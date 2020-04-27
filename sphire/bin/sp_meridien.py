@@ -2427,6 +2427,7 @@ def ali3D_polar_ccc(
 
     ptr = ctypes.cast(base_ptr, ctypes.POINTER(ctypes.c_int * size))
     buffer = numpy.frombuffer(ptr.contents, dtype="f4")
+
     buffer = buffer.reshape(lenbigbuf, size_of_one_image)
     # bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
 

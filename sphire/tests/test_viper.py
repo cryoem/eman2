@@ -27,12 +27,12 @@ import sp_global_def
 
 mpi.mpi_init(0, [])
 sp_global_def.BATCH = True
-sp_global_def.MPI = False
+sp_global_def.MPI = True
 
 MPI_PATH = "/home/adnan/applications/sphire/miniconda3/envs/py3_v5/bin/mpirun" #"/home/adnan/applications/sphire/v1.1/envs/conda_fresh/bin/"
 NUM_PROC = 6  # has to be a multiple of 3
 
-
+import subprocess
 from sp_utilities import get_im
 from numpy import allclose
 """
@@ -98,25 +98,30 @@ class Test_run(unittest.TestCase):
         filename_vol = "volf.hdf"
         filename_refvol = "refvol2.hdf"
 
-        os_system(
+        testcommand_new = (
             MPI_PATH
             + " -np "
             +str(NUM_PROC)
             +" "+path.join(ABSOLUTE_OLDBIN_PATH,"sp_viper.py")
-            +" "+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"04_ISAC","best.hdf")
+            +" "+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"04_ISAC","class_averages.hdf")
             +" "+out_dir_old
             +" --sym=c5")
 
 
-        os_system(
+        testcommand_old= (
             MPI_PATH
             + " -np "
             +str(NUM_PROC)
             +" "+path.join(ABSOLUTE_BIN_PATH,"sp_viper.py")
-            +" "+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"04_ISAC","best.hdf")
+            +" "+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"04_ISAC","class_averages.hdf")
             +" "+out_dir_new
             + " --sym=c5")
 
+        remove_dir(out_dir_new)
+        remove_dir(out_dir_old)
+
+        a = subprocess.run(args =[testcommand_new], shell=True, stderr=subprocess.STDOUT)
+        b = subprocess.run(args=[testcommand_old], shell=True, stderr=subprocess.STDOUT)
 
         # return_new_avg = get_im( path.join(out_dir_new,filename_vol) )
         # return_new_var = get_im( path.join(out_dir_new,filename_refvol))
@@ -129,8 +134,7 @@ class Test_run(unittest.TestCase):
 
 
 
-        #remove_dir(out_dir_new)
-        #remove_dir(out_dir_old)
+
 
 
 """

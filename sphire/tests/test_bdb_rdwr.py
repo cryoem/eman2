@@ -189,19 +189,19 @@ class Test_functions_outside_class(unittest.TestCase):
         self.assertEqual(atr, attr_list)
 
 
-    def test_db_get_all_attributes(self):
-        fsp = "bdb:/home/adnan/DemoResults/06_SUBSTACK_ANO#isac_substack"
-        atr = EMAN2db.db_get_all_attributes(fsp, 'xform.projection')
+    # def test_db_get_all_attributes(self):
+    #     fsp = "bdb:/home/adnan/DemoResults/06_SUBSTACK_ANO#isac_substack"
+    #     atr = EMAN2db.db_get_all_attributes(fsp, 'xform.projection')
         print(atr)
         print(type(atr))
         print(type(atr[0]))
 
-    def test_db_get_all_attributes(self):
-        fsp = "bdb:/home/adnan/DemoResults/06_SUBSTACK_ANO#isac_substack"
-        atr = EMAN2db.db_get_all_attributes(fsp, 'ctf')
-        print(atr)
-        print(type(atr))
-        print(type(atr[0]))
+    # def test_db_get_all_attributes(self):
+    #     fsp = "bdb:/home/adnan/DemoResults/06_SUBSTACK_ANO#isac_substack"
+    #     atr = EMAN2db.db_get_all_attributes(fsp, 'ctf')
+        # print(atr)
+        # print(type(atr))
+        # print(type(atr[0]))
         # attr_list = [{'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}, {'nx': 352}]
         # self.assertEqual(atr, attr_list)
 
@@ -477,11 +477,11 @@ class Test_Stacks(unittest.TestCase):
         EMAN2.display(imgnew)
 
 
-    def test_read_stack_with_write(self):
-        a = EMAN2db.EMData()
-        a.read_data('/home/adnan/PycharmProjects/DoseWeighting/Newfolder/EMAN2DB/test_img_360x360x1', 0)
-
-        print(a.get_3dview())
+    # def test_read_stack_with_write(self):
+    #     a = EMAN2db.EMData()
+    #     a.read_data('/home/adnan/PycharmProjects/DoseWeighting/Newfolder/EMAN2DB/test_img_360x360x1', 0)
+    #
+    #     print(a.get_3dview())
 
         # img = EMAN2db.EMData()
         # img.read_image(str('bdb:' + bdb_path.replace('/EMAN2DB','') + '#' + 'test_img'))
@@ -501,20 +501,20 @@ class Test_Stacks(unittest.TestCase):
         # EMAN2db.db_close_dict(a)
 
 
-    def test_ctypes_work_ornot(self):
-        import ctypes
-        import numpy
-
-        base_ptr = 139888466854280
-        size = 40368464
-        nimastack = 6989
-        target_nx = 76
-
-        ptr = ctypes.cast(base_ptr, ctypes.POINTER(ctypes.c_int * size))
-        buffer = numpy.frombuffer(ptr.contents, dtype="f4")
-
-        # buffer = buffer.reshape(nimastack, target_nx, target_nx)
-        print(buffer)
-        print(buffer.shape)
+    # def test_ctypes_work_ornot(self):
+    #     import ctypes
+    #     import numpy
+    #
+    #     base_ptr = 139888466854280
+    #     size = 40368464
+    #     nimastack = 6989
+    #     target_nx = 76
+    #
+    #     ptr = ctypes.cast(base_ptr, ctypes.POINTER(ctypes.c_int * size))
+    #     buffer = numpy.frombuffer(ptr.contents, dtype="f4")
+    #
+    #     # buffer = buffer.reshape(nimastack, target_nx, target_nx)
+    #     print(buffer)
+    #     print(buffer.shape)
 
 

@@ -84,7 +84,7 @@ ABSOLUTE_OLDBIN_PATH = path.join(ABSOLUTE_SPHIRE_PATH, "bin_py3")
 ABSOLUTE_BIN_PATH = path.join(ABSOLUTE_SPHIRE_PATH,"bin")
 
 #absolute of python
-ABSOLUTE_PATH_PYTHON = "/home/adnan/applications/sphire/miniconda3/envs/py3_v6/bin/python"
+ABSOLUTE_PATH_PYTHON = "/home/adnan/applications/sphire/miniconda3/envs/py3_v5/bin/python"
 
 
 def get_real_data(dim=2):

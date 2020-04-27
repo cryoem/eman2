@@ -1727,7 +1727,7 @@ def do_generation(
                     os.path.join(Blockdata["masterdir"], "processed_images.txt")
                 )
                 lprocessed.sort()
-                csp_utilities.write_text_file(
+                sp_utilities.write_text_file(
                     lprocessed,
                     os.path.join(Blockdata["masterdir"], "processed_images.txt"),
                 )

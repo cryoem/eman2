@@ -3362,12 +3362,11 @@ class iterImagesStack(object):
 def pack_message(data):
     """Convert data for transmission efficiently"""
     import sys
-    print(sys.getdefaultencoding())
     if isinstance(data, str):
         if len(data) > 256:
-            return b"C" + zlib.compress(data.encode('latin-1'), 1)
+            return b"C" + zlib.compress(data.encode('utf8'), 1)
         else:
-            return b"S" + data.encode('latin-1')
+            return b"S" + data.encode('utf8')
     else:
         d2x = pickle.dumps(data, 2)
         if len(d2x) > 256:
@@ -3463,15 +3462,18 @@ def wrap_mpi_bcast(data, root, communicator=None):
     sizeofdata = mpi.mpi_bcast(
         n, 4, mpi.MPI_CHAR, root, communicator
     )  # int MPI_Bcast ( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm ).
-    if mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD) == 0:
-         sizeofdata = n
+
+    if mpi.mpi_comm_rank(communicator) == root:
+        sizeofdata = n
+    else:
+        sizeofdata = b''.join([entry if entry != b'' else b'\x00' for entry in sizeofdata])
 
     n = struct.unpack("I", sizeofdata)[0]
     msgtobcast = mpi.mpi_bcast(
         msg, n, mpi.MPI_CHAR, root, communicator
     )  # int MPI_Bcast ( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm )
 
-    if mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD) == 0:
+    if mpi.mpi_comm_rank(communicator) == root:
         msgtobcast = msg
     else:
         msgtobcast = b''.join([entry if entry != b'' else b'\x00' for entry in msgtobcast])

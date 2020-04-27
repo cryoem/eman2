@@ -149,6 +149,9 @@ from   time import localtime, strftime, sleep, time
 global Tracker, Blockdata
 global  target_theta, refang
 
+import numpy
+import ctypes
+
 
 mpi_init(0, [])
 Tracker   = {}
@@ -161,7 +164,7 @@ Blockdata["shared_comm"]		= mpi_comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SH
 Blockdata["myid_on_node"]		= mpi_comm_rank(Blockdata["shared_comm"])
 Blockdata["no_of_processes_per_group"] = mpi_comm_size(Blockdata["shared_comm"])
 masters_from_groups_vs_everything_else_comm = mpi_comm_split(MPI_COMM_WORLD, Blockdata["main_node"] == Blockdata["myid_on_node"], Blockdata["myid_on_node"])
-Blockdata["color"], Blockdata["no_of_groups"], balanced_processor_load_on_nodes = get_colors_and_subsets(Blockdata["main_node"], MPI_COMM_WORLD, Blockdata["myid"], \
+Blockdata["color"], Blockdata["no_of_groups"], balanced_processor_load_on_nodes = sp_utilities.get_colors_and_subsets(Blockdata["main_node"], MPI_COMM_WORLD, Blockdata["myid"], \
 		Blockdata["shared_comm"], Blockdata["myid_on_node"], masters_from_groups_vs_everything_else_comm)
 #  We need two nodes for processing of volumes
 # end of Blockdata
@@ -1849,7 +1852,10 @@ def Xali3D_direct_ccc(data, refang, shifts, ctfs = None, bckgnoise = None, kb3D 
 	if( Blockdata["myid_on_node"] != 0 ):
 		base_vol, = mpi_win_shared_query(win_vol, MPI_PROC_NULL)
 
-	volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	# volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	ptr = ctypes.cast(base_vol, ctypes.POINTER(ctypes.c_int * sizevol))
+	volbuf = numpy.frombuffer(ptr.contents, dtype="f4")
+
 	volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
 	if( Blockdata["myid_on_node"] == 0 ):
 		np.copyto(volbuf,ndo)
@@ -1875,7 +1881,9 @@ def Xali3D_direct_ccc(data, refang, shifts, ctfs = None, bckgnoise = None, kb3D 
 	if( Blockdata["myid_on_node"] != 0 ):
 		base_ptr, = mpi_win_shared_query(win_sm, MPI_PROC_NULL)
 
-	buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	# buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	ptr = ctypes.cast(base_ptr, ctypes.POINTER(ctypes.c_int * size))
+	buffer = numpy.frombuffer(ptr.contents, dtype="f4")
 	buffer = buffer.reshape(lenbigbuf, ny, nxt)
 	#ncbuf = lenbigbuf//2
 	
@@ -1920,7 +1928,9 @@ def Xali3D_direct_ccc(data, refang, shifts, ctfs = None, bckgnoise = None, kb3D 
 
 			#  Here we get an image from a buffer by assigning an address instead of copy.
 			pointer_location = base_ptr + ((i%Blockdata["no_of_processes_per_group"])*npsi + j)*size_of_one_image*disp_unit
-			img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
+			# img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
+			ptr = ctypes.cast(pointer_location, ctypes.POINTER(ctypes.c_int * size_of_one_image))
+			img_buffer = numpy.frombuffer(ptr.contents, dtype="f4")
 			img_buffer = img_buffer.reshape(ny, nxt)
 			#temp = EMNumPy.numpy2em(img_buffer)
 			temp = emnumpy3.register_numpy_to_emdata(img_buffer)
@@ -2073,7 +2083,9 @@ def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs 
 	if( Blockdata["myid_on_node"] != 0 ):
 		base_vol, = mpi_win_shared_query(win_vol, MPI_PROC_NULL)
 
-	volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	# volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	ptr = ctypes.cast(base_vol, ctypes.POINTER(ctypes.c_int * sizevol))
+	volbuf = numpy.frombuffer(ptr.contents, dtype="f4")
 	volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
 	if( Blockdata["myid_on_node"] == 0 ):
 		np.copyto(volbuf,ndo)
@@ -2100,7 +2112,10 @@ def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs 
 	if( Blockdata["myid_on_node"] != 0 ):
 		base_ptr, = mpi_win_shared_query(win_sm, MPI_PROC_NULL)
 
-	buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	# buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	ptr = ctypes.cast(base_ptr, ctypes.POINTER(ctypes.c_int * size))
+	buffer = numpy.frombuffer(ptr.contents, dtype="f4")
+
 	buffer = buffer.reshape(lenbigbuf, ny, nxt)
 	#ncbuf = lenbigbuf//2
 	
@@ -2145,7 +2160,9 @@ def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs 
 
 			#  Here we get an image from a buffer by assigning an address instead of copy.
 			pointer_location = base_ptr + ((i%Blockdata["no_of_processes_per_group"])*n_coarse_psi + j)*size_of_one_image*disp_unit
-			img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
+			# img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
+			ptr = ctypes.cast(pointer_location, ctypes.POINTER(ctypes.c_int * size_of_one_image))
+			img_buffer = numpy.frombuffer(ptr.contents, dtype="f4")
 			img_buffer = img_buffer.reshape(ny, nxt)
 			#temp = EMNumPy.numpy2em(img_buffer)
 			temp = emnumpy3.register_numpy_to_emdata(img_buffer)
@@ -2197,7 +2214,9 @@ def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs 
 				itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
 				itpsi = (itpsi + i3)%npsi
 				pointer_location = base_ptr + (iang*n_coarse_psi + itpsi)*size_of_one_image*disp_unit
-				img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
+				# img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
+				ptr = ctypes.cast(pointer_location, ctypes.POINTER(ctypes.c_int * size_of_one_image))
+				img_buffer = numpy.frombuffer(ptr.contents, dtype="f4")
 				img_buffer = img_buffer.reshape(ny, nxt)
 				#temp = EMNumPy.numpy2em(img_buffer)
 				temp = emnumpy3.register_numpy_to_emdata(img_buffer)
@@ -2342,7 +2361,10 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 	if( Blockdata["myid_on_node"] != 0 ):
 		base_vol, = mpi_win_shared_query(win_vol, MPI_PROC_NULL)
 
-	volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	# volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	ptr = ctypes.cast(base_vol, ctypes.POINTER(ctypes.c_int * sizevol))
+	volbuf = numpy.frombuffer(ptr.contents, dtype="f4")
+
 	volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
 	if( Blockdata["myid_on_node"] == 0 ):
 		np.copyto(volbuf,ndo)
@@ -2367,7 +2389,10 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 	if( Blockdata["myid_on_node"] != 0 ):
 		base_ptr, = mpi_win_shared_query(win_sm, MPI_PROC_NULL)
 
-	buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	# buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	ptr = ctypes.cast(base_ptr, ctypes.POINTER(ctypes.c_int * size))
+	buffer = numpy.frombuffer(ptr.contents, dtype="f4")
+
 	buffer = buffer.reshape(lenbigbuf, size_of_one_image)
 	#bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
 
@@ -2422,7 +2447,10 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 		if( Blockdata["myid_on_node"] != 0 ):
 			base_volinit, = mpi_win_shared_query(win_volinit, MPI_PROC_NULL)
 
-		volbufinit = np.frombuffer(np.core.multiarray.int_asbuffer(base_volinit, sizevol*disp_unit), dtype = 'f4')
+		# volbufinit = np.frombuffer(np.core.multiarray.int_asbuffer(base_volinit, sizevol*disp_unit), dtype = 'f4')
+		ptr = ctypes.cast(base_volinit, ctypes.POINTER(ctypes.c_int * sizevol))
+		volbufinit = numpy.frombuffer(ptr.contents, dtype="f4")
+
 		volbufinit = volbufinit.reshape(nzvol, nyvol, nxvol)
 		if( Blockdata["myid_on_node"] == 0 ):
 			np.copyto(volbufinit,ndoinit)
@@ -3046,7 +3074,10 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 	if( Blockdata["myid_on_node"] != 0 ):
 		base_vol, = mpi_win_shared_query(win_vol, MPI_PROC_NULL)
 
-	volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	# volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	ptr = ctypes.cast(base_vol, ctypes.POINTER(ctypes.c_int * sizevol))
+	volbuf = numpy.frombuffer(ptr.contents, dtype="f4")
+
 	volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
 	if( Blockdata["myid_on_node"] == 0 ):
 		np.copyto(volbuf,ndo)
@@ -3071,7 +3102,10 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 	if( Blockdata["myid_on_node"] != 0 ):
 		base_ptr, = mpi_win_shared_query(win_sm, MPI_PROC_NULL)
 
-	buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	# buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	ptr = ctypes.cast(base_ptr, ctypes.POINTER(ctypes.c_int * size))
+	buffer = numpy.frombuffer(ptr.contents, dtype="f4")
+
 	buffer = buffer.reshape(lenbigbuf, size_of_one_image)
 	#bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
 
@@ -3126,7 +3160,10 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 		if( Blockdata["myid_on_node"] != 0 ):
 			base_volinit, = mpi_win_shared_query(win_volinit, MPI_PROC_NULL)
 
-		volbufinit = np.frombuffer(np.core.multiarray.int_asbuffer(base_volinit, sizevol*disp_unit), dtype = 'f4')
+		# volbufinit = np.frombuffer(np.core.multiarray.int_asbuffer(base_volinit, sizevol*disp_unit), dtype = 'f4')
+		ptr = ctypes.cast(base_volinit, ctypes.POINTER(ctypes.c_int * sizevol))
+		volbufinit = numpy.frombuffer(ptr.contents, dtype="f4")
+
 		volbufinit = volbufinit.reshape(nzvol, nyvol, nxvol)
 		if( Blockdata["myid_on_node"] == 0 ):
 			np.copyto(volbufinit,ndoinit)
@@ -3757,7 +3794,10 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 	if( Blockdata["myid_on_node"] != 0 ):
 		base_vol, = mpi_win_shared_query(win_vol, MPI_PROC_NULL)
 
-	volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	# volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	ptr = ctypes.cast(base_vol, ctypes.POINTER(ctypes.c_int * sizevol))
+	volbuf = numpy.frombuffer(ptr.contents, dtype="f4")
+
 	volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
 	if( Blockdata["myid_on_node"] == 0 ):
 		np.copyto(volbuf,ndo)
@@ -3783,7 +3823,9 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 	if( Blockdata["myid_on_node"] != 0 ):
 		base_ptr, = mpi_win_shared_query(win_sm, MPI_PROC_NULL)
 
-	buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	# buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	ptr = ctypes.cast(base_ptr, ctypes.POINTER(ctypes.c_int * size))
+	buffer = numpy.frombuffer(ptr.contents, dtype="f4")
 	buffer = buffer.reshape(lenbigbuf, size_of_one_image)
 	#bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
 
@@ -3838,7 +3880,10 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 		if( Blockdata["myid_on_node"] != 0 ):
 			base_volinit, = mpi_win_shared_query(win_volinit, MPI_PROC_NULL)
 
-		volbufinit = np.frombuffer(np.core.multiarray.int_asbuffer(base_volinit, sizevol*disp_unit), dtype = 'f4')
+		# volbufinit = np.frombuffer(np.core.multiarray.int_asbuffer(base_volinit, sizevol*disp_unit), dtype = 'f4')
+		ptr = ctypes.cast(base_volinit, ctypes.POINTER(ctypes.c_int * sizevol))
+		volbufinit = numpy.frombuffer(ptr.contents, dtype="f4")
+
 		volbufinit = volbufinit.reshape(nzvol, nyvol, nxvol)
 		if( Blockdata["myid_on_node"] == 0 ):
 			np.copyto(volbufinit,ndoinit)
@@ -4473,7 +4518,10 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 	if( Blockdata["myid_on_node"] != 0 ):
 		base_vol, = mpi_win_shared_query(win_vol, MPI_PROC_NULL)
 
-	volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	# volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	ptr = ctypes.cast(base_vol, ctypes.POINTER(ctypes.c_int * sizevol))
+	volbuf = numpy.frombuffer(ptr.contents, dtype="f4")
+
 	volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
 	if( Blockdata["myid_on_node"] == 0 ):
 		np.copyto(volbuf,ndo)
@@ -4530,7 +4578,10 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 		if( Blockdata["myid_on_node"] != 0 ):
 			base_volinit, = mpi_win_shared_query(win_volinit, MPI_PROC_NULL)
 
-		volbufinit = np.frombuffer(np.core.multiarray.int_asbuffer(base_volinit, sizevol*disp_unit), dtype = 'f4')
+		# volbufinit = np.frombuffer(np.core.multiarray.int_asbuffer(base_volinit, sizevol*disp_unit), dtype = 'f4')
+		ptr = ctypes.cast(base_volinit, ctypes.POINTER(ctypes.c_int * sizevol))
+		volbufinit = numpy.frombuffer(ptr.contents, dtype="f4")
+
 		volbufinit = volbufinit.reshape(nzvol, nyvol, nxvol)
 		if( Blockdata["myid_on_node"] == 0 ):
 			np.copyto(volbufinit,ndoinit)
@@ -4697,7 +4748,10 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 	if( Blockdata["myid_on_node"] != 0 ):
 		base_ptr, = mpi_win_shared_query(win_sm, MPI_PROC_NULL)
 
-	buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	# buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	ptr = ctypes.cast(base_ptr, ctypes.POINTER(ctypes.c_int * size))
+	buffer = numpy.frombuffer(ptr.contents, dtype="f4")
+
 	buffer = buffer.reshape(lenbigbuf, size_of_one_image)
 	#bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
 
@@ -5524,7 +5578,10 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	if( Blockdata["myid_on_node"] != 0 ):
 		base_vol, = mpi_win_shared_query(win_vol, MPI_PROC_NULL)
 
-	volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	# volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	ptr = ctypes.cast(base_vol, ctypes.POINTER(ctypes.c_int * sizevol))
+	volbuf = numpy.frombuffer(ptr.contents, dtype="f4")
+
 	volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
 	if( Blockdata["myid_on_node"] == 0 ):
 		np.copyto(volbuf,ndo)
@@ -5581,7 +5638,10 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 		if( Blockdata["myid_on_node"] != 0 ):
 			base_volinit, = mpi_win_shared_query(win_volinit, MPI_PROC_NULL)
 
-		volbufinit = np.frombuffer(np.core.multiarray.int_asbuffer(base_volinit, sizevol*disp_unit), dtype = 'f4')
+		# volbufinit = np.frombuffer(np.core.multiarray.int_asbuffer(base_volinit, sizevol*disp_unit), dtype = 'f4')
+		ptr = ctypes.cast(base_volinit, ctypes.POINTER(ctypes.c_int * sizevol))
+		volbufinit = numpy.frombuffer(ptr.contents, dtype="f4")
+
 		volbufinit = volbufinit.reshape(nzvol, nyvol, nxvol)
 		if( Blockdata["myid_on_node"] == 0 ):
 			np.copyto(volbufinit,ndoinit)
@@ -5750,7 +5810,9 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	if( Blockdata["myid_on_node"] != 0 ):
 		base_ptr, = mpi_win_shared_query(win_sm, MPI_PROC_NULL)
 
-	buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	# buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	ptr = ctypes.cast(base_ptr, ctypes.POINTER(ctypes.c_int * size))
+	buffer = numpy.frombuffer(ptr.contents, dtype="f4")
 	buffer = buffer.reshape(lenbigbuf, size_of_one_image)
 	#bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
 
@@ -6533,7 +6595,10 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 	if( Blockdata["myid_on_node"] != 0 ):
 		base_vol, = mpi_win_shared_query(win_vol, MPI_PROC_NULL)
 
-	volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	# volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	ptr = ctypes.cast(base_vol, ctypes.POINTER(ctypes.c_int * sizevol))
+	volbuf = numpy.frombuffer(ptr.contents, dtype="f4")
+
 	volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
 	if( Blockdata["myid_on_node"] == 0 ):
 		np.copyto(volbuf,ndo)
@@ -6590,7 +6655,10 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 		if( Blockdata["myid_on_node"] != 0 ):
 			base_volinit, = mpi_win_shared_query(win_volinit, MPI_PROC_NULL)
 
-		volbufinit = np.frombuffer(np.core.multiarray.int_asbuffer(base_volinit, sizevol*disp_unit), dtype = 'f4')
+		# volbufinit = np.frombuffer(np.core.multiarray.int_asbuffer(base_volinit, sizevol*disp_unit), dtype = 'f4')
+		ptr = ctypes.cast(base_volinit, ctypes.POINTER(ctypes.c_int * sizevol))
+		volbufinit = numpy.frombuffer(ptr.contents, dtype="f4")
+
 		volbufinit = volbufinit.reshape(nzvol, nyvol, nxvol)
 		if( Blockdata["myid_on_node"] == 0 ):
 			np.copyto(volbufinit,ndoinit)
@@ -6763,7 +6831,10 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 	if( Blockdata["myid_on_node"] != 0 ):
 		base_ptr, = mpi_win_shared_query(win_sm, MPI_PROC_NULL)
 
-	buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	# buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	ptr = ctypes.cast(base_ptr, ctypes.POINTER(ctypes.c_int * size))
+	buffer = numpy.frombuffer(ptr.contents, dtype="f4")
+
 	buffer = buffer.reshape(lenbigbuf, size_of_one_image)
 	#bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
 
@@ -7872,7 +7943,10 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 	if( Blockdata["myid_on_node"] != 0 ):
 		base_vol, = mpi_win_shared_query(win_vol, MPI_PROC_NULL)
 
-	volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	# volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	ptr = ctypes.cast(base_vol, ctypes.POINTER(ctypes.c_int * sizevol))
+	volbuf = numpy.frombuffer(ptr.contents, dtype="f4")
+
 	volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
 	if( Blockdata["myid_on_node"] == 0 ):
 		np.copyto(volbuf,ndo)
@@ -7929,7 +8003,10 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 		if( Blockdata["myid_on_node"] != 0 ):
 			base_volinit, = mpi_win_shared_query(win_volinit, MPI_PROC_NULL)
 
-		volbufinit = np.frombuffer(np.core.multiarray.int_asbuffer(base_volinit, sizevol*disp_unit), dtype = 'f4')
+		# volbufinit = np.frombuffer(np.core.multiarray.int_asbuffer(base_volinit, sizevol*disp_unit), dtype = 'f4')
+		ptr = ctypes.cast(base_volinit, ctypes.POINTER(ctypes.c_int * sizevol))
+		volbufinit = numpy.frombuffer(ptr.contents, dtype="f4")
+
 		volbufinit = volbufinit.reshape(nzvol, nyvol, nxvol)
 		if( Blockdata["myid_on_node"] == 0 ):
 			np.copyto(volbufinit,ndoinit)
@@ -8103,7 +8180,10 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 	if( Blockdata["myid_on_node"] != 0 ):
 		base_ptr, = mpi_win_shared_query(win_sm, MPI_PROC_NULL)
 
-	buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	# buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	ptr = ctypes.cast(base_ptr, ctypes.POINTER(ctypes.c_int * size))
+	buffer = numpy.frombuffer(ptr.contents, dtype="f4")
+
 	buffer = buffer.reshape(lenbigbuf, size_of_one_image)
 	#bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
 
