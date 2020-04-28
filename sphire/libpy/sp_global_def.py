@@ -48,7 +48,7 @@ import random
 import sys
 import time
 import sp_utilities as util
-
+import os
 
 def get_timestamp(file_format=False):
     """
@@ -87,7 +87,7 @@ def print_timestamp(tag=""):
 
     # are we using mpi?
     try:
-        mpi_rank = int(inspect.os.environ["OMPI_COMM_WORLD_RANK"])
+        mpi_rank = int(os.environ["OMPI_COMM_WORLD_RANK"])
 
         # printing the "Start"-tag will sync up the log file names so that all processes use the same logfile
         global SXPRINT_LOG, SXPRINT_LOG_SYNC
@@ -107,7 +107,7 @@ def print_timestamp(tag=""):
 
 def write_command(output_folder=None):
     try:
-        mpi_rank = int(inspect.os.environ["OMPI_COMM_WORLD_RANK"])
+        mpi_rank = int(os.environ["OMPI_COMM_WORLD_RANK"])
 
     # if there is no such thing as OMPI_COMM_WORLD_RANK, then we're not using mpi
     except KeyError:
@@ -117,7 +117,7 @@ def write_command(output_folder=None):
         command = " ".join(sys.argv) + "\n"
         if output_folder:
             with open(
-                inspect.os.path.join(output_folder, "command.txt"), "a+"
+                os.path.join(output_folder, "command.txt"), "a+"
             ) as the_command:
                 the_command.write(command)
 
@@ -125,7 +125,7 @@ def write_command(output_folder=None):
         if not SXPRINT_CMD_SKIP:
             if not SXPRINT_LOG_EXISTS:
                 try:
-                    inspect.os.makedirs(SXPRINT_LOG_PATH)
+                    os.makedirs(SXPRINT_LOG_PATH)
                 except OSError:
                     pass
                 SXPRINT_LOG_EXISTS = True
@@ -185,7 +185,7 @@ def sxprint(*args, **kwargs):
     if not SXPRINT_LOG_SKIP:
         if not SXPRINT_LOG_EXISTS:
             try:
-                inspect.os.makedirs(SXPRINT_LOG_PATH)
+                os.makedirs(SXPRINT_LOG_PATH)
             except OSError:
                 pass
             SXPRINT_LOG_EXISTS = True
@@ -304,7 +304,7 @@ IS_LOGFILE_OPEN = False
 
 # sxprint log (sxprint logging can be disabled by setting this to "")
 SXPRINT_LOG_PATH = "SPHIRE_LOG_HISTORY"
-SXPRINT_LOG_EXISTS = inspect.os.path.exists(SXPRINT_LOG_PATH)
+SXPRINT_LOG_EXISTS = os.path.exists(SXPRINT_LOG_PATH)
 SXPRINT_LOG_SKIP = False
 SXPRINT_CMD_SKIP = False
 try:
@@ -314,10 +314,10 @@ try:
 except AttributeError:
     init_func = "none"
 
-SXPRINT_LOG = inspect.os.path.join(
+SXPRINT_LOG = os.path.join(
     SXPRINT_LOG_PATH, get_timestamp(file_format=True) + "_" + init_func + ".log"
 )
 SXPRINT_LOG_SYNC = (
     False
 )  # denotes whether SXPRINT_LOG has been synchronized across mpi processes
-SXPRINT_CMD = inspect.os.path.join(SXPRINT_LOG_PATH, "commands.txt")
+SXPRINT_CMD = os.path.join(SXPRINT_LOG_PATH, "commands.txt")

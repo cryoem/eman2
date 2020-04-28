@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 #
 # Author: Steven Ludtke, 05/01/2013 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -918,8 +916,11 @@ def json_to_obj(jsdata):
 	"""converts a javascript object representation back to the original python object"""
 
 	if "__pickle__" in jsdata :
-		try: return pickle.loads(str(jsdata["__pickle__"]))
-		except: return str(jsdata["__pickle__"])				# This shouldn't happen. Means a module hasn't been loaded. This is an emergency stopgap to avoid crashing
+		try: return pickle.loads(jsdata["__pickle__"].encode("utf-8"))
+		except:
+			traceback.print_exc()
+			print("error decoding ",jsdata["__pickle__"])
+			return str(jsdata["__pickle__"])				# This shouldn't happen. Means a module hasn't been loaded. This is an emergency stopgap to avoid crashing
 	elif "__image__" in jsdata :							# images now stored in a separate HDF file
 		try: 
 			# We defer actual reading of the image until it's needed

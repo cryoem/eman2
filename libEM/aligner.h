@@ -1866,6 +1866,7 @@ namespace EMAN
 				d.put("initxform", EMObject::TRANSFORMARRAY,"An array of Transforms storing the starting positions.");
 				d.put("maxang", EMObject::FLOAT,"maximum angle from initial rotation.");
 				d.put("verbose", EMObject::BOOL,"Turn this on to have useful information printed to standard out.");
+				d.put("maxres", EMObject::FLOAT,"Maximum resolution to consider when full sampling is used");
 				return d;
 			}
 

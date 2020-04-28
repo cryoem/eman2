@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 # Muyuan Chen 2018-04
-from __future__ import print_function
-from __future__ import division
-from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -171,7 +168,7 @@ def main():
 		jd["sym"] = oldjd["sym"]
 		jd["localfilter"]=oldjd["localfilter"]
 		jd["mask"]=oldjd["mask"]
-		if oldjd.has_key("radref"):
+		if "radref" in oldjd:
 			jd["radref"]=oldjd["radref"]
 			
 		if fromspt:
@@ -214,7 +211,7 @@ def main():
 		k=list(js.keys())[0]
 		src=eval(k)[0]
 		
-		print("loading 3D particles from {}".format(base_name(src)))
+		print("loading {} 3D particles from {}".format(len(js.keys()), base_name(src)))
 		print("   box size {}, apix {:.2f}".format(bxsz, apix))
 		
 		e=EMData(src, 0, True)
@@ -405,14 +402,14 @@ def main():
 
 		s = ""
 		
-		if jd.has_key("goldstandard"): 
+		if "goldstandard" in jd: 
 			if jd["goldstandard"] > 0: 
 				s += " --align"
-		if jd.has_key("setsf"):
+		if "setsf" in jd:
 			s += " --setsf {}".format(jd['setsf']) #options.setsf)
 		
 		
-		if options.tophat=="auto" and jd.has_key("localfilter") and jd["localfilter"]==True:
+		if options.tophat=="auto" and ("localfilter" in jd) and jd["localfilter"]==True:
 			s += " --tophat local"
 		elif options.tophat=="local":
 			s += " --tophat local"

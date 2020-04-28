@@ -32,8 +32,6 @@
 #	   and proc2d have the same implementation
 #
 # todo: lp, hp, tlp vs apix
-from __future__ import print_function
-from __future__ import division
 from past.utils import old_div
 from builtins import range
 from EMAN2 import *
@@ -525,12 +523,14 @@ def main():
 				for it in range(3):
 					for z in range(best[1]-dzmax,best[1]+dzmax+1):
 						zimg=dsd.process("xform",{"transform":Transform({"type":"eman","tz":z,"phi":best[2]})})
-						best=min(best,(dsr.cmp("ccc",zimg),z,best[2],zimg))
+						tmp=(dsr.cmp("ccc",zimg),z,best[2],zimg)
+						if best[0]>tmp[0] : best=tmp
 					if options.verbose>1: print(best[:3])
 
 					for phi in arange(best[2]-20.0,best[2]+20.0,dang*2.0):
 						zimg=dsd.process("xform",{"transform":Transform({"type":"eman","tz":best[1],"phi":phi})})
-						best=min(best,(dsr.cmp("ccc",zimg),best[1],phi,zimg))
+						tmp=(dsr.cmp("ccc",zimg),best[1],phi,zimg)
+						if best[0]>tmp[0]: best=tmp
 					if options.verbose>1: print(best[:3])
 
 				# Fix best() for full sampling
@@ -541,7 +541,8 @@ def main():
 				for z in range(best[1]-3,best[1]+4):
 					for phi in arange(best[2]-dang*3.0,best[2]+dang*3.5,dang):
 						zimg=data.process("xform",{"transform":Transform({"type":"eman","tz":z,"phi":phi})})
-						best=min(best,(zalignref.cmp("ccc",zimg),z,best[2],zimg))
+						tmp=(zalignref.cmp("ccc",zimg),z,best[2],zimg)
+						if best[0]>tmp[0]: best=tmp
 				if options.verbose>1: print(best[:3])
 
 				data=best[3]
@@ -593,7 +594,12 @@ def main():
 							param_dict[key] = EMData(param_dict[key])
 						except:
 							pass
-
+				
+				# note we cannot really pass xform as string input...
+				if "xform.align3d" in param_dict:
+					if param_dict["xform.align3d"]=='none':
+						param_dict["xform.align3d"]=Transform()
+					
 				# For 'refine' aligners, we normally want to provide a starting alignment, presumably from the previous aligner. If we can't find one with start with identity matrix
 				if "refine" in alignername and "xform.align3d" not in param_dict:
 					try:

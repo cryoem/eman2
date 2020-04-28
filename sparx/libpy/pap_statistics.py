@@ -1,5 +1,5 @@
+from __future__ import division
 #
-from __future__ import print_function
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
 # Please do not copy or modify this file without written consent of the author.
 # Copyright (c) 2000-2019 The University of Texas - Houston Medical School
@@ -30,6 +30,7 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 
+from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -113,7 +114,7 @@ def avgvar(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use_eve
 		Util.add_img2(var, img)
 
 	Util.mul_scalar(ave, 1.0 /float(nima) )
-	return ave, (var - ave*ave*nima)/(nima-1)
+	return ave, old_div((var - ave*ave*nima),(nima-1))
 
 def avgvar_ctf(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use_even=True, snr=1.0, dopa = True):
 	'''
@@ -544,7 +545,7 @@ def ave_var(data, mode = "a", listID=None):
 		Util.add_img2(var, img)
 	Util.mul_scalar(ave, 1.0 /float(nlistID) )
 
-	return ave, (var - ave*ave*nlistID)/(nlistID-1)
+	return ave, old_div((var - ave*ave*nlistID),(nlistID-1))
 
 def add_oe(data):
 	"""
@@ -687,7 +688,7 @@ def ave_oe_series_d(data):
 	for i in range(2,n):
 		if i%2 == 0: Util.add_img(ave1, data[i])
 		else:        Util.add_img(ave2, data[i])
-	return ave1/(n//2+(n%2)), ave2/(n//2)
+	return old_div(ave1,(n//2+(n%2))), old_div(ave2,(n//2))
 
 def ave_oe_series(stack):
 	"""
@@ -709,7 +710,7 @@ def ave_oe_series(stack):
 		temp = rot_shift2D(ima, alpha, sx, sy, mirror)
 		if i%2 == 0: Util.add_img(ave1, temp)
 		else:        Util.add_img(ave2, temp)
-	return ave1/(n//2+(n%2)), ave2/(n//2)
+	return old_div(ave1,(n//2+(n%2))), old_div(ave2,(n//2))
 
 
 def ave_oe_series_textfile(stack, textfile):
@@ -737,7 +738,7 @@ def ave_oe_series_textfile(stack, textfile):
 		temp = rot_shift2D(ima, alpha, sx, sy, mirror)
 		if i%2 == 0: Util.add_img(ave1, temp)
 		else:        Util.add_img(ave2, temp)
-	return ave1/(n/2+n%2), ave2/(n/2)
+	return old_div(ave1,(old_div(n,2)+n%2)), old_div(ave2,(old_div(n,2)))
 
 
 def ave_oe_series_indexed(stack, idx_ref):
@@ -764,7 +765,7 @@ def ave_oe_series_indexed(stack, idx_ref):
 			temp = rot_shift2D(ima, alpha, sx, sy, mirror)
 			if i%2 == 0: Util.add_img(ave1, temp)
 			else:        Util.add_img(ave2, temp)
-	if ntot >= 0:	return ave1/(ntot/2+(ntot%2)), ave2/(ntot/2), ntot
+	if ntot >= 0:	return old_div(ave1,(old_div(ntot,2)+(ntot%2))), old_div(ave2,(old_div(ntot,2))), ntot
 	else:		return ave1, ave2, ntot
 	
 def ave_var_series_one(data, skip, kb):
@@ -790,7 +791,7 @@ def ave_var_series_one(data, skip, kb):
 			Util.add_img2(var, temp)
 
 	ave /= n-1
-	return ave, (var - ave*ave*(n-1))/(n-2)
+	return ave, old_div((var - ave*ave*(n-1)),(n-2))
 
 def add_series(stack, i1=0 ,i2=0):
 	""" Calculate average and variance files for an image series
@@ -1262,14 +1263,14 @@ def ssnr2d(data, mask = None, mode=""):
 	# convert to real images
 	var   = Util.pack_complex_to_real(var)
 	sumsq = Util.pack_complex_to_real(sumsq)
-	var = (var - sumsq/n)/(n-1)
-	ssnr   = sumsq/var/n - 1.0
+	var = old_div((var - old_div(sumsq,n)),(n-1))
+	ssnr   = old_div(old_div(sumsq,var),n) - 1.0
 	from fundamentals import rot_avg_table
 	rvar = rot_avg_table(var)
 	rsumsq = rot_avg_table(sumsq)
 	rssnr = []
 	for i in range(len(rvar)):
-		if(rvar[i] > 0.0): qt = max(0.0, rsumsq[i]/rvar[i]/n - 1.0)
+		if(rvar[i] > 0.0): qt = max(0.0, old_div(old_div(rsumsq[i],rvar[i]),n) - 1.0)
 		else:              ERROR("ssnr2d","rvar negative",1)
 		rssnr.append(qt)
 
@@ -1733,7 +1734,7 @@ def varf3d(prjlist,ssnr_text_file = None, mask2D = None, reference_structure = N
 	[ssnr1, vol_ssnr1] = recons3d_nn_SSNR(prjlist, mask2D, rw, npad, sign, sym, CTF)
 
 	nx  = prjlist[0].get_xsize()
-	if ou == -1: radius = int(nx/2) - 1
+	if ou == -1: radius = int(old_div(nx,2)) - 1
 	else:        radius = int(ou)
 	if(reference_structure == None):
 		if CTF :
@@ -1817,7 +1818,7 @@ def varf3d_MPI(prjlist, ssnr_text_file = None, mask2D = None, reference_structur
 	else:                              recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF, mpi_comm=mpi_comm)
 
 	nx  = prjlist[0].get_xsize()
-	if ou == -1: radius = int(nx/2) - 2
+	if ou == -1: radius = int(old_div(nx,2)) - 2
 	else:        radius = int(ou)
 	if(reference_structure == None):
 		if CTF :
@@ -1920,7 +1921,7 @@ def fsc(img1, img2, w = 1.0, filename=None):
 		frsc.append(result[i*sl:(i+1)*sl])
 	if filename:
 		outf = open(filename, "w")
-		for i in range(size):
+		for i in range(sl):
 			datstrings = []
 			datstrings.append("  %12f" % (frsc[0][i]))
 			datstrings.append("  %12f" % (frsc[1][i]))
@@ -1932,7 +1933,7 @@ def fsc(img1, img2, w = 1.0, filename=None):
 
 def fsc_mask(img1, img2, mask = None, w = 1.0, filename=None):
 	""" 
-	        Compute fsc using mask and normalization.
+	    Compute fsc using mask and normalization.
 
 		Usage: [frsc =] fsc(image1, image2 [, mask, w, filename])
 
@@ -1940,16 +1941,18 @@ def fsc_mask(img1, img2, mask = None, w = 1.0, filename=None):
 
 	"""
 	from pap_statistics import fsc
-	from morphology import binarize
+	from morphology import binarize, erosion, dilation
 	from utilities  import model_circle
 	nx = img1.get_xsize()
 	ny = img1.get_ysize()
 	nz = img1.get_zsize()
 	if( mask == None):  mask = model_circle(nx//2, nx, ny, nz)
 	m = binarize(mask, 0.5)
-	s1 = Util.infomask(img1, m, True)
-	s2 = Util.infomask(img2, m, True)
-	return fsc((img1-s1[0])*mask, (img2-s2[0])*mask, w, filename)
+	m = dilation(m) - erosion(m)
+	s1 = Util.infomask(img1, m, True)[0]
+	s2 = Util.infomask(img2, m, True)[0]
+	del m
+	return fsc((img1-s1)*mask, (img2-s2)*mask, w, filename)
 
 
 def locres(vi, ui, m, nk, cutoff, step, myid, main_node, number_of_proc):
@@ -1985,7 +1988,7 @@ def locres(vi, ui, m, nk, cutoff, step, myid, main_node, number_of_proc):
 	if(myid == 0):
 		freqvol = model_blank(nx,ny,nz)
 		resolut = []
-	lp = int(max(nx,ny,nz)/2/step+0.5)
+	lp = int(old_div(old_div(max(nx,ny,nz),2),step)+0.5)
 	step = 0.5/lp
 	lt = lp//number_of_proc
 	lp = (lt+1)*number_of_proc
@@ -2006,7 +2009,7 @@ def locres(vi, ui, m, nk, cutoff, step, myid, main_node, number_of_proc):
 			dp = Util.infomask(tmp3,m,True)[0]
 			#print "dpdo   ",myid,dp,do
 			if do == 0.0: dis = [freq, 0.0]
-			else:  dis = [freq, dp/do]
+			else:  dis = [freq, old_div(dp,do)]
 		else:
 			tmp1 = model_blank(nx,ny,nz,1.0)
 			tmp2 = model_blank(nx,ny,nz,1.0)
@@ -2118,7 +2121,7 @@ def get_refstack(imgstack,params,nref,refstack,cs,mask,center,Iter):
 					if(ncnt%2==1): refimgo+=out
 		if(center):
 			if(ncnt>=2):
-				tavg= (refimgo*(int(ncnt/2)+(ncnt%2)) + refimge*int(ncnt/2))/ncnt
+				tavg= old_div((refimgo*(int(old_div(ncnt,2))+(ncnt%2)) + refimge*int(old_div(ncnt,2))),ncnt)
 				drop_image(tavg,"tavg.spi")
 				cs[ir] = tavg.phase_cog()
 				refimg = fshift(tavg, -cs[ir][0], -cs[ir][1])
@@ -2127,7 +2130,7 @@ def get_refstack(imgstack,params,nref,refstack,cs,mask,center,Iter):
 				refimg = fshift(refimgo, -cs[ir][0], -cs[ir][1])				
 		else:
 			if(ncnt>=2):
-				refimg= (refimgo*(int(ncnt/2)+(ncnt%2)) + refimge*int(ncnt/2))/ncnt
+				refimg= old_div((refimgo*(int(old_div(ncnt,2))+(ncnt%2)) + refimge*int(old_div(ncnt,2))),ncnt)
 			else:
 				refimg=refimgo
 		a0 = refimg.cmp("dot", refimg, {"negative":0, "mask":mask}) # tave' * tave
@@ -2631,7 +2634,7 @@ def k_means_criterion(Cls, crit_name=''):
 		elif name == 'H':
 
 			if Je > 0.0:
-				Crit['H'] = (Tr / (Cls['k'] - 1)) / (Je / (N - Cls['k']))
+				Crit['H'] = old_div((old_div(Tr, (Cls['k'] - 1))), (old_div(Je, (N - Cls['k']))))
 			else:
 				Crit['H'] = 1.0e20
 
@@ -2644,16 +2647,16 @@ def k_means_criterion(Cls, crit_name=''):
 					if i != j:		
 						err = Cls['ave'][j].cmp("SqEuclidean",Cls['ave'][i])
 						if err > 0.0:
-							if Cls['n'][i] > 0:	ji = Cls['Ji'][i] / Cls['n'][i]
+							if Cls['n'][i] > 0:	ji = old_div(Cls['Ji'][i], Cls['n'][i])
 							else:			ji = 0
-							if Cls['n'][j] > 0:	jj = Cls['Ji'][j] / Cls['n'][j]
+							if Cls['n'][j] > 0:	jj = old_div(Cls['Ji'][j], Cls['n'][j])
 							else:			jj = 0
-							db = (ji + jj) / err
+							db = old_div((ji + jj), err)
 						else:
 							db = 1.0e20													
 					if db > val_max:	val_max = db					
 				DB += val_max
-			Crit['D'] = DB / Cls['k']			
+			Crit['D'] = old_div(DB, Cls['k'])			
 
 		else:
 			ERROR("Criterion type for K-means unknown","k_means_criterion",1)
@@ -2804,7 +2807,7 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 			# compute Ji and Je
 			for n in range(N):
 				CTFxAve               = filt_table(Cls['ave'][assign[n]], ctf[n])
-				Cls['Ji'][assign[n]] += CTFxAve.cmp("SqEuclidean", im_M[n]) / norm
+				Cls['Ji'][assign[n]] += old_div(CTFxAve.cmp("SqEuclidean", im_M[n]), norm)
 			Je = 0
 			for k in range(K):        Je = Cls['Ji'][k]
 																			
@@ -2815,7 +2818,7 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 
 			# compute Ji and Je
 			Je = 0
-			for n in range(N):	Cls['Ji'][assign[n]] += im_M[n].cmp("SqEuclidean",Cls['ave'][assign[n]])/norm
+			for n in range(N):	Cls['Ji'][assign[n]] += old_div(im_M[n].cmp("SqEuclidean",Cls['ave'][assign[n]]),norm)
 			for k in range(K):	Je += Cls['Ji'][k]	
 		
 		## Clustering		
@@ -2853,14 +2856,14 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 						if k != assign[im]:
 							nj     = float(Cls['n'][k])
 							dj     = res['dist'][k]
-							dJe[k] = (ni/(ni-1))*(di/norm) - (nj/(nj+1))*(dj/norm)
+							dJe[k] = (old_div(ni,(ni-1)))*(old_div(di,norm)) - (old_div(nj,(nj+1)))*(old_div(dj,norm))
 						else:
 							dJe[k] = 0
 
 					# normalize and select
 					mindJe = min(dJe)
 					scale  = max(dJe) - mindJe
-					for k in range(K): dJe[k] = 1 - (dJe[k] - mindJe) / scale
+					for k in range(K): dJe[k] = 1 - old_div((dJe[k] - mindJe), scale)
 					select = select_kmeans(dJe, T)
 
 					if select != res['pos']:
@@ -2908,7 +2911,7 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 				# compute Ji and Je
 				for n in range(N):
 					CTFxAve               = filt_table(Cls['ave'][assign[n]], ctf[n])
-					Cls['Ji'][assign[n]] += CTFxAve.cmp("SqEuclidean", im_M[n]) / norm
+					Cls['Ji'][assign[n]] += old_div(CTFxAve.cmp("SqEuclidean", im_M[n]), norm)
 				Je = 0
 				for k in range(K):       Je += Cls['Ji'][k]
 			
@@ -2918,11 +2921,11 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 
 				# compute Ji and Je
 				Je = 0
-				for n in range(N):	Cls['Ji'][assign[n]] += im_M[n].cmp("SqEuclidean",Cls['ave'][assign[n]]) / norm
+				for n in range(N):	Cls['Ji'][assign[n]] += old_div(im_M[n].cmp("SqEuclidean",Cls['ave'][assign[n]]), norm)
 				for k in range(K):	Je += Cls['Ji'][k]	
 									
 			# threshold convergence control
-			if Je != 0: thd = abs(Je - old_Je) / Je
+			if Je != 0: thd = old_div(abs(Je - old_Je), Je)
 			else:	    thd = 0
 
 			# Simulated annealing, update temperature
@@ -2993,7 +2996,7 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 		# compute Ji and the variance S (F - CTF * Ave)**2
 		for n in range(N):
 			CTFxAve   	      = filt_table(Cls['ave'][assign[n]], ctf[n])	
-			Cls['Ji'][assign[n]] += CTFxAve.cmp("SqEuclidean", im_M[n]) / norm
+			Cls['Ji'][assign[n]] += old_div(CTFxAve.cmp("SqEuclidean", im_M[n]), norm)
 			
 			buf.to_zero()
 			buf = Util.subn_img(CTFxAve, im_M[n])
@@ -3001,7 +3004,7 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 			
 	else:
 		# compute Ji
-		for n in range(N): 	Cls['Ji'][assign[n]] += im_M[n].cmp("SqEuclidean",Cls['ave'][assign[n]]) / norm
+		for n in range(N): 	Cls['Ji'][assign[n]] += old_div(im_M[n].cmp("SqEuclidean",Cls['ave'][assign[n]]), norm)
 		
 		# compute the variance 1/n S(im-ave)**2 -> 1/n (Sim**2 - n ave**2)
 		for im in range(N):	Util.add_img2(Cls['var'][assign[im]],im_M[im])
@@ -3157,7 +3160,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 			## Compute Ji = S(im - CTFxAve)**2 and Je = S Ji
 			for n in range(N):
 				CTFxAve		      = filt_table(Cls['ave'][assign[n]], ctf[n])
-				Cls['Ji'][assign[n]] += CTFxAve.cmp("SqEuclidean", im_M[n]) / norm
+				Cls['Ji'][assign[n]] += old_div(CTFxAve.cmp("SqEuclidean", im_M[n]), norm)
 			Je = 0
 			for k in range(K):	  Je += Cls['Ji'][k]
 		else:
@@ -3167,7 +3170,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 				
 			# Compute Ji = S(im - ave)**2 and Je = S Ji
 			Je = 0
-			for n in range(N):	Cls['Ji'][assign[n]] += im_M[n].cmp("SqEuclidean",Cls['ave'][assign[n]])/norm
+			for n in range(N):	Cls['Ji'][assign[n]] += old_div(im_M[n].cmp("SqEuclidean",Cls['ave'][assign[n]]),norm)
 			for k in range(K):	Je += Cls['Ji'][k]	
 
 		## Clustering		
@@ -3214,7 +3217,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 					if k != assign[im]:
 						nj  = float(Cls['n'][k])
 						dj  = res['dist'][k]
-						dJe[k] =  (ni/(ni-1))*(di/norm) - (nj/(nj+1))*(dj/norm)
+						dJe[k] =  (old_div(ni,(ni-1)))*(old_div(di,norm)) - (old_div(nj,(nj+1)))*(old_div(dj,norm))
 					else:
 						dJe[k] = 0	
 				# Simulate Annealing
@@ -3224,7 +3227,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 					# normalize and select
 					mindJe = min(dJe)
 					scale  = max(dJe) - mindJe
-					for k in range(K): dJe[k] = 1 - (dJe[k] - mindJe) / scale
+					for k in range(K): dJe[k] = 1 - old_div((dJe[k] - mindJe), scale)
 					select = select_kmeans(dJe, T)
 					
 					if select != res['pos']:
@@ -3249,7 +3252,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 						valCTF = [0] * len_ctm
 						for i in range(len_ctm):
 							valCTF[i] = Cls_ctf2[assign_from][i] - ctf2[im][i]
-							valCTF[i] = ctf[im][i] / valCTF[i]
+							valCTF[i] = old_div(ctf[im][i], valCTF[i])
 						# compute CTFxAve
 						CTFxAve = filt_table(Cls['ave'][assign_from], ctf[im])
 						# compute F - CTFxAve
@@ -3263,7 +3266,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 						# compute valCTF = CTFi / (S ctf2 + ctf2i)
 						valCTF = [0] * len_ctm
 						for i in range(len_ctm):
-							valCTF[i] = ctf[im][i] / (Cls_ctf2[assign_to][i] + ctf2[im][i])
+							valCTF[i] = old_div(ctf[im][i], (Cls_ctf2[assign_to][i] + ctf2[im][i]))
 						# compute CTFxAve
 						CTFxAve = filt_table(Cls['ave'][assign_to], ctf[im])
 						# compute F - CTFxAve
@@ -3314,18 +3317,18 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 				for k in range(K): Cls['Ji'][k] = 0
 				for n in range(N):
 					CTFxAve		      = filt_table(Cls['ave'][assign[n]], ctf[n])
-					Cls['Ji'][assign[n]] += CTFxAve.cmp("SqEuclidean", im_M[n]) / norm
+					Cls['Ji'][assign[n]] += old_div(CTFxAve.cmp("SqEuclidean", im_M[n]), norm)
 				Je = 0
 				for k in range(K):	  Je += Cls['Ji'][k]
 			else:
 				# Compute Je
 				Je = 0
 				for k in range(K):     Cls['Ji'][k] = 0
-				for n in range(N):	Cls['Ji'][assign[n]] += im_M[n].cmp("SqEuclidean",Cls['ave'][assign[n]]) / norm
+				for n in range(N):	Cls['Ji'][assign[n]] += old_div(im_M[n].cmp("SqEuclidean",Cls['ave'][assign[n]]), norm)
 				for k in range(K):	Je += Cls['Ji'][k]
 	
 			# threshold convergence control
-			if Je != 0: thd = abs(Je - old_Je) / Je
+			if Je != 0: thd = old_div(abs(Je - old_Je), Je)
 			else:       thd = 0
 
 			# Simulated annealing, update temperature
@@ -3362,7 +3365,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 				for k in range(K): Cls['Ji'][k] = 0
 				for n in range(N):
 					CTFxAve		      = filt_table(Cls['ave'][assign[n]], ctf[n])
-					Cls['Ji'][assign[n]] += CTFxAve.cmp("SqEuclidean", im_M[n]) / norm
+					Cls['Ji'][assign[n]] += old_div(CTFxAve.cmp("SqEuclidean", im_M[n]), norm)
 				Je = 0
 				for k in range(K):	  Je += Cls['Ji'][k]
 			else:
@@ -3375,7 +3378,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 				# Compute the accurate Je, because during the iterations Je is aproximated from average
 				Je = 0
 				for k in range(K):     Cls['Ji'][k] = 0
-				for n in range(N):	Cls['Ji'][assign[n]] += im_M[n].cmp("SqEuclidean",Cls['ave'][assign[n]]) / norm
+				for n in range(N):	Cls['Ji'][assign[n]] += old_div(im_M[n].cmp("SqEuclidean",Cls['ave'][assign[n]]), norm)
 				for k in range(K):	Je += Cls['Ji'][k]	
 
 			# memorize the result for this trial	
@@ -3811,7 +3814,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 			## Compute Ji = S(im - CTFxAve)**2 and Je = S Ji
 			for n in range(N):
 				CTFxAve		      = filt_table(Cls['ave'][assign[n]], ctf[n])
-				Cls['Ji'][assign[n]] += CTFxAve.cmp("SqEuclidean", im_M[n]) / norm
+				Cls['Ji'][assign[n]] += old_div(CTFxAve.cmp("SqEuclidean", im_M[n]), norm)
 			Je = 0
 			for k in range(K):	  Je += Cls['Ji'][k]
 		else:
@@ -3821,7 +3824,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 				
 			# Compute Ji = S(im - ave)**2 and Je = S Ji
 			Je = 0
-			for n in range(N):	Cls['Ji'][assign[n]] += im_M[n].cmp("SqEuclidean",Cls['ave'][assign[n]])/norm
+			for n in range(N):	Cls['Ji'][assign[n]] += old_div(im_M[n].cmp("SqEuclidean",Cls['ave'][assign[n]]),norm)
 			for k in range(K):	Je += Cls['Ji'][k]	
 
 		## Clustering		
@@ -3868,7 +3871,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 					if k != assign[im]:
 						nj  = float(Cls['n'][k])
 						dj  = res['dist'][k]
-						dJe[k] =  (ni/(ni-1))*(di/norm) - (nj/(nj+1))*(dj/norm)
+						dJe[k] =  (old_div(ni,(ni-1)))*(old_div(di,norm)) - (old_div(nj,(nj+1)))*(old_div(dj,norm))
 					else:
 						dJe[k] = 0	
 				# Simulate Annealing
@@ -3878,7 +3881,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 					# normalize and select
 					mindJe = min(dJe)
 					scale  = max(dJe) - mindJe
-					for k in range(K): dJe[k] = 1 - (dJe[k] - mindJe) / scale
+					for k in range(K): dJe[k] = 1 - old_div((dJe[k] - mindJe), scale)
 					select = select_kmeans(dJe, T)
 					
 					if select != res['pos']:
@@ -3903,7 +3906,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 						valCTF = [0] * len_ctm
 						for i in range(len_ctm):
 							valCTF[i] = Cls_ctf2[assign_from][i] - ctf2[im][i]
-							valCTF[i] = ctf[im][i] / valCTF[i]
+							valCTF[i] = old_div(ctf[im][i], valCTF[i])
 						# compute CTFxAve
 						CTFxAve = filt_table(Cls['ave'][assign_from], ctf[im])
 						# compute F - CTFxAve
@@ -3917,7 +3920,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 						# compute valCTF = CTFi / (S ctf2 + ctf2i)
 						valCTF = [0] * len_ctm
 						for i in range(len_ctm):
-							valCTF[i] = ctf[im][i] / (Cls_ctf2[assign_to][i] + ctf2[im][i])
+							valCTF[i] = old_div(ctf[im][i], (Cls_ctf2[assign_to][i] + ctf2[im][i]))
 						# compute CTFxAve
 						CTFxAve = filt_table(Cls['ave'][assign_to], ctf[im])
 						# compute F - CTFxAve
@@ -3967,18 +3970,18 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 				for k in range(K): Cls['Ji'][k] = 0
 				for n in range(N):
 					CTFxAve		      = filt_table(Cls['ave'][assign[n]], ctf[n])
-					Cls['Ji'][assign[n]] += CTFxAve.cmp("SqEuclidean", im_M[n]) / norm
+					Cls['Ji'][assign[n]] += old_div(CTFxAve.cmp("SqEuclidean", im_M[n]), norm)
 				Je = 0
 				for k in range(K):	  Je += Cls['Ji'][k]
 			else:
 				# Compute Je
 				Je = 0
 				for k in range(K):     Cls['Ji'][k] = 0
-				for n in range(N):	Cls['Ji'][assign[n]] += im_M[n].cmp("SqEuclidean",Cls['ave'][assign[n]]) / norm
+				for n in range(N):	Cls['Ji'][assign[n]] += old_div(im_M[n].cmp("SqEuclidean",Cls['ave'][assign[n]]), norm)
 				for k in range(K):	Je += Cls['Ji'][k]
 	
 			# threshold convergence control
-			if Je != 0: thd = abs(Je - old_Je) / Je
+			if Je != 0: thd = old_div(abs(Je - old_Je), Je)
 			else:       thd = 0
 
 			# Simulated annealing, update temperature
@@ -4015,7 +4018,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 				for k in range(K): Cls['Ji'][k] = 0
 				for n in range(N):
 					CTFxAve		      = filt_table(Cls['ave'][assign[n]], ctf[n])
-					Cls['Ji'][assign[n]] += CTFxAve.cmp("SqEuclidean", im_M[n]) / norm
+					Cls['Ji'][assign[n]] += old_div(CTFxAve.cmp("SqEuclidean", im_M[n]), norm)
 				Je = 0
 				for k in range(K):	  Je += Cls['Ji'][k]
 			else:
@@ -4028,7 +4031,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 				# Compute the accurate Je, because during the iterations Je is aproximated from average
 				Je = 0
 				for k in range(K):     Cls['Ji'][k] = 0
-				for n in range(N):	Cls['Ji'][assign[n]] += im_M[n].cmp("SqEuclidean",Cls['ave'][assign[n]]) / norm
+				for n in range(N):	Cls['Ji'][assign[n]] += old_div(im_M[n].cmp("SqEuclidean",Cls['ave'][assign[n]]), norm)
 				for k in range(K):	Je += Cls['Ji'][k]	
 
 			# memorize the result for this trial	
@@ -4305,7 +4308,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 			# [id] compute Ji
 			for im in range(N_start, N_stop):
 				CTFxAve = filt_table(Cls['ave'][int(assign[im])], ctf[im])
-				Cls['Ji'][int(assign[im])] += CTFxAve.cmp("SqEuclidean", im_M[im]) / norm
+				Cls['Ji'][int(assign[im])] += old_div(CTFxAve.cmp("SqEuclidean", im_M[im]), norm)
 
 		else:
 			# [id] Calculates averages, first calculate local sum
@@ -4321,7 +4324,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 				Cls['ave'][k] = Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
 
 			# [id] compute Ji
-			for im in range(N_start, N_stop): Cls['Ji'][int(assign[im])] += im_M[im].cmp("SqEuclidean", Cls['ave'][int(assign[im])])/norm
+			for im in range(N_start, N_stop): Cls['Ji'][int(assign[im])] += old_div(im_M[im].cmp("SqEuclidean", Cls['ave'][int(assign[im])]),norm)
 
 		# [all] compute Je
 		Je = 0
@@ -4374,14 +4377,14 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 						if k != assign[im]:
 							nj  = float(Cls['n'][k])
 							dj  = res['dist'][k]
-							dJe[k] = (ni/(ni-1))*(di/norm) - (nj/(nj+1))*(dj/norm)
+							dJe[k] = (old_div(ni,(ni-1)))*(old_div(di,norm)) - (old_div(nj,(nj+1)))*(old_div(dj,norm))
 						else:
 							dJe[k] = 0
 
 					# normalize and select
 					mindJe = min(dJe)
 					scale  = max(dJe) - mindJe
-					for k in range(K): dJe[k] = 1 - (dJe[k] - mindJe) / scale
+					for k in range(K): dJe[k] = 1 - old_div((dJe[k] - mindJe), scale)
 					select = select_kmeans(dJe, T)
 
 					if select != res['pos']:
@@ -4452,7 +4455,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 				# [id] compute Ji
 				for im in range(N_start, N_stop):
 					CTFxAve = filt_table(Cls['ave'][int(assign[im])], ctf[im])
-					Cls['Ji'][int(assign[im])] += CTFxAve.cmp("SqEuclidean", im_M[im]) / norm
+					Cls['Ji'][int(assign[im])] += old_div(CTFxAve.cmp("SqEuclidean", im_M[im]), norm)
 			
 			else:			
 				# [id] Update clusters averages
@@ -4468,7 +4471,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 					Cls['ave'][k] = Util.mult_scalar(Cls['ave'][k], 1.0/float(Cls['n'][k]))
 
 				# [id] compute Ji
-				for im in range(N_start, N_stop): Cls['Ji'][int(assign[im])] += im_M[im].cmp("SqEuclidean", Cls['ave'][int(assign[im])])/norm
+				for im in range(N_start, N_stop): Cls['Ji'][int(assign[im])] += old_div(im_M[im].cmp("SqEuclidean", Cls['ave'][int(assign[im])]),norm)
 
 			# [all] compute Je
 			Je = 0
@@ -4483,7 +4486,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 			Je = map(float, Je)[0]
 
 			# threshold convergence control
-			if Je != 0: thd = abs(Je - old_Je) / Je
+			if Je != 0: thd = old_div(abs(Je - old_Je), Je)
 			else:       thd = 0
 
 			# Simulated annealing, update temperature
@@ -4560,7 +4563,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 		# [id] compute Ji and the variance S (F - CTFxAve)**2
 		for im in range(N_start, N_stop):
 			CTFxAve = filt_table(Cls['ave'][int(assign[im])], ctf[im])
-			Cls['Ji'][int(assign[im])] += CTFxAve.cmp("SqEuclidean", im_M[im]) / norm
+			Cls['Ji'][int(assign[im])] += old_div(CTFxAve.cmp("SqEuclidean", im_M[im]), norm)
 			
 			buf.to_zero()
 			buf = Util.subn_img(CTFxAve, im_M[im])
@@ -4579,7 +4582,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 	else:
 		# [id] compute Ji and the variance 1/n S(im-ave)**2 -> 1/n (Sim**2 - n ave**2)	
 		for im in range(N_start, N_stop):
-			Cls['Ji'][int(assign[im])] += im_M[im].cmp("SqEuclidean", Cls['ave'][int(assign[im])])/norm		
+			Cls['Ji'][int(assign[im])] += old_div(im_M[im].cmp("SqEuclidean", Cls['ave'][int(assign[im])]),norm)		
 			Util.add_img2(Cls['var'][int(assign[im])], im_M[im])
 		
 		# [all] waiting the result
@@ -5155,8 +5158,8 @@ def k_means_groups_gnuplot(file, src, C, DB, H):
 		minv = min(WORLD[i])
 		maxv = max(WORLD[i])
 		d = maxv - minv
-		a = 1 / d
-		b = 0.5 - ((maxv + minv) * a / 2)
+		a = old_div(1, d)
+		b = 0.5 - (old_div((maxv + minv) * a, 2))
 		txt += ' \x22%s\x22 u 1:($%d*(%11.4e)+(%11.4e)) ti \x22%s\x22 w l,' % (src, pos[i], a, b, name[i])
 
 	out.write(txt.rstrip(',') + '\n')
@@ -5632,8 +5635,8 @@ def k_means_cuda_info(INFO):
 	
 	# write the report on the logfile
 	time_run = int(INFO['time'])
-	time_h   = time_run / 3600
-	time_m   = (time_run % 3600) / 60
+	time_h   = old_div(time_run, 3600)
+	time_m   = old_div((time_run % 3600), 60)
 	time_s   = (time_run % 3600) % 60
 	
 	print_msg('Running time is             : %s h %s min %s s\n' % (str(time_h).rjust(2, '0'), str(time_m).rjust(2, '0'), str(time_s).rjust(2, '0')))
@@ -5807,7 +5810,7 @@ def k_means_SA_T0(im_M, mask, K, rand_seed, CTF, F):
 		# compute Ji and Je
 		for n in range(N):
 			CTFxAve               = filt_table(Cls['ave'][assign[n]], ctf[n])
-			Cls['Ji'][assign[n]] += CTFxAve.cmp("SqEuclidean", im_M[n]) / norm
+			Cls['Ji'][assign[n]] += old_div(CTFxAve.cmp("SqEuclidean", im_M[n]), norm)
 		Je = 0
 		for k in range(K):        Je = Cls['Ji'][k]
 
@@ -5818,7 +5821,7 @@ def k_means_SA_T0(im_M, mask, K, rand_seed, CTF, F):
 
 		# compute Ji and Je
 		Je = 0
-		for n in range(N):	Cls['Ji'][assign[n]] += im_M[n].cmp("SqEuclidean",Cls['ave'][assign[n]])/norm
+		for n in range(N):	Cls['Ji'][assign[n]] += old_div(im_M[n].cmp("SqEuclidean",Cls['ave'][assign[n]]),norm)
 		for k in range(K):	Je += Cls['Ji'][k]	
 
 	## Clustering		
@@ -5848,14 +5851,14 @@ def k_means_SA_T0(im_M, mask, K, rand_seed, CTF, F):
 					if k != assign[im]:
 						nj  = float(Cls['n'][k])
 						dj  = res['dist'][k]
-						dJe[k] = (ni/(ni-1))*(di/norm) - (nj/(nj+1))*(dj/norm)
+						dJe[k] = (old_div(ni,(ni-1)))*(old_div(di,norm)) - (old_div(nj,(nj+1)))*(old_div(dj,norm))
 					else:
 						dJe[k] = 0
 
 				# normalize and select
 				mindJe = min(dJe)
 				scale  = max(dJe) - mindJe
-				for k in range(K): dJe[k] = (dJe[k] - mindJe) / scale
+				for k in range(K): dJe[k] = old_div((dJe[k] - mindJe), scale)
 				select = select_k(dJe, T)
 
 				if select != res['pos']:
@@ -6049,14 +6052,14 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 					if k != assign[im]:
 						nj  = float(Cls['n'][k])
 						dj  = res['dist'][k]
-						dJe[k] = (ni/(ni-1))*(di/norm) - (nj/(nj+1))*(dj/norm)
+						dJe[k] = (old_div(ni,(ni-1)))*(old_div(di,norm)) - (old_div(nj,(nj+1)))*(old_div(dj,norm))
 					else:
 						dJe[k] = 0
 
 				# normalize and select
 				mindJe = min(dJe)
 				scale  = max(dJe) - mindJe
-				for k in range(K): dJe[k] = (dJe[k] - mindJe) / scale
+				for k in range(K): dJe[k] = old_div((dJe[k] - mindJe), scale)
 				select = select_k(dJe, T)
 
 				if select != res['pos']:
@@ -6938,7 +6941,7 @@ def k_means_match_pwa(PART, lim = -1):
 	if lim == -1: lim = len(PART[0])               # number of groups
 	MAX  = []
 	Nmax = zeros((np - 1), 'int32')                # number of maximum per pairwise table
-	pos  = zeros((np * (np - 1) / 2 + 1), 'int32') # position list of maximum in MAX
+	pos  = zeros((old_div(np * (np - 1), 2) + 1), 'int32') # position list of maximum in MAX
 	for i in range(1, np):
 		for j in range(i):
 			mat  = get_mat(PART[j], PART[i])
@@ -6952,7 +6955,7 @@ def k_means_match_pwa(PART, lim = -1):
 
 	# matching
 	Nmax  = pos[1:] 
-	Nmax  = Nmax / 2
+	Nmax  = old_div(Nmax, 2)
 	pos   = pos.cumsum()
 	res   = zeros((np), 'int32')
 	lmax  = zeros((np - 1), 'int32')
@@ -7221,7 +7224,7 @@ def k_means_stab_gather(nb_run, maskname, outdir):
 				try:
 					nobjs = im.get_attr('nobjects') # check if ave not empty
 					ret = Util.infomask(im, mask, False) # 
-					im  = (im - ret[0]) / ret[1]        # normalize
+					im  = old_div((im - ret[0]), ret[1])        # normalize
 					im.write_image(outdir + '/averages.hdf', ct)
 					ct += 1
 				except: pass
@@ -8188,9 +8191,9 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 	# support of the window
 	K=6
 	alpha=1.75
-	r=M/2
+	r=old_div(M,2)
 	v=K/2.0/N
-	kbline = Util.KaiserBessel(alpha, K, r, K/(2.*N), N)
+	kbline = Util.KaiserBessel(alpha, K, r, old_div(K,(2.*N)), N)
 	parline = {"filter_type" : Processor.fourier_filter_types.KAISER_SINH_INVERSE,"alpha" : alpha, "K":K,"r":r,"v":v,"N":N}
 	amoeba_data = []
 	amoeba_data.append(kbline)
@@ -8206,7 +8209,7 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 			#  find the current maximum and its location
 			ps=line.peak_search(1,1)				
 			qn=ps[1]
-			jtot=ps[2]/2
+			jtot=old_div(ps[2],2)
 			q=Processor.EMFourierFilter(line,parline)
 			amoeba_data.insert(0,q)
 			ps = amoeba([jtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, amoeba_data)
@@ -8219,7 +8222,7 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 			#  find the current maximum and its location
 			ps=line.peak_search(1,1)				
 			qm=ps[1]
-			mtot=ps[2]/2
+			mtot=old_div(ps[2],2)
 			q=Processor.EMFourierFilter(line,parline)
 			amoeba_data.insert(0,q)
 			ps = amoeba([mtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, amoeba_data)
@@ -8242,7 +8245,7 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 			#  find the current maximum and its location
 			ps=line_s.peak_search(1,1)
 			qn=ps[1]
-			jtot=ps[2]/2
+			jtot=old_div(ps[2],2)
 			q=Processor.EMFourierFilter(line_s,parline)
 			amoeba_data.insert(0,q)
 			ps = amoeba([jtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, amoeba_data)
@@ -8289,7 +8292,7 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 				#  find the current maximum and its location
 				ps=line.peak_search(1,1)				
 				qn=ps[1]
-				jtot=ps[2]/2
+				jtot=old_div(ps[2],2)
 				q=Processor.EMFourierFilter(line,parline)
 				amoeba_data.insert(0,q)
 				ps = amoeba([jtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, amoeba_data)
@@ -8302,7 +8305,7 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 				#  find the current maximum and its location
 				ps=line.peak_search(1,1)				
 				qm=ps[1]
-				mtot=ps[2]/2
+				mtot=old_div(ps[2],2)
 				q=Processor.EMFourierFilter(line,parline)
 				amoeba_data.insert(0,q)
 				ps = amoeba([mtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, amoeba_data)
@@ -8325,7 +8328,7 @@ def kmn_g(data, numr, wr, stack, check_mirror = False, max_iter = 10, this_seed 
 				#  find the current maximum and its location
 				ps=line_s.peak_search(1,1)				
 				qn=ps[1]
-				jtot=ps[2]/2
+				jtot=old_div(ps[2],2)
 				q=Processor.EMFourierFilter(line_s,parline)
 				amoeba_data.insert(0,q)
 				ps = amoeba([jtot], [2.0], oned_search_func, 1.e-4, 1.e-4, 500, amoeba_data)
@@ -8945,7 +8948,7 @@ def var_bydef(vol_stack, vol_list, info):
 		        info.flush( )
 	if not(info is None):
 		info.write( "\n" )
-	return vars/(len(vol_list)-1)
+	return old_div(vars,(len(vol_list)-1))
 
 def histogram2d(datai, dataj, nbini, nbinj):
 	fmaxi = max(datai)
@@ -8953,8 +8956,8 @@ def histogram2d(datai, dataj, nbini, nbinj):
 	fmaxj = max(dataj)
 	fminj = min(dataj)
 
-	binsize_i = (fmaxi-fmini)/nbini
-	binsize_j = (fmaxj-fminj)/nbinj
+	binsize_i = old_div((fmaxi-fmini),nbini)
+	binsize_j = old_div((fmaxj-fminj),nbinj)
 	start_i = fmini
 	start_j = fminj
 
@@ -8970,8 +8973,8 @@ def histogram2d(datai, dataj, nbini, nbinj):
 
 	assert len(datai)==len(dataj)
 	for k in range( len(datai) ):
-		idd = min(int((datai[k]-start_i)/binsize_i), nbini-1) 
-		jdd = min(int((dataj[k]-start_j)/binsize_j), nbinj-1)
+		idd = min(int(old_div((datai[k]-start_i),binsize_i)), nbini-1) 
+		jdd = min(int(old_div((dataj[k]-start_j),binsize_j)), nbinj-1)
 		hist[idd][jdd]+=1
 
 	return region,hist
@@ -8983,7 +8986,7 @@ def hist_list(data, nbin = -1, fminiu = None, fmaxiu = None):
 	  fminiu - user provided minimum value for the histogram, it has to be smaller than the smallest element in data
 	  fmaxiu - user provided maximum value for the histogram, it has to be larger than the largest element in data
 	"""
-	if nbin < 0:  nbin = len(data)/10
+	if nbin < 0:  nbin = old_div(len(data),10)
 	fmaxi = max(data)
 	fmini = min(data)
 
@@ -9006,7 +9009,7 @@ def hist_list(data, nbin = -1, fminiu = None, fmaxiu = None):
 		hist[i] = 0
 
 	for d in data:
-		i = min(int((d-start_i)/binsize_i), nbin-1)
+		i = min(int(old_div((d-start_i),binsize_i)), nbin-1)
 		hist[i] += 1
 
 	return region, hist
@@ -9017,14 +9020,16 @@ def linreg(X, Y):
 	"""
 	Sx = Sy = Sxx = Syy = Sxy = 0.0
 	N = len(X)
-	for x, y in map(None, X, Y):
+	for i in range(N):
+		x = X[i]
+		y = Y[i]
 		Sx  += x
 		Sy  += y
 		Sxx += x*x
 		Syy += y*y
 		Sxy += x*y
 	det = Sxx * N - Sx * Sx
-	a, b = (Sxy * N - Sy * Sx)/det, (Sxx * Sy - Sx * Sxy)/det
+	a, b = old_div((Sxy * N - Sy * Sx),det), old_div((Sxx * Sy - Sx * Sxy),det)
 	"""
 	from math import sqrt
 	meanerror = residual = 0.0
@@ -9050,13 +9055,15 @@ def pearson(X, Y):
 	from math import sqrt
 	Sx = Sy = Sxx = Syy = Sxy = 0.0
 	N = len(X)
-	for x, y in map(None, X, Y):
+	for i in range(N):
+		x = X[i]
+		y = Y[i]
 		Sx  += x
 		Sy  += y
 		Sxx += x*x
 		Syy += y*y
 		Sxy += x*y
-	return (Sxy - Sx * Sy / N) / sqrt((Sxx - Sx*Sx/N)*(Syy - Sy*Sy/N))
+	return old_div((Sxy - old_div(Sx * Sy, N)), sqrt((Sxx - old_div(Sx*Sx,N))*(Syy - old_div(Sy*Sy,N))))
 
 def table_stat(X):
 	"""
@@ -9073,7 +9080,7 @@ def table_stat(X):
 		va += X[i]*X[i]
 		mi = min(mi, X[i])
 		ma = max(ma, X[i])
-	return  av/N,(va - av*av/N)/float(N-1) , mi, ma
+	return  old_div(av,N),(va - old_div(av*av,N))/float(N-1) , mi, ma
 
 def get_power_spec(stack_file, start_particle, end_particle):
 	"""
@@ -9245,12 +9252,12 @@ class def_variancer(object):
 		
 		if myid==rootid:
 			nimg = int( nimg[0] )
-			return cpy1/nimg
+			return old_div(cpy1,nimg)
 		else:
 			return None
 
 	def getvar(self):
-		avg1 = self.sum1/self.nimg
+		avg1 = old_div(self.sum1,self.nimg)
 
 		tmp = avg1.copy()
 		Util.mul_img( tmp, avg1 )
@@ -9261,7 +9268,7 @@ class def_variancer(object):
 		return avg2
 
 	def getavg(self):
-		return self.sum1/self.nimg
+		return old_div(self.sum1,self.nimg)
 
 
 class inc_variancer(object):
@@ -9306,8 +9313,8 @@ class inc_variancer(object):
 	
 			
 			for i in range(self.ntot):
-				t1 = sum1[i]/nimg
-				t2 = sum2[i]/nimg
+				t1 = old_div(sum1[i],nimg)
+				t2 = old_div(sum2[i],nimg)
 				t2 = (t2 - t1*t1)*float(nimg)/float(nimg-1)
 				adata[i] = t1
 				vdata[i] = t2
@@ -9352,8 +9359,8 @@ class inc_variancer(object):
 		return None
 
 	def getvar(self):
-		avg1 = self.sum1/self.nimg
-		avg2 = self.sum2/self.nimg
+		avg1 = old_div(self.sum1,self.nimg)
+		avg2 = old_div(self.sum2,self.nimg)
 
 		tmp = avg1.copy()
 		Util.mul_img( tmp, avg1 )
@@ -9365,7 +9372,7 @@ class inc_variancer(object):
 
 
 	def getavg(self):
-		return self.sum1/self.nimg
+		return old_div(self.sum1,self.nimg)
 
 def mono(k1,k2):
 	"""
@@ -9376,7 +9383,7 @@ def mono(k1,k2):
 
 	"""
 	mk = max(k1,k2)
-	return  min(k1,k2) + mk*(mk-1)/2
+	return  min(k1,k2) + old_div(mk*(mk-1),2)
 	
 def cluster_pairwise(d, K):
 	"""
@@ -9387,7 +9394,7 @@ def cluster_pairwise(d, K):
 	from random import randint, shuffle
 	from math import sqrt
 	N = 1 + int((sqrt(1.0 + 8.0*len(d))-1.0)/2.0)
-	if(N*(N-1)/2 != len(d)):
+	if(old_div(N*(N-1),2) != len(d)):
 		print("  incorrect dimension")
 		return
 	cent = [0]*K
@@ -9457,10 +9464,10 @@ def cluster_equalsize(d, m):
 	from math import sqrt
 	nd = d.get_xsize()
 	N = 1 + int((sqrt(1.0 + 8.0*nd)-1.0)/2.0)
-	if(N*(N-1)/2 != nd):
+	if(old_div(N*(N-1),2) != nd):
 		print("  incorrect dimension")
 		return
-	K = N/m
+	K = old_div(N,m)
 	active = [True]*N
 	groupping = [None]*K
 	for k in range(K):
@@ -9642,7 +9649,7 @@ class pcanalyzer(object):
 						self.ncov += 1
 		import os
 		size = os.stat( self.file )[6]
-		self.nimg = size/(self.ncov*4)
+		self.nimg = old_div(size,(self.ncov*4))
 		assert self.nimg * self.ncov*4 == size
 		self.bufused = True
 
@@ -9782,7 +9789,7 @@ class pcanalyzer(object):
 
 		beta = Util.snrm2(ncov, v0, 1)
 		for i in range(ncov):
-			V[0][i] = v0[i]/beta
+			V[0][i] = old_div(v0[i],beta)
 
 		for i in range(self.nimg):
 			self.read_dat(imgdata)                                     #  READ_DAT			
@@ -9812,7 +9819,7 @@ class pcanalyzer(object):
 
 			subdiag[iter-1] = beta
 			for i in range(ncov):
-				V[iter][i] = Av[i]/beta
+				V[iter][i] = old_div(Av[i],beta)
 
 			Av[:] = 0.0
 
@@ -10066,7 +10073,7 @@ class pcanalyzebck(object):
 
 		beta = Util.snrm2(ncov, v0, 1)
 		for i in range(ncov):
-			V[0][i] = v0[i]/beta
+			V[0][i] = old_div(v0[i],beta)
 
 		#self.fr = open( self.file, "rb" )
 		for i in range(self.nimg):
@@ -10098,7 +10105,7 @@ class pcanalyzebck(object):
 
 			subdiag[iter-1] = beta
 			for i in range(ncov):
-				V[iter][i] = Av[i]/beta
+				V[iter][i] = old_div(Av[i],beta)
 
 			Av[:] = 0.0
 
@@ -10462,7 +10469,7 @@ def k_means_stab_getinfo(PART, match):
 	if (len_match % np) != 0:
 		print("something wrong in k_means_stab_getinfo")
 		sys.exit()
-	num_matches = len_match/np
+	num_matches = old_div(len_match,np)
 	for i in range(num_matches):
 		MATCH.append(array(match[i*np:(i+1)*np]))
 	
@@ -10551,7 +10558,7 @@ def fit_ctf(crossresolution, ctf_params, rangedef = -1.0, i1 = 0, i2 = 0, chisqu
 		disc = 0.0
 		if chisquare:
 			for k in range(i1,i2):
-				disc += ((sgncrs[k] - copysign(1.0, ctf[k]))/crossresolution[2][k])**2
+				disc += (old_div((sgncrs[k] - copysign(1.0, ctf[k])),crossresolution[2][k]))**2
 		else:
 			for k in range(i1,i2):
 				disc += (sgncrs[k] - copysign(1.0, ctf[k]))**2
@@ -10581,5 +10588,5 @@ def randprojdir(ang, sigma):
 def scale_fsc_datasetsize(fsc_to_be_adjusted, nfsc, nnew):
 	s = float(nfsc)/float(nnew)
 	fsc_sub = [0.0]*len(fsc_to_be_adjusted)
-	for i,q in enumerate(fsc_to_be_adjusted):  fsc_sub[i] = q/(q*(1.0-s)+s)
+	for i,q in enumerate(fsc_to_be_adjusted):  fsc_sub[i] = old_div(q,(q*(1.0-s)+s))
 	return fsc_sub

@@ -1,5 +1,4 @@
 #
-from __future__ import print_function
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
 # Please do not copy or modify this file without written consent of the author.
 # Copyright (c) 2000-2019 The University of Texas - Houston Medical School
@@ -498,7 +497,7 @@ def ref_aliB_cone( ref_data ):
 	pwem = rops_table(volf)
 	ftb = []
 	for idum in range(len(pwem)):
-		ftb.append(sqrt(ref_data[1][idum]/pwem[idum]))
+		ftb.append(sqrt(old_div(ref_data[1][idum],pwem[idum])))
 	from filter import filt_table
 	volf = filt_table(volf, ftb)
 
@@ -702,7 +701,7 @@ def ref_ali3dm_new( refdata ):
 			vtab = rops_table( vol[i] )
 			ftab = [None]*len(vtab)
 			for j in range(len(vtab)):
-		        	ftab[j] = sqrt( reftab[j]/vtab[j] )
+		        	ftab[j] = sqrt( old_div(reftab[j],vtab[j]) )
 			vol[i] = filt_table( vol[i], ftab )
 
 	if ali50S:
@@ -868,7 +867,7 @@ def temp_dovolume( ref_data ):
 		rt = read_text_file( "pwreference.txt" )
 		ro = rops_table(vol)
 		#  Here unless I am mistaken it is enough to take the beginning of the reference pw.
-		for i in range(1,len(ro)):  ro[i] = (rt[i]/ro[i])**0.5
+		for i in range(1,len(ro)):  ro[i] = (old_div(rt[i],ro[i]))**0.5
 		vol = fft( filt_table( filt_tanl(vol, fl, aa), ro) )
 		msg = "Power spectrum adjusted\n"
 		print_msg(msg)
@@ -935,7 +934,7 @@ def dovolume( ref_data ):
 		rt = read_text_file( "pwreference.txt" )
 		ro = rops_table(vol)
 		#  Here unless I am mistaken it is enough to take the beginning of the reference pw.
-		for i in range(1,len(ro)):  ro[i] = (rt[i]/ro[i])**0.5
+		for i in range(1,len(ro)):  ro[i] = (old_div(rt[i],ro[i]))**0.5
 		vol = fft( filt_table( filt_tanl(vol, fl, aa), ro) )
 		msg = "Power spectrum adjusted\n"
 		print_msg(msg)
@@ -1050,14 +1049,14 @@ def do_volume_mrk02(ref_data):
 			fftip(vol)
 			ro = rops_table(vol)
 			#  Here unless I am mistaken it is enough to take the beginning of the reference pw.
-			for i in range(1,len(ro)):  ro[i] = (rt[i]/ro[i])**Tracker["upscale"]
+			for i in range(1,len(ro)):  ro[i] = (old_div(rt[i],ro[i]))**Tracker["upscale"]
 			#write_text_file(rops_table(filt_table( vol, ro),1),"foo.txt")
 			if Tracker["constants"]["sausage"]:
 				ny = vol.get_ysize()
 				y = float(ny)
 				from math import exp
 				for i in range(len(ro)):  ro[i] *= \
-				  (1.0+1.0*exp(-(((i/y/Tracker["constants"]["pixel_size"])-0.10)/0.025)**2)+1.0*exp(-(((i/y/Tracker["constants"]["pixel_size"])-0.215)/0.025)**2))
+				  (1.0+1.0*exp(-(((old_div(old_div(i,y),Tracker["constants"]["pixel_size"]))-0.10)/0.025)**2)+1.0*exp(-(((old_div(old_div(i,y),Tracker["constants"]["pixel_size"]))-0.215)/0.025)**2))
 
 			if local_filter:
 				# skip low-pass filtration
@@ -1075,7 +1074,7 @@ def do_volume_mrk02(ref_data):
 				ro = [0.0]*(ny//2+2)
 				from math import exp
 				for i in range(len(ro)):  ro[i] = \
-				  (1.0+1.0*exp(-(((i/y/Tracker["constants"]["pixel_size"])-0.10)/0.025)**2)+1.0*exp(-(((i/y/Tracker["constants"]["pixel_size"])-0.215)/0.025)**2))
+				  (1.0+1.0*exp(-(((old_div(old_div(i,y),Tracker["constants"]["pixel_size"]))-0.10)/0.025)**2)+1.0*exp(-(((old_div(old_div(i,y),Tracker["constants"]["pixel_size"]))-0.215)/0.025)**2))
 				fftip(vol)
 				filt_table(vol, ro)
 				del ro

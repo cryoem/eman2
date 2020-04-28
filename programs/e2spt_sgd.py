@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 # Muyuan Chen 2017-04
-from __future__ import print_function
-from __future__ import division
 from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
@@ -168,7 +166,7 @@ def main():
 			for t in thrds:
 				t.start()
 			angs={}
-			while threading.active_count()>1:
+			while threading.active_count()>1 or not jsd.empty():
 				time.sleep(1)
 				while not jsd.empty():
 					fsp,n,d=jsd.get()

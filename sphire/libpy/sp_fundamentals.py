@@ -1018,21 +1018,21 @@ class symclass(object):
                 sp_global_def.ERROR("For Cn symmetry, we need n>0", "symclass", 1)
             self.brackets = [
                 [
-                    past.utils.old_div(360.0, self.nsym),
+                    old_div(360.0, self.nsym),
                     90.0,
-                    past.utils.old_div(360.0, self.nsym),
+                    old_div(360.0, self.nsym),
                     90.0,
                 ],
                 [
-                    past.utils.old_div(360.0, self.nsym),
+                    old_div(360.0, self.nsym),
                     180.0,
-                    past.utils.old_div(360.0, self.nsym),
+                    old_div(360.0, self.nsym),
                     180.0,
                 ],
             ]
             for i in range(self.nsym):
                 self.symangles.append(
-                    [0.0, 0.0, i * past.utils.old_div(360.0, self.nsym)]
+                    [0.0, 0.0, i * old_div(360.0, self.nsym)]
                 )
 
         elif self.sym[0] == "d":
@@ -1041,29 +1041,29 @@ class symclass(object):
                 sp_global_def.ERROR("For Dn symmetry, we need n>0", "symclass", 1)
             self.brackets = [
                 [
-                    past.utils.old_div(360.0, self.nsym),
+                    old_div(360.0, self.nsym),
                     90.0,
-                    past.utils.old_div(360.0, self.nsym),
+                    old_div(360.0, self.nsym),
                     90.0,
                 ],
                 [
-                    past.utils.old_div(360.0, self.nsym) * 2,
+                    old_div(360.0, self.nsym) * 2,
                     90.0,
-                    past.utils.old_div(360.0, self.nsym) * 2,
+                    old_div(360.0, self.nsym) * 2,
                     90.0,
                 ],
             ]
-            for i in range(past.utils.old_div(self.nsym, 2)):
+            for i in range(old_div(self.nsym, 2)):
                 self.symangles.append(
-                    [0.0, 0.0, 2 * i * past.utils.old_div(360.0, self.nsym)]
+                    [0.0, 0.0, 2 * i * old_div(360.0, self.nsym)]
                 )
-            for i in reversed(range(past.utils.old_div(self.nsym, 2))):
+            for i in reversed(range(old_div(self.nsym, 2))):
                 self.symangles.append(
                     [
                         0.0,
                         180.0,
                         (
-                            i * past.utils.old_div(360.0, self.nsym) * 2
+                            i * old_div(360.0, self.nsym) * 2
                             + 180.0 * (int(self.sym[1:]) % 2)
                         )
                         % 360.0,
@@ -1073,17 +1073,17 @@ class symclass(object):
         elif self.sym[:3] == "oct":
             self.nsym = 24
             ncap = 4
-            cap_sig = past.utils.old_div(360.0, ncap)
+            cap_sig = old_div(360.0, ncap)
             alpha = numpy.degrees(
                 numpy.arccos(
-                    past.utils.old_div(
+                    old_div(
                         1.0,
                         (
                             numpy.sqrt(3.0)
                             * numpy.tan(
                                 2
-                                * past.utils.old_div(
-                                    past.utils.old_div(numpy.pi, ncap), 2.0
+                                * old_div(
+                                    old_div(numpy.pi, ncap), 2.0
                                 )
                             )
                         ),
@@ -1093,15 +1093,15 @@ class symclass(object):
             theta = numpy.degrees(
                 0.5
                 * numpy.arccos(
-                    past.utils.old_div(
+                    old_div(
                         numpy.cos(numpy.radians(cap_sig)),
                         (1.0 - numpy.cos(numpy.radians(cap_sig))),
                     )
                 )
             )  # also platonic_params["theta_c_on_two"]
             self.brackets = [
-                [past.utils.old_div(180.0, ncap), theta, cap_sig, alpha],
-                [past.utils.old_div(360.0, ncap), theta, cap_sig, alpha],
+                [old_div(180.0, ncap), theta, cap_sig, alpha],
+                [old_div(360.0, ncap), theta, cap_sig, alpha],
             ]
             self.symangles.extend([[0.0, 0.0, float(i)] for i in range(0, 271, 90)])
             for i in range(0, 271, 90):
@@ -1113,17 +1113,17 @@ class symclass(object):
         elif self.sym[:3] == "tet":
             self.nsym = 12
             ncap = 3
-            cap_sig = past.utils.old_div(360.0, ncap)
+            cap_sig = old_div(360.0, ncap)
             alpha = numpy.degrees(
                 numpy.arccos(
-                    past.utils.old_div(
+                    old_div(
                         1.0,
                         (
                             numpy.sqrt(3.0)
                             * numpy.tan(
                                 2
-                                * past.utils.old_div(
-                                    past.utils.old_div(numpy.pi, ncap), 2.0
+                                * old_div(
+                                    old_div(numpy.pi, ncap), 2.0
                                 )
                             )
                         ),
@@ -1133,18 +1133,18 @@ class symclass(object):
             theta = numpy.degrees(
                 0.5
                 * numpy.arccos(
-                    past.utils.old_div(
+                    old_div(
                         numpy.cos(numpy.radians(cap_sig)),
                         (1.0 - numpy.cos(numpy.radians(cap_sig))),
                     )
                 )
             )  # also platonic_params["theta_c_on_two"]
             self.brackets = [
-                [past.utils.old_div(360.0, ncap), theta, cap_sig, alpha],
-                [past.utils.old_div(360.0, ncap), theta, cap_sig, alpha],
+                [old_div(360.0, ncap), theta, cap_sig, alpha],
+                [old_div(360.0, ncap), theta, cap_sig, alpha],
             ]
             lvl1 = numpy.degrees(
-                numpy.arccos(past.utils.old_div(-1.0, 3.0))
+                numpy.arccos(old_div(-1.0, 3.0))
             )  # There  are 3 faces at this angle
             self.symangles.extend(
                 [[0.0, 0.0, 0.0], [0.0, 0.0, 120.0], [0.0, 0.0, 240.0]]
@@ -1156,17 +1156,17 @@ class symclass(object):
         elif self.sym[:4] == "icos":
             self.nsym = 60
             ncap = 5
-            cap_sig = past.utils.old_div(360.0, ncap)
+            cap_sig = old_div(360.0, ncap)
             alpha = numpy.degrees(
                 numpy.arccos(
-                    past.utils.old_div(
+                    old_div(
                         1.0,
                         (
                             numpy.sqrt(3.0)
                             * numpy.tan(
                                 2
-                                * past.utils.old_div(
-                                    past.utils.old_div(numpy.pi, ncap), 2.0
+                                * old_div(
+                                    old_div(numpy.pi, ncap), 2.0
                                 )
                             )
                         ),
@@ -1176,7 +1176,7 @@ class symclass(object):
             theta = numpy.degrees(
                 0.5
                 * numpy.arccos(
-                    past.utils.old_div(
+                    old_div(
                         numpy.cos(numpy.radians(cap_sig)),
                         (1.0 - numpy.cos(numpy.radians(cap_sig))),
                     )
@@ -1732,15 +1732,15 @@ class symclass(object):
                 phi_ge_180 = phi >= 180
                 condstat[theta_90 & phi_ge_180] = False
 
-        elif self.sym[0] == "d" and (past.utils.old_div(self.nsym, 2)) % 2 == 0:
+        elif self.sym[0] == "d" and (old_div(self.nsym, 2)) % 2 == 0:
             condstat[phi_0 & phi_ld_br_inmirr_0 & theta_ldeq_br_incmirr_1] = True
             condstat[theta_0] = True
             condstat[
                 ~phi_0 & ~phi_ld_br_inmirr_0 & ~theta_ldeq_br_incmirr_1 & ~theta_0
             ] = False
 
-        elif self.sym[0] == "d" and (past.utils.old_div(self.nsym, 2)) % 2 == 1:
-            phib = past.utils.old_div(360.0, self.nsym)
+        elif self.sym[0] == "d" and (old_div(self.nsym, 2)) % 2 == 1:
+            phib = old_div(360.0, self.nsym)
             condstat[
                 numpy.logical_and(
                     (theta_ldeq_br_incmirr_1 & phi_0 & phi_ld_br_1_0), inc_mirror
@@ -1753,10 +1753,10 @@ class symclass(object):
                 & (
                     numpy.logical_or(
                         numpy.logical_and(
-                            (phi >= past.utils.old_div(phib, 2)), (phi < phib)
+                            (phi >= old_div(phib, 2)), (phi < phib)
                         ),
                         numpy.logical_and(
-                            (phi >= phib), (phi <= phib + past.utils.old_div(phib, 2))
+                            (phi >= phib), (phi <= phib + old_div(phib, 2))
                         ),
                     )
                 )
@@ -1771,28 +1771,28 @@ class symclass(object):
 
         elif (self.sym[:3] == "oct") or (self.sym[:4] == "icos"):
             tmphi = numpy.minimum(phi, self.brackets[inc_mirror][2] - phi)
-            baldwin_lower_alt_bound = past.utils.old_div(
+            baldwin_lower_alt_bound = old_div(
                 (
-                    past.utils.old_div(
+                    old_div(
                         numpy.sin(
                             numpy.radians(
-                                past.utils.old_div(self.brackets[inc_mirror][2], 2.0)
+                                old_div(self.brackets[inc_mirror][2], 2.0)
                                 - tmphi
                             )
                         ),
                         numpy.tan(numpy.radians(self.brackets[inc_mirror][1])),
                     )
-                    + past.utils.old_div(
+                    + old_div(
                         numpy.sin(numpy.radians(tmphi)),
                         numpy.tan(numpy.radians(self.brackets[inc_mirror][3])),
                     )
                 ),
                 numpy.sin(
-                    numpy.radians(past.utils.old_div(self.brackets[inc_mirror][2], 2.0))
+                    numpy.radians(old_div(self.brackets[inc_mirror][2], 2.0))
                 ),
             )
             baldwin_lower_alt_bound = numpy.degrees(
-                numpy.arctan(past.utils.old_div(1.0, baldwin_lower_alt_bound))
+                numpy.arctan(old_div(1.0, baldwin_lower_alt_bound))
             )
 
             numpy.round(
@@ -1831,41 +1831,41 @@ class symclass(object):
 
         elif self.sym[:3] == "tet":
             tmphi = numpy.minimum(phi, self.brackets[inc_mirror][2] - phi)
-            baldwin_lower_alt_bound_1 = past.utils.old_div(
+            baldwin_lower_alt_bound_1 = old_div(
                 (
-                    past.utils.old_div(
+                    old_div(
                         numpy.sin(
                             numpy.radians(
-                                past.utils.old_div(self.brackets[inc_mirror][2], 2.0)
+                                old_div(self.brackets[inc_mirror][2], 2.0)
                                 - tmphi
                             )
                         ),
                         numpy.tan(numpy.radians(self.brackets[inc_mirror][1])),
                     )
-                    + past.utils.old_div(
+                    + old_div(
                         numpy.sin(numpy.radians(tmphi)),
                         numpy.tan(numpy.radians(self.brackets[inc_mirror][3])),
                     )
                 ),
                 numpy.sin(
-                    numpy.radians(past.utils.old_div(self.brackets[inc_mirror][2], 2.0))
+                    numpy.radians(old_div(self.brackets[inc_mirror][2], 2.0))
                 ),
             )
             is_zero = baldwin_lower_alt_bound_1 == 0
             baldwin_lower_alt_bound_1[~is_zero] = numpy.degrees(
                 numpy.arctan(
-                    past.utils.old_div(1.0, baldwin_lower_alt_bound_1[~is_zero])
+                    old_div(1.0, baldwin_lower_alt_bound_1[~is_zero])
                 )
             )
             baldwin_lower_alt_bound_1[is_zero] = self.brackets[inc_mirror][3]
 
-            baldwin_upper_alt_bound_2 = past.utils.old_div(
+            baldwin_upper_alt_bound_2 = old_div(
                 (
-                    past.utils.old_div(
+                    old_div(
                         (
                             numpy.sin(
                                 numpy.radians(
-                                    past.utils.old_div(
+                                    old_div(
                                         self.brackets[inc_mirror][2], 2.0
                                     )
                                     - tmphi
@@ -1874,11 +1874,11 @@ class symclass(object):
                         ),
                         (numpy.tan(numpy.radians(self.brackets[inc_mirror][1]))),
                     )
-                    + past.utils.old_div(
+                    + old_div(
                         (numpy.sin(numpy.radians(tmphi))),
                         numpy.tan(
                             numpy.radians(
-                                past.utils.old_div(self.brackets[inc_mirror][3], 2.0)
+                                old_div(self.brackets[inc_mirror][3], 2.0)
                             )
                         ),
                     )
@@ -1886,13 +1886,13 @@ class symclass(object):
                 (
                     numpy.sin(
                         numpy.radians(
-                            past.utils.old_div(self.brackets[inc_mirror][2], 2.0)
+                            old_div(self.brackets[inc_mirror][2], 2.0)
                         )
                     )
                 ),
             )
             baldwin_upper_alt_bound_2 = numpy.degrees(
-                numpy.arctan(past.utils.old_div(1.0, baldwin_upper_alt_bound_2))
+                numpy.arctan(old_div(1.0, baldwin_upper_alt_bound_2))
             )
 
             condstat[

@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-from past.utils import old_div
 from builtins import range
 # Muyuan Chen 2018-08
 from EMAN2 import *

@@ -537,21 +537,27 @@ EMData *EMData::copy_empty_head() const
 }
 
 
-EMData* EMData::rotavg() {
+EMData* EMData::rotavg(EMData* mask) {
 
 	ENTERFUNC;
 
 	int rmax;
 	EMData* ret = new EMData();
 	vector<int> saved_offsets = get_array_offsets();
+	vector<int> mask_offsets;
 	vector<float> count;
 
 	if (ny<2 && nz <2) {
 		LOGERR("No 1D images.");
 		throw ImageDimensionException("No 1D images!");
 	}
+	bool use;
 
 	if( this->is_complex() )  {
+		if ( mask ) {
+			LOGERR("MASK not implemented for complex images.");
+			throw ImageDimensionException("MASK not implemented for complex images!");
+		}
 		//  We will assume square image for the time being
 		rmax = ny/2;
 		ret->set_size(rmax+1, 1, 1);
@@ -604,6 +610,10 @@ EMData* EMData::rotavg() {
 		float apix_z2 = apix_z*apix_z;
 
 		set_array_offsets(-nx/2,-ny/2,-nz/2);
+		if(mask) {
+			mask_offsets = mask->get_array_offsets();
+			mask->set_array_offsets(-nx/2,-ny/2,-nz/2);
+		}
 
 		//int rmax = std::min(nx/2 + nx%2, ny/2 + ny%2);
 		if ( nz == 1 )  rmax = std::min(nx/2 + nx%2, ny/2 + ny%2);
@@ -622,14 +632,20 @@ EMData* EMData::rotavg() {
 			for (int j = -ny/2; j < ny/2 + ny%2; j++) {
 				if (abs( j*apix_y ) > rmax*rmax_ratio) continue;
 				for (int i = -nx/2; i < nx/2 + nx%2; i++) {
-					float r = std::sqrt(float(k*k*apix_z2) + float(j*j*apix_y2) + float(i*i*apix_x2))/rmax_ratio;
-					int ir = int(r);
-					if (ir >= rmax) continue;
-					float frac = r - float(ir);
-					(*ret)(ir) += (*this)(i,j,k)*(1.0f - frac);
-					(*ret)(ir+1) += (*this)(i,j,k)*frac;
-					count[ir] += 1.0f - frac;
-					count[ir+1] += frac;
+					if( mask )  {
+						if((*mask)(i,j,k)>0.5) use = true;
+						else use = false;
+					}
+					if( use ){
+						float r = std::sqrt(float(k*k*apix_z2) + float(j*j*apix_y2) + float(i*i*apix_x2))/rmax_ratio;
+						int ir = int(r);
+						if (ir >= rmax) continue;
+						float frac = r - float(ir);
+						(*ret)(ir) += (*this)(i,j,k)*(1.0f - frac);
+						(*ret)(ir+1) += (*this)(i,j,k)*frac;
+						count[ir] += 1.0f - frac;
+						count[ir+1] += frac;
+					}
 				}
 			}
 		}
@@ -638,12 +654,13 @@ EMData* EMData::rotavg() {
 		(*ret)(ir) /= std::max(count[ir],1.0f);
 	}
 	set_array_offsets(saved_offsets);
+	if(mask)  mask->set_array_offsets(mask_offsets);
 	ret->update();
 	EXITFUNC;
 	return ret;
 	}
 
-EMData* EMData::rotavg_i() {
+EMData* EMData::rotavg_i(EMData* mask) {
 
 	int rmax;
 	ENTERFUNC;
@@ -665,7 +682,7 @@ EMData* EMData::rotavg_i() {
 		rmax = std::min(nx/2 + nx%2, std::min(ny/2 + ny%2, nz/2 + nz%2));
 	}
 
-	avg1D = rotavg();
+	avg1D = rotavg(mask);
 	float padded_value = 0.0, r;
 	int i, j, k, ir;
 	size_t number_of_pixels = 0;

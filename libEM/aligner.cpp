@@ -3019,6 +3019,14 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 	int sexp_start=4;
 	int ny=this_img->get_ysize();
 	int maxshift00=(int)params.set_default("maxshift",ny/4);
+	float maxres = params.set_default("maxres",-1.0f);
+	float apix=(float)this_img->get_attr("apix_x");
+	int maxny=ny;
+	if (maxres>0)
+		maxny=4*int(ny*apix/maxres/2+1);
+		if (verbose>0)
+			printf("\n\n*******\nmax resolution %1.2f, box size %d\n", maxres, maxny);
+	
 	
 	float maxang=params.set_default("maxang",-1.0);
 	Transform initxf;
@@ -3087,7 +3095,7 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 		int ss=pow(2.0,sexp);
 		if (ss==16) ss=24;		// 16 may be too small, but 32 takes too long...
 		if (ss==32) ss=48;		// 16 may be too small, but 32 takes too long...
-		if (ss>ny) ss=ny;
+		if (ss>maxny) ss=maxny;
 		
 		int maxshift=maxshift00*ss/ny;
 		if (maxshift00<0) maxshift=-1;
@@ -3306,7 +3314,7 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 
 		delete small_this;
 		delete small_to;
-		if (ss==ny) break;
+		if (ss>=maxny && curiter>0) break;
 	}
 
 	delete base_this;

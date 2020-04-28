@@ -41,17 +41,18 @@ from __future__ import division
 #
 
 import platform
+import os
 
-spreal = platform.os.path.join(
-    platform.os.path.abspath(platform.os.path.dirname(__file__)), "sp_real.py"
+spreal = os.path.join(
+    os.path.abspath(os.path.dirname(__file__)), "sp_real.py"
 )
-ipython = platform.os.path.join(
-    platform.os.path.abspath(platform.os.path.dirname(__file__)), "ipython"
+ipython = os.path.join(
+    os.path.abspath(os.path.dirname(__file__)), "ipython"
 )
 try:
-    if platform.system() == "Linux" and platform.os.getenv("DISPLAY") == None:
+    if platform.system() == "Linux" and os.getenv("DISPLAY") == None:
         raise Exception
-    platform.os.execlp(ipython, "ipython", "-i", "--gui=qt5", spreal)
+    os.execlp(ipython, "ipython", "-i", "--gui=qt5", spreal)
 except:
     print("Warning: No DISPLAY available, running in non-GUI mode.")
-    platform.os.execlp(ipython, "ipython", "-i", spreal)
+    os.execlp(ipython, "ipython", "-i", spreal)

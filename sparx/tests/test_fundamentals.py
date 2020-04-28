@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-
 #
 # Author: Piotr Pawliczek, 10/25/2012 
 # Copyright (c) 2000-2006 The University of Texas - Houston Medical School

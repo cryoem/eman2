@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 # Muyuan Chen 2016-01
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -335,7 +332,7 @@ def main():
 			thrds=[threading.Thread(target=do_compare,args=(jsd,xforms[i])) for i in range(npt)]
 			thrtolaunch=0
 			corr=[[] for i in range(npt)]
-			while thrtolaunch<len(thrds) or threading.active_count()>1:
+			while thrtolaunch<len(thrds) or threading.active_count()>1 or not jsd.empty():
 				# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
 				# note that it's ok that we wait here forever, since there can't be new results if an existing
 				# thread hasn't finished.

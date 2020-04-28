@@ -1,6 +1,4 @@
 #-----------------------------------------------
-from __future__ import print_function
-from __future__ import division
 def process(x):
     try:
         istream=open(x,"r");

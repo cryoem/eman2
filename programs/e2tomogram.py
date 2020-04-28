@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 # Muyuan Chen 2017-04
 from past.utils import old_div
 from future import standard_library
@@ -44,7 +42,7 @@ def main():
 
 	parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=6, col=0, rowspan=1, colspan=2,mode="easy")
 
-	parser.add_argument("--tltax", type=float,help="Angle of the tilt axis. The program will calculate one if this option is not provided", default=None,guitype='floatbox',row=7, col=1, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--tltax", type=float,help="Angle of the tilt axis. Note the angle stored internally will have an opposite sign. The program will calculate one if this option is not provided.", default=None,guitype='floatbox',row=7, col=1, rowspan=1, colspan=1,mode="easy")
 	
 	parser.add_argument("--tltkeep", type=float,help="Fraction of tilts to keep in the reconstruction.", default=.9,guitype='floatbox',row=7, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--tltrange", type=str,help="Include only tilts between 'START' and 'STOP', i.e. -40.0,40.0. Default behavior is to include all tilts.", default=None)#, guitype='strbox',row=6, col=1, rowspan=1, colspan=1,mode="easy")
@@ -1064,7 +1062,7 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 	#####
 
 	
-	while thrtolaunch<len(thrds) or threading.active_count()>tsleep or jsd.empty()==False:
+	while thrtolaunch<len(thrds) or threading.active_count()>tsleep or not jsd.empty():
 		if thrtolaunch<len(thrds) :
 			while (threading.active_count()==options.threads ) : time.sleep(.1)
 			thrds[thrtolaunch].start()

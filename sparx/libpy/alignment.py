@@ -1,5 +1,4 @@
 #
-from __future__ import print_function
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
 # Please do not copy or modify this file without written consent of the author.
 # Copyright (c) 2000-2019 The University of Texas - Houston Medical School
@@ -212,8 +211,8 @@ def ang_n(tot, mode, maxrin):
 	  Calculate angle based on the position of the peak
 	"""
 	from math import fmod
-	if (mode == 'f' or mode == 'F'): return fmod(((tot-1.0) / maxrin+1.0)*360.0, 360.0)
-	else:                            return fmod(((tot-1.0) / maxrin+1.0)*180.0, 180.0)
+	if (mode == 'f' or mode == 'F'): return fmod((old_div((tot-1.0), maxrin)+1.0)*360.0, 360.0)
+	else:                            return fmod((old_div((tot-1.0), maxrin)+1.0)*180.0, 180.0)
 
 # Copy of this function is implemented in C++ in Util (Util.Applyws). It works much faster than this one.
 '''
@@ -311,8 +310,8 @@ def eqproj_cascaded_ccc_fitness_function(args, data):
 	if(  abs(sx-ps[0][0]) >= ts2 or abs(sy-ps[0][1]) >= ts2 ):
 		return  twoD_fine_search([sx,sy], data2), shift
 	else:
-		s2x = (sx-ps[0][0])/2 + shift[0]
-		s2y = (sy-ps[0][1])/2 + shift[1]
+		s2x = old_div((sx-ps[0][0]),2) + shift[0]
+		s2y = old_div((sy-ps[0][1]),2) + shift[1]
 		#print  " B ",ps[1], [s2x, s2y]
 		return ps[1], [s2x, s2y]
 
@@ -372,7 +371,7 @@ def objective_function_just_ccc_has_maximum(args, data):
 
 
 	norm_of_reference_projection = sqrt(Util.innerproduct(reference_projection, reference_projection, None))
-	rrr =  Util.innerproduct(prj, reference_projection, None) / norm_of_reference_projection
+	rrr =  old_div(Util.innerproduct(prj, reference_projection, None), norm_of_reference_projection)
 
 	# print "ccc:", format_list(args[0:5]), rrr
 	# with open("test.txt", "a") as myfile:
@@ -398,7 +397,7 @@ def objective_function_just_ccc_has_minimum(args, data):
 	reference_projection.set_attr("is_complex",0)
 
 	norm_of_reference_projection = sqrt(Util.innerproduct(reference_projection, reference_projection, None))
-	return  -Util.innerproduct(data[2], reference_projection, None) / norm_of_reference_projection
+	return  old_div(-Util.innerproduct(data[2], reference_projection, None), norm_of_reference_projection)
 	# rrr =  -Util.innerproduct(prj, reference_projection) / norm_of_reference_projection
 
 	# print "ccc:", format_list(args[0:5]), rrr
@@ -424,7 +423,7 @@ def objective_function_just_ccc_has_minimum_reduced(args, data):
 	reference_projection.set_attr("is_complex",0)
 
 	norm_of_reference_projection = sqrt(Util.innerproduct(reference_projection, reference_projection, None))
-	return  -Util.innerproduct(data[2], reference_projection, None) / norm_of_reference_projection
+	return  old_div(-Util.innerproduct(data[2], reference_projection, None), norm_of_reference_projection)
 	# rrr =  -Util.innerproduct(prj, reference_projection) / norm_of_reference_projection
 
 	# print "ccc:", format_list(args[0:5]), rrr
@@ -485,7 +484,7 @@ def objective_function_just_ccc_has_minimum_reduced_only_shifts(args, data):
 	# peak /= nrmref
 
 	norm_of_reference_projection = sqrt(reference_projection.cmp("dot", reference_projection, dict(negative = 0)))
-	rrr =  -reference_projection.cmp("dot", prj, dict(negative = 0, mask = mask2D))/ norm_of_reference_projection
+	rrr =  old_div(-reference_projection.cmp("dot", prj, dict(negative = 0, mask = mask2D)), norm_of_reference_projection)
 
 
 	# norm_of_reference_projection = sqrt(Util.innerproduct(reference_projection, reference_projection))
@@ -545,7 +544,7 @@ def objective_function_just_ccc_has_minimum2(args, data):
 	# peak /= nrmref
 
 	norm_of_reference_projection = sqrt(reference_projection.cmp("dot", reference_projection, dict(negative = 0)))
-	return -reference_projection.cmp("dot", prj, dict(negative = 0, mask = mask2D))/ norm_of_reference_projection
+	return old_div(-reference_projection.cmp("dot", prj, dict(negative = 0, mask = mask2D)), norm_of_reference_projection)
 
 	# norm_of_reference_projection = sqrt(Util.innerproduct(reference_projection, reference_projection))
 	# return -Util.innerproduct(prj, reference_projection) / norm_of_reference_projection
@@ -698,8 +697,8 @@ def eqproj_cascaded_ccc(args, data):
 	if(  abs(sx-ps[0][0]) >= ts2 or abs(sy-ps[0][1]) >= ts2 ):
 		return  twoD_fine_search([sx,sy], data2), shift
 	else:
-		s2x = (sx-ps[0][0])/2 + shift[0]
-		s2y = (sy-ps[0][1])/2 + shift[1]
+		s2x = old_div((sx-ps[0][0]),2) + shift[0]
+		s2y = old_div((sy-ps[0][1]),2) + shift[1]
 		#print  " B ",ps[1], [s2x, s2y]
 		return ps[1], [s2x, s2y]
 
@@ -788,9 +787,9 @@ def kbt(nx,npad=2):
 	# support of the window
 	K=6
 	alpha=1.75
-	r=nx/2
+	r=old_div(nx,2)
 	v=K/2.0/N
-	return Util.KaiserBessel(alpha, K, r, K/(2.*N), N)
+	return Util.KaiserBessel(alpha, K, r, old_div(K,(2.*N)), N)
      
 
 #  AP stuff  01/18/06
@@ -880,7 +879,7 @@ def ringwe(numr, mode="F"):
 		dpi = 2*pi
 	else:
 		dpi = pi
-	nring = len(numr)/3
+	nring = old_div(len(numr),3)
 	wr=[0.0]*nring
 	maxrin = float(numr[len(numr)-1])
 	for i in range(0,nring): wr[i] = numr[i*3]*dpi/float(numr[2+i*3])*maxrin/float(numr[2+i*3])
@@ -898,11 +897,11 @@ def ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0):
 	#print "ORNQ"
 	peak = -1.0E23
 
-	lkx = int(xrng[0]/step)
-	rkx = int(xrng[-1]/step)
+	lkx = int(old_div(xrng[0],step))
+	rkx = int(old_div(xrng[-1],step))
 
-	lky = int(yrng[0]/step)
-	rky = int(yrng[-1]/step)
+	lky = int(old_div(yrng[0],step))
+	rky = int(old_div(yrng[-1],step))
 
 	for i in range(-lky, rky+1):
 		iy = i*step
@@ -937,11 +936,11 @@ def ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = 0.0):
 	#print "ORMQ"
 	peak = -1.0E23
 
-	lkx = int(xrng[0]/step)
-	rkx = int(xrng[-1]/step)
+	lkx = int(old_div(xrng[0],step))
+	rkx = int(old_div(xrng[-1],step))
 
-	lky = int(yrng[0]/step)
-	rky = int(yrng[-1]/step)
+	lky = int(old_div(yrng[0],step))
+	rky = int(old_div(yrng[-1],step))
 
 	for i in range(-lky, rky+1):
 		iy = i*step
@@ -1324,7 +1323,7 @@ def sim_anneal(peaks, T, step, mode, maxrin):
 		sys = sx*so + sy*co
 
 		mirror = peaks[select][8]
-		peak   = peaks[select][0]/peaks[0][0]
+		peak   = old_div(peaks[select][0],peaks[0][0])
 	elif T == 0.0:
 		select = 0
 	
@@ -1338,13 +1337,13 @@ def sim_anneal(peaks, T, step, mode, maxrin):
 		sys = sx*so + sy*co
 
 		mirror = peaks[select][8]
-		peak   = peaks[select][0]/peaks[0][0]
+		peak   = old_div(peaks[select][0],peaks[0][0])
 	else:
 		K = len(peaks)
 		qt = peaks[0][0]
 		p  = [0.0] * K
 		ut = 1.0/T
-		for k in range(K): p[k] = (peaks[k][0]/qt)**ut
+		for k in range(K): p[k] = (old_div(peaks[k][0],qt))**ut
 
 		sumq = float(sum(p))
 		cp  = [0.0] * K
@@ -1391,7 +1390,7 @@ def sim_ccf(peaks, T, step, mode, maxrin):
 		sys = sx*so + sy*co
 
 		mirror = peaks[select][4]
-		peak   = peaks[select][0]/peaks[0][0]
+		peak   = old_div(peaks[select][0],peaks[0][0])
 	elif T == 0.0:
 		select = 0
 	
@@ -1405,7 +1404,7 @@ def sim_ccf(peaks, T, step, mode, maxrin):
 		sys = sx*so + sy*co
 
 		mirror = peaks[select][4]
-		peak   = peaks[select][0]/peaks[0][0]
+		peak   = old_div(peaks[select][0],peaks[0][0])
 	else:
 		select = int(peaks[5])
 		ang = ang_n(peaks[1]+1, mode, maxrin)
@@ -1437,25 +1436,25 @@ def sim_anneal2(peaks, Iter, T0, F, SA_stop):
 	
 		dJe = [0.0]*K
 		for k in range(K):
-			dJe[k] = peaks[k][0]/peaks[0][0]
+			dJe[k] = old_div(peaks[k][0],peaks[0][0])
 
 		# q[k]
 		q      = [0.0] * K
 		arg    = [0.0] * K
 		maxarg = 0
 		for k in range(K):
-			arg[k] = dJe[k] / T
+			arg[k] = old_div(dJe[k], T)
 			if arg[k] > maxarg: maxarg = arg[k]
 		limarg = 200
 		if maxarg > limarg:
 			sumarg = float(sum(arg))
-			for k in range(K): q[k] = exp(arg[k] * limarg / sumarg)
+			for k in range(K): q[k] = exp(old_div(arg[k] * limarg, sumarg))
 		else:
 			for k in range(K): q[k] = exp(arg[k])
 
 		sumq = float(sum(q))
 		for k in range(K):
-			p[k] = q[k] / sumq
+			p[k] = old_div(q[k], sumq)
 	else:
 		p[0] = 1.0
 	
@@ -1490,7 +1489,7 @@ def sim_anneal3(peaks, peakm, peaks_major, peakm_major, Iter, T0, F, SA_stop):
 			ang = peaks[i][1]
 			#sx = peaks[i][6]
 			#sy = peaks[i][7]		
-			dist = 64*abs(sin((ang-ang_m)/2*DEG_to_RAD))#+sqrt((sx-sx_m)**2+(sy-sy_m)**2)
+			dist = 64*abs(sin(old_div((ang-ang_m),2)*DEG_to_RAD))#+sqrt((sx-sx_m)**2+(sy-sy_m)**2)
 			neighbor.append([dist, i])
 		neighbor.sort()
 
@@ -1515,7 +1514,7 @@ def sim_anneal3(peaks, peakm, peaks_major, peakm_major, Iter, T0, F, SA_stop):
 			ang = peakm[i][1]
 			#sx = peakm[i][6]
 			#sy = peakm[i][7]		
-			dist = 64*abs(sin((ang-ang_m)/2*DEG_to_RAD))#+sqrt((sx-sx_m)**2+(sy-sy_m)**2)
+			dist = 64*abs(sin(old_div((ang-ang_m),2)*DEG_to_RAD))#+sqrt((sx-sx_m)**2+(sy-sy_m)**2)
 			neighbor.append([dist, i])
 		neighbor.sort()
 
@@ -1525,7 +1524,7 @@ def sim_anneal3(peaks, peakm, peaks_major, peakm_major, Iter, T0, F, SA_stop):
 
 		ps = peaks[select_s][0]
 		pm = peakm[select_m][0]
-		pk = select_k([1.0, min(ps/pm, pm/ps)], T)
+		pk = select_k([1.0, min(old_div(ps,pm), old_div(pm,ps))], T)
 		
 		if ps > pm and pk == 0 or ps < pm and pk == 1: use_mirror = 0
 		else: use_mirror = 1
@@ -2344,7 +2343,7 @@ def ali3D_gridding(data, volprep, refang, delta_psi, shifts, shrink, numr, wr, c
 			if(peak > simis[kl]):
 				#best = i
 				simis[kl]  = peak
-				newpar[kl] = [refang[i][0],refang[i][1],psi,sxs/shrink,sys/shrink]
+				newpar[kl] = [refang[i][0],refang[i][1],psi,old_div(sxs,shrink),old_div(sys,shrink)]
 			
 	#print  " >>>  %4d   %12.3e       %12.5f     %12.5f     %12.5f     %12.5f     %12.5f"%(best,simis[0],newpar[0][0],newpar[0][1],newpar[0][2],newpar[0][3],newpar[0][4])
 
@@ -2870,7 +2869,7 @@ def sub_favj(ave, data, jtot, mirror, numr):
 	#from utilities  import print_col
 	# trig functions in radians
 	pi2 = pi*2
-	nring = len(numr)/3
+	nring = old_div(len(numr),3)
 	maxrin = numr[len(numr)-1]
 	#print  "update",psi
 	#print_col(ave)
@@ -2882,9 +2881,9 @@ def sub_favj(ave, data, jtot, mirror, numr):
 			numr3i = numr[2+i*3]
 			np = numr[1+i*3]-1
 			ave[np]   -= data[np]
-			ave[np+1] -= data[np+1]*cos(pi2*(jtot-1)/2.0*numr3i/maxrin)
+			ave[np+1] -= data[np+1]*cos(old_div(pi2*(jtot-1)/2.0*numr3i,maxrin))
 			for j in range(2, numr3i, 2):
-				arg = pi2*(jtot-1)*int(j/2)/maxrin
+				arg = old_div(pi2*(jtot-1)*int(old_div(j,2)),maxrin)
 				cs = complex(data[np + j],data[np + j +1])*complex(cos(arg),sin(arg))
 				ave[np + j]    -= cs.real
 				ave[np + j +1] += cs.imag
@@ -2893,9 +2892,9 @@ def sub_favj(ave, data, jtot, mirror, numr):
 			numr3i = numr[2+i*3]
 			np = numr[1+i*3]-1
 			ave[np]   -= data[np]
-			ave[np+1] -= data[np+1]*cos(pi2*(jtot-1)/2.0*numr3i/maxrin)
+			ave[np+1] -= data[np+1]*cos(old_div(pi2*(jtot-1)/2.0*numr3i,maxrin))
 			for j in range(2, numr3i, 2):
-				arg = pi2*(jtot-1)*int(j/2)/maxrin
+				arg = old_div(pi2*(jtot-1)*int(old_div(j,2)),maxrin)
 				cs = complex(data[np + j],data[np + j +1])*complex(cos(arg),sin(arg))
 				ave[np + j]    -= cs.real
 				ave[np + j +1] -= cs.imag
@@ -2909,7 +2908,7 @@ def update_favj(ave, data, jtot, mirror, numr):
 	#from utilities  import print_col
 	# trig functions in radians
 	pi2 = pi*2
-	nring = len(numr)/3
+	nring = old_div(len(numr),3)
 	maxrin = numr[len(numr)-1]
 	#print  "update",psi
 	#print_col(ave)
@@ -2921,9 +2920,9 @@ def update_favj(ave, data, jtot, mirror, numr):
 			numr3i = numr[2+i*3]
 			np = numr[1+i*3]-1
 			ave[np]   += data[np]
-			ave[np+1] += data[np+1]*cos(pi2*(jtot-1)/2.0*numr3i/maxrin)
+			ave[np+1] += data[np+1]*cos(old_div(pi2*(jtot-1)/2.0*numr3i,maxrin))
 			for j in range(2, numr3i, 2):
-				arg = pi2*(jtot-1)*int(j/2)/maxrin
+				arg = old_div(pi2*(jtot-1)*int(old_div(j,2)),maxrin)
 				cs = complex(data[np + j],data[np + j +1])*complex(cos(arg),sin(arg))
 				ave[np + j]    += cs.real
 				ave[np + j +1] -= cs.imag
@@ -2932,9 +2931,9 @@ def update_favj(ave, data, jtot, mirror, numr):
 			numr3i = numr[2+i*3]
 			np = numr[1+i*3]-1
 			ave[np]   += data[np]
-			ave[np+1] += data[np+1]*cos(pi2*(jtot-1)/2.0*numr3i/maxrin)
+			ave[np+1] += data[np+1]*cos(old_div(pi2*(jtot-1)/2.0*numr3i,maxrin))
 			for j in range(2, numr3i, 2):
-				arg = pi2*(jtot-1)*int(j/2)/maxrin
+				arg = old_div(pi2*(jtot-1)*int(old_div(j,2)),maxrin)
 				cs = complex(data[np + j],data[np + j +1])*complex(cos(arg),sin(arg))
 				ave[np + j]    += cs.real
 				ave[np + j +1] += cs.imag
@@ -2947,7 +2946,7 @@ def fine_2D_refinement(data, br, mask, tavg, group = -1):
 	# IMAGES ARE SQUARES!
 	nx = data[0].get_xsize()
 	#  center is in SPIDER convention
-	cnx = int(nx/2)+1
+	cnx = int(old_div(nx,2))+1
 	cny = cnx
 
 	if(group > -1):
@@ -3012,7 +3011,7 @@ def align2d(image, refim, xrng=[0, 0], yrng=[0, 0], step=1.0, first_ring=1, last
 	step = float(step)
 	nx = refim.get_xsize()
 	ny = refim.get_ysize()
-	if(last_ring == 0):  last_ring = nx/2-2-int(max(max(xrng),max(yrng)))
+	if(last_ring == 0):  last_ring = old_div(nx,2)-2-int(max(max(xrng),max(yrng)))
 	# center in SPIDER convention
 	cnx = nx//2+1
 	cny = ny//2+1
@@ -3306,11 +3305,11 @@ def parabl(Z):
 	#  parabolic fit to a peak, C indexing
 	C1 = (26.*Z[0,0] - Z[0,1] + 2*Z[0,2] - Z[1,0] - 19.*Z[1,1] - 7.*Z[1,2] + 2.*Z[2,0] - 7.*Z[2,1] + 14.*Z[2,2])/9.
 
-	C2 = (8.* Z[0,0] - 8.*Z[0,1] + 5.*Z[1,0] - 8.*Z[1,1] + 3.*Z[1,2] +2.*Z[2,0] - 8.*Z[2,1] + 6.*Z[2,2])/(-6.)
+	C2 = old_div((8.* Z[0,0] - 8.*Z[0,1] + 5.*Z[1,0] - 8.*Z[1,1] + 3.*Z[1,2] +2.*Z[2,0] - 8.*Z[2,1] + 6.*Z[2,2]),(-6.))
 
 	C3 = (Z[0,0] - 2.*Z[0,1] + Z[0,2] + Z[1,0] -2.*Z[1,1] + Z[1,2] + Z[2,0] - 2.*Z[2,1] + Z[2,2])/6.
 
-	C4 = (8.*Z[0,0] + 5.*Z[0,1] + 2.*Z[0,2] -8.*Z[1,0] -8.*Z[1,1] - 8.*Z[1,2] + 3.*Z[2,1] + 6.*Z[2,2])/(-6.)
+	C4 = old_div((8.*Z[0,0] + 5.*Z[0,1] + 2.*Z[0,2] -8.*Z[1,0] -8.*Z[1,1] - 8.*Z[1,2] + 3.*Z[2,1] + 6.*Z[2,2]),(-6.))
 
 	C5 = (Z[0,0] - Z[0,2] - Z[2,0] + Z[2,2])/4.
 
@@ -3320,11 +3319,11 @@ def parabl(Z):
 	if(DENOM == 0.):
 		return 0.0, 0.0, 0.0
 
-	YSH   = (C4*C5 - 2.*C2*C6) / DENOM - 2.
-	XSH   = (C2*C5 - 2.*C4*C3) / DENOM - 2.
+	YSH   = old_div((C4*C5 - 2.*C2*C6), DENOM) - 2.
+	XSH   = old_div((C2*C5 - 2.*C4*C3), DENOM) - 2.
 
 	PEAKV = 4.*C1*C3*C6 - C1*C5*C5 - C2*C2*C6 + C2*C4*C5 - C4*C4*C3
-	PEAKV = PEAKV / DENOM
+	PEAKV = old_div(PEAKV, DENOM)
 	#print  "  in PARABL  ",XSH,YSH,Z[1,1],PEAKV
 
 	XSH = min(max( XSH, -1.0), 1.0)
@@ -3372,7 +3371,7 @@ def align2d_direct2(image, refim, xrng=1, yrng=1, psimax=1, psistep=1, ou = -1):
 	nx = image.get_xsize()
 	if(ou<0):  ou = nx//2-1
 	mask = model_circle(ou,nx,nx)
-	nk = int(psimax/psistep)
+	nk = int(old_div(psimax,psistep))
 	nm = 2*nk+1
 	nc = nk + 1
 	refs = [None]*nm*2
@@ -3424,7 +3423,7 @@ def align2d_direct3(input_images, refim, xrng=1, yrng=1, psimax=180, psistep=1, 
 	nx = input_images[0].get_xsize()
 	if(ou<0):  ou = nx//2-1
 	mask = model_circle(ou,nx,nx)
-	nk = int(psimax/psistep)
+	nk = int(old_div(psimax,psistep))
 	nm = 2*nk+1
 	nc = nk + 1
 	refs = [None]*nm*2
@@ -3483,7 +3482,7 @@ def align2d_direct(image, refim, xrng=1, yrng=1, psimax=1, psistep=1, ou = -1):
 	nx = image.get_xsize()
 	if(ou<0):  ou = nx//2-1
 	mask = model_circle(ou,nx,nx)
-	nk = int(psimax/psistep)
+	nk = int(old_div(psimax,psistep))
 	nm = 2*nk+1
 	nc = nk + 1
 	refs = [None]*nm
@@ -3561,13 +3560,13 @@ def align2d_no_mirror(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_r
 	step = float(step)
 	nx = refim.get_xsize()
 	ny = refim.get_ysize()
-	MAX_XRNG = nx/2
-	MAX_YRNG=ny/2
+	MAX_XRNG = old_div(nx,2)
+	MAX_YRNG=old_div(ny,2)
 	if xrng >= MAX_XRNG:
 		ERROR('Translation search range in x is at most %d'%MAX_XRNG, "align2d ", 1)
 	if yrng >= MAX_YRNG:
 		ERROR('Translation search range in y is at most %d'%MAX_YRNG, "align2d ", 1)
-	if(last_ring == 0):  last_ring = nx/2-2-int(max(xrng,yrng))
+	if(last_ring == 0):  last_ring = old_div(nx,2)-2-int(max(xrng,yrng))
 	# center in SPIDER convention
 	cnx = nx//2+1
 	cny = ny//2+1
@@ -3589,7 +3588,7 @@ def align2d_peaks(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=
 	step = float(step)
 	nx = refim.get_xsize()
 	ny = refim.get_ysize()
-	if(last_ring == 0):  last_ring = nx/2-2-int(max(xrng,yrng))
+	if(last_ring == 0):  last_ring = old_div(nx,2)-2-int(max(xrng,yrng))
 	# center in SPIDER convention
 	cnx = nx//2+1
 	cny = ny//2+1
@@ -3615,10 +3614,10 @@ def align2d_g(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, r
 	step = float(step)
 	nx = refim.get_xsize()
 	ny = refim.get_ysize()
-	if(last_ring == 0):  last_ring = nx/2-2-int(max(xrng,yrng))
+	if(last_ring == 0):  last_ring = old_div(nx,2)-2-int(max(xrng,yrng))
 	# center in SPIDER convention
-	cnx = int(nx/2)+1
-	cny = int(ny/2)+1
+	cnx = int(old_div(nx,2))+1
+	cny = int(old_div(ny,2))+1
 	#precalculate rings
 	numr = Numrinit(first_ring, last_ring, rstep, mode)
 	wr = ringwe(numr, mode)
@@ -3626,7 +3625,7 @@ def align2d_g(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, r
 	N = nx*2
 	K = 6
 	alpha = 1.75
-	r = nx/2
+	r = old_div(nx,2)
 	v = K/2.0/N
 	kb = Util.KaiserBessel(alpha, K, r, v, N)
 	refi = refim.FourInterpol(N,N,1,0)  
@@ -3653,7 +3652,7 @@ def directali(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, updown = "bo
 	from utilities    import peak_search, model_blank, inverse_transform2, compose_transform2
 	from alignment    import parabl
 
-	nr = int(2*psimax/psistep)+1
+	nr = int(old_div(2*psimax,psistep))+1
 	nc = nr//2
 
 	try:
@@ -3780,13 +3779,13 @@ def preparerefsgrid(refs, psimax=1.0, psistep=1.0):
 	alpha = 1.75
 	K = 6
 	N = M*2  # npad*image size
-	r = M/2
+	r = old_div(M,2)
 	v = K/2.0/N
 	params = {"filter_type" : Processor.fourier_filter_types.KAISER_SINH_INVERSE,
 	          "alpha" : alpha, "K":K,"r":r,"v":v,"N":N}
 	kb = Util.KaiserBessel(alpha, K, r, v, N)
 
-	nr = int(2*psimax/psistep)+1
+	nr = int(old_div(2*psimax,psistep))+1
 	nc = nr//2
 
 	ref = [None]*nr
@@ -3808,13 +3807,13 @@ def preparerefsgrid1(refs, psimax=1.0, psistep=1.0):
 	alpha = 1.75
 	K = 6
 	N = M*2  # npad*image size
-	r = M/2
+	r = old_div(M,2)
 	v = K/2.0/N
 	params = {"filter_type" : Processor.fourier_filter_types.KAISER_SINH_INVERSE,
 	          "alpha" : alpha, "K":K,"r":r,"v":v,"N":N}
 	kb = Util.KaiserBessel(alpha, K, r, v, N)
 
-	nr = int(2*psimax/psistep)+1
+	nr = int(old_div(2*psimax,psistep))+1
 	nc = nr//2
 # 	if updown == "up" :  reduced_psiref = psiref -  90.0
 # 	else:                reduced_psiref = psiref - 270.0
@@ -3857,7 +3856,7 @@ def directaligridding(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, step
 	alpha = 1.75
 	K = 6
 	N = M*2  # npad*image size
-	r = M/2
+	r = old_div(M,2)
 	v = K/2.0/N
 	params = {"filter_type" : Processor.fourier_filter_types.KAISER_SINH_INVERSE,
 	          "alpha" : alpha, "K":K,"r":r,"v":v,"N":N}
@@ -3865,7 +3864,7 @@ def directaligridding(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, step
 
 
 
-	nr = int(2*psimax/psistep)+1
+	nr = int(old_div(2*psimax,psistep))+1
 	nc = nr//2
 
 	try:
@@ -3899,8 +3898,8 @@ def directaligridding(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, step
 			"""
 
 	#  Window for ccf sampled by gridding
-	rnx   = int((xrng/stepx+0.5))
-	rny   = int((yrng/stepy+0.5))
+	rnx   = int((old_div(xrng,stepx)+0.5))
+	rny   = int((old_div(yrng,stepy)+0.5))
 	wnx = 2*rnx + 1
 	wny = 2*rny + 1
 	w = model_blank( wnx, wny)
@@ -4071,13 +4070,13 @@ def directaligridding1(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1, yrng=1, 
 	"""
 
 
-	nr = int(2*psimax/psistep)+1
+	nr = int(old_div(2*psimax,psistep))+1
 	nc = nr//2
 
 	N = inima.get_ysize()  # assumed image is square, but because it is FT take y.
 	#  Window for ccf sampled by gridding
-	rnx   = int((xrng/stepx+0.5))
-	rny   = int((yrng/stepy+0.5))
+	rnx   = int((old_div(xrng,stepx)+0.5))
+	rny   = int((old_div(yrng,stepy)+0.5))
 	wnx = 2*rnx + 1
 	wny = 2*rny + 1
 	w = model_blank( wnx, wny)
@@ -4262,7 +4261,7 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 	"""
 
 
-	nr = int(2*psimax/psistep)+1
+	nr = int(old_div(2*psimax,psistep))+1
 	nc = nr//2
 	if updown == "up" :  reduced_psiref = psiref -  90.0
 	else:                reduced_psiref = psiref - 270.0
@@ -4273,16 +4272,16 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 # 	bnr = int(round(reduced_psiref/psistep)) - nc
 # 	enr = nr + bnr
 	
-	bnr = min(max(int(round(reduced_psiref/psistep)) - nc, -nc), nr-nc-1)
-	enr = max(min(int(round(reduced_psiref/psistep))+nr-nc,nr-nc),-nc)
+	bnr = min(max(int(round(old_div(reduced_psiref,psistep))) - nc, -nc), nr-nc-1)
+	enr = max(min(int(round(old_div(reduced_psiref,psistep)))+nr-nc,nr-nc),-nc)
 
 	if enr <= bnr: return 0.0, 0.0, 0.0, peak
 	N = inima.get_ysize()  # assumed image is square, but because it is FT take y.
 	#  Window for ccf sampled by gridding
 	#   We quietly assume the search range for translations is always much less than the ccf size,
 	#     so instead of restricting anything, we will just window out ccf around previous shift locations
-	rnx   = int(round(xrng/stepx))
-	rny   = int(round(yrng/stepy))
+	rnx   = int(round(old_div(xrng,stepx)))
+	rny   = int(round(old_div(yrng,stepy)))
 	wnx = 2*rnx + 1
 	wny = 2*rny + 1
 
@@ -4483,15 +4482,15 @@ def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, x
 	kb = Util.KaiserBessel(alpha, K, r, v, N)
 	"""
 
-	nr = int(2*psimax/psistep)+1
+	nr = int(old_div(2*psimax,psistep))+1
 	nc = nr//2
 	if updown == "up" :  reduced_psiref = psiref -  90.0
 	else:                reduced_psiref = psiref - 180.0
 	#  Limit psi search to within psimax range
 	#bnr = max(int(round(reduced_psiref/psistep)),0)
 	#enr = min(int(round(reduced_psiref/psistep))+nr,nr)
-	bnr = max(int(round(reduced_psiref/psistep)),0)
-	enr = min(int(round(reduced_psiref/psistep))+nr,nr)
+	bnr = max(int(round(old_div(reduced_psiref,psistep))),0)
+	enr = min(int(round(old_div(reduced_psiref,psistep)))+nr,nr)
 	bnr = 0
 	enr = nr
 	
@@ -4499,8 +4498,8 @@ def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, x
 	#  Window for ccf sampled by gridding
 	#   We quietly assume the search range for translations is always much less than the ccf size,
 	#     so instead of restricting anything, we will just window out ccf around previous shift locations
-	rnx   = int(round(xrng/stepx))
-	rny   = int(round(yrng/stepy))
+	rnx   = int(round(old_div(xrng,stepx)))
+	rny   = int(round(old_div(yrng,stepy)))
 	wnx = 2*rnx + 1
 	wny = 2*rny + 1
 	w = model_blank( wnx, wny)
@@ -4895,7 +4894,7 @@ def ali_nvol(v, mask):
 		ave,var = ave_var(v)
 		p = Util.infomask(var, mask, True)
 		crit = p[1]
-		if((crit-ocrit)/(crit+ocrit)/2.0 > -1.0e-2 or niter > 10):  gogo = False
+		if(old_div((crit-ocrit),(crit+ocrit))/2.0 > -1.0e-2 or niter > 10):  gogo = False
 		niter += 1
 		ocrit = crit
 		ref = alivol_mask_getref(ave, mask)
@@ -4953,7 +4952,7 @@ def ali_mvol(v, mask):
 		set_params3D( ave,   (0.0,0.0,0.0,0.0,0.0,0.0,0,1.0))
 		p = Util.infomask(var, mask, True)
 		crit = p[1]
-		if((crit-ocrit)/(crit+ocrit)/2.0 > -1.0e-2 or niter > 10):  gogo = False
+		if(old_div((crit-ocrit),(crit+ocrit))/2.0 > -1.0e-2 or niter > 10):  gogo = False
 		niter += 1
 		ocrit = crit
 		ave *= mask
@@ -5322,7 +5321,7 @@ def center_projections_3D(data, ref_vol = None, ali3d_options = None, onx = -1, 
 	for im in range(nima):
 		newsx,newsy,iref,talpha,tmirr,totpeak = multalign2d_scf(data[im], refrings, ftprojections, numr, xrng, yrng, last_ring)
 		dummy, dummy, talpha, newsx, newsy = params_2D_3D(talpha, newsx, newsy, tmirr)
-		params[im] = [talpha, newsx/shrinkage, newsy/shrinkage, iref]
+		params[im] = [talpha, old_div(newsx,shrinkage), old_div(newsy,shrinkage), iref]
 
 	#=========================================================================
 	mpi_barrier(mpi_comm)
@@ -5403,7 +5402,7 @@ def generate_list_of_reference_angles_for_search(input_angles, sym):
 def reduce_indices_so_that_angles_map_only_to_asymmetrix_unit_and_keep_mirror_info(all_refs_angles, angle_index__to__all_refs_angles_within_asymmetric_unit_plus_mirror_and_symmetries):
 
 	index_of_base_refangles_reduced_to_asymetric_unit_with_mirror_info = \
-		list(set((x%len(all_refs_angles), (x/len(all_refs_angles))%2) for x in angle_index__to__all_refs_angles_within_asymmetric_unit_plus_mirror_and_symmetries))
+		list(set((x%len(all_refs_angles), (old_div(x,len(all_refs_angles)))%2) for x in angle_index__to__all_refs_angles_within_asymmetric_unit_plus_mirror_and_symmetries))
 
 	#need to eliminate duplicates, but keep the mirror information, so sort by index and then cummulate multiple indices into only one that has the mirror info from all, sorted and filtered through a set
 	

@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 02/12/2013 (sludtke@bcm.edu). Updated on 08/28/16.
 # Modified by James Michael Bell, 03/27/2017 (jmbell@bcm.edu)
@@ -599,7 +596,7 @@ def process_movie(options,fsp,dark,gain,first,flast,step,idx):
 		t0=time()
 
 		thrtolaunch=0
-		while thrtolaunch<len(thds) or threading.active_count()>1:
+		while thrtolaunch<len(thds) or threading.active_count()>1 or not ccfs.empty():
 			if thrtolaunch<len(thds) :
 				while (threading.active_count()==options.threads ) : sleep(.01)
 				#if options.verbose :

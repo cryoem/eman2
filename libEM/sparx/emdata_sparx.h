@@ -99,13 +99,13 @@ EMData *FH2Real(int Size, float OverSamplekB, int IntensityFlag =0);
  * @exception ImageDimensionException If 'this' image is 1D.
  * @return 1-D rotationally-averaged image
  */
-EMData* rotavg();
+EMData* rotavg(EMData* mask = NULL);
 
 /** Create a 2-D or 3-D rotationally averaged image.
  * @exception ImageDimensionException If 'this' image is 1D.
  * @return 2-D or 3-D rotationally-averaged image
  */
-EMData* rotavg_i();
+EMData* rotavg_i(EMData* mask = NULL);
 
 /** Multiply radially a 2-D or 3-D image by a 1-D image.
  * @param radial the 1-D image multiply to

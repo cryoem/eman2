@@ -3,6 +3,7 @@
 set -xe
 
 MYDIR="$(cd "$(dirname "$0")"; pwd -P)"
+recipe_dir="recipe"
 
 source ${MYDIR}/set_env_vars.sh
 
@@ -26,13 +27,7 @@ fi
 conda info -a
 conda list
 conda list --explicit
-conda render recipes/eman
+conda render ${recipe_dir}
 conda build purge-all
 
-if [ "$AGENT_OS_NAME" == "win" ];then
-    CONDA_BUILD_TEST="--no-test"
-else
-    CONDA_BUILD_TEST=""
-fi
-
-conda build recipes/eman -c cryoem -c defaults -c conda-forge ${CONDA_BUILD_TEST}
+conda build ${recipe_dir} -c cryoem -c defaults -c conda-forge

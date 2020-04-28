@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 # Muyuan Chen 2018-04
-from __future__ import print_function
-from __future__ import division
-from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -13,7 +10,8 @@ import threading
 from EMAN2_utils import *
 from EMAN2jsondb import JSTask
 
-
+global thrdone
+thrdone=0
 
 class SptExtractTask(JSTask):
 	
@@ -67,7 +65,7 @@ def main():
 	parser.add_header(name="orblock3", help='Just a visual separation', title="Re-extraction from spt", row=13, col=0, rowspan=1, colspan=1, mode="extract")
 
 	parser.add_argument("--jsonali", type=str,help="re-extract particles using a particle_param_xx json file from a spt alignment", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=14, col=0,rowspan=1, colspan=2, mode="extract")
-	parser.add_argument("--mindist", type=float,help="minimum distance between particles in A. for reextraction only", default=-1)
+	parser.add_argument("--mindist", type=float,help="minimum distance between particles in A. for reextraction only", default=10)
 	parser.add_argument("--keep", type=float,help="fraction of particles to keep fron previous alignment. for reextraction only.", default=.9)
 	parser.add_argument("--postproc", type=str,help="processor after 3d particle reconstruction", default="")
 	parser.add_argument("--postmask", type=str,help="masking after 3d particle reconstruction. The mask is transformed if json ", default="")
@@ -467,15 +465,16 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 		
 		
 		thrds=[threading.Thread(target=make3d,args=(i)) for i in jobs]
+		global thrdone
+		thrdone=0
 
 		#thrtolaunch=0
-		tsleep=threading.active_count()
 		ndone=0
 		time0=time.time()
 		for t in thrds:
 			t.start()
 			
-		while threading.active_count()>tsleep:
+		while thrdone<len(thrds) or not jsd.empty():
 			while not jsd.empty():
 				pid, threed, projs=jsd.get()
 				
@@ -727,6 +726,9 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 		jsd.put((pid, threed, projs))
 		#recon.clear()
 
+	global thrdone
+	thrdone+=1
+
 	return
 	
 
@@ -773,23 +775,33 @@ def parse_text(options):
 #### parse a json file from spt_align to re-extract particles
 def parse_json(options):
 	print("re-extracting particles based on previous alignment. Ignoring particle/tomogram input...")
-	xffile=options.postxf
+	import scipy.spatial.distance as scipydst
+	### read json
 	js=js_open_dict(options.jsonali)
-	coord=[]
-	allxfs={}
-	allinfo={}
-	
-	#### sort by score 
 	keys=natural_sort(js.keys())
-	score=[js[k]["score"] for k in keys]
-	srt=np.argsort(score)
+	data=[]
+	for k in keys:
+		src, ii = eval(k)
+		e=EMData(src, ii, True)
+		data.append({"k":k,
+			"src":e["data_source"],
+			"srci":e["data_n"],
+			"pos":e["ptcl_source_coord"],
+			"xf":js[k]["xform.align3d"], 
+			"score":js[k]["score"]})
 	
-	print("Reading {} particles. Score from {:.2f} to {:.2f}".format(len(score), min(score), max(score)))
+	fs=[d["src"] for d in data]
+	fnames, count=np.unique(fs, return_counts=True)
+
+	score=np.array([d["score"] for d in data])
+	print("Reading {} particles from {} tomograms. Score from {:.2f} to {:.2f}".format(len(score),len(fnames), min(score), max(score)))
 	if options.keep<1:
-		srt=srt[:int(len(score)*options.keep)+1]
-		print("Removing particles with score above {:.2f}. Keeping {} particles.".format(score[srt[-1]], len(srt)))
-	keys=[keys[i] for i in srt]
-		
+		sthr=np.sort(score)[int(len(score)*options.keep)+1]
+		print("Removing particles with score above {:.2f}.".format(sthr))
+	
+	
+	### parse post transform file
+	xffile=options.postxf
 	postxfs=[]
 	if xffile!="":
 		f=open(xffile,'r')
@@ -802,49 +814,109 @@ def parse_json(options):
 		print("Extracting {} sub-particles per original particle".format(len(postxfs)))
 	else:
 		postxfs.append(Transform())
-	
+		
+	allxfs={}
+	allinfo={}
+	dthr=options.mindist/e["apix_x"]
+	print("Removing particles within {:.1f} pixels from nearest neighbor".format(dthr))
 	nptcl=0
 	nexclude=0
-	for ky in keys:
-		src, ii = eval(ky)
-		e=EMData(src, ii, True)
-		tomo=e["class_ptcl_src"]
-		dic=js[ky]
-		dxf=dic["xform.align3d"]
-		c=e["ptcl_source_coord"]
+	alld=[]
+	for fi,fname in enumerate(fnames):
+			
+		pos=np.array([d["pos"] for d in data if d["src"]==fname])
+		ids=np.array([d["srci"] for d in data if d["src"]==fname])
+		ptclxfs=[Transform(d["xf"]) for d in data if d["src"]==fname]
+		score=np.array([d["score"] for d in data if d["src"]==fname])
+		sid=np.argsort(score)
+		pos=pos[sid]
+		ptclxfs=[ptclxfs[s] for s in sid]
+		score=score[sid]
 		
-		ptcls=[]
 		info=[]
-		for xf in postxfs:
-			ali=Transform(dxf)
-			ali=xf.inverse()*ali
-			a=ali.inverse()
-			a.translate(c[0], c[1], c[2])
+		newxfs=[]
+		for i, pxf in enumerate(ptclxfs):
+			if score[i]>sthr: continue
+			c=pos[i]
+			for nxf in postxfs:
+				ali=Transform(pxf)
+				ali=nxf.inverse()*ali
+				a=ali.inverse()
+				a.translate(c[0], c[1], c[2])
+				newxfs.append(a)
+				info.append({"orig_ptcl":str(fname),"orig_idx":int(ids[i]),"orig_xf":pxf})
+
+		newpos=np.array([p.get_trans() for p in newxfs])
+		dst=scipydst.cdist(newpos, newpos)+(np.eye(len(newpos))*1e5)
+		tokeep=np.ones(len(dst), dtype=bool)
+		for i in range(len(dst)):
+			if tokeep[i]:
+				tokeep[dst[i]<dthr]=False
+
+		newpos=newpos[tokeep]
+		nptcl+=len(newpos)
+		nexclude+=np.sum(tokeep==False)
+		
+		newxfs=[xf for i, xf in enumerate(newxfs) if tokeep[i]]
+		
+		allxfs[fname]=newxfs
+		allinfo[fname]=[p for i, p in enumerate(info) if tokeep[i]]
+		
+		
+		print("{} : ptcls {} -> {}".format(base_name(fname), len(pos), len(allxfs[fname])))
+		
+	
+	##### sort by score 
+	#keys=natural_sort(js.keys())
+	#score=[js[k]["score"] for k in keys]
+	#srt=np.argsort(score)
+	
+	
+	#keys=[keys[i] for i in srt]
+		
+	
+	#nptcl=0
+	#nexclude=0
+	#for ky in keys:
+		#src, ii = eval(ky)
+		#e=EMData(src, ii, True)
+		#tomo=e["class_ptcl_src"]
+		#dic=js[ky]
+		#dxf=dic["xform.align3d"]
+		#c=e["ptcl_source_coord"]
+		
+		#ptcls=[]
+		#info=[]
+		#for xf in postxfs:
+			#ali=Transform(dxf)
+			#ali=xf.inverse()*ali
+			#a=ali.inverse()
+			#a.translate(c[0], c[1], c[2])
 			
 			
-			if options.mindist>0 and (tomo in allxfs):
-				pos=np.array([x.get_trans() for x in allxfs[tomo]])
-				p0=np.array(a.get_trans())
-				mindst=np.min(np.linalg.norm(pos-p0, axis=1))
-				mindst*=e["apix_x"]
+			#if options.mindist>0 and (tomo in allxfs):
+				#pos=np.array([x.get_trans() for x in allxfs[tomo]])
+				#p0=np.array(a.get_trans())
+				#mindst=np.min(np.linalg.norm(pos-p0, axis=1))
+				#mindst*=e["apix_x"]
 				
-				if mindst<options.mindist:
-					nexclude+=1
-					continue
+				#if mindst<options.mindist:
+					#nexclude+=1
+					#continue
 			
-			ptcls.append(a)
-			info.append({"orig_ptcl":e["data_source"],"orig_idx":e["data_n"],"orig_xf":dxf})
-			nptcl+=1
+			#ptcls.append(a)
+			#info.append({"orig_ptcl":e["data_source"],"orig_idx":e["data_n"],"orig_xf":dxf})
+			#nptcl+=1
 
 		
-		if len(ptcls)>0:
+		#if len(ptcls)>0:
 			
-			if (tomo in allxfs):	
-				allxfs[tomo].extend(ptcls)
-				allinfo[tomo].extend(info)
-			else:
-				allxfs[tomo]=ptcls
-				allinfo[tomo]=info
+			#if (tomo in allxfs):	
+				#allxfs[tomo].extend(ptcls)
+				#allinfo[tomo].extend(info)
+			#else:
+				#allxfs[tomo]=ptcls
+				#allinfo[tomo]=info
 				
 				
 				

@@ -1,9 +1,9 @@
 package:
     name: eman2
-    version: 2.31
+    version: {{ environ.get('EMAN_VERSION', '') }}
 
 source:
-    - path: {{ RECIPE_DIR }}/../..
+    - path: {{ RECIPE_DIR }}/..
     - url: https://www.khronos.org/registry/OpenGL/api/GL/glext.h             # [win]
       folder: GL                                                              # [win]
     - url: https://www.khronos.org/registry/EGL/api/KHR/khrplatform.h         # [win]

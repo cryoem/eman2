@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 # Author: Steven Ludtke, 06/28/2018 (sludtke@bcm.edu)
 # Copyright (c) 2000- Baylor College of Medicine
 #
@@ -132,7 +130,7 @@ autoprocessing prior to using this program, but no other processing is required.
 	if options.verbose: print("Beginning reprojections")
 	# standard thread execution loop
 	thrtolaunch=0
-	while thrtolaunch<len(thrds) or threading.active_count()>1:
+	while thrtolaunch<len(thrds) or threading.active_count()>1 or not jsd.empty():
 		if thrtolaunch<len(thrds):
 			while (threading.active_count()>=options.threads) : time.sleep(0.1)
 			if options.verbose>0 : 

@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 07/18/2017 (sludtke@bcm.edu)
 # Copyright (c) 2017- Baylor College of Medicine
@@ -120,7 +117,7 @@ def main():
 	#pprint.pprint(thrds)
 	
 	thrtolaunch=0
-	while thrtolaunch<len(thrds) or threading.active_count()>1:
+	while thrtolaunch<len(thrds) or threading.active_count()>1 or not jsd.empty():
 		if thrtolaunch<len(thrds):
 			while (threading.active_count()>=options.threads) : time.sleep(0.1)
 			if options.verbose>0 : 

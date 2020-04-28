@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 # align all particles to reference and store alignment results
 # Author: Steven Ludtke (sludtke@bcm.edu)
 # Copyright (c) 2019- Baylor College of Medicine
@@ -33,7 +31,6 @@ from __future__ import division
 # 09/29/2019  Steve Ludtke
 
 
-from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -140,7 +137,7 @@ produce new sets/ for each class, which could be further-refined.
 	# here we run the threads and save the results, no actual alignment done here
 	if options.verbose: print(len(thrds)," threads")
 	thrtolaunch=0
-	while thrtolaunch<len(thrds) or threading.active_count()>1:
+	while thrtolaunch<len(thrds) or threading.active_count()>1 or not jsd.empty():
 		# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
 		# note that it's ok that we wait here forever, since there can't be new results if an existing
 		# thread hasn't finished.

@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 ###	procpdb.py	Steven Ludtke	2/2002
 
 #N procpdb.py

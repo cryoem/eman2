@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 10/04/2013 (sludtke@bcm.edu)
 # Copyright (c) 2000-2013 Baylor College of Medicine
@@ -141,7 +138,7 @@ def main():
 	# here we run the threads and save the results, no actual alignment done here
 	print(len(thrds)," threads")
 	thrtolaunch=0
-	while thrtolaunch<len(thrds) or threading.active_count()>1:
+	while thrtolaunch<len(thrds) or threading.active_count()>1 or not jsd.empty():
 		# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
 		# note that it's ok that we wait here forever, since there can't be new results if an existing
 		# thread hasn't finished.

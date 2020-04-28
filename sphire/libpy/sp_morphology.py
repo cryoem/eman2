@@ -74,13 +74,13 @@ def fill_soft_edge_kernel_mask(kernel_mask, length, mode):
 	Edge kernel value
 	"""
     if mode.lower() == "c":
-        scipy.ndimage.morphology.numpy.add(
+        numpy.add(
             0.5,
-            scipy.ndimage.morphology.numpy.multiply(
+            numpy.multiply(
                 0.5,
-                scipy.ndimage.morphology.numpy.cos(
+                numpy.cos(
                     old_div(
-                        scipy.ndimage.morphology.numpy.pi * kernel_mask, float(length)
+                        numpy.pi * kernel_mask, float(length)
                     ),
                     out=kernel_mask,
                 ),
@@ -90,7 +90,7 @@ def fill_soft_edge_kernel_mask(kernel_mask, length, mode):
         )
     else:
         Q = -4.605170185988091
-        scipy.ndimage.morphology.numpy.exp(
+        numpy.exp(
             Q * (old_div(kernel_mask, float(length))) ** 2, out=kernel_mask
         )
 
@@ -131,30 +131,30 @@ def soft_edge(img, length, mode="c", do_approx=False):
     # Create the outline for the array by erosing it once.
     # Pad the outline with the edge mask to avoid edge effects later.
     outline = img_data - scipy.ndimage.morphology.binary_erosion(img_data)
-    outline = scipy.ndimage.morphology.numpy.pad(
+    outline = numpy.pad(
         outline, length + 1, mode="constant", constant_values=0
     )
-    outline_index = scipy.ndimage.morphology.numpy.where(outline == 1)
+    outline_index = numpy.where(outline == 1)
 
     # Fill the kernel with the soft edge values
     edge_norm = length ** 2
     cosine_falloff = 100
     if dimension == 2:
-        x, y = scipy.ndimage.morphology.numpy.ogrid[
+        x, y = numpy.ogrid[
             0:kernel_mask_dim, 0:kernel_mask_dim
         ]
         kernel_mask = (
-            scipy.ndimage.morphology.numpy.sqrt(
+            numpy.sqrt(
                 old_div(((x - length) ** 2 + (y - length) ** 2), float(edge_norm))
             )
             * cosine_falloff
         )
     elif dimension == 3:
-        x, y, z = scipy.ndimage.morphology.numpy.ogrid[
+        x, y, z = numpy.ogrid[
             0:kernel_mask_dim, 0:kernel_mask_dim, 0:kernel_mask_dim
         ]
         kernel_mask = (
-            scipy.ndimage.morphology.numpy.sqrt(
+            numpy.sqrt(
                 old_div(
                     ((x - length) ** 2 + (y - length) ** 2 + (z - length) ** 2),
                     float(edge_norm),
@@ -166,12 +166,12 @@ def soft_edge(img, length, mode="c", do_approx=False):
         assert False
 
     if do_approx:
-        scipy.ndimage.morphology.numpy.add(
+        numpy.add(
             kernel_mask,
-            scipy.ndimage.morphology.numpy.copysign(0.5, kernel_mask),
+            numpy.copysign(0.5, kernel_mask),
             kernel_mask,
         )
-        scipy.ndimage.morphology.numpy.trunc(kernel_mask, kernel_mask)
+        numpy.trunc(kernel_mask, kernel_mask)
     kernel_mask[kernel_mask >= cosine_falloff] = cosine_falloff
     fill_soft_edge_kernel_mask(kernel_mask, cosine_falloff, mode)
 
@@ -183,7 +183,7 @@ def soft_edge(img, length, mode="c", do_approx=False):
             y_start = y - length
             y_stop = y + length + 1
             mask_slice = outline[x_start:x_stop, y_start:y_stop]
-            scipy.ndimage.morphology.numpy.maximum(kernel_mask, mask_slice, mask_slice)
+            numpy.maximum(kernel_mask, mask_slice, mask_slice)
         outline = outline[
             length + 1 : outline.shape[0] - length - 1,
             length + 1 : outline.shape[1] - length - 1,
@@ -197,7 +197,7 @@ def soft_edge(img, length, mode="c", do_approx=False):
             z_start = z - length
             z_stop = z + length + 1
             mask_slice = outline[x_start:x_stop, y_start:y_stop, z_start:z_stop]
-            scipy.ndimage.morphology.numpy.maximum(kernel_mask, mask_slice, mask_slice)
+            numpy.maximum(kernel_mask, mask_slice, mask_slice)
         outline = outline[
             length + 1 : outline.shape[0] - length - 1,
             length + 1 : outline.shape[1] - length - 1,
@@ -207,7 +207,7 @@ def soft_edge(img, length, mode="c", do_approx=False):
         assert False
 
     # Return a EMData object if an EMData object was the input
-    combined_mask = scipy.ndimage.morphology.numpy.maximum(img_data, outline)
+    combined_mask = numpy.maximum(img_data, outline)
     if out_eman:
         return_data[...] = combined_mask
         return_object.update()
