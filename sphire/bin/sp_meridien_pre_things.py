@@ -178,7 +178,7 @@ Blockdata["shared_comm"]		= mpi_comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SH
 Blockdata["myid_on_node"]		= mpi_comm_rank(Blockdata["shared_comm"])
 Blockdata["no_of_processes_per_group"] = mpi_comm_size(Blockdata["shared_comm"])
 masters_from_groups_vs_everything_else_comm = mpi_comm_split(MPI_COMM_WORLD, Blockdata["main_node"] == Blockdata["myid_on_node"], Blockdata["myid_on_node"])
-Blockdata["color"], Blockdata["no_of_groups"], balanced_processor_load_on_nodes = get_colors_and_subsets(Blockdata["main_node"], MPI_COMM_WORLD, Blockdata["myid"], \
+Blockdata["color"], Blockdata["no_of_groups"], balanced_processor_load_on_nodes = sp_utilities.get_colors_and_subsets(Blockdata["main_node"], MPI_COMM_WORLD, Blockdata["myid"], \
 		Blockdata["shared_comm"], Blockdata["myid_on_node"], masters_from_groups_vs_everything_else_comm)
 #  We need two nodes for processing of volumes
 if( Blockdata["no_of_groups"] > 1 ):  Blockdata["node_volume"] = [Blockdata["no_of_groups"]-2, Blockdata["no_of_groups"]-1]  # For 3D stuff take two last nodes
