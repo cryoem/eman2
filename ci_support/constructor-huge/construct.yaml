@@ -12,11 +12,6 @@ channels:
     - https://repo.anaconda.com/pkgs/msys2          # [win]
     - https://conda.anaconda.org/conda-forge
 
-channels_remap:                                       # [not win]
-  -                                                   # [not win]
-      src: file:/place_holder_conda_prefix/conda-bld  # [not win]
-      dest: file://local                              # [not win]
-
 keep_pkgs: False
 ignore_duplicate_files: True
 
