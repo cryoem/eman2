@@ -74,6 +74,18 @@ import sys
 import time
 from builtins import range
 import ctypes
+
+
+#todo: BUG TO FIX 29 april 2020
+"""
+t2 unresolved reference :  https://github.com/cryoem/eman2/blob/python3_transition/sphire/bin/sp_meridien_alpha.py#L1059
+ndoinit unresolved reference :  https://github.com/cryoem/eman2/blob/python3_transition/sphire/bin/sp_meridien_alpha.py#L2543
+ndoinit unresolved reference :  https://github.com/cryoem/eman2/blob/python3_transition/sphire/bin/sp_meridien_alpha.py#L3423
+final_iter unresolved reference :  https://github.com/cryoem/eman2/blob/python3_transition/sphire/bin/sp_meridien_alpha.py#L9475
+final_iter unresolved reference :  https://github.com/cryoem/eman2/blob/python3_transition/sphire/bin/sp_meridien_alpha.py#L9482
+"""
+
+
 """
 There are four ways to run the program:
 
@@ -10591,7 +10603,7 @@ def dump_object_to_json(file_name, data_object, indent=None):
 def prior_stack_fmt(sphire_prior_stack):
     fmt = []
     for entry in sphire_prior_stack.dtype.names:
-        if isinstance(sphire_prior_stack[entry][0], basestring):
+        if isinstance(sphire_prior_stack[entry][0], str):
             fmt.append(
                 "% {0}s".format(
                     sp_helix_sphire.np.max(
