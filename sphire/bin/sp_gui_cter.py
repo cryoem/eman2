@@ -2384,16 +2384,22 @@ class SXGuiCter(PyQt5.QtWidgets.QWidget):
         xNP = numpy.array(spFreqList)
         # print("xNP",xNP)
 
+        # Sanity check
+        if len(fitMinXNP) == 0:
+            print("WARNING!! 1D profile has no relative minima. There's probably something weird going on.")
+            fitMinXNP = numpy.array(spFreqList)
+            fitMinYNP = numpy.array(fitWAstig)
+        
         # Splinefit extrema
         fitMinTck = scipy.interpolate.splrep(
             fitMinXNP, fitMinYNP, s=bkgdSmooth
         )  # s==smoothing factor
-        expMaxTck = scipy.interpolate.splrep(expMaxXNP, expMaxYNP, s=envSmooth)
+        ####expMaxTck = scipy.interpolate.splrep(expMaxXNP, expMaxYNP, s=envSmooth)
 
         # Evaluate splines
         fitMinSpline = scipy.interpolate.splev(xNP, fitMinTck)
         # print("fitMinSpline", type(fitMinSpline), len(fitMinSpline), fitMinSpline)
-        expMaxSpline = scipy.interpolate.splev(xNP, expMaxTck)  # not used
+        ####expMaxSpline = scipy.interpolate.splev(xNP, expMaxTck)  # not used
         expMinSpline = []
         expMin = min(expWAstig[3:])  # value at origin will be zero
 
