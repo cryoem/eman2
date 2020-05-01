@@ -1637,7 +1637,7 @@ output_directory: directory name into which the output files will be written.  I
     masterdir = mpi.mpi_bcast(
         masterdir, dir_len, mpi.MPI_CHAR, main_node, mpi.MPI_COMM_WORLD
     )
-    masterdir = string.join(masterdir, "")
+    masterdir = "".join(masterdir, "")
     if masterdir[-1] != DIR_DELIM:
         masterdir += DIR_DELIM
 
@@ -1649,7 +1649,7 @@ output_directory: directory name into which the output files will be written.  I
     bdb_stack_location = mpi.mpi_bcast(
         bdb_stack_location, dir_len, mpi.MPI_CHAR, main_node, mpi.MPI_COMM_WORLD
     )
-    bdb_stack_location = string.join(bdb_stack_location, "")
+    bdb_stack_location = "".join(bdb_stack_location, "")
 
     iteration_start = sp_utilities.get_latest_directory_increment_value(
         masterdir, "main"
@@ -1767,7 +1767,7 @@ output_directory: directory name into which the output files will be written.  I
                     main_node,
                     mpi.MPI_COMM_WORLD,
                 )
-                independent_run_dir = string.join(independent_run_dir, "")
+                independent_run_dir = "".join(independent_run_dir, "")
             else:
                 this_run_is_NOT_complete = mpi.mpi_bcast(
                     this_run_is_NOT_complete,
@@ -1788,7 +1788,7 @@ output_directory: directory name into which the output files will be written.  I
                     main_node,
                     mpi.MPI_COMM_WORLD,
                 )
-                independent_run_dir = string.join(independent_run_dir, "")
+                independent_run_dir = "".join(independent_run_dir, "")
 
             if this_run_is_NOT_complete:
                 mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
