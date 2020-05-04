@@ -299,7 +299,7 @@ def main():
 		if li>0:
 			masterdir = mpi.mpi_bcast(masterdir,li,mpi.MPI_CHAR,main_node,mpi.MPI_COMM_WORLD)
 			import string
-			masterdir = string.join(masterdir,"")
+			masterdir = "".join(masterdir,"")
 		if myid ==main_node:
 			print_dict(Tracker["constants"],"Permanent settings of 3-D sorting program")
 		######### create a vstack from input stack to the local stack in masterdir

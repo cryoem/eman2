@@ -2861,7 +2861,6 @@ def main(args):
             junk = sp_utilities.cmdexecute(cmd)
         else:
             print("ISAC could not find any stable class averaging, terminating...")
-
     return
 
 
