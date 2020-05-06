@@ -180,9 +180,9 @@ class EMParallelProject3D(object):
 def prethreshold(img):
 	"""Applies an automatic threshold to the image"""
 	snz=img["sigma_nonzero"]
-	img.process_inplace("threshold.belowtozero",{"minval":snz*1.5})
+	img.process_inplace("threshold.belowtozero",{"minval":snz/2.0})
 	img.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.5})
-	img.process_inplace("threshold.belowtozero",{"minval":old_div(snz,100.0)})
+#	img.process_inplace("threshold.belowtozero",{"minval":snz/100.0})
 
 class EMProject3DTaskDC(JSTask):
 	def __init__(self,command="e2project3d.py",data=None,options=None):
