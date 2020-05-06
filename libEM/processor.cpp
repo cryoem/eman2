@@ -1284,7 +1284,6 @@ void GaussZFourierProcessor::process_inplace(EMData * image)
 	float omega = params["cutoff_abs"];
 	float zcenter=params.set_default("centerfreq",0.0f);
 	float hppix = params.set_default("hppix",-1.0f);
-	printf("hppix %f\n",hppix);
 	
 	omega = (omega<0?-1.0:1.0)*0.5f/omega/omega;
 
@@ -1338,7 +1337,6 @@ void GaussZFourierProcessor::process_inplace(EMData * image)
 		delete fft;
 		delete ift;
 	}
-	printf("done\n");
 
 }
 
@@ -11627,6 +11625,7 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 	int nseg = params.set_default("nseg",12);
 	float thr = params.set_default("thr",0.5f);
 	int segbymerge = params.set_default("segbymerge",0);
+	vector<float> centers;
 	int verbose = params.set_default("verbose",0);
 	if (nseg<=1) throw InvalidValueException(nseg,"nseg must be greater than 1");
 
@@ -11643,9 +11642,9 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 
 	// Count the number of above threshold pixels
 	size_t n2seg = 0;
-	for (int z=0; z<nz; z++) {
-		for (int y=0; y<ny; y++) {
-			for (int x=0; x<nx; x++) {
+	for (int z=1; z<nz-1; z++) {
+		for (int y=1; y<ny-1; y++) {
+			for (int x=1; x<nx-1; x++) {
 				if (image->get_value_at(x,y,z)>=thr) n2seg++;
 			}
 		}
@@ -11653,8 +11652,8 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 	if (verbose) printf("%ld voxels above threshold\n",n2seg);
 
 	// Extract the pixels for sorting
-//	WSsortlist srt[n2seg];
-	WSsortlist * srt = new WSsortlist[n2seg+1];
+	WSsortlist srt[n2seg];
+//	WSsortlist *srt = new WSsortlist[n2seg+1];
 	size_t i=0;
 	for (int z=1; z<nz-1; z++) {
 		for (int y=1; y<ny-1; y++) {
@@ -11672,7 +11671,7 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 	if (verbose) printf("Voxels extracted, sorting\n");
 
 	// actual sort
-	qsort(&srt,n2seg,sizeof(WSsortlist),WScmp);
+	qsort(srt,n2seg,sizeof(WSsortlist),WScmp);
 	if (verbose) printf("Voxels sorted (%1.4g max), starting watershed\n",srt[0].pix);
 
 	// now we start with the highest value and fill in the segments
@@ -11694,6 +11693,9 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 		if (lvl==0) {
 			if (verbose) printf("%d %d %d\t%1.0f\t%1.3g\n",x,y,z,cseg,srt[i].pix);
 			lvl=cseg;
+			centers.push_back(x);
+			centers.push_back(y);
+			centers.push_back(z);
 			cseg+=1.0;
 		}
 		if (lvl>nseg) {
@@ -11729,6 +11731,7 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 		}
 		if (verbose) printf("%ld voxels changed\n",chg);
 	}
+	ret->set_attr("segment_centers",centers);
 
 	if (segbymerge) {
 		if (cseg<segbymerge) return ret;
@@ -11738,7 +11741,7 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 	if (verbose) printf("Merging segments\n");
 	// If requested, we now merge segments with the most surface contact until we have the correct final number
 	if (segbymerge) {
-		int nsegstart=(int)cseg;	// number of segments we actually generated
+		int nsegstart=(int)cseg;	// Number of segments we actually generated
 		nseg=(int)cseg;
 		EMData *mx=new EMData(nsegstart,nsegstart,1);		// This will be a "contact matrix" among segments
 		float *mxd=mx->get_data();
@@ -11802,7 +11805,7 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 
 	}
 
-	delete [] srt;
+//	delete [] srt;
 
 	return ret;
 }

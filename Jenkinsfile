@@ -261,7 +261,7 @@ pipeline {
     INSTALLERS_DIR = convertToNativePath("${HOME_DIR}/workspace/jenkins-eman-installers")
 
     CI_BUILD       = sh(script: "! git log -1 | grep '.*\\[ci build\\].*'",       returnStatus: true)
-    EMAN_DEPS_VERSION = "22.0"
+    EMAN_DEPS_VERSION = "23.0"
   }
   
   stages {

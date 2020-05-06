@@ -12,16 +12,9 @@ conda info -a            | tee ${PREFIX}/install_logs/info_log.txt 2>&1
 conda list               | tee ${PREFIX}/install_logs/list_log.txt 2>&1
 conda list --explicit | tee -a ${PREFIX}/install_logs/list_log.txt 2>&1
 
-SP_DIR=$(python -c "import site; print(site.getsitepackages()[0])")
-
-if [ -d site-packages ]; then
-    cp -av site-packages/* "${SP_DIR}"
-    rm -rv site-packages
-fi | tee ${PREFIX}/install_logs/install_log.txt 2>&1
-
 case ${EMAN_INSTALL_DONT_UPDATE_DEPS:-} in
     0|"")
-        conda install eman-deps=22.1 -c cryoem -c defaults -c conda-forge -y | tee -a ${PREFIX}/install_logs/install_log.txt 2>&1
+        conda install eman-deps=23.1 -c cryoem -c defaults -c conda-forge -y | tee -a ${PREFIX}/install_logs/install_log.txt 2>&1
         ;;
     *)
         echo "WARNING: Skipping installation of dependencies per user request..."
