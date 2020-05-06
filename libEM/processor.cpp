@@ -11609,9 +11609,14 @@ void ScaleTransformProcessor::process_inplace(EMData* image) {
 	}
 }
 
-struct WSsortlist { float pix; short x,y,z; };
-
-int WScmp(const void *a, const void *b) { float x=((WSsortlist*)b)->pix-((WSsortlist*)a)->pix; return (x>0)-(x<0); }		// comparison function for qsort
+struct WSsortlist {
+    float pix;
+    short x,y,z;
+    
+    friend bool operator<(const WSsortlist& l, const WSsortlist& r) {
+        return l.pix < r.pix;
+    }
+};
 
 // inefficient since a copy was probably already made, but best we can do
 void WatershedProcessor::process_inplace(EMData *image) {
@@ -11652,8 +11657,7 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 	if (verbose) printf("%ld voxels above threshold\n",n2seg);
 
 	// Extract the pixels for sorting
-	WSsortlist srt[n2seg];
-//	WSsortlist *srt = new WSsortlist[n2seg+1];
+	vector<WSsortlist> srt(n2seg);
 	size_t i=0;
 	for (int z=1; z<nz-1; z++) {
 		for (int y=1; y<ny-1; y++) {
@@ -11671,7 +11675,7 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 	if (verbose) printf("Voxels extracted, sorting\n");
 
 	// actual sort
-	qsort(srt,n2seg,sizeof(WSsortlist),WScmp);
+	sort(srt.begin(), srt.end());
 	if (verbose) printf("Voxels sorted (%1.4g max), starting watershed\n",srt[0].pix);
 
 	// now we start with the highest value and fill in the segments
@@ -11804,8 +11808,6 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 		}
 
 	}
-
-//	delete [] srt;
 
 	return ret;
 }
