@@ -11652,8 +11652,7 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 	if (verbose) printf("%ld voxels above threshold\n",n2seg);
 
 	// Extract the pixels for sorting
-	WSsortlist srt[n2seg];
-//	WSsortlist *srt = new WSsortlist[n2seg+1];
+	vector<WSsortlist> srt(n2seg);
 	size_t i=0;
 	for (int z=1; z<nz-1; z++) {
 		for (int y=1; y<ny-1; y++) {
@@ -11671,7 +11670,7 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 	if (verbose) printf("Voxels extracted, sorting\n");
 
 	// actual sort
-	qsort(srt,n2seg,sizeof(WSsortlist),WScmp);
+	qsort(&srt[0],n2seg,sizeof(WSsortlist),WScmp);
 	if (verbose) printf("Voxels sorted (%1.4g max), starting watershed\n",srt[0].pix);
 
 	// now we start with the highest value and fill in the segments
@@ -11804,8 +11803,6 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 		}
 
 	}
-
-//	delete [] srt;
 
 	return ret;
 }
