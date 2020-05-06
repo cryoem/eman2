@@ -1916,11 +1916,9 @@ def write_text_file(data, file_name, form_float = "  %14.6f", form_int = "  %12d
 		for j in range(len(data)):
 			tpt = convert_from_numpy(data[j])
 			qtp = type(tpt)
-			print(j,tpt,qtp)
 			if qtp == int :	outf.write(form_int%tpt+"\n")
 			elif qtp == float:
 				frmt = chooseformat(tpt, form_float)
-				print(j,tpt,frmt)
 				outf.write(frmt%tpt+"\n")
 			else:	outf.write("  %s\n"%tpt)
 	outf.close()
