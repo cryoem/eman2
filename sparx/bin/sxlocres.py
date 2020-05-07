@@ -33,25 +33,21 @@
 from __future__ import division
 from past.utils import old_div
 from builtins import range
-import EMAN2_cppwrap
-import filter
-import fundamentals
-import global_def
-import morphology
-import mpi
+from EMAN2 import *
+from sparx import *
+from global_def import *
+from mpi import *
+import numpy as np
 import optparse
-import numpy
 import os
-import statistics
 import sys
-import utilities
 
 #Transforms the local resolution file from frequency units to angstroms.
 def makeAngRes(freqvol, nx, ny, nz, pxSize, freq_to_real=True):
 	if (pxSize == 1.0):
 		print("Using a value of 1 for the pixel size. Are you sure this is correct?")
 
-	outAngResVol = utilities.model_blank(nx,ny,nz)
+	outAngResVol = model_blank(nx,ny,nz)
 	data_in = freqvol.get_3dview()
 	data_out = outAngResVol.get_3dview()
 
@@ -84,14 +80,14 @@ def output_volume(freqvol, resolut, apix, outvol, fsc, out_ang_res, nx, ny, nz, 
 
 		data_freqvol = freqvol.get_3dview()
 		mask = data_freqvol != 0
-		percentile_25 = numpy.percentile(data_freqvol[mask], 25)
-		percentile_75 = numpy.percentile(data_freqvol[mask], 75)
+		percentile_25 = np.percentile(data_freqvol[mask], 25)
+		percentile_75 = np.percentile(data_freqvol[mask], 75)
 		iqr = percentile_75 - percentile_25
 		mask_low_pass = data_freqvol > percentile_75 + 1.5*iqr
 		mask_high_pass = data_freqvol < percentile_25 - 1.5*iqr
-		mean_real = 1 / float(numpy.mean(data_freqvol[mask & mask_low_pass & mask_high_pass]))
+		mean_real = 1 / float(np.mean(data_freqvol[mask & mask_low_pass & mask_high_pass]))
 		overall_res_real = 1 / float(res_overall)
-		#mean_ang = options.apix / float(EMAN2_cppwrap.Util.infomask(freqvol, m, True)[0])
+		#mean_ang = options.apix / float(Util.infomask(freqvol, m, True)[0])
 
 		volume_out_real = makeAngRes(freqvol, nx, ny, nz, 1)
 		volume_out_real += (overall_res_real - mean_real)
@@ -101,7 +97,7 @@ def output_volume(freqvol, resolut, apix, outvol, fsc, out_ang_res, nx, ny, nz, 
 			outAngResVol = makeAngRes(freqvol, nx, ny, nz, apix)
 			outAngResVol.write_image(outvol_shifted_ang)
 
-	if(fsc != None): utilities.write_text_row(resolut, fsc)
+	if(fsc != None): write_text_row(resolut, fsc)
 
 def main():
 	arglist = []
@@ -112,7 +108,7 @@ def main():
 
 	Compute local resolution in real space within area outlined by the maskfile and within regions wn x wn x wn
 	"""
-	parser = optparse.OptionParser(usage,version=global_def.SPARXVERSION)
+	parser = optparse.OptionParser(usage,version=SPARXVERSION)
 	
 	parser.add_option("--wn",           type="int",           default=7,      help="Size of window within which local real-space FSC is computed. (default 7)")
 	parser.add_option("--step",         type="float",         default= 1.0,   help="Shell step in Fourier size in pixels. (default 1.0)")   
@@ -130,26 +126,27 @@ def main():
 		print("See usage " + usage)
 		sys.exit()
 
-	if global_def.CACHE_DISABLE:
-		utilities.disable_bdb_cache()
+	if CACHE_DISABLE:
+		disable_bdb_cache()
 
 	res_overall = options.res_overall
+	Util.init_threads(4)
 
 	if options.MPI:
-		sys.argv = mpi.mpi_init(len(sys.argv),sys.argv)		
+		sys.argv = mpi_init(len(sys.argv),sys.argv)		
 
-		number_of_proc = mpi.mpi_comm_size(mpi.MPI_COMM_WORLD)
-		myid = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
+		number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
+		myid = mpi_comm_rank(MPI_COMM_WORLD)
 		main_node = 0
-		global_def.MPI = True
+		MPI = True
 		cutoff = options.cutoff
 
 		nk = int(options.wn)
 
 		if(myid == main_node):
 			#print sys.argv
-			vi = utilities.get_im(sys.argv[1])
-			ui = utilities.get_im(sys.argv[2])
+			vi = get_im(sys.argv[1])
+			ui = get_im(sys.argv[2])
 			
 			nx = vi.get_xsize()
 			ny = vi.get_ysize()
@@ -158,100 +155,102 @@ def main():
 		else:
 			dis = [0,0,0,0]
 
-		global_def.BATCH = True
+		BATCH = True
 
-		dis = utilities.bcast_list_to_all(dis, myid, source_node = main_node)
+		dis = bcast_list_to_all(dis, myid, source_node = main_node)
 
 		if(myid != main_node):
 			nx = int(dis[0])
 			ny = int(dis[1])
 			nz = int(dis[2])
 
-			vi = utilities.model_blank(nx,ny,nz)
-			ui = utilities.model_blank(nx,ny,nz)
+			vi = model_blank(nx,ny,nz)
+			ui = model_blank(nx,ny,nz)
 
 
 		if len(args) == 3:
-			m = utilities.model_circle((min(nx,ny,nz)-nk)//2,nx,ny,nz)
+			m = model_circle((min(nx,ny,nz)-nk)//2,nx,ny,nz)
 			outvol = args[2]
 		
 		elif len(args) == 4:
 			if(myid == main_node):
-				m = morphology.binarize(utilities.get_im(args[2]), 0.5)
+				m = binarize(get_im(args[2]), 0.5)
 			else:
-				m = utilities.model_blank(nx, ny, nz)
+				m = model_blank(nx, ny, nz)
 			outvol = args[3]
-		utilities.bcast_EMData_to_all(m, myid, main_node)
+		bcast_EMData_to_all(m, myid, main_node)
 
-		"""Multiline Comment0"""
-		freqvol, resolut = statistics.locres(vi, ui, m, nk, cutoff, options.step, myid, main_node, number_of_proc)
+		freqvol, resolut = locres(vi, ui, m, nk, cutoff, options.step, myid, main_node, number_of_proc)
 
 		if(myid == 0):
 			# Remove outliers based on the Interquartile range
 			output_volume(freqvol, resolut, options.apix, outvol, options.fsc, options.out_ang_res, nx, ny, nz, res_overall)
-		mpi.mpi_finalize()
+		mpi_finalize()
 
 	else:
-		EMAN2_cppwrap.Util.init_threads(4)
 		cutoff = options.cutoff
-		vi = utilities.get_im(args[0])
-		ui = utilities.get_im(args[1])
+		vi = get_im(args[0])
+		ui = get_im(args[1])
+
+		nx = vi.get_xsize()
+		ny = vi.get_ysize()
+		nz = vi.get_zsize()
 
 		nn = vi.get_xsize()
 		nk = int(options.wn)
 	
 		if len(args) == 3:
-			m = utilities.model_circle((nn-nk)//2,nn,nn,nn)
+			m = model_circle((nn-nk)//2,nn,nn,nn)
 			outvol = args[2]
 		
 		elif len(args) == 4:
-			m = morphology.binarize(utilities.get_im(args[2]), 0.5)
+			m = binarize(get_im(args[2]), 0.5)
 			outvol = args[3]
 
-		mc = utilities.model_blank(nn,nn,nn,1.0)-m
+		mc = model_blank(nn,nn,nn,1.0)-m
 
-		vf = fundamentals.fft(vi)
-		uf = fundamentals.fft(ui)
-		"""Multiline Comment1"""
+		vf = fft(vi)
+		uf = fft(ui)
+
 		lp = int(old_div(old_div(nn,2),options.step)+0.5)
 		step = 0.5/lp
 
-		freqvol = utilities.model_blank(nn,nn,nn)
+		freqvol = model_blank(nn,nn,nn)
 		resolut = []
 		for i in range(1,lp):
 			fl = step*i
 			fh = fl+step
 			#print(lp,i,step,fl,fh)
-			v = fundamentals.fft(filter.filt_tophatb( vf, fl, fh))
+			v = fft(filt_tophatb( vf, fl, fh))
 			#v.write_image("ovol/vivi%03i.hdf"%i)
-			u = fundamentals.fft(filter.filt_tophatb( uf, fl, fh))
-			tmp1 = EMAN2_cppwrap.Util.muln_img(v,v)
-			tmp2 = EMAN2_cppwrap.Util.muln_img(u,u)
+			u = fft(filt_tophatb( uf, fl, fh))
+			tmp1 = Util.muln_img(v,v)
+			tmp2 = Util.muln_img(u,u)
 
-			do = EMAN2_cppwrap.Util.infomask(morphology.square_root(morphology.threshold(EMAN2_cppwrap.Util.muln_img(tmp1,tmp2))),m,True)[0]
+			do = Util.infomask(square_root(threshold(Util.muln_img(tmp1,tmp2))),m,True)[0]
 
 
-			tmp3 = EMAN2_cppwrap.Util.muln_img(u,v)
-			dp = EMAN2_cppwrap.Util.infomask(tmp3,m,True)[0]
+			tmp3 = Util.muln_img(u,v)
+			dp = Util.infomask(tmp3,m,True)[0]
 			resolut.append([i,(fl+fh)/2.0, old_div(dp,do)])
 
-			tmp1 = EMAN2_cppwrap.Util.box_convolution(tmp1, nk)
-			tmp2 = EMAN2_cppwrap.Util.box_convolution(tmp2, nk)
-			tmp3 = EMAN2_cppwrap.Util.box_convolution(tmp3, nk)
+			tmp1 = Util.box_convolution(tmp1, nk)
+			tmp2 = Util.box_convolution(tmp2, nk)
+			tmp3 = Util.box_convolution(tmp3, nk)
 
-			EMAN2_cppwrap.Util.mul_img(tmp1,tmp2)
+			Util.mul_img(tmp1,tmp2)
 
-			tmp1 = morphology.square_root(morphology.threshold(tmp1))
+			tmp1 = square_root(threshold(tmp1))
 
-			EMAN2_cppwrap.Util.mul_img(tmp1,m)
-			EMAN2_cppwrap.Util.add_img(tmp1,mc)
+			Util.mul_img(tmp1,m)
+			Util.add_img(tmp1,mc)
 
-			EMAN2_cppwrap.Util.mul_img(tmp3,m)
-			EMAN2_cppwrap.Util.add_img(tmp3,mc)
+			Util.mul_img(tmp3,m)
+			Util.add_img(tmp3,mc)
 
-			EMAN2_cppwrap.Util.div_img(tmp3,tmp1)
+			Util.div_img(tmp3,tmp1)
 
-			EMAN2_cppwrap.Util.mul_img(tmp3,m)
+			Util.mul_img(tmp3,m)
 			freq=(fl+fh)/2.0
 			bailout = True
 			for x in range(nn):
