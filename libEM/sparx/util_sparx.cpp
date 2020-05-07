@@ -25636,11 +25636,10 @@ vector<float> Util::sqednorm( EMData* img, EMData* proj, EMData* ctfs, EMData* b
     return retvals;
 }
 
-
+/*
 void Util::set_freq(EMData* freqvol, EMData* temp, EMData* mask, float cutoff, float freq)
 {
 	ENTERFUNC;
-	/* Exception Handle */
 	if (!freqvol) {
 		throw NullPointerException("NULL input image");
 	}
@@ -25662,6 +25661,8 @@ void Util::set_freq(EMData* freqvol, EMData* temp, EMData* mask, float cutoff, f
 	EXITFUNC;
 	freqvol->update();
 }
+*/
+
 using namespace std;
 #include <string>
 
@@ -34049,4 +34050,42 @@ void Util::iterefadp(EMData* tvol, EMData* tweight, int maxr2, int nnxo) {
 
 }
 
+#define ptr_m(i,j,k)          ptr_m[i+(j+(k*nyt))*(size_t)nxt]
+#define ptr_freqvol(i,j,k)    ptr_freqvol[i+(j+(k*nyt))*(size_t)nxt]
+#define ptr_tmp3(i,j,k)       ptr_tmp3[i+(j+(k*nyt))*(size_t)nxt]
+int Util::set_freq(EMData* freqvol, EMData* tmp3, EMData* m, float freq, float cutoff) {
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!freqvol) {
+		throw NullPointerException("NULL input image");
+	}
+	int bailout = 1;
+	size_t nxt = freqvol->get_xsize(), nyt = freqvol->get_ysize(), nzt = freqvol->get_zsize();
+	float *ptr_m = m->get_data();
+	float *ptr_freqvol = freqvol->get_data();
+	float *ptr_tmp3 = tmp3->get_data();
+	for (size_t z=0; z<nzt; ++z)  {
+		for (size_t y=0; y<nyt; ++y)  {
+			for (size_t x=0; x<nyt; ++x) {
+				if(ptr_m(x,y,z) > 0.5) {
+					if(ptr_freqvol(x,y,z) == 0.0) {
+						if(ptr_tmp3(x,y,z) < cutoff) {
+							ptr_freqvol(x,y,z) = freq;
+							bailout = 0;
+						} else bailout = 0;
+					}
+				}
+			}
+		}
+	}
+
+	freqvol->update();
+
+	EXITFUNC;
+
+	return bailout;
+}
+#undef ptr_m
+#undef ptr_freqvol
+#undef ptr_tmp3
 

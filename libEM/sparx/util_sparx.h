@@ -1040,9 +1040,6 @@ class FakeKaiserBessel : public KaiserBessel {
 
 	static vector<float> sqednorm( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise);
 
-	//utility for sxlocres
-	static void set_freq(EMData* freqvol, EMData* temp, EMData* mask, float cutoff, float freq);
-
 	static vector<int> pickup_references(const vector<vector<float> >& refang, float delta, float an,
                 const vector<vector<float> >& datang, string symmetry);
                 
@@ -1429,5 +1426,7 @@ static void euler_direction2angles(vector<float>v, float &alpha, float &beta);
 static void  iterefa(EMData* tvol, EMData* tweight, int maxr2, int nnxo);
 static void  iterefadp(EMData* tvol, EMData* tweight, int maxr2, int nnxo);
 
+//utility for sxlocres
+static int set_freq(EMData* freqvol, EMData* tmp3, EMData* m, float freq, float cutoff);
 
 #endif	//util__sparx_h__
