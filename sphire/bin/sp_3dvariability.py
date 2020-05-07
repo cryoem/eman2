@@ -684,6 +684,7 @@ def main():
             if myid != main_node:
                 sp_utilities.wrap_mpi_send(full_data, main_node, mpi.MPI_COMM_WORLD)
             if myid == main_node:
+                dummy =None
                 for iproc in range(number_of_proc):
                     if iproc != main_node:
                         dummy = sp_utilities.wrap_mpi_recv(iproc, mpi.MPI_COMM_WORLD)

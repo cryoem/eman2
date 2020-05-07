@@ -65,6 +65,7 @@ import time
 import itertools
 import re
 from future import standard_library
+import io
 
 standard_library.install_aliases()
 from builtins import range
@@ -418,7 +419,7 @@ def plot_errors_between_any_number_of_projections(
     matplotlib.pyplot.title(
         "Sorted errors between projections\nError value = %s" % error_value
     )
-    which_projections = matplotlib.io.StringIO()
+    which_projections = io.StringIO()
     which_projections.write(six.u("_" + "%.6f" % error_value))
     for p_i in list_of_projection_indices:
         which_projections.write(six.u("_" + "%03d" % p_i))
@@ -550,7 +551,7 @@ def find_index_of_discontinuity_in_derivative(
         )
         matplotlib.pyplot.plot(second_line_x, second_line_z(second_line_x))
 
-        which_projections = matplotlib.io.StringIO()
+        which_projections = io.StringIO()
         which_projections.write(
             six.u("_" + "%.03f__%.6f" % (split_point, goodness_of_fit_for_both_lines))
         )
@@ -611,7 +612,7 @@ def find_index_of_discontinuity_in_derivative(
     )
     matplotlib.pyplot.plot(second_line_x, second_line_z(second_line_x))
 
-    which_projections = matplotlib.io.StringIO()
+    which_projections = io.StringIO()
     which_projections.write(six.u("_" + "%.03f" % split_point))
     for p_i in list_of_projection_indices:
         which_projections.write(six.u("_" + "%03d" % p_i))
@@ -1634,10 +1635,10 @@ output_directory: directory name into which the output files will be written.  I
     # send masterdir to all processes
     dir_len = len(masterdir) * int(myid == main_node)
     dir_len = mpi.mpi_bcast(dir_len, 1, mpi.MPI_INT, 0, mpi.MPI_COMM_WORLD)[0]
-    masterdir = mpi.mpi_bcast(
-        masterdir, dir_len, mpi.MPI_CHAR, main_node, mpi.MPI_COMM_WORLD
+    masterdir = sp_utilities.wrap_mpi_bcast(
+        masterdir, main_node, mpi.MPI_COMM_WORLD
     )
-    masterdir = "".join(masterdir, "")
+    masterdir = "".join(masterdir)
     if masterdir[-1] != DIR_DELIM:
         masterdir += DIR_DELIM
 
@@ -1646,10 +1647,8 @@ output_directory: directory name into which the output files will be written.  I
     # send bdb_stack_location to all processes
     dir_len = len(bdb_stack_location) * int(myid == main_node)
     dir_len = mpi.mpi_bcast(dir_len, 1, mpi.MPI_INT, 0, mpi.MPI_COMM_WORLD)[0]
-    bdb_stack_location = mpi.mpi_bcast(
-        bdb_stack_location, dir_len, mpi.MPI_CHAR, main_node, mpi.MPI_COMM_WORLD
-    )
-    bdb_stack_location = "".join(bdb_stack_location, "")
+    bdb_stack_location = sp_utilities.wrap_mpi_bcast(bdb_stack_location, main_node, mpi.MPI_COMM_WORLD)
+    bdb_stack_location = "".join(bdb_stack_location)
 
     iteration_start = sp_utilities.get_latest_directory_increment_value(
         masterdir, "main"
@@ -1760,14 +1759,12 @@ output_directory: directory name into which the output files will be written.  I
                 dir_len = mpi.mpi_bcast(
                     dir_len, 1, mpi.MPI_INT, main_node, mpi.MPI_COMM_WORLD
                 )[0]
-                independent_run_dir = mpi.mpi_bcast(
+                independent_run_dir = sp_utilities.wrap_mpi_bcast(
                     independent_run_dir,
-                    dir_len,
-                    mpi.MPI_CHAR,
                     main_node,
                     mpi.MPI_COMM_WORLD,
                 )
-                independent_run_dir = "".join(independent_run_dir, "")
+                independent_run_dir = "".join(independent_run_dir)
             else:
                 this_run_is_NOT_complete = mpi.mpi_bcast(
                     this_run_is_NOT_complete,
@@ -1781,14 +1778,12 @@ output_directory: directory name into which the output files will be written.  I
                 dir_len = mpi.mpi_bcast(
                     dir_len, 1, mpi.MPI_INT, main_node, mpi.MPI_COMM_WORLD
                 )[0]
-                independent_run_dir = mpi.mpi_bcast(
+                independent_run_dir = sp_utilities.wrap_mpi_bcast(
                     independent_run_dir,
-                    dir_len,
-                    mpi.MPI_CHAR,
                     main_node,
                     mpi.MPI_COMM_WORLD,
                 )
-                independent_run_dir = "".join(independent_run_dir, "")
+                independent_run_dir = "".join(independent_run_dir)
 
             if this_run_is_NOT_complete:
                 mpi.mpi_barrier(mpi.MPI_COMM_WORLD)

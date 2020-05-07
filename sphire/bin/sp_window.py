@@ -2063,7 +2063,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 # ========================================================================================
 
 if __name__ == "__main__":
-    mpi.mpi_init(0, [])
+
     RUNNING_UNDER_MPI = "OMPI_COMM_WORLD_SIZE" in os.environ
     if RUNNING_UNDER_MPI:
         mpi.mpi_init(0, [])  # On OS X, there is an error if MPI is initialized and not finalized, hence the conditional

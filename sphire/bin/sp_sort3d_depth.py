@@ -2253,10 +2253,11 @@ def create_masterdir():
     li = mpi.mpi_bcast(li, 1, mpi.MPI_INT, Blockdata["main_node"], mpi.MPI_COMM_WORLD)[
         0
     ]
-    masterdir = mpi.mpi_bcast(
-        masterdir, li, mpi.MPI_CHAR, Blockdata["main_node"], mpi.MPI_COMM_WORLD
+    masterdir = sp_utilities.wrap_mpi_bcast(
+        masterdir, Blockdata["main_node"], mpi.MPI_COMM_WORLD
     )
-    masterdir = "".join(masterdir, "")
+
+    masterdir = "".join(masterdir)
     if not Tracker["constants"]["masterdir"]:
         Tracker["constants"]["masterdir"] = masterdir
     Tracker["constants"]["chunk_0"] = os.path.join(
