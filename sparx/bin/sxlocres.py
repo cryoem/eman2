@@ -122,6 +122,9 @@ def main():
 
 	(options, args) = parser.parse_args(arglist[1:])
 
+	print("Program obsoleted, please use sxresolution.py instead.")
+	sys.exit()
+
 	if len(args) <3 or len(args) > 4:
 		print("See usage " + usage)
 		sys.exit()

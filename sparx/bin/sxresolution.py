@@ -220,7 +220,6 @@ def main():
 
 				do = Util.infomask(square_root(threshold(Util.muln_img(tmp1,tmp2))),m,True)[0]
 
-
 				tmp3 = Util.muln_img(u, v)
 				dp = Util.infomask(tmp3, m, True)[0]
 				resolut.append([i, fl/nx, dp/do])
