@@ -1426,7 +1426,7 @@ static void euler_direction2angles(vector<float>v, float &alpha, float &beta);
 static void  iterefa(EMData* tvol, EMData* tweight, int maxr2, int nnxo);
 static void  iterefadp(EMData* tvol, EMData* tweight, int maxr2, int nnxo);
 
-//utility for sxlocres
+//utility for sxresolution
 static int set_freq(EMData* freqvol, EMData* tmp3, EMData* m, float freq, float ndf, float zaz, float cutoff);
 
 #endif	//util__sparx_h__
