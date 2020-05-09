@@ -44,63 +44,6 @@ import optparse
 import os
 import sys
 
-#Transforms the local resolution file from frequency units to angstroms.
-def makeAngRes(freqvol, nx, ny, nz, pxSize, freq_to_real=True):
-	if (pxSize == 1.0):
-		print("Using a value of 1 for the pixel size. Are you sure this is correct?")
-
-	outAngResVol = model_blank(nx,ny,nz)
-	data_in = freqvol.get_3dview()
-	data_out = outAngResVol.get_3dview()
-
-	if freq_to_real:
-		mask = data_in > 0.0
-		data_out[mask] = old_div(pxSize, data_in[mask])
-	else:
-		mask = data_in >= 2 * pxSize
-		data_out[mask] = old_div(pxSize, data_in[mask])
-
-	return outAngResVol
-
-
-def output_volume(freqvol, resolut, apix, outvol, fsc, out_ang_res, nx, ny, nz, res_overall):
-	outvol_ang = os.path.splitext(outvol)[0] + "_ang.hdf"
-	outvol_shifted = os.path.splitext(outvol)[0] + "_shift.hdf"
-	outvol_shifted_ang = os.path.splitext(outvol_shifted)[0] + "_ang.hdf"
-
-	freqvol.write_image(outvol)
-	if(out_ang_res):
-		outAngResVol = makeAngRes(freqvol, nx, ny, nz, apix)
-		outAngResVol.write_image(outvol_ang)
-
-	if res_overall !=-1.0:
-		for ifreq in range(len(resolut)):
-			if resolut[ifreq][0] > res_overall:
-				 break
-		for jfreq in range(ifreq, len(resolut)):
-			resolut[jfreq][1] = 0.0	
-
-		data_freqvol = freqvol.get_3dview()
-		mask = data_freqvol != 0
-		percentile_25 = np.percentile(data_freqvol[mask], 25)
-		percentile_75 = np.percentile(data_freqvol[mask], 75)
-		iqr = percentile_75 - percentile_25
-		mask_low_pass = data_freqvol > percentile_75 + 1.5*iqr
-		mask_high_pass = data_freqvol < percentile_25 - 1.5*iqr
-		mean_real = 1 / float(np.mean(data_freqvol[mask & mask_low_pass & mask_high_pass]))
-		overall_res_real = 1 / float(res_overall)
-		#mean_ang = options.apix / float(Util.infomask(freqvol, m, True)[0])
-
-		volume_out_real = makeAngRes(freqvol, nx, ny, nz, 1)
-		volume_out_real += (overall_res_real - mean_real)
-		volume_out = makeAngRes(volume_out_real, nx, ny, nz, 1, False)
-		volume_out.write_image(outvol_shifted)
-		if out_ang_res:
-			outAngResVol = makeAngRes(freqvol, nx, ny, nz, apix)
-			outAngResVol.write_image(outvol_shifted_ang)
-
-	if(fsc != None): write_text_row(resolut, fsc)
-
 def main():
 	arglist = []
 	for arg in sys.argv:
@@ -125,8 +68,9 @@ def main():
 	#parser.add_option("--out_ang_res",  action="store_true",  default=False,  help="Additionally creates a local resolution file in Angstroms. (default False)")
 	parser.add_option("--significance", type="float",         default= 0.99,   help="Significance level for the Upper Confidence Interval (default 0.99)")
 	parser.add_option("--sigmag",       type="float",         default= 1.0,   help="Sigma of the Fourier space Gaussian window in pixels (default 1.0)")
+	parser.add_option("--ndf_reduce",    type="float",         default= 1.0,   help="Reduction of ndf due to point group symmetry, for example for D3 set to 6 (default 1.0)")
 	#parser.add_option("--lsigmag",       type="float",         default= 3.0,  help="Sigma of the Fourier space Gaussian window for local resolution in pixels (default 3.0)")
-	parser.add_option("--apix",         type="float",         default= 1.0,   help="Pixel size in Angstrom. Effective only with --out_ang_res options. (default 1.0)")
+	#parser.add_option("--apix",         type="float",         default= 1.0,   help="Pixel size in Angstrom. Effective only with --out_ang_res options. (default 1.0)")
 	parser.add_option("--nthreads",		type="int",           default=4,      help="Number of threads (mainly for 3D FFT) (default 4)")
 	parser.add_option("--MPI",          action="store_true",  default=False,  help="Use MPI version.")
 
@@ -238,8 +182,8 @@ def main():
 		fftip(vf)
 		fftip(uf)
 
-		rat = Util.infomask(m,None,True)[0]
-		sb = rat*360**3
+		rat = Util.infomask(m,None,True)[0]/options.ndf_reduce
+		sb = rat*nx*ny*nz
 		st = 0
 
 		freqvol = model_blank(nn,nn,nn)
