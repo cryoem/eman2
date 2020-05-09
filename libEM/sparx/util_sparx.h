@@ -1427,6 +1427,6 @@ static void  iterefa(EMData* tvol, EMData* tweight, int maxr2, int nnxo);
 static void  iterefadp(EMData* tvol, EMData* tweight, int maxr2, int nnxo);
 
 //utility for sxlocres
-static int set_freq(EMData* freqvol, EMData* tmp3, EMData* m, float freq, float cutoff);
+static int set_freq(EMData* freqvol, EMData* tmp3, EMData* m, float freq, float ndf, float zaz, float cutoff);
 
 #endif	//util__sparx_h__
