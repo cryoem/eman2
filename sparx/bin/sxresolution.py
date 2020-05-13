@@ -49,26 +49,26 @@ def main():
 	for arg in sys.argv:
 		arglist.append( arg )
 	progname = os.path.basename(arglist[0])
-	usage = progname + """ firstvolume  secondvolume  maskfile  outputdir  --wn  --step --lfi --hfi --cutoff  --radius  --fsc --apix --threads
+	usage = progname + """ firstvolume  secondvolume  maskfile  outputdir  --wn  --step --lfi --hfi --cutoff --significance --sigmag -ndf_reduce --radius  --threads
 
-	Compute local resolution in real space within area outlined by the maskfile and within regions wn x wn x wn
+	FSCM resolution measures: Compute overall and local resolution measures using a pair of half-maps.
 	"""
+
 	parser = optparse.OptionParser(usage,version=SPARXVERSION)
 	
 	parser.add_option("--wn",           type="int",           default=15,     help="Size of window within which local real-space FSC is computed. (default 15)")
 	parser.add_option("--step",         type="int",           default= 1,     help="Shell step in Fourier size in pixels (integer). (default 1)")   
 	parser.add_option("--lfi",			type="int",           default=1,	  help="Low Fourier index to begin calculations from (default 1)")
 	parser.add_option("--hfi",			type="int",           default=-1,     help="High Fourier index to end calculations on (default nx//2-2)")
-	parser.add_option("--cutoff",       type="float",         default= 0.143, help="Resolution cut-off for FSC. (default 0.143)")
+	parser.add_option("--significance", type="float",         default= 0.99,  help="Significance level for the Upper Confidence Interval (default 0.99)")
+	parser.add_option("--sigmag",       type="float",         default= 1.0,   help="Sigma of the Fourier space Gaussian window in pixels (default 1.0)")
+	parser.add_option("--ndf_reduce",   type="float",         default= 1.0,   help="Reduction of ndf due to point group symmetry, for example for D3 set to 6 (default 1.0)")
+	parser.add_option("--cutoff",       type="float",         default= 0.143, help="Resolution cut-off for FSCM CI. (default 0.143)")
 	parser.add_option("--radius",       type="int",           default=-1,     help="If there is no maskfile, sphere with r=radius will be used. By default, the radius is nx/2-wn (default -1)")
-	parser.add_option("--fsc",          type="string",        default= None,  help="Save overall FSC curve (might be truncated). By default, the program does not save the FSC curve. (default none)")
 	parser.add_option("--local_fsc",	type="int",           default=0,      help="Set to 1 to compute local resolution volume (default 0)")
 
 	#parser.add_option("--res_overall",  type="float",         default= -1.0,  help="Overall resolution at the cutoff level estimated by the user [abs units]. (default None)")
 	#parser.add_option("--out_ang_res",  action="store_true",  default=False,  help="Additionally creates a local resolution file in Angstroms. (default False)")
-	parser.add_option("--significance", type="float",         default= 0.99,   help="Significance level for the Upper Confidence Interval (default 0.99)")
-	parser.add_option("--sigmag",       type="float",         default= 1.0,   help="Sigma of the Fourier space Gaussian window in pixels (default 1.0)")
-	parser.add_option("--ndf_reduce",    type="float",         default= 1.0,   help="Reduction of ndf due to point group symmetry, for example for D3 set to 6 (default 1.0)")
 	#parser.add_option("--lsigmag",       type="float",         default= 3.0,  help="Sigma of the Fourier space Gaussian window for local resolution in pixels (default 3.0)")
 	#parser.add_option("--apix",         type="float",         default= 1.0,   help="Pixel size in Angstrom. Effective only with --out_ang_res options. (default 1.0)")
 	parser.add_option("--nthreads",		type="int",           default=4,      help="Number of threads (mainly for 3D FFT) (default 4)")
@@ -88,7 +88,7 @@ def main():
 	zaz = sti.norm.ppf(options.significance)
 
 	if options.MPI:
-		ERROR("MPI mpde not implemented","sxresolution", 1, 0)
+		ERROR("MPI mode not implemented","sxresolution", 1, 0)
 		"""
 		sys.argv = mpi_init(len(sys.argv),sys.argv)		
 
