@@ -13359,6 +13359,7 @@ Dict Util::coveig_for_py(int ncov, const vector<float>& covmatpy)
 	EXITFUNC;
 	return res;
 }
+#ifdef False
 
 vector<float> Util::pw_extract(vector<float>pw, int n, int iswi, float ps)
 {
@@ -13416,6 +13417,8 @@ vector<float> Util::pw_extract(vector<float>pw, int n, int iswi, float ps)
 	return cl1_res;
 }
 
+
+
 vector<float> Util::call_cl1(long int *k, long int *n, float *ps, long int *iswi, float *pw, float *q2,double *q, double *x, double *res, double *cu, double *s, long int *iu)
 {
     long int q2_dim1, q2_offset, q_dim1, q_offset, i__1, i__2;
@@ -13455,7 +13458,6 @@ vector<float> Util::call_cl1(long int *k, long int *n, float *ps, long int *iswi
    fit_res=Util::lsfit(k, n, &klm2d, iswi, &q2[q2_offset], &q[q_offset], &x[1], &res[1], &cu[3], &s[1], &iu[3]);
    return fit_res;
 }
-
 vector<float> Util::lsfit(long int *ks,long int *n, long int *klm2d, long int *iswi,float *q1,double *q, double *x, double *res, double *cu, double *s, long int *iu)
 {
     /* System generated locals */
@@ -13602,7 +13604,6 @@ vector<float> Util::lsfit(long int *ks,long int *n, long int *klm2d, long int *i
     	{ p.push_back(static_cast<float>(x[i__]));}
     return p;
 }
-
 void Util::cl1(long int *k, long int *l, long int *m, long int *n, long int *klm2d,
 	double *q, double *x, double *res, double *cu, long int *iu, double *s)
 {
@@ -14137,8 +14138,6 @@ L640:
     error = (float)xsum;
     return;
 }
-
-#ifdef False
 
 
 #define		mymax(x,y)		(((x)>(y))?(x):(y))

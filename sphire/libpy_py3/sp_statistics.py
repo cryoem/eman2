@@ -666,7 +666,7 @@ def locres(vi, ui, m, nk, cutoff, step, myid, main_node, number_of_proc):
                 # if(k == number_of_proc-1):  bailout = 1
                 bailout = 0
                 # print  "setting freqvol  ",k
-                EMAN2_cppwrap.Util.set_freq(freqvol, tmp3, m, cutoff, freq)
+                EMAN2_cppwrap.Util.set_freq_sphire(freqvol, tmp3, m, cutoff, freq)
                 """Multiline Comment6"""
             """Multiline Comment7"""
 
