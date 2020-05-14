@@ -3685,7 +3685,6 @@ def if_error_then_all_processes_exit_program(error_status):
                 "OMPI_COMM_WORLD_SIZE",
                 "PMI_RANK",
                 "PMI_ID",
-                "SLURM_PROCID",
                 "LAMRANK",
                 "MPI_RANKID",
                 "MP_CHILD",
