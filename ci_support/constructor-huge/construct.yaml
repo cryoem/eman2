@@ -12,17 +12,12 @@ channels:
     - https://repo.anaconda.com/pkgs/msys2          # [win]
     - https://conda.anaconda.org/conda-forge
 
-channels_remap:                                       # [not win]
-  -                                                   # [not win]
-      src: file:/place_holder_conda_prefix/conda-bld  # [not win]
-      dest: file://local                              # [not win]
-
 keep_pkgs: False
 ignore_duplicate_files: True
 
 specs:
   - eman2        2.39
-  - eman-deps    22.0
+  - eman-deps    23.1
   - conda
   - conda-build
   - pip

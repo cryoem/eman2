@@ -63,7 +63,7 @@ def display_error(msg) :
 
 # This is a floating point number-finding regular expression
 
-renumfind = re.compile(r"-?[0-9]+\.*[0-9]*[eE]?[-+]?[0-9]*")
+renumfind = re.compile(r"^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$.")
 
 # We need to sort ints and floats as themselves, not string, John Flanagan
 

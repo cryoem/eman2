@@ -575,7 +575,7 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
 		.def("rotavg_fourier", &EMAN::Util::rotavg_fourier)
 		.def("unroll1dpw", &EMAN::Util::unroll1dpw, return_value_policy< manage_new_object >(), args("onx", "ny", "bckgnoise"), "out = power")
 		.def("unrollmask", &EMAN::Util::unrollmask, return_value_policy< manage_new_object >(), args("onx", "ny"), "out = mask")
-		.def("set_freq", &EMAN::Util::set_freq, args("freqvol", "freqvol"), "utility for sxlocres")
+		.def("set_freq", &EMAN::Util::set_freq, args("freqvol", "tmp3", "m", "freq", "nref", "zaz", "cutoff"), "utility for sxlocres")
 		.def("pickup_references", &EMAN::Util::pickup_references, args("refang", "delta", "an", "datang", "symmetry"), "utility for meridian")
 		.def("cast_coarse_into_fine_sampling", &EMAN::Util::cast_coarse_into_fine_sampling, args("coarse_sampling_angles","fine_sampling_angles", "symmetry"), "utility for meridian")
 		.def("shift_gradients", &EMAN::Util::shift_gradients, args("avg", "img","wght","sx","sy"), "compute x,y shifts gradients in Fourier space")

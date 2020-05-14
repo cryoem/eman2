@@ -2055,7 +2055,7 @@ def locres(vi, ui, m, nk, cutoff, step, myid, main_node, number_of_proc):
 				#if(k == number_of_proc-1):  bailout = 1
 				bailout = 0
 				#print  "setting freqvol  ",k
-				Util.set_freq(freqvol,tmp3,m,cutoff, freq)
+				junk = Util.set_freq(freqvol, tmp3, m, freq, cutoff)
 				"""
 				for x in xrange(nx):
 					for y in xrange(ny):

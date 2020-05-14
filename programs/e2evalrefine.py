@@ -743,7 +743,7 @@ def main():
 		plt.xlabel(r"Spatial Frequency (1/$\AA$)")
 		plt.ylabel("FSC")
 
-		refines=[i for i in os.listdir(".") if "refine_" in i]
+		refines=[i for i in os.listdir(".") if "refine_" in i or "spt_" in i or "subtlt_" in i]
 		fscs=[]
 		for r in refines:
 			try: itr=max([i for i in os.listdir(r) if "fsc_masked" in i and i[-4:]==".txt"])
