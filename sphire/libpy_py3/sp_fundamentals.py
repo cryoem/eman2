@@ -463,7 +463,7 @@ def rot_avg_table(e):
     """Rotational average.
 	   Returns a table containing a rotational average of image e.
 	"""
-    qt = e.rotavg(None)
+    qt = e.rotavg_sphire()
     tab = []
     n = qt.get_xsize()
     for i in range(n):
@@ -480,7 +480,7 @@ def rot_avg_image(image_to_be_averaged):
     pass  # IMPORTIMPORTIMPORT from sp_utilities import get_im
     if type(image_to_be_averaged) is bytes:
         image_to_be_averaged = sp_utilities.get_im(image_to_be_averaged)
-    return image_to_be_averaged.rotavg_i(None)
+    return image_to_be_averaged.rotavg_i_sphire()
 
 
 def ro_textfile(e, filename, helpful_string=""):

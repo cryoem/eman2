@@ -32,4 +32,18 @@
 #define emdata__sphire_h__
 
 
+/** Create a (1-D) rotationally averaged image.
+ * @exception ImageDimensionException If 'this' image is 1D.
+ * @return 1-D rotationally-averaged image
+ */
+EMData* rotavg_sphire();
+
+/** Multiply radially a 2-D or 3-D image by a 1-D image.
+ * @param radial the 1-D image multiply to
+ * @exception ImageDimensionException If 'this' image is 1D.
+ * @return 2-D or 3-D radially multiplied image
+ */
+EMData* rotavg_i_sphire();
+
+
 #endif	//emdata__sphire_h__
