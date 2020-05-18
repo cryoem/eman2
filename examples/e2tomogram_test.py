@@ -1025,6 +1025,104 @@ def make_tile_with_thr(args):
 	
 	return
 
+#### subthread for making tomogram by tiles. similar to make_tomogram, just for small cubes
+def make_tile_with_pnthr(args):
+	jsd, imgs, tpm, sz, pad, stepx, stepy, outz,options=args
+	recon=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":options.reconmode})
+
+	if stepx in (0,1) and stepy==0: 
+		try: os.unlink("test_tilt.hdf")
+		except: pass
+		try: os.unlink("test_tile.hdf")
+		except: pass
+
+	# preprocess slices, means we double the slice memory requirement, but will generally be small
+	# compared to volume anyway. May be unnecessary, but not sure if it's safe to change imgs
+	ppimgs=[]
+	pppimgs=[]
+	ppnimgs=[]
+	for i in range(len(imgs)):
+		t=tpm[i]
+		m=imgs[i]
+		if m["nx"]==1:
+			continue
+		m.process_inplace("filter.ramp")
+		m.process_inplace("xform",{"alpha":-t[2]})
+		xf=Transform({"type":"xyz","ytilt":t[3],"xtilt":t[4]})
+
+		dy=(pad//2)-np.cos(t[3]*np.pi/180.)*pad/2
+		msk=EMData(pad, pad)
+		msk.to_one()
+		edge=(sz//10)
+		msk.process_inplace("mask.zeroedge2d",{"x0":dy+edge, "x1":dy+edge, "y0":edge, "y1":edge})
+		msk.process_inplace("mask.addshells.gauss",{"val1":0, "val2":edge})
+	
+		m.mult(msk)
+		mp=recon.preprocess_slice(m, xf)
+		if mp.has_attr("ctf") : mp.process_inplace("filter.ctfcorr.simple",{"useheader":1,"phaseflip":1,"hppix":2})
+		else : print("No CTF found for tilt-series, consider running CTF determination")
+		mp.set_complex_at(0,0,0)		# make sure the mean value is consistent (0) in all of the images
+		ppimgs.append((mp,xf))
+		pppimgs.append((mp.do_ift().process("threshold.belowtozero",{"minval":0.0}).do_fft(),xf))
+		ppnimgs.append((mp.do_ift().process("threshold.abovetozero",{"maxval":0.0}).do_fft(),xf))
+
+	# iterative reconstruction process with real-space modification
+	# 0 - init p, 1 - iter p, 2- init n, 3- iter n, 4- merge
+	for j,prm in enumerate(((0,0.6),(1,0.3),(1,0.15),(1,0.075),(2,0.6),(3,0.3),(3,0.15),(3,0.075),(4,0))): 
+		stg,thr=prm
+		if j==2: pos3d=threed
+		elif j==4: neg3d=threed
+		elif j==1 or j==3: threed.mult(1.5)
+		
+		if stg in (0,2): recon.setup()
+		elif j==4: 
+			recon.setup_seed((pos3d+neg3d).do_fft().process("xform.phaseorigin.tocorner"),0.1)
+			(pos3d+neg3d).write_image("test_tile.hdf",j*2-1)
+		else: recon.setup_seed(threed.do_fft().process("xform.phaseorigin.tocorner"),0.1)
+
+		# positive, negative or original images
+		if stg<2 : pp2use=pppimgs
+		elif stg<4 : pp2use=ppnimgs
+		else: pp2use=ppimgs
+		
+		for i in range(len(ppimgs)):
+			recon.insert_slice(pp2use[i][0],pp2use[i][1],1)
+			if stepx in (-0,1) and stepy==0: 
+				pp2use[i][0].write_image("test_tilt.hdf",-1)
+
+		# we just do the normalization once
+#		norm=np.zeros(len(ppimgs))
+#		for i in range(len(ppimgs)):
+#			recon.determine_slice_agreement(ppimgs[i][0],ppimgs[i][1],1,0)
+#			norm[i]=ppimgs[i][0]["reconstruct_norm"]
+		
+#		norm/=norm.mean()
+#		for i in range(len(ppimgs)): 
+#			ppimgs[i][0].mult(norm[i])
+#			if stepx in (0,1) and stepy==0 : print(f'{j} ({frac})\t{i}\t{norm[i]}\t{ppimgs[i][0]["reconstruct_absqual"]}')
+
+		threed=recon.finish(True)
+		#threed.write_image("tmp3d00.hdf", -1)
+		if stepx in (0,1) and stepy==0 : threed.write_image("test_tile.hdf",j*2)
+		if stg!=4: 
+			mask=threed.process("filter.lowpass.gaussz",{"cutoff_abs":0.15,"xynoz":1})
+#			mask=threed.process("normalize.histpeak")
+			if stg in (0,1) : mask.process_inplace("threshold.rangetozero",{"minval":mask["minimum"]-1,"maxval":mask["maximum"]*thr,"gauss_width":3.5})
+			elif stg in(2,3) : mask.process_inplace("threshold.rangetozero",{"minval":mask["minimum"]*thr,"maxval":mask["maximum"]+1,"gauss_width":3.5})
+
+			if stepx in (0,1) and stepy==0 : mask.write_image("test_tile.hdf",j*2+1)
+			threed=mask
+#			threed.mult(mask)
+		print(stepx,stepy,threed["ny"])
+		
+	threed.process_inplace("math.gausskernelfix",{"gauss_width":4.0})
+	threed.clip_inplace(Region((pad-sz)//2, (pad-sz)//2, (pad-outz)//2, sz, sz, outz))
+	threed.process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.filterto})
+	#threed.process_inplace("filter.highpass.gauss",{"cutoff_pixels":2})
+	jsd.put( [stepx, stepy, threed])
+	
+	return
+
 
 #### subthread for making tomogram by tiles. similar to make_tomogram, just for small cubes
 def make_tile(args):
@@ -1175,7 +1273,7 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 
 			jobs.append((jsd, tiles, tpm, sz, pad, stepx, stepy, outz, options))
 	
-	thrds=[threading.Thread(target=make_tile_with_thr,args=([i])) for i in jobs]
+	thrds=[threading.Thread(target=make_tile_with_pnthr,args=([i])) for i in jobs]
 	print("now start threads...")
 	thrtolaunch=0
 	tsleep=threading.active_count()
