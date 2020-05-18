@@ -1561,7 +1561,7 @@ def steptwo_mpi(tvol, tweight, treg, cfsc = None, regularized = True, color = 0)
 	else:  return None
 
 def calculate_2d_params_for_centering(kwargs):
-	from sp_utilities 		import wrap_mpi_gatherv, read_text_row, write_text_row, sp_utilities.bcast_number_to_all, get_im, combine_params2, model_circle, gather_compacted_EMData_to_root
+	from sp_utilities 		import wrap_mpi_gatherv, read_text_row, write_text_row, bcast_number_to_all, get_im, combine_params2, model_circle, gather_compacted_EMData_to_root
 	from sp_applications 	import MPI_start_end, ali2d_base 
 	from sp_fundamentals 	import resample, rot_shift2D 
 	from sp_filter 		import filt_ctf 
