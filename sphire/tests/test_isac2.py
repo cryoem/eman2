@@ -6,8 +6,8 @@ import subprocess
 MPI_PATH = "/home/adnan/applications/sphire/miniconda3/envs/py3_v5/bin/mpirun"
 from numpy import allclose
 
-from sphire.bin_py3 import sp_isac2 as oldfu
-from sphire.bin import sp_isac2 as fu
+# from sphire.bin_py3 import sp_isac2 as oldfu
+# from sphire.bin import sp_isac2 as fu
 
 from sphire.libpy.sp_utilities import get_im
 from os import path
