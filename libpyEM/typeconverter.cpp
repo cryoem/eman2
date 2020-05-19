@@ -93,6 +93,7 @@ EMData* EMNumPy::numpy2em(const np::ndarray& array)
 			nz = array.shape(0);
 			ny = array.shape(1);
 			nx = array.shape(2);
+			break;
 	}
 
 	np::dtype data_type = array.get_dtype();
