@@ -419,6 +419,7 @@ namespace EMAN
 		{
 			TypeDict d;
 			d.put("max", EMObject::INT, "If set, will find the max value, otherwise finds min");
+			d.put("abs", EMObject::INT, "If set, will find the value with the min or max absolute value. The actual value is preserved.");
 			d.put("owner", EMObject::EMDATA, "Contains the number of the input image which 'owns' the max/min value. Value will be insertion sequence number unless 'ortid' is set in each image being averaged.");
 			return d;
 		}
@@ -428,7 +429,8 @@ namespace EMAN
 		static const string NAME;
 		
 	private:
-		int max;
+		int ismax;
+		int isabs;
 		int nimg;
 	};
 

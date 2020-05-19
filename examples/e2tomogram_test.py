@@ -1039,8 +1039,6 @@ def make_tile_with_pnthr(args):
 	# preprocess slices, means we double the slice memory requirement, but will generally be small
 	# compared to volume anyway. May be unnecessary, but not sure if it's safe to change imgs
 	ppimgs=[]
-	pppimgs=[]
-	ppnimgs=[]
 	for i in range(len(imgs)):
 		t=tpm[i]
 		m=imgs[i]
@@ -1063,43 +1061,50 @@ def make_tile_with_pnthr(args):
 		else : print("No CTF found for tilt-series, consider running CTF determination")
 		mp.set_complex_at(0,0,0)		# make sure the mean value is consistent (0) in all of the images
 		ppimgs.append((mp,xf))
-		pppimgs.append((mp.do_ift().process("threshold.belowtozero",{"minval":0.0}).do_fft(),xf))
-		ppnimgs.append((mp.do_ift().process("threshold.abovetozero",{"maxval":0.0}).do_fft(),xf))
 
 	# iterative reconstruction process with real-space modification
 	# 0 - init p, 1 - iter p, 2- init n, 3- iter n, 4- merge
-	for j,prm in enumerate(((0,0.6),(1,0.3),(1,0.15),(1,0.075),(2,0.6),(3,0.3),(3,0.15),(3,0.075),(4,0))): 
-		stg,thr=prm
+	# threshold in terms of max/min
+	# filter is abs (nyquist = 0.5)
+	for j,prm in enumerate(((0,0.6,0.05),(1,0.3,0.05),(1,0.3,0.1),(1,0.15,0.2),(2,0.6,0.05),(3,0.3,0.05),(3,0.3,0.1),(3,0.15,0.2),(4,0,0))): 
+		stg,thr,filt=prm
+		
+		# seed the new reconstruction from the thresholded old
 		if j==2: pos3d=threed
 		elif j==4: neg3d=threed
-		elif j==1 or j==3: threed.mult(1.5)
 		
 		if stg in (0,2): recon.setup()
 		elif j==4: 
 			recon.setup_seed((pos3d+neg3d).do_fft().process("xform.phaseorigin.tocorner"),0.1)
-			(pos3d+neg3d).write_image("test_tile.hdf",j*2-1)
-		else: recon.setup_seed(threed.do_fft().process("xform.phaseorigin.tocorner"),0.1)
+			if stepx in (0,1) and stepy==0 : (pos3d+neg3d).write_image("test_tile.hdf",j*2-1)
+		else: 
+			if j==1 or j==5 : threed.mult(5)
+			recon.setup_seed(threed.do_fft().process("xform.phaseorigin.tocorner"),0.1)
 
-		# positive, negative or original images
-		if stg<2 : pp2use=pppimgs
-		elif stg<4 : pp2use=ppnimgs
-		else: pp2use=ppimgs
 		
 		for i in range(len(ppimgs)):
-			recon.insert_slice(pp2use[i][0],pp2use[i][1],1)
+			# positive, negative or original images
+			if stg<2 : 
+				pp2use=ppimgs[i][0].do_ift().process("filter.lowpass.gauss",{"cutoff_abs":filt}).process("threshold.belowtozero",{"minval":0.0}).do_fft()
+			elif stg<4 : 
+				pp2use=ppimgs[i][0].do_ift().process("filter.lowpass.gauss",{"cutoff_abs":filt}).process("threshold.abovetozero",{"maxval":0.0}).do_fft()
+			else: pp2use=ppimgs[i][0]
+			
+			recon.insert_slice(pp2use,ppimgs[i][1],1)
 			if stepx in (-0,1) and stepy==0: 
-				pp2use[i][0].write_image("test_tilt.hdf",-1)
+				pp2use.process("xform.phaseorigin.tocenter").write_image("test_tilt.hdf",-1)
 
 		# we just do the normalization once
-#		norm=np.zeros(len(ppimgs))
-#		for i in range(len(ppimgs)):
-#			recon.determine_slice_agreement(ppimgs[i][0],ppimgs[i][1],1,0)
-#			norm[i]=ppimgs[i][0]["reconstruct_norm"]
-		
-#		norm/=norm.mean()
-#		for i in range(len(ppimgs)): 
-#			ppimgs[i][0].mult(norm[i])
-#			if stepx in (0,1) and stepy==0 : print(f'{j} ({frac})\t{i}\t{norm[i]}\t{ppimgs[i][0]["reconstruct_absqual"]}')
+		#if stg==0 or stg==2 :
+			#norm=np.zeros(len(ppimgs))
+			#for i in range(len(ppimgs)):
+				#recon.determine_slice_agreement(ppimgs[i][0],ppimgs[i][1],1,0)
+				#norm[i]=ppimgs[i][0]["reconstruct_norm"]
+			
+			#norm/=norm.mean()
+			#for i in range(len(ppimgs)): 
+				#ppimgs[i][0].mult(norm[i])
+				#if stepx in (0,1) and stepy==0 : print(f'--> {j} ({thr})\t{i}\t{norm[i]}\t{ppimgs[i][0]["reconstruct_absqual"]}')
 
 		threed=recon.finish(True)
 		#threed.write_image("tmp3d00.hdf", -1)
@@ -1107,10 +1112,12 @@ def make_tile_with_pnthr(args):
 		if stg!=4: 
 			mask=threed.process("filter.lowpass.gaussz",{"cutoff_abs":0.15,"xynoz":1})
 #			mask=threed.process("normalize.histpeak")
-			if stg in (0,1) : mask.process_inplace("threshold.rangetozero",{"minval":mask["minimum"]-1,"maxval":mask["maximum"]*thr,"gauss_width":3.5})
-			elif stg in(2,3) : mask.process_inplace("threshold.rangetozero",{"minval":mask["minimum"]*thr,"maxval":mask["maximum"]+1,"gauss_width":3.5})
+			if stg in (0,1) : mask.process_inplace("threshold.rangetozero",{"minval":mask["minimum"]-1,"maxval":max(mask["maximum"]*thr,mask["sigma"]*1.5),"gauss_width":3.5})
+			elif stg in(2,3) : mask.process_inplace("threshold.rangetozero",{"minval":min(mask["minimum"]*thr,-mask["sigma"]*1.5),"maxval":mask["maximum"]+1,"gauss_width":3.5})
 
-			if stepx in (0,1) and stepy==0 : mask.write_image("test_tile.hdf",j*2+1)
+			if stepx in (0,1) and stepy==0 : 
+				print("write mask ",j)
+				mask.write_image("test_tile.hdf",j*2+1)
 			threed=mask
 #			threed.mult(mask)
 		print(stepx,stepy,threed["ny"])
