@@ -866,6 +866,13 @@ void MinMaxAverager::add_image(EMData * image)
 	nimg++;
 
 	size_t nxyz = image->get_size();
+	
+	if (nimg == 1) {
+		result = image->copy();
+		if (owner) owner->to_value(thisown);
+		return;
+	}
+
 	float *rdata = result->get_data();
 	float *data = image->get_data();
 	float *owndata = 0;
@@ -874,10 +881,6 @@ void MinMaxAverager::add_image(EMData * image)
 	ismax=(int)params.set_default("max",0);
 	isabs=(int)params.set_default("abs",0);
 	
-	if (nimg == 1) {
-		result = image->copy();
-		return;
-	}
 	
 	for (size_t i=0; i<nxyz; i++) {
 		float v = isabs?fabs(data[i]):data[i];
@@ -895,7 +898,7 @@ EMData *MinMaxAverager::finish()
 	result->update();
 	result->set_attr("ptcl_repr",nimg);
 	
-	if (result && nimg > 1) return result;
+	if (result && nimg >= 1) return result;
 
 	return NULL;
 }
