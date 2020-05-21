@@ -47,6 +47,7 @@ namespace np = boost::python::numpy;
 int init_numpy()
 {
     import_array();
+    return 0;
 }
 
 // Module ======================================================================
@@ -62,7 +63,8 @@ BOOST_PYTHON_MODULE(libpyTypeConverter2)
         .staticmethod("numpy2em")
     ;
 
-    init_numpy();
+    int dummy = 0;
+    dummy = init_numpy();
 	Py_Initialize();
 	np::initialize();
 
