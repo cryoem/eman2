@@ -207,7 +207,9 @@ def calculate_list_of_independent_viper_run_indices_used_for_outlier_elimination
             mainoutputdir + "list_of_viper_runs_included_in_outlier_elimination.json",
             "w",
         )
-        json.dump(list_of_viper_run_indices_for_the_current_rrr_viper_iteration[1:], f)
+        # workaround to fix the problem of json.dump due to non-recognition of numpy.int64 objects.
+        casted_list_of_viper_run_indices_for_the_current_rrr_viper_iteration = [int(v) for v in list_of_viper_run_indices_for_the_current_rrr_viper_iteration]
+        json.dump(casted_list_of_viper_run_indices_for_the_current_rrr_viper_iteration[1:], f)
         f.close()
 
         mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
