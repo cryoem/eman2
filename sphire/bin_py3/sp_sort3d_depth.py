@@ -9040,7 +9040,7 @@ def copy_results(log_file, all_gen_stat_list):
             clusters = []
             NACC = 0
             for ig1, value in list(Tracker["generation"].items()):
-                ig = string.atoi("%s" % ig1)
+                ig = int(ig1)
                 for ic in range(value):
                     cluster_file = os.path.join(
                         Tracker["constants"]["masterdir"],
