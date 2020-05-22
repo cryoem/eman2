@@ -63,8 +63,7 @@ BOOST_PYTHON_MODULE(libpyTypeConverter2)
         .staticmethod("numpy2em")
     ;
 
-    int dummy = 0;
-    dummy = init_numpy();
+    init_numpy();
 	Py_Initialize();
 	np::initialize();
 
