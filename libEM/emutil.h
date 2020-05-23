@@ -429,7 +429,6 @@ namespace EMAN
 	private:
 		ImageScore* image_scores;
 		int n;
-
 	};
 }
 

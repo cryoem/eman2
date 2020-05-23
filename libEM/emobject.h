@@ -283,7 +283,6 @@ namespace EMAN
 		
 		static map< ObjectType, string> init();
 		static map< ObjectType, string> type_registry;
-		
 	};
 
 	bool operator==(const EMObject &e1, const EMObject & e2);
@@ -833,7 +832,6 @@ namespace EMAN
 			return i;
 		}
 
-
 		throw NotExistingObjectException(instancename, "No such an instance existing");
 	}
 
@@ -938,7 +936,6 @@ namespace EMAN
 			TypeDict permissable_params = get_param_types();
 			for ( Dict::const_iterator it = new_params.begin(); it != new_params.end(); ++it )
 			{
-
 				if ( !permissable_params.find_type(it->first) )
 				{
 					throw InvalidParameterException(it->first);
@@ -950,7 +947,6 @@ namespace EMAN
 		Dict copy_relevant_params(const FactoryBase* const that) const
 		{
 			return params.copy_keys_in(that->get_param_types());
-
 		}
 
 		protected:
