@@ -1065,16 +1065,25 @@ def make_tile_with_pnthr(args):
 		ppimgs.append((mp,xf))
 
 	# iterative reconstruction of even/odd tilts with minimum
-	for j,filt in enumerate((0.05,0.1,0.2,0.5)):
+#	for j,filt in enumerate((0.05,0.05,0.1,0.1,0.2,0.5)):
+	for j,filt in enumerate((0.25,0.25,0.5,0.5)):
+		print(f"--------- Iter {j} ({filt})")
 		if j==0:
 			recon1.setup()
 			recon2.setup()
 			recon3.setup()
 		else:
-			threed.mult(2.0)
-			recon1.setup_seed(threed.do_fft().process("xform.phaseorigin.tocorner"),0.01)
-			recon2.setup_seed(threed.do_fft().process("xform.phaseorigin.tocorner"),0.01)
-			recon3.setup_seed(threed.do_fft().process("xform.phaseorigin.tocorner"),0.01)
+			recon1.setup_seed(seed,0.1)
+			recon2.setup_seed(seed,0.1)
+			recon3.setup_seed(seed,0.1)
+			
+			# We normalize slices to our seed, we can use any of the three for this since they are the same
+			for i in range(len(ppimgs)):
+				recon1.determine_slice_agreement(ppimgs[i][0],ppimgs[i][1],1,0)
+				norm=ppimgs[i][0]["reconstruct_norm"]
+				ppimgs[i][0].mult(norm)
+				print(f"{i}\t{norm}")
+			
 			
 		for i in range(len(ppimgs)):
 			#if i%3==0 : recon1.insert_slice(ppimgs[i][0].process("filter.lowpass.gauss",{"cutoff_abs":filt}),ppimgs[i][1],1)
@@ -1096,16 +1105,41 @@ def make_tile_with_pnthr(args):
 			threed3.write_image("test_tile.hdf",j*3+1)
 		
 		# minimum abs value kept from the pair. Should eliminate many artifacts in real-space
-		if j<3 : avg=Averagers.get("minmax",{"abs":1})
-		else: avg=Averagers.get("mean")		# in the final cycle we just average
+		#if j<3 : 
+		avg=Averagers.get("minmax",{"abs":1})
+		#else: 
+		#	avg=Averagers.get("mean")		# in the final cycle we just average
 		avg.add_image(threed1);
 		avg.add_image(threed2);
 		avg.add_image(threed3);
 		threed=avg.finish()
+		presig=threed["sigma"]
+		seed=threed.process("math.localminabs",{"xsize":0,"ysize":0,"zsize":3})
+		if j==0: seed.process_inplace("filter.linearfourier",{"cutoff_abs":0.5})
+		seed.process_inplace("normalize")
+		seed.mult(presig)
+		seed=seed.do_fft().process("xform.phaseorigin.tocorner")
 		if stepx in (0,1) and stepy==0 :threed.write_image("test_tile.hdf",j*3+2)
 		
-		print(stepx,stepy,threed["ny"])
+#		print(stepx,stepy,threed["ny"])
+	
+	# do our final iteration outside the loop
+	recon1.setup_seed(seed,0.1)
+	
+	for i in range(len(ppimgs)):
+		recon1.determine_slice_agreement(ppimgs[i][0],ppimgs[i][1],1,0)
+		norm=ppimgs[i][0]["reconstruct_norm"]
+		ppimgs[i][0].mult(norm)
+		print(f"{i}\t{norm}")
 		
+	for i in range(len(ppimgs)):
+		recon1.insert_slice(ppimgs[i][0],ppimgs[i][1],1)
+		
+	threed=recon1.finish(True)
+	if stepx in (0,1) and stepy==0 :threed.write_image("test_tile.hdf",-1)
+	
+	
+	
 	# iterative reconstruction process with real-space modification
 	# 0 - init p, 1 - iter p, 2- init n, 3- iter n, 4- merge
 	# threshold in terms of max/min

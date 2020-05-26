@@ -161,6 +161,7 @@ const string BoxMedianProcessor::NAME = "eman1.filter.median";
 const string BoxSigmaProcessor::NAME = "math.localsigma";
 const string NonConvexProcessor::NAME = "math.nonconvex";
 const string BoxMaxProcessor::NAME = "math.localmax";
+const string LocalMinAbsProcessor::NAME = "math.localminabs";
 const string MinusPeakProcessor::NAME = "math.submax";
 const string PeakOnlyProcessor::NAME = "mask.onlypeaks";
 const string DiffBlockProcessor::NAME = "eman1.filter.blockrange";
@@ -427,6 +428,7 @@ template <> Factory < Processor >::Factory()
 	force_add<BoxMedianProcessor>();
 	force_add<BoxSigmaProcessor>();
 	force_add<BoxMaxProcessor>();
+	force_add<LocalMinAbsProcessor>();
 
 	force_add<MinusPeakProcessor>();
 	force_add<PeakOnlyProcessor>();
@@ -2463,77 +2465,67 @@ void SetBitsProcessor::process_inplace(EMData *image)
 	}
 }
 
-void BoxStatProcessor::process_inplace(EMData * image)
+
+void BoxStatProcessor::process_inplace(EMData *image) {
+	EMData *cpy = process(image);
+	memcpy(image->get_data(),cpy->get_data(),image->get_size()*sizeof(float));
+	delete cpy;
+}
+
+// mirrors coordinates at box edges
+inline int MIRE(int x,int nx) { return x<0?-x:(x>=nx?nx-(x-nx+1):x); }
+
+EMData *BoxStatProcessor::process(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
-		return;
+		return NULL;
 	}
+
 
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 
-	int n = params.set_default("radius",1);
-	int areasize = 2 * n + 1;
+	int dx=1,dy=1,dz=1;
+	if (params.has_key("radius")) dx=dy=dz=params["radius"];
+	if (params.has_key("xsize")) dx=params["xsize"];
+	if (params.has_key("ysize")) dy=params["ysize"];
+	if (params.has_key("zsize")) dz=params["zsize"];
+	if (nz==1) dz=0;
 
-	int matrix_size = areasize * areasize;
-	if (nz > 1) {
-		matrix_size *= areasize;
-	}
+	int matrix_size = (2*dx+1)*(2*dy+1)*(2*dz+1);
 
 	float *array = new float[matrix_size];
 //	image->process_inplace("normalize");
 
-	float *data = image->get_data();
-	size_t total_size = (size_t)nx * (size_t)ny * (size_t)nz;
-	float *data2 = new float[total_size];
-	memcpy(data2, data, total_size * sizeof(float));
-
-	int z_begin = 0;
-	int z_end = 1;
-	int nzz=0;
-	if (nz > 1) {
-		z_begin = n;
-		z_end = nz - n;
-		nzz=n;
-	}
-
-	int nxy = nx * ny;
-
-	for (int k = z_begin; k < z_end; k++) {
-		size_t knxy = (size_t)k * nxy;
-
-		for (int j = n; j < ny - n; j++) {
-			int jnx = j * nx;
-
-			for (int i = n; i < nx - n; i++) {
-				size_t s = 0;
-
-				for (int i2 = i - n; i2 <= i + n; i2++) {
-					for (int j2 = j - n; j2 <= j + n; j2++) {
-						for (int k2 = k - nzz; k2 <= k + nzz; k2++) {
-							array[s] = data2[i2 + j2 * nx + (size_t)k2 * nxy];
-							++s;
+	EMData *ret = image->copy_head();
+	
+	// The old version of this code had a lot of hand optimizations, which likely weren't accomplishing much
+	// This is much simpler, but relies on the compiler to optimize. May be some cost associated with the new
+	// edge-mirroring policy which could be hand optomized if necessary
+	for (int k=0; k<nz; k++) {
+		for (int j=0; j<ny; j++) {
+			for (int i=0; i<nx; i++) {
+				
+				for (int kk=k-dz,s=0; kk<=k+dz; kk++) {
+					for (int jj=j-dy; jj<=j+dy; jj++) {
+						for (int ii=i-dx; ii<=i+dx; ii++,s++) {
+							array[s]=image->get_value_at(MIRE(ii,nx),MIRE(jj,ny),MIRE(kk,nz));
 						}
 					}
 				}
-
-				process_pixel(&data[i + jnx + knxy], array, matrix_size);
+				float newv;
+				process_pixel(&newv,array,matrix_size);
+				ret->set_value_at(i,j,k,newv);
 			}
 		}
 	}
-
-	image->update();
-	// We don't process pixels near the edge, so they will be "funny". Better to zero them ... I hope
-	if (nz>1) image->process_inplace("mask.zeroedge3d",Dict("x0",n,"y0",n,"z0",n));
-	else image->process_inplace("mask.zeroedge2d",Dict("x0",n,"y0",n));
-		
-	if( data2 )
-	{
-		delete[]data2;
-		data2 = 0;
-	}
+	
+	ret->update();
+	delete []array;	
+	
+	return ret;
 }
 
 void DiffBlockProcessor::process_inplace(EMData * image)

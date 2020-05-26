@@ -4397,17 +4397,21 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 	class BoxStatProcessor:public Processor
 	{
 	  public:
-		void process_inplace(EMData * image);
+		virtual void process_inplace(EMData * image);
+		virtual EMData *process(EMData * image);
 
 		static string get_group_desc()
 		{
-			return "BoxStatProcessor files are a kind of neighborhood processors. These processors compute every output pixel using information from a reduced region on the neighborhood of the input pixel. The classical form are the 3x3 processors. BoxStatProcessors could perform diverse tasks ranging from noise reduction, to differential , to mathematical morphology. BoxStatProcessor class is the base class. Specific BoxStatProcessor needs to define process_pixel(float *pixel, const float *array, int n).";
+			return "BoxStatProcessor files are real-space neighborhood processors. These processors compute every output pixel using information from a reduced region on the neighborhood of the input pixel. The classical form are the 3x3 processors. BoxStatProcessors could perform diverse tasks ranging from noise reduction, to differential , to mathematical morphology. BoxStatProcessor class is the base class. Specific BoxStatProcessor needs to define process_pixel(float *pixel, const float *array, int n).";
 		}
 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("radius", EMObject::INT, "The radius of the search box, default is 1 which results in a 3x3 box (3 = 2xradius + 1)");
+			d.put("radius", EMObject::INT, "The 'radius' of the (square/cube) search box, eg - 1 -> 3x3 box");
+			d.put("xsize", EMObject::INT, "+- range on X axis, 0 uses the value only, 1 -> -1,0,+1, ...");
+			d.put("ysize", EMObject::INT, "+- range on Y axis");
+			d.put("zsize", EMObject::INT, "+- range on Z axis)");
 			return d;
 		}
 
@@ -4523,7 +4527,7 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 
 		string get_desc() const
 		{
-			return "peak processor: pixel = max of values surrounding pixel.";
+			return "peak processor: pixel = max of values surrounding pixel in a square/cube with specified 1/2 size.";
 		}
 
 		static const string NAME;
@@ -4542,6 +4546,38 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 		}
 	};
 
+	class LocalMinAbsProcessor:public BoxStatProcessor
+	{
+	  public:
+		string get_name() const
+		{
+			return NAME;
+		}
+		static Processor *NEW()
+		{
+			return new LocalMinAbsProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Takes the actual value of the pixel in the local region with the smallest absolute value. This can be used for an effect somewhat like binary erosion with continuous data.";
+		}
+
+		static const string NAME;
+
+	  protected:
+		void process_pixel(float *pixel, const float *data, int n) const
+		{
+			float minval = FLT_MAX;
+			for (int i = 0; i < n; i++) 
+			{
+				if (fabs(data[i]) < fabs(minval)) minval=data[i];
+			}
+			*pixel = minval;
+		}
+	};
+
+	
 	/**peak processor: pixel = pixel - max of values surrounding pixel. This is a sort of positive peak-finding algorithm.
 	 */
 	class MinusPeakProcessor:public BoxStatProcessor
