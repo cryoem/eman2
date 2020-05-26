@@ -73,8 +73,8 @@ class Test_Error_cases(unittest.TestCase):
         self.assertEqual(print_new.getvalue().split('\n')[7].split("ERROR")[1],print_old.getvalue().split('\n')[7].split("ERROR")[1])
 
     def test_invalid_nruns(self):
-        testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_viper.py"),'bdb:'+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"03_PARTICLES#stack"), "out_new_dir"]
-        testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_viper.py"),'bdb:'+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"03_PARTICLES#stack"), "out_old_dir"]
+        testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_viper.py"),'bdb:'+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"03_Particles#stack"), "out_new_dir"]
+        testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_viper.py"),'bdb:'+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"03_Particles#stack"), "out_old_dir"]
         with patch.object(sys, 'argv', testargs_new):
             old_stdout = sys.stdout
             print_new = StringIO()
@@ -89,7 +89,7 @@ class Test_Error_cases(unittest.TestCase):
         self.assertEqual(print_new.getvalue().split('\n')[1].split("ERROR")[1],print_old.getvalue().split('\n')[1].split("ERROR")[1])
 
 
-
+# it fails
 class Test_run(unittest.TestCase):
     def test_(self):
         out_dir_old = "oldviper"
@@ -117,11 +117,13 @@ class Test_run(unittest.TestCase):
             +" "+out_dir_new
             + " --sym=c5")
 
-        remove_dir(out_dir_new)
-        remove_dir(out_dir_old)
+
 
         a = subprocess.run(args =[testcommand_new], shell=True, stderr=subprocess.STDOUT)
         b = subprocess.run(args=[testcommand_old], shell=True, stderr=subprocess.STDOUT)
+
+        remove_dir(out_dir_new)
+        remove_dir(out_dir_old)
 
         # return_new_avg = get_im( path.join(out_dir_new,filename_vol) )
         # return_new_var = get_im( path.join(out_dir_new,filename_refvol))
