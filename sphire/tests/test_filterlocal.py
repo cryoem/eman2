@@ -14,7 +14,8 @@ from sp_utilities import get_im
 
 
 import subprocess
-MPI_PATH = "/home/adnan/applications/sphire/miniconda3/envs/py3_v5/bin/mpirun"
+MPI_PATH = "/home/adnan/applications/sphire/miniconda3/envs/py3_v5/bin/mpirun"#"/home/lusnig/SPHIRE_1_1/envs/sphire_py3transition/bin/mpirun"
+NUM_PROC = 8
 try:
     # python 3.4+ should use builtin unittest.mock not mock package
     from unittest.mock import patch
@@ -26,11 +27,6 @@ try:
 except ImportError:
     # python3 case. You will get an error because 'sys.stdout.write(msg)' presents in the library not in the test!!
     from io import StringIO
-import sys
-
-
-# from sphire.bin_py3 import sp_filterlocal as oldfu
-# from sphire.bin import sp_filterlocal as fu
 
 import sp_global_def
 # import mpi
@@ -46,31 +42,22 @@ class Test_run(unittest.TestCase):
         new_final = "new_final.hdf"
 
         testargs_new = [str(MPI_PATH) +
-                         " -np"
-                         " 4"
-                         " /home/adnan/PycharmProjects/python3conversion/sphire/bin/sp_filterlocal.py"
-                         " /home/adnan/DemoResults/12_POSTREFINER/vol_combined.hdf"
-                         " /home/adnan/DemoResults/17_LOCAL_RES/localres.hdf"
-                         " /home/adnan/DemoResults/12_POSTREFINER/vol_adaptive_mask.hdf"
-                         " new_final.hdf"
-                         " --radius=145"
-                         " --MPI"]
+                         " -np " + str(NUM_PROC)+
+                         " "+path.join(ABSOLUTE_BIN_PATH,"sp_filterlocal.py")+
+                         " " + path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "12_POSTREFINER","vol_combined.hdf")+
+                         " " + path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "17_LOCAL_RES","localres.hdf")+
+                         " " + path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "12_POSTREFINER","vol_adaptive_mask.hdf")+
+                         " " + new_final+
+                         " --radius=145 --MPI"]
 
         testargs_old = [str(MPI_PATH) +
-                         " -np"
-                         " 4"
-                         " /home/adnan/PycharmProjects/python3conversion/sphire/bin_py3/sp_filterlocal.py"
-                         " /home/adnan/DemoResults/12_POSTREFINER/vol_combined.hdf"
-                         " /home/adnan/DemoResults/17_LOCAL_RES/localres.hdf"
-                         " /home/adnan/DemoResults/12_POSTREFINER/vol_adaptive_mask.hdf"
-                         " old_final.hdf"
-                         " --radius=145"
-                         " --MPI"]
-
-
-        print(testargs_new)
-
-        print(testargs_old)
+                         " -np " + str(NUM_PROC)+
+                         " "+path.join(ABSOLUTE_OLDBIN_PATH,"sp_filterlocal.py")+
+                         " " + path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "12_POSTREFINER","vol_combined.hdf")+
+                         " " + path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "17_LOCAL_RES","localres.hdf")+
+                         " " + path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "12_POSTREFINER","vol_adaptive_mask.hdf")+
+                         " " + old_final+
+                         " --radius=145 --MPI"]
 
         a = subprocess.run(args =testargs_new, shell=True, stderr=subprocess.STDOUT)
 
