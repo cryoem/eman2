@@ -77,6 +77,7 @@ def main():
 	parser.add_argument("--tmppath", type=str,help="Temporary path", default=None)
 	parser.add_argument("--verbose","-v", type=int,help="Verbose", default=0)
 	parser.add_argument("--noali", action="store_true",help="skip initial alignment", default=False)
+	parser.add_argument("--dryrun", action="store_true",help="skip final reconstruction", default=False)
 	parser.add_argument("--posz", action="store_true",help="auto positioning along z axis", default=False,guitype='boolbox',row=14, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--xdrift", action="store_true",help="apply extra correction for drifting along x axis", default=False,guitype='boolbox',row=13, col=0, rowspan=1, colspan=1,mode="easy")
 
@@ -275,6 +276,7 @@ def main():
 				return
 		else: 
 			#### parse tilt step
+			options.rawtlt=None
 			tlts=np.arange(-len(imgs_2k)*options.tltstep/2,len(imgs_2k)*options.tltstep/2,options.tltstep)
 		
 		if options.writetmp: np.savetxt(os.path.join(options.tmppath,"rawtilt.txt"), tlts)
@@ -294,7 +296,17 @@ def main():
 			
 		else:
 			#### do an initial course alignment before common line
-			ret=calc_global_trans(imgs_500, options)
+			if options.rawtlt:
+				srtid=np.argsort(tlts).tolist()
+				imgs_500_sort=[imgs_500[i] for i in srtid]
+				ret=calc_global_trans(imgs_500_sort, options)
+				pt=np.zeros_like(ret[1])
+				pt[srtid]=ret[1]
+				ret[1]=pt
+				
+			else:
+				ret=calc_global_trans(imgs_500, options)
+				
 			if options.badone:
 				img_tali, pretrans, badi=ret
 			else:
@@ -456,46 +468,54 @@ def main():
 			
 		ttparams=correct_zpos(threed, ttparams, options)
 		
+	
+	
 	#### alignment finish. now save output
-	if options.outsize=="2k":
-		imgout=imgs_2k
-	elif options.outsize=="4k":
-		options.bytile=True
-		imgout=imgs_4k
-	else:
-		imgout=imgs_1k
+	if options.dryrun:
+		print("Skipping final tomogram generation...")
 		
-	
-	if options.rmbeadthr>0:
-		remove_beads(imgs_500, imgout, ttparams, options)
-	
-	#### only clip z axis at the end..
-	if options.bytile:
-		threed=make_tomogram_tile(imgout, ttparams, options, errtlt=loss0, clipz=options.clipz)
 	else:
-		threed=make_tomogram(imgout, ttparams, options, errtlt=loss0, clipz=options.clipz)
-
-	if options.writetmp:
-		threed.write_image(os.path.join(path,"tomo_final.hdf"))
-		make_ali(imgout, ttparams, options, outname=os.path.join(path,"tiltseries_ali.hdf"))
-
-	#### write to the tomogram folder
-	try: os.mkdir("tomograms")
-	except: pass
-	sfx=""
-	bf=int(np.round(imgout[0]["apix_x"]/options.apix_init))
-	if bf>1:
-		sfx+="__bin{:d}".format(int(bf))
 		
-	threed["ytilt"]=yrot
-	tomoname=os.path.join("tomograms", options.basename+sfx+".hdf")
-	threed.write_image(tomoname)
-	print("Tomogram written to {}".format(tomoname))
+		if options.outsize=="2k":
+			imgout=imgs_2k
+		elif options.outsize=="4k":
+			options.bytile=True
+			imgout=imgs_4k
+		else:
+			imgout=imgs_1k
+			
+		
+		if options.rmbeadthr>0:
+			remove_beads(imgs_500, imgout, ttparams, options)
+		
+		#### only clip z axis at the end..
+		if options.bytile:
+			threed=make_tomogram_tile(imgout, ttparams, options, errtlt=loss0, clipz=options.clipz)
+		else:
+			threed=make_tomogram(imgout, ttparams, options, errtlt=loss0, clipz=options.clipz)
+
+		if options.writetmp:
+			threed.write_image(os.path.join(path,"tomo_final.hdf"))
+			make_ali(imgout, ttparams, options, outname=os.path.join(path,"tiltseries_ali.hdf"))
+
+		#### write to the tomogram folder
+		try: os.mkdir("tomograms")
+		except: pass
+		sfx=""
+		bf=int(np.round(imgout[0]["apix_x"]/options.apix_init))
+		if bf>1:
+			sfx+="__bin{:d}".format(int(bf))
+			
+		tomoname=os.path.join("tomograms", options.basename+sfx+".hdf")
+		threed["ytilt"]=yrot
+		
+		threed.write_image(tomoname)
+		print("Tomogram written to {}".format(tomoname))
 	
 	#### save alignemnt parameters to info file
 	tpm=ttparams.copy()
 	#tpm[:,:2]*=options.binfac
-	js=js_open_dict(info_name(tomoname))
+	js=js_open_dict(info_name(options.basename))
 	js["tlt_params"]=tpm.tolist()
 	js["tlt_file"]=options.inputname
 	js["ali_loss"]=loss0.tolist()
@@ -606,7 +626,7 @@ def xdrift_correction(imgs, allpms, options):
 def remove_beads(imgs_500, imgout, ttparams, options):
 	
 	print("Removing high contrast objects...")
-	threed=make_tomogram(imgs_500, ttparams, options, errtlt=options.loss0)
+	threed=make_tomogram(imgs_500, ttparams, options, errtlt=options.loss0, doclip=False, padr=1.5)
 	threed.process_inplace("math.meanshrink",{"n":2})
 	threed.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1./100})
 	threed.process_inplace("filter.highpass.gauss",{"cutoff_freq":1./50})
@@ -616,7 +636,7 @@ def remove_beads(imgs_500, imgout, ttparams, options):
 	
 	vthr=options.rmbeadthr
 	img=threed.numpy().T.copy()
-	
+	#print(img.shape)
 	img=-img
 	img[img<0]=0
 	lb, nlb= sciimg.label(img>vthr)
@@ -635,6 +655,7 @@ def remove_beads(imgs_500, imgout, ttparams, options):
 	options.npk=len(pts)
 	allparams=np.hstack([ttparams.flatten(), pts.flatten()])
 	if options.writetmp:
+		np.savetxt(os.path.join(options.tmppath, "beadpos.txt"), pts)
 		oname=os.path.join(options.tmppath, "samples_beads.hdf")
 	else: 
 		oname=None
@@ -656,16 +677,16 @@ def remove_beads(imgs_500, imgout, ttparams, options):
 		
 		plst=[]
 		for i, pk in enumerate(pts):
-			if smp[i]["minimum"]>-4:
+			#if smp[i]["minimum"]>-4:
 				#print(smp[i]["minimum"])
-				continue
+				#continue
 			
 			pxf=get_xf_pos(tpm, pk)
 			
 			
 			pxf=[int(round(pxf[0]))+nx//2-pad//2, int(round(pxf[1]))+ny//2-pad//2]
 			
-			if min(pxf)<pad/4 or min(nx-pxf[0], ny-pxf[1])<pad/4:
+			if min(pxf)<-pad/4 or min(nx-pxf[0], ny-pxf[1])<-pad/4:
 				continue
 			
 			if len(plst)>0:
@@ -856,9 +877,9 @@ def calc_global_trans(imgs, options, excludes=[], tltax=None,tlts=[]):
 		imgout.append(e)
 		
 	if options.badone:
-		return imgout, tx, badi
+		return [imgout, tx, badi]
 	else:
-		return imgout, tx
+		return [imgout, tx]
 	
 
 
@@ -1104,7 +1125,7 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 	return full3d
 
 #### reconstruct tomogram...
-def make_tomogram(imgs, tltpm, options, outname=None, padr=1.2,  errtlt=[], clipz=-1):
+def make_tomogram(imgs, tltpm, options, outname=None, padr=1.2,  errtlt=[], clipz=-1, doclip=True):
 	num=len(imgs)
 	scale=imgs[0]["apix_x"]/options.apix_init
 	print("Making bin{:d} tomogram...".format(int(np.round(scale))))
@@ -1165,11 +1186,11 @@ def make_tomogram(imgs, tltpm, options, outname=None, padr=1.2,  errtlt=[], clip
 	threed.process_inplace("normalize")
 	threed.process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.filterto})
 	#print(threed["nx"], threed["ny"], threed["nz"])
-	
-	if clipz<0:
-		threed.clip_inplace(Region(((pad-outxy)//2), ((pad-outxy)//2), 0, outxy, outxy, zthick))
-	else:
-		threed.clip_inplace(Region(((pad-outxy)//2), ((pad-outxy)//2), (zthick-clipz)//2, outxy, outxy, clipz))
+	if doclip:
+		if clipz<0:
+			threed.clip_inplace(Region(((pad-outxy)//2), ((pad-outxy)//2), 0, outxy, outxy, zthick))
+		else:
+			threed.clip_inplace(Region(((pad-outxy)//2), ((pad-outxy)//2), (zthick-clipz)//2, outxy, outxy, clipz))
 	threed["zshift"]=0
 
 	apix=imgs[0]["apix_x"]
