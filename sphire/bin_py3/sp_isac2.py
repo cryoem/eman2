@@ -2152,7 +2152,7 @@ def main(args):
             Blockdata["main_node"],
             mpi.MPI_COMM_WORLD,
         )
-        Blockdata["masterdir"] = string.join(Blockdata["masterdir"], "")
+        Blockdata["masterdir"] = str(Blockdata["masterdir"])
 
     # add stack_ali2d path to blockdata
     Blockdata["stack_ali2d"] = "bdb:" + os.path.join(
