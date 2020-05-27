@@ -124,14 +124,13 @@ class Test_helperFunctions(unittest.TestCase):
         remove_dir(self.new_output_folder)
         remove_dir(self.old_output_folder)
 
-    @unittest.skip("The error, or at least his output is changed")
     def test_LowPass_param_error(self):
         testargs_new =  (path.join(ABSOLUTE_BIN_PATH, "sp_3dvariability.py")
                          +" "+"'bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"06_SUBSTACK_ANO#isac_substack'")
                          +" "+"--output_dir="+self.new_output_folder
                          +" "+"--sym=c5"
-                         +"--fl=0.1"
-                         +"--aa=0")
+                         +" --fl=0.1"
+                         +" --aa=0")
         testargs_old = (path.join(ABSOLUTE_OLDBIN_PATH, "sp_3dvariability.py")
                         +" "+"'bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"06_SUBSTACK_ANO#isac_substack'")
                         +" "+"--output_dir="+self.old_output_folder
@@ -142,9 +141,8 @@ class Test_helperFunctions(unittest.TestCase):
         a = subprocess.run(args=[testargs_new], shell=True, capture_output=True)
         b = subprocess.run(args=[testargs_old], shell=True,  capture_output=True)
 
-        self.assertTrue(' => Input stack is not prepared for symmetry, please follow instructions' in a.stdout.decode('utf8'))
-        self.assertTrue(' => Input stack is not prepared for symmetry, please follow instructions' in b.stdout.decode('utf8'))
-        #self.assertTrue(' => Fall off has to be given for the low-pass filter' in b.stdout.decode('utf8'))
+        self.assertTrue(' => Fall off has to be given for the low-pass filter' in a.stdout.decode('utf8'))
+        self.assertTrue(' => Fall off has to be given for the low-pass filter' in b.stdout.decode('utf8'))
 
         remove_dir(self.new_output_folder)
         remove_dir(self.old_output_folder)
