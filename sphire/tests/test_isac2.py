@@ -83,13 +83,14 @@ class Test_run(unittest.TestCase):
             +" --radius=145"
             +" --CTF")
 
-        a = subprocess.run(args =[testcommand_new], shell=True, stderr=subprocess.STDOUT)
-        b = subprocess.run(args=[testcommand_old], shell=True, stderr=subprocess.STDOUT)
+        a = subprocess.run(args =[testcommand_new], shell=True, capture_output=True)
+        b = subprocess.run(args=[testcommand_old], shell=True, capture_output=True)
 
-        # old_value = get_im(path.join(self.old_output_folder, self.filename))
-        # new_value = get_im(path.join(self.new_output_folder, self.filename))
-        # self.assertTrue(numpy.array_equal(old_value.get_2dview(),new_value.get_2dview()))
-        # self.assertTrue(allclose( old_value.get_2dview().flatten().tolist()[0:100], [0.02826664224267006, 0.027966178953647614, 0.02758362889289856, 0.027607476338744164, 0.028002280741930008, 0.028992081061005592, 0.02917819656431675, 0.025063568726181984, 0.02249879390001297, 0.02685454860329628, 0.03184734284877777, 0.03102857992053032, 0.03166065365076065, 0.0392359234392643, 0.04360540211200714, 0.036976393312215805, 0.01727971062064171, 0.023975739255547523, 0.039678484201431274, 0.03920724242925644, 0.048566970974206924, 0.05904018506407738, 0.06332758814096451, 0.059697940945625305, 0.02878061681985855, 0.020571228116750717, 0.05693618208169937, 0.05775655433535576, 0.04874090477824211, 0.03842538222670555, 0.017679473385214806, 0.007761257700622082, 0.012288063764572144, 0.023420047014951706, 0.018611961975693703, 0.005126635078340769, 0.01053755171597004, 0.04059397801756859, 0.09011068940162659, 0.12636150419712067, 0.07826534658670425, 0.010442654602229595, -0.013606780208647251, -0.014976754784584045, 0.02649846114218235, 0.06628189980983734, 0.06066082417964935, 0.06835232675075531, 0.030094420537352562, -0.018862448632717133, 0.00870553869754076, 0.030758436769247055, 0.029359430074691772, 0.04237156733870506, 0.05532151088118553, 0.07659796625375748, 0.05731084942817688, 0.021425651386380196, 0.014865261502563953, 0.0036516557447612286, -0.005537862423807383, 0.011143092066049576, 0.011356080882251263, -0.008499382995069027, -0.015915805473923683, 0.001295937690883875, 0.03629670664668083, 0.038976095616817474, 0.033428825438022614, 0.032993897795677185, 0.02841532602906227, 0.02451731264591217, 0.022545520216226578, 0.02724434807896614, 0.02838853746652603, 0.027603670954704285, 0.028169872239232063, 0.028828293085098267, 0.02889416739344597, 0.028997056186199188, 0.028535181656479836, 0.026410352438688278, 0.026367953047156334, 0.03121563233435154, 0.03588540852069855, 0.03955190256237984, 0.035150784999132156, 0.03051012195646763, 0.032955560833215714, 0.02942657098174095, 0.018812870606780052, 0.008279817178845406, 0.003518986515700817, 0.029718324542045593, 0.043439824134111404, 0.037052590399980545, 0.06802663952112198, 0.08852826058864594, 0.07487991452217102, 0.051908522844314575], atol=0.5))
+        old_value = get_im(path.join(self.old_output_folder, self.filename))
+        new_value = get_im(path.join(self.new_output_folder, self.filename))
+
+        #self.assertTrue(allclose(old_value.get_2dview(),new_value.get_2dview(), atol=0.05))
+        self.assertTrue(allclose( new_value.get_2dview().flatten().tolist()[0:100], [0.020844653248786926, 0.022487156093120575, 0.02208145707845688, 0.018550248816609383, 0.018665246665477753, 0.019494876265525818, 0.02418450079858303, 0.027667080983519554, 0.02900763787329197, 0.025944046676158905, 0.031390730291604996, 0.027120821177959442, 0.00910606887191534, -0.0004518263158388436, 0.009620467200875282, 0.025462428107857704, 0.02613203041255474, 0.026837026700377464, 0.019651882350444794, -0.0013422714546322823, -0.004115818999707699, 0.03214756399393082, 0.03178049996495247, 0.011443180963397026, 0.025857364758849144, 0.026638126000761986, 0.03655451536178589, 0.05426323413848877, 0.06268023699522018, 0.03984970971941948, 0.013704168610274792, 0.008193270303308964, 0.005416750907897949, -0.012422064319252968, -0.012422808445990086, 0.014235804788768291, 0.024870628491044044, -0.005099047441035509, -0.009270750917494297, 0.015586614608764648, -0.0036001892294734716, -0.02533501200377941, -0.004470369778573513, 0.02382775768637657, 0.05031612142920494, 0.04690878838300705, 0.02393484115600586, 0.027014095336198807, 0.039149295538663864, 0.03573647513985634, 0.02213861420750618, 0.032027628272771835, 0.03532850742340088, 0.03128813952207565, 0.01826963573694229, 0.028490642085671425, 0.046303264796733856, 0.01782909594476223, -0.00606165686622262, -0.016502195969223976, -0.005856842268258333, 0.019041359424591064, 0.02800695225596428, 0.026184026151895523, 0.023107700049877167, 0.02628708817064762, 0.022019468247890472, 0.019245078787207603, 0.020709989592432976, 0.021585211157798767, 0.02417927235364914, 0.021674703806638718, 0.0199696384370327, 0.021289950236678123, 0.020935336127877235, 0.021501578390598297, 0.022525610402226448, 0.02044103667140007, 0.01824958808720112, 0.023783020675182343, 0.025899477303028107, 0.023173417896032333, 0.0289889145642519, 0.03435958921909332, 0.03157936781644821, 0.03505755960941315, 0.04005855321884155, 0.034827277064323425, 0.022344911471009254, 0.008706190623342991, 0.01249337662011385, 0.019858719781041145, 0.021026115864515305, 0.029216332361102104, 0.010308701545000076, -0.01953706704080105, -0.012493203394114971, 0.022878523916006088, 0.022390954196453094, 0.0009752019541338086], atol=0.5))
 
 
 """ see https://wrongsideofmemphis.com/2010/03/01/store-standard-output-on-a-variable-in-python/"""
@@ -109,46 +110,31 @@ class Test_Error_cases(unittest.TestCase):
         a = subprocess.run(args =[testargs_new], shell=True, capture_output=True)
         b = subprocess.run(args=[testargs_old], shell=True, capture_output=True)
 
-        print_new = a.stdout.decode('utf8').split('\n')
-        print_old = b.stdout.decode('utf8').split('\n')
+        self.assertTrue('==radius== mandatory option is missing' in b.stdout.decode('utf8'))
+        self.assertTrue('==radius== mandatory option is missing' in a.stdout.decode('utf8'))
 
-        print(print_new)
-        # with patch.object(sys, 'argv', testargs_new):
-        #     old_stdout = sys.stdout
-        #     print_new = StringIO()
-        #     sys.stdout = print_new
-        #     return_new=fu.main(testargs_new[1:])
-        # with patch.object(sys, 'argv', testargs_old):
-        #     print_old = StringIO()
-        #     sys.stdout = print_old
-        #     return_old=oldfu.main(testargs_old[1:])
-        # sys.stdout = old_stdout
-        # self.assertEqual(return_new,return_old)
-        # self.assertEqual(return_new, 1)
-        # self.assertEqual(print_new.getvalue().split('\n')[1],' ==radius== mandatory option is missing.')
-        # self.assertEqual(print_new.getvalue().split('\n')[1],print_old.getvalue().split('\n')[1])
-
-    # todo: there is an error in li = mpi.mpi_bcast(li,1,mpi.MPI_INT,Blockdata["main_node"],mpi.MPI_COMM_WORLD)[0] when I go throught it in the second 'main' call. it does not depend on the lib version. it seems to be an mpi syncronization situation ... ask markus
-    @unittest.skip("exitcode 1")
     def test_negative_radius_error(self):
-        testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_isac2.py"),'bdb:'+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"03_PARTICLES#stack"), "outnewfolder", "--radius=-145"]
-        testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_isac2.py"),'bdb:'+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"03_PARTICLES#stack"), "outoldfolder","--radius=-145"]
-        with patch.object(sys, 'argv', testargs_new):
-            with self.assertRaises(SystemExit):
-                old_stdout = sys.stdout
-                print_new = StringIO()
-                sys.stdout = print_new
-                fu.main(testargs_new[1:])
-        with patch.object(sys, 'argv', testargs_old):
-            with self.assertRaises(SystemExit):
-                print_old = StringIO()
-                sys.stdout = print_old
-                oldfu.main(testargs_old[1:])
-        sys.stdout = old_stdout
-        self.assertEqual(print_new.getvalue().split('\n')[20].split("ERROR")[1],' => Particle radius has to be provided!')
-        self.assertEqual(print_new.getvalue().split('\n')[20].split("ERROR")[1],print_old.getvalue().split('\n')[20].split("ERROR")[1])
+        testargs_new =  (path.join(ABSOLUTE_BIN_PATH, "sp_isac2.py")
+                         +" "+'bdb:'+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"03_PARTICLES#stack")
+                         +" "+"outnewfolder"
+                         +" " + "--radius=-145")
+        testargs_old =  (path.join(ABSOLUTE_OLDBIN_PATH, "sp_isac2.py")
+                         +" "+'bdb:'+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"03_PARTICLES#stack")
+                         +" "+"outoldfolder"
+                         +" " + "--radius=-145")
 
-    def test_minimum_group_size_higher_group_size_errowr(self):
+        a = subprocess.run(args =[testargs_new], shell=True, capture_output=True)
+        b = subprocess.run(args=[testargs_old], shell=True, capture_output=True)
+
+
+        self.assertTrue('ERROR => Particle radius has to be provided!' in b.stdout.decode('utf8'))
+        self.assertTrue('ERROR => Particle radius has to be provided!' in a.stdout.decode('utf8'))
+
+        self.assertTrue('li = mpi.mpi_bcast(li, 1, mpi.MPI_INT, Blockdata["main_node"], mpi.MPI_COMM_WORLD)' in b.stderr.decode('utf8'))
+        self.assertTrue('li = mpi.mpi_bcast(li, 1, mpi.MPI_INT, Blockdata["main_node"], mpi.MPI_COMM_WORLD)' in a.stderr.decode('utf8'))
+
+
+    def test_minimum_group_size_higher_group_size_error(self):
         testargs_new = (path.join(ABSOLUTE_BIN_PATH, "sp_isac2.py")
                         +" "+'bdb:'+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"03_PARTICLES#stack")
                         +" "+"outnewfolder"
@@ -157,7 +143,7 @@ class Test_Error_cases(unittest.TestCase):
                         +" "+"--img_per_grp=2")
 
 
-        testargs_old = (path.join(ABSOLUTE_OLDBIN_PATH, "sp_isac2.py"),
+        testargs_old = (path.join(ABSOLUTE_OLDBIN_PATH, "sp_isac2.py")
                         +" "+'bdb:'+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"03_PARTICLES#stack")
                         +" "+"outoldfolder"
                         +" "+"--radius=145"
@@ -167,41 +153,24 @@ class Test_Error_cases(unittest.TestCase):
         a = subprocess.run(args =[testargs_new], shell=True, capture_output=True)
         b = subprocess.run(args=[testargs_old], shell=True, capture_output=True)
 
-        print_new = a.stdout.decode('utf8').split('\n')
-        print_old = b.stdout.decode('utf8').split('\n')
+        self.assertTrue('ERROR! Minimum group size (3) is larger than the actual group size (2)' in b.stdout.decode('utf8'))
+        self.assertTrue('ERROR! Minimum group size (3) is larger than the actual group size (2)' in a.stdout.decode('utf8'))
 
-
-        # with patch.object(sys, 'argv', testargs_new):
-        #     old_stdout = sys.stdout
-        #     print_new = StringIO()
-        #     sys.stdout = print_new
-        #     return_new=fu.main(testargs_new[1:])
-        # with patch.object(sys, 'argv', testargs_old):
-        #     print_old = StringIO()
-        #     sys.stdout = print_old
-        #     return_old=oldfu.main(testargs_old[1:])
-        # sys.stdout = old_stdout
-        # self.assertEqual(return_new,return_old)
-        # self.assertEqual(return_new, 1)
-        # self.assertEqual(print_new.getvalue().split('\n')[1],'ERROR! Minimum group size (3) is larger than the actual group size (2). Oh dear :(')
-        # self.assertEqual(print_new.getvalue().split('\n')[1],print_old.getvalue().split('\n')[1])
-
-    #todo: there is an error in li = mpi.mpi_bcast(li,1,mpi.MPI_INT,Blockdata["main_node"],mpi.MPI_COMM_WORLD)[0] when I go throught it in the second 'main' call. it does not depend on the lib version. it seems to be an mpi syncronization situation ... ask markus
-    @unittest.skip("exitcode 1")
     def test_CTF_and_VPP_error(self):
-        testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_isac2.py"),'bdb:'+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"03_PARTICLES#stack"), "outnewfolder", "--radius=145", "--CTF", "--VPP"]
-        testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_isac2.py"),'bdb:'+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"03_PARTICLES#stack"), "outoldfolder","--radius=145", "--CTF", "--VPP"]
-        with patch.object(sys, 'argv', testargs_new):
-            with self.assertRaises(SystemExit):
-                old_stdout = sys.stdout
-                print_new = StringIO()
-                sys.stdout = print_new
-                fu.main(testargs_new[1:])
-        with patch.object(sys, 'argv', testargs_old):
-            with self.assertRaises(SystemExit):
-                print_old = StringIO()
-                sys.stdout = print_old
-                oldfu.main(testargs_old[1:])
-        sys.stdout = old_stdout
-        self.assertEqual(print_new.getvalue().split('\n')[20].split("ERROR")[1],'=> Options CTF and VPP cannot be used together')
-        self.assertEqual(print_new.getvalue().split('\n')[20].split("ERROR")[1],print_old.getvalue().split('\n')[20].split("ERROR")[1])
+        testargs_new =  (path.join(ABSOLUTE_BIN_PATH, "sp_isac2.py")
+                         +" "+'bdb:'+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"03_PARTICLES#stack")
+                         +" "+"outnewfolder"
+                         +" " + "--radius=145"
+                         +" " + "--CTF"
+                         +" " + "--VPP")
+        testargs_old =  (path.join(ABSOLUTE_OLDBIN_PATH, "sp_isac2.py")
+                         +" "+'bdb:'+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"03_PARTICLES#stack")
+                         +" " + "--radius=145"
+                         +" " + "--CTF"
+                         +" " + "--VPP")
+
+        a = subprocess.run(args =[testargs_new], shell=True, capture_output=True)
+        b = subprocess.run(args=[testargs_old], shell=True, capture_output=True)
+
+        self.assertTrue('Options CTF and VPP cannot be used together' in b.stdout.decode('utf8'))
+        self.assertTrue('Options CTF and VPP cannot be used together' in a.stdout.decode('utf8'))
