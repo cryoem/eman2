@@ -41,9 +41,12 @@ def main():
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default="")
-	parser.add_argument("--refine",action="store_true",help="local refinement from xform.init in header.",default=False)
+	parser.add_argument("--refine",action="store_true",help="local refinement from xform in header.",default=False)
 	parser.add_argument("--randphi",action="store_true",help="randomize phi for refine search",default=False)
+	parser.add_argument("--rand180",action="store_true",help="include 180 degree rotation for refine search",default=False)
 	parser.add_argument("--resume",action="store_true",help="resume from previous run",default=False)
+	parser.add_argument("--breaksym",action="store_true",help="break symmetry",default=False)
+	parser.add_argument("--breaksymsym", type=str,help="Specify a different symmetry for breaksym.", default=None)
 	
 	#parser.add_argument("--masktight", type=str,help="Mask_tight file", default="")
 
@@ -84,10 +87,20 @@ def main():
 		options.parallel="thread:{}".format(options.threads)
 	
 	#### make a list file if the particles are not in a lst
-	if not ptcls.endswith(".lst"):
+	if ptcls.endswith(".json"):
+		jstmp=js_open_dict(ptcls)
+		ky=jstmp.keys()[0]
+		pt,ii=eval(ky)
+		ep=EMData(pt, ii)
+		
+	elif ptcls.endswith(".lst"):
+		pass
+		
+	else:
 		ptcllst="{}/input_ptcls.lst".format(options.path)
 		run("e2proclst.py {} --create {}".format(ptcls, ptcllst))
 		ptcls=ptcllst
+		ep=EMData(ptcls,0)
 
 	options.input_ptcls=ptcls
 	options.input_ref=ref
@@ -99,11 +112,6 @@ def main():
 			js.update(vars(options))
 			js.close()
 			break
-		
-	
-	
-	
-	ep=EMData(ptcls,0)
 	
 	if options.goldcontinue==False:
 		er=EMData(ref,refn,True)
@@ -134,7 +142,15 @@ def main():
 			gd+=" --refine --maxang {:.1f}".format(options.maxang)
 			if options.randphi:
 				gd+=" --randphi"
-		#curres=0
+			if options.rand180:
+				gd+=" --rand180"
+			if itr>startitr:
+				ptcls=os.path.join(options.path, "particle_parms_{:02d}.json".format(itr-1))
+		
+		if options.breaksym:
+			gd+=" --breaksym"
+		if options.breaksymsym:
+			gd+=" --breaksymsym {}".format(options.breaksymsym)
 		
 		if options.maxshift>0:
 			gd+=" --maxshift {:.1f}".format(options.maxshift)
@@ -142,28 +158,21 @@ def main():
 		cmd="e2spt_align.py {} {} --parallel {} --path {} --iter {} --sym {} --nsoln 1 {}".format(ptcls, ref,  options.parallel, options.path, itr, options.sym, gd)
 		
 		#### in case e2spt_align get segfault....
-		ret=1
-		while ret>0:
-			try: os.remove(os.path.join(options.path, "particle_parms_{:02d}.json".format(itr)))
-			except:pass
+		#ret=1
+		#while ret>0:
+			#try: os.remove(os.path.join(options.path, "particle_parms_{:02d}.json".format(itr)))
+			#except:pass
 
-			ret=run(cmd)
+		ret=run(cmd)
 		
-		js=js_open_dict(os.path.join(options.path, "particle_parms_{:02d}.json".format(itr)))
-		score=[]
-		for k in list(js.keys()):
-			score.append(float(js[k]["score"]))
 		
 		s=""
-		if options.pkeep<1:
-			simthr=np.sort(score)[int(len(score)*options.pkeep)]
-			s+=" --simthr {:f}".format(simthr)
 		if options.maxtilt<90.:
 			s+=" --maxtilt {:.1f}".format(options.maxtilt)
 			
 		
 		#run("e2spt_average.py --threads {} --path {} --sym {} --skippostp {}".format(options.threads, options.path, options.sym, s))
-		run("e2spt_average.py --parallel {} --path {} --sym {} --skippostp {}".format(options.parallel, options.path, options.sym, s))
+		run("e2spt_average.py --parallel {} --path {} --sym {} --keep {:.3f} --iter {} --skippostp {}".format(options.parallel, options.path, options.sym, options.pkeep, itr, s))
 		
 		even=os.path.join(options.path, "threed_{:02d}_even.hdf".format(itr))
 		odd=os.path.join(options.path, "threed_{:02d}_odd.hdf".format(itr))
@@ -198,11 +207,6 @@ def main():
 			else:
 				msk=" --automask3d {}".format(msk)
 
-		#if len(options.masktight)>0:
-			#if os.path.isfile(options.masktight):
-				#msk+=" --automask3dtight mask.fromfile:filename={}".format(options.masktight)
-			#else:
-				#msk+=" --automask3dtight {}".format(options.masktight)
 
 		s=""
 		if options.goldstandard>0:
@@ -217,19 +221,16 @@ def main():
 		ppcmd="e2refine_postprocess.py --even {} --odd {} --output {} --iter {:d} --mass {} --restarget {} --threads {} --sym {} {} {} ".format(even, odd, os.path.join(options.path, "threed_{:02d}.hdf".format(itr)), itr, options.mass, curres, options.threads, options.sym, msk, s)
 		run(ppcmd)
 		
-		#if options.localnorm:
-			#for f in [even, odd]:
-				#run("e2proc3d.py {} {} --process normalize --process normalize.local:threshold=1:radius=16".format(f,f))
 			
 		ref=os.path.join(options.path, "threed_{:02d}.hdf".format(itr))
 		fsc=np.loadtxt(os.path.join(options.path, "fsc_masked_{:02d}.txt".format(itr)))
 		
-		fi=fsc[:,1]<0.3
+		fi=fsc[:,1]<0.2
 		if np.sum(fi)==0:
 			print("something wrong with the FSC curve. Cannot estimate resolution. Please check.")
 		else:
 			rs=1./fsc[fi, 0][0]
-			print("Resolution (FSC<0.3) is ~{:.1f} A".format(rs))
+			print("Resolution (FSC<0.2) is ~{:.1f} A".format(rs))
 		curres=rs
 		if curres>40.:
 			curres=40
