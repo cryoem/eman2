@@ -126,9 +126,14 @@ def main():
 		if options.verbose: print("{} found in {} JSON files".format(options.extractkey,nf))
 					
 	if options.removekey:
-		jsb=js_open_dict("backup_removed.json")
+		jsb={}
+		
 		nf=0
-		for fsp in args:
+		for ii, fsp in enumerate(args):
+			
+			if options.verbose>5:
+				sys.stdout.write("\r{}/{} finished.".format(ii, len(args)))
+				sys.stdout.flush()
 			js=js_open_dict(fsp)
 			if options.removekey in js:
 				nf+=1
@@ -137,7 +142,9 @@ def main():
 				del js[options.removekey]
 			js.close()
 
-		jsb.close()
+		js=js_open_dict("backup_removed.json")
+		js.update(jsb)
+		js.close()
 		print("Removed {} from {} files. Backup stored in backup_removed.json".format(options.removekey,nf))
 			
 
