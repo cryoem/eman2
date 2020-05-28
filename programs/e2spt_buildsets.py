@@ -7,7 +7,13 @@ import numpy as np
 
 def main():
 	
-	usage=" "
+	usage="""Build virtual stacks (.lst) from particles of the same label.  
+	To generate all particle stacks:
+	    e2spt_buildsets.py --allparticles
+	Adding --label option will only build stack for the specified label
+	To only include particles from some tomograms:
+	    e2spt_buildsets.py <particles3d/xxx.hdf> <particles3d/yyy.hdf> ...
+	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_pos_argument(name="particle_stacks",help="Specify particles input.", default="", guitype='filebox', browser="EMSPTParticleTable(withmodal=True,multiselect=True)", row=0, col=0,rowspan=1, colspan=2, mode="sets")
 	parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=3, col=0, rowspan=1, colspan=1, mode="sets")
@@ -23,8 +29,7 @@ def main():
 		fld="particles3d/"
 		plist=[fld+f for f in os.listdir(fld) if f.endswith(".hdf")]
 	
-	tags=[f[f.find("__")+2:-4] for f in plist]
-	tags=np.unique(tags)
+	tags={f[f.find("__")+2:-4] for f in plist}
 	print("Found particles with following labels: ", ", ".join(tags))
 	
 	if len(options.label)>0:
