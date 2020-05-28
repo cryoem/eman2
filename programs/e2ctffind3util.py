@@ -122,7 +122,7 @@ For more information on ctffind3 please see: Mindell, JA, Grigorieff N.  2003.  
 		args = []
 		for item in os.listdir("micrographs"):
 			try: 
-				if item.split(".")[1] == "mrc" or item.split(".")[1] == "hdf":
+				if item.split(".")[-1] == "mrc" or item.split(".")[-1] == "hdf":
 					args.append("micrographs/" + item)
 			except:
 				pass
@@ -151,29 +151,46 @@ def import_ctf(voltage, cs, ac, apix, verbose, version):
 		exit(-5)
 		
 	for filename in os.listdir("micrographs"):
-		if os.path.exists(version + "/" + base_name(filename)+"_" + version + ".log"):
-			f_log = open(version + "/" + base_name(filename) + "_" + version + ".log")
-			for line in f_log.readlines():
-				if len(line) > 1:
-					if len(line.split()) == 6:
-						if line.split()[5] == "Values":
-							defocusu = float(line.split()[0])
-							defocusv = float(line.split()[1])
-							dfang =  float(line.split()[2])
-							cc = float(line.split()[3])
-							e2defocus =  old_div((defocusu + defocusv), 20000.0)
-							e2dfdiff = old_div(abs(defocusu - defocusv), 10000.0)
-							e2dfang = dfang
-							if not os.path.exists(os.getcwd() + "/info"):
-								os.mkdir(os.getcwd() + "/info")
-							jdb = js_open_dict(os.getcwd() + "/info/" + base_name(filename) + "_info.json")
-							if "ctf" in list(jdb.keys()):
-								jdb.delete('ctf')
-							ctf = EMAN2Ctf()
-							ctf.from_dict({"defocus":e2defocus,"dfang":e2dfang,"dfdiff":e2dfdiff,"voltage":voltage,"cs":cs,"ampcont":ac,"apix":apix})
-							jdb['ctf_frame'] = [512,ctf,(256,256),tuple(),5,1]
-							#launch_childprocess("e2ctf.py --voltage {} --cs {} --ac {} --apix {} --autofit --curdefocusfix --verbose {} {}".format(voltage,cs,ac,apix,verbose-1,))
-	launch_childprocess("e2ctf.py --voltage {} --cs {} --ac {} --apix {} --allparticles --autofit --curdefocusfix --astigmatism --verbose {}".format(voltage,cs,ac,apix,verbose-1))
+		fname="{}/{}.txt".format(version, base_name(filename))
+		print(fname)
+		
+		if os.path.exists(fname):
+			f_log = open(fname)
+			vals=f_log.readlines()[-1].split()
+			vals=[float(v) for v in vals]
+			ctf = EMAN2Ctf()
+			du=vals[1]
+			dv=vals[2]
+			ctf.from_dict({"defocus":(du+dv)/20000.,"dfang":vals[3],"dfdiff":abs(du-dv)/10000,"voltage":voltage,"cs":cs,"ampcont":0,"apix":apix})
+			ctf.set_phase(vals[5])
+			jdb = js_open_dict(info_name(filename))
+			#jdb["ctf"]=ctf
+			if "ctf" in list(jdb.keys()):
+				jdb.delete('ctf')
+			jdb['ctf_frame'] = [512,ctf,(256,256),tuple(),5,1]
+			jdb.close()
+			print(ctf)
+				#if len(line) > 1:
+					#if len(line.split()) == 6:
+						#if line.split()[5] == "Values":
+							#defocusu = float(line.split()[0])
+							#defocusv = float(line.split()[1])
+							#dfang =  float(line.split()[2])
+							#cc = float(line.split()[3])
+							#e2defocus =  old_div((defocusu + defocusv), 20000.0)
+							#e2dfdiff = old_div(abs(defocusu - defocusv), 10000.0)
+							#e2dfang = dfang
+							#if not os.path.exists(os.getcwd() + "/info"):
+								#os.mkdir(os.getcwd() + "/info")
+							#jdb = js_open_dict(os.getcwd() + "/info/" + base_name(filename) + "_info.json")
+							#if "ctf" in list(jdb.keys()):
+								#jdb.delete('ctf')
+							#ctf = EMAN2Ctf()
+							#ctf.from_dict({"defocus":e2defocus,"dfang":e2dfang,"dfdiff":e2dfdiff,"voltage":voltage,"cs":cs,"ampcont":ac,"apix":apix})
+							#jdb['ctf_frame'] = [512,ctf,(256,256),tuple(),5,1]
+							#print(ctf)
+							##launch_childprocess("e2ctf.py --voltage {} --cs {} --ac {} --apix {} --autofit --curdefocusfix --verbose {} {}".format(voltage,cs,ac,apix,verbose-1,))
+	print("e2ctf.py --voltage {} --cs {} --ac {} --apix {} --allparticles --autofit --curdefocusfix --astigmatism --verbose {}".format(voltage,cs,ac,apix,verbose-1))
 
 def run_ctffind(apix, args, cs, voltage, ac, windowsize, minres, maxres, defocusmin, defocusmax, defocusstep,verbose, version):
 	print("Running " + version)
@@ -187,20 +204,33 @@ def run_ctffind(apix, args, cs, voltage, ac, windowsize, minres, maxres, defocus
 		if not os.path.exists(image):
 			print("Image Does not exist: " + image)
 			exit(-6)
-		card = open("card.txt",'w')
-		if image.split(".")[1] != "mrc":
-			launch_childprocess("e2proc2d.py {} {}.mrc --verbose={}".format(image,image.split(".")[0],verbose-1))
+		
+		if image.split(".")[-1] != "mrc":
+			launch_childprocess("e2proc2d.py {} {}.mrc --verbose={}".format(image,image[:-4],verbose-1))
 			created = True
-		card.write(image.split(".")[0] + ".mrc\n" + version + "/" + base_name(image) + "_" + version + ".ctf\n" + str(cs) + "," + str(voltage) + "," + str(ac) + "," + str(mag) + "," + str(dstep) + "\n" + str(windowsize) + "," + str(minres) + "," + str(maxres) + "," + str(defocusmin) + "," + str(defocusmax) + "," + str(defocusstep))
-		card.close()
+			
 		print("running " + version + " on: " + image)
 		if version == "ctffind3":
+			card = open("card.txt",'w')
+			card.write(image[:-4] + ".mrc\n" + version + "/" + base_name(image) + "_" + version + ".mrc\n" + str(cs) + "," + str(voltage) + "," + str(ac) + "," + str(mag) + "," + str(dstep) + "\n" + str(windowsize) + "," + str(minres) + "," + str(maxres) + "," + str(defocusmin) + "," + str(defocusmax) + "," + str(defocusstep))
+			card.close()
+			
 			s = "`which ctffind3.exe` < card.txt >ctffind3/" + base_name(image) + "_ctffind3.log"
 		else:
-			s = "`which ctffind` --old-school-input < card.txt >ctffind4/" + base_name(image) + "_ctffind4.log"
-		call(s,shell=True)
+			card = open("card.txt",'w')
+			card.write("{}.mrc\n{}/{}.mrc\n".format(image[:-4],version,  base_name(image)))
+			card.write("{:.5f}\n{:.0f}\n{:.2f}\n{:.3f}\n".format(apix, voltage, cs, ac))
+			card.write("{:d}\n{:.0f}\n{:.0f}\n{:.0f}\n{:.0f}\n{:.0f}\n".format(windowsize,minres, maxres, defocusmin, defocusmax, defocusstep,))
+			card.write("no\nno\nno\nno\nno\n")
+			
+			card.close()
+			
+			s = "`which ctffind` < card.txt"
+		#print(s)
+		os.system(s)
+		#exit()
 		if created:
-			os.remove(image.split(".")[0] + ".mrc")
+			os.remove(image[:-4] + ".mrc")
 			created = False
 	#os.remove("card.txt")
 	
