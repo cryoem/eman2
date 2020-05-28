@@ -98,7 +98,7 @@ Symmetry3D* Factory < Symmetry3D >::get(const string & instancename_)
 		}
 		if (leadingchar == 'h') {
 			int nstart=1,nsym=1;
-			float daz=5.,tz=5.,maxtilt=1.0;
+			float daz=0.,tz=0.,maxtilt=90.0;
 			string temp;
 			temp=instancename;
 			temp.erase(0,1);
@@ -1571,7 +1571,7 @@ Dict HSym::get_delimiters(const bool) const {
 	int nsym = params.set_default("nsym",0);
 	if ( nsym <= 0 ) throw InvalidValueException(nsym,"Error, you must specify a positive non zero nsym");
 
-	float maxtilt = params.set_default("maxtilt",5.0f);
+	float maxtilt = params.set_default("maxtilt",90.0f);
 
 	returnDict["alt_max"] = 90.0f;
 
@@ -1589,7 +1589,7 @@ bool HSym::is_in_asym_unit(const float& altitude, const float& azimuth, const bo
 	float alt_min = d["alt_min"];
 
 	if (inc_mirror) {
-		float e = params.set_default("maxtilt",5.0f);
+		float e = params.set_default("maxtilt",90.0f);
 		alt_min -= e;
 	}
 
@@ -1659,11 +1659,13 @@ Transform HSym::get_sym(const int n) const
 	//d["az"] = (n%nsym) * 360.0f / nsym;
 	//d["az"]=(((int) n/hsym)%nstart)*360.f/nstart+(n%hsym)*daz;
 	//d["az"] = n * daz;
-	d["az"]=(n%nstart)*(360.0/nstart)+floor(float(n)/nstart)*daz;	// corrected by steve, 7/21/11. No dependency on nsym
+	int ii=(n+1)/2;
+	if (n>1 && n%2==0) ii*=-1; // extend to both directions 
+	d["az"]=(ii%nstart)*(360.0/nstart)+floor(float(ii)/nstart)*daz;	// corrected by steve, 7/21/11. No dependency on nsym
 	d["alt"] = 0.0f;
 	d["phi"] = 0.0f;
 	Transform ret(d);
-	ret.set_trans(0,0,(n/nstart)*dz);
+	ret.set_trans(0,0,(ii/nstart)*dz);
 	return ret;
 }
 
