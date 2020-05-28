@@ -1224,6 +1224,8 @@ void FourierReconstructor::do_compare_slice_work(EMData* input_slice, const Tran
 //	double amp=0,amp2=0;	// used for normalization, weighted amplitude averages under specific conditions
 	bool use_cpu = true;
 	
+	int nval=0;
+
 #ifdef EMAN2_USING_CUDA
 	if(EMData::usecuda == 1) {
 		if(!input_slice->getcudarwdata()) input_slice->copy_to_cuda();
@@ -1294,10 +1296,12 @@ void FourierReconstructor::do_compare_slice_work(EMData* input_slice, const Tran
 					dot+=(dt[0]*dt2[0]+dt[1]*dt2[1])*dt[2];
 					power+=(dt[0]*dt[0]+dt[1]*dt[1])*dt[2];
 					power2+=(dt2[0]*dt2[0]+dt2[1]*dt2[1])*dt[2];
+//					printf("%d\t%d\t%f\t%f\t%f\n",x,y,dt[0],dt[1],dt[2]);
 // 					if (r>2 && dt[2]>=0.5) {
 // 						amp+=hypot(dt[0]*dt[0],dt[1]*dt[1])*dt[2];
 // 						amp2+=hypot(dt2[0]*dt2[0],dt2[1]*dt2[1])*dt[2];
 // 					}
+					nval++;
 				}
 			}
 			//cout << dot << " " << vweight << " " << power << " " << power2 << endl;
@@ -1313,7 +1317,7 @@ void FourierReconstructor::do_compare_slice_work(EMData* input_slice, const Tran
 	input_slice->set_attr("reconstruct_absqual_lowres",(float)dotlow);
 	float rw=weight<=0?1.0f:1.0f/weight;
 	input_slice->set_attr("reconstruct_qual",(float)(dot*rw/((rw-1.0)*dot+1.0)));	// here weight is a proxy for SNR
-	input_slice->set_attr("reconstruct_weight",(float)vweight/(float)(subnx*subny*subnz));
+	input_slice->set_attr("reconstruct_weight",(float)(vweight/(float)(nval)));
 //	printf("** %g\t%g\t%g\t%g ##\n",dot,vweight,power,power2);
 	//printf("** %f %f %f ##\n",(float)(power2<=0?1.0:sqrt(power/power2)/(inx*iny)),(float)dot,(float)(dot*weight/((weight-1.0)*dot+1.0)));
 }

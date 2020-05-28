@@ -2393,9 +2393,9 @@ class EMImageInspector2D(QtWidgets.QWidget):
 			im=self.target().list_data[i]
 			im.write_image("tmp.%03d.png"%(i-self.stminsb.value()+1))
 
-		ret= os.system("convert tmp.???.png %s"%fsp)
+		ret= os.system("gm convert tmp.???.png %s"%fsp)
 		if ret!=0 :
-			QtWidgets.QMessageBox.warning(None,"Error","GIF conversion failed. Please make sure ImageMagick (convert program) is installed and in your path. Frames not deleted.")
+			QtWidgets.QMessageBox.warning(None,"Error","GIF conversion failed. Please make sure GraphicsMagick ('gm convert' program) is installed and in your path. Frames not deleted.")
 			return
 
 		for i in range(self.stminsb.value()-1,self.stmaxsb.value()):
