@@ -153,7 +153,11 @@ def main():
 	unmaskedfsc = "{path}fsc_unmasked_{itr:02d}.txt".format(path=path,itr=options.iter)
 	cmd="e2proc3d.py {evenfile} {unmaskedfsc} --calcfsc={oddfile}".format(unmaskedfsc=unmaskedfsc,evenfile=evenfile,oddfile=oddfile)
 	run(cmd)
-
+	
+	if options.sym.startswith("h"):
+		for eo in [evenfile, oddfile]:
+			run("e2proc3d.py {} {} --sym {}".format(eo, eo, options.sym))
+			
 	### Filtration & Normalize
 	even=EMData(evenfile,0)
 	odd=EMData(oddfile,0)
@@ -428,7 +432,7 @@ def main():
 		if options.sym=="c1" : symopt=""
 		else: symopt="--sym {}".format(options.sym)
 
-		run("e2proc3d.py {combfile} {combfile} {ampcorrect} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq} --multfile {path}mask.hdf {normproc} {symopt} {postproc}".format(
+		run("e2proc3d.py {combfile} {combfile} {ampcorrect} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq} {symopt}  --multfile {path}mask.hdf {normproc} {postproc}".format(
 			combfile=combfile,path=path,itr=options.iter,normproc=massnorm,ampcorrect=ampcorrect,postproc=m3dpostproc,symopt=symopt,underfilter=underfilter,maxfreq=old_div(1.0,options.restarget)))
 
 	try:
