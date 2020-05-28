@@ -84,7 +84,7 @@ class Test_helperFunctions(unittest.TestCase):
         testargs_new = (path.join(ABSOLUTE_BIN_PATH, "sp_3dvariability.py")
                         +" "+"--symmetrize"
                         +" "+" 'bdb:" + path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"06_SUBSTACK_ANO#isac_substack'")
-                        +" "+"--output_dir=" + self.old_output_folder
+                        +" "+"--output_dir=" + self.new_output_folder
                         +" "+"--sym=c1")
         a = subprocess.run(args=[testargs_new], shell=True, capture_output=True)
         b = subprocess.run(args=[testargs_old], shell=True, capture_output=True)
@@ -102,7 +102,7 @@ class Test_helperFunctions(unittest.TestCase):
                         +" "+path.join(ABSOLUTE_BIN_PATH, "sp_3dvariability.py")
                         +" "+"--symmetrize"
                         +" "+" 'bdb:" + path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"06_SUBSTACK_ANO#isac_substack'")
-                        +" "+"--output_dir=" + self.old_output_folder
+                        +" "+"--output_dir=" + self.new_output_folder
                         +" "+"--sym=c5")
         testargs_old = (MPI_PATH
                         + " -np "
