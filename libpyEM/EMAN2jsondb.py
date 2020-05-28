@@ -519,7 +519,7 @@ class JSTask(object):
 		self.__dict__.update(data)
 		return ret
 
-	def execute(self): return
+	def execute(self, null=None): return
 
 
 ##########
