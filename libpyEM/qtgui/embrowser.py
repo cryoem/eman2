@@ -1332,6 +1332,20 @@ class EMStackFileType(EMFileType) :
 		except :
 			print("First 10 images all missing in ", path)
 			self.dim = "?"
+		
+		self.xfparms=False
+		if path.endswith(".lst"):
+			try: 
+				lst=LSXFile(path, True)
+				l=lst.read(0)
+				dic=eval(l[2].split(';')[0])
+				if isinstance(dic, dict) and 'type' in dic:
+					self.xfparms=True
+				
+			except:
+				self.xfparms=False
+				pass
+		
 
 	def actions(self) :
 		"""Returns a list of (name, callback) tuples detailing the operations the user can call on the current file"""
@@ -1340,8 +1354,12 @@ class EMStackFileType(EMFileType) :
 			return [("Show all 3D", "Show all in a single 3D window", self.show3DAll), ("Show 1st 3D", "Show only the first volume", self.show3DNew),("Show 1st 2D", "Show first volume as 2D stack", self.show2dSingle30),("Show 2nd 2D", "Show second volume as 2D stack", self.show2dSingle31),("Show All Zproj", "Show Z projection of all volumes", self.show2dStack3z),("Show All Zcen", "Show Z central section of all volumes", self.show2dStack3sec), ("Chimera", "Open in chimera (if installed)", self.showChimera), ("Save As", "Saves images in new file format", self.saveAs)]
 		# 2-D stack
 		elif self.nimg > 1 and self.dim[1] > 1:
-			return [("Show Stack", "Show all images together in one window", self.show2dStack), ("Show Stack+", "Show all images together in a new window", self.show2dStackNew), 
+			rtr=[("Show Stack", "Show all images together in one window", self.show2dStack), ("Show Stack+", "Show all images together in a new window", self.show2dStackNew), 
 				("Show 2D", "Show all images, one at a time in current window", self.show2dSingle), ("Show 2D+", "Show all images, one at a time in a new window", self.show2dSingleNew), ("FilterTool", "Open in e2filtertool.py", self.showFilterTool), ("Save As", "Saves images in new file format", self.saveAs)]
+			if self.xfparms:
+				rtr.extend([("Plot 2D", "Plot xform", self.plot2dApp),("Plot 2D+", "plot xform in new window", self.plot2dNew)])
+			return rtr
+			
 		# 1-D stack
 		elif self.nimg > 1:
 			return [("Plot 2D", "Plot all on a single 2-D plot", self.plot2dNew), ("Save As", "Saves images in new file format", self.saveAs)]
@@ -1363,6 +1381,55 @@ class EMStackFileType(EMFileType) :
 			os.system("/Applications/Chimera.app/Contents/MacOS/chimera /tmp/vol.hdf&")
 		else : print("Sorry, I don't know how to run Chimera on this platform")
 
+	def plot2dNew(self, brws):
+		self.plot2dApp(brws, True)
+		
+		
+	def plot2dApp(self, brws, new=False) :
+		"""Append self to current plot"""
+		
+		brws.busy()
+		rows = []
+		print("Reading from {}...".format(self.path))
+		lst=LSXFile(self.path, True)
+		#print(lst.read(0))
+		for i in range(lst.n):
+			l=lst.read(i)
+			
+			for lc in l[2].split(';'):
+				dic=eval(lc)
+				if 'score' in dic:
+					scr=dic.pop('score')
+				else:
+					scr=0
+				tf=Transform(dic)
+				t = tf.get_trans()
+				r = tf.get_rotation()
+				rows.append( [r["az"],r["alt"],r["phi"],t[0],t[1],t[2], scr])
+			sys.stdout.write("\r {}/{}".format(len(rows), lst.n))
+			sys.stdout.flush()
+		lst=None
+		data=np.array(rows).T.tolist()
+		#print(data)
+		if new:
+			target = EMPlot2DWidget()
+			brws.viewplot2d.append(target)
+		else:
+			try :
+				target = brws.viewplot2d[-1]
+				#target.set_data(data, remove_directories_from_name(self.path, 1))
+			except :
+				target = EMPlot2DWidget()
+				brws.viewplot2d.append(target)
+		
+		
+		target.set_data(data, self.path.split('/')[-1])
+
+		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
+
+		brws.notbusy()
+		target.show()
+		target.raise_()
 
 class EMPDBFileType(EMFileType):
 	
