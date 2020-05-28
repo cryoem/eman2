@@ -723,7 +723,7 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 		
 		jsd.put((pid, threed, projs))
 		#recon.clear()
-
+	time.sleep(1)
 	return
 	
 
@@ -793,6 +793,8 @@ def parse_json(options):
 	if options.keep<1:
 		sthr=np.sort(score)[int(len(score)*options.keep)+1]
 		print("Removing particles with score above {:.2f}.".format(sthr))
+	else:
+		sthr=1000
 	
 	
 	### parse post transform file
