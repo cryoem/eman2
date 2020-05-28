@@ -539,19 +539,28 @@ def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,preprocess):
 			
 			if getlst:
 				lstinfo=lst.read(i)
-				dc=eval(lstinfo[2])
-				if "score" in dc:
-					score=dc.pop("score")
-				else:
-					score=2
-				elem={"xform":Transform(dc)}
-				
-				if score<2:
-					elem["quality"]=-abs(score)
-					elem["weight"]=abs(score)
-				else:
-					elem["quality"]=1.0
-					elem["weight"]=1.0
+				for d in lstinfo[2].split(';'):
+					dc=eval(d)
+					#dc=eval(lstinfo[2])
+					if "score" in dc:
+						score=dc.pop("score")
+					else:
+						score=2
+					elem={"xform":Transform(dc)}
+					
+					if score<2:
+						elem["quality"]=-abs(score)
+						elem["weight"]=abs(score)
+					else:
+						elem["quality"]=1.0
+						elem["weight"]=1.0
+						
+					
+					elem["filename"]=inputfile
+					elem["filenum"]=i
+					elem["fileslice"]=-1
+
+					data.append(elem)
 			else:
 				tmp.read_image(inputfile,i,True)			
 				try: elem={"xform":tmp["xform.projection"]}
@@ -578,14 +587,14 @@ def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,preprocess):
 					except: elem["quality"]=1.0
 							
 				
-			elem["filename"]=inputfile
-			elem["filenum"]=i
-			elem["fileslice"]=-1
-			#if not lowmem:
-				#elem["data"]=tmp
-				#tmp=EMData()
+				elem["filename"]=inputfile
+				elem["filenum"]=i
+				elem["fileslice"]=-1
+				#if not lowmem:
+					#elem["data"]=tmp
+					#tmp=EMData()
 
-			data.append(elem)
+				data.append(elem)
 
 		print("Using %d images"%len(data))
 	return data
