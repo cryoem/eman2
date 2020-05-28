@@ -10,6 +10,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--train", type=str,help="train on tomo", default=None)
 	parser.add_argument("--boxsz", type=int,help="box size", default=128)
+	parser.add_argument("--gpuid", type=int,help="gpu id", default=None)
 	parser.add_argument("--nsample", type=int,help="number of samples", default=2000)
 	parser.add_argument("--learnrate", type=float,help="learning rate", default=2e-4)
 	parser.add_argument("--load", type=str,help="load model", default=None)
@@ -24,7 +25,7 @@ def main():
 	
 	global tf
 	os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]='true' 
-	tf=import_tensorflow(0)
+	tf=import_tensorflow(options.gpuid)
 	
 	if options.train!=None:
 		gen_y2x=do_training(options)
