@@ -761,6 +761,7 @@ float TomoWedgeFscCmp::cmp(EMData * image, EMData *with) const
 	float sigmaimgval = params.set_default("sigmaimgval",0.5f);
 	float sigmawithval = params.set_default("sigmawithval",0.5f);
 	
+	bool retcurve = params.set_default("retcurve",false);
 	// User can pass in a sigma vector if they like, otherwise we call it 1/10 of the standard deviation in each shell
 	// This has proven to be a good cutoff for identifying the missing wedge voxels, without throwing away too many
 	// voxels if the image is complete in Fourier space (no wedge)
@@ -782,12 +783,14 @@ float TomoWedgeFscCmp::cmp(EMData * image, EMData *with) const
 	//get min and max res
 	float minres = params.set_default("minres",0.0f);
 	float maxres = params.set_default("maxres", 0.0f);
-
-	int pmin,pmax;
-	if (minres>0) pmin=(int)floor((apix*ny)/minres);		//cutoff in pixels, assume square
-	else pmin=3;
-	if (maxres>0) pmax=(int)ceil((apix*ny)/maxres);
-	else pmax=ny/2;
+	
+	int pmin = params.set_default("pmin",3);
+	int pmax = params.set_default("pmax", ny/2);
+	
+	if (minres>0) 
+		pmin=(int)floor((apix*ny)/minres);		//cutoff in pixels, assume square
+	if (maxres>0) 
+		pmax=(int)ceil((apix*ny)/maxres);
 
 	int negative = params.set_default("negative",1);
 	
@@ -795,6 +798,7 @@ float TomoWedgeFscCmp::cmp(EMData * image, EMData *with) const
 	double sumsq1=0;
 	double sumsq2=0;
 	double norm=0;
+	vector<float> curve(nx/2), sqcv1(nx/2), sqcv2(nx/2);
 	for (int z=0; z<nz; z++) {
 		int za=z<nz/2?z:nz-z;
 		if (za>pmax) continue;
@@ -823,12 +827,24 @@ float TomoWedgeFscCmp::cmp(EMData * image, EMData *with) const
 //				if (Util::is_nan(sumsq1)) { printf("TomoWedgeCccCmp: NaN encountered: %d %d %d %f %f %f\n",x,y,z,v1r,v1i,v1); }
 				sumsq2+=v2/r2;
 				norm+=1.0;
+				if (retcurve){
+					curve[r]+=v1r*v2r+v1i*v2i;
+					sqcv1[r]+=v1;
+					sqcv2[r]+=v2;
+				}
 			}
 		}
 	}
 	image->set_attr("fft_overlap",(float)(2.0*norm/(image->get_xsize()*image->get_ysize()*image->get_zsize())));
 //	printf("%f\t%f\t%f\t%f\t%f\n",s1,s2,sumsq1,sumsq2,norm);
-
+	if (retcurve){
+		for(int i=0; i<nx/2; i++){
+			if (sqcv1[i]==0) sqcv1[i]=1;
+			if (sqcv2[i]==0) sqcv2[i]=1;
+			curve[i]=curve[i]/(sqrt(sqcv1[i])*sqrt(sqcv2[i]));
+		}
+		image->set_attr("fsc_curve", curve);
+	}
 
 	if (imageo!=image) delete image;
 	if (witho!=with) delete with;
