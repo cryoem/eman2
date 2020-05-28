@@ -1620,6 +1620,7 @@ returns (fg1d,bg1d)"""
 #		z=int(zero(n,ctf.voltage,ctf.cs,ctf.defocus,ctf.ampcont)/ds+.5)
 		z=int(old_div(ctf.zero(n-1),ds)+.5)
 		if z>len(ctf.background)-2 or z-lz<2: break
+		if lz==0: break
 		d1=min(fg[lz-1:lz+2]-bg[lz-1:lz+2])
 		d2=min(fg[ z-1: z+2]-bg[ z-1: z+2])
 		#d1=min(fg[lz]-bg[lz],fg[lz-1]-bg[lz-1],fg[lz+1]-bg[lz+1])
