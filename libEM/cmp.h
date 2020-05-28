@@ -423,8 +423,11 @@ to be missing values. If not provided, these values will be computed automatical
  			d.put("sigmawith", EMObject::FLOATARRAY, "Resolution dependent coefficient for thresholding values included in the dot product in the 'with' image. Default = 0.1 and is normally fine");
  			d.put("sigmaimgval", EMObject::FLOAT, "Sigma coefficient for thresholding values included in the dot product. default = 0.5");
  			d.put("sigmawithval", EMObject::FLOAT, "Sigma coefficient for thresholding values included in the dot product in the 'with' image. Default = 0.5");
-			d.put("minres", EMObject::FLOAT, "The minimum resolution to accept (1/A) Default is 3 pixels");
-			d.put("maxres", EMObject::FLOAT, "The maximum resolution to accept (1/A) Default is axial Nyquist");
+			d.put("minres", EMObject::FLOAT, "The minimum resolution to accept (1/A) Default is 3 pixels. overwrites pmin");
+			d.put("maxres", EMObject::FLOAT, "The maximum resolution to accept (1/A) Default is axial Nyquist. overwrites pmax");
+			d.put("pmin", EMObject::INT, "The minimum resolution in pixels.");
+			d.put("pmax", EMObject::INT, "The maximum resolution in pixels.");
+			d.put("retcurve", EMObject::BOOL, "Return fsc curve in image header");
 			return d;
 		}
 		
