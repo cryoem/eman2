@@ -41,6 +41,7 @@ import queue
 from sys import argv,exit
 from EMAN2jsondb import JSTask
 import numpy as np
+from scipy.optimize import minimize
 
 def alifn(jsd,fsp,i,a,options):
 	t=time.time()
@@ -75,6 +76,7 @@ If --goldstandard is specified, then even and odd particles will be aligned to d
 	parser.add_argument("--path",type=str,default=None,help="Path to a folder where results should be stored, following standard naming conventions (default = spt_XX)")
 	parser.add_argument("--sym",type=str,default="c1",help="Symmetry of the input. Must be aligned in standard orientation to work properly.")
 	parser.add_argument("--maxres",type=float,help="Maximum resolution to consider in alignment (in A, not 1/A)",default=0)
+	parser.add_argument("--minres",type=float,help="Minimum resolution to consider in alignment (in A, not 1/A)",default=0)
 	#parser.add_argument("--wtori",type=float,help="Weight for using the prior orientation in the particle header. default is -1, i.e. not used.",default=-1)
 	parser.add_argument("--nsoln",type=int,help="number of solutions to keep at low resolution for the aligner",default=1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
@@ -90,20 +92,12 @@ If --goldstandard is specified, then even and odd particles will be aligned to d
 	parser.add_argument("--skipali",action="store_true",help="skip alignment. the program will do nothing. mostly for testing...",default=False)
 	parser.add_argument("--maxang",type=float,help="Maximum angular difference for the refine mode. default is 30",default=30)
 	parser.add_argument("--maxshift",type=float,help="Maximum shift for the refine mode. default is 16",default=-1)
+	parser.add_argument("--scipytest",action="store_true",help="test scipy optimizer.",default=False)
+
 
 
 	(options, args) = parser.parse_args()
 	
-	#task=SptAlignTask(0,1,2,options)
-	#from pickle import dumps,loads,dump,load
-	#f=open("task.tmp",'w')
-	#dump(task,f)
-	#f.close()
-	#print(task)
-	
-	
-	#return
-
 	if options.path == None:
 		fls=[int(i[-2:]) for i in os.listdir(".") if i[:4]=="spt_" and len(i)==6 and str.isdigit(i[-2:])]
 		if len(fls)==0 : fls=[0]
@@ -191,7 +185,7 @@ If --goldstandard is specified, then even and odd particles will be aligned to d
 			#thrds=[threading.Thread(target=alifn,args=(jsd,args[0],i,ref[i%2],options)) for i in range(N)]
 	
 	elif args[0].endswith(".json"):
-		print("Reading particles from json. This is experimental...")
+		#print("Reading particles from json. This is experimental...")
 		js=js_open_dict(args[0])
 		keys=sorted(js.keys())
 		for k in keys:
@@ -215,15 +209,6 @@ If --goldstandard is specified, then even and odd particles will be aligned to d
 		task=SptAlignTask(t, options)
 		tid=etc.send_task(task)
 		tids.append(tid)
-	
-	#print("starting...")
-	#for t in tasks:
-		#if len(t)>3:
-			#task = SptAlignTask(t[0], t[1], t[2], options, t[3])
-		#else:
-			#task = SptAlignTask(t[0], t[1], t[2], options)
-		#tid=etc.send_task(task)
-		#tids.append(tid)
 
 	while 1:
 		st_vals = etc.check_task(tids)
@@ -289,6 +274,8 @@ If --goldstandard is specified, then even and odd particles will be aligned to d
 	
 	
 def reduce_sym(xf, s):
+	if s=="c1" or s.startswith("h"):
+		return xf
 	sym=parsesym(s)
 	xf.invert()
 	trans=xf.get_trans()
@@ -359,11 +346,11 @@ class SptAlignTask(JSTask):
 				
 			b.process_inplace("normalize.edgemean")
 			if options.maxres>0:
-				b.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1./options.maxres})
+				b.process_inplace("filter.lowpass.tophat",{"cutoff_freq":1./options.maxres})
 			b=b.do_fft()
 			b.process_inplace("xform.phaseorigin.tocorner")
 
-			aligndic={"verbose":options.verbose,"sym":options.sym,"sigmathis":0.1,"sigmato":1.0}
+			aligndic={"verbose":options.verbose,"sym":options.sym,"sigmathis":0.1,"sigmato":1.0, "minres":options.minres,"maxres":options.maxres}
 			
 			if options.refine and (dataxf!=None or b.has_attr("xform.align3d")):
 				ntry=options.refinentry
@@ -378,7 +365,7 @@ class SptAlignTask(JSTask):
 					if options.randphi:
 						ixf["phi"]=np.random.rand()*360.
 					if options.rand180:
-						ixf["alt"]=ixf["alt"]+180
+						ixf["alt"]=ixf["alt"]+180*(np.random.rand()>.5)
 					ixf=Transform(ixf)
 					
 					v=np.random.rand(3)-0.5
@@ -387,13 +374,11 @@ class SptAlignTask(JSTask):
 						v=v/nrm
 					else:
 						v=(0,0,1)
-					xf=Transform({"type":"spin", "n1":v[0], "n2":v[1], "n3":v[2],
-							"omega":options.maxang*np.random.randn()/3.0})
+					xf=Transform({"type":"spin", "n1":v[0], "n2":v[1], "n3":v[2],"omega":options.maxang*np.random.randn()/3.0})
 					xfs.append(xf*ixf)
 				
 				## rotate back to the first asym unit
-				if options.sym!="c1":
-					xfs=[reduce_sym(xf, options.sym) for xf in xfs]
+				xfs=[reduce_sym(xf, options.sym) for xf in xfs]
 					
 				aligndic["initxform"]=xfs
 				if options.maxshift<0:
@@ -417,6 +402,28 @@ class SptAlignTask(JSTask):
 			ref=refs[data[3]]
 			if options.skipali:
 				c=[{"xform.align3d":xfs[0].inverse(), "score":-1}]
+				
+			elif options.scipytest:
+				rescut=int(ref["ny"]*ref["apix_x"]/options.minres)
+				def testxf(x, return_curve=False):
+					xf=Transform({"type":"eman", "tx":x[0], "ty":x[1], "tz":x[2],"alt":x[3], "az":x[4], "phi":x[5]})
+					r=ref.copy()
+					r.transform(xf)
+					c=r.cmp("fsc.tomo.auto", b,
+						{"retcurve":1, "sigmaimgval":.1, "sigmawithval":2})
+					cv=np.array(r["fsc_curve"])
+
+					c=-np.mean(cv[rescut:])
+					return c
+				xf=xfs[0].inverse().get_params("eman")
+				x0=[xf["tx"], xf["ty"], xf["tz"],xf["alt"], xf["az"], xf["phi"]]
+				res=minimize(testxf, x0, method='Powell',options={'ftol': 1e-2, 'disp': False, "maxiter":10})
+				x=res.x
+				xf1=Transform({"type":"eman", "tx":x[0], "ty":x[1], "tz":x[2],
+						"alt":x[3], "az":x[4], "phi":x[5]})
+				score=res.fun.item()
+				c=[{"xform.align3d":xf1, "score":score}]
+				
 			else:
 				c=ref.xform_align_nbest("rotate_translate_3d_tree",b, aligndic, options.nsoln)
 			
