@@ -1810,6 +1810,9 @@ class EMImage2DWidget(EMGLWidget):
 		elif event.key()==Qt.Key_Space:
 			self.display_shapes = not self.display_shapes
 			self.updateGL()
+		elif event.key()==Qt.Key_P :
+			try: self.get_inspector().do_pspec_single(0)
+			except: pass
 		elif event.key()==Qt.Key_F :
 			self.set_FFT(self.curfft^2)
 			self.auto_contrast()
