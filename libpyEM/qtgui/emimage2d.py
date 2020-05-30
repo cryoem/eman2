@@ -1578,6 +1578,9 @@ class EMImage2DWidget(EMGLWidget):
 	def closeEvent(self,event) :
 		self.__write_display_settings_to_db()
 		EMGLWidget.closeEvent(self,event)
+		try:
+			for w in self.inspector.pspecwins: w.close()
+		except: pass
 
 	def dragEnterEvent(self,event):
 #		f=event.mimeData().formats()
@@ -1879,7 +1882,7 @@ class EMImage2DWidget(EMGLWidget):
 		glNormal(0,0,1)
 		glEnable(GL_TEXTURE_2D)
 		n = len(self.list_data)
-		string = str(self.list_idx+1) + ' / ' + str(n)
+		string = f"{self.list_idx} ({n})"
 		bbox = self.font_renderer.bounding_box(string)
 		x_offset = width-(bbox[3]-bbox[0]) - 10
 		y_offset = 10
@@ -2254,20 +2257,29 @@ class EMImageInspector2D(QtWidgets.QWidget):
 
 	def do_pspec_single(self,ign):
 		"""Compute 1D power spectrum of single image and plot"""
-		try: data=self.target().list_data[self.target().list_idx]
-		except: data=self.target().get_data()
+		try: 
+			data=self.target().list_data[self.target().list_idx]
+			imgn=self.target().list_idx
+			lbl=f"img_{imgn}"
+		except: 
+			data=self.target().get_data()
+			lbl=time.strftime("%H:%M:%S")
 		if data==None: return
 #		print data
 		fft=data.do_fft()
-		pspec=fft.calc_radial_dist(old_div(fft["ny"],2),0.0,1.0,1)
-		ds=old_div(1.0,(fft["ny"]*data["apix_x"]))
-		s=[ds*i for i in range(old_div(fft["ny"],2))]
+		pspec=fft.calc_radial_dist(fft["ny"]//2,0.0,1.0,1)
+		ds=1.0/(fft["ny"]*data["apix_x"])
+		s=[ds*i for i in range(fft["ny"]//2)]
 
 		from .emplot2d import EMDataFnPlotter
 
-		dfp=EMDataFnPlotter(data=(s,pspec))
+		try: 
+			dfp=self.pspecwins[-1]
+			dfp.set_data((s,pspec),lbl)
+		except: 
+			dfp=EMDataFnPlotter(data=(s,pspec),key=lbl)
+			self.pspecwins.append(dfp)
 		dfp.show()
-		self.pspecwins.append(dfp)
 
 	def do_pspec_stack(self,ign):
 		"""compute average 1D power spectrum of all images and plot"""

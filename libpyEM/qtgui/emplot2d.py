@@ -3048,7 +3048,7 @@ class EMPlot2DInspector(QtWidgets.QWidget):
 
 class EMDataFnPlotter(QtWidgets.QWidget):
 
-	def __init__(self, parent = None, data=None):
+	def __init__(self, parent = None, data=None, key="init"):
 		QtWidgets.QWidget.__init__(self, parent)
 
 		self.setWindowTitle("Plotter")
@@ -3059,17 +3059,17 @@ class EMDataFnPlotter(QtWidgets.QWidget):
 		self.plot = EMPlot2DWidget(parent=self)
 		self.gbl.addWidget(self.plot,0,0,1,1)
 
-		self.lplot = QtWidgets.QLabel("Plot")
-		self.gbl.addWidget(self.plot,1,0)
+		#self.lplot = QtWidgets.QLabel("Plot")
+		#self.gbl.addWidget(self.plot,1,0)
 
 		if data!=None :
-			self.plot.set_data(data,"init")
+			self.plot.set_data(data,key)
 
 	def closeEvent(self,event):
 		self.plot.closeEvent(event)
 
 	def set_label(self,lbl):
-		self.lplot.setText(lbl)
+		self.setWindowTitle(lbl)
 
 	def set_data(self, data, key):
 		self.plot.set_data(data,key)

@@ -1025,8 +1025,11 @@ def make_tile_with_thr(args):
 	
 	return
 
+global wlock
+wlock=0
 #### subthread for making tomogram by tiles. similar to make_tomogram, just for small cubes
 def make_tile_with_pnthr(args):
+	global wlock
 	jsd, imgs, tpm, sz, pad, stepx, stepy, outz,options=args
 	recon1=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":options.reconmode})
 	recon2=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":options.reconmode})
@@ -1079,10 +1082,12 @@ def make_tile_with_pnthr(args):
 			
 			# We normalize slices to our seed, we can use any of the three for this since they are the same
 			for i in range(len(ppimgs)):
-				recon1.determine_slice_agreement(ppimgs[i][0],ppimgs[i][1],1,0)
-				norm=ppimgs[i][0]["reconstruct_norm"]
-				ppimgs[i][0].mult(norm)
-				print(f"{i}\t{norm}")
+				prj=recon1.projection(ppimgs[i][1],1)
+				ppimgs[i][0].process_inplace("filter.matchto",{"to":prj})
+				#recon1.determine_slice_agreement(ppimgs[i][0],ppimgs[i][1],1,0)
+				#norm=ppimgs[i][0]["reconstruct_norm"]
+				#ppimgs[i][0].mult(norm)
+				#print(f"{i}\t{norm}")
 			
 			
 		for i in range(len(ppimgs)):
@@ -1093,7 +1098,7 @@ def make_tile_with_pnthr(args):
 			elif i%3==1 : recon2.insert_slice(ppimgs[i][0],ppimgs[i][1],1)
 			else : recon3.insert_slice(ppimgs[i][0],ppimgs[i][1],1)
 
-		# even and odd tilt reconstructions
+		# 1/3 tilt reconstructions
 		threed1=recon1.finish(True)
 		threed2=recon2.finish(True)
 		threed3=recon3.finish(True)
@@ -1127,10 +1132,23 @@ def make_tile_with_pnthr(args):
 	recon1.setup_seed(seed,0.1)
 	
 	for i in range(len(ppimgs)):
-		recon1.determine_slice_agreement(ppimgs[i][0],ppimgs[i][1],1,0)
-		norm=ppimgs[i][0]["reconstruct_norm"]
-		ppimgs[i][0].mult(norm)
-		print(f"{i}\t{norm}")
+		prj=recon1.projection(ppimgs[i][1],1).process("xform.phaseorigin.tocenter")
+		tmp=ppimgs[i][0].process("xform.phaseorigin.tocenter")
+		ppimgs[i][0].process_inplace("filter.matchto",{"to":prj})
+
+		# probably should use smaphores instead of globals...
+		#if stepx in (0,1) and stepy==0: 
+		while (wlock) : pass
+		wlock=1
+		prj.write_image("test_tilt.hdf",-1)
+		tmp.write_image("test_tilt.hdf",-1)
+		ppimgs[i][0].process("xform.phaseorigin.tocenter").write_image("test_tilt.hdf",-1)
+		wlock=0
+		
+		#recon1.determine_slice_agreement(ppimgs[i][0],ppimgs[i][1],1,0)
+		#norm=ppimgs[i][0]["reconstruct_norm"]
+		#ppimgs[i][0].mult(norm)
+		#print(f"{i}\t{norm}")
 		
 	for i in range(len(ppimgs)):
 		recon1.insert_slice(ppimgs[i][0],ppimgs[i][1],1)

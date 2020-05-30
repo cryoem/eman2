@@ -162,6 +162,17 @@ namespace EMAN
 		 */
 		virtual int determine_slice_agreement(EMData* slice, const Transform &euler, const float weight=1.0, bool sub=true ) { throw; }
 
+		/** This will create a projection from the current reconstruction. Only valid before finish() is called.
+		 * may not be implemented for all Reconstructors. If the reconstructor implements padding, the projection will also
+		 * be padded. The euler parameter will ignore translation and mirroring
+	  	 * @param euler The orientation of the slice as a Transform object
+		 * @param ret_fourier If set returns the Fourier transform of the projection. For many reconstructors this may be less expensive.
+		 * @return 0 if OK. 1 if error.
+	  	 * @exception
+		 */
+		virtual EMData* projection(const Transform &euler, int ret_fourier = 1) { throw; }
+
+		
 		/** Finish reconstruction and return the complete model.
 		 * @param doift A flag indicating whether the returned object should be guaranteed to be in real-space (true) or should be left in whatever space the reconstructor generated
 		 * @return The result 3D model.
@@ -424,6 +435,12 @@ namespace EMAN
 		* @exception ImageFormatException if the image is complex as opposed to real
 		*/
 		virtual int insert_slice(const EMData* const slice, const Transform & euler,const float weight);
+
+		/** Generates a projection by extracting a slice in Fourier space
+		* @param euler The orientation of the slice as a Transform object
+		* @param ret_fourier If true, will return the Fourier transform of the projection
+		*/
+		virtual EMData* projection(const Transform &euler, int ret_fourier);
 
 
 		/** Compares a slice to the current reconstruction volume and computes a normalization factor and

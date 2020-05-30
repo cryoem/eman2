@@ -1322,6 +1322,61 @@ void FourierReconstructor::do_compare_slice_work(EMData* input_slice, const Tran
 	//printf("** %f %f %f ##\n",(float)(power2<=0?1.0:sqrt(power/power2)/(inx*iny)),(float)dot,(float)(dot*weight/((weight-1.0)*dot+1.0)));
 }
 
+EMData* FourierReconstructor::projection(const Transform &euler, int ret_fourier) {
+	
+	if (subx0!=0 || suby0!=0 || subz0!=0 || subnx!=nx || subny!=ny ||subnz!=nz) 
+		throw ImageDimensionException("ERROR: Reconstructor->projection() does not work with subvolumes");
+	
+	EMData *ret = new EMData(nx,ny,1);
+	ret->set_complex(1);
+	ret->set_ri(1);
+	
+	// We must use only the rotational component of the transform, scaling, translation and mirroring
+	// are not implemented in Fourier space, but are in preprocess_slice
+	Transform rotation(euler);
+	rotation.set_scale(1.0);
+	rotation.set_mirror(false);
+	rotation.set_trans(0,0,0);
+	
+	float dt[3];	// This stores the complex and weight from the volume
+
+//	float apix=input_slice->get_attr("apix_x");
+//	float rmax=iny*apix/12.0;		// radius at 12 A, use as cutoff for low res insertion quality
+	
+	for (int y = -ny/2; y < ny/2; y++) {
+		for (int x = 0; x <=  nx/2; x++) {
+
+			float rx = (float) x/(nx-2);	// coords relative to Nyquist=.5
+			float ry = (float) y/ny;
+
+
+			Vec3f coord(rx,ry,0);
+			coord = coord*rotation; // transpose multiplication
+			float xx = coord[0]; // transformed coordinates in terms of Nyquist
+			float yy = coord[1];
+			float zz = coord[2];
+
+
+			if (fabs(xx)>0.5 || fabs(yy)>=0.5 || fabs(zz)>=0.5) continue;
+
+			// Map back to actual pixel coordinates in output volume
+			xx=xx*(nx-2);
+			yy=yy*ny;
+			zz=zz*nz;
+
+			if (!pixel_at(xx,yy,zz,dt) || dt[2]==0) continue;
+			ret->set_complex_at(x,y,std::complex<float>(dt[0]/dt[2],dt[1]/dt[2]));
+		}
+	}
+	
+	if (!ret_fourier) {
+		ret->process_inplace("xform.phaseorigin.tocenter");
+		ret->do_ift_inplace();
+	}
+	return ret;
+}
+
+
 bool FourierReconstructor::pixel_at(const float& xx, const float& yy, const float& zz, float *dt)
 {
 	int x0 = (int) floor(xx);
