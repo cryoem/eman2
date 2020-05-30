@@ -1330,6 +1330,9 @@ EMData* FourierReconstructor::projection(const Transform &euler, int ret_fourier
 	EMData *ret = new EMData(nx,ny,1);
 	ret->set_complex(1);
 	ret->set_ri(1);
+	ret->set_attr("apix_x",ret->get_attr("apix_x"));
+	ret->set_attr("apix_y",ret->get_attr("apix_y"));
+	ret->set_attr("apix_z",ret->get_attr("apix_z"));
 	
 	// We must use only the rotational component of the transform, scaling, translation and mirroring
 	// are not implemented in Fourier space, but are in preprocess_slice
