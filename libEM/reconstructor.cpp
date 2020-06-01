@@ -1372,14 +1372,17 @@ EMData* FourierReconstructor::projection(const Transform &euler, int ret_fourier
 			yy=yy*ny;
 			zz=zz*nz;
 
-			if (!pixel_at(xx,yy,zz,dt) || dt[2]==0) continue;
-			ret->set_complex_at(x,y,std::complex<float>(dt[0]/dt[2],dt[1]/dt[2]));
+			if (!pixel_at(xx,yy,zz,dt) || dt[2]<0.05) continue;
+			ret->set_complex_at(x,y,std::complex<float>(dt[0],dt[1]));	// division by dt[2] already handled in pixel_at
+//			ret->set_complex_at(x,y,std::complex<float>(dt[0]/dt[2],dt[1]/dt[2]));
 		}
 	}
 	
 	if (!ret_fourier) {
 		ret->process_inplace("xform.phaseorigin.tocenter");
-		ret->do_ift_inplace();
+		EMData *tmp=ret->do_ift();
+		delete ret;
+		ret=tmp;
 	}
 	return ret;
 }
@@ -1400,7 +1403,6 @@ bool FourierReconstructor::pixel_at(const float& xx, const float& yy, const floa
 	if (nx==subnx) {			// normal full reconstruction
 		if (x0<-nx2-1 || y0<-ny2-1 || z0<-nz2-1 || x0>nx2 || y0>ny2 || z0>nz2 ) return false;
 
-		// no error checking on add_complex_fast, so we need to be careful here
 		int x1=x0+1;
 		int y1=y0+1;
 		int z1=z0+1;
@@ -1422,16 +1424,20 @@ bool FourierReconstructor::pixel_at(const float& xx, const float& yy, const floa
 					
 					dt[0]+=gg*rdata[idx];
 					dt[1]+=(i<0?-1.0f:1.0f)*gg*rdata[idx+1];
-					dt[2]+=norm[idx/2]*gg;
+					//dt[2]+=norm[idx/2]*gg;
 					normsum2+=gg;
-					normsum+=gg*norm[idx/2];				
+					normsum+=gg*norm[idx/2];
+					if (i==0) {
+						normsum2+=gg;
+						normsum+=gg*norm[idx/2];				
+					}
 				}
 			}
 		}
 		if (normsum==0) return false;
 		dt[0]/=normsum;
 		dt[1]/=normsum;
-		dt[2]/=normsum2;
+		dt[2]=normsum/normsum2;
 //		printf("%1.2f,%1.2f,%1.2f\t%1.3f\t%1.3f\t%1.3f\t%1.3f\t%1.3f\n",xx,yy,zz,dt[0],dt[1],dt[2],rdata[idx],rdata[idx+1]);
 		return true;
 	} 
