@@ -1021,6 +1021,11 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 	// Are these exceptions really necessary? (d.woolford)
 	if (!input_slice) throw NullPointerException("EMData pointer (input image) is NULL");
 
+	
+// 	image->set_attr("apix_x",input_slice->get_attr("apix_x"));
+// 	image->set_attr("apix_y",input_slice->get_attr("apix_y"));
+// 	image->set_attr("apix_z",input_slice->get_attr("apix_z"));
+
 #ifdef EMAN2_USING_CUDA
 	if(EMData::usecuda == 1) {
 		if(!input_slice->getcudarwdata()) input_slice->copy_to_cuda(); //copy slice to cuda using the const version
@@ -1330,9 +1335,9 @@ EMData* FourierReconstructor::projection(const Transform &euler, int ret_fourier
 	EMData *ret = new EMData(nx,ny,1);
 	ret->set_complex(1);
 	ret->set_ri(1);
-	ret->set_attr("apix_x",ret->get_attr("apix_x"));
-	ret->set_attr("apix_y",ret->get_attr("apix_y"));
-	ret->set_attr("apix_z",ret->get_attr("apix_z"));
+	ret->set_attr("apix_x",image->get_attr("apix_x"));
+	ret->set_attr("apix_y",image->get_attr("apix_y"));
+	ret->set_attr("apix_z",image->get_attr("apix_z"));
 	
 	// We must use only the rotational component of the transform, scaling, translation and mirroring
 	// are not implemented in Fourier space, but are in preprocess_slice

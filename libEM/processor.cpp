@@ -759,7 +759,7 @@ void FourierAnlProcessor::process_inplace(EMData * image)
 	if (image->is_complex()) {
 		vector <float>yarray = image->calc_radial_dist(floor(image->get_ysize()*cornerscale/2),0,1.0,1);
 		create_radial_func(yarray,image);
-		image->apply_radial_func(0, 0.5f/image->get_ysize(), yarray,interpolate);
+		image->apply_radial_func(0, 1.0f/image->get_ysize(), yarray,interpolate);
 		if (return_radial) image->set_attr("filter_curve",yarray);
 	}
 	else {

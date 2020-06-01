@@ -125,7 +125,7 @@ class EMImage2DWidget(EMGLWidget):
 		self.display_fft = None		# a cached version of the FFT
 		self.fft=None				# The FFT of the current target if currently displayed
 		self.rmousedrag=None		# coordinates during a right-drag operation
-		self.mouse_mode_dict = {0:"emit", 1:"emit", 2:"emit", 3:"probe", 4:"measure", 5:"draw", 6:"emit"}
+		self.mouse_mode_dict = {0:"emit", 1:"emit", 2:"emit", 3:"probe", 4:"measure", 5:"draw", 6:"emit", 7:"emit"}
 		self.mouse_mode = 0         # current mouse mode as selected by the inspector
 		self.curfft=0				# current FFT mode (when starting with real images only)
 		self.mag = 1.1				# magnification factor
@@ -527,6 +527,50 @@ class EMImage2DWidget(EMGLWidget):
 		#print "scale is ", self.scale
 		#except: pass
 
+	def full_contrast(self,boolv=False,inspector_update=True,display_update=True):
+		
+		if self.curfft == 0:
+			if self.data == None: return
+			# histogram is impacted by downsampling, so we need to compensate
+			if self.scale<=0.5 :
+				down=self.data.process("math.meanshrink",{"n":int(floor(1.0/self.scale))})
+				mean=down["mean"]
+				sigma=down["sigma"]
+				m0=down["minimum"]
+				m1=down["maximum"]
+			else:
+				mean=self.data.get_attr("mean")
+				sigma=self.data.get_attr("sigma")
+				m0=self.data.get_attr("minimum")
+				m1=self.data.get_attr("maximum")
+			self.minden=m0
+			self.maxden=m1
+			self.curmin = m0
+			self.curmax = m1
+			if inspector_update: self.inspector_update()
+			if display_update:
+				self.force_display_update()
+				self.updateGL()
+		else:
+			if self.display_fft == None: return
+
+			mean=self.display_fft.get_attr("mean")
+			sigma=self.display_fft.get_attr("sigma")
+			m0=self.display_fft.get_attr("minimum")
+			m1=self.display_fft.get_attr("maximum")
+
+			self.fminden=0
+			self.fmaxden=min(m1,mean+20.0*sigma)
+			self.fcurmin = 0
+			self.fcurmax = m1
+
+			self.force_display_update()
+
+			if inspector_update: self.inspector_update(use_fourier=True)
+			if display_update:
+				self.force_display_update()
+				self.updateGL()
+
 	def auto_contrast(self,boolv=False,inspector_update=True,display_update=True):
 		auto_contrast = E2getappval("display2d","autocontrast",True)
 		
@@ -534,7 +578,7 @@ class EMImage2DWidget(EMGLWidget):
 			if self.data == None: return
 			# histogram is impacted by downsampling, so we need to compensate
 			if self.scale<=0.5 :
-				down=self.data.process("math.meanshrink",{"n":int(floor(old_div(1.0,self.scale)))})
+				down=self.data.process("math.meanshrink",{"n":int(floor(1.0/self.scale))})
 				mean=down["mean"]
 				sigma=down["sigma"]
 				m0=down["minimum"]
@@ -1433,7 +1477,7 @@ class EMImage2DWidget(EMGLWidget):
 
 			self.inspector.set_scale(self.scale)
 			self.inspector.update_brightness_contrast()
-
+			
 	def get_inspector(self):
 		if not self.inspector:
 			self.inspector=EMImageInspector2D(self)
@@ -1919,9 +1963,9 @@ class EMImageInspector2D(QtWidgets.QWidget):
 		self.mmtab = QtWidgets.QTabWidget()
 
 		# App tab
-		self.apptab = QtWidgets.QWidget()
-		self.apptablab = QtWidgets.QLabel("Application specific mouse functions",self.apptab)
-		self.mmtab.addTab(self.apptab,"App")
+		#self.apptab = QtWidgets.QWidget()
+		self.apptablab = QtWidgets.QTextEdit("Application specific mouse functions")
+		self.mmtab.addTab(self.apptablab,"App")
 
 		# Save tab
 		self.savetab = QtWidgets.QWidget()
@@ -2173,8 +2217,11 @@ class EMImageInspector2D(QtWidgets.QWidget):
 		self.histoequal.addItem("Hist Gauss")
 		self.vbl2.addWidget(self.histoequal,0,1,1,1)
 
-		self.auto_contrast_button = QtWidgets.QPushButton("Auto contrast")
-		self.vbl2.addWidget(self.auto_contrast_button,1,0,1,2)
+		self.auto_contrast_button = QtWidgets.QPushButton("AutoC")
+		self.vbl2.addWidget(self.auto_contrast_button,1,0,1,1)
+
+		self.full_contrast_button = QtWidgets.QPushButton("FullC")
+		self.vbl2.addWidget(self.full_contrast_button,1,1,1,1)
 
 		# FFT Buttons
 		self.fftg=QtWidgets.QButtonGroup()
@@ -2255,6 +2302,7 @@ class EMImageInspector2D(QtWidgets.QWidget):
 		self.fftg.buttonClicked[int].connect(target.set_FFT)
 		self.mmtab.currentChanged[int].connect(target.set_mouse_mode)
 		self.auto_contrast_button.clicked[bool].connect(target.auto_contrast)
+		self.full_contrast_button.clicked[bool].connect(target.full_contrast)
 
 		self.resize(400,440) # d.woolford thinks this is a good starting size as of Nov 2008 (especially on MAC)
 
@@ -2424,7 +2472,7 @@ class EMImageInspector2D(QtWidgets.QWidget):
 		except:
 			import traceback
 			traceback.print_exc()
-			r="Error executing. Access the image as 'img', for example \nimg['mean'] will yield the mean image value"
+			print("Error executing. Access the image as 'img', for example \nimg['mean'] will yield the mean image value")
 #		print r
 
 		self.pyout.setText(str(r))
@@ -2543,6 +2591,23 @@ class EMImageInspector2D(QtWidgets.QWidget):
 
 	def set_hist(self,hist,minden,maxden):
 		if hist != None and len(hist) != 0:self.hist.set_data(hist,minden,maxden)
+
+		# We also update the image header info, since it is coordinated
+		d=self.target().get_data()
+		if d==None: return
+		
+		header=f"""<html><body>
+<p>Mouse buttons -> Application</p>
+<p/>
+<table style="width: 300">
+<tr><td width="80">nx={d["nx"]:d}</td><td width="120">min={d["minimum"]:1.4g}</td><td width="120">apix_x={d["apix_x"]:1.3f}</td></tr>
+<tr><td width="80">ny={d["ny"]:d}</td><td width="120">max={d["maximum"]:1.4g}</td><td width="120">apix_y={d["apix_y"]:1.3f}</td></tr>
+<tr><td width="80">nz={d["nz"]:d}</td><td width="120">mean={d["mean"]:1.5g}</td><td width="120">apix_z={d["apix_z"]:1.3f}</td></tr>
+<tr><td width="80"> </td><td width="120">sigma={d["sigma"]:1.5g}</td><td/></tr>
+</table></html>
+"""
+		self.apptablab.setHtml(header)
+
 
 	def set_bc_range(self,lowlim,highlim):
 		#print "set range",lowlim,highlim

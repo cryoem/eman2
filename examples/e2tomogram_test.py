@@ -1067,6 +1067,10 @@ def make_tile_with_pnthr(args):
 		mp.set_complex_at(0,0,0)		# make sure the mean value is consistent (0) in all of the images
 		ppimgs.append((mp,xf))
 
+	apix_x=ppimgs[0][0]["apix_x"]
+	apix_y=ppimgs[0][0]["apix_y"]
+	apix_z=ppimgs[0][0]["apix_z"]
+	
 	# iterative reconstruction of even/odd tilts with minimum
 #	for j,filt in enumerate((0.05,0.05,0.1,0.1,0.2,0.5)):
 	for j,filt in enumerate((0.25,0.25,0.5,0.5)):
@@ -1083,6 +1087,10 @@ def make_tile_with_pnthr(args):
 			# We normalize slices to our seed, we can use any of the three for this since they are the same
 			for i in range(len(ppimgs)):
 				prj=recon1.projection(ppimgs[i][1],1)
+				prj["apix_x"]=apix_x
+				prj["apix_y"]=apix_y
+				prj["apix_z"]=apix_z
+
 				ppimgs[i][0].process_inplace("filter.matchto",{"to":prj})
 				#recon1.determine_slice_agreement(ppimgs[i][0],ppimgs[i][1],1,0)
 				#norm=ppimgs[i][0]["reconstruct_norm"]
@@ -1102,12 +1110,24 @@ def make_tile_with_pnthr(args):
 		threed1=recon1.finish(True)
 		threed2=recon2.finish(True)
 		threed3=recon3.finish(True)
+
+		threed1["apix_x"]=apix_x
+		threed1["apix_y"]=apix_y
+		threed1["apix_z"]=apix_z
+		threed2["apix_x"]=apix_x
+		threed2["apix_y"]=apix_y
+		threed2["apix_z"]=apix_z
+		threed3["apix_x"]=apix_x
+		threed3["apix_y"]=apix_y
+		threed3["apix_z"]=apix_z
+		
 		#threed1=recon1.finish(True).process("filter.lowpass.gaussz",{"cutoff_abs":filt,"xynoz":1})
 		#threed2=recon2.finish(True).process("filter.lowpass.gaussz",{"cutoff_abs":filt,"xynoz":1})
 		#threed3=recon3.finish(True).process("filter.lowpass.gaussz",{"cutoff_abs":filt,"xynoz":1})
 		if stepx in (0,1) and stepy==0 : 
-			threed1.write_image("test_tile.hdf",j*3)
-			threed3.write_image("test_tile.hdf",j*3+1)
+			threed1.write_image("test_tile.hdf",j*5)
+			threed2.write_image("test_tile.hdf",j*5+1)
+			threed2.write_image("test_tile.hdf",j*5+2)
 		
 		# minimum abs value kept from the pair. Should eliminate many artifacts in real-space
 		#if j<3 : 
@@ -1118,14 +1138,13 @@ def make_tile_with_pnthr(args):
 		avg.add_image(threed2);
 		avg.add_image(threed3);
 		threed=avg.finish()
-		presig=threed["sigma"]
 		seed=threed.process("math.localminabs",{"xsize":0,"ysize":0,"zsize":3})
 		if j==0: seed.process_inplace("filter.linearfourier",{"cutoff_abs":0.5})
 		seed.process_inplace("normalize")
-		seed.mult(presig)
+		if stepx in (0,1) and stepy==0 :
+			threed.write_image("test_tile.hdf",j*5+3)
+			seed.write_image("test_tile.hdf",j*5+4)
 		seed=seed.do_fft().process("xform.phaseorigin.tocorner")
-		if stepx in (0,1) and stepy==0 :threed.write_image("test_tile.hdf",j*3+2)
-		
 #		print(stepx,stepy,threed["ny"])
 	
 	# do our final iteration outside the loop
@@ -1133,17 +1152,20 @@ def make_tile_with_pnthr(args):
 	
 	for i in range(len(ppimgs)):
 		prj=recon1.projection(ppimgs[i][1],1).process("xform.phaseorigin.tocenter")
+		prj["apix_x"]=apix_x
+		prj["apix_y"]=apix_y
+		prj["apix_z"]=apix_z
 		tmp=ppimgs[i][0].process("xform.phaseorigin.tocenter")
 		ppimgs[i][0].process_inplace("filter.matchto",{"to":prj})
 
-		# probably should use smaphores instead of globals...
-		#if stepx in (0,1) and stepy==0: 
-		while (wlock) : pass
-		wlock=1
-		prj.write_image("test_tilt.hdf",-1)
-		tmp.write_image("test_tilt.hdf",-1)
-		ppimgs[i][0].process("xform.phaseorigin.tocenter").write_image("test_tilt.hdf",-1)
-		wlock=0
+		# probably should use semaphores instead of globals...
+		if stepx in (0,1) and stepy==0: 
+			while (wlock) : pass
+			wlock=1
+			prj.write_image("test_tilt.hdf",-1)
+			tmp.write_image("test_tilt.hdf",-1)
+			ppimgs[i][0].process("xform.phaseorigin.tocenter").write_image("test_tilt.hdf",-1)
+			wlock=0
 		
 		#recon1.determine_slice_agreement(ppimgs[i][0],ppimgs[i][1],1,0)
 		#norm=ppimgs[i][0]["reconstruct_norm"]
@@ -1154,6 +1176,9 @@ def make_tile_with_pnthr(args):
 		recon1.insert_slice(ppimgs[i][0],ppimgs[i][1],1)
 		
 	threed=recon1.finish(True)
+	threed["apix_x"]=apix_x
+	threed["apix_y"]=apix_y
+	threed["apix_z"]=apix_z
 	if stepx in (0,1) and stepy==0 :threed.write_image("test_tile.hdf",-1)
 	
 	
