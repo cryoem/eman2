@@ -527,7 +527,7 @@ class EMImage2DWidget(EMGLWidget):
 		#print "scale is ", self.scale
 		#except: pass
 
-	def auto_contrast(self,bool=False,inspector_update=True,display_update=True):
+	def auto_contrast(self,boolv=False,inspector_update=True,display_update=True):
 		auto_contrast = E2getappval("display2d","autocontrast",True)
 		
 		if self.curfft == 0:
@@ -1807,7 +1807,11 @@ class EMImage2DWidget(EMGLWidget):
 		elif event.key()==Qt.Key_Space:
 			self.display_shapes = not self.display_shapes
 			self.updateGL()
-
+		elif event.key()==Qt.Key_F :
+			self.set_FFT(self.curfft^2)
+			self.auto_contrast()
+		elif event.key()==Qt.Key_C:
+			self.auto_contrast()
 		else:
 			self.keypress.emit(event)
 
@@ -2389,9 +2393,9 @@ class EMImageInspector2D(QtWidgets.QWidget):
 			im=self.target().list_data[i]
 			im.write_image("tmp.%03d.png"%(i-self.stminsb.value()+1))
 
-		ret= os.system("convert tmp.???.png %s"%fsp)
+		ret= os.system("gm convert tmp.???.png %s"%fsp)
 		if ret!=0 :
-			QtWidgets.QMessageBox.warning(None,"Error","GIF conversion failed. Please make sure ImageMagick (convert program) is installed and in your path. Frames not deleted.")
+			QtWidgets.QMessageBox.warning(None,"Error","GIF conversion failed. Please make sure GraphicsMagick ('gm convert' program) is installed and in your path. Frames not deleted.")
 			return
 
 		for i in range(self.stminsb.value()-1,self.stmaxsb.value()):

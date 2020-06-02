@@ -53,7 +53,7 @@ def stacktoanim(stack,outpath,ntk):
 		im.set_attr("render_max",im.get_attr("mean")+im.get_attr("sigma")*3.0/contrast)
 		im.write_image("tmp_img-%03d.pgm"%i)
 		print("%d. %1.3f - %1.3f"%(i,im.get_attr("render_min"),im.get_attr("render_max")))
-	os.system("convert -delay 10 tmp_img-*.pgm %s "%outpath)
+	os.system("gm convert -delay 10 tmp_img-*.pgm %s "%outpath)
 	
 	for i in range(ntk+1):
 		os.unlink("tmp_img-%03d.pgm"%i)
