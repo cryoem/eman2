@@ -95,6 +95,7 @@ namespace EMAN
 	{
 		/** For those util function developed by Pawel's group */
 		#include "sparx/util_sparx.h"
+		#include "sphire/util_sphire.h"
 		
 	  public:
 

@@ -103,6 +103,10 @@ namespace EMAN
 
 		/** This is the header of EMData stay in sparx directory */
 		#include "sparx/emdata_sparx.h"
+
+		/** This is the header of EMData stay in sphire directory */
+		#include "sphire/emdata_sphire.h"
+
 #ifdef EMAN2_USING_CUDA
 		/** This is for CUDA related functionality */
 		#include "emdata_cuda.h"

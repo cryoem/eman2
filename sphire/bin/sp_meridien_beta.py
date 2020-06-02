@@ -154,7 +154,8 @@ import sp_helix_fundamentals
 global Tracker, Blockdata
 global  target_theta, refang
 
-
+import ctypes
+import numpy
 mpi_init(0, [])
 Tracker   = {}
 Blockdata = {}
@@ -166,7 +167,7 @@ Blockdata["shared_comm"]		= mpi_comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SH
 Blockdata["myid_on_node"]		= mpi_comm_rank(Blockdata["shared_comm"])
 Blockdata["no_of_processes_per_group"] = mpi_comm_size(Blockdata["shared_comm"])
 masters_from_groups_vs_everything_else_comm = mpi_comm_split(MPI_COMM_WORLD, Blockdata["main_node"] == Blockdata["myid_on_node"], Blockdata["myid_on_node"])
-Blockdata["color"], Blockdata["no_of_groups"], balanced_processor_load_on_nodes = get_colors_and_subsets(Blockdata["main_node"], MPI_COMM_WORLD, Blockdata["myid"], \
+Blockdata["color"], Blockdata["no_of_groups"], balanced_processor_load_on_nodes = sp_utilities.get_colors_and_subsets(Blockdata["main_node"], MPI_COMM_WORLD, Blockdata["myid"], \
 		Blockdata["shared_comm"], Blockdata["myid_on_node"], masters_from_groups_vs_everything_else_comm)
 #  We need two nodes for processing of volumes
 if( Blockdata["no_of_groups"] > 1 ):  Blockdata["node_volume"] = [Blockdata["no_of_groups"]-2, Blockdata["no_of_groups"]-1]  # For 3D stuff take two last nodes
@@ -826,11 +827,11 @@ def compute_sigma(projdata, params, first_procid, dryrun = False, myid = -1, mpi
 		else:
 			nnx = 0
 			nny = 0
-		nnx = bcast_number_to_all(nnx, source_node = Blockdata["main_node"], mpi_comm = mpi_comm)
-		nny = bcast_number_to_all(nny, source_node = Blockdata["main_node"], mpi_comm = mpi_comm)
+		nnx = sp_utilities.bcast_number_to_all(nnx, source_node = Blockdata["main_node"], mpi_comm = mpi_comm)
+		nny = sp_utilities.bcast_number_to_all(nny, source_node = Blockdata["main_node"], mpi_comm = mpi_comm)
 		if( myid != Blockdata["main_node"] ):
 			tsd = model_blank(nnx,nny, 1, 1.0)
-		bcast_EMData_to_all(tsd, myid, source_node = Blockdata["main_node"], comm = mpi_comm)
+		sp_utilities.bcast_EMData_to_all(tsd, myid, source_node = Blockdata["main_node"], comm = mpi_comm)
 		'''
 		#  I am not sure whether what follows is correct.  This part should be recalculated upon restart
 		Blockdata["accumulatepw"] = [[],[]]
@@ -846,7 +847,7 @@ def compute_sigma(projdata, params, first_procid, dryrun = False, myid = -1, mpi
 		if( myid == Blockdata["main_node"] ):
 			ngroups = len(read_text_file(os.path.join(Tracker["constants"]["masterdir"],"main000", "groupids.txt")))
 		else: ngroups = 0
-		ngroups = bcast_number_to_all(ngroups, source_node = Blockdata["main_node"], mpi_comm = mpi_comm)
+		ngroups = sp_utilities.bcast_number_to_all(ngroups, source_node = Blockdata["main_node"], mpi_comm = mpi_comm)
 
 		ndata = len(projdata)
 		nx = Tracker["constants"]["nnxo"]
@@ -866,7 +867,7 @@ def compute_sigma(projdata, params, first_procid, dryrun = False, myid = -1, mpi
 		'''
 		if(myid == 0):  ndata = EMUtil.get_image_count(partstack)
 		else:           ndata = 0
-		ndata = bcast_number_to_all(ndata)
+		ndata = sp_utilities.bcast_number_to_all(ndata)
 		if( ndata < Blockdata["nproc"]):
 			if(myid<ndata):
 				image_start = myid
@@ -881,7 +882,7 @@ def compute_sigma(projdata, params, first_procid, dryrun = False, myid = -1, mpi
 			params = read_text_row( paramsname )
 			params = [params[i][j]  for i in range(len(params))   for j in range(5)]
 		else:           params = [0.0]*(5*ndata)
-		params = bcast_list_to_all(params, myid, source_node=Blockdata["main_node"])
+		params = sp_utilities.bcast_list_to_all(params, myid, source_node=Blockdata["main_node"])
 		params = [[params[i*5+j] for j in range(5)] for i in range(ndata)]
 		'''
 		if(Blockdata["accumulatepw"] == None):
@@ -944,7 +945,7 @@ def compute_sigma(projdata, params, first_procid, dryrun = False, myid = -1, mpi
 					tsd.set_value_at(k,i,tmp1[k])
 				tsd.set_value_at(0,i,1.0)
 			tsd.write_image(os.path.join(Tracker["directory"],"bckgnoise.hdf"))
-		bcast_EMData_to_all(tsd, myid, source_node = 0, comm = mpi_comm)
+		sp_utilities.bcast_EMData_to_all(tsd, myid, source_node = 0, comm = mpi_comm)
 	nnx = tsd.get_xsize()
 	nny = tsd.get_ysize()
 	Blockdata["bckgnoise"] = []
@@ -1195,7 +1196,7 @@ def checkstep(item, keepchecking):
 			doit = 1
 	else:
 		doit = 1
-	doit = bcast_number_to_all(doit, source_node = Blockdata["main_node"])
+	doit = sp_utilities.bcast_number_to_all(doit, source_node = Blockdata["main_node"])
 	return doit, keepchecking
 
 def out_fsc(f):
@@ -1529,10 +1530,10 @@ def steptwo_mpi(tvol, tweight, treg, cfsc = None, regularized = True, color = 0)
 		nx=0
 		maxr2=0
 
-	nx = bcast_number_to_all(nx, source_node = 0, mpi_comm = Blockdata["shared_comm"])
-	ny = bcast_number_to_all(ny, source_node = 0, mpi_comm = Blockdata["shared_comm"])
-	nz = bcast_number_to_all(nz, source_node = 0, mpi_comm = Blockdata["shared_comm"])
-	maxr2 = bcast_number_to_all(maxr2, source_node = 0, mpi_comm = Blockdata["shared_comm"])
+	nx = sp_utilities.bcast_number_to_all(nx, source_node = 0, mpi_comm = Blockdata["shared_comm"])
+	ny = sp_utilities.bcast_number_to_all(ny, source_node = 0, mpi_comm = Blockdata["shared_comm"])
+	nz = sp_utilities.bcast_number_to_all(nz, source_node = 0, mpi_comm = Blockdata["shared_comm"])
+	maxr2 = sp_utilities.bcast_number_to_all(maxr2, source_node = 0, mpi_comm = Blockdata["shared_comm"])
 
 	vol_data = get_image_data(tvol)
 	we_data = get_image_data(tweight)
@@ -1605,7 +1606,7 @@ def calculate_2d_params_for_centering(kwargs):
 	Finished_initial_2d_alignment = 1
 	if(Blockdata["myid"] == Blockdata["main_node"]): 
 		if( os.path.exists(os.path.join(init2dir, "Finished_initial_2d_alignment.txt")) ): Finished_initial_2d_alignment = 0
-	Finished_initial_2d_alignment = bcast_number_to_all(Finished_initial_2d_alignment, Blockdata["main_node"], MPI_COMM_WORLD)
+	Finished_initial_2d_alignment = sp_utilities.bcast_number_to_all(Finished_initial_2d_alignment, Blockdata["main_node"], MPI_COMM_WORLD)
 	if( Finished_initial_2d_alignment == 1 ):
 
 		if(Blockdata["myid"] == 0):
@@ -1627,7 +1628,7 @@ def calculate_2d_params_for_centering(kwargs):
 			nnxo = a.get_xsize()
 		else:
 			nnxo = 0
-		nnxo = bcast_number_to_all(nnxo, source_node = Blockdata["main_node"])
+		nnxo = sp_utilities.bcast_number_to_all(nnxo, source_node = Blockdata["main_node"])
 
 		image_start, image_end = MPI_start_end(number_of_images_in_stack, Blockdata["nproc"], Blockdata["myid"])
 
@@ -1848,13 +1849,13 @@ def Xali3D_direct_ccc(data, refang, shifts, ctfs = None, bckgnoise = None, kb3D 
 			nyvol = 0
 			nzvol = 0
 
-		nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-		nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-		nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nxvol = sp_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nyvol = sp_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nzvol = sp_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
 
 		if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = model_blank( nxvol,nyvol, nzvol)
 
-		bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
+		sp_utilities.bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
 
 		odo = prep_vol( odo, npad = 2, interpolation_method = 1 )
 		ndo = EMNumPy.em2numpy(odo)
@@ -1870,17 +1871,19 @@ def Xali3D_direct_ccc(data, refang, shifts, ctfs = None, bckgnoise = None, kb3D 
 		nyvol = 0
 		nzvol = 0
 
-	orgsizevol = bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
-	nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
-	nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
-	nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
+	orgsizevol = sp_utilities.bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
+	nxvol = sp_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
+	nyvol = sp_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
+	nzvol = sp_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
 
 	win_vol, base_vol  = mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
 	sizevol = orgsizevol
 	if( Blockdata["myid_on_node"] != 0 ):
 		base_vol, = mpi_win_shared_query(win_vol, MPI_PROC_NULL)
 
-	volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	# volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	ptr = ctypes.cast(base_vol, ctypes.POINTER(ctypes.c_int * sizevol))
+	volbuf = numpy.frombuffer(ptr.contents, dtype="f4")
 	volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
 	if( Blockdata["myid_on_node"] == 0 ):
 		np.copyto(volbuf,ndo)
@@ -1906,7 +1909,9 @@ def Xali3D_direct_ccc(data, refang, shifts, ctfs = None, bckgnoise = None, kb3D 
 	if( Blockdata["myid_on_node"] != 0 ):
 		base_ptr, = mpi_win_shared_query(win_sm, MPI_PROC_NULL)
 
-	buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	# buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	ptr = ctypes.cast(base_ptr, ctypes.POINTER(ctypes.c_int * size))
+	buffer = numpy.frombuffer(ptr.contents, dtype="f4")
 	buffer = buffer.reshape(lenbigbuf, ny, nxt)
 	#ncbuf = lenbigbuf//2
 	
@@ -1951,7 +1956,9 @@ def Xali3D_direct_ccc(data, refang, shifts, ctfs = None, bckgnoise = None, kb3D 
 
 			#  Here we get an image from a buffer by assigning an address instead of copy.
 			pointer_location = base_ptr + ((i%Blockdata["no_of_processes_per_group"])*npsi + j)*size_of_one_image*disp_unit
-			img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
+			# img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
+			ptr = ctypes.cast(pointer_location, ctypes.POINTER(ctypes.c_int * size_of_one_image))
+			img_buffer = numpy.frombuffer(ptr.contents, dtype="f4")
 			img_buffer = img_buffer.reshape(ny, nxt)
 			#temp = EMNumPy.numpy2em(img_buffer)
 			temp = emnumpy3.register_numpy_to_emdata(img_buffer)
@@ -2072,13 +2079,13 @@ def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs 
 			nyvol = 0
 			nzvol = 0
 
-		nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-		nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-		nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nxvol = sp_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nyvol = sp_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nzvol = sp_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
 
 		if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = model_blank( nxvol,nyvol, nzvol)
 
-		bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
+		sp_utilities.bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
 
 		odo = prep_vol( odo, npad = 2, interpolation_method = 1 )
 		ndo = EMNumPy.em2numpy(odo)
@@ -2094,17 +2101,20 @@ def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs 
 		nyvol = 0
 		nzvol = 0
 
-	orgsizevol = bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
-	nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
-	nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
-	nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
+	orgsizevol = sp_utilities.bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
+	nxvol = sp_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
+	nyvol = sp_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
+	nzvol = sp_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
 
 	win_vol, base_vol  = mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
 	sizevol = orgsizevol
 	if( Blockdata["myid_on_node"] != 0 ):
 		base_vol, = mpi_win_shared_query(win_vol, MPI_PROC_NULL)
 
-	volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	# volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	ptr = ctypes.cast(base_vol, ctypes.POINTER(ctypes.c_int * sizevol))
+	volbuf = numpy.frombuffer(ptr.contents, dtype="f4")
+
 	volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
 	if( Blockdata["myid_on_node"] == 0 ):
 		np.copyto(volbuf,ndo)
@@ -2131,7 +2141,9 @@ def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs 
 	if( Blockdata["myid_on_node"] != 0 ):
 		base_ptr, = mpi_win_shared_query(win_sm, MPI_PROC_NULL)
 
-	buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	# buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	ptr = ctypes.cast(base_ptr, ctypes.POINTER(ctypes.c_int * size))
+	buffer = numpy.frombuffer(ptr.contents, dtype="f4")
 	buffer = buffer.reshape(lenbigbuf, ny, nxt)
 	#ncbuf = lenbigbuf//2
 	
@@ -2176,7 +2188,9 @@ def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs 
 
 			#  Here we get an image from a buffer by assigning an address instead of copy.
 			pointer_location = base_ptr + ((i%Blockdata["no_of_processes_per_group"])*n_coarse_psi + j)*size_of_one_image*disp_unit
-			img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
+			# img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
+			ptr = ctypes.cast(pointer_location, ctypes.POINTER(ctypes.c_int * size_of_one_image))
+			img_buffer = numpy.frombuffer(ptr.contents, dtype="f4")
 			img_buffer = img_buffer.reshape(ny, nxt)
 			#temp = EMNumPy.numpy2em(img_buffer)
 			temp = emnumpy3.register_numpy_to_emdata(img_buffer)
@@ -2228,7 +2242,9 @@ def XXali3D_direct_ccc(data, refang, shifts, coarse_angles, coarse_shifts, ctfs 
 				itpsi = int((coarse_angles[oldiang][2] + ipsi*coarse_delta - refang[iang][2]+360.0)/Tracker["delta"])
 				itpsi = (itpsi + i3)%npsi
 				pointer_location = base_ptr + (iang*n_coarse_psi + itpsi)*size_of_one_image*disp_unit
-				img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
+				# img_buffer = np.frombuffer(np.core.multiarray.int_asbuffer(pointer_location, size_of_one_image*disp_unit), dtype = 'f4')
+				ptr = ctypes.cast(pointer_location, ctypes.POINTER(ctypes.c_int * size_of_one_image))
+				img_buffer = numpy.frombuffer(ptr.contents, dtype="f4")
 				img_buffer = img_buffer.reshape(ny, nxt)
 				#temp = EMNumPy.numpy2em(img_buffer)
 				temp = emnumpy3.register_numpy_to_emdata(img_buffer)
@@ -2341,13 +2357,13 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 			nyvol = 0
 			nzvol = 0
 
-		nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-		nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-		nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nxvol = sp_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nyvol = sp_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nzvol = sp_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
 
 		if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = model_blank( nxvol,nyvol, nzvol)
 
-		bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
+		sp_utilities.bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
 
 		odo = prep_vol( odo, npad = 2, interpolation_method = 1 )
 		ndo = EMNumPy.em2numpy(odo)
@@ -2363,17 +2379,19 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 		nyvol = 0
 		nzvol = 0
 
-	orgsizevol = bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
-	nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
-	nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
-	nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
+	orgsizevol = sp_utilities.bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
+	nxvol = sp_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
+	nyvol = sp_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
+	nzvol = sp_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
 
 	win_vol, base_vol  = mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
 	sizevol = orgsizevol
 	if( Blockdata["myid_on_node"] != 0 ):
 		base_vol, = mpi_win_shared_query(win_vol, MPI_PROC_NULL)
 
-	volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	# volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	ptr = ctypes.cast(base_vol, ctypes.POINTER(ctypes.c_int * sizevol))
+	volbuf = numpy.frombuffer(ptr.contents, dtype="f4")
 	volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
 	if( Blockdata["myid_on_node"] == 0 ):
 		np.copyto(volbuf,ndo)
@@ -2398,7 +2416,9 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 	if( Blockdata["myid_on_node"] != 0 ):
 		base_ptr, = mpi_win_shared_query(win_sm, MPI_PROC_NULL)
 
-	buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	# buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	ptr = ctypes.cast(base_ptr, ctypes.POINTER(ctypes.c_int * size))
+	buffer = numpy.frombuffer(ptr.contents, dtype="f4")
 	buffer = buffer.reshape(lenbigbuf, size_of_one_image)
 	#bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
 
@@ -2421,13 +2441,13 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 				nyvol = 0
 				nzvol = 0
 
-			nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-			nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-			nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+			nxvol = sp_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+			nyvol = sp_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+			nzvol = sp_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
 
 			if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = model_blank( nxvol,nyvol, nzvol)
 
-			bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
+			sp_utilities.bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
 
 			odo = prep_vol( odo, npad = 2, interpolation_method = 1 )
 			ndo = EMNumPy.em2numpy(odo)
@@ -2443,17 +2463,20 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 			nyvol = 0
 			nzvol = 0
 
-		orgsizevol = bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
-		nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
-		nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
-		nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
+		orgsizevol = sp_utilities.bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
+		nxvol = sp_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
+		nyvol = sp_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
+		nzvol = sp_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
 
 		win_volinit, base_volinit  = mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
 		sizevol = orgsizevol
 		if( Blockdata["myid_on_node"] != 0 ):
 			base_volinit, = mpi_win_shared_query(win_volinit, MPI_PROC_NULL)
 
-		volbufinit = np.frombuffer(np.core.multiarray.int_asbuffer(base_volinit, sizevol*disp_unit), dtype = 'f4')
+		# volbufinit = np.frombuffer(np.core.multiarray.int_asbuffer(base_volinit, sizevol*disp_unit), dtype = 'f4')
+		ptr = ctypes.cast(base_volinit, ctypes.POINTER(ctypes.c_int * sizevol))
+		volbufinit = numpy.frombuffer(ptr.contents, dtype="f4")
+
 		volbufinit = volbufinit.reshape(nzvol, nyvol, nxvol)
 		if( Blockdata["myid_on_node"] == 0 ):
 			np.copyto(volbufinit,ndoinit)
@@ -2883,7 +2906,7 @@ def ali3D_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, origin
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		Tracker["avgvaradj"][procid] = float(Tracker["avgvaradj"][procid])/Tracker["nima_per_chunk"][procid]
 	else:  Tracker["avgvaradj"][procid] = 0.0
-	Tracker["avgvaradj"][procid] = bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
+	Tracker["avgvaradj"][procid] = sp_utilities.bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
 	mpi_barrier(MPI_COMM_WORLD)
 
 	#  Compute statistics of smear -----------------
@@ -3045,13 +3068,13 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 			nyvol = 0
 			nzvol = 0
 
-		nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-		nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-		nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nxvol = sp_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nyvol = sp_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nzvol = sp_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
 
 		if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = model_blank( nxvol,nyvol, nzvol)
 
-		bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
+		sp_utilities.bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
 
 		odo = prep_vol( odo, npad = 2, interpolation_method = 1 )
 		ndo = EMNumPy.em2numpy(odo)
@@ -3067,17 +3090,20 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 		nyvol = 0
 		nzvol = 0
 
-	orgsizevol = bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
-	nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
-	nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
-	nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
+	orgsizevol = sp_utilities.bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
+	nxvol = sp_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
+	nyvol = sp_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
+	nzvol = sp_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
 
 	win_vol, base_vol  = mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
 	sizevol = orgsizevol
 	if( Blockdata["myid_on_node"] != 0 ):
 		base_vol, = mpi_win_shared_query(win_vol, MPI_PROC_NULL)
 
-	volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	# volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	ptr = ctypes.cast(base_vol, ctypes.POINTER(ctypes.c_int * sizevol))
+	volbuf = numpy.frombuffer(ptr.contents, dtype="f4")
+
 	volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
 	if( Blockdata["myid_on_node"] == 0 ):
 		np.copyto(volbuf,ndo)
@@ -3102,7 +3128,10 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 	if( Blockdata["myid_on_node"] != 0 ):
 		base_ptr, = mpi_win_shared_query(win_sm, MPI_PROC_NULL)
 
-	buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	# buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	ptr = ctypes.cast(base_ptr, ctypes.POINTER(ctypes.c_int * size))
+	buffer = numpy.frombuffer(ptr.contents, dtype="f4")
+
 	buffer = buffer.reshape(lenbigbuf, size_of_one_image)
 	#bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
 
@@ -3125,13 +3154,13 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 				nyvol = 0
 				nzvol = 0
 
-			nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-			nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-			nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+			nxvol = sp_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+			nyvol = sp_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+			nzvol = sp_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
 
 			if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = model_blank( nxvol,nyvol, nzvol)
 
-			bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
+			sp_utilities.bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
 
 			odo = prep_vol( odo, npad = 2, interpolation_method = 1 )
 			ndo = EMNumPy.em2numpy(odo)
@@ -3147,17 +3176,20 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 			nyvol = 0
 			nzvol = 0
 
-		orgsizevol = bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
-		nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
-		nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
-		nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
+		orgsizevol = sp_utilities.bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
+		nxvol = sp_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
+		nyvol = sp_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
+		nzvol = sp_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
 
 		win_volinit, base_volinit  = mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
 		sizevol = orgsizevol
 		if( Blockdata["myid_on_node"] != 0 ):
 			base_volinit, = mpi_win_shared_query(win_volinit, MPI_PROC_NULL)
 
-		volbufinit = np.frombuffer(np.core.multiarray.int_asbuffer(base_volinit, sizevol*disp_unit), dtype = 'f4')
+		# volbufinit = np.frombuffer(np.core.multiarray.int_asbuffer(base_volinit, sizevol*disp_unit), dtype = 'f4')
+		ptr = ctypes.cast(base_volinit, ctypes.POINTER(ctypes.c_int * sizevol))
+		volbufinit = numpy.frombuffer(ptr.contents, dtype="f4")
+
 		volbufinit = volbufinit.reshape(nzvol, nyvol, nxvol)
 		if( Blockdata["myid_on_node"] == 0 ):
 			np.copyto(volbufinit,ndoinit)
@@ -3604,7 +3636,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		Tracker["avgvaradj"][procid] = float(Tracker["avgvaradj"][procid])/Tracker["nima_per_chunk"][procid]
 	else:  Tracker["avgvaradj"][procid] = 0.0
-	Tracker["avgvaradj"][procid] = bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
+	Tracker["avgvaradj"][procid] = sp_utilities.bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
 	mpi_barrier(MPI_COMM_WORLD)
 
 	#  Compute statistics of smear -----------------
@@ -3663,7 +3695,7 @@ def ali3D_primary_polar(refang, shifts, coarse_angles, coarse_shifts, procid, or
 					Blockdata["newbckgnoise"][i, igrp] = Blockdata["bckgnoise"][igrp][i]
 			Blockdata["newbckgnoise"].write_image(os.path.join(Tracker["directory"],"bckgnoise.hdf")) #  Write updated bckgnoise to current directory
 
-		bcast_EMData_to_all(Blockdata["newbckgnoise"], Blockdata["myid"], source_node = Blockdata["main_node"], comm = MPI_COMM_WORLD)
+		sp_utilities.bcast_EMData_to_all(Blockdata["newbckgnoise"], Blockdata["myid"], source_node = Blockdata["main_node"], comm = MPI_COMM_WORLD)
 		for igrp in range(nyb):
 			for i in range(nxb):
 				Blockdata["bckgnoise"][igrp][i] = Blockdata["newbckgnoise"][i, igrp]
@@ -3757,13 +3789,13 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 			nyvol = 0
 			nzvol = 0
 
-		nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-		nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-		nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nxvol = sp_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nyvol = sp_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nzvol = sp_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
 
 		if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = model_blank( nxvol,nyvol, nzvol)
 
-		bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
+		sp_utilities.bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
 
 		odo = prep_vol( odo, npad = 2, interpolation_method = 1 )
 		ndo = EMNumPy.em2numpy(odo)
@@ -3779,17 +3811,20 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 		nyvol = 0
 		nzvol = 0
 
-	orgsizevol = bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
-	nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
-	nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
-	nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
+	orgsizevol = sp_utilities.bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
+	nxvol = sp_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
+	nyvol = sp_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
+	nzvol = sp_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
 
 	win_vol, base_vol  = mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
 	sizevol = orgsizevol
 	if( Blockdata["myid_on_node"] != 0 ):
 		base_vol, = mpi_win_shared_query(win_vol, MPI_PROC_NULL)
 
-	volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	# volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	ptr = ctypes.cast(base_vol, ctypes.POINTER(ctypes.c_int * sizevol))
+	volbuf = numpy.frombuffer(ptr.contents, dtype="f4")
+
 	volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
 	if( Blockdata["myid_on_node"] == 0 ):
 		np.copyto(volbuf,ndo)
@@ -3815,7 +3850,10 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 	if( Blockdata["myid_on_node"] != 0 ):
 		base_ptr, = mpi_win_shared_query(win_sm, MPI_PROC_NULL)
 
-	buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	# buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	ptr = ctypes.cast(base_ptr, ctypes.POINTER(ctypes.c_int * size))
+	buffer = numpy.frombuffer(ptr.contents, dtype="f4")
+
 	buffer = buffer.reshape(lenbigbuf, size_of_one_image)
 	#bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
 
@@ -3838,13 +3876,13 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 				nyvol = 0
 				nzvol = 0
 
-			nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-			nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-			nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+			nxvol = sp_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+			nyvol = sp_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+			nzvol = sp_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
 
 			if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = model_blank( nxvol,nyvol, nzvol)
 
-			bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
+			sp_utilities.bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
 
 			odo = prep_vol( odo, npad = 2, interpolation_method = 1 )
 			ndo = EMNumPy.em2numpy(odo)
@@ -3860,17 +3898,20 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 			nyvol = 0
 			nzvol = 0
 
-		orgsizevol = bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
-		nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
-		nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
-		nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
+		orgsizevol = sp_utilities.bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
+		nxvol = sp_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
+		nyvol = sp_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
+		nzvol = sp_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
 
 		win_volinit, base_volinit  = mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
 		sizevol = orgsizevol
 		if( Blockdata["myid_on_node"] != 0 ):
 			base_volinit, = mpi_win_shared_query(win_volinit, MPI_PROC_NULL)
 
-		volbufinit = np.frombuffer(np.core.multiarray.int_asbuffer(base_volinit, sizevol*disp_unit), dtype = 'f4')
+		# volbufinit = np.frombuffer(np.core.multiarray.int_asbuffer(base_volinit, sizevol*disp_unit), dtype = 'f4')
+		ptr = ctypes.cast(base_volinit, ctypes.POINTER(ctypes.c_int * sizevol))
+		volbufinit = numpy.frombuffer(ptr.contents, dtype="f4")
+
 		volbufinit = volbufinit.reshape(nzvol, nyvol, nxvol)
 		if( Blockdata["myid_on_node"] == 0 ):
 			np.copyto(volbufinit,ndoinit)
@@ -4303,7 +4344,7 @@ def ali3D_polar(refang, shifts, coarse_angles, coarse_shifts, procid, original_d
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		Tracker["avgvaradj"][procid] = float(Tracker["avgvaradj"][procid])/Tracker["nima_per_chunk"][procid]
 	else:  Tracker["avgvaradj"][procid] = 0.0
-	Tracker["avgvaradj"][procid] = bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
+	Tracker["avgvaradj"][procid] = sp_utilities.bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
 	mpi_barrier(MPI_COMM_WORLD)
 
 	#  Compute statistics of smear -----------------
@@ -4474,13 +4515,13 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 			nyvol = 0
 			nzvol = 0
 
-		nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-		nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-		nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nxvol = sp_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nyvol = sp_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nzvol = sp_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
 
 		if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = model_blank( nxvol,nyvol, nzvol)
 
-		bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
+		sp_utilities.bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
 
 		odo = prep_vol( odo, npad = 2, interpolation_method = 1 )
 		ndo = EMNumPy.em2numpy(odo)
@@ -4496,17 +4537,20 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 		nyvol = 0
 		nzvol = 0
 
-	orgsizevol = bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
-	nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
-	nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
-	nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
+	orgsizevol = sp_utilities.bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
+	nxvol = sp_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
+	nyvol = sp_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
+	nzvol = sp_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
 
 	win_vol, base_vol  = mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
 	sizevol = orgsizevol
 	if( Blockdata["myid_on_node"] != 0 ):
 		base_vol, = mpi_win_shared_query(win_vol, MPI_PROC_NULL)
 
-	volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	# volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	ptr = ctypes.cast(base_vol, ctypes.POINTER(ctypes.c_int * sizevol))
+	volbuf = numpy.frombuffer(ptr.contents, dtype="f4")
+
 	volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
 	if( Blockdata["myid_on_node"] == 0 ):
 		np.copyto(volbuf,ndo)
@@ -4531,13 +4575,13 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 				nyvol = 0
 				nzvol = 0
 
-			nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-			nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-			nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+			nxvol = sp_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+			nyvol = sp_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+			nzvol = sp_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
 
 			if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = model_blank( nxvol,nyvol, nzvol)
 
-			bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
+			sp_utilities.bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
 
 			odo = prep_vol( odo, npad = 2, interpolation_method = 1 )
 			ndo = EMNumPy.em2numpy(odo)
@@ -4553,17 +4597,20 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 			nyvol = 0
 			nzvol = 0
 
-		orgsizevol = bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
-		nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
-		nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
-		nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
+		orgsizevol = sp_utilities.bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
+		nxvol = sp_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
+		nyvol = sp_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
+		nzvol = sp_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
 
 		win_volinit, base_volinit  = mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
 		sizevol = orgsizevol
 		if( Blockdata["myid_on_node"] != 0 ):
 			base_volinit, = mpi_win_shared_query(win_volinit, MPI_PROC_NULL)
 
-		volbufinit = np.frombuffer(np.core.multiarray.int_asbuffer(base_volinit, sizevol*disp_unit), dtype = 'f4')
+		# volbufinit = np.frombuffer(np.core.multiarray.int_asbuffer(base_volinit, sizevol*disp_unit), dtype = 'f4')
+		ptr = ctypes.cast(base_volinit, ctypes.POINTER(ctypes.c_int * sizevol))
+		volbufinit = numpy.frombuffer(ptr.contents, dtype="f4")
+
 		volbufinit = volbufinit.reshape(nzvol, nyvol, nxvol)
 		if( Blockdata["myid_on_node"] == 0 ):
 			np.copyto(volbufinit,ndoinit)
@@ -4690,8 +4737,8 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 						number_of_cones = int(number_of_cones*1.25)
 						#print(  " increased number_of_cones ",i,number_of_cones )
 						doit = 0
-				doit = bcast_number_to_all(doit, source_node = 0)
-				number_of_cones = bcast_number_to_all(number_of_cones, source_node = 0, mpi_comm = Blockdata["shared_comm"] )
+				doit = sp_utilities.bcast_number_to_all(doit, source_node = 0)
+				number_of_cones = sp_utilities.bcast_number_to_all(number_of_cones, source_node = 0, mpi_comm = Blockdata["shared_comm"] )
 				###if( Blockdata["myid"] == 19 ):  sxprint(  " doit ",Blockdata["myid"], i,doit ,assignments_of_refangles_to_cones[i],assignments_to_cones)
 				if( doit == 0 ):  break
 
@@ -4730,7 +4777,10 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 	if( Blockdata["myid_on_node"] != 0 ):
 		base_ptr, = mpi_win_shared_query(win_sm, MPI_PROC_NULL)
 
-	buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	# buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+
+	ptr = ctypes.cast(base_ptr, ctypes.POINTER(ctypes.c_int * size))
+	buffer = numpy.frombuffer(ptr.contents, dtype="f4")
 	buffer = buffer.reshape(lenbigbuf, size_of_one_image)
 	#bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
 
@@ -5356,7 +5406,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		Tracker["avgvaradj"][procid] = float(Tracker["avgvaradj"][procid])/Tracker["nima_per_chunk"][procid]
 	else:  Tracker["avgvaradj"][procid] = 0.0
-	Tracker["avgvaradj"][procid] = bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
+	Tracker["avgvaradj"][procid] = sp_utilities.bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
 	mpi_barrier(MPI_COMM_WORLD)
 
 	#  Compute statistics of smear -----------------
@@ -5419,7 +5469,7 @@ def ali3D_primary_local_polar(refang, shifts, coarse_angles, coarse_shifts, proc
 					Blockdata["newbckgnoise"][i, igrp] = Blockdata["bckgnoise"][igrp][i]
 			Blockdata["newbckgnoise"].write_image(os.path.join(Tracker["directory"],"bckgnoise.hdf")) #  Write updated bckgnoise to current directory
 
-		bcast_EMData_to_all(Blockdata["newbckgnoise"], Blockdata["myid"], source_node = Blockdata["main_node"], comm = MPI_COMM_WORLD)
+		sp_utilities.bcast_EMData_to_all(Blockdata["newbckgnoise"], Blockdata["myid"], source_node = Blockdata["main_node"], comm = MPI_COMM_WORLD)
 		for igrp in range(nyb):
 			for i in range(nxb):
 				Blockdata["bckgnoise"][igrp][i] = Blockdata["newbckgnoise"][i, igrp]
@@ -5527,13 +5577,13 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 			nyvol = 0
 			nzvol = 0
 
-		nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-		nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-		nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nxvol = sp_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nyvol = sp_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nzvol = sp_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
 
 		if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = model_blank( nxvol,nyvol, nzvol)
 
-		bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
+		sp_utilities.bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
 
 		odo = prep_vol( odo, npad = 2, interpolation_method = 1 )
 		ndo = EMNumPy.em2numpy(odo)
@@ -5549,17 +5599,20 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 		nyvol = 0
 		nzvol = 0
 
-	orgsizevol = bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
-	nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
-	nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
-	nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
+	orgsizevol = sp_utilities.bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
+	nxvol = sp_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
+	nyvol = sp_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
+	nzvol = sp_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
 
 	win_vol, base_vol  = mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
 	sizevol = orgsizevol
 	if( Blockdata["myid_on_node"] != 0 ):
 		base_vol, = mpi_win_shared_query(win_vol, MPI_PROC_NULL)
 
-	volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	# volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	ptr = ctypes.cast(base_vol, ctypes.POINTER(ctypes.c_int * sizevol))
+	volbuf = numpy.frombuffer(ptr.contents, dtype="f4")
+
 	volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
 	if( Blockdata["myid_on_node"] == 0 ):
 		np.copyto(volbuf,ndo)
@@ -5584,13 +5637,13 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 				nyvol = 0
 				nzvol = 0
 
-			nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-			nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-			nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+			nxvol = sp_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+			nyvol = sp_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+			nzvol = sp_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
 
 			if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = model_blank( nxvol,nyvol, nzvol)
 
-			bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
+			sp_utilities.bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
 
 			odo = prep_vol( odo, npad = 2, interpolation_method = 1 )
 			ndo = EMNumPy.em2numpy(odo)
@@ -5606,17 +5659,20 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 			nyvol = 0
 			nzvol = 0
 
-		orgsizevol = bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
-		nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
-		nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
-		nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
+		orgsizevol = sp_utilities.bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
+		nxvol = sp_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
+		nyvol = sp_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
+		nzvol = sp_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
 
 		win_volinit, base_volinit  = mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
 		sizevol = orgsizevol
 		if( Blockdata["myid_on_node"] != 0 ):
 			base_volinit, = mpi_win_shared_query(win_volinit, MPI_PROC_NULL)
 
-		volbufinit = np.frombuffer(np.core.multiarray.int_asbuffer(base_volinit, sizevol*disp_unit), dtype = 'f4')
+		# volbufinit = np.frombuffer(np.core.multiarray.int_asbuffer(base_volinit, sizevol*disp_unit), dtype = 'f4')
+		ptr = ctypes.cast(base_volinit, ctypes.POINTER(ctypes.c_int * sizevol))
+		volbufinit = numpy.frombuffer(ptr.contents, dtype="f4")
+
 		volbufinit = volbufinit.reshape(nzvol, nyvol, nxvol)
 		if( Blockdata["myid_on_node"] == 0 ):
 			np.copyto(volbufinit,ndoinit)
@@ -5745,8 +5801,8 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 						number_of_cones = int(number_of_cones*1.25)
 						#print(  " increased number_of_cones ",i,number_of_cones )
 						doit = 0
-				doit = bcast_number_to_all(doit, source_node = 0)
-				number_of_cones = bcast_number_to_all(number_of_cones, source_node = 0, mpi_comm = Blockdata["shared_comm"] )
+				doit = sp_utilities.bcast_number_to_all(doit, source_node = 0)
+				number_of_cones = sp_utilities.bcast_number_to_all(number_of_cones, source_node = 0, mpi_comm = Blockdata["shared_comm"] )
 				###if( Blockdata["myid"] == 19 ):  sxprint(  " doit ",Blockdata["myid"], i,doit ,assignments_of_refangles_to_cones[i],assignments_to_cones)
 				if( doit == 0 ):  break
 
@@ -5785,7 +5841,9 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	if( Blockdata["myid_on_node"] != 0 ):
 		base_ptr, = mpi_win_shared_query(win_sm, MPI_PROC_NULL)
 
-	buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	# buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	ptr = ctypes.cast(base_ptr, ctypes.POINTER(ctypes.c_int * size))
+	buffer = numpy.frombuffer(ptr.contents, dtype="f4")
 	buffer = buffer.reshape(lenbigbuf, size_of_one_image)
 	#bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
 
@@ -6391,7 +6449,7 @@ def ali3D_local_polar(refang, shifts, coarse_angles, coarse_shifts, procid, orig
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		Tracker["avgvaradj"][procid] = float(Tracker["avgvaradj"][procid])/Tracker["nima_per_chunk"][procid]
 	else:  Tracker["avgvaradj"][procid] = 0.0
-	Tracker["avgvaradj"][procid] = bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
+	Tracker["avgvaradj"][procid] = sp_utilities.bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
 	mpi_barrier(MPI_COMM_WORLD)
 
 	#  Compute statistics of smear -----------------
@@ -6538,13 +6596,13 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 			nyvol = 0
 			nzvol = 0
 
-		nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-		nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-		nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nxvol = sp_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nyvol = sp_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nzvol = sp_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
 
 		if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = model_blank( nxvol,nyvol, nzvol)
 
-		bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
+		sp_utilities.bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
 
 		odo = prep_vol( odo, npad = 2, interpolation_method = 1 )
 		ndo = EMNumPy.em2numpy(odo)
@@ -6560,17 +6618,19 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 		nyvol = 0
 		nzvol = 0
 
-	orgsizevol = bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
-	nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
-	nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
-	nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
+	orgsizevol = sp_utilities.bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
+	nxvol = sp_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
+	nyvol = sp_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
+	nzvol = sp_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
 
 	win_vol, base_vol  = mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
 	sizevol = orgsizevol
 	if( Blockdata["myid_on_node"] != 0 ):
 		base_vol, = mpi_win_shared_query(win_vol, MPI_PROC_NULL)
 
-	volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	# volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	ptr = ctypes.cast(base_vol, ctypes.POINTER(ctypes.c_int * sizevol))
+	volbuf = numpy.frombuffer(ptr.contents, dtype="f4")
 	volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
 	if( Blockdata["myid_on_node"] == 0 ):
 		np.copyto(volbuf,ndo)
@@ -6595,13 +6655,13 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 				nyvol = 0
 				nzvol = 0
 
-			nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-			nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-			nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+			nxvol = sp_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+			nyvol = sp_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+			nzvol = sp_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
 
 			if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = model_blank( nxvol,nyvol, nzvol)
 
-			bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
+			sp_utilities.bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
 
 			odo = prep_vol( odo, npad = 2, interpolation_method = 1 )
 			ndo = EMNumPy.em2numpy(odo)
@@ -6617,17 +6677,19 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 			nyvol = 0
 			nzvol = 0
 
-		orgsizevol = bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
-		nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
-		nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
-		nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
+		orgsizevol = sp_utilities.bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
+		nxvol = sp_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
+		nyvol = sp_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
+		nzvol = sp_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
 
 		win_volinit, base_volinit  = mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
 		sizevol = orgsizevol
 		if( Blockdata["myid_on_node"] != 0 ):
 			base_volinit, = mpi_win_shared_query(win_volinit, MPI_PROC_NULL)
 
-		volbufinit = np.frombuffer(np.core.multiarray.int_asbuffer(base_volinit, sizevol*disp_unit), dtype = 'f4')
+		# volbufinit = np.frombuffer(np.core.multiarray.int_asbuffer(base_volinit, sizevol*disp_unit), dtype = 'f4')
+		ptr = ctypes.cast(base_volinit, ctypes.POINTER(ctypes.c_int * sizevol))
+		volbufinit = numpy.frombuffer(ptr.contents, dtype="f4")
 		volbufinit = volbufinit.reshape(nzvol, nyvol, nxvol)
 		if( Blockdata["myid_on_node"] == 0 ):
 			np.copyto(volbufinit,ndoinit)
@@ -6755,8 +6817,8 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 						number_of_cones = int(number_of_cones*1.25)
 						#print(  " increased number_of_cones ",i,number_of_cones )
 						doit = 0
-				doit = bcast_number_to_all(doit, source_node = 0)
-				number_of_cones = bcast_number_to_all(number_of_cones, source_node = 0, mpi_comm = Blockdata["shared_comm"] )
+				doit = sp_utilities.bcast_number_to_all(doit, source_node = 0)
+				number_of_cones = sp_utilities.bcast_number_to_all(number_of_cones, source_node = 0, mpi_comm = Blockdata["shared_comm"] )
 				###if( Blockdata["myid"] == 19 ):  sxprint(  " doit ",Blockdata["myid"], i,doit ,assignments_of_refangles_to_cones[i],assignments_to_cones)
 				if( doit == 0 ):  break
 
@@ -6800,7 +6862,9 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 	if( Blockdata["myid_on_node"] != 0 ):
 		base_ptr, = mpi_win_shared_query(win_sm, MPI_PROC_NULL)
 
-	buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	# buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	ptr = ctypes.cast(base_ptr, ctypes.POINTER(ctypes.c_int * size))
+	buffer = numpy.frombuffer(ptr.contents, dtype="f4")
 	buffer = buffer.reshape(lenbigbuf, size_of_one_image)
 	#bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
 
@@ -7413,7 +7477,7 @@ def ali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, procid, 
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		Tracker["avgvaradj"][procid] = float(Tracker["avgvaradj"][procid])/Tracker["nima_per_chunk"][procid]
 	else:  Tracker["avgvaradj"][procid] = 0.0
-	Tracker["avgvaradj"][procid] = bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
+	Tracker["avgvaradj"][procid] = sp_utilities.bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
 	mpi_barrier(MPI_COMM_WORLD)
 	
 	at = time()
@@ -7457,7 +7521,7 @@ def cerrs(params, ctfs, particle_groups):
 		#log = None
 		ref_vol = model_blank(Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"])
 	mpi_barrier(MPI_COMM_WORLD)
-	bcast_EMData_to_all(ref_vol, Blockdata["myid"], Blockdata["nodes"][procid])
+	sp_utilities.bcast_EMData_to_all(ref_vol, Blockdata["myid"], Blockdata["nodes"][procid])
 	interpolation_method = 1
 	ref_vol = prep_vol(ref_vol, npad = 2, interpolation_method = interpolation_method )
 
@@ -7594,7 +7658,7 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 		else:
 			refang  = 0
 			rshifts = 0
-		carryon = bcast_number_to_all(carryon, source_node = Blockdata["main_node"], mpi_comm = comm)
+		carryon = sp_utilities.bcast_number_to_all(carryon, source_node = Blockdata["main_node"], mpi_comm = comm)
 		if carryon == 0: 
 			ERROR("Failed to read refang and rshifts: %s %s "%(os.path.join(final_dir, "refang.txt"),\
 			  os.path.join(final_dir, "rshifts.txt")), "do_final_rec3d", 1, data["subgroup_myid"])
@@ -7611,7 +7675,7 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 				l += len(read_text_file(partids[procid]))
 		else:
 			l  = 0
-		l  = bcast_number_to_all(l, source_node = Blockdata["main_node"], mpi_comm = comm)
+		l  = sp_utilities.bcast_number_to_all(l, source_node = Blockdata["main_node"], mpi_comm = comm)
 
 		norm_per_particle = [[],[]]
 		# get the previous number of CPUs
@@ -7621,7 +7685,7 @@ def do3d_final(partids, partstack, original_data, oldparams, oldparamstructure, 
 			  "oldparamstructure_%01d_%03d_%03d.json"%(procid,nproc_previous,\
 			    Tracker["mainiteration"]))):
 				nproc_previous += 1
-		nproc_previous = bcast_number_to_all(nproc_previous, source_node = \
+		nproc_previous = sp_utilities.bcast_number_to_all(nproc_previous, source_node = \
 		  Blockdata["main_node"], mpi_comm = comm)
 
 		for procid in range(2):
@@ -7740,10 +7804,10 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node, orgstack = No
 				sxprint("The best solution is %d  "%Tracker["constants"]["best"])
 				do_final_iter =  Tracker["constants"]["best"] # set the best as do_final iteration
 			except: carryon = 0
-		carryon = bcast_number_to_all(carryon)
+		carryon = sp_utilities.bcast_number_to_all(carryon)
 		if carryon == 0: 
 			ERROR("Best resolution is not found, do_final will not be computed", "recons3d_final", 1, Blockdata["myid"])	# Now work on selected directory
-		do_final_iter = bcast_number_to_all(do_final_iter)
+		do_final_iter = sp_utilities.bcast_number_to_all(do_final_iter)
 	elif( do_final_iter_init == -1 ): do_final_iter = Tracker["constants"]["best"]
 	else:
 		do_final_iter = do_final_iter_init
@@ -7758,7 +7822,7 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node, orgstack = No
 		except: carryon = 0
 		if orgstack: Tracker["constants"]["stack"] = orgstack
 	else: Tracker = 0
-	carryon = bcast_number_to_all(carryon, Blockdata["main_node"], MPI_COMM_WORLD)
+	carryon = sp_utilities.bcast_number_to_all(carryon, Blockdata["main_node"], MPI_COMM_WORLD)
 	if carryon == 0: 
 		ERROR("Failed to load Tracker file %s, program terminates "%os.path.join(final_dir,"Tracker_%03d.json"%do_final_iter), "recons3d_final",1, Blockdata["myid"])
 	Tracker = wrap_mpi_bcast(Tracker,      Blockdata["main_node"], MPI_COMM_WORLD)
@@ -7766,7 +7830,7 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node, orgstack = No
 	if(Blockdata["myid"] == Blockdata["main_node"]): # check stack 
 		try:  image = get_im(Tracker["constants"]["stack"],0)
 		except:carryon = 0
-	carryon = bcast_number_to_all(carryon, Blockdata["main_node"], MPI_COMM_WORLD)
+	carryon = sp_utilities.bcast_number_to_all(carryon, Blockdata["main_node"], MPI_COMM_WORLD)
 	if carryon == 0: 
 		ERROR("The orignal data stack for reconstruction %s does not exist, final reconstruction terminates"%Tracker["constants"]["stack"],"recons3d_final", 1, Blockdata["myid"])
 
@@ -7783,10 +7847,10 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node, orgstack = No
 		nnprocs = 0
 		nogo = 0
 	
-	nogo =    bcast_number_to_all(nogo,    source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
+	nogo =    sp_utilities.bcast_number_to_all(nogo,    source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
 	if( nogo == 1 ):
 		ERROR("Insufficient memory to compute final reconstruction","recons3d_final", 1, Blockdata["myid"])
-	nnprocs = bcast_number_to_all(nnprocs, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
+	nnprocs = sp_utilities.bcast_number_to_all(nnprocs, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
 	Blockdata["ncpuspernode"] 	= nnprocs
 	Blockdata["nsubset"] 		= Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
 	create_subgroup()
@@ -7901,13 +7965,13 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 			nyvol = 0
 			nzvol = 0
 
-		nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-		nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-		nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nxvol = sp_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nyvol = sp_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+		nzvol = sp_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
 
 		if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = model_blank( nxvol,nyvol, nzvol)
 
-		bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
+		sp_utilities.bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
 
 		odo = prep_vol( odo, npad = 2, interpolation_method = 1 )
 		ndo = EMNumPy.em2numpy(odo)
@@ -7923,17 +7987,20 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 		nyvol = 0
 		nzvol = 0
 
-	orgsizevol = bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
-	nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
-	nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
-	nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
+	orgsizevol = sp_utilities.bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
+	nxvol = sp_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
+	nyvol = sp_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
+	nzvol = sp_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
 
 	win_vol, base_vol  = mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
 	sizevol = orgsizevol
 	if( Blockdata["myid_on_node"] != 0 ):
 		base_vol, = mpi_win_shared_query(win_vol, MPI_PROC_NULL)
 
-	volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	# volbuf = np.frombuffer(np.core.multiarray.int_asbuffer(base_vol, sizevol*disp_unit), dtype = 'f4')
+	ptr = ctypes.cast(base_vol, ctypes.POINTER(ctypes.c_int * sizevol))
+	volbuf = numpy.frombuffer(ptr.contents, dtype="f4")
+
 	volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
 	if( Blockdata["myid_on_node"] == 0 ):
 		np.copyto(volbuf,ndo)
@@ -7958,13 +8025,13 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 				nyvol = 0
 				nzvol = 0
 
-			nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-			nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
-			nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+			nxvol = sp_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+			nyvol = sp_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
+			nzvol = sp_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"], mpi_comm = Blockdata["group_zero_comm"])
 
 			if( Blockdata["myid"] != Blockdata["main_node"] ):  odo = model_blank( nxvol,nyvol, nzvol)
 
-			bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
+			sp_utilities.bcast_EMData_to_all(odo, Blockdata["group_zero_myid"], source_node = Blockdata["main_node"], comm = Blockdata["group_zero_comm"])			
 
 			odo = prep_vol( odo, npad = 2, interpolation_method = 1 )
 			ndo = EMNumPy.em2numpy(odo)
@@ -7980,17 +8047,20 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 			nyvol = 0
 			nzvol = 0
 
-		orgsizevol = bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
-		nxvol = bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
-		nyvol = bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
-		nzvol = bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
+		orgsizevol = sp_utilities.bcast_number_to_all(orgsizevol, source_node = Blockdata["main_node"])
+		nxvol = sp_utilities.bcast_number_to_all(nxvol, source_node = Blockdata["main_node"])
+		nyvol = sp_utilities.bcast_number_to_all(nyvol, source_node = Blockdata["main_node"])
+		nzvol = sp_utilities.bcast_number_to_all(nzvol, source_node = Blockdata["main_node"])
 
 		win_volinit, base_volinit  = mpi_win_allocate_shared( sizevol*disp_unit , disp_unit, MPI_INFO_NULL, Blockdata["shared_comm"])
 		sizevol = orgsizevol
 		if( Blockdata["myid_on_node"] != 0 ):
 			base_volinit, = mpi_win_shared_query(win_volinit, MPI_PROC_NULL)
 
-		volbufinit = np.frombuffer(np.core.multiarray.int_asbuffer(base_volinit, sizevol*disp_unit), dtype = 'f4')
+		# volbufinit = np.frombuffer(np.core.multiarray.int_asbuffer(base_volinit, sizevol*disp_unit), dtype = 'f4')
+		ptr = ctypes.cast(base_volinit, ctypes.POINTER(ctypes.c_int * sizevol))
+		volbufinit = numpy.frombuffer(ptr.contents, dtype="f4")
+
 		volbufinit = volbufinit.reshape(nzvol, nyvol, nxvol)
 		if( Blockdata["myid_on_node"] == 0 ):
 			np.copyto(volbufinit,ndoinit)
@@ -8119,8 +8189,8 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 						number_of_cones = int(number_of_cones*1.25)
 						#print(  " increased number_of_cones ",i,number_of_cones )
 						doit = 0
-				doit = bcast_number_to_all(doit, source_node = 0)
-				number_of_cones = bcast_number_to_all(number_of_cones, source_node = 0, mpi_comm = Blockdata["shared_comm"] )
+				doit = sp_utilities.bcast_number_to_all(doit, source_node = 0)
+				number_of_cones = sp_utilities.bcast_number_to_all(number_of_cones, source_node = 0, mpi_comm = Blockdata["shared_comm"] )
 				###if( Blockdata["myid"] == 19 ):  sxprint(  " doit ",Blockdata["myid"], i,doit ,assignments_of_refangles_to_cones[i],assignments_to_cones)
 				if( doit == 0 ):  break
 
@@ -8164,7 +8234,10 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 	if( Blockdata["myid_on_node"] != 0 ):
 		base_ptr, = mpi_win_shared_query(win_sm, MPI_PROC_NULL)
 
-	buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	# buffer = np.frombuffer(np.core.multiarray.int_asbuffer(base_ptr, size*disp_unit), dtype = 'f4')
+	ptr = ctypes.cast(base_ptr, ctypes.POINTER(ctypes.c_int * size))
+	buffer = numpy.frombuffer(ptr.contents, dtype="f4")
+
 	buffer = buffer.reshape(lenbigbuf, size_of_one_image)
 	#bigbuffer = EMNumPy.assign_numpy_to_emdata(buffer)
 
@@ -8777,7 +8850,7 @@ def XYXali3D_local_polar_ccc(refang, shifts, coarse_angles, coarse_shifts, proci
 	if(Blockdata["myid"] == Blockdata["main_node"]):
 		Tracker["avgvaradj"][procid] = float(Tracker["avgvaradj"][procid])/Tracker["nima_per_chunk"][procid]
 	else:  Tracker["avgvaradj"][procid] = 0.0
-	Tracker["avgvaradj"][procid] = bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
+	Tracker["avgvaradj"][procid] = sp_utilities.bcast_number_to_all(Tracker["avgvaradj"][procid], Blockdata["main_node"])
 	mpi_barrier(MPI_COMM_WORLD)
 	
 	at = time()
@@ -8964,9 +9037,9 @@ def update_memory_estimation():
 	else:
 		nnprocs = 0
 		nogo    = 0
-	nogo = bcast_number_to_all(nogo, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
+	nogo = sp_utilities.bcast_number_to_all(nogo, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
 	if( nogo == 1 ):  ERROR("Insufficient memory to continue refinement from subset","continue_from_subset", 1, Blockdata["myid"])
-	nnprocs = bcast_number_to_all(nnprocs, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
+	nnprocs = sp_utilities.bcast_number_to_all(nnprocs, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
 	Blockdata["ncpuspernode"] 	= nnprocs
 	Blockdata["nsubset"] 		= Blockdata["ncpuspernode"]*Blockdata["no_of_groups"]
 	create_subgroup()
@@ -9222,9 +9295,9 @@ def rec3d_make_maps(compute_fsc = True, regularized = True):
 				#  receive fsc
 				lcfsc = 0
 		mpi_barrier(MPI_COMM_WORLD)
-		lcfsc = bcast_number_to_all(lcfsc)
+		lcfsc = sp_utilities.bcast_number_to_all(lcfsc)
 		if( Blockdata["myid"] != Blockdata["nodes"][0]  ):  cfsc = [0.0]*lcfsc
-		cfsc = bcast_list_to_all(cfsc, Blockdata["myid"], Blockdata["nodes"][0])
+		cfsc = sp_utilities.bcast_list_to_all(cfsc, Blockdata["myid"], Blockdata["nodes"][0])
 		if( Blockdata["myid"] == Blockdata["main_node"]):
 			write_text_file(cfsc, os.path.join(Tracker["directory"] ,"driver_%03d.txt"%(Tracker["mainiteration"])))
 			out_fsc(cfsc)
@@ -9405,7 +9478,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 			shakenumber = uniform( -Tracker["constants"]["shake"], Tracker["constants"]["shake"])
 		else:
 			shakenumber = 0.0
-		shakenumber = bcast_number_to_all(shakenumber, source_node = Blockdata["main_node"])
+		shakenumber = sp_utilities.bcast_number_to_all(shakenumber, source_node = Blockdata["main_node"])
 		# it has to be rounded as the number written to the disk is rounded,
 		#  so if there is discrepancy one cannot reproduce iteration.
 		shakenumber = round(shakenumber,5)
@@ -9661,11 +9734,11 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 		else:
 			nnx = 0
 			nny = 0
-		nnx = bcast_number_to_all(nnx)
-		nny = bcast_number_to_all(nny)
+		nnx = sp_utilities.bcast_number_to_all(nnx)
+		nny = sp_utilities.bcast_number_to_all(nny)
 		if( Blockdata["myid"] != Blockdata["main_node"] ):
 			Blockdata["bckgnoise"] = model_blank(nnx,nny, 1, 1.0)
-		bcast_EMData_to_all(Blockdata["bckgnoise"], Blockdata["myid"], source_node = Blockdata["main_node"])
+		sp_utilities.bcast_EMData_to_all(Blockdata["bckgnoise"], Blockdata["myid"], source_node = Blockdata["main_node"])
 
 		if(Blockdata["myid"] == Blockdata["main_node"]):
 			params = read_text_row(os.path.join(Tracker["directory"],"params-chunk_0_%03d.txt"%(Tracker["mainiteration"])))+read_text_row(os.path.join(Tracker["directory"],"params-chunk_1_%03d.txt"%(Tracker["mainiteration"])))
@@ -9833,7 +9906,7 @@ def calculate_prior_values(tracker, blockdata, outlier_file, chunk_file, params_
 		outliers = 0
 
 	# Distribute outlier list to all processes
-	outliers = bcast_list_to_all(outliers, blockdata["myid"], blockdata["main_node"])
+	outliers = sp_utilities.bcast_list_to_all(outliers, blockdata["myid"], blockdata["main_node"])
 
 	# Get the node specific outlier information
 	outliers_node = outliers[im_start:im_end]
@@ -10049,9 +10122,9 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			else:
 				if(len(args) == 1): keepgoing2  = 0
 				restart_flag  = 0
-		restart_flag = bcast_number_to_all(restart_flag, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
-		keepgoing1   = bcast_number_to_all(keepgoing1,   source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
-		keepgoing2   = bcast_number_to_all(keepgoing2,   source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
+		restart_flag = sp_utilities.bcast_number_to_all(restart_flag, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
+		keepgoing1   = sp_utilities.bcast_number_to_all(keepgoing1,   source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
+		keepgoing2   = sp_utilities.bcast_number_to_all(keepgoing2,   source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
 
 		if keepgoing1== 0:
 			ERROR( "To restart, meridien requires only the name of existing refinement directory.", myid=Blockdata["myid"] )
@@ -10216,14 +10289,14 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			#  Initialize symmetry
 			Blockdata["symclass"] = symclass(Tracker["constants"]["symmetry"])
 
-			nnxo = bcast_number_to_all(nnxo, source_node = Blockdata["main_node"])
+			nnxo = sp_utilities.bcast_number_to_all(nnxo, source_node = Blockdata["main_node"])
 
 			if( nnxo < 0 ):
 				ERROR("Incorrect image size  ", "meridien", 1, Blockdata["myid"])
 				return
 
-			pixel_size = bcast_number_to_all(pixel_size, source_node = Blockdata["main_node"])
-			fq         = bcast_number_to_all(fq,         source_node = Blockdata["main_node"])
+			pixel_size = sp_utilities.bcast_number_to_all(pixel_size, source_node = Blockdata["main_node"])
+			fq         = sp_utilities.bcast_number_to_all(fq,         source_node = Blockdata["main_node"])
 			Tracker["constants"]["nnxo"]         = nnxo
 			Tracker["constants"]["pixel_size"]   = pixel_size
 			Tracker["constants"]["fuse_freq"]    = fq
@@ -10251,7 +10324,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 				if( Tracker["constants"]["mask3D"] and (not os.path.exists(Tracker["constants"]["mask3D"]))):
 					checking_flag = 0
 
-			checking_flag = bcast_number_to_all(checking_flag, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
+			checking_flag = sp_utilities.bcast_number_to_all(checking_flag, source_node = Blockdata["main_node"], mpi_comm = MPI_COMM_WORLD)
 			if checking_flag==0:
 				ERROR( "Mask3D file does  not exists ", myid=Blockdata["myid"] )
 				return
@@ -10319,7 +10392,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 				total_stack = EMUtil.get_image_count(Tracker["constants"]["stack"])
 			else:
 				total_stack = 0
-			total_stack = bcast_number_to_all(total_stack, source_node = Blockdata["main_node"])
+			total_stack = sp_utilities.bcast_number_to_all(total_stack, source_node = Blockdata["main_node"])
 
 			partids   = os.path.join(initdir, "indexes_000.txt")
 			if( Blockdata["myid"] == Blockdata["main_node"] ):
@@ -10432,9 +10505,9 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			else:
 				Tracker["nima_per_chunk"] = [0,0]
 
-			Tracker["nima_per_chunk"][0] = bcast_number_to_all(Tracker["nima_per_chunk"][0], Blockdata["main_node"])
-			Tracker["nima_per_chunk"][1] = bcast_number_to_all(Tracker["nima_per_chunk"][1], Blockdata["main_node"])
-			Tracker["constants"]["number_of_groups"] = bcast_number_to_all(Tracker["constants"]["number_of_groups"], Blockdata["main_node"])
+			Tracker["nima_per_chunk"][0] = sp_utilities.bcast_number_to_all(Tracker["nima_per_chunk"][0], Blockdata["main_node"])
+			Tracker["nima_per_chunk"][1] = sp_utilities.bcast_number_to_all(Tracker["nima_per_chunk"][1], Blockdata["main_node"])
+			Tracker["constants"]["number_of_groups"] = sp_utilities.bcast_number_to_all(Tracker["constants"]["number_of_groups"], Blockdata["main_node"])
 			del params2d
 
 			if(Blockdata["myid"] == Blockdata["main_node"]):
@@ -10547,9 +10620,9 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 						fff = []
 						anger   = 0.0
 						shifter = 0.0
-					fff = bcast_list_to_all(fff, Blockdata["myid"], source_node=Blockdata["main_node"])
-					anger   = bcast_number_to_all(anger,   source_node = Blockdata["main_node"])
-					shifter = bcast_number_to_all(shifter, source_node = Blockdata["main_node"])
+					fff = sp_utilities.bcast_list_to_all(fff, Blockdata["myid"], source_node=Blockdata["main_node"])
+					anger   = sp_utilities.bcast_number_to_all(anger,   source_node = Blockdata["main_node"])
+					shifter = sp_utilities.bcast_number_to_all(shifter, source_node = Blockdata["main_node"])
 
 				if Tracker['constants']['do_local']:
 					keepgoing = AI_continuation( fff, anger, shifter, Blockdata["myid"] == Blockdata["main_node"])
@@ -10683,9 +10756,9 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 					fff = []
 					anger   = 0.0
 					shifter = 0.0
-				fff     = bcast_list_to_all(fff, Blockdata["myid"], source_node = Blockdata["main_node"])
-				anger   = bcast_number_to_all(anger,                source_node = Blockdata["main_node"])
-				shifter = bcast_number_to_all(shifter,              source_node = Blockdata["main_node"])
+				fff     = sp_utilities.bcast_list_to_all(fff, Blockdata["myid"], source_node = Blockdata["main_node"])
+				anger   = sp_utilities.bcast_number_to_all(anger,                source_node = Blockdata["main_node"])
+				shifter = sp_utilities.bcast_number_to_all(shifter,              source_node = Blockdata["main_node"])
 
 				keepgoing = AI_continuation( fff, anger, shifter, Blockdata["myid"] == Blockdata["main_node"])
 
@@ -10763,14 +10836,14 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 			orgstack  = args[0]
 			if Blockdata["myid"] == Blockdata["main_node"]:
 				if not os.path.exists(masterdir): checking_flag = 0
-			checking_flag = bcast_number_to_all(checking_flag, source_node = Blockdata["main_node"])
+			checking_flag = sp_utilities.bcast_number_to_all(checking_flag, source_node = Blockdata["main_node"])
 			if checking_flag ==0:  ERROR("do_final: refinement directory for final reconstruction does not exist ","meridien", 1, Blockdata["myid"])
 			
 		elif(len(args) == 1):
 			masterdir 	= args[0]
 			if Blockdata["myid"] == Blockdata["main_node"]:
 				if not os.path.exists(masterdir): checking_flag = 0
-			checking_flag = bcast_number_to_all(checking_flag, source_node = Blockdata["main_node"])
+			checking_flag = sp_utilities.bcast_number_to_all(checking_flag, source_node = Blockdata["main_node"])
 			if checking_flag ==0: ERROR("do_final: refinement directory for final reconstruction does not exist ","meridien", 1, Blockdata["myid"])
 			
 		else:

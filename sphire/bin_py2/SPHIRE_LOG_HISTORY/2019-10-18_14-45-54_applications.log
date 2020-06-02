@@ -1,0 +1,6 @@
+[Start] : 2019-10-18 14:45:54
+2019-10-18 14:45:54 main => Usage: sp_3dvariability.py prj_stack  --ave2D= --var2D=  --ave3D= --var3D= --img_per_grp= --fl=  --aa=   --sym=symmetry --CTF
+2019-10-18 14:45:54 main => Please run 'sp_3dvariability.py -h' for detailed options
+2019-10-18 14:45:54 ERROR => ERROR reported by function 'main' in file '/home/adnan/PycharmProjects/Py2to3conv/sphire/bin/sp_3dvariability.py', line 245: 
+2019-10-18 14:45:54 ERROR => Invalid number of parameters used. Please see usage information above.
+2019-10-18 14:45:54 ERROR => EXIT

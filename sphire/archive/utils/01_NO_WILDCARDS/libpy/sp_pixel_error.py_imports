@@ -1,0 +1,8 @@
+EMAN2_cppwrap
+math
+numpy
+os
+sp_fundamentals
+sp_global_def
+sp_statistics
+sp_utilities

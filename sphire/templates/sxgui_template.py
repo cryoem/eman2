@@ -362,10 +362,10 @@ class SXLookFeelConst(object):
 		
 		if not current_settings_exist and not older_settings_exist:
 			print("\nSettings directory for current SPHIRE version %s doesn't exist\nWould you like to create a new project directory and continue?\nYou need to run the sphire command in the foreground (without &) to answer this question\n[y/n] "% SXLookFeelConst.project_dir)
-			answer = raw_input()
+			answer = input()
 			while answer.lower() not in ('y', 'n'):
 				print('Answer needs to be y or n')
-				answer = raw_input()
+				answer = input()
 			if answer.lower() == 'n':
 				print("\nbye bye")
 				exit()
