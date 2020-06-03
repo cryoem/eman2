@@ -1138,6 +1138,7 @@ def isac_MPI_pap(
             )
             sp_utilities.set_params2D(alldata[im], [alphan, sxn, syn, int(mirrorn), 1.0])
 
+        mpi.mpi_barrier(comm)
         fl += 0.05
 
         if fl >= FH:
@@ -1202,6 +1203,7 @@ def isac_MPI_pap(
             ##if my_abs_id == main_node: print "Within group refinement and checking within group stability, original approach .......", check_stability, "  ",time.localtime()[0:5]
             # ====================================== standard approach is used, calculations are parallelized by scatter groups (averages) among MPI processes
             gpixer = []
+            mpi.mpi_barrier(comm)
             for j in range(myid, numref, number_of_proc):
                 assign = []
                 for im in range(nima):
