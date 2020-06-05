@@ -1033,6 +1033,7 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 #endif
 
 	bool usessnr=params.set_default("usessnr",false);
+	bool corners=params.set_default("corners",false);
 	float weight=oweight;
 	if (usessnr) {
 		if (input_slice->has_attr("class_ssnr")) weight=-1.0;	// negative weight is a flag for using SSNR
@@ -1063,7 +1064,7 @@ Transform * rotation;
 	//slice->copy_to_cuda();
 //	EMData *s2=slice->do_ift();
 //	s2->write_image("is.hdf",-1);
-	do_insert_slice_work(slice, *rotation, weight);
+	do_insert_slice_work(slice, *rotation, weight, corners);
 	
 	delete rotation; rotation=0;
 	delete slice;
@@ -1073,7 +1074,7 @@ Transform * rotation;
 }
 
 // note that negative weight is a prompt for using SSNR from header
-void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice, const Transform & arg,const float weight)
+void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice, const Transform & arg,const float weight,const bool corners)
 {
 	// Reload the inserter if the mode has changed
 // 	string mode = (string) params["mode"];
@@ -1116,6 +1117,7 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 		sscale=2.0*(ssnr.size()-1)/iny;
 	}
 	
+	float rweight=weight;
 	for ( vector<Transform>::const_iterator it = syms.begin(); it != syms.end(); ++it ) {
 		Transform t3d = arg*(*it);
 		for (int y = -iny/2; y < iny/2; y++) {
@@ -1123,12 +1125,18 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 
 				float rx = (float) x/(inx-2.0f);	// coords relative to Nyquist=.5
 				float ry = (float) y/iny;
-				int r=Util::hypot_fast_int(x,y);
-				if (r>iny/2 && abs(inx-iny)<3) continue;	// no filling in Fourier corners...
+				if (corners) {
+					if (weight<0) {
+						int r=Util::hypot_fast_int(x,y);
+						rweight=Util::get_max(0.0f,ssnr[int(r*sscale)]);
+					}
+				}
+				else {
+					int r=Util::hypot_fast_int(x,y);
+					if (r>iny/2 && abs(inx-iny)<3) continue;	// no filling in Fourier corners...
 
-				float rweight;
-				if (weight<0) rweight=Util::get_max(0.0f,ssnr[int(r*sscale)]);
-				else rweight=weight;
+					if (weight<0) rweight=Util::get_max(0.0f,ssnr[int(r*sscale)]);
+				}
 //				printf("%d\t%f\n",int(r*sscale),rweight);
 
 				Vec3f coord(rx,ry,0);

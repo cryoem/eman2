@@ -7851,7 +7851,7 @@ symmetric phase flipping can optionally be performed.";
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("strucfac", EMObject::XYDATA, "An XYData object contaning the curve to be imposed as a function of S");
+			d.put("strucfac", EMObject::XYDATA, "An XYData object contaning the intensity (not amplitude) to be imposed as a function of S");
 			d.put("apix", EMObject::FLOAT, " Override A/pix in the image header (changes x,y and z)");
 			return d;
 		}
@@ -7860,6 +7860,43 @@ symmetric phase flipping can optionally be performed.";
 
 	  protected:
 		void create_radial_func(vector < float >&radial_mask, EMData *image) const;
+	};
+
+	/**Makes the radial power distribution spherically symmetric with a profile defined by "strucfac"
+	 *@param strucfac XYData object with the curve to be imposed as intensity as a function of s
+	 *@param apix A/pix value. Overrides and replaces apix_x/y/z in image
+	 */
+	class SetIsoPowProcessor:public Processor
+	{
+	  public:
+
+		void process_inplace(EMData * image);
+		
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual string get_desc() const
+		{
+			return "Forces a map/image to have an isotropic radial power distribution. Unlike filter.setstrucfac, which produces a filtered, but anisotropic map, this forces the radial power to be the same in all directions. Phases are unchanged.";
+		}
+
+		static Processor *NEW()
+		{
+			return new SetIsoPowProcessor();
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("strucfac", EMObject::XYDATA, "An XYData object contaning the intensity (not amplitude) to be imposed as a function of S");
+			d.put("apix", EMObject::FLOAT, " Override A/pix in the image header (changes x,y and z)");
+			return d;
+		}
+
+		static const string NAME;
+
 	};
 
 	/**Smart mask processor

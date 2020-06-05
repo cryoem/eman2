@@ -150,15 +150,12 @@ bool FourierInserter3DMode2::insert_pixel(const float& xx, const float& yy, cons
 			for (int j = y0 ; j <= y1; j++) {
 				for (int i = x0; i <= x1; i ++) {
 					r = Util::hypot3sq((float) i - xx, j - yy, k - zz);
-//					gg=weight;
 					gg = Util::fast_exp(-r *h)*weight;
-//					gg = Util::fast_exp(-r / EMConsts::I2G)*weight;
-//					gg = sqrt(Util::fast_exp(-r / EMConsts::I2G))*weight;
 
 					size_t off;
 					off=data->add_complex_at_fast(i,j,k,dt*gg);
-//					off=data->add_complex_at(i,j,k,dt*gg);
 					if (off!=nxyz) norm[off/2]+=gg;
+//					if (off!=nxyz) norm[off/2]+=weight;	// experiment 6/1/20, use true Gaussian kernel, not just weight
 				}
 			}
 		}
