@@ -206,7 +206,7 @@ def main():
 			bxs.extend([[p[2], p[1],p[0], 'tm', scr[i] ,kid] for i,p in enumerate(box[:n])])
 			
 		else:
-			bxs.extend([[p[2], p[1],p[0], 'tm', scr[i] ,kid] for i,p in enumerate(pts[:n]*4)])
+			bxs.extend([[p[2], p[1],p[0], 'tm', scr[i] ,kid] for i,p in enumerate(pts[:n]*2*nbin)])
 			if options.boxsz<0:
 				boxsz=sz*nbin
 			else:
