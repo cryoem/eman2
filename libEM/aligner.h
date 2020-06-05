@@ -1867,6 +1867,7 @@ namespace EMAN
 				d.put("maxang", EMObject::FLOAT,"maximum angle from initial rotation.");
 				d.put("verbose", EMObject::BOOL,"Turn this on to have useful information printed to standard out.");
 				d.put("maxres", EMObject::FLOAT,"Maximum resolution to consider when full sampling is used");
+				d.put("minres", EMObject::FLOAT,"Minimum resolution to consider when full sampling is used");
 				return d;
 			}
 
@@ -1927,13 +1928,13 @@ namespace EMAN
 				d.put("sigmathis", EMObject::FLOAT,"Only Fourier voxels larger than sigma times this value will be considered");
 				d.put("sigmato", EMObject::FLOAT,"Only Fourier voxels larger than sigma times this value will be considered");
 				d.put("maxres", EMObject::FLOAT,"maximum resolution to compare");
+				d.put("minres", EMObject::FLOAT,"minimum resolution to compare");
 				d.put("maxang", EMObject::FLOAT,"maximum angle from initial rotation.");
 				d.put("initxform", EMObject::TRANSFORMARRAY,"An array of Transforms storing the starting positions.");
 
 // 				d.put("initxform", EMObject::TRANSFORM,"The Transform storing the starting position. If unspecified the identity matrix is used");
 				d.put("randphi", EMObject::BOOL,"Ignore phi constraint for refine search");
 				d.put("rand180", EMObject::BOOL,"Ignore 180 rotation for refine search");
-				d.put("breaksym", EMObject::BOOL,"break symmetry. used only when initxform is provided.");
 				d.put("verbose", EMObject::BOOL,"Turn this on to have useful information printed to standard out.");
 				return d;
 			}
