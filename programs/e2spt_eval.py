@@ -211,7 +211,7 @@ class SptEvalGUI(QtWidgets.QWidget):
 		for i,info in enumerate(self.fldlst):
 			#### use Qt.EditRole so we can sort them as numbers instead of strings
 			for j,pm in enumerate(hdrs):
-				if not info.has_key(pm): continue
+				if not pm in info: continue
 				v=info[pm]
 				try:
 					v=float(v)
