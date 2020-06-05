@@ -85,7 +85,7 @@ def main():
 		tsleep=threading.active_count()
 
 		ndone=0
-		while thrtolaunch<len(thrds) or threading.active_count()>tsleep:
+		while thrtolaunch<len(thrds) or threading.active_count()>tsleep or not jsd.empty():
 			if thrtolaunch<len(thrds) :
 				while (threading.active_count()==options.threads+tsleep ) : time.sleep(.1)
 				thrds[thrtolaunch].start()

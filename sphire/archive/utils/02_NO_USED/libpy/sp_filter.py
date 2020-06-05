@@ -1,0 +1,916 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+from __future__ import print_function
+def filt_median(f, nx, ny, nz = 1, kernelshape = "BLOCK"):
+	"""
+	Name
+		filt_median - Calculate the median filtered image.
+	Input
+		input image
+		nxk, nyk, nzk
+			Size of the kernel on each dimension.
+			- They have to be odd so that the center of kernal can be well defined.
+			- Note: For CIRCULAR kernel, we currently only allow circle or sphere kernel, i.e., nxk and nyk must be same for 2 dimensional image and nxk, nyk and nzk must be same for 3 dimensional image.
+		kernelshape
+			Shape of the kernel
+			- BLOCK is for block kernel (DEFAULT);
+			- CIRCULAR is for circular kernel;
+			- CROSS is for cross kernal;
+			- Note: For 1-dimensional image, these three kernels degenerate into the same shape.
+	Output
+		median filtered image
+	"""
+	pass#IMPORTIMPORTIMPORT from EMAN2 import kernel_shape, filt_median_
+
+	if kernelshape=="BLOCK":         return EMAN2_cppwrap.filt_median_(f,nx,ny,nz,EMAN2_cppwrap.kernel_shape.BLOCK)
+	elif kernelshape=="CIRCULAR":    return EMAN2_cppwrap.filt_median_(f,nx,ny,nz,EMAN2_cppwrap.kernel_shape.CIRCULAR)
+	elif kernelshape=="CROSS":       return EMAN2_cppwrap.filt_median_(f,nx,ny,nz,EMAN2_cppwrap.kernel_shape.CROSS)
+	else: sp_global_def.sxprint("Unknown kernel shape.")
+
+# Fourier filters
+def filt_tophatl(e, freq, pad = False):
+	"""
+		Name
+			filt_tophatl - top-hat low-pass Fourier filter (truncation of a Fourier series)
+		Input
+			e: input image (can be either real or Fourier)
+			freq: stop-band frequency
+			pad: logical flag specifying whether before filtering the image should be padded with zeroes in real space to twice the size (this helps avoiding aliasing artifacts). (Default pad = False).
+			All frequencies are in absolute frequency units fa and their valid range is [0:0.5].
+		Output
+			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
+	"""
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.TOP_HAT_LOW_PASS,
+		"cutoff_abs" : freq, "dopad" : pad}
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
+    
+def filt_tophath(e, freq, pad = False):
+	"""
+		Name
+			filt_tophath - top-hat high-pass Fourier filter (truncation of a Fourier series)
+		Input
+			e: input image (can be either real or Fourier)
+			freq: pass-band frequency
+			pad: logical flag specifying whether before filtering the image should be padded with zeroes in real space to twice the size (this helps avoiding aliasing artifacts). (Default pad = False).
+			All frequencies are in absolute frequency units fa and their valid range is [0:0.5].
+		Output
+			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
+	"""
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.TOP_HAT_HIGH_PASS,
+		  "cutoff_abs" : freq, "dopad" : pad}
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def filt_tophato(e, freql, freqh, value, pad = False):
+	"""
+		Name
+			filt_tophato - top-hat homomorphic Fourier filter (truncation of a Fourier series)
+		Input
+			e: input image (can be either real or Fourier)
+			freql: low-end frequency of the filter pass-band
+			freqh: high-end frequency of the filter pass-band
+			value: value of the filter in spatial frequencies lower than freql
+			pad: logical flag specifying whether before filtering the image should be padded with zeroes in real space to twice the size (this helps avoiding aliasing artifacts). (Default pad = False).
+			All frequencies are in absolute frequency units fa and their valid range is [0:0.5].
+		Output
+			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
+
+	"""
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.TOP_HOMOMORPHIC,
+		  "low_cutoff_frequency" : freql, "high_cutoff_frequency" : freqh, "value_at_zero_frequency" : value, "dopad" : pad}
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def filt_gaussb(e, sigma, center, pad = False):
+	"""
+		Name
+			filt_gaussb - Gaussian band-pass Fourier filter
+		Input
+			e: input image (can be either real or Fourier)
+			sigma: standard deviation of the Gaussian function in absolute frequency units fa.
+			center: frequency in absolute frequency units fa at which the filter reaches maximum (=1).
+			pad: logical flag specifying whether before filtering the image should be padded with zeroes in real space to twice the size (this helps avoiding aliasing artifacts). (Default pad = False).
+		Output
+			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
+	"""
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.GAUSS_BAND_PASS,
+		  "cutoff_abs" : sigma, "center" : center, "dopad" : pad}
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
+    
+def filt_gausso(e, sigma, value, pad = False):
+	"""
+	Name
+		filt_gausso - Gaussian homomorphic Fourier filter
+	Input
+		e: input image (can be either real or Fourier)
+		sigma: standard deviation of the Gaussian function in absolute frequency units fa.
+		value: center - value of the filter at zero freqeuncy
+		pad: logical flag specifying whether before filtering the image should be padded with zeroes in real space to twice the size (this helps avoiding aliasing artifacts). (Default pad = False).
+	Output
+		filtered image. Output image is real when input image is real or Fourier when input image is Fourier
+	"""
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.GAUSS_HOMOMORPHIC,
+		  "cutoff_abs" : sigma, "value_at_zero_frequency" : value, "dopad" : pad}
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def filt_btwh(e, freql, freqh, pad = False):
+	"""
+		Name
+			filt_btwh - Butterworth high-pass Fourier filter
+
+		Input
+			e: input image (can be either real or Fourier)
+			freql: low - stop-band frequency
+			freqh: high - pass-band frequency
+			pad: logical flag specifying whether before filtering the image should be padded with zeroes in real space to twice the size (this helps avoiding aliasing artifacts). (Default pad = False).
+			All frequencies are in absolute frequency units fa and their valid range is [0:0.5].
+		Output
+			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
+	"""
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.BUTTERWORTH_HIGH_PASS,
+		  "low_cutoff_frequency" : freql, "high_cutoff_frequency" : freqh, "dopad" : pad}
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
+    
+def filt_btwo(e, freql, freqh, value, pad = False):
+	"""
+		Name
+			filt_btwo - Butterworth homomorphic Fourier filter
+		Input
+			e: input image (can be either real or Fourier)
+			freql: low - stop-band frequency
+			freqh: high - pass-band frequency
+			value: value of the filter at zero frequency
+			pad: logical flag specifying whether before filtering the image should be padded with zeroes in real space to twice the size (this helps avoiding aliasing artifacts). (Default pad = False).
+			All frequencies are in absolute frequency units fa and their valid range is [0:0.5].
+		Output
+			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
+
+	"""
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.BUTTERWORTH_HOMOMORPHIC,
+		  "low_cutoff_frequency" : freql, "high_cutoff_frequency" : freqh,
+	    	  "value_at_zero_frequency" : value, "dopad" : pad}
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def filt_tanh(e, freq, fall_off, pad = False):
+	"""
+		Name
+			filt_tanh - hyperbolic tangent high-pass Fourier filter
+		Input
+			e: input image (can be either real or Fourier)
+			freq: pass-band frequency
+			fall_off: fall off of the filter
+			pad: logical flag specifying whether before filtering the image should be padded with zeroes in real space to twice the size (this helps avoiding aliasing artifacts). (Default pad = False).
+			All frequencies are in absolute frequency units fa and their valid range is [0:0.5].
+		Output
+			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
+	"""
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.TANH_HIGH_PASS,
+		  "cutoff_abs" : freq, "fall_off": fall_off, "dopad" : pad}
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
+    
+def filt_tanb(e, freql, low_fall_off, freqh, high_fall_off, pad = False):
+	"""
+		Name
+			filt_tanb - hyperbolic tangent band-pass Fourier filter
+		Input
+			e: input image (can be either real or Fourier)
+			freql: low-end frequency of the filter pass-band
+			low_fall_off: fall off of the filter at the low-end frequency
+			freqh: high-end frequency of the filter pass-band
+			high_fall_off: fall off of the filter at the high-and frequency
+			pad: logical flag specifying whether before filtering the image should be padded with zeroes in real space to twice the size (this helps avoiding aliasing artifacts). (Default pad = False).
+			All frequencies are in absolute frequency units fa and their valid range is [0:0.5].
+		Output
+			filtered image. Output image is real when input image is real or Fourier when input image is Fourier
+	"""
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.TANH_BAND_PASS,
+		  "low_cutoff_frequency" : freql, "Low_fall_off": low_fall_off,
+	    	  "high_cutoff_frequency" : freqh, "high_fall_off": high_fall_off, "dopad" : pad}
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
+    
+def filt_tano(e, freq, fall_off, value, pad = False):
+	"""
+		Name
+			filt_tano - hyperbolic tangent homomorphic Fourier filter
+		Input
+			e: input image (can be either real or Fourier)
+			freq: pass-band frequency
+			fall_off: fall off of the filter
+			value: value of the filter at zero frequency
+			pad: logical flag specifying whether before filtering the image should be padded with zeroes in real space to twice the size (this helps avoiding aliasing artifacts). (Default pad = False).
+			All frequencies are in absolute frequency units fa and their valid range is [0:0.5].
+		Output
+			filtered image. Output image is real when input image is real or Fourier when input image is Fourier.
+	"""
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type" : EMAN2_cppwrap.Processor.fourier_filter_types.TANH_HOMOMORPHIC,
+		  "cutoff_abs" : freq, "fall_off": fall_off,
+	    	  "value_at_zero_frequency" : value, "dopad" : pad}
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
+
+
+  
+def filt_kaisersinh(e, alpha):
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	M = e.get_xsize()
+	K = 6
+	N = M*2  # npad*image size
+	r=M/2
+	v=K/2.0/N
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type":EMAN2_cppwrap.Processor.fourier_filter_types.KAISER_SINH,
+		  "alpha":alpha, "K":K,"r":r,"v":v,"N":N}
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
+    
+def filt_kaisersinhp(e, alpha):
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	M = e.get_xsize()
+	K = 6
+	N = M*2  # npad*image size
+	r=M/2
+	v=K/2.0/N
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type":EMAN2_cppwrap.Processor.fourier_filter_types.KAISER_SINH,
+		  "dopad" : 1, "alpha":alpha, "K":K,"r":r,"v":v,"N":N}
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
+    
+def filt_kaisersinhinv(e, alpha):
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	M = e.get_xsize()
+	K = 6
+	N = M*2  # npad*image size
+	r=M/2
+	v=K/2.0/N
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type":EMAN2_cppwrap.Processor.fourier_filter_types.KAISER_SINH_INVERSE,
+		  "alpha":alpha, "K":K,"r":r,"v":v,"N":N}
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
+    
+def filt_kaisersinhinvp(e, alpha):
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	M = e.get_xsize()
+	K = 6
+	N = M*2  # npad*image size
+	r=M/2
+	v=K/2.0/N
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type":EMAN2_cppwrap.Processor.fourier_filter_types.KAISER_SINH_INVERSE,
+		  "dopad" : 1, "alpha":alpha, "K":K,"r":r,"v":v,"N":N}
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def filt_unctf(e, dz, cs, voltage, pixel, wgh=0.1, b_factor=0.0, sign=-1.0, dza=0.0, azz=0.0):
+	"""
+		defocus: Angstrom
+		cs: mm
+		voltage: Kv
+		pixel size: Angstrom
+		b_factor: Angstrom^2
+		wgh: Unitless
+	"""	
+	pass#IMPORTIMPORTIMPORT from EMAN2 import Processor
+	params = {"filter_type": EMAN2_cppwrap.Processor.fourier_filter_types.CTF_,
+		"defocus" : dz,
+		"Cs" : cs,
+		"voltage" : voltage,
+		"Pixel_size" : pixel,
+		"B_factor" : b_factor,
+		"amp_contrast": wgh,
+		"sign": sign,
+		"dza": dza,
+		"azz":azz,
+		"undo": 1}
+	return EMAN2_cppwrap.Processor.EMFourierFilter(e, params)
+
+def filt_params(dres, high = 0.95, low = 0.1):
+	"""
+		Name
+			filt_params - using the FSC curve establish two frequencies: stop-band, corresponding to the point where the curves drops below predefined high value, and pass-band, corresponding to the point where the curves drops below predefined low value
+		Input
+			dres - list produced by the fsc funcion
+			dres[0] - absolute frequencies
+			dres[1] - fsc, because it was calculated from half the dataset, convert it to full using rn = 2r/(1+r)
+			dres[2] - number of point use to calculate fsc coeff
+			low: cutoff of the fsc curve
+			high: cutoff of the fsc curve. Note: high and low values are optional.
+			return parameters of the Butterworth filter (low and high frequencies)
+		Output
+			freql: stop-band frequency
+			freqh: pass-band frequency
+	"""
+	n = len(dres[1])
+	if ( (2*dres[1][n-1]/(1.0+dres[1][n-1])) > low):
+		# the curve never falls below preset level, most likely something's wrong; however, return reasonable values
+		#  First, find out whether it actually does fall
+		nend = 0
+		for i in range(n-1,1,-1):
+			if ( (2*dres[1][i]/(1.0+dres[1][i]) ) < low):
+				nend = i
+				break
+		if( nend == 0 ):
+			#it does not fall anywhere
+			freql = 0.4
+			freqh = 0.4999
+			return freql,freqh
+		else:
+			n = nend +1
+	#  normal case
+	freql = 0.001 # this is in case the next loop does not work and the curve never drops below high
+	for i in range(1,n-1):
+		if ( (2*dres[1][i]/(1.0+dres[1][i]) ) < high):
+			freql = dres[0][i]
+			break
+	freqh = 0.1 # this is in case the next loop does not work and the curve never rises above low
+	for i in range(n-2,0,-1):
+		if ( (2*dres[1][i]/(1.0+dres[1][i]) ) > low):
+			freqh =min( max(dres[0][i], freql+0.1), 0.45)
+			break
+	return freql,freqh
+
+def filt_from_fsc(dres, low = 0.1):
+	"""
+		Name
+			filt_from_fsc - generate a filter using the FSC curve
+		Input
+			dres: - list produced by the fsc funcion
+			dres[0] - absolute frequencies
+			dres[1] - fsc, because it was calculated from the dataset split into halves, convert it to full using rn = 2r/(1+r)
+			dres[2] - number of point use to calculate fsc coeff
+			low (low is option): cutoff of the fsc curve
+			return filter curve rn = 2r/(1+r)
+		Output
+			filtc: a list of filter values
+			Note: it is assumed that the FSC curve was computed from the dataset split into halves, so the filter values are calculated using rf = 2r1+r
+
+	"""
+	n = len(dres[1])
+	filtc = [0.0]*n
+	filtc[0] = 1.0
+	last = n
+	for i in range(1, n-1):
+		if dres[1][i] < 0.0:
+			qt = 0.0
+		else:
+			qt = 2*(dres[1][i-1]/(1.0+dres[1][i-1]) + dres[1][i]/(1.0+dres[1][i]) + dres[1][i+1]/(1.0+dres[1][i+1]))/3.0
+		if qt < low:
+			filtc[i] = low
+			last = i
+			break
+		else:
+			filtc[i] = qt
+	if last < n-1:
+		for i in range(last, min(last+4, n)):
+			qt /= 1.2
+			filtc[i] = qt
+	return filtc
+
+def filt_from_fsc2(dres, low = 0.1):
+	"""
+		dres - list produced by the fsc funcion
+		dres[0] - absolute frequencies
+		dres[1] - fsc, because it was calculated from the dataset split into halves, convert it to full using rn = 2r/(1+r)
+		dres[2] - number of point use to calculate fsc coeff
+		low cutoff of the fsc curve
+		return filter curve rn = 2r/(1+r)
+	"""
+	n = len(dres[1])
+	filtc = [0.0]*n
+	filtc[0] = 1.0
+	last = n
+	for i in range(1,n-1):
+		if(dres[1][i]<0.0):
+			qt = 0.0
+		else:
+			qt = (dres[1][i-1]/(1.0+dres[1][i-1]) + dres[1][i]/(1.0+dres[1][i]) + dres[1][i+1]/(1.0+dres[1][i+1]))/3.0
+		if ( qt < low ):
+			filtc[i] = low
+			last = i
+			break
+		else:
+			filtc[i] = qt
+	if(last<n-1):
+		for i in range(last, min(last+4,n)):
+			qt /= 1.2
+			filtc[i] = qt
+	return filtc
+
+def filt_from_fsc_bwt(dres, low = 0.1):
+	"""
+		Name
+			filt_from_fsc_bwt - Create filter using Fourier Ring correlation coefficients with Butterworth filter (bwf) cut off.
+		Input
+			dres - list produced by the fsc funcion
+			dres[i][0] - absolute frequencies
+			dres[i][1] - fsc, because it was calculated from the dataset split into halves, convert it to full using rn = 2r/(1+r)
+			dres[i][2] - number of point use to calculate fsc coeff
+			return filter curve rn = 2r/(1+r) when frc>0.9
+		                    rn =1./sqrt(1.+(dres[i][0]/rad)**order) when frc<=0.9
+			low: pass band
+			ssnr calculated from frc with Butterworth fitler-like cutoff
+		Output
+			filtc: filter created from FRC
+	"""
+	pass#IMPORTIMPORTIMPORT from math import log,sqrt
+	n = len(dres[0])
+	filtc = [0.0]*n
+	eps=0.882 # copied from spider fq np command 
+	a=10.624 # copied from spider fq np command 
+	lowf=.45
+	for i in range(n):
+		if(dres[1][i]<low):
+			lowf=dres[0][i]
+			break
+	highf=lowf+.05
+	order=2.*math.log(eps/math.sqrt(a**2-1))/math.log(lowf/highf)
+	rad=lowf/eps**(2./order)
+	for i in range(n):		
+		if(dres[1][i]<low): 
+			qt = 1./math.sqrt(1.+(dres[0][i]/rad)**order)
+		else:
+			qt = 2*dres[1][i]/(1.0+dres[1][i])
+		filtc[i] = qt
+	return  filtc
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def fit_tanh1(dres, low = 0.1):
+	"""
+		dres - list produced by the fsc funcion
+		dres[0] - absolute frequencies
+		dres[1] - fsc, to be conservative, do not use factor of 2.
+		dres[2] - number of points use to calculate fsc coeff
+		low cutoff of the fsc curve
+		return parameters of the tanh filter: freq - cutoff frequency at which filter value is 0.5, and fall_off, the 'width' of the filter
+	"""
+	def fit_tanh_func(args, data):
+		pass#IMPORTIMPORTIMPORT from math import pi, tanh
+		v = 0.0
+		for i in range(len(data[0])):
+			fsc =  data[1][i]
+			if args[0]==0 or args[1]==0: qt=0
+			else: qt  = fsc - 0.5*( math.tanh(math.pi*(data[0][i]+args[0])/2.0/args[1]/args[0]) - math.tanh(math.pi*(data[0][i]-args[0])/2.0/args[1]/args[0]) )
+			v  -= qt*qt
+		#print args,v
+		return v
+
+	setzero = False
+	for i in range(1,len(dres[0])):
+		if not setzero:
+			if(dres[1][i] <low):  setzero = True
+		if setzero:  dres[1][i] = 0.0
+
+	freq = -1.0
+	for i in range(1,len(dres[0])-1):
+		if ( dres[1][i] < 0.5):
+			freq = dres[0][i-1]
+			break
+	if(freq < 0.0):
+		# the curve never falls below 0.5, most likely something's wrong; however, return reasonable values
+		freq = 0.2
+		fall_off = 0.2
+		return freq, fall_off
+	pass#IMPORTIMPORTIMPORT from sp_utilities import amoeba
+	args   = [freq, 0.1]
+	scale  = [0.05, 0.05]
+	result = sp_utilities.amoeba(args, scale, fit_tanh_func, data = dres)
+
+	"""Multiline Comment1"""
+	#MULTILINEMULTILINEMULTILINE 1
+	#MULTILINEMULTILINEMULTILINE 1
+	#MULTILINEMULTILINEMULTILINE 1
+	#MULTILINEMULTILINEMULTILINE 1
+	#MULTILINEMULTILINEMULTILINE 1
+		#MULTILINEMULTILINEMULTILINE 1
+		#MULTILINEMULTILINEMULTILINE 1
+		#MULTILINEMULTILINEMULTILINE 1
+	#MULTILINEMULTILINEMULTILINE 1
+	return result[0][0], result[0][1]
+
+def tanhfilter(nx, fl, aa):
+	#  generate discretized tanh filter
+	pass#IMPORTIMPORTIMPORT from math import pi, tanh
+	n = nx//2 + nx%2
+	f = [0.0]*n
+	for i in range(n):
+		x = float(i)/nx
+		f[i] = 0.5*( math.tanh(math.pi*(x+fl)/2.0/aa/fl) - math.tanh(math.pi*(x-fl)/2.0/aa/fl) )
+	return  [[float(i)/nx for i in range(n)],f]
+
+def filt_matched(ima, SNR, Pref):
+	""" 
+		Calculate Matched filter. The reference image is 
+		assumed to be a Wiener average
+		See paper Alignment under noise by PRB et al
+	"""
+
+	pass#IMPORTIMPORTIMPORT from sp_filter import filt_from_fsc_bwt, filt_table
+	pass#IMPORTIMPORTIMPORT from math import sqrt
+	pass#IMPORTIMPORTIMPORT from EMAN2 import EMData
+	pass#IMPORTIMPORTIMPORT from sp_fundamentals import rops_table
+	
+	ctf_2 = ima.get_attr('ctf_2')
+	PU = ima.get_attr('PU')
+	Pn1 = ima.get_attr('Pn1')
+	Pn2 = ima.get_attr('Pn2')
+	TE= ima.get_attr('TE')
+	HM=[]
+	TMP1=[]
+	TMP2=[]
+	for j in range(len(Pref)-1):
+		if(SNR[j]>.05): 
+			thm=SNR[j]*(SNR[j]+1.)*PU[j]/Pref[j]
+			sp_global_def.sxprint(thm)
+			hm=math.sqrt(thm)
+			deno=(SNR[j]+1)*(ctf_2[j]*Pn2[j]*TE[j]**2+Pn1[j])+ctf_2[j]*PU[j]*TE[j]**2
+			xval=hm/deno 
+		else: 
+			hm=0.0
+			xval=0.0
+		HM.append(xval)
+		TMP1.append(Pref[j])
+		TMP2.append(hm)
+		
+	img=filt_table(ima,HM)
+	res=[]
+	res.append(img)
+	res.append(TMP1)
+	res.append(TMP2)
+	del HM
+	return res	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

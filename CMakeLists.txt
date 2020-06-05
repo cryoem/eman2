@@ -1,6 +1,6 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.14)
 PROJECT(EMAN
-		VERSION 2.31
+		VERSION 2.39
 		LANGUAGES CXX
 		)
 
@@ -166,6 +166,8 @@ ELSEIF(ENABLE_OPTIMIZE_OSX)
 #	SET (OPT_FLAGS "-Os -ffast-math")
 ELSEIF(ENABLE_OPTIMIZE_MACHINE)
 	SET (OPT_FLAGS "-O5 -march=native -m64 -ffast-math -pipe")
+ELSEIF(ENABLE_OPTIMIZE_COMPATIBILITY)
+	SET (OPT_FLAGS "-O5 -march=sandybridge -m64 -ffast-math -pipe")
 ELSEIF(ENABLE_OPTIMIZE_X86_64)
 	SET (OPT_FLAGS "-O5 -march=k8 -mfpmath=sse -m64 -ffast-math -pipe")
 #	SET (OPT_FLAGS "-O5 -mfpmath=both -march=core-avx-i -m64 -ffast-math -pipe")

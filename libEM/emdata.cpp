@@ -680,6 +680,12 @@ EMData *EMData::get_clip(const Region & area, const float fill) const
 							   	   yorigin + apix_y * area.origin[1],
 							       zorigin + apix_z * area.origin[2]);
 		}
+		else {
+			result->set_xyz_origin(apix_x * area.origin[0],
+							   	   apix_y * area.origin[1],
+							       apix_z * area.origin[2]);
+		}
+
 	}
 
 //#ifdef EMAN2_USING_CUDA

@@ -181,8 +181,9 @@ def create_and_save_particle_plots(
 
 			axis = pyplot.subplot(2, 2, 4)
 
-			from numpy.lib.function_base import _hist_bin_fd
-			width = int(np.round(_hist_bin_fd(np.array(particle_defocus))))
+			from numpy.lib.histograms import _hist_bin_fd
+			# value 5 is not used in the numpy function
+			width = int(np.round(_hist_bin_fd(np.array(particle_defocus), 5)))
 
 			width = max(10, width)
 			n, _, _ = axis.hist(particle_defocus, bins=width, facecolor='green', alpha=0.75)

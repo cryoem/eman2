@@ -9,24 +9,17 @@ channels:
     - file:///place_holder_conda_prefix/conda-bld
     - https://conda.anaconda.org/cryoem
     - https://repo.anaconda.com/pkgs/main
-    - https://repo.anaconda.com/pkgs/free
     - https://repo.anaconda.com/pkgs/msys2          # [win]
     - https://conda.anaconda.org/conda-forge
-
-channels_remap:                                       # [not win]
-  -                                                   # [not win]
-      src: file:/place_holder_conda_prefix/conda-bld  # [not win]
-      dest: file://local                              # [not win]
 
 keep_pkgs: False
 ignore_duplicate_files: True
 
 specs:
-  - eman2 2.31
-  - eman-deps 16.1
-  - boost 1.66.*
-  - conda 4.6.14 py27*
-  - conda-build 3.17.8
+  - eman2        2.39
+  - eman-deps    23.1
+  - conda
+  - conda-build
   - pip
   - console_shortcut  # [win]
   - menuinst          # [win]

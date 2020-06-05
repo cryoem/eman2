@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+from __future__ import print_function
+from __future__ import division
 #
 # Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)
 # Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
@@ -38,14 +40,19 @@
 #
 #
 
-import os
 import platform
+import os
 
-spreal = os.path.join(os.path.abspath(os.path.dirname(__file__)), "sp_real.py")
-ipython = os.path.join(os.path.abspath(os.path.dirname(__file__)), "ipython")
+spreal = os.path.join(
+    os.path.abspath(os.path.dirname(__file__)), "sp_real.py"
+)
+ipython = os.path.join(
+    os.path.abspath(os.path.dirname(__file__)), "ipython"
+)
 try:
-	if platform.system()=="Linux" and os.getenv("DISPLAY")==None: raise Exception
-	os.execlp(ipython,"ipython","-i","--gui=qt5",spreal)
+    if platform.system() == "Linux" and os.getenv("DISPLAY") == None:
+        raise Exception
+    os.execlp(ipython, "ipython", "-i", "--gui=qt5", spreal)
 except:
-	print("Warning: No DISPLAY available, running in non-GUI mode.")
-	os.execlp(ipython,"ipython","-i",spreal)
+    print("Warning: No DISPLAY available, running in non-GUI mode.")
+    os.execlp(ipython, "ipython", "-i", spreal)

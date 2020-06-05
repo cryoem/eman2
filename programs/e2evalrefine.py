@@ -481,7 +481,7 @@ def main():
 		result={}
 		thrtolaunch=0
 
-		while thrtolaunch<len(thrds) or threading.active_count()>1:
+		while thrtolaunch<len(thrds) or threading.active_count()>1 or not jsd.empty():
 			# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
 			# note that it's ok that we wait here forever, since there can't be new results if an existing
 			# thread hasn't finished.
@@ -743,7 +743,7 @@ def main():
 		plt.xlabel(r"Spatial Frequency (1/$\AA$)")
 		plt.ylabel("FSC")
 
-		refines=[i for i in os.listdir(".") if "refine_" in i]
+		refines=[i for i in os.listdir(".") if "refine_" in i or "spt_" in i or "subtlt_" in i]
 		fscs=[]
 		for r in refines:
 			try: itr=max([i for i in os.listdir(r) if "fsc_masked" in i and i[-4:]==".txt"])

@@ -1933,7 +1933,7 @@ def fsc(img1, img2, w = 1.0, filename=None):
 
 def fsc_mask(img1, img2, mask = None, w = 1.0, filename=None):
 	""" 
-	        Compute fsc using mask and normalization.
+	    Compute fsc using mask and normalization.
 
 		Usage: [frsc =] fsc(image1, image2 [, mask, w, filename])
 
@@ -1941,16 +1941,18 @@ def fsc_mask(img1, img2, mask = None, w = 1.0, filename=None):
 
 	"""
 	from pap_statistics import fsc
-	from morphology import binarize
+	from morphology import binarize, erosion, dilation
 	from utilities  import model_circle
 	nx = img1.get_xsize()
 	ny = img1.get_ysize()
 	nz = img1.get_zsize()
 	if( mask == None):  mask = model_circle(nx//2, nx, ny, nz)
 	m = binarize(mask, 0.5)
-	s1 = Util.infomask(img1, m, True)
-	s2 = Util.infomask(img2, m, True)
-	return fsc((img1-s1[0])*mask, (img2-s2[0])*mask, w, filename)
+	m = dilation(m) - erosion(m)
+	s1 = Util.infomask(img1, m, True)[0]
+	s2 = Util.infomask(img2, m, True)[0]
+	del m
+	return fsc((img1-s1)*mask, (img2-s2)*mask, w, filename)
 
 
 def locres(vi, ui, m, nk, cutoff, step, myid, main_node, number_of_proc):
@@ -2053,7 +2055,7 @@ def locres(vi, ui, m, nk, cutoff, step, myid, main_node, number_of_proc):
 				#if(k == number_of_proc-1):  bailout = 1
 				bailout = 0
 				#print  "setting freqvol  ",k
-				Util.set_freq(freqvol,tmp3,m,cutoff, freq)
+				junk = Util.set_freq(freqvol, tmp3, m, freq, cutoff)
 				"""
 				for x in xrange(nx):
 					for y in xrange(ny):
@@ -9018,7 +9020,9 @@ def linreg(X, Y):
 	"""
 	Sx = Sy = Sxx = Syy = Sxy = 0.0
 	N = len(X)
-	for x, y in map(None, X, Y):
+	for i in range(N):
+		x = X[i]
+		y = Y[i]
 		Sx  += x
 		Sy  += y
 		Sxx += x*x

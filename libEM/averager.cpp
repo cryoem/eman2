@@ -844,12 +844,8 @@ EMData *ImageAverager::average(const vector < EMData * >&image_list) const
 #endif
 
 MinMaxAverager::MinMaxAverager()
-	: nimg(0)
+	: nimg(0),ismax(0),isabs(0)
 {
-	/*move max out of initializer list, since this max(0) is considered as a macro
-	 * in Visual Studio, which we defined somewhere else*/
-	max = 0;
-
 	
 }
 
@@ -869,38 +865,29 @@ void MinMaxAverager::add_image(EMData * image)
 	float thisown = image->get_attr_default("ortid",(float)nimg);
 	nimg++;
 
-	int nx = image->get_xsize();
-	int ny = image->get_ysize();
-	int nz = image->get_zsize();
-
+	size_t nxyz = image->get_size();
+	
 	if (nimg == 1) {
 		result = image->copy();
-		max = params["max"];
+		if (owner) owner->to_value(thisown);
 		return;
 	}
 
-	if (max) {
-		for (int z=0; z<nz; z++) {
-			for (int y=0; y<ny; y++) {
-				for (int x=0; x<nx; x++) {
-					if (result->get_value_at(x,y,z)<=image->get_value_at(x,y,z)) {
-						result->set_value_at(x,y,z,image->get_value_at(x,y,z));
-						if (owner) owner->set_value_at(x,y,z,thisown);
-					}
-				}
-			}
-		}
-	}
-	else {
-		for (int z=0; z<nz; z++) {
-			for (int y=0; y<ny; y++) {
-				for (int x=0; x<nx; x++) {
-					if (result->get_value_at(x,y,z)>image->get_value_at(x,y,z)) {
-						result->set_value_at(x,y,z,image->get_value_at(x,y,z)); 
-						if (owner) owner->set_value_at(x,y,z,thisown);
-					}
-				}
-			}
+	float *rdata = result->get_data();
+	float *data = image->get_data();
+	float *owndata = 0;
+	if (owner) owndata=owner->get_data();
+
+	ismax=(int)params.set_default("max",0);
+	isabs=(int)params.set_default("abs",0);
+	
+	
+	for (size_t i=0; i<nxyz; i++) {
+		float v = isabs?fabs(data[i]):data[i];
+		float rv = isabs?fabs(rdata[i]):rdata[i];
+		if ((ismax && v>rv) || (!ismax && v<rv)) {
+			rdata[i]=data[i];
+			if (owndata) owndata[i]=thisown;
 		}
 	}
 
@@ -911,7 +898,7 @@ EMData *MinMaxAverager::finish()
 	result->update();
 	result->set_attr("ptcl_repr",nimg);
 	
-	if (result && nimg > 1) return result;
+	if (result && nimg >= 1) return result;
 
 	return NULL;
 }

@@ -128,6 +128,7 @@ const string IntTranslateProcessor::NAME = "xform.translate.int";
 const string ScaleTransformProcessor::NAME = "xform.scale";
 const string ApplySymProcessor::NAME = "xform.applysym";
 const string ClampingProcessor::NAME = "threshold.clampminmax";
+const string RangeZeroProcessor::NAME = "threshold.rangetozero";
 const string NSigmaClampingProcessor::NAME = "threshold.clampminmax.nsigma";
 const string ToMinvalProcessor::NAME = "threshold.belowtominval";
 const string CutToZeroProcessor::NAME = "threshold.belowtozero_cut";
@@ -160,6 +161,7 @@ const string BoxMedianProcessor::NAME = "eman1.filter.median";
 const string BoxSigmaProcessor::NAME = "math.localsigma";
 const string NonConvexProcessor::NAME = "math.nonconvex";
 const string BoxMaxProcessor::NAME = "math.localmax";
+const string LocalMinAbsProcessor::NAME = "math.localminabs";
 const string MinusPeakProcessor::NAME = "math.submax";
 const string PeakOnlyProcessor::NAME = "mask.onlypeaks";
 const string DiffBlockProcessor::NAME = "eman1.filter.blockrange";
@@ -196,6 +198,7 @@ const string NormalizeByMassProcessor::NAME = "normalize.bymass";
 const string NormalizeEdgeMeanProcessor::NAME = "normalize.edgemean";
 const string NormalizeCircleMeanProcessor::NAME = "normalize.circlemean";
 const string NormalizeLREdgeMeanProcessor::NAME = "normalize.lredge";
+const string NormalizeHistPeakProcessor::NAME = "normalize.histpeak";
 const string NormalizeMaxMinProcessor::NAME = "normalize.maxmin";
 const string NormalizeRowProcessor::NAME = "normalize.rows";
 const string NormalizeToLeastSquareProcessor::NAME = "normalize.toimage";
@@ -374,6 +377,7 @@ template <> Factory < Processor >::Factory()
 	force_add<NSigmaClampingProcessor>();
 
 	force_add<ToZeroProcessor>();
+	force_add<RangeZeroProcessor>();
 	force_add<AboveToZeroProcessor>();
 	force_add<OutlierProcessor>();
 	force_add<ToMinvalProcessor>();
@@ -424,6 +428,7 @@ template <> Factory < Processor >::Factory()
 	force_add<BoxMedianProcessor>();
 	force_add<BoxSigmaProcessor>();
 	force_add<BoxMaxProcessor>();
+	force_add<LocalMinAbsProcessor>();
 
 	force_add<MinusPeakProcessor>();
 	force_add<PeakOnlyProcessor>();
@@ -456,6 +461,7 @@ template <> Factory < Processor >::Factory()
 	force_add<HarmonicProcessor>();
 
 	force_add<NormalizeStdProcessor>();
+	force_add<NormalizeHistPeakProcessor>();
 	force_add<NormalizeUnitProcessor>();
 	force_add<NormalizeUnitSumProcessor>();
 	force_add<NormalizeMaskProcessor>();
@@ -1264,6 +1270,8 @@ void GaussZFourierProcessor::process_inplace(EMData * image)
 		image->set_attr("apix_y", (float)params["apix"]);
 		image->set_attr("apix_z", (float)params["apix"]);
 	}
+	
+	int xynoz = params.set_default("xynoz",0);
 
 	const Dict dict = image->get_attr_dict();
 	if( params.has_key("cutoff_freq") ) {
@@ -1276,7 +1284,8 @@ void GaussZFourierProcessor::process_inplace(EMData * image)
 	}
 
 	float omega = params["cutoff_abs"];
-	float zcenter=params.set_default("centerfreq",0.0);
+	float zcenter=params.set_default("centerfreq",0.0f);
+	float hppix = params.set_default("hppix",-1.0f);
 	
 	omega = (omega<0?-1.0:1.0)*0.5f/omega/omega;
 
@@ -1302,11 +1311,24 @@ void GaussZFourierProcessor::process_inplace(EMData * image)
 	omega /=(nz*nz)/4;
 	zcenter=zcenter*(float)dict["apix_x"]*nz;
 
-	for (int z=-nz/2; z<nz/2; z++) {
-		for (int y=-ny/2; y<ny/2; y++) {
-			for (int x=0; x<nx/2; x++) {
-				std::complex <float> v=fft->get_complex_at(x,y,z);
-				fft->set_complex_at(x,y,z,v*exp(-omega*(abs(z)-zcenter)*(abs(z)-zcenter)));
+	if (xynoz) {
+		for (int x=0; x<nx/2; x++) {
+			for (int z=(x==0?0:-nz/2); z<nz/2; z++) {
+				for (int y=(x==0&&z==0?0:-ny/2); y<ny/2; y++) {
+					std::complex <float> v=fft->get_complex_at(x,y,z);
+					float r=Util::hypot_fast(x,y);
+					fft->set_complex_at(x,y,z,v*exp(-omega*(r-zcenter)*(r-zcenter))*(r>hppix?1.0f:Util::hypot3(x,y,z)/hppix));
+				}
+			}
+		}
+	}
+	else {
+		for (int z=-nz/2; z<nz/2; z++) {
+			for (int y=-ny/2; y<ny/2; y++) {
+				for (int x=0; x<nx/2; x++) {
+					std::complex <float> v=fft->get_complex_at(x,y,z);
+					fft->set_complex_at(x,y,z,v*exp(-omega*(abs(z)-zcenter)*(abs(z)-zcenter))*(fabs(z)>hppix?1.0f:Util::hypot3(x,y,z)/hppix));
+				}
 			}
 		}
 	}
@@ -1997,6 +2019,47 @@ void DoGFourierProcessor::create_radial_func(vector < float >&radial_mask) const
 	}
 }
 
+void RangeZeroProcessor::process_inplace(EMData * image)
+{
+	if (!image) {
+		LOGWARN("NULL Image");
+		return;
+	}
+	
+	float gauss_width = params.set_default("gauss_width",0.0f);
+
+	if (gauss_width<=0) {
+		size_t size = (size_t)image->get_xsize() *
+					(size_t)image->get_ysize() *
+					(size_t)image->get_zsize();
+		float *data = image->get_data();
+
+		for (size_t i = 0; i < size; ++i) {
+			if (data[i]>=minval && data[i]<=maxval) data[i]=0.0f;
+		}
+		image->update();
+	}
+	else {
+		int nx = image->get_xsize();
+		int ny = image->get_ysize();
+		int nz = image->get_zsize();
+		float wid=gauss_width/(ny*ny);
+		
+		for (int z=0; z<nz; z++) {
+			for (int y=0; y<ny; y++) {
+				for (int x=0; x<nx; x++) {
+					float cor=exp(-Util::hypot3sq(x-nx/2,y-ny/2,z-nz/2)*wid);
+					if (image->get_value_at(x,y,z)>=minval*cor && image->get_value_at(x,y,z)<=maxval*cor) image->set_value_at(x,y,z,0.0f);
+				}
+			}
+		}
+		image->update();
+	}
+		
+}
+
+
+
 void RealPixelProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
@@ -2020,6 +2083,7 @@ void RealPixelProcessor::process_inplace(EMData * image)
 	}
 	image->update();
 }
+
 
 void CoordinateProcessor::process_inplace(EMData * image)
 {
@@ -2401,77 +2465,67 @@ void SetBitsProcessor::process_inplace(EMData *image)
 	}
 }
 
-void BoxStatProcessor::process_inplace(EMData * image)
+
+void BoxStatProcessor::process_inplace(EMData *image) {
+	EMData *cpy = process(image);
+	memcpy(image->get_data(),cpy->get_data(),image->get_size()*sizeof(float));
+	delete cpy;
+}
+
+// mirrors coordinates at box edges
+inline int MIRE(int x,int nx) { return x<0?-x:(x>=nx?nx-(x-nx+1):x); }
+
+EMData *BoxStatProcessor::process(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
-		return;
+		return NULL;
 	}
+
 
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 
-	int n = params.set_default("radius",1);
-	int areasize = 2 * n + 1;
+	int dx=1,dy=1,dz=1;
+	if (params.has_key("radius")) dx=dy=dz=params["radius"];
+	if (params.has_key("xsize")) dx=params["xsize"];
+	if (params.has_key("ysize")) dy=params["ysize"];
+	if (params.has_key("zsize")) dz=params["zsize"];
+	if (nz==1) dz=0;
 
-	int matrix_size = areasize * areasize;
-	if (nz > 1) {
-		matrix_size *= areasize;
-	}
+	int matrix_size = (2*dx+1)*(2*dy+1)*(2*dz+1);
 
 	float *array = new float[matrix_size];
 //	image->process_inplace("normalize");
 
-	float *data = image->get_data();
-	size_t total_size = (size_t)nx * (size_t)ny * (size_t)nz;
-	float *data2 = new float[total_size];
-	memcpy(data2, data, total_size * sizeof(float));
-
-	int z_begin = 0;
-	int z_end = 1;
-	int nzz=0;
-	if (nz > 1) {
-		z_begin = n;
-		z_end = nz - n;
-		nzz=n;
-	}
-
-	int nxy = nx * ny;
-
-	for (int k = z_begin; k < z_end; k++) {
-		size_t knxy = (size_t)k * nxy;
-
-		for (int j = n; j < ny - n; j++) {
-			int jnx = j * nx;
-
-			for (int i = n; i < nx - n; i++) {
-				size_t s = 0;
-
-				for (int i2 = i - n; i2 <= i + n; i2++) {
-					for (int j2 = j - n; j2 <= j + n; j2++) {
-						for (int k2 = k - nzz; k2 <= k + nzz; k2++) {
-							array[s] = data2[i2 + j2 * nx + (size_t)k2 * nxy];
-							++s;
+	EMData *ret = image->copy_head();
+	
+	// The old version of this code had a lot of hand optimizations, which likely weren't accomplishing much
+	// This is much simpler, but relies on the compiler to optimize. May be some cost associated with the new
+	// edge-mirroring policy which could be hand optomized if necessary
+	for (int k=0; k<nz; k++) {
+		for (int j=0; j<ny; j++) {
+			for (int i=0; i<nx; i++) {
+				
+				for (int kk=k-dz,s=0; kk<=k+dz; kk++) {
+					for (int jj=j-dy; jj<=j+dy; jj++) {
+						for (int ii=i-dx; ii<=i+dx; ii++,s++) {
+							array[s]=image->get_value_at(MIRE(ii,nx),MIRE(jj,ny),MIRE(kk,nz));
 						}
 					}
 				}
-
-				process_pixel(&data[i + jnx + knxy], array, matrix_size);
+				float newv;
+				process_pixel(&newv,array,matrix_size);
+				ret->set_value_at(i,j,k,newv);
 			}
 		}
 	}
-
-	image->update();
-	// We don't process pixels near the edge, so they will be "funny". Better to zero them ... I hope
-	if (nz>1) image->process_inplace("mask.zeroedge3d",Dict("x0",n,"y0",n,"z0",n));
-	else image->process_inplace("mask.zeroedge2d",Dict("x0",n,"y0",n));
-		
-	if( data2 )
-	{
-		delete[]data2;
-		data2 = 0;
-	}
+	
+	ret->update();
+	delete []array;	
+	
+	return ret;
 }
 
 void DiffBlockProcessor::process_inplace(EMData * image)
@@ -4814,6 +4868,47 @@ float NormalizeStdProcessor::calc_mean(EMData * image) const
 	}
 	return image->get_attr("mean");
 }
+
+float NormalizeHistPeakProcessor::calc_mean(EMData * image) const
+{
+	if (!image) {
+		LOGWARN("NULL Image");
+		return 0;
+	}
+	float mean = image->get_attr("mean");
+	float sig = image->get_attr("sigma");
+	size_t n=image->get_size();
+	
+	// We want at least 100 values per bin on average
+	int hist_size = image->get_size()/100;
+	if (hist_size>1000) hist_size=1000;
+	if (hist_size<5) hist_size=5;
+	vector<float> hist(hist_size,0.0f);
+	
+	float histmin=mean-2.0f*sig;
+	float histmax=mean+2.0f*sig;
+	float step=(histmax-histmin)/(hist_size-1);
+	for (size_t i=0; i<n; i++) {
+		int bin = (image->get_value_at_index(i)-histmin)/step;
+		bin=bin<0?0:(bin>=hist_size?hist_size-1:bin);
+		hist[bin]++;
+	}
+	
+	// yes, probably could use fancy vector methods...
+	int maxv=hist[1],maxn=1;
+	for (int i=2; i<hist_size-1; i++) {
+		if (hist[i]>maxv) { maxv=hist[i]; maxn=i; }
+	}
+	
+	// weighted average position of the peak and nearest neighbors
+	float v1=hist[maxn-1],v2=hist[maxn],v3=hist[maxn+1];
+	float ret= (v1*(maxn-1)+v2*maxn+v3*(maxn+1))/(v1+v2+v3)*step+histmin;
+	printf("%f %f %f %f %f %f\n",v1,v2,v3,mean,sig,ret);
+	
+	return ret;
+}
+
+
 
 EMData *SubtractOptProcessor::process(const EMData * const image)
 {
@@ -7486,26 +7581,28 @@ void CTFCorrProcessor::process_inplace(EMData * image)
 
 	float defocus = params.set_default("defocus",3.0);
 	float ac = params.set_default("ac",10.0);
+	float cs = params.set_default("cs",2.7);
 	float voltage = params.set_default("voltage",300.0);
 	float apix = params.set_default("apix",image->get_attr("apix_x"));
-	int useheader = params.set_default("useheader",1);
-
+	float hppix = params.set_default("hppix",-1.0f);
+	int useheader = params.set_default("useheader",0);
+	int phaseflip = params.set_default("phaseflip",0);
 
 	int ny = image->get_ysize();
 	EMAN2Ctf ctf;
 	if (image->has_attr("ctf") && useheader){
 		
 		ctf.copy_from((Ctf *)(image->get_attr("ctf")));
+//		printf("CTF %f\t%f\t%f\t%f\n",ctf.defocus,ctf.ampcont,ctf.voltage,ctf.apix);
 	}
 	else {
 		ctf.defocus=defocus;
 		ctf.voltage=voltage;
-		ctf.cs=4.1;				// has negligible impact, so we just use a default
+		ctf.cs=cs;
 		
 		ctf.ampcont=ac;
 		ctf.dfdiff=0;
 		ctf.bfactor=200.0;
-		
 	}
 	ctf.apix=apix;
 	ctf.dsbg=1.0/(ctf.apix*ny);
@@ -7515,7 +7612,8 @@ void CTFCorrProcessor::process_inplace(EMData * image)
 
 	// reciprocal until the first CTF maximum, then no filter after that
 	int i;
-	for (i=0; i<np/2-1; i++) {
+	filter[0]=1.0;
+	for (i=1; i<np/2-1; i++) {
 		if (filter[i+1]<filter[i]) {
 			filter[i]=1.0/filter[i];
 			break;
@@ -7524,8 +7622,13 @@ void CTFCorrProcessor::process_inplace(EMData * image)
 	}
 	int gi=i;
 	while (i<np/2) {
-		filter[i]=filter[gi];
+		if (phaseflip) filter[i]=filter[gi]*(filter[i]<0?-1.0f:1.0f);
+		else filter[i]=filter[gi];
 		i++;
+	}
+	
+	if (hppix>0) {
+		for (int i=0; i<(int)hppix*3.0; i++) filter[i]*=tanh((float)i/hppix);
 	}
 
 //	for (i=0; i<np/2; i++) printf("%d\t%1.3g\n",i,filter[i]);
@@ -11498,9 +11601,14 @@ void ScaleTransformProcessor::process_inplace(EMData* image) {
 	}
 }
 
-struct WSsortlist { float pix; short x,y,z; };
-
-int WScmp(const void *a, const void *b) { float x=((WSsortlist*)b)->pix-((WSsortlist*)a)->pix; return (x>0)-(x<0); }		// comparison function for qsort
+struct WSsortlist {
+    float pix;
+    short x,y,z;
+    
+    friend bool operator<(const WSsortlist& l, const WSsortlist& r) {
+        return l.pix < r.pix;
+    }
+};
 
 // inefficient since a copy was probably already made, but best we can do
 void WatershedProcessor::process_inplace(EMData *image) {
@@ -11514,6 +11622,7 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 	int nseg = params.set_default("nseg",12);
 	float thr = params.set_default("thr",0.5f);
 	int segbymerge = params.set_default("segbymerge",0);
+	vector<float> centers;
 	int verbose = params.set_default("verbose",0);
 	if (nseg<=1) throw InvalidValueException(nseg,"nseg must be greater than 1");
 
@@ -11530,9 +11639,9 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 
 	// Count the number of above threshold pixels
 	size_t n2seg = 0;
-	for (int z=0; z<nz; z++) {
-		for (int y=0; y<ny; y++) {
-			for (int x=0; x<nx; x++) {
+	for (int z=1; z<nz-1; z++) {
+		for (int y=1; y<ny-1; y++) {
+			for (int x=1; x<nx-1; x++) {
 				if (image->get_value_at(x,y,z)>=thr) n2seg++;
 			}
 		}
@@ -11540,8 +11649,7 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 	if (verbose) printf("%ld voxels above threshold\n",n2seg);
 
 	// Extract the pixels for sorting
-//	WSsortlist srt[n2seg];
-	WSsortlist * srt = new WSsortlist[n2seg+1];
+	vector<WSsortlist> srt(n2seg);
 	size_t i=0;
 	for (int z=1; z<nz-1; z++) {
 		for (int y=1; y<ny-1; y++) {
@@ -11559,7 +11667,7 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 	if (verbose) printf("Voxels extracted, sorting\n");
 
 	// actual sort
-	qsort(&srt,n2seg,sizeof(WSsortlist),WScmp);
+	sort(srt.begin(), srt.end());
 	if (verbose) printf("Voxels sorted (%1.4g max), starting watershed\n",srt[0].pix);
 
 	// now we start with the highest value and fill in the segments
@@ -11581,6 +11689,9 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 		if (lvl==0) {
 			if (verbose) printf("%d %d %d\t%1.0f\t%1.3g\n",x,y,z,cseg,srt[i].pix);
 			lvl=cseg;
+			centers.push_back(x);
+			centers.push_back(y);
+			centers.push_back(z);
 			cseg+=1.0;
 		}
 		if (lvl>nseg) {
@@ -11616,6 +11727,7 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 		}
 		if (verbose) printf("%ld voxels changed\n",chg);
 	}
+	ret->set_attr("segment_centers",centers);
 
 	if (segbymerge) {
 		if (cseg<segbymerge) return ret;
@@ -11625,7 +11737,7 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 	if (verbose) printf("Merging segments\n");
 	// If requested, we now merge segments with the most surface contact until we have the correct final number
 	if (segbymerge) {
-		int nsegstart=(int)cseg;	// number of segments we actually generated
+		int nsegstart=(int)cseg;	// Number of segments we actually generated
 		nseg=(int)cseg;
 		EMData *mx=new EMData(nsegstart,nsegstart,1);		// This will be a "contact matrix" among segments
 		float *mxd=mx->get_data();
@@ -11688,8 +11800,6 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 		}
 
 	}
-
-	delete [] srt;
 
 	return ret;
 }
@@ -13581,14 +13691,7 @@ EMData* ConvolutionKernelProcessor::process(const EMData* const image)
 
 	int ks;
 	vector<float> kernel;
-	if (params.has_key("selem")) {
-		EMData* selem = params["selem"];
-		float *sd = selem->get_data();
-		kernel = vector<float>(sd, sd + sizeof sd / sizeof sd[0]);
-	}
-	else {
-		kernel = params["kernel"];
-	}
+	kernel = params["kernel"];
 	ks = int(sqrt(float(kernel.size())));
 	if (ks*ks != kernel.size()) throw InvalidParameterException("Convolution kernel must be square!!");
 

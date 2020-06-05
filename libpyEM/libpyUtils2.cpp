@@ -505,6 +505,7 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
 		.def("ener_tot", &EMAN::Util::ener_tot, args("data", "numr", "tot"), "")
 		.def("min_dist_real", &EMAN::Util::min_dist_real, args("image", "data"), "k-means helper")
 		.def("min_dist_four", &EMAN::Util::min_dist_four, args("image", "data"), "k-means helper")
+		.def("pw_extract_sphire", &EMAN::Util::pw_extract_sphire, args("pw", "n", "iswi", "ps"), "")
 #ifdef False
 		.def("cml_weights", &EMAN::Util::cml_weights, args("cml"), "new code common-lines\nhelper function for the weights calculation by Voronoi to Cml")
 		.def("cml_init_rot", &EMAN::Util::cml_init_rot, args("Ori"), "new code common-lines\n2009-03-25 15:35:05 JB. This function prepare rotation matrix for common-lines")
@@ -574,7 +575,7 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
 		.def("rotavg_fourier", &EMAN::Util::rotavg_fourier)
 		.def("unroll1dpw", &EMAN::Util::unroll1dpw, return_value_policy< manage_new_object >(), args("onx", "ny", "bckgnoise"), "out = power")
 		.def("unrollmask", &EMAN::Util::unrollmask, return_value_policy< manage_new_object >(), args("onx", "ny"), "out = mask")
-		.def("set_freq", &EMAN::Util::set_freq, args("freqvol", "freqvol"), "utility for sxlocres")
+		.def("set_freq", &EMAN::Util::set_freq, args("freqvol", "tmp3", "m", "freq", "nref", "zaz", "cutoff"), "utility for sxlocres")
 		.def("pickup_references", &EMAN::Util::pickup_references, args("refang", "delta", "an", "datang", "symmetry"), "utility for meridian")
 		.def("cast_coarse_into_fine_sampling", &EMAN::Util::cast_coarse_into_fine_sampling, args("coarse_sampling_angles","fine_sampling_angles", "symmetry"), "utility for meridian")
 		.def("shift_gradients", &EMAN::Util::shift_gradients, args("avg", "img","wght","sx","sy"), "compute x,y shifts gradients in Fourier space")
@@ -614,6 +615,9 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
 		.def("innerproduct_np", &EMAN::Util::innerproduct_np)
 		.def("innerproductwithctf", &EMAN::Util::innerproductwithctf)
 		.def("local_inner_product", &EMAN::Util::local_inner_product)
+		.def("pw_extract_sphire", &EMAN::Util::pw_extract_sphire)
+		.def("set_freq_sphire", &EMAN::Util::set_freq_sphire, args("freqvol", "freqvol"), "utility for sxlocres")
+
 #ifdef False
 		.def("vrdg", &EMAN::Util::vrdg)
 		.def("cmp1", &EMAN::Util::cmp1)
@@ -700,6 +704,7 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
 		.def("multiref_peaks_compress_ali2d", &EMAN::Util::multiref_peaks_compress_ali2d)
 		.def("ali2d_ccf_list", &EMAN::Util::ali2d_ccf_list)
 		//.def("ali2d_ccf_list_snake", &EMAN::Util::ali2d_ccf_list_snake)
+		.def("set_freq_sphire", &EMAN::Util::set_freq_sphire)
 		//.def("multiref_peaks_ali", &EMAN::Util::multiref_peaks_ali)
 		.def("polar_norm2", &EMAN::Util::polar_norm2, args("image1", "numr"), "")
 		.def("innerproduct", &EMAN::Util::innerproduct, args("image1", "image2", "mask"), "")
@@ -874,6 +879,7 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
 		.staticmethod("set_freq")
 		.staticmethod("histogram")
 		.staticmethod("fuse_low_freq")
+
 #ifndef _WIN32
 		.staticmethod("recv_broadcast")
 #endif	//_WIN32
@@ -905,6 +911,7 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
 		.staticmethod("coveig_for_py")
 		.staticmethod("tf")
 		//.staticmethod("cmp1")
+		.staticmethod("set_freq_sphire")
 		//.staticmethod("cmp2")
 		.staticmethod("hist_comp_freq")
 		.staticmethod("even_angles")
@@ -941,7 +948,7 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
 		.staticmethod("unrollmask")
 		.staticmethod("rotavg_fourier")
 		.staticmethod("div_cbyr")
-		.staticmethod("reg_weights")	
+		.staticmethod("reg_weights")
 		.staticmethod("ctf_img")
 		.staticmethod("ctf_img_real")
 		.staticmethod("ctf2_rimg")
@@ -970,6 +977,8 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
 		.staticmethod("cleanup_threads")
 		.staticmethod("version")
 		.staticmethod("move_points")
+		//.staticmethod("splint")
+		.staticmethod("pw_extract_sphire")
 		//.staticmethod("splint")
 		.staticmethod("compress_image_mask")
 		.staticmethod("calc_best_fft_size")

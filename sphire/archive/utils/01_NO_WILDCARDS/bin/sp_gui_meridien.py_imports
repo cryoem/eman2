@@ -1,0 +1,9 @@
+PyQt5
+PyQt5.QtCore
+PyQt5.QtGui
+PyQt5.QtWidgets
+json
+matplotlib.pyplot
+os
+sp_global_def
+sys

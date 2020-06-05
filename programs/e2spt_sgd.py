@@ -166,7 +166,7 @@ def main():
 			for t in thrds:
 				t.start()
 			angs={}
-			while threading.active_count()>1:
+			while threading.active_count()>1 or not jsd.empty():
 				time.sleep(1)
 				while not jsd.empty():
 					fsp,n,d=jsd.get()

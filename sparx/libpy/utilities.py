@@ -1752,11 +1752,17 @@ def read_spider_doc(fnam):
 
 def chooseformat(t, form_float = "  %12.5f"):
 	e_form = form_float.replace("f","e")
+	if(t == 0.0 ):  return e_form
 	ee = form_float.strip()%t
 	if(len(ee)>int( (( form_float.strip() ).split("."))[0][1:] )):  return e_form
 	df1 = float(ee)
-	df2 = float(e_form.strip()%t)
-	if(abs(t-df1) <= abs(t-df2)):  return form_float
+	if(df1==0.0):  return e_form
+	#df2 = float(e_form.strip()%t)
+	#if(abs(t-df1) <= abs(t-df2)):  return form_float
+	rat = min(t/df1,df1/t)
+	if(int(round(rat,int(e_form.split(".")[1][0])-1)) == 1): return form_float
+	#pw = int(e_form.split(".")[1][0])
+	#if( round(df1)*10**pw == round(df2)*10**pw ):  return form_float
 	else: return e_form
 
 def read_text_row(fnam, format="", skip=";"):
@@ -1811,33 +1817,35 @@ def write_text_row(data, file_name, form_float = "  %14.6f", form_int = "  %12d"
 	         First list will be written as a first line, second as a second, and so on...
 		 If only one list is given, the file will contain one line
 	"""
+	from utilities import convert_from_numpy
 	import types
-
 	outf = open(file_name, "w")
+	if data == []:
+		outf.close()
+		return
+
 	if (type(data[0]) == list):
 		# It is a list of lists
 		for i in range(len(data)):
 			for j in range(len(data[i])):
-				tpt = data[i][j]
+				tpt = convert_from_numpy(data[i][j])
 				qtp = type(tpt)
-				if qtp == int:		outf.write(form_int%tpt)
+				if qtp == int:	outf.write(form_int%tpt)
 				elif qtp == float:
 					frmt = chooseformat(tpt, form_float)
-					if( frmt.find("e") < 0 ):	outf.write(frmt%tpt)
-					else:						outf.write(frmt%tpt)
-				else:                   		outf.write("  %s"%tpt)
+					outf.write(frmt%tpt)
+				else:	outf.write("  %s"%tpt)
 			outf.write("\n")
 	else:
 		# Single list
 		for j in range(len(data)):
-			tpt = data[j]
+			tpt = convert_from_numpy(data[j])
 			qtp = type(tpt)
-			if qtp == int :			outf.write(form_int%tpt+"\n")
+			if qtp == int :	outf.write(form_int%tpt+"\n")
 			elif qtp == float:
 				frmt = chooseformat(tpt, form_float)
-				if( frmt.find("e") < 0 ):		outf.write(frmt%tpt+"\n")
-				else:							outf.write(frmt%tpt+"\n")
-			else:								outf.write("  %s\n"%tpt)
+				outf.write(frmt%tpt+"\n")
+			else:	outf.write("  %s\n"%tpt)
 	outf.flush()
 	outf.close()
 
@@ -1884,39 +1892,47 @@ def write_text_file(data, file_name, form_float = "  %14.6f", form_int = "  %12d
 	         First list will be written as a first column, second as a second, and so on...
 		 If only one list is given, the file will contain one column
 	"""
-
+	from utilities import convert_from_numpy
+	import types
+	outf = open(file_name, "w")
 	if data == []:
-		outf = open(file_name, "w")
 		outf.close()
 		return
 
-	import types
-	outf = open(file_name, "w")
 	if (type(data[0]) == list):
 		# It is a list of lists
 		for i in range(len(data[0])):
 			for j in range(len(data)):
-				tpt = data[j][i]
+				tpt = convert_from_numpy(data[j][i])
 				qtp = type(tpt)
-				if qtp == int:			outf.write(form_int%tpt)
+				if qtp == int:	outf.write(form_int%tpt)
 				elif qtp == float:
 					frmt = chooseformat(tpt, form_float)
-					if( frmt.find("e") < 0 ):	outf.write(frmt%tpt)
-					else:						outf.write(frmt%tpt)
-				else:                   		outf.write("  %s"%tpt)
+					outf.write(frmt%tpt)
+				else:	outf.write("  %s"%tpt)
 			outf.write("\n")
 	else:
 		# Single list
 		for j in range(len(data)):
-			tpt = data[j]
+			tpt = convert_from_numpy(data[j])
 			qtp = type(tpt)
-			if qtp == int :			outf.write(form_int%tpt+"\n")
+			if qtp == int :	outf.write(form_int%tpt+"\n")
 			elif qtp == float:
 				frmt = chooseformat(tpt, form_float)
-				if( frmt.find("e") < 0 ):		outf.write(frmt%tpt+"\n")
-				else:							outf.write(frmt%tpt+"\n")
-			else:                   			outf.write("  %s\n"%tpt)
+				outf.write(frmt%tpt+"\n")
+			else:	outf.write("  %s\n"%tpt)
 	outf.close()
+
+def convert_from_numpy(x):
+	"""
+		Convert numpy number to python number
+	"""
+	import numpy as np
+	try:
+		ziz = str(type(x)).index("numpy")
+		return x.tolist()
+	except:
+		return x
 
 def reconstitute_mask(image_mask_applied_file, new_mask_file, save_file_on_disk = True, saved_file_name = "image_in_reconstituted_mask.hdf"):
 	import types

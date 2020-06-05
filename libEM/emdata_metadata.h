@@ -576,7 +576,7 @@ inline size_t get_size() const
  * @return a vector containing the pixel data.
  */
 inline vector<float> get_data_as_vector() const {
-	int size = get_size();
+	size_t size = get_size();
 	vector<float> v(size);
 	float* data = get_data();
 	std::copy(data,data+size,v.begin());

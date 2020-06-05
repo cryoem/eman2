@@ -985,7 +985,7 @@ def main():
 		from utilities    	import get_im, write_text_file, read_text_file
 		from fundamentals 	import rot_avg_table, fft
 		from morphology   	import compute_bfactor,power
-		from pap_statistics   	import fsc, pearson
+		from pap_statistics import fsc, fsc_mask, pearson
 		from filter       	import filt_table, filt_gaussinv, filt_tanl
 		from EMAN2 			import periodogram
 		
@@ -1023,7 +1023,7 @@ def main():
 			e1 = get_im(input_path_list[0],0)
 		except:
 			ERROR(input_path_list[0]+" does not exist", " --combinemaps option", 1)
-		
+
 		nx = e1.get_xsize()
 		ny = e1.get_ysize()
 		nz = e1.get_zsize()
@@ -1059,8 +1059,8 @@ def main():
 			log_main.add("Total number of average images is %d"%nimage)
 			for i in range(nimage):
 				e1 = get_im(input_path_list[0],i)
-				if m: e1 *=m
-				if options.B_enhance ==0.0 or options.B_enhance == -1.:
+				if m: e1 *= m
+				if options.B_enhance == 0.0 or options.B_enhance == -1.:
 					guinierline = rot_avg_table(power(periodogram(e1),.5))
 					if options.B_stop == 0.0:
 						freq_max   =  1./(2.*options.pixel_size)
@@ -1068,7 +1068,7 @@ def main():
 						freq_max =1./options.B_stop
 					freq_min   =  1./options.B_start
 					log_main.add("B-factor exp(-B*s^2) is estimated from %f[A] to %f[A]"%(options.B_start, 2*options.pixel_size))
-					b,junk,ifreqmin, ifreqmax =compute_bfactor(guinierline, freq_min, freq_max, options.pixel_size)
+					b,junk,ifreqmin, ifreqmax = compute_bfactor(guinierline, freq_min, freq_max, options.pixel_size)
 					global_b = b*4
 					log_main.add( "The estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f"%round(-b,2))
 				else:
@@ -1270,7 +1270,7 @@ def main():
 					"""
 					Scale function to adjust the FSC to the full dataset
 					"""
-					return old_div(2. * x, (1 + x))
+					return 2. * x/(1 + x)
 
 				def create_fsc_txt(output_dir, fsc, resolution, name):
 					"""
@@ -1315,12 +1315,12 @@ def main():
 					plot_curves.append([fsc_true[0], list(map(scale_fsc, fsc_true[1]))])
 					plot_names.append(r'FSC full')
 					if m is not None:
-						fsc_mask = fsc(map1*m, map2*m, 1)
-						fsc_mask[1][0] = 1.0  # always reset fsc of zero frequency to 1.0
-						plot_curves.append(fsc_mask)
+						fscmask = fsc_mask(map1, map2, m)
+						fscmask[1][0] = 1.0  # always reset fsc of zero frequency to 1.0
+						plot_curves.append(fscmask)
 						plot_names.append(r'FSC masked halves')
 						# map fsc obtained from masked two halves to full maps
-						plot_curves.append([fsc_mask[0], list(map(scale_fsc, fsc_mask[1]))])
+						plot_curves.append([fscmask[0], list(map(scale_fsc, fscmask[1]))])
 						plot_names.append(r'FSC masked full')
 
 					resolution_in_angstrom = freq_to_angstrom(pixel_size=options.pixel_size, values=fsc_true[0])
@@ -1328,7 +1328,7 @@ def main():
 					# Create plot and write output file
 					minimum_fsc = 0
 					for fsc, name in zip(plot_curves, plot_names):
-						fsc[1][0] = 1
+						fsc[1][0] = 1.0
 						label = r'{0:18s}:  $0.5$: ${1}\AA$  |  $0.143$: ${2}\AA$'.format(
 							name,
 							round(
@@ -1383,7 +1383,7 @@ def main():
 					plt.savefig(os.path.join(options.output_dir, "fsc.png"), bbox_inches='tight')
 					plt.clf()
 
-					if m is not None: fsc_true = fsc_mask
+					if m is not None: fsc_true = fscmask
 					""" 
 						# we abandon randomize phase strategy
 						frc_without_mask = fsc(map1, map2, 1)

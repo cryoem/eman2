@@ -1,0 +1,14 @@
+EMAN2
+EMAN2_meta
+EMAN2db
+PyQt5
+PyQt5.QtCore
+PyQt5.QtGui
+collections
+functools
+optparse
+os
+re
+sp_global_def
+subprocess
+sys

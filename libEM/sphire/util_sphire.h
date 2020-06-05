@@ -35,5 +35,12 @@
 #ifndef util__sphire_h__
 #define util__sphire_h__
 
+static vector<float> pw_extract_sphire(vector<float>pw, int n, int iswi,float ps);
+static vector<float> call_cl1_sphire(long int *k,long int *n, float *ps, long int *iswi, float *pw, float *q2, double *q, double *x, double *res, double *cu, double *s, long int *iu);
+static vector<float> lsfit_sphire(long int *ks,long int *n, long int *klm2d, long int *iswi, float *q1,double *q, double *x, double *res, double *cu, double *s,long int *iu);
+static void cl1_sphire(long int *k, long int *l, long int *m, long int *n, long int *klm2d,double *q, double *x, double *res, double *cu, long
+int *iu, double *s);
+
+static void set_freq_sphire(EMData* freqvol, EMData* temp, EMData* mask, float cutoff, float freq);
 
 #endif	//util__sphire_h__

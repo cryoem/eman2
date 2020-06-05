@@ -130,7 +130,7 @@ autoprocessing prior to using this program, but no other processing is required.
 	if options.verbose: print("Beginning reprojections")
 	# standard thread execution loop
 	thrtolaunch=0
-	while thrtolaunch<len(thrds) or threading.active_count()>1:
+	while thrtolaunch<len(thrds) or threading.active_count()>1 or not jsd.empty():
 		if thrtolaunch<len(thrds):
 			while (threading.active_count()>=options.threads) : time.sleep(0.1)
 			if options.verbose>0 : 

@@ -1083,7 +1083,7 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 	#####
 
 	
-	while thrtolaunch<len(thrds) or threading.active_count()>tsleep or jsd.empty()==False:
+	while thrtolaunch<len(thrds) or threading.active_count()>tsleep or not jsd.empty():
 		if thrtolaunch<len(thrds) :
 			while (threading.active_count()==options.threads ) : time.sleep(.1)
 			thrds[thrtolaunch].start()

@@ -2514,7 +2514,7 @@ class TestEMData(unittest.TestCase):
         e.set_size(32,32,1)
         e.process_inplace("testimage.noise.uniform.rand")
         
-        re = e.rotavg()
+        re = e.rotavg(None)
         self.assertEqual(re.get_ysize(), 1)
         self.assertEqual(re.get_zsize(), 1)
         
@@ -2524,7 +2524,7 @@ class TestEMData(unittest.TestCase):
             e2.set_size(32,1,1)
             self.assertRaises( RuntimeError, e2.rotavg, )
             try:
-                e2.rotavg()
+                e2.rotavg(None)
             except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
             

@@ -1,0 +1,7 @@
+EMAN2_cppwrap
+mpi
+numpy
+optparse
+sp_fundamentals
+sp_global_def
+sys

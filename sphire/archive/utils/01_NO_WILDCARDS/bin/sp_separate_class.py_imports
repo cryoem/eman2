@@ -1,0 +1,8 @@
+EMAN2
+EMAN2_cppwrap
+EMAN2_meta
+datetime
+os
+sp_applications
+sp_global_def
+sp_logger

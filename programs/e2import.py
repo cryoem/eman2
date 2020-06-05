@@ -71,11 +71,11 @@ def main():
 	parser.add_argument("--apix",help="Specify the apix of the tiltseries you are importing. If -1 (default), the apix in the header will not be changed.",type=float,default=-1,guitype='floatbox', row=5, col=1, rowspan=1, colspan=1,mode='tiltseries[-1]')
 
 	parser.add_argument("--import_tiltseries",action="store_true",help="Import tiltseries",default=False, guitype='boolbox', row=5, col=2, rowspan=1, colspan=1, mode='tiltseries[True]')
+	parser.add_argument("--rawtlt",help="Specify an imod/serialem rawtlt file, and imported tilt series will be sorted in tilt sequence instead of collection sequence", default=None, guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)",  row=1, col=0, rowspan=1, colspan=2, mode='tiltseries')
 	parser.add_argument("--import_tomos",action="store_true",help="Import tomograms for segmentation and/or subtomogram averaging",default=False, guitype='boolbox', row=4, col=2, rowspan=1, colspan=1, mode='tomos[True]')
 
-	#parser.add_pos_argument(name="tilt_angles",help="Specify a file containing tilt angles corresponding to the input tilt images.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=True)",  row=0, col=0, rowspan=1, colspan=2, nosharedb=True, mode='rawtilts')
 
-	#parser.add_argument(name="--rawtlt",help="List the text file containing tilt angles for the tiltseries to be imported.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)",  row=3, col=0, rowspan=1, colspan=3, nosharedb=True, mode='tiltseries')
+	#parser.add_argument("--rawtlt",help="List the text file containing tilt angles for the tiltseries to be imported.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)",  row=3, col=0, rowspan=1, colspan=3, nosharedb=True, mode='tiltseries')
 	#parser.add_argument(name="--start",help="First tilt angle. Increment determined by number of tilts. Custom tilt angles can be specified by a tilt angles text file.", default="", guitype='floatbox', row=4, col=0, rowspan=1, colspan=3, nosharedb=True, mode='tiltseries')
 	#parser.add_argument(name="--stop",help="Final tilt angle. Increment determined by number of tilts. Custom tilt angles can be specified by a tilt angles text file.", default="", guitype='floatbox', row=4, col=1, rowspan=1, colspan=3, nosharedb=True, mode='tiltseries')
 
@@ -106,6 +106,7 @@ def main():
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv,options.ppid)
+	if options.rawtlt != None and len(options.rawtlt)<5: options.rawtlt=None
 
 	# Import EMAN1
 	# will read start.hed/img, split by micrograph (based on defocus), and reprocess CTF in EMAN2 style
@@ -411,21 +412,46 @@ with the same name, you should specify only the .hed files (no renaming is neces
 		for filename in args:
 			newname=os.path.join(stdir,os.path.basename(filename))
 			if options.importation == "move":
+				if options.rawtlt!=None:
+					print("Error: move mode not supported with rawtlt")
+					sys.exit(1)
 				os.rename(filename,newname)
 			if options.importation == "copy":
 				if os.path.isfile(newname): os.remove(newname)
 				tpos=filename.rfind('.')
 				if tpos>0: newname=os.path.join(stdir,os.path.basename(filename[:tpos]+'.hdf'))
 				else: newname=os.path.join(stdir,os.path.basename(filename))
-				cmd="e2proc2d.py {} {} --inplace ".format(filename, newname)
-				if options.invert: cmd+=" --mult -1 --process normalize "
-				if options.apix != -1: cmd += " --apix {} ".format(options.apix)
-				#if options.tomoseg_auto:
-				#	cmd+=" --process filter.lowpass.gauss:cutoff_abs=.25 --process filter.highpass.gauss:cutoff_pixels=5 --process threshold.clampminmax.nsigma:nsigma=3 "
-				#cmd+=options.preprocess
-				run(cmd)
+				if options.rawtlt==None:
+					cmd="e2proc2d.py {} {} --inplace ".format(filename, newname)
+					if options.invert: cmd+=" --mult -1 --process normalize "
+					if options.apix != -1: cmd += " --apix {} ".format(options.apix)
+					run(cmd)
+				else:
+					rawtlt=[(float(l.strip()),i) for i,l in enumerate(open(options.rawtlt,"r"))]
+					hdr=EMData(filename,0,True)
+					nx=hdr["nx"]
+					ny=hdr["ny"]
+					nz=hdr["nz"]
+
+					seq=0
+					for tlt,n in sorted(rawtlt):
+						if nz==1 : img=EMData(filename,n)
+						else: img=EMData(filename,0,False, Region(0,0,n,nx,ny,1))
+						if options.invert: img.mult(-1.0)
+						if options.apix!=-1:
+							img["apix_x"]=options.apix
+							img["apix_y"]=options.apix
+							img["apix_z"]=options.apix
+						img["rawtlt"]=tlt
+						img.write_image(newname,seq)
+						seq+=1
+
 				print("Done.")
-			if options.importation == "link": os.symlink(filename,newname)
+			if options.importation == "link": 
+				if options.rawtlt!=None:
+					print("Error: link mode not supported with rawtlt")
+					sys.exit(1)
+				os.symlink(filename,newname)
 			if (options.importation == "link" or options.importation == "move") and options.apix != -1:
 				run("e2proc3d.py {} {} --apix {} --threed2twod".format(newname, newname, options.apix))
 	

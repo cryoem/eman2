@@ -172,7 +172,7 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 	print(len(thrds)," threads")
 	thrtolaunch=0
 	out=open("{}/avg_multi_{:02d}.txt".format(options.path,options.iter),"w")
-	while thrtolaunch<len(thrds) or threading.active_count()>1:
+	while thrtolaunch<len(thrds) or threading.active_count()>1 or not jsd.empty():
 		# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
 		# note that it's ok that we wait here forever, since there can't be new results if an existing
 		# thread hasn't finished.
