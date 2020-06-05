@@ -15,6 +15,7 @@ def main():
 	parser.add_argument("--tomo", type=str,help="tomogram file name", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True, startpath='tomograms')", row=2, col=0,rowspan=1, colspan=2,)
 	parser.add_argument("--avg", type=str,help="3D average. will use spt_xx/threed_xx by default", default="")
 	parser.add_argument("--ptcl", type=str,help="particle input. will read from 0_spt_params by default", default="")
+	parser.add_argument("--postxf", type=str,help="extra shift after alignment", default="")
 	parser.add_argument("--keep", type=float,help="propotion to keep. will exclude bad particles if this is smaller than 1.0", default=1.0)
 	parser.add_argument("--ppid", type=int,help="ppid...", default=-1)
 	(options, args) = parser.parse_args()
@@ -22,6 +23,13 @@ def main():
 	
 	path=options.path
 	itr=options.iter
+	try:
+		postxf=options.postxf.split(',')
+		postxf=[float(i) for i in postxf]
+		print("post shift : ", postxf)
+	except:
+		postxf=[0,0,0]
+	
 	
 	if len(options.ptcl)>0:
 		ptclin=options.ptcl
@@ -91,6 +99,7 @@ def main():
 		crd=np.array(a["ptcl_source_coord"])/shrink + [
 			tomo["nx"]//2, tomo["ny"]//2, tomo["nz"]//2 + zs/shrink]
 		ts=np.array(xf.get_trans())
+		ts+=postxf
 		xf.set_trans((ts/shrink).tolist())
 		xf=xf.inverse()
 		t=avg.process("xform", {"transform":xf})
