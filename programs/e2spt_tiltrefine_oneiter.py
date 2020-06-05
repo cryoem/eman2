@@ -12,6 +12,7 @@ import re
 from EMAN2_utils import make_path
 from shutil import copy2
 from EMAN2PAR import EMTaskCustomer
+from scipy.optimize import minimize
 
 def main():
 	
@@ -33,6 +34,8 @@ def main():
 	
 
 	parser.add_argument("--transonly", action="store_true", default=False ,help="only refine translation")
+	parser.add_argument("--savepath", action="store_true", default=False ,help="save alignment path in a json file for testing.")
+	parser.add_argument("--scipytest", action="store_true", default=False ,help="test scipy optimizer")
 	parser.add_argument("--fromscratch", action="store_true", default=False ,help="align from scratch and ignore previous particle transforms. for spt mostly. will include mirror")
 	parser.add_argument("--refineastep", type=float,help="Mean angular variation for refine alignment", default=2.)
 	parser.add_argument("--refinentry", type=int,help="number of starting points for refine alignment", default=4)
@@ -41,8 +44,11 @@ def main():
 
 	parser.add_argument("--padby", type=float,default=2.0, help="pad by factor. default is 2")
 	parser.add_argument("--maxres", type=float,default=-1, help="max resolution for cmp")
+	parser.add_argument("--minres", type=float,default=-1, help="min resolution for cmp")
 	parser.add_argument("--sym", type=str,help="symmetry. will use symmetry from spt refinement by default", default="c1")
 	parser.add_argument("--ppid", type=int,help="ppid...", default=-1)
+	parser.add_argument("--nkeep", type=int,help="", default=1)
+	parser.add_argument("--verbose","-v", type=int,help="Verbose", default=0)
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -57,14 +63,8 @@ def main():
 	m=EMData(threedname)
 	bxsz=m["nx"]
 	apix=m["apix_x"]
-	if options.maxres>0:
-		options.shrink=max(1, int(options.maxres/apix*.3))
-		options.shrink=min(options.shrink, bxsz//48)
-		print("Will shrink by {} and filter to {:.0f} A. Box size {}".format(options.shrink, options.maxres, bxsz//options.shrink))
-	else:
-		options.shrink=1
-	#m.process_inplace('normalize.edgemean')
 	
+	options.shrink=1
 	pinfo=[]
 	if options.debug: nptcl=options.threads*8
 	else: nptcl=lst.n
@@ -73,25 +73,34 @@ def main():
 	lst=None
 	
 	print("Initializing parallelism...")
-	etc=EMTaskCustomer(options.parallel, module="e2spt_tiltrefine_oneiter.SptTltRefineTask")
+	if options.scipytest:
+		etc=EMTaskCustomer(options.parallel, module="e2spt_tiltrefine_oneiter.SptNewTltRefineTask")
+	else:
+		etc=EMTaskCustomer(options.parallel, module="e2spt_tiltrefine_oneiter.SptTltRefineTask")
+		
 	num_cpus = etc.cpu_est()
 	
 	print("{} total CPUs available".format(num_cpus))
 	print("{} jobs".format(nptcl))
-	
 	infos=[[] for i in range(num_cpus)]
 	for i,info in enumerate(pinfo):
 		infos[i%num_cpus].append([i, info])
 	
 	tids=[]
 	for info in infos:
-		task = SptTltRefineTask(info, threedname, options)
+		if options.scipytest:
+			task = SptNewTltRefineTask(info, threedname, options)
+		else:
+			task = SptTltRefineTask(info, threedname, options)
+			
+		if options.debug:
+			task.execute(print)
+			return
 		tid=etc.send_task(task)
 		tids.append(tid)
 	
 	while 1:
 		st_vals = etc.check_task(tids)
-		#print(st_vals)
 		if -100 in st_vals:
 			print("Error occurs in parallelism. Exit")
 			return
@@ -110,29 +119,52 @@ def main():
 	
 	del etc
 	
-	allscr=np.array([d["score"] for d in dics])
-	print(np.min(allscr), np.mean(allscr), np.max(allscr), np.std(allscr))
+	if options.savepath:
+		dtmp={i:dics[i] for i in range(len(dics))}
+		jstmp=js_open_dict(lname.replace('.lst', '.json'))
+		jstmp.update(dtmp)
+		jstmp=None
+	
+	
+	allscr=[d["score"] for d in dics]
+	
+	maxl=np.max([len(s) for s in allscr])
+	maxv=np.max(np.concatenate(allscr))
+	for s in allscr:
+		s.extend([maxv]*(maxl-len(s)))
+	allscr=np.array(allscr)
+	
+	#print(np.min(allscr), np.mean(allscr), np.max(allscr), np.std(allscr))
 	allscr=2-allscr
-	s=allscr.copy()
-	s-=np.mean(s)
-	s/=np.std(s)
-	clp=2
-	ol=abs(s)>clp
-	print("Removing {} outliers from {} particles..".format(np.sum(ol), len(s)))
-	s=(s+clp)/clp/2
-	s[ol]=0
-	allscr=s
-	allscr-=np.min(allscr)-1e-5
+	allscr-=np.min(allscr)
 	allscr/=np.max(allscr)
+	
+	if maxl>1:
+		mx=np.max(allscr, axis=1)[:,None]
+		allscr=np.exp(allscr*20)
+		allscr=allscr/np.sum(allscr, axis=1)[:,None]
+		allscr*=mx
 	
 	try: os.remove(lname)
 	except: pass
 	lout=LSXFile(lname, False)
 	for i, dc in enumerate(dics):
-		d=dc["xform.align3d"].get_params("eman")
-		d["score"]=float(allscr[i])
+		lc=""
+		
+		if isinstance(dc["xform.align3d"], list):
+			alilist=dc["xform.align3d"]
+			scorelist=dc["score"]
+		else:
+			alilist=[dc["xform.align3d"]]
+			scorelist=[dc["score"]]
+		for j,xf in enumerate(alilist):
+			d=xf.get_params("eman")
+			d["score"]=float(allscr[i,j])
+			if d["score"]>.05 or j==0:
+				lc=lc+str(d)+';'
+			
 		l=pinfo[i]
-		lout.write(-1, l[0], l[1], str(d))
+		lout.write(-1, l[0], l[1], lc[:-1])
 
 	lout=None
 
@@ -157,6 +189,253 @@ def run(cmd):
 	launch_childprocess(cmd)
 
 
+def gen_xfs(symc, astep):
+	sym=parsesym(symc)
+	xfs0=sym.gen_orientations("saff", {"delta":astep,"inc_mirror":1})
+	xfs=[x for x in xfs0]
+	n0=len(xfs)
+	ns=Transform.get_nsym(symc)
+
+	for i in range(1,ns):
+		xfs.extend([xf.get_sym(symc, i) for xf in xfs0])
+
+		
+		
+	xfmat=np.array([x.get_matrix() for x in xfs])
+	xfmat=xfmat.reshape((-1, 3,4 ))[:, :,:3]
+	dt=np.tensordot(xfmat, xfmat, axes=(1,1)).transpose(0,2,1,3)
+	om=(np.trace(dt, axis1=2, axis2=3)-1)/2.
+	om=np.clip(om, -1, 1)
+	om=np.arccos(om)*180/np.pi
+	dst=om
+	dst+=np.eye(len(xfs))*180
+	dt=np.min(dst, axis=1)
+
+	mid=np.where(dt[:n0]>astep/.9)[0]
+	nid=np.argmin(dst[mid], axis=1)
+	xns=[]
+	for i, mi in enumerate(mid):
+		ni=nid[i]
+		dx=(xfs[mi]*xfs[ni].inverse()).get_params('spin')
+		dx["omega"]/=-2
+		xns.append(xfs[mi]*Transform(dx))
+
+	xfs=xfs[:n0]
+	xfs.extend(xns)
+	xfsall=[]
+	for x in xfs:
+		for phi in np.arange(0,360-.1, astep):
+			x0=x.get_params("eman")
+			x0["phi"]=phi
+			xfsall.append(Transform(x0))
+	return xfsall
+
+class SptNewTltRefineTask(JSTask):
+	
+	
+	def __init__(self, info, ref, options):
+		
+		data={"info":info, "ref": ref}
+		JSTask.__init__(self,"SptNewTltRefine",data,{},"")
+		self.options=options
+	
+	
+	def execute(self, callback):
+		
+			
+		def test_rot(x, returnxf=False):
+			
+			fullxf=False
+			if isinstance(x, Transform):
+				xf=x
+				
+			else:
+				if len(x)<4:
+					xf=Transform({"type":"eman", "alt":x[0], "az":x[1], "phi":x[2]})
+				else:
+					xf=Transform({"type":"eman", "alt":x[0], "az":x[1], "phi":x[2],"tx":x[3], "ty":x[4]})
+					fullxf=True
+							
+				#r=(np.random.randn(4)*astep*.1).tolist()
+				#xfrnd=Transform({"type":"spin", "n1":r[0], "n2":r[1], "n3":r[2], "omega":r[3]})
+				#xf=xf*xfrnd
+			   
+			
+			pj=refsmall.project('gauss_fft',{"transform":xf, "returnfft":1})
+			
+			if fullxf:
+				x0=ss//8; x1=int(ss*.45)
+				
+			else:
+				x0=ss//8; x1=ss//3
+				ccf=imgsmall.calc_ccf(pj)
+				pos=ccf.calc_max_location_wrap(mxsft, mxsft, 0)
+				xf.set_trans(pos)
+				pj.translate(xf.get_trans())
+			
+			fsc=imgsmall.calc_fourier_shell_correlation(pj)
+			fsc=np.array(fsc).reshape((3,-1))[:, x0:x1]
+			wt=fsc[2]
+			if ctfwt:
+				wt*=ctfcv[x0:x1]
+			
+			scr=-np.sum(fsc[1]*wt)/np.sum(wt)
+			#scr=-np.mean(fsc[1])
+
+			#newxfs.append(xf)
+			#score.append(scr)
+			if returnxf:
+				return scr, xf
+			else:
+				return scr
+		
+		
+		options=self.options
+		data=self.data
+		callback(0)
+		rets=[]
+		
+
+		ref=EMData(data["ref"],0)
+		ny0=ny=ref["ny"]
+		#ref.process_inplace("threshold.belowtozero")
+		#ref.process_inplace("math.gausskernelfix",{"gauss_width":2})
+		#pad=256
+		#ref.clip_inplace(Region((ny0-pad)//2,(ny0-pad)//2,(ny0-pad)//2, pad, pad,pad))
+		#ny=pad
+		if options.maxres>0:
+			maxrescut=ceil(ny*ref["apix_x"]/options.maxres)
+			maxy=good_size(maxrescut*3)
+			maxy=int(min(maxy, ny))
+		else:
+			maxy=ny
+			maxrescut=1e5
+		
+		ref=ref.do_fft()
+		ref.process_inplace("xform.phaseorigin.tocenter")
+		ref.process_inplace("xform.fourierorigin.tocenter")
+		ssrg=2**np.arange(5,12, dtype=int)
+		#ssrg[0]=64
+		#ssrg[:2]=ssrg[:2]*3/4
+		ssrg=ssrg.tolist()
+		ss0=ssrg[0]
+		
+			
+		
+		for infoi, infos in enumerate(data["info"]):
+			ii=infos[0]
+			info=infos[1]
+			
+			img=EMData(info[1],info[0])
+			img.process_inplace("mask.soft",{"outer_radius":-10,"width":10})
+			#img.process_inplace("math.gausskernelfix",{"gauss_width":2,"invert":1})
+			#img.clip_inplace(Region((ny0-pad)//2,(ny0-pad)//2, pad, pad))
+			img=img.do_fft()
+			img.process_inplace("xform.phaseorigin.tocenter")
+			img.process_inplace("xform.fourierorigin.tocenter")
+			path=[]
+			
+			npos=64
+			lastastep=1e5
+			initxfs=[]
+				
+			if not options.fromscratch and isinstance(info[-1], str):
+				
+				for xfs in info[-1].split(';'):
+					initxf=eval(xfs)
+					if "score" in initxf:
+						initxf.pop('score')
+					
+					initxfs.append(Transform(initxf))
+				
+			if img.has_attr("ctf"):
+				ctf=img["ctf"]
+				ds=1./(ny*ref["apix_x"])
+				ctf.bfactor=10
+				ctfcv=abs(np.array(ctf.compute_1d(ny,ds,Ctf.CtfType.CTF_AMP)))
+				ci=np.where(np.diff(ctfcv)<0)[0][0]
+				ctfcv[:ci]=ctfcv[ci]
+				ctfwt=True
+			else:
+				ctfwt=False
+				
+			for si, ss in enumerate(ssrg):
+				if ss>=maxy: 
+					ss=maxy
+					
+				refsmall=ref.get_clip(Region(0,(ny-ss)//2, (ny-ss)//2, ss+2, ss, ss))
+				imgsmall=img.get_clip(Region(0,(ny-ss)//2, ss+2, ss))
+				imgsmall.process_inplace("xform.fourierorigin.tocenter")
+					
+				mxsft=ss//8
+				astep=89.999/floor((np.pi/(3*np.arctan(2./ss))))
+				#astep*=.5
+				sym=parsesym(options.sym)
+				score=[]
+				
+				if options.debug:
+					print(ss, npos, astep)
+					
+				if ss==ss0:
+					#xfs=gen_xfs(options.sym, astep)
+					xfs=sym.gen_orientations("saff",{"delta":astep,"phitoo":astep,"inc_mirror":1})
+					newxfs=[]
+					for xf in xfs:
+						scr, x=test_rot(xf, True)
+						score.append(scr)
+						newxfs.append(x)
+				
+				else:
+					xfs=newxfs
+					xfs.extend(initxfs)
+					newxfs=[]
+					simplex=np.vstack([[0,0,0], np.eye(3)*astep])
+					for xf0 in xfs:
+						x=xf0.get_params("eman")
+						x0=[x["alt"], x["az"], x["phi"]]
+						res=minimize(test_rot, x0, method='Nelder-Mead', options={'ftol': 1e-2, 'disp': False, "maxiter":50, "initial_simplex":simplex+x0})
+						scr, x=test_rot(res.x, True)
+						score.append(scr)
+						newxfs.append(x)
+						
+				xfs=newxfs
+				if options.debug:
+					print(ss, "xfs:", len(newxfs))
+
+				newxfs=[]
+				newscore=[]
+				idx=np.argsort(score)
+				for i in idx:
+					dt=[(x.inverse()*xfs[i]).get_params("spin")["omega"] for x in newxfs]
+					if len(dt)==0 or np.min(dt)>astep*4:
+						newxfs.append(xfs[i])
+						newscore.append(score[i])
+					if len(newxfs)>=npos:
+						break
+					
+				for xf in newxfs:
+					xf.set_trans(xf.get_trans()*ny/ss)
+					
+				if options.verbose>1:
+					print("size: {}, xfs: {}".format(ss, len(newxfs)))
+					for x in newxfs:
+						xf=x.get_params("eman")
+						print("\t{:.1f} {:.1f} {:.1f} {:.1f} {:.1f}".format(xf["alt"], xf["az"], xf["phi"], xf['tx'], xf['ty']))
+				
+				npos=max(1, npos//2)
+				lastastep=astep
+				path.append(newxfs)
+				if ss>=maxy:
+					break
+				
+			#r={"idx":ii, "xform.align3d":newxfs[0], "score":np.min(score)}
+			r={"idx":ii, "xform.align3d":newxfs[:options.nkeep], "score":newscore[:options.nkeep], "path":path}
+			callback(100*float(infoi/len(self.data["info"])))
+			rets.append(r)
+			
+		return rets
+
+
 class SptTltRefineTask(JSTask):
 	
 	
@@ -177,7 +456,12 @@ class SptTltRefineTask(JSTask):
 		if options.maxres>0 and options.shrink>1:
 			a.process_inplace("math.meanshrink",{"n":options.shrink})
 		
-		for i, infos in enumerate(data["info"]):
+		if options.scipytest:
+			a.process_inplace("xform.phaseorigin.tocorner")
+			a=a.do_fft()
+			a.process_inplace("xform.fourierorigin.tocorner")
+			
+		for infoi, infos in enumerate(data["info"]):
 			ii=infos[0]
 			info=infos[1]
 			
@@ -209,7 +493,7 @@ class SptTltRefineTask(JSTask):
 			
 			elif options.fromscratch:
 				alignpm={"verbose":0,"sym":options.sym}
-				mriter=[False, True]
+				mriter=[False]
 				dic=[]
 				
 				for mirror in mriter:
@@ -228,8 +512,7 @@ class SptTltRefineTask(JSTask):
 				xf=dic[bestmr]["xform.align3d"]
 				xf.set_mirror(bestmr)
 				r={"idx":ii, "xform.align3d":xf, "score":dic[bestmr]["score"]}
-				#print(ii, xf)
-	
+			
 			else:
 				nxf=options.refinentry
 				astep=options.refineastep
@@ -241,7 +524,7 @@ class SptTltRefineTask(JSTask):
 						d[ky]=initxf[ky]+(i>0)*np.random.randn()*astep/np.pi*2
 					xfs.append(Transform(d))
 						
-				alignpm={"verbose":0,"sym":options.sym,"maxshift":options.maxshift,"initxform":xfs, "maxang":astep*2.}
+				alignpm={"verbose":options.verbose,"sym":options.sym,"maxshift":options.maxshift,"initxform":xfs, "maxang":astep*2.}
 				#print("lenxfs:", len(xfs))
 				if initxf["mirror"]:
 					b=b.process("xform.flip", {"axis":'x'})
@@ -258,8 +541,9 @@ class SptTltRefineTask(JSTask):
 				xf=r["xform.align3d"]
 				xf.set_trans(options.shrink*xf.get_trans())
 				r["xform.align3d"]=xf
-			callback(100*float(i/len(self.data["info"])))
+			callback(100*float(infoi/len(self.data["info"])))
 			rets.append(r)
+			#print(infoi,r)
 		#callback(100)
 			
 		return rets
