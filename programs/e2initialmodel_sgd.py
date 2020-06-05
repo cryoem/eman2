@@ -45,14 +45,14 @@ def makeprojs(threed, options):
 	projs=[threed.project("standard",ort) for ort in oris]
 	return projs
 
-def do_ali_fullcov(ptcls, projs):
+def do_ali_fullcov(ptcls, projs, options):
 	boxsize=ptcls[0]["nx"]
 	quals=[]
 	bss=.0
 	pts=[(p, None) for p in ptcls]
 	for i in range(len(projs)):
 		#sim=cmponetomany(pjs,ptcls[i],align=("rotate_translate_flip",{"maxshift":boxsize/5}),alicmp=("ccc",{}),ralign=("refine",{}),cmp=("frc",{"minres":80,"maxres":20}))
-		sim=cmponetomany(pts,projs[i],align=("rotate_translate_tree",{"maxshift":old_div(boxsize,5), "maxres":20}),alicmp=("ccc",{}),ralign=("refine",{}),cmp=("frc",{"minres":80,"maxres":20}))
+		sim=cmponetomany(pts,projs[i],align=("rotate_translate_tree",{"maxshift":old_div(boxsize,5), "maxres":options.targetres}),alicmp=("frc",{}))
 		bs=min(sim)
 		
 		bss+=bs[0]
@@ -66,7 +66,7 @@ def do_ali_fullcov(ptcls, projs):
 	for i in range(len(projs)):
 		n=projs[i]["match_n"]
 		quals.append(projs[i]["match_qual"])
-		aptcls.append(ptcls[n].align("rotate_translate_tree",projs[i],{"maxshift":old_div(boxsize,5), "maxres":20},"frc",{}))
+		aptcls.append(ptcls[n].align("rotate_translate_tree",projs[i],{"maxshift":old_div(boxsize,5), "maxres":options.targetres},"frc",{}))
 		aptcls[-1].process_inplace("normalize.toimage",{"to":projs[i]})
 		#aptcls[-1].process_inplace("normalize")
 		aptcls[-1]["match_n"]=i
@@ -74,7 +74,7 @@ def do_ali_fullcov(ptcls, projs):
 		aptcls[-1]["xform.projection"]=projs[i]["xform.projection"]# best orientation set in the original
 	return aptcls
 
-def do_ali(ptcls, projs):
+def do_ali(ptcls, projs, options):
 	boxsize=ptcls[0]["nx"]
 	bslst=[]
 	quals=[]
@@ -82,7 +82,7 @@ def do_ali(ptcls, projs):
 	pjs=[(p, None) for p in projs]
 	for i in range(len(ptcls)):
 		#sim=cmponetomany(pjs,ptcls[i],align=("rotate_translate_flip",{"maxshift":boxsize/5}),alicmp=("ccc",{}),ralign=("refine",{}),cmp=("frc",{"minres":80,"maxres":20}))
-		sim=cmponetomany(pjs,ptcls[i],align=("rotate_translate_tree",{"maxshift":old_div(boxsize,5), "maxres":20}),alicmp=("ccc",{}),ralign=("refine",{}),cmp=("frc",{"minres":160,"maxres":20}))
+		sim=cmponetomany(pjs,ptcls[i],align=("rotate_translate_tree",{"maxshift":old_div(boxsize,5), "maxres":options.targetres}),alicmp=("ccc",{}),ralign=("refine",{}),cmp=("frc",{"minres":160,"maxres":options.targetres}))
 		bs=min(sim)
 		
 		bss+=bs[0]
@@ -100,7 +100,7 @@ def do_ali(ptcls, projs):
 	for i in range(len(ptcls)):
 		n=ptcls[bslst[i][1]]["match_n"]
 		quals.append(ptcls[bslst[i][1]]["match_qual"])
-		aptcls.append(ptcls[bslst[i][1]].align("rotate_translate_tree",projs[n],{"maxshift":old_div(boxsize,5), "maxres":20},"frc",{}))
+		aptcls.append(ptcls[bslst[i][1]].align("rotate_translate_tree",projs[n],{"maxshift":old_div(boxsize,5), "maxres":options.targetres},"frc",{}))
 		aptcls[-1].process_inplace("normalize.toimage",{"to":projs[n]})
 		#aptcls[-1].process_inplace("normalize")
 		aptcls[-1].add(-aptcls[-1]["mean"])
@@ -120,19 +120,22 @@ def make_model(jsd,myid, options):
 	lrmult=options.lrdecay
 	path=options.path
 	
-	ninit=min(32, num)
-	aptcls=[EMData(ptclname, i) for i in random_sample(num, ninit)]
-	origen=parsesym(sym)
-	oris=origen.gen_orientations('rand',{"n":ninit+1, "phitoo":1})
-	for i in range(ninit):
-		aptcls[i]["xform.projection"]=oris[i]
-		if options.shrink!=1:
-			aptcls[i].process_inplace("math.fft.resample",{"n":options.shrink})
-		aptcls[i].process_inplace("normalize")
-	map0=make3d(aptcls,sym)
-	map0.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.1})
-	map0.process_inplace("filter.lowpass.randomphase",{"cutoff_abs":.05})
-	map0.process_inplace("normalize")
+	if options.ref:
+		map0=EMData(options.ref)
+	else:
+		ninit=min(32, num)
+		aptcls=[EMData(ptclname, i) for i in random_sample(num, ninit)]
+		origen=parsesym(sym)
+		oris=origen.gen_orientations('rand',{"n":ninit+1, "phitoo":1})
+		for i in range(ninit):
+			aptcls[i]["xform.projection"]=oris[i]
+			if options.shrink!=1:
+				aptcls[i].process_inplace("math.fft.resample",{"n":options.shrink})
+			aptcls[i].process_inplace("normalize")
+		map0=make3d(aptcls,sym)
+		map0.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.1})
+		map0.process_inplace("filter.lowpass.randomphase",{"cutoff_abs":.05})
+		map0.process_inplace("normalize")
 	#map0.write_image("{}/model_00.hdf".format(path))
 	boxsize=map0["nx"]
 	niter=options.niter
@@ -150,6 +153,7 @@ def make_model(jsd,myid, options):
 			options.batchsize=max(64, options.batchsize)
 		pjs=None
 		if options.writetmp: map0.write_image("{}/model_tmp_{:02d}.hdf".format(path,myid), it-1)
+		
 		pjs=makeprojs(map0, options)
 		
 		
@@ -177,9 +181,9 @@ def make_model(jsd,myid, options):
 		kk+=options.batchsize
 	#	 print len(ptcls)
 		if options.fullcov:
-			aptcls=do_ali_fullcov(ptcls, pjs)
+			aptcls=do_ali_fullcov(ptcls, pjs, options)
 		else:
-			aptcls=do_ali(ptcls, pjs)
+			aptcls=do_ali(ptcls, pjs, options)
 		
 			
 		for i, p in enumerate(aptcls):
@@ -203,6 +207,10 @@ def make_model(jsd,myid, options):
 			#mapnew.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.3})
 		learnrate*=lrmult
 		
+		if options.setsf:
+			sf=XYData()
+			sf.read_file(options.setsf)
+			mapnew.process_inplace("filter.setstrucfac",{"apix":mapnew["apix_x"],"strucfac":sf})
 		
 		mapnew.process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.,options.targetres)})
 		#mapnew.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.3})
@@ -245,6 +253,8 @@ def main():
 	parser.add_argument("--lrdecay", type=float, help="Learning rate multiplier after each iteration.", default=1., guitype='floatbox', row=3, col=1, rowspan=1, colspan=1)
 	parser.add_argument("--addnoise", type=float, help="Add noise on particles at each iteration. Stablize convergence for some reason.", default=3., guitype='floatbox', row=4, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--shrink", type=int,help="shrinking factor", default=1, guitype='intbox', row=4, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--setsf", type=str,help="", default=None)
+	parser.add_argument("--ref", type=str,help="", default=None)
 	parser.add_argument("--writetmp", action="store_true", default=False ,help="Write output for each iteration",guitype='boolbox', row=5, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--fullcov", action="store_true", default=False ,help="Assume the input particles covers most of the orientation of the model. This gives better performance when the model is relatively feature-less, but is more likely to fail when there are incorrect particles in the input.",guitype='boolbox', row=5, col=1, rowspan=1, colspan=1)
 	parser.add_argument("--threads", type=int,help="threads", default=10, guitype='intbox', row=6, col=0, rowspan=1, colspan=1)
