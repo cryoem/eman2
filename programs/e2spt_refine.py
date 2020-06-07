@@ -94,7 +94,7 @@ def main():
 		ep=EMData(pt, ii)
 		
 	elif ptcls.endswith(".lst"):
-		pass
+		ep=EMData(ptcls,0)
 		
 	else:
 		ptcllst="{}/input_ptcls.lst".format(options.path)
