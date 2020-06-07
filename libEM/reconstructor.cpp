@@ -854,7 +854,9 @@ void FourierReconstructor::setup_seed(EMData* seed,float seed_weight) {
 	// Odd dimension support is here atm, but not above.
 	image = seed->copy();
 	image->mult(seed_weight);		// The lack of this line was what was causing all of the strange normalization issues
+
 	
+
 	if (params.has_key("subvolume")) {
 		image->set_attr("subvolume_x0",subx0);
 		image->set_attr("subvolume_y0",suby0);
@@ -868,7 +870,31 @@ void FourierReconstructor::setup_seed(EMData* seed,float seed_weight) {
 	tmp_data = new EMData();
 	tmp_data->set_size(subnx/2, subny, subnz);
 	tmp_data->to_value(seed_weight);
+	
+	// The values at x=0 and x=nyquist are added twice in the map normally, but the normalization is only added once
+	// This is compensated in the final normalization. In the seed volume we accomodate this by reducing the seed
+	// alternatively we could double the actual values. Impact is similar, if not 100% identical
+	if (subx0==0) {
+		for (int k=0; k<subnz; k++) {
+			for (int j=0; j<subny; j++) {
+				tmp_data->set_value_at(0,j,k,seed_weight/2.0);
+			}
+		}
+		tmp_data->set_value_at(0,subny/2,0,seed_weight);
+		tmp_data->set_value_at(0,0,subnz/2,seed_weight);
+	}
+	if (subnx+subx0==nx) {
+		for (int k=0; k<subnz; k++) {
+			for (int j=0; j<subny; j++) {
+				tmp_data->set_value_at(subnx/2-1,j,k,seed_weight/2.0);
+			}
+		}
+		tmp_data->set_value_at(subnx/2-1,subny/2,0,seed_weight);
+		tmp_data->set_value_at(subnx/2-1,0,subnz/2,seed_weight);
+	}
+	
 
+	
 	load_inserter();
 
 	if ( (bool) params["quiet"] == false )
@@ -882,6 +908,8 @@ void FourierReconstructor::setup_seed(EMData* seed,float seed_weight) {
 
 void FourierReconstructor::setup_seedandweights(EMData* seed,EMData* seed_weight) {
 	// default setting behavior - does not override if the parameter is already set
+	
+	// WARNING - when seed_weight is provided it must already be compensated at x=0 and x=nx-1 (should be 1/2 the actual value)
 	params.set_default("mode","gauss_2");
 
 	vector<int> size=params["size"];
@@ -1380,7 +1408,7 @@ EMData* FourierReconstructor::projection(const Transform &euler, int ret_fourier
 			yy=yy*ny;
 			zz=zz*nz;
 
-			if (!pixel_at(xx,yy,zz,dt) || dt[2]<0.05) continue;
+			if (!pixel_at(xx,yy,zz,dt) || dt[2]<0.01) continue;
 			ret->set_complex_at(x,y,std::complex<float>(dt[0],dt[1]));	// division by dt[2] already handled in pixel_at
 //			ret->set_complex_at(x,y,std::complex<float>(dt[0]/dt[2],dt[1]/dt[2]));
 		}
@@ -1426,9 +1454,10 @@ bool FourierReconstructor::pixel_at(const float& xx, const float& yy, const floa
 		for (int k = z0 ; k <= z1; k++) {
 			for (int j = y0 ; j <= y1; j++) {
 				for (int i = x0; i <= x1; i ++) {
-					r = Util::hypot3sq((float) i - xx, j - yy, k - zz);
 					idx=image->get_complex_index_fast(i,j,k);
-					gg = Util::fast_exp(-r / EMConsts::I2G);
+// 					r = Util::hypot3sq((float) i - xx, j - yy, k - zz);
+// 					gg = Util::fast_exp(-r / EMConsts::I2G);
+					gg=(1.0-fabs(i-xx))*(1.0-fabs(j-yy))*(1.0-fabs(k-zz));	// Change from Gaussian to trilinear, 6/7/20
 					
 					dt[0]+=gg*rdata[idx];
 					dt[1]+=(i<0?-1.0f:1.0f)*gg*rdata[idx+1];

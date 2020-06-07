@@ -83,7 +83,7 @@ def main():
 	parser.add_argument("--xdrift", action="store_true",help="apply extra correction for drifting along x axis", default=False,guitype='boolbox',row=13, col=0, rowspan=1, colspan=1,mode="easy")
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
-	parser.add_argument("--reconmode", type=str, help="Intepolation mode for reconstruction. default is gauss_2. check e2help.py for details. Not recommended to change.",default="gauss_2")
+	parser.add_argument("--reconmode", type=str, help="Intepolation mode for reconstruction. default is trilinear. check e2help.py for details. Not recommended to change.",default="trilinear")
 	parser.add_argument("--maxshift", type=float,help="Maximum shift between tilt(/image size). default is 0.35", default=.35,guitype='floatbox',row=11, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--badone", action="store_true",help="Remove one bad tilt during coarse alignment. seem to work better with smaller maxshift...", default=False)#, guitype='boolbox',row=9, col=0, rowspan=1, colspan=1,mode="easy")
 	
@@ -1031,9 +1031,9 @@ wlock=0
 def make_tile_with_pnthr(args):
 	global wlock
 	jsd, imgs, tpm, sz, pad, stepx, stepy, outz,options=args
-	recon1=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":options.reconmode})
-	recon2=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":options.reconmode})
-	recon3=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":options.reconmode})
+	recon1=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":options.reconmode,"corners":1})
+	recon2=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":options.reconmode,"corners":1})
+	recon3=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":options.reconmode,"corners":1})
 
 	if stepx in (0,1) and stepy==0: 
 		try: os.unlink("test_tilt.hdf")
@@ -1094,9 +1094,9 @@ def make_tile_with_pnthr(args):
 			recon2.setup()
 			recon3.setup()
 		else:
-			recon1.setup_seed(seed,0.1)
-			recon2.setup_seed(seed,0.1)
-			recon3.setup_seed(seed,0.1)
+			recon1.setup_seed(seed,0.01)
+			recon2.setup_seed(seed,0.01)
+			recon3.setup_seed(seed,0.01)
 			
 			# We normalize slices to our seed, we can use any of the three for this since they are the same
 			for i in range(len(ppimgs)):
@@ -1105,14 +1105,14 @@ def make_tile_with_pnthr(args):
 				prj["apix_y"]=apix_y
 				prj["apix_z"]=apix_z
 
-				if j==1 and stepx in (0,1) and stepy==0: tmp=ppimgs[i][0].process("xform.phaseorigin.tocenter")
+				if j==2 and stepx in (0,1) and stepy==0: tmp=ppimgs[i][0].process("xform.phaseorigin.tocenter")
 				ppimgs[i][0].process_inplace("filter.matchto",{"to":prj})
 				#recon1.determine_slice_agreement(ppimgs[i][0],ppimgs[i][1],1,0)
 				#norm=ppimgs[i][0]["reconstruct_norm"]
 				#ppimgs[i][0].mult(norm)
 				#print(f"{i}\t{norm}")
 			
-				if j==1 and stepx in (0,1) and stepy==0: 
+				if j==2 and stepx in (0,1) and stepy==0: 
 					while (wlock) : pass
 					wlock=1
 					prj.process("xform.phaseorigin.tocenter").write_image("test_tilt.hdf",i*6)
@@ -1128,7 +1128,7 @@ def make_tile_with_pnthr(args):
 			elif i%3==1 : recon2.insert_slice(ppimgs[i][0],ppimgs[i][1],1)
 			else : recon3.insert_slice(ppimgs[i][0],ppimgs[i][1],1)
 
-		if j==1 and stepx in (0,1) and stepy==0: 
+		if j==2 and stepx in (0,1) and stepy==0: 
 			for i in range(len(ppimgs)):
 				prj=recon1.projection(ppimgs[i][1],1)
 				prj.process("xform.phaseorigin.tocenter").write_image("test_tilt.hdf",i*6+3)
@@ -1159,7 +1159,7 @@ def make_tile_with_pnthr(args):
 		if stepx in (0,1) and stepy==0 : 
 			threed1.write_image("test_tile.hdf",j*6)
 			threed2.write_image("test_tile.hdf",j*6+1)
-			threed2.write_image("test_tile.hdf",j*6+2)
+			threed3.write_image("test_tile.hdf",j*6+2)
 		
 		# minimum abs value kept from the pair. Should eliminate many artifacts in real-space
 		#if j<3 : 
@@ -1280,7 +1280,7 @@ def make_tile_with_pnthr(args):
 ##			threed.mult(mask)
 		#print(stepx,stepy,threed["ny"])
 		
-	threed.process_inplace("math.gausskernelfix",{"gauss_width":4.0})
+#	threed.process_inplace("math.gausskernelfix",{"gauss_width":4.0})
 	threed.clip_inplace(Region((pad-sz)//2, (pad-sz)//2, (pad-outz)//2, sz, sz, outz))
 	threed.process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.filterto})
 	#threed.process_inplace("filter.highpass.gauss",{"cutoff_pixels":2})
