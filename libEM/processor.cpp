@@ -2515,7 +2515,7 @@ EMData *BoxStatProcessor::process(EMData * image)
 						}
 					}
 				}
-				float newv;
+				float newv=image->get_value_at(i,j,k);
 				process_pixel(&newv,array,matrix_size);
 				ret->set_value_at(i,j,k,newv);
 			}
