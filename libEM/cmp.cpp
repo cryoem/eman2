@@ -1286,11 +1286,14 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 	}
 
 	// Min/max modifications to weighting
-	float pmin,pmax;
-	if (minres>0) pmin=((float)image->get_attr("apix_x")*image->get_ysize())/minres;		//cutoff in pixels, assume square
-	else pmin=0;
-	if (maxres>0) pmax=((float)image->get_attr("apix_x")*image->get_ysize())/maxres;
-	else pmax=0;
+// 	float pmin,pmax;
+	
+	float pmin = params.set_default("pmin",0.0f);
+	float pmax = params.set_default("pmax",0.0f);
+	if (minres>0 && pmin==0) pmin=((float)image->get_attr("apix_x")*image->get_ysize())/minres;		//cutoff in pixels, assume square
+// 	else pmin=0;
+	if (maxres>0 && pmax==0) pmax=((float)image->get_attr("apix_x")*image->get_ysize())/maxres;
+// 	else pmax=0;
 
 //	printf("%f\t%f\n",pmin,pmax);
 

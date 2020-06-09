@@ -3012,7 +3012,6 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 	
 	vector<float> s_score(nsoln,1.0e24);
 	vector<float> s_step(nsoln*3,7.5f);
-// 	vector<float> s_coverage(nsoln,0.0f);
 	vector<Transform> s_xform(nsoln);
 	
 	int curiter=-1;
@@ -3022,10 +3021,14 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 	float maxres = params.set_default("maxres",-1.0f);
 	float apix=(float)this_img->get_attr("apix_x");
 	int maxny=ny;
-	if (maxres>0)
-		maxny=4*int(ny*apix/maxres/2+1);
-		if (verbose>0)
-			printf("\n\n*******\nmax resolution %1.2f, box size %d\n", maxres, maxny);
+	int maxrescut=ny/2;
+	if (maxres>0){
+		maxrescut=int(ny*apix/maxres);
+		maxny=maxrescut*3/2*2;
+		if(maxny>ny) maxny=ny;
+	}
+	if (verbose>0)
+		printf("\n\n*******\nmax resolution %1.2f, box size %d\n", maxres, maxny);
 	
 	
 	float maxang=params.set_default("maxang",-1.0);
@@ -3038,8 +3041,6 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 			s_xform[i].set_params(xfs[i].get_params("eman"));
 		}
 		sexp_start=9;
-// 		sexp_start=int(1.443*std::log(float(ny-1)))-1;
-// 		if (sexp_start<4) sexp_start=4;
 		
 		
 		curiter=0;
@@ -3076,16 +3077,10 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 
 	base_this->process_inplace("xform.fourierorigin.tocenter");		// easier to chop out Fourier subvolumes
 	base_to->process_inplace("xform.fourierorigin.tocenter");
-
-// 	float apix=(float)this_img->get_attr("apix_x");
 	
 	params["boxsize"]=ny;
 
-//	int downsample=floor(ny/20);		// Minimum shrunken box size is 20^3
 
-
-
-//	float dstep[3] = {7.5,7.5,7.5};		// we take  steps for each of the 3 angles, may be positive or negative
 	string axname[] = {"az","alt","phi"};
 
 	// We start with 32^3, 64^3 ...
@@ -3101,10 +3096,8 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 		if (maxshift00<0) maxshift=-1;
 		if (verbose>0) printf("\nSize %d, maxshift %d\n",ss, maxshift);
 		
-
-		//ss=good_size(ny/ds);
-		EMData *small_this=base_this->get_clip(Region(0,(ny-ss)/2,(ny-ss)/2,ss+2,ss,ss));		// This one is 3D
-		EMData *small_to=  base_to->  get_clip(Region(0,(ny-ss)/2,0,ss+2,ss,1));				// to is 2D
+		EMData *small_this=base_this->get_clip(Region(0,(ny-ss)/2,(ny-ss)/2,ss+2,ss,ss));	// This one is 3D
+		EMData *small_to=  base_to->  get_clip(Region(0,(ny-ss)/2,0,ss+2,ss,1));		// to is 2D
 		small_this->process_inplace("xform.fourierorigin.tocorner");					// after clipping back to canonical form
 		small_this->process_inplace("filter.highpass.gauss",Dict("cutoff_pixels",4));
 		
@@ -3143,16 +3136,13 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 			// Genrate points on a sphere in an asymmetric unit
 			if (verbose>1) printf("stage 1 - ang step %1.2f\n",astep);
 			Dict d;
-			d["inc_mirror"] = true;
+			d["inc_mirror"] = 1;
 			d["delta"] = astep;
 			Symmetry3D* sym = Factory<Symmetry3D>::get((string)params.set_default("sym","c1"));
 			// We don't generate for phi, since this can produce a very large number of orientations
-			vector<Transform> transforms = sym->gen_orientations((string)params.set_default("orientgen","eman"),d);
+			vector<Transform> transforms = sym->gen_orientations("eman", d);
 			if (verbose>0) printf("%d orientations to test (%lu)\n",(int)(transforms.size()*(360.0/astep)),transforms.size());
-			if (transforms.size()<30) continue; // for very high symmetries we will go up to 32 instead of 24
 
-			// We iterate over all orientations in an asym triangle (alt & az) then deal with phi ourselves
-//			for (std::vector<Transform>::iterator t = transforms.begin(); t!=transforms.end(); ++t) {    // iterator form was causing all sorts of problems
 			for (unsigned int it=0; it<transforms.size(); it++) {
 				if (verbose>2) {
 					printf("  %d/%lu \r",it,transforms.size());
@@ -3189,7 +3179,7 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 
 //					float sim=stt->cmp("ccc.tomo.thresh",small_to,Dict("sigmaimg",sigmathis,"sigmawith",sigmato));
 // 					float sim=stt->cmp("ccc.tomo.thresh",small_to);
-					float sim=stt->cmp("dot",small_to);
+					float sim=stt->cmp("frc",small_to);
 //					float sim=stt->cmp("fsc.tomo.auto",small_to,Dict("sigmaimg",sigmathisv,"sigmawith",sigmatov));
 //					float sim=stt->cmp("fsc.tomo.auto",small_to);
 
@@ -3202,7 +3192,7 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 						Transform tdif=s_xform[i].inverse();
 						tdif=tdif*t;
 						float adif=tdif.get_rotation("spin")["omega"];
-						if (adif<astep*2.5) {
+						if (adif<astep*4) {
 							worst=i;
 //							printf("= %1.3f\n",adif);
 						}
@@ -3303,10 +3293,14 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 			for (unsigned int j=i+1; j<nsoln; j++) {
 				if (s_score[i]>s_score[j]) {
 					float t=s_score[i]; s_score[i]=s_score[j]; s_score[j]=t;
-// 					t=s_coverage[i]; s_coverage[i]=s_coverage[j]; s_coverage[j]=t;
 					Transform tt=s_xform[i]; s_xform[i]=s_xform[j]; s_xform[j]=tt;
 				}
 			}
+		}
+		for (unsigned int i=0; i<nsoln-1; i++) {
+			Transform tt=s_xform[i];
+			tt.set_trans(tt.get_trans()*(float)ny/(float)ss);
+			s_xform[i]=tt;
 		}
 
 		// At each level of sampling we (potentially) decrease the number of answers we check in detail
@@ -3379,51 +3373,29 @@ bool RT2Dto3DTreeAligner::testort(EMData *small_this,EMData *small_to,vector<flo
 	EMData *stt=small_this->project("gauss_fft", Dict("transform", EMObject(&t), "returnfft", 1));
 	EMData *ccf=small_to->calc_ccf(stt);
 	
-	if (1){//ny>=(int)params["boxsize"]-2){ // only do sub pixel for full sampled data
 		
-		Vec3f ml=ccf->calc_max_location_wrap_intp(maxshift,maxshift,0);
-		
-// 		printf("%f\t%f\t%d\n", (float)aap["tx"], (float)ml[0], maxshift);
-		aap["tx"]=(float)aap["tx"]+(float)ml[0];
-		aap["ty"]=(float)aap["ty"]+(float)ml[1];
-	}
-	else{
-		
-		IntPoint ml=ccf->calc_max_location_wrap(maxshift,maxshift,0);
-		aap["tx"]=(int)aap["tx"]+(int)ml[0];
-		aap["ty"]=(int)aap["ty"]+(int)ml[1];
-	}
-	aap["tz"]=0;
+	IntPoint ml=ccf->calc_max_location_wrap(maxshift,maxshift,0);
+	aap["tx"]=(int)aap["tx"]+(int)ml[0];
+	aap["ty"]=(int)aap["ty"]+(int)ml[1];
+
 	t.set_params(aap);
-	EMData *st2=small_this->project("gauss_fft", Dict("transform", EMObject(&t), "returnfft", 1));
-	
-	float maxres = params.set_default("maxres",0.0f);
-	float minres = params.set_default("minres",0.0f);
+	stt->translate(t.get_trans());
+// 	EMData *st2=small_this->project("gauss_fft", Dict("transform", EMObject(&t), "returnfft", 1));
 	
 	float sim;
-	if (ny>=(int)params["boxsize"]-2){
-		sim=st2->cmp("frc",small_to,Dict("ampweight", 0, "minres", minres, "maxres", maxres));
-	}
-	else{
-		sim=st2->cmp("frc",small_to);
-	}
-//	float sim=st2->cmp("ccc.tomo.thresh",small_to,Dict("sigmaimg",sigmathis,"sigmawith",sigmato));
-// 	printf("\nTESTORT %6.1f  %6.1f  %6.1f\t%6.1f  %6.1f\t%1.5g\t%1.5g %d (%d)",
-// 		float(aap["az"]),float(aap["alt"]),float(aap["phi"]),float(aap["tx"]),float(aap["ty"]),sim,s_score[i],int(sim<s_score[i]),ccf->get_ysize());
+	sim=stt->cmp("frc",small_to, Dict("pmin",(float)ny*0.125f, "pmax", (float)ny*0.33f));
 
 	delete ccf;
+	delete stt;
+
 	// If the score is better than before, we update this particular best value
 	if (sim<s_score[i]) {
 		s_score[i]=sim;
 // 		s_coverage[i]=1;//st2->get_attr("fft_overlap");
 		s_xform[i]=t;
 
-		delete stt;
-		delete st2;
 		return true;
 	}
-	delete stt;
-	delete st2;
 	return false;
 }
 

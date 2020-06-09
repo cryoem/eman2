@@ -708,6 +708,8 @@ to be missing values. If not provided, these values will be computed automatical
 			d.put("zeromask", EMObject::INT, "Treat regions in either image that are zero as a mask (default=0)");
 			d.put("minres", EMObject::FLOAT, "Lowest resolution to use in comparison (soft cutoff). Requires accurate A/pix in image. <0 disables. Default=500");
 			d.put("maxres", EMObject::FLOAT, "Highest resolution to use in comparison (soft cutoff). Requires accurate A/pix in image. <0 disables.  Default=10");
+			d.put("pmin", EMObject::FLOAT, "The minimum resolution in pixels.");
+			d.put("pmax", EMObject::FLOAT, "The maximum resolution in pixels.");
 			return d;
 		}
 		
