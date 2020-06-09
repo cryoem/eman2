@@ -18,7 +18,7 @@ from .test_module import (
     get_data,
     remove_dir,
     get_arg_from_pickle_file,
-    ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,
+    ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,
     IMAGE_2D,
     IMAGE_BLANK_2D,
     IMAGE_3D,
@@ -44,14 +44,14 @@ sp_global_def.MPI = False
 
 ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
 ABSOLUTE_PATH_TO_MRC_FOLDER = path.join(
-    ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "CorrectedSums/corrsum/"
+    ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "CorrectedSums/corrsum/"
 )
 
 """ I'll copy a .mrc file to this temp folder from the 'SphireDemoResults' files in order to test quickly the 'cter' function."""
 ABSOLUTE_PATH_TO_TEMP_MRC_FOLDER = path.join(ABSOLUTE_PATH, "mrc_files_for_unit_test")
 
 ABSOLUTE_PATH_TO_STACK = "bdb:" + path.join(
-    ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Class2D/stack_ali2d"
+    ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "ISAC_04/stack_ali2d"
 )
 TOLERANCE = 0.0075
 
@@ -139,13 +139,13 @@ There are some opened issues in:
 
 
 def create_setup_mrc():
-    original_file = path.join(ABSOLUTE_PATH_TO_MRC_FOLDER, "TcdA1-0011_frames_sum.mrc")
+    original_file = path.join(ABSOLUTE_PATH_TO_MRC_FOLDER, "TcdA1-0011_frames.mrc")
     if not path.isdir(ABSOLUTE_PATH_TO_TEMP_MRC_FOLDER):
         mkdir(ABSOLUTE_PATH_TO_TEMP_MRC_FOLDER)
     if path.isfile(original_file):
         copyfile(
             original_file,
-            path.join(ABSOLUTE_PATH_TO_TEMP_MRC_FOLDER, "TcdA1-0011_frames_sum.mrc"),
+            path.join(ABSOLUTE_PATH_TO_TEMP_MRC_FOLDER, "TcdA1-0011_frames.mrc"),
         )
     else:
         print(
@@ -107943,9 +107943,9 @@ class Test_cter_mrk(unittest.TestCase):
     wn = 512
     i_start = 0.048
     i_stop = -1
-    selection_list = "TcdA1-0011_frames_sum.mrc"
+    selection_list = "TcdA1-0011_frames.mrc"
     input_image_path = path.join(
-        ABSOLUTE_PATH_TO_TEMP_MRC_FOLDER, "TcdA1-0001_frames_sum.mrc"
+        ABSOLUTE_PATH_TO_TEMP_MRC_FOLDER, "TcdA1-001*_frames.mrc"
     )
     output_directory = path.join(ABSOLUTE_PATH_TO_TEMP_MRC_FOLDER, "cter_mrk_results")
 
@@ -108292,9 +108292,9 @@ class Test_cter_pap(unittest.TestCase):
     wn = 512
     i_start = 0.048
     i_stop = -1
-    selection_list = "TcdA1-0011_frames_sum.mrc"
+    selection_list = "TcdA1-0011_frames.mrc"
     input_image_path = path.join(
-        ABSOLUTE_PATH_TO_TEMP_MRC_FOLDER, "TcdA1-001*_frames_sum.mrc"
+        ABSOLUTE_PATH_TO_TEMP_MRC_FOLDER, "TcdA1-001*_frames.mrc"
     )
     output_directory = path.join(ABSOLUTE_PATH_TO_TEMP_MRC_FOLDER, "cter_mrk_results")
 
@@ -108648,9 +108648,9 @@ class Test_cter_vpp(unittest.TestCase):
     i_start = 0.048
     i_stop = -1
     vpp_options = [0.3, 9.0, 0.1, 5.0, 175.0, 5.0]
-    selection_list = "TcdA1-0011_frames.mrcs"
+    selection_list = "TcdA1-0011_frames.mrc"
     input_image_path = path.join(
-        ABSOLUTE_PATH_TO_TEMP_MRC_FOLDER, "TcdA1-001*_frames.mrcs"
+        ABSOLUTE_PATH_TO_TEMP_MRC_FOLDER, "TcdA1-001*_frames.mrc"
     )
     output_directory = path.join(ABSOLUTE_PATH_TO_TEMP_MRC_FOLDER, "cter_mrk_results")
 
@@ -108895,7 +108895,7 @@ class Test_cter_vpp(unittest.TestCase):
         self.assertEqual(return_new, return_old)
 
     def test_cter_vpp_default_value_runningundermpi_and_checkconsistencyTrue(self):
-        # remove_dir(self.output_directory)
+        remove_dir(self.output_directory)
         mpi_barrier(MPI_COMM_WORLD)
         return_new = fu.cter_vpp(
             input_image_path=self.input_image_path,
@@ -108923,7 +108923,7 @@ class Test_cter_vpp(unittest.TestCase):
             n_mpi_procs=1,
         )
         # returns None because lit creates a txt file
-        # remove_dir(self.output_directory)
+        remove_dir(self.output_directory)
         mpi_barrier(MPI_COMM_WORLD)
         return_old = oldfu.cter_vpp(
             input_image_path=self.input_image_path,
