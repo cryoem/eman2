@@ -493,11 +493,7 @@ float* ColorRGBGenerator::getRGBColor(int x, int y, int z)
 	// Get data using radial color info
 	if (rgbmode == 1){
 		//calculate radius
-#ifdef _WIN32
-		float rad = (float)sqrt(pow(double(x-originx),2) + pow(double(y-originy),2) + pow(double(z-originz),2));
-#else
 		float rad = sqrt(float(pow(x-originx,2) + pow(y-originy,2) + pow(z-originz,2)));
-#endif	//_WIN32
 
 		//This indicates that new color info needs to be bound (to the GPU)
 		if(needtorecolor){
@@ -844,11 +840,7 @@ int MarchingCubes::get_edge_num(int x, int y, int z, int edge) {
 void MarchingCubes::color_vertices()
 {
 	cc.clear();
-#ifdef _WIN32
-	int scaling = (int)pow(2.0,drawing_level + 1);		// Needed to account for sampling rate
-#else
 	int scaling = pow(2,drawing_level + 1);		// Needed to account for sampling rate
-#endif	//_WIN32
 	//Color vertices. We don't need to rerun marching cubes on color vertices, so this method improves effciency
 	for(unsigned int i = 0; i < vv.elem(); i+=3){
 		float* color = rgbgenerator.getRGBColor(scaling*vv[i], scaling*vv[i+1], scaling*vv[i+2]);
