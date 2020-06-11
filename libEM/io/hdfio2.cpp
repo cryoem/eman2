@@ -50,16 +50,6 @@
 	#define  MAXPATHLEN (MAX_PATH * 4)
 #endif	//WIN32
 
-#ifdef _WIN32
-	#if (_MSC_VER < 1800) // _MSC_VER = 1800 (Visual Studio 2013)
-        static float roundf(float num) {
-            float integer = ceilf(num);
-            if (num > 0)
-                return integer - num > 0.5f ? integer - 1.0f : integer;
-            return integer - num >= 0.5f ? integer - 1.0f : integer;
-        }
-	#endif	//_MSC_VER
-#endif	//_WIN32
 
 // Some bugs with using stdint.h, so defining our own limits. Handling as float to avoid some math mishandling 
 const float INT8_min = -128.0f;
