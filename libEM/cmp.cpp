@@ -1167,13 +1167,8 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 			for (size_t i = 0,y=0; i < size; y++) {
 				for (size_t x=0; x<nx; i++,x++) {
 					if (y_data[i] && x_data[i]) {
-#ifdef	_WIN32
-						if (invert) result += Util::square(x_data[i] - (y_data[i]-b)/m)*(_hypot((float)x,(float)y)+nx/4.0);
-						else result += Util::square((x_data[i] * m) + b - y_data[i])*(_hypot((float)x,(float)y)+nx/4.0);
-#else
 						if (invert) result += Util::square(x_data[i] - (y_data[i]-b)/m)*(hypot((float)x,(float)y)+nx/4.0);
 						else result += Util::square((x_data[i] * m) + b - y_data[i])*(hypot((float)x,(float)y)+nx/4.0);
-#endif
 						count++;
 					}
 				}
@@ -1183,13 +1178,8 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 		else {
 			for (size_t i = 0,y=0; i < size; y++) {
 				for (size_t x=0; x<nx; i++,x++) {
-#ifdef	_WIN32
-					if (invert) result += Util::square(x_data[i] - (y_data[i]-b)/m)*(_hypot((float)x,(float)y)+nx/4.0);
-					else result += Util::square((x_data[i] * m) + b - y_data[i])*(_hypot((float)x,(float)y)+nx/4.0);
-#else
 					if (invert) result += Util::square(x_data[i] - (y_data[i]-b)/m)*(hypot((float)x,(float)y)+nx/4.0);
 					else result += Util::square((x_data[i] * m) + b - y_data[i])*(hypot((float)x,(float)y)+nx/4.0);
-#endif
 				}
 			}
 			result = result / size;

@@ -1280,11 +1280,7 @@ EMData *RTFExhaustiveAligner::align(EMData * this_img, EMData *to,
 	int ur2 = this_shrunk_2->get_ysize() / 2 - 2 - half_maxshift;
 	for (int dy = -half_maxshift; dy <= half_maxshift; dy += 1) {
 		for (int dx = -half_maxshift; dx <= half_maxshift; dx += 1) {
-#ifdef	_WIN32
-			if (_hypot(dx, dy) <= half_maxshift) {
-#else
 			if (hypot(dx, dy) <= half_maxshift) {
-#endif
 				EMData *uw = this_shrunk_2->unwrap(4, ur2, xst / 2, dx, dy, true);
 				EMData *uwc = uw->copy();
 				EMData *a = uw->calc_ccfx(to_shrunk_unwrapped);
@@ -1385,11 +1381,7 @@ EMData *RTFExhaustiveAligner::align(EMData * this_img, EMData *to,
 	for (float dy = bestdy2 - 3; dy <= bestdy2 + 3; dy += 1.0 ) {
 		for (float dx = bestdx2 - 3; dx <= bestdx2 + 3; dx += 1.0 ) {
 
-#ifdef	_WIN32
-			if (_hypot(dx, dy) <= maxshift) {
-#else
 			if (hypot(dx, dy) <= maxshift) {
-#endif
 				EMData *uw = this_img->unwrap(4, this_img->get_ysize() / 2 - 2 - maxshift, xst, (int)dx, (int)dy, true);
 				EMData *uwc = uw->copy();
 				EMData *a = uw->calc_ccfx(to_unwrapped);

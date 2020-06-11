@@ -1374,11 +1374,7 @@ void AmpweightFourierProcessor::process_inplace(EMData * image)
 	for (size_t i=0; i<n; i+=2) {
 		float c;
 		if (dosqrt) c=pow(fftd[i]*fftd[i]+fftd[i+1]*fftd[i+1],0.25f);
-#ifdef	_WIN32
-		else c = static_cast<float>(_hypot(fftd[i],fftd[i+1]));
-#else
 		else c = static_cast<float>(hypot(fftd[i],fftd[i+1]));
-#endif	//_WIN32
 		if (c==0) c=1.0e-30f;	// prevents divide by zero in normalization
 		fftd[i]*=c;
 		fftd[i+1]*=c;
@@ -2628,11 +2624,7 @@ void CutoffBlockProcessor::process_inplace(EMData * image)
 						continue;
 					}
 
-#ifdef	_WIN32
-					if (_hypot(j, i) < value2) {
-#else
 					if (hypot(j, i) < value2) {
-#endif
 						int t = j * 2 + (i + v1 / 2) * (v1 + 2);
 						sum += (fft_data[t] * fft_data[t] + fft_data[t + 1] * fft_data[t + 1]);
 						nitems++;
@@ -4147,11 +4139,7 @@ void BeamstopProcessor::process_inplace(EMData * image)
 	for (int i = 0; i < nx; i++) {
 		for (int j = 0; j < ny; j++) {
 
-#ifdef	_WIN32
-			int r = Util::round(_hypot((float) i - cenx, (float) j - ceny));
-#else
 			int r = Util::round(hypot((float) i - cenx, (float) j - ceny));
-#endif	//_WIN32
 
 			if (value1 < 0) {
 				if (data[i + j * nx] < (mean_values[r] - sigma_values[r] * thr)) {
@@ -5474,11 +5462,7 @@ void RotationalAverageProcessor::process_inplace(EMData * image)
 	if (image->is_complex() && image->get_ndim() == 2) {
 		for (int y = -ny/2; y < ny/2; y++) {
 			for (int x = -ny/2-1; x < nx/2+1; x++) {
-	#ifdef	_WIN32
-				float r = (float) _hypot(x,y);
-	#else
 				float r = (float) hypot(x,y);
-	#endif	//_WIN32
 				int i = (int) floor(r);
 				r -= i;
 				if (i >= 0 && i < nx / 2 - 1) {
@@ -5496,11 +5480,7 @@ void RotationalAverageProcessor::process_inplace(EMData * image)
 	else if (image->get_ndim() == 2) {
 		for (int y = 0; y < ny; y++) {
 			for (int x = 0; x < nx; x++, c++) {
-	#ifdef	_WIN32
-				float r = (float) _hypot(x - midx, y - midy);
-	#else
 				float r = (float) hypot(x - midx, y - midy);
-	#endif	//_WIN32
 
 				int i = (int) floor(r);
 				r -= i;
@@ -5566,11 +5546,7 @@ void RotationalSubstractProcessor::process_inplace(EMData * image)
 	int c = 0;
 	for (int y = 0; y < ny; y++) {
 		for (int x = 0; x < nx; x++, c++) {
-#ifdef	_WIN32
-			float r = (float) _hypot(x - nx / 2, y - ny / 2);
-#else
 			float r = (float) hypot(x - nx / 2, y - ny / 2);
-#endif
 			int i = (int) floor(r);
 			r -= i;
 			if (i >= 0 && i < nx / 2 - 1) {
@@ -9295,11 +9271,7 @@ void TestImageScurve::process_inplace(EMData * image)
 		int y=ny/4+i*ny/200;
 		for (int xx=x-nx/10; xx<x+nx/10; xx++) {
 			for (int yy=y-ny/10; yy<y+ny/10; yy++) {
-#ifdef	_WIN32
-				(*image)(xx,yy)+=exp(-pow(static_cast<float>(_hypot(xx-x,yy-y))*30.0f/nx,2.0f))*(sin(static_cast<float>((xx-x)*(yy-y)))+.5f);
-#else
 				(*image)(xx,yy)+=exp(-pow(static_cast<float>(hypot(xx-x,yy-y))*30.0f/nx,2.0f))*(sin(static_cast<float>((xx-x)*(yy-y)))+.5f);
-#endif
 			}
 		}
 	}

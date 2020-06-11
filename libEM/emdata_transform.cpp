@@ -1008,11 +1008,7 @@ void EMData::ri2ap()
 
 	size_t size = (size_t)nx * ny * nz;
 	for (size_t i = 0; i < size; i += 2) {
-#ifdef	_WIN32
-		float f = (float)_hypot(data[i], data[i + 1]);
-#else
 		float f = (float)hypot(data[i], data[i + 1]);
-#endif
 		if (data[i] == 0 && data[i + 1] == 0) {
 			data[i + 1] = 0;
 		}

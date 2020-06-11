@@ -121,11 +121,7 @@ EMData *GaussFFTProjector::project3d(EMData * image) const
 	for (int y = 0; y < f_ny; y++) {
 		for (int x = 0; x < f_nx / 2; x++) {
 			int ii = x * 2 + y * f_nx;
-#ifdef	_WIN32
-			if (_hypot(x, y - f_ny / 2) >= f_ny / 2 - 1) {
-#else
 			if (hypot(x, y - f_ny / 2) >= f_ny / 2 - 1) {
-#endif	//_WIN32
 				data[ii] = 0;
 				data[ii + 1] = 0;
 			}
