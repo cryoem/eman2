@@ -50,7 +50,6 @@
 	#define  MAXPATHLEN (MAX_PATH * 4)
 #endif	//WIN32
 
-
 // Some bugs with using stdint.h, so defining our own limits. Handling as float to avoid some math mishandling 
 const float INT8_min = -128.0f;
 const float INT16_min = -32768.0f;
