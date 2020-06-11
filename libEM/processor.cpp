@@ -9349,11 +9349,7 @@ void TestImageSphericalWave::process_inplace(EMData * image)
 	if(ndim==2) {	//2D
 		for(int j=0; j<ny; ++j) {
 			for(int i=0; i<nx; ++i) {
-#ifdef _WIN32
-				float r=_hypotf(x-(float)i,y-(float)j);
-#else
 				float r=hypot(x-(float)i,y-(float)j);
-#endif	//_WIN32
 				if (r<.5) continue;
 				image->set_value_at(i,j,cos(2*(float)pi*r/wavelength+phase)/r);
 			}

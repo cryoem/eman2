@@ -2030,11 +2030,7 @@ EMData *EMData::make_footprint(int type)
 		float *rmap=(float *)malloc(rmax*rmax*sizeof(float));
 		for (i=0; i<rmax; i++) {
 			for (j=0; j<rmax; j++) {
-#ifdef _WIN32
-				rmap[i+j*rmax]=_hypotf((float)i,(float)j);
-#else
 				rmap[i+j*rmax]=hypot((float)i,(float)j);
-#endif	//_WIN32
 //				printf("%d\t%d\t%f\n",i,j,rmap[i+j*rmax]);
 			}
 		}
@@ -2116,11 +2112,7 @@ EMData *EMData::make_footprint(int type)
 		float *rmap=(float *)malloc(rmax*rmax*sizeof(float));
 		for (i=0; i<rmax; i++) {
 			for (j=0; j<rmax; j++) {
-#ifdef _WIN32
-				rmap[i+j*rmax]=_hypotf((float)i,(float)j);
-#else
 				rmap[i+j*rmax]=hypot((float)i,(float)j);
-#endif	//_WIN32
 //				printf("%d\t%d\t%f\n",i,j,rmap[i+j*rmax]);
 			}
 		}
