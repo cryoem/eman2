@@ -1737,11 +1737,7 @@ EMData*   EMData::bispecRotTransInvDirect(int type)
 			if (Weight <=0) continue;
 			WeightImage    -> set_value_at(jk,jq,Weight);
 			WeightImage    -> set_value_at(jq,jk,Weight);
-#ifdef _WIN32
-			float ValNow  = pow( (RotTransInv[TotalInd] + RotTransInv[TotalIndBar]) / Weight, 1.0f/3.0f )  ;
-#else
 			float ValNow  = cbrt( (RotTransInv[TotalInd] + RotTransInv[TotalIndBar]) / Weight )  ;
-#endif	//_WIN32
 			RotTransInvF -> set_value_at(jk,jq,ValNow);//  include /Weight
  			RotTransInvF -> set_value_at(jq,jk,ValNow );//  include /Weight
 		}}
