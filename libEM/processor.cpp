@@ -52,7 +52,6 @@
 #include <algorithm>
 #include <gsl/gsl_fit.h>
 #include <ctime>
-#include <cmath>
 
 #ifdef __APPLE__
 	typedef unsigned int uint;
@@ -60,17 +59,6 @@
 
 #ifdef _WIN32
 	typedef unsigned int uint;
-	#if (_MSC_VER < 1800) // _MSC_VER = 1800 (Visual Studio 2013)
-		double cbrt(double x) {
-			return pow(x, 1.0/3.0);
-		}
-		float cbrt(float x) {
-			return pow(x, 1.0f/3.0f);
-		}
-		long double cbrt(long double x) {
-			return pow(x, 1.0l/3.0l);
-		}
-	#endif	//_MSC_VER
 #endif	//_WIN32
 
 #ifdef EMAN2_USING_CUDA
