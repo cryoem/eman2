@@ -34,12 +34,6 @@
 #include "util.h"
 #include "portable_fileio.h"
 
-#ifdef _WIN32
-	//MS Visual Studio.NET does not supply isnan()
-	//they have _isnan() in <cfloat>
-	#include <cfloat>
-#endif
-
 using namespace EMAN;
 
 const char *PgmIO::MAGIC_BINARY = "P5";

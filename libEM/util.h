@@ -109,11 +109,7 @@ namespace EMAN
 		 */
 		static inline bool is_nan(const float number)
 		{
-#ifdef _WIN32
-			return _isnan(number);
-#else
 			return std::isnan(number);
-#endif
 		}
 
 		/** convert complex data array from Amplitude/Phase format
