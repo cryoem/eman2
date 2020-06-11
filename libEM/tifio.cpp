@@ -42,7 +42,7 @@ using namespace EMAN;
 
 namespace {
 	/* x% weighting -> fraction of full color */
-	#define PCT(x)	(((x)*255+127)/100)
+	constexpr int PCT(int x) {return (x*255+127)/100;}
 	const int RED = PCT(30);		/* 30% */
 	const int GREEN = PCT(59);		/* 59% */
 	const int BLUE = PCT(11);		/* 11% */
