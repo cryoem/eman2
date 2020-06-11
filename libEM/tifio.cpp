@@ -528,10 +528,7 @@ int TiffIO::write_data(float * data, int image_index, const Region *,
 			return -1;
 		}
 
-		if (cdata) {
-			delete [] cdata;
-			cdata = NULL;
-		}
+        EMDeleteArray(cdata);
 	}
 	else if (bitspersample == CHAR_BIT*sizeof(short)) {
 		unsigned short *sdata = new unsigned short[nx*ny];
@@ -562,10 +559,7 @@ int TiffIO::write_data(float * data, int image_index, const Region *,
 			return -1;
 		}
 
-		if (sdata) {
-			delete [] sdata;
-			sdata = NULL;
-		}
+        EMDeleteArray(sdata);
 	}
 	else if (bitspersample == CHAR_BIT*sizeof(float)) {
 		float *fdata = new float[nx*ny];
@@ -586,10 +580,7 @@ int TiffIO::write_data(float * data, int image_index, const Region *,
 			return -1;
 		}
 
-		if (fdata) {
-			delete[] fdata;
-			fdata = NULL;
-		}
+        EMDeleteArray(fdata);
 	}
 	else {
 		LOGWARN("TIFF in EMAN2 only support data type 8 bit, 16 bit or 32 bit.");

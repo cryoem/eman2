@@ -1311,15 +1311,8 @@ EMData *EMUtil::make_image_median(const vector < EMData * >&image_list)
 		}
 	}
 
-	if (srt) {
-		delete [] srt;
-		srt = NULL;
-	}
-
-	if (src) {
-		delete [] src;
-		src = NULL;
-	}
+	EMDeleteArray(srt);
+	EMDeleteArray(src);
 
 	result->update();
 
@@ -1382,10 +1375,7 @@ ImageSort::ImageSort(int nn)
 
 ImageSort::~ImageSort()
 {
-	if (image_scores) {
-		delete [] image_scores;
-		image_scores = NULL;
-	}
+    EMDeleteArray(image_scores);
 }
 
 void ImageSort::sort()

@@ -1154,11 +1154,7 @@ int HdfIO::get_hdf_dims(int image_index, int *p_nx, int *p_ny, int *p_nz)
 
 		if (ndim != 2 && ndim != 3) {
 			LOGERR("only handle 2D/3D HDF5. Your file is %dD.", ndim);
-			if( dims )
-			{
-				delete [] dims;
-				dims = 0;
-			}
+			EMDeleteArray(dims);
 			return 1;
 		}
 		else {
@@ -1171,11 +1167,7 @@ int HdfIO::get_hdf_dims(int image_index, int *p_nx, int *p_ny, int *p_nz)
 				*p_nz = 1;
 			}
 		}
-		if( dims )
-		{
-			delete [] dims;
-			dims = 0;
-		}
+		EMDeleteArray(dims);
 	}
 	return 0;
 }
@@ -1227,11 +1219,7 @@ void HdfIO::create_cur_dataset(int image_index, int nx, int ny, int nz)
 		for (int i = 0; i < ndim; i++) {
 			Assert(dims[i] == dims1[i]);
 		}
-		if( dims1 )
-		{
-			delete [] dims1;
-			dims1 = 0;
-		}
+		EMDeleteArray(dims1);
 	}
 	else {
 		hsize_t *sdims = new hsize_t[ndim];
