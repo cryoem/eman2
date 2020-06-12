@@ -31,4 +31,4 @@ install:
 build: off
 
 test_script:
-    - conda.exe build %APPVEYOR_BUILD_FOLDER%\recipe -c cryoem -c defaults -c conda-forge --no-test
+    - conda.exe build %APPVEYOR_BUILD_FOLDER%\recipe -c cryoem -c defaults -c conda-forge
