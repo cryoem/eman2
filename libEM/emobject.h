@@ -810,7 +810,8 @@ namespace EMAN
 
 		string lower = instancename;
 		if (fi == my_instance->my_dict.end()) {
-			for (unsigned int i=0; i<lower.length(); i++) lower[i]=tolower(lower[i]);
+			for (unsigned int i=0; i<lower.length(); i++)
+			    lower[i]=tolower(lower[i]);
 			fi = my_instance->my_dict.find(lower);
 		}
 

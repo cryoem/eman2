@@ -61,7 +61,8 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 		}
 		else {
 			LstIO * myLstIO = dynamic_cast<LstIO *>(imageio);
-			if(!myLstIO)	attr_dict["source_path"] = filename;	//"source_path" is set to full path of reference image for LstIO, so skip this statement
+			if(!myLstIO)
+			    attr_dict["source_path"] = filename;	//"source_path" is set to full path of reference image for LstIO, so skip this statement
 			attr_dict["source_n"] = img_index;
 			if (imageio->is_complex_mode()) {
 				set_complex(true);

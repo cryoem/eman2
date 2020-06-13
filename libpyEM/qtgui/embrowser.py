@@ -1951,13 +1951,10 @@ class EMFileItemModel(QtCore.QAbstractItemModel) :
 
 	def columnCount(self, parent) :
 		"""Always 7 columns"""
-		#print "EMFileItemModel.columnCount() = 6"
 		return 7
 
 	def rowCount(self, parent) :
 		"""Returns the number of children for a given parent"""
-#		if parent.column() != 0 : return 0
-
 		if parent != None and parent.isValid() :
 #			print "rowCount(%s) = %d"%(str(parent), parent.internalPointer().nChildren())
 
@@ -3734,9 +3731,6 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 			self.wbutfwd.setEnabled(False)
 
 	def bookmarkPress(self, action) :
-		""""""
-#		print "Got action ", action.text(), action.data().toString()
-
 		self.setPath(action.data())
 #		self.wtree.setSelectionModel(myQItemSelection(self.curmodel))
 
