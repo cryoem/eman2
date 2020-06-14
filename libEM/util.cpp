@@ -525,17 +525,14 @@ string Util::sbasename(const string & filename)
 
 string Util::get_filename_ext(const string& filename)
 {
-    if (filename == "") {
+    if (filename.empty())
         return "";
-    }
 
-	string result = "";
-	const char *ext = strrchr(filename.c_str(), '.');
-	if (ext) {
-		ext++;
-		result = string(ext);
-	}
-	return result;
+    auto pos = filename.rfind('.');
+    if (pos != string::npos)
+        return filename.substr(pos+1);
+    else
+        return "";
 }
 
 void Util::calc_least_square_fit(size_t nitems, const float *data_x, const float *data_y,
