@@ -36,6 +36,8 @@
 #include <sys/param.h>
 #endif	// WIN32
 
+#include <utility>
+
 #include "all_imageio.h"
 #include "portable_fileio.h"
 #include "emcache.h"
@@ -1282,15 +1284,9 @@ EMData *EMUtil::make_image_median(const vector < EMData * >&image_list)
 			srt[j] = src[j][i];
 		}
 
-		for (int j = 0; j < nitems; j++) {
-			for (int k = j + 1; k < nitems; k++) {
-				if (srt[j] < srt[k]) {
-					float v = srt[j];
-					srt[j] = srt[k];
-					srt[k] = v;
-				}
-			}
-		}
+		for (int j = 0; j < nitems; j++)
+			for (int k = j + 1; k < nitems; k++)
+				std::swap(srt[j], srt[k]);
 
 		int l = nitems / 2;
 

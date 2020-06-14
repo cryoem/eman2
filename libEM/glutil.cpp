@@ -39,6 +39,8 @@
 	#define GL_GLEXT_PROTOTYPES
 #endif	//GL_GLEXT_PROTOTYPES
 
+#include <utility>
+
 #include "glutil.h"
 #include "marchingcubes.h"
 
@@ -984,16 +986,9 @@ EMBytes GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 
 	// ok, ok, not the most efficient place to do this, but it works
 	if (invy) {
-		int x,y;
-		char swp;
-
-		for (y=0; y<iysize/2; y++) {
-			for (x=0; x<ixsize; x++) {
-				swp = ret[y*bpl+x];
-				ret[y*bpl+x] = ret[(iysize-y-1)*bpl+x];
-				ret[(iysize-y-1)*bpl+x] = swp;
-			}
-		}
+		for (int y=0; y<iysize/2; y++)
+			for (int x=0; x<ixsize; x++)
+				std::swap(ret[y*bpl+x], ret[(iysize-y-1)*bpl+x]);
 	}
 
 	// return PyString_FromStringAndSize((const char*) data,iysize*bpl);
