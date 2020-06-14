@@ -486,20 +486,10 @@ string Util::change_filename_ext(const string & old_filename,
 								 const string & ext)
 {
 	Assert(old_filename != "");
-	if (ext == "") {
+	if (ext.empty())
 		return old_filename;
-	}
 
-	string filename = old_filename;
-	size_t dot_pos = filename.rfind(".");
-	if (dot_pos != string::npos) {
-		filename = filename.substr(0, dot_pos+1);
-	}
-	else {
-		filename = filename + ".";
-	}
-	filename = filename + ext;
-	return filename;
+	return remove_filename_ext(old_filename) + "." + ext;
 }
 
 string Util::remove_filename_ext(const string& filename)
