@@ -1202,25 +1202,16 @@ void EMUtil::dump_dict(const Dict & dict)
 
 bool EMUtil::is_same_size(const EMData * const em1, const EMData * const em2)
 {
-	if (em1->get_xsize() == em2->get_xsize() &&
+	return em1->get_xsize() == em2->get_xsize() &&
 		em1->get_ysize() == em2->get_ysize() &&
-		em1->get_zsize() == em2->get_zsize()) {
-		return true;
-	}
-
-	return false;
+		em1->get_zsize() == em2->get_zsize();
 }
 
 bool EMUtil::is_complex_type(EMDataType datatype)
 {
-	if (datatype == EM_SHORT_COMPLEX ||
+    return datatype == EM_SHORT_COMPLEX ||
 		datatype == EM_USHORT_COMPLEX ||
-		datatype == EM_FLOAT_COMPLEX) {
-
-		return true;
-	}
-
-	return false;
+		datatype == EM_FLOAT_COMPLEX;
 }
 
 EMData *EMUtil::vertical_acf(const EMData * image, int maxdy)

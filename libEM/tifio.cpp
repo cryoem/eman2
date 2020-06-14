@@ -94,12 +94,7 @@ void TiffIO::init()
 			throw ImageReadException(filename, "invalid TIFF");
 		}
 
-		if (buf[0] == TIFF_BIG_ENDIAN) {
-			is_big_endian = true;
-		}
-		else {
-			is_big_endian = false;
-		}
+        is_big_endian = (buf[0] == TIFF_BIG_ENDIAN);
 	}
 
 	fclose(tmp_in);
