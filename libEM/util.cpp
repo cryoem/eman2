@@ -282,7 +282,7 @@ void Util::flip_image(float *data, size_t nx, size_t ny)
 
 string Util::str_to_lower(const string& s) {
 	string ret(s);
-	std::transform(s.begin(),s.end(),ret.begin(), (int (*)(int) ) std::tolower);
+	std::transform(s.begin(), s.end(), ret.begin(), ::tolower);
 	return ret;
 }
 
