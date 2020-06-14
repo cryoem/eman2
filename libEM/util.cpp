@@ -504,23 +504,12 @@ string Util::change_filename_ext(const string & old_filename,
 
 string Util::remove_filename_ext(const string& filename)
 {
-    if (filename == "") {
+    if (filename.empty())
         return "";
-    }
 
-	char *buf = new char[filename.size()+1];
-	strcpy(buf, filename.c_str());
-	char *old_ext = strrchr(buf, '.');
-	if (old_ext) {
-		buf[strlen(buf) - strlen(old_ext)] = '\0';
-	}
-	string result = string(buf);
-	if( buf )
-	{
-		delete [] buf;
-		buf = 0;
-	}
-	return result;
+	auto pos = filename.rfind('.');
+	
+	return pos!=string::npos ? filename.substr(0, pos) : filename;
 }
 
 string Util::sbasename(const string & filename)
