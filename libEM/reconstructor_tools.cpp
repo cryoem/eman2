@@ -29,11 +29,13 @@
  *
  * */
 
+//#define DEBUG_POINT	1
 
 #include <cstring>
 #include <math.h>
 #include <gsl/gsl_sf_bessel.h>
 #include "reconstructor_tools.h"
+
 
 using namespace EMAN;
 
@@ -222,6 +224,14 @@ bool FourierInserter3DMode2l::insert_pixel(const float& xx, const float& yy, con
 					off=data->add_complex_at_fast(i,j,k,dt*gg);
 					if (off!=nxyz) norm[off/2]+=gg;
 //					if (off!=nxyz) norm[off/2]+=weight;	// experiment 6/1/20, use true Gaussian kernel, not just weight
+#ifdef DEBUG_POINT
+					if (k==23 && j==0 && i==113) {
+						std::complex<float> pv = data->get_complex_at(113,0,23);
+						float pnv = norm[off/2];
+						printf("insert: %1.4g\t%1.4g\t%1.4g\t%1.4g\t%1.4g\t%1.4g\n",pv.real()/pnv,pv.imag()/pnv,pnv,dt.real(),dt.imag(),gg);
+					}
+#endif
+
 				}
 			}
 		}

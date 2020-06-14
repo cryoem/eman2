@@ -28,6 +28,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  *
  * */
+//#define DEBUG_POINT	1
 
 #include "reconstructor.h"
 #include "plugins/reconstructor_template.h"
@@ -44,6 +45,7 @@
 #ifdef EMAN2_USING_CUDA
 #include "cuda/cuda_reconstructor.h"
 #endif
+
 
 using namespace EMAN;
 using std::complex;
@@ -323,6 +325,12 @@ void ReconstructorVolumeData::normalize_threed(const bool sqrt_damp,const bool w
 	if ( 0 == norm ) throw NullPointerException("The normalization volume was null!");
 	if ( 0 == rdata ) throw NullPointerException("The complex reconstruction volume was null!");
 
+#ifdef DEBUG_POINT
+	std::complex<float> pv = image->get_complex_at(113,0,23);
+	float pnv = tmp_data->get_value_at(113,0,23);
+	printf("norm: %1.4g\t%1.4g\t%1.4g\n",pv.real()/pnv,pv.imag()/pnv,pnv);
+#endif
+	
 	// add_complex_at handles complex conjugate addition, but the normalization image doesn't
 	// take this into account, so we need to sum the appropriate values
 	// only works for whole volumes!
@@ -896,6 +904,13 @@ void FourierReconstructor::setup_seed(EMData* seed,float seed_weight) {
 
 	
 	load_inserter();
+	
+#ifdef DEBUG_POINT
+	std::complex<float> pv = image->get_complex_at(113,0,23);
+	float pnv = tmp_data->get_value_at(113,0,23);
+	printf("seed: %1.4g\t%1.4g\t%1.4g\n",pv.real()/pnv,pv.imag()/pnv,pnv);
+#endif
+
 
 	if ( (bool) params["quiet"] == false )
 	{
@@ -1475,6 +1490,13 @@ bool FourierReconstructor::pixel_at(const float& xx, const float& yy, const floa
 		dt[0]/=normsum;
 		dt[1]/=normsum;
 		dt[2]=normsum/normsum2;
+#ifdef DEBUG_POINT
+		if (z0==23 && y0==0 && x0==113) {
+			std::complex<float> pv = image->get_complex_at(113,0,23);
+			float pnv = tmp_data->get_value_at(113,0,23);
+			printf("pixat: %1.4g\t%1.4g\t%1.4g\t%1.4g\t%1.4g\t%1.4g\n",pv.real()/pnv,pv.imag()/pnv,pnv,dt[0],dt[1],dt[2]);
+		}
+#endif
 //		printf("%1.2f,%1.2f,%1.2f\t%1.3f\t%1.3f\t%1.3f\t%1.3f\t%1.3f\n",xx,yy,zz,dt[0],dt[1],dt[2],rdata[idx],rdata[idx+1]);
 		return true;
 	} 

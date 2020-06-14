@@ -1031,16 +1031,19 @@ wlock=0
 def make_tile_with_pnthr(args):
 	global wlock
 	jsd, imgs, tpm, sz, pad, stepx, stepy, outz,options=args
-	recon1=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":options.reconmode,"corners":1})
-	recon2=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":options.reconmode,"corners":1})
-	recon3=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":options.reconmode,"corners":1})
+	recon1=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":options.reconmode,"corners":1,"quiet":1})
+	recon2=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":options.reconmode,"corners":1,"quiet":1})
+	recon3=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":options.reconmode,"corners":1,"quiet":1})
 
-	if stepx in (0,1) and stepy==0: 
+
+	if stepx in (0,1) and stepy==0:
 		try: os.unlink("test_tilt.hdf")
 		except: pass
 		try: os.unlink("test_tile.hdf")
 		except: pass
 
+	print("************",stepx,stepy,"!!!" if (stepx in (0,1) and stepy==0) else "")
+	
 	# preprocess slices, means we double the slice memory requirement, but will generally be small
 	# compared to volume anyway. May be unnecessary, but not sure if it's safe to change imgs
 	ppimgs=[]
@@ -1058,10 +1061,13 @@ def make_tile_with_pnthr(args):
 		msk=EMData(pad, pad)
 		msk.to_one()
 		edge=(sz//10)
-		msk.process_inplace("mask.zeroedge2d",{"x0":dy+edge, "x1":dy+edge, "y0":edge, "y1":edge})
-		msk.process_inplace("mask.addshells.gauss",{"val1":0, "val2":edge})
-	
-		m.mult(msk)
+
+		# next 3 lines are the normal masking
+		#msk.process_inplace("mask.zeroedge2d",{"x0":dy+edge, "x1":dy+edge, "y0":edge, "y1":edge})
+		#msk.process_inplace("mask.addshells.gauss",{"val1":0, "val2":edge})
+		#m.mult(msk)
+		m.process_inplace("mask.soft",{"outer_radius":m["ny"]//4,"width":m["ny"]//8})		# this is an experiment to have more smoothing in Fourier space
+		
 		mp=recon1.preprocess_slice(m, xf)
 		if mp.has_attr("ctf") : mp.process_inplace("filter.ctfcorr.simple",{"useheader":1,"phaseflip":1,"hppix":2})
 		else : print("No CTF found for tilt-series, consider running CTF determination")
@@ -1182,7 +1188,6 @@ def make_tile_with_pnthr(args):
 			threed.write_image("test_tile.hdf",j*6+4)
 			seed.write_image("test_tile.hdf",j*6+5)
 		seed=seed.do_fft().process("xform.phaseorigin.tocorner")
-#		print(stepx,stepy,threed["ny"])
 	
 	# do our final iteration outside the loop
 	recon1.setup_seed(seed,0.1)
@@ -1438,7 +1443,8 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 
 			jobs.append((jsd, tiles, tpm, sz, pad, stepx, stepy, outz, options))
 	
-	thrds=[threading.Thread(target=make_tile_with_pnthr,args=([i])) for i in jobs]
+	thrds=[threading.Thread(target=make_tile_with_pnthr,args=([i])) for i in jobs if i[5] in (0,1) and i[6]==0]
+#	thrds=[threading.Thread(target=make_tile_with_pnthr,args=([i])) for i in jobs]
 	print("now start threads...")
 	thrtolaunch=0
 	tsleep=threading.active_count()
