@@ -244,6 +244,7 @@ const string MaxPixelOperator::NAME = "math.max";
 const string MinPixelOperator::NAME = "math.min";
 const string MatchSFProcessor::NAME = "filter.matchto";
 const string SetSFProcessor::NAME = "filter.setstrucfac";
+const string SetIsoPowProcessor::NAME = "filter.setisotropicpow";
 const string SmartMaskProcessor::NAME = "mask.smart";
 const string TestImagePureGaussian::NAME = "testimage.puregaussian";
 const string TestImageFourierNoiseGaussian::NAME = "testimage.noise.fourier.gaussian";
@@ -532,6 +533,7 @@ template <> Factory < Processor >::Factory()
 
 	force_add<IndexMaskFileProcessor>();
 // 	force_add<CoordinateMaskFileProcessor>();
+	force_add<SetIsoPowProcessor>();
 	force_add<SetSFProcessor>();
 	force_add<MatchSFProcessor>();
 
@@ -759,7 +761,7 @@ void FourierAnlProcessor::process_inplace(EMData * image)
 	if (image->is_complex()) {
 		vector <float>yarray = image->calc_radial_dist(floor(image->get_ysize()*cornerscale/2),0,1.0,1);
 		create_radial_func(yarray,image);
-		image->apply_radial_func(0, 0.5f/image->get_ysize(), yarray,interpolate);
+		image->apply_radial_func(0, 1.0f/image->get_ysize(), yarray,interpolate);
 		if (return_radial) image->set_attr("filter_curve",yarray);
 	}
 	else {
@@ -8173,6 +8175,71 @@ void MatchSFProcessor::create_radial_func(vector < float >&rad,EMData *image) co
 
 
 }
+
+void SetIsoPowProcessor::process_inplace(EMData * image) {
+
+	EMData *tmp = 0;
+	if (!image->is_complex()) { tmp=image; image=tmp->do_fft(); }
+	
+	XYData *tmpsf = params["strucfac"];
+	XYData *sf = new XYData();
+	sf->set_state(tmpsf->get_state());
+	for (int i=0; i<sf->get_size(); i++) sf->set_y(i,sqrt(sf->get_y(i)));
+	
+	if(params.has_key("apix")) {
+		image->set_attr("apix_x", (float)params["apix"]);
+		image->set_attr("apix_y", (float)params["apix"]);
+		image->set_attr("apix_z", (float)params["apix"]);
+		if (image->has_attr("ctf")) {
+			Ctf *ctf=image->get_attr("ctf");
+			ctf->apix=(float)params["apix"];
+			image->set_attr("ctf",ctf);
+			delete(ctf);
+		}
+	}
+
+	float apix=image->get_attr("apix_x");
+	int nx=image->get_xsize();
+	int ny=image->get_ysize();
+	int nz=image->get_zsize();
+	
+	if (nz==1) {
+		for (int j=-ny/2; j<ny/2; j++) {
+			for (int i=0; i<nx/2; i++) {
+				float r=Util::hypot2(i/(float)(nx-2),j/(float)ny)/apix;	// radius in terms of Nyquist=0.5
+				float a=sf->get_yatx(r);
+				std::complex<float> v=image->get_complex_at(i,j);
+				if (v!=0.0f) v*=a/abs(v);
+				else v=std::complex<float>(a,0);
+				image->set_complex_at(i,j,v);
+			}
+		}
+	}
+	else {
+		for (int k=-nz/2; k<nz/2; k++) {
+			for (int j=-ny/2; j<ny/2; j++) {
+				for (int i=0; i<nx/2; i++) {
+					float r=Util::hypot3(i/(float)(nx-2),j/(float)ny,k/(float)nz)/apix;	// radius in terms of Nyquist=0.5
+					float a=sf->get_yatx(r);
+					std::complex<float> v=image->get_complex_at(i,j,k);
+					if (v!=0.0f) v*=a/abs(v);
+					else v=std::complex<float>(a,0);
+					image->set_complex_at(i,j,k,v);
+				}
+			}
+		}
+	}
+	
+	if (tmp!=0) {
+		EMData *tmp2=image->do_ift();
+		memcpy(tmp->get_data(),tmp2->get_data(),tmp2->get_size()*sizeof(float));
+		delete tmp2;
+		delete image;
+	}
+	delete sf;
+	
+}
+
 
 void SetSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *image) const {
 	// The radial mask comes in with the existing radial image profile

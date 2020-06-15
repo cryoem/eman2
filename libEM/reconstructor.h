@@ -162,6 +162,17 @@ namespace EMAN
 		 */
 		virtual int determine_slice_agreement(EMData* slice, const Transform &euler, const float weight=1.0, bool sub=true ) { throw; }
 
+		/** This will create a projection from the current reconstruction. Only valid before finish() is called.
+		 * may not be implemented for all Reconstructors. If the reconstructor implements padding, the projection will also
+		 * be padded. The euler parameter will ignore translation and mirroring
+	  	 * @param euler The orientation of the slice as a Transform object
+		 * @param ret_fourier If set returns the Fourier transform of the projection. For many reconstructors this may be less expensive.
+		 * @return 0 if OK. 1 if error.
+	  	 * @exception
+		 */
+		virtual EMData* projection(const Transform &euler, int ret_fourier = 1) { throw; }
+
+		
 		/** Finish reconstruction and return the complete model.
 		 * @param doift A flag indicating whether the returned object should be guaranteed to be in real-space (true) or should be left in whatever space the reconstructor generated
 		 * @return The result 3D model.
@@ -425,6 +436,12 @@ namespace EMAN
 		*/
 		virtual int insert_slice(const EMData* const slice, const Transform & euler,const float weight);
 
+		/** Generates a projection by extracting a slice in Fourier space
+		* @param euler The orientation of the slice as a Transform object
+		* @param ret_fourier If true, will return the Fourier transform of the projection
+		*/
+		virtual EMData* projection(const Transform &euler, int ret_fourier);
+
 
 		/** Compares a slice to the current reconstruction volume and computes a normalization factor and
 		 * quality. Normalization and quality are returned via attributes set in the passed slice. You may freely mix calls
@@ -487,6 +504,7 @@ namespace EMAN
 			d.put("size", EMObject::INTARRAY, "Required. The dimensions of the real-space output volume, including any padding (must be handled by the calling application). Assumed that apix x/y/z identical.");
 			d.put("sym", EMObject::STRING, "Optional. The symmetry of the reconstructed volume, c?, d?, oct, tet, icos, h?. Default is c1, ie - an asymmetric object");
 			d.put("mode", EMObject::STRING, "Optional. Fourier pixel insertion mode name (nearest_neighbor, gauss_2, gauss_3, gauss_5, gauss_5_slow, gypergeom_5, experimental) gauss_2 is the default.");
+			d.put("corners", EMObject::BOOL, "Optional. If not set, then reconstruction will cover a spherical volume with a radius of nx/2. If set, the full Fourier volume will be reconstructed, but will be ~2x slower.");
 			d.put("sqrtnorm", EMObject::BOOL, "Optional. When normalizing, additionally divides by the sqrt of the normalization factor to damp exaggerated features. Is this justifyable ? No idea (yet). Default is false.");
 			d.put("usessnr", EMObject::BOOL, "Optional. Looks for and uses the class_ssnr header parameter from each slice to weight each voxel during insertion to the reconstruction.");
 			d.put("verbose", EMObject::BOOL, "Optional. Toggles writing useful information to standard out. Default is false.");
@@ -519,7 +537,7 @@ namespace EMAN
 		 * @param euler a transform storing the slice euler angle
 		 * @param weight weighting factor for this slice (usually number of particles in a class-average)
 		 */
-		virtual void do_insert_slice_work(const EMData* const input_slice, const Transform & euler,const float weight);
+		virtual void do_insert_slice_work(const EMData* const input_slice, const Transform & euler,const float weight, const bool corners=false);
 
 		/** A function to perform the nuts and bolts of comparing an image slice
 		 * @param input_slice the slice to insert into the 3D volume

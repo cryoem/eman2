@@ -28,6 +28,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  *
  * */
+//#define DEBUG_POINT	1
 
 #include "reconstructor.h"
 #include "plugins/reconstructor_template.h"
@@ -44,6 +45,7 @@
 #ifdef EMAN2_USING_CUDA
 #include "cuda/cuda_reconstructor.h"
 #endif
+
 
 using namespace EMAN;
 using std::complex;
@@ -323,6 +325,12 @@ void ReconstructorVolumeData::normalize_threed(const bool sqrt_damp,const bool w
 	if ( 0 == norm ) throw NullPointerException("The normalization volume was null!");
 	if ( 0 == rdata ) throw NullPointerException("The complex reconstruction volume was null!");
 
+#ifdef DEBUG_POINT
+	std::complex<float> pv = image->get_complex_at(113,0,23);
+	float pnv = tmp_data->get_value_at(113,0,23);
+	printf("norm: %1.4g\t%1.4g\t%1.4g\n",pv.real()/pnv,pv.imag()/pnv,pnv);
+#endif
+	
 	// add_complex_at handles complex conjugate addition, but the normalization image doesn't
 	// take this into account, so we need to sum the appropriate values
 	// only works for whole volumes!
@@ -854,7 +862,9 @@ void FourierReconstructor::setup_seed(EMData* seed,float seed_weight) {
 	// Odd dimension support is here atm, but not above.
 	image = seed->copy();
 	image->mult(seed_weight);		// The lack of this line was what was causing all of the strange normalization issues
+
 	
+
 	if (params.has_key("subvolume")) {
 		image->set_attr("subvolume_x0",subx0);
 		image->set_attr("subvolume_y0",suby0);
@@ -868,8 +878,39 @@ void FourierReconstructor::setup_seed(EMData* seed,float seed_weight) {
 	tmp_data = new EMData();
 	tmp_data->set_size(subnx/2, subny, subnz);
 	tmp_data->to_value(seed_weight);
+	
+	// The values at x=0 and x=nyquist are added twice in the map normally, but the normalization is only added once
+	// This is compensated in the final normalization. In the seed volume we accomodate this by reducing the seed
+	// alternatively we could double the actual values. Impact is similar, if not 100% identical
+	if (subx0==0) {
+		for (int k=0; k<subnz; k++) {
+			for (int j=0; j<subny; j++) {
+				tmp_data->set_value_at(0,j,k,seed_weight/2.0);
+			}
+		}
+		tmp_data->set_value_at(0,subny/2,0,seed_weight);
+		tmp_data->set_value_at(0,0,subnz/2,seed_weight);
+	}
+	if (subnx+subx0==nx) {
+		for (int k=0; k<subnz; k++) {
+			for (int j=0; j<subny; j++) {
+				tmp_data->set_value_at(subnx/2-1,j,k,seed_weight/2.0);
+			}
+		}
+		tmp_data->set_value_at(subnx/2-1,subny/2,0,seed_weight);
+		tmp_data->set_value_at(subnx/2-1,0,subnz/2,seed_weight);
+	}
+	
 
+	
 	load_inserter();
+	
+#ifdef DEBUG_POINT
+	std::complex<float> pv = image->get_complex_at(113,0,23);
+	float pnv = tmp_data->get_value_at(113,0,23);
+	printf("seed: %1.4g\t%1.4g\t%1.4g\n",pv.real()/pnv,pv.imag()/pnv,pnv);
+#endif
+
 
 	if ( (bool) params["quiet"] == false )
 	{
@@ -882,6 +923,8 @@ void FourierReconstructor::setup_seed(EMData* seed,float seed_weight) {
 
 void FourierReconstructor::setup_seedandweights(EMData* seed,EMData* seed_weight) {
 	// default setting behavior - does not override if the parameter is already set
+	
+	// WARNING - when seed_weight is provided it must already be compensated at x=0 and x=nx-1 (should be 1/2 the actual value)
 	params.set_default("mode","gauss_2");
 
 	vector<int> size=params["size"];
@@ -1021,6 +1064,11 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 	// Are these exceptions really necessary? (d.woolford)
 	if (!input_slice) throw NullPointerException("EMData pointer (input image) is NULL");
 
+	
+// 	image->set_attr("apix_x",input_slice->get_attr("apix_x"));
+// 	image->set_attr("apix_y",input_slice->get_attr("apix_y"));
+// 	image->set_attr("apix_z",input_slice->get_attr("apix_z"));
+
 #ifdef EMAN2_USING_CUDA
 	if(EMData::usecuda == 1) {
 		if(!input_slice->getcudarwdata()) input_slice->copy_to_cuda(); //copy slice to cuda using the const version
@@ -1028,6 +1076,7 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 #endif
 
 	bool usessnr=params.set_default("usessnr",false);
+	bool corners=params.set_default("corners",false);
 	float weight=oweight;
 	if (usessnr) {
 		if (input_slice->has_attr("class_ssnr")) weight=-1.0;	// negative weight is a flag for using SSNR
@@ -1058,7 +1107,7 @@ Transform * rotation;
 	//slice->copy_to_cuda();
 //	EMData *s2=slice->do_ift();
 //	s2->write_image("is.hdf",-1);
-	do_insert_slice_work(slice, *rotation, weight);
+	do_insert_slice_work(slice, *rotation, weight, corners);
 	
 	delete rotation; rotation=0;
 	delete slice;
@@ -1068,7 +1117,7 @@ Transform * rotation;
 }
 
 // note that negative weight is a prompt for using SSNR from header
-void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice, const Transform & arg,const float weight)
+void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice, const Transform & arg,const float weight,const bool corners)
 {
 	// Reload the inserter if the mode has changed
 // 	string mode = (string) params["mode"];
@@ -1111,6 +1160,7 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 		sscale=2.0*(ssnr.size()-1)/iny;
 	}
 	
+	float rweight=weight;
 	for ( vector<Transform>::const_iterator it = syms.begin(); it != syms.end(); ++it ) {
 		Transform t3d = arg*(*it);
 		for (int y = -iny/2; y < iny/2; y++) {
@@ -1118,12 +1168,18 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 
 				float rx = (float) x/(inx-2.0f);	// coords relative to Nyquist=.5
 				float ry = (float) y/iny;
-				int r=Util::hypot_fast_int(x,y);
-				if (r>iny/2 && abs(inx-iny)<3) continue;	// no filling in Fourier corners...
+				if (corners) {
+					if (weight<0) {
+						int r=Util::hypot_fast_int(x,y);
+						rweight=Util::get_max(0.0f,ssnr[int(r*sscale)]);
+					}
+				}
+				else {
+					int r=Util::hypot_fast_int(x,y);
+					if (r>iny/2 && abs(inx-iny)<3) continue;	// no filling in Fourier corners...
 
-				float rweight;
-				if (weight<0) rweight=Util::get_max(0.0f,ssnr[int(r*sscale)]);
-				else rweight=weight;
+					if (weight<0) rweight=Util::get_max(0.0f,ssnr[int(r*sscale)]);
+				}
 //				printf("%d\t%f\n",int(r*sscale),rweight);
 
 				Vec3f coord(rx,ry,0);
@@ -1322,6 +1378,67 @@ void FourierReconstructor::do_compare_slice_work(EMData* input_slice, const Tran
 	//printf("** %f %f %f ##\n",(float)(power2<=0?1.0:sqrt(power/power2)/(inx*iny)),(float)dot,(float)(dot*weight/((weight-1.0)*dot+1.0)));
 }
 
+EMData* FourierReconstructor::projection(const Transform &euler, int ret_fourier) {
+	
+	if (subx0!=0 || suby0!=0 || subz0!=0 || subnx!=nx || subny!=ny ||subnz!=nz) 
+		throw ImageDimensionException("ERROR: Reconstructor->projection() does not work with subvolumes");
+	
+	EMData *ret = new EMData(nx,ny,1);
+	ret->set_complex(1);
+	ret->set_ri(1);
+	ret->set_attr("apix_x",image->get_attr("apix_x"));
+	ret->set_attr("apix_y",image->get_attr("apix_y"));
+	ret->set_attr("apix_z",image->get_attr("apix_z"));
+	
+	// We must use only the rotational component of the transform, scaling, translation and mirroring
+	// are not implemented in Fourier space, but are in preprocess_slice
+	Transform rotation(euler);
+	rotation.set_scale(1.0);
+	rotation.set_mirror(false);
+	rotation.set_trans(0,0,0);
+	
+	float dt[3];	// This stores the complex and weight from the volume
+
+//	float apix=input_slice->get_attr("apix_x");
+//	float rmax=iny*apix/12.0;		// radius at 12 A, use as cutoff for low res insertion quality
+	
+	for (int y = -ny/2; y < ny/2; y++) {
+		for (int x = 0; x <=  nx/2; x++) {
+
+			float rx = (float) x/(nx-2);	// coords relative to Nyquist=.5
+			float ry = (float) y/ny;
+
+
+			Vec3f coord(rx,ry,0);
+			coord = coord*rotation; // transpose multiplication
+			float xx = coord[0]; // transformed coordinates in terms of Nyquist
+			float yy = coord[1];
+			float zz = coord[2];
+
+
+			if (fabs(xx)>0.5 || fabs(yy)>=0.5 || fabs(zz)>=0.5) continue;
+
+			// Map back to actual pixel coordinates in output volume
+			xx=xx*(nx-2);
+			yy=yy*ny;
+			zz=zz*nz;
+
+			if (!pixel_at(xx,yy,zz,dt) || dt[2]<0.01) continue;
+			ret->set_complex_at(x,y,std::complex<float>(dt[0],dt[1]));	// division by dt[2] already handled in pixel_at
+//			ret->set_complex_at(x,y,std::complex<float>(dt[0]/dt[2],dt[1]/dt[2]));
+		}
+	}
+	
+	if (!ret_fourier) {
+		ret->process_inplace("xform.phaseorigin.tocenter");
+		EMData *tmp=ret->do_ift();
+		delete ret;
+		ret=tmp;
+	}
+	return ret;
+}
+
+
 bool FourierReconstructor::pixel_at(const float& xx, const float& yy, const float& zz, float *dt)
 {
 	int x0 = (int) floor(xx);
@@ -1337,7 +1454,6 @@ bool FourierReconstructor::pixel_at(const float& xx, const float& yy, const floa
 	if (nx==subnx) {			// normal full reconstruction
 		if (x0<-nx2-1 || y0<-ny2-1 || z0<-nz2-1 || x0>nx2 || y0>ny2 || z0>nz2 ) return false;
 
-		// no error checking on add_complex_fast, so we need to be careful here
 		int x1=x0+1;
 		int y1=y0+1;
 		int z1=z0+1;
@@ -1353,22 +1469,34 @@ bool FourierReconstructor::pixel_at(const float& xx, const float& yy, const floa
 		for (int k = z0 ; k <= z1; k++) {
 			for (int j = y0 ; j <= y1; j++) {
 				for (int i = x0; i <= x1; i ++) {
-					r = Util::hypot3sq((float) i - xx, j - yy, k - zz);
 					idx=image->get_complex_index_fast(i,j,k);
-					gg = Util::fast_exp(-r / EMConsts::I2G);
+// 					r = Util::hypot3sq((float) i - xx, j - yy, k - zz);
+// 					gg = Util::fast_exp(-r / EMConsts::I2G);
+					gg=(1.0-fabs(i-xx))*(1.0-fabs(j-yy))*(1.0-fabs(k-zz));	// Change from Gaussian to trilinear, 6/7/20
 					
 					dt[0]+=gg*rdata[idx];
 					dt[1]+=(i<0?-1.0f:1.0f)*gg*rdata[idx+1];
-					dt[2]+=norm[idx/2]*gg;
+					//dt[2]+=norm[idx/2]*gg;
 					normsum2+=gg;
-					normsum+=gg*norm[idx/2];				
+					normsum+=gg*norm[idx/2];
+					if (i==0) {
+						normsum2+=gg;
+						normsum+=gg*norm[idx/2];				
+					}
 				}
 			}
 		}
 		if (normsum==0) return false;
 		dt[0]/=normsum;
 		dt[1]/=normsum;
-		dt[2]/=normsum2;
+		dt[2]=normsum/normsum2;
+#ifdef DEBUG_POINT
+		if (z0==23 && y0==0 && x0==113) {
+			std::complex<float> pv = image->get_complex_at(113,0,23);
+			float pnv = tmp_data->get_value_at(113,0,23);
+			printf("pixat: %1.4g\t%1.4g\t%1.4g\t%1.4g\t%1.4g\t%1.4g\n",pv.real()/pnv,pv.imag()/pnv,pnv,dt[0],dt[1],dt[2]);
+		}
+#endif
 //		printf("%1.2f,%1.2f,%1.2f\t%1.3f\t%1.3f\t%1.3f\t%1.3f\t%1.3f\n",xx,yy,zz,dt[0],dt[1],dt[2],rdata[idx],rdata[idx+1]);
 		return true;
 	} 

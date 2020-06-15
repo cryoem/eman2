@@ -136,6 +136,7 @@ def main():
 	
 	parser.add_option("--scale", metavar="n", type="float", action="append", help="Rescales the data in the image by 'n', opposite behavior of 'shrink' above. Scaling is done by interpolation in real-space. Box size unchanged. See '--clip'")
 	parser.add_option("--setsf", type=str, metavar="inputfile", help="Set the radial structure factor. Must specify apix.")
+	parser.add_option("--setisosf", type=str, metavar="inputfile", help="Make the amplitude rotationally symmetric, and equivalent to provided structure factor")
 	parser.add_option("--step",type=str,default=None,help="Specify <init>,<step>. Processes only a subset of the input data. For example, 0,2 would process only the even numbered particles")
 	parser.add_option("--swap", action="store_true", help="Swap the byte order", default=False)
 	parser.add_option("--sym", dest = "sym", action="append", help = "Symmetry to impose - choices are: c<n>, d<n>, h<n>, tet, oct, icos")
@@ -473,6 +474,11 @@ def main():
 
 				#curve2 = dataf.calc_radial_dist(ny, 0, 0.5,True)
 #				plot((curve,curve2))
+			elif option1 == "setisosf":
+				if options.verbose>1 : print("setisosf -> ",options.setsf)
+				sf=XYData()
+				sf.read_file(options.setisosf)
+				data.process_inplace("filter.setisotropicpow",{"apix":data["apix_x"],"strucfac":sf})
 			elif option1 == "filtertable":
 				tf = options.filtertable[index_d[option1]]
 				if options.verbose>1 : print("Apply filter -> ",tf)
