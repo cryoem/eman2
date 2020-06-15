@@ -165,8 +165,8 @@ namespace EMAN
 		EMObject(XYData * xy);
 		EMObject(Transform * t);
 		EMObject(Ctf * ctf);
-		EMObject(const vector< int >& v );
-		EMObject(const vector < float >&v);
+		EMObject(const vector< int >& v);
+		EMObject(const vector<float>& v);
 		EMObject(const vector <string>& sarray);
 		EMObject(const vector <Transform>& tarray);
 
@@ -202,8 +202,8 @@ namespace EMAN
 		operator XYData *() const;
 		operator Transform *() const;
 		operator Ctf *() const;
-		operator vector < int > () const;
-		operator vector < float > () const;
+		operator vector<int> () const;
+		operator vector<float> () const;
 		operator vector<string> () const;
 		operator vector<Transform> () const;
 
@@ -281,8 +281,8 @@ namespace EMAN
 
 //		void init();
 		
-		static map< ObjectType, string> init();
-		static map< ObjectType, string> type_registry;
+		static map<ObjectType, string> init();
+		static map<ObjectType, string> type_registry;
 	};
 
 	bool operator==(const EMObject &e1, const EMObject & e2);
@@ -310,9 +310,9 @@ namespace EMAN
 			{
 			}
 
-			vector < string > keys() const
+			vector<string> keys() const
 			{
-				vector < string > result;
+				vector<string> result;
 
 				for (auto p = type_dict.begin(); p != type_dict.end(); p++)
 					result.push_back(p->first);
@@ -351,8 +351,8 @@ namespace EMAN
 			inline bool find_type( const string& type ) {  return type_dict.find(type) != type_dict.end(); }
 
 		private:
-			map < string, string > type_dict;
-			map < string, string > desc_dict;
+			map<string, string> type_dict;
+			map<string, string> desc_dict;
 	};
 
 
@@ -446,7 +446,7 @@ namespace EMAN
 		/** Construct a Dict object from a map object
 		 * Calls the generic algorithm "copy".
 		 */
-		Dict(const map < string, EMObject > &d)
+		Dict(const map<string, EMObject> &d)
 		{
 			copy(d.begin(), d.end(), inserter(dict, dict.begin()));
 			// Or use
@@ -470,9 +470,9 @@ namespace EMAN
 
 		/**	Get a vector containing all of the (string) keys in this dictionary.
 		 */
-		vector < string > keys()const
+		vector<string> keys()const
 		{
-			vector < string > result;
+			vector<string> result;
 
 			for (auto p = dict.begin(); p != dict.end(); p++)
 				result.push_back(p->first);
@@ -482,9 +482,9 @@ namespace EMAN
 
 		/** Get a vector containing copies of each of the EMObjects in this dictionary.
 		 */
-		vector < EMObject > values()const
+		vector<EMObject> values()const
 		{
-			vector < EMObject > result;
+			vector<EMObject> result;
 
 			for (auto p = dict.begin(); p != dict.end(); p++)
 				result.push_back(p->second);
@@ -563,7 +563,7 @@ namespace EMAN
 		/** Default setting behavior
 		 * This can be achieved using a template - d.woolford Jan 2008 (before there was a function being written for every type)
 		 */
-		template<typename type>
+		template <typename type>
 		type set_default(const string & key, type val)
 		{
 			if (!has_key(key)) {
@@ -637,7 +637,7 @@ namespace EMAN
 		friend bool operator!=(const Dict& d1, const Dict& d2);
 
 	private:
-		mutable map < string, EMObject > dict;
+		mutable map<string, EMObject> dict;
 
 	public:
 		/** Non const iterator support for the Dict object
@@ -647,14 +647,14 @@ namespace EMAN
 		* @author David Woolford
 		* @date Mid 2007
 		*/
-		class iterator : public map < string, EMObject >::iterator
+		class iterator : public map<string, EMObject>::iterator
 		{
 		public:
 			typedef std::bidirectional_iterator_tag iterator_category;
  			typedef pair<string, EMObject> value_type;
 
 		public:
-			iterator( map < string, EMObject >::iterator parent_it );
+			iterator( map<string, EMObject>::iterator parent_it );
 			virtual ~iterator(){}
 
 			iterator( const iterator& that );
@@ -668,13 +668,13 @@ namespace EMAN
 		 * @author David Woolford
 		 * @date Mid 2007
 		 */
-		class const_iterator :  public map < string, EMObject >::const_iterator
+		class const_iterator :  public map<string, EMObject>::const_iterator
 		{
 		public:
 			typedef std::bidirectional_iterator_tag iterator_category;
 			typedef pair<string, EMObject> value_type; // Note that value_type should NOT be const even though the container elements are const
 		public:
-			const_iterator( const map < string, EMObject >::const_iterator parent_it);
+			const_iterator( const map<string, EMObject>::const_iterator parent_it);
 			virtual ~const_iterator(){}
 			const_iterator( const Dict::iterator& it );
 
@@ -718,7 +718,8 @@ namespace EMAN
      *      Processor *f2 = Factory<Processor>::get("filter.lowpass.gauss", Dict("cufoff_freq", EMObject(12));
 	 * @author Liwei Peng
      */
-	template < class T > class Factory
+	template <class T>
+	class Factory
 	{
 	public:
 		typedef T *(*InstanceType) ();
@@ -726,40 +727,42 @@ namespace EMAN
 		template <class ClassType> static void add();
 		static T *get(const string & instance_name);
 		static T *get(const string & instance_name, const Dict & params);
-		static vector < string > get_list();
+		static vector<string> get_list();
 
 	private:
 		Factory();
-		Factory(const Factory < T > &);
+		Factory(const Factory<T> &);
 		~Factory();
 		static void init();
 		template <class ClassType> void force_add();
 
-		static Factory < T > *my_instance;
-		map < string, InstanceType > my_dict;
+		static Factory<T> *my_instance;
+		map<string, InstanceType> my_dict;
 	};
 
-	template < class T > Factory < T > *Factory < T >::my_instance = 0;
+	template <class T>
+	Factory<T>* Factory<T>::my_instance = 0;
 
-	template < class T > void Factory < T >::init()
+	template <class T>
+	void Factory<T>::init()
 	{
 		if (!my_instance) {
-			my_instance = new Factory < T > ();
+			my_instance = new Factory<T>();
 		}
 	}
 
-	template < class T > 
-	template < class ClassType > 
-	void Factory < T >::force_add()
+	template <class T> 
+	template <class ClassType > 
+	void Factory<T>::force_add()
 	{
 		string name = ClassType::NAME;
 		my_dict[name] = &ClassType::NEW;
 	}
 
 
-	template < class T > 
-	template < class ClassType >
-	void Factory < T >::add()
+	template <class T> 
+	template <class ClassType >
+	void Factory<T>::add()
 	{
 		init();
 
@@ -772,7 +775,8 @@ namespace EMAN
 		}
 	}
 
-	template < class T > T * Factory < T >::get(const string & instancename)
+	template <class T>
+	T* Factory<T>::get(const string & instancename)
 	{
 		init();
 		typename map < string, InstanceType >::iterator fi =
@@ -792,12 +796,12 @@ namespace EMAN
 		throw NotExistingObjectException(instancename, "The named object doesn't exist");
 	}
 
-	template < class T > T * Factory < T >::get(const string & instancename,
-												const Dict & params)
+	template <class T>
+	T* Factory<T>::get(const string & instancename, const Dict & params)
 	{
 		init();
 
-		typename map < string, InstanceType >::iterator fi =
+		typename map<string, InstanceType>::iterator fi =
 			my_instance->my_dict.find(instancename);
 
 		string lower = instancename;
@@ -827,7 +831,8 @@ namespace EMAN
 		throw NotExistingObjectException(instancename, "No such an instance existing");
 	}
 
-	template < class T > vector < string > Factory < T >::get_list() {
+	template <class T>
+	vector<string> Factory<T>::get_list() {
 		init();
 		vector<string> result;
 		for (auto p = my_instance->my_dict.begin(); p != my_instance->my_dict.end(); p++) {
@@ -837,25 +842,27 @@ namespace EMAN
 		return result;
 	}
 
-	template < class T > void dump_factory()
+	template <class T>
+	void dump_factory()
 	{
 		auto item_names = Factory<T>::get_list();
 
 		for (size_t i = 0; i < item_names.size(); i++) {
-			T *item = Factory < T >::get(item_names[i]);
+			T* item = Factory<T>::get(item_names[i]);
 			printf("%s :  %s\n", item->get_name().c_str(),item->get_desc().c_str());
 			TypeDict td = item->get_param_types();
 			td.dump();
 		}
 	}
 
-	template < class T > map<string, vector<string> > dump_factory_list()
+	template <class T>
+	map<string, vector<string> > dump_factory_list()
 	{
-		vector < string > item_names = Factory < T >::get_list();
+		vector<string> item_names = Factory<T>::get_list();
 		map<string, vector<string> >	factory_list;
 
 		for(auto p = item_names.begin(); p !=item_names.end(); ++p) {
-			T *item = Factory<T>::get(*p);
+			T* item = Factory<T>::get(*p);
 
 			string name = item->get_name();
 
