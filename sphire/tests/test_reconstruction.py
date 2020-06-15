@@ -37,7 +37,7 @@ TOLERANCE =0.0001
 
 """
 -----------BUG-----------------
-In Test_recons3d_4nn_ctf_MPI. We can run it with the default values of 'xysize' and 'zsize' otherwise the script crashes 
+In Test_recons3d_4nn_ctf. We can run it with the default values of 'xysize' and 'zsize' otherwise the script crashes 
   there is a KNOWN BUG --> with sizeprojection  PAP 10/22/2014
     an exception is raised in the c++ code when we change 'xysize' or 'zsize' input params. It is due basically because we inserted in a python code a key that is is not a valid key 
     in the c++ code (i.e.: sizeprojection,xratio,zratio,yratio)
