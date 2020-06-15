@@ -688,11 +688,11 @@ namespace EMAN
 		};
 
 		// Iterator support
-		iterator begin( void );
-		const_iterator begin( void ) const;
+		iterator begin();
+		const_iterator begin() const;
 
-		iterator end( void );
-		const_iterator end( void ) const;
+		iterator end();
+		const_iterator end() const;
 
 		// Wraps map.find(const string& key)
 		iterator find( const string& key );
