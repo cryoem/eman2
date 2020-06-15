@@ -16,7 +16,7 @@ from sphire.libpy_py3 import sp_reconstruction as oldfu
 from sphire.libpy import sp_reconstruction as fu
 
 
-from .test_module import get_real_data, ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, give_alignment_shc_data
+from .test_module import get_real_data, ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, give_alignment_shc_data
 
 XFORM_PROJECTION_IMG = get_arg_from_pickle_file(
     path.join(ABSOLUTE_PATH, "pickle files/alignment.shc")
@@ -32,6 +32,19 @@ STACK_NAME = "bdb:" + path.join(
     ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Substack/sort3d_substack_003"
 )
 
+TOLERANCE =0.0001
+
+
+"""
+-----------BUG-----------------
+In Test_recons3d_4nn_ctf_MPI. We can run it with the default values of 'xysize' and 'zsize' otherwise the script crashes 
+  there is a KNOWN BUG --> with sizeprojection  PAP 10/22/2014
+    an exception is raised in the c++ code when we change 'xysize' or 'zsize' input params. It is due basically because we inserted in a python code a key that is is not a valid key 
+    in the c++ code (i.e.: sizeprojection,xratio,zratio,yratio)
+-----------BUG-----------------
+"""
+
+
 
 """
 WHAT IS MISSING:
@@ -40,16 +53,6 @@ WHAT IS MISSING:
 2) recons3d_4nn after hours is still running ... is it ok? did i use bad input??
 3) recons3d_4nnw_MPI  no idea how test it
 
-
-RESULT AND KNOWN ISSUES
-Some compatibility tests for the following functions fail!!!
-1) 
-
-In these tests there is a bug --> syntax error:
-1) Test_recons3d_4nn_ctf_MPI
-  a) there is a KNOWN BUG --> with sizeprojection  PAP 10/22/2014 
-  b) if you call this function twice, or in the tests case twice in the same class test, the second time that it runs crashed beacuse del sparx_utilities.pad
-     This happen because 'sparx_utilities.pad' obj was destroyed in the first call
 
 In these tests there is a strange behavior:
 1) 
@@ -60,7 +63,6 @@ There are some opened issues in:
 1) insert_slices and insert_slices_pdf seems to have the same behaviour. See Test_insert_slices_VS_insert_slices_pdf
 2) Test_recons3d_4nn_MPI.test_default_case_z_size_both_not_negative_FAILEd failed even if I set the Tollerance to a high value (e.g.: 5)
     but Test_recons3d_4nn_MPI.test_default_case_xy_size_not_negative_myid_not_null does not failed. WHY????
-4) recons3d_4nn_ctf it seems to be not used. I did not tested it
 6) Test_recons3d_nn_SSNR_MPI.test_withMask2D, I cannot test the 2Dmask case because:
     I cannot provide it a valid mask. I tried with 'mask2D = sparx_utilities.model_circle(0.1, nx, ny) - sparx_utilities.model_circle(1, nx, ny)'
 7) Test_prepare_recons.test_main_node_half_NOTequal_myid_crashes_because_MPI_ERRORS_ARE_FATAL
@@ -1386,6 +1388,72 @@ class Test_recons3d_trl_struct_MPI(unittest.TestCase):
             "recons3d_trl_struct_MPI() missing 7 required positional arguments: 'myid', 'main_node', 'prjlist', 'paramstructure', 'refang', 'rshifts_shrank', and 'delta'",
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
+
+
+#todo: changing xysize or zsize an exception is raised in the c++ code because a key inserted in a python code is not present as valid key in the c++ code
+class Test_recons3d_4nn_ctf(unittest.TestCase):
+    stack_name="bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"06_SUBSTACK")+"#isac_substack"
+    list_proj=list(range(10))#list(range(EMUtil.get_image_count(stack_name))) # TO SPEED UP THE TEST
+
+    def test_wrong_number_params_too_few_parameters_TypeError(self):
+        with self.assertRaises(TypeError) as cm_new:
+            fu.recons3d_4nn_ctf()
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.recons3d_4nn_ctf()
+        self.assertEqual(
+            str(cm_new.exception),
+            "recons3d_4nn_ctf() missing 1 required positional argument: 'stack_name'",
+        )
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
+
+    def test_default(self):
+        return_new=fu.recons3d_4nn_ctf(stack_name=self.stack_name,
+                list_proj=self.list_proj,
+                snr=1.0,
+                sign=1,
+                symmetry="c5",
+                verbose=0,
+                npad=2,
+                xysize=-1,
+                zsize=-1,)
+        return_old = oldfu.recons3d_4nn_ctf(stack_name=self.stack_name,
+                list_proj=self.list_proj,
+                snr=1.0,
+                sign=1,
+                symmetry="c5",
+                verbose=0,
+                npad=2,
+                xysize=-1,
+                zsize=-1,)
+        values_new = return_new.get_3dview().flatten().tolist()[6730000:6730100]
+        values_old = return_old.get_3dview().flatten().tolist()[6730000:6730100]
+        self.assertTrue(allclose(values_new,values_old,atol=TOLERANCE))
+        self.assertTrue(allclose(values_new, [-0.008175757713615894, -0.014404426328837872, -0.017795974388718605, -0.020101090893149376, -0.021481061354279518, -0.01939339004456997, -0.013529766350984573, 0.0014526924351230264, 0.013484817929565907, 0.015350406058132648, 0.01491064764559269, 0.017620280385017395, 0.014526603743433952, 0.015079540200531483, 0.011095335707068443, 0.004298769868910313, 0.0017537475796416402, -0.0076746344566345215, -0.01712702587246895, -0.011844023130834103, -0.003010805929079652, 0.0023578908294439316, 0.0008031950565055013, -0.0003840778081212193, 0.0014938651584088802, 0.0008141061989590526, 0.0033412654884159565, 0.007157742977142334, 0.003432744648307562, -0.0036114398390054703, -0.00023999399854801595, 0.003933003172278404, 0.009843285195529461, 0.02078092284500599, 0.012899406254291534, -0.0023981353733688593, -0.01044760923832655, -0.014151100069284439, -0.010718115605413914, 0.0003483918553683907, 0.0032131776679307222, 0.00445888377726078, 0.0100170923396945, 0.01197141595184803, 0.00798965897411108, 0.0055170427076518536, 0.002322642132639885, -0.0005087124882265925, 0.006344383116811514, 0.016093365848064423, 0.013299107551574707, 0.006706612184643745, 0.007574137300252914, -0.000278101913863793, -0.007723006419837475, -0.014754452742636204, -0.015444238670170307, -0.008123097009956837, -0.00865654181689024, -0.005074080545455217, 0.00031706164008937776, -0.004637059755623341, -0.007329052779823542, -0.008187687955796719, -0.006155334413051605, -0.0033996431156992912, 0.0004196575318928808, 0.0017505600117146969, -0.00042223723721690476, -0.0028585041873157024, -0.00425497954711318, -0.004553338512778282, 0.005528306122869253, 0.014644039794802666, 0.010839340277016163, 3.9276215829886496e-05, -0.0045668394304811954, -0.010344775393605232, -0.013172119855880737, -0.01032797060906887, -0.006594072561711073, -0.011951446533203125, -0.013205481693148613, -0.005030252039432526, -0.006401057820767164, -0.010710644535720348, -0.013423201628029346, -0.008877635933458805, 0.0008411695016548038, 0.0021106053609400988, 0.0036782650277018547, 0.011087069287896156, 0.021000666543841362, 0.022073017433285713, 0.015972215682268143, 0.005850982386618853, 0.0008424059487879276, 0.006304286420345306, 0.01122179813683033, 0.004788603633642197], atol=TOLERANCE))
+
+    def test_no_list_proj(self):
+        return_new=fu.recons3d_4nn_ctf(stack_name=self.stack_name,
+                list_proj=[],
+                snr=1.0,
+                sign=1,
+                symmetry="c5",
+                verbose=0,
+                npad=2,
+                xysize=-1,
+                zsize=-1,)
+        return_old = oldfu.recons3d_4nn_ctf(stack_name=self.stack_name,
+                list_proj=[],
+                snr=1.0,
+                sign=1,
+                symmetry="c5",
+                verbose=0,
+                npad=2,
+                xysize=-1,
+                zsize=-1,)
+        values_new = return_new.get_3dview().flatten().tolist()[6730000:6730100]
+        values_old = return_old.get_3dview().flatten().tolist()[6730000:6730100]
+        self.assertTrue(allclose(values_new,values_old,atol=TOLERANCE))
+        self.assertTrue(allclose(values_new, [-0.0027141361497342587, -0.0016042115166783333, -0.0012538841692730784, -0.0001439655025023967, -0.0005658782320097089, -0.002757754409685731, -0.0031100143678486347, -0.00026046953280456364, -0.00024402266717515886, -0.0007060157367959619, -0.0004056012548971921, -0.0011630951194092631, -0.0011287948582321405, -0.0014167457120493054, -0.0014603992458432913, -0.0032042483799159527, -0.004441697150468826, -0.00438461359590292, -0.004383434541523457, -0.004857621621340513, -0.003259714925661683, -0.005108404438942671, -0.0073323496617376804, -0.004887132439762354, -0.004658443853259087, -0.004640433471649885, -0.0026153058279305696, -0.0034539492335170507, -0.0047066668048501015, -0.003140367567539215, -0.004809868987649679, -0.005156161729246378, -0.0046934690326452255, -0.004169596824795008, -0.0036508971825242043, -0.003153842408210039, -0.0031444935593754053, -0.0038237832486629486, -0.003443851601332426, -0.0014237675350159407, -0.0012638876214623451, -0.003036993322893977, -0.003424854716286063, -0.005451107397675514, -0.0060236286371946335, -0.006359062157571316, -0.007777389604598284, -0.005769011564552784, -0.0039445641450583935, -0.003457095008343458, -0.0038185957819223404, -0.0031649384181946516, -0.0026967362500727177, -0.001981216249987483, -0.0036444487050175667, -0.006993813905864954, -0.00798981636762619, -0.008669095113873482, -0.010004386305809021, -0.01010216400027275, -0.00875865388661623, -0.009229039773344994, -0.008642769418656826, -0.007968949154019356, -0.007398501038551331, -0.00847929809242487, -0.009401964023709297, -0.0070664663799107075, -0.007533595431596041, -0.008982239291071892, -0.00850770715624094, -0.006526491604745388, -0.006675747223198414, -0.007026358041912317, -0.00642756512388587, -0.005091938190162182, -0.005993829574435949, -0.005165192764252424, -0.006319826003164053, -0.00789443589746952, -0.006889526266604662, -0.007598149124532938, -0.009715101681649685, -0.00949602946639061, -0.0070150443352758884, -0.007071701809763908, -0.006843023467808962, -0.005015541333705187, -0.004300906788557768, -0.0059176539070904255, -0.007493783254176378, -0.005610593128949404, -0.004339412320405245, -0.004106355831027031, -0.002472139894962311, -0.0028181318193674088, -0.004513210151344538, -0.0054042283445596695, -0.005789866205304861, -0.005134963896125555], atol=TOLERANCE))
+
 
 
 class Test_recons3d_4nn_ctf_MPI(unittest.TestCase):
