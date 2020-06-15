@@ -204,7 +204,7 @@ void MrcIO::init()
 
 		is_8_bit_packed = (mrch.mode == MRC_UHEX || (mrch.imod_flags & 16)  ||  double_nx);
 
-		if (getenv("DISALLOW_PACKED_FORMAT") != NULL) {
+		if (getenv("DISALLOW_PACKED_FORMAT")) {
 			use_given_dimensions = true;
 			is_8_bit_packed = false;
 		}
@@ -267,7 +267,7 @@ void MrcIO::check_swap(const int * data, const char * filnam, bool show_errors,
 
 	int actual_stamp = MrcIO::generate_machine_stamp();
 
-	bool debug = (getenv("DEBUG_MRC_SANITY") != NULL);
+	bool debug = (getenv("DEBUG_MRC_SANITY"));
 
 	string errmsg;
 
@@ -324,7 +324,7 @@ void MrcIO::check_swap(const int * data, const char * filnam, bool show_errors,
 	}
 
 	if (debug  ||  (have_err  &&  show_errors)) {
-		if (filnam != NULL) {
+		if (filnam) {
 			printf ("file name = '%s'.\n", filnam);
 		}
 
