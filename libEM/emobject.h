@@ -313,11 +313,9 @@ namespace EMAN
 			vector < string > keys() const
 			{
 				vector < string > result;
-				map < string, string >::const_iterator p;
 
-				for (p = type_dict.begin(); p != type_dict.end(); p++) {
+				for (auto p = type_dict.begin(); p != type_dict.end(); p++)
 					result.push_back(p->first);
-				}
 
 				return result;
 			}
@@ -476,10 +474,8 @@ namespace EMAN
 		{
 			vector < string > result;
 
-			map < string, EMObject >::const_iterator p;
-			for (p = dict.begin(); p != dict.end(); p++) {
+			for (auto p = dict.begin(); p != dict.end(); p++)
 				result.push_back(p->first);
-			}
 
 			return result;
 		}
@@ -490,10 +486,8 @@ namespace EMAN
 		{
 			vector < EMObject > result;
 
-			map < string, EMObject >::const_iterator p;
-			for (p = dict.begin(); p != dict.end(); p++) {
+			for (auto p = dict.begin(); p != dict.end(); p++)
 				result.push_back(p->second);
-			}
 
 			return result;
 		}
@@ -514,7 +508,7 @@ namespace EMAN
 		 */
 		bool has_key(const string & key) const
 		{
-			map < string, EMObject >::const_iterator p = dict.find(key);
+			auto p = dict.find(key);
 			return p != dict.end();
 		}
 
@@ -582,9 +576,9 @@ namespace EMAN
 		{
 			Dict ret(*this);
 
-			for ( vector<string>::const_iterator it = excluded_keys.begin(); it != excluded_keys.end(); ++it ) {
-				if (ret.has_key(*it)) ret.erase(*it);
-			}
+			for (auto it = excluded_keys.begin(); it != excluded_keys.end(); ++it )
+				if (ret.has_key(*it))
+				    ret.erase(*it);
 
 			return ret;
 		}
@@ -592,8 +586,9 @@ namespace EMAN
 		Dict copy_exclusive_keys(const vector<string>& exclusive_keys) const
 		{
 			Dict ret;
-			for ( vector<string>::const_iterator it = exclusive_keys.begin(); it != exclusive_keys.end(); ++it ) {
-				if (has_key(*it)) ret[*it] = (*this)[*it];
+			for (auto it = exclusive_keys.begin(); it != exclusive_keys.end(); ++it ) {
+				if (has_key(*it))
+				    ret[*it] = (*this)[*it];
 			}
 
 			return ret;
@@ -818,8 +813,7 @@ namespace EMAN
 			const vector<string> para_keys = params.keys();
 //			std::cout << "the number of keys is " << para_keys.size() << std::endl; // PRB May 19th
 			const vector<string> valid_keys = i->get_param_types().keys();
-			typename vector<string>::const_iterator it;
-			for(it=para_keys.begin(); it!=para_keys.end(); ++it) {
+			for(auto it=para_keys.begin(); it!=para_keys.end(); ++it) {
 // 				std::cout << "the iterator  is " << *it << std::endl; // PRB May 19th
 				if( find(valid_keys.begin(), valid_keys.end(), *it) == valid_keys.end() ) {
 					throw InvalidParameterException(*it);
@@ -835,9 +829,8 @@ namespace EMAN
 
 	template < class T > vector < string > Factory < T >::get_list() {
 		init();
-		vector < string > result;
-		typename map < string, InstanceType >::const_iterator p;
-		for (p = my_instance->my_dict.begin(); p != my_instance->my_dict.end(); p++) {
+		vector<string> result;
+		for (auto p = my_instance->my_dict.begin(); p != my_instance->my_dict.end(); p++) {
 			result.push_back(p->first);
 		}
 
@@ -846,7 +839,7 @@ namespace EMAN
 
 	template < class T > void dump_factory()
 	{
-		vector < string > item_names = Factory < T >::get_list();
+		auto item_names = Factory<T>::get_list();
 
 		for (size_t i = 0; i < item_names.size(); i++) {
 			T *item = Factory < T >::get(item_names[i]);
@@ -861,8 +854,7 @@ namespace EMAN
 		vector < string > item_names = Factory < T >::get_list();
 		map<string, vector<string> >	factory_list;
 
-		typename vector<string>::const_iterator p;
-		for(p = item_names.begin(); p !=item_names.end(); ++p) {
+		for(auto p = item_names.begin(); p !=item_names.end(); ++p) {
 			T *item = Factory<T>::get(*p);
 
 			string name = item->get_name();
@@ -932,7 +924,7 @@ namespace EMAN
 		// this is really inserting OR individually replacing...
 		// the old data will be kept if it is not written over
 			TypeDict permissable_params = get_param_types();
-			for ( Dict::const_iterator it = new_params.begin(); it != new_params.end(); ++it )
+			for (auto it = new_params.begin(); it != new_params.end(); ++it )
 			{
 				if ( !permissable_params.find_type(it->first) )
 				{

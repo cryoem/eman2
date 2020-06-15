@@ -1709,12 +1709,10 @@ vector<EMObject> EMUtil::get_all_attributes(const string & file_name, const stri
 	Assert(file_name != "");
 	Assert(attr_name != "");
 
-	vector< shared_ptr<EMData> > vpImg = EMData::read_images(file_name, vector<int>(), true);
-	vector< shared_ptr<EMData> >::const_iterator iter;
+	auto vpImg = EMData::read_images(file_name, vector<int>(), true);
 
-	for (iter = vpImg.begin(); iter!=vpImg.end(); ++iter) {
+	for (auto iter = vpImg.begin(); iter!=vpImg.end(); ++iter)
 		v.push_back((*iter)->get_attr_default(attr_name));
-	}
 
 	return v;
 }
