@@ -67,14 +67,8 @@ def main():
 		for ir, rf in enumerate(refs):
 			cmd="e2spt_align.py {} {} --threads {} --path {} --iter {} --sym {} --verbose {}".format(ptcls, rf,  options.threads, path, itr, options.sym, options.verbose)
 			
-			
-			### in case e2spt_align get segfault....
-			ret=1
-			while ret>0:
-				try: os.remove(jsali)
-				except:pass
 
-				ret=run(cmd)
+			run(cmd)
 				
 			os.rename(jsali, jscls[ir])
 		
