@@ -1665,7 +1665,10 @@ class DBDict(object):
         # 				r = loads(self.bdb.get(self.key_translation_dict[dumps(key,-1)],txn=self.txn))
         # 			except:
         # 				return dfl
-        r = self.load_item(key, txn=self.txn)
+        try:
+            r = self.load_item(key, txn=self.txn)
+        except:
+            return dfl
         if isinstance(r, dict) and "is_complex_x" in r:
             pkey = "%s/%s_" % (self.path, self.name)
             rnx, rny, rnz = r["nx"], r["ny"], r["nz"]
