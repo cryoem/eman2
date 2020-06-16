@@ -51,7 +51,7 @@ def main():
 		ds=1.0/(apix*bxsz)
 
 		c1d=[]
-		for i in idx[:1000]:
+		for i in idx[:1000].tolist():
 			e=EMData(pname, i, True)
 			ctf=e["ctf"]
 			ctf.bfactor=0
