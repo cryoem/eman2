@@ -30,7 +30,7 @@
  * */
 
 #include "emdata.h"
-#include "all_imageio.h"
+#include "io/all_imageio.h"
 #include "ctf.h"
 #include "processor.h"
 #include "aligner.h"

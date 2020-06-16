@@ -38,14 +38,14 @@
 
 #include <utility>
 
-#include "all_imageio.h"
+#include "io/all_imageio.h"
 #include "portable_fileio.h"
 #include "emcache.h"
 #include "emdata.h"
 #include "ctf.h"
 #include "emassert.h"
 #include "exception.h"
-#include "hdf_filecache.h"
+#include "io/hdf_filecache.h"
 
 
 //#ifdef EMAN2_USING_CUDA_MALLOC
