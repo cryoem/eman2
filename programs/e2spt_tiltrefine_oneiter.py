@@ -40,12 +40,16 @@ def main():
 	parser.add_argument("--refineastep", type=float,help="Mean angular variation for refine alignment", default=2.)
 	parser.add_argument("--refinentry", type=int,help="number of starting points for refine alignment", default=4)
 	parser.add_argument("--maxshift", type=int,help="maximum shift allowed", default=8)
+	parser.add_argument("--localrefine", action="store_true", default=False ,help="local refinement")
+	parser.add_argument("--defocus", action="store_true", default=False ,help="refine defocus. Still under development")
+	parser.add_argument("--seedmap", action="store_true", default=False ,help="seed")
 
 
 	parser.add_argument("--padby", type=float,default=2.0, help="pad by factor. default is 2")
 	parser.add_argument("--maxres", type=float,default=-1, help="max resolution for cmp")
 	parser.add_argument("--minres", type=float,default=-1, help="min resolution for cmp")
 	parser.add_argument("--sym", type=str,help="symmetry. will use symmetry from spt refinement by default", default="c1")
+	parser.add_argument("--smooth", type=int,help="Smooth trajectory per image based on nearby particles. Still under development", default=-1)
 	parser.add_argument("--ppid", type=int,help="ppid...", default=-1)
 	parser.add_argument("--nkeep", type=int,help="", default=1)
 	parser.add_argument("--verbose","-v", type=int,help="Verbose", default=0)
@@ -127,6 +131,12 @@ def main():
 	
 	
 	allscr=[d["score"] for d in dics]
+	if options.smooth>0 or options.defocus:
+		### need to add per tilt smoothing later...
+		s=np.array(allscr)
+		np.savetxt(lname.replace(".lst", "score.txt"), s)
+		print(s.shape)
+		return
 	
 	maxl=np.max([len(s) for s in allscr])
 	maxv=np.max(np.concatenate(allscr))
@@ -174,10 +184,16 @@ def main():
 		m3dpar="--parallel {}".format(options.parallel)
 	else:
 		m3dpar=""
-	cmd="e2make3dpar.py --input {inp} --output {out} --pad {pd} --padvol {pdv} --threads {trd} --outsize {bx} --apix {apx} --mode gauss_2 --keep {kp} --sym {sm} {par}".format(
+		
+	if options.seedmap:
+		seed="--seedmap "+threedname
+	else:
+		seed=""
+	
+	cmd="e2make3dpar.py --input {inp} --output {out} --pad {pd} --padvol {pdv} --threads {trd} --outsize {bx} --apix {apx} --mode gauss_2 --keep {kp} --sym {sm} {seed} {par}".format(
 		inp=lname, 
 		out=threedout,
-		bx=bxsz, pd=int(bxsz*pb), pdv=int(bxsz*pb), apx=apix, kp=options.keep, sm=options.sym, trd=options.threads,par=m3dpar)
+		bx=bxsz, pd=int(bxsz*pb), pdv=int(bxsz*pb), apx=apix, kp=options.keep, sm=options.sym, trd=options.threads,par=m3dpar, seed=seed)
 	
 	run(cmd)
 
@@ -199,7 +215,6 @@ def gen_xfs(symc, astep):
 	for i in range(1,ns):
 		xfs.extend([xf.get_sym(symc, i) for xf in xfs0])
 
-		
 		
 	xfmat=np.array([x.get_matrix() for x in xfs])
 	xfmat=xfmat.reshape((-1, 3,4 ))[:, :,:3]
@@ -241,10 +256,9 @@ class SptNewTltRefineTask(JSTask):
 	
 	
 	def execute(self, callback):
-		
-			
+		time0=time.time()
 		def test_rot(x, returnxf=False):
-			
+			rotcount.append(0)
 			fullxf=False
 			if isinstance(x, Transform):
 				xf=x
@@ -254,25 +268,17 @@ class SptNewTltRefineTask(JSTask):
 					xf=Transform({"type":"eman", "alt":x[0], "az":x[1], "phi":x[2]})
 				else:
 					xf=Transform({"type":"eman", "alt":x[0], "az":x[1], "phi":x[2],"tx":x[3], "ty":x[4]})
-					fullxf=True
-							
-				#r=(np.random.randn(4)*astep*.1).tolist()
-				#xfrnd=Transform({"type":"spin", "n1":r[0], "n2":r[1], "n3":r[2], "omega":r[3]})
-				#xf=xf*xfrnd
-			   
+					fullxf=True			   
 			
 			pj=refsmall.project('gauss_fft',{"transform":xf, "returnfft":1})
 			
-			if fullxf:
-				x0=ss//8; x1=int(ss*.45)
-				
-			else:
-				x0=ss//8; x1=ss//3
-				ccf=imgsmall.calc_ccf(pj)
-				pos=ccf.calc_max_location_wrap(mxsft, mxsft, 0)
-				xf.set_trans(pos)
-				pj.translate(xf.get_trans())
-			
+			x0=ss//8; x1=int(ss*.4)
+			#x0=ss//8; x1=ss//3
+			ccf=imgsmall.calc_ccf(pj)
+			pos=ccf.calc_max_location_wrap(mxsft, mxsft, 0)
+			xf.set_trans(pos)
+			pj.translate(xf.get_trans())
+		
 			fsc=imgsmall.calc_fourier_shell_correlation(pj)
 			fsc=np.array(fsc).reshape((3,-1))[:, x0:x1]
 			wt=fsc[2]
@@ -280,10 +286,7 @@ class SptNewTltRefineTask(JSTask):
 				wt*=ctfcv[x0:x1]
 			
 			scr=-np.sum(fsc[1]*wt)/np.sum(wt)
-			#scr=-np.mean(fsc[1])
-
-			#newxfs.append(xf)
-			#score.append(scr)
+			
 			if returnxf:
 				return scr, xf
 			else:
@@ -298,11 +301,7 @@ class SptNewTltRefineTask(JSTask):
 
 		ref=EMData(data["ref"],0)
 		ny0=ny=ref["ny"]
-		#ref.process_inplace("threshold.belowtozero")
-		#ref.process_inplace("math.gausskernelfix",{"gauss_width":2})
-		#pad=256
-		#ref.clip_inplace(Region((ny0-pad)//2,(ny0-pad)//2,(ny0-pad)//2, pad, pad,pad))
-		#ny=pad
+		
 		if options.maxres>0:
 			maxrescut=ceil(ny*ref["apix_x"]/options.maxres)
 			maxy=good_size(maxrescut*3)
@@ -314,39 +313,48 @@ class SptNewTltRefineTask(JSTask):
 		ref=ref.do_fft()
 		ref.process_inplace("xform.phaseorigin.tocenter")
 		ref.process_inplace("xform.fourierorigin.tocenter")
-		ssrg=2**np.arange(5,12, dtype=int)
-		#ssrg[0]=64
-		#ssrg[:2]=ssrg[:2]*3/4
+		ssrg=2**np.arange(4,12, dtype=int)
+		ssrg[:2]=ssrg[:2]*3/2
 		ssrg=ssrg.tolist()
-		ss0=ssrg[0]
-		
-			
 		
 		for infoi, infos in enumerate(data["info"]):
+			rotcount=[]
 			ii=infos[0]
 			info=infos[1]
 			
 			img=EMData(info[1],info[0])
+			if img["ny"]!=ny: # box size mismatch. simply clip the box
+				by=img["ny"]
+				img=img.get_clip(Region((by-ny)/2, (by-ny)/2, ny,ny))
+				
 			img.process_inplace("mask.soft",{"outer_radius":-10,"width":10})
-			#img.process_inplace("math.gausskernelfix",{"gauss_width":2,"invert":1})
-			#img.clip_inplace(Region((ny0-pad)//2,(ny0-pad)//2, pad, pad))
 			img=img.do_fft()
 			img.process_inplace("xform.phaseorigin.tocenter")
 			img.process_inplace("xform.fourierorigin.tocenter")
 			path=[]
 			
-			npos=64
-			lastastep=1e5
+			npos=32
+			istart=0
 			initxfs=[]
 				
 			if not options.fromscratch and isinstance(info[-1], str):
-				
 				for xfs in info[-1].split(';'):
 					initxf=eval(xfs)
 					if "score" in initxf:
 						initxf.pop('score')
-					
 					initxfs.append(Transform(initxf))
+					
+			if options.localrefine:	
+				newxfs=[]
+				istart=1
+				npos=npos//2
+				for ixf in initxfs:
+					ix=ixf.get_params("eman")
+					for i in range(npos):
+						d={"type":"eman","tx":ix["tx"], "ty":ix["ty"]}
+						for ky in ["alt", "az", "phi"]:
+							d[ky]=ix[ky]+np.random.randn()*5./np.pi*2
+						newxfs.append(Transform(d))
 				
 			if img.has_attr("ctf"):
 				ctf=img["ctf"]
@@ -359,7 +367,8 @@ class SptNewTltRefineTask(JSTask):
 			else:
 				ctfwt=False
 				
-			for si, ss in enumerate(ssrg):
+			for si in range(istart, len(ssrg)):
+				ss=ssrg[si]
 				if ss>=maxy: 
 					ss=maxy
 					
@@ -369,15 +378,13 @@ class SptNewTltRefineTask(JSTask):
 					
 				mxsft=ss//8
 				astep=89.999/floor((np.pi/(3*np.arctan(2./ss))))
-				#astep*=.5
-				sym=parsesym(options.sym)
+				sym=Symmetries.get(options.sym)
 				score=[]
 				
 				if options.debug:
 					print(ss, npos, astep)
 					
-				if ss==ss0:
-					#xfs=gen_xfs(options.sym, astep)
+				if si==0:
 					xfs=sym.gen_orientations("saff",{"delta":astep,"phitoo":astep,"inc_mirror":1})
 					newxfs=[]
 					for xf in xfs:
@@ -387,7 +394,8 @@ class SptNewTltRefineTask(JSTask):
 				
 				else:
 					xfs=newxfs
-					xfs.extend(initxfs)
+					if len(initxfs)>0:	
+						xfs.append(initxfs[0])
 					newxfs=[]
 					simplex=np.vstack([[0,0,0], np.eye(3)*astep])
 					for xf0 in xfs:
@@ -432,6 +440,8 @@ class SptNewTltRefineTask(JSTask):
 			r={"idx":ii, "xform.align3d":newxfs[:options.nkeep], "score":newscore[:options.nkeep], "path":path}
 			callback(100*float(infoi/len(self.data["info"])))
 			rets.append(r)
+			if options.debug:
+				print('time',time.time()-time0, len(rotcount))
 			
 		return rets
 
@@ -447,20 +457,23 @@ class SptTltRefineTask(JSTask):
 	
 	
 	def execute(self, callback):
-		
+		time0=time.time()
 		options=self.options
 		data=self.data
 		callback(0)
 		rets=[]
 		a=EMData(data["ref"],0)
-		if options.maxres>0 and options.shrink>1:
-			a.process_inplace("math.meanshrink",{"n":options.shrink})
 		
-		if options.scipytest:
-			a.process_inplace("xform.phaseorigin.tocorner")
-			a=a.do_fft()
-			a.process_inplace("xform.fourierorigin.tocorner")
-			
+		#maxsft=8
+		#trans=np.indices((maxsft*2+1, maxsft*2+1)).reshape((2,-1)).T-maxsft
+		rot=np.indices((5, 5, 5)).reshape((3,-1)).T.astype(float)
+		rot=(rot-2)/2.
+		trans=np.indices((5, 5)).reshape((2,-1)).T.astype(float)
+		trans=trans-2
+		
+		#trans=np.indices((17,17)).reshape((2,-1)).T
+		#trans=(trans-8)/4.
+		
 		for infoi, infos in enumerate(data["info"]):
 			ii=infos[0]
 			info=infos[1]
@@ -473,7 +486,8 @@ class SptTltRefineTask(JSTask):
 				b.process_inplace("filter.lowpass.gauss", {"cutoff_freq":1./options.maxres})
 			
 			if b["ny"]!=a["ny"]: # box size mismatch. simply clip the box
-				b=b.get_clip(Region((b["nx"]-a["ny"])/2, (b["ny"]-a["ny"])/2, a["ny"],a["ny"]))
+				if not options.defocus:
+					b=b.get_clip(Region((b["nx"]-a["ny"])//2, (b["ny"]-a["ny"])//2, a["ny"],a["ny"]))
 				
 			if type(info[-1])==str:
 				initxf=eval(info[-1])
@@ -482,36 +496,65 @@ class SptTltRefineTask(JSTask):
 				
 			if options.transonly:
 				
+				scr=[]
+				for r in [[0,0,0]]:#rot.tolist():
+					xf=Transform({"type":"eman","tx":initxf["tx"], "ty":initxf["ty"], "alt":initxf["alt"]+r[0],"az":initxf["az"]+r[1],"phi":initxf["phi"]+r[2]})
+					pj=a.project("standard", xf)
+					
+					for t in trans.tolist():
+						pjts=pj.copy()
+						pjts.translate(t[0], t[1],0)
+						s=b.cmp("frc",pjts, {"minres":30, "maxres":5})
+						scr.append(s)
+					
+				r={"idx":ii,"xform.align3d":[xf], "score":scr}
+
+				
+				#c=b.align("translational", pj, {"intonly":0, "maxshift":options.maxshift})
+				#trans=c["xform.align2d"].get_trans()
+				#xf.translate(-trans)
+				#scr=c.cmp("frc",pj)
+			
+			elif options.defocus:
 				xf=Transform({"type":"eman","tx":initxf["tx"], "ty":initxf["ty"], "alt":initxf["alt"],"az":initxf["az"],"phi":initxf["phi"]})
 				pj=a.project("standard", xf)
-				c=b.align("translational", pj, {"intonly":0, "maxshift":options.maxshift})
-				trans=c["xform.align2d"].get_trans()
-				xf.translate(-trans)
-				scr=c.cmp("frc",pj)
-				r={"idx":ii,"xform.align3d":xf, "score":scr}
-				#print(ii, (initxf["tx"], initxf["ty"]), trans)
-			
+				pj=pj.get_clip(Region((pj["nx"]-b["nx"])//2, (pj["ny"]-b["ny"])//2, b["ny"],b["ny"]))
+				
+				ctf=b["ctf"]
+				fft1=b.do_fft()
+				flipim=fft1.copy()
+				ctf.compute_2d_complex(flipim,Ctf.CtfType.CTF_SIGN)
+				fft1.mult(flipim)
+				e=fft1.do_ift()
+				
+				fsc=e.calc_fourier_shell_correlation(pj)
+				fsc=np.array(fsc).reshape((3,-1))[1]
+				ds=1./(e["apix_x"]*e["ny"])
+				zrg=np.arange(-.3,.3,0.01)
+				scr=[]
+				for dz in zrg:
+					ctf1=EMAN2Ctf(ctf)
+					ctf1.defocus=ctf1.defocus+dz
+					c=ctf1.compute_1d(e["nx"]+2, ds, Ctf.CtfType.CTF_SIGN)
+					c=fsc*c
+					scr.append(np.sum(c[len(c)//3:len(c)*2//3]))
+				
+				r={"idx":ii,"xform.align3d":[xf], "score":scr}
+				
+				
 			elif options.fromscratch:
-				alignpm={"verbose":0,"sym":options.sym}
-				mriter=[False]
+				alignpm={"verbose":options.verbose,"sym":options.sym,"maxres":options.maxres}
 				dic=[]
 				
-				for mirror in mriter:
-					
-					if mirror:
-						b1=b.process("xform.flip", {"axis":'x'})
-					else:
-						b1=b.copy()
-						
-					b1=b1.do_fft()
-					b1.process_inplace("xform.phaseorigin.tocorner")
-					c=b1.xform_align_nbest("rotate_translate_2d_to_3d_tree",a, alignpm, 1)
-					dic.append(c[0])
+				b1=b.do_fft()
+				b1.process_inplace("xform.phaseorigin.tocorner")
+				c=b1.xform_align_nbest("rotate_translate_2d_to_3d_tree",a, alignpm, 1)
+				dic.append(c[0])
 				
 				bestmr=int(np.argmin([d["score"] for d in dic]))
 				xf=dic[bestmr]["xform.align3d"]
 				xf.set_mirror(bestmr)
-				r={"idx":ii, "xform.align3d":xf, "score":dic[bestmr]["score"]}
+				r={"idx":ii, "xform.align3d":[xf], "score":[dic[bestmr]["score"]]}
 			
 			else:
 				nxf=options.refinentry
@@ -534,15 +577,12 @@ class SptTltRefineTask(JSTask):
 
 				xf=c[0]["xform.align3d"]
 				xf.set_mirror(initxf["mirror"])
-				r={"idx":ii,"xform.align3d":xf, "score":c[0]["score"]}
+				r={"idx":ii,"xform.align3d":[xf], "score":[c[0]["score"]]}
 			
-			#print(ii,info, r)
-			if options.shrink>1:
-				xf=r["xform.align3d"]
-				xf.set_trans(options.shrink*xf.get_trans())
-				r["xform.align3d"]=xf
+			
 			callback(100*float(infoi/len(self.data["info"])))
 			rets.append(r)
+			#print('time', time.time()-time0)
 			#print(infoi,r)
 		#callback(100)
 			
