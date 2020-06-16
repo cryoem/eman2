@@ -118,6 +118,7 @@ def main():
 	parser.add_argument("--setsf",type=str,help="Force the structure factor to match a 'known' curve prior to postprocessing (<filename>, auto or none). default=none",default="none")
 	parser.add_argument("--postprocess", metavar="processor_name(param1=value1:param2=value2)", type=str, action="append", help="postprocessor to be applied to the 3D volume once the reconstruction is completed. There can be more than one postprocessor, and they are applied in the order in which they are specified. See e2help.py processors for a complete list of available processors.")
 	parser.add_argument("--apix",metavar="A/pix",type=float,help="A/pix value for output, overrides automatic values",default=None)
+	parser.add_argument("--useseedasref", action="store_true", default=False, help="use seed map as reference to weight the particles.")
 
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default=None)
 	
@@ -271,13 +272,24 @@ def main():
 			
 			options.parallel=None
 			
-	
+	refmap=None
 	if options.seedmap!=None :
-		seed=EMData(options.seedmap)
-		seed.clip_inplace(Region(old_div((nx-padvol[0]),2),old_div((ny-padvol[1]),2),old_div((nslice-padvol[2]),2),padvol[0],padvol[1],padvol[2]))
+		seed=EMData(options.seedmap)	
+		#seed.clip_inplace(Region(old_div((nx-padvol[0]),2),old_div((ny-padvol[1]),2),old_div((nslice-padvol[2]),2),padvol[0],padvol[1],padvol[2]))
+		seed=seed.get_clip(Region((seed["nx"]-padvol[0])//2,(seed["ny"]-padvol[1])//2,(seed["nz"]-padvol[2])//2,padvol[0],padvol[1],padvol[2]))
+		
+		if options.useseedasref:
+			refmap=seed.copy()	
+			refmap=refmap.do_fft()
+			refmap.process_inplace("xform.phaseorigin.tocenter")
+			refmap.process_inplace("xform.fourierorigin.tocenter")
+			
+		#seed.process_inplace("threshold.belowtozero",{"minval":0})
+		seed.process_inplace("xform.phaseorigin.tocenter")
 		seed.do_fft_inplace()
 	else:
 		seed=None
+		
 		
 
 
@@ -303,7 +315,7 @@ def main():
 
 			tids=[]
 			for t in tasks:
-				task = Make3dTask(t, seed, options)
+				task = Make3dTask(t, seed, refmap, options)
 				tid=etc.send_task(task)
 				tids.append(tid)
 
@@ -339,15 +351,19 @@ def main():
 			del etc
 			
 		else:
-			threads=[threading.Thread(target=reconstruct,args=(data[i::options.threads],recon,options.preprocess,options.pad,
-					options.fillangle,options.altedgemask,max(options.verbose-1,0),options.input.endswith(".lst"))) for i in range(options.threads)]
+			threads=[threading.Thread(target=reconstruct,args=(
+				data[i::options.threads],
+				recon,options.preprocess,
+				options.pad,
+				options.fillangle,
+				options.altedgemask,
+				max(options.verbose-1,0),
+				options.input.endswith(".lst"),
+				refmap
+				)) for i in range(options.threads)]
 
 			if it==0:
 				if options.seedmap!=None :
-					#seed=EMData(options.seedmap)
-			#		seed.process_inplace("normalize.edgemean")
-					#seed.clip_inplace(Region(old_div((nx-padvol[0]),2),old_div((ny-padvol[1]),2),old_div((nslice-padvol[2]),2),padvol[0],padvol[1],padvol[2]))
-					#seed.do_fft_inplace()
 					if options.seedweightmap==None:  
 						recon.setup_seed(seed,options.seedweight)
 					else:
@@ -546,6 +562,12 @@ def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,preprocess):
 						score=dc.pop("score")
 					else:
 						score=2
+						
+					if "dfdf" in dc:
+						dfdf=dc.pop("dfdf")
+					else:
+						dfdf=0
+						
 					elem={"xform":Transform(dc)}
 					
 					if score<2:
@@ -559,6 +581,7 @@ def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,preprocess):
 					elem["filename"]=inputfile
 					elem["filenum"]=i
 					elem["fileslice"]=-1
+					elem["dfdf"]=dfdf
 
 					data.append(elem)
 			else:
@@ -625,7 +648,7 @@ def get_processed_image(filename,nim,nsl,preprocess,pad,nx=0,ny=0):
 
 	return ret
 
-def reconstruct(data,recon,preprocess,pad,fillangle,altmask,verbose=0, lstinput=False):
+def reconstruct(data,recon,preprocess,pad,fillangle,altmask,verbose=0, lstinput=False, ref=None):
 	"""Do an actual reconstruction using an already allocated reconstructor, and a data list as produced
 	by initialize_data(). preprocess is a list of processor strings to be applied to the image data in the
 	event that it hasn't already been read into the data array. start and startweight are optional parameters
@@ -651,14 +674,13 @@ def reconstruct(data,recon,preprocess,pad,fillangle,altmask,verbose=0, lstinput=
 	ptcl=0
 	for i,elem in enumerate(data):
 		# get the image to insert
-		try:
+		if "data" in elem:
 			img=elem["data"]
 			if img["sigma"]==0 : contine
 			if not img.has_attr("reconstruct_preproc") :
 				img=recon.preprocess_slice(img,elem["xform"])
 				elem["data"]=img		# cache this for use in later iterations
-		except:
-#			print traceback.print_exc()
+		else:
 			if elem["fileslice"]>=0 : img=get_processed_image(elem["filename"],elem["filenum"],elem["fileslice"],preprocess,pad,elem["nx"],elem["ny"])
 			else : img=get_processed_image(elem["filename"],elem["filenum"],-1,preprocess,pad)
 			if img["sigma"]==0 : continue
@@ -673,11 +695,32 @@ def reconstruct(data,recon,preprocess,pad,fillangle,altmask,verbose=0, lstinput=
 				xf.set_rotation({"type":"eman"})
 				#### inverse the translation so make3d matches projection 
 				xf=xf.inverse()
+				
+			if "dfdf" in elem:
+				ctf=img["ctf"]
+				fft1=img.do_fft()
+				flipim=fft1.copy()
+				ctf.compute_2d_complex(flipim,Ctf.CtfType.CTF_SIGN)
+				fft1.mult(flipim)
+				ctf1=EMAN2Ctf(ctf)
+				ctf1.defocus=ctf1.defocus+elem["dfdf"]
+				ctf1.compute_2d_complex(flipim,Ctf.CtfType.CTF_SIGN)
+				fft1.mult(flipim)
+				img=fft1.do_ift()
 			
 			img=recon.preprocess_slice(img,xf)	# no caching here, with the lowmem option
 #		img["n"]=i
 #		if i==7 : display(img)
-
+		if ref:
+			xf=Transform(elem["xform"].get_rotation("eman"))
+			pj=ref.project('gauss_fft',{"transform":xf, "returnfft":1})
+			fsc=img.calc_fourier_shell_correlation(pj)
+			fsc=np.array(fsc).reshape((3,-1))[1]
+			fsc[:4]=1;fsc=np.clip(fsc+.1, 1e-2, 1);
+			img.process_inplace("filter.radialtable", {"table":fsc.tolist()})
+			elem["weight"]=1
+			#exit()
+			       
 		rd=elem["xform"].get_rotation("eman")
 		if verbose>0 : print(" %d/%d\r"%(i,len(data)), end=' ')
 		sys.stdout.flush()
@@ -706,9 +749,9 @@ def reconstruct(data,recon,preprocess,pad,fillangle,altmask,verbose=0, lstinput=
 class Make3dTask(JSTask):
 	
 	
-	def __init__(self, inp, seed, options):
+	def __init__(self, inp, seed, refmap, options):
 		
-		data={"data":inp,"seed":seed}
+		data={"data":inp,"seed":seed, "ref":refmap}
 		JSTask.__init__(self,"Make3d",data,{},"")
 		self.options=options
 	
@@ -718,6 +761,7 @@ class Make3dTask(JSTask):
 		callback(0)
 		data=self.data["data"]
 		seed=self.data["seed"]
+		ref=self.data["ref"]
 		options=self.options
 		
 		padvol=options.padvol3
@@ -731,7 +775,7 @@ class Make3dTask(JSTask):
 			if seed==None:
 				recon.setup()
 			else:
-				recon.setup_seed(seed,1.0)
+				recon.setup_seed(seed,options.seedweight)
 
 		else :
 			a = {
@@ -747,7 +791,10 @@ class Make3dTask(JSTask):
 			a["normout"]=normvol
 			
 			recon=Reconstructors.get("fourier", a)
-			recon.setup()
+			if seed==None:
+				recon.setup()
+			else:
+				recon.setup_seed(seed,options.seedweight)
 			
 			
 		reconstruct(
@@ -758,7 +805,8 @@ class Make3dTask(JSTask):
 			options.fillangle,
 			options.altedgemask,
 			max(options.verbose-1,0),
-			options.input.endswith(".lst")
+			options.input.endswith(".lst"),
+			ref
 			)
 		
 		output = recon.finish(False)
