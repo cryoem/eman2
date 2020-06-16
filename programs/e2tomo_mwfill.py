@@ -319,7 +319,7 @@ def model_genr(input_shape):
 	x3=tf.keras.layers.Conv2D(16, 3, activation="relu", strides=(2,2), padding="same", use_bias=False)(x2)
 
 	x4=tf.keras.layers.Conv2D(16, 3, activation="relu", padding="same", use_bias=False)(x3)
-	
+	x4=tf.keras.layers.Concatenate()([x4, x3 ])
 	
 	y2=tf.keras.layers.Conv2DTranspose(16, 3, activation="relu", strides=(2,2), padding="same", use_bias=False)(x4)
 	y2=tf.keras.layers.Concatenate()([x2, y2, ])
