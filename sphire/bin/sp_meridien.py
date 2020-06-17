@@ -1799,7 +1799,7 @@ def get_shrink_data(
 
 
 def get_anger(angle1, angle2):
- """
+    """
     Calculates difference between two angles.
 
     Arguments:
