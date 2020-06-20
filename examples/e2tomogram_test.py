@@ -1025,6 +1025,91 @@ def make_tile_with_thr(args):
 	
 	return
 
+#### subthread for making tomogram by tiles. similar to make_tomogram, just for small cubes
+def make_tile_with_median(args):
+	jsd, imgs, tpm, sz, pad, stepx, stepy, outz,options=args
+	reconf=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":options.reconmode})
+	reconm=Reconstructors.get("real_median", {"sym":'c1',"size":[sz,sz,sz]})
+
+	if stepx in (0,1) and stepy==0: 
+		try: os.unlink("test_tilt.hdf")
+		except: pass
+		try: os.unlink("test_tile.hdf")
+		except: pass
+
+	# preprocess slices, means we double the slice memory requirement, but will generally be small
+	# compared to volume anyway. May be unnecessary, but not sure if it's safe to change imgs
+	ppimgs=[]
+	pprimgs=[]
+	for i in range(len(imgs)):
+		t=tpm[i]
+		m=imgs[i]
+		if m["nx"]==1:
+			continue
+		m.process_inplace("filter.ramp")
+		m.process_inplace("xform",{"alpha":-t[2]})
+		xf=Transform({"type":"xyz","ytilt":t[3],"xtilt":t[4]})
+
+		dy=(pad//2)-np.cos(t[3]*np.pi/180.)*pad/2
+		msk=EMData(pad, pad)
+		msk.to_one()
+		edge=(sz//10)
+		msk.process_inplace("mask.zeroedge2d",{"x0":dy+edge, "x1":dy+edge, "y0":edge, "y1":edge})
+		msk.process_inplace("mask.addshells.gauss",{"val1":0, "val2":edge})
+	
+		m.mult(msk)
+		mp=reconf.preprocess_slice(m, xf)
+		if mp.has_attr("ctf") : mp.process_inplace("filter.ctfcorr.simple",{"useheader":1,"phaseflip":1,"hppix":2})
+		else : print("No CTF found for tilt-series, consider running CTF determination")
+		mp.set_complex_at(0,0,0)		# make sure the mean value is consistent (0) in all of the images
+		ppimgs.append((mp,xf))
+		
+		# kind of cheating here since we aren't preprocessing with the other reconstructor, but we know it doesn't do anything, so...
+		mpr=mp.process("xform.phaseorigin.tocenter").do_ift()
+		pprimgs.append((mpr,xf))
+
+
+	# median reconstruction
+	reconm.setup()
+	for i in range(len(ppimgs)):
+		reconm.insert_slice(pprimgs[i][0],pprimgs[i][1],1)
+		if stepx in (-0,1) and stepy==0: 
+			pprimgs[i][0].write_image("test_tilt.hdf",-1)
+	mimage = reconm.finish(False)
+	if stepx in (-0,1) and stepy==0: 
+		mimage.write_image("test_tile.hdf",0)
+	offs=(sz-pad)//2
+	mimage=mimage.get_clip(Region(offs,offs,offs,pad,pad,pad)).do_fft().process("xform.phaseorigin.tocorner")	# prepare for use as a Fourier seed
+	
+	# Fourier reconstruction
+	reconf.setup_seed(mimage,0.1)
+	
+	for i in range(len(ppimgs)):
+		prj=reconf.projection(ppimgs[i][1],1)
+		prj["apix_x"]=apix_x
+		prj["apix_y"]=apix_y
+		prj["apix_z"]=apix_z
+		tmp=ppimgs[i][0].process("xform.phaseorigin.tocenter")
+		ppimgs[i][0].process_inplace("filter.matchto",{"to":prj})
+		
+	for i in range(len(ppimgs)):
+		reconf.insert_slice(ppimgs[i][0],ppimgs[i][1],1)
+		if frac==0 and stepx in (-0,1) and stepy==0: 
+			ppimgs[i][0].write_image("test_tilt.hdf",-1)
+		
+	threed=reconf.finish(True)
+	threed["apix_x"]=apix_x
+	threed["apix_y"]=apix_y
+	threed["apix_z"]=apix_z
+		
+	threed.clip_inplace(Region((pad-sz)//2, (pad-sz)//2, (pad-outz)//2, sz, sz, outz))
+	if stepx in (0,1) and stepy==0 :threed.write_image("test_tile.hdf",1)
+	threed.process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.filterto})
+	#threed.process_inplace("filter.highpass.gauss",{"cutoff_pixels":2})
+	jsd.put( [stepx, stepy, threed])
+	
+	return
+
 global wlock
 wlock=0
 #### subthread for making tomogram by tiles. similar to make_tomogram, just for small cubes
@@ -1443,8 +1528,8 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 
 			jobs.append((jsd, tiles, tpm, sz, pad, stepx, stepy, outz, options))
 	
-	thrds=[threading.Thread(target=make_tile_with_pnthr,args=([i])) for i in jobs if i[5] in (0,1) and i[6]==0]
-#	thrds=[threading.Thread(target=make_tile_with_pnthr,args=([i])) for i in jobs]
+#	thrds=[threading.Thread(target=make_tile_with_median,args=([i])) for i in jobs if i[5] in (0,1) and i[6]==0]
+	thrds=[threading.Thread(target=make_tile_with_median,args=([i])) for i in jobs]
 	print("now start threads...")
 	thrtolaunch=0
 	tsleep=threading.active_count()

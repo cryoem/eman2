@@ -914,6 +914,88 @@ namespace EMAN
 		EMData* preprocess_slice(const EMData* const slice, const Transform& t);
 	};
 
+	/** Real space 3D reconstruction using per-voxel median.
+     *
+     * Real-space reconstruction similar to unfiltered back-projection, but computing the median rather than the mean value.
+     */
+	class RealMedianReconstructor:public Reconstructor, public ReconstructorVolumeData
+	{
+	  public:
+		RealMedianReconstructor() {  }
+
+		virtual ~RealMedianReconstructor() {}
+
+		virtual void setup();
+
+	  	/** While you can just insert unprocessed slices, if you call preprocess_slice yourself, and insert the returned
+		 * slice instead, repeatedly, it can save a fair bit of computation. The default operation just returns a copy
+		 of the image, as the preprocessing is reconstructor-specific.
+	  	 * @return the processed slice
+	  	 * @param slice the slice to be prepocessed
+	  	 * @param t transform
+	  	 * @exception InvalidValueException when the specified padding value is less than the size of the images
+		 */
+		virtual EMData* preprocess_slice( const EMData* const slice, const Transform& t = Transform() );
+		
+		/** Insert an image slice to the reconstructor. To insert multiple
+		 * image slices, call this function multiple times.
+		 *
+		 * @param slice Image slice.
+		 * @param euler Euler angle of this image slice.
+	  	 * @param weight A weighting factor for this slice, generally the number of particles in a class-average. May be ignored by some reconstructors
+		 * @return 0 if OK. 1 if error.
+		 */
+		virtual int insert_slice(const EMData* const slice, const Transform & euler,const float weight);
+
+		/** Dummy function which always returns the same values.
+	  	 * @param input_slice The EMData slice to be compared
+	  	 * @param euler The orientation of the slice as a Transform object
+	  	 * @param weight A weighting factor for this slice, generally the number of particles in a class-average. May be ignored by some reconstructors
+		 * @param sub Flag indicating whether to subtract the slice from the volume before comparing. May be ignored by some reconstructors
+		 * @return 0 if OK. 1 if error.
+		* @exception NullPointerException if the input EMData pointer is null
+		* @exception ImageFormatException if the image is complex as opposed to real
+		*/
+		virtual int determine_slice_agreement(EMData* slice, const Transform &euler, const float weight=1.0, bool sub=true );
+
+		virtual EMData *finish(bool doift=true);
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual string get_desc() const
+		{
+			return "A back projection reconstructor computing the median rather than mean value in each voxel";
+		}
+
+		static Reconstructor *NEW()
+		{
+			return new RealMedianReconstructor();
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("size", EMObject::INTARRAY, "Required. The dimensions of the real-space output volume, including any padding (must be handled by the calling application). Assumed that apix x/y/z identical.");
+			d.put("weight", EMObject::FLOAT, "Optional. A temporary value set prior to slice insertion, indicative of the inserted slice's weight. Default sis 1.");
+			d.put("sym", EMObject::STRING, "Optional. The symmetry to impose on the final reconstruction. Default is c1");
+			d.put("verbose", EMObject::INT, "Optional. Toggles writing diagnostic information to standard out. Default is 0.");
+			return d;
+		}
+		
+		static const string NAME;
+		
+	  private:
+		// Disallow copy construction
+		RealMedianReconstructor( const RealMedianReconstructor& that);
+		// Disallow assignment
+		RealMedianReconstructor& operator=( const RealMedianReconstructor& );
+		
+		vector<EMData *> slices;
+		vector<Transform> xforms;
+	};
 
 	/** Direct Fourier inversion Reconstructor
      *

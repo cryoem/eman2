@@ -28,7 +28,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  *
  * */
-//#define DEBUG_POINT	1
 
 #include "reconstructor.h"
 #include "plugins/reconstructor_template.h"
@@ -46,6 +45,7 @@
 #include "cuda/cuda_reconstructor.h"
 #endif
 
+#define DEBUG_POINT	1
 
 using namespace EMAN;
 using std::complex;
@@ -75,6 +75,7 @@ const string FourierIterReconstructor::NAME = "fourier_iter";
 const string FourierReconstructorSimple2D::NAME = "fouriersimple2D";
 const string WienerFourierReconstructor::NAME = "wiener_fourier";
 const string BackProjectionReconstructor::NAME = "back_projection";
+const string RealMedianReconstructor::NAME = "real_median";
 const string nn4Reconstructor::NAME = "nn4";
 const string nn4_rectReconstructor::NAME = "nn4_rect";
 const string nnSSNR_Reconstructor::NAME = "nnSSNR";
@@ -91,6 +92,7 @@ template <> Factory < Reconstructor >::Factory()
 	force_add<FourierReconstructorSimple2D>();
 //	force_add(&BaldwinWoolfordReconstructor::NEW);
 	force_add<WienerFourierReconstructor>();
+	force_add<RealMedianReconstructor>();
 	force_add<BackProjectionReconstructor>();
 	force_add<nn4Reconstructor>();
 	force_add<nn4_rectReconstructor>();
@@ -2479,6 +2481,160 @@ void BaldwinWoolfordReconstructor::insert_pixel(const float& x, const float& y, 
 // 	}
 // }
 */
+
+void RealMedianReconstructor::setup()
+{
+	vector<int> size=params["size"];
+	nx = size[0];
+	ny = size[1];
+	nz = size[2];
+	image = new EMData(nx,ny,nz);
+	image->to_zero();
+	
+	if (!slices.empty()) {
+		for (std::vector<EMData *>::iterator it = slices.begin() ; it != slices.end(); ++it) delete *it;
+		slices.clear();
+	}
+	xforms.clear();
+}
+
+EMData* RealMedianReconstructor::preprocess_slice(const EMData* const slice, const Transform& t)
+{
+
+// 	EMData* return_slice = slice->process("normalize.edgemean");
+// 	return_slice->process_inplace("filter.linearfourier");
+
+	EMData* return_slice;
+
+//	return_slice = slice->process("filter.linearfourier");
+	return_slice = slice->copy();
+	
+// 	Transform tmp(t);
+// 	tmp.set_rotation(Dict("type","eman")); // resets the rotation to 0 implicitly
+// 	Vec2f trans = tmp.get_trans_2d();
+// 	float scale = tmp.get_scale();
+// 	bool mirror = tmp.get_mirror();
+// 	if (trans[0] != 0 || trans[1] != 0 || scale != 1.0 ) {
+// 		return_slice->transform(tmp);
+// 	} 
+// 	if ( mirror == true ) {
+// 		return_slice->process_inplace("xform.flip",Dict("axis","x"));
+// 	}
+
+	return return_slice;
+}
+
+int RealMedianReconstructor::insert_slice(const EMData* const input, const Transform &t, const float weight)
+{
+	if (!input) {
+		LOGERR("try to insert NULL slice");
+		return 1;
+	}
+
+	if (input->get_xsize() != input->get_ysize() || input->get_xsize() != nx) {
+		LOGERR("tried to insert image that was not correction dimensions");
+		return 1;
+	}
+	
+	slices.push_back(input->copy());
+	xforms.push_back(t);
+
+	return 0;
+}
+
+// This is just a dummy function. It does not return meaningful numbers
+int RealMedianReconstructor::determine_slice_agreement(EMData*  input_slice, const Transform & arg, const float weight,bool sub)
+{
+	// Are these exceptions really necessary? (d.woolford)
+	if (!input_slice) throw NullPointerException("EMData pointer (input image) is NULL");
+
+	input_slice->set_attr("reconstruct_norm",1.0f);
+	input_slice->set_attr("reconstruct_absqual",1.0f);
+	input_slice->set_attr("reconstruct_weight",1.0f);
+
+	return 0;
+
+}
+
+EMData *RealMedianReconstructor::finish(bool doift)
+{
+	
+// 	Transform * transform;
+// 	if ( input->has_attr("xform.projection") ) {
+// 		transform = (Transform*) (input->get_attr("xform.projection")); // assignment operator
+// 	} else {
+// 		transform = new Transform(t); // assignment operator
+// 	}
+
+// 	float weight = params["weight"];
+// 	slice->mult(weight);
+
+	// We do the actual reconstruction here from all of the slices
+	for (int z=0; z<nz; z++) {
+		for (int y=0; y<ny; y++) {
+			for (int x=0; x<nx; x++) {
+				std::vector<float> vals;
+				std::vector<Transform>::iterator itt = xforms.begin();
+				for (std::vector<EMData *>::iterator it = slices.begin() ; it != slices.end(); ++it,++itt) {
+					Vec3f imvec = itt->transform(x-nx/2.0f,y-ny/2.0f,z-nz/2.0f);
+					float val=(*it)->sget_value_at(imvec[0]+nx/2,imvec[1]+ny/2);
+					if (val!=0) vals.push_back(val);
+				}
+				if (vals.size()==0) continue;
+				std::sort(vals.begin(),vals.end());
+				//printf("%d %d %d    %d\n",x,y,z,vals.size());
+				image->set_value_at(x,y,z,vals[vals.size()/2]);		// for even sizes, not quite right, and should include possibility of local average
+			}
+		}
+	} 
+
+
+// 	transform->set_scale(1.0);
+// 	transform->set_mirror(false);
+// 	transform->set_trans(0,0,0);
+// 	transform->invert();
+
+// 	tmp->transform(t.inverse());		// This was incorrect. inverse() was missing
+// 	image->add(*tmp);
+
+// 	if(transform) {delete transform; transform=0;}
+
+	// apply symmetry if requested
+	Symmetry3D* sym = Factory<Symmetry3D>::get((string)params["sym"]);
+	vector<Transform> syms = sym->get_syms();
+
+	for ( vector<Transform>::const_iterator it = syms.begin(); it != syms.end(); ++it ) {
+
+//		it->printme();
+		Transform t=*it;
+		EMData *tmpcopy = image->process("xform",Dict("transform",(EMObject)&t));
+		image->add(*tmpcopy);
+		delete tmpcopy;
+	}
+
+	image->mult(1.0f/(float)sym->get_nsym());
+	delete sym;
+// 	if (image->get_xsize()==image->get_ysize() && image->get_ysize()==image->get_zsize()) {
+// 		image->process_inplace("mask.sharp",Dict("outer_radius",image->get_xsize()/2-1));
+// 	}
+// 	else printf("No masking %d %d %d\n",image->get_xsize(),image->get_ysize(),image->get_zsize());
+	
+	// erase out copy of the projection data
+	if (!slices.empty()) {
+		for (std::vector<EMData *>::iterator it = slices.begin() ; it != slices.end(); ++it) delete *it;
+		slices.clear();
+	}
+	xforms.clear();
+	
+	EMData *ret = image;
+	if (!doift) {
+		ret=image->do_fft();
+		ret->process_inplace("xform.phaseorigin.tocorner");
+		delete image;
+	}
+	image = 0 ;
+	return ret;
+}
 
 
 void BackProjectionReconstructor::setup()
