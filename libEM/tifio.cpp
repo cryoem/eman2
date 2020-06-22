@@ -273,7 +273,7 @@ int TiffIO::read_data(float *rdata, int image_index, const Region * area, bool)
 
 			if ((cdata=(unsigned char*)_TIFFmalloc(tileSize))==NULL){
 				fprintf(stderr,"Error: Could not allocate enough memory\n");
-				return(-1);
+				return -1;
 			}
 
 			int tilePerLine = nx/tileWidth + 1;
@@ -283,7 +283,7 @@ int TiffIO::read_data(float *rdata, int image_index, const Region * area, bool)
 			for (tileCount=0; tileCount<tileMax; tileCount++) {
 				if (TIFFReadEncodedTile(tiff_file, tileCount, cdata, tileSize) == -1) {
 					fprintf(stderr,"Error reading tiled image\n");
-					return(-1);
+					return -1;
 				}
 				else {
 					NX = tileCount%tilePerLine;
@@ -316,7 +316,7 @@ int TiffIO::read_data(float *rdata, int image_index, const Region * area, bool)
 							}
 							else {
 								fprintf(stderr,"BAILING OUT:Allow only 8- or 16-bits image\n");
-								return(-1);
+								return -1;
 							}
 						}
 					}
@@ -336,7 +336,7 @@ int TiffIO::read_data(float *rdata, int image_index, const Region * area, bool)
 
 			if ((cdata = static_cast < unsigned char *>(_TIFFmalloc(strip_size)))==NULL) {
 				fprintf(stderr,"Error: Could not allocate enough memory\n");
-				return(-1);
+				return -1;
 			}
 
 			int k = 0;
