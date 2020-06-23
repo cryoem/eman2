@@ -195,7 +195,6 @@ class Contour(EMShape):
 
 	def draw(self,d2s=None,col=None):
 
-		#print "aaaaaaaa"
 		zpos=self.image.list_idx
 		allpts=[[p[0], p[1], p[3]] for p in self.points if p[2]==zpos]
 		print(np.array(self.points))
@@ -227,7 +226,6 @@ class Contour(EMShape):
 			glEnableClientState(GL_VERTEX_ARRAY)
 			glVertexPointerf(pts)
 			glDrawArrays(GL_POINTS, 0, len(pts))
-		#print "bbbbbbbbb"
 
 class EMDrawWindow(QtWidgets.QMainWindow):
 
