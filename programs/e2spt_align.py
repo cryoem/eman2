@@ -93,6 +93,7 @@ If --goldstandard is specified, then even and odd particles will be aligned to d
 	parser.add_argument("--maxang",type=float,help="Maximum angular difference for the refine mode. default is 30",default=30)
 	parser.add_argument("--maxshift",type=float,help="Maximum shift for the refine mode. default is 16",default=-1)
 	parser.add_argument("--scipytest",action="store_true",help="test scipy optimizer.",default=False)
+	parser.add_argument("--debug",action="store_true",help=".",default=False)
 
 
 
@@ -207,6 +208,10 @@ If --goldstandard is specified, then even and odd particles will be aligned to d
 	for i in range(njob):
 		t=tasks[i::njob]
 		task=SptAlignTask(t, options)
+		if options.debug:
+			ret=task.execute()
+			print(ret)
+			return 
 		tid=etc.send_task(task)
 		tids.append(tid)
 
