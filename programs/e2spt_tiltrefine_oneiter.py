@@ -464,20 +464,9 @@ class SptTltRefineTask(JSTask):
 		rets=[]
 		a=EMData(data["ref"],0)
 		
-		#maxsft=8
-		#trans=np.indices((maxsft*2+1, maxsft*2+1)).reshape((2,-1)).T-maxsft
-		rot=np.indices((5, 5, 5)).reshape((3,-1)).T.astype(float)
-		rot=(rot-2)/2.
-		trans=np.indices((5, 5)).reshape((2,-1)).T.astype(float)
-		trans=trans-2
-		
-		#trans=np.indices((17,17)).reshape((2,-1)).T
-		#trans=(trans-8)/4.
-		
 		for infoi, infos in enumerate(data["info"]):
 			ii=infos[0]
 			info=infos[1]
-			
 			b=EMData(info[1],info[0])
 				
 			if options.maxres>0:
@@ -495,10 +484,11 @@ class SptTltRefineTask(JSTask):
 					initxf.set_trans(initxf.get_trans()/float(options.shrink))
 				
 			if options.transonly:
-				
-				scr=[]
-				for r in [[0,0,0]]:#rot.tolist():
-					xf=Transform({"type":"eman","tx":initxf["tx"], "ty":initxf["ty"], "alt":initxf["alt"]+r[0],"az":initxf["az"]+r[1],"phi":initxf["phi"]+r[2]})
+				if options.smooth:
+					m=options.maxshift
+					trans=np.indices((m*2+1, m*2+1)).reshape((2,-1)).T-m
+					scr=[]
+					xf=Transform({"type":"eman","tx":initxf["tx"], "ty":initxf["ty"], "alt":initxf["alt"],"az":initxf["az"],"phi":initxf["phi"]})
 					pj=a.project("standard", xf)
 					
 					for t in trans.tolist():
@@ -506,14 +496,14 @@ class SptTltRefineTask(JSTask):
 						pjts.translate(t[0], t[1],0)
 						s=b.cmp("frc",pjts, {"minres":30, "maxres":5})
 						scr.append(s)
+				
+				else:
+					c=b.align("translational", pj, {"maxshift":options.maxshift})
+					trans=c["xform.align2d"].get_trans()
+					xf.translate(-trans)
+					scr=c.cmp("frc",pj)
 					
 				r={"idx":ii,"xform.align3d":[xf], "score":scr}
-
-				
-				#c=b.align("translational", pj, {"intonly":0, "maxshift":options.maxshift})
-				#trans=c["xform.align2d"].get_trans()
-				#xf.translate(-trans)
-				#scr=c.cmp("frc",pj)
 			
 			elif options.defocus:
 				xf=Transform({"type":"eman","tx":initxf["tx"], "ty":initxf["ty"], "alt":initxf["alt"],"az":initxf["az"],"phi":initxf["phi"]})
