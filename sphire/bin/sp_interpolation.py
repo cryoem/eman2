@@ -49,25 +49,25 @@ def cubicXY(img, x , y):
     xi_p2 = INTERPOL_WRAP(xi_p2, img_xdim)
     yi_p2 = INTERPOL_WRAP(yi_p2, img_ydim)
 
-    f00 = img[xi_n1][yi_n1]
-    f01 = img[xi][yi_n1]
-    f02 = img[xi_p1][yi_n1]
-    f03 = img[xi_p2][yi_n1]
+    f00 = img[yi_n1][xi_n1]
+    f01 = img[yi_n1][xi]
+    f02 = img[yi_n1][xi_p1]
+    f03 = img[yi_n1][xi_p2]
 
-    f10 = img[xi_n1][yi]
-    f11 = img[xi][yi]
-    f12 = img[xi_p1][yi]
-    f13 = img[xi_p2][yi]
+    f10 = img[yi][xi_n1]
+    f11 = img[yi][xi]
+    f12 = img[yi][xi_p1]
+    f13 = img[yi][xi_p2]
 
-    f20 = img[xi_n1][yi_p1]
-    f21 = img[xi][yi_p1]
-    f22 = img[xi_p1][yi_p1]
-    f23 = img[xi_p2][yi_p1]
+    f20 = img[yi_p1][xi_n1]
+    f21 = img[yi_p1][xi]
+    f22 = img[yi_p1][xi_p1]
+    f23 = img[yi_p1][xi_p2]
 
-    f30 = img[xi_n1][yi_p2]
-    f31 = img[xi][yi_p2]
-    f32 = img[xi_p1][yi_p2]
-    f33 = img[xi_p2][yi_p2]
+    f30 = img[yi_p2][xi_n1]
+    f31 = img[yi_p2][xi]
+    f32 = img[yi_p2][xi_p1]
+    f33 = img[yi_p2][xi_p2]
 
     A = numpy.array([ -1.0/2.0,  3.0/2.0, -3.0/2.0,  1.0/2.0,
              1.0,     -5.0/2.0,  2.0,     -1.0/2.0,
@@ -86,8 +86,8 @@ def cubicXY(img, x , y):
     At = numpy.transpose(At)
 
     AVA = numpy.matmul(numpy.matmul(A , V) , At)
-    xx = numpy.array([xf*xf*xf, xf*xf, xf, 1.0])
-    yy = numpy.array([yf*yf*yf, yf*yf, yf, 1.0])
+    xx = numpy.array([xf * xf * xf, xf * xf, xf, 1.0])
+    yy = numpy.array([yf * yf * yf, yf * yf, yf, 1.0])
 
     return xx.dot(numpy.inner(AVA, yy ))
 
@@ -117,25 +117,25 @@ def cubicXYgrad(img, x , y):
     xi_p2 = INTERPOL_WRAP(xi_p2, img_xdim)
     yi_p2 = INTERPOL_WRAP(yi_p2, img_ydim)
 
-    f00 = img[xi_n1][yi_n1]
-    f01 = img[xi][yi_n1]
-    f02 = img[xi_p1][yi_n1]
-    f03 = img[xi_p2][yi_n1]
+    f00 = img[yi_n1][xi_n1]
+    f01 = img[yi_n1][xi]
+    f02 = img[yi_n1][xi_p1]
+    f03 = img[yi_n1][xi_p2]
 
-    f10 = img[xi_n1][yi]
-    f11 = img[xi][yi]
-    f12 = img[xi_p1][yi]
-    f13 = img[xi_p2][yi]
+    f10 = img[yi][xi_n1]
+    f11 = img[yi][xi]
+    f12 = img[yi][xi_p1]
+    f13 = img[yi][xi_p2]
 
-    f20 = img[xi_n1][yi_p1]
-    f21 = img[xi][yi_p1]
-    f22 = img[xi_p1][yi_p1]
-    f23 = img[xi_p2][yi_p1]
+    f20 = img[yi_p1][xi_n1]
+    f21 = img[yi_p1][xi]
+    f22 = img[yi_p1][xi_p1]
+    f23 = img[yi_p1][xi_p2]
 
-    f30 = img[xi_n1][yi_p2]
-    f31 = img[xi][yi_p2]
-    f32 = img[xi_p1][yi_p2]
-    f33 = img[xi_p2][yi_p2]
+    f30 = img[yi_p2][xi_n1]
+    f31 = img[yi_p2][xi]
+    f32 = img[yi_p2][xi_p1]
+    f33 = img[yi_p2][xi_p2]
 
     A = numpy.array([ -1.0/2.0,  3.0/2.0, -3.0/2.0,  1.0/2.0,
              1.0,     -5.0/2.0,  2.0,     -1.0/2.0,
