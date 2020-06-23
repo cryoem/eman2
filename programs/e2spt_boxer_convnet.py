@@ -480,6 +480,7 @@ class EMTomobox(QtWidgets.QMainWindow):
 		self.trainset=[]
 		self.tomoinp=[]
 		self.segout=None
+		self.curinfo=None
 		
 		self.update_list()
 		self.do_update()
@@ -549,9 +550,12 @@ class EMTomobox(QtWidgets.QMainWindow):
 	
 	
 	def on_list_selected(self, row, col):
+		if self.curinfo:
+			self.save_points()
+			self.update_list()
+		
 		idx=self.imglst.item(row, 0).text()
 		self.curinfo=self.imginfo[int(idx)]
-		
 		self.set_data(self.curinfo["name"])
 		
 		#hdr=EMData(info["filename"], 0,True)
@@ -974,15 +978,6 @@ class EMTomobox(QtWidgets.QMainWindow):
 		#self.update_list()
 		
 	def clear_points(self):
-		#choice = QtWidgets.QMessageBox.question(self, 'Clear points', 
-			#'Clear all points in the tomogram?', QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
-		#if choice == QtWidgets.QMessageBox.Yes:
-			#self.boxshapes.points=[]
-			#self.boximages=[[],[]]
-		
-		#self.do_update()
-		##self.save_points()
-		
 		return
 	
 	#def box_display_changed(self):
