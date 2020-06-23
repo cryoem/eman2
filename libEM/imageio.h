@@ -264,7 +264,7 @@ namespace EMAN
 		}
 
 	protected:
-		/** Do some initialization beforing doing the read/write.
+		/** Do some initialization before doing the read/write.
 		 */
 		virtual void init() = 0;
 

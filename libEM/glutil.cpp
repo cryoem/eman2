@@ -1413,7 +1413,7 @@ void GLUtil::glDrawDisk(float radius, int spokes)
 	vertices[sideofarray*9 + 1] = 0.0;
 	vertices[sideofarray*9 + 2] = 0.0;
 
-	// This could aslo be implemented recursively
+	// This could also be implemented recursively
 
 	for (int step = 0; step < spokes; step++) {
 		// starting location
