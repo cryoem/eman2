@@ -696,7 +696,7 @@ def reconstruct(data,recon,preprocess,pad,fillangle,altmask,verbose=0, lstinput=
 				#### inverse the translation so make3d matches projection 
 				xf=xf.inverse()
 				
-			if "dfdf" in elem:
+			if ("dfdf" in elem) and (elem["dfdf"]!=0) and (img.has_attr("ctf")):
 				ctf=img["ctf"]
 				fft1=img.do_fft()
 				flipim=fft1.copy()
