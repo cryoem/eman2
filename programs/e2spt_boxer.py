@@ -146,7 +146,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		self.gbl.setColumnStretch(0,1)
 		self.gbl.setColumnStretch(1,4)
 		self.gbl.setColumnStretch(2,0)
-		self.gbl.setRowStretch(1,1)
+		self.gbl.setRowStretch(1,2)
 		self.gbl.setRowStretch(0,4)
 
 		# 3 orthogonal restricted projection views
