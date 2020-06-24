@@ -56,6 +56,7 @@ import numpy as np
 # HO is a hydrogen attached to an oxygen. 'W' is water (infrequently found)
 atomdefs={'H':(1.0,1.00794),'HO':(1.0,1.00794),'C':(6.0,12.0107),'A':(7.0,14.00674),'N':(7.0,14.00674),'O':(8.0,15.9994),'P':(15.0,30.973761),'K':(19.0,39.0983),
 	'S':(16.0,32.066),'W':(18.0,1.00794*2.0+15.9994),'AU':(79.0,196.96655) }
+transmap=str.maketrans("", "", "0123456789")
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -215,7 +216,7 @@ def main():
 				except: resol=10
 
 				try:
-					a=line[12:14].strip().translate(None,"0123456789")
+					a=line[12:14].strip().translate(transmap)
 					x=float(line[30:38])
 					y=float(line[38:46])
 					z=float(line[46:54])
@@ -239,8 +240,8 @@ def main():
 				amax[2]=max(z,amax[2])
 
 				try:
-					nelec+=atomdefs[a[0].translate(None,"0123456789").upper()][0]
-					mass+=atomdefs[a[0].translate(None,"0123456789").upper()][1]
+					nelec+=atomdefs[a[0].translate(transmap).upper()][0]
+					mass+=atomdefs[a[0].translate(transmap).upper()][1]
 					#nelec+=atomdefs[a.upper()][0]
 					#mass+=atomdefs[a.upper()][1]
 				except:
@@ -365,7 +366,7 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,model=No
 				resol=10
 
 			try:
-				a=line[12:14].strip().translate(None,"0123456789'")
+				a=line[12:14].strip().translate(transmap)
 
 				x=float(line[30:38])
 				y=float(line[38:46])
@@ -455,7 +456,7 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,model=No
 			sys.stdout.flush()
 		try:
 			# This insertion strategy ensures the output is centered.
-			elec=atomdefs[a[0].translate(None,"0123456789").upper()][0]
+			elec=atomdefs[a[0].translate(transmap).upper()][0]
 # This was producing different results than the "quick" mode, and did not match the statement printed above!!!
 #			outmap.insert_scaled_sum(gaus,(a[1]/apix+xt-amin[0]/apix,a[2]/apix+yt-amin[1]/apix,a[3]/apix+zt-amin[2]/apix),res/(pi*12.0*apix),elec)
 			if center: outmap.insert_scaled_sum(gaus,(old_div((a[1]-aavg[0]),apix)+old_div(outbox[0],2),old_div((a[2]-aavg[1]),apix)+old_div(outbox[1],2),old_div((a[3]-aavg[2]),apix)+old_div(outbox[2],2)),old_div(res,(pi*12.0*apix)),elec)
