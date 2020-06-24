@@ -134,9 +134,9 @@ def main():
 	if options.smooth>0 or options.defocus:
 		### need to add per tilt smoothing later...
 		s=np.array(allscr)
-		np.savetxt(lname.replace(".lst", "score.txt"), s)
+		np.savetxt(lname.replace(".lst", "_score.txt"), s)
 		print(s.shape)
-		return
+		#return
 	
 	maxl=np.max([len(s) for s in allscr])
 	maxv=np.max(np.concatenate(allscr))

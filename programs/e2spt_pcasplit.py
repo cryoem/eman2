@@ -305,7 +305,7 @@ def main():
 	outlsts=[]
 	for lbl in sorted(np.unique(lb)):
 		#outlst = LSXFile(inptcls.replace(".lst","_{}.lst".format(lbl)))
-		outlst = LSXFile("{}/ptcls_cls{:02d}.lst".format(options.outpath, lbl))
+		outlst = LSXFile("{}/ptcls_cls{:02d}.lst".format(options.outpath, lbl+1))
 		for i in range(nptcl):
 			if lb[i]==lbl:
 				l=inlst.read(i)
