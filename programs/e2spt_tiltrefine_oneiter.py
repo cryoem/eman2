@@ -136,7 +136,7 @@ def main():
 		s=np.array(allscr)
 		np.savetxt(lname.replace(".lst", "_score.txt"), s)
 		print(s.shape)
-		#return
+		return
 	
 	maxl=np.max([len(s) for s in allscr])
 	maxv=np.max(np.concatenate(allscr))
@@ -190,7 +190,7 @@ def main():
 	else:
 		seed=""
 	
-	cmd="e2make3dpar.py --input {inp} --output {out} --pad {pd} --padvol {pdv} --threads {trd} --outsize {bx} --apix {apx} --mode gauss_2 --keep {kp} --sym {sm} {seed} {par}".format(
+	cmd="e2make3dpar.py --input {inp} --output {out} --pad {pd} --padvol {pdv} --threads {trd} --outsize {bx} --apix {apx} --mode trilinear --keep {kp} --sym {sm} {seed} {par}".format(
 		inp=lname, 
 		out=threedout,
 		bx=bxsz, pd=int(bxsz*pb), pdv=int(bxsz*pb), apx=apix, kp=options.keep, sm=options.sym, trd=options.threads,par=m3dpar, seed=seed)
@@ -494,7 +494,7 @@ class SptTltRefineTask(JSTask):
 					for t in trans.tolist():
 						pjts=pj.copy()
 						pjts.translate(t[0], t[1],0)
-						s=b.cmp("frc",pjts, {"minres":30, "maxres":5})
+						s=b.cmp("frc",pjts, {"minres":80, "maxres":8})
 						scr.append(s)
 				
 				else:
