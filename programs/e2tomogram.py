@@ -1528,7 +1528,7 @@ def refine_one_iter(imgs, allparams, options, idx=[]):
 		pkc=pks.copy()
 		r=res*np.pi/180.
 		rotmat=np.array([[np.cos(r), -np.sin(r)], [np.sin(r), np.cos(r)]])
-		pkc[:,:2]=np.dot(pkc[:,:2],rotmat)
+		pkc[:,:2]=np.dot(pkc[:,:2],rotmat).reshape((-1,2))
 		pks=pkc
 
 	else:
