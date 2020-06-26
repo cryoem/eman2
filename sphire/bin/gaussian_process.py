@@ -2,6 +2,7 @@
 
 # Author: Adnan Ali, 17/06/2019 (adnan.ali@mpi-dortmund.mpg.de)
 # Author: Markus Stabrin 17/06/2019 (markus.stabrin@mpi-dortmund.mpg.de)
+# Author: Thorsten Wagner 17/06/2019 (thorsten.wagner@mpi-dortmund.mpg.de)
 # Copyright (c) 2019 MPI Dortmund
 
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -40,7 +41,7 @@ import pandas as pd
 import copy
 import mrcfile
 
-
+from scipy.fftpack import ifft2 as iff
 from EMAN2 import *
 import EMAN2_cppwrap
 from EMAN2 import EMNumPy
@@ -59,6 +60,11 @@ import scipy
 from scipy.optimize import minimize, Bounds, fmin_l_bfgs_b
 
 import sp_interpolation
+# widgets = ['Progress: ', Percentage(), ' ', Bar(marker='#',left='[',right=']'),
+#            ' ', ETA(), ' ', FileTransferSpeed()] #see docs for other options
+#
+# pbar = ProgressBar(widgets=widgets, maxval=UnknownLength)
+
 from tqdm import tqdm
 
 location =os.getcwd()
@@ -82,7 +88,7 @@ size = n_mpi_procs
 rank  = my_node_proc_id
 
 
-no_of_micrographs = 24
+no_of_micrographs = 17
 N_ITER =25
 shift = 1
 
@@ -99,6 +105,10 @@ def readimg(path):
     return dat
 
 
+def readimg(path):
+    with mrcfile.open(path) as mrc:
+        dat = mrc.data
+    return dat
 def numpy2em_python(numpy_array, out=None):
     """
 	Create an EMData object based on a numpy array by reference.
@@ -199,7 +209,7 @@ def read_meta_shifts(f):
 
 def giveshiftperparticles(trackingfile , frames):
     df = pd.read_csv(trackingfile)
-    particle_number = int(df['data_general'].values[0].rsplit()[1])
+    particle_number = int(df['data_general'].get_values()[0].rsplit()[1])
     shiftingperptcl = np.zeros((particle_number, frames, 2))
 
     for i in range(particle_number):
@@ -208,15 +218,13 @@ def giveshiftperparticles(trackingfile , frames):
                 k = 5 + j
             if i > 0:
                 k = i * frames + ((4 * i) + j) + 5
-            shiftingperptcl[i, j, 0] = float(df['data_general'].values[k].rsplit()[0])
-            shiftingperptcl[i, j, 1] = float(df['data_general'].values[k].rsplit()[1])
+            shiftingperptcl[i, j, 0] = float(df['data_general'].get_values()[k].rsplit()[0])
+            shiftingperptcl[i, j, 1] = float(df['data_general'].get_values()[k].rsplit()[1])
     return shiftingperptcl
-
-
 
 def givemotioncorrshifts(filename):
     shift_file = pd.read_csv(filename)
-    # header = shift_file['data_general'][0:16]
+    header = shift_file['data_general'][0:16]
     shift_x = []
     shift_y = []
     for i in range(17, len(shift_file['data_general'])):
@@ -322,12 +330,18 @@ def find_particles_info_from_movie(stack, movie_name, no_of_imgs, ptcl_source_im
                                                              len(project_params_per_movie)))
         print("Ctf estimation parameters for 1st particle in the stack are ", ctf_params_per_movie[0].to_dict())
         print("Projection parameters for 1st particle in the stack are ", project_params_per_movie[0].get_params('spider'))
-
+        # print("Dimensions x for all particles are ", nx_per_movie)
+        # print("Dimensions y for all particles are ", ny_per_movie)
+        # print("Dimensions z for all particles are ", nz_per_movie)
     elif str(os.path.basename(movie_name)).split('.')[-1] == 'tiff':
+        # print('Ctf shape',np.array(ctf_params_per_movie).shape)
         print("Number of particles detected in %s are %d" % (str(os.path.basename(movie_name)),
                                                              len(project_params_per_movie)))
         print("Ctf estimation parameters for 1st particle in the stack are ", ctf_params_per_movie[0].to_dict())
         print("Projection parameters for 1st particle in the stack are ", project_params_per_movie[0].get_params('spider'))
+        # print("Dimensions x for all particles are ", nx_per_movie[0])
+        # print("Dimensions y for all particles are ", ny_per_movie[0])
+        # print("Dimensions z for all particles are ", nz_per_movie[0])
 
     if show_first:
         ima = EMAN2_cppwrap.EMData()
@@ -346,6 +360,9 @@ Reading a reference map
 """
 def get_2D_project_for_all_ptcl_from_reference(volume_ft , kb_fu, project_params_in_stack, frames_length , show = False):
     # print("Reference projections begin")
+    # project_2D_per_movie = []
+    # pbar.start()
+    # for j in tqdm(range(frames_length) , desc= "Reference Projection"):
     project_2D_per_frame = []
     for i in tqdm(range(len(project_params_in_stack)), desc= "Reference Projection"):
         params_substack = project_params_in_stack[i].get_params('spider')
@@ -358,8 +375,19 @@ def get_2D_project_for_all_ptcl_from_reference(volume_ft , kb_fu, project_params
         del params_for_each_image
 
     return project_2D_per_frame
+        # project_2D_per_movie.append(project_2D_per_frame)
+        # pbar.update()
+        # del project_2D_per_frame
+    # pbar.finish()
     # print("Reference projections end")
 
+    # if show:
+    #     plt.ion()
+    #     plt.figure()
+    #     plt.imshow(project_2D_per_movie[0][0].get_2dview(), cmap = plt.get_cmap('Greys'))
+    #     plt.colorbar()
+    #     plt.show()
+    # return project_2D_per_movie
 
 def givemeindices(img):
     w = img.shape[0] //2  + 1
@@ -369,7 +397,9 @@ def givemeindices(img):
     x_index_expand = np.repeat(x_index, w)
     y_index_expand = np.tile(y_index, h)
     x_index_expand_cpy = x_index_expand.copy()
+    # y_index_expand_cpy = y_index_expand.copy()
     x_index_expand_cpy[x_index_expand_cpy >= w] -= h
+    # y_index_expand_cpy[y_index_expand_cpy >= w] -= h
     indices = np.sqrt(y_index_expand ** 2 + x_index_expand_cpy ** 2).astype(int)
     mask = indices < w
     indices = indices[mask]
@@ -563,6 +593,7 @@ def init_variance_array(movie_name, nxx, nyy, cen_xx, cen_yy, part_cord, zsize, 
         current_frame = Util.muln_img(current_frame, gainref)
         for j in range(len(part_cord)):
             try:
+
                 ptcl = Util.window(current_frame, nxx, nyy, 1, np.int(angout_pix * part_cord[j][0] / angout_pix) - cen_xx,
                                    np.int(angout_pix * part_cord[j][1] / angout_pix) - cen_yy, 0)
                 fft_part_img = np.fft.fft2(ptcl.get_2dview())
@@ -576,6 +607,48 @@ def init_variance_array(movie_name, nxx, nyy, cen_xx, cen_yy, part_cord, zsize, 
                 continue
     del current_frame
     return var_sum , cnt_sum
+
+
+def extract_image(inp_img, pixel_size, boxsize, cord_x, cord_y ):
+    inp = inp_img.get_2dview()
+    out =  np.zeros((boxsize,boxsize))
+    xp0 = np.int(pixel_size * cord_x / pixel_size) - boxsize//2
+    yp0 = np.int(pixel_size * cord_y / pixel_size) - boxsize//2
+
+    x0 = np.int(np.round(xp0 *pixel_size/ pixel_size))
+    y0 = np.int(np.round(yp0 *pixel_size/ pixel_size))
+
+    for y in range(boxsize):
+        for x in range(boxsize):
+            xx = x0+x
+            yy = y0+y
+            if (xx < 0):
+                xx = 0
+            elif (xx >= inp.shape[0]):
+                xx = inp.shape[0] - 1
+            else:
+                xx =xx
+
+            if (yy < 0):
+                yy = 0
+            elif (yy >= inp.shape[1]):
+                yy = inp.shape[1] - 1
+            else:
+                yy =yy
+
+            out[y][x] = inp[yy][xx]
+
+
+    out_em = EMNumPy.numpy2em(out)
+    return out_em
+
+
+
+
+
+
+
+
 
 
 def damageWeights(dosevalue, news, angpixval):
@@ -613,9 +686,28 @@ def create_doses(dose_per_frame, no_of_frames, voltage):
             dose_frames[iframe] /= 0.64
     return dose_frames
 
+
+def givemerealbfactors(pixelval, fc, boxsize):
+    # bfile = np.loadtxt('/home/adnan/PycharmProjects/Dose_Fresh/sphire/bin/bfactors.star')
+    # slope = bfile[:,1]
+    # intercept = bfile[:,2]
+
+    bfile = np.loadtxt('/home/adnan/PycharmProjects/DoseWeighting/Polis001/metadata/BFactors.txt')
+    slope = bfile[0]
+    intercept = bfile[1]
+
+    bfacy = np.exp(intercept)
+    angpix_ref = pixelval
+    sh_ref = boxsize/2 + 1
+    cf = 8.0 * ((angpix_ref)**2)  * ((sh_ref)**2)
+    bfacx = np.sqrt(np.divide(-cf, slope))
+    del bfile
+    return bfacx, bfacy
+
+# @jit(nopython=True)
 def computeweights(bfax, bfay, fc,  boxsize, normalize = True):
     kc2 = boxsize
-    kc = boxsize//2 +1
+    kc = boxsize/2 +1
     output = np.zeros((fc, kc, kc2))
     yy = 0
     for f in range (fc):
@@ -645,7 +737,12 @@ def angtopix(a , s, angpix):
 def pixtoang(p, s, angpix):
     return s * angpix / p
 
+def readimg(path):
+    with mrcfile.open(path) as mrc:
+        dat = mrc.data
+    return dat
 
+# @jit(parallel= True)
 def fitBkFactors(fcc_fsc, k0 , k1):
     kc = fcc_fsc.shape[1]
     fc = fcc_fsc.shape[0]
@@ -748,6 +845,7 @@ def findminmaxresol(fsc_path) :
             print(fscvals[i])
             return angrsol[i]
 
+
 def normalizeSigVel(sig_vel, doseperframe, angpix):
     try:
         params_scale_by_dose = doseperframe * sig_vel / angpix
@@ -756,11 +854,13 @@ def normalizeSigVel(sig_vel, doseperframe, angpix):
 
     return params_scale_by_dose
 
+
 def normalizeSigDiv(sig_div, angpix):
 
     params_scale_by_dose = sig_div / angpix
 
     return params_scale_by_dose
+
 
 def normalizeSigAcc(sig_acc, doseperframe, angpix):
     try:
@@ -770,9 +870,133 @@ def normalizeSigAcc(sig_acc, doseperframe, angpix):
 
     return params_scale_by_dose
 
+def estim_one_particle(movie_name, refer_1, refer_2, nxx, nyy, part_cord, zsize,
+                          gainrefname, chunk_arr, ctf_params_part, frame_shift_x, frame_shift_y):
+
+    current_frame = EMData()
+    current_frame.read_image(movie_name, 0)
+    xsize = current_frame.get_xsize()
+    ysize = current_frame.get_ysize()
+    cen_xx = xsize // 2
+    cen_yy = ysize // 2
+    cen_zz = zsize // 2
+    freqs=  nyy//2 + 1
+    # fsc_values = np.zeros((zsize,freqs  ))
+    # weight_0 = np.zeros((zsize, freqs))
+    # weight_1 = np.zeros((zsize, freqs ))
+    # x_index = np.arange(freqs)
+    # y_index = np.arange(nyy)
+    # x_index_expand = np.repeat(x_index, nyy)
+    # y_index_expand = np.tile(y_index, freqs)
+    # y_index_expand_cpy = y_index_expand.copy()
+    # y_index_expand_cpy[y_index_expand_cpy >= freqs] -= nyy
+    # indices = np.round(np.sqrt(x_index_expand ** 2 + y_index_expand_cpy ** 2)).astype(int)
+    # mask = indices < freqs
+    # indices = indices[mask]
+    # x_index_expand = x_index_expand[mask]
+    # y_index_expand = y_index_expand[mask]
+    # del x_index
+    # del y_index
+    # del y_index_expand_cpy
+    # del mask
+
+    gainref = EMData()
+    gainref.read_image(gainrefname,0)
+    Util.mul_scalar(gainref, -1.0)
+    globaldose = 1.277
+    angout_pix = 0.885
+
+
+    """
+    Calculating the fourier shell correlation of all the particle images with respect to 2-D reference 
+    projection of 3-D volume
+    """
+
+    ref_imgs = readimg('/home/adnan/PycharmProjects/newrelion/Polish/job013/reference_00021.mrcs')
+
+    var_movie, cnt_movie =  init_variance_array(movie_name, nxx, nyy, cen_xx, cen_yy, part_cord, zsize, gainref)
+    sigma = movie_vari_powspect(movie_name,  gainref, var_movie, cnt_movie, zsize, part_cord,
+                       nxx, nyy, cen_xx , cen_yy)
+    #
+    # CCFS = np.zeros((zsize, len(part_cord), nxx, nyy))
+    # CCFS = movieCC(movie_name, nxx, nyy, sigma, var_movie, cnt_movie, globaldose, angout_pix,
+    #                zsize, gainref, part_cord,ctf_params_part, cen_xx, cen_yy,
+    #                refer_1, refer_2, CCFS, chunk_arr, ref_imgs)
+    #
+    # CCFS = CCFS.swapaxes(0,1)
+
+    peak_values = np.zeros((len(part_cord), zsize, 2))
+
+    for i in tqdm(range(zsize), desc= "Normalize noise in image and reference image"):
+        current_frame.read_image(movie_name,i)
+        current_frame = Util.muln_img(current_frame, gainref)
+        current_frame = applyshifts(current_frame , frame_shift_x[i] , frame_shift_y[i] )
+
+        dose = globaldose * (i)
+        damageweights = damageWeights(dose, nxx, angout_pix)
+        doseline = damageweights[:, 0].tolist()
+
+        for j in range(len(part_cord)):
+            try:
+                ptcl = Util.window(current_frame, nxx, nyy, 1, part_cord[j][0] - cen_xx,
+                                             part_cord[j][1] - cen_yy ,0)
+
+                if chunk_arr[j] == 1 :
+                    refer = refer_1[j]
+                else:
+                    refer = refer_2[j]
+
+                refer = sp_filter.filt_ctf(refer, ctf_params_part[j], sign=1, binary=False)
+
+                ptcl = sp_filter.filt_table(ptcl, doseline)
+
+                fft_part_img = np.fft.fft2(ptcl.get_2dview())
+                np.divide(fft_part_img, float(nxx * nyy), out=fft_part_img)
+                scale = np.sqrt(np.divide(nxx * nyy * var_movie[j], cnt_movie[j] * zsize))
+                np.divide(fft_part_img, scale, out=fft_part_img)
+                fft_part_img = noiseNormalize_new(fft_part_img, sigma)
+
+                fft_ref_img = np.fft.fft2(refer.get_2dview())
+                np.divide(fft_ref_img, float(nxx * nyy), out=fft_ref_img)
+                fft_ref_img[0, 0] = 0.0
+                fft_ref_img = noiseNormalize_new(fft_ref_img, sigma)
+
+                ptcl = EMNumPy.numpy2em(np.fft.ifft2(fft_part_img).real)
+                refer = EMNumPy.numpy2em(np.fft.ifft2(fft_ref_img).real)
+
+                ccmap = sp_fundamentals.ccf(ptcl, refer)
+                peaks = sp_utilities.peak_search(ccmap, 3)
+
+                peak_values[j][i][0] = peaks[0][-2]
+                peak_values[j][i][1] = peaks[0][-1]
+
+                # ptcl = numpy2em_python(fft_part_img)
+                # refer = numpy2em_python(fft_ref_img)
+                # ccmap = sp_fundamentals.ccf(ptcl , refer)
+                # peak_values = sp_utilities.peak_search(ccmap, 3)
+                # ptcl = applyshifts(ptcl , -peak_values[0][-2], -peak_values[0][-1])
+                # box_img = sp_filter.filt_table(box_img, doseline)
+                # calc_fsc_per_part(ptcl, refer, fsc_values, weight_0, weight_1, i, j, indices,
+                #                   x_index_expand, y_index_expand, sigma, var_movie, cnt_movie, zsize)
+                del ptcl
+                del refer
+            except RuntimeError:
+                continue
+    del current_frame
+    # del var_movie
+    # del cnt_movie
+    del gainref
+    # del sigma
+
+
+    return peak_values
+
+    # return fsc_values, weight_0, weight_1
+
+
 
 def movieCC(movie_name, nx, ny, sigma22, var_m, count_m, gbdose, angout_pix, zsize, gainref, part_cord,
-            ctf_params_part, cen_xx, cen_yy, refer_1, refer_2, CC_ptcl, chunk_arr):
+            ctf_params_part, cen_xx, cen_yy, refer_1, refer_2, CC_ptcl, chunk_arr, rel_ref):
     """
     For noise normalization for image and reference image
     """
@@ -791,27 +1015,35 @@ def movieCC(movie_name, nx, ny, sigma22, var_m, count_m, gbdose, angout_pix, zsi
 
                 ptcl = Util.window(current_frame, nx, ny, 1, np.int(angout_pix * part_cord[j][0] / angout_pix) - cen_xx,
                                    np.int(angout_pix * part_cord[j][1] / angout_pix) - cen_yy, 0)
-                ptcl = sp_filter.filt_table(ptcl, doseline)
-                if chunk_arr[j] == 0 :
-                    refer = refer_1[j]
-                else :
-                    refer = refer_2[j]
 
-                refer = sp_filter.filt_ctf(refer, ctf_params_part[j], sign=1, binary=False)
+                ptcl = sp_filter.filt_table(ptcl, doseline)
+                # ptcl = sp_filter.filt_table(ptcl, doseline)
+                # if chunk_arr[j] == 0 :
+                #     refer = refer_1[j]
+                # else :
+                #     refer = refer_2[j]
+                # refer = sp_filter.filt_ctf(refer, ctf_params_part[j], sign=0, binary=False)
+
+                refer = rel_ref[j]
+
+
                 fft_part_img = np.fft.fft2(ptcl.get_2dview())
                 np.divide(fft_part_img, float(nx * ny), out=fft_part_img)
+                # fft_part_img[0, 0] = 0.0
                 scale = np.sqrt(np.divide(nx * ny * var_m[j], count_m[j] * zsize))
                 np.divide(fft_part_img, scale, out=fft_part_img)
                 fft_part_img = noiseNormalize(fft_part_img, sigma22)
 
-                fft_ref_img = np.fft.fft2(refer.get_2dview())
+                fft_ref_img = np.fft.fft2(refer)
                 np.divide(fft_ref_img, float(nx * ny), out=fft_ref_img)
                 fft_ref_img[0, 0] = 0.0
-                fft_ref_img = noiseNormalize(fft_ref_img, sigma22)
+                fft_ref_img = noiseNormalize_new(fft_ref_img, sigma22)
 
                 np.multiply(fft_part_img, fft_ref_img.conjugate(), out = fft_part_img)
+
                 ptcl_np_FF = np.fft.ifft2(fft_part_img)
-                ptcl_np_FF = np.multiply(ptcl_np_FF.real, float(nx*nx*nx*nx))
+                ptcl_np_FF = np.multiply(ptcl_np_FF.real, float(nx*nx*nx*nx) )
+
                 CC_ptcl[i,j] = ptcl_np_FF
 
                 del ptcl_np_FF
@@ -821,252 +1053,142 @@ def movieCC(movie_name, nx, ny, sigma22, var_m, count_m, gbdose, angout_pix, zsi
                 del refer
                 del ptcl
             except RuntimeError:
+                print("Particle skipped")
                 continue
+
     return CC_ptcl
 
-def gpmotion(sig_vel, sig_acc, sig_div, globaldose, angout_pix, shift_x, shift_y, part_cord, zsize, correlate):
-    sig_vel_px = normalizeSigVel(sig_vel, globaldose, angout_pix)
-    sig_acc_px = normalizeSigAcc(sig_acc, globaldose, angout_pix)
-    sig_div_px = normalizeSigDiv(sig_div, angout_pix)
-    sv2 = sig_vel_px * sig_vel_px
-    sd2 = sig_div_px * sig_div_px
-    sd1 = sig_div_px
-    pc = len(part_cord)
-    A = np.zeros((pc, pc))
 
-    expKer = True
-    for i in range(pc):
-        for j in range(i, pc):
-            dd = np.sum(np.abs(np.array(part_cord[i]) - np.array(part_cord[j])) ** 2)  # pos = [x,y]
-            if expKer == True:
-                k = sv2 * np.exp(- np.sqrt(dd / sd2))
-            else:
-                k = sv2 * np.exp(-0.5 * dd / sd1)
-            A[i, j] = k
-            A[j, i] = k
-
-    U, S, Vt = np.linalg.svd(A, full_matrices=True)
-    eps = 1e-10
-
-    dc = pc
-    for d in range(pc):
-        if (S[d] < eps):
-            dc = d
-            break
-
-    basis = np.zeros((dc, pc))
-    eigenVals = np.zeros(dc)
-
-    for d in range(dc):
-        l = np.sqrt(S[d])
-        for p in range(pc):
-            basis[d, p] = l * Vt[d, p]
-
-    for d in range(dc):
-        eigenVals[d] = S[d]
-
-    initialshifts = np.zeros((pc,zsize,2))
-    for i in range(pc):
-        initialshifts[i, :, :] = np.array([np.array(shift_x)[:]*-1, np.array(shift_y)[:]*-1 ]).swapaxes(0, 1)
-
-    pad = 0
-    newposi = np.zeros((pc, zsize + pad, 2))
-    partCt = 2 * (pc + pc * (zsize - 1))
-    initialCoeff = np.zeros(partCt)
-    initialCoeff  = posToParams(initialshifts, initialCoeff, pc, zsize, basis, eigenVals, dc)
-
-    options_min = {}
-    options_min['disp'] =  True
-    options_min['maxcor']  = 200
-    options_min['ftol'] = 0.0001
-    options_min['gtol'] = 0.90
-    options_min['eps'] =  1e-05
-    options_min['iprint']  = 80
-    options_min['maxfun'] =  10000
-    options_min['maxiter'] = 10000
-    options_min['maxls'] = 40
-
-    lb = 9.99e-21
-    ub = 10e19
-    bou = (lb, ub)
-    bb = np.tile(bou, partCt).reshape(partCt, 2).tolist()
-
-    result = minimize(fun = gpmotion_f, x0= initialCoeff , args = (newposi, pc, zsize, basis ,correlate, sig_acc_px, eigenVals, dc) ,
-                      method='L-BFGS-B', jac = gpmotion_grad, tol = 9.99e-17, options = options_min)
-
-    newshifts = np.zeros((pc, zsize, 2))
-    newshifts = ParamsTopos(result.x ,newshifts ,pc, zsize, basis, dc )
-    return newshifts
-
-def posToParams(pos, x, pc, zsize, basis, eigenVals, dc):
-
-    for q in range(pc):
-        x[2 * q] = pos[q][0][0]
-        x[2 * q + 1] = pos[q][0][1]
-
-    for f in range(zsize - 1):
-        for d in range(dc):
-            cx, cy = 0.0, 0.0
-            for p in range(pc):
-                vx = pos[p][f+1][0]   - pos[p][f][0]
-                vy = pos[p][f+1][1]  - pos[p][f][1]
-
-                cx += vx * basis[d, p]
-                cy += vy * basis[d, p]
-
-            x[2 * (pc + dc * f + d)] = cx / eigenVals[d]
-            x[2 * (pc + dc * f + d) + 1] = cy / eigenVals[d]
-    return x
-
-def ParamsTopos(x_vec, pos, pc, zsize, basis, dc ):
-    for p in range(pc):
-        pp = [x_vec[2*p],  x_vec[2*p+1]]
-        for f in range(zsize):
-            pos[p][f][0] = pp[0]
-            pos[p][f][1] = pp[1]
-            if f < zsize -1 :
-                vx, vy  = 0.0, 0.0
-                for d in range(dc):
-                    cx = x_vec[2*(pc + dc*f + d)]
-                    cy = x_vec[2*(pc + dc*f + d)+1]
-                    vx += cx * basis[d,p]
-                    vy += cy * basis[d,p]
-                pp[0] += vx
-                pp[1] += vy
-    return pos
-
-def gpmotion_f(x_vec, pos, pc, zsize, basis, correlation, sig_acc_px, eigenVals, dc):
-    pos = ParamsTopos(x_vec, pos, pc, zsize, basis, dc)
-    thre = 12
-    e_t = np.zeros(thre)
-    count =0
-
-    for p in range(pc):
-        for f in range (zsize):
-            epf = sp_interpolation.cubicXY(correlation[p][f], pos[p][f][0], pos[p][f][1])
-            e_t[count] -=  epf
-        if count >= thre-1:
-            count = 0
-        else:
-            count += 1
-    count = 0
-
-    for f in range(zsize-1):
-        for d in range (dc):
-            cx = x_vec[2* (pc + dc*f +d) ]
-            cy = x_vec[2* (pc + dc*f +d) +1 ]
-            e_t[count] += cx*cx  + cy*cy
-        if count >= thre - 1:
-            count = 0
-        else:
-            count += 1
-    count = 0
-    if ( sig_acc_px > 0.0):
-        for f in range(zsize -2):
-            for d in range(dc):
-                cx0 = x_vec[2 * (pc + dc * f + d)]
-                cy0 = x_vec[2 * (pc + dc * f + d) + 1]
-                cx1 = x_vec[2 * (pc + dc * (f+1) + d)]
-                cy1 = x_vec[2 * (pc + dc * (f+1) + d) + 1]
-                dcx = cx1 - cx0
-                dcy = cy1 - cy0
-                e_t[count] += eigenVals[d]*(dcx*dcx + dcy*dcy) / (sig_acc_px*sig_acc_px)
-            if count >= thre - 1:
-                count = 0
-            else:
-                count += 1
-    e_tot  = 0.0
-    e_tot = sum(e_t)
-    return e_tot
-
-def gpmotion_grad(x_vec, pos, pc, zsize, basis, correlation,
-                  sig_acc_px, eigenVals, dc):
-
-    pad = 0
-    partCt = len(x_vec)
-    thre = 12
-    gradDest  = np.zeros((thre, partCt+ pad) )
-    ccg_pf = np.zeros((pc, zsize + pad, 2))
-
-    pos = ParamsTopos(x_vec, pos, pc, zsize, basis, dc)
-    for p in range(pc):
-        for f in range (zsize):
-            vrx , vry = sp_interpolation.cubicXYgrad(correlation[p][f], pos[p][f][0], pos[p][f][1])
-            ccg_pf[p][f]  = [vrx , vry]
+movies_path = '/home/adnan/PycharmProjects/DoseWeighting/MOVIES_RELION/'
+movie = os.path.join(movies_path, '20170629_00021_frameImage.tiff')
+logfilepath = '/home/adnan/PycharmProjects/DoseWeighting/Relion_log/'
+logfile = os.path.join(logfilepath, '20170629_00021_frameImage.star')
+logfile_track = os.path.join(logfilepath, '20170629_00021_frameImage_tracks.star')
+Gainreffile = os.path.join(movies_path, 'gain.mrc')
 
 
-    count = 0
-    for p in range(pc):
-        for f in range(zsize):
-            gradDest[count][2*p] -=   ccg_pf[p][f][0]
-            gradDest[count][2*p+1] -= ccg_pf[p][f][1]
-            if count >= thre - 1:
-                count = 0
-            else:
-                count += 1
+stackfilename = "bdb:" + '/home/adnan/PycharmProjects/DoseWeighting/Relion_Stackv9/MotionCorr/job030/MOVIES_RELION/Particles/sphire_relion_stack'
 
-    count = 0
-    for d in range(dc):
-        for p in range(pc):
-            bpd = basis[d, p]
-            gx, gy = 0.0, 0.0
-            for f in range(zsize -2 , -1, -1):
-                gx += bpd * ccg_pf[p][f+1][0]
-                gy += bpd * ccg_pf[p][f+1][1]
-                gradDest[count][2 * (pc + dc * f + d) ]  -= gx
-                gradDest[count][2 * (pc + dc * f + d) + 1] -= gy
-            if count >= thre - 1:
-                count = 0
-            else:
-                count += 1
+print("Reading all the parameters from stack")
+source_n_ind_all = EMUtil.get_all_attributes(stackfilename, "source_n")
+adnan_all = EMUtil.get_all_attributes(stackfilename, 'adnan_n')
+no_of_imgs, ptcl_source_images, project_params_all, particle_coordinates_all, \
+            ctf_params_all, nx_all, ny_all, nz_all, chunks_all = read_all_attributes_from_stack(stackfilename)
 
-    count = 0
-    for f in range(zsize-1):
-        for d in range(pc):
-            gradDest[count][2 * (pc + dc * f + d) ] +=  2.0 *  x_vec[2 * (pc + dc * f + d) ]
-            gradDest[count][2 * (pc + dc * f + d) + 1] +=  2.0 *  x_vec[2 * (pc + dc * f + d) +1 ]
 
-        if count >= thre - 1:
-            count = 0
-        else:
-            count += 1
+ref_vol_path1 = '/home/adnan/PycharmProjects/DoseWeighting/run_half1_class001_unfil.mrc'
+ref_vol_path2 = '/home/adnan/PycharmProjects/DoseWeighting/run_half2_class001_unfil.mrc'
+mask_path = '/home/adnan/PycharmProjects/DoseWeighting/mask.mrc'
 
-    count = 0
-    if ( sig_acc_px > 0.0):
-        sa2 = sig_acc_px * sig_acc_px
+ref_EM_1 = sp_utilities.get_im(ref_vol_path1)
+ref_EM_2 = sp_utilities.get_im(ref_vol_path2)
 
-        for f in range(zsize-2):
-            for d in range(dc):
-                cx0 = x_vec[2 * (pc + dc * f + d)]
-                cy0 = x_vec[2 * (pc + dc * f + d) + 1]
-                cx1 = x_vec[2 * (pc + dc * (f + 1) + d)]
-                cy1 = x_vec[2 * (pc + dc * (f + 1) + d) + 1]
+mask_volume = sp_utilities.get_im(mask_path)
 
-                dcx = cx1 - cx0
-                dcy = cy1 - cy0
+ref_EM_1 *= mask_volume
+ref_EM_2 *= mask_volume
 
-                gradDest[count][2 * (pc + dc * f + d)] -= 2.0 * eigenVals[d] * dcx / sa2
-                gradDest[count][2 * (pc + dc * f + d)+1] -= 2.0 * eigenVals[d] * dcy / sa2
-                gradDest[count][2 * (pc + dc * (f+1) + d)] += 2.0 * eigenVals[d] * dcx / sa2
-                gradDest[count][2 * (pc + dc * (f+1) + d)+1] += 2.0 * eigenVals[d] * dcy / sa2
+volft_1 = sp_projection.prep_vol(ref_EM_1, npad=2, interpolation_method= 1)
+volft_2  = sp_projection.prep_vol(ref_EM_2, npad=2, interpolation_method= 1)
 
-            if count >= thre - 1:
-                count = 0
-            else:
-                count += 1
+kb_1 = 0
+kb_2 = 0
 
-    gradDest_in = np.zeros(partCt)
+del mask_volume
+del ref_EM_1
+del ref_EM_2
 
-    for t in range(thre):
-        for i in range(partCt):
-            gradDest_in[i] += gradDest[t][i]
+min_res = 20
+max_res = 2.97757
+# if args.max_res == -1:
+#     max_res = findminmaxresol(args.half_curve)
+# else:
+#     max_res = args.max_res
 
-    return gradDest_in
+# ref_volume_1 = readimg(ref_vol_path1)
+# ref_volume_2 = readimg(ref_vol_path2)
+#
+# mask_volume = readimg(mask_path)
+#
+# ref_volume_1 = np.multiply(ref_volume_1, mask_volume)
+# ref_volume_2 = np.multiply(ref_volume_2, mask_volume)
+#
+# ref_EM_1 = EMData()
+# ref_EM_2 = EMData()
+#
+# ref_EM_1 = EMNumPy.numpy2em(ref_volume_1)
+# ref_EM_2 = EMNumPy.numpy2em(ref_volume_2)
+#
+# volft_1, kb_1 = sp_projection.prep_vol(ref_EM_1, npad=2, interpolation_method=-1)
+# volft_2, kb_2 = sp_projection.prep_vol(ref_EM_2, npad=2, interpolation_method=-1)
+
+zsize = EMUtil.get_image_count(movie)
+# shiftperptcl = giveshiftperparticles(logfile_track, zsize)
+# print(shiftperptcl)
+
+shift_file = pd.read_csv(logfile)
+header = shift_file['data_general'][0:16]
+shift_x = []
+shift_y = []
+for i in range(17, len(shift_file['data_general'])):
+    shift_x.append(float(shift_file['data_general'][i].split()[1]))
+    shift_y.append(float(shift_file['data_general'][i].split()[2]))
+
+# print(shift_x, shift_y)
+
+print("Sorted the particles from the stack ")
+project_params, particle_coordinates, ctf_params, \
+nx, ny, nz, adnan_n, chunks = find_particles_info_from_movie(stackfilename,
+                                                                   movie,
+                                                                   no_of_imgs,
+                                                                   ptcl_source_images,
+                                                                   project_params_all,
+                                                                   particle_coordinates_all,
+                                                                   ctf_params_all,
+                                                                   nx_all,
+                                                                   ny_all,
+                                                                   nz_all,
+                                                                   adnan_all,
+                                                                   chunks_all,
+                                                                   show_first=False)
+
+
+del adnan_n
+
+
+ref_project_2D_ptcl_vol1 = get_2D_project_for_all_ptcl_from_reference(volft_1, kb_1, project_params, zsize, show=False)
+ref_project_2D_ptcl_vol2 = get_2D_project_for_all_ptcl_from_reference(volft_2, kb_2, project_params, zsize, show=False)
+
+
+peak_values = estim_one_particle( movie,
+                    ref_project_2D_ptcl_vol1,
+                    ref_project_2D_ptcl_vol2,
+                    nx[0], ny[0],
+                    particle_coordinates,
+                    zsize,
+                    Gainreffile,
+                    chunks,
+                    ctf_params,
+                    shift_x, shift_y)
+
+count = 0
+f = open('newcordinates.txt', 'w')
+for sli in peak_values:
+    np.savetxt(f, sli, fmt='%20.6f', delimiter='  ', newline='\n', header='Particle_' + str(count))
+    count += 1
+f.close()
+
+print('CTF on Reference projections')
 
 
 
+
+
+
+"""
+I have placed it here so that i dont confuse two things.
 def get_fcc_all_particles(movie_name, refer_1, refer_2, nxx, nyy, part_cord, zsize,
-                          gainrefname, chunk_arr, ctf_params_part, frame_shift_x, frame_shift_y, newshifts):
+                          gainrefname, part_shifts, chunk_arr, ctf_params_part, frame_shift_x, frame_shift_y):
 
     current_frame = EMData()
     current_frame.read_image(movie_name, 0)
@@ -1103,69 +1225,63 @@ def get_fcc_all_particles(movie_name, refer_1, refer_2, nxx, nyy, part_cord, zsi
     Util.mul_scalar(gainref, -1.0)
     globaldose = 1.277
     angout_pix = 0.885
-    sig_vel = 0.9435
-    sig_acc = 2.55
-    sig_div = 8235
 
-
+"""
+#Calculating the fourier shell correlation of all the particle images with respect to 2-D reference
+# projection of 3-D volume
+"""
     var_movie, cnt_movie =  init_variance_array(movie_name, nxx, nyy, cen_xx, cen_yy, part_cord, zsize, gainref)
     sigma = movie_vari_powspect(movie_name,  gainref, var_movie, cnt_movie, zsize, part_cord,
                        nxx, nyy, cen_xx , cen_yy)
 
-    CCFS = np.zeros((zsize, len(part_cord), nxx, nyy))
-    CCFS = movieCC(movie_name, nxx, nyy, sigma, var_movie, cnt_movie, globaldose, angout_pix,
-                   zsize, gainref, part_cord,ctf_params_part, cen_xx, cen_yy,
-                   refer_1, refer_2, CCFS, chunk_arr)
-
-    CCFS = CCFS.swapaxes(0, 1)
-
-    newshifts  = gpmotion(sig_vel , sig_acc, sig_div, globaldose, angout_pix,frame_shift_x, frame_shift_y,
-             part_cord, zsize, CCFS)
-
-    for i in tqdm(range(zsize), desc="FCC Loop"):
+    for i in tqdm(range(zsize), desc= "FCC Loop"):
+        # bad_particles = []
         current_frame.read_image(movie_name,i)
         current_frame = Util.muln_img(current_frame, gainref)
-        dose = globaldose * (i)
-        damageweights = damageWeights(dose, nxx, angout_pix)
-        doseline = damageweights[:, 0].tolist()
+        current_frame = applyshifts(current_frame , frame_shift_x[i] , frame_shift_y[i] )
         for j in range(len(part_cord)):
             try:
-                ptcl = Util.window(current_frame, nxx, nyy, 1,
-                                   np.int(angout_pix * part_cord[j][0] / angout_pix) - cen_xx,
-                                   np.int(angout_pix * part_cord[j][1] / angout_pix) - cen_yy, 0)
-                ptcl = applyshifts(ptcl, -newshifts[j][i][0], -newshifts[j][i][1])
+                ptcl = Util.window(current_frame, nxx, nyy, 1, part_cord[j][0] - cen_xx,
+                                             part_cord[j][1] - cen_yy ,0)
 
-                if chunk_arr[j] == 1:
+                # ptcl = applyshifts(ptcl, -part_shifts[j][i][0], -part_shifts[j][i][1])
+                if chunk_arr[j] == 1 :
                     refer = refer_1[j]
-                else:
+                else :
                     refer = refer_2[j]
 
                 refer = sp_filter.filt_ctf(refer, ctf_params_part[j], sign=1, binary=False)
 
-                # beam_tiltx = 0.096435999999999994
-                # beam_tilty = -0.26850000000000002
-                # wavelength = 0.025079493567048063
-                # Cs = 1.3999999999999999
-                # refer = apply_tilt(refer, beam_tiltx, beam_tilty, wavelength, Cs, angout_pix)
+                # ccmap = sp_fundamentals.ccf(ptcl , refer)
+                #
+                # peak_values = sp_utilities.peak_search(ccmap, 3)
+                #
+                # ptcl = applyshifts(ptcl , -peak_values[0][-2], -peak_values[0][-1])
 
                 calc_fsc_per_part(ptcl, refer, fsc_values, weight_0, weight_1, i, j, indices,
                                   x_index_expand, y_index_expand, sigma, var_movie, cnt_movie, zsize)
                 del ptcl
                 del refer
             except RuntimeError:
+                # bad_particles.append(j)
                 continue
-
+        # del bad_particles
     del current_frame
     del var_movie
     del cnt_movie
     del gainref
-    # del newshifts
+    # del bad_particles
     del sigma
-    del CCFS
 
-    return fsc_values, weight_0, weight_1, newshifts
+    return fsc_values, weight_0, weight_1
+"""
 
-
+"""
+Extracting particle image from the movie data. First getting the particle cordinates from the dictionary and then 
+creating a window around to extract the same particle from each frame
+"""
+"""
+#----------------------- Particle cordinate
 def get_all_polish_ptcl_imgs( movie_name,
                               nxx, nyy,
                               part_cord,
@@ -1173,8 +1289,12 @@ def get_all_polish_ptcl_imgs( movie_name,
                               gainrefname,
                               partshifts,
                               bfx,
-                              bfy):
-    """Getting dimension information"""
+                              bfy,
+                              frame_shift_x,
+                              frame_shift_y):
+"""
+#Getting dimension information
+"""
     current_frame = EMData()
     current_frame.read_image(movie_name, 0)
     xsize = current_frame.get_xsize()
@@ -1185,27 +1305,28 @@ def get_all_polish_ptcl_imgs( movie_name,
     gainref.read_image(gainrefname,0)
     Util.mul_scalar(gainref, -1.0)
 
+    # bfx, bfy = givemerealbfactors(angout_pix, zsize, nxx)
     weights = computeweights(bfx, bfy, zsize, nxx, True)
-    angout_pix = 0.885
+
     particle_imgs_in_movie = []
     for i in tqdm(range(zsize) , desc= "Applying Weights and get polish particles"):
         current_frame.read_image(movie_name, i)
         current_frame = Util.muln_img(current_frame, gainref)
+        current_frame = applyshifts(current_frame, frame_shift_x[i], frame_shift_y[i])
         line = weights[i, :, 0].tolist()
         crop_imgs = []
         new_coord = []
         for j in range(len(part_cord)):
             try:
-                box_img = Util.window(current_frame, nxx, nyy, 1,
-                                   np.int(angout_pix * part_cord[j][0] / angout_pix) - cen_xx,
-                                   np.int(angout_pix * part_cord[j][1] / angout_pix) - cen_yy, 0)
-                box_img = applyshifts(box_img, -partshifts[j][i][0], -partshifts[j][i][1])
+                box_img = Util.window(current_frame, nxx, nyy, 1, part_cord[j][0] - cen_xx,
+                                             part_cord[j][1] - cen_yy ,0)
+                # box_img = applyshifts(box_img, -partshifts[j][i][0], -partshifts[j][i][1])
                 box_img = sp_filter.filt_table(box_img, line)
-                
                 crop_imgs.append(box_img)
                 new_coord.append(j)
                 del box_img
             except RuntimeError:
+                # bad_particles.append(j)
                 continue
         if i == zsize - 1:
             new_coord = new_coord
@@ -1218,416 +1339,4 @@ def get_all_polish_ptcl_imgs( movie_name,
     del gainref
     del weights
     return particle_imgs_in_movie , new_coord
-
-
-parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-
-parser.add_argument(
-    'movies_folder',
-    type=str,
-    help='Movies folder'
-)
-
-parser.add_argument(
-    'log_folder',
-    type=str,
-    help='Log files folder'
-)
-
-parser.add_argument(
-    'stack_file',
-    type=str,
-    help='Substack file'
-)
-
-parser.add_argument(
-    'reference_vol_0',
-    type=str,
-    help = 'reference volume 0'
-)
-
-parser.add_argument(
-    'reference_vol_1',
-    type=str,
-    help = 'reference volume 1'
-)
-
-parser.add_argument(
-    'ref_mask',
-    type=str,
-    help='Reference mask of the particle'
-)
-
-parser.add_argument(
-    'saved_folder',
-    type=str,
-    help='Location of folder where new mrcs files and bdb will be stored'
-)
-
-parser.add_argument(
-    'no_of_mic',
-    type=int,
-    help='Number of micrographs to be processed'
-)
-
-parser.add_argument(
-    'ang_pix',
-    type=float,
-    help='Angular pixel value in angstorms'
-)
-
-parser.add_argument(
-    'min_res',
-    type=float,
-    help='Minimum resolution value in angstorms'
-)
-
-parser.add_argument(
-    'max_res',
-    type=float,
-    help='Maximum resolution value in angstorms'
-)
-
-parser.add_argument(
-    'half_curve',
-    type=str,
-    help='FSC values from the Post refiner'
-)
-
-args = parser.parse_args()
-no_of_micrographs = args.no_of_mic
-Gainreffile = os.path.join( os.path.abspath(os.path.join(str(args.movies_folder), os.pardir)), 'gain.mrc')
-movie_names = return_movie_names(str(args.movies_folder))
-
-#-------------------------------Reading corrected sums log files for reading the global shifts applied
-log_movie_path = args.log_folder
-stackfilename = "bdb:" + args.stack_file
-stack_absolute_path = args.saved_folder
-
-print("Reading all the parameters from stack")
-no_of_imgs, ptcl_source_images, project_params_all, particle_coordinates_all, \
-            ctf_params_all, nx_all, ny_all, nz_all, chunks_all = read_all_attributes_from_stack(stackfilename)
-
-print('no of images', no_of_imgs)
-adnan_all = np.arange(EMUtil.get_image_count(stackfilename)).tolist()
-
-print("Finding Non existing .mrc files in substack with respect to the movies")
-movie_name_x = []
-ptcl_source_images_xx =[]
-
-for i in range(no_of_imgs):
-    ptcl_source_images_xx.append(str(os.path.basename(ptcl_source_images[i])).split('.mrc')[0])
-
-count = 0
-for i in range (no_of_micrographs) :
-    temp = np.where(np.array(ptcl_source_images_xx) == str(os.path.basename(movie_names[i])).split('.tiff')[0])
-    if len(temp[0]) != 0:
-        movie_name_x.append(movie_names[i])
-        count+=1
-
-movie_names = movie_name_x
-no_of_micrographs = count
-
-del ptcl_source_images_xx
-
-ref_EM_1 = sp_utilities.get_im(args.reference_vol_0)
-ref_EM_2 = sp_utilities.get_im(args.reference_vol_1)
-
-mask_volume = sp_utilities.get_im(args.ref_mask)
-
-ref_EM_1 *= mask_volume
-ref_EM_2 *= mask_volume
-
-volft_1 = sp_projection.prep_vol(ref_EM_1, npad=2, interpolation_method=1)
-volft_2 = sp_projection.prep_vol(ref_EM_2, npad=2, interpolation_method=1)
-
-
-kb_1 = 0
-kb_2 = 0
-del mask_volume
-del ref_EM_1
-del ref_EM_2
-
-global_fcc = []
-global_wg0 = []
-global_wg1 = []
-global_shift = []
-
-min_res = args.min_res
-
-if args.max_res == -1:
-    max_res = findminmaxresol(args.half_curve)
-else:
-    max_res = args.max_res
-
-
-# min_res = 20
-max_res = 2.97757
-
-ima_start, ima_end = sp_applications.MPI_start_end(no_of_micrographs, n_mpi_procs, my_mpi_proc_id)
-
-for micro in enumerate(movie_names[ima_start:ima_end]):
-
-    print("Applying GLOBAL shifts", micro)
-    if str(os.path.basename(micro[1])).split('.')[-1] == 'mrcs':
-        logfile = os.path.join(os.path.abspath(os.path.join(log_movie_path, os.pardir)),
-                               micro[1].split('.')[0].split('/')[-1] + '.log')
-        print(logfile)
-    elif str(os.path.basename(micro[1])).split('.')[-1] == 'tiff':
-        logfile = os.path.join(os.path.abspath(os.path.join(log_movie_path, os.pardir)),
-                           micro[1].split('.')[0].split('/')[-1]  + '.star')
-        print(logfile)
-
-    zsize = EMUtil.get_image_count(micro[1])
-
-    shift_x, shift_y = givemotioncorrshifts(logfile)
-
-    trackfile = os.path.join(os.path.abspath(os.path.join(log_movie_path, os.pardir)),
-                             micro[1].split('.')[0].split('/')[-1] + '_tracks' + '.star')
-
-    try:
-        shiftperptcl = giveshiftperparticles(trackfile, zsize)
-    except:
-        print("Per particles shifts files not available")
-
-    # print(shift_x, shift_y)
-    print("Sorted the particles from the stack ")
-    project_params, particle_coordinates, ctf_params, \
-    nx, ny, nz, adnan_n, chunks = find_particles_info_from_movie(stackfilename,
-                                                                       micro[1],
-                                                                       no_of_imgs,
-                                                                       ptcl_source_images,
-                                                                       project_params_all,
-                                                                       particle_coordinates_all,
-                                                                       ctf_params_all,
-                                                                       nx_all,
-                                                                       ny_all,
-                                                                       nz_all,
-                                                                       adnan_all,
-                                                                       chunks_all,
-                                                                       show_first=False)
-
-
-    del adnan_n
-    # del project_params
-    # shift_file_name = os.path.join(os.path.join(str(args.saved_folder), 'metadata'),
-    #                        micro[1].split('.')[0].split('/')[-1] + '_partshift.txt')
-
-    # shiftperptcl = np.loadtxt(shift_file_name).reshape(len(particle_coordinates), zsize, 2)
-
-    ref_project_2D_ptcl_vol1 = get_2D_project_for_all_ptcl_from_reference(volft_1, kb_1, project_params, zsize, show=False)
-    ref_project_2D_ptcl_vol2 = get_2D_project_for_all_ptcl_from_reference(volft_2, kb_2, project_params, zsize, show=False)
-
-    fsc_val, weight0, weight1, part_shifts = get_fcc_all_particles(micro[1], ref_project_2D_ptcl_vol1, ref_project_2D_ptcl_vol2,
-                                                      nx[0], ny[0], particle_coordinates, zsize, Gainreffile,
-                                                      chunks, ctf_params, shift_x, shift_y, shiftperptcl)
-
-    np.savetxt(os.path.join(
-        os.path.join(str(args.saved_folder), 'metadata' ),
-        micro[1].split('.')[0].split('/')[-1] + '_FCC.txt'), fsc_val)
-
-    np.savetxt(os.path.join(
-        os.path.join(str(args.saved_folder), 'metadata'),
-        micro[1].split('.')[0].split('/')[-1] + '_wg0.txt'), weight0)
-
-    np.savetxt(os.path.join(
-        os.path.join(str(args.saved_folder), 'metadata'),
-        micro[1].split('.')[0].split('/')[-1] + '_wg1.txt'), weight1)
-
-    count = 0
-    f = open(os.path.join(os.path.join(str(args.saved_folder), 'metadata'),
-                           micro[1].split('.')[0].split('/')[-1] + '_partshift.txt'), 'w')
-    for sli in part_shifts:
-        np.savetxt(f, sli, fmt='%20.6f', delimiter='  ', newline='\n', header='Particle_' + str(count))
-        count += 1
-    f.close()
-
-    # count = 0
-    # f = open('test.txt', 'w')
-    # for sli in a:
-    #     np.savetxt(f, sli, fmt='%20.6f', delimiter='  ', newline='\n', header='Particle_' + str(count))
-    #     count+=1
-    # f.close()
-
-    global_fcc.append(fsc_val)
-    global_wg0.append(weight0)
-    global_wg1.append(weight1)
-    global_shift.append(part_shifts)
-
-    del fsc_val
-    del weight0
-    del weight1
-    del part_shifts
-    del ref_project_2D_ptcl_vol1
-    del ref_project_2D_ptcl_vol2
-    del particle_coordinates
-    del ctf_params
-    del shift_x
-    del shift_y
-    del project_params
-
-fsc_values_per_micrograph = sp_utilities.wrap_mpi_gatherv(global_fcc, 0, mpi.MPI_COMM_WORLD)
-weight0_per_micrograph = sp_utilities.wrap_mpi_gatherv(global_wg0, 0, mpi.MPI_COMM_WORLD)
-weight1_per_micrograph = sp_utilities.wrap_mpi_gatherv(global_wg1, 0, mpi.MPI_COMM_WORLD)
-part_shifts_per_micrograph = sp_utilities.wrap_mpi_gatherv(global_shift, 0, mpi.MPI_COMM_WORLD)
-
-
-
-del global_fcc
-del global_wg0
-del global_wg1
-del global_shift
-
-mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
-
-if main_mpi_proc == my_mpi_proc_id :
-    fsc_values_per_micrograph = np.array(fsc_values_per_micrograph)
-    weight0_per_micrograph  = np.array(weight0_per_micrograph)
-    weight1_per_micrograph = np.array(weight1_per_micrograph)
-
-    fsc_sum_per_frame = np.sum(np.array(fsc_values_per_micrograph), axis=0)
-    weight0_per_micrograph = np.sum(np.array(weight0_per_micrograph), axis=0)
-    weight1_per_micrograph = np.sum(np.array(weight1_per_micrograph), axis=0)
-
-    weight = np.sqrt(weight0_per_micrograph + weight1_per_micrograph)
-    FCC = np.divide(fsc_sum_per_frame, weight)
-
-    sh_ref = FCC.shape[1]
-    s_ref = 2* (sh_ref - 1)
-
-    k0 = int(angtopix(min_res, s_ref, args.ang_pix))
-    k1 = int(angtopix(max_res, s_ref, args.ang_pix ))
-
-    bfacsxx , bfacsyy = fitBkFactors(FCC, k0 , k1)
-
-    cf =  8.0 * ((args.ang_pix)**2)  * ((sh_ref)**2)
-    b = np.zeros(FCC.shape[0])
-    k = np.zeros(FCC.shape[0])
-
-    for f in range(FCC.shape[0]):
-        s = bfacsxx[f, 0]
-        b[f] = np.divide(-cf, s * s)
-        k[f] = np.log(bfacsxx[f, 1])
-
-    bfactors = np.array((b, k))
-    np.savetxt(os.path.join(
-        os.path.join(str(args.saved_folder), 'metadata'),
-        'BFactors.txt'), bfactors)
-
-    del b
-    del k
-    bfacxx = bfacsxx[:, 0].tolist()
-    bfacsyy = bfacsxx[:, 1].tolist()
-
-else:
-    bfacxx = []
-    bfacsyy = []
-
-bfacx = sp_utilities.bcast_list_to_all(bfacxx, my_mpi_proc_id, main_mpi_proc, mpi.MPI_COMM_WORLD)
-bfacy = sp_utilities.bcast_list_to_all(bfacsyy, my_mpi_proc_id, main_mpi_proc, mpi.MPI_COMM_WORLD)
-
-
-
-
-bfacx,bfacy = np.loadtxt('/home/adnan/PycharmProjects/DoseWeighting/Polis001/metadata/BFactors.txt')
-
-for micro in enumerate(movie_names[ima_start:ima_end]):
-    # print("Applying GLOBAL shifts", micro[0])
-    # if str(os.path.basename(micro[1])).split('.')[-1] == 'mrcs':
-    #     logfile = os.path.join(os.path.abspath(os.path.join(log_movie_path, os.pardir)),
-    #                            micro[1].split('.')[0].split('/')[-1] + '.log')
-    #     print(logfile)
-    # elif str(os.path.basename(micro[1])).split('.')[-1] == 'tiff':
-    #     logfile = os.path.join(os.path.abspath(os.path.join(log_movie_path, os.pardir)),
-    #                        micro[1].split('.')[0].split('/')[-1]  + '.star')
-    #     print(logfile)
-
-    # shift_x, shift_y = givemotioncorrshifts(logfile)
-    zsize = EMUtil.get_image_count(micro[1])
-
-
-
-    print("Sorted the particles from the stack ")
-    project_params, particle_coordinates, ctf_params, \
-    nx, ny, nz,  adnan_n, chunks = find_particles_info_from_movie(stackfilename,
-                                                                               micro[1],
-                                                                               no_of_imgs,
-                                                                               ptcl_source_images,
-                                                                               project_params_all,
-                                                                               particle_coordinates_all,
-                                                                               ctf_params_all,
-                                                                               nx_all,
-                                                                               ny_all,
-                                                                               nz_all,
-                                                                               adnan_all,
-                                                                               chunks_all,
-                                                                               show_first=False)
-
-
-    del project_params
-    del ctf_params
-    del chunks
-    print("Applying dose weighting")
-
-    shift_file_name = os.path.join(os.path.join(str(args.saved_folder), 'metadata'),
-                           micro[1].split('.')[0].split('/')[-1] + '_partshift.txt')
-
-    shiftperptcl = np.loadtxt(shift_file_name).reshape(len(particle_coordinates), zsize, 2)
-
-    particle_imgs_dosed, old_ind_coord = get_all_polish_ptcl_imgs(micro[1],
-                                                                    nx[0],
-                                                                    ny[0],
-                                                                    particle_coordinates,
-                                                                    zsize,
-                                                                    Gainreffile,
-                                                                    shiftperptcl,
-                                                                    bfacx,
-                                                                    bfacy)
-
-
-    particle_imgs_dosed = np.array(particle_imgs_dosed).swapaxes(0, 1)
-
-    print("Dose weighting done, summing starts")
-    mask = sp_utilities.model_circle(nx[0] // 2, nx[0], nx[0])
-    ave_particle_dosed = []
-    for i in range(len(particle_imgs_dosed)):
-        ave_particle_dosed.append(sum(particle_imgs_dosed[i]))
-    del particle_imgs_dosed
-    del particle_coordinates
-
-    print("Writing into mrcs files", len(ave_particle_dosed))
-
-    local_stack_path = "bdb:%s" % os.path.join(str(os.path.join(str(stack_absolute_path), 'micrographs')) , micro[1].split('.')[0].split('/')[-1] + "_ptcls")
-    local_mrc_path = os.path.join(str(os.path.join(str(stack_absolute_path), 'micrographs')) , micro[1].split('.')[0].split('/')[-1] + "_ptcls.mrcs")
-    local_bdb_stack = db_open_dict(local_stack_path)
-    old_stack = db_open_dict(stackfilename, ro=True)
-    print('Polish particles saved in ', local_mrc_path)
-
-    for i in range(len(ave_particle_dosed)):
-        index_old = adnan_n[old_ind_coord[i]]
-        old_dict = old_stack.get(index_old, nodata=True).get_attr_dict()
-        old_dict['data_path'] = local_mrc_path
-        old_dict['data_n'] = int(i)
-        old_dict['source_n'] = int(i)
-        old_dict['ptcl_source_coord_id'] = i
-        local_bdb_stack[i] = old_dict
-        ave_particle_dosed[i] = sp_fundamentals.resample(ave_particle_dosed[i], 1 )  # (0.885/1.24)
-        st = Util.infomask(ave_particle_dosed[i], mask, False)
-        ave_particle_dosed[i] += 2 * st[0]
-        st = Util.infomask(ave_particle_dosed[i], mask, False)
-        ave_particle_dosed[i] -= st[0]
-        ave_particle_dosed[i] /= st[1]
-        ave_particle_dosed[i].append_image(local_mrc_path)
-
-        db_close_dict(local_stack_path)
-        db_close_dict(stackfilename)
-
-    del local_bdb_stack
-    del old_stack
-    del ave_particle_dosed
-    del old_ind_coord
-
-mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
-mpi.mpi_finalize()
-
-
+"""
