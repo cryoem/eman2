@@ -1033,7 +1033,7 @@ def make_tile_with_median(args):
 		if tsz>1: break
 	offs=(tsz-pad)//2
 #	print(f"median tile: {sz} {tsz} {pad} {offs}") 
-	reconm=Reconstructors.get("real_median", {"sym":'c1',"size":[tsz,tsz,tsz],"mode":2})
+	reconm=Reconstructors.get("real_median", {"sym":'c1',"size":[tsz,tsz,tsz],"mode":4})
 	reconf=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":options.reconmode, "corners":1})
 #	reconf=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":options.reconmode, "corners":1,"savenorm":"test_norm.hdf","sqrtnorm":1})
 
@@ -1052,30 +1052,28 @@ def make_tile_with_median(args):
 		m=imgs[i]
 		if m["nx"]==1:
 			continue
+		
 		m.process_inplace("filter.ramp")
 		m.process_inplace("xform",{"alpha":-t[2]})
 		xf=Transform({"type":"xyz","ytilt":t[3],"xtilt":t[4]})
 
-		# need to do the CTF and zeroing first or the mask won't be to zero
-		mp=m.do_fft()
+		# Skipping masking for the moment, may have a negative impact
+		#dy=(pad//2)-np.cos(t[3]*np.pi/180.)*pad/2
+		#msk=EMData(pad, pad)
+		#msk.to_one()
+		#edge=(sz//10)
+		#msk.process_inplace("mask.zeroedge2d",{"x0":dy+edge, "x1":dy+edge, "y0":edge, "y1":edge})
+		#msk.process_inplace("mask.addshells.gauss",{"val1":0, "val2":edge})
+		#m.mult(msk)
+		
+		mp=reconf.preprocess_slice(m, xf)
 		if mp.has_attr("ctf") : mp.process_inplace("filter.ctfcorr.simple",{"useheader":1,"phaseflip":1,"hppix":2})
 		else : print("No CTF found for tilt-series, consider running CTF determination")
 		mp.set_complex_at(0,0,0)		# make sure the mean value is consistent (0) in all of the images
-		m=mp.do_ift()
-
-		dy=(pad//2)-np.cos(t[3]*np.pi/180.)*pad/2
-		msk=EMData(pad, pad)
-		msk.to_one()
-		edge=(sz//10)
-		msk.process_inplace("mask.zeroedge2d",{"x0":dy+edge, "x1":dy+edge, "y0":edge, "y1":edge})
-		msk.process_inplace("mask.addshells.gauss",{"val1":0, "val2":edge})
-	
-		#m.mult(msk)
-		mp=reconf.preprocess_slice(m, xf)
 		ppimgs.append((mp,xf))
-		
-		# kind of cheating here since we aren't preprocessing with the other reconstructor, but we know it doesn't do anything, so...
+
 		mpr=mp.process("xform.phaseorigin.tocenter").do_ift().get_clip(Region(-offs,-offs,tsz,tsz))
+		mpr.process_inplace("filter.bilateral",{"distance_sigma":2.0,"half_width":3,"niter":1,"value_sigma":mpr["sigma"]*2.0})
 		pprimgs.append((mpr,xf))
 
 		# summed radial profile for making structure factor

@@ -967,7 +967,13 @@ namespace EMAN
 
 		virtual string get_desc() const
 		{
-			return "A back projection reconstructor computing the median rather than mean value in each voxel";
+			return "A back projection reconstructor with alternative statistics. mode:\n\
+0 - median rather than mean per voxel (default)\n\
+1 - similar to a mode. progressive subdivision of numeric axis to find dense value cluster\n\
+2 - median with a bias towands zero (postive and negative)\n\
+3 - median with a bias towards the 1/2 of the values spanning a narrower range\n\
+4 - specifically for tomography, requires slices to be in order by tilt\n\
+";
 		}
 
 		static Reconstructor *NEW()

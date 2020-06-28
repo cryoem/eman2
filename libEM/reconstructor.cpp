@@ -2590,20 +2590,21 @@ EMData *RealMedianReconstructor::finish(bool doift)
 				for (std::vector<EMData *>::iterator it = slices.begin() ; it != slices.end(); ++it,++itt) {
 					Vec3f imvec = itt->transform(x-nx/2.0f,y-ny/2.0f,z-nz/2.0f);
 					
-					// single interpolated value
-// 					float val=(*it)->sget_value_at_interp(imvec[0]+nx/2,imvec[1]+ny/2);
-// 					if (val!=0) vals.push_back(val);
+					// single interpolated value from 2-D
+					float val=(*it)->sget_value_at_interp(imvec[0]+nx/2,imvec[1]+ny/2);
+					if (val!=0) vals.push_back(val);
 					
-					int xx=floor(imvec[0]+nx/2);
-					int yy=floor(imvec[1]+ny/2);
-					float val=(*it)->sget_value_at(xx,yy);
-					if (val!=0) vals.push_back(val);
-					val=(*it)->sget_value_at(xx+1,yy);
-					if (val!=0) vals.push_back(val);
-					val=(*it)->sget_value_at(xx+1,yy+1);
-					if (val!=0) vals.push_back(val);
-					val=(*it)->sget_value_at(xx,yy+1);
-					if (val!=0) vals.push_back(val);
+					// uses all 4 of the nearest values from the 2-D image
+// 					int xx=floor(imvec[0]+nx/2);
+// 					int yy=floor(imvec[1]+ny/2);
+// 					float val=(*it)->sget_value_at(xx,yy);
+// 					if (val!=0) vals.push_back(val);
+// 					val=(*it)->sget_value_at(xx+1,yy);
+// 					if (val!=0) vals.push_back(val);
+// 					val=(*it)->sget_value_at(xx+1,yy+1);
+// 					if (val!=0) vals.push_back(val);
+// 					val=(*it)->sget_value_at(xx,yy+1);
+// 					if (val!=0) vals.push_back(val);
 				}
 				if (vals.size()==0) continue;
 				
@@ -2692,6 +2693,47 @@ EMData *RealMedianReconstructor::finish(bool doift)
 					int p3=vals.size()*2/3;
 					float v=(vals[p2]-vals[0]<vals[vals.size()-1]-vals[p2])?(vals[p1]+vals[p1-1]+vals[p1+1])/3.0f:(vals[p3]+vals[p3-1]+vals[p3+1])/3.0f;
 					image->set_value_at(x,y,z,v);		// for even sizes, not quite right, and should include possibility of local average
+					break;
+				}
+				case 4:
+				{
+					// too few values, return median
+					if (vals.size()<10) {
+						std::sort(vals.begin(),vals.end());
+						image->set_value_at(x,y,z,vals[vals.size()/2]);		// for even sizes, not quite right, and should include possibility of local average
+						break;
+					}
+					
+					//compute stats
+					int n=vals.size();
+					float mean=0,sigma=0;
+					for (int i=0; i<n; i++) { mean+=vals[i]; sigma+=vals[i]*vals[i]; }
+					mean/=n;
+					sigma=sqrt(sigma/n-mean);
+					// low & high refer to angle not value
+					float low=(vals[0]+vals[1]+vals[2]+vals[3])/4.0f;
+					float high=(vals[n-1]+vals[n-2]+vals[n-3]+vals[n-4])/4.0f;
+					
+					// If both extreme tilts roughly agree, then we assume that's the right range to use and we average values near that
+					// by computing the mean of all values within 1 sigma of all values
+					if (fabs(low-high)<sigma) {
+						mean=(low+high)*4.0f;
+						int c=8;
+						for (int i=4; i<n-4; i++) { 
+							if (fabs(vals[i]-mean/c)<sigma) { mean+=vals[i]; c++; } 
+						}
+						image->set_value_at(x,y,z,mean/c);
+					}
+					// This means the extremes disagree and we have to pick which value is best, we go with min(fabs)
+					else {
+						if (fabs(low)<fabs(high)) mean=low*4.0;
+						else mean=high*4.0;
+						int c=4;
+						for (int i=4; i<n-4; i++) { 
+							if (fabs(vals[i]-mean/c)<sigma) { mean+=vals[i]; c++; } 
+						}
+						image->set_value_at(x,y,z,mean/c);
+					}
 					break;
 				}
 				}
