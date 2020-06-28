@@ -978,6 +978,7 @@ namespace EMAN
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
+			d.put("mode", EMObject::INT, "Default is 0, median. 1 - compute estimated statistical mode.");
 			d.put("size", EMObject::INTARRAY, "Required. The dimensions of the real-space output volume, including any padding (must be handled by the calling application). Assumed that apix x/y/z identical.");
 			d.put("weight", EMObject::FLOAT, "Optional. A temporary value set prior to slice insertion, indicative of the inserted slice's weight. Default sis 1.");
 			d.put("sym", EMObject::STRING, "Optional. The symmetry to impose on the final reconstruction. Default is c1");

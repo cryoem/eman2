@@ -312,7 +312,7 @@ EMData *FourierReconstructorSimple2D::finish(bool)
 	return  ret;
 }
 
-void ReconstructorVolumeData::normalize_threed(const bool sqrt_damp,const bool wiener)
+void ReconstructorVolumeData::normalize_threed(const bool sqrtnorm,const bool wiener)
 // normalizes the 3-D Fourier volume. Also imposes appropriate complex conjugate relationships
 {
 	float* norm = tmp_data->get_data();
@@ -374,7 +374,7 @@ void ReconstructorVolumeData::normalize_threed(const bool sqrt_damp,const bool w
 	// actual normalization
 	for (size_t i = 0; i < (size_t)subnx * subny * subnz; i += 2) {
 		float d = norm[i/2];
-		if (sqrt_damp) d*=sqrt(d);
+		if (sqrtnorm) d=sqrt(d);
 		if (d == 0) {
 			rdata[i] = 0;
 			rdata[i + 1] = 0;
@@ -1425,9 +1425,10 @@ EMData* FourierReconstructor::projection(const Transform &euler, int ret_fourier
 			yy=yy*ny;
 			zz=zz*nz;
 
-			if (!pixel_at(xx,yy,zz,dt) || dt[2]<0.01) continue;
+			if (!pixel_at(xx,yy,zz,dt) || dt[2]<0.005) continue;
+//			if (x==0) printf("%d %d %g %g %g\n",x,y,dt[0],dt[1],dt[2]);
+			if ((x==0 ||x==nx/2) && (y!=0 && y!=-ny/2)) { dt[0]/=2; dt[1]/=2; }
 			ret->set_complex_at(x,y,std::complex<float>(dt[0],dt[1]));	// division by dt[2] already handled in pixel_at
-//			ret->set_complex_at(x,y,std::complex<float>(dt[0]/dt[2],dt[1]/dt[2]));
 		}
 	}
 	
@@ -1443,86 +1444,105 @@ EMData* FourierReconstructor::projection(const Transform &euler, int ret_fourier
 
 bool FourierReconstructor::pixel_at(const float& xx, const float& yy, const float& zz, float *dt)
 {
-	int x0 = (int) floor(xx);
-	int y0 = (int) floor(yy);
-	int z0 = (int) floor(zz);
+	int x0 = (int) Util::round(xx);
+	int y0 = (int) Util::round(yy);
+	int z0 = (int) Util::round(zz);
+
+	std::complex<float> val=image->get_complex_at(x0,y0,z0);
+	size_t idx=image->get_complex_index_fast(x0,y0,z0)/2;
+	float norm=tmp_data->get_value_at_index(idx);
+	dt[0]=val.real()/norm;
+	dt[1]=val.imag()/norm;
+	dt[2]=norm;
+//	printf("%d %d %d    %g %g %g\n",x0,y0,z0,dt[0],dt[1],dt[2]);
+	return true;
 	
-	float *rdata=image->get_data();
-	float *norm=tmp_data->get_data();
-	float normsum=0,normsum2=0;
-
-	dt[0]=dt[1]=dt[2]=0.0;
-
-	if (nx==subnx) {			// normal full reconstruction
-		if (x0<-nx2-1 || y0<-ny2-1 || z0<-nz2-1 || x0>nx2 || y0>ny2 || z0>nz2 ) return false;
-
-		int x1=x0+1;
-		int y1=y0+1;
-		int z1=z0+1;
-		if (x0<-nx2) x0=-nx2;
-		if (x1>nx2) x1=nx2;
-		if (y0<-ny2) y0=-ny2;
-		if (y1>ny2) y1=ny2;
-		if (z0<-nz2) z0=-nz2;
-		if (z1>nz2) z1=nz2;
-		
-		size_t idx=0;
-		float r, gg;
-		for (int k = z0 ; k <= z1; k++) {
-			for (int j = y0 ; j <= y1; j++) {
-				for (int i = x0; i <= x1; i ++) {
-					idx=image->get_complex_index_fast(i,j,k);
+	//Trilinear interpolation version caused prominent interpolation artifacts due to high noise levels
+	// between 1/2 Nyquist and Nyquist. While the nearest neighbor interpolation used above still has
+	// artifacts, it seems better for this puprose.
+	
+// 	int x0 = (int) floor(xx);
+// 	int y0 = (int) floor(yy);
+// 	int z0 = (int) floor(zz);
+// 	
+// 	float *rdata=image->get_data();
+// 	float *norm=tmp_data->get_data();
+// 	float normsum=0,normsum2=0;
+// 
+// 	dt[0]=dt[1]=dt[2]=0.0;
+// 
+// 	if (nx==subnx) {			// normal full reconstruction
+// 		if (x0<-nx2-1 || y0<-ny2-1 || z0<-nz2-1 || x0>nx2 || y0>ny2 || z0>nz2 ) return false;
+// 
+// 		
+// 		
+// 		int x1=x0+1;
+// 		int y1=y0+1;
+// 		int z1=z0+1;
+// 		if (x0<-nx2) x0=-nx2;
+// 		if (x1>nx2) x1=nx2;
+// 		if (y0<-ny2) y0=-ny2;
+// 		if (y1>ny2) y1=ny2;
+// 		if (z0<-nz2) z0=-nz2;
+// 		if (z1>nz2) z1=nz2;
+// 		
+// 		size_t idx=0;
+// 		float r, gg;
+// 		for (int k = z0 ; k <= z1; k++) {
+// 			for (int j = y0 ; j <= y1; j++) {
+// 				for (int i = x0; i <= x1; i ++) {
+// 					idx=image->get_complex_index_fast(i,j,k);
+// // 					r = Util::hypot3sq((float) i - xx, j - yy, k - zz);
+// // 					gg = Util::fast_exp(-r / EMConsts::I2G);
+// 					gg=(1.0-fabs(i-xx))*(1.0-fabs(j-yy))*(1.0-fabs(k-zz));	// Change from Gaussian to trilinear, 6/7/20
+// 					
+// 					dt[0]+=gg*rdata[idx];
+// 					dt[1]+=(i<0?-1.0f:1.0f)*gg*rdata[idx+1];
+// 					//dt[2]+=norm[idx/2]*gg;
+// 					normsum2+=gg;
+// 					normsum+=gg*norm[idx/2];
+// 					if (i==0) {
+// 						normsum2+=gg;
+// 						normsum+=gg*norm[idx/2];				
+// 					}
+// 				}
+// 			}
+// 		}
+// 		if (normsum==0) return false;
+// 		dt[0]/=normsum;
+// 		dt[1]/=normsum;
+// 		dt[2]=normsum/normsum2;
+// #ifdef DEBUG_POINT
+// 		if (z0==23 && y0==0 && x0==113) {
+// 			std::complex<float> pv = image->get_complex_at(113,0,23);
+// 			float pnv = tmp_data->get_value_at(113,0,23);
+// 			printf("pixat: %1.4g\t%1.4g\t%1.4g\t%1.4g\t%1.4g\t%1.4g\n",pv.real()/pnv,pv.imag()/pnv,pnv,dt[0],dt[1],dt[2]);
+// 		}
+// #endif
+// //		printf("%1.2f,%1.2f,%1.2f\t%1.3f\t%1.3f\t%1.3f\t%1.3f\t%1.3f\n",xx,yy,zz,dt[0],dt[1],dt[2],rdata[idx],rdata[idx+1]);
+// 		return true;
+// 	} 
+// 	else {					// for subvolumes, not optimized yet
+// 		size_t idx;
+// 		float r, gg;
+// 		for (int k = z0 ; k <= z0 + 1; k++) {
+// 			for (int j = y0 ; j <= y0 + 1; j++) {
+// 				for (int i = x0; i <= x0 + 1; i ++) {
 // 					r = Util::hypot3sq((float) i - xx, j - yy, k - zz);
-// 					gg = Util::fast_exp(-r / EMConsts::I2G);
-					gg=(1.0-fabs(i-xx))*(1.0-fabs(j-yy))*(1.0-fabs(k-zz));	// Change from Gaussian to trilinear, 6/7/20
-					
-					dt[0]+=gg*rdata[idx];
-					dt[1]+=(i<0?-1.0f:1.0f)*gg*rdata[idx+1];
-					//dt[2]+=norm[idx/2]*gg;
-					normsum2+=gg;
-					normsum+=gg*norm[idx/2];
-					if (i==0) {
-						normsum2+=gg;
-						normsum+=gg*norm[idx/2];				
-					}
-				}
-			}
-		}
-		if (normsum==0) return false;
-		dt[0]/=normsum;
-		dt[1]/=normsum;
-		dt[2]=normsum/normsum2;
-#ifdef DEBUG_POINT
-		if (z0==23 && y0==0 && x0==113) {
-			std::complex<float> pv = image->get_complex_at(113,0,23);
-			float pnv = tmp_data->get_value_at(113,0,23);
-			printf("pixat: %1.4g\t%1.4g\t%1.4g\t%1.4g\t%1.4g\t%1.4g\n",pv.real()/pnv,pv.imag()/pnv,pnv,dt[0],dt[1],dt[2]);
-		}
-#endif
-//		printf("%1.2f,%1.2f,%1.2f\t%1.3f\t%1.3f\t%1.3f\t%1.3f\t%1.3f\n",xx,yy,zz,dt[0],dt[1],dt[2],rdata[idx],rdata[idx+1]);
-		return true;
-	} 
-	else {					// for subvolumes, not optimized yet
-		size_t idx;
-		float r, gg;
-		for (int k = z0 ; k <= z0 + 1; k++) {
-			for (int j = y0 ; j <= y0 + 1; j++) {
-				for (int i = x0; i <= x0 + 1; i ++) {
-					r = Util::hypot3sq((float) i - xx, j - yy, k - zz);
-					idx=image->get_complex_index(i,j,k,subx0,suby0,subz0,nx,ny,nz);
-					gg = Util::fast_exp(-r / EMConsts::I2G)*norm[idx/2];
-					
-					dt[0]+=gg*rdata[idx];
-					dt[1]+=(i<0?-1.0f:1.0f)*gg*rdata[idx+1];
-					dt[2]+=norm[idx/2];
-					normsum+=gg;
-				}
-			}
-		}
-		
-		if (normsum==0)  return false;
-		return true;
-	}
+// 					idx=image->get_complex_index(i,j,k,subx0,suby0,subz0,nx,ny,nz);
+// 					gg = Util::fast_exp(-r / EMConsts::I2G)*norm[idx/2];
+// 					
+// 					dt[0]+=gg*rdata[idx];
+// 					dt[1]+=(i<0?-1.0f:1.0f)*gg*rdata[idx+1];
+// 					dt[2]+=norm[idx/2];
+// 					normsum+=gg;
+// 				}
+// 			}
+// 		}
+// 		
+// 		if (normsum==0)  return false;
+// 		return true;
+// 	}
 }
 
 
@@ -2559,15 +2579,7 @@ int RealMedianReconstructor::determine_slice_agreement(EMData*  input_slice, con
 EMData *RealMedianReconstructor::finish(bool doift)
 {
 	
-// 	Transform * transform;
-// 	if ( input->has_attr("xform.projection") ) {
-// 		transform = (Transform*) (input->get_attr("xform.projection")); // assignment operator
-// 	} else {
-// 		transform = new Transform(t); // assignment operator
-// 	}
-
-// 	float weight = params["weight"];
-// 	slice->mult(weight);
+	int mode = params.set_default("mode",0);	// confusing, mode means mode of operation
 
 	// We do the actual reconstruction here from all of the slices
 	for (int z=0; z<nz; z++) {
@@ -2577,13 +2589,112 @@ EMData *RealMedianReconstructor::finish(bool doift)
 				std::vector<Transform>::iterator itt = xforms.begin();
 				for (std::vector<EMData *>::iterator it = slices.begin() ; it != slices.end(); ++it,++itt) {
 					Vec3f imvec = itt->transform(x-nx/2.0f,y-ny/2.0f,z-nz/2.0f);
-					float val=(*it)->sget_value_at(imvec[0]+nx/2,imvec[1]+ny/2);
+					
+					// single interpolated value
+// 					float val=(*it)->sget_value_at_interp(imvec[0]+nx/2,imvec[1]+ny/2);
+// 					if (val!=0) vals.push_back(val);
+					
+					int xx=floor(imvec[0]+nx/2);
+					int yy=floor(imvec[1]+ny/2);
+					float val=(*it)->sget_value_at(xx,yy);
+					if (val!=0) vals.push_back(val);
+					val=(*it)->sget_value_at(xx+1,yy);
+					if (val!=0) vals.push_back(val);
+					val=(*it)->sget_value_at(xx+1,yy+1);
+					if (val!=0) vals.push_back(val);
+					val=(*it)->sget_value_at(xx,yy+1);
 					if (val!=0) vals.push_back(val);
 				}
 				if (vals.size()==0) continue;
-				std::sort(vals.begin(),vals.end());
-				//printf("%d %d %d    %d\n",x,y,z,vals.size());
-				image->set_value_at(x,y,z,vals[vals.size()/2]);		// for even sizes, not quite right, and should include possibility of local average
+				
+// 				// debugging, save all values for specific voxels to look at statistics
+// 				if ((x==515&&y==461&&z==281) ||
+// 				(x==516&&y==462&&z==299) ||
+// 				(x==516&&y==461&&z==262) ||
+// 				(x==212&&y==409&&z==304)) {
+// 					char fsp[80];
+// 					sprintf(fsp,"stat_%d_%d_%d.txt",x,y,z);
+// 					FILE *out=fopen(fsp,"w");
+// 					for (std::vector<float>::iterator v = vals.begin(); v!=vals.end(); ++v) fprintf(out,"%f\n",*v);
+// 					fclose(out);
+// 				}
+				
+				switch(mode) {
+				// median, the namesake of the reconstructor
+				case 0:
+					std::sort(vals.begin(),vals.end());
+					//printf("%d %d %d    %d\n",x,y,z,vals.size());
+					image->set_value_at(x,y,z,vals[vals.size()/2]);		// for even sizes, not quite right, and should include possibility of local average
+					break;
+
+				// This is something like a mode. It progressively subdivides the numeric axis in halves
+				// until reaching a small number of values which are then averaged
+				case 1:
+					{
+					// We only use this method if we have at least 6 possible values for the voxel, otherwise we just average
+					if (vals.size()<6) {
+						float val=0;
+						for (int i=0; i<vals.size(); i++) val+=vals[i];
+						image->set_value_at(x,y,z,val/vals.size());
+						break;
+					}
+					// Sort the list to simplify the remaining logic
+					std::sort(vals.begin(),vals.end());
+					int v0=0,v1=vals.size(),vs=v1/2;		// bracket values, v0 first, v1 last+1, vs is first value in second zone
+					
+					// we continue until we have a zone containing 4 or fewer values
+					//int count=0;
+					while (v1-v0>8) {
+						float cen=(vals[v0]+vals[v1-1])/2.0f;		// value halfway between the extremes
+						for (vs=v0; vs<v1; vs++) { if (vals[vs]>=cen) break; }		// find the first value in the upper zone
+						// shift to the zone containing more values
+						if (v1-vs>vs-v0) v0=vs;
+						else v1=vs;
+						//printf("%d %d %d %d\t%g\t%g\t%g\t%g\t%g\t%g\t%g\n",v0,vs,v1,vals.size(),cen,vals[0],vals[v0],vals[vs-1],vals[vs],vals[v1],vals[vals.size()-1]);
+						//count++;
+						//if (count>20) exit(1);
+					}
+					float val=0;
+					for (int i=v0; i<v1; i++) val+=vals[i];
+					image->set_value_at(x,y,z,val/(v1-v0));
+					break;
+					}
+				// median with a bias towards zero (positive and negative), using 1/3 or 2/3 position in the sorted array
+				case 2:
+				{
+					if (vals.size()<6) {
+						float val=0;
+						for (int i=0; i<vals.size(); i++) val+=vals[i];
+						image->set_value_at(x,y,z,val/vals.size());
+						break;
+					}
+					std::sort(vals.begin(),vals.end());
+					//printf("%d %d %d    %d\n",x,y,z,vals.size());
+					int p1=vals.size()/3-1;
+					int p2=vals.size()*2/3;
+					float v=(fabs(vals[p1])<fabs(vals[p2]))?(vals[p1]+vals[p1-1]+vals[p1+1])/3.0f:(vals[p2]+vals[p2-1]+vals[p2+1])/3.0f;
+					image->set_value_at(x,y,z,v);		// for even sizes, not quite right, and should include possibility of local average
+					break;
+				}
+				// bias the median towards the half of the points spanning the narrower range
+				case 3:
+				{
+					if (vals.size()<6) {
+						float val=0;
+						for (int i=0; i<vals.size(); i++) val+=vals[i];
+						image->set_value_at(x,y,z,val/vals.size());
+						break;
+					}
+					std::sort(vals.begin(),vals.end());
+					//printf("%d %d %d    %d\n",x,y,z,vals.size());
+					int p1=vals.size()/3-1;
+					int p2=vals.size()/2;
+					int p3=vals.size()*2/3;
+					float v=(vals[p2]-vals[0]<vals[vals.size()-1]-vals[p2])?(vals[p1]+vals[p1-1]+vals[p1+1])/3.0f:(vals[p3]+vals[p3-1]+vals[p3+1])/3.0f;
+					image->set_value_at(x,y,z,v);		// for even sizes, not quite right, and should include possibility of local average
+					break;
+				}
+				}
 			}
 		}
 	} 

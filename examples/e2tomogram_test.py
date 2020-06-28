@@ -1025,11 +1025,17 @@ def make_tile_with_thr(args):
 	
 	return
 
-#### subthread for making tomogram by tiles. similar to make_tomogram, just for small cubes
+#### subthread for making tomogram by tiles. This variant combines real median reconstruction with Fourier reconstruction
 def make_tile_with_median(args):
 	jsd, imgs, tpm, sz, pad, stepx, stepy, outz,options=args
-	reconf=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":options.reconmode})
-	reconm=Reconstructors.get("real_median", {"sym":'c1',"size":[sz,sz,sz]})
+	for im in imgs:
+		tsz=im["ny"]
+		if tsz>1: break
+	offs=(tsz-pad)//2
+#	print(f"median tile: {sz} {tsz} {pad} {offs}") 
+	reconm=Reconstructors.get("real_median", {"sym":'c1',"size":[tsz,tsz,tsz],"mode":2})
+	reconf=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":options.reconmode, "corners":1})
+#	reconf=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":options.reconmode, "corners":1,"savenorm":"test_norm.hdf","sqrtnorm":1})
 
 	if stepx in (0,1) and stepy==0: 
 		try: os.unlink("test_tilt.hdf")
@@ -1050,6 +1056,13 @@ def make_tile_with_median(args):
 		m.process_inplace("xform",{"alpha":-t[2]})
 		xf=Transform({"type":"xyz","ytilt":t[3],"xtilt":t[4]})
 
+		# need to do the CTF and zeroing first or the mask won't be to zero
+		mp=m.do_fft()
+		if mp.has_attr("ctf") : mp.process_inplace("filter.ctfcorr.simple",{"useheader":1,"phaseflip":1,"hppix":2})
+		else : print("No CTF found for tilt-series, consider running CTF determination")
+		mp.set_complex_at(0,0,0)		# make sure the mean value is consistent (0) in all of the images
+		m=mp.do_ift()
+
 		dy=(pad//2)-np.cos(t[3]*np.pi/180.)*pad/2
 		msk=EMData(pad, pad)
 		msk.to_one()
@@ -1057,54 +1070,80 @@ def make_tile_with_median(args):
 		msk.process_inplace("mask.zeroedge2d",{"x0":dy+edge, "x1":dy+edge, "y0":edge, "y1":edge})
 		msk.process_inplace("mask.addshells.gauss",{"val1":0, "val2":edge})
 	
-		m.mult(msk)
+		#m.mult(msk)
 		mp=reconf.preprocess_slice(m, xf)
-		if mp.has_attr("ctf") : mp.process_inplace("filter.ctfcorr.simple",{"useheader":1,"phaseflip":1,"hppix":2})
-		else : print("No CTF found for tilt-series, consider running CTF determination")
-		mp.set_complex_at(0,0,0)		# make sure the mean value is consistent (0) in all of the images
 		ppimgs.append((mp,xf))
 		
 		# kind of cheating here since we aren't preprocessing with the other reconstructor, but we know it doesn't do anything, so...
-		mpr=mp.process("xform.phaseorigin.tocenter").do_ift()
+		mpr=mp.process("xform.phaseorigin.tocenter").do_ift().get_clip(Region(-offs,-offs,tsz,tsz))
 		pprimgs.append((mpr,xf))
 
+		# summed radial profile for making structure factor
+		try: 
+			inten+=np.array(mp.calc_radial_dist(mp["ny"]*141//200,0.0,1.0,True))
+			nin+=1
+		except: 
+			inten=np.array(mp.calc_radial_dist(mp["ny"]*141//200,0.0,1.0,True))
+			nin=1
+	
+	inten/=nin
 
+	apix_x=ppimgs[0][0]["apix_x"]
+	apix_y=ppimgs[0][0]["apix_y"]
+	apix_z=ppimgs[0][0]["apix_z"]
+
+	# mean structure factor of slices for later use
+	sf=XYData()
+	s=[1/(apix_y*ppimgs[0][0]["ny"])*i for i in range(len(inten))]
+	sf.set_xy_list(list(s),list(inten))
+
+	
 	# median reconstruction
 	reconm.setup()
-	for i in range(len(ppimgs)):
+	for i in range(len(pprimgs)):
 		reconm.insert_slice(pprimgs[i][0],pprimgs[i][1],1)
 		if stepx in (-0,1) and stepy==0: 
+			pprimgs[i][0]["xform.projection"]=pprimgs[i][1]
 			pprimgs[i][0].write_image("test_tilt.hdf",-1)
-	mimage = reconm.finish(False)
+	seed = reconm.finish(True).get_clip(Region(offs,offs,offs,pad,pad,pad))
+	seed["apix_x"]=apix_x
+	seed["apix_y"]=apix_y
+	seed["apix_z"]=apix_z
 	if stepx in (-0,1) and stepy==0: 
-		mimage.write_image("test_tile.hdf",0)
-	offs=(sz-pad)//2
-	mimage=mimage.get_clip(Region(offs,offs,offs,pad,pad,pad)).do_fft().process("xform.phaseorigin.tocorner")	# prepare for use as a Fourier seed
+		seed.write_image("test_tile.hdf",0)
+	seed=seed.do_fft().process("xform.phaseorigin.tocorner")	# prepare for use as a Fourier seed
+	seed.process_inplace("filter.setisotropicpow",{"strucfac":sf})	
+	#seed.process_inplace("filter.setstrucfac",{"strucfac":sf,"scale":1.0/(pad**3)})
+	if stepx in (-0,1) and stepy==0: 
+		seed.do_ift().process("xform.phaseorigin.tocenter").write_image("test_tile.hdf",1)
 	
 	# Fourier reconstruction
-	reconf.setup_seed(mimage,0.1)
+	reconf.setup_seed(seed,0.02)
 	
 	for i in range(len(ppimgs)):
 		prj=reconf.projection(ppimgs[i][1],1)
 		prj["apix_x"]=apix_x
 		prj["apix_y"]=apix_y
 		prj["apix_z"]=apix_z
-		tmp=ppimgs[i][0].process("xform.phaseorigin.tocenter")
-		ppimgs[i][0].process_inplace("filter.matchto",{"to":prj})
+#		ppimgs[i][0].process_inplace("filter.setstrucfac",{"strucfac":sf,"scale":1.0/(pad**3)})
+#		ppimgs[i][0].process_inplace("filter.setisotropicpow",{"strucfac":sf})	
+		tmp=ppimgs[i][0].process("xform.phaseorigin.tocenter").do_ift()
+#		ppimgs[i][0].process_inplace("filter.matchto",{"to":prj})
+		if stepx in (-0,1) and stepy==0: 
+			prj.process("xform.phaseorigin.tocenter").do_ift().write_image("test_tilt.hdf",-1)
+			tmp.write_image("test_tilt.hdf",-1)
 		
 	for i in range(len(ppimgs)):
 		reconf.insert_slice(ppimgs[i][0],ppimgs[i][1],1)
-		if frac==0 and stepx in (-0,1) and stepy==0: 
-			ppimgs[i][0].write_image("test_tilt.hdf",-1)
 		
 	threed=reconf.finish(True)
 	threed["apix_x"]=apix_x
 	threed["apix_y"]=apix_y
 	threed["apix_z"]=apix_z
 		
-	threed.clip_inplace(Region((pad-sz)//2, (pad-sz)//2, (pad-outz)//2, sz, sz, outz))
-	if stepx in (0,1) and stepy==0 :threed.write_image("test_tile.hdf",1)
+	if stepx in (0,1) and stepy==0 :threed.write_image("test_tile.hdf",2)
 	threed.process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.filterto})
+	threed.clip_inplace(Region((pad-sz)//2, (pad-sz)//2, (pad-outz)//2, sz, sz, outz))
 	#threed.process_inplace("filter.highpass.gauss",{"cutoff_pixels":2})
 	jsd.put( [stepx, stepy, threed])
 	
