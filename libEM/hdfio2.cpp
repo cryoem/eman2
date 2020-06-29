@@ -224,18 +224,6 @@ EMObject HdfIO2::read_attr(hid_t attr) {
 		free(matrix);
 		delete t; t=0;
 
-// 		trans3d = (float*)malloc(16*sizeof(float));	//16 float for a Transform3D object
-// 		H5Aread(attr, type, trans3d);
-// //		ret.create_transform3d_by_array(trans3d);
-// 		trans = new Transform3D();
-// 		for (r=0; r<4; ++r) {
-// 			for (c=0; c<4; ++c) {
-// 				trans->set(r, c, trans3d[k]);
-// 				++k;
-// 			}
-// 		}
-// 		ret = EMObject(trans);
-// 		free(trans3d);
 		break;
 	default:
 		LOGERR("Unhandled HDF5 metadata %d", cls);
@@ -1197,34 +1185,6 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 
 		H5Dread(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
 
-		// Not sure who wrote this code, but it is entirely stupid. The whole point of HDF is that it takes care
-		// of data conversions for you. The only case where there might be an issue with the new line above is 32 bit ints -> float
-// 		switch(H5Tget_size(dt)) {
-// 		case 4:
-// 			H5Dread(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
-// 
-// 			break;
-// 		case 2:
-// 			H5Dread(ds,H5T_NATIVE_USHORT,spc,spc,H5P_DEFAULT,usdata);
-// 
-// 			for (i = 0; i < size; ++i) {
-// 				j = size - 1 - i;
-// 				data[j] = static_cast < float >(usdata[j]);
-// 			}
-// 
-// 			break;
-// 		case 1:
-// 			H5Dread(ds,H5T_NATIVE_UCHAR,spc,spc,H5P_DEFAULT,cdata);
-// 
-// 			for (i = 0; i < size; ++i) {
-// 				j = size - 1 - i;
-// 				data[j] = static_cast < float >(cdata[j]);
-// 			}
-// 
-// 			break;
-// 		default:
-// 			throw ImageReadException(filename, "EMAN does not support this data type.");
-// 		}
 	}
 
 	H5Tclose(dt);
