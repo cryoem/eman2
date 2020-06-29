@@ -45,7 +45,7 @@
 #include "cuda/cuda_reconstructor.h"
 #endif
 
-#define DEBUG_POINT	1
+//#define DEBUG_POINT	1
 
 using namespace EMAN;
 using std::complex;
