@@ -475,8 +475,8 @@ class SptTltRefineTask(JSTask):
 				b.process_inplace("filter.lowpass.gauss", {"cutoff_freq":1./options.maxres})
 			
 			if b["ny"]!=a["ny"]: # box size mismatch. simply clip the box
-				if not options.defocus:
-					b=b.get_clip(Region((b["nx"]-a["ny"])//2, (b["ny"]-a["ny"])//2, a["ny"],a["ny"]))
+				#if not options.defocus:
+				b=b.get_clip(Region((b["nx"]-a["ny"])//2, (b["ny"]-a["ny"])//2, a["ny"],a["ny"]))
 				
 			if type(info[-1])==str:
 				initxf=eval(info[-1])
@@ -494,7 +494,7 @@ class SptTltRefineTask(JSTask):
 					for t in trans.tolist():
 						pjts=pj.copy()
 						pjts.translate(t[0], t[1],0)
-						s=b.cmp("frc",pjts, {"minres":80, "maxres":8})
+						s=b.cmp("frc",pjts, {"minres":80, "maxres":6})
 						scr.append(s)
 				
 				else:
@@ -508,7 +508,7 @@ class SptTltRefineTask(JSTask):
 			elif options.defocus:
 				xf=Transform({"type":"eman","tx":initxf["tx"], "ty":initxf["ty"], "alt":initxf["alt"],"az":initxf["az"],"phi":initxf["phi"]})
 				pj=a.project("standard", xf)
-				pj=pj.get_clip(Region((pj["nx"]-b["nx"])//2, (pj["ny"]-b["ny"])//2, b["ny"],b["ny"]))
+				#pj=pj.get_clip(Region((pj["nx"]-b["nx"])//2, (pj["ny"]-b["ny"])//2, b["ny"],b["ny"]))
 				
 				ctf=b["ctf"]
 				fft1=b.do_fft()
@@ -520,14 +520,14 @@ class SptTltRefineTask(JSTask):
 				fsc=e.calc_fourier_shell_correlation(pj)
 				fsc=np.array(fsc).reshape((3,-1))[1]
 				ds=1./(e["apix_x"]*e["ny"])
-				zrg=np.arange(-.3,.3,0.01)
+				zrg=np.arange(-.5,.5,0.001)
 				scr=[]
 				for dz in zrg:
 					ctf1=EMAN2Ctf(ctf)
 					ctf1.defocus=ctf1.defocus+dz
 					c=ctf1.compute_1d(e["nx"]+2, ds, Ctf.CtfType.CTF_SIGN)
 					c=fsc*c
-					scr.append(np.sum(c[len(c)//3:len(c)*2//3]))
+					scr.append(np.sum(c[len(c)//4:len(c)*2//3]))
 				
 				r={"idx":ii,"xform.align3d":[xf], "score":scr}
 				

@@ -45,6 +45,7 @@ def main():
 	parser.add_argument("--randphi",action="store_true",help="randomize phi for refine search",default=False)
 	parser.add_argument("--rand180",action="store_true",help="include 180 degree rotation for refine search",default=False)
 	parser.add_argument("--resume",action="store_true",help="resume from previous run",default=False)
+	parser.add_argument("--scipy",action="store_true",help="test scipy refinement",default=False)
 	parser.add_argument("--breaksym",action="store_true",help="break symmetry",default=False)
 	parser.add_argument("--breaksymsym", type=str,help="Specify a different symmetry for breaksym.", default=None)
 	
@@ -154,15 +155,11 @@ def main():
 		
 		if options.maxshift>0:
 			gd+=" --maxshift {:.1f}".format(options.maxshift)
+		if options.scipy:
+			gd+=" --scipy"
 
-		cmd="e2spt_align.py {} {} --parallel {} --path {} --iter {} --sym {} --nsoln 1 {}".format(ptcls, ref,  options.parallel, options.path, itr, options.sym, gd)
+		cmd="e2spt_align.py {} {} --parallel {} --path {} --iter {} --sym {} --maxres {} {}".format(ptcls, ref,  options.parallel, options.path, itr, options.sym, curres, gd)
 		
-		#### in case e2spt_align get segfault....
-		#ret=1
-		#while ret>0:
-			#try: os.remove(os.path.join(options.path, "particle_parms_{:02d}.json".format(itr)))
-			#except:pass
-
 		ret=run(cmd)
 		
 		
@@ -218,7 +215,7 @@ def main():
 		if options.localfilter:
 			s+=" --tophat local "
 			
-		ppcmd="e2refine_postprocess.py --even {} --odd {} --output {} --iter {:d} --mass {} --restarget {} --threads {} --sym {} {} {} ".format(even, odd, os.path.join(options.path, "threed_{:02d}.hdf".format(itr)), itr, options.mass, curres, options.threads, options.sym, msk, s)
+		ppcmd="e2refine_postprocess.py --even {} --odd {} --output {} --iter {:d} --mass {} --threads {} --sym {} {} {} ".format(even, odd, os.path.join(options.path, "threed_{:02d}.hdf".format(itr)), itr, options.mass, options.threads, options.sym, msk, s)
 		run(ppcmd)
 		
 			
@@ -231,7 +228,7 @@ def main():
 		else:
 			rs=1./fsc[fi, 0][0]
 			print("Resolution (FSC<0.2) is ~{:.1f} A".format(rs))
-		curres=rs
+		curres=rs*.8
 		if curres>40.:
 			curres=40
 		
