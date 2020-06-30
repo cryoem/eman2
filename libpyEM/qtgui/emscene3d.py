@@ -1470,7 +1470,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 					f=f.replace('=',' ')
 					fmtstr+=" -{}".format(f)
 		
-		nimgs=rg//dt
+		nimgs=int(rg//dt)
 		print("will make {} images with {:.1f} angular step covering {:d} degrees".format(nimgs, dt, int(rg)))
 		for i in range(nimgs):
 		

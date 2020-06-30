@@ -152,7 +152,10 @@ def main():
 def do_extraction(pfile, options, xfs=[], info=[]):
 	#pfile=args[0]
 	if options.verbose>0:print("Reading from {}...".format(pfile))
-	options.boxsz= good_size(options.boxsz_unbin // options.shrink)
+	if options.boxsz_unbin>0:
+		options.boxsz= good_size(options.boxsz_unbin // options.shrink)
+	else:
+		options.boxsz=-1
 	
 	#### reading alignment info...
 	js=js_open_dict(info_name(pfile))
