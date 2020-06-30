@@ -921,8 +921,8 @@ lc is the cursor selection point in plot coords"""
 			xmin=1.0e38
 			xmax=-1.0e38
 			for k in list(self.axes.keys()):
-				if not self.visibility[k]: continue
 				ax=self.axes[k][0]
+				if not self.visibility[k] or len(self.data[k])<=ax: continue
 				if ax==-1 : 
 					xmin=min(xmin,0)
 					xmax=max(xmax,len(self.data[k][0]))
@@ -939,8 +939,8 @@ lc is the cursor selection point in plot coords"""
 			ymin=1.0e38
 			ymax=-1.0e38
 			for k in list(self.axes.keys()):
-				if not self.visibility[k]: continue
 				ax=self.axes[k][1]
+				if not self.visibility[k] or len(self.data[k])<=ax: continue
 				if ax==-1:
 					ymin=min(ymin,0)
 					ymax=max(ymax,len(self.data[k][0]))
@@ -957,18 +957,31 @@ lc is the cursor selection point in plot coords"""
 			cmin=1.0e38
 			cmax=-1.0e38
 			for k in list(self.axes.keys()):
-				if not self.visibility[k]: continue
-				cmin=min(cmin,min(self.data[k][self.axes[k][2]]))
-				cmax=max(cmax,max(self.data[k][self.axes[k][2]]))
+				ax=self.axes[k][2]
+				if not self.visibility[k] or len(self.data[k])<=ax or ax<-1: continue
+				if ax==-1:
+					cmin=min(cmin,0)
+					cmax=max(cmax,len(self.data[k][0]))
+				else :
+					print(k,force,self.climits,self.data[k])
+					cmin=min(cmin,min(self.data[k][ax]))
+					cmax=max(cmax,max(self.data[k][ax]))
+					
 			self.climits=(cmin,cmax)
 
 		if force or self.slimits==None or self.slimits[1]<=self.slimits[0] :
 			smin=1.0e38
 			smax=-1.0e38
 			for k in list(self.axes.keys()):
-				if not self.visibility[k]: continue
-				smin=min(smin,min(self.data[k][self.axes[k][3]]))
-				smax=max(smax,max(self.data[k][self.axes[k][3]]))
+				ax=self.axes[k][3]
+				if not self.visibility[k] or len(self.data[k])<=ax or ax<-1: continue
+				if ax==-1:
+					smin=min(smin,0)
+					smax=max(smax,len(self.data[k][0]))
+				else :
+					smin=min(smin,min(self.data[k][ax]))
+					smax=max(smax,max(self.data[k][ax]))
+
 			self.slimits=(smin,smax)
 
 		if self.inspector: self.inspector.update()

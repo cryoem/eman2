@@ -8257,6 +8257,7 @@ void SetSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *ima
 			delete(ctf);
 		}
 	}
+	float scale=params.set_default("scale",1.0f);
 
 	float apix=image->get_attr("apix_x");
 	int ny=image->get_ysize();
@@ -8274,7 +8275,7 @@ void SetSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *ima
 //			radial_mask[i]= sqrt(n*sf->get_yatx(i/(apix*2.0f*n),false)/radial_mask[i]);
 //		}
 		if (radial_mask[i]>0) {
-			radial_mask[i]= sqrt((ny*ny*ny)*sf->get_yatx(i/(apix*ny))/radial_mask[i]);
+			radial_mask[i]= sqrt((ny*ny*ny)*scale*sf->get_yatx(i/(apix*ny))/radial_mask[i]);
 		}
 		else if (i>0) radial_mask[i]=radial_mask[i-1];	// For points where the existing power spectrum was 0
 	

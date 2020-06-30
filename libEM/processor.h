@@ -4053,7 +4053,6 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 //			TypeDict d = CircularMaskProcessor::get_param_types();
 			TypeDict d;
 			d.put("gauss_width", EMObject::FLOAT, "Used to calculate the constant factor - gauss_width / (ny*ny)" );
-			d.put("invert", EMObject::INT, "invert the sign of kernel" );
 //			d.put("ring_width", EMObject::INT, "The width of the mask ring.");
 			return d;
 		}
@@ -4088,11 +4087,7 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 
 		void process_dist_pixel(float *pixel, float dist) const
 		{
-			bool inv = (bool)params.set_default("invert",0);
-			if (inv)
-				(*pixel) *= exp(-dist * slice_value);
-			else
-				(*pixel) /= exp(-dist * slice_value);
+			(*pixel) /= exp(-dist * slice_value);
 		}
 	  private:
 		float slice_value;
@@ -7852,6 +7847,7 @@ symmetric phase flipping can optionally be performed.";
 		{
 			TypeDict d;
 			d.put("strucfac", EMObject::XYDATA, "An XYData object contaning the intensity (not amplitude) to be imposed as a function of S");
+			d.put("scale", EMObject::XYDATA, "A constant to multiply strucfac by to rescale the output. Setting to 1/ny^3 provides an alternative normalization. default = 1.0");
 			d.put("apix", EMObject::FLOAT, " Override A/pix in the image header (changes x,y and z)");
 			return d;
 		}

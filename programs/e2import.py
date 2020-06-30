@@ -71,7 +71,7 @@ def main():
 	parser.add_argument("--apix",help="Specify the apix of the tiltseries you are importing. If -1 (default), the apix in the header will not be changed.",type=float,default=-1,guitype='floatbox', row=5, col=1, rowspan=1, colspan=1,mode='tiltseries[-1]')
 
 	parser.add_argument("--import_tiltseries",action="store_true",help="Import tiltseries",default=False, guitype='boolbox', row=5, col=2, rowspan=1, colspan=1, mode='tiltseries[True]')
-	parser.add_argument("--rawtlt",help="Specify an imod/serialem rawtlt file, and imported tilt series will be sorted in tilt sequence instead of collection sequence", default=None, guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)",  row=1, col=0, rowspan=1, colspan=2, mode='tiltseries')
+	parser.add_argument("--rawtlt",help="Specify an imod/serialem rawtlt file, and imported tilt series will be sorted in tilt sequence instead of collection sequence, 'auto' will attempt to find a .tlt file automatically", default=None, guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)",  row=1, col=0, rowspan=1, colspan=2, mode='tiltseries')
 	parser.add_argument("--import_tomos",action="store_true",help="Import tomograms for segmentation and/or subtomogram averaging",default=False, guitype='boolbox', row=4, col=2, rowspan=1, colspan=1, mode='tomos[True]')
 
 
@@ -106,7 +106,7 @@ def main():
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv,options.ppid)
-	if options.rawtlt != None and len(options.rawtlt)<5: options.rawtlt=None
+	if options.rawtlt != None and options.rawtlt!="auto" and len(options.rawtlt)<5: options.rawtlt=None
 
 	# Import EMAN1
 	# will read start.hed/img, split by micrograph (based on defocus), and reprocess CTF in EMAN2 style
@@ -426,8 +426,11 @@ with the same name, you should specify only the .hed files (no renaming is neces
 					if options.invert: cmd+=" --mult -1 --process normalize "
 					if options.apix != -1: cmd += " --apix {} ".format(options.apix)
 					run(cmd)
-				else:
-					rawtlt=[(float(l.strip()),i) for i,l in enumerate(open(options.rawtlt,"r"))]
+				else: 
+					if options.rawtlt=="auto" :
+						rawtlt=[(float(l.strip()),i) for i,l in enumerate(open(filename.rsplit(".",1)[0]+".tlt","r"))]
+					else:
+						rawtlt=[(float(l.strip()),i) for i,l in enumerate(open(options.rawtlt,"r"))]
 					hdr=EMData(filename,0,True)
 					nx=hdr["nx"]
 					ny=hdr["ny"]
