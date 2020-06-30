@@ -1175,7 +1175,7 @@ def make_tile_with_pnthr(args):
 		m=imgs[i]
 		if m["nx"]==1:
 			continue
-#		m.process_inplace("filter.ramp")
+		m.process_inplace("filter.ramp")
 		m.process_inplace("xform",{"alpha":-t[2]})
 		xf=Transform({"type":"xyz","ytilt":t[3],"xtilt":t[4]})
 
@@ -1188,7 +1188,6 @@ def make_tile_with_pnthr(args):
 		#msk.process_inplace("mask.zeroedge2d",{"x0":dy+edge, "x1":dy+edge, "y0":edge, "y1":edge})
 		#msk.process_inplace("mask.addshells.gauss",{"val1":0, "val2":edge})
 		#m.mult(msk)
-		m.process_inplace("mask.soft",{"outer_radius":m["ny"]//4,"width":m["ny"]//8})		# this is an experiment to have more smoothing in Fourier space
 		
 		mp=recon1.preprocess_slice(m, xf)
 		if mp.has_attr("ctf") : mp.process_inplace("filter.ctfcorr.simple",{"useheader":1,"phaseflip":1,"hppix":2})
@@ -1300,9 +1299,9 @@ def make_tile_with_pnthr(args):
 		threed=avg.finish()
 		seed=threed.process("math.localminabs",{"xsize":0,"ysize":0,"zsize":2})
 		if j==0 : seed.process_inplace("filter.setisotropicpow",{"strucfac":sf})
-		else : seed.process_inplace("filter.setstrucfac",{"strucfac":sf})
+		else : seed.process_inplace("filter.setstrucfac",{"strucfac":sf,"scale":1.0/(pad**3)})
 		#if j==0: seed.process_inplace("filter.linearfourier",{"cutoff_abs":0.5})
-		seed.process_inplace("normalize")
+#		seed.process_inplace("normalize")
 		if stepx in (0,1) and stepy==0 :
 			tavg=threed1+threed2+threed3
 			tavg.mult(0.3333)
@@ -1566,7 +1565,7 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 			jobs.append((jsd, tiles, tpm, sz, pad, stepx, stepy, outz, options))
 	
 #	thrds=[threading.Thread(target=make_tile_with_median,args=([i])) for i in jobs if i[5] in (0,1) and i[6]==0]
-	thrds=[threading.Thread(target=make_tile_with_median,args=([i])) for i in jobs]
+	thrds=[threading.Thread(target=make_tile_with_pnthr,args=([i])) for i in jobs]
 	print("now start threads...")
 	thrtolaunch=0
 	tsleep=threading.active_count()
