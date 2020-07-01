@@ -1214,16 +1214,17 @@ def make_tile_with_pnthr(args):
 	
 	# iterative reconstruction of even/odd tilts with minimum
 #	for j,filt in enumerate((0.05,0.05,0.1,0.1,0.2,0.5)):
-	for j,filt in enumerate((0.25,0.25,0.5,0.5)):
+#	for j,filt in enumerate((0.25,0.25,0.5,0.5)):
+	for j,filt in enumerate((0.25,0.25,0.25)):
 		print(f"--------- Iter {j} ({filt})")
 		if j==0:
 			recon1.setup()
 			recon2.setup()
 			recon3.setup()
 		else:
-			recon1.setup_seed(seed,0.01)
-			recon2.setup_seed(seed,0.01)
-			recon3.setup_seed(seed,0.01)
+			recon1.setup_seed(seed,0.02)
+			recon2.setup_seed(seed,0.02)
+			recon3.setup_seed(seed,0.02)
 			
 			# We normalize slices to our seed, we can use any of the three for this since they are the same
 			for i in range(len(ppimgs)):
@@ -1290,14 +1291,16 @@ def make_tile_with_pnthr(args):
 		
 		# minimum abs value kept from the pair. Should eliminate many artifacts in real-space
 		#if j<3 : 
-		avg=Averagers.get("minmax",{"abs":1})
+		#avg=Averagers.get("minmax",{"abs":1})
+		avg=Averagers.get("median")
 		#else: 
 		#	avg=Averagers.get("mean")		# in the final cycle we just average
 		avg.add_image(threed1);
 		avg.add_image(threed2);
 		avg.add_image(threed3);
 		threed=avg.finish()
-		seed=threed.process("math.localminabs",{"xsize":0,"ysize":0,"zsize":2})
+		seed=threed.copy()
+#		seed=threed.process("math.localminabs",{"xsize":0,"ysize":0,"zsize":2})
 		if j==0 : seed.process_inplace("filter.setisotropicpow",{"strucfac":sf})
 		else : seed.process_inplace("filter.setstrucfac",{"strucfac":sf,"scale":1.0/(pad**3)})
 		#if j==0: seed.process_inplace("filter.linearfourier",{"cutoff_abs":0.5})
@@ -1311,7 +1314,7 @@ def make_tile_with_pnthr(args):
 		seed=seed.do_fft().process("xform.phaseorigin.tocorner")
 	
 	# do our final iteration outside the loop
-	recon1.setup_seed(seed,0.1)
+	recon1.setup_seed(seed,0.02)
 	
 	for i in range(len(ppimgs)):
 		prj=recon1.projection(ppimgs[i][1],1)
@@ -1319,7 +1322,7 @@ def make_tile_with_pnthr(args):
 		prj["apix_y"]=apix_y
 		prj["apix_z"]=apix_z
 		tmp=ppimgs[i][0].process("xform.phaseorigin.tocenter")
-		ppimgs[i][0].process_inplace("filter.matchto",{"to":prj})
+#		ppimgs[i][0].process_inplace("filter.matchto",{"to":prj})
 
 		# probably should use semaphores instead of globals...
 		#if stepx in (0,1) and stepy==0: 
