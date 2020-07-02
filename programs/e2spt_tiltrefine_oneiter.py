@@ -494,7 +494,7 @@ class SptTltRefineTask(JSTask):
 					for t in trans.tolist():
 						pjts=pj.copy()
 						pjts.translate(t[0], t[1],0)
-						s=b.cmp("frc",pjts, {"minres":80, "maxres":6})
+						s=b.cmp("frc",pjts, {"minres":options.minres, "maxres":options.maxres})
 						scr.append(s)
 				
 				else:

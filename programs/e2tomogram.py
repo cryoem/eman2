@@ -386,7 +386,7 @@ def main():
 			name_sample=os.path.join(path,"samples_{:02d}.hdf".format(niter))
 			name_ali=os.path.join(path,"ali_{:02d}.hdf".format(niter))
 			name_ptclali=os.path.join(path,"ptclali_{:02d}.hdf".format(niter))
-			make_ali(imgs_2k, ttparams, options, outname=name_ali)
+			make_ali(imgs_1k, ttparams, options, outname=name_ali)
 		else:
 			name_tomo=name_sample=name_ali=name_ptclali=None
 			
@@ -410,7 +410,7 @@ def main():
 				if options.writetmp:
 					make_samples(imgs_, allparams, options,
 						outname=os.path.join(path,"samples_init.hdf"), refinepos=True);
-				
+				#ptclpos=ali_ptcls(imgs_, allparams, options, outname=name_ptclali, doali=True)
 			
 				if options.xdrift:
 					allparams=np.hstack([ttparams.flatten(), pks.flatten()])
@@ -419,6 +419,8 @@ def main():
 					if options.writetmp:
 						make_samples(imgs_, allparams, options,
 							outname=os.path.join(path,"samples_xdrift.hdf"), refinepos=True);
+						#ptclpos=ali_ptcls(imgs_, allparams, options, outname=os.path.join(path,"ptcls_xdrift.hdf"), doali=True)
+						#make_ali(imgs_1k, ttparams, options, outname=os.path.join(path,"ali_xdrift.hdf"))
 
 			#### Now actually refine the alignment parameters using the landmarks.
 			for idx in rfseq:
@@ -573,7 +575,7 @@ def xdrift_correction(imgs, allpms, options):
 	scale=imgs[0]["apix_x"]/options.apix_init
 	ttparams[:,:2]/=scale
 	pks/=scale
-	prange=np.arange(options.npk)
+	prange=np.arange(min(options.npk, 5))
 
 	k=0
 	nx=imgs[0]["nx"]
@@ -585,17 +587,19 @@ def xdrift_correction(imgs, allpms, options):
 	#### this is the matrix to return containing the offset of each landmark at each tilt
 	for ii,nid in enumerate(nrange):
 		if nid==zeroid: 
-			xbest=0
+			xbest=[0,0]
 			continue
 	
 		score=[]
 		#drange=np.arange(-10,11, dtype=float)*bx/scale*2
 		#drange+=xbest
-		def testloc(dx):
+		def testloc(dx, writeout=False):
 			scr=[]
 			tpm=ttparams[nid].copy()
-			tpm[0]+=dx*np.cos(tpm[2]*np.pi/180)
-			tpm[1]+=dx*np.sin(tpm[2]*np.pi/180)
+			#tpm[0]+=dx*np.cos(tpm[2]*np.pi/180)
+			#tpm[1]+=dx*np.sin(tpm[2]*np.pi/180)
+			tpm[0]+=dx[0]
+			tpm[1]+=dx[1]
 			for pid in prange:
 			
 				pxf=get_xf_pos(tpm, pks[pid])
@@ -605,18 +609,23 @@ def xdrift_correction(imgs, allpms, options):
 
 				xf=Transform({"type":"2d","tx":pxf[0],"ty":pxf[1]})
 				e=imgs[nid].get_rotated_clip(xf,(bx*2,bx*2,1)).process("normalize.edgemean")
+				#if writeout and pid==0:
+					#e.write_image("tomorecon_00/testout.hdf",-1)
 				e.process_inplace("mask.gaussian", {"outer_radius":e["nx"]//4})
 				scr.append(e["minimum"])
 			
 			return np.mean(scr)
 		
+		#testloc(xbest, True)
 		res=minimize(testloc, xbest,method='Powell',options={'ftol': 1e-2, 'disp': False, "maxiter":10})
+		#print(nid, xbest, res.x)
 		xbest=res.x
+		#testloc(xbest, True)
 		
 		
 		#print(nid, xbest, res.x, res.fun)
-		ttparams[nid][0]+=xbest*np.cos(ttparams[nid][2]*np.pi/180)
-		ttparams[nid][1]+=xbest*np.sin(ttparams[nid][2]*np.pi/180)
+		ttparams[nid][0]+=xbest[0]#*np.cos(ttparams[nid][2]*np.pi/180)
+		ttparams[nid][1]+=xbest[1]#*np.sin(ttparams[nid][2]*np.pi/180)
 				
 
 		
