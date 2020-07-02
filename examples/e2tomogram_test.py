@@ -1033,8 +1033,8 @@ def make_tile_with_median(args):
 		if tsz>1: break
 	offs=(tsz-pad)//2
 #	print(f"median tile: {sz} {tsz} {pad} {offs}") 
-	reconm=Reconstructors.get("real_median", {"sym":'c1',"size":[tsz,tsz,tsz],"mode":4})
-	reconf=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":options.reconmode, "corners":1})
+	reconm=Reconstructors.get("real_median", {"sym":'c1',"size":[tsz,tsz,tsz],"mode":1})
+	reconf=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":"nearest_neighbor", "corners":1})
 #	reconf=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":options.reconmode, "corners":1,"savenorm":"test_norm.hdf","sqrtnorm":1})
 
 	if stepx in (0,1) and stepy==0: 
@@ -1078,10 +1078,10 @@ def make_tile_with_median(args):
 
 		# summed radial profile for making structure factor
 		try: 
-			inten+=np.array(mp.calc_radial_dist(mp["ny"]*141//200,0.0,1.0,True))
+			inten+=np.array(mpr.do_fft().calc_radial_dist(mp["ny"]*141//200,0.0,1.0,True))
 			nin+=1
 		except: 
-			inten=np.array(mp.calc_radial_dist(mp["ny"]*141//200,0.0,1.0,True))
+			inten=np.array(mpr.do_fft().calc_radial_dist(mp["ny"]*141//200,0.0,1.0,True))
 			nin=1
 	
 	inten/=nin
@@ -1090,7 +1090,7 @@ def make_tile_with_median(args):
 	apix_y=ppimgs[0][0]["apix_y"]
 	apix_z=ppimgs[0][0]["apix_z"]
 
-	# mean structure factor of slices for later use
+	# mean structure factor of blfiltered slices for later use
 	sf=XYData()
 	s=[1/(apix_y*ppimgs[0][0]["ny"])*i for i in range(len(inten))]
 	sf.set_xy_list(list(s),list(inten))
@@ -1123,7 +1123,7 @@ def make_tile_with_median(args):
 		prj["apix_x"]=apix_x
 		prj["apix_y"]=apix_y
 		prj["apix_z"]=apix_z
-#		ppimgs[i][0].process_inplace("filter.setstrucfac",{"strucfac":sf,"scale":1.0/(pad**3)})
+		ppimgs[i][0].process_inplace("filter.setstrucfac",{"strucfac":sf,"scale":1.0/(pad**3)})
 #		ppimgs[i][0].process_inplace("filter.setisotropicpow",{"strucfac":sf})	
 		tmp=ppimgs[i][0].process("xform.phaseorigin.tocenter").do_ift()
 #		ppimgs[i][0].process_inplace("filter.matchto",{"to":prj})
@@ -1153,9 +1153,9 @@ wlock=0
 def make_tile_with_pnthr(args):
 	global wlock
 	jsd, imgs, tpm, sz, pad, stepx, stepy, outz,options=args
-	recon1=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":options.reconmode,"corners":1,"quiet":1})
-	recon2=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":options.reconmode,"corners":1,"quiet":1})
-	recon3=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":options.reconmode,"corners":1,"quiet":1})
+	recon1=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":"nearest_neighbor","corners":1,"quiet":1})
+	recon2=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":"nearest_neighbor","corners":1,"quiet":1})
+	recon3=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":"nearest_neighbor","corners":1,"quiet":1})
 
 
 	if stepx in (0,1) and stepy==0:
@@ -1214,16 +1214,17 @@ def make_tile_with_pnthr(args):
 	
 	# iterative reconstruction of even/odd tilts with minimum
 #	for j,filt in enumerate((0.05,0.05,0.1,0.1,0.2,0.5)):
-	for j,filt in enumerate((0.25,0.25,0.5,0.5)):
+#	for j,filt in enumerate((0.25,0.25,0.5,0.5)):
+	for j,filt in enumerate((0.25,0.25)):
 		print(f"--------- Iter {j} ({filt})")
 		if j==0:
 			recon1.setup()
 			recon2.setup()
 			recon3.setup()
 		else:
-			recon1.setup_seed(seed,0.01)
-			recon2.setup_seed(seed,0.01)
-			recon3.setup_seed(seed,0.01)
+			recon1.setup_seed(seed,0.02)
+			recon2.setup_seed(seed,0.02)
+			recon3.setup_seed(seed,0.02)
 			
 			# We normalize slices to our seed, we can use any of the three for this since they are the same
 			for i in range(len(ppimgs)):
@@ -1290,14 +1291,16 @@ def make_tile_with_pnthr(args):
 		
 		# minimum abs value kept from the pair. Should eliminate many artifacts in real-space
 		#if j<3 : 
-		avg=Averagers.get("minmax",{"abs":1})
+		#avg=Averagers.get("minmax",{"abs":1})
+		avg=Averagers.get("median")
 		#else: 
 		#	avg=Averagers.get("mean")		# in the final cycle we just average
 		avg.add_image(threed1);
 		avg.add_image(threed2);
 		avg.add_image(threed3);
 		threed=avg.finish()
-		seed=threed.process("math.localminabs",{"xsize":0,"ysize":0,"zsize":2})
+		seed=threed.copy()
+#		seed=threed.process("math.localminabs",{"xsize":0,"ysize":0,"zsize":2})
 		if j==0 : seed.process_inplace("filter.setisotropicpow",{"strucfac":sf})
 		else : seed.process_inplace("filter.setstrucfac",{"strucfac":sf,"scale":1.0/(pad**3)})
 		#if j==0: seed.process_inplace("filter.linearfourier",{"cutoff_abs":0.5})
@@ -1311,15 +1314,15 @@ def make_tile_with_pnthr(args):
 		seed=seed.do_fft().process("xform.phaseorigin.tocorner")
 	
 	# do our final iteration outside the loop
-	recon1.setup_seed(seed,0.1)
+	recon1.setup_seed(seed,0.02)
 	
-	for i in range(len(ppimgs)):
-		prj=recon1.projection(ppimgs[i][1],1)
-		prj["apix_x"]=apix_x
-		prj["apix_y"]=apix_y
-		prj["apix_z"]=apix_z
-		tmp=ppimgs[i][0].process("xform.phaseorigin.tocenter")
-		ppimgs[i][0].process_inplace("filter.matchto",{"to":prj})
+	#for i in range(len(ppimgs)):
+		#prj=recon1.projection(ppimgs[i][1],1)
+		#prj["apix_x"]=apix_x
+		#prj["apix_y"]=apix_y
+		#prj["apix_z"]=apix_z
+		#tmp=ppimgs[i][0].process("xform.phaseorigin.tocenter")
+#		ppimgs[i][0].process_inplace("filter.matchto",{"to":prj})
 
 		# probably should use semaphores instead of globals...
 		#if stepx in (0,1) and stepy==0: 
@@ -1336,6 +1339,7 @@ def make_tile_with_pnthr(args):
 		#print(f"{i}\t{norm}")
 		
 	for i in range(len(ppimgs)):
+		ppimgs[i][0].process_inplace("filter.setstrucfac",{"strucfac":sf,"scale":1.0/(pad**3)})
 		recon1.insert_slice(ppimgs[i][0],ppimgs[i][1],1)
 		
 	threed=recon1.finish(True)
@@ -1565,7 +1569,7 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 			jobs.append((jsd, tiles, tpm, sz, pad, stepx, stepy, outz, options))
 	
 #	thrds=[threading.Thread(target=make_tile_with_median,args=([i])) for i in jobs if i[5] in (0,1) and i[6]==0]
-	thrds=[threading.Thread(target=make_tile_with_pnthr,args=([i])) for i in jobs]
+	thrds=[threading.Thread(target=make_tile_with_median,args=([i])) for i in jobs]
 	print("now start threads...")
 	thrtolaunch=0
 	tsleep=threading.active_count()

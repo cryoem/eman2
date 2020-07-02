@@ -434,14 +434,14 @@ namespace EMAN
 		int nimg;
 	};
 
-	/** AbsMaxMinAverager averages a list of images to the maximum(or minimum of the absolute pixel value)
+	/** MedianAverager averages a list of images to the maximum(or minimum of the absolute pixel value)
 	 *  It optionally makes a sigma image.
      *@param min If set, will find the min value, otherwise finds max
      */
-	class AbsMaxMinAverager:public Averager
+	class MedianAverager:public Averager
 	{
 	public:
-		AbsMaxMinAverager();
+		MedianAverager();
 
 		void add_image( EMData * image);
 		EMData * finish();
@@ -453,26 +453,26 @@ namespace EMAN
 
 		string get_desc() const
 		{
-			return "Average to maximum(or minimum if set parameter 'min' to non-zero) absolute value in each pixel";
+			return "Computes the median value instead of the mean. If even number of images, averages the middle two.";
 		}
 
 		static Averager *NEW()
 		{
-			return new AbsMaxMinAverager();
+			return new MedianAverager();
 		}
 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("min", EMObject::INT, "If set, will average to minimum absolute value, by default average to max");
+			//d.put("min", EMObject::INT, "If set, will average to minimum absolute value, by default average to max");
 			return d;
 		}
 
 		static const string NAME;
 
 	private:
-		int min;
-		int nimg;
+		std::vector<EMData*> imgs;
+		
 	};
 
 
