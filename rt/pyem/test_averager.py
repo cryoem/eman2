@@ -77,6 +77,8 @@ class TestAverager(unittest.TestCase):
 		self.assertAlmostEqual(data2[0,0], 10.0, 3)
 		self.assertAlmostEqual(data2[2,2], 2.0, 3)
 
+	test_AbsMaxMinAverager.broken = True
+
 def test_main():
     p = OptionParser()
     p.add_option('--t', action='store_true', help='test exception', default=False )
