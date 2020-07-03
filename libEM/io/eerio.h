@@ -34,6 +34,7 @@
 
 #include "imageio.h"
 
+#include <tiffio.h>
 #include <bitset>
 
 
@@ -126,6 +127,7 @@ namespace EMAN
 
 	private:
 		bool is_big_endian;
+		TIFF *tiff_file;
 	};
 }
 
