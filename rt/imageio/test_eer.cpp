@@ -118,6 +118,12 @@ void test_eer_rle_no_overflow() {
 		assert(rle1 == 1);
 	}
 
+	// Test conversion operator
+	assert(rle1 == 1.);
+	assert(rle1 == 1.f);
+	assert(rle1 == (int)1);
+	assert(rle1 == (short)1);
+
 	BitStream<BuffWord> is2(&a);
 	BitReader<2, false, BuffWord> rle2;
 
