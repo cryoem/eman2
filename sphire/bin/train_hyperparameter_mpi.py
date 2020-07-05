@@ -366,6 +366,7 @@ def givemeindices(img):
 
     return indices, x_index_expand, y_index_expand
 
+
 def noiseNormalize(img, sigma2):
     area = 0.25 * np.pi * float(361 * 360)
     indx, xind, yind = givemeindices(img)
@@ -380,6 +381,7 @@ def noiseNormalize(img, sigma2):
     del xind
     del yind
     return img
+
 
 def powerspectrum_per_image(norm_img):
     w = norm_img.shape[0] // 2 + 1
@@ -757,7 +759,7 @@ def movieCC(movie_name, nx, ny, sigma22, var_m, count_m, gbdose, angout_pix, zsi
 
         # dose = gbdose * (i)
         # damageweights = damageWeights(dose, nx, angout_pix)
-        doseline = damageweights[i,:, 0].tolist()
+        doseline = damageweights[i, :, 0].tolist()
         for j in range(len(part_cord)):
             try:
                 ptcl = Util.window(current_frame, nx, ny, 1, np.int(angout_pix * part_cord[j][0] / angout_pix) - cen_xx,
@@ -784,7 +786,6 @@ def movieCC(movie_name, nx, ny, sigma22, var_m, count_m, gbdose, angout_pix, zsi
                 ptcl_np_FF = np.fft.ifft2(fft_part_img)
                 ptcl_np_FF = np.multiply(ptcl_np_FF.real, float(nx * nx * nx * nx))
 
-
                 CC_ptcl[i, j] = ptcl_np_FF
 
                 del ptcl_np_FF
@@ -800,7 +801,7 @@ def movieCC(movie_name, nx, ny, sigma22, var_m, count_m, gbdose, angout_pix, zsi
 
 
 def movieCC_train(movie_name, nx, ny, sigma22, var_m, count_m, gbdose, angout_pix, zsize, gainref, part_cord,
-            ctf_params_part, cen_xx, cen_yy, refer_1, refer_2, CC_ptcl, movie_total, chunk_arr, damageweights,
+                  ctf_params_part, cen_xx, cen_yy, refer_1, refer_2, CC_ptcl, movie_total, chunk_arr, damageweights,
                   accPix, accCords, maxRangeP):
     """
     For noise normalization for image and reference image
@@ -810,15 +811,16 @@ def movieCC_train(movie_name, nx, ny, sigma22, var_m, count_m, gbdose, angout_pi
     for i in tqdm(range(zsize), desc="Cross correlation "):
         current_frame.read_image(movie_name, i)
         current_frame = Util.muln_img(current_frame, gainref)
-        doseline = damageweights[i,:, 0].tolist()
+        doseline = damageweights[i, :, 0].tolist()
         for j in range(len(part_cord)):
             try:
                 ptcl = Util.window(current_frame, nx, ny, 1, np.int(angout_pix * part_cord[j][0] / angout_pix) - cen_xx,
                                    np.int(angout_pix * part_cord[j][1] / angout_pix) - cen_yy, 0)
                 ptcl = sp_filter.filt_table(ptcl, doseline)
 
-                ptcl2 = Util.window(current_frame, nx, ny, 1, np.int(angout_pix * part_cord[j][0] / angout_pix) - cen_xx,
-                                   np.int(angout_pix * part_cord[j][1] / angout_pix) - cen_yy, 0)
+                ptcl2 = Util.window(current_frame, nx, ny, 1,
+                                    np.int(angout_pix * part_cord[j][0] / angout_pix) - cen_xx,
+                                    np.int(angout_pix * part_cord[j][1] / angout_pix) - cen_yy, 0)
 
                 if chunk_arr[j] == 0:
                     refer = refer_1[j]
@@ -832,7 +834,6 @@ def movieCC_train(movie_name, nx, ny, sigma22, var_m, count_m, gbdose, angout_pi
                 np.divide(fft_part_img, scale, out=fft_part_img)
                 fft_part_img = noiseNormalize(fft_part_img, sigma22)
 
-
                 fft_part_img_2 = np.fft.fft2(ptcl2.get_2dview())
                 np.divide(fft_part_img_2, float(nx * ny), out=fft_part_img_2)
                 scale = np.sqrt(np.divide(nx * ny * var_m[j], count_m[j] * zsize))
@@ -845,10 +846,10 @@ def movieCC_train(movie_name, nx, ny, sigma22, var_m, count_m, gbdose, angout_pi
                 fft_ref_img[0, 0] = 0.0
                 fft_ref_img = noiseNormalize(fft_ref_img, sigma22)
 
-                np.multiply(fft_part_img, fft_ref_img.conjugate(), out = fft_part_img)
+                np.multiply(fft_part_img, fft_ref_img.conjugate(), out=fft_part_img)
                 ptcl_np_FF = np.fft.ifft2(fft_part_img)
                 ptcl_np_FF = np.multiply(ptcl_np_FF.real, float(nx * nx * nx * nx))
-                CC_ptcl[i, j] = crop_corner(ptcl_np_FF,maxRangeP,maxRangeP)
+                CC_ptcl[i, j] = crop_corner(ptcl_np_FF, maxRangeP, maxRangeP)
 
                 del ptcl_np_FF
                 del fft_part_img
@@ -857,6 +858,7 @@ def movieCC_train(movie_name, nx, ny, sigma22, var_m, count_m, gbdose, angout_pi
                 del scale
                 del refer
                 del ptcl
+                del ptcl2
             except RuntimeError:
                 continue
 
@@ -1128,13 +1130,11 @@ def get_fcc_all_particles(movie_name, refer_1, refer_2, nxx, nyy, part_cord, zsi
     sig_acc = 2.55
     sig_div = 8235
 
-    alignDoseWeights = np.zeros((zsize, boxsize//2 +1, boxsize ))
+    alignDoseWeights = np.zeros((zsize, boxsize // 2 + 1, boxsize))
     for i in range(zsize):
         dose = globaldose * (i)
         damageweights = damageWeights(dose, boxsize, angout_pix)
         alignDoseWeights[i] = damageweights
-
-
 
     var_movie, cnt_movie = init_variance_array(movie_name, nxx, nyy, cen_xx, cen_yy, part_cord, zsize, gainref)
     sigma = movie_vari_powspect(movie_name, gainref, var_movie, cnt_movie, zsize, part_cord,
@@ -1255,18 +1255,19 @@ def MotionParamEstima(movie_names, stackfilename, boxsize, zsize, angout_pix, mc
 
     kout = 106
 
-    k_cutoff = np.int(kout * np.sqrt(align_frac) + 0.5 )
+    k_cutoff = np.int(kout * np.sqrt(align_frac) + 0.5)
     k_eval = np.int(kout * np.sqrt(1.0 - eval_frac) + 0.5)
 
     k_cutoff_angst = angtopix(k_cutoff, boxsize, angout_pix)
     k_eval_angst = angtopix(k_eval, boxsize, angout_pix)
 
-
     print("Maximum frequency to consider the alignment {} A ({} px)".format(k_cutoff_angst, k_cutoff))
 
     print("frequency range to consider for evaluation {} - {} A ({} - {} px)".format(k_eval_angst,
-                                                                pixtoang(kout, boxsize, angout_pix), k_eval, kout ))
-    mc = 24  #micrgraph count
+                                                                                     pixtoang(kout, boxsize,
+                                                                                              angout_pix), k_eval,
+                                                                                     kout))
+    mc = 24  # micrgraph count
     random.seed(23)
     randNums = np.zeros(mc)
 
@@ -1295,24 +1296,22 @@ def MotionParamEstima(movie_names, stackfilename, boxsize, zsize, angout_pix, mc
 
     mc = len(order)
     globaldose = 1.277
-    CC, part_data, refer_data, dose_data, accPix, accCords = prepAlignment(globaldose, angout_pix, boxsize, zsize, k_cutoff, k_eval+2, kout,
-                  mc, sel_files, gainrefname, movie_files, maxRange, volft_1, volft_2)
+    CC, part_data, refer_data, dose_data, accPix, accCords = prepAlignment(globaldose, angout_pix, boxsize, zsize,
+                                                                           k_cutoff, k_eval + 2, kout,
+                                                                           mc, sel_files, gainrefname, movie_files,
+                                                                           maxRange, volft_1, volft_2)
 
     initial = motiontoProblem([Sv_init, Sd_init, Sa_init])
 
-
-
-
-
     n = len(initial)
-    m = n+1
-    simplex = np.zeros((m,n))
+    m = n + 1
+    simplex = np.zeros((m, n))
     simplex[0] = initial
     initialStep = 3000
 
-    for j in range(1,m):
+    for j in range(1, m):
         simplex[j] = initial
-        simplex[j][j-1] += initialStep
+        simplex[j][j - 1] += initialStep
 
     options_min = {}
     options_min['disp'] = True
@@ -1322,31 +1321,30 @@ def MotionParamEstima(movie_names, stackfilename, boxsize, zsize, angout_pix, mc
     # dd = evaluateParams(initial,globaldose, angout_pix, mc, sel_files,movie_files, CC,
     #                     part_data, refer_data, accPix, accCords, dose_data, logfile_loc )
     # optimize call
-    vd  = minimize(fun = evaluateParams , x0 = initial, tol=30, args=(globaldose, angout_pix, mc, sel_files,movie_files, CC,
-                                          part_data, refer_data, accPix, accCords, dose_data, logfile_loc ),
-                                        method='Nelder-Mead', options=options_min)
+    vd = minimize(fun=evaluateParams, x0=initial, tol=30, args=(globaldose, angout_pix, mc, sel_files, movie_files, CC,
+                                                                part_data, refer_data, accPix, accCords, dose_data,
+                                                                logfile_loc), method='Nelder-Mead', options=options_min)
 
     print("Result of parameter is ", vd.x)
     newvd = problemtoMotion(vd.x)
-    velscale =  10000.0
+    velscale = 10000.0
     divScale = 1.0
     accScale = 1000.0
     conv = 30
-    nrm = [newvd[0] * velscale, newvd[1]*divScale , newvd[2]*accScale]
+    nrm = [newvd[0] * velscale, newvd[1] * divScale, newvd[2] * accScale]
 
-    rnd = [conv * 0.5 * (int(2.0 * nrm[0] / conv + 0.5)) / velscale ,
+    rnd = [conv * 0.5 * (int(2.0 * nrm[0] / conv + 0.5)) / velscale,
            conv * 0.5 * (int(2.0 * nrm[1] / conv + 0.5)) / divScale,
-           conv * 0.5 * (int(2.0 * nrm[2] / conv + 0.5)) / accScale ]
+           conv * 0.5 * (int(2.0 * nrm[2] / conv + 0.5)) / accScale]
 
     print("nrm values is ", nrm)
     print("Final parameters is", rnd)
 
 
-
 def updateTsc(tracks, pc, zsize, boxsize, accPix, accCords, obs, pred, damage):
-    outT = [0.0 , 0.0 , 0.0 ]
+    outT = [0.0, 0.0, 0.0]
     pc = tracks.shape[0]
-    sh = boxsize//2 +1
+    sh = boxsize // 2 + 1
     for p in range(pc):
         for f in range(zsize):
             shifts = [0.0, 0.0]
@@ -1359,32 +1357,30 @@ def updateTsc(tracks, pc, zsize, boxsize, accPix, accCords, obs, pred, damage):
                 else:
                     y = accCords[i][1] - boxsize
 
-                dotp = 2 * np.pi *(x*shifts[0] + y*shifts[1])
+                dotp = 2 * np.pi * (x * shifts[0] + y * shifts[1])
                 b = np.sin(dotp)
                 a = np.cos(dotp)
 
                 t2 = obs[p][f][i]
                 c = t2.real
                 d = t2.imag
-                ac = a*c
-                bd = b*d
+                ac = a * c
+                bd = b * d
                 ab_cd = (a + b) * (c + d)
 
-                z_obs = (ac-bd) + (ab_cd - ac - bd)*1j
+                z_obs = (ac - bd) + (ab_cd - ac - bd) * 1j
 
                 zpred = pred[p][i]
                 dmg = damage[f][i]
 
-                outT[0] += dmg * (zpred.real * z_obs.real + zpred.imag * z_obs.imag )
-                outT[1] += dmg * (np.abs(z_obs)**2)
-                outT[2] += dmg * (np.abs(zpred)**2)
+                outT[0] += dmg * (zpred.real * z_obs.real + zpred.imag * z_obs.imag)
+                outT[1] += dmg * (np.abs(z_obs) ** 2)
+                outT[2] += dmg * (np.abs(zpred) ** 2)
     return outT
 
 
-
-
-def evaluateParams(x, dose, angpix, gc, sel_files, movie_all, correlate, movie, reference, accPix, accCords, damage, logfile_loc ):
-
+def evaluateParams(x, dose, angpix, gc, sel_files, movie_all, correlate, movie, reference, accPix, accCords, damage,
+                   logfile_loc):
     vda = problemtoMotion(x)
 
     sig_v_vals_px = normalizeSigVel(vda[0], dose, angpix)
@@ -1397,12 +1393,15 @@ def evaluateParams(x, dose, angpix, gc, sel_files, movie_all, correlate, movie, 
     pctot = 0
     tscAs = [0.0, 0.0, 0.0]
 
-    for g in tqdm(range(gc), desc="Evaluation Loop"):
-        pc = EMUtil.get_image_count(sel_files[g])
-        part_cord = EMUtil.get_all_attributes(sel_files[g], "ptcl_source_coord")
-        if pc <2 :
+    ima_start, ima_end = sp_applications.MPI_start_end(gc, n_mpi_procs, my_mpi_proc_id)
+
+    for micro in enumerate(sel_files[ima_start:ima_end]):
+        g = sel_files.index(micro[1])
+        pc = EMUtil.get_image_count(micro[1])
+        part_cord = EMUtil.get_all_attributes(micro[1], "ptcl_source_coord")
+        if pc < 2:
             continue
-        logfile = os.path.join(logfile_loc, movie_all[g].split('/')[-1].split('.tiff')[0]  + '.star')
+        logfile = os.path.join(logfile_loc, movie_all[g].split('/')[-1].split('.tiff')[0] + '.star')
         shift_x, shift_y = givemotioncorrshifts(logfile)
         expKer = True
         A = np.zeros((pc, pc))
@@ -1462,13 +1461,15 @@ def evaluateParams(x, dose, angpix, gc, sel_files, movie_all, correlate, movie, 
                           args=(newposi, pc, zsize, basis, correlate[g], sig_a_vals_px, eigenVals, dc),
                           method='L-BFGS-B', jac=gpmotion_grad, tol=9.99e-17, options=options_min)
         tracks = np.zeros((pc, zsize, 2))
-        tracks  = ParamsTopos(result.x, tracks, pc, zsize, basis, dc)
+        tracks = ParamsTopos(result.x, tracks, pc, zsize, basis, dc)
 
-        tsc= updateTsc (tracks , pc, zsize, boxsize, accPix, accCords, movie[g], reference[g], damage)
+        tsc = updateTsc(tracks, pc, zsize, boxsize, accPix, accCords, movie[g], reference[g], damage)
         tscAs[0] += tsc[0]
         tscAs[1] += tsc[1]
         tscAs[2] += tsc[2]
 
+
+        del part_cord
         del tracks
         del result
         del options_min
@@ -1486,7 +1487,7 @@ def evaluateParams(x, dose, angpix, gc, sel_files, movie_all, correlate, movie, 
         del partCt
         del bb
 
-
+    mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
     wg = tscAs[1] * tscAs[2]
     if wg > 0.0:
@@ -1497,18 +1498,15 @@ def evaluateParams(x, dose, angpix, gc, sel_files, movie_all, correlate, movie, 
     return -tp
 
 
-
-
-
 def motiontoProblem(vd):
     s = vd[2]
     accThresh = 500.0
     accEps = 1e-5
-    velscale =  10000.0
+    velscale = 10000.0
     divScale = 1.0
     accScale = 1000.0
-    if s < accThresh :
-        if s >  accEps:
+    if s < accThresh:
+        if s > accEps:
             w = 1.0 / s
         else:
             w = 1.0 / accEps
@@ -1517,8 +1515,9 @@ def motiontoProblem(vd):
 
     return [vd[0] * velscale, vd[1] * divScale, vd[2] * accScale]
 
+
 def problemtoMotion(x):
-    velscale =  10000.0
+    velscale = 10000.0
     divScale = 1.0
     accScale = 1000.0
     accThresh = 500.0
@@ -1536,52 +1535,51 @@ def problemtoMotion(x):
 def Butterworthfilter(img, radIn, radOut):
     w = img.shape[0]
     h = img.shape[1]
-    out = np.zeros((w,h))
+    out = np.zeros((w, h))
 
     for y in range(h):
         for x in range(w):
             xx = x
-            if y <= h/2 :
+            if y <= h / 2:
                 yy = y
             else:
-                yy = y-h
+                yy = y - h
 
-            r =  np.sqrt(xx*xx + yy*yy)
-            if r < radIn :
-                out[x,y] = img[x,y]
-            elif r < radOut :
+            r = np.sqrt(xx * xx + yy * yy)
+            if r < radIn:
+                out[x, y] = img[x, y]
+            elif r < radOut:
                 t = (r - radIn) / (radOut - radIn)
                 a = 0.5 * (1.0 + np.cos(np.pi * t))
-                out[x,y] = a*img[x,y]
+                out[x, y] = a * img[x, y]
             else:
-                out[x,y] = 0.0
+                out[x, y] = 0.0
     return out
 
 
 def prepAlignment(globaldose, angout_pix, boxsize, zsize, k_cutoff, k0, k1, mc, sel_files,
-                  gainrefname, movie_names,  maxRange, volft_1, volft_2 ):
-
-    alignDoseWeights = np.zeros((zsize, boxsize//2 +1, boxsize ))
+                  gainrefname, movie_names, maxRange, volft_1, volft_2):
+    alignDoseWeights = np.zeros((zsize, boxsize // 2 + 1, boxsize))
     for i in range(zsize):
         dose = globaldose * (i)
         damageweig = damageWeights(dose, boxsize, angout_pix)
-        alignDoseWeights[i] = Butterworthfilter(damageweig, k_cutoff-1, k_cutoff +1 )
+        alignDoseWeights[i] = Butterworthfilter(damageweig, k_cutoff - 1, k_cutoff + 1)
 
     accCords = []
     num = 0
 
     for y in range(boxsize):
-        for x in range(boxsize//2 + 1):
-            xx =x
-            if y < boxsize//2 + 1:
+        for x in range(boxsize // 2 + 1):
+            xx = x
+            if y < boxsize // 2 + 1:
                 yy = y
             else:
                 yy = y - boxsize
 
             r = round(np.sqrt(xx * xx + yy * yy))
             if r >= k0 and r < k1:
-                accCords.append([x,y])
-                num +=1
+                accCords.append([x, y])
+                num += 1
 
     accPix = num
     align_newgh = np.zeros((zsize, accPix))
@@ -1590,14 +1588,13 @@ def prepAlignment(globaldose, angout_pix, boxsize, zsize, k_cutoff, k0, k1, mc, 
         dose = globaldose * (f)
         damagewe = damageWeights(dose, boxsize, angout_pix)
         for i in range(accPix):
-            align_newgh[f,i] = damagewe[accCords[i][0], accCords[i][1]]
-
+            align_newgh[f, i] = damagewe[accCords[i][0], accCords[i][1]]
 
     pctot = 0
     maxRangeP = 2 * maxRange
     current_frame = EMData()
     gainref = EMData()
-    gainref.read_image(gainrefname,0)
+    gainref.read_image(gainrefname, 0)
     Util.mul_scalar(gainref, -1.0)
 
     CC_crop = []
@@ -1607,21 +1604,26 @@ def prepAlignment(globaldose, angout_pix, boxsize, zsize, k_cutoff, k0, k1, mc, 
     kb_1 = 0
     kb_2 = 0
 
+    ima_start, ima_end = sp_applications.MPI_start_end(mc, n_mpi_procs, my_mpi_proc_id)
 
-    for g in tqdm(range(mc), desc="Pre_Alignment"):
-        pc = EMUtil.get_image_count(sel_files[g])
-        if pc < 2 :
+    for micro in enumerate(sel_files[ima_start:ima_end]):
+    # for g in tqdm(range(mc), desc="Pre_Alignment"):
+        g = sel_files.index(micro[1])
+
+        print("\n Running pre-alignment in parallel", g, micro[1])
+        pc = EMUtil.get_image_count(micro[1])
+        if pc < 2:
             continue
 
-        pctot +=pc
+        pctot += pc
 
-        part_cord = EMUtil.get_all_attributes(sel_files[g], "ptcl_source_coord")
-        ctf_params_part = EMUtil.get_all_attributes(sel_files[g], "ctf")
-        chunk_arr = EMUtil.get_all_attributes(sel_files[g], "chunk_id")
-        project_params = EMUtil.get_all_attributes(sel_files[g], "xform.projection")
-        nx = EMUtil.get_all_attributes(sel_files[g], 'nx')
+        part_cord = EMUtil.get_all_attributes(micro[1], "ptcl_source_coord")
+        ctf_params_part = EMUtil.get_all_attributes(micro[1], "ctf")
+        chunk_arr = EMUtil.get_all_attributes(micro[1], "chunk_id")
+        project_params = EMUtil.get_all_attributes(micro[1], "xform.projection")
+        nx = EMUtil.get_all_attributes(micro[1], 'nx')
         nxx = nx[0]
-        ny = EMUtil.get_all_attributes(sel_files[g], 'ny')
+        ny = EMUtil.get_all_attributes(micro[1], 'ny')
         nyy = ny[0]
         current_frame.read_image(movie_names[g], 0)
         xsize = current_frame.get_xsize()
@@ -1631,23 +1633,22 @@ def prepAlignment(globaldose, angout_pix, boxsize, zsize, k_cutoff, k0, k1, mc, 
         cen_yy = ysize // 2
 
         refer_1 = get_2D_project_for_all_ptcl_from_reference(volft_1, kb_1, project_params, zsize,
-                                                                              show=False)
+                                                             show=False)
         refer_2 = get_2D_project_for_all_ptcl_from_reference(volft_2, kb_2, project_params, zsize,
-                                                                              show=False)
-
+                                                             show=False)
 
         var_movie, cnt_movie = init_variance_array(movie_names[g], nxx, nyy, cen_xx, cen_yy, part_cord, zsize, gainref)
         sigma = movie_vari_powspect(movie_names[g], gainref, var_movie, cnt_movie, zsize, part_cord,
                                     nxx, nyy, cen_xx, cen_yy)
         CCFS = np.zeros((zsize, len(part_cord), maxRangeP, maxRangeP))
-        movie_mic = np.zeros((zsize, len(part_cord), accPix), dtype = complex)
+        movie_mic = np.zeros((zsize, len(part_cord), accPix), dtype=complex)
         CCFS, movie_mic = movieCC_train(movie_names[g], nxx, nyy, sigma, var_movie, cnt_movie, globaldose, angout_pix,
-                       zsize, gainref, part_cord, ctf_params_part, cen_xx, cen_yy,
-                       refer_1, refer_2, CCFS, movie_mic , chunk_arr, alignDoseWeights,
-                        accPix, accCords, maxRangeP)
+                                        zsize, gainref, part_cord, ctf_params_part, cen_xx, cen_yy,
+                                        refer_1, refer_2, CCFS, movie_mic, chunk_arr, alignDoseWeights,
+                                        accPix, accCords, maxRangeP)
 
         CCFS = CCFS.swapaxes(0, 1)
-        movie_mic = movie_mic.swapaxes(0,1)
+        movie_mic = movie_mic.swapaxes(0, 1)
         CC_crop.append(CCFS)
         movies_all.append(movie_mic)
 
@@ -1657,7 +1658,7 @@ def prepAlignment(globaldose, angout_pix, boxsize, zsize, k_cutoff, k0, k1, mc, 
         del cnt_movie
         del sigma
 
-        refer_mic = np.zeros((len(part_cord), accPix) , dtype = complex)
+        refer_mic = np.zeros((len(part_cord), accPix), dtype=complex)
         for p in range(len(part_cord)):
             if chunk_arr[p] == 1:
                 refer = refer_1[p]
@@ -1683,12 +1684,20 @@ def prepAlignment(globaldose, angout_pix, boxsize, zsize, k_cutoff, k0, k1, mc, 
         del nx
         del ny
 
+    CC_crop_m = sp_utilities.wrap_mpi_gatherv(CC_crop, 0, mpi.MPI_COMM_WORLD)
+    movies_all_m = sp_utilities.wrap_mpi_gatherv(movies_all, 0, mpi.MPI_COMM_WORLD)
+    refer_all_m = sp_utilities.wrap_mpi_gatherv(refer_all, 0, mpi.MPI_COMM_WORLD)
+
+    CC_crop = sp_utilities.bcast_list_to_all(CC_crop_m, my_mpi_proc_id, main_mpi_proc, mpi.MPI_COMM_WORLD)
+    movies_all = sp_utilities.bcast_list_to_all(movies_all_m, my_mpi_proc_id, main_mpi_proc, mpi.MPI_COMM_WORLD)
+    refer_all = sp_utilities.bcast_list_to_all(refer_all_m, my_mpi_proc_id, main_mpi_proc, mpi.MPI_COMM_WORLD)
+
     return CC_crop, movies_all, refer_all, align_newgh, accPix, accCords
 
 
-def accelerate(in_img, accPix, accCords, comp = True):
+def accelerate(in_img, accPix, accCords, comp=True):
     if comp == True:
-        out_img = np.zeros(accPix, dtype = complex)
+        out_img = np.zeros(accPix, dtype=complex)
     else:
         out_img = np.zeros(accPix)
     for i in range(accPix):
@@ -1696,22 +1705,22 @@ def accelerate(in_img, accPix, accCords, comp = True):
     return out_img
 
 
-def crop_corner(correl, w,h):
-    #Todo: Here i have to write the function to crop fourier image
+def crop_corner(correl, w, h):
+    # Todo: Here i have to write the function to crop fourier image
     Crop_images = np.zeros((w, h))
     w1 = correl.shape[0]
     h1 = correl.shape[1]
     for y in range(h1):
         for x in range(w1):
-            if x< w1/2:
+            if x < w1 / 2:
                 x1 = x
             else:
-                x1 = x-w1
-            if y <h1/2:
+                x1 = x - w1
+            if y < h1 / 2:
                 y1 = y
             else:
-                y1 = y-h1
-            if (x1 < w//2 and y1 < h//2 and x1 >= -w//2 and y1 >= -h//2):
+                y1 = y - h1
+            if (x1 < w // 2 and y1 < h // 2 and x1 >= -w // 2 and y1 >= -h // 2):
                 if x1 < 0:
                     x0 = x1 + w
                 else:
@@ -1725,10 +1734,6 @@ def crop_corner(correl, w,h):
     return Crop_images
 
 
-
-
-
-
 movie_names = return_movie_names('/home/adnan/PycharmProjects/DoseWeighting/MOVIES_RELION/20170629_*_frameImage.tiff')
 stackfilename = 'bdb:/home/adnan/PycharmProjects/DoseWeighting/Relion_Stackv6/MotionCorr/job030/MOVIES_RELION/Particles/sphire_relion_stack'
 logfile_loc = '/home/adnan/PycharmProjects/DoseWeighting/Relion_log/'
@@ -1739,11 +1744,9 @@ mc = 24
 globaldose = 1.277
 
 reference_vol_0 = '/home/adnan/PycharmProjects/DoseWeighting/run_half1_class001_unfil.mrc'
-reference_vol_1 ='/home/adnan/PycharmProjects/DoseWeighting/run_half2_class001_unfil.mrc'
+reference_vol_1 = '/home/adnan/PycharmProjects/DoseWeighting/run_half2_class001_unfil.mrc'
 ref_mask = '/home/adnan/PycharmProjects/DoseWeighting/mask.mrc'
 gainrefname = '/home/adnan/PycharmProjects/DoseWeighting/MOVIES_RELION/gain.mrc'
-
-
 
 ref_EM_1 = sp_utilities.get_im(reference_vol_0)
 ref_EM_2 = sp_utilities.get_im(reference_vol_1)
@@ -1755,14 +1758,17 @@ ref_EM_2 *= mask_volume
 volft_1 = sp_projection.prep_vol(ref_EM_1, npad=2, interpolation_method=1)
 volft_2 = sp_projection.prep_vol(ref_EM_2, npad=2, interpolation_method=1)
 
+del ref_EM_1
+del ref_EM_2
+del mask_volume
 
 
 # prepAlignment(globaldose, angout_pix, boxsize, zsize)
 MotionParamEstima(movie_names, stackfilename, boxsize, zsize, angout_pix,
                   mc, volft_1, volft_2, gainrefname, logfile_loc)
 
-
-
+mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
+mpi.mpi_finalize()
 """
 
 
