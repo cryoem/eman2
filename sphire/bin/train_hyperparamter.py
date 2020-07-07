@@ -1494,7 +1494,7 @@ def evaluateParams(x, dose, angpix, gc, sel_files, movie_all, correlate, movie, 
     else:
         tp = 0.0
 
-    return -tp
+    return -tp, tscAs
 
 
 
