@@ -77,16 +77,16 @@ import ctypes
 There are four ways to run the program:
 
 1. Standard default run, starts from exhaustive searches, uses initial reference structure
-mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py  bdb:sparx_stack vton1 mask15.hdf --sym=c5  --initialshifts  --radius=120  --mask3D=mask15.hdf    >1ovotn &
+mpirun -np 64 --hostfile four_nodes.txt  sp_meridien.py  bdb:sparx_stack vton1 mask15.hdf --sym=c5  --initialshifts  --radius=120  --mask3D=mask15.hdf    >1ovotn &
 
 2. Restart after the last fully finished iteration, one can change some parameters (MPI settings have to be the same)
-mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py  vton1 --radius=100 >2ovotn &
+mpirun -np 64 --hostfile four_nodes.txt  sp_meridien.py  vton1 --radius=100 >2ovotn &
 
 3. Local refinement, starts from user-provided orientation parameters, delta has to be <= 3.75
-mpirun -np 64 --hostfile four_nodes.txt sxmeridien.py --local_refinement bdb:sparx_stack   vton3 --delta=1.875 --xr=2.0  --inires=5.5  --sym=c5  --radius=120  --mask3D=mask15.hdf >5ovotn &
+mpirun -np 64 --hostfile four_nodes.txt sp_meridien.py --local_refinement bdb:sparx_stack   vton3 --delta=1.875 --xr=2.0  --inires=5.5  --sym=c5  --radius=120  --mask3D=mask15.hdf >5ovotn &
 
 4. Restart of local refinement after the last fully finished iteration, one can change some parameters (MPI settings have to be the same)
-mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3  --xr=0.6 >6ovotn &
+mpirun -np 64 --hostfile four_nodes.txt  sp_meridien.py --local_refinement  vton3  --xr=0.6 >6ovotn &
 
 
 """
@@ -201,6 +201,22 @@ Blockdata["main_shared_nodes"] = [
 
 
 def create_subgroup():
+    """
+    Creates groups of particles for MPI parallelization.
+
+    Arguments:
+        None
+
+    Returns:
+        None
+        
+    Updated:
+        Blockdata["subgroup_comm"]
+        Blockdata["subgroup_size"]
+        Blockdata["subgroup_myid"]
+        Blockdata["nodes"]
+    """
+
     # select a subset of myids to be in subdivision
     if Blockdata["myid_on_node"] < Blockdata["ncpuspernode"]:
         submyids = [Blockdata["myid"]]
@@ -236,7 +252,23 @@ def create_subgroup():
 
 
 def create_zero_group():
-    # select a subset of myids to be in subdivision, This is a group of all zero IDs on nodes, taken from isac2
+    """
+    Select a subset of myids to be in subdivision.
+    This is a group of all zero IDs on nodes.
+    Taken from isac2
+    
+    Arguments:
+        None
+
+    Returns:
+        None
+        
+    Updated:
+        Blockdata["group_zero_comm"]
+        Blockdata["subgroup_size"]
+        Blockdata["subgroup_myid"]
+    """
+
     if Blockdata["myid_on_node"] == 0:
         submyids = [Blockdata["myid"]]
     else:
@@ -278,6 +310,19 @@ def create_zero_group():
 
 
 def AI(fff, anger, shifter, chout=False):
+    """
+    Decides whether convergence has been reached.
+
+    Arguments:
+        fff : Driver FSC
+        anger : Angular error 
+        shifter : Shift error
+        chout : (boolean) Flag if main process
+
+    Returns:
+        keepgoing : 0 if covergence is reached, 1 if not
+    """
+    
     global Tracker, Blockdata
     #  chout - if true, one can print, call the program with, chout = (Blockdata["myid"] == Blockdata["main_node"])
     #  fff (fsc), anger, shifter are coming from the previous iteration
@@ -492,6 +537,19 @@ def AI(fff, anger, shifter, chout=False):
 
 
 def AI_continuation(fff, anger=-1.0, shifter=-1.0, chout=False):
+    """
+    Decides whether convergence has been reached, for continue mode.
+
+    Arguments:
+        fff : Driver FSC
+        anger : Angular error 
+        shifter : Shift error
+        chout : (boolean) Flag if main process
+
+    Returns:
+        keepgoing : 0 if covergence is reached, 1 if not
+    """
+    
     global Tracker, Blockdata
     #  chout - if true, one can print, call the program with, chout = (Blockdata["myid"] == Blockdata["main_node"])
     #  fff (fsc), anger, shifter are coming from the previous iteration
@@ -724,6 +782,20 @@ def AI_continuation(fff, anger=-1.0, shifter=-1.0, chout=False):
 
 
 def params_changes(params, oldparams):
+    """
+    Calculates angular error and shift error.
+
+    Arguments:
+        params : Parameter file
+        oldparams : Previous-iteration parameter file
+
+    Returns:
+        tuple: (
+            Angular error (anger)
+            Shift error (shifter)
+            )
+    """
+
     #  Indexes contain list of images processed - sorted integers, subset of the full range.
     #  params - contain parameters associated with these images
     #  Both lists can be of different sizes, so we have to find a common subset
@@ -748,6 +820,19 @@ def params_changes(params, oldparams):
 
 
 def compute_search_params(acc_trans, shifter, old_range):
+    """
+    Updates translational search range and step size.
+
+    Arguments:
+        acc_trans : DESCRIPTION
+        shifter : Shift error
+        old_range : Old translational search range
+
+    Returns:
+        new_range : New translational search range
+        step : Translation step size
+    """
+    
     # step refer to the fine sampled step; while the range remains
     if old_range == 0.0 and shifter != 0.0:
         old_range = acc_trans
@@ -765,6 +850,19 @@ def compute_search_params(acc_trans, shifter, old_range):
 
 
 def assign_particles_to_groups(minimum_group_size=10, asubset=None):
+    """
+    Groups particles according to micrograph.
+    Merges group of nearest defocus until minimum group size achieved.
+
+    Arguments:
+        minimum_group_size : Minimum number of particles allowed in smallest group
+        asubset : Lookup table from original group number to new group number
+
+    Returns:
+        List of particles (q0 or sq0)
+        Second list of particles (q1 or sq1)
+    """
+    
     global Tracker, Blockdata
     #  Input data does not have to be consecutive in terms of ptcl_source_image or defocus
     #
@@ -1022,9 +1120,24 @@ def assign_particles_to_groups(minimum_group_size=10, asubset=None):
 
 
 def number_of_cones_to_delta(number_of_cones):
+    """
+    Finds the angular increment which results in at least the number of cones specified. 
+    
+    A given angular increment will divide the Hilbert sphere into a number of patches/cones. 
+    This function will serially halve the angular increment until the threshold number of cones is reached.
+
+    Arguments:
+        number_of_cones : Minimum number of cones desired
+
+    Returns:
+        Angular increment which exceeds the desired number of cones
+        Number of cones, is dependent on symmetry
+    """
+    
     if number_of_cones == 1:
         return Blockdata["symclass"][1][3] + 0.5, 1
     else:
+        # Cn symmetry
         if Blockdata["symclass"].sym[0] == "c":
             t2 = 89.0
             for i in range(92, 0, -1):
@@ -1034,13 +1147,19 @@ def number_of_cones_to_delta(number_of_cones):
                 if nren > number_of_cones:
                     return float(i), nren
             while True:
+                # Serially halve delta
                 i = old_div(i, 2.0)
                 a = Blockdata["symclass"].even_angles(i, theta1=1.0, theta2=t2)
+                
+                # Duplicate on opposite side of Hilbert sphere
                 a += [[(q[0] + 90.0) % 360.0, 180.0 - q[1], 0] for q in a]
                 nren = len(a)
+                
+                # Once the minimum number of cones is exceeded, return
                 if nren > number_of_cones:
                     return float(i), nren
 
+        # All other symmetries
         else:
             # t2 = Blockdata["symclass"].brackets[1][3] + 0.5
             for i in range(int(t2 + 1), 0, -1):
@@ -1058,6 +1177,18 @@ def number_of_cones_to_delta(number_of_cones):
 
 
 def find_assignments_of_refangles_to_angles(normals_set, ancor_angle, an):
+    """
+    Returns angles within neighborhood of given angle.
+
+    Arguments:
+        normals_set : Set of reference angles (?)
+        ancor_angle : Set of Euler angles
+        an : Angular neighborhood
+
+    Returns:
+        List of angles within neighborhood of given angle
+    """
+
     #  returns list of angles within normals_set that are within an angles from ancor_angle
     global Blockdata
 
@@ -1090,6 +1221,19 @@ def find_assignments_of_refangles_to_angles(normals_set, ancor_angle, an):
 
 
 def find_nearest_k_refangles_to_many_angles(normals_set, angles, delta, howmany):
+    """
+    Returns desired number of nearest angles from a given angle.
+
+    Arguments:
+        normals_set : Set of reference angles (?)
+        angles : List of sets of Euler angles
+        delta : Angular increment
+        howmany : Number of nearest reference angles to search
+
+    Returns:
+        assignments : List of lists of nearest angles, one list per image
+    """
+
     assignments = [-1] * len(angles)
     for i, ancor_angle in enumerate(angles):
         assignments[i] = find_nearest_k_refangles_to_angles(
@@ -1099,11 +1243,26 @@ def find_nearest_k_refangles_to_many_angles(normals_set, angles, delta, howmany)
 
 
 def find_nearest_k_refangles_to_angles(normals_set, ancor_angle, delta, howmany):
+    """
+    Returns desired number of nearest angles from a given angle.
+
+    Arguments:
+        normals_set : Set of reference angles (?)
+        ancor_angle : Set of Euler angles
+        delta : Angular increment
+        howmany : Number of nearest reference angles to search
+
+    Returns:
+        List of nearest angles within neighborhood of given angle
+    """
+
     #  returns list of angles within normals_set that are within an angles from ancor_angle
     global Blockdata
     nang1 = len(normals_set) - 1
     qtl = 0
     bigger = 1.0
+    
+    # Gradually increase neighborhood 'an' until we achieve specified number of angles
     while qtl < howmany:
         an = bigger * max(delta * (old_div(howmany, 2)), delta)
         Blockdata["target_theta"] = ancor_angle[1]
@@ -1142,6 +1301,17 @@ def find_nearest_k_refangles_to_angles(normals_set, ancor_angle, delta, howmany)
 
 
 def auxiliary_funcdef(xxx):
+    """
+    DESCRIPTION.
+    Will be minimized during Golden search.
+
+    Arguments:
+        xxx : DESCRIPTION
+
+    Returns:
+        DESCRIPTION
+    """
+
     global Blockdata
     l = min(max(int(xxx + 0.5), 0), len(Blockdata["angle_set"]) - 1)
     # print l,abs(target_theta - refang[l][1])
@@ -1152,6 +1322,18 @@ def auxiliary_funcdef(xxx):
 
 
 def compute_sigma(projdata, params, first_procid, dryrun=False, myid=-1, mpi_comm=-1):
+    """
+    Generates background image, either by copying from previous iteration or calculating it anew.
+
+    Arguments:
+        projdata : Input particle stack
+        params : List of alignment parameters
+        first_procid : NOT USED
+        dryrun : (boolean) Copy background from previous iteration
+        myid : MPI process ID
+        mpi_comm : MPI communicator
+    """
+
     global Tracker, Blockdata
     # Input stack of particles with all params in header
     # Output: 1/sigma^2 and a dictionary
@@ -1163,6 +1345,8 @@ def compute_sigma(projdata, params, first_procid, dryrun=False, myid=-1, mpi_com
     if dryrun:
         # tsd = model_blank(nv + nv//2,len(sd), 1, 1.0)
         # tocp = model_blank(len(sd), 1, 1, 1.0)
+        
+        # Copy background noise image from old directory to new
         if myid == Blockdata["main_node"]:
             tsd = sp_utilities.get_im(
                 os.path.join(Tracker["previousoutputdir"], "bckgnoise.hdf")
@@ -1237,16 +1421,26 @@ def compute_sigma(projdata, params, first_procid, dryrun=False, myid=-1, mpi_com
             st = EMAN2_cppwrap.Util.infomask(stmp, mask, False)
             stmp -= st[0]
             stmp = old_div(stmp, st[1])
+            
+            # Apply cosine mask 
             temp = sp_morphology.cosinemask(
                 stmp, radius=Tracker["constants"]["radius"], s=0.0
             )
+            
+            # Update sum of cosine-masked images
             EMAN2_cppwrap.Util.add_img(tavg, temp)
+            
+            # Compute rotational average of Fourier transform
             sig = EMAN2_cppwrap.Util.rotavg_fourier(temp)
             # sig = rops(pad(((cyclic_shift( projdata[i], int(sx), int(round(sy)) ) - st[0])/st[1]), mx,mx,1,0.0))
             # sig = rops(pad(((cyclic_shift(projdata, int(round(params[i][-2])), int(round(params[i][-1])) ) - st[0])/st[1])*invg, mx,mx,1,0.0))
+            
+            # Update sum of rotational for each group
             for k in range(nv):
                 tsd.set_value_at(k, indx, tsd.get_value_at(k, indx) + sig[k])
             """Multiline Comment3"""
+            
+            # Update particle-group counter
             tocp[indx] += 1
 
         ####for lll in range(len(Blockdata["accumulatepw"])):  sxprint(myid,ndata,lll,len(Blockdata["accumulatepw"][lll]))
@@ -1261,6 +1455,8 @@ def compute_sigma(projdata, params, first_procid, dryrun=False, myid=-1, mpi_com
             # for k in range(1,nv):  sxprint("  BACKG  ",k,tsd.get_value_at(k,0)/tocp[0] ,sig[k],tsd.get_value_at(k,0)/tocp[0] - sig[k])
             tmp1 = [0.0] * nv
             tmp2 = [0.0] * nv
+            
+            # Loop throgh groups
             for i in range(ngroups):
                 for k in range(1, nv):
                     qt = old_div(tsd.get_value_at(k, i), tocp[i]) - sig[k]
@@ -1303,6 +1499,24 @@ def getindexdata(
     myid=-1,
     mpi_comm=-1,
 ):
+    """
+    Gets subset of particle stack and parameter file for parallelization.
+
+    Arguments:
+        partids : Particle selection file
+        partstack : Parameter file
+        particle_groups : Particle group file
+        original_data : Image stack
+        small_memory : (boolean) Flag to add group number to attributes (default)
+        nproc : Number of MPI processes
+        myid : MPI process ID
+        mpi_comm : MPI communicator
+
+    Returns:
+        original_data : Subset of original image stack
+        partstack : Subset of parameter file
+    """
+
     global Tracker, Blockdata
     # The function will read from stack a subset of images specified in partids
     #   and assign to them parameters from partstack
@@ -1358,6 +1572,25 @@ def get_shrink_data(
     nosmearing=False,
     npad=1,
 ):
+    """
+    Normalizes and optionally shifts and takes Fourier transform of image stack.
+
+    Arguments:
+        nxinit : Image dimension
+        procid : Chunk number
+        original_data : Image stack/substack
+        oldparams : Parameter list
+        return_real : (boolean) Flag to take inverse FFT
+        preshift : (boolean) Flag to apply shifts
+        apply_mask : (boolean) Flag to apply mask
+        nonorm : (boolean) Applies normalization from parameter list
+        nosmearing : (boolean) Flag to apply floating-point shift (True) or integer shift (False)
+        npad : (NOT USED) Padding factor
+
+    Returns:
+        data : Stack of normalized input images, optionally shifted and optionally FFT
+    """
+
     global Tracker, Blockdata
     """
 	This function will read from stack a subset of images specified in partids
@@ -1566,6 +1799,17 @@ def get_shrink_data(
 
 
 def get_anger(angle1, angle2):
+    """
+    Calculates difference between two angles.
+
+    Arguments:
+        angle1 : List of 3 Euler angles
+        angle1 : Second list of 3 Euler angles
+
+    Returns:
+        axes_dis_min : Minimum angular distance
+    """
+
     A1 = sp_fundamentals.rotmatrix(angle1[0], angle1[1], angle1[2])
     ar = Blockdata["symclass"].symmetry_related(angle2)
     axes_dis_min = 1.0e23
@@ -1581,6 +1825,18 @@ def get_anger(angle1, angle2):
 
 
 def checkstep(item, keepchecking):
+    """
+    Checks whether input item exists.
+
+    Arguments:
+        item : File for which to check the existence
+        keepchecking : (boolean) Flag to keep checking for input item
+
+    Returns:
+        doit : 1 if not main node or if input item doesn't exist, 0 if main node and item exists
+        keepchecking : (boolean) Flag to cease checking for input item
+    """
+
     global Tracker, Blockdata
     if Blockdata["myid"] == Blockdata["main_node"]:
         if keepchecking:
@@ -1598,6 +1854,13 @@ def checkstep(item, keepchecking):
 
 
 def out_fsc(f):
+    """
+    Prints driver FSC.
+
+    Arguments:
+        f : (list) Fourier Shell Correlation 
+    """
+
     global Tracker, Blockdata
     sp_global_def.sxprint(" ")
     sp_global_def.sxprint(
@@ -1620,6 +1883,21 @@ def out_fsc(f):
 
 
 def get_refangs_and_shifts():
+    """
+    Get a list of of reference angles (rotated by delta/2) and shift combinations, and 
+        also reference angles and shift combinations at twice the coarseness.
+
+    Global inputs:
+        Tracker : Retrieves delta, xr (shift range), and ts (shift step)
+        Blockdata : Retrieves symclass
+    
+    Returns:
+        refang : List of reference angles, rotated by -0.5 delta
+        rshifts : List of shift combinations to try
+        coarse : List of reference angles with double the angular spacing
+        coarse_shifts : List of shift combinations with double the shift step
+    """
+
     global Tracker, Blockdata
 
     refang = Blockdata["symclass"].even_angles(Tracker["delta"])
@@ -1659,9 +1937,17 @@ def get_refangs_and_shifts():
 
 def get_shifts_neighbors(rshifts, cs):
     """
-	  	output is a list of shift neighbors to cs within ts*1.5 distance\
-	  	This yields at most five shifts
-	"""
+    Checks whether Pythagorean distance between shifts is less than 1.5 times the shift range ('ts').
+    This yields at most five shifts.
+
+    Arguments:
+        rshifts : List of shift combinations
+        cs : Coarse shift combination (single)
+
+    Returns:
+        shiftneighbors : List of shift neighbors to cs within ts*1.5 distance
+    """
+
     shiftneighbors = []
     rad = Tracker["ts"] * 1.5
     for l, q in enumerate(rshifts):
@@ -1671,6 +1957,15 @@ def get_shifts_neighbors(rshifts, cs):
 
 
 def shakegrid(rshifts, qt):
+    """
+    Shifts the list of input shift combinations by a given amount.
+
+    Arguments:
+        rshifts : List of shift combinations (modified)
+        qt : Amount to shift
+
+    """
+
     for i in range(len(rshifts)):
         rshifts[i][0] += qt
         rshifts[i][1] += qt
@@ -1680,6 +1975,16 @@ def shakegrid(rshifts, qt):
 
 
 def get_refvol(nxinit):
+    """
+    Resizes volume 'refvol'.
+
+    Arguments:
+        ref_vol : Target volme dimension
+
+    Returns:
+        ref_vol : Resized volume
+    """
+
     ref_vol = sp_utilities.get_im(Tracker["refvol"])
     nnn = ref_vol.get_xsize()
     if nxinit != nnn:
@@ -1700,6 +2005,27 @@ def do3d(
     smearing=True,
     mpi_comm=-1,
 ):
+    """
+    Computes 3D reconstruction. 
+    Set up shared memory before calling this function.
+
+    Arguments:
+        procid : Chunk number
+        data : Image stack
+        newparams : Alignment parameters, including smear information
+        refang : Reference angles
+        rshifts : List of shift combinations
+        norm_per_particle : List of normalization data
+        myid : MPI Process ID
+        smearing : (boolean) Flag for smearing
+        mpi_comm : MPI communicator
+        
+    Outputs written to disk, for each chunk and mainiteration:
+        tempdir/tvol_%01d_%03d.hdf
+        tempdir/tweight_%01d_%03d.hdf
+        tempdir/trol_%01d_%03d.hdf
+    """
+
     global Tracker, Blockdata
 
     #  Without filtration
@@ -1819,6 +2145,14 @@ def do3d(
 
 
 def print_dict(dict, theme):
+    """
+    Prints dictionary contents (e.g., Tracker) to log.
+
+    Arguments:
+        dict : Dictionary to print
+        theme : Title for printed output
+    """
+
     line = time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime()) + " =>"
     sp_global_def.sxprint(line, theme)
     spaces = "                    "
@@ -1847,6 +2181,17 @@ def print_dict(dict, theme):
 
 
 def stepone(tvol, tweight):
+    """
+    Applies weighting function.
+
+    Arguments:
+        tvol : Input 3D FFT
+        tweight : Input weighting function
+
+    Returns:
+        Weighted FFT
+    """
+
     global Tracker, Blockdata
     tvol.set_attr("is_complex", 1)
     ovol = EMAN2_cppwrap.Util.shrinkfvol(tvol, 2)
@@ -1859,6 +2204,21 @@ def stepone(tvol, tweight):
 
 
 def steptwo_mpi(tvol, tweight, treg, cfsc=None, regularized=True, color=0):
+    """
+    Applies weights, regularization, and matched filter.
+
+    Arguments:
+        tvol : Input 3D FFT
+        tweight : Weighting function
+        treg : List of regularization weights
+        cfsc (list) Fourier Shell Correlation
+        regularized : (boolean) Apply regularization
+        color : DESCRIPTION
+
+    Returns:
+        tvol : (only for main MPI process) Weighted, regularized, and filtered volume
+    """
+
     global Tracker, Blockdata
 
     n_iter = 10  # number of iterations for iterative process for doing map
@@ -1952,7 +2312,7 @@ def steptwo_mpi(tvol, tweight, treg, cfsc=None, regularized=True, color=0):
     # Util.iterefa(tvol, tweight, maxr2, Tracker["constants"]["nnxo"])
 
     if Blockdata["myid_on_node"] == 0:
-        #  Either pad or window in F space to 2*nnxo
+        #  Either pad or window in Fourier space to 2*nnxo
         nx = tvol.get_ysize()
         if nx > 2 * Tracker["constants"]["nnxo"]:
             tvol = sp_fundamentals.fdecimate(
@@ -1973,6 +2333,7 @@ def steptwo_mpi(tvol, tweight, treg, cfsc=None, regularized=True, color=0):
                 normalize=False,
             )
 
+        # Invert FFT
         tvol = sp_fundamentals.fft(tvol)
         tvol = sp_fundamentals.cyclic_shift(
             tvol,
@@ -1989,6 +2350,7 @@ def steptwo_mpi(tvol, tweight, treg, cfsc=None, regularized=True, color=0):
             Tracker["constants"]["nnxo"],
             Tracker["constants"]["nnxo"],
         )
+        # Apply cosinemask(tvol, radius, cosine_width=5, bckg=None)
         tvol = sp_morphology.cosinemask(
             tvol, old_div(Tracker["constants"]["nnxo"], 2) - 1 - 5, 5, None
         )  # clean artifacts in corners
@@ -1998,6 +2360,29 @@ def steptwo_mpi(tvol, tweight, treg, cfsc=None, regularized=True, color=0):
 
 
 def calculate_2d_params_for_centering(kwargs):
+    """
+    Caclulate parameters for centering in 2D.
+
+    Arguments:
+        kwargs : Dictionary containing the following keys:
+            init2dir : 2D alignment directory
+            myid : MPI process ID
+            main_node : Main MPI process ID
+            number_of_images_in_stack : Number of images in stack
+            nproc : Number of MPI processes
+            target_radius : Radius to which particles will the downsampled for pre-alignment, pixels
+            radi : Particle radius in full-sized images
+            center_method : Centering method
+            nxrsteps : Translation search step, pixels
+            command_line_provided_stack_filename : Stack file
+            options_skip_prealignment : (boolean) Skip prealignment
+            options_CTF : (boolean) Apply CTF correction
+            mpi_comm : MPI communicator
+
+    Returns:
+        params2d : (only for main MPI process) List of alignment parameters
+    """
+
     #################################################################################################################################################################
     # get parameters from the dictionary
     init2dir = kwargs["init2dir"]
@@ -2096,6 +2481,8 @@ def calculate_2d_params_for_centering(kwargs):
         if old_div(txrm, nxrsteps) > 0:
             tss = ""
             txr = ""
+            
+            # Halve search range until less than 1
             while old_div(txrm, nxrsteps) > 0:
                 tts = old_div(txrm, nxrsteps)
                 tss += "  %d" % tts
@@ -2174,6 +2561,19 @@ def calculate_2d_params_for_centering(kwargs):
 
 
 def Numrinit_local(first_ring, last_ring, skip=1, mode="F"):
+    """
+    Collects list of radii to calculate polar 1D projections.
+
+    Arguments:
+        first_ring : Inner radius
+        last_ring : Outer radius
+        skip : Ring step
+        mode : Search around full circmference ("F") or half circmference ("H")
+
+    Returns:
+        numr : List of radii
+    """
+
     """This function calculates the necessary information for the 2D
 	   polar interpolation. For each ring, three elements are recorded:
 	   numr[i*3]:  Radius of this ring
@@ -2225,6 +2625,30 @@ def ali3D_polar_ccc(
     nonorm=False,
     applyctf=True,
 ):
+    """
+    3D projection matching for de novo (not restricted) refinement in "INITIAL" state.
+
+    Arguments:
+        refang : List of reference angles
+        shifts : List of shift combinations
+        coarse_angles : List of reference angles with double the angular spacing
+        coarse_shifts : List of shift combinations with double the shift step
+        procid : Chunk ID
+        original_data : Image stack
+        oldparams : List of alignment parameters
+        preshift : (boolean) Apply previously-estimated shifts
+        apply_mask : (boolean) Apply cosine mask
+        nonorm : (NOT USED) Skip normalization
+        applyctf : NOT USED
+
+    Returns:
+        newpar : Alignment parameters
+            newpar = [[params],[],... len(data)]
+                params = [particleID, [worst_similarity, sum_all_similarities],[imageallparams]]]
+                    imageallparams = [[orientation, similarity],[],...  number of all orientations ]
+        nima : Norm per particle (here, 1.0)
+    """
+
     global Tracker, Blockdata
     #  Input data has to be CTF-multiplied, preshifted
     #  Output - newpar, see structure
@@ -3080,6 +3504,30 @@ def ali3D_primary_polar(
     nonorm=False,
     applyctf=True,
 ):
+    """
+    3D projection matching in "PRIMARY" state.
+
+    Arguments:
+        refang : List of reference angles
+        shifts : List of shift combinations
+        coarse_angles : List of reference angles with double the angular spacing
+        coarse_shifts : List of shift combinations with double the shift step
+        procid : Chunk ID
+        original_data : Image stack
+        oldparams : List of alignment parameters
+        preshift : (boolean) Apply previously-estimated shifts
+        apply_mask : (boolean) Apply cosine mask
+        nonorm : (boolean) Skip normalization
+        applyctf : NOT USED
+
+    Returns:
+        newpar : Alignment parameters
+            newpar = [[params],[],... len(data)]
+                params = [particleID, [worst_similarity, sum_all_similarities],[imageallparams]]]
+                    imageallparams = [[orientation, similarity],[],...  number of all orientations ]
+        nima : List of norms per particle
+    """
+
     global Tracker, Blockdata
     #  Input data has to be CTF-multiplied, preshifted
     #  Output - newpar, see structure
@@ -4140,6 +4588,30 @@ def ali3D_polar(
     nonorm=False,
     applyctf=True,
 ):
+    """
+    3D projection matching in "EXHAUSTIVE" state.
+
+    Arguments:
+        refang : List of reference angles
+        shifts : List of shift combinations
+        coarse_angles : List of reference angles with double the angular spacing
+        coarse_shifts : List of shift combinations with double the shift step
+        procid : Chunk ID
+        original_data : Image stack
+        oldparams : List of alignment parameters
+        preshift : (boolean) Apply previously-estimated shifts
+        apply_mask : (boolean) Apply cosine mask
+        nonorm : (boolean) Skip normalization
+        applyctf : NOT USED
+
+    Returns:
+        newpar : Alignment parameters
+            newpar = [[params],[],... len(data)]
+                params = [particleID, [worst_similarity, sum_all_similarities],[imageallparams]]]
+                    imageallparams = [[orientation, similarity],[],...  number of all orientations ]
+        nima : List of norms per particle
+    """
+
     global Tracker, Blockdata
     #  Input data has to be CTF-multiplied, preshifted
     #  Output - newpar, see structure
@@ -5113,9 +5585,6 @@ def ali3D_polar(
     return newpar, norm_per_particle
 
 
-# MODIFIED FROM TRUE POLAR  12/06/2017  PAP
-
-
 def ali3D_primary_local_polar(
     refang,
     shifts,
@@ -5130,8 +5599,30 @@ def ali3D_primary_local_polar(
     applyctf=True,
 ):
     """
-	12/06/2017
-	"""
+    3D projection matching in local refinement in "PRiMARY" state.
+    MODIFIED FROM TRUE POLAR  12/06/2017  PAP
+
+    Arguments:
+        refang : List of reference angles
+        shifts : List of shift combinations
+        coarse_angles : List of reference angles with double the angular spacing
+        coarse_shifts : List of shift combinations with double the shift step
+        procid : Chunk ID
+        original_data : Image stack
+        oldparams : List of alignment parameters
+        preshift : (boolean) Apply previously-estimated shifts
+        apply_mask : (boolean) Apply cosine mask
+        nonorm : (boolean) Skip normalization
+        applyctf : NOT USED
+
+    Returns:
+        newpar : Alignment parameters
+            newpar = [[params],[],... len(data)]
+                params = [particleID, [worst_similarity, sum_all_similarities],[imageallparams]]]
+                    imageallparams = [[orientation, similarity],[],...  number of all orientations ]
+        nima : List of norms per particle
+    """
+
     global Tracker, Blockdata
     #  Input data has to be CTF-multiplied, preshifted
     #  Output - newpar, see structure
@@ -5450,7 +5941,7 @@ def ali3D_primary_local_polar(
         mode,
     )
     size_of_one_image = crefim.get_xsize()
-    #  We will assume half of the memory is available.  We will do it betteer later.
+    #  We will assume half of the memory is available.  We will do it better later.
     numberofrefs_inmem = int(
         old_div(
             old_div(Tracker["constants"]["memory_per_node"], 4),
@@ -6085,7 +6576,7 @@ def ali3D_primary_local_polar(
                         keepf, Blockdata["main_node"], mpi.MPI_COMM_WORLD
                     )
                     # if(keepf == 0):
-                    # 	ERROR("Too few images to estimate keepfirst","sxmeridien", 1, Blockdata["myid"])
+                    # 	ERROR("Too few images to estimate keepfirst","sp_meridien", 1, Blockdata["myid"])
                     # 	mpi_finalize()
                     # 	exit()
                     ###print("  STARTING8    ",Blockdata["myid"],keepf)
@@ -6622,8 +7113,30 @@ def ali3D_local_polar(
     applyctf=True,
 ):
     """
-	02/07/2017
-	"""
+    3D projection matching in "RESTRICTED" or "FiNAL" state.
+    02/07/2017
+
+    Arguments:
+        refang : List of reference angles
+        shifts : List of shift combinations
+        coarse_angles : List of reference angles with double the angular spacing
+        coarse_shifts : List of shift combinations with double the shift step
+        procid : Chunk ID
+        original_data : Image stack
+        oldparams : List of alignment parameters
+        preshift : (boolean) Apply previously-estimated shifts
+        apply_mask : (boolean) Apply cosine mask
+        nonorm : (boolean) Skip normalization
+        applyctf : NOT USED
+
+    Returns:
+        newpar : Alignment parameters
+            newpar = [[params],[],... len(data)]
+                params = [particleID, [worst_similarity, sum_all_similarities],[imageallparams]]]
+                    imageallparams = [[orientation, similarity],[],...  number of all orientations ]
+        nima : List of norms per particle
+    """
+
     global Tracker, Blockdata
     #  Input data has to be CTF-multiplied, preshifted
     #  Output - newpar, see structure
@@ -7558,7 +8071,7 @@ def ali3D_local_polar(
                         if not keepfirst_error:
                             sp_global_def.ERROR(
                                 "\n\n###\n###\n###\nToo few images to estimate keepfirst.\nSet it to 3 for now.\nYou are entering unkown water!\nIn case the results do not look promising, try less processors.\n###\n###\n###\n\n",
-                                "sxmeridien",
+                                "sp_meridien",
                                 0,
                                 Blockdata["myid"],
                             )
@@ -8027,6 +8540,22 @@ def ali3D_local_polar(
 
 
 def cerrs(params, ctfs, particle_groups):
+    """
+    Calculates angular and shift accuracies.
+
+    Arguments:
+        params : Parameter list
+        ctfs : (list) CTF parameters
+        particle_groups : (list) Group assignment for each particle
+
+    Returns:
+        None
+        
+    Updates:
+        Tracker["acc_rot"] : Angular accuracy
+        Tracker["acc_trans"] : Shift accuracy
+    """
+
     global Tracker, Blockdata
 
     shrinkage = old_div(float(Tracker["nxinit"]), float(Tracker["constants"]["nnxo"]))
@@ -8071,7 +8600,7 @@ def cerrs(params, ctfs, particle_groups):
         phi1 = params[itry][0]
         theta1 = params[itry][1]
         psi1 = params[itry][2]
-        # // Get CTF for this particle
+        
         #   Get F1 = Proj(refvol; angles1, shifts=0)
         F1 = sp_projection.prgl(
             ref_vol,
@@ -8079,6 +8608,8 @@ def cerrs(params, ctfs, particle_groups):
             interpolation_method=1,
             return_real=False,
         )
+        
+        # // Get CTF for this particle
         ctfs[itry].apix = old_div(ctfs[itry].apix, shrinkage)
         ct = sp_morphology.ctf_img_real(Tracker["nxinit"], ctfs[itry])
         EMAN2_cppwrap.Util.mul_img(ct, ct)
@@ -8228,6 +8759,28 @@ def do3d_final(
     final_iter=-1,
     comm=-1,
 ):
+    """
+    Sets up MPI and computes 3D reconstruction.
+
+    Arguments:
+        partids : Lists of particles for each chunk (overwritten)
+        partstack : List of alignment parameters from chunk parameter file
+        original_data : (overwritten) Subset of image stack
+        oldparams : (list) Subset of alignment parameters
+        oldparamstructure : Parameters including smear information
+        projdata : (overwritten) Normalized subset of image stack
+        final_iter : Iteration number to use
+        comm : MPI communitcator
+
+    Returns:
+        None
+        
+    Calls do3d(), which writes:
+        tempdir/tvol_%01d_%03d.hdf
+        tempdir/tweight_%01d_%03d.hdf
+        tempdir/trol_%01d_%03d.hdf
+    """
+
     global Tracker, Blockdata
 
     if Blockdata["subgroup_myid"] > -1:
@@ -8463,6 +9016,24 @@ def do3d_final(
 
 
 def recons3d_final(masterdir, do_final_iter_init, memory_per_node, orgstack=None):
+    """
+    Allocates memory and computes 3D reconstruction.
+
+    Arguments:
+        masterdir : Output directory
+        do_final_iter_init : Iteration number to use
+        memory_per_node : Memory to use (GB)
+        orgstack : Original image stack filename
+
+    Returns:
+        None
+        
+    Calls do3d_final(), which calls do3d(), which writes the following:
+        tempdir/tvol_%01d_%03d.hdf
+        tempdir/tweight_%01d_%03d.hdf
+        tempdir/trol_%01d_%03d.hdf
+    """
+
     global Tracker, Blockdata
     # search for best solution, and load respective tracker
     carryon = 1
@@ -8631,6 +9202,26 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node, orgstack=None
 def recons3d_trl_struct_MPI_nosmearing(
     myid, main_node, prjlist, parameters, CTF, upweighted, mpi_comm, target_size
 ):
+    """
+    Computes reconstruction without smearing using nearest-neighbor interpolation.
+    Used by rec3d_continuation_nosmearing()
+
+    Arguments:
+        myid : Process ID
+        main_node : Main process ID 
+        prjlist : (list) Image stack
+        parameters : (list) Projection parameters
+        CTF : (boolean) Perform CTF-correction
+        upweighted (boolean) : If False, multiply by background noise
+        mpi_comm : MPI communicator
+        target_size : Volume dimension, after padding
+
+    Returns (main MPI process only):
+        fftvol : DESCRIPTION
+        weight : DESCRIPTION
+        refvol : DESCRIPTION
+    """
+
     global Tracker, Blockdata
     imgsize = prjlist[0].get_ysize()  # It can be Fourier, so take y-size
     refvol = sp_utilities.model_blank(target_size)
@@ -8700,6 +9291,22 @@ def recons3d_trl_struct_MPI_nosmearing(
 
 
 def rec3d_continuation_nosmearing(original_data, mpi_comm):
+    """
+    Sets up MPI and computes 3D reconstruction without smearing.
+
+    Arguments:
+        original_data : (overwritten) Subset of image stack
+        mpi_comm : MPI communicator
+
+    Returns:
+        None
+
+    Outputs written to disk by do3d():
+        tempdir/tvol_%01d_%03d.hdf
+        tempdir/tweight_%01d_%03d.hdf
+        tempdir/trol_%01d_%03d.hdf
+    """
+
     global Tracker, Blockdata
 
     original_data = [None, None]
@@ -8799,6 +9406,19 @@ def rec3d_continuation_nosmearing(original_data, mpi_comm):
 
 
 def update_memory_estimation():
+    """
+    Estimates number of CPUs given memory per node.
+
+    Arguments:
+        None
+
+    Returns:
+        None
+        
+    Updates:
+        Tracker["constants"]["memory_per_node"]
+    """
+
     global Tracker, Blockdata
     if Blockdata["myid"] == Blockdata["main_node"]:
         if Tracker["constants"]["memory_per_node"] == -1.0:
@@ -8872,6 +9492,36 @@ def update_memory_estimation():
 
 
 def update_tracker(shell_line_command):
+    """
+    Updates Tracker dictionary.
+
+    Arguments:
+        shell_line_command : command line with arguments
+
+    Returns:
+        None
+    
+    Sets:
+        Tracker["constants"]["radius"]
+        Tracker["constants"]["inires"]
+        Tracker["constants"]["inires"]
+        Tracker["constants"]["shake"]
+        Tracker["constants"]["symmetry"]
+        Tracker["constants"]["mask3D"]
+        Tracker["constants"]["ccfpercentage"]
+        Tracker["constants"]["nonorm"]
+        Tracker["constants"]["small_memory"]
+        Tracker["constants"]["keep_groups"]
+        Tracker["constants"]["subset"]
+        Tracker["constants"]["oldrefdir"]
+        Tracker["constants"]["function"]
+        Tracker["constants"]["an"]
+        Tracker["currentres"]
+        Tracker["xr"]
+        Tracker["ts"]
+        Tracker["delta"]
+    """
+
     global Tracker, Blockdata
     # reset parameters for a restart run; update only those specified options in restart
     # 1. maxit is not included.
@@ -8997,6 +9647,21 @@ def update_tracker(shell_line_command):
 
 
 def rec3d_make_maps(compute_fsc=True, regularized=True):
+    """
+    Computes 3D reconstructions for each chunk.
+
+    Arguments:
+        compute_fsc : (boolean) Compute Fourier Shell Correlation
+        regularized : (boolean) Apply regularization
+
+    Returns:
+        None
+        
+    Outputs:
+        driver_%03d.txt : Driver FSC file
+        vol_0_%03d.hdf or vol_%d_unfil_%03d.hdf : 3D reconstruction (regularized or unregularized)
+    """
+
     global Tracker, Blockdata
 
     # final reconstruction: compute_fsc = False; regularized = False
@@ -9055,6 +9720,8 @@ def rec3d_make_maps(compute_fsc=True, regularized=True):
             else:
                 #  receive fsc
                 lcfsc = 0
+        
+        # If more than 1 group
         else:
             if (
                 Blockdata["myid"] == Blockdata["nodes"][1]
@@ -9147,6 +9814,8 @@ def rec3d_make_maps(compute_fsc=True, regularized=True):
             else:
                 #  receive fsc
                 lcfsc = 0
+        # End no_of_groups IF-THEN
+        
         mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
         lcfsc = sp_utilities.bcast_number_to_all(lcfsc)
         if Blockdata["myid"] != Blockdata["nodes"][0]:
@@ -9162,6 +9831,7 @@ def rec3d_make_maps(compute_fsc=True, regularized=True):
                 ),
             )
             out_fsc(cfsc)
+    # End compute-FSC IF-THEN
 
     # Now that we have the curve, do the reconstruction
     Tracker["maxfrad"] = old_div(Tracker["nxinit"], 2)
@@ -9283,6 +9953,8 @@ def rec3d_make_maps(compute_fsc=True, regularized=True):
         if Blockdata["myid"] == Blockdata["nodes"][0]:
             shutil.rmtree(os.path.join(Tracker["directory"], "tempdir"))
         mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
+    
+    # If not regularized
     else:
         if Blockdata["no_of_groups"] == 1:
             for iproc in range(2):
@@ -9381,6 +10053,8 @@ def rec3d_make_maps(compute_fsc=True, regularized=True):
                             )
                         )
                 mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
+        
+        # If more than one group
         else:
             if Blockdata["myid"] == Blockdata["main_shared_nodes"][1]:
                 # post-insertion operations, done only in main_node
@@ -9520,6 +10194,9 @@ def rec3d_make_maps(compute_fsc=True, regularized=True):
                         )
                     )
             mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
+        # End no_of_groups IF-THEN
+    # End regularization IF-THEN
+    
     return
 
 
@@ -9532,6 +10209,27 @@ def refinement_one_iteration(
     general_mode=True,
     continuation_mode=False,
 ):
+    """
+    Oversees one iteration of refinement, calling appropriate alignment function:
+        ali3D_polar_ccc()
+        ali3D_primary_polar()
+        ali3D_polar()
+        ali3D_local_polar()
+        ali3D_primary_local_polar()
+
+    Arguments:
+        partids : Particle lists for each chunk
+        partstack : (list) Parameters for each chunk
+        original_data : (overwritten) Subset of image stack
+        oldparams : (overwritten) Subset of projection parameters
+        projdata : (overwritten) Normalized image stack
+        general_mode : (boolean) Regular search
+        continuation_mode : (boolean) Local search
+
+    Returns:
+        None
+    """
+
     global Tracker, Blockdata
     #  READ DATA AND COMPUTE SIGMA2   ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
     for procid in range(2):
@@ -9695,7 +10393,7 @@ def refinement_one_iteration(
                 )
             else:
                 sp_global_def.ERROR(
-                    "sxmeridien",
+                    "sp_meridien",
                     "Incorrect state  %s" % Tracker["state"],
                     1,
                     Blockdata["myid"],
@@ -9740,13 +10438,14 @@ def refinement_one_iteration(
                 )
             else:
                 sp_global_def.ERROR(
-                    "sxmeridien",
+                    "sp_meridien",
                     "Incorrect state  %s" % Tracker["state"],
                     1,
                     Blockdata["myid"],
                 )
         else:
             pass
+        # End general_mode IF-THEN
 
         qt = old_div(
             old_div(1.0, Tracker["constants"]["nnxo"]), Tracker["constants"]["nnxo"]
@@ -10160,18 +10859,18 @@ def main():
 	There are five ways to run the program:
 
 1. Standard default run, starts from exhaustive searches, uses initial reference structure
-mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py  bdb:sparx_stack vton1 mask15.hdf --sym=c5  --initialshifts  --radius=120  --mask3D=mask15.hdf    >1ovotn &
+mpirun -np 64 --hostfile four_nodes.txt  sp_meridien.py  bdb:sparx_stack vton1 mask15.hdf --sym=c5  --initialshifts  --radius=120  --mask3D=mask15.hdf    >1ovotn &
 
 2. Restart after the last fully finished iteration, one can change some parameters (MPI settings have to be the same)
-mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py  vton1 --radius=100 >2ovotn &
+mpirun -np 64 --hostfile four_nodes.txt  sp_meridien.py  vton1 --radius=100 >2ovotn &
 
 3. Local refinement, starts from user-provided orientation parameters, delta has to be <= 3.75
-mpirun -np 64 --hostfile four_nodes.txt sxmeridien.py --local_refinement bdb:sparx_stack   vton3 --delta=1.875 --xr=2.0  --inires=5.5  --sym=c5  --radius=120  --mask3D=mask15.hdf >5ovotn &
+mpirun -np 64 --hostfile four_nodes.txt sp_meridien.py --local_refinement bdb:sparx_stack   vton3 --delta=1.875 --xr=2.0  --inires=5.5  --sym=c5  --radius=120  --mask3D=mask15.hdf >5ovotn &
 
 4. Restart of local refinement after the last fully finished iteration, one can change some parameters (MPI settings have to be the same)
-mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3  --xr=0.6 >6ovotn &
+mpirun -np 64 --hostfile four_nodes.txt  sp_meridien.py --local_refinement  vton3  --xr=0.6 >6ovotn &
 
-5.  mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py vton3 --do_final=21
+5.  mpirun -np 64 --hostfile four_nodes.txt  sp_meridien.py vton3 --do_final=21
 
 	"""
     )
@@ -10594,7 +11293,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
                         Tracker["nxstep"],
                         2 * (Tracker["currentres"] + Tracker["nxstep"]),
                     ),
-                    "sxmeridien",
+                    "sp_meridien",
                     1,
                     Blockdata["myid"],
                 )
@@ -10607,7 +11306,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
                 "nnxo"
             ]:
                 sp_global_def.ERROR(
-                    "Particle radius set too large!", "sxmeridien", 1, Blockdata["myid"]
+                    "Particle radius set too large!", "sp_meridien", 1, Blockdata["myid"]
                 )
             ###<-----end of sanity check <----------------------
             ###<<<----------------------------- parse program
@@ -11050,7 +11749,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
                     if not doit2:
                         sp_global_def.ERROR(
                             "There was a gap in main directories, program cannot proceed",
-                            "sxmeridien",
+                            "sp_meridien",
                             1,
                             Blockdata["myid"],
                         )
@@ -11121,8 +11820,8 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
                         Tracker["constants"]["memory_per_node"],
                     )
 
-            #  End of if doit
-        #   end of while
+            #  End of doit IF-THEN
+        # End of keepgoing WHILE loop
 
     elif do_continuation_mode:
         # case1: local meridien run using parameters stored in headers
@@ -11489,7 +12188,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
                         Tracker["nxstep"],
                         2 * (Tracker["currentres"] + Tracker["nxstep"]),
                     ),
-                    "sxmeridien",
+                    "sp_meridien",
                     1,
                     Blockdata["myid"],
                 )
@@ -11502,7 +12201,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
                 "nnxo"
             ]:
                 sp_global_def.ERROR(
-                    "Particle radius set too large!", "sxmeridien", 1, Blockdata["myid"]
+                    "Particle radius set too large!", "sp_meridien", 1, Blockdata["myid"]
                 )
             ###<-----end of sanity check <----------------------
             ###<<<----------------------------- parse program
@@ -11846,7 +12545,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
                     if not doit2:
                         sp_global_def.ERROR(
                             "There was a gap in main directories, program cannot proceed",
-                            "sxmeridien",
+                            "sp_meridien",
                             1,
                             Blockdata["myid"],
                         )
