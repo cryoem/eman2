@@ -588,7 +588,6 @@ Takes a path or bdb: specifier and returns the number of images in the reference
 
 
 # NOTE: Toshio Moriya 2018/08/02
-# This is a temporal function to fix the bdb related problem caused by Tunay's recent modifications
 def db_fix_image_count(fsp):
     """fix_image_count(path)
 
