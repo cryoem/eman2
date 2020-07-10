@@ -1504,7 +1504,7 @@ def ali_ptcls(imgs, allpms, options, outname=None, doali=True):
 				tx=[0,0]
 
 			if outname:
-				e["score"]=[tx[0], tx[1]]#trans[nid].tolist()
+				e["score"]=[tx[0]+tlast[0], tx[1]+tlast[1]]#trans[nid].tolist()
 				e["pid"]=int(pid)
 				e["nid"]=int(nid)
 				e.write_image(outname, int(nid+pid*num))

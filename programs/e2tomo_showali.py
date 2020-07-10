@@ -235,15 +235,19 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 	def get_data(self, itr):
 		
 		
-		fname=os.path.join(self.options.path, "ali_{:02d}.hdf".format(itr))
+		#fname=os.path.join(self.options.path, "ali_{:02d}.hdf".format(itr))
+		fname=os.path.join(self.options.path, "tltseries_input.hdf")
 		pname=os.path.join(self.options.path, "landmarks_{:02d}.txt".format(itr))
-		pks=np.loadtxt(pname)
+		tpm=np.loadtxt(os.path.join(self.options.path, "tltparams_{:02d}.txt".format(itr)))
+		tpm=tpm[:,1:]
+		tpm[:,:2]/=4
+		pks=np.loadtxt(pname)/4
 		imgs = EMData.read_images(fname)
 		img=EMData(imgs[0]["nx"],imgs[0]["ny"], len(imgs))
 		xfs=[]
 		for i,m in enumerate(imgs):
 			img.insert_clip(m, (0,0,i))
-			xfs.append(m["xform.projection"])
+			#xfs.append(m["xform.projection"])
 
 
 		aname=os.path.join(self.options.path, "ptclali_{:02d}.hdf".format(itr))
@@ -259,16 +263,23 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 		
 		dx=img["nx"]//2
 		dy=img["ny"]//2
-		for nid, xf in enumerate(xfs):
+		for t in tpm:
 			p2d=[]
-			for pid, p in enumerate(pks):
-				pt=[p[0], p[1], p[2]]
-				ptx=xf.transform(pt)
-				ptx=[i/2 for i in ptx]
-				ptx=[ptx[0]+dx, ptx[1]+dy]
-				p2d.append(ptx)
-				
+			for p in pks:
+				pt=get_xf_pos(t, p)
+				pt=[pt[0]+dx, pt[1]+dy]
+				p2d.append(pt)
 			pks2d.append(p2d)
+		#for nid, xf in enumerate(xfs):
+			#p2d=[]
+			#for pid, p in enumerate(pks):
+				#pt=[p[0], p[1], p[2]]
+				#ptx=xf.transform(pt)
+				##ptx=[i/2 for i in ptx]
+				#ptx=[ptx[0]+dx, ptx[1]+dy]
+				#p2d.append(ptx)
+				
+			#pks2d.append(p2d)
 		
 		self.pks2d=np.array(pks2d)
 		#print(self.pks2d.shape)
@@ -283,7 +294,18 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 	def closeEvent(self, event):
 		self.imgview.close()
 		self.boxesviewer.close()
+		
+def get_xf_pos(tpm, pk):
+	### first project the point to xy plane
+	xf0=Transform({"type":"xyz","xtilt":float(tpm[4]),"ytilt":float(tpm[3])})
+	p0=[pk[0], pk[1], pk[2]]
+	p1=xf0.transform(p0)#).astype(int)
 
+	### undo the 2D alignment
+	xf1=Transform({"type":"2d","tx":tpm[0], "ty":tpm[1],"alpha":tpm[2]})
+	p2=xf1.transform([p1[0], p1[1]])
+
+	return [p2[0], p2[1]]
 
 if __name__ == '__main__':
 	main()
