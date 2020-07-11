@@ -960,8 +960,6 @@ def isac_MPI_pap(
                         numpy.copyto(d[j * nima : (j + 1) * nima], dbuf)
 
                 del dbuf
-		
-	mpi.mpi_barrier(comm)
 
         # --------------------------------------------------[ find alignment match ]
 
@@ -1140,8 +1138,7 @@ def isac_MPI_pap(
             )
             sp_utilities.set_params2D(alldata[im], [alphan, sxn, syn, int(mirrorn), 1.0])
 
-        mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
-	
+        mpi.mpi_barrier(comm)
         fl += 0.05
 
         if fl >= FH:
@@ -1186,8 +1183,6 @@ def isac_MPI_pap(
                     sp_utilities.set_params2D(alldata[im], [alpha, sx, sy, mirror, 1.0])
 
             main_iter += 1
-	
-            mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 
             # There are two approaches to scatter calculations among MPI processes during stability checking.
             # The first one is the original one. I added the second method.
