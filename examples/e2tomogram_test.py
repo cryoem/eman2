@@ -502,7 +502,7 @@ def main():
 		make_ali(imgout, ttparams, options, outname=os.path.join(path,"tiltseries_ali.hdf"))
 
 	#### write to the tomogram folder
-	try: os.mkdir("tomograms")
+	try: os.mkdir("tomograms_test")
 	except: pass
 	sfx=""
 	bf=int(np.round(imgout[0]["apix_x"]/options.apix_init))
@@ -510,7 +510,7 @@ def main():
 		sfx+="__bin{:d}".format(int(bf))
 		
 	threed["ytilt"]=yrot
-	tomoname=os.path.join("tomograms", options.basename+sfx+".hdf")
+	tomoname=os.path.join("tomograms_test", options.basename+sfx+".hdf")
 	threed.write_image(tomoname)
 	print("Tomogram written to {}".format(tomoname))
 	
