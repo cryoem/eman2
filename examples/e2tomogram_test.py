@@ -1033,7 +1033,7 @@ def make_tile_with_median(args):
 		if tsz>1: break
 	offs=(tsz-pad)//2
 #	print(f"median tile: {sz} {tsz} {pad} {offs}") 
-	reconm=Reconstructors.get("real_median", {"sym":'c1',"size":[tsz,tsz,tsz],"mode":1})
+	reconm=Reconstructors.get("real_median", {"sym":'c1',"size":[tsz,tsz,tsz],"mode":0})
 	reconf=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":"nearest_neighbor", "corners":1})
 #	reconf=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":options.reconmode, "corners":1,"savenorm":"test_norm.hdf","sqrtnorm":1})
 
@@ -1053,18 +1053,18 @@ def make_tile_with_median(args):
 		if m["nx"]==1:
 			continue
 		
-		m.process_inplace("filter.ramp")
+		#m.process_inplace("filter.ramp")
 		m.process_inplace("xform",{"alpha":-t[2]})
 		xf=Transform({"type":"xyz","ytilt":t[3],"xtilt":t[4]})
 
 		# Skipping masking for the moment, may have a negative impact
-		#dy=(pad//2)-np.cos(t[3]*np.pi/180.)*pad/2
-		#msk=EMData(pad, pad)
-		#msk.to_one()
-		#edge=(sz//10)
-		#msk.process_inplace("mask.zeroedge2d",{"x0":dy+edge, "x1":dy+edge, "y0":edge, "y1":edge})
-		#msk.process_inplace("mask.addshells.gauss",{"val1":0, "val2":edge})
-		#m.mult(msk)
+		dy=(pad//2)-np.cos(t[3]*np.pi/180.)*pad/2
+		msk=EMData(pad, pad)
+		msk.to_one()
+		edge=(sz//10)
+		msk.process_inplace("mask.zeroedge2d",{"x0":dy+edge, "x1":dy+edge, "y0":edge, "y1":edge})
+		msk.process_inplace("mask.addshells.gauss",{"val1":0, "val2":edge})
+		m.mult(msk)
 		
 		mp=reconf.preprocess_slice(m, xf)
 		if mp.has_attr("ctf") : mp.process_inplace("filter.ctfcorr.simple",{"useheader":1,"phaseflip":1,"hppix":2})
