@@ -51,6 +51,7 @@ import eman2_gui.emapplication
 import eman2_gui.emimage
 import os
 import sp_global_def
+from sp_sparx import *
 
 GUIUSE = True
 
