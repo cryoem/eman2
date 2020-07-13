@@ -959,8 +959,8 @@ def main():
 							d["render_min"] = d["mean"] - d["sigma"]*sca
 							d["render_max"] = d["mean"] + d["sigma"]*sca
 						elif options.fixintscaling == "full" :
-							d["render_min"]=d["minimum"]
-							d["render_max"]=d["maximum"]
+							d["render_min"]=d["minimum"]*1.001
+							d["render_max"]=d["maximum"]*1.001
 						else :
 							try :
 								sca = float(options.fixintscaling)
