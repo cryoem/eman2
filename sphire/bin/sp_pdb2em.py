@@ -65,6 +65,7 @@ atomdefs = {
     "A": (7.0, 14.00674),
     "N": (7.0, 14.00674),
     "O": (8.0, 15.9994),
+    "MG": (12.0, 24.305),
     "P": (15.0, 30.973761),
     "S": (16.0, 32.066),
     "W": (18.0, 1.00794 * 2.0 + 15.9994),
@@ -193,6 +194,7 @@ map to the center of the volume."""
                 mass += atomdefs[a.upper()][1]
             except:
                 sp_global_def.sxprint(("Unknown atom %s ignored at %d" % (a, aseq)))
+                continue
 
             atoms.append([a, x, y, z])
             natm += 1
