@@ -35,6 +35,7 @@
 #ifdef _WIN32
 #pragma warning(disable:4819)
 #endif	//_WIN32
+
 #include <Python.h>
 #include "typeconverter.h"
 #include "emdata.h"
@@ -288,7 +289,6 @@ PyObject* EMObject_to_python::convert(EMObject const& emobj)
 
 	return result;
 }
-
 
 EMNumPy::~EMNumPy()
 {

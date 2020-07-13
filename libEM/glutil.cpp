@@ -55,7 +55,6 @@
 using namespace EMAN;
 
 // By depfault we need to first bind data to the GPU
-
 GLuint GLUtil::buffer[2] = {0, 0};
 
 unsigned int GLUtil::gen_glu_mipmaps(const EMData* const emdata)
@@ -310,7 +309,6 @@ EMBytes GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 	// as a 12 bit colorspace and apply the gamma mapping to that
 	// This should produce good accuracy for gamma values
 	// larger than 0.5 (and a high upper limit)
-
 	static int smg0 = 0, smg1 = 0; // while this destroys threadsafety in the rendering process
 	static float sgam=0; // it is necessary for speed when rendering large numbers of small images
 	static unsigned char gammamap[4096];
@@ -482,7 +480,6 @@ EMBytes GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 						graypdf[(int)(ceil((rangemax-2)*(t - render_min)/(render_max-render_min)))]++;
 						graypdftwo[(unsigned char) (gs * (t - render_min))]++;
 					}
-
 					l += dsx;
 				}
 
@@ -499,7 +496,6 @@ EMBytes GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 				// There seems to be some overflow issue happening
 				// where the statement if (l > lmax) break (below) doesn't work
 				// because the loop that iterates jjj can inadvertantly go out of bounds
-
 				if ((l + addi*nx) >= nxy) {
 					addj = (nxy-l)/nx;
 
@@ -527,7 +523,6 @@ EMBytes GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 					}
 
 					////////////
-
 					if (t <= rm) graypdf[0]++;
 					else if (t >= render_max) graypdf[rangemax-1]++;
 					else {
@@ -535,9 +530,7 @@ EMBytes GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 					}
 
 //					data[i * asrgb + j * bpl] = p;
-
 //					if (hist) histd[p]++;
-
 					l += addi;
 					remx += addr;
 
@@ -564,7 +557,6 @@ EMBytes GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 		}
 
 		// graypdftwo binflag
-
 		binflag = 0;
 
 		for (int i=1; i<(maxgray-mingray); i++) { // 0~253
@@ -594,7 +586,6 @@ EMBytes GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 		}
 
 		// start gaussian matching
-
 		float mean = abs(rangemax-2)/2;
 		float standdv = abs(mean)/3;
 
@@ -621,7 +612,6 @@ EMBytes GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 			for (int j=0; j<(rangemax-2); j++) {
 				if (graycdf[i] <= gaussiancdf[j]) {
 					gaussianlookup[i] = j;
-
 					break;
 				}
 			}
@@ -630,9 +620,7 @@ EMBytes GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 		for (int i=0; i<(rangemax-2); i++) {
 			grayhe[i] = floor(0.5+(((double)(rangemax-3)*graycdf[i])/graycdf[rangemax-3]));
 		}
-
 	}
-
 	////// End of Histogram Equalization ///////
 
 	if (emdata->is_complex()) {
@@ -661,7 +649,6 @@ EMBytes GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 					int ph;
 
 					// in color mode
-
 					if (flags & 16 && asrgb>2) {
 //						if (l >= (ny - inv_scale) * nx) ph = (int)(image_data[k+1]*768/(2.0*M_PI))+384;	 // complex phase as integer 0-767;
 						if (ll >= nx / 2) ph = (int)(image_data[k+1]*768/(2.0*M_PI))+384;	 // complex phase as integer 0-767;
@@ -684,7 +671,6 @@ EMBytes GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 					}
 
 					// color rendering
-
 					if (flags & 16 && asrgb>2) {
 						if (ph<256) {
 							data[i * asrgb + j * bpl] = p*(255-ph)/256;
@@ -891,7 +877,6 @@ EMBytes GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 				// There seems to be some overflow issue happening
 				// where the statement if (l > lmax) break (below) doesn't work
 				// because the loop that iterates jjj can inadvertantly go out of bounds
-
 				if ((l + addi*nx) >= nxy) {
 					addj = (nxy-l)/nx;
 
@@ -978,7 +963,6 @@ EMBytes GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 	}
 
 	// this replicates r -> g,b
-
 	if (asrgb == 3 && !(flags & 16)) {
 		for (int j=ymin*bpl; j <= ymax*bpl; j+=bpl) {
 			for (int i=xmin; i<xsize*3; i+=3) {
@@ -999,7 +983,6 @@ EMBytes GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 	EXITFUNC;
 
 	// ok, ok, not the most efficient place to do this, but it works
-
 	if (invy) {
 		int x,y;
 		char swp;
@@ -1069,7 +1052,6 @@ unsigned long GLUtil::get_isosurface_dl(MarchingCubes* mc,
 
 	if (tex_id != 0) {
 		// Normalize the coordinates to be on the interval 0,1
-
 		mc->pp.mult3(1.0f/(float) mc->_emdata->get_xsize(),
 			 1.0f/(float)mc->_emdata->get_ysize(),
 			 1.0f/(float)mc->_emdata->get_zsize());
@@ -1113,7 +1095,6 @@ unsigned long GLUtil::get_isosurface_dl(MarchingCubes* mc,
 	// Drawing range elements based on the output of
 	// glGetIntegerv(GL_MAX_ELEMENTS_INDICES, & maxf);
 	// Saved about 60% of the time... drawRange should probably always be true
-
 	bool drawRange = true;
 
 	if (drawRange == false) {
@@ -1154,11 +1135,9 @@ void GLUtil::contour_isosurface(MarchingCubes* mc)
 	mc->calculate_surface();
 
 	// What does this do???
-
 	for (unsigned int i = 0; i < mc->ff.elem(); ++i ) mc->ff[i] /= 3;
 
 	// Need to rebind data (to the GPU)
-
 	mc->needtobind = true;
 }
 
@@ -1188,7 +1167,6 @@ void GLUtil::render_using_VBOs(MarchingCubes* mc, unsigned int tex_id,
 
 	// whenever something changes, like color mode or color scale (or threshold),
 	// we need to recolor
-
 	if (mc->getRGBmode() && (mc->rgbgenerator.getNeedToRecolor() ||
 		 mc->needtobind)) {
 		mc->color_vertices();
@@ -1214,7 +1192,6 @@ void GLUtil::render_using_VBOs(MarchingCubes* mc, unsigned int tex_id,
 #endif	//_WIN32
 
 	// Normal vectors
-
 	glEnableClientState(GL_NORMAL_ARRAY);
 	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 	glBindBuffer(GL_ARRAY_BUFFER, mc->buffer[2]);
@@ -1227,7 +1204,6 @@ void GLUtil::render_using_VBOs(MarchingCubes* mc, unsigned int tex_id,
 	glNormalPointer(GL_FLOAT,0,0);
 
 	// Vertex vectors
-
 	glBindBuffer(GL_ARRAY_BUFFER, mc->buffer[0]);
 
 	if (mc->needtobind) {
@@ -1239,7 +1215,6 @@ void GLUtil::render_using_VBOs(MarchingCubes* mc, unsigned int tex_id,
 	glVertexPointer(3,GL_FLOAT,0,0);
 
 	// Color vectors
-
 	if (mc->getRGBmode()) {
 		glEnableClientState(GL_COLOR_ARRAY);
 		glBindBuffer(GL_ARRAY_BUFFER, mc->buffer[3]);
@@ -1253,7 +1228,6 @@ void GLUtil::render_using_VBOs(MarchingCubes* mc, unsigned int tex_id,
 	}
 
 	// Indices
-
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mc->buffer[1]);
 
 	if (mc->needtobind) {
@@ -1262,7 +1236,6 @@ void GLUtil::render_using_VBOs(MarchingCubes* mc, unsigned int tex_id,
 	}
 
 	// This lets us know if buffers an not implmemted
-
 	if (!glIsBuffer(mc->buffer[0])) {
 		cout << "Can't Generate GL Vertex Buffers. glGenBuffer error" << endl;
 
@@ -1270,7 +1243,6 @@ void GLUtil::render_using_VBOs(MarchingCubes* mc, unsigned int tex_id,
 	}
 
 	// finally draw the elemenets
-
 	glDrawElements(GL_TRIANGLES, mc->ff.elem(), GL_UNSIGNED_INT, 0);
 
 	// No longer need to bind data to the GPU
@@ -1307,7 +1279,6 @@ void GLUtil::glMultMatrix (const Transform & xform)
 }
 
 // This draws a bounding box, or any box
-
 void GLUtil::glDrawBoundingBox(float width, float height, float depth)
 {
 	float x = width/2.0f;
@@ -1392,7 +1363,6 @@ void GLUtil::glDrawDisk(float radius, int spokes)
 	vector<float> vertices(3*arraysize + 3);
 
 	// last vertex is center
-
 	vertices[3*arraysize] = 0.0;
 	vertices[3*arraysize+1] = 0.0;
 	vertices[3*arraysize+2] = 0.0;
@@ -1414,14 +1384,12 @@ void GLUtil::glDrawDisk(float radius, int spokes)
 	vertices[sideofarray*9 + 2] = 0.0;
 
 	// This could also be implemented recursively
-
 	for (int step = 0; step < spokes; step++) {
 		// starting location
 		int x = sideofarray/pow(2.0,(double)(step+1));
 
 		for (int i = 1; i <= 4*pow(2.0,(double)step); i++) {
 			// take the necessary steps
-
 			int index =  x + 2*x*(i-1);
 			int index_f = (index + x) % arraysize;
 			int index_i = index - x;
@@ -1429,7 +1397,6 @@ void GLUtil::glDrawDisk(float radius, int spokes)
 			cout << index << " " << index_f << " " << index_i << endl;
 
 			// need to resclae length to that of radius
-
 			vertices[index_f*3] = (vertices[index_f*3] - vertices[index_i*3])/2.0f;
 			vertices[index_f*3 + 1] = (vertices[index_f*3 + 1] - vertices[index_i*3 + 1])/2.0f;
 			vertices[index_f*3 + 2] = (vertices[index_f*3 + 2] - vertices[index_i*3 + 2])/2.0f;
@@ -1437,17 +1404,14 @@ void GLUtil::glDrawDisk(float radius, int spokes)
 	}
 
 	// GL stuff
-
 	if (glIsBuffer(GLUtil::buffer[0]) == GL_FALSE) {
 		glGenBuffers(2, GLUtil::buffer);
 	}
 
 	// Could use dirty bit here but not worth my time to implement
-
 	glBindBuffer(GL_ARRAY_BUFFER, GLUtil::buffer[0]);
 
 	// glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
 	glBufferData(GL_ARRAY_BUFFER, vertices.size(), &(vertices[0]),
 		 GL_STATIC_DRAW);
 	glEnableClientState(GL_VERTEX_ARRAY);

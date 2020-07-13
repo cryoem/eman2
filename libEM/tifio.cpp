@@ -282,7 +282,8 @@ int TiffIO::read_data(float *rdata, int image_index, const Region * area, bool)
 
 			for (tileCount=0; tileCount<tileMax; tileCount++) {
 				if (TIFFReadEncodedTile(tiff_file, tileCount, cdata, tileSize) == -1) {
-					fprintf(stderr,"Error reading tiled image\n");return(-1);
+					fprintf(stderr,"Error reading tiled image\n");
+					return(-1);
 				}
 				else {
 					NX = tileCount%tilePerLine;

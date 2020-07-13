@@ -61,7 +61,8 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 		}
 		else {
 			LstIO * myLstIO = dynamic_cast<LstIO *>(imageio);
-			if(!myLstIO)	attr_dict["source_path"] = filename;	//"source_path" is set to full path of reference image for LstIO, so skip this statement
+			if(!myLstIO)
+			    attr_dict["source_path"] = filename;	//"source_path" is set to full path of reference image for LstIO, so skip this statement
 			attr_dict["source_n"] = img_index;
 			if (imageio->is_complex_mode()) {
 				set_complex(true);
@@ -83,7 +84,6 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 			attr_dict.erase("nz");
 
 			if (!nodata) {
-
 				if (region) {
 					nx = (int)region->get_width();
 					if (nx <= 0) nx = 1;
@@ -224,7 +224,6 @@ void EMData::write_image(const string & filename, int img_index,
 	ImageIO::IOMode rwmode = ImageIO::READ_WRITE;
 
 	//set "nx", "ny", "nz" and "changecount" in attr_dict, since they are taken out of attribute dictionary
-
 	attr_dict["nx"] = nx;
 	attr_dict["ny"] = ny;
 	attr_dict["nz"] = nz;
