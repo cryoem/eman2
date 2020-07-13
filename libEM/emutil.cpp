@@ -511,7 +511,6 @@ EMUtil::ImageType EMUtil::get_image_type(const string & in_filename)
 	}
 	else {
 		// LOGERR("I don't know this image's type: '%s'", filename.c_str());
-
 		throw ImageFormatException("invalid image type");
 	}
 
@@ -1012,7 +1011,6 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 		if ((fz0 + zlen)> nz && nz > 1) zlen = nz-fz0;
 
 		// This is fine - the region was entirely outside the image
-
 		if ( xlen <= 0 || ylen <= 0 || zlen <= 0 ) return;
 
 		if (mode_size == mode_size_half) {
@@ -1021,7 +1019,6 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 			// with an effective mode size of half a byte,
 			// where most x-pixel parameters need to be even
 			// for everything to work well.
-
 			bool error = false;
 
 			if (fx0 % 2 != 0  &&  false) { // Don't check right now.
@@ -1103,7 +1100,6 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 
 	for (int k = dz0; k < (dz0+zlen); k++) {
 		// k is image/slice number, starting from 0
-
 		if (y_pre_gap > 0) {
 			portable_fseek(file, y_pre_gap, SEEK_CUR);
 		}
@@ -1132,7 +1128,6 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 
 				// region considerations add complications
 				// in the flipping scenario (imagic format)
-
 				if (dy0 > 0) {
 					jj += dy0;
 				}
@@ -1401,25 +1396,20 @@ void ImageSort::sort()
 void ImageSort::set(int i, float score)
 {
 	Assert(i >= 0);
-
 	image_scores[i] = ImageScore(i, score);
 }
 
 int ImageSort::get_index(int i) const
 {
 	Assert(i >= 0);
-
 	return image_scores[i].index;
 }
-
 
 float ImageSort::get_score(int i) const
 {
 	Assert(i >= 0);
-
 	return image_scores[i].score;
 }
-
 
 int ImageSort::size() const
 {
@@ -1759,7 +1749,6 @@ void EMUtil::getRenderLimits(const Dict & dict, float & rendermin, float & rende
 	// logic in getRenderMinMax, which is triggered when render_max<=render_min
 	// at present this routine just reads header values. It is still here in case we need to implement 
 	// more complicated logic in future.
-	
 	rendermin = 0.0;	// when rendermax<=rendermin, automatic mode is invoked
 	rendermax = 0.0;
 
@@ -1768,8 +1757,6 @@ void EMUtil::getRenderLimits(const Dict & dict, float & rendermin, float & rende
 
 	if (dict.has_key("render_min")) rendermin = (float) dict["render_min"];
 	if (dict.has_key("render_max")) rendermax = (float) dict["render_max"];
-	
-	
 }
 
 void EMUtil::getRenderMinMax(float * data, const int nx, const int ny,
@@ -1929,7 +1916,6 @@ EMObject EMUtil::read_hdf_attribute(const string & filename, const string & key,
 	imageio->init();
 
 	// Each image is in a group for later expansion. Open the group
-
 	hid_t file = imageio->get_fileid();
 
 	char ipath[50];

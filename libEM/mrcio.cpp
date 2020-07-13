@@ -182,7 +182,6 @@ void MrcIO::init()
 
 		// Stuff added for 8 bit packed mode,
 		// with 2 4-bit values packed into each 8-bit byte:
-
 		float ny_to_nx_ratio;
 
 		if (mrch.nx > 0) {
@@ -670,7 +669,6 @@ int MrcIO::read_fei_header(Dict & dict, int image_index, const Region * area, bo
 	}
 
 	/* Read extended image header by specified image index */
-
 	FeiMrcExtHeader feiexth;
 
 	portable_fseek(mrcfile, sizeof(FeiMrcHeader)+sizeof(FeiMrcExtHeader)*image_index, SEEK_SET);
@@ -988,7 +986,6 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool)
 
 	if (! (isFEI || is_stack)) {
 		// single image format, index can only be zero
-
 		image_index = 0;
 	}
 
@@ -1034,7 +1031,6 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool)
 		if (mrch.mode == MRC_UHEX) {
 			// Have MRC packed 8 bit format with 2 4-bit values in each 8-bit byte,
 			// so the mode size is effectively half a byte, signalled by this value:
-
 			modesize = 11111111;
 		}
 		else {
@@ -1192,7 +1188,6 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 //	int xlen = 0, ylen = 0, zlen = 0;
 //	EMUtil::get_region_dims(area, nx, &xlen, mrch.ny, &ylen, mrch.nz, &zlen);
 //	int size = xlen * ylen * zlen;
-
 	void * ptr_data = data;
 
 	float rmin = rendermin;
@@ -1324,7 +1319,6 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 	// New way to write data which includes region writing.
 	// If it is tested to be OK, remove the old code in the
 	// #if 0  ... #endif block.
-
 	EMUtil::process_region_io(ptr_data, mrcfile, WRITE_ONLY, image_index,
 							  mode_size, mrch.nx, mrch.ny, mrch.nz, area);
 

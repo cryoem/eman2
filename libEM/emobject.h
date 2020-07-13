@@ -283,7 +283,6 @@ namespace EMAN
 		
 		static map< ObjectType, string> init();
 		static map< ObjectType, string> type_registry;
-		
 	};
 
 	bool operator==(const EMObject &e1, const EMObject & e2);
@@ -811,7 +810,8 @@ namespace EMAN
 
 		string lower = instancename;
 		if (fi == my_instance->my_dict.end()) {
-			for (unsigned int i=0; i<lower.length(); i++) lower[i]=tolower(lower[i]);
+			for (unsigned int i=0; i<lower.length(); i++)
+			    lower[i]=tolower(lower[i]);
 			fi = my_instance->my_dict.find(lower);
 		}
 
@@ -832,7 +832,6 @@ namespace EMAN
 			i->set_params(params);
 			return i;
 		}
-
 
 		throw NotExistingObjectException(instancename, "No such an instance existing");
 	}
@@ -938,7 +937,6 @@ namespace EMAN
 			TypeDict permissable_params = get_param_types();
 			for ( Dict::const_iterator it = new_params.begin(); it != new_params.end(); ++it )
 			{
-
 				if ( !permissable_params.find_type(it->first) )
 				{
 					throw InvalidParameterException(it->first);
@@ -950,7 +948,6 @@ namespace EMAN
 		Dict copy_relevant_params(const FactoryBase* const that) const
 		{
 			return params.copy_keys_in(that->get_param_types());
-
 		}
 
 		protected:

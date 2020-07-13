@@ -566,8 +566,6 @@ string Util::get_filename_ext(const string& filename)
 	return result;
 }
 
-
-
 void Util::calc_least_square_fit(size_t nitems, const float *data_x, const float *data_y,
 								 float *slope, float *intercept, bool ignore_zero,float absmax)
 {
