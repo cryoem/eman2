@@ -120,7 +120,6 @@ HdfIO2::~HdfIO2()
 
 // This reads an already opened attribute and returns the results as an EMObject
 // The attribute is not closed
-
 EMObject HdfIO2::read_attr(hid_t attr) {
 	hid_t type = H5Aget_type(attr);
 	hid_t spc = H5Aget_space(attr);
@@ -129,88 +128,46 @@ EMObject HdfIO2::read_attr(hid_t attr) {
 	hssize_t pts = H5Sget_simple_extent_npoints(spc);	// number of points > 1 if an array of floats or integers
 
 	EMObject ret(0);
-	char c;
-	int i;
-//	unsigned int ui;
-	float f,*fa;
-	int * ia;
-//	unsigned int * uia;
-	double d;
-	char *s;
-	vector <float> fv((size_t)pts);
-	vector <int> iv((size_t)pts);
-//	vector <unsigned int> uiv(pts);
-
-	float *matrix;
-	Transform* t;
-	Ctf* ctf;
-// int r, c, k=0;
 
 	switch (cls) {
 	case H5T_INTEGER:
 		if (sz == 1) {
+			char c;
 			H5Aread(attr,H5T_NATIVE_CHAR,&c);
-			bool b = false;
-
-			if (c=='T') {
-				b = true;
-			}
-			else if (c=='F') {
-				b = false;
-			}
-
-			ret = EMObject(b);
+			ret = EMObject(bool((c=='T')));
 		}
 		else if (sz == 4) {
 			if (pts == 1) {
+			    int i;
 				H5Aread(attr,H5T_NATIVE_INT,&i);
 				ret=EMObject(i);
 			}
 			else {
-				ia=(int *)malloc((size_t)pts*sizeof(int));
-				H5Aread(attr,H5T_NATIVE_INT,ia);
-
-				for (i=0; i<pts; i++) iv[i] = ia[i];
-
-				free(ia);
+				vector <int> iv((size_t)pts);
+				H5Aread(attr,H5T_NATIVE_INT,iv.data());
 
 				ret = EMObject(iv);
 			}
 		}
 
 		break;
-// 	case H5T_UNSIGNED_INTEGER:
-// 		if (pts==1) {
-// 			H5Aread(attr,H5T_NATIVE_UINT,&ui);
-// 			ret=EMObject(ui);
-// 		}
-// 		else {
-// 			uia=(unsigned int *)malloc(pts*sizeof(unsigned int));
-// 			H5Aread(attr,H5T_NATIVE_UINT,uia);
-// 			for (i=0; i<pts; i++) uiv[i]=uia[i];
-// 			free(uia);
-// 			ret=EMObject(uiv);
-// 		}
-// 		break;
 	case H5T_FLOAT:
 		if (sz == 4) {
 			if (pts == 1) {
+				float f;
 				H5Aread(attr,H5T_NATIVE_FLOAT,&f);
 
 				ret=EMObject(f);
 			}
 			else {
-				fa = (float *)malloc((size_t)pts*sizeof(float));
-				H5Aread(attr,H5T_NATIVE_FLOAT,fa);
-
-				for (i=0; i<pts; i++) fv[i] = fa[i];
-
-				free(fa);
+				vector <float> fv(pts);
+				H5Aread(attr,H5T_NATIVE_FLOAT,fv.data());
 
 				ret=EMObject(fv);
 			}
 		}
 		else if (sz == 8) {
+			double d;
 			H5Aread(attr,H5T_NATIVE_DOUBLE,&d);
 
 			ret = EMObject(d);
@@ -218,10 +175,13 @@ EMObject HdfIO2::read_attr(hid_t attr) {
 
 		break;
 	case H5T_STRING:
+        char *s;
 		s = (char *)malloc(sz+1);
 
 		H5Aread(attr,type,s);
 //		H5Aread(attr,H5T_NATIVE_CHAR,s);
+
+		Ctf *ctf;
 
 		if (s[0] == 'O' && isdigit(s[1])) {
 			ctf = new EMAN1Ctf();
@@ -247,36 +207,23 @@ EMObject HdfIO2::read_attr(hid_t attr) {
 
 			delete ctf;
 		}
-		else {
+		else
 			ret = EMObject(s);
-		}
 
 		free(s);
 
 		break;
 	case H5T_COMPOUND:
+		float *matrix;
 		matrix = (float*)malloc(12*sizeof(float));
 		H5Aread(attr, type, matrix);
 
-//		ret.create_transform3d_by_array(trans3d);
-
+		Transform *t;
 		t = new Transform(matrix);
 		ret = EMObject(t);
 		free(matrix);
 		delete t; t=0;
 
-// 		trans3d = (float*)malloc(16*sizeof(float));	//16 float for a Transform3D object
-// 		H5Aread(attr, type, trans3d);
-// //		ret.create_transform3d_by_array(trans3d);
-// 		trans = new Transform3D();
-// 		for (r=0; r<4; ++r) {
-// 			for (c=0; c<4; ++c) {
-// 				trans->set(r, c, trans3d[k]);
-// 				++k;
-// 			}
-// 		}
-// 		ret = EMObject(trans);
-// 		free(trans3d);
 		break;
 	default:
 		LOGERR("Unhandled HDF5 metadata %d", cls);
@@ -290,7 +237,6 @@ EMObject HdfIO2::read_attr(hid_t attr) {
 
 // This writes an attribute with specified name to a given open object
 // The attribute is opened and closed. returns 0 on success
-
 int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 	hid_t type=0;
 	hid_t spc=0;
@@ -373,7 +319,6 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 
    // we need this delete attribute call here, even we called erase_header()
    // at the beginning of write_header(), since the  "imageid_max" need be updated correctly.
-
 	if (H5Adelete(loc,name) < 0) {
 #ifdef DEBUGHDF
 		LOGERR("HDF: Attribute %s deletion error in write_attr().\n", name);
@@ -387,30 +332,20 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 
 	hid_t attr = H5Acreate(loc,name,type,spc,H5P_DEFAULT);
 
-	bool b;
-	char c;
 	int i;
-	short si;
-	float f,*fa;
-	int * ia;
-	unsigned int ui;
-	double d;
-	const char *s;
-	Transform * tp;
 
 	switch(obj.get_type()) {
 	case EMObject::BOOL:
+		bool b;
 		b = (bool)obj;
 
-		if (b) {
-			c = 'T';
-		} else {
-			c = 'F';
-		}
+		char c;
+		c = (b ? 'T' : 'F');
 
 		H5Awrite(attr,type,&c);
 		break;
 	case EMObject::SHORT:
+		short si;
 		si = (short)obj;
 		i = (int)si;
 		H5Awrite(attr,type,&i);
@@ -420,29 +355,35 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 		H5Awrite(attr,type,&i);
 		break;
 	case EMObject::UNSIGNEDINT:
+		unsigned int ui;
 		ui=(unsigned int)obj;
 		H5Awrite(attr,type,&ui);
 		break;
 	case EMObject::FLOAT:
+		float f;
 		f=(float)obj;
 		H5Awrite(attr,type,&f);
 		break;
 	case EMObject::DOUBLE:
+		double d;
 		d=(double)obj;
 		H5Awrite(attr,type,&d);
 		break;
 	case EMObject::STRING:
 	case EMObject::CTF:
+		const char *s;
 		s=(const char *)obj;
 		H5Awrite(attr,type,s);
 		break;
 	case EMObject::FLOATARRAY:
+		float *fa;
 		fa=(float *)malloc(fv.size()*sizeof(float));
 		for (ui=0; ui<fv.size(); ui++) fa[ui]=fv[ui];
 		H5Awrite(attr,type,fa);
 		free(fa);
 		break;
 	case EMObject::INTARRAY:
+		int * ia;
 		ia=(int *)malloc(iv.size()*sizeof(int));
 		for (ui=0; ui<iv.size(); ui++) ia[ui]=iv[ui];
 		H5Awrite(attr,type,ia);
@@ -450,6 +391,7 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 		break;
 	case EMObject::TRANSFORM:
 	{
+		Transform * tp;
 		tp = (Transform *)obj;
 		fa = (float *)malloc(12*sizeof(float));
 		int r, c, k=0;
@@ -496,7 +438,6 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 // individual images is currently associated with the GROUP, not the dataset
 // dataset-specific data could also be associated with the dataset in
 // future. At the moment, there is only a single dataset in each group.
-
 void HdfIO2::init()
 {
 	ENTERFUNC;
@@ -544,7 +485,6 @@ void HdfIO2::init()
 	// FIXME - This section was added by Grant, presumably because DirectElectron was storing metadata items
 	// associated with the entire image group, so he automatically calls them "DDD".*, but this doesn't
 	// seem a good permanent solution...
-
 	else { // read the meta attributes for all images
 		int nattr=H5Aget_num_attrs(group);
 
@@ -567,7 +507,6 @@ void HdfIO2::init()
 }
 
 // If this version of init() returns -1, then we have an old-style HDF5 file
-
 int HdfIO2::init_test()
 {
 	ENTERFUNC;
@@ -620,14 +559,12 @@ bool HdfIO2::is_valid(const void *first_block)
 }
 
 // Reads all of the attributes from the /MDF/images/<imgno> group
-
 int HdfIO2::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 	init();
 
 	/* Copy the meta attributes stored in /MDF/images */
-
 	size_t meta_attr_size = meta_attr_dict.size();
 
 	if (meta_attr_size!=0) {
@@ -643,7 +580,6 @@ int HdfIO2::read_header(Dict & dict, int image_index, const Region * area, bool)
 	int i;
 
 	// Each image is in a group for later expansion. Open the group
-
 	char ipath[50];
 	sprintf(ipath,"/MDF/images/%d", image_index);
 	hid_t igrp=H5Gopen(file, ipath);
@@ -725,7 +661,6 @@ int HdfIO2::read_header(Dict & dict, int image_index, const Region * area, bool)
 	H5Gclose(igrp);
 
 	//Get the data type from data set, HDF5 file header attribute 'datatype' may be wrong
-
 	sprintf(ipath,"/MDF/images/%d/image",image_index);
 	hid_t ds=H5Dopen(file,ipath);
 
@@ -758,7 +693,6 @@ int HdfIO2::read_header(Dict & dict, int image_index, const Region * area, bool)
 // This erases any existing attributes from the image group
 // prior to writing a new header. For a new image there
 // won't be any, so this should be harmless.
-
 int HdfIO2::erase_header(int image_index)
 {
 	ENTERFUNC;
@@ -774,7 +708,6 @@ int HdfIO2::erase_header(int image_index)
 	int i;
 
 	// Each image is in a group for later expansion. Open the group
-
 	char ipath[50];
 	sprintf(ipath,"/MDF/images/%d", image_index);
 	hid_t igrp=H5Gopen(file, ipath);
@@ -839,7 +772,6 @@ int HdfIO2::read_data_8bit(unsigned char *data, int image_index, const Region *a
 		hid_t memoryspace = 0;
 
  		/* Get the file dataspace - the region we want to read in the file */
-
 		int x0 = 0, y0 = 0, z0 = 0;		// the coordinates for up left corner, trim to be within image bound
 		int x1 = 0, y1 = 0, z1 = 0;		// the coordinates for down right corner, trim to be within image bound
 		int nx1 = 1, ny1 = 1, nz1 = 1;	// dimensions of the sub-region, actual region read from file
@@ -884,7 +816,6 @@ int HdfIO2::read_data_8bit(unsigned char *data, int image_index, const Region *a
 						(const hsize_t*)dcount, NULL);
 
 			/* Define memory dataspace - the memory we will created for the region */
-
 			hsize_t     dims[3];              /* size of the region in the memory */
 
 			dims[0] = dcount[2]?dcount[2]:1;
@@ -930,7 +861,6 @@ int HdfIO2::read_data_8bit(unsigned char *data, int image_index, const Region *a
 						(const hsize_t*)dcount, NULL);
 
 			/* Define memory dataspace - the memory we will created for the region */
-
 			hsize_t     dims[2];              /* size of the region in the memory */
 
 			dims[0] = (hsize_t)(dcount[1]?dcount[1]:1);
@@ -1086,7 +1016,6 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 		hid_t memoryspace = 0;
 
  		/* Get the file dataspace - the region we want to read in the file */
-
 		int x0 = 0, y0 = 0, z0 = 0;		// the coordinates for up left corner, trim to be within image bound
 		int x1 = 0, y1 = 0, z1 = 0;		// the coordinates for down right corner, trim to be within image bound
 		int nx1 = 1, ny1 = 1, nz1 = 1;	// dimensions of the sub-region, actual region read from file
@@ -1131,7 +1060,6 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 						(const hsize_t*)dcount, NULL);
 
 			/* Define memory dataspace - the memory we will created for the region */
-
 			hsize_t     dims[3];              /* size of the region in the memory */
 
 			dims[0] = dcount[2]?dcount[2]:1;
@@ -1177,7 +1105,6 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 						(const hsize_t*)dcount, NULL);
 
 			/* Define memory dataspace - the memory we will created for the region */
-
 			hsize_t     dims[2];              /* size of the region in the memory */
 
 			dims[0] = (hsize_t)(dcount[1]?dcount[1]:1);
@@ -1258,34 +1185,6 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 
 		H5Dread(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
 
-		// Not sure who wrote this code, but it is entirely stupid. The whole point of HDF is that it takes care
-		// of data conversions for you. The only case where there might be an issue with the new line above is 32 bit ints -> float
-// 		switch(H5Tget_size(dt)) {
-// 		case 4:
-// 			H5Dread(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
-// 
-// 			break;
-// 		case 2:
-// 			H5Dread(ds,H5T_NATIVE_USHORT,spc,spc,H5P_DEFAULT,usdata);
-// 
-// 			for (i = 0; i < size; ++i) {
-// 				j = size - 1 - i;
-// 				data[j] = static_cast < float >(usdata[j]);
-// 			}
-// 
-// 			break;
-// 		case 1:
-// 			H5Dread(ds,H5T_NATIVE_UCHAR,spc,spc,H5P_DEFAULT,cdata);
-// 
-// 			for (i = 0; i < size; ++i) {
-// 				j = size - 1 - i;
-// 				data[j] = static_cast < float >(cdata[j]);
-// 			}
-// 
-// 			break;
-// 		default:
-// 			throw ImageReadException(filename, "EMAN does not support this data type.");
-// 		}
 	}
 
 	H5Tclose(dt);
@@ -1323,7 +1222,6 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 
 // Writes all attributes in 'dict' to the image group
 // Creation of the image dataset is also handled here
-
 int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 						EMUtil::EMDataType, bool)
 {
@@ -1345,7 +1243,6 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 
 	// If image_index<0 append, and make sure the max value in the file is correct
 	// though this is normally handled by EMData.write_image()
-
 	hid_t attr=H5Aopen_name(group,"imageid_max");
 	int nimg = read_attr(attr);
 	H5Aclose(attr);
@@ -1359,7 +1256,6 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 	}
 
 	// Each image is in a group for later expansion. Open the group, create if necessary
-
 	char ipath[50];
 	sprintf(ipath,"/MDF/images/%d",image_index);
 	hid_t igrp=H5Gopen(file,ipath);
@@ -1367,7 +1263,6 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 	if (igrp < 0) {	// group not existed
 		is_exist = false;
 		// Need to create a new image group
-
 		igrp=H5Gcreate(file,ipath,64);		// The image is a group, with attributes on the group
 
 		if (igrp < 0) throw ImageWriteException(filename,"Unable to add /MDF/images/# to HDF5 file");
@@ -1406,7 +1301,6 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 
 			// change the size or data type of a image,
 			// the existing data set is invalid, unlink it
-
 			if ((int)dict["nx"]*(int)dict["ny"]*(int)dict["nz"] !=
 				(int)dict2["nx"]*(int)dict2["ny"]*(int)dict2["nz"] ||
 				dict["datatype"] != dict2["datatype"] ) {
@@ -1420,7 +1314,6 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 
 	if (! area) {
 		// Write the attributes to the group
-
 		vector <string> keys=dict.keys();
 
 		for (i=0; i<keys.size(); i++) {
@@ -1437,7 +1330,6 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 	H5Gclose(igrp);
 
    // Set render_min and render_max from EMData attr's if possible.
-
 	if (dict.has_key("render_compress_level")) renderlevel=(float)dict["render_compress_level"];
 	EMUtil::getRenderLimits(dict, rendermin, rendermax, renderbits);
 
@@ -1446,7 +1338,6 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 }
 
 // Writes the actual image data to the corresponding dataset (already created)
-
 int HdfIO2::write_data(float *data, int image_index, const Region* area,
 					  EMUtil::EMDataType dt, bool)
 {
@@ -1549,7 +1440,6 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 	}
 
 	// convert data to unsigned short, unsigned char...
-
 	hsize_t size = (hsize_t)nx*ny*nz;
 
 	unsigned char  *ucdata = NULL;
@@ -1591,7 +1481,6 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			}
 
 			/* Create memory space with size of the region. */
-
 			hsize_t dims[3];	/* size of the region in the memory */
 			dims[0] = dcount[2]?dcount[2]:1;
 			dims[1]	= dcount[1]?dcount[1]:1;
@@ -1617,7 +1506,6 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 
 			/* Create memory space with size of the region. */
 			/* Define memory dataspace - the memory we will created for the region */
-
 			hsize_t     dims[2];              /* size of the region in the memory */
 			dims[0] = (hsize_t)(dcount[1]?dcount[1]:1);
 			dims[1]	= (hsize_t)(dcount[0]?dcount[0]:1);

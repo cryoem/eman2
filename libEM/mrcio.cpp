@@ -138,7 +138,6 @@ void MrcIO::init()
 
 		// become_host_endian((int *) &mrch, NUM_4BYTES_PRE_MAP);
 		// become_host_endian((int *) &mrch.machinestamp, NUM_4BYTES_AFTER_MAP);
-
 		mode_size = get_mode_size(mrch.mode);
 
 		if (is_complex_mode()) {
@@ -757,14 +756,6 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 		if (is_big_endian != ByteOrder::is_host_big_endian()) {
 			opposite_endian = true;
 		}
-
-/*
-		if (new_mode != mrch.mode) {
-			LOGERR("cannot write to different mode file %s", filename.c_str());
-
-			return 1;
-		}
-*/
 
 		portable_fseek(mrcfile, 0, SEEK_SET);
 	}

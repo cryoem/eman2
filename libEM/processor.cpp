@@ -2498,7 +2498,7 @@ EMData *BoxStatProcessor::process(EMData * image)
 
 	int matrix_size = (2*dx+1)*(2*dy+1)*(2*dz+1);
 
-	float *array = new float[matrix_size];
+	vector<float> array(matrix_size);
 //	image->process_inplace("normalize");
 
 	EMData *ret = image->copy_head();
@@ -2518,14 +2518,13 @@ EMData *BoxStatProcessor::process(EMData * image)
 					}
 				}
 				float newv=image->get_value_at(i,j,k);
-				process_pixel(&newv,array,matrix_size);
+				process_pixel(&newv,array.data(),matrix_size);
 				ret->set_value_at(i,j,k,newv);
 			}
 		}
 	}
 	
 	ret->update();
-	delete []array;	
 	
 	return ret;
 }
@@ -14129,7 +14128,7 @@ void ObjDensityProcessor::process_inplace(EMData * image)
 	label->process_inplace("threshold.notzero");
 	label->process_inplace("morph.object.label");
 	int nobj=int(label->get_attr("maximum"))+1;
-	float *sden=new float[nobj];	// sum density of each object
+	vector<float> sden(nobj);	// sum density of each object
 	for (int i=0; i<nobj; i++) sden[i]=0;
 
 	for (int x=0; x<nx; x++){
@@ -14155,7 +14154,6 @@ void ObjDensityProcessor::process_inplace(EMData * image)
 		}
 	}
 	delete label;
-	delete []sden;
 }
 EMData* ObjLabelProcessor::process(const EMData* const image) //
 {

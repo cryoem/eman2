@@ -110,7 +110,7 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 				}
 			}
 			else {
-				if (rdata!=0) EMUtil::em_free(rdata);
+				if (rdata) EMUtil::em_free(rdata);
 				rdata=0;
 			}
 
@@ -228,15 +228,13 @@ void EMData::write_image(const string & filename, int img_index,
 	attr_dict["changecount"] = changecount;
 
     // Check if this is a write only format.
-    if (Util::is_file_exist(filename)) {
-        if (!header_only && region == 0) {
+    if (Util::is_file_exist(filename) && (!header_only && region == 0)) {
             ImageIO * tmp_imageio = EMUtil::get_imageio(filename, ImageIO::READ_ONLY, imgtype);
             if (tmp_imageio->is_single_image_format()) {
                 rwmode = ImageIO::WRITE_ONLY;
             }
             EMUtil::close_imageio(filename, tmp_imageio);
             tmp_imageio = 0;
-        }
     }
 
 	LOGVAR("getimageio %d",rwmode);

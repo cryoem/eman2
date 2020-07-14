@@ -51,11 +51,9 @@ namespace {
 TiffIO::TiffIO(string tiff_filename, IOMode rw)
 :	filename(tiff_filename), rw_mode(rw), tiff_file(0),
 	bitspersample(0), photometric(0), initialized(false),
-	rendermin(0.0), rendermax(0.0), renderbits(16), nimg(1)
-{
-	is_big_endian = ByteOrder::is_host_big_endian();
-}
-
+	rendermin(0.0), rendermax(0.0), renderbits(16), nimg(1),
+	is_big_endian(ByteOrder::is_host_big_endian())
+{}
 
 TiffIO::~TiffIO()
 {
@@ -495,7 +493,7 @@ int TiffIO::write_data(float * data, int image_index, const Region *,
 	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, renderbits);
 
 	if (bitspersample == CHAR_BIT) {
-		unsigned char *cdata = new unsigned char[nx*ny];
+		vector<unsigned char> cdata(nx*ny);
 		
 		int src_idx, dst_idx;
 
@@ -517,16 +515,14 @@ int TiffIO::write_data(float * data, int image_index, const Region *,
 			}
 		}
 
-		if (TIFFWriteEncodedStrip(tiff_file, 0, cdata, nx*ny) == -1) {
+		if (TIFFWriteEncodedStrip(tiff_file, 0, cdata.data(), nx*ny) == -1) {
 			printf("Fail to write tiff file.\n");
 
 			return -1;
 		}
-
-        EMDeleteArray(cdata);
 	}
 	else if (bitspersample == CHAR_BIT*sizeof(short)) {
-		unsigned short *sdata = new unsigned short[nx*ny];
+		vector<unsigned short> sdata(nx*ny);
 
 		int src_idx, dst_idx;
 
@@ -548,16 +544,14 @@ int TiffIO::write_data(float * data, int image_index, const Region *,
 			}
 		}
 
-		if (TIFFWriteEncodedStrip(tiff_file, 0, sdata, nx*ny*sizeof(short)) == -1) {
+		if (TIFFWriteEncodedStrip(tiff_file, 0, sdata.data(), nx*ny*sizeof(short)) == -1) {
 			printf("Fail to write tiff file.\n");
 
 			return -1;
 		}
-
-        EMDeleteArray(sdata);
 	}
 	else if (bitspersample == CHAR_BIT*sizeof(float)) {
-		float *fdata = new float[nx*ny];
+		vector<float> fdata(nx*ny);
 
 		int src_idx, dst_idx;
 
@@ -569,13 +563,11 @@ int TiffIO::write_data(float * data, int image_index, const Region *,
 			}
 		}
 
-		if (TIFFWriteEncodedStrip(tiff_file, 0, fdata, nx*ny*sizeof(float)) == -1) {
+		if (TIFFWriteEncodedStrip(tiff_file, 0, fdata.data(), nx*ny*sizeof(float)) == -1) {
 			printf("Fail to write tiff file.\n");
 
 			return -1;
 		}
-
-        EMDeleteArray(fdata);
 	}
 	else {
 		LOGWARN("TIFF in EMAN2 only support data type 8 bit, 16 bit or 32 bit.");

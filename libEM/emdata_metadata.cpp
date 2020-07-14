@@ -992,16 +992,6 @@ MCArray3D EMData::get_3dcview() const
 }
 
 
-int greaterthan( const void* p1, const void* p2 )
-{
-	float*  v1 = (float*) p1;
-	float*  v2 = (float*) p2;
-
-	if ( *v1 < *v2 )  return 0;
-	else return 1;
-}
-
-
 EMObject EMData::get_attr(const string & key) const
 {
 	ENTERFUNC;
@@ -1095,16 +1085,13 @@ EMObject EMData::get_attr(const string & key) const
 	{
 		if ( is_complex() ) throw ImageFormatException("Error - can not calculate the median of a complex image");
 		size_t n = size;
-		float* tmp = new float[n];
 		float* d = get_data();
-		if (tmp == 0 ) throw BadAllocException("Error - could not create deep copy of image data");
+		vector<float> tmp(d, d+n);
 //		for(size_t i=0; i < n; ++i) tmp[i] = d[i]; // should just be a memcpy
-		std::copy(d, d+n, tmp);
-		qsort(tmp, n, sizeof(float), &greaterthan);
+		sort(begin(tmp), end(tmp));
 		float median;
 		if (n%2==1) median = tmp[n/2];
 		else median = (tmp[n/2-1]+tmp[n/2])/2.0f;
-		delete [] tmp;
 		return median;
 	}
 	else if (key == "nonzero_median")
