@@ -1253,59 +1253,6 @@ EMData *EMUtil::vertical_acf(const EMData * image, int maxdy)
 	return ret;
 }
 
-EMData *EMUtil::make_image_median(const vector < EMData * >&image_list)
-{
-	if (image_list.size() == 0) {
-		return 0;
-	}
-
-	EMData *image0 = image_list[0];
-
-	int image0_nx = image0->get_xsize();
-	int image0_ny = image0->get_ysize();
-	int image0_nz = image0->get_zsize();
-	size_t size = (size_t)image0_nx * image0_ny * image0_nz;
-
-	EMData *result = new EMData();
-
-	result->set_size(image0_nx, image0_ny, image0_nz);
-
-	float *dest = result->get_data();
-	int nitems = static_cast < int >(image_list.size());
-	float *srt = new float[nitems];
-	float **src = new float *[nitems];
-
-	for (int i = 0; i < nitems; i++) {
-		src[i] = image_list[i]->get_data();
-	}
-
-	for (size_t i = 0; i < size; ++i) {
-		for (int j = 0; j < nitems; j++) {
-			srt[j] = src[j][i];
-		}
-
-		for (int j = 0; j < nitems; j++)
-			for (int k = j + 1; k < nitems; k++)
-				std::swap(srt[j], srt[k]);
-
-		int l = nitems / 2;
-
-		if (nitems < 3) {
-			dest[i] = srt[l];
-		}
-		else {
-			dest[i] = (srt[l] + srt[l + 1] + srt[l - 1]) / 3.0f;
-		}
-	}
-
-	EMDeleteArray(srt);
-	EMDeleteArray(src);
-
-	result->update();
-
-	return result;
-}
-
 bool EMUtil::is_same_ctf(const EMData * image1, const EMData * image2)
 {
 	if (!image1) {
