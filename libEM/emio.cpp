@@ -29,7 +29,6 @@
  *
  * */
 
-#include <cstring>
 #include "emio.h"
 #include "portable_fileio.h"
 #include "geometry.h"

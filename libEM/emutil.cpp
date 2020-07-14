@@ -36,6 +36,8 @@
 #include <sys/param.h>
 #endif	// WIN32
 
+#include <utility>
+
 #include "all_imageio.h"
 #include "portable_fileio.h"
 #include "emcache.h"
@@ -1202,25 +1204,16 @@ void EMUtil::dump_dict(const Dict & dict)
 
 bool EMUtil::is_same_size(const EMData * const em1, const EMData * const em2)
 {
-	if (em1->get_xsize() == em2->get_xsize() &&
+	return em1->get_xsize() == em2->get_xsize() &&
 		em1->get_ysize() == em2->get_ysize() &&
-		em1->get_zsize() == em2->get_zsize()) {
-		return true;
-	}
-
-	return false;
+		em1->get_zsize() == em2->get_zsize();
 }
 
 bool EMUtil::is_complex_type(EMDataType datatype)
 {
-	if (datatype == EM_SHORT_COMPLEX ||
+    return datatype == EM_SHORT_COMPLEX ||
 		datatype == EM_USHORT_COMPLEX ||
-		datatype == EM_FLOAT_COMPLEX) {
-
-		return true;
-	}
-
-	return false;
+		datatype == EM_FLOAT_COMPLEX;
 }
 
 EMData *EMUtil::vertical_acf(const EMData * image, int maxdy)
@@ -1258,72 +1251,6 @@ EMData *EMUtil::vertical_acf(const EMData * image, int maxdy)
 	ret->update();
 
 	return ret;
-}
-
-EMData *EMUtil::make_image_median(const vector < EMData * >&image_list)
-{
-	if (image_list.size() == 0) {
-		return 0;
-	}
-
-	EMData *image0 = image_list[0];
-
-	int image0_nx = image0->get_xsize();
-	int image0_ny = image0->get_ysize();
-	int image0_nz = image0->get_zsize();
-	size_t size = (size_t)image0_nx * image0_ny * image0_nz;
-
-	EMData *result = new EMData();
-
-	result->set_size(image0_nx, image0_ny, image0_nz);
-
-	float *dest = result->get_data();
-	int nitems = static_cast < int >(image_list.size());
-	float *srt = new float[nitems];
-	float **src = new float *[nitems];
-
-	for (int i = 0; i < nitems; i++) {
-		src[i] = image_list[i]->get_data();
-	}
-
-	for (size_t i = 0; i < size; ++i) {
-		for (int j = 0; j < nitems; j++) {
-			srt[j] = src[j][i];
-		}
-
-		for (int j = 0; j < nitems; j++) {
-			for (int k = j + 1; k < nitems; k++) {
-				if (srt[j] < srt[k]) {
-					float v = srt[j];
-					srt[j] = srt[k];
-					srt[k] = v;
-				}
-			}
-		}
-
-		int l = nitems / 2;
-
-		if (nitems < 3) {
-			dest[i] = srt[l];
-		}
-		else {
-			dest[i] = (srt[l] + srt[l + 1] + srt[l - 1]) / 3.0f;
-		}
-	}
-
-	if (srt) {
-		delete [] srt;
-		srt = NULL;
-	}
-
-	if (src) {
-		delete [] src;
-		src = NULL;
-	}
-
-	result->update();
-
-	return result;
 }
 
 bool EMUtil::is_same_ctf(const EMData * image1, const EMData * image2)
@@ -1382,10 +1309,7 @@ ImageSort::ImageSort(int nn)
 
 ImageSort::~ImageSort()
 {
-	if (image_scores) {
-		delete [] image_scores;
-		image_scores = NULL;
-	}
+    EMDeleteArray(image_scores);
 }
 
 void ImageSort::sort()

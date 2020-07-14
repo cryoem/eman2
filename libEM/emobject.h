@@ -350,7 +350,7 @@ namespace EMAN
 
 			void dump();
 
-			inline bool find_type( const string& type ) {  if ( type_dict.find(type) != type_dict.end() ) return true; return false; }
+			inline bool find_type( const string& type ) {  return type_dict.find(type) != type_dict.end(); }
 
 		private:
 			map < string, string > type_dict;
@@ -515,10 +515,7 @@ namespace EMAN
 		bool has_key(const string & key) const
 		{
 			map < string, EMObject >::const_iterator p = dict.find(key);
-			if (p != dict.end()) {
-				return true;
-			}
-			return false;
+			return p != dict.end();
 		}
 
 		/** Ask the Dictionary for its size
@@ -691,11 +688,11 @@ namespace EMAN
 		};
 
 		// Iterator support
-		iterator begin( void );
-		const_iterator begin( void ) const;
+		iterator begin();
+		const_iterator begin() const;
 
-		iterator end( void );
-		const_iterator end( void ) const;
+		iterator end();
+		const_iterator end() const;
 
 		// Wraps map.find(const string& key)
 		iterator find( const string& key );

@@ -42,7 +42,7 @@ using namespace EMAN;
 
 namespace {
 	/* x% weighting -> fraction of full color */
-	#define PCT(x)	(((x)*255+127)/100)
+	constexpr int PCT(int x) {return (x*255+127)/100;}
 	const int RED = PCT(30);		/* 30% */
 	const int GREEN = PCT(59);		/* 59% */
 	const int BLUE = PCT(11);		/* 11% */
@@ -94,12 +94,7 @@ void TiffIO::init()
 			throw ImageReadException(filename, "invalid TIFF");
 		}
 
-		if (buf[0] == TIFF_BIG_ENDIAN) {
-			is_big_endian = true;
-		}
-		else {
-			is_big_endian = false;
-		}
+        is_big_endian = (buf[0] == TIFF_BIG_ENDIAN);
 	}
 
 	fclose(tmp_in);
@@ -273,7 +268,7 @@ int TiffIO::read_data(float *rdata, int image_index, const Region * area, bool)
 
 			if ((cdata=(unsigned char*)_TIFFmalloc(tileSize))==NULL){
 				fprintf(stderr,"Error: Could not allocate enough memory\n");
-				return(-1);
+				return -1;
 			}
 
 			int tilePerLine = nx/tileWidth + 1;
@@ -283,7 +278,7 @@ int TiffIO::read_data(float *rdata, int image_index, const Region * area, bool)
 			for (tileCount=0; tileCount<tileMax; tileCount++) {
 				if (TIFFReadEncodedTile(tiff_file, tileCount, cdata, tileSize) == -1) {
 					fprintf(stderr,"Error reading tiled image\n");
-					return(-1);
+					return -1;
 				}
 				else {
 					NX = tileCount%tilePerLine;
@@ -316,7 +311,7 @@ int TiffIO::read_data(float *rdata, int image_index, const Region * area, bool)
 							}
 							else {
 								fprintf(stderr,"BAILING OUT:Allow only 8- or 16-bits image\n");
-								return(-1);
+								return -1;
 							}
 						}
 					}
@@ -336,7 +331,7 @@ int TiffIO::read_data(float *rdata, int image_index, const Region * area, bool)
 
 			if ((cdata = static_cast < unsigned char *>(_TIFFmalloc(strip_size)))==NULL) {
 				fprintf(stderr,"Error: Could not allocate enough memory\n");
-				return(-1);
+				return -1;
 			}
 
 			int k = 0;
@@ -528,10 +523,7 @@ int TiffIO::write_data(float * data, int image_index, const Region *,
 			return -1;
 		}
 
-		if (cdata) {
-			delete [] cdata;
-			cdata = NULL;
-		}
+        EMDeleteArray(cdata);
 	}
 	else if (bitspersample == CHAR_BIT*sizeof(short)) {
 		unsigned short *sdata = new unsigned short[nx*ny];
@@ -562,10 +554,7 @@ int TiffIO::write_data(float * data, int image_index, const Region *,
 			return -1;
 		}
 
-		if (sdata) {
-			delete [] sdata;
-			sdata = NULL;
-		}
+        EMDeleteArray(sdata);
 	}
 	else if (bitspersample == CHAR_BIT*sizeof(float)) {
 		float *fdata = new float[nx*ny];
@@ -586,10 +575,7 @@ int TiffIO::write_data(float * data, int image_index, const Region *,
 			return -1;
 		}
 
-		if (fdata) {
-			delete[] fdata;
-			fdata = NULL;
-		}
+        EMDeleteArray(fdata);
 	}
 	else {
 		LOGWARN("TIFF in EMAN2 only support data type 8 bit, 16 bit or 32 bit.");

@@ -302,11 +302,7 @@ void EMData::write_image(const string & filename, int img_index,
 					}
 					err = imageio->write_data((float*)lstdata, img_index,
 											  region, filestoragetype, use_host_endian);
-					if( lstdata )
-					{
-						delete [] lstdata;
-						lstdata = 0;
-					}
+					EMDeleteArray(lstdata);
 				}
 				if (imgtype == EMUtil::IMAGE_LSTFAST) {
 					const char *reffile = attr_dict["LST.reffile"];
@@ -329,11 +325,7 @@ void EMData::write_image(const string & filename, int img_index,
 					}
 					err = imageio->write_data((float*)lstdata, img_index,
 											  region, filestoragetype, use_host_endian);
-					if( lstdata )
-					{
-						delete [] lstdata;
-						lstdata = 0;
-					}
+					EMDeleteArray(lstdata);
 				}
 				else {
 					err = imageio->write_data(get_data(), img_index, region, filestoragetype,

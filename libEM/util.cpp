@@ -252,10 +252,7 @@ bool Util::check_file_by_magic(const void *first_block, const char *magic)
 
 bool Util::is_file_exist(const string & filename)
 {
-	if (access(filename.c_str(), F_OK) == 0) {
-		return true;
-	}
-	return false;
+	return access(filename.c_str(), F_OK) == 0;
 }
 
 
@@ -312,11 +309,7 @@ bool Util::sstrncmp(const char *s1, const char *s2)
 		throw NullPointerException("Null string");
 	}
 
-	if (strncmp(s1, s2, strlen(s2)) == 0) {
-		return true;
-	}
-
-	return false;
+	return strncmp(s1, s2, strlen(s2)) == 0;
 }
 
 string Util::int2str(int n)

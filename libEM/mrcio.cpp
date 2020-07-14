@@ -204,7 +204,7 @@ void MrcIO::init()
 
 		is_8_bit_packed = (mrch.mode == MRC_UHEX || (mrch.imod_flags & 16)  ||  double_nx);
 
-		if (getenv("DISALLOW_PACKED_FORMAT") != NULL) {
+		if (getenv("DISALLOW_PACKED_FORMAT")) {
 			use_given_dimensions = true;
 			is_8_bit_packed = false;
 		}
@@ -267,7 +267,7 @@ void MrcIO::check_swap(const int * data, const char * filnam, bool show_errors,
 
 	int actual_stamp = MrcIO::generate_machine_stamp();
 
-	bool debug = (getenv("DEBUG_MRC_SANITY") != NULL);
+	bool debug = (getenv("DEBUG_MRC_SANITY"));
 
 	string errmsg;
 
@@ -324,7 +324,7 @@ void MrcIO::check_swap(const int * data, const char * filnam, bool show_errors,
 	}
 
 	if (debug  ||  (have_err  &&  show_errors)) {
-		if (filnam != NULL) {
+		if (filnam) {
 			printf ("file name = '%s'.\n", filnam);
 		}
 
@@ -800,7 +800,7 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 		mrch.yorigin = d["ty"];
 		mrch.zorigin = d["tz"];
 
-		if (t) {delete t; t = NULL;}
+		EMDeletePtr(t);
 	}
 
 	if (dict.has_key("origin_x") && dict.has_key("origin_y") && dict.has_key("origin_z")){
@@ -1322,10 +1322,10 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 	EMUtil::process_region_io(ptr_data, mrcfile, WRITE_ONLY, image_index,
 							  mode_size, mrch.nx, mrch.ny, mrch.nz, area);
 
-	if (cdata)  {delete [] cdata;  cdata  = NULL;}
-	if (scdata) {delete [] scdata; scdata = NULL;}
-	if (sdata)  {delete [] sdata;  sdata  = NULL;}
-	if (usdata) {delete [] usdata; usdata = NULL;}
+	EMDeleteArray(cdata);
+	EMDeleteArray(scdata);
+	EMDeleteArray(sdata);
+	EMDeleteArray(usdata);
 
 #if 0
 	int row_size = nx * get_mode_size(mrch.mode);
@@ -1386,11 +1386,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 		}
 	}
 
-	if (cbuf)
-	{
-		delete [] cbuf;
-		cbuf = NULL;
-	}
+	EMDeleteArray(cbuf);
 #endif
 
 	EXITFUNC;
