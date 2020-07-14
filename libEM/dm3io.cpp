@@ -51,10 +51,7 @@ TagTable::TagTable()
 TagTable::~TagTable()
 {
 	for (unsigned int i = 0; i < data_list.size(); i++) {
-		if (data_list[i]) {
-			delete [] data_list[i];
-			data_list[i] = 0;
-		}
+		EMDeleteArray(data_list[i]);
 	}
 }
 
@@ -280,15 +277,8 @@ string TagData::read_string(int size)
 	str[size] = '\0';
 	string str1 = string(str);
 
-	if (str) {
-		delete [] str;
-		str = NULL;
-	}
-
-	if (buf) {
-		delete [] buf;
-		buf = NULL;
-	}
+	EMDeleteArray(str);
+	EMDeleteArray(buf);
 
 	return str1;
 }
@@ -454,10 +444,7 @@ int TagData::read(bool nodata)
 		return 1;
 	}
 
-	if (mark) {
-		delete [] mark;
-		mark = 0;
-	}
+	EMDeleteArray(mark);
 
 	int encoded_types_size = 0;
 	nr = fread(&encoded_types_size, sizeof(int), 1, in); nr++;
@@ -609,10 +596,7 @@ int TagEntry::read(bool nodata)
 
 	name = string(tmp_name);
 
-	if (tmp_name) {
-		delete [] tmp_name;
-		tmp_name = 0;
-	}
+	EMDeleteArray(tmp_name);
 
 	LOGVAR("\ntag name: '%s', len: %d, type: '%s'",
 		   name.c_str(), name_len, Gatan::to_str((EntryType) tag_type));
