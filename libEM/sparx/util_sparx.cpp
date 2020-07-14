@@ -38,7 +38,7 @@
 #include <string>
 #include <ctime>
 #include <iostream>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <cstdio>
 #include <cstdlib>
 #include <cassert>
@@ -32263,7 +32263,7 @@ void Util::constrained_helix_exhaustive( vector<EMData*> data, vector<EMData*> f
 
 	const int ndata = data.size();
 
-	std::vector< boost::shared_ptr<EMData> > objectsToDelete; // objects added to this vector are automatically deleted at the end of this function
+	std::vector< std::shared_ptr<EMData> > objectsToDelete; // objects added to this vector are automatically deleted at the end of this function
 
 	vector<float> c0 = data[0]->get_attr("ptcl_source_coord");
 	vector< vector<EMData*> > ccfs(ndata, vector<EMData*>(nphi));
@@ -32274,11 +32274,11 @@ void Util::constrained_helix_exhaustive( vector<EMData*> data, vector<EMData*> f
 		for (int iphi = 0; iphi < nphi; ++iphi) {
 			std::auto_ptr<EMData> corr( correlation( refproj[iphi], fdata[im], CIRCULANT, true) );
 			ccfs[im][iphi] = Util::window( corr.get(), nwx, nwy);
-			objectsToDelete.push_back(boost::shared_ptr<EMData>(ccfs[im][iphi]));
+			objectsToDelete.push_back(std::shared_ptr<EMData>(ccfs[im][iphi]));
 			if (! Dsym) {
 				std::auto_ptr<EMData> corr2( correlation( rotproj[iphi], fdata[im], CIRCULANT, true) );
 				ccfr[im][iphi] = Util::window( corr2.get(), nwx, nwy);
-				objectsToDelete.push_back(boost::shared_ptr<EMData>(ccfr[im][iphi]));
+				objectsToDelete.push_back(std::shared_ptr<EMData>(ccfr[im][iphi]));
 			}
 		}
 	}

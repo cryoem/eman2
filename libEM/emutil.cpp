@@ -47,8 +47,6 @@
 #include "exception.h"
 #include "hdf_filecache.h"
 
-#include <boost/shared_ptr.hpp>
-using boost::shared_ptr;
 
 //#ifdef EMAN2_USING_CUDA_MALLOC
 //#include "cuda/cuda_util.h"

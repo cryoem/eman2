@@ -39,8 +39,8 @@
 using std::cout;
 using std::endl;
 
-#include <boost/shared_ptr.hpp>
-using boost::shared_ptr;
+#include <memory>
+using std::shared_ptr;
 
 using namespace EMAN;
 
