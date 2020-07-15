@@ -29,7 +29,7 @@ def alifn(jsd,fsp,i,a,options):
 		for ii in range(len(xfs), ntry):
 			ixf=initxf.get_params("eman")
 			ixf["phi"]=np.random.rand()*360.
-			ixf["alt"]=ixf["alt"]+180
+			ixf["alt"]=ixf["alt"]+180*(np.random.rand()>.5)
 			ixf=Transform(ixf)
 			
 			v=np.random.rand(3)-0.5
