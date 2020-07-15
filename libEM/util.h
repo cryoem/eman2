@@ -32,10 +32,6 @@
 #ifndef eman__util_h__
 #define eman__util_h__ 1
 
-#ifdef _WIN32
-	#include <cfloat>
-#endif	//_WIN32
-
 #ifdef WIN32
 #include <windows.h>
 	#include <process.h>

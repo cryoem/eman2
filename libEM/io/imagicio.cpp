@@ -38,9 +38,7 @@
 #include "emassert.h"
 #include "transform.h"
 
-#ifdef _WIN32
-	#include <ctime>
-#endif	//_WIN32
+#include <ctime>
 
 using namespace EMAN;
 
