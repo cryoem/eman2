@@ -69,7 +69,11 @@ int write_image(EMData* em, const char* infile, char* outfile,
 	}
 	
     if (is_new_file) {
-    	EMDeleteArray(outfile);
+    	if( outfile )
+    	{
+			delete [] outfile;
+			outfile = 0;
+    	}
     }
     
     return err;
