@@ -33,7 +33,6 @@
 #define eman__util_h__ 1
 
 #ifdef _WIN32
-	#pragma warning(disable:4819)
 	#include <cfloat>
 #endif	//_WIN32
 
