@@ -4,6 +4,9 @@ from EMAN2 import *
 import numpy as np
 from sklearn.decomposition import PCA
 floattype=np.float32
+os.environ["CUDA_VISIBLE_DEVICES"]='0' 
+os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]='true' 
+import tensorflow as tf
 
 def get_sym_pts(sym, pts):
 	nsym=Transform.get_nsym(sym)
@@ -32,6 +35,7 @@ def get_sym_pts(sym, pts):
 			
 	return asym
 
+@tf.function
 def xf2pts(pts, ang):
 
 	azp=-ang[:,0]
@@ -74,6 +78,7 @@ def xf2pts(pts, ang):
 
 
 #### make 2D projections in Fourier space
+@tf.function
 def pts2img(pts, ang, lp=.1, sym="c1"):
 	bsz=ang.shape[0]
 	
@@ -115,6 +120,7 @@ def pts2img(pts, ang, lp=.1, sym="c1"):
 	return (imgs_real, imgs_imag)
 
 #### compute particle-projection FRC 
+@tf.function
 def calc_frc(data_cpx, imgs_cpx, return_curve=False):
 	mreal, mimag=imgs_cpx
 	dreal, dimag=data_cpx
@@ -144,7 +150,7 @@ def calc_frc(data_cpx, imgs_cpx, return_curve=False):
 		return frcval
 	
 def load_particles(fname, shuffle=False, hdrxf=False):
-	projs=EMData.read_images(fname)
+	projs=EMData.read_images(fname)#[:200]
 	if shuffle:
 		rnd=np.arange(len(projs))
 		np.random.shuffle(rnd)
@@ -159,7 +165,7 @@ def load_particles(fname, shuffle=False, hdrxf=False):
 		if fname.endswith(".lst"):
 			lst=LSXFile(fname, True)
 			xfs=[]
-			for i in range(lst.n):
+			for i in range(len(projs)):
 				l=lst.read(i)
 				xfs.append(eval(l[2]))
 			if shuffle:
@@ -239,6 +245,7 @@ def train_generator(gen_model, trainset, options):
 	for itr in range(options.niter):
 		cost=[]
 		for pjr,pji,xf in trainset:
+			if xf.shape[0]==1: continue
 			pj_cpx=(pjr,pji)
 			with tf.GradientTape() as gt:
 				conf=tf.zeros((xf.shape[0],1,2), dtype=floattype)
@@ -258,6 +265,38 @@ def train_generator(gen_model, trainset, options):
 		sys.stdout.write("\r")
 		
 		print("iter {}, loss : {:.3f}".format(itr, np.mean(cost)))
+
+def eval_model(gen_model, trainset, options):
+	
+	imgs=[]
+	xfs=[]
+	for pjr,pji,xf in trainset:
+		conf=tf.zeros((xf.shape[0],1,2), dtype=floattype)
+		pout=gen_model(conf)
+		std=tf.reduce_mean(tf.math.reduce_std(pout, axis=1), axis=0)
+		imgs_real, imgs_imag=pts2img(pout, xf, sym=options.sym)
+		imgs_cpx=tf.complex(imgs_real, imgs_imag)
+		imgs_out=tf.signal.irfft2d(imgs_cpx)
+		imgs.append(imgs_out)
+		xfs.append(xf.numpy())
+		
+	imgs=tf.concat(imgs, axis=0).numpy()
+	xfs=np.concatenate(xfs, axis=0)
+	print(imgs.shape)
+	print(xfs.shape)
+	xfs[:,:3]=xfs[:,:3]*180./np.pi
+	xfs[:,3:]*=imgs.shape[-1]
+	if os.path.isfile(options.evalmodel):
+		os.remove(options.evalmodel)
+	for m,x in zip(imgs, xfs):
+		e=from_numpy(m)
+		x=x.tolist()
+		xf=Transform({"type":"eman", "az":x[0], "alt":x[1], "phi":x[2], "tx":x[3], "ty":x[4]})
+		e["xform.projection"]=xf
+		e["apix_x"]=e["apix_y"]=options.raw_apix
+		e.write_image(options.evalmodel,-1)
+		
+	
 
 def ccf_trans(ref,img):
 	ref_real, ref_imag = ref
@@ -387,31 +426,29 @@ def main():
 	parser.add_argument("--model", type=str,help="load from an existing model file", default="")
 	parser.add_argument("--modelout", type=str,help="output trained model file. only used when --projs is provided", default="")
 	parser.add_argument("--projs", type=str,help="projections with orientations (in hdf header or comment column of lst file) to train model", default="")
+	parser.add_argument("--evalmodel", type=str,help="generate model projection images", default="")
 	parser.add_argument("--ptclsin", type=str,help="particles input for alignment", default="")
 	parser.add_argument("--fsc", type=str,help="fsc file input for weighting. does not seem to be very useful...", default="")
 	parser.add_argument("--ptclsout", type=str,help="aligned particle output", default="")
 	parser.add_argument("--learnrate", type=float,help="learning rate for model training only. ", default=1e-4)
 	parser.add_argument("--sigmareg", type=float,help="regularizer for the std of gaussian width", default=.5)
 	parser.add_argument("--niter", type=int,help="number of iterations", default=10)
+	parser.add_argument("--npts", type=int,help="number of points to initialize. default is 64", default=64)
 	parser.add_argument("--batchsz", type=int,help="batch size", default=32)
+	parser.add_argument("--maxboxsz", type=int,help="maximum fourier box size to use. Idealy use pixels of the current resolution * 3 ", default=64)
 	parser.add_argument("--double", action="store_true", default=False ,help="double the number of points.")
 	parser.add_argument("--fromscratch", action="store_true", default=False ,help="start from coarse alignment. otherwise will only do refinement from last round")
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	
-	os.environ["CUDA_VISIBLE_DEVICES"]='0' 
-	os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]='true' 
-	global tf
-	import tensorflow as tf
-	
-	maxboxsz=168
+
+	maxboxsz=options.maxboxsz
 	global weightcurve
 	if options.fsc:
 		weightcurve=np.loadtxt(options.fsc)[:,1]
 	else:
 		weightcurve=np.ones(1000)
 	weightcurve[:4]=0
-	print(weightcurve.shape)
 		
 		
 	if options.model:
@@ -422,20 +459,22 @@ def main():
 			pts[:,3]/=2
 		
 		gen_model=build_generator(len(pts))
+		print("{} gaussian in the model".format(len(pts)))
 		conf=tf.zeros((1,1,2), dtype=floattype)
-		opt=tf.keras.optimizers.Adam(learning_rate=1e-3) 
+		opt=tf.keras.optimizers.Adam(learning_rate=1e-4) 
 		gen_model.compile(optimizer=opt, loss=tf.losses.MeanAbsoluteError())
 		loss=[]
-		for i in range(100):
+		for i in range(500):
 			loss.append(gen_model.train_on_batch(conf, pts))
 		print("Abs loss from loaded model : {:.03f}".format(loss[-1]))
 	else:
-		gen_model=build_generator(64)
+		gen_model=build_generator(options.npts)
 	
 	if options.projs:
 		print("Train model from ptcl-xfrom pairs...")
 		e=EMData(options.projs, 0, True)
 		raw_apix, raw_boxsz = e["apix_x"], e["ny"]
+		options.raw_apix=raw_apix
 		data_cpx, xfsnp = load_particles(options.projs, shuffle=True, hdrxf=True)
 		set_indices_boxsz(data_cpx[0].shape[1], raw_apix, True)
 		
@@ -443,9 +482,14 @@ def main():
 		dcpx=get_clip(data_cpx, sz)
 		trainset=tf.data.Dataset.from_tensor_slices((dcpx[0], dcpx[1], xfsnp))
 		trainset=trainset.batch(options.batchsz)
+		
 		train_generator(gen_model, trainset, options)
 		pout=gen_model(tf.zeros((1,1,2), dtype=floattype))
 		np.savetxt(options.modelout, pout[0])
+		
+		if options.evalmodel:
+			eval_model(gen_model, trainset, options)
+		
 		
 	if options.ptclsin:
 		print("Align particles...")
@@ -480,7 +524,7 @@ def main():
 			
 		set_indices_boxsz(maxboxsz)
 		dcpx=get_clip(data_cpx, sz)
-		xfsnp, frcs=refine_align(dcpx, xfsnp, pts, options)
+		xfsnp, frcs=refine_align(dcpx, xfsnp, pts, options, lr=1e-4)
 			
 		save_ptcls_xform(xfsnp, raw_boxsz, options)
 
