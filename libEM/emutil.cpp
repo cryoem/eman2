@@ -1307,7 +1307,10 @@ ImageSort::ImageSort(int nn)
 
 ImageSort::~ImageSort()
 {
-    EMDeleteArray(image_scores);
+	if (image_scores) {
+		delete [] image_scores;
+		image_scores = NULL;
+	}
 }
 
 void ImageSort::sort()

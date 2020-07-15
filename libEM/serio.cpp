@@ -56,8 +56,15 @@ SerIO::~SerIO()
 		serfile = 0;
 	}
 
-    EMDeleteArray(data_offset_array);
-    EMDeleteArray(tag_offset_array);
+	if (data_offset_array) {
+		delete [] data_offset_array;
+		data_offset_array = 0;
+	}
+
+	if (tag_offset_array) {
+		delete [] tag_offset_array;
+		tag_offset_array = 0;
+	}
 }
 
 void SerIO::init()
