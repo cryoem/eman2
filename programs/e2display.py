@@ -51,7 +51,6 @@ def main():
 
 	This program can be used to visualize most files used in EMAN2. Running it without arguments
 	will open a browser window with more flexible functionality than the command-line.
-	
 	"""
 	global app,win,options
 

@@ -42,7 +42,7 @@ using namespace EMAN;
 
 namespace {
 	/* x% weighting -> fraction of full color */
-	#define PCT(x)	(((x)*255+127)/100)
+	constexpr int PCT(int x) {return (x*255+127)/100;}
 	const int RED = PCT(30);		/* 30% */
 	const int GREEN = PCT(59);		/* 59% */
 	const int BLUE = PCT(11);		/* 11% */
@@ -51,11 +51,9 @@ namespace {
 TiffIO::TiffIO(string tiff_filename, IOMode rw)
 :	filename(tiff_filename), rw_mode(rw), tiff_file(0),
 	bitspersample(0), photometric(0), initialized(false),
-	rendermin(0.0), rendermax(0.0), renderbits(16), nimg(1)
-{
-	is_big_endian = ByteOrder::is_host_big_endian();
-}
-
+	rendermin(0.0), rendermax(0.0), renderbits(16), nimg(1),
+	is_big_endian(ByteOrder::is_host_big_endian())
+{}
 
 TiffIO::~TiffIO()
 {
@@ -94,12 +92,7 @@ void TiffIO::init()
 			throw ImageReadException(filename, "invalid TIFF");
 		}
 
-		if (buf[0] == TIFF_BIG_ENDIAN) {
-			is_big_endian = true;
-		}
-		else {
-			is_big_endian = false;
-		}
+        is_big_endian = (buf[0] == TIFF_BIG_ENDIAN);
 	}
 
 	fclose(tmp_in);
@@ -273,7 +266,7 @@ int TiffIO::read_data(float *rdata, int image_index, const Region * area, bool)
 
 			if ((cdata=(unsigned char*)_TIFFmalloc(tileSize))==NULL){
 				fprintf(stderr,"Error: Could not allocate enough memory\n");
-				return(-1);
+				return -1;
 			}
 
 			int tilePerLine = nx/tileWidth + 1;
@@ -282,7 +275,8 @@ int TiffIO::read_data(float *rdata, int image_index, const Region * area, bool)
 
 			for (tileCount=0; tileCount<tileMax; tileCount++) {
 				if (TIFFReadEncodedTile(tiff_file, tileCount, cdata, tileSize) == -1) {
-					fprintf(stderr,"Error reading tiled image\n");return(-1);
+					fprintf(stderr,"Error reading tiled image\n");
+					return -1;
 				}
 				else {
 					NX = tileCount%tilePerLine;
@@ -315,7 +309,7 @@ int TiffIO::read_data(float *rdata, int image_index, const Region * area, bool)
 							}
 							else {
 								fprintf(stderr,"BAILING OUT:Allow only 8- or 16-bits image\n");
-								return(-1);
+								return -1;
 							}
 						}
 					}
@@ -335,7 +329,7 @@ int TiffIO::read_data(float *rdata, int image_index, const Region * area, bool)
 
 			if ((cdata = static_cast < unsigned char *>(_TIFFmalloc(strip_size)))==NULL) {
 				fprintf(stderr,"Error: Could not allocate enough memory\n");
-				return(-1);
+				return -1;
 			}
 
 			int k = 0;
@@ -499,7 +493,7 @@ int TiffIO::write_data(float * data, int image_index, const Region *,
 	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, renderbits);
 
 	if (bitspersample == CHAR_BIT) {
-		unsigned char *cdata = new unsigned char[nx*ny];
+		vector<unsigned char> cdata(nx*ny);
 		
 		int src_idx, dst_idx;
 
@@ -521,19 +515,14 @@ int TiffIO::write_data(float * data, int image_index, const Region *,
 			}
 		}
 
-		if (TIFFWriteEncodedStrip(tiff_file, 0, cdata, nx*ny) == -1) {
+		if (TIFFWriteEncodedStrip(tiff_file, 0, cdata.data(), nx*ny) == -1) {
 			printf("Fail to write tiff file.\n");
 
 			return -1;
 		}
-
-		if (cdata) {
-			delete [] cdata;
-			cdata = NULL;
-		}
 	}
 	else if (bitspersample == CHAR_BIT*sizeof(short)) {
-		unsigned short *sdata = new unsigned short[nx*ny];
+		vector<unsigned short> sdata(nx*ny);
 
 		int src_idx, dst_idx;
 
@@ -555,19 +544,14 @@ int TiffIO::write_data(float * data, int image_index, const Region *,
 			}
 		}
 
-		if (TIFFWriteEncodedStrip(tiff_file, 0, sdata, nx*ny*sizeof(short)) == -1) {
+		if (TIFFWriteEncodedStrip(tiff_file, 0, sdata.data(), nx*ny*sizeof(short)) == -1) {
 			printf("Fail to write tiff file.\n");
 
 			return -1;
 		}
-
-		if (sdata) {
-			delete [] sdata;
-			sdata = NULL;
-		}
 	}
 	else if (bitspersample == CHAR_BIT*sizeof(float)) {
-		float *fdata = new float[nx*ny];
+		vector<float> fdata(nx*ny);
 
 		int src_idx, dst_idx;
 
@@ -579,15 +563,10 @@ int TiffIO::write_data(float * data, int image_index, const Region *,
 			}
 		}
 
-		if (TIFFWriteEncodedStrip(tiff_file, 0, fdata, nx*ny*sizeof(float)) == -1) {
+		if (TIFFWriteEncodedStrip(tiff_file, 0, fdata.data(), nx*ny*sizeof(float)) == -1) {
 			printf("Fail to write tiff file.\n");
 
 			return -1;
-		}
-
-		if (fdata) {
-			delete[] fdata;
-			fdata = NULL;
 		}
 	}
 	else {

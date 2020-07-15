@@ -82,6 +82,7 @@ def main():
 	parser.add_argument("--db-set-hcoords", type=str, help="Replaces the helix coordinates in the database with the coordinates from the specified file (in EMAN1 *.box format). Use --helix-width to specify a width for all boxes.")
 
 	parser.add_argument("--helix-width", "-w", type=int, dest="helix_width", help="Helix width in pixels. Overrides widths saved in the database or in an input file.", default=-1)
+	parser.add_argument("--helix-length", "-l", type=int, dest="helix_length", help="Helix length in pixels. Normally each filament can be an arbitrary length. This forces all new helices to a fixed size.", default=-1)
 	parser.add_argument("--ptcl-overlap", type=int, dest="ptcl_overlap", help="Particle overlap in pixels", default=-1)
 	parser.add_argument("--ptcl-length", type=int, dest="ptcl_length", help="Particle length in pixels", default=-1)
 	parser.add_argument("--ptcl-width", type=int, dest="ptcl_width", help="Particle width in pixels", default=-1)
@@ -96,10 +97,15 @@ def main():
 		print("ERROR: please provide a list of files to be boxed at the command line")
 		sys.exit(1)
 
-	if options.helix_width < 1:
+	if options.helix_width < 2:
 		helix_width = None
 	else:
 		helix_width = options.helix_width
+
+	if options.helix_length < 2:
+		helix_length = None
+	else:
+		helix_length = options.helix_length
 
 	if options.ptcl_width < 1:
 		px_width = None
@@ -122,7 +128,7 @@ def main():
 		if ENABLE_GUI:
 			logid=E2init(sys.argv,options.ppid)
 			app = EMApp()
-			helixboxer = EMHelixBoxerWidget(args, app, options.helix_width,options.save_ext)
+			helixboxer = EMHelixBoxerWidget(args, app, helix_width,options.save_ext,helix_length)
 			helixboxer.show()
 			helixboxer.raise_()
 			app.execute()
@@ -961,15 +967,16 @@ if ENABLE_GUI:
 		"""
 		the GUI widget which contains the settings for boxing helices and writing results to files
 		"""
-		def __init__(self, micrograph_filepaths, app, box_width=100, saveext="hdf"):
+		def __init__(self, micrograph_filepaths, app, box_width=100, saveext="hdf", box_length = -1):
 			"""
 			@param micrograph_filepath: the path to the image file for the micrograph
 			@param app: the application to which this widget belongs
 			"""
 			QtWidgets.QWidget.__init__(self)
 
-			if box_width<1 : box_width=100
+			if box_width==None or box_width<1 : box_width=100
 			self.box_width=box_width
+			self.box_length=box_length
 
 			self.saveext=saveext
 			self.app = app
@@ -1415,12 +1422,12 @@ if ENABLE_GUI:
 							if dist_squared < min_squared_dist:
 								min_squared_dist = dist_squared
 								closest_pt_ix = i
-						if closest_pt_ix == 0: #first endpoint
+						if closest_pt_ix == 2 or self.box_length!=None: #midpoint
+							self.edit_mode = "move"
+						elif closest_pt_ix == 0: #first endpoint
 							self.edit_mode = "1st_point"
 						elif closest_pt_ix == 1: #second endpoint
 							self.edit_mode = "2nd_point"
-						elif closest_pt_ix == 2: #midpoint
-							self.edit_mode = "move"
 						else:
 							self.edit_mode = "error"
 
@@ -1457,12 +1464,22 @@ if ENABLE_GUI:
 			@param click_loc: the coordinates in image (not screen) pixels of the mouse click on the image
 			"""
 
+			cx=cursor_loc[0]
+			cy=cursor_loc[1]
+
 			if self.click_loc and self.edit_mode: #self.click_loc and self.edit_mode are set in mouse_down
 				if self.edit_mode == "new":
 					if self.click_loc[0] != cursor_loc[0] or self.click_loc[1] != cursor_loc[1]: #Don't make a zero-sized box
+						if self.box_length!=None and self.box_length>1 : 
+							dx=cx-self.click_loc[0]
+							dy=cy-self.click_loc[1]
+							sca=self.box_length/hypot(dx,dy)
+							cx=self.click_loc[0]+dx*sca
+							cy=self.click_loc[1]+dy*sca
+
 						self.current_boxkey = self.generate_emshape_key()
 						emshape_list = ( "rectline",self.color[0], self.color[1], self.color[2],
-											self.click_loc[0], self.click_loc[1], cursor_loc[0], cursor_loc[1], self.get_width(), 2 )
+											self.click_loc[0], self.click_loc[1], cx, cy, self.get_width(), 2 )
 
 						emshape_box = EMShape(emshape_list)
 						self.main_image.add_shape(self.current_boxkey, emshape_box)
@@ -1483,7 +1500,7 @@ if ENABLE_GUI:
 					first = self.initial_helix_box_data_list[:2]
 					second = self.initial_helix_box_data_list[2:4]
 					width = self.initial_helix_box_data_list[4]
-					move = (cursor_loc[0] - self.click_loc[0], cursor_loc[1]-self.click_loc[1])
+					move = (cx - self.click_loc[0], cy-self.click_loc[1])
 
 					if self.edit_mode == "move":
 						first = (move[0]+first[0], move[1]+first[1])
@@ -1491,7 +1508,11 @@ if ENABLE_GUI:
 					elif self.edit_mode == '1st_point': #move first point
 						first = (move[0]+first[0], move[1]+first[1])
 					elif self.edit_mode == "2nd_point":
-						second = (move[0]+second[0], move[1]+second[1])
+						if self.box_length!=None and self.box_length>1 :
+							sca=self.box_length/hypot(move[0],move[1])
+							second=(first[0]+sca*move[0],first[1]+sca*move[1])
+						else:
+							second = (move[0]+second[0], move[1]+second[1])
 
 					box = self.main_image.get_shapes().get(self.current_boxkey)
 					box.getShape()[4] = first[0]

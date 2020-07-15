@@ -255,7 +255,7 @@ return centers;
 void KMeansAnalyzer::update_centers(int sigmas) {
 int nptcl=images.size();
 //int repr[ncls];
-int * repr = new int[ncls];
+vector<int> repr(ncls);
 
 for (int i=0; i<ncls; i++) {
 	centers[i]->to_zero();
@@ -323,8 +323,6 @@ for (int i=0; i<ncls; i++) {
 if (verbose>1) printf("\n");
 
 reseed();
-
-delete [] repr;
 }
 
 // This will look for any unassigned points and reseed each inside the class with the broadest distribution widely distributed

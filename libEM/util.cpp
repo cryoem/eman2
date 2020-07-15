@@ -252,10 +252,7 @@ bool Util::check_file_by_magic(const void *first_block, const char *magic)
 
 bool Util::is_file_exist(const string & filename)
 {
-	if (access(filename.c_str(), F_OK) == 0) {
-		return true;
-	}
-	return false;
+	return access(filename.c_str(), F_OK) == 0;
 }
 
 
@@ -285,7 +282,7 @@ void Util::flip_image(float *data, size_t nx, size_t ny)
 
 string Util::str_to_lower(const string& s) {
 	string ret(s);
-	std::transform(s.begin(),s.end(),ret.begin(), (int (*)(int) ) std::tolower);
+	std::transform(s.begin(), s.end(), ret.begin(), ::tolower);
 	return ret;
 }
 
@@ -312,11 +309,7 @@ bool Util::sstrncmp(const char *s1, const char *s2)
 		throw NullPointerException("Null string");
 	}
 
-	if (strncmp(s1, s2, strlen(s2)) == 0) {
-		return true;
-	}
-
-	return false;
+	return strncmp(s1, s2, strlen(s2)) == 0;
 }
 
 string Util::int2str(int n)
@@ -493,41 +486,20 @@ string Util::change_filename_ext(const string & old_filename,
 								 const string & ext)
 {
 	Assert(old_filename != "");
-	if (ext == "") {
+	if (ext.empty())
 		return old_filename;
-	}
 
-	string filename = old_filename;
-	size_t dot_pos = filename.rfind(".");
-	if (dot_pos != string::npos) {
-		filename = filename.substr(0, dot_pos+1);
-	}
-	else {
-		filename = filename + ".";
-	}
-	filename = filename + ext;
-	return filename;
+	return remove_filename_ext(old_filename) + "." + ext;
 }
 
 string Util::remove_filename_ext(const string& filename)
 {
-    if (filename == "") {
+    if (filename.empty())
         return "";
-    }
 
-	char *buf = new char[filename.size()+1];
-	strcpy(buf, filename.c_str());
-	char *old_ext = strrchr(buf, '.');
-	if (old_ext) {
-		buf[strlen(buf) - strlen(old_ext)] = '\0';
-	}
-	string result = string(buf);
-	if( buf )
-	{
-		delete [] buf;
-		buf = 0;
-	}
-	return result;
+	auto pos = filename.rfind('.');
+	
+	return pos!=string::npos ? filename.substr(0, pos) : filename;
 }
 
 string Util::sbasename(const string & filename)
@@ -553,20 +525,15 @@ string Util::sbasename(const string & filename)
 
 string Util::get_filename_ext(const string& filename)
 {
-    if (filename == "") {
+    if (filename.empty())
         return "";
-    }
 
-	string result = "";
-	const char *ext = strrchr(filename.c_str(), '.');
-	if (ext) {
-		ext++;
-		result = string(ext);
-	}
-	return result;
+    auto pos = filename.rfind('.');
+    if (pos != string::npos)
+        return filename.substr(pos+1);
+    else
+        return "";
 }
-
-
 
 void Util::calc_least_square_fit(size_t nitems, const float *data_x, const float *data_y,
 								 float *slope, float *intercept, bool ignore_zero,float absmax)

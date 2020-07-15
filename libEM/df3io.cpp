@@ -144,20 +144,20 @@ int Df3IO::read_data(float *rdata, int, const Region *, bool)
 		nr = fread(uidata, sizeof(unsigned int), image_size, df3file); nr++;
 		become_host_endian < unsigned int >(uidata, image_size);
 		std::copy(uidata, uidata+image_size, rdata);
-		if(uidata) {delete [] uidata; uidata=0;}
+		EMDeleteArray(uidata);
 		break;
 	case sizeof(unsigned short):
 		usdata = new unsigned short[image_size];
 		nr = fread(usdata, sizeof(unsigned short), image_size, df3file); nr++;
 		become_host_endian < unsigned short >(usdata, image_size);
 		std::copy(usdata, usdata+image_size, rdata);
-		if(usdata) {delete [] usdata; usdata=0;}
+		EMDeleteArray(usdata);
 		break;
 	case sizeof(unsigned char):
 		ucdata = new unsigned char[image_size];
 		nr = fread(ucdata, sizeof(unsigned char), image_size, df3file); nr++;
 		std::copy(ucdata, ucdata+image_size, rdata);
-		if(ucdata) {delete [] ucdata; ucdata=0;}
+		EMDeleteArray(ucdata);
 		break;
 	default:
 		throw ImageReadException(filename, "DF3 does not support this kind of data type.");
@@ -197,7 +197,7 @@ int Df3IO::write_data(float *data, int, const Region*,
 		if(fwrite(uidata, sizeof(unsigned int), img_size, df3file) != img_size) {
 			throw ImageWriteException(filename, "DF3 unsigned int data");
 		}
-		if(uidata) {delete [] uidata; uidata=0;}
+		EMDeleteArray(uidata);
 		break;
 	case EMUtil::EM_USHORT:
 		usdata = new unsigned short[img_size];
@@ -216,7 +216,7 @@ int Df3IO::write_data(float *data, int, const Region*,
 		if(fwrite(usdata, sizeof(unsigned short), img_size, df3file) != img_size) {
 			throw ImageWriteException(filename, "DF3 unsigned short data");
 		}
-		if(usdata) {delete [] usdata; usdata=0;}
+		EMDeleteArray(usdata);
 		break;
 	case EMUtil::EM_UCHAR:
 		ucdata = new unsigned char[img_size];
@@ -234,7 +234,7 @@ int Df3IO::write_data(float *data, int, const Region*,
 		if(fwrite(ucdata, sizeof(unsigned char), img_size, df3file) != img_size) {
 			throw ImageWriteException(filename, "DF3 unsigned char data");
 		}
-		if(ucdata) {delete [] ucdata; ucdata=0;}
+		EMDeleteArray(ucdata);
 		break;
 	default:
 		throw ImageWriteException(filename,"DF3 does not support this data format");

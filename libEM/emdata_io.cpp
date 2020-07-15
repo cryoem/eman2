@@ -61,7 +61,8 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 		}
 		else {
 			LstIO * myLstIO = dynamic_cast<LstIO *>(imageio);
-			if(!myLstIO)	attr_dict["source_path"] = filename;	//"source_path" is set to full path of reference image for LstIO, so skip this statement
+			if(!myLstIO)
+			    attr_dict["source_path"] = filename;	//"source_path" is set to full path of reference image for LstIO, so skip this statement
 			attr_dict["source_n"] = img_index;
 			if (imageio->is_complex_mode()) {
 				set_complex(true);
@@ -83,7 +84,6 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 			attr_dict.erase("nz");
 
 			if (!nodata) {
-
 				if (region) {
 					nx = (int)region->get_width();
 					if (nx <= 0) nx = 1;
@@ -110,7 +110,7 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 				}
 			}
 			else {
-				if (rdata!=0) EMUtil::em_free(rdata);
+				if (rdata) EMUtil::em_free(rdata);
 				rdata=0;
 			}
 
@@ -215,31 +215,26 @@ void EMData::write_image(const string & filename, int img_index,
 		fft_shuffle();
 
 	if (imgtype == EMUtil::IMAGE_UNKNOWN) {
-		const char *ext = strrchr(filename.c_str(), '.');
-		if (ext) {
-			ext++;
-			imgtype = EMUtil::get_image_ext_type(ext);
-		}
+		auto pos = filename.rfind('.');
+		if (pos != string::npos)
+			imgtype = EMUtil::get_image_ext_type(filename.substr(pos+1));
 	}
 	ImageIO::IOMode rwmode = ImageIO::READ_WRITE;
 
 	//set "nx", "ny", "nz" and "changecount" in attr_dict, since they are taken out of attribute dictionary
-
 	attr_dict["nx"] = nx;
 	attr_dict["ny"] = ny;
 	attr_dict["nz"] = nz;
 	attr_dict["changecount"] = changecount;
 
     // Check if this is a write only format.
-    if (Util::is_file_exist(filename)) {
-        if (!header_only && region == 0) {
+    if (Util::is_file_exist(filename) && (!header_only && region == 0)) {
             ImageIO * tmp_imageio = EMUtil::get_imageio(filename, ImageIO::READ_ONLY, imgtype);
             if (tmp_imageio->is_single_image_format()) {
                 rwmode = ImageIO::WRITE_ONLY;
             }
             EMUtil::close_imageio(filename, tmp_imageio);
             tmp_imageio = 0;
-        }
     }
 
 	LOGVAR("getimageio %d",rwmode);
@@ -303,11 +298,7 @@ void EMData::write_image(const string & filename, int img_index,
 					}
 					err = imageio->write_data((float*)lstdata, img_index,
 											  region, filestoragetype, use_host_endian);
-					if( lstdata )
-					{
-						delete [] lstdata;
-						lstdata = 0;
-					}
+					EMDeleteArray(lstdata);
 				}
 				if (imgtype == EMUtil::IMAGE_LSTFAST) {
 					const char *reffile = attr_dict["LST.reffile"];
@@ -330,11 +321,7 @@ void EMData::write_image(const string & filename, int img_index,
 					}
 					err = imageio->write_data((float*)lstdata, img_index,
 											  region, filestoragetype, use_host_endian);
-					if( lstdata )
-					{
-						delete [] lstdata;
-						lstdata = 0;
-					}
+					EMDeleteArray(lstdata);
 				}
 				else {
 					err = imageio->write_data(get_data(), img_index, region, filestoragetype,

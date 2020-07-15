@@ -311,15 +311,8 @@ string TagData::read_string(int size)
 	str[size] = '\0';
 	string str1 = string(str);
 
-	if (str) {
-		delete [] str;
-		str = NULL;
-	}
-
-	if (buf) {
-		delete [] buf;
-		buf = NULL;
-	}
+	EMDeleteArray(str);
+	EMDeleteArray(buf);
 
 	return str1;
 }
@@ -476,10 +469,7 @@ int TagData::read_any(bool nodata, int image_index, int num_images)
 		val[str_sz] = '\0';
 		string val_str = string(val);
 
-		if (val) {
-			delete [] val;
-			val = NULL;
-		}
+		EMDeleteArray(val);
 
 		tagtable->add(name, val_str);
 	}
@@ -515,10 +505,7 @@ int TagData::read_tag_data(bool nodata, int image_index, int num_images)
 		return 1;
 	}
 
-	if (mark) {
-		delete [] mark;
-		mark = NULL;
-	}
+	EMDeleteArray(mark);
 
 	long long encoded_types_size = 0;
 	nr = fread(&encoded_types_size, sizeof(long long), 1, in); nr++;
@@ -641,10 +628,7 @@ int TagEntry::read_tag_entry(bool nodata, int image_index, int num_images)
 
 	name = string(tmp_name);
 
-	if (tmp_name) {
-		delete [] tmp_name;
-		tmp_name = NULL;
-	}
+	EMDeleteArray(tmp_name);
 
 	LOGVAR("\ntag name: '%s', len: %d, type: '%s'",
 		   name.c_str(), name_len, GatanDM4::to_str((EntryType) tagtype));

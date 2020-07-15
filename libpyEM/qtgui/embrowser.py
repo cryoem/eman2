@@ -56,20 +56,16 @@ import weakref
 
 def display_error(msg) :
 	"""Displays an error message, in gui and on terminal."""
-
 	print(msg)
 	sys.stdout.flush()
 	QtWidgets.QMessageBox.warning(None, "Error", msg)
 
 # This is a floating point number-finding regular expression
-
 renumfind = re.compile(r"-?[0-9]+\.*[0-9]*[eE]?[-+]?[0-9]*")
 
 # We need to sort ints and floats as themselves, not string, John Flanagan
-
 def safe_int(v) :
 	"""Performs a safe conversion from a string to an int. If a non int is presented we return the lowest possible value"""
-
 	try :
 		return int(v)
 	except (ValueError, TypeError) :
@@ -77,7 +73,6 @@ def safe_int(v) :
 
 def safe_float(v) :
 	"""Performs a safe conversion from a string to a float. If a non float is presented we return the lowest possible value"""
-
 	try :
 		return float(v)
 	except :
@@ -87,7 +82,6 @@ def safe_float(v) :
 
 def isprint(s) :
 	"""returns True if the string contains only printable ascii characters"""
-
 	# Seems like no isprint() in python, this does basically the same thing
 	s=s.decode("utf-8")
 	mpd = s.translate("AAAAAAAAABBAABAAAAAAAAAAAAAAAAAA"+"B"*95+"A"*129)
@@ -101,7 +95,6 @@ def isprint(s) :
 
 def askFileExists() :
 	"""Opens a dialog and asks the user what to do if a file to be written to already exists"""
-
 	box = QtWidgets.QMessageBox(4, "File Exists", "File already exists. What would you like to do ?")	# 4 means we're asking a question
 	b1 = box.addButton("Append", QtWidgets.QMessageBox.AcceptRole)
 	b2 = box.addButton("Overwrite", QtWidgets.QMessageBox.AcceptRole)
@@ -120,16 +113,13 @@ class EMFileType(object) :
 
 	# A class dictionary keyed by EMDirEntry filetype string with value beign a single subclass of EMFileType. filetype strings are unique
 	# When you add a new EMFiletype subclass, it must be added to this dictionary to be functional
-
 	typesbyft = {}
 
 	# a class dictionary keyed by file extension with values being either a single subclass or a list of possible subclasses for that extension
 	# When you add a new EMFiletype subclass, it must be added to this dictionary to be functional
-
 	typesbyext = {}
 
 	# A list of all types that need to be checked when the file extension can't be interpreted
-
 	alltocheck = ()
 
 	setsmode = False
@@ -142,31 +132,26 @@ class EMFileType(object) :
 
 	def setFile(self, path) :
 		"""Represent a new file. Will update inspector if open. Assumes isValid already checked !"""
-
 		if path[:2] == "./" : path = path[2:]
 		self.path = path
 
 	def setN(self, n) :
 		"""Change the specific image methods should target"""
-
 		self.n = n
 
 	@staticmethod
 	def name() :
 		"""The unique name of this FileType. Stored in EMDirEntry.filetype for each file."""
-
 		return None
 
 	@staticmethod
 	def isValid(path, header) :
 		"""Returns (size, n, dim) if the referenced path is a file of this type, false if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
-
 		return False
 
 	@staticmethod
 	def infoClass() :
 		"""Returns a reference to the QWidget subclass for displaying information about this file"""
-
 		return EMInfoPane
 
 	#def setSetsDB(self, db_name) :
@@ -180,12 +165,10 @@ class EMFileType(object) :
 	def actions(self) :
 		"""Returns a list of (name, help, callback) tuples detailing the operations the user can call on the current file.
 		callbacks will also be passed a reference to the browser object."""
-
 		return []
 
 	def saveAs(self, brws) :
 		"""Save an image file/stack to a new file"""
-
 		outpath = QtWidgets.QInputDialog.getText(None, "Save Filename", "Filename to save to (type determined by extension)", 0, self.path)
 
 		if outpath[1] != True : return
@@ -232,7 +215,6 @@ class EMFileType(object) :
 
 	def plot2dApp(self, brws) :
 		"""Append self to current plot"""
-
 		brws.busy()
 
 		if self.n >= 0 : data = EMData(self.path)
@@ -254,7 +236,6 @@ class EMFileType(object) :
 
 	def plot2dNew(self, brws) :
 		"""Make a new plot"""
-
 		brws.busy()
 
 		if self.n >= 0 : data = EMData(self.path)
@@ -272,7 +253,6 @@ class EMFileType(object) :
 
 	def show3dApp(self, brws) :
 		"""Add to current 3-D window"""
-
 		brws.busy()
 		
 		if self.n >= 0 : data = emdataitem3d.EMDataItem3D(self.path, n = self.n)
@@ -299,7 +279,6 @@ class EMFileType(object) :
 
 	def show3DNew(self, brws) :
 		"""New 3-D window"""
-
 		brws.busy()
 
 		if self.n >= 0 : data = emdataitem3d.EMDataItem3D(self.path, n = self.n)
@@ -321,7 +300,6 @@ class EMFileType(object) :
 
 	def show3DAll(self, brws) :
 		"""All in new 3-D window (3-D stacks)"""
-
 		brws.busy()
 
 		target = emscene3d.EMScene3D()
@@ -343,7 +321,6 @@ class EMFileType(object) :
 
 	def show2dStack(self, brws) :
 		"""A set of 2-D images together in an existing window"""
-	
 		brws.busy()
 
 		# if self.dim[2] > 1 :
@@ -371,7 +348,6 @@ class EMFileType(object) :
 
 	def show2dStackNew(self, brws) :
 		"""A set of 2-D images together in a new window"""
-
 		brws.busy()
 
 		# if self.dim[2] > 1 :
@@ -394,7 +370,6 @@ class EMFileType(object) :
 
 	def show2dStack3z(self, brws) :
 		"""A set of 2-D images derived from a stack of 3-D Volumes"""
-	
 		brws.busy()
 
 		# if self.dim[2] > 1 :
@@ -423,7 +398,6 @@ class EMFileType(object) :
 
 	def show2dStack3sec(self, brws) :
 		"""A set of 2-D images derived from a stack of 3-D Volumes"""
-	
 		brws.busy()
 
 		# if self.dim[2] > 1 :
@@ -452,7 +426,6 @@ class EMFileType(object) :
 
 	def show2dSingle(self, brws, new=False) :
 		"""Show a single 2-D image"""
-
 		brws.busy()
 
 		if self.nimg > 1 :
@@ -493,7 +466,6 @@ class EMFileType(object) :
 
 	def show2dSingle30(self, brws) :
 		"""Show a single 3-D volume as a 2-D image"""
-
 		brws.busy()
 
 		data = EMData(self.path,0)
@@ -513,7 +485,6 @@ class EMFileType(object) :
 	
 	def show2dSingle31(self, brws) :
 		"""Show a single 3-D volume as a 2-D image"""
-
 		brws.busy()
 		#print(self.path)
 
@@ -582,13 +553,11 @@ class EMTextFileType(EMFileType) :
 	@staticmethod
 	def name() :
 		"""The unique name of this FileType. Stored in EMDirEntry.filetype for each file."""
-
 		return "Text"
 
 	@staticmethod
 	def isValid(path, header) :
 		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
-
 		if not isprint(header) : return False			# demand printable Ascii. FIXME: what about unicode ?
 
 		try : size = os.stat(path)[6]
@@ -605,13 +574,12 @@ class EMTextFileType(EMFileType) :
 	@staticmethod
 	def infoClass() :
 		"""Returns a reference to the QWidget subclass for displaying information about this file"""
-
 		return EMTextInfoPane
 
 	def actions(self) :
 		"""No actions other than the inspector for text files"""
-
 		return []
+
 
 class EMHTMLFileType(EMFileType) :
 	"""FileType for files containing HTML text"""
@@ -619,13 +587,11 @@ class EMHTMLFileType(EMFileType) :
 	@staticmethod
 	def name() :
 		"""The unique name of this FileType. Stored in EMDirEntry.filetype for each file."""
-
 		return "HTML"
 
 	@staticmethod
 	def isValid(path, header) :
 		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
-
 		if not isprint(header) : return False			# demand printable Ascii. FIXME: what about unicode ?
 		if isinstance(header, bytes):
 			header=header.decode("utf-8")
@@ -646,17 +612,14 @@ class EMHTMLFileType(EMFileType) :
 	@staticmethod
 	def infoClass() :
 		"""Returns a reference to the QWidget subclass for displaying information about this file"""
-
 		return EMHTMLInfoPane
 
 	def actions(self) :
 		"""No actions other than the inspector for HTML files"""
-
 		return [("Firefox", "Open in Firefox", self.showFirefox)]
 
 	def showFirefox(self, brws) :
 		"""Try to open file in firefox"""
-
 		if get_platform() == "Linux" :
 			os.system("firefox -new-tab file://%s"%os.path.abspath(self.path))
 		elif get_platform() == "Darwin" :
@@ -664,19 +627,18 @@ class EMHTMLFileType(EMFileType) :
 		else : 
 			print("Sorry, I don't know how to run Firefox on this platform")
 
+
 class EMPDFFileType(EMFileType) :
 	"""FileType for PDF files"""
 
 	@staticmethod
 	def name() :
 		"""The unique name of this FileType. Stored in EMDirEntry.filetype for each file."""
-
 		return "PDF"
 
 	@staticmethod
 	def isValid(path, header) :
 		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
-
 		if header[:4]!=b"%PDF": return False
 
 		try :
@@ -688,23 +650,19 @@ class EMPDFFileType(EMFileType) :
 	@staticmethod
 	def infoClass() :
 		"""Returns a reference to the QWidget subclass for displaying information about this file"""
-
 		return EMPDFInfoPane
 
 	def actions(self) :
 		"""Few actions"""
-
 		if get_platform() == "Linux" :
 			return [("gv", "Open using gv", self.showPlatform),("Firefox", "Open in Firefox", self.showFirefox)]
 		elif get_platform() == "Darwin" :
 			return [("Open", "Default Open", self.showPlatform)]
 		else : 
 			return []
-		
 
 	def showPlatform(self, brws) :
 		"""Try to open file in firefox"""
-
 		if get_platform() == "Linux" :
 			os.system("gv %s"%os.path.abspath(self.path))
 		elif get_platform() == "Darwin" :
@@ -714,7 +672,6 @@ class EMPDFFileType(EMFileType) :
 
 	def showFirefox(self, brws) :
 		"""Try to open file in firefox"""
-
 		if get_platform() == "Linux" :
 			os.system("firefox -new-tab file://%s"%os.path.abspath(self.path))
 		elif get_platform() == "Darwin" :
@@ -729,7 +686,6 @@ class EMPlotFileType(EMFileType) :
 	@staticmethod
 	def name() :
 		"""The unique name of this FileType. Stored in EMDirEntry.filetype for each file."""
-
 		return "Plot"
 
 	@staticmethod
@@ -743,7 +699,6 @@ class EMPlotFileType(EMFileType) :
 		numc = 0
 
 		for l in hdr :
-			
 			if len(l)==0: continue
 			if l[0] == "#" : continue		# comment lines ok
 
@@ -757,7 +712,6 @@ class EMPlotFileType(EMFileType) :
 		size = os.stat(path)[6]
 
 		# Make sure all of the lines have the same number of columns
-
 		fin = open(path, "r")
 		numr = 0
 
@@ -773,7 +727,6 @@ class EMPlotFileType(EMFileType) :
 	@staticmethod
 	def infoClass() :
 		"""Returns a reference to the QWidget subclass for displaying information about this file"""
-
 		return EMPlotInfoPane
 
 	def __init__(self, path) :
@@ -781,7 +734,6 @@ class EMPlotFileType(EMFileType) :
 		EMFileType.__init__(self, path)	# the current path this FileType is representing
 
 		# Make sure all of the lines have the same number of columns
-
 		fin = open(path, "r")
 		numr = 0
 		numc = 0
@@ -809,7 +761,6 @@ class EMPlotFileType(EMFileType) :
 	def actions(self) :
 		"""Returns a list of (name, help, callback) tuples detailing the operations the user can call on the current file.
 		callbacks will also be passed a reference to the browser object."""
-
 		if self.numc > 2 : return [("Plot 2D", "Add to current plot", self.plot2dApp), ("Plot 2D+", "Make new plot", self.plot2dNew),
 			("Histogram", "Add to current histogram", self.histApp),("Histogram +", "Make new histogram", self.histNew),
 			("Plot 3D", "Add to current 3-D plot", self.plot3dApp),("Plot 3D+", "Make new 3-D plot", self.plot3dNew)]
@@ -818,7 +769,6 @@ class EMPlotFileType(EMFileType) :
 
 	def plot2dApp(self, brws) :
 		"""Append self to current plot"""
-		
 		brws.busy()
 
 		#data1 = []
@@ -851,7 +801,6 @@ class EMPlotFileType(EMFileType) :
 
 	def plot2dNew(self, brws) :
 		"""Make a new plot"""
-
 		brws.busy()
 
 		#data1 = []
@@ -880,7 +829,6 @@ class EMPlotFileType(EMFileType) :
 	
 	def histNew(self, brws) :
 		"""Make a new plot"""
-
 		brws.busy()
 
 		data1 = []
@@ -908,7 +856,6 @@ class EMPlotFileType(EMFileType) :
 
 	def histApp(self, brws) :
 		"""Append self to current plot"""
-		
 		brws.busy()
 
 		data1 = []
@@ -940,7 +887,6 @@ class EMPlotFileType(EMFileType) :
 
 	def plot3dApp(self, brws) :
 		"""Append self to current plot"""
-		
 		brws.busy()
 
 		try :
@@ -960,7 +906,6 @@ class EMPlotFileType(EMFileType) :
 
 	def plot3dNew(self, brws) :
 		"""Make a new plot"""
-
 		brws.busy()
 
 		target = EMPlot3DWidget()
@@ -975,31 +920,28 @@ class EMPlotFileType(EMFileType) :
 		target.raise_()
 
 
-
 class EMFolderFileType(EMFileType) :
 	"""FileType for Folders"""
 
 	@staticmethod
 	def name() :
 		"""The unique name of this FileType. Stored in EMDirEntry.filetype for each file."""
-
 		return "Folder"
+
 	@staticmethod
 	def isValid(path, header) :
 		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
-
 		return False
 
 	@staticmethod
 	def infoClass() :
 		"""Returns a reference to the QWidget subclass for displaying information about this file"""
-
 		return EMFolderInfoPane
 
 	def actions(self) :
 		"""Returns a list of (name, callback) tuples detailing the operations the user can call on the current file"""
-
 		return []
+
 
 class EMJSONFileType(EMFileType) :
 	"""FileType for JSON files"""
@@ -1007,7 +949,6 @@ class EMJSONFileType(EMFileType) :
 	@staticmethod
 	def name() :
 		"""The unique name of this FileType. Stored in EMDirEntry.filetype for each file."""
-
 		return "JSON"
 
 	@staticmethod
@@ -1023,7 +964,6 @@ class EMJSONFileType(EMFileType) :
 	@staticmethod
 	def infoClass() :
 		"""Returns a reference to the QWidget subclass for displaying information about this file"""
-
 		return EMJSONInfoPane
 
 	def __init__(self, path) :
@@ -1041,7 +981,6 @@ class EMJSONFileType(EMFileType) :
 
 	def actions(self) :
 		"""Returns a list of (name, help, callback) tuples detailing the operations the user can call on the current file"""
-
 		# No actions for now...
 		if len(self.js.values())==0:
 			return []
@@ -1060,10 +999,8 @@ class EMJSONFileType(EMFileType) :
 	def plot2dNew(self, brws):
 		self.plot2dApp(brws, True)
 		
-		
 	def plot2dApp(self, brws, new=False) :
 		"""Append self to current plot"""
-		
 		brws.busy()
 		
 		modifiers = QtWidgets.QApplication.keyboardModifiers()
@@ -1072,7 +1009,6 @@ class EMJSONFileType(EMFileType) :
 		else:
 			inv=True
 
-		
 		rows = []
 		for k in self.keys:
 			dct = self.js[k]
@@ -1101,7 +1037,6 @@ class EMJSONFileType(EMFileType) :
 				target = EMPlot2DWidget()
 				brws.viewplot2d.append(target)
 		
-		
 		target.set_data(data, self.path.split('/')[-1])
 
 		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
@@ -1115,7 +1050,6 @@ class EMJSONFileType(EMFileType) :
 	
 	def histApp(self, brws, new=False) :
 		"""Make a new plot"""
-		
 		modifiers = QtWidgets.QApplication.keyboardModifiers()
 		if modifiers == QtCore.Qt.ShiftModifier:
 			inv=False
@@ -1144,7 +1078,6 @@ class EMJSONFileType(EMFileType) :
 		else:
 			target = EMHistogramWidget()
 			brws.viewhist.append(target)
-		
 			
 		target.set_data(data, self.path.split('/')[-1])
 
@@ -1161,19 +1094,16 @@ class EMBdbFileType(EMFileType) :
 	@staticmethod
 	def name() :
 		"""The unique name of this FileType. Stored in EMDirEntry.filetype for each file."""
-
 		return "BDB"
 
 	@staticmethod
 	def isValid(path, header) :
 		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
-
 		return False
 
 	@staticmethod
 	def infoClass() :
 		"""Returns a reference to the QWidget subclass for displaying information about this file"""
-
 		return EMBDBInfoPane
 
 	def __init__(self, path) :
@@ -1184,7 +1114,6 @@ class EMBdbFileType(EMFileType) :
 
 		# here we assume the bdb either contains numbered images OR key/value pairs. Not strictly valid,
 		# but typically true
-
 		self.nimg = len(self.bdb)
 
 		if self.nimg == 0 : self.keys = list(self.bdb.keys())
@@ -1197,7 +1126,6 @@ class EMBdbFileType(EMFileType) :
 
 	def actions(self) :
 		"""Returns a list of (name, help, callback) tuples detailing the operations the user can call on the current file"""
-
 		# single 3-D
 		if self.nimg == 1 and self.dim[2] > 1 :
 			return [("Show 3D", "Add to 3D window", self.show3dApp), ("Show 3D+", "New 3D Window", self.show3DNew), ("Show Stack", "Show as set of 2-D Z slices", self.show2dStack), 
@@ -1226,7 +1154,6 @@ class EMBdbFileType(EMFileType) :
 
 	def showProjXYZ(self,brws) :
 		"""Show XYZ projections of 3-D volume"""
-
 		brws.busy()
 
 		tmp=EMData(self.path, self.n)
@@ -1243,7 +1170,6 @@ class EMBdbFileType(EMFileType) :
 
 	def showChimera(self, brws) :
 		"""Open in Chimera"""
-
 		if get_platform() == "Linux" :
 			os.system("e2proc3d.py %s /tmp/vol.hdf"%self.path)		# Probably not a good hack to use, but it will do for now...
 			os.system("chimera /tmp/vol.hdf&")
@@ -1283,24 +1209,20 @@ class EMImageFileType(EMFileType) :
 	@staticmethod
 	def name() :
 		"""The unique name of this FileType. Stored in EMDirEntry.filetype for each file."""
-
 		return "Image"
 
 	@staticmethod
 	def isValid(path, header) :
 		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
-
 		return False
 
 	@staticmethod
 	def infoClass() :
 		"""Returns a reference to the QWidget subclass for displaying information about this file"""
-
 		return EMImageInfoPane
 
 	def actions(self) :
 		"""Returns a list of (name, callback) tuples detailing the operations the user can call on the current file"""
-
 		# single 3-D
 		if  self.dim[2] > 1 :
 			return [("Show 3D", "Add to 3D window", self.show3dApp), ("Show 3D+", "New 3D Window", self.show3DNew), ("Show Stack", "Show as set of 2-D Z slices", self.show2dStack), 
@@ -1320,7 +1242,6 @@ class EMImageFileType(EMFileType) :
 
 	def showProjXYZ(self,brws) :
 		"""Show XYZ projections of 3-D volume"""
-
 		brws.busy()
 
 		if self.n>=0 : tmp=EMData(self.path, self.n)
@@ -1338,7 +1259,6 @@ class EMImageFileType(EMFileType) :
 
 	def showChimera(self, brws) :
 		"""Open in Chimera"""
-
 		if get_platform() == "Linux" :
 			# these types are supported natively in Chimera
 			if EMUtil.get_image_type(self.path) in (IMAGE_HDF, IMAGE_MRC, IMAGE_SPIDER, IMAGE_SINGLE_SPIDER) :
@@ -1358,19 +1278,16 @@ class EMStackFileType(EMFileType) :
 	@staticmethod
 	def name() :
 		"""The unique name of this FileType. Stored in EMDirEntry.filetype for each file."""""
-
 		return "Image Stack"
 
 	@staticmethod
 	def isValid(path, header) :
 		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
-
 		return False
 
 	@staticmethod
 	def infoClass() :
 		"""Returns a reference to the QWidget subclass for displaying information about this file"""
-
 		return EMStackInfoPane
 
 	def __init__(self, path) :
@@ -1404,7 +1321,6 @@ class EMStackFileType(EMFileType) :
 				self.xfparms=False
 				pass
 		
-
 	def actions(self) :
 		"""Returns a list of (name, callback) tuples detailing the operations the user can call on the current file"""
 		# 3-D stack
@@ -1442,10 +1358,8 @@ class EMStackFileType(EMFileType) :
 	def plot2dNew(self, brws):
 		self.plot2dApp(brws, True)
 		
-		
 	def plot2dApp(self, brws, new=False) :
 		"""Append self to current plot"""
-		
 		brws.busy()
 		rows = []
 		print("Reading from {}...".format(self.path))
@@ -1480,7 +1394,6 @@ class EMStackFileType(EMFileType) :
 				target = EMPlot2DWidget()
 				brws.viewplot2d.append(target)
 		
-		
 		target.set_data(data, self.path.split('/')[-1])
 
 		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
@@ -1489,8 +1402,8 @@ class EMStackFileType(EMFileType) :
 		target.show()
 		target.raise_()
 
+
 class EMPDBFileType(EMFileType):
-	
 	"""FileType for files with original pdb format"""
 	
 	def __init__(self, path) :
@@ -1621,7 +1534,6 @@ class EMPDBFileType(EMFileType):
 
 
 # These are set all together at the end rather than after each class for efficiency
-
 EMFileType.typesbyft = {
 	"Folder"      : EMFolderFileType,
 	"JSON"        : EMJSONFileType,
@@ -1638,7 +1550,6 @@ EMFileType.typesbyft = {
 # Note that image types are not included here, and are handled via a separate mechanism
 # note that order is important in the tuples. The most specific filetype should go first, and
 # the most general last (they will be checked in order)
-
 EMFileType.extbyft = {
 	".json" : (EMJSONFileType, EMTextFileType),
 	".pdb"  : (EMPDBFileType,  EMTextFileType),
@@ -1651,7 +1562,6 @@ EMFileType.extbyft = {
 
 # Default Choices when extension doesn't work
 # We don't need to test for things like Images because they are fully tested outside this mechanism
-
 EMFileType.alltocheck = (EMPlotFileType, EMPDBFileType, EMTextFileType)
 
 
@@ -1666,7 +1576,6 @@ class EMDirEntry(object) :
 		"""The path for this item is root/name.
 		Parent (EMDirEntry) must be specified if it exists.
 		hidedot will cause hidden files (starting with .) to be excluded"""
-
 		self.__parent = parent	# single parent
 		self.__children = None	# ordered list of children, None indicates no check has been made, empty list means no children, otherwise list of names or list of EMDirEntrys
 		self.dirregex = dirregex	# only list files using regex
@@ -1698,13 +1607,11 @@ class EMDirEntry(object) :
 		self.date = local_datetime(stat[8])			# modification date (string: yyyy/mm/dd hh:mm:ss)
 
 		# These can be expensive so we only get them on request, or if they are fast
-
 		self.dim = None			# dimensions (string)
 		self.filetype = None		# file type (string, "Folder" for directory)
 		self.nimg = None			# number of images in file (int)
 
 		# Directories don't really have extra info
-
 		if os.path.isdir(self.filepath) :
 			self.filetype = "Folder"
 			self.dim = ""
@@ -1718,14 +1625,12 @@ class EMDirEntry(object) :
 
 	def path(self) :
 		"""The full path of the current item"""
-
 		if self.isbdb : return "bdb:%s#%s"%(self.root, self.name)
 
 		return os.path.join(self.root, self.name).replace("\\", "/")
 
 	def truepath(self) :
 		"""The actual path to the file for the current item"""
-
 		if self.isbdb : return "%s/EMAN2DB/%s.bdb"%(self.root, self.name)
 
 		return os.path.join(self.root, self.name).replace("\\", "/")
@@ -1740,19 +1645,16 @@ class EMDirEntry(object) :
 
 	def sort(self, column, order) :
 		"""Recursive sorting"""
-
 		if self.__children == None or len(self.__children) == 0 or isinstance(self.__children[0], str) : return
 
 		self.__children.sort(key = self.__class__.col[column], reverse = order)
 
 		# This keeps the row numbers consistent
-
 		for i, child in enumerate(self.__children) :
 			child.index = i
 
 	def findSelected(self, ret) :
 		"""Used to retain selection during sorting. Returns a list of (parent, row) pairs."""
-
 		if self.__children == None or len(self.__children) == 0 or isinstance(self.__children[0], str) : return
 
 #		if len(ret) == 0 : print "findsel"
@@ -1771,12 +1673,10 @@ class EMDirEntry(object) :
 
 	def parent(self) :
 		"""Return the parent"""
-
 		return self.__parent
 
 	def child(self, n) :
 		"""Returns nth child or None"""
-
 		self.fillChildEntries()
 
 		try : return self.__children[n]
@@ -1787,7 +1687,6 @@ class EMDirEntry(object) :
 
 	def nChildren(self) :
 		"""Count of children"""
-
 		self.fillChildNames()
 
 #		print "EMDirEntry.nChildren(%s) = %d"%(self.filepath, len(self.__children))
@@ -1797,21 +1696,18 @@ class EMDirEntry(object) :
 	def fillChildNames(self) :
 		"""Makes sure that __children contains at LEAST a list of names. This function needs to reimplemented to make derived browsers, 
 		NOTE!!!! You must have nimg implemented in your reimplementation (I know this is a bad design....)"""
-
 		if self.__children == None :
 			if not os.path.isdir(self.filepath) :
 				self.__children = []
 				return
 
 			# read the child filenames
-
 			if self.hidedot :
 				filelist = [i for i in os.listdir(self.filepath) if i[0] != '.']
 			else :
 				filelist = os.listdir(self.filepath)
 
 			# Weed out undesirable files
-
 			self.__children = []
 
 			if self.dirregex != None :
@@ -1862,7 +1758,6 @@ class EMDirEntry(object) :
 
 	def fillChildEntries(self) :
 		"""Makes sure that __children have been filled with EMDirEntries when appropriate"""
-
 		if self.__children == None : self.fillChildNames()
 		if len(self.__children) == 0 : return		# nothing to do. No children
 		if not isinstance(self.__children[0], str) : return 		# this implies entries have already been filled
@@ -1872,7 +1767,6 @@ class EMDirEntry(object) :
 
 	def statFile(self, filename) :
 		"""Stat either a file or BDB"""
-
 		if filename[:4].lower() == "bdb:" :
 			path, dictname, keys = db_parse_path(filename)
 			path = path + "/EMAN2DB/" + dictname + ".bdb"
@@ -1892,7 +1786,6 @@ class EMDirEntry(object) :
 		Returns 3 if both have changed
 
 		This method is largely called in subclasses."""
-
 		tp = self.truepath()
 
 		if self.updtime >= os.stat(tp).st_mtime : change = 0
@@ -1927,7 +1820,6 @@ class EMDirEntry(object) :
 			pass
 
 		# Check the cache for metadata
-
 		if self.path()[:4].lower()!="bdb:" and not (os.path.isfile(self.path()) or os.path.islink(self.path())) : 
 			self.filetype="SPECIAL"
 			return 0
@@ -1935,7 +1827,6 @@ class EMDirEntry(object) :
 		name = 'browser'
 
 		# BDB details are already cached and can often be retrieved quickly
-
 		if self.isbdb :
 			self.filetype = "BDB"
 
@@ -1963,12 +1854,10 @@ class EMDirEntry(object) :
 
 		# we do this this way because there are so many possible image file extensions, and sometimes
 		# people use a non-standard one (esp for MRC files)
-
 		try : self.nimg = EMUtil.get_image_count(self.path())
 		except : self.nimg = 0
 
 		# we have an image file
-
 		if self.nimg > 0 :
 			try : 
 				tmp = EMData(self.path(), 0, True)		# try to read an image header for the file
@@ -1991,7 +1880,6 @@ class EMDirEntry(object) :
 			else : self.filetype = "Image Stack"
 
 		# Ok, we need to try to figure out what kind of file this is
-
 		else :
 			head = open(self.path(), "rb").read(4096)		# Most FileTypes should be able to identify themselves using the first 4K block of a file
 			ext=os.path.splitext(self.path())[1]
@@ -2025,7 +1913,6 @@ class EMDirEntry(object) :
 
 def nonone(val) :
 	"""Returns '-' for None, otherwise the string representation of the passed value"""
-
 	try :
 		if val != None : return str(val)
 		return "-"
@@ -2033,7 +1920,6 @@ def nonone(val) :
 
 def humansize(val) :
 	"""Representation of an integer in readable form"""
-
 	try : val = int(val)
 	except : return val
 
@@ -2061,21 +1947,14 @@ class EMFileItemModel(QtCore.QAbstractItemModel) :
 		"""The data is loaded lazily for children already. We don't generally
 		need to worry about there being SO many file that this is necessary, so it always 
 		returns False."""
-
 		return False
 
 	def columnCount(self, parent) :
 		"""Always 7 columns"""
-
-		#print "EMFileItemModel.columnCount() = 6"
-
 		return 7
 
 	def rowCount(self, parent) :
 		"""Returns the number of children for a given parent"""
-
-#		if parent.column() != 0 : return 0
-
 		if parent != None and parent.isValid() :
 #			print "rowCount(%s) = %d"%(str(parent), parent.internalPointer().nChildren())
 
@@ -2087,7 +1966,6 @@ class EMFileItemModel(QtCore.QAbstractItemModel) :
 
 	def data(self, index, role) :
 		"""Returns the data for a specific location as a string"""
-
 		if not index.isValid() : return None
 		if role != Qt.DisplayRole : return None
 
@@ -2116,7 +1994,6 @@ class EMFileItemModel(QtCore.QAbstractItemModel) :
 
 	def headerData(self, sec, orient, role) :
 		# In case we use the QTableViews
-
 		if orient == Qt.Vertical :
 			if role == Qt.DisplayRole :
 				return str(sec)
@@ -2124,7 +2001,6 @@ class EMFileItemModel(QtCore.QAbstractItemModel) :
 				return None
 
 		# This works for all Q*views
-
 		if orient == Qt.Horizontal :
 			if role == Qt.DisplayRole :
 				return self.__class__.headers[sec]
@@ -2135,7 +2011,6 @@ class EMFileItemModel(QtCore.QAbstractItemModel) :
 
 	def hasChildren(self, parent) :
 		"""Returns whether the index 'parent' has any child items"""
-
 		#print "EMFileItemModel.hasChildren(%d, %d, %s)"%(parent.row(), parent.column(), str(parent.internalPointer()))
 #		if parent.column() != 0 : return False
 
@@ -2148,7 +2023,6 @@ class EMFileItemModel(QtCore.QAbstractItemModel) :
 
 	def hasIndex(self, row, col, parent) :
 		"""Test if the specified index would exist"""
-
 #		print "EMFileItemModel.hasIndex(%d, %d, %s)"%(row, column, parent.internalPointer())
 
 		try :
@@ -2162,7 +2036,6 @@ class EMFileItemModel(QtCore.QAbstractItemModel) :
 
 	def index(self, row, column, parent) :
 		"""produces a new QModelIndex for the specified item"""
-
 #		if column == 0 : print "Index :", row, column, parent.internalPointer(),
 
 		try :
@@ -2181,7 +2054,6 @@ class EMFileItemModel(QtCore.QAbstractItemModel) :
 
 	def parent(self, index) :
 		"""Returns the parent of the specified index"""
-
 #		print "parent ", index.row()
 
 		if index.isValid() :
@@ -2196,7 +2068,6 @@ class EMFileItemModel(QtCore.QAbstractItemModel) :
 
 	def sort(self, column, order) :
 		"""Trigger recursive sorting"""
-
 		if column < 0 : return
 
 		self.root.sort(column, order)
@@ -2205,7 +2076,6 @@ class EMFileItemModel(QtCore.QAbstractItemModel) :
 
 	def findSelected(self, toplevel = True) :
 		"""Makes a list of QModelIndex items for all items marked as selected"""
-
 #		print "findsel"
 
 		sel = []
@@ -2217,7 +2087,6 @@ class EMFileItemModel(QtCore.QAbstractItemModel) :
 
 	def details(self, index) :
 		"""This will trigger loading the (expensive) details about the specified index, and update the display"""
-
 		if not index.isValid() : return
 
 		if index.internalPointer().fillDetails() :
@@ -2231,6 +2100,7 @@ class myQItemSelection(QtCore.QItemSelectionModel) :
 		print(tl.indexes()[0].row(), tl.indexes()[0].column(), int(br))
 		QtCore.QItemSelectionModel.select(self, tl, QtCore.QItemSelectionModel.SelectionFlags(QtCore.QItemSelectionModel.ClearAndSelect+QtCore.QItemSelectionModel.Rows))
 
+
 class EMInfoPane(QtWidgets.QWidget) :
 	"""Subclasses of this class will be used to display information about specific files. Each EMFileType class will return the
 	pointer to the appropriate infoPane subclass for displaying information about the file it represents. The subclass instances
@@ -2238,7 +2108,6 @@ class EMInfoPane(QtWidgets.QWidget) :
 
 	def __init__(self, parent = None) :
 		"""Set our GUI up"""
-
 		QtWidgets.QWidget.__init__(self, parent)
 
 		# self.setTitle("e2display.py Information Pane")
@@ -2246,14 +2115,12 @@ class EMInfoPane(QtWidgets.QWidget) :
 		self.setWindowTitle("e2display.py Information Pane") # Jesus
 
 		# Root class represents no target
-
 		self.hbl = QtWidgets.QHBoxLayout(self)
 		self.lbl = QtWidgets.QLabel("No Information Available")
 		self.hbl.addWidget(self.lbl)
 
 	def display(self, target) :
 		"""display information for the target EMDirEntry with EMFileType ftype"""
-
 		# self.setTitle("e2display.py Information Pane")
 
 		self.target = target
@@ -2267,6 +2134,7 @@ class EMInfoPane(QtWidgets.QWidget) :
 	def notbusy(self) :
 		pass
 
+
 class EMTextInfoPane(EMInfoPane) :
 	def __init__(self, parent = None) :
 		QtWidgets.QWidget.__init__(self, parent)
@@ -2274,19 +2142,16 @@ class EMTextInfoPane(EMInfoPane) :
 		self.vbl = QtWidgets.QVBoxLayout(self)
 
 		# text editing widget
-
 		self.text = QtWidgets.QTextEdit()
 		self.text.setAcceptRichText(False)
 		self.text.setReadOnly(True)
 		self.vbl.addWidget(self.text)
 
 		# Find box
-
 		self.wfind = StringBox(label = "Find:")
 		self.vbl.addWidget(self.wfind)
 
 		# Buttons
-
 		self.hbl = QtWidgets.QHBoxLayout()
 
 		self.wbutedit = QtWidgets.QPushButton("Edit")
@@ -2309,7 +2174,6 @@ class EMTextInfoPane(EMInfoPane) :
 
 	def display(self, data) :
 		"""display information for the target EMDirEntry"""
-
 		self.target = data
 
 		self.text.setPlainText(open(self.target.path(), "r").read())
@@ -2321,7 +2185,6 @@ class EMTextInfoPane(EMInfoPane) :
 
 	def find(self, value) :
 		"""Find a string"""
-
 		if not self.text.find(value) :
 			# this implements wrapping
 			self.text.moveCursor(1, 0)
@@ -2340,6 +2203,7 @@ class EMTextInfoPane(EMInfoPane) :
 		try : open(self.target.path(), "w").write(str(self.text.toPlainText()))
 		except : QtWidgets.QMessageBox.warning(self, "Error !", "File write failed")
 
+
 class EMHTMLInfoPane(EMInfoPane) :
 	def __init__(self, parent = None) :
 		QtWidgets.QWidget.__init__(self, parent)
@@ -2347,19 +2211,16 @@ class EMHTMLInfoPane(EMInfoPane) :
 		self.vbl = QtWidgets.QVBoxLayout(self)
 
 		# text editing widget
-
 		self.text = QtWidgets.QTextEdit()
 		self.text.setAcceptRichText(True)
 		self.text.setReadOnly(True)
 		self.vbl.addWidget(self.text)
 
 		# Find box
-
 		self.wfind = StringBox(label = "Find:")
 		self.vbl.addWidget(self.wfind)
 
 		# Buttons
-
 		self.hbl = QtWidgets.QHBoxLayout()
 
 		self.wbutedit = QtWidgets.QPushButton("Edit")
@@ -2382,7 +2243,6 @@ class EMHTMLInfoPane(EMInfoPane) :
 
 	def display(self, data) :
 		"""display information for the target EMDirEntry"""
-
 		self.target = data
 		self.text.setHtml(open(self.target.path(), "r").read())
 		self.text.setReadOnly(True)
@@ -2392,7 +2252,6 @@ class EMHTMLInfoPane(EMInfoPane) :
 
 	def find(self, value) :
 		"""Find a string"""
-
 		if not self.text.find(value) :
 			# this implements wrapping
 			self.text.moveCursor(1, 0)
@@ -2410,6 +2269,7 @@ class EMHTMLInfoPane(EMInfoPane) :
 	def buttonOk(self, tog) :
 		try : open(self.target.path(), "w").write(str(self.text.toHtml()))
 		except : QtWidgets.QMessageBox.warning(self, "Error !", "File write failed")
+
 
 class EMPDBInfoPane(EMInfoPane) :
 	def __init__(self, parent = None) :
@@ -2468,6 +2328,7 @@ class EMPDBInfoPane(EMInfoPane) :
 		try : open(self.target.path(), "w").write(str(self.text.toPlainText()))
 		except : QtWidgets.QMessageBox.warning(self, "Error !", "File write failed")
 
+
 class EMPlotInfoPane(EMInfoPane) :
 	def __init__(self, parent = None) :
 		QtWidgets.QWidget.__init__(self, parent)
@@ -2475,18 +2336,15 @@ class EMPlotInfoPane(EMInfoPane) :
 		self.gbl = QtWidgets.QGridLayout(self)
 
 		# List as alternate mechanism for selecting image number(s)
-
 		self.plotdata = QtWidgets.QTableWidget()
 		self.gbl.addWidget(self.plotdata, 0, 0)
 
 	def display(self, target) :
 		"""display information for the target EMDirEntry"""
-
 		self.target = target
 		self.plotdata.clear()
 
 		# read the data into a list of lists
-
 		numc = 0
 		data = []
 
@@ -2517,6 +2375,7 @@ class EMPlotInfoPane(EMInfoPane) :
 		if len(data) == 2500 :
 			self.plotdata.setVerticalHeaderItem(2500, QtWidgets.QTableWidgetItem("..."))
 
+
 class EMFolderInfoPane(EMInfoPane) :
 	def __init__(self, parent = None) :
 		QtWidgets.QWidget.__init__(self, parent)
@@ -2525,8 +2384,8 @@ class EMFolderInfoPane(EMInfoPane) :
 
 	def display(self, target) :
 		"""display information for the target EMDirEntry"""
-
 		self.target = target
+
 
 class EMBDBInfoPane(EMInfoPane) :
 	maxim = 500
@@ -2537,18 +2396,15 @@ class EMBDBInfoPane(EMInfoPane) :
 		self.gbl = QtWidgets.QGridLayout(self)
 
 		# Spinbox for selecting image number
-
 		self.wimnum = QtWidgets.QSpinBox()
 		self.wimnum.setRange(0, 0)
 		self.gbl.addWidget(self.wimnum, 0, 0)
 
 		# List as alternate mechanism for selecting image number(s)
-
 		self.wimlist = QtWidgets.QListWidget()
 		self.gbl.addWidget(self.wimlist, 1, 0)
 
 		# Actual header contents
-
 		self.wheadtree = QtWidgets.QTreeWidget()
 		self.wheadtree.setColumnCount(2)
 		self.wheadtree.setHeaderLabels(["Item", "Value"])
@@ -2558,13 +2414,11 @@ class EMBDBInfoPane(EMInfoPane) :
 		self.gbl.setColumnStretch(1, 4)
 
 		# Lower region has buttons for actions
-
 		self.hbl2 = QtWidgets.QGridLayout()
 
 		self.wbutmisc = []
 
 		# 10 buttons for context-dependent actions
-
 		self.hbl2.setRowStretch(0, 1)
 		self.hbl2.setRowStretch(1, 1)
 
@@ -2578,7 +2432,6 @@ class EMBDBInfoPane(EMInfoPane) :
 				self.wbutmisc[-1].clicked[bool].connect(lambda x, v = i*2+j :self.buttonMisc(v))
 
 		# These just clean up the layout a bit
-
 		self.wbutxx = QtWidgets.QLabel("")
 		self.wbutxx.setMaximumHeight(12)
 		self.hbl2.addWidget(self.wbutxx, 0, 6)
@@ -2600,7 +2453,6 @@ class EMBDBInfoPane(EMInfoPane) :
 
 	def hideEvent(self, event) :
 		"""If this pane is no longer visible close any child views"""
-
 		for v in self.view2d : v.close()
 		for v in self.view3d : v.close()
 		for v in self.view2ds : v.close()
@@ -2608,7 +2460,6 @@ class EMBDBInfoPane(EMInfoPane) :
 
 	def buttonMisc(self, but) :
 		"""Context sensitive button press"""
-
 		val = self.wimlist.currentItem().text()
 		try :
 			val = int(val)
@@ -2621,12 +2472,10 @@ class EMBDBInfoPane(EMInfoPane) :
 
 	def display(self, target) :
 		"""display information for the target EMDirEntry"""
-
 		self.target = target
 		self.bdb = db_open_dict(self.target.path())
 
 		# Set up image selectors for stacks
-
 		if target.nimg == 0 :
 			self.wimnum.hide()
 			k = list(self.bdb.keys())
@@ -2647,7 +2496,6 @@ class EMBDBInfoPane(EMInfoPane) :
 		self.wheadtree.clear()
 
 		# This sets up action buttons which can be used on individual images in a stack
-
 		try :
 			self.curft = EMImageFileType(target.path())
 			self.curactions = self.curft.actions()
@@ -2663,18 +2511,15 @@ class EMBDBInfoPane(EMInfoPane) :
 					b.setEnabled(False)
 		except :
 			# Not a readable image or volume
-
 			pass
 
 	def imNumChange(self, num) :
 		"""New image number"""
-
 		if num < 500 : self.wimlist.setCurrentRow(num)
 		else : self.showItem(num)
 
 	def imSelChange(self) :
 		"""New image selection"""
-
 		val = self.wimlist.currentItem().text()
 
 		try :
@@ -2687,7 +2532,6 @@ class EMBDBInfoPane(EMInfoPane) :
 
 	def showItem(self, key) :
 		"""Shows header information for the selected item"""
-
 		self.wheadtree.clear()
 		trg = self.bdb.get_header(key)
 
@@ -2702,11 +2546,9 @@ class EMBDBInfoPane(EMInfoPane) :
 
 	def addTreeItem(self, trg, parent = None) :
 		"""(recursively) add an item to the tree"""
-
 		itms = []
 
 		# Dictionaries may require recursion
-
 		if isinstance(trg, dict) :
 			for k in sorted(trg.keys()) :
 				itms.append(QtWidgets.QTreeWidgetItem(list((str(k), str(trg[k])))))
@@ -2728,6 +2570,7 @@ class EMBDBInfoPane(EMInfoPane) :
 			self.wheadtree.resizeColumnToContents(0)
 		else : parent.addChildren(itms)
 
+
 class EMJSONInfoPane(EMInfoPane) :
 	def __init__(self, parent = None) :
 		QtWidgets.QWidget.__init__(self, parent)
@@ -2735,12 +2578,10 @@ class EMJSONInfoPane(EMInfoPane) :
 		self.gbl = QtWidgets.QGridLayout(self)
 
 		# List of keys
-
 		self.wkeylist = QtWidgets.QListWidget()
 		self.gbl.addWidget(self.wkeylist, 1, 0)
 
 		# contents of a single key
-
 		self.wheadtree = QtWidgets.QTreeWidget()
 		self.wheadtree.setColumnCount(2)
 		self.wheadtree.setHeaderLabels(["Key/#", "Value"])
@@ -2750,13 +2591,11 @@ class EMJSONInfoPane(EMInfoPane) :
 		self.gbl.setColumnStretch(1, 4)
 
 		# Lower region has buttons for actions
-
 		self.hbl2 = QtWidgets.QGridLayout()
 
 		self.wbutmisc = []
 
 		# 10 buttons for context-dependent actions
-
 		self.hbl2.setRowStretch(0, 1)
 		self.hbl2.setRowStretch(1, 1)
 
@@ -2770,7 +2609,6 @@ class EMJSONInfoPane(EMInfoPane) :
 				self.wbutmisc[-1].clicked[bool].connect(lambda x, v = i*2+j :self.buttonMisc(v))
 
 		# These just clean up the layout a bit
-
 		self.wbutxx = QtWidgets.QLabel("")
 		self.wbutxx.setMaximumHeight(12)
 		self.hbl2.addWidget(self.wbutxx, 0, 6)
@@ -2792,7 +2630,6 @@ class EMJSONInfoPane(EMInfoPane) :
 
 	def hideEvent(self, event) :
 		"""If this pane is no longer visible close any child views"""
-
 		for v in self.view2d : v.close()
 		for v in self.view3d : v.close()
 		for v in self.view2ds : v.close()
@@ -2800,7 +2637,6 @@ class EMJSONInfoPane(EMInfoPane) :
 
 	def buttonMisc(self, but) :
 		"""Context sensitive button press"""
-
 		val = self.wkeylist.currentItem().text()
 
 		# self.curft.setN(val)
@@ -2808,12 +2644,10 @@ class EMJSONInfoPane(EMInfoPane) :
 
 	def display(self, target) :
 		"""display information for the target EMDirEntry"""
-
 		self.target = target
 		self.js = js_open_dict(self.target.path())
 
 		# Set up image selectors for stacks
-
 		k = list(self.js.keys())
 		k.sort()
 		self.wkeylist.addItems(k)
@@ -2826,14 +2660,12 @@ class EMJSONInfoPane(EMInfoPane) :
 
 	def imSelChange(self) :
 		"""New image selection"""
-
 		val = str(self.wkeylist.currentItem().text())
 
 		self.showItem(val)
 
 	def showItem(self, key) :
 		"""Shows header information for the selected item"""
-
 		self.wheadtree.clear()
 		trg = self.js[key]
 
@@ -2849,27 +2681,22 @@ class EMJSONInfoPane(EMInfoPane) :
 
 	def treeExp(self, item) :
 		"""Make sure the tree columns get resized when the user expands/contracts the content"""
-
 		self.wheadtree.resizeColumnToContents(1)
 		self.wheadtree.resizeColumnToContents(0)
 
 	def treeSel(self) :
 		"""When the selection changes in the tree"""
-
 		#FIXME - Not implemented yet
 
 	def treeAct(self, item, col) :
 		"""When a tree item is 'activated' """
-
 		#FIXME - Not implemented yet
 
 	def addTreeItem(self, trg, parent = None) :
 		"""(recursively) add an item to the tree"""
-
 		itms = []
 
 		# Dictionaries may require recursion
-
 		if isinstance(trg, dict) :
 			for k in sorted(trg.keys()) :
 				if isinstance(trg[k], (list, tuple, set, dict, EMAN2Ctf)) :
@@ -2917,7 +2744,6 @@ class EMImageInfoPane(EMInfoPane) :
 		self.gbl = QtWidgets.QGridLayout(self)
 
 		# Actual header contents
-
 		self.wheadtree = QtWidgets.QTreeWidget()
 		self.wheadtree.setColumnCount(2)
 		self.wheadtree.setHeaderLabels(["Item", "Value"])
@@ -2925,7 +2751,6 @@ class EMImageInfoPane(EMInfoPane) :
 
 	def display(self, target) :
 		"""display information for the target EMDirEntry"""
-
 		self.target = target
 
 		self.wheadtree.clear()
@@ -2946,11 +2771,9 @@ class EMImageInfoPane(EMInfoPane) :
 
 	def addTreeItem(self, trg, parent = None) :
 		"""(recursively) add an item to the tree"""
-
 		itms = []
 
 		# Dictionaries may require recursion
-
 		if isinstance(trg, dict) :
 			for k in sorted(trg.keys()) :
 				itms.append(QtWidgets.QTreeWidgetItem(list((str(k), str(trg[k])))))
@@ -2972,6 +2795,7 @@ class EMImageInfoPane(EMInfoPane) :
 			self.wheadtree.resizeColumnToContents(0)
 		else : parent.addChildren(itms)
 
+
 class EMStackInfoPane(EMInfoPane) :
 	module_closed = QtCore.pyqtSignal()
 	maxim = 500
@@ -2991,7 +2815,6 @@ class EMStackInfoPane(EMInfoPane) :
 		self.gbl.addWidget(self.gbl.label2, 0, 1) # Jesus
 
 		'''Spinbox for selecting image number'''
-
 		self.wimnum = QtWidgets.QSpinBox()
 
 		# self.wimnum.setRange(0, 0) # JOHN
@@ -3001,7 +2824,6 @@ class EMStackInfoPane(EMInfoPane) :
 		self.gbl.addWidget(self.wimnum, 1, 0) # Jesus
 
 		'''List as alternate mechanism for selecting image number(s)'''
-
 		self.wimlist = QtWidgets.QListWidget()
 
 		# self.gbl.addWidget(self.wimlist, 1, 0) # JOHN
@@ -3020,13 +2842,11 @@ class EMStackInfoPane(EMInfoPane) :
 		self.gbl.setColumnStretch(1, 4)
 
 		'''Lower region has buttons for actions'''
-
 		self.hbl2 = QtWidgets.QGridLayout()
 
 		self.wbutmisc = []
 
 		'''10 buttons for context-dependent actions'''
-
 		# self.hbl2.setRowStretch(0, 1) # JOHN
 		# self.hbl2.setRowStretch(1, 1) # JOHN
 
@@ -3043,7 +2863,6 @@ class EMStackInfoPane(EMInfoPane) :
 				self.wbutmisc[-1].clicked[bool].connect(lambda x, v = i*2+j :self.buttonMisc(v))
 
 		# These just clean up the layout a bit
-
 		self.wbutxx = QtWidgets.QLabel("")
 		self.wbutxx.setMaximumHeight(12)
 		# self.hbl2.addWidget(self.wbutxx, 0, 6) # JOHN
@@ -3085,23 +2904,19 @@ class EMStackInfoPane(EMInfoPane) :
 
 	def hideEvent(self, event) :
 		"""If this pane is no longer visible close any child views"""
-
 		for v in self.view2d : v.close()
 		event.accept()
 
 	def buttonMisc(self, but) :
 		"""Context sensitive button press"""
-
 		self.curft.setN(int(self.wimnum.value()))
 		self.curactions[but][2](self)				# This calls the action method
 
 	def display(self, target) :
 		"""display information for the target EMDirEntry"""
-
 		self.target = target
 
 		# Set up image selectors for stacks
-
 		self.wimnum.setRange(0, target.nimg-1)
 		self.wimlist.clear()
 		self.wimlist.addItems([str(i) for i in range(0, min(target.nimg, self.maxim))])
@@ -3114,7 +2929,6 @@ class EMStackInfoPane(EMInfoPane) :
 		self.wheadtree.clear()
 
 		# This sets up action buttons which can be used on individual images in a stack
-
 		self.curft = EMImageFileType(target.path())
 		self.curactions = self.curft.actions()
 
@@ -3130,13 +2944,11 @@ class EMStackInfoPane(EMInfoPane) :
 
 	def imNumChange(self, num) :
 		"""New image number"""
-
 		if num < 500 : self.wimlist.setCurrentRow(num)
 		else : self.showItem(num)
 
 	def imSelChange(self) :
 		"""New image selection"""
-
 		try :
 			val = self.wimlist.currentItem().text()
 			val = int(val)
@@ -3152,7 +2964,6 @@ class EMStackInfoPane(EMInfoPane) :
 
 	def showItem(self, key) :
 		"""Shows header information for the selected item"""
-
 		self.wheadtree.clear()
 
 		try : trg = EMData(self.target.path(), key, True).get_attr_dict()		# read the header only, discard the emdata object
@@ -3172,11 +2983,9 @@ class EMStackInfoPane(EMInfoPane) :
 
 	def addTreeItem(self, trg, parent = None) :
 		"""(recursively) add an item to the tree"""
-
 		itms = []
 
 		# Dictionaries may require recursion
-
 		if isinstance(trg, dict) :
 			for k in sorted(trg.keys()) :
 				itms.append(QtWidgets.QTreeWidgetItem(list((str(k), str(trg[k])))))
@@ -3198,6 +3007,7 @@ class EMStackInfoPane(EMInfoPane) :
 			self.wheadtree.resizeColumnToContents(0)
 		else : parent.addChildren(itms)
 
+
 class EMInfoWin(QtWidgets.QWidget) :
 	"""The info window"""
 	winclosed = QtCore.pyqtSignal()
@@ -3209,12 +3019,10 @@ class EMInfoWin(QtWidgets.QWidget) :
 		self.stack = QtWidgets.QStackedLayout(self)
 
 		# We add one instance of 'infoPane' parent class to represent nothing
-
 		self.stack.addWidget(EMInfoPane())
 
 	def set_target(self, target, ftype) :
 		"""Display the info pane for target EMDirEntry with EMFileType instance ftype"""
-
 		self.target = target
 		self.ftype = ftype
 
@@ -3235,7 +3043,6 @@ class EMInfoWin(QtWidgets.QWidget) :
 				break
 		else :
 			# If we got here, then we need to make a new instance of the appropriate pane
-
 			if cls == None : print("No class ! (%s)"%str(ftype))
 			#self.winclosed = QtCore.pyqtSignal()
 			pane = cls()
@@ -3246,6 +3053,7 @@ class EMInfoWin(QtWidgets.QWidget) :
 	def closeEvent(self, event) :
 		QtWidgets.QWidget.closeEvent(self, event)
 		self.winclosed.emit()
+
 
 class SortSelTree(QtWidgets.QTreeView) :
 	"""This is a subclass of QtWidgets.QTreeView. It is almost identical but implements selection processing with sorting.
@@ -3277,7 +3085,6 @@ class SortSelTree(QtWidgets.QTreeView) :
 		if col == -1 : return
 
 		# we mark all selected records
-
 		try :
 			for s in self.selectedIndexes() :
 				if s.column() == 0 :
@@ -3289,11 +3096,9 @@ class SortSelTree(QtWidgets.QTreeView) :
 #			print "no model"
 
 		# then do the actual sort
-
 		QtWidgets.QTreeView.sortByColumn(self, col, ascend)
 
 		# then set a new selection list
-
 		sel = self.model().findSelected()
 		if len(sel) == 0 :return
 
@@ -3303,6 +3108,7 @@ class SortSelTree(QtWidgets.QTreeView) :
 
 #		for i in sel : self.selectionModel().select(i, QtCore.QItemSelectionModel.ClearAndSelect)
 #		self.update()
+
 
 class EMBrowserWidget(QtWidgets.QWidget) :
 	"""This widget is a file browser for EMAN2. In addition to being a regular file browser, it supports:
@@ -3321,9 +3127,7 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 		setsmode - Used during bad particle marking
 		dirregex - default "", a regular expression for filtering filenames (directory names not filtered)
 		"""
-
 		# although this looks dumb it is necessary to break Python's issue with circular imports(a major weakness of Python IMO)
-
 		global emscene3d, emdataitem3d
 		from . import emscene3d
 		from . import emdataitem3d
@@ -3343,7 +3147,6 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 		self.gbl = QtWidgets.QGridLayout(self)
 
 		# Top Toolbar area
-
 		self.wtoolhbl = QtWidgets.QHBoxLayout()
 		self.wtoolhbl.setContentsMargins(0, 0, 0, 0)
 
@@ -3358,7 +3161,6 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 		self.wtoolhbl.addWidget(self.wbutfwd, 0)
 
 		# Text line for showing (or editing) full path
-
 		self.lpath = QtWidgets.QLabel("  Path:")
 		self.wtoolhbl.addWidget(self.lpath)
 
@@ -3375,7 +3177,6 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 		self.gbl.addLayout(self.wtoolhbl, 0, 0, 1, 2)
 
 		# 2nd Top Toolbar area
-
 		self.wtoolhbl2 = QtWidgets.QHBoxLayout()
 		self.wtoolhbl2.setContentsMargins(0, 0, 0, 0)
 
@@ -3388,7 +3189,6 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 		self.wtoolhbl2.addWidget(self.wbutrefresh, 0)
 
 		# Text line for showing (or editing) full path
-
 		self.lfilter = QtWidgets.QLabel("Filter:")
 		self.wtoolhbl2.addWidget(self.lfilter)
 
@@ -3440,7 +3240,6 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 		self.gbl.addWidget(self.wbookmarkfr, 2, 0)
 
 		# This is the main window listing files and metadata
-
 		self.wtree = SortSelTree()
 
 		if multiselect : self.wtree.setSelectionMode(3)	# extended selection
@@ -3452,13 +3251,11 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 		self.gbl.addWidget(self.wtree, 2, 1)
 
 		# Lower region has buttons for actions
-
 		self.hbl2 = QtWidgets.QGridLayout()
 
 		self.wbutmisc = []
 
 		# 10 buttons for context-dependent actions
-
 		self.hbl2.setRowStretch(0, 1)
 		self.hbl2.setRowStretch(1, 1)
 
@@ -3480,7 +3277,6 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 		self.hbl2.addWidget(self.wbutyy, 1, 6)
 
 		# buttons for selector use
-
 		if withmodal :
 #			self.wspace1 = QtWidgets.QSpacerItem(100, 10, QtWidgets.QSizePolicy.MinimumExpanding)
 #			self.hbl2.addSpacerItem(self.wspace1)
@@ -3525,7 +3321,6 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 
 		# Each of these contains a list of open windows displaying different types of content
 		# The last item in the list is considered the 'current' item for any append operations
-
 		self.view2d = []
 		self.view2ds = []
 		self.view3d = []
@@ -3534,7 +3329,6 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 		self.viewhist = []
 
 		# These items are used to do gradually filling in of file details for better interactivity
-
 		self.updtimer = QTimer()		# This causes the actual display updates, which can't be done from a python thread
 		self.updtimer.timeout.connect(self.updateDetailsDisplay)
 		self.updthreadexit = False		# when set, this triggers the update thread to exit
@@ -3554,17 +3348,14 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 
 	def busy(self) :
 		"""display a busy cursor"""
-
 		QtWidgets.qApp.setOverrideCursor(Qt.BusyCursor)
 
 	def notbusy(self) :
 		"""normal arrow cursor"""
-
 		QtWidgets.qApp.setOverrideCursor(Qt.ArrowCursor)
 
 	def updateDetails(self) :
 		"""This is spawned as a thread to gradually fill in file details in the background"""
-
 		while 1 :
 			if self.updthreadexit : break
 
@@ -3586,7 +3377,6 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 	def updateDetailsDisplay(self) :
 		"""Since we can't do GUI updates from a thread, this is a timer event to update the display after the background thread
 		gets the details for each item"""
-
 		if self.needresize > 0 :
 			self.needresize -= 1
 			self.wtree.resizeColumnToContents(3)
@@ -3611,12 +3401,10 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 
 	def editFilter(self, newfilt) :
 		"""Sets a new filter. Requires reloading the current directory."""
-
 		self.setPath(str(self.wpath.text()))
 
 	def editPath(self) :
 		"""Set a new path"""
-
 		self.setPath(str(self.wpath.text()))
 
 # 	def keyPressEvent(self, event) :
@@ -3717,24 +3505,20 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 
 	def itemExpand(self, qmi) :
 		"""Called when an item is expanded"""
-
 		if qmi.internalPointer().path() in self.expanded : return
 		self.expanded.add(qmi.internalPointer().path())
 
 #		print "expand", qmi.internalPointer().path()
 
 		# Otherwise we get expand events on a single-click
-
 		if qmi.internalPointer().filetype != "Folder" : return
 
 		# we add the child items to the list needing updates
-
 		for i in range(self.curmodel.rowCount(qmi)-1, -1, -1) :
 			self.updlist.append(self.curmodel.index(i, 0, qmi))
 
 	def buttonMisc(self, num) :
 		"""One of the programmable action buttons was pressed"""
-
 #		print "press ", self.curactions[num][0]
 
 		try: self.curactions[num][2](self)				# This calls the action method
@@ -3742,7 +3526,6 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 
 	def buttonOk(self, tog) :
 		"""When the OK button is pressed, this will emit a signal. The receiver should call the getResult method (once) to get the list of paths"""
-
 		qism = self.wtree.selectionModel().selectedRows()
 		self.result = [i.internalPointer().path().replace(os.getcwd(), ".") for i in qism]
 		self.updtimer.stop()
@@ -3750,7 +3533,6 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 
 	def buttonCancel(self, tog) :
 		"""When the Cancel button is pressed, a signal is emitted, but getResult should not be called."""
-
 		self.result = []
 		self.updtimer.stop()
 		self.cancel.emit() # this signal is important when e2ctf is being used by a program running its own eve
@@ -3761,9 +3543,7 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 
 	def buttonBack(self, tog) :
 		"""Button press"""
-
 		# I don't like the stack idea, it's annoying, so I am using a circular array instead John F
-
 		l = self.pathstack.index(self.curpath)
 		self.setPath(self.pathstack[(l-1)], True)
 
@@ -3773,9 +3553,7 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 
 	def buttonFwd(self, tog) :
 		"""Button press"""
-
 		# I don't like the stack idea, it's annoying, so I am using a circular array instead John F
-
 		l = self.pathstack.index(self.curpath)
 		self.setPath(self.pathstack[(l+1)], True)
 
@@ -3785,7 +3563,6 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 
 	def buttonUp(self, tog) :
 		"""Button press"""
-
 		if "/" in self.curpath : newpath = self.curpath.rsplit("/", 1)[0]
 		else : newpath = os.path.realpath(self.curpath).rsplit("/", 1)[0]
 
@@ -3797,7 +3574,6 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 
 	def buttonRefresh(self, tog) :
 		"""Button press"""
-
 		self.setPath(self.curpath)
 
 	def infowinClosed(self) :
@@ -3824,7 +3600,6 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 		ok/cancel have been pressed. If cancel is pressed or ok is pressed with no selection, 
 		returns an empty list []. With a valid selection, returns a list of path strings.
 		When called after ok/cancel, also closes the dialog."""
-
 		if self.result == None : return None
 
 		self.close()
@@ -3836,33 +3611,25 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 	def getCWD(self) :
 		""" In modal mode, this will return the directory the browser is in. This is useful for
 		using the browser to select a directory of interest. """
-
 		# If a directory is selected, return this
-
 		if self.result and os.path.isdir(self.result[0]) :
 			self.close()
 			return self.result[0]
 
 		# If there is no current path and no result dir
-
 		if self.curpath == None : return None
-
 		# Return current path
-
 		self.close()
-
 		return self.curpath
 
 	def addBookmark(self, label, path) :
 		"""Add a new bookmark"""
-
 		act = self.wbookmarks.addAction(label)
 		act.setData(path)
 
 	def setPath(self, path, silent = False, inimodel = EMFileItemModel) :
 		"""Sets the current root path for the browser window. If silent is true, 
 		the path history will not be updated."""
-
 		if path != ""  and  path[0] == ":" :
 			os.system(path[1:])
 			return
@@ -3950,7 +3717,6 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 		self.expanded = set()
 
 		# we add the child items to the list needing updates
-
 		for i in range(self.curmodel.rowCount(None)-1, -1, -1) :
 			self.updlist.append(self.curmodel.index(i, 0, None))
 
@@ -3965,10 +3731,6 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 			self.wbutfwd.setEnabled(False)
 
 	def bookmarkPress(self, action) :
-		""""""
-
-#		print "Got action ", action.text(), action.data().toString()
-
 		self.setPath(action.data())
 #		self.wtree.setSelectionModel(myQItemSelection(self.curmodel))
 
@@ -3988,7 +3750,6 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 		self.module_closed.emit()
 
 # This is just for testing, of course
-
 def main():
 	em_app = EMApp()
 	window = EMBrowserWidget(withmodal = True, multiselect = True)

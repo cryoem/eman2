@@ -139,8 +139,6 @@ namespace EMAN
 
 		static EMData *vertical_acf(const EMData * image, int maxdy);
 
-		static EMData *make_image_median(const vector < EMData * >&image_list);
-
 		/** Get an image's format type from its filename extension.
 		 * @param file_ext File extension.
 		 * @return image format type.
@@ -429,7 +427,6 @@ namespace EMAN
 	private:
 		ImageScore* image_scores;
 		int n;
-
 	};
 }
 

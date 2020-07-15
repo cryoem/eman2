@@ -961,7 +961,7 @@ def isac_MPI_pap(
 
                 del dbuf
 		
-	mpi.mpi_barrier(comm)
+        mpi.mpi_barrier(comm)
 
         # --------------------------------------------------[ find alignment match ]
 

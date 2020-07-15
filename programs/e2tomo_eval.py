@@ -74,15 +74,15 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		
 		self.wg_thumbnail=EMImage2DWidget(parent=self)
 		self.wg_thumbnail.set_scale(1)
-		self.wg_thumbnail_width=int(self.size().width()/3*.9)
-		self.wg_thumbnail.resize(self.wg_thumbnail_width,self.wg_thumbnail_width)
+#		self.wg_thumbnail_width=int(self.size().width()/3*.9)
+#		self.wg_thumbnail.resize(self.wg_thumbnail_width,self.wg_thumbnail_width)
 		#print self.wg_thumbnail_width
 		self.wg_thumbnail.setMinimumHeight(330)
 		self.gbl.addWidget(self.wg_thumbnail, 0,1,3,2)
 		
 		self.bt_show2d=QtWidgets.QPushButton("Show2D")
 		self.bt_show2d.setToolTip("Show 2D images")
-		self.gbl.addWidget(self.bt_show2d, 4,1,1,2)
+		self.gbl.addWidget(self.bt_show2d, 4,1)
 		
 		self.bt_runboxer=QtWidgets.QPushButton("Boxer")
 		self.bt_runboxer.setToolTip("Run spt_boxer")
@@ -90,15 +90,19 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		
 		self.bt_refresh=QtWidgets.QPushButton("Refresh")
 		self.bt_refresh.setToolTip("Refresh")
-		self.gbl.addWidget(self.bt_refresh, 5,2)
+		self.gbl.addWidget(self.bt_refresh, 4,2)
 		
 		self.bt_showtlts=QtWidgets.QPushButton("ShowTilts")
 		self.bt_showtlts.setToolTip("Show raw tilt series")
 		self.gbl.addWidget(self.bt_showtlts, 6,1)
 		
+		self.bt_showatlts=QtWidgets.QPushButton("ShowAliTilts")
+		self.bt_showatlts.setToolTip("Show raw tilt series")
+		self.gbl.addWidget(self.bt_showatlts, 6,2)
+		
 		self.bt_plottpm=QtWidgets.QPushButton("TiltParams")
 		self.bt_plottpm.setToolTip("Plot tilt parameters")
-		self.gbl.addWidget(self.bt_plottpm, 6,2)
+		self.gbl.addWidget(self.bt_plottpm, 5,2)
 		
 		self.bt_plotloss=QtWidgets.QPushButton("PlotLoss")
 		self.bt_plotloss.setToolTip("Plot alignment loss")
@@ -115,6 +119,7 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		self.bt_plotloss.clicked[bool].connect(self.plot_loss)
 		self.bt_plottpm.clicked[bool].connect(self.plot_tltparams)
 		self.bt_showtlts.clicked[bool].connect(self.show_tlts)
+		self.bt_showatlts.clicked[bool].connect(self.show_ali_tlts)
 		self.bt_refresh.clicked[bool].connect(self.update_files)
 		self.bt_plotctf.clicked[bool].connect(self.plot_ctf)
 		
@@ -335,6 +340,30 @@ class TomoEvalGUI(QtWidgets.QWidget):
 
 		self.wg_tltimage.set_data(self.cur_tlt)
 		self.wg_tltimage.show()
+
+	def show_ali_tlts(self):
+		idx, info=self.get_id_info()
+		if idx==None: return
+		print("Showing aligned tilt series for image {} : {}".format(int(idx), info["filename"]))
+		
+		if EMUtil.get_image_count(info["tltfile"])==1:
+			tmp=EMData(info["tltfile"],0)
+			nx=tmp["nx"]
+			ny=tmp["ny"]
+			n=tmp["nz"]
+			self.cur_tlt=[EMData(info["tltfile"],0,Region([0,0,i,nx,ny,1])) for i in range(n)]
+			self.wg_tltimage.list_idx=int(old_div(self.cur_tlt["nz"],2))
+		else:
+			self.cur_tlt=EMData.read_images(info["tltfile"])
+			self.wg_tltimage.list_idx=int(len(self.cur_tlt)/2)
+
+		for i,t in enumerate(info["tlt_params"]):
+			self.cur_tlt[i].translate(-t[0],-t[1],0);
+			self.cur_tlt[i].process_inplace("normalize.edgemean")
+
+		self.wg_tltimage.set_data(self.cur_tlt)
+		self.wg_tltimage.show()
+
 	
 	def plot_ctf(self):
 		idx, info=self.get_id_info()
