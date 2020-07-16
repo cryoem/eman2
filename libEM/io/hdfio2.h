@@ -123,7 +123,6 @@ namespace EMAN
 		hid_t group;
 		hid_t accprop;
 		hid_t simple_space;
-		string filename;
 		IOMode rw_mode;
 		bool initialized;
 		

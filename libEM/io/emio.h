@@ -93,7 +93,6 @@ namespace EMAN
 		};
 
 	  private:
-		string filename;
 		IOMode rw_mode;
 		FILE *em_file;
 		EMHeader emh;

@@ -57,7 +57,6 @@ namespace EMAN
 		}
 		int get_nimg();
 	  private:
-		string filename;
 		IOMode rw_mode;
 		FILE *lst_file;
 

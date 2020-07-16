@@ -64,7 +64,6 @@ namespace EMAN
 		};
 
 	  private:
-		string filename;
 		IOMode rw_mode;
 		FILE *pgm_file;
 

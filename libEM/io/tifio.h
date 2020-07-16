@@ -62,7 +62,6 @@ namespace EMAN
 			TIFF_BIG_ENDIAN = 0x4d
 		};
 
-		string filename;
 		IOMode rw_mode;
 		TIFF *tiff_file;
 		int nimg;

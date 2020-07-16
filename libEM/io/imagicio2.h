@@ -245,7 +245,6 @@ namespace EMAN
 		
 		int generate_machine_stamp() const;
 	  private:
-		string filename;
 		string hed_filename;
 		string img_filename;
 

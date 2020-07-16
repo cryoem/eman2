@@ -261,7 +261,6 @@ namespace EMAN
 		static const char *SHORT_CTF_MAGIC;
 
 	private:
-		string filename;
 		IOMode rw_mode;
 		FILE *mrcfile;
 		int mode_size;

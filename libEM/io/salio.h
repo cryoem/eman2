@@ -71,7 +71,6 @@ namespace EMAN
 		};
 
 	  private:
-		string filename;
 		IOMode rw_mode;
 		FILE *sal_file;
 		bool initialized;

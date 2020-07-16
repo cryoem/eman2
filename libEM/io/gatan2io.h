@@ -76,7 +76,6 @@ namespace EMAN
 		int to_em_datatype(int gatan_type);
 
 	  private:
-		string filename;
 		IOMode rw_mode;
 		FILE *gatan2_file;
 		Gatan2Header gatanh;

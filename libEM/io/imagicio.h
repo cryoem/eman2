@@ -179,7 +179,6 @@ namespace EMAN
 		void write_ctf(const Ctf * const ctf, int image_index = 0);
 		
 	  private:
-		string filename;
 		string hed_filename;
 		string img_filename;
 

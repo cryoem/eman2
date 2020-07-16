@@ -253,7 +253,6 @@ namespace EMAN
 		{ NUM_ID_INT = 3 };
 
 	  private:
-		string filename;
 		IOMode rw_mode;
 		FILE *dm3file;
 		bool is_big_endian;

@@ -121,7 +121,6 @@ namespace EMAN
 		DataType get_datatype_from_name(const string& datatype_name);
 		DatasetType get_datasettype_from_name(const string& dataset_name);
 	
-		string filename;
 		IOMode rw_mode;
 		FILE *vtk_file;
 		bool is_big_endian;

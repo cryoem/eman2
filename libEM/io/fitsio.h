@@ -58,7 +58,6 @@ namespace EMAN
 		static int to_mrcmode(int em_datatype, int is_complex);
 
 	private:
-		string filename;
 		IOMode rw_mode;
 		FILE *fitsfile;
 

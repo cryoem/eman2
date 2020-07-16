@@ -89,7 +89,6 @@ namespace EMAN
 			short unused[233];	//unused space
 		};
 
-		string filename;
 		IOMode rw_mode;
 		FILE *omapfile;
 		OmapHeader omaph;

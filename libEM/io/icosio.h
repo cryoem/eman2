@@ -75,7 +75,6 @@ namespace EMAN
 		};
 
 	  private:
-		string filename;
 		IOMode rw_mode;
 		IcosHeader icosh;
 		FILE *icos_file;
