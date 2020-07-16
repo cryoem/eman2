@@ -37,6 +37,10 @@
 
 using namespace EMAN;
 
+ImageIO::ImageIO(const string & fname)
+		: filename(fname)
+{}
+
 ImageIO::~ImageIO()
 {
 }
