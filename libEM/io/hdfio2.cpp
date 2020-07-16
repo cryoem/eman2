@@ -68,8 +68,8 @@ using namespace EMAN;
 static const int ATTR_NAME_LEN = 128;
 
 HdfIO2::HdfIO2(const string & hdf_filename, IOMode rw)
-:	nx(1), ny(1), nz(1), is_exist(false),
-	file(-1), group(-1), filename(hdf_filename),
+:	filename(hdf_filename), nx(1), ny(1), nz(1), is_exist(false),
+	file(-1), group(-1),
 	rw_mode(rw), initialized(false), rendermin(0.0), rendermax(0.0), renderbits(16), renderlevel(1)
 {
 	H5dont_atexit();
