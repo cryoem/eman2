@@ -350,6 +350,7 @@ namespace EMAN
 					 bool * is_new = 0, bool overwrite = false);
 
 		string filename;
+		bool initialized;
 	};
 
 	/** DEFINE_IMAGEIO_FUNC declares the functions that needs to

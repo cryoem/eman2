@@ -79,7 +79,6 @@ namespace EMAN
 		IcosHeader icosh;
 		FILE *icos_file;
 		bool is_big_endian;
-		bool initialized;
 		bool is_new_file;
 	};
 

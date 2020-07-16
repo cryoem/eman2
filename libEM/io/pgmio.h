@@ -68,7 +68,6 @@ namespace EMAN
 		FILE *pgm_file;
 
 		bool is_big_endian;
-		bool initialized;
 
 		int nx;
 		int ny;

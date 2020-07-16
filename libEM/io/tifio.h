@@ -68,7 +68,6 @@ namespace EMAN
 		unsigned short bitspersample;
 		unsigned short photometric;
 		bool is_big_endian;
-		bool initialized;
 		
 		unsigned int nx;
 		unsigned int ny;

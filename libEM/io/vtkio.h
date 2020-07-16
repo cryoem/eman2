@@ -125,7 +125,6 @@ namespace EMAN
 		FILE *vtk_file;
 		bool is_big_endian;
 		bool is_new_file;
-		bool initialized;
 
 		DataType datatype;
 		VtkType filetype;

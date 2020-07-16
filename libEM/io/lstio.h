@@ -61,7 +61,6 @@ namespace EMAN
 		FILE *lst_file;
 
 		bool is_big_endian;
-		bool initialized;
 		int nimg;
 
 		ImageIO *imageio;

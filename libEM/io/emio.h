@@ -100,7 +100,6 @@ namespace EMAN
 		size_t mode_size;
 		DataType mode;
 		bool is_big_endian;
-		bool initialized;
 		bool is_new_file;
 	};
 

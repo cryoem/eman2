@@ -188,7 +188,6 @@ namespace EMAN
 
 		ImagicHeader imagich;
 		bool is_big_endian;
-		bool initialized;
 		bool is_new_hed;
 		bool is_new_img;
 

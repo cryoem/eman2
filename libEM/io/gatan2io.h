@@ -81,7 +81,6 @@ namespace EMAN
 		Gatan2Header gatanh;
 
 		bool is_big_endian;
-		bool initialized;
 	};
 
 }

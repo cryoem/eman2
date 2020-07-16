@@ -245,7 +245,6 @@ namespace EMAN
 		SpiderHeader *cur_h;   // the current reading/writing image header
 		
 		bool is_big_endian;
-		bool initialized;
 		bool is_new_file;
 	};
 }

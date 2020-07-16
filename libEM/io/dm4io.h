@@ -262,7 +262,6 @@ namespace EMAN
 		IOMode rw_mode;
 		FILE *dm4file;
 		bool is_big_endian;
-		bool initialized;
 		GatanDM4::TagTable * tagtable;
 	};
 }

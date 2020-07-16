@@ -56,7 +56,6 @@ namespace EMAN
 		IOMode rw_mode;
 		FILE *jpeg_file;
 
-		bool initialized;
 		float rendermin;
 		float rendermax;
 		int renderbits;

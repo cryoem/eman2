@@ -57,7 +57,6 @@ namespace EMAN
 		char *filename;
 		int v4l_file;
 
-		bool initialized;
 
 		int nx;
 		int ny;

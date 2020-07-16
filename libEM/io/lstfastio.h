@@ -70,7 +70,6 @@ namespace EMAN
 		FILE *lst_file;
 
 		bool is_big_endian;
-		bool initialized;
 		int nimg;
 		unsigned int line_length;
 		unsigned int head_length;

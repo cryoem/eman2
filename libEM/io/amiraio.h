@@ -59,7 +59,6 @@ namespace EMAN
 		FILE *amira_file;
 
 		bool is_big_endian;
-		bool initialized;
 		EMUtil::EMDataType dt;
 		int nx;
 		int ny;

@@ -124,7 +124,6 @@ namespace EMAN
 		hid_t accprop;
 		hid_t simple_space;
 		IOMode rw_mode;
-		bool initialized;
 		
 		Dict meta_attr_dict;	//this is used for the meta attributes stored in /MDF/images
 

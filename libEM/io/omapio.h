@@ -94,7 +94,6 @@ namespace EMAN
 		OmapHeader omaph;
 
 		bool is_big_endian;
-		bool initialized;
 		bool is_new_file;
 	};
 

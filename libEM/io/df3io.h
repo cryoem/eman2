@@ -63,7 +63,6 @@ namespace EMAN
 		unsigned short nx, ny, nz;
 		IOMode rw_mode;
 		FILE *df3file;
-		bool initialized;
 		bool is_new_file;
 		float rendermin;
 		float rendermax;

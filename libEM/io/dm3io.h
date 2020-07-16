@@ -256,7 +256,6 @@ namespace EMAN
 		IOMode rw_mode;
 		FILE *dm3file;
 		bool is_big_endian;
-		bool initialized;
 		Gatan::TagTable * tagtable;
 	};
 

@@ -177,7 +177,6 @@ namespace EMAN
 		FILE *pif_file;
 		int mode_size;
 		bool is_big_endian;
-		bool initialized;
 		bool is_new_file;
 		float real_scale_factor;
 	};

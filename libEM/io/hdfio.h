@@ -130,7 +130,6 @@ namespace EMAN
         
 
 		IOMode rw_mode;
-		bool initialized;
 		bool is_new_file;
 		
 		hid_t file;

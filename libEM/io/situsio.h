@@ -59,7 +59,6 @@ namespace EMAN
 		IOMode rw_mode;
 		FILE *situsfile;
 
-		bool initialized;
 		bool is_new_file;
 
 		float apix, origx, origy, origz;

@@ -71,7 +71,6 @@ namespace EMAN
 		FILE *xplor_file;
 
 		bool is_big_endian;
-		bool initialized;
 		bool is_new_file;
 		int nlines_in_header;
 		
