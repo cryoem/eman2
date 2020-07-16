@@ -39,8 +39,9 @@
 
 
 private:
-void _read_image(ImageIO *imageio, int img_index, bool nodata,
-						 const Region * region, bool is_3d);
+void _read_image(ImageIO *imageio, int img_index = 0,
+				bool header_only = false,
+				const Region * region = 0, bool is_3d = false);
 
 public:
 /** read an image file and stores its information to this

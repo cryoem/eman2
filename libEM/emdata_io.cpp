@@ -416,13 +416,14 @@ vector < shared_ptr<EMData> > EMData::read_images(const string & filename, vecto
 	}
 
 	size_t n = (num_img == 0 ? total_img : num_img);
+	ImageIO *imageio = EMUtil::get_imageio(filename, ImageIO::READ_ONLY);
 
 	vector< shared_ptr<EMData> > v;
 	for (size_t j = 0; j < n; j++) {
 		shared_ptr<EMData> d(new EMData());
 		size_t k = (num_img == 0 ? j : img_indices[j]);
 		try {
-			d->read_image(filename, (int)k, header_only);
+			d->_read_image(imageio, (int)k, header_only);
 		}
 		catch(E2Exception &e) {
 			throw(e);
@@ -434,6 +435,10 @@ vector < shared_ptr<EMData> > EMData::read_images(const string & filename, vecto
 		else
 			throw ImageReadException(filename, "imageio read data failed");
 	}
+
+	EMUtil::close_imageio(filename, imageio);
+	imageio = 0;
+
 
 	EXITFUNC;
 	return v;
