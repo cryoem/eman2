@@ -89,7 +89,7 @@ namespace EMAN
 			short unused[233];	//unused space
 		};
 
-		FILE *omapfile;
+		FILE *file;
 		OmapHeader omaph;
 
 		bool is_big_endian;

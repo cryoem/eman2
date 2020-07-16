@@ -632,7 +632,7 @@ int TagEntry::read(bool nodata)
 ////////////////////////////////////////////
 
 DM3IO::DM3IO(const string & fname, IOMode rw)
-	:	ImageIO(fname, rw), dm3file(0)
+	:	ImageIO(fname, rw), file(0)
 {
 	is_big_endian = ByteOrder::is_host_big_endian();
 	tagtable = new TagTable();
@@ -640,9 +640,9 @@ DM3IO::DM3IO(const string & fname, IOMode rw)
 
 DM3IO::~DM3IO()
 {
-	if (dm3file) {
-		fclose(dm3file);
-		dm3file = 0;
+	if (file) {
+		fclose(file);
+		file = 0;
 	}
 	if (tagtable) {
 		delete tagtable;
@@ -662,10 +662,10 @@ void DM3IO::init()
 		throw ImageReadException(filename, "only support DM3 read-only");
 	}
 
-	dm3file = sfopen(filename, READ_ONLY);
+	file = sfopen(filename, READ_ONLY);
 
 	int buf[NUM_ID_INT];
-	if (fread(buf, sizeof(buf), 1, dm3file) != 1) {
+	if (fread(buf, sizeof(buf), 1, file) != 1) {
 		throw ImageReadException(filename, "read first block of DM3 file");
 	}
 
@@ -739,8 +739,8 @@ int DM3IO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	image_index = 0;
 	check_read_access(image_index);
 
-	portable_fseek(dm3file, NUM_ID_INT * sizeof(int), SEEK_SET);
-	TagGroup root_group(dm3file, tagtable, "");
+	portable_fseek(file, NUM_ID_INT * sizeof(int), SEEK_SET);
+	TagGroup root_group(file, tagtable, "");
 	root_group.read(true);
 
 	int nx = tagtable->get_xsize();
@@ -798,9 +798,9 @@ int DM3IO::read_data(float *rdata, int image_index, const Region * area, bool)
 	image_index = 0;
 	check_read_access(image_index, rdata);
 
-	portable_fseek(dm3file, NUM_ID_INT * sizeof(int), SEEK_SET);
+	portable_fseek(file, NUM_ID_INT * sizeof(int), SEEK_SET);
 
-	TagGroup root_group(dm3file, tagtable, "");
+	TagGroup root_group(file, tagtable, "");
 	root_group.read(false);
 	
 	int nx = tagtable->get_xsize();

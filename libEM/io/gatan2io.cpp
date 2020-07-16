@@ -37,7 +37,7 @@
 using namespace EMAN;
 
 Gatan2IO::Gatan2IO(const string & fname, IOMode rw)
-:	ImageIO(fname, rw), gatan2_file(0)
+:	ImageIO(fname, rw), file(0)
 {
 	is_big_endian = ByteOrder::is_host_big_endian();
 	memset(&gatanh, 0, sizeof(Gatan2Header));
@@ -45,9 +45,9 @@ Gatan2IO::Gatan2IO(const string & fname, IOMode rw)
 
 Gatan2IO::~Gatan2IO()
 {
-	if (gatan2_file) {
-		fclose(gatan2_file);
-		gatan2_file = 0;
+	if (file) {
+		fclose(file);
+		file = 0;
 	}
 }
 
@@ -62,10 +62,10 @@ void Gatan2IO::init()
 	initialized = true;
 
 	bool is_new_file = false;
-	gatan2_file = sfopen(filename, rw_mode, &is_new_file);
+	file = sfopen(filename, rw_mode, &is_new_file);
 
 	if (!is_new_file) {
-		if (fread(&gatanh, sizeof(Gatan2Header), 1, gatan2_file) != 1) {
+		if (fread(&gatanh, sizeof(Gatan2Header), 1, file) != 1) {
 			throw ImageReadException(filename, "Gatan2 Header");
 		}
 
@@ -162,10 +162,10 @@ int Gatan2IO::read_data(float *data, int image_index, const Region * area, bool 
 	
 	check_region(area, IntSize(gatanh.nx, gatanh.ny));
 	
-	portable_fseek(gatan2_file, sizeof(Gatan2Header), SEEK_SET);
+	portable_fseek(file, sizeof(Gatan2Header), SEEK_SET);
 
 #if 0
-	if (fread(data, gatanh.nx * gatanh.len, gatanh.ny, gatan2_file) != (unsigned int) gatanh.ny) {
+	if (fread(data, gatanh.nx * gatanh.len, gatanh.ny, file) != (unsigned int) gatanh.ny) {
 		LOGDEBUG("Data read incomplete in Gatan file '%s'", filename.c_str());
 		return 1;
 	}
@@ -176,7 +176,7 @@ int Gatan2IO::read_data(float *data, int image_index, const Region * area, bool 
 	unsigned char *cdata = (unsigned char *) data;
 	int *ldata = (int *) data;
 
-	EMUtil::process_region_io(cdata, gatan2_file, READ_ONLY, image_index, gatanh.len,
+	EMUtil::process_region_io(cdata, file, READ_ONLY, image_index, gatanh.len,
 							  gatanh.nx, gatanh.ny, 1, area);
 
 	switch (gatanh.type) {

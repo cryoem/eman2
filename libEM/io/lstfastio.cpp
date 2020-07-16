@@ -50,7 +50,7 @@ using namespace EMAN;
 const char *LstFastIO::MAGIC = "#LSX";
 
 LstFastIO::LstFastIO(const string & fname, IOMode rw)
-:	ImageIO(fname, rw), lst_file(0)
+:	ImageIO(fname, rw), file(0)
 {
 	is_big_endian = ByteOrder::is_host_big_endian();
 	nimg = 0;
@@ -62,9 +62,9 @@ LstFastIO::LstFastIO(const string & fname, IOMode rw)
 
 LstFastIO::~LstFastIO()
 {
-	if (lst_file) {
-		fclose(lst_file);
-		lst_file = 0;
+	if (file) {
+		fclose(file);
+		file = 0;
 	}
 	ref_filename = "";
 	if(imageio) {
@@ -83,13 +83,13 @@ void LstFastIO::init()
 	initialized = true;
 
 	bool is_new_file = false;
-	lst_file = sfopen(filename, rw_mode, &is_new_file);
+	file = sfopen(filename, rw_mode, &is_new_file);
 
 	if (!is_new_file) {
 
 		char buf[MAXPATHLEN];
 
-		if (!fgets(buf, MAXPATHLEN, lst_file)) {
+		if (!fgets(buf, MAXPATHLEN, file)) {
 			throw ImageReadException(filename, "first block");
 		}
 
@@ -97,13 +97,13 @@ void LstFastIO::init()
 			throw ImageReadException(filename, "invalid LST file");
 		}
 
-		fgets(buf,MAXPATHLEN,lst_file);
-		fgets(buf,MAXPATHLEN,lst_file);
+		fgets(buf,MAXPATHLEN,file);
+		fgets(buf,MAXPATHLEN,file);
 		line_length=atoi(buf+1);
-		head_length=ftell(lst_file);
-		fseek(lst_file,0L,SEEK_END);
-		nimg=(ftell(lst_file)-head_length)/line_length;
-		rewind(lst_file);
+		head_length=ftell(file);
+		fseek(file,0L,SEEK_END);
+		nimg=(ftell(file)-head_length)/line_length;
+		rewind(file);
 	}
 	EXITFUNC;
 }
@@ -143,8 +143,8 @@ int LstFastIO::calc_ref_image_index(int image_index)
 	else {
 		char buf[MAXPATHLEN];
 
-		fseek(lst_file,head_length+line_length*image_index,SEEK_SET);
-		if (!fgets(buf, MAXPATHLEN, lst_file)) {
+		fseek(file,head_length+line_length*image_index,SEEK_SET);
+		if (!fgets(buf, MAXPATHLEN, file)) {
 			LOGERR("reach EOF in file '%s' before reading %dth image",
 				   filename.c_str(), image_index);
 			return 1;
@@ -217,7 +217,7 @@ int LstFastIO::read_header(Dict & dict, int image_index, const Region * area, bo
 int LstFastIO::write_header(const Dict &, int, const Region* , EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
-	fprintf(lst_file, "%s\n# 80\n", MAGIC);
+	fprintf(file, "%s\n# 80\n", MAGIC);
 	EXITFUNC;
 	return 0;
 }
@@ -237,9 +237,9 @@ int LstFastIO::write_data(float *data, int, const Region* , EMUtil::EMDataType, 
 	ENTERFUNC;
 	char *data2=(char*)data;
 	if (strlen(data2)>line_length-1) throw ImageWriteException("", "Comment too long for this LSX file");
-	fprintf(lst_file, "%s", (char*)data);
-	for (unsigned int i=strlen(data2); i<line_length-1; i++) putc(' ',lst_file);
-	putc('\n',lst_file);
+	fprintf(file, "%s", (char*)data);
+	for (unsigned int i=strlen(data2); i<line_length-1; i++) putc(' ',file);
+	putc('\n',file);
 
 	EXITFUNC;
 	return 0;
@@ -247,7 +247,7 @@ int LstFastIO::write_data(float *data, int, const Region* , EMUtil::EMDataType, 
 
 void LstFastIO::flush()
 {
-	fflush(lst_file);
+	fflush(file);
 }
 
 bool LstFastIO::is_complex_mode()

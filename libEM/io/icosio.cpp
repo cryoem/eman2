@@ -38,7 +38,7 @@ using namespace EMAN;
 
 
 IcosIO::IcosIO(const string & fname, IOMode rw)
-:	ImageIO(fname, rw), icos_file(0)
+:	ImageIO(fname, rw), file(0)
 {
 	is_big_endian = ByteOrder::is_host_big_endian();
 	is_new_file = false;
@@ -47,9 +47,9 @@ IcosIO::IcosIO(const string & fname, IOMode rw)
 
 IcosIO::~IcosIO()
 {
-	if (icos_file) {
-		fclose(icos_file);
-		icos_file = 0;
+	if (file) {
+		fclose(file);
+		file = 0;
 	}
 }
 
@@ -61,10 +61,10 @@ void IcosIO::init()
 	}
 
 	initialized = true;
-	icos_file = sfopen(filename, rw_mode, &is_new_file);
+	file = sfopen(filename, rw_mode, &is_new_file);
 
 	if (!is_new_file) {
-		if (fread(&icosh, sizeof(IcosHeader), 1, icos_file) != 1) {
+		if (fread(&icosh, sizeof(IcosHeader), 1, file) != 1) {
 			throw ImageReadException(filename, "ICOS header");
 		}
 
@@ -165,9 +165,9 @@ int IcosIO::write_header(const Dict & dict, int image_index, const Region* ,
 	icosh.min = dict["minimum"];
 	icosh.max = dict["maximum"];
 
-	rewind(icos_file);
+	rewind(file);
 
-	if (fwrite(&icosh, sizeof(IcosHeader), 1, icos_file) != 1) {
+	if (fwrite(&icosh, sizeof(IcosHeader), 1, file) != 1) {
 		throw ImageWriteException(filename, "ICOS header write");
 	}
 
@@ -184,9 +184,9 @@ int IcosIO::read_data(float *data, int image_index, const Region * area, bool)
 	check_read_access(image_index, data);
 	check_region(area, IntSize(icosh.nx, icosh.ny, icosh.nz),false,false);
 
-	portable_fseek(icos_file, sizeof(IcosHeader), SEEK_SET);
+	portable_fseek(file, sizeof(IcosHeader), SEEK_SET);
 
-	EMUtil::process_region_io((unsigned char *) data, icos_file,
+	EMUtil::process_region_io((unsigned char *) data, file,
 							  READ_ONLY, image_index,
 							  sizeof(float), icosh.nx, icosh.ny, icosh.nz,
 							  area, false, EMUtil::IMAGE_ICOS, sizeof(int), sizeof(int));
@@ -207,9 +207,9 @@ int IcosIO::write_data(float *data, int image_index, const Region* area,
 	//single image format, index can only be zero
 	image_index = 0;
 	check_write_access(rw_mode, image_index, 1, data);
-	portable_fseek(icos_file, sizeof(IcosHeader), SEEK_SET);
+	portable_fseek(file, sizeof(IcosHeader), SEEK_SET);
 
-	EMUtil::process_region_io(data, icos_file, rw_mode, image_index,
+	EMUtil::process_region_io(data, file, rw_mode, image_index,
 							  sizeof(float), icosh.nx, icosh.ny, icosh.nz, area,
 							  false, EMUtil::IMAGE_ICOS, sizeof(int), sizeof(int));
 
@@ -226,7 +226,7 @@ int IcosIO::write_data(float *data, int image_index, const Region* area,
 
 	for (int j = 0; j < nrows; j++) {
 		memcpy(&buf[1], &data[nx * j], nx * float_size);
-		if (fwrite(buf, row_size, 1, icos_file) != 1) {
+		if (fwrite(buf, row_size, 1, file) != 1) {
 			throw ImageWriteException(filename, "ICOS data");
 		}
 	}
@@ -243,7 +243,7 @@ int IcosIO::write_data(float *data, int image_index, const Region* area,
 
 void IcosIO::flush()
 {
-	fflush(icos_file);
+	fflush(file);
 }
 
 bool IcosIO::is_complex_mode()

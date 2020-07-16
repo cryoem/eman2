@@ -261,7 +261,7 @@ namespace EMAN
 		static const char *SHORT_CTF_MAGIC;
 
 	private:
-		FILE *mrcfile;
+		FILE *file;
 		int mode_size;
 
 		union {

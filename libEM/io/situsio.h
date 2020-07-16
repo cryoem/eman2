@@ -56,7 +56,7 @@ namespace EMAN
 		static bool is_valid(const void *first_block);
 
 	private:
-		FILE *situsfile;
+		FILE *file;
 
 		bool is_new_file;
 

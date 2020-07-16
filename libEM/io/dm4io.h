@@ -259,7 +259,7 @@ namespace EMAN
 	  private:
 		enum { NUM_ID_INT = 4 };	//actually its int+long+int=16 bytes
 
-		FILE *dm4file;
+		FILE *file;
 		bool is_big_endian;
 		GatanDM4::TagTable * tagtable;
 	};

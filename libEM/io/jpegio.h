@@ -53,7 +53,7 @@ namespace EMAN
 		static bool is_valid(const void *first_block);
 		int get_nimg();
 	  private:
-		FILE *jpeg_file;
+		FILE *file;
 
 		float rendermin;
 		float rendermax;

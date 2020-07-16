@@ -44,7 +44,7 @@ using namespace EMAN;
 PifIO::PifIO(const string & fname, IOMode rw)
 :	ImageIO(fname, rw)
 {
-	pif_file = 0;
+	file = 0;
 	mode_size = 0;
 	is_big_endian = ByteOrder::is_host_big_endian();
 	real_scale_factor = 1;
@@ -54,9 +54,9 @@ PifIO::PifIO(const string & fname, IOMode rw)
 
 PifIO::~PifIO()
 {
-	if (pif_file) {
-		fclose(pif_file);
-		pif_file = 0;
+	if (file) {
+		fclose(file);
+		file = 0;
 	}
 }
 
@@ -123,10 +123,10 @@ void PifIO::init()
 	}
 
 	initialized = true;
-	pif_file = sfopen(filename, rw_mode, &is_new_file);
+	file = sfopen(filename, rw_mode, &is_new_file);
 
 	if (!is_new_file) {
-		if (fread(&pfh, sizeof(PifFileHeader), 1, pif_file) != 1) {
+		if (fread(&pfh, sizeof(PifFileHeader), 1, file) != 1) {
 			throw ImageReadException(filename, "PIF file header");
 		}
 
@@ -211,7 +211,7 @@ void PifIO::fseek_to(int image_index)
 	size_t file_offset = sizeof(PifFileHeader) +
 		(pih_sz + image_size * mode_size) * image_index;
 
-	portable_fseek(pif_file, file_offset, SEEK_SET);
+	portable_fseek(file, file_offset, SEEK_SET);
 }
 
 
@@ -225,7 +225,7 @@ int PifIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	int pih_sz = sizeof(PifImageHeader);
 	PifImageHeader pih;
 
-	if (fread(&pih, pih_sz, 1, pif_file) != 1) {
+	if (fread(&pih, pih_sz, 1, file) != 1) {
 		throw ImageReadException(filename, "PIF Image header");
 	}
 	else {
@@ -314,7 +314,7 @@ int PifIO::write_header(const Dict & dict, int image_index, const Region* area,
 		pfh.nz = dict["nz"];
 		pfh.nimg += 1;
 		pfh.endian = (int) ByteOrder::is_host_big_endian();
-		fwrite(&pfh, sizeof(PifFileHeader), 1, pif_file);
+		fwrite(&pfh, sizeof(PifFileHeader), 1, file);
 	}
 
 	PifImageHeader pih;
@@ -343,7 +343,7 @@ int PifIO::write_header(const Dict & dict, int image_index, const Region* area,
 
 	sprintf(pih.time, "%d/%02d/%02d %d:%02d",
 			t->tm_mon, t->tm_mday, t->tm_year, t->tm_hour, t->tm_min);
-	fwrite(&pih, sizeof(PifImageHeader), 1, pif_file);
+	fwrite(&pih, sizeof(PifImageHeader), 1, file);
 
 	EXITFUNC;
 	return 0;
@@ -359,7 +359,7 @@ int PifIO::read_data(float *data, int image_index, const Region *area, bool)
 	int pih_sz = sizeof(PifImageHeader);
 	PifImageHeader pih;
 
-	if (fread(&pih, pih_sz, 1, pif_file) != 1) {
+	if (fread(&pih, pih_sz, 1, file) != 1) {
 		throw ImageReadException(filename, "PIF Image header");
 	}
 
@@ -379,7 +379,7 @@ int PifIO::read_data(float *data, int image_index, const Region *area, bool)
 	unsigned char * cdata = (unsigned char*)data;
 	short *sdata = (short*) data;
 
-	EMUtil::process_region_io(cdata, pif_file, READ_ONLY,
+	EMUtil::process_region_io(cdata, file, READ_ONLY,
 							  0, mode_size, pih.nx, pih.ny,
 							  num_layers, area);
 
@@ -428,7 +428,7 @@ int PifIO::read_data(float *data, int image_index, const Region *area, bool)
 	for (int l = 0; l < num_layers; l++) {
 		int offset1 = l * pfh.nx * pfh.ny;
 		for (int j = 0; j < pfh.ny; j++) {
-			if (fread(buf, mode_size, pfh.nx, pif_file) != (unsigned int) pfh.nx) {
+			if (fread(buf, mode_size, pfh.nx, file) != (unsigned int) pfh.nx) {
 				if( buf )
 				{
 					delete[]buf;
@@ -489,7 +489,7 @@ int PifIO::write_data(float *data, int image_index, const Region* area,
 
 	// to write a region; if it works, please remove the code
 	// in #if 0 ... #endif
-	EMUtil::process_region_io(data, pif_file, WRITE_ONLY, 0,
+	EMUtil::process_region_io(data, file, WRITE_ONLY, 0,
 							  mode_size, nx, ny, nz, area);
 
 #if 0
@@ -501,7 +501,7 @@ int PifIO::write_data(float *data, int image_index, const Region* area,
 				idx = i * nx * ny + j * nx + k;
 				buf[k] = (int) data[idx];
 			}
-			fwrite(buf, sizeof(int) * nx, 1, pif_file);
+			fwrite(buf, sizeof(int) * nx, 1, file);
 		}
 	}
 	if( buf )
@@ -517,7 +517,7 @@ int PifIO::write_data(float *data, int image_index, const Region* area,
 
 void PifIO::flush()
 {
-	fflush(pif_file);
+	fflush(file);
 }
 
 bool PifIO::is_complex_mode()

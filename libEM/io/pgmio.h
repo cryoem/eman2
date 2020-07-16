@@ -64,7 +64,7 @@ namespace EMAN
 		};
 
 	  private:
-		FILE *pgm_file;
+		FILE *file;
 
 		bool is_big_endian;
 

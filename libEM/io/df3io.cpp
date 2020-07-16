@@ -38,16 +38,16 @@
 using namespace EMAN;
 
 Df3IO::Df3IO(const string & fname, IOMode rw)
-:	ImageIO(fname, rw), df3file(0),
+:	ImageIO(fname, rw), file(0),
  	is_new_file(false), rendermin(0.0), rendermax(0.0), renderbits(16)
 {
 }
 
 Df3IO::~Df3IO()
 {
-	if (df3file) {
-		fclose(df3file);
-		df3file = 0;
+	if (file) {
+		fclose(file);
+		file = 0;
 	}
 }
 
@@ -59,7 +59,7 @@ void Df3IO::init()
 	}
 
 	initialized = true;
-	df3file = sfopen(filename, rw_mode, &is_new_file);
+	file = sfopen(filename, rw_mode, &is_new_file);
 
 	EXITFUNC;
 }
@@ -72,12 +72,12 @@ int Df3IO::read_header(Dict & dict, int, const Region *, bool )
 	size_t nr;
 
 	if (!is_new_file) {
-		if (fread(&nx, sizeof(unsigned short), 1, df3file) != 1) {
+		if (fread(&nx, sizeof(unsigned short), 1, file) != 1) {
 			throw ImageReadException(filename, "DF3 header");
 		}
 
-		nr = fread(&ny, sizeof(unsigned short), 1, df3file); nr++;
-		nr = fread(&nz, sizeof(unsigned short), 1, df3file); nr++;
+		nr = fread(&ny, sizeof(unsigned short), 1, file); nr++;
+		nr = fread(&nz, sizeof(unsigned short), 1, file); nr++;
 
 		if(!ByteOrder::is_host_big_endian()) {
 			ByteOrder::swap_bytes(&nx);
@@ -103,7 +103,7 @@ int Df3IO::write_header(const Dict & dict, int, const Region*, EMUtil::EMDataTyp
 	ny = (unsigned short)((int)dict["ny"]);
 	nz = (unsigned short)((int)dict["nz"]);
 
-	portable_fseek(df3file, 0, SEEK_SET);
+	portable_fseek(file, 0, SEEK_SET);
 
 	unsigned short df3header[3];
 	df3header[0] = nx;
@@ -113,7 +113,7 @@ int Df3IO::write_header(const Dict & dict, int, const Region*, EMUtil::EMDataTyp
 
 	EMUtil::getRenderLimits(dict, rendermin, rendermax, renderbits);
 
-	if(fwrite(df3header, sizeof(unsigned short), 3, df3file) != 3) {
+	if(fwrite(df3header, sizeof(unsigned short), 3, file) != 3) {
 		throw ImageWriteException(filename, "DF3 header");
 	}
 
@@ -129,33 +129,33 @@ int Df3IO::read_data(float *rdata, int, const Region *, bool)
 	size_t nr;
 
 	// obtain file size:
-	portable_fseek (df3file , 0 , SEEK_END);
-	size_t fsize = ftell (df3file);
-	rewind (df3file);
+	portable_fseek (file , 0 , SEEK_END);
+	size_t fsize = ftell (file);
+	rewind (file);
 
 	unsigned int * uidata = 0;
 	unsigned short * usdata = 0;
 	unsigned char * ucdata = 0;
 
-	portable_fseek(df3file, sizeof(unsigned short)*3, SEEK_SET);	//skip header
+	portable_fseek(file, sizeof(unsigned short)*3, SEEK_SET);	//skip header
 	switch(fsize/image_size) {
 	case sizeof(unsigned int):
 		uidata = new unsigned int[image_size];
-		nr = fread(uidata, sizeof(unsigned int), image_size, df3file); nr++;
+		nr = fread(uidata, sizeof(unsigned int), image_size, file); nr++;
 		become_host_endian < unsigned int >(uidata, image_size);
 		std::copy(uidata, uidata+image_size, rdata);
 		if(uidata) {delete [] uidata; uidata=0;}
 		break;
 	case sizeof(unsigned short):
 		usdata = new unsigned short[image_size];
-		nr = fread(usdata, sizeof(unsigned short), image_size, df3file); nr++;
+		nr = fread(usdata, sizeof(unsigned short), image_size, file); nr++;
 		become_host_endian < unsigned short >(usdata, image_size);
 		std::copy(usdata, usdata+image_size, rdata);
 		if(usdata) {delete [] usdata; usdata=0;}
 		break;
 	case sizeof(unsigned char):
 		ucdata = new unsigned char[image_size];
-		nr = fread(ucdata, sizeof(unsigned char), image_size, df3file); nr++;
+		nr = fread(ucdata, sizeof(unsigned char), image_size, file); nr++;
 		std::copy(ucdata, ucdata+image_size, rdata);
 		if(ucdata) {delete [] ucdata; ucdata=0;}
 		break;
@@ -194,7 +194,7 @@ int Df3IO::write_data(float *data, int, const Region*,
 			}
 		}
 		ByteOrder::become_big_endian(uidata, img_size);
-		if(fwrite(uidata, sizeof(unsigned int), img_size, df3file) != img_size) {
+		if(fwrite(uidata, sizeof(unsigned int), img_size, file) != img_size) {
 			throw ImageWriteException(filename, "DF3 unsigned int data");
 		}
 		if(uidata) {delete [] uidata; uidata=0;}
@@ -213,7 +213,7 @@ int Df3IO::write_data(float *data, int, const Region*,
 			}
 		}
 		ByteOrder::become_big_endian(usdata, img_size);
-		if(fwrite(usdata, sizeof(unsigned short), img_size, df3file) != img_size) {
+		if(fwrite(usdata, sizeof(unsigned short), img_size, file) != img_size) {
 			throw ImageWriteException(filename, "DF3 unsigned short data");
 		}
 		if(usdata) {delete [] usdata; usdata=0;}
@@ -231,7 +231,7 @@ int Df3IO::write_data(float *data, int, const Region*,
 				ucdata[i]=(unsigned char)((data[i]-rendermin)/(rendermax-rendermin)*UCHAR_MAX);
 			}
 		}
-		if(fwrite(ucdata, sizeof(unsigned char), img_size, df3file) != img_size) {
+		if(fwrite(ucdata, sizeof(unsigned char), img_size, file) != img_size) {
 			throw ImageWriteException(filename, "DF3 unsigned char data");
 		}
 		if(ucdata) {delete [] ucdata; ucdata=0;}
@@ -246,7 +246,7 @@ int Df3IO::write_data(float *data, int, const Region*,
 
 void Df3IO::flush()
 {
-	fflush(df3file);
+	fflush(file);
 }
 
 bool Df3IO::is_image_big_endian()

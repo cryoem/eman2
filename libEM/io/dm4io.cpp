@@ -740,7 +740,7 @@ int TagGroup::get_entry_id()
 /////////////////////////////////////////////////////////////////////////////////////////////
 
 DM4IO::DM4IO(const string & fname, IOMode rw)
-	:	ImageIO(fname, rw), dm4file(0)
+	:	ImageIO(fname, rw), file(0)
 {
 	is_big_endian = ByteOrder::is_host_big_endian();
 	tagtable = new TagTable();
@@ -748,9 +748,9 @@ DM4IO::DM4IO(const string & fname, IOMode rw)
 
 DM4IO::~DM4IO()
 {
-	if (dm4file) {
-		fclose(dm4file);
-		dm4file = 0;
+	if (file) {
+		fclose(file);
+		file = 0;
 	}
 	if (tagtable) {
 		delete tagtable;
@@ -770,20 +770,20 @@ void DM4IO::init()
 		throw ImageReadException(filename, "only support DM4 read-only");
 	}
 
-	dm4file = sfopen(filename, READ_ONLY);
+	file = sfopen(filename, READ_ONLY);
 
 	int stream_version = 0;
-	if (fread(&stream_version, sizeof(stream_version), 1, dm4file) != 1) {
+	if (fread(&stream_version, sizeof(stream_version), 1, file) != 1) {
 		throw ImageReadException(filename, "read stream version of DM4 file");
 	}
 
 	long long recsize;
-	if (fread(&recsize, sizeof(recsize), 1, dm4file) != 1) {
+	if (fread(&recsize, sizeof(recsize), 1, file) != 1) {
 		throw ImageReadException(filename, "read size of TagGroup recoed of DM4 file");
 	}
 
 	int endianness;
-	if (fread(&endianness, sizeof(endianness), 1, dm4file) != 1) {
+	if (fread(&endianness, sizeof(endianness), 1, file) != 1) {
 		throw ImageReadException(filename, "read endianness indicator of DM4 file");
 	}
 
@@ -854,8 +854,8 @@ int DM4IO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	image_index = 0;
 	check_read_access(image_index);
 
-	portable_fseek(dm4file, NUM_ID_INT * sizeof(int), SEEK_SET);
-	TagGroup root_group(dm4file, tagtable, "");
+	portable_fseek(file, NUM_ID_INT * sizeof(int), SEEK_SET);
+	TagGroup root_group(file, tagtable, "");
 	root_group.read_tag_group(true, 0, 1);
 
 	int nx = tagtable->get_xsize();
@@ -911,15 +911,15 @@ int DM4IO::read_data(float *rdata, int image_index, const Region * area, bool)
 
 	check_read_access(image_index, rdata);
 
-	portable_fseek(dm4file, NUM_ID_INT * sizeof(int), SEEK_SET);
-	TagGroup root_group(dm4file, tagtable, "");
+	portable_fseek(file, NUM_ID_INT * sizeof(int), SEEK_SET);
+	TagGroup root_group(file, tagtable, "");
 	root_group.read_tag_group(true, 0, 1);
 
 	int nx = tagtable->get_xsize();
 	int ny = tagtable->get_ysize();
 	int num_images = tagtable->get_image_counted();
 
-	portable_fseek(dm4file, NUM_ID_INT * sizeof(int), SEEK_SET);
+	portable_fseek(file, NUM_ID_INT * sizeof(int), SEEK_SET);
 	root_group.read_tag_group(false, image_index, num_images);
 
 	check_region(area, IntSize(nx, ny));
@@ -1038,7 +1038,7 @@ int DM4IO::get_nimg()
 {
 	init();
 
-	TagGroup root_group(dm4file, tagtable, "");
+	TagGroup root_group(file, tagtable, "");
 	root_group.read_tag_group(true, 0, 1);
 
 	return tagtable->get_image_counted();

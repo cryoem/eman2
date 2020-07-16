@@ -42,7 +42,7 @@ const char * SitusIO::OUTFORMAT = "%12.6f";
 const int SitusIO::LINE_LENGTH = 1024;
 
 SitusIO::SitusIO(const string & fname, IOMode rw) :
-		ImageIO(fname, rw), situsfile(0),
+		ImageIO(fname, rw), file(0),
 		is_new_file(false),
 		apix(0.0f), origx(0.0f), origy(0.0f), origz(0.0f),
 		nx(0), ny(0), nz(0)
@@ -51,9 +51,9 @@ SitusIO::SitusIO(const string & fname, IOMode rw) :
 
 SitusIO::~SitusIO()
 {
-	if (situsfile) {
-		fclose(situsfile);
-		situsfile = 0;
+	if (file) {
+		fclose(file);
+		file = 0;
 	}
 }
 
@@ -65,11 +65,11 @@ void SitusIO::init()
 	}
 
 	initialized = true;
-	situsfile = sfopen(filename, rw_mode, &is_new_file);
+	file = sfopen(filename, rw_mode, &is_new_file);
 
 	if (!is_new_file) {
 		char first_block[1024];
-		fread(&first_block, sizeof(char), sizeof(first_block), situsfile);
+		fread(&first_block, sizeof(char), sizeof(first_block), file);
 		if (!is_valid(&first_block)) {
 			throw ImageReadException(filename, "invalid SITUS file");
 		}
@@ -89,8 +89,8 @@ int SitusIO::read_data(float* data, int image_index, const EMAN::Region*, bool)
 
 	image_index = 0;	//single image format
 
-	portable_fseek(situsfile, 0, SEEK_SET);
-	EMUtil::jump_lines(situsfile, SITUS_HEADER_LINES);	//skip header lines
+	portable_fseek(file, 0, SEEK_SET);
+	EMUtil::jump_lines(file, SITUS_HEADER_LINES);	//skip header lines
 
 	int number_lines = nx*ny*nz / NFLOAT_PER_LINE + 1;
 
@@ -98,7 +98,7 @@ int SitusIO::read_data(float* data, int image_index, const EMAN::Region*, bool)
 	int nitems_in_line = 0;
 	for (int i=0; i<number_lines; ++i) {
 		char line[LINE_LENGTH];
-		if (!fgets(line, sizeof(line), situsfile)) {
+		if (!fgets(line, sizeof(line), file)) {
 			printf("read situs file failed\n");
 		}
 
@@ -152,11 +152,11 @@ int SitusIO::write_header(const EMAN::Dict& dict, int, const EMAN::Region*, EMAN
 	char headerline[LINE_LENGTH];
 	sprintf(headerline, "%.6f %.6f %.6f %.6f %d %d %d", apix, origx, origy, origz, nx, ny, nz);
 
-	if(!fputs(headerline, situsfile)) {
+	if(!fputs(headerline, file)) {
 		printf("Write situs header failed\n");
 	}
 
-	if(!fputs("\n\n", situsfile)) {
+	if(!fputs("\n\n", file)) {
 		printf("Write situs header failed\n");
 	}
 
@@ -169,9 +169,9 @@ int SitusIO::write_data(float* data, int, const EMAN::Region*, EMAN::EMUtil::EMD
 	ENTERFUNC;
 
 	for (size_t index=0; index<(size_t)nx*ny*nz; ++index) {
-		fprintf(situsfile, OUTFORMAT, data[index]);
+		fprintf(file, OUTFORMAT, data[index]);
 		if((index+1)%NFLOAT_PER_LINE == 0) {
-			fputs("\n", situsfile);
+			fputs("\n", file);
 		}
 	}
 
@@ -206,7 +206,7 @@ bool SitusIO::is_valid(const void *first_block)
 
 void SitusIO::flush()
 {
-	fflush(situsfile);
+	fflush(file);
 }
 
 bool SitusIO::is_image_big_endian()

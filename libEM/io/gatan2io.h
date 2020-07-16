@@ -76,7 +76,7 @@ namespace EMAN
 		int to_em_datatype(int gatan_type);
 
 	  private:
-		FILE *gatan2_file;
+		FILE *file;
 		Gatan2Header gatanh;
 
 		bool is_big_endian;

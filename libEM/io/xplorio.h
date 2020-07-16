@@ -67,7 +67,7 @@ namespace EMAN
 		static bool is_valid(const void *first_block);
 
 	  private:		
-		FILE *xplor_file;
+		FILE *file;
 
 		bool is_big_endian;
 		bool is_new_file;

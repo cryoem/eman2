@@ -46,7 +46,7 @@ using namespace EMAN;
 const char *AmiraIO::MAGIC = "# AmiraMesh";
 
 AmiraIO::AmiraIO(const string & fname, IOMode rw)
-:	ImageIO(fname, rw), amira_file(0),
+:	ImageIO(fname, rw), file(0),
 	is_big_endian(true), dt(EMUtil::EM_UNKNOWN),
 	 nx(0), ny(0), nz(0),
 	 pixel(0), xorigin(0), yorigin(0), zorigin(0)
@@ -55,9 +55,9 @@ AmiraIO::AmiraIO(const string & fname, IOMode rw)
 
 AmiraIO::~AmiraIO()
 {
-	if (amira_file) {
-		fclose(amira_file);
-		amira_file = 0;
+	if (file) {
+		fclose(file);
+		file = 0;
 	}
 }
 
@@ -72,11 +72,11 @@ void AmiraIO::init()
 	initialized = true;
 	bool is_new_file = false;
 
-	amira_file = sfopen(filename, rw_mode, &is_new_file, true);
+	file = sfopen(filename, rw_mode, &is_new_file, true);
 
 	if (!is_new_file) {
 		char buf[MAXPATHLEN];
-		if (!fgets(buf, MAXPATHLEN, amira_file)) {
+		if (!fgets(buf, MAXPATHLEN, file)) {
 			throw ImageReadException(filename, "Amira Header");
 		}
 
@@ -130,7 +130,7 @@ int AmiraIO::read_header(Dict & dict, int image_index, const Region *, bool)
 	char datatype[16] = "";
 
 	do {
-		char * str = fgets(ll,MAXPATHLEN,amira_file); str = str;
+		char * str = fgets(ll,MAXPATHLEN,file); str = str;
 //		printf("%s", ll);
 		if(char* s=strstr(ll,"define Lattice ")) {
 			if(sscanf(s+15,"%d %d %d",&nx, &ny, &nz) == 3) {
@@ -224,7 +224,7 @@ int AmiraIO::write_header(const Dict & dict, int image_index, const Region*, EMU
 	float pixel = 0.0f;
 	if(dict.has_key("apix_x")) pixel = dict["apix_x"];
 
-	rewind(amira_file);
+	rewind(file);
 
 	string line1;
 	if(ByteOrder::is_host_big_endian()) {
@@ -236,17 +236,17 @@ int AmiraIO::write_header(const Dict & dict, int image_index, const Region*, EMU
 
 	string type = "float";
 
-	if (fprintf(amira_file, "%s", line1.c_str()) <= 0) {
+	if (fprintf(file, "%s", line1.c_str()) <= 0) {
 		LOGERR("cannot write to AmiraMesh file '%s'", filename.c_str());
 		err = 1;
 	}
 	else {
-		fprintf(amira_file,"define Lattice %d %d %d\n\n",nx,ny,nz);
-		fprintf(amira_file,"Parameters {\n");
-		fprintf(amira_file, "\tContent \"%dx%dx%d %s, uniform coordinates\",\n", nx,ny,nz,type.c_str());
-		fprintf(amira_file, "\tCoordType \"uniform\",\n");
-		fprintf(amira_file,"\tBoundingBox %.2f %.2f %.2f %.2f %.2f %.2f\n}\n\n",xorigin,xorigin+pixel*(nx-1),yorigin,yorigin+pixel*(ny-1),zorigin,zorigin+pixel*(nz-1));
-		fprintf(amira_file, "Lattice { float ScalarField } @1\n\n# Data section follows\n@1\n");
+		fprintf(file,"define Lattice %d %d %d\n\n",nx,ny,nz);
+		fprintf(file,"Parameters {\n");
+		fprintf(file, "\tContent \"%dx%dx%d %s, uniform coordinates\",\n", nx,ny,nz,type.c_str());
+		fprintf(file, "\tCoordType \"uniform\",\n");
+		fprintf(file,"\tBoundingBox %.2f %.2f %.2f %.2f %.2f %.2f\n}\n\n",xorigin,xorigin+pixel*(nx-1),yorigin,yorigin+pixel*(ny-1),zorigin,zorigin+pixel*(nz-1));
+		fprintf(file, "Lattice { float ScalarField } @1\n\n# Data section follows\n@1\n");
 	}
 
 	EXITFUNC;
@@ -263,7 +263,7 @@ int AmiraIO::read_data(float * rdata, int, const Region *, bool)
 	switch(dt) {
 	case EMUtil::EM_FLOAT:
 		
-		nr = fread(rdata,nx*nz,ny*sizeof(float),amira_file); nr++;
+		nr = fread(rdata,nx*nz,ny*sizeof(float),file); nr++;
 		
 		if ( (is_big_endian && ByteOrder::is_host_big_endian()) && !(is_big_endian || ByteOrder::is_host_big_endian()) ) {
 			char tmpdata;
@@ -299,7 +299,7 @@ int AmiraIO::read_data(float * rdata, int, const Region *, bool)
 	case EMUtil::EM_SHORT:
 	{
 		short *datashort = (short*)malloc(sizeof(short)*nx*ny*nz);
-		nr = fread(datashort,nx*nz,ny*sizeof(short),amira_file); nr++;
+		nr = fread(datashort,nx*nz,ny*sizeof(short),file); nr++;
 
 		if ( (is_big_endian && ByteOrder::is_host_big_endian()) && !(is_big_endian || ByteOrder::is_host_big_endian()) ) {
 			char tmpdata;
@@ -333,7 +333,7 @@ int AmiraIO::read_data(float * rdata, int, const Region *, bool)
 	case EMUtil::EM_CHAR:
 	{
 		char *databyte = (char*)malloc(sizeof(char)*nx*ny*nz);
-		nr = fread(databyte,nx*nz,ny*sizeof(char),amira_file); nr++;
+		nr = fread(databyte,nx*nz,ny*sizeof(char),file); nr++;
 
 		for(size_t i=0; i<size; ++i) rdata[i] = float(databyte[i]);
 		free(databyte);
@@ -385,7 +385,7 @@ int AmiraIO::write_data(float *data, int image_index, const Region*, EMUtil::EMD
 	}
 	delete[] copydata;	
 	
-	if (fwrite(data, nx * nz, ny * sizeof(float), amira_file) != ny * sizeof(float)) {
+	if (fwrite(data, nx * nz, ny * sizeof(float), file) != ny * sizeof(float)) {
 		throw ImageWriteException(filename, "incomplete file write in AmiraMesh file");
 	}
 
@@ -395,7 +395,7 @@ int AmiraIO::write_data(float *data, int image_index, const Region*, EMUtil::EMD
 
 void AmiraIO::flush()
 {
-	fflush(amira_file);
+	fflush(file);
 }
 
 bool AmiraIO::is_complex_mode()

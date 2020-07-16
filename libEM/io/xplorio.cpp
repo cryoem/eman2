@@ -54,7 +54,7 @@ const int XplorIO::FLOAT_SIZE = 12;
 const char * XplorIO::OUTFORMAT = "%12.5E";
 
 XplorIO::XplorIO(const string & fname, IOMode rw)
-:	ImageIO(fname, rw), xplor_file(0)
+:	ImageIO(fname, rw), file(0)
 {
 	is_big_endian = ByteOrder::is_host_big_endian();
 	is_new_file = false;
@@ -75,9 +75,9 @@ XplorIO::XplorIO(const string & fname, IOMode rw)
 
 XplorIO::~XplorIO()
 {
-	if (xplor_file) {
-		fclose(xplor_file);
-		xplor_file = 0;
+	if (file) {
+		fclose(file);
+		file = 0;
 	}
 }
 
@@ -89,15 +89,15 @@ void XplorIO::init()
 
 	ENTERFUNC;
 	initialized = true;
-	xplor_file = sfopen(filename, rw_mode, &is_new_file);
+	file = sfopen(filename, rw_mode, &is_new_file);
 
 	if (!is_new_file) {
 		char first_block[1024];
-		fread(&first_block, sizeof(char), sizeof(first_block), xplor_file);
+		fread(&first_block, sizeof(char), sizeof(first_block), file);
 		if (!is_valid(&first_block)) {
 			throw ImageReadException(filename, "invalid XPLOR");
 		}
-		portable_fseek(xplor_file, 0, SEEK_SET);
+		portable_fseek(file, 0, SEEK_SET);
 		char line[1024];
 		int i = 1;
 		int ntitle = 0;
@@ -113,7 +113,7 @@ void XplorIO::init()
 		float celly = 0;
 		float cellz = 0;
 
-		while(fgets(line, sizeof(line), xplor_file)) {
+		while(fgets(line, sizeof(line), file)) {
 			line[strlen(line)-1] = '\0';
 			if (i == 2) {
 				ntitle = atoi(line);
@@ -250,11 +250,11 @@ int XplorIO::write_header(const Dict & dict, int image_index, const Region* area
 	nlines_in_header = 0;
 	time_t t0 = time(0);
 	struct tm *t = localtime(&t0);
-	rewind(xplor_file);
+	rewind(file);
 
-	fprintf(xplor_file, "\n");
-	fprintf(xplor_file, "%8d\n", 1);
-	fprintf(xplor_file, "\"%s\" written by EMAN at %s", filename.c_str(), asctime(t));
+	fprintf(file, "\n");
+	fprintf(file, "%8d\n", 1);
+	fprintf(file, "\"%s\" written by EMAN at %s", filename.c_str(), asctime(t));
 
 	int z0 = -nz / 2;
 	int z1 = (nz - 1) / 2;
@@ -264,7 +264,7 @@ int XplorIO::write_header(const Dict & dict, int image_index, const Region* area
 		z1 = nz - 1;
 	}
 
-	fprintf(xplor_file, "%8d%8d%8d%8d%8d%8d%8d%8d%8d\n",
+	fprintf(file, "%8d%8d%8d%8d%8d%8d%8d%8d%8d\n",
 			nx, -nx / 2, nx % 2 ? nx / 2 : nx / 2 - 1, ny, -ny / 2,
 			ny % 2 ? ny / 2 : ny / 2 - 1, nz, z0, z1);
 
@@ -272,9 +272,9 @@ int XplorIO::write_header(const Dict & dict, int image_index, const Region* area
 	sprintf(fformat, "%s%s%s%s%s%s\n",
 			OUTFORMAT, OUTFORMAT,OUTFORMAT, OUTFORMAT, OUTFORMAT,OUTFORMAT);
 
-	fprintf(xplor_file, fformat,
+	fprintf(file, fformat,
 			nx * apix_x, ny * apix_y, nz * apix_z, 90.0, 90.0, 90.0);
-	fprintf(xplor_file, "ZYX\n");
+	fprintf(file, "ZYX\n");
 	nlines_in_header = 5;
 	flush();
 
@@ -306,10 +306,10 @@ int XplorIO::read_data(float *data, int image_index, const Region *area, bool)
 	}
 
 	Assert(nlines_in_header > 0);
-	rewind(xplor_file);
-	EMUtil::jump_lines(xplor_file, nlines_in_header);
+	rewind(file);
+	EMUtil::jump_lines(file, nlines_in_header);
 
-	EMUtil::process_ascii_region_io(data, xplor_file, ImageIO::READ_ONLY, image_index,
+	EMUtil::process_ascii_region_io(data, file, ImageIO::READ_ONLY, image_index,
 									FLOAT_SIZE, nx, ny, nz, area, true,
 									NFLOAT_PER_LINE, OUTFORMAT);
 
@@ -329,7 +329,7 @@ int XplorIO::read_data(float *data, int, const Region *, bool)
 	int nleft = nxy - nlines * step;
 
 	for (int k = 0; k < nz; k++) {
-		fgets(line, sizeof(line), xplor_file);
+		fgets(line, sizeof(line), file);
 		int kk = 0;
 		sscanf(line, "%d", &kk);
 		if (kk != (k+1)) {
@@ -339,7 +339,7 @@ int XplorIO::read_data(float *data, int, const Region *, bool)
 		int k2 = k * nxy;
 
 		for (int i = 0; i < nlines; i++) {
-			fgets(line, sizeof(line), xplor_file);
+			fgets(line, sizeof(line), file);
 			int i2 = k2 + i * step;
 			sscanf(line, "%f %f %f %f %f %f",
 				   &data[i2], &data[i2+1], &data[i2+2],
@@ -348,7 +348,7 @@ int XplorIO::read_data(float *data, int, const Region *, bool)
 
 		if (nleft > 0) {
 			int i2 = k2 + nlines * step;
-			fgets(line, sizeof(line), xplor_file);
+			fgets(line, sizeof(line), file);
 			char *pline = line;
 			for (int j = 0; j < nleft; j++) {
 				sscanf(pline, "%f", &data[i2+j]);
@@ -375,8 +375,8 @@ int XplorIO::write_data(float *data, int image_index, const Region* area,
 	check_region(area, FloatSize(nx,ny,nz), is_new_file);
 
 	if (!is_new_file) {
-		rewind(xplor_file);
-		EMUtil::jump_lines(xplor_file, nlines_in_header);
+		rewind(file);
+		EMUtil::jump_lines(file, nlines_in_header);
 	}
 
 	int nsecs = nx * ny;
@@ -384,27 +384,27 @@ int XplorIO::write_data(float *data, int image_index, const Region* area,
 
 	if (!area) {
 		for (int k = 0; k < nz; ++k) {
-			fprintf(xplor_file, "%8d\n", (k+1));
+			fprintf(file, "%8d\n", (k+1));
 
 			for (int i = 0; i < nsecs - step; i += step) {
 				for (int j = 0; j < step; j++) {
-					fprintf(xplor_file, OUTFORMAT, data[k * nsecs + i + j]);
+					fprintf(file, OUTFORMAT, data[k * nsecs + i + j]);
 				}
-				fprintf(xplor_file, "\n");
+				fprintf(file, "\n");
 			}
 
 			for (int l = (nsecs - 1) / step * step; l < nsecs; l++) {
-				fprintf(xplor_file, OUTFORMAT, data[k * nsecs + l]);
+				fprintf(file, OUTFORMAT, data[k * nsecs + l]);
 			}
 
-			fprintf(xplor_file, "\n");
+			fprintf(file, "\n");
 		}
 
 		// not sure what this is doing. so comment out.
 		//fprintf(xplor_file, "%8d\n", -9999);
 	}
 	else {
-		EMUtil::process_ascii_region_io(data, xplor_file, ImageIO::WRITE_ONLY,
+		EMUtil::process_ascii_region_io(data, file, ImageIO::WRITE_ONLY,
 										image_index, FLOAT_SIZE, nx, ny, nz,
 										area, true, NFLOAT_PER_LINE, OUTFORMAT);
 
@@ -417,7 +417,7 @@ int XplorIO::write_data(float *data, int image_index, const Region* area,
 
 void XplorIO::flush()
 {
-	fflush(xplor_file);
+	fflush(file);
 }
 
 bool XplorIO::is_complex_mode()
