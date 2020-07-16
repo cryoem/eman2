@@ -55,7 +55,7 @@ namespace EMAN
 	 * ftp:://ftp.hdfgroup.org/HDF5/special_tools/h5check/
 	 * to verify the HDF5 file is compliant with the HDF5 File Format Specification. 
 	 */
-	class HdfIO:public ImageIO
+	class HdfIO : public ImageIO
 	{
 	  public:
 		enum DataType

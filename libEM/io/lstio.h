@@ -42,7 +42,7 @@ namespace EMAN
 	 */
 		
 		
-	class LstIO:public ImageIO
+	class LstIO : public ImageIO
 	{
 	  public:
 		explicit LstIO(const string & fname, IOMode rw_mode = READ_ONLY);

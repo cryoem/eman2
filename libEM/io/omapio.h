@@ -47,7 +47,7 @@ namespace EMAN
 	 * - BRIX (BINARY; input and output) - similar to DSN6, but has a human-readable first record that contains the cell constants etc.
 	 * - OMAP (input and output) - treated as DSN6
 	 *  */
-	class OmapIO:public ImageIO
+	class OmapIO : public ImageIO
 	{
 	public:
 		explicit OmapIO(const string & fname, IOMode rw_mode = READ_ONLY);

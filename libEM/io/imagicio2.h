@@ -66,7 +66,7 @@ namespace EMAN
 	 * but write to new format from - Grant Tang.
 	 */
 
-	class ImagicIO2:public ImageIO
+	class ImagicIO2 : public ImageIO
 	{
 	  public:
 		static const char *HED_EXT;

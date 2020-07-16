@@ -51,7 +51,7 @@
 
 namespace EMAN
 {
-	class Df3IO:public ImageIO
+	class Df3IO : public ImageIO
 	{
 	public:
 		explicit Df3IO(const string & fname, IOMode rw_mode = READ_ONLY);

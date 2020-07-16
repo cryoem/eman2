@@ -42,7 +42,7 @@ namespace EMAN
 	 * A Gatan2 file contains 1 2D image.
 	 */
 	   
-	class Gatan2IO:public ImageIO
+	class Gatan2IO : public ImageIO
 	{
 	  public:
 		explicit Gatan2IO(const string & fname, IOMode rw_mode = READ_ONLY);

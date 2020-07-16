@@ -41,7 +41,7 @@ namespace EMAN
 	 *
 	 * An EM image file stores 1 single 2D or 3D image.
      */
-	class EmIO:public ImageIO
+	class EmIO : public ImageIO
 	{
 	  public:
 		explicit EmIO(const string & fname, IOMode rw_mode = READ_ONLY);

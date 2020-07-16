@@ -41,7 +41,7 @@ namespace EMAN
 	 * dimensions and pixel type are defined in the header.
 	 */
 	
-	class FitsIO:public ImageIO
+	class FitsIO : public ImageIO
 	{
 	public:
 		explicit FitsIO(const string & fname, IOMode rw_mode = READ_ONLY);

@@ -41,7 +41,7 @@ namespace EMAN
 	 * image format, please refer spiderio.h.
 	 * @see spiderio.h
 	 */	
-	class SingleSpiderIO:public SpiderIO
+	class SingleSpiderIO : public SpiderIO
 	{
 	  public:
 		/** SingleSpiderIO constructor.

@@ -51,7 +51,7 @@ namespace EMAN
 	 */
 		
 		
-	class LstFastIO:public ImageIO
+	class LstFastIO : public ImageIO
 	{
 	  public:
 		explicit LstFastIO(const string & fname, IOMode rw_mode = READ_ONLY);

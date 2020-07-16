@@ -45,7 +45,7 @@ namespace EMAN
 	 *
 	 * A TIFF file contains 1 2D image.
 	*/
-	class TiffIO:public ImageIO
+	class TiffIO : public ImageIO
 	{
 	  public:
 		explicit TiffIO(const string & fname, IOMode rw_mode = READ_ONLY);

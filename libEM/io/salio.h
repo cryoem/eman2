@@ -44,7 +44,7 @@ namespace EMAN
 	 * Each pair of hdr/img SAL files contains 1 2D image.
 	*/
 
-	class SalIO:public ImageIO
+	class SalIO : public ImageIO
 	{
 	  public:
 		explicit SalIO(const string & fname, IOMode rw_mode = READ_ONLY);

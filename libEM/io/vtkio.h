@@ -69,7 +69,7 @@ namespace EMAN
 	 *
 	 * A VTK file contains 1 2D or 3D image.
 	 */
-	class VtkIO:public ImageIO
+	class VtkIO : public ImageIO
 	{
 	  public:
 		explicit VtkIO(const string & fname, IOMode rw_mode = READ_ONLY);

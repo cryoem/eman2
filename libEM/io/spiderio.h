@@ -68,7 +68,7 @@ namespace EMAN
 	 * file, use image_index = -1.
      *
 	 */
-	class SpiderIO:public ImageIO
+	class SpiderIO : public ImageIO
 	{
 	  public:
 		explicit SpiderIO(const string & fname, IOMode rw_mode = READ_ONLY);

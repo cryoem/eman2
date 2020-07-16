@@ -62,7 +62,7 @@ namespace EMAN
 	 * 
 	 */
 
-	class ImagicIO:public ImageIO
+	class ImagicIO : public ImageIO
 	{
 	  public:
 		static const char *HED_EXT;

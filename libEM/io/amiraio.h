@@ -45,7 +45,7 @@ namespace EMAN
 	 *
 	 * An Amira file has only 1 2D or 3D image.
 	 */
-	class AmiraIO:public ImageIO
+	class AmiraIO : public ImageIO
 	{
 	  public:
 		AmiraIO(const string & fname, IOMode rw_mode = READ_ONLY);

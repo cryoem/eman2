@@ -64,7 +64,7 @@ namespace EMAN
 	 * ftp:://ftp.hdfgroup.org/HDF5/special_tools/h5check/
 	 * to verify the HDF5 file is compliant with the HDF5 File Format Specification.
 	 */
-	class HdfIO2:public ImageIO
+	class HdfIO2 : public ImageIO
 	{
 	  public:
 		explicit HdfIO2(const string & fname, IOMode rw_mode = READ_ONLY);
