@@ -263,6 +263,10 @@ namespace EMAN
 			}
 		}
 
+		string get_filename() const {
+			return filename;
+		}
+
 	protected:
 		/** Do some initialization before doing the read/write.
 		 */

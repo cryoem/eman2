@@ -57,12 +57,12 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 	else {
 		int err = imageio->read_header(attr_dict, img_index, region, is_3d);
 		if (err) {
-			throw ImageReadException(filename, "imageio read header failed");
+			throw ImageReadException(imageio->get_filename(), "imageio read header failed");
 		}
 		else {
 			LstIO * myLstIO = dynamic_cast<LstIO *>(imageio);
 			if(!myLstIO)
-			    attr_dict["source_path"] = filename;	//"source_path" is set to full path of reference image for LstIO, so skip this statement
+			    attr_dict["source_path"] = imageio->get_filename();	//"source_path" is set to full path of reference image for LstIO, so skip this statement
 			attr_dict["source_n"] = img_index;
 			if (imageio->is_complex_mode()) {
 				set_complex(true);
@@ -103,7 +103,7 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 				// should be safe.
 				int err = imageio->read_data(get_data(), img_index, region, is_3d);
 				if (err) {
-					throw ImageReadException(filename, "imageio read data failed");
+					throw ImageReadException(imageio->get_filename(), "imageio read data failed");
 				}
 				else {
 					update();
