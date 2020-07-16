@@ -44,17 +44,9 @@ using std::shared_ptr;
 
 using namespace EMAN;
 
-void EMData::read_image(const string & filename, int img_index, bool nodata,
+void EMData::_read_image(ImageIO *imageio, int img_index, bool nodata,
 						const Region * region, bool is_3d)
 {
-	ENTERFUNC;
-
-	ImageIO *imageio = EMUtil::get_imageio(filename, ImageIO::READ_ONLY);
-
-	if (!imageio) {
-		throw ImageFormatException("cannot create an image io");
-	}
-	else {
 		int err = imageio->read_header(attr_dict, img_index, region, is_3d);
 		if (err) {
 			throw ImageReadException(imageio->get_filename(), "imageio read header failed");
@@ -115,8 +107,21 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 			}
 
 		}
+}
+
+void EMData::read_image(const string & filename, int img_index, bool nodata,
+						const Region * region, bool is_3d)
+{
+	ENTERFUNC;
+
+	ImageIO *imageio = EMUtil::get_imageio(filename, ImageIO::READ_ONLY);
+
+	if (!imageio) {
+		throw ImageFormatException("cannot create an image io");
 	}
     
+	_read_image(imageio, img_index, nodata, region, is_3d);
+
 	EMUtil::close_imageio(filename, imageio);
 	imageio = 0;
 	EXITFUNC;

@@ -38,6 +38,10 @@
 #define emdata__io_h__
 
 
+private:
+void _read_image(ImageIO *imageio, int img_index, bool nodata,
+						 const Region * region, bool is_3d);
+
 public:
 /** read an image file and stores its information to this
  * EMData object.
