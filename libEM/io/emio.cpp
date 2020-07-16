@@ -36,7 +36,7 @@
 using namespace EMAN;
 
 EmIO::EmIO(const string & fname, IOMode rw)
-:	ImageIO(fname, rw), file(0)
+:	ImageIO(fname, rw)
 {
 	mode_size = 0;
 	mode = EM_EM_UNKNOWN;

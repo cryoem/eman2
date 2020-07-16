@@ -43,7 +43,7 @@ using namespace EMAN;
 
 SpiderIO::SpiderIO(const string & fname, IOMode rw)
 :	ImageIO(fname, rw),
-	file(0), first_h(0), cur_h(0),
+	first_h(0), cur_h(0),
 	is_big_endian(ByteOrder::is_host_big_endian())
 {
 	is_new_file = !Util::is_file_exist(filename);

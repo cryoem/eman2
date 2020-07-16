@@ -740,7 +740,7 @@ int TagGroup::get_entry_id()
 /////////////////////////////////////////////////////////////////////////////////////////////
 
 DM4IO::DM4IO(const string & fname, IOMode rw)
-	:	ImageIO(fname, rw), file(0)
+	:	ImageIO(fname, rw)
 {
 	is_big_endian = ByteOrder::is_host_big_endian();
 	tagtable = new TagTable();

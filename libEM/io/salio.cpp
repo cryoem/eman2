@@ -51,7 +51,7 @@ const char *SalIO::MAGIC = " IDENTIFICATION";
 
 
 SalIO::SalIO(const string & fname, IOMode rw)
-:	ImageIO(fname, rw), file(0)
+:	ImageIO(fname, rw)
 {
 	nx = 0;
 	ny = 0;

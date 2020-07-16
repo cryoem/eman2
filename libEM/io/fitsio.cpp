@@ -43,7 +43,6 @@ FitsIO::FitsIO(const string & fname, IOMode rw)
 {
 	is_big_endian = ByteOrder::is_host_big_endian();
 	is_new_file = false;
-	file=0;
 }
 
 FitsIO::~FitsIO()
