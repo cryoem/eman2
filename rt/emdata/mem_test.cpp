@@ -36,8 +36,6 @@
 
 #include <boost/shared_array.hpp>
 using boost::shared_array;
-#include <boost/shared_ptr.hpp>
-using boost::shared_ptr;
 
 using namespace std;
 using namespace EMAN;

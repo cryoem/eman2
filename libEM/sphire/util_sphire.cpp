@@ -37,7 +37,6 @@
 #include <string>
 #include <ctime>
 #include <iostream>
-#include <boost/shared_ptr.hpp>
 #include <cstdio>
 #include <cstdlib>
 #include <cassert>

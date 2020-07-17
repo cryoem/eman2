@@ -79,7 +79,7 @@ BOOST_PYTHON_MODULE(libpyTypeConverter2)
 	EMAN::vector_to_python<EMAN::EMAN2Ctf>();
 	EMAN::vector_to_python<std::string>();
 	EMAN::vector_to_python<EMAN::EMData*>();
-	EMAN::vector_to_python< boost::shared_ptr<EMAN::EMData> >();
+	EMAN::vector_to_python< std::shared_ptr<EMAN::EMData> >();
 	EMAN::vector_to_python<EMAN::Pixel>();
 	EMAN::vector_to_python<EMAN::EMObject>();
 	EMAN::vector_to_python<EMAN::Vec3f>();
@@ -150,7 +150,7 @@ BOOST_PYTHON_MODULE(libpyTypeConverter2)
 	EMAN::emobject_eman2ctf_from_python();
 	EMAN::emobject_null_from_python();
 
-	register_ptr_to_python< boost::shared_ptr<EMAN::EMData> >();
+	register_ptr_to_python< std::shared_ptr<EMAN::EMData> >();
 
 	implicitly_convertible<int, EMAN::EMObject>();
 	//implicitly_convertible<float, EMAN::EMObject>();

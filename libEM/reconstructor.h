@@ -34,7 +34,7 @@
 #ifndef eman_reconstructor_h__
 #define eman_reconstructor_h__ 1
 #include <fstream>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include "emdata.h"
 #include "exception.h"
 #include "emobject.h"
@@ -43,7 +43,7 @@
 using std::vector;
 using std::map;
 using std::string;
-using boost::shared_ptr;
+using std::shared_ptr;
 
 using std::cout;
 using std::cerr;
