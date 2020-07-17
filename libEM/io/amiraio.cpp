@@ -45,8 +45,8 @@ using namespace EMAN;
 
 const char *AmiraIO::MAGIC = "# AmiraMesh";
 
-AmiraIO::AmiraIO(const string & file, IOMode rw)
-:	ImageIO(file), rw_mode(rw), amira_file(0),
+AmiraIO::AmiraIO(const string & fname, IOMode rw)
+:	ImageIO(fname), rw_mode(rw), amira_file(0),
 	is_big_endian(true), initialized(false), dt(EMUtil::EM_UNKNOWN),
 	 nx(0), ny(0), nz(0),
 	 pixel(0), xorigin(0), yorigin(0), zorigin(0)

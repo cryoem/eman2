@@ -54,7 +54,7 @@ namespace EMAN
 	class Df3IO:public ImageIO
 	{
 	public:
-		explicit Df3IO(const string & filename, IOMode rw_mode = READ_ONLY);
+		explicit Df3IO(const string & fname, IOMode rw_mode = READ_ONLY);
 		~Df3IO();
 
 		DEFINE_IMAGEIO_FUNC;

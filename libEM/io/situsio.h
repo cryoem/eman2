@@ -48,7 +48,7 @@ namespace EMAN
 	class SitusIO : public ImageIO
 	{
 	public:
-		explicit SitusIO(const string & omapname, IOMode rw_mode = READ_ONLY);
+		explicit SitusIO(const string & fname, IOMode rw_mode = READ_ONLY);
 		~SitusIO();
 
 		DEFINE_IMAGEIO_FUNC;

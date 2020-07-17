@@ -249,7 +249,7 @@ namespace EMAN
 	class DM4IO : public ImageIO
 	{
 	  public:
-		explicit DM4IO(const string & filename, IOMode rw_mode = READ_ONLY);
+		explicit DM4IO(const string & fname, IOMode rw_mode = READ_ONLY);
 		~DM4IO();
 
 		DEFINE_IMAGEIO_FUNC;

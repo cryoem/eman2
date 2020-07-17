@@ -48,7 +48,7 @@ namespace EMAN
 		 * @param filename The filename of a single spider image file.
 		 * @param rw_mode Read/Write file open mode.
 		 */
-		explicit SingleSpiderIO(const string & filename, IOMode rw_mode = READ_ONLY);
+		explicit SingleSpiderIO(const string & fname, IOMode rw_mode = READ_ONLY);
 		~SingleSpiderIO();
 		
 		/** Write a single SPIDER format header to an image.

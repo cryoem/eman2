@@ -46,7 +46,7 @@ namespace EMAN
 	class PngIO:public ImageIO
 	{
 	  public:
-		explicit PngIO(const string & filename, IOMode rw_mode = READ_ONLY);
+		explicit PngIO(const string & fname, IOMode rw_mode = READ_ONLY);
 		~PngIO();
 
 		DEFINE_IMAGEIO_FUNC;

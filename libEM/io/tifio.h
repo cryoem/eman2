@@ -48,7 +48,7 @@ namespace EMAN
 	class TiffIO:public ImageIO
 	{
 	  public:
-		explicit TiffIO(string filename, IOMode rw_mode = READ_ONLY);
+		explicit TiffIO(const string & fname, IOMode rw_mode = READ_ONLY);
 		~TiffIO();
 
 		DEFINE_IMAGEIO_FUNC;

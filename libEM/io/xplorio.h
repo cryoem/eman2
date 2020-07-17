@@ -60,7 +60,7 @@ namespace EMAN
 	class XplorIO:public ImageIO
 	{
 	  public:
-		explicit XplorIO(const string & filename, IOMode rw_mode = READ_ONLY);
+		explicit XplorIO(const string & fname, IOMode rw_mode = READ_ONLY);
 		~XplorIO();
 
 		DEFINE_IMAGEIO_FUNC;

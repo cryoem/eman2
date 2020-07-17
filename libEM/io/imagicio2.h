@@ -72,7 +72,7 @@ namespace EMAN
 		static const char *HED_EXT;
 		static const char *IMG_EXT;
 		
-		explicit ImagicIO2(string filename, IOMode rw_mode = READ_ONLY);
+		explicit ImagicIO2(const string & fname, IOMode rw_mode = READ_ONLY);
 		~ImagicIO2();
 
 		DEFINE_IMAGEIO_FUNC;

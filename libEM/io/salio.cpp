@@ -50,8 +50,8 @@ const char *SalIO::IMG_EXT = "img";
 const char *SalIO::MAGIC = " IDENTIFICATION";
 
 
-SalIO::SalIO(const string & file, IOMode rw)
-:	ImageIO(file), rw_mode(rw), sal_file(0), initialized(false)
+SalIO::SalIO(const string & fname, IOMode rw)
+:	ImageIO(fname), rw_mode(rw), sal_file(0), initialized(false)
 {
 	nx = 0;
 	ny = 0;

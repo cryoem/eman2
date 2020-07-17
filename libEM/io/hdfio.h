@@ -62,7 +62,7 @@ namespace EMAN
 		{ INT, FLOAT, STRING };
 
 	  public:
-		explicit HdfIO(const string & filename, IOMode rw_mode = READ_ONLY);
+		explicit HdfIO(const string & fname, IOMode rw_mode = READ_ONLY);
 		~HdfIO();
 
 		DEFINE_IMAGEIO_FUNC;

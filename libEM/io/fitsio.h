@@ -44,7 +44,7 @@ namespace EMAN
 	class FitsIO:public ImageIO
 	{
 	public:
-		explicit FitsIO(const string & filename, IOMode rw_mode = READ_ONLY);
+		explicit FitsIO(const string & fname, IOMode rw_mode = READ_ONLY);
 		~FitsIO();
 
 		DEFINE_IMAGEIO_FUNC;

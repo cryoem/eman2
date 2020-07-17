@@ -39,8 +39,8 @@ using namespace EMAN;
 const char *PgmIO::MAGIC_BINARY = "P5";
 const char *PgmIO::MAGIC_ASCII = "P2";
 
-PgmIO::PgmIO(const string & file, IOMode rw)
-:	ImageIO(file), rw_mode(rw), pgm_file(0), is_big_endian(true),
+PgmIO::PgmIO(const string & fname, IOMode rw)
+:	ImageIO(fname), rw_mode(rw), pgm_file(0), is_big_endian(true),
 	initialized(false), nx(0), ny(0), maxval(0), minval(0),
 	file_offset(0), rendermin(0), rendermax(0), renderbits(16)
 {}

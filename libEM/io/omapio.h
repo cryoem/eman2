@@ -50,7 +50,7 @@ namespace EMAN
 	class OmapIO:public ImageIO
 	{
 	public:
-		explicit OmapIO(const string & omapname, IOMode rw_mode = READ_ONLY);
+		explicit OmapIO(const string & fname, IOMode rw_mode = READ_ONLY);
 		~OmapIO();
 
 		DEFINE_IMAGEIO_FUNC;

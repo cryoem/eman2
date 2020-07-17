@@ -63,7 +63,7 @@ void errno_exit (const char *s)
 }
 
 
-V4L2IO::V4L2IO(const string & file, IOMode rw)
+V4L2IO::V4L2IO(const string & fname, IOMode rw)
 {
 	filename=(char *)malloc(file.length()+1);
 	strcpy(filename,file.c_str());

@@ -242,7 +242,7 @@ namespace EMAN
 	class DM3IO:public ImageIO
 	{
 	  public:
-		explicit DM3IO(const string & filename, IOMode rw_mode = READ_ONLY);
+		explicit DM3IO(const string & fname, IOMode rw_mode = READ_ONLY);
 		~DM3IO();
 
 		DEFINE_IMAGEIO_FUNC;
