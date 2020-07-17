@@ -47,7 +47,7 @@ const char *MrcIO::CTF_MAGIC = "!-";
 const char *MrcIO::SHORT_CTF_MAGIC = "!$";
 
 MrcIO::MrcIO(const string & mrc_filename, IOMode rw)
-:	filename(mrc_filename), rw_mode(rw), mrcfile(0), mode_size(0),
+:	ImageIO(mrc_filename), rw_mode(rw), mrcfile(0), mode_size(0),
 		isFEI(false), is_ri(0), is_new_file(false), initialized(false),
 		is_transpose(false), is_stack(false), stack_size(1),
 		is_8_bit_packed(false), use_given_dimensions(true),

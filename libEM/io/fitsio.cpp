@@ -39,7 +39,7 @@
 using namespace EMAN;
 
 FitsIO::FitsIO(const string & fits_filename, IOMode rw)
-:	filename(fits_filename), rw_mode(rw)
+:	ImageIO(fits_filename), rw_mode(rw)
 {
 	is_big_endian = ByteOrder::is_host_big_endian();
 	is_new_file = false;

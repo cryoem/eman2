@@ -49,7 +49,7 @@ const char *ImagicIO2::REAL_TYPE_MAGIC = "REAL";
 const char *ImagicIO2::CTF_MAGIC = "!-";
 
 ImagicIO2::ImagicIO2(string file, IOMode rw)
-:	filename(file), rw_mode(rw), hed_file(0), img_file(0), initialized(false)
+:	ImageIO(file), rw_mode(rw), hed_file(0), img_file(0), initialized(false)
 {
 	hed_filename = Util::change_filename_ext(filename, HED_EXT);
 	img_filename = Util::change_filename_ext(filename, IMG_EXT);

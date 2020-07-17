@@ -49,7 +49,7 @@ namespace {
 }
 
 TiffIO::TiffIO(string tiff_filename, IOMode rw)
-:	filename(tiff_filename), rw_mode(rw), tiff_file(0),
+:	ImageIO(tiff_filename), rw_mode(rw), tiff_file(0),
 	bitspersample(0), photometric(0), initialized(false),
 	rendermin(0.0), rendermax(0.0), renderbits(16), nimg(1),
 	is_big_endian(ByteOrder::is_host_big_endian())

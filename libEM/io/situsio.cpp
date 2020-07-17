@@ -42,7 +42,7 @@ const char * SitusIO::OUTFORMAT = "%12.6f";
 const int SitusIO::LINE_LENGTH = 1024;
 
 SitusIO::SitusIO(const string & situsname, IOMode rw) :
-		filename(situsname), rw_mode(rw), situsfile(0),
+		ImageIO(situsname), rw_mode(rw), situsfile(0),
 		initialized(false), is_new_file(false),
 		apix(0.0f), origx(0.0f), origy(0.0f), origz(0.0f),
 		nx(0), ny(0), nz(0)

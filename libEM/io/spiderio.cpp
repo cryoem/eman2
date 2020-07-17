@@ -42,7 +42,7 @@
 using namespace EMAN;
 
 SpiderIO::SpiderIO(const string & spider_filename, IOMode rw)
-:	filename(spider_filename), rw_mode(rw),
+:	ImageIO(spider_filename), rw_mode(rw),
 	spider_file(0), first_h(0), cur_h(0),
 	is_big_endian(ByteOrder::is_host_big_endian()),
 	initialized(false)

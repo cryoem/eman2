@@ -51,7 +51,7 @@ const char *SalIO::MAGIC = " IDENTIFICATION";
 
 
 SalIO::SalIO(const string & file, IOMode rw)
-:	filename(file), rw_mode(rw), sal_file(0), initialized(false)
+:	ImageIO(file), rw_mode(rw), sal_file(0), initialized(false)
 {
 	nx = 0;
 	ny = 0;

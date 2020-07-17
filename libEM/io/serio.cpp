@@ -43,7 +43,7 @@ static const short SER_SERIES_ID 		= 0x0197;
 static const int   ValidNumberElementsOffset = 18;	//the offset to ValidNumberElements, which is the number of images in the file
 
 SerIO::SerIO(const string & file, IOMode rw) :
-		filename(file), rw_mode(rw), serfile(0), initialized(false),
+		ImageIO(file), rw_mode(rw), serfile(0), initialized(false),
 		is_new_file(false), data_offset_array(0),tag_offset_array(0),
 		nimg(0), nx(0), ny(0), nz(0), datatypeid(0), datamode(0)
 {

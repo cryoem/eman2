@@ -54,7 +54,7 @@ const int XplorIO::FLOAT_SIZE = 12;
 const char * XplorIO::OUTFORMAT = "%12.5E";
 
 XplorIO::XplorIO(const string & file, IOMode rw)
-:	filename(file), rw_mode(rw), xplor_file(0), initialized(false)
+:	ImageIO(file), rw_mode(rw), xplor_file(0), initialized(false)
 {
 	is_big_endian = ByteOrder::is_host_big_endian();
 	is_new_file = false;
