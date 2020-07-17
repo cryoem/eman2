@@ -128,23 +128,37 @@ EMObject HdfIO2::read_attr(hid_t attr) {
 	hssize_t pts = H5Sget_simple_extent_npoints(spc);	// number of points > 1 if an array of floats or integers
 
 	EMObject ret(0);
+	char c;
+	int i;
+	float f,*fa;
+	int * ia;
+	double d;
+	char *s;
+	vector <float> fv((size_t)pts);
+	vector <int> iv((size_t)pts);
+
+	float *matrix;
+	Transform* t;
+	Ctf* ctf;
 
 	switch (cls) {
 	case H5T_INTEGER:
 		if (sz == 1) {
-			char c;
 			H5Aread(attr,H5T_NATIVE_CHAR,&c);
 			ret = EMObject(bool((c=='T')));
 		}
 		else if (sz == 4) {
 			if (pts == 1) {
-			    int i;
 				H5Aread(attr,H5T_NATIVE_INT,&i);
 				ret=EMObject(i);
 			}
 			else {
-				vector <int> iv((size_t)pts);
-				H5Aread(attr,H5T_NATIVE_INT,iv.data());
+				ia=(int *)malloc((size_t)pts*sizeof(int));
+				H5Aread(attr,H5T_NATIVE_INT,ia);
+
+				for (i=0; i<pts; i++) iv[i] = ia[i];
+
+				free(ia);
 
 				ret = EMObject(iv);
 			}
@@ -154,20 +168,22 @@ EMObject HdfIO2::read_attr(hid_t attr) {
 	case H5T_FLOAT:
 		if (sz == 4) {
 			if (pts == 1) {
-				float f;
 				H5Aread(attr,H5T_NATIVE_FLOAT,&f);
 
 				ret=EMObject(f);
 			}
 			else {
-				vector <float> fv(pts);
-				H5Aread(attr,H5T_NATIVE_FLOAT,fv.data());
+				fa = (float *)malloc((size_t)pts*sizeof(float));
+				H5Aread(attr,H5T_NATIVE_FLOAT,fa);
+
+				for (i=0; i<pts; i++) fv[i] = fa[i];
+
+				free(fa);
 
 				ret=EMObject(fv);
 			}
 		}
 		else if (sz == 8) {
-			double d;
 			H5Aread(attr,H5T_NATIVE_DOUBLE,&d);
 
 			ret = EMObject(d);
@@ -175,13 +191,10 @@ EMObject HdfIO2::read_attr(hid_t attr) {
 
 		break;
 	case H5T_STRING:
-        char *s;
 		s = (char *)malloc(sz+1);
 
 		H5Aread(attr,type,s);
 //		H5Aread(attr,H5T_NATIVE_CHAR,s);
-
-		Ctf *ctf;
 
 		if (s[0] == 'O' && isdigit(s[1])) {
 			ctf = new EMAN1Ctf();
@@ -207,18 +220,17 @@ EMObject HdfIO2::read_attr(hid_t attr) {
 
 			delete ctf;
 		}
-		else
+		else {
 			ret = EMObject(s);
+		}
 
 		free(s);
 
 		break;
 	case H5T_COMPOUND:
-		float *matrix;
 		matrix = (float*)malloc(12*sizeof(float));
 		H5Aread(attr, type, matrix);
 
-		Transform *t;
 		t = new Transform(matrix);
 		ret = EMObject(t);
 		free(matrix);
@@ -332,20 +344,26 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 
 	hid_t attr = H5Acreate(loc,name,type,spc,H5P_DEFAULT);
 
+	bool b;
+	char c;
 	int i;
+	short si;
+	float f,*fa;
+	int * ia;
+	unsigned int ui;
+	double d;
+	const char *s;
+	Transform * tp;
 
 	switch(obj.get_type()) {
 	case EMObject::BOOL:
-		bool b;
 		b = (bool)obj;
 
-		char c;
 		c = (b ? 'T' : 'F');
 
 		H5Awrite(attr,type,&c);
 		break;
 	case EMObject::SHORT:
-		short si;
 		si = (short)obj;
 		i = (int)si;
 		H5Awrite(attr,type,&i);
@@ -355,35 +373,29 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 		H5Awrite(attr,type,&i);
 		break;
 	case EMObject::UNSIGNEDINT:
-		unsigned int ui;
 		ui=(unsigned int)obj;
 		H5Awrite(attr,type,&ui);
 		break;
 	case EMObject::FLOAT:
-		float f;
 		f=(float)obj;
 		H5Awrite(attr,type,&f);
 		break;
 	case EMObject::DOUBLE:
-		double d;
 		d=(double)obj;
 		H5Awrite(attr,type,&d);
 		break;
 	case EMObject::STRING:
 	case EMObject::CTF:
-		const char *s;
 		s=(const char *)obj;
 		H5Awrite(attr,type,s);
 		break;
 	case EMObject::FLOATARRAY:
-		float *fa;
 		fa=(float *)malloc(fv.size()*sizeof(float));
 		for (ui=0; ui<fv.size(); ui++) fa[ui]=fv[ui];
 		H5Awrite(attr,type,fa);
 		free(fa);
 		break;
 	case EMObject::INTARRAY:
-		int * ia;
 		ia=(int *)malloc(iv.size()*sizeof(int));
 		for (ui=0; ui<iv.size(); ui++) ia[ui]=iv[ui];
 		H5Awrite(attr,type,ia);
@@ -391,7 +403,6 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 		break;
 	case EMObject::TRANSFORM:
 	{
-		Transform * tp;
 		tp = (Transform *)obj;
 		fa = (float *)malloc(12*sizeof(float));
 		int r, c, k=0;
