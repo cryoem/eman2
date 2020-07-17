@@ -36,7 +36,7 @@ using namespace EMAN;
 
 OmapIO::OmapIO(const string & fname, IOMode rw) :
 		ImageIO(fname), rw_mode(rw), omapfile(0),
-		is_big_endian(false), initialized(false), is_new_file(false)
+		is_big_endian(false), is_new_file(false)
 {
 	memset(&omaph, 0, sizeof(OmapHeader));
 	is_big_endian = ByteOrder::is_host_big_endian();

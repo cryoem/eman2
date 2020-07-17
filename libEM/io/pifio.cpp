@@ -47,7 +47,6 @@ PifIO::PifIO(const string & fname, IOMode rw)
 	pif_file = 0;
 	mode_size = 0;
 	is_big_endian = ByteOrder::is_host_big_endian();
-	initialized = false;
 	real_scale_factor = 1;
 	is_new_file = false;
 	memset(&pfh, 0, sizeof(PifFileHeader));

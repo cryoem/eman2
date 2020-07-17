@@ -46,7 +46,7 @@ using namespace EMAN;
 
 JpegIO::JpegIO(const string & fname, IOMode rw)
 :	ImageIO(fname), rw_mode(rw),
-	jpeg_file(0), initialized(false), rendermin(0.0), rendermax(0.0), renderbits(16)
+	jpeg_file(0), rendermin(0.0), rendermax(0.0), renderbits(16)
 {}
 
 JpegIO::~JpegIO()
