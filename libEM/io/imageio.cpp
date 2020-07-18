@@ -115,7 +115,7 @@ void ImageIO::check_write_access(IOMode iomode, int image_index, int max_nimg)
 	init();
 
 	if (iomode == READ_ONLY) {
-		throw ImageWriteException("", "File is not openned to write");
+		throw ImageWriteException("", "File is not opened to write");
 	}
 
 	if ((image_index < -1) || (max_nimg > 0 && image_index >= max_nimg)) {
