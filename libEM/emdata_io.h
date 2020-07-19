@@ -158,22 +158,4 @@ static vector < std::shared_ptr<EMData> >read_images(const string & filename,
 									  bool header_only = false);
 
 
-/** Read a set of images from file specified by 'filename'. If
- * the given 'ext' is not empty, replace 'filename's extension it.
- * Images with index from img_index_start to img_index_end are read.
- *
- * @param filename The image file name.
- * @param img_index_start Starting image index.
- * @param img_index_end Ending image index.
- * @param header_only If true, only read image header. If
- *     false, read both data and header.
- * @param ext The new image filename extension.
- * @return The set of images read from filename.
- */
-static vector < std::shared_ptr<EMData> >read_images_ext(const string & filename,
-										  int img_index_start,
-										  int img_index_end,
-										  bool header_only = false,
-										  const string & ext = "");
-
 #endif	//emdata__io_h__
