@@ -139,8 +139,7 @@ void write_lst(const string & filename,
  * @param out Output stream; cout by default.
  * @param str Message string to be printed.
  */
-void print_image(const string str = string(""),
-		ostream& out = std::cout);
+friend ostream& operator<<(ostream& out, const EMData& obj);
 
 
 /** Read a set of images from file specified by 'filename'.

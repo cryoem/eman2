@@ -358,11 +358,10 @@ void EMData::write_lst(const string & filename, const string & reffile,
 }
 
 
-void EMData::print_image(const string str, ostream& out) {
-	out << "Printing EMData object: " << str << std::endl;
-	int nx = get_xsize();
-	int ny = get_ysize();
-	int nz = get_zsize();
+ostream& operator<<(ostream& out, const EMData& obj) {
+	int nx = obj.get_xsize();
+	int ny = obj.get_ysize();
+	int nz = obj.get_zsize();
 	for (int iz = 0; iz < nz; iz++) {
 		out << "(z = " << iz << " slice)" << std::endl;
 		for (int ix = 0; ix < nx; ix++) {
@@ -370,7 +369,7 @@ void EMData::print_image(const string str, ostream& out) {
 				out << std::setiosflags(std::ios::fixed)
 					<< std::setiosflags(std::ios_base::scientific)
 					<< std::setw(12)
-					 << std::setprecision(5) << (*this)(ix,iy,iz) << "  ";
+					 << std::setprecision(5) << obj(ix,iy,iz) << "  ";
 				if (((iy+1) % 6) == 0) {
 					out << std::endl << "   ";
 				}
@@ -378,6 +377,7 @@ void EMData::print_image(const string str, ostream& out) {
 			out << std::endl;
 		}
 	}
+	return out;
 }
 
 vector<shared_ptr<EMData>> EMData::read_images(const string & filename, vector<int> img_indices,
