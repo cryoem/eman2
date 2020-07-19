@@ -99,7 +99,6 @@ void EMData::_read_image(ImageIO *imageio, int img_index, bool nodata,
 				if (rdata) EMUtil::em_free(rdata);
 				rdata=0;
 			}
-
 		}
 }
 
@@ -381,7 +380,7 @@ void EMData::print_image(const string str, ostream& out) {
 	}
 }
 
-vector < shared_ptr<EMData> > EMData::read_images(const string & filename, vector < int >img_indices,
+vector<shared_ptr<EMData>> EMData::read_images(const string & filename, vector<int> img_indices,
 									   bool header_only)
 {
 	ENTERFUNC;
@@ -396,7 +395,7 @@ vector < shared_ptr<EMData> > EMData::read_images(const string & filename, vecto
 	size_t n = (num_img == 0 ? total_img : num_img);
 	ImageIO *imageio = EMUtil::get_imageio(filename, ImageIO::READ_ONLY);
 
-	vector< shared_ptr<EMData> > v;
+	vector<shared_ptr<EMData>> v;
 	for (size_t j = 0; j < n; j++) {
 		shared_ptr<EMData> d(new EMData());
 		size_t k = (num_img == 0 ? j : img_indices[j]);
@@ -419,4 +418,3 @@ vector < shared_ptr<EMData> > EMData::read_images(const string & filename, vecto
 	EXITFUNC;
 	return v;
 }
-

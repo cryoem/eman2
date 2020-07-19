@@ -153,8 +153,8 @@ void print_image(const string str = string(""),
  *     false, read both data and header.
  * @return The set of images read from filename.
  */
-static vector < std::shared_ptr<EMData> >read_images(const string & filename,
-									  vector < int >img_indices = vector < int >(),
+static vector<std::shared_ptr<EMData>> read_images(const string & filename,
+									  vector<int> img_indices = vector<int>(),
 									  bool header_only = false);
 
 
