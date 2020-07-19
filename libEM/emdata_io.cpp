@@ -48,9 +48,8 @@ void EMData::_read_image(ImageIO *imageio, int img_index, bool nodata,
 						const Region * region, bool is_3d)
 {
 		int err = imageio->read_header(attr_dict, img_index, region, is_3d);
-		if (err) {
+		if (err)
 			throw ImageReadException(imageio->get_filename(), "imageio read header failed");
-		}
 		else {
 			LstIO * myLstIO = dynamic_cast<LstIO *>(imageio);
 			if(!myLstIO)
@@ -60,12 +59,10 @@ void EMData::_read_image(ImageIO *imageio, int img_index, bool nodata,
 				set_complex(true);
 				set_fftpad(true);
 			}
-			if (attr_dict.has_key("is_fftodd") && (int)attr_dict["is_fftodd"] == 1) {
+			if (attr_dict.has_key("is_fftodd") && (int)attr_dict["is_fftodd"] == 1)
 				set_fftodd(true);
-			}
-			if ((int) attr_dict["is_complex_ri"] == 1) {
+			if ((int) attr_dict["is_complex_ri"] == 1)
 				set_ri(true);
-			}
 			save_byteorder_to_dict(imageio);
 
 			nx = attr_dict["nx"];
@@ -86,20 +83,17 @@ void EMData::_read_image(ImageIO *imageio, int img_index, bool nodata,
 					set_size(nx,ny,nz);
 					to_zero(); // This could be avoided in favor of setting only the regions that were not read to to zero... but tedious
 				} // else the dimensions of the file being read match those of this
-				else {
+				else
 					set_size(nx, ny, nz);
-				}
 
 				// If GPU features are enabled there is  danger that rdata will
 				// not be allocated, but set_size takes care of this, so this
 				// should be safe.
 				int err = imageio->read_data(get_data(), img_index, region, is_3d);
-				if (err) {
+				if (err)
 					throw ImageReadException(imageio->get_filename(), "imageio read data failed");
-				}
-				else {
+				else
 					update();
-				}
 			}
 			else {
 				if (rdata) EMUtil::em_free(rdata);
@@ -116,9 +110,8 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 
 	ImageIO *imageio = EMUtil::get_imageio(filename, ImageIO::READ_ONLY);
 
-	if (!imageio) {
+	if (!imageio)
 		throw ImageFormatException("cannot create an image io");
-	}
     
 	_read_image(imageio, img_index, nodata, region, is_3d);
 
@@ -235,18 +228,16 @@ void EMData::write_image(const string & filename, int img_index,
     // Check if this is a write only format.
     if (Util::is_file_exist(filename) && (!header_only && region == 0)) {
             ImageIO * tmp_imageio = EMUtil::get_imageio(filename, ImageIO::READ_ONLY, imgtype);
-            if (tmp_imageio->is_single_image_format()) {
+            if (tmp_imageio->is_single_image_format())
                 rwmode = ImageIO::WRITE_ONLY;
-            }
             EMUtil::close_imageio(filename, tmp_imageio);
             tmp_imageio = 0;
     }
 
 	LOGVAR("getimageio %d",rwmode);
 	ImageIO *imageio = EMUtil::get_imageio(filename, rwmode, imgtype);
-	if (!imageio) {
+	if (!imageio)
 		throw ImageFormatException("cannot create an image io");
-	}
 	else {
 		update_stat();
 		/* Let each image format decide how to deal with negative image_index*/
@@ -277,30 +268,25 @@ void EMData::write_image(const string & filename, int img_index,
 
 		int err = imageio->write_header(attr_dict, img_index, region, filestoragetype,
 										use_host_endian);
-		if (err) {
+		if (err)
 			throw ImageWriteException(filename, "imageio write header failed");
-		}
 		else {
 			if (!header_only) {
 				if (imgtype == EMUtil::IMAGE_LST) {
 					const char *reffile = attr_dict["LST.reffile"];
-					if (strcmp(reffile, "") == 0) {
+					if (strcmp(reffile, "") == 0)
 						reffile = path.c_str();
-					}
 					int refn = attr_dict["LST.refn"];
-					if (refn < 0) {
+					if (refn < 0)
 						refn = pathnum;
-					}
 
 					const char *comment = attr_dict["LST.comment"];
 					char *lstdata = new char[1024];
 					sprintf(lstdata, "%d\t%s", refn, reffile);
-					if(strcmp(comment, "") != 0) {
+					if(strcmp(comment, "") != 0)
 						sprintf(lstdata+strlen(lstdata), "\t%s\n", comment);
-					}
-					else {
+					else
 						strcat(lstdata, "\n");
-					}
 					err = imageio->write_data((float*)lstdata, img_index,
 											  region, filestoragetype, use_host_endian);
 					if( lstdata )
@@ -311,23 +297,19 @@ void EMData::write_image(const string & filename, int img_index,
 				}
 				if (imgtype == EMUtil::IMAGE_LSTFAST) {
 					const char *reffile = attr_dict["LST.reffile"];
-					if (strcmp(reffile, "") == 0) {
+					if (strcmp(reffile, "") == 0)
 						reffile = path.c_str();
-					}
 					int refn = attr_dict["LST.refn"];
-					if (refn < 0) {
+					if (refn < 0)
 						refn = pathnum;
-					}
 
 					const char *comment = attr_dict["LST.comment"];
 					char *lstdata = new char[1024];
 					sprintf(lstdata, "%d\t%s", refn, reffile);
-					if(strcmp(comment, "") != 0) {
+					if(strcmp(comment, "") != 0)
 						sprintf(lstdata+strlen(lstdata), "\t%s\n", comment);
-					}
-					else {
+					else
 						strcat(lstdata, "\n");
-					}
 					err = imageio->write_data((float*)lstdata, img_index,
 											  region, filestoragetype, use_host_endian);
 					if( lstdata )
@@ -336,10 +318,9 @@ void EMData::write_image(const string & filename, int img_index,
 						lstdata = 0;
 					}
 				}
-				else {
+				else
 					err = imageio->write_data(get_data(), img_index, region, filestoragetype,
 											  use_host_endian);
-				}
 				if (err) {
 					imageio->flush();
 					throw ImageWriteException(filename, "imageio write data failed");
@@ -348,9 +329,8 @@ void EMData::write_image(const string & filename, int img_index,
 		}
 	}
 	//PNG image already do cleaning in write_data function.
-	if (!(imgtype == EMUtil::IMAGE_PNG)) {
+	if (!(imgtype == EMUtil::IMAGE_PNG))
 		imageio->flush();
-	}
 
     EMUtil::close_imageio(filename, imageio);
 	imageio = 0;
@@ -409,11 +389,9 @@ vector < shared_ptr<EMData> > EMData::read_images(const string & filename, vecto
 	int total_img = EMUtil::get_image_count(filename);
 	size_t num_img = img_indices.size();
 
-	for (size_t i = 0; i < num_img; i++) {
-		if (img_indices[i] < 0 || img_indices[i] >= total_img) {
+	for (size_t i = 0; i < num_img; i++)
+		if (img_indices[i] < 0 || img_indices[i] >= total_img)
 			throw OutofRangeException(0, total_img, img_indices[i], "image index");
-		}
-	}
 
 	size_t n = (num_img == 0 ? total_img : num_img);
 	ImageIO *imageio = EMUtil::get_imageio(filename, ImageIO::READ_ONLY);
@@ -429,9 +407,7 @@ vector < shared_ptr<EMData> > EMData::read_images(const string & filename, vecto
 			throw(e);
 		}
 		if ( d != 0 )
-		{
 			v.push_back(d);
-		}
 		else
 			throw ImageReadException(filename, "imageio read data failed");
 	}
