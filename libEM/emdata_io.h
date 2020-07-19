@@ -157,6 +157,9 @@ static vector<std::shared_ptr<EMData>> read_images(const string & filename,
 									  vector<int> img_indices = vector<int>(),
 									  bool header_only = false);
 
+static bool write_images(const string & filename,
+									  vector<std::shared_ptr<EMData>> imgs);
+
 
 /** Print the image data to a file stream (standard out by default).
  * @param out Output stream; cout by default.

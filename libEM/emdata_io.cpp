@@ -410,6 +410,31 @@ vector<shared_ptr<EMData>> EMData::read_images(const string & filename, vector<i
 	return v;
 }
 
+bool EMData::write_images(const string & filename, vector<std::shared_ptr<EMData>> imgs)
+{
+	ENTERFUNC;
+
+	ImageIO *imageio = EMUtil::get_imageio(filename, ImageIO::WRITE_ONLY);
+
+	auto num_imgs = imgs.size();
+	for (size_t i = 0; i < num_imgs; i++) {
+		auto d = imgs[i].get();
+		try {
+			d->_write_image(imageio, (int)i);
+		}
+		catch(E2Exception &e) {
+			throw(e);
+		}
+	}
+
+	EMUtil::close_imageio(filename, imageio);
+	imageio = 0;
+
+
+	EXITFUNC;
+	return true;
+}
+
 ostream& operator<<(ostream& out, const EMData& obj) {
 	int nx = obj.get_xsize();
 	int ny = obj.get_ysize();
