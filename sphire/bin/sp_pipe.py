@@ -55,6 +55,7 @@ import sp_morphology
 import sp_utilities
 import sys
 import time
+import numpy
 from builtins import range
 from builtins import object
 
@@ -66,6 +67,117 @@ from builtins import object
 # ----------------------------------------------------------------------------------------
 # Generate command line
 # ----------------------------------------------------------------------------------------
+
+
+def reorder_filaments(args, overwrite=False):
+    # Define the name of this subcommand
+    # subcommand_name = "reorder_filaments"
+    command_script_basename = os.path.basename(sys.argv[0])
+    subcommand_name = "{} {}".format(command_script_basename, args.subcommand)
+    
+    # Check MPI execution
+    if SXmpi_run.n_mpi_procs > 1:
+        error_status = ("The {} subcommand supports only a single process.".format(subcommand_name), inspect.getframeinfo(inspect.currentframe()))
+        sp_utilities.if_error_then_all_processes_exit_program(error_status)
+    
+    # To make the execution exit upon fatal error by ERROR in global_def.py
+    sp_global_def.BATCH = True 
+    
+    # Check error conditions of arguments
+    args.input_stack_path = args.input_stack_path.strip()
+    try:
+        EMAN2_cppwrap.EMData(args.input_stack_path)
+    except RuntimeError:
+        sp_global_def.ERROR( "Input image stack file does not exist. Please check the file path and restart the program.", where=subcommand_name)
+    args.output_directory = args.output_directory.strip()
+    if os.path.exists(args.output_directory) and not overwrite:
+        sp_global_def.ERROR( "Output directory exists. Please change the name and restart the program.", where=subcommand_name)
+    
+    # Import important information
+    segment_id = EMAN2_cppwrap.EMUtil.get_all_attributes(args.input_stack_path, 'segment_id')
+    filament_track_length = EMAN2_cppwrap.EMUtil.get_all_attributes(args.input_stack_path, 'filament_track_length')
+    filament_id = EMAN2_cppwrap.EMUtil.get_all_attributes(args.input_stack_path, 'filament_id')
+    str_length = max(map(len, filament_id))
+    filament_dtype = '|U{0}'.format(str_length)
+
+    dtype = [('segment_id', '<i8'), ('filament_track_length', '<f8'), ('filament_id',  filament_dtype), ('original_id', '<i8'), ('mic_id', filament_dtype), ('filament_number', '<i8')]
+    data = numpy.empty(len(filament_id), dtype=dtype)
+    data['segment_id'] = segment_id
+    data['filament_id'] = filament_id
+    data['filament_track_length'] = filament_track_length
+    data['original_id'] = numpy.arange(data.shape[0])
+    data['mic_id'] = numpy.array(numpy.char.rsplit(data['filament_id'], sep='_', maxsplit=1).tolist())[:, 0]
+    data['filament_number'] = numpy.unique(data['filament_id'], return_inverse=True)[1]
+
+    data = numpy.sort(data, order=['mic_id', 'filament_id', 'segment_id', 'filament_track_length'])
+
+    condition_segment = numpy.diff(data['segment_id']) != 1
+    condition_filament = numpy.diff(data['filament_number']) != 0
+
+    filaments = numpy.split(data, numpy.where(condition_segment | condition_filament)[0]+1)
+    length_per_filament = numpy.array(list(map(len, filaments)))
+    valid_filament_condition = numpy.array(length_per_filament) >= args.min_nr_segments
+    valid_filaments = numpy.array(filaments)[valid_filament_condition]
+
+    number_of_segments = numpy.sum(length_per_filament[valid_filament_condition])
+
+    output_data = numpy.empty(number_of_segments, dtype=[('filament_id', filament_dtype), ('segment_id', '<i8'), ('filament_track_length', '<f8'), ('original_id', '<i8')])
+
+    prev_mic = None
+    prev_index = 0
+    for filament in valid_filaments:
+        if prev_mic != filament['mic_id'][0]:
+            prev_mic = filament['mic_id'][0]
+            idx = 0
+        output_data['segment_id'][prev_index:prev_index+filament.shape[0]] = numpy.arange(filament.shape[0])
+        output_data['filament_track_length'][prev_index:prev_index+filament.shape[0]] = filament['filament_track_length'] - filament['filament_track_length'][0]
+        output_data['filament_id'][prev_index:prev_index+filament.shape[0]] = '{0}_{1:05d}'.format(filament['mic_id'][0], idx)
+        output_data['original_id'][prev_index:prev_index+filament.shape[0]] = filament['original_id']
+        prev_index += filament.shape[0]
+        idx += 1
+
+    output_data = numpy.sort(output_data, order='original_id')
+    output_file = os.path.join(args.output_directory, '{0}.txt'.format(args.substack_basename))
+
+    try:
+        os.mkdir(args.output_directory)
+    except:
+        pass
+    with open(output_file, 'w') as write:
+        numpy.savetxt(write, output_data[['filament_id', 'segment_id', 'filament_track_length']], fmt='%s')
+
+    with open('{0}_list{1}'.format(*os.path.splitext(output_file)), 'w') as write:
+        numpy.savetxt(write, output_data['original_id'], fmt='%d')
+
+    substack_path = "bdb:{}#{}".format(args.output_directory, args.substack_basename)
+    filament_id = EMAN2_cppwrap.EMUtil.get_all_attributes(args.input_stack_path, 'filament_id')
+
+    if args.input_stack_path.startswith('bdb:'):
+        cmd_line = "e2bdb.py {} --makevstack={} --list={}".format(
+                args.input_stack_path,  # source stack
+                substack_path,  # target stack
+                '{0}_list{1}'.format(*os.path.splitext(output_file))
+                )  # indices to denote which images in the source stack to add to the target stack
+    else:
+        cmd_line = "e2proc2d.py {} {} --list={}".format(
+                args.input_stack_path,  # source stack
+                substack_path,  # target stack
+                '{0}_list{1}'.format(*os.path.splitext(output_file))
+                )  # indices to denote which images in the source stack to add to the target stack
+    status = sp_utilities.cmdexecute(cmd_line)
+    if status == 0: 
+        sp_global_def.ERROR( "\'{}\' execution failed.".format(cmd_line) )
+    cmd_line = "sp_header.py {} --import={} --params='filament_id segment_id filament_track_length'".format(
+            substack_path, # target stack
+            output_file
+            )
+    status = sp_utilities.cmdexecute(cmd_line)
+    if status == 0: 
+        sp_global_def.ERROR( "\'{}\' execution failed.".format(cmd_line) )
+
+    return numpy.unique(output_data['filament_id']).shape[0], numpy.unique(data['filament_id']).shape[0]
+
+
 
 
 def get_cmd_line():
@@ -852,9 +964,13 @@ def isac_substack(args):
     virtual_bdb_substack_path = "bdb:{}#{}".format(
         args.output_directory, args.substack_basename
     )
+    if args.min_nr_segments:
+        virtual_bdb_substack_path_tmp = "bdb:{}#{}_original".format(args.output_directory, args.substack_basename)
+    else:
+        virtual_bdb_substack_path_tmp = virtual_bdb_substack_path
     cmd_line = "e2bdb.py {} --makevstack={} --list={}".format(
         args.input_bdb_stack_path,  # source stack
-        virtual_bdb_substack_path,  # target stack
+        virtual_bdb_substack_path_tmp,  # target stack
         fullstack_img_id_path_of_isac_substack,
     )  # indices to denote which images in the source stack to add to the target stack
     status = sp_utilities.cmdexecute(cmd_line)
@@ -869,7 +985,7 @@ def isac_substack(args):
         "Importing the total 2D alignment parameters in the original scale to the header entry..."
     )
     cmd_line = "sp_header.py {} --import={} --params={}".format(
-        virtual_bdb_substack_path,  # target stack
+        virtual_bdb_substack_path_tmp,  # target stack
         isac_substack_total_header_align2d_path,  # import sp_alignment parameters from .txt file
         "xform.align2d",
     )  # perform the import on the alignment parameters
@@ -884,7 +1000,7 @@ def isac_substack(args):
     sp_global_def.sxprint(
         "Creating projection parameters header entry from imported 2D alignment parameters using 2D-to-3D transformation..."
     )
-    cmd_line = "sp_params_2D_to_3D.py {}".format(virtual_bdb_substack_path)
+    cmd_line = "sp_params_2D_to_3D.py {}".format(virtual_bdb_substack_path_tmp)
     status = sp_utilities.cmdexecute(cmd_line)
     if status == 0:
         sp_global_def.ERROR(
@@ -898,7 +1014,7 @@ def isac_substack(args):
         args.output_directory, "{}_header_projection.txt".format(args.substack_basename)
     )
     cmd_line = "sp_header.py {} --export={} --params=xform.projection".format(
-        virtual_bdb_substack_path, isac_substack_total_header_projection_path
+        virtual_bdb_substack_path_tmp, isac_substack_total_header_projection_path
     )
     status = sp_utilities.cmdexecute(cmd_line)
     if status == 0:
@@ -912,7 +1028,7 @@ def isac_substack(args):
         "Importing class membership information (also found in file 'particle_membership.txt')..."
     )
     cmd_line = "sp_header.py {} --import={} --params={}".format(
-        virtual_bdb_substack_path,  # target stack
+        virtual_bdb_substack_path_tmp,  # target stack
         class_membership_file_path,  # import sp_alignment parameters from .txt file
         "ISAC_class_id",
     )  # perform the import on the alignment parameters
@@ -934,8 +1050,18 @@ def isac_substack(args):
     sp_global_def.sxprint("  Extracted class members : %6d" % (n_isac_substack_img))
     sp_global_def.sxprint(
         "  ISAC substack size      : %6d"
-        % (EMAN2_cppwrap.EMUtil.get_image_count(virtual_bdb_substack_path))
+        % (EMAN2_cppwrap.EMUtil.get_image_count(virtual_bdb_substack_path_tmp))
     )
+
+    if args.min_nr_segments:
+        args.input_stack_path = virtual_bdb_substack_path_tmp
+        n_filaments, ori_n_filaments = reorder_filaments(args, overwrite=True)
+        sp_global_def.sxprint(" ")
+        sp_global_def.sxprint("Summary of processing...")
+        sp_global_def.sxprint("  Previous filaments : %6d"%(ori_n_filaments)) 
+        sp_global_def.sxprint("  Splitted filaments : %6d"%(n_filaments))
+        sp_global_def.sxprint("  Valid segments     : %6d"%(EMAN2_cppwrap.EMUtil.get_image_count(virtual_bdb_substack_path)))
+
     sp_global_def.sxprint(" ")
 
 
@@ -2378,19 +2504,59 @@ def restacking(args):
             self.mic_basename = mic_basename
             self.is_in_stack = False
             self.is_in_list = False
+
+            self.all_lists = []
+
             self.img_id_list = []
+            self.all_lists.append(self.img_id_list)
+
             self.ctf_params_list = []
+            self.all_lists.append(self.ctf_params_list)
+
+            self.filament_id_list = []
+            self.all_lists.append(self.filament_id_list)
+
+            self.segment_id_list = []
+            self.all_lists.append(self.segment_id_list)
+
             self.original_proj_params_list = []
+            self.all_lists.append(self.original_proj_params_list)
+
             self.original_coords_list = []
-            self.original_rebox_coords_list = (
-                []
-            )  # contains both original coordinates and original projection paramters
+            self.all_lists.append(self.original_coords_list)
+
+            self.original_coords_filament_list = []
+            self.all_lists.append(self.original_coords_filament_list)
+
+            self.original_rebox_coords_list = [] # contains both original coordinates and original projection paramters
+            self.all_lists.append(self.original_rebox_coords_list)
+
             self.centered_proj_params_list = []
+            self.all_lists.append(self.centered_proj_params_list)
+
             self.centered_coords_list = []
-            self.centered_rebox_coords_list = (
-                []
-            )  # contains both centered coordinates and centered projection paramters
+            self.all_lists.append(self.centered_coords_list)
+
+            self.centered_coords_filament_list = []
+            self.all_lists.append(self.centered_coords_filament_list)
+
+            self.centered_rebox_coords_list = [] # contains both centered coordinates and centered projection paramters
+            self.all_lists.append(self.centered_rebox_coords_list)
             # ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+
+        def sort_lists(self, new_index):
+            for entry in self.all_lists:
+                entry[:] = [entry[i] for i in new_index]
+
+        def get_min_max_filament_coord(self, filament_id, centered):
+            mask = filament_id == numpy.array(self.filament_id_list)
+            if centered:
+                filament_boxes = numpy.array(self.centered_coords_filament_list)[mask]
+            else:
+                filament_boxes = numpy.array(self.original_coords_filament_list)[mask]
+            min_value = ', '.join(map(str, filament_boxes[0].strip().split()[:2]))
+            max_value = ', '.join(map(str, filament_boxes[-1].strip().split()[:2]))
+            return min_value, max_value
 
     # Define the name of this subcommand
     # subcommand_name = "restacking"
@@ -2610,6 +2776,14 @@ def restacking(args):
             if not mic_entry.is_in_stack:
                 mic_entry.is_in_stack = True
 
+        try:
+            filament_id = str(img.get_attr("filament_id"))
+            segment_id = str(img.get_attr("segment_id"))
+        except KeyError:
+            filament_id = None
+            segment_id = None
+        global_mic_dict[mic_basename].filament_id_list.append(filament_id)
+        global_mic_dict[mic_basename].segment_id_list.append(segment_id)
         global_mic_dict[mic_basename].img_id_list.append(img_id)
 
         # Get micrograph resampling ratio of previous sxwindow run
@@ -2734,6 +2908,12 @@ def restacking(args):
                     int(eman1_dummy),
                 )
             )
+            global_mic_dict[mic_basename].original_coords_filament_list.append(
+                "{:6d} {:6d}\n".format(
+                    ptcl_source_coordinate_x,
+                    ptcl_source_coordinate_y
+                )
+            )
 
             ctf_params = img.get_attr("ctf")
 
@@ -2796,6 +2976,12 @@ def restacking(args):
                     int(args.rb_box_size),
                     int(args.rb_box_size),
                     int(eman1_dummy),
+                )
+            )
+            global_mic_dict[mic_basename].centered_coords_filament_list.append(
+                "{:6d} {:6d}\n".format(
+                    int(centered_coordinate_x),
+                    int(centered_coordinate_y)
                 )
             )
 
@@ -2995,6 +3181,19 @@ def restacking(args):
     sp_global_def.sxprint(" ")
     for mic_basename in mic_basename_list_of_output_stack:
         mic_entry = global_mic_dict[mic_basename]
+        is_filament = mic_entry.filament_id_list[0] is not None
+        if is_filament:
+            data_for_sort = numpy.empty(
+                len(mic_entry.filament_id_list),
+                dtype=[
+                    ('filament_id', '|U{0}'.format(max(map(len, mic_entry.filament_id_list)))),
+                    ('segment_id', '<i8')
+                    ]
+                )
+            data_for_sort['filament_id'] = mic_entry.filament_id_list
+            data_for_sort['segment_id'] = mic_entry.segment_id_list
+            sort_indices = numpy.argsort(data_for_sort, order=['filament_id', 'segment_id'])
+            mic_entry.sort_lists(sort_indices)
 
         # Append particle ID list to global output stack particle ID list
         global_output_image_id_list += mic_entry.img_id_list
@@ -3035,7 +3234,17 @@ def restacking(args):
                 "{}{}".format(mic_rootname, original_coords_list_suffix),
             )
             original_coords_list_file = open(original_coords_list_path, "w")
-            for original_coords in mic_entry.original_coords_list:
+            if is_filament:
+                original_coords_list_file.write('#micrograph: {0}\n#segment length: {1}\n#segment width: {1}\n'.format(mic_basename, args.rb_box_size))
+                coords_list = mic_entry.original_coords_filament_list
+            else:
+                coords_list = mic_entry.original_coords_list
+            prev_filament_id = None
+            for idx, original_coords in enumerate(coords_list):
+                if prev_filament_id != mic_entry.filament_id_list[idx]:
+                    prev_filament_id = mic_entry.filament_id_list[idx]
+                    min_value, max_value = mic_entry.get_min_max_filament_coord(mic_entry.filament_id_list[idx], centered=False)
+                    original_coords_list_file.write('#helix: ({0}),({1}),{2}\n'.format(min_value, max_value, args.rb_box_size))
                 original_coords_list_file.write(original_coords)
             original_coords_list_file.close()
 
@@ -3057,7 +3266,17 @@ def restacking(args):
                 "{}{}".format(mic_rootname, centered_coords_list_suffix),
             )
             centered_coords_list_file = open(centered_coords_list_path, "w")
-            for centered_particle_coordinates in mic_entry.centered_coords_list:
+            if is_filament:
+                centered_coords_list_file.write('#micrograph: {0}\n#segment length: {1}\n#segment width: {1}\n'.format(mic_basename, args.rb_box_size))
+                coords_list = mic_entry.centered_coords_filament_list
+            else:
+                coords_list = mic_entry.centered_coords_list
+            prev_filament_id = None
+            for idx, centered_particle_coordinates in enumerate(coords_list):
+                if prev_filament_id != mic_entry.filament_id_list[idx]:
+                    prev_filament_id = mic_entry.filament_id_list[idx]
+                    min_value, max_value = mic_entry.get_min_max_filament_coord(mic_entry.filament_id_list[idx], centered=True)
+                    centered_coords_list_file.write('#helix: ({0}),({1}),{2}\n'.format(min_value, max_value, args.rb_box_size))
                 centered_coords_list_file.write(centered_particle_coordinates)
             centered_coords_list_file.close()
 
@@ -3830,7 +4049,7 @@ def desymmetrize(args):
     except:
         sp_global_def.ERROR(
             "Failed to read image header of particle #%d from %s. Aborting..."
-            % (symmetrized_particle_id, args.input_bdb_stack_path),
+            % (0, args.input_bdb_stack_path),
             where=subcommand_name,
         )  # action=1 - fatal error, exit
 
@@ -4082,6 +4301,12 @@ def main():
         default="isac_substack",
         help="Stack subset basename: Specify the basename of ISAC2 stack subset file. It cannot be empty string or only white spaces. (default isac_substack)",
     )
+    parser_isac_subset.add_argument(
+        "--min_nr_segments",
+        type=int,
+        default=0,
+        help="Filament mode: The splitted filaments will be re-grouped into filaments with at least the specified number of segments."
+        )
     ###
     ### NOTE: Toshio Moriya 2018/01/13
     ### The following options are not implemented yet.
@@ -4089,6 +4314,13 @@ def main():
     ### parser_isac_subset.add_argument("--no_virtual_stack",            action="store_true",  default=False,  help="Do not create virtual stack: Use this option to create only the particle ID list text file associated with the ISAC class averages. (default False)")
     ### parser_isac_subset.add_argument("--no_import_align2d",           action="store_true",  default=False,  help="Do not import alignment:  (default False)")
     parser_isac_subset.set_defaults(func=isac_substack)
+
+    parser_reorder_filaments = subparsers.add_parser("reorder_filaments", help="ISAC2 Stack Subset: Create virtual subset stack consisting from ISAC2 accounted particles by retrieving particle numbers associated with the ISAC2 or Beautifier class averages. The command also saves a list text file containing the retrieved original image numbers and 2D alignment parameters. In addition, it stores the 2D alignment parameters to stack header.")
+    parser_reorder_filaments.add_argument("input_stack_path",          type=str,                            help="Input BDB image stack: Specify the same BDB image stack used for the associated ISAC2 run. (default required string)")
+    parser_reorder_filaments.add_argument("output_directory",              type=str,                            help="Output directory: The results will be written here. This directory will be created automatically and it must not exist previously. (default required string)")
+    parser_reorder_filaments.add_argument("--min_nr_segments",           type=int,  default=0,  help="Filament mode: The splitted filaments will be re-grouped into filaments with at least the specified number of segments.")
+    parser_reorder_filaments.add_argument("--substack_basename",           type=str,  default="reorder_filaments",  help="Stack subset basename: Specify the basename of ISAC2 stack subset file. It cannot be empty string or only white spaces. (default isac_substack)")
+    parser_reorder_filaments.set_defaults(func=reorder_filaments)
 
     # create the subparser for the "resample_micrographs" subcommand
     parser_resample_micrographs = subparsers.add_parser(
