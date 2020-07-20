@@ -129,6 +129,9 @@ def read_cryolo_helical_segmented_coords_file(coords_path):
         coord_filaments = numpy.split(coordinates, split_indicis)
         for filament_id, filament in enumerate(coord_filaments):
             curr_filaments_coords = []
+            if len(filament) <= 1:
+                print('Nr. of segments for this filament is {0}! Cannot calculate the angle necessary for subsequent filamentous processing steps. Therefore this filament will be skipped. If you do not want to skip those, please follow the SPA approach and use sphire instead of cryolo_helical_segmented as the --coordinates_format flag and do not provide the --filament_width flag in subsequent processes.'.format(len(filament)))
+                continue
 
             for segment_id, coords in enumerate(filament):
                 if segment_id == 0 and len(filament) > 1:
@@ -291,7 +294,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
         "--coordinates_format",
         type="string",
         default="cryolo",
-        help="Coordinate file format: Allowed values are 'sphire', 'eman1', 'eman2', or 'spider'. The sphire, eman2, and spider formats use the particle center as coordinates. The eman1 format uses the lower left corner of the box as coordinates. (default eman1)",
+        help="Coordinate file format: Allowed values are 'sphire', 'eman1', 'eman2', or 'spider', 'cryolo', 'cryolo_helical_segmented'. The sphire, eman2, and spider formats use the particle center as coordinates. The eman1, cryolo, and cryolo_helical_segmented' format uses the lower left corner of the box as coordinates. cryolo_helical_segmented is for already segmented helical coordinates. (default cryolo)",
     )
     parser.add_option(
         "--box_size",
