@@ -1103,6 +1103,9 @@ def get_fcc_all_particles(movie_name, refer_1, refer_2, nxx, nyy, part_cord, zsi
     Util.mul_scalar(gainref, -1.0)
     globaldose = 1.277
     angout_pix = 0.885
+
+
+
     sig_vel = 0.9435
     sig_acc = 2.55
     sig_div = 8235
@@ -1363,6 +1366,10 @@ else:
 
 # min_res = 20
 max_res = 2.97757
+
+
+
+# max_res = 3.0000
 
 ima_start, ima_end = sp_applications.MPI_start_end(no_of_micrographs, n_mpi_procs, my_mpi_proc_id)
 
