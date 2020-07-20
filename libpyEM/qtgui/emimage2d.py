@@ -38,7 +38,7 @@ import OpenGL
 OpenGL.ERROR_CHECKING = False
 from OpenGL import GL,GLU,GLUT
 from OpenGL.GL import *
-from .valslider import ValSlider,ValBox,StringBox
+from .valslider import ValSlider,ValBox,StringBox,EMSpinWidget
 from math import *
 import EMAN2db
 from EMAN2 import *
@@ -1977,12 +1977,17 @@ class EMImageInspector2D(QtWidgets.QWidget):
 		self.stwholebut.setToolTip("save EMData in any EMAN2 format")
 		self.ststackbut = QtWidgets.QPushButton("Save Stack")
 		self.ststackbut.setToolTip("save EMData objects as stack in any EMAN2 format")
+		self.stfpssb = QtWidgets.QSpinBox()
+		self.stfpssb.setRange(1,60)
+		self.stfpssb.setValue(8)
+		self.stfpssb.setToolTip("Frames per second for movie generation")
 		self.stmoviebut = QtWidgets.QPushButton("Movie")
 		self.stanimgif = QtWidgets.QPushButton("GIF Anim")
 
 		self.stlay.addWidget(self.stsnapbut,0,0)
 		self.stlay.addWidget(self.stwholebut,1,0)
 		self.stlay.addWidget(self.ststackbut,1,1)
+		self.stlay.addWidget(self.stfpssb,0,1)
 		self.stlay.addWidget(self.stmoviebut,0,2)
 		self.stlay.addWidget(self.stanimgif,1,2)
 		self.stmoviebut.setEnabled(False)
@@ -1998,7 +2003,7 @@ class EMImageInspector2D(QtWidgets.QWidget):
 		self.stmaxsb.setRange(0,0)
 		self.stmaxsb.setValue(0)
 
-		self.rngbl.addWidget(self.stmmlbl)
+		self.rngbl.addWidget(self.stmmlbl,Qt.AlignRight)
 		self.rngbl.addWidget(self.stminsb)
 		self.rngbl.addWidget(self.stmaxsb)
 
@@ -2438,8 +2443,9 @@ class EMImageInspector2D(QtWidgets.QWidget):
 			im["render_max"]=im["mean"]+im["sigma"]*2.5
 			im.write_image("tmp.%03d.png"%(i-self.stminsb.value()+1))
 
-		# vcodec and pix_fmt are for quicktime compatibility. r 2 is 2 FPS
-		ret= os.system("ffmpeg -r 5 -i tmp.%%03d.png -vcodec libx264 -pix_fmt yuv420p  %s"%fsp)
+		# vcodec and pix_fmt are for quicktime compatibility. -r 2 is 2 FPS
+		rate=int(self.stfpssb.value())
+		ret= os.system("ffmpeg -r %d -i tmp.%%03d.png -vcodec libx264 -pix_fmt yuv420p -r %d %s"%(rate,rate,fsp))
 		if ret!=0 :
 			QtWidgets.QMessageBox.warning(None,"Error","Movie conversion (ffmpeg) failed. Please make sure ffmpeg is in your path. Frames not deleted.")
 			return
