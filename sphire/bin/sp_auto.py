@@ -75,13 +75,13 @@ def parse_args():
     group.add_argument(
         "--mpi_submission_command",
         type=str,
-        default="sbatch",
+        default=None,
         help="Submission command, e.g. sbatch, qsub, ...",
     )
     group.add_argument(
         "--mpi_submission_template",
         type=str,
-        default="TEMPLATES/submit.sh",
+        default=None,
         help="Submission template.",
     )
 
@@ -132,7 +132,7 @@ def parse_args():
         "--mtf",
         dest="XXX_SP_MTF_XXX",
         type=str,
-        default="",
+        default=None,
         help="MTF file for the sharpening step",
     )
     group.add_argument(
@@ -256,7 +256,7 @@ def parse_args():
         "--cter_mic_pattern",
         dest="XXX_SP_CTER_MICROGRAPH_PATTERN_XXX",
         type=str,
-        default="Mics/*.mrc",
+        default=None,
         help="Micrograph pattern in case unblur is skipped.",
     )
     group.add_argument(
@@ -281,7 +281,7 @@ def parse_args():
         "--cryolo_predict_path",
         dest="XXX_SP_CRYOLO_PREDICT_PATH_XXX",
         type=str,
-        default="/Path/cryolo_predict.py",
+        default=None,
         help="Path to the cryolo predict executable.",
     )
     group.add_argument(
@@ -324,7 +324,7 @@ def parse_args():
         "--cryolo_mic_path",
         dest="XXX_SP_CRYOLO_MICROGRAPH_PATH_XXX",
         type=str,
-        default="Mics/*.mrc",
+        default=None,
         help="Micrograph pattern in case unblur is skipped.",
     )
     group.add_argument(
@@ -346,21 +346,21 @@ def parse_args():
         "--window_box_pattern",
         dest="XXX_SP_WINDOW_BOX_PATTERN_XXX",
         type=str,
-        default="Boxes/*.box",
+        default=None,
         help="Window box file pattern.",
     )
     group.add_argument(
         "--window_mic_pattern",
         dest="XXX_SP_WINDOW_MICROGRAPH_PATTERN_XXX",
         type=str,
-        default="Mics/*.mrc",
+        default=None,
         help="Window mrc file pattern.",
     )
     group.add_argument(
         "--window_partres",
         dest="XXX_SP_WINDOW_PARTRES_XXX",
         type=str,
-        default="CTER/partres.txt",
+        default=None,
         help="CTER partres file. In case of negative stain put this value to the pixel size.",
     )
     group.add_argument(
@@ -400,7 +400,7 @@ def parse_args():
         "--isac2_input_stack",
         dest="XXX_SP_ISAC_STACK_XXX",
         type=str,
-        default="bdb:path#stack",
+        default=None,
         help="Path to the Input stack for ISAC",
     )
     group.add_argument(
@@ -432,14 +432,14 @@ def parse_args():
         "--cinderella_predict_path",
         dest="XXX_SP_CINDERELLA_PREDICT_PATH_XXX",
         type=str,
-        default="/Path/sp_cinderella_predict.py",
+        default=None,
         help="Path to the cinderella executable.",
     )
     group.add_argument(
         "--cinderella_model_path",
         dest="XXX_SP_CINDERELLA_MODEL_PATH_XXX",
         type=str,
-        default="cinderella_model.h5",
+        default=None,
         help="Path to trained cinderella model",
     )
 
@@ -461,7 +461,7 @@ def parse_args():
         "--cinderella_input_stack",
         dest="XXX_SP_CINDERELLA_STACK_XXX",
         type=str,
-        default="isac_classes.h5",
+        default=None,
         help="Path to ISAC class stack",
     )
     group.add_argument(
@@ -494,11 +494,17 @@ def parse_args():
         help="Do not run 3d ab-initio reconstruction.",
     )
     group.add_argument(
-        "--rviper_input_stack",
-        dest="XXX_SP_RVIPER_INPUT_STACK_XXX",
+        '--rviper_use_final',
+        action='store_true',
+        default=False,
+        help='Use the final result of the last main iteration. Otherwhise take the first result.'
+    )
+    group.add_argument(
+        '--rviper_input_stack',
+        dest='XXX_SP_RVIPER_INPUT_STACK_XXX',
         type=str,
-        default="bdb:path#stack",
-        help="Path to the input stack for RVIPER",
+        default=None,
+        help='Path to the input stack for RVIPER'
     )
     group.add_argument(
         "--rviper_output_dir",
@@ -526,7 +532,7 @@ def parse_args():
         "--adjust_rviper_resample",
         dest="XXX_SP_ADJUSTMENT_RESAMPLE_RATIO_XXX",
         type=str,
-        default="bdb:path#stack",
+        default=None,
         help="Resample ratio for RVIPER.",
     )
     group.add_argument(
@@ -591,21 +597,21 @@ def parse_args():
         "--meridien_input_volume",
         dest="XXX_SP_MERIDIEN_INPUT_VOLUME_XXX",
         type=str,
-        default="ref_vol.hdf",
+        default=None,
         help="Path to the ref_vol.hdf file",
     )
     group.add_argument(
         "--meridien_input_mask",
         dest="XXX_SP_MERIDIEN_INPUT_MASK_XXX",
         type=str,
-        default="mask.hdf",
+        default=None,
         help="Path to the mask.hdf file",
     )
     group.add_argument(
         "--meridien_input_stack",
         dest="XXX_SP_MERIDIEN_INPUT_STACK_XXX",
         type=str,
-        default="bdb:path#stack",
+        default=None,
         help="Path to the Input stack for Meridien",
     )
     group.add_argument(
@@ -988,12 +994,16 @@ def get_rviper(status_dict, **kwargs):
     return cmd
 
 
-def get_adjustment(status_dict, **kwargs):
+def get_adjustment(status_dict, use_final, **kwargs):
     cmd = []
     if status_dict["do_rviper"] and status_dict["do_adjust_rviper"]:
+        cmd.append('LATEST_VIPER_DIR=$(ls -rd XXX_SP_RVIPER_OUTPUT_DIR_XXX/main*/run* | head -n1);')
         cmd.append("sp_pipe.py")
         cmd.append("moon_eliminator")
-        cmd.append("XXX_SP_RVIPER_OUTPUT_DIR_XXX/main001/run000/refvol2.hdf")
+        if use_final:
+            cmd.append('${LATEST_VIPER_DIR}/volf.hdf')
+        else:
+            cmd.append('XXX_SP_RVIPER_OUTPUT_DIR_XXX/main001/run000/refvol2.hdf')
         cmd.append("XXX_SP_ADJUSTMENT_OUTPUT_DIR_XXX")
         cmd.append("--pixel_size=XXX_SP_PIXEL_SIZE_XXX")
         if status_dict["do_isac2"]:
@@ -1310,10 +1320,6 @@ def main(args_as_dict):
 
             if key == "skip_window":
                 do_dict["{0}_stack".format(key.replace("skip", "do"))] = bool(not value)
-            elif key == "skip_isac2":
-                do_dict["{0}_substack".format(key.replace("skip", "do"))] = bool(
-                    not value
-                )
             elif key == "skip_restack":
                 do_dict["{0}_import_params".format(key.replace("skip", "do"))] = bool(
                     not value
@@ -1341,12 +1347,14 @@ def main(args_as_dict):
                 do_dict["{0}_sharpening".format(key.replace("skip", "do"))] = bool(
                     not value
                 )
+    do_dict['do_isac2_substack'] = not (args_as_dict['skip_cinderella'] and args_as_dict['skip_isac2']) 
 
     phase_plate = args_as_dict["phase_plate"]
     negative_stain = args_as_dict["negative_stain"]
     fill_rviper_mask = args_as_dict["fill_rviper_mask"]
     do_gain = bool(args_as_dict["XXX_SP_UNBLUR_GAIN_FILE_XXX"] is not None)
     filament_mode = bool(args_as_dict['XXX_SP_FILAMENT_WIDTH_XXX'] is not None)
+    use_final = args_as_dict['rviper_use_final']
 
     mpi_procs = args_as_dict["mpi_procs"]
     mpi_submission = args_as_dict["mpi_submission_template"]
@@ -1373,6 +1381,7 @@ def main(args_as_dict):
                     status_dict=do_dict,
                     do_gain=do_gain,
                     filament_mode=filament_mode,
+                    use_final=use_final,
                 )
                 if entry.strip()
             ]
@@ -1385,8 +1394,11 @@ def main(args_as_dict):
             running_idx += 1
             current_idx += 1
 
-    with open(mpi_submission) as read:
-        lines = read.readlines()
+    try:
+        with open(mpi_submission) as read:
+            lines = read.readlines()
+    except Exception as e:
+        sp_global_def.ERROR(str(e) + '\nCannot open mpi_submission template!', action=1)
     found_lines = []
     for idx, entry in enumerate(lines):
         if "XXX_SXCMD_LINE_XXX" in entry and "mpirun" in entry:
@@ -1416,6 +1428,7 @@ def main(args_as_dict):
         "--import=$(ls XXX_SP_RESTACK_MERIDIEN_OUTPUT_DIR_XXX/final_params_*.txt)",
         "XXX_SP_RESTACK_MERIDIEN_OUTPUT_DIR_XXX/vol_*_unfil_*.hdf",
         "XXX_SP_CTF_MERIDIEN_OUTPUT_DIR_XXX/vol_*_unfil_*.hdf",
+        'LATEST_VIPER_DIR=$(ls -rd XXX_SP_RVIPER_OUTPUT_DIR_XXX/main*/run* | head -n1);',
     )
 
     final_lines = []
@@ -1453,14 +1466,25 @@ def main(args_as_dict):
                     output_folder_dict[key] = value
                 tmp = tmp.replace(key, value)
         final_lines.append(tmp)
-    final_line = "\n".join(final_lines)
+    #final_line = "\n".join(final_lines)
 
     for key, value in args_as_dict.items():
         if key.startswith("XXX"):
             if "_ADDITION_XXX" in key:
                 value = "' '".join(value.split(" "))
-            final_line = final_line.replace(key, str(value))
-    lines[found_lines[-1]] = final_line.replace(" ''", "").replace("';'", ";")
+            final_lines_new = []
+            for line in final_lines:
+                new_line = []
+                for entry in line.split():
+                    if key in entry and value is None:
+                        continue
+                    new_line.append(entry.replace(key, str(value)))
+                new_line.append('\n')
+                final_lines_new.append(' '.join(new_line))
+            final_lines = final_lines_new
+
+    final_line = '\n'.join(final_lines_new)
+    lines[found_lines[-1]] = final_line.replace(" ''", '').replace('\';\'', ';')
 
     subprocess.os.mkdir(args_as_dict["output_directory"])
     sp_global_def.write_command(args_as_dict["output_directory"])
@@ -1479,6 +1503,7 @@ def main(args_as_dict):
 
 
 if __name__ == "__main__":
+    sp_global_def.BATCH = True
     sp_global_def.print_timestamp("Start")
     main(vars(parse_args()))
     sp_global_def.print_timestamp("Finish")
