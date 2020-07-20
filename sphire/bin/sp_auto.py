@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
 from __future__ import division
-from past.utils import old_div
 #
 # Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)
 # Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
@@ -135,6 +134,20 @@ def parse_args():
         type=str,
         default="",
         help="MTF file for the sharpening step",
+    )
+    group.add_argument(
+        '--filament_width',
+        dest='XXX_SP_FILAMENT_WIDTH_XXX',
+        type=int,
+        default=None,
+        help='Filament width in Pixel'
+    )
+    group.add_argument(
+        '--helical_rise',
+        dest='XXX_SP_HELICAL_RISE_XXX',
+        type=float,
+        default=None,
+        help='Helical rise in Angstrom'
     )
     group.add_argument(
         "--negative_stain",
@@ -857,7 +870,7 @@ def get_cryolo_predict(status_dict, **kwargs):
     return cmd
 
 
-def get_window(status_dict, negative_stain, **kwargs):
+def get_window(status_dict, negative_stain, filament_mode, **kwargs):
     cmd = []
     cmd.append("sp_window.py")
     if status_dict["do_unblur"]:
@@ -870,7 +883,10 @@ def get_window(status_dict, negative_stain, **kwargs):
         cmd.append("XXX_SP_WINDOW_MICROGRAPH_PATTERN_XXX")
 
     if status_dict["do_cryolo"]:
-        cmd.append("XXX_SP_CRYOLO_OUTPUT_DIR_XXX/EMAN/*.box")
+        if filament_mode:
+            cmd.append('XXX_SP_CRYOLO_OUTPUT_DIR_XXX/EMAN_HELIX_SEGMENTED/*.box')
+        else:
+            cmd.append('XXX_SP_CRYOLO_OUTPUT_DIR_XXX/EMAN/*.box')
     else:
         cmd.append("XXX_SP_WINDOW_BOX_PATTERN_XXX")
 
@@ -884,6 +900,9 @@ def get_window(status_dict, negative_stain, **kwargs):
     cmd.append("--box_size=XXX_SP_BOX_SIZE_XXX")
     if negative_stain:
         cmd.append("--skip_invert")
+
+    if filament_mode:
+        cmd.append('--coordinates_format=cryolo_helical_segmented')
     cmd.append("XXX_SP_WINDOW_ADDITION_XXX")
     return cmd
 
@@ -1007,28 +1026,50 @@ def get_mask_rviper(status_dict, fill_rviper_mask, **kwargs):
     return cmd
 
 
-def get_meridien(status_dict, **kwargs):
+def get_meridien(status_dict, filament_mode, **kwargs):
     cmd = []
-    cmd.append("sp_meridien.py")
+    if filament_mode:
+        cmd.append('sp_meridien_alpha.py')
+    else:
+        cmd.append('sp_meridien.py')
+
     if status_dict["do_isac2"]:
         cmd.append("bdb:XXX_SP_SUBSTACK_OUTPUT_DIR_XXX/isac_substack")
     else:
         cmd.append("XXX_SP_MERIDIEN_INPUT_STACK_XXX")
     cmd.append("XXX_SP_MERIDIEN_OUTPUT_DIR_XXX")
+
     if status_dict["do_rviper"]:
         cmd.append("XXX_SP_ADJUSTMENT_OUTPUT_DIR_XXX/vol3d_ref_moon_eliminated.hdf")
     else:
         cmd.append("XXX_SP_MERIDIEN_INPUT_VOLUME_XXX")
-    cmd.append("--radius=XXX_SP_PARTICLE_RADIUS_XXX")
-    cmd.append("--symmetry=XXX_SP_SYMMETRY_XXX")
-    cmd.append("--memory_per_node=XXX_SP_MEMORY_PER_NODE_XXX")
+
     if status_dict["do_mask_rviper"]:
         cmd.append("--mask3D=XXX_SP_MASK_RVIPER_OUTPUT_DIR_XXX/sp_mask_mask.hdf")
     else:
         cmd.append("--mask3D=XXX_SP_MERIDIEN_INPUT_MASK_XXX")
+
     if status_dict["do_isac2"]:
         cmd.append("--initialshifts")
         cmd.append("--skip_prealignment")
+
+    cmd.append('--radius=XXX_SP_PARTICLE_RADIUS_XXX')
+    cmd.append('--symmetry=XXX_SP_SYMMETRY_XXX')
+    cmd.append('--memory_per_node=XXX_SP_MEMORY_PER_NODE_XXX')
+
+    if filament_mode:
+        cmd.append('--initialshifts')
+        cmd.append('--skip_prealignment')
+        cmd.append('--delta=3.75')
+        cmd.append('--theta_min=90')
+        cmd.append('--theta_max=90')
+        cmd.append('--angle_method=M')
+        cmd.append('--ccfpercentage=90')
+        cmd.append('--chunk_by=filament_id')
+        cmd.append('--outlier_by=filament_id')
+        cmd.append('--filament_width=XXX_SP_FILAMENT_WIDTH_XXX')
+        cmd.append('--helical_rise=XXX_SP_HELICAL_RISE_XXX')
+
     cmd.append("XXX_SP_MERIDIEN_ADDITION_XXX")
     return cmd
 
@@ -1305,6 +1346,7 @@ def main(args_as_dict):
     negative_stain = args_as_dict["negative_stain"]
     fill_rviper_mask = args_as_dict["fill_rviper_mask"]
     do_gain = bool(args_as_dict["XXX_SP_UNBLUR_GAIN_FILE_XXX"] is not None)
+    filament_mode = bool(args_as_dict['XXX_SP_FILAMENT_WIDTH_XXX'] is not None)
 
     mpi_procs = args_as_dict["mpi_procs"]
     mpi_submission = args_as_dict["mpi_submission_template"]
@@ -1330,6 +1372,7 @@ def main(args_as_dict):
                     fill_rviper_mask=fill_rviper_mask,
                     status_dict=do_dict,
                     do_gain=do_gain,
+                    filament_mode=filament_mode,
                 )
                 if entry.strip()
             ]
@@ -1430,7 +1473,7 @@ def main(args_as_dict):
     if not args_as_dict["dry_run"]:
         sp_global_def.sxprint(
             subprocess.check_output(
-                [args_as_dict["mpi_submission_command"], out_submission]
+                args_as_dict['mpi_submission_command'].split() + [out_submission]
             )
         )
 
