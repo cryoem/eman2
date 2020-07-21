@@ -84,6 +84,25 @@ nohup mpirun -np  64   --hostfile ./node4567.txt  sx3dvariability.py bdb:data/da
 """
 
 
+def check_output_format(input_var, filename):
+    out_data_3d = EMAN2.EMData(10, 10, 10)
+    out_data_3d += 1
+    try:
+        out_data_3d.write_image("test_"+filename)
+    except Exception as e:
+        msg="The parameter '"+input_var+"' has a not valid extension or the file is not writable. Actual namefile is: '"+filename
+        sp_global_def.ERROR(msg,action=1)
+        return False
+
+    # i cannot just remove it because in case of multiple cpu use it could crash
+    try:
+        os.remove("test_"+filename)
+    except Exception as useless_e:
+        pass
+    return True
+
+
+
 def main():
     def params_3D_2D_NEW(phi, theta, psi, s2x, s2y, mirror):
         # the final ali2d parameters already combine shifts operation first and rotation operation second for parameters converted from 3D
@@ -423,7 +442,27 @@ def main():
         log_main = sp_logger.Logger(sp_logger.BaseLogger_Files())
         log_main.prefix = optparse.os.path.join(current_output_dir, "./")
 
+        error = 0
         if myid == main_node:
+            # check extension output files
+            valid_output=True
+            if options.var3D:
+                valid_output = valid_output and check_output_format(input_var="--var3D", filename=options.var3D)
+
+            if options.ave3D:
+                valid_output = valid_output and check_output_format(input_var="--ave3D", filename=options.ave3D)
+
+            if options.var2D:
+                valid_output = valid_output and check_output_format(input_var="--var2D", filename=options.var2D)
+
+            if options.ave2D:
+                valid_output = valid_output and check_output_format(input_var="--ave2D", filename=options.ave2D)
+
+            if valid_output is False:
+                error = 1
+
+
+
             line = ""
             for a in sys.argv:
                 line += " " + a
@@ -462,6 +501,14 @@ def main():
             )
             log_main.add("Window size          : %5d " % current_window)
             log_main.add("sx3dvariability begins")
+
+        mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
+        error = sp_utilities.bcast_number_to_all(
+            error, source_node=0, mpi_comm=mpi.MPI_COMM_WORLD
+        )
+
+        if error == 1:
+            return
 
         symbaselen = 0
         if myid == main_node:
@@ -806,7 +853,7 @@ def main():
                         -cpar["tx"] * current_decimate,
                         -cpar["ty"] * current_decimate,
                         mirror_list[i][j],
-                    )
+                        )
                     if thetaM <= 90:
                         if mirror == 0:
                             alpha, sx, sy, scale = sp_utilities.compose_transform2(
@@ -822,7 +869,7 @@ def main():
                                 0.0,
                                 0.0,
                                 1.0,
-                            )
+                                )
                     else:
                         if mirror == 0:
                             alpha, sx, sy, scale = sp_utilities.compose_transform2(
