@@ -357,29 +357,6 @@ void EMData::write_lst(const string & filename, const string & reffile,
 	EXITFUNC;
 }
 
-
-ostream& operator<<(ostream& out, const EMData& obj) {
-	int nx = obj.get_xsize();
-	int ny = obj.get_ysize();
-	int nz = obj.get_zsize();
-	for (int iz = 0; iz < nz; iz++) {
-		out << "(z = " << iz << " slice)" << std::endl;
-		for (int ix = 0; ix < nx; ix++) {
-			for (int iy = 0; iy < ny; iy++) {
-				out << std::setiosflags(std::ios::fixed)
-					<< std::setiosflags(std::ios_base::scientific)
-					<< std::setw(12)
-					 << std::setprecision(5) << obj(ix,iy,iz) << "  ";
-				if (((iy+1) % 6) == 0) {
-					out << std::endl << "   ";
-				}
-			}
-			out << std::endl;
-		}
-	}
-	return out;
-}
-
 vector<shared_ptr<EMData>> EMData::read_images(const string & filename, vector<int> img_indices,
 									   bool header_only)
 {
@@ -417,4 +394,26 @@ vector<shared_ptr<EMData>> EMData::read_images(const string & filename, vector<i
 
 	EXITFUNC;
 	return v;
+}
+
+ostream& operator<<(ostream& out, const EMData& obj) {
+	int nx = obj.get_xsize();
+	int ny = obj.get_ysize();
+	int nz = obj.get_zsize();
+	for (int iz = 0; iz < nz; iz++) {
+		out << "(z = " << iz << " slice)" << std::endl;
+		for (int ix = 0; ix < nx; ix++) {
+			for (int iy = 0; iy < ny; iy++) {
+				out << std::setiosflags(std::ios::fixed)
+					<< std::setiosflags(std::ios_base::scientific)
+					<< std::setw(12)
+					<< std::setprecision(5) << obj(ix,iy,iz) << "  ";
+				if (((iy+1) % 6) == 0) {
+					out << std::endl << "   ";
+				}
+			}
+			out << std::endl;
+		}
+	}
+	return out;
 }

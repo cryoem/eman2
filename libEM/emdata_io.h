@@ -135,13 +135,6 @@ void write_lst(const string & filename,
 			   const string & comment="");
 
 
-/** Print the image data to a file stream (standard out by default).
- * @param out Output stream; cout by default.
- * @param str Message string to be printed.
- */
-friend ostream& operator<<(ostream& out, const EMData& obj);
-
-
 /** Read a set of images from file specified by 'filename'.
  * Which images are read is set by 'img_indices'.
  * @param filename The image file name.
@@ -156,5 +149,11 @@ static vector<std::shared_ptr<EMData>> read_images(const string & filename,
 									  vector<int> img_indices = vector<int>(),
 									  bool header_only = false);
 
+
+/** Print the image data to a file stream (standard out by default).
+ * @param out Output stream; cout by default.
+ * @param str Message string to be printed.
+ */
+friend ostream& operator<<(ostream& out, const EMData& obj);
 
 #endif	//emdata__io_h__
