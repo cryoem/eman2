@@ -32,8 +32,77 @@
 #ifndef eman__eerio_h__
 #define eman__eerio_h__ 1
 
+#include "imageio.h"
+
+#include <bitset>
+
+
 namespace EMAN
 {
+	template <class T>
+	class BitStream {
+	public:
+		BitStream(T *buf)
+		: buffer(buf), cur(*buffer)
+		{}
+
+		T get_bits(int N) {
+			auto result = cur & ((1 << N) - 1);
+
+			if(N < bit_counter) {
+				cur        >>= N;
+				bit_counter -= N;
+			}
+			else {
+				auto remaining_bits = N - bit_counter;
+
+				cur = *(++buffer);
+				result |= ((cur & ((1 << remaining_bits) - 1)) << bit_counter);
+
+				cur >>= remaining_bits;
+				bit_counter = max_num_bits - remaining_bits;
+			}
+
+			return result;
+		}
+
+	private:
+		T *buffer;
+		T cur;
+		const size_t max_num_bits = 8*sizeof(T);
+		size_t bit_counter        = max_num_bits;
+
+		friend std::ostream &operator<<(std::ostream &out, const BitStream &obj) {
+			return out<<"cur: "<<std::bitset<8*sizeof(T)>(obj.cur)
+						<<endl
+						<<"bit_counter: "<<obj.bit_counter<<endl
+						<<"max_num_bits: "<<obj.max_num_bits<<endl;
+		}
+	};
+
+	template<unsigned int T, bool BIT_OVERFLOW, class U>
+	class BitReader {
+	private:
+		const decltype(T) num_bits = T;
+		const decltype(T) max_val = (1 << num_bits) - 1;
+		uintmax_t val = 0;
+
+	public:
+		operator decltype(val) const () {
+			return val;
+		}
+
+		friend BitStream<U>& operator>>(BitStream<U> &in, BitReader<T, BIT_OVERFLOW, U> &obj) {
+			decltype(val) count;
+			obj.val = 0;
+			do {
+				count = in.get_bits(obj.num_bits);
+				obj.val += count;
+			} while(BIT_OVERFLOW && count == obj.max_val);
+
+			return in;
+		}
+	};
 }
 
 #endif	//eman__eerio_h__

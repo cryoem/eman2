@@ -38,8 +38,64 @@ using namespace EMAN;
 #include <cassert>
 
 
+#include "io/eerio.h"
+
+void test_bit_stream() {
+	uint64_t a1 = ~0;
+
+	BitStream<uint64_t> is1(&a1);
+	assert(is1.get_bits(3) == 7);
+	assert(is1.get_bits(9) == (1 << 9) - 1);
+	assert(is1.get_bits(1) == 1);
+
+	uint64_t a2 = 1<<1 | 1<<3 | 1<<5 | 1<<7;
+	BitStream<uint64_t> is2(&a2);
+
+	assert(is2.get_bits(2) == 2);
+	assert(is2.get_bits(3) == 2);
+	assert(is2.get_bits(3) == 5);
+
+	uint8_t a3 = 0b10101010;
+	uint8_t b3 = 0b10011001;
+	uint8_t ab3[] = {a3, b3};
+
+	BitStream<uint64_t> is3(reinterpret_cast<uint64_t *>(ab3));
+	assert(is3.get_bits(2) == 2);
+	assert(is3.get_bits(6) == 42);
+	assert(is3.get_bits(3) == 1);
+
+	uint64_t ab4[] = {a3, b3};
+	BitStream<uint64_t> is4(ab4);
+
+	assert(is4.get_bits(20) == a3);
+	assert(is4.get_bits(43) == 0);
+	assert(is4.get_bits(20) == 0b100110010);
+}
+
+void test_bit_reader() {
+	uint8_t a5 = 0b10101010;
+	uint8_t b5 = 0b11011001;
+	uint8_t c5 = 0b10011111;
+	uint8_t d5 = 0b10011001;
+	uint8_t ab5[] = {a5, b5, c5, d5};
+
+	BitStream<uint8_t> is5(ab5);
+	BitReader<7, true, uint8_t> rle;
+
+	is5 >> rle;
+	assert(rle == 42);
+
+	is5 >> rle;
+	assert(rle == 0b110011);
+
+	is5 >> rle;
+	assert(rle == 0b1001100 + (1<<7) - 1);
+}
+
 int main()
 {
+	test_bit_stream();
+	test_bit_reader();
 
 	return 0;
 }
