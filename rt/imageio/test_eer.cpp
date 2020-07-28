@@ -80,7 +80,7 @@ void test_bit_reader() {
 	uint8_t ab5[] = {a5, b5, c5, d5};
 
 	BitStream<uint8_t> is5(ab5);
-	BitReader<7, true, uint8_t> rle;
+	Rle<7, uint8_t> rle;
 
 	is5 >> rle;
 	assert(rle == 42);

@@ -103,6 +103,9 @@ namespace EMAN
 			return in;
 		}
 	};
+
+	template<unsigned int T, class U>
+	using Rle = BitReader<T, true, U>;
 }
 
 #endif	//eman__eerio_h__
