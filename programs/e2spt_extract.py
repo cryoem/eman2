@@ -859,13 +859,14 @@ def parse_json(options):
 					tokeep[dst[i]<dthr]=False
 
 			newpos=newpos[tokeep]
+			newxfs=[xf for i, xf in enumerate(newxfs) if tokeep[i]]
+			info=[p for i, p in enumerate(info) if tokeep[i]]
+			nexclude+=np.sum(tokeep==False)
+			
 		nptcl+=len(newpos)
-		nexclude+=np.sum(tokeep==False)
-		
-		newxfs=[xf for i, xf in enumerate(newxfs) if tokeep[i]]
 		
 		allxfs[fname]=newxfs
-		allinfo[fname]=[p for i, p in enumerate(info) if tokeep[i]]
+		allinfo[fname]=info
 		
 		
 		print("{} : ptcls {} -> {}".format(base_name(fname), len(pos), len(allxfs[fname])))
