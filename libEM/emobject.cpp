@@ -760,78 +760,11 @@ string EMObject::to_str(ObjectType argtype) const
 
 string EMObject::get_object_type_name(ObjectType t)
 {
-#ifdef _WIN32
-	if (t == BOOL) {
-		return "BOOL";
-	}else
-	if ( t == SHORT) {
-		return "SHORT";
-	}else
-	if ( t == INT){
-		return "INT";
-	}else
-	if ( t == UNSIGNEDINT){
-		return "UNSIGNEDINT";
-	} else
-	if ( t == FLOAT){
-		return "FLOAT";
-	} else
-	if ( t == DOUBLE){
-		return "DOUBLE";
-	}else
-	if ( t == STRING){
-		return "STRING";
-	}else
-	if ( t == EMDATA){
-		return "EMDATA";
-	}
-	else
-	if ( t == XYDATA){
-		return "XYDATA";
-	}else
-	if ( t == INTARRAY){
-		return "INTARRAY";
-	}else
-	if ( t == FLOATARRAY){
-		return "FLOATARRAY";
-	} else
-	if ( t == STRINGARRAY){
-		return "STRINGARRAY";
-	}else
-	if ( t == TRANSFORM){
-		return "TRANSFORM";
-	}else
-	if ( t == TRANSFORMARRAY){
-		return "TRANSFORMARRAY";
-	}
-	if ( t == CTF){
-		return "CTF";
-	}else
-	if ( t == FLOAT_POINTER){
-		return "FLOAT_POINTER";
-	}else
-	if ( t == INT_POINTER){
-		return "INT_POINTER";
-	}else
-	if ( t == UNKNOWN){
-		return "UNKNOWN";
-	} else
-	if ( t == VOID_POINTER){
-		return "VOID_POINTER";
-	}
-	else {
-		LOGERR("No such EMObject defined");
-		throw NotExistingObjectException("EMObject", "unknown type");
-	}
-
-#else
-
 	if  ( type_registry.find(t) != type_registry.end() )
 		return type_registry[t];
 	else
 		LOGERR("No such EMObject defined");
 		throw NotExistingObjectException("EMObject", "unknown type");
-#endif	//_WIN32
 }
 
 bool EMAN::operator==(const EMObject &e1, const EMObject & e2)

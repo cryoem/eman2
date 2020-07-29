@@ -1110,13 +1110,6 @@ double PointArray::sim_potential() {
 		for (size_t i=0; i<n; i++) ret+=sim_pointpotential(adist[i],aang[i],adihed[i]);
 	}
 
-#ifdef _WIN32
-//	if (_isnan(ret/n))
-#else
-//	if (std::isnan(ret/n))
-#endif
-//		printf("%f             %f\n",ret,n);
-	
 	return ret/n;
 }
 

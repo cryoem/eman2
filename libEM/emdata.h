@@ -32,10 +32,6 @@
 #ifndef eman__emdata_h__
 #define eman__emdata_h__ 1
 
-#ifdef _WIN32
-	#pragma warning(disable:4819)
-#endif	//_WIN32
-
 #include <cfloat>
 #include <complex>
 #include <fstream>

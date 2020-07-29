@@ -1008,11 +1008,7 @@ void EMData::ri2ap()
 
 	size_t size = (size_t)nx * ny * nz;
 	for (size_t i = 0; i < size; i += 2) {
-#ifdef	_WIN32
-		float f = (float)_hypot(data[i], data[i + 1]);
-#else
 		float f = (float)hypot(data[i], data[i + 1]);
-#endif
 		if (data[i] == 0 && data[i + 1] == 0) {
 			data[i + 1] = 0;
 		}
@@ -1741,11 +1737,7 @@ EMData*   EMData::bispecRotTransInvDirect(int type)
 			if (Weight <=0) continue;
 			WeightImage    -> set_value_at(jk,jq,Weight);
 			WeightImage    -> set_value_at(jq,jk,Weight);
-#ifdef _WIN32
-			float ValNow  = pow( (RotTransInv[TotalInd] + RotTransInv[TotalIndBar]) / Weight, 1.0f/3.0f )  ;
-#else
 			float ValNow  = cbrt( (RotTransInv[TotalInd] + RotTransInv[TotalIndBar]) / Weight )  ;
-#endif	//_WIN32
 			RotTransInvF -> set_value_at(jk,jq,ValNow);//  include /Weight
  			RotTransInvF -> set_value_at(jq,jk,ValNow );//  include /Weight
 		}}

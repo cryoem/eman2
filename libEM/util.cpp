@@ -753,11 +753,7 @@ if (x>=dim || y>=dim) {
 	mem=(float*)realloc(mem,4*dim*dim);
 	for (int y=0; y<dim; y++) {
 		for (int x=0; x<dim; x++) {
-#ifdef	_WIN32
-			mem[x+y*dim]=(float)_hypot((float)x,(float)y);
-#else
 			mem[x+y*dim]=hypot((float)x,(float)y);
-#endif
 		}
 	}
 }
@@ -779,11 +775,7 @@ if (x>=dim || y>=dim) {
 	mem=(short*)realloc(mem,2*dim*dim);
 	for (int y=0; y<dim; y++) {
 		for (int x=0; x<dim; x++) {
-#ifdef	_WIN32
-			mem[x+y*dim]=(short)Util::round(_hypot((float)x,(float)y));
-#else
 			mem[x+y*dim]=(short)Util::round(hypot((float)x,(float)y));
-#endif
 		}
 	}
 }

@@ -32,11 +32,6 @@
 #ifndef eman__util_h__
 #define eman__util_h__ 1
 
-#ifdef _WIN32
-	#pragma warning(disable:4819)
-	#include <cfloat>
-#endif	//_WIN32
-
 #ifdef WIN32
 #include <windows.h>
 	#include <process.h>
@@ -109,11 +104,7 @@ namespace EMAN
 		 */
 		static inline bool is_nan(const float number)
 		{
-#ifdef _WIN32
-			return _isnan(number);
-#else
 			return std::isnan(number);
-#endif
 		}
 
 		/** convert complex data array from Amplitude/Phase format
@@ -782,13 +773,7 @@ namespace EMAN
 		 */
 		static inline float hypot2(float x, float y)
 		{
-//			return sqrtf(x * x + y * y);
-#ifdef	_WIN32
-			return (float) _hypot(x, y);
-#else
 			return (float) hypot(x, y);
-#endif	//_WIN32
-			
 		}
 		
 		/** Euclidean distance function squared in 2D: f(x,y) = (x*x + y*y);

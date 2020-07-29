@@ -178,11 +178,7 @@ int Log::begin(int argc, char *argv[], int ppid)
 {
 	time_t tm = time(0);
 	const char *pwd = getenv("PWD");
-#ifdef	_WIN32
-	int ref = _getpid();
-#else
 	int ref = getpid();
-#endif
 
 	string filename = Util::sbasename(argv[0]);
 
