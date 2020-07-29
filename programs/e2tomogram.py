@@ -82,7 +82,7 @@ def main():
 	parser.add_argument("--xdrift", action="store_true",help="apply extra correction for drifting along x axis", default=False,guitype='boolbox',row=13, col=0, rowspan=1, colspan=1,mode="easy")
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
-	parser.add_argument("--reconmode", type=str, help="Intepolation mode for reconstruction. default is gauss_2. check e2help.py for details. Not recommended to change.",default="gauss_2")
+	parser.add_argument("--reconmode", type=str, help="Intepolation mode for reconstruction. default is trilinear. check e2help.py for details. Not recommended to change.",default="trilinear")
 	parser.add_argument("--maxshift", type=float,help="Maximum shift between tilt(/image size). default is 0.35", default=.35)
 	parser.add_argument("--highpass", type=int,help="initial highpass filter for alignment in pixels. default if 5", default=5)
 	parser.add_argument("--badone", action="store_true",help="Remove one bad tilt during coarse alignment. seem to work better with smaller maxshift...", default=False)#, guitype='boolbox',row=9, col=0, rowspan=1, colspan=1,mode="easy")
@@ -966,7 +966,8 @@ def make_tile(args):
 		
 	
 	threed=recon.finish(True)
-	threed.process_inplace("math.gausskernelfix",{"gauss_width":4.0})
+	if options.reconmode=="gauss_2":
+		threed.process_inplace("math.gausskernelfix",{"gauss_width":4.0})
 	#threed.write_image("tmp3d00.hdf", -1)
 	threed.clip_inplace(Region((pad-sz)//2, (pad-sz)//2, (pad-outz)//2, sz, sz, outz))
 	threed.process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.filterto})
