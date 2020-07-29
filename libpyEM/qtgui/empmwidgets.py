@@ -415,8 +415,9 @@ class PMFileNameWidget(PMBaseWidget):
 		self.setValue(str(self.filenamebox.text()))
 
 	def _on_cancel(self):
-		self.window.close()
-		self.window=None
+		if self.window:
+			self.window.close()
+			self.window=None
 
 	def _on_ok(self):
 		filename = ""

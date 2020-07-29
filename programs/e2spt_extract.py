@@ -535,7 +535,7 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 		apixout=apix*float(options.shrink3d)
 		#print('shrink3d!', bx, options.padtwod, options.shrink3d, p3d)
 	
-	recon=Reconstructors.get("fourier", {"sym":'c1', "size":[p3d, p3d, p3d], "mode":"gauss_2"})
+	recon=Reconstructors.get("fourier", {"sym":'c1', "size":[p3d, p3d, p3d], "mode":"trilinear"})
 	recon.setup()
 	
 	if len(ctfinfo)>0:
@@ -685,7 +685,7 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 		else:
 			threed=recon.finish(True)
 			#threed=EMData(p3d, p3d, p3d)
-			threed.process_inplace("math.gausskernelfix",{"gauss_width":4.0})
+			#threed.process_inplace("math.gausskernelfix",{"gauss_width":4.0})
 			threed=threed.get_clip(Region((p3d-bx)//2,(p3d-bx)//2,(p3d-bx)//2,bx,bx,bx))
 		
 		#if threed["sigma"]==0:
@@ -851,13 +851,14 @@ def parse_json(options):
 				info.append({"orig_ptcl":str(fname),"orig_idx":int(ids[i]),"orig_xf":pxf})
 
 		newpos=np.array([p.get_trans() for p in newxfs])
-		dst=scipydst.cdist(newpos, newpos)+(np.eye(len(newpos))*1e5)
-		tokeep=np.ones(len(dst), dtype=bool)
-		for i in range(len(dst)):
-			if tokeep[i]:
-				tokeep[dst[i]<dthr]=False
+		if len(newpos)>1:
+			dst=scipydst.cdist(newpos, newpos)+(np.eye(len(newpos))*1e5)
+			tokeep=np.ones(len(dst), dtype=bool)
+			for i in range(len(dst)):
+				if tokeep[i]:
+					tokeep[dst[i]<dthr]=False
 
-		newpos=newpos[tokeep]
+			newpos=newpos[tokeep]
 		nptcl+=len(newpos)
 		nexclude+=np.sum(tokeep==False)
 		

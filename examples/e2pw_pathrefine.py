@@ -544,14 +544,13 @@ def main():
 	pw=[[],[]]
 	for inv,is0 in enumerate([s0, s0[::-1]]):
 
-		ss0=lkup[is0].tostring()
-		ss1=lkup[s1].tostring()
+		ss0=''.join(lkup[is0])#.tostring()
+		ss1=''.join(lkup[s1])#.tostring()
 
 		cmpdic={}
 		for i in range(20):
 			for j in range(20):
 				cmpdic[(lkup[i], lkup[j])]=(old_div((19.-abs(i-j)),20.))
-
 
 
 

@@ -589,7 +589,7 @@ class SptAlignTask(JSTask):
 						ts=Transform()
 						
 					#print(bb["xform.align3d"].get_trans())
-					ccc=bb.cmp("fsc.tomo.auto", ref, {"sigmaimgval":3.0, "sigmawithval":0.})
+					ccc=bb.cmp("fsc.tomo.auto", ref, {"sigmaimgval":3.0, "sigmawithval":0., "minres":options.minres,"maxres":options.maxres})
 					cs.append(ccc)
 					transxf.append(ts)
 					

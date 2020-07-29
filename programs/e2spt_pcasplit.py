@@ -55,7 +55,7 @@ from sys import argv,exit
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """Usage: e2spt_pcasplit.py [options] <spt_XX> <reference>"""
+	usage = """Usage: e2spt_pcasplit.py --path <spt_XX> [options]"""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--path",type=str,required=True,default=None,help="Path to a folder where results should be stored, following standard naming conventions (default = spt_XX)",guitype='filebox',row=0, col=0, rowspan=1, colspan=2)
