@@ -32,7 +32,7 @@
 #include "emdata.h"
 #include "ctf.h"
 #include "portable_fileio.h"
-#include "imageio.h"
+#include "io/imageio.h"
 
 #include <cstring>
 #include <sstream>

@@ -32,7 +32,7 @@
 #include <iomanip>
 
 #include "emdata.h"
-#include "all_imageio.h"
+#include "io/all_imageio.h"
 #include "ctf.h"
 
 #include <iostream>

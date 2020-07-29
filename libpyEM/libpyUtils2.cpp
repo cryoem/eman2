@@ -42,7 +42,7 @@
 #include <emdata.h>
 #include <emutil.h>
 #include <sparx/lapackblas.h>
-#include <imageio.h>
+#include <io/imageio.h>
 #include <testutil.h>
 #include <xydata.h>
 #include <emobject.h>

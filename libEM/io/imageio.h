@@ -129,7 +129,7 @@ namespace EMAN
 		enum IOMode
 		{ READ_ONLY = 1, READ_WRITE = 2, WRITE_ONLY = 3 };
 	  public:
-		virtual ~ ImageIO();
+		virtual ~ImageIO();
 
 		/** Read the header from an image.
 		 *
@@ -301,7 +301,7 @@ namespace EMAN
 		 * [0, max_nimg].
 		 * @param max_nimg Maximum number of images in the file. If
 		 * its value <= 0, don't check image_index againt max_nimg.
-		 * @param data The data array to be writting to the image file.
+		 * @param data The data array to be writing to the image file.
 		 * @exception ImageWriteException Image is not opened for writing.
 		 * @exception OutofRangeException If image_index is out of range.
 		 */
