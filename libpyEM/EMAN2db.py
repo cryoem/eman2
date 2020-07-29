@@ -65,6 +65,15 @@ except:
 
     frozenset = Set
 
+try:
+    from starfile_db import sp_starfile_db as star
+
+    STAR_AVAILABLE = True
+except ImportError:
+    STAR_AVAILABLE = False
+
+import pandas as pd
+
 # If set, fairly verbose debugging information will be written to the console
 # larger numbers will increase the amount of output
 DBDEBUG = 0
@@ -462,6 +471,35 @@ def db_read_image(self, fsp, *parms, **kparms):
         #		except:
         #			raise Exception("Could not access "+str(fsp)+" "+str(key))
         return None
+
+    elif fsp.endswith('.star'):
+        star_file = star.StarFile(fsp)
+        try:
+            tag = kparms['tag']
+        except KeyError:
+            tag = 'particles'
+
+        try:
+            data = star_file[tag]
+        except KeyError:
+            data = star_file['']
+
+        image_data = data.iloc[parms[0]]
+        image_name = image_data['_rlnImageName']
+        number, file_name = image_name.split('@')
+
+        file_name = os.path.join('/home/adnan/PycharmProjects/newrelion/', file_name)
+        parms = list(parms)
+        parms[0] = int(number)
+        try:
+            del kparms['tag']
+        except KeyError:
+            pass
+
+        emdata = EMData().read_image_c(file_name, *parms, **kparms)
+        # HEADER_MAGIC(emdata)   # this has to be done
+        return emdata
+
     if len(kparms) != 0:
         if 'img_index' not in kparms:
             kparms['img_index'] = 0
@@ -503,6 +541,47 @@ def db_read_images(fsp, *parms):
                 keys = parms[0]
             if not keys or len(keys) == 0: keys = list(range(len(db)))
         return [db.get(i, nodata=nodata) for i in keys]
+
+    elif fsp.endswith('.star'):
+        star_file = star.StarFile(fsp)
+        try:
+            tag = parms['tag']
+        except TypeError:
+            tag = 'particles'
+        try:
+            data = star_file[tag]
+        except KeyError:
+            data = star_file['']
+
+        if len(parms) > 0:
+            image_data = data.iloc[parms[0]]
+            # total_imgs= []
+            # for number , file_name in image_data['_rlnImageName'].str.split('@'):
+            #     img = EMData()
+            #     file_name = os.path.join('/home/adnan/PycharmProjects/newrelion/', file_name)
+            #     img.read_image_c(file_name, int(number)-1)
+            #     total_imgs.append(img)
+            # return total_imgs
+            total_imgs = []
+            for file_name, group_data in pd.DataFrame(image_data['_rlnImageName'].str.split('@').tolist()).groupby(1):
+                numbers = group_data[0].astype(int)
+                file_name = os.path.join('/home/adnan/PycharmProjects/newrelion/', file_name)
+                total_imgs.extend(EMData.read_images_c(file_name, (numbers - 1).tolist()))
+            return total_imgs
+
+        elif len(parms) == 0:
+            total_imgs = []
+            # for number , file_name in data['_rlnImageName'].str.split('@'):
+            #     img = EMData()
+            #     file_name = os.path.join('/home/adnan/PycharmProjects/newrelion/', file_name)
+            #     img.read_image_c(file_name, int(number)-1)
+            #     total_imgs.append(img)
+            for file_name, group_data in pd.DataFrame(data['_rlnImageName'].str.split('@').tolist()).groupby(1):
+                numbers = group_data[0].astype(int)
+                file_name = os.path.join('/home/adnan/PycharmProjects/newrelion/', file_name)
+                total_imgs.extend(EMData.read_images_c(file_name, (numbers - 1).tolist()))
+            return total_imgs
+
     if len(parms) > 0 and (parms[0] == None or len(parms[0]) == 0):
         parms = (list(range(EMUtil.get_image_count(fsp))),) + parms[1:]
     return EMData.read_images_c(fsp, *parms)
@@ -588,6 +667,7 @@ Takes a path or bdb: specifier and returns the number of images in the reference
 
 
 # NOTE: Toshio Moriya 2018/08/02
+# This is a temporal function to fix the bdb related problem caused by Tunay's recent modifications
 def db_fix_image_count(fsp):
     """fix_image_count(path)
 
@@ -1668,7 +1748,6 @@ class DBDict(object):
             r = self.load_item(key, txn=self.txn)
         except:
             return dfl
-
 
         if isinstance(r, dict) and "is_complex_x" in r:
             pkey = "%s/%s_" % (self.path, self.name)
