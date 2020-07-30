@@ -350,6 +350,7 @@ namespace EMAN
 					 bool * is_new = 0, bool overwrite = false);
 
 		string filename;
+		IOMode rw_mode;
 		bool initialized = false;
 	};
 

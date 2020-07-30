@@ -75,7 +75,6 @@ namespace EMAN
 		};
 
 	  private:
-		IOMode rw_mode;
 		IcosHeader icosh;
 		FILE *icos_file;
 		bool is_big_endian;

@@ -182,7 +182,6 @@ namespace EMAN
 		string hed_filename;
 		string img_filename;
 
-		IOMode rw_mode;
 		FILE *hed_file;
 		FILE *img_file;
 

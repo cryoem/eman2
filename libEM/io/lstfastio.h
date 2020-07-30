@@ -66,7 +66,6 @@ namespace EMAN
 		}
 		int get_nimg();
 	  private:
-		IOMode rw_mode;
 		FILE *lst_file;
 
 		bool is_big_endian;

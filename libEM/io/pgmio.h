@@ -64,7 +64,6 @@ namespace EMAN
 		};
 
 	  private:
-		IOMode rw_mode;
 		FILE *pgm_file;
 
 		bool is_big_endian;

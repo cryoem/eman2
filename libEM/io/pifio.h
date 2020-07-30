@@ -172,7 +172,6 @@ namespace EMAN
 		int to_pif_datatype(int em_datatype);
 
 	    string filename;
-		IOMode rw_mode;
 		PifFileHeader pfh;
 		FILE *pif_file;
 		int mode_size;

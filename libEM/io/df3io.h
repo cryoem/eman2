@@ -61,7 +61,6 @@ namespace EMAN
 		static bool is_valid(const void *first_block, off_t file_size = 0);
 	private:
 		unsigned short nx, ny, nz;
-		IOMode rw_mode;
 		FILE *df3file;
 		bool is_new_file;
 		float rendermin;

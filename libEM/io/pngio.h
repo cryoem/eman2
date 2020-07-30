@@ -66,7 +66,6 @@ namespace EMAN
 		};
 
 	  private:
-		IOMode rw_mode;
 		FILE *png_file;
 
 

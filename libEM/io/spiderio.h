@@ -238,7 +238,6 @@ namespace EMAN
 		void swap_header(SpiderHeader * header);
 
 	  protected:
-		IOMode rw_mode;
 
 		FILE *spider_file;
 		SpiderHeader *first_h; // overall image header

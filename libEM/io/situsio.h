@@ -56,7 +56,6 @@ namespace EMAN
 		static bool is_valid(const void *first_block);
 
 	private:
-		IOMode rw_mode;
 		FILE *situsfile;
 
 		bool is_new_file;

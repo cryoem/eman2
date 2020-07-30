@@ -53,7 +53,6 @@ namespace EMAN
 		static bool is_valid(const void *first_block);
 		int get_nimg();
 	  private:
-		IOMode rw_mode;
 		FILE *jpeg_file;
 
 		float rendermin;

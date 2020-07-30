@@ -129,7 +129,6 @@ namespace EMAN
 		static const char *HDF5_SIGNATURE;
         
 
-		IOMode rw_mode;
 		bool is_new_file;
 		
 		hid_t file;
