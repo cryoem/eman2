@@ -1088,7 +1088,6 @@ class SXCmdWidget(QWidget):
 				# Create script for queue submission from a give template
 				submit_command_prefix = str(self.sxcmd_tab_main.qsub_cmd_edit.text()).split()[0]+"_"
 
-
 				template_file_path = self.sxcmd_tab_main.qsub_script_edit.text()
 				if os.path.exists(template_file_path) == False:
 					QMessageBox.warning(self, "Invalid parameter value", "Invalid file path for qsub script template (%s). Aborting execution ..." % (template_file_path))
