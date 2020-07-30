@@ -39,7 +39,7 @@
 using namespace EMAN;
 
 PngIO::PngIO(const string & fname, IOMode rw)
-:	ImageIO(fname), rw_mode(rw), png_file(0),
+:	ImageIO(fname, rw), png_file(0),
 	png_ptr(0), info_ptr(0), end_info(0), nx(0), ny(0),
 	depth_type(PNG_INVALID_DEPTH), number_passes(0),
 	rendermin(0.0), rendermax(0.0), renderbits(16)

@@ -129,7 +129,7 @@ namespace EMAN
 		enum IOMode
 		{ READ_ONLY = 1, READ_WRITE = 2, WRITE_ONLY = 3 };
 	  public:
-		ImageIO(const string & fname);
+		ImageIO(const string & fname, IOMode rw);
 
 		virtual ~ImageIO();
 

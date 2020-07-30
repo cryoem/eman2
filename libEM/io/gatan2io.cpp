@@ -37,7 +37,7 @@
 using namespace EMAN;
 
 Gatan2IO::Gatan2IO(const string & fname, IOMode rw)
-:	ImageIO(fname), rw_mode(rw), gatan2_file(0)
+:	ImageIO(fname, rw), gatan2_file(0)
 {
 	is_big_endian = ByteOrder::is_host_big_endian();
 	memset(&gatanh, 0, sizeof(Gatan2Header));

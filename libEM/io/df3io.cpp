@@ -38,7 +38,7 @@
 using namespace EMAN;
 
 Df3IO::Df3IO(const string & fname, IOMode rw)
-:	ImageIO(fname), rw_mode(rw), df3file(0),
+:	ImageIO(fname, rw), df3file(0),
  	is_new_file(false), rendermin(0.0), rendermax(0.0), renderbits(16)
 {
 }

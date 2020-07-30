@@ -632,7 +632,7 @@ int TagEntry::read(bool nodata)
 ////////////////////////////////////////////
 
 DM3IO::DM3IO(const string & fname, IOMode rw)
-	:	ImageIO(fname), rw_mode(rw), dm3file(0)
+	:	ImageIO(fname, rw), dm3file(0)
 {
 	is_big_endian = ByteOrder::is_host_big_endian();
 	tagtable = new TagTable();

@@ -42,7 +42,7 @@
 using namespace EMAN;
 
 PifIO::PifIO(const string & fname, IOMode rw)
-:	ImageIO(fname), rw_mode(rw)
+:	ImageIO(fname, rw)
 {
 	pif_file = 0;
 	mode_size = 0;

@@ -50,7 +50,7 @@ using namespace EMAN;
 const char *LstIO::MAGIC = "#LST";
 
 LstIO::LstIO(const string & fname, IOMode rw)
-:	ImageIO(fname), rw_mode(rw), lst_file(0)
+:	ImageIO(fname, rw), lst_file(0)
 {
 	is_big_endian = ByteOrder::is_host_big_endian();
 	nimg = 0;
