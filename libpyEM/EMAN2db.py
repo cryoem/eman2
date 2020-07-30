@@ -478,7 +478,6 @@ def db_read_image(self, fsp, *parms, **kparms):
             tag = kparms['tag']
         except KeyError:
             tag = 'particles'
-
         try:
             data = star_file[tag]
         except KeyError:
@@ -495,7 +494,6 @@ def db_read_image(self, fsp, *parms, **kparms):
             del kparms['tag']
         except KeyError:
             pass
-
         emdata = EMData().read_image_c(file_name, *parms, **kparms)
         # HEADER_MAGIC(emdata)   # this has to be done
         return emdata
@@ -511,10 +509,8 @@ def db_read_image(self, fsp, *parms, **kparms):
             kparms['is_3d'] = False
     return self.read_image_c(fsp, *parms, **kparms)
 
-
 EMData.read_image_c = EMData.read_image
 EMData.read_image = db_read_image
-
 
 def db_read_images(fsp, *parms):
     """EMData.read_images(filespec,[image # list],[header only])
@@ -552,7 +548,6 @@ def db_read_images(fsp, *parms):
             data = star_file[tag]
         except KeyError:
             data = star_file['']
-
         if len(parms) > 0:
             image_data = data.iloc[parms[0]]
             # total_imgs= []
@@ -568,7 +563,6 @@ def db_read_images(fsp, *parms):
                 file_name = os.path.join('/home/adnan/PycharmProjects/newrelion/', file_name)
                 total_imgs.extend(EMData.read_images_c(file_name, (numbers - 1).tolist()))
             return total_imgs
-
         elif len(parms) == 0:
             total_imgs = []
             # for number , file_name in data['_rlnImageName'].str.split('@'):
@@ -585,7 +579,6 @@ def db_read_images(fsp, *parms):
     if len(parms) > 0 and (parms[0] == None or len(parms[0]) == 0):
         parms = (list(range(EMUtil.get_image_count(fsp))),) + parms[1:]
     return EMData.read_images_c(fsp, *parms)
-
 
 EMData.read_images_c = staticmethod(EMData.read_images)
 EMData.read_images = staticmethod(db_read_images)
