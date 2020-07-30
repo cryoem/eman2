@@ -64,8 +64,6 @@ namespace EMAN
 		};
 
 	  private:
-		FILE *file;
-
 		bool is_big_endian;
 
 		int nx;

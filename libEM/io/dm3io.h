@@ -253,7 +253,6 @@ namespace EMAN
 		{ NUM_ID_INT = 3 };
 
 	  private:
-		FILE *file;
 		bool is_big_endian;
 		Gatan::TagTable * tagtable;
 	};

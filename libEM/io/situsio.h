@@ -56,8 +56,6 @@ namespace EMAN
 		static bool is_valid(const void *first_block);
 
 	private:
-		FILE *file;
-
 		bool is_new_file;
 
 		float apix, origx, origy, origz;

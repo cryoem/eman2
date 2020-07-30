@@ -173,7 +173,6 @@ namespace EMAN
 
 	    string filename;
 		PifFileHeader pfh;
-		FILE *file;
 		int mode_size;
 		bool is_big_endian;
 		bool is_new_file;

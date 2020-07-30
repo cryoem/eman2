@@ -55,8 +55,6 @@ namespace EMAN
 		static bool is_valid(const void *first_block);
 
 	  private:
-		FILE *file;
-
 		bool is_big_endian;
 		EMUtil::EMDataType dt;
 		int nx;

@@ -71,7 +71,6 @@ namespace EMAN
 		};
 
 	  private:
-		FILE *file;
 		int nx;
 		int ny;
 		int record_length;

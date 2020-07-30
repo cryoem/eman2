@@ -57,8 +57,6 @@ namespace EMAN
 		}
 		int get_nimg();
 	  private:
-		FILE *file;
-
 		bool is_big_endian;
 		int nimg;
 

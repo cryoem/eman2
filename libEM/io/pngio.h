@@ -66,9 +66,6 @@ namespace EMAN
 		};
 
 	  private:
-		FILE *file;
-
-
 		png_structp png_ptr;
 		png_infop info_ptr;
 		png_infop end_info;

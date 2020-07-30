@@ -351,6 +351,7 @@ namespace EMAN
 
 		string filename;
 		IOMode rw_mode;
+		FILE *file;
 		bool initialized = false;
 	};
 

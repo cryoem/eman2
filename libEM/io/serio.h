@@ -101,7 +101,6 @@ namespace EMAN
 			int		NumberDimensions;
 		};
 
-		FILE *	file;
 		bool 	is_new_file;
 
 		SerHeader serh;

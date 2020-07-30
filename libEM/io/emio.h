@@ -93,7 +93,6 @@ namespace EMAN
 		};
 
 	  private:
-		FILE *file;
 		EMHeader emh;
 
 		size_t mode_size;

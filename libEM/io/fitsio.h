@@ -58,8 +58,6 @@ namespace EMAN
 		static int to_mrcmode(int em_datatype, int is_complex);
 
 	private:
-		FILE *file;
-
 		bool is_big_endian;
 		bool is_new_file;
 		int dstart;

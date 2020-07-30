@@ -239,7 +239,6 @@ namespace EMAN
 
 	  protected:
 
-		FILE *file;
 		SpiderHeader *first_h; // overall image header
 		SpiderHeader *cur_h;   // the current reading/writing image header
 		
