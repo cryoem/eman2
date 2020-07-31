@@ -1058,7 +1058,6 @@ class SXCmdWidget(QWidget):
 		QtCore.QTimer.singleShot(5000, lambda: execute_btn.setEnabled(True))
 
 		# Generate command line
-
 		cmd_line = self.generate_cmd_line()
 
 		if cmd_line:
@@ -6862,7 +6861,7 @@ def main():
 	sxapp.setStyleSheet("QToolTip {font-size:%dpt;}" % (new_point_size));
 
 	# Initialise a singleton class for look & feel constants
-	version_string = '1.3'
+	version_string = '1.4'
 	SXLookFeelConst.initialise(sxapp, version_string)
 
 	# Define the main window (class SXMainWindow)
