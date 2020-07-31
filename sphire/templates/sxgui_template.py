@@ -1086,15 +1086,17 @@ class SXCmdWidget(QWidget):
 			if self.sxcmd_tab_main.qsub_enable_checkbox.checkState() == Qt.Checked:
 				# Case 1: queue submission is enabled (MPI can be supported or unsupported)
 				# Create script for queue submission from a give template
+				submit_command_prefix = str(self.sxcmd_tab_main.qsub_cmd_edit.text()).split()[0]+"_"
+
 				template_file_path = self.sxcmd_tab_main.qsub_script_edit.text()
 				if os.path.exists(template_file_path) == False:
 					QMessageBox.warning(self, "Invalid parameter value", "Invalid file path for qsub script template (%s). Aborting execution ..." % (template_file_path))
 					return
 				file_template = open(self.sxcmd_tab_main.qsub_script_edit.text(),"r")
 				if number is not None:
-					file_name_qsub_script = os.path.join(output_dir, "{0:04d}_".format(number) + "qsub_" + str(self.sxcmd_tab_main.qsub_job_name_edit.text()) + ".sh")
+					file_name_qsub_script = os.path.join(output_dir, "{0:04d}_".format(number) + submit_command_prefix + str(self.sxcmd_tab_main.qsub_job_name_edit.text()) + ".sh")
 				else:
-					file_name_qsub_script = os.path.join(output_dir, "qsub_" + str(self.sxcmd_tab_main.qsub_job_name_edit.text()) + ".sh")
+					file_name_qsub_script = os.path.join(output_dir, submit_command_prefix + str(self.sxcmd_tab_main.qsub_job_name_edit.text()) + ".sh")
 				file_qsub_script = open(file_name_qsub_script,"w")
 				for line_io in file_template:
 					if line_io.find("XXX_SXCMD_LINE_XXX") != -1:
