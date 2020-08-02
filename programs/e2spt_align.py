@@ -569,7 +569,7 @@ class SptAlignTask(JSTask):
 				c=[{},]
 				a=ref.align("translational",b, {"intonly":1,"maxshift":options.maxshift})
 				c[0]["xform.align3d"]=a["xform.align3d"]
-				c[0]["score"]=a["score"]
+				c[0]["score"]=a["score.align"]
 			else:
 				c=ref.xform_align_nbest("rotate_translate_3d_tree",b, aligndic, options.nsoln)
 			
