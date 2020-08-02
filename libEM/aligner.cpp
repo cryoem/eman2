@@ -342,8 +342,9 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 	}
 #endif // EMAN2_USING_CUDA
 
+	float maxvalue=0;
 	if (use_cpu) {
-		peak = cf->calc_max_location_wrap(maxshiftx, maxshifty, maxshiftz);
+		peak = cf->calc_max_location_wrap(maxshiftx, maxshifty, maxshiftz, &maxvalue);
 	}
 	//cout << -peak[0] << " " << -peak[1] << " " << -peak[2] << endl;
 	Vec3f cur_trans = Vec3f ( (float)-peak[0], (float)-peak[1], (float)-peak[2]);
@@ -383,11 +384,13 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 //		Transform* t = get_set_align_attr("xform.align3d",cf,this_img);
 //		t->set_trans(cur_trans);
 		cf->set_attr("xform.align3d",&t);
+		cf->set_attr("score.align,-maxvalue);
 	} else if ( ny != 1 ) {
 		//Transform* t = get_set_align_attr("xform.align2d",cf,this_img);
 		cur_trans[2] = 0; // just make sure of it
 		t.set_trans(cur_trans);
 		cf->set_attr("xform.align2d",&t);
+		cf->set_attr("score.align,-maxvalue);
 	}
 	return cf;
 }

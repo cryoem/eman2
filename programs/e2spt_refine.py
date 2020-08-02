@@ -41,6 +41,7 @@ def main():
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default="")
+	parser.add_argument("--transonly",action="store_true",help="translational alignment only",default=False)
 	parser.add_argument("--refine",action="store_true",help="local refinement from xform in header.",default=False)
 	parser.add_argument("--randphi",action="store_true",help="randomize phi for refine search",default=False)
 	parser.add_argument("--rand180",action="store_true",help="include 180 degree rotation for refine search",default=False)
@@ -147,6 +148,9 @@ def main():
 				gd+=" --rand180"
 			if itr>startitr:
 				ptcls=os.path.join(options.path, "particle_parms_{:02d}.json".format(itr-1))
+
+		if options.transonly: gd+=" --transonly"
+
 		
 		if options.breaksym:
 			gd+=" --breaksym"
