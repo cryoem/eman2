@@ -36,6 +36,10 @@ except:
 a = EMAN2.EMData.read_images(inputfile)
 
 
+
+a[0].write_image(outputfile)
+
+
 print(STAR_AVAILABLE)
 print(star_file)
 
