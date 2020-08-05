@@ -8,6 +8,11 @@ import EMAN2
 import EMAN2db
 import EMAN2_cppwrap
 
+
+from EMAN2 import EMUtil
+
+from EMAN2 import EMAN2Ctf
+
 # elif fsp.endswith('.star'):
 #   if not STAR_AVAILABLE:
 #     print('READING STAR FILES NOT AVAILABLE')
@@ -17,7 +22,7 @@ import EMAN2_cppwrap
 
 inputfile = '/home/adnan/Desktop/star_file_project/particles_optics.star'
 
-inputfile = '/home/adnan/PycharmProjects/newrelion/Extract/job032/particles.star'
+inputfile = '/home/adnan/PycharmProjects/newrelion/Refine3D/job056/run_data.star'
 
 
 outputfile = '/home/adnan/Desktop/star_file_project/newtest.star'
@@ -33,11 +38,14 @@ except:
 # img.read_image(inputfile, 0 )
 
 
-a = EMAN2.EMData.read_images(inputfile)
 
+pp = EMUtil.get_all_attributes(inputfile, 'ctf')
 
-
-a[0].write_image(outputfile)
+# a = EMAN2.EMData.read_images(inputfile)
+#
+#
+#
+# a[0].write_image(outputfile)
 
 
 print(STAR_AVAILABLE)

@@ -57,6 +57,7 @@ except ImportError as e:
 
 from libpyEMData2 import EMData
 from libpyUtils2 import EMUtil
+from EMAN2 import EMAN2Ctf
 
 try:
     a = frozenset()
@@ -73,6 +74,7 @@ except ImportError:
     STAR_AVAILABLE = False
 
 import pandas as pd
+import numpy as np
 
 # If set, fairly verbose debugging information will be written to the console
 # larger numbers will increase the amount of output
@@ -478,6 +480,7 @@ def db_read_image(self, fsp, *parms, **kparms):
             tag = kparms['tag']
         except KeyError:
             tag = 'particles'
+
         try:
             data = star_file[tag]
         except KeyError:
@@ -494,6 +497,7 @@ def db_read_image(self, fsp, *parms, **kparms):
             del kparms['tag']
         except KeyError:
             pass
+
         emdata = EMData().read_image_c(file_name, *parms, **kparms)
         # HEADER_MAGIC(emdata)   # this has to be done
         return emdata
@@ -509,8 +513,10 @@ def db_read_image(self, fsp, *parms, **kparms):
             kparms['is_3d'] = False
     return self.read_image_c(fsp, *parms, **kparms)
 
+
 EMData.read_image_c = EMData.read_image
 EMData.read_image = db_read_image
+
 
 def db_read_images(fsp, *parms):
     """EMData.read_images(filespec,[image # list],[header only])
@@ -548,6 +554,7 @@ def db_read_images(fsp, *parms):
             data = star_file[tag]
         except KeyError:
             data = star_file['']
+
         if len(parms) > 0:
             image_data = data.iloc[parms[0]]
             # total_imgs= []
@@ -563,6 +570,7 @@ def db_read_images(fsp, *parms):
                 file_name = os.path.join('/home/adnan/PycharmProjects/newrelion/', file_name)
                 total_imgs.extend(EMData.read_images_c(file_name, (numbers - 1).tolist()))
             return total_imgs
+
         elif len(parms) == 0:
             total_imgs = []
             # for number , file_name in data['_rlnImageName'].str.split('@'):
@@ -579,6 +587,7 @@ def db_read_images(fsp, *parms):
     if len(parms) > 0 and (parms[0] == None or len(parms[0]) == 0):
         parms = (list(range(EMUtil.get_image_count(fsp))),) + parms[1:]
     return EMData.read_images_c(fsp, *parms)
+
 
 EMData.read_images_c = staticmethod(EMData.read_images)
 EMData.read_images = staticmethod(db_read_images)
@@ -616,6 +625,22 @@ def db_write_image(self, fsp, *parms):
         db.set(self, key=key, region=region, txn=None)  # this makes region writing work
         #		db[parms[0]] = self # this means region writing does not work
         return
+
+    # only writing to a file is working still need to work on the star file saving
+    elif fsp.endswith('.star'):
+        star_file = star.StarFile(fsp)
+        if len(parms) == 0:
+            parms = [0]
+        if len(parms) > 0:
+            part_number = str(parms[0] + 1) + '@'  # parms[0] == particle number
+        name = part_number + fsp.split('.star')[0] + '.mrcs'
+        a = pd.DataFrame(index=np.arange(1))
+        star_file['particles'] = a
+        star_file['particles'].loc[parms[0], '_rlnImageName'] = name
+        star_file.write_star_file(fsp, ['particles'])
+        self.write_image_c(fsp.split('.star')[0] + '.mrcs', *parms)
+        return
+
     return self.write_image_c(fsp, *parms)
 
 
@@ -651,6 +676,20 @@ Takes a path or bdb: specifier and returns the number of images in the reference
             for i in keys:
                 if i in db: n += 1
             return n
+
+    elif fsp.endswith('.star'):
+        star_file = star.StarFile(fsp)
+        try:
+            tag = parms['tag']
+        except NameError:
+            tag = 'particles'
+        try:
+            data = star_file[tag]
+        except KeyError:
+            data = star_file['']
+
+        return data.shape[0]
+
     try:
         ret = EMUtil.get_image_count_c(fsp)
     except:
@@ -707,7 +746,6 @@ EMUtil.fix_image_count = staticmethod(db_fix_image_count)
 
 def db_get_image_info(fsp):
     """get_image_info(path)
-
 Takes a bdb: specifier and returns the number of images and image dimensions."""
     if fsp[:4].lower() == "bdb:":
         path, dictname, keys = db_parse_path(fsp)
@@ -759,6 +797,43 @@ def db_get_all_attributes(fsp, *parms):
             else:
                 keys = parms[0]
         return [db.get_attr(i, attr_name) for i in keys]
+
+    elif fsp.endswith('.star'):
+        star_file = star.StarFile(fsp)
+        try:
+            tag = parms['tag']
+        except TypeError:
+            tag = 'particles'
+        try:
+            data = star_file[tag]
+        except KeyError:
+            data = star_file['']
+
+        special_keys = ('ctf', 'xform.projection')
+        if parms[0] in special_keys:
+            if parms[0] == 'ctf':
+                ctf_list = []
+                for idx in range(data.shape[0]):
+                    star_data = data.iloc[idx]
+                    ctfdict = {"defocus": ((star_data["_rlnDefocusU"] +
+                                            star_data["_rlnDefocusV"]) / 20000),
+                               "bfactor": star_data["_rlnCtfBfactor"],
+                               "ampcont": 100 * star_data["_rlnAmplitudeContrast"],
+                               "apix": star_data["_rlnDetectorPixelSize"],
+                               "voltage": star_data["_rlnVoltage"],
+                               "cs": star_data["_rlnSphericalAberration"],
+                               }
+                    ctf_list.append(EMAN2Ctf.from_dict(ctfdict))
+                    del ctfdict
+                    del star_data
+
+                pass
+        else:
+            key = star_file.sphire_header_magic(parms[0])
+            return data[key]
+
+        # return data[parms[0]]
+
     return EMUtil.get_all_attributes_c(fsp, *parms)
 
 
