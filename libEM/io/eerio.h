@@ -130,6 +130,7 @@ namespace EMAN
 		TIFF *tiff_file;
 		uint16_t compression = 0;
 		string metadata;
+		size_t num_dirs = 0;
 	};
 }
 

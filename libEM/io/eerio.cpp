@@ -31,12 +31,17 @@
 
 #include "eerio.h"
 
+#include <tiffio.h>
+
 using namespace EMAN;
 
 EerIO::EerIO(const string & fname, IOMode rw)
 :	ImageIO(fname, rw)
 {
 	tiff_file = TIFFOpen(fname.c_str(), "r");
+
+	for(num_dirs=0; TIFFReadDirectory(tiff_file); num_dirs++)
+		;
 }
 
 EerIO::~EerIO()
