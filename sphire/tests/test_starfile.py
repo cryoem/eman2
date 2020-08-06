@@ -25,6 +25,8 @@ inputfile = '/home/adnan/Desktop/star_file_project/particles_optics.star'
 inputfile = '/home/adnan/PycharmProjects/newrelion/Refine3D/job056/run_data.star'
 
 
+
+
 outputfile = '/home/adnan/Desktop/star_file_project/newtest.star'
 star_file = star.StarFile(inputfile)
 
@@ -37,9 +39,13 @@ except:
 # img = EMAN2.EMData()
 # img.read_image(inputfile, 0 )
 
+bdbfile = 'bdb:/home/adnan/PycharmProjects/DoseWeighting/Relion_Stackv5/MotionCorr/job049/MOVIES_RELION/Particles/20170629_00021_frameImage_ptcls'
+
+dd = EMUtil.get_all_attributes(bdbfile, 'xform.projection')
 
 
-pp = EMUtil.get_all_attributes(inputfile, 'ctf')
+
+pp = EMUtil.get_all_attributes(inputfile, 'xform.projection')
 
 # a = EMAN2.EMData.read_images(inputfile)
 #

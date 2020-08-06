@@ -58,6 +58,7 @@ except ImportError as e:
 from libpyEMData2 import EMData
 from libpyUtils2 import EMUtil
 from EMAN2 import EMAN2Ctf
+from EMAN2 import Transform
 
 try:
     a = frozenset()
@@ -809,30 +810,87 @@ def db_get_all_attributes(fsp, *parms):
         except KeyError:
             data = star_file['']
 
-        special_keys = ('ctf', 'xform.projection')
+        special_keys = ('ctf', 'xform.projection', 'ptcl_source_coord', 'xform.align2d')
         if parms[0] in special_keys:
             if parms[0] == 'ctf':
                 ctf_list = []
                 for idx in range(data.shape[0]):
                     star_data = data.iloc[idx]
+                    ctf = EMAN2Ctf()
+                    idx_cter_astig_ang = 45 - star_data["_rlnDefocusAngle"]
+                    if idx_cter_astig_ang >= 180:
+                        idx_cter_astig_ang -= 180
+                    else:
+                        idx_cter_astig_ang += 180
                     ctfdict = {"defocus": ((star_data["_rlnDefocusU"] +
                                             star_data["_rlnDefocusV"]) / 20000),
                                "bfactor": star_data["_rlnCtfBfactor"],
                                "ampcont": 100 * star_data["_rlnAmplitudeContrast"],
-                               "apix": star_data["_rlnDetectorPixelSize"],
+                               "apix": (10000 * star_data["_rlnDetectorPixelSize"]) /
+                                       star_data["_rlnMagnification"],
                                "voltage": star_data["_rlnVoltage"],
                                "cs": star_data["_rlnSphericalAberration"],
+                               "dfdiff": ((-star_data["_rlnDefocusU"] +
+                                           star_data["_rlnDefocusV"]) / 10000),
+                               "dfang": idx_cter_astig_ang,
+                               "snr": [],
+                               "background": []
                                }
-                    ctf_list.append(EMAN2Ctf.from_dict(ctfdict))
+                    ctf.from_dict(ctfdict)
+                    ctf_list.append(ctf)
                     del ctfdict
                     del star_data
+                return ctf_list
 
-                pass
+            elif parms[0] == 'xform.projection':
+                trans_list = []
+                for idx in range(data.shape[0]):
+                    star_data = data.iloc[idx]
+                    trans = Transform(
+                        {
+                            "type": "spider",
+                            "phi": star_data["_rlnAngleRot"],
+                            "theta": star_data["_rlnAngleTilt"],
+                            "psi": star_data["_rlnAnglePsi"],
+                            "tx": -star_data["_rlnOriginX"],
+                            "ty": -star_data["_rlnOriginY"],
+                            "tz": 0.0,
+                            "mirror": 0,
+                            "scale": 1.0
+                        }
+                    )
+                    trans_list.append(trans)
+                return trans_list
+
+            elif parms[0] == 'xform.align2d':
+                trans_list = []
+                for idx in range(data.shape[0]):
+                    star_data = data.iloc[idx]
+                    trans = Transform(
+                        {
+                            "type": "2d",
+                            "tx": -star_data["_rlnOriginX"],
+                            "ty": -star_data["_rlnOriginY"],
+                            "alpha": 0.0,
+                            "mirror": 1.0,
+                            "scale": 1.0
+                        }
+                    )
+                    trans_list.append(trans)
+                return trans_list
+
+            elif parms[0] == 'ptcl_source_coord':
+                cord_list = []
+                for idx in range(data.shape[0]):
+                    star_data = data.iloc[idx]
+                    cord_list.append([star_data["_rlnCoordinateX"], star_data["_rlnCoordinateY"]])
+                return cord_list
+
+            else:
+                assert False, 'Missing rule for {}'.format(key)
         else:
             key = star_file.sphire_header_magic(parms[0])
             return data[key]
-
-        # return data[parms[0]]
 
     return EMUtil.get_all_attributes_c(fsp, *parms)
 
