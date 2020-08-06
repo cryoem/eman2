@@ -68,6 +68,16 @@ int EerIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 	TIFFGetField(tiff_file, 65001, &count, &metadata_c);
 	metadata = string(metadata_c, count);
 
+	int nx = 0;
+	int ny = 0;
+
+	TIFFGetField(tiff_file, TIFFTAG_IMAGEWIDTH, &nx);
+	TIFFGetField(tiff_file, TIFFTAG_IMAGELENGTH, &ny);
+
+	dict["nx"] = nx;
+	dict["ny"] = ny;
+	dict["nz"] = 1;
+
 	return 0;
 }
 
