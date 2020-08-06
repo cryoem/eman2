@@ -123,6 +123,8 @@ namespace EMAN
 		EerIO(const string & fname, IOMode rw_mode = READ_ONLY);
 		~EerIO();
 
+		int get_nimg();
+
 		DEFINE_IMAGEIO_FUNC;
 
 	private:

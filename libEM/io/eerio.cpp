@@ -56,6 +56,11 @@ void EerIO::init()
 	EXITFUNC;
 }
 
+int EerIO::get_nimg()
+{
+	return num_dirs;
+}
+
 bool EerIO::is_image_big_endian()
 {
 	return is_big_endian;
@@ -82,6 +87,8 @@ int EerIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 	dict["nx"] = nx;
 	dict["ny"] = ny;
 	dict["nz"] = 1;
+
+	dict["nimg"] = int(get_nimg());
 
 	return 0;
 }
