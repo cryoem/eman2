@@ -128,6 +128,8 @@ namespace EMAN
 	private:
 		bool is_big_endian;
 		TIFF *tiff_file;
+		uint16_t compression = 0;
+		string metadata;
 	};
 }
 
