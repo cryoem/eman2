@@ -117,14 +117,19 @@ namespace EMAN
 	using EerSubPix = SubPix<4, EerWord>;
 
 
+	typedef vector<pair<int, int>> VC;
+	
 	class EerFrame {
 	public:
 		EerFrame() =default;
 		EerFrame(TIFF *tiff);
 
+		VC coords() const;
+
 	private:
 		size_t num_strips;
 		std::vector<unsigned char> data;
+		VC _coords;
 	};
 
 

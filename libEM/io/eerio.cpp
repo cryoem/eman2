@@ -66,6 +66,9 @@ EerFrame::EerFrame(TIFF *tiff)
 	}
 }
 
+VC EerFrame::coords() const {
+	return _coords;
+}
 
 EerIO::EerIO(const string & fname, IOMode rw)
 :	ImageIO(fname, rw)
