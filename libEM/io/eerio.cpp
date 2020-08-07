@@ -49,6 +49,21 @@ EerFrame::EerFrame(TIFF *tiff)
 		data.resize(prev_size + strip_sizes[i]);
 		TIFFReadRawStrip(tiff, i, data.data()+prev_size, strip_sizes[i]);
 	}
+
+	EerStream is(reinterpret_cast<EerWord *>(data.data()));
+	EerRle    rle;
+	EerSubPix sub_pix;
+
+	int count = 0;
+	int N = 4096*4096;
+
+	while (count<N) {
+		is>>rle>>sub_pix;
+		int x = count & 4095;
+		int y = count >> 12;
+
+		count += rle+1;
+	}
 }
 
 
