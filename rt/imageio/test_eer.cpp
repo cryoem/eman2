@@ -104,11 +104,53 @@ void test_eer_sub_pix() {
 	assert(sub_pix == 11);
 }
 
+void test_eer_rle_no_overflow() {
+	typedef uint8_t BuffWord;
+	auto num_bits = sizeof(BuffWord) * 8;
+	
+	BuffWord a = 0b11111111;
+	
+	BitStream<BuffWord> is1(&a);
+	BitReader<1, false, BuffWord> rle1;
+	
+	for(int i=0; i<num_bits; i++) {
+		is1 >> rle1;
+		assert(rle1 == 1);
+	}
+
+	BitStream<BuffWord> is2(&a);
+	BitReader<2, false, BuffWord> rle2;
+
+	for(int i=0; i<num_bits/2; i++) {
+		is2 >> rle2;
+		assert(rle2 == 0b11);
+	}
+
+	BitStream<BuffWord> is4(&a);
+	BitReader<4, false, BuffWord> rle4;
+
+	for(int i=0; i<num_bits/4; i++) {
+		is4 >> rle4;
+		assert(rle4 == 0b1111);
+	}
+
+	BitStream<BuffWord> is3(&a);
+	BitReader<3, false, BuffWord> rle3;
+
+	is3>>rle3;
+	assert(rle3 == 0b111);
+	is3>>rle3;
+	assert(rle3 == 0b111);
+	is3>>rle3;
+	assert(rle3 == 0b11);
+}
+
 int main()
 {
 	test_bit_stream();
 	test_bit_reader();
 	test_eer_sub_pix();
+	test_eer_rle_no_overflow();
 
 	return 0;
 }
