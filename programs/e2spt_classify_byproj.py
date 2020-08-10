@@ -115,7 +115,7 @@ produce new sets/ for each class, which could be further-refined.
 		fls=[int(i[15:17]) for i in os.listdir(options.path) if i[:15]=="particle_parms_" and str.isdigit(i[15:17])]
 		if len(fls)==0 : options.iter=1
 		else: options.iter=max(fls)+1
-		if options.verbose : print("Using iteration ",otions.iter)
+		if options.verbose : print("Using iteration ",options.iter)
 
 	db=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,options.iter))
 
