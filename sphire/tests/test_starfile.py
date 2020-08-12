@@ -36,16 +36,20 @@ try:
 except:
   star_file.imported_content['']
 
-# img = EMAN2.EMData()
-# img.read_image(inputfile, 0 )
 
-bdbfile = 'bdb:/home/adnan/PycharmProjects/DoseWeighting/Relion_Stackv5/MotionCorr/job049/MOVIES_RELION/Particles/20170629_00021_frameImage_ptcls'
-
-dd = EMUtil.get_all_attributes(bdbfile, 'xform.projection')
+img = EMAN2.EMData()
+img.read_image(inputfile, 0 )
 
 
+print(img.get_2dview())
 
-pp = EMUtil.get_all_attributes(inputfile, 'xform.projection')
+# bdbfile = 'bdb:/home/adnan/PycharmProjects/DoseWeighting/Relion_Stackv5/MotionCorr/job049/MOVIES_RELION/Particles/20170629_00021_frameImage_ptcls'
+
+# dd = EMUtil.get_all_attributes(bdbfile, 'xform.projection')
+
+
+
+# pp = EMUtil.get_all_attributes(inputfile, 'ctf')
 
 # a = EMAN2.EMData.read_images(inputfile)
 #

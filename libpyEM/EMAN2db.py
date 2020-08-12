@@ -494,14 +494,17 @@ def db_read_image(self, fsp, *parms, **kparms):
         file_name = os.path.join('/home/adnan/PycharmProjects/newrelion/', file_name)
         parms = list(parms)
         parms[0] = int(number)
+
         try:
             del kparms['tag']
         except KeyError:
             pass
 
-        emdata = EMData().read_image_c(file_name, *parms, **kparms)
+        self.read_image_c(file_name, *parms, **kparms)
+        db_set_header_star(self, image_data, star_file)
+
         # HEADER_MAGIC(emdata)   # this has to be done
-        return emdata
+        return None
 
     if len(kparms) != 0:
         if 'img_index' not in kparms:
@@ -517,6 +520,59 @@ def db_read_image(self, fsp, *parms, **kparms):
 
 EMData.read_image_c = EMData.read_image
 EMData.read_image = db_read_image
+
+
+def db_set_header_star(img, data_dict, star_cla):
+    star_dict = star_cla.sphire_keys
+
+    for key in list(data_dict.keys()):
+        if key in star_dict:
+            value = data_dict[key]
+            img.set_attr(star_dict[key], value)
+
+    try:
+        image_name = data_dict['_rlnImageName']
+        number, file_name = image_name.split('@')
+        img.set_attr("data_path", file_name)
+        img.set_attr("ptcl_source_coord_id", int(number))
+    except Exception as e:
+        print('Yet unknown exception! This may lead to unknown behaviour')
+        print(e)
+
+    try:
+        ctfimg = EMAN2Ctf()
+        ctfdict = star_cla.get_emdata_ctf(data_dict)
+        ctfimg.from_dict(ctfdict)
+        img.set_attr("ctf", ctfimg)
+
+    except Exception as e:
+        print('Yet unknown exception! This may lead to unknown behaviour')
+        print(e)
+
+    try:
+        transdict = star_cla.get_emdata_transform(data_dict)
+        trans = Transform(transdict)
+        img.set_attr("xform.projection", trans)
+    except Exception as e:
+        print('Yet unknown exception! This may lead to unknown behaviour')
+        print(e)
+
+    try:
+        transdict = star_cla.get_emdata_transform_2d(data_dict)
+        trans = Transform(transdict)
+        img.set_attr("xform.align2d", trans)
+    except Exception as e:
+        print('Yet unknown exception! This may lead to unknown behaviour')
+        print(e)
+
+    try:
+        cor = [data_dict["_rlnCoordinateX"], data_dict["_rlnCoordinateY"]]
+        img.set_attr('ptcl_source_coord', cor)
+    except Exception as e:
+        print('Yet unknown exception! This may lead to unknown behaviour')
+        print(e)
+
+    return
 
 
 def db_read_images(fsp, *parms):
@@ -558,13 +614,6 @@ def db_read_images(fsp, *parms):
 
         if len(parms) > 0:
             image_data = data.iloc[parms[0]]
-            # total_imgs= []
-            # for number , file_name in image_data['_rlnImageName'].str.split('@'):
-            #     img = EMData()
-            #     file_name = os.path.join('/home/adnan/PycharmProjects/newrelion/', file_name)
-            #     img.read_image_c(file_name, int(number)-1)
-            #     total_imgs.append(img)
-            # return total_imgs
             total_imgs = []
             for file_name, group_data in pd.DataFrame(image_data['_rlnImageName'].str.split('@').tolist()).groupby(1):
                 numbers = group_data[0].astype(int)
@@ -582,6 +631,7 @@ def db_read_images(fsp, *parms):
             for file_name, group_data in pd.DataFrame(data['_rlnImageName'].str.split('@').tolist()).groupby(1):
                 numbers = group_data[0].astype(int)
                 file_name = os.path.join('/home/adnan/PycharmProjects/newrelion/', file_name)
+
                 total_imgs.extend(EMData.read_images_c(file_name, (numbers - 1).tolist()))
             return total_imgs
 
@@ -810,32 +860,14 @@ def db_get_all_attributes(fsp, *parms):
         except KeyError:
             data = star_file['']
 
-        special_keys = ('ctf', 'xform.projection', 'ptcl_source_coord', 'xform.align2d')
+        special_keys = ('ctf', 'xform.projection', 'ptcl_source_coord', 'xform.align2d', 'filament_ID')
         if parms[0] in special_keys:
             if parms[0] == 'ctf':
                 ctf_list = []
                 for idx in range(data.shape[0]):
                     star_data = data.iloc[idx]
+                    ctfdict = star_file.get_emdata_ctf(star_data)
                     ctf = EMAN2Ctf()
-                    idx_cter_astig_ang = 45 - star_data["_rlnDefocusAngle"]
-                    if idx_cter_astig_ang >= 180:
-                        idx_cter_astig_ang -= 180
-                    else:
-                        idx_cter_astig_ang += 180
-                    ctfdict = {"defocus": ((star_data["_rlnDefocusU"] +
-                                            star_data["_rlnDefocusV"]) / 20000),
-                               "bfactor": star_data["_rlnCtfBfactor"],
-                               "ampcont": 100 * star_data["_rlnAmplitudeContrast"],
-                               "apix": (10000 * star_data["_rlnDetectorPixelSize"]) /
-                                       star_data["_rlnMagnification"],
-                               "voltage": star_data["_rlnVoltage"],
-                               "cs": star_data["_rlnSphericalAberration"],
-                               "dfdiff": ((-star_data["_rlnDefocusU"] +
-                                           star_data["_rlnDefocusV"]) / 10000),
-                               "dfang": idx_cter_astig_ang,
-                               "snr": [],
-                               "background": []
-                               }
                     ctf.from_dict(ctfdict)
                     ctf_list.append(ctf)
                     del ctfdict
@@ -846,36 +878,17 @@ def db_get_all_attributes(fsp, *parms):
                 trans_list = []
                 for idx in range(data.shape[0]):
                     star_data = data.iloc[idx]
-                    trans = Transform(
-                        {
-                            "type": "spider",
-                            "phi": star_data["_rlnAngleRot"],
-                            "theta": star_data["_rlnAngleTilt"],
-                            "psi": star_data["_rlnAnglePsi"],
-                            "tx": -star_data["_rlnOriginX"],
-                            "ty": -star_data["_rlnOriginY"],
-                            "tz": 0.0,
-                            "mirror": 0,
-                            "scale": 1.0
-                        }
-                    )
+                    transdict = star_file.get_emdata_transform(star_data)
+                    trans = Transform(transdict)
                     trans_list.append(trans)
                 return trans_list
-
+            # please have
             elif parms[0] == 'xform.align2d':
                 trans_list = []
                 for idx in range(data.shape[0]):
                     star_data = data.iloc[idx]
-                    trans = Transform(
-                        {
-                            "type": "2d",
-                            "tx": -star_data["_rlnOriginX"],
-                            "ty": -star_data["_rlnOriginY"],
-                            "alpha": 0.0,
-                            "mirror": 1.0,
-                            "scale": 1.0
-                        }
-                    )
+                    transdict = star_file.get_emdata_transform_2d(star_data)
+                    trans = Transform(transdict)
                     trans_list.append(trans)
                 return trans_list
 
