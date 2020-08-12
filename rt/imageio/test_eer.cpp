@@ -72,13 +72,13 @@ void test_bit_stream() {
 	assert(is4.get_bits(20) == 0b100110010);
 }
 
-void test_bit_reader() {
-	uint8_t a5 = 0b10101010;
-	uint8_t b5 = 0b11011001;
-	uint8_t c5 = 0b10011111;
-	uint8_t d5 = 0b10011001;
-	uint8_t ab5[] = {a5, b5, c5, d5};
+uint8_t a5 = 0b10101010;
+uint8_t b5 = 0b11011001;
+uint8_t c5 = 0b10011111;
+uint8_t d5 = 0b10011001;
+uint8_t ab5[] = {a5, b5, c5, d5};
 
+void test_bit_reader() {
 	BitStream<uint8_t> is5(ab5);
 	Rle<7, uint8_t> rle;
 
@@ -92,10 +92,23 @@ void test_bit_reader() {
 	assert(rle == 0b1001100 + (1<<7) - 1);
 }
 
+void test_eer_sub_pix() {
+	BitStream<uint8_t> is6(ab5);
+	SubPix<4, uint8_t> sub_pix;
+	Rle<7, uint8_t> rle6;
+
+	is6 >> sub_pix;
+	assert(sub_pix == 10);
+
+	is6 >> rle6 >> sub_pix;
+	assert(sub_pix == 11);
+}
+
 int main()
 {
 	test_bit_stream();
 	test_bit_reader();
+	test_eer_sub_pix();
 
 	return 0;
 }
