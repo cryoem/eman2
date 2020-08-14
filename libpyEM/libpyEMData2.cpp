@@ -272,6 +272,11 @@ EMData *EMData_calc_ccf_wrapper0(EMData &ths) {
 	return ths.calc_ccf();
 }
 
+IntPoint EMData_calc_max_location_wrap_wrapper(EMData &ths,const int maxdx, const int maxdy, const int maxdz) {
+	GILRelease rel;
+	return ths.calc_max_location_wrap(maxdx, maxdy, maxdz, NULL);
+}
+
 vector<float> EMData_calc_fourier_shell_correlation_wrapper1(EMData &ths, EMData *with) {
 	GILRelease rel;
 	
@@ -552,7 +557,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("calc_sigma_diff", &EMAN::EMData::calc_sigma_diff, "Calculates sigma above and below the mean and returns the\ndifference between them.\n \nreturn The difference between sigma above and below the mean.")
 	.def("calc_min_location", &EMAN::EMData::calc_min_location, "Calculates the coordinates of the minimum-value pixel.\n \nreturn The coordinates of the minimum-value pixel.")
 	.def("calc_max_location", &EMAN::EMData::calc_max_location, "Calculates the coordinates of the maximum-value pixel.\n \nreturn The coordinates of the maximum-value pixel.")
-	.def("calc_max_location_wrap", &EMAN::EMData::calc_max_location_wrap, "Calculates the wrapped coordinates of the maximum value.\nThis function is useful in the context of Fourier correlation.\nyou can call this function to find the correct translational shift when using calc_ccf etc.\n \nreturn the wrapped coordinates of the maximum")
+	.def("calc_max_location_wrap", EMData_calc_max_location_wrap_wrapper, "Calculates the wrapped coordinates of the maximum value.\nThis function is useful in the context of Fourier correlation.\nyou can call this function to find the correct translational shift when using calc_ccf etc.\n \nreturn the wrapped coordinates of the maximum")
 	.def("calc_max_location_wrap_intp", &EMAN::EMData::calc_max_location_wrap_intp, "Calculates the wrapped coordinates of the maximum value with interpolation.\nThis function is useful in the context of Fourier correlation.\nyou can call this function to find the correct translational shift when using calc_ccf etc.\n \nreturn the wrapped coordinates of the maximum")
 	.def("calc_center_of_mass", &EMAN::EMData::calc_center_of_mass, "Calculate the center of mass with a threshold (eg - 0 means use only positive values)")
 	.def("calc_min_index", &EMAN::EMData::calc_min_index, "Calculates the index of minimum-value pixel when assuming\nall pixels are in a 1D array.\n \nreturn Index of the minimum-value pixel.")

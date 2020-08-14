@@ -105,7 +105,7 @@ class SptavgTask(JSTask):
 				avg.add_image(c)
 			
 			
-			callback(ii*100//len(data))
+			callback(min(99,ii*100//len(data)))
 			#print(fsp, i, xf)
 			
 		
