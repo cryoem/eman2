@@ -44,7 +44,7 @@ from EMAN2jsondb import JSTask
 import numpy as np
 import sklearn.decomposition as skdc
 
-def ptclextract(jsd,db,ks,shrink,layers,verbose):
+def ptclextract(jsd,db,ks,shrink,layers,sym,verbose):
 	#  we have to get the 3d particles in the right orientation
 	lasttime=time.time()
 	for i,k in ks:
@@ -59,6 +59,7 @@ def ptclextract(jsd,db,ks,shrink,layers,verbose):
 		xf=parm["xform.align3d"]
 		ptcl.process_inplace("xform",{"transform":xf})
 		if shrink>1 : ptcl.process_inplace("math.meanshrink",{"n":shrink})
+		if sym!="" and sym!="c1" : ptcl.process_inplace("xform.applysym",{"sym":sym})
 		ptcl["score"]=parm["score"]
 		
 		# these are the range limited orthogonal projections
@@ -95,6 +96,7 @@ produce new sets/ for each class, which could be further-refined.
 	parser.add_argument("--ncls",type=int,help="Number of classes to generate",default=3,guitype="intbox", row=1, col=1, rowspan=1, colspan=1,mode="gui")
 	parser.add_argument("--nbasis",type=int,help="Number of basis vectors for the MSA phase, default=4",default=4)
 	parser.add_argument("--layers",type=int,help="number of slices about the center to use for the projection in each direction, ie 0->1, 1->3, 2->5. Default=2",default=2,guitype="intbox", row=2, col=1, rowspan=1, colspan=1,mode="gui")	
+	parser.add_argument("--sym",type=str,default="c1",help="Symmetry of the input. Must be aligned in standard orientation to work properly.")
 	parser.add_argument("--shrink", default=1,type=int,help="shrink the particles before processing",guitype="intbox", row=2, col=0, rowspan=1, colspan=1,mode="gui")
 	parser.add_argument("--threads", default=4,type=int,help="Number of alignment threads to run in parallel on a single computer. This is the only parallelism supported by e2spt_align at present.", guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--saveali",action="store_true",help="In addition to the unaligned sets/ for each class, generate aligned particle stacks per class",default=False)
@@ -132,7 +134,7 @@ produce new sets/ for each class, which could be further-refined.
 	jsd=queue.Queue(0)
 
 	NTHREADS=max(options.threads,2)		# we have one thread just writing results
-	thrds=[threading.Thread(target=ptclextract,args=(jsd,db,ks[i::NTHREADS-1],options.shrink,options.layers,options.verbose>1 and i==0)) for i in range(NTHREADS-1)]
+	thrds=[threading.Thread(target=ptclextract,args=(jsd,db,ks[i::NTHREADS-1],options.shrink,options.layers,options.sym,options.verbose>1 and i==0)) for i in range(NTHREADS-1)]
 
 	try: os.unlink("{}/alisecs_{:02d}.hdf".format(options.path,options.iter))
 	except: pass
