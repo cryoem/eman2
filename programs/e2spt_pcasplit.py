@@ -328,7 +328,7 @@ def main():
 		js=js_open_dict("{}/particle_parms_{:02d}.json".format(options.outpath, i+1))
 		js.update(d)
 		js.close()
-		os.system("e2spt_average.py --path {} --iter {} --threads 10 --sym {} --skippostp".format(options.outpath, i+1, options.sym))
+		os.system("e2spt_average.py --path {} --iter {} --threads 10 --sym {} --skippostp --simthr 1".format(options.outpath, i+1, options.sym))
 
 	E2end(logid)
 
