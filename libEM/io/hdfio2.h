@@ -46,9 +46,6 @@
 #ifndef __STDC_LIMIT_MACROS
 	#define __STDC_CONSTANT_MACROS 1
 #endif
-#ifndef _WIN32
-	#include <stdint.h>
-#endif
 #include <vector>
 
 using std::vector;

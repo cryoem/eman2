@@ -10,7 +10,7 @@ platform:
 
 install:
     - call %CONDA_INSTALL_LOCN%\Scripts\activate.bat
-    - python -m compileall -q .
+    - python -m compileall -q -x .git .
     - set
     # Cywing's git breaks conda-build. (See https://github.com/conda-forge/conda-smithy-feedstock/pull/2.)
     - rmdir C:\cygwin /s /q

@@ -33,14 +33,15 @@ def main():
 
 	parser.add_argument("--maxtilt",type=float,help="Explicitly zeroes data beyond specified tilt angle. Assumes tilt axis exactly on Y and zero tilt in X-Y plane. Default 90 (no limit).",default=90.0, guitype='floatbox',row=8, col=2,rowspan=1, colspan=1, mode="model")
 
-	parser.add_argument("--threads", type=int,help="threads", default=12, guitype='intbox',row=9, col=0,rowspan=1, colspan=1, mode="model")
 
 	parser.add_argument("--path", type=str,help="Specify name of refinement folder. Default is spt_XX.", default=None)#, guitype='strbox', row=10, col=0,rowspan=1, colspan=3, mode="model")
 	parser.add_argument("--maxang",type=float,help="maximum anglular difference in refine mode.",default=30)
 	parser.add_argument("--maxshift",type=float,help="maximum shift in pixel.",default=-1)
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
+	parser.add_argument("--threads", type=int,help="threads", default=12, guitype='intbox',row=9, col=0,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default="")
+	parser.add_argument("--transonly",action="store_true",help="translational alignment only",default=False)
 	parser.add_argument("--refine",action="store_true",help="local refinement from xform in header.",default=False)
 	parser.add_argument("--randphi",action="store_true",help="randomize phi for refine search",default=False)
 	parser.add_argument("--rand180",action="store_true",help="include 180 degree rotation for refine search",default=False)
@@ -147,6 +148,9 @@ def main():
 				gd+=" --rand180"
 			if itr>startitr:
 				ptcls=os.path.join(options.path, "particle_parms_{:02d}.json".format(itr-1))
+
+		if options.transonly: gd+=" --transonly"
+
 		
 		if options.breaksym:
 			gd+=" --breaksym"
@@ -168,8 +172,8 @@ def main():
 			s+=" --maxtilt {:.1f}".format(options.maxtilt)
 			
 		
-		#run("e2spt_average.py --threads {} --path {} --sym {} --skippostp {}".format(options.threads, options.path, options.sym, s))
-		run("e2spt_average.py --parallel {} --path {} --sym {} --keep {:.3f} --iter {} --skippostp {}".format(options.parallel, options.path, options.sym, options.pkeep, itr, s))
+		run("e2spt_average.py --threads {} --path {} --sym {} --skippostp {}".format(options.threads, options.path, options.sym, s))
+		#run("e2spt_average.py --parallel {} --path {} --sym {} --keep {:.3f} --iter {} --skippostp {}".format(options.parallel, options.path, options.sym, options.pkeep, itr, s))
 		
 		even=os.path.join(options.path, "threed_{:02d}_even.hdf".format(itr))
 		odd=os.path.join(options.path, "threed_{:02d}_odd.hdf".format(itr))

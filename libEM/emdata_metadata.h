@@ -194,11 +194,12 @@ IntPoint calc_max_location() const;
 /** Calculates the wrapped coordinates of the maximum value
  * This function is useful in the context of Fourier correlation
  * you can call this function to find the correct translational shift when using calc_ccf etc
+ * If *value is provided, it will be set to the value at the max location
  * @return the wrapped coordinates of the maximum
  * @author David Woolford
  * @date Fri Jun 6th 2008
  */
-IntPoint calc_max_location_wrap(const int maxshiftx=-1, const int maxshifty=-1, const int maxshiftz=-1);
+IntPoint calc_max_location_wrap(const int maxshiftx=-1, const int maxshifty=-1, const int maxshiftz=-1, float *value = 0);
 
 /** Calculates the wrapped coordinates of the maximum value, and uses quadration intp to subpixel prec
  * This function is useful in the context of Fourier correlation

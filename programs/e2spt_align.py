@@ -82,6 +82,7 @@ If --goldstandard is specified, then even and odd particles will be aligned to d
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default=None)
+	parser.add_argument("--transonly",action="store_true",help="translational alignment only, for prealigned particles",default=False)
 	parser.add_argument("--refine",action="store_true",help="local refinement from xform.align3d in header.",default=False)
 	
 	parser.add_argument("--refinentry", type=int, help="number of tests for refine mode. default is 8",default=8)
@@ -583,8 +584,11 @@ class SptAlignTask(JSTask):
 			ref=refs[data[3]]
 			if options.skipali:
 				c=[{"xform.align3d":xfs[0].inverse(), "score":-1}]
-				
-				
+			elif options.transonly:
+				c=[{},]
+				a=ref.align("translational",b, {"intonly":1,"maxshift":options.maxshift})
+				c[0]["xform.align3d"]=a["xform.align3d"]
+				c[0]["score"]=a["score.align"]
 			else:
 				c=ref.xform_align_nbest("rotate_translate_3d_tree",b, aligndic, options.nsoln)
 			

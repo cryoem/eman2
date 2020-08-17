@@ -18,7 +18,7 @@ if [ -n "${CIRCLECI}" ];then
     conda activate eman
 fi
 
-python -m compileall -q .
+python -m compileall -q -x .git .
 
 # Build and install eman2
 rm -vf ${CONDA_PREFIX}/bin/e2*.py
