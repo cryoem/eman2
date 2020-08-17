@@ -56,7 +56,7 @@ def main():
 			run("e2spt_tiltrefine_oneiter.py --ptclin {pt}/ptcls_{i0:02d}_{eo}.lst --ptclout {pt}/ptcls_{i1:02d}_{eo}.lst --ref {pt}/threed_{i0:02d}_{eo}.hdf --threedout {pt}/threed_{i1:02d}_{eo}.hdf --threads 24 --parallel {par} --keep {kp} --sym {s} --maxres {rs:.2f} --minres -1 --padby 2 --nkeep 1 {etc}".format(pt=options.path, i0=i, i1=i+1, rs=res, eo=eo, s=sym, etc=etcrefine, par=options.parallel, kp=options.keep))
 
 			
-		run("e2refine_postprocess.py --even {pt}/threed_{i1:02d}_even.hdf --sym {s} --setsf strucfac.txt  {etc}".format(pt=options.path, i1=i+1, etc=etcpostp, s=sym))
+		run("refine_postprocess.py --even {pt}/threed_{i1:02d}_even.hdf --sym {s} --overwrite --setsf strucfac.txt  {etc}".format(pt=options.path, i1=i+1, etc=etcpostp, s=sym))
 		
 		
 		if res>0:
