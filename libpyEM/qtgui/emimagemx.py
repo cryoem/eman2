@@ -798,7 +798,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		HOMEDB.open_dict("display_preferences")
 		db = HOMEDB.display_preferences
 		#auto_contrast = db.get("display_stack_auto_contrast", dfl = True)
-		start_guess = db.get("display_stack_np_for_auto", dfl = 20)
+		#start_guess = db.get("display_stack_np_for_auto", dfl = 20)
 
 		mean  = 0.0
 		sigma = 0.0

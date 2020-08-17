@@ -1531,11 +1531,15 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 	if (ampweight) amp=image->calc_radial_dist(ny/2,0,1,0);
 
 	// Min/max modifications to weighting
-	float pmin,pmax;
-	if (minres>0) pmin=((float)image->get_attr("apix_x")*image->get_ysize())/minres;		//cutoff in pixels, assume square
-	else pmin=0;
-	if (maxres>0) pmax=((float)image->get_attr("apix_x")*image->get_ysize())/maxres;
-	else pmax=0;
+	float pmin = params.set_default("pmin",0);
+	float pmax = params.set_default("pmax", 0);
+	
+	if (pmin==0 && minres>0)
+		pmin=((float)image->get_attr("apix_x")*image->get_ysize())/minres;		//cutoff in pixels, assume square
+	
+	if (pmax==0 && maxres>0) 
+		pmax=((float)image->get_attr("apix_x")*image->get_ysize())/maxres;
+	
 
 	double sum=0.0, norm=0.0;
 
