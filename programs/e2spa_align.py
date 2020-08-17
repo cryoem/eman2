@@ -64,10 +64,7 @@ def main():
 		pinfo.append(lst.read(i))
 	lst=None
 	
-	batch=100 ## <100 particles per job to avoid some memory leaking issue...
-	nbatch=((nptcl//batch)//num_cpus+1)*num_cpus
-	nbatch=min(nptcl//4, nbatch)
-	nbatch=num_cpus
+	nbatch=min(nptcl//4, num_cpus)
 	
 	infos=[[] for i in range(nbatch)]
 	for i,info in enumerate(pinfo):

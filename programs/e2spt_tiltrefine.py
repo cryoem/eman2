@@ -69,7 +69,7 @@ def main():
 	parser.add_argument("--output", type=str,help="Write results to this directory. We do not recommend changing this.", default="subtlt")#, guitype='intbox',row=2, col=1,rowspan=1, colspan=1)
 	parser.add_argument("--debug", action="store_true", default=False ,help="Turn on debug mode. This will only process a small subset of the data (threads * 8 particles)")
 	parser.add_argument("--localnorm",action="store_true",help="local normalization. do not use yet....",default=False)
-	parser.add_argument("--sym", type=str,help="symmetry. will use symmetry from spt refinement by default", default="c1")
+	parser.add_argument("--sym", type=str,help="symmetry. will use symmetry from spt refinement by default", default="")
 	parser.add_argument("--ppid", type=int,help="ppid...", default=-1)
 	parser.add_argument("--transonly", action="store_true", default=False ,help="only refine translation",guitype='boolbox',row=7, col=0,rowspan=1, colspan=1)
 

@@ -557,16 +557,19 @@ def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,preprocess):
 				lstinfo=lst.read(i)
 				for d in lstinfo[2].split(';'):
 					dc=eval(d)
-					#dc=eval(lstinfo[2])
+					score=2
+					dfdf=0
 					if "score" in dc:
 						score=dc.pop("score")
-					else:
-						score=2
 						
 					if "dfdf" in dc:
 						dfdf=dc.pop("dfdf")
-					else:
-						dfdf=0
+					
+					xfkey=["type","alt","az","phi","tx","ty","tz","alpha","scale"]
+					keys=list(dc.keys())
+					for k in keys:
+						if k not in xfkey:
+							dc.pop(k)
 						
 					elem={"xform":Transform(dc)}
 					
