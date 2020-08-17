@@ -161,6 +161,7 @@ If --goldstandard is specified, then even and odd particles will be aligned to d
 
 	n=-1
 	tasks=[]
+	readjson=False
 	if args[0].endswith(".lst") or args[0].endswith(".hdf"):
 		#### check if even/odd split exists
 		fsps=[args[0][:-4]+"__even.lst",args[0][:-4]+"__odd.lst"]
@@ -180,6 +181,8 @@ If --goldstandard is specified, then even and odd particles will be aligned to d
 	elif args[0].endswith(".json"):
 		#print("Reading particles from json. This is experimental...")
 		js=js_open_dict(args[0])
+		readjson=True
+		jsinput=dict(js)
 		keys=sorted(js.keys())
 		for k in keys:
 			src, ii=eval(k)
@@ -232,9 +235,13 @@ If --goldstandard is specified, then even and odd particles will be aligned to d
 		for ret in rets:
 			fsp,n,dic=ret
 			if len(dic)==1:
-				angs[(fsp,n)]=dic[0]
-			else:
-				angs[(fsp,n)]=dic
+				dic=dic[0]
+				
+			if readjson:
+				k=str((fsp,n))
+				if "eo" in js[k]:
+					dic["eo"]=jsinput[k]["eo"]
+			angs[(fsp,n)]=dic
 		
 	out="{}/particle_parms_{:02d}.json".format(options.path,options.iter)
 	if os.path.isfile(out):
@@ -275,13 +282,21 @@ class ScipySptAlignTask(JSTask):
 		
 		def testxf(x):
 			thisxf=Transform({"type":"eman", "tx":x[0], "ty":x[1], "tz":x[2],"alt":x[3], "az":x[4], "phi":x[5]})
+			dxf=thisxf*initxf
+			dt=dxf.get_params("spin")["omega"]
+			#print(dt)
+			if dt>options.maxang:
+				return 1
 			xfs=[x*thisxf for x in pjxfs]
 			pjs=[refsmall.project('gauss_fft',{"transform":x, "returnfft":1}) for x in xfs]
 			
-			fscs=[im.calc_fourier_shell_correlation(pj) for im,pj in zip(imgsmall, pjs)]
-			fscs=np.array(fscs).reshape((len(fscs), 3, -1))[:,1]
-			
-			c=-np.mean(fscs[:, 8:int(ny*.45)])
+			#fscs=[im.calc_fourier_shell_correlation(pj) for im,pj in zip(imgsmall, pjs)]
+			#fscs=np.array(fscs).reshape((len(fscs), 3, -1))[:,1]
+			#pm={"pmin":8, "pmax":int(ss*.45)}
+			#pm={"maxres":8,"minres":300}
+			c=np.mean([a.cmp("frc",b, cmppm) for a,b in zip(pjs, imgsmall)])
+			#c=-np.mean(fscs[:, 8:int(ny*.45)])
+			#print(c, ss, ny)
 			return c
 		
 		
@@ -290,7 +305,8 @@ class ScipySptAlignTask(JSTask):
 			txf.set_trans(p.tolist())
 			xfs=[x*txf for x in pjxfs]
 			pjtrans=[refsmall.project('gauss_fft',{"transform":x, "returnfft":1}) for x in xfs]
-			scr=np.mean([a.cmp("frc",b) for a,b in zip(pjtrans, imgsmall)])
+			scr=np.mean([a.cmp("frc",b, cmppm) for a,b in zip(pjtrans, imgsmall)])
+			#print(scr)
 			return scr
 		
 		callback(0)
@@ -404,6 +420,7 @@ class ScipySptAlignTask(JSTask):
 				xfout=[]
 				
 				#print(ss)
+				cmppm={"pmin":8, "pmax":int(ss*.45)}
 				for ixf in ixfs:
 					curxf=ixf.inverse()
 					curxf.set_trans(curxf.get_trans()*ss/ny)
@@ -439,9 +456,11 @@ class ScipySptAlignTask(JSTask):
 			
 			
 			rets.append((fsp,fid,c))
-			#exit()
-			#print(len(rets))
-			callback(len(rets)*100//len(self.data))
+			
+			if options.debug:
+				print(fid, scrs)
+			else:
+				callback(len(rets)*100//len(self.data))
 
 		
 		return rets
@@ -609,13 +628,11 @@ class SptAlignTask(JSTask):
 					
 			
 			rets.append((fsp,i,c))
+			if options.debug:
+				print(i, c[0]["score"])
+			else:
+				callback(len(rets)*100//len(self.data)-1)
 
-			callback(len(rets)*100//len(self.data)-1)
-
-		#print(fsp, i, c[0])
-		#callback(100)
-		#print(i,c[0]["xform.align3d"])
-		#exit()
 		return rets
 		
 

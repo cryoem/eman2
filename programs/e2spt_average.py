@@ -82,7 +82,7 @@ class SptavgTask(JSTask):
 		for ii,dt in enumerate(data):
 			fsp, i, xf=dt
 			### it seems that there are some problems with non integer shift in fourier space...
-			xf.set_trans(np.round(xf.get_trans()).tolist())
+			#xf.set_trans(np.round(xf.get_trans()).tolist())
 			b=EMData(fsp,i)
 			
 			if b["sigma"]==0:
@@ -217,7 +217,7 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 			
 			
 	if options.parallel:
-		print("running in mpi mode. This is experimental, so please switch back to threading if anything goes wrong...")
+		#print("running in mpi mode. This is experimental, so please switch back to threading if anything goes wrong...")
 				
 		from EMAN2PAR import EMTaskCustomer
 		etc=EMTaskCustomer(options.parallel, module="e2spt_average.SptavgTask")
@@ -225,9 +225,17 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 		
 		print("{} total CPUs available".format(num_cpus))
 		data=[[],[]] ## even/odd
-		for i,k in enumerate(keys):
-			src, ii=eval(k)[0],eval(k)[1]
-			data[ii%2].append([src, ii, angs[k]["xform.align3d"]])
+		if "eo" in angs[keys[0]]:
+			print("Reading even/odd subset from json file...")
+			
+			for i,k in enumerate(keys):
+				src, ii=eval(k)[0],eval(k)[1]
+				eo=int(angs[k]["eo"])
+				data[eo].append([src, ii, angs[k]["xform.align3d"]])
+		else:
+			for i,k in enumerate(keys):
+				src, ii=eval(k)[0],eval(k)[1]
+				data[ii%2].append([src, ii, angs[k]["xform.align3d"]])
 		
 		
 		#### check and save size of particle
@@ -237,10 +245,8 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 		avgs=[]
 		for ieo, eo in enumerate(["even", "odd"]):
 			print("Averaging {}...".format(eo))
-		
-			tasks=[data[ieo][i::num_cpus] for i in range(num_cpus)]
-			
-			
+			nbatch=min(len(data[ieo])//4, num_cpus)
+			tasks=[data[ieo][i::nbatch] for i in range(nbatch)]
 			
 			print("{} particles in {} jobs".format(len(data[ieo]), len(tasks) ))
 
@@ -252,12 +258,9 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 
 			while 1:
 				st_vals = etc.check_task(tids)
-				#print("{:.1f}/{} finished".format(np.mean(st_vals), 100))
-				#print(tids)
 				if np.min(st_vals) == 100: break
 				time.sleep(5)
 
-			#dics=[0]*nptcl
 			
 			output=EMData(sz, sz, sz)
 			normvol=EMData((sz//2+1)*2, sz, sz)
