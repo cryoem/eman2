@@ -45,7 +45,6 @@
 #include "ctf.h"
 #include "emassert.h"
 #include "exception.h"
-#include "io/hdf_filecache.h"
 
 
 //#ifdef EMAN2_USING_CUDA_MALLOC

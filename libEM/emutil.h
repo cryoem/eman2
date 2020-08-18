@@ -32,7 +32,7 @@
 #ifndef eman__emutil__h__
 #define eman__emutil__h__ 1
 
-#include <string.h>
+#include <cstring>
 #include "emobject.h"
 #include "emassert.h"
 
