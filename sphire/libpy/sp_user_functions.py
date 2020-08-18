@@ -1051,7 +1051,7 @@ def do_volume_mrk02(ref_data):
         elif Tracker["constants"]["mask3D"] == "auto":
             mask3D = sp_morphology.adaptive_mask(vol)
         else:
-            if type(Tracker["constants"]["mask3D"]) == bytes:
+            if isinstance(Tracker["constants"]["mask3D"], (bytes, str)):
                 mask3D = sp_utilities.get_im(Tracker["constants"]["mask3D"])
             else:
                 mask3D = (Tracker["constants"]["mask3D"]).copy()
@@ -1342,7 +1342,7 @@ def do_volume_mrk03(ref_data):
         elif Tracker["constants"]["mask3D"] == "auto":
             mask3D = sp_morphology.adaptive_mask(vol)
         else:
-            if type(Tracker["constants"]["mask3D"]) == bytes:
+            if isinstance(Tracker["constants"]["mask3D"], (bytes, str)):
                 mask3D = sp_utilities.get_im(Tracker["constants"]["mask3D"])
             else:
                 mask3D = (Tracker["constants"]["mask3D"]).copy()
@@ -1501,7 +1501,7 @@ def do_volume_mrk04(ref_data):
         elif Tracker["constants"]["mask3D"] == "auto":
             mask3D = sp_morphology.adaptive_mask(vol)
         else:
-            if type(Tracker["constants"]["mask3D"]) == bytes:
+            if isinstance(Tracker["constants"]["mask3D"], (bytes, str)):
                 mask3D = sp_utilities.get_im(Tracker["constants"]["mask3D"])
             else:
                 mask3D = (Tracker["constants"]["mask3D"]).copy()
@@ -1618,7 +1618,7 @@ def do_volume_mrk05(ref_data):
     elif Tracker["constants"]["mask3D"] == "auto":
         mask3D = sp_morphology.adaptive_mask(vol)
     else:
-        if type(Tracker["constants"]["mask3D"]) == bytes:
+        if isinstance(Tracker["constants"]["mask3D"], (bytes, str)):
             mask3D = sp_utilities.get_im(Tracker["constants"]["mask3D"])
         else:
             mask3D = (Tracker["constants"]["mask3D"]).copy()
