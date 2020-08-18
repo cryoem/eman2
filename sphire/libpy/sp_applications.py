@@ -231,7 +231,7 @@ def ali2d_MPI(
             sp_utilities.print_msg("GPU IDs                     : %s\n" % (GPUID))
 
     if maskfile:
-        if type(maskfile) is bytes:
+        if isinstance(maskfile, (bytes, str)):
             if myid == main_node:
                 sp_utilities.print_msg(
                     "Maskfile                    : %s\n\n" % (maskfile)
@@ -730,7 +730,7 @@ def ali2d_base(
     else:
         auto_stop = False
 
-    if type(stack) is bytes:
+    if isinstance(stack, (bytes, str)):
         if myid == main_node:
             total_nima = EMAN2_cppwrap.EMUtil.get_image_count(stack)
         else:
@@ -818,7 +818,7 @@ def ali2d_base(
         log.add("Number of processors used   : %d" % (number_of_proc))
 
     if maskfile:
-        if type(maskfile) is bytes:
+        if isinstance(maskfile, (bytes, str)):
             if myid == main_node:
                 log.add("Maskfile                    : %s" % (maskfile))
             mask = sp_utilities.get_image(maskfile)
@@ -1284,7 +1284,7 @@ def mref_ali2d(
     user_func = sp_user_functions.factory[user_func_name]
 
     if maskfile:
-        if type(maskfile) is bytes:
+        if isinstance(maskfile, (bytes, str)):
             mask = sp_utilities.get_image(maskfile)
         else:
             mask = maskfile
@@ -1619,7 +1619,7 @@ def mref_ali2d_MPI(
     user_func = sp_user_functions.factory[user_func_name]
 
     if maskfile:
-        if type(maskfile) is bytes:
+        if isinstance(maskfile, (bytes, str)):
             mask = sp_utilities.get_image(maskfile)
         else:
             mask = maskfile
@@ -2065,7 +2065,7 @@ def project3d(
         angles = sp_utilities.even_angles(
             delta, symmetry=symmetry, method=method, phiEqpsi=phiEqpsi
         )
-    elif type(listagls) is bytes:
+    elif isinstance(listagls, (bytes, str)):
         angles = sp_utilities.read_text_row(listagls, "", "")
     else:
         angles = listagls
@@ -2074,7 +2074,7 @@ def project3d(
     if listctfs is None:
         # not set, so simply ignore it
         ctfs = None
-    elif type(listctfs) is bytes:
+    elif isinstance(listctfs, (bytes, str)):
         # a string, so assume this is a filename and try to open the file
         try:
             ctfs = sp_utilities.read_text_row(listctfs, "", "")
@@ -2094,11 +2094,11 @@ def project3d(
     else:
         noise_level = None
 
-    if type(volume) is bytes:
+    if isinstance(volume, (bytes, str)):
         vol = EMAN2_cppwrap.EMData()
         vol.read_image(volume)
         if mask:
-            if type(mask) is bytes:
+            if isinstance(mask, (bytes, str)):
                 maski = EMAN2_cppwrap.EMData()
                 maski.read_image(volume)
                 EMAN2_cppwrap.Util.mul_img(vol, maski)
@@ -2122,7 +2122,7 @@ def project3d(
         vol = volume
         if mask:
             vol = vol.copy()
-            if type(mask) is bytes:
+            if isinstance(mask, (bytes, str)):
                 maski = EMAN2_cppwrap.EMData()
                 maski.read_image(volume)
                 EMAN2_cppwrap.Util.mul_img(vol, maski)
@@ -2143,7 +2143,7 @@ def project3d(
             else:
                 volft, kbx, kby, kbz = sp_projection.prep_vol(vol)
 
-    if type(stack) is bytes:
+    if isinstance(stack, (bytes, str)):
         Disk = True
         os.system("rm -f  " + stack)
     else:

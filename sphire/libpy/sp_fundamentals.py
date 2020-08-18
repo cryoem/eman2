@@ -477,7 +477,7 @@ def rot_avg_image(image_to_be_averaged):
 	"""
     pass  # IMPORTIMPORTIMPORT import types
     pass  # IMPORTIMPORTIMPORT from sp_utilities import get_im
-    if type(image_to_be_averaged) is bytes:
+    if isinstance(image_to_be_averaged, (bytes, str)):
         image_to_be_averaged = sp_utilities.get_im(image_to_be_averaged)
     return image_to_be_averaged.rotavg_i_sphire()
 
