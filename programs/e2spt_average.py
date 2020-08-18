@@ -53,7 +53,9 @@ def rotfnsym(avg,fsp,i,a,sym,masked,maxtilt,verbose):
 		c=b.process("xform",{"transform":xf.get_sym(sym,s)})
 		d=c.align("translational",masked)
 		avg.add_image(d)
-		if verbose: print(f"{i} {s}: {d["xform.align3d"].get_trans}")
+		if verbose: 
+			trans=str(d["xform.align3d"].get_trans())
+			print(f"{i} {s}: {trans}")
 	#jsd.put((fsp,i,b))
 
 
