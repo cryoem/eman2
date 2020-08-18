@@ -1616,6 +1616,18 @@ def main():
 					"""
                     return old_div(2.0 * x, (1 + x))
 
+                def create_xml(output_dir, fsc, resolution, name):
+                    data = []
+                    for ifreq, value in enumerate(fsc[1]):
+                        data.append([1/resolution[ifreq], value])
+
+                    fsc_values = ['<fsc title="SPHIRE masked-corrected {} FSC" xaxis="Resolution (A-1)" yaxis="Correlation Coefficient">'.format(name)]
+                    for x, y in data:
+                        fsc_values.append('\n  <coordinate>\n    <x>{0}</x>\n    <y>{1}</y>\n  </coordinate>'.format(x, y))
+                    fsc_values.append('\n</fsc>')
+                    with open(os.path.join(output_dir, '{0}.xml'.format(name)), 'w') as write:
+                        write.write(''.join(fsc_values))
+
                 def create_fsc_txt(output_dir, fsc, resolution, name):
                     """
 					Create a text file based on the fsc
@@ -1716,6 +1728,12 @@ def main():
                             linewidth=thicknesslist[idx],
                         )
                         create_fsc_txt(
+                            output_dir=options.output_dir,
+                            fsc=fsc,
+                            resolution=resolution_in_angstrom,
+                            name=name.replace(" ", "_").lower(),
+                        )
+                        create_xml(
                             output_dir=options.output_dir,
                             fsc=fsc,
                             resolution=resolution_in_angstrom,
