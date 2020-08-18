@@ -66,6 +66,11 @@ def ptclextract(jsd,db,ks,shrink,layers,sym,verbose):
 		x=ptcl.process("misc.directional_sum",{"axis":"x","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
 		y=ptcl.process("misc.directional_sum",{"axis":"y","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
 		z=ptcl.process("misc.directional_sum",{"axis":"z","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
+
+		# different directions sometimes have vastly different standard deviations, independent normalization may help balance
+		x.process_inplace("normalize")
+		y.process_inplace("normalize")
+		z.process_inplace("normalize")
 		
 		# we pack the 3 projections into a single 2D image
 		all=EMData(x["nx"]*3,x["ny"],1)

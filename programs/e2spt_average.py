@@ -45,14 +45,15 @@ def rotfnsym(avg,fsp,i,a,sym,masked,maxtilt,verbose):
 		bf=b.do_fft()
 		bf.process_inplace("mask.wedgefill",{"thresh_sigma":0.0,"maxtilt":maxtilt})
 		b=bf.do_ift()
-	b.process_inplace("xform",{"transform":a})
+	b.process_inplace("xform",{"transform":a})	# after erasing out of limit wedge, put in the correct orientation
 	xf = Transform()
-	xf.to_identity()
+	xf.to_identity()	# isn't this already true?
 	nsym=xf.get_nsym(sym)
-	for i in range(nsym):
-		c=b.process("xform",{"transform":xf.get_sym(sym,i)})
+	for s in range(nsym):
+		c=b.process("xform",{"transform":xf.get_sym(sym,s)})
 		d=c.align("translational",masked)
 		avg.add_image(d)
+		if verbose: print(f"{i} {s}: {d["xform.align3d"].get_trans}")
 	#jsd.put((fsp,i,b))
 
 

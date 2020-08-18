@@ -49,6 +49,7 @@ def main():
 	parser.add_argument("--scipy",action="store_true",help="test scipy refinement",default=False)
 	parser.add_argument("--breaksym",action="store_true",help="break symmetry",default=False)
 	parser.add_argument("--breaksymsym", type=str,help="Specify a different symmetry for breaksym.", default=None)
+	parser.add_argument("--symalimask",type=str,default=None,help="This will translationally realign each asymmetric unit to the previous map masked by the specified mask. Note not the same as symalimasked in e2spt_average. This is a mask, not a reference. ")
 	
 	#parser.add_argument("--masktight", type=str,help="Mask_tight file", default="")
 
@@ -170,6 +171,12 @@ def main():
 		s=""
 		if options.maxtilt<90.:
 			s+=" --maxtilt {:.1f}".format(options.maxtilt)
+
+		# we apply the symmetric subunit mask provided to the current reference and send it to e2spt_average to do a final translational alignment
+		if options.symalimask!=None: 
+			cmd=f"e2proc3d.py {ref} {options.path}/ref_mono.hdf --multfile {options.symalimask}"
+			run(cmd)
+			s+=f" --symalimasked={options.path}/ref_mono.hdf"
 			
 		
 		run("e2spt_average.py --threads {} --path {} --sym {} --skippostp {}".format(options.threads, options.path, options.sym, s))
