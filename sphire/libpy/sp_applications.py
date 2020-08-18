@@ -1980,6 +1980,31 @@ def mref_ali2d_MPI(
 
 """Multiline Comment32"""
 
+def transform2d(stack_data, stack_data_ali, shift = False, ignore_mirror = False, method = "quadratic"):
+# apply 2D alignment parameters stored in the header of the input stack file using gridding interpolation and create an output stack file
+    from sp_fundamentals   import rot_shift2D
+    from sp_utilities 	    import set_params2D, get_params2D, get_im
+    import os
+    if  shift:
+        from sp_utilities     import compose_transform2m
+        from sp_fundamentals  import fshift, mirror
+
+    t = EMAN2_cppwrap.Transform({"type":"2D"})# Transform({"type":"2D"})
+    nima = EMAN2_cppwrap.EMUtil.get_image_count(stack_data)
+    for im in range(nima):
+        data = get_im(stack_data, im)
+        al2d = get_params2D(data)
+        if(shift):
+            angb, sxb, syb, nm, ct = compose_transform2m(0.0, al2d[1], al2d[2], 0, 1.0, -al2d[0], 0.0, 0.0, al2d[3], 1.0)
+            data = fshift(data, sxb, syb)
+            if ignore_mirror: nm = 0
+            if(nm == 1):  data = mirror(data)
+        else:
+            if ignore_mirror: al2d[3] = 0
+            data = rot_shift2D(data, al2d[0], al2d[1], al2d[2], al2d[3], al2d[4], interpolation_method = method)
+        data.set_attr("xform.align2d", t)
+        data.write_image(stack_data_ali, im)
+
 
 def cpy(ins_list, ous):
     # reworked to include lists, since we want to be able to copy lists of images
