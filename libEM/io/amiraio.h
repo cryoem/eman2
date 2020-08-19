@@ -55,11 +55,7 @@ namespace EMAN
 		static bool is_valid(const void *first_block);
 
 	  private:
-		IOMode rw_mode;
-		FILE *amira_file;
-
 		bool is_big_endian;
-		bool initialized;
 		EMUtil::EMDataType dt;
 		int nx;
 		int ny;

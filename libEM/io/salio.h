@@ -71,9 +71,6 @@ namespace EMAN
 		};
 
 	  private:
-		IOMode rw_mode;
-		FILE *sal_file;
-		bool initialized;
 		int nx;
 		int ny;
 		int record_length;

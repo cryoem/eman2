@@ -39,7 +39,7 @@
 using namespace EMAN;
 
 PngIO::PngIO(const string & fname, IOMode rw)
-:	ImageIO(fname), rw_mode(rw), png_file(0), initialized(false),
+:	ImageIO(fname, rw),
 	png_ptr(0), info_ptr(0), end_info(0), nx(0), ny(0),
 	depth_type(PNG_INVALID_DEPTH), number_passes(0),
 	rendermin(0.0), rendermax(0.0), renderbits(16)
@@ -47,9 +47,9 @@ PngIO::PngIO(const string & fname, IOMode rw)
 
 PngIO::~PngIO()
 {
-	if (png_file) {
-		fclose(png_file);
-		png_file = 0;
+	if (file) {
+		fclose(file);
+		file = 0;
 	}
 
 	png_ptr = 0;
@@ -67,7 +67,7 @@ void PngIO::init()
 	initialized = true;
 
 	bool is_new_file = false;
-	png_file = sfopen(filename, rw_mode, &is_new_file, true);
+	file = sfopen(filename, rw_mode, &is_new_file, true);
 
 	if (!is_new_file) {
 		png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, 0, 0, 0);
@@ -94,11 +94,11 @@ void PngIO::init()
 		throw ImageReadException(filename, "an error occurs within png");
 	}
 
-	png_init_io(png_ptr, png_file);
+	png_init_io(png_ptr, file);
 
 	if (!is_new_file) {
 		unsigned char header[PNG_BYTES_TO_CHECK];
-		fread(header, sizeof(unsigned char), PNG_BYTES_TO_CHECK, png_file);
+		fread(header, sizeof(unsigned char), PNG_BYTES_TO_CHECK, file);
 		if (!is_valid(header)) {
 			throw ImageReadException(filename, "invalid PNG format");
 		}
@@ -273,7 +273,7 @@ int PngIO::read_data(float *data, int image_index, const Region * area, bool)
 
 	check_region(area, IntSize(nx1, ny1));
 
-	png_init_io(png_ptr, png_file);
+	png_init_io(png_ptr, file);
 	png_set_sig_bytes(png_ptr, PNG_BYTES_TO_CHECK);
 
 	int xlen = 0, ylen = 0, x0 = 0, y0 = 0;

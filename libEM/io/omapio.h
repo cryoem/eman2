@@ -89,12 +89,9 @@ namespace EMAN
 			short unused[233];	//unused space
 		};
 
-		IOMode rw_mode;
-		FILE *omapfile;
 		OmapHeader omaph;
 
 		bool is_big_endian;
-		bool initialized;
 		bool is_new_file;
 	};
 

@@ -101,9 +101,6 @@ namespace EMAN
 			int		NumberDimensions;
 		};
 
-		IOMode 	rw_mode;
-		FILE *	serfile;
-		bool 	initialized;
 		bool 	is_new_file;
 
 		SerHeader serh;

@@ -43,7 +43,7 @@ static const short SER_SERIES_ID 		= 0x0197;
 static const int   ValidNumberElementsOffset = 18;	//the offset to ValidNumberElements, which is the number of images in the file
 
 SerIO::SerIO(const string & fname, IOMode rw) :
-		ImageIO(fname), rw_mode(rw), serfile(0), initialized(false),
+		ImageIO(fname, rw),
 		is_new_file(false), data_offset_array(0),tag_offset_array(0),
 		nimg(0), nx(0), ny(0), nz(0), datatypeid(0), datamode(0)
 {
@@ -51,9 +51,9 @@ SerIO::SerIO(const string & fname, IOMode rw) :
 
 SerIO::~SerIO()
 {
-	if (serfile) {
-		fclose(serfile);
-		serfile = 0;
+	if (file) {
+		fclose(file);
+		file = 0;
 	}
 
 	if (data_offset_array) {
@@ -76,10 +76,10 @@ void SerIO::init()
 	}
 
 	initialized = true;
-	serfile = sfopen(filename, rw_mode, &is_new_file);
+	file = sfopen(filename, rw_mode, &is_new_file);
 
 	if (!is_new_file) {
-		if (fread(&serh, sizeof(SerHeader), 1, serfile) != 1) {
+		if (fread(&serh, sizeof(SerHeader), 1, file) != 1) {
 			throw ImageReadException(filename, "SER header");
 		}
 
@@ -115,10 +115,10 @@ int SerIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 {
 	ENTERFUNC;
 	init();
-	rewind(serfile);
+	rewind(file);
 
 	short hitem1[3];
-	if (fread(hitem1, sizeof(short), 3, serfile) != 3) {
+	if (fread(hitem1, sizeof(short), 3, file) != 3) {
 		throw ImageReadException(filename, "SER header");
 	}
 
@@ -132,18 +132,18 @@ int SerIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 	int hitem2[6];
 	uint64_t offset_array;
 	if (hitem1[2]==0x210) {
-		if (fread(hitem2, sizeof(int), 6, serfile) != 6) {
+		if (fread(hitem2, sizeof(int), 6, file) != 6) {
 			throw ImageReadException(filename, "SER header");
 		}
 		dict["SER.OffsetArrayOffset"]	= hitem2[4];
 		offset_array=(uint64_t)hitem2[4];
 	}
 	else {
-		if (fread(hitem2, sizeof(int), 4, serfile) != 4) {
+		if (fread(hitem2, sizeof(int), 4, file) != 4) {
 			throw ImageReadException(filename, "SER header");
 		}
-		fread(&offset_array, 8,1,serfile);
-		fread(&hitem2[5],4,1,serfile);
+		fread(&offset_array, 8,1,file);
+		fread(&hitem2[5],4,1,file);
 	}
 		
 	
@@ -166,7 +166,7 @@ int SerIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 
 // 	long pos = ftell(serfile);
 // 	assert(pos == (int)dict["SER.OffsetArrayOffset"]);
-	portable_fseek(serfile,(off_t)offset_array,SEEK_SET);
+	portable_fseek(file,(off_t)offset_array,SEEK_SET);
 
 	int tot = (int)dict["SER.TotalNumberElements"];
 
@@ -174,7 +174,7 @@ int SerIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 	tag_offset_array = new uint64_t[tot];
 	if (hitem1[2]==0x210) {
 		int *off=new int[tot*2];
-		if (fread(off, 4, tot*2, serfile) != (unsigned int)tot*2) {
+		if (fread(off, 4, tot*2, file) != (unsigned int)tot*2) {
 			throw ImageReadException(filename, "SER header");
 		}
 		for (int i=0; i<tot; i++) {
@@ -184,10 +184,10 @@ int SerIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 		delete[] off;
 	}
 	else {
-		if (fread(data_offset_array, sizeof(uint64_t), tot, serfile) != (unsigned int)tot) {
+		if (fread(data_offset_array, sizeof(uint64_t), tot, file) != (unsigned int)tot) {
 			throw ImageReadException(filename, "SER header");
 		}
-		if (fread(tag_offset_array, sizeof(uint64_t), tot, serfile) != (unsigned int)tot) {
+		if (fread(tag_offset_array, sizeof(uint64_t), tot, file) != (unsigned int)tot) {
 			throw ImageReadException(filename, "SER header");
 		}
 	}
@@ -195,13 +195,13 @@ int SerIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 	this->datatypeid = (int)dict["SER.DataTypeID"];
 
 	off_t dataoffset = data_offset_array[image_index];
-	portable_fseek(serfile, dataoffset, SEEK_SET);
+	portable_fseek(file, dataoffset, SEEK_SET);
 
 	//To read the attribute in data element(not the actual data)
 	read_data_element(dict);
 
 	off_t tagoffset = tag_offset_array[image_index];
-	portable_fseek(serfile, tagoffset, SEEK_SET);
+	portable_fseek(file, tagoffset, SEEK_SET);
 
 	//To read the data tag appended after data values
 	read_data_tag(dict);
@@ -242,10 +242,10 @@ int SerIO::read_data(float *rdata, int image_index, const Region *, bool )
 	double * pdouble = 0;
 	switch(this->datatypeid) {
 	case oneD:
-		portable_fseek(serfile, data_offset+26, SEEK_SET);	//offset 26 to actual data values
+		portable_fseek(file, data_offset+26, SEEK_SET);	//offset 26 to actual data values
 		break;
 	case twoD:
-		portable_fseek(serfile, data_offset+50, SEEK_SET);	//offset 50 to actual data values
+		portable_fseek(file, data_offset+50, SEEK_SET);	//offset 50 to actual data values
 		break;
 	default:
 		throw ImageReadException(filename, "SER header, wrong DataTypeID");
@@ -254,7 +254,7 @@ int SerIO::read_data(float *rdata, int image_index, const Region *, bool )
 	switch(this->datamode) {
 	case SER_UCHAR:
 		puchar = new unsigned char[size];
-		if (fread(puchar, sizeof(unsigned char), size, serfile) != size) {
+		if (fread(puchar, sizeof(unsigned char), size, file) != size) {
 			throw ImageReadException(filename, "SER data");
 		}
 		for (i = 0; i<size; ++i) {
@@ -264,7 +264,7 @@ int SerIO::read_data(float *rdata, int image_index, const Region *, bool )
 		break;
 	case SER_USHORT:
 		pushort = new unsigned short[size];
-		if (fread(pushort, sizeof(unsigned short), size, serfile) != size) {
+		if (fread(pushort, sizeof(unsigned short), size, file) != size) {
 			throw ImageReadException(filename, "SER data");
 		}
 		for (i = 0; i<size; ++i) {
@@ -274,7 +274,7 @@ int SerIO::read_data(float *rdata, int image_index, const Region *, bool )
 		break;
 	case SER_UINT:
 		puint = new unsigned int[size];
-		if (fread(puint, sizeof(unsigned int), size, serfile) != size) {
+		if (fread(puint, sizeof(unsigned int), size, file) != size) {
 			throw ImageReadException(filename, "SER data");
 		}
 		for (i = 0; i<size; ++i) {
@@ -284,7 +284,7 @@ int SerIO::read_data(float *rdata, int image_index, const Region *, bool )
 		break;
 	case SER_CHAR:
 		pchar = new char[size];
-		if (fread(pchar, sizeof(unsigned char), size, serfile) != size) {
+		if (fread(pchar, sizeof(unsigned char), size, file) != size) {
 			throw ImageReadException(filename, "SER data");
 		}
 		for (i = 0; i<size; ++i) {
@@ -294,7 +294,7 @@ int SerIO::read_data(float *rdata, int image_index, const Region *, bool )
 		break;
 	case SER_SHORT:
 		pshort = new short[size];
-		if (fread(pshort, sizeof(short), size, serfile) != size) {
+		if (fread(pshort, sizeof(short), size, file) != size) {
 			throw ImageReadException(filename, "SER data");
 		}
 		for (i = 0; i<size; ++i) {
@@ -304,7 +304,7 @@ int SerIO::read_data(float *rdata, int image_index, const Region *, bool )
 		break;
 	case SER_INT:
 		pint = new int[size];
-		if (fread(pint, sizeof(int), size, serfile) != size) {
+		if (fread(pint, sizeof(int), size, file) != size) {
 			throw ImageReadException(filename, "SER data");
 		}
 		for (i = 0; i<size; ++i) {
@@ -313,13 +313,13 @@ int SerIO::read_data(float *rdata, int image_index, const Region *, bool )
 		delete [] pint;
 		break;
 	case SER_FLOAT:
-		if (fread(rdata, sizeof(float), size, serfile) != size) {
+		if (fread(rdata, sizeof(float), size, file) != size) {
 			throw ImageReadException(filename, "SER data");
 		}
 		break;
 	case SER_DOUBLE:
 		pdouble = new double[size];
-		if (fread(pdouble, sizeof(double), size, serfile) != size) {
+		if (fread(pdouble, sizeof(double), size, file) != size) {
 			throw ImageReadException(filename, "SER data");
 		}
 		for (i = 0; i<size; ++i) {
@@ -357,7 +357,7 @@ bool SerIO::is_complex_mode()
 
 void SerIO::flush()
 {
-	fflush(serfile);
+	fflush(file);
 }
 
 bool SerIO::is_image_big_endian()
@@ -368,9 +368,9 @@ bool SerIO::is_image_big_endian()
 int SerIO::get_nimg() {
 	init();
 
-	portable_fseek(serfile, ValidNumberElementsOffset, SEEK_SET);
+	portable_fseek(file, ValidNumberElementsOffset, SEEK_SET);
 	int nimg;
-	if (fread(&nimg, sizeof(int), 1, serfile) != 1) {
+	if (fread(&nimg, sizeof(int), 1, file) != 1) {
 		throw ImageReadException(filename, "SER header");
 	}
 
@@ -380,7 +380,7 @@ int SerIO::get_nimg() {
 void SerIO::read_dim_arr(Dict & dict, int idx)
 {
 	int dimsize;
-	if (fread(&dimsize, sizeof(int), 1, serfile) != 1) {
+	if (fread(&dimsize, sizeof(int), 1, file) != 1) {
 		throw ImageReadException(filename, "SER header");
 	}
 
@@ -388,20 +388,20 @@ void SerIO::read_dim_arr(Dict & dict, int idx)
 	dict["SER.DimensionSize"+sidx]	= dimsize;
 
 	double hitem3[2];
-	if (fread(hitem3, sizeof(double), 2, serfile) != 2) {
+	if (fread(hitem3, sizeof(double), 2, file) != 2) {
 		throw ImageReadException(filename, "SER header");
 	}
 	dict["SER.CalibrationOffset"+sidx]	= hitem3[0];
 	dict["SER.CalibrationDelta"+sidx]	= hitem3[1];
 
 	int celement;
-	if (fread(&celement, sizeof(int), 1, serfile) != 1) {
+	if (fread(&celement, sizeof(int), 1, file) != 1) {
 		throw ImageReadException(filename, "SER header");
 	}
 	dict["SER.CalibrationElement"+sidx]	= celement;
 
 	int desclen;
-	if (fread(&desclen, sizeof(int), 1, serfile) != 1) {
+	if (fread(&desclen, sizeof(int), 1, file) != 1) {
 		throw ImageReadException(filename, "SER header");
 	}
 	dict["SER.DescriptionLength"+sidx]	= desclen;
@@ -409,7 +409,7 @@ void SerIO::read_dim_arr(Dict & dict, int idx)
 	if(desclen != 0) {
 		char * descr = new char[desclen+1];
 		//char descr[desclen+1];
-		if (fread(descr, sizeof(char), desclen, serfile) != (unsigned int)desclen) {
+		if (fread(descr, sizeof(char), desclen, file) != (unsigned int)desclen) {
 			throw ImageReadException(filename, "SER header");
 		}
 		descr[desclen] = '\0';
@@ -419,7 +419,7 @@ void SerIO::read_dim_arr(Dict & dict, int idx)
 	}
 
 	int unitslen;
-	if (fread(&unitslen, sizeof(int), 1, serfile) != 1) {
+	if (fread(&unitslen, sizeof(int), 1, file) != 1) {
 		throw ImageReadException(filename, "SER header");
 	}
 	dict["SER.UnitsLength"+sidx] = unitslen;
@@ -427,7 +427,7 @@ void SerIO::read_dim_arr(Dict & dict, int idx)
 	if(unitslen != 0) {
 		char * units = new char[unitslen+1];
 		//char units[unitslen+1];
-		if (fread(units, sizeof(int), unitslen, serfile) != (unsigned int)unitslen) {
+		if (fread(units, sizeof(int), unitslen, file) != (unsigned int)unitslen) {
 			throw ImageReadException(filename, "SER header");
 		}
 		units[unitslen] = '\0';
@@ -442,26 +442,26 @@ void SerIO::read_data_element(Dict & dict)
 {
 	if(this->datatypeid == oneD) {	//1D image
 		double hitem4[2];
-		if (fread(hitem4, sizeof(double), 2, serfile) != 2) {
+		if (fread(hitem4, sizeof(double), 2, file) != 2) {
 			throw ImageReadException(filename, "SER header");
 		}
 		dict["SER.CalibrationOffset"] 	= hitem4[0];
 		dict["SER.CalibrationDelta"]	= hitem4[1];
 
 		int cali;
-		if (fread(&cali, sizeof(int), 1, serfile) != 1) {
+		if (fread(&cali, sizeof(int), 1, file) != 1) {
 			throw ImageReadException(filename, "SER header");
 		}
 		dict["SER.CalibrationElement"] = cali;
 
 		short datatype;
-		if (fread(&datatype, sizeof(short), 1, serfile) != 1) {
+		if (fread(&datatype, sizeof(short), 1, file) != 1) {
 			throw ImageReadException(filename, "SER header");
 		}
 		dict["SER.DataType"] = datatype;
 
 		int arrlen;
-		if (fread(&arrlen, sizeof(int), 1, serfile) != 1) {
+		if (fread(&arrlen, sizeof(int), 1, file) != 1) {
 			throw ImageReadException(filename, "SER header");
 		}
 		dict["nx"] = arrlen;
@@ -474,40 +474,40 @@ void SerIO::read_data_element(Dict & dict)
 	}
 	else if(this->datatypeid == twoD) {	//2D image
 		double hitem4[2];
-		if (fread(hitem4, sizeof(double), 2, serfile) != 2) {
+		if (fread(hitem4, sizeof(double), 2, file) != 2) {
 			throw ImageReadException(filename, "SER header");
 		}
 		dict["SER.CalibrationOffsetX"] 	= hitem4[0];
 		dict["SER.CalibrationDeltaX"]	= hitem4[1];
 
 		int calix;
-		if (fread(&calix, sizeof(int), 1, serfile) != 1) {
+		if (fread(&calix, sizeof(int), 1, file) != 1) {
 			throw ImageReadException(filename, "SER header");
 		}
 		dict["SER.CalibrationElementX"] = calix;
 
 		double hitem5[2];
-		if (fread(hitem5, sizeof(double), 2, serfile) != 2) {
+		if (fread(hitem5, sizeof(double), 2, file) != 2) {
 			throw ImageReadException(filename, "SER header");
 		}
 		dict["SER.CalibrationOffsetX"] 	= hitem5[0];
 		dict["SER.CalibrationDeltaX"]	= hitem5[1];
 
 		int caliy;
-		if (fread(&caliy, sizeof(int), 1, serfile) != 1) {
+		if (fread(&caliy, sizeof(int), 1, file) != 1) {
 			throw ImageReadException(filename, "SER header");
 		}
 		dict["SER.CalibrationElementY"] = caliy;
 
 		short datatype;
-		if (fread(&datatype, sizeof(short), 1, serfile) != 1) {
+		if (fread(&datatype, sizeof(short), 1, file) != 1) {
 			throw ImageReadException(filename, "SER header");
 		}
 		dict["SER.DataType"] = datatype;
 		this->datamode = datatype;
 
 		int arrsize[2];
-		if (fread(&arrsize, sizeof(int), 2, serfile) != 2) {
+		if (fread(&arrsize, sizeof(int), 2, file) != 2) {
 			throw ImageReadException(filename, "SER header");
 		}
 		dict["nx"] = arrsize[0];
@@ -525,32 +525,32 @@ void SerIO::read_data_tag(Dict & dict)
 	int tag_type = (int)dict["SER.TagTypeID"];
 	if( tag_type == timeOnly ) {
 		short tagtype;
-		if (fread(&tagtype, sizeof(short), 1, serfile) != 1) {
+		if (fread(&tagtype, sizeof(short), 1, file) != 1) {
 			throw ImageReadException(filename, "SER header");
 		}
 		assert((int)tagtype == tag_type);
 
 		int sertime;
-		if (fread(&sertime, sizeof(int), 1, serfile) != 1) {
+		if (fread(&sertime, sizeof(int), 1, file) != 1) {
 			throw ImageReadException(filename, "SER header");
 		}
 		dict["SER.Time"] = sertime;
 	}
 	else if( tag_type == posTime ) {
 		short tagtype;
-		if (fread(&tagtype, sizeof(short), 1, serfile) != 1) {
+		if (fread(&tagtype, sizeof(short), 1, file) != 1) {
 			throw ImageReadException(filename, "SER header");
 		}
 		assert((int)tagtype == tag_type);
 
 		int sertime;
-		if (fread(&sertime, sizeof(int), 1, serfile) != 1) {
+		if (fread(&sertime, sizeof(int), 1, file) != 1) {
 			throw ImageReadException(filename, "SER header");
 		}
 		dict["SER.Time"] = sertime;
 
 		double pos[2];
-		if (fread(&pos, sizeof(double), 2, serfile) != 2) {
+		if (fread(&pos, sizeof(double), 2, file) != 2) {
 			throw ImageReadException(filename, "SER header");
 		}
 		dict["SER.PosionX"] = pos[0];

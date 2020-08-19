@@ -66,11 +66,6 @@ namespace EMAN
 		};
 
 	  private:
-		IOMode rw_mode;
-		FILE *png_file;
-
-		bool initialized;
-
 		png_structp png_ptr;
 		png_infop info_ptr;
 		png_infop end_info;

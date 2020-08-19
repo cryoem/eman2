@@ -35,8 +35,8 @@
 using namespace EMAN;
 
 OmapIO::OmapIO(const string & fname, IOMode rw) :
-		ImageIO(fname), rw_mode(rw), omapfile(0),
-		is_big_endian(false), initialized(false), is_new_file(false)
+		ImageIO(fname, rw),
+		is_big_endian(false), is_new_file(false)
 {
 	memset(&omaph, 0, sizeof(OmapHeader));
 	is_big_endian = ByteOrder::is_host_big_endian();
@@ -44,9 +44,9 @@ OmapIO::OmapIO(const string & fname, IOMode rw) :
 
 OmapIO::~OmapIO()
 {
-	if (omapfile) {
-		fclose(omapfile);
-		omapfile = 0;
+	if (file) {
+		fclose(file);
+		file = 0;
 	}
 }
 
@@ -59,25 +59,25 @@ void OmapIO::init()
 	}
 
 	initialized = true;
-	omapfile = sfopen(filename, rw_mode, &is_new_file);
+	file = sfopen(filename, rw_mode, &is_new_file);
 
 	char record[512];	//record size 512 bytes
 
 	if (!is_new_file) {
-		if (fread(record, 512, 1, omapfile) != 1) {
+		if (fread(record, 512, 1, file) != 1) {
 			throw ImageReadException(filename, "OMAP header");
 		}
 
 		for(int i=0; i<512; i++) {
 			if(!isprint(record[i])) {
-				portable_fseek(omapfile, 0, SEEK_SET);
+				portable_fseek(file, 0, SEEK_SET);
 				break;
 			}
 
 			if(record[i] == '\0') break;
 		}
 
-		if (fread(&omaph, sizeof(OmapHeader), 1, omapfile) != 1) {
+		if (fread(&omaph, sizeof(OmapHeader), 1, file) != 1) {
 			throw ImageReadException(filename, "OMAP header");
 		}
 
@@ -164,7 +164,7 @@ int OmapIO::read_data(float *rdata, int, EMAN::Region const*, bool)
 	for (int k=0; k < inz; k++) {
 		for (int j=0;  j < iny; j++) {
 			for (int i=0; i < inx; i++) {
-				if (fread(record, 512, 1, omapfile) != 1) {
+				if (fread(record, 512, 1, file) != 1) {
 					throw ImageReadException(filename, "OMAP data");
 				}
 
@@ -279,5 +279,5 @@ bool OmapIO::is_complex_mode()
 
 void OmapIO::flush()
 {
-	fflush(omapfile);
+	fflush(file);
 }

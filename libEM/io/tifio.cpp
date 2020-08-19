@@ -49,8 +49,8 @@ namespace {
 }
 
 TiffIO::TiffIO(const string & fname, IOMode rw)
-:	ImageIO(fname), rw_mode(rw), tiff_file(0),
-	bitspersample(0), photometric(0), initialized(false),
+:	ImageIO(fname, rw), tiff_file(0),
+	bitspersample(0), photometric(0),
 	rendermin(0.0), rendermax(0.0), renderbits(16), nimg(1),
 	is_big_endian(ByteOrder::is_host_big_endian())
 {}

@@ -182,13 +182,11 @@ namespace EMAN
 		string hed_filename;
 		string img_filename;
 
-		IOMode rw_mode;
 		FILE *hed_file;
 		FILE *img_file;
 
 		ImagicHeader imagich;
 		bool is_big_endian;
-		bool initialized;
 		bool is_new_hed;
 		bool is_new_img;
 

@@ -253,10 +253,7 @@ namespace EMAN
 		{ NUM_ID_INT = 3 };
 
 	  private:
-		IOMode rw_mode;
-		FILE *dm3file;
 		bool is_big_endian;
-		bool initialized;
 		Gatan::TagTable * tagtable;
 	};
 

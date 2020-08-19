@@ -93,14 +93,11 @@ namespace EMAN
 		};
 
 	  private:
-		IOMode rw_mode;
-		FILE *em_file;
 		EMHeader emh;
 
 		size_t mode_size;
 		DataType mode;
 		bool is_big_endian;
-		bool initialized;
 		bool is_new_file;
 	};
 

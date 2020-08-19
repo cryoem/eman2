@@ -62,13 +62,11 @@ namespace EMAN
 			TIFF_BIG_ENDIAN = 0x4d
 		};
 
-		IOMode rw_mode;
 		TIFF *tiff_file;
 		int nimg;
 		unsigned short bitspersample;
 		unsigned short photometric;
 		bool is_big_endian;
-		bool initialized;
 		
 		unsigned int nx;
 		unsigned int ny;

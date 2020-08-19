@@ -67,11 +67,7 @@ namespace EMAN
 		static bool is_valid(const void *first_block);
 
 	  private:		
-		IOMode rw_mode;
-		FILE *xplor_file;
-
 		bool is_big_endian;
-		bool initialized;
 		bool is_new_file;
 		int nlines_in_header;
 		

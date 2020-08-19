@@ -129,7 +129,7 @@ namespace EMAN
 		enum IOMode
 		{ READ_ONLY = 1, READ_WRITE = 2, WRITE_ONLY = 3 };
 	  public:
-		ImageIO(const string & fname);
+		ImageIO(const string & fname, IOMode rw);
 
 		virtual ~ImageIO();
 
@@ -350,6 +350,9 @@ namespace EMAN
 					 bool * is_new = 0, bool overwrite = false);
 
 		string filename;
+		IOMode rw_mode;
+		FILE *file = nullptr;
+		bool initialized = false;
 	};
 
 	/** DEFINE_IMAGEIO_FUNC declares the functions that needs to

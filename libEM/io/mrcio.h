@@ -261,8 +261,6 @@ namespace EMAN
 		static const char *SHORT_CTF_MAGIC;
 
 	private:
-		IOMode rw_mode;
-		FILE *mrcfile;
 		int mode_size;
 
 		union {
@@ -284,7 +282,6 @@ namespace EMAN
 		int is_ri;
 		bool is_big_endian;
 		bool is_new_file;
-		bool initialized;
 		bool is_transpose;
 		float rendermin;
 		float rendermax;

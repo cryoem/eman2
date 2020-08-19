@@ -45,15 +45,15 @@
 using namespace EMAN;
 
 JpegIO::JpegIO(const string & fname, IOMode rw)
-:	ImageIO(fname), rw_mode(rw),
-	jpeg_file(0), initialized(false), rendermin(0.0), rendermax(0.0), renderbits(16)
+:	ImageIO(fname, rw),
+	rendermin(0.0), rendermax(0.0), renderbits(16)
 {}
 
 JpegIO::~JpegIO()
 {
-	if (jpeg_file) {
-		fclose(jpeg_file);
-		jpeg_file = NULL;
+	if (file) {
+		fclose(file);
+		file = NULL;
 	}
 
 }
@@ -69,7 +69,7 @@ void JpegIO::init()
 	initialized = true;
 
 	bool is_new_file = false;
-	jpeg_file = sfopen(filename, rw_mode, &is_new_file, true);
+	file = sfopen(filename, rw_mode, &is_new_file, true);
 
 	if (! is_new_file) {
 		throw ImageReadException(filename, "JPEG reading not supported");
@@ -77,7 +77,7 @@ void JpegIO::init()
 	else {
 		cinfo.err = jpeg_std_error(&jerr);
 		jpeg_create_compress(&cinfo);
-		jpeg_stdio_dest(&cinfo, jpeg_file);
+		jpeg_stdio_dest(&cinfo, file);
 	}
 
 	rendermin = 0.0;

@@ -50,10 +50,9 @@ using namespace EMAN;
 const char *LstIO::MAGIC = "#LST";
 
 LstIO::LstIO(const string & fname, IOMode rw)
-:	ImageIO(fname), rw_mode(rw), lst_file(0)
+:	ImageIO(fname, rw)
 {
 	is_big_endian = ByteOrder::is_host_big_endian();
-	initialized = false;
 	nimg = 0;
 	imageio = 0;
 	ref_filename = "";
@@ -63,9 +62,9 @@ LstIO::LstIO(const string & fname, IOMode rw)
 
 LstIO::~LstIO()
 {
-	if (lst_file) {
-		fclose(lst_file);
-		lst_file = 0;
+	if (file) {
+		fclose(file);
+		file = 0;
 	}
 	ref_filename = "";
 	if(imageio) {
@@ -84,13 +83,13 @@ void LstIO::init()
 	initialized = true;
 
 	bool is_new_file = false;
-	lst_file = sfopen(filename, rw_mode, &is_new_file);
+	file = sfopen(filename, rw_mode, &is_new_file);
 
 	if (!is_new_file) {
 
 		char buf[MAXPATHLEN];
 
-		if (!fgets(buf, MAXPATHLEN, lst_file)) {
+		if (!fgets(buf, MAXPATHLEN, file)) {
 			throw ImageReadException(filename, "first block");
 		}
 
@@ -98,12 +97,12 @@ void LstIO::init()
 			throw ImageReadException(filename, "invalid LST file");
 		}
 
-		for (nimg = 0; fgets(buf, MAXPATHLEN, lst_file) != 0; nimg++) {
+		for (nimg = 0; fgets(buf, MAXPATHLEN, file) != 0; nimg++) {
 			if (buf[0] == '#') {
 				nimg--;
 			}
 		}
-		rewind(lst_file);
+		rewind(file);
 	}
 	EXITFUNC;
 }
@@ -134,12 +133,12 @@ int LstIO::calc_ref_image_index(int image_index)
 		int step = image_index - last_lst_index;
 
 		if (step < 0) {
-			rewind(lst_file);
+			rewind(file);
 			step = image_index + 1;
 		}
 
 		for (int i = 0; i < step; i++) {
-			if (!fgets(buf, MAXPATHLEN, lst_file)) {
+			if (!fgets(buf, MAXPATHLEN, file)) {
 				LOGERR("reach EOF in file '%s' before reading %dth image",
 					   filename.c_str(), image_index);
 				return 1;
@@ -214,7 +213,7 @@ int LstIO::write_header(const Dict &, int, const Region* , EMUtil::EMDataType, b
 {
 	ENTERFUNC;
 	init();
-	fprintf(lst_file, "%s\n", MAGIC);
+	fprintf(file, "%s\n", MAGIC);
 	EXITFUNC;
 	return 0;
 }
@@ -232,14 +231,14 @@ int LstIO::read_data(float *data, int image_index, const Region * area, bool is_
 int LstIO::write_data(float *data, int, const Region* , EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
-	fprintf(lst_file, "%s\n", (char*)data);
+	fprintf(file, "%s\n", (char*)data);
 	EXITFUNC;
 	return 0;
 }
 
 void LstIO::flush()
 {
-	fflush(lst_file);
+	fflush(file);
 }
 
 bool LstIO::is_complex_mode()

@@ -76,12 +76,9 @@ namespace EMAN
 		int to_em_datatype(int gatan_type);
 
 	  private:
-		IOMode rw_mode;
-		FILE *gatan2_file;
 		Gatan2Header gatanh;
 
 		bool is_big_endian;
-		bool initialized;
 	};
 
 }
