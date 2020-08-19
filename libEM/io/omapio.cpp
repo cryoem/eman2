@@ -34,8 +34,8 @@
 
 using namespace EMAN;
 
-OmapIO::OmapIO(const string & omapname, IOMode rw) :
-		filename(omapname), rw_mode(rw), omapfile(0),
+OmapIO::OmapIO(const string & fname, IOMode rw) :
+		ImageIO(fname), rw_mode(rw), omapfile(0),
 		is_big_endian(false), initialized(false), is_new_file(false)
 {
 	memset(&omaph, 0, sizeof(OmapHeader));

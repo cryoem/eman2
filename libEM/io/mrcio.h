@@ -41,10 +41,10 @@ namespace EMAN
 	 * dimensions and pixel type are defined in the header.
 	 */
 	
-	class MrcIO:public ImageIO
+	class MrcIO : public ImageIO
 	{
 	public:
-		explicit MrcIO(const string & filename, IOMode rw_mode = READ_ONLY);
+		explicit MrcIO(const string & fname, IOMode rw_mode = READ_ONLY);
 		~MrcIO();
 
 		DEFINE_IMAGEIO_FUNC;
@@ -261,7 +261,6 @@ namespace EMAN
 		static const char *SHORT_CTF_MAGIC;
 
 	private:
-		string filename;
 		IOMode rw_mode;
 		FILE *mrcfile;
 		int mode_size;

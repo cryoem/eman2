@@ -66,13 +66,13 @@ namespace EMAN
 	 * but write to new format from - Grant Tang.
 	 */
 
-	class ImagicIO2:public ImageIO
+	class ImagicIO2 : public ImageIO
 	{
 	  public:
 		static const char *HED_EXT;
 		static const char *IMG_EXT;
 		
-		explicit ImagicIO2(string filename, IOMode rw_mode = READ_ONLY);
+		explicit ImagicIO2(const string & fname, IOMode rw_mode = READ_ONLY);
 		~ImagicIO2();
 
 		DEFINE_IMAGEIO_FUNC;
@@ -245,7 +245,6 @@ namespace EMAN
 		
 		int generate_machine_stamp() const;
 	  private:
-		string filename;
 		string hed_filename;
 		string img_filename;
 

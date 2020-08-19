@@ -43,10 +43,10 @@ namespace EMAN
 	 * A PGM file contains one 2D image.
 	 *
 	 */
-	class PgmIO:public ImageIO
+	class PgmIO : public ImageIO
 	{
 	  public:
-		explicit PgmIO(const string & filename, IOMode rw_mode = READ_ONLY);
+		explicit PgmIO(const string & fname, IOMode rw_mode = READ_ONLY);
 		~PgmIO();
 
 		DEFINE_IMAGEIO_FUNC;
@@ -64,7 +64,6 @@ namespace EMAN
 		};
 
 	  private:
-		string filename;
 		IOMode rw_mode;
 		FILE *pgm_file;
 

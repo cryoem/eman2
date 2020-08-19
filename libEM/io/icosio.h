@@ -47,10 +47,10 @@ namespace EMAN
 	 * An Icos file stores 1 2D or 3D image.
 	 * 
 	 */
-	class IcosIO:public ImageIO
+	class IcosIO : public ImageIO
 	{
 	  public:
-		explicit IcosIO(const string & filename, IOMode rw_mode = READ_ONLY);
+		explicit IcosIO(const string & fname, IOMode rw_mode = READ_ONLY);
 		~IcosIO();
 
 		DEFINE_IMAGEIO_FUNC;
@@ -75,7 +75,6 @@ namespace EMAN
 		};
 
 	  private:
-		string filename;
 		IOMode rw_mode;
 		IcosHeader icosh;
 		FILE *icos_file;

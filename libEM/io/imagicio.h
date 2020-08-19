@@ -62,13 +62,13 @@ namespace EMAN
 	 * 
 	 */
 
-	class ImagicIO:public ImageIO
+	class ImagicIO : public ImageIO
 	{
 	  public:
 		static const char *HED_EXT;
 		static const char *IMG_EXT;
 		
-		explicit ImagicIO(string filename, IOMode rw_mode = READ_ONLY);
+		explicit ImagicIO(const string & fname, IOMode rw_mode = READ_ONLY);
 		~ImagicIO();
 
 		DEFINE_IMAGEIO_FUNC;
@@ -179,7 +179,6 @@ namespace EMAN
 		void write_ctf(const Ctf * const ctf, int image_index = 0);
 		
 	  private:
-		string filename;
 		string hed_filename;
 		string img_filename;
 

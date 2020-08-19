@@ -51,17 +51,16 @@
 
 namespace EMAN
 {
-	class Df3IO:public ImageIO
+	class Df3IO : public ImageIO
 	{
 	public:
-		explicit Df3IO(const string & filename, IOMode rw_mode = READ_ONLY);
+		explicit Df3IO(const string & fname, IOMode rw_mode = READ_ONLY);
 		~Df3IO();
 
 		DEFINE_IMAGEIO_FUNC;
 		static bool is_valid(const void *first_block, off_t file_size = 0);
 	private:
 		unsigned short nx, ny, nz;
-		string filename;
 		IOMode rw_mode;
 		FILE *df3file;
 		bool initialized;

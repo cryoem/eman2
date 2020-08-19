@@ -67,8 +67,6 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_write_lst_overloads_1_4, writ
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMData_read_images_overloads_1_3, EMAN::EMData::read_images, 1, 3)
 
-BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMData_read_images_ext_overloads_3_5, EMAN::EMData::read_images_ext, 3, 5)
-
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_set_size_overloads_1_4, EMAN::EMData::set_size, 1, 4)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_set_complex_size_overloads_1_3, EMAN::EMData::set_complex_size, 1, 3)
@@ -547,7 +545,6 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("write_lst", &EMAN::EMData::write_lst, EMAN_EMData_write_lst_overloads_1_4(args("filename", "reffile", "refn", "comment"), "Append data to a LST image file.\nfilename - The LST image file name.\nreffile - Reference file name.\nrefn The reference file number.\ncomment - The comment to the added reference file."))
 //	.def("print_image", &EMAN::EMData::print_image, EMAN_EMData_print_image_overloads_0_2(args("filename", "output_stream"), "Print the image data to a file stream (standard out by default).\nfilename - image file to be printed.\noutput_stream - Output stream; cout by default."))
 	.def("read_images", &EMAN::EMData::read_images, EMAN_EMData_read_images_overloads_1_3(args("filename", "img_indices", "header_only"),"Read a set of images from file specified by 'filename'.\nWhich images are read is set by 'img_indices'.\nfilename The image file name.\nimg_indices Which images are read. If it is empty, all images are read. If it is not empty, only those in this array are read.\nheader_only If true, only read image header. If false, read both data and header.\nreturn The set of images read from filename."))
-	.def("read_images_ext", &EMAN::EMData::read_images_ext, EMAN_EMData_read_images_ext_overloads_3_5(args("filename", "img_index_start", "img_index_end", "header_only", "ext"), "Read a set of images from file specified by 'filename'. If\nthe given 'ext' is not empty, replace 'filename's extension it.\nImages with index from img_index_start to img_index_end are read.\n \nfilename - The image file name.\nimg_index_start Starting image index.\nimg_index_end - Ending image index.\nheader_only - If true, only read image header. If false, read both data and header.\next - The new image filename extension.\n \nreturn The set of images read from filename."))
 	.def("get_fft_amplitude", &EMAN::EMData::get_fft_amplitude, return_value_policy< manage_new_object >(), "return the amplitudes of the FFT including the left half\n \nreturn The current FFT image's amplitude image.\nexception - ImageFormatException If the image is not a complex image.")
 	.def("get_fft_amplitude2D", &EMAN::EMData::get_fft_amplitude2D, return_value_policy< manage_new_object >(), "return the amplitudes of the 2D FFT including the left half, PRB\n \nreturn The current FFT image's amplitude image.\nexception - ImageFormatException If the image is not a complex image.")
 	.def("get_fft_phase", &EMAN::EMData::get_fft_phase, return_value_policy< manage_new_object >(), "return the phases of the FFT including the left half\n \nreturn The current FFT image's phase image.\nexception - ImageFormatException If the image is not a complex image.")
@@ -885,7 +882,6 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("getwedge", &EMAN::EMData::compute_missingwedge, EMAN_EMData_compute_missingwedge_overloads_1_3(args("wedgeangle", "start", "stop"), "get the missingt wedge mean ansd std")[ return_value_policy< manage_new_object >() ])
 	.def("__getitem__", &emdata_getitem)
 	.def("__setitem__", &emdata_setitem)
-	.staticmethod("read_images_ext")
 	.staticmethod("read_images")
 	.def("__add__", (EMAN::EMData* (*)(const EMAN::EMData&, const EMAN::EMData&) )&EMAN::operator+, return_value_policy< manage_new_object >() )
 	.def("__sub__", (EMAN::EMData* (*)(const EMAN::EMData&, const EMAN::EMData&) )&EMAN::operator-, return_value_policy< manage_new_object >() )

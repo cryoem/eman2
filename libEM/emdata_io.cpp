@@ -44,25 +44,17 @@ using std::shared_ptr;
 
 using namespace EMAN;
 
-void EMData::read_image(const string & filename, int img_index, bool nodata,
+void EMData::_read_image(ImageIO *imageio, int img_index, bool nodata,
 						const Region * region, bool is_3d)
 {
-	ENTERFUNC;
-
-	ImageIO *imageio = EMUtil::get_imageio(filename, ImageIO::READ_ONLY);
-
-	if (!imageio) {
-		throw ImageFormatException("cannot create an image io");
-	}
-	else {
 		int err = imageio->read_header(attr_dict, img_index, region, is_3d);
 		if (err) {
-			throw ImageReadException(filename, "imageio read header failed");
+			throw ImageReadException(imageio->get_filename(), "imageio read header failed");
 		}
 		else {
 			LstIO * myLstIO = dynamic_cast<LstIO *>(imageio);
 			if(!myLstIO)
-			    attr_dict["source_path"] = filename;	//"source_path" is set to full path of reference image for LstIO, so skip this statement
+			    attr_dict["source_path"] = imageio->get_filename();	//"source_path" is set to full path of reference image for LstIO, so skip this statement
 			attr_dict["source_n"] = img_index;
 			if (imageio->is_complex_mode()) {
 				set_complex(true);
@@ -103,7 +95,7 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 				// should be safe.
 				int err = imageio->read_data(get_data(), img_index, region, is_3d);
 				if (err) {
-					throw ImageReadException(filename, "imageio read data failed");
+					throw ImageReadException(imageio->get_filename(), "imageio read data failed");
 				}
 				else {
 					update();
@@ -115,8 +107,21 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 			}
 
 		}
+}
+
+void EMData::read_image(const string & filename, int img_index, bool nodata,
+						const Region * region, bool is_3d)
+{
+	ENTERFUNC;
+
+	ImageIO *imageio = EMUtil::get_imageio(filename, ImageIO::READ_ONLY);
+
+	if (!imageio) {
+		throw ImageFormatException("cannot create an image io");
 	}
     
+	_read_image(imageio, img_index, nodata, region, is_3d);
+
 	EMUtil::close_imageio(filename, imageio);
 	imageio = 0;
 	EXITFUNC;
@@ -411,13 +416,14 @@ vector < shared_ptr<EMData> > EMData::read_images(const string & filename, vecto
 	}
 
 	size_t n = (num_img == 0 ? total_img : num_img);
+	ImageIO *imageio = EMUtil::get_imageio(filename, ImageIO::READ_ONLY);
 
 	vector< shared_ptr<EMData> > v;
 	for (size_t j = 0; j < n; j++) {
 		shared_ptr<EMData> d(new EMData());
 		size_t k = (num_img == 0 ? j : img_indices[j]);
 		try {
-			d->read_image(filename, (int)k, header_only);
+			d->_read_image(imageio, (int)k, header_only);
 		}
 		catch(E2Exception &e) {
 			throw(e);
@@ -430,44 +436,10 @@ vector < shared_ptr<EMData> > EMData::read_images(const string & filename, vecto
 			throw ImageReadException(filename, "imageio read data failed");
 	}
 
-	EXITFUNC;
-	return v;
-}
+	EMUtil::close_imageio(filename, imageio);
+	imageio = 0;
 
 
-vector < shared_ptr<EMData> >EMData::read_images_ext(const string & filename, int img_index_start,
-										   int img_index_end, bool header_only,
-										   const string & ext)
-{
-	ENTERFUNC;
-
-	if (img_index_end < img_index_start) {
-		throw InvalidValueException(img_index_end, "image index end < image index start");
-	}
-	string new_filename = filename;
-	new_filename = new_filename.insert(new_filename.rfind("."), ext);
-	int num_img = EMUtil::get_image_count(new_filename);
-
-	if (img_index_start < 0 || img_index_start >= num_img) {
-		throw OutofRangeException(0, num_img-1, img_index_start, "image index start");
-	}
-
-	if (img_index_end >= num_img) {
-		img_index_end = num_img - 1;
-	}
-
-	vector < shared_ptr<EMData> >v;
-
-	for (int i = img_index_start; i < img_index_end; i++) {
-		shared_ptr<EMData> d(new EMData());
-		try {
-			d->read_image(new_filename, i, header_only);
-		}
-		catch(E2Exception &e) {
-			throw(e);
-		}
-		v.push_back(d);
-	}
 	EXITFUNC;
 	return v;
 }

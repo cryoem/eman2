@@ -42,10 +42,10 @@ namespace EMAN
 		(video4linux). ie - this will read from a framegrabber, etc.
 	 */
 	
-	class V4L2IO:public ImageIO
+	class V4L2IO : public ImageIO
 	{
 	public:
-		explicit V4L2IO(const string & filename, IOMode rw_mode = READ_ONLY);
+		explicit V4L2IO(const string & fname, IOMode rw_mode = READ_ONLY);
 		~V4L2IO();
 
 		DEFINE_IMAGEIO_FUNC;

@@ -69,10 +69,10 @@ namespace EMAN
 	 *
 	 * A VTK file contains 1 2D or 3D image.
 	 */
-	class VtkIO:public ImageIO
+	class VtkIO : public ImageIO
 	{
 	  public:
-		explicit VtkIO(const string & filename, IOMode rw_mode = READ_ONLY);
+		explicit VtkIO(const string & fname, IOMode rw_mode = READ_ONLY);
 		~VtkIO();
 
 		DEFINE_IMAGEIO_FUNC;
@@ -121,7 +121,6 @@ namespace EMAN
 		DataType get_datatype_from_name(const string& datatype_name);
 		DatasetType get_datasettype_from_name(const string& dataset_name);
 	
-		string filename;
 		IOMode rw_mode;
 		FILE *vtk_file;
 		bool is_big_endian;

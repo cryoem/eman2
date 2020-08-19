@@ -68,10 +68,10 @@ namespace EMAN
 	 * file, use image_index = -1.
      *
 	 */
-	class SpiderIO:public ImageIO
+	class SpiderIO : public ImageIO
 	{
 	  public:
-		explicit SpiderIO(const string & filename, IOMode rw_mode = READ_ONLY);
+		explicit SpiderIO(const string & fname, IOMode rw_mode = READ_ONLY);
 		~SpiderIO();
 
 		DEFINE_IMAGEIO_FUNC;
@@ -238,7 +238,6 @@ namespace EMAN
 		void swap_header(SpiderHeader * header);
 
 	  protected:
-		string filename;
 		IOMode rw_mode;
 
 		FILE *spider_file;

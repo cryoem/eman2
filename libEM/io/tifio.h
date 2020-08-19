@@ -45,10 +45,10 @@ namespace EMAN
 	 *
 	 * A TIFF file contains 1 2D image.
 	*/
-	class TiffIO:public ImageIO
+	class TiffIO : public ImageIO
 	{
 	  public:
-		explicit TiffIO(string filename, IOMode rw_mode = READ_ONLY);
+		explicit TiffIO(const string & fname, IOMode rw_mode = READ_ONLY);
 		~TiffIO();
 
 		DEFINE_IMAGEIO_FUNC;
@@ -62,7 +62,6 @@ namespace EMAN
 			TIFF_BIG_ENDIAN = 0x4d
 		};
 
-		string filename;
 		IOMode rw_mode;
 		TIFF *tiff_file;
 		int nimg;

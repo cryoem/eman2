@@ -38,6 +38,11 @@
 #define emdata__io_h__
 
 
+private:
+void _read_image(ImageIO *imageio, int img_index = 0,
+				bool header_only = false,
+				const Region * region = 0, bool is_3d = false);
+
 public:
 /** read an image file and stores its information to this
  * EMData object.
@@ -152,23 +157,5 @@ static vector < std::shared_ptr<EMData> >read_images(const string & filename,
 									  vector < int >img_indices = vector < int >(),
 									  bool header_only = false);
 
-
-/** Read a set of images from file specified by 'filename'. If
- * the given 'ext' is not empty, replace 'filename's extension it.
- * Images with index from img_index_start to img_index_end are read.
- *
- * @param filename The image file name.
- * @param img_index_start Starting image index.
- * @param img_index_end Ending image index.
- * @param header_only If true, only read image header. If
- *     false, read both data and header.
- * @param ext The new image filename extension.
- * @return The set of images read from filename.
- */
-static vector < std::shared_ptr<EMData> >read_images_ext(const string & filename,
-										  int img_index_start,
-										  int img_index_end,
-										  bool header_only = false,
-										  const string & ext = "");
 
 #endif	//emdata__io_h__
