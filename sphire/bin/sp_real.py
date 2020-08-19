@@ -46,6 +46,7 @@ from __future__ import division
 #
 
 import EMAN2
+from EMAN2 import *
 import PyQt5
 import eman2_gui.emapplication
 import eman2_gui.emimage
