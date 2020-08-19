@@ -16,7 +16,8 @@ def main():
 
 	parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=2, col=1, rowspan=1, colspan=1, mode="model")
 
-	parser.add_argument("--mask", type=str,help="Mask file to be applied to initial model", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=3, col=0,rowspan=1, colspan=3, mode="model")
+	parser.add_argument("--mask", type=str,help="Mask file to be applied to initial model", default="" guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=3, col=0,rowspan=1, colspan=3, mode="model")
+	parser.add_argument("--maskalign", type=str,help="Mask file applied to 3D alignment reference in each iteration. Not applied to the average, which will follow normal masking routine.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=3, col=0,rowspan=1, colspan=3, mode="model")
 
 	parser.add_argument("--niter", type=int,help="Number of iterations", default=5, guitype='intbox',row=4, col=0,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--sym", type=str,help="symmetry", default="c1", guitype='strbox',row=4, col=1,rowspan=1, colspan=1, mode="model")
@@ -89,6 +90,13 @@ def main():
 	if options.parallel=="":
 		options.parallel="thread:{}".format(options.threads)
 	
+	msk=options.mask
+	if len(msk)>0:
+		if os.path.isfile(msk):
+			msk=" --automask3d mask.fromfile:filename={}".format(msk)
+		else:
+			msk=" --automask3d {}".format(msk)
+
 	#### make a list file if the particles are not in a lst
 	if ptcls.endswith(".json"):
 		jstmp=js_open_dict(ptcls)
@@ -132,6 +140,13 @@ def main():
 		
 	
 	for itr in range(startitr,options.niter+startitr):
+
+		# the alignment ref may be masked using a different file, or just copied
+		ar=EMData(ref,0)
+		if (len(options.maskalign)>0):
+			m=EMData(options.maskalign,0)
+			ar.mult(m)
+		ar.write_image(f"{options.path}/alignref.hdf",0)
 		
 		#### generate alignment command first
 		gd=""
@@ -163,7 +178,7 @@ def main():
 		if options.scipy:
 			gd+=" --scipy"
 
-		cmd="e2spt_align.py {} {} --parallel {} --path {} --iter {} --sym {} --maxres {} {}".format(ptcls, ref,  options.parallel, options.path, itr, options.sym, curres, gd)
+		cmd="e2spt_align.py {} {}/alignref.hdf --parallel {} --path {} --iter {} --sym {} --maxres {} {}".format(ptcls, options.path,  options.parallel, options.path, itr, options.sym, curres, gd)
 		
 		ret=run(cmd)
 		
@@ -208,14 +223,6 @@ def main():
 			e.write_image(f)
 			
 		
-		msk=options.mask
-		if len(msk)>0:
-			if os.path.isfile(msk):
-				msk=" --automask3d mask.fromfile:filename={}".format(msk)
-			else:
-				msk=" --automask3d {}".format(msk)
-
-
 		s=""
 		if options.goldstandard>0:
 			s+=" --align"
