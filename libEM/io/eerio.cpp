@@ -131,3 +131,8 @@ bool EerIO::is_complex_mode()
 void EerIO::flush()
 {
 }
+
+bool EerIO::is_single_image_format() const
+{
+	return false;
+}

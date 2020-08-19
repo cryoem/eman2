@@ -124,6 +124,8 @@ namespace EMAN
 		~EerIO();
 
 		int get_nimg();
+		bool is_single_image_format() const override;
+
 
 		DEFINE_IMAGEIO_FUNC;
 
