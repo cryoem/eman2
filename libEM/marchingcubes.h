@@ -239,7 +239,7 @@ namespace EMAN
 			return rgbmode;
 		}
 		
-		/** Lets us know if we need to recalclate colors*/
+		/** Lets us know if we need to recalculate colors*/
 		inline bool getNeedToRecolor()
 		{
 			return needtorecolor;
@@ -259,7 +259,7 @@ namespace EMAN
 		float minimum;
 		float maximum;
 	
-		bool needtorecolor;	// dirty bit to let the sytem know when we need to recolor
+		bool needtorecolor;	// dirty bit to let the system know when we need to recolor
 		
 		float* colormap; 	// pointer to a colormap
 		EMData* em_data;	// pointer to EMdata
@@ -449,7 +449,7 @@ namespace EMAN
 		CustomVector<float> nn;
 		CustomVector<unsigned int> ff;
 		
-		/** COlor by radius generator */
+		/** Color by radius generator */
 		ColorRGBGenerator rgbgenerator;
 		
 		bool needtobind;	// A dirty bit to signal when the the MC algorithm or color has chaged and hence a need to update GPU buffers

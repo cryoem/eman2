@@ -91,7 +91,7 @@ namespace EMAN
 	 *
 	 *   - The gap from insertion or appending should be filled with zero.
 	 *
-	 * Image region writing follows the following princeples:
+	 * Image region writing follows the following principles:
 	 *
 	 *   - The file must exist before writing a region to it.
 	 *
