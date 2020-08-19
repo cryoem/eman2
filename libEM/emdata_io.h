@@ -43,6 +43,14 @@ void _read_image(ImageIO *imageio, int img_index = 0,
 				bool header_only = false,
 				const Region * region = 0, bool is_3d = false);
 
+void _write_image(ImageIO *imageio,
+				 int img_index = 0,
+				 EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN,
+				 bool header_only = false,
+				 const Region * region = 0,
+				 EMUtil::EMDataType filestoragetype = EMUtil::EM_FLOAT,
+				 bool use_host_endian = true);
+
 public:
 /** read an image file and stores its information to this
  * EMData object.
@@ -135,14 +143,6 @@ void write_lst(const string & filename,
 			   const string & comment="");
 
 
-/** Print the image data to a file stream (standard out by default).
- * @param out Output stream; cout by default.
- * @param str Message string to be printed.
- */
-void print_image(const string str = string(""),
-		ostream& out = std::cout);
-
-
 /** Read a set of images from file specified by 'filename'.
  * Which images are read is set by 'img_indices'.
  * @param filename The image file name.
@@ -153,9 +153,18 @@ void print_image(const string str = string(""),
  *     false, read both data and header.
  * @return The set of images read from filename.
  */
-static vector < std::shared_ptr<EMData> >read_images(const string & filename,
-									  vector < int >img_indices = vector < int >(),
+static vector<std::shared_ptr<EMData>> read_images(const string & filename,
+									  vector<int> img_indices = vector<int>(),
 									  bool header_only = false);
 
+static bool write_images(const string & filename,
+									  vector<std::shared_ptr<EMData>> imgs);
+
+
+/** Print the image data to a file stream (standard out by default).
+ * @param out Output stream; cout by default.
+ * @param str Message string to be printed.
+ */
+friend ostream& operator<<(ostream& out, const EMData& obj);
 
 #endif	//emdata__io_h__
