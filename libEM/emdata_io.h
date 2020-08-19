@@ -43,6 +43,14 @@ void _read_image(ImageIO *imageio, int img_index = 0,
 				bool header_only = false,
 				const Region * region = 0, bool is_3d = false);
 
+void _write_image(ImageIO *imageio,
+				 int img_index = 0,
+				 EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN,
+				 bool header_only = false,
+				 const Region * region = 0,
+				 EMUtil::EMDataType filestoragetype = EMUtil::EM_FLOAT,
+				 bool use_host_endian = true);
+
 public:
 /** read an image file and stores its information to this
  * EMData object.
