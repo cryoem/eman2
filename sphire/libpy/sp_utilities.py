@@ -642,7 +642,7 @@ def center_2D(
     pass  # IMPORTIMPORTIMPORT from sp_fundamentals import fshift
     pass  # IMPORTIMPORTIMPORT import types
 
-    if type(image_to_be_centered) == bytes:
+    if isinstance(image_to_be_centered, (bytes, str)):
         image_to_be_centered = get_im(image_to_be_centered)
     if center_method == 0:
         return image_to_be_centered, 0.0, 0.0
@@ -1236,7 +1236,7 @@ def pad(
     off_center_nz=0,
 ):
 
-    if type(background) != bytes:
+    if not isinstance(background, (bytes, str)):
         background = str(background)
     if background == "average":
         image_padded = EMAN2_cppwrap.Util.pad(
