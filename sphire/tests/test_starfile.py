@@ -38,10 +38,10 @@ except:
 
 
 img = EMAN2.EMData()
-img.read_image(inputfile, 0 )
+pp = img.read_images(inputfile, [0, 4, 5, 7])
 
+pp[0].write_image(outputfile)
 
-print(img.get_2dview())
 
 # bdbfile = 'bdb:/home/adnan/PycharmProjects/DoseWeighting/Relion_Stackv5/MotionCorr/job049/MOVIES_RELION/Particles/20170629_00021_frameImage_ptcls'
 

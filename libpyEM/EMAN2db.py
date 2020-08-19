@@ -524,17 +524,25 @@ EMData.read_image = db_read_image
 
 def db_set_header_star(img, data_dict, star_cla):
     star_dict = star_cla.sphire_keys
-
+    # img.set_attr("hello", np.int32(1))
     for key in list(data_dict.keys()):
         if key in star_dict:
             value = data_dict[key]
             img.set_attr(star_dict[key], value)
+        else:
+            sphire_key = star_cla.sphire_header_magic(key)
+            if sphire_key:
+                continue
+            else:
+                value = data_dict[key]
+                print(key, value)
+                img.set_attr(key, float(value))
 
     try:
         image_name = data_dict['_rlnImageName']
         number, file_name = image_name.split('@')
         img.set_attr("data_path", file_name)
-        img.set_attr("ptcl_source_coord_id", int(number))
+        img.set_attr("ptcl_source_coord_id", int(number)-1)
     except Exception as e:
         print('Yet unknown exception! This may lead to unknown behaviour')
         print(e)
