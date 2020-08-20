@@ -79,8 +79,8 @@ uint8_t d5 = 0b10011001;
 uint8_t ab5[] = {a5, b5, c5, d5};
 
 void test_bit_reader() {
-	BitStream<uint8_t> is5(ab5);
-	Rle<7, uint8_t> rle;
+	EerStream is5(ab5);
+	EerRle rle;
 
 	is5 >> rle;
 	assert(rle == 42);
@@ -93,9 +93,9 @@ void test_bit_reader() {
 }
 
 void test_eer_sub_pix() {
-	BitStream<uint8_t> is6(ab5);
-	SubPix<4, uint8_t> sub_pix;
-	Rle<7, uint8_t> rle6;
+	EerStream is6(ab5);
+	EerSubPix sub_pix;
+	EerRle rle6;
 
 	is6 >> sub_pix;
 	assert(sub_pix == 10);
