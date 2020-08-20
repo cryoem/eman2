@@ -114,6 +114,19 @@ namespace EMAN
 	using EerStream = BitStream<EerWord>;
 	using EerRle    = Rle   <7, EerWord>;
 	using EerSubPix = SubPix<4, EerWord>;
+
+
+	class EerIO : public ImageIO
+	{
+	public:
+		EerIO(const string & fname, IOMode rw_mode = READ_ONLY);
+		~EerIO();
+
+		DEFINE_IMAGEIO_FUNC;
+
+	private:
+		bool is_big_endian;
+	};
 }
 
 #endif	//eman__eerio_h__

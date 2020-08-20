@@ -1,85 +1,100 @@
 /*
- * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
- * Copyright (c) 2000-2006 Baylor College of Medicine
- * 
+ * Author: tunay.durmaz@bcm.edu, 08/20/2020
+ * Copyright (c) 2020- Baylor College of Medicine
+ *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
  * complete EMAN2 and SPARX software packages have some GPL dependencies,
  * so you are responsible for compliance with the licenses of these packages
  * if you opt to use BSD licensing. The warranty disclaimer below holds
  * in either instance.
- * 
+ *
  * This complete copyright notice must be included in any revised version of the
  * source code. Additional authorship citations may be added, but existing
  * author citations must be preserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  * */
- 
-#ifndef eman__ioioio_h__
-#define eman__ioioio_h__ 1
 
-// NOTE: for some reason unknown, hdfio.h must be behind pngio.h. 
-
-#include "mrcio.h"
 #include "eerio.h"
 
-#ifdef USE_PNG
-	#include "pngio.h"
-#endif	//USE_PNG
+using namespace EMAN;
 
-#ifdef USE_JPEG
-	#include "jpegio.h"
-#endif
+EerIO::EerIO(const string & fname, IOMode rw)
+:	ImageIO(fname, rw)
+{
+}
 
-#include "dm3io.h"
-#include "dm4io.h"
+EerIO::~EerIO()
+{
+}
 
-#ifdef USE_TIFF
-	#include "tifio.h"
-#endif	//USE_TIFF
+void EerIO::init()
+{
+	ENTERFUNC;
 
-#include "pifio.h"
-#include "vtkio.h"
-#include "sspiderio.h"
-#include "pgmio.h"
-#include "icosio.h"
-#include "lstio.h"
-#include "lstfastio.h"
+	EXITFUNC;
+}
 
-#ifdef USE_HDF5
-	#include "hdfio.h"
-	#include "hdfio2.h"
-#endif	//USE_HDF5
+bool EerIO::is_image_big_endian()
+{
+	return is_big_endian;
+}
 
-#include "salio.h"
-#include "amiraio.h"
-#include "xplorio.h"
-#include "gatan2io.h"
-#include "emio.h"
-#include "imagicio.h"
-#include "imagicio2.h"
-#include "fitsio.h"
-#include "df3io.h"
-#include "omapio.h"
-#include "situsio.h"
-#include "serio.h"
 
-#ifdef ENABLE_V4L2
-	#include "v4l2io.h"
-#endif
+int EerIO::read_header(Dict & dict, int image_index, const Region * area, bool is_3d)
+{
+	return 0;
+}
 
-#endif	//eman__ioioio_h__
+
+int EerIO::write_header(const Dict & dict, int image_index, const Region* area,
+						EMUtil::EMDataType filestoragetype, bool use_host_endian)
+{
+	ENTERFUNC;
+
+	EXITFUNC;
+
+	return 0;
+}
+
+int EerIO::read_data(float *rdata, int image_index, const Region * area, bool)
+{
+	ENTERFUNC;
+
+	EXITFUNC;
+
+	return 0;
+}
+
+int EerIO::write_data(float *data, int image_index, const Region* area,
+					  EMUtil::EMDataType, bool use_host_endian)
+{
+	ENTERFUNC;
+
+	EXITFUNC;
+	return 0;
+}
+
+
+bool EerIO::is_complex_mode()
+{
+	return false;
+}
+
+void EerIO::flush()
+{
+}
