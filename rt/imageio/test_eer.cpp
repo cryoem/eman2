@@ -79,7 +79,7 @@ uint8_t d5 = 0b10011001;
 uint8_t ab5[] = {a5, b5, c5, d5};
 
 void test_bit_reader() {
-	EerStream is5(ab5);
+	EerStream is5(reinterpret_cast<EerWord *>(ab5));
 	EerRle rle;
 
 	is5 >> rle;
@@ -93,7 +93,7 @@ void test_bit_reader() {
 }
 
 void test_eer_sub_pix() {
-	EerStream is6(ab5);
+	EerStream is6(reinterpret_cast<EerWord *>(ab5));
 	EerSubPix sub_pix;
 	EerRle rle6;
 
