@@ -143,6 +143,7 @@ def stopautoflush():
 # These are very widely used and hard to find, so some shortcuts
 # Image file types
 IMAGE_MRC = EMUtil.ImageType.IMAGE_MRC
+IMAGE_EER = EMUtil.ImageType.IMAGE_EER
 IMAGE_SPIDER = EMUtil.ImageType.IMAGE_SPIDER
 IMAGE_SINGLE_SPIDER = EMUtil.ImageType.IMAGE_SINGLE_SPIDER
 IMAGE_IMAGIC = EMUtil.ImageType.IMAGE_IMAGIC
