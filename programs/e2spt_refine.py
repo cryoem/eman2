@@ -233,9 +233,11 @@ def main():
 		if options.localfilter:
 			s+=" --tophat local "
 			
-		ppcmd="e2refine_postprocess.py --even {} --odd {} --output {} --iter {:d} --mass {} --threads {} --sym {} {} {} ".format(even, odd, os.path.join(options.path, "threed_{:02d}.hdf".format(itr)), itr, options.mass, options.threads, options.sym, msk, s)
-		run(ppcmd)
-		
+		# if we are doing local symmetry refinement or breaking the symmetry
+		# it's a bit counterproductive if we then apply symmetry here (as was happening before 8/22/20)
+		syms=f"--sym {options.sym}"
+		if options.symalimask!=None or options.breaksym: syms=""
+		run(f"e2refine_postprocess.py --even {even} --odd {odd} --output {options.path}threed_{itr:02d}.hdf --iter {itr:d} --mass {options.mass} --threads {options.threads} {syms} {msk} {s}")
 			
 		ref=os.path.join(options.path, "threed_{:02d}.hdf".format(itr))
 		fsc=np.loadtxt(os.path.join(options.path, "fsc_masked_{:02d}.txt".format(itr)))
