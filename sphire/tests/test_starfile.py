@@ -24,9 +24,6 @@ inputfile = '/home/adnan/Desktop/star_file_project/particles_optics.star'
 
 inputfile = '/home/adnan/PycharmProjects/newrelion/Refine3D/job056/run_data.star'
 
-
-
-
 outputfile = '/home/adnan/Desktop/star_file_project/newtest.star'
 star_file = star.StarFile(inputfile)
 
@@ -40,8 +37,17 @@ except:
 img = EMAN2.EMData()
 pp = img.read_images(inputfile, [0, 4, 5, 7])
 
-pp[0].write_image(outputfile)
+# pp[0].write_image(outputfile)
+# pp[1].write_image(outputfile)
 
+
+# EMAN2.EMData().write_image(outputfile, pp)
+
+for i, emdata in enumerate(pp):
+     emdata.write_image(outputfile, i)
+
+
+dd = EMAN2.EMData().read_images(outputfile.split('.star')[0]+'.mrcs')
 
 # bdbfile = 'bdb:/home/adnan/PycharmProjects/DoseWeighting/Relion_Stackv5/MotionCorr/job049/MOVIES_RELION/Particles/20170629_00021_frameImage_ptcls'
 

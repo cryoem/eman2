@@ -535,14 +535,17 @@ def db_set_header_star(img, data_dict, star_cla):
                 continue
             else:
                 value = data_dict[key]
-                print(key, value)
+                if type(value) == np.int64:
+                    value = np.int32(value)
+                else:
+                    value = value
                 img.set_attr(key, float(value))
 
     try:
         image_name = data_dict['_rlnImageName']
         number, file_name = image_name.split('@')
         img.set_attr("data_path", file_name)
-        img.set_attr("ptcl_source_coord_id", int(number)-1)
+        img.set_attr("ptcl_source_coord_id", int(number) - 1)
     except Exception as e:
         print('Yet unknown exception! This may lead to unknown behaviour')
         print(e)
@@ -620,27 +623,46 @@ def db_read_images(fsp, *parms):
         except KeyError:
             data = star_file['']
 
+        # if len(parms) > 0 :
+        #     image_data = data.iloc[parms[0]]
+        #     total_imgs = []
+        #     for file_name, group_data in pd.DataFrame(image_data['_rlnImageName'].str.split('@').tolist()).groupby(1) :
+        #         numbers = group_data[0].astype(int)
+        #         file_name = os.path.join('/home/adnan/PycharmProjects/newrelion/', file_name)
+        #         img = EMData.read_images_c(file_name, (numbers-1).tolist())
+        #         total_imgs.extend(img)
+        #     return total_imgs
+
         if len(parms) > 0:
             image_data = data.iloc[parms[0]]
             total_imgs = []
-            for file_name, group_data in pd.DataFrame(image_data['_rlnImageName'].str.split('@').tolist()).groupby(1):
-                numbers = group_data[0].astype(int)
+            for index in range(image_data.shape[0]):
+                numbers = int(image_data.iloc[index]['_rlnImageName'].split('@')[0])
+                file_name = image_data.iloc[index]['_rlnImageName'].split('@')[1]
                 file_name = os.path.join('/home/adnan/PycharmProjects/newrelion/', file_name)
-                total_imgs.extend(EMData.read_images_c(file_name, (numbers - 1).tolist()))
+                img = EMData.read_images_c(file_name, [(numbers - 1)])
+                db_set_header_star(img[0], image_data.iloc[index], star_file)
+                total_imgs.extend(img)
             return total_imgs
+
+        # elif len(parms) == 0 :
+        #     total_imgs = []
+        #     for file_name, group_data in pd.DataFrame(data['_rlnImageName'].str.split('@').tolist()).groupby(1):
+        #         numbers = group_data[0].astype(int)
+        #         file_name = os.path.join('/home/adnan/PycharmProjects/newrelion/', file_name)
+        #
+        #         total_imgs.extend(EMData.read_images_c(file_name, (numbers-1).tolist()))
+        #     return total_imgs
 
         elif len(parms) == 0:
             total_imgs = []
-            # for number , file_name in data['_rlnImageName'].str.split('@'):
-            #     img = EMData()
-            #     file_name = os.path.join('/home/adnan/PycharmProjects/newrelion/', file_name)
-            #     img.read_image_c(file_name, int(number)-1)
-            #     total_imgs.append(img)
-            for file_name, group_data in pd.DataFrame(data['_rlnImageName'].str.split('@').tolist()).groupby(1):
-                numbers = group_data[0].astype(int)
+            for index in range(data.shape[0]):
+                numbers = int(data.iloc[index]['_rlnImageName'].split('@')[0])
+                file_name = data.iloc[index]['_rlnImageName'].split('@')[1]
                 file_name = os.path.join('/home/adnan/PycharmProjects/newrelion/', file_name)
-
-                total_imgs.extend(EMData.read_images_c(file_name, (numbers - 1).tolist()))
+                img = EMData.read_images_c(file_name, [(numbers - 1)])
+                db_set_header_star(img[0], data.iloc[index], star_file)
+                total_imgs.extend(img)
             return total_imgs
 
     if len(parms) > 0 and (parms[0] == None or len(parms[0]) == 0):
@@ -690,14 +712,18 @@ def db_write_image(self, fsp, *parms):
         star_file = star.StarFile(fsp)
         if len(parms) == 0:
             parms = [0]
-        if len(parms) > 0:
-            part_number = str(parms[0] + 1) + '@'  # parms[0] == particle number
-        name = part_number + fsp.split('.star')[0] + '.mrcs'
-        a = pd.DataFrame(index=np.arange(1))
-        star_file['particles'] = a
-        star_file['particles'].loc[parms[0], '_rlnImageName'] = name
-        star_file.write_star_file(fsp, ['particles'])
-        self.write_image_c(fsp.split('.star')[0] + '.mrcs', *parms)
+            em_dict = self.get_attr_dict()
+            db_em_to_star_header(em_dict, star_file, fsp, parms[0])
+            star_file.write_star_file(fsp, ['particles'])
+            self.write_image_c(fsp.split('.star')[0] + '.mrcs', *parms)
+
+        else:
+            # writing in star files works but writing in mrcs file crashes (need some help from markus)
+            em_dict = self.get_attr_dict()
+            db_em_to_star_header(em_dict, star_file, fsp, parms[0])
+            star_file.write_star_file(fsp, ['particles'])
+            self.write_image_c(fsp.split('.star')[0] + '.mrcs', *parms)
+            # self.write_image_c(fsp.split('.star')[0]+'.mrcs', *parms)
         return
 
     return self.write_image_c(fsp, *parms)
@@ -705,6 +731,65 @@ def db_write_image(self, fsp, *parms):
 
 EMData.write_image_c = EMData.write_image
 EMData.write_image = db_write_image
+
+
+def db_em_to_star_header(em_dict, star_file, fsp, ptcl_no):
+    name = str(ptcl_no + 1) + fsp.split('.star')[0] + '.mrcs'
+    a = pd.DataFrame(index=np.arange(1))
+    star_file['particles'] = a
+    star_file.line_dict['is_loop'] = True
+
+    special_keys = ('ctf', 'xform.projection', 'ptcl_source_coord', 'xform.align2d')
+
+    for key in list(em_dict.keys()):
+        em_key = star_file.sphire_header_magic(key)
+        if em_key:
+            star_file['particles'].loc[ptcl_no + 1, em_key] = em_dict[key]
+        elif key[0:2] == '_r':
+            star_file['particles'].loc[ptcl_no + 1, key] = em_dict[key]
+        else:
+            if key in special_keys:
+                if key == 'ctf':
+                    ctfdict = em_dict[key].to_dict()
+                    defocus = ctfdict['defocus']
+                    star_file['particles'].loc[ptcl_no + 1, "_rlnDefocusU"] = (
+                            (20000 * ctfdict["defocus"] - 10000 * ctfdict["dfdiff"]) / 2
+                    )
+
+                    star_file['particles'].loc[ptcl_no + 1, "_rlnDefocusV"] = (
+                            20000 * ctfdict["defocus"] - star_file['particles'].loc[ptcl_no + 1, "_rlnDefocusU"]
+                    )
+                    star_file['particles'].loc[ptcl_no + 1, "_rlnCtfBfactor"] = ctfdict["bfactor"]
+                    star_file['particles'].loc[ptcl_no + 1, "_rlnAmplitudeContrast"] = ctfdict["ampcont"] / 100
+                    star_file['particles'].loc[ptcl_no + 1, "_rlnDetectorPixelSize"] = ctfdict["apix"]
+                    star_file['particles'].loc[ptcl_no + 1, "_rlnMagnification"] = 10000
+                    star_file['particles'].loc[ptcl_no + 1, "_rlnVoltage"] = ctfdict["voltage"]
+                    star_file['particles'].loc[ptcl_no + 1, "_rlnSphericalAberration"] = ctfdict["cs"]
+                    star_file['particles'].loc[ptcl_no + 1, "_rlnDefocusAngle"] = 45 - ctfdict["dfang"]
+
+                elif key == 'xform.projection':
+                    trans = em_dict[key].get_params("spider")
+                    star_file['particles'].loc[ptcl_no + 1, "_rlnAngleRot"] = trans["phi"]
+                    star_file['particles'].loc[ptcl_no + 1, "_rlnAngleTilt"] = trans["theta"]
+                    star_file['particles'].loc[ptcl_no + 1, "_rlnAnglePsi"] = trans["psi"]
+                    star_file['particles'].loc[ptcl_no + 1, "_rlnOriginX"] = -trans["tx"]
+                    star_file['particles'].loc[ptcl_no + 1, "_rlnOriginY"] = -trans["ty"]
+
+                elif key == 'xform.align2d':
+                    trans = em_dict[key].get_params("2d")
+                    star_file['particles'].loc[ptcl_no + 1, "_rlnAnglePsi"] = trans["alpha"]
+                    star_file['particles'].loc[ptcl_no + 1, "_rlnOriginX"] = -trans["tx"]
+                    star_file['particles'].loc[ptcl_no + 1, "_rlnOriginY"] = -trans["ty"]
+
+                elif key == 'ptcl_source_coord':
+                    star_file['particles'].loc[ptcl_no + 1, "_rlnCoordinateX"] = em_dict[key][0]
+                    star_file['particles'].loc[ptcl_no + 1, "_rlnCoordinateY"] = em_dict[key][1]
+                else:
+                    pass
+
+    part_path = str("{:08n}".format(ptcl_no + 1)) + '@' + em_dict["data_path"]
+    star_file['particles'].loc[ptcl_no + 1, '_rlnImageName'] = part_path
+    return
 
 
 def db_get_image_count(fsp):
