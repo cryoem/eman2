@@ -265,7 +265,7 @@ def main(args):
             fmt.append("%{0}.6f".format(max_length + 7))
         elif "int" in str(dtype_dict[name][0]):
             fmt.append("%{0}d".format(max_length))
-        elif "|S" in str(dtype_dict[name][0]):
+        elif "|U" in str(dtype_dict[name][0]) or "<U" in str(dtype_dict[name][0]):
             fmt.append("%{0}s".format(max_length))
         else:
             assert False
@@ -426,13 +426,13 @@ def import_partres_file(partres_file):
             ("max_resolution", float),
             ("amplitude_contrast", float),
             ("phase_shift", float),
-            ("micrograph_name", "|S1000"),
+            ("micrograph_name", "|U1000"),
         ]
         dtype_output_list = [
             ("_rlnDefocusU", float),
             ("_rlnDefocusV", float),
             ("_rlnDefocusAngle", float),
-            ("_rlnMicrographName", "|S1000"),
+            ("_rlnMicrographName", "|U1000"),
             ("_rlnDetectorPixelSize", float),
             ("_rlnMagnification", float),
             ("_rlnCtfMaxResolution", float),
@@ -626,10 +626,10 @@ def create_stack_dtype(particle_dict):
             ]
 
         elif key == "ptcl_source_image":
-            original_name[key] = [("_rlnMicrographName", "|S1000")]
+            original_name[key] = [("_rlnMicrographName", "|U1000")]
 
         elif key == "data_path":
-            original_name[key] = [("_rlnImageName", "|S1000")]
+            original_name[key] = [("_rlnImageName", "|U1000")]
 
         elif key == "ptcl_source_coord_id":
             original_name[key] = [("ptcl_source_coord_id", int)]
@@ -683,7 +683,7 @@ def create_stack_array(dtype_list, header_dict, output_dir, project_dir):
 	Particle array
 	"""
     final_dtype_list = [entry for entry in dtype_list if entry[0].startswith("_rln")]
-    particle_array = numpy.empty(len(header_dict.values()[0]), dtype=final_dtype_list)
+    particle_array = numpy.empty(len(list( header_dict.values() )[0] ), dtype=final_dtype_list)
     create_stack = False
 
     for key in header_dict:
