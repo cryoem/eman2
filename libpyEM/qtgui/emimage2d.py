@@ -2606,6 +2606,9 @@ class EMImageInspector2D(QtWidgets.QWidget):
 			defocus=f"&Delta;Z={ctfdef:1.5g}"
 		except: defocus=""
 		
+		try: ptclrepr=f"ptcl_repr={d['ptcl_repr']}"
+		except: ptclrepr=""
+
 		header=f"""<html><body>
 <p>Mouse buttons -> Application</p>
 <p/>
@@ -2613,7 +2616,7 @@ class EMImageInspector2D(QtWidgets.QWidget):
 <tr><td width="80">nx={d["nx"]:d}</td><td width="120">min={d["minimum"]:1.4g}</td><td width="120">apix_x={d["apix_x"]:1.3f}</td></tr>
 <tr><td width="80">ny={d["ny"]:d}</td><td width="120">max={d["maximum"]:1.4g}</td><td width="120">apix_y={d["apix_y"]:1.3f}</td></tr>
 <tr><td width="80">nz={d["nz"]:d}</td><td width="120">mean={d["mean"]:1.5g}</td><td width="120">apix_z={d["apix_z"]:1.3f}</td></tr>
-<tr><td width="80">{defocus}</td><td width="120">sigma={d["sigma"]:1.5g}</td><td/></tr>
+<tr><td width="80">{defocus}</td><td width="120">sigma={d["sigma"]:1.5g}</td>{ptclrepr}<td/></tr>
 </table></html>
 """
 		self.apptablab.setHtml(header)
