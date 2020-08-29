@@ -208,11 +208,12 @@ produce new sets/ for each class, which could be further-refined.
 	sets=[LSXFile("sets/{}_{:02d}_{:02d}.lst".format(options.path,options.iter,i)) for i in range(options.ncls)]
 	
 	# Initialize averages
-	avgs=[EMData(nx,ny,nz) for i in range(options.ncls)]
-	for a in avgs:
-		a["apix_x"]=hdr["apix_x"]
-		a["apix_y"]=hdr["apix_y"]
-		a["apix_z"]=hdr["apix_z"]
+#	avgs=[EMData(nx,ny,nz) for i in range(options.ncls)]
+	avgs=[Averagers.get("mean.tomo") for i in range(options.ncls)]
+#	for a in avgs:
+#		a["apix_x"]=hdr["apix_x"]
+#		a["apix_y"]=hdr["apix_y"]
+#		a["apix_z"]=hdr["apix_z"]
 	
 	# do the actual averaging
 	for n,im in enumerate(prjs):
@@ -226,7 +227,7 @@ produce new sets/ for each class, which could be further-refined.
 		ptcl=EMData(im["orig_file"],im["orig_n"])
 		xf=db[im["orig_key"]]["xform.align3d"]
 		ptcl.transform(xf)
-		avgs[cls].add(ptcl)		# add to the correct class average
+		avgs[cls].add_image(ptcl)		# add to the correct class average
 		
 		# If requested, we save the aligned (shrunken) volume to the stack for this class
 		if options.saveali: 
@@ -246,7 +247,7 @@ produce new sets/ for each class, which could be further-refined.
 		print("Class {}: {}".format(i,n))
 		centers[i].write_image("{}/classes_sec_{:02d}.hdf".format(options.path,options.iter),i)
 		if n>0 : avgs[i].mult(1.0/n)
-		avgs[i].write_image("{}/classes_{:02d}.hdf".format(options.path,options.iter),i)
+		avgs[i].finish().write_image("{}/classes_{:02d}.hdf".format(options.path,options.iter),i)
 		
 	if options.verbose: print("Done")
 
