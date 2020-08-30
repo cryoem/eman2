@@ -9648,6 +9648,7 @@ void TestImageCirclesphere::process_inplace(EMData * image)
 void TestImageHollowEllipse::process_inplace(EMData * image)
 {
 	preprocess(image);
+	image->to_zero();	// The testimage processors are supposed to replace the image contents
 
 	float width = params.set_default("width",2.0f);
 
@@ -9730,6 +9731,7 @@ void TestImageHollowEllipse::process_inplace(EMData * image)
 void TestImageEllipse::process_inplace(EMData * image)
 {
 	preprocess(image);
+	image->to_zero();	// The testimage processors are supposed to replace the image contents
 
 
 	float a = params.set_default("a",nx/2.0f-1.0f);
