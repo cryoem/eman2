@@ -38,6 +38,9 @@ import time
 
 def compress_files(jsd,i,fsps,options) :
 	"""calls a subprocess to do actual compression"""
+	if len(fsps)==0 :	# shouldn't happen, of course
+		jsd.put(i)
+		return
 	cmd="e2compress.py {}".format(" ".join(fsps))
 	cmd+=" "+commandoptions(options,("threads","ppid","positionalargs"))
 #	print(cmd)
@@ -152,11 +155,11 @@ e2compress.py --nooutliers --outpath ../micrographs_5bit --threads 32 -v 2 --bit
 			if outpath[-4:]!=".hdf" : outpath=outpath.rsplit(".",1)[0]+".hdf"
 			
 			N=EMUtil.get_image_count(f)
-			if options.verbose : print("Processing {} with {} images".format(f,N))
+			if options.verbose : print(f"Processing {f} with {N} images (->{tmpname})")
 			t0=time.time()
 			for i in range(N):
 				im=EMData(f,i)
-				if options.nooutliers : im.process_inplace("threshold.clampminmax.nsigma",{"tomean":1,"nsigma":5})
+				if options.nooutliers : im.process_inplace("threshold.clampminmax.nsigma",{"tomean":0,"nsigma":6})
 				im["render_bits"]=options.bits
 				if options.compresslevel!=None : im["render_compress_level"]=options.compresslevel
 				if options.range!=None:
@@ -170,9 +173,13 @@ e2compress.py --nooutliers --outpath ../micrographs_5bit --threads 32 -v 2 --bit
 				im.write_image(tmpname,i,IMAGE_UNKNOWN,0,None,EM_COMPRESSED)
 				
 			if options.verbose>1 : print("{:0.1f} s".format(time.time()-t0))
-			try: os.unlink(outpath)
-			except:pass
-			os.rename(tmpname,outpath)
+			if os.path.isfile(tmpname):
+				try: os.unlink(outpath)
+				except:pass
+				os.rename(tmpname,outpath)
+			else:
+				print(f"ERROR: temporary file not created: {tmpname}, cannot rename to {outpath}")
+				sys.exit(1)
 		
 	E2end(logid)
 
