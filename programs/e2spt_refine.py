@@ -50,7 +50,7 @@ def main():
 	parser.add_argument("--scipy",action="store_true",help="test scipy refinement",default=False)
 	parser.add_argument("--breaksym",action="store_true",help="break symmetry",default=False)
 	parser.add_argument("--breaksymsym", type=str,help="Specify a different symmetry for breaksym.", default=None)
-	parser.add_argument("--symalimask",type=str,default=None,help="This will translationally realign each asymmetric unit to the previous map masked by the specified mask. Note not the same as symalimasked in e2spt_average. This is a mask, not a reference. ")
+	parser.add_argument("--symalimask",type=str,default=None,help="This will translationally realign each asymmetric unit to the previous map masked by the specified mask. While this invokes symalimasked in e2spt_average, this isn't the same, it is a mask, not a masked reference. ")
 	
 	#parser.add_argument("--masktight", type=str,help="Mask_tight file", default="")
 
@@ -238,7 +238,17 @@ def main():
 		syms=f"--sym {options.sym}"
 		if options.symalimask!=None or options.breaksym: syms=""
 		run(f"e2refine_postprocess.py --even {even} --odd {odd} --output {options.path}threed_{itr:02d}.hdf --iter {itr:d} --mass {options.mass} --threads {options.threads} {syms} {msk} {s}")
-			
+
+		try: symn=int(options.sym[1:])
+		except: symn=0
+		if options.symalimask!=None and not options.breaksym and symn>0:
+			os.rename(f"{options.path}threed_{itr:02d}.hdf",f"{options.path}threed_{itr:02d}_nosym.hdf")
+			phir=360.0/(symn*2.0)
+			if   options.sym[0].lower()=="c":
+				run(f"e2proc3d.py {options.path}threed_{itr:02d}_nosym.hdf {options.path}threed_{itr:02d}.hdf --process mask.cylinder:phicen=0:phirange={phir-5.0}:phitriangle=1:phitrirange=10.0 --sym {options.sym}")
+			elif options.sym[0].lower()=="d":
+				run(f"e2proc3d.py {options.path}threed_{itr:02d}_nosym.hdf {options.path}threed_{itr:02d}.hdf --process mask.cylinder:phicen=0:phirange={phir-5.0}:phitriangle=1:phitrirange=10.0:zmin={data['nz']/2}:zmax={data['nz']} --sym {options.sym}")
+
 		ref=os.path.join(options.path, "threed_{:02d}.hdf".format(itr))
 		fsc=np.loadtxt(os.path.join(options.path, "fsc_masked_{:02d}.txt".format(itr)))
 		

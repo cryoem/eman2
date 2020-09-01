@@ -9,6 +9,8 @@ import queue
 import threading
 from EMAN2_utils import *
 from EMAN2jsondb import JSTask
+import os
+import sys
 
 global thrdone
 thrdone=0
@@ -75,7 +77,7 @@ def main():
 	parser.add_argument("--norewrite", action="store_true", default=False ,help="skip existing files. do not rewrite.")
 	parser.add_argument("--parallel", type=str,help="parallel", default="")
 	#parser.add_argument("--alioffset", type=str,help="coordinate offset when re-extract particles. (x,y,z)", default="0,0,0", guitype='strbox', row=12, col=0,rowspan=1, colspan=1, mode="extract")
-	parser.add_argument("--postxf", type=str,help="a file listing post transforms", default="")
+	parser.add_argument("--postxf", type=str,help="a file listing post transforms (see http://eman2.org/e2tomo_more), or for simple symmetry, <sym>,<cx>,<cy>,<cz> where the coordinates specify the center of a single subunit", default=None)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)	
 	parser.add_argument("--skip3d", action="store_true", default=False ,help="do not make 3d particles. only generate 2d particles and 3d header. ")
 
@@ -803,14 +805,30 @@ def parse_json(options):
 	### parse post transform file
 	xffile=options.postxf
 	postxfs=[]
-	if xffile!="":
-		f=open(xffile,'r')
-		lines=f.readlines()
-		f.close()
-		for l in lines:
-			if len(l)>3:
-				postxfs.append(Transform(eval(l)))
-				
+	if xffile!=None:
+		if os.path.isfile(xffile):
+			f=open(xffile,'r')
+			lines=f.readlines()
+			f.close()
+			for l in lines:
+				if len(l)>3:
+					postxfs.append(Transform(eval(l)))
+		else:
+			try:
+				xfsym,xc,yc,zc=xffile.split(",")
+				xc=float(xc)
+				yc=float(yc)
+				zc=float(zc)
+
+				sym=Symmetries.get(xfsym)
+				xf0=Transform({"type":"eman", "tx":xc, "ty":yc, "tz":zc})
+				for i in range(sym.get_nsym()):
+    					postxfs.append(sym.get_sym(i)*xf0)
+					
+			except:
+				print("ERROR: --postxf must be a filename or <sym>,<cx>,<cy>,<cz>")
+				sys.exit(1)
+
 		print("Extracting {} sub-particles per original particle".format(len(postxfs)))
 	else:
 		postxfs.append(Transform())
