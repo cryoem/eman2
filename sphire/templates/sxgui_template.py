@@ -1508,7 +1508,7 @@ class SXCmdWidget(QWidget):
 		elif file_format == "data2d_one":
 			# Read not supported: ;; JPEG (*.jpg *.jpeg)
 			# Maybe only 2D image stack: ;; MRCS (*.mrcs)
-			name = QFileDialog.getOpenFileName(self, "Select any image file", SXLookFeelConst.file_dialog_dir, "Typical image files (*.hdf *.bdb *.mrc *.spi *.img *.tif *.tiff *.png);; HDF (*.hdf);; BDB (*.bdb);; MRC (*.mrc);; Spider (*.spi);; Imagic (*.img);; TIFF (*.tif *.tiff);; PNG (*.png);; Gatan (*.dm2 *.dm3 *.dm4);; FEI (*.ser);; EM (*.em);; ICOS (*.icos);; Amira (*.am);; DF3 (*.d3);; FITS (*.fts);; LST (*.lst);; LSTFAST (*.lsx *.lst);; OMAP (*.omap);; PGM (*.pgm);; PIF (*.pif);; SAL (*.img );; SITUS (*.situs);; V4L (*.v4l);; VTK (*.vtk);; XPLOR (*.xplor);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			name = QFileDialog.getOpenFileName(self, "Select any image file", SXLookFeelConst.file_dialog_dir, "Typical image files (*.hdf *.bdb *.mrc *.spi *.img *.tif *.tiff *.png *.mrcs);; HDF (*.hdf);; BDB (*.bdb);; MRC (*.mrc *.mrcs);; Spider (*.spi);; Imagic (*.img);; TIFF (*.tif *.tiff);; PNG (*.png);; Gatan (*.dm2 *.dm3 *.dm4);; FEI (*.ser);; EM (*.em);; ICOS (*.icos);; Amira (*.am);; DF3 (*.d3);; FITS (*.fts);; LST (*.lst);; LSTFAST (*.lsx *.lst);; OMAP (*.omap);; PGM (*.pgm);; PIF (*.pif);; SAL (*.img );; SITUS (*.situs);; V4L (*.v4l);; VTK (*.vtk);; XPLOR (*.xplor);; All files (*)", options = QFileDialog.DontUseNativeDialog)
 			if isinstance(name, tuple):
 				file_path = str(name[0])
 			else:
