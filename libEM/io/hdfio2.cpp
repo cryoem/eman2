@@ -1452,6 +1452,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 	short *sdata = NULL;
 
 	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, renderbits, nz);
+	int rendertrunc = 0;	// keep track of truncated pixels
 //	printf("RMM  %f  %f\n",rendermin,rendermax);
 
 	// Limiting values for signed and unsigned with specified bits
@@ -1536,9 +1537,11 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			for (size_t i = 0; i < size; ++i) {
 				if (data[i] <= rendermin) {
 					sdata[i] = (short)RSMIN;
+					rendertrunc++;
 				}
 				else if (data[i] >= rendermax) {
 					sdata[i] = (short)RSMAX;
+					rendertrunc++;
 				}
 				else {
 					sdata[i]=(short)roundf((data[i]-rendermin)/(rendermax-rendermin)*(RSMAX-RSMIN)+RSMIN);
@@ -1561,9 +1564,11 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			for (size_t i = 0; i < size; ++i) {
 				if (data[i] <= rendermin) {
 					usdata[i] = 0;
+					rendertrunc++;
 				}
 				else if (data[i] >= rendermax) {
 					usdata[i] = (unsigned short)RUMAX;
+					rendertrunc++;
 				}
 				else {
 					usdata[i]=(unsigned short)roundf((data[i]-rendermin)/(rendermax-rendermin)*RUMAX);
@@ -1586,9 +1591,11 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			for (size_t i = 0; i < size; ++i) {
 				if (data[i] <= rendermin) {
 					cdata[i] = (char) RSMIN;
+					rendertrunc++;
 				}
 				else if (data[i] >= rendermax){
 					cdata[i] = (char) RSMAX;
+					rendertrunc++;
 				}
 				else {
 					cdata[i]=(char)roundf((data[i]-rendermin)/(rendermax-rendermin)*(RSMAX-RSMIN)+RSMIN);
@@ -1611,9 +1618,11 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			for (size_t i = 0; i < size; ++i) {
 				if (data[i] <= rendermin) {
 					ucdata[i] = 0;
+					rendertrunc++;
 				}
 				else if (data[i] >= rendermax){
 					ucdata[i] = (unsigned char)RUMAX;
+					rendertrunc++;
 				}
 				else {
 					ucdata[i]=(unsigned char)roundf((data[i]-rendermin)/(rendermax-rendermin)*RUMAX);
@@ -1638,9 +1647,11 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 				for (size_t i = 0; i < size; ++i) {
 					if (data[i] <= rendermin) {
 						ucdata[i] = 0;
+						rendertrunc++;
 					}
 					else if (data[i] >= rendermax){
 						ucdata[i] = (unsigned char)RUMAX;
+						rendertrunc++;
 					}
 					else {
 						ucdata[i]=(unsigned char)roundf((data[i]-rendermin)/(rendermax-rendermin)*RUMAX);
@@ -1657,9 +1668,11 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 				for (size_t i = 0; i < size; ++i) {
 					if (data[i] <= rendermin) {
 						usdata[i] = 0;
+						rendertrunc++;
 					}
 					else if (data[i] >= rendermax) {
 						usdata[i] = (unsigned short)RUMAX;
+						rendertrunc++;
 					}
 					else {
 						usdata[i]=(unsigned short)roundf((data[i]-rendermin)/(rendermax-rendermin)*RUMAX);
@@ -1693,9 +1706,11 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			for (size_t i = 0; i < size; ++i) {
 				if (data[i] <= rendermin) {
 					sdata[i] = (short)RSMIN;
+					rendertrunc++;
 				}
 				else if (data[i] >= rendermax) {
 					sdata[i] = (short)RSMAX;
+					rendertrunc++;
 				}
 				else {
 					sdata[i]=(short)roundf((data[i]-rendermin)/(rendermax-rendermin)*(RSMAX-RSMIN)+RSMIN);
@@ -1714,9 +1729,11 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			for (size_t i = 0; i < size; ++i) {
 				if (data[i] <= rendermin) {
 					usdata[i] = 0;
+					rendertrunc++;
 				}
 				else if (data[i] >= rendermax) {
 					usdata[i] = (unsigned short)RUMAX;
+					rendertrunc++;
 				}
 				else {
 					usdata[i]=(unsigned short)roundf((data[i]-rendermin)/(rendermax-rendermin)*RUMAX);
@@ -1735,9 +1752,11 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			for (size_t i = 0; i < size; ++i) {
 				if (data[i] <= rendermin) {
 					cdata[i] = (char) RSMIN;
+					rendertrunc++;
 				}
 				else if (data[i] >= rendermax){
 					cdata[i] = (char) RSMAX;
+					rendertrunc++;
 				}
 				else {
 					cdata[i]=(char)roundf((data[i]-rendermin)/(rendermax-rendermin)*(RSMAX-RSMIN)+RSMIN);
@@ -1756,9 +1775,11 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			for (size_t i = 0; i < size; ++i) {
 				if (data[i] <= rendermin) {
 					ucdata[i] = 0;
+					rendertrunc++;
 				}
 				else if (data[i] >= rendermax){
 					ucdata[i] = (unsigned char)RUMAX;
+					rendertrunc++;
 				}
 				else {
 					ucdata[i]=(unsigned char)roundf((data[i]-rendermin)/(rendermax-rendermin)*RUMAX);
@@ -1779,9 +1800,11 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 				for (size_t i = 0; i < size; ++i) {
 					if (data[i] <= rendermin) {
 						ucdata[i] = 0;
+						rendertrunc++;
 					}
 					else if (data[i] >= rendermax) {
 						ucdata[i] = (unsigned char)RUMAX;
+						rendertrunc++;
 					}
 					else {
 						ucdata[i]=(unsigned char)roundf((data[i]-rendermin)/(rendermax-rendermin)*RUMAX);
@@ -1798,9 +1821,11 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 				for (size_t i = 0; i < size; ++i) {
 					if (data[i] <= rendermin) {
 						usdata[i] = 0;
+						rendertrunc++;
 					}
 					else if (data[i] >= rendermax) {
 						usdata[i] = (unsigned short)RUMAX;
+						rendertrunc++;
 					}
 					else {
 						usdata[i]=(unsigned short)roundf((data[i]-rendermin)/(rendermax-rendermin)*RUMAX);
@@ -1832,6 +1857,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 		write_attr(igrp,"EMAN.stored_rendermin",EMObject(rendermin));
 		write_attr(igrp,"EMAN.stored_rendermax",EMObject(rendermax));
 		write_attr(igrp,"EMAN.stored_renderbits",EMObject(renderbits));
+		write_attr(igrp,"EMAN.stored_truncated",EMObject(rendertrunc));
 		H5Gclose(igrp);
 	}
 

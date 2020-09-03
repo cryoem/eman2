@@ -55,10 +55,8 @@ converts a list of image files to compressed hdf files. If the input file is als
 the file extension. When read by EMAN2, compressed HDF files will be rescaled to their original (rounded) values, not the integer
 values stored in the file. If read using other software it is likely that the integer values will be seen.
 
-The --nooutliers option will truncate any image values more than 5 standard deviations from the mean. This option is very strongly recommended,
-otherwise outliers may force the real data to occupy only 1 or 2 bits. While this will produce extremely good compression, the information
-loss may be severe. It is also possible to further limit the range of current image values with the --range and/or --sigrange options, but in
-most cases this additional truncation is not desirable. If used, --sigrange 3,3 is a reasonable choice.
+The --nooutliers option will truncate extreme image values. This is an ALTERNATIVE to specifying --range or --sigrange. This will eliminate 
+a small fraction of the most extreme values in the images.
 
 Default behavior is to perform 10 bit integer compression, which is sufficient for pretty much any CryoEM image file
 or reconstruction. Raw movie frames may need only 2-4 bits and aligned averaged micrographs are likely to be fine with 4-6 bits, so it
@@ -92,7 +90,7 @@ e2compress.py --nooutliers --outpath ../micrographs_5bit --threads 32 -v 2 --bit
 
 	parser.add_argument("--bits",type=int,help="Bits to retain in the output file, 0 or 2-16. 0 is a flag indicating the native floating point format.",default=10)
 	parser.add_argument("--compresslevel",type=int,help="Compression level to use when writing. No impact on image quality, but large impact on speed. Default = 1",default=None)
-	parser.add_argument("--nooutliers",action="store_true",default=False,help="Removes outliers (>5*sigma from mean) before compression/ranging. ie - sigma will be recomputed for compression")
+	parser.add_argument("--nooutliers",action="store_true",default=False,help="will set --range to eliminate a few of the most extreme values from both ends of the histogram")
 	parser.add_argument("--range",type=str,help="Specify <minval>,<maxval> representing the largest and smallest values to be saved in the output file. Automatic if unspecified.",default=None)
 	parser.add_argument("--sigrange",type=str,help="Specify <minsig>,<maxsig>, eg- 4,4 Number of standard deviations below and above the mean to retain in the output. Default is not to truncate. 4-5 is usually safe.",default=None)
 	parser.add_argument("--outpath",type=str,help="Specify a destination folder for the compressed files. This will avoid overwriting existing files.", default=None);
@@ -103,8 +101,11 @@ e2compress.py --nooutliers --outpath ../micrographs_5bit --threads 32 -v 2 --bit
 
 	(options, args) = parser.parse_args()
 	
-	if options.range!=None and options.sigrange!=None:
-		print("ERROR: only one of --range and --sigrange may be specified")
+	c=0
+	if options.range!=None : c+=1
+	if options.sigrange!=None : c+=1
+	if options.nooutliers : c+=1
+	if c>1 : print("WARNING: only one of --nooutliers, --range and --sigrange should be specified")
 
 	if options.outpath!=None and not os.path.isdir(options.outpath):
 		print("ERROR: --outpath must specify an existing, writable directory")
@@ -159,10 +160,26 @@ e2compress.py --nooutliers --outpath ../micrographs_5bit --threads 32 -v 2 --bit
 			t0=time.time()
 			for i in range(N):
 				im=EMData(f,i)
-				if options.nooutliers : im.process_inplace("threshold.clampminmax.nsigma",{"tomean":0,"nsigma":6})
+
 				im["render_bits"]=options.bits
 				if options.compresslevel!=None : im["render_compress_level"]=options.compresslevel
-				if options.range!=None:
+				if options.nooutliers :
+					nxyz=im.get_size()
+					maxout=max(nxyz//20000,8)		# at most 1 in 20000 pixels should be considered an outlier on each end
+					h0=im["minimum"]
+					h1=im["maximum"]
+					hs=(h1-h0)/1023
+					hist=im.calc_hist(1024,h0,h1)
+					
+					#ok, we're doing this approximately
+					for sl in range(512):
+						if sum(hist[:sl])>maxout: break
+					for sh in range(1023,512,-1):
+						if sum(hist[sh:])>maxout: break
+
+					im["render_min"]=sl*hs+h0
+					im["render_max"]=(sh+1)*hs+h0
+				elif options.range!=None:
 					rendermin,rendermax=options.range.split(",")
 					im["render_min"]=float(rendermin)
 					im["render_max"]=float(rendermax)
