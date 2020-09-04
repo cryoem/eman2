@@ -56,6 +56,7 @@ def main():
 	parser.add_argument("--notmp", action="store_true",help="Do not write temporary files.", default=False, mode="easy[True]", guitype="boolbox", row=10,col=1, rowspan=1, colspan=1)
 
 	parser.add_argument("--pkkeep", type=float,help="Fraction of landmarks to keep in the tracking.", default=.9,guitype='floatbox',row=11, col=1, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--compressbits", type=int,help="Number of bits of precision in output tomogram with lossless compression. -1 -> uncompressed float", default=-1,guitype='intbox',row=11, col=0, rowspan=1, colspan=1,mode="easy[8]")
 
 	parser.add_argument("--clipz", type=int,help="Z thickness of the final tomogram output. default is -1, (5/16 of tomogram length)", default=-1,guitype='intbox',row=9, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--bxsz", type=int,help="Box size of the particles for tracking. Default is 32. Maybe helpful to use a larger one for fiducial-less cases..", default=32, guitype='intbox',row=5, col=1, rowspan=1, colspan=1,mode="easy")
@@ -221,8 +222,8 @@ def main():
 	if options.writetmp:
 		inppath=os.path.join(options.tmppath,"tltseries_input.hdf")
 		for i,m in enumerate(imgs_1k):
-			m.write_image(inppath, i)
-		
+			if options.compressbits<0: m.write_image(inppath, i)
+			else: m.write_compressed(inppath, i, options.compressbits, nooutliers=True)
 	
 	if options.load:
 		#### loading parameters from json file
@@ -324,7 +325,8 @@ def main():
 			
 			if options.writetmp:
 				for i,m in enumerate(img_tali):
-					m.write_image(os.path.join(options.tmppath,"tltseries_transali.hdf"), i)
+					if options.compressbits<0: m.write_image(os.path.join(options.tmppath,"tltseries_transali.hdf"), i)
+					else: m.write_compressed(os.path.join(options.tmppath,"tltseries_transali.hdf"), i,options.compressbits,nooutliers=True)
 			
 			#### this is the matrix that save the alignment parameters
 			pretrans*=img_tali[0]["apix_x"]/options.apix_init  #### since the pretrans is calculated from 500x500 images..
@@ -467,7 +469,8 @@ def main():
 	if options.posz:
 		threed=make_tomogram(imgs_500, ttparams, options, errtlt=loss0, clipz=360)
 		if options.writetmp:
-			threed.write_image(os.path.join(path,"tomo_posz.hdf"))
+			if options.compressbits<0: threed.write_image(os.path.join(path,"tomo_posz.hdf"))
+			else: threed.write_compressed(os.path.join(path,"tomo_posz.hdf"),0,options.compressbits,nooutliers=True)
 			
 		ttparams=correct_zpos(threed, ttparams, options)
 		
@@ -498,7 +501,8 @@ def main():
 			threed=make_tomogram(imgout, ttparams, options, errtlt=loss0, clipz=options.clipz)
 
 		if options.writetmp:
-			threed.write_image(os.path.join(path,"tomo_final.hdf"))
+			if options.compressbits<0: threed.write_image(os.path.join(path,"tomo_final.hdf"))
+			else: threed.write_compressed(os.path.join(path,"tomo_final.hdf"),0,options.compressbits,nooutliers=True)
 			make_ali(imgout, ttparams, options, outname=os.path.join(path,"tiltseries_ali.hdf"))
 
 		#### write to the tomogram folder
@@ -512,7 +516,8 @@ def main():
 		tomoname=os.path.join("tomograms", options.basename+sfx+".hdf")
 		threed["ytilt"]=yrot
 		
-		threed.write_image(tomoname)
+		if options.compressbits<0: threed.write_image(tomoname)
+		else: threed.write_compressed(tomoname,0,options.compressbits,nooutliers=True)
 		print("Tomogram written to {}".format(tomoname))
 	
 	#### save alignemnt parameters to info file
@@ -642,7 +647,8 @@ def remove_beads(imgs_500, imgout, ttparams, options):
 	threed.process_inplace("filter.highpass.gauss",{"cutoff_freq":1./50})
 	threed.process_inplace("normalize")
 	if options.writetmp:
-		threed.write_image(os.path.join(options.tmppath, "tomo_rmbead.hdf"))
+		if options.compressbits<0: threed.write_image(os.path.join(options.tmppath, "tomo_rmbead.hdf"))
+		else: threed.write_compressed(os.path.join(options.tmppath, "tomo_rmbead.hdf"),0,options.compressbits,nooutliers=False)
 	
 	vthr=options.rmbeadthr
 	img=threed.numpy().T.copy()
@@ -1210,7 +1216,8 @@ def make_tomogram(imgs, tltpm, options, outname=None, padr=1.2,  errtlt=[], clip
 	if options.normslice and outxy>1000:
 		threed.process_inplace("normalize.rows")
 	if outname:
-		threed.write_image(outname)
+		if options.compressbits<0: threed.write_image(outname)
+		else: threed.write_compressed(outname,0,options.compressbits,nooutliers=True)
 		if options.verbose: print("Map written to {}.".format(outname))
 
 	return threed
@@ -1266,7 +1273,8 @@ def make_ali(imgs, tpm, options, outname=None):
 		po.rotate(-tpm[2],0,0)
 		xform=Transform({"type":"xyz","ytilt":tpm[3],"xtilt":tpm[4]})
 		po["xform.projection"]=xform
-		po.write_image(outname, nid)
+		if options.compressbits<0: po.write_image(outname, nid)
+		else po.write_compressed(outname,nid,options.compressbits,nooutliers=True)
 
 #### search for alignment landmarks in the tomogram
 def find_landmark(threed, options):

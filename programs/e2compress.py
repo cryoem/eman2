@@ -173,12 +173,12 @@ e2compress.py --nooutliers --outpath ../micrographs_5bit --threads 32 -v 2 --bit
 					
 					#ok, we're doing this approximately
 					for sl in range(512):
-						if sum(hist[:sl])>maxout: break
+						if sum(hist[:sl+1])>maxout: break
 					for sh in range(1023,512,-1):
 						if sum(hist[sh:])>maxout: break
 
 					im["render_min"]=sl*hs+h0
-					im["render_max"]=(sh+1)*hs+h0
+					im["render_max"]=(sh)*hs+h0
 				elif options.range!=None:
 					rendermin,rendermax=options.range.split(",")
 					im["render_min"]=float(rendermin)
