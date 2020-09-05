@@ -73,6 +73,7 @@ def main():
 	parser.add_argument("--import_tiltseries",action="store_true",help="Import tiltseries",default=False, guitype='boolbox', row=5, col=2, rowspan=1, colspan=1, mode='tiltseries[True]')
 	parser.add_argument("--rawtlt",help="Specify an imod/serialem rawtlt file, and imported tilt series will be sorted in tilt sequence instead of collection sequence, 'auto' will attempt to find a .tlt file automatically", default=None, guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)",  row=1, col=0, rowspan=1, colspan=2, mode='tiltseries')
 	parser.add_argument("--import_tomos",action="store_true",help="Import tomograms for segmentation and/or subtomogram averaging",default=False, guitype='boolbox', row=4, col=2, rowspan=1, colspan=1, mode='tomos[True]')
+	parser.add_argument("--compressbits", type=int,help="Bits to keep for compression. default is -1 meaning uncompressed floating point. Currently used only on tiltseries and eman1", default=-1,guitype='intbox',row=9, col=2, rowspan=1, colspan=1, mode="tiltseries[8]")
 
 
 	#parser.add_argument("--rawtlt",help="List the text file containing tilt angles for the tiltseries to be imported.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)",  row=3, col=0, rowspan=1, colspan=3, nosharedb=True, mode='tiltseries')
@@ -162,7 +163,8 @@ def main():
 			# unflip the EMAN1 phases (hopefully accurate enough)
 			fft1.mult(flipim)
 			img=fft1.do_ift()
-			img.write_image("particles/particles{:03d}.hdf".format(imgnum),-1)		# append particle to stack
+			if options.compressbits<0: img.write_image("particles/particles{:03d}.hdf".format(imgnum),-1)		# append particle to stack
+			else: img.write_compressed("particles/particles{:03d}.hdf".format(imgnum),-1,options.compressbits,options.nooutliers=True)		# append particle to stack
 
 		if options.curdefocusfix:
 			flag="--curdefocusfix"
@@ -446,7 +448,8 @@ with the same name, you should specify only the .hed files (no renaming is neces
 							img["apix_y"]=options.apix
 							img["apix_z"]=options.apix
 						img["rawtlt"]=tlt
-						img.write_image(newname,seq)
+						if options.compressbits<0: img.write_image(newname,seq)
+						else: img.write_compressed(newname,seq,options.compressbits,nooutliers=True)
 						seq+=1
 
 				print("Done.")
