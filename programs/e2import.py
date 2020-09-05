@@ -164,7 +164,7 @@ def main():
 			fft1.mult(flipim)
 			img=fft1.do_ift()
 			if options.compressbits<0: img.write_image("particles/particles{:03d}.hdf".format(imgnum),-1)		# append particle to stack
-			else: img.write_compressed("particles/particles{:03d}.hdf".format(imgnum),-1,options.compressbits,options.nooutliers=True)		# append particle to stack
+			else: img.write_compressed("particles/particles{:03d}.hdf".format(imgnum),-1,options.compressbits,nooutliers=True)		# append particle to stack
 
 		if options.curdefocusfix:
 			flag="--curdefocusfix"
