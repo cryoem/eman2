@@ -615,7 +615,7 @@ may require 8 or more bits.
 			im["render_max"]=im["maximum"]
 		
 		# would like to use the new write_images, but it isn't quite ready yet.
-		im.write_image(fsp,i+n,EMUtil.ImageType.IMAGE_UNKNOWN,0,None,EM_COMPRESSED)
+		im.write_image(fsp,i+n,EMUtil.ImageType.IMAGE_UNKNOWN,0,None,EMUtil.EMDataType.EM_COMPRESSED)
 	
 EMData.write_compressed=im_write_compressed
 
