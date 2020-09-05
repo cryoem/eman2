@@ -716,14 +716,14 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 			threed["xform.align3d"]=tf_dir
 		
 		
-		if options.saveint and options.compress<0:
-			#### save as integers
-			lst=[threed]+projs
-			outmode=file_mode_map["uint8"]
-			for data in lst:
-				data.process_inplace("math.setbits",{"nsigma":3, "bits":8})
-				data["render_min"]=file_mode_range[outmode][0]
-				data["render_max"]=file_mode_range[outmode][1]
+		#if options.saveint and options.compress<0:
+			##### save as integers
+			#lst=[threed]+projs
+			#outmode=file_mode_map["uint8"]
+			#for data in lst:
+				#data.process_inplace("math.setbits",{"nsigma":3, "bits":8})
+				#data["render_min"]=file_mode_range[outmode][0]
+				#data["render_max"]=file_mode_range[outmode][1]
 		
 		jsd.put((pid, threed, projs))
 		#recon.clear()
