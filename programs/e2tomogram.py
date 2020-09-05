@@ -1274,7 +1274,7 @@ def make_ali(imgs, tpm, options, outname=None):
 		xform=Transform({"type":"xyz","ytilt":tpm[3],"xtilt":tpm[4]})
 		po["xform.projection"]=xform
 		if options.compressbits<0: po.write_image(outname, nid)
-		else po.write_compressed(outname,nid,options.compressbits,nooutliers=True)
+		else: po.write_compressed(outname,nid,options.compressbits,nooutliers=True)
 
 #### search for alignment landmarks in the tomogram
 def find_landmark(threed, options):
