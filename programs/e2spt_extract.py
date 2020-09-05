@@ -499,7 +499,7 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 				except: pji=0
 				pjids=[]
 				for i,pj in enumerate(projs):
-					if options.compressbits<1 : pj.write_image(options.output2d, pji)
+					if options.compressbits<0 : pj.write_image(options.output2d, pji)
 					else: pj.write_compressed(options.output2d,pji,options.compressbits,nooutliers=True)
 					pjids.append(pji)
 					pji+=1
@@ -507,8 +507,8 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 				threed["class_ptcl_src"]=options.output2d
 				threed["class_ptcl_idxs"]=pjids
 
-				if options.compressbits<1: threed.write_image(options.output, pid)
-				else: threed:write_compressed(options.output, pid)
+				if options.compressbits<0: threed.write_image(options.output, pid)
+				else: threed.write_compressed(options.output, pid,options.compressbits,nooutliers=True)
 				
 				ndone+=1
 				if options.verbose>0:
