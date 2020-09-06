@@ -195,7 +195,7 @@ input volumes.
 		overlap=6
 		
 	if options.localsize==-1 : 
-		lnx=int(old_div(32,apix))
+		lnx=32//apix
 		if lnx<16: lnx=16
 		lnx=(((lnx-1)//overlap)+1)*overlap
 	else: lnx=options.localsize

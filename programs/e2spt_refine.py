@@ -20,7 +20,7 @@ def main():
 	parser.add_argument("--maskalign", type=str,help="Mask file applied to 3D alignment reference in each iteration. Not applied to the average, which will follow normal masking routine.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=4, col=0,rowspan=1, colspan=3, mode="model")
 
 	parser.add_argument("--niter", type=int,help="Number of iterations", default=5, guitype='intbox',row=5, col=0,rowspan=1, colspan=1, mode="model")
-	parser.add_argument("--sym", type=str,help="symmetry", default="c1", guitype='strbox',row=4, col=5,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--sym", type=str,help="symmetry", default="c1", guitype='strbox',row=5, col=1,rowspan=1, colspan=1, mode="model")
 	
 	parser.add_argument("--mass", type=float,help="mass. default -1 will skip by mass normalization", default=-1, guitype='floatbox',row=5, col=2,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--localfilter", action="store_true", default=False ,help="use tophat local", guitype='boolbox',row=6, col=2,rowspan=1, colspan=1, mode="model")
@@ -237,7 +237,7 @@ def main():
 		# it's a bit counterproductive if we then apply symmetry here (as was happening before 8/22/20)
 		syms=f"--sym {options.sym}"
 		if options.symalimask!=None or options.breaksym: syms=""
-		run(f"e2refine_postprocess.py --even {even} --odd {odd} --output {options.path}threed_{itr:02d}.hdf --iter {itr:d} --mass {options.mass} --threads {options.threads} {syms} {msk} {s}")
+		run(f"e2refine_postprocess.py --even {even} --odd {odd} --output {options.path}threed_{itr:02d}.hdf --iter {itr:d} --tomo --mass {options.mass} --threads {options.threads} {syms} {msk} {s}")
 
 		try: symn=int(options.sym[1:])
 		except: symn=0
