@@ -57,6 +57,7 @@ def main():
 	parser.add_argument("--setsf",type=str,help="Force the structure factor to match a 'known' curve prior to postprocessing (<filename>, none). default=none",default="none")
 	parser.add_argument("--iter", dest = "iter", type = int, default=-1, help = "Iteration number to generate FSC filenames")
 	parser.add_argument("--align",action="store_true",default=False,help="Will do o to e alignment and test for handedness flips. Should not be repeated as it overwrites the odd file with the aligned result.")
+	parser.add_argument("--tomo",action="store_true",default=False,help="Modifies settings to be more appropriate for typical subtomogram averaging")
 	parser.add_argument("--tophat",type=str,default=None,help="'global' or 'local'. Final Wiener filter disabled, and replaced by a tophat filter either across the map at 0.143 as Relion appears to do, or locally based on e2fsc.py results")
 	parser.add_argument("--ampcorrect",choices=['strucfac', 'flatten','none'],default="strucfac",help="Will perform amplitude correction via the specified method. The default choice is strucfac.")
 	parser.add_argument("--ncmult",type=float,default=1.05,help="Specify how much to multiply noise cutoff during flattening amplitude correction. Default is 1.05.")
@@ -393,7 +394,10 @@ def main():
 				combfile=combfile,path=path,itr=options.iter,normproc=massnorm,ampcorrect=ampcorrect,postproc=m3dpostproc,symopt=symopt,underfilter=underfilter,maxfreq=old_div(1.0,options.restarget),noisecutoff=noisecutoff))
 		elif options.tophat=="local":
 			# compute local resolution and locally filter averaged volume
-			cmd="e2fsc.py {path}threed_even_unmasked.hdf {path}threed_odd_unmasked.hdf --output {path}fscvol_{itr:02d}.hdf --outfilt {path}threed_{itr:02d}.hdf --outfilte {path}threed_{itr:02d}_even.hdf --outfilto {path}threed_{itr:02d}_odd.hdf --mask {path}mask.hdf --threads {threads} -v 1".format(path=path,itr=options.iter,threads=options.threads)
+			if options.tomo: localsize=max(16,100//apix)
+			else: localsize=max(16,32//apix)
+			cmd="e2fsc.py {path}threed_even_unmasked.hdf {path}threed_odd_unmasked.hdf --output {path}fscvol_{itr:02d}.hdf --outfilt {path}threed_{itr:02d}.hdf --outfilte {path}threed_{itr:02d}_even.hdf --outfilto {path}threed_{itr:02d}_odd.hdf --mask {path}mask.hdf --threads {threads} --localsize {localsize} -v 1".format(
+				path=path,itr=options.iter,threads=options.threads,localsize=localsize)
 			run(cmd)
 
 			# we impose the symmetry in real-space, since this is what people expect

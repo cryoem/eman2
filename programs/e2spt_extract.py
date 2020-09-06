@@ -697,12 +697,16 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 				threed.process_inplace(filtername, param_dict)
 				
 			if mask:
-				if tf_dir:
-					m=mask.copy()
-					m.transform(tf_dir.inverse())
-					threed.mult(m)
-				else:
-					threed.mult(mask)
+				try:
+					if tf_dir:
+						m=mask.copy()
+						m.transform(tf_dir.inverse())
+						threed.mult(m)
+					else:
+						threed.mult(mask)
+				except: 
+					print(f'Mask error, size mismatch volume->{threed["nx"]} mask->{mask["nx"]}')
+					raise Exception()
 				
 		
 		threed["apix_x"]=threed["apix_y"]=threed["apix_z"]=apixout
