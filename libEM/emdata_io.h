@@ -157,14 +157,26 @@ static vector<std::shared_ptr<EMData>> read_images(const string & filename,
 									  vector<int> img_indices = vector<int>(),
 									  bool header_only = false);
 
-static bool write_images(const string & filename,
-									  vector<std::shared_ptr<EMData>> imgs);
-
-
-/** Print the image data to a file stream (standard out by default).
- * @param out Output stream; cout by default.
- * @param str Message string to be printed.
+/** Write a set of images to file specified by 'filename'.
+ * Which images are written is set by 'imgs'.
+ * @param filename The image file name.
+ * @param imgs Which images are written.
+ * @param imgtype Write to the given image format type. if not
+ *        specified, use the 'filename' extension to decide.
+ * @param header_only To write only the header or both header and data.
+ * @param region Define the region to write to.
+ * @param filestoragetype The image data type used in the output file.
+ * @param use_host_endian To write in the host computer byte order.
+ * @return True if set of images are written successfully to filename.
  */
+static bool write_images(const string & filename,
+									  vector<std::shared_ptr<EMData>> imgs,
+									  EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN,
+									  bool header_only = false,
+									  const Region * region = nullptr,
+									  EMUtil::EMDataType filestoragetype = EMUtil::EM_FLOAT,
+									  bool use_host_endian = true);
+
 friend ostream& operator<<(ostream& out, const EMData& obj);
 
 #endif	//emdata__io_h__
