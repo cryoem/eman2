@@ -1403,11 +1403,12 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			{
 //				printf("COMPRESSING!\n");
 				hid_t plist = H5Pcreate(H5P_DATASET_CREATE);
-				hsize_t cdims[3] = { nx>256?256:nx, ny>256?256:ny, 1};		// slice-wise reading common in 3D so 2-D chunks
 				if (nz==1) {
+					hsize_t cdims[2] = { ny>256?256:ny, nx>256?256:nx};		// slice-wise reading common in 3D so 2-D chunks
 					H5Pset_chunk(plist,2,cdims);	// uses only the first 2 elements
 				}
 				else {
+					hsize_t cdims[3] = { 1, ny>256?256:ny, nx>256?256:nx};		// slice-wise reading common in 3D so 2-D chunks
 					H5Pset_chunk(plist,3,cdims);
 				}
 //				H5Pset_scaleoffset(plist,H5Z_SO_FLOAT_DSCALE,2);  // doesn't seem to work right?, anyway some conceptual problems
