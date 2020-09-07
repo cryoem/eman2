@@ -172,8 +172,8 @@ produce new sets/ for each class, which could be further-refined.
 		while not jsd.empty():
 			i,k,all=jsd.get()
 			prjs[i]=all
-			#all.write_compressed("{}/alisecs_{:02d}.hdf".format(options.path,options.iter),i,8)
-			all.write_image("{}/alisecs_{:02d}.hdf".format(options.path,options.iter),i)
+			all.write_compressed("{}/alisecs_{:02d}.hdf".format(options.path,options.iter),i,8)
+			#all.write_image("{}/alisecs_{:02d}.hdf".format(options.path,options.iter),i)
 
 	for t in thrds:
 		t.join()
