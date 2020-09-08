@@ -162,7 +162,7 @@ def main():
 		if options.scipy:
 			gd+=" --scipy"
 
-		run(f"e2spt_align.py {ptcls} {options.path}/alignref.hdf --parallel {options.parallel} --path {options.path} --iter {itr} --sym {options.sym} --maxres {options.restarget} {gd}")
+		run(f"e2spt_align.py {ptcls} {options.path}/align_ref.hdf --parallel {options.parallel} --path {options.path} --iter {itr} --sym {options.sym} --maxres {options.restarget} {gd}")
 		
 		
 		s=""
@@ -172,7 +172,7 @@ def main():
 		run(f"e2spt_average_multi.py {refss} --parallel {options.parallel} --path {options.path} --sym {options.sym} {s} --iter {itr} --mask {options.path}/mask.hdf --maskclass {options.path}/maskclass.hdf --maxres {options.restarget}")
 		
 		# alignment reference for the next round
-		run(f"e2proc3d.py {options.path}/threed_{itr:02d}_00.hdf {options.path}/alignref.hdf --multfile {options.path}/maskalign.hdf")
+		run(f"e2proc3d.py {options.path}/threed_{itr:02d}_00.hdf {options.path}/align_ref.hdf --multfile {options.path}/maskalign.hdf")
 		
 		# refss is a string list of references for classification
 		refss=" ".join([f"{options.path}/threed_{itr:02d}_{k:02d}.hdf" for k in range(len(refs))]) 
