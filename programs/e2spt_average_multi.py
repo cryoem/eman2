@@ -90,7 +90,8 @@ class SptavgmultTask(JSTask):
 		
 		if options.randnclass<=0:
 			for r in refnames:
-				ref=EMData(r,0)
+				if "," in r: ref=EMData(r.split(",")[0],int(r.split(",")[-1]))
+				else: ref=EMData(r,0)
 				if options.maskclass:
 					ref.mult(maskclass)
 				ref=ref.do_fft()
