@@ -85,14 +85,14 @@ class SptavgmultTask(JSTask):
 		
 		
 		refs=[]
-		if options.mask:
-			mask=EMData(options.mask)
+		if options.maskclass:
+			maskclass=EMData(options.maskclass)
 		
 		if options.randnclass<=0:
 			for r in refnames:
 				ref=EMData(r,0)
-				if options.mask:
-					ref.mult(mask)
+				if options.maskclass:
+					ref.mult(maskclass)
 				ref=ref.do_fft()
 				ref.process_inplace("xform.phaseorigin.tocenter")
 				#ref.process_inplace("xform.fourierorigin.tocenter")
@@ -200,7 +200,8 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 	parser.add_argument("--path",type=str,default=None,help="Path to a folder containing current results (default = highest spt_XX)")
 	parser.add_argument("--parallel",type=str,default=None,help="parallel mode. Not all functions are implemented yet..")
 	parser.add_argument("--threads", default=4,type=int,help="Number of alignment threads to run in parallel on a single computer. This is the only parallelism supported by e2spt_align at present.")
-	parser.add_argument("--mask",type=str,default=None,help="Mask each reference before classification")
+	parser.add_argument("--maskclass",type=str,default=None,help="Mask each reference before classification")
+	parser.add_argument("--mask",type=str,default=None,help="Mask applied to final averages")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--noali", action="store_true", default=False ,help="Skip translational alignment.")
 	parser.add_argument("--sample",type=int,help="use only N samples.",default=-1)
@@ -347,13 +348,13 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 	else:
 		
 		n=len(args)
-		refs=[EMData(i) for i in args]
+		args=[comma(i) for i in args]
+		refs=[EMData(i[0],i[1]) for i in args]
 		if options.maxres>0:
 			for r in refs: r.process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,options.maxres)})
-		if options.mask:
-			mask=EMData(options.mask)
-			refs=[r*mask for r in refs]
-		
+		if options.maskclass!=None:
+			mask=EMData(options.maskclass)
+			for r in refs: r.mult(mask)
 		
 		jsd=queue.Queue(0)
 
@@ -398,13 +399,18 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 			t.join()
 
 		avs=[i.finish() for i in avgs]
-	
+
+	if options.mask: mask=EMData(options.mask)
 	for i,v in enumerate(avs):
+		if options.mask: v.mult(mask)
 		v.write_image("{}/threed_{:02d}_{:02d}.hdf".format(options.path,options.iter,i),0)
 
 	print("Done")
 	E2end(logid)
 
+def comma(fsp):
+	if "," in fsp: return fsp.split(",")[0],int(fsp.split(",")[-1])
+	return fsp,0
 
 if __name__ == "__main__":
 	main()
