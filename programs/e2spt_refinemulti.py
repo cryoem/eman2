@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-# Muyuan Chen 2017-03
-# Steve Ludtke 2020-09 adapted from e2spt_refine
+# Steve Ludtke 2020-09 loosely based on e2spt_refine
+# Muyuan Chen 2017-03 e2spt_refine
 from builtins import range
 from EMAN2 import *
 import numpy as np
@@ -17,9 +17,9 @@ def main():
 
 	parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=2, col=1, rowspan=1, colspan=1, mode="model")
 
-	parser.add_argument("--mask", type=str,help="Mask file to be applied to initial model", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=3, col=0,rowspan=1, colspan=3, mode="model")
-	parser.add_argument("--maskalign", type=str,help="Mask file applied to 3D alignment reference in each iteration. Not applied to the average, which will follow normal masking routine.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=4, col=0,rowspan=1, colspan=3, mode="model")
-	parser.add_argument("--maskref", type=str,help="Mask file applied to 3D classification references in each iteration. Not applied to the average.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=4, col=0,rowspan=1, colspan=3, mode="model")
+	parser.add_argument("--mask", type=str,help="Mask file to be applied to initial model", default=None, guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=3, col=0,rowspan=1, colspan=3, mode="model")
+	parser.add_argument("--maskalign", type=str,help="Mask file applied to 3D alignment reference in each iteration. Not applied to the average, which will follow normal masking routine.", default=None, guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=4, col=0,rowspan=1, colspan=3, mode="model")
+	parser.add_argument("--maskclass", type=str,help="Mask file applied to 3D classification references in each iteration. Not applied to the average.", default=None, guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=4, col=0,rowspan=1, colspan=3, mode="model")
 
 	parser.add_argument("--niter", type=int,help="Number of iterations", default=5, guitype='intbox',row=5, col=0,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--sym", type=str,help="symmetry", default="c1", guitype='strbox',row=5, col=1,rowspan=1, colspan=1, mode="model")
@@ -57,9 +57,7 @@ def main():
 	for i in range(len(refs)):
 		if len(refs[i])==1: refs[i].append(0)
 		else: refs[i][1]=int(refs[i][1])
-	ref=refs[0][0]
-	refn=refs[0][1]
-
+	
 	curres=20
 	startitr=1
 		
@@ -67,12 +65,6 @@ def main():
 	if options.parallel=="":
 		options.parallel="thread:{}".format(options.threads)
 	
-	msk=options.mask
-	if len(msk)>0:
-		if os.path.isfile(msk):
-			msk=" --automask3d mask.fromfile:filename={}".format(msk)
-		else:
-			msk=" --automask3d {}".format(msk)
 
 	#### make a list file if the particles are not in a lst
 	if ptcls.endswith(".json"):
@@ -88,6 +80,43 @@ def main():
 		ptcls=ptcllst
 		ep=EMData(ptcls,0)
 
+	er=EMData(refs[0][0],refs[0][1])
+	apix=ep["apix_x"]
+	nx=ep["nx"]
+
+	#if options.mask!=None and len(options.mask)>0:
+		#if os.path.isfile(options.mask): mask=f"mask.fromfile:filename={options.mask}"
+		#else: mask=options.mask
+	#else: mask=f"mask.soft:outer_radius=-1"
+
+	#if options.maskalign!=None and len(options.maskalign)>0:
+		#if os.path.isfile(options.maskalign): maskalign=f"mask.fromfile:filename={options.maskalign}"
+		#else: maskalign=options.maskalign
+	#else: maskalign=f"mask.soft:outer_radius={nx*4//10}"
+
+	#if options.maskref!=None and len(options.maskref)>0:
+		#if os.path.isfile(options.maskref): maskref=f"mask.fromfile:filename={options.maskref}"
+		#else: maskref=options.maskref
+	#else: maskref=f"mask.soft:outer_radius={nx*4//10}"
+
+	m=EMData(nx,nx,nx)
+	m.to_one()
+	m.process_inplace("mask.soft",{"outer_radius":-3,"width":3})
+	
+	# make sure we have a mask of each type
+	if options.mask==None:
+		m.write_compressed(f"{options.path}/mask.hdf",0,8)
+	else: run(f"e2proc3d.py {options.mask} {options.path}/mask.hdf")
+
+	m.process_inplace("mask.soft",{"outer_radius":nx*2//5,"width":nx//20})
+	if options.maskalign==None:
+		m.write_compressed(f"{options.path}/maskalign.hdf",0,8)
+	else: run(f"e2proc3d.py {options.maskalign} {options.path}/maskalign.hdf")
+
+	if options.maskclass==None:
+		m.write_compressed(f"{options.path}/maskclass.hdf",0,8)
+	else: run(f"e2proc3d.py {options.maskclass} {options.path}/maskclass.hdf")
+
 	options.input_ptcls=ptcls
 	options.input_ref=refs
 	options.cmd=' '.join(sys.argv)
@@ -102,29 +131,23 @@ def main():
 			break
 	
 	# Initial seed
-	er=EMData(refs[0][0],refs[0][1],True)
-	if er["apix_x"]==1.0 : print("Warning, A/pix exactly 1.0. You may wish to double-check that this is correct!")
+	if apix==1.0 : print("Warning, A/pix exactly 1.0. You may wish to double-check that this is correct!")
 	if abs(1-ep["apix_x"]/er["apix_x"])>0.01 or ep["nx"]!=er["nx"]:
 		print("apix mismatch {:.2f} vs {:.2f}".format(ep["apix_x"], er["apix_x"]))
 		rs=er["apix_x"]/ep["apix_x"]
 		if rs>1.:
-			run("e2proc3d.py {} {}/model_input.hdf --clip {} --scale {} --process mask.soft:outer_radius=-1 --first {} --last {}".format(refs[0][0], options.path, ep["nx"], rs,refs[0][1],refs[0][1]))
+			run("e2proc3d.py {} {}/align_ref.hdf --clip {} --scale {} --multfile {}/maskalign.hdf --first {} --last {}".format(refs[0][0], options.path, ep["nx"], rs,options.path,refs[0][1],refs[0][1]))
 		else:
-			run("e2proc3d.py {} {}/model_input.hdf --scale {} --clip {} --process mask.soft:outer_radius=-1 --first {} --last {}".format(refs[0][0], options.path, rs, ep["nx"],refs[0][1],refs[0][1]))
+			run("e2proc3d.py {} {}/align_ref.hdf --scale {} --clip {} --multfile {}/maskalign.hdf --first {} --last {}".format(refs[0][0], options.path, rs, ep["nx"],options.path,refs[0][1],refs[0][1]))
 	else:	
-			run("e2proc3d.py {} {}/model_input.hdf --process mask.soft:outer_radius=-1 --first {} --last {}".format(refs[0][0], options.path, refs[0][1],refs[0][1]))
+			run("e2proc3d.py {} {}/align_ref.hdf --multfile {}/maskalign.hdf --first {} --last {}".format(refs[0][0], options.path, options.path,refs[0][1],refs[0][1]))
 		
 	
+	# Iterative refinement
 	for itr in range(startitr,options.niter+startitr):
 
-		# the alignment ref may be masked using a different file, or just copied
-		ar=EMData(ref,refn)
-		if (len(options.maskalign)>0):
-			m=EMData(options.maskalign,0)
-			ar.mult(m)
-		ar.write_image(f"{options.path}/alignref.hdf",0)
-		
 		#### generate alignment command first
+		gd=""
 		if options.refine:
 			gd+=" --refine --maxang {:.1f}".format(options.maxang)
 			if options.randphi:
@@ -133,31 +156,27 @@ def main():
 				gd+=" --rand180"
 			if itr>startitr:
 				ptcls=os.path.join(options.path, "particle_parms_{:02d}.json".format(itr-1))
-
 		if options.transonly: gd+=" --transonly"
-
-		gd=""
 		if options.maxshift>0:
 			gd+=" --maxshift {:.1f}".format(options.maxshift)
 		if options.scipy:
 			gd+=" --scipy"
 
-		cmd="e2spt_align.py {} {}/alignref.hdf --parallel {} --path {} --iter {} --sym {} --maxres {} {}".format(ptcls, options.path,  options.parallel, options.path, itr, options.sym, options.restarget, gd)
-		
-		ret=run(cmd)
+		run(f"e2spt_align.py {ptcls} {options.path}/alignref.hdf --parallel {options.parallel} --path {options.path} --iter {itr} --sym {options.sym} --maxres {options.restarget} {gd}")
 		
 		
 		s=""
 		if options.maxtilt<90.:
 			s+=" --maxtilt {:.1f}".format(options.maxtilt)
 		
-		run(f"e2spt_average_multi.py {refss} --parallel {options.parallel} --path {options.path} --sym {options.sym} {s} --iter {itr} --mask {options.maskref}")
+		run(f"e2spt_average_multi.py {refss} --parallel {options.parallel} --path {options.path} --sym {options.sym} {s} --iter {itr} --mask {options.path}/mask.hdf --maskclass {options.path}/maskclass.hdf --maxres {options.restarget}")
 		
-
-		ref=os.path.join(options.path, "threed_{:02d}_00.hdf".format(itr))
-		refn=0
+		# alignment reference for the next round
+		run(f"e2proc3d.py {options.path}/threed_{itr:02d}_00.hdf {options.path}/alignref.hdf --multfile {options.path}/maskalign.hdf")
+		
+		# refss is a string list of references for classification
 		refss=" ".join([f"{options.path}/threed_{itr:02d}_{k:02d}.hdf" for k in range(len(refs))]) 
-
+		
 	E2end(logid)
 	
 def run(cmd):
