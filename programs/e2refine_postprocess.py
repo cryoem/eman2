@@ -405,6 +405,16 @@ def main():
 			run("e2proc3d.py {oddfile} {oddfile}  --multfile {path}mask.hdf {normproc} {postproc} {symopt} ".format(oddfile=oddfile,path=path,itr=options.iter,normproc=massnorm,postproc=m3dpostproc,symopt=symopt))
 
 			nx,ny,nz=combined["nx"],combined["ny"],combined["nz"]
+			
+		elif options.tophat=="localreal":
+			# compute local resolution and locally filter averaged volume
+			cmd="e2fsc_local.py --even {path}threed_even_unmasked.hdf --odd {path}threed_odd_unmasked.hdf --output {path}threed_{itr:02d}.hdf --mask {path}mask.hdf {sf} --sym {s} ".format(path=path,itr=options.iter, sf=setsf, s=options.sym)
+			run(cmd)
+			for eo in ["even","odd"]:
+				run("e2proc3d.py {path}threed_{eo}_unmasked_out.hdf {path}threed_{itr:02d}_{eo}.hdf".format(path=path,itr=options.iter, eo=eo))
+				os.remove("{path}threed_{eo}_unmasked_out.hdf".format(path=path,itr=options.iter, eo=eo))
+			
+			
 		else:
 			print("ERROR: invalid tophat option. Must be 'global' or 'local'.")
 			sys.exit(1)
