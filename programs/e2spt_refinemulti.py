@@ -62,6 +62,7 @@ def main():
 	startitr=1
 		
 	if options.path==None: options.path = make_path("spt") 
+	options.path=options.path.strip('/\\')
 	if options.parallel=="":
 		options.parallel="thread:{}".format(options.threads)
 	
