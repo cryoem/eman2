@@ -55,7 +55,7 @@ def main():
 			threed="{}/threed_{:02d}_{:02d}.hdf".format(path, itr, ic)
 			refs.append(threed)
 			
-			run("e2make3dpar.py --input {inp} --output {out} --pad {pd} --padvol {pd} --outsize {bx} --apix {apx} --mode trilinear --keep 1 --sym {sm} --parallel {par}".format(inp=lname, out=threed, bx=box, pd=pad, apx=apix, sm=sym, par=options.parallel))
+			run("e2spa_make3d.py --input {inp} --output {out} --keep 1 --sym {sm} --parallel {par}".format(inp=lname, out=threed, sm=sym, par=options.parallel))
 			
 			run("e2proc3d.py {} {} --process filter.lowpass.gauss:cutoff_freq={:.4f} --process normalize.edgemean".format(threed, threed, 1./options.maxres))
 			
@@ -75,6 +75,10 @@ def main():
 		print("iter {}, {:.1f}% particles change class".format(itr, 100*np.mean(c0!=cls)))
 		
 	
+	ps=classify_list("r3dcls_02/ptcls_input.lst", cls, "r3dcls_02/ptcls_final", True)
+	thd=[p.replace("ptcls_final","threed_final")[:-3]+"hdf" for p in ps]
+	for pt,td, in zip(ps, thd):
+		run("e2spa_make3d.py --input {inp} --output {out} --keep 1 --sym {sm} --parallel {par}".format(inp=pt, out=td, sm=sym, par=options.parallel))
 		
 	E2end(logid)
 	
@@ -83,19 +87,33 @@ def run(cmd):
 	launch_childprocess(cmd)
 	
 	
-def classify_list(lstname, cls, outprefix):
+def classify_list(lstname, cls, outprefix, spliteo=False):
 	lst=LSXFile(lstname)
 	ncls=np.max(cls)+1
 	outnames=["{}_{:02d}.lst".format(outprefix, i) for i in range(ncls)]
+	if spliteo:
+		om=[]
+		for o in outnames:
+			om.append(o[:-4]+"_even.lst")
+			om.append(o[:-4]+"_odd.lst")
+		outnames=om	
+		
 	for o in outnames:
 		if os.path.isfile(o):
 			os.remove(o)
+
 	lout=[LSXFile(o, False) for o in outnames]
 	for i in range(lst.n):
 		l=lst.read(i)
-		lout[int(cls[i])].write(-1, l[0], l[1], l[2])
+		ii=int(cls[i])
 		
+		if spliteo:
+			ii=ii*2+i%2
+			
+		lout[ii].write(-1, l[0], l[1], l[2])
+
 	lout=None
+	return outnames
 		
 	
 if __name__ == '__main__':

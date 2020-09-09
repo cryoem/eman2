@@ -26,6 +26,8 @@ def main():
 	parser.add_argument("--apix",metavar="A/pix",type=float,help="A/pix value for output, overrides automatic values",default=None)
 	
 	parser.add_argument("--ref", type=str,help="ref", default=None)
+	parser.add_argument("--minres", type=float,help="", default=200)
+	parser.add_argument("--maxres", type=float,help="", default=5)
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default=None)
 	
 	parser.add_argument("--debug", action="store_true", default=False, help="")
@@ -39,14 +41,9 @@ def main():
 	
 	# get basic image parameters
 	tmp=EMData(options.input,0,True)
-	nx=tmp["nx"]
-	ny=tmp["ny"]
-	boxsz=max(nx,ny)
-	nslice=tmp["nz"]
+	boxsz=tmp["nx"]
 	if options.apix!=None : apix=options.apix
 	else : apix=tmp["apix_x"]
-
-	if options.verbose>0: print("Image dimensions %d x %d"%(nx,ny))
 
 	if options.pad<0:
 		options.pad=good_size(boxsz*1.5)
@@ -96,8 +93,23 @@ def main():
 		wts=np.array(wts)
 		del etc
 		
+		r0=int(apix*boxsz/options.minres)
+		r1=int(apix*boxsz/options.maxres)
+		print(r0,r1)
+		scrs=np.mean(wts[:,r0:r1], axis=1)
+		if options.keep<1:
+			thr=np.sort(scrs)[int(len(scrs)*(1-options.keep))-1]
+			scrs[scrs<thr]=-1
+		
 		for i,d in enumerate(data):
-			d["curve"]=wts[i]
+			#d["curve"]=wts[i]
+			d["weight"]=float(scrs[i])
+			
+			
+		#print(wts.shape)
+		#w=from_numpy(wts).copy()
+		#w.write_image(options.output.replace("threed","wtall"))
+		#return
 	
 	
 	etc=EMTaskCustomer(options.parallel, module="e2spa_make3d.Make3dTask")
@@ -176,7 +188,7 @@ def initialize_data(inputfile, options):
 			if "score" in dc:
 				score=dc["score"]
 			else:
-				score=1
+				score=-1
 				
 			dcxf={k:dc[k] for k in dc.keys() if k in xfkey}
 				
@@ -188,9 +200,15 @@ def initialize_data(inputfile, options):
 			}
 			data.append(elem)
 			
-	scrs=-np.array([d["score"] for d in data])
-	scrs[scrs<0]=0
-	scrs/=np.max(scrs)
+	scrs=np.array([d["score"] for d in data])
+	if np.min(scrs)>=0:
+		print("positive score. assume this is weight...")
+	else:
+		scrs=-scrs
+		scrs[scrs<0]=0
+		scrs=scrs/np.max(scrs)
+	
+	print("score max {:.2f}, min {:.2f}".format(np.max(scrs), np.min(scrs)))
 	if options.keep<1:
 		thr=np.sort(scrs)[int(len(scrs)*(1-options.keep))-1]
 		scrs[scrs<thr]=-1
@@ -310,16 +328,15 @@ class WeightptclTask(JSTask):
 
 			fsc=img.calc_fourier_shell_correlation(pj)
 			w=np.array(fsc).reshape((3,-1))[1]
+			wts.append([elem["filenum"], w])
 			
-			x=np.arange(len(w)*2)
-			p=argrelextrema(w, np.greater)[0]
-			p=p[w[p]>0]
-			p=p[p>4]
-			cfit = np.polyfit(x[p], np.log(w[p]), 1)
-			c=np.exp(x*cfit[0])*np.exp(cfit[1])
-			#c/=c[0]
-			#c=x*0+1
-			wts.append([elem["filenum"], c])
+			#x=np.arange(len(w)*2)
+			#p=argrelextrema(w, np.greater)[0]
+			#p=p[w[p]>0]
+			#p=p[p>4]
+			#cfit = np.polyfit(x[p], np.log(w[p]), 1)
+			#c=np.exp(x*cfit[0])*np.exp(cfit[1])
+			#wts.append([elem["filenum"], c])
 			
 			
 		
