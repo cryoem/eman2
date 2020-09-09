@@ -239,10 +239,10 @@ namespace EMAN
 	 * 1 Gatan DM3 file contains 1 2D image.
 	*/
 
-	class DM3IO:public ImageIO
+	class DM3IO : public ImageIO
 	{
 	  public:
-		explicit DM3IO(const string & filename, IOMode rw_mode = READ_ONLY);
+		explicit DM3IO(const string & fname, IOMode rw_mode = READ_ONLY);
 		~DM3IO();
 
 		DEFINE_IMAGEIO_FUNC;
@@ -253,11 +253,7 @@ namespace EMAN
 		{ NUM_ID_INT = 3 };
 
 	  private:
-		string filename;
-		IOMode rw_mode;
-		FILE *dm3file;
 		bool is_big_endian;
-		bool initialized;
 		Gatan::TagTable * tagtable;
 	};
 

@@ -35,8 +35,8 @@
 
 using namespace EMAN;
 
-EmIO::EmIO(const string & file, IOMode rw)
-:	filename(file), rw_mode(rw), em_file(0), initialized(false)
+EmIO::EmIO(const string & fname, IOMode rw)
+:	ImageIO(fname, rw)
 {
 	mode_size = 0;
 	mode = EM_EM_UNKNOWN;
@@ -47,9 +47,9 @@ EmIO::EmIO(const string & file, IOMode rw)
 
 EmIO::~EmIO()
 {
-	if (em_file) {
-		fclose(em_file);
-		em_file = 0;
+	if (file) {
+		fclose(file);
+		file = 0;
 	}
 }
 
@@ -63,10 +63,10 @@ void EmIO::init()
 
 
 	initialized = true;
-	em_file = sfopen(filename, rw_mode, &is_new_file);
+	file = sfopen(filename, rw_mode, &is_new_file);
 
 	if (!is_new_file) {
-		if (fread(&emh, sizeof(EMHeader), 1, em_file) != 1) {
+		if (fread(&emh, sizeof(EMHeader), 1, file) != 1) {
 			throw ImageReadException(filename, "EM header");
 		}
 		if (!is_valid(&emh)) {
@@ -186,8 +186,8 @@ int EmIO::write_header(const Dict & dict, int image_index, const Region* area,
 	emh.nz = dict["nz"];
 	emh.data_type = EM_EM_FLOAT;
 
-	rewind(em_file);
-	if (fwrite(&emh, sizeof(EMHeader), 1, em_file) != 1) {
+	rewind(file);
+	if (fwrite(&emh, sizeof(EMHeader), 1, file) != 1) {
 		throw ImageWriteException(filename, "EM Header");
 	}
 
@@ -204,10 +204,10 @@ int EmIO::read_data(float *data, int image_index, const Region * area, bool)
 	check_read_access(image_index, data);
 	check_region(area, IntSize(emh.nx, emh.ny, emh.nz),false,false);
 
-	portable_fseek(em_file, sizeof(EMHeader), SEEK_SET);
+	portable_fseek(file, sizeof(EMHeader), SEEK_SET);
 
 	unsigned char *cdata = (unsigned char *) data;
-	EMUtil::process_region_io(cdata, em_file, READ_ONLY, image_index, mode_size,
+	EMUtil::process_region_io(cdata, file, READ_ONLY, image_index, mode_size,
 							  emh.nx, emh.ny, emh.nz, area);
 
 	int xlen = 0, ylen = 0, zlen = 0;
@@ -257,9 +257,9 @@ int EmIO::write_data(float *data, int image_index, const Region* area, EMUtil::E
 	//single image format, index can only be zero
 	image_index = 0;
 	check_write_access(rw_mode, image_index, 1, data);
-	portable_fseek(em_file, sizeof(EMHeader), SEEK_SET);
+	portable_fseek(file, sizeof(EMHeader), SEEK_SET);
 
-	EMUtil::process_region_io(data, em_file, rw_mode,
+	EMUtil::process_region_io(data, file, rw_mode,
 							  image_index, sizeof(float),
 							  emh.nx, emh.ny, emh.nz, area);
 #if 0
@@ -269,7 +269,7 @@ int EmIO::write_data(float *data, int image_index, const Region* area, EMUtil::E
 	for (int i = 0; i < emh.nz; i++) {
 		int k = i * sec_size;
 		for (int j = 0; j < emh.ny; j++) {
-			fwrite(&data[k + j * emh.nx], row_size, 1, em_file);
+			fwrite(&data[k + j * emh.nx], row_size, 1, file);
 		}
 	}
 #endif
@@ -280,7 +280,7 @@ int EmIO::write_data(float *data, int image_index, const Region* area, EMUtil::E
 
 void EmIO::flush()
 {
-	fflush(em_file);
+	fflush(file);
 }
 
 bool EmIO::is_complex_mode()

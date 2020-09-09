@@ -32,7 +32,7 @@
 #ifndef eman__emutil__h__
 #define eman__emutil__h__ 1
 
-#include <string.h>
+#include <cstring>
 #include "emobject.h"
 #include "emassert.h"
 
@@ -108,6 +108,7 @@ namespace EMAN
 		{
 			IMAGE_UNKNOWN,
 			IMAGE_MRC,
+			IMAGE_EER,
 			IMAGE_SPIDER,
 			IMAGE_SINGLE_SPIDER,
 			IMAGE_IMAGIC,

@@ -1746,7 +1746,7 @@ def do_volume(data, options, iter, mpi_comm):
         elif options.mask3D == "auto":
             mask3D = sp_morphology.adaptive_mask(vol)
         else:
-            if type(options.mask3D) == bytes:
+            if isinstance(options.mask3D, (bytes, str)):
                 mask3D = sp_utilities.get_im(options.mask3D)
             else:
                 mask3D = (options.mask3D).copy()

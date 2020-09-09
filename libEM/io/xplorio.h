@@ -57,22 +57,17 @@ namespace EMAN
 	 * A XPLOR file contains one  2D or 3D image.
 	 */ 
 	
-	class XplorIO:public ImageIO
+	class XplorIO : public ImageIO
 	{
 	  public:
-		explicit XplorIO(const string & filename, IOMode rw_mode = READ_ONLY);
+		explicit XplorIO(const string & fname, IOMode rw_mode = READ_ONLY);
 		~XplorIO();
 
 		DEFINE_IMAGEIO_FUNC;
 		static bool is_valid(const void *first_block);
 
 	  private:		
-		string filename;
-		IOMode rw_mode;
-		FILE *xplor_file;
-
 		bool is_big_endian;
-		bool initialized;
 		bool is_new_file;
 		int nlines_in_header;
 		

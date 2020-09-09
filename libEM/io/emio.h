@@ -41,10 +41,10 @@ namespace EMAN
 	 *
 	 * An EM image file stores 1 single 2D or 3D image.
      */
-	class EmIO:public ImageIO
+	class EmIO : public ImageIO
 	{
 	  public:
-		explicit EmIO(const string & filename, IOMode rw_mode = READ_ONLY);
+		explicit EmIO(const string & fname, IOMode rw_mode = READ_ONLY);
 		~EmIO();
 
 		DEFINE_IMAGEIO_FUNC;
@@ -93,15 +93,11 @@ namespace EMAN
 		};
 
 	  private:
-		string filename;
-		IOMode rw_mode;
-		FILE *em_file;
 		EMHeader emh;
 
 		size_t mode_size;
 		DataType mode;
 		bool is_big_endian;
-		bool initialized;
 		bool is_new_file;
 	};
 

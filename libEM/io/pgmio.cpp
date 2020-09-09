@@ -39,17 +39,17 @@ using namespace EMAN;
 const char *PgmIO::MAGIC_BINARY = "P5";
 const char *PgmIO::MAGIC_ASCII = "P2";
 
-PgmIO::PgmIO(const string & file, IOMode rw)
-:	filename(file), rw_mode(rw), pgm_file(0), is_big_endian(true),
-	initialized(false), nx(0), ny(0), maxval(0), minval(0),
+PgmIO::PgmIO(const string & fname, IOMode rw)
+:	ImageIO(fname, rw), is_big_endian(true),
+	nx(0), ny(0), maxval(0), minval(0),
 	file_offset(0), rendermin(0), rendermax(0), renderbits(16)
 {}
 
 PgmIO::~PgmIO()
 {
-	if (pgm_file) {
-		fclose(pgm_file);
-		pgm_file = 0;
+	if (file) {
+		fclose(file);
+		file = 0;
 	}
 }
 
@@ -82,16 +82,16 @@ void PgmIO::init()
 	initialized = true;
 
 	bool is_new_file = false;
-	pgm_file = sfopen(filename, rw_mode, &is_new_file, true);
+	file = sfopen(filename, rw_mode, &is_new_file, true);
 
 	if (!is_new_file) {
 		const int bufsz = 1024;
 		char buf[bufsz];
 
-		buf[0] = static_cast < char >(getc(pgm_file));
-		buf[1] = static_cast < char >(getc(pgm_file));
+		buf[0] = static_cast < char >(getc(file));
+		buf[1] = static_cast < char >(getc(file));
 		buf[2] = '\0';
-		getc(pgm_file);
+		getc(file);
 
 		if (!is_valid(&buf)) {
 			throw ImageReadException(filename, "invalid PGM file");
@@ -99,20 +99,20 @@ void PgmIO::init()
 
 		char c = '\0';
 
-		while ((c = static_cast < char >(getc(pgm_file))) == '#') {
-			fgets(buf, bufsz, pgm_file);
+		while ((c = static_cast < char >(getc(file))) == '#') {
+			fgets(buf, bufsz, file);
 		}
-		ungetc(c, pgm_file);
+		ungetc(c, file);
 
-		nx = read_int_and_space(pgm_file);
-		ny = read_int_and_space(pgm_file);
-		maxval = read_int_and_space(pgm_file);
+		nx = read_int_and_space(file);
+		ny = read_int_and_space(file);
+		maxval = read_int_and_space(file);
 
 		if (nx <= 0 || ny <= 0) {
 			throw ImageReadException(filename, "file size < 0");
 		}
 
-		file_offset = portable_ftell(pgm_file);
+		file_offset = portable_ftell(file);
 	}
 	EXITFUNC;
 }
@@ -195,7 +195,7 @@ int PgmIO::write_header(const Dict & dict, int image_index, const Region*,
 
 		EMUtil::getRenderLimits(dict, rendermin, rendermax, renderbits);
 
-		fprintf(pgm_file, "%s\n%d %d\n%d\n", MAGIC_BINARY, nx, ny, maxval);
+		fprintf(file, "%s\n%d %d\n%d\n", MAGIC_BINARY, nx, ny, maxval);
 	}
 
 	EXITFUNC;
@@ -211,12 +211,12 @@ int PgmIO::read_data(float *data, int image_index, const Region * area, bool)
 	check_read_access(image_index, data);
 	check_region(area, IntSize(nx, ny));
 
-	portable_fseek(pgm_file, file_offset, SEEK_SET);
+	portable_fseek(file, file_offset, SEEK_SET);
 
 	unsigned char *cdata = (unsigned char *) (data);
 	size_t mode_size = sizeof(unsigned char);
 
-	EMUtil::process_region_io(cdata, pgm_file, READ_ONLY, image_index,
+	EMUtil::process_region_io(cdata, file, READ_ONLY, image_index,
 							  mode_size, nx, ny, 1, area, true);
 
 	int xlen = 0, ylen = 0;
@@ -271,7 +271,7 @@ int PgmIO::write_data(float *data, int image_index, const Region* area,
 
 	size_t mode_size = sizeof(unsigned char);
 	//fwrite(cdata, nx, ny, pgm_file);
-	EMUtil::process_region_io(cdata, pgm_file, WRITE_ONLY, image_index,
+	EMUtil::process_region_io(cdata, file, WRITE_ONLY, image_index,
 							  mode_size, nx, ny, 1, area);
 
 	free(cdata);
@@ -281,7 +281,7 @@ int PgmIO::write_data(float *data, int image_index, const Region* area,
 
 void PgmIO::flush()
 {
-	fflush(pgm_file);
+	fflush(file);
 }
 
 

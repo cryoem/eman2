@@ -249,7 +249,7 @@ namespace EMAN
 	class DM4IO : public ImageIO
 	{
 	  public:
-		explicit DM4IO(const string & filename, IOMode rw_mode = READ_ONLY);
+		explicit DM4IO(const string & fname, IOMode rw_mode = READ_ONLY);
 		~DM4IO();
 
 		DEFINE_IMAGEIO_FUNC;
@@ -259,11 +259,7 @@ namespace EMAN
 	  private:
 		enum { NUM_ID_INT = 4 };	//actually its int+long+int=16 bytes
 
-		string filename;
-		IOMode rw_mode;
-		FILE *dm4file;
 		bool is_big_endian;
-		bool initialized;
 		GatanDM4::TagTable * tagtable;
 	};
 }

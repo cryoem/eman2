@@ -779,7 +779,7 @@ def isac_MPI_pap(
     image_start, image_end = sp_applications.MPI_start_end(nima, number_of_proc, myid)
 
     if maskfile:
-        if type(maskfile) is bytes:
+        if isinstance(maskfile, (bytes, str)):
             mask = sp_utilities.get_image(maskfile)
         else:
             mask = maskfile

@@ -43,21 +43,16 @@ extern "C" {
 namespace EMAN
 {
 	/** JpegIO reads/writes a 2D JPEG image. Currently write-only */
-	class JpegIO:public ImageIO
+	class JpegIO : public ImageIO
 	{
 	  public:
-		explicit JpegIO(const string & filename, IOMode rw_mode = WRITE_ONLY);
+		explicit JpegIO(const string & fname, IOMode rw_mode = WRITE_ONLY);
 		~JpegIO();
 
 		DEFINE_IMAGEIO_FUNC;
 		static bool is_valid(const void *first_block);
 		int get_nimg();
 	  private:
-		string filename;
-		IOMode rw_mode;
-		FILE *jpeg_file;
-
-		bool initialized;
 		float rendermin;
 		float rendermax;
 		int renderbits;

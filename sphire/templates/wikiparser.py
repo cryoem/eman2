@@ -314,6 +314,8 @@ def construct_keyword_dict():
 
 	# Added keywords for cinderella
 	keyword_dict["cinderella_path"] = SXkeyword_map(2, "py")
+	keyword_dict["input_stack_cinderella"] = SXkeyword_map(0, "data2d_one")
+
 
 
 	keyword_dict["--range"] = SXkeyword_map(2, "float")

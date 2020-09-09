@@ -23,6 +23,7 @@ target_sources(EM2 PRIVATE
 			   pointarray.cpp
 			   pdbreader.cpp
 			   io/mrcio.cpp
+			   io/eerio.cpp
 			   io/dm3io.cpp
 			   io/dm4io.cpp
 			   io/tifio.cpp

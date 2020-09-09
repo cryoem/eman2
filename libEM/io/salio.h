@@ -44,10 +44,10 @@ namespace EMAN
 	 * Each pair of hdr/img SAL files contains 1 2D image.
 	*/
 
-	class SalIO:public ImageIO
+	class SalIO : public ImageIO
 	{
 	  public:
-		explicit SalIO(const string & filename, IOMode rw_mode = READ_ONLY);
+		explicit SalIO(const string & fname, IOMode rw_mode = READ_ONLY);
 		~SalIO();
 
 		DEFINE_IMAGEIO_FUNC;
@@ -71,10 +71,6 @@ namespace EMAN
 		};
 
 	  private:
-		string filename;
-		IOMode rw_mode;
-		FILE *sal_file;
-		bool initialized;
 		int nx;
 		int ny;
 		int record_length;

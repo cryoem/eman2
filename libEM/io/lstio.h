@@ -42,10 +42,10 @@ namespace EMAN
 	 */
 		
 		
-	class LstIO:public ImageIO
+	class LstIO : public ImageIO
 	{
 	  public:
-		explicit LstIO(const string & filename, IOMode rw_mode = READ_ONLY);
+		explicit LstIO(const string & fname, IOMode rw_mode = READ_ONLY);
 		~LstIO();
 
 		DEFINE_IMAGEIO_FUNC;
@@ -57,12 +57,7 @@ namespace EMAN
 		}
 		int get_nimg();
 	  private:
-		string filename;
-		IOMode rw_mode;
-		FILE *lst_file;
-
 		bool is_big_endian;
-		bool initialized;
 		int nimg;
 
 		ImageIO *imageio;

@@ -64,10 +64,10 @@ namespace EMAN
 	 * ftp:://ftp.hdfgroup.org/HDF5/special_tools/h5check/
 	 * to verify the HDF5 file is compliant with the HDF5 File Format Specification.
 	 */
-	class HdfIO2:public ImageIO
+	class HdfIO2 : public ImageIO
 	{
 	  public:
-		explicit HdfIO2(const string & filename, IOMode rw_mode = READ_ONLY);
+		explicit HdfIO2(const string & fname, IOMode rw_mode = READ_ONLY);
 		~HdfIO2();
 
 		DEFINE_IMAGEIO_FUNC;
@@ -123,9 +123,6 @@ namespace EMAN
 		hid_t group;
 		hid_t accprop;
 		hid_t simple_space;
-		string filename;
-		IOMode rw_mode;
-		bool initialized;
 		
 		Dict meta_attr_dict;	//this is used for the meta attributes stored in /MDF/images
 

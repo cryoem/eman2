@@ -107,10 +107,9 @@ herr_t attr_info(hid_t dataset, const char *name, void *opdata)
 	return 0;
 }
 
-HdfIO::HdfIO(const string & hdf_filename, IOMode rw)
-:	filename(hdf_filename), rw_mode(rw)
+HdfIO::HdfIO(const string & fname, IOMode rw)
+:	ImageIO(fname, rw)
 {
-	initialized = false;
 	is_new_file = false;
 	file = -1;
 	group = -1;

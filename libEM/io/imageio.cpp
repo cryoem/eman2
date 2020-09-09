@@ -37,6 +37,10 @@
 
 using namespace EMAN;
 
+ImageIO::ImageIO(const string & fname, IOMode rw)
+		: filename(fname), rw_mode(rw)
+{}
+
 ImageIO::~ImageIO()
 {
 }
@@ -132,27 +136,23 @@ FILE *ImageIO::sfopen(const string & filename, IOMode mode,
 					  bool * is_new, bool overwrite)
 {
 	FILE *f = 0;
-	if (mode == READ_ONLY) {
+	if (mode == READ_ONLY)
 		f = fopen(filename.c_str(), "rb");
-	}
 	else if (mode == READ_WRITE) {
 		if (overwrite) {
 			f = fopen(filename.c_str(), "wb");
-			if (is_new) {
+			if (is_new)
 				*is_new = true;
-			}
 		}
 		else {
 			f = fopen(filename.c_str(), "r+b");
 			if (!f) {
 				FILE *f1 = fopen(filename.c_str(), "wb");
-				if (!f1) {
+				if (!f1)
 					throw FileAccessException(filename);
-				}
 				else {
-					if (is_new) {
+					if (is_new)
 						*is_new = true;
-					}
 					fclose(f1);
 					f1 = 0;
 					f = fopen(filename.c_str(), "r+b");
@@ -162,14 +162,13 @@ FILE *ImageIO::sfopen(const string & filename, IOMode mode,
 	}
 	else if (mode == WRITE_ONLY) {
 		f = fopen(filename.c_str(), "wb");
-		if (is_new) {
+		if (is_new)
 			*is_new = true;
-		}
 	}
 
-	if (!f) {
+	if (!f)
 		throw FileAccessException(filename);
-	}
+
 	return f;
 }
 

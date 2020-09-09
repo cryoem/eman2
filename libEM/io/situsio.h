@@ -48,7 +48,7 @@ namespace EMAN
 	class SitusIO : public ImageIO
 	{
 	public:
-		explicit SitusIO(const string & omapname, IOMode rw_mode = READ_ONLY);
+		explicit SitusIO(const string & fname, IOMode rw_mode = READ_ONLY);
 		~SitusIO();
 
 		DEFINE_IMAGEIO_FUNC;
@@ -56,11 +56,6 @@ namespace EMAN
 		static bool is_valid(const void *first_block);
 
 	private:
-		string filename;
-		IOMode rw_mode;
-		FILE *situsfile;
-
-		bool initialized;
 		bool is_new_file;
 
 		float apix, origx, origy, origz;

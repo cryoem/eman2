@@ -50,8 +50,8 @@ const char *SalIO::IMG_EXT = "img";
 const char *SalIO::MAGIC = " IDENTIFICATION";
 
 
-SalIO::SalIO(const string & file, IOMode rw)
-:	filename(file), rw_mode(rw), sal_file(0), initialized(false)
+SalIO::SalIO(const string & fname, IOMode rw)
+:	ImageIO(fname, rw)
 {
 	nx = 0;
 	ny = 0;
@@ -62,9 +62,9 @@ SalIO::SalIO(const string & file, IOMode rw)
 
 SalIO::~SalIO()
 {
-	if (sal_file) {
-		fclose(sal_file);
-		sal_file = 0;
+	if (file) {
+		fclose(file);
+		file = 0;
 	}
 }
 
@@ -82,20 +82,20 @@ void SalIO::init()
 	string img_filename = Util::change_filename_ext(filename, IMG_EXT);
 
 	bool is_new_file = false;
-	sal_file = sfopen(hdr_filename, rw_mode, &is_new_file);
+	file = sfopen(hdr_filename, rw_mode, &is_new_file);
 
 	char scan_type[MAXPATHLEN];
 	ScanAxis axis = X_SCAN_AXIS;
 
 	if (!is_new_file) {
 		char buf[MAXPATHLEN];
-		if (fgets(buf, MAXPATHLEN, sal_file)) {
+		if (fgets(buf, MAXPATHLEN, file)) {
 			if (!is_valid(buf)) {
 				throw ImageReadException(filename, "ivalid SAL");
 			}
 		}
 
-		while (fgets(buf, MAXPATHLEN, sal_file)) {
+		while (fgets(buf, MAXPATHLEN, file)) {
 			const char *buf1 = buf + 1;
 
 			if (Util::sstrncmp(buf1, "NXP")) {
@@ -132,8 +132,8 @@ void SalIO::init()
 			ny = t;
 		}
 	}
-	fclose(sal_file);
-	sal_file = sfopen(img_filename, rw_mode);
+	fclose(file);
+	file = sfopen(img_filename, rw_mode);
 
 	EXITFUNC;
 }
@@ -203,7 +203,7 @@ int SalIO::read_data(float *data, int image_index, const Region * area, bool)
 		return 1;
 	}
 
-	rewind(sal_file);
+	rewind(file);
 
 	int mode_size = (int)sizeof(short);
 	unsigned char *cdata = (unsigned char *) data;
@@ -212,7 +212,7 @@ int SalIO::read_data(float *data, int image_index, const Region * area, bool)
 	size_t block_size = (((row_size - 1) / record_length) + 1) * record_length;
 	size_t post_row = block_size - row_size;
 
-	EMUtil::process_region_io(cdata, sal_file, READ_ONLY, image_index,
+	EMUtil::process_region_io(cdata, file, READ_ONLY, image_index,
 							  mode_size, nx, ny, 1, area, false,
 							  EMUtil::IMAGE_SAL, 0, post_row);
 
@@ -221,7 +221,7 @@ int SalIO::read_data(float *data, int image_index, const Region * area, bool)
 	int block_size = (((row_size - 1) / record_length) + 1) * record_length;
 
 	for (int j = 0; j < ny; j++) {
-		if (fread(&cdata[j * row_size], block_size, 1, sal_file) != 1) {
+		if (fread(&cdata[j * row_size], block_size, 1, file) != 1) {
 			LOGERR("Incomplete SAL data read %d/%d blocks", j, ny);
 			return 1;
 		}

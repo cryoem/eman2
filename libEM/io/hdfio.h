@@ -55,14 +55,14 @@ namespace EMAN
 	 * ftp:://ftp.hdfgroup.org/HDF5/special_tools/h5check/
 	 * to verify the HDF5 file is compliant with the HDF5 File Format Specification. 
 	 */
-	class HdfIO:public ImageIO
+	class HdfIO : public ImageIO
 	{
 	  public:
 		enum DataType
 		{ INT, FLOAT, STRING };
 
 	  public:
-		explicit HdfIO(const string & filename, IOMode rw_mode = READ_ONLY);
+		explicit HdfIO(const string & fname, IOMode rw_mode = READ_ONLY);
 		~HdfIO();
 
 		DEFINE_IMAGEIO_FUNC;
@@ -129,9 +129,6 @@ namespace EMAN
 		static const char *HDF5_SIGNATURE;
         
 
-		string filename;
-		IOMode rw_mode;
-		bool initialized;
 		bool is_new_file;
 		
 		hid_t file;

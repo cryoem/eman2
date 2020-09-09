@@ -38,20 +38,18 @@
 
 using namespace EMAN;
 
-FitsIO::FitsIO(const string & fits_filename, IOMode rw)
-:	filename(fits_filename), rw_mode(rw)
+FitsIO::FitsIO(const string & fname, IOMode rw)
+:	ImageIO(fname, rw)
 {
 	is_big_endian = ByteOrder::is_host_big_endian();
 	is_new_file = false;
-	initialized = false;
-	fitsfile=0;
 }
 
 FitsIO::~FitsIO()
 {
-	if (fitsfile) {
-		fclose(fitsfile);
-		fitsfile = 0;
+	if (file) {
+		fclose(file);
+		file = 0;
 	}
 }
 
@@ -64,7 +62,7 @@ void FitsIO::init()
 	}
 
 	initialized = true;
-	fitsfile = sfopen(filename, rw_mode, &is_new_file);
+	file = sfopen(filename, rw_mode, &is_new_file);
 
 	EXITFUNC;
 }
@@ -115,9 +113,9 @@ int FitsIO::read_header(Dict & dict, int image_index, const Region * area, bool 
 	char s[81],lbl[9],val[80];
 //	int dim=0;
 	s[80]=0;
-	rewind(fitsfile);
+	rewind(file);
 	size_t nr;
-	for (nr = fread(s,80,1,fitsfile); strncmp("END",s,3); nr = fread(s,80,1,fitsfile)) {
+	for (nr = fread(s,80,1,file); strncmp("END",s,3); nr = fread(s,80,1,file)) {
 		nr = nr;
 		sscanf(s,"%8s = %[^/]",lbl,val);
 //		printf("%s,%s\n",lbl,val);
@@ -135,7 +133,7 @@ int FitsIO::read_header(Dict & dict, int image_index, const Region * area, bool 
 		}
 	}
 
-	dstart=((ftell(fitsfile)-1)/2880+1)*2880;
+	dstart=((ftell(file)-1)/2880+1)*2880;
 
 	int xlen = 0, ylen = 0, zlen = 0;
 	dtype=atoi(dict["FITS.BITPIX"]);
@@ -169,7 +167,7 @@ int FitsIO::read_data(float *rdata, int image_index, const Region *, bool )
 	image_index = 0;
 	check_read_access(image_index, rdata);
 
-	portable_fseek(fitsfile, dstart, SEEK_SET);
+	portable_fseek(file, dstart, SEEK_SET);
 	char *cdata=(char *)rdata;
 	short *sdata=(short *)rdata;
 	int *idata=(int *)rdata;
@@ -177,26 +175,26 @@ int FitsIO::read_data(float *rdata, int image_index, const Region *, bool )
 
 	switch (dtype) {
 	case 8:
-		nr = fread(cdata,nx,ny*nz,fitsfile); nr++;
+		nr = fread(cdata,nx,ny*nz,file); nr++;
 		for (i=size-1; i<size; i--) rdata[i]=cdata[i];
 		break;
 	case 16:
-		nr = fread(cdata,nx,ny*nz*2,fitsfile); nr++;
+		nr = fread(cdata,nx,ny*nz*2,file); nr++;
 		if (!ByteOrder::is_host_big_endian()) ByteOrder::swap_bytes((short*) sdata, size);
 		for (i=size-1; i<size; i--) rdata[i]=sdata[i];
 		break;
 	case 32:
-		nr = fread(cdata,nx,ny*nz*4,fitsfile); nr++;
+		nr = fread(cdata,nx,ny*nz*4,file); nr++;
 		if (!ByteOrder::is_host_big_endian()) ByteOrder::swap_bytes((int*) rdata, size);
 		for (i=0; i<size; i++) rdata[i]=static_cast<float>(idata[i]);
 		break;
 	case -32:
-		nr = fread(cdata,nx*4,ny*nz,fitsfile); nr++;
+		nr = fread(cdata,nx*4,ny*nz,file); nr++;
 		if (!ByteOrder::is_host_big_endian()) ByteOrder::swap_bytes((float*) rdata, size);
 		break;
 	case -64:
 		ddata=(double *)malloc(size*8);
-		nr = fread(ddata,nx,ny*nz*8,fitsfile); nr++;
+		nr = fread(ddata,nx,ny*nz*8,file); nr++;
 		if (!ByteOrder::is_host_big_endian()) ByteOrder::swap_bytes((double*) ddata, size);
 		for (i=0; i<size; i++) rdata[i]=static_cast<float>(ddata[i]);
 		free(ddata);
@@ -229,7 +227,7 @@ bool FitsIO::is_complex_mode()
 
 void FitsIO::flush()
 {
-	fflush(fitsfile);
+	fflush(file);
 }
 
 int FitsIO::read_ctf(Ctf &, int)

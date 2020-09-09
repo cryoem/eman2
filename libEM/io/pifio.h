@@ -49,10 +49,10 @@ namespace EMAN
 	 * (nx,ny,nz) in PifFileHeader are equal to (nx,ny,nz) in each
 	 * Image header.
 	 */
-	class PifIO:public ImageIO
+	class PifIO : public ImageIO
 	{
 	  public:
-		explicit PifIO(const string & filename, IOMode rw_mode = READ_ONLY);
+		explicit PifIO(const string & fname, IOMode rw_mode = READ_ONLY);
 		~PifIO();
 
 		DEFINE_IMAGEIO_FUNC;
@@ -172,12 +172,9 @@ namespace EMAN
 		int to_pif_datatype(int em_datatype);
 
 	    string filename;
-		IOMode rw_mode;
 		PifFileHeader pfh;
-		FILE *pif_file;
 		int mode_size;
 		bool is_big_endian;
-		bool initialized;
 		bool is_new_file;
 		float real_scale_factor;
 	};

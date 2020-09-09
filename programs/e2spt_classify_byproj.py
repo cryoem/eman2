@@ -44,7 +44,7 @@ from EMAN2jsondb import JSTask
 import numpy as np
 import sklearn.decomposition as skdc
 
-def ptclextract(jsd,db,ks,shrink,layers,sym,verbose):
+def ptclextract(jsd,db,ks,shrink,layers,sym,mask,verbose):
 	#  we have to get the 3d particles in the right orientation
 	lasttime=time.time()
 	for i,k in ks:
@@ -58,6 +58,7 @@ def ptclextract(jsd,db,ks,shrink,layers,sym,verbose):
 		ptcl=EMData(k[0],k[1])
 		xf=parm["xform.align3d"]
 		ptcl.process_inplace("xform",{"transform":xf})
+		if mask!=None : ptcl.mult(mask)
 		if shrink>1 : ptcl.process_inplace("math.meanshrink",{"n":shrink})
 		if sym!="" and sym!="c1" : ptcl.process_inplace("xform.applysym",{"sym":sym})
 		ptcl["score"]=parm["score"]
@@ -66,6 +67,11 @@ def ptclextract(jsd,db,ks,shrink,layers,sym,verbose):
 		x=ptcl.process("misc.directional_sum",{"axis":"x","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
 		y=ptcl.process("misc.directional_sum",{"axis":"y","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
 		z=ptcl.process("misc.directional_sum",{"axis":"z","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
+
+		# different directions sometimes have vastly different standard deviations, independent normalization may help balance
+		x.process_inplace("normalize")
+		y.process_inplace("normalize")
+		z.process_inplace("normalize")
 		
 		# we pack the 3 projections into a single 2D image
 		all=EMData(x["nx"]*3,x["ny"],1)
@@ -98,6 +104,7 @@ produce new sets/ for each class, which could be further-refined.
 	parser.add_argument("--layers",type=int,help="number of slices about the center to use for the projection in each direction, ie 0->1, 1->3, 2->5. Default=2",default=2,guitype="intbox", row=2, col=1, rowspan=1, colspan=1,mode="gui")	
 	parser.add_argument("--sym",type=str,default="c1",help="Symmetry of the input. Must be aligned in standard orientation to work properly.")
 	parser.add_argument("--shrink", default=1,type=int,help="shrink the particles before processing",guitype="intbox", row=2, col=0, rowspan=1, colspan=1,mode="gui")
+	parser.add_argument("--mask", default=None,type=str,help="Apply a 3D mask file to each particle prior to making projections")
 	parser.add_argument("--threads", default=4,type=int,help="Number of alignment threads to run in parallel on a single computer. This is the only parallelism supported by e2spt_align at present.", guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--saveali",action="store_true",help="In addition to the unaligned sets/ for each class, generate aligned particle stacks per class",default=False)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
@@ -119,6 +126,9 @@ produce new sets/ for each class, which could be further-refined.
 		else: options.iter=max(fls)+1
 		if options.verbose : print("Using iteration ",options.iter)
 
+	if options.mask!=None: initmask=EMData(options.mask,0)
+	else: initmask=None
+
 	db=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,options.iter))
 
 	logid=E2init(sys.argv, options.ppid)
@@ -134,7 +144,7 @@ produce new sets/ for each class, which could be further-refined.
 	jsd=queue.Queue(0)
 
 	NTHREADS=max(options.threads,2)		# we have one thread just writing results
-	thrds=[threading.Thread(target=ptclextract,args=(jsd,db,ks[i::NTHREADS-1],options.shrink,options.layers,options.sym,options.verbose>1 and i==0)) for i in range(NTHREADS-1)]
+	thrds=[threading.Thread(target=ptclextract,args=(jsd,db,ks[i::NTHREADS-1],options.shrink,options.layers,options.sym,initmask,options.verbose>1 and i==0)) for i in range(NTHREADS-1)]
 
 	try: os.unlink("{}/alisecs_{:02d}.hdf".format(options.path,options.iter))
 	except: pass
@@ -198,11 +208,12 @@ produce new sets/ for each class, which could be further-refined.
 	sets=[LSXFile("sets/{}_{:02d}_{:02d}.lst".format(options.path,options.iter,i)) for i in range(options.ncls)]
 	
 	# Initialize averages
-	avgs=[EMData(nx,ny,nz) for i in range(options.ncls)]
-	for a in avgs:
-		a["apix_x"]=hdr["apix_x"]
-		a["apix_y"]=hdr["apix_y"]
-		a["apix_z"]=hdr["apix_z"]
+#	avgs=[EMData(nx,ny,nz) for i in range(options.ncls)]
+	avgs=[Averagers.get("mean.tomo") for i in range(options.ncls)]
+#	for a in avgs:
+#		a["apix_x"]=hdr["apix_x"]
+#		a["apix_y"]=hdr["apix_y"]
+#		a["apix_z"]=hdr["apix_z"]
 	
 	# do the actual averaging
 	for n,im in enumerate(prjs):
@@ -216,7 +227,7 @@ produce new sets/ for each class, which could be further-refined.
 		ptcl=EMData(im["orig_file"],im["orig_n"])
 		xf=db[im["orig_key"]]["xform.align3d"]
 		ptcl.transform(xf)
-		avgs[cls].add(ptcl)		# add to the correct class average
+		avgs[cls].add_image(ptcl)		# add to the correct class average
 		
 		# If requested, we save the aligned (shrunken) volume to the stack for this class
 		if options.saveali: 
@@ -236,7 +247,7 @@ produce new sets/ for each class, which could be further-refined.
 		print("Class {}: {}".format(i,n))
 		centers[i].write_image("{}/classes_sec_{:02d}.hdf".format(options.path,options.iter),i)
 		if n>0 : avgs[i].mult(1.0/n)
-		avgs[i].write_image("{}/classes_{:02d}.hdf".format(options.path,options.iter),i)
+		avgs[i].finish().write_image("{}/classes_{:02d}.hdf".format(options.path,options.iter),i)
 		
 	if options.verbose: print("Done")
 

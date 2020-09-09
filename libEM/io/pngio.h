@@ -43,10 +43,10 @@ namespace EMAN
 	/** PngIO reads/writes a 2D PNG image. Currently 8-bit and 16-bit
 	 * PNG read/write are supported.
 	 */
-	class PngIO:public ImageIO
+	class PngIO : public ImageIO
 	{
 	  public:
-		explicit PngIO(const string & filename, IOMode rw_mode = READ_ONLY);
+		explicit PngIO(const string & fname, IOMode rw_mode = READ_ONLY);
 		~PngIO();
 
 		DEFINE_IMAGEIO_FUNC;
@@ -66,12 +66,6 @@ namespace EMAN
 		};
 
 	  private:
-		string filename;
-		IOMode rw_mode;
-		FILE *png_file;
-
-		bool initialized;
-
 		png_structp png_ptr;
 		png_infop info_ptr;
 		png_infop end_info;

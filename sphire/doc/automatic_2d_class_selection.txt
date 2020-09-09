@@ -8,7 +8,7 @@ Automatic 2D class selection: Classify classes into good and bad.
 
 Usage in command line
 
-  sp_cinderella_pred.py cinderella_path inputstack output_dir model_path --confidence_threshold=CONFIDENCE_THRESHOLD --gpu=GPU --batch_size=BATCH_SIZE
+  sp_cinderella_pred.py cinderella_path input_stack_cinderella output_dir model_path --confidence_threshold=CONFIDENCE_THRESHOLD --gpu=GPU --batch_size=BATCH_SIZE
 
 \\
 ===== Typical usage =====
@@ -19,7 +19,7 @@ Usage in command line
 ===== Input =====
 === Main Parameters ===
   ; cinderella_path : Cinderella predict executeable : Path to the sp_cinderella_predict.py in your Cinderella environment (default none)
-  ; inputstack : Input stack : Path to your class stack (.mrcs/.hdf). (default none)
+  ; input_stack_cinderella : Input stack : Path to your class stack (.mrcs/.hdf). (default none)
   ; output_dir : Output directory : Folder to write results. (default required string)
   ; model_path : Model path : Specifiy the path to your model file. (default required string)
 

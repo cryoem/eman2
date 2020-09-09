@@ -63,11 +63,9 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_append_image_overloads_1_3, a
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_write_lst_overloads_1_4, write_lst, 1, 4)
 
-//BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_print_image_overloads_0_2, EMAN::EMData::print_image, 0, 2)
-
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMData_read_images_overloads_1_3, EMAN::EMData::read_images, 1, 3)
 
-BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMData_read_images_ext_overloads_3_5, EMAN::EMData::read_images_ext, 3, 5)
+BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMData_write_images_overloads_2_7, EMAN::EMData::write_images, 2, 7)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_set_size_overloads_1_4, EMAN::EMData::set_size, 1, 4)
 
@@ -545,9 +543,8 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("write_image", &EMAN::EMData::write_image, EMAN_EMData_write_image_overloads_1_7(args("filename", "img_index", "imgtype", "header_only", "region", "filestoragetype", "use_host_endian"), "write the header and data out to an image.\n\nIf the img_index = -1, append the image to the given image file.\n\nIf the given image file already exists, this image\nformat only stores 1 image, and no region is given, then\ntruncate the image file  to  zero length before writing\ndata out. For header writing only, no truncation happens.\n\nIf a region is given, then write a region only.\n\nfilename - The image file name.\nimg_index - The nth image to write as.\nimgtype - Write to the given image format type. if not specified, use the 'filename' extension to decide.\nheader_only - To write only the header or both header and data.\nregion - Define the region to write to.\nfilestoragetype - The image data type used in the output file.\nuse_host_endian - To write in the host computer byte order.\n\nexception - ImageFormatException\nexception ImageWriteException"))
 	.def("append_image", &EMAN::EMData::append_image, EMAN_EMData_append_image_overloads_1_3(args("filename", "imgtype", "header_only"), "append to an image file; If the file doesn't exist, create one.\nfilename - The image file name.\nimgtype - Write to the given image format type. if not specified, use the 'filename' extension to decide.\nheader_only - To write only the header or both header and data."))
 	.def("write_lst", &EMAN::EMData::write_lst, EMAN_EMData_write_lst_overloads_1_4(args("filename", "reffile", "refn", "comment"), "Append data to a LST image file.\nfilename - The LST image file name.\nreffile - Reference file name.\nrefn The reference file number.\ncomment - The comment to the added reference file."))
-//	.def("print_image", &EMAN::EMData::print_image, EMAN_EMData_print_image_overloads_0_2(args("filename", "output_stream"), "Print the image data to a file stream (standard out by default).\nfilename - image file to be printed.\noutput_stream - Output stream; cout by default."))
 	.def("read_images", &EMAN::EMData::read_images, EMAN_EMData_read_images_overloads_1_3(args("filename", "img_indices", "header_only"),"Read a set of images from file specified by 'filename'.\nWhich images are read is set by 'img_indices'.\nfilename The image file name.\nimg_indices Which images are read. If it is empty, all images are read. If it is not empty, only those in this array are read.\nheader_only If true, only read image header. If false, read both data and header.\nreturn The set of images read from filename."))
-	.def("read_images_ext", &EMAN::EMData::read_images_ext, EMAN_EMData_read_images_ext_overloads_3_5(args("filename", "img_index_start", "img_index_end", "header_only", "ext"), "Read a set of images from file specified by 'filename'. If\nthe given 'ext' is not empty, replace 'filename's extension it.\nImages with index from img_index_start to img_index_end are read.\n \nfilename - The image file name.\nimg_index_start Starting image index.\nimg_index_end - Ending image index.\nheader_only - If true, only read image header. If false, read both data and header.\next - The new image filename extension.\n \nreturn The set of images read from filename."))
+	.def("write_images", &EMAN::EMData::write_images, EMAN_EMData_write_images_overloads_2_7(args("filename", "imgs", "imgtype", "header_only", "region", "filestoragetype", "use_host_endian"),"Write a set of images to file specified by 'filename'.\nWhich images are written is set by 'imgs'.\nfilename The image file name.\\n\\nIf a region is given, then write a region only.\\n\\nfilename - The image file name.\\nimgs - Images to write.\\nimgtype - Write to the given image format type. if not specified, use the 'filename' extension to decide.\\nheader_only - To write only the header or both header and data.\\nregion - Define the region to write to.\\nfilestoragetype - The image data type used in the output file.\\nuse_host_endian - To write in the host computer byte order.\\n\\nreturn True if images written successfully to filename."))
 	.def("get_fft_amplitude", &EMAN::EMData::get_fft_amplitude, return_value_policy< manage_new_object >(), "return the amplitudes of the FFT including the left half\n \nreturn The current FFT image's amplitude image.\nexception - ImageFormatException If the image is not a complex image.")
 	.def("get_fft_amplitude2D", &EMAN::EMData::get_fft_amplitude2D, return_value_policy< manage_new_object >(), "return the amplitudes of the 2D FFT including the left half, PRB\n \nreturn The current FFT image's amplitude image.\nexception - ImageFormatException If the image is not a complex image.")
 	.def("get_fft_phase", &EMAN::EMData::get_fft_phase, return_value_policy< manage_new_object >(), "return the phases of the FFT including the left half\n \nreturn The current FFT image's phase image.\nexception - ImageFormatException If the image is not a complex image.")
@@ -885,8 +882,8 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("getwedge", &EMAN::EMData::compute_missingwedge, EMAN_EMData_compute_missingwedge_overloads_1_3(args("wedgeangle", "start", "stop"), "get the missingt wedge mean ansd std")[ return_value_policy< manage_new_object >() ])
 	.def("__getitem__", &emdata_getitem)
 	.def("__setitem__", &emdata_setitem)
-	.staticmethod("read_images_ext")
 	.staticmethod("read_images")
+	.staticmethod("write_images")
 	.def("__add__", (EMAN::EMData* (*)(const EMAN::EMData&, const EMAN::EMData&) )&EMAN::operator+, return_value_policy< manage_new_object >() )
 	.def("__sub__", (EMAN::EMData* (*)(const EMAN::EMData&, const EMAN::EMData&) )&EMAN::operator-, return_value_policy< manage_new_object >() )
 	.def("__mul__", (EMAN::EMData* (*)(const EMAN::EMData&, const EMAN::EMData&) )&EMAN::operator*, return_value_policy< manage_new_object >() )

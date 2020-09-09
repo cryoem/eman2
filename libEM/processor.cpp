@@ -8642,6 +8642,12 @@ EMData* DirectionalSumProcessor::process(const EMData* const image ) {
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 	EMData* ret = new EMData;
+	if (image->has_attr("ptcl_repr")) ret->set_attr("ptcl_repr",image->get_attr("ptcl_repr"));
+	if (image->has_attr("xform_align2d")) ret->set_attr("xform_align2d",image->get_attr("xform_align2d"));
+	if (image->has_attr("xform_align3d")) ret->set_attr("xform_align3d",image->get_attr("xform_align3d"));
+	ret->set_attr("apix_y",image->get_attr("apix_y"));	// potentially meaningless, may get overwritten, but better to be self-consistent
+	ret->set_attr("apix_z",image->get_attr("apix_z"));	// meaningless, but better to be self-consistent
+	
 
 	if (nz==1) {
 		if (dir=="x") {
@@ -9642,6 +9648,7 @@ void TestImageCirclesphere::process_inplace(EMData * image)
 void TestImageHollowEllipse::process_inplace(EMData * image)
 {
 	preprocess(image);
+	image->to_zero();	// The testimage processors are supposed to replace the image contents
 
 	float width = params.set_default("width",2.0f);
 
@@ -9724,6 +9731,7 @@ void TestImageHollowEllipse::process_inplace(EMData * image)
 void TestImageEllipse::process_inplace(EMData * image)
 {
 	preprocess(image);
+	image->to_zero();	// The testimage processors are supposed to replace the image contents
 
 
 	float a = params.set_default("a",nx/2.0f-1.0f);

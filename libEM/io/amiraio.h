@@ -45,22 +45,17 @@ namespace EMAN
 	 *
 	 * An Amira file has only 1 2D or 3D image.
 	 */
-	class AmiraIO:public ImageIO
+	class AmiraIO : public ImageIO
 	{
 	  public:
-		AmiraIO(const string & filename, IOMode rw_mode = READ_ONLY);
+		AmiraIO(const string & fname, IOMode rw_mode = READ_ONLY);
 		~AmiraIO();
 
 		DEFINE_IMAGEIO_FUNC;
 		static bool is_valid(const void *first_block);
 
 	  private:
-		string filename;
-		IOMode rw_mode;
-		FILE *amira_file;
-
 		bool is_big_endian;
-		bool initialized;
 		EMUtil::EMDataType dt;
 		int nx;
 		int ny;

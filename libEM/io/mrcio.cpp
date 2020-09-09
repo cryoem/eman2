@@ -46,9 +46,9 @@ using namespace EMAN;
 const char *MrcIO::CTF_MAGIC = "!-";
 const char *MrcIO::SHORT_CTF_MAGIC = "!$";
 
-MrcIO::MrcIO(const string & mrc_filename, IOMode rw)
-:	filename(mrc_filename), rw_mode(rw), mrcfile(0), mode_size(0),
-		isFEI(false), is_ri(0), is_new_file(false), initialized(false),
+MrcIO::MrcIO(const string & fname, IOMode rw)
+:	ImageIO(fname, rw), mode_size(0),
+		isFEI(false), is_ri(0), is_new_file(false),
 		is_transpose(false), is_stack(false), stack_size(1),
 		is_8_bit_packed(false), use_given_dimensions(true),
 		rendermin(0.0), rendermax(0.0), renderbits(16)
@@ -59,9 +59,9 @@ MrcIO::MrcIO(const string & mrc_filename, IOMode rw)
 
 MrcIO::~MrcIO()
 {
-	if (mrcfile) {
-		fclose(mrcfile);
-		mrcfile = NULL;
+	if (file) {
+		fclose(file);
+		file = NULL;
 	}
 }
 
@@ -93,7 +93,7 @@ void MrcIO::init()
 	initialized = true;
 
 //	mrcfile = sfopen(filename, rwmode, &is_new_file);
-	mrcfile = sfopen(filename, rwmode, NULL);
+	file = sfopen(filename, rwmode, NULL);
 
 	string ext = Util::get_filename_ext(filename);
 
@@ -108,7 +108,7 @@ void MrcIO::init()
 	}
 
 	if (! is_new_file) {
-		if (fread(&mrch, sizeof(MrcHeader), 1, mrcfile) != 1) {
+		if (fread(&mrch, sizeof(MrcHeader), 1, file) != 1) {
 			throw ImageReadException(filename, "MRC header");
 		}
 
@@ -670,9 +670,9 @@ int MrcIO::read_fei_header(Dict & dict, int image_index, const Region * area, bo
 	/* Read extended image header by specified image index */
 	FeiMrcExtHeader feiexth;
 
-	portable_fseek(mrcfile, sizeof(FeiMrcHeader)+sizeof(FeiMrcExtHeader)*image_index, SEEK_SET);
+	portable_fseek(file, sizeof(FeiMrcHeader)+sizeof(FeiMrcExtHeader)*image_index, SEEK_SET);
 
-	if (fread(&feiexth, sizeof(FeiMrcExtHeader), 1, mrcfile) != 1) {
+	if (fread(&feiexth, sizeof(FeiMrcExtHeader), 1, file) != 1) {
 		throw ImageReadException(filename, "FEI MRC extended header");
 	}
 
@@ -757,7 +757,7 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 			opposite_endian = true;
 		}
 
-		portable_fseek(mrcfile, 0, SEEK_SET);
+		portable_fseek(file, 0, SEEK_SET);
 	}
 	else {
 		mrch.alpha = mrch.beta = mrch.gamma = 90.0f;
@@ -944,7 +944,7 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 		swap_header(mrch2);
 	}
 
-	if (fwrite(&mrch2, sizeof(MrcHeader), 1, mrcfile) != 1) {
+	if (fwrite(&mrch2, sizeof(MrcHeader), 1, file) != 1) {
 		throw ImageWriteException(filename, "MRC header");
 	}
 
@@ -1003,9 +1003,9 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool)
 
 	if (isFEI) {	// FEI extended MRC
 		check_region(area, FloatSize(feimrch.nx, feimrch.ny, feimrch.nz), is_new_file, false);
-		portable_fseek(mrcfile, sizeof(MrcHeader)+feimrch.next, SEEK_SET);
+		portable_fseek(file, sizeof(MrcHeader)+feimrch.next, SEEK_SET);
 
-		EMUtil::process_region_io(cdata, mrcfile, READ_ONLY,
+		EMUtil::process_region_io(cdata, file, READ_ONLY,
 								  image_index, mode_size,
 								  feimrch.nx, feimrch.ny, feimrch.nz, area);
 
@@ -1015,7 +1015,7 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool)
 	}
 	else {	// regular MRC
 		check_region(area, FloatSize(mrch.nx, mrch.ny, mrch.nz), is_new_file, false);
-		portable_fseek(mrcfile, sizeof(MrcHeader)+mrch.nsymbt, SEEK_SET);
+		portable_fseek(file, sizeof(MrcHeader)+mrch.nsymbt, SEEK_SET);
 
 		size_t modesize;
 
@@ -1028,7 +1028,7 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool)
 			modesize = mode_size;
 		}
 
-		EMUtil::process_region_io(cdata, mrcfile, READ_ONLY,
+		EMUtil::process_region_io(cdata, file, READ_ONLY,
 								  image_index, modesize,
 								  mrch.nx, mrch.ny, mrch.nz, area);
 
@@ -1161,7 +1161,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 		Util::rotate_phase_origin(data, nx, ny, nz);
 	}
 
-	portable_fseek(mrcfile, sizeof(MrcHeader), SEEK_SET);
+	portable_fseek(file, sizeof(MrcHeader), SEEK_SET);
 
 	if ((is_big_endian != ByteOrder::is_host_big_endian()) || ! use_host_endian) {
 		if (mrch.mode != MRC_UCHAR  &&  mrch.mode != MRC_CHAR) {
@@ -1310,7 +1310,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 	// New way to write data which includes region writing.
 	// If it is tested to be OK, remove the old code in the
 	// #if 0  ... #endif block.
-	EMUtil::process_region_io(ptr_data, mrcfile, WRITE_ONLY, image_index,
+	EMUtil::process_region_io(ptr_data, file, WRITE_ONLY, image_index,
 							  mode_size, mrch.nx, mrch.ny, mrch.nz, area);
 
 	if (cdata)  {delete [] cdata;  cdata  = NULL;}
@@ -1339,7 +1339,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 				}
 
 				pbuf = cbuf;
-				fwrite(cbuf, row_size, 1, mrcfile);
+				fwrite(cbuf, row_size, 1, file);
 
 				break;
 
@@ -1350,7 +1350,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 				}
 
 				pbuf = sbuf;
-				fwrite(sbuf, row_size, 1, mrcfile);
+				fwrite(sbuf, row_size, 1, file);
 
 				break;
 
@@ -1360,7 +1360,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 				}
 
 				pbuf = sbuf;
-				fwrite(sbuf, row_size, 1, mrcfile);
+				fwrite(sbuf, row_size, 1, file);
 
 				break;
 
@@ -1372,7 +1372,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 			}
 
 			if (pbuf) {
-				fwrite(pbuf, row_size, 1, mrcfile);
+				fwrite(pbuf, row_size, 1, file);
 			}
 		}
 	}
@@ -1513,13 +1513,13 @@ void MrcIO::update_stats(void * data, size_t size)
 //		swap_header(mrch2);
 //	}
 
-	portable_fseek(mrcfile, 0, SEEK_SET);
+	portable_fseek(file, 0, SEEK_SET);
 	
-	if (fwrite(& mrch, sizeof(MrcHeader), 1, mrcfile) != 1) {
+	if (fwrite(& mrch, sizeof(MrcHeader), 1, file) != 1) {
 		throw ImageWriteException(filename, "Error writing MRC header to update statistics.");
 	}
 	
-	portable_fseek(mrcfile, sizeof(MrcHeader), SEEK_SET);
+	portable_fseek(file, sizeof(MrcHeader), SEEK_SET);
 }
 
 bool MrcIO::is_complex_mode()
@@ -1563,9 +1563,9 @@ void MrcIO::write_ctf(const Ctf & ctf, int)
 	strncat(mrch.labels[0], ctf_str.c_str(),
 			  MRC_LABEL_SIZE - strlen(CTF_MAGIC) - 1);
 
-	rewind(mrcfile);
+	rewind(file);
 
-	if (fwrite(&mrch, sizeof(MrcHeader), 1, mrcfile) != 1) {
+	if (fwrite(&mrch, sizeof(MrcHeader), 1, file) != 1) {
 		throw ImageWriteException(filename, "write CTF info to header failed");
 	}
 
@@ -1574,7 +1574,7 @@ void MrcIO::write_ctf(const Ctf & ctf, int)
 
 void MrcIO::flush()
 {
-	fflush(mrcfile);
+	fflush(file);
 }
 
 int MrcIO::get_mode_size(int mm)

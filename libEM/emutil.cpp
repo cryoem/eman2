@@ -45,7 +45,6 @@
 #include "ctf.h"
 #include "emassert.h"
 #include "exception.h"
-#include "io/hdf_filecache.h"
 
 
 //#ifdef EMAN2_USING_CUDA_MALLOC
@@ -202,6 +201,8 @@ EMUtil::ImageType EMUtil::get_image_ext_type(const string & file_ext)
 		imagetypes["ser"] = IMAGE_SER;
 		imagetypes["SER"] = IMAGE_SER;
 
+		imagetypes["eer"] = IMAGE_EER;
+
 		initialized = true;
 	}
 
@@ -251,6 +252,9 @@ EMUtil::ImageType EMUtil::fast_get_image_type(const string & filename,
 			return IMAGE_MRC;
 		}
 		break;
+    case IMAGE_EER:
+		return IMAGE_EER;
+        break;
 	case IMAGE_DM3:
 		if (DM3IO::is_valid(first_block)) {
 			return IMAGE_DM3;
@@ -585,6 +589,9 @@ ImageIO *EMUtil::get_imageio(const string & filename, int rw,
 #endif
 	case IMAGE_MRC:
 		imageio = new MrcIO(filename, rw_mode);
+		break;
+	case IMAGE_EER:
+		imageio = new EerIO(filename, rw_mode);
 		break;
 	case IMAGE_IMAGIC:
 		imageio = new ImagicIO2(filename, rw_mode);

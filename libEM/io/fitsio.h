@@ -41,10 +41,10 @@ namespace EMAN
 	 * dimensions and pixel type are defined in the header.
 	 */
 	
-	class FitsIO:public ImageIO
+	class FitsIO : public ImageIO
 	{
 	public:
-		explicit FitsIO(const string & filename, IOMode rw_mode = READ_ONLY);
+		explicit FitsIO(const string & fname, IOMode rw_mode = READ_ONLY);
 		~FitsIO();
 
 		DEFINE_IMAGEIO_FUNC;
@@ -58,13 +58,8 @@ namespace EMAN
 		static int to_mrcmode(int em_datatype, int is_complex);
 
 	private:
-		string filename;
-		IOMode rw_mode;
-		FILE *fitsfile;
-
 		bool is_big_endian;
 		bool is_new_file;
-		bool initialized;
 		int dstart;
 		int dtype;
 		int nx,ny,nz;

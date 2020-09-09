@@ -40,8 +40,8 @@ using namespace EMAN;
 
 const char *VtkIO::MAGIC = "# vtk DataFile Version";
 
-VtkIO::VtkIO(const string & vtk_filename, IOMode rw)
-:	filename(vtk_filename), rw_mode(rw), vtk_file(0), initialized(false)
+VtkIO::VtkIO(const string & fname, IOMode rw)
+:	ImageIO(fname, rw)
 {
 	is_big_endian = ByteOrder::is_host_big_endian();
 	is_new_file = false;
@@ -62,9 +62,9 @@ VtkIO::VtkIO(const string & vtk_filename, IOMode rw)
 
 VtkIO::~VtkIO()
 {
-	if (vtk_file) {
-		fclose(vtk_file);
-		vtk_file = 0;
+	if (file) {
+		fclose(file);
+		file = 0;
 	}
 }
 
@@ -82,12 +82,12 @@ void VtkIO::init()
 	ENTERFUNC;
 	initialized = true;
 
-	vtk_file = sfopen(filename, rw_mode, &is_new_file);
+	file = sfopen(filename, rw_mode, &is_new_file);
 
 	if (!is_new_file) {
 		char buf[1024];
 		int bufsz = sizeof(buf);
-		if (fgets(buf, bufsz, vtk_file) == 0) {
+		if (fgets(buf, bufsz, file) == 0) {
 			throw ImageReadException(filename, "first block");
 		}
 
@@ -95,11 +95,11 @@ void VtkIO::init()
 			throw ImageReadException(filename, "invalid VTK");
 		}
 
-		if (fgets(buf, bufsz, vtk_file) == 0) {
+		if (fgets(buf, bufsz, file) == 0) {
 			throw ImageReadException(filename, "read VTK file failed");
 		}
 
-		if (fgets(buf, bufsz, vtk_file)) {
+		if (fgets(buf, bufsz, file)) {
 			if (samestr(buf, "ASCII")) {
 				filetype = VTK_ASCII;
 			}
@@ -111,7 +111,7 @@ void VtkIO::init()
 			throw ImageReadException(filename, "read VTK file failed");
 		}
 
-		if (fgets(buf, bufsz, vtk_file)) {
+		if (fgets(buf, bufsz, file)) {
 			if (samestr(buf, "DATASET")) {
 				char dataset_name[128];
 				sscanf(buf, "DATASET %s", dataset_name);
@@ -123,7 +123,7 @@ void VtkIO::init()
 			throw ImageReadException(filename, "read VTK file failed");
 		}
 
-		while (fgets(buf, bufsz, vtk_file)) {
+		while (fgets(buf, bufsz, file)) {
 			if (samestr(buf, "SCALARS")) {
 				char datatypestr[32];
 				char scalartype[32];
@@ -151,7 +151,7 @@ void VtkIO::init()
 			throw ImageReadException(filename, "binary VTK is not supported");
 		}
 #endif
-		file_offset = portable_ftell(vtk_file);
+		file_offset = portable_ftell(file);
 	}
 	EXITFUNC;
 }
@@ -231,15 +231,15 @@ int VtkIO::write_header(const Dict & dict, int image_index, const Region*,
 	spacingy = dict["apix_y"];
 	spacingz = dict["apix_z"];
 
-	fprintf(vtk_file, "# vtk DataFile Version 2.0\n");
-	fprintf(vtk_file, "EMAN\n");
-	fprintf(vtk_file, "BINARY\n");
-	fprintf(vtk_file, "DATASET STRUCTURED_POINTS\n");
-	fprintf(vtk_file, "DIMENSIONS %0d %0d %0d\nORIGIN %f %f %f\nSPACING %f %f %f\n",
+	fprintf(file, "# vtk DataFile Version 2.0\n");
+	fprintf(file, "EMAN\n");
+	fprintf(file, "BINARY\n");
+	fprintf(file, "DATASET STRUCTURED_POINTS\n");
+	fprintf(file, "DIMENSIONS %0d %0d %0d\nORIGIN %f %f %f\nSPACING %f %f %f\n",
 			nx, ny, nz, originx, originy, originz, spacingx, spacingy, spacingz);
 
 
-	fprintf(vtk_file, "POINT_DATA %0lu\nSCALARS density float 1\nLOOKUP_TABLE default\n",
+	fprintf(file, "POINT_DATA %0lu\nSCALARS density float 1\nLOOKUP_TABLE default\n",
 			(size_t)nx * ny * nz);
 	EXITFUNC;
 	return 0;
@@ -257,7 +257,7 @@ int VtkIO::read_data(float *data, int image_index, const Region * area, bool)
 		LOGWARN("read VTK region is not supported yet. Read whole image instead.");
 	}
 
-	portable_fseek(vtk_file, file_offset, SEEK_SET);
+	portable_fseek(file, file_offset, SEEK_SET);
 
 	int xlen = 0, ylen = 0, zlen = 0;
 	int x0 = 0, y0 = 0, z0 = 0;
@@ -270,7 +270,7 @@ int VtkIO::read_data(float *data, int image_index, const Region * area, bool)
 		char *buf = new char[bufsz];
 		int i = 0;
 
-		while (fgets(buf, bufsz, vtk_file)) {
+		while (fgets(buf, bufsz, file)) {
 			size_t bufslen = strlen(buf) - 1;
 			char numstr[32];
 			int k = 0;
@@ -298,7 +298,7 @@ int VtkIO::read_data(float *data, int image_index, const Region * area, bool)
 		for (int i = 0; i < nz; i++) {
 			int i2 = i * nxy;
 			for (int j = 0; j < ny; j++) {
-				fread(&data[i2 + j * nx], row_size, 1, vtk_file);
+				fread(&data[i2 + j * nx], row_size, 1, file);
 			}
 		}
 
@@ -326,7 +326,7 @@ int VtkIO::write_data(float *data, int image_index, const Region* ,
 		swapped = true;
 	}
 
-	fwrite(data, nx * nz, ny * sizeof(float), vtk_file);
+	fwrite(data, nx * nz, ny * sizeof(float), file);
 
 	if (swapped) {
 		ByteOrder::swap_bytes(data, (size_t)nx * ny * nz);
@@ -337,7 +337,7 @@ int VtkIO::write_data(float *data, int image_index, const Region* ,
 
 void VtkIO::flush()
 {
-	fflush(vtk_file);
+	fflush(file);
 }
 
 bool VtkIO::is_complex_mode()
@@ -453,7 +453,7 @@ void VtkIO::read_dataset(DatasetType dstype)
 	if (dstype == STRUCTURED_POINTS) {
 		int nlines = 3;
 		int i = 0;
-		while (i < nlines && fgets(buf, bufsz, vtk_file)) {
+		while (i < nlines && fgets(buf, bufsz, file)) {
 			if (samestr(buf, "DIMENSIONS")) {
 				sscanf(buf, "DIMENSIONS %d %d %d", &nx, &ny, &nz);
 			}

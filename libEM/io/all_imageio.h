@@ -35,6 +35,7 @@
 // NOTE: for some reason unknown, hdfio.h must be behind pngio.h. 
 
 #include "mrcio.h"
+#include "eerio.h"
 
 #ifdef USE_PNG
 	#include "pngio.h"

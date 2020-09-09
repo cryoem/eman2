@@ -37,8 +37,8 @@
 
 using namespace EMAN;
 
-SingleSpiderIO::SingleSpiderIO(const string & file, IOMode rw)
-:	SpiderIO(file, rw)
+SingleSpiderIO::SingleSpiderIO(const string & fname, IOMode rw)
+:	SpiderIO(fname, rw)
 {
 }
 

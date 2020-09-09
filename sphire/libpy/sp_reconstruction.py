@@ -97,13 +97,13 @@ def recons3d_4nn(
 	"""
 
     if list_proj == []:
-        if type(stack_name) == bytes:
+        if isinstance(stack_name, (bytes, str)):
             nima = EMAN2_cppwrap.EMUtil.get_image_count(stack_name)
         else:
             nima = len(stack_name)
         list_proj = list(range(nima))
     # read first image to determine the size to use
-    if type(stack_name) == bytes:
+    if isinstance(stack_name, (bytes, str)):
         proj = EMAN2_cppwrap.EMData()
         proj.read_image(stack_name, list_proj[0])
     else:
@@ -160,7 +160,7 @@ def recons3d_4nn(
 
     r.setup()
 
-    if type(stack_name) == bytes:
+    if isinstance(stack_name, (bytes, str)):
         for i in range(len(list_proj)):
             proj.read_image(stack_name, list_proj[i])
             # horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1

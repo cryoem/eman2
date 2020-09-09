@@ -55,7 +55,7 @@ namespace EMAN
 	class SerIO : public ImageIO
 	{
 	public:
-		explicit SerIO(const string & filename, IOMode rw_mode = READ_ONLY);
+		explicit SerIO(const string & fname, IOMode rw_mode = READ_ONLY);
 		~SerIO();
 
 		DEFINE_IMAGEIO_FUNC;
@@ -101,10 +101,6 @@ namespace EMAN
 			int		NumberDimensions;
 		};
 
-		string 	filename;
-		IOMode 	rw_mode;
-		FILE *	serfile;
-		bool 	initialized;
 		bool 	is_new_file;
 
 		SerHeader serh;

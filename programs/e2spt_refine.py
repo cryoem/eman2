@@ -17,6 +17,7 @@ def main():
 	parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=2, col=1, rowspan=1, colspan=1, mode="model")
 
 	parser.add_argument("--mask", type=str,help="Mask file to be applied to initial model", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=3, col=0,rowspan=1, colspan=3, mode="model")
+	parser.add_argument("--maskalign", type=str,help="Mask file applied to 3D alignment reference in each iteration. Not applied to the average, which will follow normal masking routine.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=3, col=0,rowspan=1, colspan=3, mode="model")
 
 	parser.add_argument("--niter", type=int,help="Number of iterations", default=5, guitype='intbox',row=4, col=0,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--sym", type=str,help="symmetry", default="c1", guitype='strbox',row=4, col=1,rowspan=1, colspan=1, mode="model")
@@ -49,6 +50,7 @@ def main():
 	parser.add_argument("--scipy",action="store_true",help="test scipy refinement",default=False)
 	parser.add_argument("--breaksym",action="store_true",help="break symmetry",default=False)
 	parser.add_argument("--breaksymsym", type=str,help="Specify a different symmetry for breaksym.", default=None)
+	parser.add_argument("--symalimask",type=str,default=None,help="This will translationally realign each asymmetric unit to the previous map masked by the specified mask. While this invokes symalimasked in e2spt_average, this isn't the same, it is a mask, not a masked reference. ")
 	
 	#parser.add_argument("--masktight", type=str,help="Mask_tight file", default="")
 
@@ -88,6 +90,13 @@ def main():
 	if options.parallel=="":
 		options.parallel="thread:{}".format(options.threads)
 	
+	msk=options.mask
+	if len(msk)>0:
+		if os.path.isfile(msk):
+			msk=" --automask3d mask.fromfile:filename={}".format(msk)
+		else:
+			msk=" --automask3d {}".format(msk)
+
 	#### make a list file if the particles are not in a lst
 	if ptcls.endswith(".json"):
 		jstmp=js_open_dict(ptcls)
@@ -131,6 +140,13 @@ def main():
 		
 	
 	for itr in range(startitr,options.niter+startitr):
+
+		# the alignment ref may be masked using a different file, or just copied
+		ar=EMData(ref,0)
+		if (len(options.maskalign)>0):
+			m=EMData(options.maskalign,0)
+			ar.mult(m)
+		ar.write_image(f"{options.path}/alignref.hdf",0)
 		
 		#### generate alignment command first
 		gd=""
@@ -162,7 +178,7 @@ def main():
 		if options.scipy:
 			gd+=" --scipy"
 
-		cmd="e2spt_align.py {} {} --parallel {} --path {} --iter {} --sym {} --maxres {} {}".format(ptcls, ref,  options.parallel, options.path, itr, options.sym, curres, gd)
+		cmd="e2spt_align.py {} {}/alignref.hdf --parallel {} --path {} --iter {} --sym {} --maxres {} {}".format(ptcls, options.path,  options.parallel, options.path, itr, options.sym, curres, gd)
 		
 		ret=run(cmd)
 		
@@ -170,6 +186,12 @@ def main():
 		s=""
 		if options.maxtilt<90.:
 			s+=" --maxtilt {:.1f}".format(options.maxtilt)
+
+		# we apply the symmetric subunit mask provided to the current reference and send it to e2spt_average to do a final translational alignment
+		if options.symalimask!=None: 
+			cmd=f"e2proc3d.py {ref} {options.path}/ref_mono.hdf --multfile {options.symalimask}"
+			run(cmd)
+			s+=f" --symalimasked={options.path}/ref_mono.hdf"
 			
 		
 		run("e2spt_average.py --threads {} --path {} --sym {} --skippostp {}".format(options.threads, options.path, options.sym, s))
@@ -201,14 +223,6 @@ def main():
 			e.write_image(f)
 			
 		
-		msk=options.mask
-		if len(msk)>0:
-			if os.path.isfile(msk):
-				msk=" --automask3d mask.fromfile:filename={}".format(msk)
-			else:
-				msk=" --automask3d {}".format(msk)
-
-
 		s=""
 		if options.goldstandard>0:
 			s+=" --align"
@@ -219,10 +233,22 @@ def main():
 		if options.localfilter:
 			s+=" --tophat local "
 			
-		ppcmd="e2refine_postprocess.py --even {} --odd {} --output {} --iter {:d} --mass {} --threads {} --sym {} {} {} ".format(even, odd, os.path.join(options.path, "threed_{:02d}.hdf".format(itr)), itr, options.mass, options.threads, options.sym, msk, s)
-		run(ppcmd)
-		
-			
+		# if we are doing local symmetry refinement or breaking the symmetry
+		# it's a bit counterproductive if we then apply symmetry here (as was happening before 8/22/20)
+		syms=f"--sym {options.sym}"
+		if options.symalimask!=None or options.breaksym: syms=""
+		run(f"e2refine_postprocess.py --even {even} --odd {odd} --output {options.path}threed_{itr:02d}.hdf --iter {itr:d} --mass {options.mass} --threads {options.threads} {syms} {msk} {s}")
+
+		try: symn=int(options.sym[1:])
+		except: symn=0
+		if options.symalimask!=None and not options.breaksym and symn>0:
+			os.rename(f"{options.path}threed_{itr:02d}.hdf",f"{options.path}threed_{itr:02d}_nosym.hdf")
+			phir=360.0/(symn*2.0)
+			if   options.sym[0].lower()=="c":
+				run(f"e2proc3d.py {options.path}threed_{itr:02d}_nosym.hdf {options.path}threed_{itr:02d}.hdf --process mask.cylinder:phicen=0:phirange={phir-5.0}:phitriangle=1:phitrirange=10.0 --sym {options.sym}")
+			elif options.sym[0].lower()=="d":
+				run(f"e2proc3d.py {options.path}threed_{itr:02d}_nosym.hdf {options.path}threed_{itr:02d}.hdf --process mask.cylinder:phicen=0:phirange={phir-5.0}:phitriangle=1:phitrirange=10.0:zmin={data['nz']/2}:zmax={data['nz']} --sym {options.sym}")
+
 		ref=os.path.join(options.path, "threed_{:02d}.hdf".format(itr))
 		fsc=np.loadtxt(os.path.join(options.path, "fsc_masked_{:02d}.txt".format(itr)))
 		

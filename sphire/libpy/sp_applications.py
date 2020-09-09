@@ -231,7 +231,7 @@ def ali2d_MPI(
             sp_utilities.print_msg("GPU IDs                     : %s\n" % (GPUID))
 
     if maskfile:
-        if type(maskfile) is bytes:
+        if isinstance(maskfile, (bytes, str)):
             if myid == main_node:
                 sp_utilities.print_msg(
                     "Maskfile                    : %s\n\n" % (maskfile)
@@ -730,7 +730,7 @@ def ali2d_base(
     else:
         auto_stop = False
 
-    if type(stack) is bytes:
+    if isinstance(stack, (bytes, str)):
         if myid == main_node:
             total_nima = EMAN2_cppwrap.EMUtil.get_image_count(stack)
         else:
@@ -818,7 +818,7 @@ def ali2d_base(
         log.add("Number of processors used   : %d" % (number_of_proc))
 
     if maskfile:
-        if type(maskfile) is bytes:
+        if isinstance(maskfile, (bytes, str)):
             if myid == main_node:
                 log.add("Maskfile                    : %s" % (maskfile))
             mask = sp_utilities.get_image(maskfile)
@@ -1284,7 +1284,7 @@ def mref_ali2d(
     user_func = sp_user_functions.factory[user_func_name]
 
     if maskfile:
-        if type(maskfile) is bytes:
+        if isinstance(maskfile, (bytes, str)):
             mask = sp_utilities.get_image(maskfile)
         else:
             mask = maskfile
@@ -1619,7 +1619,7 @@ def mref_ali2d_MPI(
     user_func = sp_user_functions.factory[user_func_name]
 
     if maskfile:
-        if type(maskfile) is bytes:
+        if isinstance(maskfile, (bytes, str)):
             mask = sp_utilities.get_image(maskfile)
         else:
             mask = maskfile
@@ -1980,6 +1980,31 @@ def mref_ali2d_MPI(
 
 """Multiline Comment32"""
 
+def transform2d(stack_data, stack_data_ali, shift = False, ignore_mirror = False, method = "quadratic"):
+# apply 2D alignment parameters stored in the header of the input stack file using gridding interpolation and create an output stack file
+    from sp_fundamentals   import rot_shift2D
+    from sp_utilities 	    import set_params2D, get_params2D, get_im
+    import os
+    if  shift:
+        from sp_utilities     import compose_transform2m
+        from sp_fundamentals  import fshift, mirror
+
+    t = EMAN2_cppwrap.Transform({"type":"2D"})# Transform({"type":"2D"})
+    nima = EMAN2_cppwrap.EMUtil.get_image_count(stack_data)
+    for im in range(nima):
+        data = get_im(stack_data, im)
+        al2d = get_params2D(data)
+        if(shift):
+            angb, sxb, syb, nm, ct = compose_transform2m(0.0, al2d[1], al2d[2], 0, 1.0, -al2d[0], 0.0, 0.0, al2d[3], 1.0)
+            data = fshift(data, sxb, syb)
+            if ignore_mirror: nm = 0
+            if(nm == 1):  data = mirror(data)
+        else:
+            if ignore_mirror: al2d[3] = 0
+            data = rot_shift2D(data, al2d[0], al2d[1], al2d[2], al2d[3], al2d[4], interpolation_method = method)
+        data.set_attr("xform.align2d", t)
+        data.write_image(stack_data_ali, im)
+
 
 def cpy(ins_list, ous):
     # reworked to include lists, since we want to be able to copy lists of images
@@ -2065,7 +2090,7 @@ def project3d(
         angles = sp_utilities.even_angles(
             delta, symmetry=symmetry, method=method, phiEqpsi=phiEqpsi
         )
-    elif type(listagls) is bytes:
+    elif isinstance(listagls, (bytes, str)):
         angles = sp_utilities.read_text_row(listagls, "", "")
     else:
         angles = listagls
@@ -2074,7 +2099,7 @@ def project3d(
     if listctfs is None:
         # not set, so simply ignore it
         ctfs = None
-    elif type(listctfs) is bytes:
+    elif isinstance(listctfs, (bytes, str)):
         # a string, so assume this is a filename and try to open the file
         try:
             ctfs = sp_utilities.read_text_row(listctfs, "", "")
@@ -2094,11 +2119,11 @@ def project3d(
     else:
         noise_level = None
 
-    if type(volume) is bytes:
+    if isinstance(volume, (bytes, str)):
         vol = EMAN2_cppwrap.EMData()
         vol.read_image(volume)
         if mask:
-            if type(mask) is bytes:
+            if isinstance(mask, (bytes, str)):
                 maski = EMAN2_cppwrap.EMData()
                 maski.read_image(volume)
                 EMAN2_cppwrap.Util.mul_img(vol, maski)
@@ -2122,7 +2147,7 @@ def project3d(
         vol = volume
         if mask:
             vol = vol.copy()
-            if type(mask) is bytes:
+            if isinstance(mask, (bytes, str)):
                 maski = EMAN2_cppwrap.EMData()
                 maski.read_image(volume)
                 EMAN2_cppwrap.Util.mul_img(vol, maski)
@@ -2143,7 +2168,7 @@ def project3d(
             else:
                 volft, kbx, kby, kbz = sp_projection.prep_vol(vol)
 
-    if type(stack) is bytes:
+    if isinstance(stack, (bytes, str)):
         Disk = True
         os.system("rm -f  " + stack)
     else:
