@@ -8,7 +8,10 @@ os.environ["CUDA_VISIBLE_DEVICES"]='0'
 os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]='true' 
 import tensorflow as tf
 
+#### Symmetrize the Gaussian coordinates. Only works for c/d sym right now
 def get_sym_pts(sym, pts):
+	if sym=="c1":
+		return [tf.transpose(pts[:,:3])]
 	nsym=Transform.get_nsym(sym)
 	asym=[]
 	if sym.startswith('d'):
@@ -35,6 +38,7 @@ def get_sym_pts(sym, pts):
 			
 	return asym
 
+#### rotate-translate Gaussian coordinates based on transforms
 @tf.function
 def xf2pts(pts, ang):
 
@@ -141,16 +145,23 @@ def calc_frc(data_cpx, imgs_cpx, return_curve=False):
 	if return_curve:
 		return frc
 	else:
-		#### min/max resolution considered
-		#fq= np.logical_and(freq>1./freq_bound[0], freq<1./freq_bound[1]).astype(floattype)
-		#frcval=tf.reduce_sum(frc*fq[:sz//2], axis=1)/np.sum(fq)
-		#frcval=tf.reduce_mean(frc[:, sz//8:sz//3], axis=1)
-		wt=weightcurve[:sz//3]
-		frcval=tf.reduce_mean(frc[:, :sz//3]*wt[None,:], axis=1)
+		frcval=tf.reduce_mean(frc[:, 4:], axis=1)
 		return frcval
 	
+#### load particles from file and fourier transform them
+#### particles need to have their transform in file header or comment of list file
 def load_particles(fname, shuffle=False, hdrxf=False):
-	projs=EMData.read_images(fname)#[:200]
+	projs=[]
+	n=EMUtil.get_image_count(fname)
+	e=EMData(fname, 0, True)
+	nx=e["nx"]
+	bx=nx
+	for i in range(n):
+		e=EMData(fname, i)
+		e.clip_inplace(Region((nx-bx)//2,(nx-bx)//2, bx,bx))
+		projs.append(e)
+		
+	#projs=EMData.read_images(fname)#[:200]
 	if shuffle:
 		rnd=np.arange(len(projs))
 		np.random.shuffle(rnd)
@@ -181,14 +192,17 @@ def load_particles(fname, shuffle=False, hdrxf=False):
 	else:
 		return data_cpx
 	
+#### do fourier clipping in numpy than export to tf to save memory...
 def get_clip(datacpx, newsz):
 	if (datacpx[0].shape[1])<=newsz:
 		return datacpx
 	s=newsz//2
-	dc=[tf.boolean_mask(d,clipid[1]<s, axis=1) for d in datacpx]
-	dc=[tf.boolean_mask(d,clipid[0]<s+1, axis=2) for d in dc]
-	return dc
+	dc=[d[:,clipid[1]<s,:] for d in datacpx]
+	dc=[d[:,:,clipid[0]<s+1] for d in dc]
+	return [tf.constant(d) for d in dc]
 
+#### compute fourier indices for image generation, clipping, and frc
+#### use some global varibles to avoid passing them around too often...
 def set_indices_boxsz(boxsz, apix=0, return_freq=False):
 	idx=np.indices((boxsz,boxsz))-boxsz//2
 	idx=np.fft.ifftshift(idx)
@@ -217,25 +231,59 @@ def set_indices_boxsz(boxsz, apix=0, return_freq=False):
 		
 		return idxft, rrft, rings
 
-
-def build_generator(npt, mid=512):
-	pall=np.zeros((npt, 5), dtype=floattype)
-	pall[:,3:]=1
+#### build decoder network. 
+## input integer to initialize as zeros with N points
+## input point list to initialize to match input
+def build_decoder(pts, mid=512):
+	if isinstance(pts, int):
+		npt=pts
+		initpts=False
+		
+	else:
+		npt=len(pts)
+		initpts=True
+	
+	x0=tf.keras.Input(shape=(1,2))
+	
+	kinit=tf.keras.initializers.RandomNormal(0,1e-2)
+	layer_output=tf.keras.layers.Dense(npt*5, kernel_initializer=kinit, activation="sigmoid")
+	
 	layers=[
-		tf.keras.layers.Dense(mid,input_shape=(1,2),activation="relu",
-					bias_initializer=tf.random_normal_initializer(0,.01)),
+		tf.keras.layers.Dense(mid,activation="relu",
+					bias_initializer=kinit),
 		tf.keras.layers.Dense(mid,activation="relu"),
 		tf.keras.layers.Dense(mid,activation="relu"),
 		tf.keras.layers.Dense(mid,activation="relu"),
 		tf.keras.layers.BatchNormalization(),
-		tf.keras.layers.Dense(npt*5, kernel_initializer=tf.random_normal_initializer(.0,.1),
-					bias_initializer=tf.constant_initializer(pall)),
+		layer_output,
 		tf.keras.layers.Reshape((npt,5))
 	]
-	gen_model=tf.keras.Sequential(layers)
+	
+	## the five columns are for x,y,z,amp,sigma
+	## the range for x,y,z is [-.5, .5]
+	## range for amp is [0,1], sigma is [.5, 1.5]
+	bshift=np.array([-.5,-.5,-.5,0,.5]).astype(floattype)
+	
+	y0=x0
+	for l in layers:
+		y0=l(y0)
+		
+	y0=y0+tf.constant(bshift)
+	gen_model=tf.keras.Model(x0, y0)
+	
+	## match the bias of the final layer to input
+	## need to undo the sigmoid activation
+	if initpts:
+		bs=pts.copy()-bshift
+		bs=np.clip(bs, 1e-6, 1-1e-6)
+		bs=-np.log(1./bs-1)
+		layer_output.bias.assign(bs.flatten())
+	
 	return gen_model
 
-def train_generator(gen_model, trainset, options):
+#### training decoder on projections
+
+def train_decoder(gen_model, trainset, options):
 	opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate) 
 	wts=gen_model.trainable_variables
 	
@@ -251,7 +299,7 @@ def train_generator(gen_model, trainset, options):
 				conf=tf.zeros((xf.shape[0],1,2), dtype=floattype)
 				pout=gen_model(conf)
 				std=tf.reduce_mean(tf.math.reduce_std(pout, axis=1), axis=0)
-				imgs_cpx=pts2img(pout, xf, sym=options.sym)
+				imgs_cpx=pts2img(pout, xf)
 				fval=calc_frc(pj_cpx, imgs_cpx)
 				loss=-tf.reduce_mean(fval)
 				l=loss+std[4]*options.sigmareg
@@ -260,20 +308,29 @@ def train_generator(gen_model, trainset, options):
 			grad=gt.gradient(l, wts)
 			opt.apply_gradients(zip(grad, wts))
 			
-			sys.stdout.write("\r {}/{}\t{:.3f}".format(len(cost), nbatch, loss))
+			sys.stdout.write("\r {}/{}\t{:.3f}     ".format(len(cost), nbatch, loss))
 			sys.stdout.flush()
 		sys.stdout.write("\r")
 		
-		print("iter {}, loss : {:.3f}".format(itr, np.mean(cost)))
+		print("iter {}, loss : {:.3f}      ".format(itr, np.mean(cost)))
 
-def eval_model(gen_model, trainset, options):
+def eval_model(gen_model, options):
 	
 	imgs=[]
 	xfs=[]
-	for pjr,pji,xf in trainset:
+	symmetry=Symmetries.get(options.sym)
+	xfs=symmetry.gen_orientations("eman", {"delta":3})
+	xfs=[x.get_params("eman") for x in xfs]
+	
+	xfsnp=np.array([[x["az"],x["alt"],x["phi"], x["tx"], x["ty"]] for x in xfs], dtype=floattype)
+	xfsnp[:,:3]=xfsnp[:,:3]*np.pi/180.
+	xfs=[]
+	set_indices_boxsz(128)
+	trainset=tf.data.Dataset.from_tensor_slices((xfsnp))
+	trainset=trainset.batch(8)
+	for xf in trainset:
 		conf=tf.zeros((xf.shape[0],1,2), dtype=floattype)
 		pout=gen_model(conf)
-		std=tf.reduce_mean(tf.math.reduce_std(pout, axis=1), axis=0)
 		imgs_real, imgs_imag=pts2img(pout, xf, sym=options.sym)
 		imgs_cpx=tf.complex(imgs_real, imgs_imag)
 		imgs_out=tf.signal.irfft2d(imgs_cpx)
@@ -297,7 +354,6 @@ def eval_model(gen_model, trainset, options):
 		e.write_image(options.evalmodel,-1)
 		
 	
-
 def ccf_trans(ref,img):
 	ref_real, ref_imag = ref
 	img_real, img_imag = img
@@ -374,30 +430,47 @@ def refine_align(dcpx, xfsnp, pts, options, lr=1e-3):
 	opt=tf.keras.optimizers.Adam(learning_rate=lr) 
 	xfvs=[]
 	frcs=[]
-	niter=options.niter*2
+	niter=options.niter
+	scr=[]
+	
 	for ptr,ptj,xf in trainset:
 		ptcl_cpx=(ptr, ptj)
 		xfvar=tf.Variable(xf)
+		p=tf.constant(tf.zeros((xf.shape[0],pts.shape[0], 5))+pts)
+		cost=[]
 		for itr in range(niter):
 			with tf.GradientTape() as gt:
-				proj_cpx=pts2img(pts, xfvar, sym=options.sym)
+				#xv=tf.concat([xf[:,:3], xfvar[:,3:]], axis=1)
+				xv=xfvar
+				proj_cpx=pts2img(p, xv, sym=options.sym)
 				fval=calc_frc(proj_cpx, ptcl_cpx)
 				loss=-tf.reduce_mean(fval)
 
 			grad=gt.gradient(loss, xfvar)
 			opt.apply_gradients([(grad, xfvar)])
+			cost.append(loss)
 
 			sys.stdout.write("\r batch {}/{}, iter {}/{}, loss {:.3f}   ".format(len(xfvs), nbatch, itr+1, niter, loss))
 			sys.stdout.flush()
 			
 		xfvs.append(xfvar.numpy())
 		frcs.extend(fval.numpy().tolist())
-	xfsnp=np.vstack(xfvs)
+		scr.append([cost[0],cost[-1]])
+		
 	print()
+	xfsnp1=np.vstack(xfvs)
+	print(np.mean(abs(xfsnp1-xfsnp), axis=0))
+	#xfsnp1[:,:3]=xfsnp[:,:3]
+	xfsnp=xfsnp1.copy()
+	
 	frcs=np.array(frcs)
+	
+	scr=np.mean(scr, axis=0)
+	print("Done. average loss from {:.3f} to {:.3f}".format(scr[0], scr[1]))
+	
 	return xfsnp, frcs
 
-def save_ptcls_xform(xfsnp, boxsz, options):
+def save_ptcls_xform(xfsnp, boxsz, options, scr):
 	xnp=xfsnp.copy()
 	xnp[:,:3]=xnp[:,:3]*180./np.pi
 	xnp[:,3:]*=boxsz
@@ -409,9 +482,11 @@ def save_ptcls_xform(xfsnp, boxsz, options):
 	if os.path.isfile(oname): os.remove(oname)
 	lst=LSXFile(oname, False)
 	lst0=LSXFile(options.ptclsin, True)
+	print(scr)
 	for i,xf in enumerate(xfs):
 		l0=lst0.read(i)
 		d=xf.get_params("eman")
+		d["score"]=-scr[i]
 		lst.write(-1, l0[0], l0[1], str(d))
 
 	lst=None
@@ -428,12 +503,12 @@ def main():
 	parser.add_argument("--projs", type=str,help="projections with orientations (in hdf header or comment column of lst file) to train model", default="")
 	parser.add_argument("--evalmodel", type=str,help="generate model projection images", default="")
 	parser.add_argument("--ptclsin", type=str,help="particles input for alignment", default="")
-	parser.add_argument("--fsc", type=str,help="fsc file input for weighting. does not seem to be very useful...", default="")
+	#parser.add_argument("--fsc", type=str,help="fsc file input for weighting. does not seem to be very useful...", default="")
 	parser.add_argument("--ptclsout", type=str,help="aligned particle output", default="")
 	parser.add_argument("--learnrate", type=float,help="learning rate for model training only. ", default=1e-4)
-	parser.add_argument("--sigmareg", type=float,help="regularizer for the std of gaussian width", default=.5)
+	parser.add_argument("--sigmareg", type=float,help="regularizer for the std of gaussian width", default=.1)
 	parser.add_argument("--niter", type=int,help="number of iterations", default=10)
-	parser.add_argument("--npts", type=int,help="number of points to initialize. default is 64", default=64)
+	parser.add_argument("--npts", type=int,help="number of points to initialize. ", default=-1)
 	parser.add_argument("--batchsz", type=int,help="batch size", default=32)
 	parser.add_argument("--maxboxsz", type=int,help="maximum fourier box size to use. Idealy use pixels of the current resolution * 3 ", default=64)
 	parser.add_argument("--double", action="store_true", default=False ,help="double the number of points.")
@@ -442,23 +517,26 @@ def main():
 	logid=E2init(sys.argv)
 	
 
-	maxboxsz=options.maxboxsz
-	global weightcurve
-	if options.fsc:
-		weightcurve=np.loadtxt(options.fsc)[:,1]
-	else:
-		weightcurve=np.ones(1000)
-	weightcurve[:4]=0
-		
+	maxboxsz=options.maxboxsz		
 		
 	if options.model:
 		print("Recompute model from coordinates...")
 		pts=np.loadtxt(options.model)
+		#pts=pts[:1001]
+		
 		if options.double:
 			pts=np.repeat(pts, 2, axis=0)
 			pts[:,3]/=2
 		
-		gen_model=build_generator(len(pts))
+		if options.npts>len(pts):
+			p=pts.copy()
+			np.random.shuffle(p)
+			p=p[:(options.npts-len(pts))]
+			pts=np.concatenate([pts, p], axis=0)
+	       
+		## randomize it a bit so we dont have all zero weights
+		rnd=np.random.randn(pts.shape[0], pts.shape[1])*1e-3
+		gen_model=build_decoder(pts+rnd)
 		print("{} gaussian in the model".format(len(pts)))
 		conf=tf.zeros((1,1,2), dtype=floattype)
 		opt=tf.keras.optimizers.Adam(learning_rate=1e-4) 
@@ -466,9 +544,10 @@ def main():
 		loss=[]
 		for i in range(500):
 			loss.append(gen_model.train_on_batch(conf, pts))
-		print("Abs loss from loaded model : {:.03f}".format(loss[-1]))
+			
+		print("Abs loss from loaded model : {:.05f}".format(loss[-1]))
 	else:
-		gen_model=build_generator(options.npts)
+		gen_model=build_decoder(options.npts)
 	
 	if options.projs:
 		print("Train model from ptcl-xfrom pairs...")
@@ -478,17 +557,19 @@ def main():
 		data_cpx, xfsnp = load_particles(options.projs, shuffle=True, hdrxf=True)
 		set_indices_boxsz(data_cpx[0].shape[1], raw_apix, True)
 		
-		set_indices_boxsz(maxboxsz)
-		dcpx=get_clip(data_cpx, sz)
-		trainset=tf.data.Dataset.from_tensor_slices((dcpx[0], dcpx[1], xfsnp))
-		trainset=trainset.batch(options.batchsz)
+		if options.niter>0:
+			set_indices_boxsz(maxboxsz)
+			dcpx=get_clip(data_cpx, sz)
+			trainset=tf.data.Dataset.from_tensor_slices((dcpx[0], dcpx[1], xfsnp))
+			trainset=trainset.batch(options.batchsz)
 		
-		train_generator(gen_model, trainset, options)
-		pout=gen_model(tf.zeros((1,1,2), dtype=floattype))
-		np.savetxt(options.modelout, pout[0])
+			train_decoder(gen_model, trainset, options)
+			pout=gen_model(tf.zeros((1,1,2), dtype=floattype))
+			np.savetxt(options.modelout, pout[0])
 		
 		if options.evalmodel:
-			eval_model(gen_model, trainset, options)
+			set_indices_boxsz(raw_boxsz)
+			eval_model(gen_model, options)
 		
 		
 	if options.ptclsin:
@@ -526,7 +607,7 @@ def main():
 		dcpx=get_clip(data_cpx, sz)
 		xfsnp, frcs=refine_align(dcpx, xfsnp, pts, options, lr=1e-4)
 			
-		save_ptcls_xform(xfsnp, raw_boxsz, options)
+		save_ptcls_xform(xfsnp, raw_boxsz, options, frcs)
 
 	
 	#conf=tf.zeros((1,1,2), dtype=floattype)
