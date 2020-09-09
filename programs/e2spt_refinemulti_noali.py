@@ -54,12 +54,17 @@ def main():
 	itr=options.niter
 	mt=np.loadtxt("{}/avg_multi_{:02d}.txt".format(path, itr))
 	js=js_open_dict("{}/particle_parms_00.json".format(path))
+	s=Transform()
 	for i in range(ncls):
 		jout={}
-		for j,k in enumerate(js.keys()):
+		for k in list(js.keys()):
 			src,ii=eval(k)
-			if mt[j,2]==ii:
+			ic=np.where(mt[:,0]==ii)[0][0]
+			if mt[ic,2]==i:
 				jout[k]=js[k]
+				xf=js[k]["xform.align3d"]
+				x=s.get_sym(sym, int(mt[ic,3]))
+				jout[k]["xform.align3d"]=x*xf
 				
 		fm="{}/particle_parms_{:02d}_cls_{:02d}.json".format(path, itr, i)
 		jo=js_open_dict(fm)

@@ -617,6 +617,7 @@ class EMTomobox(QtWidgets.QMainWindow):
 			imgs=[r for r in oldref if r["fromtomo"]==tomo]
 			self.datafile=tomo
 			self.data=EMData(tomo)
+			self.data.mult(self.options.mult)
 			for m in imgs:
 				p=m["pos"]
 				self.add_reference(m["label"], p[0],p[1],p[2])
