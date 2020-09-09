@@ -35,6 +35,7 @@ def main():
 	parser.add_argument("--boxsz", type=int,help="Overwrite box size", default=-1, guitype='intbox', row=7, col=0,rowspan=1, colspan=1, mode="boxing")
 	parser.add_argument("--threads", type=int,help="number of threads to use", default=12, guitype='intbox', row=8, col=0,rowspan=1, colspan=1, mode="boxing")
 
+	parser.add_argument("--shrink", type=int,help="binning factor. Default (-1) will downsample to ~500", default=-1)
 	parser.add_argument("--ppid", type=int,help="ppid", default=-2)
 
 	(options, args) = parser.parse_args()
@@ -55,7 +56,10 @@ def main():
 		
 		print("Locating reference-like particles in {} (File {}/{})".format(imgname,filenum+1,len(args)))
 		img=EMData(imgname)
-		nbin=int(img["nx"]//450)
+		if options.shrink>0:
+			nbin=options.shrink
+		else:
+			nbin=int(img["nx"]//450)
 		if nbin>1:
 			print("Will shrink tomogram by {}".format(nbin))
 			img.process_inplace("math.meanshrink",{'n':nbin})
