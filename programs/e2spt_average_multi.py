@@ -324,7 +324,7 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 		stats=np.vstack(stats)
 		stats=stats[np.argsort(stats[:,0]),:]
 		np.savetxt("{}/avg_multi_{:02d}.txt".format(options.path,options.iter), stats)
-		lsts=[LSXFile(f"sets/{options.path}_{options.iter:02d}_{i:02d}" for i in range(nref)]
+		lsts=[LSXFile(f"sets/{options.path}_{options.iter:02d}_{i:02d}") for i in range(nref)]
 		for n,score,cls,x in stats:
 			lsts[cls].write(-1,n,data[0][0])
 		lsts=None
