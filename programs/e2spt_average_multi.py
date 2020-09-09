@@ -158,7 +158,13 @@ class SptavgmultTask(JSTask):
 		#callback(100)
 		outputs=[]
 		for avg in avgrs:
-			outputs.append(avg.finish())
+			a=avg.finish()
+			if a:
+				outputs.append(a)
+			else:
+				e=b.copy()
+				e.to_zero()
+				outputs.append(e)
 				
 				
 		return (outputs, nrmvls, stats)
