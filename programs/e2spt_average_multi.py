@@ -211,6 +211,7 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 
 	(options, args) = parser.parse_args()
 
+
 	if options.path == None:
 		fls=[int(i[-2:]) for i in os.listdir(".") if i[:4]=="spt_" and len(i)==6 and str.isdigit(i[-2:])]
 		if len(fls)==0 : 
@@ -218,6 +219,8 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 			sys.exit(2)
 		options.path = "spt_{:02d}".format(max(fls))
 		if options.verbose : print("Working in : ",options.path)
+		
+	options.path=options.path.strip('/\\')
 
 	if options.iter<=0 :
 		fls=[int(i[15:17]) for i in os.listdir(options.path) if i[:15]=="particle_parms_" and str.isdigit(i[15:17])]
@@ -321,7 +324,7 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 		stats=np.vstack(stats)
 		stats=stats[np.argsort(stats[:,0]),:]
 		np.savetxt("{}/avg_multi_{:02d}.txt".format(options.path,options.iter), stats)
-		lsts=[LSXFile(f"sets/{options.path.strip("/\\")}_{options.iter:02d}_{i:02d}" for i in range(nref)]
+		lsts=[LSXFile(f"sets/{options.path)}_{options.iter:02d}_{i:02d}" for i in range(nref)]
 		for n,score,cls,x in stats:
 			lsts[cls].write(-1,n,data[0][0])
 		lsts=None
