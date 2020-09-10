@@ -252,7 +252,10 @@ produce new sets/ for each class, which could be further-refined.
 		print("Class {}: {}".format(i,n))
 		centers[i].write_image("{}/classes_sec_{:02d}.hdf".format(options.path,options.iter),i)
 		if n>0 : avgs[i].mult(1.0/n)
-		avgs[i].finish().write_image("{}/classes_{:02d}.hdf".format(options.path,options.iter),i)
+		avg=avgs[i].finish()
+		if options.hp>0 : avg.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/options.hp})
+		if options.lp>0 : avg.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.lp})
+		avg.write_image("{}/classes_{:02d}.hdf".format(options.path,options.iter),i)
 		
 	if options.verbose: print("Done")
 
