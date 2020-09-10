@@ -24,9 +24,10 @@ def main():
 	parser.add_argument("--debug", action="store_true", default=False ,help="Turn on debug mode. This will only process a small subset of the data")
 	parser.add_argument("--maxshift", type=int,help="maximum shift allowed", default=-1)
 	parser.add_argument("--localrefine", action="store_true", default=False ,help="local refinement")
-	parser.add_argument("--ctfweight", action="store_true", default=False ,help="weight by ctf")
+	parser.add_argument("--ctfweight", action="store_true", default=False ,help="weight by ctf. not used yet...")
+	parser.add_argument("--slow", action="store_true", default=False ,help="slow but finer search")
 	parser.add_argument("--maxres", type=float,default=-1, help="max resolution for cmp")
-	#parser.add_argument("--minres", type=float,default=-1, help="min resolution for cmp")
+	parser.add_argument("--minrespx", type=int,default=4, help="skip the first x pixel in fourier space")
 	parser.add_argument("--sym", type=str,help="symmetry. ", default="c1")
 	parser.add_argument("--ppid", type=int,help="ppid...", default=-1)
 	#parser.add_argument("--nkeep", type=int,help="", default=1)
@@ -170,19 +171,19 @@ class SpaAlignTask(JSTask):
 				
 				
 			#x0=ss//8; x1=int(ss*.4)
-			x0=4; x1=int(ss*.4)
+			x0=int(options.minrespx); x1=int(ss*.4)
 		
 			fsc=imgsmall.calc_fourier_shell_correlation(pj)
 			fsc=np.array(fsc).reshape((3,-1))[:, x0:x1]
 			x=np.arange(ss//2)[x0:x1]
-			wt=np.exp(-x/50)
+			wt=np.exp(-x/30)
 			#wt=fsc[2]
 			#if ctfwt:
 				#wt*=ctfcv[x0:x1]
 			
 			scr=-np.sum(fsc[1]*wt)/np.sum(wt)
 			#scr=np.mean(-fsc[1])
-			del pj,ccf
+			#del pj,ccf
 			#scr=1
 			if returnxf:
 				return scr, xf
@@ -211,7 +212,8 @@ class SpaAlignTask(JSTask):
 		ref.process_inplace("xform.phaseorigin.tocenter")
 		ref.process_inplace("xform.fourierorigin.tocenter")
 		ssrg=2**np.arange(5,12, dtype=int)
-		#ssrg[:2]=ssrg[:2]*3/4
+		if not options.slow:
+			ssrg[:2]=ssrg[:2]*3/4
 		ssrg=ssrg.tolist()
 		xfsit0=[]
 		
@@ -275,7 +277,9 @@ class SpaAlignTask(JSTask):
 					
 				mxsft=8
 				mxsft=min(mxsft, options.maxshift*ss//ny)
-				astep=89.999/floor((np.pi/(3*np.arctan(2./ss))))
+				astep=89.999/floor((np.pi/(3*np.arctan(2./ss))))*2
+				if options.slow:
+					astep/=2.
 				sym=Symmetries.get(options.sym)
 				score=[]
 					
@@ -296,8 +300,11 @@ class SpaAlignTask(JSTask):
 					for xf0 in xfs:
 						x=xf0.get_params("eman")
 						curxf=[x["alt"], x["az"], x["phi"],x["tx"]*ss/ny,x["ty"]*ss/ny]
-						x0=[x["alt"], x["az"], x["phi"]]
-						res=minimize(test_rot, x0, method='Nelder-Mead', options={'ftol': 1e-2, 'disp': False, "maxiter":50, "initial_simplex":simplex+x0})
+						if ss<maxy:
+							x0=curxf[:3]
+						else:
+							x0=curxf
+						res=minimize(test_rot, x0, method='Nelder-Mead', options={'ftol': 1e-2, 'disp': False, "maxiter":50})
 						scr, x=test_rot(res.x, True)
 						score.append(scr)
 						newxfs.append(x)
@@ -307,7 +314,6 @@ class SpaAlignTask(JSTask):
 				newxfs=[]
 				newscore=[]
 				idx=np.argsort(score)
-				print(idx[0])
 				for i in idx:
 					dt=[(x.inverse()*xfs[i]).get_params("spin")["omega"] for x in newxfs]
 					if len(dt)==0 or np.min(dt)>astep*4:
