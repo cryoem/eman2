@@ -6,10 +6,7 @@ from sklearn.decomposition import PCA
 floattype=np.float32
 os.environ["CUDA_VISIBLE_DEVICES"]='0' 
 os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]='true' 
-try:
-	import tensorflow as tf
-except:
-	pass
+import tensorflow as tf
 
 #### Symmetrize the Gaussian coordinates. Only works for c/d sym right now
 def get_sym_pts(sym, pts):
@@ -535,7 +532,7 @@ def main():
 	parser.add_argument("--ptclsin", type=str,help="particles input for alignment", default="")
 	parser.add_argument("--ptclsout", type=str,help="aligned particle output", default="")
 	parser.add_argument("--learnrate", type=float,help="learning rate for model training only. ", default=1e-4)
-	parser.add_argument("--sigmareg", type=float,help="regularizer for the std of gaussian width", default=.1)
+	parser.add_argument("--sigmareg", type=float,help="regularizer for the std of gaussian width", default=.5)
 	parser.add_argument("--niter", type=int,help="number of iterations", default=10)
 	parser.add_argument("--npts", type=int,help="number of points to initialize. ", default=-1)
 	parser.add_argument("--batchsz", type=int,help="batch size", default=32)
@@ -549,6 +546,7 @@ def main():
 	parser.add_argument("--midout", type=str,help="middle layer output", default="")
 	parser.add_argument("--pas", type=str,help="choose whether to adjust position, amplitude, sigma. use 3 digit 0/1 input. default is 110, i.e. only adjusting position and amplitude", default="110")
 	parser.add_argument("--nmid", type=int,help="size of the middle layer", default=4)
+	parser.add_argument("--mask", type=str,help="remove points outside mask", default="")
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -606,8 +604,26 @@ def main():
 		
 			train_decoder(gen_model, trainset, options)
 			pout=gen_model(tf.zeros((1,options.nmid), dtype=floattype)).numpy()[0]
+			
 			pout[:,3]/=np.max(pout[:,3])
-			pout=pout[pout[:,3]>.2]
+			pout=pout[pout[:,3]>.1]
+			
+			
+			if options.mask:
+				
+				msk=EMData(options.mask)
+				m=msk.numpy().copy()
+
+				p=pout[:,:3].copy()
+				p=p[:,::-1]
+				p[:,:2]*=-1
+				p=(p+.5)*msk["nx"]
+
+				o=np.round(p).astype(int)
+				v=m[o[:,0], o[:,1], o[:,2]]
+				pout=pout[v>.9]
+
+			
 			print(pout.shape)
 			np.savetxt(options.modelout, pout)
 			gen_model=build_decoder(pout, ninp=options.nmid)
