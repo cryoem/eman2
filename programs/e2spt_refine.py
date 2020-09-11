@@ -154,7 +154,6 @@ def main():
 			if itr==1 : ar.process_inplace("filter.lowpass.randomphase",{"cutoff_freq":1.0/options.goldstandard})
 			if (len(options.maskalign)>0): ar.mult(maskalign)
 			ar.write_image(f"{options.path}/alignref_even.hdf",0)
-			if itr==0 : 
 			ar=EMData(refo,0)
 			if itr==1 : ar.process_inplace("filter.lowpass.randomphase",{"cutoff_freq":1.0/options.goldstandard})
 			if (len(options.maskalign)>0): ar.mult(maskalign)

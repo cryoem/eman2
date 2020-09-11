@@ -430,7 +430,8 @@ with the same name, you should specify only the .hed files (no renaming is neces
 					run(cmd)
 				else: 
 					if options.rawtlt=="auto" :
-						rawtlt=[(float(l.strip()),i) for i,l in enumerate(open(filename.rsplit(".",1)[0]+".tlt","r"))]
+						try: rawtlt=[(float(l.strip()),i) for i,l in enumerate(open(filename.rsplit(".",1)[0]+".tlt","r"))]
+						except: rawtlt=[(float(l.strip()),i) for i,l in enumerate(open(filename.rsplit(".",1)[0]+".tlta","r"))]
 					else:
 						rawtlt=[(float(l.strip()),i) for i,l in enumerate(open(options.rawtlt,"r"))]
 					hdr=EMData(filename,0,True)
