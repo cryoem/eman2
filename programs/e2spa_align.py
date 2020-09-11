@@ -144,47 +144,37 @@ class SpaAlignTask(JSTask):
 		JSTask.__init__(self,"SptNewTltRefine",data,{},"")
 		self.options=options
 	
-	#@profile
 	def execute(self, callback):
-		
+		time0=time.time()
 		def test_rot(x, returnxf=False):
-			ccftrans=True
-			
+			fullxf=False
 			if isinstance(x, Transform):
 				xf=x
-			else:
-				x=list(x)
-				if len(x)==len(curxf):
-					ccftrans=False
-				else:
-					x.extend(curxf[len(x):])
 				
-				xf=Transform({"type":"eman", "alt":x[0], "az":x[1], "phi":x[2],"tx":x[3], "ty":x[4]})
+			else:
+				if len(x)<4:
+					xf=Transform({"type":"eman", "alt":x[0], "az":x[1], "phi":x[2]})
+				else:
+					xf=Transform({"type":"eman", "alt":x[0], "az":x[1], "phi":x[2],"tx":x[3], "ty":x[4]})
+					fullxf=True			   
 			
 			pj=refsmall.project('gauss_fft',{"transform":xf, "returnfft":1})
 			
-			if ccftrans:
-				ccf=imgsmall.calc_ccf(pj)
-				pos=ccf.calc_max_location_wrap(mxsft, mxsft, 0)
-				xf.translate(pos)
-				pj.process_inplace("xform", {"tx":pos[0], "ty":pos[1]})
-				
-				
-			#x0=ss//8; x1=int(ss*.4)
-			x0=int(options.minrespx); x1=int(ss*.4)
+			x0=ss//8; x1=int(ss*.4)
+			#x0=ss//8; x1=ss//3
+			ccf=imgsmall.calc_ccf(pj)
+			pos=ccf.calc_max_location_wrap(mxsft, mxsft, 0)
+			xf.set_trans(pos)
+			pj.process_inplace("xform", {"tx":pos[0], "ty":pos[1]})
 		
 			fsc=imgsmall.calc_fourier_shell_correlation(pj)
 			fsc=np.array(fsc).reshape((3,-1))[:, x0:x1]
-			x=np.arange(ss//2)[x0:x1]
-			wt=np.exp(-x/30)
-			#wt=fsc[2]
-			#if ctfwt:
-				#wt*=ctfcv[x0:x1]
+			wt=fsc[2]
+			if ctfwt:
+				wt*=ctfcv[x0:x1]
 			
 			scr=-np.sum(fsc[1]*wt)/np.sum(wt)
-			#scr=np.mean(-fsc[1])
-			#del pj,ccf
-			#scr=1
+			
 			if returnxf:
 				return scr, xf
 			else:
@@ -196,7 +186,6 @@ class SpaAlignTask(JSTask):
 		callback(0)
 		rets=[]
 		
-
 		ref=EMData(data["ref"],0)
 		ny0=ny=ref["ny"]
 		
@@ -208,27 +197,23 @@ class SpaAlignTask(JSTask):
 			maxy=ny
 			maxrescut=1e5
 		
-		ref.do_fft_inplace()
+		ref=ref.do_fft()
 		ref.process_inplace("xform.phaseorigin.tocenter")
 		ref.process_inplace("xform.fourierorigin.tocenter")
-		ssrg=2**np.arange(5,12, dtype=int)
-		if not options.slow:
-			ssrg[:2]=ssrg[:2]*3/4
+		ssrg=2**np.arange(4,12, dtype=int)
+		ssrg[:2]=ssrg[:2]*3/2
 		ssrg=ssrg.tolist()
-		xfsit0=[]
 		
 		for infoi, infos in enumerate(data["info"]):
-			time0=time.time()
 			ii=infos[0]
 			info=infos[1]
 			
 			img=EMData(info[1],info[0])
 				
-			#img.process_inplace("mask.soft",{"outer_radius":-10,"width":10})
-			img.do_fft_inplace()
+			img.process_inplace("mask.soft",{"outer_radius":-10,"width":10})
+			img=img.do_fft()
 			img.process_inplace("xform.phaseorigin.tocenter")
 			img.process_inplace("xform.fourierorigin.tocenter")
-			#img.process_inplace("filter.highpass.gauss",{"cutoff_pixels":4})
 			path=[]
 			
 			npos=32
@@ -244,18 +229,19 @@ class SpaAlignTask(JSTask):
 					
 			if options.localrefine:	
 				newxfs=[]
-				istart=len(ssrg)-1
+				istart=1
 				npos=npos//2
 				for ixf in initxfs:
 					ix=ixf.get_params("eman")
 					newxfs.append(Transform(ix))
+
 					for i in range(npos-1):
 						d={"type":"eman","tx":ix["tx"], "ty":ix["ty"]}
 						for ky in ["alt", "az", "phi"]:
 							d[ky]=ix[ky]+np.random.randn()*5./np.pi*2
 						newxfs.append(Transform(d))
 				
-			if img.has_attr("ctf") and options.ctfweight:
+			if img.has_attr("ctf"):
 				ctf=img["ctf"]
 				ds=1./(ny*ref["apix_x"])
 				ctf.bfactor=10
@@ -270,27 +256,27 @@ class SpaAlignTask(JSTask):
 				ss=ssrg[si]
 				if ss>=maxy: 
 					ss=maxy
-										
+					
 				refsmall=ref.get_clip(Region(0,(ny-ss)//2, (ny-ss)//2, ss+2, ss, ss))
 				imgsmall=img.get_clip(Region(0,(ny-ss)//2, ss+2, ss))
 				imgsmall.process_inplace("xform.fourierorigin.tocenter")
 					
-				mxsft=8
-				mxsft=min(mxsft, options.maxshift*ss//ny)
-				astep=89.999/floor((np.pi/(3*np.arctan(2./ss))))*2
-				if options.slow:
-					astep/=2.
+				mxsft=ss//8
+				astep=89.999/floor((np.pi/(3*np.arctan(2./ss))))
 				sym=Symmetries.get(options.sym)
 				score=[]
+				
+				if options.debug:
+					print(ss, npos, astep)
 					
 				if si==0:
-					if len(xfsit0)==0:
-						xfsit0=sym.gen_orientations("saff",{"delta":astep,"phitoo":astep,"inc_mirror":1})
+					xfs=sym.gen_orientations("saff",{"delta":astep,"phitoo":astep,"inc_mirror":1})
 					newxfs=[]
-					for xf in xfsit0:
+					for xf in xfs:
 						scr, x=test_rot(xf, True)
 						score.append(scr)
 						newxfs.append(x)
+				
 				else:
 					xfs=newxfs
 					if len(initxfs)>0:	
@@ -299,17 +285,15 @@ class SpaAlignTask(JSTask):
 					simplex=np.vstack([[0,0,0], np.eye(3)*astep])
 					for xf0 in xfs:
 						x=xf0.get_params("eman")
-						curxf=[x["alt"], x["az"], x["phi"],x["tx"]*ss/ny,x["ty"]*ss/ny]
-						if ss<maxy:
-							x0=curxf[:3]
-						else:
-							x0=curxf
-						res=minimize(test_rot, x0, method='Nelder-Mead', options={'ftol': 1e-2, 'disp': False, "maxiter":50})
+						x0=[x["alt"], x["az"], x["phi"]]
+						res=minimize(test_rot, x0, method='Nelder-Mead', options={'ftol': 1e-2, 'disp': False, "maxiter":50, "initial_simplex":simplex+x0})
 						scr, x=test_rot(res.x, True)
 						score.append(scr)
 						newxfs.append(x)
 						
 				xfs=newxfs
+				if options.debug:
+					print(ss, "xfs:", len(newxfs))
 
 				newxfs=[]
 				newscore=[]
@@ -333,22 +317,16 @@ class SpaAlignTask(JSTask):
 				
 				npos=max(1, npos//2)
 				lastastep=astep
-				#path.append(newxfs)
-				del refsmall,imgsmall,xfs
+				path.append(newxfs)
 				if ss>=maxy:
 					break
 				
 			#r={"idx":ii, "xform.align3d":newxfs[0], "score":np.min(score)}
-				
 			r={"idx":ii, "xform.align3d":newxfs[:1], "score":newscore[:1], "path":path}
-			del img
-			if not options.debug:
-				callback(100*float(infoi/len(self.data["info"])))
+			callback(100*float(infoi/len(self.data["info"])))
 			rets.append(r)
-			
 			if options.debug:
-				print(newxfs[0])
-				print("time : {:.1f}, best score {:.2f}".format(time.time()-time0, newscore[0]))
+				print('time',time.time()-time0, len(rotcount))
 			
 		return rets
 
