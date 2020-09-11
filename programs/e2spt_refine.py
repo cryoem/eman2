@@ -142,11 +142,25 @@ def main():
 	for itr in range(startitr,options.niter+startitr):
 
 		# the alignment ref may be masked using a different file, or just copied
-		ar=EMData(ref,0)
-		if (len(options.maskalign)>0):
-			m=EMData(options.maskalign,0)
-			ar.mult(m)
-		ar.write_image(f"{options.path}/alignref.hdf",0)
+		if options.goldstandard>0 or options.goldcontinue :
+			refe=ref[:-4]+"_even.hdf"
+			refo=ref[:-4]+"_odd.hdf"
+			ar=EMData(refe,0)
+			if (len(options.maskalign)>0):
+				m=EMData(options.maskalign,0)
+				ar.mult(m)
+			ar.write_image(f"{options.path}/alignref_even.hdf",0)
+			ar=EMData(refo,0)
+			if (len(options.maskalign)>0):
+				m=EMData(options.maskalign,0)
+				ar.mult(m)
+			ar.write_image(f"{options.path}/alignref_odd.hdf",0)
+		else:
+			ar=EMData(ref,0)
+			if (len(options.maskalign)>0):
+				m=EMData(options.maskalign,0)
+				ar.mult(m)
+			ar.write_image(f"{options.path}/alignref.hdf",0)
 		
 		#### generate alignment command first
 		gd=""
