@@ -79,7 +79,7 @@ class EMImage2DWidget(EMGLWidget):
 
 	allim=WeakKeyDictionary()
 
-	def __init__(self, image=None, application=get_application(),winid=None, parent=None):
+	def __init__(self, image=None, application=get_application(),winid=None, parent=None,sizehint=(512,512)):
 
 		self.inspector = None # this should be a qt widget, otherwise referred to as an inspector in eman
 
@@ -87,6 +87,7 @@ class EMImage2DWidget(EMGLWidget):
 		self.setFocusPolicy(Qt.StrongFocus)
 		self.setMouseTracking(True)
 		self.initimageflag = True
+		self.initsizehint = sizehint	# this is used when no data has been set yet
 
 		self.fftorigincenter = E2getappval("emimage2d","origincenter")
 		if self.fftorigincenter == None : self.fftorigincenter=False
@@ -245,18 +246,17 @@ class EMImage2DWidget(EMGLWidget):
 
 	def get_parent_suggested_size(self):
 
+		if self.data==None and self.fft==None : return (self.initsizehint[0]+12,self.initsizehint[1]+12)
+	
 		data = self.data
 		if data == None: data = self.fft
 
-		if data != None and  data.get_xsize()<640 and data.get_ysize()<640:
-			try : return (data.get_xsize()+12,data.get_ysize()+12)
-			except : return (640,640)
-		else:
-			return (640,640)
+		try: return (data["nx"]+12,data["ny"]+12)
+		except : return (self.initsizehint[0]+12,self.initsizehint[1]+12)
 
 	def sizeHint(self):
 #		print self.get_parent_suggested_size()
-		if self.data==None : return QtCore.QSize(512,512)
+		if self.data==None and self.fft==None : return self.initsizehint
 		return QtCore.QSize(*self.get_parent_suggested_size())
 
 	def set_disp_proc(self,procs):
