@@ -44,7 +44,7 @@ from EMAN2jsondb import JSTask
 import numpy as np
 import sklearn.decomposition as skdc
 
-def ptclextract(jsd,db,ks,shrink,layers,sym,mask,verbose):
+def ptclextract(jsd,db,ks,shrink,layers,sym,mask,hp,lp,verbose):
 	#  we have to get the 3d particles in the right orientation
 	lasttime=time.time()
 	for i,k in ks:
@@ -61,6 +61,8 @@ def ptclextract(jsd,db,ks,shrink,layers,sym,mask,verbose):
 		if mask!=None : ptcl.mult(mask)
 		if shrink>1 : ptcl.process_inplace("math.meanshrink",{"n":shrink})
 		if sym!="" and sym!="c1" : ptcl.process_inplace("xform.applysym",{"sym":sym})
+		if hp>0 : ptcl.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/hp})
+		if lp>0 : ptcl.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/lp})
 		ptcl["score"]=parm["score"]
 		
 		# these are the range limited orthogonal projections
@@ -101,11 +103,13 @@ produce new sets/ for each class, which could be further-refined.
 	parser.add_argument("--iter",type=int,help="Iteration number within path, default = last iteration",default=-1,guitype="intbox", row=1, col=0, rowspan=1, colspan=1,mode="gui")
 	parser.add_argument("--ncls",type=int,help="Number of classes to generate",default=3,guitype="intbox", row=1, col=1, rowspan=1, colspan=1,mode="gui")
 	parser.add_argument("--nbasis",type=int,help="Number of basis vectors for the MSA phase, default=4",default=4)
-	parser.add_argument("--layers",type=int,help="number of slices about the center to use for the projection in each direction, ie 0->1, 1->3, 2->5. Default=2",default=2,guitype="intbox", row=2, col=1, rowspan=1, colspan=1,mode="gui")	
+	parser.add_argument("--layers",type=int,help="number of 1 pixel layers about the center to use for the projection in each direction (size in reduced image if --shrink used), ie 0->1, 1->3, 2->5. Default=2",default=2,guitype="intbox", row=2, col=1, rowspan=1, colspan=1,mode="gui")	
 	parser.add_argument("--sym",type=str,default="c1",help="Symmetry of the input. Must be aligned in standard orientation to work properly.")
 	parser.add_argument("--shrink", default=1,type=int,help="shrink the particles before processing",guitype="intbox", row=2, col=0, rowspan=1, colspan=1,mode="gui")
 	parser.add_argument("--mask", default=None,type=str,help="Apply a 3D mask file to each particle prior to making projections")
 	parser.add_argument("--threads", default=4,type=int,help="Number of alignment threads to run in parallel on a single computer. This is the only parallelism supported by e2spt_align at present.", guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--hp",default=-1,type=float,help="Apply a high-pass filter at the specified resolution when generating projections. Specify as resolution in A, eg - 100")
+	parser.add_argument("--lp",default=-1,type=float,help="Apply a low-pass filter at the specified resolution when generating projections. Specify the resolution in A, eg - 25")
 	parser.add_argument("--saveali",action="store_true",help="In addition to the unaligned sets/ for each class, generate aligned particle stacks per class",default=False)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -144,7 +148,7 @@ produce new sets/ for each class, which could be further-refined.
 	jsd=queue.Queue(0)
 
 	NTHREADS=max(options.threads,2)		# we have one thread just writing results
-	thrds=[threading.Thread(target=ptclextract,args=(jsd,db,ks[i::NTHREADS-1],options.shrink,options.layers,options.sym,initmask,options.verbose>1 and i==0)) for i in range(NTHREADS-1)]
+	thrds=[threading.Thread(target=ptclextract,args=(jsd,db,ks[i::NTHREADS-1],options.shrink,options.layers,options.sym,initmask,options.hp,options.lp,options.verbose>1 and i==0)) for i in range(NTHREADS-1)]
 
 	try: os.unlink("{}/alisecs_{:02d}.hdf".format(options.path,options.iter))
 	except: pass
@@ -168,7 +172,8 @@ produce new sets/ for each class, which could be further-refined.
 		while not jsd.empty():
 			i,k,all=jsd.get()
 			prjs[i]=all
-			all.write_image("{}/alisecs_{:02d}.hdf".format(options.path,options.iter),i)
+			all.write_compressed("{}/alisecs_{:02d}.hdf".format(options.path,options.iter),i,8)
+			#all.write_image("{}/alisecs_{:02d}.hdf".format(options.path,options.iter),i)
 
 	for t in thrds:
 		t.join()
@@ -247,7 +252,10 @@ produce new sets/ for each class, which could be further-refined.
 		print("Class {}: {}".format(i,n))
 		centers[i].write_image("{}/classes_sec_{:02d}.hdf".format(options.path,options.iter),i)
 		if n>0 : avgs[i].mult(1.0/n)
-		avgs[i].finish().write_image("{}/classes_{:02d}.hdf".format(options.path,options.iter),i)
+		avg=avgs[i].finish()
+		if options.hp>0 : avg.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/options.hp})
+		if options.lp>0 : avg.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.lp})
+		avg.write_image("{}/classes_{:02d}.hdf".format(options.path,options.iter),i)
 		
 	if options.verbose: print("Done")
 

@@ -72,8 +72,8 @@ def main():
 	parser.add_argument("--postproc", type=str,help="processor after 3d particle reconstruction", default="")
 	parser.add_argument("--postmask", type=str,help="masking after 3d particle reconstruction. The mask is transformed if json ", default="")
 	parser.add_argument("--textin", type=str,help="text file for particle coordinates. do not use..", default=None)
-	parser.add_argument("--compress", type=int,help="Bits to keep for compression. Not compatible with saveint. default is -1 meaning no compression. 8 bit seems fine...", default=-1)
-	parser.add_argument("--saveint", action="store_true", default=False ,help="save particles in uint8 format to save space. still under testing.")
+	parser.add_argument("--compressbits", type=int,help="Bits to keep for compression. default is -1 meaning uncompressed floating point. 8 bit seems fine...", default=-1,guitype='intbox',row=5, col=1, rowspan=1, colspan=1, mode="extract[8]")
+#	parser.add_argument("--saveint", action="store_true", default=False ,help="save particles in uint8 format to save space. still under testing.")
 	parser.add_argument("--norewrite", action="store_true", default=False ,help="skip existing files. do not rewrite.")
 	parser.add_argument("--parallel", type=str,help="parallel", default="")
 	#parser.add_argument("--alioffset", type=str,help="coordinate offset when re-extract particles. (x,y,z)", default="0,0,0", guitype='strbox', row=12, col=0,rowspan=1, colspan=1, mode="extract")
@@ -463,12 +463,12 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 		
 		
 		hdftype=EMUtil.get_image_ext_type("hdf")
-		if options.compress>0:
-			outmode=EM_COMPRESSED
-		elif options.saveint:
-			outmode=file_mode_map["uint8"]
-		else:
-			outmode=file_mode_map["float"]
+		#if options.compress>0:
+			#outmode=EM_COMPRESSED
+		#elif options.saveint:
+			#outmode=file_mode_map["uint8"]
+		#else:
+			#outmode=file_mode_map["float"]
 		
 		
 		thrds=[threading.Thread(target=make3d,args=(i)) for i in jobs]
@@ -487,27 +487,28 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 				
 				
 				
-				if options.compress>0:
-					sig=5.0
-					for im in projs+[threed]:
-						im["render_bits"]=options.compress
-						im["render_compress_level"]=1
-						im["render_min"]=im["mean"]-im["sigma"]*sig
-						im["render_max"]=im["mean"]+im["sigma"]*sig
+				#if options.compress>0:
+					#sig=5.0
+					#for im in projs+[threed]:
+						#im["render_bits"]=options.compress
+						#im["render_compress_level"]=1
+						#im["render_min"]=im["mean"]-im["sigma"]*sig
+						#im["render_max"]=im["mean"]+im["sigma"]*sig
 
 				try: pji=EMUtil.get_image_count(options.output2d)
 				except: pji=0
 				pjids=[]
 				for i,pj in enumerate(projs):
-					#pj.write_image(options.output2d, pji, hdftype,  False, None, outmode)
-					pj.write_image(options.output2d, pji,IMAGE_UNKNOWN,0,None,EM_COMPRESSED)
+					if options.compressbits<0 : pj.write_image(options.output2d, pji)
+					else: pj.write_compressed(options.output2d,pji,options.compressbits,nooutliers=True)
 					pjids.append(pji)
 					pji+=1
 					
 				threed["class_ptcl_src"]=options.output2d
 				threed["class_ptcl_idxs"]=pjids
 
-				threed.write_image(options.output, pid,IMAGE_UNKNOWN,0,None,EM_COMPRESSED)
+				if options.compressbits<0: threed.write_image(options.output, pid)
+				else: threed.write_compressed(options.output, pid,options.compressbits,nooutliers=True)
 				
 				ndone+=1
 				if options.verbose>0:
@@ -696,12 +697,16 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 				threed.process_inplace(filtername, param_dict)
 				
 			if mask:
-				if tf_dir:
-					m=mask.copy()
-					m.transform(tf_dir.inverse())
-					threed.mult(m)
-				else:
-					threed.mult(mask)
+				try:
+					if tf_dir:
+						m=mask.copy()
+						m.transform(tf_dir.inverse())
+						threed.mult(m)
+					else:
+						threed.mult(mask)
+				except: 
+					print(f'Mask error, size mismatch volume->{threed["nx"]} mask->{mask["nx"]}')
+					raise Exception()
 				
 		
 		threed["apix_x"]=threed["apix_y"]=threed["apix_z"]=apixout
@@ -715,14 +720,14 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 			threed["xform.align3d"]=tf_dir
 		
 		
-		if options.saveint and options.compress<0:
-			#### save as integers
-			lst=[threed]+projs
-			outmode=file_mode_map["uint8"]
-			for data in lst:
-				data.process_inplace("math.setbits",{"nsigma":3, "bits":8})
-				data["render_min"]=file_mode_range[outmode][0]
-				data["render_max"]=file_mode_range[outmode][1]
+		#if options.saveint and options.compress<0:
+			##### save as integers
+			#lst=[threed]+projs
+			#outmode=file_mode_map["uint8"]
+			#for data in lst:
+				#data.process_inplace("math.setbits",{"nsigma":3, "bits":8})
+				#data["render_min"]=file_mode_range[outmode][0]
+				#data["render_max"]=file_mode_range[outmode][1]
 		
 		jsd.put((pid, threed, projs))
 		#recon.clear()

@@ -85,14 +85,15 @@ class SptavgmultTask(JSTask):
 		
 		
 		refs=[]
-		if options.mask:
-			mask=EMData(options.mask)
+		if options.maskclass:
+			maskclass=EMData(options.maskclass)
 		
 		if options.randnclass<=0:
 			for r in refnames:
-				ref=EMData(r,0)
-				if options.mask:
-					ref.mult(mask)
+				if "," in r: ref=EMData(r.split(",")[0],int(r.split(",")[-1]))
+				else: ref=EMData(r,0)
+				if options.maskclass:
+					ref.mult(maskclass)
 				ref=ref.do_fft()
 				ref.process_inplace("xform.phaseorigin.tocenter")
 				#ref.process_inplace("xform.fourierorigin.tocenter")
@@ -184,7 +185,6 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_argument("--threads", default=4,type=int,help="Number of alignment threads to run in parallel on a single computer. This is the only parallelism supported by e2spt_align at present.")
 	parser.add_argument("--iter",type=int,help="Iteration number within path. Default = start a new iteration",default=0)
 	parser.add_argument("--simthr", default=-0.1,type=float,help="Similarity is smaller for better 'quality' particles. Specify the highest value to include from e2spt_hist.py. Default -0.1")
 	parser.add_argument("--simthr2", default=0,type=float,help="Simlarity score for the best matching final alignment. Scaling may be different due to resolution limit. Default 0")
@@ -200,7 +200,9 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 	parser.add_argument("--applysym",type=str,help="Symmetry to apply to the structure after classification.",default="c1")
 	parser.add_argument("--path",type=str,default=None,help="Path to a folder containing current results (default = highest spt_XX)")
 	parser.add_argument("--parallel",type=str,default=None,help="parallel mode. Not all functions are implemented yet..")
-	parser.add_argument("--mask",type=str,default=None,help="multiply a mask file before classification")
+	parser.add_argument("--threads", default=4,type=int,help="Number of alignment threads to run in parallel on a single computer. This is the only parallelism supported by e2spt_align at present.")
+	parser.add_argument("--maskclass",type=str,default=None,help="Mask each reference before classification")
+	parser.add_argument("--mask",type=str,default=None,help="Mask applied to final averages")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--noali", action="store_true", default=False ,help="Skip translational alignment.")
 	parser.add_argument("--sample",type=int,help="use only N samples.",default=-1)
@@ -209,6 +211,7 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 
 	(options, args) = parser.parse_args()
 
+
 	if options.path == None:
 		fls=[int(i[-2:]) for i in os.listdir(".") if i[:4]=="spt_" and len(i)==6 and str.isdigit(i[-2:])]
 		if len(fls)==0 : 
@@ -216,6 +219,8 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 			sys.exit(2)
 		options.path = "spt_{:02d}".format(max(fls))
 		if options.verbose : print("Working in : ",options.path)
+		
+	options.path=options.path.strip('/\\')
 
 	if options.iter<=0 :
 		fls=[int(i[15:17]) for i in os.listdir(options.path) if i[:15]=="particle_parms_" and str.isdigit(i[15:17])]
@@ -319,6 +324,11 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 		stats=np.vstack(stats)
 		stats=stats[np.argsort(stats[:,0]),:]
 		np.savetxt("{}/avg_multi_{:02d}.txt".format(options.path,options.iter), stats)
+		lsts=[LSXFile(f"sets/{options.path}_{options.iter:02d}_{i:02d}") for i in range(nref)]
+		for n,score,cls,x in stats:
+			lsts[int(cls)].write(-1,int(n),data[0][0])
+		lsts=None
+		
 		avs=[]
 		for r in range(nref):
 			output=EMData(sz, sz, sz)
@@ -347,13 +357,13 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 	else:
 		
 		n=len(args)
-		refs=[EMData(i) for i in args]
+		args=[comma(i) for i in args]
+		refs=[EMData(i[0],i[1]) for i in args]
 		if options.maxres>0:
 			for r in refs: r.process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,options.maxres)})
-		if options.mask:
-			mask=EMData(options.mask)
-			refs=[r*mask for r in refs]
-		
+		if options.maskclass!=None:
+			mask=EMData(options.maskclass)
+			for r in refs: r.mult(mask)
 		
 		jsd=queue.Queue(0)
 
@@ -398,13 +408,18 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 			t.join()
 
 		avs=[i.finish() for i in avgs]
-	
+
+	if options.mask: mask=EMData(options.mask)
 	for i,v in enumerate(avs):
+		if options.mask: v.mult(mask)
 		v.write_image("{}/threed_{:02d}_{:02d}.hdf".format(options.path,options.iter,i),0)
 
 	print("Done")
 	E2end(logid)
 
+def comma(fsp):
+	if "," in fsp: return fsp.split(",")[0],int(fsp.split(",")[-1])
+	return fsp,0
 
 if __name__ == "__main__":
 	main()

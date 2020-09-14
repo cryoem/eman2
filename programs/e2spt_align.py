@@ -63,7 +63,7 @@ This program is part of the 'new' hierarchy of e2spt_ programs. It performs one 
 
 The reference may be <volume> or <volume>,<n>
 
-If --goldstandard is specified, then even and odd particles will be aligned to different perturbed versions of the reference volume, phase-randomized past the specified resolution."""
+If --goldstandard is specified, even and odd variants of the alignment reference must be provided, and even and odd particles will be aligned separately"""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
@@ -134,7 +134,7 @@ If --goldstandard is specified, then even and odd particles will be aligned to d
 	logid=E2init(sys.argv, options.ppid)
 	refnames=[]
 
-	if options.goldcontinue:
+	if options.goldcontinue or options.goldstandard>0:
 		ref=[]
 		try:
 			refnames=[reffile[:-4]+"_even.hdf", reffile[:-4]+"_odd.hdf"]
@@ -143,22 +143,22 @@ If --goldstandard is specified, then even and odd particles will be aligned to d
 			
 		except:
 			print("Error: cannot find one of reference files, eg: ",EMData(reffile[:-4]+"_even.hdf",0))
-	else:
-		ref=[]
-		ref.append(EMData(reffile,refn))
-		ref.append(EMData(reffile,refn))
-
-		if options.goldstandard>0 :
-			ref[0].process_inplace("filter.lowpass.randomphase",{"cutoff_freq":old_div(1.0,options.goldstandard)})
-			ref[0].process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,options.goldstandard)})
-			ref[1].process_inplace("filter.lowpass.randomphase",{"cutoff_freq":old_div(1.0,options.goldstandard)})
-			ref[1].process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,options.goldstandard)})
-			refnames=["{}/align_ref_even.hdf".format(options.path), "{}/align_ref_odd.hdf".format(options.path)]
-			ref[0].write_image(refnames[0],0)
-			ref[1].write_image(refnames[1],0)
-			
-		else:
-			refnames=[reffile, reffile]
+#	else:
+#		ref=[]
+#		ref.append(EMData(reffile,refn))
+#		ref.append(EMData(reffile,refn))
+#
+#		if options.goldstandard>0 :
+#			ref[0].process_inplace("filter.lowpass.randomphase",{"cutoff_freq":old_div(1.0,options.goldstandard)})
+#			ref[0].process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,options.goldstandard)})
+#			ref[1].process_inplace("filter.lowpass.randomphase",{"cutoff_freq":old_div(1.0,options.goldstandard)})
+#			ref[1].process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,options.goldstandard)})
+#			refnames=["{}/align_ref_even.hdf".format(options.path), "{}/align_ref_odd.hdf".format(options.path)]
+#			ref[0].write_image(refnames[0],0)
+#			ref[1].write_image(refnames[1],0)
+#			
+#		else:
+#			refnames=[reffile, reffile]
 
 	n=-1
 	tasks=[]

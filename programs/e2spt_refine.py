@@ -17,13 +17,13 @@ def main():
 	parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=2, col=1, rowspan=1, colspan=1, mode="model")
 
 	parser.add_argument("--mask", type=str,help="Mask file to be applied to initial model", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=3, col=0,rowspan=1, colspan=3, mode="model")
-	parser.add_argument("--maskalign", type=str,help="Mask file applied to 3D alignment reference in each iteration. Not applied to the average, which will follow normal masking routine.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=3, col=0,rowspan=1, colspan=3, mode="model")
+	parser.add_argument("--maskalign", type=str,help="Mask file applied to 3D alignment reference in each iteration. Not applied to the average, which will follow normal masking routine.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=4, col=0,rowspan=1, colspan=3, mode="model")
 
-	parser.add_argument("--niter", type=int,help="Number of iterations", default=5, guitype='intbox',row=4, col=0,rowspan=1, colspan=1, mode="model")
-	parser.add_argument("--sym", type=str,help="symmetry", default="c1", guitype='strbox',row=4, col=1,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--niter", type=int,help="Number of iterations", default=5, guitype='intbox',row=5, col=0,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--sym", type=str,help="symmetry", default="c1", guitype='strbox',row=5, col=1,rowspan=1, colspan=1, mode="model")
 	
-	parser.add_argument("--mass", type=float,help="mass. default -1 will skip by mass normalization", default=-1, guitype='floatbox',row=5, col=0,rowspan=1, colspan=1, mode="model")
-	parser.add_argument("--localfilter", action="store_true", default=False ,help="use tophat local", guitype='boolbox',row=5, col=2,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--mass", type=float,help="mass. default -1 will skip by mass normalization", default=-1, guitype='floatbox',row=5, col=2,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--localfilter", action="store_true", default=False ,help="use tophat local", guitype='boolbox',row=6, col=2,rowspan=1, colspan=1, mode="model")
 
 	parser.add_argument("--goldstandard", type=int,help="initial resolution for gold standard refinement", default=-1, guitype='intbox',row=6, col=0,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--goldcontinue", action="store_true", default=False ,help="continue from an existing gold standard refinement", guitype='boolbox',row=6, col=1,rowspan=1, colspan=1, mode="model")
@@ -138,15 +138,32 @@ def main():
 				run("e2proc3d.py {} {}/model_input.hdf --process mask.soft:outer_radius=-1 --first {} --last {}".format(ref, options.path, refn,refn))
 		ref="{}/model_input.hdf".format(options.path)
 		
+	if (len(options.maskalign)>0):
+		maskalign=EMData(options.maskalign,0)
 	
 	for itr in range(startitr,options.niter+startitr):
 
 		# the alignment ref may be masked using a different file, or just copied
-		ar=EMData(ref,0)
-		if (len(options.maskalign)>0):
-			m=EMData(options.maskalign,0)
-			ar.mult(m)
-		ar.write_image(f"{options.path}/alignref.hdf",0)
+		if options.goldstandard>0 or options.goldcontinue :
+			if itr==1: refe,refo=ref,ref
+			else:
+				refe=ref[:-4]+"_even.hdf"
+				refo=ref[:-4]+"_odd.hdf"
+				
+			ar=EMData(refe,0)
+			if itr==1 : ar.process_inplace("filter.lowpass.randomphase",{"cutoff_freq":1.0/options.goldstandard})
+			if (len(options.maskalign)>0): ar.mult(maskalign)
+			ar.write_image(f"{options.path}/alignref_even.hdf",0)
+			ar=EMData(refo,0)
+			if itr==1 : ar.process_inplace("filter.lowpass.randomphase",{"cutoff_freq":1.0/options.goldstandard})
+			if (len(options.maskalign)>0): ar.mult(maskalign)
+			ar.write_image(f"{options.path}/alignref_odd.hdf",0)
+		else:
+			ar=EMData(ref,0)
+			if (len(options.maskalign)>0):
+				m=EMData(options.maskalign,0)
+				ar.mult(m)
+			ar.write_image(f"{options.path}/alignref.hdf",0)
 		
 		#### generate alignment command first
 		gd=""
@@ -237,7 +254,7 @@ def main():
 		# it's a bit counterproductive if we then apply symmetry here (as was happening before 8/22/20)
 		syms=f"--sym {options.sym}"
 		if options.symalimask!=None or options.breaksym: syms=""
-		run(f"e2refine_postprocess.py --even {even} --odd {odd} --output {options.path}threed_{itr:02d}.hdf --iter {itr:d} --mass {options.mass} --threads {options.threads} {syms} {msk} {s}")
+		run(f"e2refine_postprocess.py --even {even} --odd {odd} --output {options.path}threed_{itr:02d}.hdf --iter {itr:d} --tomo --mass {options.mass} --threads {options.threads} {syms} {msk} {s}")
 
 		try: symn=int(options.sym[1:])
 		except: symn=0
