@@ -521,25 +521,34 @@ def save_ptcls_xform(xfsnp, boxsz, options, scr):
 
 def main():
 	
-	usage=""" 
+	usage="""Single particle alignment, reconstruction and heterogeneity analysis with Gaussian model and neural networks. There are a few modes.
+	
+	Reconstruction from projections or particles with transforms:
+	e2gmm_refine.py --projs <projection file> --modelout <model output text file> --npts <number of Gaussian in model>
+	
+	Align particles using the model (local refinement only):
+	e2gmm_refine.py --model <model input> --ptclsin <particle input list> --ptclout <particle list output> --align 
+	
+	Heterogeneity analysis:
+	e2gmm_refine.py --model <model input> --ptclsin <particle input list>  --heter --midout <conformation output text file>
+	
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--sym", type=str,help="symmetry. currently only support c and d", default="c1")
 	parser.add_argument("--model", type=str,help="load from an existing model file", default="")
 	parser.add_argument("--modelout", type=str,help="output trained model file. only used when --projs is provided", default="")
 	parser.add_argument("--projs", type=str,help="projections with orientations (in hdf header or comment column of lst file) to train model", default="")
-	parser.add_argument("--evalmodel", type=str,help="generate model projection images", default="")
+	parser.add_argument("--evalmodel", type=str,help="generate model projection images to the given file name", default="")
 	parser.add_argument("--ptclsin", type=str,help="particles input for alignment", default="")
 	parser.add_argument("--ptclsout", type=str,help="aligned particle output", default="")
-	parser.add_argument("--learnrate", type=float,help="learning rate for model training only. ", default=1e-4)
-	parser.add_argument("--sigmareg", type=float,help="regularizer for the std of gaussian width", default=.5)
+	parser.add_argument("--learnrate", type=float,help="learning rate for model training only. Default is 1e-4. ", default=1e-4)
+	parser.add_argument("--sigmareg", type=float,help="regularizer for the sigma of gaussian width. Larger value means all Gaussian functions will have essentially the same width. Smaller value may help compensating local resolution difference.", default=.5)
 	parser.add_argument("--niter", type=int,help="number of iterations", default=10)
 	parser.add_argument("--npts", type=int,help="number of points to initialize. ", default=-1)
 	parser.add_argument("--batchsz", type=int,help="batch size", default=32)
 	parser.add_argument("--maxboxsz", type=int,help="maximum fourier box size to use. Idealy use pixels of the current resolution * 3 ", default=64)
 	parser.add_argument("--align", action="store_true", default=False ,help="align particles.")
 	parser.add_argument("--heter", action="store_true", default=False ,help="heterogeneity analysis.")
-	parser.add_argument("--double", action="store_true", default=False ,help="double the number of points.")
 	parser.add_argument("--fromscratch", action="store_true", default=False ,help="start from coarse alignment. otherwise will only do refinement from last round")
 	parser.add_argument("--gradout", type=str,help="gradient output", default="")
 	parser.add_argument("--gradin", type=str,help="reading from gradient output instead of recomputing", default="")
@@ -562,9 +571,6 @@ def main():
 		
 	if options.model and options.projs:
 		print("Recompute model from coordinates...")
-		if options.double:
-			pts=np.repeat(pts, 2, axis=0)
-			pts[:,3]/=2
 		
 		if options.npts>len(pts):
 			p=pts.copy()

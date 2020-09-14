@@ -5,19 +5,21 @@ import numpy as np
 
 def main():
 	
-	usage=" "
+	usage=""" New single particle refinement routine. Still under construction. For simple usage,
+	e2spa_refine.py --ptcl <particle list file> --ref <reference map> --res <inital resoution>
+	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--ptcl", type=str,help="particle input", default="")
 	parser.add_argument("--ref", type=str,help="reference", default="")
-	parser.add_argument("--path", type=str,help="path", default="r3d_00")
+	parser.add_argument("--path", type=str,help="path. default is r3d_00", default="r3d_00")
 	parser.add_argument("--parallel", type=str,help="", default="thread:1")
 	parser.add_argument("--sym", type=str,help="sym", default="c1")
-	parser.add_argument("--res", type=float,help="initial resolution", default=10)
-	parser.add_argument("--keep", type=float,help="keep", default=.8)
+	parser.add_argument("--res", type=float,help="The resolution that reference map is lowpass filtered to (with phase randomization) at the begining of the refinement. ", default=10)
+	parser.add_argument("--keep", type=float,help="keep", default=.9)
 	parser.add_argument("--startiter", type=int,help="iter", default=0)
 	parser.add_argument("--niter", type=int,help="iter", default=10)
 	parser.add_argument("--setsf", type=str,help="structure factor", default="strucfac.txt")
-	parser.add_argument("--slow", action="store_true", default=False ,help="slow but finer search")
+	parser.add_argument("--slow", action="store_true", default=False ,help="slow but finer search. not used yet")
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)

@@ -286,8 +286,8 @@ class ScipySptAlignTask(JSTask):
 			dxf=thisxf*initxf
 			dt=dxf.get_params("spin")["omega"]
 			#print(dt)
-			if dt>options.maxang:
-				return 1
+			#if dt>options.maxang:
+				#return 1
 			xfs=[x*thisxf for x in pjxfs]
 			pjs=[refsmall.project('gauss_fft',{"transform":x, "returnfft":1}) for x in xfs]
 			
@@ -421,7 +421,7 @@ class ScipySptAlignTask(JSTask):
 				xfout=[]
 				
 				#print(ss)
-				cmppm={"pmin":8, "pmax":int(ss*.45)}
+				cmppm={"pmin":4, "pmax":int(ss*.45)}
 				for ixf in ixfs:
 					curxf=ixf.inverse()
 					curxf.set_trans(curxf.get_trans()*ss/ny)
@@ -459,7 +459,16 @@ class ScipySptAlignTask(JSTask):
 			rets.append((fsp,fid,c))
 			
 			if options.debug:
-				print(fid, scrs)
+				print(fid,  score)
+				x=initxf.inverse().get_params("eman")
+				c=np.round([x["tx"], x["ty"], x["tz"], x["alt"], x["az"], x["phi"]],1)
+				print(c, testxf(c))
+				
+				x=xf1.inverse().get_params("eman")
+				c=np.round([x["tx"], x["ty"], x["tz"], x["alt"], x["az"], x["phi"]],1)
+				print(c, testxf(c))
+				
+				
 			else:
 				callback(len(rets)*100//len(self.data))
 

@@ -42,6 +42,7 @@ def main():
 	parser.add_argument("--cut", type=float,help="", default=.2)
 	parser.add_argument("--sym", type=str,help="", default="c1")	
 	parser.add_argument("--overwrite", action="store_true", default=False ,help="overwrite even/odd input")
+	parser.add_argument("--tophat", action="store_true", default=False ,help="tophat instead of gauss")
 	parser.add_argument("--ppid", type=int,help="", default=-1)
 
 	(options, args) = parser.parse_args()
@@ -120,7 +121,10 @@ def main():
 		for c in cs:
 			m=f.process("threshold.binaryrange", {"low":c-.05, "high":c+.05})
 			m.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.3})
-			ef=mp.process("filter.lowpass.gauss",{"cutoff_abs":c+.05})
+			if options.tophat:
+				ef=mp.process("filter.lowpass.tophat",{"cutoff_abs":c+.05})
+			else:
+				ef=mp.process("filter.lowpass.gauss",{"cutoff_abs":c+.05})
 			ef.process_inplace("normalize.circlemean",{"radius":-8,"width":5})
 			ef.mult(m)
 			eout.add(ef)

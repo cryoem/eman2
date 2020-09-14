@@ -113,19 +113,14 @@ def main():
 	
 	del etc
 	
-	if options.savepath:
-		dtmp={i:dics[i] for i in range(len(dics))}
-		jstmp=js_open_dict(lname.replace('.lst', '.json'))
-		jstmp.update(dtmp)
-		jstmp=None
-	
 	
 	allscr=[d["score"] for d in dics]
 	if options.smooth>0 or options.defocus:
 		### need to add per tilt smoothing later...
 		s=np.array(allscr)
-		np.savetxt(lname.replace(".lst", "_score.txt"), s)
-		print(s.shape)
+		oname=lname.replace(".lst", "_score.hdf")
+		ss=from_numpy(s).copy()
+		ss.write_image(oname)
 		return
 	
 	maxl=np.max([len(s) for s in allscr])
@@ -219,43 +214,32 @@ class SptTltRefineTask(JSTask):
 		data=self.data
 		callback(0)
 		rets=[]
-		a=EMData(data["ref"],0)
+		ref=EMData(data["ref"],0)
 		
 		for infoi, infos in enumerate(data["info"]):
 			ii=infos[0]
 			info=infos[1]
-			b=EMData(info[1],info[0])
-				
-			if options.maxres>0:
-				if options.shrink>1:
-					b.process_inplace("math.meanshrink",{"n":options.shrink})
-				b.process_inplace("filter.lowpass.gauss", {"cutoff_freq":1./options.maxres})
+			img=EMData(info[1],info[0])
 			
-			if b["ny"]!=a["ny"]: # box size mismatch. simply clip the box
-				#if not options.defocus:
-				b=b.get_clip(Region((b["nx"]-a["ny"])//2, (b["ny"]-a["ny"])//2, a["ny"],a["ny"]))
+			if img["ny"]!=ref["ny"]: # box size mismatch. simply clip the box
+				img=img.get_clip(Region((img["nx"]-ref["ny"])//2, (img["ny"]-ref["ny"])//2, ref["ny"],ref["ny"]))
 				
 			if type(info[-1])==str:
 				initxf=eval(info[-1])
-				if options.shrink>1:
-					initxf.set_trans(initxf.get_trans()/float(options.shrink))
 					
 				xf=Transform({"type":"eman","tx":initxf["tx"], "ty":initxf["ty"], "alt":initxf["alt"],"az":initxf["az"],"phi":initxf["phi"]})
 				
 			if options.transonly:
-				#if options.smooth>0:
+				pj=ref.project('standard', xf)
+
 				m=options.maxshift
 				trans=np.indices((m*2+1, m*2+1)).reshape((2,-1)).T-m
 				scr=[]
-				
-				pj=a.project("standard", xf)
-				
+
 				for t in trans.tolist():
-					pjts=pj.copy()
-					pjts.translate(t[0], t[1],0)
-					s=b.cmp("frc",pjts, {"minres":options.minres, "maxres":options.maxres})
+					pjts=pj.process("xform",{"tx":t[0],"ty":t[1]})
+					s=img.cmp("frc",pjts, {"minres":options.minres, "maxres":options.maxres})
 					scr.append(s)
-				
 				
 				if options.smooth<=0:
 					s=np.argmin(scr)
@@ -266,11 +250,9 @@ class SptTltRefineTask(JSTask):
 				r={"idx":ii,"xform.align3d":[xf], "score":scr}
 			
 			elif options.defocus:
-				pj=a.project("standard", xf)
-				#pj=pj.get_clip(Region((pj["nx"]-b["nx"])//2, (pj["ny"]-b["ny"])//2, b["ny"],b["ny"]))
-				
-				ctf=b["ctf"]
-				fft1=b.do_fft()
+				pj=ref.project("standard", xf)
+				ctf=img["ctf"]
+				fft1=img.do_fft()
 				flipim=fft1.copy()
 				ctf.compute_2d_complex(flipim,Ctf.CtfType.CTF_SIGN)
 				fft1.mult(flipim)
@@ -289,21 +271,6 @@ class SptTltRefineTask(JSTask):
 					scr.append(np.sum(c[len(c)//4:len(c)*2//3]))
 				
 				r={"idx":ii,"xform.align3d":[xf], "score":scr}
-				
-				
-			elif options.fromscratch:
-				alignpm={"verbose":options.verbose,"sym":options.sym,"maxres":options.maxres}
-				dic=[]
-				
-				b1=b.do_fft()
-				b1.process_inplace("xform.phaseorigin.tocorner")
-				c=b1.xform_align_nbest("rotate_translate_2d_to_3d_tree",a, alignpm, 1)
-				dic.append(c[0])
-				
-				bestmr=int(np.argmin([d["score"] for d in dic]))
-				xf=dic[bestmr]["xform.align3d"]
-				xf.set_mirror(bestmr)
-				r={"idx":ii, "xform.align3d":[xf], "score":[dic[bestmr]["score"]]}
 			
 			else:
 				nxf=options.refinentry
@@ -319,10 +286,10 @@ class SptTltRefineTask(JSTask):
 				alignpm={"verbose":options.verbose,"sym":options.sym,"maxshift":options.maxshift,"initxform":xfs, "maxang":astep*2.}
 				#print("lenxfs:", len(xfs))
 				if initxf["mirror"]:
-					b=b.process("xform.flip", {"axis":'x'})
-				b=b.do_fft()
-				b.process_inplace("xform.phaseorigin.tocorner")
-				c=b.xform_align_nbest("rotate_translate_2d_to_3d_tree",a, alignpm, 1)
+					img=img.process("xform.flip", {"axis":'x'})
+				img=img.do_fft()
+				img.process_inplace("xform.phaseorigin.tocorner")
+				c=img.xform_align_nbest("rotate_translate_2d_to_3d_tree",ref, alignpm, 1)
 
 				xf=c[0]["xform.align3d"]
 				xf.set_mirror(initxf["mirror"])

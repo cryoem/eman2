@@ -147,29 +147,29 @@ class SpaAlignTask(JSTask):
 	def execute(self, callback):
 		time0=time.time()
 		def test_rot(x, returnxf=False):
-			fullxf=False
 			if isinstance(x, Transform):
 				xf=x
 				
 			else:
-				if len(x)<4:
-					xf=Transform({"type":"eman", "alt":x[0], "az":x[1], "phi":x[2]})
-				else:
-					xf=Transform({"type":"eman", "alt":x[0], "az":x[1], "phi":x[2],"tx":x[3], "ty":x[4]})
-					fullxf=True			   
+				x=list(x)
+				x.extend(curxf[len(x):])
+				#x.extend([0.,0.])
+				#x.extend([curxf[3], curxf[4]])
+				xf=Transform({"type":"eman", "alt":x[0], "az":x[1], "phi":x[2],"tx":x[3], "ty":x[4]})
 			
 			pj=refsmall.project('gauss_fft',{"transform":xf, "returnfft":1})
 			
-			x0=ss//8; x1=int(ss*.4)
+			x0=4; x1=int(ss*.4)
 			#x0=ss//8; x1=ss//3
 			ccf=imgsmall.calc_ccf(pj)
 			pos=ccf.calc_max_location_wrap(mxsft, mxsft, 0)
-			xf.set_trans(pos)
+			xf.translate(pos[0], pos[1],0)
 			pj.process_inplace("xform", {"tx":pos[0], "ty":pos[1]})
 		
 			fsc=imgsmall.calc_fourier_shell_correlation(pj)
 			fsc=np.array(fsc).reshape((3,-1))[:, x0:x1]
-			wt=fsc[2]
+			#wt=fsc[2]
+			wt=np.ones_like(fsc[1])
 			if ctfwt:
 				wt*=ctfcv[x0:x1]
 			
@@ -204,6 +204,10 @@ class SpaAlignTask(JSTask):
 		ssrg[:2]=ssrg[:2]*3/2
 		ssrg=ssrg.tolist()
 		
+		astep=7.4
+		sym=Symmetries.get(options.sym)
+		xfcrs=sym.gen_orientations("saff",{"delta":astep,"phitoo":astep,"inc_mirror":1})
+		
 		for infoi, infos in enumerate(data["info"]):
 			ii=infos[0]
 			info=infos[1]
@@ -214,7 +218,6 @@ class SpaAlignTask(JSTask):
 			img=img.do_fft()
 			img.process_inplace("xform.phaseorigin.tocenter")
 			img.process_inplace("xform.fourierorigin.tocenter")
-			path=[]
 			
 			npos=32
 			istart=0
@@ -263,16 +266,16 @@ class SpaAlignTask(JSTask):
 					
 				mxsft=ss//8
 				astep=89.999/floor((np.pi/(3*np.arctan(2./ss))))
-				sym=Symmetries.get(options.sym)
+				
 				score=[]
 				
 				if options.debug:
 					print(ss, npos, astep)
 					
 				if si==0:
-					xfs=sym.gen_orientations("saff",{"delta":astep,"phitoo":astep,"inc_mirror":1})
+					
 					newxfs=[]
-					for xf in xfs:
+					for xf in xfcrs:
 						scr, x=test_rot(xf, True)
 						score.append(scr)
 						newxfs.append(x)
@@ -285,7 +288,8 @@ class SpaAlignTask(JSTask):
 					simplex=np.vstack([[0,0,0], np.eye(3)*astep])
 					for xf0 in xfs:
 						x=xf0.get_params("eman")
-						x0=[x["alt"], x["az"], x["phi"]]
+						curxf=[x["alt"], x["az"], x["phi"],x["tx"]*ss/ny,x["ty"]*ss/ny]
+						x0=curxf[:3]
 						res=minimize(test_rot, x0, method='Nelder-Mead', options={'ftol': 1e-2, 'disp': False, "maxiter":50, "initial_simplex":simplex+x0})
 						scr, x=test_rot(res.x, True)
 						score.append(scr)
@@ -317,16 +321,17 @@ class SpaAlignTask(JSTask):
 				
 				npos=max(1, npos//2)
 				lastastep=astep
-				path.append(newxfs)
 				if ss>=maxy:
 					break
 				
 			#r={"idx":ii, "xform.align3d":newxfs[0], "score":np.min(score)}
-			r={"idx":ii, "xform.align3d":newxfs[:1], "score":newscore[:1], "path":path}
+			r={"idx":ii, "xform.align3d":newxfs[:1], "score":newscore[:1]}
 			callback(100*float(infoi/len(self.data["info"])))
 			rets.append(r)
 			if options.debug:
-				print('time',time.time()-time0, len(rotcount))
+				print('time',time.time()-time0)
+				print(newxfs[0])
+				return
 			
 		return rets
 
