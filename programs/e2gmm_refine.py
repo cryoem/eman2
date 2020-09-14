@@ -6,7 +6,12 @@ from sklearn.decomposition import PCA
 floattype=np.float32
 os.environ["CUDA_VISIBLE_DEVICES"]='0' 
 os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]='true' 
-import tensorflow as tf
+if ('-h' in sys.argv) or ('--help' in sys.argv):
+	tf=type('empty', (object,), {})()
+	tf.function=lambda f: f
+	print("Printing help. Skip tensorflow import")
+else:
+	import tensorflow as tf
 
 #### Symmetrize the Gaussian coordinates. Only works for c/d sym right now
 def get_sym_pts(sym, pts):
