@@ -364,6 +364,10 @@ def randomizer(options, model, tag):
 	randomangles = False	
 	randomtrans = False 
 	
+
+	random_transform = Transform()
+	trivial_transform = Transform()
+
 	if not options.notrandomize:
 		
 		randomangles =True
@@ -515,16 +519,16 @@ def randomizer(options, model, tag):
 				b.write_image(randstackname,i)
 				if options.verbose > 9: print("\n(e2spt_simulation.py) saving random orientations stack. particle %d written to %s" % ( i, randstackname ))
 
+			
+			if options.verbose > 9:
+				print("\n(e2spt_simulation.py) applied transform".format(outtransform))
+
 			else:
 				pass #stack of particles in random orientations not saved
 		else:
 			pass #angles and translations were not randomized; the stack to be return will contain copies of the model (might be modified by noise/CTF later) 
 
 		randptcls.update({i:b})
-		
-		if options.verbose > 9:
-			print("\n(e2spt_simulation.py) applied transform", random_transform)
-
 
 	jsA.close()
 	jsAS.close()
@@ -652,7 +656,7 @@ def plotvals( options, vals, tag ):
 	return
 
 
-def textwriter(options,data,tag):
+def textwriter(options,data,tag,count=True):
 	
 	#if options.path not in name:
 	name = options.path + '/' + tag + '.txt'
@@ -661,9 +665,10 @@ def textwriter(options,data,tag):
 	
 	lines=[]
 	
-	for i in range(len(data)):
-			
+	for i in range(len(data)):	
 		line2write = str(i) + '\t' + str(data[i]) + '\n'
+		if not count:
+			line2write = str(data[i]) + '\n'
 		#print "THe line to write is"
 		lines.append(line2write)
 	
@@ -741,7 +746,10 @@ def subtomosim(options,ptcls,outname,dimension):
 	tasks=[]	
 	
 	tangles = genangles( options )
-	
+	tanglesfile=textwriter(options,tangles,options.path.replace('_01','')+"_angles",False)
+	if options.verbose:
+		print("\nwrote tangles file to f={}".format(tanglesfile))
+
 	for i in ptcls:	
 		task=SubtomoSimTask(ptcls[i],i,options,outname,tangles)
 		tasks.append(task)
@@ -1036,6 +1044,9 @@ class SubtomoSimTask(JSTask):
 			
 			prj_r = prj
 			
+			print("\nsaved raw prj ; dimension={}, oiptions.snr={}, options.applyctf={}".format(dimension,options.snr,options.applyctf))
+			#sys.exit(1)
+
 			if options.snr and options.snr != 0.0 and options.snr != '0.0' and options.snr != '0' and dimension == 3:
 				
 				if options.applyctf: #noise gets applied twice if --applyctf; half before, half after
@@ -1049,6 +1060,17 @@ class SubtomoSimTask(JSTask):
 					if options.verbose > 9: print("!!!!!!\n\n\nNOT applying CTF options.applyctf={}\n\n\n".format(options.applyctf))
 
 				prj_r = noiseit( prj_r, options, nslices, outname, i )	
+
+			
+				print("\ndapplied noise, if any; dimension={}, oiptions.snr={}, options.applyctf={}".format(dimension,options.snr,options.applyctf))
+				#sys.exit(1)
+			
+			if dimension == 3 and not options.snr and options.applyctf:
+				defocus = calcdefocus(options, realalt, px, pz)
+				prj_r = ctfer( prj_r, options, defocus, apix )
+				print("\napplied CTF")
+				#sys.exit(1)
+
 
 			ctfed_projections.append(prj_r)
 		
