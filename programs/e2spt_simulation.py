@@ -1030,7 +1030,7 @@ class SubtomoSimTask(JSTask):
 			prj.process_inplace('normalize.edgemean')
 		
 			if options.saveprjs:
-				finalprjsRAW = outname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsRAW.hdf')
+				finalprjsRAW = outname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(options.nptcls))) + '_prjsRAW.hdf')
 				#if options.path + '/' in outname:
 				#	finalprjsRAW = outname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsRAW.hdf')
 				
@@ -1076,8 +1076,8 @@ class SubtomoSimTask(JSTask):
 		
 			if options.verbose > 9: print("should save edited prjs...")
 			if options.saveprjs and (options.applyctf or options.snr):
-				finalprjsED = outname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsEDITED.hdf')
-				
+				#finalprjsED = outname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsEDITED.hdf')
+				finalprjsED = outname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(options.nptcls))) + '_prjsEDITED.hdf')
 				finalprjsED = finalprjsED.replace('_preproc','')
 				prj_r.write_image( finalprjsED , prjindx)	
 				if options.verbose > 9: print("wrote edited prj to %s, indx %d" %( finalprjsED, prjindx ))
