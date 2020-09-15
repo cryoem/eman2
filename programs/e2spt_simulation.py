@@ -1177,6 +1177,10 @@ def calcdefocus(options,realalt,px,pz):
 def ctfer(prj, options, defocus, apix):
 	if options.verbose > 1: print("\n(e2spt_simulation)(ctfer)!!!applying CTF options.applyctf={}\n\n\n".format(options.applyctf))
 
+	original_size = prj['nx']
+	if options.pad2d:
+		prj = clip2d(prj,prj['nx']*2)
+
 	prj_fft = prj.do_fft()
 	ctf = EMAN2Ctf()
 	ctf.from_dict({ 'defocus': defocus, 'bfactor': options.bfactor ,'ampcont': options.ampcont ,'apix':apix, 'voltage':options.voltage, 'cs':options.cs })	
@@ -1185,6 +1189,10 @@ def ctfer(prj, options, defocus, apix):
 	prj_fft.mult(prj_ctf)
 
 	prj_r = prj_fft.do_ift()							#Go back to real space
+	
+	if options.pad2d:
+		prj = clip2d(prj,original_size)
+	
 	prj_r['ctf'] = ctf
 
 	return prj_r
