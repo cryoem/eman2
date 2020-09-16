@@ -905,7 +905,7 @@ class SubtomoSimTask(JSTask):
 			if options.verbose > 1: print("\ndone calculating px")
 
 		pz=0
-		if round(old_div(options.icethickness*10000,apix)) > round(old_div(image['nx'],2.0)) and not options.applyfocusdepth:
+		if round(old_div(options.icethickness*10000,apix)) > round(old_div(image['nx'],2.0)) and options.applyfocusdepth:
 			'''
 			Beware, --icethickness supplied in microns
 			'''
