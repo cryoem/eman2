@@ -522,7 +522,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 			print("file does not exist")
 			return
 
-		f=file(fsp,"r")
+		f=open(fsp,"r")
 		for b in f:
 			b2=[old_div(int(float(i)),self.shrink) for i in b.split()[:3]]
 			bdf=[0,0,0,"manual",0.0, self.currentset]
@@ -539,7 +539,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		if len(fsp)==0:
 			return
 
-		out=file(fsp,"w")
+		out=open(fsp,"w")
 		for b in self.boxes:
 			out.write("%d\t%d\t%d\n"%(b[0]*shrinkf,b[1]*shrinkf,b[2]*shrinkf))
 		out.close()
