@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 '''
 ====================
-Author: Jesus Galaz-Montoya - 2011, Last update: 15/Sep/2020
+Author: Jesus Galaz-Montoya - 2011, Last update: 15/sep/2020
 ====================
 
 # This software is issued under a joint BSD/GNU license. You may use the
