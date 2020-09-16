@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 '''
 ====================
-Author: Jesus Galaz-Montoya - 2011, Last update: 16/Apr/2019
+Author: Jesus Galaz-Montoya - 2011, Last update: 15/Sep/2020
 ====================
 
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -100,6 +100,7 @@ def main():
 	CTF PARAMETERS
 	'''
 	parser.add_argument("--applyctf", action="store_true",default=False,help="Default=False (off). If on, it applies ctf to the projections in the simulated tilt series based on defocus, cs, and voltage parameters.")
+	parser.add_argument("--applyfocusdepth", action="store_true",default=False,help="Default=False (off). If on, this will assign different 'z-height' values to different particles")
 	parser.add_argument("--defocus", type=float,default=3.0,help="""Default=3.0. Target defocus at the tilt axis (in microns) for the simulated tilt series. Notice that DEFOCUS (underfocus) values are POSITIVE, by convention.""")
 	parser.add_argument("--voltage", type=int,default=200,help="""Default=200 KV. Voltage of the microscope, used to simulate the ctf added to the subtomograms.""")
 	parser.add_argument("--cs", type=float,default=2.1,help="""Default is 2.1. Cs of the microscope, used to simulate the ctf added to the subtomograms.""")
@@ -904,7 +905,7 @@ class SubtomoSimTask(JSTask):
 			if options.verbose > 1: print("\ndone calculating px")
 
 		pz=0
-		if round(old_div(options.icethickness*10000,apix)) > round(old_div(image['nx'],2.0)):
+		if round(old_div(options.icethickness*10000,apix)) > round(old_div(image['nx'],2.0)) and not options.applyfocusdepth:
 			'''
 			Beware, --icethickness supplied in microns
 			'''
