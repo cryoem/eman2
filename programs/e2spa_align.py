@@ -24,7 +24,7 @@ def main():
 	parser.add_argument("--debug", action="store_true", default=False ,help="Turn on debug mode. This will only process a small subset of the data")
 	parser.add_argument("--maxshift", type=int,help="maximum shift allowed", default=-1)
 	parser.add_argument("--localrefine", action="store_true", default=False ,help="local refinement")
-	parser.add_argument("--ctfweight", action="store_true", default=False ,help="weight by ctf. not used yet...")
+	#parser.add_argument("--ctfweight", action="store_true", default=False ,help="weight by ctf. not used yet...")
 	parser.add_argument("--slow", action="store_true", default=False ,help="slow but finer search")
 	parser.add_argument("--maxres", type=float,default=-1, help="max resolution for cmp")
 	parser.add_argument("--minrespx", type=int,default=4, help="skip the first x pixel in fourier space")
@@ -36,11 +36,9 @@ def main():
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 
-	#gc.set_debug(gc.DEBUG_LEAK)
 	lstname=options.ptclin
 	threedname=options.ref
 	lname=options.ptclout
-
 	
 	lst=LSXFile(lstname, True)
 	m=EMData(threedname)
@@ -129,7 +127,6 @@ def main():
 	lout=None
 	E2end(logid)
 
-
 def run(cmd):
 	print(cmd)
 	launch_childprocess(cmd)
@@ -149,18 +146,14 @@ class SpaAlignTask(JSTask):
 		def test_rot(x, returnxf=False):
 			if isinstance(x, Transform):
 				xf=x
-				
 			else:
 				x=list(x)
 				x.extend(curxf[len(x):])
-				#x.extend([0.,0.])
-				#x.extend([curxf[3], curxf[4]])
 				xf=Transform({"type":"eman", "alt":x[0], "az":x[1], "phi":x[2],"tx":x[3], "ty":x[4]})
 			
 			pj=refsmall.project('gauss_fft',{"transform":xf, "returnfft":1})
-			
-			x0=4; x1=int(ss*.4)
-			#x0=ss//8; x1=ss//3
+			x0=options.minrespx; x1=int(ss*.4)
+
 			ccf=imgsmall.calc_ccf(pj)
 			pos=ccf.calc_max_location_wrap(mxsft, mxsft, 0)
 			xf.translate(pos[0], pos[1],0)
@@ -324,7 +317,6 @@ class SpaAlignTask(JSTask):
 				if ss>=maxy:
 					break
 				
-			#r={"idx":ii, "xform.align3d":newxfs[0], "score":np.min(score)}
 			r={"idx":ii, "xform.align3d":newxfs[:1], "score":newscore[:1]}
 			callback(100*float(infoi/len(self.data["info"])))
 			rets.append(r)

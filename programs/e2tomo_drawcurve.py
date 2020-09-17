@@ -342,7 +342,7 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 		self.imgview.show()
 		
 	def save_pdb(self):
-		pts=np.array(self.contour.points)
+		pts=np.array([p for p in self.contour.points if p[4]==self.contour.classid])
 		if len(pts)==0:
 			return
 		

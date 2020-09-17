@@ -42,7 +42,7 @@ def main():
 	parser.add_argument("--cut", type=float,help="", default=.2)
 	parser.add_argument("--sym", type=str,help="", default="c1")	
 	parser.add_argument("--overwrite", action="store_true", default=False ,help="overwrite even/odd input")
-	parser.add_argument("--tophat", action="store_true", default=False ,help="tophat instead of gauss")
+	parser.add_argument("--gauss", action="store_true", default=False ,help="gauss instead of tophat")
 	parser.add_argument("--ppid", type=int,help="", default=-1)
 
 	(options, args) = parser.parse_args()
@@ -121,11 +121,11 @@ def main():
 		for c in cs:
 			m=f.process("threshold.binaryrange", {"low":c-.05, "high":c+.05})
 			m.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.3})
-			if options.tophat:
-				ef=mp.process("filter.lowpass.tophat",{"cutoff_abs":c+.05})
-			else:
+			if options.gauss:
 				ef=mp.process("filter.lowpass.gauss",{"cutoff_abs":c+.05})
-			ef.process_inplace("normalize.circlemean",{"radius":-8,"width":5})
+			else:
+				ef=mp.process("filter.lowpass.tophat",{"cutoff_abs":c+.05})
+			#ef.process_inplace("normalize.circlemean",{"radius":-8,"width":5})
 			ef.mult(m)
 			eout.add(ef)
 			wt.add(m)
@@ -136,7 +136,7 @@ def main():
 		eout.process_inplace("xform.applysym",{"sym":options.sym})
 		eout.process_inplace("normalize.circlemean",{"radius":-8,"width":5})
 		
-		#eout.mult(mask)
+		eout.mult(mask)
 		eout.set_attr_dict(mp.get_attr_dict())
 		
 		mps.append(eout)
