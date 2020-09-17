@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 '''
 ====================
-Author: Jesus Galaz-Montoya - 2011, Last update: 16/Apr/2019
+Author: Jesus Galaz-Montoya - 2011, Last update: 15/sep/2020
 ====================
 
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -52,7 +52,7 @@ def main():
 	
 	parser.add_argument("--clip", type=int,default=None,help="""Default=None. The final box size to clip the output subtomograms to.""")								
 	parser.add_argument("--gridholesize", type=float,default=1.0,help="""Default=1.0. Size of the carbon hole in micrometers for the simulated grid (this will determine the shifts in defocus for each particle at each tilt angle, depending on the position of the particle respect to the tilt axis; the tilt axis by convention goes parallel to Y through the middle of the tomogram.""")
-	parser.add_argument("--icethickness", type=float,default=0.4,help="""Default=0.4. Thickness of the specimen to simulate, in microns. Default=0.4; --icethickness will be used to calculate the size of the tomogram in Z in PIXELS for the simulated tomogram. This parameter will also be used to assign a random coordinate in Z to each subtomogram.""")
+	parser.add_argument("--icethickness", type=float,default=0.0,help="""Default=0.0. Thickness of the specimen to simulate, in microns (e.g., 0.4 would be 400 nm); --icethickness will be used to calculate the size of the tomogram in Z in PIXELS for the simulated tomogram. This parameter will also be used to assign a random coordinate in Z to each subtomogram.""")
 	parser.add_argument("--input", type=str, default='', help="""The name of the input volume from which simulated subtomograms will be generated. The output will be in HDF format, since volume stack support is required. The input CAN be PDB, MRC or and HDF stack. If the input file is PDB or MRC, a version of the supplied model will be written out in HDF format. If the input file is a stack, simulatd subvolumes will be generated from each model in the stack and written to different output stacks. For example, if the input file contains models A and B, two output stacks with simulated subvolumes will be generated.""")
 	parser.add_argument("--invert",action="store_true",default=False,help=""""Default=False. This will multiply the pixel values by -1. This is intended to make the simulated particles be like real EM data before contrast reversal (black, negative contrast), assuming that they're being generated from a model/image where the protein has positive values. It not supplied, 'white protein' (positive density values) will be used by default (or whatever the original contrast is of the image supplied as a model).""")
 	
@@ -100,6 +100,7 @@ def main():
 	CTF PARAMETERS
 	'''
 	parser.add_argument("--applyctf", action="store_true",default=False,help="Default=False (off). If on, it applies ctf to the projections in the simulated tilt series based on defocus, cs, and voltage parameters.")
+	parser.add_argument("--applyfocusdepth", action="store_true",default=False,help="Default=False (off). If on, this will assign different 'z-height' values to different particles")
 	parser.add_argument("--defocus", type=float,default=3.0,help="""Default=3.0. Target defocus at the tilt axis (in microns) for the simulated tilt series. Notice that DEFOCUS (underfocus) values are POSITIVE, by convention.""")
 	parser.add_argument("--voltage", type=int,default=200,help="""Default=200 KV. Voltage of the microscope, used to simulate the ctf added to the subtomograms.""")
 	parser.add_argument("--cs", type=float,default=2.1,help="""Default is 2.1. Cs of the microscope, used to simulate the ctf added to the subtomograms.""")
@@ -364,6 +365,10 @@ def randomizer(options, model, tag):
 	randomangles = False	
 	randomtrans = False 
 	
+
+	random_transform = Transform()
+	trivial_transform = Transform()
+
 	if not options.notrandomize:
 		
 		randomangles =True
@@ -515,16 +520,16 @@ def randomizer(options, model, tag):
 				b.write_image(randstackname,i)
 				if options.verbose > 9: print("\n(e2spt_simulation.py) saving random orientations stack. particle %d written to %s" % ( i, randstackname ))
 
+			
+			if options.verbose > 9:
+				print("\n(e2spt_simulation.py) applied transform".format(outtransform))
+
 			else:
 				pass #stack of particles in random orientations not saved
 		else:
 			pass #angles and translations were not randomized; the stack to be return will contain copies of the model (might be modified by noise/CTF later) 
 
 		randptcls.update({i:b})
-		
-		if options.verbose > 9:
-			print("\n(e2spt_simulation.py) applied transform", random_transform)
-
 
 	jsA.close()
 	jsAS.close()
@@ -652,7 +657,7 @@ def plotvals( options, vals, tag ):
 	return
 
 
-def textwriter(options,data,tag):
+def textwriter(options,data,tag,count=True):
 	
 	#if options.path not in name:
 	name = options.path + '/' + tag + '.txt'
@@ -661,9 +666,10 @@ def textwriter(options,data,tag):
 	
 	lines=[]
 	
-	for i in range(len(data)):
-			
+	for i in range(len(data)):	
 		line2write = str(i) + '\t' + str(data[i]) + '\n'
+		if not count:
+			line2write = str(data[i]) + '\n'
 		#print "THe line to write is"
 		lines.append(line2write)
 	
@@ -741,7 +747,10 @@ def subtomosim(options,ptcls,outname,dimension):
 	tasks=[]	
 	
 	tangles = genangles( options )
-	
+	tanglesfile=textwriter(options,tangles,options.path.replace('_01','')+"_angles",False)
+	if options.verbose:
+		print("\nwrote tangles file to f={}".format(tanglesfile))
+
 	for i in ptcls:	
 		task=SubtomoSimTask(ptcls[i],i,options,outname,tangles)
 		tasks.append(task)
@@ -896,7 +905,7 @@ class SubtomoSimTask(JSTask):
 			if options.verbose > 1: print("\ndone calculating px")
 
 		pz=0
-		if round(old_div(options.icethickness*10000,apix)) > round(old_div(image['nx'],2.0)):
+		if round(old_div(options.icethickness*10000,apix)) > round(old_div(image['nx'],2.0)) and options.applyfocusdepth:
 			'''
 			Beware, --icethickness supplied in microns
 			'''
@@ -1022,7 +1031,7 @@ class SubtomoSimTask(JSTask):
 			prj.process_inplace('normalize.edgemean')
 		
 			if options.saveprjs:
-				finalprjsRAW = outname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsRAW.hdf')
+				finalprjsRAW = outname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(options.nptcls))) + '_prjsRAW.hdf')
 				#if options.path + '/' in outname:
 				#	finalprjsRAW = outname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsRAW.hdf')
 				
@@ -1036,6 +1045,9 @@ class SubtomoSimTask(JSTask):
 			
 			prj_r = prj
 			
+			print("\nsaved raw prj ; dimension={}, oiptions.snr={}, options.applyctf={}".format(dimension,options.snr,options.applyctf))
+			#sys.exit(1)
+
 			if options.snr and options.snr != 0.0 and options.snr != '0.0' and options.snr != '0' and dimension == 3:
 				
 				if options.applyctf: #noise gets applied twice if --applyctf; half before, half after
@@ -1050,12 +1062,23 @@ class SubtomoSimTask(JSTask):
 
 				prj_r = noiseit( prj_r, options, nslices, outname, i )	
 
+			
+				print("\ndapplied noise, if any; dimension={}, oiptions.snr={}, options.applyctf={}".format(dimension,options.snr,options.applyctf))
+				#sys.exit(1)
+			
+			if dimension == 3 and not options.snr and options.applyctf:
+				defocus = calcdefocus(options, realalt, px, pz)
+				prj_r = ctfer( prj_r, options, defocus, apix )
+				print("\napplied CTF")
+				#sys.exit(1)
+
+
 			ctfed_projections.append(prj_r)
 		
 			if options.verbose > 9: print("should save edited prjs...")
 			if options.saveprjs and (options.applyctf or options.snr):
-				finalprjsED = outname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsEDITED.hdf')
-				
+				#finalprjsED = outname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsEDITED.hdf')
+				finalprjsED = outname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(options.nptcls))) + '_prjsEDITED.hdf')
 				finalprjsED = finalprjsED.replace('_preproc','')
 				prj_r.write_image( finalprjsED , prjindx)	
 				if options.verbose > 9: print("wrote edited prj to %s, indx %d" %( finalprjsED, prjindx ))
@@ -1155,6 +1178,10 @@ def calcdefocus(options,realalt,px,pz):
 def ctfer(prj, options, defocus, apix):
 	if options.verbose > 1: print("\n(e2spt_simulation)(ctfer)!!!applying CTF options.applyctf={}\n\n\n".format(options.applyctf))
 
+	original_size = prj['nx']
+	if options.pad2d:
+		prj = clip2d(prj,prj['nx']*2)
+
 	prj_fft = prj.do_fft()
 	ctf = EMAN2Ctf()
 	ctf.from_dict({ 'defocus': defocus, 'bfactor': options.bfactor ,'ampcont': options.ampcont ,'apix':apix, 'voltage':options.voltage, 'cs':options.cs })	
@@ -1163,6 +1190,10 @@ def ctfer(prj, options, defocus, apix):
 	prj_fft.mult(prj_ctf)
 
 	prj_r = prj_fft.do_ift()							#Go back to real space
+	
+	if options.pad2d:
+		prj = clip2d(prj,original_size)
+	
 	prj_r['ctf'] = ctf
 
 	return prj_r
