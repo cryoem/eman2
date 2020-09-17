@@ -397,7 +397,7 @@ def main():
 			if options.tomo: localsize=max(16,100//apix)
 			else: localsize=max(16,32//apix)
 			cmd="e2fsc.py {path}threed_even_unmasked.hdf {path}threed_odd_unmasked.hdf --output {path}fscvol_{itr:02d}.hdf --outfilt {path}threed_{itr:02d}.hdf --outfilte {path}threed_{itr:02d}_even.hdf --outfilto {path}threed_{itr:02d}_odd.hdf --mask {path}mask.hdf --threads {threads} --localsize {localsize} -v 1".format(
-				path=path,itr=options.iter,threads=options.threads,localsize=localsize)
+				path=path,itr=options.iter,threads=options.threads,localsize=int(localsize))
 			run(cmd)
 
 			# we impose the symmetry in real-space, since this is what people expect

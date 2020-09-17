@@ -132,7 +132,7 @@ If --goldstandard is specified, even and odd variants of the alignment reference
 	NTHREADS=max(options.threads+1,2)		# we have one thread just writing results
 
 	logid=E2init(sys.argv, options.ppid)
-	refnames=[]
+	refnames=[reffile,reffile]
 
 	if options.goldcontinue or options.goldstandard>0:
 		ref=[]

@@ -28,7 +28,7 @@ def main():
 		
 	copy2(options.parm, "{}/particle_parms_00.json".format(path))
 	if options.mask!="":
-		mask=" --mask {}".format(options.mask)
+		mask=" --maskclass {}".format(options.mask)
 	else:
 		mask=""
 
@@ -63,7 +63,7 @@ def main():
 			if mt[ic,2]==i:
 				jout[k]=js[k]
 				xf=js[k]["xform.align3d"]
-				x=s.get_sym(sym, int(mt[ic,3]))
+				x=s.get_sym(options.sym, int(mt[ic,3]))
 				jout[k]["xform.align3d"]=x*xf
 				
 		fm="{}/particle_parms_{:02d}_cls_{:02d}.json".format(path, itr, i)
