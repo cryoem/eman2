@@ -52,6 +52,7 @@ import threading
 import time
 import traceback
 import weakref
+import random
 
 
 def display_error(msg) :
@@ -319,6 +320,63 @@ class EMFileType(object) :
 		target.show()
 		target.raise_()
 
+	def show2dAvg(self, brws, new=False) :
+		"""Show the unaligned average of all images in a stack"""
+		brws.busy()
+
+		# this averages images in chunks of 1000 (when more than 1000 images in the file)
+		avg=sum([sum(EMData.read_images(self.path,list(range(i,min(i+1000,self.nimg))))) for i in range(0,self.nimg,1000)])
+
+		if not new:
+			try :
+				target = brws.view2d[-1]
+				target.set_data(avg)
+			except :
+				new=True
+				
+		if new:
+			target = EMImage2DWidget()
+			target.set_data(avg)
+			brws.view2d.append(target)
+
+		target.setWindowTitle("sum of"+self.path.split('/')[-1])
+
+		brws.notbusy()
+		target.show()
+		target.raise_()
+
+	def show2dAvgRnd(self, brws) :
+		"""Show averages of random subsets of 1/4 or 1000 images from the stack"""
+
+		# minimum number of images required
+		if self.nimg<8 : return
+		brws.busy()
+
+		avgs=[]
+		for i in range(10):
+			imns=[random.randrange(self.nimg) for j in range(min(self.nimg//4,1000))]
+			imns.sort()
+			ims=EMData.read_images(self.path,imns)
+			avgs.append(sum(ims))
+			avgs[-1].mult(1.0/len(imns))
+
+		try :
+			target = brws.view2d[-1]
+			target.set_data(avgs)
+			#if self.getSetsDB() : target.set_single_active_set(self.getSetsDB())
+		except :
+			target = EMImage2DWidget()
+			target.set_data(avgs)
+#			target.mx_image_double.connect(target.mouse_double_click)		# this makes class average viewing work in app mode
+			brws.view2ds.append(target)
+
+		target.qt_parent.setWindowTitle("Random Avg Stack - "+self.path.split('/')[-1])
+
+		brws.notbusy()
+		target.show()
+		target.raise_()
+
+
 	def show2dStack(self, brws) :
 		"""A set of 2-D images together in an existing window"""
 		brws.busy()
@@ -398,6 +456,18 @@ class EMFileType(object) :
 
 	def show2dStack3sec(self, brws) :
 		"""A set of 2-D images derived from a stack of 3-D Volumes"""
+		try:
+			ret=self.secparm.exec_()
+		except:
+			self.secparm=EMSliceParamDialog(brws,self.nimg)
+			ret=self.secparm.exec_()
+		
+		img0=self.secparm.wspinmin.value()
+		img1=self.secparm.wspinmax.value()
+		layers=self.secparm.wspinlayers.value()
+		applyxf=self.secparm.wcheckxf.checkState()
+		
+		
 		brws.busy()
 
 		# if self.dim[2] > 1 :
@@ -405,7 +475,36 @@ class EMFileType(object) :
 			# for z in range(self.dim[2]) :
 				# data.append(EMData(self.path, 0, False, Region(0, 0, z, self.dim[0], self.dim[1], 1)))
 		# else : data = EMData.read_images(self.path)
-		data=[EMData(self.path,i,False,Region(0,0,self.dim[2]/2,self.dim[0],self.dim[1],1)) for i in range(self.nimg)]
+		
+		data=[]
+		for i in range(self.nimg):
+			ptcl=EMData(self.path,i)
+			try: xf=ptcl["xform.align3d"]
+			except: xf=Transform()
+			if applyxf: ptcl.process_inplace("xform",{"transform":xf})
+#			if hp>0 : ptcl.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/hp})
+#			if lp>0 : ptcl.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/lp})
+			
+			# these are the range limited orthogonal projections
+			x=ptcl.process("misc.directional_sum",{"axis":"x","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
+			y=ptcl.process("misc.directional_sum",{"axis":"y","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
+			z=ptcl.process("misc.directional_sum",{"axis":"z","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
+
+			# different directions sometimes have vastly different standard deviations, independent normalization may help balance
+			x.process_inplace("normalize")
+			y.process_inplace("normalize")
+			z.process_inplace("normalize")
+			
+			# we pack the 3 projections into a single 2D image
+			all=EMData(x["nx"]*3,x["ny"],1)
+			all.insert_clip(x,(0,0))
+			all.insert_clip(y,(x["nx"],0))
+			all.insert_clip(z,(x["nx"]*2,0))
+			
+			for k in ["ptcl_repr","class_ptcl_idxs","class_ptlc_src","orig_file","orig_n","source_path","source_n"]:
+				try: all[k]=ptcl[k]
+				except: pass
+			data.append(all)
 
 		try :
 			target = brws.view2ds[-1]
@@ -1147,7 +1246,9 @@ class EMBdbFileType(EMFileType) :
 		# 2-D stack
 		elif self.nimg > 1 and self.dim[1] > 1 :
 			return [("Show Stack", "Show all images together in one window", self.show2dStack), ("Show Stack+", "Show all images together in a new window", self.show2dStackNew), 
-				("Show 2D", "Show all images, one at a time in current window", self.show2dSingle), ("Show 2D+", "Show all images, one at a time in a new window", self.show2dSingleNew), ("FilterTool", "Open in e2filtertool.py", self.showFilterTool), ("Save As", "Saves images in new file format", self.saveAs)]
+				("Show 2D", "Show all images, one at a time in current window", self.show2dSingle), ("Show 2D+", "Show all images, one at a time in a new window", self.show2dSingleNew), 
+				("Avg All", "Unaligned average of entire stack",self.show2dAvg),("Avg Sample","Averages random min(1/4 of images,1000) multiple times",self.show2dAvgRnd),
+				("FilterTool", "Open in e2filtertool.py", self.showFilterTool), ("Save As", "Saves images in new file format", self.saveAs)]
 		# 1-D stack
 		elif self.nimg > 0 :
 			return [("Plot 2D", "Plot all on a single 2-D plot", self.plot2dNew), ("Save As", "Saves images in new file format", self.saveAs)]
@@ -1327,11 +1428,13 @@ class EMStackFileType(EMFileType) :
 		"""Returns a list of (name, callback) tuples detailing the operations the user can call on the current file"""
 		# 3-D stack
 		if self.nimg > 1 and self.dim[2] > 1:
-			return [("Show all 3D", "Show all in a single 3D window", self.show3DAll), ("Show 1st 3D", "Show only the first volume", self.show3DNew),("Show 1st 2D", "Show first volume as 2D stack", self.show2dSingle30),("Show 2nd 2D", "Show second volume as 2D stack", self.show2dSingle31),("Show All Zproj", "Show Z projection of all volumes", self.show2dStack3z),("Show All Zcen", "Show Z central section of all volumes", self.show2dStack3sec), ("Chimera", "Open in chimera (if installed)", self.showChimera), ("Save As", "Saves images in new file format", self.saveAs)]
+			return [("Show all 3D", "Show all in a single 3D window", self.show3DAll), ("Show 1st 3D", "Show only the first volume", self.show3DNew),("Show 1st 2D", "Show first volume as 2D stack", self.show2dSingle30),("Show 2nd 2D", "Show second volume as 2D stack", self.show2dSingle31),("Show All Zproj", "Show Z projection of all volumes", self.show2dStack3z),("All XYZ", "Show restricted XYZ projections of all", self.show2dStack3sec), ("Chimera", "Open in chimera (if installed)", self.showChimera), ("Save As", "Saves images in new file format", self.saveAs)]
 		# 2-D stack
 		elif self.nimg > 1 and self.dim[1] > 1:
 			rtr=[("Show Stack", "Show all images together in one window", self.show2dStack), ("Show Stack+", "Show all images together in a new window", self.show2dStackNew), 
-				("Show 2D", "Show all images, one at a time in current window", self.show2dSingle), ("Show 2D+", "Show all images, one at a time in a new window", self.show2dSingleNew), ("FilterTool", "Open in e2filtertool.py", self.showFilterTool), ("Save As", "Saves images in new file format", self.saveAs)]
+				("Show 2D", "Show all images, one at a time in current window", self.show2dSingle), ("Show 2D+", "Show all images, one at a time in a new window", self.show2dSingleNew), 
+				("Avg All", "Unaligned average of entire stack",self.show2dAvg),("Avg Rnd Subset","Averages random min(1/4 of images,1000) multiple times",self.show2dAvgRnd),
+				("FilterTool", "Open in e2filtertool.py", self.showFilterTool), ("Save As", "Saves images in new file format", self.saveAs)]
 			if self.xfparms:
 				rtr.extend([("Plot 2D", "Plot xform", self.plot2dApp),("Plot 2D+", "plot xform in new window", self.plot2dNew)])
 			return rtr
@@ -3111,6 +3214,48 @@ class SortSelTree(QtWidgets.QTreeView) :
 #		for i in sel : self.selectionModel().select(i, QtCore.QItemSelectionModel.ClearAndSelect)
 #		self.update()
 
+class EMSliceParamDialog(QtWidgets.QDialog):
+	"""This modal dialog asks the user for parameters required for the XYZ 3-D stack viewer"""
+	def __init__(self, parent = None,nimg = 1) :
+		QtWidgets.QDialog.__init__(self,parent)
+		
+		self.setWindowTitle("Slice Parameters")
+
+#		self.resize(780, 580)
+		self.vbl = QtWidgets.QVBoxLayout(self)
+		self.fol = QtWidgets.QFormLayout()
+		self.vbl.addLayout(self.fol)
+
+		self.wspinmin=QtWidgets.QSpinBox()
+		self.wspinmin.setRange(-1,nimg-1)
+		self.wspinmin.setValue(-1)
+		self.fol.addRow("First Image #:",self.wspinmin)
+		
+		self.wspinmax=QtWidgets.QSpinBox()
+		self.wspinmax.setRange(-1,nimg-1)
+		self.wspinmax.setValue(-1)
+		self.fol.addRow("Last Image #:",self.wspinmax)
+
+		self.wspinlayers=QtWidgets.QSpinBox()
+		self.wspinlayers.setRange(0,256)
+		self.wspinlayers.setValue(0)
+		self.fol.addRow("Sum Layers (0->1, 1->3, 2->5, ...):",self.wspinlayers)
+
+		self.wcheckxf=QtWidgets.QCheckBox("enable")
+		self.wcheckxf.setChecked(1)
+		self.fol.addRow("Apply xform.align3d from header:",self.wcheckxf)
+
+		self.bhb = QtWidgets.QHBoxLayout()
+		self.vbl.addLayout(self.bhb)
+		self.wbutok = QtWidgets.QPushButton("OK")
+		self.bhb.addWidget(self.wbutok)
+
+		self.wbutcancel = QtWidgets.QPushButton("Cancel")
+		self.bhb.addWidget(self.wbutcancel)
+	
+		self.wbutok.clicked[bool].connect(self.accept)
+		self.wbutcancel.clicked[bool].connect(self.reject)
+		self.wbutok.setDefault(1)
 
 class EMBrowserWidget(QtWidgets.QWidget) :
 	"""This widget is a file browser for EMAN2. In addition to being a regular file browser, it supports:
@@ -3524,7 +3669,9 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 #		print "press ", self.curactions[num][0]
 
 		try: self.curactions[num][2](self)				# This calls the action method
-		except: pass		# sometimes we are missing an action
+		except: 
+			traceback.print_exc()
+			# sometimes we are missing an action
 
 	def buttonOk(self, tog) :
 		"""When the OK button is pressed, this will emit a signal. The receiver should call the getResult method (once) to get the list of paths"""

@@ -564,6 +564,9 @@ EMData.write_compressed(list,fsp,n_first_img,bits,...)
 
 Compression is lossless, but with variable bit reduction which is (potentially) lossy. 
 
+Ignores any render_min/render_max already in the image header. To use those values, pass them as arguments
+and do not specify nooutliers.
+
 If nooutliers is set, this will override any specified minval/maxval. If maxval<minval then the full range of 
 image values will be included in the bit reduced image. If large outliers are present, this may effectively remove 
 almost all of the information in the image. Nooutliers will eliminate up to ~0.01% of the extreme pixel values from the

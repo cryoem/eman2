@@ -79,7 +79,7 @@ class EMImage2DWidget(EMGLWidget):
 
 	allim=WeakKeyDictionary()
 
-	def __init__(self, image=None, application=get_application(),winid=None, parent=None):
+	def __init__(self, image=None, application=get_application(),winid=None, parent=None,sizehint=(512,512)):
 
 		self.inspector = None # this should be a qt widget, otherwise referred to as an inspector in eman
 
@@ -87,6 +87,7 @@ class EMImage2DWidget(EMGLWidget):
 		self.setFocusPolicy(Qt.StrongFocus)
 		self.setMouseTracking(True)
 		self.initimageflag = True
+		self.initsizehint = sizehint	# this is used when no data has been set yet
 
 		self.fftorigincenter = E2getappval("emimage2d","origincenter")
 		if self.fftorigincenter == None : self.fftorigincenter=False
@@ -245,18 +246,17 @@ class EMImage2DWidget(EMGLWidget):
 
 	def get_parent_suggested_size(self):
 
+		if self.data==None and self.fft==None : return (self.initsizehint[0]+12,self.initsizehint[1]+12)
+	
 		data = self.data
 		if data == None: data = self.fft
 
-		if data != None and  data.get_xsize()<640 and data.get_ysize()<640:
-			try : return (data.get_xsize()+12,data.get_ysize()+12)
-			except : return (640,640)
-		else:
-			return (640,640)
+		try: return (data["nx"]+12,data["ny"]+12)
+		except : return (self.initsizehint[0]+12,self.initsizehint[1]+12)
 
 	def sizeHint(self):
 #		print self.get_parent_suggested_size()
-		if self.data==None : return QtCore.QSize(512,512)
+		if self.data==None and self.fft==None : return self.initsizehint
 		return QtCore.QSize(*self.get_parent_suggested_size())
 
 	def set_disp_proc(self,procs):
@@ -1599,11 +1599,11 @@ class EMImage2DWidget(EMGLWidget):
 
 	def scr_to_img(self,v0,v1=None):
 		#TODO: origin_x and origin_y are part of the hack in self.render() and self.render_bitmap()
-		origin_x = self.scale*(int(old_div(self.origin[0],self.scale))+0.5)
-		origin_y = self.scale*(int(old_div(self.origin[1],self.scale))+0.5)
+		origin_x = self.scale*(int(self.origin[0]/self.scale)+0.5)
+		origin_y = self.scale*(int(self.origin[1]/self.scale)+0.5)
 
-		try: img_coords = ( old_div((v0+origin_x),self.scale), old_div((self.height()-(v1-origin_y)),self.scale) )
-		except:	img_coords = (old_div((v0[0]+origin_x),self.scale),old_div((self.height()-(v0[1]-origin_y)),self.scale))
+		try: img_coords = (((v0+origin_x)/self.scale), ((self.height()-(v1-origin_y))/self.scale) )
+		except:	img_coords = (((v0[0]+origin_x)/self.scale),((self.height()-(v0[1]-origin_y))/self.scale))
 
 #		print "Screen:", v0, v1
 #		print "Img:", img_coords
