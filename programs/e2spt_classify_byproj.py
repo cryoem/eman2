@@ -239,7 +239,7 @@ produce new sets/ for each class, which could be further-refined.
 			if options.shrink>1 : ptcl.process_inplace("math.meanshrink",{"n":options.shrink})
 			ptcl.write_image("{}/aliptcl_{:02d}_{:02d}.hdf".format(options.path,options.iter,cls),-1)
 		
-		sets[cls].write(-1,im["orig_n"],im["orig_file"],str(db[im["orig_key"]]["xform.align3d"].get_params("eman"))
+		sets[cls].write(-1,im["orig_n"],im["orig_file"],str(db[im["orig_key"]]["xform.align3d"].get_params("eman")))
 	
 	if options.verbose: print("\nSaving classes")
 	try: os.unlink("{}/classes_sec_{:02d}.hdf".format(options.path,options.iter))
