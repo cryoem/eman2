@@ -92,13 +92,14 @@ def main():
 	parser.add_option("--apix", type="float", default=None, help="Default=None (not used). A/pixel for S scaling. Also sets/resets the apix of an image to this value.")
 	parser.add_option("--append", action="store_true", help="Append output image, i.e., do not write inplace.")
 	parser.add_option("--average", action="store_true", help="Computes the average of a stack of 3D volumes", default=False)	
-	parser.add_option("--avg_byxf", action="store_true", help="Transform each volume by xform.align3d in its header before computing the average", default=False)	
+	parser.add_option("--avg_byxf", action="store_true", help="Transform each volume by xform.align3d in its header before computing the average. Only used in --average mode.", default=False)	
 	parser.add_option("--averager", type="string", default="mean", help="Averager used for --average and --sym options")
 
 	parser.add_option("--calcfsc", type="string", metavar="with input", help="Calculate a FSC curve between two models. Output is a txt file. This option is the name of the second volume.")
 	parser.add_option("--calcsf", type="string", metavar="outputfile", help="Calculate a radial structure factor. Must specify apix.")
 	parser.add_option("--calcradial", type="int",default=-1,help="Calculate the radial density by shell. Output file becomes a text file. 0 - mean amp, 2 - min, 3 - max, 4 - sigma")
 	parser.add_option("--clip", metavar="x[,y,z[,xc,yc,zc]]", type='string', action="callback", callback=intvararg_callback, help="Make the output have this size by padding/clipping. 1, 3 or 6 arguments. ")
+  	parser.add_option("--compressbits", type=int,help="HDF only. Bits to keep for compression. ",default=-1)
 
 	parser.add_option("--fftclip", metavar="x, y, z", type="string", action="callback", callback=floatvararg_callback, help="Make the output have this size, rescaling by padding FFT.")
 	parser.add_option("--filtertable", type="string", action="append",help="Applies a 2 column (S,amp) file as a filter in Fourier space, assumed 0 outside the defined range.")
@@ -132,7 +133,7 @@ def main():
 
 	parser.add_option("--resetxf",action="store_true",help="Reset an existing transform matrix to the identity matrix")
 	parser.add_option("--ralignzphi", type=str ,action="append", help="Refine Z alignment within +-10 pixels  and phi +-15 degrees (for C symmetries), specify name of alignment reference here not with --alignref")
-	parser.add_option("--rot",type=str,metavar="az,alt,phi or convention:par=val:...",help="Rotate map. Specify az,alt,phi or convention:par=val:par=val:...  eg - mrc:psi=22:theta=15:omega=7", action="append",default=None)
+	parser.add_option("--rot",type=str,metavar="az,alt,phi, convention:par=val:..., or 'header' to use xform.align3d from header",help="Rotate map. Specify az,alt,phi or convention:par=val:par=val:...  eg - mrc:psi=22:theta=15:omega=7", action="append",default=None)
 	
 	parser.add_option("--scale", metavar="n", type="float", action="append", help="Rescales the data in the image by 'n', opposite behavior of 'shrink' above. Scaling is done by interpolation in real-space. Box size unchanged. See '--clip'")
 	parser.add_option("--setsf", type=str, metavar="inputfile", help="Set the radial structure factor. Must specify apix.")
@@ -250,10 +251,13 @@ def main():
 			out["render_min"]=file_mode_range[stype][0]
 			out["render_max"]=file_mode_range[stype][1]
 
-		try: out.write_image(outfile,0,IMAGE_UNKNOWN,0,None,EMUtil.EMDataType(stype))
-		except:
-			print("Failed to write in file mode matching input, reverting to floating point output")
-			out.write_image(outfile,0)
+		if options.compressbits>=0:
+			out.write_compressed(outfile,0,options.compressbits,nooutliers=True)
+		else:
+			try: out.write_image(outfile,0,IMAGE_UNKNOWN,0,None,EMUtil.EMDataType(stype))
+			except:
+				print("Failed to write in file mode matching input, reverting to floating point output")
+				out.write_image(outfile,0)
 
 		print("Complete !")
 		sys.exit(0)
@@ -349,7 +353,10 @@ def main():
 		except:
 			pass
 
-		avg.write_image(outfile,0)
+		if options.compressbits>=0:
+			avg.write_compressed(outfile,0,options.compressbits,nooutliers=True)
+		else:
+			avg.write_image(outfile,0)
 		sys.exit(1)
 
 	index_d = {}
@@ -662,13 +669,11 @@ def main():
 
 			elif option1 == "rot":
 				fi = index_d[option1]
-				#try:
-				xform=parse_transform(options.rot[fi])
-				#except:
-				#	print "Invalid rotation specified: ",options.rot[fi]
-				#	print "Please see e2help.py transform"
-
-				data.transform(xform)
+				if options.rot[fi].lower()=="header":
+					data.transform(data["xform.align3d"])
+				else:
+					xform=parse_transform(options.rot[fi])
+					data.transform(xform)
 				index_d[option1] += 1
 
 			elif option1 == "clip":
@@ -786,12 +791,21 @@ def main():
 				print("rescale output to range {} - {}".format(data["render_min"],data["render_max"]))
 
 		if options.unstacking:	#output a series numbered single image files
-			data.write_image(os.path.splitext(outfile)[0]+'-'+str(img_index+1).zfill(len(str(nimg)))+ os.path.splitext(outfile)[-1], -1, EMUtil.ImageType.IMAGE_UNKNOWN, False, None, file_mode_map[options.outmode], not(options.swap))
+			if options.compressbits>=0:
+				data.write_compressed(os.path.splitext(outfile)[0]+'-'+str(img_index+1).zfill(len(str(nimg)))+ os.path.splitext(outfile)[-1],0,options.compressbits,nooutliers=True)
+			else:
+				data.write_image(os.path.splitext(outfile)[0]+'-'+str(img_index+1).zfill(len(str(nimg)))+ os.path.splitext(outfile)[-1], -1, EMUtil.ImageType.IMAGE_UNKNOWN, False, None, file_mode_map[options.outmode], not(options.swap))
 		else:   #output a single 2D image or a 2D stack
 			if options.append:
-				data.write_image(outfile, -1, EMUtil.get_image_ext_type(options.outtype), False, None, file_mode_map[options.outmode], not(options.swap))
+				if options.compressbits>=0:
+					data.write_compressed(outfile,-1,options.compressbits,nooutliers=True)
+				else:
+					data.write_image(outfile, -1, EMUtil.get_image_ext_type(options.outtype), False, None, file_mode_map[options.outmode], not(options.swap))
 			else:
-				data.write_image(outfile, img_index, EMUtil.get_image_ext_type(options.outtype), False, None, file_mode_map[options.outmode], not(options.swap))
+				if options.compressbits>=0:
+					data.write_compressed(outfile,img_index,options.compressbits,nooutliers=True)
+				else:
+					data.write_image(outfile, img_index, EMUtil.get_image_ext_type(options.outtype), False, None, file_mode_map[options.outmode], not(options.swap))
 
 		img_index += 1
 		for append_option in append_options:	#clean up the multi-option counter for next image

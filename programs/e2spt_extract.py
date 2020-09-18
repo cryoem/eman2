@@ -807,7 +807,7 @@ def parse_json(options):
 		sthr=1000
 	
 	
-	### parse post transform file
+	### parse post transform file (or inline symmetry option)
 	xffile=options.postxf
 	postxfs=[]
 	if xffile!=None:

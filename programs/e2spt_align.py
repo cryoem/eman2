@@ -43,18 +43,18 @@ from EMAN2jsondb import JSTask
 import numpy as np
 from scipy.optimize import minimize
 
-def alifn(jsd,fsp,i,a,options):
-	t=time.time()
-	b=EMData(fsp,i).do_fft()
-	b.process_inplace("xform.phaseorigin.tocorner")
+#def alifn(jsd,fsp,i,a,options):
+	#t=time.time()
+	#b=EMData(fsp,i).do_fft()
+	#b.process_inplace("xform.phaseorigin.tocorner")
 
-	# we align backwards due to symmetry
-	if options.verbose>2 : print("Aligning: ",fsp,i)
-	c=a.xform_align_nbest("rotate_translate_3d_tree",b,{"verbose":0,"sym":options.sym,"sigmathis":0.1,"sigmato":1.0, "maxres":options.maxres},options.nsoln)
-	for cc in c : cc["xform.align3d"]=cc["xform.align3d"].inverse()
+	## we align backwards due to symmetry
+	#if options.verbose>2 : print("Aligning: ",fsp,i)
+	#c=a.xform_align_nbest("rotate_translate_3d_tree",b,{"verbose":0,"sym":options.sym,"sigmathis":0.1,"sigmato":1.0, "maxres":options.maxres},options.nsoln)
+	#for cc in c : cc["xform.align3d"]=cc["xform.align3d"].inverse()
 
-	jsd.put((fsp,i,c[0]))
-	if options.verbose>1 : print("{}\t{}\t{}\t{}".format(fsp,i,time.time()-t,c[0]["score"]))
+	#jsd.put((fsp,i,c[0]))
+	#if options.verbose>1 : print("{}\t{}\t{}\t{}".format(fsp,i,time.time()-t,c[0]["score"]))
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -589,7 +589,6 @@ class SptAlignTask(JSTask):
 			
 			#print(myid,di,i,time.time()-options.nowtime)
 			
-	
 			ref=refs[data[3]]
 			if options.skipali:
 				c=[{"xform.align3d":xfs[0].inverse(), "score":-1}]

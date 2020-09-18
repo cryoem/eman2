@@ -1599,11 +1599,11 @@ class EMImage2DWidget(EMGLWidget):
 
 	def scr_to_img(self,v0,v1=None):
 		#TODO: origin_x and origin_y are part of the hack in self.render() and self.render_bitmap()
-		origin_x = self.scale*(int(old_div(self.origin[0],self.scale))+0.5)
-		origin_y = self.scale*(int(old_div(self.origin[1],self.scale))+0.5)
+		origin_x = self.scale*(int(self.origin[0]/self.scale)+0.5)
+		origin_y = self.scale*(int(self.origin[1]/self.scale)+0.5)
 
-		try: img_coords = ( old_div((v0+origin_x),self.scale), old_div((self.height()-(v1-origin_y)),self.scale) )
-		except:	img_coords = (old_div((v0[0]+origin_x),self.scale),old_div((self.height()-(v0[1]-origin_y)),self.scale))
+		try: img_coords = (((v0+origin_x)/self.scale), ((self.height()-(v1-origin_y))/self.scale) )
+		except:	img_coords = (((v0[0]+origin_x)/self.scale),((self.height()-(v0[1]-origin_y))/self.scale))
 
 #		print "Screen:", v0, v1
 #		print "Img:", img_coords
