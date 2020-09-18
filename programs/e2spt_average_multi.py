@@ -83,6 +83,8 @@ class SptavgmultTask(JSTask):
 		options=self.options
 		sz=options.boxsz
 		
+		x0=Transform()
+		nsym=x0.get_nsym(options.sym)
 		
 		refs=[]
 		if options.maskclass:
@@ -92,6 +94,7 @@ class SptavgmultTask(JSTask):
 			for r in refnames:
 				if "," in r: ref=EMData(r.split(",")[0],int(r.split(",")[-1]))
 				else: ref=EMData(r,0)
+				
 				if options.maskclass:
 					ref.mult(maskclass)
 				ref=ref.do_fft()
@@ -113,7 +116,6 @@ class SptavgmultTask(JSTask):
 		stats=[]
 		for ii,dt in enumerate(data):
 			fsp, i, xf=dt
-			#xf.set_trans(np.round(xf.get_trans()).tolist())
 			b=EMData(fsp,i)
 			b.process_inplace("normalize.edgemean")
 			b=b.do_fft()
@@ -122,41 +124,50 @@ class SptavgmultTask(JSTask):
 			
 			b.process_inplace("xform.phaseorigin.tocorner")
 			
-			x0=Transform()
-			nsym=x0.get_nsym(options.sym)
+			
 			best=[1.0e50,None,None]
 			bxfs=[]
 			for k in range(nsym):
 				x=x0.get_sym(options.sym, k)
 				bxfs.append(b.process("xform",{"transform":x*xf}))
 				
-			for k, bxf in enumerate(bxfs):
-				for r in range(nref):
+				
+			scrs=[]
+			for r in range(nref):
+				for k, bxf in enumerate(bxfs):
 					if options.randnclass<=0:
 						score=bxf.cmp("fsc.tomo.auto", refs[r], {"sigmaimgval":3.0, "sigmawithval":0., "maxres":options.maxres})
 					else:
 						score=float(-1-.1*np.random.rand())
+						
+					scrs.append(score)
 					if score<best[0] : best=[score,r,k]
-			
-			nsym1=x0.get_nsym(options.applysym)
-			if best[0]<options.simthr2: 
-				avg=bxfs[best[2]]
-				if nsym1==1:
-					avgrs[best[1]].add_image(avg)
-				else:
-					for k in range(nsym1):
-						x=x0.get_sym(options.applysym, k)
-						c=avg.process("xform",{"transform":x})
-						avgrs[best[1]].add_image(c)
-					
 			
 			
 			callback(ii*100//len(data))
 			stats.append([i]+best)
-			#print(fsp, i, best)
 			
+			if best[0]>options.simthr2: 
+				continue
+			
+			if options.symcopy:
+				scrs=np.array(scrs).reshape((nref, nsym))
+				s=np.argmin(scrs, axis=0)
+				for k, bxf in enumerate(bxfs):
+					avgrs[int(s[k])].add_image(bxf)
+				continue
+			
+			nsym1=x0.get_nsym(options.applysym)
+			avg=bxfs[best[2]]
+			if nsym1==1:
+				avgrs[best[1]].add_image(avg)
+			else:
+				for k in range(nsym1):
+					x=x0.get_sym(options.applysym, k)
+					c=avg.process("xform",{"transform":x})
+					avgrs[best[1]].add_image(c)
+				
 		
-		#callback(100)
 		outputs=[]
 		for avg in avgrs:
 			a=avg.finish()
@@ -205,6 +216,8 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 	parser.add_argument("--mask",type=str,default=None,help="Mask applied to final averages")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--noali", action="store_true", default=False ,help="Skip translational alignment.")
+	parser.add_argument("--symcopy", action="store_true", default=False ,help="Copy each particle for each asymetrical unit. need a maskclass to focus on one unit. do not work with applysym")
+	parser.add_argument("--nolstout", action="store_true", default=False ,help="Skip writting lst output.")
 	parser.add_argument("--sample",type=int,help="use only N samples.",default=-1)
 	parser.add_argument("--randnclass",type=int,help="split into N random classes. ignore refs",default=-1)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -297,7 +310,6 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 		for t in tasks:
 			task = SptavgmultTask(t, args, options)
 			#task.execute(print)
-			#print("done")
 			#exit()
 			tid=etc.send_task(task)
 			tids.append(tid)
@@ -324,10 +336,11 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 		stats=np.vstack(stats)
 		stats=stats[np.argsort(stats[:,0]),:]
 		np.savetxt("{}/avg_multi_{:02d}.txt".format(options.path,options.iter), stats)
-		lsts=[LSXFile(f"sets/{options.path}_{options.iter:02d}_{i:02d}") for i in range(nref)]
-		for n,score,cls,x in stats:
-			lsts[int(cls)].write(-1,int(n),data[0][0])
-		lsts=None
+		if not options.nolstout:
+			lsts=[LSXFile(f"sets/{options.path}_{options.iter:02d}_{i:02d}.lst") for i in range(nref)]
+			for n,score,cls,x in stats:
+				lsts[int(cls)].write(-1,int(n),data[0][0])
+			lsts=None
 		
 		avs=[]
 		for r in range(nref):
