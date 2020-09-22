@@ -1,0 +1,140 @@
+~~NOTOC~~
+
+===== sp_isac2_gpu =====
+GPU ISAC - 2D Clustering: Iterative Stable Alignment and Clustering (ISAC) of a 2D image stack, using the GPU.
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sp_isac2_gpu.py stack_file output_directory --radius=particle_radius --img_per_grp=img_per_grp --CTF --filament_width=filament_width --xr=xr --thld_err=thld_err --target_radius=target_radius --target_nx=target_nx --VPP --gpu_devices --ir=ir --rs=rs --yr=yr --ts=ts --maxit=maxit --center_method=center_method --dst=dst --FL=FL --FH=FH --FF=FF --init_iter=init_iter --iter_reali=iter_reali --stab_ali=stab_ali --minimum_grp_size --rand_seed=rand_seed --skip_prealignment --restart --filament_mask_ignore --skip_ordering
+
+\\
+===== Typical usage =====
+
+sp_isac2_gpu exists only in MPI version.
+
+\\ __1. Conventional TEM dataset__:
+
+  mpirun -np 96 sp_isac2_gpu.py bdb:stack_file output_directory --radius=120 --CTF --gpu_devices=0
+
+Note: ISAC2 will change the size of input data such that they fit into box size 76x76 by default (see Description below).
+
+\\ __2. Phase Plate TEM dataset__:
+
+  mpirun -np 96 sp_isac2_gpu.py bdb:stack_file output_directory --radius=120 --gpu_devices=0 --VPP
+
+Note: CTF and VPP options cannot be used together.
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; stack_file : Input image stack: Images must to be square (//nx//=//ny//). The stack can be either in .bdb or in .hdf format. (default required string)
+  ; output_directory : Output directory: General ISAC output directory to store all results. If the directory already exists ISAC will only run in continuation mode (see advanced parameter restart). (default required string)
+
+  ; %%--%%radius : Particle radius [Pixels] : Radius of the particle in pixels. ISAC cannot offer a default here since the value will depend on the particle im question. (default required int)
+  ; %%--%%img_per_grp : Images per class: Ideally the number of images per class. In practice this value determines the number of classes //K// = //N// / //img_per_grp//, where //N// is the total number of images in the input stack. (default 200)
+  ; %%--%%CTF : CTF phase flipping : Use for cryo datasets. If set to True the data will be phase-flipped using CTF information included in the image headers. Cannot be used together with the VPP option. (default False) : %%--%%VPP==False
+  ; %%--%%VPP : Phase Plate data : Use this option if the dataset is taken with a phase plate. Cannot be used together with the CTF option. (default False) : %%--%%CTF==False
+  ; %%--%%gpu_devices : GPU : List of GPUs to use, separated by commas if more than one.  (default 0)
+
+\\
+=== Advanced Parameters ===
+  ; %%--%%xr : Translation search range [Pixels] : The translational search range. Change with care; higher values will incur significantly higher processing costs. (default 1)::0;advanced
+  ; %%--%%thld_err : Pixel error threshold [Pixels]: Used as a threshold value when checking cluster stability. The pixel error is defined as the root mean square of distances between corresponding pixels from set of found transformations and their average transformation; it depends linearly on square of radius (parameter //ou//). //units// - //pixels//. (default 0.7)
+  ; %%--%%target_radius : Target particle radius [Pixels] : Particle radius used by ISAC2 to process the data. All particle images will be re-scaled to match their particle radius with this radius. (default 29)
+  ; %%--%%target_nx : Target particle image size [Pixels] : Image size used by ISAC2 to process the data. particle images will first be resized according to target particle radius (see above) and then cropped or padded to achieve the target image size. When //xr// > 0, the final image size for ISAC2 processing is //target_nx// + //xr// - 1  (default 76)
+  ; %%--%%ir : Inner ring [Pixels] : Radius of the inner-most ring when resampling images to polar coordinates. (default 1)
+  ; %%--%%rs : Ring step [Pixels] : Radius step size when resampling images to polar coordinates. (default 1)
+  ; %%--%%yr : Y search range [Pixels] : The translational search range in the y direction. Set to the value of //xr// by default. (default -1)::
+  ; %%--%%ts : Search step [Pixels] : Translational search step. (default 1.0)
+  ; %%--%%maxit : Reference-free alignment iterations: The number of iterations for reference-free alignments. (default 30)
+  ; %%--%%center_method : Centering method : Method to center global 2D average during the initial prealignment of the data (0: no centering; -1: average shift method; please see function center_2D in sp_utilities.py for methods 1-7). (default -1)
+  ; %%--%%dst : Discrete angle used for within-group alignment : Discrete angle used for within-group alignment. (default 90.0)
+  ; %%--%%FL : Lowest filter frequency [1/Pixel] : Lowest frequency used for the tangent filter. (default 0.2)
+  ; %%--%%FH : Highest filter frequency [1/Pixel] : Highest frequency used for the tangent filter. (default 0.45)
+  ; %%--%%FF : Tangent filter fall-off : The fall-off of the tangent filter. (default 0.2)
+  ; %%--%%init_iter : Maximum generations : Maximum number of generation iterations performed for a given subset. (default 7)
+  ; %%--%%iter_reali : SAC stability check interval : Defines every how many iterations the SAC stability checking is performed. (default 1)
+  ; %%--%%stab_ali : Number of alignments for stability check : The number of alignment runs when checking stability. (default 5)
+  ; %%--%%minimum_grp_size : Minimum size of reproducible classes : Minimum size of reproducible classes. (default 60)
+  ; %%--%%rand_seed : Seed: Random seed set before calculations. Useful for testing purposes. By default, ISAC2 sets a random seed number. (default none)
+  ; %%--%%skip_prealignment : Do pre-alignment: Indicate if pre-alignment should be used or not. Do not use pre-alignment if images are already centered. The //2dalignment// directory will still be generated but the parameters will be zero. By default, do pre-alignment. (default False question reversed in GUI)
+  ; %%--%%restart : Restart run: 0: Restart ISAC2 after the last completed main iteration (i.e. the directory must contain //finished// file); //k//: Restart ISAC2 after //k//-th main iteration, it has to be completed (i.e. the directory must contain //finished// file), and higer iterations will be removed; Default: Do not restart. (default -1)
+  ; %%--%%skip_ordering: Skip ordered class averages: Skip the creation of the ordered class averages. (default False)
+  ; %%--%%filament_width : Filament width [Pixels]: When this is set to a non-default value, ISAC assumes helical data, in which case particle images will be subjected to rectangular masking of the given this value. (default -1)::-1;main
+  ; %%--%%filament_mask_ignore : Ignore filament masking (filament use only): ONLY RELEVANT IF parameter filament_width is set to a non-default value. When processing helical particle images rectangular masking is used (A) to normalize and (B) to mask the actual particle images. The latter can be disabled by setting this flag to True. (default True question reversed in GUI)::
+
+\\
+===== Output =====
+
+\\
+=== List of Output Files ===
+|| **File Name** || **Discription** ||
+|| class_averages.hdf || class averages file that contains all class averages from all generations. ||
+
+\\
+===== Description =====
+
+\\
+==== Method ====
+The program will perform the following steps (to save computation time, in case of inadvertent termination, i.e. power failure or other causes, the program can be restarted from any saved step location, see options)  :
+
+  - The images in the input stacked will be phase-flipped.
+  - The data stack will be pre-aligned (output is in subdirectory 2dalignment, in particular it contains the overall 2D average aqfinal.hdf, it is advisable to confirm it is correctly centered).
+    * In case 2dalignment directory exists steps 1 and 2 are skipped. 
+  - The alignment shift parameters will be applied to the input data.
+  - **IMPORTANT**: Input aligned images will be resized such that the original user-provided radius will be now target_radius and the box size target_nx + xr - 1.  The pixel size of the modified data is thus original_pixel_size * original_radius_size / target_radius.
+    * The pseudo-code for adjusting the size of the radius and the size of the images is as follows:
+    * shrink_ratio = target_radius / original_radius_size
+    * new_pixel_size = original_pixel_size * shrink_ratio
+    * if shrink_ratio is different than 1: resample images using shrink_ratio
+    * if new_pixel_size > target_nx : cut image to be target_nx in size
+    * if new_pixel_size < target_nx : pad image to be target_nx in size
+    * The target_radius and target_nx options allow the user to finely adjust the image so that it contains enough background information.
+  - The program will iterate through generations of ISAC2 by alternating two steps. The outcome of these two steps is in subdirectory generation_*** (stars replaced by the current generation number).
+    *  Calculation of candidate class averages.
+    *  Calculation of validated class averages. 
+  - The program will terminate when it cannot find any more reproducible class averages.
+  - If no restart option is given the program will pick-up from the last saved point.
+
+Also see the reference below.
+
+\\
+==== Time and Memory ====
+
+\\
+
+\\
+==== Developer Notes ====
+
+\\
+==== Reference ====
+Yang, Z., Fang,  J., Chittuluru, F., Asturias, F. and Penczek, P. A.: Iterative Stable Alignment and Clustering of 2D Transmission Electron Microscope Images, ''Structure'' 20, 237-247, February 8, 2012.
+
+\\
+==== Author / Maintainer ====
+Fabian Schoenefeld
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_isac2_gpu.py
+
+\\
+==== See also ====
+[[pipeline:isac:sp_compute_isac_avg|sp_compute_isac_avg]], [[pipeline:isac:sp_pipe_isac_substack|sp_pipe isac_substack]], and [[pipeline:isac:sp_isac2|sp_isac2]]
+
+\\
+==== Maturity ====
+Beta:: Under evaluation and testing. Please let us know if there are any bugs.
+
+\\
+==== Bugs ====
+None right now.
+
+\\
