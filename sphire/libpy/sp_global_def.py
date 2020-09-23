@@ -116,6 +116,18 @@ def write_command(output_folder=None):
     if mpi_rank == 0:
         command = " ".join(sys.argv) + "\n"
         if output_folder:
+            global SXPRINT_OUTDIR_PATH, PRE_LOG
+            SXPRINT_OUTDIR_PATH = output_folder
+            with open(os.path.join(SXPRINT_OUTDIR_PATH, SXPRINT_OUTDIR_FILENAME), "a+") as write:
+                write.write('\n')
+                write.write('\n')
+                write.write('NEW COMMAND: {}'.format(command))
+                write.write('\n')
+                write.write('\n')
+                write.write('\n'.join(PRE_LOG))
+                write.write('\n')
+            PRE_LOG = None
+
             with open(
                 os.path.join(output_folder, "command.txt"), "a+"
             ) as the_command:
@@ -179,6 +191,14 @@ def sxprint(*args, **kwargs):
     # print message to stdout
     print(m, end=end)
     sys.stdout.flush()
+
+    if SXPRINT_OUTDIR_PATH is None:
+        global PRE_LOG
+        PRE_LOG.append(m)
+    else:
+        assert PRE_LOG is None
+        with open(os.path.join(SXPRINT_OUTDIR_PATH, SXPRINT_OUTDIR_FILENAME), "a+") as write:
+            write.write(m + end)
 
     # print message to SPHIRE execution log
     global SXPRINT_LOG_EXISTS, SXPRINT_LOG_SKIP
@@ -303,6 +323,10 @@ LOGFILE_HANDLE = 0
 IS_LOGFILE_OPEN = False
 
 # sxprint log (sxprint logging can be disabled by setting this to "")
+SXPRINT_OUTDIR_PATH = None
+SXPRINT_OUTDIR_FILENAME = 'logfile.txt'
+PRE_LOG = []
+
 SXPRINT_LOG_PATH = "SPHIRE_LOG_HISTORY"
 SXPRINT_LOG_EXISTS = os.path.exists(SXPRINT_LOG_PATH)
 SXPRINT_LOG_SKIP = False
