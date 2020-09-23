@@ -803,7 +803,10 @@ class EMPlotFileType(EMFileType) :
 			if len(l)>4000:
 				return (os.stat(path)[6], '-', 'big')
 			numc=renumfind.findall(l)
-			numc = len([float(i) for i in numc])		# number of numeric columns
+			try:
+				numc = len([float(i) for i in numc])		# number of numeric columns
+			except ValueError:
+				return False
 
 			if numc > 0 : break			# just finding the number of columns
 
