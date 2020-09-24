@@ -5,7 +5,6 @@ import unittest
 
 import cPickle as pickle
 import os
-import sys
 from mpi import *
 import sp_global_def
 import numpy
@@ -17,8 +16,7 @@ sp_global_def.MPI = True
 
 ABSOLUTE_PATH = os.path.dirname(os.path.realpath(__file__))
 
-
-from ..libpy import sp_user_functions as fu
+from sphire.sphire.libpy import sp_user_functions as fu
 
 from ..libpy_py3 import sp_user_functions as oldfu
 
