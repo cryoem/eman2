@@ -17,6 +17,7 @@ def main():
 	parser.add_argument("--ncls", type=int,help="number of classes", default=3)
 	parser.add_argument("--nbasis", type=int,help="PCA dimensionality", default=2)
 	parser.add_argument("--setsf", type=str,help="setsf", default="")
+	parser.add_argument("--threads", default=12,type=int,help="Number of threads to run in parallel on a single computer. This is the only parallelism supported by e2make3dpar")
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	
@@ -64,7 +65,7 @@ def main():
 	for o in onames:
 		t=o.replace("ptcl", "threed")[:-3]+"hdf"
 		print(o,t)
-		cmd="e2make3dpar.py --input {} --output {} --pad {} --mode trilinear --no_wt --keep 1 --threads 12 {}".format(o,t, options.pad, options.setsf)
+		cmd="e2make3dpar.py --input {} --output {} --pad {} --mode trilinear --no_wt --keep 1 --threads {} {}".format(o,t, options.pad, options.threads, options.setsf)
 		launch_childprocess(cmd)
 	
 	E2end(logid)
