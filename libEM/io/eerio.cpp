@@ -98,7 +98,20 @@ void EerIO::init()
 {
 	ENTERFUNC;
 
+	_read_meta_info();
+
 	EXITFUNC;
+}
+
+void EerIO::_read_meta_info() {
+	TIFFSetDirectory(tiff_file, 0);
+	TIFFGetField(tiff_file, TIFFTAG_COMPRESSION, &compression);
+
+	char *metadata_c = nullptr;
+	uint32_t count = 0;
+
+	TIFFGetField(tiff_file, 65001, &count, &metadata_c);
+	metadata = string(metadata_c, count);
 }
 
 int EerIO::get_nimg()
@@ -114,14 +127,7 @@ bool EerIO::is_image_big_endian()
 
 int EerIO::read_header(Dict & dict, int image_index, const Region * area, bool is_3d)
 {
-	TIFFSetDirectory(tiff_file, 0);
-	TIFFGetField(tiff_file, TIFFTAG_COMPRESSION, &compression);
-
-	char *metadata_c = nullptr;
-	uint32_t count = 0;
-
-	TIFFGetField(tiff_file, 65001, &count, &metadata_c);
-	metadata = string(metadata_c, count);
+	TIFFSetDirectory(tiff_file, image_index);
 
 	int nx = 0;
 	int ny = 0;

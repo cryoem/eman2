@@ -146,6 +146,8 @@ namespace EMAN
 		DEFINE_IMAGEIO_FUNC;
 
 	private:
+		void _read_meta_info();
+
 		bool is_big_endian;
 		TIFF *tiff_file;
 		uint16_t compression = 0;
