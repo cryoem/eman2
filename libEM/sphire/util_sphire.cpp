@@ -178,7 +178,7 @@ vector<int> Util::sp_assign_groups(std::string matrix_address, int nref, int nim
 	int group, ima;
 
 	// allocate and sort vector of indices
-    size_t count = (size_t)nref * (size_t)nima; // danger: nref*nima will not fit into int
+	size_t count = (size_t)nref * (size_t)nima; // danger: nref*nima will not fit into int
 	std::vector<int> dd(count) ;
 	for (size_t i=0; i<count; i++){
 		dd[i] = i;
