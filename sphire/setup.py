@@ -26,7 +26,7 @@ def create_entrypoints():
     for path in all_files:
         filename = os.path.basename(path)
         with open(path) as file:
-            #https://regex101.com/r/b8NlEJ/1
+            #https://regex101.com/r/b8NlEJ/2
             result = re.findall("^def\s+(_?main_?)\(\)",file.read(),re.M)
         if len(result) == 1:
             main_name = result[0]
