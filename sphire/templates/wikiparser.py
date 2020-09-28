@@ -214,7 +214,7 @@ def construct_keyword_dict():
 	keyword_dict["input_image_path"]              = SXkeyword_map(2, "mic_one")             # input_image_path
 	keyword_dict["source_micrograph"]             = SXkeyword_map(2, "mic_both")            # source_micrograph_pattern
 	keyword_dict["input_micrograph"]              = SXkeyword_map(2, "mic_stack")           # input_micrograph_pattern 
-	keyword_dict["stack_file"]                    = SXkeyword_map(2, "data2d_one")
+	keyword_dict["stack_file"]                    = SXkeyword_map(2, "data2d_stack")
 	keyword_dict["isac_class_avgs_path"]          = SXkeyword_map(2, "data2d_one")          # isac_class_avgs_path
 	keyword_dict["stack"]                         = SXkeyword_map(2, "bdb2d_stack")         # stack, prj_stack, input_stack, --instack=input_stack_file
 	keyword_dict["volume"]                        = SXkeyword_map(2, "data3d_one")          # initial_volume, firstvolume, secondvolume, input_volume
@@ -399,7 +399,7 @@ def handle_exceptional_cases(sxcmd):
 		assert(sxcmd.token_dict["selection_list"].type == "select_mic_stack")
 		sxcmd.token_dict["selection_list"].type = "select_mic_one_ext"
 	elif sxcmd.name == "sp_gpu_isac2":
-		sxcmd.token_dict["stack_file"].type = "data2d_one"
+		sxcmd.token_dict["stack_file"].type = "data2d_stack"
 	elif sxcmd.name == "sp_isac2":
 		assert(sxcmd.token_dict["output_directory"].key_base == "output_directory")
 		assert(sxcmd.token_dict["output_directory"].type == "output")
