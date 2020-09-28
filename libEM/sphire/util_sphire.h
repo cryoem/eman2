@@ -35,6 +35,9 @@
 #ifndef util__sphire_h__
 #define util__sphire_h__
 
+// utility function used in (GPU) ISAC
+vector<int> Util::sp_assign_groups(std::string matrix_address, int nref, int nima)
+
 static vector<float> pw_extract_sphire(vector<float>pw, int n, int iswi,float ps);
 static vector<float> call_cl1_sphire(long int *k,long int *n, float *ps, long int *iswi, float *pw, float *q2, double *q, double *x, double *res, double *cu, double *s, long int *iu);
 static vector<float> lsfit_sphire(long int *ks,long int *n, long int *klm2d, long int *iswi, float *q1,double *q, double *x, double *res, double *cu, double *s,long int *iu);
