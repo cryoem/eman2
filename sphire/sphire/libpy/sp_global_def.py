@@ -115,8 +115,9 @@ def write_command(output_folder=None):
 
     if mpi_rank == 0:
         command = " ".join(sys.argv) + "\n"
-        if output_folder:
-            global SXPRINT_OUTDIR_PATH, PRE_LOG
+        global SXPRINT_OUTDIR_PATH, PRE_LOG
+        if output_folder and PRE_LOG is not None:
+
             SXPRINT_OUTDIR_PATH = output_folder
             with open(os.path.join(SXPRINT_OUTDIR_PATH, SXPRINT_OUTDIR_FILENAME), "a+") as write:
                 write.write('\n')
