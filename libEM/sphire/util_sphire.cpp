@@ -160,6 +160,83 @@ using std::sin;
 /* real_t sin(real_t); */
 #endif
 
+vector<int> Util::sp_assign_groups(std::string matrix_address, int nref, int nima)
+{
+	// convert memory address sent as string to float pointer
+	const float * matrix;
+	size_t addr = 0;
+	for ( std::string::const_iterator i = matrix_address.begin();  i != matrix_address.end();  ++i ) {
+		int digit = *i - '0';
+		addr *= 10;
+		addr += digit;
+	}
+	matrix = reinterpret_cast<float*>(addr);
+
+	int kt = nref;
+	unsigned int maxasi = (unsigned int)(nima/nref);
+	vector< vector<int> > id_list(nref);
+	int group, ima;
+
+	// allocate and sort vector of indices
+    size_t count = (size_t)nref * (size_t)nima; // danger: nref*nima will not fit into int
+	std::vector<int> dd(count) ;
+	for (size_t i=0; i<count; i++){
+		dd[i] = i;
+	}
+
+	assign_groups_comparator comparator(matrix);
+	sort(dd.begin(), dd.end(), comparator);
+	
+	// main loop
+	size_t begin = 0;
+	std::vector<bool> del_row(nref, false);
+	std::vector<bool> del_column(nima, false);
+	while (kt > 0) {
+		bool flag = true;
+		while (flag) {
+			int l = dd[begin];
+			group = l/nima;
+			ima = l%nima;
+			if (del_column[ima] || del_row[group]
+				begin++;
+			else
+				flag = false;
+		}
+
+		id_list[group].push_back(ima);
+		if (kt > 1) {
+			if (id_list[group].size() < maxasi)
+				group = -1;
+			else
+				kt -= 1;
+		} else {
+			if (id_list[group].size() < maxasi+nima%nref)
+				group = -1;
+			else
+				kt -= 1;
+		}
+		del_column[ima] = true;
+		if (group != -1) {
+			del_row[group] = true;
+		}
+	}
+	
+	vector<int> id_list_1;
+
+	for (int iref=0; iref<nref; iref++){
+		for (unsigned int im=0; im<maxasi; im++){
+			id_list_1.push_back(id_list[iref][im]);
+		}
+	}
+	for (unsigned int im=maxasi; im<maxasi+nima%nref; im++){
+		id_list_1.push_back(id_list[group][im]);
+	}
+
+	id_list_1.push_back(group);
+
+	return id_list_1;
+}
+
 vector<float> Util::pw_extract_sphire(vector<float>pw, int n, int iswi, float ps)
 {
 	int k,m,n1,klmd,klm2d,nklmd,n2d,n_larg,l, n2;
