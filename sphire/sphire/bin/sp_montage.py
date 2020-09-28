@@ -117,7 +117,7 @@ def write_montage_file(stack, montage_file, N, gx, gy, bg, scale, number, begin_
 						montage.set_value_at(col*(nx+gx)+2+t, row*(ny+gy)+2+10-s, maxn)
 	montage.write_image(montage_file)
 
-def main():
+def run():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stack montagefile --N=image_per_row --gx=gap_on_x_axis --gy=gap_on_y_axis --bg=background_option --scale --number --begin_zero"
 	parser = OptionParser(usage,version=SPARXVERSION)
@@ -146,9 +146,11 @@ def main():
 		write_montage_file(args[0], args[1], options.N, options.gx, options.gy, options.bg, options.scale, options.number, options.begin_zero)
 		sp_global_def.BATCH = False
 
-
-if __name__ == "__main__":
+def main():
 	sp_global_def.print_timestamp( "Start" )
 	sp_global_def.write_command()
-	main()
+	run()
 	sp_global_def.print_timestamp( "Finish" )
+
+if __name__ == "__main__":
+	main()

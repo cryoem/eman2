@@ -10845,7 +10845,7 @@ def refinement_one_iteration(
 #
 
 
-def main():
+def run():
     global Tracker, Blockdata
 
     # ------------------------------------------------------------------------------------
@@ -12725,13 +12725,15 @@ mpirun -np 64 --hostfile four_nodes.txt  sp_meridien.py --local_refinement  vton
     else:
         sp_global_def.ERROR("Incorrect input options", "meridien", 1, Blockdata["myid"])
 
-
-if __name__ == "__main__":
+def main():
     sp_global_def.BATCH = True
     sp_global_def.MPI = True
     sp_global_def.print_timestamp("Start")
-    main()
+    run()
     sp_global_def.print_timestamp("Finish")
     sp_global_def.BATCH = False
     sp_global_def.MPI = False
     mpi.mpi_finalize()
+
+if __name__ == "__main__":
+    main()

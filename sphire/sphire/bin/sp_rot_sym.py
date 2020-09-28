@@ -46,7 +46,7 @@ from ..libpy.sp_global_def import *
 from optparse import OptionParser
 import sys
 
-def main():
+def run():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " input_filename output_filename --sym=Symmetry group --phi --theta --psi=The 3 Eulerian angles in degrees --r=Radius of mask --phirange --thetarange --psirange=A search scale for each angle --ftol --xtol = convergence criterion the function and angles values"
 	parser = OptionParser(usage,version=SPARXVERSION)
@@ -78,8 +78,11 @@ def main():
 		rot_sym(args[0],args[1],options.sym,options.r,options.phi,options.theta,options.psi,options.phirange,options.thetarange,options.psirange,options.ftol,options.xtol)
 		sp_global_def.write_command('.')
 		sp_global_def.BATCH = False
-	
-if __name__ == "__main__":
+
+def main():
 	sp_global_def.print_timestamp( "Start" )
-	main()
+	run()
 	sp_global_def.print_timestamp( "Finish" )
+
+if __name__ == "__main__":
+	main()

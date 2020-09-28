@@ -218,7 +218,7 @@ def pca(cov):
 	return values[perm], vecs[:, perm]
 
 
-def main():
+def run():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + """ [options] <inputfile> <outputfile>
 
@@ -726,9 +726,11 @@ def main():
 				sxprint(lsnake)
 				for m in range(len(d)):  d[snake[m]].write_image(new_stack, m)
 		
-
-if __name__ == "__main__":
+def main():
 	sp_global_def.print_timestamp( "Start" )
 	sp_global_def.write_command()
-	main()
+	run()
 	sp_global_def.print_timestamp( "Finish" )
+
+if __name__ == "__main__":
+	main()

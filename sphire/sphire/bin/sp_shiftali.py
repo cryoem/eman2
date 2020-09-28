@@ -78,7 +78,7 @@ mpi.mpi_init( 0, [] )
 
 
 
-def main():
+def run():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stack <maskfile> --search_rng=10 --maxit=max_iteration --CTF --snr=SNR --Fourvar=Fourier_variance --oneDx --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
@@ -711,16 +711,18 @@ def get_multiplicity(U, u, i):
             break
         
     return multiplicity
-  
-
 
 def gaussian(sigma, a, mu, x):
 	from math import sqrt, pi
 	return a*exp(-(x-mu)**2/(2.0*sigma**2))*1.0/(sigma*sqrt(2*pi))
-			
-if __name__ == "__main__":
+
+def main():
 	sp_global_def.print_timestamp( "Start" )
 	sp_global_def.write_command()
-	main()
+	run()
 	sp_global_def.print_timestamp( "Finish" )
 	mpi.mpi_finalize()
+
+			
+if __name__ == "__main__":
+	main()

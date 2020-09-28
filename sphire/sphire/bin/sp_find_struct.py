@@ -52,7 +52,7 @@ import mpi
 
 mpi.mpi_init( 0, [] )
 
-def main():
+def run():
 	progname = os.path.basename(sys.argv[0])
 	usage    = progname + " stack outdir --ir --ou --delta --dpsi --lf --hf --rand_seed --maxit --debug --noweights --trials --given --first_zero --weights --MPIGA--pcross --pmut --maxgen --MPI --trials"
 	parser   = OptionParser(usage, version = SPARXVERSION)
@@ -120,10 +120,12 @@ def main():
 				    weights, options.debug, options.trials)
 			sp_global_def.BATCH = False
 
-
-if __name__ == "__main__":
+def main():
 	sp_global_def.print_timestamp( "Start" )
 	sp_global_def.write_command()
-	main()
+	run()
 	sp_global_def.print_timestamp( "Finish" )
 	mpi.mpi_finalize()
+
+if __name__ == "__main__":
+	main()

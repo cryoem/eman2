@@ -52,7 +52,7 @@ import sys
 from builtins import range
 
 
-def main():
+def run():
     arglist = []
     for arg in sys.argv:
         arglist.append(arg)
@@ -218,8 +218,7 @@ def main():
     sp_global_def.write_command(optparse.os.path.dirname(vol_stack))
     sp_global_def.BATCH = False
 
-
-if __name__ == "__main__":
+def main():
     RUNNING_UNDER_MPI = "OMPI_COMM_WORLD_SIZE" in optparse.os.environ
     if RUNNING_UNDER_MPI:
         mpi.mpi_init(
@@ -227,8 +226,11 @@ if __name__ == "__main__":
         )  # On OS X, there is an error if MPI is initialized and not finalized, hence the conditional
     sp_global_def.print_timestamp("Start")
     sp_global_def.write_command()
-    main()
+    run()
     sp_global_def.print_timestamp("Finish")
     mpi.mpi_finalize()
     if RUNNING_UNDER_MPI:
         mpi.mpi_finalize()
+
+if __name__ == "__main__":
+    main()

@@ -47,7 +47,7 @@ from ..libpy.sp_global_def import sxprint
 from ..libpy.sp_global_def import *
 from optparse import OptionParser
 import sys
-def main():
+def run():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " volume ref_volume --discrepancy=ccc --ang_scale=angular range  --shift_scale=shift range  --mag_scale=magnification range --r=radius of a mask"
 	parser = OptionParser(usage,version=SPARXVERSION)
@@ -93,9 +93,12 @@ def main():
 		sp_global_def.BATCH = True
 		ali_vol_rotate(args[0], args[1], options.ang_scale, options.r, options.discrepancy)
 		sp_global_def.BATCH = False
-		
-if __name__ == "__main__":
+
+def main():
 	sp_global_def.print_timestamp( "Start" )
 	sp_global_def.write_command()
-	main()
+	run()
 	sp_global_def.print_timestamp( "Finish" )
+
+if __name__ == "__main__":
+	main()

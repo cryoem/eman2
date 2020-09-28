@@ -46,7 +46,7 @@ from   optparse import OptionParser
 import sys
 
 
-def main():
+def run():
 	
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + "2Dprojections plot_output Read projection angles from 2Dprojections file or from a text file and write a 2D image file containing their distribution on a hemisphere."
@@ -70,8 +70,11 @@ def main():
 		plot_projs_distrib(args[0], args[1], options.wnx)
 		sp_global_def.BATCH = False
 
-if __name__ == "__main__":
+def main():
 	sp_global_def.print_timestamp( "Start" )
 	sp_global_def.write_command()
-	main()
+	run()
 	sp_global_def.print_timestamp( "Finish" )
+
+if __name__ == "__main__":
+	main()

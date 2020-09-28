@@ -309,7 +309,7 @@ def print_dict(dict,theme):
 	for q in dict:  sxprint("                    => ",q+spaces[len(q):],":  ",dict[q])
 
 
-def main():
+def run():
 
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stack  [output_directory]  initial_volume  --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=angular_neighborhood  --CTF  --fl --aa --ref_a=S --sym=c1"
@@ -466,9 +466,11 @@ def main():
 
 	mpi_barrier(MPI_COMM_WORLD)
 
+def main():
+	sp_global_def.print_timestamp("Start")
+	run()
+	sp_global_def.print_timestamp("Finish")
+	mpi.mpi_finalize()
 
 if __name__=="__main__":
-	sp_global_def.print_timestamp( "Start" )
 	main()
-	sp_global_def.print_timestamp( "Finish" )
-	mpi.mpi_finalize()

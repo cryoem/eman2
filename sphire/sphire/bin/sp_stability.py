@@ -48,7 +48,7 @@ from ..libpy.sp_global_def     import *
 from   optparse       import OptionParser
 import sys
 
-def main():
+def run():
 	from ..libpy.sp_utilities import get_input_from_string
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stack output_average --radius=particle_radius --xr=xr --yr=yr --ts=ts --thld_err=thld_err --num_ali=num_ali --fl=fl --aa=aa --CTF --verbose --stables"
@@ -191,8 +191,11 @@ def main():
 
 		sp_global_def.BATCH = False
 
-if __name__ == "__main__":
+def main():
 	sp_global_def.print_timestamp( "Start" )
 	sp_global_def.write_command()
-	main()
+	run()
 	sp_global_def.print_timestamp( "Finish" )
+
+if __name__ == "__main__":
+	main()

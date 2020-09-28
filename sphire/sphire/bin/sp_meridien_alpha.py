@@ -10629,7 +10629,7 @@ def prior_stack_fmt(sphire_prior_stack):
     return " ".join(fmt)
 
 
-def main():
+def run():
     global Tracker, Blockdata
 
     # ------------------------------------------------------------------------------------
@@ -12646,6 +12646,9 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
     else:
         sp_global_def.ERROR("Incorrect input options", "meridien", 1, Blockdata["myid"])
 
+
+def main():
+    run()
 
 if __name__ == "__main__":
     main()

@@ -44,7 +44,7 @@ import sys
 import time
 
 
-def main():
+def run():
 
     # Parse the Options
     progname = os.path.basename(sys.argv[0])
@@ -507,8 +507,10 @@ def run_summovie(opt):
         for entry in sorted(micrograph_list):
             f.write("{0}\n".format(entry))
 
+def main():
+    sp_global_def.print_timestamp("Start")
+    run()
+    sp_global_def.print_timestamp("Finish")
 
 if __name__ == "__main__":
-    sp_global_def.print_timestamp("Start")
     main()
-    sp_global_def.print_timestamp("Finish")

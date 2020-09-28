@@ -53,7 +53,7 @@ import mpi
 
 mpi.mpi_init( 0, [] )
 
-def main():
+def run():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stack outdir <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range --ts=translation_step --dst=delta --center=center --maxit=max_iteration --CTF --snr=SNR --Fourvar=Fourier_variance --Ng=group_number --Function=user_function_name --CUDA --GPUID --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
@@ -154,10 +154,12 @@ def main():
 			"""
 		sp_global_def.BATCH = False
 
+def main():
+	sp_global_def.print_timestamp("Start")
+	sp_global_def.write_command()
+	run()
+	sp_global_def.print_timestamp("Finish")
+	mpi.mpi_finalize()
 
 if __name__ == "__main__":
-	sp_global_def.print_timestamp( "Start" )
-	sp_global_def.write_command()
 	main()
-	sp_global_def.print_timestamp( "Finish" )
-	mpi.mpi_finalize()

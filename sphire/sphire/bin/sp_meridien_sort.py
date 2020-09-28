@@ -9551,7 +9551,7 @@ def refinement_one_iteration(partids, partstack, original_data, oldparams, projd
 #   This can be used to restart process from an arbitrary iteration.
 #   
 #
-def main():
+def run():
 
 	from ..libpy.sp_utilities import write_text_row, drop_image, model_gauss_noise, get_im, set_params_proj, wrap_mpi_bcast, model_circle
 	from ..libpy import sp_user_functions
@@ -10687,6 +10687,9 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 		exit()
 	else:
 		ERROR("Incorrect input options","meridien", 1, Blockdata["myid"])
+
+def main():
+	run()
 
 if __name__=="__main__":
 	main()

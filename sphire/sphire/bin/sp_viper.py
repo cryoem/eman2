@@ -56,7 +56,7 @@ from builtins import range
 
 
 
-def main(args):
+def run(args):
 
     progname = optparse.os.path.basename(sys.argv[0])
     usage = (
@@ -334,10 +334,12 @@ directory		output directory name: into which the results will be written (if it 
         all_projs, subset, runs_count, options, mpi_comm=mpi.MPI_COMM_WORLD, log=log
     )
 
-
-if __name__ == "__main__":
+def main():
     mpi.mpi_init(0, [])
     sp_global_def.print_timestamp("Start")
     main(sys.argv[1:])
     sp_global_def.print_timestamp("Finish")
     mpi.mpi_finalize()
+
+if __name__ == "__main__":
+    main()

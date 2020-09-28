@@ -237,7 +237,7 @@ def is_float(value):
 # ========================================================================================
 
 
-def main():
+def run():
     program_name = os.path.basename(sys.argv[0])
     usage = (
         program_name
@@ -2064,19 +2064,20 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
 # ========================================================================================
 # Define main function for command line execution
 # ========================================================================================
-
-if __name__ == "__main__":
-
+def main():
     RUNNING_UNDER_MPI = "OMPI_COMM_WORLD_SIZE" in os.environ
     if RUNNING_UNDER_MPI:
         mpi.mpi_init(0, [])  # On OS X, there is an error if MPI is initialized and not finalized, hence the conditional
     sp_global_def.print_timestamp("Start")
-    main()
+    run()
     sp_global_def.print_timestamp("Finish")
 
     if RUNNING_UNDER_MPI:
         mpi.mpi_finalize()
 
+if __name__ == "__main__":
+
+    main()
 
 # ========================================================================================
 #  END OF FILE

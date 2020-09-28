@@ -52,7 +52,7 @@ import mpi
 mpi.mpi_init( 0, [] )
 
 
-def main():
+def run():
 	from   optparse       import OptionParser
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " filelist outdir  --fl=filter_low_value --aa=filter_fall_off --radccc=radius_ccc  -repair=repairfile --pca --pcamask --pcanvec --MPI"
@@ -106,10 +106,12 @@ def main():
 			defvar(  files, outdir, options.fl, options.aa, options.radccc, options.repair, options.pca, options.pcamask, options.pcanvec)
 			sp_global_def.BATCH = False
 
-
-if __name__ == "__main__":
+def main():
 	sp_global_def.print_timestamp( "Start" )
 	sp_global_def.write_command()
-	main()
+	run()
 	sp_global_def.print_timestamp( "Finish" )
 	mpi.mpi_finalize()
+
+if __name__ == "__main__":
+	main()

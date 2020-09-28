@@ -103,7 +103,7 @@ def check_output_format(input_var, filename):
 
 
 
-def main():
+def run():
     def params_3D_2D_NEW(phi, theta, psi, s2x, s2y, mirror):
         # the final ali2d parameters already combine shifts operation first and rotation operation second for parameters converted from 3D
         if mirror:
@@ -1142,9 +1142,11 @@ def main():
 
         sp_global_def.BATCH = False
 
-
-if __name__ == "__main__":
+def main():
     sp_global_def.print_timestamp("Start")
-    main()
+    run()
     sp_global_def.print_timestamp("Finish")
     mpi.mpi_finalize()
+
+if __name__ == "__main__":
+    main()

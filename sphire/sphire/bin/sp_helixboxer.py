@@ -74,7 +74,7 @@ within a helix. Usually, all segments from a micrograph will have the same dimen
 SXHELIXBOXER_DB = "bdb:" # used to use "bdb:e2helixboxercache#"
 
 
-def main():
+def run():
 	usage = """sxhelixboxer.py --gui <micrograph1> <<micrograph2> <micrograph3> ...
 	sxhelixboxer.py --gui --helix-width=<width> <micrograph1> <<micrograph2> <micrograph3> ...
 	sxhelixboxer.py <options (not --gui)> <micrograph>    
@@ -2270,9 +2270,14 @@ def windowmic(outstacknameall, micpath, outdir, micname, hcoordsname, pixel_size
 					prj.write_image(otcl_images, j)
 					#prj.write_image(outstacknameall, iseg)
 					#iseg += 1
-		h+=1			
-if __name__ == '__main__':
-	sp_global_def.print_timestamp( "Start" )
+		h+=1
+
+
+def main():
+	sp_global_def.print_timestamp("Start")
 	sp_global_def.write_command()
+	run()
+	sp_global_def.print_timestamp("Finish")
+
+if __name__ == '__main__':
 	main()
-	sp_global_def.print_timestamp( "Finish" )

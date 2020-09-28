@@ -204,7 +204,7 @@ argparser.add_argument(
 argparser.add_argument("--cryolo_train_path", default=None, type=str)
 
 
-def main():
+def run():
     # Read arguments
     args = argparser.parse_args()
 
@@ -337,9 +337,11 @@ def main():
 
     subprocess.check_call(command)
 
-
-if __name__ == "__main__":
+def main():
     sp_global_def.print_timestamp("Start")
     sp_global_def.write_command()
-    main()
+    run()
     sp_global_def.print_timestamp("Finish")
+
+if __name__ == "__main__":
+    main()

@@ -51,7 +51,7 @@ import mpi
 mpi.mpi_init( 0, [] )
 
 
-def main():
+def run():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " tifdir <micdir> --inx=tif --foc=f --ext=spi --cst=1 pixel_size=2 --sca_a=1 --sca_b=1 --step=63.5 --mag=40 --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
@@ -96,11 +96,13 @@ def main():
 
 		copyfromtif(args[0], outdir, options.inx, options.foc, options.ext, options.cst, options.pixel_size, options.sca_a, options.sca_b, options.step, options.mag, options.MPI)
 		sp_global_def.BATCH = False
-		
 
-if __name__ == "__main__":
+def main():
 	sp_global_def.print_timestamp( "Start" )
 	sp_global_def.write_command()
 	main()
 	sp_global_def.print_timestamp( "Finish" )
 	mpi.mpi_finalize()
+
+if __name__ == "__main__":
+	main()

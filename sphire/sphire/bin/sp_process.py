@@ -76,7 +76,7 @@ from builtins import range
 """Multiline Comment0"""
 
 
-def main():
+def run():
     progname = os.path.basename(sys.argv[0])
     usage = (
         progname
@@ -2440,8 +2440,10 @@ def main():
         return
 
 
-if __name__ == "__main__":
+def main():
     sp_global_def.print_timestamp("Start")
-    main()
-    print("Done!")
+    run()
     sp_global_def.print_timestamp("Finish")
+
+if __name__ == "__main__":
+    main()

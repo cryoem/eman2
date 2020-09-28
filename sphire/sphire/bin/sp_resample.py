@@ -279,7 +279,7 @@ def resample( prjfile, outdir, bufprefix, nbufvol, nvol, seedbase,\
 			finfo.write( "time for iteration: %10.3f\n" % (time() - iter_start) )
 			finfo.flush()
 
-def main():
+def run():
 
 	import sys
 
@@ -327,9 +327,12 @@ def main():
 	           options.delta, options.d, options.snr, options.CTF, options.npad,\
 		   options.MPI, myid, ncpu, options.verbose )
 
-
-if __name__ == "__main__":
+def main():
 	sp_global_def.print_timestamp( "Start" )
-	main()
+	run()
 	sp_global_def.print_timestamp( "Finish" )
 	mpi.mpi_finalize()
+
+if __name__ == "__main__":
+	main()
+

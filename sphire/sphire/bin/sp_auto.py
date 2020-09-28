@@ -1279,7 +1279,7 @@ def get_ctf_sharpening(status_dict, **kwargs):
     return cmd
 
 
-def start_auto(args_as_dict):
+def run(args_as_dict):
     if subprocess.os.path.exists(args_as_dict["output_directory"]):
         sp_global_def.sxprint(
             "Output directory already exists! Please choose another one."
@@ -1504,7 +1504,7 @@ def start_auto(args_as_dict):
 def main():
     sp_global_def.BATCH = True
     sp_global_def.print_timestamp("Start")
-    start_auto(vars(parse_args()))
+    run(vars(parse_args()))
     sp_global_def.print_timestamp("Finish")
 
 if __name__ == "__main__":

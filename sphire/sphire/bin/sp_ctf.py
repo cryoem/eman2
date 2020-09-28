@@ -70,7 +70,7 @@ sfcurve=None		# This will store a global structure factor curve if specified
 envelopes=[]		# simplex minimizer needs to use a global at the moment
 
 
-def main():
+def run():
 	global debug,logid
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] <input stack/image> ...
@@ -1172,9 +1172,12 @@ class GUIctf(QtGui.QWidget):
 		
 		return
 
-
-if __name__ == "__main__":
+def main():
 	sp_global_def.print_timestamp( "Start" )
 	sp_global_def.write_command()
-	main()
+	run()
 	sp_global_def.print_timestamp( "Finish" )
+
+
+if __name__ == "__main__":
+	main()

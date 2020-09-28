@@ -4749,7 +4749,7 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         PyQt5.QtCore.QCoreApplication.instance().quit()
 
 
-def _main():
+def run():
     app = PyQt5.QtWidgets.QApplication(sys.argv)
 
     if len(sys.argv) > 3:
@@ -4774,9 +4774,11 @@ def _main():
 
     app.exec_()
 
-
-if __name__ == "__main__":
+def _main():
     sp_global_def.print_timestamp("Start")
     sp_global_def.write_command()
-    _main()
+    run()
     sp_global_def.print_timestamp("Finish")
+
+if __name__ == "__main__":
+    _main()

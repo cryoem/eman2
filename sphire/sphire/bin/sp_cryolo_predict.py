@@ -136,7 +136,7 @@ argparser.add_argument(
 )
 
 
-def main():
+def run():
     # Read arguments
     args = argparser.parse_args()
 
@@ -208,7 +208,10 @@ def main():
     sp_global_def.write_command(output_dir)
 
 
-if __name__ == "__main__":
+def main():
     sp_global_def.print_timestamp("Start")
-    main()
+    run()
     sp_global_def.print_timestamp("Finish")
+
+if __name__ == "__main__":
+    main()

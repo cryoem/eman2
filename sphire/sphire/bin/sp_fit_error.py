@@ -543,7 +543,7 @@ def red(angle):
 	return angle-360*floor((angle+180)/360)
 
 
-def main():
+def run():
 	# read args from command line ---------------------------------
 	progname = os.path.basename(sys.argv[0])
 	usage = "mpirun [-np num_proc] [--host node[,node,...]] " + progname + "  map_file  segment_file [FSC_mask] [option_list]"
@@ -1409,6 +1409,11 @@ def main():
 	mpi_finalize()
 	exit()
 
+def main():
+	sp_global_def.print_timestamp( "Start" )
+	sp_global_def.write_command()
+	run()
+	sp_global_def.print_timestamp("Finish")
 
 if __name__ == "__main__":
 	main()

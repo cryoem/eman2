@@ -70,7 +70,7 @@ def genbuf( prjfile, bufprefix, beg, end, CTF, npad, verbose = 0 ):
 			finfo.write( "%6d buffered, time: %10.3f\n" % (i+1, time()-start_time) )
 			finfo.flush()
 
-def main():
+def run():
 	arglist = []
 	for arg in sys.argv:
 		arglist.append( arg )
@@ -100,9 +100,10 @@ def main():
 	nprj = EMUtil.get_image_count( prjfile )
 	genbuf( prjfile, bufprefix, 0, nprj, options.CTF, options.npad, options.verbose )
 
-
-if __name__ == "__main__":
+def main():
 	sp_global_def.print_timestamp( "Start" )
 	sp_global_def.write_command()
-	main()
+	run()
 	sp_global_def.print_timestamp( "Finish" )
+if __name__ == "__main__":
+	main()

@@ -49,7 +49,7 @@ import os
 import sys
 
       
-def main():
+def run():
     progname = os.path.basename(sys.argv[0])
     usage = progname + " input_stack start end output_stack  <mask> --rad=mask_radius"
     parser = OptionParser(usage, version=SPARXVERSION)
@@ -82,8 +82,11 @@ def main():
     varimax(input_stack, list(range(imgstart, imgend)), output_stack, mask, options.rad, options.verbose)
     sp_global_def.BATCH = False
 
-if __name__ == "__main__":
+def main():
     sp_global_def.print_timestamp( "Start" )
     sp_global_def.write_command()
+    run()
+    sp_global_def.print_timestamp( "Finish" )
+
+if __name__ == "__main__":
     main()
-    sp_global_def.print_timestamp( "Finish" ) 

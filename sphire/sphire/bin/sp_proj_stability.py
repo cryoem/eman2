@@ -83,7 +83,7 @@ from ..libpy.sp_utilities    import group_proj_by_phitheta, model_circle, get_in
 mpi.mpi_init( 0, [] )
 
 
-def main():
+def run():
 
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " proj_stack output_averages --MPI"
@@ -436,9 +436,12 @@ def main():
 	sp_global_def.BATCH = False
 	mpi_barrier(MPI_COMM_WORLD)
 
-if __name__=="__main__":
+def main():
 	sp_global_def.print_timestamp( "Start" )
 	sp_global_def.write_command()
-	main()
+	run()
 	sp_global_def.print_timestamp( "Finish" )
 	mpi.mpi_finalize()
+
+if __name__=="__main__":
+	main()

@@ -49,7 +49,7 @@ from   optparse import OptionParser
 import sys
 
 
-def main():
+def run():
 	
 	progname = os.path.basename(sys.argv[0])
 	# # horatio active_refactoring Jy51i1EwmLD4tWZ9_00003_1
@@ -100,8 +100,11 @@ def main():
 			ave_ali(args[0], name_output, options.ali, options.set_size, options.set_members)
 			sp_global_def.BATCH = False
 
-if __name__ == "__main__":
+def main():
 	sp_global_def.print_timestamp( "Start" )
 	sp_global_def.write_command()
 	main()
 	sp_global_def.print_timestamp( "Finish" )
+
+if __name__ == "__main__":
+	main()

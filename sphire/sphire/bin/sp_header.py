@@ -48,7 +48,7 @@ from ..libpy import sp_utilities
 import sys
 
 
-def main():
+def run():
     arglist = []
     for arg in sys.argv:
         arglist.append(arg)
@@ -177,6 +177,8 @@ def main():
     if not options.fprint:
         sp_global_def.print_timestamp("Finish")
 
+def main():
+    run()
 
 if __name__ == "__main__":
     main()

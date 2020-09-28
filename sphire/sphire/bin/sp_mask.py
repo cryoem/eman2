@@ -387,7 +387,7 @@ def sanity_checks(command_args, input_vol):
             )
 
 
-def main():
+def run():
     """
 	Main function.
 
@@ -560,11 +560,13 @@ def main():
         sp_global_def.sxprint("Write outputs.")
         mask_first.write_image(output_prefix + "_mask.hdf")
 
-
-if __name__ == "__main__":
+def main():
     sp_global_def.print_timestamp("Start")
     sp_global_def.BATCH = True
-    main()
+    run()
     sp_global_def.BATCH = False
     sp_global_def.sxprint("Done!")
     sp_global_def.print_timestamp("Finish")
+
+if __name__ == "__main__":
+    main()

@@ -9960,7 +9960,7 @@ def prior_stack_fmt(sphire_prior_stack):
 	return ' '.join(fmt)
 
 
-def main():
+def run():
 
 	from ..libpy.sp_utilities import write_text_row, drop_image, model_gauss_noise, get_im, set_params_proj, wrap_mpi_bcast, model_circle
 	from ..libpy import sp_user_functions
@@ -10881,12 +10881,15 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
 	else:
 		ERROR("Incorrect input options","meridien", 1, Blockdata["myid"])
 
-if __name__=="__main__":
+def main():
 	sp_global_def.BATCH = True
 	sp_global_def.MPI   = True
 	sp_global_def.print_timestamp( "Start" )
-	main()
+	run()
 	sp_global_def.print_timestamp( "Finish" )
 	sp_global_def.BATCH = False
 	sp_global_def.MPI   = False
 	mpi.mpi_finalize()
+
+if __name__=="__main__":
+	main()

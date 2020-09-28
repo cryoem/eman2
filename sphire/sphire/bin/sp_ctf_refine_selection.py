@@ -82,7 +82,7 @@ def setup_argparser():
 	return argparser
 
 
-def _main_():
+def run():
 	argparser = setup_argparser()
 
 	args = argparser.parse_args()
@@ -138,8 +138,10 @@ def _main_():
 	EMAN2db.db_close_dict(local_bdb_stack)
 	sp_global_def.sxprint("Particles updated/extracted", num_particles_relevant)
 
+def _main_():
+	sp_global_def.print_timestamp("Start")
+	run()
+	sp_global_def.print_timestamp("Finish")
 
 if __name__ == "__main__":
-	sp_global_def.print_timestamp("Start")
 	_main_()
-	sp_global_def.print_timestamp("Finish")

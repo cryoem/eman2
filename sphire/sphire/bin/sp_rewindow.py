@@ -170,7 +170,7 @@ def mrk_resample2d(img, sub_rate, target_size=None):
 # ========================================================================================
 
 
-def main():
+def run():
     program_name = os.path.basename(sys.argv[0])
     usage = (
         program_name
@@ -2001,16 +2001,19 @@ For negative staining data, use --skip_invert.
     sys.stdout.flush()
     return
 
+def main():
+    mpi.mpi_init(0, [])
+    sp_global_def.print_timestamp("Start")
+    run()
+    sp_global_def.print_timestamp("Finish")
+    mpi.mpi_finalize()
+
 
 # ========================================================================================
 # Define main function for command line execution
 # ========================================================================================
 if __name__ == "__main__":
-    mpi.mpi_init(0, [])
-    sp_global_def.print_timestamp("Start")
     main()
-    sp_global_def.print_timestamp("Finish")
-    mpi.mpi_finalize()
 
 # ========================================================================================
 #  END OF FILE

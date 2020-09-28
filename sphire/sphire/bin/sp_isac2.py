@@ -2035,7 +2035,7 @@ def parse_parameters(prog_name, usage, args):
     return parser.parse_args(args)
 
 
-def main(args):
+def run(args):
     # ------------------------------------------------------[ command line parameters ]
 
     usage = (
@@ -2870,10 +2870,12 @@ def main(args):
             print("ISAC could not find any stable class averaging, terminating...")
     return
 
-
-if __name__ == "__main__":
-
+def main():
     sp_global_def.print_timestamp("Start")
-    main(sys.argv[1:])
+    run(sys.argv[1:])
     sp_global_def.print_timestamp("Finish")
     mpi.mpi_finalize()
+
+if __name__ == "__main__":
+    main()
+

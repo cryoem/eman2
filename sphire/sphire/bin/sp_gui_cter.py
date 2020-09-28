@@ -86,7 +86,7 @@ Filterwarnings suppreses this message.
 numpy.warnings.filterwarnings("ignore", message="numpy.dtype")
 
 
-def main():
+def run():
     progname = os.path.basename(sys.argv[0])
     usage = (
         progname
@@ -3934,6 +3934,11 @@ class SXGuiCter(PyQt5.QtWidgets.QWidget):
                 selected_hist_param.unapply_widget_lower.setValue(hist_x)
                 self.newThresholdLower()
 
+def main():
+    sp_global_def.print_timestamp("Start")
+    sp_global_def.write_command()
+    run()
+    sp_global_def.print_timestamp("Finish")
 
 if __name__ == "__main__":
     main()

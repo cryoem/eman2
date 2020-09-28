@@ -50,7 +50,7 @@ from ..libpy.sp_global_def import *
 from optparse import OptionParser
 import sys, configparser
 
-def main():
+def run():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " configure_file.cfg"
 
@@ -72,9 +72,11 @@ def main():
 	ali2d_mref(args[0])
 	sp_global_def.BATCH = False
 
+def main():
+	sp_global_def.print_timestamp("Start")
+	sp_global_def.write_command()
+	run()
+	sp_global_def.print_timestamp("Finish")
 
 if __name__ == "__main__":
-	sp_global_def.print_timestamp( "Start" )
-	sp_global_def.write_command()
 	main()
-	sp_global_def.print_timestamp( "Finish" )

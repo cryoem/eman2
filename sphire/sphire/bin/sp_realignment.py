@@ -52,7 +52,7 @@ import mpi
 mpi.mpi_init( 0, [] )
 
 
-def main():
+def run():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " out_averages outdir --ou=outer_radius --xr=x_range --ts=translation_step --maxit=max_iteration --CTF --snr=SNR --function=user_function_name --Fourvar --ali=kind_of_alignment --center=center_type"
 	parser = OptionParser(usage,version=SPARXVERSION)
@@ -98,10 +98,12 @@ def main():
 			realignment(args[0], args[1], args[2], options.ou, options.xr, options.ts, options.maxit, options.function, options.snr, options.CTF, options.Fourvar, options.Ng, options.num_ali, options.err_th, options.K, options.dst, options.center, options.CUDA, options.GPUID, options.MPI)
 		sp_global_def.BATCH = False
 		
-
-if __name__ == "__main__":
+def main():
 	sp_global_def.print_timestamp( "Start" )
 	sp_global_def.write_command()
-	main()
+	run()
 	sp_global_def.print_timestamp( "Finish" )
 	mpi.mpi_finalize()
+
+if __name__ == "__main__":
+	main()

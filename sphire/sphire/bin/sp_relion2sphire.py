@@ -122,7 +122,7 @@ def estimate_angle(coords_a, coords_b):
 # ========================================================================================
 
 
-def main():
+def run():
     # Parse command argument
     arglist = []
     for arg in sys.argv:
@@ -2270,12 +2270,15 @@ def main():
     sp_global_def.sxprint("# DONE!")
 
 
+def main():
+    sp_global_def.print_timestamp("Start")
+    run()
+    sp_global_def.print_timestamp("Finish")
+
 # ----------------------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    sp_global_def.print_timestamp("Start")
     main()
-    sp_global_def.print_timestamp("Finish")
 
 # ========================================================================================
 # END OF SCRIPT

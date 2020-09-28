@@ -52,7 +52,7 @@ import mpi
 
 mpi.mpi_init( 0, [] )
 
-def main():
+def run():
 	arglist = []
 	for arg in sys.argv:
 		arglist.append( arg )
@@ -145,10 +145,12 @@ def main():
 		ihrsr(args[0], args[1], args[2], mask, irp, oup, options.rs, xrp, options.ynumber, txsp, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, options.dp, options.ndp, options.dp_step, options.dphi, options.ndphi, options.dphi_step, options.psi_max, rminp, rmaxp, options.fract, options.nise, options.npad,options.sym, options.function, options.datasym, options.apix, options.debug, options.MPI, options.WRAP, y_restrict2) 
 		sp_global_def.BATCH = False
 
-
-if __name__ == "__main__":
+def main():
 	sp_global_def.print_timestamp( "Start" )
 	sp_global_def.write_command()
-	main()
+	run()
 	sp_global_def.print_timestamp( "Finish" )
 	mpi.mpi_finalize()
+
+if __name__ == "__main__":
+	main()

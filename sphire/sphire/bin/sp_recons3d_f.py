@@ -51,7 +51,7 @@ import mpi
 mpi.mpi_init( 0, [] )
 
 
-def main():
+def run():
 
 	arglist = []
 	for arg in sys.argv:
@@ -99,10 +99,12 @@ def main():
 	recons3d_f(prj_stack, vol_stack, fsc_curve, mask, options.CTF, options.snr, options.sym, options.list, options.group, options.npad, options.verbose, options.MPI)
 	sp_global_def.BATCH = False
 
-
-if __name__ == "__main__":
+def main():
 	sp_global_def.print_timestamp( "Start" )
 	sp_global_def.write_command()
-	main()
+	run()
 	sp_global_def.print_timestamp( "Finish" )
 	mpi.mpi_finalize()
+
+if __name__ == "__main__":
+	main()

@@ -48,7 +48,7 @@ from ..libpy.sp_global_def import *
 from   optparse import OptionParser
 import sys
 
-def main():
+def run():
 
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stackfile outdir  <maskfile> --K1=Min_number_of_Cluster --K2=Max_number_of_Clusters --opt_method=K-means_method --trials=Number_of_trials_of_K-means --CTF --rand_seed=1000 --maxit=Maximum_number_of_iterations --F=simulated_annealing --T0=simulated_annealing --MPI --CUDA --debug"
@@ -95,9 +95,12 @@ def main():
 		if options.MPI:
 			from mpi import mpi_finalize
 			mpi_finalize()
-			
-if __name__ == "__main__":
+
+def main():
 	sp_global_def.print_timestamp( "Start" )
 	sp_global_def.write_command()
-	main()
+	run()
 	sp_global_def.print_timestamp( "Finish" )
+
+if __name__ == "__main__":
+	main()

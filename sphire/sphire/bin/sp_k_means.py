@@ -56,7 +56,7 @@ import mpi
 #
 #
 
-def main():
+def run():
 	
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stack outdir <maskfile> --K=10 --trials=2 --debug --maxit=100 --rand_seed=10 --crit='all' --F=0.9 --T0=2.0 --init_method='rnd' --normalize --CTF --MPI --CUDA"
@@ -108,10 +108,13 @@ def main():
 		sp_global_def.BATCH = False
 
 
-if __name__ == "__main__":
+def main():
 	sp_global_def.print_timestamp( "Start" )
 	sp_global_def.write_command()
-	main()
+	run()
 	sp_global_def.print_timestamp( "Finish" )
 	if "OMPI_COMM_WORLD_SIZE" in os.environ:
 		mpi.mpi_finalize()
+
+if __name__ == "__main__":
+	main()

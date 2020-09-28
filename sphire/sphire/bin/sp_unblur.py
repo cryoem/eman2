@@ -338,7 +338,7 @@ def create_unblur_command(
     return "\n".join([str(entry) for entry in unblur_command])
 
 
-def main():
+def run():
     """
 	Main function
 
@@ -510,11 +510,13 @@ def main():
             )
         )
 
-
-if __name__ == "__main__":
+def main():
     sp_global_def.print_timestamp("Start")
     sp_global_def.BATCH = True
-    main()
+    run()
     sp_global_def.BATCH = False
     sp_global_def.print_timestamp("Finish")
     mpi.mpi_finalize()
+
+if __name__ == "__main__":
+    main()

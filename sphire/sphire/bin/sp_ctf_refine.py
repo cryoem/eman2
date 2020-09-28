@@ -690,7 +690,7 @@ def setup_argparser():
     return argparser, child_argparser
 
 
-def _main_():
+def run():
     _, child_argparser = setup_argparser()
     # These global variables are kind of ugly, but are necessary in python2. Will be removed in
     # python 3.
@@ -866,9 +866,11 @@ def _main_():
 
     sp_global_def.sxprint("Done")
 
-
-if __name__ == "__main__":
+def _main_():
     sp_global_def.BATCH = True
     sp_global_def.print_timestamp("Start")
-    _main_()
+    run()
     sp_global_def.print_timestamp("Finish")
+
+if __name__ == "__main__":
+    _main_()

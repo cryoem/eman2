@@ -63,7 +63,7 @@ mpi.mpi_init( 0, [] )
 
 
 
-def main():
+def run():
 	from ..libpy.sp_logger import Logger, BaseLogger_Files
 	arglist = []
 	i = 0
@@ -692,9 +692,12 @@ def main():
 		mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 		return
 
-if __name__ == "__main__":
+def main():
 	sp_global_def.print_timestamp( "Start" )
 	sp_global_def.write_command()
-	main()
+	run()
 	sp_global_def.print_timestamp( "Finish" )
 	mpi.mpi_finalize()
+
+if __name__ == "__main__":
+	main()

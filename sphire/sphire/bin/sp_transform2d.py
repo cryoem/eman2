@@ -49,7 +49,7 @@ from ..libpy.sp_applications  import  transform2d
 from optparse      import OptionParser
 import sys
 
-def main():
+def run():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stack_in  stack_out"
 	parser = OptionParser(usage,version=SPARXVERSION)
@@ -70,8 +70,11 @@ def main():
 		transform2d(args[0], args[1], options.shift, options.ignore_mirror, options.method)
 		sp_global_def.BATCH = False
 
-if __name__ == "__main__":
+def main():
 	sp_global_def.print_timestamp( "Start" )
 	sp_global_def.write_command()
-	main()
+	run()
 	sp_global_def.print_timestamp( "Finish" )
+
+if __name__ == "__main__":
+	main()

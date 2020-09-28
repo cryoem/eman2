@@ -50,7 +50,7 @@ from   optparse import OptionParser
 from EMAN2 import *
 
 
-def main():
+def run():
 
 	import sys
 
@@ -86,9 +86,11 @@ def main():
 			Util.mul_scalar(data , -1 )
 			data.write_image( fname )
 
-
-if __name__ == "__main__":
+def main():
 	sp_global_def.print_timestamp( "Start" )
 	sp_global_def.write_command()
-	main()
+	run()
 	sp_global_def.print_timestamp( "Finish" )
+
+if __name__ == "__main__":
+	main()

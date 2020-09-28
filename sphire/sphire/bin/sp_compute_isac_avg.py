@@ -172,7 +172,7 @@ def apply_enhancement(avg, B_start, pixel_size, user_defined_Bfactor):
     )
 
 
-def main():
+def run():
     global Tracker, Blockdata
     progname = os.path.basename(sys.argv[0])
     usage = progname + " --output_dir=output_dir  --isac_dir=output_dir_of_isac "
@@ -845,10 +845,13 @@ def main():
 
     return
 
-
-if __name__ == "__main__":
+def main():
     mpi.mpi_init(0, [])
     sp_global_def.print_timestamp("Start")
-    main()
+    run()
     sp_global_def.print_timestamp("Finish")
     mpi.mpi_finalize()
+
+
+if __name__ == "__main__":
+    main()

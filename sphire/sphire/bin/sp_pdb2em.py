@@ -74,7 +74,7 @@ atomdefs = {
 }
 
 
-def main():
+def run():
     progname = optparse.os.path.basename(sys.argv[0])
     usage = """%prog [options] input.pdb output.hdf
 
@@ -410,9 +410,11 @@ map to the center of the volume."""
         sp_global_def.ERROR("Unknown image type")
         return
 
-
-if __name__ == "__main__":
+def main():
     sp_global_def.print_timestamp("Start")
     sp_global_def.write_command()
-    main()
+    run()
     sp_global_def.print_timestamp("Finish")
+
+if __name__ == "__main__":
+    main()

@@ -52,7 +52,7 @@ import mpi
 mpi.mpi_init( 0, [] )
 
 
-def main():
+def run():
 	arglist = []
 	for arg in sys.argv:
 		arglist.append( arg )
@@ -103,10 +103,12 @@ def main():
 			mref_ali2d(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.center, options.maxit, options.CTF, options.snr, options.function, options.rand_seed, options.MPI)
 		sp_global_def.BATCH = False
 
-
-if __name__ == "__main__":
+def main():
 	sp_global_def.print_timestamp( "Start" )
 	sp_global_def.write_command()
-	main()
+	run()
 	sp_global_def.print_timestamp( "Finish" )
 	mpi.mpi_finalize()
+
+if __name__ == "__main__":
+	main()

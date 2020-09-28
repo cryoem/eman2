@@ -27,7 +27,7 @@ def create_entrypoints():
         filename = os.path.basename(path)
         with open(path) as file:
             #https://regex101.com/r/b8NlEJ/1
-            result = re.findall("^def\s+(_?main_?)\(",file.read(),re.M)
+            result = re.findall("^def\s+(_?main_?)\(\)",file.read(),re.M)
         if len(result) == 1:
             main_name = result[0]
             entry = filename + " = sphire.bin." + os.path.splitext(filename)[0]+":"+main_name

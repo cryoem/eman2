@@ -53,7 +53,7 @@ import mpi
 mpi.mpi_init( 0, [] )
 
 
-def main():
+def run():
 	arglist = []
 	i = 0
 	while( i < len(sys.argv) ):
@@ -149,10 +149,12 @@ def main():
 			options.function,  options.npad, options.debug, options.fourvar, options.stoprnct)
 		sp_global_def.BATCH = False
 		
-
-if __name__ == "__main__":
+def main():
 	sp_global_def.print_timestamp( "Start" )
 	sp_global_def.write_command()
-	main()
+	run()
 	sp_global_def.print_timestamp( "Finish" )
 	mpi.mpi_finalize()
+
+if __name__ == "__main__":
+	main()

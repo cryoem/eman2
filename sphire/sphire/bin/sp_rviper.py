@@ -1090,7 +1090,7 @@ def get_already_processed_viper_runs(run_get_already_processed_viper_runs):
         get_already_processed_viper_runs.r_permutation = [0] * 20
 
 
-def main():
+def run():
 
     main_node = 0
     mpi_comm = mpi.MPI_COMM_WORLD
@@ -1918,10 +1918,13 @@ output_directory: directory name into which the output files will be written.  I
 
     mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
-
-if __name__ == "__main__":
+def main():
     mpi.mpi_init(0, [])
     sp_global_def.print_timestamp("Start")
-    main()
+    run()
     sp_global_def.print_timestamp("Finish")
     mpi.mpi_finalize()
+
+
+if __name__ == "__main__":
+    main()

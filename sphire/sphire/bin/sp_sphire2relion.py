@@ -141,7 +141,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def main(args):
+def run(args):
     """
 	Main function contains the logic behind the program.
 
@@ -813,8 +813,10 @@ def import_particle_stack(particle_stack, output_dir, project_dir):
 
     return stack_array, create_stack
 
+def main():
+    sp_global_def.print_timestamp("Start")
+    run(parse_args())
+    sp_global_def.print_timestamp("Finish")
 
 if __name__ == "__main__":
-    sp_global_def.print_timestamp("Start")
-    main(parse_args())
-    sp_global_def.print_timestamp("Finish")
+    main()

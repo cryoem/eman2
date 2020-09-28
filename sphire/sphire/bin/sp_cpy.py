@@ -50,7 +50,7 @@ from ..libpy import sp_utilities
 import sys
 
 
-def main():
+def run():
     progname = optparse.os.path.basename(sys.argv[0])
     usage = progname + " stack_in  stack_out"
     parser = optparse.OptionParser(usage, version=sp_global_def.SPARXVERSION)
@@ -83,9 +83,12 @@ def main():
         # application.cpy
         sp_applications.cpy(args[:-1], args[-1:][0])
 
-
-if __name__ == "__main__":
+def main():
     sp_global_def.print_timestamp("Start")
     sp_global_def.write_command()
-    main()
+    run()
     sp_global_def.print_timestamp("Finish")
+
+
+if __name__ == "__main__":
+    main()

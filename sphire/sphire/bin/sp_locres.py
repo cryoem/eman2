@@ -119,7 +119,7 @@ def output_volume(
         sp_utilities.write_text_row(resolut, fsc)
 
 
-def main():
+def run():
     arglist = []
     for arg in sys.argv:
         arglist.append(arg)
@@ -382,9 +382,12 @@ def main():
         )
 
 
-if __name__ == "__main__":
+def main():
     mpi.mpi_init(0, [])
     sp_global_def.print_timestamp("Start")
-    main()
+    run()
     sp_global_def.print_timestamp("Finish")
     mpi.mpi_finalize()
+
+if __name__ == "__main__":
+    main()

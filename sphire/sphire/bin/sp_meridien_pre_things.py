@@ -7300,7 +7300,7 @@ def reduce_shifts(sx, sy, img):
 	return int(round(sx)), int(round(sy))
 
 
-def main():
+def run():
 
 	from ..libpy.sp_utilities import write_text_row, drop_image, model_gauss_noise, get_im, set_params_proj, wrap_mpi_bcast, model_circle
 	from ..libpy.sp_applications  import MPI_start_end
@@ -8097,13 +8097,15 @@ def main():
 	else:
 		ERROR( "Incorrect input options", myid=Blockdata["myid"] )
 		return
-
-if __name__=="__main__":
+def main():
 	sp_global_def.BATCH = True
 	sp_global_def.MPI   = True
 	sp_global_def.print_timestamp( "Start" )
-	main()
+	run()
 	sp_global_def.print_timestamp( "Finish" )
 	sp_global_def.BATCH = False
 	sp_global_def.MPI   = False
 	mpi.mpi_finalize()
+
+if __name__=="__main__":
+	main()

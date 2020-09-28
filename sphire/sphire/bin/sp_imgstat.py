@@ -47,7 +47,7 @@ import os
 import sys
 from optparse    import OptionParser
 
-def main():
+def run():
 
 	arglist = []
 	for arg in sys.argv:
@@ -79,8 +79,11 @@ def main():
 	sp_global_def.BATCH = True
 	imgstat( args, options.ccc, options.fsc, options.inf, options.rad )
 
-if __name__=="__main__":
+def main():
 	sp_global_def.print_timestamp( "Start" )
 	sp_global_def.write_command()
-	main()
+	run()
 	sp_global_def.print_timestamp( "Finish" )
+
+if __name__=="__main__":
+	main()

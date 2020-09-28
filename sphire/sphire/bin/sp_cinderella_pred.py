@@ -78,7 +78,7 @@ argparser.add_argument(
 )
 
 
-def main():
+def run():
     args = argparser.parse_args()
     cindy_path = args.cinderella_path
     input_stack = args.inputstack
@@ -113,8 +113,10 @@ def main():
     subprocess.check_call(complete_command)
     sp_global_def.write_command(out_dir)
 
+def main():
+    sp_global_def.print_timestamp("Start")
+    run()
+    sp_global_def.print_timestamp("Finish")
 
 if __name__ == "__main__":
-    sp_global_def.print_timestamp("Start")
     main()
-    sp_global_def.print_timestamp("Finish")

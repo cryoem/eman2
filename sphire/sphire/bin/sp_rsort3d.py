@@ -68,7 +68,7 @@ from ..libpy.sp_reconstruction import rec3D_MPI_noCTF,rec3D_two_chunks_MPI
 from ..libpy.sp_applications   import mref_ali3d_EQ_Kmeans, ali3d_mref_Kmeans_MPI  
 
 
-def main():
+def run():
 	from time import sleep
 	from ..libpy.sp_logger import Logger, BaseLogger_Files
 	arglist = []
@@ -840,8 +840,11 @@ def main():
 		mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 		return
 
-if __name__ == "__main__":
+def main():
 	sp_global_def.print_timestamp( "Start" )
-	main()
+	run()
 	sp_global_def.print_timestamp( "Finish" )
 	mpi.mpi_finalize()
+
+if __name__ == "__main__":
+	main()

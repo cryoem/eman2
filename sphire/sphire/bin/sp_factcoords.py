@@ -52,7 +52,7 @@ import mpi
 
 mpi.mpi_init( 0, [] )
       
-def main():
+def run():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " prj_stack .. average eigvol output_factcoords --rad=radius --neigvol=number_of_eigvol  --CTF"
 	parser = OptionParser(usage, version=SPARXVERSION)
@@ -96,10 +96,12 @@ def main():
 			factcoords_vol(stacks, avgvol, eigvol, output, options.rad, options.neigvol, options.fl, options.aa, options.MPI)
 		sp_global_def.BATCH = False
 		
-
-if __name__ == "__main__":
+def main():
 	sp_global_def.print_timestamp( "Start" )
 	sp_global_def.write_command()
-	main()
+	run()
 	sp_global_def.print_timestamp( "Finish" )
 	mpi.mpi_finalize()
+
+if __name__ == "__main__":
+	main()
