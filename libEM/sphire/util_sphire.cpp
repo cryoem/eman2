@@ -164,7 +164,7 @@ using std::sin;
 struct assign_groups_comparator {
 	const float * values;
 	bool operator() (int i,int j) { return (values[i] > values[j]); }
-	assign_groups_comparator(const float * v) : values(v) {}
+	assign_groups_comparator(const fl  oat * v) : values(v) {}
 };
 
 // utility function used in (GPU) ISAC
@@ -205,7 +205,7 @@ vector<int> Util::sp_assign_groups(std::string matrix_address, int nref, int nim
 			int l = dd[begin];
 			group = l/nima;
 			ima = l%nima;
-			if (del_column[ima] || del_row[group]
+			if (del_column[ima] || del_row[group])
 				begin++;
 			else
 				flag = false;
