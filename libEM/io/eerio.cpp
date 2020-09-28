@@ -61,10 +61,10 @@ EerFrame::EerFrame(TIFF *tiff)
 		is>>rle>>sub_pix;
 		int x = count & 4095;
 		int y = count >> 12;
-
-		count += rle+1;
 		
 		_coords.push_back(std::make_pair(x,y));
+
+		count += rle+1;
 	}
 }
 
@@ -133,8 +133,6 @@ int EerIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 	dict["ny"] = ny;
 	dict["nz"] = 1;
 
-	dict["nimg"] = int(get_nimg());
-
 	return 0;
 }
 
@@ -153,8 +151,8 @@ int EerIO::read_data(float *rdata, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
-	for(auto &frame : frames[image_index].coords())
-		rdata[frame.first + frame.second * 4096] += 1;
+	for(auto &c : frames[image_index].coords())
+		rdata[c.first + c.second * 4096] += 1;
 
 	EXITFUNC;
 
