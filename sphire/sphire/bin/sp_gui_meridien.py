@@ -580,9 +580,12 @@ def run(args=None):
     gui = MainWindow(app.font())
     sys.exit(app.exec_())
 
-
-if __name__ == "__main__":
+def main():
     sp_global_def.print_timestamp("Start")
     sp_global_def.write_command()
     run()
     sp_global_def.print_timestamp("Finish")
+
+
+if __name__ == "__main__":
+    main()

@@ -1330,7 +1330,7 @@ def search_range(n, radius, shift, range, location=""):
 
 
 def alivol_mask_getref(v, mask):
-    pass  # IMPORTIMPORTIMPORT from sp_utilities import set_params3D
+    pass  # IMPORTIMPORTIMPORT from ..libpy.sp_utilities import set_params3D
     v50S_ref = v.copy()
     v50S_ref *= mask
     cnt = v50S_ref.phase_cog()
@@ -1341,8 +1341,8 @@ def alivol_mask_getref(v, mask):
 
 
 def alivol_mask(v, vref, mask):
-    pass  # IMPORTIMPORTIMPORT from sp_utilities    import set_params3D, get_params3D,compose_transform3
-    pass  # IMPORTIMPORTIMPORT from sp_applications import ali_vol_shift, ali_vol_rotate
+    pass  # IMPORTIMPORTIMPORT from ..libpy.sp_utilities    import set_params3D, get_params3D,compose_transform3
+    pass  # IMPORTIMPORTIMPORT from ..libpy.sp_applications import ali_vol_shift, ali_vol_rotate
     v50S_i = v.copy()
     v50S_i *= mask
     cnt = v50S_i.phase_cog()
@@ -1363,11 +1363,11 @@ def alivol_mask(v, vref, mask):
 
 
 def ali_nvol(v, mask):
-    pass  # IMPORTIMPORTIMPORT from sp_alignment    import alivol_mask_getref, alivol_mask
-    pass  # IMPORTIMPORTIMPORT from sp_statistics   import ave_var
-    pass  # IMPORTIMPORTIMPORT from sp_utilities    import set_params3D, get_params3D ,compose_transform3
+    pass  # IMPORTIMPORTIMPORT from ..libpy.sp_alignment    import alivol_mask_getref, alivol_mask
+    pass  # IMPORTIMPORTIMPORT from ..libpy.sp_statistics   import ave_var
+    pass  # IMPORTIMPORTIMPORT from ..libpy.sp_utilities    import set_params3D, get_params3D ,compose_transform3
 
-    pass  # IMPORTIMPORTIMPORT from sp_fundamentals import rot_shift3D
+    pass  # IMPORTIMPORTIMPORT from ..libpy.sp_fundamentals import rot_shift3D
     ocrit = 1.0e20
     gogo = True
     niter = 0
@@ -1418,8 +1418,8 @@ def ali_nvol(v, mask):
 
 
 def ali_vol_func_rotate(params, data):
-    pass  # IMPORTIMPORTIMPORT from sp_utilities    import compose_transform3
-    pass  # IMPORTIMPORTIMPORT from sp_fundamentals import rot_shift3D
+    pass  # IMPORTIMPORTIMPORT from ..libpy.sp_utilities    import compose_transform3
+    pass  # IMPORTIMPORTIMPORT from ..libpy.sp_fundamentals import rot_shift3D
     cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale = sp_utilities.compose_transform3(
         data[3][0],
         data[3][1],
@@ -1445,8 +1445,8 @@ def ali_vol_func_rotate(params, data):
 
 
 def ali_vol_func_shift(params, data):
-    pass  # IMPORTIMPORTIMPORT from sp_utilities    import compose_transform3
-    pass  # IMPORTIMPORTIMPORT from sp_fundamentals import rot_shift3D
+    pass  # IMPORTIMPORTIMPORT from ..libpy.sp_utilities    import compose_transform3
+    pass  # IMPORTIMPORTIMPORT from ..libpy.sp_fundamentals import rot_shift3D
     cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale = sp_utilities.compose_transform3(
         data[3][0],
         data[3][1],

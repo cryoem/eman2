@@ -543,819 +543,872 @@ def red(angle):
 	return angle-360*floor((angle+180)/360)
 
 
+def main():
+	# read args from command line ---------------------------------
+	progname = os.path.basename(sys.argv[0])
+	usage = "mpirun [-np num_proc] [--host node[,node,...]] " + progname + "  map_file  segment_file [FSC_mask] [option_list]"
 
-# read args from command line ---------------------------------
-progname = os.path.basename(sys.argv[0])
-usage = "mpirun [-np num_proc] [--host node[,node,...]] " + progname + "  map_file  segment_file [FSC_mask] [option_list]"
+	parser = OptionParser(usage, version=SPARXVERSION)
+	parser.add_option("--res", type="float", default=-1.0, metavar="resolution",
+					  help="Resolution of map. If given, the FSC will be adjusted. If not, the resolution will be deduced from the FSC.")
+	parser.add_option("--R", type="float", default=0.01, metavar="coeff_R",
+					  help="R coefficient in the fitted FSC curve.")
+	parser.add_option("--B", type="float", default=500.0, metavar="coeff_B",
+					  help="B coefficient in the fitted FSC curve.")
+	parser.add_option("--u0", type="float", default=1.0, metavar="FSC_at_0",
+					  help="Value of the experimental FSC curve at frequency 0.")
+	parser.add_option("--pix", type="float", default=3.0, metavar="pixel_size",
+					  help="Pixel size of map, in A.")
+	parser.add_option("--sigN", type="float", default=3.0, metavar="sigma_noise",
+					  help="Standard deviation of the Gaussian noise.")
+	parser.add_option("--alpha", type="float", default=0.0, metavar="cloud_factor",
+					  help="If not 0, an additional cloud will be created, corresponding to sigma_noise*cloud_factor, and the fitting parameters will be scaled by cloud_factor.")
+	parser.add_option("--fsc_rapid_fall", action="store_true", default=False,
+					  help="Do a rapid tapering of the FSC curve.")
+	parser.add_option("--j1", type="int", default=0, metavar="rapid_start",
+					  help="Start index of the tapering factor.")
+	parser.add_option("--j2", type="int", default=0, metavar="rapid_end",
+					  help="End index of the tapering factor.")
+	parser.add_option("--synth", action="store_true", default=False,
+					  help="Create and save a simulated map, and exit.")
+	parser.add_option("--no_sim_noise", action="store_true", default=False,
+					  help="Do not add noise when creating a simulated map.")
+	parser.add_option("--filtmap", action="store_true", default=False,
+					  help="Filter the map instead of the segment.")
+	parser.add_option("--imask", action="store_true", default=False,
+					  help="Use a mask to restrain the position of the segment.")
+	parser.add_option("--init_max", action="store_true", default=False,
+					  help="Choose the initial fit using the max (instead of the median) of the correlation values.")
 
-parser = OptionParser(usage,version=SPARXVERSION)
-parser.add_option("--res",      type="float",   default= -1.0, metavar="resolution",   help="Resolution of map. If given, the FSC will be adjusted. If not, the resolution will be deduced from the FSC.")
-parser.add_option("--R",        type="float",   default= 0.01, metavar="coeff_R",      help="R coefficient in the fitted FSC curve.")
-parser.add_option("--B",        type="float",   default= 500.0,metavar="coeff_B",      help="B coefficient in the fitted FSC curve.")
-parser.add_option("--u0",       type="float",   default= 1.0,  metavar="FSC_at_0",     help="Value of the experimental FSC curve at frequency 0.")
-parser.add_option("--pix",      type="float",   default= 3.0,  metavar="pixel_size",   help="Pixel size of map, in A.")
-parser.add_option("--sigN",   type="float",   default= 3.0,  metavar="sigma_noise",  help="Standard deviation of the Gaussian noise.")
-parser.add_option("--alpha",    type="float",   default= 0.0,  metavar="cloud_factor", help="If not 0, an additional cloud will be created, corresponding to sigma_noise*cloud_factor, and the fitting parameters will be scaled by cloud_factor.")
-parser.add_option("--fsc_rapid_fall", action="store_true", default= False, help="Do a rapid tapering of the FSC curve.")
-parser.add_option("--j1",       type="int",     default= 0,    metavar="rapid_start",  help="Start index of the tapering factor.")
-parser.add_option("--j2",       type="int",     default= 0,    metavar="rapid_end",    help="End index of the tapering factor.")
-parser.add_option("--synth",          action="store_true", default= False, help="Create and save a simulated map, and exit.")
-parser.add_option("--no_sim_noise",   action="store_true", default= False, help="Do not add noise when creating a simulated map.")
-parser.add_option("--filtmap",        action="store_true", default= False, help="Filter the map instead of the segment.")
-parser.add_option("--imask",          action="store_true", default= False, help="Use a mask to restrain the position of the segment.")
-parser.add_option("--init_max",       action="store_true", default= False, help="Choose the initial fit using the max (instead of the median) of the correlation values.")
+	# parser.add_option("--nover",    type="int",     default= 1,    metavar="oversampling_factor", help="Number of times to oversample input volumes.")
 
-#parser.add_option("--nover",    type="int",     default= 1,    metavar="oversampling_factor", help="Number of times to oversample input volumes.")
+	(options, args) = parser.parse_args()  # by default it returns args = sys.argv[1:]
 
-(options, args) = parser.parse_args()    # by default it returns args = sys.argv[1:]
+	sys.argv = mpi_init(len(sys.argv), sys.argv)
+	myid = mpi_comm_rank(MPI_COMM_WORLD)
+	ncpu = mpi_comm_size(MPI_COMM_WORLD)
+	main_node = 0
 
-sys.argv = mpi_init(len(sys.argv),sys.argv)
-myid = mpi_comm_rank(MPI_COMM_WORLD)
-ncpu = mpi_comm_size(MPI_COMM_WORLD)
-main_node = 0
+	if len(args) < 2 or len(args) > 3:
+		print("usage:  " + usage)
+		print("Please run '" + progname + " -h' for detailed options")
+		mpi_finalize()
+		exit(101)
 
-if len(args) < 2 or len(args)>3:
-	print("usage:  " + usage)
-	print("Please run '" + progname + " -h' for detailed options")
-	mpi_finalize()
-	exit(101)
-
-largeFile = args[0]
-segFile = args[1]
-if len(args)==3:
-	maskFile = args[2]
-	user_mask = True
-else:
-	user_mask = False
-segName = os.path.splitext(os.path.basename(segFile))[0]
-
-R = options.R
-B = options.B
-u0 = options.u0
-pix = options.pix
-
-if options.res>0.0:
-	resol = options.res
-	aau = pix/resol
-	gamres = 0.5*log(16/B*log((2*u0*(1+R)-1)/R))/log(2*aau)
-else:
-	aau = sqrt(4/B*log((2*u0*(1+R))/R))
-	resol = round(pix/aau,1)
-	gamres = 1.0
-
-#nover = options.nover
-fsc_rapid_fall = options.fsc_rapid_fall
-j1 = options.j1
-j2 = options.j2
-if fsc_rapid_fall:
-	if j1<=0 or j2<=j1:
-		print("Warning: input j1,j2 not valid. Will use default values.")
-		epsf = 0.1   # level under which the FSC is essentially 0
-		b1 = sqrt(4/B*log((u0*(1+R)-epsf)/R/epsf))
-		b2 = b1+0.25*(0.5-b1)
-
-sigNoise = options.sigN
-alpha = options.alpha
-synthetic = options.synth
-sim_noise = not options.no_sim_noise
-filtseg = not options.filtmap
-imask = options.imask
-init_median = not options.init_max
-
-
-if myid == main_node:
-	print("Options in effect:")
-	print("  map_file =", largeFile)
-	print("  segment_file =", segFile)
-	if user_mask == True:
-		print("  FSC_mask =",maskFile)
+	largeFile = args[0]
+	segFile = args[1]
+	if len(args) == 3:
+		maskFile = args[2]
+		user_mask = True
 	else:
-		print("  FSC_mask = None")
-	print("  res =",resol)
-	print("  R =",R)
-	print("  B =",B)
-	print("  u0 =",u0)
-	print("  pix =",pix)
-	print("  sigN =",sigNoise)
-	print("  alpha =",alpha)
-	print("  fsc_rapid =",fsc_rapid_fall)
-	print("  j1 =",j1)
-	print("  j2 =",j2)
-	print("  synth =",synthetic)
-	print("  no_sim_noise =", not sim_noise)
-	print("  filtmap =", not filtseg)
-	print("  imask =",imask)
-	print("  init_max =", not init_median)
-	sp_global_def.write_command('.')
-#-------------------------------------
+		user_mask = False
+	segName = os.path.splitext(os.path.basename(segFile))[0]
 
+	R = options.R
+	B = options.B
+	u0 = options.u0
+	pix = options.pix
 
-### parameters not specified by the user: -------------------
-
-# number of times to oversample input volumes:
-nover = 1
-
-# discrepancy measure:
-discrep = "dot"  #"ccc"  "dot"  "lod"
-
-# parameters for ali_vol:
-ang_bracket = 5.0
-shift_bracket = 5.0
-
-# number of positions in the random initial shake:
-# for the noise-free map:
-nt1 = 20/ncpu
-if nt1<1: nt1=1
-# for the noise-corrupted maps:
-nt2 = 10
-
-# amplitudes of the random initial shakes:
-# for the noise-free fitting:
-shake_shift_1 = 2.0    # pixels
-shake_ang_1 = 2.0      # degrees
-# for the noise-corrupted fittings:
-shake_shift_2 = 2.0    # pixels
-shake_ang_2 = 2.0      # degrees
-
-# max number of cycles for monitoring convergence:
-max_cycles = 10
-
-# number of terms, minus 1, to average successive sigmas
-# during the convergence:
-rave = 3
-
-# relative max change in std for ending Monte Carlo:
-sigma_max_change = 0.03
-
-# multiplier for the restraint mask (imask):
-lambdam = 1.0
-
-# maximum desired number of ouput matrices:
-nmatsout = 1000
-
-#----------------------------------------------------------
-
-# begin computations---------------------------------------
-
-
-# segment map:
-img1_orig_0 = get_image(segFile)
-
-nx = img1_orig_0.get_xsize()
-ny = img1_orig_0.get_ysize()
-nz = img1_orig_0.get_zsize()
-
-s = [0.0]*6
-s = center_of_gravity_phase(img1_orig_0)
-
-for i in range(1,nx//2):
-	mask = cyclic_shift(model_circle(i, nx, ny, nz),int(s[3]),int(s[4]),int(s[5]))
-	if Util.infomask(img1_orig_0,mask,False)[3] == 0.0:
-		break
-radius = i   #smallest sphere that contains the segment
-
-# scale radius according to oversampling:
-radius *= nover
-
-# radius of mask:
-mask_rad = 1.3*radius
-
-# box size to window images (so that it's a multiple of nover):
-nbox = 2*int(mask_rad/nover+1)*nover
-
-# to prevent the window from going out of the boundary of the whole map:
-if (nx-nbox)/2 <= abs(s[3]):
-	nbox = int(nx-2*abs(s[3])-1)
-if (ny-nbox)/2 <= abs(s[4]):
-	nbox = int(ny-2*abs(s[4])-1)
-if (nz-nbox)/2 <= abs(s[5]):
-	nbox = int(nz-2*abs(s[5])-1)
-if nbox%2 ==0: nbox=nbox-1
-
-
-# target map:
-img2_orig = get_image(largeFile)
-
-nx0 = img2_orig.get_xsize()
-ny0 = img2_orig.get_ysize()
-nz0 = img2_orig.get_zsize()
-
-if nover>1:
-	img1_orig_0 = fpol(img1_orig_0, nx0*nover, ny0*nover, nz0*nover, True)
-
-if myid == main_node:
-	print("Radius of segment =",radius,"pix")
-
-if nover>1:
-	img2_orig = fpol(img2_orig, nx0*nover, ny0*nover, nz0*nover, True)
-
-# digitize FSC curve:
-sf0 = nx0//2
-sf1 = sf0*nover+1
-FSC = [0.0]*sf1
-dn = 0.5/float(sf0)
-for j in range(sf1):
-	if j<=sf0:
-		n = j*dn
-		FSC[j] = u0*(1.0+R)/(1.0+R*exp(B*n**2/4))
+	if options.res > 0.0:
+		resol = options.res
+		aau = pix / resol
+		gamres = 0.5 * log(16 / B * log((2 * u0 * (1 + R) - 1) / R)) / log(2 * aau)
 	else:
-		FSC[j] = 0.0
+		aau = sqrt(4 / B * log((2 * u0 * (1 + R)) / R))
+		resol = round(pix / aau, 1)
+		gamres = 1.0
 
-# multiply FSC by rapidly decreasing factor:
-if fsc_rapid_fall:
-	if j1<=0 or j2<=j1:    # if user-specified are invalid
-		j1 = b1*nx0
-		j2 = b2*nx0
-	for j in range(len(FSC)):
-		if j<=j1: ff = 1.0
-		elif j>=j2: ff = 0.0
-		else:
-			x = float(j2-j1)*(1.0/(j2-j)-1.0/(j-j1))
-			ff = 1.0/(1.0+exp(x))
-		FSC[j] *= ff
+	# nover = options.nover
+	fsc_rapid_fall = options.fsc_rapid_fall
+	j1 = options.j1
+	j2 = options.j2
+	if fsc_rapid_fall:
+		if j1 <= 0 or j2 <= j1:
+			print("Warning: input j1,j2 not valid. Will use default values.")
+			epsf = 0.1  # level under which the FSC is essentially 0
+			b1 = sqrt(4 / B * log((u0 * (1 + R) - epsf) / R / epsf))
+			b2 = b1 + 0.25 * (0.5 - b1)
 
-# shift FSC to simulate desired resolution:
-FSC = shift_gamma(FSC, gamres)
-
-# get sqrt(FSC) (for capping):
-sqrfsc = []
-for j in range(len(FSC)):
-	sqrfsc.append(sqrt(FSC[j]))
-
-# if user didn't provide an FSC mask, create one:
-if(not user_mask):
-	sg = 0.02    # sigma of the Gaussian filter in abs. freq. units
-	fthr = 0.01  # threshold for binarizing the filtered map (ratio with max)
-	fmask = fsc_mask(img2_orig, sg, fthr)
-else:
-	fmask = get_image(maskFile)
-q2 = q2norm(fmask)
-if myid == main_node:
-	print("squared L^2 norm of FSC mask =", q2)
-
-
-# normalization factor so that FT(Gaussian noise) has sigma=1:
-factor_noise = norm_factor_noise(nx0, ny0, nz0)
-
-
-########################################################################
-# IMPORTANT: this block generates a realization of noise that will be
-# different across the nodes, if run on several nodes. This will screw up
-# the calculation. Hence, the synthetic case should be run on a single node;
-# OR the map saved and then read back in as a real map (so it doesn't go
-# through this block) -- this is way it's done here;
-# OR this block should be changed so that the noise map
-# is computed on the main node and then sent to the various nodes.
-########################################################################
-# if using a synthetic map, apply envelope function and
-# add noise according to the given FSC:
-if synthetic and sim_noise:
-	img2_orig_e = filt_gaussl(img2_orig, aau)
-	pwEF = rops_table(img2_orig_e)
-	noise_filt_synth = create_noise_filter(pwEF, FSC, q2)
-	img2_orig_e = map_adjustment(img2_orig_e, FSC)
-	img2_orig = create_noisy_map(img2_orig_e, 1.0, noise_filt_synth, factor_noise)
+	sigNoise = options.sigN
+	alpha = options.alpha
+	synthetic = options.synth
+	sim_noise = not options.no_sim_noise
+	filtseg = not options.filtmap
+	imask = options.imask
+	init_median = not options.init_max
 
 	if myid == main_node:
-		# save this map, to be read back in as a real EM map
-		# (this avoids the problem mentioned above):
-		drop_image(img2_orig, "map_simulated.spi","s")
-
-		# fcr of the whole structure, for testing:
-		fcrwhole = fsc(img2_orig, img2_orig_e)[1]
-		for i in range(len(fcrwhole)):
-			if FSC[i] == 0.0:
-				fcrwhole[i] = 0.0
-		filename = segName+"_"+str(resol)+"_fcrwhole.txt"
-		write_text_file(fcrwhole, filename)
-
-	mpi_finalize()
-	exit(111)
-
-
-# compute inertia-ellipsoid mask:
-mask2 = ellipsoid(img1_orig_0)
-
-# masked map and segment:
-um = mask2*img2_orig
-pm = mask2*img1_orig_0
-
-# initial FCR curve:
-fcr = fsc(um, pm)[1]
-
-# cap fcr to sqrt(FSC):
-lf = len(fcr); fcr1 = [0.0]*lf
-for i in range(lf):
-	if fcr[i]>sqrfsc[i]:
-		fcr1[i] = sqrfsc[i]
-	else:
-		fcr1[i] = fcr[i]
-
-# compute fitted FCR curve:
-fcrf = fitfcr(fcr1, R,B)
-
-# cap fcrf to sqrt(FSC):
-for i in range(lf):
-	if fcrf[i]>sqrfsc[i]:
-		fcrf[i] = sqrfsc[i]
-
-
-# get power spectra for filters:
-pwu = rops_table(um)
-pwp = rops_table(pm)
-
-# create filter for initial fitting:
-sg = min(nx0,ny0,nz0)*aau   # sigma of Gaussian constraint on ccf
-Wfilt = create_CCFR_filter(pwu, pwp, fcrf, sg)
-
-
-# filter target map or segment (to do the initial fitting):
-if filtseg:
-	img1_filt = filt_table(img1_orig_0, Wfilt)
-	img2_filt = img2_orig.copy()
-else:
-	img1_filt = img1_orig_0.copy()
-	img2_filt = filt_table(img2_orig, Wfilt)
-
-
-# apply restraint mask if requested:
-if imask:
-	img1_orig_1 = get_image(segFile)
-	if nover>1:
-		img1_orig_1 = fpol(img1_orig_1, nx0*nover, ny0*nover, nz0*nover, True)
-	blob = filt_gaussl(img1_orig_1, 0.1)
-	ithres = 0.03 * Util.infomask(blob, None, True)[3]
-	imaskvol = binarize(blob, ithres)
-	img2_filt = img2_filt * imaskvol
-
-
-# shift maps by segment's COG, and window:
-img1_filt = Util.window(img1_filt, nbox, nbox, nbox, int(s[3]), int(s[4]), int(s[5]))
-img2_filt = Util.window(img2_filt, nbox, nbox, nbox, int(s[3]), int(s[4]), int(s[5]))
-
-
-names_params = ["phi", "theta", "psi", "s3x", "s3y", "s3z"]
-lpar = 6
-
-mask = model_circle(mask_rad, nbox, nbox, nbox)
-
-
-# prepare segment for gridding
-#(after this point, img1_filt MUST be used ONLY in rot_shift3D_grid):
-img1_filt,kb = prepi3D(img1_filt)
-
-
-# this is done with 0 to be able to compute the initial bccc:
-x = rot_shift3D_grid(img1_filt, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, kb, "background", False)
-
-bccc = compdisc(x, img2_filt, mask, discrep)
-
-if myid == main_node:
-	print("initial",discrep,"=",bccc)
-bccc = -1.e10
-
-# parameters are in the "XYZ" convention
-
-params = [0.0]*lpar
-bparams = [0.0]*lpar
-
-# shift to the center of mass of segment:
-tshift = Transform({"type":"spider","phi":0.0,"theta":0.0,"psi":0.0,"tx":s[3],"ty":s[4],"tz":s[5]})
-
-if myid == main_node:
-	ccparlist = [[0.0 for j in range(lpar+1)] for i in range(ncpu)]
-
-ccparlist0 = [[0.0 for j in range(lpar+1)] for i in range(nt1)]
-
-
-if myid == main_node:
-	print("                  a_x      a_y      a_z       x        y        z         dot")
-
-for i in range(nt1):
-	lt = i*ncpu+myid
-
-	for k in range(lpar):
-		if k<lpar-3: params[k] = shake_ang_1*(2.0*random()-1.0)
-		else: params[k] = shake_shift_1*(2.0*random()-1.0)
-
-	params = ali_vol_grid(img1_filt, params, img2_filt, ang_bracket, shift_bracket, mask_rad, discrep, kb, False)
-
-	# params are in the "xyz" convention, so get "spider" ones to do the rot:
-	tr = Transform({"type":"xyz","xtilt":params[0],"ytilt":params[1],"ztilt":params[2], "tx":params[3], "ty":params[4], "tz":params[5]})
-	qt = tr.get_params("spider")
-
-	x = rot_shift3D_grid(img1_filt,qt['phi'],qt['theta'],qt['psi'],qt['tx'],qt['ty'],qt['tz'],1.0,kb,"background", False)
-
-	tc = compdisc(x, img2_filt, mask, discrep)
-
-	print("     fit #%3d  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %10.6f" % \
-	(lt,params[0],params[1],params[2],params[3],params[4],params[5], tc))
-
-	if(init_median):
-		ccparlist0[i][0] = tc
-		for j in range(lpar):
-			ccparlist0[i][j+1] = params[j]
-	else:
-		if(tc>bccc):
-			bccc = tc
-			for k in range(lpar): bparams[k] = params[k]
-
-if(init_median):
-	ccparlist0.sort()
-	bccc = ccparlist0[nt1/2][0]    # or (nt1-1)/2
-	for j in range(lpar):
-		bparams[j] = ccparlist0[nt1/2][j+1]    # or (nt1-1)/2
-
-mpi_barrier(MPI_COMM_WORLD)
-
-if myid == main_node:
-	for j in range(ncpu):
-		if(j != main_node):
-			cc_params = mpi_recv(lpar+1, MPI_FLOAT, j, j*100, MPI_COMM_WORLD)
-			if(init_median):
-				for k in range(lpar+1):
-					ccparlist[j][k] = float(cc_params[k])
-			else:
-				if (float(cc_params[0])>bccc):
-					bccc = float(cc_params[0])
-					for k in range(lpar): bparams[k] = float(cc_params[k+1])
+		print("Options in effect:")
+		print("  map_file =", largeFile)
+		print("  segment_file =", segFile)
+		if user_mask == True:
+			print("  FSC_mask =", maskFile)
 		else:
-			if(init_median):
-				ccparlist[j][0] = bccc
-				for k in range(lpar):
-					ccparlist[j][k+1] = bparams[k]
-else:
-	mpi_send([bccc, bparams[0], bparams[1], bparams[2], bparams[3], bparams[4], bparams[5]], lpar+1, MPI_FLOAT, main_node, myid*100, MPI_COMM_WORLD)
+			print("  FSC_mask = None")
+		print("  res =", resol)
+		print("  R =", R)
+		print("  B =", B)
+		print("  u0 =", u0)
+		print("  pix =", pix)
+		print("  sigN =", sigNoise)
+		print("  alpha =", alpha)
+		print("  fsc_rapid =", fsc_rapid_fall)
+		print("  j1 =", j1)
+		print("  j2 =", j2)
+		print("  synth =", synthetic)
+		print("  no_sim_noise =", not sim_noise)
+		print("  filtmap =", not filtseg)
+		print("  imask =", imask)
+		print("  init_max =", not init_median)
+		sp_global_def.write_command('.')
+	# -------------------------------------
 
-mpi_barrier(MPI_COMM_WORLD)
+	### parameters not specified by the user: -------------------
 
-if myid == main_node:
-	if(init_median):
-		ccparlist.sort()
-		bccc = ccparlist[ncpu/2][0]    # or (ncpu-1)/2
-		for j in range(lpar):
-			bparams[j] = ccparlist[ncpu/2][j+1]    # or (ncpu-1)/2
-		
-	print()
-	if(init_median):
-		print("BEST (median): %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %10.6f" % \
-		(bparams[0],bparams[1],bparams[2],bparams[3],bparams[4],bparams[5], bccc))
+	# number of times to oversample input volumes:
+	nover = 1
+
+	# discrepancy measure:
+	discrep = "dot"  # "ccc"  "dot"  "lod"
+
+	# parameters for ali_vol:
+	ang_bracket = 5.0
+	shift_bracket = 5.0
+
+	# number of positions in the random initial shake:
+	# for the noise-free map:
+	nt1 = 20 / ncpu
+	if nt1 < 1: nt1 = 1
+	# for the noise-corrupted maps:
+	nt2 = 10
+
+	# amplitudes of the random initial shakes:
+	# for the noise-free fitting:
+	shake_shift_1 = 2.0  # pixels
+	shake_ang_1 = 2.0  # degrees
+	# for the noise-corrupted fittings:
+	shake_shift_2 = 2.0  # pixels
+	shake_ang_2 = 2.0  # degrees
+
+	# max number of cycles for monitoring convergence:
+	max_cycles = 10
+
+	# number of terms, minus 1, to average successive sigmas
+	# during the convergence:
+	rave = 3
+
+	# relative max change in std for ending Monte Carlo:
+	sigma_max_change = 0.03
+
+	# multiplier for the restraint mask (imask):
+	lambdam = 1.0
+
+	# maximum desired number of ouput matrices:
+	nmatsout = 1000
+
+	# ----------------------------------------------------------
+
+	# begin computations---------------------------------------
+
+	# segment map:
+	img1_orig_0 = get_image(segFile)
+
+	nx = img1_orig_0.get_xsize()
+	ny = img1_orig_0.get_ysize()
+	nz = img1_orig_0.get_zsize()
+
+	s = [0.0] * 6
+	s = center_of_gravity_phase(img1_orig_0)
+
+	for i in range(1, nx // 2):
+		mask = cyclic_shift(model_circle(i, nx, ny, nz), int(s[3]), int(s[4]), int(s[5]))
+		if Util.infomask(img1_orig_0, mask, False)[3] == 0.0:
+			break
+	radius = i  # smallest sphere that contains the segment
+
+	# scale radius according to oversampling:
+	radius *= nover
+
+	# radius of mask:
+	mask_rad = 1.3 * radius
+
+	# box size to window images (so that it's a multiple of nover):
+	nbox = 2 * int(mask_rad / nover + 1) * nover
+
+	# to prevent the window from going out of the boundary of the whole map:
+	if (nx - nbox) / 2 <= abs(s[3]):
+		nbox = int(nx - 2 * abs(s[3]) - 1)
+	if (ny - nbox) / 2 <= abs(s[4]):
+		nbox = int(ny - 2 * abs(s[4]) - 1)
+	if (nz - nbox) / 2 <= abs(s[5]):
+		nbox = int(nz - 2 * abs(s[5]) - 1)
+	if nbox % 2 == 0: nbox = nbox - 1
+
+	# target map:
+	img2_orig = get_image(largeFile)
+
+	nx0 = img2_orig.get_xsize()
+	ny0 = img2_orig.get_ysize()
+	nz0 = img2_orig.get_zsize()
+
+	if nover > 1:
+		img1_orig_0 = fpol(img1_orig_0, nx0 * nover, ny0 * nover, nz0 * nover, True)
+
+	if myid == main_node:
+		print("Radius of segment =", radius, "pix")
+
+	if nover > 1:
+		img2_orig = fpol(img2_orig, nx0 * nover, ny0 * nover, nz0 * nover, True)
+
+	# digitize FSC curve:
+	sf0 = nx0 // 2
+	sf1 = sf0 * nover + 1
+	FSC = [0.0] * sf1
+	dn = 0.5 / float(sf0)
+	for j in range(sf1):
+		if j <= sf0:
+			n = j * dn
+			FSC[j] = u0 * (1.0 + R) / (1.0 + R * exp(B * n ** 2 / 4))
+		else:
+			FSC[j] = 0.0
+
+	# multiply FSC by rapidly decreasing factor:
+	if fsc_rapid_fall:
+		if j1 <= 0 or j2 <= j1:  # if user-specified are invalid
+			j1 = b1 * nx0
+			j2 = b2 * nx0
+		for j in range(len(FSC)):
+			if j <= j1:
+				ff = 1.0
+			elif j >= j2:
+				ff = 0.0
+			else:
+				x = float(j2 - j1) * (1.0 / (j2 - j) - 1.0 / (j - j1))
+				ff = 1.0 / (1.0 + exp(x))
+			FSC[j] *= ff
+
+	# shift FSC to simulate desired resolution:
+	FSC = shift_gamma(FSC, gamres)
+
+	# get sqrt(FSC) (for capping):
+	sqrfsc = []
+	for j in range(len(FSC)):
+		sqrfsc.append(sqrt(FSC[j]))
+
+	# if user didn't provide an FSC mask, create one:
+	if (not user_mask):
+		sg = 0.02  # sigma of the Gaussian filter in abs. freq. units
+		fthr = 0.01  # threshold for binarizing the filtered map (ratio with max)
+		fmask = fsc_mask(img2_orig, sg, fthr)
 	else:
-		print("BEST (max):    %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %10.6f" % \
-		(bparams[0],bparams[1],bparams[2],bparams[3],bparams[4],bparams[5], bccc))
-	print()
+		fmask = get_image(maskFile)
+	q2 = q2norm(fmask)
+	if myid == main_node:
+		print("squared L^2 norm of FSC mask =", q2)
 
-mpi_barrier(MPI_COMM_WORLD)
+	# normalization factor so that FT(Gaussian noise) has sigma=1:
+	factor_noise = norm_factor_noise(nx0, ny0, nz0)
 
-bparams = mpi_bcast(bparams, lpar, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+	########################################################################
+	# IMPORTANT: this block generates a realization of noise that will be
+	# different across the nodes, if run on several nodes. This will screw up
+	# the calculation. Hence, the synthetic case should be run on a single node;
+	# OR the map saved and then read back in as a real map (so it doesn't go
+	# through this block) -- this is way it's done here;
+	# OR this block should be changed so that the noise map
+	# is computed on the main node and then sent to the various nodes.
+	########################################################################
+	# if using a synthetic map, apply envelope function and
+	# add noise according to the given FSC:
+	if synthetic and sim_noise:
+		img2_orig_e = filt_gaussl(img2_orig, aau)
+		pwEF = rops_table(img2_orig_e)
+		noise_filt_synth = create_noise_filter(pwEF, FSC, q2)
+		img2_orig_e = map_adjustment(img2_orig_e, FSC)
+		img2_orig = create_noisy_map(img2_orig_e, 1.0, noise_filt_synth, factor_noise)
 
+		if myid == main_node:
+			# save this map, to be read back in as a real EM map
+			# (this avoids the problem mentioned above):
+			drop_image(img2_orig, "map_simulated.spi", "s")
 
-# transform with the resulting parameters:
-tsx_init = Transform({"type":"xyz","xtilt":float(bparams[0]),"ytilt":float(bparams[1]),"ztilt":float(bparams[2]),"tx":float(bparams[3]),"ty":float(bparams[4]),"tz":float(bparams[5])})
-# transform in the original box:
-tsxp = tshift * tsx_init * tshift.inverse()
-qt = tsxp.get_params("spider")
-# best initial fit in original box:
-img1_orig_g,kb0 = prepi3D(img1_orig_0)
-x = rot_shift3D_grid(img1_orig_g, qt['phi'],qt['theta'],qt['psi'],qt['tx'],qt['ty'],qt['tz'], 1.0, kb0, "background", False)
+			# fcr of the whole structure, for testing:
+			fcrwhole = fsc(img2_orig, img2_orig_e)[1]
+			for i in range(len(fcrwhole)):
+				if FSC[i] == 0.0:
+					fcrwhole[i] = 0.0
+			filename = segName + "_" + str(resol) + "_fcrwhole.txt"
+			write_text_file(fcrwhole, filename)
 
-# test - write out best initial fit:
-if (myid == main_node):
-	if nover>1:
-		x = Util.decimate(x, nover, nover, nover)
-	drop_image(x, segName+"_"+str(resol)+"_init_fit.spi","s")
-#mpi_finalize(); exit(777)
+		mpi_finalize()
+		exit(111)
 
-#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-# using new position of segment, recompute filter:
+	# compute inertia-ellipsoid mask:
+	mask2 = ellipsoid(img1_orig_0)
 
-mask2 = ellipsoid(x)
-um = mask2*img2_orig
-pm = mask2*x
-fcr = fsc(um, pm)[1]
+	# masked map and segment:
+	um = mask2 * img2_orig
+	pm = mask2 * img1_orig_0
 
-lf = len(fcr); fcr1 = [0.0]*lf
-for i in range(lf):
-	if fcr[i]>sqrfsc[i]:
-		fcr1[i] = sqrfsc[i]
+	# initial FCR curve:
+	fcr = fsc(um, pm)[1]
+
+	# cap fcr to sqrt(FSC):
+	lf = len(fcr);
+	fcr1 = [0.0] * lf
+	for i in range(lf):
+		if fcr[i] > sqrfsc[i]:
+			fcr1[i] = sqrfsc[i]
+		else:
+			fcr1[i] = fcr[i]
+
+	# compute fitted FCR curve:
+	fcrf = fitfcr(fcr1, R, B)
+
+	# cap fcrf to sqrt(FSC):
+	for i in range(lf):
+		if fcrf[i] > sqrfsc[i]:
+			fcrf[i] = sqrfsc[i]
+
+	# get power spectra for filters:
+	pwu = rops_table(um)
+	pwp = rops_table(pm)
+
+	# create filter for initial fitting:
+	sg = min(nx0, ny0, nz0) * aau  # sigma of Gaussian constraint on ccf
+	Wfilt = create_CCFR_filter(pwu, pwp, fcrf, sg)
+
+	# filter target map or segment (to do the initial fitting):
+	if filtseg:
+		img1_filt = filt_table(img1_orig_0, Wfilt)
+		img2_filt = img2_orig.copy()
 	else:
-		fcr1[i] = fcr[i]
+		img1_filt = img1_orig_0.copy()
+		img2_filt = filt_table(img2_orig, Wfilt)
 
-fcrf = fitfcr(fcr1, R,B)
-
-for i in range(lf):
-	if fcrf[i]>sqrfsc[i]:
-		fcrf[i] = sqrfsc[i]
-
-pwu = rops_table(um)
-pwp = rops_table(pm)
-Wfilt = create_CCFR_filter(pwu, pwp, fcrf, sg)
-
-if filtseg:
-	img1_filt = filt_table(x, Wfilt)
-else:
-	img1_filt = x.copy()
-
-# test:
-#if myid == main_node:
-#	filename = segName+"_"+str(resol)+"_fcr.txt"
-#	if synthetic and sim_noise:
-#		write_text_file([fcr, fcrf, Wfilt, sqrfsc], filename)
-#	else:
-#		write_text_file([fcr, fcrf, Wfilt, sqrfsc], filename)
-#	drop_image(filt_table(img2_orig, Wfilt), segName+"_"+str(resol)+"_map_filt.spi", "s")
-#	drop_image(filt_table(x, Wfilt), segName+"_"+str(resol)+"_init_fit_filt.spi", "s")
-#mpi_finalize(); exit(999)
-
-#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
-
-# window moved, filtered segment:
-img1_filt = Util.window(img1_filt, nbox, nbox, nbox, int(s[3]), int(s[4]), int(s[5]))
-
-# prepare moved segment for gridding:
-#(after this point, img1_init MUST be used ONLY in rot_shift3D_grid):
-img1_init,kbi = prepi3D(img1_filt)
-
-
-# create filter to model noise:
-pwG = rops_table(img2_orig)
-noise_filt = create_noise_filter(pwG, FSC, q2)
-
-# adjust target map so that the given FSC (and SSNR) are in
-# exact accordance to the noise filter just computed (which is bounded):
-img2_orig = map_adjustment(img2_orig, FSC)
-
-
-sumbp  = [0.0]*(lpar+1)
-sumbp2 = [0.0]*(lpar+1)
-bp_mean  = [0.0]*(lpar+1)
-bp_sigma = [0.0]*(lpar+1)
-bp_skew  = [0.0]*(lpar+1)
-bp_delta = [0.0]*(lpar+1)
-
-for j in range(lpar+1):
-	sumbp[j]  = 0.0
-	sumbp2[j] = 0.0
-
-# create the "cloud" volume(s) (average of moved segments):
-nxc = img1_orig_0.get_xsize()
-nyc = img1_orig_0.get_ysize()
-nzc = img1_orig_0.get_zsize()
-cloud = model_blank(nxc, nyc, nzc)
-if alpha != 0.0:
-	cloud2 = model_blank(nxc, nyc, nzc)
-
-
-# array to store sigmas at the end of each cycle:
-sigmas = [[0.0 for j in range(lpar+1)] for i in range(max_cycles)]
-
-for cycle in range(max_cycles):
-	lt = cycle*ncpu+myid
-	img2_noisy = create_noisy_map(img2_orig, sigNoise, noise_filt, factor_noise)
-	if (not filtseg):
-		img2_noisy = filt_table(img2_noisy, Wfilt)
+	# apply restraint mask if requested:
 	if imask:
-		img2_noisy = img2_noisy * imaskvol
-	img2_noisy = Util.window(img2_noisy, nbox, nbox, nbox, int(s[3]), int(s[4]), int(s[5]))
+		img1_orig_1 = get_image(segFile)
+		if nover > 1:
+			img1_orig_1 = fpol(img1_orig_1, nx0 * nover, ny0 * nover, nz0 * nover, True)
+		blob = filt_gaussl(img1_orig_1, 0.1)
+		ithres = 0.03 * Util.infomask(blob, None, True)[3]
+		imaskvol = binarize(blob, ithres)
+		img2_filt = img2_filt * imaskvol
 
+	# shift maps by segment's COG, and window:
+	img1_filt = Util.window(img1_filt, nbox, nbox, nbox, int(s[3]), int(s[4]), int(s[5]))
+	img2_filt = Util.window(img2_filt, nbox, nbox, nbox, int(s[3]), int(s[4]), int(s[5]))
+
+	names_params = ["phi", "theta", "psi", "s3x", "s3y", "s3z"]
+	lpar = 6
+
+	mask = model_circle(mask_rad, nbox, nbox, nbox)
+
+	# prepare segment for gridding
+	# (after this point, img1_filt MUST be used ONLY in rot_shift3D_grid):
+	img1_filt, kb = prepi3D(img1_filt)
+
+	# this is done with 0 to be able to compute the initial bccc:
+	x = rot_shift3D_grid(img1_filt, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, kb, "background", False)
+
+	bccc = compdisc(x, img2_filt, mask, discrep)
+
+	if myid == main_node:
+		print("initial", discrep, "=", bccc)
 	bccc = -1.e10
 
-	bparams = [0.0]*lpar
-	for i in range(nt2):
-		for k in range(lpar):
-			if k<lpar-3: params[k] = shake_ang_2*(2.0*random()-1.0)
-			else: params[k] = shake_shift_2*(2.0*random()-1.0)
+	# parameters are in the "XYZ" convention
 
-		params = ali_vol_grid(img1_init, params, img2_noisy, ang_bracket, shift_bracket, mask_rad, discrep, kbi, False)
+	params = [0.0] * lpar
+	bparams = [0.0] * lpar
+
+	# shift to the center of mass of segment:
+	tshift = Transform(
+		{"type": "spider", "phi": 0.0, "theta": 0.0, "psi": 0.0, "tx": s[3], "ty": s[4],
+		 "tz": s[5]})
+
+	if myid == main_node:
+		ccparlist = [[0.0 for j in range(lpar + 1)] for i in range(ncpu)]
+
+	ccparlist0 = [[0.0 for j in range(lpar + 1)] for i in range(nt1)]
+
+	if myid == main_node:
+		print("                  a_x      a_y      a_z       x        y        z         dot")
+
+	for i in range(nt1):
+		lt = i * ncpu + myid
+
+		for k in range(lpar):
+			if k < lpar - 3:
+				params[k] = shake_ang_1 * (2.0 * random() - 1.0)
+			else:
+				params[k] = shake_shift_1 * (2.0 * random() - 1.0)
+
+		params = ali_vol_grid(img1_filt, params, img2_filt, ang_bracket, shift_bracket, mask_rad,
+							  discrep, kb, False)
 
 		# params are in the "xyz" convention, so get "spider" ones to do the rot:
-		tr = Transform({"type":"xyz","xtilt":params[0],"ytilt":params[1],"ztilt":params[2], "tx":params[3], "ty":params[4], "tz":params[5]})
+		tr = Transform({"type": "xyz", "xtilt": params[0], "ytilt": params[1], "ztilt": params[2],
+						"tx": params[3], "ty": params[4], "tz": params[5]})
 		qt = tr.get_params("spider")
 
-		x = rot_shift3D_grid(img1_init,qt['phi'],qt['theta'],qt['psi'],qt['tx'],qt['ty'],qt['tz'],1.0,kbi,"background",False)
+		x = rot_shift3D_grid(img1_filt, qt['phi'], qt['theta'], qt['psi'], qt['tx'], qt['ty'],
+							 qt['tz'], 1.0, kb, "background", False)
 
-		tc = compdisc(x, img2_noisy, mask, discrep)
+		tc = compdisc(x, img2_filt, mask, discrep)
 
-		if(tc>bccc):
-			bccc = tc
-			for k in range(lpar): bparams[k] = params[k]
+		print("     fit #%3d  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %10.6f" % \
+			  (lt, params[0], params[1], params[2], params[3], params[4], params[5], tc))
 
-	print("BEST fit #%3d   %6.2f   %6.2f   %6.2f   %6.2f   %6.2f   %6.2f   %10.6f" % \
-	(lt,bparams[0],bparams[1],bparams[2],bparams[3],bparams[4],bparams[5], bccc))
+		if (init_median):
+			ccparlist0[i][0] = tc
+			for j in range(lpar):
+				ccparlist0[i][j + 1] = params[j]
+		else:
+			if (tc > bccc):
+				bccc = tc
+				for k in range(lpar): bparams[k] = params[k]
 
-	#if lt<nmatsout:
-	parfile = open(segName+str(resol)+"_params_"+str(lt)+".txt","w")
-	row = "%7.3f %7.3f %7.3f %7.3f %7.3f %7.3f\n" % (bparams[0],bparams[1],bparams[2],bparams[3],bparams[4],bparams[5])
-	parfile.write(row)
-	parfile.close()
+	if (init_median):
+		ccparlist0.sort()
+		bccc = ccparlist0[nt1 / 2][0]  # or (nt1-1)/2
+		for j in range(lpar):
+			bparams[j] = ccparlist0[nt1 / 2][j + 1]  # or (nt1-1)/2
 
-	# pixel motion from rotation
-	tsx = Transform({"type":"xyz","xtilt":bparams[0],"ytilt":bparams[1],"ztilt":bparams[2], "tx":bparams[3], "ty":bparams[4], "tz":bparams[5]})
-	qts = tsx.get_params("spin")
-	rotp = red(qts['omega'])*radius*3.14159/180.
-
-	for j in range(lpar):
-		sumbp[j]  += bparams[j]
-		sumbp2[j] += bparams[j]**2
-	sumbp[lpar]  += rotp
-	sumbp2[lpar] += rotp**2
-
-	N = (cycle+1)*ncpu
-	bp_mean  = mpi_reduce(sumbp,  lpar+1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-	bp_sigma = mpi_reduce(sumbp2, lpar+1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 	mpi_barrier(MPI_COMM_WORLD)
 
 	if myid == main_node:
-		for j in range(lpar+1):
-			bp_mean[j] = bp_mean[j]/N
-			bp_sigma[j] = sqrt((bp_sigma[j]- N*bp_mean[j]**2)/(N-1))
-			sigmas[cycle][j] = bp_sigma[j]
+		for j in range(ncpu):
+			if (j != main_node):
+				cc_params = mpi_recv(lpar + 1, MPI_FLOAT, j, j * 100, MPI_COMM_WORLD)
+				if (init_median):
+					for k in range(lpar + 1):
+						ccparlist[j][k] = float(cc_params[k])
+				else:
+					if (float(cc_params[0]) > bccc):
+						bccc = float(cc_params[0])
+						for k in range(lpar): bparams[k] = float(cc_params[k + 1])
+			else:
+				if (init_median):
+					ccparlist[j][0] = bccc
+					for k in range(lpar):
+						ccparlist[j][k + 1] = bparams[k]
+	else:
+		mpi_send([bccc, bparams[0], bparams[1], bparams[2], bparams[3], bparams[4], bparams[5]],
+				 lpar + 1, MPI_FLOAT, main_node, myid * 100, MPI_COMM_WORLD)
 
-		if cycle>rave:
-			maxdev = 0.0
-			for j in range(lpar-3,lpar+1):
-				ss = 0.0
-				for k in range(cycle-rave,cycle+1):
-					ss += sigmas[k][j]
-				devj = abs(sigmas[cycle][j]-sigmas[cycle-rave-1][j])/ss
-				if devj > maxdev: maxdev = devj
-				bp_sigma[j] = ss/float(rave+1)    # replacing by running average
-			if maxdev<sigma_max_change:
-				to_break = 1
+	mpi_barrier(MPI_COMM_WORLD)
+
+	if myid == main_node:
+		if (init_median):
+			ccparlist.sort()
+			bccc = ccparlist[ncpu / 2][0]  # or (ncpu-1)/2
+			for j in range(lpar):
+				bparams[j] = ccparlist[ncpu / 2][j + 1]  # or (ncpu-1)/2
+
+		print()
+		if (init_median):
+			print("BEST (median): %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %10.6f" % \
+				  (bparams[0], bparams[1], bparams[2], bparams[3], bparams[4], bparams[5], bccc))
+		else:
+			print("BEST (max):    %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %10.6f" % \
+				  (bparams[0], bparams[1], bparams[2], bparams[3], bparams[4], bparams[5], bccc))
+		print()
+
+	mpi_barrier(MPI_COMM_WORLD)
+
+	bparams = mpi_bcast(bparams, lpar, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+
+	# transform with the resulting parameters:
+	tsx_init = Transform({"type": "xyz", "xtilt": float(bparams[0]), "ytilt": float(bparams[1]),
+						  "ztilt": float(bparams[2]), "tx": float(bparams[3]),
+						  "ty": float(bparams[4]), "tz": float(bparams[5])})
+	# transform in the original box:
+	tsxp = tshift * tsx_init * tshift.inverse()
+	qt = tsxp.get_params("spider")
+	# best initial fit in original box:
+	img1_orig_g, kb0 = prepi3D(img1_orig_0)
+	x = rot_shift3D_grid(img1_orig_g, qt['phi'], qt['theta'], qt['psi'], qt['tx'], qt['ty'],
+						 qt['tz'], 1.0, kb0, "background", False)
+
+	# test - write out best initial fit:
+	if (myid == main_node):
+		if nover > 1:
+			x = Util.decimate(x, nover, nover, nover)
+		drop_image(x, segName + "_" + str(resol) + "_init_fit.spi", "s")
+	# mpi_finalize(); exit(777)
+
+	# @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	# using new position of segment, recompute filter:
+
+	mask2 = ellipsoid(x)
+	um = mask2 * img2_orig
+	pm = mask2 * x
+	fcr = fsc(um, pm)[1]
+
+	lf = len(fcr);
+	fcr1 = [0.0] * lf
+	for i in range(lf):
+		if fcr[i] > sqrfsc[i]:
+			fcr1[i] = sqrfsc[i]
+		else:
+			fcr1[i] = fcr[i]
+
+	fcrf = fitfcr(fcr1, R, B)
+
+	for i in range(lf):
+		if fcrf[i] > sqrfsc[i]:
+			fcrf[i] = sqrfsc[i]
+
+	pwu = rops_table(um)
+	pwp = rops_table(pm)
+	Wfilt = create_CCFR_filter(pwu, pwp, fcrf, sg)
+
+	if filtseg:
+		img1_filt = filt_table(x, Wfilt)
+	else:
+		img1_filt = x.copy()
+
+	# test:
+	# if myid == main_node:
+	#	filename = segName+"_"+str(resol)+"_fcr.txt"
+	#	if synthetic and sim_noise:
+	#		write_text_file([fcr, fcrf, Wfilt, sqrfsc], filename)
+	#	else:
+	#		write_text_file([fcr, fcrf, Wfilt, sqrfsc], filename)
+	#	drop_image(filt_table(img2_orig, Wfilt), segName+"_"+str(resol)+"_map_filt.spi", "s")
+	#	drop_image(filt_table(x, Wfilt), segName+"_"+str(resol)+"_init_fit_filt.spi", "s")
+	# mpi_finalize(); exit(999)
+
+	# @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+	# window moved, filtered segment:
+	img1_filt = Util.window(img1_filt, nbox, nbox, nbox, int(s[3]), int(s[4]), int(s[5]))
+
+	# prepare moved segment for gridding:
+	# (after this point, img1_init MUST be used ONLY in rot_shift3D_grid):
+	img1_init, kbi = prepi3D(img1_filt)
+
+	# create filter to model noise:
+	pwG = rops_table(img2_orig)
+	noise_filt = create_noise_filter(pwG, FSC, q2)
+
+	# adjust target map so that the given FSC (and SSNR) are in
+	# exact accordance to the noise filter just computed (which is bounded):
+	img2_orig = map_adjustment(img2_orig, FSC)
+
+	sumbp = [0.0] * (lpar + 1)
+	sumbp2 = [0.0] * (lpar + 1)
+	bp_mean = [0.0] * (lpar + 1)
+	bp_sigma = [0.0] * (lpar + 1)
+	bp_skew = [0.0] * (lpar + 1)
+	bp_delta = [0.0] * (lpar + 1)
+
+	for j in range(lpar + 1):
+		sumbp[j] = 0.0
+		sumbp2[j] = 0.0
+
+	# create the "cloud" volume(s) (average of moved segments):
+	nxc = img1_orig_0.get_xsize()
+	nyc = img1_orig_0.get_ysize()
+	nzc = img1_orig_0.get_zsize()
+	cloud = model_blank(nxc, nyc, nzc)
+	if alpha != 0.0:
+		cloud2 = model_blank(nxc, nyc, nzc)
+
+	# array to store sigmas at the end of each cycle:
+	sigmas = [[0.0 for j in range(lpar + 1)] for i in range(max_cycles)]
+
+	for cycle in range(max_cycles):
+		lt = cycle * ncpu + myid
+		img2_noisy = create_noisy_map(img2_orig, sigNoise, noise_filt, factor_noise)
+		if (not filtseg):
+			img2_noisy = filt_table(img2_noisy, Wfilt)
+		if imask:
+			img2_noisy = img2_noisy * imaskvol
+		img2_noisy = Util.window(img2_noisy, nbox, nbox, nbox, int(s[3]), int(s[4]), int(s[5]))
+
+		bccc = -1.e10
+
+		bparams = [0.0] * lpar
+		for i in range(nt2):
+			for k in range(lpar):
+				if k < lpar - 3:
+					params[k] = shake_ang_2 * (2.0 * random() - 1.0)
+				else:
+					params[k] = shake_shift_2 * (2.0 * random() - 1.0)
+
+			params = ali_vol_grid(img1_init, params, img2_noisy, ang_bracket, shift_bracket,
+								  mask_rad, discrep, kbi, False)
+
+			# params are in the "xyz" convention, so get "spider" ones to do the rot:
+			tr = Transform(
+				{"type": "xyz", "xtilt": params[0], "ytilt": params[1], "ztilt": params[2],
+				 "tx": params[3], "ty": params[4], "tz": params[5]})
+			qt = tr.get_params("spider")
+
+			x = rot_shift3D_grid(img1_init, qt['phi'], qt['theta'], qt['psi'], qt['tx'], qt['ty'],
+								 qt['tz'], 1.0, kbi, "background", False)
+
+			tc = compdisc(x, img2_noisy, mask, discrep)
+
+			if (tc > bccc):
+				bccc = tc
+				for k in range(lpar): bparams[k] = params[k]
+
+		print("BEST fit #%3d   %6.2f   %6.2f   %6.2f   %6.2f   %6.2f   %6.2f   %10.6f" % \
+			  (lt, bparams[0], bparams[1], bparams[2], bparams[3], bparams[4], bparams[5], bccc))
+
+		# if lt<nmatsout:
+		parfile = open(segName + str(resol) + "_params_" + str(lt) + ".txt", "w")
+		row = "%7.3f %7.3f %7.3f %7.3f %7.3f %7.3f\n" % (
+		bparams[0], bparams[1], bparams[2], bparams[3], bparams[4], bparams[5])
+		parfile.write(row)
+		parfile.close()
+
+		# pixel motion from rotation
+		tsx = Transform(
+			{"type": "xyz", "xtilt": bparams[0], "ytilt": bparams[1], "ztilt": bparams[2],
+			 "tx": bparams[3], "ty": bparams[4], "tz": bparams[5]})
+		qts = tsx.get_params("spin")
+		rotp = red(qts['omega']) * radius * 3.14159 / 180.
+
+		for j in range(lpar):
+			sumbp[j] += bparams[j]
+			sumbp2[j] += bparams[j] ** 2
+		sumbp[lpar] += rotp
+		sumbp2[lpar] += rotp ** 2
+
+		N = (cycle + 1) * ncpu
+		bp_mean = mpi_reduce(sumbp, lpar + 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+		bp_sigma = mpi_reduce(sumbp2, lpar + 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+		mpi_barrier(MPI_COMM_WORLD)
+
+		if myid == main_node:
+			for j in range(lpar + 1):
+				bp_mean[j] = bp_mean[j] / N
+				bp_sigma[j] = sqrt((bp_sigma[j] - N * bp_mean[j] ** 2) / (N - 1))
+				sigmas[cycle][j] = bp_sigma[j]
+
+			if cycle > rave:
+				maxdev = 0.0
+				for j in range(lpar - 3, lpar + 1):
+					ss = 0.0
+					for k in range(cycle - rave, cycle + 1):
+						ss += sigmas[k][j]
+					devj = abs(sigmas[cycle][j] - sigmas[cycle - rave - 1][j]) / ss
+					if devj > maxdev: maxdev = devj
+					bp_sigma[j] = ss / float(rave + 1)  # replacing by running average
+				if maxdev < sigma_max_change:
+					to_break = 1
+				else:
+					to_break = 0
+				# test:
+				print(
+					"cycle = %2d, sigma_rot = %6.2f, sigma_x = %6.2f, sigma_y = %6.2f, sigma_z = %6.2f, change = %6.2f%%" % \
+					(cycle, bp_sigma[lpar], bp_sigma[lpar - 3], bp_sigma[lpar - 2],
+					 bp_sigma[lpar - 1], maxdev * 100.0))
 			else:
 				to_break = 0
-			#test:
-			print("cycle = %2d, sigma_rot = %6.2f, sigma_x = %6.2f, sigma_y = %6.2f, sigma_z = %6.2f, change = %6.2f%%" % \
-				(cycle, bp_sigma[lpar], bp_sigma[lpar-3], bp_sigma[lpar-2], bp_sigma[lpar-1], maxdev*100.0))
+				# test:
+				print(
+					"cycle = %2d, sigma_rot = %6.2f, sigma_x = %6.2f, sigma_y = %6.2f, sigma_z = %6.2f" % \
+					(cycle, bp_sigma[lpar], bp_sigma[lpar - 3], bp_sigma[lpar - 2],
+					 bp_sigma[lpar - 1]))
 		else:
 			to_break = 0
-			#test:
-			print("cycle = %2d, sigma_rot = %6.2f, sigma_x = %6.2f, sigma_y = %6.2f, sigma_z = %6.2f" % \
-				(cycle, bp_sigma[lpar], bp_sigma[lpar-3], bp_sigma[lpar-2], bp_sigma[lpar-1]))
-	else:
-		to_break = 0
-	
-	to_break = mpi_bcast(to_break, 1, MPI_INT, main_node, MPI_COMM_WORLD)
-	to_break = int(to_break[0])
-	if to_break == 1: break
 
+		to_break = mpi_bcast(to_break, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+		to_break = int(to_break[0])
+		if to_break == 1: break
 
-if myid == main_node:
-	
-	M = min(nmatsout,N)
-	
-	# collect params for all fits in the array parmat:
-	parmat = [[0.0 for j in range(lpar)] for i in range(N)]
+	if myid == main_node:
 
-	for i in range(N):
-		paramsrows = read_text_row(segName+str(resol)+"_params_"+str(i)+".txt")
-		for j in range(lpar):
-			parmat[i][j] = paramsrows[0][j]
+		M = min(nmatsout, N)
 
-	# remove all individual parameter files:
-	for i in range(N):
-		system("rm "+segName+str(resol)+"_params_"+str(i)+".txt")
+		# collect params for all fits in the array parmat:
+		parmat = [[0.0 for j in range(lpar)] for i in range(N)]
 
-	# compute some more stats of the fitting parameters:
-	median = [0.0]*lpar; parlist = [0.0]*N; cp=[0.0]*lpar; wp=[0.0]*lpar
-	for j in range(lpar):
 		for i in range(N):
-			parlist[i] = parmat[i][j]
-		parlist.sort()
-		median[j] = parlist[N/2]
-		parlist_filt = []
-		for i in range(N):
-			if(parlist[i]>median[j]-3*bp_sigma[j] and parlist[i]<median[j]+3*bp_sigma[j]):
-				parlist_filt.append(parlist[i])
-
-		# get "min/max" of distribution:
-		ap = ess_p(parlist_filt,0.05)
-		bp = ess_p(parlist_filt,0.95)
-
-		# center and width of distrib:
-		cp[j] = (ap+bp)/2.0
-		wp[j] = (bp-ap)/2.0
-	
-		# compute stats without outliers:
-		ave,var,skew = mean_var_skew(parlist_filt)
-		bp_mean[j]  = ave
-		bp_sigma[j] = sqrt(var)
-		bp_skew[j]  = skew
-
-	# put together all parameters in one file (after filtering outliers
-	# and composing with initial motion):
-	parfile = open(segName+"_"+str(resol)+"_params_movie.txt","w")
-	parmat_filt = []     # parmat with outliers excluded
-	count = 0
-	for i in range(N):
-		keep = 1
-		for j in range(lpar):
-			if(parmat[i][j]<median[j]-3*bp_sigma[j] or parmat[i][j]>median[j]+3*bp_sigma[j]):
-				keep = 0
-				break
-		if keep == 0:
-			continue
-		parmat_filt.append(parmat[i])
-		# scale parmat[i] by alpha (if non-zero) wrt to the mean:
-		if alpha != 0.0:
+			paramsrows = read_text_row(segName + str(resol) + "_params_" + str(i) + ".txt")
 			for j in range(lpar):
-				parmat[i][j] = (parmat[i][j]-bp_mean[j])*alpha+bp_mean[j]
-		# compose with init motion and write out line to parameter file:
-		tsx = Transform({"type":"xyz","xtilt":parmat[i][0],"ytilt":parmat[i][1],"ztilt":parmat[i][2],"tx":parmat[i][3],"ty":parmat[i][4],"tz":parmat[i][5]})
-		tsx_comp = tsx * tsx_init
-		qtc = tsx_comp.get_params("xyz")
-		row = "%7.3f %7.3f %7.3f %7.3f %7.3f %7.3f\n" % (red(qtc['xtilt']), red(qtc['ytilt']), red(qtc['ztilt']), qtc['tx'],qtc['ty'],qtc['tz'])
-		parfile.write(row)
-		count += 1
-		if count >= nmatsout:
-			break
-	parfile.close()
+				parmat[i][j] = paramsrows[0][j]
 
-	M = count   # final number of output fits
+		# remove all individual parameter files:
+		for i in range(N):
+			system("rm " + segName + str(resol) + "_params_" + str(i) + ".txt")
 
-	print("          aves: %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f" % \
-		(bp_mean[0], bp_mean[1], bp_mean[2], bp_mean[3], bp_mean[4], bp_mean[5]))
-	print("        sigmas: %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f" % \
-		(bp_sigma[0], bp_sigma[1], bp_sigma[2], bp_sigma[3], bp_sigma[4], bp_sigma[5]))
-	print("         skews: %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f" % \
-		(bp_skew[0], bp_skew[1], bp_skew[2], bp_skew[3], bp_skew[4], bp_skew[5]))
-
-	sigma_tr  = sqrt(bp_sigma[lpar-3]**2+bp_sigma[lpar-2]**2+bp_sigma[lpar-1]**2)
-	sigma_mot = sqrt(sigma_tr**2+bp_sigma[lpar]**2)
-	skew_mot  = sqrt(bp_skew[3]**2+bp_skew[4]**2+bp_skew[5]**2)
-
-	print("  sigma_noise =",sigNoise)
-	print("  sigma_rot = %7.3f pix, sigma_shift = %7.3f pix, sigma_mot = %7.3f pix" % \
-		(bp_sigma[lpar], sigma_tr, sigma_mot))
-	print("   skew_mot = %7.3f" % (skew_mot))
-
-	# write out mean position:
-	tsx_mean = Transform({"type":"xyz","xtilt":float(bp_mean[0]),"ytilt":float(bp_mean[1]),"ztilt":float(bp_mean[2]),"tx":float(bp_mean[3]),"ty":float(bp_mean[4]),"tz":float(bp_mean[5])})
-	tsxp = tshift * tsx_mean * tsx_init * tshift.inverse()
-	qt = tsxp.get_params("spider")
-	x = rot_shift3D(img1_orig_0,qt['phi'],qt['theta'],qt['psi'],qt['tx'],qt['ty'],qt['tz'])
-	if nover>1:
-		x = Util.decimate(x, nover, nover, nover)
-	drop_image(x, segName+"_"+str(resol)+"_meanx.spi","s")
-
-	# ... I think it's probably better to use sigma instead of width to define the ellipsoid:
-	for j in range(lpar):
-		wp[j] = bp_sigma[j]
-
-	# generate cloud(s):
-	for i in range(M):
+		# compute some more stats of the fitting parameters:
+		median = [0.0] * lpar;
+		parlist = [0.0] * N;
+		cp = [0.0] * lpar;
+		wp = [0.0] * lpar
 		for j in range(lpar):
-			params[j] = parmat_filt[i][j]
-		# project motion onto surface of ellipsoid:
-		krot =   sqrt(((params[0]-cp[0])/wp[0])**2 + ((params[1]-cp[1])/wp[1])**2 + ((params[2]-cp[2])/wp[2])**2)
-		kshift = sqrt(((params[3]-cp[3])/wp[3])**2 + ((params[4]-cp[4])/wp[4])**2 + ((params[5]-cp[5])/wp[5])**2)
-		bp_delta[0] = (params[0]-cp[0])/krot;   bp_delta[1] = (params[1]-cp[1])/krot;
-		bp_delta[2] = (params[2]-cp[2])/krot;   bp_delta[3] = (params[3]-cp[3])/kshift;
-		bp_delta[4] = (params[4]-cp[4])/kshift; bp_delta[5] = (params[5]-cp[5])/kshift;
+			for i in range(N):
+				parlist[i] = parmat[i][j]
+			parlist.sort()
+			median[j] = parlist[N / 2]
+			parlist_filt = []
+			for i in range(N):
+				if (parlist[i] > median[j] - 3 * bp_sigma[j] and parlist[i] < median[j] + 3 *
+						bp_sigma[j]):
+					parlist_filt.append(parlist[i])
 
-		# loop over both signs of each delta to generate 64 points on the ellipsoid:
-		for s0 in [-1,1]:
-			xte = s0*bp_delta[0]+cp[0]
-			for s1 in [-1,1]:
-				yte = s1*bp_delta[1]+cp[1]
-				for s2 in [-1,1]:
-					zte = s2*bp_delta[2]+cp[2]
-					for s3 in [-1,1]:
-						txe = s3*bp_delta[3]+cp[3]
-						for s4 in [-1,1]:
-							tye = s4*bp_delta[4]+cp[4]
-							for s5 in [-1,1]:
-								tze = s5*bp_delta[5]+cp[5]
-								tsxe = Transform({"type":"xyz","xtilt":xte,"ytilt":yte,"ztilt":zte,"tx":txe,"ty":tye,"tz":tze})
-								# total transformation in the original (non-windowed) volume:
-								tsxp = tshift * tsxe * tsx_init * tshift.inverse()
-								qt = tsxp.get_params("spider")
-								img4 = rot_shift3D(img1_orig_0,qt['phi'],qt['theta'],qt['psi'],qt['tx'],qt['ty'],qt['tz'])
-								cloud = 0.5*(square_root(square(cloud-img4))+cloud+img4)   # max(cloud,img4)
-								#do scaled cloud if requested:
-								if alpha != 0.0:
-									xte2 = s0*bp_delta[0]*alpha+cp[0]
-									yte2 = s1*bp_delta[1]*alpha+cp[1]
-									zte2 = s2*bp_delta[2]*alpha+cp[2]
-									txe2 = s3*bp_delta[3]*alpha+cp[3]
-									tye2 = s4*bp_delta[4]*alpha+cp[4]
-									tze2 = s5*bp_delta[5]*alpha+cp[5]
-									tsxe2 = Transform({"type":"xyz","xtilt":xte2,"ytilt":yte2,"ztilt":zte2,"tx":txe2,"ty":tye2,"tz":tze2})
+			# get "min/max" of distribution:
+			ap = ess_p(parlist_filt, 0.05)
+			bp = ess_p(parlist_filt, 0.95)
+
+			# center and width of distrib:
+			cp[j] = (ap + bp) / 2.0
+			wp[j] = (bp - ap) / 2.0
+
+			# compute stats without outliers:
+			ave, var, skew = mean_var_skew(parlist_filt)
+			bp_mean[j] = ave
+			bp_sigma[j] = sqrt(var)
+			bp_skew[j] = skew
+
+		# put together all parameters in one file (after filtering outliers
+		# and composing with initial motion):
+		parfile = open(segName + "_" + str(resol) + "_params_movie.txt", "w")
+		parmat_filt = []  # parmat with outliers excluded
+		count = 0
+		for i in range(N):
+			keep = 1
+			for j in range(lpar):
+				if (parmat[i][j] < median[j] - 3 * bp_sigma[j] or parmat[i][j] > median[j] + 3 *
+						bp_sigma[j]):
+					keep = 0
+					break
+			if keep == 0:
+				continue
+			parmat_filt.append(parmat[i])
+			# scale parmat[i] by alpha (if non-zero) wrt to the mean:
+			if alpha != 0.0:
+				for j in range(lpar):
+					parmat[i][j] = (parmat[i][j] - bp_mean[j]) * alpha + bp_mean[j]
+			# compose with init motion and write out line to parameter file:
+			tsx = Transform(
+				{"type": "xyz", "xtilt": parmat[i][0], "ytilt": parmat[i][1], "ztilt": parmat[i][2],
+				 "tx": parmat[i][3], "ty": parmat[i][4], "tz": parmat[i][5]})
+			tsx_comp = tsx * tsx_init
+			qtc = tsx_comp.get_params("xyz")
+			row = "%7.3f %7.3f %7.3f %7.3f %7.3f %7.3f\n" % (
+			red(qtc['xtilt']), red(qtc['ytilt']), red(qtc['ztilt']), qtc['tx'], qtc['ty'],
+			qtc['tz'])
+			parfile.write(row)
+			count += 1
+			if count >= nmatsout:
+				break
+		parfile.close()
+
+		M = count  # final number of output fits
+
+		print("          aves: %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f" % \
+			  (bp_mean[0], bp_mean[1], bp_mean[2], bp_mean[3], bp_mean[4], bp_mean[5]))
+		print("        sigmas: %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f" % \
+			  (bp_sigma[0], bp_sigma[1], bp_sigma[2], bp_sigma[3], bp_sigma[4], bp_sigma[5]))
+		print("         skews: %7.3f  %7.3f  %7.3f  %7.3f  %7.3f  %7.3f" % \
+			  (bp_skew[0], bp_skew[1], bp_skew[2], bp_skew[3], bp_skew[4], bp_skew[5]))
+
+		sigma_tr = sqrt(bp_sigma[lpar - 3] ** 2 + bp_sigma[lpar - 2] ** 2 + bp_sigma[lpar - 1] ** 2)
+		sigma_mot = sqrt(sigma_tr ** 2 + bp_sigma[lpar] ** 2)
+		skew_mot = sqrt(bp_skew[3] ** 2 + bp_skew[4] ** 2 + bp_skew[5] ** 2)
+
+		print("  sigma_noise =", sigNoise)
+		print("  sigma_rot = %7.3f pix, sigma_shift = %7.3f pix, sigma_mot = %7.3f pix" % \
+			  (bp_sigma[lpar], sigma_tr, sigma_mot))
+		print("   skew_mot = %7.3f" % (skew_mot))
+
+		# write out mean position:
+		tsx_mean = Transform({"type": "xyz", "xtilt": float(bp_mean[0]), "ytilt": float(bp_mean[1]),
+							  "ztilt": float(bp_mean[2]), "tx": float(bp_mean[3]),
+							  "ty": float(bp_mean[4]), "tz": float(bp_mean[5])})
+		tsxp = tshift * tsx_mean * tsx_init * tshift.inverse()
+		qt = tsxp.get_params("spider")
+		x = rot_shift3D(img1_orig_0, qt['phi'], qt['theta'], qt['psi'], qt['tx'], qt['ty'],
+						qt['tz'])
+		if nover > 1:
+			x = Util.decimate(x, nover, nover, nover)
+		drop_image(x, segName + "_" + str(resol) + "_meanx.spi", "s")
+
+		# ... I think it's probably better to use sigma instead of width to define the ellipsoid:
+		for j in range(lpar):
+			wp[j] = bp_sigma[j]
+
+		# generate cloud(s):
+		for i in range(M):
+			for j in range(lpar):
+				params[j] = parmat_filt[i][j]
+			# project motion onto surface of ellipsoid:
+			krot = sqrt(((params[0] - cp[0]) / wp[0]) ** 2 + ((params[1] - cp[1]) / wp[1]) ** 2 + (
+						(params[2] - cp[2]) / wp[2]) ** 2)
+			kshift = sqrt(
+				((params[3] - cp[3]) / wp[3]) ** 2 + ((params[4] - cp[4]) / wp[4]) ** 2 + (
+							(params[5] - cp[5]) / wp[5]) ** 2)
+			bp_delta[0] = (params[0] - cp[0]) / krot;
+			bp_delta[1] = (params[1] - cp[1]) / krot;
+			bp_delta[2] = (params[2] - cp[2]) / krot;
+			bp_delta[3] = (params[3] - cp[3]) / kshift;
+			bp_delta[4] = (params[4] - cp[4]) / kshift;
+			bp_delta[5] = (params[5] - cp[5]) / kshift;
+
+			# loop over both signs of each delta to generate 64 points on the ellipsoid:
+			for s0 in [-1, 1]:
+				xte = s0 * bp_delta[0] + cp[0]
+				for s1 in [-1, 1]:
+					yte = s1 * bp_delta[1] + cp[1]
+					for s2 in [-1, 1]:
+						zte = s2 * bp_delta[2] + cp[2]
+						for s3 in [-1, 1]:
+							txe = s3 * bp_delta[3] + cp[3]
+							for s4 in [-1, 1]:
+								tye = s4 * bp_delta[4] + cp[4]
+								for s5 in [-1, 1]:
+									tze = s5 * bp_delta[5] + cp[5]
+									tsxe = Transform(
+										{"type": "xyz", "xtilt": xte, "ytilt": yte, "ztilt": zte,
+										 "tx": txe, "ty": tye, "tz": tze})
 									# total transformation in the original (non-windowed) volume:
-									tsxp2 = tshift * tsxe2 * tsx_init * tshift.inverse()
-									qt2 = tsxp2.get_params("spider")
-									img5 = rot_shift3D(img1_orig_0,qt2['phi'],qt2['theta'],qt2['psi'],qt2['tx'],qt2['ty'],qt2['tz'])
-									cloud2 = 0.5*(square_root(square(cloud2-img5))+cloud2+img5)   # max(cloud2,img5)
+									tsxp = tshift * tsxe * tsx_init * tshift.inverse()
+									qt = tsxp.get_params("spider")
+									img4 = rot_shift3D(img1_orig_0, qt['phi'], qt['theta'],
+													   qt['psi'], qt['tx'], qt['ty'], qt['tz'])
+									cloud = 0.5 * (square_root(
+										square(cloud - img4)) + cloud + img4)  # max(cloud,img4)
+									# do scaled cloud if requested:
+									if alpha != 0.0:
+										xte2 = s0 * bp_delta[0] * alpha + cp[0]
+										yte2 = s1 * bp_delta[1] * alpha + cp[1]
+										zte2 = s2 * bp_delta[2] * alpha + cp[2]
+										txe2 = s3 * bp_delta[3] * alpha + cp[3]
+										tye2 = s4 * bp_delta[4] * alpha + cp[4]
+										tze2 = s5 * bp_delta[5] * alpha + cp[5]
+										tsxe2 = Transform(
+											{"type": "xyz", "xtilt": xte2, "ytilt": yte2,
+											 "ztilt": zte2, "tx": txe2, "ty": tye2, "tz": tze2})
+										# total transformation in the original (non-windowed) volume:
+										tsxp2 = tshift * tsxe2 * tsx_init * tshift.inverse()
+										qt2 = tsxp2.get_params("spider")
+										img5 = rot_shift3D(img1_orig_0, qt2['phi'], qt2['theta'],
+														   qt2['psi'], qt2['tx'], qt2['ty'],
+														   qt2['tz'])
+										cloud2 = 0.5 * (square_root(square(
+											cloud2 - img5)) + cloud2 + img5)  # max(cloud2,img5)
 
-	if nover>1:
-		cloud = Util.decimate(cloud, nover, nover, nover)
+		if nover > 1:
+			cloud = Util.decimate(cloud, nover, nover, nover)
+			if alpha != 0.0:
+				cloud2 = Util.decimate(cloud2, nover, nover, nover)
+
+		drop_image(cloud, segName + "_" + str(resol) + "_cloudx.spi", "s")
 		if alpha != 0.0:
-			cloud2 = Util.decimate(cloud2, nover, nover, nover)
+			drop_image(cloud2, segName + "_" + str(resol) + "_cloudx_scaled.spi", "s")
 
-	drop_image(cloud, segName+"_"+str(resol)+"_cloudx.spi", "s")
-	if alpha != 0.0:
-		drop_image(cloud2, segName+"_"+str(resol)+"_cloudx_scaled.spi", "s")
+	mpi_finalize()
+	exit()
 
-mpi_finalize()
-exit()
+
+if __name__ == "__main__":
+	main()

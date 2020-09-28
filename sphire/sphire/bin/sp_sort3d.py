@@ -328,7 +328,7 @@ def main():
 		from random import shuffle
 		# Compute the resolution 
 		#### make chunkdir dictionary for computing margin of error
-from ..libpy import sp_user_functions
+		from ..libpy import sp_user_functions
 		user_func  = sp_user_functions.factory[Tracker["constants"]["user_func"]]
 		chunk_dict = {}
 		chunk_list = []

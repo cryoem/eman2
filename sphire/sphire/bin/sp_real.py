@@ -53,36 +53,38 @@ import eman2_gui.emimage
 import os
 from ..libpy import sp_global_def
 from ..libpy.sp_sparx import *
+def main():
+    GUIUSE = True
 
-GUIUSE = True
+    try:
+        if EMAN2.get_platform() == "Linux" and os.getenv("DISPLAY") == None:
+            raise Exception
 
-try:
-    if EMAN2.get_platform() == "Linux" and os.getenv("DISPLAY") == None:
-        raise Exception
+        # import IPython.lib.inputhook
 
-    # import IPython.lib.inputhook
+        app = eman2_gui.emapplication.EMApp()
+        # IPython.lib.inputhook.enable_qt4(app)
 
-    app = eman2_gui.emapplication.EMApp()
-    # IPython.lib.inputhook.enable_qt4(app)
+        def ipy_on_timer():
+            eman2_gui.emimage.image_update()
 
-    def ipy_on_timer():
-        eman2_gui.emimage.image_update()
+        ipytimer = PyQt5.QtCore.QTimer()
+        ipytimer.timeout.connect(ipy_on_timer)
+        ipytimer.start(200)
 
-    ipytimer = PyQt5.QtCore.QTimer()
-    ipytimer.timeout.connect(ipy_on_timer)
-    ipytimer.start(200)
-
-    EMAN2.GUIMode = True
-    EMAN2.app = app
-except:
-    GUIUSE = False
+        EMAN2.GUIMode = True
+        EMAN2.app = app
+    except:
+        GUIUSE = False
 
 
-if GUIUSE:
-    print("Welcome to the interactive SPARX-GUI Python interface, provided by ipython")
-else:
-    print(
-        "Welcome to the interactive SPARX-NoGUI Python interface, provided by ipython"
-    )
+    if GUIUSE:
+        print("Welcome to the interactive SPARX-GUI Python interface, provided by ipython")
+    else:
+        print(
+            "Welcome to the interactive SPARX-NoGUI Python interface, provided by ipython"
+        )
 
-print("  ", sp_global_def.SPARXVERSION)
+    print("  ", sp_global_def.SPARXVERSION)
+
+main()

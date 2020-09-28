@@ -255,7 +255,7 @@ def main():
 		# Get the pixel size; if none, set to 1.0, and the original image size
 		from ..libpy.sp_utilities import get_shrink_data_huang
 		from time import sleep
-from ..libpy import sp_user_functions
+		from ..libpy import sp_user_functions
 		user_func = sp_user_functions.factory[Tracker["constants"]["user_func"]]
 		if(myid == main_node):
 			line = ''

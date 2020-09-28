@@ -9229,7 +9229,7 @@ def compare_bckgnoise(bckgnoise1, bckgnoise2):
 	
 def rec3d_make_maps(compute_fsc = True, regularized = True):
 	global Tracker, Blockdata
-from ..libpy import sp_user_functions
+	from ..libpy import sp_user_functions
 	
 	# final reconstruction: compute_fsc = False; regularized = False
 	# tempdir is removed in the end of the function
@@ -9963,7 +9963,7 @@ def prior_stack_fmt(sphire_prior_stack):
 def main():
 
 	from ..libpy.sp_utilities import write_text_row, drop_image, model_gauss_noise, get_im, set_params_proj, wrap_mpi_bcast, model_circle
-from ..libpy import sp_user_functions
+	from ..libpy import sp_user_functions
 	from ..libpy.sp_applications  import MPI_start_end
 	from optparse      import OptionParser
 	from ..libpy.sp_global_def    import SPARXVERSION

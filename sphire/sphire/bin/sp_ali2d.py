@@ -151,7 +151,7 @@ def main():
 				options.center, options.maxit, options.CTF, options.snr, options.Fourvar, \
 				-1, options.function, False, "", options.MPI, \
 				options.template, random_method = options.random_method)
-	    	"""
+			"""
 		sp_global_def.BATCH = False
 
 

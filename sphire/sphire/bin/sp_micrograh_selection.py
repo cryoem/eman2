@@ -670,14 +670,15 @@ class MainWindow(QMainWindow):
             last_loaded_image = row_index
 
 
-
+def main():
+    app = emapplication.EMApp()
+    GUI = MainWindow()
+    GUI.showMaximized()
+    # GUI.show()
+    app.exec_()
 
 
 
 
 if __name__ == '__main__':
-    app = emapplication.EMApp()
-    GUI = MainWindow()
-    GUI.showMaximized()
-    #GUI.show()
-    app.exec_()
+    main()

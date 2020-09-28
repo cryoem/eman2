@@ -1982,12 +1982,12 @@ def mref_ali2d_MPI(
 
 def transform2d(stack_data, stack_data_ali, shift = False, ignore_mirror = False, method = "quadratic"):
 # apply 2D alignment parameters stored in the header of the input stack file using gridding interpolation and create an output stack file
-    from sp_fundamentals   import rot_shift2D
-    from sp_utilities 	    import set_params2D, get_params2D, get_im
+    from ..libpy.sp_fundamentals   import rot_shift2D
+    from ..libpy.sp_utilities 	    import set_params2D, get_params2D, get_im
     import os
     if  shift:
-        from sp_utilities     import compose_transform2m
-        from sp_fundamentals  import fshift, mirror
+        from ..libpy.sp_utilities     import compose_transform2m
+        from ..libpy.sp_fundamentals  import fshift, mirror
 
     t = EMAN2_cppwrap.Transform({"type":"2D"})# Transform({"type":"2D"})
     nima = EMAN2_cppwrap.EMUtil.get_image_count(stack_data)
@@ -4122,8 +4122,8 @@ def ali_vol_3(
     vol, refv, ang_scale, shift_scale, radius=None, discrepancy="ccc", mask=None
 ):
     # rotation and shift
-    pass  # IMPORTIMPORTIMPORT from sp_alignment    import ali_vol_func
-    pass  # IMPORTIMPORTIMPORT from sp_utilities    import model_circle, amoeba
+    pass  # IMPORTIMPORTIMPORT from ..libpy.sp_alignment    import ali_vol_func
+    pass  # IMPORTIMPORTIMPORT from ..libpy.sp_utilities    import model_circle, amoeba
 
     nx = refv.get_xsize()
     ny = refv.get_ysize()
@@ -4147,10 +4147,10 @@ def ali_vol_3(
 
 def ali_vol_rotate(vol, refv, ang_scale, radius=None, discrepancy="ccc"):
     # rotation
-    pass  # IMPORTIMPORTIMPORT from sp_alignment    import ali_vol_func_rotate
-    pass  # IMPORTIMPORTIMPORT from sp_utilities    import get_image, model_circle, get_params3D, set_params3D
-    pass  # IMPORTIMPORTIMPORT from sp_utilities    import amoeba, compose_transform3
-    pass  # IMPORTIMPORTIMPORT from sp_fundamentals import rot_shift3D
+    pass  # IMPORTIMPORTIMPORT from ..libpy.sp_alignment    import ali_vol_func_rotate
+    pass  # IMPORTIMPORTIMPORT from ..libpy.sp_utilities    import get_image, model_circle, get_params3D, set_params3D
+    pass  # IMPORTIMPORTIMPORT from ..libpy.sp_utilities    import amoeba, compose_transform3
+    pass  # IMPORTIMPORTIMPORT from ..libpy.sp_fundamentals import rot_shift3D
 
     ref = sp_utilities.get_image(refv)
     nx = ref.get_xsize()
@@ -4204,7 +4204,7 @@ def ali_vol_rotate(vol, refv, ang_scale, radius=None, discrepancy="ccc"):
     # print  " new params ", cphi, ctheta, cpsi, cs2x, cs2y, cs2z, cscale, new_params[1]
     sp_utilities.set_params3D(e, [cphi, ctheta, cpsi, cs2x, cs2y, cs2z, 0, cscale])
     if type(vol) == type(""):
-        pass  # IMPORTIMPORTIMPORT from sp_utilities import write_headers
+        pass  # IMPORTIMPORTIMPORT from ..libpy.sp_utilities import write_headers
         sp_utilities.write_headers(vol, [e], [0])
     else:
         return e
@@ -4212,10 +4212,10 @@ def ali_vol_rotate(vol, refv, ang_scale, radius=None, discrepancy="ccc"):
 
 def ali_vol_shift(vol, refv, shift_scale, radius=None, discrepancy="ccc"):
     # shift
-    pass  # IMPORTIMPORTIMPORT from sp_alignment    import ali_vol_func_shift
-    pass  # IMPORTIMPORTIMPORT from sp_utilities    import get_image, model_circle, get_params3D, set_params3D
-    pass  # IMPORTIMPORTIMPORT from sp_utilities    import amoeba, compose_transform3
-    pass  # IMPORTIMPORTIMPORT from sp_fundamentals import rot_shift3D
+    pass  # IMPORTIMPORTIMPORT from ..libpy.sp_alignment    import ali_vol_func_shift
+    pass  # IMPORTIMPORTIMPORT from ..libpy.sp_utilities    import get_image, model_circle, get_params3D, set_params3D
+    pass  # IMPORTIMPORTIMPORT from ..libpy.sp_utilities    import amoeba, compose_transform3
+    pass  # IMPORTIMPORTIMPORT from ..libpy.sp_fundamentals import rot_shift3D
 
     ref = sp_utilities.get_image(refv)
     nx = ref.get_xsize()
@@ -4269,14 +4269,14 @@ def ali_vol_shift(vol, refv, shift_scale, radius=None, discrepancy="ccc"):
     # print  " new params ", cphi, ctheta, cpsi, cs3x, cs3y, cs3z, cscale, new_params[1]
     sp_utilities.set_params3D(e, [cphi, ctheta, cpsi, cs3x, cs3y, cs3z, 0, cscale])
     if type(vol) == type(""):
-        pass  # IMPORTIMPORTIMPORT from sp_utilities import write_headers
+        pass  # IMPORTIMPORTIMPORT from ..libpy.sp_utilities import write_headers
         sp_utilities.write_headers(vol, [e], [0])
     else:
         return e
 
 
 def wrapper_params_2D_to_3D(stack):
-    pass  # IMPORTIMPORTIMPORT from sp_utilities import params_2D_3D, print_begin_msg, print_end_msg, print_msg, get_params2D, set_params_proj, write_header
+    pass  # IMPORTIMPORTIMPORT from ..libpy.sp_utilities import params_2D_3D, print_begin_msg, print_end_msg, print_msg, get_params2D, set_params_proj, write_header
 
     # print_begin_msg("params_2D_to_3D")
     # print_msg("Input stack                 : %s\n\n"%(stack))

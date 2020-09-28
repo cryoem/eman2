@@ -57,7 +57,7 @@ from . import sp_projection
 from . import sp_reconstruction
 from . import sp_statistics
 from . import sp_utilities
-from sp_utilities import getvec, getfvec, getang3, lacos, angles_to_normals
+from ..libpy.sp_utilities import getvec, getfvec, getang3, lacos, angles_to_normals
 import time
 
 

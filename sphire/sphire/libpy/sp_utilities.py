@@ -638,8 +638,8 @@ def center_2D(
     # MULTILINEMULTILINEMULTILINE 1
     # MULTILINEMULTILINEMULTILINE 1
     # MULTILINEMULTILINEMULTILINE 1
-    pass  # IMPORTIMPORTIMPORT from sp_utilities import peak_search
-    pass  # IMPORTIMPORTIMPORT from sp_fundamentals import fshift
+    pass  # IMPORTIMPORTIMPORT from ..libpy.sp_utilities import peak_search
+    pass  # IMPORTIMPORTIMPORT from ..libpy.sp_fundamentals import fshift
     pass  # IMPORTIMPORTIMPORT import types
 
     if isinstance(image_to_be_centered, (bytes, str)):
@@ -660,9 +660,9 @@ def center_2D(
         )
 
     elif center_method == 7:
-        pass  # IMPORTIMPORTIMPORT from sp_fundamentals import ccf, cyclic_shift
-        pass  # IMPORTIMPORTIMPORT from sp_morphology import binarize
-        pass  # IMPORTIMPORTIMPORT from sp_utilities import model_blank
+        pass  # IMPORTIMPORTIMPORT from ..libpy.sp_fundamentals import ccf, cyclic_shift
+        pass  # IMPORTIMPORTIMPORT from ..libpy.sp_morphology import binarize
+        pass  # IMPORTIMPORTIMPORT from ..libpy.sp_utilities import model_blank
         pass  # IMPORTIMPORTIMPORT from EMAN2 import rsconvolution
 
         p = EMAN2_cppwrap.Util.infomask(image_to_be_centered, None, True)
@@ -702,7 +702,7 @@ def center_2D(
         )
 
     elif center_method == 5:
-        pass  # IMPORTIMPORTIMPORT from sp_fundamentals import rot_avg_image, ccf
+        pass  # IMPORTIMPORTIMPORT from ..libpy.sp_fundamentals import rot_avg_image, ccf
         pass  # IMPORTIMPORTIMPORT from math import sqrt
 
         not_centered = True
@@ -3855,7 +3855,7 @@ def angle_between_projections_directions(proj1, proj2):
 	  OUTPUT: angle (in degrees)
 	"""
     pass  # IMPORTIMPORTIMPORT from math import sin, cos, acos, radians, degrees
-    pass  # IMPORTIMPORTIMPORT from sp_utilities import lacos
+    pass  # IMPORTIMPORTIMPORT from ..libpy.sp_utilities import lacos
 
     theta1 = numpy.radians(proj1[1])
     theta2 = numpy.radians(proj2[1])

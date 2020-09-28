@@ -148,7 +148,7 @@ def main():
 					options.function, options.Fourvar, options.npad, options.debug, options.stoprnct, gamma=options.gamma)
 				else:
 					from ..libpy.sp_multi_shc import ali3d_multishc_soft
-from ..libpy import sp_user_functions
+					from ..libpy import sp_user_functions
 					options.user_func = sp_user_functions.factory[options.function]
 					ali3d_multishc_soft(args[0], args[1], options, mpi_comm = None, log = None, nsoft = options.nsoft )
 				sp_global_def.BATCH = False

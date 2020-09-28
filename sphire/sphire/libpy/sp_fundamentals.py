@@ -476,7 +476,7 @@ def rot_avg_image(image_to_be_averaged):
 	Returns a 2-D or 3-D image containing a rotational average of image e
 	"""
     pass  # IMPORTIMPORTIMPORT import types
-    pass  # IMPORTIMPORTIMPORT from sp_utilities import get_im
+    pass  # IMPORTIMPORTIMPORT from ..libpy.sp_utilities import get_im
     if isinstance(image_to_be_averaged, (bytes, str)):
         image_to_be_averaged = sp_utilities.get_im(image_to_be_averaged)
     return image_to_be_averaged.rotavg_i_sphire()
@@ -500,7 +500,7 @@ def rops(img, lng=False):
 		Input image can be real or Fourier, can be rectangular
 		output length mapped onto x-dimension length
 	"""
-    from sp_utilities import model_blank
+    from ..libpy.sp_utilities import model_blank
     table = Util.rotavg_fourier(img)
     table = table[:old_div(len(table), 2)]
     scale = (img.get_xsize() - 2 * img.is_complex()) * img.get_ysize() * img.get_zsize()
@@ -521,7 +521,7 @@ def rops_textfile(img, filename, lng=False):
 		Input image can be real or Fourier, can be rectangular
 		output length mapped onto x-dimension length
 	"""
-    from sp_utilities import write_text_file
+    from ..libpy.sp_utilities import write_text_file
     table = Util.rotavg_fourier(img)
     table = table[:old_div(len(table), 2)]
     scale = (img.get_xsize() - 2 * img.is_complex()) * img.get_ysize() * img.get_zsize()

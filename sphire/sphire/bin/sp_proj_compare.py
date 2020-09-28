@@ -1393,8 +1393,7 @@ def insert_image(smallimg, largeimage, xoffset, yoffset):
             getpixel = smallimg.get_value_at(xcoord, ycoord)
             largeimage.set_value_at(xoffset + xcoord, yoffset + ycoord, getpixel)
 
-
-if __name__ == "__main__":
+def main():
     sp_global_def.print_timestamp("Start")
     options = parse_command_line()
 
@@ -1429,4 +1428,8 @@ if __name__ == "__main__":
     main_proj_compare(options.classavgs, options.vol3d, outdir, options, mode=options.mode, prjmethod=options.prjmethod,
               classangles=options.classangles, partangles=options.partangles, selectdoc=selectdoc,
               displayYN=options.display, debug=options.debug)
-    sp_global_def.print_timestamp( "Finish" )
+    sp_global_def.print_timestamp("Finish")
+
+if __name__ == "__main__":
+    main()
+

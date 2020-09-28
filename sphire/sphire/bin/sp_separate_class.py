@@ -630,24 +630,31 @@ def filter_shrink(input_bdb_name, output_stack_path, output_bdb_name, alignYN=Fa
 
 	return num_imgs
 
-if __name__ == "__main__":
+def main():
 	# Command-line arguments
-	parser = EMArgumentParser(usage=USAGE,version=EMANVERSION)
+	parser = EMArgumentParser(usage=USAGE, version=EMANVERSION)
 	parser.add_argument('classavgs', help='Input class averages')
 	parser.add_argument('instack', help='Input image stack')
 	parser.add_argument('outdir', type=str, help='Output directory')
-	parser.add_argument('--align_isac_dir', type=str, default=None, help='ISAC directory, for aligning images')
-	parser.add_argument('--filtrad', type=float, help='For optional filtered images, low-pass filter radius (1/px or, if pixel size specified, Angstroms)')
-	parser.add_argument('--apix', type=float, default=None, help='Pixel size, Angstroms (might be downsampled by ISAC)')
+	parser.add_argument('--align_isac_dir', type=str, default=None,
+						help='ISAC directory, for aligning images')
+	parser.add_argument('--filtrad', type=float,
+						help='For optional filtered images, low-pass filter radius (1/px or, if pixel size specified, Angstroms)')
+	parser.add_argument('--apix', type=float, default=None,
+						help='Pixel size, Angstroms (might be downsampled by ISAC)')
 	parser.add_argument('--shrink', type=int, help='Optional downsampling factor')
 	parser.add_argument('--nvec', type=int, help='Number of eigenimages to compute')
-	parser.add_argument('--format', type=str, default='.mrcs', help='Format of optional output aligned-imaged stacks')
+	parser.add_argument('--format', type=str, default='.mrcs',
+						help='Format of optional output aligned-imaged stacks')
 	parser.add_argument('--verbose', "-v", action="store_true", help='Increase verbosity')
 	parser.add_argument('--debug', action="store_true", help='Debug mode')
-	
+
 	(options, args) = parser.parse_args()
-	#print('args',args)
-	#print('options', options)
-	#exit()
-	
+	# print('args',args)
+	# print('options', options)
+	# exit()
+
 	separate_class(options.classavgs, options.instack, options, outdir=options.outdir)
+
+if __name__ == "__main__":
+	main()

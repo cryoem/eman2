@@ -338,7 +338,7 @@ def create_unblur_command(
     return "\n".join([str(entry) for entry in unblur_command])
 
 
-def main(args):
+def main():
     """
 	Main function
 
@@ -348,7 +348,7 @@ def main(args):
 	Returns:
 	None
 	"""
-
+    args = parse_args()
     main_mpi_proc = 0
     my_mpi_proc_id = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
     n_mpi_procs = mpi.mpi_comm_size(mpi.MPI_COMM_WORLD)
@@ -514,7 +514,7 @@ def main(args):
 if __name__ == "__main__":
     sp_global_def.print_timestamp("Start")
     sp_global_def.BATCH = True
-    main(parse_args())
+    main()
     sp_global_def.BATCH = False
     sp_global_def.print_timestamp("Finish")
     mpi.mpi_finalize()

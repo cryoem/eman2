@@ -314,9 +314,9 @@ def recons3d_4nnw_MPI(
 			sign: sign of the CTF
 			symmetry: point-group symmetry to be enforced, each projection will enter the reconstruction in all symmetry-related directions.
 	"""
-    pass  # IMPORTIMPORTIMPORT from sp_utilities  import reduce_EMData_to_root, pad
+    pass  # IMPORTIMPORTIMPORT from ..libpy.sp_utilities  import reduce_EMData_to_root, pad
     pass  # IMPORTIMPORTIMPORT from EMAN2      import Reconstructors
-    pass  # IMPORTIMPORTIMPORT from sp_utilities  import iterImagesList, set_params_proj, model_blank
+    pass  # IMPORTIMPORTIMPORT from ..libpy.sp_utilities  import iterImagesList, set_params_proj, model_blank
     pass  # IMPORTIMPORTIMPORT from mpi        import MPI_COMM_WORLD
     pass  # IMPORTIMPORTIMPORT import types
 
@@ -339,7 +339,7 @@ def recons3d_4nnw_MPI(
     bnx = old_div(imgsize * npad, 2) + 1
     if fsc:
         pass  # IMPORTIMPORTIMPORT from math import sqrt
-        pass  # IMPORTIMPORTIMPORT from sp_utilities import reshape_1d
+        pass  # IMPORTIMPORTIMPORT from ..libpy.sp_utilities import reshape_1d
         t = [0.0] * len(fsc)
         for i in range(len(fsc)):
             t[i] = min(max(fsc[i], 0.0), 0.999)
@@ -476,7 +476,7 @@ def recons3d_4nnw_MPI(
     if myid == 0:
         dummy = r.finish(True)
     else:
-        pass  # IMPORTIMPORTIMPORT from sp_utilities import model_blank
+        pass  # IMPORTIMPORTIMPORT from ..libpy.sp_utilities import model_blank
         if xysize == -1 and zsize == -1:
             fftvol = sp_utilities.model_blank(imgsize, imgsize, imgsize)
         else:
