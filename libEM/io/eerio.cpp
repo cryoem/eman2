@@ -68,7 +68,7 @@ EerFrame::EerFrame(TIFF *tiff)
 	}
 }
 
-VC EerFrame::coords() const {
+auto EerFrame::coords() const {
 	return _coords;
 }
 
