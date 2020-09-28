@@ -164,7 +164,7 @@ using std::sin;
 struct assign_groups_comparator {
 	const float * values;
 	bool operator() (int i,int j) { return (values[i] > values[j]); }
-	assign_groups_comparator(const fl  oat * v) : values(v) {}
+	assign_groups_comparator(const float *v) : values(v) {}
 };
 
 // utility function used in (GPU) ISAC
