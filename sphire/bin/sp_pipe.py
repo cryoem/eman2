@@ -2779,7 +2779,7 @@ def restacking(args):
         try:
             filament_id = str(img.get_attr("filament_id"))
             segment_id = str(img.get_attr("segment_id"))
-        except KeyError:
+        except RuntimeError:
             filament_id = None
             segment_id = None
         global_mic_dict[mic_basename].filament_id_list.append(filament_id)
