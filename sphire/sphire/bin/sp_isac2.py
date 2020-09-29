@@ -1758,7 +1758,7 @@ def do_generation(
             )
 
             if (int(len(bad) * 1.2) < 2 * options.img_per_grp) or (
-                (len(good) == 0) and (generation_iter == 1) and (new_good_classes <= options.delta_good)
+                (generation_iter == 1) and (new_good_classes <= options.delta_good)
             ):
                 #  Insufficient number of images to keep processing bad set
                 #    or
@@ -1779,7 +1779,7 @@ def do_generation(
                 )
                 # Check whether what remains can be still processed in a new main interation
                 if (len(leftout) < 2 * options.img_per_grp) or (
-                    (len(good) == 0) and (generation_iter == 1) and (new_good_classes <= options.delta_good)
+                    (generation_iter == 1) and (new_good_classes <= options.delta_good)
                 ):
                     #    if the the number of remaining all bad too low full stop
                     keepdoing_main = False
