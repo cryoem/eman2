@@ -160,11 +160,11 @@ using std::sin;
 /* real_t sin(real_t); */
 #endif
 
-// utility struct for sp_assign_groups()
-struct assign_groups_comparator {
+// utility struct for sp_assign_groups() (unchanged from the original)
+struct sp_assign_groups_comparator {
 	const float * values;
 	bool operator() (int i,int j) { return (values[i] > values[j]); }
-	assign_groups_comparator(const float *v) : values(v) {}
+	sp_assign_groups_comparator(const float *v) : values(v) {}
 };
 
 // utility function used in (GPU) ISAC
@@ -192,7 +192,7 @@ vector<int> Util::sp_assign_groups(std::string matrix_address, int nref, int nim
 		dd[i] = i;
 	}
 
-	assign_groups_comparator comparator(matrix);
+	sp_assign_groups_comparator comparator(matrix);
 	sort(dd.begin(), dd.end(), comparator);
 	
 	// main loop
