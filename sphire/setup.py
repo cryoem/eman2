@@ -45,12 +45,11 @@ setup(
     version=find_version("sphire", "__init__.py"),
     python_requires='>3.4.0',
     packages=find_packages(),
-    url='---',
-    license='---',
+    url='https://github.com/cryoem/eman2',
+    license='GPLv3',
     author='SPHIRE Development Team',
     author_email='sphire-devel@mpi-dortmund.mpg.de',
-    description='The SPHIRE cryo-EM package',
+    description='Python binaries and libraries for the SPHIRE cryo-EM package',
     entry_points={
         'console_scripts': create_entrypoints()},
 )
-#[            'sp_3dvariability.py = sphire.bin.sp_3dvariability:main']
