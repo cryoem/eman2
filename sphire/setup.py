@@ -49,7 +49,7 @@ setup(
     license='GPLv3',
     author='SPHIRE Development Team',
     author_email='sphire-devel@mpi-dortmund.mpg.de',
-    description='Python binaries and libraries for the SPHIRE cryo-EM package!',
+    description='Python binaries and libraries for the SPHIRE cryo-EM package',
     entry_points={
         'console_scripts': create_entrypoints()},
 )
