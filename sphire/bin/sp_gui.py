@@ -1532,8 +1532,6 @@ class SXCmdWidget(QWidget):
 				file_path = translate_to_bdb_path(file_path)
 		elif file_format == "data2d_stack":
 			# NOTE: Toshio Moriya 2018/01/25
-			# Currently, this case is not used. Instead, using bdb2d_stack
-			# 
 			# Read not supported: ;; JPEG (*.jpg *.jpeg)
 			# 2D image stack not supported: ;; Gatan (*.dm2 *.dm3);; EM (*.em);; ICOS (*.icos);; Amira (*.am);; DF3 (*.d3);; FITS (*.fts);; OMAP (*.omap);; PGM (*.pgm);; PNG (*.png);; SAL (*.hdr *.img);; SITUS (*.situs);; TIFF (*.tif *.tiff);; V4L (*.v4l);; VTK (*.vtk);; XPLOR (*.xplor)
 			# Maybe only single 2D image: ;; MRC (*.mrc)

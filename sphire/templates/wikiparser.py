@@ -109,7 +109,7 @@ def construct_keyword_dict():
 	# - mic_stack           : Line edit box for formatted string type, and open file buttons for .mrcs/.mrc (mrc2d_mic_stack) and all supported 2D stack formats (mic_stack with bdb path parser)
 	# - data2d_one          : Line edit box for formatted string type, and open file buttons for .hdf (hdf2d_one) and all supported 2D image formats (data2d_one with bdb path parser)
 	# - bdb2d_stack         : Line edit box for formatted string type, and open file buttons for .bdb (bdb2d_stack)
-	# - data2d_stack        : Line edit box for formatted string type, and open file buttons for .bdb (bdb2d_stack) and all supported 2D stack formats (data2d_stack with bdb path parser) NOTE: Toshio Moriya 2018/01/25 Currently, this case is not used. Instead, using bdb2d_stack
+	# - data2d_stack        : Line edit box for formatted string type, and open file buttons for .bdb (bdb2d_stack) and all supported 2D stack formats (data2d_stack with bdb path parser)
 	# - data3d_one          : Line edit box for formatted string type, and open file buttons for .hdf (hdf3d_one) and all supported 3D volume formats (data3d_one with bdb path parser)
 	# - data3d_stack        : Line edit box for formatted string type, and open file buttons for .hdf (hdf3d_stack) and all supported 3D stack formats (with bdb path parser) NOTE: Toshio Moriya 2018/01/25 Currently, this case is not used. Instead, using bdb2d_stack
 	#
