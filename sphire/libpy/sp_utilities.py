@@ -1020,7 +1020,7 @@ def model_rotated_rectangle2D(
         sizex = radius_long * 2
         sizey = radius_long * 2
 
-    mask = matplotlib.pyplot.np.zeros((sizex, sizey))
+    mask = numpy.zeros((sizex, sizey))
     mask[
         (old_div(sizex, 2) - radius_short) : (old_div(sizex, 2) + radius_short),
         (old_div(sizey, 2) - radius_long) : (old_div(sizey, 2) + radius_long),
@@ -3927,23 +3927,23 @@ def angular_distribution_sabrina(params_file, output_folder, prefix, method, pix
 
     if error:
         for entry in error_list:
-            sxprint(error_template.format(entry))
+            sp_global_def.sxprint(error_template.format(entry))
         return None
     else:
         if do_print:
-            sxprint('Values are valid')
+           sp_global_def.sxprint('Values are valid')
 
     try:
         os.makedirs(output_folder)
     except OSError as exc:
         if exc.errno == errno.EEXIST and os.path.lexists(output_folder):
             if do_print:
-                sxprint('Output directory already exists: {0}'.format(output_folder))
+               sp_global_def.sxprint('Output directory already exists: {0}'.format(output_folder))
         else:
             raise
     else:
         if do_print:
-            sxprint('Created output directory: {0}'.format(output_folder))
+           sp_global_def.sxprint('Created output directory: {0}'.format(output_folder))
     sp_global_def.write_command(output_folder)
 
     COLUMN_X = 0
@@ -3953,7 +3953,7 @@ def angular_distribution_sabrina(params_file, output_folder, prefix, method, pix
 
     # Import the parameters, assume the columns 0 (Phi) 1 (Theta) 2 (Psi) are present
     if do_print:
-        sxprint('Import projection parameter')
+       sp_global_def.sxprint('Import projection parameter')
     data_params = numpy.atleast_2d(numpy.genfromtxt(params_file, usecols=(0, 1, 2)))
     if exclude is not None:
         mask = numpy.array(exclude)
@@ -3963,7 +3963,7 @@ def angular_distribution_sabrina(params_file, output_folder, prefix, method, pix
 
     # If the symmetry is c0, do not remove mirror projections.
     if do_print:
-        sxprint('Reduce anglesets')
+       sp_global_def.sxprint('Reduce anglesets')
     if symmetry.endswith('_full'):
         symmetry = symmetry.rstrip('_full')
         inc_mirror = 1
@@ -3980,7 +3980,7 @@ def angular_distribution_sabrina(params_file, output_folder, prefix, method, pix
     # data_params = [[0.0, 0.0, 0.0], [22,91,45]]
     # data_params = numpy.atleast_2d(data_params)
     if do_print:
-        sxprint('Reduce data to symmetry - This might take some time for high symmetries')
+       sp_global_def.sxprint('Reduce data to symmetry - This might take some time for high symmetries')
     # Reduce the parameter data by moving mirror projections into the non-mirror region of the sphere.
     data = sym_class.reduce_anglesets(data_params, inc_mirror=inc_mirror, tolistconv=False)
     # Create cartesian coordinates
@@ -4013,7 +4013,7 @@ def angular_distribution_sabrina(params_file, output_folder, prefix, method, pix
     # Normalize the radii so that the 1% value - ordered values - is 1 (robust against outliers)
     quartile_idx = int((len(sorted_radius_plot)-1) * (100-nth_percentile) / 100.0)
     quartile_value = sorted_radius_plot[quartile_idx]
-    percentile_idxes = np.where(radius_array == quartile_value)[0]
+    percentile_idxes = numpy.where(radius_array == quartile_value)[0]
     radius_normalized = numpy.true_divide(radius_array, quartile_value)
 
     #Normalize for color - max value = yellow
@@ -4044,7 +4044,7 @@ def angular_distribution_sabrina(params_file, output_folder, prefix, method, pix
 
     # Create output bild file
     if do_print:
-        sxprint('Create bild file')
+       sp_global_def.sxprint('Create bild file')
     output_bild_file = os.path.join(output_folder, '{0}.bild'.format(prefix))
     lightblue = [173/255.0, 216/255.0, 230/255.0, 1]
     with open(output_bild_file, 'w') as write:
@@ -4089,7 +4089,7 @@ def angular_distribution_sabrina(params_file, output_folder, prefix, method, pix
 
     # 2D distribution plot
     if do_print:
-        sxprint('Create 2D legend plot')
+       sp_global_def.sxprint('Create 2D legend plot')
     output_bild_legend_png = os.path.join(output_folder, '{0}.png'.format(prefix))
     plt.axhline(quartile_value, 0, 1, color=lightblue, label='{0:.2f}th percentile'.format(nth_percentile), zorder=1)
     plt.bar(array_x, height=sorted_radius_plot, width=1, color=colors[numpy.argsort(radius_array)[::-1]], zorder=2)
@@ -4108,7 +4108,7 @@ def angular_distribution_sabrina(params_file, output_folder, prefix, method, pix
     """
     # 2D distribution txt file
     if do_print:
-        sxprint('Create 2D legend text file')
+       sp_global_def. sxprint('Create 2D legend text file')
 
     output_bild_legend_txt = os.path.join(output_folder, '{0}.txt'.format(prefix))
     with open(output_bild_legend_txt, 'w') as write:

@@ -4245,8 +4245,8 @@ def angular_distribution_batch(args):
 	Returns:
 	None
 	"""
-    old = kwargs['old']
     kwargs = vars(args)
+    old = kwargs['old']
     del kwargs["func"]
     del kwargs["subcommand"]
     del kwargs['old']
