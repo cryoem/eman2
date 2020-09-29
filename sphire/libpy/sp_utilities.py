@@ -1020,7 +1020,7 @@ def model_rotated_rectangle2D(
         sizex = radius_long * 2
         sizey = radius_long * 2
 
-    mask = matplotlib.pyplot.np.zeros((sizex, sizey))
+    mask = numpy.zeros((sizex, sizey))
     mask[
         (old_div(sizex, 2) - radius_short) : (old_div(sizex, 2) + radius_short),
         (old_div(sizey, 2) - radius_long) : (old_div(sizey, 2) + radius_long),
@@ -3870,6 +3870,251 @@ getang3 = angle_between_projections_directions
 
 
 """Multiline Comment36"""
+
+
+def angular_distribution_sabrina(params_file, output_folder, prefix, method, pixel_size, delta, symmetry, box_size, particle_radius, dpi, nth_percentile, do_print=True, exclude=None):
+    matplotlib.pyplot.matplotlib.use("Agg")
+
+    matplotlib.pyplot.rc('axes', axisbelow=True)
+
+    def get_color(sorted_array):
+        """
+        Get the color for the 2D visual representation.
+
+        Arguments:
+        sorted_array - Array sorted by size.
+
+        Returns:
+        List of colors for each entry in the sorted_array.
+        """
+        sorted_normalized = numpy.true_divide(sorted_array, numpy.max(sorted_array))
+        color_list = []
+        for item in sorted_normalized:
+            color_list.append((0, item, 1-item))
+        return color_list
+
+    COLUMN_Z = 2
+
+    error_template = 'ERROR: {0}'
+    error = False
+    error_list = []
+
+    if pixel_size <= 0:
+        error_list.append('Pixel size cannot be smaller equals 0')
+        error = True
+
+    if box_size <= 0:
+        error_list.append('Box size cannot be smaller equals 0')
+        error = True
+
+    if particle_radius <= 0:
+        error_list.append('Particle radius cannot be smaller equals 0')
+        error = True
+
+    if delta <= 0:
+        error_list.append('delta cannot be smaller equals 0')
+        error = True
+
+    if dpi <= 0:
+        error_list.append('Dpi cannot be smaller equals 0')
+        error = True
+
+    if error:
+        for entry in error_list:
+            sp_global_def.sxprint(error_template.format(entry))
+        return None
+    else:
+        if do_print:
+           sp_global_def.sxprint('Values are valid')
+
+    try:
+        os.makedirs(output_folder)
+    except OSError as exc:
+        if exc.errno == errno.EEXIST and os.path.lexists(output_folder):
+            if do_print:
+               sp_global_def.sxprint('Output directory already exists: {0}'.format(output_folder))
+        else:
+            raise
+    else:
+        if do_print:
+           sp_global_def.sxprint('Created output directory: {0}'.format(output_folder))
+    sp_global_def.write_command(output_folder)
+
+    COLUMN_X = 0
+    COLUMN_Y = 1
+    if prefix is None:
+        prefix = os.path.basename(os.path.splitext(params_file)[0])
+
+    # Import the parameters, assume the columns 0 (Phi) 1 (Theta) 2 (Psi) are present
+    if do_print:
+       sp_global_def.sxprint('Import projection parameter')
+    data_params = numpy.atleast_2d(numpy.genfromtxt(params_file, usecols=(0, 1, 2)))
+    if exclude is not None:
+        mask = numpy.array(exclude)
+        mask[mask < 0] = 0
+        mask = mask.astype(numpy.bool)
+        data_params = data_params[~mask]
+
+    # If the symmetry is c0, do not remove mirror projections.
+    if do_print:
+       sp_global_def.sxprint('Reduce anglesets')
+    if symmetry.endswith('_full'):
+        symmetry = symmetry.rstrip('_full')
+        inc_mirror = 1
+    else:
+        symmetry = symmetry
+        inc_mirror = 0
+
+    # Create 2 symclass objects.
+    # One C1 object for the inital reference angles.
+    # One related to the actual symmetry, to deal with mirror projections.
+    sym_class = sp_fundamentals.symclass(symmetry)
+
+
+    # data_params = [[0.0, 0.0, 0.0], [22,91,45]]
+    # data_params = numpy.atleast_2d(data_params)
+    if do_print:
+       sp_global_def.sxprint('Reduce data to symmetry - This might take some time for high symmetries')
+    # Reduce the parameter data by moving mirror projections into the non-mirror region of the sphere.
+    data = sym_class.reduce_anglesets(data_params, inc_mirror=inc_mirror, tolistconv=False)
+    # Create cartesian coordinates
+
+    # sym_class.even_angles(delta= delta , method=method, inc_mirror=inc_mirror)
+    # sym_class.build_kdtree()
+    # indices = sym_class.find_k_nearest_neighbors(data, k=1, tolistconv=False)
+
+    # radius_array = numpy.bincount(indices.flatten(), minlength=sym_class.angles.shape[0])
+
+    radius_array, indices = angular_histogram(data,delta,sym =sym_class,method=method,inc_mirror=inc_mirror)
+
+    angles_no_mirror_cart = sym_class.to_cartesian(sym_class.angles, tolistconv=False)
+
+    nonzero_mask = numpy.nonzero(radius_array)
+    radius_array = radius_array[nonzero_mask]
+
+
+    # Calculate best width and length for the bins in 3D
+    width = (pixel_size * particle_radius * numpy.radians(delta) * 2) / float(2 * 3)
+    length = particle_radius * 0.2
+
+# Create arrays for 2D plot + normalization
+    nonzero_mask = list(nonzero_mask[0])
+    sorted_radius = radius_array
+    sorted_radius_plot = numpy.sort(radius_array)[::-1]
+    array_x = numpy.arange(sorted_radius.shape[0])
+
+
+    # Normalize the radii so that the 1% value - ordered values - is 1 (robust against outliers)
+    quartile_idx = int((len(sorted_radius_plot)-1) * (100-nth_percentile) / 100.0)
+    quartile_value = sorted_radius_plot[quartile_idx]
+    percentile_idxes = numpy.where(radius_array == quartile_value)[0]
+    radius_normalized = numpy.true_divide(radius_array, quartile_value)
+
+    #Normalize for color - max value = yellow
+    radius_normalized_color = numpy.true_divide(radius_array, numpy.max(radius_array))
+
+    # Vector pointing to the center of the Box in chimera
+    vector_center = 0.5 * numpy.array([
+        box_size,
+        box_size,
+        box_size
+        ])
+
+    # Inner and outer vector. The bin starts at inner vector and stops at outer vector
+    inner_vector = vector_center + angles_no_mirror_cart[nonzero_mask] * particle_radius
+
+#Length here!!
+    outer_vector = vector_center + angles_no_mirror_cart[nonzero_mask] * (particle_radius + radius_normalized.reshape(radius_normalized.shape[0], 1) * length )
+    outer_vector_blue = vector_center + angles_no_mirror_cart[nonzero_mask] * (particle_radius + radius_normalized.reshape(radius_normalized.shape[0], 1) * length * 1.01 )
+
+    # Adjust pixel size
+    numpy.multiply(inner_vector, pixel_size, out=inner_vector)
+    numpy.multiply(outer_vector, pixel_size, out=outer_vector)
+    numpy.multiply(outer_vector_blue, pixel_size, out=outer_vector_blue)
+
+    #get cmap for coloring of bins
+    a=matplotlib.pyplot.get_cmap('viridis')
+    colors = a(radius_normalized_color)
+
+    # Create output bild file
+    if do_print:
+       sp_global_def.sxprint('Create bild file')
+    output_bild_file = os.path.join(output_folder, '{0}.bild'.format(prefix))
+    lightblue = [173/255.0, 216/255.0, 230/255.0, 1]
+    with open(output_bild_file, 'w') as write:
+        for idx, (inner, outer, outer_blue, color) in enumerate(zip(inner_vector, outer_vector, outer_vector_blue, colors)):
+            if idx in percentile_idxes:
+                write.write('.color {0} {1} {2}\n'.format(*lightblue))
+                write.write(
+                    '.cylinder {0:.3f} {1:.3f} {2:.3f} {3:.3f} {4:.3f} {5:.3f} {6:.3f}\n'.format(
+                        outer[COLUMN_X],
+                        outer[COLUMN_Y],
+                        outer[COLUMN_Z],
+                        outer_blue[COLUMN_X],
+                        outer_blue[COLUMN_Y],
+                        outer_blue[COLUMN_Z],
+                        width
+                        )
+                    )
+            write.write('.color {0} {1} {2}\n'.format(*color))
+            write.write(
+                '.cylinder {0:.3f} {1:.3f} {2:.3f} {3:.3f} {4:.3f} {5:.3f} {6:.3f}\n'.format(
+                    inner[COLUMN_X],
+                    inner[COLUMN_Y],
+                    inner[COLUMN_Z],
+                    outer[COLUMN_X],
+                    outer[COLUMN_Y],
+                    outer[COLUMN_Z],
+                    width
+                    )
+                )
+
+    """
+    lina = numpy.argsort(radius_array)
+    sorted_radius = radius_array[lina[::-1]]
+    array_x = numpy.arange(sorted_radius.shape[0])
+    angles_no_mirror = angles_no_mirror[lina[::-1]]
+    nonzero_mask = list(nonzero_mask[0][lina[::-1]])
+
+    """
+
+    #"""
+    
+
+    # 2D distribution plot
+    if do_print:
+       sp_global_def.sxprint('Create 2D legend plot')
+    output_bild_legend_png = os.path.join(output_folder, '{0}.png'.format(prefix))
+    matplotlib.pyplot.axhline(quartile_value, 0, 1, color=lightblue, label='{0:.2f}th percentile'.format(nth_percentile), zorder=1)
+    matplotlib.pyplot.bar(array_x, height=sorted_radius_plot, width=1, color=colors[numpy.argsort(radius_array)[::-1]], zorder=2)
+    ax = matplotlib.pyplot.axes()
+    ax.yaxis.grid(linestyle='--', linewidth=1, zorder=0)
+    matplotlib.pyplot.xlabel('Bin / a.u.')
+    matplotlib.pyplot.ylabel('Nr. of Particles')
+    matplotlib.pyplot.legend()
+    matplotlib.pyplot.savefig(output_bild_legend_png, dpi=dpi)
+    matplotlib.pyplot.clf()
+    """
+    sxprint(array_x)
+    sxprint(sorted_radius)
+    sxprint(len(angles_no_mirror))
+    sxprint(angles_no_mirror)
+    """
+    # 2D distribution txt file
+    if do_print:
+       sp_global_def. sxprint('Create 2D legend text file')
+
+    output_bild_legend_txt = os.path.join(output_folder, '{0}.txt'.format(prefix))
+    with open(output_bild_legend_txt, 'w') as write:
+        for i in range(len(sorted_radius)):
+            #	for value_x, value_y in zip(array_x, sorted_radius):
+            value_x = '{0:6d}'.format(array_x[i])
+            value_y = '{0:6d}'.format(sorted_radius[i])
+            phi     = '{0:10f}'.format(sym_class.angles[nonzero_mask[i]][0])
+            theta   = '{0:10f}'.format(sym_class.angles[nonzero_mask[i]][1])
+            write.write('{0}\n'.format('\t'.join([value_x, value_y, phi, theta])))
+
+
 
 
 def angular_distribution(

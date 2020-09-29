@@ -2779,7 +2779,7 @@ def restacking(args):
         try:
             filament_id = str(img.get_attr("filament_id"))
             segment_id = str(img.get_attr("segment_id"))
-        except KeyError:
+        except RuntimeError:
             filament_id = None
             segment_id = None
         global_mic_dict[mic_basename].filament_id_list.append(filament_id)
@@ -4246,9 +4246,15 @@ def angular_distribution_batch(args):
 	None
 	"""
     kwargs = vars(args)
+    old = kwargs['old']
     del kwargs["func"]
     del kwargs["subcommand"]
-    sp_utilities.angular_distribution(**vars(args))
+    del kwargs['old']
+    if old:
+        del kwargs['nth_percentile']
+        sp_utilities.angular_distribution(**vars(args))
+    else:
+        sp_utilities.angular_distribution_sabrina(**vars(args))
 
 
 # ========================================================================================
@@ -4675,8 +4681,14 @@ def main():
         "--particle_radius", type=int, default=120, help="Particle radius (default 120)"
     )
     parser_subcmd.add_argument(
-        "--dpi", type=int, default=72, help="Dpi for the legend plot (default 72)"
+        "--dpi", type=int, default=144, help="Dpi for the legend plot (default 144)"
     )
+    parser_subcmd.add_argument(
+        "--nth_percentile",    type=float, default=99,             help="Use the value of the nth percentile of the radius distribution for normalization (default 99)"
+        )
+    parser_subcmd.add_argument(
+        "--old",             action='store_true',   default=False,             help="Use the old color scheme and normalization. The old style was normalizing the maximum length instead of the nth percentile and used a blue to green instead of a blue over green to yellow color scheme.(default False)"
+        )
     parser_subcmd.set_defaults(func=angular_distribution_batch)
 
     # ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
