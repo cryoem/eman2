@@ -3873,15 +3873,9 @@ getang3 = angle_between_projections_directions
 
 
 def angular_distribution_sabrina(params_file, output_folder, prefix, method, pixel_size, delta, symmetry, box_size, particle_radius, dpi, nth_percentile, do_print=True, exclude=None):
-    import sp_fundamentals
-    import numpy
-    import scipy.spatial as scipy_spatial
-    import errno
-    import matplotlib
-    matplotlib.use('Agg')
-    import matplotlib.pyplot as plt
+    matplotlib.pyplot.matplotlib.use("Agg")
 
-    plt.rc('axes', axisbelow=True)
+    matplotlib.pyplot.rc('axes', axisbelow=True)
 
     def get_color(sorted_array):
         """
@@ -4039,7 +4033,7 @@ def angular_distribution_sabrina(params_file, output_folder, prefix, method, pix
     numpy.multiply(outer_vector_blue, pixel_size, out=outer_vector_blue)
 
     #get cmap for coloring of bins
-    a=plt.get_cmap('viridis')
+    a=matplotlib.pyplot.get_cmap('viridis')
     colors = a(radius_normalized_color)
 
     # Create output bild file
@@ -4091,15 +4085,15 @@ def angular_distribution_sabrina(params_file, output_folder, prefix, method, pix
     if do_print:
        sp_global_def.sxprint('Create 2D legend plot')
     output_bild_legend_png = os.path.join(output_folder, '{0}.png'.format(prefix))
-    plt.axhline(quartile_value, 0, 1, color=lightblue, label='{0:.2f}th percentile'.format(nth_percentile), zorder=1)
-    plt.bar(array_x, height=sorted_radius_plot, width=1, color=colors[numpy.argsort(radius_array)[::-1]], zorder=2)
-    ax = plt.axes()
+    matplotlib.pyplot.axhline(quartile_value, 0, 1, color=lightblue, label='{0:.2f}th percentile'.format(nth_percentile), zorder=1)
+    matplotlib.pyplot.bar(array_x, height=sorted_radius_plot, width=1, color=colors[numpy.argsort(radius_array)[::-1]], zorder=2)
+    ax = matplotlib.pyplot.axes()
     ax.yaxis.grid(linestyle='--', linewidth=1, zorder=0)
-    plt.xlabel('Bin / a.u.')
-    plt.ylabel('Nr. of Particles')
-    plt.legend()
-    plt.savefig(output_bild_legend_png, dpi=dpi)
-    plt.clf()
+    matplotlib.pyplot.xlabel('Bin / a.u.')
+    matplotlib.pyplot.ylabel('Nr. of Particles')
+    matplotlib.pyplot.legend()
+    matplotlib.pyplot.savefig(output_bild_legend_png, dpi=dpi)
+    matplotlib.pyplot.clf()
     """
     sxprint(array_x)
     sxprint(sorted_radius)
