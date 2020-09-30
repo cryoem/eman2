@@ -87,7 +87,7 @@ class EMImage2DWidget(EMGLWidget):
 		self.setFocusPolicy(Qt.StrongFocus)
 		self.setMouseTracking(True)
 		self.initimageflag = True
-		self.initsizehint = sizehint	# this is used when no data has been set yet
+		self.initsizehint = QtCore.QSize(sizehint[0],sizehint[1])	# this is used when no data has been set yet
 
 		self.fftorigincenter = E2getappval("emimage2d","origincenter")
 		if self.fftorigincenter == None : self.fftorigincenter=False
