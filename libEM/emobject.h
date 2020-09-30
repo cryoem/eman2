@@ -229,6 +229,8 @@ namespace EMAN
 		 */
 		string get_type_string() const { return get_object_type_name(type); }
 
+		// This forces a string to be a CTF object instead
+		void force_CTF() { type=CTF; }
 
 		/** Write the EMObject's value to a string
 		 * Literally copies into a string, except for the case

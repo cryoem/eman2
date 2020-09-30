@@ -256,7 +256,7 @@ class EMImage2DWidget(EMGLWidget):
 
 	def sizeHint(self):
 #		print self.get_parent_suggested_size()
-		if self.data==None and self.fft==None : return self.initsizehint
+		if self.data==None and self.fft==None : return QtCore.QSize(*self.initsizehint)
 		return QtCore.QSize(*self.get_parent_suggested_size())
 
 	def set_disp_proc(self,procs):

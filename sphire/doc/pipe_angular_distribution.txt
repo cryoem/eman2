@@ -8,7 +8,7 @@ Angular Distribution: Generate a chimera .bild file for the visual representatio
 
 Usage in command line
 
-  sp_pipe.py  angular_distribution  params_file  output_folder  --prefix=None --method=S --pixel_size=1.0 --delta=3.75 --symmetry=c1 --box_size=256 --particle_radius=120 --dpi=72
+  sp_pipe.py  angular_distribution  params_file  output_folder  --prefix=None --method=S --pixel_size=1.0 --delta=3.75 --symmetry=c1 --box_size=256 --particle_radius=120 --dpi=144 --nth_percentile=99 --old
 
 \\
 ===== Typical usage =====
@@ -45,17 +45,19 @@ With the --dpi option, one can adjust the quality of the plot.
 	; params_file : Projection parameters : File containing the 3D projection parameters (default required string)
 	; output_folder : Output directory: Output folder name (default required string)
 	; %%--%%prefix : File prefix : Prefix for the output files - None uses the same name as the params file - Existing files will be overwritten (default none)
-	; %%--%%symmetry : Point-group symmetry: Symmetry to be applied to 3D reconstruction (default c1)
+	; %%--%%symmetry : Point-group symmetry: Symmetry - c0 creates full sphere distribution; XXX_full, e.g. c1_full, c4_full, icos_full, creates a histogram for both hemispheres. (default c1)
+	; %%--%%box_size : Particle box size [Pixels] : Box size (default 256)
+	; %%--%%pixel_size : Pixel size [A] : Pixel size of the project (default 1.0)
+	; %%--%%particle_radius : Particle radius [Pixels] : Particle radius (default 120)
 
 \\
 === Advanced Parameters ===
 
-	; %%--%%pixel_size : Pixel size [A] : Pixel size of the project (default 1.0)
 	; %%--%%delta : Angular sampling step [Degrees] : Angular step size in degree - Low deltas combined with low symmetry might crash chimera session (default 3.75|||15|||7.5|||1.875|||0.9375|||0.46875|||0.234375)
-	; %%--%%box_size : Particle box size [Pixels] : Box size (default 256)
-	; %%--%%particle_radius : Particle radius [Pixels] : Particle radius (default 120)
 	; %%--%%method : Distribution method : Method used to create the reference angles (S or P or M) (default S|||M|||P)::M|||P|||S;Advanced
-	; %%--%%dpi : Plot DPI : Dpi for the legend plot (default 72)
+	; %%--%%dpi : Plot DPI : Dpi for the legend plot (default 144)
+	; %%--%%nth_percentile : Nth percentil : Use the value of the nth percentile of the radius distribution for normalization (default 99)
+	; %%--%%old : Use old : Use the old color scheme and normalization. The old style was normalizing the maximum length instead of the nth percentile and used a blue to green instead of a blue over green to yellow color scheme. (default False)
 
 \\
 ===== Output =====

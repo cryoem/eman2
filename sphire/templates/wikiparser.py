@@ -109,7 +109,7 @@ def construct_keyword_dict():
 	# - mic_stack           : Line edit box for formatted string type, and open file buttons for .mrcs/.mrc (mrc2d_mic_stack) and all supported 2D stack formats (mic_stack with bdb path parser)
 	# - data2d_one          : Line edit box for formatted string type, and open file buttons for .hdf (hdf2d_one) and all supported 2D image formats (data2d_one with bdb path parser)
 	# - bdb2d_stack         : Line edit box for formatted string type, and open file buttons for .bdb (bdb2d_stack)
-	# - data2d_stack        : Line edit box for formatted string type, and open file buttons for .bdb (bdb2d_stack) and all supported 2D stack formats (data2d_stack with bdb path parser) NOTE: Toshio Moriya 2018/01/25 Currently, this case is not used. Instead, using bdb2d_stack
+	# - data2d_stack        : Line edit box for formatted string type, and open file buttons for .bdb (bdb2d_stack) and all supported 2D stack formats (data2d_stack with bdb path parser)
 	# - data3d_one          : Line edit box for formatted string type, and open file buttons for .hdf (hdf3d_one) and all supported 3D volume formats (data3d_one with bdb path parser)
 	# - data3d_stack        : Line edit box for formatted string type, and open file buttons for .hdf (hdf3d_stack) and all supported 3D stack formats (with bdb path parser) NOTE: Toshio Moriya 2018/01/25 Currently, this case is not used. Instead, using bdb2d_stack
 	#
@@ -214,6 +214,7 @@ def construct_keyword_dict():
 	keyword_dict["input_image_path"]              = SXkeyword_map(2, "mic_one")             # input_image_path
 	keyword_dict["source_micrograph"]             = SXkeyword_map(2, "mic_both")            # source_micrograph_pattern
 	keyword_dict["input_micrograph"]              = SXkeyword_map(2, "mic_stack")           # input_micrograph_pattern 
+	keyword_dict["stack_file"]                    = SXkeyword_map(2, "data2d_stack")
 	keyword_dict["isac_class_avgs_path"]          = SXkeyword_map(2, "data2d_one")          # isac_class_avgs_path
 	keyword_dict["stack"]                         = SXkeyword_map(2, "bdb2d_stack")         # stack, prj_stack, input_stack, --instack=input_stack_file
 	keyword_dict["volume"]                        = SXkeyword_map(2, "data3d_one")          # initial_volume, firstvolume, secondvolume, input_volume
@@ -397,6 +398,8 @@ def handle_exceptional_cases(sxcmd):
 		assert(sxcmd.token_dict["selection_list"].key_base == "selection_list")
 		assert(sxcmd.token_dict["selection_list"].type == "select_mic_stack")
 		sxcmd.token_dict["selection_list"].type = "select_mic_one_ext"
+	elif sxcmd.name == "sp_gpu_isac2":
+		sxcmd.token_dict["stack_file"].type = "data2d_stack"
 	elif sxcmd.name == "sp_isac2":
 		assert(sxcmd.token_dict["output_directory"].key_base == "output_directory")
 		assert(sxcmd.token_dict["output_directory"].type == "output")
@@ -2470,6 +2473,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 
 	sxcmd_role = "sxr_pipe"
 	sxcmd_config_list.append(SXcmd_config("../doc/isac2.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_isac2()))
+	sxcmd_config_list.append(SXcmd_config("../doc/gpu_isac2.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_isac2()))
 ### 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isacselect()))
 ### 	sxcmd_config_list.append(SXcmd_config("../doc/e2bdb.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_isac_makevstack()))
 ### 	sxcmd_config_list.append(SXcmd_config("../doc/isac_post_processing.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))

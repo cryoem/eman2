@@ -13,18 +13,22 @@ def main():
 	parser.add_argument("--pcaout", type=str,help="pca output", default="")
 	parser.add_argument("--ptclsin", type=str,help="ptcl input", default="")
 	parser.add_argument("--ptclsout", type=str,help="ptcl out suffix", default="")
+	parser.add_argument("--pad", type=int,help="pad for make3d", default=-1)
+	parser.add_argument("--ncls", type=int,help="number of classes", default=3)
+	parser.add_argument("--nbasis", type=int,help="PCA dimensionality", default=2)
 	parser.add_argument("--setsf", type=str,help="setsf", default="")
+	parser.add_argument("--threads", default=12,type=int,help="Number of threads to run in parallel on a single computer. This is the only parallelism supported by e2make3dpar")
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	
 	pts=np.loadtxt(options.pts)
 	
-	pca=PCA(2)
+	pca=PCA(options.nbasis)
 	p2=pca.fit_transform(pts[:,1:])
 	if options.pcaout:
 		np.savetxt(options.pcaout, p2)
 
-	clust=cluster.KMeans(3)
+	clust=cluster.KMeans(options.ncls)
 
 	lbs=clust.fit_predict(p2)
 	onames=[]
@@ -54,14 +58,14 @@ def main():
 		onames.append(onm)
 	
 	e=EMData(fname, 0, True)
-	sz=good_size(e["nx"])
+	if options.pad<1: options.pad=good_size(e["nx"]*1.25)
 	if options.setsf:
 		options.setsf=" --setsf "+options.setsf
 	
 	for o in onames:
 		t=o.replace("ptcl", "threed")[:-3]+"hdf"
 		print(o,t)
-		cmd="e2make3dpar.py --input {} --output {} --pad {} --mode trilinear --keep 1 --threads 12 {}".format(o,t, sz, options.setsf)
+		cmd="e2make3dpar.py --input {} --output {} --pad {} --mode trilinear --no_wt --keep 1 --threads {} {}".format(o,t, options.pad, options.threads, options.setsf)
 		launch_childprocess(cmd)
 	
 	E2end(logid)

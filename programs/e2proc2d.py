@@ -195,6 +195,7 @@ def main():
 	parser.add_argument("--medianshrink", metavar="n", type=int, action="append", help="Reduce an image size by an integral scaling factor, uses median filter. eg - 2 will reduce image size to 1/2. Clip is not required.")
 	parser.add_argument("--fouriershrink", metavar="n", type=float, action="append", help="Reduce an image size by an arbitrary scaling factor by clipping in Fourier space. eg - 2 will reduce image size to 1/2.")
 	parser.add_argument("--mraprep",  action="store_true", help="this is an experimental option")
+	parser.add_argument("--compressbits", type=int,help="HDF only. Bits to keep for compression. -1 for no compression",default=-1)
 	parser.add_argument("--outmode", type=str, default="float", help="All EMAN2 programs write images with 4-byte floating point values when possible by default. This allows specifying an alternate format when supported (float, int8, int16, int32, uint8, uint16, uint32). Values are rescaled to fill MIN-MAX range.")
 	parser.add_argument("--outnorescale", action="store_true", default=False, help="If specified, floating point values will not be rescaled when writing data as integers. Values outside of range are truncated.")
 	parser.add_argument("--mrc16bit",  action="store_true", help="(deprecated, use --outmode instead) output as 16 bit MRC file")
@@ -1128,9 +1129,13 @@ def main():
 
 							if outfile!=None :
 								if options.inplace:
-									d.write_image(outfile, i, out_type, False, None, out_mode, not_swap)
+									if options.compressbits>=0:
+										d.write_compressed(outfile,i,options.compressbits,nooutliers=True)
+									else: d.write_image(outfile, i, out_type, False, None, out_mode, not_swap)
 								else: # append the image
-									d.write_image(outfile, -1, out_type, False, None, out_mode, not_swap)
+									if options.compressbits>=0:
+										d.write_compressed(outfile,-1,options.compressbits,nooutliers=True)
+									else: d.write_image(outfile, -1, out_type, False, None, out_mode, not_swap)
 
 		# end of image loop
 
@@ -1140,8 +1145,14 @@ def main():
 	#		avg.mult(1.0/(n1-n0+1.0))
 	#		average.process_inplace("normalize");
 
-			if options.inplace: avg.write_image(outfile,0)
-			else : avg.write_image(outfile,-1)
+			if options.inplace: 
+				if options.compressbits>=0:
+					avg.write_compressed(outfile,0,options.compressbits,nooutliers=True)
+				else: avg.write_image(outfile,0)
+			else : 
+				if options.compressbits>=0:
+					avg.write_compressed(outfile,-1,options.compressbits,nooutliers=True)
+				else: avg.write_image(outfile,-1)
 
 		if options.fftavg:
 			fftavg.mult(old_div(1.0, sqrt(n1 - n0 + 1)))
