@@ -59,21 +59,16 @@ if __name__ == '__main__':
 
 from __future__ import print_function
 from __future__ import division
-from past.utils import old_div
 
-from pickle import load as pickle_load
-from pickle import dumps as pickle_dumps
 from os import path, mkdir
 from mpi import *
 import sp_global_def
-from numpy import allclose, array_equal, array
+from numpy import allclose, array_equal
 from numpy import full as numpy_full
 from numpy import float32 as numpy_float32
-from numpy import ones as numpy_ones
-from zlib import compress
 
 from sphire.libpy_py3 import sp_utilities as oldfu
-from sphire.libpy import sp_utilities as fu
+from sphire.sphire.libpy import sp_utilities as fu
 
 mpi_init(0, [])
 sp_global_def.BATCH = True
@@ -91,21 +86,16 @@ from sphire.tests.test_module import (
     ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,
     IMAGE_2D,
     IMAGE_2D_REFERENCE,
-    KB_IMAGE2D_SIZE,
     IMAGE_3D,
     IMAGE_BLANK_2D,
     IMAGE_BLANK_3D,
-    MASK,
-    MASK_2DIMAGE,
-    MASK_3DIMAGE,
 )
-from sphire.libpy.sp_fundamentals import symclass as foundamental_symclasss
+from sphire.sphire.libpy.sp_fundamentals import symclass as foundamental_symclasss
 
 from EMAN2_cppwrap import EMData
 from EMAN2 import EMNumPy
 from copy import deepcopy
 from json import load as json_load
-from random import randint
 
 try:
     from StringIO import StringIO  # python2 case

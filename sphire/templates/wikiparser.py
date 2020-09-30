@@ -38,7 +38,7 @@
 #
 
 import copy
-import sp_global_def
+import sphire.libpy.sp_global_def
 import os
 import sxgui_template
 from builtins import object

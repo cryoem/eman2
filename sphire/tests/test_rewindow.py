@@ -3,7 +3,7 @@ from __future__ import division
 import unittest
 import sys
 
-from sphire.bin import sp_rewindow as fu
+from ..sphire.bin import sp_rewindow as fu
 from sphire.bin_py3 import sp_rewindow as oldfu
 
 from .test_module import IMAGE_2D,IMAGE_3D

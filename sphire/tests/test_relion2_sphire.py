@@ -2,9 +2,7 @@ from __future__ import print_function
 from __future__ import division
 
 from sphire.bin_py3 import sp_relion2sphire as oldfu
-from sphire.bin import sp_relion2sphire as fu
-from os import path
-from .test_module import ABSOLUTE_OLDBIN_PATH,ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,ABSOLUTE_BIN_PATH
+from ..sphire.bin import sp_relion2sphire as fu
 import unittest
 
 try:

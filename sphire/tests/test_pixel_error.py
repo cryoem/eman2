@@ -271,10 +271,9 @@ ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
 
 from EMAN2 import Transform
 from numpy import array_equal as numpy_array_equal
-from .test_module import IMAGE_2D, IMAGE_3D, IMAGE_2D_REFERENCE
 
 from sphire.libpy_py3 import sp_pixel_error as oldfu
-from sphire.libpy import sp_pixel_error as fu
+from sphire.sphire.libpy import sp_pixel_error as fu
 
 """
 pickle files stored under smb://billy.storage.mpi-dortmund.mpg.de/abt3/group/agraunser/transfer/Adnan/pickle files

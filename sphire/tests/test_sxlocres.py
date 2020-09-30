@@ -1,7 +1,7 @@
 import copy
 import sp_utilities
 import numpy
-from ..bin import sp_locres
+from ..sphire.bin import sp_locres
 
 
 class TestMakeAngRes:

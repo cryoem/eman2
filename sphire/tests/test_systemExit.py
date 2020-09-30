@@ -1,12 +1,8 @@
 from __future__ import print_function
 from __future__ import division
 
-from ..libpy import sp_morphology as fu
+from ..sphire.libpy import sp_morphology as fu, sp_utilities, sp_utilities as oldsparx_utilities
 from ..libpy_py3 import sp_morphology as oldfu
-
-from ..libpy import sp_utilities
-from ..libpy import sp_utilities as oldsparx_utilities
-
 
 import unittest
 

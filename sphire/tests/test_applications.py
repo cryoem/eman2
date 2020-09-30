@@ -45,7 +45,6 @@ import sp_global_def
 import numpy
 
 from os import path, mkdir
-from pickle import loads as pickle_loads
 
 ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
 
@@ -63,29 +62,21 @@ from .test_module import (
     get_arg_from_pickle_file,
     ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,
     returns_values_in_file,
-    get_real_data,
     give_ali_vol_data,
     give_ali2d_base_data,
 )
 from .test_module import (
     IMAGE_2D,
-    IMAGE_2D_REFERENCE,
     IMAGE_3D,
-    IMAGE_BLANK_2D,
     IMAGE_BLANK_3D,
-    MASK_2DIMAGE,
-    MASK_3DIMAGE,
-    MASK,
 )
 
-from EMAN2db import db_open_dict as EMAN2db_db_open_dict
-
-from sphire.libpy.sp_utilities import even_angles
+from sphire.sphire.libpy.sp_utilities import even_angles
 
 from EMAN2_cppwrap import EMData
 
 from sphire.libpy_py3 import sp_applications as oldfu
-from sphire.libpy import sp_applications as fu
+from sphire.sphire.libpy import sp_applications as fu
 
 TOLERANCE = 0.0005
 ABSOLUTE_PATH_TO_STACK = "bdb:" + path.join(
@@ -966,7 +957,7 @@ class Test_ali2d_base(unittest.TestCase):
                                    log = log, number_of_proc = number_of_proc, myid = myid, main_node = main_node, mpi_comm = None)
 
         mpi_barrier(MPI_COMM_WORLD)
-        from sphire.libpy import sp_utilities
+        from sphire.sphire.libpy import sp_utilities
         import numpy
 
         image = sp_utilities.get_im(path.join(outdirnew, "aqfinal.hdf"))
