@@ -44,7 +44,7 @@ Some particles may have been erroneously assigned to a class, as indiciated by a
   ; stack : Input image stack : Set of 2D images to be compared, i.e., class averages. (default required string)
   ; input_volume : Input volume : Reconstruction for which re-projections will be computed. In RVIPER, this file is of the form main003/run002/rotated_volume.hdf. This volume must have the same dimensions as the input images. (default required string)
   ; outdir : Output directory : Directory where outputs will be written. (default required string)
-  ; %%--%%mode : Comparison method : Choices are: viper, projmatch, and meridien. (default viper|||projmatch|||meridien)
+  ; %%--%%mode : Comparison method : Choices are: viper, projmatch, and meridien. (default projmatch|||viper|||meridien)
   ; %%--%%classangles : VIPER - Projection parameter file : Parameter file containing projection angles. Not required if the projection parameters are stored in the header of the input images, which for ISAC2 is generally not the case. In RVIPER, this file is of the form main003/run002/rotated_reduced_params.txt. (default None) : %%--%%mode==viper
   ; %%--%%classselect : VIPER - Image selection file : Input selection containing list of images to be included from the input stack.  For instance, RVIPER, if it finds a stable solution, may exclude some images, and thus their projection angles will be excluded from the parameters file.  The file containing the list of included images will have a name like main003/index_keep_image.txt. (default None) : %%--%%mode==viper
   ; %%--%%delta : ProjMatch - Sampling angle : Angular-sampling for reference projections. (default 7.5|||15|||3.75|||1.875|||0.9375|||0.46875|||0.234375) : %%--%%mode==projmatch
