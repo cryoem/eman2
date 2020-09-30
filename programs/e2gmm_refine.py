@@ -356,7 +356,7 @@ def eval_model(gen_model, options):
 	xfsnp=np.array([[x["az"],x["alt"],x["phi"], x["tx"], x["ty"]] for x in xfs], dtype=floattype)
 	xfsnp[:,:3]=xfsnp[:,:3]*np.pi/180.
 	xfs=[]
-	set_indices_boxsz(128)
+	set_indices_boxsz(options.evalboxsz)
 	trainset=tf.data.Dataset.from_tensor_slices((xfsnp))
 	trainset=trainset.batch(8)
 	for xf in trainset:
@@ -544,6 +544,7 @@ def main():
 	parser.add_argument("--modelout", type=str,help="output trained model file. only used when --projs is provided", default="")
 	parser.add_argument("--projs", type=str,help="projections with orientations (in hdf header or comment column of lst file) to train model", default="")
 	parser.add_argument("--evalmodel", type=str,help="generate model projection images to the given file name", default="")
+	parser.add_argument("--evalboxsz", type=int,help="box size for projections when --evalmodel is used. default is 128", default=128)
 	parser.add_argument("--ptclsin", type=str,help="particles input for alignment", default="")
 	parser.add_argument("--ptclsout", type=str,help="aligned particle output", default="")
 	parser.add_argument("--learnrate", type=float,help="learning rate for model training only. Default is 1e-4. ", default=1e-4)
@@ -551,7 +552,7 @@ def main():
 	parser.add_argument("--niter", type=int,help="number of iterations", default=10)
 	parser.add_argument("--npts", type=int,help="number of points to initialize. ", default=-1)
 	parser.add_argument("--batchsz", type=int,help="batch size", default=32)
-	parser.add_argument("--maxboxsz", type=int,help="maximum fourier box size to use. Idealy use pixels of the current resolution * 3 ", default=64)
+	parser.add_argument("--maxboxsz", type=int,help="maximum fourier box size to use. 2 x target Fourier radius. ", default=64)
 	parser.add_argument("--align", action="store_true", default=False ,help="align particles.")
 	parser.add_argument("--heter", action="store_true", default=False ,help="heterogeneity analysis.")
 	parser.add_argument("--fromscratch", action="store_true", default=False ,help="start from coarse alignment. otherwise will only do refinement from last round")
@@ -802,6 +803,8 @@ def main():
 			sv=np.hstack([np.where(ptclidx)[0][:,None], mid])
 			print(mid.shape, sv.shape)
 			np.savetxt(options.midout, sv)
+		
+			print("Conformation output saved to {}".format(options.midout))
 		
 	E2end(logid)
 	
