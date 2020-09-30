@@ -356,7 +356,7 @@ def eval_model(gen_model, options):
 	xfsnp=np.array([[x["az"],x["alt"],x["phi"], x["tx"], x["ty"]] for x in xfs], dtype=floattype)
 	xfsnp[:,:3]=xfsnp[:,:3]*np.pi/180.
 	xfs=[]
-	set_indices_boxsz(options.evalboxsz)
+	set_indices_boxsz(options.evalsize)
 	trainset=tf.data.Dataset.from_tensor_slices((xfsnp))
 	trainset=trainset.batch(8)
 	for xf in trainset:
@@ -544,7 +544,7 @@ def main():
 	parser.add_argument("--modelout", type=str,help="output trained model file. only used when --projs is provided", default="")
 	parser.add_argument("--projs", type=str,help="projections with orientations (in hdf header or comment column of lst file) to train model", default="")
 	parser.add_argument("--evalmodel", type=str,help="generate model projection images to the given file name", default="")
-	parser.add_argument("--evalboxsz", type=int,help="box size for projections when --evalmodel is used. default is 128", default=128)
+	parser.add_argument("--evalsize", type=int,help="Box size for the projections for evaluation.", default=128)
 	parser.add_argument("--ptclsin", type=str,help="particles input for alignment", default="")
 	parser.add_argument("--ptclsout", type=str,help="aligned particle output", default="")
 	parser.add_argument("--learnrate", type=float,help="learning rate for model training only. Default is 1e-4. ", default=1e-4)

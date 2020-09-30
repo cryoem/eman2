@@ -736,7 +736,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
         for input_mic_path in input_mic_path_list:
             # Find tail index of micrograph id substring and extract the substring from the micrograph name
             input_mic_basename = os.path.basename(input_mic_path)
-            mic_id_substr_tail_idx = input_mic_basename.index(mic_basename_tokens[1])
+            mic_id_substr_tail_idx = input_mic_basename.rindex(mic_basename_tokens[1])
             mic_id_substr = input_mic_basename[
                 mic_id_substr_head_idx:mic_id_substr_tail_idx
             ]
@@ -819,7 +819,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
         for selected_mic_path in selected_mic_path_list:
             # Find tail index of micrograph id substring and extract the substring from the micrograph name
             selected_mic_basename = os.path.basename(selected_mic_path)
-            mic_id_substr_tail_idx = selected_mic_basename.index(mic_basename_tokens[1])
+            mic_id_substr_tail_idx = selected_mic_basename.rindex(mic_basename_tokens[1])
             mic_id_substr = selected_mic_basename[
                 mic_id_substr_head_idx:mic_id_substr_tail_idx
             ]
@@ -880,7 +880,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
         for coords_path in coords_path_list:
 
             # Find tail index of coordinates id substring and extract the substring from the coordinates file path
-            coords_id_substr_tail_idx = coords_path.index(coords_pattern_tokens[1])
+            coords_id_substr_tail_idx = coords_path.rindex(coords_pattern_tokens[1])
             coords_id_substr = coords_path[
                 coords_id_substr_head_idx:coords_id_substr_tail_idx
             ]
@@ -959,7 +959,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
                     # Find tail index of micrograph id substring and extract the substring from the micrograph path of CTER partres entry
                     cter_mic_path = cter_entry[idx_cter_mic_name]
                     cter_mic_basename = os.path.basename(cter_mic_path)
-                    mic_id_substr_tail_idx = cter_mic_basename.index(
+                    mic_id_substr_tail_idx = cter_mic_basename.rindex(
                         mic_basename_tokens[1]
                     )
                     mic_id_substr = cter_mic_basename[
@@ -1083,7 +1083,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
                     # Find tail index of micrograph id substring and extract the substring from the micrograph path of CTER partres entry
                     cter_mic_path = cter_entry[idx_cter_mic_name]
                     cter_mic_basename = os.path.basename(cter_mic_path)
-                    mic_id_substr_tail_idx = cter_mic_basename.index(
+                    mic_id_substr_tail_idx = cter_mic_basename.rindex(
                         mic_basename_tokens[1]
                     )
                     mic_id_substr = cter_mic_basename[

@@ -185,33 +185,34 @@ EMObject HdfIO2::read_attr(hid_t attr) {
 		H5Aread(attr,type,s);
 //		H5Aread(attr,H5T_NATIVE_CHAR,s);
 
-		if (s[0] == 'O' && isdigit(s[1])) {
-			ctf = new EMAN1Ctf();
-			try {
-				ctf->from_string(string(s));
-				ret = EMObject(ctf);
-			}
-			catch(...) {
-				ret=EMObject(s);
-			}
-
-			delete ctf;
-		}
-		else if (s[0] == 'E' && isdigit(s[1])) {
-			ctf = new EMAN2Ctf();
-			try {
-				ctf->from_string(string(s));
-				ret = EMObject(ctf);
-			}
-			catch(...) {
-				ret=EMObject(s);
-			}
-
-			delete ctf;
-		}
-		else {
-			ret = EMObject(s);
-		}
+// 		if (s[0] == 'O' && isdigit(s[1])) {
+// 			ctf = new EMAN1Ctf();
+// 			try {
+// 				ctf->from_string(string(s));
+// 				ret = EMObject(ctf);
+// 			}
+// 			catch(...) {
+// 				ret=EMObject(s);
+// 			}
+// 
+// 			delete ctf;
+// 		}
+// 		else if (s[0] == 'E' && isdigit(s[1])) {
+// 			ctf = new EMAN2Ctf();
+// 			try {
+// 				ctf->from_string(string(s));
+// 				ret = EMObject(ctf);
+// 			}
+// 			catch(...) {
+// 				ret=EMObject(s);
+// 			}
+// 
+// 			delete ctf;
+// 		}
+// 		else {
+		ret = EMObject(s);
+		if ((s[0] == 'O' && isdigit(s[1])) || (s[0] == 'E' && isdigit(s[1]))) ret.force_CTF();
+// 		}
 
 		free(s);
 
@@ -614,22 +615,23 @@ int HdfIO2::read_header(Dict & dict, int image_index, const Region * area, bool)
 	}
 
 	if (dict.has_key("ctf")) {
-		string ctfString = (string)dict["ctf"];
-
-		if (ctfString.substr(0, 1) == "O") {
-			Ctf * ctf_ = new EMAN1Ctf();
-			ctf_->from_string(ctfString);
-			dict.erase("ctf");
-			dict["ctf"] = ctf_;
-			delete ctf_;
-		}
-		else if (ctfString.substr(0, 1) == "E") {
-			Ctf * ctf_ = new EMAN2Ctf();
-			ctf_->from_string(ctfString);
-			dict.erase("ctf");
-			dict["ctf"] = ctf_;
-			delete ctf_;
-		}
+		dict["ctf"].force_CTF();
+// 		string ctfString = (string)dict["ctf"];
+// 
+// 		if (ctfString.substr(0, 1) == "O") {
+// 			Ctf * ctf_ = new EMAN1Ctf();
+// 			ctf_->from_string(ctfString);
+// 			dict.erase("ctf");
+// 			dict["ctf"] = ctf_;
+// 			delete ctf_;
+// 		}
+// 		else if (ctfString.substr(0, 1) == "E") {
+// 			Ctf * ctf_ = new EMAN2Ctf();
+// 			ctf_->from_string(ctfString);
+// 			dict.erase("ctf");
+// 			dict["ctf"] = ctf_;
+// 			delete ctf_;
+// 		}
 	}
 
 	if (area) {
