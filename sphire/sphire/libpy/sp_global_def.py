@@ -49,6 +49,7 @@ import sys
 import time
 from . import sp_utilities as util
 import os
+import sphire
 
 def get_timestamp(file_format=False):
     """
@@ -310,8 +311,9 @@ MPI = False
 CACHE_DISABLE = False
 
 # ________________________________________ System settings: please do not change
+#test_sphire_v_string = sphire.__init__.version
 
-SPARXVERSION = "SPHIRE v1.4 (GitHub: " + EMAN2_meta.DATESTAMP + ")"
+SPARXVERSION = "SPHIRE v"+sphire.__version__+" (GitHub: " + EMAN2_meta.DATESTAMP + ")"
 SPARX_MPI_TAG_UNIVERSAL = 123456
 SPARX_DOCUMENTATION_WEBSITE = "http://sparx-em.org/sparxwiki/"
 

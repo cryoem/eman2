@@ -56,6 +56,7 @@ from EMAN2_cppwrap import *
 try:
 	from ..libpy.sp_global_def import *
 	from ..libpy.sp_sparx import *
+	import sphire
 except ImportError as e:
 	print("Import error raised. Ignore.")
 	print(e)
@@ -63,6 +64,7 @@ from optparse import OptionParser
 from functools import partial  # Use to connect event-source widget and event handler
 from subprocess import *
 import re
+
 
 # ========================================================================================
 # Helper Functions
@@ -4884,7 +4886,8 @@ def main():
 	sxapp.setStyleSheet("QToolTip {font-size:%dpt;}" % (new_point_size));
 
 	# Initialise a singleton class for look & feel constants
-	version_string = '1.4'
+
+	version_string = sphire.__version__#'1.4'
 	SXLookFeelConst.initialise(sxapp, version_string)
 
 	# Define the main window (class SXMainWindow)
