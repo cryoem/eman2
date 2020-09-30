@@ -40,6 +40,12 @@ def create_entrypoints():
 
     return entries
 
+def get_longdescription():
+    from os import path
+    this_directory = path.abspath(path.dirname(__file__))
+    with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
+        long_description = f.read()
+    return long_description
 setup(
     name='sphire',
     version=find_version("sphire", "__init__.py"),
@@ -50,6 +56,8 @@ setup(
     author='SPHIRE Development Team',
     author_email='sphire-devel@mpi-dortmund.mpg.de',
     description='Python binaries and libraries for the SPHIRE cryo-EM package',
+    long_description=get_longdescription(),
+    long_description_content_type="text/markdown",
     entry_points={
         'console_scripts': create_entrypoints()},
 )
