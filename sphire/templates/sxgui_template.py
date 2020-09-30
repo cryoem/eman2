@@ -343,7 +343,8 @@ class SXLookFeelConst(object):
 	@staticmethod
 	def initialise(sxapp, version):
 		# Set the directory for all file dialogs to script directory
-		SXLookFeelConst.project_dir += '_{0}'.format(version)
+		version_main = ".".join(version.split('.')[:2])
+		SXLookFeelConst.project_dir += '/{0}'.format(version_main)
 		SXLookFeelConst.file_dialog_dir = os.getcwd()
 		
 		# Check whether current settings directory exists
@@ -354,9 +355,10 @@ class SXLookFeelConst(object):
 			
 		do_longer_warning = False
 		older_settings_exist = False
-		for file_name in os.listdir(SXLookFeelConst.file_dialog_dir):
-			if SXLookFeelConst.project_dir_raw in file_name and file_name != SXLookFeelConst.project_dir:
-				print('WARNING: Directory %s/ detected that belongs to another version of SPHIRE.' % file_name)
+		print('\nCurrent SPHIRE settings directory: {}'.format(SXLookFeelConst.project_dir))
+		for file_name in os.listdir(SXLookFeelConst.project_dir_raw):
+			if file_name != os.path.basename(SXLookFeelConst.project_dir):
+				print('INFORMATION: Old settings directory %s/%s detected that belongs to another version of SPHIRE.' % (SXLookFeelConst.project_dir_raw, file_name))
 				older_settings_exist = True
 				
 				if not current_settings_exist:
@@ -1146,7 +1148,7 @@ class SXCmdWidget(QWidget):
 
 			# Save the current state of GUI settings
 			if os.path.exists(self.sxcmd.get_category_dir_path(SXLookFeelConst.project_dir)) == False:
-				os.mkdir(self.sxcmd.get_category_dir_path(SXLookFeelConst.project_dir))
+				os.makedirs(self.sxcmd.get_category_dir_path(SXLookFeelConst.project_dir))
 			self.write_params(self.gui_settings_file_path)
 		# else: SX command line is be empty because an error happens in generate_cmd_line. Let's do nothing
 
@@ -1179,7 +1181,7 @@ class SXCmdWidget(QWidget):
 
 			# Save the current state of GUI settings
 			if os.path.exists(self.sxcmd.get_category_dir_path(SXLookFeelConst.project_dir)) == False:
-				os.mkdir(self.sxcmd.get_category_dir_path(SXLookFeelConst.project_dir))
+				os.makedirs(self.sxcmd.get_category_dir_path(SXLookFeelConst.project_dir))
 			self.write_params(self.gui_settings_file_path)
 		# else: Do nothing
 
@@ -3641,7 +3643,7 @@ class SXConstSetWidget(QWidget):
 
 		# Save the current state of GUI settings
 		if os.path.exists(SXLookFeelConst.project_dir) == False:
-			os.mkdir(SXLookFeelConst.project_dir)
+			os.makedirs(SXLookFeelConst.project_dir)
 		self.write_consts(self.gui_settings_file_path)
 
 	def write_consts(self, file_path_out):
