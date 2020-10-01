@@ -47,7 +47,7 @@ import sys
 def main():
 
     spreal = os.path.join(
-        os.path.abspath(sys.path[0]), "sp_real.py"
+        os.path.abspath(os.path.dirname(__file__)), "sp_real.py"
     )
     ipython = os.path.join(
         os.path.abspath(sys.path[0]), "ipython"

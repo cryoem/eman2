@@ -51,8 +51,8 @@ import PyQt5
 import eman2_gui.emapplication
 import eman2_gui.emimage
 import os
-from ..libpy import sp_global_def
-from ..libpy.sp_sparx import *
+from sphire.libpy import sp_global_def
+from sphire.libpy.sp_sparx import *
 
 def main():
     GUIUSE = True
