@@ -62,7 +62,7 @@ def display_error(msg) :
 	QtWidgets.QMessageBox.warning(None, "Error", msg)
 
 # This is a floating point number-finding regular expression
-renumfind = re.compile(r"-?[0-9]+\.*[0-9]*[eE]?[-+]?[0-9]*")
+renumfind = re.compile(r"(?<=\s)[+-]?[0-9]+\.*[0-9]*(?:[eE][-+]?[0-9]+|)(?=\s|$)")
 
 # We need to sort ints and floats as themselves, not string, John Flanagan
 def safe_int(v) :
@@ -803,10 +803,8 @@ class EMPlotFileType(EMFileType) :
 			if len(l)>4000:
 				return (os.stat(path)[6], '-', 'big')
 			numc=renumfind.findall(l)
-			try:
-				numc = len([float(i) for i in numc])		# number of numeric columns
-			except ValueError:
-				return False
+
+			numc = len([float(i) for i in numc])		# number of numeric columns
 
 			if numc > 0 : break			# just finding the number of columns
 
