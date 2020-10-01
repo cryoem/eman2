@@ -356,13 +356,16 @@ class SXLookFeelConst(object):
 		do_longer_warning = False
 		older_settings_exist = False
 		print('\nCurrent SPHIRE settings directory: {}'.format(SXLookFeelConst.project_dir))
-		for file_name in os.listdir(SXLookFeelConst.project_dir_raw):
-			if file_name != os.path.basename(SXLookFeelConst.project_dir):
-				print('INFORMATION: Old settings directory %s/%s detected that belongs to another version of SPHIRE.' % (SXLookFeelConst.project_dir_raw, file_name))
-				older_settings_exist = True
-				
-				if not current_settings_exist:
-					do_longer_warning = True
+		try:
+			for file_name in os.listdir(SXLookFeelConst.project_dir_raw):
+				if file_name != os.path.basename(SXLookFeelConst.project_dir):
+					print('INFORMATION: Old settings directory %s/%s detected that belongs to another version of SPHIRE.' % (SXLookFeelConst.project_dir_raw, file_name))
+					older_settings_exist = True
+
+					if not current_settings_exist:
+						do_longer_warning = True
+		except FileNotFoundError:
+			pass
 				
 		if do_longer_warning:
 			print('To load old settings, please load the gui settings manually.')
