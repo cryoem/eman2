@@ -60,4 +60,5 @@ def main():
         print("Warning: No DISPLAY available, running in non-GUI mode.")
         os.execlp(ipython, "ipython", "-i", spreal)
 
-main()
+if __name__ == "__main__":
+	main()

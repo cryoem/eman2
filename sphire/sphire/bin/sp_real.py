@@ -53,6 +53,7 @@ import eman2_gui.emimage
 import os
 from ..libpy import sp_global_def
 from ..libpy.sp_sparx import *
+
 def main():
     GUIUSE = True
 
@@ -87,4 +88,5 @@ def main():
 
     print("  ", sp_global_def.SPARXVERSION)
 
-main()
+if __name__ == "__main__":
+	main()
