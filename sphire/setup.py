@@ -4,6 +4,7 @@ import codecs
 import os
 
 here = os.path.abspath(os.path.dirname(__file__))
+os.chdir(here)
 
 def read(*parts):
     with codecs.open(os.path.join(here, *parts), 'r') as fp:
