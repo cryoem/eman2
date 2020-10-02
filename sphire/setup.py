@@ -1,10 +1,10 @@
 from setuptools import setup, find_packages
+import glob
 import re
 import codecs
 import os
 
 here = os.path.abspath(os.path.dirname(__file__))
-os.chdir(here)
 
 def read(*parts):
     with codecs.open(os.path.join(here, *parts), 'r') as fp:
@@ -19,8 +19,6 @@ def find_version(*file_paths):
     raise RuntimeError("Unable to find version string.")
 
 def create_entrypoints():
-    import glob
-    import os
     all_files = glob.glob("sphire/bin/*.py")
 
     entries = []
@@ -42,11 +40,10 @@ def create_entrypoints():
     return entries
 
 def get_longdescription():
-    from os import path
-    this_directory = path.abspath(path.dirname(__file__))
-    with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
+    with open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
         long_description = f.read()
     return long_description
+
 setup(
     name='sphire',
     version=find_version("sphire", "__init__.py"),
