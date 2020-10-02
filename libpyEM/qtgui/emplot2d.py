@@ -88,6 +88,7 @@ from matplotlib.figure import Figure
 #matplotlib.use('Agg')
 import numpy as np
 
+from . import embrowser
 from .emapplication import EMApp, EMGLWidget
 from .emglobjects import EMOpenGLFlagsAndTools
 
@@ -373,8 +374,8 @@ class EMPlot2DWidget(EMGLWidget):
 					except: comments=None
 				else: comments=None
 				rdata=[i.split("#")[0] for i in rdata if i[0]!='#']
-				if ',' in rdata[0]: rdata=[[safe_float(j) for j in i.split(',')] for i in rdata]
-				else : rdata=[[float(j) for j in i.split()] for i in rdata]
+				rdata=[list(map(safe_float, embrowser.renumfind.findall(i))) for i in rdata if embrowser.renumfind.search(i)]
+
 				nx=len(rdata[0])
 				ny=len(rdata)
 				data=[[rdata[j][i] for j in range(ny)] for i in range(nx)]
