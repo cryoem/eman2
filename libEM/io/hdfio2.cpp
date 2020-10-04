@@ -80,6 +80,10 @@ HdfIO2::HdfIO2(const string & fname, IOMode rw)
 	// 0.75 ->H5D_CHUNK_CACHE_W0_DEFAULT  but raises an error
 	H5Pset_cache(accprop, 0, 256, 1024*4096,  0.75);	// meaningless for non-chunked data, sets the default chunk cache size per data set to 4 MB
 	//H5Pset_fapl_stdio( accprop );
+	
+	// This says it's ok to use a version of the file compatible only with versions 1.8+ of the library
+	// was supposed to improve speed on attribute read/write, but made it 5x slower !?
+	//H5Pset_libver_bounds(accprop, H5F_LIBVER_18, H5F_LIBVER_LATEST);
 
 //	H5Pset_fapl_core( accprop, 1048576, 0  );
 
@@ -491,7 +495,8 @@ void HdfIO2::init()
 
 		char name[ATTR_NAME_LEN];
 		for (int i=0; i<nattr; i++) {
-			hid_t attr=H5Aopen_idx(group, i);
+//			hid_t attr=H5Aopen_idx(group, i);
+			hid_t attr=H5Aopen_by_idx(group,".",H5_INDEX_CRT_ORDER,H5_ITER_NATIVE,i,H5P_DEFAULT,H5P_DEFAULT);
 			H5Aget_name(attr,127,name);
 
 			if (strcmp(name,"imageid_max")!=0) {
@@ -595,7 +600,8 @@ int HdfIO2::read_header(Dict & dict, int image_index, const Region * area, bool)
 	char name[ATTR_NAME_LEN];
 
 	for (i=0; i<nattr; i++) {
-		hid_t attr=H5Aopen_idx(igrp, i);
+		//hid_t attr=H5Aopen_idx(igrp, i);
+		hid_t attr=H5Aopen_by_idx(igrp,".",H5_INDEX_NAME,H5_ITER_NATIVE,i,H5P_DEFAULT,H5P_DEFAULT);
 		H5Aget_name(attr,127,name);
 
 		if (strncmp(name,"EMAN.", 5)!=0) {
@@ -719,13 +725,15 @@ int HdfIO2::erase_header(int image_index)
 	char name[ATTR_NAME_LEN];
 
 	for (i=0; i<nattr; i++) {
-		hid_t attr = H5Aopen_idx(igrp, 0); // use 0 as index here, since the H5Adelete() will change the index
-		H5Aget_name(attr,127,name);
-		H5Aclose(attr);
+// 		hid_t attr = H5Aopen_idx(igrp, 0); // use 0 as index here, since the H5Adelete() will change the index
+// 		H5Aget_name(attr,127,name);
+// 		H5Aclose(attr);
+// 
+// 		if (H5Adelete(igrp,name) < 0) {
+// 			LOGERR("attribute %s deletion error in erase_header().\n", name);
+// 		}
+		hid_t attr=H5Adelete_by_idx(igrp,".",H5_INDEX_UNKNOWN,H5_ITER_NATIVE,i,H5P_DEFAULT);
 
-		if (H5Adelete(igrp,name) < 0) {
-			LOGERR("attribute %s deletion error in erase_header().\n", name);
-		}
 	}
 
 	H5Gclose(igrp);
