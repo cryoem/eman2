@@ -5,6 +5,7 @@
 # Author: Thorsten Wagner 2019 (thorsten.wagner@mpi-dortmund.mpg.de)
 # Author: Toshio Moriya 2016-2019 (toshio.moriya@kek.jp)
 # Author: T. Durmaz 08/29/2014 (tunay.durmaz@uth.tmc.edu)
+# Author: Adnan Ali 2019 (adnan.ali@mpi-dortmund.mpg.de)
 #
 # Copyright (c) 2016-2019 Max Planck Institute of Molecular Physiology
 #
@@ -57,8 +58,6 @@ import sp_utilities
 import sys
 import time
 from builtins import range
-
-
 
 
 # ========================================================================================
@@ -1627,7 +1626,8 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
         local_mrcs_name = mic_baseroot + "_ptcls.mrcs"
         local_mrcs_path = os.path.join(mpi_proc_dir, local_mrcs_name)
 
-        local_bdb_stack = EMAN2db.db_open_dict(local_stack_path)
+        local_bdb_stack = EMAN2db.db_open_dict(local_stack_path)  #returning local database
+                                                                    # it should return particles dataframe
         # --------------------------------------------------------------------------------
         # Prepare coordinates loop variables
         # --------------------------------------------------------------------------------

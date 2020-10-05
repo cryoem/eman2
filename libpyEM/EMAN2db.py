@@ -28,7 +28,6 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
-#
 
 from future import standard_library
 
@@ -57,8 +56,6 @@ except ImportError as e:
 
 from libpyEMData2 import EMData
 from libpyUtils2 import EMUtil
-from EMAN2 import EMAN2Ctf
-from EMAN2 import Transform
 
 try:
     a = frozenset()
@@ -68,7 +65,7 @@ except:
     frozenset = Set
 
 try:
-    from starfile_db import sp_starfile_db as star
+    from pyStarDB import sp_pystardb as star
 
     STAR_AVAILABLE = True
 except ImportError:
@@ -97,7 +94,6 @@ MAXOPEN = 64
 # maximum number of times a task will be restarted before we assume there is something fundamentally
 # flawed about the task itself
 MAXTASKFAIL = 10
-
 cachesize = 80000000
 
 
@@ -283,24 +279,34 @@ def db_parse_path(url):
     return (url[0], url[1], u2)  # bdb:path/to#dict?k1,k2,k3,...
 
 
-def db_open_dict(url, ro=False, with_keys=False):
+def db_open_dict(url, ro=False, with_keys=False, tag='particles'):
     """opens a DB through an environment from a db:/path/to/db#dbname string. If you want to specify a specific image by key,
     you can specify the key as:  db:/path/to/db#dbname?key
     If key is an integer, it will be converted to an integer before lookup. For commands like read_images, key may also be a
     comma-separated list of keys. Thus it is impossible to access data items
     with keys like '1' instead of (int)1 using this mechanism. ro is a read only flag, which will disable caching as well."""
 
-    path, dictname, keys = db_parse_path(url)
+    if url[:4].lower() == "bdb:":
 
-    ddb = EMAN2DB.open_db(path)
-    ddb.open_dict(dictname, ro=ro)
+        path, dictname, keys = db_parse_path(url)
 
-    if with_keys:
-        if ro: return (ddb[dictname + "__ro"], keys)
-        return (ddb[dictname], keys)
+        ddb = EMAN2DB.open_db(path)
+        ddb.open_dict(dictname, ro=ro)
 
-    if ro: return ddb[dictname + "__ro"]
-    return ddb[dictname]
+        if with_keys:
+            if ro: return (ddb[dictname + "__ro"], keys)
+            return (ddb[dictname], keys)
+
+        if ro: return ddb[dictname + "__ro"]
+        return ddb[dictname]
+
+
+    elif url.endswith('.star'):
+        data = Pd_to_Db_conversion.open_db(url)
+        return data
+
+    else:
+        pass
 
 
 def db_close_dict(url):
@@ -308,15 +314,24 @@ def db_close_dict(url):
     After closing, a dict CAN be reopened, but references to existing dict objects should not be used
     after closing. Ignores non bdb: urls"""
 
-    try:
-        path, dictname, keys = db_parse_path(url)
-    except:
+    if url[:4].lower() == "bdb:":
+        try:
+            path, dictname, keys = db_parse_path(url)
+        except:
+            return
+
+        ddb = EMAN2DB.open_db(path)
+        ddb.close_dict(dictname)
+
         return
 
-    ddb = EMAN2DB.open_db(path)
-    ddb.close_dict(dictname)
+    elif url.endswith('.star'):
+        data = Pd_to_Db_conversion.open_db(url)
+        data.star.write_star_file(out_star_file=url, overwrite=True)
+        return
 
-    return
+    else:
+        pass
 
 
 def db_remove_dict(url):
@@ -481,7 +496,6 @@ def db_read_image(self, fsp, *parms, **kparms):
             tag = kparms['tag']
         except KeyError:
             tag = 'particles'
-
         try:
             data = star_file[tag]
         except KeyError:
@@ -502,8 +516,6 @@ def db_read_image(self, fsp, *parms, **kparms):
 
         self.read_image_c(file_name, *parms, **kparms)
         db_set_header_star(self, image_data, star_file)
-
-        # HEADER_MAGIC(emdata)   # this has to be done
         return None
 
     if len(kparms) != 0:
@@ -522,19 +534,22 @@ EMData.read_image_c = EMData.read_image
 EMData.read_image = db_read_image
 
 
-def db_set_header_star(img, data_dict, star_cla):
+def db_set_header_star(img, dataframe, star_cla):
+    """
+    Uses the dataframe and the starclass to insert the data into
+    the EMData image with respect to specific keys.
+    """
     star_dict = star_cla.sphire_keys
-    # img.set_attr("hello", np.int32(1))
-    for key in list(data_dict.keys()):
+    for key in dataframe.keys():
         if key in star_dict:
-            value = data_dict[key]
+            value = dataframe[key]
             img.set_attr(star_dict[key], value)
         else:
-            sphire_key = star_cla.sphire_header_magic(key)
+            sphire_key = star.sphire_header_magic(key)
             if sphire_key:
                 continue
             else:
-                value = data_dict[key]
+                value = dataframe[key]
                 if type(value) == np.int64:
                     value = np.int32(value)
                 else:
@@ -542,47 +557,40 @@ def db_set_header_star(img, data_dict, star_cla):
                 img.set_attr(key, float(value))
 
     try:
-        image_name = data_dict['_rlnImageName']
+        image_name = dataframe['_rlnImageName']
         number, file_name = image_name.split('@')
         img.set_attr("data_path", file_name)
         img.set_attr("ptcl_source_coord_id", int(number) - 1)
     except Exception as e:
-        print('Yet unknown exception! This may lead to unknown behaviour')
-        print(e)
+        pass
 
     try:
         ctfimg = EMAN2Ctf()
-        ctfdict = star_cla.get_emdata_ctf(data_dict)
+        ctfdict = star.get_emdata_ctf(data_dict)
         ctfimg.from_dict(ctfdict)
         img.set_attr("ctf", ctfimg)
-
     except Exception as e:
-        print('Yet unknown exception! This may lead to unknown behaviour')
-        print(e)
+        pass
 
     try:
-        transdict = star_cla.get_emdata_transform(data_dict)
+        transdict = star.get_emdata_transform(data_dict)
         trans = Transform(transdict)
         img.set_attr("xform.projection", trans)
     except Exception as e:
-        print('Yet unknown exception! This may lead to unknown behaviour')
-        print(e)
+        pass
 
     try:
-        transdict = star_cla.get_emdata_transform_2d(data_dict)
+        transdict = star.get_emdata_transform_2d(data_dict)
         trans = Transform(transdict)
         img.set_attr("xform.align2d", trans)
     except Exception as e:
-        print('Yet unknown exception! This may lead to unknown behaviour')
-        print(e)
+        pass
 
     try:
         cor = [data_dict["_rlnCoordinateX"], data_dict["_rlnCoordinateY"]]
         img.set_attr('ptcl_source_coord', cor)
     except Exception as e:
-        print('Yet unknown exception! This may lead to unknown behaviour')
-        print(e)
-
+        pass
     return
 
 
@@ -622,37 +630,41 @@ def db_read_images(fsp, *parms):
             data = star_file[tag]
         except KeyError:
             data = star_file['']
+        try:
+            if parms[2] == True:  # for returning starclass
+                return star_file
+        except IndexError:
+            pass
 
-        # if len(parms) > 0 :
-        #     image_data = data.iloc[parms[0]]
-        #     total_imgs = []
-        #     for file_name, group_data in pd.DataFrame(image_data['_rlnImageName'].str.split('@').tolist()).groupby(1) :
-        #         numbers = group_data[0].astype(int)
-        #         file_name = os.path.join('/home/adnan/PycharmProjects/newrelion/', file_name)
-        #         img = EMData.read_images_c(file_name, (numbers-1).tolist())
-        #         total_imgs.extend(img)
-        #     return total_imgs
+        try:
+            if parms[1] == True:  # for returning starclass
+                parms[1]
+        except IndexError:
+            parms = list(parms)
+            parms.append(False)
 
         if len(parms) > 0:
             image_data = data.iloc[parms[0]]
             total_imgs = []
-            for index in range(image_data.shape[0]):
-                numbers = int(image_data.iloc[index]['_rlnImageName'].split('@')[0])
-                file_name = image_data.iloc[index]['_rlnImageName'].split('@')[1]
-                file_name = os.path.join('/home/adnan/PycharmProjects/newrelion/', file_name)
-                img = EMData.read_images_c(file_name, [(numbers - 1)])
-                db_set_header_star(img[0], image_data.iloc[index], star_file)
-                total_imgs.extend(img)
-            return total_imgs
-
-        # elif len(parms) == 0 :
-        #     total_imgs = []
-        #     for file_name, group_data in pd.DataFrame(data['_rlnImageName'].str.split('@').tolist()).groupby(1):
-        #         numbers = group_data[0].astype(int)
-        #         file_name = os.path.join('/home/adnan/PycharmProjects/newrelion/', file_name)
-        #
-        #         total_imgs.extend(EMData.read_images_c(file_name, (numbers-1).tolist()))
-        #     return total_imgs
+            if parms[1] == False:
+                for index in range(image_data.shape[0]):
+                    numbers = int(image_data.iloc[index]['_rlnImageName'].split('@')[0])
+                    file_name = image_data.iloc[index]['_rlnImageName'].split('@')[1]
+                    file_name = os.path.join('/home/adnan/PycharmProjects/newrelion/', file_name)
+                    img = EMData.read_images_c(file_name, [(numbers - 1)])
+                    db_set_header_star(img[0], image_data.iloc[index], star_file)
+                    total_imgs.extend(img)
+                return total_imgs
+            else:
+                for index in range(image_data.shape[0]):
+                    numbers = int(image_data.iloc[index]['_rlnImageName'].split('@')[0])
+                    file_name = image_data.iloc[index]['_rlnImageName'].split('@')[1]
+                    file_name = os.path.join('/home/adnan/PycharmProjects/newrelion/', file_name)
+                    img = EMData()
+                    db_set_header_star(img, image_data.iloc[index], star_file)
+                    total_imgs.append(img)
+                    del img
+                return total_imgs
 
         elif len(parms) == 0:
             total_imgs = []
@@ -707,23 +719,20 @@ def db_write_image(self, fsp, *parms):
         #		db[parms[0]] = self # this means region writing does not work
         return
 
-    # only writing to a file is working still need to work on the star file saving
     elif fsp.endswith('.star'):
         star_file = star.StarFile(fsp)
         if len(parms) == 0:
             parms = [0]
             em_dict = self.get_attr_dict()
-            db_em_to_star_header(em_dict, star_file, fsp, parms[0])
-            star_file.write_star_file(fsp, ['particles'])
+            star.db_em_to_star_header(em_dict, star_file, parms[0])
+            star_file.write_star_file(out_star_file=fsp, overwrite=True)
             self.write_image_c(fsp.split('.star')[0] + '.mrcs', *parms)
 
         else:
-            # writing in star files works but writing in mrcs file crashes (need some help from markus)
             em_dict = self.get_attr_dict()
-            db_em_to_star_header(em_dict, star_file, fsp, parms[0])
-            star_file.write_star_file(fsp, ['particles'])
+            star.db_em_to_star_header(em_dict, star_file, parms[0])
+            star_file.write_star_file(out_star_file=fsp, overwrite=True)
             self.write_image_c(fsp.split('.star')[0] + '.mrcs', *parms)
-            # self.write_image_c(fsp.split('.star')[0]+'.mrcs', *parms)
         return
 
     return self.write_image_c(fsp, *parms)
@@ -733,69 +742,10 @@ EMData.write_image_c = EMData.write_image
 EMData.write_image = db_write_image
 
 
-def db_em_to_star_header(em_dict, star_file, fsp, ptcl_no):
-    name = str(ptcl_no + 1) + fsp.split('.star')[0] + '.mrcs'
-    a = pd.DataFrame(index=np.arange(1))
-    star_file['particles'] = a
-    star_file.line_dict['is_loop'] = True
-
-    special_keys = ('ctf', 'xform.projection', 'ptcl_source_coord', 'xform.align2d')
-
-    for key in list(em_dict.keys()):
-        em_key = star_file.sphire_header_magic(key)
-        if em_key:
-            star_file['particles'].loc[ptcl_no + 1, em_key] = em_dict[key]
-        elif key[0:2] == '_r':
-            star_file['particles'].loc[ptcl_no + 1, key] = em_dict[key]
-        else:
-            if key in special_keys:
-                if key == 'ctf':
-                    ctfdict = em_dict[key].to_dict()
-                    defocus = ctfdict['defocus']
-                    star_file['particles'].loc[ptcl_no + 1, "_rlnDefocusU"] = (
-                            (20000 * ctfdict["defocus"] - 10000 * ctfdict["dfdiff"]) / 2
-                    )
-
-                    star_file['particles'].loc[ptcl_no + 1, "_rlnDefocusV"] = (
-                            20000 * ctfdict["defocus"] - star_file['particles'].loc[ptcl_no + 1, "_rlnDefocusU"]
-                    )
-                    star_file['particles'].loc[ptcl_no + 1, "_rlnCtfBfactor"] = ctfdict["bfactor"]
-                    star_file['particles'].loc[ptcl_no + 1, "_rlnAmplitudeContrast"] = ctfdict["ampcont"] / 100
-                    star_file['particles'].loc[ptcl_no + 1, "_rlnDetectorPixelSize"] = ctfdict["apix"]
-                    star_file['particles'].loc[ptcl_no + 1, "_rlnMagnification"] = 10000
-                    star_file['particles'].loc[ptcl_no + 1, "_rlnVoltage"] = ctfdict["voltage"]
-                    star_file['particles'].loc[ptcl_no + 1, "_rlnSphericalAberration"] = ctfdict["cs"]
-                    star_file['particles'].loc[ptcl_no + 1, "_rlnDefocusAngle"] = 45 - ctfdict["dfang"]
-
-                elif key == 'xform.projection':
-                    trans = em_dict[key].get_params("spider")
-                    star_file['particles'].loc[ptcl_no + 1, "_rlnAngleRot"] = trans["phi"]
-                    star_file['particles'].loc[ptcl_no + 1, "_rlnAngleTilt"] = trans["theta"]
-                    star_file['particles'].loc[ptcl_no + 1, "_rlnAnglePsi"] = trans["psi"]
-                    star_file['particles'].loc[ptcl_no + 1, "_rlnOriginX"] = -trans["tx"]
-                    star_file['particles'].loc[ptcl_no + 1, "_rlnOriginY"] = -trans["ty"]
-
-                elif key == 'xform.align2d':
-                    trans = em_dict[key].get_params("2d")
-                    star_file['particles'].loc[ptcl_no + 1, "_rlnAnglePsi"] = trans["alpha"]
-                    star_file['particles'].loc[ptcl_no + 1, "_rlnOriginX"] = -trans["tx"]
-                    star_file['particles'].loc[ptcl_no + 1, "_rlnOriginY"] = -trans["ty"]
-
-                elif key == 'ptcl_source_coord':
-                    star_file['particles'].loc[ptcl_no + 1, "_rlnCoordinateX"] = em_dict[key][0]
-                    star_file['particles'].loc[ptcl_no + 1, "_rlnCoordinateY"] = em_dict[key][1]
-                else:
-                    pass
-
-    part_path = str("{:08n}".format(ptcl_no + 1)) + '@' + em_dict["data_path"]
-    star_file['particles'].loc[ptcl_no + 1, '_rlnImageName'] = part_path
-    return
-
-
 def db_get_image_count(fsp):
     """get_image_count(path)
-
-Takes a path or bdb: specifier and returns the number of images in the referenced stack."""
+    Takes a path or bdb: specifier and returns the number of images
+    in the referenced stack."""
     if fsp[:4].lower() == "bdb:":
         path, dictname, keys = db_parse_path(fsp)
         if keys == None:
@@ -837,7 +787,6 @@ Takes a path or bdb: specifier and returns the number of images in the reference
     try:
         ret = EMUtil.get_image_count_c(fsp)
     except:
-        #		print"Error with get_image_count on : ",fsp
         raise Exception(fsp)
     return ret
 
@@ -890,7 +839,7 @@ EMUtil.fix_image_count = staticmethod(db_fix_image_count)
 
 def db_get_image_info(fsp):
     """get_image_info(path)
-Takes a bdb: specifier and returns the number of images and image dimensions."""
+    Takes a bdb: specifier and returns the number of images and image dimensions."""
     if fsp[:4].lower() == "bdb:":
         path, dictname, keys = db_parse_path(fsp)
         if keys == None:
@@ -924,6 +873,10 @@ Takes a bdb: specifier and returns the number of images and image dimensions."""
 
 
 def db_get_all_attributes(fsp, *parms):
+    """
+    Returns all the data inside the dictionary of either EMAN2db or starfile.
+    Inputs = filename,  key
+    """
     if fsp[:4].lower() == "bdb:":
         db = db_open_dict(fsp, True)
         attr_name = parms[-1]
@@ -953,13 +906,13 @@ def db_get_all_attributes(fsp, *parms):
         except KeyError:
             data = star_file['']
 
-        special_keys = ('ctf', 'xform.projection', 'ptcl_source_coord', 'xform.align2d', 'filament_ID')
+        special_keys = ('ctf', 'xform.projection', 'ptcl_source_coord', 'xform.align2d')
         if parms[0] in special_keys:
             if parms[0] == 'ctf':
                 ctf_list = []
                 for idx in range(data.shape[0]):
                     star_data = data.iloc[idx]
-                    ctfdict = star_file.get_emdata_ctf(star_data)
+                    ctfdict = star.get_emdata_ctf(star_data)
                     ctf = EMAN2Ctf()
                     ctf.from_dict(ctfdict)
                     ctf_list.append(ctf)
@@ -971,16 +924,15 @@ def db_get_all_attributes(fsp, *parms):
                 trans_list = []
                 for idx in range(data.shape[0]):
                     star_data = data.iloc[idx]
-                    transdict = star_file.get_emdata_transform(star_data)
+                    transdict = star.get_emdata_transform(star_data)
                     trans = Transform(transdict)
                     trans_list.append(trans)
                 return trans_list
-            # please have
             elif parms[0] == 'xform.align2d':
                 trans_list = []
                 for idx in range(data.shape[0]):
                     star_data = data.iloc[idx]
-                    transdict = star_file.get_emdata_transform_2d(star_data)
+                    transdict = star.get_emdata_transform_2d(star_data)
                     trans = Transform(transdict)
                     trans_list.append(trans)
                 return trans_list
@@ -995,7 +947,7 @@ def db_get_all_attributes(fsp, *parms):
             else:
                 assert False, 'Missing rule for {}'.format(key)
         else:
-            key = star_file.sphire_header_magic(parms[0])
+            key = star.sphire_header_magic(parms[0])
             return data[key]
 
     return EMUtil.get_all_attributes_c(fsp, *parms)
@@ -1003,6 +955,188 @@ def db_get_all_attributes(fsp, *parms):
 
 EMUtil.get_all_attributes_c = staticmethod(EMUtil.get_all_attributes)
 EMUtil.get_all_attributes = staticmethod(db_get_all_attributes)
+
+
+def db_em_to_star_header(em_dict, dataframe, ptcl_no):
+    """
+    It converts the data from EMAN dictionary and pass it all
+    to pandas dataframe after conversion of keys.
+    """
+
+    special_keys = ('ctf', 'xform.projection', 'ptcl_source_coord',
+                    'xform.align2d', "data_path")
+
+    for key in list(em_dict.keys()):
+        em_key = sphire_header_magic(key)
+        if em_key:
+            dataframe.loc[ptcl_no + 1, em_key] = em_dict[key]
+        elif key[0:2] == '_r':
+            dataframe.loc[ptcl_no + 1, key] = em_dict[key]
+        else:
+            if key in special_keys:
+                if key == 'ctf':
+                    ctfdict = em_dict[key].to_dict()
+                    defocus = ctfdict['defocus']
+                    dataframe.loc[ptcl_no + 1, "_rlnDefocusU"] = (
+                            (20000 * ctfdict["defocus"] - 10000 * ctfdict["dfdiff"]) / 2
+                    )
+
+                    dataframe.loc[ptcl_no + 1, "_rlnDefocusV"] = (
+                            20000 * ctfdict["defocus"] -
+                            star_file['particles'].loc[ptcl_no + 1, "_rlnDefocusU"]
+                    )
+                    dataframe.loc[ptcl_no + 1, "_rlnCtfBfactor"] = ctfdict["bfactor"]
+                    dataframe.loc[ptcl_no + 1, "_rlnAmplitudeContrast"] = ctfdict["ampcont"] / 100
+                    dataframe.loc[ptcl_no + 1, "_rlnDetectorPixelSize"] = ctfdict["apix"]
+                    dataframe.loc[ptcl_no + 1, "_rlnMagnification"] = 10000
+                    dataframe.loc[ptcl_no + 1, "_rlnVoltage"] = ctfdict["voltage"]
+                    dataframe.loc[ptcl_no + 1, "_rlnSphericalAberration"] = ctfdict["cs"]
+                    dataframe.loc[ptcl_no + 1, "_rlnDefocusAngle"] = 45 - ctfdict["dfang"]
+
+                elif key == 'xform.projection':
+                    trans = em_dict[key].get_params("spider")
+                    dataframe.loc[ptcl_no + 1, "_rlnAngleRot"] = trans["phi"]
+                    dataframe.loc[ptcl_no + 1, "_rlnAngleTilt"] = trans["theta"]
+                    dataframe.loc[ptcl_no + 1, "_rlnAnglePsi"] = trans["psi"]
+                    dataframe.loc[ptcl_no + 1, "_rlnOriginX"] = -trans["tx"]
+                    dataframe.loc[ptcl_no + 1, "_rlnOriginY"] = -trans["ty"]
+
+                elif key == 'xform.align2d':
+                    trans = em_dict[key].get_params("2d")
+                    dataframe.loc[ptcl_no + 1, "_rlnAnglePsi"] = trans["alpha"]
+                    dataframe.loc[ptcl_no + 1, "_rlnOriginX"] = -trans["tx"]
+                    dataframe.loc[ptcl_no + 1, "_rlnOriginY"] = -trans["ty"]
+
+                elif key == 'ptcl_source_coord':
+                    dataframe.loc[ptcl_no + 1, "_rlnCoordinateX"] = em_dict[key][0]
+                    dataframe.loc[ptcl_no + 1, "_rlnCoordinateY"] = em_dict[key][1]
+
+                elif key == 'data_path':
+                    try:
+                        part_path = str("{:08n}".format(em_dict["ptcl_source_coord_id"] + 1)) + '@' + em_dict[
+                            "data_path"]
+                        dataframe.loc[ptcl_no + 1, '_rlnImageName'] = part_path
+                    except KeyError:  # if datapath is not provided
+                        pass
+                else:
+                    pass
+    return
+
+
+class Pd_to_Db_conversion():
+    """
+    The class helps the starfile class in adopting the behavior of db_open_dict and
+    db_close_dict.
+    In general this class should wrap around the starclass so that if you pass dict
+    to a pandas dataframe at particular index, it should do its magic and save the dictionary
+    properly in the pandas dataframe
+    """
+
+    opendbs = {}
+    lock = threading.Lock()
+
+    def open_db(path=None):
+        """This is an alternate constructor which may return a cached (already open)
+        sphire instance"""
+
+        Pd_to_Db_conversion.lock.acquire()
+
+        if not path: path = e2gethome() + "/.eman2"
+        if path == "." or path == "./": path = e2getcwd()
+        if path in Pd_to_Db_conversion.opendbs:
+            Pd_to_Db_conversion.lock.release()
+            return Pd_to_Db_conversion.opendbs[path]
+        ret = Pd_to_Db_conversion(star.StarFile(path))
+        Pd_to_Db_conversion.lock.release()
+        return ret
+
+    def __init__(self, StarFile, special_key=None):
+        self.index = 0
+        self.star = StarFile
+        if special_key != None:
+            self.converter = StarFile[special_key]
+        else:
+            try:
+                self.converter = StarFile['particles']
+            except KeyError:
+                self.converter = StarFile['']
+            except:
+                self.converter.update('particles', pandas.DataFrame(), True)
+
+        # Keep a cache of opened database environments
+        Pd_to_Db_conversion.opendbs[self.star.star_file] = self
+
+    def set(self, index, in_data):
+        if isinstance(in_data, dict):
+            db_em_to_star_header(in_data, self.converter, index)
+        else:
+            pass
+
+    def __setitem__(self, index, data):
+        self.set(index, data)
+
+    def get(self, index):
+        sp_keys = self.star.sphire_keys
+        return db_star_to_em_header(self.converter, index, sp_keys)
+
+    def __getitem__(self, index):
+        return self.get(index)
+
+
+def db_star_to_em_header(dataframe, idx, sphire_keys):
+    special_keys = ('ctf', 'xform.projection', 'ptcl_source_coord', 'xform.align2d', "data_path")
+    em_dict = {}
+    for key in special_keys:
+        if key == 'ctf':
+            ctfdict = star.get_emdata_ctf(dataframe.iloc[idx])
+            ctf = EMAN2Ctf()
+            ctf.from_dict(ctfdict)
+            em_dict[key] = ctf
+            del ctfdict
+
+        elif key == 'xform.projection':
+            transdict = star.get_emdata_transform(dataframe.iloc[idx])
+            trans = Transform(transdict)
+            em_dict[key] = trans
+            del transdict
+
+        elif key == 'xform.align2d':
+            transdict = star.get_emdata_transform_2d(dataframe.iloc[idx])
+            trans = Transform(transdict)
+            em_dict[key] = trans
+            del transdict
+        elif key == 'ptcl_source_coord':
+            coord = [dataframe.iloc[idx]["_rlnCoordinateX"], dataframe.iloc[idx]["_rlnCoordinateY"]]
+            em_dict[key] = coord
+
+        elif key == 'data_path':
+            image_name = dataframe.iloc[idx]['_rlnImageName']
+            number, file_name = image_name.split('@')
+            em_dict[key] = file_name
+            em_dict["ptcl_source_coord_id"] = int(number) - 1
+
+        else:
+            assert False, 'Missing rule for {}'.format(key)
+
+    for keys in dataframe:
+        try:
+            if keys in sphire_keys:
+                new_key = sphire_keys[keys]
+            else:
+                new_key = star.sphire_header_magic(keys)
+            if new_key == keys:
+                continue
+            else:
+                value = dataframe.iloc[idx][keys]
+                if isinstance(value, np.int64):
+                    value = np.int32(value)
+                else:
+                    value = value
+                em_dict[new_key] = value
+        except KeyError:
+            pass
+
+    return em_dict
 
 
 #############
@@ -1383,10 +1517,6 @@ only practical option.)
 
         self.dicts = {}
 
-    # if self.__dbenv.DBfailchk(flags=0) :
-    # self.LOG(1,"Database recovery required")
-    # sys.exit(1)
-
     def close(self):
         """close the environment associated with this object. This should ONLY be called if no other
         EMAN2 programs are currently running. Even then it is optional. see e2bdb.py --cleanup"""
@@ -1402,7 +1532,6 @@ only practical option.)
         self.close()
 
     def __getitem__(self, key):
-        #		print "get ",key
         try:
             return self.dicts[key]
         except:
@@ -1411,7 +1540,6 @@ only practical option.)
             raise KeyError
 
     def open_dict(self, name, ro=False):
-        #		print "open ",name,ro
         if name in self.dicts: return
         self.dicts[name] = DBDict(name, dbenv=self.dbenv, path=self.path + "/EMAN2DB", parent=self, ro=ro)
         self.__dict__[name] = self.dicts[name]
@@ -1428,18 +1556,7 @@ only practical option.)
         self.__dict__[name].realopen()
         self.__dict__[name].bdb.truncate()
         self.__dict__[name].close()
-        #		try: os.unlink(self.path+"/EMAN2DB/"+name+".bdb")		# this is unsafe as far at the DB is concerned, but the method below freezes :^(
-        #		except: pass
 
-        # if self.dicts.has_key(name) : self.dicts[name].close()
-        # print self.path+"/EMAN2DB/"+name+".bdb"
-        # self.dbenv.dbremove(self.path+"/EMAN2DB/"+name+".bdb")		# this is the 'correct' way, but using it seems to cause a process to lockup on FUTEX_WAIT  :^(
-
-        # if not (name in self.dicts.keys()) :
-        # if name in self.dicts.keys():
-        # self.__dict__[name].close()
-        # try: os.unlink(self.path+"/EMAN2DB/"+name+".bdb")
-        # except: pass
         for f in os.listdir(self.path + "/EMAN2DB"):
             if fnmatch.fnmatch(f, name + '_*'):
                 try:
@@ -1528,8 +1645,6 @@ class DBDict(object):
         """This actually opens the database (unless already open), if ro is set and the database is not already
         open read-write, it will be opened read-only"""
 
-        #		print "open ",self.name
-
         global DBDEBUG
         if DBDEBUG:
             while not self.lock.acquire(False):
@@ -1548,20 +1663,12 @@ class DBDict(object):
             self.close()  # we need to reopen read-write
             self.lock.acquire()
 
-        # if DBDEBUG:
-        ## look at the locking subsystem stats
-        # ls=self.dbenv.lock_stat()
-        # print "lock_stat:\t",
-        # for i in ("nlocks","maxlocks","nlockers","maxlockers","nobjects","maxobjects","maxnlocks"): print ls[i],"\t",
-        # print
-
         self.bdb = db.DB(
             self.dbenv)  # we don't check BDB_CACHE_DISABLE here, since self.dbenv will already be None if its set
         if self.file == None:
             lfile = self.name + ".bdb"
         else:
             lfile = self.file
-        #		print "open ",self.path+"/"+file,self.name,ro
         if ro:
             try:
                 self.bdb.open(self.path + "/" + lfile, self.name, db.DB_BTREE, db.DB_RDONLY | db.DB_THREAD)
@@ -1572,13 +1679,7 @@ class DBDict(object):
                 self.lock.release()
                 if DBDEBUG: traceback.print_exc()
                 raise Exception("Cannot open or find %s" % self.name)
-            # except:
-            ## try one more time... this shouldn't be necessary...
-            # time.sleep(1)
-            ##				try:
-            # self.bdb.open(self.path+"/"+file,self.name,db.DB_BTREE,db.DB_RDONLY|db.DB_THREAD)
-            ##				except:
-            ##					raise Exception,"Cannot open database : %s"%self.path+"/"+file
+
             self.isro = True
         else:
             try:
@@ -1596,19 +1697,10 @@ class DBDict(object):
                     traceback.print_exc()
                     print("Unable to open read/write %s (%s/%s)" % (self.name, self.path, lfile))
                     return
-            # except:
-            ## try one more time... this shouldn't be necessary...
-            # time.sleep(1)
-            # try:
-            # self.bdb.open(self.path+"/"+file,self.name,db.DB_BTREE,db.DB_CREATE|db.DB_THREAD)
-            # except:
-            # raise Exception,"Cannot create database : %s"%self.path+"/"+file
+
             self.isro = False
 
-        # print("bdb keys are", self.bdb.keys())
-        # print(self.__dict__['bdb'].keys())
         for old_key in self.bdb.keys():
-            # print("bdb key are", self.bdb.keys())
             try:
                 self.key_translation_dict[dumps(loads(old_key), 2)] = old_key
             except:
@@ -1624,11 +1716,6 @@ class DBDict(object):
 
         if DBDEBUG: print("Opened ", self.name)
 
-    #		print "%d open"%DBDict.nopen
-    #		print "opened ",self.name,ro
-    #		self.bdb.open(file,name,db.DB_HASH,dbopenflags)
-    #		print "Init ",name,file,path
-
     def close_one(self):
         """Will select and close any excess open databases. Closure is based on the number of times it has been reopened and the
         time it was last used."""
@@ -1641,9 +1728,6 @@ class DBDict(object):
 
         global DBDEBUG
 
-        #		if len(l)>MAXOPEN :
-        #			print "%d dbs open, autoclose disabled"%len(l)
-        #			for j,i in enumerate(l): print j,i[2].name,i[0]-time.time(),i[1]
         if len(l) > MAXOPEN:
             if DBDEBUG: print("DB autoclosing %d/%d " % (len(l) - MAXOPEN, len(l)))
             for i in range(len(l) - MAXOPEN):
@@ -1668,7 +1752,6 @@ class DBDict(object):
         if not self.lock.acquire(False):
             time.sleep(0.1)
 
-        #		print "close x ",self.path+"/"+str(self.file),self.name,"XXX"
         try:
             self.bdb.close()
         except:
@@ -1690,7 +1773,6 @@ class DBDict(object):
         if self.bdb == None:
             self.lock.release()
             return
-        #		print "close x ",self.path+"/"+str(self.file),self.name,"XXX"
         self.bdb.close()
         self.bdb = None
         DBDict.nopen -= 1
@@ -1718,7 +1800,6 @@ class DBDict(object):
         try:
             ret = {}
             for i in n:
-                # d=loads(self.bdb.get(dumps(i,-1),txn=self.txn))
                 d = self.load_item(i, txn=self.txn)
                 if getattr(attr, '__iter__', False):
                     ret[i] = {}
@@ -1732,21 +1813,18 @@ class DBDict(object):
             return ret
         except:
             if getattr(attr, '__iter__', False) and not isinstance(attr, str):
-                # d=loads(self.bdb.get(dumps(n,-1),txn=self.txn))
                 d = self.load_item(n, txn=self.txn)
 
                 ret = {}
                 for a in attr:
                     if a in d: ret[a] = d[a]
                 return ret
-            # return loads(self.bdb.get(dumps(n,-1),txn=self.txn))[attr]
             return self.load_item(n, txn=self.txn)[attr]
 
     def set_attr(self, n, attr, val=None):
         """Sets an attribute to val in EMData object 'n'. Alternatively, attr may be a dictionary containing multiple key/value pairs
         to be updated in the EMData object. Unlike with get_attr, n must always refer to a single EMData object in the database."""
         self.realopen()
-        # a=loads(self.bdb.get(dumps(n,-1),txn=self.txn))
         a = self.load_item(n, txn=self.txn)
         if isinstance(attr, dict):
             a.update(attr)
@@ -1761,9 +1839,6 @@ class DBDict(object):
         except:
             return 0
 
-    #		return self.bdb.stat(db.DB_FAST_STAT)["nkeys"]
-    #		return len(self.bdb)
-
     def put(self, key, val, txn=None):
         """This performs the bdb.put function with some error detection and retry capabilities.
             Retrying should not be necessary, but we have been completely unable to figure out the cause
@@ -1771,7 +1846,6 @@ class DBDict(object):
         n = 0
         while n < 10:
             try:
-                # self.bdb.put(key,val,txn=txn)
                 self.bdb.put(key, val, txn=txn)
                 break
             except:
@@ -1792,7 +1866,6 @@ class DBDict(object):
             ad = val.get_attr_dict()
             pkey = "%s/%s_" % (self.path, self.name)
             fkey = "%dx%dx%d" % (ad["nx"], ad["ny"], ad["nz"])
-            #			print "w",fkey
             try:
                 n = self.load_item(key, fkey, self.txn)
             except:
@@ -1801,9 +1874,7 @@ class DBDict(object):
                 else:
                     self[fkey] += 1
                 n = self[fkey]
-            # self.put(fkey + self.get_key(key), dumps(n, 2), txn=self.txn)  # a special key for the binary location
             self.dump_item(key, n, fkey, txn=self.txn)
-            # self.put(fkey+dumps(key,-1),dumps(n,-1),txn=self.txn)		# a special key for the binary location
             # write the metadata
             try:
                 del ad["data_path"]
@@ -1812,7 +1883,6 @@ class DBDict(object):
 
             t = time.localtime(time.time())
             ad["timestamp"] = "%04d/%02d/%02d %02d:%02d:%02d" % t[:6]
-            # self.put(dumps(key,-1),dumps(ad,-1),txn=self.txn)
             self.dump_item(key, ad, txn=self.txn)
 
             if isinstance(key, int) and ("maxrec" not in self or key > self["maxrec"]):
@@ -1838,31 +1908,15 @@ class DBDict(object):
             val.write_data(pkey + fkey, n * 4 * ad["nx"] * ad["ny"] * ad["nz"])
 
         else:
-            # self.put(dumps(key,-1),dumps(val,-1),txn=self.txn)
             self.dump_item(key, val, txn=self.txn)
             if isinstance(key, int) and ("maxrec" not in self or key > self["maxrec"]): self["maxrec"] = key
 
     def __getitem__(self, key):
         self.realopen(self.rohint)
-        # try:
-        # 	r = loads(self.bdb.get(dumps(key,-1),txn=self.txn))
-        # except:
-        # 	try:
-        # 		r = loads(self.bdb.get(dumps(key,-1).replace('\x00', '\x01'), txn=self.txn))
-        # 	except:
-        # 		try:
-        # 			r = loads(self.bdb.get(dumps(key,-1).replace('\x01', '\x00'), txn=self.txn))
-        # 		except:
-        # 			try:
-        # 				r = loads(self.bdb.get(self.key_translation_dict[dumps(key,-1)],txn=self.txn))
-        # 			except:
-        # 				return None
-
         r = self.load_item(key, txn=self.txn)
         if isinstance(r, dict) and "is_complex_x" in r:
             pkey = "%s/%s_" % (self.path, self.name)
             fkey = "%dx%dx%d" % (r["nx"], r["ny"], r["nz"])
-            #			print "r",fkey
             ret = EMData(r["nx"], r["ny"], r["nz"])
             if "data_path" in r:
                 if r["data_path"].endswith('.mrcs'):
@@ -1874,7 +1928,6 @@ class DBDict(object):
                         ret.read_image(self.path + "/" + p, int(l))  # relative
                 else:
                     p, l = r["data_path"].split("*")
-                    #				print "read ",os.getcwd(),self.path,p,l
                     if p[0] == '/':
                         ret.read_data(p, int(l))
                     else:
@@ -1900,12 +1953,10 @@ class DBDict(object):
 
     def __delitem__(self, key):
         self.realopen()
-        # self.bdb.delete(dumps(key,-1),txn=self.txn)
         self.bdb.delete(self.get_key(key), txn=self.txn)
 
     def __contains__(self, key):
         self.realopen(self.rohint)
-        # return dumps(key,-1) in self.bdb
         return self.get_key(key) in self.bdb
 
     def item_type(self, key):
@@ -1939,8 +1990,6 @@ class DBDict(object):
         self.realopen(self.rohint)
         return key in set(self.keys())
 
-    # return dumps(key,-1) in self.bdb
-
     def get_data_path(self, key):
         """returns the path to the binary data as "path*location". Only valid for EMData objects."""
         self.realopen(self.rohint)
@@ -1963,19 +2012,6 @@ class DBDict(object):
         """Alternate method for retrieving records. Permits specification of an EMData 'target'
         object in which to place the read object"""
         self.realopen(self.rohint)
-        # try:
-        # 	r = loads(self.bdb.get(dumps(key,-1),txn=self.txn))
-        # except:
-        # 	try:
-        # 		r = loads(self.bdb.get(dumps(key,-1).replace('\x00', '\x01'), txn=self.txn))
-        # 	except:
-        # 		try:
-        # 			r = loads(self.bdb.get(dumps(key,-1).replace('\x01', '\x00'), txn=self.txn))
-        # 		except:
-        # 			try:
-        # 				r = loads(self.bdb.get(self.key_translation_dict[dumps(key,-1)],txn=self.txn))
-        # 			except:
-        # 				return dfl
         try:
             r = self.load_item(key, txn=self.txn)
         except:
@@ -1986,7 +2022,6 @@ class DBDict(object):
             rnx, rny, rnz = r["nx"], r["ny"], r["nz"]
             fkey = "%dx%dx%d" % (rnx, rny, rnz)
 
-            #			print "r",fkey
             if region != None:
                 size = region.get_size()
                 # zeros are annoyingly necessary
@@ -2033,7 +2068,6 @@ class DBDict(object):
                     try:
                         n = self.load_item(key, fkey)
                     except:
-                        # print("key,pkey,fkey", key, pkey, fkey, pkey+fkey)
                         raise KeyError("Undefined data location key %s for %s" % (key, pkey + fkey))
                     try:
                         ret.read_data(pkey + fkey, n * 4 * rnx * rny * rnz, region, rnx, rny,
@@ -2079,18 +2113,14 @@ class DBDict(object):
 
             pkey = "%s/%s_" % (self.path, self.name)
             fkey = "%dx%dx%d" % (ad["nx"], ad["ny"], ad["nz"])
-            #			print "w",fkey
             try:
                 n = self.load_item(key, fkey, txn=self.txn)
             except Exception as e:
-                # print(e)
                 if fkey not in self:
                     self[fkey] = 0
                 else:
                     self[fkey] += 1
                 n = self[fkey]
-            # self.put(fkey+dumps(key,-1),dumps(n,-1),txn=txn)		# a special key for the binary location
-            # self.put(fkey.encode('utf8') + self.get_key(key), dumps(n, 2), txn=txn)  # a special key for the binary location
             self.dump_item(key, n, fkey, txn=txn)
             # write the metadata
             try:
@@ -2112,7 +2142,6 @@ class DBDict(object):
                     im = self[0]
                     sz = (im["nx"], im["ny"], im["nz"])
                 except Exception as e:
-                    # print(e)
                     sz = (0, 0, 0)
                 db2[self.name] = (time.time(), len(self), sz)
             else:
@@ -2129,10 +2158,7 @@ class DBDict(object):
                                ad["nz"])
             else:
                 val.write_data(pkey + fkey, n * 4 * ad["nx"] * ad["ny"] * ad["nz"])
-        #			print "WI ",self.path,self.name,key,val,BDB_CACHE_DISABLE,pkey+fkey,n*4*ad["nx"]*ad["ny"]*ad["nz"]
-
         else:
-            # self.put(dumps(key,-1),dumps(val,-1),txn=txn)
             self.dump_item(key, val, txn=self.txn)
             if isinstance(key, int) and ("maxrec" not in self or key > self["maxrec"]): self["maxrec"] = key
 
@@ -2153,10 +2179,8 @@ class DBDict(object):
             # write the metadata
             ad = val.get_attr_dict()
             self.dump_item(key, ad, txn=self.txn)
-        # self.bdb.put(dumps(key,-1),dumps(ad,-1),txn=txn)
         elif isinstance(val, dict):
             self.dump_item(key, ad, txn=self.txn)
-        # self.bdb.put(dumps(key,-1),dumps(val,-1),txn=txn)
         else:
             raise Exception("set_header is only valid for EMData objects or dictionaries")
 
@@ -2179,39 +2203,7 @@ class DBDict(object):
     def load_item(self, key, fkey=b'', txn=None):
         if not isinstance(fkey, bytes):
             fkey = fkey.encode('utf-8')
-        # print("print value is", self.bdb.get(fkey+ self.get_key(key), txn=txn))
         return loads(self.bdb.get(fkey + self.get_key(key), txn=txn))
-
-
-# def load_item(self, key , fkey=b'', txn = None):
-# 	if not isinstance(fkey, bytes):
-# 		fkey = fkey.encode('utf-8')
-# 	print("key in python 3", key)
-# 	try:
-# 		r = loads(self.bdb.get(fkey+get_key(key), txn=txn))
-# 	except:
-# 		try:
-# 			r = loads(self.bdb.get(fkey+get_key(key).replace('\x00', '\x01'), txn=txn))
-# 		except:
-# 			try:
-# 				r = loads(self.bdb.get(fkey+get_key(key).replace('\x01', '\x00'), txn=txn))
-# 			except:
-# 				try:
-# 					r = loads(self.bdb.get(self.key_translation_dict[fkey+get_key(key)], txn=txn))
-# 				except:
-# 					raise
-# 	return r
-
-
-# def dump_item(self, key , value, txn=None):
-# 		try:
-# 			r = self.bdb.put(key=self.key_translation_dict[dumps(key,2)] ,data = dumps(value, 2), txn=txn)
-# 		except:
-# 			try:
-# 				r =self.bdb.put(key=dumps(key, 2), data=dumps(value, 2), txn = txn )
-# 			except:
-# 				raise
-# 		return r
 
 
 # def DB_cleanup():
@@ -2245,6 +2237,5 @@ __doc__ = \
     with standard naming conventions, etc. helps provide the capability to log
     the entire refinement process."""
 
-
-
-
+from EMAN2 import EMAN2Ctf
+from EMAN2 import Transform
