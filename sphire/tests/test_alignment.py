@@ -54,7 +54,6 @@ from .test_module import (
     IMAGE_3D,
     IMAGE_BLANK_2D,
     IMAGE_BLANK_3D,
-    MASK,
     MASK_2DIMAGE,
     MASK_3DIMAGE,
     give_ali2d_single_iter_data,
@@ -62,15 +61,12 @@ from .test_module import (
     give_ormq_data,
 )
 
-from sphire.libpy.sp_fundamentals import fft  # ccf,rot_shift2D
-from sphire.libpy.sp_utilities import model_circle, model_blank, even_angles
-from sphire.libpy.sp_projection import prep_vol
-from sphire.libpy import sp_projection
+from sphire.sphire.libpy.sp_fundamentals import fft  # ccf,rot_shift2D
+from sphire.sphire.libpy.sp_utilities import model_circle, model_blank, even_angles
+from sphire.sphire.libpy.sp_projection import prep_vol
 
 from sphire.libpy_py3 import sp_alignment as oldfu
-from sphire.libpy import sp_alignment as fu
-
-import sphire.tests.test_module as test_module
+from sphire.sphire.libpy import sp_alignment as fu, sp_utilities
 
 from mpi import *
 
@@ -4387,7 +4383,6 @@ class Test_alivol_mask(unittest.TestCase):
         self.assertEqual(msg[1], msg_old[1])
 
     def test_luca_ali_vol_mask(self):
-        from sphire.libpy import sp_utilities
         p = [180.0,0.0, 30.0, 0.5, 0.5, 1.2, 0,1]
 
         new_mask = sp_utilities.model_circle(2, 10, 10, 10)

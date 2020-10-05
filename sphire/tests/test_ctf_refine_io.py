@@ -2,8 +2,6 @@ import unittest
 
 from sphire.libpy_py3 import sp_ctf_refine_io as oldfu
 
-from sphire.libpy import sp_ctf_refine_io as fu
-
 
 class Test_read_meridien_data(unittest.TestCase):
     def test_read_meridien_data(self):

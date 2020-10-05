@@ -1,12 +1,11 @@
 from __future__ import print_function
 from __future__ import division
-from past.utils import old_div
 import unittest
 
 from numpy import array_equal
 
 from sphire.libpy_py3 import sp_isac as oldfu
-from sphire.libpy import sp_isac as fu
+from ..sphire.libpy import sp_isac as fu
 
 from .test_module import IMAGE_2D
 """

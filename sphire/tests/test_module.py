@@ -49,11 +49,9 @@ List:
 """
 
 from os import system as os_system
-from copy import deepcopy
 from numpy import arange, float32 as np_float32
-from sphire.libpy.sp_utilities import model_blank, model_circle
+from sphire.sphire.libpy.sp_utilities import model_blank, model_circle
 from EMAN2_cppwrap import Util, EMData
-from pickle import load as pickle_load
 from os import path, remove
 
 # import io

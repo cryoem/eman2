@@ -4,11 +4,11 @@ from __future__ import division
 
 from time import sleep
 
-from sphire.bin import sp_cter as fu
+from ..sphire.bin import sp_cter as fu
 from sphire.bin_py3 import sp_cter as oldfu
 
 
-from sphire.libpy.sp_utilities import get_im
+from sphire.sphire.libpy.sp_utilities import get_im
 from numpy import array_equal
 from os import path,listdir
 from .test_module import ABSOLUTE_OLDBIN_PATH,ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,ABSOLUTE_BIN_PATH,remove_list_of_file,remove_dir
