@@ -35,6 +35,8 @@
 
 using namespace EMAN;
 
+const unsigned int EER_CAMERA_SIZE_BITS = 12;
+const unsigned int EER_CAMERA_SIZE      = 1 << EER_CAMERA_SIZE_BITS; // 2^12 = 4096
 
 EerFrame::EerFrame(TIFF *tiff)
 	: num_strips(TIFFNumberOfStrips(tiff))
@@ -55,12 +57,11 @@ EerFrame::EerFrame(TIFF *tiff)
 	EerSubPix sub_pix;
 
 	int count = 0;
-	int N = 4096*4096;
 
-	while (count<N) {
+	while (count < EER_CAMERA_SIZE * EER_CAMERA_SIZE) {
 		is>>rle>>sub_pix;
-		int x = count & 4095;
-		int y = count >> 12;
+		int x = count & (EER_CAMERA_SIZE - 1);
+		int y = count >> EER_CAMERA_SIZE_BITS;
 		
 		_coords.push_back(std::make_pair(x,y));
 
@@ -135,8 +136,8 @@ int EerIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 	TIFFGetField(tiff_file, TIFFTAG_IMAGEWIDTH, &nx);
 	TIFFGetField(tiff_file, TIFFTAG_IMAGELENGTH, &ny);
 
-	dict["nx"] = nx;
-	dict["ny"] = ny;
+	dict["nx"] = EER_CAMERA_SIZE;
+	dict["ny"] = EER_CAMERA_SIZE;
 	dict["nz"] = 1;
 
 	return 0;
@@ -158,7 +159,7 @@ int EerIO::read_data(float *rdata, int image_index, const Region * area, bool)
 	ENTERFUNC;
 
 	for(auto &c : frames[image_index].coords())
-		rdata[c.first + c.second * 4096] += 1;
+		rdata[c.first + c.second * EER_CAMERA_SIZE] += 1;
 
 	EXITFUNC;
 
