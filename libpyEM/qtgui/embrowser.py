@@ -1479,7 +1479,8 @@ class EMStackFileType(EMFileType) :
 					scr=dic.pop('score')
 				else:
 					scr=0
-				tf=Transform(dic)
+				xfkey=["type","alt","az","phi","tx","ty","tz","alpha","scale"]
+				tf=Transform({k:dic[k] for k in dic.keys() if k in xfkey})
 				t = tf.get_trans()
 				r = tf.get_rotation()
 				rows.append( [r["az"],r["alt"],r["phi"],t[0],t[1],t[2], scr])
