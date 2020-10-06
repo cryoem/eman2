@@ -15,23 +15,28 @@ def main():
 	parser.add_argument("--path", type=str,help="path", default=None)
 	parser.add_argument("--iter", type=int,help="iteration number", default=2)
 	parser.add_argument("--nframe", type=int,help="number of frames in the trajectory", default=15)
+	parser.add_argument("--parminit", type=str,help="compare to another parm file instead of xform in header", default=None)
 	parser.add_argument("--replace3d", type=str,help="replace the 3D map used for trajectory", default=None)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	
-	js=js_open_dict(os.path.join(options.path, "0_spt_params.json"))
-	if js.has_key("refine") and js["refine"]:
-		print("Reading from {}".format(options.path))
-	else:
-		print("This program only works on SPT projects using the --refine option")
-		return
+	#js=js_open_dict(os.path.join(options.path, "0_spt_params.json"))
+	#if js.has_key("refine") and js["refine"]:
+		#print("Reading from {}".format(options.path))
+	#else:
+		#print("This program only works on SPT projects using the --refine option")
+		#return
 	
-	js.close()
+	#js.close()
 	
 	
 	js0=js_open_dict(os.path.join(options.path, "particle_parms_{:02d}.json".format(options.iter)))
 	dic=dict(js0)
 	js0.close()
+	
+	if options.parminit:
+		dic00=dict(js_open_dict(options.parminit)).copy()
+		
 	params=[]
 	pts=[]
 	keys=sorted(dic.keys())
@@ -39,8 +44,12 @@ def main():
 		pm0=dic[ky]
 		xf0=Transform(pm0['xform.align3d'])
 		src, ii =eval(ky)
-		e=EMData(src, ii, True)
-		xf1=e["xform.align3d"]
+		
+		if options.parminit:
+			xf1=Transform(dic00[ky]["xform.align3d"])
+		else:
+			e=EMData(src, ii, True)
+			xf1=e["xform.align3d"]
 
 		dx=np.linalg.norm(xf0.get_trans()-xf1.get_trans())
 
