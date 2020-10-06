@@ -189,6 +189,8 @@ HdfIO2::~HdfIO2()
 		H5Aread(attr,type,s);
 //		H5Aread(attr,H5T_NATIVE_CHAR,s);
 
+		// It appears that CTF objects are stored in EMObjects as strings, not object pointers. Previously there was a double
+		// conversion happening, costing a LOT of speed.
 // 		if (s[0] == 'O' && isdigit(s[1])) {
 // 			ctf = new EMAN1Ctf();
 // 			try {
@@ -564,7 +566,7 @@ bool HdfIO2::is_valid(const void *first_block)
 	return false;
 }
 
-herr_t h5_iter_attr( hid_t igrp, const char *attr_name, const H5A_info_t *ainfo, void *user) {
+herr_t h5_iter_attr_read( hid_t igrp, const char *attr_name, const H5A_info_t *ainfo, void *user) {
 	hid_t attr=H5Aopen_by_name(igrp,".",attr_name, H5P_DEFAULT, H5P_DEFAULT);
 	
 	Dict *dict = (Dict *)user;
@@ -582,7 +584,13 @@ herr_t h5_iter_attr( hid_t igrp, const char *attr_name, const H5A_info_t *ainfo,
 	H5Aclose(attr);
 	return 0;
 }
+
+herr_t h5_iter_attr_del( hid_t igrp, const char *attr_name, const H5A_info_t *ainfo, void *user) {
+	hid_t attr=H5Adelete_by_name(igrp,".",attr_name, H5P_DEFAULT);
 	
+	return 0;
+}
+
 
 // Reads all of the attributes from the /MDF/images/<imgno> group
 int HdfIO2::read_header(Dict & dict, int image_index, const Region * area, bool)
@@ -617,7 +625,7 @@ int HdfIO2::read_header(Dict & dict, int image_index, const Region * area, bool)
 	}
 	
 	hsize_t n=0;
-	if (H5Aiterate2(igrp,H5_INDEX_NAME, H5_ITER_NATIVE, &n, &h5_iter_attr, &dict)) {
+	if (H5Aiterate2(igrp,H5_INDEX_NAME, H5_ITER_NATIVE, &n, &h5_iter_attr_read, &dict)) {
 		printf("Error on HDF5 iter attr\n");
 	}
 
@@ -745,21 +753,28 @@ int HdfIO2::erase_header(int image_index)
 	sprintf(ipath,"/MDF/images/%d", image_index);
 	hid_t igrp=H5Gopen(file, ipath);
 
-	int nattr=H5Aget_num_attrs(igrp);
-
-	char name[ATTR_NAME_LEN];
-
-	for (i=0; i<nattr; i++) {
-// 		hid_t attr = H5Aopen_idx(igrp, 0); // use 0 as index here, since the H5Adelete() will change the index
-// 		H5Aget_name(attr,127,name);
-// 		H5Aclose(attr);
-// 
-// 		if (H5Adelete(igrp,name) < 0) {
-// 			LOGERR("attribute %s deletion error in erase_header().\n", name);
-// 		}
-		hid_t attr=H5Adelete_by_idx(igrp,".",H5_INDEX_UNKNOWN,H5_ITER_NATIVE,i,H5P_DEFAULT);
-
+	
+	hsize_t n=0;
+	if (H5Aiterate2(igrp,H5_INDEX_NAME, H5_ITER_NATIVE, &n, &h5_iter_attr_del, NULL)) {
+		printf("Error on HDF5 erase_header\n");
 	}
+
+	
+// 	int nattr=H5Aget_num_attrs(igrp);
+// 
+// 	char name[ATTR_NAME_LEN];
+// 
+// 	for (i=0; i<nattr; i++) {
+// // 		hid_t attr = H5Aopen_idx(igrp, 0); // use 0 as index here, since the H5Adelete() will change the index
+// // 		H5Aget_name(attr,127,name);
+// // 		H5Aclose(attr);
+// // 
+// // 		if (H5Adelete(igrp,name) < 0) {
+// // 			LOGERR("attribute %s deletion error in erase_header().\n", name);
+// // 		}
+// 		hid_t attr=H5Adelete_by_idx(igrp,".",H5_INDEX_UNKNOWN,H5_ITER_NATIVE,i,H5P_DEFAULT);
+// 
+// 	}
 
 	H5Gclose(igrp);
 	EXITFUNC;
@@ -1299,7 +1314,7 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 	sprintf(ipath,"/MDF/images/%d",image_index);
 	hid_t igrp=H5Gopen(file,ipath);
 
-	if (igrp < 0) {	// group not existed
+	if (igrp < 0) {	// group doesn't exist
 		is_exist = false;
 		// Need to create a new image group
 		igrp=H5Gcreate(file,ipath,64);		// The image is a group, with attributes on the group
@@ -1310,26 +1325,31 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 	 * Keep the header and dataset intact for region writing*/
 	else {
 		is_exist = true;
-		int nattr=H5Aget_num_attrs(igrp);
-		char name[ATTR_NAME_LEN];
+// 		int nattr=H5Aget_num_attrs(igrp);
+// 		char name[ATTR_NAME_LEN];
 		Dict dict2;
+		hsize_t n=0;
+		if (H5Aiterate2(igrp,H5_INDEX_NAME, H5_ITER_NATIVE, &n, &h5_iter_attr_read, &dict2)) {
+			printf("Error on HDF5 iter attr\n");
+		}
 
-		for (int i=0; i<nattr; i++) {
-			hid_t attr=H5Aopen_idx(igrp, i);
-			H5Aget_name(attr,127,name);
-
-			if (strncmp(name,"EMAN.", 5)!=0) {
-				H5Aclose(attr);
-				continue;
-			}
-
-			EMObject val=read_attr(attr);
-			dict2[name+5]=val;
-			H5Aclose(attr);
-
-			if (!dict2.has_key("datatype")) { // by default, HDF5 is written as float
-				dict2["datatype"] = (int)EMUtil::EM_FLOAT;
-			}
+// 		for (int i=0; i<nattr; i++) {
+// 			hid_t attr=H5Aopen_idx(igrp, i);
+// 			H5Aget_name(attr,127,name);
+// 
+// 			if (strncmp(name,"EMAN.", 5)!=0) {
+// 				H5Aclose(attr);
+// 				continue;
+// 			}
+// 
+// 			EMObject val=read_attr(attr);
+// 			dict2[name+5]=val;
+// 			H5Aclose(attr);
+// 
+// 		}
+		
+		if (!dict2.has_key("datatype")) { // by default, HDF5 is written as float
+			dict2["datatype"] = (int)EMUtil::EM_FLOAT;
 		}
 
 		if (area) {
