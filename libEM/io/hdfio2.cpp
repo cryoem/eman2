@@ -113,7 +113,7 @@ HdfIO2::~HdfIO2()
 
 // This reads an already opened attribute and returns the results as an EMObject
 // The attribute is not closed
-EMObject HdfIO2::read_attr(hid_t attr) {
+	EMObject HdfIO2::read_attr(hid_t attr) {
 	hid_t type = H5Aget_type(attr);
 	hid_t spc = H5Aget_space(attr);
 	H5T_class_t cls = H5Tget_class(type);
@@ -564,6 +564,26 @@ bool HdfIO2::is_valid(const void *first_block)
 	return false;
 }
 
+herr_t h5_iter_attr( hid_t igrp, const char *attr_name, const H5A_info_t *ainfo, void *user) {
+	hid_t attr=H5Aopen_by_name(igrp,".",attr_name, H5P_DEFAULT, H5P_DEFAULT);
+	
+	Dict *dict = (Dict *)user;
+	
+	if (strncmp(attr_name,"EMAN.",5)==0) {
+		
+		try {
+			EMObject val=HdfIO2::read_attr(attr);
+			(*dict)[attr_name+5]=val;
+		}
+		catch(...) {
+			printf("HDF: Error reading HDF attribute %s\n",attr_name+5);
+		}
+	}
+	H5Aclose(attr);
+	return 0;
+}
+	
+
 // Reads all of the attributes from the /MDF/images/<imgno> group
 int HdfIO2::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
@@ -595,30 +615,35 @@ int HdfIO2::read_header(Dict & dict, int image_index, const Region * area, bool)
 		sprintf(msg,"Image %d does not exist",image_index); // yes, sprintf(), terrible I know
 		throw ImageReadException(filename,msg);
 	}
-
-	int nattr=H5Aget_num_attrs(igrp);
-	char name[ATTR_NAME_LEN];
-
-	for (i=0; i<nattr; i++) {
-		//hid_t attr=H5Aopen_idx(igrp, i);
-		hid_t attr=H5Aopen_by_idx(igrp,".",H5_INDEX_NAME,H5_ITER_NATIVE,i,H5P_DEFAULT,H5P_DEFAULT);
-		H5Aget_name(attr,127,name);
-
-		if (strncmp(name,"EMAN.", 5)!=0) {
-			H5Aclose(attr);
-			continue;
-		}
-
-		try {
-			EMObject val=read_attr(attr);
-			dict[name+5]=val;
-		}
-		catch(...) {
-			printf("HDF: Error reading HDF attribute %s\n",name+5);
-		}
-
-		H5Aclose(attr);
+	
+	hsize_t n=0;
+	if (H5Aiterate2(igrp,H5_INDEX_NAME, H5_ITER_NATIVE, &n, &h5_iter_attr, &dict)) {
+		printf("Error on HDF5 iter attr\n");
 	}
+
+// 	int nattr=H5Aget_num_attrs(igrp);
+// 	char name[ATTR_NAME_LEN];
+// 
+// 	for (i=0; i<nattr; i++) {
+// 		//hid_t attr=H5Aopen_idx(igrp, i);
+// 		hid_t attr=H5Aopen_by_idx(igrp,".",H5_INDEX_NAME,H5_ITER_NATIVE,i,H5P_DEFAULT,H5P_DEFAULT);
+// 		H5Aget_name(attr,127,name);
+// 
+// 		if (strncmp(name,"EMAN.", 5)!=0) {
+// 			H5Aclose(attr);
+// 			continue;
+// 		}
+// 
+// 		try {
+// 			EMObject val=read_attr(attr);
+// 			dict[name+5]=val;
+// 		}
+// 		catch(...) {
+// 			printf("HDF: Error reading HDF attribute %s\n",name+5);
+// 		}
+// 
+// 		H5Aclose(attr);
+// 	}
 
 	if (dict.has_key("ctf")) {
 		dict["ctf"].force_CTF();
