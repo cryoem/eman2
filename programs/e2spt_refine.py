@@ -21,11 +21,13 @@ def main():
 
 	parser.add_argument("--niter", type=int,help="Number of iterations", default=5, guitype='intbox',row=5, col=0,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--sym", type=str,help="symmetry", default="c1", guitype='strbox',row=5, col=1,rowspan=1, colspan=1, mode="model")
+#	parser.add_argument("--maxres",type=float,help="Maximum resolution (the smaller number) to consider in alignment (in A, not 1/A)",default=0)
+	parser.add_argument("--minres",type=float,help="Minimum resolution (the larger number) to consider in alignment (in A, not 1/A, default=200)",default=200)
 	
 	parser.add_argument("--mass", type=float,help="mass. default -1 will skip by mass normalization", default=-1, guitype='floatbox',row=5, col=2,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--localfilter", action="store_true", default=False ,help="use tophat local", guitype='boolbox',row=6, col=2,rowspan=1, colspan=1, mode="model")
 
-	parser.add_argument("--goldstandard", type=int,help="initial resolution for gold standard refinement", default=-1, guitype='intbox',row=6, col=0,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--goldstandard", type=int,help="initial resolution for gold standard refinement in A", default=-1, guitype='intbox',row=6, col=0,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--goldcontinue", action="store_true", default=False ,help="continue from an existing gold standard refinement", guitype='boolbox',row=6, col=1,rowspan=1, colspan=1, mode="model")
 
 	parser.add_argument("--setsf", type=str,help="structure factor", default=None, guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=7, col=0,rowspan=1, colspan=3, mode="model")
@@ -82,7 +84,8 @@ def main():
 		print("Start resolution {:.1f}".format(curres))
 		
 	else:
-		curres=20
+		if options.maxres!=0 : curres=options.maxres
+		else: curres=20
 		startitr=1
 		
 		
@@ -195,7 +198,7 @@ def main():
 		if options.scipy:
 			gd+=" --scipy"
 
-		cmd="e2spt_align.py {} {}/alignref.hdf --parallel {} --path {} --iter {} --sym {} --maxres {} {}".format(ptcls, options.path,  options.parallel, options.path, itr, options.sym, curres, gd)
+		cmd="e2spt_align.py {} {}/alignref.hdf --parallel {} --path {} --iter {} --sym {} --minres {} --maxres {} {}".format(ptcls, options.path,  options.parallel, options.path, itr, options.sym, options.minres, curres, gd)
 		
 		ret=run(cmd)
 		
