@@ -54,6 +54,7 @@ import numpy
 import operator
 import optparse
 import os
+import subprocess
 from ..libpy import sp_global_def
 from ..libpy import sp_morphology
 from ..libpy import sp_pixel_error
@@ -144,8 +145,8 @@ def run():
     parser.add_option(
         "--star_section",
         type="string",
-        default="data_",
-        help="Section title in STAR file: The section title in the RELION star file where the data should be extracted. (default data_)",
+        default="data_particles",
+        help="Section title in STAR file: The section title in the RELION star file where the data should be extracted. (default data_particles)",
     )
     parser.add_option(
         "--outputs_root",
@@ -195,6 +196,7 @@ def run():
 
     dir_path_relion_project = options.relion_project_dir
     str_relion_start_section = options.star_section
+
     outputs_root = options.outputs_root.strip()
     box_size = options.box_size
     is_enable_create_stack = bool(not options.do_not_create_stack)
@@ -412,6 +414,7 @@ def run():
     # SPHIRE params output files & directories related
     file_name_sphire_micrographs = "{}_micrographs.txt".format(outputs_root)
     file_name_sphire_cter_partres = "{}_cter_partres.txt".format(outputs_root)
+    file_name_sphire_cter_per_particle = "{}_ctf_per_particle.txt".format(outputs_root)
     # name_pattern_sphire_stack_chunk = '{}_stack_chunk*.txt'.format(outputs_root)
 
     dir_name_coordinates = "Coordinates"
@@ -514,6 +517,12 @@ def run():
     os.makedirs(dir_path_work)
     sp_global_def.write_command(dir_path_work)
 
+    if str_relion_start_section == 'data_particles':
+        tmp_output = '{}_old.star'.format(os.path.join(dir_path_work, os.path.splitext(os.path.basename(file_path_relion_star))[0]))
+        subprocess.call('sp_convert_relionnew_to_relionold.py {} {}'.format(file_path_relion_star, tmp_output).split())
+        file_path_relion_star = tmp_output
+        str_relion_start_section = 'data_'
+
     # ------------------------------------------------------------------------------------
     # STEP 2: Convert RELION parameters to SPHIRE format
     # ------------------------------------------------------------------------------------
@@ -584,6 +593,7 @@ def run():
     file_relion_star = open(file_path_relion_star, "r")
 
     # Loop through all lines in input RELION STAR file
+    per_particle_ctf = []
     for i_line, str_line in enumerate(file_relion_star):
 
         # First, find data section in STAR file
@@ -946,6 +956,16 @@ def run():
                         sphire_cter_dict[micrograph_dirname][
                             micrograph_basename
                         ].append(sphire_cter_entry)
+                    per_particle_ctf.append([
+                        sphire_cter_entry[idx_cter_def],
+                        sphire_cter_entry[idx_cter_cs],
+                        sphire_cter_entry[idx_cter_vol],
+                        sphire_cter_entry[idx_cter_apix],
+                        sphire_cter_entry[idx_cter_bfactor],
+                        sphire_cter_entry[idx_cter_total_ac],
+                        sphire_cter_entry[idx_cter_astig_amp],
+                        sphire_cter_entry[idx_cter_astig_ang],
+                        ])
 
                     i_sphire_stack_ctf += 1
                 elif options.negative_stain:
@@ -1496,6 +1516,16 @@ def run():
         sp_global_def.sxprint("# ")
         sp_global_def.sxprint("# Saving SPHIRE parameters files ...")
 
+        with open(os.path.join(dir_path_work, file_name_sphire_cter_per_particle), 'w') as write:
+            write.write(
+                '\n'.join(
+                    ' '.join(map(str, ctf_entry))
+                    for ctf_entry
+                    in per_particle_ctf
+                    )
+                )
+
+
         # Write micrograph name to files (micrograph selection list file)
         for micrograph_dirname in sorted(sphire_micrographs_dict):
             dir_path_sphire_micrographs = os.path.join(
@@ -1564,10 +1594,10 @@ def run():
                     )  # use percentage
                 # I removed a very awkward code which as far as I can tell was meant to assure that
                 #   all values on this list are identical.  I replaced it by proper python
-                assert len(set(sphire_cter_table[idx_cter_cs])) == 1
-                assert len(set(sphire_cter_table[idx_cter_vol])) == 1
-                assert len(set(sphire_cter_table[idx_cter_apix])) == 1
-                assert len(set(sphire_cter_table[idx_cter_bfactor])) == 1
+                #assert len(set(sphire_cter_table[idx_cter_cs])) == 1
+                #assert len(set(sphire_cter_table[idx_cter_vol])) == 1
+                #assert len(set(sphire_cter_table[idx_cter_apix])) == 1
+                #assert len(set(sphire_cter_table[idx_cter_bfactor])) == 1
 
                 sphire_cter_stats[
                     idx_cter_total_ac
