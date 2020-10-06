@@ -130,6 +130,9 @@ namespace EMAN
 		size_t num_strips;
 		std::vector<unsigned char> data;
 		COORDS _coords;
+
+		void _load_data(TIFF *tiff);
+		void _decode_data();
 	};
 
 

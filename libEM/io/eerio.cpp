@@ -35,12 +35,16 @@
 
 using namespace EMAN;
 
-const unsigned int EER_CAMERA_SIZE_BITS = 12;
-const unsigned int EER_CAMERA_SIZE      = 1 << EER_CAMERA_SIZE_BITS; // 2^12 = 4096
 
 EerFrame::EerFrame(TIFF *tiff)
 	: num_strips(TIFFNumberOfStrips(tiff))
 {
+	_load_data(tiff);
+
+	_decode_data();
+}
+
+void EerFrame::_load_data(TIFF *tiff) {
 	vector<unsigned int> strip_sizes(num_strips);
 	for(size_t i=0; i<num_strips; ++i) {
 		strip_sizes[i] = TIFFRawStripSize(tiff, i);
@@ -51,7 +55,12 @@ EerFrame::EerFrame(TIFF *tiff)
 		data.resize(prev_size + strip_sizes[i]);
 		TIFFReadRawStrip(tiff, i, data.data()+prev_size, strip_sizes[i]);
 	}
+}
 
+const unsigned int EER_CAMERA_SIZE_BITS = 12;
+const unsigned int EER_CAMERA_SIZE      = 1 << EER_CAMERA_SIZE_BITS; // 2^12 = 4096
+
+void EerFrame::_decode_data() {
 	EerStream is(reinterpret_cast<EerWord *>(data.data()));
 	EerRle    rle;
 	EerSubPix sub_pix;
