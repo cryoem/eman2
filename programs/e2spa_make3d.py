@@ -31,8 +31,8 @@ def main():
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default=None)
 	
 	parser.add_argument("--debug", action="store_true", default=False, help="")
+	parser.add_argument("--clsid", default=-1, type=int, help="only reconstruct a class of particles")
 
-	# Database Metadata storage
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
@@ -106,12 +106,6 @@ def main():
 			d["weight"]=float(scrs[i])
 			
 			
-		#print(wts.shape)
-		#w=from_numpy(wts).copy()
-		#w.write_image(options.output.replace("threed","wtall"))
-		#return
-	
-	
 	etc=EMTaskCustomer(options.parallel, module="e2spa_make3d.Make3dTask")
 	num_cpus = etc.cpu_est()
 	print("{} total CPUs available".format(num_cpus))
@@ -175,7 +169,6 @@ def initialize_data(inputfile, options):
 
 	n_input=EMUtil.get_image_count(inputfile)
 	lst=LSXFile(inputfile)
-	print(n_input," input images")
 
 	data=[]
 	xfkey=["type","alt","az","phi","tx","ty","tz","alpha","scale"]
@@ -185,6 +178,9 @@ def initialize_data(inputfile, options):
 		lstinfo=lst.read(i)
 		for d in lstinfo[2].split(';'):
 			dc=eval(d)
+			if (options.clsid>=0) and ("class" in dc):
+				if dc["class"]!=options.clsid:
+					continue
 			if "score" in dc:
 				score=dc["score"]
 			else:
@@ -201,6 +197,7 @@ def initialize_data(inputfile, options):
 			data.append(elem)
 			
 	scrs=np.array([d["score"] for d in data])
+	print(len(data)," input images")
 	if np.min(scrs)>=0:
 		print("positive score. assume this is weight...")
 	else:
@@ -210,11 +207,11 @@ def initialize_data(inputfile, options):
 	
 	print("score max {:.2f}, min {:.2f}".format(np.max(scrs), np.min(scrs)))
 	if options.keep<1:
-		thr=np.sort(scrs)[int(len(scrs)*(1-options.keep))-1]
+		s=np.sort(scrs[scrs>0])
+		thr=s[int(len(s)*(1-options.keep))-1]
 		scrs[scrs<thr]=-1
-		
 	
-	for i in range(n_input):
+	for i in range(len(data)):
 		data[i]["weight"]=float(scrs[i])
 		
 	return data
@@ -234,15 +231,7 @@ def reconstruct(data,recon,pad,ref=None):
 		img.clip_inplace(Region((img["nx"]-pad)//2, (img["ny"]-pad)//2, pad, pad))
 		
 		if "curve" in elem:
-			c=elem["curve"]#*0+1
-			#ctf=img["ctf"]
-			#ctf.bfactor=0
-			#sz=len(c)*2
-			#apix=img["apix_x"]
-			#ctf=abs(np.array(ctf.compute_1d(sz,1./(apix*sz),Ctf.CtfType.CTF_AMP)))
-			##ci=np.where(np.diff(ctf)<0)[0][0]
-			##ctf[:ci]=1
-			#c=ctf*c
+			c=elem["curve"]
 			img.process_inplace("filter.radialtable", {"table":c.tolist()})
 			#wt=1
 		

@@ -16,6 +16,7 @@ def main():
 	parser.add_argument("--maxres", type=float,help="max resolution", default=10)
 	parser.add_argument("--minres", type=float,help="min resolution", default=100)
 	parser.add_argument("--niter", type=int,help="iter", default=10)
+	parser.add_argument("--setsf", type=str,help="setsf", default=None)
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -25,11 +26,18 @@ def main():
 	ncls=options.ncls
 	if not os.path.isdir(path):
 		os.mkdir(path)
+		
+	if options.setsf:
+		setsf=" --setsf {}".format(options.setsf)
+	else:
+		setsf=""
 	
 	pinput="{}/ptcls_input.lst".format(path)
 	if "even" in options.ptcl:
 		print("Merging even/odd particle list")
 		run("e2proclst.py {} {} --create {} --mergeeo".format(options.ptcl, options.ptcl.replace("even", "odd"), pinput))
+	else:
+		run("e2proclst.py {} {} --create {}".format(options.ptcl,options.ptcl, pinput))
 	
 	npt=EMUtil.get_image_count(pinput)
 	cls=np.random.randint(0, ncls, npt)
@@ -57,7 +65,7 @@ def main():
 			
 			run("e2spa_make3d.py --input {inp} --output {out} --keep 1 --sym {sm} --parallel {par}".format(inp=lname, out=threed, sm=sym, par=options.parallel))
 			
-			run("e2proc3d.py {} {} --process filter.lowpass.gauss:cutoff_freq={:.4f} --process normalize.edgemean".format(threed, threed, 1./options.maxres))
+			run("e2proc3d.py {} {} {} --process filter.lowpass.gauss:cutoff_freq={:.4f} --process normalize.edgemean".format(threed, threed, setsf, 1./options.maxres))
 			
 		
 		sfile="{}/score_{:02d}.txt".format(path, itr)
