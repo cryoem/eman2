@@ -21,7 +21,7 @@ def main():
 
 	parser.add_argument("--niter", type=int,help="Number of iterations", default=5, guitype='intbox',row=5, col=0,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--sym", type=str,help="symmetry", default="c1", guitype='strbox',row=5, col=1,rowspan=1, colspan=1, mode="model")
-#	parser.add_argument("--maxres",type=float,help="Maximum resolution (the smaller number) to consider in alignment (in A, not 1/A)",default=0)
+	parser.add_argument("--maxres",type=float,help="Maximum resolution (the smaller number) to consider in alignment (in A, not 1/A)",default=0)
 	parser.add_argument("--minres",type=float,help="Minimum resolution (the larger number) to consider in alignment (in A, not 1/A, default=200)",default=200)
 	
 	parser.add_argument("--mass", type=float,help="mass. default -1 will skip by mass normalization", default=-1, guitype='floatbox',row=5, col=2,rowspan=1, colspan=1, mode="model")
