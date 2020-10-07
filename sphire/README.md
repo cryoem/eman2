@@ -9,6 +9,6 @@ It's not a standalone package.
 Version 1.4.x needs EMAN >= 2.3
 
 # More information
- 
+  
 https://sphire.mpg.de
  
