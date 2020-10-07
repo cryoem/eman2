@@ -1261,6 +1261,8 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
         .value("IMAGE_VTK", EMAN::EMUtil::IMAGE_VTK)
         .value("IMAGE_MRC", EMAN::EMUtil::IMAGE_MRC)
         .value("IMAGE_EER", EMAN::EMUtil::IMAGE_EER)
+        .value("IMAGE_EER8K", EMAN::EMUtil::IMAGE_EER8K)
+        .value("IMAGE_EER16K", EMAN::EMUtil::IMAGE_EER16K)
         .value("IMAGE_LST", EMAN::EMUtil::IMAGE_LST)
         .value("IMAGE_DM3", EMAN::EMUtil::IMAGE_DM3)
         .value("IMAGE_DM4", EMAN::EMUtil::IMAGE_DM4)
