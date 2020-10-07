@@ -40,8 +40,6 @@ EerFrame::EerFrame(TIFF *tiff)
 	: num_strips(TIFFNumberOfStrips(tiff))
 {
 	_load_data(tiff);
-
-	_decode_data();
 }
 
 void EerFrame::_load_data(TIFF *tiff) {
@@ -57,13 +55,17 @@ void EerFrame::_load_data(TIFF *tiff) {
 	}
 }
 
+auto EerFrame::data_() const {
+	return data.data();
+}
+
 typedef vector<pair<int, int>> COORDS;
 
 const unsigned int EER_CAMERA_SIZE_BITS = 12;
 const unsigned int EER_CAMERA_SIZE      = 1 << EER_CAMERA_SIZE_BITS; // 2^12 = 4096
 
-auto EerFrame::_decode_data() {
-	EerStream is(reinterpret_cast<EerWord *>(data.data()));
+auto EMAN::decode_eer_data(EerWord *data) {
+	EerStream is((data));
 	EerRle    rle;
 	EerSubPix sub_pix;
 
@@ -169,7 +171,8 @@ int EerIO::read_data(float *rdata, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
-	for(auto &c : frames[image_index].coords())
+	auto coords = decode_eer_data((EerWord *) frames[image_index].data_());
+	for(auto &c : coords)
 		rdata[c.first + c.second * EER_CAMERA_SIZE] += 1;
 
 	EXITFUNC;

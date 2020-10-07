@@ -122,13 +122,17 @@ namespace EMAN
 		EerFrame() =default;
 		EerFrame(TIFF *tiff);
 
+		auto data_() const;
+
 	private:
 		size_t num_strips;
 		std::vector<unsigned char> data;
 
 		void _load_data(TIFF *tiff);
-		auto _decode_data();
 	};
+
+
+	auto decode_eer_data(EerWord *data);
 
 
 	class EerIO : public ImageIO
