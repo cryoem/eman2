@@ -57,29 +57,31 @@ void EerFrame::_load_data(TIFF *tiff) {
 	}
 }
 
+typedef vector<pair<int, int>> COORDS;
+
 const unsigned int EER_CAMERA_SIZE_BITS = 12;
 const unsigned int EER_CAMERA_SIZE      = 1 << EER_CAMERA_SIZE_BITS; // 2^12 = 4096
 
-void EerFrame::_decode_data() {
+auto EerFrame::_decode_data() {
 	EerStream is(reinterpret_cast<EerWord *>(data.data()));
 	EerRle    rle;
 	EerSubPix sub_pix;
 
 	int count = 0;
 
+	COORDS coords;
+
 	while (count < EER_CAMERA_SIZE * EER_CAMERA_SIZE) {
 		is>>rle>>sub_pix;
 		int x = count & (EER_CAMERA_SIZE - 1);
 		int y = count >> EER_CAMERA_SIZE_BITS;
 		
-		_coords.push_back(std::make_pair(x,y));
+		coords.push_back(std::make_pair(x,y));
 
 		count += rle+1;
 	}
-}
 
-auto EerFrame::coords() const {
-	return _coords;
+	return coords;
 }
 
 EerIO::EerIO(const string & fname, IOMode rw)

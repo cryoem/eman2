@@ -116,23 +116,18 @@ namespace EMAN
 	using EerRle    = Rle   <7, EerWord>;
 	using EerSubPix = SubPix<4, EerWord>;
 
-
-	typedef vector<pair<int, int>> COORDS;
 	
 	class EerFrame {
 	public:
 		EerFrame() =default;
 		EerFrame(TIFF *tiff);
 
-		auto coords() const;
-
 	private:
 		size_t num_strips;
 		std::vector<unsigned char> data;
-		COORDS _coords;
 
 		void _load_data(TIFF *tiff);
-		void _decode_data();
+		auto _decode_data();
 	};
 
 
