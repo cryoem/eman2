@@ -179,13 +179,17 @@ namespace EMAN
 		return count >> camera_size_bits;
 	}
 
+	static DecoderIx<0> decoder0x;
+	static DecoderIx<1> decoder1x;
+	static DecoderIx<2> decoder2x;
+
 	auto decode_eer_data(EerWord *data, Decoder &decoder);
 
 
 	class EerIO : public ImageIO
 	{
 	public:
-		EerIO(const string & fname, IOMode rw_mode = READ_ONLY, Decoder &dec);
+		EerIO(const string & fname, IOMode rw_mode = READ_ONLY, Decoder &dec=decoder0x);
 		~EerIO();
 
 		int get_nimg();
