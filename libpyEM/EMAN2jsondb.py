@@ -202,6 +202,9 @@ def transform_from_jsondict(dct):
 ### File locking routines, hopefully platform independent
 ############
 
+class MyLockException(Exception):
+	pass
+
 ### First we try Linux/Mac
 try:
 	import fcntl		# Linux/Unix file locking
@@ -209,11 +212,17 @@ try:
 	def file_lock(fileobj, readonly=True):
 		"""Unix file locking. Not truly enforced, but useful in thread synchronization. Multiple threads can have read-locks, but only one can have writelock"""
 
-		if readonly : fcntl.lockf(fileobj.fileno(),fcntl.LOCK_SH)
-		else : fcntl.lockf(fileobj.fileno(),fcntl.LOCK_EX)
+		try:
+			if readonly : fcntl.lockf(fileobj.fileno(),fcntl.LOCK_SH)
+			else : fcntl.lockf(fileobj.fileno(),fcntl.LOCK_EX)
+		except OSError:
+			raise MyLockException('Could not lock %s due to permissions' % fileobj.name)
 
 	def file_unlock(fileobj):
-		fcntl.lockf(fileobj.fileno(),fcntl.LOCK_UN)
+		try:
+			fcntl.lockf(fileobj.fileno(),fcntl.LOCK_UN)
+		except OSError:
+			raise MyLockException('Could not unlock %s due to permissions' % fileobj.name)
 
 ### If that fails, we try windows
 except ImportError:
@@ -568,7 +577,11 @@ JSDicts are open at one time."""
 			return cls.opendicts[normpath]
 
 		try : ret=JSDict(path)
-		except:
+		except MyLockException as e:
+			cls.lock.release()
+			print(e)
+			raise Exception("Unable to open "+path)
+		except Exception:
 			cls.lock.release()
 			traceback.print_exc()
 			print("===========================")
