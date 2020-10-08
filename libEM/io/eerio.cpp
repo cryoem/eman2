@@ -59,9 +59,13 @@ auto EerFrame::data_() const {
 	return data.data();
 }
 
+auto Decoder::operator()(unsigned int count, unsigned int sub_pix) const {
+	return std::make_pair(x(count, sub_pix), y(count, sub_pix));
+}
+
 typedef vector<pair<int, int>> COORDS;
 
-auto EMAN::decode_eer_data(EerWord *data, Decoder decoder) {
+auto EMAN::decode_eer_data(EerWord *data, Decoder &decoder) {
 	EerStream is((data));
 	EerRle    rle;
 	EerSubPix sub_pix;
@@ -81,8 +85,8 @@ auto EMAN::decode_eer_data(EerWord *data, Decoder decoder) {
 	return coords;
 }
 
-EerIO::EerIO(const string & fname, IOMode rw)
-:	ImageIO(fname, rw)
+EerIO::EerIO(const string & fname, IOMode rw, Decoder &dec)
+:	ImageIO(fname, rw), decoder(dec)
 {
 	tiff_file = TIFFOpen(fname.c_str(), "r");
 

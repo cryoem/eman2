@@ -133,16 +133,26 @@ namespace EMAN
 
 
 	class Decoder {
+	public:
+		virtual unsigned int num_pix() const =0;
+		auto operator()(unsigned int count, unsigned int sub_pix) const;
+
+		const unsigned int camera_size_bits = 12;
+		const unsigned int camera_size     = 1 << camera_size_bits; // 2^12 = 4096
+
+	private:
+		virtual unsigned int x(unsigned int count, unsigned int sub_pix) const =0;
+		virtual unsigned int y(unsigned int count, unsigned int sub_pix) const =0;
 	};
 	
 	
-	auto decode_eer_data(EerWord *data, Decoder decoder);
+	auto decode_eer_data(EerWord *data, Decoder &decoder);
 
 
 	class EerIO : public ImageIO
 	{
 	public:
-		EerIO(const string & fname, IOMode rw_mode = READ_ONLY);
+		EerIO(const string & fname, IOMode rw_mode = READ_ONLY, Decoder &dec);
 		~EerIO();
 
 		int get_nimg();
@@ -161,7 +171,7 @@ namespace EMAN
 		size_t num_dirs = 0;
 		
 		vector<EerFrame> frames;
-		Decoder decoder;
+		Decoder &decoder;
 	};
 }
 
