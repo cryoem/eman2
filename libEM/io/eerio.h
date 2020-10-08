@@ -36,6 +36,7 @@
 
 #include <tiffio.h>
 #include <bitset>
+#include <cmath>
 
 
 namespace EMAN
@@ -146,6 +147,38 @@ namespace EMAN
 	};
 	
 	
+	template <unsigned int I>
+	struct DecoderIx : public Decoder {
+		unsigned int num_pix() const override;
+		unsigned int x(unsigned int count, unsigned int sub_pix) const override;
+		unsigned int y(unsigned int count, unsigned int sub_pix) const override;
+	};
+
+	template <unsigned int I>
+	unsigned int DecoderIx<I>::num_pix() const {
+		return camera_size * pow(2, I);
+	}
+
+	template <unsigned int I>
+	unsigned int DecoderIx<I>::x(unsigned int count, unsigned int sub_pix) const {
+		return  (DecoderIx<0>().x(count, sub_pix) << I) | (sub_pix & I);
+	}
+
+	template <unsigned int I>
+	unsigned int DecoderIx<I>::y(unsigned int count, unsigned int sub_pix) const {
+		return (DecoderIx<0>().y(count, sub_pix) << I) | (sub_pix >> I);
+	}
+
+	template <>
+	inline unsigned int DecoderIx<0>::x(unsigned int count, unsigned int sub_pix) const {
+		return count & (camera_size - 1);
+	}
+
+	template <>
+	inline unsigned int DecoderIx<0>::y(unsigned int count, unsigned int sub_pix) const {
+		return count >> camera_size_bits;
+	}
+
 	auto decode_eer_data(EerWord *data, Decoder &decoder);
 
 
