@@ -132,7 +132,11 @@ namespace EMAN
 	};
 
 
-	auto decode_eer_data(EerWord *data);
+	class Decoder {
+	};
+	
+	
+	auto decode_eer_data(EerWord *data, Decoder decoder);
 
 
 	class EerIO : public ImageIO
@@ -157,6 +161,7 @@ namespace EMAN
 		size_t num_dirs = 0;
 		
 		vector<EerFrame> frames;
+		Decoder decoder;
 	};
 }
 
