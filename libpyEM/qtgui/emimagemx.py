@@ -1557,7 +1557,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		if event.source()==self:
 			event.setDropAction(Qt.MoveAction)
 			event.accept()
-		elif event.provides("application/x-eman"):
+		elif event.mimeData().hasFormat("application/x-eman"):
 			event.setDropAction(Qt.CopyAction)
 			event.accept()
 
@@ -1624,7 +1624,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			self.data.append(EMAN2.GUIbeingdragged)
 			self.set_data(self.data)
 			EMAN2.GUIbeingdragged=None
-		elif event.provides("application/x-eman"):
+		elif event.mimeData().hasFormat("application/x-eman"):
 			x=loads(event.mime_data().data("application/x-eman"))
 			if not lc : self.data.append(x)
 			else : self.data.insert(lc[0],x)

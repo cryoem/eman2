@@ -1631,7 +1631,7 @@ class EMImage2DWidget(EMGLWidget):
 #		for i in f:
 #			print str(i)
 
-		if event.provides("application/x-eman"):
+		if event.mimeData().hasFormat("application/x-eman"):
 			event.setDropAction(Qt.CopyAction)
 			event.accept()
 
@@ -1639,7 +1639,7 @@ class EMImage2DWidget(EMGLWidget):
 		if EMAN2.GUIbeingdragged:
 			self.set_data(EMAN2.GUIbeingdragged)
 			EMAN2.GUIbeingdragged=None
-		elif event.provides("application/x-eman"):
+		if event.mimeData().hasFormat("application/x-eman"):
 			x=loads(event.mimeData().data("application/x-eman"))
 			self.set_data(x)
 			event.acceptProposedAction()
