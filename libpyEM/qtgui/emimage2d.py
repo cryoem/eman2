@@ -1631,9 +1631,13 @@ class EMImage2DWidget(EMGLWidget):
 #		for i in f:
 #			print str(i)
 
-		if event.provides("application/x-eman"):
-			event.setDropAction(Qt.CopyAction)
-			event.accept()
+		try:
+			if event.provides("application/x-eman"):
+				event.setDropAction(Qt.CopyAction)
+				event.accept()
+		except AttributeError:
+			# 2020_10_09 Markus Stabrin: Happened after dragging a screenshot over the open image on MAC.
+			pass
 
 	def dropEvent(self,event):
 		if EMAN2.GUIbeingdragged:
