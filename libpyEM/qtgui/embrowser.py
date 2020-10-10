@@ -463,8 +463,12 @@ class EMFileType(object) :
 			self.secparm=EMSliceParamDialog(brws,self.nimg)
 			ret=self.secparm.exec_()
 		
+		if not ret: return	# cancel
+	
 		img0=self.secparm.wspinmin.value()
-		img1=self.secparm.wspinmax.value()
+		img0=max(img0,0)
+		img1=self.secparm.wspinmax.value()+1
+		if img1<0 or img1>self.nimg: img1=self.nimg
 		layers=self.secparm.wspinlayers.value()
 		applyxf=self.secparm.wcheckxf.checkState()
 		
@@ -476,10 +480,16 @@ class EMFileType(object) :
 			# for z in range(self.dim[2]) :
 				# data.append(EMData(self.path, 0, False, Region(0, 0, z, self.dim[0], self.dim[1], 1)))
 		# else : data = EMData.read_images(self.path)
+				
+		progress = QtWidgets.QProgressDialog("Generating projections", "Cancel", 0, img1-img0-1,None)
+#		progress.show()
 		
 		data=[]
-		for i in range(self.nimg):
-			ptcl=EMData(self.path,i)
+		for i in range(img0,img1):
+			try: ptcl=EMData(self.path,i)
+			except:
+				print(f"Error reading {self.path} {i}")
+				continue
 			try: xf=ptcl["xform.align3d"]
 			except: xf=Transform()
 			if applyxf: ptcl.process_inplace("xform",{"transform":xf})
@@ -506,6 +516,12 @@ class EMFileType(object) :
 				try: all[k]=ptcl[k]
 				except: pass
 			data.append(all)
+			
+			progress.setValue(i-img0)
+			
+			if progress.wasCanceled():
+#				progress.close()
+				return
 
 		try :
 			target = brws.view2ds[-1]
