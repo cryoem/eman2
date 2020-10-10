@@ -62,8 +62,8 @@ def display_error(msg) :
 	QtWidgets.QMessageBox.warning(None, "Error", msg)
 
 # This is a floating point number-finding regular expression
-# Documentation: https://regex101.com/r/68zUsE/7/
-renumfind = re.compile(r"(?:^|(?<=[^\d\w:.-]))[+-]?\d+\.*\d*(?:[eE][-+]?\d+|)(?=[^\d\w:.-]|$)")
+# Documentation: https://regex101.com/r/68zUsE/4/
+renumfind = re.compile(r"(?<=[^\d\w:.-])[+-]?\d+\.*\d*(?:[eE][-+]?\d+|)(?=[^\d\w:.-]|$)")
 
 # We need to sort ints and floats as themselves, not string, John Flanagan
 def safe_int(v) :
@@ -496,9 +496,13 @@ class EMFileType(object) :
 #			if hp>0 : ptcl.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/hp})
 #			if lp>0 : ptcl.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/lp})
 			
+			time.sleep(0.001)
+			get_application().processEvents()
 			# these are the range limited orthogonal projections
 			x=ptcl.process("misc.directional_sum",{"axis":"x","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
+			get_application().processEvents()
 			y=ptcl.process("misc.directional_sum",{"axis":"y","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
+			get_application().processEvents()
 			z=ptcl.process("misc.directional_sum",{"axis":"z","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
 
 			# different directions sometimes have vastly different standard deviations, independent normalization may help balance
@@ -506,6 +510,7 @@ class EMFileType(object) :
 			y.process_inplace("normalize")
 			z.process_inplace("normalize")
 			
+			get_application().processEvents()
 			# we pack the 3 projections into a single 2D image
 			all=EMData(x["nx"]*3,x["ny"],1)
 			all.insert_clip(x,(0,0))
@@ -523,16 +528,10 @@ class EMFileType(object) :
 #				progress.close()
 				return
 
-		try :
-			target = brws.view2ds[-1]
-			target.set_data(data,self.path)
-			#if self.getSetsDB() : target.set_single_active_set(self.getSetsDB())
-		except :
-			target = EMImageMXWidget()
-			target.set_data(data,self.path)
-			target.mx_image_double.connect(target.mouse_double_click)		# this makes class average viewing work in app mode
-			# if self.getSetsDB() : target.set_single_active_set(self.getSetsDB())
-			brws.view2ds.append(target)
+		target = EMImageMXWidget()
+		target.set_data(data,self.path)
+		target.mx_image_double.connect(target.mouse_double_click)		# this makes class average viewing work in app mode
+		brws.view2ds.append(target)
 
 		target.qt_parent.setWindowTitle("Stack - "+self.path.split('/')[-1])
 
