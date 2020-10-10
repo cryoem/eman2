@@ -103,11 +103,12 @@ void EMData::_read_image(ImageIO *imageio, int img_index, bool nodata,
 }
 
 void EMData::read_image(const string & filename, int img_index, bool nodata,
-						const Region * region, bool is_3d)
+						const Region * region, bool is_3d,
+						EMUtil::ImageType imgtype)
 {
 	ENTERFUNC;
 
-	ImageIO *imageio = EMUtil::get_imageio(filename, ImageIO::READ_ONLY);
+	ImageIO *imageio = EMUtil::get_imageio(filename, ImageIO::READ_ONLY, imgtype);
 
 	if (!imageio)
 		throw ImageFormatException("cannot create an image io");
@@ -372,6 +373,7 @@ void EMData::write_lst(const string & filename, const string & reffile,
 }
 
 vector<shared_ptr<EMData>> EMData::read_images(const string & filename, vector<int> img_indices,
+									   EMUtil::ImageType imgtype,
 									   bool header_only)
 {
 	ENTERFUNC;
@@ -384,7 +386,7 @@ vector<shared_ptr<EMData>> EMData::read_images(const string & filename, vector<i
 			throw OutofRangeException(0, total_img, img_indices[i], "image index");
 
 	size_t n = (num_img == 0 ? total_img : num_img);
-	ImageIO *imageio = EMUtil::get_imageio(filename, ImageIO::READ_ONLY);
+	ImageIO *imageio = EMUtil::get_imageio(filename, ImageIO::READ_ONLY, imgtype);
 
 	vector<shared_ptr<EMData>> v;
 	for (size_t j = 0; j < n; j++) {

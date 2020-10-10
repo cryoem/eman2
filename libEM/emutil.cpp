@@ -1678,7 +1678,7 @@ vector<EMObject> EMUtil::get_all_attributes(const string & file_name, const stri
 	Assert(file_name != "");
 	Assert(attr_name != "");
 
-	auto vpImg = EMData::read_images(file_name, vector<int>(), true);
+	auto vpImg = EMData::read_images(file_name, vector<int>(), EMUtil::IMAGE_UNKNOWN, true);
 
 	for (auto iter = vpImg.begin(); iter!=vpImg.end(); ++iter)
 		v.push_back((*iter)->get_attr_default(attr_name));
