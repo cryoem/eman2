@@ -915,17 +915,6 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 #endif	//_WIN32
 	);
 
-	enum_< EMAN::EMData::FFTPLACE >("FFTPLACE")
-	    .value("FFT_IN_PLACE", EMAN::EMData::FFT_IN_PLACE)
-	    .value("FFT_OUT_OF_PLACE", EMAN::EMData::FFT_OUT_OF_PLACE)
-	;
-
-
-	enum_< EMAN::EMData::WINDOWPLACE >("WINDOWPLACE")
-	    .value("WINDOW_OUT_OF_PLACE", EMAN::EMData::WINDOW_OUT_OF_PLACE)
-	    .value("WINDOW_IN_PLACE", EMAN::EMData::WINDOW_IN_PLACE)
-	;
-
 	delete EMAN_EMData_scope;
 
 }
