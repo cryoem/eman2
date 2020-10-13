@@ -230,6 +230,10 @@ def main():
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--step",type=str,default="0,1",help="Specify <init>,<step>. Processes only a subset of the input data. For example, 0,2 would process only the even numbered particles")
 
+	eer_input_group = parser.add_mutually_exclusive_group()
+	eer_input_group.add_argument("--eer8k",  action="store_true", help="Render EER file on 8k grid.")
+	eer_input_group.add_argument("--eer16k", action="store_true", help="Render EER file on 16k grid.")
+
 	# Parallelism
 
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:n=<proc>:option:option",default=None)
@@ -598,8 +602,17 @@ def main():
 				else:
 					if options.verbose > 1 :
 						print("Read image #", i, "from input file:")
+					
 					d = EMData()
-					d.read_image(infile, i)
+					
+					if options.eer8k:
+						img_type = IMAGE_EER8K
+					elif options.eer16k:
+						img_type = IMAGE_EER16K
+					else:
+						img_type = IMAGE_UNKNOWN
+					
+					d.read_image(infile, i, False, None, False, img_type)
 			else:
 				if plane in xyplanes:
 					roi = Region(0,0,i,tomo_nx,tomo_ny,1)
