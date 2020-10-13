@@ -122,11 +122,11 @@ namespace EMAN
 		EerFrame() =default;
 		EerFrame(TIFF *tiff);
 
-		auto data_() const;
+		auto data() const;
 
 	private:
 		size_t num_strips;
-		std::vector<unsigned char> data;
+		std::vector<unsigned char> _data;
 
 		void _load_data(TIFF *tiff);
 	};

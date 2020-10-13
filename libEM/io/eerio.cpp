@@ -49,14 +49,14 @@ void EerFrame::_load_data(TIFF *tiff) {
 	}
 
 	for(size_t i=0; i<num_strips; ++i) {
-		auto prev_size = data.size();
-		data.resize(prev_size + strip_sizes[i]);
-		TIFFReadRawStrip(tiff, i, data.data()+prev_size, strip_sizes[i]);
+		auto prev_size = _data.size();
+		_data.resize(prev_size + strip_sizes[i]);
+		TIFFReadRawStrip(tiff, i, _data.data()+prev_size, strip_sizes[i]);
 	}
 }
 
-auto EerFrame::data_() const {
-	return data.data();
+auto EerFrame::data() const {
+	return _data.data();
 }
 
 auto Decoder::operator()(unsigned int count, unsigned int sub_pix) const {
@@ -170,7 +170,7 @@ int EerIO::read_data(float *rdata, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
-	auto coords = decode_eer_data((EerWord *) frames[image_index].data_(), decoder);
+	auto coords = decode_eer_data((EerWord *) frames[image_index].data(), decoder);
 	for(auto &c : coords)
 		rdata[c.first + c.second * decoder.num_pix()] += 1;
 
