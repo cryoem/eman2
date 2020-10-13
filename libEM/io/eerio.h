@@ -36,7 +36,6 @@
 
 #include <tiffio.h>
 #include <bitset>
-#include <cmath>
 
 
 namespace EMAN
@@ -156,7 +155,7 @@ namespace EMAN
 
 	template <unsigned int I>
 	unsigned int DecoderIx<I>::num_pix() const {
-		return camera_size * pow(2, I);
+		return camera_size * (1 << I);
 	}
 
 	template <unsigned int I>
