@@ -202,6 +202,8 @@ EMUtil::ImageType EMUtil::get_image_ext_type(const string & file_ext)
 		imagetypes["SER"] = IMAGE_SER;
 
 		imagetypes["eer"] = IMAGE_EER;
+//		imagetypes["eer"] = IMAGE_EER8K;
+//		imagetypes["eer"] = IMAGE_EER16K;
 
 		initialized = true;
 	}
@@ -255,6 +257,12 @@ EMUtil::ImageType EMUtil::fast_get_image_type(const string & filename,
     case IMAGE_EER:
 		return IMAGE_EER;
         break;
+	case IMAGE_EER8K:
+		return IMAGE_EER8K;
+		break;
+	case IMAGE_EER16K:
+		return IMAGE_EER16K;
+		break;
 	case IMAGE_DM3:
 		if (DM3IO::is_valid(first_block)) {
 			return IMAGE_DM3;
@@ -591,7 +599,13 @@ ImageIO *EMUtil::get_imageio(const string & filename, int rw,
 		imageio = new MrcIO(filename, rw_mode);
 		break;
 	case IMAGE_EER:
-		imageio = new EerIO(filename, rw_mode);
+		imageio = new EerIO(filename, rw_mode, decoder0x);
+		break;
+	case IMAGE_EER8K:
+		imageio = new EerIO(filename, rw_mode, decoder1x);
+		break;
+	case IMAGE_EER16K:
+		imageio = new EerIO(filename, rw_mode, decoder2x);
 		break;
 	case IMAGE_IMAGIC:
 		imageio = new ImagicIO2(filename, rw_mode);
@@ -1664,7 +1678,7 @@ vector<EMObject> EMUtil::get_all_attributes(const string & file_name, const stri
 	Assert(file_name != "");
 	Assert(attr_name != "");
 
-	auto vpImg = EMData::read_images(file_name, vector<int>(), true);
+	auto vpImg = EMData::read_images(file_name, vector<int>(), EMUtil::IMAGE_UNKNOWN, true);
 
 	for (auto iter = vpImg.begin(); iter!=vpImg.end(); ++iter)
 		v.push_back((*iter)->get_attr_default(attr_name));
