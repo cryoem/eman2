@@ -169,7 +169,7 @@ def main():
 	'e2help.py processors -v 2' for a detailed list of available procesors
 	"""
 
-	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,allow_abbrev=False,version=EMANVERSION)
 
 	parser.add_argument("--apix", type=float, help="A/pixel for S scaling")
 	parser.add_argument("--average", action="store_true", help="Averages all input images (without alignment) and writes a single output image")
@@ -801,6 +801,7 @@ def main():
 
 					if tdx != 0.0 or tdy != 0.0 :
 						d.translate(tdx,tdy,0.0)
+						#print(f"translate {tdx},{tdy}")
 
 					index_d[option1] += 1
 
