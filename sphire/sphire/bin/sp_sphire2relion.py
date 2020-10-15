@@ -306,7 +306,7 @@ def create_particle_stack(particle_stack, output_dir, particle_data):
             sp_global_def.sxprint(particle_idx, " of ", particle_data.shape[0])
         emdata = EMAN2_cppwrap.EMData(particle_stack, particle_idx)
 
-        output_name = os.path.join(output_dir, ptcl_names[particle_idx])
+        output_name = os.path.join(output_dir, "Particles", os.path.basename(ptcl_names[particle_idx]))
         try:
             os.makedirs(os.path.dirname(output_name))
         except OSError:
@@ -612,6 +612,7 @@ def create_stack_dtype(particle_dict):
 	Dtype list, header name list
 	"""
     original_name = {}
+    original_name['data_path'] = [("_rlnImageName", "|U1000")]
     for key in particle_dict:
         if key == "ptcl_source_coord":
             original_name[key] = [
@@ -627,9 +628,6 @@ def create_stack_dtype(particle_dict):
 
         elif key == "ptcl_source_image":
             original_name[key] = [("_rlnMicrographName", "|U1000")]
-
-        elif key == "data_path":
-            original_name[key] = [("_rlnImageName", "|U1000")]
 
         elif key == "ptcl_source_coord_id":
             original_name[key] = [("ptcl_source_coord_id", int)]
@@ -668,6 +666,7 @@ def create_stack_dtype(particle_dict):
         for dtype in original_name[key]:
             if dtype not in dtype_list:
                 dtype_list.append(dtype)
+
     return sorted(dtype_list), original_name.keys()
 
 
@@ -765,9 +764,9 @@ def create_stack_array(dtype_list, header_dict, output_dir, project_dir):
                             entry + 1,
                             os.path.relpath(
                                 os.path.join(
-                                    output_dir, "Particles", os.path.basename(name)
+                                    os.path.realpath(output_dir), "Particles", os.path.basename(name)
                                 ),
-                                project_dir,
+                                os.path.realpath(project_dir),
                             ),
                         )
                         for entry in numpy.arange(numpy.sum(mask))
