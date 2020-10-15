@@ -219,7 +219,7 @@ class EMFileType(object) :
 		"""Append self to current plot"""
 		brws.busy()
 
-		if self.n >= 0 : data = EMData(self.path)
+		if self.n <= 0 : data = EMData(self.path)
 		else : data = EMData(self.path, self.n)
 
 		try :
@@ -240,7 +240,7 @@ class EMFileType(object) :
 		"""Make a new plot"""
 		brws.busy()
 
-		if self.n >= 0 : data = EMData(self.path)
+		if self.n <= 0 : data = EMData(self.path)
 		else : data = EMData(self.path, self.n)
 
 		target = EMPlot2DWidget()
@@ -885,7 +885,7 @@ class EMPlotFileType(EMFileType) :
 		
 		return [("Plot 2D", "Add to current plot", self.plot2dApp), ("Plot 2D+", "Make new plot", self.plot2dNew),("Hist 2D", "Add to current histogram", self.histApp),("Hist 2D+", "Make new histogram", self.histNew)]
 
-	def plot2dApp(self, brws) :
+	#def plot2dApp(self, brws) :
 		"""Append self to current plot"""
 		brws.busy()
 
@@ -1453,7 +1453,7 @@ class EMStackFileType(EMFileType) :
 				("Avg All", "Unaligned average of entire stack",self.show2dAvg),("Avg Rnd Subset","Averages random min(1/4 of images,1000) multiple times",self.show2dAvgRnd),
 				("FilterTool", "Open in e2filtertool.py", self.showFilterTool), ("Save As", "Saves images in new file format", self.saveAs)]
 			if self.xfparms:
-				rtr.extend([("Plot 2D", "Plot xform", self.plot2dApp),("Plot 2D+", "plot xform in new window", self.plot2dNew)])
+				rtr.extend([("Plot 2D", "Plot xform", self.plot2dLstApp),("Plot 2D+", "plot xform in new window", self.plot2dLstNew)])
 			return rtr
 			
 		# 1-D stack
@@ -1477,10 +1477,38 @@ class EMStackFileType(EMFileType) :
 			os.system("/Applications/Chimera.app/Contents/MacOS/chimera /tmp/vol.hdf&")
 		else : print("Sorry, I don't know how to run Chimera on this platform")
 
-	def plot2dNew(self, brws):
+	def plot2dNew(self, brws) :
+		self.plot2dApp(brws, True)
+
+	def plot2dApp(self, brws, new=False) :
+		"""Append self to current plot"""
+		brws.busy()
+
+		data = EMData.read_images(self.path)
+
+		if new:
+			target = EMPlot2DWidget()
+			brws.viewplot2d.append(target)
+			
+		else:
+			try :
+				target = brws.viewplot2d[-1]
+			except :
+				target = EMPlot2DWidget()
+				brws.viewplot2d.append(target)
+				
+		for i,d in enumerate(data): target.set_data(d, f"{i},{self.path.split('/')[-1]}")
+		
+		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
+
+		brws.notbusy()
+		target.show()
+		target.raise_()
+
+	def plot2dLstNew(self, brws):
 		self.plot2dApp(brws, True)
 		
-	def plot2dApp(self, brws, new=False) :
+	def plot2dLstApp(self, brws, new=False) :
 		"""Append self to current plot"""
 		brws.busy()
 		rows = []
