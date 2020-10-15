@@ -85,9 +85,21 @@ auto decode_eer_data(EerWord *data, Decoder &decoder) {
 	return coords;
 }
 
+void TIFFOutputWarning(const char* module, const char* fmt, va_list ap)
+{
+	if(string(fmt).rfind("Unknown field with tag %d (0x%x) encountered") != string::npos)
+		return;
+
+	cout << module << ": ";
+	vprintf(fmt, ap);
+	cout << endl;
+}
+
 EerIO::EerIO(const string & fname, IOMode rw, Decoder &dec)
 :	ImageIO(fname, rw), decoder(dec)
 {
+	TIFFSetWarningHandler(TIFFOutputWarning);
+
 	tiff_file = TIFFOpen(fname.c_str(), "r");
 
 	for(num_dirs=0; TIFFReadDirectory(tiff_file); num_dirs++)
