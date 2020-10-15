@@ -182,8 +182,6 @@ namespace EMAN
 	static DecoderIx<1> decoder1x;
 	static DecoderIx<2> decoder2x;
 
-	auto decode_eer_data(EerWord *data, Decoder &decoder);
-
 
 	class EerIO : public ImageIO
 	{

@@ -65,7 +65,7 @@ auto Decoder::operator()(unsigned int count, unsigned int sub_pix) const {
 
 typedef vector<pair<int, int>> COORDS;
 
-auto EMAN::decode_eer_data(EerWord *data, Decoder &decoder) {
+auto decode_eer_data(EerWord *data, Decoder &decoder) {
 	EerStream is((data));
 	EerRle    rle;
 	EerSubPix sub_pix;
