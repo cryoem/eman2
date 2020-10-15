@@ -367,8 +367,10 @@ int PngIO::write_data(float *data, int image_index, const Region*,
 
 	if (depth_type == PNG_CHAR_DEPTH) {
 		renderbits = 8;
+	}
 	else if (depth_type == PNG_SHORT_DEPTH) {
 		renderbits = 16;
+	}
 	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, renderbits);
 
 //	printf("render %f %f \n",rendermin,rendermax);
