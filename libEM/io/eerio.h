@@ -36,7 +36,6 @@
 
 #include <tiffio.h>
 #include <bitset>
-#include <cmath>
 
 
 namespace EMAN
@@ -123,11 +122,11 @@ namespace EMAN
 		EerFrame() =default;
 		EerFrame(TIFF *tiff);
 
-		auto data_() const;
+		auto data() const;
 
 	private:
 		size_t num_strips;
-		std::vector<unsigned char> data;
+		std::vector<unsigned char> _data;
 
 		void _load_data(TIFF *tiff);
 	};
@@ -156,34 +155,41 @@ namespace EMAN
 
 	template <unsigned int I>
 	unsigned int DecoderIx<I>::num_pix() const {
-		return camera_size * pow(2, I);
+//                    4096 *   1     //  4k 
+//                    4096 *   2     //  8k
+//                    4096 *   4     // 16k
+		return camera_size * (1 << I);
 	}
 
 	template <unsigned int I>
 	unsigned int DecoderIx<I>::x(unsigned int count, unsigned int sub_pix) const {
-		return  (DecoderIx<0>().x(count, sub_pix) << I) | (sub_pix & I);
+//                               (((count & 4095) << 2) | ((sub_pix & 3) ^ 2))       // 16k
+//                               (((count & 4095) << 1) | ((sub_pix & 3) ^ 2) << 1)  //  8k
+		return  (DecoderIx<0>().x(count, sub_pix) << I) | (((sub_pix & 3) ^ 2) << (2 - I));
 	}
 
 	template <unsigned int I>
 	unsigned int DecoderIx<I>::y(unsigned int count, unsigned int sub_pix) const {
-		return (DecoderIx<0>().y(count, sub_pix) << I) | (sub_pix >> I);
+//                               (((count >> 12) << 2) | ((sub_pix >> 2) ^ 2))       // 16k
+//                               (((count >> 12) << 1) | ((sub_pix >> 2) ^ 2) << 1)  //  8k
+		return (DecoderIx<0>().y(count, sub_pix) << I) | (((sub_pix >> 2) ^ 2) << (2 - I));
 	}
 
 	template <>
 	inline unsigned int DecoderIx<0>::x(unsigned int count, unsigned int sub_pix) const {
+//		       count & ((1 << 12)   - 1)
 		return count & (camera_size - 1);
 	}
 
 	template <>
 	inline unsigned int DecoderIx<0>::y(unsigned int count, unsigned int sub_pix) const {
+//		       count >> 12
 		return count >> camera_size_bits;
 	}
 
 	static DecoderIx<0> decoder0x;
 	static DecoderIx<1> decoder1x;
 	static DecoderIx<2> decoder2x;
-
-	auto decode_eer_data(EerWord *data, Decoder &decoder);
 
 
 	class EerIO : public ImageIO

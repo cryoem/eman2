@@ -49,14 +49,14 @@ void EerFrame::_load_data(TIFF *tiff) {
 	}
 
 	for(size_t i=0; i<num_strips; ++i) {
-		auto prev_size = data.size();
-		data.resize(prev_size + strip_sizes[i]);
-		TIFFReadRawStrip(tiff, i, data.data()+prev_size, strip_sizes[i]);
+		auto prev_size = _data.size();
+		_data.resize(prev_size + strip_sizes[i]);
+		TIFFReadRawStrip(tiff, i, _data.data()+prev_size, strip_sizes[i]);
 	}
 }
 
-auto EerFrame::data_() const {
-	return data.data();
+auto EerFrame::data() const {
+	return _data.data();
 }
 
 auto Decoder::operator()(unsigned int count, unsigned int sub_pix) const {
@@ -65,7 +65,7 @@ auto Decoder::operator()(unsigned int count, unsigned int sub_pix) const {
 
 typedef vector<pair<int, int>> COORDS;
 
-auto EMAN::decode_eer_data(EerWord *data, Decoder &decoder) {
+auto decode_eer_data(EerWord *data, Decoder &decoder) {
 	EerStream is((data));
 	EerRle    rle;
 	EerSubPix sub_pix;
@@ -85,9 +85,21 @@ auto EMAN::decode_eer_data(EerWord *data, Decoder &decoder) {
 	return coords;
 }
 
+void TIFFOutputWarning(const char* module, const char* fmt, va_list ap)
+{
+	if(string(fmt).rfind("Unknown field with tag %d (0x%x) encountered") != string::npos)
+		return;
+
+	cout << module << ": ";
+	vprintf(fmt, ap);
+	cout << endl;
+}
+
 EerIO::EerIO(const string & fname, IOMode rw, Decoder &dec)
 :	ImageIO(fname, rw), decoder(dec)
 {
+	TIFFSetWarningHandler(TIFFOutputWarning);
+
 	tiff_file = TIFFOpen(fname.c_str(), "r");
 
 	for(num_dirs=0; TIFFReadDirectory(tiff_file); num_dirs++)
@@ -170,7 +182,7 @@ int EerIO::read_data(float *rdata, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
-	auto coords = decode_eer_data((EerWord *) frames[image_index].data_(), decoder);
+	auto coords = decode_eer_data((EerWord *) frames[image_index].data(), decoder);
 	for(auto &c : coords)
 		rdata[c.first + c.second * decoder.num_pix()] += 1;
 
