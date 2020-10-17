@@ -105,6 +105,9 @@ EMData* EMNumPy::numpy2em(const np::ndarray& array)
 		std::copy(array_data, array_data + nx * ny * nz, reinterpret_cast<float *>(temparray));
 	}
 	EMData* image = new EMData((float*)temparray, nx, ny, nz);
+	image->set_attr("apix_x", 1.0);
+	image->set_attr("apix_y", 1.0);
+	image->set_attr("apix_z", 1.0);
 
 	image->update();
 	return image;
