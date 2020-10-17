@@ -39,42 +39,67 @@ using namespace EMAN;
 EerFrame::EerFrame(TIFF *tiff)
 	: num_strips(TIFFNumberOfStrips(tiff))
 {
+	_load_data(tiff);
+}
+
+void EerFrame::_load_data(TIFF *tiff) {
 	vector<unsigned int> strip_sizes(num_strips);
 	for(size_t i=0; i<num_strips; ++i) {
 		strip_sizes[i] = TIFFRawStripSize(tiff, i);
 	}
 
 	for(size_t i=0; i<num_strips; ++i) {
-		auto prev_size = data.size();
-		data.resize(prev_size + strip_sizes[i]);
-		TIFFReadRawStrip(tiff, i, data.data()+prev_size, strip_sizes[i]);
+		auto prev_size = _data.size();
+		_data.resize(prev_size + strip_sizes[i]);
+		TIFFReadRawStrip(tiff, i, _data.data()+prev_size, strip_sizes[i]);
 	}
+}
 
-	EerStream is(reinterpret_cast<EerWord *>(data.data()));
+auto EerFrame::data() const {
+	return _data.data();
+}
+
+auto Decoder::operator()(unsigned int count, unsigned int sub_pix) const {
+	return std::make_pair(x(count, sub_pix), y(count, sub_pix));
+}
+
+typedef vector<pair<int, int>> COORDS;
+
+auto decode_eer_data(EerWord *data, Decoder &decoder) {
+	EerStream is((data));
 	EerRle    rle;
 	EerSubPix sub_pix;
 
 	int count = 0;
-	int N = 4096*4096;
 
-	while (count<N) {
+	COORDS coords;
+
+	while (count < decoder.camera_size * decoder.camera_size) {
 		is>>rle>>sub_pix;
-		int x = count & 4095;
-		int y = count >> 12;
+		
+		coords.push_back(decoder(count, sub_pix));
 
 		count += rle+1;
-		
-		_coords.push_back(std::make_pair(x,y));
 	}
+
+	return coords;
 }
 
-VC EerFrame::coords() const {
-	return _coords;
-}
-
-EerIO::EerIO(const string & fname, IOMode rw)
-:	ImageIO(fname, rw)
+void TIFFOutputWarning(const char* module, const char* fmt, va_list ap)
 {
+	if(string(fmt).rfind("Unknown field with tag %d (0x%x) encountered") != string::npos)
+		return;
+
+	cout << module << ": ";
+	vprintf(fmt, ap);
+	cout << endl;
+}
+
+EerIO::EerIO(const string & fname, IOMode rw, Decoder &dec)
+:	ImageIO(fname, rw), decoder(dec)
+{
+	TIFFSetWarningHandler(TIFFOutputWarning);
+
 	tiff_file = TIFFOpen(fname.c_str(), "r");
 
 	for(num_dirs=0; TIFFReadDirectory(tiff_file); num_dirs++)
@@ -98,7 +123,20 @@ void EerIO::init()
 {
 	ENTERFUNC;
 
+	_read_meta_info();
+
 	EXITFUNC;
+}
+
+void EerIO::_read_meta_info() {
+	TIFFSetDirectory(tiff_file, 0);
+	TIFFGetField(tiff_file, TIFFTAG_COMPRESSION, &compression);
+
+	char *metadata_c = nullptr;
+	uint32_t count = 0;
+
+	TIFFGetField(tiff_file, 65001, &count, &metadata_c);
+	metadata = string(metadata_c, count);
 }
 
 int EerIO::get_nimg()
@@ -114,14 +152,7 @@ bool EerIO::is_image_big_endian()
 
 int EerIO::read_header(Dict & dict, int image_index, const Region * area, bool is_3d)
 {
-	TIFFSetDirectory(tiff_file, 0);
-	TIFFGetField(tiff_file, TIFFTAG_COMPRESSION, &compression);
-
-	char *metadata_c = nullptr;
-	uint32_t count = 0;
-
-	TIFFGetField(tiff_file, 65001, &count, &metadata_c);
-	metadata = string(metadata_c, count);
+	TIFFSetDirectory(tiff_file, image_index);
 
 	int nx = 0;
 	int ny = 0;
@@ -129,11 +160,9 @@ int EerIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 	TIFFGetField(tiff_file, TIFFTAG_IMAGEWIDTH, &nx);
 	TIFFGetField(tiff_file, TIFFTAG_IMAGELENGTH, &ny);
 
-	dict["nx"] = nx;
-	dict["ny"] = ny;
+	dict["nx"] = decoder.num_pix();
+	dict["ny"] = decoder.num_pix();
 	dict["nz"] = 1;
-
-	dict["nimg"] = int(get_nimg());
 
 	return 0;
 }
@@ -153,8 +182,9 @@ int EerIO::read_data(float *rdata, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
-	for(auto &frame : frames[image_index].coords())
-		rdata[frame.first + frame.second * 4096] += 1;
+	auto coords = decode_eer_data((EerWord *) frames[image_index].data(), decoder);
+	for(auto &c : coords)
+		rdata[c.first + c.second * decoder.num_pix()] += 1;
 
 	EXITFUNC;
 

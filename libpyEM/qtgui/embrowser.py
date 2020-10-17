@@ -219,7 +219,7 @@ class EMFileType(object) :
 		"""Append self to current plot"""
 		brws.busy()
 
-		if self.n >= 0 : data = EMData(self.path)
+		if self.n <= 0 : data = EMData(self.path)
 		else : data = EMData(self.path, self.n)
 
 		try :
@@ -240,7 +240,7 @@ class EMFileType(object) :
 		"""Make a new plot"""
 		brws.busy()
 
-		if self.n >= 0 : data = EMData(self.path)
+		if self.n <= 0 : data = EMData(self.path)
 		else : data = EMData(self.path, self.n)
 
 		target = EMPlot2DWidget()
@@ -463,8 +463,12 @@ class EMFileType(object) :
 			self.secparm=EMSliceParamDialog(brws,self.nimg)
 			ret=self.secparm.exec_()
 		
+		if not ret: return	# cancel
+	
 		img0=self.secparm.wspinmin.value()
-		img1=self.secparm.wspinmax.value()
+		img0=max(img0,0)
+		img1=self.secparm.wspinmax.value()+1
+		if img1<0 or img1>self.nimg: img1=self.nimg
 		layers=self.secparm.wspinlayers.value()
 		applyxf=self.secparm.wcheckxf.checkState()
 		
@@ -476,19 +480,29 @@ class EMFileType(object) :
 			# for z in range(self.dim[2]) :
 				# data.append(EMData(self.path, 0, False, Region(0, 0, z, self.dim[0], self.dim[1], 1)))
 		# else : data = EMData.read_images(self.path)
+				
+		progress = QtWidgets.QProgressDialog("Generating projections", "Cancel", 0, img1-img0-1,None)
+#		progress.show()
 		
 		data=[]
-		for i in range(self.nimg):
-			ptcl=EMData(self.path,i)
+		for i in range(img0,img1):
+			try: ptcl=EMData(self.path,i)
+			except:
+				print(f"Error reading {self.path} {i}")
+				continue
 			try: xf=ptcl["xform.align3d"]
 			except: xf=Transform()
 			if applyxf: ptcl.process_inplace("xform",{"transform":xf})
 #			if hp>0 : ptcl.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/hp})
 #			if lp>0 : ptcl.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/lp})
 			
+			time.sleep(0.001)
+			get_application().processEvents()
 			# these are the range limited orthogonal projections
 			x=ptcl.process("misc.directional_sum",{"axis":"x","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
+			get_application().processEvents()
 			y=ptcl.process("misc.directional_sum",{"axis":"y","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
+			get_application().processEvents()
 			z=ptcl.process("misc.directional_sum",{"axis":"z","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
 
 			# different directions sometimes have vastly different standard deviations, independent normalization may help balance
@@ -496,6 +510,7 @@ class EMFileType(object) :
 			y.process_inplace("normalize")
 			z.process_inplace("normalize")
 			
+			get_application().processEvents()
 			# we pack the 3 projections into a single 2D image
 			all=EMData(x["nx"]*3,x["ny"],1)
 			all.insert_clip(x,(0,0))
@@ -506,17 +521,17 @@ class EMFileType(object) :
 				try: all[k]=ptcl[k]
 				except: pass
 			data.append(all)
+			
+			progress.setValue(i-img0)
+			
+			if progress.wasCanceled():
+#				progress.close()
+				return
 
-		try :
-			target = brws.view2ds[-1]
-			target.set_data(data,self.path)
-			#if self.getSetsDB() : target.set_single_active_set(self.getSetsDB())
-		except :
-			target = EMImageMXWidget()
-			target.set_data(data,self.path)
-			target.mx_image_double.connect(target.mouse_double_click)		# this makes class average viewing work in app mode
-			# if self.getSetsDB() : target.set_single_active_set(self.getSetsDB())
-			brws.view2ds.append(target)
+		target = EMImageMXWidget()
+		target.set_data(data,self.path)
+		target.mx_image_double.connect(target.mouse_double_click)		# this makes class average viewing work in app mode
+		brws.view2ds.append(target)
 
 		target.qt_parent.setWindowTitle("Stack - "+self.path.split('/')[-1])
 
@@ -870,7 +885,7 @@ class EMPlotFileType(EMFileType) :
 		
 		return [("Plot 2D", "Add to current plot", self.plot2dApp), ("Plot 2D+", "Make new plot", self.plot2dNew),("Hist 2D", "Add to current histogram", self.histApp),("Hist 2D+", "Make new histogram", self.histNew)]
 
-	def plot2dApp(self, brws) :
+	#def plot2dApp(self, brws) :
 		"""Append self to current plot"""
 		brws.busy()
 
@@ -1440,7 +1455,7 @@ class EMStackFileType(EMFileType) :
 				("Avg All", "Unaligned average of entire stack",self.show2dAvg),("Avg Rnd Subset","Averages random min(1/4 of images,1000) multiple times",self.show2dAvgRnd),
 				("FilterTool", "Open in e2filtertool.py", self.showFilterTool), ("Save As", "Saves images in new file format", self.saveAs)]
 			if self.xfparms:
-				rtr.extend([("Plot 2D", "Plot xform", self.plot2dApp),("Plot 2D+", "plot xform in new window", self.plot2dNew)])
+				rtr.extend([("Plot 2D", "Plot xform", self.plot2dLstApp),("Plot 2D+", "plot xform in new window", self.plot2dLstNew)])
 			return rtr
 			
 		# 1-D stack
@@ -1464,10 +1479,38 @@ class EMStackFileType(EMFileType) :
 			os.system("/Applications/Chimera.app/Contents/MacOS/chimera /tmp/vol.hdf&")
 		else : print("Sorry, I don't know how to run Chimera on this platform")
 
-	def plot2dNew(self, brws):
+	def plot2dNew(self, brws) :
+		self.plot2dApp(brws, True)
+
+	def plot2dApp(self, brws, new=False) :
+		"""Append self to current plot"""
+		brws.busy()
+
+		data = EMData.read_images(self.path)
+
+		if new:
+			target = EMPlot2DWidget()
+			brws.viewplot2d.append(target)
+			
+		else:
+			try :
+				target = brws.viewplot2d[-1]
+			except :
+				target = EMPlot2DWidget()
+				brws.viewplot2d.append(target)
+				
+		for i,d in enumerate(data): target.set_data(d, f"{i},{self.path.split('/')[-1]}")
+		
+		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
+
+		brws.notbusy()
+		target.show()
+		target.raise_()
+
+	def plot2dLstNew(self, brws):
 		self.plot2dApp(brws, True)
 		
-	def plot2dApp(self, brws, new=False) :
+	def plot2dLstApp(self, brws, new=False) :
 		"""Append self to current plot"""
 		brws.busy()
 		rows = []

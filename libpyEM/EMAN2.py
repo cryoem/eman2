@@ -65,7 +65,7 @@ T=Transform({"type":"2d","alpha":0})
 bispec_invar_parm=(32,10)
 
 # These are processors which don't support in-place operation
-outplaceprocs=["math.bispectrum.slice","math.harmonic"]
+outplaceprocs=["math.bispectrum.slice","math.harmonic","misc.directional_sum"]
 
 # Without this, in many countries Qt will set things so "," is used as a decimal
 # separator by sscanf and other functions, which breaks CTF reading and some other things
@@ -144,6 +144,8 @@ def stopautoflush():
 # Image file types
 IMAGE_MRC = EMUtil.ImageType.IMAGE_MRC
 IMAGE_EER = EMUtil.ImageType.IMAGE_EER
+IMAGE_EER8K = EMUtil.ImageType.IMAGE_EER8K
+IMAGE_EER16K = EMUtil.ImageType.IMAGE_EER16K
 IMAGE_SPIDER = EMUtil.ImageType.IMAGE_SPIDER
 IMAGE_SINGLE_SPIDER = EMUtil.ImageType.IMAGE_SINGLE_SPIDER
 IMAGE_IMAGIC = EMUtil.ImageType.IMAGE_IMAGIC
@@ -616,8 +618,8 @@ def commandoptions(options,exclude=[]):
 
 class EMArgumentParser(argparse.ArgumentParser):
 	""" subclass of argparser to masquerade as optparser and run the GUI """
-	def __init__(self, prog=None,usage=None,description=None,epilog=None,version=None,parents=[],formatter_class=argparse.HelpFormatter,prefix_chars='-',fromfile_prefix_chars=None,argument_default=None,conflict_handler='error',add_help=True):
-		argparse.ArgumentParser.__init__(self,prog=prog,usage=usage,description=description,epilog=epilog,parents=parents,formatter_class=formatter_class,prefix_chars=prefix_chars,fromfile_prefix_chars=fromfile_prefix_chars,argument_default=argument_default,conflict_handler=conflict_handler,add_help=add_help)
+	def __init__(self, prog=None,usage=None,description=None,epilog=None,version=None,parents=[],formatter_class=argparse.HelpFormatter,prefix_chars='-',fromfile_prefix_chars=None,argument_default=None,conflict_handler='error',add_help=True,allow_abbrev=True):
+		argparse.ArgumentParser.__init__(self,prog=prog,usage=usage,description=description,epilog=epilog,parents=parents,formatter_class=formatter_class,prefix_chars=prefix_chars,fromfile_prefix_chars=fromfile_prefix_chars,argument_default=argument_default,conflict_handler=conflict_handler,add_help=add_help,allow_abbrev=allow_abbrev)
 
 		# A list of options to add to the GUI
 		self.optionslist = []

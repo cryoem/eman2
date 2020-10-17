@@ -20,7 +20,7 @@ for i,fi in enumerate(argv[1:-1]):
 
 	# check magic number and skip
 	a=fin.read(13)
-	if a[:3]!="FEI" :
+	if a[:7]!=b"FEI Raw" :
 		print("Image magic number '%s', not 'FEI RawImage'"%a)
 		sys.exit(1)
 
@@ -28,25 +28,32 @@ for i,fi in enumerate(argv[1:-1]):
 	(one,nx,ny,chan,bits,encoding,offset,stridex,stridey)=unpack("9I",fin.read(36))
 
 	img=EMData(nx,ny)
-	print("%s: %d x %d  %d"%(fi,nx,ny,encoding))
+	print("%s: %d x %d  %d "%(fi,nx,ny,encoding),end="")
 
 	fin=None			# close the file for the process_region_io below
 
-	if encoding==1 :		# signed int
+	if encoding==0 :		# signed int
 		EMUtil.read_raw_emdata(img,fi,49,1,0,2,None)
+		print("Signed Int")
+	elif encoding==1 :		# unsigned int
+		EMUtil.read_raw_emdata(img,fi,49,1,0,1,None)
+		print("Unsigned Int")
+	elif encoding==2 :		# float
+		EMUtil.read_raw_emdata(img,fi,49,1,0,0,None)
+		print("Float")
 	else :
-		print("Unknown encoding")
+		print(f"Unknown encoding {encoding}")
 
 
 	if i==0: imga=img.copy()
 	else: imga.add(img)
 
 	if i>4 : 
-		img.process_inplace("normalize.edgemean")
+#		img.process_inplace("normalize.edgemean")	# not sure why someone thought this was a good idea
 		img.write_image(argv[-1],i-4)	# write to output file
 
 #imga.mult(1/1024.0)
-imga.process_inplace("normalize.edgemean")
+#imga.process_inplace("normalize.edgemean")	# destroys the value of the image when used on things like gain references
 imga.write_image(argv[-1],0)
 
 #process_region_io(EMAN::EMData *ths, const char* path, size_t offset, int rw_mode, int image_index, size_t mode_size, const EMAN::Region * area=0

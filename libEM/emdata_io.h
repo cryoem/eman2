@@ -72,7 +72,8 @@ public:
  */
 void read_image(const string & filename, int img_index = 0,
 				bool header_only = false,
-				const Region * region = 0, bool is_3d = false);
+				const Region * region = 0, bool is_3d = false,
+				EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN);
 
 /** read in a binned image, bin while reading. For use in huge files(tomograms)
  * @param filename The image file name.
@@ -155,6 +156,7 @@ void write_lst(const string & filename,
  */
 static vector<std::shared_ptr<EMData>> read_images(const string & filename,
 									  vector<int> img_indices = vector<int>(),
+									  EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN,
 									  bool header_only = false);
 
 /** Write a set of images to file specified by 'filename'.
