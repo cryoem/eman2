@@ -161,6 +161,7 @@ class SpaAlignTask(JSTask):
 		
 			fsc=imgsmall.calc_fourier_shell_correlation(pj)
 			fsc=np.array(fsc).reshape((3,-1))[:, x0:x1]
+			
 			#wt=fsc[2]
 			wt=np.ones_like(fsc[1])
 			if ctfwt:
@@ -289,8 +290,6 @@ class SpaAlignTask(JSTask):
 						newxfs.append(x)
 						
 				xfs=newxfs
-				if options.debug:
-					print(ss, "xfs:", len(newxfs))
 
 				newxfs=[]
 				newscore=[]
@@ -303,8 +302,14 @@ class SpaAlignTask(JSTask):
 					if len(newxfs)>=npos:
 						break
 					
-				for xf in newxfs:
-					xf.set_trans(xf.get_trans()*ny/ss)
+				for xi,xf in enumerate(newxfs):
+					## translation between -ny//2 and ny//2
+					x=np.array(xf.get_trans()*ny/ss)
+					x=x%ny
+					x=x-ny*(x>ny//2)
+					
+					xf.set_trans(x.tolist())
+					
 					
 				if options.verbose>1:
 					print("size: {}, xfs: {}".format(ss, len(newxfs)))
