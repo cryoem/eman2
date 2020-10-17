@@ -63,7 +63,7 @@ def display_error(msg) :
 
 # This is a floating point number-finding regular expression
 # Documentation: https://regex101.com/r/68zUsE/4/
-renumfind = re.compile(r"(?<=[^\d\w:.-])[+-]?\d+\.*\d*(?:[eE][-+]?\d+|)(?=[^\d\w:.-]|$)")
+renumfind = re.compile(r"(?:^|(?<=[^\d\w:.-]))[+-]?\d+\.*\d*(?:[eE][-+]?\d+|)(?=[^\d\w:.-]|$)")
 
 # We need to sort ints and floats as themselves, not string, John Flanagan
 def safe_int(v) :
@@ -1059,7 +1059,9 @@ class EMJSONFileType(EMFileType) :
 		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
 
 		header=header.decode("utf-8")
-		if path[-5:] == ".json" and header.strip()[0] == "{" : return (humansize(os.stat(path).st_size), "-", "-")
+		if path[-5:] == ".json" and header.strip()[0] == "{" : 
+			sz = len(js_open_dict(path).keys())
+			return (humansize(os.stat(path).st_size), sz, "-")
 		else : return None
 			# sz = len(js_open_dict(path).keys())
 			# return ("-", sz, "-")
