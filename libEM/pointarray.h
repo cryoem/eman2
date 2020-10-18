@@ -108,16 +108,6 @@ namespace EMAN
 		*/
 		Transform *align_2d(PointArray *to,float max_dist);	// computes the optimal alignment between two (non-identical) sets of points
 
-		/** Translationally aligns one PointArray to another in 2 dimensions
-		*
-		* @param to Another PointArray to align to
-		* @param flags
-		* @param dxhint
-		* @param dyhint
-		* @return A Pixel containing dx,dy and a quality factor (smaller better)
-		*/
-		vector<float> align_trans_2d(PointArray *to,int flags=0,float dxhint=0,float dyhint=0 );		// translational alignment of point sets in 2-D
-
 		void mask(double rmax, double rmin = 0.0);
 		void mask_asymmetric_unit(const string & sym);
 		void transform(const Transform& transform);
