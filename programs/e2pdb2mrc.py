@@ -202,7 +202,7 @@ def main():
 			elif line[:5]=="SHEET":
 				isheet += abs(int(line[22:26])-int(line[33:37]))+1
 
-			elif (line[:4]=='ATOM' or (line[:6]=='HETATM' and options.het)) :
+			elif line[:4]=='ATOM' or (line[:6]=='HETATM' and options.het) :
 
 				if lastres != line[17:21]:
 					ires += 1
@@ -354,7 +354,7 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,model=No
 			if stm and line[:6]=="ENDMDL" : break
 			if not stm: continue
 
-		if (line[:4]=='ATOM' or (line[:6]=='HETATM' and het)) :
+		if line[:4]=='ATOM' or (line[:6]=='HETATM' and het) :
 			if chains and not (line[21] in chains) : continue
 
 			try:
