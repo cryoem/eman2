@@ -319,7 +319,6 @@ def main():
 
 	E2end(logger)
 
-# this function originally added so that it could be accessed independently (for Junjie Zhang by David Woolford)
 def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,model=None,center=False,quiet=False):
 	'''
 	file_name is the name of a pdb file
@@ -333,7 +332,6 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,model=No
 
 	try : infile=open(file_name,"r")
 	except : raise IOError("%s is an invalid file name" %file_name)
-
 
 	if res<=apix : print("Warning: res<=apix. Generally res should be 2x apix or more")
 
@@ -472,6 +470,7 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,model=No
 	outmap.set_attr("origin_y",-yt*apix+amin[1])
 	outmap.set_attr("origin_z",-zt*apix+amin[2])
 	return outmap
+
 
 if __name__ == "__main__":
     main()

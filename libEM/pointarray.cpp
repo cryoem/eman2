@@ -743,12 +743,10 @@ void PointArray::right_transform(const Transform& transform) {
 		points[i+1]=v[1];
 		points[i+2]=v[2];
 	}
-
 }
 void PointArray::set_from(PointArray * source, const string & sym, Transform *transform)
 {
 	set_from(source->get_points_array(), source->get_number_points(), sym, transform);
-
 }
 
 void PointArray::set_from(double *src,  int num, const string & sym, Transform *xform)
@@ -780,7 +778,6 @@ void PointArray::set_from(double *src,  int num, const string & sym, Transform *
 void PointArray::set_from(vector<float> pts) {
 	set_number_points(pts.size()/4);
 	for (unsigned int i=0; i<pts.size(); i++) points[i]=pts[i];
-
 }
 
 void PointArray::set_from_density_map(EMData * map, int num, float thresh, float apix,
@@ -1429,7 +1426,6 @@ void PointArray::sim_printstat() {
 	double p=sim_potential();
 	double anorm = 180.0/M_PI;
 	printf(" potential: %1.1f\t map: %1.2f\tdist: %1.2f || %1.2f / %1.2f / %1.2f\tang: %1.2f / %1.2f / %1.2f\tdihed: %1.2f / %1.2f / %1.2f  ln=%1.1f\n",p,mmap,dist0,midist,mdist/n,madist,miang*anorm,mang/n*anorm,maang*anorm,midihed*anorm,mdihed/n*anorm,madihed*anorm,mdihed/(M_PI*2.0)-n/10.0);
-		
 }
 
 void PointArray::sim_set_pot_parms(double pdist0,double pdistc,double pangc, double pdihed0, double pdihedc, double pmapc, EMData *pmap, double pmindistc,double pdistpenc) {
@@ -1463,7 +1459,6 @@ void PointArray::sim_set_pot_parms(double pdist0,double pdistc,double pangc, dou
 // 		grady=map->process("math.edge.ygradient");
 // 		gradz=map->process("math.edge.zgradient");
 	}
-		
 }
 
 // Double the number of points by adding new points on the center of edges
@@ -1518,7 +1513,6 @@ void PointArray::sim_add_point_double() {
 // Delete one point with lowest density, and add two points on the edges to that one.
 // Or add one point on the edge with lowest density
 void PointArray::sim_add_point_one() {
-
 	
 	double maxpot=-1000000,pot,meanpot=0;
 	size_t ipt=0;
@@ -1546,7 +1540,6 @@ void PointArray::sim_add_point_one() {
 			ipt=i;
 			onedge=1;
 		}
-	
 	}
 	
 	// The rest points remain the same
@@ -1627,17 +1620,14 @@ void PointArray::sim_add_point_one() {
 				newpt[1]=points[(i+1)*4];
 				newpt[2]=points[(i+2)*4];
 			}
-				
 		}
 		points[i*4]=newpt[0];
 		points[i*4+1]=newpt[1];
 		points[i*4+2]=newpt[2];
 	}
-	
 }
 
 vector<float> PointArray::do_pca(int start=0, int end=-1){
-	
 	if (end==-1) end=n;
 	float covmat[9],mean[3];
 	for (int i=0; i<3; i++) mean[i]=0;
@@ -1685,7 +1675,6 @@ vector<float> PointArray::do_filter(vector<float> pts, float *ft, int num){
 		}
 	}
 	return result;
-	
 }
 
 vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindensity=4, vector<int> edge=vector<int>(),int twodir=0,size_t minl=9)
@@ -1697,7 +1686,6 @@ vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindens
 // 	float ft[7]={0,0,0,1,0,0,0};
 
 	// search for long rods in the point array globally
-	
 	for (int dir=twodir; dir<2; dir++){ 
 		// search in both directions and combine the result
 		if( twodir==0)
@@ -1770,7 +1758,6 @@ vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindens
 				helix[i*2]=tmp;
 			}
 		}
-			
 
 	}
 
@@ -1880,7 +1867,6 @@ vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindens
 		allhlx.push_back(edge[i*2]);
 		allhlx.push_back(edge[i*2+1]);
 	}
-	
 	
 	vector<int> allhlx2;
 	minid=1;
@@ -2003,8 +1989,6 @@ vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindens
 			points[i*4+j]=finalhlx[i*3+j];
 		points[i*4+3]=0;
 	}
-			
-
 	
 	printf("\n\n");
 	return hlxid;
@@ -2096,8 +2080,6 @@ vector<double> PointArray::construct_helix(int start,int end, float phs, float &
 		}
 		
 		// correct handness
-		
-		
 		float hel=calc_helicity(pts);
 		
 		rtdir=hel;
@@ -2106,8 +2088,6 @@ vector<double> PointArray::construct_helix(int start,int end, float phs, float &
 			break;
 		else
 			dir=0;
-	
-
 	}
 	// calculate score
 // 	int sx=map->get_xsize(),sy=map->get_ysize(),sz=map->get_zsize();
@@ -2188,8 +2168,8 @@ float PointArray::calc_helicity(vector<double> pts){
 	vcs/=(npt/3-2);
 
 	return hlxdir.dot(vcs);
-  
 }
+
 void PointArray::save_pdb_with_helix(const char *file, vector<float> hlxid)
 {
 
@@ -2240,7 +2220,6 @@ void PointArray::remove_helix_from_map(EMData *m, vector<float> hlxid){
 
 Transform PointArray::calc_transform(PointArray *p)
 {
-	
 	Transform t;
 	
 	// calculate translation
@@ -2333,9 +2312,7 @@ void PointArray::delete_point(int id){
 		points[i]=points[i+4];
 	}
 	set_number_points(n-1);
-	
 }
-
 
 bool PointArray::read_ca_from_pdb(const char *file)
 {
@@ -2403,7 +2380,6 @@ bool PointArray::read_ca_from_pdb(const char *file)
 	return true;
 }
 
-
 void PointArray::sort_by_axis(int axis)
 {
 	if (axis == 0)
@@ -2451,16 +2427,11 @@ EMData *PointArray::pdb2mrc_by_summation(int map_size, float apix, float res, in
 		
 		//printf("\n bfactor=%f",bfactor[s]);
 		
-		
-		
-		
-		
 		if(addpdbbfactor==-1){
 			gauss_real_width = res/M_PI;	// in Angstrom, res is in Angstrom
 		}else{
 			gauss_real_width = (bfactor[s])/(4*sqrt(2.0)*M_PI);	// in Angstrom, res is in Angstrom
 		}
-		
 		
 		table_size = int (max_table_x * gauss_real_width / (apix * table_step_size) * 1.25);
 		table.resize(table_size);
