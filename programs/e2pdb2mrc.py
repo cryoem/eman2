@@ -30,12 +30,12 @@
 #
 #
 
-# e2pdb2mrc.py  07/23/3004  Steven Ludtke
+# e2pdb2mrc.py  07/23/2004  Steven Ludtke
 # This program will generate an electron density map from a PDB file. Unlike the earlier versions
 # of this program, operations like applying symmetry or centering are now offloaded onto
 # e2procpdb.py. Note that atomic form factors are not included in this program. It is designed
 # for intermediate resolutions (~4 A and higher). Each atom is represented by a Gaussian with
-# the approrpiate number of electrons.
+# the appropriate number of electrons.
 
 # PDB sample line
 #           1         2         3         4         5         6         7
@@ -324,8 +324,8 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,model=No
 	'''
 	file_name is the name of a pdb file
 	apix is the angstrom per pixel
-	res is requested resolution, quivalent to Gaussian lowpass with 1/e width at 1/res
-	het is a flag inidicating whether HET atoms should be included in the map
+	res is requested resolution, equivalent to Gaussian lowpass with 1/e width at 1/res
+	het is a flag indicating whether HET atoms should be included in the map
 	box is the boxsize, can be a single int (e.g. 128), a tuple (e.g. [128,64,54]), or a string (e.g. "128" or "128,64,57")
 	chains is a string list of chain identifiers, eg 'ABEFG'
 	quiet can be used to turn of helpful print outs

@@ -239,8 +239,8 @@ namespace EMAN
 		double *adihed;	// dihedral using 2 points before and one point after
 		
 		/** Used for simplistic loop dynamics simulation
-		 * Assumes all points are connected sequetially in a closed loop,
-		 * potential includes distance, angle and dihedral terms, with optional denisty based terms
+		 * Assumes all points are connected sequentially in a closed loop,
+		 * potential includes distance, angle and dihedral terms, with optional density based terms
 		 *  @param dist0 - center distance for quadratic energy term
 		 *  @param distc - quadratic distance coefficient c(dist-dist0)^2
 		 *  @param angc - quadratic angle coefficient c*(180-ang)^2
@@ -248,7 +248,7 @@ namespace EMAN
 		 *  @param dihedc - dihedral angle coefficient c*(dihed-dihed0)^2
 		 *  @param mapc - coefficient for map energy
 		 *  @param map - EMData representing map to match/fit
-		 *  @param mindistc - mininum distance between two points
+		 *  @param mindistc - minimum distance between two points
 		 *  @param distpenc - penalty for close points
 		 */
 		double dist0, distc, angc, dihed0, dihedc, mapc,apix, mindistc,distpenc;
