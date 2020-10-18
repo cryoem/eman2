@@ -162,7 +162,7 @@ namespace EMAN
 		/** Compute a potential value for a perturbed point, including +-2 nearest neighbors which will also be impacted **/
 		double sim_potentialdxyz(int i,double dx, double dy, double dz);
 		
-		/** Updates the dist,ang,dihed parameters **/
+		/** Updates the dist, ang, dihed parameters **/
 		void sim_updategeom();
 
 		/** returns a vector pointing downhill for a single point **/
@@ -217,7 +217,7 @@ namespace EMAN
 		/** Delete one point in the array **/
 		void delete_point(int id);
 		
-		/** Remove the correponding density of the helix point from a density map**/
+		/** Remove the corresponding density of the helix point from a density map**/
 		void remove_helix_from_map(EMData *m, vector<float> hlxid);
 		
 		/** Read only C-alpha atoms from a pdb file **/
@@ -251,12 +251,12 @@ namespace EMAN
 		 *  @param mindistc - minimum distance between two points
 		 *  @param distpenc - penalty for close points
 		 */
-		double dist0, distc, angc, dihed0, dihedc, mapc,apix, mindistc,distpenc;
+		double dist0, distc, angc, dihed0, dihedc, mapc, apix, mindistc, distpenc;
 		bool map2d; // map is 2d
 		EMData *map;
-		EMData *gradx,*grady,*gradz;
+		EMData *gradx, *grady, *gradz;
 		vector<Vec3f> oldshifts;
-		int centx,centy,centz;
+		int centx, centy, centz;
 	};
 }
 

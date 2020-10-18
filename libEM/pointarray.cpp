@@ -1061,7 +1061,7 @@ void PointArray::set_from_density_map(EMData * map, int num, float thresh, float
 	map->update();
 }
 
-/** Updates the dist,ang,dihed parameters **/
+/** Updates the dist, ang, dihed parameters **/
 void PointArray::sim_updategeom() {
 	if (!adist) adist=(double *)malloc(sizeof(double)*n);
 	if (!aang) aang=(double *)malloc(sizeof(double)*n);

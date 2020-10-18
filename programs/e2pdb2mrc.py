@@ -189,7 +189,7 @@ def main():
 				# 		tfs[tfid][rowid] = row
 
 			if line[:5] =="HELIX":
-				# not confident about this... 
+				# not confident about this...
 				# need to learn more about pdb file format
 				if int(line[20:25]) > lhelix or line[19] != lch:
 					ihelix+=abs(int(line[20:25])-int(line[32:37]))-1
@@ -199,7 +199,7 @@ def main():
 				lch=line[19]
 				lhelix=int(line[32:37])
 
-			elif line[:5]=="SHEET":
+			elif line[:5] == "SHEET":
 				isheet += abs(int(line[22:26])-int(line[33:37]))+1
 
 			elif line[:4]=='ATOM' or (line[:6]=='HETATM' and options.het) :
@@ -296,14 +296,14 @@ def main():
 			pa = PointArray()
 			pts = np.concatenate(points).flatten()
 			pa.set_from(pts.tolist()[0])
-		
+
 		if options.center: pa.center_to_zero()
 
 		#bound = max(pa.get_bounding_box().get_size())
 		#if boxsize < bound:
 			#boxsize = int(bound+1)
 			#print("Box size too small. Will use {} instead.".format(boxsize))
-		
+
 		out = pa.pdb2mrc_by_summation(boxsize,options.apix,options.res,addpdbbfactor)
 		out.write_image(args[1])
 
@@ -473,4 +473,4 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,model=No
 
 
 if __name__ == "__main__":
-    main()
+	main()
