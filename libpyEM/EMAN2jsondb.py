@@ -216,13 +216,13 @@ try:
 			if readonly : fcntl.lockf(fileobj.fileno(),fcntl.LOCK_SH)
 			else : fcntl.lockf(fileobj.fileno(),fcntl.LOCK_EX)
 		except OSError:
-			raise MyLockException('Could not lock %s due to permissions' % fileobj.name)
+			raise MyLockException('Could not lock %s due to permissions or filesystem support' % fileobj.name)
 
 	def file_unlock(fileobj):
 		try:
 			fcntl.lockf(fileobj.fileno(),fcntl.LOCK_UN)
 		except OSError:
-			raise MyLockException('Could not unlock %s due to permissions' % fileobj.name)
+			raise MyLockException('Could not unlock %s due to permissions or filesystem support' % fileobj.name)
 
 ### If that fails, we try windows
 except ImportError:
