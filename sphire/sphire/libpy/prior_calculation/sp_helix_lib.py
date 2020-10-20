@@ -99,7 +99,7 @@ def import_data_sphire(tracker, group_id, symclass, params_file=None, index_file
 
     prior_tracker = {}
     # Import the original stack for different input cases
-    if isinstance(tracker, basestring):
+    if isinstance(tracker, str):
         original_stack = mhs.import_sphire_stack(stack_path=tracker, group_id=group_id)
     elif isinstance(tracker, dict):
         # Only load the stack if it is not already loaded

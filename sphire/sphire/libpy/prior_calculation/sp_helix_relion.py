@@ -41,11 +41,11 @@ def create_dtype_dict():
     """Create type dictionary"""
     # Open the dictionary file and convert it to a dictionary
     dict_as_string = \
-        '_rlnCtfImage    |S200\n' + \
-        '_rlnImageName   |S200\n' + \
-        '_rlnMicrographName  |S200\n' + \
-        '_rlnOriginalParticleName    |S200\n' + \
-        '_rlnGroupName   |S200\n' + \
+        '_rlnCtfImage    |U200\n' + \
+        '_rlnImageName   |U200\n' + \
+        '_rlnMicrographName  |U200\n' + \
+        '_rlnOriginalParticleName    |U200\n' + \
+        '_rlnGroupName   |U200\n' + \
         '_rlnGroupNumber <i8\n' + \
         '_rlnClassNumber <i8\n' + \
         '_rlnNrOfSignificantSamples  <i8\n' + \
@@ -121,7 +121,7 @@ def import_star_file(input_star_file):
     # header_names list and append the dtype of the related column.
     # If there isn't an entry for the name yet it will be written to
     # the dictionary file and saved as float.
-    # If no header_names are there set the column to ('column', '|S200')
+    # If no header_names are there set the column to ('column', '|U200')
 
     dtype_list = []
     if any(header_names):
@@ -132,7 +132,7 @@ def import_star_file(input_star_file):
                 dtype_list.append((names, '<f8'))
                 dtype_dict.update({names: '<f8'})
     else:
-        dtype_list.append(('column', '|S200'))
+        dtype_list.append(('column', '|U200'))
         linenumber = 0
 
     # Import the dataInput as a np structured Array.  Skip the lines
@@ -177,13 +177,15 @@ def write_star_file(output_array, header_string, output_file, outliers, do_disca
 
         for row in output_array[not_outliers]:
             for element in row:
-                if isinstance(element, float):
+                if isinstance(element, (float, np.floating)):
                     text = '{:> 15.6f}'.format(element)
-                if isinstance(element, int):
+                elif isinstance(element, (int, np.integer)):
                     text = '{:> 7d}'.format(element)
-                if isinstance(element, basestring):
+                elif isinstance(element, (str, np.character)):
                     text = '{:>{}s}'.format(
                         element, len(element) + 6
                         )
+                else:
+                    assert False
                 f.write(text)
             f.write('\n')
