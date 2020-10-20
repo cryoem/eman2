@@ -138,7 +138,8 @@ def main():
 		if options.full:
 			tfs = {}
 
-		for line in infile:
+		lines = []
+		for line_num, line in enumerate(infile):
 			if options.model!=None:
 				if line[:5]=="MODEL":
 					if int(line.split()[1])==options.model: stm=True
@@ -226,6 +227,7 @@ def main():
 					print(a,aseq,resol,x,y,z)
 
 				atoms.append((a,x,y,z))
+				lines.append(line_num)
 
 				aavg[0]+=x
 				aavg[1]+=y
@@ -267,7 +269,7 @@ def main():
 			boxsize=int(1.9*boxsize+(2.0*options.res/options.apix))
 
 		pa=PointArray()
-		pa.read_from_pdb(args[0])
+		pa.read_from_pdb(args[0], lines)
 
 		if options.omit > 0.0 and options.omit < 100.0:
 			natm = pa.get_number_points()

@@ -44,6 +44,8 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_PointArray_distmx_overloads_0_1, dis
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_PointArray_mask_overloads_1_2, mask, 1, 2)
 
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_PointArray_read_from_pdb_overloads_1_2, read_from_pdb, 1, 2)
+
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_PointArray_set_from_overloads_1_3, set_from, 1, 3)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_PointArray_set_from_overloads_2_4, set_from, 2, 4)
@@ -73,7 +75,7 @@ BOOST_PYTHON_MODULE(libpyPointArray2)
         .def("__len__", &EMAN::PointArray::get_number_points)
         .def("set_number_points", &EMAN::PointArray::set_number_points)
          .def("get_points", &EMAN::PointArray::get_points)
-        .def("read_from_pdb", &EMAN::PointArray::read_from_pdb)
+        .def("read_from_pdb", &EMAN::PointArray::read_from_pdb, EMAN_PointArray_read_from_pdb_overloads_1_2())
         .def("save_to_pdb", &EMAN::PointArray::save_to_pdb)
         .def("get_center", &EMAN::PointArray::get_center)
         .def("center_to_zero", &EMAN::PointArray::center_to_zero)
