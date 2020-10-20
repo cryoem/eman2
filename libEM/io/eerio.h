@@ -163,16 +163,16 @@ namespace EMAN
 
 	template <unsigned int I>
 	unsigned int DecoderIx<I>::x(unsigned int count, unsigned int sub_pix) const {
-//                               (((count & 4095) << 2) | ((sub_pix & 3) ^ 2))       // 16k
-//                               (((count & 4095) << 1) | ((sub_pix & 3) ^ 2) << 1)  //  8k
-		return  (DecoderIx<0>().x(count, sub_pix) << I) | (((sub_pix & 3) ^ 2) << (2 - I));
+//                               (((count & 4095) << 2) |  ((sub_pix & 3) ^ 2))       // 16k
+//                               (((count & 4095) << 1) |  ((sub_pix & 3) ^ 2) >> 1)  //  8k
+		return  (DecoderIx<0>().x(count, sub_pix) << I) | (((sub_pix & 3) ^ 2) >> (2 - I));
 	}
 
 	template <unsigned int I>
 	unsigned int DecoderIx<I>::y(unsigned int count, unsigned int sub_pix) const {
-//                               (((count >> 12) << 2) | ((sub_pix >> 2) ^ 2))       // 16k
-//                               (((count >> 12) << 1) | ((sub_pix >> 2) ^ 2) << 1)  //  8k
-		return (DecoderIx<0>().y(count, sub_pix) << I) | (((sub_pix >> 2) ^ 2) << (2 - I));
+//                               (((count >> 12) << 2) |  ((sub_pix >> 2) ^ 2))       // 16k
+//                               (((count >> 12) << 1) |  ((sub_pix >> 2) ^ 2) >> 1)  //  8k
+		return (DecoderIx<0>().y(count, sub_pix) << I) | (((sub_pix >> 2) ^ 2) >> (2 - I));
 	}
 
 	template <>
