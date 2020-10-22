@@ -96,12 +96,33 @@ void TIFFOutputWarning(const char* module, const char* fmt, va_list ap)
 	cout << endl;
 }
 
+string read_acquisition_metadata(TIFF *tiff) {
+	char *metadata_c = nullptr;
+	uint32_t count = 0;
+
+	TIFFSetDirectory(tiff, 0);
+	TIFFGetField(tiff, 65001, &count, &metadata_c);
+
+	return string(metadata_c, count);
+}
+
+auto read_compression(TIFF *tiff) {
+	uint16_t compression = 0;
+
+	TIFFGetField(tiff, TIFFTAG_COMPRESSION, &compression);
+
+	return compression;
+}
+
+
 EerIO::EerIO(const string & fname, IOMode rw, Decoder &dec)
 :	ImageIO(fname, rw), decoder(dec)
 {
 	TIFFSetWarningHandler(TIFFOutputWarning);
 
 	tiff_file = TIFFOpen(filename.c_str(), "r");
+
+	acquisition_metadata = read_acquisition_metadata(tiff_file);
 
 	for( ; TIFFReadDirectory(tiff_file); )
 		num_frames = TIFFCurrentDirectory(tiff_file) + 1;
@@ -124,20 +145,7 @@ void EerIO::init()
 {
 	ENTERFUNC;
 
-	_read_meta_info();
-
 	EXITFUNC;
-}
-
-void EerIO::_read_meta_info() {
-	TIFFSetDirectory(tiff_file, 0);
-	TIFFGetField(tiff_file, TIFFTAG_COMPRESSION, &compression);
-
-	char *metadata_c = nullptr;
-	uint32_t count = 0;
-
-	TIFFGetField(tiff_file, 65001, &count, &metadata_c);
-	metadata = string(metadata_c, count);
 }
 
 int EerIO::get_nimg()

@@ -205,12 +205,9 @@ namespace EMAN
 		DEFINE_IMAGEIO_FUNC;
 
 	private:
-		void _read_meta_info();
-
 		bool is_big_endian;
 		TIFF *tiff_file;
-		uint16_t compression = 0;
-		string metadata;
+		string acquisition_metadata;
 		size_t num_frames = 0;
 		
 		vector<EerFrame> frames;
