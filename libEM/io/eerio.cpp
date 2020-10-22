@@ -70,7 +70,7 @@ auto decode_eer_data(EerWord *data, Decoder &decoder) {
 	EerRle    rle;
 	EerSubPix sub_pix;
 
-	is>>rle>>sub_pix;
+	is >> rle >> sub_pix;
 	int count = rle;
 
 	COORDS coords;
@@ -78,7 +78,7 @@ auto decode_eer_data(EerWord *data, Decoder &decoder) {
 	while (count < decoder.camera_size * decoder.camera_size) {
 		coords.push_back(decoder(count, sub_pix));
 
-		is>>rle>>sub_pix;
+		is >> rle >> sub_pix;
 
 		count += rle+1;
 	}
@@ -101,10 +101,10 @@ EerIO::EerIO(const string & fname, IOMode rw, Decoder &dec)
 {
 	TIFFSetWarningHandler(TIFFOutputWarning);
 
-	tiff_file = TIFFOpen(fname.c_str(), "r");
+	tiff_file = TIFFOpen(filename.c_str(), "r");
 
-	for(num_dirs=0; TIFFReadDirectory(tiff_file); num_dirs++)
-		;
+	for( ; TIFFReadDirectory(tiff_file); )
+		num_frames = TIFFCurrentDirectory(tiff_file) + 1;
 
 	frames.resize(get_nimg());
 	
@@ -142,7 +142,7 @@ void EerIO::_read_meta_info() {
 
 int EerIO::get_nimg()
 {
-	return num_dirs;
+	return num_frames;
 }
 
 bool EerIO::is_image_big_endian()
