@@ -885,7 +885,7 @@ class EMPlotFileType(EMFileType) :
 		
 		return [("Plot 2D", "Add to current plot", self.plot2dApp), ("Plot 2D+", "Make new plot", self.plot2dNew),("Hist 2D", "Add to current histogram", self.histApp),("Hist 2D+", "Make new histogram", self.histNew)]
 
-	#def plot2dApp(self, brws) :
+	def plot2dApp(self, brws) :
 		"""Append self to current plot"""
 		brws.busy()
 
@@ -1508,7 +1508,7 @@ class EMStackFileType(EMFileType) :
 		target.raise_()
 
 	def plot2dLstNew(self, brws):
-		self.plot2dApp(brws, True)
+		self.plot2dLstApp(brws, True)
 		
 	def plot2dLstApp(self, brws, new=False) :
 		"""Append self to current plot"""
