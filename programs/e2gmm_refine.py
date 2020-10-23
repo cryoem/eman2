@@ -6,6 +6,7 @@ from sklearn.decomposition import PCA
 floattype=np.float32
 os.environ["CUDA_VISIBLE_DEVICES"]='0' 
 os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]='true' 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' #### reduce log output
 if ('-h' in sys.argv) or ('--help' in sys.argv):
 	tf=type('empty', (object,), {})()
 	tf.function=lambda f: f
