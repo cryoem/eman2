@@ -446,7 +446,7 @@ return ret;
 }
 
 
-bool PointArray::read_from_pdb(const char *file)
+bool PointArray::read_from_pdb(const char *file, const vector<int> &lines)
 {
 	struct stat filestat;
 	stat(file, &filestat);
@@ -464,7 +464,16 @@ bool PointArray::read_from_pdb(const char *file)
 	char s[200];
 	size_t count = 0;
 	
+	int line_num = -1;
+	
+	set<int> lines_set(begin(lines), end(lines)); // searching in sets should be faster than vectors
+	
 	while ((fgets(s, 200, fp) != NULL)) {
+		line_num++;
+		
+		if(find(begin(lines_set), end(lines_set), line_num) == end(lines_set))
+			continue;
+		
 		if (strncmp(s, "ENDMDL", 6) == 0)
 			break;
 		if (strncmp(s, "ATOM", 4) != 0)

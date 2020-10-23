@@ -35,7 +35,7 @@ along with this program; if not, write to the free software
 foundation, inc., 59 temple place, suite 330, boston, ma  02111-1307 usa
 """
 import sys
-from .. import sp_sparx as sp
+import EMAN2_cppwrap
 import numpy as np
 import shutil
 
@@ -43,9 +43,9 @@ import shutil
 def import_sphire_stack(stack_path, group_id):
     """Import the necessary data from a bdb/hdf stack"""
     dtype_list = [
-        ('ptcl_source_image', '|S200'),
-        ('filament', '|S200'),
-        ('filament_id', '|S200'),
+        ('ptcl_source_image', '|U200'),
+        ('filament', '|U200'),
+        ('filament_id', '|U200'),
         ('segment_id', '<i8'),
         ('data_n', '<i8'),
         ('ISAC_class_id', '<i8')
@@ -57,19 +57,19 @@ def import_sphire_stack(stack_path, group_id):
             break
     if not is_in_dtype:
         try:
-            data = sp.EMUtil.get_all_attributes(stack_path, group_id)
+            data = EMAN2_cppwrap.EMUtil.get_all_attributes(stack_path, group_id)
         except KeyError:
             print('Group_id', group_id, 'needs to be present in the stack header!')
             sys.exit(1)
         else:
             dtype = type(data)
-        dtype_list.append((group_id, '|S200'))
+        dtype_list.append((group_id, '|U200'))
 
     imported_data = []
     bad_idx = []
     for idx, entry in enumerate(dtype_list):
         try:
-            data = sp.EMUtil.get_all_attributes(stack_path, entry[0])
+            data = EMAN2_cppwrap.EMUtil.get_all_attributes(stack_path, entry[0])
         except KeyError:
             bad_idx.append(idx)
             if entry[0] == group_id:
@@ -164,14 +164,16 @@ def write_file(output_name, array, name_list, outlier_apply, outlier_name):
             else:
                 pass
             for name in name_list:
-                if isinstance(element[name], float):
+                if isinstance(element[name], (float, np.floating)):
                     text = '{:> 15.6f}'.format(element[name])
-                if isinstance(element[name], int):
+                elif isinstance(element[name], (int, np.integer)):
                     text = '{:> 7d}'.format(element[name])
-                if isinstance(element[name], basestring):
+                elif isinstance(element[name], (str, np.character)):
                     text = '{:>{}s}'.format(
                         element[name], len(element[name]) + 6
                         )
+                else:
+                    assert False
                 f.write(text)
             f.write('\n')
 
@@ -179,7 +181,7 @@ def write_file(output_name, array, name_list, outlier_apply, outlier_name):
 def prepare_output(tracker, file_name, file_name_old):
     default_name = '{0}_not_applied.txt'.format(file_name)
 
-    if isinstance(tracker, basestring):
+    if isinstance(tracker, str):
         output_name = default_name
     elif isinstance(tracker, dict):
         #if tracker['constants']['apply_prior']:

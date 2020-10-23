@@ -65,7 +65,7 @@ namespace EMAN
 		PointArray & operator=(PointArray & pa);
 		size_t get_number_points() const;
 		void set_number_points(size_t nn);
-		bool read_from_pdb(const char *file);
+		bool read_from_pdb(const char *file, const vector<int> &lines=vector<int>());
 		void save_to_pdb(const char *file);
 		FloatPoint get_center();
 		void center_to_zero();	// shift center to zero

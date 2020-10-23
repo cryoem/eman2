@@ -10584,7 +10584,7 @@ def load_object_from_json(file_name):
 
 def dump_tracker_to_json(file_name, tracker):
     if tracker["constants"]["stack_prior"] is not None:
-        sp_helix_sphire.np.savetxt(
+        numpy.savetxt(
             os.path.join(tracker["constants"]["masterdir"], "stack_prior.txt"),
             Tracker["constants"]["stack_prior"],
             fmt=Tracker["constants"]["stack_prior_fmt"],
@@ -10603,7 +10603,7 @@ def dump_object_to_json(file_name, data_object, indent=None):
 def prior_stack_fmt(sphire_prior_stack):
     fmt = []
     for entry in sphire_prior_stack.dtype.names:
-        if isinstance(sphire_prior_stack[entry][0], str):
+        if isinstance(sphire_prior_stack[entry][0], (str, numpy.character)):
             fmt.append(
                 "% {0}s".format(
                     sp_helix_sphire.np.max(
@@ -10612,20 +10612,22 @@ def prior_stack_fmt(sphire_prior_stack):
                     + 3
                 )
             )
-        elif isinstance(sphire_prior_stack[entry][0], int):
+
+        elif isinstance(sphire_prior_stack[entry][0], (int, numpy.integer)):
             fmt.append(
                 "% {0}d".format(
                     len(str(sp_helix_sphire.np.max(sphire_prior_stack[entry]))) + 3
                 )
             )
-        elif isinstance(sphire_prior_stack[entry][0], float):
+
+        elif isinstance(sphire_prior_stack[entry][0], (float, numpy.floating)):
             fmt.append(
                 "% {0}.6f".format(
                     len(str(sp_helix_sphire.np.max(sphire_prior_stack[entry]))) + 3
                 )
             )
         else:
-            sp_global_def.sxprint("UNKNOWN", entry, type(entry))
+            sp_global_def.sxprint("UNKNOWN", entry, type(entry), sphire_prior_stack[entry][0], type(sphire_prior_stack[entry][0]))
     return " ".join(fmt)
 
 

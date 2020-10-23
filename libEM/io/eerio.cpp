@@ -70,14 +70,15 @@ auto decode_eer_data(EerWord *data, Decoder &decoder) {
 	EerRle    rle;
 	EerSubPix sub_pix;
 
-	int count = 0;
+	is>>rle>>sub_pix;
+	int count = rle;
 
 	COORDS coords;
 
 	while (count < decoder.camera_size * decoder.camera_size) {
-		is>>rle>>sub_pix;
-		
 		coords.push_back(decoder(count, sub_pix));
+
+		is>>rle>>sub_pix;
 
 		count += rle+1;
 	}
