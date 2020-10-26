@@ -114,6 +114,24 @@ auto read_compression(TIFF *tiff) {
 	return compression;
 }
 
+auto read_raw_data(TIFF *tiff) {
+	auto num_strips = TIFFNumberOfStrips(tiff);
+	vector<unsigned int> strip_sizes(num_strips);
+
+	for(size_t i=0; i<num_strips; ++i)
+		strip_sizes[i] = TIFFRawStripSize(tiff, i);
+
+	std::vector<unsigned char> data;
+
+	for(size_t i=0; i<num_strips; ++i) {
+		auto prev_size = data.size();
+		data.resize(prev_size + strip_sizes[i]);
+		TIFFReadRawStrip(tiff, i, data.data() + prev_size, strip_sizes[i]);
+	}
+
+	return data;
+}
+
 
 EerIO::EerIO(const string & fname, IOMode rw, Decoder &dec)
 :	ImageIO(fname, rw), decoder(dec)
@@ -127,13 +145,6 @@ EerIO::EerIO(const string & fname, IOMode rw, Decoder &dec)
 	for( ; TIFFReadDirectory(tiff_file); )
 		num_frames = TIFFCurrentDirectory(tiff_file) + 1;
 
-	frames.resize(get_nimg());
-	
-	for(size_t i=0; i<get_nimg(); i++){
-		TIFFSetDirectory(tiff_file, i);
-
-		frames[i] = EerFrame(tiff_file);
-	}
 }
 
 EerIO::~EerIO()

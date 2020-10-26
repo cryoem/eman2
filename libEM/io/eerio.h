@@ -210,7 +210,6 @@ namespace EMAN
 		string acquisition_metadata;
 		size_t num_frames = 0;
 		
-		vector<EerFrame> frames;
 		Decoder &decoder;
 	};
 }
