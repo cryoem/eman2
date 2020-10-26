@@ -179,7 +179,11 @@ int EerIO::read_data(float *rdata, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
-	auto coords = decode_eer_data((EerWord *) frames[image_index].data(), decoder);
+	TIFFSetDirectory(tiff_file, image_index);
+	
+	auto data = read_raw_data(tiff_file);
+
+	auto coords = decode_eer_data((EerWord *) data.data(), decoder);
 	for(auto &c : coords)
 		rdata[c.first + c.second * decoder.num_pix()] += 1;
 
