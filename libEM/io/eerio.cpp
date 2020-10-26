@@ -36,29 +36,6 @@
 using namespace EMAN;
 
 
-EerFrame::EerFrame(TIFF *tiff)
-	: num_strips(TIFFNumberOfStrips(tiff))
-{
-	_load_data(tiff);
-}
-
-void EerFrame::_load_data(TIFF *tiff) {
-	vector<unsigned int> strip_sizes(num_strips);
-	for(size_t i=0; i<num_strips; ++i) {
-		strip_sizes[i] = TIFFRawStripSize(tiff, i);
-	}
-
-	for(size_t i=0; i<num_strips; ++i) {
-		auto prev_size = _data.size();
-		_data.resize(prev_size + strip_sizes[i]);
-		TIFFReadRawStrip(tiff, i, _data.data()+prev_size, strip_sizes[i]);
-	}
-}
-
-auto EerFrame::data() const {
-	return _data.data();
-}
-
 auto Decoder::operator()(unsigned int count, unsigned int sub_pix) const {
 	return std::make_pair(x(count, sub_pix), y(count, sub_pix));
 }
