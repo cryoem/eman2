@@ -157,7 +157,7 @@ EerIO::EerIO(const string & fname, IOMode rw, Decoder &dec)
 
 	tiff_file = TIFFOpen(filename.c_str(), "r");
 
-	acquisition_metadata = read_acquisition_metadata(tiff_file);
+	auto acquisition_metadata = read_acquisition_metadata(tiff_file);
 	acquisition_data_dict = parse_acquisition_data(acquisition_metadata);
 
 	for( ; TIFFReadDirectory(tiff_file); )

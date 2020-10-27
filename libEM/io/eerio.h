@@ -192,7 +192,6 @@ namespace EMAN
 	private:
 		bool is_big_endian;
 		TIFF *tiff_file;
-		string acquisition_metadata;
 		size_t num_frames = 0;
 		Dict acquisition_data_dict;
 		
