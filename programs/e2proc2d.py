@@ -231,8 +231,8 @@ def main():
 	parser.add_argument("--step",type=str,default="0,1",help="Specify <init>,<step>. Processes only a subset of the input data. For example, 0,2 would process only the even numbered particles")
 
 	eer_input_group = parser.add_mutually_exclusive_group()
-	eer_input_group.add_argument("--eer8k",  action="store_true", help="Render EER file on 8k grid.")
-	eer_input_group.add_argument("--eer16k", action="store_true", help="Render EER file on 16k grid.")
+	eer_input_group.add_argument("--eer2x",  action="store_true", help="Render EER file on 8k grid.")
+	eer_input_group.add_argument("--eer4x", action="store_true", help="Render EER file on 16k grid.")
 
 	# Parallelism
 
@@ -603,10 +603,10 @@ def main():
 					
 					d = EMData()
 					
-					if options.eer8k:
-						img_type = IMAGE_EER8K
-					elif options.eer16k:
-						img_type = IMAGE_EER16K
+					if options.eer2x:
+						img_type = IMAGE_EER2X
+					elif options.eer4x:
+						img_type = IMAGE_EER4X
 					else:
 						img_type = IMAGE_UNKNOWN
 					
