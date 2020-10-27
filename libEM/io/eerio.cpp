@@ -32,6 +32,8 @@
 #include "eerio.h"
 
 #include <tiffio.h>
+#include <regex>
+
 
 using namespace EMAN;
 
@@ -83,6 +85,44 @@ string read_acquisition_metadata(TIFF *tiff) {
 	return string(metadata_c, count);
 }
 
+string to_snake_case(const string &s) {
+	auto ret(s);
+	int sh = 0;
+	for(int i=0; i<s.size(); i++) {
+		if(isupper(s[i])) {
+			ret.insert(i+sh, "_");
+			sh++;
+			ret[i + sh] = ::tolower(s[i]);
+		}
+	}
+	
+	return ret;
+}
+
+Dict parse_acquisition_data(string metadata) {
+	Dict dict;
+	metadata = to_snake_case(metadata);
+	
+	std::regex re("<item name=\"\(.*?\)\".*?>\(.*?\)</item>");
+	std::sregex_iterator next(metadata.begin(), metadata.end(), re);
+	std::sregex_iterator end;
+
+	set<string> floats {"exposure_time", "mean_dose_rate", "total_dose"};
+	set<string> ints {"number_of_frames", "sensor_image_height", "sensor_image_width"};
+	
+	for( ; next != end; ++next) {
+		std::smatch m = *next;
+
+		auto key = m[1].str();
+		if(find(floats.begin(), floats.end(), key) != floats.end())
+			dict["EER." + key] = stof(m[2]);
+		else
+			dict["EER." + key] = stoi(m[2]);
+	}
+	
+	return dict;
+}
+
 auto read_compression(TIFF *tiff) {
 	uint16_t compression = 0;
 
@@ -118,6 +158,7 @@ EerIO::EerIO(const string & fname, IOMode rw, Decoder &dec)
 	tiff_file = TIFFOpen(filename.c_str(), "r");
 
 	acquisition_metadata = read_acquisition_metadata(tiff_file);
+	acquisition_data_dict = parse_acquisition_data(acquisition_metadata);
 
 	for( ; TIFFReadDirectory(tiff_file); )
 		num_frames = TIFFCurrentDirectory(tiff_file) + 1;
@@ -160,6 +201,11 @@ int EerIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 	dict["nx"] = decoder.num_pix();
 	dict["ny"] = decoder.num_pix();
 	dict["nz"] = 1;
+
+	dict["EER.compression"] = read_compression(tiff_file);
+	
+	for(auto &d : acquisition_data_dict)
+		dict[d.first] = d.second;
 
 	return 0;
 }
