@@ -2980,8 +2980,8 @@ def restacking(args):
             )
             global_mic_dict[mic_basename].centered_coords_filament_list.append(
                 "{:6d} {:6d}\n".format(
-                    int(centered_coordinate_x),
-                    int(centered_coordinate_y)
+                    int(ptcl_source_coordinate_x + shift2d_x),
+                    int(ptcl_source_coordinate_y + shift2d_y)
                 )
             )
 
