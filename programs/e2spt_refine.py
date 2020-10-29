@@ -257,17 +257,17 @@ def main():
 		# it's a bit counterproductive if we then apply symmetry here (as was happening before 8/22/20)
 		syms=f"--sym {options.sym}"
 		if options.symalimask!=None or options.breaksym: syms=""
-		run(f"e2refine_postprocess.py --even {even} --odd {odd} --output {options.path}threed_{itr:02d}.hdf --iter {itr:d} --tomo --mass {options.mass} --threads {options.threads} {syms} {msk} {s}")
+		run(f"e2refine_postprocess.py --even {even} --odd {odd} --output {options.path}/threed_{itr:02d}.hdf --iter {itr:d} --tomo --mass {options.mass} --threads {options.threads} {syms} {msk} {s}")
 
 		try: symn=int(options.sym[1:])
 		except: symn=0
 		if options.symalimask!=None and not options.breaksym and symn>0:
-			os.rename(f"{options.path}threed_{itr:02d}.hdf",f"{options.path}threed_{itr:02d}_nosym.hdf")
+			os.rename(f"{options.path}threed_{itr:02d}.hdf",f"{options.path}/threed_{itr:02d}_nosym.hdf")
 			phir=360.0/(symn*2.0)
 			if   options.sym[0].lower()=="c":
-				run(f"e2proc3d.py {options.path}threed_{itr:02d}_nosym.hdf {options.path}threed_{itr:02d}.hdf --process mask.cylinder:phicen=0:phirange={phir-5.0}:phitriangle=1:phitrirange=10.0 --sym {options.sym}")
+				run(f"e2proc3d.py {options.path}threed_{itr:02d}_nosym.hdf {options.path}/threed_{itr:02d}.hdf --process mask.cylinder:phicen=0:phirange={phir-5.0}:phitriangle=1:phitrirange=10.0 --sym {options.sym}")
 			elif options.sym[0].lower()=="d":
-				run(f"e2proc3d.py {options.path}threed_{itr:02d}_nosym.hdf {options.path}threed_{itr:02d}.hdf --process mask.cylinder:phicen=0:phirange={phir-5.0}:phitriangle=1:phitrirange=10.0:zmin={data['nz']/2}:zmax={data['nz']} --sym {options.sym}")
+				run(f"e2proc3d.py {options.path}threed_{itr:02d}_nosym.hdf {options.path}/threed_{itr:02d}.hdf --process mask.cylinder:phicen=0:phirange={phir-5.0}:phitriangle=1:phitrirange=10.0:zmin={data['nz']/2}:zmax={data['nz']} --sym {options.sym}")
 
 		ref=os.path.join(options.path, "threed_{:02d}.hdf".format(itr))
 		fsc=np.loadtxt(os.path.join(options.path, "fsc_masked_{:02d}.txt".format(itr)))
