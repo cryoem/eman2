@@ -1181,6 +1181,21 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 //	int size = xlen * ylen * zlen;
 	void * ptr_data = data;
 
+	int truebits=0;
+	switch(mrch.mode) {
+		case MRC_UCHAR:	truebits=8; break;
+		case MRC_SHORT: truebits=16; break;
+		case MRC_FLOAT: truebits=32; break;
+		case MRC_SHORT_COMPLEX: truebits=32; break;
+		case MRC_FLOAT_COMPLEX: truebits=25; break;
+		case MRC_USHORT: truebits=16; break;
+		case MRC_UCHAR3: truebits=8; break;
+		case MRC_CHAR: truebits=8; break;
+		case MRC_UHEX: truebits=4; break;
+		case MRC_UNKNOWN: truebits=0; break;
+	}
+	if (renderbits==0 || renderbits>truebits) renderbits=truebits;
+	
 	float rmin = rendermin;
 	float rmax = rendermax;
 	int rbits = renderbits;

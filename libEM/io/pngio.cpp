@@ -364,6 +364,10 @@ int PngIO::write_data(float *data, int image_index, const Region*,
 
 	// If we didn't get any parameters in 'render_min' or 'render_max',
 	// we need to find some good ones
+	int truebits=0;
+	if (depth_type==PNG_CHAR_DEPTH) truebits=8;
+	else if (depth_type=PNG_SHORT_DEPTH) truebits=16;
+	if (renderbits==0 || renderbits>truebits) renderbits=truebits;
 
 	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, renderbits);
 

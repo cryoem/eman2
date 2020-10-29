@@ -78,6 +78,9 @@ namespace EMAN
 	class Region;
 	class ImageIO;
 
+	// Was going to make this a static member of EMUtil since it is tied to EMDataType, but couldn't sort out the syntax
+	const int EMDataTypeBits[] = { 0,8,8,16,16,32,32,32,64,32,32,64,0 };
+
 	class EMUtil
 	{
 	public:
@@ -101,6 +104,7 @@ namespace EMAN
 			EM_FLOAT_COMPLEX,
 			EM_COMPRESSED				// compressed
 		};
+		
 
 		/** Image format types.
 		 */

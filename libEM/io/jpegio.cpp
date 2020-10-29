@@ -186,6 +186,7 @@ int JpegIO::write_data(float *data, int image_index, const Region* area,
 	// If we didn't get any parameters in 'render_min' or 'render_max',
 	// we need to find some good ones.
 
+	if (renderbits==0 || renderbits>8) renderbits=8;
 	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, renderbits);
 
 	unsigned char *cdata = (unsigned char *)malloc(nx+1);

@@ -245,6 +245,8 @@ int PgmIO::write_data(float *data, int image_index, const Region* area,
 	check_write_access(rw_mode, image_index, 1, data);
 	check_region(area, IntSize(nx, ny));
 
+	if (renderbits==0 || renderbits>8) renderbits=8;
+
 	// If we didn't get any parameters in 'render_min' or 'render_max', we need to find some good ones
 	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, renderbits);
 

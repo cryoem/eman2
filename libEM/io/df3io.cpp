@@ -177,6 +177,8 @@ int Df3IO::write_data(float *data, int, const Region*,
 	unsigned short * usdata = 0;
 	unsigned char * ucdata = 0;
 
+	int truebits=EMDataTypeBits[(int)dt];
+	if (renderbits==0 || renderbits>truebits) renderbits=truebits;
 	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, renderbits,  nz);
 
 	switch(dt) {
