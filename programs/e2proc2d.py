@@ -602,6 +602,10 @@ def main():
 						print("Read image #", i, "from input file:")
 					
 					d = EMData()
+
+					if (options.eer2x or options.eer4x) and infile[-4:] != ".eer":
+						print("Error: --eer2x and --eer4x options can be used only with EER files.")
+						sys.exit(1)
 					
 					if options.eer2x:
 						img_type = IMAGE_EER2X
