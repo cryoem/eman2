@@ -30,12 +30,12 @@
 #
 #
 
-# e2pdb2mrc.py  07/23/3004  Steven Ludtke
+# e2pdb2mrc.py  07/23/2004  Steven Ludtke
 # This program will generate an electron density map from a PDB file. Unlike the earlier versions
 # of this program, operations like applying symmetry or centering are now offloaded onto
 # e2procpdb.py. Note that atomic form factors are not included in this program. It is designed
 # for intermediate resolutions (~4 A and higher). Each atom is represented by a Gaussian with
-# the approrpiate number of electrons.
+# the appropriate number of electrons.
 
 # PDB sample line
 #           1         2         3         4         5         6         7
@@ -189,7 +189,7 @@ def main():
 				# 		tfs[tfid][rowid] = row
 
 			if line[:5] =="HELIX":
-				# not confident about this... 
+				# not confident about this...
 				# need to learn more about pdb file format
 				if int(line[20:25]) > lhelix or line[19] != lch:
 					ihelix+=abs(int(line[20:25])-int(line[32:37]))-1
@@ -199,10 +199,10 @@ def main():
 				lch=line[19]
 				lhelix=int(line[32:37])
 
-			elif line[:5]=="SHEET":
+			elif line[:5] == "SHEET":
 				isheet += abs(int(line[22:26])-int(line[33:37]))+1
 
-			elif (line[:4]=='ATOM' or (line[:6]=='HETATM' and options.het)) :
+			elif line[:4]=='ATOM' or (line[:6]=='HETATM' and options.het) :
 
 				if lastres != line[17:21]:
 					ires += 1
@@ -296,14 +296,14 @@ def main():
 			pa = PointArray()
 			pts = np.concatenate(points).flatten()
 			pa.set_from(pts.tolist()[0])
-		
+
 		if options.center: pa.center_to_zero()
 
 		#bound = max(pa.get_bounding_box().get_size())
 		#if boxsize < bound:
 			#boxsize = int(bound+1)
 			#print("Box size too small. Will use {} instead.".format(boxsize))
-		
+
 		out = pa.pdb2mrc_by_summation(boxsize,options.apix,options.res,addpdbbfactor)
 		out.write_image(args[1])
 
@@ -319,13 +319,12 @@ def main():
 
 	E2end(logger)
 
-# this function originally added so that it could be accessed independently (for Junjie Zhang by David Woolford)
 def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,model=None,center=False,quiet=False):
 	'''
 	file_name is the name of a pdb file
 	apix is the angstrom per pixel
-	res is requested resolution, quivalent to Gaussian lowpass with 1/e width at 1/res
-	het is a flag inidicating whether HET atoms should be included in the map
+	res is requested resolution, equivalent to Gaussian lowpass with 1/e width at 1/res
+	het is a flag indicating whether HET atoms should be included in the map
 	box is the boxsize, can be a single int (e.g. 128), a tuple (e.g. [128,64,54]), or a string (e.g. "128" or "128,64,57")
 	chains is a string list of chain identifiers, eg 'ABEFG'
 	quiet can be used to turn of helpful print outs
@@ -333,7 +332,6 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,model=No
 
 	try : infile=open(file_name,"r")
 	except : raise IOError("%s is an invalid file name" %file_name)
-
 
 	if res<=apix : print("Warning: res<=apix. Generally res should be 2x apix or more")
 
@@ -354,7 +352,7 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,model=No
 			if stm and line[:6]=="ENDMDL" : break
 			if not stm: continue
 
-		if (line[:4]=='ATOM' or (line[:6]=='HETATM' and het)) :
+		if line[:4]=='ATOM' or (line[:6]=='HETATM' and het) :
 			if chains and not (line[21] in chains) : continue
 
 			try:
@@ -473,5 +471,6 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,model=No
 	outmap.set_attr("origin_z",-zt*apix+amin[2])
 	return outmap
 
+
 if __name__ == "__main__":
-    main()
+	main()

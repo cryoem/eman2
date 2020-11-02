@@ -109,9 +109,6 @@ namespace EMAN
 #endif // EMAN2_USING_CUDA
 
 	public:
-		enum FFTPLACE { FFT_OUT_OF_PLACE, FFT_IN_PLACE };
-		enum WINDOWPLACE { WINDOW_OUT_OF_PLACE, WINDOW_IN_PLACE };
-
 		/** Construct an empty EMData instance. It has no image data. */
 		EMData();
 		~ EMData();
