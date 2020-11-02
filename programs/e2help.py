@@ -143,43 +143,43 @@ act as a filter on the names of the algorithms."""
 	elif args[0] in ("imagetypes", "imagetype", "image", "images", "imageformats", "imageformat"):
 		print("Available image types:")
 		
-		header_line = ["Type", "Extension", "Read", "Write", "3D", "ImgStack", "VolStack", "RgnI/O", "Comments"]
+		header_line = ["Type", "Extension", "Read", "Write", "3D", "ImgStack", "VolStack", "RgnI/O"]
 		img_types = [
-			 ["HDF5", "hdf", "Y", "Y", "Y", "Y", "Y", "Y", "HDF5 is an international standard for scientific data (http://www.hdfgroup.org/HDF5/). It supports arbitrary metadata (header info) and is very portable. This is the standard interchange format for EMAN2. Chimera can read EMAN2 style HDF files."],
-			 ["DM2 (Gatan)", "dm2", "Y", "N", "N", "N", "N", "N", "Proprietary Gatan format (older version)"],
-			 ["DM3 (Gatan)", "dm3", "Y", "N", "N", "N", "", "N", "Proprietary Gatan format from Digital Micrograph"],
-			 ["DM4 (Gatan)", "dm4", "Y", "N", "Y", "Y", "", "N", "Proprietary Gatan format from Digital Micrograph, used with K2 cameras"],
-			 ["SER (FEI)", "ser", "Y", "N", "N", "Y", "", "N", "Proprietary FEI format (Falcon camera ?)"],
-			 ["EER (TF)", "eer", "Y", "N", "N", "Y", "N", "N ", "Falcon 4 camera counting mode format. Extremely large frame count with RLE compression to make frames very small. Supports up to 4x oversampling of counting data. Default reader is without oversampling. See below for details."],
-			 ["EM", "em", "Y", "Y", "Y", "N", "", "Y", "As produced by the EM software package"],
-			 ["ICOS", "icos", "Y", "Y", "Y", "N", "", "Y", "Old icosahedral format"],
-			 ["Imagic", "img/hed", "Y", "Y", "Y", "Y", "Y", "Y", "This format stores header and image data in 2 separate files. Region I/O is only available for 2D. The Imagic format in EMAN2 is fully compatible with Imagic4D standard since the 2.0 release."],
-			 ["MRC", "mrc", "Y", "Y", "N", "Y", "", "Y", "Largely compatible with CCP4. Note that some programs will treat 3D MRC files as stacks of 2D imagess (like IMOD). This behavior is partially supported in EMAN, but be aware that it is impossible to store metadata about each image in the stack when doing this, so it is not suitable as an export format for single particle work. EMAN2 supports reading of FEI MRC, which is an extended MRC format for tomography. The extra header information will be read into the header. All FEI MRC images will be 2-byte integer."],
-			 ["MRCS", "mrcs", "Y", "Y", "N", "Y", "soon?", "Y", "Identical to MRC format above. If the filename is .mrcs, then a 3-D volume file will automatically be treated as a stack of 2-D images. If any other extension is used, it will appear to be a single 3-D volume."],
-			 ["Spider Stack", "spi", "Y", "Y", "Y", "Y", "", "Y", "To read the overall image header in a stacked spider file, use image_index = -1."],
-			 ["Spider Single", "spi", "Y", "Y", "Y", "N", "", "Y", "Specify \"--outtype=spidersingle\" to use with e2proc2d/3d"],
-			 ["SER", "ser", "Y", "N", "N", "Y", "", "N", "Also known as TIA (Emospec) file format, used by FEI Tecnai and Titan microscope for acquiring and displaying scanned images and spectra"],
-			 ["BDB", "N/A", "Y", "Y", "Y", "Y", "", "Y", "This entry is for EMAN2's (retired) embedded database system. While it is still possible to read/write BDB's for backwards compatibility, we do not suggest any new use of this format in EMAN2 (SPARX still uses it for many operations)"],
-			 ["Amira", "am", "Y", "Y", "Y", "N", "", "N", "A native format for the Amira visualization package"],
-			 ["DF3", "df3", "Y", "Y", "Y", "N", "", "N", "File format for POV-Ray, support 8,16,32 bit integer per pixel"],
-			 ["FITS", "fts", "Y", "N", "Y", "N", "", "N", "Widely used file format in astronomy"],
-			 ["JPEG", "jpg/jpeg", "N", "Y", "N", "N", "", "N", "Note that JPEG images use lossy compression and are NOT suitable for quantitative analysis. PNG (lossless compression) is a better alternative unless file size is of critical importance."],
-			 ["LST", "lst", "Y", "Y", "Y", "Y", "", "N", "ASCII file contains a list of image file names and numbers. Two variants, LST and LSX. LSX is normally used in EMAN2 and has the additional restraint that all lines have the same length."],
-			 ["LSTFAST", "lsx/lst", "Y", "Y", "Y", "Y", "", "N", "Optomized version of LST"],
-			 ["OMAP", "omap", "Y", "N", "Y", "N", "", "N", "Also called DSN6 map, 1 byte integer per pixel"],
-			 ["PGM", "pgm", "Y", "Y", "N", "N", "", "N", "Standard graphics format with 8 bit greyscale images. No compression."],
-			 ["PIF", "pif", "Y", "Y", "Y", "Y", "", "N", "Purdue Image Format. This will read most, but not all PIF images. Recent support added for mode 40 and 46 (boxed particles). Some of the FFT formats cannot be read by EMAN2. PIF writing is normally done in FLOAT mode, which is not used very often in PIF. PIF technically permits only images with odd dimensions, EMAN does not enforce this."],
-			 ["PNG", "png", "Y", "Y", "N", "N", "", "N", "Excellent format for presentations. Lossless data compression, 8 bit or 16 bit per pixel"],
-			 ["SAL", "hdr/img", "Y", "N", "N", "N", "", "N", "Scans-A-Lot. Old proprietary scanner format. Separate header and data file"],
-			 ["SITUS", "situs", "Y", "Y", "Y", "N", "", "N", "Situs-specific ASCII format on a cubic lattice. Used by Situs programs"],
-			 ["TIFF", "tiff/tif", "Y", "Y", "N", "N", "", "N", "Good format for use with programs like photoshop. Some variants are good for quantitative analysis, but JPEG compression should be avoided."],
-			 ["V4L", "v4l", "Y", "N", "N", "N", "", "N", "Used by some video-capture boards in Linux. Acquires images from the V4L2 interface in real-time(video4linux)."],
-			 ["VTK", "vtk", "Y", "Y", "Y", "N", "", "N", "Native format from Visualization Toolkit"],
-			 ["XPLOR", "xplor", "Y", "Y", "Y", "N", "", "N", "8 bytes integer, 12.5E float ASCII format"]]
+			 ["HDF5",          "hdf",      "Y", "Y", "Y", "Y", "Y",     "Y"],
+			 ["DM2 (Gatan)",   "dm2",      "Y", "N", "N", "N", "N",     "N"],
+			 ["DM3 (Gatan)",   "dm3",      "Y", "N", "N", "N", "",      "N"],
+			 ["DM4 (Gatan)",   "dm4",      "Y", "N", "Y", "Y", "",      "N"],
+			 ["SER (FEI)",     "ser",      "Y", "N", "N", "Y", "",      "N"],
+			 ["EER (TF)",      "eer",      "Y", "N", "N", "Y", "N",     "N "],
+			 ["EM",            "em",       "Y", "Y", "Y", "N", "",      "Y"],
+			 ["ICOS",          "icos",     "Y", "Y", "Y", "N", "",      "Y"],
+			 ["Imagic",        "img/hed",  "Y", "Y", "Y", "Y", "Y",     "Y"],
+			 ["MRC",           "mrc",      "Y", "Y", "N", "Y", "",      "Y"],
+			 ["MRCS",          "mrcs",     "Y", "Y", "N", "Y", "soon?", "Y"],
+			 ["Spider Stack",  "spi",      "Y", "Y", "Y", "Y", "",      "Y"],
+			 ["Spider Single", "spi",      "Y", "Y", "Y", "N", "",      "Y"],
+			 ["SER",           "ser",      "Y", "N", "N", "Y", "",      "N"],
+			 ["BDB",           "N/A",      "Y", "Y", "Y", "Y", "",      "Y"],
+			 ["Amira",         "am",       "Y", "Y", "Y", "N", "",      "N"],
+			 ["DF3",           "df3",      "Y", "Y", "Y", "N", "",      "N"],
+			 ["FITS",          "fts",      "Y", "N", "Y", "N", "",      "N"],
+			 ["JPEG",          "jpg/jpeg", "N", "Y", "N", "N", "",      "N"],
+			 ["LST",           "lst",      "Y", "Y", "Y", "Y", "",      "N"],
+			 ["LSTFAST",       "lsx/lst",  "Y", "Y", "Y", "Y", "",      "N"],
+			 ["OMAP",          "omap",     "Y", "N", "Y", "N", "",      "N"],
+			 ["PGM",           "pgm",      "Y", "Y", "N", "N", "",      "N"],
+			 ["PIF",           "pif",      "Y", "Y", "Y", "Y", "",      "N"],
+			 ["PNG",           "png",      "Y", "Y", "N", "N", "",      "N"],
+			 ["SAL",           "hdr/img",  "Y", "N", "N", "N", "",      "N"],
+			 ["SITUS",         "situs",    "Y", "Y", "Y", "N", "",      "N"],
+			 ["TIFF",          "tiff/tif", "Y", "Y", "N", "N", "",      "N"],
+			 ["V4L",           "v4l",      "Y", "N", "N", "N", "",      "N"],
+			 ["VTK",           "vtk",      "Y", "Y", "Y", "N", "",      "N"],
+			 ["XPLOR",         "xplor",    "Y", "Y", "Y", "N", "",      "N"]]
 		
 		type_len_max = max([len(img[0]) for img in img_types])
 		
-		print(f"{header_line[0]:>{type_len_max}}: " + " ".join(header_line[1:-1]))
+		print(f"{header_line[0]:>{type_len_max}}: " + " ".join(header_line[1:]))
 		
 		for img in img_types:
 			print(  f"{img[0]:<{type_len_max}}: " 
