@@ -202,8 +202,8 @@ EMUtil::ImageType EMUtil::get_image_ext_type(const string & file_ext)
 		imagetypes["SER"] = IMAGE_SER;
 
 		imagetypes["eer"] = IMAGE_EER;
-//		imagetypes["eer"] = IMAGE_EER8K;
-//		imagetypes["eer"] = IMAGE_EER16K;
+//		imagetypes["eer"] = IMAGE_EER2X;
+//		imagetypes["eer"] = IMAGE_EER4X;
 
 		initialized = true;
 	}
@@ -257,11 +257,11 @@ EMUtil::ImageType EMUtil::fast_get_image_type(const string & filename,
     case IMAGE_EER:
 		return IMAGE_EER;
         break;
-	case IMAGE_EER8K:
-		return IMAGE_EER8K;
+	case IMAGE_EER2X:
+		return IMAGE_EER2X;
 		break;
-	case IMAGE_EER16K:
-		return IMAGE_EER16K;
+	case IMAGE_EER4X:
+		return IMAGE_EER4X;
 		break;
 	case IMAGE_DM3:
 		if (DM3IO::is_valid(first_block)) {
@@ -601,10 +601,10 @@ ImageIO *EMUtil::get_imageio(const string & filename, int rw,
 	case IMAGE_EER:
 		imageio = new EerIO(filename, rw_mode, decoder0x);
 		break;
-	case IMAGE_EER8K:
+	case IMAGE_EER2X:
 		imageio = new EerIO(filename, rw_mode, decoder1x);
 		break;
-	case IMAGE_EER16K:
+	case IMAGE_EER4X:
 		imageio = new EerIO(filename, rw_mode, decoder2x);
 		break;
 	case IMAGE_IMAGIC:

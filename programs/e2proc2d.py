@@ -231,8 +231,8 @@ def main():
 	parser.add_argument("--step",type=str,default="0,1",help="Specify <init>,<step>. Processes only a subset of the input data. For example, 0,2 would process only the even numbered particles")
 
 	eer_input_group = parser.add_mutually_exclusive_group()
-	eer_input_group.add_argument("--eer8k",  action="store_true", help="Render EER file on 8k grid.")
-	eer_input_group.add_argument("--eer16k", action="store_true", help="Render EER file on 16k grid.")
+	eer_input_group.add_argument("--eer2x",  action="store_true", help="Render EER file on 8k grid.")
+	eer_input_group.add_argument("--eer4x", action="store_true", help="Render EER file on 16k grid.")
 
 	# Parallelism
 
@@ -452,7 +452,6 @@ def main():
 			nimg = EMUtil.get_image_count(infile)
 
 			# reads header only
-
 			isthreed = False
 			plane = options.plane
 			[tomo_nx, tomo_ny, tomo_nz] = gimme_image_dimensions3D(infile)
@@ -493,7 +492,6 @@ def main():
 			print("%d images, processing %d-%d stepping by %d"%(nimg,n0,n1,options.step[1]))
 
 		# Now we deal with inclusion/exclusion lists
-
 		if options.list or options.select :
 			imagelist = [0]*nimg
 
@@ -604,11 +602,15 @@ def main():
 						print("Read image #", i, "from input file:")
 					
 					d = EMData()
+
+					if (options.eer2x or options.eer4x) and infile[-4:] != ".eer":
+						print("Error: --eer2x and --eer4x options can be used only with EER files.")
+						sys.exit(1)
 					
-					if options.eer8k:
-						img_type = IMAGE_EER8K
-					elif options.eer16k:
-						img_type = IMAGE_EER16K
+					if options.eer2x:
+						img_type = IMAGE_EER2X
+					elif options.eer4x:
+						img_type = IMAGE_EER4X
 					else:
 						img_type = IMAGE_UNKNOWN
 					
@@ -669,7 +671,6 @@ def main():
 
 					# Parse the options to convert the image file name to EMData object
 					# (for both plain image file and bdb file)
-
 					for key in list(param_dict.keys()):
 						#print str(param_dict[key])
 
@@ -860,7 +861,7 @@ def main():
 						d.process_inplace("math.fft.resample",{"n":fshrink})
 
 					index_d[option1] += 1
-					
+
 				elif option1 == "headertransform":
 					xfmode = options.headertransform[index_d[option1]]
 					

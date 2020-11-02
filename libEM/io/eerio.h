@@ -117,21 +117,6 @@ namespace EMAN
 	using EerSubPix = SubPix<4, EerWord>;
 
 	
-	class EerFrame {
-	public:
-		EerFrame() =default;
-		EerFrame(TIFF *tiff);
-
-		auto data() const;
-
-	private:
-		size_t num_strips;
-		std::vector<unsigned char> _data;
-
-		void _load_data(TIFF *tiff);
-	};
-
-
 	class Decoder {
 	public:
 		virtual unsigned int num_pix() const =0;
@@ -205,15 +190,11 @@ namespace EMAN
 		DEFINE_IMAGEIO_FUNC;
 
 	private:
-		void _read_meta_info();
-
 		bool is_big_endian;
 		TIFF *tiff_file;
-		uint16_t compression = 0;
-		string metadata;
-		size_t num_dirs = 0;
+		size_t num_frames = 0;
+		Dict acquisition_data_dict;
 		
-		vector<EerFrame> frames;
 		Decoder &decoder;
 	};
 }

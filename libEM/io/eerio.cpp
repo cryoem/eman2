@@ -32,32 +32,11 @@
 #include "eerio.h"
 
 #include <tiffio.h>
+#include <regex>
+
 
 using namespace EMAN;
 
-
-EerFrame::EerFrame(TIFF *tiff)
-	: num_strips(TIFFNumberOfStrips(tiff))
-{
-	_load_data(tiff);
-}
-
-void EerFrame::_load_data(TIFF *tiff) {
-	vector<unsigned int> strip_sizes(num_strips);
-	for(size_t i=0; i<num_strips; ++i) {
-		strip_sizes[i] = TIFFRawStripSize(tiff, i);
-	}
-
-	for(size_t i=0; i<num_strips; ++i) {
-		auto prev_size = _data.size();
-		_data.resize(prev_size + strip_sizes[i]);
-		TIFFReadRawStrip(tiff, i, _data.data()+prev_size, strip_sizes[i]);
-	}
-}
-
-auto EerFrame::data() const {
-	return _data.data();
-}
 
 auto Decoder::operator()(unsigned int count, unsigned int sub_pix) const {
 	return std::make_pair(x(count, sub_pix), y(count, sub_pix));
@@ -70,7 +49,7 @@ auto decode_eer_data(EerWord *data, Decoder &decoder) {
 	EerRle    rle;
 	EerSubPix sub_pix;
 
-	is>>rle>>sub_pix;
+	is >> rle >> sub_pix;
 	int count = rle;
 
 	COORDS coords;
@@ -78,7 +57,7 @@ auto decode_eer_data(EerWord *data, Decoder &decoder) {
 	while (count < decoder.camera_size * decoder.camera_size) {
 		coords.push_back(decoder(count, sub_pix));
 
-		is>>rle>>sub_pix;
+		is >> rle >> sub_pix;
 
 		count += rle+1;
 	}
@@ -96,23 +75,94 @@ void TIFFOutputWarning(const char* module, const char* fmt, va_list ap)
 	cout << endl;
 }
 
+string read_acquisition_metadata(TIFF *tiff) {
+	char *metadata_c = nullptr;
+	uint32_t count = 0;
+
+	TIFFSetDirectory(tiff, 0);
+	TIFFGetField(tiff, 65001, &count, &metadata_c);
+
+	return string(metadata_c, count);
+}
+
+string to_snake_case(const string &s) {
+	auto ret(s);
+	int sh = 0;
+	for(int i=0; i<s.size(); i++) {
+		if(isupper(s[i])) {
+			ret.insert(i+sh, "_");
+			sh++;
+			ret[i + sh] = ::tolower(s[i]);
+		}
+	}
+	
+	return ret;
+}
+
+Dict parse_acquisition_data(string metadata) {
+	Dict dict;
+	metadata = to_snake_case(metadata);
+	
+	std::regex re("<item name=\"\(.*?\)\".*?>\(.*?\)</item>");
+	std::sregex_iterator next(metadata.begin(), metadata.end(), re);
+	std::sregex_iterator end;
+
+	set<string> floats {"exposure_time", "mean_dose_rate", "total_dose"};
+	set<string> ints {"number_of_frames", "sensor_image_height", "sensor_image_width"};
+	
+	for( ; next != end; ++next) {
+		std::smatch m = *next;
+
+		auto key = m[1].str();
+		if(find(floats.begin(), floats.end(), key) != floats.end())
+			dict["EER." + key] = stof(m[2]);
+		else
+			dict["EER." + key] = stoi(m[2]);
+	}
+	
+	return dict;
+}
+
+auto read_compression(TIFF *tiff) {
+	uint16_t compression = 0;
+
+	TIFFGetField(tiff, TIFFTAG_COMPRESSION, &compression);
+
+	return compression;
+}
+
+auto read_raw_data(TIFF *tiff) {
+	auto num_strips = TIFFNumberOfStrips(tiff);
+	vector<unsigned int> strip_sizes(num_strips);
+
+	for(size_t i=0; i<num_strips; ++i)
+		strip_sizes[i] = TIFFRawStripSize(tiff, i);
+
+	std::vector<unsigned char> data;
+
+	for(size_t i=0; i<num_strips; ++i) {
+		auto prev_size = data.size();
+		data.resize(prev_size + strip_sizes[i]);
+		TIFFReadRawStrip(tiff, i, data.data() + prev_size, strip_sizes[i]);
+	}
+
+	return data;
+}
+
+
 EerIO::EerIO(const string & fname, IOMode rw, Decoder &dec)
 :	ImageIO(fname, rw), decoder(dec)
 {
 	TIFFSetWarningHandler(TIFFOutputWarning);
 
-	tiff_file = TIFFOpen(fname.c_str(), "r");
+	tiff_file = TIFFOpen(filename.c_str(), "r");
 
-	for(num_dirs=0; TIFFReadDirectory(tiff_file); num_dirs++)
-		;
+	auto acquisition_metadata = read_acquisition_metadata(tiff_file);
+	acquisition_data_dict = parse_acquisition_data(acquisition_metadata);
 
-	frames.resize(get_nimg());
-	
-	for(size_t i=0; i<get_nimg(); i++){
-		TIFFSetDirectory(tiff_file, i);
+	for( ; TIFFReadDirectory(tiff_file); )
+		num_frames = TIFFCurrentDirectory(tiff_file) + 1;
 
-		frames[i] = EerFrame(tiff_file);
-	}
 }
 
 EerIO::~EerIO()
@@ -124,25 +174,12 @@ void EerIO::init()
 {
 	ENTERFUNC;
 
-	_read_meta_info();
-
 	EXITFUNC;
-}
-
-void EerIO::_read_meta_info() {
-	TIFFSetDirectory(tiff_file, 0);
-	TIFFGetField(tiff_file, TIFFTAG_COMPRESSION, &compression);
-
-	char *metadata_c = nullptr;
-	uint32_t count = 0;
-
-	TIFFGetField(tiff_file, 65001, &count, &metadata_c);
-	metadata = string(metadata_c, count);
 }
 
 int EerIO::get_nimg()
 {
-	return num_dirs;
+	return num_frames;
 }
 
 bool EerIO::is_image_big_endian()
@@ -165,6 +202,11 @@ int EerIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 	dict["ny"] = decoder.num_pix();
 	dict["nz"] = 1;
 
+	dict["EER.compression"] = read_compression(tiff_file);
+	
+	for(auto &d : acquisition_data_dict)
+		dict[d.first] = d.second;
+
 	return 0;
 }
 
@@ -183,7 +225,11 @@ int EerIO::read_data(float *rdata, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
-	auto coords = decode_eer_data((EerWord *) frames[image_index].data(), decoder);
+	TIFFSetDirectory(tiff_file, image_index);
+	
+	auto data = read_raw_data(tiff_file);
+
+	auto coords = decode_eer_data((EerWord *) data.data(), decoder);
 	for(auto &c : coords)
 		rdata[c.first + c.second * decoder.num_pix()] += 1;
 
