@@ -140,7 +140,7 @@ def reorder_filaments(args, overwrite=False):
     output_file = os.path.join(args.output_directory, '{0}.txt'.format(args.substack_basename))
 
     try:
-        os.mkdir(args.output_directory)
+        os.makedirs(args.output_directory)
     except:
         pass
     with open(output_file, 'w') as write:
@@ -800,7 +800,7 @@ def isac_substack(args):
     if not os.path.exists(subdir_path):
         sp_global_def.sxprint(" ")
         sp_global_def.sxprint("Creating output subdirectory {}.".format(subdir_path))
-        os.mkdir(subdir_path)
+        os.makedirs(subdir_path)
 
     # Check the number of default ISAC class averages in ISAC or Beautifier run
     sp_global_def.sxprint(" ")
@@ -1406,7 +1406,7 @@ def resample_micrographs(args):
         # Check the input dataset consistency and save the result to a text file, if necessary.
         if args.check_consistency:
             # Create output directory
-            os.mkdir(root_out_dir)
+            os.makedirs(root_out_dir)
             sp_global_def.write_command(root_out_dir)
 
             # Open the consistency check file
@@ -1546,7 +1546,7 @@ def resample_micrographs(args):
         # However, it is side-effect of the function, so we will explicitly make root output directory here.
         #
         if not os.path.exists(root_out_dir):
-            os.mkdir(root_out_dir)
+            os.makedirs(root_out_dir)
 
     # All node should wait for main node to create root output directory
     if SXmpi_run.RUNNING_UNDER_MPI:
@@ -1558,7 +1558,7 @@ def resample_micrographs(args):
         # To walk-around synchronisation problem between all MPI nodes and a file server,
         #
         try:
-            os.mkdir(root_out_dir)
+            os.makedirs(root_out_dir)
         except OSError as err:
             pass
 
@@ -1952,7 +1952,7 @@ def organize_micrographs(args):
         # Check the input dataset consistency and save the result to a text file, if necessary.
         if args.check_consistency:
             # Create destination directory
-            os.mkdir(dst_dir)
+            os.makedirs(dst_dir)
 
             # Open the consistency check file
             mic_consistency_check_info_path = os.path.join(
@@ -2213,7 +2213,7 @@ def organize_micrographs(args):
     if not os.path.exists(dst_dir):
         sp_global_def.sxprint(" ")
         sp_global_def.sxprint("Creating the destination directory (%s)..." % (dst_dir))
-        os.mkdir(dst_dir)
+        os.makedirs(dst_dir)
     sp_global_def.write_command(dst_dir)
 
     # --------------------------------------------------------------------------------
@@ -3078,7 +3078,7 @@ def restacking(args):
                     )
                 )
 
-    os.mkdir(args.output_directory)
+    os.makedirs(args.output_directory)
     sp_global_def.write_command(args.output_directory)
 
     sp_global_def.sxprint(" ")
@@ -3152,23 +3152,23 @@ def restacking(args):
     if args.reboxing:
         original_coords_list_subdir = "original"
         original_coords_list_suffix = "_original.box"
-        os.mkdir(os.path.join(args.output_directory, original_coords_list_subdir))
+        os.makedirs(os.path.join(args.output_directory, original_coords_list_subdir))
 
         original_rebox_coords_list_subdir = "original_rebox"
         original_rebox_coords_list_suffix = (
             "_original_rebox.rbx"
         )  # SPHIRE rebox coordinate format
-        os.mkdir(os.path.join(args.output_directory, original_rebox_coords_list_subdir))
+        os.makedirs(os.path.join(args.output_directory, original_rebox_coords_list_subdir))
 
         centered_coords_list_subdir = "centered"
         centered_coords_list_suffix = "_centered.box"
-        os.mkdir(os.path.join(args.output_directory, centered_coords_list_subdir))
+        os.makedirs(os.path.join(args.output_directory, centered_coords_list_subdir))
 
         centered_rebox_coords_list_subdir = "centered_rebox"
         centered_rebox_coords_list_suffix = (
             "_centered_rebox.rbx"
         )  # SPHIRE rebox coordinate format
-        os.mkdir(os.path.join(args.output_directory, centered_rebox_coords_list_subdir))
+        os.makedirs(os.path.join(args.output_directory, centered_rebox_coords_list_subdir))
 
     global_output_image_id_list = []
     global_ctf_params_counters = 0
@@ -3658,7 +3658,7 @@ def moon_eliminator(args):
 
     # Create output directory
     sp_global_def.sxprint(" ")
-    os.mkdir(args.output_directory)
+    os.makedirs(args.output_directory)
     sp_global_def.write_command(args.output_directory)
 
     # ------------------------------------------------------------------------------------
@@ -3986,7 +3986,7 @@ def desymmetrize(args):
         )  # action=1 - fatal error, exit
 
     # Create output directory
-    os.mkdir(args.output_directory)
+    os.makedirs(args.output_directory)
     sp_global_def.write_command(args.output_directory)
 
     # Load symmetrized particle IDs of all sorted groups in the specified homogeneous group
