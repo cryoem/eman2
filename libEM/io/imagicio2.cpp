@@ -297,53 +297,53 @@ int ImagicIO2::read_header(Dict & dict, int image_index, const Region * area, bo
 	dict["IMAGIC.beta"] = hed.beta;
 	dict["IMAGIC.gamma"] = hed.gamma;
 
-	dict["IMAGIC.IMAVERS"] = hed.imavers;
-	dict["IMAGIC.REALTYPE"] = hed.realtype;
+	dict["IMAGIC.imavers"] = hed.imavers;
+	dict["IMAGIC.realtype"] = hed.realtype;
 
-	dict["IMAGIC.ANGLE"] = hed.angle;
-	dict["IMAGIC.VOLTAGE"] = hed.voltage;
-	dict["IMAGIC.SPABERR"] = hed.spaberr;
-	dict["IMAGIC.PCOHER"] = hed.pcoher;
-	dict["IMAGIC.CCC"] = hed.ccc;
-	dict["IMAGIC.ERRAR"] = hed.errar;
-	dict["IMAGIC.ERR3D"] = hed.err3d;
-	dict["IMAGIC.REF"] = hed.ref;
-	dict["IMAGIC.CLASSNO"] = hed.ref;
-	dict["IMAGIC.LOCOLD"] = hed.locold;
-	dict["IMAGIC.REPQUAL"] = hed.repqual;
-	dict["IMAGIC.ZSHIFT"] = hed.zshift;
-	dict["IMAGIC.XSHIFT"] = hed.xshift;
-	dict["IMAGIC.YSHIFT"] = hed.yshift;
-	dict["IMAGIC.NUMCLS"] = hed.numcls;
-	dict["IMAGIC.OVQUAL"] = hed.ovqual;
-	dict["IMAGIC.EANGLE"] = hed.eangle;
-	dict["IMAGIC.EXSHIFT"] = hed.exshift;
-	dict["IMAGIC.EYSHIFT"] = hed.eyshift;
-	dict["IMAGIC.CMTOTVAR"] = hed.cmtotvar;
-	dict["IMAGIC.INFORMAT"] = hed.informat;
-	dict["IMAGIC.NUMEIGEN"] = hed.numeigen;
-	dict["IMAGIC.NIACTIVE"] = hed.niactive;
+	dict["IMAGIC.angle"] = hed.angle;
+	dict["IMAGIC.voltage"] = hed.voltage;
+	dict["IMAGIC.spaberr"] = hed.spaberr;
+	dict["IMAGIC.pcoher"] = hed.pcoher;
+	dict["IMAGIC.ccc"] = hed.ccc;
+	dict["IMAGIC.errar"] = hed.errar;
+	dict["IMAGIC.err3d"] = hed.err3d;
+	dict["IMAGIC.ref"] = hed.ref;
+	dict["IMAGIC.classno"] = hed.ref;
+	dict["IMAGIC.locold"] = hed.locold;
+	dict["IMAGIC.repqual"] = hed.repqual;
+	dict["IMAGIC.zshift"] = hed.zshift;
+	dict["IMAGIC.xshift"] = hed.xshift;
+	dict["IMAGIC.yshift"] = hed.yshift;
+	dict["IMAGIC.numcls"] = hed.numcls;
+	dict["IMAGIC.ovqual"] = hed.ovqual;
+	dict["IMAGIC.eangle"] = hed.eangle;
+	dict["IMAGIC.exshift"] = hed.exshift;
+	dict["IMAGIC.eyshift"] = hed.eyshift;
+	dict["IMAGIC.cmtotvar"] = hed.cmtotvar;
+	dict["IMAGIC.informat"] = hed.informat;
+	dict["IMAGIC.numeigen"] = hed.numeigen;
+	dict["IMAGIC.niactive"] = hed.niactive;
 	dict["apix_x"] = hed.resolx;
 	dict["apix_y"] = hed.resoly;
 	dict["apix_z"] = hed.resolz;
 	if(hed.errar==-1.0) {
-		dict["IMAGIC.FABOSA1"] = hed.alpha2;
-		dict["IMAGIC.FABOSA2"] = hed.beta2;
-		dict["IMAGIC.FABOSA3"] = hed.gamma2;
+		dict["IMAGIC.fabosa1"] = hed.alpha2;
+		dict["IMAGIC.fabosa2"] = hed.beta2;
+		dict["IMAGIC.fabosa3"] = hed.gamma2;
 	}
 	else {
-		dict["IMAGIC.ALPHA2"] = hed.alpha2;
-		dict["IMAGIC.BETA2"] = hed.beta2;
-		dict["IMAGIC.GAMMA2"] = hed.gamma2;
+		dict["IMAGIC.alpha2"] = hed.alpha2;
+		dict["IMAGIC.beta2"] = hed.beta2;
+		dict["IMAGIC.gamma2"] = hed.gamma2;
 	}
-	dict["IMAGIC.NMETRIC"] = hed.nmetric;
-	dict["IMAGIC.ACTMSA"] = hed.actmsa;
+	dict["IMAGIC.nmetric"] = hed.nmetric;
+	dict["IMAGIC.actmsa"] = hed.actmsa;
 
 	vector<float> v_coosmsa(hed.coosmsa, hed.coosmsa+69);
-	dict["IMAGIC.COOSMSA"] = v_coosmsa;
+	dict["IMAGIC.coosmsa"] = v_coosmsa;
 
-	dict["IMAGIC.EIGVAL"] = hed.coosmsa[19];
-	dict["IMAGIC.HISTORY"] = hed.history+'\0';
+	dict["IMAGIC.eigval"] = hed.coosmsa[19];
+	dict["IMAGIC.history"] = hed.history+'\0';
 
 	dict["orientation_convention"] = "IMAGIC";
 	const float alpha = hed.alpha;
