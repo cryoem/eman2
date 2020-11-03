@@ -16,10 +16,13 @@ if [ ${CONDA_BUILD:-0} -ne 1 ];then
     bash "${MYDIR}/test_git_hash.sh"
 fi
 
-# 3. Existence tests for data files like images, font files, JSON
+# 3. Test imports
+python "${MYDIR}/test_imports.py"
+
+# 4. Existence tests for data files like images, font files, JSON
 python "${MYDIR}/test_EMAN2DIR.py"
 
-# 4. Unit tests
+# 5. Unit tests
 nosetests -vv --exe -m "^test_*" \
                     -e "^test_image_" \
                     -e "test_main" \
@@ -28,7 +31,7 @@ nosetests -vv --exe -m "^test_*" \
                     -a \!broken \
                     rt/pyem/
 
-# 5. Test openmpi
+# 6. Test openmpi
 if [ $(whoami) != "root" ];then
     mpirun --oversubscribe -n 4 $(which python) ${MYDIR}/../examples/mpi_test.py
 fi
