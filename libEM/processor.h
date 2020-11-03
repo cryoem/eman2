@@ -2166,9 +2166,10 @@ The basic design of EMAN Processors: <br>\
 		float sigma;
 	};
 
-	/** Convert an image containing normalized correlation coefficients to SNR or a Wiener filter 
+	/** Convert an image containing normalized correlation coefficients to SNR or a Wiener filter value
+	 *  used in conjunction with local resolution filtration
 	 */
-	class CCCSNRProcessor:public RealPixelProcessor
+	class CCCSNRProcessor:public Processor
 	{
 	  public:
 		string get_name() const
@@ -2186,29 +2187,16 @@ The basic design of EMAN Processors: <br>\
 			d.put("wiener", EMObject::INT, "If set, returns Wiener image, default returns SNR");
 			return d;
 		}
-		
-		void set_params(const Dict & new_params)
-		{
-			mode=params.has_key("wiener")?(int)params["wiener"]:0;
-		}
-
-
-		static const string NAME;
-
-	  protected:
-		int mode;
-		void process_pixel(float *x) const
-		{
-			float snr=(*x>=1.0)?10000.0f:*x/(1.0f-*x);
-			if (snr<0) snr=0.0f;
-			if (mode) *x=snr/(1+snr);
-			else *x = snr;
-		}
-
+				
 		string get_desc() const
 		{
 			return "Converts an image containing normalized CCC values to SNR or a Wiener values";
 		}
+
+		void process_inplace(EMData * image);
+
+		static const string NAME;
+
 	};
 
 	
