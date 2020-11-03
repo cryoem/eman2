@@ -2166,6 +2166,52 @@ The basic design of EMAN Processors: <br>\
 		float sigma;
 	};
 
+	/** Convert an image containing normalized correlation coefficients to SNR or a Wiener filter 
+	 */
+	class CCCSNRProcessor:public RealPixelProcessor
+	{
+	  public:
+		string get_name() const
+		{
+			return NAME;
+		}
+		static Processor *NEW()
+		{
+			return new CCCSNRProcessor();
+		}
+		
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("wiener", EMObject::INT, "If set, returns Wiener image, default returns SNR");
+			return d;
+		}
+		
+		void set_params(const Dict & new_params)
+		{
+			mode=params.has_key("wiener")?(int)params["wiener"]:0;
+		}
+
+
+		static const string NAME;
+
+	  protected:
+		int mode;
+		void process_pixel(float *x) const
+		{
+			float snr=(*x>=1.0)?10000.0f:*x/(1.0f-*x);
+			if (snr<0) snr=0.0f;
+			if (mode) *x=snr/(1+snr);
+			else *x = snr;
+		}
+
+		string get_desc() const
+		{
+			return "Converts an image containing normalized CCC values to SNR or a Wiener values";
+		}
+	};
+
+	
 	/**f(x) = |x|
 	 */
 	class AbsoluteValueProcessor:public RealPixelProcessor
@@ -8054,6 +8100,42 @@ symmetric phase flipping can optionally be performed.";
 		static const string NAME;
 	};
 
+	/**Replace a source image with a Gaussian band in Fourier space with a given center and width
+	 * @param center center of the Fourier band in pixels
+	 * @param width 1/e half-width for the Gaussian band
+	 */
+	class TestImageFourierGaussianBand : public TestImageProcessor
+	{
+	public:
+		virtual void process_inplace(EMData * image);
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual string get_desc() const
+		{
+			return "Replace a source image with a single radial Fourier band with a (truncated) Gaussian profile. f(s)=exp(-(s-c/w)^2). width=sqrt(2) is the minimum width to produce a flat sum with a spacing of 1 pixel.";
+		}
+
+		static Processor * NEW()
+		{
+			return new TestImageFourierGaussianBand();
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("center", EMObject::FLOAT, "center of the band in Fourier pixels. required");
+			d.put("width", EMObject::FLOAT, "1/2e width of Gaussian in Fourier pixels. default = sqrt(2)");
+			return d;
+		}
+
+		static const string NAME;
+	};
+	
+	
 	/**
 	 * @author David Woolford
 	 * @date June 15th 2009

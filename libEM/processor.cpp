@@ -95,6 +95,7 @@ const string AzSharpProcessor::NAME = "filter.azimuthal.contrast";
 const string HighpassAutoPeakProcessor::NAME = "filter.highpass.autopeak";
 const string LinearRampProcessor::NAME = "eman1.filter.ramp";
 const string AbsoluteValueProcessor::NAME = "math.absvalue";
+const string CCCSNRProcessor::NAME = "math.ccc_snr_wiener";
 const string FloorValueProcessor::NAME = "math.floor";
 const string BooleanProcessor::NAME = "threshold.notzero";
 const string KmeansSegmentProcessor::NAME = "segment.kmeans";
@@ -235,6 +236,7 @@ const string SetSFProcessor::NAME = "filter.setstrucfac";
 const string SetIsoPowProcessor::NAME = "filter.setisotropicpow";
 const string SmartMaskProcessor::NAME = "mask.smart";
 const string TestImagePureGaussian::NAME = "testimage.puregaussian";
+const string TestImageFourierGaussianBand::NAME = "testimage.fourier.gaussianband";
 const string TestImageFourierNoiseGaussian::NAME = "testimage.noise.fourier.gaussian";
 const string TestImageFourierNoiseProfile::NAME = "testimage.noise.fourier.profile";
 const string CTFSNRWeightProcessor::NAME = "ctf.snr.weight";
@@ -378,6 +380,7 @@ template <> Factory < Processor >::Factory()
 	force_add<LinearXformProcessor>();
 	force_add<SetBitsProcessor>();
 	
+	force_add<CCCSNRProcessor>();
 	force_add<ExpProcessor>();
 	force_add<RangeThresholdProcessor>();
 	force_add<SigmaProcessor>();
@@ -545,6 +548,7 @@ template <> Factory < Processor >::Factory()
 	force_add<TestImageLineWave>();
 	force_add<TestImageEllipse>();
 	force_add<TestImageHollowEllipse>();
+	force_add<TestImageFourierGaussianBand>();
 	force_add<TestImageFourierNoiseGaussian>();
 	force_add<TestImageFourierNoiseProfile>();
 
@@ -8755,6 +8759,64 @@ void TestImageProcessor::preprocess(EMData * image)
 	nx = image->get_xsize();
 	ny = image->get_ysize();
 	nz = image->get_zsize();
+}
+
+void TestImageFourierGaussianBand::process_inplace(EMData* image)
+{
+	if (!image->is_complex()) {
+		int nx = image->get_xsize();
+		int offset = 2 - nx%2;
+
+		image->set_size(nx+offset,image->get_ysize(),image->get_zsize());
+		image->set_complex(true);
+		if (1 == offset) image->set_fftodd(true);
+		else image->set_fftodd(false);
+		image->set_fftpad(true);
+	}
+	image->set_ri(true);
+	image->to_zero();
+
+	float center = params.set_default("center",ny/4);
+	float width = params.set_default("width",sqrt(2.0f));
+
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+	int w3 = floor(width*3);
+	float l0 = pow(center-w3,2.0f);
+	float l1 = pow(center+w3,2.0f);
+	
+	if (nz==1) {
+		// 1D
+		if (ny==1) {
+			for (int x=0; x<nx/2; x++) {
+				if (abs(x-center)>w3) continue;
+				image->set_complex_at(x,0,exp(-pow((x-center)/width,2.0f)));
+			}
+		}
+		// 2D
+		else {
+			for (int y=-ny/2; y<ny/2; y++) {
+				for (int x=0; x<nx/2; x++) {
+					float r=Util::hypot_fast(x,y);
+					if (r<center-w3 || r>center+w3) continue;
+					image->set_complex_at(x,y,exp(-pow((r-center)/width,2.0f)));
+				}
+			}
+		}
+	}
+	else {
+		// 3D
+		for (int z=-nz/2; z<nz/2; z++) {
+			for (int y=-ny/2; y<ny/2; y++) {
+				for (int x=0; x<nx/2; x++) {
+					float r=Util::hypot3(x,y,z);
+					if (r<center-w3 || r>center+w3) continue;
+					image->set_complex_at(x,y,z,exp(-pow((r-center)/width,2.0f)));
+				}
+			}
+		}
+	}
 }
 
 
