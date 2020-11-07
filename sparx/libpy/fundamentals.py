@@ -822,17 +822,27 @@ def rot_avg(e, mask = None):
 	"""Rotational average.
 	   Returns a 1-D image containing a rotational average of image e.
 	"""
-	return e.rotavg(mask)
+	from utilities import model_blank
+	if mask: return e.rotavg(mask)
+	else:
+		nx = e.get_xsize()
+		ny = e.get_ysize()
+		nz = e.get_zsize()
+		return e.rotavg(model_blank(nx,ny,nz,1.0))
 
 def rot_avg_table(e, mask = None):
 	"""Rotational average.
 	   Returns a table containing a rotational average of image e.
 	"""
-	qt = e.rotavg(mask)
+	from utilities import model_blank
+	nx = e.get_xsize()
+	ny = e.get_ysize()
+	nz = e.get_zsize()
+	if mask: qt =  e.rotavg(mask)
+	else: qt = e.rotavg(model_blank(nx,ny,nz,1.0))
 	tab = []
-	n = qt.get_xsize()
-	for i in range(n):
-		tab.append(qt.get_value_at(i))
+	for i in range(nx//2,nx):
+		tab.append(qt.get_value_at(i-nx//2))
 	return tab
 
 def rot_avg_image(image_to_be_averaged, mask = None):
@@ -841,18 +851,27 @@ def rot_avg_image(image_to_be_averaged, mask = None):
 	Returns a 2-D or 3-D image containing a rotational average of image e
 	"""
 	import types
-	from utilities import get_im
+	from utilities import model_blank, get_im
 	if type(image_to_be_averaged) is bytes: image_to_be_averaged = get_im(image_to_be_averaged)
-	return image_to_be_averaged.rotavg_i(mask)
+	if(mask): return image_to_be_averaged.rotavg_i(mask)
+	else:
+		nx = image_to_be_averaged.get_xsize()
+		ny = image_to_be_averaged.get_ysize()
+		nz = image_to_be_averaged.get_zsize()
+		return image_to_be_averaged.rotavg_i(model_blank(nx,ny,nz,1.0))
 
 def ro_textfile(e, filename, helpful_string="", mask = None):
 	"""Rotational average stored as a text file.
 	   Saves a text file (suitable for gnuplot) of the rotational average of e.
 	"""
+	from utilities import model_blank
 	out = open(filename, "w")
 	out.write("#Rotational average: %s\n" % (helpful_string));
-	f = e.rotavg(mask)
 	nr = f.get_xsize()
+	ny = f.get_ysize()
+	nz = f.get_zsize()
+	if mask: f = e.rotavg(mask)
+	else: f = e.rotavg(model_blank(nx,ny,nz,1.0))
 	for ir in range(nr):
 		out.write("%d\t%12.5g\n" % (ir, f.get_value_at(ir)))
 	out.close()
@@ -1708,7 +1727,6 @@ class symclass(object):
 		"""
 		from math import degrees, radians, sin, cos, tan, atan, acos, sqrt, pi
 		#from utilities import get_sym, get_symt
-		from string import lower
 		self.sym = sym.lower()
 		if(self.sym[0] == "c"):
 			self.nsym = int(self.sym[1:])
