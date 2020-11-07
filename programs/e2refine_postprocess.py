@@ -393,10 +393,16 @@ def main():
 			run("e2proc3d.py {combfile} {combfile} {ampcorrect} --process filter.lowpass.tophat:cutoff_freq={noisecutoff} --multfile {path}mask.hdf {normproc} {symopt} {postproc}".format(
 				combfile=combfile,path=path,itr=options.iter,normproc=massnorm,ampcorrect=ampcorrect,postproc=m3dpostproc,symopt=symopt,underfilter=underfilter,maxfreq=old_div(1.0,options.restarget),noisecutoff=noisecutoff))
 		elif options.tophat=="local":
-			# compute local resolution and locally filter averaged volume
-			if options.tomo: localsize=max(16,100//apix)
-			else: localsize=max(16,32//apix)
-			cmd="e2fsc.py {path}threed_even_unmasked.hdf {path}threed_odd_unmasked.hdf --output {path}fscvol_{itr:02d}.hdf --outfilt {path}threed_{itr:02d}.hdf --outfilte {path}threed_{itr:02d}_even.hdf --outfilto {path}threed_{itr:02d}_odd.hdf --mask {path}mask.hdf --threads {threads} --localsize {localsize} -v 1".format(
+			## compute local resolution and locally filter averaged volume
+			#if options.tomo: localsize=max(16,100//apix)
+			#else: localsize=max(16,32//apix)
+			#cmd="e2fsc.py {path}threed_even_unmasked.hdf {path}threed_odd_unmasked.hdf --output {path}fscvol_{itr:02d}.hdf --outfilt {path}threed_{itr:02d}.hdf --outfilte {path}threed_{itr:02d}_even.hdf --outfilto {path}threed_{itr:02d}_odd.hdf --mask {path}mask.hdf --threads {threads} --localsize {localsize} -v 1".format(
+				#path=path,itr=options.iter,threads=options.threads,localsize=int(localsize))
+			#run(cmd)
+
+			# compute local resolution and locally filter averaged volume, using new local fsc
+			localsizea=max(options.restarget*3,15)
+			cmd="e2fsc_real_local.py {path}threed_even_unmasked.hdf {path}threed_odd_unmasked.hdf --output {path}fscvol_{itr:02d}.hdf --outfilt {path}threed_{itr:02d}.hdf --mask {path}mask.hdf --threads {threads} --localsizea {localsizea} -v 1".format(
 				path=path,itr=options.iter,threads=options.threads,localsize=int(localsize))
 			run(cmd)
 
