@@ -1180,11 +1180,11 @@ void CCCSNRProcessor::process_inplace(EMData *image) {
 	int mode=params.set_default("wiener",0);
 	
 	for (size_t i=0; i<nxyz; i++) {
-		float v=image->get_value_at(i);
+		float v=image->get_value_at_index(i);
 		float snr=(v>=.9999)?10000.0f:v/(1.0f-v);
 		if (snr<0) snr=0.0f;
-		if (mode) image->set_value_at(i,snr/(1+snr));
-		else image->set_value_at(i,snr);
+		if (mode) image->set_value_at_index(i,snr/(1+snr));
+		else image->set_value_at_index(i,snr);
 	}
 }
 

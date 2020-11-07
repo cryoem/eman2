@@ -705,6 +705,7 @@ int HdfIO2::read_header(Dict & dict, int image_index, const Region * area, bool)
 	sprintf(ipath,"/MDF/images/%d/image",image_index);
 	hid_t ds=H5Dopen(file,ipath);
 
+	// FIXME - This isn't valid any more, since we support signed and unsigned, and have compression
 	if (ds > 0) {	// ds > 0 means successfully opened the dataset
 		hid_t dt = H5Dget_type(ds);
 
@@ -1251,6 +1252,7 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 	hid_t iattr=H5Aopen_name(igrp,"EMAN.stored_renderbits");
 	if (iattr>=0) {
 		renderbits=(int)read_attr(iattr);
+//		printf("stored renderbits %d\n",renderbits);
 		H5Aclose(iattr);
 		if (renderbits>0) {
 			iattr=H5Aopen_name(igrp,"EMAN.stored_rendermax");
@@ -1849,6 +1851,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 
 			break;
 		case EMUtil::EM_COMPRESSED:
+			//printf("writec %d %f %f\n",renderbits,rendermin,rendermax);
 			if (renderbits<=0) err_no = H5Dwrite(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
 			else if (renderbits<=8) {
 				ucdata = new unsigned char[size];

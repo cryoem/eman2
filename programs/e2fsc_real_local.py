@@ -57,25 +57,28 @@ def calc_oneres(jsd,vol1f,vol2f,freq,ftsize):
 	
 	# We are computing a normalized dot product over a region, so we start with the squared and cross map
 	volcor=vol1b*vol2b		# A*B
-	vol1b.process_inplace("math.squared")
-	vol2b.process_inplace("math.squared")
+	vol1b2=vol1b.process("math.squared")
+	vol2b2=vol2b.process("math.squared")
 	
 	# then we low-pass filter (local convolution) to select the "region" for each vector
 	volcor.process_inplace("filter.lowpass.gauss",{"cutoff_resolv":1.0/ftsize})
-	vol1b.process_inplace("filter.lowpass.gauss",{"cutoff_resolv":1.0/ftsize})
-	vol2b.process_inplace("filter.lowpass.gauss",{"cutoff_resolv":1.0/ftsize})
+	vol1b2.process_inplace("filter.lowpass.gauss",{"cutoff_resolv":1.0/ftsize})
+	vol2b2.process_inplace("filter.lowpass.gauss",{"cutoff_resolv":1.0/ftsize})
+	vol1b2.process_inplace("threshold.belowtozero",{"minval":0})   # obviously this should not be necessary, but (likely due to FFT roundoff error) it is
+	vol2b2.process_inplace("threshold.belowtozero",{"minval":0})
+
 	
 	# put it all together to get a normalized local correlation at this one frequency
-	vol1b.mult(vol2b)
-	vol1b.process_inplace("math.sqrt")
-	vol1b.process_inplace("math.reciprocal")
-	volcor.mult(vol1b)
+	vol1b2.mult(vol2b2)
+	vol1b2.process_inplace("math.sqrt")
+	vol1b2.process_inplace("math.reciprocal",{"zero_to":0.0})
+	volcor.mult(vol1b2)
 	
 	# Now let's turn that into a Wiener filter
 	filt=volcor.process("math.ccc_snr_wiener",{"wiener":1})
-	filtav=((vol1f+vol2f)*filt).do_ift()
+	filtav=((vol1b+vol2b)*filt)
 	
-	jsd.put((filtav,volcor))
+	jsd.put((freq,filtav,volcor))
 	
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -136,47 +139,24 @@ input volumes.
 	print("%d x %d x %d"%(nx,ny,nz))
 	if nx!=ny or nx!=nz : print("Warning: non-cubic volumes may produce unexpected results")
 
+	box=good_size(ny+options.localsize)
+	print("Using box-size: ",box)
+	v1f=v1.get_clip(Region((nx-box)/2,(ny-box)/2,(nz-box)/2,box,box,box)).do_fft()
+	v2f=v2.get_clip(Region((nx-box)/2,(ny-box)/2,(nz-box)/2,box,box,box)).do_fft()
 	
-
-	if apix*lnx/2.0<10.0 :
-		print("WARNING: Local sampling box is <10 A. Adjusting to 16 A.")
-		lnx=int(floor(32.0/apix))
-	print("Local region is %d pixels"%lnx)
 	
 	if options.verbose: print("Preparing for local calculation")
-	# Create a centered Gaussian mask with a size ~1/10th of the box size
-	cenmask=EMData(lnx,lnx,lnx)
-	cenmask.to_one()
-	cenmask.process_inplace("mask.gaussian",{"inner_radius":old_div(lnx,6),"outer_radius":old_div(lnx,6)})
-	print("Approx feature size for assessment = %1.1f A"%(apix*lnx/2.0))
-#	cenmask.write_image("cenmask.hdf")
-	#display(cenmask)
+
+	# This averager will contain the resolution map when done
+	resvola=Averagers.get("minmax",{"max":1})
 	
-	# Create a Gaussian with the correct size to produce a flat average in 3-D
-	avgmask=EMData(lnx,lnx,lnx)
-	avgmask.to_one()
-	d=float(lnx//overlap)
-#	avgmask.process_inplace("mask.gaussian",{"outer_radius":2.0*d/log(8.0) })	# this mask is adjusted to the precise width necessary so a sum of tiled overlapping Gaussians will be flat
-	avgmask.process_inplace("mask.gaussian",{"outer_radius":3.0*d/log(8.0) })	# make it a bit wider since we are weighting anyway, this should produce smoother surfaces
-	
-	resvol=EMData(nx,ny,nz)
-	resvol["apix_x"]=apix*lnx//overlap
-	resvol["apix_y"]=apix*lnx//overlap
-	resvol["apix_z"]=apix*lnx//overlap
-	resvol143=resvol.copy()
-	
-	print("Local region: ",lnx," with step ",lnx//overlap)
-	
-	# volfilt will contain the locally filtered version of the map
-	volfilt=v1.copy()
-	volfilt.to_zero()
-	volnorm=v1.copy()
-	volnorm.to_zero()
+	# This averager will contain the final filtered volume
+	filtvol=Averagers.get("mean")
 
 	NTHREADS=max(options.threads,2)		# we have one thread just writing results
 	jsd=queue.Queue(0)
-	thrds=[(jsd,) for i in range(NTHREADS-1)]
-	
+	thrds=[(jsd,v1f,v2f,f,options.localsize) for f in range(1,ny//2)]
+
 	# here we run the threads and save the results, no actual alignment done here
 	if options.verbose: print(len(thrds)," threads")
 	thrtolaunch=0
@@ -193,26 +173,28 @@ input volumes.
 		else: time.sleep(1)
 		if options.verbose>1 and thrtolaunch>0:
 			frac=thrtolaunch/float(len(thrds))
-			print("{}% complete".format(100.0*frac))
+			print("{:1.1f}% complete".format(100.0*frac))
 	
 		while not jsd.empty():
-			fsp,nds=jsd.get()
-			for n,d in nds:
-				angs[(fsp,n)]=d
-				if options.saveali:
-					v=EMData(fsp,n)
-					v.transform(d["xform.align2d"])
-					v.write_image("{}/aliptcls_{:02d}.hdf".format(options.path,options.iter),n)
-
+			freq,filtav,volcor=jsd.get()
+			filtav=filtav.get_clip(Region((box-nx)/2,(box-ny)/2,(box-nz)/2,nx,ny,nz))
+			volcor=volcor.get_clip(Region((box-nx)/2,(box-ny)/2,(box-nz)/2,nx,ny,nz))
+			filtvol.add_image(filtav)
+			# Threshold the map representing a single spatial frequency, then 
+			# replace the value with spatial freq. Max of all of the individual resolution maps
+			# should represent the local resolution map
+			volcor.get_clip(Region(0,0,nz*2//3,nx,ny,1)).write_image("res_slice.hdf",freq-1)
+			volcor.process_inplace("threshold.binary",{"value":0.143})
+			volcor.mult(freq/(ny*apix))
+			resvola.add_image(volcor)
 
 	for t in thrds:
 		t.join()
+		
+	filtvol.finish().write_image(options.outfilt,0)
+	resvola.finish().write_image(options.output,0)
 
 	
-	resvol.write_image("resvol.hdf")
-	resvol143.write_image(options.output)
-	volfilt.write_image(options.outfilt)
-
 	E2end(logid)
 
 if __name__ == "__main__":
