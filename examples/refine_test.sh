@@ -4,7 +4,7 @@ e2rawdata.py orig_micrographs/* --edgenorm --xraypixel --ctfest --apix=1.275 --v
 
 e2import.py orig_boxes/*box --import_boxes --box_type=boxes
 
-e2boxer.py --allmicrographs --boxsize=288 --ptclsize=192 --write_ptcls --apix=-1.0
+e2boxer.py --allmicrographs --boxsize=288 --ptclsize=192 --write_ptcls --apix=1.275
 
 e2ctf_auto.py --hires --apix=1.275 --voltage=300.0 --cs=2.7 --invartype=auto --defocusmin=0.6 --defocusmax=4.0 --constbfactor=80.0 --ac=10.0 --threads=32 --minqual=0
 

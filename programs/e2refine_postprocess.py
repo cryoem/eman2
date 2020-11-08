@@ -52,6 +52,7 @@ def main():
 	parser.add_argument("--even", dest="even", type=str,default=None, help="The filename of the map from the even 1/2 of the data")
 	parser.add_argument("--odd", dest="odd", type=str,default=None, help="The filename of the map from the odd 1/2 of the data")
 	parser.add_argument("--output", dest="output", type=str,default=None, help="Filename for the final averaged/filtered result.")
+	parser.add_argument("--compressbits", type=int,help="Bits to keep when writing volumes with compression. 0->lossless floating point. Default 10 (3 significant figures)", default=10)
 	parser.add_argument("--mass", default=0, type=float,help="The rough mass of the particle in kilodaltons, used to run normalize.bymass. Due to resolution effects, not always the true mass.")
 	parser.add_argument("--restarget", default=5, type=float,help="The specified target resolution to avoid underfiltering artifacts.")
 	parser.add_argument("--setsf",type=str,help="Force the structure factor to match a 'known' curve prior to postprocessing (<filename>, none). default=none",default="none")
@@ -145,7 +146,7 @@ def main():
 		o.transform(ali)
 
 		os.unlink(oddfile)
-		o.write_image(oddfile)
+		o.write_compressed(oddfile,0,options.compressbits)
 		os.unlink("{path}tmp1.hdf".format(path=path))
 		os.unlink("{path}tmp2.hdf".format(path=path))
 		os.unlink("{path}tmp0.hdf".format(path=path))
@@ -165,7 +166,7 @@ def main():
 	combined=even+odd
 	try: combined["ptcl_repr"]=even["ptcl_repr"]+odd["ptcl_repr"]
 	except: pass
-	combined.write_image(combfile,0)
+	combined.write_compressed(combfile,0,options.compressbits)
 
 	apix=combined["apix_x"]
 
@@ -281,7 +282,7 @@ def main():
 
 		if automask3d2!=None : mask.process_inplace(automask3d2[0],automask3d2[1])
 
-		mask.write_image("{path}mask.hdf".format(path=path),0)
+		mask.write_compressed("{path}mask.hdf".format(path=path),0,0)
 
 		# automask (tight)
 #		th=min(md[rmaxval-nx//8:rmaxval+nx//8])
@@ -293,7 +294,7 @@ def main():
 
 		if automask3d2!=None : mask.process_inplace(automask3d2[0],automask3d2[1])
 
-		mask.write_image("{path}mask_tight.hdf".format(path=path),0)
+		mask.write_compressed("{path}mask_tight.hdf".format(path=path),0,0)
 
 	else:
 		amask3d=parsemodopt(options.automask3d)
@@ -302,26 +303,26 @@ def main():
 			amask3d[1]["return_mask"]=1
 			mask=vol.process(amask3d[0],amask3d[1])
 			if automask3d2!=None : mask.process_inplace(automask3d2[0],automask3d2[1])
-			mask.write_image("{path}mask.hdf".format(path=path),0)
+			mask.write_compressed("{path}mask.hdf".format(path=path),0,0)
 
 			vol=EMData("{path}tmp.hdf".format(path=path),0)
 			amask3d[1]["nshells"]=int(amask3d[1]["nshells"]*.5)
 			mask=vol.process(amask3d[0],amask3d[1])
 			if automask3d2!=None : mask.process_inplace(automask3d2[0],automask3d2[1])
-			mask.write_image("{path}mask_tight.hdf".format(path=path),0)
+			mask.write_compressed("{path}mask_tight.hdf".format(path=path),0,0)
 		else:
 			mask=EMData(nx,ny,nz)
 			mask.to_one()
 			mask.process_inplace(amask3d[0],amask3d[1])
 			if automask3d2!=None : mask.process_inplace(automask3d2[0],automask3d2[1])
-			mask.write_image("{path}mask.hdf".format(path=path),0)
+			mask.write_compressed("{path}mask.hdf".format(path=path),0,0)
 			
 			#if options.automask3dtight!=None:
 				#amask3dtight=parsemodopt(options.automask3dtight)
 				#mask.process_inplace(amask3dtight[0],amask3dtight[1])
 
 #			mask.process_inplace("morph.erode.binary",{"k":2})
-			mask.write_image("{path}mask_tight.hdf".format(path=path),0)
+			mask.write_compressed("{path}mask_tight.hdf".format(path=path),0,0)
 
 	combined2=0
 	#if options.automask3d2==None or len(options.automask3d2.strip())==0 : amask3d2=""
@@ -381,7 +382,7 @@ def main():
 			run(cmd)
 
 			### Refilter/mask
-			combined.write_image(combfile,0)	# write the original average back to disk
+			combined.write_compressed(combfile,0,options.compressbits)	# write the original average back to disk
 
 			# Note that the snrmult=4 below should really be 2 (due to the averaging of the 2 maps), the 4 is a somewhat arbitrary compensation for the .143 cutoff being a bit low
 			nx,ny,nz=combined["nx"],combined["ny"],combined["nz"]
@@ -443,7 +444,7 @@ def main():
 		run(cmd)
 
 		### Refilter/mask
-		combined.write_image(combfile,0)	# write the original average back to disk
+		combined.write_compressed(combfile,0,options.compressbits)	# write the original average back to disk
 
 		# Note that the snrmult=4 below should really be 2 (due to the averaging of the 2 maps), the 4 is a somewhat arbitrary compensation for the .143 cutoff being a bit low
 		nx,ny,nz=combined["nx"],combined["ny"],combined["nz"]

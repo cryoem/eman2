@@ -107,6 +107,7 @@ def main():
 	parser.add_argument("--unboxedonly",action="store_true",default=False,help="Only include image files without existing box locations", guitype='boolbox', row=10, col=1, rowspan=1, colspan=1, mode="boxing,extraction")
 	parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=-1, guitype='intbox', row=2, col=0, rowspan=1, colspan=1, mode="boxing,extraction")
 	parser.add_argument("--ptclsize","-P",type=int,help="Longest axis of particle in pixels (diameter, not radius)",default=-1, guitype='intbox', row=2, col=1, rowspan=1, colspan=1, mode="boxing,extraction")
+	parser.add_argument("--compressbits", type=int,help="Bits to keep when writing images with compression. 0->lossless floating point. Default 6", default=6,guitype='intbox', row=14, col=0, rowspan=1, colspan=1, mode="extraction[6]")
 	parser.add_argument("--write_dbbox",action="store_true",default=False,help="Export EMAN1 .box files",guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode="extraction")
 	parser.add_argument("--write_ptcls",action="store_true",default=False,help="Extract selected particles from micrographs and write to disk", guitype='boolbox', row=3, col=1, rowspan=1, colspan=1, mode="extraction[True]")
 	parser.add_argument("--invert",action="store_true",help="If specified, inverts input contrast. Particles MUST be white on a darker background.",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode="extraction")
@@ -321,7 +322,7 @@ def main():
 		print(".box files written to boxfiles/")
 
 	if options.write_ptcls:
-		write_particles(args,boxsize,options.verbose)
+		write_particles(args,boxsize,options.compressbits,options.verbose)
 		print("Particles written to particles/*_ptcls.hdf")
 
 	E2end(logid)
@@ -345,7 +346,7 @@ def write_boxfiles(files,boxsize):
 		for b in boxes:
 			out.write("{:0.0f}\t{:0.0f}\t{:0.0f}\t{:0.0f}\n".format(int(b[0]-boxsize2),int(b[1]-boxsize2),int(boxsize),int(boxsize)))
 
-def write_particles(files,boxsize,verbose):
+def write_particles(files,boxsize,compressbits,verbose):
 	"""This function will write a particles/*_ptcls.hdf file for each provided micrograph, based on
 	box locations in the corresponding info/*json file. To use this with .box files, they must be imported
 	to a JSON file first."""
@@ -377,7 +378,7 @@ def write_particles(files,boxsize,verbose):
 			boxim=micrograph.get_clip(Region(b[0]-boxsize2,b[1]-boxsize2,boxsize,boxsize))
 			boxim["ptcl_source_coord"]=(b[0],b[1])
 			boxim["ptcl_source_image"]=m
-			boxim.write_image(ptcl,i)
+			boxim.write_compressed(ptcl,i,compressbits)
 	
 ##########
 # to add a new autoboxer module, create a class here, then add it to the GUIBoxer.aboxmodes list below

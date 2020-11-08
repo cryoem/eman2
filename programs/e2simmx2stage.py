@@ -166,7 +166,7 @@ def main():
 			avg.mult(old_div(1.0,len(i)))
 			avg["class_ptcl_idxs"]=i
 			avg["class_ptcl_src"]=args[0]
-			avg.write_image(args[4],ii)
+			avg.write_compressed(args[4],ii,0)
 
 		E2progress(E2n,0.15)
 		############### Step 2 - classify the particles against the averaged references
@@ -203,13 +203,13 @@ def main():
 			for i in classes[vals[j][1]]: mx[i,ptcl]=0.0
 
 	mx.update()
-	mx.write_image(args[2],0)
+	mx.write_compressed(args[2],0,0)
 #	mx.write_image("bdb:refine_02#simmx_00_x",0)
 
 	mx.to_zero()
 	if options.saveali:
 		for i in range(1,6):
-			mx.write_image(args[2],i)		# seed alignment data with nothing
+			mx.write_compressed(args[2],i,0)		# seed alignment data with nothing
 #			mx.write_image("bdb:refine_02#simmx_00_x",i)
 
 

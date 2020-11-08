@@ -178,14 +178,22 @@ def main():
 		E2end(E2n)
 
 	print("Classification complete, writing classmx")
-	clsmx[0].write_image(args[1],0)
-	clsmx[1].write_image(args[1],1)
+	#clsmx[0].write_image(args[1],0)
+	#clsmx[1].write_image(args[1],1)
+	#if num_sim>=5 :
+		#clsmx[2].write_image(args[1],2)
+		#clsmx[3].write_image(args[1],3)
+		#clsmx[4].write_image(args[1],4)
+		#clsmx[5].write_image(args[1],5)
+		#if num_sim>5 : clsmx[6].write_image(args[1],6)
+	clsmx[0].write_compressed(args[1],0,0)
+	clsmx[1].write_compressed(args[1],1,0)
 	if num_sim>=5 :
-		clsmx[2].write_image(args[1],2)
-		clsmx[3].write_image(args[1],3)
-		clsmx[4].write_image(args[1],4)
-		clsmx[5].write_image(args[1],5)
-		if num_sim>5 : clsmx[6].write_image(args[1],6)
+		clsmx[2].write_compressed(args[1],2,0)
+		clsmx[3].write_compressed(args[1],3,0)
+		clsmx[4].write_compressed(args[1],4,0)
+		clsmx[5].write_compressed(args[1],5,0)
+		if num_sim>5 : clsmx[6].write_compressed(args[1],6,0)
 		
 	
 
