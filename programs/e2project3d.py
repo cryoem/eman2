@@ -172,8 +172,10 @@ class EMParallelProject3D(object):
 		for idx,image in list(rslts.items()):
 			if not isinstance(image,EMData): continue # this is here because we get the dimensions of the database as a key (e.g. '40x40x1').
 			image["model_id"]=self.modeln
-			if self.options.append : image.write_image(self.options.outfile,-1)
-			else : image.write_image(self.options.outfile,idx+self.start)
+			#if self.options.append : image.write_image(self.options.outfile,-1)
+			#else : image.write_image(self.options.outfile,idx+self.start)
+			if self.options.append : image.write_compressed(self.options.outfile,-1,self.options.compressbits)
+			else : image.write_compressed(self.options.outfile,idx+self.start,self.options.compressbits)
 
 		return True
 
@@ -253,6 +255,7 @@ def main():
 	parser.add_argument("--postprocess", metavar="processor_name(param1=value1:param2=value2)", type=str, action="append", help="postprocessor to be applied to each projection. There can be more than one postprocessor, and they are applied in the order in which they are specified. See e2help.py processors for a complete list of available processors.")
 	parser.add_argument("--cuda",action="store_true", help="Use CUDA for the projections.",default=False)
 	parser.add_argument("--prethreshold",action="store_true", help="Applies an automatic threshold to the volume before projecting",default=False)
+	parser.add_argument("--compressbits", type=int,help="Bits to keep when writing projections with compression. 0->lossless floating point. Default 10 (3 significant figures)", default=10)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--parallel",help="Parallelism string",default=None,type=str)
 
@@ -374,8 +377,10 @@ def generate_and_save_projections(options, data, eulers, smear=0,modeln=0):
 
 		p["model_id"]=modeln
 		try:
-			if options.append: p.write_image(options.outfile,-1)
-			else : p.write_image(options.outfile,i)
+			#if options.append: p.write_image(options.outfile,-1)
+			#else : p.write_image(options.outfile,i)
+			if options.append: p.write_compressed(options.outfile,-1,options.compressbits)
+			else : p.write_compressed(options.outfile,i,options.compressbits)
 		except:
 			print("Error: Cannot write to file %s"%options.outfile)
 			exit(1)

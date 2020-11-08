@@ -44,7 +44,7 @@ import time
 from numpy import *
 import queue
 
-def calc_oneres(jsd,vol1f,vol2f,apix,freq,ftsize,rmask=None):
+def calc_oneres(jsd,vol1f,vol2f,apix,freq,ftsize,tophat=False,cutoff=0.143,rmask=None):
 	"""Calculates a local correlation map and locally weighted filtered volume centered on a single spatial frequency
 	this would normally be called multiple times (for each spatial frequency) and the results merged. rmask, if provided
 	will also compute a correlation value under a single masked region. This could be done separately, but it is more 
@@ -86,9 +86,14 @@ def calc_oneres(jsd,vol1f,vol2f,apix,freq,ftsize,rmask=None):
 	vol1b2.process_inplace("math.reciprocal",{"zero_to":0.0})
 	volcor.mult(vol1b2)
 	
-	# Now let's turn that into a Wiener filter
-	filt=volcor.process("math.ccc_snr_wiener",{"wiener":1})
-	filtav=((vol1b+vol2b)*filt)
+	if tophat:
+		# Now let's turn that into a binary filter (tophat)
+		filt=volcor.process("threshold.binary",{"value":cutoff})
+		filtav=((vol1b+vol2b)*filt)
+	else:
+		# Now let's turn that into a Wiener filter
+		filt=volcor.process("math.ccc_snr_wiener",{"wiener":1})
+		filtav=((vol1b+vol2b)*filt)
 	
 	jsd.put((freq,filtav,volcor,corunmask,cormask))
 	
@@ -114,6 +119,7 @@ input volumes.
 	parser.add_argument("--apix", type=float, help="A/pix to use for the comparison (default uses Vol1 apix)",default=0)
 	parser.add_argument("--cutoff", type=float, help="fsc cutoff. default is 0.143",default=0.143)
 	parser.add_argument("--mask",type=str,help="Optional mask to produce masked overall FSC curve. Must have the same dimensions as the input volumes.",default=None)
+	parser.add_argument("--tophat",action="store_true",help="If set, the local filter is a tophat filter, otherwise a local Wiener filter is applied",default=False)
 	#parser.add_argument("--refs",type=str,help="Reference images from the similarity matrix (projections)",default=None)
 	#parser.add_argument("--inimgs",type=str,help="Input image file",default=None)
 	#parser.add_argument("--outimgs",type=str,help="Output image file",default="imgs.hdf")
@@ -178,7 +184,7 @@ input volumes.
 
 	NTHREADS=max(options.threads,2)		# we have one thread just writing results
 	jsd=queue.Queue(0)
-	thrds=[(jsd,v1f,v2f,apix,f,options.localsizea,mask) for f in range(1,box//2)]
+	thrds=[(jsd,v1f,v2f,apix,f,options.localsizea,options.tophat,options.cutoff,mask) for f in range(1,box//2)]
 
 	# here we run the threads and save the results, no actual alignment done here
 	if options.verbose: print(len(thrds)," threads")

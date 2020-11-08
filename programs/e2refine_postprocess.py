@@ -59,7 +59,7 @@ def main():
 	parser.add_argument("--iter", dest = "iter", type = int, default=-1, help = "Iteration number to generate FSC filenames")
 	parser.add_argument("--align",action="store_true",default=False,help="Will do o to e alignment and test for handedness flips. Should not be repeated as it overwrites the odd file with the aligned result.")
 	parser.add_argument("--tomo",action="store_true",default=False,help="Modifies settings to be more appropriate for typical subtomogram averaging")
-	parser.add_argument("--tophat",type=str,default=None,help="'global' or 'local'. Final Wiener filter disabled, and replaced by a tophat filter either across the map at 0.143 as Relion appears to do, or locally based on e2fsc.py results")
+	parser.add_argument("--tophat",type=str,default=None,help="'global', 'local' or 'localwiener'. Overall Wiener filter disabled, and replaced by a tophat filter either across the map at 0.143 as Relion appears to do, or locally based on e2fsc_local_real.py results (either local tophat or local wiener)")
 	parser.add_argument("--ampcorrect",choices=['strucfac', 'flatten','none'],default="strucfac",help="Will perform amplitude correction via the specified method. The default choice is strucfac.")
 	parser.add_argument("--ncmult",type=float,default=1.05,help="Specify how much to multiply noise cutoff during flattening amplitude correction. Default is 1.05.")
 	parser.add_argument("--m3dpostprocess", type=str, default=None, help="Default=none. An arbitrary post-processor to run after all other automatic processing.")
@@ -403,6 +403,30 @@ def main():
 
 			# compute local resolution and locally filter averaged volume, using new local fsc
 			localsizea=max(options.restarget*3,15)
+			cmd="e2fsc_real_local.py {path}threed_even_unmasked.hdf {path}threed_odd_unmasked.hdf --output {path}fscvol_{itr:02d}.hdf --outfilt {path}threed_{itr:02d}.hdf --mask {path}mask.hdf --threads {threads} --localsizea {localsizea} --tophat -v 1".format(
+				path=path,itr=options.iter,threads=options.threads,localsizea=int(localsizea))
+			run(cmd)
+
+			# we impose the symmetry in real-space, since this is what people expect
+			if options.sym=="c1" : symopt=""
+			else: symopt="--sym {}".format(options.sym)
+
+			run("e2proc3d.py {path}threed_{itr:02d}.hdf {path}threed_{itr:02d}.hdf --multfile {path}mask.hdf {normproc} {postproc} {symopt} ".format(path=path,itr=options.iter,normproc=massnorm,postproc=m3dpostproc,symopt=symopt))
+			run("e2proc3d.py {evenfile} {evenfile} --multfile {path}mask.hdf {normproc} {postproc} {symopt} ".format(evenfile=evenfile,path=path,itr=options.iter,normproc=massnorm,postproc=m3dpostproc,symopt=symopt))
+			run("e2proc3d.py {oddfile} {oddfile}  --multfile {path}mask.hdf {normproc} {postproc} {symopt} ".format(oddfile=oddfile,path=path,itr=options.iter,normproc=massnorm,postproc=m3dpostproc,symopt=symopt))
+
+			nx,ny,nz=combined["nx"],combined["ny"],combined["nz"]
+
+		elif options.tophat=="localwiener":
+			## compute local resolution and locally filter averaged volume
+			#if options.tomo: localsize=max(16,100//apix)
+			#else: localsize=max(16,32//apix)
+			#cmd="e2fsc.py {path}threed_even_unmasked.hdf {path}threed_odd_unmasked.hdf --output {path}fscvol_{itr:02d}.hdf --outfilt {path}threed_{itr:02d}.hdf --outfilte {path}threed_{itr:02d}_even.hdf --outfilto {path}threed_{itr:02d}_odd.hdf --mask {path}mask.hdf --threads {threads} --localsize {localsize} -v 1".format(
+				#path=path,itr=options.iter,threads=options.threads,localsize=int(localsize))
+			#run(cmd)
+
+			# compute local resolution and locally filter averaged volume, using new local fsc
+			localsizea=max(options.restarget*3,15)
 			cmd="e2fsc_real_local.py {path}threed_even_unmasked.hdf {path}threed_odd_unmasked.hdf --output {path}fscvol_{itr:02d}.hdf --outfilt {path}threed_{itr:02d}.hdf --mask {path}mask.hdf --threads {threads} --localsizea {localsizea} -v 1".format(
 				path=path,itr=options.iter,threads=options.threads,localsizea=int(localsizea))
 			run(cmd)
@@ -416,6 +440,7 @@ def main():
 			run("e2proc3d.py {oddfile} {oddfile}  --multfile {path}mask.hdf {normproc} {postproc} {symopt} ".format(oddfile=oddfile,path=path,itr=options.iter,normproc=massnorm,postproc=m3dpostproc,symopt=symopt))
 
 			nx,ny,nz=combined["nx"],combined["ny"],combined["nz"]
+
 			
 		elif options.tophat=="localreal":
 			# compute local resolution and locally filter averaged volume

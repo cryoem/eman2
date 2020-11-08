@@ -70,6 +70,7 @@ def main():
 	parser.add_argument("--invartype",choices=["auto","bispec","harmonic"],help="Which type of invariants to generate: (bispec,harmonic)",default="auto")
 	parser.add_argument("--msamode",type=str,help="Enable MSA based classification, default=disabled, typically 'pca', see e2msa.py --mode option for full list",default=None)
 	parser.add_argument("--nbasisfp",type=int,default=12,help="Only used in MSA mode. Number of MSA basis vectors to use when classifying particles, default=12")
+	parser.add_argument("--compressbits", type=int,help="Bits to keep when writing class-averages with compression. 0->lossless floating point. Default 10 (3 significant figures)", default=10)
 
 	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on the local computer")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
@@ -255,7 +256,7 @@ def main():
 	if options.classmx!=None:
 		if os.path.exists(options.classmx): remove_file(options.classmx)
 		for i,m in enumerate(clsmx):
-			m.write_image(options.classmx,i)
+			m.write_compressed(options.classmx,i,0)
 	
 	if options.classinfo!=None:
 		if os.path.exists(options.classinfo): remove_file(options.classinfo)
@@ -299,10 +300,9 @@ def main():
 				avg["projection_image_idx"]=i
 				try: avg["xform.projection"]=refs[i]["xform.projection"]
 				except: pass
-				avg.write_image(options.classes,i)
+				avg.write_compressed(options.classes,i,options.compressbits)
 			else:
-				empty.write_image(options.classes,i)
-		
+				empty.write_compressed(options.classes,i,options.compressbits)
 
 	E2end(E2n)
 
