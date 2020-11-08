@@ -223,6 +223,7 @@ input volumes.
 		t.join()
 		
 	filtvol.finish().write_compressed(options.outfilt,0,12)
+	resvola.process_inplace("filter.lowpass.gauss",{"cutoff_resolv":2/options.localsize)
 	resvola.finish().write_compressed(options.output,0,10)
 
 	Util.save_data(1/(box*apix),1/(box*apix),fscum,"fsc_unmasked.txt")
