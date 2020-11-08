@@ -403,7 +403,7 @@ def main():
 			# compute local resolution and locally filter averaged volume, using new local fsc
 			localsizea=max(options.restarget*3,15)
 			cmd="e2fsc_real_local.py {path}threed_even_unmasked.hdf {path}threed_odd_unmasked.hdf --output {path}fscvol_{itr:02d}.hdf --outfilt {path}threed_{itr:02d}.hdf --mask {path}mask.hdf --threads {threads} --localsizea {localsizea} -v 1".format(
-				path=path,itr=options.iter,threads=options.threads,localsize=int(localsize))
+				path=path,itr=options.iter,threads=options.threads,localsizea=int(localsizea))
 			run(cmd)
 
 			# we impose the symmetry in real-space, since this is what people expect
