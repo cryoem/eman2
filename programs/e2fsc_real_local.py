@@ -234,7 +234,7 @@ input volumes.
 	if options.outfilto!=None: av2.write_compressed(options.outfilto,0,12)
 	((av1+av2)/2).write_compressed(options.outfilt,0,12)
 	resvol=resvola.finish()
-	resvol.process_inplace("filter.lowpass.gauss",{"cutoff_resolv":2/options.localsize})
+	resvol.process_inplace("filter.lowpass.gauss",{"cutoff_resolv":2/options.localsizea})
 	resvol.write_compressed(options.output,0,10)
 
 	Util.save_data(1/(box*apix),1/(box*apix),fscum,"fsc_unmasked.txt")
