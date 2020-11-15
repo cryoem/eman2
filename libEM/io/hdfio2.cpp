@@ -1467,14 +1467,15 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 	// Now, we try and open the dataset
 	ds = H5Dopen(file,ipath);
 
-	// Unfortunately HDF5 doesn't have any mechanism for deleting and recreating a data set in the same file
-	// so our only option in the event of a mismatch is to raise an exception
+	// In theory we will catch all of these mismatches when writing the header above, and unlinking mismatching
+	// data objects (not truly deleting, could make files bigger). This code shouldn't cost much, so will leave
+	// it here to double-check  11/14/20
 	if (ds>=0) {
 		hid_t cpl=H5Dget_create_plist(ds);
 		H5D_layout_t layout = H5Pget_layout(cpl);
 		H5Pclose(cpl);
 
-		printf("%d %d %d %d   ",(int)layout,(int)(dt==EMUtil::EM_COMPRESSED),(int)H5D_CHUNKED,(int)H5D_COMPACT);
+//		printf("%d %d %d %d   ",(int)layout,(int)(dt==EMUtil::EM_COMPRESSED),(int)H5D_CHUNKED,(int)H5D_COMPACT);
 		if ((layout==H5D_CHUNKED && dt!=EMUtil::EM_COMPRESSED) || (layout!=H5D_CHUNKED && dt==EMUtil::EM_COMPRESSED)) {
 			H5Sclose(spc);
 			H5Dclose(ds);
