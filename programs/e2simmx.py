@@ -41,6 +41,7 @@ from math import *
 import os
 import sys
 import traceback
+import random
 from EMAN2_utils import cmponetomany
 
 a = EMUtil.ImageType.IMAGE_UNKNOWN
@@ -161,9 +162,9 @@ class EMParallelSimMX(object):
 		e.set_attr(PART_FILE_ATTR,self.args[1])
 		n = 1
 		if self.options.saveali: n = 6 # the total number of images written to disk
-		if not options.fillzero : e.write_compressed(output,0,0)
+		if not options.fillzero : e.write_image(output,0)
 		for i in range(1,n):
-			e.write_compressed(output,i,0)
+			e.write_image(output,i)
 
 	def __get_blocks(self):
 		'''
@@ -308,18 +309,12 @@ class EMParallelSimMX(object):
 				clen=l["nx"]
 #				launch_childprocess("e2proc2d.py %s %s"%(self.args[2],self.args[2]+"_x"))
 				print("Filling noncomputed regions in similarity matrix (%dx%d)"%(clen,rlen))
-				# This method won't work with compression, but unlike when this was written memory
-				# shouldn't be the limiting factor now... hopefully
-				#l=EMData()
-				#for r in range(rlen):
-					#l.read_image(self.args[2],0,False,Region(0,r,clen,1))
-					#fill=l["maximum"]+.0001
-					#l.process_inplace("threshold.belowtominval",{"minval":-1.0e37,"newval":fill})
-					#l.write_image(self.args[2],0,EMUtil.ImageType.IMAGE_UNKNOWN,False,Region(0,r,clen,1))
-				l=EMData(self.args[2],0)
-				fill=l["maximum"]+.0001
-				l.process_inplace("threshold.belowtominval",{"minval":-1.0e37,"newval":fill})
-				l.write_compressed(self.args[2],0,0)
+				l=EMData()
+				for r in range(rlen):
+					l.read_image(self.args[2],0,False,Region(0,r,clen,1))
+					fill=l["maximum"]+.0001
+					l.process_inplace("threshold.belowtominval",{"minval":-1.0e37,"newval":fill})
+					l.write_image(self.args[2],0,EMUtil.ImageType.IMAGE_UNKNOWN,False,Region(0,r,clen,1))
 
 				print("Filling complete")
 
@@ -343,10 +338,8 @@ class EMParallelSimMX(object):
 
 		# Note this is region io - the init_memory function made sure the images exist and are the right dimensions (on disk)
 		for i,mxout in enumerate(result_data):
-			#mxout.write_image(output,i,EMUtil.ImageType.IMAGE_UNKNOWN,False,r)
-			tmp=EMData(output,i)
-			tmp.insert_clip(mxout,[insertion_c,insertion_r,0])
-			tmp.write_compressed(output,i,0)
+			mxout.write_image(output,i,EMUtil.ImageType.IMAGE_UNKNOWN,False,r)
+
 
 def image_range(a,b=None):
 	"""This is an iterator which handles the (#), (min,max), (1,2,3,...) image number convention for passed data"""
@@ -688,6 +681,8 @@ def main():
 	if options.parallel:
 		parsimmx = EMParallelSimMX(options,args,E2n)
 		parsimmx.execute()
+		# Region writing is used extensively, so we do the compression as a post-processing operation
+		compress_hdf(options.outfile,0)
 		E2end(E2n)
 		sys.exit(0)
 
@@ -718,9 +713,9 @@ def main():
 		a=EMData()
 		a.set_size(clen,rlen,1)
 		a.to_zero()
-		a.write_compressed(args[2],0,0)
+		a.write_image(args[2],0)
 		if options.saveali:
-			for i in range(1,6): a.write_compressed(args[2],i,0)
+			for i in range(1,6): a.write_image(args[2],i)
 		E2end(E2n)
 		sys.exit(0)
 
@@ -836,14 +831,10 @@ def main():
 
 	# write the results into the full-sized matrix
 	if crange==[0,clen] and rrange==[0,rlen] :
-		for i,j in enumerate(mxout) : j.write_compressed(args[2],i,0)
+		for i,j in enumerate(mxout) : j.write_image(args[2],i)
+		compress_hdf(args[2],0)
 	else :
-		for i,j in enumerate(mxout) : 
-			# Won't work with compressions
-			#j.write_image(args[2],i,IMAGE_UNKNOWN,0,Region(crange[0],rrange[0],0,crange[1]-crange[0],rrange[1]-rrange[0],1))
-			full=EMData(args[2],i)
-			full.insert_clip(j,[crange[0],rrange[0],0])
-			full.write_compressed(args[2],i,0)
+		for i,j in enumerate(mxout) : j.write_image(args[2],i,IMAGE_UNKNOWN,0,Region(crange[0],rrange[0],0,crange[1]-crange[0],rrange[1]-rrange[0],1))
 
 	E2end(E2n)
 

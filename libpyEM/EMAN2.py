@@ -51,7 +51,7 @@ from EMAN2_meta import *
 import EMAN2db, EMAN2jsondb
 import argparse, copy
 import glob
-
+import random 
 
 import threading
 #from Sparx import *
@@ -421,6 +421,12 @@ def e2getinstalldir() :
 	
 	return os.path.abspath(os.path.join(this_file_dirname, rel_path))
 
+def get_temp_name():
+	"""Returns a suitable name for a temporary HDF file in the current directory. Does not create or delete the file."""
+	fsp=f"tmp_{random.randint(0,9999999):07d}.hdf"
+	if os.path.exists(fsp) : return get_temp_name()		# risky? shouldn't really ever recurse forever...
+	return fsp
+
 def numbered_path(prefix,makenew):
 	"""Finds the next numbered path to use for a given prefix. ie- prefix='refine' if refine_01/EMAN2DB
 exists will produce refine_02 if makenew is set (and create refine_02) and refine_01 if not"""
@@ -524,6 +530,16 @@ def numbered_bdb(bdb_url):
 			else:
 				return "bdb:"+useful_info[0]+"#"+useful_info[1] + "_"+str(i)+str(j)
 
+def compress_hdf(fsp,bits,nooutliers=False,level=1):
+	"""This will take an existing HDF file and rewrite it with the specified compression
+	nooutliers can be specified, but minval/maxval are determined automatically. Returns
+	immediately if non-HDF filename is provided."""
+	if fsp[-4:].lower()!=".hdf" : return
+	nm=get_temp_name()
+	os.rename(fsp,nm)
+	n=EMUtil.get_image_count_c(nm)
+	for i in range(n): EMData(nm,i).write_compressed(fsp,i,bits,nooutliers=nooutliers,level=level)
+	os.unlink(nm)
 
 def get_header(filename,i):
 	return EMData(filename,i,True).get_attr_dict()

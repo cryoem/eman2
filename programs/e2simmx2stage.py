@@ -203,13 +203,15 @@ def main():
 			for i in classes[vals[j][1]]: mx[i,ptcl]=0.0
 
 	mx.update()
-	mx.write_compressed(args[2],0,0)
+	mx.write_image(args[2],0)		# no compression here to prevent region writing problems
+#	mx.write_compressed(args[2],0,0)
 #	mx.write_image("bdb:refine_02#simmx_00_x",0)
 
 	mx.to_zero()
 	if options.saveali:
 		for i in range(1,6):
-			mx.write_compressed(args[2],i,0)		# seed alignment data with nothing
+			mx.write_image(args[2],i)		# no compression because we need to overwrite later
+#			mx.write_compressed(args[2],i,0)		# seed alignment data with nothing
 #			mx.write_image("bdb:refine_02#simmx_00_x",i)
 
 

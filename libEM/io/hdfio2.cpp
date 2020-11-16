@@ -1481,15 +1481,16 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			H5Dclose(ds);
 			throw ImageWriteException(filename,"HDF ERROR: Trying to overwrite an image with compression mismatch");
 		}
-			
-		hid_t spc_file = H5Dget_space(ds);
-		if (H5Sget_simple_extent_ndims(spc_file)!=rank) {
-			H5Sclose(spc_file);
-			H5Sclose(spc);
-			H5Dclose(ds);
-			throw ImageWriteException(filename,"HDF ERROR: Trying to overwrite an image with different dimensionality");
-		}
-		H5Sclose(spc_file);
+		
+		// causes issues with region writing, and not sure it's really necessary
+// 		hid_t spc_file = H5Dget_space(ds);
+// 		if (H5Sget_simple_extent_ndims(spc_file)!=rank) {
+// 			H5Sclose(spc_file);
+// 			H5Sclose(spc);
+// 			H5Dclose(ds);
+// 			throw ImageWriteException(filename,"HDF ERROR: Trying to overwrite an image with different dimensionality");
+// 		}
+// 		H5Sclose(spc_file);
 		
 		hid_t fdt = H5Dget_type(ds);
 //		printf("%d %d\n",(int)fdt,(int)dt);
