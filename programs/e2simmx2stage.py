@@ -239,6 +239,11 @@ def main():
 	launch_childprocess(cmd)
 
 	E2progress(E2n,1.0)
+	
+	# we compress these at the very end to avoid region writing problems
+	compress_hdf(args[2],0)
+	compress_hdf(args[3],0)
+	compress_hdf(args[5],0)
 
 #	E2progress(E2n,float(r-rrange[0])/(rrange[1]-rrange[0]))
 

@@ -682,7 +682,7 @@ def main():
 		parsimmx = EMParallelSimMX(options,args,E2n)
 		parsimmx.execute()
 		# Region writing is used extensively, so we do the compression as a post-processing operation
-		compress_hdf(options.outfile,0)
+#		compress_hdf(options.outfile,0)
 		E2end(E2n)
 		sys.exit(0)
 
@@ -832,7 +832,7 @@ def main():
 	# write the results into the full-sized matrix
 	if crange==[0,clen] and rrange==[0,rlen] :
 		for i,j in enumerate(mxout) : j.write_image(args[2],i)
-		compress_hdf(args[2],0)
+#		compress_hdf(args[2],0)
 	else :
 		for i,j in enumerate(mxout) : j.write_image(args[2],i,IMAGE_UNKNOWN,0,Region(crange[0],rrange[0],0,crange[1]-crange[0],rrange[1]-rrange[0],1))
 
