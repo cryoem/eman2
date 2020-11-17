@@ -150,13 +150,20 @@ def import_ctf(voltage, cs, ac, apix, verbose, version):
 		print("no " + version + " directory found. Please see usage instructions!")
 		exit(-5)
 		
+	errors=[]
 	for filename in os.listdir("micrographs"):
 		fname="{}/{}.txt".format(version, base_name(filename))
 		print(fname)
 		
 		if os.path.exists(fname):
 			f_log = open(fname)
-			vals=f_log.readlines()[-1].split()
+			vals=f_log.readlines()[-1]
+			if vals.startswith("#"):
+				print("!!! error - empty file")
+				errors.append(fname)
+				continue
+			
+			vals=vals.split()
 			vals=[float(v) for v in vals]
 			ctf = EMAN2Ctf()
 			du=vals[1]
@@ -190,7 +197,10 @@ def import_ctf(voltage, cs, ac, apix, verbose, version):
 							#jdb['ctf_frame'] = [512,ctf,(256,256),tuple(),5,1]
 							#print(ctf)
 							##launch_childprocess("e2ctf.py --voltage {} --cs {} --ac {} --apix {} --autofit --curdefocusfix --verbose {} {}".format(voltage,cs,ac,apix,verbose-1,))
-	print("e2ctf.py --voltage {} --cs {} --ac {} --apix {} --allparticles --autofit --curdefocusfix --astigmatism --verbose {}".format(voltage,cs,ac,apix,verbose-1))
+	#print("e2ctf.py --voltage {} --cs {} --ac {} --apix {} --allparticles --autofit --curdefocusfix --astigmatism --verbose {}".format(voltage,cs,ac,apix,verbose-1))
+	print("errors in :")
+	for e in errors:
+		print(e)
 
 def run_ctffind(apix, args, cs, voltage, ac, windowsize, minres, maxres, defocusmin, defocusmax, defocusstep,verbose, version):
 	print("Running " + version)
