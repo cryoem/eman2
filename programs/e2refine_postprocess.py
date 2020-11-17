@@ -52,7 +52,7 @@ def main():
 	parser.add_argument("--even", dest="even", type=str,default=None, help="The filename of the map from the even 1/2 of the data")
 	parser.add_argument("--odd", dest="odd", type=str,default=None, help="The filename of the map from the odd 1/2 of the data")
 	parser.add_argument("--output", dest="output", type=str,default=None, help="Filename for the final averaged/filtered result.")
-	parser.add_argument("--compressbits", type=int,help="Bits to keep when writing volumes with compression. 0->lossless floating point. Default 10 (3 significant figures)", default=10)
+	parser.add_argument("--compressbits", type=int,help="Bits to keep when writing (most) volumes with compression. 0->lossless floating point. Default 10 (3 significant figures)", default=10)
 	parser.add_argument("--mass", default=0, type=float,help="The rough mass of the particle in kilodaltons, used to run normalize.bymass. Due to resolution effects, not always the true mass.")
 	parser.add_argument("--restarget", default=5, type=float,help="The specified target resolution to avoid underfiltering artifacts.")
 	parser.add_argument("--setsf",type=str,help="Force the structure factor to match a 'known' curve prior to postprocessing (<filename>, none). default=none",default="none")
@@ -284,7 +284,7 @@ def main():
 
 		try: os.unlink(f"{path}mask.hdf")
 		except:pass
-		mask.write_compressed("{path}mask.hdf".format(path=path),0,0)
+		mask.write_compressed("{path}mask.hdf".format(path=path),0,8)
 
 		# automask (tight)
 #		th=min(md[rmaxval-nx//8:rmaxval+nx//8])
@@ -298,7 +298,7 @@ def main():
 
 		try: os.unlink(f"{path}mask_tight.hdf")
 		except:pass
-		mask.write_compressed("{path}mask_tight.hdf".format(path=path),0,0)
+		mask.write_compressed("{path}mask_tight.hdf".format(path=path),0,8)
 
 	else:
 		amask3d=parsemodopt(options.automask3d)
