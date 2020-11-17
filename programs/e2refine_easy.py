@@ -362,8 +362,8 @@ used, browse to the 0_refine_parms.json file in the refinement directory. You ca
 	if options.startfrom!=None:
 		try:
 			olddb = js_open_dict(options.startfrom+"/0_refine_parms.json")
-			run("e2proc3d.py {oldeven} {path}/threed_00_even.hdf".format(oldeven=olddb["last_even"],path=options.path))
-			run("e2proc3d.py {oldodd} {path}/threed_00_odd.hdf".format(  oldodd =olddb["last_odd"] ,path=options.path))
+			run("e2proc3d.py {oldeven} {path}/threed_00_even.hdf --compressbits {bits}".format(oldeven=olddb["last_even"],path=options.path,bits=options.compressbits))
+			run("e2proc3d.py {oldodd} {path}/threed_00_odd.hdf --compressbits {bits}".format(  oldodd =olddb["last_odd"] ,path=options.path,bits=options.compressbits))
 			run("e2proc3d.py {path}/threed_00_even.hdf {path}/fsc_unmasked_00.txt --calcfsc {path}/threed_00_odd.hdf".format(path=options.path))
 			if options.input==None: options.input=(str(olddb["input"][0]),str(olddb["input"][1]))
 			else:
@@ -381,14 +381,14 @@ used, browse to the 0_refine_parms.json file in the refinement directory. You ca
 			else : randomres=options.targetres*2.0
 
 			if options.norandomphase :
-				run("e2proc3d.py {model} {path}/threed_00_even.hdf  --apix={apix}".format(model=options.model,path=options.path,freq=old_div(1.0,(randomres)),apix=apix))
-				run("e2proc3d.py {model} {path}/threed_00_odd.hdf  --apix={apix}" .format(model=options.model,path=options.path,freq=old_div(1.0,(randomres)),apix=apix))
+				run("e2proc3d.py {model} {path}/threed_00_even.hdf  --apix={apix} --compressbits {bits}".format(model=options.model,path=options.path,freq=old_div(1.0,(randomres)),apix=apix,bits=options.compressbits))
+				run("e2proc3d.py {model} {path}/threed_00_odd.hdf  --apix={apix} --compressbits {bits}" .format(model=options.model,path=options.path,freq=old_div(1.0,(randomres)),apix=apix,bits=options.compressbits))
 				append_html("""<p>No phase randomization or other prefilter applied to <i>{model}</i> at user request. If input model was not already preprocessed in some appropriate way,
 then this map have initial model bias, and resolution evaluation may be unrealiable.</p>
 <p>Input particles are from <i>{infile}</i></p>""".format(model=options.model,infile=options.input,res=randomres,resb=randomres*0.9))
 			else:
-				run("e2proc3d.py {model} {path}/threed_00_even.hdf --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix}".format(model=options.model,path=options.path,freq=old_div(1.0,(randomres)),apix=apix))
-				run("e2proc3d.py {model} {path}/threed_00_odd.hdf --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix}" .format(model=options.model,path=options.path,freq=old_div(1.0,(randomres)),apix=apix))
+				run("e2proc3d.py {model} {path}/threed_00_even.hdf --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix} --compressbits {bits}".format(model=options.model,path=options.path,freq=old_div(1.0,(randomres)),apix=apix,bits=options.compressbits))
+				run("e2proc3d.py {model} {path}/threed_00_odd.hdf --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix} --compressbits {bits}" .format(model=options.model,path=options.path,freq=old_div(1.0,(randomres)),apix=apix,bits=options.compressbits))
 				run("e2proc3d.py {path}/threed_00_even.hdf {path}/fsc_unmasked_00.txt --calcfsc {path}/threed_00_odd.hdf".format(path=options.path))
 				append_html("""<p>Randomizing the Fourier phases of <i>{model}</i> at resolutions higher than {res:1.1f} &Aring;. If the final achieved resolution is not at least ~{resb:1.1f} &Aring;, then the
 gold standard resolution assessment is not valid, and you need to re-refine, starting with a lower resolution target.</p>
@@ -1266,6 +1266,8 @@ the differences responsible for the assessed resolution.</li>
 For the final completed iteration, the unmasked even and odd volumes are also retained: threed_even|odd_unmasked.hdf</li>
 </ul>""".format(path=options.path,iter=it))
 
+	compress_hdf(f"{options.path}/threed_even_unmasked.hdf",options.compressbits)
+	compress_hdf(f"{options.path}/threed_odd_unmasked.hdf",options.compressbits)
 
 	E2end(logid)
 
