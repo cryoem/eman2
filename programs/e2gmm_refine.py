@@ -619,7 +619,7 @@ def main():
 			pout=gen_model(tf.zeros((1,options.nmid), dtype=floattype)).numpy()[0]
 			
 			pout[:,3]/=np.max(pout[:,3])
-			pout=pout[pout[:,3]>.1]
+			#pout=pout[pout[:,3]>.1]
 			
 			
 			if options.mask:
