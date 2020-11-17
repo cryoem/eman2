@@ -118,6 +118,7 @@ input volumes.
 	parser.add_argument("--outfilt",type=str,help="Output locally filtered average volume",default="res143_filtered.hdf")
 	parser.add_argument("--outfilte",type=str,help="Apply the local filter to the even map as well and write to specified file",default=None)
 	parser.add_argument("--outfilto",type=str,help="Apply the local filter to the odd map as well and write to specified file",default=None)
+	parser.add_argument("--compressbits", type=int,help="Bits to keep when writing volumes with compression. 0->lossless floating point. Default 10 (3 significant figures)", default=10)
 	parser.add_argument("--localsizea", type=int, help="Size in Angstroms of the local region to compute the resolution in",default=50)
 	parser.add_argument("--apix", type=float, help="A/pix to use for the comparison (default uses Vol1 apix)",default=0)
 	parser.add_argument("--cutoff", type=float, help="fsc cutoff. default is 0.143",default=0.143)
@@ -220,7 +221,7 @@ input volumes.
 			# Threshold the map representing a single spatial frequency, then 
 			# replace the value with spatial freq. Max of all of the individual resolution maps
 			# should represent the local resolution map
-			volcor.get_clip(Region(0,0,nz*2//3,nx,ny,1)).write_image("res_slice.hdf",freq-1)
+			#volcor.get_clip(Region(0,0,nz*2//3,nx,ny,1)).write_image("res_slice.hdf",freq-1)
 			volcor.process_inplace("threshold.binary",{"value":0.143})
 			volcor.mult(freq/(ny*apix))
 			resvola.add_image(volcor)
@@ -229,13 +230,14 @@ input volumes.
 		t.join()
 		
 	av1=filtvol1.finish()
-	if options.outfilte!=None: av1.write_compressed(options.outfilte,0,12)
+	if options.outfilte!=None: av1.write_compressed(options.outfilte,0,options.compressbits,erase=True)
 	av2=filtvol2.finish()
-	if options.outfilto!=None: av2.write_compressed(options.outfilto,0,12)
-	((av1+av2)/2).write_compressed(options.outfilt,0,12)
+	if options.outfilto!=None: av2.write_compressed(options.outfilto,0,options.compressbits,erase=True)
+	((av1+av2)/2).write_compressed(options.outfilt,0,options.compressbits,erase=True)
 	resvol=resvola.finish()
 	resvol.process_inplace("filter.lowpass.gauss",{"cutoff_resolv":2/options.localsizea})
-	resvol.write_compressed(options.output,0,10)
+	# compression mode 0 here not because of need for precision, but so Chimera gets the correct values
+	resvol.write_compressed(options.output,0,0,erase=True)
 
 	Util.save_data(1/(box*apix),1/(box*apix),fscum,"fsc_unmasked.txt")
 	if mask!=None: Util.save_data(1/(box*apix),1/(box*apix),fscm,"fsc_masked.txt")

@@ -52,7 +52,7 @@ def main():
 	parser.add_argument("--even", dest="even", type=str,default=None, help="The filename of the map from the even 1/2 of the data")
 	parser.add_argument("--odd", dest="odd", type=str,default=None, help="The filename of the map from the odd 1/2 of the data")
 	parser.add_argument("--output", dest="output", type=str,default=None, help="Filename for the final averaged/filtered result.")
-	parser.add_argument("--compressbits", type=int,help="Bits to keep when writing volumes with compression. 0->lossless floating point. Default 10 (3 significant figures)", default=10)
+	parser.add_argument("--compressbits", type=int,help="Bits to keep when writing (most) volumes with compression. 0->lossless floating point. Default 10 (3 significant figures)", default=10)
 	parser.add_argument("--mass", default=0, type=float,help="The rough mass of the particle in kilodaltons, used to run normalize.bymass. Due to resolution effects, not always the true mass.")
 	parser.add_argument("--restarget", default=5, type=float,help="The specified target resolution to avoid underfiltering artifacts.")
 	parser.add_argument("--setsf",type=str,help="Force the structure factor to match a 'known' curve prior to postprocessing (<filename>, none). default=none",default="none")
@@ -146,7 +146,7 @@ def main():
 		o.transform(ali)
 
 		os.unlink(oddfile)
-		o.write_compressed(oddfile,0,options.compressbits)
+		o.write_image(oddfile,0)
 		os.unlink("{path}tmp1.hdf".format(path=path))
 		os.unlink("{path}tmp2.hdf".format(path=path))
 		os.unlink("{path}tmp0.hdf".format(path=path))
@@ -166,7 +166,7 @@ def main():
 	combined=even+odd
 	try: combined["ptcl_repr"]=even["ptcl_repr"]+odd["ptcl_repr"]
 	except: pass
-	combined.write_compressed(combfile,0,options.compressbits)
+	combined.write_image(combfile,0)
 
 	apix=combined["apix_x"]
 
@@ -282,7 +282,9 @@ def main():
 
 		if automask3d2!=None : mask.process_inplace(automask3d2[0],automask3d2[1])
 
-		mask.write_compressed("{path}mask.hdf".format(path=path),0,0)
+		try: os.unlink(f"{path}mask.hdf")
+		except:pass
+		mask.write_compressed("{path}mask.hdf".format(path=path),0,8)
 
 		# automask (tight)
 #		th=min(md[rmaxval-nx//8:rmaxval+nx//8])
@@ -294,7 +296,9 @@ def main():
 
 		if automask3d2!=None : mask.process_inplace(automask3d2[0],automask3d2[1])
 
-		mask.write_compressed("{path}mask_tight.hdf".format(path=path),0,0)
+		try: os.unlink(f"{path}mask_tight.hdf")
+		except:pass
+		mask.write_compressed("{path}mask_tight.hdf".format(path=path),0,8)
 
 	else:
 		amask3d=parsemodopt(options.automask3d)
@@ -315,6 +319,8 @@ def main():
 			mask.to_one()
 			mask.process_inplace(amask3d[0],amask3d[1])
 			if automask3d2!=None : mask.process_inplace(automask3d2[0],automask3d2[1])
+			try: os.unlink(f"{path}mask.hdf")
+			except:pass
 			mask.write_compressed("{path}mask.hdf".format(path=path),0,0)
 			
 			#if options.automask3dtight!=None:
@@ -322,6 +328,8 @@ def main():
 				#mask.process_inplace(amask3dtight[0],amask3dtight[1])
 
 #			mask.process_inplace("morph.erode.binary",{"k":2})
+			try: os.unlink(f"{path}mask_tight.hdf")
+			except:pass
 			mask.write_compressed("{path}mask_tight.hdf".format(path=path),0,0)
 
 	combined2=0
@@ -382,7 +390,7 @@ def main():
 			run(cmd)
 
 			### Refilter/mask
-			combined.write_compressed(combfile,0,options.compressbits)	# write the original average back to disk
+			combined.write_image(combfile,0)	# write the original average back to disk
 
 			# Note that the snrmult=4 below should really be 2 (due to the averaging of the 2 maps), the 4 is a somewhat arbitrary compensation for the .143 cutoff being a bit low
 			nx,ny,nz=combined["nx"],combined["ny"],combined["nz"]
@@ -393,6 +401,8 @@ def main():
 
 			run("e2proc3d.py {combfile} {combfile} {ampcorrect} --process filter.lowpass.tophat:cutoff_freq={noisecutoff} --multfile {path}mask.hdf {normproc} {symopt} {postproc}".format(
 				combfile=combfile,path=path,itr=options.iter,normproc=massnorm,ampcorrect=ampcorrect,postproc=m3dpostproc,symopt=symopt,underfilter=underfilter,maxfreq=old_div(1.0,options.restarget),noisecutoff=noisecutoff))
+			compress_hdf(combfile,options.compressbits)
+			
 		elif options.tophat=="local":
 			## compute local resolution and locally filter averaged volume
 			#if options.tomo: localsize=max(16,100//apix)
@@ -403,8 +413,8 @@ def main():
 
 			# compute local resolution and locally filter averaged volume, using new local fsc
 			localsizea=max(options.restarget*3,15)
-			cmd="e2fsc_real_local.py {path}threed_even_unmasked.hdf {path}threed_odd_unmasked.hdf --output {path}fscvol_{itr:02d}.hdf --outfilt {path}threed_{itr:02d}.hdf --outfilte {path}threed_{itr:02d}_even.hdf --outfilto {path}threed_{itr:02d}_odd.hdf --mask {path}mask.hdf --threads {threads} --localsizea {localsizea} --tophat -v 1".format(
-				path=path,itr=options.iter,threads=options.threads,localsizea=int(localsizea))
+			cmd="e2fsc_real_local.py {path}threed_even_unmasked.hdf {path}threed_odd_unmasked.hdf --output {path}fscvol_{itr:02d}.hdf --outfilt {path}threed_{itr:02d}.hdf --outfilte {path}threed_{itr:02d}_even.hdf --outfilto {path}threed_{itr:02d}_odd.hdf --mask {path}mask.hdf --threads {threads} --localsizea {localsizea} --compressbits {bits} --tophat -v 1".format(
+				path=path,itr=options.iter,threads=options.threads,localsizea=int(localsizea),bits=options.compressbits)
 			run(cmd)
 
 			# we impose the symmetry in real-space, since this is what people expect
@@ -427,8 +437,8 @@ def main():
 
 			# compute local resolution and locally filter averaged volume, using new local fsc
 			localsizea=max(options.restarget*3,15)
-			cmd="e2fsc_real_local.py {path}threed_even_unmasked.hdf {path}threed_odd_unmasked.hdf --output {path}fscvol_{itr:02d}.hdf --outfilt {path}threed_{itr:02d}.hdf --outfilte {path}threed_{itr:02d}_even.hdf --outfilto {path}threed_{itr:02d}_odd.hdf --mask {path}mask.hdf --threads {threads} --localsizea {localsizea} -v 1".format(
-				path=path,itr=options.iter,threads=options.threads,localsizea=int(localsizea))
+			cmd="e2fsc_real_local.py {path}threed_even_unmasked.hdf {path}threed_odd_unmasked.hdf --output {path}fscvol_{itr:02d}.hdf --outfilt {path}threed_{itr:02d}.hdf --outfilte {path}threed_{itr:02d}_even.hdf --outfilto {path}threed_{itr:02d}_odd.hdf --mask {path}mask.hdf --threads {threads} --localsizea {localsizea} --compressbits {bits} -v 1".format(
+				path=path,itr=options.iter,threads=options.threads,localsizea=int(localsizea),bits=options.compressbits)
 			run(cmd)
 
 			# we impose the symmetry in real-space, since this is what people expect
@@ -454,6 +464,10 @@ def main():
 		else:
 			print("ERROR: invalid tophat option. Must be 'global' or 'local'.")
 			sys.exit(1)
+		
+		compress_hdf(evenfile,options.compressbits)
+		compress_hdf(oddfile,options.compressbits)
+		compress_hdf(f"{path}threed_{options.iter:02d}.hdf",options.compressbits)
 	else:
 		# _unmasked volumes are filtered
 		run("e2proc3d.py {evenfile} {path}threed_even_unmasked.hdf {ampcorrect} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq} --process filter.lowpass.tophat:cutoff_abs=0.5".format(evenfile=evenfile,path=path,itr=options.iter,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=old_div(1.0,options.restarget)))
@@ -469,7 +483,7 @@ def main():
 		run(cmd)
 
 		### Refilter/mask
-		combined.write_compressed(combfile,0,options.compressbits)	# write the original average back to disk
+		combined.write_image(combfile,0)	# write the original average back to disk
 
 		# Note that the snrmult=4 below should really be 2 (due to the averaging of the 2 maps), the 4 is a somewhat arbitrary compensation for the .143 cutoff being a bit low
 		nx,ny,nz=combined["nx"],combined["ny"],combined["nz"]
@@ -480,6 +494,10 @@ def main():
 
 		run("e2proc3d.py {combfile} {combfile} {ampcorrect} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq} {symopt}  --multfile {path}mask.hdf {normproc} {postproc}".format(
 			combfile=combfile,path=path,itr=options.iter,normproc=massnorm,ampcorrect=ampcorrect,postproc=m3dpostproc,symopt=symopt,underfilter=underfilter,maxfreq=old_div(1.0,options.restarget)))
+
+		compress_hdf(evenfile,options.compressbits)
+		compress_hdf(oddfile,options.compressbits)
+		compress_hdf(combfile,options.compressbits)
 
 	try:
 		os.unlink("{path}tmp_even.hdf".format(path=path))

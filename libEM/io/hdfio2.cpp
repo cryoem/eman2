@@ -1428,17 +1428,14 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 	if (nz == 1 && ny == 1)  {
 		hsize_t dims[1]= { nx };
 		spc=H5Screate_simple(1,dims,NULL);
-		rank=1;
 	}
 	else if (nz == 1)  {
 		hsize_t dims[2]= { ny,nx };
 		spc=H5Screate_simple(2,dims,NULL);
-		rank=2;
 	}
 	else {
 		hsize_t dims[3]= { nz, ny, nx };
 		spc=H5Screate_simple(3,dims,NULL);
-		rank=3;
 	}
 	
 	// Setup a standard HDF datatype
@@ -1481,15 +1478,16 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			H5Dclose(ds);
 			throw ImageWriteException(filename,"HDF ERROR: Trying to overwrite an image with compression mismatch");
 		}
-			
-		hid_t spc_file = H5Dget_space(ds);
-		if (H5Sget_simple_extent_ndims(spc_file)!=rank) {
-			H5Sclose(spc_file);
-			H5Sclose(spc);
-			H5Dclose(ds);
-			throw ImageWriteException(filename,"HDF ERROR: Trying to overwrite an image with different dimensionality");
-		}
-		H5Sclose(spc_file);
+		
+		// causes issues with region writing, and not sure it's really necessary
+// 		hid_t spc_file = H5Dget_space(ds);
+// 		if (H5Sget_simple_extent_ndims(spc_file)!=rank) {
+// 			H5Sclose(spc_file);
+// 			H5Sclose(spc);
+// 			H5Dclose(ds);
+// 			throw ImageWriteException(filename,"HDF ERROR: Trying to overwrite an image with different dimensionality");
+// 		}
+// 		H5Sclose(spc_file);
 		
 		hid_t fdt = H5Dget_type(ds);
 //		printf("%d %d\n",(int)fdt,(int)dt);
@@ -1528,7 +1526,12 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 //		printf("CRT %d %s\n",ds,ipath);
 		H5Pclose(plist);	// safe to do this here?
 	}
-
+	else {	//existing file
+		hid_t spc_file = H5Dget_space(ds);
+		rank = H5Sget_simple_extent_ndims(spc_file);
+		H5Sclose(spc_file);
+	}
+	
 	if (! data) {
 		H5Dclose(ds);
 		H5Sclose(spc);

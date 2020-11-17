@@ -550,7 +550,7 @@ def db_write_image(self, fsp, *parms):
 EMData.write_image_c = EMData.write_image
 EMData.write_image = db_write_image
 
-def im_write_compressed(self,fsp,n,bits=8,minval=0,maxval=0,nooutliers=False,level=1):
+def im_write_compressed(self,fsp,n,bits=8,minval=0,maxval=0,nooutliers=False,level=1,erase=False):
 	"""write_compressed(self or list,fsp,n,bits=8,minval=0,maxval=0,nooutliers=False,level=1)
 
 This flexible image writing routine will write compressed HDF images (or a single image). It may be called
@@ -562,12 +562,12 @@ or a list of images:
 
 EMData.write_compressed(list,fsp,n_first_img,bits,...)
 
-Compression is lossless, but with variable bit reduction which is (potentially) lossy. 
+Compression itself is lossless, but uses variable bit reduction which is (usually) lossy. 
 
 Ignores any render_min/render_max already in the image header. To use those values, pass them as arguments
 and do not specify nooutliers.
 
-If nooutliers is set, this will override any specified minval/maxval. If maxval<minval then the full range of 
+If nooutliers is set, this will override any specified minval/maxval. If maxval<=minval then the full range of 
 image values will be included in the bit reduced image. If large outliers are present, this may effectively remove 
 almost all of the information in the image. Nooutliers will eliminate up to ~0.01% of the extreme pixel values from the
 histogram by clamping the values at the extrema. For integrating mode raw micrograph data, nooutliers is 
@@ -581,11 +581,21 @@ provides good compression without having a significant performance impact.
 Somewhat counterintuitively, the noisier the data, the fewer bits that are required to fully represent the
 image. That is, raw micorgraphs can safely be stored as 3-4 bits, whereas a reconstructed, filtered volume
 may require 8 or more bits.
+
+If erase is set, the file will be deleted if it exists, before writing. Obviously this must be used with caution,
+but a problem with overwriting existing compressed HDF images is that the original images are not truly deleted
+and the file size will increase.
 """
 	if isinstance(self,EMData) : 
 		self=[self]
-		
-	if n==-1: n=EMUtil.get_image_count_c(fsp)
+	
+	if erase:
+		try: os.unlink(fsp)
+		except: pass
+	
+	if n==-1: 
+		try: n=EMUtil.get_image_count_c(fsp)
+		except: n=0
 	
 	# Maybe should have this revert to normal write_image, if a different format?
 	if fsp[-4:].lower()!=".hdf" : raise(Exception,"Only HDF format is supported by im_write_compressed")
