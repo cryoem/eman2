@@ -236,7 +236,8 @@ input volumes.
 	((av1+av2)/2).write_compressed(options.outfilt,0,options.compressbits,erase=True)
 	resvol=resvola.finish()
 	resvol.process_inplace("filter.lowpass.gauss",{"cutoff_resolv":2/options.localsizea})
-	resvol.write_compressed(options.output,0,options.compressbits,erase=True)
+	# compression mode 0 here not because of need for precision, but so Chimera gets the correct values
+	resvol.write_compressed(options.output,0,0,erase=True)
 
 	Util.save_data(1/(box*apix),1/(box*apix),fscum,"fsc_unmasked.txt")
 	if mask!=None: Util.save_data(1/(box*apix),1/(box*apix),fscm,"fsc_masked.txt")
