@@ -603,6 +603,8 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 
 			e.mult(-1)
 			e.process_inplace("normalize.edgemean")
+			e.process_inplace("threshold.belowtozero",{"minval":-8})
+			e.process_inplace("threshold.abovetozero",{"maxval":8})
 			wd=(pad-boxsz*2)/4.
 			e.process_inplace("mask.soft",{"outer_radius":-wd, "width":wd/2})
 			if e["sigma"]==0:
