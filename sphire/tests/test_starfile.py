@@ -47,7 +47,7 @@ class Test_EMDB_functions(unittest.TestCase):
 
   def test_read_image(self):
     img = EMAN2.EMData()
-    img.read_image(inputfile, 0)
+    img.read_image(inputfile, 0, True)
 
     self.assertEqual(str(img.get_attr('ctf').to_dict()), str(
       {'ampcont': 10.0, 'apix': 0.8849999904632568, 'background': [], 'bfactor': 0.0, 'cs': 1.399999976158142,

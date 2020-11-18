@@ -30,7 +30,6 @@
 #
 
 from future import standard_library
-
 standard_library.install_aliases()
 from builtins import range
 from builtins import object
@@ -505,7 +504,7 @@ def db_read_image(self, fsp, *parms, **kparms):
         image_name = image_data['_rlnImageName']
         number, file_name = image_name.split('@')
 
-        file_name = os.path.join('/home/adnan/PycharmProjects/newrelion/', file_name)
+        # file_name = os.path.join('/home/adnan/PycharmProjects/newrelion/', file_name)
         parms = list(parms)
         parms[0] = int(number)
 
@@ -541,20 +540,23 @@ def db_set_header_star(img, dataframe, star_cla):
     """
     star_dict = star_cla.sphire_keys
     for key in dataframe.keys():
-        if key in star_dict:
-            value = dataframe[key]
-            img.set_attr(star_dict[key], value)
+        if key == '_rlnImageName':
+            continue
         else:
-            sphire_key = star.sphire_header_magic(key)
-            if sphire_key:
-                continue
-            else:
+            if key in star_dict:
                 value = dataframe[key]
-                if type(value) == np.int64:
-                    value = np.int32(value)
+                img.set_attr(star_dict[key], value)
+            else:
+                sphire_key = star.sphire_header_magic(key, star_dict)
+                if sphire_key:
+                    continue
                 else:
-                    value = value
-                img.set_attr(key, float(value))
+                    value = dataframe[key]
+                    if type(value) == np.int64:
+                        value = np.int32(value)
+                    else:
+                        value = value
+                    img.set_attr(key, float(value))
 
     try:
         image_name = dataframe['_rlnImageName']
@@ -564,30 +566,31 @@ def db_set_header_star(img, dataframe, star_cla):
     except Exception as e:
         pass
 
+
     try:
         ctfimg = EMAN2Ctf()
-        ctfdict = star.get_emdata_ctf(data_dict)
+        ctfdict = star.get_emdata_ctf(dataframe)
         ctfimg.from_dict(ctfdict)
         img.set_attr("ctf", ctfimg)
     except Exception as e:
         pass
 
     try:
-        transdict = star.get_emdata_transform(data_dict)
+        transdict = star.get_emdata_transform(dataframe)
         trans = Transform(transdict)
         img.set_attr("xform.projection", trans)
     except Exception as e:
         pass
 
     try:
-        transdict = star.get_emdata_transform_2d(data_dict)
+        transdict = star.get_emdata_transform_2d(dataframe)
         trans = Transform(transdict)
         img.set_attr("xform.align2d", trans)
     except Exception as e:
         pass
 
     try:
-        cor = [data_dict["_rlnCoordinateX"], data_dict["_rlnCoordinateY"]]
+        cor = [dataframe["_rlnCoordinateX"], dataframe["_rlnCoordinateY"]]
         img.set_attr('ptcl_source_coord', cor)
     except Exception as e:
         pass
@@ -650,7 +653,7 @@ def db_read_images(fsp, *parms):
                 for index in range(image_data.shape[0]):
                     numbers = int(image_data.iloc[index]['_rlnImageName'].split('@')[0])
                     file_name = image_data.iloc[index]['_rlnImageName'].split('@')[1]
-                    file_name = os.path.join('/home/adnan/PycharmProjects/newrelion/', file_name)
+                    # file_name = os.path.join('/home/adnan/PycharmProjects/newrelion/', file_name)
                     img = EMData.read_images_c(file_name, [(numbers - 1)])
                     db_set_header_star(img[0], image_data.iloc[index], star_file)
                     total_imgs.extend(img)
@@ -659,7 +662,7 @@ def db_read_images(fsp, *parms):
                 for index in range(image_data.shape[0]):
                     numbers = int(image_data.iloc[index]['_rlnImageName'].split('@')[0])
                     file_name = image_data.iloc[index]['_rlnImageName'].split('@')[1]
-                    file_name = os.path.join('/home/adnan/PycharmProjects/newrelion/', file_name)
+                    # file_name = os.path.join('/home/adnan/PycharmProjects/newrelion/', file_name)
                     img = EMData()
                     db_set_header_star(img, image_data.iloc[index], star_file)
                     total_imgs.append(img)
@@ -671,7 +674,7 @@ def db_read_images(fsp, *parms):
             for index in range(data.shape[0]):
                 numbers = int(data.iloc[index]['_rlnImageName'].split('@')[0])
                 file_name = data.iloc[index]['_rlnImageName'].split('@')[1]
-                file_name = os.path.join('/home/adnan/PycharmProjects/newrelion/', file_name)
+                # file_name = os.path.join('/home/adnan/PycharmProjects/newrelion/', file_name)
                 img = EMData.read_images_c(file_name, [(numbers - 1)])
                 db_set_header_star(img[0], data.iloc[index], star_file)
                 total_imgs.extend(img)
@@ -723,20 +726,29 @@ def db_write_image(self, fsp, *parms):
         star_file = star.StarFile(fsp)
         if len(parms) == 0:
             parms = [0]
+            special_keys = star_file.special_keys
+            ignored_keys = star_file.ignored_keys
             em_dict = self.get_attr_dict()
-            star.db_em_to_star_header(em_dict, star_file, parms[0])
+            try:
+                star_file['particles']
+            except :
+                star_file.update('particles',pd.DataFrame(), True )
+            db_em_to_star_header(em_dict, star_file, parms[0], special_keys, ignored_keys)
             star_file.write_star_file(out_star_file=fsp, overwrite=True)
             self.write_image_c(fsp.split('.star')[0] + '.mrcs', *parms)
-
         else:
             em_dict = self.get_attr_dict()
-            star.db_em_to_star_header(em_dict, star_file, parms[0])
+            special_keys = star_file.special_keys
+            ignored_keys = star_file.ignored_keys
+            try:
+                star_file['particles']
+            except :
+                star_file.update('particles',pd.DataFrame(), True )
+            db_em_to_star_header(em_dict, star_file['particles'], parms[0], special_keys, ignored_keys)
             star_file.write_star_file(out_star_file=fsp, overwrite=True)
             self.write_image_c(fsp.split('.star')[0] + '.mrcs', *parms)
         return
-
     return self.write_image_c(fsp, *parms)
-
 
 EMData.write_image_c = EMData.write_image
 EMData.write_image = db_write_image
@@ -906,7 +918,9 @@ def db_get_all_attributes(fsp, *parms):
         except KeyError:
             data = star_file['']
 
-        special_keys = ('ctf', 'xform.projection', 'ptcl_source_coord', 'xform.align2d')
+        # special_keys = ('ctf', 'xform.projection', 'ptcl_source_coord', 'xform.align2d')
+
+        special_keys = star_file.special_keys
         if parms[0] in special_keys:
             if parms[0] == 'ctf':
                 ctf_list = []
@@ -947,7 +961,7 @@ def db_get_all_attributes(fsp, *parms):
             else:
                 assert False, 'Missing rule for {}'.format(key)
         else:
-            key = star.sphire_header_magic(parms[0])
+            key = star.sphire_header_magic(parms[0], special_keys)
             return data[key]
 
     return EMUtil.get_all_attributes_c(fsp, *parms)
@@ -957,17 +971,23 @@ EMUtil.get_all_attributes_c = staticmethod(EMUtil.get_all_attributes)
 EMUtil.get_all_attributes = staticmethod(db_get_all_attributes)
 
 
-def db_em_to_star_header(em_dict, dataframe, ptcl_no):
+
+def db_get_image_type(fsp):
+    if fsp.endswith('.star'):
+        return EMUtil.ImageType.IMAGE_MRC
+    else:
+        return EMUtil.get_image_type_c(fsp)
+
+EMUtil.get_image_type_c = staticmethod(EMUtil.get_image_type)
+EMUtil.get_image_type = staticmethod(db_get_image_type)
+
+def db_em_to_star_header(em_dict, dataframe, ptcl_no, special_keys, ignored_keys):
     """
     It converts the data from EMAN dictionary and pass it all
     to pandas dataframe after conversion of keys.
     """
-
-    special_keys = ('ctf', 'xform.projection', 'ptcl_source_coord',
-                    'xform.align2d', "data_path")
-
     for key in list(em_dict.keys()):
-        em_key = sphire_header_magic(key)
+        em_key = star.sphire_header_magic(key, special_keys)
         if em_key:
             dataframe.loc[ptcl_no + 1, em_key] = em_dict[key]
         elif key[0:2] == '_r':
@@ -983,7 +1003,7 @@ def db_em_to_star_header(em_dict, dataframe, ptcl_no):
 
                     dataframe.loc[ptcl_no + 1, "_rlnDefocusV"] = (
                             20000 * ctfdict["defocus"] -
-                            star_file['particles'].loc[ptcl_no + 1, "_rlnDefocusU"]
+                            dataframe.loc[ptcl_no + 1, "_rlnDefocusU"]
                     )
                     dataframe.loc[ptcl_no + 1, "_rlnCtfBfactor"] = ctfdict["bfactor"]
                     dataframe.loc[ptcl_no + 1, "_rlnAmplitudeContrast"] = ctfdict["ampcont"] / 100
@@ -1019,7 +1039,12 @@ def db_em_to_star_header(em_dict, dataframe, ptcl_no):
                     except KeyError:  # if datapath is not provided
                         pass
                 else:
-                    pass
+                    assert False, 'Missing rule for {}'.format(key)
+            elif key in ignored_keys:
+                pass
+
+            else:
+                print("Missing Keys are {}".format(key))
     return
 
 
@@ -1057,18 +1082,22 @@ class Pd_to_Db_conversion():
             self.converter = StarFile[special_key]
         else:
             try:
-                self.converter = StarFile['particles']
-            except KeyError:
-                self.converter = StarFile['']
+                try:
+                    self.converter = StarFile['particles']
+                except KeyError:
+                    self.converter = StarFile['']
             except:
-                self.converter.update('particles', pandas.DataFrame(), True)
+                self.star.update('particles', pd.DataFrame(), True)
+                self.converter = self.star['particles']
 
         # Keep a cache of opened database environments
         Pd_to_Db_conversion.opendbs[self.star.star_file] = self
 
     def set(self, index, in_data):
         if isinstance(in_data, dict):
-            db_em_to_star_header(in_data, self.converter, index)
+            special_keys = self.star.special_keys
+            ignored_keys = self.star.ignored_keys
+            db_em_to_star_header(in_data, self.converter, index, special_keys, ignored_keys)
         else:
             pass
 
@@ -1123,7 +1152,8 @@ def db_star_to_em_header(dataframe, idx, sphire_keys):
             if keys in sphire_keys:
                 new_key = sphire_keys[keys]
             else:
-                new_key = star.sphire_header_magic(keys)
+                sp = star.StarFile.special_keys
+                new_key = star.sphire_header_magic(keys, sp)
             if new_key == keys:
                 continue
             else:
