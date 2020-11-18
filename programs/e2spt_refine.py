@@ -173,6 +173,7 @@ def main():
 		gd=""
 		if options.goldstandard>0 and itr==1:
 			curres=options.goldstandard*1.5
+			if curres>75.: curres=75
 			gd=" --goldstandard {}".format(options.goldstandard)
 		if options.goldcontinue or (options.goldstandard>0 and itr>1):
 			gd=" --goldcontinue".format(options.goldstandard)
@@ -199,7 +200,7 @@ def main():
 		if options.scipy:
 			gd+=" --scipy"
 
-		cmd="e2spt_align.py {} {}/alignref.hdf --parallel {} --path {} --iter {} --sym {} --minres {} --maxres {} {}".format(ptcls, options.path,  options.parallel, options.path, itr, options.sym, options.minres, curres, gd)
+		cmd="e2spt_align.py {} {}/alignref.hdf --parallel {} --path {} --iter {} --sym {} --minres {} --maxres {} {}".format(ptcls, options.path,  options.parallel, options.path, itr, options.sym, options.minres, curres*.75, gd)
 		
 		ret=run(cmd)
 		
@@ -281,9 +282,9 @@ def main():
 		else:
 			rs=1./fsc[fi, 0][0]
 			print("Resolution (FSC<0.2) is ~{:.1f} A".format(rs))
-		curres=rs*.8
-		if curres>40.:
-			curres=40
+		curres=rs
+		if curres>50.:
+			curres=50
 		
 
 	E2end(logid)
