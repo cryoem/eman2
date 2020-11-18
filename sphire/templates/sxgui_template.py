@@ -53,12 +53,18 @@ except ImportError:
     from PyQt5 import QtCore
 from EMAN2 import *
 from EMAN2_cppwrap import *
-from sp_global_def import *
-from sp_sparx import *
+try:
+	from ..libpy.sp_global_def import *
+	from ..libpy.sp_sparx import *
+	import sphire
+except ImportError as e:
+	print("Import error raised. Ignore.")
+	print(e)
 from optparse import OptionParser
 from functools import partial  # Use to connect event-source widget and event handler
 from subprocess import *
 import re
+
 
 # ========================================================================================
 # Helper Functions
@@ -337,7 +343,8 @@ class SXLookFeelConst(object):
 	@staticmethod
 	def initialise(sxapp, version):
 		# Set the directory for all file dialogs to script directory
-		SXLookFeelConst.project_dir += '_{0}'.format(version)
+		version_main = ".".join(version.split('.')[:2])
+		SXLookFeelConst.project_dir += '/{0}'.format(version_main)
 		SXLookFeelConst.file_dialog_dir = os.getcwd()
 		
 		# Check whether current settings directory exists
@@ -348,13 +355,17 @@ class SXLookFeelConst(object):
 			
 		do_longer_warning = False
 		older_settings_exist = False
-		for file_name in os.listdir(SXLookFeelConst.file_dialog_dir):
-			if SXLookFeelConst.project_dir_raw in file_name and file_name != SXLookFeelConst.project_dir:
-				print('WARNING: Directory %s/ detected that belongs to another version of SPHIRE.' % file_name)
-				older_settings_exist = True
-				
-				if not current_settings_exist:
-					do_longer_warning = True
+		print('\nCurrent SPHIRE settings directory: {}'.format(SXLookFeelConst.project_dir))
+		try:
+			for file_name in os.listdir(SXLookFeelConst.project_dir_raw):
+				if file_name != os.path.basename(SXLookFeelConst.project_dir):
+					print('INFORMATION: Old settings directory %s/%s detected that belongs to another version of SPHIRE.' % (SXLookFeelConst.project_dir_raw, file_name))
+					older_settings_exist = True
+
+					if not current_settings_exist:
+						do_longer_warning = True
+		except FileNotFoundError:
+			pass
 				
 		if do_longer_warning:
 			print('To load old settings, please load the gui settings manually.')
@@ -1086,15 +1097,17 @@ class SXCmdWidget(QWidget):
 			if self.sxcmd_tab_main.qsub_enable_checkbox.checkState() == Qt.Checked:
 				# Case 1: queue submission is enabled (MPI can be supported or unsupported)
 				# Create script for queue submission from a give template
+				submit_command_prefix = str(self.sxcmd_tab_main.qsub_cmd_edit.text()).split()[0]+"_"
+
 				template_file_path = self.sxcmd_tab_main.qsub_script_edit.text()
 				if os.path.exists(template_file_path) == False:
 					QMessageBox.warning(self, "Invalid parameter value", "Invalid file path for qsub script template (%s). Aborting execution ..." % (template_file_path))
 					return
 				file_template = open(self.sxcmd_tab_main.qsub_script_edit.text(),"r")
 				if number is not None:
-					file_name_qsub_script = os.path.join(output_dir, "{0:04d}_".format(number) + "qsub_" + str(self.sxcmd_tab_main.qsub_job_name_edit.text()) + ".sh")
+					file_name_qsub_script = os.path.join(output_dir, "{0:04d}_".format(number) + submit_command_prefix + str(self.sxcmd_tab_main.qsub_job_name_edit.text()) + ".sh")
 				else:
-					file_name_qsub_script = os.path.join(output_dir, "qsub_" + str(self.sxcmd_tab_main.qsub_job_name_edit.text()) + ".sh")
+					file_name_qsub_script = os.path.join(output_dir, submit_command_prefix + str(self.sxcmd_tab_main.qsub_job_name_edit.text()) + ".sh")
 				file_qsub_script = open(file_name_qsub_script,"w")
 				for line_io in file_template:
 					if line_io.find("XXX_SXCMD_LINE_XXX") != -1:
@@ -1138,7 +1151,7 @@ class SXCmdWidget(QWidget):
 
 			# Save the current state of GUI settings
 			if os.path.exists(self.sxcmd.get_category_dir_path(SXLookFeelConst.project_dir)) == False:
-				os.mkdir(self.sxcmd.get_category_dir_path(SXLookFeelConst.project_dir))
+				os.makedirs(self.sxcmd.get_category_dir_path(SXLookFeelConst.project_dir))
 			self.write_params(self.gui_settings_file_path)
 		# else: SX command line is be empty because an error happens in generate_cmd_line. Let's do nothing
 
@@ -1171,7 +1184,7 @@ class SXCmdWidget(QWidget):
 
 			# Save the current state of GUI settings
 			if os.path.exists(self.sxcmd.get_category_dir_path(SXLookFeelConst.project_dir)) == False:
-				os.mkdir(self.sxcmd.get_category_dir_path(SXLookFeelConst.project_dir))
+				os.makedirs(self.sxcmd.get_category_dir_path(SXLookFeelConst.project_dir))
 			self.write_params(self.gui_settings_file_path)
 		# else: Do nothing
 
@@ -1506,7 +1519,7 @@ class SXCmdWidget(QWidget):
 		elif file_format == "data2d_one":
 			# Read not supported: ;; JPEG (*.jpg *.jpeg)
 			# Maybe only 2D image stack: ;; MRCS (*.mrcs)
-			name = QFileDialog.getOpenFileName(self, "Select any image file", SXLookFeelConst.file_dialog_dir, "Typical image files (*.hdf *.bdb *.mrc *.spi *.img *.tif *.tiff *.png);; HDF (*.hdf);; BDB (*.bdb);; MRC (*.mrc);; Spider (*.spi);; Imagic (*.img);; TIFF (*.tif *.tiff);; PNG (*.png);; Gatan (*.dm2 *.dm3 *.dm4);; FEI (*.ser);; EM (*.em);; ICOS (*.icos);; Amira (*.am);; DF3 (*.d3);; FITS (*.fts);; LST (*.lst);; LSTFAST (*.lsx *.lst);; OMAP (*.omap);; PGM (*.pgm);; PIF (*.pif);; SAL (*.img );; SITUS (*.situs);; V4L (*.v4l);; VTK (*.vtk);; XPLOR (*.xplor);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			name = QFileDialog.getOpenFileName(self, "Select any image file", SXLookFeelConst.file_dialog_dir, "Typical image files (*.hdf *.bdb *.mrc *.spi *.img *.tif *.tiff *.png *.mrcs);; HDF (*.hdf);; BDB (*.bdb);; MRC (*.mrc *.mrcs);; Spider (*.spi);; Imagic (*.img);; TIFF (*.tif *.tiff);; PNG (*.png);; Gatan (*.dm2 *.dm3 *.dm4);; FEI (*.ser);; EM (*.em);; ICOS (*.icos);; Amira (*.am);; DF3 (*.d3);; FITS (*.fts);; LST (*.lst);; LSTFAST (*.lsx *.lst);; OMAP (*.omap);; PGM (*.pgm);; PIF (*.pif);; SAL (*.img );; SITUS (*.situs);; V4L (*.v4l);; VTK (*.vtk);; XPLOR (*.xplor);; All files (*)", options = QFileDialog.DontUseNativeDialog)
 			if isinstance(name, tuple):
 				file_path = str(name[0])
 			else:
@@ -1530,8 +1543,6 @@ class SXCmdWidget(QWidget):
 				file_path = translate_to_bdb_path(file_path)
 		elif file_format == "data2d_stack":
 			# NOTE: Toshio Moriya 2018/01/25
-			# Currently, this case is not used. Instead, using bdb2d_stack
-			# 
 			# Read not supported: ;; JPEG (*.jpg *.jpeg)
 			# 2D image stack not supported: ;; Gatan (*.dm2 *.dm3);; EM (*.em);; ICOS (*.icos);; Amira (*.am);; DF3 (*.d3);; FITS (*.fts);; OMAP (*.omap);; PGM (*.pgm);; PNG (*.png);; SAL (*.hdr *.img);; SITUS (*.situs);; TIFF (*.tif *.tiff);; V4L (*.v4l);; VTK (*.vtk);; XPLOR (*.xplor)
 			# Maybe only single 2D image: ;; MRC (*.mrc)
@@ -3635,7 +3646,7 @@ class SXConstSetWidget(QWidget):
 
 		# Save the current state of GUI settings
 		if os.path.exists(SXLookFeelConst.project_dir) == False:
-			os.mkdir(SXLookFeelConst.project_dir)
+			os.makedirs(SXLookFeelConst.project_dir)
 		self.write_consts(self.gui_settings_file_path)
 
 	def write_consts(self, file_path_out):
@@ -4880,7 +4891,8 @@ def main():
 	sxapp.setStyleSheet("QToolTip {font-size:%dpt;}" % (new_point_size));
 
 	# Initialise a singleton class for look & feel constants
-	version_string = '1.3'
+
+	version_string = sphire.__version__#'1.4'
 	SXLookFeelConst.initialise(sxapp, version_string)
 
 	# Define the main window (class SXMainWindow)

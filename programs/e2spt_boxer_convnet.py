@@ -24,7 +24,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--label", type=str,help="Load previous contour segmentation.", default="tomobox")
 	parser.add_argument("--gpuid", type=str,help="Specify the gpu to use", default="")
-	parser.add_argument("--mult", type=float,help="multiply data by factor. useful for vpp data...", default=.1)
+	parser.add_argument("--mult", type=float,help="multiply data by factor. useful for vpp data...", default=1)
 	#parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -617,6 +617,7 @@ class EMTomobox(QtWidgets.QMainWindow):
 			imgs=[r for r in oldref if r["fromtomo"]==tomo]
 			self.datafile=tomo
 			self.data=EMData(tomo)
+			self.data.mult(self.options.mult)
 			for m in imgs:
 				p=m["pos"]
 				self.add_reference(m["label"], p[0],p[1],p[2])
@@ -710,8 +711,17 @@ class EMTomobox(QtWidgets.QMainWindow):
 		if self.nnet==None:
 			print("Neural network not initialized...")
 			return
+		
+		modifiers = QtWidgets.QApplication.keyboardModifiers()
+		skipexist=(modifiers == QtCore.Qt.ShiftModifier)
+		if skipexist:
+			print("Skipping tomograms with particles")
+			
 		for i,info in enumerate(self.imginfo):
 			self.curinfo=info
+			if skipexist and info["nptcl"]>0:
+				print("Skipping {}..".format(info["name"]))
+				continue
 			self.set_data(info["name"])
 			self.apply_nnet()
 		
@@ -967,7 +977,7 @@ class EMTomobox(QtWidgets.QMainWindow):
 				clsid=0
 			else:
 				clsid=max([int(k) for k in clslst.keys()])+1
-			clslst[str(clsid)]={"name":label, "boxsize": int(self.boxshapes.circlesize*2)}
+			clslst[str(clsid)]={"name":label, "boxsize": int(self.boxshapes.circlesize*4)}
 			js["class_list"]=clslst
 			self.curinfo["clsid"]=clsid
 			

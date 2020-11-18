@@ -32,10 +32,6 @@
 #ifndef eman__exception_h__
 #define eman__exception_h__ 1
 
-#ifdef _WIN32
-	#pragma warning(disable:4996)
-#endif	//_WIN32
-
 #include <log.h>
 
 #include <string>

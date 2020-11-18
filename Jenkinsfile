@@ -261,7 +261,6 @@ pipeline {
     INSTALLERS_DIR = convertToNativePath("${HOME_DIR}/workspace/jenkins-eman-installers")
 
     CI_BUILD       = sh(script: "! git log -1 | grep '.*\\[ci build\\].*'",       returnStatus: true)
-    EMAN_DEPS_VERSION = "23.0"
   }
   
   stages {
@@ -288,7 +287,7 @@ pipeline {
       
       steps {
         notifyGitHub('PENDING')
-        sh 'source $(conda info --root)/bin/activate eman-deps-${EMAN_DEPS_VERSION} && env | sort && bash ci_support/build_no_recipe.sh'
+        sh 'source ci_support/set_env_vars.sh && source $(conda info --root)/bin/activate eman-deps-${EMAN_DEPS_VERSION} && env | sort && bash ci_support/build_no_recipe.sh'
       }
     }
     
@@ -296,7 +295,7 @@ pipeline {
       when { not { expression { isSkipStage() } } }
       steps {
         notifyGitHub('PENDING')
-        sh 'bash ci_support/build_recipe.sh'
+        sh 'source ci_support/set_env_vars.sh && bash ci_support/build_recipe.sh'
       }
     }
     

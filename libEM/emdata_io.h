@@ -38,6 +38,19 @@
 #define emdata__io_h__
 
 
+private:
+void _read_image(ImageIO *imageio, int img_index = 0,
+				bool header_only = false,
+				const Region * region = 0, bool is_3d = false);
+
+void _write_image(ImageIO *imageio,
+				 int img_index = 0,
+				 EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN,
+				 bool header_only = false,
+				 const Region * region = 0,
+				 EMUtil::EMDataType filestoragetype = EMUtil::EM_FLOAT,
+				 bool use_host_endian = true);
+
 public:
 /** read an image file and stores its information to this
  * EMData object.
@@ -59,7 +72,8 @@ public:
  */
 void read_image(const string & filename, int img_index = 0,
 				bool header_only = false,
-				const Region * region = 0, bool is_3d = false);
+				const Region * region = 0, bool is_3d = false,
+				EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN);
 
 /** read in a binned image, bin while reading. For use in huge files(tomograms)
  * @param filename The image file name.
@@ -130,14 +144,6 @@ void write_lst(const string & filename,
 			   const string & comment="");
 
 
-/** Print the image data to a file stream (standard out by default).
- * @param out Output stream; cout by default.
- * @param str Message string to be printed.
- */
-void print_image(const string str = string(""),
-		ostream& out = std::cout);
-
-
 /** Read a set of images from file specified by 'filename'.
  * Which images are read is set by 'img_indices'.
  * @param filename The image file name.
@@ -148,27 +154,31 @@ void print_image(const string str = string(""),
  *     false, read both data and header.
  * @return The set of images read from filename.
  */
-static vector < std::shared_ptr<EMData> >read_images(const string & filename,
-									  vector < int >img_indices = vector < int >(),
+static vector<std::shared_ptr<EMData>> read_images(const string & filename,
+									  vector<int> img_indices = vector<int>(),
+									  EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN,
 									  bool header_only = false);
 
-
-/** Read a set of images from file specified by 'filename'. If
- * the given 'ext' is not empty, replace 'filename's extension it.
- * Images with index from img_index_start to img_index_end are read.
- *
+/** Write a set of images to file specified by 'filename'.
+ * Which images are written is set by 'imgs'.
  * @param filename The image file name.
- * @param img_index_start Starting image index.
- * @param img_index_end Ending image index.
- * @param header_only If true, only read image header. If
- *     false, read both data and header.
- * @param ext The new image filename extension.
- * @return The set of images read from filename.
+ * @param imgs Which images are written.
+ * @param imgtype Write to the given image format type. if not
+ *        specified, use the 'filename' extension to decide.
+ * @param header_only To write only the header or both header and data.
+ * @param region Define the region to write to.
+ * @param filestoragetype The image data type used in the output file.
+ * @param use_host_endian To write in the host computer byte order.
+ * @return True if set of images are written successfully to filename.
  */
-static vector < std::shared_ptr<EMData> >read_images_ext(const string & filename,
-										  int img_index_start,
-										  int img_index_end,
-										  bool header_only = false,
-										  const string & ext = "");
+static bool write_images(const string & filename,
+									  vector<std::shared_ptr<EMData>> imgs,
+									  EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN,
+									  bool header_only = false,
+									  const Region * region = nullptr,
+									  EMUtil::EMDataType filestoragetype = EMUtil::EM_FLOAT,
+									  bool use_host_endian = true);
+
+friend ostream& operator<<(ostream& out, const EMData& obj);
 
 #endif	//emdata__io_h__

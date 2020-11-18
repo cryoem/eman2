@@ -174,7 +174,7 @@ def main():
 	parser.add_argument("--nref", type=int,help="Using N tilt images near the center tilt to estimate the range of defocus for all images. Default is 15", default=15, guitype='intbox',row=6, col=2,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--stepx", type=int,help="Number of tiles to generate on x-axis (different defocus)", default=20, guitype='intbox',row=8, col=0,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--stepy", type=int,help="Number of tiles to generate on y-axis (same defocus)", default=40, guitype='intbox',row=8, col=1,rowspan=1, colspan=1, mode="model")
-	parser.add_argument("--refine", action="store_true", help="Include a refinement step in the end for more precise estimation.", default=False, guitype='boolbox',row=9, col=0, rowspan=1, colspan=1,mode="model")
+	#parser.add_argument("--refine", action="store_true", help="Include a refinement step in the end for more precise estimation.", default=False, guitype='boolbox',row=9, col=0, rowspan=1, colspan=1,mode="model")
 	parser.add_argument("--checkhand", action="store_true", help="Check the handedness of tomogram.", default=False,guitype='boolbox',row=10, col=0, rowspan=1, colspan=1,mode="model")
 	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on the local computer",guitype='intbox', row=8, col=2, rowspan=1, colspan=1, mode='model')
 	parser.add_argument("--nolog",action="store_true",default=False,help="Default=False. Turn off recording of the command ran for this program onto the .eman2log.txt file")	
@@ -436,9 +436,9 @@ def main():
 			amp, df= np.array(np.where(allscr==np.min(allscr))).T[0]
 			
 			pm=(defrg[df], pshift[amp])
-		if options.refine:
-			res=minimize(compute_score, pm, (powerspecs[it], options),method='Nelder-Mead',options={'xtol': 1e-3, 'disp': False, "maxiter":10})
-			pm=res.x
+		#if options.refine:
+			#res=minimize(compute_score, pm, (powerspecs[it], options),method='Nelder-Mead',options={'xtol': 1e-3, 'disp': False, "maxiter":10})
+			#pm=res.x
 		
 		if options.verbose>0: print("ID {}, angle {:.1f}, defocus {:.3f}, phase shift {:.1f}, score {:.1f}".format(it, tltparams[it,3], pm[0], pm[1], np.min(allscr)*1000))
 		dfs.append(pm[0])

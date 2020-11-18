@@ -14,18 +14,13 @@ sp_global_def.MPI = True
 
 ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
 
-
-from .test_module import get_arg_from_pickle_file
-from os import path
-from numpy import array_equal as numpy_array_equal, allclose
+from numpy import array_equal as numpy_array_equal
 from copy import deepcopy
 from EMAN2_cppwrap import EMData
 
 TOLERANCE = 0.00005
 from sphire.libpy_py3 import sp_multi_shc as oldfu
-from sphire.libpy import sp_multi_shc as fu
-
-from sphire.libpy import sp_fundamentals
+from sphire.sphire.libpy import sp_multi_shc as fu, sp_fundamentals
 
 """
 WHAT IS MISSING:

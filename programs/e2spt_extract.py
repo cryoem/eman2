@@ -9,6 +9,8 @@ import queue
 import threading
 from EMAN2_utils import *
 from EMAN2jsondb import JSTask
+import os
+import sys
 
 global thrdone
 thrdone=0
@@ -70,14 +72,16 @@ def main():
 	parser.add_argument("--postproc", type=str,help="processor after 3d particle reconstruction", default="")
 	parser.add_argument("--postmask", type=str,help="masking after 3d particle reconstruction. The mask is transformed if json ", default="")
 	parser.add_argument("--textin", type=str,help="text file for particle coordinates. do not use..", default=None)
-	parser.add_argument("--compress", type=int,help="Bits to keep for compression. Not compatible with saveint. default is -1 meaning no compression. 8 bit seems fine...", default=-1)
-	parser.add_argument("--saveint", action="store_true", default=False ,help="save particles in uint8 format to save space. still under testing.")
+	parser.add_argument("--compressbits", type=int,help="Bits to keep for compression. default is -1 meaning uncompressed floating point. 8 bit seems fine...", default=-1,guitype='intbox',row=5, col=1, rowspan=1, colspan=1, mode="extract[8]")
+#	parser.add_argument("--saveint", action="store_true", default=False ,help="save particles in uint8 format to save space. still under testing.")
 	parser.add_argument("--norewrite", action="store_true", default=False ,help="skip existing files. do not rewrite.")
 	parser.add_argument("--parallel", type=str,help="parallel", default="")
 	#parser.add_argument("--alioffset", type=str,help="coordinate offset when re-extract particles. (x,y,z)", default="0,0,0", guitype='strbox', row=12, col=0,rowspan=1, colspan=1, mode="extract")
-	parser.add_argument("--postxf", type=str,help="a file listing post transforms", default="")
-	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
-	parser.add_argument("--shrink3d", type=int, help="Only shrink 3d particles by x factor",default=-1)
+	parser.add_argument("--postxf", type=str,help="a file listing post transforms (see http://eman2.org/e2tomo_more), or for simple symmetry, <sym>,<cx>,<cy>,<cz> where the coordinates specify the center of a single subunit", default=None)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)	
+	parser.add_argument("--skip3d", action="store_true", default=False ,help="do not make 3d particles. only generate 2d particles and 3d header. ")
+
+	#parser.add_argument("--shrink3d", type=int, help="Only shrink 3d particles by x factor",default=-1)
 	parser.add_argument("--verbose", type=int,help="verbose", default=1)
 
 	(options, args) = parser.parse_args()
@@ -459,12 +463,12 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 		
 		
 		hdftype=EMUtil.get_image_ext_type("hdf")
-		if options.compress>0:
-			outmode=EM_COMPRESSED
-		elif options.saveint:
-			outmode=file_mode_map["uint8"]
-		else:
-			outmode=file_mode_map["float"]
+		#if options.compress>0:
+			#outmode=EM_COMPRESSED
+		#elif options.saveint:
+			#outmode=file_mode_map["uint8"]
+		#else:
+			#outmode=file_mode_map["float"]
 		
 		
 		thrds=[threading.Thread(target=make3d,args=(i)) for i in jobs]
@@ -483,27 +487,28 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 				
 				
 				
-				if options.compress>0:
-					sig=5.0
-					for im in projs+[threed]:
-						im["render_bits"]=options.compress
-						im["render_compress_level"]=1
-						im["render_min"]=im["mean"]-im["sigma"]*sig
-						im["render_max"]=im["mean"]+im["sigma"]*sig
+				#if options.compress>0:
+					#sig=5.0
+					#for im in projs+[threed]:
+						#im["render_bits"]=options.compress
+						#im["render_compress_level"]=1
+						#im["render_min"]=im["mean"]-im["sigma"]*sig
+						#im["render_max"]=im["mean"]+im["sigma"]*sig
 
 				try: pji=EMUtil.get_image_count(options.output2d)
 				except: pji=0
 				pjids=[]
 				for i,pj in enumerate(projs):
-					#pj.write_image(options.output2d, pji, hdftype,  False, None, outmode)
-					pj.write_image(options.output2d, pji,IMAGE_UNKNOWN,0,None,EM_COMPRESSED)
+					if options.compressbits<0 : pj.write_image(options.output2d, pji)
+					else: pj.write_compressed(options.output2d,pji,options.compressbits,nooutliers=True)
 					pjids.append(pji)
 					pji+=1
 					
 				threed["class_ptcl_src"]=options.output2d
 				threed["class_ptcl_idxs"]=pjids
 
-				threed.write_image(options.output, pid,IMAGE_UNKNOWN,0,None,EM_COMPRESSED)
+				if options.compressbits<0: threed.write_image(options.output, pid)
+				else: threed.write_compressed(options.output, pid,options.compressbits,nooutliers=True)
 				
 				ndone+=1
 				if options.verbose>0:
@@ -525,17 +530,17 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 	pad=options.pad
 	apix=imgs[0]["apix_x"]
 
-	if options.shrink3d<=1:
+	if 1:#options.shrink3d<=1:
 		p3d=pad
 		bx=boxsz*2
 		apixout=apix
-	else:
-		bx=good_size(boxsz*2/options.shrink3d)
-		p3d=good_size(boxsz*2/options.shrink3d*options.padtwod)
-		apixout=apix*float(options.shrink3d)
-		#print('shrink3d!', bx, options.padtwod, options.shrink3d, p3d)
+	#else:
+		#bx=good_size(boxsz*2/options.shrink3d)
+		#p3d=good_size(boxsz*2/options.shrink3d*options.padtwod)
+		#apixout=apix*float(options.shrink3d)
+		##print('shrink3d!', bx, options.padtwod, options.shrink3d, p3d)
 	
-	recon=Reconstructors.get("fourier", {"sym":'c1', "size":[p3d, p3d, p3d], "mode":"gauss_2"})
+	recon=Reconstructors.get("fourier", {"sym":'c1', "size":[p3d, p3d, p3d], "mode":"trilinear"})
 	recon.setup()
 	
 	if len(ctfinfo)>0:
@@ -598,6 +603,8 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 
 			e.mult(-1)
 			e.process_inplace("normalize.edgemean")
+			e.process_inplace("threshold.belowtozero",{"minval":-8})
+			e.process_inplace("threshold.abovetozero",{"maxval":8})
 			wd=(pad-boxsz*2)/4.
 			e.process_inplace("mask.soft",{"outer_radius":-wd, "width":wd/2})
 			if e["sigma"]==0:
@@ -663,34 +670,46 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 			projs.append(e)
 			#print(xform)
 			
-			if options.shrink3d<=1:
-				e0=e
-			else:
-				e0=e.process("math.meanshrink",{"n":options.shrink3d})
-				txdf/=float(options.shrink3d)
-				tydf/=float(options.shrink3d)
+			e0=e
 			
 			sz=e0["nx"]
 			e0=e0.get_clip(Region((sz-p3d)//2,(sz-p3d)//2,p3d,p3d))
 			#e0.write_image("test.hdf",-1)
 			trans=Transform({"type":"2d", "tx":-txdf, "ty":-tydf})
-			e1=recon.preprocess_slice(e0, trans)
-			recon.insert_slice(e1,xform,1)
+			if not options.skip3d:
+				e1=recon.preprocess_slice(e0, trans)
+				recon.insert_slice(e1,xform,1)
 
-		if len(projs)<len(imgs)/5:
+		if options.skip3d:
+			threed=EMData(1,1,1)
+			
+		elif len(projs)<len(imgs)/5:
 			#### too many bad 2D particles
 			threed=EMData(bx,bx,bx)
 			threed.to_zero()
 			#continue
 		else:
 			threed=recon.finish(True)
-			#threed=EMData(p3d, p3d, p3d)
-			threed.process_inplace("math.gausskernelfix",{"gauss_width":4.0})
 			threed=threed.get_clip(Region((p3d-bx)//2,(p3d-bx)//2,(p3d-bx)//2,bx,bx,bx))
 		
-		#if threed["sigma"]==0:
-			####empty particle for some reason...
-			#continue
+			threed.process_inplace("normalize.edgemean")
+		
+			if options.postproc!="":
+				(filtername, param_dict) = parsemodopt(options.postproc)
+				threed.process_inplace(filtername, param_dict)
+				
+			if mask:
+				try:
+					if tf_dir:
+						m=mask.copy()
+						m.transform(tf_dir.inverse())
+						threed.mult(m)
+					else:
+						threed.mult(mask)
+				except: 
+					print(f'Mask error, size mismatch volume->{threed["nx"]} mask->{mask["nx"]}')
+					raise Exception()
+				
 		
 		threed["apix_x"]=threed["apix_y"]=threed["apix_z"]=apixout
 		threed["ptcl_source_coord"]=pos.tolist()
@@ -699,32 +718,18 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 		for hd in hdr.keys():
 			threed[str(hd)]=hdr[hd]
 			
-		threed.process_inplace("normalize.edgemean")
-		
 		if tf_dir:
 			threed["xform.align3d"]=tf_dir
 		
-		if options.postproc!="":
-			(filtername, param_dict) = parsemodopt(options.postproc)
-			threed.process_inplace(filtername, param_dict)
-			
-		if mask:
-			if tf_dir:
-				m=mask.copy()
-				m.transform(tf_dir.inverse())
-				threed.mult(m)
-			else:
-				threed.mult(mask)
-			
 		
-		if options.saveint and options.compress<0:
-			#### save as integers
-			lst=[threed]+projs
-			outmode=file_mode_map["uint8"]
-			for data in lst:
-				data.process_inplace("math.setbits",{"nsigma":3, "bits":8})
-				data["render_min"]=file_mode_range[outmode][0]
-				data["render_max"]=file_mode_range[outmode][1]
+		#if options.saveint and options.compress<0:
+			##### save as integers
+			#lst=[threed]+projs
+			#outmode=file_mode_map["uint8"]
+			#for data in lst:
+				#data.process_inplace("math.setbits",{"nsigma":3, "bits":8})
+				#data["render_min"]=file_mode_range[outmode][0]
+				#data["render_max"]=file_mode_range[outmode][1]
 		
 		jsd.put((pid, threed, projs))
 		#recon.clear()
@@ -804,17 +809,33 @@ def parse_json(options):
 		sthr=1000
 	
 	
-	### parse post transform file
+	### parse post transform file (or inline symmetry option)
 	xffile=options.postxf
 	postxfs=[]
-	if xffile!="":
-		f=open(xffile,'r')
-		lines=f.readlines()
-		f.close()
-		for l in lines:
-			if len(l)>3:
-				postxfs.append(Transform(eval(l)))
-				
+	if xffile!=None:
+		if os.path.isfile(xffile):
+			f=open(xffile,'r')
+			lines=f.readlines()
+			f.close()
+			for l in lines:
+				if len(l)>3:
+					postxfs.append(Transform(eval(l)))
+		else:
+			try:
+				xfsym,xc,yc,zc=xffile.split(",")
+				xc=float(xc)
+				yc=float(yc)
+				zc=float(zc)
+
+				sym=Symmetries.get(xfsym)
+				xf0=Transform({"type":"eman", "tx":xc, "ty":yc, "tz":zc})
+				for i in range(sym.get_nsym()):
+    					postxfs.append(sym.get_sym(i)*xf0)
+					
+			except:
+				print("ERROR: --postxf must be a filename or <sym>,<cx>,<cy>,<cz>")
+				sys.exit(1)
+
 		print("Extracting {} sub-particles per original particle".format(len(postxfs)))
 	else:
 		postxfs.append(Transform())
@@ -851,20 +872,22 @@ def parse_json(options):
 				info.append({"orig_ptcl":str(fname),"orig_idx":int(ids[i]),"orig_xf":pxf})
 
 		newpos=np.array([p.get_trans() for p in newxfs])
-		dst=scipydst.cdist(newpos, newpos)+(np.eye(len(newpos))*1e5)
-		tokeep=np.ones(len(dst), dtype=bool)
-		for i in range(len(dst)):
-			if tokeep[i]:
-				tokeep[dst[i]<dthr]=False
+		if len(newpos)>1:
+			dst=scipydst.cdist(newpos, newpos)+(np.eye(len(newpos))*1e5)
+			tokeep=np.ones(len(dst), dtype=bool)
+			for i in range(len(dst)):
+				if tokeep[i]:
+					tokeep[dst[i]<dthr]=False
 
-		newpos=newpos[tokeep]
+			newpos=newpos[tokeep]
+			newxfs=[xf for i, xf in enumerate(newxfs) if tokeep[i]]
+			info=[p for i, p in enumerate(info) if tokeep[i]]
+			nexclude+=np.sum(tokeep==False)
+			
 		nptcl+=len(newpos)
-		nexclude+=np.sum(tokeep==False)
-		
-		newxfs=[xf for i, xf in enumerate(newxfs) if tokeep[i]]
 		
 		allxfs[fname]=newxfs
-		allinfo[fname]=[p for i, p in enumerate(info) if tokeep[i]]
+		allinfo[fname]=info
 		
 		
 		print("{} : ptcls {} -> {}".format(base_name(fname), len(pos), len(allxfs[fname])))

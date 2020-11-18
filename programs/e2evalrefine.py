@@ -181,6 +181,7 @@ def main():
 	parser.add_argument("--resolution_vsref", type=str, default=None, help="Computes the FSC between the last iteration of each refine_xx directory and a specified reference map. Map must be aligned, but will be rescaled if necessary.")
 	parser.add_argument("--evalptclqual", default=False, action="store_true", help="Evaluates the particle-map agreement using the refine_xx folder name. This may be used to identify bad particles.",guitype='boolbox', row=8, col=1, rowspan=1, colspan=1, mode='evalptcl[True]')
 	parser.add_argument("--evalclassqual", default=False, action="store_true", help="Evaluates the class-average-projection agreement using the refine_xx folder name.",guitype='boolbox', row=8, col=2, rowspan=1, colspan=1, mode='evalptcl[False]')
+	parser.add_argument("--extractorientptcl", default=None, type=str, help="Extracts the particles from a refinement with per-particle orientation information. If HDF output, will store as xform_align3d in header.")
 	parser.add_argument("--anisotropy", type=int, default=-1, help="Specify a class-number (more particles better). Will use that class to evaluate magnification anisotropy in the data. ")
 	parser.add_argument("--evalclassdetail", default=False, action="store_true", help="If specified with evalclassqual, will generate individual FRC curves for each class average in the even subset")
 	parser.add_argument("--includeprojs", default=False, action="store_true", help="If specified with --evalptclqual, projections will be written to disk for easy comparison.",guitype='boolbox', row=8, col=0, rowspan=1, colspan=1, mode='evalptcl[True]')
@@ -384,6 +385,78 @@ def main():
 
 			print(best)
 
+	# This will extract particles with final orientation information into a new file. If the output is a HDF file
+	# it will have xform.align3d set in the header, such that e2make3d could be used to reconstruct the particles
+	if options.extractorientptcl!=None:
+		print("Oriented particle extraction mode")
+
+		jsparm=js_open_dict(args[0]+"/0_refine_parms.json")
+
+		if options.iter==None:
+			try:
+				options.iter=int(jsparm["last_map"].split("_")[-1][:2])
+				options.sym=jsparm["sym"]
+			except:
+				print("Could not find a completed iteration in ",args[0])
+				sys.exit(1)
+		
+		# This is not great programming process, but greatly simplifies threading, and reduces potential memory usage
+
+		try:
+			pathmx=["{}/classmx_{:02d}_even.hdf".format(args[0],options.iter),"{}/classmx_{:02d}_odd.hdf".format(args[0],options.iter)]
+			classmx=[EMData(f,0) for f in pathmx]
+			nptcl=[classmx[i]["ny"] for i in range(len(pathmx))]
+			cmxtx=[EMData(f,2) for f in pathmx]
+			cmxty=[EMData(f,3) for f in pathmx]
+			cmxalpha=[EMData(f,4) for f in pathmx]
+			cmxmirror=[EMData(f,5) for f in pathmx]
+
+		except:
+			traceback.print_exc()
+			print("====\nError reading classification matrix. Must be full classification matrix with alignments")
+			sys.exit(1)
+
+		if options.verbose: print("{} even and {} odd particles in classmx".format(nptcl[0],nptcl[1]))
+
+
+		# path to the even/odd particles used for the refinement
+		cptcl=jsparm["input"]
+		cptcl=[str(i) for i in cptcl]
+
+		# this reads all of the EMData headers from the projections, should normally be the same for even and odd, and assume same across iterations
+		pathprj="{}/projections_{:02d}_even.hdf".format(args[0],options.iter)
+		nref=EMUtil.get_image_count(pathprj)
+		eulers=[EMData(pathprj,i,1)["xform.projection"] for i in range(nref)]
+
+		tlast=time()
+		# Put particles in class lists
+		classptcls={}
+		for eo in range(2):
+			for j in range(nptcl[eo]):
+				cls=int(classmx[eo][0,j])
+				try: classptcls[cls].append((eo,j))
+				except: classptcls[cls]=[(eo,j)]
+
+#		pts=set()
+		fsp=options.extractorientptcl
+		if fsp.split(".")[-1]=="hdf":
+			for c,cpl in classptcls.items():
+				if options.verbose: print(f"Class: {c} ({len(cpl)})")
+				for k in range(len(cpl)):
+					eo=cpl[k][0]
+					j=cpl[k][1]
+					ptcl=EMData(cptcl[eo],j)
+					ptclxf=Transform({"type":"2d","alpha":cmxalpha[eo][0,j],"mirror":int(cmxmirror[eo][0,j]),"tx":cmxtx[eo][0,j],"ty":cmxty[eo][0,j]}).inverse()
+					clsxf=eulers[c]
+					ptcl["xform.projection"]=ptclxf*clsxf
+					ptcl.write_compressed(fsp,eo+2*j,bits=8,nooutliers=False)
+					#if c==99 :
+						#ptcl.process_inplace("xform",{"transform":ptclxf.inverse()})
+						#ptcl.write_image("cls1.hdf",-1)
+#					pts.add(eo+2*j)
+		
+#		print(set(range(max(pts)+1))-pts)
+		
 	if options.evalptclqual:
 #		from multiprocessing import Pool
 		import threading,queue

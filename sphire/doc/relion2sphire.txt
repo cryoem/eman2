@@ -28,7 +28,7 @@ sp_relion2sphire does not support MPI.
   ; output_directory : Output directory: All the results will be written in here. It cannot be an existing one. (default required string)
 
   ; %%--%%relion_project_dir : RELION project directory: Path to RELION project directory associated with the RELION STAR file. By default, the program assume the current directory is the RELION project directory. (default none)
-  ; %%--%%star_section : Section title in STAR file: The section title in the RELION star file where the data should be extracted. (default data_)
+  ; %%--%%star_section : Section title in STAR file: The section title in the RELION star file where the data should be extracted. (default data_particles)
   ; %%--%%outputs_root : Root name of outputs: Specify the root name of all outputs. It cannot be empty string or only white spaces. (default sphire)
   ; %%--%%box_size : Box size: Box size for particle extraction. It also controls the saved coordinates file format. If the given value is > 0, store the eman1 format. coordinate file. The coordinates of eman1 format is particle box corner associated with this box size. The coordinates of SPHIRE format is particle center. By default, use SPHIRE format. (default 0)
 

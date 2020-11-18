@@ -1167,13 +1167,8 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 			for (size_t i = 0,y=0; i < size; y++) {
 				for (size_t x=0; x<nx; i++,x++) {
 					if (y_data[i] && x_data[i]) {
-#ifdef	_WIN32
-						if (invert) result += Util::square(x_data[i] - (y_data[i]-b)/m)*(_hypot((float)x,(float)y)+nx/4.0);
-						else result += Util::square((x_data[i] * m) + b - y_data[i])*(_hypot((float)x,(float)y)+nx/4.0);
-#else
 						if (invert) result += Util::square(x_data[i] - (y_data[i]-b)/m)*(hypot((float)x,(float)y)+nx/4.0);
 						else result += Util::square((x_data[i] * m) + b - y_data[i])*(hypot((float)x,(float)y)+nx/4.0);
-#endif
 						count++;
 					}
 				}
@@ -1183,13 +1178,8 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 		else {
 			for (size_t i = 0,y=0; i < size; y++) {
 				for (size_t x=0; x<nx; i++,x++) {
-#ifdef	_WIN32
-					if (invert) result += Util::square(x_data[i] - (y_data[i]-b)/m)*(_hypot((float)x,(float)y)+nx/4.0);
-					else result += Util::square((x_data[i] * m) + b - y_data[i])*(_hypot((float)x,(float)y)+nx/4.0);
-#else
 					if (invert) result += Util::square(x_data[i] - (y_data[i]-b)/m)*(hypot((float)x,(float)y)+nx/4.0);
 					else result += Util::square((x_data[i] * m) + b - y_data[i])*(hypot((float)x,(float)y)+nx/4.0);
-#endif
 				}
 			}
 			result = result / size;
@@ -1531,11 +1521,15 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 	if (ampweight) amp=image->calc_radial_dist(ny/2,0,1,0);
 
 	// Min/max modifications to weighting
-	float pmin,pmax;
-	if (minres>0) pmin=((float)image->get_attr("apix_x")*image->get_ysize())/minres;		//cutoff in pixels, assume square
-	else pmin=0;
-	if (maxres>0) pmax=((float)image->get_attr("apix_x")*image->get_ysize())/maxres;
-	else pmax=0;
+	float pmin = params.set_default("pmin",0);
+	float pmax = params.set_default("pmax", 0);
+	
+	if (pmin==0 && minres>0)
+		pmin=((float)image->get_attr("apix_x")*image->get_ysize())/minres;		//cutoff in pixels, assume square
+	
+	if (pmax==0 && maxres>0) 
+		pmax=((float)image->get_attr("apix_x")*image->get_ysize())/maxres;
+	
 
 	double sum=0.0, norm=0.0;
 

@@ -43,18 +43,18 @@ from EMAN2jsondb import JSTask
 import numpy as np
 from scipy.optimize import minimize
 
-def alifn(jsd,fsp,i,a,options):
-	t=time.time()
-	b=EMData(fsp,i).do_fft()
-	b.process_inplace("xform.phaseorigin.tocorner")
+#def alifn(jsd,fsp,i,a,options):
+	#t=time.time()
+	#b=EMData(fsp,i).do_fft()
+	#b.process_inplace("xform.phaseorigin.tocorner")
 
-	# we align backwards due to symmetry
-	if options.verbose>2 : print("Aligning: ",fsp,i)
-	c=a.xform_align_nbest("rotate_translate_3d_tree",b,{"verbose":0,"sym":options.sym,"sigmathis":0.1,"sigmato":1.0, "maxres":options.maxres},options.nsoln)
-	for cc in c : cc["xform.align3d"]=cc["xform.align3d"].inverse()
+	## we align backwards due to symmetry
+	#if options.verbose>2 : print("Aligning: ",fsp,i)
+	#c=a.xform_align_nbest("rotate_translate_3d_tree",b,{"verbose":0,"sym":options.sym,"sigmathis":0.1,"sigmato":1.0, "maxres":options.maxres},options.nsoln)
+	#for cc in c : cc["xform.align3d"]=cc["xform.align3d"].inverse()
 
-	jsd.put((fsp,i,c[0]))
-	if options.verbose>1 : print("{}\t{}\t{}\t{}".format(fsp,i,time.time()-t,c[0]["score"]))
+	#jsd.put((fsp,i,c[0]))
+	#if options.verbose>1 : print("{}\t{}\t{}\t{}".format(fsp,i,time.time()-t,c[0]["score"]))
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -63,7 +63,7 @@ This program is part of the 'new' hierarchy of e2spt_ programs. It performs one 
 
 The reference may be <volume> or <volume>,<n>
 
-If --goldstandard is specified, then even and odd particles will be aligned to different perturbed versions of the reference volume, phase-randomized past the specified resolution."""
+If --goldstandard is specified, even and odd variants of the alignment reference must be provided, and even and odd particles will be aligned separately"""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
@@ -75,13 +75,14 @@ If --goldstandard is specified, then even and odd particles will be aligned to d
 	#parser.add_argument("--savealibin",type=int,help="shrink aligned particles before saving",default=1)
 	parser.add_argument("--path",type=str,default=None,help="Path to a folder where results should be stored, following standard naming conventions (default = spt_XX)")
 	parser.add_argument("--sym",type=str,default="c1",help="Symmetry of the input. Must be aligned in standard orientation to work properly.")
-	parser.add_argument("--maxres",type=float,help="Maximum resolution to consider in alignment (in A, not 1/A)",default=0)
-	parser.add_argument("--minres",type=float,help="Minimum resolution to consider in alignment (in A, not 1/A)",default=0)
+	parser.add_argument("--maxres",type=float,help="Maximum resolution (the smaller number) to consider in alignment (in A, not 1/A)",default=0)
+	parser.add_argument("--minres",type=float,help="Minimum resolution (the larger number) to consider in alignment (in A, not 1/A)",default=0)
 	#parser.add_argument("--wtori",type=float,help="Weight for using the prior orientation in the particle header. default is -1, i.e. not used.",default=-1)
 	parser.add_argument("--nsoln",type=int,help="number of solutions to keep at low resolution for the aligner",default=1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default=None)
+	parser.add_argument("--transonly",action="store_true",help="translational alignment only, for prealigned particles",default=False)
 	parser.add_argument("--refine",action="store_true",help="local refinement from xform.align3d in header.",default=False)
 	
 	parser.add_argument("--refinentry", type=int, help="number of tests for refine mode. default is 8",default=8)
@@ -131,9 +132,9 @@ If --goldstandard is specified, then even and odd particles will be aligned to d
 	NTHREADS=max(options.threads+1,2)		# we have one thread just writing results
 
 	logid=E2init(sys.argv, options.ppid)
-	refnames=[]
+	refnames=[reffile,reffile]
 
-	if options.goldcontinue:
+	if options.goldcontinue or options.goldstandard>0:
 		ref=[]
 		try:
 			refnames=[reffile[:-4]+"_even.hdf", reffile[:-4]+"_odd.hdf"]
@@ -142,25 +143,26 @@ If --goldstandard is specified, then even and odd particles will be aligned to d
 			
 		except:
 			print("Error: cannot find one of reference files, eg: ",EMData(reffile[:-4]+"_even.hdf",0))
-	else:
-		ref=[]
-		ref.append(EMData(reffile,refn))
-		ref.append(EMData(reffile,refn))
-
-		if options.goldstandard>0 :
-			ref[0].process_inplace("filter.lowpass.randomphase",{"cutoff_freq":old_div(1.0,options.goldstandard)})
-			ref[0].process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,options.goldstandard)})
-			ref[1].process_inplace("filter.lowpass.randomphase",{"cutoff_freq":old_div(1.0,options.goldstandard)})
-			ref[1].process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,options.goldstandard)})
-			refnames=["{}/align_ref_even.hdf".format(options.path), "{}/align_ref_odd.hdf".format(options.path)]
-			ref[0].write_image(refnames[0],0)
-			ref[1].write_image(refnames[1],0)
-			
-		else:
-			refnames=[reffile, reffile]
+#	else:
+#		ref=[]
+#		ref.append(EMData(reffile,refn))
+#		ref.append(EMData(reffile,refn))
+#
+#		if options.goldstandard>0 :
+#			ref[0].process_inplace("filter.lowpass.randomphase",{"cutoff_freq":old_div(1.0,options.goldstandard)})
+#			ref[0].process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,options.goldstandard)})
+#			ref[1].process_inplace("filter.lowpass.randomphase",{"cutoff_freq":old_div(1.0,options.goldstandard)})
+#			ref[1].process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,options.goldstandard)})
+#			refnames=["{}/align_ref_even.hdf".format(options.path), "{}/align_ref_odd.hdf".format(options.path)]
+#			ref[0].write_image(refnames[0],0)
+#			ref[1].write_image(refnames[1],0)
+#			
+#		else:
+#			refnames=[reffile, reffile]
 
 	n=-1
 	tasks=[]
+	readjson=False
 	if args[0].endswith(".lst") or args[0].endswith(".hdf"):
 		#### check if even/odd split exists
 		fsps=[args[0][:-4]+"__even.lst",args[0][:-4]+"__odd.lst"]
@@ -180,6 +182,8 @@ If --goldstandard is specified, then even and odd particles will be aligned to d
 	elif args[0].endswith(".json"):
 		#print("Reading particles from json. This is experimental...")
 		js=js_open_dict(args[0])
+		readjson=True
+		jsinput=dict(js)
 		keys=sorted(js.keys())
 		for k in keys:
 			src, ii=eval(k)
@@ -232,9 +236,13 @@ If --goldstandard is specified, then even and odd particles will be aligned to d
 		for ret in rets:
 			fsp,n,dic=ret
 			if len(dic)==1:
-				angs[(fsp,n)]=dic[0]
-			else:
-				angs[(fsp,n)]=dic
+				dic=dic[0]
+				
+			if readjson:
+				k=str((fsp,n))
+				if "eo" in js[k]:
+					dic["eo"]=jsinput[k]["eo"]
+			angs[(fsp,n)]=dic
 		
 	out="{}/particle_parms_{:02d}.json".format(options.path,options.iter)
 	if os.path.isfile(out):
@@ -275,13 +283,21 @@ class ScipySptAlignTask(JSTask):
 		
 		def testxf(x):
 			thisxf=Transform({"type":"eman", "tx":x[0], "ty":x[1], "tz":x[2],"alt":x[3], "az":x[4], "phi":x[5]})
+			dxf=thisxf*initxf
+			dt=dxf.get_params("spin")["omega"]
+			#print(dt)
+			#if dt>options.maxang:
+				#return 1
 			xfs=[x*thisxf for x in pjxfs]
 			pjs=[refsmall.project('gauss_fft',{"transform":x, "returnfft":1}) for x in xfs]
 			
-			fscs=[im.calc_fourier_shell_correlation(pj) for im,pj in zip(imgsmall, pjs)]
-			fscs=np.array(fscs).reshape((len(fscs), 3, -1))[:,1]
-			
-			c=-np.mean(fscs[:, 8:int(ny*.45)])
+			#fscs=[im.calc_fourier_shell_correlation(pj) for im,pj in zip(imgsmall, pjs)]
+			#fscs=np.array(fscs).reshape((len(fscs), 3, -1))[:,1]
+			#pm={"pmin":8, "pmax":int(ss*.45)}
+			#pm={"maxres":8,"minres":300}
+			c=np.mean([a.cmp("frc",b, cmppm) for a,b in zip(pjs, imgsmall)])
+			#c=-np.mean(fscs[:, 8:int(ny*.45)])
+			#print(c, ss, ny)
 			return c
 		
 		
@@ -290,7 +306,8 @@ class ScipySptAlignTask(JSTask):
 			txf.set_trans(p.tolist())
 			xfs=[x*txf for x in pjxfs]
 			pjtrans=[refsmall.project('gauss_fft',{"transform":x, "returnfft":1}) for x in xfs]
-			scr=np.mean([a.cmp("frc",b) for a,b in zip(pjtrans, imgsmall)])
+			scr=np.mean([a.cmp("frc",b, cmppm) for a,b in zip(pjtrans, imgsmall)])
+			#print(scr)
 			return scr
 		
 		callback(0)
@@ -404,6 +421,7 @@ class ScipySptAlignTask(JSTask):
 				xfout=[]
 				
 				#print(ss)
+				cmppm={"pmin":4, "pmax":int(ss*.45)}
 				for ixf in ixfs:
 					curxf=ixf.inverse()
 					curxf.set_trans(curxf.get_trans()*ss/ny)
@@ -439,9 +457,20 @@ class ScipySptAlignTask(JSTask):
 			
 			
 			rets.append((fsp,fid,c))
-			#exit()
-			#print(len(rets))
-			callback(len(rets)*100//len(self.data))
+			
+			if options.debug:
+				print(fid,  score)
+				x=initxf.inverse().get_params("eman")
+				c=np.round([x["tx"], x["ty"], x["tz"], x["alt"], x["az"], x["phi"]],1)
+				print(c, testxf(c))
+				
+				x=xf1.inverse().get_params("eman")
+				c=np.round([x["tx"], x["ty"], x["tz"], x["alt"], x["az"], x["phi"]],1)
+				print(c, testxf(c))
+				
+				
+			else:
+				callback(len(rets)*100//len(self.data))
 
 		
 		return rets
@@ -560,12 +589,14 @@ class SptAlignTask(JSTask):
 			
 			#print(myid,di,i,time.time()-options.nowtime)
 			
-	
 			ref=refs[data[3]]
 			if options.skipali:
 				c=[{"xform.align3d":xfs[0].inverse(), "score":-1}]
-				
-				
+			elif options.transonly:
+				c=[{},]
+				a=ref.align("translational",b, {"intonly":1,"maxshift":options.maxshift})
+				c[0]["xform.align3d"]=a["xform.align3d"]
+				c[0]["score"]=a["score.align"]
 			else:
 				c=ref.xform_align_nbest("rotate_translate_3d_tree",b, aligndic, options.nsoln)
 			
@@ -589,7 +620,7 @@ class SptAlignTask(JSTask):
 						ts=Transform()
 						
 					#print(bb["xform.align3d"].get_trans())
-					ccc=bb.cmp("fsc.tomo.auto", ref, {"sigmaimgval":3.0, "sigmawithval":0.})
+					ccc=bb.cmp("fsc.tomo.auto", ref, {"sigmaimgval":3.0, "sigmawithval":0., "minres":options.minres,"maxres":options.maxres})
 					cs.append(ccc)
 					transxf.append(ts)
 					
@@ -609,13 +640,11 @@ class SptAlignTask(JSTask):
 					
 			
 			rets.append((fsp,i,c))
+			if options.debug:
+				print(i, c[0]["score"])
+			else:
+				callback(len(rets)*100//len(self.data)-1)
 
-			callback(len(rets)*100//len(self.data)-1)
-
-		#print(fsp, i, c[0])
-		#callback(100)
-		#print(i,c[0]["xform.align3d"])
-		#exit()
 		return rets
 		
 

@@ -65,7 +65,7 @@ namespace EMAN
 		PointArray & operator=(PointArray & pa);
 		size_t get_number_points() const;
 		void set_number_points(size_t nn);
-		bool read_from_pdb(const char *file);
+		bool read_from_pdb(const char *file, const vector<int> &lines=vector<int>());
 		void save_to_pdb(const char *file);
 		FloatPoint get_center();
 		void center_to_zero();	// shift center to zero
@@ -107,16 +107,6 @@ namespace EMAN
 		* @return a Transform to map 'this' to 'to'
 		*/
 		Transform *align_2d(PointArray *to,float max_dist);	// computes the optimal alignment between two (non-identical) sets of points
-
-		/** Translationally aligns one PointArray to another in 2 dimensions
-		*
-		* @param to Another PointArray to align to
-		* @param flags
-		* @param dxhint
-		* @param dyhint
-		* @return A Pixel containing dx,dy and a quality factor (smaller better)
-		*/
-		vector<float> align_trans_2d(PointArray *to,int flags=0,float dxhint=0,float dyhint=0 );		// translational alignment of point sets in 2-D
 
 		void mask(double rmax, double rmin = 0.0);
 		void mask_asymmetric_unit(const string & sym);
@@ -162,7 +152,7 @@ namespace EMAN
 		/** Compute a potential value for a perturbed point, including +-2 nearest neighbors which will also be impacted **/
 		double sim_potentialdxyz(int i,double dx, double dy, double dz);
 		
-		/** Updates the dist,ang,dihed parameters **/
+		/** Updates the dist, ang, dihed parameters **/
 		void sim_updategeom();
 
 		/** returns a vector pointing downhill for a single point **/
@@ -217,7 +207,7 @@ namespace EMAN
 		/** Delete one point in the array **/
 		void delete_point(int id);
 		
-		/** Remove the correponding density of the helix point from a density map**/
+		/** Remove the corresponding density of the helix point from a density map**/
 		void remove_helix_from_map(EMData *m, vector<float> hlxid);
 		
 		/** Read only C-alpha atoms from a pdb file **/
@@ -239,8 +229,8 @@ namespace EMAN
 		double *adihed;	// dihedral using 2 points before and one point after
 		
 		/** Used for simplistic loop dynamics simulation
-		 * Assumes all points are connected sequetially in a closed loop,
-		 * potential includes distance, angle and dihedral terms, with optional denisty based terms
+		 * Assumes all points are connected sequentially in a closed loop,
+		 * potential includes distance, angle and dihedral terms, with optional density based terms
 		 *  @param dist0 - center distance for quadratic energy term
 		 *  @param distc - quadratic distance coefficient c(dist-dist0)^2
 		 *  @param angc - quadratic angle coefficient c*(180-ang)^2
@@ -248,15 +238,15 @@ namespace EMAN
 		 *  @param dihedc - dihedral angle coefficient c*(dihed-dihed0)^2
 		 *  @param mapc - coefficient for map energy
 		 *  @param map - EMData representing map to match/fit
-		 *  @param mindistc - mininum distance between two points
+		 *  @param mindistc - minimum distance between two points
 		 *  @param distpenc - penalty for close points
 		 */
-		double dist0, distc, angc, dihed0, dihedc, mapc,apix, mindistc,distpenc;
+		double dist0, distc, angc, dihed0, dihedc, mapc, apix, mindistc, distpenc;
 		bool map2d; // map is 2d
 		EMData *map;
-		EMData *gradx,*grady,*gradz;
+		EMData *gradx, *grady, *gradz;
 		vector<Vec3f> oldshifts;
-		int centx,centy,centz;
+		int centx, centy, centz;
 	};
 }
 

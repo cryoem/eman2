@@ -143,20 +143,23 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		self.gbl = QtWidgets.QGridLayout(self.centralWidget())
 
 		# relative stretch factors
-		self.gbl.setColumnStretch(0,1)
-		self.gbl.setColumnStretch(1,4)
+		self.gbl.setColumnMinimumWidth(0,200)
+		self.gbl.setRowMinimumHeight(0,200)
+		self.gbl.setColumnStretch(0,0)
+		self.gbl.setColumnStretch(1,100)
 		self.gbl.setColumnStretch(2,0)
-		self.gbl.setRowStretch(1,2)
-		self.gbl.setRowStretch(0,4)
+		self.gbl.setRowStretch(1,0)
+		self.gbl.setRowStretch(0,100)
+		
 
 		# 3 orthogonal restricted projection views
-		self.xyview = EMImage2DWidget()
+		self.xyview = EMImage2DWidget(sizehint=(1024,1024))
 		self.gbl.addWidget(self.xyview,0,1)
 
-		self.xzview = EMImage2DWidget()
+		self.xzview = EMImage2DWidget(sizehint=(1024,256))
 		self.gbl.addWidget(self.xzview,1,1)
 
-		self.zyview = EMImage2DWidget()
+		self.zyview = EMImage2DWidget(sizehint=(256,1024))
 		self.gbl.addWidget(self.zyview,0,0)
 
 		# Select Z for xy view
@@ -359,6 +362,9 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 			
 		info.close()
 		
+		E2loadappwin("e2sptboxer","main",self)
+		E2loadappwin("e2sptboxer","boxes",self.boxesviewer.qt_parent)
+		E2loadappwin("e2sptboxer","option",self.optionviewer)
 		
 		#### particle classes
 		if len(self.sets)==0:
@@ -383,6 +389,10 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 
 		self.datasize=(data["nx"],data["ny"],data["nz"])
 		self.x_loc, self.y_loc, self.z_loc=data["nx"]//2,data["ny"]//2,data["nz"]//2
+
+		self.gbl.setRowMinimumHeight(1,max(250,data["nz"]))
+		self.gbl.setColumnMinimumWidth(0,max(250,data["nz"]))
+		print(data["nx"],data["ny"],data["nz"])
 
 		self.wdepth.setRange(0,data["nz"]-1)
 		self.wdepth.setValue(data["nz"]//2)
@@ -493,7 +503,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 			print("file does not exist")
 			return
 
-		f=file(fsp,"r")
+		f=open(fsp,"r")
 		for b in f:
 			b2=[old_div(int(float(i)),self.shrink) for i in b.split()[:3]]
 			bdf=[0,0,0,"manual",0.0, self.currentset]
@@ -510,7 +520,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		if len(fsp)==0:
 			return
 
-		out=file(fsp,"w")
+		out=open(fsp,"w")
 		for b in self.boxes:
 			out.write("%d\t%d\t%d\n"%(b[0]*shrinkf,b[1]*shrinkf,b[2]*shrinkf))
 		out.close()
@@ -822,8 +832,8 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 	
 	def scroll_to(self, x,y,z, axis=""):
 		if axis!="z": self.xyview.scroll_to(x,y,True)
-		if axis!="y": self.xzview.scroll_to(x,z,True)
-		if axis!="x": self.zyview.scroll_to(z,y,True)
+		if axis!="y": self.xzview.scroll_to(x,self.data["nz"]/2,True)
+		if axis!="x": self.zyview.scroll_to(self.data["nz"]/2,y,True)
 	
 	#### mouse click
 	def xy_down(self,event):
@@ -1133,12 +1143,17 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		print("Exiting")
 		self.SaveJson()
 		
+		E2saveappwin("e2sptboxer","main",self)
+		E2saveappwin("e2sptboxer","boxes",self.boxesviewer.qt_parent)
+		E2saveappwin("e2sptboxer","option",self.optionviewer)
+		
 		#self.boxviewer.close()
 		self.boxesviewer.close()
 		self.optionviewer.close()
-		self.xyview.close()
-		self.xzview.close()
-		self.zyview.close()
+		#self.optionviewer.close()
+		#self.xyview.close()
+		#self.xzview.close()
+		#self.zyview.close()
 		
 		self.module_closed.emit() # this signal is important when e2ctf is being used by a program running its own event loop
 

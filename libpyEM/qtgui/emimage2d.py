@@ -38,7 +38,7 @@ import OpenGL
 OpenGL.ERROR_CHECKING = False
 from OpenGL import GL,GLU,GLUT
 from OpenGL.GL import *
-from .valslider import ValSlider,ValBox,StringBox
+from .valslider import ValSlider,ValBox,StringBox,EMSpinWidget
 from math import *
 import EMAN2db
 from EMAN2 import *
@@ -79,7 +79,7 @@ class EMImage2DWidget(EMGLWidget):
 
 	allim=WeakKeyDictionary()
 
-	def __init__(self, image=None, application=get_application(),winid=None, parent=None):
+	def __init__(self, image=None, application=get_application(),winid=None, parent=None,sizehint=(512,512)):
 
 		self.inspector = None # this should be a qt widget, otherwise referred to as an inspector in eman
 
@@ -87,6 +87,7 @@ class EMImage2DWidget(EMGLWidget):
 		self.setFocusPolicy(Qt.StrongFocus)
 		self.setMouseTracking(True)
 		self.initimageflag = True
+		self.initsizehint = (sizehint[0],sizehint[1])	# this is used when no data has been set yet
 
 		self.fftorigincenter = E2getappval("emimage2d","origincenter")
 		if self.fftorigincenter == None : self.fftorigincenter=False
@@ -245,18 +246,17 @@ class EMImage2DWidget(EMGLWidget):
 
 	def get_parent_suggested_size(self):
 
+		if self.data==None and self.fft==None : return (self.initsizehint[0]+12,self.initsizehint[1]+12)
+	
 		data = self.data
 		if data == None: data = self.fft
 
-		if data != None and  data.get_xsize()<640 and data.get_ysize()<640:
-			try : return (data.get_xsize()+12,data.get_ysize()+12)
-			except : return (640,640)
-		else:
-			return (640,640)
+		try: return (data["nx"]+12,data["ny"]+12)
+		except : return (self.initsizehint[0]+12,self.initsizehint[1]+12)
 
 	def sizeHint(self):
 #		print self.get_parent_suggested_size()
-		if self.data==None : return QtCore.QSize(512,512)
+		if self.data==None and self.fft==None : return QtCore.QSize(*self.initsizehint)
 		return QtCore.QSize(*self.get_parent_suggested_size())
 
 	def set_disp_proc(self,procs):
@@ -1599,11 +1599,11 @@ class EMImage2DWidget(EMGLWidget):
 
 	def scr_to_img(self,v0,v1=None):
 		#TODO: origin_x and origin_y are part of the hack in self.render() and self.render_bitmap()
-		origin_x = self.scale*(int(old_div(self.origin[0],self.scale))+0.5)
-		origin_y = self.scale*(int(old_div(self.origin[1],self.scale))+0.5)
+		origin_x = self.scale*(int(self.origin[0]/self.scale)+0.5)
+		origin_y = self.scale*(int(self.origin[1]/self.scale)+0.5)
 
-		try: img_coords = ( old_div((v0+origin_x),self.scale), old_div((self.height()-(v1-origin_y)),self.scale) )
-		except:	img_coords = (old_div((v0[0]+origin_x),self.scale),old_div((self.height()-(v0[1]-origin_y)),self.scale))
+		try: img_coords = (((v0+origin_x)/self.scale), ((self.height()-(v1-origin_y))/self.scale) )
+		except:	img_coords = (((v0[0]+origin_x)/self.scale),((self.height()-(v0[1]-origin_y))/self.scale))
 
 #		print "Screen:", v0, v1
 #		print "Img:", img_coords
@@ -1631,7 +1631,7 @@ class EMImage2DWidget(EMGLWidget):
 #		for i in f:
 #			print str(i)
 
-		if event.provides("application/x-eman"):
+		if event.mimeData().hasFormat("application/x-eman"):
 			event.setDropAction(Qt.CopyAction)
 			event.accept()
 
@@ -1639,7 +1639,7 @@ class EMImage2DWidget(EMGLWidget):
 		if EMAN2.GUIbeingdragged:
 			self.set_data(EMAN2.GUIbeingdragged)
 			EMAN2.GUIbeingdragged=None
-		elif event.provides("application/x-eman"):
+		if event.mimeData().hasFormat("application/x-eman"):
 			x=loads(event.mimeData().data("application/x-eman"))
 			self.set_data(x)
 			event.acceptProposedAction()
@@ -1862,6 +1862,8 @@ class EMImage2DWidget(EMGLWidget):
 			self.auto_contrast()
 		elif event.key()==Qt.Key_C:
 			self.auto_contrast()
+		elif event.key()==Qt.Key_I:
+			self.show_inspector(1)
 		else:
 			self.keypress.emit(event)
 
@@ -1977,12 +1979,17 @@ class EMImageInspector2D(QtWidgets.QWidget):
 		self.stwholebut.setToolTip("save EMData in any EMAN2 format")
 		self.ststackbut = QtWidgets.QPushButton("Save Stack")
 		self.ststackbut.setToolTip("save EMData objects as stack in any EMAN2 format")
+		self.stfpssb = QtWidgets.QSpinBox()
+		self.stfpssb.setRange(1,60)
+		self.stfpssb.setValue(8)
+		self.stfpssb.setToolTip("Frames per second for movie generation")
 		self.stmoviebut = QtWidgets.QPushButton("Movie")
 		self.stanimgif = QtWidgets.QPushButton("GIF Anim")
 
 		self.stlay.addWidget(self.stsnapbut,0,0)
 		self.stlay.addWidget(self.stwholebut,1,0)
 		self.stlay.addWidget(self.ststackbut,1,1)
+		self.stlay.addWidget(self.stfpssb,0,1)
 		self.stlay.addWidget(self.stmoviebut,0,2)
 		self.stlay.addWidget(self.stanimgif,1,2)
 		self.stmoviebut.setEnabled(False)
@@ -1998,7 +2005,7 @@ class EMImageInspector2D(QtWidgets.QWidget):
 		self.stmaxsb.setRange(0,0)
 		self.stmaxsb.setValue(0)
 
-		self.rngbl.addWidget(self.stmmlbl)
+		self.rngbl.addWidget(self.stmmlbl,Qt.AlignRight)
 		self.rngbl.addWidget(self.stminsb)
 		self.rngbl.addWidget(self.stmaxsb)
 
@@ -2438,8 +2445,9 @@ class EMImageInspector2D(QtWidgets.QWidget):
 			im["render_max"]=im["mean"]+im["sigma"]*2.5
 			im.write_image("tmp.%03d.png"%(i-self.stminsb.value()+1))
 
-		# vcodec and pix_fmt are for quicktime compatibility. r 2 is 2 FPS
-		ret= os.system("ffmpeg -r 5 -i tmp.%%03d.png -vcodec libx264 -pix_fmt yuv420p  %s"%fsp)
+		# vcodec and pix_fmt are for quicktime compatibility. -r 2 is 2 FPS
+		rate=int(self.stfpssb.value())
+		ret= os.system("ffmpeg -r %d -i tmp.%%03d.png -vcodec libx264 -pix_fmt yuv420p -r %d %s"%(rate,rate,fsp))
 		if ret!=0 :
 			QtWidgets.QMessageBox.warning(None,"Error","Movie conversion (ffmpeg) failed. Please make sure ffmpeg is in your path. Frames not deleted.")
 			return
@@ -2600,16 +2608,19 @@ class EMImageInspector2D(QtWidgets.QWidget):
 			defocus=f"&Delta;Z={ctfdef:1.5g}"
 		except: defocus=""
 		
-		header=f"""<html><body>
+		try: ptclrepr=f"ptcl_repr={d['ptcl_repr']}"
+		except: ptclrepr=""
+
+		header=f'''<html><body>
 <p>Mouse buttons -> Application</p>
 <p/>
 <table style="width: 300">
 <tr><td width="80">nx={d["nx"]:d}</td><td width="120">min={d["minimum"]:1.4g}</td><td width="120">apix_x={d["apix_x"]:1.3f}</td></tr>
 <tr><td width="80">ny={d["ny"]:d}</td><td width="120">max={d["maximum"]:1.4g}</td><td width="120">apix_y={d["apix_y"]:1.3f}</td></tr>
 <tr><td width="80">nz={d["nz"]:d}</td><td width="120">mean={d["mean"]:1.5g}</td><td width="120">apix_z={d["apix_z"]:1.3f}</td></tr>
-<tr><td width="80">{defocus}</td><td width="120">sigma={d["sigma"]:1.5g}</td><td/></tr>
+<tr><td width="80">{defocus}</td><td width="120">sigma={d["sigma"]:1.5g}</td><td>{ptclrepr}</td></tr>
 </table></html>
-"""
+'''
 		self.apptablab.setHtml(header)
 
 

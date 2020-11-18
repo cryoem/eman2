@@ -538,8 +538,8 @@ class PathWalker(object):
 
 	def _solve_lkh(self):
 		print("\n=== Solving TSP with LKH ===")
-		
-		tspfile = tempfile.mkstemp(suffix='.tsp')[1]
+		tspfile="tspfile.tsp"
+		#tspfile = tempfile.mkstemp(suffix='.tsp')[1]
 		lkhfile = tempfile.mkstemp(suffix='.lkh')[1]
 		outfile = tempfile.mkstemp(suffix='.out')[1]
 
@@ -566,7 +566,7 @@ class PathWalker(object):
 		ret = self._readtour_lkh(outfile)
 		
 		try:
-			os.unlink(tspfile)
+			#os.unlink(tspfile)
 			os.unlink(lkhfile)
 			os.unlink(outfile)
 		except:
@@ -730,7 +730,10 @@ class PathWalker(object):
 				
 				if self.mrcfile:
 					mmm=self.mrc.get_value_at(int(round(old_div(np[0],self.apix_x)+old_div(SX,2))),int(round(old_div(np[1],self.apix_y)+old_div(SY,2))),int(round(old_div(np[2],self.apix_z)+old_div(SZ,2))))
+				else:
+					mmm=0
 				mpt+=mmm
+				#print(mmm)
 				count+=1
 			#print mmm,
 			#p=np
@@ -838,7 +841,7 @@ class PathWalker(object):
 			row.append(d)
 
 		fout.write("EDGE_WEIGHT_SECTION\n")
-		fout.write(" ".join(["{:d}".format(int(d*10)) for d in row])+"\n")
+		fout.write(" ".join(["{:d}".format(int(d*.0001)) for d in row])+"\n")
 			
 
 

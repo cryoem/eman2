@@ -67,6 +67,7 @@ def main():
 	parser.add_argument("--focused",type=str,help="Name of a reference projection file to read 1st iteration refine alignment references from.", default=None)
 	parser.add_argument("--ref", type=str, help="Reference image(s). Used as an initial alignment reference and for final orientation adjustment if present. Also used to assign euler angles to the generated classes. This is typically the projections that were used for classification.", default=None)
 	parser.add_argument("--storebad", action="store_true", help="Even if a class-average fails, write to the output. Forces 1->1 numbering in output",default=False)
+	parser.add_argument("--compressbits", type=int,help="Bits to keep when writing class-averages with compression. 0->lossless floating point. Default 10 (3 significant figures)", default=10)
 	parser.add_argument("--decayedge", action="store_true", help="Applies an edge decay to zero on the output class-averages. A very good idea if you plan on 3-D reconstruction.",default=False)
 	parser.add_argument("--resultmx",type=str,help="Specify an output image to store the result matrix. This contains 5 images where row is particle number. Rows in the first image contain the class numbers and in the second image consist of 1s or 0s indicating whether or not the particle was included in the class. The corresponding rows in the third, fourth and fifth images are the refined x, y and angle (respectively) used in the final alignment, these are updated and accurate, even if the particle was excluded from the class.", default=None)
 	parser.add_argument("--iter", type=int, help="The number of iterations to perform. Default is 1.", default=1)
@@ -206,8 +207,8 @@ def main():
 
 						if options.ref!=None : rslt[1]["average"]["projection_image"]=options.ref
 #						print("write",rslt[1]["n"])
-						if options.storebad : rslt[1]["average"].write_image(options.output,rslt[1]["n"])
-						else: rslt[1]["average"].write_image(options.output,-1)
+						if options.storebad : rslt[1]["average"].write_compressed(options.output,rslt[1]["n"],options.compressbits)
+						else: rslt[1]["average"].write_compressed(options.output,-1,options.compressbits)
 
 
 						# Update the resultsmx if requested
@@ -242,7 +243,7 @@ def main():
 						blk.to_zero()
 						blk.set_attr("ptcl_repr", 0)
 						blk.set_attr("apix_x",apix)
-						blk.write_image(options.output,rslt[1]["n"])
+						blk.write_compressed(options.output,rslt[1]["n"],options.compressbits)
 
 			taskids=[j for i,j in enumerate(taskids) if curstat[i]!=100]
 
@@ -271,8 +272,8 @@ def main():
 					#rslt["average"].process_inplace("mask.decayedge2d",{"width":nx/15})
 				if options.ref!=None : rslt["average"]["projection_image"]=options.ref
 				try:
-					if options.storebad : rslt["average"].write_image(options.output,t.options["n"])
-					else: rslt["average"].write_image(options.output,-1)
+					if options.storebad : rslt["average"].write_compressed(options.output,t.options["n"],options.compressbits)
+					else: rslt["average"].write_compressed(options.output,-1,options.compressbits)
 				except:
 					traceback.print_exc()
 					print("Error writing class average {} to {}".format(t.options["n"],options.output))
@@ -312,11 +313,11 @@ def main():
 				blk.to_zero()
 				blk.set_attr("ptcl_repr", 0)
 				blk.set_attr("apix_x",apix)
-				blk.write_image(options.output,t.options["n"])
+				blk.write_compressed(options.output,t.options["n"],options.compressbits)
 
 	if options.resultmx!=None:
 		if options.verbose : print("Writing results matrix")
-		for i,j in enumerate(classmx) : j.write_image(options.resultmx,i)
+		for i,j in enumerate(classmx) : j.write_compressed(options.resultmx,i,0)
 
 	print("Class averaging complete")
 	E2end(logger)
@@ -657,7 +658,7 @@ def class_average(images,ref=None,focused=None,niter=1,normproc=("normalize.edge
 			ptcl=get_image(images,i,normproc)					# get the particle to align
 			ali=align_one(ptcl,ref,prefilt,align,aligncmp,ralign,raligncmp,focused)  # align to reference
 			sim=ali.cmp(scmp[0],ref,scmp[1])			# compare similarity to reference (may use a different cmp() than the aligner)
-			if saveali and it==niter : ali.write_image("aligned.hdf",-1)
+			if saveali and it==niter : ali.write_compressed("aligned.hdf",-1,6)
 
 			try: use=ptcl_info[i][2]
 			except: use=1

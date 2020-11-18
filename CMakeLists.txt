@@ -239,10 +239,6 @@ IF(ENABLE_NATIVE_FFT)
 	ADD_DEFINITIONS(-DNATIVE_FFT)
 ENDIF()
 
-IF(ENABLE_RT)
-    ADD_SUBDIRECTORY(rt)
-ENDIF()
-
 IF(ENABLE_SPARX_CUDA)
 	INCLUDE(${CMAKE_SOURCE_DIR}/libEM/cuda/FindCUDA.cmake)
 	CUDA_INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/libEM)
@@ -283,4 +279,8 @@ if(NOT WIN32)
 			)
 endif()
 
-include(cmake/testing.cmake)
+
+IF(ENABLE_RT)
+	include(cmake/testing.cmake)
+	ADD_SUBDIRECTORY(rt)
+ENDIF()

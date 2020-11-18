@@ -12,7 +12,7 @@ target_sources(EM2 PRIVATE
 			   emobject.cpp
 			   emfft.cpp
 			   log.cpp
-			   imageio.cpp
+			   io/imageio.cpp
 			   util.cpp
 			   emutil.cpp
 			   interp.cpp
@@ -22,13 +22,14 @@ target_sources(EM2 PRIVATE
 			   geometry.cpp
 			   pointarray.cpp
 			   pdbreader.cpp
-			   mrcio.cpp
-			   dm3io.cpp
-			   dm4io.cpp
-			   tifio.cpp
-			   hdfio.cpp
-			   hdfio2.cpp
-			   jpegio.cpp
+			   io/mrcio.cpp
+			   io/eerio.cpp
+			   io/dm3io.cpp
+			   io/dm4io.cpp
+			   io/tifio.cpp
+			   io/hdfio.cpp
+			   io/hdfio2.cpp
+			   io/jpegio.cpp
 			   emdata.cpp
 			   emdata_io.cpp
 			   emdata_core.cpp
@@ -36,28 +37,28 @@ target_sources(EM2 PRIVATE
 			   emdata_modular.cpp
 			   emdata_metadata.cpp
 			   emdata_transform.cpp
-			   pifio.cpp
-			   v4l2io.cpp
-			   vtkio.cpp
-			   spiderio.cpp
-			   sspiderio.cpp
-			   pgmio.cpp
-			   fitsio.cpp
-			   icosio.cpp
-			   lstio.cpp
-			   lstfastio.cpp
-			   pngio.cpp
-			   salio.cpp
-			   amiraio.cpp
-			   xplorio.cpp
-			   gatan2io.cpp
-			   emio.cpp
-			   imagicio.cpp
-			   imagicio2.cpp
-			   df3io.cpp
-			   omapio.cpp
-			   situsio.cpp
-			   serio.cpp
+			   io/pifio.cpp
+			   io/v4l2io.cpp
+			   io/vtkio.cpp
+			   io/spiderio.cpp
+			   io/sspiderio.cpp
+			   io/pgmio.cpp
+			   io/fitsio.cpp
+			   io/icosio.cpp
+			   io/lstio.cpp
+			   io/lstfastio.cpp
+			   io/pngio.cpp
+			   io/salio.cpp
+			   io/amiraio.cpp
+			   io/xplorio.cpp
+			   io/gatan2io.cpp
+			   io/emio.cpp
+			   io/imagicio.cpp
+			   io/imagicio2.cpp
+			   io/df3io.cpp
+			   io/omapio.cpp
+			   io/situsio.cpp
+			   io/serio.cpp
 			   emcache.cpp
 			   ctf.cpp
 			   xydata.cpp
@@ -72,7 +73,7 @@ target_sources(EM2 PRIVATE
 			   testutil.cpp
 			   analyzer.cpp
 			   randnum.cpp
-			   hdf_filecache.cpp
+			   io/hdf_filecache.cpp
 			   polardata.cpp
 			   tomoseg.cpp
 			   )

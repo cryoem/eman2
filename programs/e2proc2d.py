@@ -169,10 +169,11 @@ def main():
 	'e2help.py processors -v 2' for a detailed list of available procesors
 	"""
 
-	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
+	parser = EMArgumentParser(usage=usage,allow_abbrev=False,version=EMANVERSION)
 
 	parser.add_argument("--apix", type=float, help="A/pixel for S scaling")
 	parser.add_argument("--average", action="store_true", help="Averages all input images (without alignment) and writes a single output image")
+	parser.add_argument("--avgseq", type=int,default=0, help="Averages sets of N sequential frames. eg - if N=4 and the input contains 100 images, the output would be 25 images")
 	parser.add_argument("--averager",type=str,help="If --average is specified, this is the averager to use (e2help.py averager). Default=mean",default="mean")
 	parser.add_argument("--calcsf", metavar="outputfile", type=str, help="calculate a radial structure factor for the image and write it to the output file, must specify apix. divide into <n> angular bins")
 	parser.add_argument("--calccont", action="store_true", help="Compute the low resolution azimuthal contrast of each image and put it in the header as eval_contrast_lowres. Larger values imply more 'interesting' images.")
@@ -195,6 +196,7 @@ def main():
 	parser.add_argument("--medianshrink", metavar="n", type=int, action="append", help="Reduce an image size by an integral scaling factor, uses median filter. eg - 2 will reduce image size to 1/2. Clip is not required.")
 	parser.add_argument("--fouriershrink", metavar="n", type=float, action="append", help="Reduce an image size by an arbitrary scaling factor by clipping in Fourier space. eg - 2 will reduce image size to 1/2.")
 	parser.add_argument("--mraprep",  action="store_true", help="this is an experimental option")
+	parser.add_argument("--compressbits", type=int,help="HDF only. Bits to keep for compression. -1 for no compression",default=-1)
 	parser.add_argument("--outmode", type=str, default="float", help="All EMAN2 programs write images with 4-byte floating point values when possible by default. This allows specifying an alternate format when supported (float, int8, int16, int32, uint8, uint16, uint32). Values are rescaled to fill MIN-MAX range.")
 	parser.add_argument("--outnorescale", action="store_true", default=False, help="If specified, floating point values will not be rescaled when writing data as integers. Values outside of range are truncated.")
 	parser.add_argument("--mrc16bit",  action="store_true", help="(deprecated, use --outmode instead) output as 16 bit MRC file")
@@ -227,6 +229,10 @@ def main():
 	parser.add_argument("--unstacking", action="store_true", help="Process a stack of 2D images, then output as a series of numbered single image files", default=False)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--step",type=str,default="0,1",help="Specify <init>,<step>. Processes only a subset of the input data. For example, 0,2 would process only the even numbered particles")
+
+	eer_input_group = parser.add_mutually_exclusive_group()
+	eer_input_group.add_argument("--eer2x",  action="store_true", help="Render EER file on 8k grid.")
+	eer_input_group.add_argument("--eer4x", action="store_true", help="Render EER file on 16k grid.")
 
 	# Parallelism
 
@@ -391,7 +397,7 @@ def main():
 			E2end(logid)
 			sys.exit(r)
 
-		if options.average:
+		if options.average or options.avgseq>0:
 			averager = parsemodopt(options.averager)
 			average = Averagers.get(averager[0], averager[1])
 		else : average = None
@@ -446,7 +452,6 @@ def main():
 			nimg = EMUtil.get_image_count(infile)
 
 			# reads header only
-
 			isthreed = False
 			plane = options.plane
 			[tomo_nx, tomo_ny, tomo_nz] = gimme_image_dimensions3D(infile)
@@ -487,7 +492,6 @@ def main():
 			print("%d images, processing %d-%d stepping by %d"%(nimg,n0,n1,options.step[1]))
 
 		# Now we deal with inclusion/exclusion lists
-
 		if options.list or options.select :
 			imagelist = [0]*nimg
 
@@ -535,7 +539,9 @@ def main():
 		if options.verbose > 1 :
 			print("input file, output file, is three-d =", infile, outfile, isthreed)
 
+		count=0
 		for i in range(n0, n1+1, options.step[1]):
+			count+=1
 			if options.verbose >= 1:
 				if time.time()-lasttime > 3 or options.verbose > 2 :
 					sys.stdout.write(" %7d\r" %i)
@@ -594,8 +600,21 @@ def main():
 				else:
 					if options.verbose > 1 :
 						print("Read image #", i, "from input file:")
+					
 					d = EMData()
-					d.read_image(infile, i)
+
+					if (options.eer2x or options.eer4x) and infile[-4:] != ".eer":
+						print("Error: --eer2x and --eer4x options can be used only with EER files.")
+						sys.exit(1)
+					
+					if options.eer2x:
+						img_type = IMAGE_EER2X
+					elif options.eer4x:
+						img_type = IMAGE_EER4X
+					else:
+						img_type = IMAGE_UNKNOWN
+					
+					d.read_image(infile, i, False, None, False, img_type)
 			else:
 				if plane in xyplanes:
 					roi = Region(0,0,i,tomo_nx,tomo_ny,1)
@@ -652,7 +671,6 @@ def main():
 
 					# Parse the options to convert the image file name to EMData object
 					# (for both plain image file and bdb file)
-
 					for key in list(param_dict.keys()):
 						#print str(param_dict[key])
 
@@ -784,6 +802,7 @@ def main():
 
 					if tdx != 0.0 or tdy != 0.0 :
 						d.translate(tdx,tdy,0.0)
+						#print(f"translate {tdx},{tdy}")
 
 					index_d[option1] += 1
 
@@ -842,7 +861,7 @@ def main():
 						d.process_inplace("math.fft.resample",{"n":fshrink})
 
 					index_d[option1] += 1
-					
+
 				elif option1 == "headertransform":
 					xfmode = options.headertransform[index_d[option1]]
 					
@@ -885,9 +904,8 @@ def main():
 
 				elif option1 == "average":
 					average.add_image(d)
-
 					continue
-
+				
 				elif option1 == "fftavg":
 					if not fftavg:
 						fftavg = EMData()
@@ -1016,7 +1034,13 @@ def main():
 								d["render_min"] = d["minimum"]
 								d["render_max"] = d["maximum"]
 
-					if not options.average:	# skip writing the input image to output file
+					if options.avgseq>1: 
+						average.add_image(d)
+						if count%options.avgseq==0:
+							d=average.finish()
+#							print(f"{count} {d['ptcl_repr']}")
+						
+					if not options.average and (options.avgseq<=1 or count%options.avgseq==0):	# skip writing the input image to output file
 						# write processed image to file
 
 						out_type = EMUtil.get_image_ext_type(options.outtype)
@@ -1128,20 +1152,30 @@ def main():
 
 							if outfile!=None :
 								if options.inplace:
-									d.write_image(outfile, i, out_type, False, None, out_mode, not_swap)
+									if options.compressbits>=0:
+										d.write_compressed(outfile,i,options.compressbits,nooutliers=True)
+									else: d.write_image(outfile, i, out_type, False, None, out_mode, not_swap)
 								else: # append the image
-									d.write_image(outfile, -1, out_type, False, None, out_mode, not_swap)
+									if options.compressbits>=0:
+										d.write_compressed(outfile,-1,options.compressbits,nooutliers=True)
+									else: d.write_image(outfile, -1, out_type, False, None, out_mode, not_swap)
 
 		# end of image loop
 
 		if average:
 			avg = average.finish()
-			avg["ptcl_repr"] = (n1-n0+1)
+	#		avg["ptcl_repr"] = (n1-n0+1)	# should be set by averager, and this may be wrong in avgseq mode
 	#		avg.mult(1.0/(n1-n0+1.0))
 	#		average.process_inplace("normalize");
 
-			if options.inplace: avg.write_image(outfile,0)
-			else : avg.write_image(outfile,-1)
+			if options.inplace: 
+				if options.compressbits>=0:
+					avg.write_compressed(outfile,0,options.compressbits,nooutliers=True)
+				else: avg.write_image(outfile,0)
+			else : 
+				if options.compressbits>=0:
+					avg.write_compressed(outfile,-1,options.compressbits,nooutliers=True)
+				else: avg.write_image(outfile,-1)
 
 		if options.fftavg:
 			fftavg.mult(old_div(1.0, sqrt(n1 - n0 + 1)))

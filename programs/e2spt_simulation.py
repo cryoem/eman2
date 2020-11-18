@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 '''
 ====================
-Author: Jesus Galaz-Montoya - 2011, Last update: 16/Apr/2019
+Author: Jesus Galaz-Montoya - 2011, Last update: 15/sep/2020
 ====================
 
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -51,8 +51,12 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)	
 	
 	parser.add_argument("--clip", type=int,default=None,help="""Default=None. The final box size to clip the output subtomograms to.""")								
+	
+	parser.add_argument("--dualaxis",action='store_true',default=False,help="""Default=False. Simulate subtomograms made of two independent and orthogonal tilt series.""")
+
 	parser.add_argument("--gridholesize", type=float,default=1.0,help="""Default=1.0. Size of the carbon hole in micrometers for the simulated grid (this will determine the shifts in defocus for each particle at each tilt angle, depending on the position of the particle respect to the tilt axis; the tilt axis by convention goes parallel to Y through the middle of the tomogram.""")
-	parser.add_argument("--icethickness", type=float,default=0.4,help="""Default=0.4. Thickness of the specimen to simulate, in microns. Default=0.4; --icethickness will be used to calculate the size of the tomogram in Z in PIXELS for the simulated tomogram. This parameter will also be used to assign a random coordinate in Z to each subtomogram.""")
+	
+	parser.add_argument("--icethickness", type=float,default=0.0,help="""Default=0.0. Thickness of the specimen to simulate, in microns (e.g., 0.4 would be 400 nm); --icethickness will be used to calculate the size of the tomogram in Z in PIXELS for the simulated tomogram. This parameter will also be used to assign a random coordinate in Z to each subtomogram.""")
 	parser.add_argument("--input", type=str, default='', help="""The name of the input volume from which simulated subtomograms will be generated. The output will be in HDF format, since volume stack support is required. The input CAN be PDB, MRC or and HDF stack. If the input file is PDB or MRC, a version of the supplied model will be written out in HDF format. If the input file is a stack, simulatd subvolumes will be generated from each model in the stack and written to different output stacks. For example, if the input file contains models A and B, two output stacks with simulated subvolumes will be generated.""")
 	parser.add_argument("--invert",action="store_true",default=False,help=""""Default=False. This will multiply the pixel values by -1. This is intended to make the simulated particles be like real EM data before contrast reversal (black, negative contrast), assuming that they're being generated from a model/image where the protein has positive values. It not supplied, 'white protein' (positive density values) will be used by default (or whatever the original contrast is of the image supplied as a model).""")
 	
@@ -77,7 +81,10 @@ def main():
 	parser.add_argument("--saverandstack", action="store_true",default=True,help="""Default=True. DEPREPCATED. [This option is on by default and there's no way to turn it off. The stack of randomly oriented particles before simulating the missing wedge WILL be saved]. Save the stack of randomly oriented particles, before subtomogram simulation (before the missing wedge and noise are added).""")
 	parser.add_argument("--saveprjs", action="store_true",default=False,help="""Default=False. Save the projections (the 'tilt series') for each simulated subtomogram.""")	
 	parser.add_argument("--savetlt",action="store_true",default=False,help="""Default=False. Save a text file with .tlt extension (as in IMOD) containing the tilt angles for the simulated tomogram and/or subtomograms.""")
-	parser.add_argument("--snr",type=float,default=None,help="Default=None. Weighing noise factor for noise added to the image.")
+	parser.add_argument("--savemissingtilts",action="store_true",default=False,help="""Default=False. Save tilt images corresponding to the missing wedge region.""")
+
+
+	parser.add_argument("--snr",type=float,default=None,help="Default=None. Number smaller than 1.0 to make the final SNR in each tilt image. This will be calculated as SNR=sgima_signal/sigma_noise. 0.5 might be a good number assuming typical cryoEM-SPA images have SNR of 0.1 or less, and cryoET tilt series are collected with 4-6x the dose as cryoEM-SPA images.")
 	parser.add_argument("--sym",type=str,default='c1',help="Default=c1. If your particle is symmetrical, it is only necessary to randomize orientations within the asymmetric unit.")
 	parser.add_argument("--simref",action="store_true",default=False,help="Default=False. This will make a simulated particle in the same orientation as the original --input, saved to its own separate file.")
 	parser.add_argument("--set2tiltaxis",action='store_true',default=False,help="""Default=False. Simulate particles along the tilt axis only.""")
@@ -100,6 +107,7 @@ def main():
 	CTF PARAMETERS
 	'''
 	parser.add_argument("--applyctf", action="store_true",default=False,help="Default=False (off). If on, it applies ctf to the projections in the simulated tilt series based on defocus, cs, and voltage parameters.")
+	parser.add_argument("--applyfocusdepth", action="store_true",default=False,help="Default=False (off). If on, this will assign different 'z-height' values to different particles")
 	parser.add_argument("--defocus", type=float,default=3.0,help="""Default=3.0. Target defocus at the tilt axis (in microns) for the simulated tilt series. Notice that DEFOCUS (underfocus) values are POSITIVE, by convention.""")
 	parser.add_argument("--voltage", type=int,default=200,help="""Default=200 KV. Voltage of the microscope, used to simulate the ctf added to the subtomograms.""")
 	parser.add_argument("--cs", type=float,default=2.1,help="""Default is 2.1. Cs of the microscope, used to simulate the ctf added to the subtomograms.""")
@@ -364,6 +372,10 @@ def randomizer(options, model, tag):
 	randomangles = False	
 	randomtrans = False 
 	
+
+	random_transform = Transform()
+	trivial_transform = Transform()
+
 	if not options.notrandomize:
 		
 		randomangles =True
@@ -515,16 +527,16 @@ def randomizer(options, model, tag):
 				b.write_image(randstackname,i)
 				if options.verbose > 9: print("\n(e2spt_simulation.py) saving random orientations stack. particle %d written to %s" % ( i, randstackname ))
 
+			
+			if options.verbose > 9:
+				print("\n(e2spt_simulation.py) applied transform".format(outtransform))
+
 			else:
 				pass #stack of particles in random orientations not saved
 		else:
 			pass #angles and translations were not randomized; the stack to be return will contain copies of the model (might be modified by noise/CTF later) 
 
 		randptcls.update({i:b})
-		
-		if options.verbose > 9:
-			print("\n(e2spt_simulation.py) applied transform", random_transform)
-
 
 	jsA.close()
 	jsAS.close()
@@ -652,7 +664,7 @@ def plotvals( options, vals, tag ):
 	return
 
 
-def textwriter(options,data,tag):
+def textwriter(options,data,tag,count=True):
 	
 	#if options.path not in name:
 	name = options.path + '/' + tag + '.txt'
@@ -661,9 +673,10 @@ def textwriter(options,data,tag):
 	
 	lines=[]
 	
-	for i in range(len(data)):
-			
+	for i in range(len(data)):	
 		line2write = str(i) + '\t' + str(data[i]) + '\n'
+		if not count:
+			line2write = str(data[i]) + '\n'
 		#print "THe line to write is"
 		lines.append(line2write)
 	
@@ -741,7 +754,10 @@ def subtomosim(options,ptcls,outname,dimension):
 	tasks=[]	
 	
 	tangles = genangles( options )
-	
+	tanglesfile=textwriter(options,tangles,options.path.replace('_01','')+"_angles",False)
+	if options.verbose:
+		print("\nwrote tangles file to f={}".format(tanglesfile))
+
 	for i in ptcls:	
 		task=SubtomoSimTask(ptcls[i],i,options,outname,tangles)
 		tasks.append(task)
@@ -896,7 +912,7 @@ class SubtomoSimTask(JSTask):
 			if options.verbose > 1: print("\ndone calculating px")
 
 		pz=0
-		if round(old_div(options.icethickness*10000,apix)) > round(old_div(image['nx'],2.0)):
+		if round(old_div(options.icethickness*10000,apix)) > round(old_div(image['nx'],2.0)) and options.applyfocusdepth:
 			'''
 			Beware, --icethickness supplied in microns
 			'''
@@ -937,7 +953,10 @@ class SubtomoSimTask(JSTask):
 
 		alt = lower_bound
 		raw_projections = []
+		raw_projections_b = [] #in case --dualaxis is set
+
 		ctfed_projections = []
+		ctfed_projections_b = []
 	
 		randT = image['sptsim_randT']
 		if options.verbose > 9:
@@ -955,111 +974,158 @@ class SubtomoSimTask(JSTask):
 		#for j in range( nslices ):						#Extra 'noise' slices are 0 if --fillwedge is off. Calculated above if on.
 		
 		prjindx=0
+		transforms = {}
 		for realalt in tiltangles:	
 			
 			#Generate the projection orientation for each image in the tilt series
 			
 			#t = Transform({'type':'eman','az':90,'alt':realalt,'phi':-90})		#Correct
-			t = Transform({'type':'eman','az':-90,'alt':realalt,'phi':90})		#Alternative correct, -90 +90 are interchangeable for phi and az
+			t1 = Transform({'type':'eman','az':-90,'alt':realalt,'phi':90})		#Alternative correct, -90 +90 are interchangeable for phi and az
 			#trecon = Transform({'type':'eman','az':0,'alt':realalt,'phi':0}) 	#Garbage
-			if options.tiltaxis == 'x':
-				t = Transform({'type':'eman','az':0,'alt':realalt,'phi':0})				
+
+			if options.tiltaxis == 'x' and not options.dualaxis:
+				t1 = Transform({'type':'eman','az':0,'alt':realalt,'phi':0})				
 		
 			if dimension == 2:
 				
-				t = Transform({'type':'eman','az':realalt,'alt':0,'phi':0})
+				t1 = Transform({'type':'eman','az':realalt,'alt':0,'phi':0})
 				#print "\n\nUSING 2D transform!!!!", t
 				#sys.exit()
 			
-			#prj = image.process("misc.directional_sum",{"axis":"z"})
-			if options.verbose > 9: print("\nprojecting from",t,realalt)
-	
-			prj = image.project("standard",t)
-			
-			if options.verbose > 9: print("projection done")
-			
-			'''
-			if options.fillwedge and j > nslices:
-	 			
-	 			print("""\n(e2spt_simulation.py) I'm adding an extra slice with just noise""") + str(j-nslices) + '/' + str(extraslices)
-				nx = image['nx']
-				ny = image['ny']
-			
-				noise = test_image(1,size=(nx,ny))			
-				noise2 = noise.process("filter.lowpass.gauss",{"cutoff_abs":.25})
-				noise.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.75})
-				
-				finalnoise = ( noise*3 + noise2*3 )
-			
-				prj = finalnoise
-			'''	
-			
-			terror=txerror=tyerror=0
-			
-			if options.terror and not options.txerror:
-				txerror = random.randint( -1*options.terror, options.terror )
-			elif options.txerror:
-				txerror = random.randint( -1*options.txerror, options.txerror )
-				
-			if options.terror and not options.tyerror:
-				tyerror = random.randint( -1*options.terror, options.terror )
-			elif options.tyerror:
-				tyerror = random.randint( -1*options.tyerror, options.tyerror )
-			
-			if txerror or tyerror:
-				prj.translate(txerror,tyerror,0)
-			
-			prj.set_attr('xform.projection',t)
-			prj['apix_x']=apix
-			prj['apix_y']=apix
-			prj['spt_tiltangle']=realalt
-			prj['spt_tiltaxis']=options.tiltaxis
-			prj['spt_txerror'] = txerror
-			prj['spt_tyerror'] = tyerror
-			prj['ptcl_source_coord']=sptcoords
-			prj['spt_prj_indx'] = prjindx
-			
-			prj.process_inplace('normalize.edgemean')
-		
-			if options.saveprjs:
-				finalprjsRAW = outname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsRAW.hdf')
-				#if options.path + '/' in outname:
-				#	finalprjsRAW = outname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsRAW.hdf')
-				
-				finalprjsRAW = finalprjsRAW.replace('_preproc','')	
-				prj.write_image( finalprjsRAW , prjindx )					#Write projections stack for particle i
-				
-			raw_projections.append(prj)
-			
-			if options.invert:
-				prj.mult(-1)
-			
-			prj_r = prj
-			
-			if options.snr and options.snr != 0.0 and options.snr != '0.0' and options.snr != '0' and dimension == 3:
-				
-				if options.applyctf: #noise gets applied twice if --applyctf; half before, half after
-					prj_r = noiseit( prj_r, options, nslices, outname, i, dontsave=True ) 
 
-					#if options.verbose > 1: print("\ne2spt_simulation)(main) will call calcdefocus")
+			if options.dualaxis:
+				td1 = Transform({'type':'eman','az':-90,'alt':realalt,'phi':90})	
+				td2 = Transform({'type':'eman','az':0,'alt':realalt,'phi':0})
+				transforms.update({'t1':td1,'t2':td2})
+			else:
+				transforms.update({'t1':t1})
+
+
+			for tr in sorted( transforms.keys() ):
+				t = transforms[tr]
+
+				#prj = image.process("misc.directional_sum",{"axis":"z"})
+				if options.verbose > 9: print("\nprojecting from",t,realalt)
+		
+				prj = image.project("standard",t)
+				
+				if options.verbose > 9: print("projection done")
+				
+				'''
+				if options.fillwedge and j > nslices:
+		 			
+		 			print("""\n(e2spt_simulation.py) I'm adding an extra slice with just noise""") + str(j-nslices) + '/' + str(extraslices)
+					nx = image['nx']
+					ny = image['ny']
+				
+					noise = test_image(1,size=(nx,ny))			
+					noise2 = noise.process("filter.lowpass.gauss",{"cutoff_abs":.25})
+					noise.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.75})
+					
+					finalnoise = ( noise*3 + noise2*3 )
+				
+					prj = finalnoise
+				'''	
+				
+				terror=txerror=tyerror=0
+				
+				if options.terror and not options.txerror:
+					txerror = random.randint( -1*options.terror, options.terror )
+				elif options.txerror:
+					txerror = random.randint( -1*options.txerror, options.txerror )
+					
+				if options.terror and not options.tyerror:
+					tyerror = random.randint( -1*options.terror, options.terror )
+				elif options.tyerror:
+					tyerror = random.randint( -1*options.tyerror, options.tyerror )
+				
+				if txerror or tyerror:
+					prj.translate(txerror,tyerror,0)
+				
+				prj.set_attr('xform.projection',t)
+				prj['apix_x']=apix
+				prj['apix_y']=apix
+				prj['spt_tiltangle']=realalt
+				#prj['spt_tiltaxis']=options.tiltaxis
+				if tr == 't1':
+					prj['spt_tiltaxis']= 'y'
+				if tr == 't2':
+					prj['spt_tiltaxis']= 'x'
+
+				prj['spt_txerror'] = txerror
+				prj['spt_tyerror'] = tyerror
+				prj['ptcl_source_coord']=sptcoords
+				prj['spt_prj_indx'] = prjindx
+				
+				prj.process_inplace('normalize.edgemean')
+			
+				if options.saveprjs:
+					finalprjsRAW = outname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(options.nptcls))) + '_prjsRAW.hdf')
+					#if options.path + '/' in outname:
+					#	finalprjsRAW = outname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsRAW.hdf')
+					
+					finalprjsRAW = finalprjsRAW.replace('_preproc','')
+					if tr == 't2':
+						finalprjsRAW = finalprjsRAW.replace('.hdf','_b.hdf')
+							
+					prj.write_image( finalprjsRAW , prjindx )					#Write projections stack for particle i
+				
+
+				if tr == 't1':
+					raw_projections.append(prj)
+				if tr == 't2':
+					raw_projections_b.append(prj)
+				
+				if options.invert:
+					prj.mult(-1)
+				
+				prj_r = prj
+				
+				print("\nsaved raw prj ; dimension={}, oiptions.snr={}, options.applyctf={}".format(dimension,options.snr,options.applyctf))
+				#sys.exit(1)
+
+				if options.snr and options.snr != 0.0 and options.snr != '0.0' and options.snr != '0' and dimension == 3:
+					
+					if options.applyctf: #noise gets applied twice if --applyctf; half before, half after
+						prj_r = noiseit( prj_r, options, nslices, outname, i, dontsave=True ) 
+
+						#if options.verbose > 1: print("\ne2spt_simulation)(main) will call calcdefocus")
+						defocus = calcdefocus(options, realalt, px, pz)
+						prj_r = ctfer( prj_r, options, defocus, apix )
+					
+					elif not options.applyctf:
+						if options.verbose > 9: print("!!!!!!\n\n\nNOT applying CTF options.applyctf={}\n\n\n".format(options.applyctf))
+
+					prj_r = noiseit( prj_r, options, nslices, outname, i )	
+
+				
+					print("\ndapplied noise, if any; dimension={}, oiptions.snr={}, options.applyctf={}".format(dimension,options.snr,options.applyctf))
+					#sys.exit(1)
+				
+				if dimension == 3 and not options.snr and options.applyctf:
 					defocus = calcdefocus(options, realalt, px, pz)
 					prj_r = ctfer( prj_r, options, defocus, apix )
-				
-				elif not options.applyctf:
-					if options.verbose > 9: print("!!!!!!\n\n\nNOT applying CTF options.applyctf={}\n\n\n".format(options.applyctf))
+					print("\napplied CTF")
+					#sys.exit(1)
 
-				prj_r = noiseit( prj_r, options, nslices, outname, i )	
 
-			ctfed_projections.append(prj_r)
+				if tr == 't1':
+					ctfed_projections.append(prj)
+				if tr == 't2':
+					ctfed_projections_b.append(prj_r)
+
+			
+				if options.verbose > 9: print("should save edited prjs...")
+				if options.saveprjs and (options.applyctf or options.snr):
+					#finalprjsED = outname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsEDITED.hdf')
+					finalprjsED = outname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(options.nptcls))) + '_prjsEDITED.hdf')
+					finalprjsED = finalprjsED.replace('_preproc','')
+					if tr == 't2':
+						finalprjsED = finalprjsED.replace('.hdf','_b.hdf')
+
+					prj_r.write_image( finalprjsED , prjindx)	
+					if options.verbose > 9: print("wrote edited prj to %s, indx %d" %( finalprjsED, prjindx ))
 		
-			if options.verbose > 9: print("should save edited prjs...")
-			if options.saveprjs and (options.applyctf or options.snr):
-				finalprjsED = outname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsEDITED.hdf')
-				
-				finalprjsED = finalprjsED.replace('_preproc','')
-				prj_r.write_image( finalprjsED , prjindx)	
-				if options.verbose > 9: print("wrote edited prj to %s, indx %d" %( finalprjsED, prjindx ))
-	
 			prjindx += 1
 
 		box = max(int(image['nx']),int(image['ny']),int(image['nz']))
@@ -1085,6 +1151,14 @@ class SubtomoSimTask(JSTask):
 			pm = r.preprocess_slice(p,p['xform.projection'])
 			r.insert_slice(pm,pm['xform.projection'],1.0)
 			k+=1
+
+		if options.dualaxis:
+			kk=0
+			for pp in ctfed_projections_b:
+				pmm = r.preprocess_slice(pp,pp['xform.projection'])
+				r.insert_slice(pmm,pmm['xform.projection'],1.0)
+				kk+=1
+
 			
 		rec = r.finish(True)
 	
@@ -1155,6 +1229,10 @@ def calcdefocus(options,realalt,px,pz):
 def ctfer(prj, options, defocus, apix):
 	if options.verbose > 1: print("\n(e2spt_simulation)(ctfer)!!!applying CTF options.applyctf={}\n\n\n".format(options.applyctf))
 
+	original_size = prj['nx']
+	if options.pad2d:
+		prj = clip2d(prj,prj['nx']*2)
+
 	prj_fft = prj.do_fft()
 	ctf = EMAN2Ctf()
 	ctf.from_dict({ 'defocus': defocus, 'bfactor': options.bfactor ,'ampcont': options.ampcont ,'apix':apix, 'voltage':options.voltage, 'cs':options.cs })	
@@ -1163,6 +1241,10 @@ def ctfer(prj, options, defocus, apix):
 	prj_fft.mult(prj_ctf)
 
 	prj_r = prj_fft.do_ift()							#Go back to real space
+	
+	if options.pad2d:
+		prj = clip2d(prj,original_size)
+	
 	prj_r['ctf'] = ctf
 
 	return prj_r
@@ -1180,6 +1262,34 @@ def noiseit( prj_r, options, nslices, outname, i, dontsave=False ):
 	
 	#noise = ( noise*3 + noise2*3 )
 	
+	#One definition of SNR = sigmasignal/sigmanoise when the noise is "known"
+	sigmasignal = prj_r['sigma']
+	sigmanoise = noise['sigma']
+	if i == 0:
+		print("\nsigmasignal={}".format(sigmasignal))
+		print("\n sigmanoise={}".format(sigmanoise))
+
+	#current_snr = sigmasignal/sigmanoise
+
+	signal_downweight_factor = options.snr * sigmanoise/sigmasignal
+	noise_boost_factor = 1.0/signal_downweight_factor
+
+	fractionationfactor = old_div(61.0,nslices)		#If 61 slices go into each subtomo, then the fractionation factor
+										#Will be 1. This assumes a +-60 deg data collection range with 2 deg increments.
+										#Otherwise, if nslices is > 61 the signal in each slice will be diluted, accordingly.
+										#If nslices < 1, the signal in each slice will be enhanced. In the end, regardless of the nslices value, 
+										#subtomograms will always have the same amount of signal instead of signal depending on number of images.
+
+	if i == 0:
+		print("\nfractionationfactor={}".format(fractionationfactor))
+
+
+	noise_boost_factor /= fractionationfactor
+	
+	if i == 0:
+		print("\nnoise_boost_factor={}".format(noise_boost_factor))
+
+
 	if options.savenoise and not dontsave:	#when --applyctf is on, noise gets applied twice, before and after CTF; it only needs to be saved the second time
 		if options.verbose > 1: print("\ne2spt_simulation)(noiseit) saving noise images")
 		noiseStackName = outname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_NOISE.hdf')
@@ -1188,7 +1298,8 @@ def noiseit( prj_r, options, nslices, outname, i, dontsave=False ):
 	#when --applyctf is on, noise gets applied twice; half before applying CTF, half after; therefore, we account for this
 	#by dividing the noise by 2 each time if --applyctf is provided.
 
-	noise *= float( options.snr )
+	#noise *= float( options.snr ) #pre nov 2020
+	noise *= noise_boost_factor
 	if options.applyctf:
 		noise *= 0.5
 		if options.verbose > 1: print("\ne2spt_simulation)(noiseit) --applyctf={}, therefore multiplied noise *0.5".format(options.applyctf))
@@ -1197,16 +1308,13 @@ def noiseit( prj_r, options, nslices, outname, i, dontsave=False ):
 	#prj_r.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.25})
 	#prj_r.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.75})
 	
-	fractionationfactor = old_div(61.0,nslices)		#If 61 slices go into each subtomo, then the fractionation factor
-											#Will be 1. This assumes a +-60 deg data collection range with 2 deg increments.
-											#Otherwise, if nslices is > 61 the signal in each slice will be diluted, accordingly.
-											#If nslices < 1, the signal in each slice will be enhanced. In the end, regardless of the nslices value, 
-											#subtomograms will always have the same amount of signal instead of signal depending on number of images.
-	prj_r.mult( fractionationfactor )
+
+	#prj_r.mult( fractionationfactor )
 	prj_r.add(noise)
 	if options.verbose > 1: print("\ne2spt_simulation)(noiseit) done adding noise to prj_r. Returning prj_r")
 	
 	return prj_r
+
 
 
 def get_results(etc,tids,options):

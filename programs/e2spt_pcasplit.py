@@ -55,7 +55,7 @@ from sys import argv,exit
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """Usage: e2spt_pcasplit.py [options] <spt_XX> <reference>"""
+	usage = """Usage: e2spt_pcasplit.py --path <spt_XX> [options]"""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--path",type=str,required=True,default=None,help="Path to a folder where results should be stored, following standard naming conventions (default = spt_XX)",guitype='filebox',row=0, col=0, rowspan=1, colspan=2)
@@ -328,7 +328,7 @@ def main():
 		js=js_open_dict("{}/particle_parms_{:02d}.json".format(options.outpath, i+1))
 		js.update(d)
 		js.close()
-		os.system("e2spt_average.py --path {} --iter {} --threads 10 --sym {} --skippostp".format(options.outpath, i+1, options.sym))
+		os.system("e2spt_average.py --path {} --iter {} --threads 10 --sym {} --skippostp --simthr 1".format(options.outpath, i+1, options.sym))
 
 	E2end(logid)
 

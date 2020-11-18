@@ -38,14 +38,13 @@
 
 #include <utility>
 
-#include "all_imageio.h"
+#include "io/all_imageio.h"
 #include "portable_fileio.h"
 #include "emcache.h"
 #include "emdata.h"
 #include "ctf.h"
 #include "emassert.h"
 #include "exception.h"
-#include "hdf_filecache.h"
 
 
 //#ifdef EMAN2_USING_CUDA_MALLOC
@@ -202,6 +201,10 @@ EMUtil::ImageType EMUtil::get_image_ext_type(const string & file_ext)
 		imagetypes["ser"] = IMAGE_SER;
 		imagetypes["SER"] = IMAGE_SER;
 
+		imagetypes["eer"] = IMAGE_EER;
+//		imagetypes["eer"] = IMAGE_EER2X;
+//		imagetypes["eer"] = IMAGE_EER4X;
+
 		initialized = true;
 	}
 
@@ -250,6 +253,15 @@ EMUtil::ImageType EMUtil::fast_get_image_type(const string & filename,
 		if (MrcIO::is_valid(first_block, file_size)) {
 			return IMAGE_MRC;
 		}
+		break;
+    case IMAGE_EER:
+		return IMAGE_EER;
+        break;
+	case IMAGE_EER2X:
+		return IMAGE_EER2X;
+		break;
+	case IMAGE_EER4X:
+		return IMAGE_EER4X;
 		break;
 	case IMAGE_DM3:
 		if (DM3IO::is_valid(first_block)) {
@@ -585,6 +597,15 @@ ImageIO *EMUtil::get_imageio(const string & filename, int rw,
 #endif
 	case IMAGE_MRC:
 		imageio = new MrcIO(filename, rw_mode);
+		break;
+	case IMAGE_EER:
+		imageio = new EerIO(filename, rw_mode, decoder0x);
+		break;
+	case IMAGE_EER2X:
+		imageio = new EerIO(filename, rw_mode, decoder1x);
+		break;
+	case IMAGE_EER4X:
+		imageio = new EerIO(filename, rw_mode, decoder2x);
 		break;
 	case IMAGE_IMAGIC:
 		imageio = new ImagicIO2(filename, rw_mode);
@@ -1657,7 +1678,7 @@ vector<EMObject> EMUtil::get_all_attributes(const string & file_name, const stri
 	Assert(file_name != "");
 	Assert(attr_name != "");
 
-	auto vpImg = EMData::read_images(file_name, vector<int>(), true);
+	auto vpImg = EMData::read_images(file_name, vector<int>(), EMUtil::IMAGE_UNKNOWN, true);
 
 	for (auto iter = vpImg.begin(); iter!=vpImg.end(); ++iter)
 		v.push_back((*iter)->get_attr_default(attr_name));

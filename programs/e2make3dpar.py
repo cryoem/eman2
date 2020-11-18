@@ -92,6 +92,8 @@ def main():
 	parser.add_argument("--pad", metavar="x or x,y", default=None,type=str, help="Will zero-pad images to the specifed size (x,y) or (x,x) prior to reconstruction. If not specified or 0 no padding occurs. If a negative value is specified automatic padding is performed. ")
 	parser.add_argument("--padvol", metavar="x or x,y,z", default=None,type=str, help="Defines the dimensions (x,y,z) or (x,x,x) of the reconstructed volume. If ommitted, implied value based on padded 2D images is used.")
 	parser.add_argument("--outsize", metavar="x or x,y,z", default=None, type=str, help="Defines the dimensions (x,y,z) or (x,x,x) of the final volume written to disk, if ommitted, size will be based on unpadded input size")
+	parser.add_argument("--compressbits", type=int,help="Bits to keep when writing volumes with compression. 0->lossless floating point. Default 10 (3 significant figures)", default=10)
+
 	#parser.add_argument("--clipz", default=None, type=int, help="Extract a specified number of central z-slices. Option disabled by default.")
 
 	parser.add_argument("--savenorm", default=None, type=str, help="If set, will save the normalization volume showing Fourier space filling to the specified file")
@@ -489,7 +491,8 @@ def main():
 		remove_file(options.output)
 
 	# write the reconstruction to disk
-	output.write_image(options.output,0)
+#	output.write_image(options.output,0)
+	output.write_compressed(options.output,0,options.compressbits)
 	if options.verbose>0:
 			print("Output File: "+options.output)
 
@@ -557,16 +560,19 @@ def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,preprocess):
 				lstinfo=lst.read(i)
 				for d in lstinfo[2].split(';'):
 					dc=eval(d)
-					#dc=eval(lstinfo[2])
+					score=2
+					dfdf=0
 					if "score" in dc:
 						score=dc.pop("score")
-					else:
-						score=2
 						
 					if "dfdf" in dc:
 						dfdf=dc.pop("dfdf")
-					else:
-						dfdf=0
+					
+					xfkey=["type","alt","az","phi","tx","ty","tz","alpha","scale"]
+					keys=list(dc.keys())
+					for k in keys:
+						if k not in xfkey:
+							dc.pop(k)
 						
 					elem={"xform":Transform(dc)}
 					

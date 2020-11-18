@@ -48,6 +48,7 @@ from eman2_gui.emimagemx import EMImageMXWidget
 from eman2_gui.valslider import *
 import queue
 from eman2_gui import embrowser
+import traceback
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -61,10 +62,8 @@ def main():
 	and averaging is performed to produce pseudo time-series animations detailing some aspect of the structure's
 	variability.
 	
-	This program is NOT designed for use with stacks of tens of thousands of images. All images are kept in system
-	memory. All images are theoretically supposed to share a common overall orientation. That is, for a normal single
-	particle project, you would first subclassify the overall image stack used for 3-D using e2refine2d.py or
-	e2refine.py, then run this program only on a subset of particles.
+	To use this program, you must first run e2a2d_align to align a stack of particles to a single 2-D reference image.
+	This program will use those results as a starting point.
 	
 	If an existing project is specified with --path, previous results will be re-opened"""
 
@@ -474,7 +473,7 @@ class EMMotion(QtWidgets.QMainWindow):
 			traceback.print_exc()
 			self.particles=None
 			self.wlnptcl.setText("No Data")
-			print("Warning: no particle alignment data found for iter=",itr)
+			print(f"Warning: no particle alignment data found for iter={itr}\nYou must run e2a2d_align.py on a stack of particles prior to using this program!")
 			return
 		
 		m=0

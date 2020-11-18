@@ -23,6 +23,7 @@ def main():
 	parser.add_argument("--inplace", action="store_true", default=False ,help="overwrite input.")
 	parser.add_argument("--invert", action="store_true", default=False ,help="invert direction.")
 	parser.add_argument("--mode", type=str,help="choose from rad/line, default is line", default="line")
+	parser.add_argument("--vec", type=str,help="vector direction, default 0,0,1", default="0,0,1")
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -54,6 +55,10 @@ class EMSptEval(QtWidgets.QMainWindow):
 		self.jsname=jsname
 		self.options=options
 		self.load_json()
+		v=np.array([float(i) for i in options.vec.split(',')])
+		v/=np.linalg.norm(v)
+		self.vec=v.tolist()
+		
 		
 		self.setMinimumSize(700,200)
 		self.setCentralWidget(QtWidgets.QWidget())
@@ -188,7 +193,7 @@ class EMSptEval(QtWidgets.QMainWindow):
 		for x in xfs:
 			x.set_trans(0,0,0)
 			x.invert()
-		vecs=np.array([xf.transform([0,0,1]) for xf in xfs])
+		vecs=np.array([xf.transform(self.vec) for xf in xfs])
 		#vecs=np.array([xf.transform([-.44,-.89,0]) for xf in xfs])
 		pc=np.mean(pos, axis=0)
 		

@@ -52,7 +52,6 @@
 #include <algorithm>
 #include <gsl/gsl_fit.h>
 #include <ctime>
-#include <cmath>
 
 #ifdef __APPLE__
 	typedef unsigned int uint;
@@ -60,17 +59,6 @@
 
 #ifdef _WIN32
 	typedef unsigned int uint;
-	#if (_MSC_VER < 1800) // _MSC_VER = 1800 (Visual Studio 2013)
-		double cbrt(double x) {
-			return pow(x, 1.0/3.0);
-		}
-		float cbrt(float x) {
-			return pow(x, 1.0f/3.0f);
-		}
-		long double cbrt(long double x) {
-			return pow(x, 1.0l/3.0l);
-		}
-	#endif	//_MSC_VER
 #endif	//_WIN32
 
 #ifdef EMAN2_USING_CUDA
@@ -107,6 +95,7 @@ const string AzSharpProcessor::NAME = "filter.azimuthal.contrast";
 const string HighpassAutoPeakProcessor::NAME = "filter.highpass.autopeak";
 const string LinearRampProcessor::NAME = "eman1.filter.ramp";
 const string AbsoluteValueProcessor::NAME = "math.absvalue";
+const string CCCSNRProcessor::NAME = "math.ccc_snr_wiener";
 const string FloorValueProcessor::NAME = "math.floor";
 const string BooleanProcessor::NAME = "threshold.notzero";
 const string KmeansSegmentProcessor::NAME = "segment.kmeans";
@@ -247,6 +236,7 @@ const string SetSFProcessor::NAME = "filter.setstrucfac";
 const string SetIsoPowProcessor::NAME = "filter.setisotropicpow";
 const string SmartMaskProcessor::NAME = "mask.smart";
 const string TestImagePureGaussian::NAME = "testimage.puregaussian";
+const string TestImageFourierGaussianBand::NAME = "testimage.fourier.gaussianband";
 const string TestImageFourierNoiseGaussian::NAME = "testimage.noise.fourier.gaussian";
 const string TestImageFourierNoiseProfile::NAME = "testimage.noise.fourier.profile";
 const string CTFSNRWeightProcessor::NAME = "ctf.snr.weight";
@@ -390,6 +380,7 @@ template <> Factory < Processor >::Factory()
 	force_add<LinearXformProcessor>();
 	force_add<SetBitsProcessor>();
 	
+	force_add<CCCSNRProcessor>();
 	force_add<ExpProcessor>();
 	force_add<RangeThresholdProcessor>();
 	force_add<SigmaProcessor>();
@@ -557,6 +548,7 @@ template <> Factory < Processor >::Factory()
 	force_add<TestImageLineWave>();
 	force_add<TestImageEllipse>();
 	force_add<TestImageHollowEllipse>();
+	force_add<TestImageFourierGaussianBand>();
 	force_add<TestImageFourierNoiseGaussian>();
 	force_add<TestImageFourierNoiseProfile>();
 
@@ -1183,6 +1175,21 @@ void LowpassAutoBProcessor::create_radial_func(vector < float >&radial_mask,EMDa
 	free(dy);
  }
 
+void CCCSNRProcessor::process_inplace(EMData *image) {
+	size_t nxyz = image->get_size();
+	int mode=params.set_default("wiener",0);
+	float scale=params.set_default("scalesnr",2.0f);
+	
+	for (size_t i=0; i<nxyz; i++) {
+		float v=image->get_value_at_index(i);
+		float snr=(v>=.9999)?10000.0f:scale*v/(1.0f-v);
+		if (snr<0) snr=0.0f;
+		if (mode) image->set_value_at_index(i,snr/(1.0f+snr));
+		else image->set_value_at_index(i,snr);
+	}
+}
+
+ 
 void SNREvalProcessor::process_inplace(EMData * image)
 {
 	int ys=image->get_ysize();
@@ -1374,11 +1381,7 @@ void AmpweightFourierProcessor::process_inplace(EMData * image)
 	for (size_t i=0; i<n; i+=2) {
 		float c;
 		if (dosqrt) c=pow(fftd[i]*fftd[i]+fftd[i+1]*fftd[i+1],0.25f);
-#ifdef	_WIN32
-		else c = static_cast<float>(_hypot(fftd[i],fftd[i+1]));
-#else
 		else c = static_cast<float>(hypot(fftd[i],fftd[i+1]));
-#endif	//_WIN32
 		if (c==0) c=1.0e-30f;	// prevents divide by zero in normalization
 		fftd[i]*=c;
 		fftd[i+1]*=c;
@@ -2628,11 +2631,7 @@ void CutoffBlockProcessor::process_inplace(EMData * image)
 						continue;
 					}
 
-#ifdef	_WIN32
-					if (_hypot(j, i) < value2) {
-#else
 					if (hypot(j, i) < value2) {
-#endif
 						int t = j * 2 + (i + v1 / 2) * (v1 + 2);
 						sum += (fft_data[t] * fft_data[t] + fft_data[t + 1] * fft_data[t + 1]);
 						nitems++;
@@ -4147,11 +4146,7 @@ void BeamstopProcessor::process_inplace(EMData * image)
 	for (int i = 0; i < nx; i++) {
 		for (int j = 0; j < ny; j++) {
 
-#ifdef	_WIN32
-			int r = Util::round(_hypot((float) i - cenx, (float) j - ceny));
-#else
 			int r = Util::round(hypot((float) i - cenx, (float) j - ceny));
-#endif	//_WIN32
 
 			if (value1 < 0) {
 				if (data[i + j * nx] < (mean_values[r] - sigma_values[r] * thr)) {
@@ -5474,11 +5469,7 @@ void RotationalAverageProcessor::process_inplace(EMData * image)
 	if (image->is_complex() && image->get_ndim() == 2) {
 		for (int y = -ny/2; y < ny/2; y++) {
 			for (int x = -ny/2-1; x < nx/2+1; x++) {
-	#ifdef	_WIN32
-				float r = (float) _hypot(x,y);
-	#else
 				float r = (float) hypot(x,y);
-	#endif	//_WIN32
 				int i = (int) floor(r);
 				r -= i;
 				if (i >= 0 && i < nx / 2 - 1) {
@@ -5496,11 +5487,7 @@ void RotationalAverageProcessor::process_inplace(EMData * image)
 	else if (image->get_ndim() == 2) {
 		for (int y = 0; y < ny; y++) {
 			for (int x = 0; x < nx; x++, c++) {
-	#ifdef	_WIN32
-				float r = (float) _hypot(x - midx, y - midy);
-	#else
 				float r = (float) hypot(x - midx, y - midy);
-	#endif	//_WIN32
 
 				int i = (int) floor(r);
 				r -= i;
@@ -5566,11 +5553,7 @@ void RotationalSubstractProcessor::process_inplace(EMData * image)
 	int c = 0;
 	for (int y = 0; y < ny; y++) {
 		for (int x = 0; x < nx; x++, c++) {
-#ifdef	_WIN32
-			float r = (float) _hypot(x - nx / 2, y - ny / 2);
-#else
 			float r = (float) hypot(x - nx / 2, y - ny / 2);
-#endif
 			int i = (int) floor(r);
 			r -= i;
 			if (i >= 0 && i < nx / 2 - 1) {
@@ -8678,6 +8661,12 @@ EMData* DirectionalSumProcessor::process(const EMData* const image ) {
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 	EMData* ret = new EMData;
+	if (image->has_attr("ptcl_repr")) ret->set_attr("ptcl_repr",image->get_attr("ptcl_repr"));
+	if (image->has_attr("xform_align2d")) ret->set_attr("xform_align2d",image->get_attr("xform_align2d"));
+	if (image->has_attr("xform_align3d")) ret->set_attr("xform_align3d",image->get_attr("xform_align3d"));
+	ret->set_attr("apix_y",image->get_attr("apix_y"));	// potentially meaningless, may get overwritten, but better to be self-consistent
+	ret->set_attr("apix_z",image->get_attr("apix_z"));	// meaningless, but better to be self-consistent
+	
 
 	if (nz==1) {
 		if (dir=="x") {
@@ -8785,6 +8774,64 @@ void TestImageProcessor::preprocess(EMData * image)
 	nx = image->get_xsize();
 	ny = image->get_ysize();
 	nz = image->get_zsize();
+}
+
+void TestImageFourierGaussianBand::process_inplace(EMData* image)
+{
+	if (!image->is_complex()) {
+		int nx = image->get_xsize();
+		int offset = 2 - nx%2;
+
+		image->set_size(nx+offset,image->get_ysize(),image->get_zsize());
+		image->set_complex(true);
+		if (1 == offset) image->set_fftodd(true);
+		else image->set_fftodd(false);
+		image->set_fftpad(true);
+	}
+	image->set_ri(true);
+	image->to_zero();
+
+	float center = params.set_default("center",ny/4);
+	float width = params.set_default("width",sqrt(2.0f));
+
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+	int w3 = floor(width*3);
+	float l0 = pow(center-w3,2.0f);
+	float l1 = pow(center+w3,2.0f);
+	
+	if (nz==1) {
+		// 1D
+		if (ny==1) {
+			for (int x=0; x<nx/2; x++) {
+				if (abs(x-center)>w3) continue;
+				image->set_complex_at(x,0,exp(-pow((x-center)/width,2.0f)));
+			}
+		}
+		// 2D
+		else {
+			for (int y=-ny/2; y<ny/2; y++) {
+				for (int x=0; x<nx/2; x++) {
+					float r=Util::hypot_fast(x,y);
+					if (r<center-w3 || r>center+w3) continue;
+					image->set_complex_at(x,y,exp(-pow((r-center)/width,2.0f)));
+				}
+			}
+		}
+	}
+	else {
+		// 3D
+		for (int z=-nz/2; z<nz/2; z++) {
+			for (int y=-ny/2; y<ny/2; y++) {
+				for (int x=0; x<nx/2; x++) {
+					float r=Util::hypot3(x,y,z);
+					if (r<center-w3 || r>center+w3) continue;
+					image->set_complex_at(x,y,z,exp(-pow((r-center)/width,2.0f)));
+				}
+			}
+		}
+	}
 }
 
 
@@ -9295,11 +9342,7 @@ void TestImageScurve::process_inplace(EMData * image)
 		int y=ny/4+i*ny/200;
 		for (int xx=x-nx/10; xx<x+nx/10; xx++) {
 			for (int yy=y-ny/10; yy<y+ny/10; yy++) {
-#ifdef	_WIN32
-				(*image)(xx,yy)+=exp(-pow(static_cast<float>(_hypot(xx-x,yy-y))*30.0f/nx,2.0f))*(sin(static_cast<float>((xx-x)*(yy-y)))+.5f);
-#else
 				(*image)(xx,yy)+=exp(-pow(static_cast<float>(hypot(xx-x,yy-y))*30.0f/nx,2.0f))*(sin(static_cast<float>((xx-x)*(yy-y)))+.5f);
-#endif
 			}
 		}
 	}
@@ -9377,11 +9420,7 @@ void TestImageSphericalWave::process_inplace(EMData * image)
 	if(ndim==2) {	//2D
 		for(int j=0; j<ny; ++j) {
 			for(int i=0; i<nx; ++i) {
-#ifdef _WIN32
-				float r=_hypotf(x-(float)i,y-(float)j);
-#else
 				float r=hypot(x-(float)i,y-(float)j);
-#endif	//_WIN32
 				if (r<.5) continue;
 				image->set_value_at(i,j,cos(2*(float)pi*r/wavelength+phase)/r);
 			}
@@ -9686,6 +9725,7 @@ void TestImageCirclesphere::process_inplace(EMData * image)
 void TestImageHollowEllipse::process_inplace(EMData * image)
 {
 	preprocess(image);
+	image->to_zero();	// The testimage processors are supposed to replace the image contents
 
 	float width = params.set_default("width",2.0f);
 
@@ -9768,6 +9808,7 @@ void TestImageHollowEllipse::process_inplace(EMData * image)
 void TestImageEllipse::process_inplace(EMData * image)
 {
 	preprocess(image);
+	image->to_zero();	// The testimage processors are supposed to replace the image contents
 
 
 	float a = params.set_default("a",nx/2.0f-1.0f);
@@ -10165,8 +10206,9 @@ void CCDNormProcessor::process_inplace(EMData * image)
 EMData* EnhanceProcessor::process(const EMData * const image)
 {
 	int nx=image->get_xsize();
+	int nz=image->get_xsize();
 	EMData * result = image->process("filter.highpass.gauss",Dict("cutoff_freq",0.01f));
-	result->process_inplace("mask.decayedge2d",Dict("width",nx/50));
+	if (nz==1) result->process_inplace("mask.decayedge2d",Dict("width",nx/50));
 	result->add(-float(result->get_attr("minimum")));
 	result->process_inplace("filter.lowpass.tophat",Dict("cutoff_freq",0.05));
 	result->process_inplace("math.squared");

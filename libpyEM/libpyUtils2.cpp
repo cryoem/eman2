@@ -28,10 +28,6 @@
  *
  * */
 
-#ifdef _WIN32
-	#pragma warning(disable:4819)
-#endif	//_WIN32
-
 #include <numpy/arrayobject.h>
 
 // Boost Includes ==============================================================
@@ -42,7 +38,7 @@
 #include <emdata.h>
 #include <emutil.h>
 #include <sparx/lapackblas.h>
-#include <imageio.h>
+#include <io/imageio.h>
 #include <testutil.h>
 #include <xydata.h>
 #include <emobject.h>
@@ -1264,6 +1260,9 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
         .value("IMAGE_EMIM", EMAN::EMUtil::IMAGE_EMIM)
         .value("IMAGE_VTK", EMAN::EMUtil::IMAGE_VTK)
         .value("IMAGE_MRC", EMAN::EMUtil::IMAGE_MRC)
+        .value("IMAGE_EER", EMAN::EMUtil::IMAGE_EER)
+        .value("IMAGE_EER2X", EMAN::EMUtil::IMAGE_EER2X)
+        .value("IMAGE_EER4X", EMAN::EMUtil::IMAGE_EER4X)
         .value("IMAGE_LST", EMAN::EMUtil::IMAGE_LST)
         .value("IMAGE_DM3", EMAN::EMUtil::IMAGE_DM3)
         .value("IMAGE_DM4", EMAN::EMUtil::IMAGE_DM4)

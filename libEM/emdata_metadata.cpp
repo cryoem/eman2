@@ -32,7 +32,7 @@
 #include "emdata.h"
 #include "ctf.h"
 #include "portable_fileio.h"
-#include "imageio.h"
+#include "io/imageio.h"
 
 #include <cstring>
 #include <sstream>
@@ -399,7 +399,7 @@ IntPoint EMData::calc_max_location() const
 }
 
 
-IntPoint EMData::calc_max_location_wrap(const int maxdx, const int maxdy, const int maxdz)
+IntPoint EMData::calc_max_location_wrap(const int maxdx, const int maxdy, const int maxdz, float *value)
 {
 	int maxshiftx = maxdx, maxshifty = maxdy, maxshiftz = maxdz;
 	if (maxdx == -1) maxshiftx = get_xsize()/4;
@@ -439,6 +439,7 @@ IntPoint EMData::calc_max_location_wrap(const int maxdx, const int maxdy, const 
 			}
 		}
 	}
+	if (value) *value=max_value;
 
 	return peak;
 }

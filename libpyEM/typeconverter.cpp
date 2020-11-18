@@ -32,10 +32,6 @@
 #define NO_IMPORT_ARRAY
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 
-#ifdef _WIN32
-#pragma warning(disable:4819)
-#endif	//_WIN32
-
 #include <Python.h>
 #include "typeconverter.h"
 #include "emdata.h"
@@ -109,6 +105,9 @@ EMData* EMNumPy::numpy2em(const np::ndarray& array)
 		std::copy(array_data, array_data + nx * ny * nz, reinterpret_cast<float *>(temparray));
 	}
 	EMData* image = new EMData((float*)temparray, nx, ny, nz);
+	image->set_attr("apix_x", 1.0);
+	image->set_attr("apix_y", 1.0);
+	image->set_attr("apix_z", 1.0);
 
 	image->update();
 	return image;

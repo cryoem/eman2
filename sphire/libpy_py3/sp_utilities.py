@@ -4325,6 +4325,55 @@ def params_2D_3D(alpha, sx, sy, mirror):
     return phi, theta, psi, s2x, s2y
 
 
+def compose_transform2m(
+	alpha1=0.0,
+	sx1=0.0,
+	sy1=0.0,
+	mirror1=0,
+	scale1=1.0,
+	alpha2=0.0,
+	sx2=0.0,
+	sy2=0.0,
+	mirror2=0,
+	scale2=1.0,
+):
+	"""Print the composition of two transformations  T2*T1
+		Here  if v's are vectors:   vnew = T2*T1 vold
+			 with T1 described by alpha1, sx1, scale1 etc.
+
+	  Combined parameters correspond to image first transformed by set 1 followed by set 2.
+
+		Usage: compose_transform2(alpha1,sx1,sy1,mirror1,scale1,alpha2,sx2,sy2,mirror2,scale2)
+		   angles in degrees
+	"""
+
+	t1 = EMAN2_cppwrap.Transform(
+		{
+			"type": "2D",
+			"alpha": alpha1,
+			"tx": sx1,
+			"ty": sy1,
+			"mirror": mirror1,
+			"scale": scale1,
+		}
+	)
+	t2 = EMAN2_cppwrap.Transform(
+		{
+			"type": "2D",
+			"alpha": alpha2,
+			"tx": sx2,
+			"ty": sy2,
+			"mirror": mirror2,
+			"scale": scale2,
+		}
+	)
+	tt = t2 * t1
+	d = tt.get_params("2D")
+	return d["alpha"], d["tx"], d["ty"], int(d["mirror"] + 0.1), d["scale"]
+
+
+
+
 def compose_transform2(alpha1, sx1, sy1, scale1, alpha2, sx2, sy2, scale2):
     """Print the composition of two transformations  T2*T1
         Here  if v's are vectors:   vnew = T2*T1 vold

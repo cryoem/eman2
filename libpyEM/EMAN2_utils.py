@@ -17,11 +17,13 @@ amino_dict= {0: 'ALA', 1: 'ARG', 2: 'ASN', 3: 'ASP', 4: 'CYS', 5: 'GLU', 6: 'GLN
 amino_dict.update(dict((v, k) for k, v in list(amino_dict.items())))
 amino_dict.update({'A': 0, 'C': 4, 'E': 5, 'D': 3, 'G': 7, 'F': 13, 'I': 9, 'H': 8, 'K': 11, 'M': 12, 'L': 10, 'N': 2, 'Q': 6, 'P': 14, 'S': 15, 'R': 1, 'T': 16, 'W': 17, 'V': 19, 'Y': 18, 'X':20, 'U': 22})
 
-def pdb2numpy(fname, readres=False, readocc=False, readbfac=False):
+
+def pdb2numpy(fname, readres=False, readocc=False, readbfac=False, readchain=False):
 	f=open(fname,'r')
 	lines=f.readlines()
 	f.close()
 	data=[]
+	cid={}
 	for l in lines:
 		if l.startswith("ATOM") or l.startswith("HETATM"):
 			if l[13:15]!="CA": continue
@@ -34,10 +36,17 @@ def pdb2numpy(fname, readres=False, readocc=False, readbfac=False):
 				a.append(float(l[54:60].strip()))
 			if readbfac:
 				a.append(float(l[60:66].strip()))
+			if readchain:
+				c=l[20:23].strip()
+				if not c in cid:
+					cid[c]=len(cid.keys())
+				
+				a.append(cid[c])
 			data.append(a)
-	
+
 	pts=np.array(data)
 	return pts
+
 
 def numpy2pdb(data,fname,occ=[],bfac=[],chainid=[], model=0, residue=[]):
 	if model>0:

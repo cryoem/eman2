@@ -4,7 +4,7 @@ from __future__ import division
 
 import unittest
 from numpy import array_equal, linspace, allclose
-from sphire.libpy.sp_utilities import model_gauss_noise
+from sphire.sphire.libpy.sp_utilities import model_gauss_noise
 from EMAN2_cppwrap import EMData, EMAN2Ctf
 from copy import deepcopy
 
@@ -16,7 +16,7 @@ mpi_init(0, [])
 TOLERANCE = 0.0075
 
 from sphire.libpy_py3 import sp_filter as oldfu
-from sphire.libpy import sp_filter as fu
+from sphire.sphire.libpy import sp_filter as fu
 
 """
 WHAT IS MISSING:

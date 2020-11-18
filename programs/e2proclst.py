@@ -189,8 +189,9 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 		
 				elif options.exclude:
 					indxs=set(range(n))
-					indxsexclude = set(options.exclude.split(','))
-					indxsinclude = [int(j) for j in indxs-indxsexclude]
+					indxsexclude = set([int(i) for i in options.exclude.split(',')])
+					indxsinclude = list(indxs-indxsexclude)
+					if len(indxsinclude)<2000 :print(f"including ({len(indxsinclude)}): {indxsinclude}")
 
 				elif options.include:
 					indxsinclude = [int(j) for j in options.include.split(',')]

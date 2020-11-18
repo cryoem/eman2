@@ -3,8 +3,7 @@ from __future__ import division
 
 from numpy import array_equal,allclose
 
-
-from sphire.bin import sp_compute_isac_avg as fu
+from ..sphire.bin import sp_compute_isac_avg as fu
 from sphire.bin_py3 import sp_compute_isac_avg as oldfu
 
 

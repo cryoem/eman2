@@ -17,14 +17,17 @@ def main():
 	parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=2, col=1, rowspan=1, colspan=1, mode="model")
 
 	parser.add_argument("--mask", type=str,help="Mask file to be applied to initial model", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=3, col=0,rowspan=1, colspan=3, mode="model")
+	parser.add_argument("--maskalign", type=str,help="Mask file applied to 3D alignment reference in each iteration. Not applied to the average, which will follow normal masking routine.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=4, col=0,rowspan=1, colspan=3, mode="model")
 
-	parser.add_argument("--niter", type=int,help="Number of iterations", default=5, guitype='intbox',row=4, col=0,rowspan=1, colspan=1, mode="model")
-	parser.add_argument("--sym", type=str,help="symmetry", default="c1", guitype='strbox',row=4, col=1,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--niter", type=int,help="Number of iterations", default=5, guitype='intbox',row=5, col=0,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--sym", type=str,help="symmetry", default="c1", guitype='strbox',row=5, col=1,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--maxres",type=float,help="Maximum resolution (the smaller number) to consider in alignment (in A, not 1/A)",default=0)
+	parser.add_argument("--minres",type=float,help="Minimum resolution (the larger number) to consider in alignment (in A, not 1/A, default=200)",default=200)
 	
-	parser.add_argument("--mass", type=float,help="mass. default -1 will skip by mass normalization", default=-1, guitype='floatbox',row=5, col=0,rowspan=1, colspan=1, mode="model")
-	parser.add_argument("--localfilter", action="store_true", default=False ,help="use tophat local", guitype='boolbox',row=5, col=2,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--mass", type=float,help="mass. default -1 will skip by mass normalization", default=-1, guitype='floatbox',row=5, col=2,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--localfilter", action="store_true", default=False ,help="use tophat local", guitype='boolbox',row=6, col=2,rowspan=1, colspan=1, mode="model")
 
-	parser.add_argument("--goldstandard", type=int,help="initial resolution for gold standard refinement", default=-1, guitype='intbox',row=6, col=0,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--goldstandard", type=int,help="initial resolution for gold standard refinement in A", default=-1, guitype='intbox',row=6, col=0,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--goldcontinue", action="store_true", default=False ,help="continue from an existing gold standard refinement", guitype='boolbox',row=6, col=1,rowspan=1, colspan=1, mode="model")
 
 	parser.add_argument("--setsf", type=str,help="structure factor", default=None, guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=7, col=0,rowspan=1, colspan=3, mode="model")
@@ -33,14 +36,15 @@ def main():
 
 	parser.add_argument("--maxtilt",type=float,help="Explicitly zeroes data beyond specified tilt angle. Assumes tilt axis exactly on Y and zero tilt in X-Y plane. Default 90 (no limit).",default=90.0, guitype='floatbox',row=8, col=2,rowspan=1, colspan=1, mode="model")
 
-	parser.add_argument("--threads", type=int,help="threads", default=12, guitype='intbox',row=9, col=0,rowspan=1, colspan=1, mode="model")
 
 	parser.add_argument("--path", type=str,help="Specify name of refinement folder. Default is spt_XX.", default=None)#, guitype='strbox', row=10, col=0,rowspan=1, colspan=3, mode="model")
 	parser.add_argument("--maxang",type=float,help="maximum anglular difference in refine mode.",default=30)
 	parser.add_argument("--maxshift",type=float,help="maximum shift in pixel.",default=-1)
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
+	parser.add_argument("--threads", type=int,help="threads", default=12, guitype='intbox',row=9, col=0,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default="")
+	parser.add_argument("--transonly",action="store_true",help="translational alignment only",default=False)
 	parser.add_argument("--refine",action="store_true",help="local refinement from xform in header.",default=False)
 	parser.add_argument("--randphi",action="store_true",help="randomize phi for refine search",default=False)
 	parser.add_argument("--rand180",action="store_true",help="include 180 degree rotation for refine search",default=False)
@@ -48,6 +52,7 @@ def main():
 	parser.add_argument("--scipy",action="store_true",help="test scipy refinement",default=False)
 	parser.add_argument("--breaksym",action="store_true",help="break symmetry",default=False)
 	parser.add_argument("--breaksymsym", type=str,help="Specify a different symmetry for breaksym.", default=None)
+	parser.add_argument("--symalimask",type=str,default=None,help="This will translationally realign each asymmetric unit to the previous map masked by the specified mask. While this invokes symalimasked in e2spt_average, this isn't the same, it is a mask, not a masked reference. ")
 	
 	#parser.add_argument("--masktight", type=str,help="Mask_tight file", default="")
 
@@ -79,7 +84,8 @@ def main():
 		print("Start resolution {:.1f}".format(curres))
 		
 	else:
-		curres=20
+		if options.maxres!=0 : curres=options.maxres
+		else: curres=20
 		startitr=1
 		
 		
@@ -87,6 +93,13 @@ def main():
 	if options.parallel=="":
 		options.parallel="thread:{}".format(options.threads)
 	
+	msk=options.mask
+	if len(msk)>0:
+		if os.path.isfile(msk):
+			msk=" --automask3d mask.fromfile:filename={}".format(msk)
+		else:
+			msk=" --automask3d {}".format(msk)
+
 	#### make a list file if the particles are not in a lst
 	if ptcls.endswith(".json"):
 		jstmp=js_open_dict(ptcls)
@@ -128,8 +141,32 @@ def main():
 				run("e2proc3d.py {} {}/model_input.hdf --process mask.soft:outer_radius=-1 --first {} --last {}".format(ref, options.path, refn,refn))
 		ref="{}/model_input.hdf".format(options.path)
 		
+	if (len(options.maskalign)>0):
+		maskalign=EMData(options.maskalign,0)
 	
 	for itr in range(startitr,options.niter+startitr):
+
+		# the alignment ref may be masked using a different file, or just copied
+		if options.goldstandard>0 or options.goldcontinue :
+			if itr==1: refe,refo=ref,ref
+			else:
+				refe=ref[:-4]+"_even.hdf"
+				refo=ref[:-4]+"_odd.hdf"
+				
+			ar=EMData(refe,0)
+			if itr==1 : ar.process_inplace("filter.lowpass.randomphase",{"cutoff_freq":1.0/options.goldstandard})
+			if (len(options.maskalign)>0): ar.mult(maskalign)
+			ar.write_image(f"{options.path}/alignref_even.hdf",0)
+			ar=EMData(refo,0)
+			if itr==1 : ar.process_inplace("filter.lowpass.randomphase",{"cutoff_freq":1.0/options.goldstandard})
+			if (len(options.maskalign)>0): ar.mult(maskalign)
+			ar.write_image(f"{options.path}/alignref_odd.hdf",0)
+		else:
+			ar=EMData(ref,0)
+			if (len(options.maskalign)>0):
+				m=EMData(options.maskalign,0)
+				ar.mult(m)
+			ar.write_image(f"{options.path}/alignref.hdf",0)
 		
 		#### generate alignment command first
 		gd=""
@@ -147,6 +184,9 @@ def main():
 				gd+=" --rand180"
 			if itr>startitr:
 				ptcls=os.path.join(options.path, "particle_parms_{:02d}.json".format(itr-1))
+
+		if options.transonly: gd+=" --transonly"
+
 		
 		if options.breaksym:
 			gd+=" --breaksym"
@@ -158,7 +198,7 @@ def main():
 		if options.scipy:
 			gd+=" --scipy"
 
-		cmd="e2spt_align.py {} {} --parallel {} --path {} --iter {} --sym {} --maxres {} {}".format(ptcls, ref,  options.parallel, options.path, itr, options.sym, curres, gd)
+		cmd="e2spt_align.py {} {}/alignref.hdf --parallel {} --path {} --iter {} --sym {} --minres {} --maxres {} {}".format(ptcls, options.path,  options.parallel, options.path, itr, options.sym, options.minres, curres, gd)
 		
 		ret=run(cmd)
 		
@@ -166,10 +206,16 @@ def main():
 		s=""
 		if options.maxtilt<90.:
 			s+=" --maxtilt {:.1f}".format(options.maxtilt)
+
+		# we apply the symmetric subunit mask provided to the current reference and send it to e2spt_average to do a final translational alignment
+		if options.symalimask!=None: 
+			cmd=f"e2proc3d.py {ref} {options.path}/ref_mono.hdf --multfile {options.symalimask}"
+			run(cmd)
+			s+=f" --symalimasked={options.path}/ref_mono.hdf"
 			
 		
-		#run("e2spt_average.py --threads {} --path {} --sym {} --skippostp {}".format(options.threads, options.path, options.sym, s))
-		run("e2spt_average.py --parallel {} --path {} --sym {} --keep {:.3f} --iter {} --skippostp {}".format(options.parallel, options.path, options.sym, options.pkeep, itr, s))
+		run("e2spt_average.py --threads {} --path {} --sym {} --skippostp {}".format(options.threads, options.path, options.sym, s))
+		#run("e2spt_average.py --parallel {} --path {} --sym {} --keep {:.3f} --iter {} --skippostp {}".format(options.parallel, options.path, options.sym, options.pkeep, itr, s))
 		
 		even=os.path.join(options.path, "threed_{:02d}_even.hdf".format(itr))
 		odd=os.path.join(options.path, "threed_{:02d}_odd.hdf".format(itr))
@@ -197,14 +243,6 @@ def main():
 			e.write_image(f)
 			
 		
-		msk=options.mask
-		if len(msk)>0:
-			if os.path.isfile(msk):
-				msk=" --automask3d mask.fromfile:filename={}".format(msk)
-			else:
-				msk=" --automask3d {}".format(msk)
-
-
 		s=""
 		if options.goldstandard>0:
 			s+=" --align"
@@ -215,10 +253,22 @@ def main():
 		if options.localfilter:
 			s+=" --tophat local "
 			
-		ppcmd="e2refine_postprocess.py --even {} --odd {} --output {} --iter {:d} --mass {} --threads {} --sym {} {} {} ".format(even, odd, os.path.join(options.path, "threed_{:02d}.hdf".format(itr)), itr, options.mass, options.threads, options.sym, msk, s)
-		run(ppcmd)
-		
-			
+		# if we are doing local symmetry refinement or breaking the symmetry
+		# it's a bit counterproductive if we then apply symmetry here (as was happening before 8/22/20)
+		syms=f"--sym {options.sym}"
+		if options.symalimask!=None or options.breaksym: syms=""
+		run(f"e2refine_postprocess.py --even {even} --odd {odd} --output {options.path}/threed_{itr:02d}.hdf --iter {itr:d} --tomo --mass {options.mass} --threads {options.threads} {syms} {msk} {s}")
+
+		try: symn=int(options.sym[1:])
+		except: symn=0
+		if options.symalimask!=None and not options.breaksym and symn>0:
+			os.rename(f"{options.path}threed_{itr:02d}.hdf",f"{options.path}/threed_{itr:02d}_nosym.hdf")
+			phir=360.0/(symn*2.0)
+			if   options.sym[0].lower()=="c":
+				run(f"e2proc3d.py {options.path}threed_{itr:02d}_nosym.hdf {options.path}/threed_{itr:02d}.hdf --process mask.cylinder:phicen=0:phirange={phir-5.0}:phitriangle=1:phitrirange=10.0 --sym {options.sym}")
+			elif options.sym[0].lower()=="d":
+				run(f"e2proc3d.py {options.path}threed_{itr:02d}_nosym.hdf {options.path}/threed_{itr:02d}.hdf --process mask.cylinder:phicen=0:phirange={phir-5.0}:phitriangle=1:phitrirange=10.0:zmin={data['nz']/2}:zmax={data['nz']} --sym {options.sym}")
+
 		ref=os.path.join(options.path, "threed_{:02d}.hdf".format(itr))
 		fsc=np.loadtxt(os.path.join(options.path, "fsc_masked_{:02d}.txt".format(itr)))
 		

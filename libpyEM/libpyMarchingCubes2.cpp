@@ -28,10 +28,6 @@
  *
  * */
 
-#ifdef _WIN32
-	#pragma warning(disable:4819)
-#endif	//_WIN32
-
 // Boost Includes ==============================================================
 #include <boost/python.hpp>
 

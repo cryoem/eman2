@@ -86,8 +86,8 @@ def alignstars(a,b):
 	"""This will take two lists of x,y,peak,rad_gyr and align them in 2-d"""
 	a=l2pa(a)
 	b=l2pa(b)
-#	print a.align_trans_2d(b)
 	print(a.align_2d(b))
+	# WARNING: align_trans_2d called in the next line is a removed routine
 	print(a.align_trans_2d(b,1,0,0))
 #	print centerofstars(a),centerofstars(b)
 

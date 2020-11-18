@@ -1,6 +1,7 @@
 import unittest
 
-from sphire.libpy import sp_user_functions_meridien as oldfu
+from sphire.sphire.libpy import sp_user_functions_meridien as oldfu
+
 
 # from sphire.libpy_py3 import sp_user_functions_meridien as fu
 

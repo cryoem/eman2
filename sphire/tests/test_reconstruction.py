@@ -13,8 +13,7 @@ from mpi import *
 mpi_init(0, [])
 
 from sphire.libpy_py3 import sp_reconstruction as oldfu
-from sphire.libpy import sp_reconstruction as fu
-
+from sphire.sphire.libpy import sp_reconstruction as fu
 
 from .test_module import get_real_data, ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, give_alignment_shc_data
 

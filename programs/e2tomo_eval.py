@@ -64,7 +64,7 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		self.imglst=QtWidgets.QTableWidget(1, 3, self)
 		#self.imglst.verticalHeader().hide()
 		
-		self.gbl.addWidget(self.imglst,0,0,11,1)
+		self.gbl.addWidget(self.imglst,0,0,12,1)
 		self.imglst.setColumnWidth(0,50)
 		self.imglst.setColumnWidth(1,200)
 		self.imglst_srtby=0
@@ -74,8 +74,8 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		
 		self.wg_thumbnail=EMImage2DWidget(parent=self)
 		self.wg_thumbnail.set_scale(1)
-#		self.wg_thumbnail_width=int(self.size().width()/3*.9)
-#		self.wg_thumbnail.resize(self.wg_thumbnail_width,self.wg_thumbnail_width)
+		#self.wg_thumbnail_width=int(self.size().width()/3*.9)
+		#self.wg_thumbnail.resize(self.wg_thumbnail_width,self.wg_thumbnail_width)
 		#print self.wg_thumbnail_width
 		self.wg_thumbnail.setMinimumHeight(330)
 		self.gbl.addWidget(self.wg_thumbnail, 0,1,3,2)
@@ -108,10 +108,13 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		self.bt_plotloss.setToolTip("Plot alignment loss")
 		self.gbl.addWidget(self.bt_plotloss, 7,1)
 		
-		
 		self.bt_plotctf=QtWidgets.QPushButton("PlotCtf")
 		self.bt_plotctf.setToolTip("Plot CTF estimation")
 		self.gbl.addWidget(self.bt_plotctf, 7,2)
+		
+		self.bt_clearptcl=QtWidgets.QPushButton("ClearPtcls")
+		self.bt_clearptcl.setToolTip("Clear all ptcls")
+		self.gbl.addWidget(self.bt_clearptcl, 8,2)
 		
 
 		self.bt_show2d.clicked[bool].connect(self.show2d)
@@ -122,6 +125,7 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		self.bt_showatlts.clicked[bool].connect(self.show_ali_tlts)
 		self.bt_refresh.clicked[bool].connect(self.update_files)
 		self.bt_plotctf.clicked[bool].connect(self.plot_ctf)
+		self.bt_clearptcl.clicked[bool].connect(self.clear_ptcls)
 		
 		self.wg_2dimage=EMImage2DWidget()
 		self.wg_2dimage.setWindowTitle("Tomo2D")
@@ -133,13 +137,13 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		self.cur_tlt=None
 		
 		self.setspanel=TomoListWidget(self)
-		self.gbl.addWidget(self.setspanel, 8,1,2,2)
+		self.gbl.addWidget(self.setspanel, 9,1,2,2)
 		
 		
 		self.wg_notes=QtWidgets.QLineEdit(self)
 		self.wg_notes.setText("Comments:")
 		#self.wg_notes.setStyleSheet("color: rgb(150, 150, 150);")
-		self.gbl.addWidget(self.wg_notes, 10,1,1,2)
+		self.gbl.addWidget(self.wg_notes, 11,1,1,2)
 		
 		#self.setspanel.itemClicked[QtWidgets.QListWidgetItem].connect(self.clickset)
 		self.wg_notes.textChanged.connect(self.noteupdate)
@@ -402,6 +406,14 @@ class TomoEvalGUI(QtWidgets.QWidget):
 			#self.ptclcls[k][0]=chk
 			#self.update_list()
 		
+	def clear_ptcls(self):
+		idx, info=self.get_id_info()
+		infoname=info_name(info["e2basename"])
+		js=js_open_dict(infoname)
+		js["class_list"]={}
+		js["boxes_3d"]=[]
+		js["curves"]=[]
+		js=None
 		
 	def noteupdate(self):
 		notes=self.wg_notes.text()
@@ -425,7 +437,7 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		iz=old_div(hdr["nz"],2)
 		e=EMData(info["filename"], 0, False, Region(0,0,iz, hdr["nx"], hdr["ny"],1))
 		
-		fac=float(hdr["nx"])/self.bt_show2d.width()*1.01
+		fac=float(hdr["nx"])/self.bt_show2d.width()*.55
 		e.process_inplace('math.fft.resample',{"n":fac})
 		self.wg_thumbnail.set_data(e)
 		self.wg_notes.setText(str(info["notes"]))

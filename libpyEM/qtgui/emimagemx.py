@@ -798,7 +798,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		HOMEDB.open_dict("display_preferences")
 		db = HOMEDB.display_preferences
 		#auto_contrast = db.get("display_stack_auto_contrast", dfl = True)
-		start_guess = db.get("display_stack_np_for_auto", dfl = 20)
+		#start_guess = db.get("display_stack_np_for_auto", dfl = 20)
 
 		mean  = 0.0
 		sigma = 0.0
@@ -1557,7 +1557,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		if event.source()==self:
 			event.setDropAction(Qt.MoveAction)
 			event.accept()
-		elif event.provides("application/x-eman"):
+		elif event.mimeData().hasFormat("application/x-eman"):
 			event.setDropAction(Qt.CopyAction)
 			event.accept()
 
@@ -1624,7 +1624,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			self.data.append(EMAN2.GUIbeingdragged)
 			self.set_data(self.data)
 			EMAN2.GUIbeingdragged=None
-		elif event.provides("application/x-eman"):
+		elif event.mimeData().hasFormat("application/x-eman"):
 			x=loads(event.mime_data().data("application/x-eman"))
 			if not lc : self.data.append(x)
 			else : self.data.insert(lc[0],x)

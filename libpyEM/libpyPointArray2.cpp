@@ -28,10 +28,6 @@
  *
  * */
 
-#ifdef _WIN32
-	#pragma warning(disable:4819)
-#endif	//_WIN32
-
 // Boost Includes ==============================================================
 #include <boost/python.hpp>
 
@@ -47,6 +43,8 @@ namespace  {
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_PointArray_distmx_overloads_0_1, distmx, 0, 1)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_PointArray_mask_overloads_1_2, mask, 1, 2)
+
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_PointArray_read_from_pdb_overloads_1_2, read_from_pdb, 1, 2)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_PointArray_set_from_overloads_1_3, set_from, 1, 3)
 
@@ -77,7 +75,7 @@ BOOST_PYTHON_MODULE(libpyPointArray2)
         .def("__len__", &EMAN::PointArray::get_number_points)
         .def("set_number_points", &EMAN::PointArray::set_number_points)
          .def("get_points", &EMAN::PointArray::get_points)
-        .def("read_from_pdb", &EMAN::PointArray::read_from_pdb)
+        .def("read_from_pdb", &EMAN::PointArray::read_from_pdb, EMAN_PointArray_read_from_pdb_overloads_1_2())
         .def("save_to_pdb", &EMAN::PointArray::save_to_pdb)
         .def("get_center", &EMAN::PointArray::get_center)
         .def("center_to_zero", &EMAN::PointArray::center_to_zero)
@@ -93,7 +91,6 @@ BOOST_PYTHON_MODULE(libpyPointArray2)
         .def("transform", &EMAN::PointArray::transform)
 		.def("right_transform", &EMAN::PointArray::right_transform)
         .def("align_2d", &EMAN::PointArray::align_2d,return_value_policy< manage_new_object >())
-        .def("align_trans_2d", &EMAN::PointArray::align_trans_2d)
         .def("mask", &EMAN::PointArray::mask, EMAN_PointArray_mask_overloads_1_2())
         .def("mask_asymmetric_unit", &EMAN::PointArray::mask_asymmetric_unit)
         .def("set_from", (void (EMAN::PointArray::*)(EMAN::PointArray*, const std::string&, EMAN::Transform*) )&EMAN::PointArray::set_from, EMAN_PointArray_set_from_overloads_1_3())

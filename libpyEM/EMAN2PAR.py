@@ -44,15 +44,17 @@ from pickle import dumps,loads,dump,load
 from EMAN2jsondb import JSTask,JSTaskQueue,js_open_dict
 from EMAN2 import test_image,EMData,abs_path,local_datetime,EMUtil,Util,get_platform, e2getinstalldir
 
-DBUG=False		# If set will dump a bunch of debugging output, normally should be False
-
 # If we can't import it then we probably won't be trying to use MPI
 try :
 	from mpi import *
 	from mpi_eman import *
+	MPIOK=True
 except : 
-	print("Failed to import MPI...")
+	MPIOK=False
 	pass
+
+DBUG=False		# If set will dump a bunch of debugging output, normally should be False
+
 
 # if there is a problem with zlib just don't compress
 try: 
@@ -202,6 +204,10 @@ class EMMpiTaskHandler(object):
 	all knowledge of running processes dies with it."""
 	lock=threading.Lock()
 	def __init__(self,ncpus=2,scratchdir="/tmp",module="", usethreads=-1):
+		if not MPIOK:
+			print("Error: MPI import failed")
+			sys.exit(1)
+
 		try: user=getpass.getuser()
 		except: user="anyone"
 

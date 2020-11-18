@@ -15,7 +15,7 @@ mpi_init(0, [])
 sp_global_def.BATCH = True
 sp_global_def.MPI = False
 from sphire.libpy_py3 import sp_statistics as oldfu
-from sphire.libpy import sp_statistics as fu
+from sphire.sphire.libpy import sp_statistics as fu
 
 from sphire.tests.test_module import (
     remove_list_of_file,
@@ -26,7 +26,7 @@ from sphire.tests.test_module import (
     give_ali2d_single_iter_data,
     give_ave_series_data,
 )
-from sphire.libpy.sp_utilities import model_circle, model_blank
+from sphire.sphire.libpy.sp_utilities import model_circle
 from EMAN2_cppwrap import EMData
 
 ABSOLUTE_PATH = path.dirname(path.realpath(__file__))

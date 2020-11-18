@@ -9,11 +9,11 @@ from numpy import allclose
 # from sphire.bin_py3 import sp_isac2 as oldfu
 # from sphire.bin import sp_isac2 as fu
 
-from sphire.libpy.sp_utilities import get_im
+from sphire.sphire.libpy.sp_utilities import get_im
 from os import path
 from sphire.tests.test_module import ABSOLUTE_OLDBIN_PATH,ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,ABSOLUTE_BIN_PATH,remove_dir
 import unittest
-import numpy
+
 try:
     # python 3.4+ should use builtin unittest.mock not mock package
     from unittest.mock import patch
@@ -25,7 +25,6 @@ try:
 except ImportError:
     # python3 case. You will get an error because 'sys.stdout.write(msg)' presents in the library not in the test!!
     from io import StringIO
-import sys
 
 """
 WHAT IS MISSING:
