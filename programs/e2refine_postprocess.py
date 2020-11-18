@@ -86,7 +86,7 @@ def main():
 	if options.m3dpostprocess==None or len(options.m3dpostprocess.strip())==0 : m3dpostproc=""
 	else : m3dpostproc="--process "+options.m3dpostprocess
 
-	lpfilt=old_div(1.15,max(10.0,options.restarget))	# low-pass for alignment
+	lpfilt=1.15/max(10.0,options.restarget)	# low-pass for alignment
 	
 	
 	
@@ -194,7 +194,7 @@ def main():
 		print("NOT performing amplitude correction")
 		ampcorrect = ""
 
-	maxfreq=old_div(1.0,options.restarget)
+	maxfreq=1.0/options.restarget
 	wiener = "--process=filter.wiener.byfsc:fscfile={path}fsc_unmasked_{itr:02d}.txt:snrmult=2:maxfreq={maxfreq}".format(path=path, itr=options.iter, maxfreq=maxfreq)
 	if options.mass>0:
 		massnorm = "--process normalize.bymass:thr=1:mass={mass}".format(mass=options.mass)
@@ -363,7 +363,7 @@ def main():
 		noisecutoff=calc_noise_cutoff("{path}fsc_masked_{itr:02d}.txt".format(path=path,itr=options.iter),options.ncmult)
 	except:
 		print("WARNING: no resolution determined from FSC at 0.143, using 1/restarget for tophat cutoff")
-		noisecutoff=old_div(1.0,options.restarget)
+		noisecutoff=1.0/options.restarget
 
 	# readjust 'flatten' for new fsc
 	if options.ampcorrect == "flatten":

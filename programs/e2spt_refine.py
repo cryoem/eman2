@@ -27,8 +27,9 @@ def main():
 	parser.add_argument("--mass", type=float,help="mass. default -1 will skip by mass normalization", default=-1, guitype='floatbox',row=5, col=2,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--localfilter", action="store_true", default=False ,help="use tophat local", guitype='boolbox',row=6, col=2,rowspan=1, colspan=1, mode="model")
 
-	parser.add_argument("--goldstandard", type=int,help="initial resolution for gold standard refinement in A", default=-1, guitype='intbox',row=6, col=0,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--goldstandard", type=int,help="Phase randomization resolution for gold standard refinement in A. Not equivalent to restarget in e2refine_easy.", default=-1, guitype='intbox',row=6, col=0,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--goldcontinue", action="store_true", default=False ,help="continue from an existing gold standard refinement", guitype='boolbox',row=6, col=1,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--restarget", default=0, type=float,help="The resolution you reasonably expect to achieve in the current refinement run in A.")
 
 	parser.add_argument("--setsf", type=str,help="structure factor", default=None, guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=7, col=0,rowspan=1, colspan=3, mode="model")
 
@@ -77,15 +78,15 @@ def main():
 			fsc=np.loadtxt(os.path.join(options.path, "fsc_masked_{:02d}.txt".format(itr)))
 			rs=1./fsc[fsc[:,1]<0.3, 0][0]
 		except:
-			rs=20
+			rs=60
 		curres=rs
-		if curres>20.:
-			curres=20
+		if curres>75.:
+			curres=75
 		print("Start resolution {:.1f}".format(curres))
 		
 	else:
-		if options.maxres!=0 : curres=options.maxres
-		else: curres=20
+		if options.minres!=0 : curres=options.minres
+		else: curres=60
 		startitr=1
 		
 		
@@ -171,7 +172,7 @@ def main():
 		#### generate alignment command first
 		gd=""
 		if options.goldstandard>0 and itr==1:
-			curres=options.goldstandard
+			curres=options.goldstandard*1.5
 			gd=" --goldstandard {}".format(options.goldstandard)
 		if options.goldcontinue or (options.goldstandard>0 and itr>1):
 			gd=" --goldcontinue".format(options.goldstandard)
@@ -252,12 +253,14 @@ def main():
 			
 		if options.localfilter:
 			s+=" --tophat local "
-			
+		
 		# if we are doing local symmetry refinement or breaking the symmetry
 		# it's a bit counterproductive if we then apply symmetry here (as was happening before 8/22/20)
 		syms=f"--sym {options.sym}"
 		if options.symalimask!=None or options.breaksym: syms=""
-		run(f"e2refine_postprocess.py --even {even} --odd {odd} --output {options.path}/threed_{itr:02d}.hdf --iter {itr:d} --tomo --mass {options.mass} --threads {options.threads} {syms} {msk} {s}")
+		if options.restarget>0: restarget=options.restarget
+		else: restarget=curres
+		run(f"e2refine_postprocess.py --even {even} --odd {odd} --output {options.path}/threed_{itr:02d}.hdf --iter {itr:d} --tomo --mass {options.mass} --threads {options.threads} --restarget {restarget} {syms} {msk} {s}")
 
 		try: symn=int(options.sym[1:])
 		except: symn=0
