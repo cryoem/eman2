@@ -861,6 +861,14 @@ def textwriter(data,options,name,invert=0,xvals=None,onlydata=False):
 	return
 
 
+def extensions():
+	"""
+	Can help to quickly check for/find valid EM image files in a directory based on filename before even attempting to load an file into an EMData object
+	Author: Jesus Montoya, jgalaz@gmail.com
+	"""
+	return ['.dm3','.DM3','.mrc','.MRC','.mrcs','.MRCS','.hdf','.HDF','.tif','.TIF','.st','.ST','.ali','.ALI','.rec','.REC']
+
+
 def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ralign=None, alircmp=("dot",{}),shrink=None,mask=None,subset=None,prefilt=False,verbose=0):
 	"""Compares one image (target) to a list of many images (reflist). Returns """
 
