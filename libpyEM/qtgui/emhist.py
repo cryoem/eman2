@@ -302,7 +302,7 @@ class EMHistogramWidget(EMGLWidget):
 					for i in range(len(im)):
 						r.append(im[i][j,0])
 					all.append(r)
-				self.set_data(all,vecset,quiet=quiet)
+				self.set_data(all,"Vecset",quiet=quiet)
 			else:
 				for idx,image in enumerate(im):
 					l = [i for i in range(image.get_size())]
