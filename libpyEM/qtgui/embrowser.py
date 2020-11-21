@@ -1290,8 +1290,8 @@ class EMJSONFileType(EMFileType) :
 			all.insert_clip(z,(x["nx"]*2,0))
 			
 			# copy some parameters from the original image header
-			for k in ["ptcl_repr","class_ptcl_idxs","class_ptlc_src","orig_file","orig_n","source_path","source_n"]:
-				try: all[k]=ptcl[k]
+			for kh in ["ptcl_repr","class_ptcl_idxs","class_ptlc_src","orig_file","orig_n","source_path","source_n"]:
+				try: all[kh]=ptcl[kh]
 				except: pass
 			data.append(all)
 			
