@@ -499,12 +499,20 @@ class EMFileType(object) :
 			
 			time.sleep(0.001)
 			get_application().processEvents()
-			# these are the range limited orthogonal projections
+			# these are the range limited orthogonal projections, with optional filtration
 			x=ptcl.process("misc.directional_sum",{"axis":"x","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
-			get_application().processEvents()
+			if lowpass>0 : x.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/lowpass})
+			if highpass>0 : x.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/highpass})
+			get_application().processEvents()	# keeps the GUI happy
+
 			y=ptcl.process("misc.directional_sum",{"axis":"y","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
+			if lowpass>0 : y.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/lowpass})
+			if highpass>0 : y.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/highpass})
 			get_application().processEvents()
+
 			z=ptcl.process("misc.directional_sum",{"axis":"z","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
+			if lowpass>0 : z.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/lowpass})
+			if highpass>0 : z.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/highpass})
 
 			# different directions sometimes have vastly different standard deviations, independent normalization may help balance
 			x.process_inplace("normalize")
@@ -1234,12 +1242,15 @@ class EMJSONFileType(EMFileType) :
 		if img1<=img0 : img1+=1
 		imgstep=self.secparm.wspinstep.value()
 		layers=self.secparm.wspinlayers.value()
+		lowpass=float(self.secparm.wlelp.text())
+		highpass=float(self.secparm.wlehp.text())
 		applyxf=self.secparm.wcheckxf.checkState()
 		
+#		print(img0,img1,ungstep,layers)
 		
 		brws.busy()
 				
-		progress = QtWidgets.QProgressDialog("Generating projections", "Cancel", 0, img1-img0-1,None)
+		progress = QtWidgets.QProgressDialog("Generating projections", "Cancel", 0, (img1-img0-1)/imgstep,None)
 		
 		data=[]
 		i=0
@@ -1250,7 +1261,7 @@ class EMJSONFileType(EMFileType) :
 				print("Key error: ",k)
 				continue
 			
-			if (n<img0 or n>=img1) and (n-img0)%imgstep!=0 : 
+			if n<img0 or n>=img1 or (n-img0)%imgstep!=0 : 
 				continue
 		
 			try: ptcl=EMData(fsp,n)
@@ -1270,12 +1281,21 @@ class EMJSONFileType(EMFileType) :
 			
 			time.sleep(0.001)
 			get_application().processEvents()
-			# these are the range limited orthogonal projections
+
+			# these are the range limited orthogonal projections, with optional filtration
 			x=ptcl.process("misc.directional_sum",{"axis":"x","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
-			get_application().processEvents()
+			if lowpass>0 : x.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/lowpass})
+			if highpass>0 : x.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/highpass})
+			get_application().processEvents()	# keeps the GUI happy
+
 			y=ptcl.process("misc.directional_sum",{"axis":"y","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
+			if lowpass>0 : y.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/lowpass})
+			if highpass>0 : y.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/highpass})
 			get_application().processEvents()
+
 			z=ptcl.process("misc.directional_sum",{"axis":"z","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
+			if lowpass>0 : z.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/lowpass})
+			if highpass>0 : z.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/highpass})
 
 			# different directions sometimes have vastly different standard deviations, independent normalization may help balance
 			x.process_inplace("normalize")
@@ -3390,25 +3410,38 @@ class EMSliceParamDialog(QtWidgets.QDialog):
 		self.wspinmin=QtWidgets.QSpinBox()
 		self.wspinmin.setRange(-1,nimg-1)
 		self.wspinmin.setValue(-1)
+		self.wspinmin.setToolTip("Start of range of volumes to display, -1 for all")
 		self.fol.addRow("First Image #:",self.wspinmin)
 		
 		self.wspinmax=QtWidgets.QSpinBox()
 		self.wspinmax.setRange(-1,nimg-1)
 		self.wspinmax.setValue(-1)
+		self.wspinmax.setToolTip("End (exclusive) of range of volumes to display, -1 for all")
 		self.fol.addRow("Last Image #:",self.wspinmax)
 
 		self.wspinstep=QtWidgets.QSpinBox()
 		self.wspinstep.setRange(1,nimg/2)
 		self.wspinstep.setValue(1)
+		self.wspinstep.setToolTip("Step for range of volumes to display (partial display of file)")
 		self.fol.addRow("Step:",self.wspinstep)
 
 		self.wspinlayers=QtWidgets.QSpinBox()
 		self.wspinlayers.setRange(0,256)
 		self.wspinlayers.setValue(0)
+		self.wspinlayers.setToolTip("Projection about center +- selected number of layers, eg- 0 -> central section only")
 		self.fol.addRow("Sum Layers (0->1, 1->3, 2->5, ...):",self.wspinlayers)
+
+		self.wlelp=QtWidgets.QLineEdit("-1")
+		self.wlelp.setToolTip("If >0 applies a low-pass filter in 2D. Specify in A.")
+		self.fol.addRow("Lowpass (A):",self.wlelp)
+
+		self.wlehp=QtWidgets.QLineEdit("-1")
+		self.wlehp.setToolTip("If >0 applies a high-pass filter in 2D. Specify in A.")
+		self.fol.addRow("Highpass (A):",self.wlehp)
 
 		self.wcheckxf=QtWidgets.QCheckBox("enable")
 		self.wcheckxf.setChecked(1)
+		self.wcheckxf.setToolTip("If set, applies the xform from the JSON/lst file or image header before making projections")
 		self.fol.addRow("Apply xform.align3d from header:",self.wcheckxf)
 
 		self.bhb = QtWidgets.QHBoxLayout()
