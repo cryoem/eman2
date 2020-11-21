@@ -467,8 +467,9 @@ class EMFileType(object) :
 	
 		img0=self.secparm.wspinmin.value()
 		img0=max(img0,0)
-		img1=self.secparm.wspinmax.value()+1
+		img1=self.secparm.wspinmax.value()
 		if img1<0 or img1>self.nimg: img1=self.nimg
+		imgstep=self.secparm.wspinstep.value()
 		layers=self.secparm.wspinlayers.value()
 		applyxf=self.secparm.wcheckxf.checkState()
 		
@@ -485,7 +486,7 @@ class EMFileType(object) :
 #		progress.show()
 		
 		data=[]
-		for i in range(img0,img1):
+		for i in range(img0,img1,imgstep):
 			try: ptcl=EMData(self.path,i)
 			except:
 				print(f"Error reading {self.path} {i}")
@@ -1107,12 +1108,20 @@ class EMJSONFileType(EMFileType) :
 		v=self.js.values()[0]
 		if type(v)==dict:
 			if "xform.align3d" in v:
-				return [
+				ret=[
 					("Plot 2D", "plot xform", self.plot2dApp),
 					("Plot 2D+", "plot xform", self.plot2dNew),
 					("Histogram", "histogram xform", self.histApp),
 					("Histogram+", "histogram xform", self.histNew)
 					]
+				try:
+					fsp,n=eval(self.js.keys()[0])
+					tmp=EMData(fsp,n)
+					ret.append(("All XYZ", "Show restricted XYZ projections of all", self.show2dStack3sec))
+				except:
+					pass
+			
+				return ret
 
 		return []
 	
@@ -1202,6 +1211,110 @@ class EMJSONFileType(EMFileType) :
 		target.set_data(data, self.path.split('/')[-1])
 
 		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
+
+		brws.notbusy()
+		target.show()
+		target.raise_()
+
+	def show2dStack3sec(self, brws) :
+		"""A set of 2-D images derived from a stack of 3-D Volumes referenced from a JSON file"""
+		try:
+			ret=self.secparm.exec_()
+		except:
+			self.secparm=EMSliceParamDialog(brws,len(self.js))
+			ret=self.secparm.exec_()
+		
+		if not ret: return	# cancel
+	
+		# with JSON files, img0 and 1 are particle number in the referenced key
+		img0=self.secparm.wspinmin.value()
+		img0=max(img0,0)
+		img1=self.secparm.wspinmax.value()
+		if img1<0 or img1>len(self.js): img1=len(self.js)
+		if img1<=img0 : img1+=1
+		imgstep=self.secparm.wspinstep.value()
+		layers=self.secparm.wspinlayers.value()
+		applyxf=self.secparm.wcheckxf.checkState()
+		
+		
+		brws.busy()
+				
+		progress = QtWidgets.QProgressDialog("Generating projections", "Cancel", 0, img1-img0-1,None)
+		
+		data=[]
+		i=0
+		for k in self.keys:
+			try:
+				fsp,n=eval(k)
+			except:
+				print("Key error: ",k)
+				continue
+			
+			if (n<img0 or n>=img1) and (n-img0)%imgstep!=0 : 
+				continue
+		
+			try: ptcl=EMData(fsp,n)
+			except:
+				print(f"Error reading {self.path} {i}")
+				continue
+			
+			# We use the xform.align3d if it's in the JSON file, otherwise try the header
+			try: xf=self.js[k]["xform.align3d"]
+			except: 
+				try: xf=ptcl["xform.align3d"]
+				except: xf=Transform()
+			if applyxf: ptcl.process_inplace("xform",{"transform":xf})
+			
+#			if hp>0 : ptcl.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/hp})
+#			if lp>0 : ptcl.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/lp})
+			
+			time.sleep(0.001)
+			get_application().processEvents()
+			# these are the range limited orthogonal projections
+			x=ptcl.process("misc.directional_sum",{"axis":"x","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
+			get_application().processEvents()
+			y=ptcl.process("misc.directional_sum",{"axis":"y","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
+			get_application().processEvents()
+			z=ptcl.process("misc.directional_sum",{"axis":"z","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
+
+			# different directions sometimes have vastly different standard deviations, independent normalization may help balance
+			x.process_inplace("normalize")
+			y.process_inplace("normalize")
+			z.process_inplace("normalize")
+			
+			get_application().processEvents()
+			# we pack the 3 projections into a single 2D image
+			all=EMData(x["nx"]*3,x["ny"],1)
+			all.insert_clip(x,(0,0))
+			all.insert_clip(y,(x["nx"],0))
+			all.insert_clip(z,(x["nx"]*2,0))
+			
+			# copy some parameters from the original image header
+			for k in ["ptcl_repr","class_ptcl_idxs","class_ptlc_src","orig_file","orig_n","source_path","source_n"]:
+				try: all[k]=ptcl[k]
+				except: pass
+			data.append(all)
+			
+			# copy some parameters from the JSON file to the final image for possible display
+			all["xform.align3d"]=xf
+			try: all["score"]=self.js[k]["score"]
+			except: pass
+			try: all["coverage"]=self.js[k]["coverage"]
+			except: pass
+			
+			progress.setValue(i-img0)
+			i+=1
+			
+			if progress.wasCanceled():
+#				progress.close()
+				return
+
+		target = EMImageMXWidget()
+		target.set_data(data,self.path)
+		target.mx_image_double.connect(target.mouse_double_click)		# this makes class average viewing work in app mode
+		brws.view2ds.append(target)
+
+		target.qt_parent.setWindowTitle("Stack - "+self.path.split('/')[-1])
 
 		brws.notbusy()
 		target.show()
@@ -3283,6 +3396,11 @@ class EMSliceParamDialog(QtWidgets.QDialog):
 		self.wspinmax.setRange(-1,nimg-1)
 		self.wspinmax.setValue(-1)
 		self.fol.addRow("Last Image #:",self.wspinmax)
+
+		self.wspinstep=QtWidgets.QSpinBox()
+		self.wspinstep.setRange(1,nimg/2)
+		self.wspinstep.setValue(1)
+		self.fol.addRow("Step:",self.wspinstep)
 
 		self.wspinlayers=QtWidgets.QSpinBox()
 		self.wspinlayers.setRange(0,256)
