@@ -13843,7 +13843,6 @@ def iso_kmeans(images, out_dir, parameter, K=None, mask=None, init_method="Rando
 def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqpsi = "Minus", symmetry = "c1", listagls = None , listctfs = None, noise = None, realsp = False, trillinear = False):
 	from projection    import   prgs, prep_vol, project
 	from utilities     import   even_angles, read_text_row, set_params_proj, model_gauss_noise, info
-	from string        import   split
 	from filter        import   filt_ctf,filt_gaussl
 	import os
 	import types
@@ -13885,11 +13884,11 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 	else:
 		noise_level = None
 
-	if(type(volume) is bytes):
+	if(type(volume) is str):
 		vol = EMData()
 		vol.read_image(volume)
 		if(mask):
-			if(type(mask) is bytes):
+			if(type(mask) is str):
 				maski = EMData()
 				maski.read_image(volume)
 				Util.mul_img(vol, maski)
@@ -13934,7 +13933,7 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 			else:
 				volft, kbx,kby,kbz = prep_vol(vol)
 
-	if(type(stack) is bytes):
+	if(type(stack) is str):
 		Disk = True
 		os.system("rm -f  "+stack)	
 	else:

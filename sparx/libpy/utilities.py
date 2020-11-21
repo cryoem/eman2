@@ -806,10 +806,9 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 
 	from math      import pi, sqrt, cos, acos, tan, sin
 	from utilities import even_angles_cd
-	from string    import lower,split
 	angles = []
 	symmetryLower = symmetry.lower()
-	symmetry_string = split(symmetry)[0]
+	symmetry_string = symmetry.split()[0]
 	if(symmetry_string[0]  == "c"):
 		if(phi2 == 359.99):
 			angles = even_angles_cd(delta, theta1, theta2, phi1-ant, old_div(phi2,int(symmetry_string[1:]))+ant, method, phiEqpsi)
@@ -3613,7 +3612,7 @@ def nearest_many_full_k_projangles(reference_normals, angles, howmany = 1, sym_c
 	if(sym_class == None): dos = True
 	elif(sym_class.sym[:2] == "c1"): dos = True
 	else:  dos = False
-	
+
 	if dos:
 		for i,q in enumerate(angles):
 			ref = getfvec(q[0],q[1])
