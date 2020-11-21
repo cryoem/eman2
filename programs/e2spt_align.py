@@ -90,6 +90,7 @@ If --goldstandard is specified, even and odd variants of the alignment reference
 	parser.add_argument("--breaksym",action="store_true",help="symmetry breaking.",default=False)
 	parser.add_argument("--breaksymsym",type=str,help="the symmetry to use for breaksym. setting sym to c6 and this to c2 results in a c3 structure. default is the same as sym",default=None)
 	parser.add_argument("--rand180",action="store_true",help="randomly add a 180 degree rotation during refine alignment",default=False)
+	parser.add_argument("--test180",action="store_true",help="Test for improved alignment with 180 degree rotations even during refine alignment",default=False)
 	parser.add_argument("--skipali",action="store_true",help="skip alignment. the program will do nothing. mostly for testing...",default=False)
 	parser.add_argument("--maxang",type=float,help="Maximum angular difference for the refine mode. default is 30",default=30)
 	parser.add_argument("--maxshift",type=float,help="Maximum shift for the refine mode. default is 16",default=-1)
@@ -542,6 +543,7 @@ class SptAlignTask(JSTask):
 			b.process_inplace("xform.phaseorigin.tocorner")
 
 			aligndic={"verbose":options.verbose,"sym":options.sym,"sigmathis":0.1,"sigmato":1.0, "minres":options.minres,"maxres":options.maxres}
+			r180=Transform({"type":"eman","alt":180})
 			
 			if options.refine and (dataxf!=None or b.has_attr("xform.align3d")):
 				ntry=options.refinentry
@@ -550,6 +552,9 @@ class SptAlignTask(JSTask):
 				else:
 					initxf=b["xform.align3d"]
 				xfs=[initxf]
+				
+				if options.test180:
+					xfs.extend([o.rotate(r180) for o in xfs])
 				
 				for ii in range(len(xfs), ntry):
 					ixf=initxf.get_params("eman")

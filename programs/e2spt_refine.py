@@ -50,6 +50,7 @@ def main():
 	parser.add_argument("--refine",action="store_true",help="local refinement from xform in header.",default=False)
 	parser.add_argument("--randphi",action="store_true",help="randomize phi for refine search",default=False)
 	parser.add_argument("--rand180",action="store_true",help="include 180 degree rotation for refine search",default=False)
+	parser.add_argument("--test180",action="store_true",help="Test for improved alignment with 180 degree rotations even during refine alignment",default=False)
 	parser.add_argument("--resume",action="store_true",help="resume from previous run",default=False)
 	parser.add_argument("--scipy",action="store_true",help="test scipy refinement",default=False)
 	parser.add_argument("--breaksym",action="store_true",help="break symmetry",default=False)
@@ -188,6 +189,8 @@ def main():
 				gd+=" --randphi"
 			if options.rand180:
 				gd+=" --rand180"
+			if options.test180:
+				gd+=" --test180"
 			if itr>startitr:
 				ptcls=os.path.join(options.path, "particle_parms_{:02d}.json".format(itr-1))
 
