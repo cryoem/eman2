@@ -84,7 +84,7 @@ def main():
 	parser.add_argument("--savemissingtilts",action="store_true",default=False,help="""Default=False. Save tilt images corresponding to the missing wedge region.""")
 
 
-	parser.add_argument("--snr",type=float,default=None,help="Default=None. Weighing noise factor for noise added to the image.")
+	parser.add_argument("--snr",type=float,default=None,help="Default=None. Number smaller than 1.0 to make the final SNR in each tilt image. This will be calculated as SNR=sgima_signal/sigma_noise. 0.5 might be a good number assuming typical cryoEM-SPA images have SNR of 0.1 or less, and cryoET tilt series are collected with 4-6x the dose as cryoEM-SPA images.")
 	parser.add_argument("--sym",type=str,default='c1',help="Default=c1. If your particle is symmetrical, it is only necessary to randomize orientations within the asymmetric unit.")
 	parser.add_argument("--simref",action="store_true",default=False,help="Default=False. This will make a simulated particle in the same orientation as the original --input, saved to its own separate file.")
 	parser.add_argument("--set2tiltaxis",action='store_true',default=False,help="""Default=False. Simulate particles along the tilt axis only.""")
@@ -1262,6 +1262,34 @@ def noiseit( prj_r, options, nslices, outname, i, dontsave=False ):
 	
 	#noise = ( noise*3 + noise2*3 )
 	
+	#One definition of SNR = sigmasignal/sigmanoise when the noise is "known"
+	sigmasignal = prj_r['sigma']
+	sigmanoise = noise['sigma']
+	if i == 0:
+		print("\nsigmasignal={}".format(sigmasignal))
+		print("\n sigmanoise={}".format(sigmanoise))
+
+	#current_snr = sigmasignal/sigmanoise
+
+	signal_downweight_factor = options.snr * sigmanoise/sigmasignal
+	noise_boost_factor = 1.0/signal_downweight_factor
+
+	fractionationfactor = old_div(61.0,nslices)		#If 61 slices go into each subtomo, then the fractionation factor
+										#Will be 1. This assumes a +-60 deg data collection range with 2 deg increments.
+										#Otherwise, if nslices is > 61 the signal in each slice will be diluted, accordingly.
+										#If nslices < 1, the signal in each slice will be enhanced. In the end, regardless of the nslices value, 
+										#subtomograms will always have the same amount of signal instead of signal depending on number of images.
+
+	if i == 0:
+		print("\nfractionationfactor={}".format(fractionationfactor))
+
+
+	noise_boost_factor /= fractionationfactor
+	
+	if i == 0:
+		print("\nnoise_boost_factor={}".format(noise_boost_factor))
+
+
 	if options.savenoise and not dontsave:	#when --applyctf is on, noise gets applied twice, before and after CTF; it only needs to be saved the second time
 		if options.verbose > 1: print("\ne2spt_simulation)(noiseit) saving noise images")
 		noiseStackName = outname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_NOISE.hdf')
@@ -1270,7 +1298,8 @@ def noiseit( prj_r, options, nslices, outname, i, dontsave=False ):
 	#when --applyctf is on, noise gets applied twice; half before applying CTF, half after; therefore, we account for this
 	#by dividing the noise by 2 each time if --applyctf is provided.
 
-	noise *= float( options.snr )
+	#noise *= float( options.snr ) #pre nov 2020
+	noise *= noise_boost_factor
 	if options.applyctf:
 		noise *= 0.5
 		if options.verbose > 1: print("\ne2spt_simulation)(noiseit) --applyctf={}, therefore multiplied noise *0.5".format(options.applyctf))
@@ -1279,16 +1308,13 @@ def noiseit( prj_r, options, nslices, outname, i, dontsave=False ):
 	#prj_r.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.25})
 	#prj_r.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.75})
 	
-	fractionationfactor = old_div(61.0,nslices)		#If 61 slices go into each subtomo, then the fractionation factor
-											#Will be 1. This assumes a +-60 deg data collection range with 2 deg increments.
-											#Otherwise, if nslices is > 61 the signal in each slice will be diluted, accordingly.
-											#If nslices < 1, the signal in each slice will be enhanced. In the end, regardless of the nslices value, 
-											#subtomograms will always have the same amount of signal instead of signal depending on number of images.
-	prj_r.mult( fractionationfactor )
+
+	#prj_r.mult( fractionationfactor )
 	prj_r.add(noise)
 	if options.verbose > 1: print("\ne2spt_simulation)(noiseit) done adding noise to prj_r. Returning prj_r")
 	
 	return prj_r
+
 
 
 def get_results(etc,tids,options):

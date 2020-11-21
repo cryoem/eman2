@@ -25,10 +25,12 @@ def main():
 	parser.add_argument("--minres",type=float,help="Minimum resolution (the larger number) to consider in alignment (in A, not 1/A, default=200)",default=200)
 	
 	parser.add_argument("--mass", type=float,help="mass. default -1 will skip by mass normalization", default=-1, guitype='floatbox',row=5, col=2,rowspan=1, colspan=1, mode="model")
-	parser.add_argument("--localfilter", action="store_true", default=False ,help="use tophat local", guitype='boolbox',row=6, col=2,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--localfilter", action="store_true", default=False ,help="Deprecated. Please use --tophat")
+	parser.add_argument("--tophat", type=str, default=None,help = "'local', 'localwiener' or 'global'. Instead of imposing a final overall Wiener filter, use a tophat filter (global similar to Relion). local is a local tophat filter, localwiener is a localized Wiener filter", guitype='strbox', row=6, col=2,rowspan=1, colspan=1, mode="model['local']")
 
-	parser.add_argument("--goldstandard", type=int,help="initial resolution for gold standard refinement in A", default=-1, guitype='intbox',row=6, col=0,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--goldstandard", type=int,help="Phase randomization resolution for gold standard refinement in A. Not equivalent to restarget in e2refine_easy.", default=-1, guitype='intbox',row=6, col=0,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--goldcontinue", action="store_true", default=False ,help="continue from an existing gold standard refinement", guitype='boolbox',row=6, col=1,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--restarget", default=0, type=float,help="The resolution you reasonably expect to achieve in the current refinement run in A.")
 
 	parser.add_argument("--setsf", type=str,help="structure factor", default=None, guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=7, col=0,rowspan=1, colspan=3, mode="model")
 
@@ -48,6 +50,7 @@ def main():
 	parser.add_argument("--refine",action="store_true",help="local refinement from xform in header.",default=False)
 	parser.add_argument("--randphi",action="store_true",help="randomize phi for refine search",default=False)
 	parser.add_argument("--rand180",action="store_true",help="include 180 degree rotation for refine search",default=False)
+	parser.add_argument("--test180",action="store_true",help="Test for improved alignment with 180 degree rotations even during refine alignment",default=False)
 	parser.add_argument("--resume",action="store_true",help="resume from previous run",default=False)
 	parser.add_argument("--scipy",action="store_true",help="test scipy refinement",default=False)
 	parser.add_argument("--breaksym",action="store_true",help="break symmetry",default=False)
@@ -77,17 +80,20 @@ def main():
 			fsc=np.loadtxt(os.path.join(options.path, "fsc_masked_{:02d}.txt".format(itr)))
 			rs=1./fsc[fsc[:,1]<0.3, 0][0]
 		except:
-			rs=20
+			rs=60
 		curres=rs
-		if curres>20.:
-			curres=20
+		if curres>75.:
+			curres=75
 		print("Start resolution {:.1f}".format(curres))
 		
 	else:
-		if options.maxres!=0 : curres=options.maxres
-		else: curres=20
+		if options.minres!=0 : curres=options.minres
+		else: curres=60
 		startitr=1
 		
+	if options.localfilter:
+		if options.tophat!=None: print("Warning: ignoring --localfilter since --tophat specified")
+		else: options.tophat="local"
 		
 	if options.path==None: options.path = make_path("spt") 
 	if options.parallel=="":
@@ -171,7 +177,8 @@ def main():
 		#### generate alignment command first
 		gd=""
 		if options.goldstandard>0 and itr==1:
-			curres=options.goldstandard
+			curres=options.goldstandard*1.5
+			if curres>75.: curres=75
 			gd=" --goldstandard {}".format(options.goldstandard)
 		if options.goldcontinue or (options.goldstandard>0 and itr>1):
 			gd=" --goldcontinue".format(options.goldstandard)
@@ -182,6 +189,8 @@ def main():
 				gd+=" --randphi"
 			if options.rand180:
 				gd+=" --rand180"
+			if options.test180:
+				gd+=" --test180"
 			if itr>startitr:
 				ptcls=os.path.join(options.path, "particle_parms_{:02d}.json".format(itr-1))
 
@@ -198,7 +207,7 @@ def main():
 		if options.scipy:
 			gd+=" --scipy"
 
-		cmd="e2spt_align.py {} {}/alignref.hdf --parallel {} --path {} --iter {} --sym {} --minres {} --maxres {} {}".format(ptcls, options.path,  options.parallel, options.path, itr, options.sym, options.minres, curres, gd)
+		cmd="e2spt_align.py {} {}/alignref.hdf --parallel {} --path {} --iter {} --sym {} --minres {} --maxres {} {}".format(ptcls, options.path,  options.parallel, options.path, itr, options.sym, options.minres, curres*.75, gd)
 		
 		ret=run(cmd)
 		
@@ -214,8 +223,8 @@ def main():
 			s+=f" --symalimasked={options.path}/ref_mono.hdf"
 			
 		
-		run("e2spt_average.py --threads {} --path {} --sym {} --skippostp {}".format(options.threads, options.path, options.sym, s))
-		#run("e2spt_average.py --parallel {} --path {} --sym {} --keep {:.3f} --iter {} --skippostp {}".format(options.parallel, options.path, options.sym, options.pkeep, itr, s))
+		#run("e2spt_average.py --threads {} --path {} --sym {} --skippostp {}".format(options.threads, options.path, options.sym, s))
+		run("e2spt_average.py --parallel {} --path {} --sym {} --keep {:.3f} --iter {} --skippostp {}".format(options.parallel, options.path, options.sym, options.pkeep, itr, s))
 		
 		even=os.path.join(options.path, "threed_{:02d}_even.hdf".format(itr))
 		odd=os.path.join(options.path, "threed_{:02d}_odd.hdf".format(itr))
@@ -250,14 +259,16 @@ def main():
 		if options.setsf:
 			s+=" --setsf {}".format(options.setsf)
 			
-		if options.localfilter:
-			s+=" --tophat local "
-			
+		if options.tophat!=None:
+			s+=f" --tophat {options.tophat} "
+		
 		# if we are doing local symmetry refinement or breaking the symmetry
 		# it's a bit counterproductive if we then apply symmetry here (as was happening before 8/22/20)
 		syms=f"--sym {options.sym}"
 		if options.symalimask!=None or options.breaksym: syms=""
-		run(f"e2refine_postprocess.py --even {even} --odd {odd} --output {options.path}/threed_{itr:02d}.hdf --iter {itr:d} --tomo --mass {options.mass} --threads {options.threads} {syms} {msk} {s}")
+		if options.restarget>0: restarget=options.restarget
+		else: restarget=curres
+		run(f"e2refine_postprocess.py --even {even} --odd {odd} --output {options.path}/threed_{itr:02d}.hdf --iter {itr:d} --tomo --mass {options.mass} --threads {options.threads} --restarget {restarget} {syms} {msk} {s}")
 
 		try: symn=int(options.sym[1:])
 		except: symn=0
@@ -278,9 +289,9 @@ def main():
 		else:
 			rs=1./fsc[fi, 0][0]
 			print("Resolution (FSC<0.2) is ~{:.1f} A".format(rs))
-		curres=rs*.8
-		if curres>40.:
-			curres=40
+		curres=rs
+		if curres>50.:
+			curres=50
 		
 
 	E2end(logid)

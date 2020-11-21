@@ -131,6 +131,7 @@ NOTE: This program should be run from the project directory, not from within the
 	parser.add_argument("--phaseflipproc3",help="If specified _proc particles will be generated. Typical = math.meanshrink:n=2",default=None, guitype='strbox', row=11, col=0, rowspan=1, colspan=3, mode='genoutp["math.meanshrink:n=2"]')
 	parser.add_argument("--phaseflipproc4",help="If specified _proc particles will be generated.",default=None, guitype='strbox', row=12, col=0, rowspan=1, colspan=3, mode='genoutp')
 	parser.add_argument("--phaseflipproc5",help="If specified _proc particles will be generated.",default=None, guitype='strbox', row=14, col=0, rowspan=1, colspan=3, mode='genoutp')
+	parser.add_argument("--compressbits", type=int,help="Bits to keep when writing images with compression. 0->lossless floating point. Default 6", default=6, guitype='intbox', row=2, col=2, mode="genoutp[6]")
 
 #	parser.add_argument("--virtualout",type=str,help="Make a virtual stack copy of the input images with CTF parameters stored in the header. BDB only.",default=None)
 	parser.add_argument("--storeparm",action="store_true",help="Output files will include CTF info. CTF parameters are used from the database, rather than values that may be present in the input image header. Critical to use this when generating output !",default=False,guitype='boolbox', row=3, col=2, rowspan=1, colspan=1, mode='genoutp[True]')
@@ -454,7 +455,7 @@ def write_e2ctf_output(options):
 			if wienerout : print("Wiener image out: ",wienerout, end=' ')
 			print("  defocus=",ctf.defocus)
 
-			process_stack(filename,phaseout,phasehpout,phasesmout,wienerout,phaseprocout,options.extrapad,not options.nonorm,options.oversamp,ctf,snrfilt=options.snrfilt,invert=options.invert,storeparm=options.storeparm,source_image=options.source_image,zero_ok=options.zerook,verbose=options.verbose)
+			process_stack(filename,phaseout,phasehpout,phasesmout,wienerout,phaseprocout,options.extrapad,not options.nonorm,options.oversamp,ctf,snrfilt=options.snrfilt,invert=options.invert,storeparm=options.storeparm,source_image=options.source_image,zero_ok=options.zerook,compressbits=options.compressbits,verbose=options.verbose)
 
 			if logid : E2progress(logid,old_div(float(i+1),len(options.filenames)))
 
@@ -757,7 +758,7 @@ def env_cmp(sca,envelopes):
 
 	return ret
 
-def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=None,phaseproc=None,extrapad=False,edgenorm=True,oversamp=1,default_ctf=None,snrfilt=False,invert=False,storeparm=False,source_image=None,zero_ok=False,verbose=0):
+def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=None,phaseproc=None,extrapad=False,edgenorm=True,oversamp=1,default_ctf=None,snrfilt=False,invert=False,storeparm=False,source_image=None,zero_ok=False,compressbits=6,verbose=0):
 	"""Will phase-flip and/or Wiener filter particles in a file based on their stored CTF parameters.
 	phaseflip should be the path for writing the phase-flipped particles
 	wiener should be the path for writing the Wiener filtered (and possibly phase-flipped) particles
@@ -877,7 +878,8 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 			if edgenorm: out.process("normalize.edgemean")
 			if phaseflip:
 				try:
-					out.write_image(phaseflip,i)
+					#out.write_image(phaseflip,i)
+					out.write_compressed(phaseflip,i,compressbits)
 				except:
 					print(phaseflip,i)
 					x = EMData(phaseflip,i,False)
@@ -904,7 +906,7 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 				if extrapad and out2["nx"]==out2["ny"] and out2["ny"]==out["ny"]:
 					pad=good_size(out2["ny"]*1.25)
 					out2.clip_inplace(Region((-(pad-out2["nx"])//2),(-(pad-out2["ny"])//2),pad,pad))
-				out2.write_image(phaseproc[0],i)
+				out2.write_compressed(phaseproc[0],i,compressbits)
 
 			if phasehp:
 				fft2=fft1.copy()
@@ -921,7 +923,7 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 				if edgenorm: out.process_inplace("normalize.edgemean")
 				if invert: out.mult(-1.0)
 				#process_inplace("filter.highpass.autopeak")
-				out.write_image(phasehp,i)
+				out.write_compressed(phasehp,i,compressbits)
 
 			if phasesmall:
 				out2=out.copy()				# processor may or may not be in Fourier space
@@ -939,7 +941,7 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 #				print fft2.get_ysize(),len(hpfilt)
 
 				if edgenorm: out2.process_inplace("normalize.edgemean")
-				out2.write_image(phasesmall,i)
+				out2.write_compressed(phasesmall,i,compressbits)
 
 
 		if wiener :
@@ -961,13 +963,13 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 			out.clip_inplace(Region(int(ys2*(oversamp-1)/2.0),int(ys2*(oversamp-1)/2.0),ys2,ys2))
 			if invert : out.mult(-1.0)
 			out.process("normalize.edgemean")
-			try: out.write_image(wiener,i)
+			try: out.write_compressed(wiener,i,compressbits)
 			except:
 				print(wiener,i)
-				try: out.write_image(wiener,i)
+				try: out.write_compressed(wiener,i,compressbits)
 				except:
 					print("!!! ",wiener,i)
-					out.write_image("error.hed",-1)
+					out.write_compressed("error.hed",-1,compressbits)
 
 		#if virtualout:
 			#im1["data_path"]=vin.get_data_path(i)
@@ -2990,7 +2992,7 @@ class GUIctf(QtWidgets.QWidget):
 			for i in range(n):
 				img=EMData(fsp,i)
 				img.mult(-1.0)
-				img.write_image(fsp,i)
+				img.write_compressed(fsp,i,6)
 
 			self.ptcldata=EMData.read_images(fsp,list(range(0,20)))
 			self.guirealim.set_data(self.ptcldata)

@@ -1279,7 +1279,7 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 // Writes all attributes in 'dict' to the image group
 // Creation of the image dataset is also handled here
 int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
-						EMUtil::EMDataType, bool)
+						EMUtil::EMDataType dt, bool endian)
 {
 #ifdef DEBUGHDF
 	printf("HDF: write_head %d\n",image_index);
@@ -1360,12 +1360,15 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 		else {
 			erase_header(image_index);
 
+//			printf("eraseh %d %d %d %d %d %d %d %d %d\n",(int)dict["nx"],(int)dict["ny"],(int)dict["nz"],(int)dict2["nx"],(int)dict2["ny"],(int)dict2["nz"],(int)dict["datatype"],(int)dict2["datatype"],(int)dt);
 			// change the size or data type of a image,
 			// the existing data set is invalid, unlink it
 			if ((int)dict["nx"]*(int)dict["ny"]*(int)dict["nz"] !=
 				(int)dict2["nx"]*(int)dict2["ny"]*(int)dict2["nz"] ||
-				dict["datatype"] != dict2["datatype"] ) {
+				(int)dict["datatype"] != (int)dict2["datatype"] ||
+				dict2.has_key("render_compress_level") || (int)dt==(int)EMUtil::EM_COMPRESSED) {
 
+//				printf("erase\n");
 				sprintf(ipath,"/MDF/images/%d/image",image_index);
 
 				H5Gunlink(igrp, ipath);
@@ -1420,9 +1423,13 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 
 	sprintf(ipath, "/MDF/images/%d/image", image_index);
 
-	// Now create the actual image dataspace(not for regional writing)
-
-	if (nz == 1)  {
+	// Now create the image dataspace (not used for region writing)
+	hsize_t rank = 0;
+	if (nz == 1 && ny == 1)  {
+		hsize_t dims[1]= { nx };
+		spc=H5Screate_simple(1,dims,NULL);
+	}
+	else if (nz == 1)  {
 		hsize_t dims[2]= { ny,nx };
 		spc=H5Screate_simple(2,dims,NULL);
 	}
@@ -1431,69 +1438,100 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 		spc=H5Screate_simple(3,dims,NULL);
 	}
 	
+	// Setup a standard HDF datatype
+	hid_t hdt=0;
+	switch(dt) {
+		case EMUtil::EM_FLOAT: hdt=H5T_NATIVE_FLOAT; break;
+		case EMUtil::EM_USHORT: hdt=H5T_NATIVE_USHORT; break;
+		case EMUtil::EM_UCHAR: hdt=H5T_NATIVE_UCHAR; break;
+		case EMUtil::EM_SHORT: hdt=H5T_NATIVE_SHORT; break;
+		case EMUtil::EM_CHAR: hdt=H5T_NATIVE_CHAR; break;
+		case EMUtil::EM_COMPRESSED:
+			if (renderbits<=0) hdt=H5T_NATIVE_FLOAT;
+			else if (renderbits<=8) hdt=H5T_NATIVE_UCHAR;
+			else if (renderbits<=16) hdt=H5T_NATIVE_USHORT;
+			else throw ImageWriteException(filename,"Bit reduced compressed HDF5 files may not use more than 16 bits. For native float, set 0 bits.");
+			break;
+		default:
+			throw ImageWriteException(filename,"HDF5 does not support this data format");
+	}
+			
 	if (nx==1 && dt==EMUtil::EM_COMPRESSED) {
 		printf("Warning: HDF compressed mode not supported when nx=1\n");
 		dt=EMUtil::EM_FLOAT;
 	}
-		
-	ds = H5Dopen(file,ipath);
-	hsize_t rank = 0;
 
-	if (ds < 0) {//new dataset
-		switch(dt) {
-		case EMUtil::EM_FLOAT:
-			ds=H5Dcreate(file,ipath, H5T_NATIVE_FLOAT, spc, H5P_DEFAULT );
-			break;
-		case EMUtil::EM_USHORT:
-			ds=H5Dcreate(file,ipath, H5T_NATIVE_USHORT, spc, H5P_DEFAULT );
-			break;
-		case EMUtil::EM_SHORT:
-			ds=H5Dcreate(file,ipath, H5T_NATIVE_SHORT, spc, H5P_DEFAULT );
-			break;
-		case EMUtil::EM_UCHAR:
-			ds=H5Dcreate(file,ipath, H5T_NATIVE_UCHAR, spc, H5P_DEFAULT );
-			break;
-		case EMUtil::EM_CHAR:
-			ds=H5Dcreate(file,ipath, H5T_NATIVE_CHAR, spc, H5P_DEFAULT );
-			break;
-		case EMUtil::EM_COMPRESSED:
-			{
-//				printf("COMPRESSING!\n");
-				hid_t plist = H5Pcreate(H5P_DATASET_CREATE);
-				if (nz==1) {
-					hsize_t cdims[2] = { ny>256?256:ny, nx>256?256:nx};		// slice-wise reading common in 3D so 2-D chunks
-					H5Pset_chunk(plist,2,cdims);	// uses only the first 2 elements
-				}
-				else {
-					hsize_t cdims[3] = { 1, ny>256?256:ny, nx>256?256:nx};		// slice-wise reading common in 3D so 2-D chunks
-					H5Pset_chunk(plist,3,cdims);
-				}
-//				H5Pset_scaleoffset(plist,H5Z_SO_FLOAT_DSCALE,2);  // doesn't seem to work right?, anyway some conceptual problems
-//				H5Pset_shuffle(plist);	// rearrange bytes, seems to have zero impact, maybe deflate is internally doing something?
-				H5Pset_deflate(plist, renderlevel);	// zlib level default is 1
-				//conclusion is that SZIP compresses roughly as well as GZIP3, but is twice as fast (for 4 bit cryoem data)
-				// While this is good, it isn't worth the IP hassles right now. We can revisit the issue later if a good
-				// open license library starts being widely used
-				//int r=H5Pset_szip (plist, H5_SZIP_NN_OPTION_MASK, 32);	// szip with 32 pixels per block (NN (2 stage) vs EC), NN definitely seems to perform better
-//				if (r) printf("R: %d\n",r);
-				if (renderbits<=0) ds=H5Dcreate(file,ipath, H5T_NATIVE_FLOAT, spc, plist );
-				else if (renderbits<=8) ds=H5Dcreate(file,ipath, H5T_NATIVE_UCHAR, spc, plist );
-				else if (renderbits<=16) ds=H5Dcreate(file,ipath, H5T_NATIVE_USHORT, spc, plist );
-				else throw ImageWriteException(filename,"Compressed HDF5 files may not use more than 16 bits. For native float, set 0 bits.");
-				H5Pclose(plist);	// safe to do this here?
-			}
-			break;
-		default:
-			throw ImageWriteException(filename,"HDF5 does not support this data format");
+	// Now, we try and open the dataset
+	ds = H5Dopen(file,ipath);
+
+	// In theory we will catch all of these mismatches when writing the header above, and unlinking mismatching
+	// data objects (not truly deleting, could make files bigger). This code shouldn't cost much, so will leave
+	// it here to double-check  11/14/20
+	if (ds>=0) {
+		hid_t cpl=H5Dget_create_plist(ds);
+		H5D_layout_t layout = H5Pget_layout(cpl);
+		H5Pclose(cpl);
+
+//		printf("%d %d %d %d   ",(int)layout,(int)(dt==EMUtil::EM_COMPRESSED),(int)H5D_CHUNKED,(int)H5D_COMPACT);
+		if ((layout==H5D_CHUNKED && dt!=EMUtil::EM_COMPRESSED) || (layout!=H5D_CHUNKED && dt==EMUtil::EM_COMPRESSED)) {
+			H5Sclose(spc);
+			H5Dclose(ds);
+			throw ImageWriteException(filename,"HDF ERROR: Trying to overwrite an image with compression mismatch");
 		}
+		
+		// causes issues with region writing, and not sure it's really necessary
+// 		hid_t spc_file = H5Dget_space(ds);
+// 		if (H5Sget_simple_extent_ndims(spc_file)!=rank) {
+// 			H5Sclose(spc_file);
+// 			H5Sclose(spc);
+// 			H5Dclose(ds);
+// 			throw ImageWriteException(filename,"HDF ERROR: Trying to overwrite an image with different dimensionality");
+// 		}
+// 		H5Sclose(spc_file);
+		
+		hid_t fdt = H5Dget_type(ds);
+//		printf("%d %d\n",(int)fdt,(int)dt);
+		if (!H5Tequal(fdt,dt)) {
+			H5Tclose(fdt);
+			H5Sclose(spc);
+			H5Dclose(ds);
+			throw ImageWriteException(filename,"HDF ERROR: Trying to overwrite an image with different data type");
+		}
+		
+		
 	}
-	// TODO - it is possible that not deleting and recreating the dataspace here will prevent rewriting the same file with a different mode or compression
+	
+	if (ds < 0) {	//new dataset
+		hid_t plist = H5Pcreate(H5P_DATASET_CREATE);	// we could just use H5P_DEFAULT for non-compressed
+		if (dt==EMUtil::EM_COMPRESSED) {
+			if (nz==1) {
+				hsize_t cdims[2] = { ny>256?256:ny, nx>256?256:nx};		// slice-wise reading common in 3D so 2-D chunks
+				H5Pset_chunk(plist,2,cdims);	// uses only the first 2 elements
+			}
+			else {
+				hsize_t cdims[3] = { 1, ny>256?256:ny, nx>256?256:nx};		// slice-wise reading common in 3D so 2-D chunks
+				H5Pset_chunk(plist,3,cdims);
+			}
+	// 		H5Pset_scaleoffset(plist,H5Z_SO_FLOAT_DSCALE,2);  // doesn't seem to work right?, anyway some conceptual problems
+	// 		H5Pset_shuffle(plist);	// rearrange bytes, seems to have zero impact, maybe deflate is internally doing something?
+			H5Pset_deflate(plist, renderlevel);		// zlib level default is 1
+			//conclusion is that SZIP compresses roughly as well as GZIP3, but is twice as fast (for 4 bit cryoem data)
+			// While this is good, it isn't worth the IP hassles right now. We can revisit the issue later if a good
+			// open license library starts being widely used
+			//int r=H5Pset_szip (plist, H5_SZIP_NN_OPTION_MASK, 32);	// szip with 32 pixels per block (NN (2 stage) vs EC), NN definitely seems to perform better
+	//		if (r) printf("R: %d\n",r);
+		}
+
+		ds=H5Dcreate(file,ipath, hdt, spc, plist );
+//		printf("CRT %d %s\n",ds,ipath);
+		H5Pclose(plist);	// safe to do this here?
+	}
 	else {	//existing file
 		hid_t spc_file = H5Dget_space(ds);
 		rank = H5Sget_simple_extent_ndims(spc_file);
 		H5Sclose(spc_file);
 	}
-
+	
 	if (! data) {
 		H5Dclose(ds);
 		H5Sclose(spc);

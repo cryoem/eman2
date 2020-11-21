@@ -2185,12 +2185,14 @@ The basic design of EMAN Processors: <br>\
 		{
 			TypeDict d;
 			d.put("wiener", EMObject::INT, "If set, returns Wiener image, default returns SNR");
+			d.put("scalesnr", EMObject::INT, "Scales SSNR by provided value prior to return or use in Wiener calculation. Default 2");
 			return d;
 		}
 				
 		string get_desc() const
 		{
-			return "Converts an image containing normalized CCC values to SNR or a Wiener values";
+			return "Converts an image containing normalized CCC values to SNR or Wiener filter values. scalesnr defaults to 2, which\
+ uses the SNR of the average of the two half-image volumes. ie - if scalesnr is 2: SNR = 2*FSC/(1-FSC)";
 		}
 
 		void process_inplace(EMData * image);

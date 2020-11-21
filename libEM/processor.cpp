@@ -1178,12 +1178,13 @@ void LowpassAutoBProcessor::create_radial_func(vector < float >&radial_mask,EMDa
 void CCCSNRProcessor::process_inplace(EMData *image) {
 	size_t nxyz = image->get_size();
 	int mode=params.set_default("wiener",0);
+	float scale=params.set_default("scalesnr",2.0f);
 	
 	for (size_t i=0; i<nxyz; i++) {
 		float v=image->get_value_at_index(i);
-		float snr=(v>=.9999)?10000.0f:v/(1.0f-v);
+		float snr=(v>=.9999)?10000.0f:scale*v/(1.0f-v);
 		if (snr<0) snr=0.0f;
-		if (mode) image->set_value_at_index(i,snr/(1+snr));
+		if (mode) image->set_value_at_index(i,snr/(1.0f+snr));
 		else image->set_value_at_index(i,snr);
 	}
 }

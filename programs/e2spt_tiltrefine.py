@@ -412,6 +412,8 @@ def main():
 		
 		if options.tophat=="auto" and ("localfilter" in jd) and jd["localfilter"]==True:
 			s += " --tophat local"
+		elif options.tophat=="localwiener":
+			s += " --tophat localwiener"
 		elif options.tophat=="local":
 			s += " --tophat local"
 		elif options.tophat=="global":

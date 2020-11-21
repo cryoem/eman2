@@ -187,6 +187,16 @@ def main():
 		clsmx[5].write_image(args[1],5)
 		if num_sim>5 : clsmx[6].write_image(args[1],6)
 		
+	# This file isn't really that big, and if nx==1 compression doesn't work
+	#clsmx[0].write_compressed(args[1],0,0)
+	#clsmx[1].write_compressed(args[1],1,0)
+	#if num_sim>=5 :
+		#clsmx[2].write_compressed(args[1],2,0)
+		#clsmx[3].write_compressed(args[1],3,0)
+		#clsmx[4].write_compressed(args[1],4,0)
+		#clsmx[5].write_compressed(args[1],5,0)
+		#if num_sim>5 : clsmx[6].write_compressed(args[1],6,0)
+		
 	
 
 def check(options,verbose):
