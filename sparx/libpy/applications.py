@@ -16155,7 +16155,6 @@ def extract_value( s ):
 
 def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, rand_alpha=False, fimport=None, 
 	   fexport=None, fprint=False, backup=False, suffix='_backup', restore=False, delete=False, consecutive=False):
-	from string    import split
 	from utilities import write_header, file_type, generate_ctf
 	from random    import random, randint
 	from utilities import set_params2D, get_params2D, set_params3D, get_params3D, set_params_proj, get_params_proj, set_ctf, get_ctf
@@ -16173,7 +16172,7 @@ def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, ran
 		return
 
 
-	params = split(params)
+	params = params.split()
 
 	if fimport != None: fimp = open(fimport, 'r')
 	if fexport != None: fexp = open(fexport, 'w')
@@ -16189,7 +16188,7 @@ def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, ran
 			if len(line)==0 :
 				print("Error: file " + fimport + " has only " + str(i) + " lines, while there are " + str(nimage) + " images in the file.")
 				return
-			parmvalues = split(line)
+			parmvalues =line.split()
 			il=0
 			for p in params:
 				if p[:13] == "xform.align2d":
