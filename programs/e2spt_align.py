@@ -554,7 +554,7 @@ class SptAlignTask(JSTask):
 				xfs=[initxf]
 				
 				if options.test180:
-					xfs.extend([o.rotate(r180) for o in xfs])
+					xfs.extend([r180*o for o in xfs])
 				
 				for ii in range(len(xfs), ntry):
 					ixf=initxf.get_params("eman")
