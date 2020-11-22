@@ -11,7 +11,7 @@ def main():
 	parser.add_argument("--path", type=str,help="path", default="sptcls_00")
 	parser.add_argument("--ncls", type=int,help="number of class", default=2)
 	parser.add_argument("--niter", type=int,help="number of iterations", default=10)
-	parser.add_argument("--maxres", type=float,help="max resolution", default=15)
+	parser.add_argument("--maxres", type=float,help="max resolution in A", default=15)
 	parser.add_argument("--parm", type=str,help="particle_parms_xx.json file from spt_refine", default="")
 	parser.add_argument("--parallel", type=str,help="parallel", default="thread:1")
 	parser.add_argument("--mask", type=str,help="mask file", default="")
