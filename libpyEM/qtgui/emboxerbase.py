@@ -1109,6 +1109,7 @@ class ParticlesWindowEventHandler(BoxEventsHandler):
 	def box_released(self,event,lc):
 		if lc == None or lc[0] == None: return
 
+		import PyQt5
 		if event.modifiers()&PyQt5.QtCore.Qt.ShiftModifier:
 			self.particle_window.remove_particle_image(lc[0],event,True)
 			self.particle_window.force_display_update()
