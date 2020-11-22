@@ -472,7 +472,7 @@ class JSTaskQueue(object):
 			JSTaskQueue.lock.release()
 			return
 
-		print("Error running task:\n{tid}\t{cls}\t{runtime}\t{endtime}\t{starttime}\t{queuetime}\t{host}".format(tid=tid,cls=task.__class__.__name__,runtime=time.time()-task.starttime,endtime=time.time(),starttime=task.starttime,queuetime=task.queuetime,host=task.exechost))
+		print("Error running task:\n{tid}\t{cls}\t{runtime}\t{endtime}\t{starttime}\t{queuetime}\t{host}".format(tid=taskid,cls=task.__class__.__name__,runtime=time.time()-task.starttime,endtime=time.time(),starttime=task.starttime,queuetime=task.queuetime,host=task.exechost))
 		#if self.active["min"]==taskid : self.active["min"]=min(self.active.keys())
 		del self.active[taskid]
 		JSTaskQueue.lock.release()
@@ -601,7 +601,7 @@ JSDicts are open at one time."""
 
 		if not isinstance(path,str) : raise Exception("Must specify path to open JSONDB")
 		if path[-5:]!=".json" :
-			raise Exception("JSON databases must have .json extension ('{}')".format(url))
+			raise Exception("JSON databases must have .json extension ('{}')".format(path))
 
 		try: normpath=os.path.abspath(path)
 		except: raise Exception("Cannot find path for {}".format(path))

@@ -1775,6 +1775,7 @@ class EMImage2DWidget(EMGLWidget):
 	def mouseReleaseEvent(self, event):
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 		lc=self.scr_to_img(event.x(),event.y())
+		current_shapes = self.get_shapes()
 		if self.rmousedrag:
 			self.rmousedrag=None
 		else:

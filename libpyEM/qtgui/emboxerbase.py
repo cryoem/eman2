@@ -2307,7 +2307,7 @@ class EMBoxerWriteOutputTask(WorkFlowTask):
 			if progress.wasCanceled():
 				from EMAN2 import remove_file
 				for file in files_written: remove_file(file)
-				progress.setValue(nim)
+				progress.setValue(prog)
 				progress.close()
 				return
 
