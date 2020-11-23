@@ -838,8 +838,8 @@ def Numrinit(first_ring, last_ring, skip=1, mode="F"):
 		lcirc += ip
 
 	return  numr
-'''
-def Numrinit(first_ring, last_ring, skip=1, mode="F"):
+
+def Numreqinit(first_ring, last_ring, skip=1, mode="F"):
 	#  This is to test equal length rings
 	"""This function calculates the necessary information for the 2D 
 	   polar interpolation. For each ring, three elements are recorded:
@@ -860,14 +860,14 @@ def Numrinit(first_ring, last_ring, skip=1, mode="F"):
 	numr = []
 	lcirc = 1
 	#  This is for testing equal length rings
-	ip = 128
-	for k in xrange(first_ring, last_ring+1, skip):
+	jp = int(dpi * last_ring+0.5)
+	ip = 2**(log2(jp)+1)  # do not oversample each ring
+	for k in range(first_ring, last_ring+1, skip):
 		numr.append(k)
 		numr.append(lcirc)
 		numr.append(ip)
 		lcirc += ip		
 	return  numr
-'''
 
 def ringwe(numr, mode="F"):
 	"""
