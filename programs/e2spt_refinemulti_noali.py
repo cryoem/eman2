@@ -8,11 +8,12 @@ def main():
 	
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--path", type=str,help="path", default="sptcls_00")
+	parser.add_argument("--path", type=str,help="Output path", default=None)
 	parser.add_argument("--ncls", type=int,help="number of class", default=2)
 	parser.add_argument("--niter", type=int,help="number of iterations", default=10)
-	parser.add_argument("--maxres", type=float,help="max resolution", default=15)
+	parser.add_argument("--maxres", type=float,help="max resolution in A", default=15)
 	parser.add_argument("--parm", type=str,help="particle_parms_xx.json file from spt_refine", default="")
+	parser.add_argument("--strucfac",type=str,help="Structure factor file",default=None)
 	parser.add_argument("--parallel", type=str,help="parallel", default="thread:1")
 	parser.add_argument("--mask", type=str,help="mask file", default="")
 	parser.add_argument("--sym", type=str,help="", default="c1")
@@ -24,7 +25,8 @@ def main():
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 
-	path=options.path
+	if options.path!=None: path=options.path
+	else: path=numbered_path("sptcls",True)
 	ncls=options.ncls
 	
 	if not os.path.isdir(path):
@@ -69,9 +71,11 @@ def main():
 			mt1=np.loadtxt("{}/avg_multi_{:02d}.txt".format(path, itr))
 			chg=np.mean(np.any(mt0[:,2:]!=mt1[:,2:], axis=1))*100
 			print("iter {}, {:.1f}% particles change class".format(itr, chg))
-		
+
+		if options.strucfac!=None : strucfac=f"--setsf {options.strucfac}"
+		else: strucfac=""
 		for i in range(ncls):
-			cmd="e2proc3d.py {pp}/threed_{it:02d}_{cl:02d}.hdf {pp}/threed_{it:02d}_{cl:02d}.hdf --setsf sf.txt --process filter.lowpass.gauss:cutoff_freq={res:.3f} --process normalize.edgemean --process mask.soft:outer_radius=-10:width=10".format(it=itr, cl=i, pp=path, res=1./options.maxres)
+			cmd="e2proc3d.py {pp}/threed_{it:02d}_{cl:02d}.hdf {pp}/threed_{it:02d}_{cl:02d}.hdf {strucfac} --process filter.lowpass.gauss:cutoff_freq={res:.3f} --process normalize.edgemean --process mask.soft:outer_radius=-10:width=10".format(it=itr, cl=i, strucfac=strucfac, pp=path, res=1./options.maxres)
 			run(cmd)
 			
 	itr=options.niter

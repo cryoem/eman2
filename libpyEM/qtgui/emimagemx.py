@@ -434,6 +434,20 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		else:
 			QtWidgets.QMessageBox.information(None,"Save Successful","%d images appended to %s"%(len(outset),fsp))
 		
+	def save_set_text(self,name):
+		"""Saves the particles in a named set to a text file"""
+		outset=self.get_set(name)
+		if len(outset)==None :
+			QtWidgets.QMessageBox.warning(None,"Error","The set: %s is empty"%(name))
+			return
+		
+		# Get the output filespec
+		fsp=QtWidgets.QFileDialog.getSaveFileName(self, "Output Text File")[0]
+		fsp=str(fsp)
+		out=open(fsp,"w")
+		
+		badimg=[]
+		for i in sorted(outset): out.write(f"{i:d}\n")
 
 	def get_set(self,name):
 		"""Returns the actual set object for the named set. Creates a new empty set of that
@@ -2633,12 +2647,15 @@ class EMMXSetsPanel(QtWidgets.QWidget):
 		vbl.addWidget(self.new_set_button)
 		self.delete_set_button = QtWidgets.QPushButton("delete")
 		vbl.addWidget(self.delete_set_button)
-		self.save_set_button = QtWidgets.QPushButton("Save")
+		self.save_set_button = QtWidgets.QPushButton("Save Set")
 		vbl.addWidget(self.save_set_button)
+		self.save_sett_button = QtWidgets.QPushButton("Save Text")
+		vbl.addWidget(self.save_sett_button)
 
 		hbl.addLayout(vbl)
 
 		self.save_set_button.clicked[bool].connect(self.save_set)
+		self.save_sett_button.clicked[bool].connect(self.save_set_text)
 		self.new_set_button.clicked[bool].connect(self.new_set)
 		self.delete_set_button.clicked[bool].connect(self.delete_set)
 		self.setlist.itemChanged[QtWidgets.QListWidgetItem].connect(self.set_list_item_changed)
@@ -2688,6 +2705,11 @@ class EMMXSetsPanel(QtWidgets.QWidget):
 		selections = self.setlist.selectedItems()
 		for item in selections:
 			self.target().save_set(str(item.text()))
+
+	def save_set_text(self):
+		selections = self.setlist.selectedItems()
+		for item in selections:
+			self.target().save_set_text(str(item.text()))
 
 	def update_sets(self):
 		keys=sorted(self.target().sets.keys())

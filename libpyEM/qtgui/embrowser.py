@@ -108,6 +108,42 @@ def askFileExists() :
 	elif box.clickedButton() == b2 : return "overwrite"
 	else : return "cancel"
 
+def makeOrthoProj(ptcl,layers,highpass,lowpass):
+	"""makes restricted orthogonal projections from a 3-D volume and returns as a single 2d image
+	ptcl - 3D input ovlume
+	layers - +- layer range about center for integration
+	highpass - optional high-pass filter in A (<0 disables)
+	lowpass - optional low-pass filter in A (<0 disables)
+	"""
+	
+	# these are the range limited orthogonal projections, with optional filtration
+	x=ptcl.process("misc.directional_sum",{"axis":"x","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
+	if lowpass>0 : x.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/lowpass})
+	if highpass>0 : x.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/highpass})
+	get_application().processEvents()	# keeps the GUI happy
+
+	y=ptcl.process("misc.directional_sum",{"axis":"y","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
+	if lowpass>0 : y.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/lowpass})
+	if highpass>0 : y.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/highpass})
+	get_application().processEvents()
+
+	z=ptcl.process("misc.directional_sum",{"axis":"z","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
+	if lowpass>0 : z.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/lowpass})
+	if highpass>0 : z.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/highpass})
+
+	# different directions sometimes have vastly different standard deviations, independent normalization may help balance
+	x.process_inplace("normalize")
+	y.process_inplace("normalize")
+	z.process_inplace("normalize")
+	
+	get_application().processEvents()
+	# we pack the 3 projections into a single 2D image
+	hall=EMData(x["nx"]*3,x["ny"],1)
+	hall.insert_clip(x,(0,0))
+	hall.insert_clip(y,(x["nx"],0))
+	hall.insert_clip(z,(x["nx"]*2,0))
+
+	return hall
 
 class EMFileType(object) :
 	"""This is a base class for handling interaction with files of different types. It includes a number of execution methods common to
@@ -473,6 +509,17 @@ class EMFileType(object) :
 		layers=self.secparm.wspinlayers.value()
 		applyxf=self.secparm.wcheckxf.checkState()
 		
+		maskfsp=str(self.secparm.wlemask.text())
+		mask=None
+		if len(maskfsp)>4 :
+			try: mask=EMData(maskfsp,0)
+			except: print("ERROR: unable to read mask file: ",maskfsp)
+
+		reffsp=str(self.secparm.wleref.text())
+		ref=None
+		if len(reffsp)>4 :
+			try: ref=EMData(reffsp,0)
+			except: print("ERROR: unable to read ref file: ",maskfsp)
 		
 		brws.busy()
 
@@ -486,6 +533,11 @@ class EMFileType(object) :
 #		progress.show()
 		
 		data=[]
+		if ref!=None:
+			if mask!=None: ref.mult(mask)
+			hall=makeOrthoProj(ref,layers,highpass,lowpass)
+			data.append(hall)
+			
 		for i in range(img0,img1,imgstep):
 			try: ptcl=EMData(self.path,i)
 			except:
@@ -494,42 +546,17 @@ class EMFileType(object) :
 			try: xf=ptcl["xform.align3d"]
 			except: xf=Transform()
 			if applyxf: ptcl.process_inplace("xform",{"transform":xf})
-#			if hp>0 : ptcl.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/hp})
-#			if lp>0 : ptcl.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/lp})
+			if mask!=None : ptcl.mult(mask)
 			
 			time.sleep(0.001)
 			get_application().processEvents()
-			# these are the range limited orthogonal projections, with optional filtration
-			x=ptcl.process("misc.directional_sum",{"axis":"x","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
-			if lowpass>0 : x.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/lowpass})
-			if highpass>0 : x.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/highpass})
-			get_application().processEvents()	# keeps the GUI happy
-
-			y=ptcl.process("misc.directional_sum",{"axis":"y","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
-			if lowpass>0 : y.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/lowpass})
-			if highpass>0 : y.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/highpass})
-			get_application().processEvents()
-
-			z=ptcl.process("misc.directional_sum",{"axis":"z","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
-			if lowpass>0 : z.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/lowpass})
-			if highpass>0 : z.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/highpass})
-
-			# different directions sometimes have vastly different standard deviations, independent normalization may help balance
-			x.process_inplace("normalize")
-			y.process_inplace("normalize")
-			z.process_inplace("normalize")
 			
-			get_application().processEvents()
-			# we pack the 3 projections into a single 2D image
-			all=EMData(x["nx"]*3,x["ny"],1)
-			all.insert_clip(x,(0,0))
-			all.insert_clip(y,(x["nx"],0))
-			all.insert_clip(z,(x["nx"]*2,0))
+			hall=makeOrthoProj(ptcl,layers,highpass,lowpass)
 			
 			for k in ["ptcl_repr","class_ptcl_idxs","class_ptlc_src","orig_file","orig_n","source_path","source_n"]:
-				try: all[k]=ptcl[k]
+				try: hall[k]=ptcl[k]
 				except: pass
-			data.append(all)
+			data.append(hall)
 			
 			progress.setValue(i-img0)
 			
@@ -1246,6 +1273,18 @@ class EMJSONFileType(EMFileType) :
 		highpass=float(self.secparm.wlehp.text())
 		applyxf=self.secparm.wcheckxf.checkState()
 		
+		maskfsp=str(self.secparm.wlemask.text())
+		mask=None
+		if len(maskfsp)>4 :
+			try: mask=EMData(maskfsp,0)
+			except: print("ERROR: unable to read mask file: ",maskfsp)
+
+		reffsp=str(self.secparm.wleref.text())
+		ref=None
+		if len(reffsp)>4 :
+			try: ref=EMData(reffsp,0)
+			except: print("ERROR: unable to read ref file: ",maskfsp)
+		
 #		print(img0,img1,ungstep,layers)
 		
 		brws.busy()
@@ -1253,6 +1292,11 @@ class EMJSONFileType(EMFileType) :
 		progress = QtWidgets.QProgressDialog("Generating projections", "Cancel", 0, (img1-img0-1)/imgstep,None)
 		
 		data=[]
+		if ref!=None:
+			if mask!=None: ref.mult(mask)
+			hall=makeOrthoProj(ref,layers,highpass,lowpass)
+			data.append(hall)
+			
 		i=0
 		for k in self.keys:
 			try:
@@ -1275,51 +1319,24 @@ class EMJSONFileType(EMFileType) :
 				try: xf=ptcl["xform.align3d"]
 				except: xf=Transform()
 			if applyxf: ptcl.process_inplace("xform",{"transform":xf})
-			
-#			if hp>0 : ptcl.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/hp})
-#			if lp>0 : ptcl.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/lp})
-			
+			if mask!=None : ptcl.mult(mask)
+						
 			time.sleep(0.001)
 			get_application().processEvents()
 
-			# these are the range limited orthogonal projections, with optional filtration
-			x=ptcl.process("misc.directional_sum",{"axis":"x","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
-			if lowpass>0 : x.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/lowpass})
-			if highpass>0 : x.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/highpass})
-			get_application().processEvents()	# keeps the GUI happy
-
-			y=ptcl.process("misc.directional_sum",{"axis":"y","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
-			if lowpass>0 : y.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/lowpass})
-			if highpass>0 : y.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/highpass})
-			get_application().processEvents()
-
-			z=ptcl.process("misc.directional_sum",{"axis":"z","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
-			if lowpass>0 : z.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/lowpass})
-			if highpass>0 : z.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/highpass})
-
-			# different directions sometimes have vastly different standard deviations, independent normalization may help balance
-			x.process_inplace("normalize")
-			y.process_inplace("normalize")
-			z.process_inplace("normalize")
-			
-			get_application().processEvents()
-			# we pack the 3 projections into a single 2D image
-			all=EMData(x["nx"]*3,x["ny"],1)
-			all.insert_clip(x,(0,0))
-			all.insert_clip(y,(x["nx"],0))
-			all.insert_clip(z,(x["nx"]*2,0))
+			hall=makeOrthoProj(ptcl,layers,highpass,lowpass)
 			
 			# copy some parameters from the original image header
 			for kh in ["ptcl_repr","class_ptcl_idxs","class_ptlc_src","orig_file","orig_n","source_path","source_n"]:
-				try: all[kh]=ptcl[kh]
+				try: hall[kh]=ptcl[kh]
 				except: pass
-			data.append(all)
+			data.append(hall)
 			
 			# copy some parameters from the JSON file to the final image for possible display
-			all["xform.align3d"]=xf
-			try: all["score"]=self.js[k]["score"]
+			hall["xform.align3d"]=xf
+			try: hall["score"]=self.js[k]["score"]
 			except: pass
-			try: all["coverage"]=self.js[k]["coverage"]
+			try: hall["coverage"]=self.js[k]["coverage"]
 			except: pass
 			
 			progress.setValue(i-img0)
@@ -3438,6 +3455,14 @@ class EMSliceParamDialog(QtWidgets.QDialog):
 		self.wlehp=QtWidgets.QLineEdit("-1")
 		self.wlehp.setToolTip("If >0 applies a high-pass filter in 2D. Specify in A.")
 		self.fol.addRow("Highpass (A):",self.wlehp)
+
+		self.wlemask=QtWidgets.QLineEdit("")
+		self.wlemask.setToolTip("Optional filename of a mask volume (same dimensions)")
+		self.fol.addRow("Mask volume:",self.wlemask)
+
+		self.wleref=QtWidgets.QLineEdit("")
+		self.wleref.setToolTip("Optional filename of a reference volume (same dimensions)")
+		self.fol.addRow("Reference volume:",self.wleref)
 
 		self.wcheckxf=QtWidgets.QCheckBox("enable")
 		self.wcheckxf.setChecked(1)

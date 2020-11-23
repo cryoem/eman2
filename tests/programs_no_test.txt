@@ -2,7 +2,6 @@
  e2version.py                 # manually tested
  e2.py                        # no -h
  e2_real.py                   # no -h
- e2fhstat.py                  # broken
+ e2fhstat.py                  # no -h
  e2projectmanager.py          # no -h
- e2refinetorelion2d.py        # broken: #48
- e2unwrap3d.py                # broken
+ e2unwrap3d.py                # no -h

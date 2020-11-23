@@ -427,17 +427,21 @@ def get_temp_name():
 	if os.path.exists(fsp) : return get_temp_name()		# risky? shouldn't really ever recurse forever...
 	return fsp
 
-def numbered_path(prefix,makenew):
-	"""Finds the next numbered path to use for a given prefix. ie- prefix='refine' if refine_01/EMAN2DB
-exists will produce refine_02 if makenew is set (and create refine_02) and refine_01 if not"""
-	n=1
-	while os.access("%s_%02d/EMAN2DB"%(prefix,n),os.F_OK) : n+=1
-	if makenew or n==1:
-		path="%s_%02d"%(prefix,n)
+def numbered_path(prefix,makenew=False):
+	"""Finds or creates folders of the form prefix_NN. If makenew is set, will create a new folder with NN one
+	larger than the largest existing path. If makenew is not set, returns the highest existing numbered path of that form."""
+	if prefix[-1]=="_" : prefix=prefix[:-1]
+	cur=[int(p.split("_")[-1]) for p in os.listdir(".") if p.rsplit("_",1)[0]==prefix and p.split("_")[-1].isdigit()]
+	
+	if makenew:
+		cur.append(0)		# in case of no matches
+		path=f"{prefix}_{max(cur)+1:02d}"
 		try: os.mkdir(path)
-		except: pass
+		except: 
+			raise Exception(f"ERROR: numbered_path() could not create {path}")
 		return path
-	return "%s_%02d"%(prefix,n-1)
+	if len(cur)==0 : raise Exception(f"ERROR: no paths of the form {prefix}_NN found")
+	return f"{prefix}_{max(cur):02d}"
 
 def get_numbered_directories(prefix,wd=e2getcwd()):
 	'''
