@@ -396,7 +396,7 @@ def main():
 				run(f"e2proc3d.py {threedname} alignref.hdf --multfile {jd['maskalign']}")
 				threedname="alignref.hdf"
 			
-			cmd=f"e2spt_tiltrefine_oneiter.py --ptclin {lstname} --ptclout {lname} --ref {threedname} --threedout {threedout} --keep {options.keep} --threads {options.threads} --parallel {options.parallel} --refineastep {options.refineastep} --refinentry {options.refinentry} --maxshift {options.maxshift} --padby {options.padby} --sym {jd["sym"]}"
+			cmd=f"e2spt_tiltrefine_oneiter.py --ptclin {lstname} --ptclout {lname} --ref {threedname} --threedout {threedout} --keep {options.keep} --threads {options.threads} --parallel {options.parallel} --refineastep {options.refineastep} --refinentry {options.refinentry} --maxshift {options.maxshift} --padby {options.padby} --sym {jd['sym']}"
 			if options.debug: 
 				cmd+=" --debug"
 				
