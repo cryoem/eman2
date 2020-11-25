@@ -109,7 +109,7 @@ def DB_cleanup(signum=None, stack=None):
         except:
             pass
     if signum in (2, 15):
-        print("Shutdown complete, exiting")
+#        print("Shutdown complete, exiting")
         sys.stderr.flush()
         sys.stdout.flush()
         # parallel_process_exit()

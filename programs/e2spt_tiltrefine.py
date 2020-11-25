@@ -237,7 +237,7 @@ def main():
 		
 			thr=int(len(score)*options.ptclkeep)
 			simthr=np.sort(score)[thr]
-			print("  Removing {} bad 3D particles...".format(thr))
+			print("  Removing {} bad 3D particles with ptclkeep {}...".format(thr,options.ptclkeep))
 			
 		else:
 			simthr=10000
