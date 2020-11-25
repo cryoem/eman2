@@ -43,16 +43,17 @@ def main():
 
 	parser.add_argument("--maxalt", type=float,help="max altitude to insert to volume", default=45.0, guitype='floatbox',row=3, col=2,rowspan=1, colspan=1)	
 	
-	parser.add_argument("--mask", type=str, default="Auto" ,help="Refinement and reprojection masking.",guitype='strbox',row=4, col=0,rowspan=1, colspan=2)	
+	parser.add_argument("--mask", type=str, default="auto" ,help="Refinement and reprojection masking. Default uses mask from source",guitype='filebox',browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=4, col=0,rowspan=1, colspan=2)	
+	parser.add_argument("--maskalign", type=str,help="Mask to apply during alignment, but not the final model. Default is to use the same mask.", default="auto", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=5, col=0,rowspan=1, colspan=2)
 	
 	parser.add_argument("--nogs", action="store_true", default=False ,help="Skip gold standard. This is not a great idea...", guitype='boolbox',row=4, col=2,rowspan=1, colspan=1)
 	
 
-	parser.add_argument("--threads", type=int,help="Number of CPU threads to use. Default is 12.", default=12, guitype='intbox',row=5, col=2,rowspan=1, colspan=1)
-	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use. Default is thread:12", default="thread:12", guitype='strbox',row=5, col=0,rowspan=1, colspan=2)
+	parser.add_argument("--threads", type=int,help="Number of CPU threads to use. Default is 12.", default=12, guitype='intbox',row=6, col=2,rowspan=1, colspan=1)
+	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use. Default is thread:12", default="thread:12", guitype='strbox',row=6, col=0,rowspan=1, colspan=2)
 
-	parser.add_argument("--buildsetonly", action="store_true", default=False ,help="will only prepare particle set for the refinement but skip the actual refinement process.",guitype='boolbox',row=6, col=0,rowspan=1, colspan=1)
-	parser.add_argument("--resume", action="store_true", default=False ,help="continue from previous run",guitype='boolbox',row=6, col=1,rowspan=1, colspan=1)
+	parser.add_argument("--buildsetonly", action="store_true", default=False ,help="will only prepare particle set for the refinement but skip the actual refinement process.",guitype='boolbox',row=7, col=0,rowspan=1, colspan=1)
+	parser.add_argument("--resume", action="store_true", default=False ,help="continue from previous run",guitype='boolbox',row=7, col=1,rowspan=1, colspan=1)
 	
 	parser.add_argument("--reproject", action="store_true", default=False ,help="Reproject 3D particles into 2D particles.")
 	
@@ -71,7 +72,7 @@ def main():
 	parser.add_argument("--localnorm",action="store_true",help="local normalization. do not use yet....",default=False)
 	parser.add_argument("--sym", type=str,help="symmetry. will use symmetry from spt refinement by default", default="")
 	parser.add_argument("--ppid", type=int,help="ppid...", default=-1)
-	parser.add_argument("--transonly", action="store_true", default=False ,help="only refine translation",guitype='boolbox',row=7, col=0,rowspan=1, colspan=1)
+	parser.add_argument("--transonly", action="store_true", default=False ,help="only refine translation",guitype='boolbox',row=7, col=2,rowspan=1, colspan=1)
 
 
 	(options, args) = parser.parse_args()
@@ -167,7 +168,8 @@ def main():
 		jd["setsf"] = oldjd["setsf"]
 		jd["sym"] = oldjd["sym"]
 		jd["localfilter"]=oldjd["localfilter"]
-		jd["mask"]=oldjd["mask"]
+		jd["mask"]=oldjd.getdefault("mask","")
+		jd["maskalign"]=oldjd.getdefault("maskalign","")
 		if "radref" in oldjd:
 			jd["radref"]=oldjd["radref"]
 			
@@ -180,19 +182,19 @@ def main():
 		jd["mass"] = -1
 		jd["sym"] = "c1"
 		jd["localfilter"]=False
-		jd["mask"]=""
+		jd["mask"]="auto"
 			
 		if fromspt:
 			options.ptclkeep=0.9
 		
-	
-	if options.mask.lower()!="none":
-		#print("Overwritting masking")
-		if options.mask.lower()=="auto":
-			jd["mask"]=""
-		else:
-			jd["mask"]=options.mask
-	
+	if options.mask.lower()=="none" or len(options.mask)<4 : jd["mask"]=""
+	elif options.mask.lower()!="auto" :
+		jd["mask"]=options.mask
+		
+	if options.maskalign.lower()=="none" or len(options.maskalign)<4 : jd["maskalign"]=""
+	elif options.maskalign.lower()!="auto" :
+		jd["maskalign"]=options.maskalign
+		
 	
 	#if options.localfilter==0:
 		#jd["localfilter"]=False
@@ -237,7 +239,7 @@ def main():
 		
 			thr=int(len(score)*options.ptclkeep)
 			simthr=np.sort(score)[thr]
-			print("  Removing {} bad 3D particles with ptclkeep {}...".format(thr,options.ptclkeep))
+			print("  Removing {} bad 3D particles with ptclkeep ...".format(thr))
 			
 		else:
 			simthr=10000
@@ -390,7 +392,11 @@ def main():
 			lname=os.path.join(path, "ali_ptcls_{:02d}_{}.lst".format(itr+1, eo))
 			threedout=os.path.join(path, "threed_{:02d}_{}.hdf".format(itr+1, eo))
 			
-			cmd="e2spt_tiltrefine_oneiter.py --ptclin {} --ptclout {} --ref {} --threedout {} --keep {} --threads {} --parallel {} --refineastep {} --refinentry {} --maxshift {} --padby {} --sym {}".format(lstname, lname, threedname, threedout,  options.keep, options.threads, options.parallel, options.refineastep, options.refinentry, options.maxshift, options.padby, jd["sym"])
+			if jd["maskalign"]!="":
+				run(f"e2proc3d.py {threedname} alignref.hdf --multfile {jd['maskalign']}")
+				threedname="alignref.hdf"
+			
+			cmd=f"e2spt_tiltrefine_oneiter.py --ptclin {lstname} --ptclout {lname} --ref {threedname} --threedout {threedout} --keep {options.keep} --threads {options.threads} --parallel {options.parallel} --refineastep {options.refineastep} --refinentry {options.refinentry} --maxshift {options.maxshift} --padby {options.padby} --sym {jd["sym"]}"
 			if options.debug: 
 				cmd+=" --debug"
 				
@@ -419,7 +425,7 @@ def main():
 		elif options.tophat=="global":
 			s += " --tophat global"
 			
-		msk = jd["mask"] #{}/mask_tight.hdf".format(path)
+		msk = jd["mask"] 	#{}/mask_tight.hdf".format(path)
 		if len(msk)>0:
 			if os.path.isfile(msk):
 				msk=" --automask3d mask.fromfile:filename={}".format(msk)
