@@ -103,42 +103,6 @@ def interp_points(pts, npt=50, pmin=0., pmax=1.):
     ax=fun_ax(rg).T
     return ax
 
-#### Distance from a point to a line segment
-#### copied from stackoverflow..
-def dist_line_point(A, B, P):
-	""" segment line AB, point P, where each one is an array([x, y]) """
-	if all(A == P) or all(B == P):
-		return 0
-	if np.arccos(np.dot(old_div((P - A), numpy.linalg.norm(P - A)), old_div((B - A), numpy.linalg.norm(B - A)))) > old_div(np.pi, 2):
-		return numpy.linalg.norm(P - A)
-	if np.arccos(np.dot(old_div((P - B), numpy.linalg.norm(P - B)), old_div((A - B), numpy.linalg.norm(A - B)))) > old_div(np.pi, 2):
-		return numpy.linalg.norm(P - B)
-	return old_div(numpy.linalg.norm(np.cross((P-A), (P-B))), numpy.linalg.norm(A - B))
-
-#### Distance from a set of points to a set of lines
-#### Return the distance to the nearest line for each point
-def dist_pts_lines(pts, lines):
-	dsts=np.zeros((len(pts), len(lines)-1))
-	for i,p in enumerate(pts):
-		for j in range(len(lines)-1):
-			dsts[i,j]=dist_line_point(lines[j], lines[j+1], p)
-	return np.min(dsts, axis=1)
-
-#### Moving average
-def moving_average(a, n=3) :
-	ret = np.cumsum(a, axis=0)
-	ret[n:] = ret[n:] - ret[:-n]
-	return old_div(ret[n - 1:], n)
-
-#### Line to line distance and angle
-def line2line_angle(a0, a1, b0, b1):
-	a=a1-a0
-	b=b1-b0
-	c=b0-a0
-	lang=old_div(np.dot(a,b),(norm(a)*norm(b)))
-	return lang
-
-	
 #### Calculate the rotation matrix that rotate a given vector to [0,0,1]
 def calc_rot_mat(v):
 
