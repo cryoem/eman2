@@ -62,6 +62,7 @@ def main():
 	parser.add_argument("--tophat",type=str,default=None,help="'global', 'local' or 'localwiener'. Overall Wiener filter disabled, and replaced by a tophat filter either across the map at 0.143 as Relion appears to do, or locally based on e2fsc_local_real.py results (either local tophat or local wiener)")
 	parser.add_argument("--ampcorrect",choices=['strucfac', 'flatten','none'],default="strucfac",help="Will perform amplitude correction via the specified method. The default choice is strucfac.")
 	parser.add_argument("--ncmult",type=float,default=1.05,help="Specify how much to multiply noise cutoff during flattening amplitude correction. Default is 1.05.")
+	parser.add_argument("--localsize",type=float,default=-1,help="Override the automatic local region size (in A) used for local resolution calculation and filtration.")
 	parser.add_argument("--m3dpostprocess", type=str, default=None, help="Default=none. An arbitrary post-processor to run after all other automatic processing.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--automaskexpand", default=-1, type=int,help="Default=boxsize/20. Specify number of voxels to expand mask before soft edge. Only used if automask3d not specified." )
@@ -413,6 +414,7 @@ def main():
 
 			# compute local resolution and locally filter averaged volume, using new local fsc
 			localsizea=max(options.restarget*3,15)
+			if options.localsize>0 : localsizea=options.localsize
 			cmd="e2fsc_real_local.py {path}threed_even_unmasked.hdf {path}threed_odd_unmasked.hdf --output {path}fscvol_{itr:02d}.hdf --outfilt {path}threed_{itr:02d}.hdf --outfilte {path}threed_{itr:02d}_even.hdf --outfilto {path}threed_{itr:02d}_odd.hdf --mask {path}mask.hdf --threads {threads} --localsizea {localsizea} --compressbits {bits} --tophat -v 1".format(
 				path=path,itr=options.iter,threads=options.threads,localsizea=int(localsizea),bits=options.compressbits)
 			run(cmd)
@@ -437,6 +439,7 @@ def main():
 
 			# compute local resolution and locally filter averaged volume, using new local fsc
 			localsizea=max(options.restarget*3,15)
+			if options.localsize>0 : localsizea=options.localsize
 			cmd="e2fsc_real_local.py {path}threed_even_unmasked.hdf {path}threed_odd_unmasked.hdf --output {path}fscvol_{itr:02d}.hdf --outfilt {path}threed_{itr:02d}.hdf --outfilte {path}threed_{itr:02d}_even.hdf --outfilto {path}threed_{itr:02d}_odd.hdf --mask {path}mask.hdf --threads {threads} --localsizea {localsizea} --compressbits {bits} -v 1".format(
 				path=path,itr=options.iter,threads=options.threads,localsizea=int(localsizea),bits=options.compressbits)
 			run(cmd)

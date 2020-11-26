@@ -88,7 +88,6 @@ from matplotlib.figure import Figure
 #matplotlib.use('Agg')
 import numpy as np
 
-from . import embrowser
 from .emapplication import EMApp, EMGLWidget
 from .emglobjects import EMOpenGLFlagsAndTools
 
@@ -346,7 +345,7 @@ class EMPlot2DWidget(EMGLWidget):
 					for i in range(len(im)):
 						r.append(im[i][j,0])
 					all.append(r)
-				self.set_data(all,vecset,quiet=quiet)
+				self.set_data(all,"Vecset",quiet=quiet)
 			else:
 				for idx,image in enumerate(im):
 					l = [i for i in range(image.get_size())]
@@ -374,6 +373,7 @@ class EMPlot2DWidget(EMGLWidget):
 					except: comments=None
 				else: comments=None
 				rdata=[i.split("#")[0] for i in rdata if i[0]!='#']
+				from . import embrowser
 				rdata=[list(map(safe_float, embrowser.renumfind.findall(i))) for i in rdata if embrowser.renumfind.search(i)]
 
 				nx=len(rdata[0])
