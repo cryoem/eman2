@@ -154,44 +154,15 @@ int LstFastIO::calc_ref_image_index(int image_index)
 		char ref_image_path[MAXPATHLEN];
 		char unused[256];
 		sscanf(buf, " %d %s %[ .,0-9-]", &ref_image_index, ref_image_path, unused);
-
-		char fullpath[MAXPATHLEN];
-
-		char sep = '/';
-#ifdef WIN32
-		sep = '\\';
-#endif
-// 		if (ref_image_path[0] == sep) {
-			strcpy(fullpath, ref_image_path);
-// 		}
-// 		else {
-// 			if (strrchr(filename.c_str(), sep)) {
-// 				strcpy(fullpath, filename.c_str());
-// 			}
-// 			else {
-// #ifndef WIN32
-// 				getcwd(fullpath, MAXPATHLEN);
-// #else
-// 				//GetCurrentDirectory(MAXPATHLEN, fullpath);
-// #endif
-// 			}
-// 
-// 			char *p_basename = strrchr(fullpath, sep);
-// 			if (p_basename) {
-// 				//p_basename++;
-// 				//*p_basename = '\0';
-// 				char ssep[2];
-// 				ssep[0] = sep;
-// 				ssep[1] = '\0';
-// 				strcat(fullpath, ssep);
-// 				strcat(fullpath, ref_image_path);
-// 			}
-// 		}
-
-		ref_filename = string(fullpath);
-		if (!Util::is_file_exist(ref_filename)) throw FileAccessException(ref_filename);
-		imageio = EMUtil::get_imageio(ref_filename, rw_mode);
-
+		string newrefname = string(ref_image_path);
+		if (newrefname.compare(ref_filename)==0) {	// use the existing imageio when possible, TODO: cache a few?
+			if (imageio==0) throw FileAccessException(ref_filename);
+		} else {
+			ref_filename = newrefname;
+			if (!Util::is_file_exist(ref_filename)) throw FileAccessException(ref_filename);
+			if (imageio!=0) delete imageio;
+			imageio = EMUtil::get_imageio(ref_filename, rw_mode);
+		}
 		last_ref_index = ref_image_index;
 	}
 //	printf("%d\t%d\t%s\n",image_index,last_ref_index,ref_filename.c_str());

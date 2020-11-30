@@ -177,7 +177,7 @@ class EMClassPtclTool(QtWidgets.QWidget):
 		self.vbadptcl=None
 
 		self.updateFiles()
-		QtCore.QTimer.singleShot(500,self.fixlocation)
+		QtCore.QTimer.singleShot(1000,self.fixlocation)
 
 	def makeNewSet(self,x):
 		"Makes a new particle set based on the selected class-averages"
@@ -479,16 +479,16 @@ class EMClassPtclTool(QtWidgets.QWidget):
 		self.vclasses.show()
 		self.vgoodptcl.show()
 		self.vbadptcl.show()
-		QtCore.QTimer.singleShot(500,self.fixlocation)
+		QtCore.QTimer.singleShot(1000,self.fixlocation)
 		
 		QtWidgets.qApp.setOverrideCursor(Qt.ArrowCursor)
 
 	def fixlocation(self):
 		E2loadappwin("e2evalparticles","main",self)
-		if self.vclasses: E2loadappwin("e2evalparticles","classes",self.vclasses)
+		if self.vclasses: E2loadappwin("e2evalparticles","classes",self.vclasses.qt_parent)
 		if self.vgoodptcl: 
-			E2loadappwin("e2evalparticles","good",self.vgoodptcl)
-			E2loadappwin("e2evalparticles","bad",self.vbadptcl)
+			E2loadappwin("e2evalparticles","good",self.vgoodptcl.qt_parent)
+			E2loadappwin("e2evalparticles","bad",self.vbadptcl.qt_parent)
 
 
 	def classSelect(self,event,lc):
@@ -512,7 +512,7 @@ class EMClassPtclTool(QtWidgets.QWidget):
 
 		self.vgoodptcl.show()
 		self.vbadptcl.show()
-		QtCore.QTimer.singleShot(500,self.fixlocation)
+#		QtCore.QTimer.singleShot(500,self.fixlocation)
 		
 		QtWidgets.qApp.setOverrideCursor(Qt.ArrowCursor)
 
@@ -521,9 +521,9 @@ class EMClassPtclTool(QtWidgets.QWidget):
 
 	def closeEvent(self,event):
 		E2saveappwin("e2evalparticles","main",self)
-		E2saveappwin("e2evalparticles","classes",self.vclasses)
-		E2saveappwin("e2evalparticles","good",self.vgoodptcl)
-		E2saveappwin("e2evalparticles","bad",self.vbadptcl)
+		E2saveappwin("e2evalparticles","classes",self.vclasses.qt_parent)
+		E2saveappwin("e2evalparticles","good",self.vgoodptcl.qt_parent)
+		E2saveappwin("e2evalparticles","bad",self.vbadptcl.qt_parent)
 		try :
 			self.vclasses.commit_sets()
 			self.vclasses.close()
