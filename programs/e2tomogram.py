@@ -79,6 +79,7 @@ def main():
 	parser.add_argument("--verbose","-v", type=int,help="Verbose", default=0)
 	parser.add_argument("--noali", action="store_true",help="skip initial alignment", default=False)
 	parser.add_argument("--dryrun", action="store_true",help="skip final reconstruction", default=False)
+	parser.add_argument("--patchtrack", action="store_true",help="use patch tracking instead of landmark based alignment. still under development", default=False)
 	parser.add_argument("--posz", action="store_true",help="auto positioning along z axis", default=False,guitype='boolbox',row=14, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--xdrift", action="store_true",help="apply extra correction for drifting along x axis", default=False,guitype='boolbox',row=13, col=0, rowspan=1, colspan=1,mode="easy")
 
@@ -250,7 +251,7 @@ def main():
 			loss0=abs(ttparams[:,3])
 			
 		options.zeroid=zeroid=np.argmin(abs(tlts))
-		
+	
 	else:
 		#### determine alignment parameters from scratch
 		if (options.rawtlt!=None and len(options.rawtlt)>0) :
@@ -292,10 +293,14 @@ def main():
 		tlts-=tlts[options.zeroid]
 		
 		ttparams=np.zeros((num, 5))
+		if options.tltax!=None:
+			### it turns out there is a sign difference between serialem and eman...
+			options.tltax=-options.tltax
+		
 		
 		if options.noali:
 			print("Skipping coarse alignment...")
-			
+		
 		else:
 			#### do an initial course alignment before common line
 			if options.rawtlt:
@@ -317,11 +322,8 @@ def main():
 			if options.tltax==None:
 				tltax=calc_tltax_rot(img_tali, options)
 				options.tltax=tltax
-			else:
-				### it turns out there is a sign difference between serialem and eman...
-				tltax=-options.tltax
-				options.tltax=tltax
-			print("tilt axis:  {:.2f}".format(tltax))
+			
+			print("tilt axis:  {:.2f}".format(options.tltax))
 			
 			if options.writetmp:
 				for i,m in enumerate(img_tali):
@@ -341,6 +343,19 @@ def main():
 		if options.badone:
 			loss0[badi]=np.max(loss0)+100
 	
+	
+	if options.patchtrack:
+		print("Alignment by patch tracking")
+		
+		tpm1, loss0= do_patch_tracking(imgs_500, ttparams, options)
+		tpm2, loss0= do_patch_tracking(imgs_1k, tpm1, options)
+		
+		if options.writetmp:
+			make_ali(imgs_1k, ttparams, options, outname=os.path.join(path,"patch_ali_00.hdf"))
+			make_ali(imgs_1k, tpm1, options, outname=os.path.join(path,"patch_ali_01.hdf"))
+			make_ali(imgs_1k, tpm2, options, outname=os.path.join(path,"patch_ali_02.hdf"))
+			
+		ttparams=tpm1.copy()
 	
 	pks=np.zeros((options.npk, 3))
 	#### pack parameters together so it is easier to pass around
@@ -534,6 +549,101 @@ def main():
 	print("Finished. Total time: {:.1f}s".format(dtime))
 
 	E2end(logid)
+
+
+
+def get_xf_pos_inv(tpm, pk):
+
+	
+	xf1=Transform({"type":"2d","tx":tpm[0], "ty":tpm[1],"alpha":tpm[2]}).inverse()
+	p2=xf1.transform([pk[0], pk[1]])
+	
+	return [p2[0]/np.cos(tpm[3]*np.pi/180), p2[1], 0]
+
+def pt_testxy(x, img, tpm, p0, tiles0, bsz):
+	t=tpm.copy()
+
+	t[:2]+=x
+	
+	p2=np.array([get_xf_pos(t, p) for p in p0])
+
+	ps=p2+img["nx"]//2
+	tiles1=[img.get_clip(Region(i[0]-bsz//2,i[1]-bsz//2,bsz, bsz)) for i in ps.tolist()]
+
+	for t in tiles1:
+		t.process_inplace("mask.soft",{"outer_radius":-bsz//8, "width":bsz//12})
+
+	tx=[]
+	for i in range(len(ps)):
+		t0=tiles0[i]
+		t1=tiles1[i]
+		t0ali=t0.align("translational", t1, {"maxshift":bsz//4})
+		xf=t0ali["xform.align2d"].get_params("2d")
+		tx.append([xf["tx"], xf["ty"]])
+
+	tx=np.array(tx)
+	d=np.mean(np.linalg.norm(tx, axis=1))
+
+	return d
+    
+def do_patch_tracking(imgs, ttparams, options):
+	
+	scale=int(np.round(imgs[0]["apix_x"]/options.apix_init))
+	print("scale by {}".format(scale))
+	
+	cn=len(ttparams)//2
+	if scale>5:
+		tsz=64
+		bsz=128
+	else:
+		tsz=96
+		bsz=128
+		
+	nx=imgs[0]["nx"]
+	n=nx//tsz
+	print("generating {} patches along each axis".format(n))
+	idx=np.indices((n,n))
+	idx=idx.reshape((2,-1)).T
+	idx*=tsz
+	idx=idx-np.max(idx)/2
+
+	nidpair=[]
+	nidpair+=[[i, i-1] for i in range(cn ,0, -1)]
+	nidpair+=[[i, i+1] for i in range(cn, len(imgs)-1)]
+
+	tpm=ttparams.copy()
+	tpm[:,:2]/=scale
+	tpm[:,:2]-=tpm[cn,:2]
+	tpm[:,4]=0 ## skip off plane tilt
+		
+	
+	loss=np.zeros(len(tpm))
+	for nid in nidpair:
+		
+		p0=np.array([get_xf_pos_inv(tpm[nid[0]], p) for p in idx])		
+
+		ps=idx+nx//2
+		tiles0=[imgs[nid[0]].get_clip(Region(i[0]-bsz//2,i[1]-bsz//2,bsz, bsz)) for i in ps.tolist()]
+		for t in tiles0:
+			t.process_inplace("mask.soft",{"outer_radius":-bsz//8, "width":bsz//12})
+		
+		x0=[0,0]
+		maketile=True
+		res=minimize(pt_testxy, x0, (imgs[nid[1]], tpm[nid[1]], p0, tiles0, bsz),method='Powell',options={'xtol': .1, 'disp': False, "maxiter":10})
+		l=res.fun*scale*options.apix_init/10.
+		print("tilt {} -> {} : ({:.2f}, {:.2f}), {:.3f}".format(nid[0], nid[1], res.x[0], res.x[1], l))
+		loss[nid[1]]=l
+		if nid[1]>nid[0]:
+			rg=range(nid[1], len(imgs))
+		else:
+			rg=range(0, nid[1]+1)
+		
+		for i in rg:
+			tpm[i,:2]+=res.x
+			
+	tpm[:,:2]-=np.mean(tpm[:,:2], axis=0)
+	tpm[:,:2]*=scale
+	return tpm, loss
 	
 def correct_zpos(tomo, ttparams, options):
 	print("Positioning along z axis")
