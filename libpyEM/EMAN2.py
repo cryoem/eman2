@@ -293,6 +293,7 @@ def E2saveappwin(app,key,win):
 		geom=(pos.x(),pos.y(),win.width(),win.height())
 
 		E2setappval(app,key,geom)
+#		print(app,key,geom)
 	except:
 		print("Error saving window location ",key)
 
@@ -303,6 +304,7 @@ def E2loadappwin(app,key,win):
 		if geom==None : raise Exception
 		win.resize(geom[2],geom[3])
 		win.move(geom[0],geom[1])
+#		print(app,key,geom)
 	except: return
 
 def E2saveprojtype(app,key,win):
