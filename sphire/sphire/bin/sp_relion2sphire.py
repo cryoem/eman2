@@ -519,19 +519,25 @@ def run():
 
     if str_relion_start_section == 'data_particles':
         tmp_output = '{}_old.star'.format(os.path.join(dir_path_work, os.path.splitext(os.path.basename(file_path_relion_star))[0]))
-        return_code = subprocess.call(
-            'sp_convert_relionnew_to_relionold.py {} {}'.format(
+        sp_global_def.sxprint('Try to create old-style star file')
+        cmd = 'sp_convert_relionnew_to_relionold.py {} {}'.format(
                 file_path_relion_star,
                 tmp_output
-            ).split()
-        )
+                )
+        sp_global_def.sxprint('Execute: {}'.format(cmd))
+        return_code = subprocess.call(cmd.split())
         if return_code == 0:
+            sp_global_def.sxprint('Succesfully converted to old-style star file')
             str_relion_start_section = 'data_'
             file_path_relion_star = tmp_output
         elif return_code == 1:
+            sp_global_def.sxprint('Old style star file with particle data detected.')
             str_relion_start_section = 'data_particles'
         elif return_code == 2:
+            sp_global_def.sxprint('Old style star file detected.')
             str_relion_start_section = 'data_'
+        else:
+            assert False, 'Please contact the SPHIRE developers'
 
 
     # ------------------------------------------------------------------------------------
