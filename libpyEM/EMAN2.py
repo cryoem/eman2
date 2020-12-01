@@ -51,7 +51,7 @@ from EMAN2_meta import *
 import EMAN2db, EMAN2jsondb
 import argparse, copy
 import glob
-import random 
+import random
 
 import threading
 #from Sparx import *
