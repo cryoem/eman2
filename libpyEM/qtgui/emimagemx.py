@@ -959,7 +959,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.matrix_panel.update_panel_params(self.view_width(),height,self.scale,self.data,self.origin[1],self)
 		view_height = self.height()
 		panel_height = self.matrix_panel.height
-		if panel_height < view_heights :
+		if panel_height < view_height:
 			# This auto rescaling stuff was disabled at the requeset of Steve Ludtke. Uncomment to see how it works
 			#self.scale =  self.matrix_panel.get_min_scale(self.view_width(),self.height(),self.scale,self.data) # this is to prevent locking
 			self.draw_scroll = False
@@ -1583,7 +1583,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		msg = QtWidgets.QMessageBox()
 		msg.setWindowTitle("Whoops")
 		if self.data==None or len(self.data)==0:
-			msg.setText("there is no data to save" %fsp)
+			msg.setText("there is no data to save")
 			msg.exec_()
 			return
 
