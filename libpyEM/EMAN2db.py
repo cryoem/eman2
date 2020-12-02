@@ -30,6 +30,7 @@
 #
 
 from future import standard_library
+
 standard_library.install_aliases()
 from builtins import range
 from builtins import object
@@ -485,8 +486,6 @@ def db_read_image(self, fsp, *parms, **kparms):
 
         x = db.get(key, target=self, nodata=nodata, region=region)
         if x == None: raise Exception("Could not access " + str(fsp) + " " + str(key))
-        #		except:
-        #			raise Exception("Could not access "+str(fsp)+" "+str(key))
         return None
 
     elif fsp.endswith('.star'):
@@ -504,17 +503,16 @@ def db_read_image(self, fsp, *parms, **kparms):
         image_name = image_data['_rlnImageName']
         number, file_name = image_name.split('@')
 
-        # file_name = os.path.join('/home/adnan/PycharmProjects/newrelion/', file_name)
         parms = list(parms)
-        parms[0] = int(number)
+        parms[0] = int(number) - 1
 
         try:
             del kparms['tag']
         except KeyError:
             pass
 
-        self.read_image_c(file_name, *parms, **kparms)
         db_set_header_star(self, image_data, star_file)
+        self.read_image_c(file_name, *parms, **kparms)
         return None
 
     if len(kparms) != 0:
@@ -539,8 +537,9 @@ def db_set_header_star(img, dataframe, star_cla):
     the EMData image with respect to specific keys.
     """
     star_dict = star_cla.sphire_keys
+    fixed_keys = ['_rlnImageName', 'changecount', 'is_complex_ri']
     for key in dataframe.keys():
-        if key == '_rlnImageName':
+        if key in fixed_keys:
             continue
         else:
             if key in star_dict:
@@ -566,6 +565,10 @@ def db_set_header_star(img, dataframe, star_cla):
     except Exception as e:
         pass
 
+    try:
+        img.set_attr("data_path", file_name)
+    except:
+        pass
 
     try:
         ctfimg = EMAN2Ctf()
@@ -590,7 +593,7 @@ def db_set_header_star(img, dataframe, star_cla):
         pass
 
     try:
-        cor = [dataframe["_rlnCoordinateX"], dataframe["_rlnCoordinateY"]]
+        cor = [int(dataframe["_rlnCoordinateX"]), int(dataframe["_rlnCoordinateY"])]
         img.set_attr('ptcl_source_coord', cor)
     except Exception as e:
         pass
@@ -653,7 +656,6 @@ def db_read_images(fsp, *parms):
                 for index in range(image_data.shape[0]):
                     numbers = int(image_data.iloc[index]['_rlnImageName'].split('@')[0])
                     file_name = image_data.iloc[index]['_rlnImageName'].split('@')[1]
-                    # file_name = os.path.join('/home/adnan/PycharmProjects/newrelion/', file_name)
                     img = EMData.read_images_c(file_name, [(numbers - 1)])
                     db_set_header_star(img[0], image_data.iloc[index], star_file)
                     total_imgs.extend(img)
@@ -662,11 +664,9 @@ def db_read_images(fsp, *parms):
                 for index in range(image_data.shape[0]):
                     numbers = int(image_data.iloc[index]['_rlnImageName'].split('@')[0])
                     file_name = image_data.iloc[index]['_rlnImageName'].split('@')[1]
-                    # file_name = os.path.join('/home/adnan/PycharmProjects/newrelion/', file_name)
-                    img = EMData()
+                    img = EMData(file_name, (numbers - 1), True)
                     db_set_header_star(img, image_data.iloc[index], star_file)
                     total_imgs.append(img)
-                    del img
                 return total_imgs
 
         elif len(parms) == 0:
@@ -674,7 +674,6 @@ def db_read_images(fsp, *parms):
             for index in range(data.shape[0]):
                 numbers = int(data.iloc[index]['_rlnImageName'].split('@')[0])
                 file_name = data.iloc[index]['_rlnImageName'].split('@')[1]
-                # file_name = os.path.join('/home/adnan/PycharmProjects/newrelion/', file_name)
                 img = EMData.read_images_c(file_name, [(numbers - 1)])
                 db_set_header_star(img[0], data.iloc[index], star_file)
                 total_imgs.extend(img)
@@ -731,30 +730,51 @@ def db_write_image(self, fsp, *parms):
             em_dict = self.get_attr_dict()
             try:
                 star_file['particles']
-            except :
-                star_file.update('particles',pd.DataFrame(), True )
+            except:
+                star_file.update('particles', pd.DataFrame(), True)
             db_em_to_star_header(em_dict, star_file, parms[0], special_keys, ignored_keys)
             star_file.write_star_file(out_star_file=fsp, overwrite=True)
-            self.write_image_c(fsp.split('.star')[0] + '.mrcs', *parms)
+            self.write_image_c(fsp.split('.star')[0] + '.hdf', *parms)
         else:
             em_dict = self.get_attr_dict()
             special_keys = star_file.special_keys
             ignored_keys = star_file.ignored_keys
             try:
                 star_file['particles']
-            except :
-                star_file.update('particles',pd.DataFrame(), True )
+            except:
+                star_file.update('particles', pd.DataFrame(), True)
             db_em_to_star_header(em_dict, star_file['particles'], parms[0], special_keys, ignored_keys)
             star_file.write_star_file(out_star_file=fsp, overwrite=True)
-            self.write_image_c(fsp.split('.star')[0] + '.mrcs', *parms)
+            self.write_image_c(fsp.split('.star')[0] + '.hdf', *parms)
         return
     return self.write_image_c(fsp, *parms)
+
 
 EMData.write_image_c = EMData.write_image
 EMData.write_image = db_write_image
 
-def im_write_compressed(self,fsp,n,bits=8,minval=0,maxval=0,nooutliers=False,level=1,erase=False):
-	"""write_compressed(self or list,fsp,n,bits=8,minval=0,maxval=0,nooutliers=False,level=1)
+
+def write_images(EM_data_list, fsp, indices):
+    local_bdb_stack = db_open_dict(fsp)
+    special_keys = star.StarFile(fsp).special_keys
+    ignored_keys = star.StarFile(fsp).ignored_keys
+
+    # print(EM_data_list[0].get_attr_dict())
+
+    for loc_part_id, loc_part_value in enumerate(indices):
+        particle_img_dict = EM_data_list[loc_part_id].get_attr_dict()
+        particle_img_dict['data_path'] = fsp.split('.star')[0] + '.hdf'
+        db_em_to_star_header(particle_img_dict, local_bdb_stack.star['particles'], loc_part_value, special_keys, ignored_keys)
+        particle_img_dict['data_path'] = fsp.split('.star')[0] + '.hdf'
+        EM_data_list[loc_part_id].write_image_c(particle_img_dict['data_path'], loc_part_value)
+
+
+    local_bdb_stack.star.write_star_file(out_star_file=fsp, overwrite=True)
+    db_close_dict(fsp)
+
+
+def im_write_compressed(self, fsp, n, bits=8, minval=0, maxval=0, nooutliers=False, level=1, erase=False):
+    """write_compressed(self or list,fsp,n,bits=8,minval=0,maxval=0,nooutliers=False,level=1)
 
 This flexible image writing routine will write compressed HDF images (or a single image). It may be called
 on an instance:
@@ -765,15 +785,15 @@ or a list of images:
 
 EMData.write_compressed(list,fsp,n_first_img,bits,...)
 
-Compression itself is lossless, but uses variable bit reduction which is (usually) lossy. 
+Compression itself is lossless, but uses variable bit reduction which is (usually) lossy.
 
 Ignores any render_min/render_max already in the image header. To use those values, pass them as arguments
 and do not specify nooutliers.
 
-If nooutliers is set, this will override any specified minval/maxval. If maxval<=minval then the full range of 
-image values will be included in the bit reduced image. If large outliers are present, this may effectively remove 
+If nooutliers is set, this will override any specified minval/maxval. If maxval<=minval then the full range of
+image values will be included in the bit reduced image. If large outliers are present, this may effectively remove
 almost all of the information in the image. Nooutliers will eliminate up to ~0.01% of the extreme pixel values from the
-histogram by clamping the values at the extrema. For integrating mode raw micrograph data, nooutliers is 
+histogram by clamping the values at the extrema. For integrating mode raw micrograph data, nooutliers is
 highly recommended, though it is probably unnecessary with counting mode images, unless there is an extremely
 bad normalization value.
 
@@ -789,51 +809,57 @@ If erase is set, the file will be deleted if it exists, before writing. Obviousl
 but a problem with overwriting existing compressed HDF images is that the original images are not truly deleted
 and the file size will increase.
 """
-	if isinstance(self,EMData) : 
-		self=[self]
-	
-	if erase:
-		try: os.unlink(fsp)
-		except: pass
-	
-	if n==-1: 
-		try: n=EMUtil.get_image_count_c(fsp)
-		except: n=0
-	
-	# Maybe should have this revert to normal write_image, if a different format?
-	if fsp[-4:].lower()!=".hdf" : raise(Exception,"Only HDF format is supported by im_write_compressed")
-	
-	for i,im in enumerate(self):
-		if not isinstance(im,EMData) : raise(Exception,"write_compressed() requires a list of EMData objects")
-		im["render_bits"]=bits
-		im["render_compress_level"]=level
-		if nooutliers :
-			nxyz=im.get_size()
-			maxout=max(nxyz//20000,8)		# at most 1 in 20000 pixels should be considered an outlier on each end
-			h0=im["minimum"]
-			h1=im["maximum"]
-			hs=(h1-h0)/1023
-			hist=im.calc_hist(1024,h0,h1)
-			
-			#ok, we're doing this approximately
-			for sl in range(512):
-				if sum(hist[:sl+1])>maxout: break
-			for sh in range(1023,512,-1):
-				if sum(hist[sh:])>maxout: break
+    if isinstance(self, EMData):
+        self = [self]
 
-			im["render_min"]=sl*hs+h0
-			im["render_max"]=(sh)*hs+h0
-		elif maxval>minval:
-			im["render_min"]=float(minval)
-			im["render_max"]=float(maxval)
-		else:
-			im["render_min"]=im["minimum"]
-			im["render_max"]=im["maximum"]
-		
-		# would like to use the new write_images, but it isn't quite ready yet.
-		im.write_image(fsp,i+n,EMUtil.ImageType.IMAGE_UNKNOWN,0,None,EMUtil.EMDataType.EM_COMPRESSED)
-	
-EMData.write_compressed=im_write_compressed
+    if erase:
+        try:
+            os.unlink(fsp)
+        except:
+            pass
+
+    if n == -1:
+        try:
+            n = EMUtil.get_image_count_c(fsp)
+        except:
+            n = 0
+
+    # Maybe should have this revert to normal write_image, if a different format?
+    if fsp[-4:].lower() != ".hdf": raise (Exception, "Only HDF format is supported by im_write_compressed")
+
+    for i, im in enumerate(self):
+        if not isinstance(im, EMData): raise (Exception, "write_compressed() requires a list of EMData objects")
+        im["render_bits"] = bits
+        im["render_compress_level"] = level
+        if nooutliers:
+            nxyz = im.get_size()
+            maxout = max(nxyz // 20000, 8)  # at most 1 in 20000 pixels should be considered an outlier on each end
+            h0 = im["minimum"]
+            h1 = im["maximum"]
+            hs = (h1 - h0) / 1023
+            hist = im.calc_hist(1024, h0, h1)
+
+            # ok, we're doing this approximately
+            for sl in range(512):
+                if sum(hist[:sl + 1]) > maxout: break
+            for sh in range(1023, 512, -1):
+                if sum(hist[sh:]) > maxout: break
+
+            im["render_min"] = sl * hs + h0
+            im["render_max"] = (sh) * hs + h0
+        elif maxval > minval:
+            im["render_min"] = float(minval)
+            im["render_max"] = float(maxval)
+        else:
+            im["render_min"] = im["minimum"]
+            im["render_max"] = im["maximum"]
+
+        # would like to use the new write_images, but it isn't quite ready yet.
+        im.write_image(fsp, i + n, EMUtil.ImageType.IMAGE_UNKNOWN, 0, None, EMUtil.EMDataType.EM_COMPRESSED)
+
+
+EMData.write_compressed = im_write_compressed
+
 
 def db_get_image_count(fsp):
     """get_image_count(path)
@@ -1036,7 +1062,7 @@ def db_get_all_attributes(fsp, *parms):
                 cord_list = []
                 for idx in range(data.shape[0]):
                     star_data = data.iloc[idx]
-                    cord_list.append([star_data["_rlnCoordinateX"], star_data["_rlnCoordinateY"]])
+                    cord_list.append([int(star_data["_rlnCoordinateX"]), int(star_data["_rlnCoordinateY"])])
                 return cord_list
 
             else:
@@ -1052,21 +1078,23 @@ EMUtil.get_all_attributes_c = staticmethod(EMUtil.get_all_attributes)
 EMUtil.get_all_attributes = staticmethod(db_get_all_attributes)
 
 
-
 def db_get_image_type(fsp):
     if fsp.endswith('.star'):
         return EMUtil.ImageType.IMAGE_MRC
     else:
         return EMUtil.get_image_type_c(fsp)
 
+
 EMUtil.get_image_type_c = staticmethod(EMUtil.get_image_type)
 EMUtil.get_image_type = staticmethod(db_get_image_type)
+
 
 def db_em_to_star_header(em_dict, dataframe, ptcl_no, special_keys, ignored_keys):
     """
     It converts the data from EMAN dictionary and pass it all
     to pandas dataframe after conversion of keys.
     """
+    # print("Particle number", ptcl_no)
     for key in list(em_dict.keys()):
         em_key = star.sphire_header_magic(key, special_keys)
         if em_key:
@@ -1101,23 +1129,36 @@ def db_em_to_star_header(em_dict, dataframe, ptcl_no, special_keys, ignored_keys
                     dataframe.loc[ptcl_no + 1, "_rlnAnglePsi"] = trans["psi"]
                     dataframe.loc[ptcl_no + 1, "_rlnOriginX"] = -trans["tx"]
                     dataframe.loc[ptcl_no + 1, "_rlnOriginY"] = -trans["ty"]
+                    dataframe.loc[ptcl_no + 1, "_spMirror"] = trans["mirror"]
+                    dataframe.loc[ptcl_no + 1, "_spScale"] = trans["scale"]
 
                 elif key == 'xform.align2d':
                     trans = em_dict[key].get_params("2d")
                     dataframe.loc[ptcl_no + 1, "_rlnAnglePsi"] = trans["alpha"]
                     dataframe.loc[ptcl_no + 1, "_rlnOriginX"] = -trans["tx"]
                     dataframe.loc[ptcl_no + 1, "_rlnOriginY"] = -trans["ty"]
+                    dataframe.loc[ptcl_no + 1, "_spMirror"] = trans["mirror"]
+                    dataframe.loc[ptcl_no + 1, "_spScale"] = trans["scale"]
+
 
                 elif key == 'ptcl_source_coord':
-                    dataframe.loc[ptcl_no + 1, "_rlnCoordinateX"] = em_dict[key][0]
-                    dataframe.loc[ptcl_no + 1, "_rlnCoordinateY"] = em_dict[key][1]
+                    dataframe.loc[ptcl_no + 1, "_rlnCoordinateX"] = int(em_dict[key][0])
+                    dataframe.loc[ptcl_no + 1, "_rlnCoordinateY"] = int(em_dict[key][1])
 
                 elif key == 'data_path':
                     try:
                         part_path = str("{:08n}".format(em_dict["ptcl_source_coord_id"] + 1)) + '@' + em_dict[
                             "data_path"]
                         dataframe.loc[ptcl_no + 1, '_rlnImageName'] = part_path
-                    except KeyError:  # if datapath is not provided
+                    except Exception as e:  # if datapath is not provided
+                        print(e)
+                        pass
+
+                elif key == 'originalid':
+                    try:
+                        dataframe.loc[ptcl_no + 1, 'originalid'] = em_dict[key]
+                    except Exception as e:  # if datapath is not provided
+                        print(e)
                         pass
                 else:
                     assert False, 'Missing rule for {}'.format(key)
@@ -1174,6 +1215,15 @@ class Pd_to_Db_conversion():
         # Keep a cache of opened database environments
         Pd_to_Db_conversion.opendbs[self.star.star_file] = self
 
+        # Make the database directory
+        if not os.access(os.path.dirname(self.star.star_file), os.F_OK):
+            try:
+                os.makedirs(os.path.dirname(self.star.star_file))
+            except:
+                # perhaps there is another process running that just made it?
+                if not os.access(os.path.dirname(self.star.star_file), os.F_OK):
+                    raise RuntimeError("Error - there was a problem creating the Starfile directory")
+
     def set(self, index, in_data):
         if isinstance(in_data, dict):
             special_keys = self.star.special_keys
@@ -1191,6 +1241,18 @@ class Pd_to_Db_conversion():
 
     def __getitem__(self, index):
         return self.get(index)
+
+    def get_attr(self, n, attr):
+        sp_keys = self.star.sphire_keys
+        newdict = db_star_to_em_header(self.converter, index, sp_keys)
+        return newdict[attr]
+
+    def set_attr(self, n, attr, value):
+        sp_keys = self.star.special_keys
+        ign_keys = self.star.ignored_keys
+        em_dict = {attr: value}
+        db_em_to_star_header(em_dict, self.converter, n, sp_keys, ign_keys)
+        return
 
 
 def db_star_to_em_header(dataframe, idx, sphire_keys):
@@ -1216,7 +1278,7 @@ def db_star_to_em_header(dataframe, idx, sphire_keys):
             em_dict[key] = trans
             del transdict
         elif key == 'ptcl_source_coord':
-            coord = [dataframe.iloc[idx]["_rlnCoordinateX"], dataframe.iloc[idx]["_rlnCoordinateY"]]
+            coord = [int(dataframe.iloc[idx]["_rlnCoordinateX"]), int(dataframe.iloc[idx]["_rlnCoordinateY"])]
             em_dict[key] = coord
 
         elif key == 'data_path':

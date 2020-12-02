@@ -2062,6 +2062,9 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
                     while not os.path.exists(name):
                         time.sleep(0.1)
 
+            for i in range(len(all_star_files)):
+                print(all_star_files[i])
+
             newstar = star.StarFile.add_star(all_star_files)
             newstar.write_star_file(os.path.join(root_out_dir, "data.star"))
 

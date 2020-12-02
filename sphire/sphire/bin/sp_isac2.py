@@ -7,7 +7,7 @@ Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)
 Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
 Author: Thorsten Wagner 2019 (thorsten.wagner@mpi-dortmund.mpg.de)
 # Author: Tapu Shaikh 2019 (tapu.shaikh@mpi-dortmund.mpg.de)
-# Author: Adnan Ali 2019 (adnan.ali@mpi-dortmund.mpg.de)
+Author: Adnan Ali 2019 (adnan.ali@mpi-dortmund.mpg.de)
 # Author: Luca Lusnig 2019 (luca.lusnig@mpi-dortmund.mpg.de)
 Author: Toshio Moriya 2019 (toshio.moriya@kek.jp)
 Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
@@ -41,7 +41,7 @@ Place, Suite 330, Boston, MA  02111-1307 USA
 
 import EMAN2
 import EMAN2_cppwrap
-from EMAN2db import db_open_dict
+from EMAN2db import db_open_dict, db_close_dict, write_images
 import ctypes
 import mpi
 import numpy
@@ -62,7 +62,7 @@ import subprocess
 import sys
 import time
 import random
-
+import tqdm
 # ====================================================================[ import ]
 
 # compatibility
@@ -72,15 +72,9 @@ standard_library.install_aliases()
 from builtins import range
 
 # system
-
 # python base packages
-
 # EMAN2 & sparx base
-
-
 # EMAN2 & sparx general utility
-
-
 # EMAN2 & sparx specific packages
 
 
@@ -264,7 +258,7 @@ def normalize_particle_images(
             mask = sp_utilities.model_circle(old_div(new_dim, 2) - 2, new_dim, new_dim)
 
     # pre-process all images
-    for im in range(len(aligned_images)):
+    for im in tqdm.tqdm(range(len(aligned_images)), desc= "Normalizing Particle images"):
 
         # apply any available alignment parameters
         aligned_images[im] = sp_fundamentals.rot_shift2D(
@@ -741,6 +735,7 @@ def isac_MPI_pap(
 		alldata (list): Class averages (format unclear).
 	"""
 
+
     # ------------------------------------------------------[ initialize mpi ]
 
     global Blockdata
@@ -772,12 +767,15 @@ def isac_MPI_pap(
 
     nima = len(alldata)  # no of images
 
-    # set all parameters to be zero on input
+    # reset all alignment parameters
     for im in range(nima):
         sp_utilities.set_params2D(alldata[im], [0.0, 0.0, 0.0, 0, 1.0])
 
+    # print(alldata[0].get_attr_dict())
+
     image_start, image_end = sp_applications.MPI_start_end(nima, number_of_proc, myid)
 
+    # set mask (circular mask by default)
     if maskfile:
         if isinstance(maskfile, (bytes, str)):
             mask = sp_utilities.get_image(maskfile)
@@ -787,17 +785,25 @@ def isac_MPI_pap(
     else:
         mask = sp_utilities.model_circle(last_ring, nx, nx)
 
+    # read references from file (if given a filename)
     if type(refim) == type(""):
         refi = EMAN2_cppwrap.EMData.read_images(refim)
+
+    # each process creates a working copy of the references
     else:
-        # It's safer to make a hard copy here. Although I am not sure, I believe a shallow copy
-        # has messed up the program.
-        #   This is really strange.  It takes much memory without any need.  PAP 01/17/2015
-        #      However, later I made changes so refi is deleted from time to time.  All to be checked.
-        # refi = refim
         refi = [None for i in range(len(refim))]
         for i in range(len(refim)):
             refi[i] = refim[i].copy()
+
+        # NOTE: It's safer to make a hard copy here. Although I am not sure, I
+        # believe a shallow copy has messed up the program. This is really
+        # strange. It takes much memory without any need. [PAP 01/17/2015]
+        # However, later I made changes so refi is deleted from time to time.
+
+        # NOTE: Shallow copies will result in each MPI process referencing the
+        # same reference stack, which probably is the source of the troubles
+        # mentioned above. [FS 07/09/2019]
+
 
     numref = len(refi)
 
@@ -871,11 +877,22 @@ def isac_MPI_pap(
             numpy.zeros(4 * (image_end - image_start), dtype=numpy.float32)
             for i in range(numref)
         ]
+        # NOTE: peak_list is a local (to this proc) 2D array where each row
+        # holds the four peak aln params (angle, shift_x, shift_y, mirror)
+        # to produce the highest match between this ref and all sbj imgs of
+        # the local work load.
+
         #  nima is the total number of images, not the one on this node, the latter is (image_end-image_start)
         #    d matrix required by EQ-Kmeans can be huge!!  PAP 01/17/2015
         # d = zeros(numref*nima, dtype=float32)
         if Blockdata["myid_on_node"] == 0:
             d.fill(0.0)
+
+        # NOTE: the d-array is a 1D array that is local to the NODE, i.e.,
+        # shared by all mpi procs of the same physical machine. The buffer
+        # is organized as a table where row k holds the correlation values
+        # between all sbj imgs and ref[k], and the match between sbj[i] and
+        # ref[k] is: d[k*nima+i]
 
         # --------------------------------------------------[ compute the 2D alignment  ]
 
@@ -1291,9 +1308,13 @@ def isac_MPI_pap(
                         )
                     stable_members.sort()
 
+
+
                     refi[j] = sp_filter.filt_tanl(
                         sp_statistics.ave_series(stable_data), FH, FF
                     )
+
+
                     refi[j].set_attr("members", stable_members)
                     refi[j].set_attr("n_objects", len(stable_members))
                     # print  "Class %4d ...... Size of the stable subset = %4d  "%(j, len(stable_members))
@@ -1559,10 +1580,12 @@ def do_generation(
     emnumpy2 = EMAN2_cppwrap.EMNumPy()
     bigbuffer = emnumpy2.register_numpy_to_emdata(buffer)
 
+
+    print("Reading the stack images for clipping starts")
     if Blockdata["myid_on_node"] == 0:
         #  read data on process 0 of each node
         # print "  READING DATA FIRST :",Blockdata["myid"],Blockdata["stack_ali2d"],len(plist)
-        for i in range(nimastack):
+        for i in tqdm.tqdm(range(nimastack), desc= "Reading stack for clipping"):
             bigbuffer.insert_clip(
                 sp_utilities.get_im(Blockdata["stack_ali2d"], plist[i]), (0, 0, i)
             )
@@ -1571,6 +1594,8 @@ def do_generation(
     mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
     alldata = [None] * nimastack
     emnumpy3 = [None] * nimastack
+
+    print("Reading the stack images for clipping ends")
 
     msk = sp_utilities.model_blank(target_nx, target_nx, 1, 1)
     for i in range(nimastack):
@@ -2101,6 +2126,10 @@ def run(args):
 
     # ------------------------------------------------------[ master directory setup ]
 
+    if Blockdata["myid"]==0:
+        sp_global_def.sxprint( time.strftime("%Y-%m-%d %H:%M:%S :: ", time.localtime()) + "main() :: Parameter sanity checks passed" )
+        sp_global_def.sxprint( time.strftime("%Y-%m-%d %H:%M:%S :: ", time.localtime()) + "main() :: Create master directory" )
+
     # get mpi id values (NOTE: these are not used consistently throughout the code)
     main_node = Blockdata["main_node"]
     myid = Blockdata["myid"]
@@ -2140,9 +2169,13 @@ def run(args):
         Blockdata["masterdir"] = string.join(Blockdata["masterdir"], "")
 
     # add stack_ali2d path to blockdata
-    Blockdata["stack_ali2d"] = "bdb:" + os.path.join(
-        Blockdata["masterdir"], "stack_ali2d"
+    Blockdata["stack_ali2d"] = os.path.join(
+        Blockdata["masterdir"], "stack_ali2d.star"
     )
+
+    # Blockdata["stack_ali2d"] = "bdb:" + os.path.join(
+    #     Blockdata["masterdir"], "stack_ali2d"
+    # )
 
     if myid == main_node:
         sp_global_def.sxprint(
@@ -2359,6 +2392,8 @@ def run(args):
     if not checkitem(os.path.join(init2dir, "Finished_initial_2d_alignment.txt")):
 
         if myid == 0:
+            sp_global_def.sxprint(time.strftime("%Y-%m-%d %H:%M:%S :: ",
+                                              time.localtime()) + "main() :: Pre-alignment not yet done. Setting up..")
 
             #  Create output directory
             log2d = sp_logger.Logger(sp_logger.BaseLogger_Files())
@@ -2376,6 +2411,8 @@ def run(args):
         else:
             nnxo = 0
         nnxo = sp_utilities.bcast_number_to_all(nnxo, source_node=main_node)
+
+        if myid == 0: sp_global_def.sxprint(time.strftime("%Y-%m-%d %H:%M:%S :: ", time.localtime()) + "main() :: Reading data")
 
         image_start, image_end = sp_applications.MPI_start_end(
             Blockdata["total_nima"], nproc, myid
@@ -2558,7 +2595,7 @@ def run(args):
         # defocus value correction for all images
         if Blockdata["myid"] == main_node:
             sp_global_def.sxprint("Apply CTF")
-        for im in range(nima):
+        for im in tqdm.tqdm(range(nima), desc="Applying CTF"):
             # create custom mask per particle in case we're processing filament images
             if options.filament_width != -1:
                 mask = sp_utilities.model_rotated_rectangle2D(
@@ -2614,22 +2651,51 @@ def run(args):
             ignore_helical_mask=options.filament_mask_ignore,
         )
 
-        if Blockdata["myid"] == main_node:
-            sp_global_def.sxprint("Gather EMData")
 
         # gather normalized particles at the root node
-        sp_utilities.gather_compacted_EMData_to_root(
-            Blockdata["total_nima"], aligned_images, myid
-        )
+        # sp_utilities.gather_compacted_EMData_to_root(
+        #     Blockdata["total_nima"], aligned_images, myid
+        # )
+        mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
+
+
+        for pid in range(Blockdata["nproc"]):
+            if myid == pid:
+                write_images(aligned_images, Blockdata["stack_ali2d"], list(range(image_start, image_end)))
+                del aligned_images
+
+            mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
+
+
+
+
+        # if myid == 0: print(time.strftime("%Y-%m-%d %H:%M:%S :: ", time.localtime()) + "main() :: PROC" + str(
+        #     myid) + " Writing new particle stack.. ", end=""); sys.stdout.flush()
+        #
+        # # every proc adds their part to the stack_ali2d bdb-stack)
+        # for pid in range(Blockdata["nproc"]):
+        #     if myid == pid:
+        #         for loc_idx, glb_idx in enumerate(range(image_start, image_end)):
+        #             aligned_images[loc_idx].write_image(Blockdata["stack_ali2d"], glb_idx)
+        #         del aligned_images
+        #
+        #         DB = db_open_dict(Blockdata["stack_ali2d"])
+        #         DB.close()  # has to be explicitly closed
+        #
+        #     mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
+
 
         if Blockdata["myid"] == main_node:
-            sp_global_def.sxprint("Write aligned stack")
-            for i in range(Blockdata["total_nima"]):
-                aligned_images[i].write_image(Blockdata["stack_ali2d"], i)
-            del aligned_images
-            #  It has to be explicitly closed
-            DB = db_open_dict(Blockdata["stack_ali2d"])
-            DB.close()
+            # sp_global_def.sxprint("Write aligned stack")
+            # for i in range(Blockdata["total_nima"]):
+            #     aligned_images[i].write_image(Blockdata["stack_ali2d"], i)
+            # del aligned_images
+
+            # #  It has to be explicitly closed
+            # DB = db_open_dict(Blockdata["stack_ali2d"])
+            # DB.close()
+
+            sp_global_def.sxprint("Stack writing done")
 
             fp = open(
                 os.path.join(Blockdata["masterdir"], "README_shrink_ratio.txt"), "w"
@@ -2657,6 +2723,7 @@ def run(args):
                 "sp_header.py  --consecutive  --params=originalid   %s"
                 % Blockdata["stack_ali2d"]
             )
+
 
             fp = open(os.path.join(init2dir, "Finished_initial_2d_alignment.txt"), "w")
             fp.flush()

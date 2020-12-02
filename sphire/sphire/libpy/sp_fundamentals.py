@@ -281,7 +281,9 @@ def resample(img, sub_rate=0.5):
     # Automatically adjust pixel size for ctf parameters
     apix = sp_utilities.get_pixel_size(e)
     apix = old_div(apix, sub_rate)
+
     sp_utilities.set_pixel_size(e, apix)
+
     cc = e.get_attr_default("xform.projection", None)
     if cc:
         cp = cc.get_params("spider")

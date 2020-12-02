@@ -102,3 +102,143 @@ class Test_EMDB_functions(unittest.TestCase):
 
 
 
+  def test_writing_test_again(self):
+    dd = np.arange(5000).tolist()
+    inputfile = '/home/adnan/PycharmProjects/starfile_conv/sphire/tests/resources/test_starfile.star'
+    start_time1 = time.time()
+    img = EMAN2.EMData()
+    pp = img.read_images(inputfile, dd, True)
+
+    for i in range(len(pp)):
+      pp[i].write_image('/home/adnan/PycharmProjects/starfile_conv/sphire/tests/resources/newstarfile.star', i)
+
+
+  def test_writing_images(self):
+    print("You are awesome")
+    dd = np.arange(5000).tolist()
+    inputfile = '/home/adnan/PycharmProjects/starfile_conv/sphire/tests/resources/test_starfile.star'
+    img = EMAN2.EMData()
+    pp = img.read_images(inputfile, dd, True)
+
+    # start_time1 = time.time()
+    # for i in range(len(pp)):
+    #   pp[i].write_image('/home/adnan/PycharmProjects/starfile_conv/sphire/tests/resources/saved_in_loop.star', i)
+    #
+    # print("Time used for saving data using write_image", time.time() - start_time1)
+
+
+    start_time2 = time.time()
+    outputfile = '/home/adnan/PycharmProjects/starfile_conv/sphire/tests/resources/saved_in_onego.star'
+    EMAN2db.write_images(pp, outputfile, np.arange(5000).tolist() )
+
+    print("Time used for saving data using write_images", time.time() - start_time2)
+    print("Execution done")
+
+
+    # for a , b in enumerate(range(25,55)):
+    #   print(a,b)
+
+
+
+  def test_bdb_star(self):
+    bdb_file_loc = 'bdb:/home/adnan/PycharmProjects/Starfile_test_demo/04_ISAC_BDB/stack_ali2d'
+
+    star_file_loc = '/home/adnan/PycharmProjects/Starfile_test_demo/04_ISAC/stack_ali2d.star'
+
+    # star_file_loc = 'bdb:/home/adnan/PycharmProjects/Starfile_test_demo/04_ISAC/stack_ali2d'
+
+    # bdb_file_loc = 'bdb:/home/adnan/PycharmProjects/Starfile_test_demo/03_PARTICLES_BDB/data'
+    #
+    # star_file_loc = '/home/adnan/PycharmProjects/Starfile_test_demo/03_PARTICLES_STAR/data.star'
+    #
+
+    dd = np.arange(50).tolist()
+    img1 = EMAN2.EMData()
+    bdb_stack = img1.read_images(bdb_file_loc, dd, False)
+
+    img2 = EMAN2.EMData()
+    pp = img2.read_images(star_file_loc, dd, False)
+
+    # print(bdb_stack[0].get_attr('ctf'))
+    # print(pp[0].get_attr('ctf'))
+
+    found_lost_keys = ['is_complex_ri'
+                       ]
+    bdb_dont_have = ['data_path']
+
+
+    import inspect
+    def f1():
+     f2()
+
+    def f2():
+      print('caller name', inspect.stack())
+
+    f1()
+
+
+    for ind in range(len(pp)):
+      for key, val in bdb_stack[ind].get_attr_dict().items():
+        print(key)
+        if key == "changecount" :
+          print("Change count value")
+          print("Value in BDB ", val)
+          print("Value in star",  pp[ind].get_attr_dict()[key])
+
+        if key == 'ctf':
+          dict_bdb = bdb_stack[ind]['ctf'].to_dict()
+          dict_star = pp[ind]['ctf'].to_dict()
+
+          for ctfkey , ctfvalue in  dict_bdb.items():
+            print(ctfkey , ctfvalue)
+            print(ctfkey, dict_star[ctfkey])
+
+        try:
+          if val == pp[ind].get_attr_dict()[key]:
+            print('They are same')
+          else:
+            print(val, pp[ind].get_attr_dict()[key])
+        except KeyError :
+          print('Not present' , val)
+        print('')
+      # print(bdb_stack[ind].get_2dview()[50:150, 50:150])
+      self.assertTrue(np.array_equal(pp[ind].get_2dview() , bdb_stack[ind].get_2dview() ))
+
+    # for ind , micro in enumerate(pp):
+    #   for keys in bdb_stack[ind].get_attr_dict():
+
+        # if keys in found_lost_keys:
+        #   pass
+        # elif keys in star.StarFile(star_file_loc).ignored_keys:
+        #   continue
+        #
+        # elif keys in bdb_dont_have:
+        #   pass
+        # else:
+        #   if keys == 'ctf':
+        #     # print(pp[ind][keys].to_dict())
+        #     # print(bdb_stack[ind][keys].to_dict())
+        #     pass
+        #
+        #   else:
+        #     # print(keys)
+        #     # print(pp[ind][keys])
+        #     # print(bdb_stack[ind][keys])
+        #     self.assertEqual(pp[ind][keys] , bdb_stack[ind][keys])
+
+  def test_bdb_star_writing(self):
+
+    bdb_file_loc = 'bdb:/home/adnan/PycharmProjects/Starfile_test_demo/03_PARTICLES_NEWBDB/data'
+    star_file_loc = '/home/adnan/PycharmProjects/Starfile_test_demo/03_PARTICLES_STAR/data.star'
+
+    dd = np.arange(50).tolist()
+    img2 = EMAN2.EMData()
+    pp = img2.read_images(star_file_loc, dd, False)
+
+    # for i in range(len(pp)):
+    EMAN2db.write_images(pp, bdb_file_loc,range(len(pp)))
+
+
+
+
+

@@ -519,9 +519,18 @@ def run():
 
     if str_relion_start_section == 'data_particles':
         tmp_output = '{}_old.star'.format(os.path.join(dir_path_work, os.path.splitext(os.path.basename(file_path_relion_star))[0]))
-        subprocess.call('sp_convert_relionnew_to_relionold.py {} {}'.format(file_path_relion_star, tmp_output).split())
-        file_path_relion_star = tmp_output
-        str_relion_start_section = 'data_'
+        return_code = subprocess.call('sp_convert_relionnew_to_relionold.py {} {}'.format(
+            file_path_relion_star,
+            tmp_output
+        ).split()
+                                      )
+        if return_code == 0:
+            str_relion_start_section = 'data_'
+            file_path_relion_star = tmp_output
+        elif return_code == 1:
+            str_relion_start_section = 'data_particles'
+        elif return_code == 2:
+            str_relion_start_section = 'data_'
 
     # ------------------------------------------------------------------------------------
     # STEP 2: Convert RELION parameters to SPHIRE format

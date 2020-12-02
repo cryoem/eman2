@@ -329,7 +329,11 @@ def ave_var(data, mode="a", listID=None):
 
     return ave, old_div((var - ave * ave * nlistID), (nlistID - 1))
 
-
+# import inspect
+# def whoami():
+#     return inspect.stack()[1][3]
+# def whoscalling():
+#     return inspect.stack()[2][3]
 def ave_series(data, pave=True, mask=None):
     """
 		Calculate average of a image series using current alignment parameters
@@ -347,6 +351,9 @@ def ave_series(data, pave=True, mask=None):
         EMAN2_cppwrap.Util.mul_img(ave, mask)
     if pave:
         EMAN2_cppwrap.Util.mul_scalar(ave, old_div(1.0, float(n)))
+
+    # print("Len of the data", n)
+    # print ( "Function name %s, Function calling is %s" % (whoami(), whoscalling()))
     return ave
 
 

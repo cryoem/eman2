@@ -936,12 +936,23 @@ def get_im(stackname, im=0):
 	Usage: myimage = get_im("path/to/stack", im)
 	   or: myimage = get_im( data, im )
 	"""
-    if type(stackname) == type(""):
-        e = EMAN2_cppwrap.EMData()
-        e.read_image(stackname, im)
-        return e
-    else:
-        return stackname[im].copy()
+
+    if stackname.lower() == "bdb:":
+        if type(stackname) == type(""):
+            e = EMAN2_cppwrap.EMData()
+            e.read_image(stackname, im)
+            return e
+        else:
+            return stackname[im].copy()
+
+    elif stackname.endswith(".star"):
+        if type(stackname) == type(""):
+            e = EMAN2.EMData()
+            pp = e.read_images(stackname, [im])
+            return pp[0]
+        else:
+            return stackname[im].copy()
+
 
 
 def get_image_data(img):
@@ -2404,7 +2415,7 @@ def write_headers(filename, data, lima):
 	"""
 
     ftp = file_type(filename)
-    if ftp == "bdb":
+    if ftp == "bdb" or ftp == 'star':
         #  For unknown reasons this does not work on Linux, but works on Mac ??? Really?
         DB = EMAN2db.db_open_dict(filename)
         for i in range(len(lima)):
@@ -2431,7 +2442,7 @@ def write_header(filename, data, lima):
 	"""
 
     ftp = file_type(filename)
-    if ftp == "bdb":
+    if ftp == "bdb" or ftp == 'star':
         DB = EMAN2db.db_open_dict(filename)
         DB.set_header(lima, data)
     elif ftp == "hdf":
@@ -2442,12 +2453,14 @@ def write_header(filename, data, lima):
 
 def file_type(name):
     if len(name) > 4:
-        if name[:4] == "bdb:":
+        if name[:4] == "bdb:" :
             return "bdb"
         elif name[-4:-3] == ".":
             return name[-3:]
         elif name[-5:] == ".mrcs":
             return "mrcs"
+        elif name.endswith('.star'):
+            return "star"
     sp_global_def.ERROR("Unacceptable file format", "file_type", 1)
 
 

@@ -63,6 +63,10 @@ import sys
 import time
 
 
+from pyStarDB import sp_pystardb as star
+
+
+
 def ali2d_MPI(
     stack,
     outdir,
@@ -1130,7 +1134,7 @@ def ali2d_base(
     if write_headers:
         par_str = ["xform.align2d", "ID"]
         if myid == main_node:
-            if sp_utilities.file_type(stack) == "bdb":
+            if sp_utilities.file_type(stack) == "bdb" :
                 sp_utilities.recv_attr_dict_bdb(
                     main_node,
                     stack,
@@ -2811,7 +2815,7 @@ def header(
 
     nimage = EMAN2_cppwrap.EMUtil.get_image_count(stack)
     ext = sp_utilities.file_type(stack)
-    if ext == "bdb":
+    if ext == "bdb" or ext == 'star':
         DB = EMAN2db.db_open_dict(stack)
     for i in range(nimage):
         if fimport != None:
@@ -2861,7 +2865,8 @@ def header(
                             "scale": scale,
                         }
                     )
-                    if ext == "bdb":
+                    if ext == "bdb" or ext == 'star':
+                        # key = star.sphire_header_magic()
                         DB.set_attr(i, "xform.align2d", t)
                     elif ext == "hdf":
                         EMAN2_cppwrap.EMUtil.write_hdf_attribute(
@@ -2889,7 +2894,7 @@ def header(
                         {"type": "spider", "phi": phi, "theta": theta, "psi": psi}
                     )
                     t.set_trans(EMAN2_cppwrap.Vec2f(-s2x, -s2y))
-                    if ext == "bdb":
+                    if ext == "bdb"  or ext == 'star':
                         DB.set_attr(i, "xform.projection", t)
                     elif ext == "hdf":
                         EMAN2_cppwrap.EMUtil.write_hdf_attribute(
@@ -2922,7 +2927,7 @@ def header(
                             "scale": scale,
                         }
                     )
-                    if ext == "bdb":
+                    if ext == "bdb" or ext == 'star':
                         DB.set_attr(i, "xform.align3d", t)
                     elif ext == "hdf":
                         EMAN2_cppwrap.EMUtil.write_hdf_attribute(
@@ -2931,20 +2936,20 @@ def header(
                     il += 8
                 elif p[: len("members")] == "members":
                     members = [int(entry) for entry in line.strip("[]\n \t").split(",")]
-                    if ext == "bdb":
+                    if ext == "bdb" or ext == 'star':
                         DB.set_attr(i, "members", members)
                     elif ext == "hdf":
                         EMAN2_cppwrap.EMUtil.write_hdf_attribute(
                             stack, "members", members, i
                         )
                 elif p.startswith("ISAC_SPLIT_"):
-                    if ext == "bdb":
+                    if ext == "bdb" or ext == 'star':
                         DB.set_attr(i, p.strip(), line.strip())
                     elif ext == "hdf":
                         EMAN2_cppwrap.EMUtil.write_hdf_attribute(
                             stack, p.strip(), line.strip(), i
                         )
-                elif p == "ctf":
+                elif p == "ctf" or ext == 'star':
                     if len(parmvalues) < il + 6:
                         sp_global_def.sxprint("Not enough parameters!")
                         return
@@ -2960,7 +2965,7 @@ def header(
                     ctf = sp_utilities.generate_ctf(
                         [defocus, cs, voltage, apix, bfactor, ampcont, dfdiff, dfang]
                     )
-                    if ext == "bdb":
+                    if ext == "bdb" or ext == 'star':
                         DB.set_attr(i, "ctf", ctf)
                     elif ext == "hdf":
                         EMAN2_cppwrap.EMUtil.write_hdf_attribute(stack, "ctf", ctf, i)
@@ -2969,7 +2974,7 @@ def header(
                     # if len(params)!=len(parmvalues):
                     # print "Error: %d params need to be set, while %d values are provided in line %d of file." % ( len(params), len(parmvalues), i )
                     # return
-                    if ext == "bdb":
+                    if ext == "bdb" or ext == 'star':
                         DB.set_attr(i, p, extract_value(parmvalues[il]))
                     elif ext == "hdf":
                         EMAN2_cppwrap.EMUtil.write_hdf_attribute(
@@ -2998,7 +3003,7 @@ def header(
                                 "scale": 1.0,
                             }
                         )
-                        if ext == "bdb":
+                        if ext == "bdb" or ext == 'star':
                             DB.set_attr(i, "xform.align2d", t)
                         elif ext == "hdf":
                             EMAN2_cppwrap.EMUtil.write_hdf_attribute(
@@ -3007,7 +3012,7 @@ def header(
                     elif p[:16] == "xform.projection":
                         # set_params_proj(img, [0.0, 0.0, 0.0, 0.0, 0.0], p)
                         t = EMAN2_cppwrap.Transform({"type": "spider"})
-                        if ext == "bdb":
+                        if ext == "bdb" or ext == 'star':
                             DB.set_attr(i, "xform.projection", t)
                         elif ext == "hdf":
                             EMAN2_cppwrap.EMUtil.write_hdf_attribute(
@@ -3016,7 +3021,7 @@ def header(
                     elif p[:13] == "xform.align3d":
                         # set_params3D(img, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 1.0], p)
                         t = EMAN2_cppwrap.Transform({"type": "spider"})
-                        if ext == "bdb":
+                        if ext == "bdb" or ext == 'star':
                             DB.set_attr(i, "xform.align3d", t)
                         elif ext == "hdf":
                             EMAN2_cppwrap.EMUtil.write_hdf_attribute(
@@ -3027,7 +3032,7 @@ def header(
                         return
                     else:
                         # img.set_attr(p, 0)
-                        if ext == "bdb":
+                        if ext == "bdb" or ext == 'star':
                             DB.set_attr(i, p, 0)
                         elif ext == "hdf":
                             EMAN2_cppwrap.EMUtil.write_hdf_attribute(stack, p, 0, i)
@@ -3037,7 +3042,7 @@ def header(
                         return
                     else:
                         # img.set_attr(p, 1)
-                        if ext == "bdb":
+                        if ext == "bdb" or ext == 'star':
                             DB.set_attr(i, p, 1)
                         elif ext == "hdf":
                             EMAN2_cppwrap.EMUtil.write_hdf_attribute(stack, p, 1, i)
@@ -3047,12 +3052,12 @@ def header(
                         return
                     else:
                         # img.set_attr(p, 1)
-                        if ext == "bdb":
+                        if ext == "bdb" or ext == 'star':
                             DB.set_attr(i, p, set)
                         elif ext == "hdf":
                             EMAN2_cppwrap.EMUtil.write_hdf_attribute(stack, p, set, i)
                 elif consecutive:
-                    if ext == "bdb":
+                    if ext == "bdb" or ext == 'star':
                         DB.set_attr(i, p, i)
                     elif ext == "hdf":
                         EMAN2_cppwrap.EMUtil.write_hdf_attribute(stack, p, i, i)
@@ -3074,7 +3079,7 @@ def header(
                                 "scale": scale,
                             }
                         )
-                        if ext == "bdb":
+                        if ext == "bdb" or ext == 'star':
                             DB.set_attr(i, "xform.align2d", t)
                         elif ext == "hdf":
                             EMAN2_cppwrap.EMUtil.write_hdf_attribute(
@@ -3091,7 +3096,7 @@ def header(
                             {"type": "spider", "phi": phi, "theta": theta, "psi": psi}
                         )
                         t.set_trans(EMAN2_cppwrap.Vec2f(-s2x, -s2y))
-                        if ext == "bdb":
+                        if ext == "bdb" or ext == 'star':
                             DB.set_attr(i, "xform.projection", t)
                         elif ext == "hdf":
                             EMAN2_cppwrap.EMUtil.write_hdf_attribute(
@@ -3120,7 +3125,7 @@ def header(
                                 "scale": scale,
                             }
                         )
-                        if ext == "bdb":
+                        if ext == "bdb" or ext == 'star':
                             DB.set_attr(i, "xform.align3d", t)
                         elif ext == "hdf":
                             EMAN2_cppwrap.EMUtil.write_hdf_attribute(
@@ -3147,7 +3152,7 @@ def header(
                                 "scale": scale,
                             }
                         )
-                        if ext == "bdb":
+                        if ext == "bdb" or ext == 'star':
                             DB.set_attr(i, "xform.align2d", t)
                         elif ext == "hdf":
                             EMAN2_cppwrap.EMUtil.write_hdf_attribute(
@@ -3165,7 +3170,7 @@ def header(
                             {"type": "spider", "phi": phi, "theta": theta, "psi": psi}
                         )
                         t.set_trans(EMAN2_cppwrap.Vec2f(-s2x, -s2y))
-                        if ext == "bdb":
+                        if ext == "bdb" or ext == 'star':
                             DB.set_attr(i, "xform.projection", t)
                         elif ext == "hdf":
                             EMAN2_cppwrap.EMUtil.write_hdf_attribute(
@@ -3194,7 +3199,7 @@ def header(
                                 "scale": scale,
                             }
                         )
-                        if ext == "bdb":
+                        if ext == "bdb" or ext == 'star':
                             DB.set_attr(i, "xform.align3d", t)
                         elif ext == "hdf":
                             EMAN2_cppwrap.EMUtil.write_hdf_attribute(
@@ -3207,7 +3212,7 @@ def header(
                 elif fexport != None:
                     if p[:13] == "xform.align2d":
                         # alpha, sx, sy, mirror, scale = get_params2D(img, p)
-                        if ext == "bdb":
+                        if ext == "bdb" or ext == 'star':
                             t = DB.get_attr(i, "xform.align2d")
                             d = t.get_params("2D")
                             fexp.write(
@@ -3239,7 +3244,7 @@ def header(
 
                     elif p[:16] == "xform.projection":
                         # phi, theta, psi, s2x, s2y = get_params_proj(img, p)
-                        if ext == "bdb":
+                        if ext == "bdb" or ext == 'star':
                             t = DB.get_attr(i, "xform.projection")
                             d = t.get_params("spider")
                             fexp.write(
@@ -3259,7 +3264,7 @@ def header(
 
                     elif p[:13] == "xform.align3d":
                         # phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(img, p)
-                        if ext == "bdb":
+                        if ext == "bdb" or ext == 'star':
                             t = DB.get_attr(i, "xform.align3d")
                             d = t.get_params("spider")
                             fexp.write(
@@ -3297,7 +3302,7 @@ def header(
 
                     elif p == "ctf":
                         # defocus, cs, voltage, apix, bfactor, ampcont = get_ctf(img)
-                        if ext == "bdb":
+                        if ext == "bdb" or ext == 'star':
                             t = DB.get_attr(i, "ctf")
                         elif ext == "hdf":
                             t = EMAN2_cppwrap.EMUtil.read_hdf_attribute(stack, "ctf", i)
@@ -3316,7 +3321,7 @@ def header(
                         )
 
                     else:
-                        if ext == "bdb":
+                        if ext == "bdb" or ext == 'star':
                             fexp.write("%15s " % str(DB.get_attr(i, p)))
 
                         elif ext == "hdf":
@@ -3329,7 +3334,7 @@ def header(
                 elif fprint:
                     if p[:13] == "xform.align2d":
                         # alpha, sx, sy, mirror, scale = get_params2D(img, p)
-                        if ext == "bdb":
+                        if ext == "bdb" or ext == 'star':
                             t = DB.get_attr(i, "xform.align2d")
                             d = t.get_params("2D")
                             print(
@@ -3362,7 +3367,7 @@ def header(
                             )
                     elif p[:16] == "xform.projection":
                         # phi, theta, psi, s2x, s2y = get_params_proj(img, p)
-                        if ext == "bdb":
+                        if ext == "bdb" or ext == 'star':
                             t = DB.get_attr(i, "xform.projection")
                             d = t.get_params("spider")
                             print(
@@ -3382,7 +3387,7 @@ def header(
                             )
                     elif p[:13] == "xform.align3d":
                         # phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(img, p)
-                        if ext == "bdb":
+                        if ext == "bdb" or ext == 'star':
                             t = DB.get_attr(i, "xform.align3d")
                             d = t.get_params("spider")
                             print(
@@ -3420,7 +3425,7 @@ def header(
                             )
                     elif p == "ctf":
                         # defocus, cs, voltage, apix, bfactor, ampcont = get_ctf(img)
-                        if ext == "bdb":
+                        if ext == "bdb" or ext == 'star':
                             t = DB.get_attr(i, "ctf")
                         elif ext == "hdf":
                             t = EMAN2_cppwrap.EMUtil.read_hdf_attribute(stack, "ctf", i)
@@ -3440,7 +3445,7 @@ def header(
                         )
 
                     else:
-                        if ext == "bdb":
+                        if ext == "bdb" or ext == 'star':
                             print("%15s" % str(DB.get_attr(i, p)), end=" ")
                         elif ext == "hdf":
                             print(
@@ -3453,7 +3458,7 @@ def header(
                 elif backup:
                     # t = img.get_attr(p)
                     # img.set_attr(p+suffix, t)
-                    if ext == "bdb":
+                    if ext == "bdb" or ext == 'star':
                         t = DB.get_attr(i, p)
                         DB.set_attr(i, p + suffix, t)
                     elif ext == "hdf":
@@ -3479,7 +3484,7 @@ def header(
                     # t= EMUtil.read_hdf_attribute(stack,p,i)
                     if p[:13] == "xform.align2d":
                         # img.set_attr(p[:13], t)
-                        if ext == "bdb":
+                        if ext == "bdb" or ext == 'star':
                             t = DB.get_attr(i, p)
                             DB.set_attr(i, "xform.align2d", t)
                         elif ext == "hdf":
@@ -3489,7 +3494,7 @@ def header(
                             )
                     elif p[:16] == "xform.projection":
                         # img.set_attr(p[:10], t)
-                        if ext == "bdb":
+                        if ext == "bdb" or ext == 'star':
                             t = DB.get_attr(i, p)
                             DB.set_attr(i, "xform.projection", t)
                         elif ext == "hdf":
@@ -3499,7 +3504,7 @@ def header(
                             )
                     elif p[:13] == "xform.align3d":
                         # img.set_attr(p[:13], t)
-                        if ext == "bdb":
+                        if ext == "bdb" or ext == 'star':
                             t = DB.get_attr(i, p)
                             DB.set_attr(i, "xform.align3d", t)
                     elif ext == "hdf":
@@ -3510,7 +3515,7 @@ def header(
                             )
                     else:
                         # img.set_attr(p[:-len(suffix)], t)
-                        if ext == "bdb":
+                        if ext == "bdb" or ext == 'star':
                             t = DB.get_attr(i, p)
                             DB.set_attr(i, p[: -len(suffix)], t)
                         elif ext == "hdf":
@@ -3529,8 +3534,12 @@ def header(
                 fexp.write("\n")
             if fprint:
                 print(" ")
-    if ext == "bdb":
+    if ext == "bdb" :
         DB.close()
+
+    if ext == ".star":
+        EMAN2db.db_close_dict(stack)
+
 
 
 def MPI_start_end(nima, nproc, myid):
