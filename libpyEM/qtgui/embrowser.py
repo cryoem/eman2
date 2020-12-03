@@ -508,6 +508,8 @@ class EMFileType(object) :
 		imgstep=self.secparm.wspinstep.value()
 		layers=self.secparm.wspinlayers.value()
 		applyxf=self.secparm.wcheckxf.checkState()
+		highpass=float(self.secparm.wlehp.text())
+		lowpass=float(self.secparm.wlelp.text())
 		
 		maskfsp=str(self.secparm.wlemask.text())
 		mask=None
