@@ -513,7 +513,7 @@ def db_read_image(self, fsp, *parms, **kparms):
 
         db_set_header_star(self, image_data, star_file)
         self.read_image_c(file_name, *parms, **kparms)
-        return None
+        return
 
     if len(kparms) != 0:
         if 'img_index' not in kparms:
@@ -537,7 +537,7 @@ def db_set_header_star(img, dataframe, star_cla):
     the EMData image with respect to specific keys.
     """
     star_dict = star_cla.sphire_keys
-    fixed_keys = ['_rlnImageName', 'changecount', 'is_complex_ri']
+    fixed_keys = ['_rlnImageName']
     for key in dataframe.keys():
         if key in fixed_keys:
             continue
@@ -563,11 +563,6 @@ def db_set_header_star(img, dataframe, star_cla):
         img.set_attr("data_path", file_name)
         img.set_attr("ptcl_source_coord_id", int(number) - 1)
     except Exception as e:
-        pass
-
-    try:
-        img.set_attr("data_path", file_name)
-    except:
         pass
 
     try:
@@ -732,6 +727,9 @@ def db_write_image(self, fsp, *parms):
                 star_file['particles']
             except:
                 star_file.update('particles', pd.DataFrame(), True)
+
+            em_dict["ptcl_source_coord_id"] = parms[0]
+            em_dict['data_path'] = fsp.split('.star')[0] + '.mrcs'
             db_em_to_star_header(em_dict, star_file, parms[0], special_keys, ignored_keys)
             star_file.write_star_file(out_star_file=fsp, overwrite=True)
             self.write_image_c(fsp.split('.star')[0] + '.mrcs', *parms)
@@ -743,6 +741,9 @@ def db_write_image(self, fsp, *parms):
                 star_file['particles']
             except:
                 star_file.update('particles', pd.DataFrame(), True)
+
+            em_dict["ptcl_source_coord_id"] = parms[0]
+            em_dict['data_path'] = fsp.split('.star')[0] + '.mrcs'
             db_em_to_star_header(em_dict, star_file['particles'], parms[0], special_keys, ignored_keys)
             star_file.write_star_file(out_star_file=fsp, overwrite=True)
             self.write_image_c(fsp.split('.star')[0] + '.mrcs', *parms)
@@ -763,11 +764,10 @@ def write_images(EM_data_list, fsp, indices):
 
     for loc_part_id, loc_part_value in enumerate(indices):
         particle_img_dict = EM_data_list[loc_part_id].get_attr_dict()
+        particle_img_dict["ptcl_source_coord_id"] = loc_part_value
         particle_img_dict['data_path'] = fsp.split('.star')[0] + '.mrcs'
         db_em_to_star_header(particle_img_dict, local_bdb_stack.star['particles'], loc_part_value, special_keys, ignored_keys)
-        particle_img_dict['data_path'] = fsp.split('.star')[0] + '.mrcs'
         EM_data_list[loc_part_id].write_image_c(particle_img_dict['data_path'], loc_part_value)
-
 
     local_bdb_stack.star.write_star_file(out_star_file=fsp, overwrite=True)
     db_close_dict(fsp)
@@ -1129,16 +1129,16 @@ def db_em_to_star_header(em_dict, dataframe, ptcl_no, special_keys, ignored_keys
                     dataframe.loc[ptcl_no + 1, "_rlnAnglePsi"] = trans["psi"]
                     dataframe.loc[ptcl_no + 1, "_rlnOriginX"] = -trans["tx"]
                     dataframe.loc[ptcl_no + 1, "_rlnOriginY"] = -trans["ty"]
-                    dataframe.loc[ptcl_no + 1, "_spMirror"] = trans["mirror"]
-                    dataframe.loc[ptcl_no + 1, "_spScale"] = trans["scale"]
+                    dataframe.loc[ptcl_no + 1, "_rlnMirror"] = trans["mirror"]
+                    dataframe.loc[ptcl_no + 1, "_rlnScale"] = trans["scale"]
 
                 elif key == 'xform.align2d':
                     trans = em_dict[key].get_params("2d")
                     dataframe.loc[ptcl_no + 1, "_rlnAnglePsi"] = trans["alpha"]
                     dataframe.loc[ptcl_no + 1, "_rlnOriginX"] = -trans["tx"]
                     dataframe.loc[ptcl_no + 1, "_rlnOriginY"] = -trans["ty"]
-                    dataframe.loc[ptcl_no + 1, "_spMirror"] = trans["mirror"]
-                    dataframe.loc[ptcl_no + 1, "_spScale"] = trans["scale"]
+                    dataframe.loc[ptcl_no + 1, "_rlnMirror"] = trans["mirror"]
+                    dataframe.loc[ptcl_no + 1, "_rlnScale"] = trans["scale"]
 
 
                 elif key == 'ptcl_source_coord':
@@ -1156,7 +1156,7 @@ def db_em_to_star_header(em_dict, dataframe, ptcl_no, special_keys, ignored_keys
 
                 elif key == 'originalid':
                     try:
-                        dataframe.loc[ptcl_no + 1, 'originalid'] = em_dict[key]
+                        dataframe.loc[ptcl_no + 1, '_rlnOriginalid'] = em_dict[key]
                     except Exception as e:  # if datapath is not provided
                         print(e)
                         pass

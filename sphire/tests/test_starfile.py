@@ -167,15 +167,6 @@ class Test_EMDB_functions(unittest.TestCase):
     bdb_dont_have = ['data_path']
 
 
-    import inspect
-    def f1():
-     f2()
-
-    def f2():
-      print('caller name', inspect.stack())
-
-    f1()
-
 
     for ind in range(len(pp)):
       for key, val in bdb_stack[ind].get_attr_dict().items():
@@ -227,6 +218,8 @@ class Test_EMDB_functions(unittest.TestCase):
         #     self.assertEqual(pp[ind][keys] , bdb_stack[ind][keys])
 
   def test_bdb_star_writing(self):
+    import os
+    os.chdir('/home/adnan/PycharmProjects/Starfile_test_demo/')
 
     bdb_file_loc = 'bdb:/home/adnan/PycharmProjects/Starfile_test_demo/03_PARTICLES_NEWBDB/data'
     star_file_loc = '/home/adnan/PycharmProjects/Starfile_test_demo/03_PARTICLES_STAR/data.star'
@@ -237,6 +230,49 @@ class Test_EMDB_functions(unittest.TestCase):
 
     # for i in range(len(pp)):
     EMAN2db.write_images(pp, bdb_file_loc,range(len(pp)))
+
+
+
+  def test_star_two_file_writing(self):
+    import os
+    os.chdir('/home/adnan/PycharmProjects/Starfile_test_demo/')
+    from EMAN2 import EMData
+    first_file = '/home/adnan/PycharmProjects/Starfile_test_demo/03_PARTICLES/mpi_proc_000/TcdA1-0010_frames_ptcls.star'
+    second_file = '/home/adnan/PycharmProjects/Starfile_test_demo/03_PARTICLES/mpi_proc_000/TcdA1-0011_frames_ptcls.star'
+
+    img1 = EMAN2.EMData()
+    img2 = EMAN2.EMData()
+
+    first_star = img1.read_image(first_file, 0)
+    second_star = img2.read_image(second_file, 0)
+
+    out = '/home/adnan/PycharmProjects/Starfile_test_demo/output.star'
+
+    img1.write_image(out, 0)
+    img2.write_image(out, 1)
+    img2.write_image(out, 2)
+
+    # comp_a = EMData(out, 0)
+    # comp_b = EMData(out, 1)
+    #
+    # assert (np.array_equal(a.get_2dview(), comp_a.get_2dview()))
+    # assert (np.array_equal(b.get_2dview(), comp_b.get_2dview()))
+
+
+    def test_reading(self):
+
+      import os
+      os.chdir()
+      import sp_utilities
+
+      file = 'CorrectedSums / corrsum_dw / TcdA1 - 0010_frames.mrc'
+
+
+
+
+
+
+
 
 
 

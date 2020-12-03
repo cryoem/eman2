@@ -1581,7 +1581,6 @@ def do_generation(
     bigbuffer = emnumpy2.register_numpy_to_emdata(buffer)
 
 
-    print("Reading the stack images for clipping starts")
     if Blockdata["myid_on_node"] == 0:
         #  read data on process 0 of each node
         # print "  READING DATA FIRST :",Blockdata["myid"],Blockdata["stack_ali2d"],len(plist)
@@ -1595,7 +1594,6 @@ def do_generation(
     alldata = [None] * nimastack
     emnumpy3 = [None] * nimastack
 
-    print("Reading the stack images for clipping ends")
 
     msk = sp_utilities.model_blank(target_nx, target_nx, 1, 1)
     for i in range(nimastack):

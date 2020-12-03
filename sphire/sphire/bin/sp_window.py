@@ -2060,7 +2060,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
             if main_mpi_proc == my_mpi_proc_id:
                 for name in all_star_files:
                     while not os.path.exists(name):
-                        time.sleep(0.1)
+                        time.sleep(0.5)
 
             for i in range(len(all_star_files)):
                 print(all_star_files[i])

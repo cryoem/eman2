@@ -937,21 +937,12 @@ def get_im(stackname, im=0):
 	   or: myimage = get_im( data, im )
 	"""
 
-    if stackname.lower().startswith("bdb:"):
-        if type(stackname) == type(""):
-            e = EMAN2_cppwrap.EMData()
-            e.read_image(stackname, im)
-            return e
-        else:
-            return stackname[im].copy()
-
-    elif stackname.endswith(".star"):
-        if type(stackname) == type(""):
-            e = EMAN2.EMData()
-            pp = e.read_images(stackname, [im])
-            return pp[0]
-        else:
-            return stackname[im].copy()
+    if type(stackname) == type(""):
+        e = EMAN2_cppwrap.EMData()
+        e.read_image(stackname, im)
+        return e
+    else:
+        return stackname[im].copy()
 
 
 
@@ -2415,7 +2406,7 @@ def write_headers(filename, data, lima):
 	"""
 
     ftp = file_type(filename)
-    if ftp == "bdb" or ftp == 'star':
+    if ftp == "bdb":
         #  For unknown reasons this does not work on Linux, but works on Mac ??? Really?
         DB = EMAN2db.db_open_dict(filename)
         for i in range(len(lima)):
