@@ -30,6 +30,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 # ========================================================================================
+import sys
 import pandas
 import re
 import argparse
@@ -196,9 +197,19 @@ def main():
             star_file[tag_key]
         except KeyError:
             print('Could not read particles or micrographs entry!')
-            sys.exit(1)
+            return 2
 
-    for val_particles, df_particles in star_file[tag_key].groupby('_rlnOpticsGroup'):
+    try:
+        optics_keys = star_file[tag_key].groupby('_rlnOpticsGroup')
+    except KeyError:
+        return 1
+
+    try:
+        optics_keys = star_file['optics'].groupby('_rlnOpticsGroup')
+    except KeyError:
+        return 1
+
+    for val_particles, df_particles in optics_keys:
         for val_optics, df_optics in star_file['optics'].groupby('_rlnOpticsGroup'):
             if val_particles == val_optics:
                 for key in df_optics:
@@ -226,6 +237,7 @@ def main():
                     pass
 
     star_file.write_star(args.output, [tag_key])
+    return 0
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
