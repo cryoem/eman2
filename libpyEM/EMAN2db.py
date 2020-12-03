@@ -734,7 +734,7 @@ def db_write_image(self, fsp, *parms):
                 star_file.update('particles', pd.DataFrame(), True)
             db_em_to_star_header(em_dict, star_file, parms[0], special_keys, ignored_keys)
             star_file.write_star_file(out_star_file=fsp, overwrite=True)
-            self.write_image_c(fsp.split('.star')[0] + '.hdf', *parms)
+            self.write_image_c(fsp.split('.star')[0] + '.mrcs', *parms)
         else:
             em_dict = self.get_attr_dict()
             special_keys = star_file.special_keys
@@ -745,7 +745,7 @@ def db_write_image(self, fsp, *parms):
                 star_file.update('particles', pd.DataFrame(), True)
             db_em_to_star_header(em_dict, star_file['particles'], parms[0], special_keys, ignored_keys)
             star_file.write_star_file(out_star_file=fsp, overwrite=True)
-            self.write_image_c(fsp.split('.star')[0] + '.hdf', *parms)
+            self.write_image_c(fsp.split('.star')[0] + '.mrcs', *parms)
         return
     return self.write_image_c(fsp, *parms)
 
@@ -763,9 +763,9 @@ def write_images(EM_data_list, fsp, indices):
 
     for loc_part_id, loc_part_value in enumerate(indices):
         particle_img_dict = EM_data_list[loc_part_id].get_attr_dict()
-        particle_img_dict['data_path'] = fsp.split('.star')[0] + '.hdf'
+        particle_img_dict['data_path'] = fsp.split('.star')[0] + '.mrcs'
         db_em_to_star_header(particle_img_dict, local_bdb_stack.star['particles'], loc_part_value, special_keys, ignored_keys)
-        particle_img_dict['data_path'] = fsp.split('.star')[0] + '.hdf'
+        particle_img_dict['data_path'] = fsp.split('.star')[0] + '.mrcs'
         EM_data_list[loc_part_id].write_image_c(particle_img_dict['data_path'], loc_part_value)
 
 

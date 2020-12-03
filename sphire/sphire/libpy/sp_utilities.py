@@ -937,7 +937,7 @@ def get_im(stackname, im=0):
 	   or: myimage = get_im( data, im )
 	"""
 
-    if stackname.lower() == "bdb:":
+    if stackname.lower().startswith("bdb:"):
         if type(stackname) == type(""):
             e = EMAN2_cppwrap.EMData()
             e.read_image(stackname, im)
