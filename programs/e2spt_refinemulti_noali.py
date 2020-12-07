@@ -33,7 +33,7 @@ def main():
 	if not os.path.isdir(path):
 		os.mkdir(path)
 		
-	if len(options.ref)>0 : 
+	if options.ref!=None and len(options.ref)>0 : 
 		refss=" ".join(options.ref)
 		ncls=len(options.ref)
 	else: refss=None
