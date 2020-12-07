@@ -5,7 +5,8 @@
 from past.utils import old_div
 from EMAN2 import *
 from numpy import *
-from sys import argv,exit
+from sys import argv,exit,stdout
+from time import time
 try:
 	import matplotlib
 #	matplotlib.use("AGG")
@@ -27,7 +28,9 @@ This program will look in an spt_XX folder at particle_parms_xx.json and show a 
 	parser.add_argument("--path", type=str, default=None, help="Path to a folder containing current results (default = highest spt_XX)", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=0, col=0, rowspan=1, colspan=2,mode="gui")
 	parser.add_argument("--iter",type=int,help="Iteration number within path. Default = auto",default=0, guitype="intbox", row=1, col=0, rowspan=1, colspan=1,mode="gui")
 	parser.add_argument("--bins",type=int,help="Number of bins to use in the histogram",default=100, guitype="intbox", row=1, col=1, rowspan=1, colspan=1,mode="gui")
-	parser.add_argument("--mode",  default = "score", type=str,help="Which variable to histogram, score, coverage, alt, az, phi, dx, dy, dz. default=score.",guitype='strbox', row=2, col=0, rowspan=1, colspan=2, mode="gui")
+	parser.add_argument("--mask",type=str,help="Mask file to use for remask score calculation. If not specified, remask must have been previously computed",default=None)
+	parser.add_argument("--maskref",type=str,help="File containing the reference to compare the masked volumes with (required with --mask)",default=None)
+	parser.add_argument("--mode",  default = "score", type=str,help="Which variable to histogram, score, coverage, alt, az, phi, dx, dy, dz, score_remask. default=score.",guitype='strbox', row=2, col=0, rowspan=1, colspan=2, mode="gui")
 	#parser.add_argument("--threads", default=4,type=int,help="Number of alignment threads to run in parallel on a single computer. This is the only parallelism supported by e2spt_align at present.", guitype='intbox', row=24, col=2, rowspan=1, colspan=1, mode="refinement")
 	#parser.add_argument("--goldstandard",type=float,help="If specified, will phase randomize the even and odd references past the specified resolution (in A, not 1/A)",default=0)
 	#parser.add_argument("--saveali",action="store_true",help="Save a stack file (aliptcls.hdf) containing the aligned subtomograms.",default=False)
@@ -53,7 +56,33 @@ This program will look in an spt_XX folder at particle_parms_xx.json and show a 
 		
 
 	angs=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,options.iter))
-	if options.mode in ("score","coverage"):
+	# if a mask is specified we recompute score_remask, regardless of whether it is later used
+	if options.mask!=None and options.maskref!=None:
+		mask=EMData(options.mask)
+		maskref=EMData(options.maskref)
+		maskref.mult(mask)
+		
+		if options.verbose: print("Recomputing score_remask")
+		t=time()
+		n=len(angs)
+		i=0
+		for k in angs.keys():
+			i+=1
+			itm=angs[k]
+			ort=itm["xform.align3d"]
+			fsp,j=eval(k)
+			img=EMData(fsp,j)
+			img.process_inplace("xform",{"transform":ort})
+			img.mult(mask)
+#			itm["score_remask"]=img.cmp("ccc", maskref)
+			itm["score_remask"]=img.cmp("fsc.tomo.auto", maskref, {"sigmaimgval":3.0, "sigmawithval":0., "minres":300.0,"maxres":25.0})
+			angs[k]=itm
+			if options.verbose and time()-t>3:
+				t=time()
+				print(f"   {i}/{n}\r",end="")
+				stdout.flush()
+	
+	if options.mode in ("score","coverage","score_remask"):
 		data=[angs[a][options.mode] for a in list(angs.keys())]
 	else:
 		data=[angs[a]["xform.align3d"].get_params("eman")[options.mode] for a in list(angs.keys())]
@@ -61,14 +90,14 @@ This program will look in an spt_XX folder at particle_parms_xx.json and show a 
 
 	if options.extract:
 		out=open("{}/particle_parms_{:02d}.txt".format(options.path,options.iter),"w")
-		out.write("# num; score; ref coverage; az; alt; phi\n")
+		out.write("# num; score; ref coverage; az; alt; phi; score_remask\n")
 
 		k=list(angs.keys())
 		k.sort(key=lambda i:int(eval(i)[1]))
 		for i in k:
 			itm=angs[i]
 			ort=itm["xform.align3d"].get_params("eman")
-			out.write("{}\t{}\t{}\t{}\t{}\t{}\t# {};{}\n".format(int(eval(i)[1]),itm["score"],itm["coverage"],ort["az"],ort["alt"],ort["phi"],eval(i)[1],eval(i)[0]))
+			out.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{}\n".format(int(eval(i)[1]),itm["score"],itm["coverage"],ort["az"],ort["alt"],ort["phi"],itm.get("score_remask",0.0),eval(i)[1],eval(i)[0]))
 
 	col=array(data)
 
@@ -86,7 +115,7 @@ This program will look in an spt_XX folder at particle_parms_xx.json and show a 
 		lz=len(col[col<0])
 		gz=len(col[col>0])
 		print("%1.2f (%d) less than zero"%(old_div(float(lz),(lz+gz)),lz))
-		print("%1.2f (%d) less than zero"%(old_div(float(gz),(lz+gz)),gz))
+		print("%1.2f (%d) greater than zero"%(old_div(float(gz),(lz+gz)),gz))
 
 	his=histogram(col,options.bins)
 
