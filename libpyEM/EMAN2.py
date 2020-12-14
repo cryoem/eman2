@@ -1068,6 +1068,11 @@ def kill_process(pid):
 		except:
 			return 0
 
+def run(cmd,quiet=False):
+	"""shortcut redefined all over the place. Might as well put it in one location."""
+	if not quiet: print(cmd)
+	launch_childprocess(cmd)
+
 def launch_childprocess(cmd,handle_err=0):
 	'''
 	Convenience function to launch child processes

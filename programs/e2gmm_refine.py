@@ -563,9 +563,10 @@ def main():
 	parser.add_argument("--pas", type=str,help="choose whether to adjust position, amplitude, sigma. use 3 digit 0/1 input. default is 110, i.e. only adjusting position and amplitude", default="110")
 	parser.add_argument("--nmid", type=int,help="size of the middle layer", default=4)
 	parser.add_argument("--mask", type=str,help="remove points outside mask", default="")
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
-	logid=E2init(sys.argv)
+	logid=E2init(sys.argv,options.ppid)
 	
 	gen_model=None
 	maxboxsz=options.maxboxsz
