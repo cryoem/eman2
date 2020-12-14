@@ -45,7 +45,7 @@ def get_sym_pts(sym, pts):
 	return asym
 
 #### rotate-translate Gaussian coordinates based on transforms
-@tf.function
+#@tf.function
 def xf2pts(pts, ang):
 
 	azp=-ang[:,0]
@@ -88,7 +88,7 @@ def xf2pts(pts, ang):
 
 
 #### make 2D projections in Fourier space
-@tf.function
+#@tf.function
 def pts2img(pts, ang, lp=.1, sym="c1"):
 	bsz=ang.shape[0]
 	
@@ -130,7 +130,7 @@ def pts2img(pts, ang, lp=.1, sym="c1"):
 	return (imgs_real, imgs_imag)
 
 #### compute particle-projection FRC 
-@tf.function
+#@tf.function
 def calc_frc(data_cpx, imgs_cpx, return_curve=False):
 	mreal, mimag=imgs_cpx
 	dreal, dimag=data_cpx
@@ -327,7 +327,7 @@ def train_decoder(gen_model, trainset, options):
 				conf=tf.zeros((xf.shape[0],options.nmid), dtype=floattype)
 				pout=gen_model(conf)
 				std=tf.reduce_mean(tf.math.reduce_std(pout, axis=1), axis=0)
-				imgs_cpx=pts2img(pout, xf)
+				imgs_cpx=pts2img(pout, xf, sym=options.sym)
 				fval=calc_frc(pj_cpx, imgs_cpx)
 				loss=-tf.reduce_mean(fval)
 				l=loss+std[4]*options.sigmareg
@@ -601,7 +601,7 @@ def main():
 	
 	if options.projs:
 		if gen_model==None:
-			gen_model=build_decoder(options.npts)
+			gen_model=build_decoder(options.npts, ninp=options.nmid)
 		print("Train model from ptcl-xfrom pairs...")
 		e=EMData(options.projs, 0, True)
 		raw_apix, raw_boxsz = e["apix_x"], e["ny"]
