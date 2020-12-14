@@ -537,14 +537,15 @@ class SptAlignTask(JSTask):
 				continue
 				
 			b.process_inplace("normalize.edgemean")
-			#if options.maxres>0:
-				#b.process_inplace("filter.lowpass.tophat",{"cutoff_freq":1./options.maxres})
+			if options.maxres>0:
+				b.process_inplace("filter.lowpass.tophat",{"cutoff_freq":1./options.maxres})
 			b=b.do_fft()
 			b.process_inplace("xform.phaseorigin.tocorner")
 
 			aligndic={"verbose":options.verbose,"sym":options.sym,"sigmathis":0.1,"sigmato":1.0, "minres":options.minres,"maxres":options.maxres}
 			r180=Transform({"type":"eman","alt":180})
 			
+			initxf=None
 			if options.refine and (dataxf!=None or b.has_attr("xform.align3d")):
 				ntry=options.refinentry
 				if dataxf!=None:
@@ -599,8 +600,16 @@ class SptAlignTask(JSTask):
 				c=[{"xform.align3d":xfs[0].inverse(), "score":-1}]
 			elif options.transonly:
 				c=[{},]
-				a=ref.align("translational",b, {"intonly":1,"maxshift":options.maxshift})
-				c[0]["xform.align3d"]=a["xform.align3d"]
+				if initxf:
+					r=ref.process("xform", {"transform":initxf.inverse()})
+				else:
+					r=ref
+				a=r.align("translational",b, {"intonly":1,"maxshift":options.maxshift})
+				x=a["xform.align3d"]
+				if initxf:
+					x=x*(initxf.inverse())
+				
+				c[0]["xform.align3d"]=x
 				c[0]["score"]=a["score.align"]
 			else:
 				c=ref.xform_align_nbest("rotate_translate_3d_tree",b, aligndic, options.nsoln)
