@@ -32,7 +32,6 @@
 
 
 from EMAN2 import *
-from optparse import OptionParser
 import sys
 from math import *
 import os.path
@@ -47,26 +46,26 @@ you may pass only a single operation to the program for each invocation, or beha
 process a single volume in a single file in-place.
 
 """
-	parser = OptionParser(usage)
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
 
-	parser.add_option("--streaksubtract",type="string",help="This will subtract the histogram peak value along a single axis in the volume.",default=None)
+	parser.add_argument("--streaksubtract",type=str,help="This will subtract the histogram peak value along a single axis in the volume.",default=None)
 
-	parser.add_option("--process", metavar="processor_name:param1=value1:param2=value2", type="string",
+	parser.add_argument("--process", metavar="processor_name:param1=value1:param2=value2", type=str,
 								action="append", help="apply a processor named 'processorname' with all its parameters/values. WARNING: this works by operating on fragments of the overall image at a time, and some processors won't work properly this way.")
 
-	parser.add_option("--mult", metavar="f", type="float", 
+	parser.add_argument("--mult", metavar="f", type=float, 
 								help="Scales the densities by a fixed number in the output")
 	
-	parser.add_option("--multfile", type="string", action="append",
+	parser.add_argument("--multfile", type=str, action="append",
 								help="Multiplies the volume by another volume of identical size. This can be used to apply masks, etc.")
 		
-	parser.add_option("--add", metavar="f", type="float", 
+	parser.add_argument("--add", metavar="f", type=float, 
 								help="Adds a constant 'f' to the densities")
 
-	parser.add_option("--trans", metavar="dx,dy,dz", type="string", default=0, help="Translate map by dx,dy,dz ")
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higher number means higher level of verboseness")
+	parser.add_argument("--trans", metavar="dx,dy,dz", type=str, default=0, help="Translate map by dx,dy,dz ")
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 		
 	(options, args) = parser.parse_args()
 

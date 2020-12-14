@@ -816,7 +816,7 @@ lc is the cursor selection point in plot coords"""
 					try: self.particle_viewers[i].set_data(ptclim)
 					except: 
 						self.particle_viewers.append(emimage2d.EMImage2DWidget(ptclim))
-						if len(self.particle_viewers)!=i+1 : print_exc()
+						if len(self.particle_viewers)!=i+1 : traceback.print_exc()
 					self.particle_viewers[i].show()
 #				if len(cmts)==2
 #					p1=EMData(cmts[1],cmts[0])

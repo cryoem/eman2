@@ -170,6 +170,9 @@ def main():
 		for a class containing many particles (within a particular refine_xx folder). It is a good idea to compare results
 		among classes in different highly occupied orientations.
 
+	--extractorientptcl <output name>
+		provides a way to extract particles with the alignment information for each particle stored in its header. Ostensibly such a data set could
+		be run directly through e2make3d.py, but its primary use is with e2gmm.py and similar programs.
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
@@ -454,6 +457,7 @@ def main():
 						#ptcl.process_inplace("xform",{"transform":ptclxf.inverse()})
 						#ptcl.write_image("cls1.hdf",-1)
 #					pts.add(eo+2*j)
+		else: print("ERROR: currently only HDF is supported for output of --extractorientptcl")
 		
 #		print(set(range(max(pts)+1))-pts)
 		

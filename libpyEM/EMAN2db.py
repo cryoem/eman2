@@ -58,13 +58,6 @@ except ImportError as e:
 from libpyEMData2 import EMData
 from libpyUtils2 import EMUtil
 
-try:
-    a = frozenset()
-except:
-    from sets import Set
-
-    frozenset = Set
-
 # If set, fairly verbose debugging information will be written to the console
 # larger numbers will increase the amount of output
 DBDEBUG = 0

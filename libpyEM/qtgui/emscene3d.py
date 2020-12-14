@@ -1843,7 +1843,7 @@ class EMLight(object):
 		"""
 		Return the specular lighting
 		"""
-		returnself.colorspecular
+		return self.colorspecular
 	
 	def getPosition(self):
 		"""

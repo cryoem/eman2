@@ -51,7 +51,7 @@ from EMAN2_meta import *
 import EMAN2db, EMAN2jsondb
 import argparse, copy
 import glob
-import random 
+import random
 
 import threading
 #from Sparx import *
@@ -300,9 +300,11 @@ def E2saveappwin(app,key,win):
 def E2loadappwin(app,key,win):
 	"""restores a geometry saved with E2saveappwin"""
 	try:
-		geom=E2getappval(app,key)
+		geom=list(E2getappval(app,key))
 		if geom==None : raise Exception
 		win.resize(geom[2],geom[3])
+		geom[0]=max(16,geom[0])
+		geom[1]=max(16,geom[1])
 		win.move(geom[0],geom[1])
 #		print(app,key,geom)
 	except: return
