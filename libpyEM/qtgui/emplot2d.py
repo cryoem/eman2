@@ -118,6 +118,8 @@ class EMPlot2DWidget(EMGLWidget):
 
 		EMGLWidget.__init__(self, parent=parent, winid=winid)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"plot.png"))
+		self.setMinimumWidth(120)
+		self.setMinimumHeight(80)
 
 		emshape.pixelratio=self.devicePixelRatio()
 		self.axes={}

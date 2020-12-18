@@ -457,7 +457,17 @@ def main():
 						#ptcl.process_inplace("xform",{"transform":ptclxf.inverse()})
 						#ptcl.write_image("cls1.hdf",-1)
 #					pts.add(eo+2*j)
-		else: print("ERROR: currently only HDF is supported for output of --extractorientptcl")
+		elif fsp.split(".")[-1]=="lst":
+			lsx=LSXFile(fsp)
+			for c,cpl in classptcls.items():
+				if options.verbose: print(f"Class: {c} ({len(cpl)})")
+				for k in range(len(cpl)):
+					eo=cpl[k][0]
+					j=cpl[k][1]
+					ptclxf=Transform({"type":"2d","alpha":cmxalpha[eo][0,j],"mirror":int(cmxmirror[eo][0,j]),"tx":cmxtx[eo][0,j],"ty":cmxty[eo][0,j]}).inverse()
+					clsxf=eulers[c]
+					lsx.write(eo+2*j,j,cptcl[eo],(ptclxf*clsxf).get_params("eman"))
+		else: print("ERROR: currently only HDF or LST are supported for output of --extractorientptcl")
 		
 #		print(set(range(max(pts)+1))-pts)
 		

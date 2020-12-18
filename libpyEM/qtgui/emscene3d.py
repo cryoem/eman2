@@ -735,7 +735,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 	sgmousemove = QtCore.pyqtSignal(float, float)
 	sgmouserelease = QtCore.pyqtSignal(float, float)
 	name = "SG"
-	def __init__(self, parentwidget=None, SGactivenodeset=set(), scalestep=0.5):
+	def __init__(self, parent=None, SGactivenodeset=set(), scalestep=0.5):
 		"""
 		@param parent: The parent of the widget
 		@param SGnodelist: a list enumerating all the SGnodes
@@ -743,7 +743,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		@param scalestep: The step to increment the object scaling
 		"""
 		EMItem3D.__init__(self, parent=None, transform=Transform())
-		EMGLWidget.__init__(self,parentwidget)
+		EMGLWidget.__init__(self,parent)
 		QtOpenGL.QGLFormat().setDoubleBuffer(True)
 		QtOpenGL.QGLFormat().setDepth(True)
 		self.setSelectedItem(True)			# The root is selected by default
