@@ -709,6 +709,22 @@ class EMPlot2DWidget(EMGLWidget):
 		self.needupd=1
 		if not quiet : self.updateGL()
 
+	def setXAxisAll(self,xa):
+		for k in self.axes.keys():
+			v=self.axes[k]
+			self.axes[k]=(xa,v[1],v[2],v[3])
+		self.autoscale(True)
+		self.needupd=1
+		self.updateGL()
+		
+	def setYAxisAll(self,ya):
+		for k in self.axes.keys():
+			v=self.axes[k]
+			self.axes[k]=(v[0],ya,v[2],v[3])
+		self.autoscale(True)
+		self.needupd=1
+		self.updateGL()
+
 	def setPlotParms(self,key,color,line,linetype,linewidth,sym,symtype,symsize,quiet=False):
 		if color==None : color=self.pparm[key][0]
 		if line==None : line=self.pparm[key][1]
