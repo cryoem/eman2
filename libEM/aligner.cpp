@@ -3416,7 +3416,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	if (nrsoln == 0) throw InvalidParameterException("ERROR (RT3DTreeAligner): nsoln must be >0"); // What was the user thinking?
 
 	int nsoln = nrsoln*2;
-	if (nrsoln<16) nsoln=32;		// we start with at least 32 solutions, but then gradually decrease with increasing scale
+	if (nrsoln<32) nsoln=64;		// we start with at least 32 solutions, but then gradually decrease with increasing scale
 
 	// !!!!!! IMPORTANT NOTE - we are inverting the order of this and to here to match convention in other aligners, to compensate
 	// the Transform is inverted before being returned

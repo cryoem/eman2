@@ -168,7 +168,7 @@ int FitsIO::read_data(float *rdata, int image_index, const Region *, bool )
 	check_read_access(image_index, rdata);
 
 	portable_fseek(file, dstart, SEEK_SET);
-	char *cdata=(char *)rdata;
+	unsigned char *cdata=(unsigned char *)rdata;
 	short *sdata=(short *)rdata;
 	int *idata=(int *)rdata;
 	double *ddata;

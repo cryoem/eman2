@@ -112,12 +112,16 @@ class EMPlot2DWidget(EMGLWidget):
 	"""A QT widget for drawing 2-D plots using matplotlib
 	"""
 	selected_sg = QtCore.pyqtSignal()
-	mousedown = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
+	mouseDown = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
+	mouseDrag = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
+	mouseUp = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
 
 	def __init__(self,application=None,winid=None,parent=None):
 
 		EMGLWidget.__init__(self, parent=parent, winid=winid)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"plot.png"))
+		self.setMinimumWidth(120)
+		self.setMinimumHeight(80)
 
 		emshape.pixelratio=self.devicePixelRatio()
 		self.axes={}
@@ -139,6 +143,7 @@ class EMPlot2DWidget(EMGLWidget):
 		self.data={}				# List of Lists to plot
 		self.visibility = {}  	   	# Same entries as in self.data, but entries are true or False to indicate visibility
 		self.glflags = EMOpenGLFlagsAndTools() 	# supplies power of two texturing flags
+		self.mouseemit=False		# if set, mouse events will be emitted by the widget
 
 		self.tex_name = 0
 		self.main_display_list = 0
@@ -707,6 +712,22 @@ class EMPlot2DWidget(EMGLWidget):
 		self.needupd=1
 		if not quiet : self.updateGL()
 
+	def setXAxisAll(self,xa):
+		for k in self.axes.keys():
+			v=self.axes[k]
+			self.axes[k]=(xa,v[1],v[2],v[3])
+		self.autoscale(True)
+		self.needupd=1
+		self.updateGL()
+		
+	def setYAxisAll(self,ya):
+		for k in self.axes.keys():
+			v=self.axes[k]
+			self.axes[k]=(v[0],ya,v[2],v[3])
+		self.autoscale(True)
+		self.needupd=1
+		self.updateGL()
+
 	def setPlotParms(self,key,color,line,linetype,linewidth,sym,symtype,symsize,quiet=False):
 		if color==None : color=self.pparm[key][0]
 		if line==None : line=self.pparm[key][1]
@@ -832,6 +853,10 @@ lc is the cursor selection point in plot coords"""
 
 		self.selected_sg.emit()
 
+	def set_mouse_emit(self,value):
+		"""if set to True, the widget will emit mouse events for tracking the cursor"""
+		self.mouseemit=value
+
 	def mousePressEvent(self, event):
 		lc=self.scr2plot(event.x(),event.y())
 		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
@@ -848,6 +873,8 @@ lc is the cursor selection point in plot coords"""
 			self.add_shape("lcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-220,self.scrlim[3]-10,"%1.5g (%s), %1.5g"%(lc[0],recip,lc[1]),120.0,-1)))
 			self.update_selected((event.x(),event.y()),lc)
 			self.updateGL()
+			
+			if self.mouseemit : self.mouseDown.emit(event,self.scr2plot(event.x(),event.y()))
 			#if self.mmode==0:
 				#self.emit(QtCore.SIGNAL("mousedown"), event)
 				#return
@@ -872,6 +899,7 @@ lc is the cursor selection point in plot coords"""
 			self.add_shape("lcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-220,self.scrlim[3]-10,"%1.5g (%s), %1.5g"%(lc[0],recip,lc[1]),120.0,-1)))
 			self.update_selected((event.x(),event.y()),lc)
 			self.updateGL()
+			if self.mouseemit : self.mouseDrag.emit(event,self.scr2plot(event.x(),event.y()))
 #			self.add_shape("mcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-80,self.scrlim[3]-20,"%1.3g, %1.3g"%(self.plot2scr(*lc)[0],self.plot2scr(*lc)[1]),1.5,1)))
 
 	def mouseReleaseEvent(self, event):
@@ -881,6 +909,9 @@ lc is the cursor selection point in plot coords"""
 			if fabs(event.x()-self.rmousedrag[0])+fabs(event.y()-self.rmousedrag[1])<3 : self.rescale(0,0,0,0)
 			else : self.rescale(min(lc[0],lc2[0]),max(lc[0],lc2[0]),min(lc[1],lc2[1]),max(lc[1],lc2[1]))
 			self.rmousedrag=None
+		elif event.buttons()&Qt.LeftButton:
+			if self.mouseemit : self.mouseUp.emit(event,self.scr2plot(event.x(),event.y()))
+
 		#elif event.button()==Qt.LeftButton:
 			#if self.mmode==0:
 				#self.emit(QtCore.SIGNAL("mouseup"), event)
