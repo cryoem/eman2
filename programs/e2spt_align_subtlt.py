@@ -62,9 +62,11 @@ The reference may be <volume> or <volume>,<n>
 	parser.add_argument("--minres",type=float,help="Minimum resolution to consider in alignment (in A, not 1/A)",default=0)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--maxshift", type=int, help="maximum shift for subtilt refine",default=8)
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default=None)
-	parser.add_argument("--maxshift",type=float,help="Maximum shift for the refine mode. default is 16",default=-1)
 	parser.add_argument("--fromscratch",action="store_true",help=".",default=False)
+	parser.add_argument("--skipali3d",action="store_true",help="",default=False)
+	parser.add_argument("--skipali2d",action="store_true",help="",default=False)
 	parser.add_argument("--debug",action="store_true",help=".",default=False)
 	parser.add_argument("--plst",type=str,default=None,help="list of 2d particle with alignment parameters. will reconstruct before alignment.")
 	parser.add_argument("--smooth",type=float,help="smooth local motion by this factor. smoother local motion with larger numbers",default=-1)
@@ -198,7 +200,7 @@ The reference may be <volume> or <volume>,<n>
 		ts=dc.pop("transscr")
 		for i, ii in enumerate(dc["imgidx"]):
 			dxf=dc["imgxfs"][i].get_params("eman")
-			dxf["score"]=float(dc["imgscore"][i])
+			#dxf["score"]=float(dc["imgscore"][i])
 			dxf["pid"]=n; dxf["tid"]=i; dxf["class"]=n%2
 			tsmult=dc["tsmult"]
 			data.append({
@@ -206,24 +208,29 @@ The reference may be <volume> or <volume>,<n>
 				"xf":dxf, "coord":dc["coord"], "tsscr":ts[i]
 				})
 	
-	if options.smooth>0:
-		m=8
-		trans=np.indices((m*2+1, m*2+1)).reshape((2,-1)).T-m
-		alldtx=np.zeros((len(data), 3))
-		fnames=np.unique([d["src"] for d in data])
-		maxtid=np.max([d["tid"] for d in data])+1
-		print("Smoothing trajectories...")
-		for fname in fnames:
-			print(fname)
+	m=options.maxshift
+	trans=np.indices((m*2+1, m*2+1)).reshape((2,-1)).T-m
+	alldtx=np.zeros((len(data), 3))
+	fnames=np.unique([d["src"] for d in data])
+	maxtid=np.max([d["tid"] for d in data])+1
+	print("Smoothing trajectories...")
+	for fname in fnames:
+		print(fname)
 
-			for tid in range(maxtid):
-				idx=[i for i,d in enumerate(data) if d["src"]==fname and d["tid"]==tid]
-				if len(idx)==0:
-					continue
-				
-				coord=np.array([data[i]["coord"] for i in idx])
-				scrs=np.array([data[i]["tsscr"] for i in idx])
-				
+		for tid in range(maxtid):
+			idx=[i for i,d in enumerate(data) if d["src"]==fname and d["tid"]==tid]
+			if len(idx)==0:
+				continue
+			
+			coord=np.array([data[i]["coord"] for i in idx])
+			scrs=np.array([data[i]["tsscr"] for i in idx])
+			
+			if options.smooth<=0:
+				s=np.argmin(scrs, 1)
+				sv=np.min(scrs, axis=1)
+				newdtx=np.hstack([trans[s], sv[:,None]])
+				if tid==0:print("  Skip smoothing")
+			else:	
 				newdtx=[]
 				
 				for i, crd in enumerate(coord):
@@ -244,8 +251,9 @@ The reference may be <volume> or <volume>,<n>
 				sys.stdout.write("\r   {}: {:.4f}".format(tid, np.mean(scr)))
 				sys.stdout.flush()
 				newdtx=np.array(newdtx)
-				alldtx[idx]=newdtx
-			print()
+			
+			alldtx[idx]=newdtx
+		print()
 		 
 	for i,d in enumerate(data):
 		dxf=d["xf"]
@@ -293,30 +301,12 @@ class SptAlignTask(JSTask):
 		def testxf(x, return_xf=False):
 			
 			txf=Transform({"type":"eman", "tx":x[0], "ty":x[1], "tz":x[2],"alt":x[3], "az":x[4], "phi":x[5]})
-			xfs=[p*txf for p in pjxfs]
+			xfs=[p*txf for p in pjxfsmall]
 			pjs=[refsmall.project('gauss_fft',{"transform":x, "returnfft":1}) for x in xfs]
-			#for m0,p0 in zip(imgsmallpjs, pjs):
-				#m=m0.copy()
-				#p=p0.copy()
-				
-				#m.process_inplace("xform.phaseorigin.tocenter")
-				#m=m.do_ift()
-				#m.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.2})
-				#m.process_inplace("normalize.edgemean")
-				
-				#p.process_inplace("xform.phaseorigin.tocenter")
-				#p=p.do_ift()
-				#p.process_inplace("normalize.edgemean")
-				
-				#m.write_image("tmpimg.hdf", -1)
-				#p.write_image("tmpimg.hdf", -1)
 
 			fscs=np.array([m.calc_fourier_shell_correlation(p) for m,p in zip(imgsmallpjs, pjs)])
 			fscs=fscs.reshape((len(fscs), 3, -1))[:,1,:]
 			scr=-np.mean(fscs[:, minp:maxp])
-			#scr=-np.mean(fscs)
-			#ss=-np.mean(fscs, axis=1)
-			#print(ss)
 			
 			if return_xf:
 				ss=-np.mean(fscs[:, minp:maxp], axis=1)
@@ -324,39 +314,42 @@ class SptAlignTask(JSTask):
 			else:
 				return scr
 		
-		#try:os.remove("tmpimg.hdf")
-		#except: pass
 		
 		callback(0)
-		
 		options=self.options
+		rets=[]
+		
 		refnames=self.data[0][2]
 		ref=EMData(refnames[0],0,True)
 		by=ref["ny"]
-		ny=by#good_size(by*1.4)
+		ny=good_size(by*1.4)
 		apix=ref["apix_x"]
 		
 		refs=[]
 		for r in refnames:
 			ref=EMData(r,0)
-			#ref=ref.get_clip(Region((by-ny)/2, (by-ny)/2,(by-ny)/2, ny, ny,ny))
+			ref=ref.get_clip(Region((by-ny)/2, (by-ny)/2,(by-ny)/2, ny, ny,ny))
 			refft=ref.do_fft()
 			refft.process_inplace("xform.phaseorigin.tocenter")
 			refft.process_inplace("xform.fourierorigin.tocenter")
 			refs.append(refft)
 		
-		rets=[]
-		#fromscratch=True
-		
+		#### for initial coarse alignment
 		astep=7.5
 		sym=Symmetries.get(options.sym)
 		xfcrs=sym.gen_orientations("saff",{"delta":astep,"phitoo":astep,"inc_mirror":1})
 		
+		#### for later iterative alignment
 		ssrg=2**np.arange(4,12, dtype=int)
 		ssrg[:2]=ssrg[:2]*3/2
 		ssrg=ssrg.tolist()
 		
-		minp=2
+		#### resolution range
+		if options.minres>0:
+			minp=ceil(ny*ref["apix_x"]/options.minres)
+		else:
+			minp=2
+			
 		if options.maxres>0:
 			maxp=ceil(ny*ref["apix_x"]/options.maxres)
 			maxy=good_size(maxp*3)
@@ -365,19 +358,26 @@ class SptAlignTask(JSTask):
 			maxy=ny
 			maxp=int(ny*.4)
 			
+			
 		if options.debug: print("max res: {:.2f}, max box size {}".format(options.maxres, maxy))
 		for di,data in enumerate(self.data):
 			
 			#### prepare inputs
-			
 			fsp=data[0]
 			fid=data[1]
 			ref=refs[data[3]]
 			if len(data)>4:
 				lastxf=data[4].inverse()
+			else:
+				lastxf=None
 			
 			## 3D particle
 			img=EMData(fsp, fid)
+			img.process_inplace("filter.highpass.gauss",{"cutoff_pixels":4})
+			img.process_inplace("normalize.edgemean")
+			img.process_inplace("mask.soft",{"outer_radius":-1})
+			img=img.get_clip(Region((by-ny)/2, (by-ny)/2,(by-ny)/2, ny, ny,ny))
+			
 			img=img.do_fft()
 			img.process_inplace("xform.phaseorigin.tocenter")
 			img.process_inplace("xform.fourierorigin.tocenter")
@@ -389,68 +389,93 @@ class SptAlignTask(JSTask):
 			## projection transforms for the 2d particles
 			pjxfs=[]
 			if options.plst:
-				## a 2d particle list with transforms is provided
+				#### a 2d particle list with transforms is provided
 				## reconstruct 3d particle from 2d paticles
-				## unclear how useful is this yet...
-				
+				dts=[]
+				pjxfs00=[]
 				xinfo=data[5]
-				pad=ny; sz=by
-				parms = {"size":[pad]*3,"mode":"trilinear","sym":"c1"}
+				parms = {"size":[ny]*3,"mode":"trilinear","sym":"c1"}
 				recon=Reconstructors.get("fourier", parms)
 				recon.setup()
 				for i, txf in xinfo:
 					e=EMData(options.plst, i)
 					e-=e.get_edge_mean()
-					e.clip_inplace(Region((e["nx"]-pad)//2, (e["ny"]-pad)//2, pad, pad))
+					e.clip_inplace(Region((e["nx"]-ny)//2, (e["ny"]-ny)//2, ny, ny))
 					xf=txf*(lastxf.inverse())
+					pxf=e["xform.projection"]
+					dt=xf.get_trans()-pxf.get_trans()
+					dts.append(dt)
 					ts=Transform(xf)
 					ts.set_rotation({"type":"eman"})
 					ts.invert() 
 					e=recon.preprocess_slice(e,ts)
 					recon.insert_slice(e,xf,1)
 					pjxfs.append(xf)
+					pjxfs00.append(pxf)
 				
 				img=recon.finish(True)
-				img.process_inplace("normalize.circlemean", {"radius":sz*.45,"width":4})
-				img.process_inplace("mask.soft",{"outer_radius":sz*.45,"width":8})
+				img.process_inplace("normalize.circlemean", {"radius":by*.5,"width":4})
+				img.process_inplace("mask.soft",{"outer_radius":by*.5,"width":8})
+				#img["xform.align3d"]=lastxf.inverse()
+				#img=img.get_clip(Region((ny-by)/2, (ny-by)/2,(ny-by)/2, by, by,by))
+				#img.write_image("tmpptcls.hdf",fid)
+				#continue
 			
+				img=img.do_fft()
+				img.process_inplace("xform.phaseorigin.tocenter")
+				img.process_inplace("xform.fourierorigin.tocenter")
+				dts=np.array(dts)[:,:2]
 			else:
-				## otherwise, read projection transform from header
-				
-				#img=EMData(fsp, fid)
-				#img.process_inplace("normalize.edgemean")
-				#img.process_inplace("mask.soft",{"outer_radius":-1})
-				#img=img.get_clip(Region((by-ny)/2, (by-ny)/2,(by-ny)/2, ny, ny,ny))
-				
+				#### otherwise, read projection transform from header
+				dts=np.zeros((len(imgidx), 2))
 				for i in imgidx: 
 					m=EMData(imgsrc, i, True)
 					pjxfs.append(m["xform.projection"])
 					
+				pjxfs00=pjxfs
 
-			## 2d particle projections
+			#### make 2d particle projections from 3d particles
 			imgpjs=[]
 			for pxf in pjxfs:
 				m=img.project('gauss_fft',{"transform":pxf, "returnfft":1})
 				m.process_inplace("xform.fourierorigin.tocenter")
 				imgpjs.append(m)
 			
-			
+			#### start from coarse alignment / do refine search around previous solution
 			if options.fromscratch:
 				curxfs=[]
 				npos=16
-				istart=0
+				ifirst=0
 			else:
 				curxfs=[lastxf]
 				npos=1
-				istart=len(ssrg)-1
+				ifirst=len(ssrg)-1
 				
+			#### optionally skip 3d alignment. need to prepare results for subsequent 2d alignment
+			if options.skipali3d:
+				ilast=-1
+				ss=maxy
+				refsmall=ref.get_clip(Region(0,(ny-ss)//2, (ny-ss)//2, ss+2, ss, ss))
+				newscore=[-1]
+				imgsmallpjs=[]
+				for pj in imgpjs:
+					m=pj.get_clip(Region(0,(ny-ss)//2, ss+2, ss))
+					m.process_inplace("xform.fourierorigin.tocenter")
+					imgsmallpjs.append(m)
+					
+			else:
+				ilast=len(ssrg)
+			
+			#### 3d alignment loop. increase fourier box size and reduce solutions every iteration
 			if options.debug: print("Align particle ( {}, {} )".format(fsp, fid))
-			for si in range(istart, len(ssrg)):
+			for si in range(ifirst, ilast):
 				ss=ssrg[si]
 				if ss>=maxy: 
 					ss=maxy
 			
-				mxsft=ss//8
+				mxsft=ss//6
+				astep = 89.999/floor(np.pi/(1.5*2.0*atan(2.0/ss))) ### copied from spt tree aligner
+				
 				newxfs=[]
 				score=[]
 				if options.debug: print("size {}, solution {}".format(ss, npos))
@@ -470,11 +495,12 @@ class SptAlignTask(JSTask):
 						ccf=imgsmall.calc_ccf(refrot)
 						pos=ccf.calc_max_location_wrap(mxsft, mxsft, mxsft)
 						xf.translate(pos[0], pos[1],pos[2])
-						refrot=refrot.process("xform", {"tx":pos[0], "ty":pos[1], "tz":pos[2]})
-						fsc=refrot.calc_fourier_shell_correlation(imgsmall)
-						fsc=np.array(fsc).reshape((3,-1))[1]
+				
+						refrot=refsmall.process("xform", {"transform":xf})
+						scr=imgsmall.cmp("ccc.tomo.thresh", refrot)
+						score.append(scr)
+						
 						newxfs.append(xf)
-						score.append(-np.mean(fsc))
 						if options.debug: 
 							sys.stdout.write("\r {}/{}    {:.3f}  ".format(len(newxfs), len(xfcrs), score[-1]).ljust(40))
 							sys.stdout.flush()
@@ -487,13 +513,17 @@ class SptAlignTask(JSTask):
 						m=pj.get_clip(Region(0,(ny-ss)//2, ss+2, ss))
 						m.process_inplace("xform.fourierorigin.tocenter")
 						imgsmallpjs.append(m)
+					
+					pjxfsmall=[Transform(p) for p in pjxfs]
+					for p in pjxfsmall:
+						p.set_trans(p.get_trans()*ss/ny)
 						
 					for xf in curxfs:
 						x=xf.get_params("eman")
 						x0=[x["tx"]*ss/ny, x["ty"]*ss/ny, x["tz"]*ss/ny, x["alt"], x["az"], x["phi"]]
 						
 						simplex=np.vstack([[0,0,0,0,0,0], np.eye(6)*1])
-						res=minimize(testxf, x0,  method='Nelder-Mead', options={'ftol': 1e-3, 'disp': False, "maxiter":30,"initial_simplex":simplex+x0})
+						res=minimize(testxf, x0,  method='Nelder-Mead', options={'ftol': 1e-3, 'disp': False, "maxiter":50,"initial_simplex":simplex+x0})
 						
 						x=res.x
 						txf=Transform({"type":"eman", "tx":x[0], "ty":x[1], "tz":x[2],"alt":x[3], "az":x[4], "phi":x[5]})
@@ -536,54 +566,74 @@ class SptAlignTask(JSTask):
 					break
 				
 			
-			thisxf=Transform(newxfs[0])
-			thisxf.set_trans(thisxf.get_trans()*ss/ny)
-			
-			x=thisxf.get_params("eman")
-			x0=[x["tx"], x["ty"], x["tz"], x["alt"], x["az"], x["phi"]]
-			score, xfout, imgxfs, imgscr = testxf(x0, True)
-			xfout.set_trans(xfout.get_trans()*ny/ss)
-			for x in imgxfs:
-				x.set_trans(x.get_trans()*ny/ss)
-			
-			
 			##############
-			xfs=[p*thisxf for p in pjxfs]
-			pjs=[refsmall.project('gauss_fft',{"transform":x, "returnfft":1}) for x in xfs]
-			m=8
+			
+			xfout=Transform(curxfs[0])
+			score=newscore[0]
+			
+			thisxf=Transform(curxfs[0])
+			thisxf.set_trans(thisxf.get_trans()*maxy/ny)
+			
+			pjxfsmall=[Transform(p) for p in pjxfs]
+			for p in pjxfsmall:
+				p.set_trans(p.get_trans()*maxy/ny)
+				
+			imgxfs=[p*thisxf for p in pjxfsmall]
+			pjs=[refsmall.project('gauss_fft',{"transform":x, "returnfft":1}) for x in imgxfs]
+			m=options.maxshift
 			trans=np.indices((m*2+1, m*2+1)).reshape((2,-1)).T-m
-			scr=[]
+			if options.skipali2d:
+				scr=np.zeros((len(trans), len(pjxfs)))
+				scr[len(trans)//2]=-1
+			else:
+				scr=[]
 
-			for t in trans.tolist():
-				pjts=[p.process("xform",{"tx":t[0],"ty":t[1]}) for p in pjs]
+				for t in trans.tolist():
+					pjts=[p.process("xform",{"tx":t[0],"ty":t[1]}) for p in pjs]
+					
+					fscs=np.array([m.calc_fourier_shell_correlation(p) for m,p in zip(imgsmallpjs, pjts)])
+					fscs=fscs.reshape((len(fscs), 3, -1))[:,1,minp:maxp]
+					scr.append(-np.mean(fscs, axis=1))
+					
+				scr=np.array(scr)
 				
-				fscs=np.array([m.calc_fourier_shell_correlation(p) for m,p in zip(imgsmallpjs, pjts)])
-				fscs=fscs.reshape((len(fscs), 3, -1))[:,1,minp:maxp]
-				scr.append(-np.mean(fscs, axis=1))
-				
-			scr=np.array(scr)
-			#s=np.argmin(scr, axis=0)
-			#print(np.min(scr))
+			dts=dts*maxy/ny
+			s0=scr.reshape((m*2+1, m*2+1, -1))
+			s1=np.zeros_like(scr)
+			dt=np.round(dts).astype(int)
+			for i in range(scr.shape[1]):
+				s=do_trans(s0[:,:,i], dt[i])
+				s=s.flatten()
+				s1[:,i]=s
 			
-			#ti=thisxf.inverse()
-			#pjxfs=[p*ti for p in xfs]
+			scr=s1.copy()
 			
+			imgxfs=[p*xfout for p in pjxfs00]
 			
-			
-			#score, xfout, imgxfs, imgscr = testxf(x0, True)
-			
-			c={"xform.align3d":xfout.inverse(), "score":score, "imgsrc":imgsrc, "imgidx":imgidx, "imgxfs":imgxfs,"imgscore":imgscr, "transscr":scr.T, "coord":imgcoord, "tsmult":float(ny/maxy)}
+			c={"xform.align3d":xfout.inverse(), "score":score, "imgsrc":imgsrc, "imgidx":imgidx, "imgxfs":imgxfs, "transscr":scr.T, "coord":imgcoord, "tsmult":float(ny/maxy)}
 						
 			rets.append((fsp,fid,c))
 			
 			if options.debug:
-				print(fid,  score)
-				c=np.round(x0,2)
-				print(c, scr0)
+				
+				if lastxf:
+					x=Transform(lastxf)
+					x.set_trans(x.get_trans()*maxy/ny)
+					x=x.get_params("eman")
+					c=[x["tx"], x["ty"], x["tz"], x["alt"], x["az"], x["phi"]]
+					s0 = testxf(c)
+				else:
+					s0=0
 				
 				x=xfout.get_params("eman")
 				c=[x["tx"], x["ty"], x["tz"], x["alt"], x["az"], x["phi"]]
-				print(np.round(c,2), testxf(c))
+				
+				ti=thisxf.inverse()
+				pjxfs=[p*ti for p in xfs]
+				x=thisxf.get_params("eman")
+				x0=[x["tx"], x["ty"], x["tz"], x["alt"], x["az"], x["phi"]]
+				s1 = testxf(x0)
+				print(fid,  np.round(c,2),s0, score,s1)
 				
 				print('#############')
 				exit()
@@ -594,6 +644,17 @@ class SptAlignTask(JSTask):
 		
 		return rets
 		
+
+def do_trans(a, x):
+	n=len(a)
+	b=np.zeros_like(a)
+	x=np.array(x)
+	i=np.array([[0,n],[0,n]])+x[:,None]
+	i=np.clip(i, 0, n).astype(int)
+	j=np.array([[0,n],[0,n]])-x[:,None]
+	j=np.clip(j, 0, n).astype(int)
+	b[i[0,0]:i[0,1],i[1,0]:i[1,1]]=a[j[0,0]:j[0,1], j[1,0]:j[1,1]]
+	return b
 		
 
 if __name__ == "__main__":
