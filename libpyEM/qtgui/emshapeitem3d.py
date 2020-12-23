@@ -421,15 +421,18 @@ class EMSphere(EMShapeBase):
 		gluSphere(quadratic,self.radius,self.slices,self.stacks)
 
 class EMScatterPlot3D(EMShapeBase):
+	"""Class representing a set of spheres in space. 3 data dimensions minimum (x,y,z). If a 4th is present, it will alter the surface brightness.
+	surface brightness axis uses a fixed minimum of zero (black) and the actual maximum value as white."""
 	name = "Plot3D"
 	nodetype = "ShapeNode"
 	
 	def __init__(self, transform=None):
 		EMShapeBase.__init__(self, parent=None, children=set(), transform=transform)
+		self.data=[[],[],[]]
 		
-	def setData(self, data, pointsize):
+	def setData(self, data, pointsize=1.0):
 		""" Set the dat to plot. Format is a [X, Y, Z] whereX Y and Z are lists of the same length """
-		if len(data) != 3:
+		if len(data) < 3:
 			raise ValueError("Data must have 3 dimensions")
 		if len(data[0]) != len(data[1]) or len(data[1]) != len(data[2]):
 			raise ValueError("Dimensions must be of the same length")
@@ -441,8 +444,8 @@ class EMScatterPlot3D(EMShapeBase):
 		
 	def setPointSize(self, pointsize):
 		self.pointsize = pointsize
-		self.slices = int(pointsize)
-		self.stacks = int(pointsize)
+		self.slices = 8
+		self.stacks = 8
 		
 	def getEvalString(self):
 		"""Implement me"""
@@ -454,12 +457,16 @@ class EMScatterPlot3D(EMShapeBase):
 		return self.item_inspector
 	
 	def renderShape(self):
+		if len(self.data[0])<1 : return
 		# Material properties of the sphere
-		glDisable(GL_COLOR_MATERIAL)
+		#glDisable(GL_COLOR_MATERIAL)
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
 		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
 		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
+		#glColor(1.0,1.0,1.0)
+		if len(self.data)>3:
+			cmax=max(self.data[3])
 		
 		quadratic = gluNewQuadric()
 		gluQuadricNormals(quadratic, GLU_SMOOTH)    # Create Smooth Normals (NEW) 
@@ -467,7 +474,10 @@ class EMScatterPlot3D(EMShapeBase):
 		
 		for i in range(len(self.data[0])):
 			glPushMatrix()
-			
+			if len(self.data)>3:
+				brtcol=max(self.data[3][i]/cmax,0.0)		# color is black for values of 0 ranging to white at max
+				glMaterialfv(GL_FRONT, GL_DIFFUSE, [brtcol*0.75,brtcol*0.75,brtcol*0.75,1.0])
+				glMaterialfv(GL_FRONT, GL_AMBIENT, [brtcol,brtcol,brtcol,1.0])
 			glTranslatef(self.data[0][i],self.data[1][i],self.data[2][i])
 			gluSphere(quadratic,self.pointsize,self.slices,self.stacks)
 			
