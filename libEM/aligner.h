@@ -1946,6 +1946,75 @@ namespace EMAN
 
 	};
 
+		/** 3D rotational and translational alignment using a hierarchical method with gradually decreasing downsampling in Fourier space.
+	 * In theory, very fast, and without need for a "refine" aligner. Comparator is ignored. Uses an inbuilt comparison. This variant
+	 * uses something like FLCF (local cross correlation) for translational alignment, and should work better when the reference is masked
+	 * but doing this slows things down.
+	 * @param sym The symmtery to use as the basis of the spherical sampling
+	 * @param verbose Turn this on to have useful information printed to standard out
+	 * @author Steve Ludtke
+	 * @date April 2015
+	 */
+	class RT3DLocalTreeAligner:public Aligner
+	{
+		public:
+			/** See Aligner comments for more details
+			 */
+			virtual EMData * align(EMData * this_img, EMData * to_img,
+								   const string & cmp_name= "sqeuclidean", const Dict& cmp_params = Dict()) const;
+			/** See Aligner comments for more details
+			 */
+			virtual EMData * align(EMData * this_img, EMData * to_img) const
+			{
+				return align(this_img, to_img, "sqeuclidean", Dict());
+			}
+
+
+			/** See Aligner comments for more details
+			 */
+			virtual vector<Dict> xform_align_nbest(EMData * this_img, EMData * to_img, const unsigned int nsoln, const string & cmp_name, const Dict& cmp_params) const;
+
+			virtual string get_name() const
+			{
+				return NAME;
+			}
+
+			virtual string get_desc() const
+			{
+				return "3D rotational and translational alignment using a hierarchical approach in Fourier space. Should be very fast and not require 'refine' alignment. This variant performs a locally normalized CCF for translational alignment and should thus work better when the reference is masked, but will be slower.";
+			}
+
+			static Aligner *NEW()
+			{
+				return new RT3DLocalTreeAligner();
+			}
+
+			virtual TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("maxshift", EMObject::INT,"maximum shift allowed");
+				d.put("sym", EMObject::STRING,"The symmtery to use as the basis of the spherical sampling. Default is c1 (no symmetry)");
+				d.put("sigmathis", EMObject::FLOAT,"Only Fourier voxels larger than sigma times this value will be considered");
+				d.put("sigmato", EMObject::FLOAT,"Only Fourier voxels larger than sigma times this value will be considered");
+				d.put("maxres", EMObject::FLOAT,"maximum resolution to compare");
+				d.put("minres", EMObject::FLOAT,"minimum resolution to compare");
+				d.put("maxang", EMObject::FLOAT,"maximum angle from initial rotation.");
+				d.put("initxform", EMObject::TRANSFORMARRAY,"An array of Transforms storing the starting positions.");
+
+// 				d.put("initxform", EMObject::TRANSFORM,"The Transform storing the starting position. If unspecified the identity matrix is used");
+				d.put("randphi", EMObject::BOOL,"Ignore phi constraint for refine search");
+				d.put("rand180", EMObject::BOOL,"Ignore 180 rotation for refine search");
+				d.put("verbose", EMObject::BOOL,"Turn this on to have useful information printed to standard out.");
+				return d;
+			}
+
+			static const string NAME;
+
+		private:
+			bool testort(EMData *small_this, EMData *small_to,EMData *small_mask,EMData *small_thissq,vector<float> &sigmathisv,vector<float> &sigmatov, vector<float> &s_score, vector<float> &s_coverage,vector<Transform> &s_xform,int i,Dict &upd, Transform initxf, int maxshift) const;
+
+	};
+
 	/** 3D rotational symmetry aligner. This aligner takes a map, which must be first aligned to the symmetry axis,
 	 * and rotates it to it symmetric positions. This is used to check for pseudo symmetry (such as finding the tail
 	 * of an icosahedral virus). A list of best matches (moving to a reference is produced. Alternativly, a rotated

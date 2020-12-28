@@ -84,6 +84,7 @@ If --goldstandard is specified, even and odd variants of the alignment reference
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default=None)
 	parser.add_argument("--transonly",action="store_true",help="translational alignment only, for prealigned particles",default=False)
 	parser.add_argument("--refine",action="store_true",help="local refinement from xform.align3d in header.",default=False)
+	parser.add_argument("--flcf",action="store_true",help="use slower aligner (experimental)",default=False)
 	
 	parser.add_argument("--refinentry", type=int, help="number of tests for refine mode. default is 8",default=8)
 	parser.add_argument("--randphi",action="store_true",help="randomize phi during refine alignment",default=False)
@@ -612,7 +613,8 @@ class SptAlignTask(JSTask):
 				c[0]["xform.align3d"]=x
 				c[0]["score"]=a["score.align"]
 			else:
-				c=ref.xform_align_nbest("rotate_translate_3d_tree",b, aligndic, options.nsoln)
+				if options.flcf: c=ref.xform_align_nbest("rotate_translate_3d_local_tree",b, aligndic, options.nsoln)
+				else: c=ref.xform_align_nbest("rotate_translate_3d_tree",b, aligndic, options.nsoln)
 			
 			
 			
