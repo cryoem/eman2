@@ -4215,6 +4215,8 @@ vector<Dict> RT3DLocalTreeAligner::xform_align_nbest(EMData * this_img, EMData *
 
 		delete small_this;
 		delete small_to;
+		delete small_thissq;
+		delete small_mask;
 		
 		lastss=ss;
 		if (ss>=maxny && curiter>0) break;
@@ -4222,6 +4224,8 @@ vector<Dict> RT3DLocalTreeAligner::xform_align_nbest(EMData * this_img, EMData *
 
 	delete base_this;
 	delete base_to;
+	delete base_thissq;
+	delete base_mask;
 	
 	// note the translations are wrong when the alignment stops before ss==ny
 	if (lastss<ny){
