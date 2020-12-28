@@ -4323,10 +4323,12 @@ bool RT3DLocalTreeAligner::testort(EMData *small_this,EMData *small_to,EMData *s
 		s_coverage[i]=st2->get_attr("fft_overlap");
 		s_xform[i]=t;
 		delete stt;
+	delete sttsq;
 		delete st2;
 		return true;
 	}
 	delete stt;
+	delete sttsq;
 	delete st2;
 	return false;
 }
