@@ -280,7 +280,7 @@ class ScipySptAlignTask(JSTask):
 		
 		JSTask.__init__(self,"SptAlign",data,{},"")
 		self.options=options
-		if options.mask!=None: raise Exception,"--mask not supported in scipy mode"
+		if options.mask!=None: raise Exception("--mask not supported in scipy mode")
 	
 	
 	def execute(self, callback):
