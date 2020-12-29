@@ -3413,33 +3413,63 @@ EMData* RT3DTreeAligner::align(EMData * this_img, EMData *to, const string & cmp
 
 }
 
-// NOTE - if symmetry is applied, it is critical that "to" be the volume which is already aligned to the symmetry axes (ie - the reference)
+// NOTE - if symmetry is applied, it is critical that "this" (as passed in to the algorithm) be the volume which is already aligned 
+// to the symmetry axes (ie - the reference). this is confusing as it is inverted internally in the algorithm, so the passed in 
+// "this" becomes "to" in the code to conform to the way the other aligners work.
 vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, const unsigned int nrsoln, const string & cmp_name, const Dict& cmp_params) const {
 	if (nrsoln == 0) throw InvalidParameterException("ERROR (RT3DTreeAligner): nsoln must be >0"); // What was the user thinking?
 
 	int nsoln = nrsoln*2;
 	if (nrsoln<32) nsoln=64;		// we start with at least 32 solutions, but then gradually decrease with increasing scale
 
-	// !!!!!! IMPORTANT NOTE - we are inverting the order of this and to here to match convention in other aligners, to compensate
-	// the Transform is inverted before being returned
-	EMData *base_this;
-	EMData *base_to;
-	if (this_img->is_complex()) base_to=this_img->copy();
-	else {
-		base_to=this_img->do_fft();
-		base_to->process_inplace("xform.phaseorigin.tocorner");
-	}
-
-	if (to->is_complex()) base_this=to->copy();
-	else {
-		base_this=to->do_fft();
-		base_this->process_inplace("xform.phaseorigin.tocorner");
-	}
-
 	float sigmathis = params.set_default("sigmathis",0.01f);
 	float sigmato = params.set_default("sigmato",0.01f);
 	int verbose = params.set_default("verbose",0);
 	float maxres = params.set_default("maxres",-1.0f);
+	EMData *mask = params.set_default("mask",(EMData *)NULL);
+	
+	// !!!!!! IMPORTANT NOTE - we are inverting the order of this and to here to match convention in other aligners, to compensate
+	// the Transform is inverted before being returned
+	EMData *base_this;
+	EMData *base_to;
+	if (mask) {
+		if (this_img->is_complex()) {
+			EMData *tmp = this_img->do_ift();
+			tmp->process_inplace("xform.phaseorigin.tocenter");
+			tmp->process_inplace("normalize.mask",Dict("mask",mask,"applymask",1));
+			base_to=tmp->do_fft();
+			base_to->process_inplace("xform.phaseorigin.tocorner");
+			delete tmp;
+		}
+		else {
+			EMData *tmp = this_img->process("normalize.mask",Dict("mask",mask,"applymask",1));
+			base_to=tmp->do_fft();
+			base_to->process_inplace("xform.phaseorigin.tocorner");
+			delete tmp;
+		}
+
+		if (to->is_complex()) {
+			base_this=to->copy();
+		}
+		else {
+			base_this=to->do_fft();
+			base_this->process_inplace("xform.phaseorigin.tocorner");
+		}
+	}
+	else {
+		if (this_img->is_complex()) base_to=this_img->copy();
+		else {
+			base_to=this_img->do_fft();
+			base_to->process_inplace("xform.phaseorigin.tocorner");
+		}
+
+		if (to->is_complex()) base_this=to->copy();
+		else {
+			base_this=to->do_fft();
+			base_this->process_inplace("xform.phaseorigin.tocorner");
+		}
+	}
+
 
 	if (base_this->get_xsize()!=base_this->get_ysize()+2 || base_this->get_ysize()!=base_this->get_zsize()
 		|| base_to->get_xsize()!=base_to->get_ysize()+2 || base_to->get_ysize()!=base_to->get_zsize()) throw InvalidCallException("ERROR (RT3DTreeAligner): requires cubic images with even numbered box sizes");
@@ -3662,7 +3692,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 				// We work an axis at a time until we get where we want to be. Somewhat like a simplex
 				int changed=1;
 				Dict upd;
-				testort(small_this,small_to,sigmathisv,sigmatov,s_score,s_coverage,s_xform,i,upd, initxf, maxshift);
+				testort(small_this,small_to,sigmathisv,sigmatov,s_score,s_coverage,s_xform,i,upd, initxf, maxshift,mask);
 				while (changed) {
 					changed=0;
 					for (int axis=0; axis<3; axis++) {
@@ -3672,7 +3702,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 						// phi continues to move independently. I believe this should produce a more monotonic energy surface
 						if (axis==0) upd[axname[2]]=-s_step[i*3+axis];
 
-						int r=testort(small_this,small_to,sigmathisv,sigmatov,s_score,s_coverage,s_xform,i,upd, initxf, maxshift);
+						int r=testort(small_this,small_to,sigmathisv,sigmatov,s_score,s_coverage,s_xform,i,upd, initxf, maxshift,mask);
 
 						// If we fail, we reverse direction with a slightly smaller step and try that
 						// Whether this fails or not, we move on to the next axis
@@ -3680,7 +3710,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 						else {
 							s_step[i*3+axis]*=-0.75;
 							upd[axname[axis]]=s_step[i*3+axis];
-							r=testort(small_this,small_to,sigmathisv,sigmatov,s_score,s_coverage,s_xform,i,upd, initxf, maxshift);
+							r=testort(small_this,small_to,sigmathisv,sigmatov,s_score,s_coverage,s_xform,i,upd, initxf, maxshift,mask);
 							if (r) changed=1;
 						}
 						if (verbose>4) printf("\nX %1.3f\t%1.3f\t%1.3f\t%d\t",s_step[i*3],s_step[i*3+1],s_step[i*3+2],changed);
@@ -3768,7 +3798,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 
 // This is just to prevent redundancy. It takes the existing solution vectors as arguments, an a proposed update for
 // vector i. It updates the vectors if the proposal makes an improvement, in which case it returns true
-bool RT3DTreeAligner::testort(EMData *small_this,EMData *small_to,vector<float> &sigmathisv,vector<float> &sigmatov,vector<float> &s_score, vector<float> &s_coverage,vector<Transform> &s_xform,int i,Dict &upd, Transform initxf, int maxshift) const {
+bool RT3DTreeAligner::testort(EMData *small_this,EMData *small_to,vector<float> &sigmathisv,vector<float> &sigmatov,vector<float> &s_score, vector<float> &s_coverage,vector<Transform> &s_xform,int i,Dict &upd, Transform initxf, int maxshift, EMData* mask) const {
 	Transform t;
 	Dict aap=s_xform[i].get_params("eman");
 	aap["tx"]=0;

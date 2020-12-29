@@ -1912,7 +1912,7 @@ namespace EMAN
 
 			virtual string get_desc() const
 			{
-				return "3D rotational and translational alignment using a hierarchical approach in Fourier space. Should be very fast and not require 'refine' alignment.";
+				return "3D rotational and translational alignment using a hierarchical approach in Fourier space. Should be very fast and not require 'refine' alignment. 'this' should be the fixed reference, aligned to symmetry axes and mask if provided. If masking, provide the mask rather than premasking the volume.";
 			}
 
 			static Aligner *NEW()
@@ -1923,6 +1923,7 @@ namespace EMAN
 			virtual TypeDict get_param_types() const
 			{
 				TypeDict d;
+				d.put("mask", EMObject::EMDATA,"A mask under which to do the alignment. Mask relative to 'this'");
 				d.put("maxshift", EMObject::INT,"maximum shift allowed");
 				d.put("sym", EMObject::STRING,"The symmtery to use as the basis of the spherical sampling. Default is c1 (no symmetry)");
 				d.put("sigmathis", EMObject::FLOAT,"Only Fourier voxels larger than sigma times this value will be considered");
@@ -1942,7 +1943,7 @@ namespace EMAN
 			static const string NAME;
 
 		private:
-			bool testort(EMData *small_this, EMData *small_to,vector<float> &sigmathisv,vector<float> &sigmatov, vector<float> &s_score, vector<float> &s_coverage,vector<Transform> &s_xform,int i,Dict &upd, Transform initxf, int maxshift) const;
+			bool testort(EMData *small_this, EMData *small_to,vector<float> &sigmathisv,vector<float> &sigmatov, vector<float> &s_score, vector<float> &s_coverage,vector<Transform> &s_xform,int i,Dict &upd, Transform initxf, int maxshift,EMData *mask) const;
 
 	};
 
@@ -1981,7 +1982,7 @@ namespace EMAN
 
 			virtual string get_desc() const
 			{
-				return "3D rotational and translational alignment using a hierarchical approach in Fourier space. Should be very fast and not require 'refine' alignment. This variant performs a locally normalized CCF for translational alignment and should thus work better when the reference is masked, but will be slower.";
+				return "EXPERIMENATAL - 3D rotational and translational alignment using a hierarchical approach in Fourier space. Should be very fast and not require 'refine' alignment. This variant performs a locally normalized CCF for translational alignment and should thus work better when the reference is masked, but will be slower.";
 			}
 
 			static Aligner *NEW()

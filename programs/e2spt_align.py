@@ -73,6 +73,7 @@ If --goldstandard is specified, even and odd variants of the alignment reference
 	parser.add_argument("--goldcontinue",action="store_true",help="Will use even/odd refs corresponding to specified reference to continue refining without phase randomizing again",default=False)
 	#parser.add_argument("--saveali",action="store_true",help="Save a stack file (aliptcls.hdf) containing the aligned subtomograms.",default=False)
 	#parser.add_argument("--savealibin",type=int,help="shrink aligned particles before saving",default=1)
+	parser.add_argument("--mask",type=str,default=None,help="Mask file aligned to the input reference. Alignment occurs under this mask.")
 	parser.add_argument("--path",type=str,default=None,help="Path to a folder where results should be stored, following standard naming conventions (default = spt_XX)")
 	parser.add_argument("--sym",type=str,default="c1",help="Symmetry of the input. Must be aligned in standard orientation to work properly.")
 	parser.add_argument("--maxres",type=float,help="Maximum resolution (the smaller number) to consider in alignment (in A, not 1/A)",default=0)
@@ -279,6 +280,7 @@ class ScipySptAlignTask(JSTask):
 		
 		JSTask.__init__(self,"SptAlign",data,{},"")
 		self.options=options
+		if options.mask!=None: raise Exception,"--mask not supported in scipy mode"
 	
 	
 	def execute(self, callback):
@@ -499,9 +501,15 @@ class SptAlignTask(JSTask):
 		refnames=self.data[0][2]
 		refs=[]
 		for r in refnames:
-			ref=EMData(r,0).do_fft()
-			ref.process_inplace("xform.phaseorigin.tocorner")
-			refs.append(ref)
+			if options.mask==None :
+				# refs are FFT without a mask real with
+				ref=EMData(r,0).do_fft()
+				ref.process_inplace("xform.phaseorigin.tocorner")
+				refs.append(ref)
+			else:
+				ref=EMData(r,0)
+				refs.append(ref)
+				mask=EMData(options.mask,0)
 			
 		if options.breaksym:
 			x=Transform()

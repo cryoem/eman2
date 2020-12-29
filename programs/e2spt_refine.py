@@ -17,7 +17,7 @@ def main():
 	parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=2, col=1, rowspan=1, colspan=1, mode="model")
 
 	parser.add_argument("--mask", type=str,help="Mask file to be applied to initial model", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=3, col=0,rowspan=1, colspan=3, mode="model")
-	parser.add_argument("--maskalign", type=str,help="Mask file applied to 3D alignment reference in each iteration. Not applied to the average, which will follow normal masking routine.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=4, col=0,rowspan=1, colspan=3, mode="model")
+	parser.add_argument("--maskalign", type=str,help="Mask file applied to 3D alignment reference in each iteration. Not applied to the average, which will follow normal masking routine.", default=None, guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=4, col=0,rowspan=1, colspan=3, mode="model")
 
 	parser.add_argument("--niter", type=int,help="Number of iterations", default=5, guitype='intbox',row=5, col=0,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--sym", type=str,help="symmetry", default="c1", guitype='strbox',row=5, col=1,rowspan=1, colspan=1, mode="model")
@@ -147,8 +147,8 @@ def main():
 				run("e2proc3d.py {} {}/model_input.hdf --process mask.soft:outer_radius=-1 --first {} --last {}".format(ref, options.path, refn,refn))
 		ref="{}/model_input.hdf".format(options.path)
 		
-	if (len(options.maskalign)>0):
-		maskalign=EMData(options.maskalign,0)
+	#if options.maskalign!=None:
+		#maskalign=EMData(options.maskalign,0)
 	
 	for itr in range(startitr,options.niter+startitr):
 
@@ -161,17 +161,17 @@ def main():
 				
 			ar=EMData(refe,0)
 			if itr==1 : ar.process_inplace("filter.lowpass.randomphase",{"cutoff_freq":1.0/options.goldstandard})
-			if (len(options.maskalign)>0): ar.mult(maskalign)
+			#if (len(options.maskalign)>0): ar.mult(maskalign)
 			ar.write_image(f"{options.path}/alignref_even.hdf",0)
 			ar=EMData(refo,0)
 			if itr==1 : ar.process_inplace("filter.lowpass.randomphase",{"cutoff_freq":1.0/options.goldstandard})
-			if (len(options.maskalign)>0): ar.mult(maskalign)
+			#if (len(options.maskalign)>0): ar.mult(maskalign)
 			ar.write_image(f"{options.path}/alignref_odd.hdf",0)
 		else:
 			ar=EMData(ref,0)
-			if (len(options.maskalign)>0):
-				m=EMData(options.maskalign,0)
-				ar.mult(m)
+			#if (len(options.maskalign)>0):
+				#m=EMData(options.maskalign,0)
+				#ar.mult(m)
 			ar.write_image(f"{options.path}/alignref.hdf",0)
 		
 		#### generate alignment command first
@@ -206,6 +206,9 @@ def main():
 			gd+=" --maxshift {:.1f}".format(options.maxshift)
 		if options.scipy:
 			gd+=" --scipy"
+		
+		if options.maskalign!=None:
+			gd+=f" --mask {options.maskalign}" 
 
 		cmd="e2spt_align.py {} {}/alignref.hdf --parallel {} --path {} --iter {} --sym {} --minres {} --maxres {} {}".format(ptcls, options.path,  options.parallel, options.path, itr, options.sym, options.minres, curres*.75, gd)
 		
