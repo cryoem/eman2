@@ -506,6 +506,7 @@ class SptAlignTask(JSTask):
 				ref=EMData(r,0).do_fft()
 				ref.process_inplace("xform.phaseorigin.tocorner")
 				refs.append(ref)
+				mask=None
 			else:
 				ref=EMData(r,0)
 				refs.append(ref)
@@ -593,6 +594,7 @@ class SptAlignTask(JSTask):
 				aligndic["maxang"]=options.maxang
 				aligndic["randphi"]=options.randphi
 				aligndic["rand180"]=options.rand180
+				if mask!=None : aligndic["mask"]=mask
 			
 			else:
 				xfs=[Transform()]
@@ -622,7 +624,9 @@ class SptAlignTask(JSTask):
 				c[0]["score"]=a["score.align"]
 			else:
 				if options.flcf: c=ref.xform_align_nbest("rotate_translate_3d_local_tree",b, aligndic, options.nsoln)
-				else: c=ref.xform_align_nbest("rotate_translate_3d_tree",b, aligndic, options.nsoln)
+				else:
+#					print("rotate_translate_3d_tree",b, aligndic, options.nsoln)
+					c=ref.xform_align_nbest("rotate_translate_3d_tree",b, aligndic, options.nsoln)
 			
 			
 			

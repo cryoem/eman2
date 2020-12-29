@@ -3426,7 +3426,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	float sigmato = params.set_default("sigmato",0.01f);
 	int verbose = params.set_default("verbose",0);
 	float maxres = params.set_default("maxres",-1.0f);
-	EMData *mask = params.set_default("mask",(EMData *)NULL);
+	EMData *mask = params.set_default("mask",(EMData *)0);
 	
 	// !!!!!! IMPORTANT NOTE - we are inverting the order of this and to here to match convention in other aligners, to compensate
 	// the Transform is inverted before being returned
@@ -3436,13 +3436,13 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		if (this_img->is_complex()) {
 			EMData *tmp = this_img->do_ift();
 			tmp->process_inplace("xform.phaseorigin.tocenter");
-			tmp->process_inplace("normalize.mask",Dict("mask",mask,"applymask",1));
+			tmp->process_inplace("normalize.mask",Dict("mask",mask,"apply_mask",1));
 			base_to=tmp->do_fft();
 			base_to->process_inplace("xform.phaseorigin.tocorner");
 			delete tmp;
 		}
 		else {
-			EMData *tmp = this_img->process("normalize.mask",Dict("mask",mask,"applymask",1));
+			EMData *tmp = this_img->process("normalize.mask",Dict("mask",mask,"apply_mask",1));
 			base_to=tmp->do_fft();
 			base_to->process_inplace("xform.phaseorigin.tocorner");
 			delete tmp;
@@ -3493,7 +3493,6 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 			printf("\n\n*******\nmax resolution %1.2f, box size %d\n", maxres, maxny);
 	
 	
-	
 	float maxang=params.set_default("maxang",-1.0);
 	Transform initxf;
 	
@@ -3521,7 +3520,6 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 // 			s_step[i]=.5;
 // 		}
 	}
-
 
 //	float dstep[3] = {7.5,7.5,7.5};		// we take  steps for each of the 3 angles, may be positive or negative
 	string axname[] = {"az","alt","phi"};
@@ -3843,8 +3841,8 @@ bool RT3DTreeAligner::testort(EMData *small_this,EMData *small_to,vector<float> 
 
 	// rotate in Fourier space then use a CCF to find translation
 	EMData *stt=small_this->process("xform",Dict("transform",EMObject(&t),"zerocorners",1));
-//	EMData *ccf=small_to->calc_ccf(stt);
-	EMData *ccf=small_to->calc_flcf(stt);
+	EMData *ccf=small_to->calc_ccf(stt);
+//	EMData *ccf=small_to->calc_flcf(stt);
 	IntPoint ml=ccf->calc_max_location_wrap(maxshift, maxshift, maxshift);
 
 
