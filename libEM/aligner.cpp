@@ -3041,12 +3041,12 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 		
 		
 		curiter=0;
-		float s=0.5;
+		float s=2.5;		// random initial direction to avoid bias, increased initial step 12/30/20
 		if ((maxang>0) && (s>maxang/2)){
 			s=maxang/2;
 		}
 		for (int i=0; i<nsoln*3; i++) {
-			s_step[i]=s;
+			s_step[i]=s*(random()&1)?1.0:-1.0;
 		}
 	}
 	
