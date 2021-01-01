@@ -48,6 +48,7 @@ def main():
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default="")
 	parser.add_argument("--transonly",action="store_true",help="translational alignment only",default=False)
 	parser.add_argument("--refine",action="store_true",help="local refinement from xform in header.",default=False)
+	parser.add_argument("--realign",action="store_true",help="realigns the average to the initial reference to prevent drift in C1 refinements",default=False)
 	parser.add_argument("--randphi",action="store_true",help="randomize phi for refine search",default=False)
 	parser.add_argument("--rand180",action="store_true",help="include 180 degree rotation for refine search",default=False)
 	parser.add_argument("--test180",action="store_true",help="Test for improved alignment with 180 degree rotations even during refine alignment",default=False)
@@ -295,7 +296,21 @@ def main():
 		curres=rs
 		if curres>50.:
 			curres=50
-		
+			
+		# realign to the initial reference to prevent drifting. Particularly important with alignment masks
+		if options.realign:
+			print("Realigning to initial reference")
+			os.rename(f"{combine}","tmp.hdf")
+			run(f"e2proc3d.py tmp.hdf {combine} --alignref {options.path}/model_input.hdf --align rotate_translate_3d_tree")	# align
+			xform=EMData(combine,0,True)["xform.align3d"]		# recover alignment orientation
+			
+			print("Updating particle orientations from alignment")
+			angs=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,itr))		# now we want to update the particle orientations as well for the next round
+			for k in angs.keys():
+				parm=angs[k]
+				parm["xform.align3d"]=parm["xform.align3d"]*xform
+				angs.setval(k,parm,True)
+			angs.sync()
 
 	E2end(logid)
 	
