@@ -318,7 +318,7 @@ def main():
 			print("Updating particle orientations from alignment")
 			angs=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,itr))		# now we want to update the particle orientations as well for the next round
 			for k in angs.keys():
-				parm=angs[k]
+				parm=angs.get(k,True)
 				parm["xform.align3d"]=parm["xform.align3d"]*xform
 				angs.setval(k,parm,True)
 			angs.sync()
