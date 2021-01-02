@@ -307,11 +307,13 @@ def main():
 			# this is critical for the next round, but also makes sense for self-consistency
 			a=EMData(even)
 			a.process_inplace("xform",{"transform":xform})
-			a.write_compressed(even,bits=10)
+			os.unlink(even)										# writing compressed, need to remove original
+			a.write_compressed(even,0,10)
 
 			a=EMData(odd)
 			a.process_inplace("xform",{"transform":xform})
-			a.write_compressed(odd,bits=10)
+			os.unlink(odd)
+			a.write_compressed(odd,0,10)
 			
 			print("Updating particle orientations from alignment")
 			angs=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,itr))		# now we want to update the particle orientations as well for the next round
