@@ -3484,7 +3484,6 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	float apix=(float)this_img->get_attr("apix_x");
 	int ny=this_img->get_ysize();
 	params["boxsize"]=ny;
-	int maxshift00=(int)params.set_default("maxshift",ny/4);
 
 	int maxny=ny;
 	if (0)//maxres>0)
@@ -3493,7 +3492,6 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 			printf("\n\n*******\nmax resolution %1.2f, box size %d\n", maxres, maxny);
 	
 	
-	float maxang=params.set_default("maxang",-1.0);
 	Transform initxf;
 	
 //	int downsample=floor(ny/20);		// Minimum shrunken box size is 20^3
@@ -3515,11 +3513,19 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 			s_xform[i].set_params(xfs[i].get_params("eman"));
 		}
 		sexp_start=5;
-		curiter=0;
+		curiter=0;							// bypass the first round of global orientation search
 // 		for (int i=0; i<nsoln*3; i++) {
 // 			s_step[i]=.5;
 // 		}
 	}
+	else if (params.has_key("maxang")) {		// if we got maxshift or maxang without initxform, we need to set up identity xform
+		nsoln=1;	// Default transform should be identity, so just set number to 1
+		curiter=0;	// skip global search
+		sexp_start=5;
+	}
+		
+	int maxshift00=(int)params.set_default("maxshift",ny/4);
+	float maxang=params.set_default("maxang",-1.0);
 
 //	float dstep[3] = {7.5,7.5,7.5};		// we take  steps for each of the 3 angles, may be positive or negative
 	string axname[] = {"az","alt","phi"};

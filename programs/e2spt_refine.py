@@ -301,7 +301,7 @@ def main():
 		if options.realign:
 			print("Realigning to initial reference")
 			os.rename(f"{combine}","tmp.hdf")
-			run(f"e2proc3d.py tmp.hdf {combine} --alignref {options.path}/model_input.hdf --align rotate_translate_3d_tree")	# align
+			run(f"e2proc3d.py tmp.hdf {combine} --alignref {options.path}/model_input.hdf --align rotate_translate_3d_tree --compressbits 10")	# align
 			xform=EMData(combine,0,True)["xform.align3d"]		# recover alignment orientation
 			
 			print("Updating particle orientations from alignment")
