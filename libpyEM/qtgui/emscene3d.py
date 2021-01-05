@@ -1875,7 +1875,7 @@ class EMLight(object):
 		
 class EMCamera(object):
 	"""Implementation of the camera"""
-	def __init__(self, near, far, usingortho=True, fovy=60.0, boundingbox=50.0, screenfraction=0.5):
+	def __init__(self, near, far, usingortho=True, fovy=90.0, boundingbox=50.0, screenfraction=0.5):
 		"""
 		@param fovy: The field of view angle
 		@param near: The volume view near position
