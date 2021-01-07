@@ -343,6 +343,7 @@ class SptAlignTask(JSTask):
 		ssrg=2**np.arange(4,12, dtype=int)
 		ssrg[:2]=ssrg[:2]*3/2
 		ssrg=ssrg.tolist()
+		ssrg=[24]+ssrg
 		
 		#### resolution range
 		if options.minres>0:
@@ -444,7 +445,7 @@ class SptAlignTask(JSTask):
 			#### start from coarse alignment / do refine search around previous solution
 			if options.fromscratch:
 				curxfs=[]
-				npos=16
+				npos=32
 				ifirst=0
 			else:
 				curxfs=[lastxf]
@@ -474,11 +475,10 @@ class SptAlignTask(JSTask):
 					ss=maxy
 			
 				mxsft=ss//6
-				astep = 89.999/floor(np.pi/(1.5*2.0*atan(2.0/ss))) ### copied from spt tree aligner
-				
+				astep=89.999/floor((np.pi/(3*np.arctan(2./ss)))) ### copied from spt tree aligner
 				newxfs=[]
 				score=[]
-				if options.debug: print("size {}, solution {}".format(ss, npos))
+				if options.debug: print("size {}, solution {}, astep {:.1f}, xmult {:.1f}".format(ss, npos, astep, ny/ss))
 
 				refsmall=ref.get_clip(Region(0,(ny-ss)//2, (ny-ss)//2, ss+2, ss, ss))	
 				
@@ -494,9 +494,10 @@ class SptAlignTask(JSTask):
 						refrot=refsmall.process("xform", {"transform":xf})
 						ccf=imgsmall.calc_ccf(refrot)
 						pos=ccf.calc_max_location_wrap(mxsft, mxsft, mxsft)
-						xf.translate(pos[0], pos[1],pos[2])
+						#xf.translate(pos[0], pos[1],pos[2])
 				
-						refrot=refsmall.process("xform", {"transform":xf})
+						#refrot=refsmall.process("xform", {"transform":xf})
+						refrot=refrot.process("xform", {"tx":pos[0], "ty":pos[1], "tz":pos[2]})
 						scr=imgsmall.cmp("ccc.tomo.thresh", refrot)
 						score.append(scr)
 						
@@ -522,7 +523,9 @@ class SptAlignTask(JSTask):
 						x=xf.get_params("eman")
 						x0=[x["tx"]*ss/ny, x["ty"]*ss/ny, x["tz"]*ss/ny, x["alt"], x["az"], x["phi"]]
 						
-						simplex=np.vstack([[0,0,0,0,0,0], np.eye(6)*1])
+						simplex=np.vstack([[0,0,0,0,0,0], np.eye(6)])
+						simplex[4:]*=astep
+						
 						res=minimize(testxf, x0,  method='Nelder-Mead', options={'ftol': 1e-3, 'disp': False, "maxiter":50,"initial_simplex":simplex+x0})
 						
 						x=res.x
@@ -583,8 +586,10 @@ class SptAlignTask(JSTask):
 			m=options.maxshift
 			trans=np.indices((m*2+1, m*2+1)).reshape((2,-1)).T-m
 			if options.skipali2d:
-				scr=np.zeros((len(trans), len(pjxfs)))
-				scr[len(trans)//2]=-1
+				scr=np.zeros((len(trans), len(pjxfs)))+1
+				fscs=np.array([m.calc_fourier_shell_correlation(p) for m,p in zip(imgsmallpjs, pjs)])
+				fscs=fscs.reshape((len(fscs), 3, -1))[:,1,minp:maxp]
+				scr[len(trans)//2]=-np.mean(fscs, axis=1)
 			else:
 				scr=[]
 
@@ -596,6 +601,7 @@ class SptAlignTask(JSTask):
 					scr.append(-np.mean(fscs, axis=1))
 					
 				scr=np.array(scr)
+			print(scr[len(trans)//2])
 				
 			dts=dts*maxy/ny
 			s0=scr.reshape((m*2+1, m*2+1, -1))
@@ -629,7 +635,7 @@ class SptAlignTask(JSTask):
 				c=[x["tx"], x["ty"], x["tz"], x["alt"], x["az"], x["phi"]]
 				
 				ti=thisxf.inverse()
-				pjxfs=[p*ti for p in xfs]
+				pjxfs=[p*ti for p in imgxfs]
 				x=thisxf.get_params("eman")
 				x0=[x["tx"], x["ty"], x["tz"], x["alt"], x["az"], x["phi"]]
 				s1 = testxf(x0)
