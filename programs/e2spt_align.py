@@ -73,6 +73,7 @@ If --goldstandard is specified, even and odd variants of the alignment reference
 	parser.add_argument("--goldcontinue",action="store_true",help="Will use even/odd refs corresponding to specified reference to continue refining without phase randomizing again",default=False)
 	#parser.add_argument("--saveali",action="store_true",help="Save a stack file (aliptcls.hdf) containing the aligned subtomograms.",default=False)
 	#parser.add_argument("--savealibin",type=int,help="shrink aligned particles before saving",default=1)
+	parser.add_argument("--mask",type=str,default=None,help="Mask file aligned to the input reference. Alignment occurs under this mask.")
 	parser.add_argument("--path",type=str,default=None,help="Path to a folder where results should be stored, following standard naming conventions (default = spt_XX)")
 	parser.add_argument("--sym",type=str,default="c1",help="Symmetry of the input. Must be aligned in standard orientation to work properly.")
 	parser.add_argument("--maxres",type=float,help="Maximum resolution (the smaller number) to consider in alignment (in A, not 1/A)",default=0)
@@ -84,6 +85,7 @@ If --goldstandard is specified, even and odd variants of the alignment reference
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default=None)
 	parser.add_argument("--transonly",action="store_true",help="translational alignment only, for prealigned particles",default=False)
 	parser.add_argument("--refine",action="store_true",help="local refinement from xform.align3d in header.",default=False)
+	parser.add_argument("--flcf",action="store_true",help="use slower aligner (experimental)",default=False)
 	
 	parser.add_argument("--refinentry", type=int, help="number of tests for refine mode. default is 8",default=8)
 	parser.add_argument("--randphi",action="store_true",help="randomize phi during refine alignment",default=False)
@@ -278,6 +280,7 @@ class ScipySptAlignTask(JSTask):
 		
 		JSTask.__init__(self,"SptAlign",data,{},"")
 		self.options=options
+		if options.mask!=None: raise Exception("--mask not supported in scipy mode")
 	
 	
 	def execute(self, callback):
@@ -498,9 +501,16 @@ class SptAlignTask(JSTask):
 		refnames=self.data[0][2]
 		refs=[]
 		for r in refnames:
-			ref=EMData(r,0).do_fft()
-			ref.process_inplace("xform.phaseorigin.tocorner")
-			refs.append(ref)
+			if options.mask==None :
+				# refs are FFT without a mask real with
+				ref=EMData(r,0).do_fft()
+				ref.process_inplace("xform.phaseorigin.tocorner")
+				refs.append(ref)
+				mask=None
+			else:
+				ref=EMData(r,0)
+				refs.append(ref)
+				mask=EMData(options.mask,0)
 			
 		if options.breaksym:
 			x=Transform()
@@ -537,14 +547,15 @@ class SptAlignTask(JSTask):
 				continue
 				
 			b.process_inplace("normalize.edgemean")
-			#if options.maxres>0:
-				#b.process_inplace("filter.lowpass.tophat",{"cutoff_freq":1./options.maxres})
+			if options.maxres>0:
+				b.process_inplace("filter.lowpass.tophat",{"cutoff_freq":1./options.maxres})
 			b=b.do_fft()
 			b.process_inplace("xform.phaseorigin.tocorner")
 
 			aligndic={"verbose":options.verbose,"sym":options.sym,"sigmathis":0.1,"sigmato":1.0, "minres":options.minres,"maxres":options.maxres}
 			r180=Transform({"type":"eman","alt":180})
 			
+			initxf=None
 			if options.refine and (dataxf!=None or b.has_attr("xform.align3d")):
 				ntry=options.refinentry
 				if dataxf!=None:
@@ -583,6 +594,7 @@ class SptAlignTask(JSTask):
 				aligndic["maxang"]=options.maxang
 				aligndic["randphi"]=options.randphi
 				aligndic["rand180"]=options.rand180
+				if mask!=None : aligndic["mask"]=mask
 			
 			else:
 				xfs=[Transform()]
@@ -599,11 +611,22 @@ class SptAlignTask(JSTask):
 				c=[{"xform.align3d":xfs[0].inverse(), "score":-1}]
 			elif options.transonly:
 				c=[{},]
-				a=ref.align("translational",b, {"intonly":1,"maxshift":options.maxshift})
-				c[0]["xform.align3d"]=a["xform.align3d"]
+				if initxf:
+					r=ref.process("xform", {"transform":initxf.inverse()})
+				else:
+					r=ref
+				a=r.align("translational",b, {"intonly":1,"maxshift":options.maxshift})
+				x=a["xform.align3d"]
+				if initxf:
+					x=x*(initxf.inverse())
+				
+				c[0]["xform.align3d"]=x
 				c[0]["score"]=a["score.align"]
 			else:
-				c=ref.xform_align_nbest("rotate_translate_3d_tree",b, aligndic, options.nsoln)
+				if options.flcf: c=ref.xform_align_nbest("rotate_translate_3d_local_tree",b, aligndic, options.nsoln)
+				else:
+#					print("rotate_translate_3d_tree",b, aligndic, options.nsoln)
+					c=ref.xform_align_nbest("rotate_translate_3d_tree",b, aligndic, options.nsoln)
 			
 			
 			

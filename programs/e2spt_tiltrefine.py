@@ -73,6 +73,8 @@ def main():
 	parser.add_argument("--sym", type=str,help="symmetry. will use symmetry from spt refinement by default", default="")
 	parser.add_argument("--ppid", type=int,help="ppid...", default=-1)
 	parser.add_argument("--transonly", action="store_true", default=False ,help="only refine translation",guitype='boolbox',row=7, col=2,rowspan=1, colspan=1)
+	parser.add_argument("--maxres", type=float,default=-1, help="max resolution for fsc")
+	parser.add_argument("--minres", type=float,default=-1, help="min resolution for fsc")
 
 
 	(options, args) = parser.parse_args()
@@ -239,7 +241,7 @@ def main():
 		
 			thr=int(len(score)*options.ptclkeep)
 			simthr=np.sort(score)[thr]
-			print("  Removing {} bad 3D particles with ptclkeep ...".format(thr))
+			print("  Keeping {} good 3D particles with ptclkeep ...".format(thr))
 			
 		else:
 			simthr=10000
@@ -395,8 +397,12 @@ def main():
 			if jd["maskalign"]!="":
 				run(f"e2proc3d.py {threedname} alignref.hdf --multfile {jd['maskalign']}")
 				threedname="alignref.hdf"
+				
+			xtra=""
+			if options.minres>0 : xtra+=f"--minres {options.minres} "
+			if options.maxres>0 : xtra+=f"--maxres {options.maxres} "
 			
-			cmd=f"e2spt_tiltrefine_oneiter.py --ptclin {lstname} --ptclout {lname} --ref {threedname} --threedout {threedout} --keep {options.keep} --threads {options.threads} --parallel {options.parallel} --refineastep {options.refineastep} --refinentry {options.refinentry} --maxshift {options.maxshift} --padby {options.padby} --sym {jd['sym']}"
+			cmd=f"e2spt_tiltrefine_oneiter.py --ptclin {lstname} --ptclout {lname} --ref {threedname} --threedout {threedout} --keep {options.keep} --threads {options.threads} --parallel {options.parallel} --refineastep {options.refineastep} --refinentry {options.refinentry} --maxshift {options.maxshift} --padby {options.padby} --sym {jd['sym']} {xtra}"
 			if options.debug: 
 				cmd+=" --debug"
 				
@@ -428,7 +434,7 @@ def main():
 		msk = jd["mask"] 	#{}/mask_tight.hdf".format(path)
 		if len(msk)>0:
 			if os.path.isfile(msk):
-				msk=" --automask3d mask.fromfile:filename={}".format(msk)
+				msk=" --mask {}".format(msk)
 			else:
 				msk=" --automask3d {}".format(msk)
 				

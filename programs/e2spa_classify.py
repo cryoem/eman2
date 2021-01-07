@@ -21,9 +21,9 @@ def main():
 
 	parser.add_argument("--maxres", type=float,default=15, help="max resolution for cmp")
 	parser.add_argument("--minres", type=float,default=300, help="min resolution for cmp")
-	parser.add_argument("--sym", type=str,help="symmetry. ", default="c1")
+	#parser.add_argument("--sym", type=str,help="symmetry. ", default="c1")
 	parser.add_argument("--mask", type=str,help="mask. ", default=None)
-	parser.add_argument("--maxshift", type=int,help="max shift.", default=0)
+	#parser.add_argument("--maxshift", type=int,help="max shift.", default=0)
 	
 	parser.add_argument("--ppid", type=int,help="ppid...", default=-1)
 	parser.add_argument("--verbose","-v", type=int,help="Verbose", default=0)

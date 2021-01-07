@@ -45,7 +45,7 @@ def get_sym_pts(sym, pts):
 	return asym
 
 #### rotate-translate Gaussian coordinates based on transforms
-@tf.function
+#@tf.function
 def xf2pts(pts, ang):
 
 	azp=-ang[:,0]
@@ -88,7 +88,7 @@ def xf2pts(pts, ang):
 
 
 #### make 2D projections in Fourier space
-@tf.function
+#@tf.function
 def pts2img(pts, ang, lp=.1, sym="c1"):
 	bsz=ang.shape[0]
 	
@@ -130,7 +130,7 @@ def pts2img(pts, ang, lp=.1, sym="c1"):
 	return (imgs_real, imgs_imag)
 
 #### compute particle-projection FRC 
-@tf.function
+#@tf.function
 def calc_frc(data_cpx, imgs_cpx, return_curve=False):
 	mreal, mimag=imgs_cpx
 	dreal, dimag=data_cpx
@@ -327,7 +327,7 @@ def train_decoder(gen_model, trainset, options):
 				conf=tf.zeros((xf.shape[0],options.nmid), dtype=floattype)
 				pout=gen_model(conf)
 				std=tf.reduce_mean(tf.math.reduce_std(pout, axis=1), axis=0)
-				imgs_cpx=pts2img(pout, xf)
+				imgs_cpx=pts2img(pout, xf, sym=options.sym)
 				fval=calc_frc(pj_cpx, imgs_cpx)
 				loss=-tf.reduce_mean(fval)
 				l=loss+std[4]*options.sigmareg
@@ -560,12 +560,14 @@ def main():
 	parser.add_argument("--gradout", type=str,help="gradient output", default="")
 	parser.add_argument("--gradin", type=str,help="reading from gradient output instead of recomputing", default="")
 	parser.add_argument("--midout", type=str,help="middle layer output", default="")
+	parser.add_argument("--decoderout", type=str,help="Save the trained decoder model. Filename should be .h5 or .tf", default=None)
 	parser.add_argument("--pas", type=str,help="choose whether to adjust position, amplitude, sigma. use 3 digit 0/1 input. default is 110, i.e. only adjusting position and amplitude", default="110")
 	parser.add_argument("--nmid", type=int,help="size of the middle layer", default=4)
 	parser.add_argument("--mask", type=str,help="remove points outside mask", default="")
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
-	logid=E2init(sys.argv)
+	logid=E2init(sys.argv,options.ppid)
 	
 	gen_model=None
 	maxboxsz=options.maxboxsz
@@ -601,7 +603,7 @@ def main():
 	
 	if options.projs:
 		if gen_model==None:
-			gen_model=build_decoder(options.npts)
+			gen_model=build_decoder(options.npts, ninp=options.nmid)
 		print("Train model from ptcl-xfrom pairs...")
 		e=EMData(options.projs, 0, True)
 		raw_apix, raw_boxsz = e["apix_x"], e["ny"]
@@ -760,6 +762,7 @@ def main():
 		nbatch=0
 		for t in trainset: nbatch+=1
 		
+		# Training
 		for itr in range(options.niter):
 				
 			cost=[]
@@ -789,6 +792,10 @@ def main():
 			sys.stdout.write("\r")
 			
 			print("iter {}, loss : {:.4f}".format(itr, np.mean(cost)))
+		
+		if options.decoderout!=None: 
+			decode_model.save(options.decoderout)
+			print("Decoder saved as ",options.decoderout)
 		
 		## conformation output
 		ag=allgrds[ptclidx]

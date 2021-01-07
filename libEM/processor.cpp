@@ -4507,77 +4507,52 @@ float NormalizeUnitSumProcessor::calc_sigma(EMData * image) const
 	return ret==0.0f?1.0f:ret;
 }
 
-float NormalizeMaskProcessor::calc_sigma(EMData * image) const
+void NormalizeMaskProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
-		return 0;
+		return;
 	}
 	EMData *mask = params["mask"];
-	int no_sigma = params["no_sigma"];
+	int no_sigma = params.set_default("no_sigma",0);
+	int apply_mask = params.set_default("apply_mask",0);
 
-	if(no_sigma == 0) {
-		return 1;
-	}
-	else {
-		if (!EMUtil::is_same_size(mask, image)) {
-			LOGERR("normalize.maskProcessor: mask and image must be the same size");
-			throw ImageDimensionException("mask and image must be the same size");
-		}
-
-		float *data = image->get_data();
-		float *mask_data = mask->get_data();
-		size_t size = (size_t)image->get_xsize() * image->get_ysize() * image->get_zsize();
-		double sum = 0;
-		double sq2 = 0;
-		size_t n_norm = 0;
-
-		for (size_t i = 0; i < size; ++i) {
-			if (mask_data[i] > 0.5f) {
-				sum += data[i];
-				sq2 += data[i]*double (data[i]);
-				n_norm++;
+	int nx=image->get_xsize();
+	int ny=image->get_ysize();
+	int nz=image->get_zsize();
+	
+	double sum=0;
+	double sumsq=0;
+	double nnz=0;
+	
+	for (int z=0; z<nz; z++) {
+		for (int y=0; y<ny; y++) {
+			for (int x=0; x<nx; x++) {
+				double m=mask->get_value_at(x,y,z);
+				if (m==0) continue;
+				if (!apply_mask) m=1.0;		// If not applying the mask (which may have values between 0 and 1) we don't want to alter the values
+				double v=(double)image->get_value_at(x,y,z)*m;
+				sum+=v;
+				sumsq+=v*v;
+				nnz+=1.0;
 			}
 		}
-		return sqrt(static_cast<float>((sq2 - sum * sum /n_norm)/(n_norm -1))) ;
 	}
-}
-
-float NormalizeMaskProcessor::calc_mean(EMData * image) const
-{
-	if (!image) {
-		LOGWARN("NULL Image");
-		return 0;
-	}
-	EMData *mask = params["mask"];
-
-	if (!EMUtil::is_same_size(mask, image)) {
-		LOGERR("normalize.maskProcessor: mask and image must be the same size");
-		throw ImageDimensionException("mask and image must be the same size");
-	}
-
-	float *data = image->get_data();
-	float *mask_data = mask->get_data();
-	size_t size = (size_t)image->get_xsize() * image->get_ysize() * image->get_zsize();
-	double sum = 0;
-	size_t n_norm = 0;
-
-	for (size_t i = 0; i < size; ++i) {
-		if (mask_data[i] > 0.5f) {
-			sum += data[i];
-			n_norm++;
+	
+	float mean=(float)(sum/nnz);
+	float sigma=sqrt((float)(sumsq-sum*sum/nnz)/nnz);
+	if (no_sigma) sigma=1.0f;
+	
+	for (int z=0; z<nz; z++) {
+		for (int y=0; y<ny; y++) {
+			for (int x=0; x<nx; x++) {
+				float m=mask->get_value_at(x,y,z);
+				if (!apply_mask) m=1.0;		// If not applying the mask (which may have values between 0 and 1) we don't want to alter the values
+				if (m==0) image->set_value_at(x,y,z,0);
+				else image->set_value_at(x,y,z,(image->get_value_at(x,y,z)*m-mean)/sigma);
+			}
 		}
 	}
-
-	float mean = 0;
-	if (n_norm == 0) {
-		mean = image->get_edge_mean();
-	}
-	else {
-		mean = (float) sum / n_norm;
-	}
-
-	return mean;
 }
 
 void NormalizeRampNormVar::process_inplace(EMData * image)

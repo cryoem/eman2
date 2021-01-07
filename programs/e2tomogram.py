@@ -79,7 +79,7 @@ def main():
 	parser.add_argument("--verbose","-v", type=int,help="Verbose", default=0)
 	parser.add_argument("--noali", action="store_true",help="skip initial alignment", default=False)
 	parser.add_argument("--dryrun", action="store_true",help="skip final reconstruction", default=False)
-	parser.add_argument("--patchtrack", action="store_true",help="use patch tracking instead of landmark based alignment. still under development", default=False)
+	parser.add_argument("--patchtrack", type=int, help="use patch tracking instead of landmark based alignment. still under development", default=-1)
 	parser.add_argument("--posz", action="store_true",help="auto positioning along z axis", default=False,guitype='boolbox',row=14, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--xdrift", action="store_true",help="apply extra correction for drifting along x axis", default=False,guitype='boolbox',row=13, col=0, rowspan=1, colspan=1,mode="easy")
 
@@ -344,18 +344,24 @@ def main():
 			loss0[badi]=np.max(loss0)+100
 	
 	
-	if options.patchtrack:
+	if options.patchtrack>0:
 		print("Alignment by patch tracking")
 		
 		tpm1, loss0= do_patch_tracking(imgs_500, ttparams, options)
-		tpm2, loss0= do_patch_tracking(imgs_1k, tpm1, options)
 		
 		if options.writetmp:
 			make_ali(imgs_1k, ttparams, options, outname=os.path.join(path,"patch_ali_00.hdf"))
 			make_ali(imgs_1k, tpm1, options, outname=os.path.join(path,"patch_ali_01.hdf"))
-			make_ali(imgs_1k, tpm2, options, outname=os.path.join(path,"patch_ali_02.hdf"))
 			
 		ttparams=tpm1.copy()
+		if options.patchtrack>1:
+			tpm2, loss0= do_patch_tracking(imgs_1k, tpm1, options)
+			ttparams=tpm2.copy()
+		
+			if options.writetmp:
+				make_ali(imgs_1k, tpm2, options, outname=os.path.join(path,"patch_ali_02.hdf"))
+			
+		
 	
 	pks=np.zeros((options.npk, 3))
 	#### pack parameters together so it is easier to pass around

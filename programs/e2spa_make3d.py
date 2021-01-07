@@ -26,6 +26,7 @@ def main():
 	parser.add_argument("--apix",metavar="A/pix",type=float,help="A/pix value for output, overrides automatic values",default=None)
 	
 	parser.add_argument("--ref", type=str,help="ref", default=None)
+	parser.add_argument("--tidrange", type=str,help="range of tilt id to include", default="-1,-1")
 	parser.add_argument("--minres", type=float,help="", default=200)
 	parser.add_argument("--maxres", type=float,help="", default=5)
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default=None)
@@ -51,8 +52,13 @@ def main():
 	if options.outsize<0:
 		options.outsize=boxsz
 		
+	options.tidrange=[int(i) for i in options.tidrange.split(',')]
+	if options.tidrange[0]>=0:
+		print("including tilt ids from {} to {}".format(options.tidrange[0], options.tidrange[1]))
+	
 	data=initialize_data(options.input, options)
 	padvol=options.pad
+		
 
 	from EMAN2PAR import EMTaskCustomer
 	if options.ref:
@@ -88,7 +94,10 @@ def main():
 		for i in tids:
 			wt=etc.get_results(i)[1]
 			for w in wt:
-				wts[w[0]]=w[1]
+				try:
+					wts[w[0]]=w[1]
+				except:
+					print(len(wts), w)
 				
 		wts=np.array(wts)
 		del etc
@@ -102,7 +111,7 @@ def main():
 			scrs[scrs<thr]=-1
 		
 		for i,d in enumerate(data):
-			#d["curve"]=wts[i]
+			d["curve"]=wts[i]
 			d["weight"]=float(scrs[i])
 			
 			
@@ -181,6 +190,10 @@ def initialize_data(inputfile, options):
 			if (options.clsid>=0) and ("class" in dc):
 				if dc["class"]!=options.clsid:
 					continue
+			if ("tid" in dc) and (options.tidrange[0]>=0):
+				if dc["tid"]<options.tidrange[0] or dc["tid"]>options.tidrange[1]:
+					continue
+					
 			if "score" in dc:
 				score=dc["score"]
 			else:
@@ -192,7 +205,8 @@ def initialize_data(inputfile, options):
 				"xform":Transform(dcxf),
 				"score":score,
 				"filename":inputfile,
-				"filenum":i
+				"filenum":i,
+				"idx":len(data)
 			}
 			data.append(elem)
 			
@@ -317,15 +331,16 @@ class WeightptclTask(JSTask):
 
 			fsc=img.calc_fourier_shell_correlation(pj)
 			w=np.array(fsc).reshape((3,-1))[1]
-			wts.append([elem["filenum"], w])
 			
-			#x=np.arange(len(w)*2)
-			#p=argrelextrema(w, np.greater)[0]
-			#p=p[w[p]>0]
-			#p=p[p>4]
-			#cfit = np.polyfit(x[p], np.log(w[p]), 1)
-			#c=np.exp(x*cfit[0])*np.exp(cfit[1])
+			x=np.arange(len(w)*2)
+			p=argrelextrema(w, np.greater)[0]
+			p=p[w[p]>0]
+			p=p[p>4]
+			cfit = np.polyfit(x[p], np.log(w[p]), 1)
+			w=np.exp(x*cfit[0])*np.exp(cfit[1])
 			#wts.append([elem["filenum"], c])
+			
+			wts.append([elem["idx"], w])
 			
 			
 		

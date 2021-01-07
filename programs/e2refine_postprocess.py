@@ -380,6 +380,13 @@ def main():
 		run("e2proc3d.py {evenfile} {path}threed_even_unmasked.hdf {ampcorrect} --process filter.lowpass.tophat:cutoff_abs=0.5".format(evenfile=evenfile,path=path,itr=options.iter,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=old_div(1.0,options.restarget),noisecutoff=noisecutoff))
 		run("e2proc3d.py {oddfile} {path}threed_odd_unmasked.hdf {ampcorrect} --process filter.lowpass.tophat:cutoff_abs=0.5".format(oddfile=oddfile,path=path,itr=options.iter,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=old_div(1.0,options.restarget),noisecutoff=noisecutoff))
 
+		# we impose the symmetry in real-space, since this is what people expect
+		if options.sym=="c1" : symopt=""
+		else: symopt="--sym {}".format(options.sym)
+		
+		nx,ny,nz=combined["nx"],combined["ny"],combined["nz"]
+
+		
 		if options.tophat=="global" :
 			# Technically snrmult should be 1 here, but we use 2 to help speed convergence
 			cmd="e2proc3d.py {path}tmp_even.hdf {evenfile} {ampcorrect} --process filter.lowpass.tophat:cutoff_freq={noisecutoff} --multfile {path}mask.hdf {normproc} {postproc}".format(
@@ -394,23 +401,12 @@ def main():
 			combined.write_image(combfile,0)	# write the original average back to disk
 
 			# Note that the snrmult=4 below should really be 2 (due to the averaging of the 2 maps), the 4 is a somewhat arbitrary compensation for the .143 cutoff being a bit low
-			nx,ny,nz=combined["nx"],combined["ny"],combined["nz"]
-
-			# we impose the symmetry in real-space, since this is what people expect
-			if options.sym=="c1" : symopt=""
-			else: symopt="--sym {}".format(options.sym)
-
+			
 			run("e2proc3d.py {combfile} {combfile} {ampcorrect} --process filter.lowpass.tophat:cutoff_freq={noisecutoff} --multfile {path}mask.hdf {normproc} {symopt} {postproc}".format(
 				combfile=combfile,path=path,itr=options.iter,normproc=massnorm,ampcorrect=ampcorrect,postproc=m3dpostproc,symopt=symopt,underfilter=underfilter,maxfreq=old_div(1.0,options.restarget),noisecutoff=noisecutoff))
 			compress_hdf(combfile,options.compressbits)
 			
 		elif options.tophat=="local":
-			## compute local resolution and locally filter averaged volume
-			#if options.tomo: localsize=max(16,100//apix)
-			#else: localsize=max(16,32//apix)
-			#cmd="e2fsc.py {path}threed_even_unmasked.hdf {path}threed_odd_unmasked.hdf --output {path}fscvol_{itr:02d}.hdf --outfilt {path}threed_{itr:02d}.hdf --outfilte {path}threed_{itr:02d}_even.hdf --outfilto {path}threed_{itr:02d}_odd.hdf --mask {path}mask.hdf --threads {threads} --localsize {localsize} -v 1".format(
-				#path=path,itr=options.iter,threads=options.threads,localsize=int(localsize))
-			#run(cmd)
 
 			# compute local resolution and locally filter averaged volume, using new local fsc
 			localsizea=max(options.restarget*3,15)
@@ -419,23 +415,11 @@ def main():
 				path=path,itr=options.iter,threads=options.threads,localsizea=int(localsizea),bits=options.compressbits)
 			run(cmd)
 
-			# we impose the symmetry in real-space, since this is what people expect
-			if options.sym=="c1" : symopt=""
-			else: symopt="--sym {}".format(options.sym)
-
 			run("e2proc3d.py {path}threed_{itr:02d}.hdf {path}threed_{itr:02d}.hdf --multfile {path}mask.hdf {normproc} {postproc} {symopt} ".format(path=path,itr=options.iter,normproc=massnorm,postproc=m3dpostproc,symopt=symopt))
 			run("e2proc3d.py {evenfile} {evenfile} --multfile {path}mask.hdf {normproc} {postproc} {symopt} ".format(evenfile=evenfile,path=path,itr=options.iter,normproc=massnorm,postproc=m3dpostproc,symopt=symopt))
 			run("e2proc3d.py {oddfile} {oddfile}  --multfile {path}mask.hdf {normproc} {postproc} {symopt} ".format(oddfile=oddfile,path=path,itr=options.iter,normproc=massnorm,postproc=m3dpostproc,symopt=symopt))
 
-			nx,ny,nz=combined["nx"],combined["ny"],combined["nz"]
-
 		elif options.tophat=="localwiener":
-			## compute local resolution and locally filter averaged volume
-			#if options.tomo: localsize=max(16,100//apix)
-			#else: localsize=max(16,32//apix)
-			#cmd="e2fsc.py {path}threed_even_unmasked.hdf {path}threed_odd_unmasked.hdf --output {path}fscvol_{itr:02d}.hdf --outfilt {path}threed_{itr:02d}.hdf --outfilte {path}threed_{itr:02d}_even.hdf --outfilto {path}threed_{itr:02d}_odd.hdf --mask {path}mask.hdf --threads {threads} --localsize {localsize} -v 1".format(
-				#path=path,itr=options.iter,threads=options.threads,localsize=int(localsize))
-			#run(cmd)
 
 			# compute local resolution and locally filter averaged volume, using new local fsc
 			localsizea=max(options.restarget*3,15)
@@ -444,15 +428,9 @@ def main():
 				path=path,itr=options.iter,threads=options.threads,localsizea=int(localsizea),bits=options.compressbits)
 			run(cmd)
 
-			# we impose the symmetry in real-space, since this is what people expect
-			if options.sym=="c1" : symopt=""
-			else: symopt="--sym {}".format(options.sym)
-
 			run("e2proc3d.py {path}threed_{itr:02d}.hdf {path}threed_{itr:02d}.hdf --multfile {path}mask.hdf {normproc} {postproc} {symopt} ".format(path=path,itr=options.iter,normproc=massnorm,postproc=m3dpostproc,symopt=symopt))
 			run("e2proc3d.py {evenfile} {evenfile} --multfile {path}mask.hdf {normproc} {postproc} {symopt} ".format(evenfile=evenfile,path=path,itr=options.iter,normproc=massnorm,postproc=m3dpostproc,symopt=symopt))
 			run("e2proc3d.py {oddfile} {oddfile}  --multfile {path}mask.hdf {normproc} {postproc} {symopt} ".format(oddfile=oddfile,path=path,itr=options.iter,normproc=massnorm,postproc=m3dpostproc,symopt=symopt))
-
-			nx,ny,nz=combined["nx"],combined["ny"],combined["nz"]
 
 			
 		elif options.tophat=="localreal":
@@ -463,6 +441,19 @@ def main():
 				run("e2proc3d.py {path}threed_{eo}_unmasked_out.hdf {path}threed_{itr:02d}_{eo}.hdf".format(path=path,itr=options.iter, eo=eo))
 				os.remove("{path}threed_{eo}_unmasked_out.hdf".format(path=path,itr=options.iter, eo=eo))
 			
+		elif options.tophat=="localold":
+			
+			
+			# compute local resolution and locally filter averaged volume
+			if options.tomo: localsize=max(16,100//apix)
+			else: localsize=max(16,32//apix)
+			cmd="e2fsc.py {path}threed_even_unmasked.hdf {path}threed_odd_unmasked.hdf --output {path}fscvol_{itr:02d}.hdf --outfilt {path}threed_{itr:02d}.hdf --outfilte {path}threed_{itr:02d}_even.hdf --outfilto {path}threed_{itr:02d}_odd.hdf --mask {path}mask.hdf --threads {threads} --localsize {localsize} -v 1".format(
+				path=path,itr=options.iter,threads=options.threads,localsize=int(localsize))
+			run(cmd)
+			
+			run("e2proc3d.py {path}threed_{itr:02d}.hdf {path}threed_{itr:02d}.hdf --multfile {path}mask.hdf {normproc} {postproc} {symopt} ".format(path=path,itr=options.iter,normproc=massnorm,postproc=m3dpostproc,symopt=symopt))
+			run("e2proc3d.py {evenfile} {evenfile} --multfile {path}mask.hdf {normproc} {postproc} {symopt} ".format(evenfile=evenfile,path=path,itr=options.iter,normproc=massnorm,postproc=m3dpostproc,symopt=symopt))
+			run("e2proc3d.py {oddfile} {oddfile}  --multfile {path}mask.hdf {normproc} {postproc} {symopt} ".format(oddfile=oddfile,path=path,itr=options.iter,normproc=massnorm,postproc=m3dpostproc,symopt=symopt))
 			
 		else:
 			print("ERROR: invalid tophat option. Must be 'global' or 'local'.")

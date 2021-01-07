@@ -121,6 +121,7 @@ input volumes.
 	parser.add_argument("--compressbits", type=int,help="Bits to keep when writing volumes with compression. 0->lossless floating point. Default 10 (3 significant figures)", default=10)
 	parser.add_argument("--localsizea", type=int, help="Size in Angstroms of the local region to compute the resolution in",default=50)
 	parser.add_argument("--apix", type=float, help="A/pix to use for the comparison (default uses Vol1 apix)",default=0)
+	parser.add_argument("--normin",type=str,help="Apply a real space normalization to each input before FSC. Default normalize.edgemean. Use 'none' to disable.",default="normalize.edgemean")
 	parser.add_argument("--cutoff", type=float, help="fsc cutoff. default is 0.143",default=0.143)
 	parser.add_argument("--mask",type=str,help="Optional mask to produce masked overall FSC curve. Must have the same dimensions as the input volumes.",default=None)
 	parser.add_argument("--tophat",action="store_true",help="If set, the local filter is a tophat filter, otherwise a local Wiener filter is applied",default=False)
@@ -147,6 +148,11 @@ input volumes.
 
 	v1=EMData(args[0],0)
 	v2=EMData(args[1],0)
+	
+	if options.normin!=None and options.normin.lower()!="none" and len(options.normin)>3 :
+		v1.process_inplace(options.normin)
+		v2.process_inplace(options.normin)
+		
 	#if options.mask!=None:
 		#mask=EMData(options.mask)
 		#v1.mult(mask)
