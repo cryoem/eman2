@@ -209,10 +209,7 @@ def main():
     except KeyError:
         return 1
 
-    print('tag_key', tag_key)
     for val_particles, df_particles in particle_keys:
-        print('val_particles', val_particles)
-        print('df_particles', df_particles)
         for val_optics, df_optics in optics_keys:
             if val_particles == val_optics:
                 for key in df_optics:
