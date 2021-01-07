@@ -200,17 +200,20 @@ def main():
             return 2
 
     try:
-        optics_keys = star_file[tag_key].groupby('_rlnOpticsGroup')
-    except KeyError:
-        return 1
-
-    try:
         optics_keys = star_file['optics'].groupby('_rlnOpticsGroup')
     except KeyError:
         return 1
 
-    for val_particles, df_particles in optics_keys:
-        for val_optics, df_optics in star_file['optics'].groupby('_rlnOpticsGroup'):
+    try:
+        particle_keys = star_file[tag_key].groupby('_rlnOpticsGroup')
+    except KeyError:
+        return 1
+
+    print('tag_key', tag_key)
+    for val_particles, df_particles in particle_keys:
+        print('val_particles', val_particles)
+        print('df_particles', df_particles)
+        for val_optics, df_optics in optics_keys:
             if val_particles == val_optics:
                 for key in df_optics:
                     if key == '_rlnImagePixelSize':
