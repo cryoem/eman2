@@ -254,6 +254,7 @@ def build_encoder(mid=512, nout=4):
 	tf.keras.layers.Dense(mid, activation="relu", kernel_regularizer=l2),
 	tf.keras.layers.Dense(mid, activation="relu", kernel_regularizer=l2),
 	tf.keras.layers.Dense(mid, activation="relu", kernel_regularizer=l2),
+	tf.keras.layers.Dropout(.3),
 	tf.keras.layers.BatchNormalization(),
 	tf.keras.layers.Dense(nout, kernel_regularizer=l2, kernel_initializer=kinit),
 	]
@@ -282,7 +283,8 @@ def build_decoder(pts, mid=512, ninp=4):
 					bias_initializer=kinit),
 		tf.keras.layers.Dense(mid,activation="relu"),
 		tf.keras.layers.Dense(mid,activation="relu"),
-		tf.keras.layers.Dense(mid,activation="relu"),
+		#tf.keras.layers.Dense(mid,activation="relu"),
+		tf.keras.layers.Dropout(.3),
 		tf.keras.layers.BatchNormalization(),
 		layer_output,
 		tf.keras.layers.Reshape((npt,5))
