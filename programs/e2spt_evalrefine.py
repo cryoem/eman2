@@ -240,30 +240,31 @@ def main():
 		os.system("e2display.py --plot "+" ".join(fscs))
 
 	if options.timingbypath:
-		dl=[i for i in os.listdir(".") if "refine_" in i]		# list of all refine_ directories
+		dl=[i for i in os.listdir(".") if "spt_" in i]		# list of all refine_ directories
 		dl.sort()
 
 		for d in dl:
 			try:
-				jsparm=js_open_dict("{}/0_refine_parms.json".format(d))
+				jsparm=js_open_dict("{}/0_spt_params.json".format(d))
 				try: cores=int(jsparm["parallel"].split(":")[1])
 				except: cores=int(jsparm["threads"])
-				lastmap=str(jsparm["last_map"])
-				lastiter=int(lastmap.split("/")[-1].split("_")[-1][:2])
-				firstmap="{}/threed_00_even.hdf".format(d)
-				starttime=os.stat(firstmap).st_mtime
-				endtime=os.stat(lastmap).st_mtime
+				lastiter=max([int(i.split("_")[1][:2]) for i in os.listdir(d) if "threed_" in i and len(i)==13])
+				starttime=os.stat(f"{d}/model_input.hdf").st_mtime
+				endtime=os.stat(f"{d}/threed_{lastiter:02d}.hdf").st_mtime
+				input_ptcl=jsparm["input_ptcls"]
+				if input_ptcl[-3:]=="hdf" or input_ptcl[-3:]=="lst" : nptcl=EMUtil.get_image_count(input_ptcl)
+				elif input_ptcl[-4:]=="json": nptcl=len(js_open_dict(input_ptcl))
+				else: nptcl=-1
 				#print lastmap
-				box=EMData(lastmap,0,True)["nx"]
-				targetres=jsparm["targetres"]
-				speed=jsparm["speed"]
-				bispec="bispec" if jsparm.getdefault("bispec",False) else " "
-				if bispec==" ": bispec="invar" if jsparm.getdefault("invar",False) else " "
-				nptcl=EMUtil.get_image_count(str(jsparm["input"][0]))+EMUtil.get_image_count(str(jsparm["input"][1]))
-
-				print("{path}\t{nptcl} ptcls\t{niter} iter\t{cores} cores\t{h:02d}:{m:02d} walltime\t{cpuh:1.1f} CPU-h\t{cpuhpi:1.2f} CPU-h/it\t{bs} box\t{targ:1.1f} targetres\tspd={speed} {bispec}".format(
-					path=d,niter=lastiter,cores=cores,h=int((endtime-starttime)//3600),m=int(((endtime-starttime)%3600)//60),
-					cpuh=old_div(cores*(endtime-starttime),3600),cpuhpi=old_div(cores*(endtime-starttime),(3600*lastiter)),bs=box,targ=targetres,speed=speed,bispec=bispec,nptcl=nptcl))
+				box=EMData(f"{d}/model_input.hdf",0,True)["nx"]
+				targetres=jsparm["restarget"]
+				niter=jsparm["niter"]
+				sym=jsparm["sym"]
+				tophat=jsparm.get("tophat","None")
+#				maxshift=jsparm.get("maxshift","None")
+#				maxang=jsparm.get("maxang","None")
+				print(f"{d}\t{nptcl}\t{niter} iter\t{cores} cores\t{int((endtime-starttime)//3600)}:{int(((endtime-starttime)%3600)//60):02d}\t{cores*(endtime-starttime)/(3600*lastiter):0.1f} CPU-h/it\ttargres {targetres}\t{tophat}")
+							  
 			except: 
 				if options.verbose: traceback.print_exc()
 				print("No timing for ",d)

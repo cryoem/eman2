@@ -17,7 +17,7 @@ def main():
 	parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=2, col=1, rowspan=1, colspan=1, mode="model")
 
 	parser.add_argument("--mask", type=str,help="Mask file to be applied to initial model", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=3, col=0,rowspan=1, colspan=3, mode="model")
-	parser.add_argument("--maskalign", type=str,help="Mask file applied to 3D alignment reference in each iteration. Not applied to the average, which will follow normal masking routine.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=4, col=0,rowspan=1, colspan=3, mode="model")
+	parser.add_argument("--maskalign", type=str,help="Mask file applied to 3D alignment reference in each iteration. Not applied to the average, which will follow normal masking routine.", default=None, guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=4, col=0,rowspan=1, colspan=3, mode="model")
 
 	parser.add_argument("--niter", type=int,help="Number of iterations", default=5, guitype='intbox',row=5, col=0,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--sym", type=str,help="symmetry", default="c1", guitype='strbox',row=5, col=1,rowspan=1, colspan=1, mode="model")
@@ -48,6 +48,7 @@ def main():
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default="")
 	parser.add_argument("--transonly",action="store_true",help="translational alignment only",default=False)
 	parser.add_argument("--refine",action="store_true",help="local refinement from xform in header.",default=False)
+	parser.add_argument("--realign",action="store_true",help="realigns the average to the initial reference to prevent drift in C1 refinements",default=False)
 	parser.add_argument("--randphi",action="store_true",help="randomize phi for refine search",default=False)
 	parser.add_argument("--rand180",action="store_true",help="include 180 degree rotation for refine search",default=False)
 	parser.add_argument("--test180",action="store_true",help="Test for improved alignment with 180 degree rotations even during refine alignment",default=False)
@@ -147,8 +148,8 @@ def main():
 				run("e2proc3d.py {} {}/model_input.hdf --process mask.soft:outer_radius=-1 --first {} --last {}".format(ref, options.path, refn,refn))
 		ref="{}/model_input.hdf".format(options.path)
 		
-	if (len(options.maskalign)>0):
-		maskalign=EMData(options.maskalign,0)
+	#if options.maskalign!=None:
+		#maskalign=EMData(options.maskalign,0)
 	
 	for itr in range(startitr,options.niter+startitr):
 
@@ -161,17 +162,17 @@ def main():
 				
 			ar=EMData(refe,0)
 			if itr==1 : ar.process_inplace("filter.lowpass.randomphase",{"cutoff_freq":1.0/options.goldstandard})
-			if (len(options.maskalign)>0): ar.mult(maskalign)
+			#if (len(options.maskalign)>0): ar.mult(maskalign)
 			ar.write_image(f"{options.path}/alignref_even.hdf",0)
 			ar=EMData(refo,0)
 			if itr==1 : ar.process_inplace("filter.lowpass.randomphase",{"cutoff_freq":1.0/options.goldstandard})
-			if (len(options.maskalign)>0): ar.mult(maskalign)
+			#if (len(options.maskalign)>0): ar.mult(maskalign)
 			ar.write_image(f"{options.path}/alignref_odd.hdf",0)
 		else:
 			ar=EMData(ref,0)
-			if (len(options.maskalign)>0):
-				m=EMData(options.maskalign,0)
-				ar.mult(m)
+			#if (len(options.maskalign)>0):
+				#m=EMData(options.maskalign,0)
+				#ar.mult(m)
 			ar.write_image(f"{options.path}/alignref.hdf",0)
 		
 		#### generate alignment command first
@@ -206,6 +207,9 @@ def main():
 			gd+=" --maxshift {:.1f}".format(options.maxshift)
 		if options.scipy:
 			gd+=" --scipy"
+		
+		if options.maskalign!=None:
+			gd+=f" --mask {options.maskalign}" 
 
 		cmd="e2spt_align.py {} {}/alignref.hdf --parallel {} --path {} --iter {} --sym {} --minres {} --maxres {} {}".format(ptcls, options.path,  options.parallel, options.path, itr, options.sym, options.minres, curres*.75, gd)
 		
@@ -292,7 +296,32 @@ def main():
 		curres=rs
 		if curres>50.:
 			curres=50
-		
+			
+		# realign to the initial reference to prevent drifting. Particularly important with alignment masks
+		if options.realign:
+			print("Realigning to initial reference")
+			os.rename(f"{combine}","tmp.hdf")
+			run(f"e2proc3d.py tmp.hdf {combine} --alignref {options.path}/model_input.hdf --align rotate_translate_3d_tree --compressbits 10")	# align
+			xform=EMData(combine,0,True)["xform.align3d"]		# recover alignment orientation
+			
+			# this is critical for the next round, but also makes sense for self-consistency
+			a=EMData(even)
+			a.process_inplace("xform",{"transform":xform})
+			os.unlink(even)										# writing compressed, need to remove original
+			a.write_compressed(even,0,10)
+
+			a=EMData(odd)
+			a.process_inplace("xform",{"transform":xform})
+			os.unlink(odd)
+			a.write_compressed(odd,0,10)
+			
+			print("Updating particle orientations from alignment")
+			angs=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,itr))		# now we want to update the particle orientations as well for the next round
+			for k in angs.keys():
+				parm=angs.get(k,True)
+				parm["xform.align3d"]=parm["xform.align3d"]*xform
+				angs.setval(k,parm,True)
+			angs.sync()
 
 	E2end(logid)
 	

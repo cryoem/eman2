@@ -246,6 +246,18 @@ void EMData_add_wrapper(EMData &ths, EMData &to) {
 	ths.add(to);
 }
 
+EMData *EMData_calc_ccf_masked_wrapper1(EMData &ths, EMData *with) {
+	GILRelease rel;
+	
+	return ths.calc_ccf_masked(with);
+}
+
+EMData *EMData_calc_ccf_masked_wrapper3(EMData &ths, EMData *with, EMData *withsq, EMData *mask) {
+	GILRelease rel;
+	
+	return ths.calc_ccf_masked(with,withsq,mask);
+}
+
 EMData *EMData_calc_ccf_wrapper3(EMData &ths, EMData *with, fp_flag fpflag, bool center) {
 	GILRelease rel;
 	
@@ -852,6 +864,8 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("calc_ccf", &EMData_calc_ccf_wrapper1, args("with"), return_value_policy< manage_new_object >())
 	.def("calc_ccf", &EMData_calc_ccf_wrapper2, args("with", "fpflag"),return_value_policy< manage_new_object >())
 	.def("calc_ccf", &EMData_calc_ccf_wrapper3, args("with", "fpflag", "center"), return_value_policy< manage_new_object >())
+	.def("calc_ccf_masked", &EMData_calc_ccf_masked_wrapper1, args("with"), return_value_policy< manage_new_object >())
+	.def("calc_ccf_masked", &EMData_calc_ccf_masked_wrapper3, args("with", "withsquared", "mask"), return_value_policy< manage_new_object >())
 	.def("calc_ccfx", &EMAN::EMData::calc_ccfx, EMAN_EMData_calc_ccfx_overloads_1_6(args("with", "y0", "y1", "nosum","flip","usez"), "Calculate Cross-Correlation Function (CCF) in the x-direction and adds them up,\nresult in 1D.\nWARNING: this routine will modify the 'this' and 'with' to contain\n1D fft's without setting some flags. This is an optimization\nfor rotational alignment.\nsee calc_ccf()\n \nwith - The image used to calculate CCF.\ny0 - Starting position in x-direction(default=0).\ny1 - Ending position in x-direction. '-1' means the end of the row.(default=-1)\nnosum - If true, returns an image y1-y0+1 pixels high.(default=False)\n \nreturn The result image containing the CCF.\nexception - NullPointerException If input image 'with' is NULL.\nexception - ImageFormatException If 'with' and 'this' are not same size.\nexception - ImageDimensionException If 'this' image is 3D.")[ return_value_policy< manage_new_object >() ])
 	.def("calc_fast_sigma_image",&EMAN::EMData::calc_fast_sigma_image, return_value_policy< manage_new_object >(), args("mask"), "Calculates the local standard deviation (sigma) image using the given\nmask image. The mask image is typically much smaller than this image,\nand consists of ones, or is a small circle consisting of ones. The extent\nof the non zero neighborhood explicitly defines the range over which\nthe local standard deviation is determined.\nFourier convolution is used to do the math, ala Roseman (2003, Ultramicroscopy)\nHowever, Roseman was just working on methods Van Heel had presented earlier.\nThe normalize flag causes the mask image to be processed so that it has a unit sum.\nWorks in 1,2 and 3D\n \nmask - the image that will be used to define the neighborhood for determine the local standard deviation\n \nreturn the sigma image, the phase origin is at the corner (not the center)\nexception - ImageDimensionException if the dimensions of with do not match those of this\nexception - ImageDimensionException if any of the dimensions sizes of with exceed of this image's.")
 	.def("make_rotational_footprint", &EMAN::EMData::make_rotational_footprint, EMAN_EMData_make_rotational_footprint_overloads_0_1(args("unwrap"), "Makes a 'rotational footprint', which is an 'unwound'\nautocorrelation function. generally the image should be\nedge-normalized and masked before using this.\n \nunwrap - RFP undergoes polar->cartesian x-form,(default=True)\n \nreturn The rotaional footprint image.\nexception - ImageFormatException If image size is not even.")[ return_value_policy< manage_new_object >() ])

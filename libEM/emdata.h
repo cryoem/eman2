@@ -415,6 +415,17 @@ namespace EMAN
 		 */
 		EMData *calc_ccf(EMData * with = 0, fp_flag fpflag = CIRCULANT, bool center=false);
 
+		/** Calculate cross correlation between this and with where this is assumed to have had a mask
+		 *  applied to it (zero value in masked-out regions). The mask will be used to compute a local
+		 *  normalization to prevent regions of high brightness from being preferentially aligned to the
+		 *  reference. Note that this local normalization is applied only to one of the two images,
+		 *  so the correlation values remain on arbitrary scale. If FFT of the square of with and the
+		 *  fft of the mask have been precalculated, passing them in will save time. Arguments should
+		 *  be either all-real or all comples. If mask is not provided, it will be computed from this
+		 *  based on zero values 
+		 */
+		EMData *calc_ccf_masked(EMData *with,EMData *withsq=0,EMData *mask=0);
+		
 		/** Zero the pixels in the bottom left corner of the image
 		 *  If radius is greater than 1, than circulant zeroing occurs
 		 *  assuming that the center of operation starts in the bottom left

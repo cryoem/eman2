@@ -1597,6 +1597,34 @@ EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag,bool center)
 	}
 }
 
+EMData *EMData::calc_ccf_masked(EMData *with,EMData *withsq,EMData *mask) 
+{
+	if ((withsq==0 && mask!=0)||(withsq!=0 && mask==0)) 
+		throw NullPointerException("calc_ccf_masked error, both or neither of withsq and mask must be specified");
+
+	bool needfree=0;
+	if (withsq==0) {
+		withsq=with->process("math.squared");
+		mask=this->process("threshold.notzero");
+		needfree=1;
+	}
+		
+	EMData *c1=this->calc_ccf(with);
+	EMData *c2=mask->calc_ccf(withsq);
+	
+	
+	c2->process_inplace("math.reciprocal",Dict("zero_to",0.0f));
+	c2->process_inplace("math.sqrt");
+	c1->mult(*c2);
+	delete c2;
+
+	if (needfree) {
+		delete withsq;
+		delete mask;
+	}
+	return c1;
+}
+
 EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum, bool flip,bool usez)
 {
 	ENTERFUNC;

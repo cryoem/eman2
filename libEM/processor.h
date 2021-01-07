@@ -5904,12 +5904,15 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 
 	
 	/**Uses a 1/0 mask defining a region to use for the zero-normalization.if no_sigma is 1, standard deviation not modified.
-	 *@param mask the 1/0 mask defining a region to use for the zero-normalization
-	 *@param no_sigma if this flag is zero, only average under the mask will be substracted. set this flag to 1, standard deviation not modified
+	 *@param mask The 0-1 mask defining the region for the normalization. Any non-zero values will be considered
+	 *@param no_sigma If set, the mean will be set to zero, but sigma will not be modified
+	 *@param apply_mask If set, the mask will also be applied (multiplied) to the volume
 	 */
-	class NormalizeMaskProcessor:public NormalizeProcessor
+	class NormalizeMaskProcessor:public Processor
 	{
 	  public:
+		void process_inplace(EMData * image);
+
 		string get_name() const
 		{
 			return NAME;
@@ -5928,16 +5931,14 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("mask", EMObject::EMDATA, "the 1/0 mask defining a region to use for the zero-normalization");
-			d.put("no_sigma", EMObject::INT, "if this flag is zero, only average under the mask will be substracted. set this flag to 1, standard deviation not modified");
+			d.put("mask", EMObject::EMDATA, "The 0-1 mask defining the region for the normalization. Any non-zero values will be considered");
+			d.put("no_sigma", EMObject::INT, "If set, the mean will be set to zero, but sigma will not be modified");
+			d.put("apply_mask", EMObject::INT, "If set, the mask will also be applied (multiplied) to the volume");
 			return d;
 		}
 
 		static const string NAME;
 
-	  protected:
-		float calc_sigma(EMData * image) const;
-		float calc_mean(EMData * image) const;
 	};
 
 	/**Normalize the image whilst also removing any ramps. Ramps are removed first, then mean and sigma becomes 0 and 1 respectively

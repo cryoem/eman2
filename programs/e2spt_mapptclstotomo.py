@@ -17,6 +17,7 @@ def main():
 	parser.add_argument("--ptcl", type=str,help="particle input. will read from 0_spt_params by default", default="")
 	parser.add_argument("--postxf", type=str,help="extra shift after alignment", default="")
 	parser.add_argument("--keep", type=float,help="propotion to keep. will exclude bad particles if this is smaller than 1.0", default=1.0)
+	parser.add_argument("--gui",action="store_true",help="open the resulting map and tomogram in a GUI display",default=False,guitype="boolbox",row=4, col=0,rowspan=1, colspan=1)
 	parser.add_argument("--ppid", type=int,help="ppid...", default=-1)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -43,6 +44,7 @@ def main():
 	lst=LSXFile(ptclin, True)
 	
 	tomo=EMData(options.tomo)
+	if options.gui: tomo_orig=tomo.copy()
 	
 	if len(options.avg)==0:
 		options.avg="{}/threed_{:02d}.hdf".format(path, itr)
@@ -112,15 +114,44 @@ def main():
 	pts=np.array(pts)
 	pfile="{}/ptcls_pos_{:02d}.pdb".format(path, itr)
 	tfile="{}/ptcls_in_tomo_{}_{:02d}.hdf".format(path, bname, itr)
-	tomo.write_image(tfile)
+	tomo.write_compressed(tfile,0,8)
 	numpy2pdb(fname=pfile, data=pts)
 	print("Map {} particles to the tomogram".format(len(pts)))
 	print("Particle coordinates written to {}".format(pfile))
 	print("Map with particles written to {}".format(tfile))
-	print("Done.")
 	js=None
 	E2end(logid)
 	
+	if options.gui:
+		print("opening GUI")
+		from eman2_gui.emapplication import get_application, EMApp
+		from eman2_gui.emscene3d import EMScene3D
+		from eman2_gui.emdataitem3d import EMDataItem3D, EMIsosurface, EMSliceItem3D
+		from eman2_gui.emshape import EMShape
+
+		app = EMApp()
+		view=EMScene3D()
+		
+		# slice through the original tomogram
+		tomo_orig_di = EMDataItem3D(tomo_orig, transform=Transform())
+		view.insertNewNode('Data', tomo_orig_di, parentnode=view)
+		volslice = EMSliceItem3D(tomo_orig_di, transform=Transform())
+		view.insertNewNode("Slice", volslice, parentnode=tomo_orig_di)
+		
+		# isosurface of reconstituted particles
+		tomo_di = EMDataItem3D(tomo, transform=Transform())
+		view.insertNewNode('Data', tomo_di, parentnode=view)
+		isosurface = EMIsosurface(tomo_di, transform=Transform())
+		view.insertNewNode("Iso", isosurface, parentnode=tomo_di)
+
+		view.show()
+		try: view.raise_()
+		except: pass
+
+		app.execute()
+			
+	print("Done.")
+
 	
 	
 if __name__ == '__main__':
