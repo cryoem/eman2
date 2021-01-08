@@ -40,7 +40,7 @@ def main():
 
 
 	parser.add_argument("--path", type=str,help="Specify name of refinement folder. Default is spt_XX.", default=None)#, guitype='strbox', row=10, col=0,rowspan=1, colspan=3, mode="model")
-	parser.add_argument("--maxang",type=float,help="maximum anglular difference in refine mode.",default=30)
+	parser.add_argument("--maxang",type=float,help="maximum anglular difference in refine mode.",default=-1)
 	parser.add_argument("--maxshift",type=float,help="maximum shift in pixel.",default=-1)
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
@@ -66,6 +66,10 @@ def main():
 	ref=options.reference.split(",")[0]
 	try: refn=int(options.reference.split(",")[1])
 	except: refn=0
+	
+	if (options.maxang>0 and not options.refine) or (options.maxang<=0 and options.refine):
+		print("Error: --maxang and --refine must be specified together")
+		sys.exit(1)
 
 	if options.resume:
 		try:

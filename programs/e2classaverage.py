@@ -317,7 +317,7 @@ def main():
 
 	if options.resultmx!=None:
 		if options.verbose : print("Writing results matrix")
-		for i,j in enumerate(classmx) : j.write_compressed(options.resultmx,i,0)
+		for i,j in enumerate(classmx) : j.write_image(options.resultmx,i)
 
 	print("Class averaging complete")
 	E2end(logger)

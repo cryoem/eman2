@@ -14,7 +14,6 @@ def main():
 	parser.add_argument("--iter", type=int,help="iteration number", default=1,guitype='intbox',row=0, col=1,rowspan=1, colspan=1)
 	parser.add_argument("--tomo", type=str,help="tomogram file name", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True, startpath='tomograms')", row=2, col=0,rowspan=1, colspan=2,)
 	parser.add_argument("--avg", type=str,help="3D average. will use spt_xx/threed_xx by default", default="")
-	parser.add_argument("--ptcl", type=str,help="particle input. will read from 0_spt_params by default", default="")
 	parser.add_argument("--postxf", type=str,help="extra shift after alignment", default="")
 	parser.add_argument("--keep", type=float,help="propotion to keep. will exclude bad particles if this is smaller than 1.0", default=1.0)
 	parser.add_argument("--gui",action="store_true",help="open the resulting map and tomogram in a GUI display",default=False,guitype="boolbox",row=4, col=0,rowspan=1, colspan=1)
@@ -32,17 +31,9 @@ def main():
 		postxf=[0,0,0]
 	
 	
-	if len(options.ptcl)>0:
-		ptclin=options.ptcl
-	else:
-		js=js_open_dict("{}/0_spt_params.json".format(path))
-		ptclin=str(js["input_ptcls"])
-		js=None
 	
 	js=js_open_dict("{}/particle_parms_{:02d}.json".format(path, itr))
-	
-	lst=LSXFile(ptclin, True)
-	
+		
 	tomo=EMData(options.tomo)
 	if options.gui: tomo_orig=tomo.copy()
 	
@@ -64,35 +55,39 @@ def main():
 	
 	tomo.to_zero()
 	
-	bname=base_name(options.tomo)
-	ptclid=[]
+	ptcl=[]
 	scr=[]
-	for i in range(lst.n):
-		l=lst.read(i)
-		if bname==base_name(l[1]):
-			ky=str((ptclin,i))
-			if js.has_key(ky):
-				ptclid.append(i)
-				val=js[ky]
-				scr.append(val["score"])
+	llfile=""
+	bname=base_name(options.tomo)
+	for k in js.keys():
+		fsp,i=eval(k)
+		if fsp[-4:]==".lst" :
+			if llfile!=fsp : 
+				llfile=fsp
+				lsx=LSXFile(fsp,True)
+			i,fsp,x=lsx.read(i)
+		if base_name(fsp)==bname:
+			ptcl.append((js[k]["score"],fsp,i,js[k]["xform.align3d"]))
+	
+	ptcl.sort()
+	print(ptcl)
 			
-	nptcl=int(len(scr)*options.keep)
+	nptcl=int(len(ptcl)*options.keep)
 	if options.keep<1.0:
-		sthr=np.sort(scr)[nptcl]
+		sthr=ptcl[nptcl][0]
 	else:
 		sthr=100
 	
 	pts=[]
 	print("{:d} particles total.".format(int(nptcl)))
-	for i in ptclid:
-		l=lst.read(i)
-		ky=str((ptclin,i))
-		val=js[ky]
-		s=val["score"]
+	if nptcl==0:
+		print("No particles. Exiting")
+		sys.exit(0)
+		
+	for s,fsp,i,xf in ptcl:
 		if s>sthr:
 			continue
-		a=EMData(l[1], l[0],True)
-		xf=Transform(val["xform.align3d"])
+		a=EMData(fsp, i,True)
 		
 		if tomo.has_attr("zshift"):
 			zs=tomo["zshift"]
