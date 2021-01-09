@@ -88,7 +88,7 @@ def main():
 	parser.add_argument("--resolution_vsref", type=str, default=None, help="Computes the FSC between the last iteration of each refine_xx directory and a specified reference map. Map must be aligned, but will be rescaled if necessary.")
 	#parser.add_argument("--iter", type=int, default=None, help="If a refine_XX folder is being used, this selects a particular refinement iteration. Otherwise the last complete iteration is used.")
 	#parser.add_argument("--mask",type=str,help="Mask to be used to focus --evalptclqual and other options. May be useful for separating heterogeneous data.", default=None)
-	#parser.add_argument("--sym",type=str,help="Symmetry to be used in searching adjacent unit cells, default from refine_xx parms", default=None)
+	parser.add_argument("--sym",type=str,help="Symmetry to be used in searching adjacent unit cells", default="c1")
 	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful",guitype='intbox', row=9, col=0, rowspan=1, colspan=1, mode='evalptcl[4]')
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
@@ -108,7 +108,7 @@ def main():
 	
 	if options.jsonortcmp:
 		if len(args)!=2:
-			print("Please spectify the two json files to compare, eg - e2spt_evalrefine.py --jsonortcmp <json1> <json2>")
+			print("Please specify the two json files to compare, eg - e2spt_evalrefine.py --jsonortcmp <json1> <json2>")
 			sys.exit(1)
 			
 		js1=js_open_dict(args[0])
@@ -116,7 +116,7 @@ def main():
 		
 		out=open("jsonstat.txt","w")
 		out.write(f"# {args[0]} vs {args[1]}\n")
-		out.write(f"# score1, score 2, angle diff, angle axis X, Y, Z, az1, alt1, phi1, az2, alt2, phi2   # particle ref\n")
+		out.write(f"# score1, score 2, angle diff, sym angle diff, angle axis X, Y, Z, az1, alt1, phi1, az2, alt2, phi2   # particle ref\n")
 		
 		for k in js1.keys():
 			o1=js1[k]["xform.align3d"]
@@ -127,8 +127,9 @@ def main():
 			o1e=o1.get_rotation("eman")
 			o2e=o2.get_rotation("eman")
 			ke=eval(k)
+			dsym=angle_ab_sym(options.sym,o1.inverse(),o2.inverse())
 			
-			out.write(f'{js1[k]["score"]:1.4f}\t{js2[k]["score"]:1.4f}\t{dspin["omega"]:1.4f}\t{dspin["n1"]:1.4f}\t{dspin["n2"]:1.4f}\t{dspin["n3"]:1.4f}\t{o1e["az"]:1.4f}\t{o1e["alt"]:1.4f}\t{o1e["phi"]:1.4f}\t{o2e["az"]:1.4f}\t{o2e["alt"]:1.4f}\t{o2e["phi"]:1.4f}\t# {ke[0]},{ke[1]}\n')
+			out.write(f'{js1[k]["score"]:1.4f}\t{js2[k]["score"]:1.4f}\t{dspin["omega"]:1.4f}\t{dsym:1.4f}\t{dspin["n1"]:1.4f}\t{dspin["n2"]:1.4f}\t{dspin["n3"]:1.4f}\t{o1e["az"]:1.4f}\t{o1e["alt"]:1.4f}\t{o1e["phi"]:1.4f}\t{o2e["az"]:1.4f}\t{o2e["alt"]:1.4f}\t{o2e["phi"]:1.4f}\t# {ke[0]},{ke[1]}\n')
 		
 	if options.resolution_all:
 		######################
