@@ -423,6 +423,9 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 		ptclpos, outname, boxsz, info=pinfo
 		if len(info)>0 and len(info)!=len(ptclpos):
 			print("Warning: Extra header info exist but does not match particle count...")
+			
+		# if a particle has been removed from the JSON file it causes issues if we don't skip it
+		if len(info)<4 or len(info[3])==0: continue
 		if options.dotest:
 			nptcl=options.threads
 			batchsz=1
@@ -539,6 +542,8 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 		#p3d=good_size(boxsz*2/options.shrink3d*options.padtwod)
 		#apixout=apix*float(options.shrink3d)
 		##print('shrink3d!', bx, options.padtwod, options.shrink3d, p3d)
+		
+	print(f"Begin make3d bx={bx} pad={pad} ")
 	
 	recon=Reconstructors.get("fourier", {"sym":'c1', "size":[p3d, p3d, p3d], "mode":"trilinear"})
 	recon.setup()
@@ -707,7 +712,7 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 					else:
 						threed.mult(mask)
 				except: 
-					print(f'Mask error, size mismatch volume->{threed["nx"]} mask->{mask["nx"]}')
+					print(f'Mask error, size mismatch volume->{threed["nx"]} mask->{mask["nx"]}\n{pinfo}')
 					raise Exception()
 				
 		
