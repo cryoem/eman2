@@ -425,7 +425,8 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 			print("Warning: Extra header info exist but does not match particle count...")
 			
 		# if a particle has been removed from the JSON file it causes issues if we don't skip it
-		if len(info)<4 or len(info[3])==0: continue
+		if len(info)==0: continue
+
 		if options.dotest:
 			nptcl=options.threads
 			batchsz=1
