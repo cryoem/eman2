@@ -157,7 +157,7 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 	#pfile=args[0]
 	if options.verbose>0:print("Reading from {}...".format(pfile))
 	if options.boxsz_unbin>0:
-		options.boxsz= good_size(options.boxsz_unbin // options.shrink)
+		options.boxsz= good_size(int(options.boxsz_unbin / options.shrink))
 	else:
 		options.boxsz=-1
 	
