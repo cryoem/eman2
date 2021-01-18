@@ -54,8 +54,8 @@ except ImportError:
 from EMAN2 import *
 from EMAN2_cppwrap import *
 try:
-	from ..libpy.sp_global_def import *
-	from ..libpy.sp_sparx import *
+	from sphire.libpy import sp_global_def  #### from ..libpy.sp_global_def import *
+	from sphire.libpy.sp_sparx import *     #### from ..libpy.sp_sparx import *
 	import sphire
 except ImportError as e:
 	print("Import error raised. Ignore.")
@@ -4828,7 +4828,7 @@ def main():
 	usage = progname + """ 
 	The main SPHIRE GUI application. It is designed as the command generator for the SPHIRE single particle analysis pipeline.
 	"""
-	parser = OptionParser(usage, version=SPARXVERSION)
+	parser = OptionParser(usage, version=sp_global_def.SPARXVERSION)
 	parser.add_option('--helical', action='store_true', default=False, help='Start the GUI in helical mode. This can be changed after the start. (default False)')
 	# No options!!! Does not need to call parser.add_option()
 	
@@ -4915,6 +4915,7 @@ def main():
 
 # ========================================================================================
 if __name__ == "__main__":
+	print()
 	main()
 
 # ========================================================================================
