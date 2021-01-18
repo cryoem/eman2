@@ -170,7 +170,7 @@ produce new sets/ for each class, which could be further-refined.
 			#print("{}% complete".format(100.0*frac))
 	
 		while not jsd.empty():
-			i,k,apll=jsd.get()
+			i,k,pall=jsd.get()
 			prjs[i]=pall
 			pall.write_compressed("{}/alisecs_{:02d}.hdf".format(options.path,options.iter),i,8)
 			#all.write_image("{}/alisecs_{:02d}.hdf".format(options.path,options.iter),i)
