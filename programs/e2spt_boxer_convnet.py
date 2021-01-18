@@ -22,10 +22,10 @@ def main():
 
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--label", type=str,help="Load previous contour segmentation.", default="tomobox")
-	parser.add_argument("--gpuid", type=str,help="Specify the gpu to use", default="")
+	parser.add_argument("--label", type=str,help="Load previous contour segmentation.", default="tomobox",guitype='strbox',row=0, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--gpuid", type=str,help="Specify the gpu to use", default="",guitype='intbox',row=1, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--mult", type=float,help="multiply data by factor. useful for vpp data...", default=1)
-	#parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	
@@ -161,7 +161,14 @@ class NNet:
 		modelbig=tf.keras.Sequential([ly]+self.layers[1:])
 		ly.weights[0].assign(self.layers[0].weights[0], read_value=False)
 		ly.weights[1].assign(self.layers[0].weights[1], read_value=False)
-		out=modelbig.predict(img)
+		bsz=16
+		nb=len(img)//bsz+1
+		out=[]
+		for i in range(nb):
+			o=modelbig.predict(img[i*bsz:(i+1)*bsz])
+			out.append(o)
+			
+		out=np.concatenate(out,axis=0)
 		return out
 		
 	def save_network(self, fname, options=None):
@@ -404,16 +411,16 @@ class EMTomobox(QtWidgets.QMainWindow):
 		self.val_targetsize=TextBox("TargetSize", 1)
 		self.gbl.addWidget(self.val_targetsize, 1,2,1,1)
 		
-		self.val_learnrate=TextBox("LearnRate", 1e-5)
+		self.val_learnrate=TextBox("LearnRate", 1e-4)
 		self.gbl.addWidget(self.val_learnrate, 2,2,1,1)
 		
 		self.val_ptclthr=TextBox("PtclThresh", 0.8)
 		self.gbl.addWidget(self.val_ptclthr, 3,2,1,1)
 		
-		self.val_circlesize=TextBox("CircleSize", 32)
+		self.val_circlesize=TextBox("CircleSize", 24)
 		self.gbl.addWidget(self.val_circlesize, 4,2,1,1)
 		
-		self.val_niter=TextBox("Niter", 10)
+		self.val_niter=TextBox("Niter", 20)
 		self.gbl.addWidget(self.val_niter, 5,2,1,1)
 		
 		self.val_posmult=TextBox("PosMult", 2)
