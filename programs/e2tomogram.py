@@ -79,7 +79,7 @@ def main():
 	parser.add_argument("--verbose","-v", type=int,help="Verbose", default=0)
 	parser.add_argument("--noali", action="store_true",help="skip initial alignment", default=False)
 	parser.add_argument("--dryrun", action="store_true",help="skip final reconstruction", default=False)
-	parser.add_argument("--patchtrack", type=int, help="use patch tracking instead of landmark based alignment. still under development", default=-1)
+	parser.add_argument("--patchtrack", type=int, help="use patch tracking before landmark based alignment. input 0/1/2 as the number of patch tracking iterations.", default=-1,guitype='intbox',row=16, col=1, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--posz", action="store_true",help="auto positioning along z axis", default=False,guitype='boolbox',row=14, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--xdrift", action="store_true",help="apply extra correction for drifting along x axis", default=False,guitype='boolbox',row=13, col=0, rowspan=1, colspan=1,mode="easy")
 
