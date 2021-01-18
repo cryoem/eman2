@@ -100,6 +100,7 @@ def main():
 	parser.add_option("--calcradial", type="int",default=-1,help="Calculate the radial density by shell. Output file becomes a text file. 0 - mean amp, 2 - min, 3 - max, 4 - sigma")
 	parser.add_option("--clip", metavar="x[,y,z[,xc,yc,zc]]", type='string', action="callback", callback=intvararg_callback, help="Make the output have this size by padding/clipping. 1, 3 or 6 arguments. ")
 	parser.add_option("--compressbits", type=int,help="HDF only. Bits to keep for compression. -1 for no compression",default=-1)
+	parser.add_option("--diffmap", type="string", help="Will match the power spectrum of the specified file to the input file, then subtract it from the input file")
 
 	parser.add_option("--fftclip", metavar="x, y, z", type="string", action="callback", callback=floatvararg_callback, help="Make the output have this size, rescaling by padding FFT.")
 	parser.add_option("--filtertable", type="string", action="append",help="Applies a 2 column (S,amp) file as a filter in Fourier space, assumed 0 outside the defined range.")
@@ -443,6 +444,12 @@ def main():
 			elif option1 == "matchto":
 				mt=EMData(options.matchto[0])
 				data.process_inplace("filter.matchto",{"to":mt})
+				mt=None
+
+			elif option1 == "diffmap":
+				mt=EMData(options.diffmap)
+				mt.process_inplace("filter.matchto",{"to":data})
+				data.sub(mt)
 				mt=None
 
 			elif option1 == "calcfsc" :
