@@ -26,7 +26,7 @@ def main():
 	
 	parser.add_argument("--mass", type=float,help="mass. default -1 will skip by mass normalization", default=-1, guitype='floatbox',row=5, col=2,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--localfilter", action="store_true", default=False ,help="Deprecated. Please use --tophat")
-	parser.add_argument("--tophat", type=str, default=None,help = "'local', 'localwiener' or 'global'. Instead of imposing a final overall Wiener filter, use a tophat filter (global similar to Relion). local is a local tophat filter, localwiener is a localized Wiener filter", guitype='strbox', row=6, col=2,rowspan=1, colspan=1, mode="model['local']")
+	parser.add_argument("--tophat", type=str, default=None,help = "'local', 'localwiener' or 'global'. Instead of imposing a uniform Wiener filter, use a tophat filter (global similar to Relion). local is a local tophat filter, localwiener is a localized Wiener filter", guitype='strbox', row=6, col=2,rowspan=1, colspan=1, mode="model['local']")
 
 	parser.add_argument("--goldstandard", type=int,help="Phase randomization resolution for gold standard refinement in A. Not equivalent to restarget in e2refine_easy.", default=-1, guitype='intbox',row=6, col=0,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--goldcontinue", action="store_true", default=False ,help="continue from an existing gold standard refinement", guitype='boolbox',row=6, col=1,rowspan=1, colspan=1, mode="model")
@@ -40,7 +40,7 @@ def main():
 
 
 	parser.add_argument("--path", type=str,help="Specify name of refinement folder. Default is spt_XX.", default=None)#, guitype='strbox', row=10, col=0,rowspan=1, colspan=3, mode="model")
-	parser.add_argument("--maxang",type=float,help="maximum anglular difference in refine mode.",default=30)
+	parser.add_argument("--maxang",type=float,help="maximum anglular difference in refine mode.",default=-1)
 	parser.add_argument("--maxshift",type=float,help="maximum shift in pixel.",default=-1)
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
@@ -66,6 +66,10 @@ def main():
 	ref=options.reference.split(",")[0]
 	try: refn=int(options.reference.split(",")[1])
 	except: refn=0
+	
+	if (options.maxang>0 and not options.refine) or (options.maxang<=0 and options.refine):
+		print("Error: --maxang and --refine must be specified together")
+		sys.exit(1)
 
 	if options.resume:
 		try:
@@ -93,8 +97,7 @@ def main():
 		startitr=1
 		
 	if options.localfilter:
-		if options.tophat!=None: print("Warning: ignoring --localfilter since --tophat specified")
-		else: options.tophat="local"
+		if options.tophat==None: options.tophat="local"
 		
 	if options.path==None: options.path = make_path("spt") 
 	if options.parallel=="":

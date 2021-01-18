@@ -256,7 +256,8 @@ def main():
 	if options.classmx!=None:
 		if os.path.exists(options.classmx): remove_file(options.classmx)
 		for i,m in enumerate(clsmx):
-			m.write_compressed(options.classmx,i,0)
+			m.write_image(options.classmx,i)
+#			m.write_compressed(options.classmx,i,0)
 	
 	if options.classinfo!=None:
 		if os.path.exists(options.classinfo): remove_file(options.classinfo)

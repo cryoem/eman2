@@ -421,7 +421,7 @@ class EMImage2DWidget(EMGLWidget):
 				self.list_idx = len(data)//2 #otherwise we use the list idx from the previous list data, as in when being used from the emselector
 			d = data[0]
 			if d.has_attr("apix_x"):
-				apix=d["apix_x"]
+				apix=float(d["apix_x"])
 			else:
 				apix=1.0
 			if d.is_complex():
@@ -449,7 +449,7 @@ class EMImage2DWidget(EMGLWidget):
 		else:
 			self.list_data = None
 			self.list_fft_data = None
-			apix=data["apix_x"]
+			apix=float(data["apix_x"])
 			if data.is_complex() or self.curfft in [1,2,3]:
 				self.display_fft = None
 				self.data = None

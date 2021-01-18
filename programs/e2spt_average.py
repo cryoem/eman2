@@ -135,6 +135,7 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 	parser.add_argument("--simthr", default=-0.1,type=float,help="Similarity is smaller for better 'quality' particles. Specify the highest value to include from e2spt_hist.py. Default -0.1")
 	parser.add_argument("--keep", default=-1,type=float,help="fraction of particles to keep. will overwrite simthr if set.")
 	parser.add_argument("--replace",type=str,default=None,help="Replace the input subtomograms used for alignment with the specified file (used when the aligned particles were masked or filtered)")
+	parser.add_argument("--outfile",type=str,default=None,help="Normally even/odd and overall outputs automatically generated. If specified, only overall file written with this specified filename. Suppresses postprocessing.")
 	parser.add_argument("--wedgesigma",type=float,help="Threshold for identifying missing data in Fourier space in terms of standard deviation of each Fourier shell. Default 3.0",default=3.0)
 	parser.add_argument("--minalt",type=float,help="Minimum alignment altitude to include. Default=0",default=0)
 	parser.add_argument("--maxalt",type=float,help="Maximum alignment altitude to include. Deafult=180",default=180)
@@ -344,6 +345,10 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 			
 	av=ave+avo
 	av.mult(0.5)
+
+	if options.outfile:
+		av.write_image(options.outfile)
+		sys.exit(0)
 
 	evenfile="{}/threed_{:02d}_even.hdf".format(options.path,options.iter)
 	oddfile="{}/threed_{:02d}_odd.hdf".format(options.path,options.iter)
