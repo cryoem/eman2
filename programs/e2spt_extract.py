@@ -425,7 +425,8 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 			print("Warning: Extra header info exist but does not match particle count...")
 			
 		# if a particle has been removed from the JSON file it causes issues if we don't skip it
-		if len(info)==0: continue
+		if len(info)==0 and len(options.jsonali)>0: 
+			continue
 
 		if options.dotest:
 			nptcl=options.threads
@@ -544,7 +545,7 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 		#apixout=apix*float(options.shrink3d)
 		##print('shrink3d!', bx, options.padtwod, options.shrink3d, p3d)
 		
-	print(f"Begin make3d bx={bx} pad={pad} ")
+	if options.verbose>0: print(f"Begin make3d bx={bx} pad={pad} ")
 	
 	recon=Reconstructors.get("fourier", {"sym":'c1', "size":[p3d, p3d, p3d], "mode":"trilinear"})
 	recon.setup()
