@@ -67,6 +67,7 @@ def main():
 	bname=base_name(options.tomo)
 	ptclid=[]
 	scr=[]
+	
 	for i in range(lst.n):
 		l=lst.read(i)
 		if bname==base_name(l[1]):
@@ -76,14 +77,18 @@ def main():
 				val=js[ky]
 				scr.append(val["score"])
 			
+	
 	nptcl=int(len(scr)*options.keep)
+	print("{:d} particles total.".format(int(nptcl)))
+	if nptcl==0:
+		print("No particles from the given tomogram. exit")
+		return
 	if options.keep<1.0:
 		sthr=np.sort(scr)[nptcl]
 	else:
 		sthr=100
 	
 	pts=[]
-	print("{:d} particles total.".format(int(nptcl)))
 	for i in ptclid:
 		l=lst.read(i)
 		ky=str((ptclin,i))
