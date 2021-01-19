@@ -58,8 +58,10 @@ try:
 	from ..libpy.sp_sparx import *
 	import sphire
 except ImportError as e:
-	print("Import error raised. Ignore.")
-	print(e)
+	#####print("Import error raised. Ignore.")
+	#####print(e)
+	from sp_global_def import *
+	from sp_sparx import *
 from optparse import OptionParser
 from functools import partial  # Use to connect event-source widget and event handler
 from subprocess import *
@@ -4892,7 +4894,7 @@ def main():
 
 	# Initialise a singleton class for look & feel constants
 
-	version_string = sphire.__version__#'1.4'
+	version_string = '1.4' #### sphire.__version__#
 	SXLookFeelConst.initialise(sxapp, version_string)
 
 	# Define the main window (class SXMainWindow)
