@@ -93,7 +93,7 @@ def main():
 		print("Start resolution {:.1f}".format(curres))
 		
 	else:
-		if options.minres!=0 : curres=options.minres
+		if options.maxres!=0 : curres=options.maxres
 		else: curres=60
 		startitr=1
 		
