@@ -17,6 +17,8 @@ def main():
 	parser.add_argument("--ncls", type=int,help="number of classes", default=3)
 	parser.add_argument("--nbasis", type=int,help="PCA dimensionality", default=2)
 	parser.add_argument("--setsf", type=str,help="setsf", default="")
+	parser.add_argument("--mode", type=str,help="classify/regress", default="classify")
+	parser.add_argument("--nptcl", type=int,help="number of particles per class in regress mode", default=2000)
 	parser.add_argument("--threads", default=12,type=int,help="Number of threads to run in parallel on a single computer. This is the only parallelism supported by e2make3dpar")
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -28,22 +30,49 @@ def main():
 	if options.pcaout:
 		np.savetxt(options.pcaout, p2)
 
-	clust=cluster.KMeans(options.ncls)
-
-	lbs=clust.fit_predict(p2)
+	if options.mode=="classify":
+		clust=cluster.KMeans(options.ncls)
+		lbs=clust.fit_predict(p2)
+		lbunq=np.unique(lbs)
+		
+	else:
+		p=p2[:,0]
+		print(np.max(abs(p)))
+		rg=np.arange(options.ncls)
+		rg=rg/np.max(rg)-.5
+		mx=2*np.sort(abs(p))[int(len(p)*.9)]
+		print(np.sort(abs(p)))
+		print(mx)
+		rg=rg*mx+np.mean(p)
+		
+		
+	#exit()
 	onames=[]
 	fname=options.ptclsin
 	lstinp=fname.endswith(".lst")
 	
 	if lstinp:
-		lin=LSXFile("gmm_03/ptcls_set2.lst")
+		lin=LSXFile(lstinp)
 		
-	for j,l in enumerate(np.unique(lbs)):
-		ii=(lbs==l)
-		idx=pts[ii,0].astype(int)
+		
+	#for j,l in enumerate(np.unique(lbs)):
+	for j in range(options.ncls):
 		
 		onm="{}_{:02d}.lst".format(options.ptclsout, j)
-		print(len(idx),onm)
+		
+		if options.mode=="classify":
+			l=lbunq[j]
+			ii=(lbs==l)
+			print(onm, np.sum(ii))
+		else:
+			d=abs(p2[:,0]-rg[j])
+			ii=np.argsort(d)[:options.nptcl]
+			print(onm, rg[j], d[ii[-1]])
+		
+		idx=pts[ii,0].astype(int)
+		
+		
+		
 		if os.path.isfile(onm):
 			os.remove(onm)
 		lout=LSXFile(onm, False)
