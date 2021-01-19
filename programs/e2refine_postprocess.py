@@ -386,6 +386,10 @@ def main():
 		
 		nx,ny,nz=combined["nx"],combined["ny"],combined["nz"]
 
+		# this is not a good way of handling this, consider it a temporary patch FIXME
+		if nx>512 : smlthreads=min(threads,8)
+		elif nx>384 : smlthreads=min(threads,16)
+		else: smlthreads=threads
 		
 		if options.tophat=="global" :
 			# Technically snrmult should be 1 here, but we use 2 to help speed convergence
@@ -411,7 +415,7 @@ def main():
 			# compute local resolution and locally filter averaged volume, using new local fsc
 			localsizea=max(options.restarget*5,15)
 			if options.localsize>0 : localsizea=options.localsize
-			cmd="e2fsc_real_local.py {path}threed_even_unmasked.hdf {path}threed_odd_unmasked.hdf --output {path}fscvol_{itr:02d}.hdf --outfilt {path}threed_{itr:02d}.hdf --outfilte {path}threed_{itr:02d}_even.hdf --outfilto {path}threed_{itr:02d}_odd.hdf --mask {path}mask.hdf --threads {threads} --localsizea {localsizea} --compressbits {bits} --tophat -v 1".format(
+			cmd="e2fsc_real_local.py {path}threed_even_unmasked.hdf {path}threed_odd_unmasked.hdf --output {path}fscvol_{itr:02d}.hdf --outfilt {path}threed_{itr:02d}.hdf --outfilte {path}threed_{itr:02d}_even.hdf --outfilto {path}threed_{itr:02d}_odd.hdf --mask {path}mask.hdf --threads {smlthreads} --localsizea {localsizea} --compressbits {bits} --tophat -v 1".format(
 				path=path,itr=options.iter,threads=options.threads,localsizea=int(localsizea),bits=options.compressbits)
 			run(cmd)
 
@@ -424,7 +428,7 @@ def main():
 			# compute local resolution and locally filter averaged volume, using new local fsc
 			localsizea=max(options.restarget*5,15)
 			if options.localsize>0 : localsizea=options.localsize
-			cmd="e2fsc_real_local.py {path}threed_even_unmasked.hdf {path}threed_odd_unmasked.hdf --output {path}fscvol_{itr:02d}.hdf --outfilt {path}threed_{itr:02d}.hdf --outfilte {path}threed_{itr:02d}_even.hdf --outfilto {path}threed_{itr:02d}_odd.hdf --mask {path}mask.hdf --threads {threads} --localsizea {localsizea} --compressbits {bits} -v 1".format(
+			cmd="e2fsc_real_local.py {path}threed_even_unmasked.hdf {path}threed_odd_unmasked.hdf --output {path}fscvol_{itr:02d}.hdf --outfilt {path}threed_{itr:02d}.hdf --outfilte {path}threed_{itr:02d}_even.hdf --outfilto {path}threed_{itr:02d}_odd.hdf --mask {path}mask.hdf --threads {smlthreads} --localsizea {localsizea} --compressbits {bits} -v 1".format(
 				path=path,itr=options.iter,threads=options.threads,localsizea=int(localsizea),bits=options.compressbits)
 			run(cmd)
 
