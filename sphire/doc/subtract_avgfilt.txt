@@ -1,0 +1,111 @@
+~~NOTOC~~
+
+===== sp_signalsubtract avgfilt =====
+
+Average and Filter : Average and low-pass filter a map for segmentation.
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  	sp_signalsubtract.py avgfilt --avol1=map_to_average_1 --avol2=map_to_average_2 --outdir=output_subtraction_directory --apix=pixel_size --filtrad=filter_radius --verbosity=verbosity_level
+
+
+\\
+===== Typical usage =====
+
+sp_signalsubtract comprises the steps needed to subtract masked regions from a map in order to focus on the remaining features from that map.  There are six steps for this process (five within SPHIRE):
+
+\\ __1. Average and low-pass filter a map for segmentation __:
+
+  sp_signalsubtract.py avgfilt --avol1=map_to_average_1 --avol2=map_to_average_2 --outdir=output_subtraction_directory --apix=pixel_size --filtrad=filter_radius
+
+Generate a denoised map for segmentation.  The input map(s) can be postprocessed (i.e., sharpened, masked, etc.), but it is important that the final map that is masked below (in Step 4) is not postprocessed.  
+
+Choose a low-pass filter radius so that a permissive (i.e., low) surface threshold can be used in Chimera.  If too high a threshold is used during segmentation, then the resulting mask may not encapsulate the entire region of interest.  If a low threshold is used on a not-post-processed high-resolution map, then disconnected "moon" densities will be included in the segmentation.
+  
+Note 1: If you already have an averaged map, or don't have two maps to average, skip the '--avol2' flag.
+
+Note 2: Low-pass filter radius should be in units of Angstroms if pixel size (--apix) is provided.  If pixel size is not provided, then the program expects the filter radius in units of absolute frequency (px^-1)
+
+\\ __2. Locate regions to be subtracted __:
+
+We recommend using Chimera's segmentation function "Segger" (Tools -> Volume Data -> Segment Map).    
+
+Note the threshold used when segmenting the map.  Group the segments in the that you want to exclude; CTRL-click selects a segment, and SHIFT-CTRL-click adds a segment to the selection.  (Mouse controls can be customized under "Options.")  
+
+Hint 1: Make the segmented regions transparent (Regions -> Make transparent).  
+
+Hint 2: Hide regions once you have grouped them (Regions -> Hide), in case there are segments which are underneath the selected surface segments.  
+
+Save the grouped selection to a file (File -> Save selections to .mrc file...). 
+
+The initial map will not have the same dimensions as the original.  Pad the map to the target size at the Chimera command line:
+
+  vop resample #4 onGrid #2  
+
+...where #4 is the index of the grouped segmented map, and #2 is the original map.  Save the padded map to a new file (File -> Save map as...).
+
+\\ __3. Mask a soft mask of the region to be excluded __:
+
+\\ __4. Compute re-projections of map to be subtracted, and subtract them from the original images __:
+
+\\ __5. Compute reconstruction of density remaining after signal-subtraction __:
+
+\\ __6. Center map of the remaining density __:
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; %%--%%avol1 : Map #1 to average: First map to average. (default required string) : subtraction_mode==avgfilt
+  ; %%--%%avol2 : Map #2 to average : Second map to average. If not provided, first map will be used. (default None) : subtraction_mode==avgfilt
+  ; %%--%%outdir : Output directory : Directory where outputs will be written. (default required string)
+  ; %%--%%filtrad : Filter radius : Low-pass filter radius. (default None) : subtraction_mode==avgfilt
+  ; %%--%%apix : Pixel size : Pixel size in Angstroms. (default None)
+  
+\\
+=== Advanced Parameters ===
+  ; %%--%%verbosity : Verbosity level : Controls how much information will be written to the screen. (default 2)
+  
+\\
+===== Output =====
+  ; vol_avg_unfil.hdf : (avgfilt) Average of input half-set maps, unfiltered.
+  ; vol_avg_fil.hdf : (avgfilt) Low-pass filtered average of input half-set maps.
+  ; input_filtered.hdf : (avgfilt) Low-pass filtered input map.
+ 
+\\
+===== Description =====
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+
+\\
+==== Developer Notes ====
+
+\\
+==== Author / Maintainer ====
+Tapu Shaikh
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_signalsubtract.py
+
+\\
+==== See also ====
+
+\\
+==== Maturity ====
+Beta:: Under evaluation and testing. Please let us know if there are any bugs.
+
+\\
+==== Bugs ====
+
+\\
