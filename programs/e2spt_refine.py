@@ -57,6 +57,7 @@ def main():
 	parser.add_argument("--breaksym",action="store_true",help="break symmetry",default=False)
 	parser.add_argument("--breaksymsym", type=str,help="Specify a different symmetry for breaksym.", default=None)
 	parser.add_argument("--symalimask",type=str,default=None,help="This will translationally realign each asymmetric unit to the previous map masked by the specified mask. While this invokes symalimasked in e2spt_average, this isn't the same, it is a mask, not a masked reference. ")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	
 	#parser.add_argument("--masktight", type=str,help="Mask_tight file", default="")
 
