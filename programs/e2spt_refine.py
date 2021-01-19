@@ -166,17 +166,17 @@ def main():
 			ar=EMData(refe,0)
 			if itr==1 : ar.process_inplace("filter.lowpass.randomphase",{"cutoff_freq":1.0/options.goldstandard})
 			#if (len(options.maskalign)>0): ar.mult(maskalign)
-			ar.write_image(f"{options.path}/alignref_even.hdf",0)
+			ar.write_compressed(f"{options.path}/alignref_even.hdf",0,12,erase=True)
 			ar=EMData(refo,0)
 			if itr==1 : ar.process_inplace("filter.lowpass.randomphase",{"cutoff_freq":1.0/options.goldstandard})
 			#if (len(options.maskalign)>0): ar.mult(maskalign)
-			ar.write_image(f"{options.path}/alignref_odd.hdf",0)
+			ar.write_compressed(f"{options.path}/alignref_odd.hdf",0,12,erase=True)
 		else:
 			ar=EMData(ref,0)
 			#if (len(options.maskalign)>0):
 				#m=EMData(options.maskalign,0)
 				#ar.mult(m)
-			ar.write_image(f"{options.path}/alignref.hdf",0)
+			ar.write_compressed(f"{options.path}/alignref.hdf",0,12,erase=True)
 		
 		#### generate alignment command first
 		gd=""
@@ -253,10 +253,10 @@ def main():
 		for f in [even, odd]:
 			e=EMData(f)
 			e.del_attr("xform.align3d")
-			e.write_image(f.replace("threed_{:02d}_".format(itr), "threed_raw_"))
+			e.write_compressed(f.replace("threed_{:02d}_".format(itr), "threed_raw_"),12,erase=True)
 			if options.setsf==None:
 				e.process_inplace("filter.setstrucfac",{"apix":e["apix_x"],"strucfac":sf})
-			e.write_image(f)
+			e.write_compressed(f,0,12,erase=True)
 			
 		
 		s=""
