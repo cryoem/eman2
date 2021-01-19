@@ -387,9 +387,9 @@ def main():
 		nx,ny,nz=combined["nx"],combined["ny"],combined["nz"]
 
 		# this is not a good way of handling this, consider it a temporary patch FIXME
-		if nx>512 : smlthreads=min(threads,8)
-		elif nx>384 : smlthreads=min(threads,16)
-		else: smlthreads=threads
+		if nx>512 : smlthreads=min(options.threads,8)
+		elif nx>384 : smlthreads=min(options.threads,16)
+		else: smlthreads=options.threads
 		
 		if options.tophat=="global" :
 			# Technically snrmult should be 1 here, but we use 2 to help speed convergence
