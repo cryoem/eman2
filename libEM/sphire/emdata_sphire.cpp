@@ -144,6 +144,7 @@ EMData* EMData::rotavg_sphire() {
 				    if (ir >= rmax) continue;
 				    float frac = r - float(ir);
 				    (*ret)(ir) += (*this)(i,j,k)*(1.0f - frac);
+				    (*ret)(ir+1) += (*this)(i,j,k)*frac;
 				    count[ir] += 1.0f - frac;
 				    count[ir+1] += frac;
 
