@@ -1,0 +1,88 @@
+~~NOTOC~~
+
+===== sp_polishing =====
+Relion Polishing: Apply relion polishing on SPHIRE generated stacks 
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sp_polishing.py post_refine_folder motioncorr_starfile output_folder training_params --first_frame --last_frame --bfac_minfreq --bfac_maxfreq --no_of_proc
+  
+  
+  \\ 12_POSTREFINER MotionCorr/job030/corrected_micrographs.star Polish/job156 Polish/job083/opt_params.txt --first_frame=1 --last_frame=-1 --bfac_minfreq=20 --bfac_maxfreq=-1 --no_of_proc=12
+
+\\
+===== Typical usage =====
+
+\\ __1. Applying polishing using exisiting training data:
+
+  sp_polishing 12_POSTREFINER MotionCorr/job030/corrected_micrographs.star Polish/job156 Polish/job083/opt_params.txt --first_frame=1 --last_frame=-1 --bfac_minfreq=20 --bfac_maxfreq=-1 --no_of_proc=12
+
+Note: The above case will use the optimize parameters from the training part.
+
+\\ __2. Applying training part of the polishing:
+
+  sp_polishing 12_POSTREFINER MotionCorr/job030/corrected_micrographs.star --first_frame=1 --last_frame=-1 --bfac_minfreq=20 --bfac_maxfreq=-1 --no_of_proc=12
+
+Note: In case you want to do training part of polishing then dont provide the optimize parameter txt file
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; post_refine_folder : Post Refine Folder: Input folder is the directory where the results of the post refiner are present. Python routine automatically locates all the required files used for polishing. (default required string)
+  ; motioncorr_starfile : MotionCorr Starfile: MotionCorr generated star file which normally is saved as corrected_micrographs.star (default required string)
+  ; output_folder : Output folder : Output folder is the directory where all the results of the polishing are saved. (default required string)
+
+  ;%%--%%training_params : training params : In case if the user wants to do the training part of the polishing then this is None. Otherwise provide the optimize_params.txt file. (default none)
+  ; %%--%%first_frame : first frame [number] : The 1st frame number from where it should start. (default 1)
+  ; %%--%%last_frame : last frame [number] : The last frame number where it should end. (default -1)
+  ; %%--%%bfac_minfreq : bfactor_minimum_frequency : The minimum frequency range which is normally the maximum inner shell to include in enhancement. (default 20)
+  ; %%--%%bfac_maxfreq : bfactor_maximum_frequency : The minimum frequency range which is normally the maximum outer shell to include in enhancement. (default -1)
+  ; %%--%%min_no_particles : Minimum no of particles : Number of particles to inlcude for training. (default 5000)
+  ; %%--%%no_of_proc : no_of_processors : The number of processors use during the polishing. (default 1)
+
+\\
+===== Output =====
+The output is the result of the polishing saved in the output_folder directory.
+
+\\
+=== List of Output Files ===
+|| **File Name** || **Discription** ||
+|| opt_params_all_groups.txt || In case if the training part of the polishing is computed, then it generates txt file which contains the optimize parameters which are used for the later part of the polishing. ||
+|| bfactor.star || In case of applying polishing on the data, it calculates the bfactor for applying the weights on the particle images. ||
+|| shiny.star || In case of applying polishing on the data, it generates the metadata file for all the results. ||
+|| Movies/*_tracks.star || Per-Particles motion estimated shifts files. ||
+
+
+
+\\
+==== Developer Notes ====
+=== 2020/01/06 Adnan Ali ===
+  * Let me know if you find some bugs or want some modifications or improvement in the implementation.
+\\
+==== Reference ====
+Jasenko Zivanov, Takanori Nakane and Sjors H W Scheres: A Bayesian approach to beam-induced motion correction in cryo-EM single-particle analysis, ''IUCrJ'' 6, 5-17, January, 2019.
+
+\\
+==== Author / Maintainer ====
+Jasenko Zivanov, Takanori Nakane and Sjors H W Scheres
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_polishing.py
+
+\\
+==== Maturity ====
+Beta:: Under evaluation and testing. Please let us know if there are any bugs.
+
+\\
+==== Bugs ====
+None right now.
+
+\\
