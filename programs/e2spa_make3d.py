@@ -29,7 +29,7 @@ def main():
 	parser.add_argument("--tidrange", type=str,help="range of tilt id to include", default="-1,-1")
 	parser.add_argument("--minres", type=float,help="", default=200)
 	parser.add_argument("--maxres", type=float,help="", default=5)
-	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default=None)
+	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default="thread:1")
 	
 	parser.add_argument("--debug", action="store_true", default=False, help="")
 	parser.add_argument("--clsid", default=-1, type=int, help="only reconstruct a class of particles")
