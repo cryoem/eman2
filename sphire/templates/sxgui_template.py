@@ -58,6 +58,7 @@ try:
 	from ..libpy.sp_sparx import *
 	import sphire
 except ImportError as e:
+	from sphire.libpy import sp_global_def
 	print("Import error raised. Ignore.")
 	print(e)
 from optparse import OptionParser
@@ -954,7 +955,7 @@ class SXCmdWidget(QWidget):
 						elif sxcmd_token.key_prefix == "--":
 							sxcmd_line += " %s%s=%s" % (sxcmd_token.key_prefix, sxcmd_token.key_base, widget_text)
 						else:
-							ERROR("Logical Error: Encountered unexpected prefix for token (%s) of command (%s). Consult with the developer." % (sxcmd_token.key_base, self.sxcmd.get_mode_name_for("human")), "%s in %s" % (__name__, os.path.basename(__file__)))
+							sp_global_def.ERROR("Logical Error: Encountered unexpected prefix for token (%s) of command (%s). Consult with the developer." % (sxcmd_token.key_base, self.sxcmd.get_mode_name_for("human")), "%s in %s" % (__name__, os.path.basename(__file__)))
 						# else: # assert(sxcmd_token.widget.text() == sxcmd_token.default) # Do not add to this command line
 
 		return sxcmd_line
@@ -1037,7 +1038,7 @@ class SXCmdWidget(QWidget):
 				file_template.close()
 			elif self.sxcmd.mpi_support:
 				# Case 2: queue submission is disabled, but MPI is supported
-				if self.sxcmd_tab_main.qsub_enable_checkbox.checkState() == Qt.Checked: ERROR("Logical Error: Encountered unexpected condition for sxcmd_tab_main.qsub_enable_checkbox.checkState. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
+				if self.sxcmd_tab_main.qsub_enable_checkbox.checkState() == Qt.Checked: sp_global_def.ERROR("Logical Error: Encountered unexpected condition for sxcmd_tab_main.qsub_enable_checkbox.checkState. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
 				# Add MPI execution to command line
 				cmd_line = str(self.sxcmd_tab_main.mpi_cmd_line_edit.text())
 				# If empty string is entered, use a default template
@@ -1052,7 +1053,7 @@ class SXCmdWidget(QWidget):
 					cmd_line = cmd_line.replace("XXX_SXCMD_LINE_XXX", sxcmd_line)
 			else:
 				# Case 3: queue submission is disabled, and MPI is not supported
-				if self.sxcmd_tab_main.qsub_enable_checkbox.checkState() == Qt.Checked: ERROR("Logical Error: Encountered unexpected condition for sxcmd_tab_main.qsub_enable_checkbox.checkState. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
+				if self.sxcmd_tab_main.qsub_enable_checkbox.checkState() == Qt.Checked: sp_global_def.ERROR("Logical Error: Encountered unexpected condition for sxcmd_tab_main.qsub_enable_checkbox.checkState. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
 				# Use sx command as it is
 				cmd_line = sxcmd_line
 		else:
@@ -1136,7 +1137,7 @@ class SXCmdWidget(QWidget):
 				return
 			else:
 				# Case 2: queue submission is disabled (MPI can be supported or unsupported)
-				if self.sxcmd_tab_main.qsub_enable_checkbox.checkState() == Qt.Checked: ERROR("Logical Error: Encountered unexpected condition for sxcmd_tab_main.qsub_enable_checkbox.checkState. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
+				if self.sxcmd_tab_main.qsub_enable_checkbox.checkState() == Qt.Checked: sp_global_def.ERROR("Logical Error: Encountered unexpected condition for sxcmd_tab_main.qsub_enable_checkbox.checkState. Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
 				print("Executed the following command: ")
 				print(cmd_line)
 
@@ -1734,6 +1735,15 @@ class SXCmdWidget(QWidget):
 				file_path = SXLookFeelConst.format_path(file_path)
 		elif file_format == "params_relion_star":
 			name = QFileDialog.getOpenFileName(self, "Select RELION STAR file", SXLookFeelConst.file_dialog_dir, "RELION STAR files (*.star);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			if isinstance(name, tuple):
+				file_path = str(name[0])
+			else:
+				file_path = str(name)
+			# Use relative path.
+			if file_path:
+				file_path = SXLookFeelConst.format_path(file_path)
+		elif file_format == "params_star":
+			name = QFileDialog.getOpenFileName(self, "Select STAR file", SXLookFeelConst.file_dialog_dir, "STAR files (*.star);; All files (*)", options = QFileDialog.DontUseNativeDialog)
 			if isinstance(name, tuple):
 				file_path = str(name[0])
 			else:
@@ -2615,6 +2625,25 @@ class SXCmdTab(QWidget):
 							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
 							temp_btn.setMinimumWidth(func_btn_min_width)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+						elif cmd_token.type == "params_star":
+							file_format = cmd_token.type
+							temp_btn = QPushButton("Select STAR file")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							temp_btn.setToolTip('<FONT>' + "Display open file dialog to select a STAR file</FONT>")
+							grid_layout.addWidget(temp_btn, grid_row,grid_col_origin + token_label_col_span + token_widget_col_span * 2,
+												  token_widget_row_span, token_widget_col_span)
+							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file,
+															 cmd_token_widget, file_format))
+							file_format = "INVISIBLE"
+							temp_btn = QPushButton("%s" % file_format)
+							temp_btn.setToolTip('<FONT>' + "This is %s button</FONT>" % file_format)
+							temp_btn.setEnabled(False)
+							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0);'
+												   ' border: 0px rgba(0, 0, 0, 0) solid')
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							grid_layout.addWidget(temp_btn, grid_row,
+												  grid_col_origin + token_label_col_span + token_widget_col_span * 3,
+												  token_widget_row_span, token_widget_col_span)
 						elif cmd_token.type == "params_any_json":
 							file_format = cmd_token.type
 							temp_btn = QPushButton("Select JSON file")
@@ -2887,7 +2916,7 @@ class SXCmdTab(QWidget):
 ###							temp_btn.setMinimumWidth(func_btn_min_width)
 ###							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 						else:
-							if cmd_token.type not in ["int", "float", "string", "output", "apix", "ctfwin", "box", "radius", "sym", "mass", "filament_width"]: ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer."  % cmd_token.type, "%s in %s" % (__name__, os.path.basename(__file__)))
+							if cmd_token.type not in ["int", "float", "string", "output", "apix", "ctfwin", "box", "radius", "sym", "mass", "filament_width"]: sp_global_def.ERROR("Logical Error: Encountered unsupported type (%s). Consult with the developer."  % cmd_token.type, "%s in %s" % (__name__, os.path.basename(__file__)))
 						
 						# if cmd_token.type in ["output", "output_continue", "output_bdb2d_stack"]:
 						# 	# Need to add output info button in future
@@ -4218,7 +4247,7 @@ class SXDialogCalculator(QDialog):
 		apix = sxoperand_apix.validated
 		# This button should have been disabled if all operands are valid
 		if abs_freq is None:
-			ERROR("Logical Error: Encountered unexpected condition in SXDialogCalculator.handle_apply_unit_conversion(). Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
+			sp_global_def.ERROR("Logical Error: Encountered unexpected condition in SXDialogCalculator.handle_apply_unit_conversion(). Consult with the developer.", "%s in %s" % (__name__, os.path.basename(__file__)))
 			self.sxcmd_token_widget_abs_freq.setText("Logical Error")
 			self.sxcmd_token_subwidget_left_ares.setText("Logical Error")
 		else:
@@ -4828,7 +4857,7 @@ def main():
 	usage = progname + """ 
 	The main SPHIRE GUI application. It is designed as the command generator for the SPHIRE single particle analysis pipeline.
 	"""
-	parser = OptionParser(usage, version=SPARXVERSION)
+	parser = OptionParser(usage, version=sp_global_def.SPARXVERSION)
 	parser.add_option('--helical', action='store_true', default=False, help='Start the GUI in helical mode. This can be changed after the start. (default False)')
 	# No options!!! Does not need to call parser.add_option()
 	
@@ -4892,7 +4921,7 @@ def main():
 
 	# Initialise a singleton class for look & feel constants
 
-	version_string = sphire.__version__#'1.4'
+	version_string = '1.4'
 	SXLookFeelConst.initialise(sxapp, version_string)
 
 	# Define the main window (class SXMainWindow)
