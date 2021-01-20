@@ -105,7 +105,7 @@ def main():
 			jsout=js_open_dict("tmp_tmp.json")
 			for k in js.keys():
 				fsp,n=eval(k)
-				fsp2=fsp.rsplit("__",1)[0]+"__"+options.retype
+				fsp2=fsp.rsplit("__",1)[0]+"__"+options.retype+".hdf"
 				jsout.setval(str((fsp2,n)),js[k],True)
 				
 			jsout.sync()
