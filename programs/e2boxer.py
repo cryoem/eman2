@@ -1370,7 +1370,6 @@ class boxerTopaz(QtCore.QObject):
 		launch_childprocess(f". `conda info --base`/etc/profile.d/conda.sh && conda activate topaz && topaz preprocess -s {downsample} -o topaz/processed/micrographs/ topaz/mrc_micro/*.mrc ;echo")
 
 		launch_childprocess(f". `conda info --base`/etc/profile.d/conda.sh && conda activate topaz && topaz train --train-images topaz/processed/micrographs/ --train-targets topaz/processed/particles/particles.txt --radius 3 --model {model} --image-ext .mrc --method GE-binomial --autoencoder 0 --num-particles {nexpected} --epoch-size 1000 --num-epochs 10 --num-workers {threads} --device {gpu} --save-prefix topaz/model --output topaz/results.txt ;echo")
-		pass
 
 	@staticmethod
 	def do_autobox(micrograph,goodrefs,badrefs,bgrefs,apix,nthreads,params,prog=None):
