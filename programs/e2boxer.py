@@ -42,6 +42,8 @@ import numpy as np
 import threading
 import queue
 import os,sys
+from pathlib import Path
+
 
 apix=0
 
@@ -1309,23 +1311,11 @@ class boxerTopaz(QtCore.QObject):
 		boxerTopaz.gpu.setToolTip("Use GPU only if it has over 16GB RAM")
         
 
-		try:os.mkdir("topaz")
-		except:pass
-
-		try:os.mkdir("topaz/mrc_micro")
-		except:pass
-
-		try:os.mkdir("topaz/processed")
-		except:pass
-
-		try:os.mkdir("topaz/processed/particles")
-		except:pass
-
-		try:os.mkdir("topaz/processed/micrographs")
-		except:pass
-
-		try:os.mkdir("topaz/processed/predicted_particles")
-		except:pass
+		for d in ["topaz/mrc_micro", 
+				  "topaz/processed/particles",
+				  "topaz/processed/micrographs",
+				  "topaz/processed/predicted_particles"]:
+			Path(d).mkdir(parents=True, exist_ok=True)
         
 
 		return
