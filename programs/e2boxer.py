@@ -1286,7 +1286,7 @@ class boxerTopaz(QtCore.QObject):
 
 		boxerTopaz.nexpected = ValBox(label="Expected Particles Per Micrograph", value = 150)
 		gridlay.addWidget(boxerTopaz.nexpected)
-        
+
 		boxerTopaz.threshold = ValBox(label="Extraction Threshold", value=6)
 		gridlay.addWidget(boxerTopaz.threshold)
 
@@ -1305,21 +1305,18 @@ class boxerTopaz(QtCore.QObject):
 		boxerTopaz.modelconv127 = QtWidgets.QCheckBox("Model conv127")
 		gridlay.addWidget(boxerTopaz.modelconv127)
 		boxerTopaz.modelconv127.setToolTip("Model must have apix < 126 after downsampling to use conv127")
-        
+
 		boxerTopaz.gpu = QtWidgets.QCheckBox("Use GPU *see note*")
 		gridlay.addWidget(boxerTopaz.gpu)
 		boxerTopaz.gpu.setToolTip("Use GPU only if it has over 16GB RAM")
-        
 
 		for d in ["topaz/mrc_micro", 
 				  "topaz/processed/particles",
 				  "topaz/processed/micrographs",
 				  "topaz/processed/predicted_particles"]:
 			Path(d).mkdir(parents=True, exist_ok=True)
-        
 
 		return
-	
 
 	@staticmethod
 	def do_train(args = None) :
@@ -1329,10 +1326,9 @@ class boxerTopaz(QtCore.QObject):
 		threads    = boxerTopaz.boxerwindow.vbthreads.getValue()
 		pixradius  = (diameter / (2 * downsample))
 
-    
 		if boxerTopaz.gpu.isChecked() : gpu = "0"
 		else : gpu = "-1"
-            
+
 		boxerTopaz.model = "resnet8"
 		mdlcnt = 1          
 		if boxerTopaz.modelresnet8.isChecked() : 
@@ -1352,7 +1348,7 @@ class boxerTopaz(QtCore.QObject):
 			print("ERROR: Select Only One Model")
 			sys.exit(1)
 		model = boxerTopaz.model
-        
+
 		launch_childprocess('e2proc2d.py micrographs/*.hdf topaz/mrc_micro/@.mrc')
 
 		launch_childprocess(f". `conda info --base`/etc/profile.d/conda.sh && conda activate topaz && topaz convert -s {downsample} -o topaz/processed/particles/particles.txt boxfiles/*.box ;echo")
@@ -1363,7 +1359,6 @@ class boxerTopaz(QtCore.QObject):
 
 	@staticmethod
 	def do_autobox(micrograph,goodrefs,badrefs,bgrefs,apix,nthreads,params,prog=None):
-        
 		threshold  = boxerTopaz.threshold.getValue()
 		downsample = int(boxerTopaz.downsample.getValue())
 		diameter   = boxerTopaz.boxerwindow.vbbpsize.getValue()
@@ -1373,7 +1368,7 @@ class boxerTopaz(QtCore.QObject):
 		selected_micrograph = micrograph["source_path"].replace("micrographs/", '').replace(".hdf", '')
 
 		launch_childprocess(f". `conda info --base`/etc/profile.d/conda.sh && conda activate topaz && topaz extract topaz/processed/micrographs/{selected_micrograph}.mrc --model topaz/model_epoch10.sav --radius {pixradius} --threshold {threshold} --num-workers {threads} --output topaz/processed/predicted_particles/{selected_micrograph}predicted.txt ;echo")
-        
+
 		launch_childprocess(f". `conda info --base`/etc/profile.d/conda.sh && conda activate topaz && topaz convert -x {downsample} -o topaz/processed/predicted_particles/{selected_micrograph}predicted_full.txt topaz/processed/predicted_particles/{selected_micrograph}predicted.txt ;echo")
 
 		with open(f"topaz/processed/predicted_particles/{selected_micrograph}predicted_full.txt", "r") as f:
@@ -1390,15 +1385,14 @@ class boxerTopaz(QtCore.QObject):
 		pixradius  = int(diameter / (2 * downsample))
 		boxsize    = boxerTopaz.boxerwindow.vbbsize.getValue()
 
-        
 		launch_childprocess(f". `conda info --base`/etc/profile.d/conda.sh && conda activate topaz && topaz extract topaz/processed/micrographs/*.mrc --model topaz/model_epoch10.sav --radius {pixradius} --threshold {threshold} --num-workers {threads} --output topaz/processed/predicted_particles/predicted.txt ;echo")
-        
+
 		launch_childprocess(f". `conda info --base`/etc/profile.d/conda.sh && conda activate topaz && topaz convert -x {downsample} -o topaz/processed/predicted_particles/all_predicted_full.txt topaz/processed/predicted_particles/predicted.txt ;echo")
-        
+
 		with open(f"topaz/processed/predicted_particles/all_predicted_full.txt", "r") as f:
 			next(f)
 			newboxes = [('micrographs/'+(line.split()[0])+'.hdf',int((line.split())[1]),int((line.split())[2]),"auto_topaz") for line in f]
-        
+
 		for ii, fspl in enumerate(filenames):
 			fsp = fspl.split()[1]
 			db = js_open_dict(info_name(fsp)) 
@@ -1416,7 +1410,8 @@ class boxerTopaz(QtCore.QObject):
 			if prog:
 				prog.setValue(ii+1)           
 		return
-	
+
+
 class boxerGauss(QtCore.QObject):
 	@staticmethod
 	def setup_gui(gridlay,boxerwindow=None):
