@@ -217,3 +217,4 @@ def create_and_save_particle_plots(
 		pyplot.tight_layout()
 		pyplot.savefig(out_img_name)
 		pyplot.close()
+		
