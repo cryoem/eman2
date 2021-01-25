@@ -1288,23 +1288,23 @@ class boxerTopaz(QtCore.QObject):
 		boxerTopaz.threshold = ValBox(label="Extraction Threshold", value=6)
 		gridlay.addWidget(boxerTopaz.threshold)
 
-		boxerTopaz.modelresnet8=QtWidgets.QCheckBox("Model Resnet8")
+		boxerTopaz.modelresnet8 = QtWidgets.QCheckBox("Model Resnet8")
 		gridlay.addWidget(boxerTopaz.modelresnet8)
 		boxerTopaz.modelresnet8.setToolTip("Model must have apix < 70 after downsampling to use resnet8")
 
-		boxerTopaz.modelconv31=QtWidgets.QCheckBox("Model conv31")
+		boxerTopaz.modelconv31 = QtWidgets.QCheckBox("Model conv31")
 		gridlay.addWidget(boxerTopaz.modelconv31)
 		boxerTopaz.modelconv31.setToolTip("Model must have apix < 30 after downsampling to use conv31")
 
-		boxerTopaz.modelconv63=QtWidgets.QCheckBox("Model conv63")
+		boxerTopaz.modelconv63 = QtWidgets.QCheckBox("Model conv63")
 		gridlay.addWidget(boxerTopaz.modelconv63)
 		boxerTopaz.modelconv63.setToolTip("Model must have apix < 62 after downsampling to use conv63")
 
-		boxerTopaz.modelconv127=QtWidgets.QCheckBox("Model conv127")
+		boxerTopaz.modelconv127 = QtWidgets.QCheckBox("Model conv127")
 		gridlay.addWidget(boxerTopaz.modelconv127)
 		boxerTopaz.modelconv127.setToolTip("Model must have apix < 126 after downsampling to use conv127")
         
-		boxerTopaz.gpu=QtWidgets.QCheckBox("Use GPU *see note*")
+		boxerTopaz.gpu = QtWidgets.QCheckBox("Use GPU *see note*")
 		gridlay.addWidget(boxerTopaz.gpu)
 		boxerTopaz.gpu.setToolTip("Use GPU only if it has over 16GB RAM")
         
@@ -1334,10 +1334,10 @@ class boxerTopaz(QtCore.QObject):
 	@staticmethod
 	def do_train(args = None) :
 		downsample = int(boxerTopaz.downsample.getValue())
-		nexpected = boxerTopaz.nexpected.getValue()
-		diameter=boxerTopaz.boxerwindow.vbbpsize.getValue()
-		threads = boxerTopaz.boxerwindow.vbthreads.getValue()
-		pixradius = (diameter / (2 * downsample))
+		nexpected  = boxerTopaz.nexpected.getValue()
+		diameter   = boxerTopaz.boxerwindow.vbbpsize.getValue()
+		threads    = boxerTopaz.boxerwindow.vbthreads.getValue()
+		pixradius  = (diameter / (2 * downsample))
 
     
 		if boxerTopaz.gpu.isChecked() : gpu = "0"
@@ -1374,13 +1374,13 @@ class boxerTopaz(QtCore.QObject):
 	@staticmethod
 	def do_autobox(micrograph,goodrefs,badrefs,bgrefs,apix,nthreads,params,prog=None):
         
-		threshold = boxerTopaz.threshold.getValue()
+		threshold  = boxerTopaz.threshold.getValue()
 		downsample = int(boxerTopaz.downsample.getValue())
-		diameter=boxerTopaz.boxerwindow.vbbpsize.getValue()
-		threads = boxerTopaz.boxerwindow.vbthreads.getValue()
-		pixradius = int(diameter / (2 * downsample))
-		boxsize = boxerTopaz.boxerwindow.vbbsize.getValue()
-		selected_micrograph=micrograph["source_path"].replace("micrographs/", '').replace(".hdf", '')
+		diameter   = boxerTopaz.boxerwindow.vbbpsize.getValue()
+		threads    = boxerTopaz.boxerwindow.vbthreads.getValue()
+		pixradius  = int(diameter / (2 * downsample))
+		boxsize    = boxerTopaz.boxerwindow.vbbsize.getValue()
+		selected_micrograph = micrograph["source_path"].replace("micrographs/", '').replace(".hdf", '')
 
 		launch_childprocess(f". `conda info --base`/etc/profile.d/conda.sh && conda activate topaz && topaz extract topaz/processed/micrographs/{selected_micrograph}.mrc --model topaz/model_epoch10.sav --radius {pixradius} --threshold {threshold} --num-workers {threads} --output topaz/processed/predicted_particles/{selected_micrograph}predicted.txt ;echo")
         
@@ -1388,17 +1388,17 @@ class boxerTopaz(QtCore.QObject):
 
 		with open(f"topaz/processed/predicted_particles/{selected_micrograph}predicted_full.txt", "r") as f:
 			next(f)
-			boxes=[(int((line.split())[1]),int((line.split())[2]),"auto_topaz") for line in f]
+			boxes = [(int((line.split())[1]),int((line.split())[2]),"auto_topaz") for line in f]
 		return boxes
 
 	@staticmethod
 	def do_autobox_all(filenames,goodrefs,badrefs,bgrefs,apix,nthreads,params,prog=None):
-		threshold = boxerTopaz.threshold.getValue()
+		threshold  = boxerTopaz.threshold.getValue()
 		downsample = int(boxerTopaz.downsample.getValue())
-		diameter=boxerTopaz.boxerwindow.vbbpsize.getValue()
-		threads = boxerTopaz.boxerwindow.vbthreads.getValue()
-		pixradius = int(diameter / (2 * downsample))
-		boxsize = boxerTopaz.boxerwindow.vbbsize.getValue()
+		diameter   = boxerTopaz.boxerwindow.vbbpsize.getValue()
+		threads    = boxerTopaz.boxerwindow.vbthreads.getValue()
+		pixradius  = int(diameter / (2 * downsample))
+		boxsize    = boxerTopaz.boxerwindow.vbbsize.getValue()
 
         
 		launch_childprocess(f". `conda info --base`/etc/profile.d/conda.sh && conda activate topaz && topaz extract topaz/processed/micrographs/*.mrc --model topaz/model_epoch10.sav --radius {pixradius} --threshold {threshold} --num-workers {threads} --output topaz/processed/predicted_particles/predicted.txt ;echo")
@@ -1407,21 +1407,21 @@ class boxerTopaz(QtCore.QObject):
         
 		with open(f"topaz/processed/predicted_particles/all_predicted_full.txt", "r") as f:
 			next(f)
-			newboxes=[('micrographs/'+(line.split()[0])+'.hdf',int((line.split())[1]),int((line.split())[2]),"auto_topaz") for line in f]
+			newboxes = [('micrographs/'+(line.split()[0])+'.hdf',int((line.split())[1]),int((line.split())[2]),"auto_topaz") for line in f]
         
 		for ii, fspl in enumerate(filenames):
-			fsp=fspl.split()[1]
-			db=js_open_dict(info_name(fsp)) 
+			fsp = fspl.split()[1]
+			db = js_open_dict(info_name(fsp)) 
 			if "boxes" in db:
-				boxes=db["boxes"]
-				bname=newboxes[0][3]
-				boxes=[b for b in boxes if b[2]!=bname]
+				boxes = db["boxes"]
+				bname = newboxes[0][3]
+				boxes = [b for b in boxes if b[2]!=bname]
 			else:
-				boxes=[]
+				boxes = []
 			for n in newboxes:
 				if n[0] == fsp:
 					boxes.extend([n[1:4]])
-			db["boxes"]=boxes
+			db["boxes"] = boxes
 			db.close()
 			if prog:
 				prog.setValue(ii+1)           
@@ -1444,17 +1444,17 @@ aboxmodes = [ ("Local Search","auto_local",boxerLocal),
 	     ("Topaz", "auto_topaz", boxerTopaz),
 			]
 #boxcolors = { "selected":(0.9,0.9,0.9), "manual":(0,0,0.7), "refgood":(0,0.8,0), "refbad":(0.8,0,0), "refbg":(0.7,0.7,0), "unknown":[.4,.1,.1], "auto_local":(.3,.1,.4), "auto_ref":(.1,.3,.4), "auto_gauss":(.4,.1,.4),  "auto_convnet":(.1,.5,.1)}
-boxcolors = { "selected":(0.9,0.9,0.9), 
-			  "manual":(0,0,0.7), 
-			  "refgood":(0,0.8,0), 
-			  "refbad":(0.8,0,0), 
-			  "refbg":(0.7,0.7,0), 
-			  "unknown":[.4,.1,.1], 
-			  "auto_local":(.3,.1,.4), 
-			  "auto_ref":(.1,.3,.4), 
-			  "auto_gauss":(.4,.4,.1), 
-			  "auto_convnet":(.3,.1,.4),
-			  "auto_topaz":(.5,.1,.5),
+boxcolors = { "selected":     (0.9,0.9,0.9), 
+			  "manual":       (0,0,0.7), 
+			  "refgood":      (0,0.8,0), 
+			  "refbad":       (0.8,0,0), 
+			  "refbg":        (0.7,0.7,0), 
+			  "unknown":      [.4,.1,.1], 
+			  "auto_local":   (.3,.1,.4), 
+			  "auto_ref":     (.1,.3,.4), 
+			  "auto_gauss":   (.4,.4,.1), 
+			  "auto_convnet": (.3,.1,.4),
+			  "auto_topaz":   (.5,.1,.5),
 			}
 
 class GUIBoxer(QtWidgets.QWidget):
