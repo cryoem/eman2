@@ -1352,9 +1352,7 @@ class boxerTopaz(QtCore.QObject):
 		launch_childprocess('e2proc2d.py micrographs/*.hdf topaz/mrc_micro/@.mrc')
 
 		launch_childprocess(f". `conda info --base`/etc/profile.d/conda.sh && conda activate topaz && topaz convert -s {downsample} -o topaz/processed/particles/particles.txt boxfiles/*.box ;echo")
-
 		launch_childprocess(f". `conda info --base`/etc/profile.d/conda.sh && conda activate topaz && topaz preprocess -s {downsample} -o topaz/processed/micrographs/ topaz/mrc_micro/*.mrc ;echo")
-
 		launch_childprocess(f". `conda info --base`/etc/profile.d/conda.sh && conda activate topaz && topaz train --train-images topaz/processed/micrographs/ --train-targets topaz/processed/particles/particles.txt --radius 3 --model {model} --image-ext .mrc --method GE-binomial --autoencoder 0 --num-particles {nexpected} --epoch-size 1000 --num-epochs 10 --num-workers {threads} --device {gpu} --save-prefix topaz/model --output topaz/results.txt ;echo")
 
 	@staticmethod
@@ -1368,7 +1366,6 @@ class boxerTopaz(QtCore.QObject):
 		selected_micrograph = micrograph["source_path"].replace("micrographs/", '').replace(".hdf", '')
 
 		launch_childprocess(f". `conda info --base`/etc/profile.d/conda.sh && conda activate topaz && topaz extract topaz/processed/micrographs/{selected_micrograph}.mrc --model topaz/model_epoch10.sav --radius {pixradius} --threshold {threshold} --num-workers {threads} --output topaz/processed/predicted_particles/{selected_micrograph}predicted.txt ;echo")
-
 		launch_childprocess(f". `conda info --base`/etc/profile.d/conda.sh && conda activate topaz && topaz convert -x {downsample} -o topaz/processed/predicted_particles/{selected_micrograph}predicted_full.txt topaz/processed/predicted_particles/{selected_micrograph}predicted.txt ;echo")
 
 		with open(f"topaz/processed/predicted_particles/{selected_micrograph}predicted_full.txt", "r") as f:
@@ -1386,7 +1383,6 @@ class boxerTopaz(QtCore.QObject):
 		boxsize    = boxerTopaz.boxerwindow.vbbsize.getValue()
 
 		launch_childprocess(f". `conda info --base`/etc/profile.d/conda.sh && conda activate topaz && topaz extract topaz/processed/micrographs/*.mrc --model topaz/model_epoch10.sav --radius {pixradius} --threshold {threshold} --num-workers {threads} --output topaz/processed/predicted_particles/predicted.txt ;echo")
-
 		launch_childprocess(f". `conda info --base`/etc/profile.d/conda.sh && conda activate topaz && topaz convert -x {downsample} -o topaz/processed/predicted_particles/all_predicted_full.txt topaz/processed/predicted_particles/predicted.txt ;echo")
 
 		with open(f"topaz/processed/predicted_particles/all_predicted_full.txt", "r") as f:
