@@ -1286,9 +1286,14 @@ class boxerTopaz(QtCore.QObject):
 
 	@staticmethod
 	def _launch_childprocess(cmd_topaz):
-		launch_childprocess(f".  {boxerTopaz.conda_init_path} " \
-							f"&& {boxerTopaz.conda_activate_cmd} " \
-							f"&& {cmd_topaz}")
+		proc = subprocess.run(f".  {boxerTopaz.conda_init_path} " \
+							  f"&& {boxerTopaz.conda_activate_cmd} " \
+							  f"&& {cmd_topaz}", shell=True,
+							  text=True,
+							  capture_output=True
+							  )
+		if proc.returncode:
+			sys.exit(1)
 
 	@staticmethod
 	def setup_gui(gridlay, boxerwindow=None):
