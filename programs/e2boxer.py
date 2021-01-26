@@ -1362,9 +1362,9 @@ class boxerTopaz(QtCore.QObject):
 
 		launch_childprocess('e2proc2d.py micrographs/*.hdf topaz/mrc_micro/@.mrc')
 
-		boxerTopaz._launch_childprocess(f"topaz convert -s {downsample} -o topaz/processed/particles/particles.txt boxfiles/*.box ;echo")
-		boxerTopaz._launch_childprocess(f"topaz preprocess -s {downsample} -o topaz/processed/micrographs/ topaz/mrc_micro/*.mrc ;echo")
-		boxerTopaz._launch_childprocess(f"topaz train --train-images topaz/processed/micrographs/ --train-targets topaz/processed/particles/particles.txt --radius 3 --model {model} --image-ext .mrc --method GE-binomial --autoencoder 0 --num-particles {nexpected} --epoch-size 1000 --num-epochs 10 --num-workers {threads} --device {gpu} --save-prefix topaz/model --output topaz/results.txt ;echo")
+		boxerTopaz._launch_childprocess(f"topaz convert -s {downsample} -o topaz/processed/particles/particles.txt boxfiles/*.box")
+		boxerTopaz._launch_childprocess(f"topaz preprocess -s {downsample} -o topaz/processed/micrographs/ topaz/mrc_micro/*.mrc")
+		boxerTopaz._launch_childprocess(f"topaz train --train-images topaz/processed/micrographs/ --train-targets topaz/processed/particles/particles.txt --radius 3 --model {model} --image-ext .mrc --method GE-binomial --autoencoder 0 --num-particles {nexpected} --epoch-size 1000 --num-epochs 10 --num-workers {threads} --device {gpu} --save-prefix topaz/model --output topaz/results.txt")
 
 	@staticmethod
 	def do_autobox(micrograph,goodrefs,badrefs,bgrefs,apix,nthreads,params,prog=None):
@@ -1376,8 +1376,8 @@ class boxerTopaz(QtCore.QObject):
 		boxsize    = boxerTopaz.boxerwindow.vbbsize.getValue()
 		selected_micrograph = micrograph["source_path"].replace("micrographs/", '').replace(".hdf", '')
 
-		boxerTopaz._launch_childprocess(f"topaz extract topaz/processed/micrographs/{selected_micrograph}.mrc --model topaz/model_epoch10.sav --radius {pixradius} --threshold {threshold} --num-workers {threads} --output topaz/processed/predicted_particles/{selected_micrograph}predicted.txt ;echo")
-		boxerTopaz._launch_childprocess(f"topaz convert -x {downsample} -o topaz/processed/predicted_particles/{selected_micrograph}predicted_full.txt topaz/processed/predicted_particles/{selected_micrograph}predicted.txt ;echo")
+		boxerTopaz._launch_childprocess(f"topaz extract topaz/processed/micrographs/{selected_micrograph}.mrc --model topaz/model_epoch10.sav --radius {pixradius} --threshold {threshold} --num-workers {threads} --output topaz/processed/predicted_particles/{selected_micrograph}predicted.txt")
+		boxerTopaz._launch_childprocess(f"topaz convert -x {downsample} -o topaz/processed/predicted_particles/{selected_micrograph}predicted_full.txt topaz/processed/predicted_particles/{selected_micrograph}predicted.txt")
 
 		with open(f"topaz/processed/predicted_particles/{selected_micrograph}predicted_full.txt", "r") as f:
 			next(f)
@@ -1393,8 +1393,8 @@ class boxerTopaz(QtCore.QObject):
 		pixradius  = int(diameter / (2 * downsample))
 		boxsize    = boxerTopaz.boxerwindow.vbbsize.getValue()
 
-		boxerTopaz._launch_childprocess(f"topaz extract topaz/processed/micrographs/*.mrc --model topaz/model_epoch10.sav --radius {pixradius} --threshold {threshold} --num-workers {threads} --output topaz/processed/predicted_particles/predicted.txt ;echo")
-		boxerTopaz._launch_childprocess(f"topaz convert -x {downsample} -o topaz/processed/predicted_particles/all_predicted_full.txt topaz/processed/predicted_particles/predicted.txt ;echo")
+		boxerTopaz._launch_childprocess(f"topaz extract topaz/processed/micrographs/*.mrc --model topaz/model_epoch10.sav --radius {pixradius} --threshold {threshold} --num-workers {threads} --output topaz/processed/predicted_particles/predicted.txt")
+		boxerTopaz._launch_childprocess(f"topaz convert -x {downsample} -o topaz/processed/predicted_particles/all_predicted_full.txt topaz/processed/predicted_particles/predicted.txt")
 
 		with open(f"topaz/processed/predicted_particles/all_predicted_full.txt", "r") as f:
 			next(f)
