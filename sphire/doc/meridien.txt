@@ -8,7 +8,7 @@
 
 Usage in command line
 
-  sp_meridien.py  stack  output_directory  initial_volume  --do_final=MERIDIEN_ITERATION_ID  --local_refinement  --radius=particle_radius  --mask3D=MASK3D  --symmetry=SYMMETRY  --inires=INITIAL_RESOLUTION  --delta=DELTA  --xr=XR  --ts=TS  --initialshifts  --skip_prealignment  --memory_per_node=MEMORY_PER_NODE  --center_method=CENTER_METHOD  --target_radius=TARGET_RADIUS  --an=ANGULAR_NEIGHBORHOOD  --shake=SHAKE  --small_memory  --ccfpercentage=CCFPERCENTAGE  --nonorm --function=FUNCTION
+  sp_meridien.py  stack  output_directory  initial_volume  --do_final=MERIDIEN_ITERATION_ID  --local_refinement  --radius=particle_radius  --mask3D=MASK3D  --symmetry=SYMMETRY  --inires=INITIAL_RESOLUTION  --delta=DELTA  --xr=XR  --ts=TS  --initialshifts  --skip_prealignment  --memory_per_node=MEMORY_PER_NODE  --center_method=CENTER_METHOD  --target_radius=TARGET_RADIUS  --an=ANGULAR_NEIGHBORHOOD  --shake=SHAKE  --small_memory  --ccfpercentage=CCFPERCENTAGE  --nonorm --function=FUNCTION --voldir=reconstruction_directory
 
 
 \\
@@ -47,6 +47,7 @@ One can change some parameters (MPI settings have to be the same)
   ; initial_volume : Initial 3D reference: The 3D reference used in the initial iteration of 3D refinement. Required only for new runs. (default none)
 
   ; %%--%%do_final : Iteration number: Specify the iteration which to perform final reconstruction. By setting to 0, program searches for the iteration which had best resolution, then performs correponding final reconstruction. Value must be zero or positive. (default -1)
+  ; %%--%%voldir : Output reconstruction directory: Directory in which the output reconstructions will be written. (default None)
   ; %%--%%local_refinement : Perform local refinement: Perform local refinement starting from user-provided orientation parameters stored in the header of input image stack. (default False)
 
   ; %%--%%radius : Particle radius [Pixels]: Outer particle radius in pixels < int(boxsize/2)-1. Ignored in final reconstruction. (default -1) 

@@ -38,6 +38,10 @@
 #
 
 import copy
+<<<<<<< HEAD
+from sphire.libpy import sp_global_def
+=======
+>>>>>>> release-2.9
 import os
 import sxgui_template
 from builtins import object
@@ -481,6 +485,22 @@ def handle_exceptional_cases(sxcmd):
 		assert(sxcmd.token_dict["outdir"].key_base == "outdir")
 		assert(sxcmd.token_dict["outdir"].type == "output")
 		sxcmd.token_dict["outdir"].type = "output_continue"
+	elif sxcmd.name == "sp_signalsubtract":
+		if sxcmd.subname =='avgfilt':
+			sxcmd.token_dict["avol1"].type = "data3d_one"
+			sxcmd.token_dict["avol2"].type = "data3d_one"
+		if sxcmd.subname =='sp_mask':
+			sxcmd.token_dict["map2mask"].type = "data3d_one"
+			sxcmd.token_dict["fullmap"].type = "data3d_one"
+		if sxcmd.subname =='projsubtract':
+			sxcmd.token_dict["origparts"].type = "data2d_stack"
+			sxcmd.token_dict["map2subtract"].type = "data3d_one"
+			sxcmd.token_dict["projparams"].type = "params_proj_txt"
+		if sxcmd.subname =='centershift':
+			sxcmd.token_dict["cvol1"].type = "data3d_one"
+			sxcmd.token_dict["cvol2"].type = "data3d_one"
+			sxcmd.token_dict["shiftparams"].type = "params_proj_txt"
+			sxcmd.token_dict["diffimgs"].type = "data2d_stack"
 	elif sxcmd.name == "sp_locres":
 		assert(sxcmd.token_dict["wn"].key_base == "wn")
 		assert(sxcmd.token_dict["wn"].type == "ctfwin")
@@ -2001,11 +2021,15 @@ def create_sxcmd_subconfig_meridien_local_iteration(beta=False):
 
 	return sxcmd_subconfig
 
-def create_sxcmd_subconfig_meridien_final(beta=False):
+def create_sxcmd_subconfig_meridien_final(beta=False, voldir=False):
 	token_edit_list = []
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("do_final"); token_edit.is_required = True; token_edit.is_locked = False; token_edit.default = -1; token_edit.restore = -1; token_edit_list.append(token_edit)
 	
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit.label = "Meridien Output Directory"; token_edit.help = "This directory must exist. In this mode information is read from files in this directory and the results will be written there."; token_edit.is_required = True; token_edit_list.append(token_edit)
+	if not voldir:
+		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit.label = "Meridien Output Directory"; token_edit.help = "This directory must exist. In this mode information is read from files in this directory and the results will be written there."; token_edit.is_required = True; token_edit_list.append(token_edit)
+	else:
+		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit.label = "Meridien Directory"; token_edit.help = "This directory must exist. In this mode information is read from files in this directory."; token_edit.is_required = True; token_edit_list.append(token_edit)
+		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("voldir"); token_edit.label = "Output Reconstruction Directory"; token_edit.help = "Directory in which the output reconstructions will be written."; token_edit_list.append(token_edit)
 	
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("memory_per_node"); token_edit_list.append(token_edit)
 
@@ -2013,7 +2037,10 @@ def create_sxcmd_subconfig_meridien_final(beta=False):
 	if beta:
 		sxcmd_subconfig = SXsubcmd_config("Final 3D Reconstruction Only (Beta)", "Compute a final 3D reconstruction using either select or best resolution iteration of meridien.", token_edit_list, sxsubcmd_mpi_support)
 	else:
-		sxcmd_subconfig = SXsubcmd_config("Final 3D Reconstruction Only", "Compute a final 3D reconstruction using either select or best resolution iteration of meridien.", token_edit_list, sxsubcmd_mpi_support)
+		if not voldir:
+			sxcmd_subconfig = SXsubcmd_config("Final 3D Reconstruction Only", "Compute a final 3D reconstruction using either select or best resolution iteration of meridien.", token_edit_list, sxsubcmd_mpi_support)
+		else:
+			sxcmd_subconfig = SXsubcmd_config("Compute 3D Reconstruction", "Compute a final 3D reconstruction from iteration number used for signal-subtraction.", token_edit_list, sxsubcmd_mpi_support)
 
 	return sxcmd_subconfig
 
@@ -2131,6 +2158,23 @@ def create_sxcmd_subconfig_sort3d_makevstack():
 ### 	sxcmd_subconfig = SXsubcmd_config("PostRefiner of Cluster Volume", "Reconstruct unfiltered maps from a list of selection files and merge the two halves maps, so that users can adjust B-factors and low-pass filter to have proper visualization.", token_edit_list, sxsubcmd_mpi_support)
 ### 
 ### 	return sxcmd_subconfig
+
+def create_sxcmd_subconfig_subtract_projsubtract():
+	token_edit_list = []
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("origparts"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("map2subtract"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("projparams"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("outdir"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("nmontage"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("inmem"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("saveprojs"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("stats"); token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("nonorm"); token_edit_list.append(token_edit)
+
+	sxsubcmd_mpi_support = True
+	sxcmd_subconfig = SXsubcmd_config("Project and Subtract", "Compute re-projections of map to be subtracted, and subtract them from the original images.", token_edit_list, sxsubcmd_mpi_support)
+
+	return sxcmd_subconfig
 
 def create_sxcmd_subconfig_utility_makevstack():
 	token_edit_list = []
@@ -2536,6 +2580,14 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_role = "sxr_pipe"
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_standard_fresh()))
 	sxcmd_config_list.append(SXcmd_config("../doc/gui_meridien.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable = False))
+	sxcmd_config_list.append(
+		SXcmd_config(
+			"../doc/fscm.txt", 
+			"DokuWiki", 
+			sxcmd_category, 
+			sxcmd_role
+			)
+		)
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_postrefiner_halfset_vol()))
 	sxcmd_config_list.append(
 		SXcmd_config(
@@ -2610,6 +2662,55 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_config_list.append(SXcmd_config("../doc/batch.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable = False))
 
 	# --------------------------------------------------------------------------------
+	sxcmd_category = "sxc_subtract"
+
+	sxcmd_role = "sxr_pipe"
+	sxcmd_config_list.append(
+		SXcmd_config("../doc/subtract_avgfilt.txt", "DokuWiki", 
+					sxcmd_category, 
+					sxcmd_role, 
+					)
+		)
+	
+	sxcmd_config_list.append(
+		SXcmd_config("../doc/subtract_mask.txt", "DokuWiki", 
+					sxcmd_category, 
+					sxcmd_role
+					)
+		)
+	
+	sxcmd_config_list.append(
+		SXcmd_config("../doc/subtract_projsubtract.txt", "DokuWiki", 
+					sxcmd_category, 
+					sxcmd_role,
+					#subconfig = create_sxcmd_subconfig_subtract_projsubtract()
+					)
+		)
+	
+	sxcmd_config_list.append(
+		SXcmd_config("../doc/meridien.txt", "DokuWiki", 
+					sxcmd_category, 
+					sxcmd_role, 
+					subconfig = create_sxcmd_subconfig_meridien_final(voldir=True)
+					)
+		)
+	
+	sxcmd_config_list.append(
+		SXcmd_config("../doc/subtract_centershift.txt", "DokuWiki", 
+					sxcmd_category, 
+					sxcmd_role
+					)
+		)
+	
+	sxcmd_role = "sxr_util"
+	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
+	sxcmd_config_list.append(SXcmd_config("../doc/pipe_moon_eliminator.txt", "DokuWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/mask.txt", "DokuWiki", sxcmd_category, sxcmd_role))
+	#sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_adaptive_mask3d()))
+	sxcmd_config_list.append(SXcmd_config("../doc/pipe_angular_distribution.txt", "DokuWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/batch.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable = False))
+
+	# --------------------------------------------------------------------------------
 	sxcmd_category = "sxc_localres"
 
 	sxcmd_role = "sxr_pipe"
@@ -2624,6 +2725,44 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 			)
 		)
 
+	sxcmd_role = "sxr_alt"
+	sxcmd_config_list.append(
+		SXcmd_config("../doc/subtract_avgfilt.txt", "DokuWiki", 
+					sxcmd_category, 
+					sxcmd_role, 
+					)
+		)
+	
+	sxcmd_config_list.append(
+		SXcmd_config("../doc/subtract_mask.txt", "DokuWiki", 
+					sxcmd_category, 
+					sxcmd_role
+					)
+		)
+	
+	sxcmd_config_list.append(
+		SXcmd_config("../doc/subtract_projsubtract.txt", "DokuWiki", 
+					sxcmd_category, 
+					sxcmd_role,
+					#subconfig = create_sxcmd_subconfig_subtract_projsubtract()
+					)
+		)
+	
+	sxcmd_config_list.append(
+		SXcmd_config("../doc/meridien.txt", "DokuWiki", 
+					sxcmd_category, 
+					sxcmd_role, 
+					subconfig = create_sxcmd_subconfig_meridien_final(voldir=True)
+					)
+		)
+	
+	sxcmd_config_list.append(
+		SXcmd_config("../doc/subtract_centershift.txt", "DokuWiki", 
+					sxcmd_category, 
+					sxcmd_role
+					)
+		)
+	
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/pipe_moon_eliminator.txt", "DokuWiki", sxcmd_category, sxcmd_role))
@@ -2705,6 +2844,7 @@ def main(is_dev_mode = False, is_MoinMoinWiki_mode = False):
 	sxcmd_category_list.append(sxgui_template.SXcmd_category("sxc_viper", "Initial 3D Modeling", "Initial 3D modeling with VIPER/RVIPER"))
 	sxcmd_category_list.append(sxgui_template.SXcmd_category("sxc_meridien", "3D Refinement", "MERIDIEN 3d Refinement and PostRefiner"))
 	sxcmd_category_list.append(sxgui_template.SXcmd_category("sxc_sort3d", "3D Clustering", "3D Variability and SROT3D_DEPTH 3D Clustering"))
+	sxcmd_category_list.append(sxgui_template.SXcmd_category("sxc_subtract", "Signal Subtraction", "Signal Subtraction"))
 	sxcmd_category_list.append(sxgui_template.SXcmd_category("sxc_localres", "Local Resolution", "Local Resolution, and Local Filtering"))
 	sxcmd_category_list.append(sxgui_template.SXcmd_category("sxc_movie", "Movie Micrograph", "Micrograph Movie Alignemnt and Drift Assessment"))
 	sxcmd_category_list.append(sxgui_template.SXcmd_category("sxc_utilities", "Utilities", "Miscellaneous Utlitity Commands"))
