@@ -433,6 +433,9 @@ def handle_exceptional_cases(sxcmd):
 	elif sxcmd.name == "sp_eval_isac":
 		sxcmd.token_dict["input_class_avgs"].type = "data2d_one"
 		sxcmd.token_dict["particles"].type = "data2d_stack"
+	elif sxcmd.name == "sp_compare2d":
+		sxcmd.token_dict["image_stack_1"].type = "data2d_one"
+		sxcmd.token_dict["image_stack_2"].type = "data2d_one"
 	elif sxcmd.name == "sp_proj_compare":
 		sxcmd.token_dict["stack"].type = "data2d_one"
 		sxcmd.token_dict["classangles"].type = "params_proj_txt"
