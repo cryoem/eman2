@@ -1,0 +1,90 @@
+~~NOTOC~~
+
+===== sp_compare2d =====
+Compare 2D images : Find best match between two sets of 2D images.
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  	sp_compare2d.py image_stack_1 image_stack_2 output_directory --maxshift=maximum_shift --outterradius=outer_radius --ringstep=ring_step --normalize=normalization_mode --verbosity=verbosity_level
+
+
+\\
+===== Typical usage =====
+
+The purpose of sp_compare2d.py is to: 
+
+  : finds the best match between one set of images and another by running a simple multi-reference alignment. For each image in the first input stack, the best match from the second stack will be displayed side-by-side.
+
+\\ __1. General usage __:
+
+  sp_compare2d.py image_stack_1 image_stack_2 output_directory
+
+\\ __2. Advanced usage__:
+
+  sp_compare2d.py image_stack_1 image_stack_2 output_directory --maxshift=maximum_shift --outterradius=outer_radius --normalize=normalization_mode
+
+If no maximum shift is specified, a default value of 2 pixels will be used.
+
+If no outer radius is specified, the maximum radius allowed given the maximum shift and image dimension will be used.
+
+If both sets of input stacks come from the same source (e.g., ISAC), then no normalization should be necessary.  If the input stacks do not come from the same source, then one form of normalization may be necessary to show both images side-by-side.
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; image_stack_1 : Input stack #1 : To each imagine in this stack, all of the images in the second input stack will be compared.  (default required string)
+  ; image_stack_2 : Input stack #2 : Each image from this stack will be aligned to each image from the first input stack. (default required string)
+  ; output_directory : Output directory : Directory where output files will be written. (default required string)
+  ; %%--%%outterradius : Outer radius : Outer radius in pixels. If not specified, the maximum allowed from the image dimension and maximum shift will be used. (default -1)
+  ; %%--%%normalize : Normalization mode : Methods for displaying the images from the two inputs stacks. If both comes from the same source, uses "None". Other options: "minmax" (sets the minimum and maximum for each image to constants), "rops" (sets 1D rotational power spectra equal to each other), and "sigmaone" (sets the average to 0 and sigma to 1). (default None|||minmax|||rops|||sigmaone)
+
+\\
+=== Advanced Parameters ===
+  ; %%--%%maxshift : Maximum shift : Maximum shift allowed during alignment. Alignment will be slowed significantly as the maximum shift increases. (default 2)
+  ; %%--%%ringstep : Ring step : Alignments will be computed at this radial increment, in pixels. (default 1)
+  ; %%--%%verbosity : Verbosity level : Controls how much information will be written to the screen, from 0..2. (default 1)
+  
+\\
+===== Output =====
+  ; docalign2d.txt : Text file of alignment parameters of input images.
+  ; stkcompare2d.hdf : Side-by-side comparison of 2D images.
+ 
+\\
+===== Description =====
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+
+\\
+==== Developer Notes ====
+
+\\
+==== Author / Maintainer ====
+Tapu Shaikh
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_proj_compare.py
+
+\\
+==== See also ====
+
+\\
+==== Maturity ====
+Beta:: Under evaluation and testing. Please let us know if there are any bugs.
+
+\\
+==== Bugs ====
+In projection-matching mode, with large images/volume, program sometimes crashes with a segmentation fault. If this error occurs, try specifying a ring step (flag matchstep) from the default of 1 pixel.
+
+\\
