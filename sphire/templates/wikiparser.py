@@ -38,10 +38,13 @@
 #
 
 import copy
-import sphire.libpy.sp_global_def
 import os
 import sxgui_template
 from builtins import object
+try:
+	import sphire.libpy.sp_global_def
+except ModuleNotFoundError:
+	import sp_global_def
 
 # ========================================================================================
 class SXsubcmd_config(object):
@@ -460,6 +463,9 @@ def handle_exceptional_cases(sxcmd):
 		assert(sxcmd.token_dict["output_directory"].key_base == "output_directory")
 		assert(sxcmd.token_dict["output_directory"].type == "output")
 		sxcmd.token_dict["output_directory"].type = "output_continue"
+	elif sxcmd.name == "sxresolution":
+		sxcmd.token_dict["radius"].type = "int"
+		sxcmd.token_dict["wn"].type = "int"
 	elif sxcmd.name == "sp_sort3d_depth":
 		assert(sxcmd.token_dict["output_dir"].key_base == "output_dir")
 		assert(sxcmd.token_dict["output_dir"].type == "output")
@@ -993,9 +999,9 @@ def construct_token_list_from_DokuWiki(sxcmd_config):
 					# Extract 'usage in command line' to identify each command token is either an argument (no-prefix) or option ('--' prefix)
 					# This information is also used to check consistency between 'usage in command line' and list in '== Input ==' and '== Output ==' sections
 					head_token_idx = 1
-					if line_wiki[0:len("sp")] == "sp" or line_wiki[0:len("e2")] == "e2":
+					if line_wiki[0:len("sp")] == "sp" or line_wiki[0:len("e2")] == "e2" or line_wiki[0:len("sx")] == "sx":
 						usage_token_list_line = line_wiki.split()
-						if usage_token_list_line[0] != sxcmd.name + ".py": sp_global_def.ERROR("Wiki Format Error: First token should be script name with .py (sx*.py or e2*.py)", "%s in %s" % (__name__, os.path.basename(__file__)))
+						if usage_token_list_line[0] != sxcmd.name + ".py": sp_global_def.ERROR("Wiki Format Error: First token should be script name with .py (sp*.py or e2*.py or sx*.py)", "%s in %s" % (__name__, os.path.basename(__file__)))
 						if sxcmd.subname != "":
 							head_token_idx = 2
 							if usage_token_list_line[1] != sxcmd.subname: sp_global_def.ERROR("Wiki Format Error: Second token of this command should be subname", "%s in %s" % (__name__, os.path.basename(__file__)))
@@ -2526,6 +2532,14 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_standard_fresh()))
 	sxcmd_config_list.append(SXcmd_config("../doc/gui_meridien.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_postrefiner_halfset_vol()))
+	sxcmd_config_list.append(
+		SXcmd_config(
+			"../doc/fscm.txt", 
+			"DokuWiki", 
+			sxcmd_category, 
+			sxcmd_role
+			)
+		)
 
 	sxcmd_role = "sxr_alt"
 	sxcmd_config_list.append(SXcmd_config("../doc/header.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_header_import_xform_projection()))
@@ -2596,6 +2610,14 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_role = "sxr_pipe"
 	sxcmd_config_list.append(SXcmd_config("../doc/locres.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/filterlocal.txt", "DokuWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(
+		SXcmd_config(
+			"../doc/fscm.txt", 
+			"DokuWiki", 
+			sxcmd_category, 
+			sxcmd_role
+			)
+		)
 
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
