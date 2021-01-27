@@ -28,6 +28,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  *
  * */
+#include <random>
+
 #include "emfft.h"
 #include "cmp.h"
 #include "aligner.h"
@@ -3045,8 +3047,10 @@ vector<Dict> RT2Dto3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * 
 		if ((maxang>0) && (s>maxang/2)){
 			s=maxang/2;
 		}
+		std::random_device rd;
+		std::uniform_int_distribution<int> dist(0, 1);
 		for (int i=0; i<nsoln*3; i++) {
-			s_step[i]=s*(random()&1)?1.0:-1.0;
+			s_step[i]=s*(dist(rd))?1.0:-1.0;
 		}
 	}
 	
