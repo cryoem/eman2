@@ -93,7 +93,7 @@ def main():
 		print("Start resolution {:.1f}".format(curres))
 		
 	else:
-		if options.minres!=0 : curres=options.minres
+		if options.maxres!=0 : curres=options.maxres
 		else: curres=60
 		startitr=1
 		
@@ -261,7 +261,7 @@ def main():
 		for f in [even, odd]:
 			e=EMData(f)
 			e.del_attr("xform.align3d")
-			e.write_compressed(f.replace("threed_{:02d}_".format(itr), "threed_raw_"),12,erase=True)
+			e.write_compressed(f.replace("threed_{:02d}_".format(itr), "threed_raw_"),0,12,erase=True)
 			if options.setsf==None:
 				e.process_inplace("filter.setstrucfac",{"apix":e["apix_x"],"strucfac":sf})
 			e.write_compressed(f,0,12,erase=True)

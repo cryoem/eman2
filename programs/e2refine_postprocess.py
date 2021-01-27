@@ -52,7 +52,7 @@ def main():
 	parser.add_argument("--even", dest="even", type=str,default=None, help="The filename of the map from the even 1/2 of the data")
 	parser.add_argument("--odd", dest="odd", type=str,default=None, help="The filename of the map from the odd 1/2 of the data")
 	parser.add_argument("--output", dest="output", type=str,default=None, help="Filename for the final averaged/filtered result.")
-	parser.add_argument("--compressbits", type=int,help="Bits to keep when writing (most) volumes with compression. 0->lossless floating point. Default 10 (3 significant figures)", default=10)
+	parser.add_argument("--compressbits", type=int,help="Bits to keep when writing (most) volumes with compression. 0->lossless floating point. Default 12 (3 significant figures)", default=12)
 	parser.add_argument("--mass", default=0, type=float,help="The rough mass of the particle in kilodaltons, used to run normalize.bymass. Due to resolution effects, not always the true mass.")
 	parser.add_argument("--restarget", default=5, type=float,help="The specified target resolution to avoid underfiltering artifacts.")
 	parser.add_argument("--setsf",type=str,help="Force the structure factor to match a 'known' curve prior to postprocessing (<filename>, none). default=none",default="none")
@@ -147,7 +147,7 @@ def main():
 		o.transform(ali)
 
 		os.unlink(oddfile)
-		o.write_image(oddfile,0)
+		o.write_compressed(oddfile,0,options.compressbits,erase=True)
 		os.unlink("{path}tmp1.hdf".format(path=path))
 		os.unlink("{path}tmp2.hdf".format(path=path))
 		os.unlink("{path}tmp0.hdf".format(path=path))
@@ -167,7 +167,7 @@ def main():
 	combined=even+odd
 	try: combined["ptcl_repr"]=even["ptcl_repr"]+odd["ptcl_repr"]
 	except: pass
-	combined.write_image(combfile,0)
+	combined.write_compressed(combfile,0,options.compressbits,erase=True)
 
 	apix=combined["apix_x"]
 
@@ -285,7 +285,7 @@ def main():
 
 		try: os.unlink(f"{path}mask.hdf")
 		except:pass
-		mask.write_compressed("{path}mask.hdf".format(path=path),0,8)
+		mask.write_compressed("{path}mask.hdf".format(path=path),0,8,erase=True)
 
 		# automask (tight)
 #		th=min(md[rmaxval-nx//8:rmaxval+nx//8])
@@ -299,7 +299,7 @@ def main():
 
 		try: os.unlink(f"{path}mask_tight.hdf")
 		except:pass
-		mask.write_compressed("{path}mask_tight.hdf".format(path=path),0,8)
+		mask.write_compressed("{path}mask_tight.hdf".format(path=path),0,8,erase=True)
 
 	else:
 		amask3d=parsemodopt(options.automask3d)
@@ -308,13 +308,13 @@ def main():
 			amask3d[1]["return_mask"]=1
 			mask=vol.process(amask3d[0],amask3d[1])
 			if automask3d2!=None : mask.process_inplace(automask3d2[0],automask3d2[1])
-			mask.write_compressed("{path}mask.hdf".format(path=path),0,0)
+			mask.write_compressed("{path}mask.hdf".format(path=path),0,8,erase=True)
 
 			vol=EMData("{path}tmp.hdf".format(path=path),0)
 			amask3d[1]["nshells"]=int(amask3d[1]["nshells"]*.5)
 			mask=vol.process(amask3d[0],amask3d[1])
 			if automask3d2!=None : mask.process_inplace(automask3d2[0],automask3d2[1])
-			mask.write_compressed("{path}mask_tight.hdf".format(path=path),0,0)
+			mask.write_compressed("{path}mask_tight.hdf".format(path=path),0,8,erase=True)
 		else:
 			mask=EMData(nx,ny,nz)
 			mask.to_one()
@@ -322,7 +322,7 @@ def main():
 			if automask3d2!=None : mask.process_inplace(automask3d2[0],automask3d2[1])
 			try: os.unlink(f"{path}mask.hdf")
 			except:pass
-			mask.write_compressed("{path}mask.hdf".format(path=path),0,0)
+			mask.write_compressed("{path}mask.hdf".format(path=path),0,8,erase=True)
 			
 			#if options.automask3dtight!=None:
 				#amask3dtight=parsemodopt(options.automask3dtight)
@@ -331,7 +331,7 @@ def main():
 #			mask.process_inplace("morph.erode.binary",{"k":2})
 			try: os.unlink(f"{path}mask_tight.hdf")
 			except:pass
-			mask.write_compressed("{path}mask_tight.hdf".format(path=path),0,0)
+			mask.write_compressed("{path}mask_tight.hdf".format(path=path),0,8,erase=True)
 
 	combined2=0
 	#if options.automask3d2==None or len(options.automask3d2.strip())==0 : amask3d2=""
@@ -387,9 +387,9 @@ def main():
 		nx,ny,nz=combined["nx"],combined["ny"],combined["nz"]
 
 		# this is not a good way of handling this, consider it a temporary patch FIXME
-		if nx>512 : smlthreads=min(threads,8)
-		elif nx>384 : smlthreads=min(threads,16)
-		else: smlthreads=threads
+		if nx>512 : smlthreads=min(options.threads,8)
+		elif nx>384 : smlthreads=min(options.threads,16)
+		else: smlthreads=options.threads
 		
 		if options.tophat=="global" :
 			# Technically snrmult should be 1 here, but we use 2 to help speed convergence
@@ -402,7 +402,7 @@ def main():
 			run(cmd)
 
 			### Refilter/mask
-			combined.write_image(combfile,0)	# write the original average back to disk
+			combined.write_compressed(combfile,0,options.compressbits,erase=True)	# write the original average back to disk
 
 			# Note that the snrmult=4 below should really be 2 (due to the averaging of the 2 maps), the 4 is a somewhat arbitrary compensation for the .143 cutoff being a bit low
 			
@@ -415,8 +415,8 @@ def main():
 			# compute local resolution and locally filter averaged volume, using new local fsc
 			localsizea=max(options.restarget*5,15)
 			if options.localsize>0 : localsizea=options.localsize
-			cmd="e2fsc_real_local.py {path}threed_even_unmasked.hdf {path}threed_odd_unmasked.hdf --output {path}fscvol_{itr:02d}.hdf --outfilt {path}threed_{itr:02d}.hdf --outfilte {path}threed_{itr:02d}_even.hdf --outfilto {path}threed_{itr:02d}_odd.hdf --mask {path}mask.hdf --threads {smlthreads} --localsizea {localsizea} --compressbits {bits} --tophat -v 1".format(
-				path=path,itr=options.iter,threads=options.threads,localsizea=int(localsizea),bits=options.compressbits)
+			cmd="e2fsc_real_local.py {path}threed_even_unmasked.hdf {path}threed_odd_unmasked.hdf --output {path}fscvol_{itr:02d}.hdf --outfilt {path}threed_{itr:02d}.hdf --outfilte {path}threed_{itr:02d}_even.hdf --outfilto {path}threed_{itr:02d}_odd.hdf --mask {path}mask.hdf --threads {threads} --localsizea {localsizea} --compressbits {bits} --tophat -v 1".format(
+				path=path,itr=options.iter,threads=smlthreads,localsizea=int(localsizea),bits=options.compressbits)
 			run(cmd)
 
 			run("e2proc3d.py {path}threed_{itr:02d}.hdf {path}threed_{itr:02d}.hdf --multfile {path}mask.hdf {normproc} {postproc} {symopt} ".format(path=path,itr=options.iter,normproc=massnorm,postproc=m3dpostproc,symopt=symopt))
@@ -428,8 +428,8 @@ def main():
 			# compute local resolution and locally filter averaged volume, using new local fsc
 			localsizea=max(options.restarget*5,15)
 			if options.localsize>0 : localsizea=options.localsize
-			cmd="e2fsc_real_local.py {path}threed_even_unmasked.hdf {path}threed_odd_unmasked.hdf --output {path}fscvol_{itr:02d}.hdf --outfilt {path}threed_{itr:02d}.hdf --outfilte {path}threed_{itr:02d}_even.hdf --outfilto {path}threed_{itr:02d}_odd.hdf --mask {path}mask.hdf --threads {smlthreads} --localsizea {localsizea} --compressbits {bits} -v 1".format(
-				path=path,itr=options.iter,threads=options.threads,localsizea=int(localsizea),bits=options.compressbits)
+			cmd="e2fsc_real_local.py {path}threed_even_unmasked.hdf {path}threed_odd_unmasked.hdf --output {path}fscvol_{itr:02d}.hdf --outfilt {path}threed_{itr:02d}.hdf --outfilte {path}threed_{itr:02d}_even.hdf --outfilto {path}threed_{itr:02d}_odd.hdf --mask {path}mask.hdf --threads {threads} --localsizea {localsizea} --compressbits {bits} -v 1".format(
+				path=path,itr=options.iter,threads=smlthreads,localsizea=int(localsizea),bits=options.compressbits)
 			run(cmd)
 
 			run("e2proc3d.py {path}threed_{itr:02d}.hdf {path}threed_{itr:02d}.hdf --multfile {path}mask.hdf {normproc} {postproc} {symopt} ".format(path=path,itr=options.iter,normproc=massnorm,postproc=m3dpostproc,symopt=symopt))
@@ -481,7 +481,7 @@ def main():
 		run(cmd)
 
 		### Refilter/mask
-		combined.write_image(combfile,0)	# write the original average back to disk
+		combined.write_compressed(combfile,0,options.compressbits,erase=True)	# write the original average back to disk
 
 		# Note that the snrmult=4 below should really be 2 (due to the averaging of the 2 maps), the 4 is a somewhat arbitrary compensation for the .143 cutoff being a bit low
 		nx,ny,nz=combined["nx"],combined["ny"],combined["nz"]

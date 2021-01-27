@@ -425,7 +425,8 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 			print("Warning: Extra header info exist but does not match particle count...")
 			
 		# if a particle has been removed from the JSON file it causes issues if we don't skip it
-		if len(info)==0: continue
+		if len(info)==0 and len(options.jsonali)>0: 
+			continue
 
 		if options.dotest:
 			nptcl=options.threads
@@ -544,7 +545,7 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 		#apixout=apix*float(options.shrink3d)
 		##print('shrink3d!', bx, options.padtwod, options.shrink3d, p3d)
 		
-	print(f"Begin make3d bx={bx} pad={pad} ")
+	if options.verbose>0: print(f"Begin make3d bx={bx} pad={pad} ")
 	
 	recon=Reconstructors.get("fourier", {"sym":'c1', "size":[p3d, p3d, p3d], "mode":"trilinear"})
 	recon.setup()
@@ -796,12 +797,20 @@ def parse_json(options):
 	for k in keys:
 		src, ii = eval(k)
 		e=EMData(src, ii, True)
-		data.append({"k":k,
-			"src":e["data_source"],
-			"srci":e["data_n"],
-			"pos":e["ptcl_source_coord"],
-			"xf":js[k]["xform.align3d"], 
-			"score":js[k]["score"]})
+		if src[-4:]==".lst" :
+			data.append({"k":k,
+				"src":e["data_source"],
+				"srci":e["data_n"],
+				"pos":e["ptcl_source_coord"],
+				"xf":js[k]["xform.align3d"], 
+				"score":js[k]["score"]})
+		else:
+			data.append({"k":k,
+				"src":src,
+				"srci":ii,
+				"pos":e["ptcl_source_coord"],
+				"xf":js[k]["xform.align3d"], 
+				"score":js[k]["score"]})
 	
 	fs=[d["src"] for d in data]
 	fnames, count=np.unique(fs, return_counts=True)

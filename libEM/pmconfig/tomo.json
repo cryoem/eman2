@@ -141,8 +141,12 @@
         "CHILDREN": []
       },
       {
+        "PROGRAM": "e2spt_boxer_convnet.py",
+        "NAME": "Convnet based auto-boxing",
+        "CHILDREN": []
+      },
+      {
         "MODE": "extract",
-        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2spt_boxer",
         "PROGRAM": "e2spt_extract.py",
         "NAME": "Extract particles",
         "CHILDREN": []
