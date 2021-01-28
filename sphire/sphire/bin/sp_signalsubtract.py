@@ -142,7 +142,7 @@ Outputs:
 
 """ % ((__file__,)*5)
 
-MODIFIED="Modified 2021-01-20"
+MODIFIED="Modified 2021-01-26"
 
 """
 CHANGELOG:
@@ -158,6 +158,7 @@ CHANGELOG:
     2019-05-31 (trs) -- can low-pass filter map before masking
     2019-05-22 (trs) -- replaced soft mask with sp_mask
     2019-05-22 (trs) -- updated for SPHIRE v1.2
+    TODO: don't use safe-exit() with errors
     TODO: add full set of options for sp_mask
 """
 
@@ -319,10 +320,12 @@ def quick_barrier():
     
     if "OMPI_COMM_WORLD_SIZE" in os.environ : mpi.mpi_barrier(mpi.MPI_COMM_WORLD) 	
     
-def safe_exit(verbosity=0):
+def safe_exit(mesg=None, verbosity=0):
     """
     Properly closes MPI before exiting, preventing ugly warnings
     Safe for non-MPI calls also
+    
+    Modified 2021-01-17
 
     Argument:
         verbosity : controls how much information to write to screen (0..3)
@@ -342,7 +345,10 @@ def safe_exit(verbosity=0):
     if verbosity >= 1:
         print("Process %s: Finalized" % my_rank)
     
-    sp_global_def.print_timestamp( "Finish" )
+    if mesg:
+        sp_global_def.ERROR(mesg, __file__, 1)
+    else:
+        sp_global_def.print_timestamp( "Finish" )
     
     exit()
     
@@ -464,7 +470,7 @@ def system_call_23(cmd, args, lenient=False, stdout=None, stderr=None, usempi=Fa
     if usempi:
         os.environ["OMPI_COMM_WORLD_RANK"]= mpi_rank
     
-def main(options, outdir='.', verbosity=0):
+def signalsubtract(options, outdir='.', verbosity=0):
     """
     Main function overseeing various signal-subtraction modes.
     
@@ -488,9 +494,7 @@ def main(options, outdir='.', verbosity=0):
     if options.mode == 'avgfilt':
         # If no volume provided, give error
         if not options.avol1 and not options.avol2:
-            sp_global_def.ERROR("No volumes provided!", __file__, 1)
-            print('Usage:', USAGE)
-            exit()
+            safe_exit("No volumes provided!")
         else:
             # If only one volume provided, use that one
             if bool(options.avol1) ^ bool(options.avol2):  # "^" is XOR
@@ -534,7 +538,7 @@ def main(options, outdir='.', verbosity=0):
         
         if not options.map2mask:
             continueTF= False
-            sp_global_def.ERROR("No map2mask given!", __file__, 1)
+            safe_exit("No map2mask given!")
         
         if continueTF:
             map2mask= options.map2mask
@@ -589,15 +593,15 @@ def main(options, outdir='.', verbosity=0):
                 print_log_msg(mesg, log_obj)
         else:
             continueTF= False
-            sp_global_def.ERROR("No origparts given!", __file__, 1)
+            safe_exit("No origparts given!")
             
         if options.map2subtract:
             if is_main and verbosity>=1 : 
-                mesg= "Will compute projections from map '%s'" % options.map2subtract
+                mesg= "Will store projections from map '%s'" % options.map2subtract
                 print_log_msg(mesg, log_obj)
         else:
             continueTF= False
-            sp_global_def.ERROR("No map2subtract given!", __file__, 1)
+            safe_exit("No map2subtract given!")
             
         if options.projparams:
             if is_main and verbosity>=1 : 
@@ -605,7 +609,7 @@ def main(options, outdir='.', verbosity=0):
                 print_log_msg(mesg, log_obj)
         else:
             continueTF= False
-            sp_global_def.ERROR("No projparams given!", __file__, 1)
+            safe_exit("No projparams given!")
             
         if options.nonorm:
             if is_main and verbosity>=1 : 
@@ -621,7 +625,7 @@ def main(options, outdir='.', verbosity=0):
         if options.normalize:
             if options.nonorm : 
                 continueTF= False
-                sp_global_def.ERROR("Options '--normalize' and '--nonorm' are incompatible", __file__, 1)
+                safe_exit("Options '--normalize' and '--nonorm' are incompatible")
 
             if is_main and verbosity>=1 : 
                 mesg= "DEPRECATION WARNING: Option '--normalize no longer needed', is now default"
@@ -630,7 +634,7 @@ def main(options, outdir='.', verbosity=0):
         if options.stats: 
             stats_doc= os.path.join(outdir, NORM_STATS_DOC)
             if is_main and verbosity>=1: 
-                mesg= "Will write input image statistics to '%s'" % stats_doc
+                mesg= "Will write input image statistics"
                 print_log_msg(mesg, log_obj)
         else:
             stats_doc= None
@@ -684,7 +688,7 @@ def main(options, outdir='.', verbosity=0):
         
         # If no volume provided, give error
         if not options.cvol1 and not options.cvol2:
-            sp_global_def.ERROR("No volumes provided!", __file__, 1)
+            safe_exit("No volumes provided!")
             continueTF= False
         else:
             # If only one volume provided, use that one
@@ -716,7 +720,7 @@ def main(options, outdir='.', verbosity=0):
         
         if not options.volradius:
             continueTF= False
-            sp_global_def.ERROR("No volradius given!", __file__, 1)
+            safe_exit("No volradius given!")
         else:
             # Convert to pixels if pixel size is provided
             if options.apix:
@@ -750,8 +754,7 @@ def main(options, outdir='.', verbosity=0):
             exit()
         
     else:
-        sp_global_def.ERROR("No valid mode given! Acceptable modes are: avgfilt, sp_mask, projsubtract, centershift", __file__, 1)
-        exit()
+        safe_exit("No valid mode given! Acceptable modes are: avgfilt, sp_mask, projsubtract, centershift")
 
     if is_main : print_log_msg("Done!", log_obj)
     
@@ -901,6 +904,7 @@ def projsubtract(parts0, ctfdoc, map2subtract, projparams, outdir, mpioptions,
     
     # BDB names
     reproj_bdb_class= BdbNames(reprojs, outdir)
+    diff_bdb_class= BdbNames(diffimg_stem, outdir)
     diffimg_stack= os.path.join(outdir, diffimg_stem + '.mrcs')
     
     # Filenames for parallelization
@@ -965,8 +969,7 @@ def projsubtract(parts0, ctfdoc, map2subtract, projparams, outdir, mpioptions,
     if is_main and verbosity>=1:
         mesg= "Subtracting re-projections '%s' from original images '%s'" % (reproj_bdb_class.bdb_name, parts0)
         print_log_msg(mesg, log)
-        cmd= "sp_process.py %s %s %s --subtract_stack" % (
-            parts0, reproj_bdb_class.bdb_name, 'bdb:' + outdir + '#' + diffimg_stem)
+        cmd= "sp_process.py %s %s %s --subtract_stack" % (parts0, reproj_bdb_class.bdb_name, diff_bdb_class.bdb_name)
         if do_norm : cmd+= ' --normalize'
         print_log_msg(cmd, log)
     
@@ -995,24 +998,33 @@ def projsubtract(parts0, ctfdoc, map2subtract, projparams, outdir, mpioptions,
             if verbosity>=1:
                 print_log_msg("Writing up to %s example images" % numtestimgs, log)
             
+            ####write_example_montages(
+                ####mpi_orig_template, 
+                ####mpi_proj_bdb_stem, 
+                ####mpi_diff_bdb_stem, 
+                ####numtestimgs,
+                ####outdir, 
+                ####TEST_MONTAGE,
+                ####log=log, 
+                ####verbosity=verbosity
+                ####)
             write_example_montages(
-                mpi_orig_template, 
-                mpi_proj_bdb_stem, 
-                mpi_diff_bdb_stem, 
+                parts0, 
+                reproj_bdb_class.bdb_name, 
+                diff_bdb_class.bdb_name, 
                 numtestimgs,
                 outdir, 
                 TEST_MONTAGE,
                 log=log, 
                 verbosity=verbosity
                 )
-        else:
-            printvars('numtestimgs', typeTF=True)
             
         if not saveprojs:
             if verbosity>=1:
                 print_log_msg("Cleaning up intermediate projections", log)
             
             clean_projs(
+                reproj_bdb_class.bdb_name,
                 mpi_proj_bdb_stem, 
                 mpi_mrc_stack_template, 
                 outdir, 
@@ -1098,6 +1110,12 @@ def project3d_MPI(volfile, projparams, outdir, ctfdoc, orig_part_bdb,
     ctf_list= sp_utilities.read_text_row(ctfdoc)
     start, end= sp_applications.MPI_start_end( len(angles_list), num_mpi_procs, my_mpi_proc_id )
     num_angles= end - start + 1
+    
+    # Read specific attribute as list, rather than read image and then get attribute
+    coord_list= EMAN2.EMUtil.get_all_attributes(orig_part_bdb, "ptcl_source_coord")
+    source_list= EMAN2.EMUtil.get_all_attributes(orig_part_bdb, "ptcl_source_image")
+    # (Reading the image individual and then the attributes took ~30 minutes in test set.)
+    
     quick_barrier()
     
     if RUNNING_UNDER_MPI:
@@ -1160,10 +1178,10 @@ def project3d_MPI(volfile, projparams, outdir, ctfdoc, orig_part_bdb,
         selection_file= mpi_partdoc_template.format(my_mpi_proc_id)
         sp_utilities.write_text_row(index_list, selection_file)
         
-        # Read specific attribute as list, rather than read image and then get attribute
-        coord_list= EMAN2.EMUtil.get_all_attributes(orig_part_bdb, "ptcl_source_coord")
-        source_list= EMAN2.EMUtil.get_all_attributes(orig_part_bdb, "ptcl_source_image")
-        # (Reading the image individual and then the attributes took ~30 minutes in test set.)
+        ##### Read specific attribute as list, rather than read image and then get attribute
+        ####coord_list= EMAN2.EMUtil.get_all_attributes(orig_part_bdb, "ptcl_source_coord")
+        ####source_list= EMAN2.EMUtil.get_all_attributes(orig_part_bdb, "ptcl_source_image")
+        ##### (Reading the image individual and then the attributes took ~30 minutes in test set.)
     
         # Set up BDB
         mpi_proj_bdb_obj= BdbNames(mpi_proj_bdb_stem.format(my_mpi_proc_id), outdir)
@@ -1230,9 +1248,9 @@ def project3d_MPI(volfile, projparams, outdir, ctfdoc, orig_part_bdb,
             prj_dict["data_path"]= sp_utilities.makerelpath(comb_proj_bdb_obj.eman2db_dir, mpi_mrc_stack_file)
             
             # For verification
-            if RUNNING_UNDER_MPI:
-                prj_dict["ptcl_source_coord"]= coord_list[global_num]
-                prj_dict["ptcl_source_image"]= source_list[global_num]
+            ####if RUNNING_UNDER_MPI:
+            prj_dict["ptcl_source_coord"]= coord_list[global_num]
+            prj_dict["ptcl_source_image"]= source_list[global_num]
             
             new_bdb_dict[part_counter]= prj_dict
             aligned_stack_obj.insert_clip(prj_obj, (0, 0, part_counter) )
@@ -1240,9 +1258,9 @@ def project3d_MPI(volfile, projparams, outdir, ctfdoc, orig_part_bdb,
             prj_obj["ptcl_source_coord_id"]= part_counter
         
             # For verification
-            if RUNNING_UNDER_MPI:
-                prj_obj["ptcl_source_coord"]= coord_list[global_num]
-                prj_obj["ptcl_source_image"]= source_list[global_num]
+            ####if RUNNING_UNDER_MPI:
+            prj_obj["ptcl_source_coord"]= coord_list[global_num]
+            prj_obj["ptcl_source_image"]= source_list[global_num]
         
             prj_obj.write_image(mpi_bdb_name, part_counter)
         
@@ -1259,7 +1277,7 @@ def project3d_MPI(volfile, projparams, outdir, ctfdoc, orig_part_bdb,
         args= "%s --makevstack %s --list %s" % (orig_part_bdb, mpi_orig_name, selection_file)
         if start==0 and verbosity>=1:
             print_log_msg("Finished making projections\n", log)
-            print_log_msg("Making substacks from '%s' for each parallel process" % orig_part_bdb, log)
+            print_log_msg("Making substacks from input '%s' for each parallel process" % orig_part_bdb, log)
             print_log_msg(cmd + " " + args, log)
         
         system_call_23(cmd, args, stdout=where_stdout)
@@ -1286,9 +1304,10 @@ def project3d_MPI(volfile, projparams, outdir, ctfdoc, orig_part_bdb,
         
     quick_barrier()
     
-def subtract_stack_MPI(minuend_stack, subtrahend_stack, combined_diffimg_bdb_stem, outdir, stats_doc=None, do_norm=False, 
-                    mpi_orig_template=None, mpi_proj_bdb_stem=None, mpi_stack_dir=None, mpi_diff_bdb_stem=None, 
-                    mpioptions=None, log=None, verbosity=0):
+def subtract_stack_MPI(minuend_stack, subtrahend_stack, combined_diffimg_bdb_stem, outdir, 
+                       stats_doc=None, do_norm=False, mpi_orig_template=None, 
+                       mpi_proj_bdb_stem=None, mpi_stack_dir=None, mpi_diff_bdb_stem=None, 
+                       mpioptions=None, log=None, verbosity=0):
     """
     Subtracts one image stack from another, adapted from sp_process.py, 2018-12-06.
     
@@ -1310,7 +1329,7 @@ def subtract_stack_MPI(minuend_stack, subtrahend_stack, combined_diffimg_bdb_ste
     
     # Check if using MPI
     RUNNING_UNDER_MPI= "OMPI_COMM_WORLD_SIZE" in os.environ
-    main_mpi_proc= 0
+    main_mpi_proc= mpioptions['main_process']
     is_main= mpioptions['is_main']
     num_init_parts= EMAN2.EMUtil.get_image_count(minuend_stack)
     
@@ -1318,28 +1337,29 @@ def subtract_stack_MPI(minuend_stack, subtrahend_stack, combined_diffimg_bdb_ste
     if RUNNING_UNDER_MPI:
         my_mpi_proc_id= mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
         num_mpi_procs   = mpi.mpi_comm_size(mpi.MPI_COMM_WORLD)
+        mpi_minuend_stack= mpi_orig_template.format(my_mpi_proc_id)
+        mpi_subtrahend_stack= 'bdb:' + outdir + '#' + mpi_proj_bdb_stem.format(my_mpi_proc_id)
+        mpi_difference_stack= os.path.join(mpi_stack_dir, 'stk' + mpi_diff_bdb_stem.format(my_mpi_proc_id) + '.mrcs') 
+        mpi_diff_bdb_obj= BdbNames(mpi_diff_bdb_stem.format(my_mpi_proc_id), outdir)
     else:
         my_mpi_proc_id= 0
         num_mpi_procs= 1
-        mpi_diff_bdb_obj= BdbNames(combined_diffimg_bdb_stem, outdir)
+        mpi_minuend_stack= minuend_stack
+        mpi_subtrahend_stack= subtrahend_stack
+        mpi_difference_stack= os.path.join(mpi_stack_dir, 'stk' + MPI_SUBTRACT_PREFIX + '.mrcs') 
+        mpi_diff_bdb_obj= BdbNames(COMB_SUBTRACT_BDB, outdir)
         
-    # Filenames for each MPI process
-    minuend_stack= mpi_orig_template.format(my_mpi_proc_id)
-    subtrahend_stack= 'bdb:' + outdir + '#' + mpi_proj_bdb_stem.format(my_mpi_proc_id)
-    difference_stack= os.path.join(mpi_stack_dir, 'stk' + mpi_diff_bdb_stem.format(my_mpi_proc_id) + '.mrcs') 
-    mpi_diff_bdb_obj= BdbNames(mpi_diff_bdb_stem.format(my_mpi_proc_id), outdir)
-        
-    # Sanity check
+    # Sanity checks
     try:
-        nimages= EMAN2.EMUtil.get_image_count(minuend_stack)
+        nimages= EMAN2.EMUtil.get_image_count(mpi_minuend_stack)
     except: 
-        printvars(['minuend_stack', 'my_mpi_proc_id'])
-        safe_exit()
+        printvars(['mpi_minuend_stack', 'my_mpi_proc_id'])
+        safe_exit("Can't process mpi_minuend_stack")
     try:
-        mimages= EMAN2.EMUtil.get_image_count(subtrahend_stack)
+        mimages= EMAN2.EMUtil.get_image_count(mpi_subtrahend_stack)
     except: 
-        printvars(['subtrahend_stack', 'my_mpi_proc_id'])
-        safe_exit()
+        printvars(['mpi_subtrahend_stack', 'my_mpi_proc_id'])
+        safe_exit("Can't process mpi_subtrahend_stack")
     assert nimages == mimages, 'ERROR!! Two input stacks have different number of images %s %s' % (nimages, mimages)
     
     new_bdb_dict= EMAN2db.db_open_dict(mpi_diff_bdb_obj.bdb_name)
@@ -1348,17 +1368,17 @@ def subtract_stack_MPI(minuend_stack, subtrahend_stack, combined_diffimg_bdb_ste
     
     for idx in tqdm.tqdm(range(nimages), unit='img', disable=disableTF, file=sys.stdout):
         try:
-            mimage = sp_utilities.get_im(minuend_stack, idx)
+            mimage = sp_utilities.get_im(mpi_minuend_stack, idx)
         except: 
-            printvars(['minuend_stack', 'idx'])
-            safe_exit()
+            printvars(['mpi_minuend_stack', 'idx'])
+            safe_exit("Can't process mpi_minuend_stack")
             # (NOTE: I once got an error here which I wasn't able to reproduce.)
         
         try:
-            simage= sp_utilities.get_im(subtrahend_stack, idx)
+            simage= sp_utilities.get_im(mpi_subtrahend_stack, idx)
         except:
-            printvars(['subtrahend_stack', 'idx'])
-            safe_exit()
+            printvars(['mpi_subtrahend_stack', 'idx'])
+            safe_exit("Can't process mpi_subtrahend_stack")
             
         # Record statistics
         if stats_doc or do_norm:
@@ -1379,11 +1399,11 @@ def subtract_stack_MPI(minuend_stack, subtrahend_stack, combined_diffimg_bdb_ste
         
         prj_obj= simage.get_attr('xform.projection')
         diffimg.set_attr('xform.projection', prj_obj)
-        diffimg.write_image(difference_stack, idx)
+        diffimg.write_image(mpi_difference_stack, idx)
         
         header_dict= mimage.get_attr_dict()
         header_dict["ptcl_source_coord_id"]= idx
-        header_dict["data_path"]= sp_utilities.makerelpath(mpi_diff_bdb_obj.eman2db_dir, difference_stack)
+        header_dict["data_path"]= sp_utilities.makerelpath(mpi_diff_bdb_obj.eman2db_dir, mpi_difference_stack)
         
         if stats_doc or do_norm:
             header_dict['old_mean'] = st[0]
@@ -1407,18 +1427,18 @@ def subtract_stack_MPI(minuend_stack, subtrahend_stack, combined_diffimg_bdb_ste
         print_log_msg(mesg, log)
         safe_exit()
     
-    if RUNNING_UNDER_MPI and my_mpi_proc_id==main_mpi_proc and verbosity>=1: 
+    if RUNNING_UNDER_MPI and is_main and verbosity>=1: #### my_mpi_proc_id==main_mpi_proc 
         print_log_msg("Waiting for parallel processes to finish...\n", log)
     
     quick_barrier()
+    if verbosity>=1 : print_log_msg("Finished subtracting reprojections\n", log)
     
     combined_diffimg_bdb_obj= BdbNames(combined_diffimg_bdb_stem, outdir)
+    print('combined_diffimg_bdb_obj', combined_diffimg_bdb_obj.bdb_name)  #### DIAGNOSTIC
     
     # Write combined BDB (main process only)
-    if RUNNING_UNDER_MPI and my_mpi_proc_id == main_mpi_proc:
-        if verbosity>=1 : 
-            print_log_msg("Finished subtracting reprojections\n", log)
-            print_log_msg("Combining signal-subtracted stack files...", log)
+    if RUNNING_UNDER_MPI and is_main: #### my_mpi_proc_id==main_mpi_proc:
+        if verbosity>=1 : print_log_msg("Combining signal-subtracted stack files...", log)
         
         # Combine stacks
         num_merged_parts= merge_bdbs(
@@ -1433,7 +1453,7 @@ def subtract_stack_MPI(minuend_stack, subtrahend_stack, combined_diffimg_bdb_ste
         assert num_init_parts == num_merged_parts, "ERROR!! Mismatch input particles %s != %s merged particles" % (num_init_parts, num_merged_parts)
         
     # Save stats
-    if my_mpi_proc_id == main_mpi_proc:
+    if is_main: #### my_mpi_proc_id == main_mpi_proc:
         if stats_doc or do_norm:
             if verbosity>=1 : print_log_msg("Reading mean values...", log)
             avg_list= EMAN2.EMUtil.get_all_attributes(combined_diffimg_bdb_obj.bdb_name, "old_mean")
@@ -1450,7 +1470,7 @@ def subtract_stack_MPI(minuend_stack, subtrahend_stack, combined_diffimg_bdb_ste
             # Write to file
             sp_utilities.write_text_row(stats_list, stats_doc)
             
-            if verbosity>=1 : print_log_msg("Wrote average and sigma before normalization to %s" % stats_doc, log)
+            if verbosity>=1 : print_log_msg("Wrote average and sigma before normalization to '%s'" % stats_doc, log)
         # End stats IF-THEN
     # End main IF-THEN
         
@@ -1531,9 +1551,9 @@ def merge_bdbs(input_bdb_dir, input_stem_template, num_files, output_bdb_obj, ve
     
     # Close new database
     EMAN2db.db_close_dict(output_bdb_obj.bdb_name)
-    print('1610: EMAN2db.db_close_dict', output_bdb_obj.bdb_name, type(output_bdb_obj.bdb_name) )  #### DIAGNOSTIC
+    print('1534: EMAN2db.db_close_dict', output_bdb_obj.bdb_name, type(output_bdb_obj.bdb_name) )  #### DIAGNOSTIC
     numoutimgs= EMAN2.EMUtil.get_image_count(output_bdb_obj.bdb_name)
-    print('1612: EMAN2db.db_close_dict')  #### DIAGNOSTIC "a bytes-like object is required, not 'NoneType'"
+    print('1536: Ignore warning "a bytes-like object is required, not NoneType", is an issue with EMAN2db.db_close_dict')  #### DIAGNOSTIC 
     assert numoutimgs == img_counter, "Uh oh!! merge_bdbs: %s != %s" % (numoutimgs, img_counter)
     if verbosity>=1 : 
         print_log_msg("Wrote %s images to '%s' from %s files\n" % (numoutimgs, output_bdb_obj.bdb_name, num_files), log)
@@ -1570,15 +1590,15 @@ def update_data_path(curr_path, in_eman2db_dir, out_eman2db_dir):
     
     return rel_path
 
-def write_example_montages(mpi_orig_template, mpi_proj_bdb_stem, mpi_diff_bdb_stem, numtestimgs, 
+def write_example_montages(orig_stack, proj_stack, diff_stack, numtestimgs, 
                            outdir, outstack, log=None, verbosity=0):
     """
     Writes montage of comparison images.
     
     Arguments:
-        mpi_orig_template : original BDB template, w/o directory
-        mpi_proj_bdb_stem : projection BDB template, w/directory
-        mpi_diff_bdb_stem : difference BDB template, w/directory
+        orig_stack : original BDB
+        proj_stack : projection BDB
+        diff_stack : difference BDB
         numtestimgs : number of test montages to write
         outdir : output directory
         outstack : output stack
@@ -1586,15 +1606,15 @@ def write_example_montages(mpi_orig_template, mpi_proj_bdb_stem, mpi_diff_bdb_st
         verbosity : how much information to write to screen (0..3)
     """
     
-    # Set up MPI
-    if "OMPI_COMM_WORLD_SIZE" in os.environ:
-        my_mpi_proc_id= mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
-    else:
-        my_mpi_proc_id= 0
+    ##### Set up MPI
+    ####if "OMPI_COMM_WORLD_SIZE" in os.environ:
+        ####my_mpi_proc_id= mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
+    ####else:
+        ####my_mpi_proc_id= 0
         
-    orig_stack= mpi_orig_template.format(my_mpi_proc_id)
-    proj_stack= 'bdb:' + outdir + '#' + mpi_proj_bdb_stem.format(my_mpi_proc_id)
-    diff_stack= 'bdb:' + outdir + '#' + mpi_diff_bdb_stem.format(my_mpi_proc_id)
+    ####orig_stack= mpi_orig_template.format(my_mpi_proc_id)
+    ####proj_stack= 'bdb:' + outdir + '#' + mpi_proj_bdb_stem.format(my_mpi_proc_id)
+    ####diff_stack= 'bdb:' + outdir + '#' + mpi_diff_bdb_stem.format(my_mpi_proc_id)
     out_path= os.path.join(outdir, outstack)
     
     # Get number of images, and sanity check
@@ -1717,13 +1737,14 @@ def insert_image(smallimg, largeimage, xoffset, yoffset):
                     ))
                 printvars(['xcoord','xoffset','ycoord','yoffset','largeimage','getpixel'], True, True)
 
-def clean_projs(mpi_proj_bdb_stem, mpi_stack_template, outdir, mpioptions, 
+def clean_projs(combined_proj_bdb_name, mpi_proj_bdb_stem, mpi_stack_template, outdir, mpioptions, 
                 inmem=False, log=None, verbosity=0):
     """
     Deletes intermediate projection stacks.
     
     Arguments:
-        mpi_proj_bdb_stem : BDB stem
+        combined_proj_bdb_name : Combined projection BDB
+        mpi_proj_bdb_stem : BDB stem for each MPI process
         mpi_stack_template : stack template
         outdir : output directory
         mpioptions : (dict) parallelization options
@@ -1735,31 +1756,34 @@ def clean_projs(mpi_proj_bdb_stem, mpi_stack_template, outdir, mpioptions,
     # Loop through parallel processes
     for curr_proc_id in range(mpioptions['size']):
         # Get full path of '.bdb' file
-        mpi_proj_bdb_obj= BdbNames(mpi_proj_bdb_stem.format(curr_proc_id), outdir)
-        mpi_proj_bdb_path= mpi_proj_bdb_obj.bdb_path
+        if mpioptions['use']:
+            proj_bdb_obj= BdbNames(mpi_proj_bdb_stem.format(curr_proc_id), outdir)
+        else:
+            proj_bdb_obj= BdbNames(combined_proj_bdb_name)
+        proj_bdb_path= proj_bdb_obj.bdb_path
         
         # If in memory, then there will be an MRC stack
         if inmem:
             # If not parallel, then no need to substitute process ID
             if mpioptions['use']:
-                mpi_stack_file= mpi_stack_template.format(curr_proc_id)
+                proj_stack_file= mpi_stack_template.format(curr_proc_id)
             else:
-                mpi_stack_file= mpi_stack_template
+                proj_stack_file= mpi_stack_template
         # If not in memory, then we need to find the dimensions
         else:
             # If first process, get image dimensions (needed if not inmem)
             if curr_proc_id==0:
-                img= sp_utilities.get_image(mpi_proj_bdb_obj.bdb_name, 0)
+                img= sp_utilities.get_image(proj_bdb_obj.bdb_name, 0)
                 xdim= img['nx']
                 ydim= img['ny']
                 zdim= img['nz']
-            mpi_stack_file= os.path.splitext(mpi_proj_bdb_path)[0] + "_%sx%sx%s" % (xdim,ydim,zdim)
+            proj_stack_file= os.path.splitext(proj_bdb_path)[0] + "_%sx%sx%s" % (xdim,ydim,zdim)
         # End inmem if-then
         
-        os.remove(mpi_proj_bdb_path)
-        os.remove(mpi_stack_file)
+        os.remove(proj_bdb_path)
+        os.remove(proj_stack_file)
         if verbosity>=3:
-            print_log_msg("  Deleted %s & %s" % (mpi_proj_bdb_path, mpi_stack_file), log)
+            print_log_msg("  Deleted %s & %s" % (proj_bdb_path, proj_stack_file), log)
     # End process loop
     
 def centershift(input1, input2, diffimgs, uncentered_file, inverted_file, volradius, init_centered_file, inparams, params_cp, params_cent, log, verbose, is_main):
@@ -2137,19 +2161,22 @@ def parse_command_line():
     
     return parser.parse_args()
 
-if __name__ == "__main__":
+def main():
+    options= parse_command_line()
 
+    #print('options', options)
+    #exit()
+    
     RUNNING_UNDER_MPI= "OMPI_COMM_WORLD_SIZE" in os.environ
     if RUNNING_UNDER_MPI:
-        mpi.mpi_init( 0, [] )  # On OS X, there is an error if MPI is initialized and not finalized, hence the conditional
-        
+            mpi.mpi_init( 0, [] )  # On OS X, there is an error if MPI is initialized and not finalized, hence the conditional
     sp_global_def.print_timestamp( "Start" )
-    options= parse_command_line()
-    #print("options:", options)
-    #exit()
-
-    main(options, outdir=options.outdir, verbosity=options.verbosity)
+    
+    signalsubtract(options, outdir=options.outdir, verbosity=options.verbosity)
 
     sp_global_def.print_timestamp( "Finish" )
     if RUNNING_UNDER_MPI:
             mpi.mpi_finalize()
+
+if __name__ == "__main__":
+    main()

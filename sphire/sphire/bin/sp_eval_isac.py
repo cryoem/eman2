@@ -522,7 +522,7 @@ def system_call_23(cmd, args, lenient=False, stdout=None, stderr=None, usempi=Fa
     if usempi:
         os.environ["OMPI_COMM_WORLD_RANK"]= mpi_rank
     
-def main(classavgstack, options, outdir='.', verbosity=0, usempi=False):
+def eval_isac(classavgstack, options, outdir='.', verbosity=0, usempi=False):
     """
     Main function overseeing various ISAC-evaluation modes.
     
@@ -3676,8 +3676,7 @@ def parse_command_line():
     
     return parser.parse_args()
 
-if __name__ == "__main__":
-    
+def main():
     options= parse_command_line()
 
     #print('options', options)
@@ -3688,8 +3687,11 @@ if __name__ == "__main__":
             mpi.mpi_init( 0, [] )  # On OS X, there is an error if MPI is initialized and not finalized, hence the conditional
     sp_global_def.print_timestamp( "Start" )
     
-    main(options.classavgs, options, outdir=options.outdir, verbosity=options.verbosity, usempi=RUNNING_UNDER_MPI)
+    eval_isac(options.classavgs, options, outdir=options.outdir, verbosity=options.verbosity, usempi=RUNNING_UNDER_MPI)
     
     sp_global_def.print_timestamp( "Finish" )
     if RUNNING_UNDER_MPI:
             mpi.mpi_finalize()
+
+if __name__ == "__main__":
+    main()
