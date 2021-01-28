@@ -54,29 +54,14 @@ except ImportError:
 from EMAN2 import *
 from EMAN2_cppwrap import *
 try:
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> release-2.9
 	from sphire.libpy import sp_global_def  #### from ..libpy.sp_global_def import *
 	from sphire.libpy.sp_sparx import *     #### from ..libpy.sp_sparx import *
-	import sphire
-except ImportError as e:
-	print("Import error raised. Ignore.")
-	print(e)
-<<<<<<< HEAD
-=======
-=======
-	from ..libpy.sp_global_def import *
-	from ..libpy.sp_sparx import *
 	import sphire
 except ImportError as e:
 	#####print("Import error raised. Ignore.")
 	#####print(e)
 	from sp_global_def import *
 	from sp_sparx import *
->>>>>>> f1bc59080f4d56fbdd8e2071a6b9d75a71a4f12d
->>>>>>> release-2.9
 from optparse import OptionParser
 from functools import partial  # Use to connect event-source widget and event handler
 from subprocess import *
@@ -4768,11 +4753,8 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		sxcmd_category_list.append(sxcmd_category)
 		sxcmd_category = SXcmd_category(); sxcmd_category.name = "sxc_sort3d"; sxcmd_category.label = "3D Clustering"; sxcmd_category.short_info = "3D Variability and SROT3D_DEPTH 3D Clustering"
 		sxcmd_category_list.append(sxcmd_category)
-<<<<<<< HEAD
 		sxcmd_category = SXcmd_category(); sxcmd_category.name = "sxc_subtract"; sxcmd_category.label = "Signal Subtraction"; sxcmd_category.short_info = "Signal Subtraction"
 		sxcmd_category_list.append(sxcmd_category)
-=======
->>>>>>> release-2.9
 		sxcmd_category = SXcmd_category(); sxcmd_category.name = "sxc_localres"; sxcmd_category.label = "Local Resolution"; sxcmd_category.short_info = "Local Resolution, and Local Filtering"
 		sxcmd_category_list.append(sxcmd_category)
 		sxcmd_category = SXcmd_category(); sxcmd_category.name = "sxc_movie"; sxcmd_category.label = "Movie Micrograph"; sxcmd_category.short_info = "Micrograph Movie Alignemnt and Drift Assessment"
@@ -5161,9 +5143,6 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
 		sxcmd = SXcmd(); sxcmd.name = "sp_eval_isac"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Evaluate ISAC classes"; sxcmd.short_info = "Separates stacks of particle images into stacks for each class."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_isac"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "input_class_avgs"; token.key_prefix = ""; token.label = "Input class averages"; token.help = "Set of 2D class averages, with particle-membership information in header. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = ""; token.restore = [[""], [""]]; token.type = "data2d_one"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "Output directory"; token.help = "Directory where outputs will be written. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = ""; token.restore = [[""], [""]]; token.type = "output"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
@@ -5196,22 +5175,6 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "maxshift"; token.key_prefix = "--"; token.label = "Maximum shift"; token.help = "Maximum shift allowed during alignment. Alignment will be slowed significantly as the maximum shift increases. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "2"; token.restore = [['2'], ['2']]; token.type = "int"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "ringstep"; token.key_prefix = "--"; token.label = "Ring step"; token.help = "Alignments will be computed at this radial increment, in pixels. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "1"; token.restore = [['1'], ['1']]; token.type = "int"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "verbosity"; token.key_prefix = "--"; token.label = "Verbosity level"; token.help = "Controls how much information will be written to the screen, from 0..2. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "1"; token.restore = [['1'], ['1']]; token.type = "int"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-=======
->>>>>>> release-2.9
-		sxcmd = SXcmd(); sxcmd.name = "sp_separate_class"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Separate Into Classes"; sxcmd.short_info = "Separates stacks of particle images into stacks for each class."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_isac"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
-		token = SXcmd_token(); token.key_base = "input_class_avgs"; token.key_prefix = ""; token.label = "Input class averages"; token.help = "Set of 2D class averages, with particle-membership information in header. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = ""; token.restore = [[""], [""]]; token.type = "data2d_one"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-		token = SXcmd_token(); token.key_base = "input_image_stack"; token.key_prefix = ""; token.label = "Input particles"; token.help = "Particle image stack. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = ""; token.restore = [[""], [""]]; token.type = "bdb2d_stack"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-		token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "Output directory"; token.help = "Directory where outputs will be written. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = ""; token.restore = [[""], [""]]; token.type = "output"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-		token = SXcmd_token(); token.key_base = "isac_dir"; token.key_prefix = "--"; token.label = "ISAC directory"; token.help = "Input ISAC directory, if applying alignments to particles. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "None"; token.restore = [['None'], ['None']]; token.type = "dir"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-		token = SXcmd_token(); token.key_base = "filt"; token.key_prefix = "--"; token.label = "Filter radius"; token.help = "Gaussian low-pass filter radius, Angstroms if pxsz specified below, else pixels^-1. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "None"; token.restore = [['None'], ['None']]; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-		token = SXcmd_token(); token.key_base = "pxsz"; token.key_prefix = "--"; token.label = "Pixel size"; token.help = "Angstroms per pixel, might be downsampled already by ISAC2. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "None"; token.restore = [['None'], ['None']]; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-		token = SXcmd_token(); token.key_base = "shrink"; token.key_prefix = "--"; token.label = "Downsampling factor"; token.help = "Downsampling factor, e.g., 6 -&gt; 1/6 original size. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "None"; token.restore = [['None'], ['None']]; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-		token = SXcmd_token(); token.key_base = "nvec"; token.key_prefix = "--"; token.label = "Number of eigenimages"; token.help = "Number of eigenimages to compute. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "None"; token.restore = [['None'], ['None']]; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-		token = SXcmd_token(); token.key_base = "verbose"; token.key_prefix = "--"; token.label = "Verbose"; token.help = "Writes additional messages to the terminal during execution. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = False; token.restore = [[False], [False]]; token.type = "bool"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-<<<<<<< HEAD
-=======
->>>>>>> f1bc59080f4d56fbdd8e2071a6b9d75a71a4f12d
->>>>>>> release-2.9
 
 		sxcmd_list.append(sxcmd)
 
@@ -5476,7 +5439,6 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-<<<<<<< HEAD
 		sxcmd = SXcmd(); sxcmd.name = "sxresolution"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Compute mFSC"; sxcmd.short_info = "Compute overall and local resolution measures using a pair of half-maps."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = True; sxcmd.category = "sxc_meridien"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "firstvolume"; token.key_prefix = ""; token.label = "Volume #1"; token.help = "First unfiltered half-map.  "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = ""; token.restore = [[""], [""]]; token.type = "data3d_one"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "secondvolume"; token.key_prefix = ""; token.label = "Volume #2"; token.help = "Second unfiltered half-map. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = ""; token.restore = [[""], [""]]; token.type = "data3d_one"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
@@ -5496,8 +5458,6 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-=======
->>>>>>> release-2.9
 		sxcmd = SXcmd(); sxcmd.name = "sp_process"; sxcmd.subname = ""; sxcmd.mode = "combinemaps"; sxcmd.subset_config = "halfset maps"; sxcmd.label = "PostRefiner"; sxcmd.short_info = "Post-refine a pair of unfiltered odd & even halfset maps by combining them, then enhancing the high frequencies (Halfset Maps Mode). B-factor can be automatically estimated from the unfiltered halfset maps. This mode requires two arguments; use unfiltered halfset maps produced by MERIDIEN."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_meridien"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "combinemaps"; token.key_prefix = "--"; token.label = "Post-refine halfset volumes"; token.help = "Post-refine a pair of unfiltered odd & even halfset maps by combining them, then enhancing the high frequencies (Halfset Maps Mode). B-factor can be automatically estimated from the unfiltered halfset maps. This mode requires two arguments; use unfiltered halfset maps produced by MERIDIEN."; token.group = "main"; token.is_required = True; token.is_locked = True; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = True; token.restore = [[True], [True]]; token.type = "bool"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "firstvolume"; token.key_prefix = ""; token.label = "First unfiltered halfset map"; token.help = "As generated by sxmeridien."; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = ""; token.restore = [[""], [""]]; token.type = "data3d_one"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
@@ -5525,10 +5485,6 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-=======
 		sxcmd = SXcmd(); sxcmd.name = "sxresolution"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Compute mFSC"; sxcmd.short_info = "Compute overall and local resolution measures using a pair of half-maps."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = True; sxcmd.category = "sxc_meridien"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "firstvolume"; token.key_prefix = ""; token.label = "Volume #1"; token.help = "First unfiltered half-map.  "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = ""; token.restore = [[""], [""]]; token.type = "data3d_one"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "secondvolume"; token.key_prefix = ""; token.label = "Volume #2"; token.help = "Second unfiltered half-map. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = ""; token.restore = [[""], [""]]; token.type = "data3d_one"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
@@ -5548,8 +5504,6 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
->>>>>>> f1bc59080f4d56fbdd8e2071a6b9d75a71a4f12d
->>>>>>> release-2.9
 		sxcmd = SXcmd(); sxcmd.name = "sp_header"; sxcmd.subname = ""; sxcmd.mode = "import"; sxcmd.subset_config = ""; sxcmd.label = "Import Projection Parameters"; sxcmd.short_info = "Import projection orientation parameters to the header of the input stack. (Five columns: phi, theta, pshi, sx, sy). These parameters are required by 'Local Refinement from Stack' mode."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_meridien"; sxcmd.role = "sxr_alt"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "import"; token.key_prefix = "--"; token.label = "Import parameters"; token.help = "Import parameters from file. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = ""; token.restore = [[""], [""]]; token.type = "params_any_txt"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "stack"; token.key_prefix = ""; token.label = "Input image stack"; token.help = "Path to input image stack. The stack can be either bdb or hdf. However, the GUI supports only bdb. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = ""; token.restore = [[""], [""]]; token.type = "bdb2d_stack"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
@@ -6181,7 +6135,6 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-<<<<<<< HEAD
 		sxcmd = SXcmd(); sxcmd.name = "sp_signalsubtract"; sxcmd.subname = "avgfilt"; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Average and Filter"; sxcmd.short_info = "Average and low-pass filter a map for segmentation."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_subtract"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "avol1"; token.key_prefix = "--"; token.label = "Map #1 to average"; token.help = "First map to average. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', ''], ['subtraction_mode', 'avgfilt', 'False']]; token.default = ""; token.restore = [[""], [""]]; token.type = "data3d_one"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token; sxcmd.dependency_dict.setdefault('subtraction_mode', []).append([token.key_base, 'avgfilt', 'False'])
 		token = SXcmd_token(); token.key_base = "avol2"; token.key_prefix = "--"; token.label = "Map #2 to average"; token.help = "Second map to average. If not provided, first map will be used. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', ''], ['subtraction_mode', 'avgfilt', 'False']]; token.default = "None"; token.restore = [['None'], ['None']]; token.type = "data3d_one"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token; sxcmd.dependency_dict.setdefault('subtraction_mode', []).append([token.key_base, 'avgfilt', 'False'])
@@ -6335,8 +6288,6 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-=======
->>>>>>> release-2.9
 		sxcmd = SXcmd(); sxcmd.name = "sp_locres"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Local Resolution"; sxcmd.short_info = "Compute local resolution of a map."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = True; sxcmd.category = "sxc_localres"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "firstvolume"; token.key_prefix = ""; token.label = "First half-map"; token.help = "A sub-map computed from about half of input projection data. In case of quasi-independent half-refinements, it has to one of the two generated structures. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = ""; token.restore = [[""], [""]]; token.type = "data3d_one"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "secondvolume"; token.key_prefix = ""; token.label = "Second half-map"; token.help = "A sub-map computed from about half of input projection data. In case of quasi-independent half-refinements, it has to one of the two generated structures. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = ""; token.restore = [[""], [""]]; token.type = "data3d_one"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
@@ -6364,7 +6315,25 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-<<<<<<< HEAD
+		sxcmd = SXcmd(); sxcmd.name = "sxresolution"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Compute mFSC"; sxcmd.short_info = "Compute overall and local resolution measures using a pair of half-maps."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = True; sxcmd.category = "sxc_localres"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
+		token = SXcmd_token(); token.key_base = "firstvolume"; token.key_prefix = ""; token.label = "Volume #1"; token.help = "First unfiltered half-map.  "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = ""; token.restore = [[""], [""]]; token.type = "data3d_one"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "secondvolume"; token.key_prefix = ""; token.label = "Volume #2"; token.help = "Second unfiltered half-map. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = ""; token.restore = [[""], [""]]; token.type = "data3d_one"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "maskfile"; token.key_prefix = ""; token.label = "3D mask"; token.help = "Defines the region within which FSCM will be computed. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "None"; token.restore = [['None'], ['None']]; token.type = "data3d_one"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "outputdir"; token.key_prefix = ""; token.label = "Output directory"; token.help = "Directory where output files will be written. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = ""; token.restore = [[""], [""]]; token.type = "output"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "Mask radius"; token.help = "If there is no maskfile, sphere with r=radius will be used. By default, the radius is nx/2-wn. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', ''], ['maskfile', 'None', 'False']]; token.default = "None"; token.restore = [['None'], ['None']]; token.type = "int"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token; sxcmd.dependency_dict.setdefault('maskfile', []).append([token.key_base, 'None', 'False'])
+		token = SXcmd_token(); token.key_base = "wn"; token.key_prefix = "--"; token.label = "Window size"; token.help = "Size of window within which local real-space FSC is computed. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "15"; token.restore = [['15'], ['15']]; token.type = "int"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "local_fsc"; token.key_prefix = "--"; token.label = "Compute local resolution"; token.help = "Set to 1 to compute local resolution volume. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "0"; token.restore = [['0', '1'], ['0', '1']]; token.type = "int"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "sigmag"; token.key_prefix = "--"; token.label = "Sigma of Gaussian window"; token.help = "Sigma of the Fourier space Gaussian window in pixels. Local resolution values are computed within small windowed areas (size wn^15). Due to small sample size the values are inaccurate and outcome tends to be noisy. It is thus suggested to use broader Gaussian window when local resolution is computed, say sigmag=3.0. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "1.0"; token.restore = [['1.0'], ['1.0']]; token.type = "float"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "step"; token.key_prefix = "--"; token.label = "Shell step"; token.help = "Shell step in Fourier size in pixels (integer). "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "1"; token.restore = [['1'], ['1']]; token.type = "int"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "lfi"; token.key_prefix = "--"; token.label = "Inner radius"; token.help = "First Fourier index from which to begin calculation (in Fourier pixels) "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "1"; token.restore = [['1'], ['1']]; token.type = "int"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "hfi"; token.key_prefix = "--"; token.label = "Outer radius"; token.help = "Last Fourier index to end calculation (in Fourier pixels). Default radius is nx2-2. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "None"; token.restore = [['None'], ['None']]; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "significance"; token.key_prefix = "--"; token.label = "Significance level"; token.help = "Significance level for the upper confidence interval "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "0.99"; token.restore = [['0.99'], ['0.99']]; token.type = "float"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "ndf_reduce"; token.key_prefix = "--"; token.label = "Number of asymmetric units"; token.help = "Reduction of number of degrees of freedom due to point group symmetry, for example for D3 set to 6. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "1.0"; token.restore = [['1.0'], ['1.0']]; token.type = "float"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "cutoff"; token.key_prefix = "--"; token.label = "FSC criterion"; token.help = "Resolution cut-off for FSCM confidence interval. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "0.143"; token.restore = [['0.143'], ['0.143']]; token.type = "float"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "nthreads"; token.key_prefix = "--"; token.label = "Number of threads"; token.help = "Number of threads (mainly for 3D FFT). "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "4"; token.restore = [['4'], ['4']]; token.type = "int"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+
+		sxcmd_list.append(sxcmd)
+
 		sxcmd = SXcmd(); sxcmd.name = "sp_signalsubtract"; sxcmd.subname = "avgfilt"; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Average and Filter"; sxcmd.short_info = "Average and low-pass filter a map for segmentation."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_localres"; sxcmd.role = "sxr_alt"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "avol1"; token.key_prefix = "--"; token.label = "Map #1 to average"; token.help = "First map to average. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', ''], ['subtraction_mode', 'avgfilt', 'False']]; token.default = ""; token.restore = [[""], [""]]; token.type = "data3d_one"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token; sxcmd.dependency_dict.setdefault('subtraction_mode', []).append([token.key_base, 'avgfilt', 'False'])
 		token = SXcmd_token(); token.key_base = "avol2"; token.key_prefix = "--"; token.label = "Map #2 to average"; token.help = "Second map to average. If not provided, first map will be used. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', ''], ['subtraction_mode', 'avgfilt', 'False']]; token.default = "None"; token.restore = [['None'], ['None']]; token.type = "data3d_one"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token; sxcmd.dependency_dict.setdefault('subtraction_mode', []).append([token.key_base, 'avgfilt', 'False'])
@@ -6418,30 +6387,6 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-=======
-<<<<<<< HEAD
-=======
-		sxcmd = SXcmd(); sxcmd.name = "sxresolution"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Compute mFSC"; sxcmd.short_info = "Compute overall and local resolution measures using a pair of half-maps."; sxcmd.mpi_support = True; sxcmd.mpi_add_flag = True; sxcmd.category = "sxc_localres"; sxcmd.role = "sxr_pipe"; sxcmd.is_submittable = True
-		token = SXcmd_token(); token.key_base = "firstvolume"; token.key_prefix = ""; token.label = "Volume #1"; token.help = "First unfiltered half-map.  "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = ""; token.restore = [[""], [""]]; token.type = "data3d_one"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-		token = SXcmd_token(); token.key_base = "secondvolume"; token.key_prefix = ""; token.label = "Volume #2"; token.help = "Second unfiltered half-map. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = ""; token.restore = [[""], [""]]; token.type = "data3d_one"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-		token = SXcmd_token(); token.key_base = "maskfile"; token.key_prefix = ""; token.label = "3D mask"; token.help = "Defines the region within which FSCM will be computed. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "None"; token.restore = [['None'], ['None']]; token.type = "data3d_one"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-		token = SXcmd_token(); token.key_base = "outputdir"; token.key_prefix = ""; token.label = "Output directory"; token.help = "Directory where output files will be written. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = ""; token.restore = [[""], [""]]; token.type = "output"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-		token = SXcmd_token(); token.key_base = "radius"; token.key_prefix = "--"; token.label = "Mask radius"; token.help = "If there is no maskfile, sphere with r=radius will be used. By default, the radius is nx/2-wn. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', ''], ['maskfile', 'None', 'False']]; token.default = "None"; token.restore = [['None'], ['None']]; token.type = "int"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token; sxcmd.dependency_dict.setdefault('maskfile', []).append([token.key_base, 'None', 'False'])
-		token = SXcmd_token(); token.key_base = "wn"; token.key_prefix = "--"; token.label = "Window size"; token.help = "Size of window within which local real-space FSC is computed. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "15"; token.restore = [['15'], ['15']]; token.type = "int"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-		token = SXcmd_token(); token.key_base = "local_fsc"; token.key_prefix = "--"; token.label = "Compute local resolution"; token.help = "Set to 1 to compute local resolution volume. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "0"; token.restore = [['0', '1'], ['0', '1']]; token.type = "int"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-		token = SXcmd_token(); token.key_base = "sigmag"; token.key_prefix = "--"; token.label = "Sigma of Gaussian window"; token.help = "Sigma of the Fourier space Gaussian window in pixels. Local resolution values are computed within small windowed areas (size wn^15). Due to small sample size the values are inaccurate and outcome tends to be noisy. It is thus suggested to use broader Gaussian window when local resolution is computed, say sigmag=3.0. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "1.0"; token.restore = [['1.0'], ['1.0']]; token.type = "float"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-		token = SXcmd_token(); token.key_base = "step"; token.key_prefix = "--"; token.label = "Shell step"; token.help = "Shell step in Fourier size in pixels (integer). "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "1"; token.restore = [['1'], ['1']]; token.type = "int"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-		token = SXcmd_token(); token.key_base = "lfi"; token.key_prefix = "--"; token.label = "Inner radius"; token.help = "First Fourier index from which to begin calculation (in Fourier pixels) "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "1"; token.restore = [['1'], ['1']]; token.type = "int"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-		token = SXcmd_token(); token.key_base = "hfi"; token.key_prefix = "--"; token.label = "Outer radius"; token.help = "Last Fourier index to end calculation (in Fourier pixels). Default radius is nx2-2. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "None"; token.restore = [['None'], ['None']]; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-		token = SXcmd_token(); token.key_base = "significance"; token.key_prefix = "--"; token.label = "Significance level"; token.help = "Significance level for the upper confidence interval "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "0.99"; token.restore = [['0.99'], ['0.99']]; token.type = "float"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-		token = SXcmd_token(); token.key_base = "ndf_reduce"; token.key_prefix = "--"; token.label = "Number of asymmetric units"; token.help = "Reduction of number of degrees of freedom due to point group symmetry, for example for D3 set to 6. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "1.0"; token.restore = [['1.0'], ['1.0']]; token.type = "float"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-		token = SXcmd_token(); token.key_base = "cutoff"; token.key_prefix = "--"; token.label = "FSC criterion"; token.help = "Resolution cut-off for FSCM confidence interval. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "0.143"; token.restore = [['0.143'], ['0.143']]; token.type = "float"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-		token = SXcmd_token(); token.key_base = "nthreads"; token.key_prefix = "--"; token.label = "Number of threads"; token.help = "Number of threads (mainly for 3D FFT). "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "4"; token.restore = [['4'], ['4']]; token.type = "int"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-
-		sxcmd_list.append(sxcmd)
-
->>>>>>> f1bc59080f4d56fbdd8e2071a6b9d75a71a4f12d
->>>>>>> release-2.9
 		sxcmd = SXcmd(); sxcmd.name = "e2display"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Display Data"; sxcmd.short_info = "Displays images, volumes, or 1D plots."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_localres"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = False
 		token = SXcmd_token(); token.key_base = "input_data_list"; token.key_prefix = ""; token.label = "Input files"; token.help = "List of input images, volumes, plots. Wild cards (e.g *) can be used to select a list of files. Not recommended when the list is large. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "none"; token.restore = [['none'], ['none']]; token.type = "displayable_list"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "singleimage"; token.key_prefix = "--"; token.label = "Single image view"; token.help = "Display a stack one image at a time. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = False; token.restore = [[False], [False]]; token.type = "bool"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
@@ -6710,9 +6655,6 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 
 		sxcmd_list.append(sxcmd)
 
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
 		sxcmd = SXcmd(); sxcmd.name = "sp_compare2d"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Compare 2D images"; sxcmd.short_info = "Find best match between two sets of 2D images."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_utilities"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
 		token = SXcmd_token(); token.key_base = "image_stack_1"; token.key_prefix = ""; token.label = "Input stack #1"; token.help = "To each imagine in this stack, all of the images in the second input stack will be compared.  "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = ""; token.restore = [[""], [""]]; token.type = "data2d_one"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "image_stack_2"; token.key_prefix = ""; token.label = "Input stack #2"; token.help = "Each image from this stack will be aligned to each image from the first input stack. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = ""; token.restore = [[""], [""]]; token.type = "data2d_one"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
@@ -6722,22 +6664,6 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "maxshift"; token.key_prefix = "--"; token.label = "Maximum shift"; token.help = "Maximum shift allowed during alignment. Alignment will be slowed significantly as the maximum shift increases. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "2"; token.restore = [['2'], ['2']]; token.type = "int"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "ringstep"; token.key_prefix = "--"; token.label = "Ring step"; token.help = "Alignments will be computed at this radial increment, in pixels. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "1"; token.restore = [['1'], ['1']]; token.type = "int"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "verbosity"; token.key_prefix = "--"; token.label = "Verbosity level"; token.help = "Controls how much information will be written to the screen, from 0..2. "; token.group = "advanced"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "1"; token.restore = [['1'], ['1']]; token.type = "int"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-=======
->>>>>>> release-2.9
-		sxcmd = SXcmd(); sxcmd.name = "sp_separate_class"; sxcmd.subname = ""; sxcmd.mode = ""; sxcmd.subset_config = ""; sxcmd.label = "Separate Into Classes"; sxcmd.short_info = "Separates stacks of particle images into stacks for each class."; sxcmd.mpi_support = False; sxcmd.mpi_add_flag = False; sxcmd.category = "sxc_utilities"; sxcmd.role = "sxr_util"; sxcmd.is_submittable = True
-		token = SXcmd_token(); token.key_base = "input_class_avgs"; token.key_prefix = ""; token.label = "Input class averages"; token.help = "Set of 2D class averages, with particle-membership information in header. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = ""; token.restore = [[""], [""]]; token.type = "data2d_one"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-		token = SXcmd_token(); token.key_base = "input_image_stack"; token.key_prefix = ""; token.label = "Input particles"; token.help = "Particle image stack. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = ""; token.restore = [[""], [""]]; token.type = "bdb2d_stack"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-		token = SXcmd_token(); token.key_base = "output_directory"; token.key_prefix = ""; token.label = "Output directory"; token.help = "Directory where outputs will be written. "; token.group = "main"; token.is_required = True; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = ""; token.restore = [[""], [""]]; token.type = "output"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-		token = SXcmd_token(); token.key_base = "isac_dir"; token.key_prefix = "--"; token.label = "ISAC directory"; token.help = "Input ISAC directory, if applying alignments to particles. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "None"; token.restore = [['None'], ['None']]; token.type = "dir"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-		token = SXcmd_token(); token.key_base = "filt"; token.key_prefix = "--"; token.label = "Filter radius"; token.help = "Gaussian low-pass filter radius, Angstroms if pxsz specified below, else pixels^-1. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "None"; token.restore = [['None'], ['None']]; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-		token = SXcmd_token(); token.key_base = "pxsz"; token.key_prefix = "--"; token.label = "Pixel size"; token.help = "Angstroms per pixel, might be downsampled already by ISAC2. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "None"; token.restore = [['None'], ['None']]; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-		token = SXcmd_token(); token.key_base = "shrink"; token.key_prefix = "--"; token.label = "Downsampling factor"; token.help = "Downsampling factor, e.g., 6 -&gt; 1/6 original size. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "None"; token.restore = [['None'], ['None']]; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-		token = SXcmd_token(); token.key_base = "nvec"; token.key_prefix = "--"; token.label = "Number of eigenimages"; token.help = "Number of eigenimages to compute. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "None"; token.restore = [['None'], ['None']]; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-		token = SXcmd_token(); token.key_base = "verbose"; token.key_prefix = "--"; token.label = "Verbose"; token.help = "Writes additional messages to the terminal during execution. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = False; token.restore = [[False], [False]]; token.type = "bool"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
-<<<<<<< HEAD
-=======
->>>>>>> f1bc59080f4d56fbdd8e2071a6b9d75a71a4f12d
->>>>>>> release-2.9
 
 		sxcmd_list.append(sxcmd)
 
@@ -7216,11 +7142,7 @@ def main():
 	usage = progname + """ 
 	The main SPHIRE GUI application. It is designed as the command generator for the SPHIRE single particle analysis pipeline.
 	"""
-<<<<<<< HEAD
 	parser = OptionParser(usage, version=sp_global_def.SPARXVERSION)
-=======
-	parser = OptionParser(usage, version=SPARXVERSION)
->>>>>>> release-2.9
 	parser.add_option('--helical', action='store_true', default=False, help='Start the GUI in helical mode. This can be changed after the start. (default False)')
 	# No options!!! Does not need to call parser.add_option()
 	
@@ -7284,15 +7206,7 @@ def main():
 
 	# Initialise a singleton class for look & feel constants
 
-<<<<<<< HEAD
-	version_string = sphire.__version__#'1.4'
-=======
-<<<<<<< HEAD
-	version_string = sphire.__version__#'1.4'
-=======
 	version_string = '1.4' #### sphire.__version__#
->>>>>>> f1bc59080f4d56fbdd8e2071a6b9d75a71a4f12d
->>>>>>> release-2.9
 	SXLookFeelConst.initialise(sxapp, version_string)
 
 	# Define the main window (class SXMainWindow)
@@ -7315,10 +7229,7 @@ def main():
 
 # ========================================================================================
 if __name__ == "__main__":
-<<<<<<< HEAD
 	print()
-=======
->>>>>>> release-2.9
 	main()
 
 # ========================================================================================

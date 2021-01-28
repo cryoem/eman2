@@ -38,10 +38,7 @@
 #
 
 import copy
-<<<<<<< HEAD
 from sphire.libpy import sp_global_def
-=======
->>>>>>> release-2.9
 import os
 import sxgui_template
 from builtins import object
