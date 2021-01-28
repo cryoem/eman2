@@ -141,6 +141,16 @@ void div(float f);
  */
 void div(const EMData & image);
 
+/** Replaces the value of each pixel with the minimum of the current value
+ * and the value in the provided image. An Averager can be used to do this
+ * across many images. This permits a strategy where the intermediate values
+ * are needed, not just the final minimum.
+ * @param image The image 'this' image divided by.
+ * @exception ImageFormatException If the 2 images are not same size.
+ */
+void update_min(const EMData & image);
+
+
 /** Set all the pixel value = 0. */
 void to_zero();
 
