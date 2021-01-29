@@ -101,7 +101,7 @@ def calc_oneres(jsd,vol1f,vol2f,apix,freq,ftsize,tophat=False,cutoff=0.143,rmask
 			volcor.update_min(minvol)	# could just copy, but timing is likely about the same
 			curvol=max(freq,curvol)		# should always be freq, but just to be safe...
 			
-		filt=volcor.process("math.ccc_snr_wiener",{"wiener":1})
+		filt=volcor.process("math.ccc_snr_wiener",{"wiener":1,"scalesnr":3.0})
 
 	filt1=vol1b*filt
 	filt2=vol2b*filt
