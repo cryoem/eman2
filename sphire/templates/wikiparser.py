@@ -2020,12 +2020,16 @@ def create_sxcmd_subconfig_meridien_local_iteration(beta=False):
 
 def create_sxcmd_subconfig_meridien_final(beta=False, voldir=False):
 	token_edit_list = []
+	
+	if voldir:
+		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("stack"); token_edit.label = "Input image stack"; token_edit.help = "Particle stack to use for reconstruction (i.e., after signal-subtraction)."; token_edit.is_required = True; token_edit_list.append(token_edit)
+		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit.label = "Meridien Directory"; token_edit.help = "This directory must exist. In this mode information is read from files in this directory."; token_edit.is_required = True; token_edit_list.append(token_edit)
+	
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("do_final"); token_edit.is_required = True; token_edit.is_locked = False; token_edit.default = -1; token_edit.restore = -1; token_edit_list.append(token_edit)
 	
 	if not voldir:
 		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit.label = "Meridien Output Directory"; token_edit.help = "This directory must exist. In this mode information is read from files in this directory and the results will be written there."; token_edit.is_required = True; token_edit_list.append(token_edit)
 	else:
-		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit.label = "Meridien Directory"; token_edit.help = "This directory must exist. In this mode information is read from files in this directory."; token_edit.is_required = True; token_edit_list.append(token_edit)
 		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("voldir"); token_edit.label = "Output Reconstruction Directory"; token_edit.help = "Directory in which the output reconstructions will be written."; token_edit_list.append(token_edit)
 	
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("memory_per_node"); token_edit_list.append(token_edit)
