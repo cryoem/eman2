@@ -6,7 +6,7 @@ It's not a standalone package.
 
 # Compatibility
 
-Version 1.4.x needs EMAN >= 2.3
+Version 1.4.x needs EMAN >= 2.9
 
 # More information
   
