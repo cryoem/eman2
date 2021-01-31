@@ -1270,7 +1270,7 @@ class boxerConvNet(QtCore.QObject):
 
 class boxerGauss(QtCore.QObject):
 	# default parameters values
-	defaults = {'use_variance':1,
+	defaults = {'use_variance':True,
 				'gauss_width':1.0,
 				'thr_low':1.0, #0.0, changed for testing
 				'thr_hgh':2.0, #1.0, changed for testing
@@ -1300,7 +1300,6 @@ class boxerGauss(QtCore.QObject):
 	def do_autobox(micrograph,goodrefs,badrefs,bgrefs,apix,nthreads,params,prog=None):
 		#from sparx import filt_gaussl, get_im, filt_gaussh
 		from sparx import filt_gaussl, filt_gaussh
-		
 		# determine if running from GUI or command line
 		# NOTE --autopick option overrides the --gui option
 		# NOTE boxsize is needed for the picker, however, is not passed to do_autobox method
@@ -1319,8 +1318,8 @@ class boxerGauss(QtCore.QObject):
 			#for param, value in boxerGauss.defaults.items():
 			# check if parameter was supplied by user, otherwise use default value
 			# TODO isolate picker to a separate method and use kwargs instead
-			if params.get('use_variance'):
-				use_variance = params['use_variance']
+			if 'use_variance' in params: # cannot use "get" for a bool value
+				use_variance = bool(params['use_variance'])
 			else:
 				use_variance = boxerGauss.defaults['use_variance']
 			
@@ -1353,7 +1352,6 @@ class boxerGauss(QtCore.QObject):
 		#print("invert: ", self.invert)
 		print("gauss width: ", gauss_width)
 		print("variance: ", use_variance)
-
 		# get the micrograph:
 		# NOTE next processing steps were taken from e2boxer_old.py GaussBoxer.get_small_image
 		# Currently it is not clear how to make downsampling work and calculate the coordinates back to the original image
@@ -1402,7 +1400,7 @@ class boxerGauss(QtCore.QObject):
 		small_img -= avg
 		small_img /= sigma
 		#small_img.write_image('small_img_new.hdf') # write to disk for debugging - looks OK
-		if(use_variance):
+		if use_variance:
 			from morphology import power
 			small_img = power(small_img, 2.0)
 			print("Using variance")
