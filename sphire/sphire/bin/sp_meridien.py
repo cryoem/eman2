@@ -10078,6 +10078,10 @@ def rec3d_make_maps(compute_fsc=True, regularized=True):
         else:
             if 'voldir' in Tracker["constants"]:
                 recondir = Tracker["constants"]["voldir"]
+                
+                if Blockdata["myid"] == Blockdata["main_node"] and not os.path.isdir(recondir):
+                    os.makedirs(recondir)
+                mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
             else:
                 recondir = Tracker["constants"]["masterdir"]
             

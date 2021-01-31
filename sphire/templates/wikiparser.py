@@ -2023,7 +2023,7 @@ def create_sxcmd_subconfig_meridien_final(beta=False, voldir=False):
 	
 	if voldir:
 		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("stack"); token_edit.label = "Input image stack"; token_edit.help = "Particle stack to use for reconstruction (i.e., after signal-subtraction)."; token_edit.is_required = True; token_edit_list.append(token_edit)
-		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit.label = "Meridien Directory"; token_edit.help = "This directory must exist. In this mode information is read from files in this directory."; token_edit.is_required = True; token_edit_list.append(token_edit)
+		token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("output_directory"); token_edit.label = "Meridien Directory"; token_edit.help = "This directory must exist. In this mode, information is read from files in this directory. GUI will ask if you really want to continue; answer Yes."; token_edit.is_required = True; token_edit_list.append(token_edit)
 	
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("do_final"); token_edit.is_required = True; token_edit.is_locked = False; token_edit.default = -1; token_edit.restore = -1; token_edit_list.append(token_edit)
 	
