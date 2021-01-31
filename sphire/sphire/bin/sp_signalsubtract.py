@@ -142,7 +142,7 @@ Outputs:
 
 """ % ((__file__,)*5)
 
-MODIFIED="Modified 2021-01-26"
+MODIFIED="Modified 2021-01-31"
 
 """
 CHANGELOG:
@@ -158,7 +158,7 @@ CHANGELOG:
     2019-05-31 (trs) -- can low-pass filter map before masking
     2019-05-22 (trs) -- replaced soft mask with sp_mask
     2019-05-22 (trs) -- updated for SPHIRE v1.2
-    TODO: don't use safe-exit() with errors
+    TODO: don't use safe_exit() with errors
     TODO: add full set of options for sp_mask
 """
 
@@ -175,15 +175,45 @@ class BdbNames:
     """
 
     def __init__(self, bdb_stem, dir_above_eman2db=None):
-        self.bdb_stem= bdb_stem
+        # Sanity check in case already a BDB name
+        if bdb_stem[:4]=="bdb:":
+            strip_bdb= bdb_stem[4:]
+            
+            # Check if there's a slash or pound
+            if "#" in strip_bdb or '/' in strip_bdb:
+                # Make sure directory is not also specified explicitly
+                assert not dir_above_eman2db, "ERROR!! Directory specified but already has directory: %s %s" % (bdb_stem, dir_above_eman2db)
+                
+                # Remove pound first
+                split_pound= strip_bdb.split("#")
+                assert len(split_pound)<=2, "ERROR!! More than one '#' in %s" % strip_bdb
+                
+                # If there is one "#", first element is the directory, and 2nd is the stem
+                if len(split_pound)==2:
+                    dir_above_eman2db= split_pound[0]
+                    self.bdb_stem= split_pound[1]
+                
+                # If there weren't any #s, then look for /s
+                elif len(split_pound)==1:
+                    split_slash= os.path.split(strip_bdb)
+                    dir_above_eman2db, self.bdb_stem= os.path.split(strip_bdb)
+                
+                else:
+                    mesg= "Don't know how to parse %s" % split_pound
+                    sp_global_def.ERROR(mesg, __file__, 1)
+            
+        else:
+            self.bdb_stem= bdb_stem
+        
         if dir_above_eman2db != None:
             self.bdb_dir= dir_above_eman2db
         else:
             self.bdb_dir= '.'
+        
         self.eman2db_dir= os.path.join(self.bdb_dir, 'EMAN2DB')
         self.bdb_name= self.stem2name()
         self.bdb_path= self.stem2path()
-
+        
     def stem2name(self):
         if self.bdb_dir != None:
             name= 'bdb:' + self.bdb_dir + "#" + self.bdb_stem
@@ -726,7 +756,7 @@ def signalsubtract(options, outdir='.', verbosity=0):
             if options.apix:
                 volradiuspx= old_div(options.volradius, options.apix)
                 if verbosity>=1:
-                    mesg= "Will use a radius of %spx for centering (%sA at %s A/px)" % (volradiuspx, options.volradius, options.apix)
+                    mesg= f"Will use a radius of {volradiuspx: .1f}px for centering ({options.volradius}A at {options.apix} A/px)"
                     print_log_msg(mesg, log_obj)
             else:
                 volradiuspx= options.volradius
@@ -998,16 +1028,6 @@ def projsubtract(parts0, ctfdoc, map2subtract, projparams, outdir, mpioptions,
             if verbosity>=1:
                 print_log_msg("Writing up to %s example images" % numtestimgs, log)
             
-            ####write_example_montages(
-                ####mpi_orig_template, 
-                ####mpi_proj_bdb_stem, 
-                ####mpi_diff_bdb_stem, 
-                ####numtestimgs,
-                ####outdir, 
-                ####TEST_MONTAGE,
-                ####log=log, 
-                ####verbosity=verbosity
-                ####)
             write_example_montages(
                 parts0, 
                 reproj_bdb_class.bdb_name, 
@@ -1178,11 +1198,6 @@ def project3d_MPI(volfile, projparams, outdir, ctfdoc, orig_part_bdb,
         selection_file= mpi_partdoc_template.format(my_mpi_proc_id)
         sp_utilities.write_text_row(index_list, selection_file)
         
-        ##### Read specific attribute as list, rather than read image and then get attribute
-        ####coord_list= EMAN2.EMUtil.get_all_attributes(orig_part_bdb, "ptcl_source_coord")
-        ####source_list= EMAN2.EMUtil.get_all_attributes(orig_part_bdb, "ptcl_source_image")
-        ##### (Reading the image individual and then the attributes took ~30 minutes in test set.)
-    
         # Set up BDB
         mpi_proj_bdb_obj= BdbNames(mpi_proj_bdb_stem.format(my_mpi_proc_id), outdir)
         mpi_bdb_name= mpi_proj_bdb_obj.bdb_name
@@ -1248,7 +1263,6 @@ def project3d_MPI(volfile, projparams, outdir, ctfdoc, orig_part_bdb,
             prj_dict["data_path"]= sp_utilities.makerelpath(comb_proj_bdb_obj.eman2db_dir, mpi_mrc_stack_file)
             
             # For verification
-            ####if RUNNING_UNDER_MPI:
             prj_dict["ptcl_source_coord"]= coord_list[global_num]
             prj_dict["ptcl_source_image"]= source_list[global_num]
             
@@ -1258,7 +1272,6 @@ def project3d_MPI(volfile, projparams, outdir, ctfdoc, orig_part_bdb,
             prj_obj["ptcl_source_coord_id"]= part_counter
         
             # For verification
-            ####if RUNNING_UNDER_MPI:
             prj_obj["ptcl_source_coord"]= coord_list[global_num]
             prj_obj["ptcl_source_image"]= source_list[global_num]
         
@@ -1427,17 +1440,16 @@ def subtract_stack_MPI(minuend_stack, subtrahend_stack, combined_diffimg_bdb_ste
         print_log_msg(mesg, log)
         safe_exit()
     
-    if RUNNING_UNDER_MPI and is_main and verbosity>=1: #### my_mpi_proc_id==main_mpi_proc 
+    if RUNNING_UNDER_MPI and is_main and verbosity>=1: 
         print_log_msg("Waiting for parallel processes to finish...\n", log)
     
     quick_barrier()
     if verbosity>=1 : print_log_msg("Finished subtracting reprojections\n", log)
     
     combined_diffimg_bdb_obj= BdbNames(combined_diffimg_bdb_stem, outdir)
-    print('combined_diffimg_bdb_obj', combined_diffimg_bdb_obj.bdb_name)  #### DIAGNOSTIC
     
     # Write combined BDB (main process only)
-    if RUNNING_UNDER_MPI and is_main: #### my_mpi_proc_id==main_mpi_proc:
+    if RUNNING_UNDER_MPI and is_main: 
         if verbosity>=1 : print_log_msg("Combining signal-subtracted stack files...", log)
         
         # Combine stacks
@@ -1453,7 +1465,7 @@ def subtract_stack_MPI(minuend_stack, subtrahend_stack, combined_diffimg_bdb_ste
         assert num_init_parts == num_merged_parts, "ERROR!! Mismatch input particles %s != %s merged particles" % (num_init_parts, num_merged_parts)
         
     # Save stats
-    if is_main: #### my_mpi_proc_id == main_mpi_proc:
+    if is_main: 
         if stats_doc or do_norm:
             if verbosity>=1 : print_log_msg("Reading mean values...", log)
             avg_list= EMAN2.EMUtil.get_all_attributes(combined_diffimg_bdb_obj.bdb_name, "old_mean")
@@ -1551,9 +1563,7 @@ def merge_bdbs(input_bdb_dir, input_stem_template, num_files, output_bdb_obj, ve
     
     # Close new database
     EMAN2db.db_close_dict(output_bdb_obj.bdb_name)
-    print('1534: EMAN2db.db_close_dict', output_bdb_obj.bdb_name, type(output_bdb_obj.bdb_name) )  #### DIAGNOSTIC
     numoutimgs= EMAN2.EMUtil.get_image_count(output_bdb_obj.bdb_name)
-    print('1536: Ignore warning "a bytes-like object is required, not NoneType", is an issue with EMAN2db.db_close_dict')  #### DIAGNOSTIC 
     assert numoutimgs == img_counter, "Uh oh!! merge_bdbs: %s != %s" % (numoutimgs, img_counter)
     if verbosity>=1 : 
         print_log_msg("Wrote %s images to '%s' from %s files\n" % (numoutimgs, output_bdb_obj.bdb_name, num_files), log)
@@ -1606,15 +1616,6 @@ def write_example_montages(orig_stack, proj_stack, diff_stack, numtestimgs,
         verbosity : how much information to write to screen (0..3)
     """
     
-    ##### Set up MPI
-    ####if "OMPI_COMM_WORLD_SIZE" in os.environ:
-        ####my_mpi_proc_id= mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
-    ####else:
-        ####my_mpi_proc_id= 0
-        
-    ####orig_stack= mpi_orig_template.format(my_mpi_proc_id)
-    ####proj_stack= 'bdb:' + outdir + '#' + mpi_proj_bdb_stem.format(my_mpi_proc_id)
-    ####diff_stack= 'bdb:' + outdir + '#' + mpi_diff_bdb_stem.format(my_mpi_proc_id)
     out_path= os.path.join(outdir, outstack)
     
     # Get number of images, and sanity check
