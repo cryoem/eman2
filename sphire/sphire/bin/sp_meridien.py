@@ -9106,7 +9106,7 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node, orgstack=None
                 Tracker = sp_utilities.convert_json_fromunicode(json.load(fout))
                 
                 # Mainly for signal-subtraction
-                Tracker["constants"]["voldir"] = voldir
+                if voldir : Tracker["constants"]["voldir"] = voldir
                 
             fout.close()
         except:
@@ -10077,6 +10077,7 @@ def rec3d_make_maps(compute_fsc=True, regularized=True):
         # If more than one group
         else:
             if 'voldir' in Tracker["constants"]:
+                assert Tracker["constants"]["voldir"] != None, "ERROR! 'voldir' is None"
                 recondir = Tracker["constants"]["voldir"]
                 
                 if Blockdata["myid"] == Blockdata["main_node"] and not os.path.isdir(recondir):

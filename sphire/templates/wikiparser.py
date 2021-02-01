@@ -2041,7 +2041,7 @@ def create_sxcmd_subconfig_meridien_final(beta=False, voldir=False):
 		if not voldir:
 			sxcmd_subconfig = SXsubcmd_config("Final 3D Reconstruction Only", "Compute a final 3D reconstruction using either select or best resolution iteration of meridien.", token_edit_list, sxsubcmd_mpi_support)
 		else:
-			sxcmd_subconfig = SXsubcmd_config("Compute 3D Reconstruction", "Compute a final 3D reconstruction from iteration number used for signal-subtraction.", token_edit_list, sxsubcmd_mpi_support)
+			sxcmd_subconfig = SXsubcmd_config("Compute 3D Reconstruction", "Compute a 3D reconstruction using refinement iteration used for signal-subtraction.", token_edit_list, sxsubcmd_mpi_support)
 
 	return sxcmd_subconfig
 

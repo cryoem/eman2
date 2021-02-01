@@ -29,31 +29,15 @@ Note 1: If you already have an averaged map, or don't have two maps to average, 
 
 Note 2: Low-pass filter radius should be in units of Angstroms if pixel size (--apix) is provided.  If pixel size is not provided, then the program expects the filter radius in units of absolute frequency (px^-1)
 
-\\ __2. Locate regions to be subtracted __:
+\\ __2. Locate regions to be subtracted __
 
-We recommend using Chimera's segmentation function "Segger" (Tools -> Volume Data -> Segment Map).    
+\\ __3. Mask a soft mask of the region to be excluded __
 
-Note the threshold used when segmenting the map.  Group the segments in the that you want to exclude; CTRL-click selects a segment, and SHIFT-CTRL-click adds a segment to the selection.  (Mouse controls can be customized under "Options.")  
+\\ __4. Compute re-projections of map to be subtracted, and subtract them from the original images __
 
-Hint 1: Make the segmented regions transparent (Regions -> Make transparent).  
+\\ __5. Compute reconstruction of density remaining after signal-subtraction __
 
-Hint 2: Hide regions once you have grouped them (Regions -> Hide), in case there are segments which are underneath the selected surface segments.  
-
-Save the grouped selection to a file (File -> Save selections to .mrc file...). 
-
-The initial map will not have the same dimensions as the original.  Pad the map to the target size at the Chimera command line:
-
-  vop resample #4 onGrid #2  
-
-...where #4 is the index of the grouped segmented map, and #2 is the original map.  Save the padded map to a new file (File -> Save map as...).
-
-\\ __3. Mask a soft mask of the region to be excluded __:
-
-\\ __4. Compute re-projections of map to be subtracted, and subtract them from the original images __:
-
-\\ __5. Compute reconstruction of density remaining after signal-subtraction __:
-
-\\ __6. Center map of the remaining density __:
+\\ __6. Center map of the remaining density __
 
 \\
 ===== Input =====
@@ -70,9 +54,9 @@ The initial map will not have the same dimensions as the original.  Pad the map 
   
 \\
 ===== Output =====
-  ; vol_avg_unfil.hdf : (avgfilt) Average of input half-set maps, unfiltered.
-  ; vol_avg_fil.hdf : (avgfilt) Low-pass filtered average of input half-set maps.
-  ; input_filtered.hdf : (avgfilt) Low-pass filtered input map.
+  ; vol_avg_unfil.hdf : Average of input half-set maps, unfiltered.
+  ; vol_avg_fil.hdf : Low-pass filtered average of input half-set maps.
+  ; input_filtered.hdf : Low-pass filtered input map.
  
 \\
 ===== Description =====
