@@ -11,12 +11,11 @@ source:
 
 requirements:
     build:
-        - cmake     3.14.*
         - {{ compiler('cxx') }}
         - {{ cdt('mesa-libgl-devel') }}   # [linux]
 
     host:
-        - eman-deps-cxx     {{ environ.get('EMAN_DEPS_VERSION', '') }}
+        - eman-deps         {{ environ.get('EMAN_DEPS_VERSION', '') }}
         - libglu                          # [linux]
     
 test:
