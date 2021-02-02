@@ -3007,26 +3007,17 @@ def avgvar(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use_eve
     inmem = True
     if type(data) == type(""):
         inmem = False
-        from sp_utilities    import get_im	
 
     img2D = True
     if inmem:
         img = data[0]
     else:
-        img = get_im(data,0)
+        img = sp_utilities.get_im(data,0)
     nx = img.get_xsize()
     ny = img.get_ysize()
     nz = img.get_zsize()
     if nz > 1:
         img2D = False
-
-    if mode == 'a':
-        if img2D:
-            from sp_utilities import get_params2D
-            from sp_fundamentals import rot_shift2D
-        else:
-            from sp_utilities import get_params3D
-            from sp_fundamentals import rot_shift3D
 
     if inmem:
         data_nima = len(data)
@@ -3046,13 +3037,13 @@ def avgvar(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use_eve
         if inmem:
             img = data[i]
         else:
-            img = get_im(data, i)
+            img = sp_utilities.get_im(data, i)
         if (mode == 'a'):
             if img2D:
-                angle, sx, sy, mirror, scale = get_params2D(img)
-                img = rot_shift2D(img, angle, sx, sy, mirror, scale, interp)
+                angle, sx, sy, mirror, scale = sp_utilities.get_params2D(img)
+                img = sp_fundamentals.rot_shift2D(img, angle, sx, sy, mirror, scale, interp)
             else:
-                phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(img)
+                phi, theta, psi, s3x, s3y, s3z, mirror, scale = sp_utilities.get_params3D(img)
                 img = rot_shift3D(img, phi, theta, psi, s3x, s3y, s3z, scale)
         EMAN2.Util.add_img(ave, img)
         EMAN2.Util.add_img2(var, img)
