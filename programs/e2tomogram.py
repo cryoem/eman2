@@ -86,7 +86,7 @@ def main():
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--reconmode", type=str, help="Intepolation mode for reconstruction. default is trilinear. check e2help.py for details. Not recommended to change.",default="trilinear")
 	parser.add_argument("--maxshift", type=float,help="Maximum shift between tilt(/image size). default is 0.35", default=.35)
-	parser.add_argument("--highpass", type=int,help="initial highpass filter for alignment in pixels. default if 5", default=5)
+	parser.add_argument("--highpass", type=int,help="initial highpass filter for alignment in pixels. default if 3", default=3)
 	parser.add_argument("--badone", action="store_true",help="Remove one bad tilt during coarse alignment. seem to work better with smaller maxshift...", default=False)#, guitype='boolbox',row=9, col=0, rowspan=1, colspan=1,mode="easy")
 	
 	parser.add_argument("--autoclipxy", action="store_true",help="Optimize the x-y shape of the tomogram to fit in the tilt images. only works in bytile reconstruction. useful for non square cameras.", default=False)
@@ -203,8 +203,10 @@ def main():
 		m=p.process("math.meanshrink", {"n":2})
 		m.process_inplace("filter.ramp")
 		m.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.3})
-		m.process_inplace("normalize.edgemean")
 		m.process_inplace("filter.highpass.gauss",{"cutoff_pixels":options.highpass})
+		m.process_inplace("normalize.edgemean")
+		sz=512
+		m.clip_inplace(Region((m["nx"]-sz)//2, (m["ny"]-sz)//2, sz,sz))
 		m["apix_x"]=m["apix_y"]=p["apix_x"]*2.
 		imgs_500.append(m)
 
@@ -286,7 +288,8 @@ def main():
 		
 		#### we need a zero degree tilt as reference to position the tomogram
 		if options.zeroid<0:
-			zeroid=np.argmin(abs(tlts))
+			#zeroid=np.argmin(abs(tlts))
+			zeroid=len(tlts)//2
 			options.zeroid=zeroid
 		
 		#### here we always assume the center tilt is at 0 degree
@@ -388,7 +391,8 @@ def main():
 		np.savetxt(os.path.join(path,"tltparams_init.txt"), tpm, fmt="%.3f")
 	
 	yrot=0 #### this is to save the overall rotation of tomogram
-	
+	rawfilterto=options.filterto
+	options.filterto=.25
 	for niter, siter in enumerate(scaleiter):
 		#### main refinement loop.
 		###  we do a number of iterations for images of different sizes, starting from 500x500 images and gradually get to 4k images
@@ -409,7 +413,7 @@ def main():
 			name_sample=os.path.join(path,"samples_{:02d}.hdf".format(niter))
 			name_ali=os.path.join(path,"ali_{:02d}.hdf".format(niter))
 			name_ptclali=os.path.join(path,"ptclali_{:02d}.hdf".format(niter))
-			make_ali(imgs_1k, ttparams, options, outname=name_ali)
+			make_ali(imgs_500, ttparams, options, outname=name_ali)
 		else:
 			name_tomo=name_sample=name_ali=name_ptclali=None
 			
@@ -433,7 +437,7 @@ def main():
 				if options.writetmp:
 					make_samples(imgs_, allparams, options,
 						outname=os.path.join(path,"samples_init.hdf"), refinepos=True);
-				#ptclpos=ali_ptcls(imgs_, allparams, options, outname=name_ptclali, doali=True)
+				ptclpos=ali_ptcls(imgs_, allparams, options, outname=os.path.join(path,"ptclali_init.hdf"), doali=True)
 			
 				if options.xdrift:
 					allparams=np.hstack([ttparams.flatten(), pks.flatten()])
@@ -442,7 +446,7 @@ def main():
 					if options.writetmp:
 						make_samples(imgs_, allparams, options,
 							outname=os.path.join(path,"samples_xdrift.hdf"), refinepos=True);
-						#ptclpos=ali_ptcls(imgs_, allparams, options, outname=os.path.join(path,"ptcls_xdrift.hdf"), doali=True)
+						ptclpos=ali_ptcls(imgs_, allparams, options, outname=os.path.join(path,"ptcls_xdrift.hdf"), doali=True)
 						#make_ali(imgs_1k, ttparams, options, outname=os.path.join(path,"ali_xdrift.hdf"))
 
 			#### Now actually refine the alignment parameters using the landmarks.
@@ -496,7 +500,7 @@ def main():
 		ttparams=correct_zpos(threed, ttparams, options)
 		
 	
-	
+	options.filterto=rawfilterto
 	#### alignment finish. now save output
 	if options.dryrun:
 		print("Skipping final tomogram generation...")
@@ -508,10 +512,11 @@ def main():
 		elif options.outsize=="4k":
 			options.bytile=True
 			imgout=imgs_4k
+		elif options.outsize=="500":
+			imgout=imgs_500
 		else:
 			imgout=imgs_1k
 			
-		
 		if options.rmbeadthr>0:
 			remove_beads(imgs_500, imgout, ttparams, options)
 		
@@ -522,10 +527,10 @@ def main():
 			threed=make_tomogram(imgout, ttparams, options, errtlt=loss0, clipz=options.clipz)
 
 		if options.writetmp:
+			make_ali(imgout, ttparams, options, outname=os.path.join(path,"tiltseries_ali.hdf"))
 			if options.compressbits<0: threed.write_image(os.path.join(path,"tomo_final.hdf"))
 			else: threed.write_compressed(os.path.join(path,"tomo_final.hdf"),0,options.compressbits,nooutliers=True)
-			make_ali(imgout, ttparams, options, outname=os.path.join(path,"tiltseries_ali.hdf"))
-
+			
 		#### write to the tomogram folder
 		try: os.mkdir("tomograms")
 		except: pass
@@ -591,7 +596,7 @@ def pt_testxy(x, img, tpm, p0, tiles0, bsz):
 	d=np.mean(np.linalg.norm(tx, axis=1))
 
 	return d
-    
+	
 def do_patch_tracking(imgs, ttparams, options):
 	
 	scale=int(np.round(imgs[0]["apix_x"]/options.apix_init))
@@ -686,72 +691,143 @@ def correct_zpos(tomo, ttparams, options):
 	return ttparamsnew
 
 	
+def make_mask(ss,rr=-1,sft=[0,0]):
+	ix, iy=np.indices((ss,ss))
+	maskv=np.exp(-.002*(iy-ss//2)**2)
+	maskv/=np.max(maskv)
+
+	r=np.sqrt((ix-ss//2-sft[0])**2+(iy-ss//2-sft[1])**2)
+	if rr<0:
+		rr=ss*.4
+	r=r-rr
+	r[r<0]=0
+	maskc=np.exp(-1e-2*r**2)
+	maskc=maskc/np.max(maskc)
+	maskc[maskc>1]=1
+	return maskc
 
 def xdrift_correction(imgs, allpms, options):
 	print("Performing rotation axis drift correction....")
 	zeroid=options.zeroid
-	num=options.num
-	nrange=np.hstack([np.arange(zeroid, num), np.arange(zeroid, -1, -1)])
-	ttparams, pks=get_params(allpms, options)
-	scale=imgs[0]["apix_x"]/options.apix_init
-	ttparams[:,:2]/=scale
-	pks/=scale
-	prange=np.arange(min(options.npk, 5))
-
-	k=0
-	nx=imgs[0]["nx"]
-	ny=imgs[0]["ny"]
-	fidptcls=[]
+	nz=options.num
+	tpm, pks=get_params(allpms, options)
+	nrange=np.hstack([np.arange(zeroid, nz), np.arange(zeroid, -1, -1)])
+	prange=np.arange(len(pks))
+	nx=ny=imgs[0]["nx"]
+	scale=float(imgs[0]["apix_x"])/options.apix_init
 	bx=options.bxsz//2
-	apix=imgs[0]["apix_x"]
-	
-	#### this is the matrix to return containing the offset of each landmark at each tilt
-	for ii,nid in enumerate(nrange):
-		if nid==zeroid: 
-			xbest=[0,0]
-			continue
-	
-		score=[]
-		#drange=np.arange(-10,11, dtype=float)*bx/scale*2
-		#drange+=xbest
-		def testloc(dx, writeout=False):
-			scr=[]
-			tpm=ttparams[nid].copy()
-			#tpm[0]+=dx*np.cos(tpm[2]*np.pi/180)
-			#tpm[1]+=dx*np.sin(tpm[2]*np.pi/180)
-			tpm[0]+=dx[0]
-			tpm[1]+=dx[1]
+	print("  itr, landmark dz, image dx:")
+	for itr in range(3):
+		pp=pks/scale
+		ptclss=np.zeros((nz,len(pks), bx*2, bx*2))
+		for nid in nrange:
+			if nid==nrange[0]: 
+				lasts=0
+				continue
+			ptcls=[]
 			for pid in prange:
-			
-				pxf=get_xf_pos(tpm, pks[pid])
+				tt=tpm[nid].copy()
+				tt[:2]/=scale
+
+				pxf=get_xf_pos(tt, pp[pid])
 				pxf[0]+=nx//2
 				pxf[1]+=ny//2
 
+				xf=Transform({"type":"2d","tx":pxf[0],"ty":pxf[1]})
+				e=imgs[nid].get_rotated_clip(xf,(bx*2,bx*2,1)).process("normalize.edgemean")
+				e.rotate(-tt[2],0,0)
+				ptcls.append(e.numpy().copy())
+
+			ptcls=np.array(ptcls)
+			ptclss[nid]=ptcls
+			
+		ptclss=np.array(ptclss)
+
+		zrg=10
+		rg=np.arange(-zrg,zrg+1)
+		pts=[]
+		scr=[]
+		for dz in rg:
+			for nid in range(nz):
+				ptcls=ptclss[nid]
+				tt=tpm[nid].copy()
+				tt[:2]/=scale
+				pxf=get_xf_pos(tt, [0,0,int(dz)])
+				pts.append(pxf)
+				
+				msk=make_mask(ptcls.shape[-1],1,[pxf[0], pxf[1]])
+				p=ptcls*msk
+				mp=np.min(p, axis=(1,2))
+				scr.append(mp)
+
+		scr=np.array(scr)#.reshape()
+
+		scr=scr.reshape((len(rg),nz,-1))
+		scr=np.transpose(scr, (2,0,1))
+		dzs=np.array([rg[np.argmin(np.mean(s,axis=1))] for s in scr])
+		pks1=pks.copy()
+		pks1[:,2]-=dzs*scale
+		
+		print(dzs)
+
+		pp=pks1.copy()/scale
+		ptclss=np.zeros((nz,len(pks), bx*2, bx*2))
+		for nid in range(nz):
+			ptcls=[]
+			for pid in prange:
+				tt=tpm[nid].copy()
+				tt[:2]/=scale
+
+				pxf=get_xf_pos(tt, pp[pid])
+				pxf[0]+=nx//2
+				pxf[1]+=ny//2
 
 				xf=Transform({"type":"2d","tx":pxf[0],"ty":pxf[1]})
 				e=imgs[nid].get_rotated_clip(xf,(bx*2,bx*2,1)).process("normalize.edgemean")
-				#if writeout and pid==0:
-					#e.write_image("tomorecon_00/testout.hdf",-1)
-				e.process_inplace("mask.gaussian", {"outer_radius":e["nx"]//4})
-				scr.append(e["minimum"])
-			
-			return np.mean(scr)
-		
-		#testloc(xbest, True)
-		res=minimize(testloc, xbest,method='Powell',options={'ftol': 1e-2, 'disp': False, "maxiter":10})
-		#print(nid, xbest, res.x)
-		xbest=res.x
-		#testloc(xbest, True)
-		
-		
-		#print(nid, xbest, res.x, res.fun)
-		ttparams[nid][0]+=xbest[0]#*np.cos(ttparams[nid][2]*np.pi/180)
-		ttparams[nid][1]+=xbest[1]#*np.sin(ttparams[nid][2]*np.pi/180)
-				
+				e.rotate(-tt[2],0,0)
+				ptcls.append(e.numpy().copy())
 
+			ptcls=np.array(ptcls)
+			ptclss[nid]=ptcls
+			
+		ptclss=np.array(ptclss)
+
+		tsx=np.zeros(nz)
+		xrg=5
+
+		for nid in nrange:
+			if nid==nrange[0]: 
+				lasts=0
+				continue
+			ptcls=ptclss[nid]
+			scr=[]
+			rg=np.arange(-xrg,xrg+1)
+			for dx in rg:
+				msk=make_mask(ptcls.shape[-1],1,[0,dx+lasts])
+				p=ptcls*msk
+				mp=np.min(p, axis=(1,2))
+				scr.append(np.mean(mp))
+
+			s=rg[np.argmin(scr)]
+			lasts+=s
+			tsx[nid]=lasts
+
+		tp=np.zeros((nz,2))
+		for i,t in enumerate(tpm):
+			tp[i,0]=tsx[i]*np.cos(t[2]*np.pi/180)
+			tp[i,1]=tsx[i]*np.sin(t[2]*np.pi/180)	
+			
+		tpm1=tpm.copy()
+		tpm1[:,:2]-=tp*scale
 		
-	ttparams[:,:2]*=scale
-	return ttparams
+		
+		print(itr, np.mean(abs(dzs)), np.mean(abs(tsx)))
+
+		tpm=tpm1.copy()
+		pks=pks1.copy()
+
+
+	return tpm
 
 
 def remove_beads(imgs_500, imgout, ttparams, options):
@@ -955,9 +1031,79 @@ def get_xf_pos(tpm, pk):
 
 	return [p2[0], p2[1]]
 
-
 #### coarse translational alignment
 def calc_global_trans(imgs, options, excludes=[], tltax=None,tlts=[]):
+	data=[]
+	nz=len(imgs)
+	sz=256
+	for m in imgs:
+		s=m.process("math.meanshrink",{"n":2})
+		s.process_inplace("filter.lowpass.gauss", {"cutoff_abs":.4})
+		s.process_inplace("normalize.edgemean")
+		s.clip_inplace(Region((s["nx"]-sz)//2, (s["ny"]-sz)//2, sz,sz))
+		data.append(s.numpy().copy())
+		
+	data=np.array(data)
+	data00=data.copy()
+	print(data.shape)
+
+	ix, iy=np.indices((sz,sz))
+
+	r=np.sqrt((ix-sz//2)**2+(iy-sz//2)**2)
+	r=r-sz*.4
+	r[r<0]=0
+	maskc=np.exp(-1e-2*r**2)
+	maskc=maskc/np.max(maskc)
+	maskc[maskc>1]=1
+	
+	trans=np.zeros((nz, 2))
+	for itr in range(3):
+		fts=[]
+		for i in range(nz):
+			m=data[i]*maskc
+			m=get_fft(m)
+			am=np.abs(m)
+			am[am==0]=1
+			m/=am
+			fts.append(m)
+		
+		
+		ts=[]
+		ts.append([0,0])
+		for i in range(1,nz):
+			a=fts[i-1]
+			b=fts[i]
+			
+			c=a*np.conj(b)
+			c=get_img(c)
+
+			p=np.array(np.where(c==np.max(c))).flatten()-sz//2
+			ts.append(p)
+		
+		ts=-np.cumsum(ts, axis=0)
+		ts-=ts[nz//2]
+		print(itr, np.mean(abs(ts), axis=0))
+		ts=ts.astype(float)+trans
+		tx=-np.round(ts).astype(int)
+		
+		data=data00.copy()
+		for i in range(nz):
+			data[i]=np.roll(data00[i], tx[i], axis=[0, 1])
+		trans=ts.copy()
+		
+	trans=-ts[:,::-1].copy()*2
+	
+	imgout=[]
+	for i,m in enumerate(imgs):
+		e=m.process("mask.soft",{"outer_radius":-8,"width":8})
+		t=trans[i]
+		e.translate(t[0], t[1],0)
+		imgout.append(e)
+		
+	return [imgout, trans]
+
+#### coarse translational alignment
+def calc_global_trans_0(imgs, options, excludes=[], tltax=None,tlts=[]):
 	print("Doing coarse translational alignment...")
 
 	num=len(imgs)
@@ -1398,14 +1544,20 @@ def find_landmark(threed, options):
 	#threed0=threed.process("normalize.rows")
 	#### use minshrink so we keep the minimas
 	threedtiny=threed.process("math.minshrink", {"n":2})
-	threedtiny.process_inplace("normalize")
+	threedtiny.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.2})
 	threedtiny.process_inplace("filter.highpass.gauss",{"cutoff_pixels":3})
+	threedtiny.process_inplace("normalize")
 	mapnp=threedtiny.numpy().copy()
-	asrt= np.argsort(mapnp.flatten())
+	#asrt= np.argsort(mapnp.flatten())
+	b=32
+	m=mapnp.copy()
+	m[:,:b]=m[:,-b:]=m[:,:,:b]=m[:,:,-b:]=0
+	asrt= np.argsort(m.flatten())
 
 	#### go through every point starting from the darkest ones.
 	### there should be a much faster way but we are only doing it on ~250 cubes so it is not too slow
 	pts=[]
+	imgs=[]
 	dthr=options.pk_mindist*float(threedtiny["nx"])
 	vthr=options.pk_maxval
 	for i in range(len(asrt)):
@@ -1418,11 +1570,14 @@ def find_landmark(threed, options):
 				continue
 
 		pts.append(pt)
+		m=threedtiny.get_clip(Region(int(pt[2])-b ,int(pt[1])-b ,int(pt[0]) ,b*2, b*2, 1))
+		imgs.append(m)
+		
 		if mapnp[pt]>vthr:
 			break
 		
 		#### generate a bit more landmarks for some randomness
-		if len(pts)>=options.npk*1.2:
+		if len(pts)>=options.npk*1.5:
 			break
 
 	if len(pts)<options.npk:
@@ -1431,6 +1586,15 @@ def find_landmark(threed, options):
 	else:
 		#### I commented out the shuffling for stable testing. maybe should add it back sometime..
 		#np.random.shuffle(pts)
+		area=[]
+		for i,m in enumerate(imgs):
+			c=np.array(m.calc_radial_dist(32,0,1,1))
+			c/=c[0]
+			c=np.mean(c[3:])-np.mean(c[:3])
+			area.append(c)
+		aid=np.argsort(area)
+		pts=[pts[a] for a in aid]
+
 		pts=pts[:options.npk]
 
 	pks=np.array(pts)-np.array(mapnp.shape)/2.
@@ -1580,6 +1744,9 @@ def ali_ptcls(imgs, allpms, options, outname=None, doali=True):
 	ttparams[:,:2]/=scale
 	pks/=scale
 	prange=np.arange(options.npk)
+	if outname:
+		try:os.remove(outname)
+		except:pass
 
 	k=0
 	nx=imgs[0]["nx"]
