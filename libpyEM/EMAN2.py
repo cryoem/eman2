@@ -1541,6 +1541,16 @@ def get_platform():
 if get_platform() == "Darwin":
 	glut_inited = True # this is a hack for the time being
 
+def display_path(path):
+	"""Will generate a suitable reduced path for use in title-bars on windows, etc."""
+	
+	try: full=os.path.abspath(path)
+	except: full=path
+	
+	full=full.replace("\\","/").split("/")
+	if len(full)==1: return full
+	return "/".join(full[-2:])
+
 def remove_directories_from_name(file_name,ntk=0):
 	'''
 	Removes the directories from a file name.

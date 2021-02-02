@@ -260,13 +260,13 @@ class EMFileType(object) :
 
 		try :
 			target = brws.viewplot2d[-1]
-			target.set_data(data, self.path.split("/")[-1].split("#")[-1])
+			target.set_data(data, display_path(self.path))
 		except :
 			target = EMPlot2DWidget()
 			brws.viewplot2d.append(target)
-			target.set_data(data, self.path.split("/")[-1].split("#")[-1])
+			target.set_data(data, display_path(self.path))
 
-		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
+		target.qt_parent.setWindowTitle(display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -281,9 +281,9 @@ class EMFileType(object) :
 
 		target = EMPlot2DWidget()
 		brws.viewplot2d.append(target)
-		target.set_data(data, self.path.split("/")[-1].split("#")[-1])
+		target.set_data(data, display_path(self.path))
 
-		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
+		target.qt_parent.setWindowTitle(display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -302,14 +302,14 @@ class EMFileType(object) :
 			target = emscene3d.EMScene3D()
 			brws.view3d.append(target)
 
-		target.insertNewNode(self.path.split("/")[-1].split("#")[-1], data, parentnode = target)
+		target.insertNewNode(display_path(self.path), data, parentnode = target)
 		iso = emdataitem3d.EMIsosurface(data)
 		target.insertNewNode('Isosurface', iso, parentnode = data)
 		target.initialViewportDims(data.getData().get_xsize())	# Scale viewport to object size
 		target.setCurrentSelection(iso)				# Set isosurface to display upon inspector loading
 		target.updateSG()	# this is needed because this might just be an addition to the SG rather than initialization
 
-		target.setWindowTitle(self.path.split('/')[-1])
+		target.setWindowTitle(display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -325,13 +325,13 @@ class EMFileType(object) :
 		target = emscene3d.EMScene3D()
 		brws.view3d.append(target)
 
-		target.insertNewNode(self.path.split("/")[-1].split("#")[-1], data)
+		target.insertNewNode(display_path(self.path), data)
 		iso = emdataitem3d.EMIsosurface(data)
 		target.insertNewNode('Isosurface', iso, parentnode = data)
 		target.initialViewportDims(data.getData().get_xsize())	# Scale viewport to object size
 		target.setCurrentSelection(iso)				# Set isosurface to display upon inspector loading
 		brws.notbusy()
-		target.setWindowTitle(self.path.split('/')[-1])
+		target.setWindowTitle(display_path(self.path))
 
 		target.show()
 		target.raise_()
@@ -345,14 +345,14 @@ class EMFileType(object) :
 
 		for n in range(self.nimg) :
 			data = emdataitem3d.EMDataItem3D(self.path, n = n)
-			target.insertNewNode("{} #{}".format(self.path.split("/")[-1], n), data)
+			target.insertNewNode("{} #{}".format(display_path(self.path), n), data)
 			iso = emdataitem3d.EMIsosurface(data)
 			target.insertNewNode('Isosurface', iso, parentnode = data)
 
 		target.initialViewportDims(data.getData().get_xsize())	# Scale viewport to object size
 		target.setCurrentSelection(iso)				# Set isosurface to display upon inspector loading
 		brws.notbusy()
-		target.setWindowTitle(self.path.split('/')[-1])
+		target.setWindowTitle(display_path(self.path))
 
 		target.show()
 		target.raise_()
@@ -376,7 +376,7 @@ class EMFileType(object) :
 			target.set_data(avg)
 			brws.view2d.append(target)
 
-		target.setWindowTitle("sum of"+self.path.split('/')[-1])
+		target.setWindowTitle("sum of"+display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -407,7 +407,7 @@ class EMFileType(object) :
 #			target.mx_image_double.connect(target.mouse_double_click)		# this makes class average viewing work in app mode
 			brws.view2ds.append(target)
 
-		target.qt_parent.setWindowTitle("Random Avg Stack - "+self.path.split('/')[-1])
+		target.qt_parent.setWindowTitle("Random Avg Stack - "+display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -435,7 +435,7 @@ class EMFileType(object) :
 			# if self.getSetsDB() : target.set_single_active_set(self.getSetsDB())
 			brws.view2ds.append(target)
 
-		target.qt_parent.setWindowTitle("Stack - "+self.path.split('/')[-1])
+		target.qt_parent.setWindowTitle("Stack - "+display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -457,7 +457,7 @@ class EMFileType(object) :
 		# if self.getSetsDB() : target.set_single_active_set(self.getSetsDB())
 		brws.view2ds.append(target)
 
-		target.qt_parent.setWindowTitle("Stack - "+self.path.split('/')[-1])
+		target.qt_parent.setWindowTitle("Stack - "+display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -485,7 +485,7 @@ class EMFileType(object) :
 			# if self.getSetsDB() : target.set_single_active_set(self.getSetsDB())
 			brws.view2ds.append(target)
 
-		target.qt_parent.setWindowTitle("Stack - "+self.path.split('/')[-1])
+		target.qt_parent.setWindowTitle("Stack - "+display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -571,7 +571,7 @@ class EMFileType(object) :
 		target.mx_image_double.connect(target.mouse_double_click)		# this makes class average viewing work in app mode
 		brws.view2ds.append(target)
 
-		target.qt_parent.setWindowTitle("Stack - "+self.path.split('/')[-1])
+		target.qt_parent.setWindowTitle("Stack - "+display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -611,7 +611,7 @@ class EMFileType(object) :
 			target.set_data(data, xyz=xyz)
 			brws.view2d.append(target)
 
-		target.setWindowTitle(self.path.split('/')[-1])
+		target.setWindowTitle(display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -630,7 +630,7 @@ class EMFileType(object) :
 			target = EMImage2DWidget(data)
 			brws.view2d.append(target)
 
-		target.setWindowTitle(self.path.split('/')[-1])
+		target.setWindowTitle(display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -650,7 +650,7 @@ class EMFileType(object) :
 			target = EMImage2DWidget(data)
 			brws.view2d.append(target)
 
-		target.setWindowTitle(self.path.split('/')[-1])
+		target.setWindowTitle(display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -680,7 +680,7 @@ class EMFileType(object) :
 			#target = EMImage2DWidget(data)
 		#brws.view2d.append(target)
 
-		#target.qt_parent.setWindowTitle(self.path.split('/')[-1])
+		#target.qt_parent.setWindowTitle(display_path(self.path))
 
 		#brws.notbusy()
 		#target.show()
@@ -949,7 +949,7 @@ class EMPlotFileType(EMFileType) :
 			brws.viewplot2d.append(target)
 			target.set_data_from_file(self.path)
 
-		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
+		target.qt_parent.setWindowTitle(display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -977,7 +977,7 @@ class EMPlotFileType(EMFileType) :
 		target.set_data_from_file(self.path)
 		#target.set_data(data, remove_directories_from_name(self.path, 1))
 
-		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
+		target.qt_parent.setWindowTitle(display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -1004,7 +1004,7 @@ class EMPlotFileType(EMFileType) :
 		brws.viewhist.append(target)
 		target.set_data(data, remove_directories_from_name(self.path, 1))
 
-		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
+		target.qt_parent.setWindowTitle(display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -1035,7 +1035,7 @@ class EMPlotFileType(EMFileType) :
 			brws.viewhist.append(target)
 			target.set_data(data, remove_directories_from_name(self.path, 1))
 		
-		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
+		target.qt_parent.setWindowTitle(display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -1054,7 +1054,7 @@ class EMPlotFileType(EMFileType) :
 			brws.viewplot3d.append(target)
 			target.set_data_from_file(self.path)
 
-		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
+		target.qt_parent.setWindowTitle(display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -1069,7 +1069,7 @@ class EMPlotFileType(EMFileType) :
 		target.set_data_from_file(self.path)
 		#target.set_data(data, remove_directories_from_name(self.path, 1))
 
-		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
+		target.qt_parent.setWindowTitle(display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -1203,9 +1203,9 @@ class EMJSONFileType(EMFileType) :
 				target = EMPlot2DWidget()
 				brws.viewplot2d.append(target)
 		
-		target.set_data(data, self.path.split('/')[-1])
+		target.set_data(data, display_path(self.path))
 
-		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
+		target.qt_parent.setWindowTitle(display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -1245,9 +1245,9 @@ class EMJSONFileType(EMFileType) :
 			target = EMHistogramWidget()
 			brws.viewhist.append(target)
 			
-		target.set_data(data, self.path.split('/')[-1])
+		target.set_data(data, display_path(self.path))
 
-		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
+		target.qt_parent.setWindowTitle(display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -1353,7 +1353,7 @@ class EMJSONFileType(EMFileType) :
 		target.mx_image_double.connect(target.mouse_double_click)		# this makes class average viewing work in app mode
 		brws.view2ds.append(target)
 
-		target.qt_parent.setWindowTitle("Stack - "+self.path.split('/')[-1])
+		target.qt_parent.setWindowTitle("Stack - "+display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -1436,7 +1436,7 @@ class EMBdbFileType(EMFileType) :
 		target = EMImage2DWidget(data)
 		brws.view2d.append(target)
 
-		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
+		target.qt_parent.setWindowTitle(display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -1525,7 +1525,7 @@ class EMImageFileType(EMFileType) :
 		target = EMImage2DWidget(data)
 		brws.view2d.append(target)
 
-		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
+		target.qt_parent.setWindowTitle(display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -1651,9 +1651,9 @@ class EMStackFileType(EMFileType) :
 				target = EMPlot2DWidget()
 				brws.viewplot2d.append(target)
 				
-		for i,d in enumerate(data): target.set_data(d, f"{i},{self.path.split('/')[-1]}")
+		for i,d in enumerate(data): target.set_data(d, f"{i},{display_path(self.path)}")
 		
-		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
+		target.qt_parent.setWindowTitle(display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -1699,9 +1699,9 @@ class EMStackFileType(EMFileType) :
 				target = EMPlot2DWidget()
 				brws.viewplot2d.append(target)
 		
-		target.set_data(data, self.path.split('/')[-1])
+		target.set_data(data, display_path(self.path))
 
-		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
+		target.qt_parent.setWindowTitle(display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -1764,7 +1764,7 @@ class EMPDBFileType(EMFileType):
 		pdb_model = EMPDBItem3D(self.path)
 		target = emscene3d.EMScene3D()
 		brws.view3d.append(target)
-		target.insertNewNode(self.path.split("/")[-1].split("#")[-1],pdb_model)
+		target.insertNewNode(display_path(self.path),pdb_model)
 		modeltype = EMSphereModel(self.path)
 		target.insertNewNode(modeltype.representation, modeltype, parentnode = pdb_model)
 		target.initialViewportDims(pdb_model.getBoundingBoxDimensions()[0])	# Scale viewport to object size
@@ -1782,7 +1782,7 @@ class EMPDBFileType(EMFileType):
 		except:
 			target = emscene3d.EMScene3D()
 			brws.view3d.append(target)
-		target.insertNewNode(self.path.split("/")[-1].split("#")[-1],pdb_model, parentnode = target)
+		target.insertNewNode(display_path(self.path),pdb_model, parentnode = target)
 		modeltype = EMSphereModel(self.path)
 		target.insertNewNode(modeltype.representation, modeltype, parentnode = pdb_model)
 		target.initialViewportDims(pdb_model.getBoundingBoxDimensions()[0])	# Scale viewport to object size
@@ -1799,7 +1799,7 @@ class EMPDBFileType(EMFileType):
 		pdb_model = EMPDBItem3D(self.path)
 		target = emscene3d.EMScene3D()
 		brws.view3d.append(target)
-		target.insertNewNode(self.path.split("/")[-1].split("#")[-1],pdb_model)
+		target.insertNewNode(display_path(self.path),pdb_model)
 		modeltype = EMBallStickModel(self.path) #parent=pdb_model)
 		target.insertNewNode(modeltype.representation, modeltype, parentnode = pdb_model)
 		target.initialViewportDims(pdb_model.getBoundingBoxDimensions()[0])	# Scale viewport to object size
@@ -1817,7 +1817,7 @@ class EMPDBFileType(EMFileType):
 		except:
 			target = emscene3d.EMScene3D()
 			brws.view3d.append(target)
-		target.insertNewNode(self.path.split("/")[-1].split("#")[-1],pdb_model, parentnode = target)
+		target.insertNewNode(display_path(self.path),pdb_model, parentnode = target)
 		modeltype = EMBallStickModel(self.path)#parent=pdb_model)
 		target.insertNewNode(modeltype.representation, modeltype, parentnode = pdb_model)
 		target.initialViewportDims(pdb_model.getBoundingBoxDimensions()[0])	# Scale viewport to object size
