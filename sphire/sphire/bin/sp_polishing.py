@@ -387,6 +387,8 @@ def run(args):
                 )
 
                 subprocess.run(args=[sph2rel_call], shell=True, text=True)
+
+                """
                 #### This wont be necessary in cases where the entire pipeline was run with MotionCorr shifts
                 bdb_star = star.StarFile(os.path.join(os.path.join(os.getcwd(), os.path.join(str(options.Output_folder), "BDB2STAR")),
                                                       'sphire2relion.star'))
@@ -402,6 +404,8 @@ def run(args):
                 bdb_star[""]['_rlnMicrographName'] = new_micrograph_name
 
                 bdb_star.write_star_file(overwrite=True)
+                
+                """
 
             ####### SPHIRE 2 RELION Parts ends here
 
