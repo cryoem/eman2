@@ -77,6 +77,8 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	parser.add_argument("--retype", type=str, default=None, help="If a lst file is referencing a set of particles from particles/imgname__oldtype.hdf, this will change oldtype to the specified string in-place (modifies input files)")
 	parser.add_argument("--refile", type=str, default=None, help="similar to retype, but replaces the full filename of the source image file with the provided string")
 
+	parser.add_argument("--nocomments", action="store_true", default=False, help="Removes the comments from each line of the lst file.")
+
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higher number means higher level of verboseness",default=1)
 
 
@@ -357,7 +359,14 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 		if options.verbose :
 			if nwrt==ntot : print("{} particles in {}".format(ntot,options.mergesort))
 			else : print("{} of {} particles written to {}".format(nwrt,ntot,options.mergesort))
-
+		
+	if options.nocomments:
+		for f in args:
+			lst=LSXFile(f,True)
+			for i in range(len(lst)):
+				im=lst.read(i)
+				lst.write(i,im[0],im[1])
+			lst.normalize()
 	E2end(logid)
 
 

@@ -601,7 +601,7 @@ class SptAlignTask(JSTask):
 					scr.append(-np.mean(fscs, axis=1))
 					
 				scr=np.array(scr)
-			print(scr[len(trans)//2])
+			#print(scr[len(trans)//2])
 				
 			dts=dts*maxy/ny
 			s0=scr.reshape((m*2+1, m*2+1, -1))
