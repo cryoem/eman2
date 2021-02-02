@@ -8,23 +8,20 @@ Relion Polishing: Apply relion polishing on SPHIRE generated stacks
 
 Usage in command line
 
-  sp_polishing.py post_refine_folder motioncorr_starfile output_folder training_params --first_frame --last_frame --bfac_minfreq --bfac_maxfreq --no_of_proc
+  sp_polishing.py post_refine_folder motioncorr_starfile output_folder training_params --first_frame --last_frame --bfac_minfreq --bfac_maxfreq --min_no_particles --relion_mpi_procs --no_of_threads
   
-  
-  \\ 12_POSTREFINER MotionCorr/job030/corrected_micrographs.star Polish/job156 Polish/job083/opt_params.txt --first_frame=1 --last_frame=-1 --bfac_minfreq=20 --bfac_maxfreq=-1 --no_of_proc=12
-
 \\
 ===== Typical usage =====
 
-\\ __1. Applying polishing using exisiting training data:
+\\ __1. Applying polishing using exisiting training data __:
 
-  sp_polishing 12_POSTREFINER MotionCorr/job030/corrected_micrographs.star Polish/job156 Polish/job083/opt_params.txt --first_frame=1 --last_frame=-1 --bfac_minfreq=20 --bfac_maxfreq=-1 --no_of_proc=12
+  mpirun -np 96 sp_polishing.py 12_POSTREFINER MotionCorr/job030/corrected_micrographs.star Polish/job156 Polish/job083/opt_params.txt --first_frame=1 --last_frame=-1 --bfac_minfreq=20 --bfac_maxfreq=-1 --relion_mpi_procs=1 --no_of_threads=12
 
 Note: The above case will use the optimize parameters from the training part.
 
-\\ __2. Applying training part of the polishing:
+\\ __2. Applying training part of the polishing __:
 
-  sp_polishing 12_POSTREFINER MotionCorr/job030/corrected_micrographs.star --first_frame=1 --last_frame=-1 --bfac_minfreq=20 --bfac_maxfreq=-1 --no_of_proc=12
+  mpirun -np 96 sp_polishing.py 12_POSTREFINER MotionCorr/job030/corrected_micrographs.star --first_frame=1 --last_frame=-1 --bfac_minfreq=20 --bfac_maxfreq=-1 --relion_mpi_procs=1 --no_of_threads=12
 
 Note: In case you want to do training part of polishing then dont provide the optimize parameter txt file
 
@@ -41,7 +38,8 @@ Note: In case you want to do training part of polishing then dont provide the op
   ; %%--%%bfac_minfreq : bfactor_minimum_frequency : The minimum frequency range which is normally the maximum inner shell to include in enhancement. (default 20)
   ; %%--%%bfac_maxfreq : bfactor_maximum_frequency : The minimum frequency range which is normally the maximum outer shell to include in enhancement. (default -1)
   ; %%--%%min_no_particles : Minimum no of particles : Number of particles to inlcude for training. (default 5000)
-  ; %%--%%no_of_proc : no_of_processors : The number of processors use during the polishing. (default 1)
+  ; %%--%%relion_mpi_procs : Relion MPI Procs : The number of MPI processors used for Relion multiprocessing. (default 1)
+  ; %%--%%no_of_threads : number of threads : The number of threads use during the polishing. (default 1)
 
 \\
 ===== Output =====
@@ -54,8 +52,6 @@ The output is the result of the polishing saved in the output_folder directory.
 || bfactor.star || In case of applying polishing on the data, it calculates the bfactor for applying the weights on the particle images. ||
 || shiny.star || In case of applying polishing on the data, it generates the metadata file for all the results. ||
 || Movies/*_tracks.star || Per-Particles motion estimated shifts files. ||
-
-
 
 \\
 ==== Developer Notes ====

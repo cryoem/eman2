@@ -14499,7 +14499,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         sxcmd.subset_config = "";
         sxcmd.label = "Relion Polishing";
         sxcmd.short_info = "Apply relion polishing on SPHIRE generated stacks";
-        sxcmd.mpi_support = False;
+        sxcmd.mpi_support = True;
         sxcmd.mpi_add_flag = False;
         sxcmd.category = "sxc_meridien";
         sxcmd.role = "sxr_pipe";
@@ -14649,10 +14649,26 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         sxcmd.token_list.append(token);
         sxcmd.token_dict[token.key_base] = token
         token = SXcmd_token();
-        token.key_base = "no_of_proc";
+        token.key_base = "relion_mpi_procs";
         token.key_prefix = "--";
-        token.label = "no_of_processors";
-        token.help = "The number of processors use during the polishing. ";
+        token.label = "Relion MPI Procs";
+        token.help = "The number of MPI processors used for Relion multiprocessing. ";
+        token.group = "main";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', '']];
+        token.default = "1";
+        token.restore = [['1'], ['1']];
+        token.type = "int";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token
+        token = SXcmd_token();
+        token.key_base = "no_of_threads";
+        token.key_prefix = "--";
+        token.label = "number of threads";
+        token.help = "The number of threads use during the polishing. ";
         token.group = "main";
         token.is_required = False;
         token.is_locked = False;

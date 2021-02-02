@@ -764,9 +764,9 @@ def create_stack_array(dtype_list, header_dict, output_dir, project_dir):
                             entry + 1,
                             os.path.relpath(
                                 os.path.join(
-                                    os.path.realpath(output_dir), "Particles", os.path.basename(name)
+                                    os.path.abspath(output_dir), "Particles", os.path.basename(name)
                                 ),
-                                os.path.realpath(project_dir),
+                                os.path.abspath(project_dir),
                             ),
                         )
                         for entry in numpy.arange(numpy.sum(mask))

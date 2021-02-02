@@ -205,7 +205,7 @@ def create_and_save_particle_plots(
 		pyplot.hist(
 			all_errors,
 			bins=np.arange(0, np.max(all_errors) - 0.001, 0.001),
-			normed=True,
+			density=True,
 			cumulative=True,
 			label="CDF",
 			histtype="step",
