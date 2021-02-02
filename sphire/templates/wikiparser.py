@@ -437,6 +437,7 @@ def handle_exceptional_cases(sxcmd):
 	elif sxcmd.name == "sp_eval_isac":
 		sxcmd.token_dict["input_class_avgs"].type = "data2d_one"
 		sxcmd.token_dict["particles"].type = "data2d_stack"
+		sxcmd.token_dict["align_isac_dir"].type = "dir"
 	elif sxcmd.name == "sp_compare2d":
 		sxcmd.token_dict["image_stack_1"].type = "data2d_one"
 		sxcmd.token_dict["image_stack_2"].type = "data2d_one"
@@ -2667,39 +2668,30 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 
 	sxcmd_role = "sxr_pipe"
 	sxcmd_config_list.append(
-		SXcmd_config("../doc/subtract_avgfilt.txt", "DokuWiki", 
-					sxcmd_category, 
-					sxcmd_role, 
+		SXcmd_config("../doc/subtract_avgfilt.txt", "DokuWiki", sxcmd_category, sxcmd_role)
+		)
+	
+	sxcmd_config_list.append(
+		SXcmd_config("../doc/subtract_mask.txt", "DokuWiki", sxcmd_category, sxcmd_role)
+		)
+	
+	sxcmd_config_list.append(
+		SXcmd_config("../doc/subtract_projsubtract.txt", "DokuWiki", sxcmd_category, sxcmd_role)
+		)
+	
+	sxcmd_config_list.append(
+		SXcmd_config("../doc/meridien.txt", "DokuWiki", sxcmd_category, sxcmd_role, 
+			subconfig = create_sxcmd_subconfig_meridien_final(voldir=True)
 					)
 		)
 	
 	sxcmd_config_list.append(
-		SXcmd_config("../doc/subtract_mask.txt", "DokuWiki", 
-					sxcmd_category, 
-					sxcmd_role
-					)
+		SXcmd_config("../doc/subtract_centershift.txt", "DokuWiki", sxcmd_category, sxcmd_role)
 		)
 	
 	sxcmd_config_list.append(
-		SXcmd_config("../doc/subtract_projsubtract.txt", "DokuWiki", 
-					sxcmd_category, 
-					sxcmd_role,
-					#subconfig = create_sxcmd_subconfig_subtract_projsubtract()
-					)
-		)
-	
-	sxcmd_config_list.append(
-		SXcmd_config("../doc/meridien.txt", "DokuWiki", 
-					sxcmd_category, 
-					sxcmd_role, 
-					subconfig = create_sxcmd_subconfig_meridien_final(voldir=True)
-					)
-		)
-	
-	sxcmd_config_list.append(
-		SXcmd_config("../doc/subtract_centershift.txt", "DokuWiki", 
-					sxcmd_category, 
-					sxcmd_role
+		SXcmd_config("../doc/meridien.txt", "DokuWiki", sxcmd_category, sxcmd_role, 
+					subconfig = create_sxcmd_subconfig_meridien_local_stack()
 					)
 		)
 	
@@ -2726,44 +2718,6 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 			)
 		)
 
-	sxcmd_role = "sxr_alt"
-	sxcmd_config_list.append(
-		SXcmd_config("../doc/subtract_avgfilt.txt", "DokuWiki", 
-					sxcmd_category, 
-					sxcmd_role, 
-					)
-		)
-	
-	sxcmd_config_list.append(
-		SXcmd_config("../doc/subtract_mask.txt", "DokuWiki", 
-					sxcmd_category, 
-					sxcmd_role
-					)
-		)
-	
-	sxcmd_config_list.append(
-		SXcmd_config("../doc/subtract_projsubtract.txt", "DokuWiki", 
-					sxcmd_category, 
-					sxcmd_role,
-					#subconfig = create_sxcmd_subconfig_subtract_projsubtract()
-					)
-		)
-	
-	sxcmd_config_list.append(
-		SXcmd_config("../doc/meridien.txt", "DokuWiki", 
-					sxcmd_category, 
-					sxcmd_role, 
-					subconfig = create_sxcmd_subconfig_meridien_final(voldir=True)
-					)
-		)
-	
-	sxcmd_config_list.append(
-		SXcmd_config("../doc/subtract_centershift.txt", "DokuWiki", 
-					sxcmd_category, 
-					sxcmd_role
-					)
-		)
-	
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/e2display.txt", "DokuWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/pipe_moon_eliminator.txt", "DokuWiki", sxcmd_category, sxcmd_role))

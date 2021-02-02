@@ -186,7 +186,7 @@ Advanced Parameters:
     STACKFILEDIR, CLASS_STACK_PREFIX, STACKFILEDIR, CLASS_STACK_PREFIX, 
     __file__,__file__,__file__,__file__,__file__,__file__,)
 
-MODIFIED="Modified 2021-01-01"
+MODIFIED="Modified 2021-02-02"
 
 """
 Modifications log:
@@ -1387,7 +1387,7 @@ def check_isac_or_beautify(processed_imgs_file, isac_dir, partstack, classavgsta
     all_params_exists= os.path.exists(all_isac_params_file)
     isac_shrink_exists= os.path.exists(isac_shrink_path)
     
-    # If all three files exist, then proceed
+    # If all four files exist, then proceed
     if classed_imglist_exists and init_params_exists and all_params_exists and isac_shrink_exists:
         isacTF= True
         params_type='isac'
@@ -1488,7 +1488,7 @@ def check_isac_or_beautify(processed_imgs_file, isac_dir, partstack, classavgsta
     
     # Neither ISAC nor beautified
     if not isacTF and not beautifiedTF:
-        mesg=  "\nERROR!! Directory '%s' is missing files that ISAC or beautified directories should have!" % options.align_isac_dir
+        mesg=  "\nERROR!! Directory '%s' is missing files that ISAC or beautified directories should have!" % isac_dir
         
         mesg+= "\n\nISAC directory should have:"
         mesg+= "\n  %s %s" % (processed_imgs_file, classed_imglist_exists)
@@ -1507,10 +1507,10 @@ def check_isac_or_beautify(processed_imgs_file, isac_dir, partstack, classavgsta
     
     # Both types of files are present
     elif isacTF and beautifiedTF:
-        mesg= "WARNING!! Directory '%s' has files of both ISAC or beautified directories" % options.align_isac_dir
+        mesg= "WARNING!! Directory '%s' has files of both ISAC or beautified directories" % isac_dir
         print_log_msg(mesg, log)
         print_log_msg('Will proceed without applying alignments...', log)
-        options.align_isac_dir= None
+        isac_dir= None
         
     # One or the other
     elif isacTF and not beautifiedTF:
