@@ -400,7 +400,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.app().processEvents()
 
 		# heterogeneity analysis
-		run(f"e2gmm_refine.py --model {modelout} --ptclsin {self.gmm}/particles.lst --heter --maxboxsz {self.jsparm['boxsize']} --gradout {self.gmm}/{self.currunkey}_grads.hdf --mask {self.currun['mask']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {self.gmm}/{self.currunkey}_decoder.h5 --pas {self.currun['pas']}")
+		run(f"e2gmm_refine.py --model {modelout} --ptclsin {self.gmm}/particles.lst --heter --maxboxsz {self.jsparm['boxsize']} --gradout {self.gmm}/{self.currunkey}_grads.hdf --mask {self.currun['mask']} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {self.gmm}/{self.currunkey}_decoder.h5 --pas {self.currun['pas']}")
 		prog.setValue(9)
 		self.app().processEvents()
 
