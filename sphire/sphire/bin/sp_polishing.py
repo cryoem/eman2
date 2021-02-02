@@ -28,7 +28,6 @@ if RUNNING_UNDER_MPI :
     mpi.mpi_init(0, [])
     rank = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
     size = mpi.mpi_comm_size(mpi.MPI_COMM_WORLD)
-    new_comm = mpi.mpi_comm_split(mpi.MPI_COMM_WORLD, rank, rank)
 else :
     rank  =0
     size = 1
