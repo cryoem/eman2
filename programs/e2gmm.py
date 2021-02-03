@@ -374,7 +374,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		prog=QtWidgets.QProgressDialog("Running networks. Progress updates here are limited. See the Console for detailed output.","Abort",0,9)
 		prog.show()
 		# First step with very coarse model, gradually increasing size improves convergence
-		run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --npt {self.currun['ngauss']} --maxboxsz 24 --modelout {modelout} --niter 20 --mask {self.currun['mask']} --nmid {self.currun['dim']}")
+		run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --npt {self.currun['ngauss']} --maxboxsz 24 --modelout {modelout} --niter {self.currun['trainiter']*4} --mask {self.currun['mask']} --nmid {self.currun['dim']}")
 		prog.setValue(1)
 		self.app().processEvents()
 		
@@ -389,7 +389,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			else: s=""
 				
 			# iterate until box size is the full size of the particles
-			run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --npt {self.currun['ngauss']} --maxboxsz {box} --model {self.gmm}/{self.currunkey}_model_gmm.txt --modelout {modelout} --niter {self.currun['trainiter']} --mask {self.currun['mask']} --nmid {self.currun['dim']} {s}")
+			run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --npt {self.currun['ngauss']} --maxboxsz {box} --model {self.gmm}/{self.currunkey}_model_gmm.txt --modelout {modelout} --niter {self.currun['trainiter']*2} --mask {self.currun['mask']} --nmid {self.currun['dim']} {s}")
 			prog.setValue(n)
 			self.app().processEvents()
 			n+=1
