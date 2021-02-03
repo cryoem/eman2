@@ -289,7 +289,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wbutdrgrp.buttonClicked[QtWidgets.QAbstractButton].connect(self.plot_mode_sel)
 		self.wsbxcol.valueChanged[int].connect(self.wplot2d.setXAxisAll)
 		self.wsbycol.valueChanged[int].connect(self.wplot2d.setYAxisAll)
-		self.wplot2d.mouseDown[QtGui.QMouseEvent,tuple].connect(self.plot_mouse)
+		self.wplot2d.mousedown[QtGui.QMouseEvent,tuple].connect(self.plot_mouse)
 		self.wplot2d.mouseUp[QtGui.QMouseEvent,tuple].connect(self.plot_mouse)
 		self.wplot2d.mouseDrag[QtGui.QMouseEvent,tuple].connect(self.plot_mouse)
 		E2loadappwin("e2gmm","main",self)
