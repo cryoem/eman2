@@ -14,7 +14,7 @@ conda list --explicit | tee -a ${PREFIX}/install_logs/list_log.txt 2>&1
 
 case ${EMAN_INSTALL_DONT_UPDATE_DEPS:-} in
     0|"")
-        conda install eman-deps=29.3 -c cryoem -c defaults -c conda-forge -y | tee -a ${PREFIX}/install_logs/install_log.txt 2>&1
+        conda install eman-deps=29.4 -c cryoem -c defaults -c conda-forge -y | tee -a ${PREFIX}/install_logs/install_log.txt 2>&1
         ;;
     *)
         echo "WARNING: Skipping installation of dependencies per user request..."
