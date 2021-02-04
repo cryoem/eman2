@@ -18,7 +18,7 @@ install:
     - set PYTHONUNBUFFERED=1
     - set CPU_COUNT=2
     - set EMAN_VERSION=2.9
-    - set EMAN_DEPS_VERSION=29.4
+    - set EMAN_DEPS_VERSION=29.5
 
     - conda.exe config --set show_channel_urls true
 
