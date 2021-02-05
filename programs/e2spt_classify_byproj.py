@@ -130,6 +130,11 @@ produce new sets/ for each class, which could be further-refined.
 		else: options.iter=max(fls)+1
 		print("Using iteration ",options.iter)
 
+	cruns=[int(i[15:17]) for i in os.listdir(options.path) if i[:12]=="classes_sec_" and len(i)>=21 and str.isdigit(i[15:17])]
+	if len(cruns)==0: crun=0
+	else: crun=max(cruns)+1
+	print("crun: ",crun)
+
 	if options.mask!=None: 
 		try: initmask=EMData(options.mask,0)
 		except: 
@@ -179,7 +184,7 @@ produce new sets/ for each class, which could be further-refined.
 		while not jsd.empty():
 			i,k,pall=jsd.get()
 			prjs[i]=pall
-			pall.write_compressed("{}/alisecs_{:02d}.hdf".format(options.path,options.iter),i,8)
+			pall.write_compressed(f"{options.path}/alisecs_{options.iter:02d}_{crun:02d}.hdf",i,8)
 			#all.write_image("{}/alisecs_{:02d}.hdf".format(options.path,options.iter),i)
 
 	for t in thrds:
@@ -210,14 +215,14 @@ produce new sets/ for each class, which could be further-refined.
 	# Generate new averages from the original particles
 	# Write new sets/ for each class
 	for i in range(options.ncls):
-		try: os.unlink("sets/{}_{:02d}_{:02d}.lst".format(options.path,options.iter,i))
+		try: os.unlink("sets/{}_{:02d}_{:02d}_{:02d}.lst".format(options.path,options.iter,crun,i))
 		except: pass
 
 	hdr=EMData(ks[0][1][0],ks[0][1][1],True)
 	nx=hdr["nx"]
 	ny=hdr["ny"]
 	nz=hdr["nz"]
-	sets=[LSXFile("sets/{}_{:02d}_{:02d}.lst".format(options.path,options.iter,i)) for i in range(options.ncls)]
+	sets=[LSXFile("sets/{}_{:02d}_{:02d}_{:02d}.lst".format(options.path,options.iter,crun,i)) for i in range(options.ncls)]
 	
 	# Initialize averages
 #	avgs=[EMData(nx,ny,nz) for i in range(options.ncls)]
@@ -244,27 +249,27 @@ produce new sets/ for each class, which could be further-refined.
 		# If requested, we save the aligned (shrunken) volume to the stack for this class
 		if options.saveali: 
 			if options.shrink>1 : ptcl.process_inplace("math.meanshrink",{"n":options.shrink})
-			ptcl.write_image("{}/aliptcl_{:02d}_{:02d}.hdf".format(options.path,options.iter,cls),-1)
+			ptcl.write_image("{}/aliptcl_{:02d}_{:02d}_{:02d}.hdf".format(options.path,options.iter,crun,cls),-1)
 		
 		sets[cls].write(-1,im["orig_n"],im["orig_file"],str(db[im["orig_key"]]["xform.align3d"].get_params("eman")))
 	
 	if options.verbose: print("\nSaving classes")
-	try: os.unlink("{}/classes_sec_{:02d}.hdf".format(options.path,options.iter))
+	try: os.unlink("{}/classes_sec_{:02d}_{:02d}.hdf".format(options.path,options.iter,crun))
 	except: pass
-	try: os.unlink("{}/classes_{:02d}.hdf".format(options.path,options.iter))
+	try: os.unlink("{}/classes_{:02d}_{:02d}.hdf".format(options.path,options.iter,crun))
 	except: pass
 	# write class averages
 	for i in range(options.ncls):
 		n=centers[i]["ptcl_repr"]
 		print("Class {}: {}".format(i,n))
 #		centers[i].write_image("{}/classes_sec_{:02d}.hdf".format(options.path,options.iter),i)
-		centers[i].write_compressed("{}/classes_sec_{:02d}.hdf".format(options.path,options.iter),i,8)
+		centers[i].write_compressed("{}/classes_sec_{:02d}_{:02d}.hdf".format(options.path,options.iter,crun),i,8)
 		if n>0 : avgs[i].mult(1.0/n)
 		avg=avgs[i].finish()
 		if options.hp>0 : avg.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/options.hp})
 		if options.lp>0 : avg.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.lp})
 #		avg.write_image("{}/classes_{:02d}.hdf".format(options.path,options.iter),i)
-		avg.write_compressed("{}/classes_{:02d}.hdf".format(options.path,options.iter),i,12)
+		avg.write_compressed("{}/classes_{:02d}_{:02d}.hdf".format(options.path,options.iter,crun),i,12)
 		
 	if options.verbose: print("Done")
 
