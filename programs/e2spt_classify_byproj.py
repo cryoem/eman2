@@ -125,9 +125,9 @@ produce new sets/ for each class, which could be further-refined.
 		except: pass
 
 	if options.iter<=0 :
-		fls=[int(i[15:17]) for i in os.listdir(options.path) if i[:15]=="particle_parms_" and str.isdigit(i[15:17])]
+		fls=[int(i[7:9]) for i in os.listdir(options.path) if i[:7]=="threed_" and str.isdigit(i[7:9])]
 		if len(fls)==0 : options.iter=1
-		else: options.iter=max(fls)+1
+		else: options.iter=max(fls)
 		print("Using iteration ",options.iter)
 
 	cruns=[int(i[15:17]) for i in os.listdir(options.path) if i[:12]=="classes_sec_" and len(i)>=21 and str.isdigit(i[15:17])]
@@ -193,6 +193,7 @@ produce new sets/ for each class, which could be further-refined.
 	if options.verbose: print("Performing PCA")
 
 	mask=sum(prjs)
+	if prjs[0]==0 : print("ERROR: likely trying to use an incomplete or nonexistent iteration")
 	mask.process_inplace("threshold.notzero")
 	prjsary=np.zeros((len(prjs),int(mask["square_sum"]+0.5)))		# input to PCA
 	for i,p in enumerate(prjs):
@@ -277,12 +278,3 @@ produce new sets/ for each class, which could be further-refined.
 
 if __name__ == "__main__":
 	main()
-
-
-
-
-
-
-
-
-
