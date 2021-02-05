@@ -168,15 +168,12 @@ def testPackage(installer_file, installation_dir) {
 def deployPackage(size_type='') {
     stability_type = getBuildStabilityType()
     installer_ext  = getInstallerExt()
-    
-    eman_deps_ver = sh(returnStdout: true, script: 'source ci_support/set_env_vars.sh && echo ${EMAN_DEPS_VERSION}').trim()
 
     def sourceFile  = "eman2" + binary_size_suffix[size_type] + ".${AGENT_OS_NAME}." + installer_ext
     def targetFile  = getDeployFileName(size_type)
     def cdCommand   = "cd ${DEPLOY_PATH}/" + stability_type
-    def cpCommand   = "cp " + sourceFile + " " + "eman2_release_test_deps-" + eman_deps_ver + "_"+ binary_size_suffix[size_type] + ".${AGENT_OS_NAME}." + stability_type + "." + installer_ext
     def mvCommand   = "mv " + sourceFile + " " + targetFile
-    def execCommand = cdCommand + " && " + cpCommand + " && " + mvCommand
+    def execCommand = cdCommand + " && " + mvCommand
     
     sshPublisher(publishers: [
                               sshPublisherDesc(configName: 'Installer-Server',
