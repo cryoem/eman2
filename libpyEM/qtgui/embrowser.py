@@ -111,23 +111,29 @@ def askFileExists() :
 def makeOrthoProj(ptcl,layers,highpass,lowpass):
 	"""makes restricted orthogonal projections from a 3-D volume and returns as a single 2d image
 	ptcl - 3D input ovlume
-	layers - +- layer range about center for integration
+	layers - +- layer range about center for integration, -1 is full projection
 	highpass - optional high-pass filter in A (<0 disables)
 	lowpass - optional low-pass filter in A (<0 disables)
 	"""
 	
 	# these are the range limited orthogonal projections, with optional filtration
-	x=ptcl.process("misc.directional_sum",{"axis":"x","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
+	if layers>=0:
+		first=ptcl["nx"]/2-layers
+		last=ptcl["nx"]/2+layers+1
+	else:
+		first=0
+		last=-1
+	x=ptcl.process("misc.directional_sum",{"axis":"x","first":first,"last":last})
 	if lowpass>0 : x.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/lowpass})
 	if highpass>0 : x.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/highpass})
 	get_application().processEvents()	# keeps the GUI happy
 
-	y=ptcl.process("misc.directional_sum",{"axis":"y","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
+	y=ptcl.process("misc.directional_sum",{"axis":"y","first":first,"last":last})
 	if lowpass>0 : y.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/lowpass})
 	if highpass>0 : y.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/highpass})
 	get_application().processEvents()
 
-	z=ptcl.process("misc.directional_sum",{"axis":"z","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
+	z=ptcl.process("misc.directional_sum",{"axis":"z","first":first,"last":last})
 	if lowpass>0 : z.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/lowpass})
 	if highpass>0 : z.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/highpass})
 
@@ -501,11 +507,17 @@ class EMFileType(object) :
 		
 		if not ret: return	# cancel
 	
-		img0=self.secparm.wspinmin.value()
-		img0=max(img0,0)
-		img1=self.secparm.wspinmax.value()
-		if img1<0 or img1>self.nimg: img1=self.nimg
-		imgstep=self.secparm.wspinstep.value()
+		# these won't be available if nimg==1
+		try:
+			img0=self.secparm.wspinmin.value()
+			img0=max(img0,0)
+			img1=self.secparm.wspinmax.value()
+			if img1<0 or img1>self.nimg: img1=self.nimg
+			imgstep=self.secparm.wspinstep.value()
+		except:
+			img0=0
+			img1=1
+			imgstep=1
 		layers=self.secparm.wspinlayers.value()
 		applyxf=self.secparm.wcheckxf.checkState()
 		highpass=float(self.secparm.wlehp.text())
@@ -566,10 +578,15 @@ class EMFileType(object) :
 #				progress.close()
 				return
 
-		target = EMImageMXWidget()
-		target.set_data(data,self.path)
-		target.mx_image_double.connect(target.mouse_double_click)		# this makes class average viewing work in app mode
-		brws.view2ds.append(target)
+		if self.nimg==1:
+			target = EMImage2DWidget()
+			target.set_data(data,self.path)
+			brws.view2d.append(target)
+		else:
+			target = EMImageMXWidget()
+			target.set_data(data,self.path)
+			target.mx_image_double.connect(target.mouse_double_click)		# this makes class average viewing work in app mode
+			brws.view2ds.append(target)
 
 		target.qt_parent.setWindowTitle("Stack - "+display_path(self.path))
 
@@ -1502,7 +1519,8 @@ class EMImageFileType(EMFileType) :
 			return [("Show 3D", "Add to 3D window", self.show3dApp), ("Show 3D+", "New 3D Window", self.show3DNew), ("Show Stack", "Show as set of 2-D Z slices", self.show2dStack), 
 				("Show Stack+", "Show all images together in a new window", self.show2dStackNew), ("Show 2D", "Show in a scrollable 2D image window", self.show2dSingle), 
 				("Show 2D+", "Show all images, one at a time in a new window", self.show2dSingleNew), ("Chimera", "Open in chimera (if installed)", self.showChimera), 
-				("FilterTool", "Open in e2filtertool.py", self.showFilterTool), ("ProjXYZ", "Make projections along Z,Y,X", self.showProjXYZ ), ("Save As", "Saves images in new file format", self.saveAs)]
+				("FilterTool", "Open in e2filtertool.py", self.showFilterTool), ("Rng XYZ", "Show restricted XYZ projection", self.show2dStack3sec), ("Save As", "Saves images in new file format", self.saveAs)]
+#				("FilterTool", "Open in e2filtertool.py", self.showFilterTool), ("ProjXYZ", "Make projections along Z,Y,X", self.showProjXYZ ), ("Save As", "Saves images in new file format", self.saveAs)]
 		## 2-D stack, STEVE: THIS SHOULD NOT BE HERE
 		# elif self.nimg > 1 :
 			# return [("Show Stack", "Show as set of 2-D Z slices", self.show2dStack), ("Show Stack+", "Show all images together in a new window", self.show2dStackNew), ("Show 2D", "Show in a scrollable 2D image window", self.show2dSingle), 
@@ -3426,28 +3444,29 @@ class EMSliceParamDialog(QtWidgets.QDialog):
 		self.fol = QtWidgets.QFormLayout()
 		self.vbl.addLayout(self.fol)
 
-		self.wspinmin=QtWidgets.QSpinBox()
-		self.wspinmin.setRange(-1,nimg-1)
-		self.wspinmin.setValue(-1)
-		self.wspinmin.setToolTip("Start of range of volumes to display, -1 for all")
-		self.fol.addRow("First Image #:",self.wspinmin)
-		
-		self.wspinmax=QtWidgets.QSpinBox()
-		self.wspinmax.setRange(-1,nimg-1)
-		self.wspinmax.setValue(-1)
-		self.wspinmax.setToolTip("End (exclusive) of range of volumes to display, -1 for all")
-		self.fol.addRow("Last Image #:",self.wspinmax)
+		if nimg>1:
+			self.wspinmin=QtWidgets.QSpinBox()
+			self.wspinmin.setRange(-1,nimg-1)
+			self.wspinmin.setValue(-1)
+			self.wspinmin.setToolTip("Start of range of volumes to display, -1 for all")
+			self.fol.addRow("First Image #:",self.wspinmin)
+			
+			self.wspinmax=QtWidgets.QSpinBox()
+			self.wspinmax.setRange(-1,nimg-1)
+			self.wspinmax.setValue(-1)
+			self.wspinmax.setToolTip("End (exclusive) of range of volumes to display, -1 for all")
+			self.fol.addRow("Last Image #:",self.wspinmax)
 
-		self.wspinstep=QtWidgets.QSpinBox()
-		self.wspinstep.setRange(1,nimg/2)
-		self.wspinstep.setValue(1)
-		self.wspinstep.setToolTip("Step for range of volumes to display (partial display of file)")
-		self.fol.addRow("Step:",self.wspinstep)
+			self.wspinstep=QtWidgets.QSpinBox()
+			self.wspinstep.setRange(1,nimg/2)
+			self.wspinstep.setValue(1)
+			self.wspinstep.setToolTip("Step for range of volumes to display (partial display of file)")
+			self.fol.addRow("Step:",self.wspinstep)
 
 		self.wspinlayers=QtWidgets.QSpinBox()
-		self.wspinlayers.setRange(0,256)
-		self.wspinlayers.setValue(0)
-		self.wspinlayers.setToolTip("Projection about center +- selected number of layers, eg- 0 -> central section only")
+		self.wspinlayers.setRange(-1,256)
+		self.wspinlayers.setValue(-1)
+		self.wspinlayers.setToolTip("Projection about center +- selected number of layers, eg- 0 -> central section only, -1 full projection")
 		self.fol.addRow("Sum Layers (0->1, 1->3, 2->5, ...):",self.wspinlayers)
 
 		self.wlelp=QtWidgets.QLineEdit("-1")
@@ -3467,9 +3486,9 @@ class EMSliceParamDialog(QtWidgets.QDialog):
 		self.fol.addRow("Reference volume:",self.wleref)
 
 		self.wcheckxf=QtWidgets.QCheckBox("enable")
-		self.wcheckxf.setChecked(1)
+		self.wcheckxf.setChecked(0)
 		self.wcheckxf.setToolTip("If set, applies the xform from the JSON/lst file or image header before making projections")
-		self.fol.addRow("Apply xform.align3d from header:",self.wcheckxf)
+		self.fol.addRow("Apply xform.align3d from image:",self.wcheckxf)
 
 		self.bhb = QtWidgets.QHBoxLayout()
 		self.vbl.addLayout(self.bhb)
