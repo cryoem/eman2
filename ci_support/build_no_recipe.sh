@@ -9,7 +9,7 @@ source ${MYDIR}/set_env_vars.sh
 if [ -n "${TRAVIS}" ];then
     source ci_support/setup_conda.sh
 
-    conda create -n eman eman-deps=${EMAN_DEPS_VERSION} -c cryoem -c defaults -c conda-forge --yes --quiet
+    conda create -n eman eman-deps-dev=${EMAN_DEPS_VERSION} -c cryoem -c defaults -c conda-forge --yes --quiet
     conda activate eman
 fi
 
