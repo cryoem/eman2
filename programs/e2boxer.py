@@ -707,7 +707,6 @@ class boxerLocal(QtCore.QObject):
 		#display(cmpim)
 			
 		print("done")
-		
 		return boxes2
 
 
@@ -1490,18 +1489,177 @@ class boxerTopaz(QtCore.QObject):
 
 
 class boxerGauss(QtCore.QObject):
+	# default parameters values
+	defaults = {'use_variance':True,
+				'gauss_width':1.0,
+				'thr_low':1.0, #0.0, changed for testing
+				'thr_hgh':2.0, #1.0, changed for testing
+	}
 	@staticmethod
 	def setup_gui(gridlay,boxerwindow=None):
-		return
+		#boxerGauss.invert = CheckBox(label="Invert contrast", value=0) # set globally
+		# the utility input/output pixel size settings is not clear, do not expose
+		# how about the CTF estimation in Gauss window? It should also work globally?
+		# NOTE also set here default values for params - must be floats!
+		boxerGauss.use_variance = CheckBox(label="Use variance", value=boxerGauss.defaults['use_variance'])
+		#boxerGauss.use_variance.
+		boxerGauss.gauss_width = ValBox(label="Gaussian width:",value=boxerGauss.defaults['gauss_width'])
+		boxerGauss.gauss_width.setToolTip("Increase if too small particles are picked")
+		boxerGauss.thr_low = ValBox(label="Threshold low:",value=boxerGauss.defaults['thr_low'])
+		boxerGauss.thr_low.setToolTip("Increase if too much background is picked")
+		boxerGauss.thr_hgh = ValBox(label="Threshold high:",value=boxerGauss.defaults['thr_hgh'])
+		boxerGauss.thr_hgh.setToolTip("Decrease if too much aggregates are picked")
+		gridlay.addWidget(boxerGauss.use_variance,0,0)
+		gridlay.addWidget(boxerGauss.gauss_width,0,1)
+		gridlay.addWidget(boxerGauss.thr_low,1,0)
+		gridlay.addWidget(boxerGauss.thr_hgh,1,1)
+		# keep a reference the main window of e2boxer to access box size and maybe other values
+		boxerGauss.boxerwindow = boxerwindow
 	
 	@staticmethod
 	def do_autobox(micrograph,goodrefs,badrefs,bgrefs,apix,nthreads,params,prog=None):
-		print("ERROR: Gauss autoboxer is not yet complete. Please use another method.")
-		return
+		#from sparx import filt_gaussl, get_im, filt_gaussh
+		from sparx import filt_gaussl, filt_gaussh
+		# determine if running from GUI or command line
+		# NOTE --autopick option overrides the --gui option
+		# NOTE boxsize is needed for the picker, however, is not passed to do_autobox method
+		# in GUI mode boxsize is read directly from boxerwindow widget
+		# in CLI mode boxsize must be included in the autopick parameter string
+		# --autopick auto_gauss:width=1:low=0:high=1:boxsize=128
+		if hasattr(boxerGauss, 'boxerwindow'):
+			#print("GUI detected")
+			use_variance = boxerGauss.use_variance.getValue()
+			gauss_width = boxerGauss.gauss_width.getValue()
+			thr_low = boxerGauss.thr_low.getValue()
+			thr_hgh = boxerGauss.thr_hgh.getValue()
+			boxsize = boxerGauss.boxerwindow.vbbsize.getValue()
+		else:
+			#print("CLI detected")
+			#for param, value in boxerGauss.defaults.items():
+			# check if parameter was supplied by user, otherwise use default value
+			# TODO isolate picker to a separate method and use kwargs instead
+			if 'use_variance' in params: # cannot use "get" for a bool value
+				use_variance = bool(params['use_variance'])
+			else:
+				use_variance = boxerGauss.defaults['use_variance']
+			
+			if params.get('gauss_width'):
+				gauss_width = params['gauss_width']
+			else:
+				gauss_width = boxerGauss.defaults['gauss_width']
+
+			if params.get('thr_low'):
+				thr_low = params['thr_low']
+			else:
+				thr_low = boxerGauss.defaults['thr_low']
+
+			if params.get('thr_hgh'):
+				thr_hgh = params['thr_hgh']
+			else:
+				thr_hgh = boxerGauss.defaults['thr_hgh']
+			
+			# the boxsize _has_ to be passed as a parameter for gauss picker in CLI
+			if params.get('boxsize'):
+				boxsize = params['boxsize']
+			else:
+				raise ValueError("Missing parameter \'boxsize\' for Gauss autopicker, e.g.:\n --autopick \'auto_gauss:boxsize=128\'")
+			
+		### print the determined parameters
+		print("thr low: ", thr_low)
+		print("thr hi: ", thr_hgh)
+		#print("pixel_output: ", self.pixel_output)
+		#print("pixel input: ", self.pixel_input)
+		#print("invert: ", self.invert)
+		print("gauss width: ", gauss_width)
+		print("variance: ", use_variance)
+		# get the micrograph:
+		# NOTE next processing steps were taken from e2boxer_old.py GaussBoxer.get_small_image
+		# Currently it is not clear how to make downsampling work and calculate the coordinates back to the original image
+		# In SPHIRE tutorial the cryo-EM data were not downsampled
+		# Perhaps, the input/output pixels are only needed when creating a downsampled particle stack?
+		subsample_rate = old_div(apix, 10.) # aka downsample; 8-10 A in other pickers, but in e2boxer_old.py gauss worked OK with 1
+		subsample_rate = 1.0 # needs to be a float!
+		# NOTE with subsample_rate=1 the parameters below are computed as in _old.py
+		# the generated image is also similar (identical?)
+		frequency_cutoff = 0.5 * subsample_rate
+		template_min = 15 # hard-coded in e2boxer_old
+		gaussh_param = old_div(subsample_rate, boxsize) # simplified from the e2boxer_old code
+		# invert = # inversion is handled globally, no need to to specify it here
+		
+		# TODO remove reduntant img_ variables
+		img = micrograph
+		img_filt = filt_gaussh(img, gaussh_param)
+		if subsample_rate != 1.0:
+			print("Generating downsampled image\n")
+			sb = Util.sincBlackman(template_min, frequency_cutoff,1999) # 1999 taken directly from util_sparx.h
+			small_img = img_filt.downsample(sb,subsample_rate)
+			del sb
+		else:
+			small_img = img_filt.copy()
+		del img_filt
+		'''
+		# setting some metadata
+		small_img.set_attr("invert", invert)
+		small_img.set_attr("gaussh_param", gaussh_param)
+		small_img.set_attr("subsample_rate",subsample_rate)
+		small_img.set_attr("frequency_cutoff",frequency_cutoff)
+		small_img.set_attr("template_min",template_min)
+		try:
+			ctf_dict = img.get_attr("ctf")
+			ctf_dict.apix = self.pixel_output
+			small_img.set_attr("ctf",ctf_dict)
+		except:
+			pass
+
+		'''
+		del img
+		# small_img is thus the equivalent of microdown in other pickers
+		
+		### start the picking
+		[avg,sigma,fmin,fmax] = Util.infomask(small_img, None, True )
+		small_img -= avg
+		small_img /= sigma
+		#small_img.write_image('small_img_new.hdf') # write to disk for debugging - looks OK
+		if use_variance:
+			from morphology import power
+			small_img = power(small_img, 2.0)
+			print("Using variance")
+		ccf = filt_gaussl( small_img, old_div(gauss_width, boxsize) )
+		del small_img
+		peaks = ccf.peak_ccf( old_div(boxsize,2)-1)
+		del ccf
+		npeak = old_div(len(peaks),3)
+		print("npeak: ", npeak)
+		boxes = []
+		ccfs = []
+		for i in range(npeak):
+			cx = peaks[3*i+1]
+			cy = peaks[3*i+2]
+
+			corr_score= peaks[3*i]
+			skip = False
+			if not(thr_low is None) and corr_score < thr_low:
+				skip = True
+
+			if not(thr_hgh is None) and corr_score > thr_hgh:
+				skip = True
+
+			if not skip:
+				ccfs.append( peaks[3*i] )
+				#type = GaussBoxer.AUTO_NAME
+				#box = [cx,cy,type,corr_score]
+				box = [cx,cy,'auto_gauss',corr_score]
+				boxes.append(box)
+		del peaks		
+			
+		#print("ERROR: Gauss autoboxer is not yet complete. Please use another method.")
+		return boxes
+	
+	
 	
 aboxmodes = [ ("Local Search","auto_local",boxerLocal),
 	     ("by Ref","auto_ref",boxerByRef), 
-#	     ("Gauss","auto_gauss",boxerGauss),
+	     ("Gauss","auto_gauss",boxerGauss),
 	     ("NeuralNet", "auto_convnet", boxerConvNet)
 #	     ("Topaz", "auto_topaz", boxerTopaz),			# disabled until we can really test it
 			]
@@ -2263,7 +2421,6 @@ class GUIBoxer(QtWidgets.QWidget):
 			return
 	
 		bname=boxes[0][2]
-
 		# Filter out all existing boxes for this picking mode
 		self.boxes=[i for i in self.boxes if i[2]!=bname]
 
