@@ -391,8 +391,10 @@ class boxerByRef(QtCore.QObject):
 	"""Simple reference-based cross-correlation picker with exhaustive rotational search"""
 	@staticmethod
 	def setup_gui(gridlay,boxerwindow=None):
-		boxerByRef.threshold=ValSlider(None,(0.1,8),"Threshold",1.5,90)
-		gridlay.addWidget(boxerByRef.threshold,0,0)
+		boxerByRef.lbl=QtWidgets.QLabel("Requires Good Refs. Suggest From 3D or projections (From 2D). Do not use particles.")
+		gridlay.addWidget(boxerByRef.lbl,0,0)
+		boxerByRef.threshold=ValSlider(None,(0.1,15),"Threshold",1.5,90)
+		gridlay.addWidget(boxerByRef.threshold,1,0)
 	
 	@staticmethod
 	def do_autobox(micrograph,goodrefs,badrefs,bgrefs,apix,nthreads,params,prog=None):
@@ -581,8 +583,10 @@ class boxerLocal(QtCore.QObject):
 	"""Reference based search by downsampling and 2-D alignment to references"""
 	@staticmethod
 	def setup_gui(gridlay,boxerwindow=None):
-		boxerLocal.threshold=ValSlider(None,(0,8.0),"Threshold",5.0,90)
-		gridlay.addWidget(boxerLocal.threshold,0,0)
+		boxerLocal.lbl=QtWidgets.QLabel("Requires Good Refs. Suggest From 3D or projections (From 2D). Do not use particles.")
+		gridlay.addWidget(boxerLocal.lbl,0,0)
+		boxerLocal.threshold=ValSlider(None,(0,10.0),"Threshold",5.0,90)
+		gridlay.addWidget(boxerLocal.threshold,1,0)
 	
 	@staticmethod
 	def do_autobox(micrograph,goodrefs,badrefs,bgrefs,apix,nthreads,params,prog=None):
@@ -595,13 +599,13 @@ class boxerLocal(QtCore.QObject):
 		except:
 			try: threshold=boxerLocal.threshold.getValue()
 			except:
-				print("Error, no threshold (0.1-2) specified")
+				print("Error, no threshold specified")
 				return
 		
 		nx=goodrefs[0]["nx"]
-		downsample=old_div(8.0,apix)			# we downsample to 10 A/pix
-		nxdown=good_size(int(old_div(nx,downsample)))
-		downsample=old_div(float(nx),float(nxdown))
+		downsample=8/apix			# we downsample to 10 A/pix
+		nxdown=good_size(int(nx/downsample))
+		downsample=float(nx)/float(nxdown)
 		microdown=micrograph.process("normalize.edgemean").process("math.fft.resample",{"n":downsample})
 		print("downsample by ",downsample)
 		
@@ -710,7 +714,7 @@ class boxerLocal(QtCore.QObject):
 	@staticmethod
 	def ccftask(jsd,ref,downsample,microdown,ri):
 
-		mref=ref.process("mask.soft",{"outer_radius":old_div(ref["nx"],2)-4,"width":3})
+		mref=ref.process("mask.soft",{"outer_radius":ref["nx"]//2-4,"width":3})
 		mref.process_inplace("math.fft.resample",{"n":downsample})
 		nxdown=mref["nx"]
 		
@@ -751,18 +755,20 @@ class boxerConvNet(QtCore.QObject):
 	@staticmethod
 	def setup_gui(gridlay, boxerwindow=None):
 		boxerConvNet.boxerwindow=boxerwindow
+		boxerConvNet.lbl=QtWidgets.QLabel("Requires Good, Bad and Bkgnd refs from several micrographs. ~20-50 of each.\nTrain once, autobox many times. Retrain if refs change.")
+		gridlay.addWidget(boxerConvNet.lbl,0,0)
 		boxerConvNet.bt_train=QtWidgets.QPushButton("Train")
 		boxerConvNet.bt_train.setToolTip("Train the network using references")
-		gridlay.addWidget(boxerConvNet.bt_train)
+		gridlay.addWidget(boxerConvNet.bt_train,1,0)
 		boxerConvNet.bt_train.clicked[bool].connect(boxerConvNet.do_training)
 		#boxerConvNet.ck_train=QtWidgets.QCheckBox("Train from scratch")
 		#gridlay.addWidget(boxerConvNet.ck_train)
 		
 		boxerConvNet.threshold=ValSlider(None,(0,5.0),"Threshold1",0.2,90)
-		gridlay.addWidget(boxerConvNet.threshold)
+		gridlay.addWidget(boxerConvNet.threshold,2,0)
 		
 		boxerConvNet.threshold2=ValSlider(None,(-20,10),"Threshold2",-1,90)
-		gridlay.addWidget(boxerConvNet.threshold2)
+		gridlay.addWidget(boxerConvNet.threshold2,3,0)
 		return
 	
 	
@@ -1271,6 +1277,10 @@ class boxerConvNet(QtCore.QObject):
 				
 		return
 
+#####################
+## External Topaz boxer, requires independent Topaz install in its own environment 
+## such that 'conda activate topaz' will work
+##########
 
 class boxerTopaz(QtCore.QObject):
 	
@@ -1304,38 +1314,43 @@ class boxerTopaz(QtCore.QObject):
 	@staticmethod
 	def setup_gui(gridlay, boxerwindow=None):
 		boxerTopaz.boxerwindow = boxerwindow
+		
+		boxerTopaz.lbl=QtWidgets.QLabel("Experimental! Requires topaz installed in 'topaz' environment.\nFull manual selection on one frame, then Train!")
+		gridlay.addWidget(boxerTopaz.lbl,0,0,1,2)
+
+		
 		boxerTopaz.bt_train = QtWidgets.QPushButton("Train")
 		boxerTopaz.bt_train.setToolTip("Train Model")
-		gridlay.addWidget(boxerTopaz.bt_train)
+		gridlay.addWidget(boxerTopaz.bt_train,2,0)
 		boxerTopaz.bt_train.clicked[bool].connect(boxerTopaz.do_train)
 
-		boxerTopaz.downsample = ValBox(label="Downsample Factor", value=4)
-		gridlay.addWidget(boxerTopaz.downsample)
+		boxerTopaz.downsample = ValBox(label="Downsample", value=4)
+		gridlay.addWidget(boxerTopaz.downsample,4,0)
 
-		boxerTopaz.nexpected = ValBox(label="Expected Particles Per Micrograph", value = 150)
-		gridlay.addWidget(boxerTopaz.nexpected)
+		boxerTopaz.nexpected = ValBox(label="Ptcl per Frame", value = 150)
+		gridlay.addWidget(boxerTopaz.nexpected,4,1)
 
-		boxerTopaz.threshold = ValBox(label="Extraction Threshold", value=6)
-		gridlay.addWidget(boxerTopaz.threshold)
+		boxerTopaz.threshold = ValBox(label="Extr. Threshold", value=6)
+		gridlay.addWidget(boxerTopaz.threshold,5,0)
 
 		boxerTopaz.modelresnet8 = QtWidgets.QCheckBox("Model Resnet8")
-		gridlay.addWidget(boxerTopaz.modelresnet8)
+		gridlay.addWidget(boxerTopaz.modelresnet8,6,0)
 		boxerTopaz.modelresnet8.setToolTip("Model must have apix < 70 after downsampling to use resnet8")
 
 		boxerTopaz.modelconv31 = QtWidgets.QCheckBox("Model conv31")
-		gridlay.addWidget(boxerTopaz.modelconv31)
+		gridlay.addWidget(boxerTopaz.modelconv31,6,1)
 		boxerTopaz.modelconv31.setToolTip("Model must have apix < 30 after downsampling to use conv31")
 
 		boxerTopaz.modelconv63 = QtWidgets.QCheckBox("Model conv63")
-		gridlay.addWidget(boxerTopaz.modelconv63)
+		gridlay.addWidget(boxerTopaz.modelconv63,7,0)
 		boxerTopaz.modelconv63.setToolTip("Model must have apix < 62 after downsampling to use conv63")
 
 		boxerTopaz.modelconv127 = QtWidgets.QCheckBox("Model conv127")
-		gridlay.addWidget(boxerTopaz.modelconv127)
+		gridlay.addWidget(boxerTopaz.modelconv127,7,1)
 		boxerTopaz.modelconv127.setToolTip("Model must have apix < 126 after downsampling to use conv127")
 
-		boxerTopaz.gpu = QtWidgets.QCheckBox("Use GPU *see note*")
-		gridlay.addWidget(boxerTopaz.gpu)
+		boxerTopaz.gpu = QtWidgets.QCheckBox("Use GPU (16GB GPU reqd!)")
+		gridlay.addWidget(boxerTopaz.gpu,8,0)
 		boxerTopaz.gpu.setToolTip("Use GPU only if it has over 16GB RAM")
 
 		for d in [boxerTopaz.mrc_micro_path,
@@ -1487,8 +1502,8 @@ class boxerGauss(QtCore.QObject):
 aboxmodes = [ ("Local Search","auto_local",boxerLocal),
 	     ("by Ref","auto_ref",boxerByRef), 
 #	     ("Gauss","auto_gauss",boxerGauss),
-	     ("NeuralNet", "auto_convnet", boxerConvNet),
-	     ("Topaz", "auto_topaz", boxerTopaz),
+	     ("NeuralNet", "auto_convnet", boxerConvNet)
+#	     ("Topaz", "auto_topaz", boxerTopaz),			# disabled until we can really test it
 			]
 #boxcolors = { "selected":(0.9,0.9,0.9), "manual":(0,0,0.7), "refgood":(0,0.8,0), "refbad":(0.8,0,0), "refbg":(0.7,0.7,0), "unknown":[.4,.1,.1], "auto_local":(.3,.1,.4), "auto_ref":(.1,.3,.4), "auto_gauss":(.4,.1,.4),  "auto_convnet":(.1,.5,.1)}
 boxcolors = { "selected":     (0.9,0.9,0.9), 
@@ -2242,6 +2257,10 @@ class GUIBoxer(QtWidgets.QWidget):
 		
 		# if we got nothing, we just leave the current results alone
 		#if len(boxes)==0 : return
+		
+		if len(boxes)==0 : 
+			QtWidgets.QMessageBox.warning(self,"Error", "No particles found. Existing locations unchanged.")
+			return
 	
 		bname=boxes[0][2]
 
