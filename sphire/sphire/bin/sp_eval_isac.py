@@ -371,13 +371,17 @@ def prepare_log(outdir='.', verbose=False, main=True):
         verbose : (boolean) Updates flag to False if Logger class can mirror output to screen
     """
     
-    logname= "log_" + datetime.datetime.now().strftime("%Y%m%d_%H%M%S") +  ".txt"
+    logname= "logfile.txt"
     logname= os.path.join(outdir, logname)
     
     # May be using old version of logger.py
     try:
         if verbose:
-            log= sp_logger.Logger(base_logger=sp_logger.BaseLogger_Files(), base_logger2=sp_logger.BaseLogger_Print(), file_name=logname)
+            log= sp_logger.Logger(
+                base_logger=sp_logger.BaseLogger_Files(), 
+                base_logger2=sp_logger.BaseLogger_Print(), 
+                file_name=logname
+                )
             verbose= False  # logger output will be echoed to screen
         else:
             log= sp_logger.Logger(base_logger=sp_logger.BaseLogger_Files(), file_name=logname)
@@ -411,7 +415,7 @@ def print_log_msg(mesg, log=None, is_main=True):
     
     if is_main:
         if log: 
-            log.add(mesg)
+            sp_global_def.sxprint(mesg)  #### log.add(mesg)
         else:
             print(mesg)
 
@@ -546,7 +550,7 @@ def eval_isac(classavgstack, options, outdir='.', verbosity=0, usempi=False):
             prepare_outdir(os.path.join(outdir, STACKFILEDIR) )
     
     quick_barrier()
-    log, _= prepare_log(outdir, main=is_main)
+    log, _= prepare_log(outdir, verbose=verbosity>=1, main=is_main)
     sp_global_def.write_command(outdir)  # expects mpi_comm_rank to be 0, which isn't necessarily main process, which is randomly assigned
     
     if verbosity>=1 : 
@@ -633,11 +637,11 @@ def separate_classes(classavgstack, options, outdir='.', verbosity=0, log=None, 
         print_log_msg("Will apply alignments from '%s'" % options.align_isac_dir, log, is_main)
     
     if options.nvec>0 and options.align_isac_dir == None:
-        print()
+        if verbosity>=1 and is_main : print()
         print_log_msg("ERROR!! To compute eigenimages, need to specify --align_isac_dir", log, is_main)
         safe_exit()
     
-    print()
+    if verbosity>=1 and is_main : print()
     if options.ctf != None:
         if options.align_isac_dir:
             if options.ctf == 'flip':
@@ -763,7 +767,7 @@ def separate_classes(classavgstack, options, outdir='.', verbosity=0, log=None, 
                         mesg= "Using non-default executable at '%s'" % options.chains_exe
                         print_log_msg(mesg, log, is_main)
 
-                chains_exe= 'python ' + options.chains_exe
+                chains_exe= options.chains_exe  #### 'python ' + options.chains_exe
             else:
                 chains_exe= "sp_chains.py"
             
@@ -810,13 +814,13 @@ def separate_classes(classavgstack, options, outdir='.', verbosity=0, log=None, 
                         
         mesg= 'Writing %s eigenimages per class' % options.nvec
         if options.pca_radius >=1 and (options.mask_drawn or options.mask_binary):
-            print()
+            if verbosity>=1 and is_main : print()
             print_log_msg("ERROR!! Option '--pca_radius' not available with option '--mask_drawn' or '--mask_binary'", log, is_main)
             print_log_msg("Pick one and restart\n", log, is_main)
             safe_exit()
         
         elif options.mask_drawn and options.mask_binary:
-            print()
+            if verbosity>=1 and is_main : print()
             print_log_msg("ERROR!! Options '--mask_drawn' and '--mask_binary' cannot be used simulatenously", log, is_main)
             print_log_msg("Pick one and restart\n", log, is_main)
             safe_exit()
@@ -964,7 +968,10 @@ def separate_classes(classavgstack, options, outdir='.', verbosity=0, log=None, 
         
         # Simply copy image stack
         else:
-            if verbosity>=1 : print_log_msg("Copying '%s' to virtual stack '%s'" % (partstack, combined_bdb_obj.bdb_name), log, is_main)
+            if verbosity>=1: 
+                num_virtual_parts= EMAN2.EMUtil.get_image_count(partstack)
+                mesg= "Copying metadata for %s particles in '%s'" % (num_virtual_parts, partstack)
+                print_log_msg(mesg, log, is_main)
             cmd= "e2bdb.py %s --makevstack %s" % (partstack, combined_bdb_obj.bdb_name)
             if verbosity>=1 : print_log_msg("  " + cmd, log, is_main)
             if is_main: os.system(cmd)
@@ -1248,7 +1255,7 @@ def separate_classes(classavgstack, options, outdir='.', verbosity=0, log=None, 
                 ), log, is_main)
             print_log_msg('  e2bdb.py %s --makevstack <output_bdb> --list %s' % (final_bdb_name, processed_vomq_imgs_file), log, is_main)
         
-        print()
+        if verbosity>=1 and is_main : print()
     
     quick_barrier()
     
@@ -1538,7 +1545,7 @@ def check_isac_or_beautify(processed_imgs_file, isac_dir, partstack, classavgsta
         print("ERROR!! Unknown state %s %s" % (isacTF, beautifiedTF) )
         exit()
     
-    print()
+    if verbose : print()
     
     return params_type, isac_shrink_ratio, combined_params_file, idim_parts
     
@@ -1579,13 +1586,13 @@ def prepare_mask(classavgstack, mask_file, mask_type, outstack=LOCALMASKS, idim_
                 
                 # Print warning if class averages have a different dimension
                 if idim_mask!=idim_classavg:
-                    print()
+                    if is_main : print()
                     print_log_msg("WARNING! Mask dimension %s is not same as class-average dimension %s" % (idim_mask, idim_classavg), log, is_main)
                     print_log_msg("Binarization threshold for masked images may not be appropriate\n", log, is_main)
                 
                 # Print warning if not beautified parameters
                 if idim_parts==idim_classavg and params_type!='beautified':
-                    print()
+                    if is_main : print()
                     print_log_msg("WARNING! Averages appear to be full-sized, but parameters do not correspond to beautifier\n", log, is_main)
             
             # If particle images and mask images have different dimensions, will rescale mask
@@ -1640,7 +1647,7 @@ def prepare_mask(classavgstack, mask_file, mask_type, outstack=LOCALMASKS, idim_
                 
                 # Sanity check
                 if mask_thresh['maximum'] == 0.0:
-                    print()
+                    if is_main : print()
                     print_log_msg("ERROR!! Mask for class #%s is empty" % class_num, log, is_main)
                     print_log_msg("Maximum in '%s' is %s (after resampling)," % (
                         mask_file, mask_shrunken['maximum']
@@ -2185,13 +2192,6 @@ def separate_by_class(num_classes, stack2split, classdoc_template, class_init_bd
                         avg_var_eig_list= pca(class_stack_list, nvec=num_factors, maskfile=curr_mask)
                     else:
                         avg_var_eig_list= pca(class_stack_list, nvec=num_factors, mask_radius=pca_radius)
-                    
-                    ####avg_img, var_img= avg_optional_ctf(
-                        ####aligned_bdb_name, 
-                        ####ctf_method=ctf_method, 
-                        ####pws_docfile=pws_doc_template.format(class_num), 
-                        ####do_align=True
-                        ####)
                 # End PCA if-then
                     
                 # Apply final alignments
@@ -2303,22 +2303,6 @@ def separate_by_class(num_classes, stack2split, classdoc_template, class_init_bd
         mpi_ave_stack_obj.write_image(mpi_ave_stack_path)
         EMAN2db.db_close_dict(mpi_ave_bdb_name)
     
-    ####quick_barrier(myid)
-    ####if usempi:#### and not is_main: 
-        ####for class_num in range(mpi_start, mpi_end):
-            ####printvars(['myid','class_num'])
-            ####sp_utilities.bcast_EMData_to_all(montage_list[class_num], myid, main_mpi_proc, mpi.MPI_COMM_WORLD)
-
-    ##### Write average/variance/eigenimages
-    ####if is_main:
-        ########if usempi: 
-            ########for class_num in range(mpi_start, mpi_end):
-                ########printvars(['myid','class_num'])
-                ########sp_utilities.bcast_EMData_to_all(montage_list[class_num], myid, main_mpi_proc, mpi.MPI_COMM_WORLD)
-        
-        ####for class_num in range(num_classes):
-            ####montage_list[class_num].write_image(montage_file, class_num)
-    
     quick_barrier()
     
     if do_align and is_main:
@@ -2427,7 +2411,6 @@ def prepare_2d_forPCA(data, mode = "a", output_stack = None, CTF = False):
             st = EMAN2.Util.infomask(img, mask, False)
             img -= st[0]
             EMAN2.Util.add_img(ave, img)
-        ####ave /= float(n)    #### (TODO: check whether float() makes a difference)
         ave = old_div(ave, n)
         for i in range(n):
             if inmem:
@@ -2865,7 +2848,7 @@ def avg_optional_ctf(bdb_or_list, ctf_method=None, pws_docfile=None, do_align=Tr
         align_mode= 'n'
     
     if ctf_method == 'wiener':
-        avg_img, var_img= sp_statistics.avgvar_ctf(bdb_or_list, dopa=True, mode=align_mode)
+        avg_img, var_img= avgvar_ctf(bdb_or_list, dopa=True, mode=align_mode)
     elif ctf_method == 'flip':
         avg_img, var_img, pxsz= avgvar_flipctf(bdb_or_list, dopa=False, mode=align_mode)
         avg_noctf, var_noctf=   avgvar(bdb_or_list, mode=align_mode)  # move to sp_statistics
@@ -2875,7 +2858,6 @@ def avg_optional_ctf(bdb_or_list, ctf_method=None, pws_docfile=None, do_align=Tr
         rops_noctf= sp_fundamentals.rops_table(avg_noctf)
         spfreq= [ old_div( x, 2.0 * pxsz * (len(rops_ctf)-1) ) for x in range(len(rops_ctf))]
         pws_tuple_list= list( zip(spfreq, rops_ctf, rops_noctf) )  # list() should work in both python 2 & 3
-        ####pws_list= map(list, pws_tuple_list)  # wrote_text_row won't like list of tuples
         pws_list = [list(x) for x in pws_tuple_list]  # wrote_text_row won't like list of tuples
         
         # Write 1D power spectra
@@ -2887,6 +2869,110 @@ def avg_optional_ctf(bdb_or_list, ctf_method=None, pws_docfile=None, do_align=Tr
         exit()
     
     return avg_img, var_img
+
+def avgvar_ctf(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use_even=True, snr=1.0, dopa = True):
+    '''
+    
+    INPUT
+    
+    data: image stack, must be 2D, must be in real space
+    mode: whether to apply alignment parameters. Default mode='a' means apply parameters
+    rot_method: specifies the function by which images are rotated/shifted if alignment parameters are to be applied. This is only relevant for the case where images are 2D, in which case rot_method can be either rot_shift2D or rotshift2dg, with the default being rot_shift2D. If images are 3D, rot_shift3D will be used to rotate/shift the images.
+    interp: interpolation method to use for rot_method when applying alignment parameters.
+    i1: index of first image to be used.
+    i2: index of last image to be used. If i2 = 0, then i2 defaults to one less than number of images in the data
+    use_odd: images with indices between i1 and i2 which are odd are used if and only if use_odd is set to True. Default is True.
+    use_even: images with indices between i1 and i2 which are even are used if and only if use_even is set to True. Default is True.
+    snr: signal to noise ratio, default 1.0
+    
+    OUTPUT
+    
+    tavg: The best estimate (Wiener filter) given the image series and estimated CTF parms, in real space.
+            
+        var: Variance (in real space) calculated as follows, [1/(n-1)]*[sum_j { F[(H_j*(O_j - F^{-1}(H_j*tavg))^2]/SUM_CTF^2} where O_j is the j-th image in real space, F^{-1} denotes inverse fourier transform operator, and H_j is the CTF of the j-th image
+    
+    '''
+
+    inmem = True
+    if type(data) == type(""):
+        inmem = False
+
+    if inmem:
+        img = data[0]
+    else:
+        img = sp_utilities.get_im(data,0)
+    nx = img.get_xsize()
+    ny = img.get_ysize()
+    nz = img.get_zsize()
+    if nz > 1:
+        ERROR("images must be 2D for CTF correction.....exiting","avgvar_ctf",1)
+
+    if img.get_attr_default('ctf_applied', 0) == 1:
+        ERROR("data cannot be ctf-applied....exiting","avgvar_ctf",1)
+
+    if inmem:
+        data_nima = len(data)
+    else:
+        data_nima = EMAN2.EMUtil.get_image_count(data)
+
+    if i2 == 0: i2 = data_nima-1
+    if dopa:
+        nx2 = nx*2
+        ny2 = ny*2
+    else:
+        nx2 = nx
+        ny2 = ny
+    ave = EMAN2.EMData(nx2, ny2, 1, False)
+    ctf_2_sum = EMAN2.EMData(nx2, ny2, 1, False)
+    nima = 0
+    for i in range(i1, i2+1):
+        if not(use_odd) and i%2 == 1: continue
+        if not(use_even) and i%2 == 0: continue
+        nima += 1
+        if inmem: img = data[i].copy()
+        else: img = sp_utilities.get_im(data, i)
+
+        ctf_params = img.get_attr("ctf")
+
+        if(mode == 'a'):
+            angle, sx, sy, mirror, scale = sp_utilities.get_params2D(img)
+            img = sp_fundamentals.rot_shift2D(img, angle, sx, sy, mirror, scale, interp)
+            ctf_params.dfang += alpha
+            if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
+
+        img = sp_utilities.pad(img, nx2, ny2, 1, background = "circumference")
+        sp_fundamentals.fftip(img)
+        EMAN2.Util.add_img(ave, sp_filter.filt_ctf(img, ctf_params))
+        EMAN2.Util.add_img2(ctf_2_sum, sp_morphology.ctf_img(nx2, ctf_params))
+
+    ctf_2_sum += 1.0/snr
+    EMAN2.Util.div_filter(ave, ctf_2_sum)
+
+    # calculate variance in real space
+    tvar = sp_utilities.model_blank(nx, ny, nz)
+    for i in range(i1, i2+1):
+        if not(use_odd) and i%2 == 1: continue
+        if not(use_even) and i%2 == 0: continue
+        if inmem: img = data[i].copy()
+        else: img = sp_utilities.get_im(data, i)
+
+        ctf_params = img.get_attr("ctf")
+
+        if (mode == 'a'):
+            angle, sx, sy, mirror, scale = sp_utilities.get_params2D(img)
+            img = sp_fundamentals.rot_shift2D(img, angle, sx, sy, mirror, scale, interp)
+            ctf_params.dfang += alpha
+            if mirror == 1:  ctf_params.dfang = 270.0-ctf_params.dfang
+
+        img = sp_utilities.pad(img, nx2, ny2, 1, background = "circumference")
+        sp_fundamentals.fftip(img)
+        img = img - sp_filter.filt_ctf(ave, ctf_params, dopa)
+        img = sp_fundamentals.window2d(sp_fundamentals.fft(img),nx,ny)
+        EMAN2.Util.add_img2(tvar, img)
+
+    ####EMAN2.Util.mul_scalar(tvar, 1.0/float(nima))
+    EMAN2.Util.mul_scalar(tvar, old_div(1.0, float(nima) ) )  # The "1.0" and "float()" are probably unnecessary
+    return  sp_fundamentals.window2d(sp_fundamentals.fft(ave),nx,ny) , tvar#,(tvar - totv*totv/nima), tvar, totv,tavg
 
 def avgvar_flipctf(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use_even=True, snr=1.0, dopa = True):
     '''
@@ -3001,8 +3087,6 @@ def avgvar(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use_eve
     var: the variance of the image series in real space
 
     '''
-    
-    #### TODO: modernize and return to sp_statistics
     
     inmem = True
     if type(data) == type(""):
@@ -3511,7 +3595,7 @@ def bandpass_filter(input_stack, options, outdir, log=None, verbosity=0):
         assert os.path.exists(output_stack), "ERROR!! '%s' not written!" % output_stack
         print_log_msg("Wrote %s images to '%s'\n" % (num_filt, output_stack), log)
     
-    print()
+        print()
     
 def parse_command_line():
     """
