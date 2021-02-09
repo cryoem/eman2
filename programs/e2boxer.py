@@ -1976,7 +1976,7 @@ class GUIBoxer(QtWidgets.QWidget):
 		except:
 			print("Error: Unknown symmetry")
 			return
-		orts=sym.gen_orientations("eman",{"delta":15,"inc_mirror":1})
+		orts=sym.gen_orientations("eman",{"delta":11.25,"inc_mirror":1})
 		prog=QtWidgets.QProgressDialog("Making Projections","Abort",0,len(orts))
 		prog.setWindowModality(Qt.WindowModal)
 		prog.setValue(0)
