@@ -91,14 +91,14 @@ Applies a bandpass filter to class averages.  Bandpass radius assumed to be in u
   ; %%--%%pca_radius : PCA radius : Radius for principal component analysis (PCA). Only pixels within this radius will be examined using PCA. (default None) : nvec!=0
   ; %%--%%mask_binary : Binary mask file : A binary mask file to use for principal component analysis. (default None) : nvec!=0
   ; %%--%%mask_drawn : Drawn mask file : A drawn mask means that, using e2display.py or a similar program, a mask was drawn on top of a class average. The mask will be binarized according to the maximum of the class average, and that binary mask will be used for PCA. When running sp_eval_isac.py, the screen output will report the maximum pixel value among the class averages. Use a value exceeding that value for the pen intensity when drawing the mask using e2display.py. (default None) : nvec!=0
-  ; %%--%%bandpass_width : Bandpass width : Width of bandpass filter, in units of absolute frequency (i.e., 0..0.5). (default 0.03) : bandpass_radius!=None
+  ; %%--%%bandpass_radius : Bandpass radius : Applies a bandpass filter to class averages.  Bandpass radius assumed to be in units of Angstroms if pixel size is provided. (default None) : particles==None
   
 \\
 === Advanced Parameters ===
   ; %%--%%write_centered : Apply centering : Applies centering parameters from sp_center_2d3d.py. (default False) : particles!=None
   ; %%--%%applyparams : Centering options : Allowed centering options are  'combined' (shifts and rotation, both floating point) and 'intshifts' (integer shifts only, to avoid interpolation). (default combined|||intshifts) : write_centered==True
   ; %%--%%debug : Debug centering : For use with centering option 'intshifts', to make sure that correct shifts are applied, rotation is applied, and averages are computed. If this flag is not activated, no averages will be generated. (default False) : applyparams==intshifts
-  ; %%--%%bandpass_radius : Bandpass radius : Applies a bandpass filter to class averages.  Bandpass radius assumed to be in units of Angstroms if pixel size is provided. (default None) : particles==None
+  ; %%--%%bandpass_width : Bandpass width : Width of bandpass filter, in units of absolute frequency (i.e., 0..0.5). (default 0.03) : bandpass_radius!=None
   ; %%--%%verbosity : Verbosity : Controls the amount of information written to the screen, ranging from 0..6. (default 2)
 
 \\

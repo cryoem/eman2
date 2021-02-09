@@ -42,6 +42,9 @@ import numpy as np
 import threading
 import queue
 import os,sys
+from pathlib import Path
+import subprocess
+
 
 apix=0
 
@@ -388,8 +391,10 @@ class boxerByRef(QtCore.QObject):
 	"""Simple reference-based cross-correlation picker with exhaustive rotational search"""
 	@staticmethod
 	def setup_gui(gridlay,boxerwindow=None):
-		boxerByRef.threshold=ValSlider(None,(0.1,8),"Threshold",1.5,90)
-		gridlay.addWidget(boxerByRef.threshold,0,0)
+		boxerByRef.lbl=QtWidgets.QLabel("Requires Good Refs. Suggest From 3D or projections (From 2D). Do not use particles.")
+		gridlay.addWidget(boxerByRef.lbl,0,0)
+		boxerByRef.threshold=ValSlider(None,(0.1,15),"Threshold",1.5,90)
+		gridlay.addWidget(boxerByRef.threshold,1,0)
 	
 	@staticmethod
 	def do_autobox(micrograph,goodrefs,badrefs,bgrefs,apix,nthreads,params,prog=None):
@@ -578,8 +583,10 @@ class boxerLocal(QtCore.QObject):
 	"""Reference based search by downsampling and 2-D alignment to references"""
 	@staticmethod
 	def setup_gui(gridlay,boxerwindow=None):
-		boxerLocal.threshold=ValSlider(None,(0,8.0),"Threshold",5.0,90)
-		gridlay.addWidget(boxerLocal.threshold,0,0)
+		boxerLocal.lbl=QtWidgets.QLabel("Requires Good Refs. Suggest From 3D or projections (From 2D). Do not use particles.")
+		gridlay.addWidget(boxerLocal.lbl,0,0)
+		boxerLocal.threshold=ValSlider(None,(0,10.0),"Threshold",5.0,90)
+		gridlay.addWidget(boxerLocal.threshold,1,0)
 	
 	@staticmethod
 	def do_autobox(micrograph,goodrefs,badrefs,bgrefs,apix,nthreads,params,prog=None):
@@ -592,13 +599,13 @@ class boxerLocal(QtCore.QObject):
 		except:
 			try: threshold=boxerLocal.threshold.getValue()
 			except:
-				print("Error, no threshold (0.1-2) specified")
+				print("Error, no threshold specified")
 				return
 		
 		nx=goodrefs[0]["nx"]
-		downsample=old_div(8.0,apix)			# we downsample to 10 A/pix
-		nxdown=good_size(int(old_div(nx,downsample)))
-		downsample=old_div(float(nx),float(nxdown))
+		downsample=8/apix			# we downsample to 10 A/pix
+		nxdown=good_size(int(nx/downsample))
+		downsample=float(nx)/float(nxdown)
 		microdown=micrograph.process("normalize.edgemean").process("math.fft.resample",{"n":downsample})
 		print("downsample by ",downsample)
 		
@@ -706,7 +713,7 @@ class boxerLocal(QtCore.QObject):
 	@staticmethod
 	def ccftask(jsd,ref,downsample,microdown,ri):
 
-		mref=ref.process("mask.soft",{"outer_radius":old_div(ref["nx"],2)-4,"width":3})
+		mref=ref.process("mask.soft",{"outer_radius":ref["nx"]//2-4,"width":3})
 		mref.process_inplace("math.fft.resample",{"n":downsample})
 		nxdown=mref["nx"]
 		
@@ -747,18 +754,20 @@ class boxerConvNet(QtCore.QObject):
 	@staticmethod
 	def setup_gui(gridlay, boxerwindow=None):
 		boxerConvNet.boxerwindow=boxerwindow
+		boxerConvNet.lbl=QtWidgets.QLabel("Requires Good, Bad and Bkgnd refs from several micrographs. ~20-50 of each.\nTrain once, autobox many times. Retrain if refs change.")
+		gridlay.addWidget(boxerConvNet.lbl,0,0)
 		boxerConvNet.bt_train=QtWidgets.QPushButton("Train")
 		boxerConvNet.bt_train.setToolTip("Train the network using references")
-		gridlay.addWidget(boxerConvNet.bt_train)
+		gridlay.addWidget(boxerConvNet.bt_train,1,0)
 		boxerConvNet.bt_train.clicked[bool].connect(boxerConvNet.do_training)
 		#boxerConvNet.ck_train=QtWidgets.QCheckBox("Train from scratch")
 		#gridlay.addWidget(boxerConvNet.ck_train)
 		
 		boxerConvNet.threshold=ValSlider(None,(0,5.0),"Threshold1",0.2,90)
-		gridlay.addWidget(boxerConvNet.threshold)
+		gridlay.addWidget(boxerConvNet.threshold,2,0)
 		
 		boxerConvNet.threshold2=ValSlider(None,(-20,10),"Threshold2",-1,90)
-		gridlay.addWidget(boxerConvNet.threshold2)
+		gridlay.addWidget(boxerConvNet.threshold2,3,0)
 		return
 	
 	
@@ -1267,6 +1276,217 @@ class boxerConvNet(QtCore.QObject):
 				
 		return
 
+#####################
+## External Topaz boxer, requires independent Topaz install in its own environment 
+## such that 'conda activate topaz' will work
+##########
+
+class boxerTopaz(QtCore.QObject):
+	
+	conda_base_path = Path(subprocess.run(['conda info --base'], shell=True, capture_output=True).stdout.decode().strip())
+	conda_init_path = conda_base_path / "etc" / "profile.d" / "conda.sh"
+	conda_activate_cmd = "conda activate topaz"
+
+	topaz_path               = Path("topaz")
+	mrc_micro_path           = topaz_path / "mrc_micro"
+	particles_path           = topaz_path / "processed" / "particles"
+	micrographs_path         = topaz_path / "processed" / "micrographs"
+	predicted_particles_path = topaz_path / "processed" / "predicted_particles"
+
+	@staticmethod
+	def _launch_childprocess(cmd_topaz):
+		print(f"Starting 'topaz'...\n{cmd_topaz}")
+		proc = subprocess.run(f".  {boxerTopaz.conda_init_path} " \
+							  f"&& {boxerTopaz.conda_activate_cmd} " \
+							  f"&& {cmd_topaz}", shell=True,
+							  text=True,
+							  capture_output=True
+							  )
+		if proc.returncode:
+			print("FAILED SUB-PROCESS")
+			print("==================")
+			print(f"CMD   : {proc.args}")
+			print(f"STDOUT: {proc.stdout}")
+			print(f"STDERR: {proc.stderr}")
+			sys.exit(1)
+
+	@staticmethod
+	def setup_gui(gridlay, boxerwindow=None):
+		boxerTopaz.boxerwindow = boxerwindow
+		
+		boxerTopaz.lbl=QtWidgets.QLabel("Experimental! Requires topaz installed in 'topaz' environment.\nFull manual selection on one frame, then Train!")
+		gridlay.addWidget(boxerTopaz.lbl,0,0,1,2)
+
+		
+		boxerTopaz.bt_train = QtWidgets.QPushButton("Train")
+		boxerTopaz.bt_train.setToolTip("Train Model")
+		gridlay.addWidget(boxerTopaz.bt_train,2,0)
+		boxerTopaz.bt_train.clicked[bool].connect(boxerTopaz.do_train)
+
+		boxerTopaz.downsample = ValBox(label="Downsample", value=4)
+		gridlay.addWidget(boxerTopaz.downsample,4,0)
+
+		boxerTopaz.nexpected = ValBox(label="Ptcl per Frame", value = 150)
+		gridlay.addWidget(boxerTopaz.nexpected,4,1)
+
+		boxerTopaz.threshold = ValBox(label="Extr. Threshold", value=6)
+		gridlay.addWidget(boxerTopaz.threshold,5,0)
+
+		boxerTopaz.modelresnet8 = QtWidgets.QCheckBox("Model Resnet8")
+		gridlay.addWidget(boxerTopaz.modelresnet8,6,0)
+		boxerTopaz.modelresnet8.setToolTip("Model must have apix < 70 after downsampling to use resnet8")
+
+		boxerTopaz.modelconv31 = QtWidgets.QCheckBox("Model conv31")
+		gridlay.addWidget(boxerTopaz.modelconv31,6,1)
+		boxerTopaz.modelconv31.setToolTip("Model must have apix < 30 after downsampling to use conv31")
+
+		boxerTopaz.modelconv63 = QtWidgets.QCheckBox("Model conv63")
+		gridlay.addWidget(boxerTopaz.modelconv63,7,0)
+		boxerTopaz.modelconv63.setToolTip("Model must have apix < 62 after downsampling to use conv63")
+
+		boxerTopaz.modelconv127 = QtWidgets.QCheckBox("Model conv127")
+		gridlay.addWidget(boxerTopaz.modelconv127,7,1)
+		boxerTopaz.modelconv127.setToolTip("Model must have apix < 126 after downsampling to use conv127")
+
+		boxerTopaz.gpu = QtWidgets.QCheckBox("Use GPU (16GB GPU reqd!)")
+		gridlay.addWidget(boxerTopaz.gpu,8,0)
+		boxerTopaz.gpu.setToolTip("Use GPU only if it has over 16GB RAM")
+
+		for d in [boxerTopaz.mrc_micro_path,
+				  boxerTopaz.particles_path,
+				  boxerTopaz.micrographs_path,
+				  boxerTopaz.predicted_particles_path]:
+			Path(d).mkdir(parents=True, exist_ok=True)
+
+		return
+
+	@staticmethod
+	def do_train(args = None) :
+		downsample = int(boxerTopaz.downsample.getValue())
+		nexpected  = boxerTopaz.nexpected.getValue()
+		diameter   = boxerTopaz.boxerwindow.vbbpsize.getValue()
+		threads    = boxerTopaz.boxerwindow.vbthreads.getValue()
+		pixradius  = (diameter / (2 * downsample))
+
+		if boxerTopaz.gpu.isChecked() : gpu = "0"
+		else : gpu = "-1"
+
+		boxerTopaz.model = "resnet8"
+		mdlcnt = 1          
+		if boxerTopaz.modelresnet8.isChecked() : 
+			boxerTopaz.model = "resnet8"
+			mdlcnt = mdlcnt + 1
+		if boxerTopaz.modelconv31.isChecked() : 
+			boxerTopaz.model = "conv31"
+			mdlcnt = mdlcnt + 1
+		if boxerTopaz.modelconv63.isChecked() : 
+			boxerTopaz.model = "conv63"
+			mdlcnt = mdlcnt + 1
+		if boxerTopaz.modelconv127.isChecked() : 
+			boxerTopaz.model = "conv127" 
+			mdlcnt = mdlcnt + 1
+		if mdlcnt > 2 :
+			print("=====================================")
+			print("ERROR: Select Only One Model")
+			sys.exit(1)
+		model = boxerTopaz.model
+
+		launch_childprocess(f'e2proc2d.py micrographs/*.hdf {boxerTopaz.mrc_micro_path}/@.mrc')
+
+		boxerTopaz._launch_childprocess(f"topaz convert " \
+										f"-s {downsample} " \
+										f"-o {boxerTopaz.particles_path}/particles.txt " \
+										f"boxfiles/*.box")
+		boxerTopaz._launch_childprocess(f"topaz preprocess " \
+										f"-s {downsample} " \
+										f"-o {boxerTopaz.micrographs_path}/ " \
+										f"{boxerTopaz.mrc_micro_path}/*.mrc")
+		boxerTopaz._launch_childprocess(f"topaz train " \
+										f"--train-images {boxerTopaz.micrographs_path}/ " \
+										f"--train-targets {boxerTopaz.particles_path}/particles.txt " \
+										f"--radius 3 " \
+										f"--model {model} " \
+										f"--image-ext .mrc " \
+										f"--method GE-binomial " \
+										f"--autoencoder 0 " \
+										f"--num-particles {nexpected} " \
+										f"--epoch-size 1000 " \
+										f"--num-epochs 10 " \
+										f"--num-workers {threads} " \
+										f"--device {gpu} " \
+										f"--save-prefix {boxerTopaz.topaz_path}/model " \
+										f"--output {boxerTopaz.topaz_path}/results.txt")
+
+	@staticmethod
+	def do_autobox(micrograph,goodrefs,badrefs,bgrefs,apix,nthreads,params,prog=None):
+		threshold  = boxerTopaz.threshold.getValue()
+		downsample = int(boxerTopaz.downsample.getValue())
+		diameter   = boxerTopaz.boxerwindow.vbbpsize.getValue()
+		threads    = boxerTopaz.boxerwindow.vbthreads.getValue()
+		pixradius  = int(diameter / (2 * downsample))
+		boxsize    = boxerTopaz.boxerwindow.vbbsize.getValue()
+		selected_micrograph = micrograph["source_path"].replace("micrographs/", '').replace(".hdf", '')
+
+		boxerTopaz._launch_childprocess(f"topaz extract " \
+										f"{boxerTopaz.micrographs_path}/{selected_micrograph}.mrc " \
+										f"--model {boxerTopaz.topaz_path}/model_epoch10.sav " \
+										f"--radius {pixradius} " \
+										f"--threshold {threshold} " \
+										f"--num-workers {threads} " \
+										f"--output {boxerTopaz.predicted_particles_path}/{selected_micrograph}predicted.txt")
+		boxerTopaz._launch_childprocess(f"topaz convert " \
+										f"-x {downsample} " \
+										f"-o {boxerTopaz.predicted_particles_path}/{selected_micrograph}predicted_full.txt " \
+										f"{boxerTopaz.predicted_particles_path}/{selected_micrograph}predicted.txt")
+
+		with open(f"{boxerTopaz.predicted_particles_path}/{selected_micrograph}predicted_full.txt", "r") as f:
+			next(f)
+			boxes = [(int((line.split())[1]),int((line.split())[2]),"auto_topaz") for line in f]
+		return boxes
+
+	@staticmethod
+	def do_autobox_all(filenames,goodrefs,badrefs,bgrefs,apix,nthreads,params,prog=None):
+		threshold  = boxerTopaz.threshold.getValue()
+		downsample = int(boxerTopaz.downsample.getValue())
+		diameter   = boxerTopaz.boxerwindow.vbbpsize.getValue()
+		threads    = boxerTopaz.boxerwindow.vbthreads.getValue()
+		pixradius  = int(diameter / (2 * downsample))
+		boxsize    = boxerTopaz.boxerwindow.vbbsize.getValue()
+
+		boxerTopaz._launch_childprocess(f"topaz extract " \
+										f"{boxerTopaz.micrographs_path}/*.mrc " \
+										f"--model {boxerTopaz.topaz_path}/model_epoch10.sav " \
+										f"--radius {pixradius} " \
+										f"--threshold {threshold} " \
+										f"--num-workers {threads} " \
+										f"--output {boxerTopaz.predicted_particles_path}/predicted.txt")
+		boxerTopaz._launch_childprocess(f"topaz convert " \
+										f"-x {downsample} " \
+										f"-o {boxerTopaz.predicted_particles_path}/all_predicted_full.txt " \
+										f"{boxerTopaz.predicted_particles_path}/predicted.txt")
+
+		with open(f"{boxerTopaz.predicted_particles_path}/all_predicted_full.txt", "r") as f:
+			next(f)
+			newboxes = [('micrographs/'+(line.split()[0])+'.hdf',int((line.split())[1]),int((line.split())[2]),"auto_topaz") for line in f]
+
+		for ii, fspl in enumerate(filenames):
+			fsp = fspl.split()[1]
+			db = js_open_dict(info_name(fsp)) 
+			if "boxes" in db:
+				boxes = db["boxes"]
+				bname = newboxes[0][3]
+				boxes = [b for b in boxes if b[2]!=bname]
+			else:
+				boxes = []
+			for n in newboxes:
+				if n[0] == fsp:
+					boxes.extend([n[1:4]])
+			db["boxes"] = boxes
+			db.close()
+			if prog:
+				prog.setValue(ii+1)           
+		return
+
 
 class boxerGauss(QtCore.QObject):
 	# default parameters values
@@ -1440,9 +1660,22 @@ class boxerGauss(QtCore.QObject):
 aboxmodes = [ ("Local Search","auto_local",boxerLocal),
 	     ("by Ref","auto_ref",boxerByRef), 
 	     ("Gauss","auto_gauss",boxerGauss),
-	     ("NeuralNet", "auto_convnet", boxerConvNet)]
+	     ("NeuralNet", "auto_convnet", boxerConvNet)
+#	     ("Topaz", "auto_topaz", boxerTopaz),			# disabled until we can really test it
+			]
 #boxcolors = { "selected":(0.9,0.9,0.9), "manual":(0,0,0.7), "refgood":(0,0.8,0), "refbad":(0.8,0,0), "refbg":(0.7,0.7,0), "unknown":[.4,.1,.1], "auto_local":(.3,.1,.4), "auto_ref":(.1,.3,.4), "auto_gauss":(.4,.1,.4),  "auto_convnet":(.1,.5,.1)}
-boxcolors = { "selected":(0.9,0.9,0.9), "manual":(0,0,0.7), "refgood":(0,0.8,0), "refbad":(0.8,0,0), "refbg":(0.7,0.7,0), "unknown":[.4,.1,.1], "auto_local":(.3,.1,.4), "auto_ref":(.1,.3,.4), "auto_gauss":(.4,.4,.1),  "auto_convnet":(.3,.1,.4)}
+boxcolors = { "selected":     (0.9,0.9,0.9), 
+			  "manual":       (0,0,0.7), 
+			  "refgood":      (0,0.8,0), 
+			  "refbad":       (0.8,0,0), 
+			  "refbg":        (0.7,0.7,0), 
+			  "unknown":      [.4,.1,.1], 
+			  "auto_local":   (.3,.1,.4), 
+			  "auto_ref":     (.1,.3,.4), 
+			  "auto_gauss":   (.4,.4,.1), 
+			  "auto_convnet": (.3,.1,.4),
+			  "auto_topaz":   (.5,.1,.5),
+			}
 
 class GUIBoxer(QtWidgets.QWidget):
 	# Dictionary of autopickers
@@ -2181,7 +2414,11 @@ class GUIBoxer(QtWidgets.QWidget):
 		boxes=[b for b in boxes if b[0]-boxsize2>=0 and b[1]-boxsize2>=0 and b[0]+boxsize2<self.micrograph["nx"] and b[1]+boxsize2<self.micrograph["ny"]]
 		
 		# if we got nothing, we just leave the current results alone
-		if len(boxes)==0 : return
+		#if len(boxes)==0 : return
+		
+		if len(boxes)==0 : 
+			QtWidgets.QMessageBox.warning(self,"Error", "No particles found. Existing locations unchanged.")
+			return
 	
 		bname=boxes[0][2]
 		# Filter out all existing boxes for this picking mode

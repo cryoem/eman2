@@ -874,7 +874,7 @@ lc is the cursor selection point in plot coords"""
 			self.update_selected((event.x(),event.y()),lc)
 			self.updateGL()
 			
-			if self.mouseemit : self.mouseDown.emit(event,self.scr2plot(event.x(),event.y()))
+			if self.mouseemit : self.mousedown.emit(event,self.scr2plot(event.x(),event.y()))
 			#if self.mmode==0:
 				#self.emit(QtCore.SIGNAL("mousedown"), event)
 				#return

@@ -2,7 +2,7 @@
 
 ===== sp_signalsubtract sp_mask =====
 
-Generate Mask : Mask a soft mask of the region to be excluded.
+Generate and Apply Mask : Make a soft mask of the region to be excluded.
 
 \\
 ===== Usage =====
@@ -17,11 +17,9 @@ Usage in command line
 
 sp_signalsubtract comprises the steps needed to subtract masked regions from a map in order to focus on the remaining features from that map.  There are six steps for this process (five within SPHIRE):
 
-\\ __1. Average and low-pass filter a map for segmentation __:
+\\ __1. Average and low-pass filter a map for segmentation __
 
-  sp_signalsubtract.py avgfilt --avol1=map_to_average_1 --avol2=map_to_average_2 --outdir=output_subtraction_directory --apix=pixel_size --filtrad=filter_radius
-
-\\ __2. Locate regions to be subtracted __:
+\\ __2. Locate regions to be subtracted __
 
 \\ __3. Mask a soft mask of the region to be excluded __:
 
@@ -31,11 +29,11 @@ The map to make a mask from (--map2mask) corresponds to the region that you want
 
 !!!IMPORTANT!!! The full map which is to be multiplied by the mask (--fullmap) must NOT have been postprocessed (e.g., sharpened).  Otherwise, re-projections will not be optimally comparable to the experimental images.  
   
-\\ __4. Compute re-projections of map to be subtracted, and subtract them from the original images __:
+\\ __4. Compute re-projections of map to be subtracted, and subtract them from the original images __
 
-\\ __5. Compute reconstruction of density remaining after signal-subtraction __:
+\\ __5. Compute reconstruction of density remaining after signal-subtraction __
 
-\\ __6. Center map of the remaining density __:
+\\ __6. Center map of the remaining density __
 
 \\
 ===== Input =====
@@ -51,9 +49,9 @@ The map to make a mask from (--map2mask) corresponds to the region that you want
   
 \\
 ===== Output =====
-  ; mask_final.hdf : (sp_mask) Final mask
-  ; vol_masked.hdf : (sp_mask) Diagnostic masked input map
-  ; ctf_params.txt : (sp_mask) CTF parameter file
+  ; mask_final.hdf : Final mask
+  ; vol_masked.hdf : Diagnostic masked input map
+  ; ctf_params.txt : CTF parameter file
  
 \\
 ===== Description =====

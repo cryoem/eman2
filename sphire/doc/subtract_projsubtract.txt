@@ -19,11 +19,11 @@ sp_signalsubtract exists in both MPI and non-MPI versions (Running MPI version d
 
 sp_signalsubtract comprises the steps needed to subtract masked regions from a map in order to focus on the remaining features from that map.  There are six steps for this process (five within SPHIRE):
 
-\\ __1. Average and low-pass filter a map for segmentation __:
+\\ __1. Average and low-pass filter a map for segmentation __
 
-\\ __2. Locate regions to be subtracted __:
+\\ __2. Locate regions to be subtracted __
 
-\\ __3. Mask a soft mask of the region to be excluded __:
+\\ __3. Mask a soft mask of the region to be excluded __
 
 \\ __4. Compute re-projections of map to be subtracted, and subtract them from the original images __:
 
@@ -43,7 +43,7 @@ This step will compute a reoncstruction using Meridien, i.e., with "smear" infor
   
 Note: If the "--voldir" flag is not specified, the resulting reconstructions will be written to the Meridien directory, which may overwrite existing files.
 
-\\ __6. Center map of the remaining density __:
+\\ __6. Center map of the remaining density __
 
 \\
 ===== Input =====
@@ -64,9 +64,9 @@ Note: If the "--voldir" flag is not specified, the resulting reconstructions wil
   
 \\
 ===== Output =====
-  ; docnormstats.txt : (projsubtract) Normalization statistics
-  ; all_subtracted : (projsubtract) Combined BDB stack of signal-subtracted images
-  ; stktestmontage.hdf : (projsubtract) Montage of test images
+  ; docnormstats.txt : Normalization statistics
+  ; all_subtracted : Combined BDB stack of signal-subtracted images
+  ; stktestmontage.hdf : Montage of test images
  
 \\
 ===== Description =====

@@ -289,7 +289,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wbutdrgrp.buttonClicked[QtWidgets.QAbstractButton].connect(self.plot_mode_sel)
 		self.wsbxcol.valueChanged[int].connect(self.wplot2d.setXAxisAll)
 		self.wsbycol.valueChanged[int].connect(self.wplot2d.setYAxisAll)
-		self.wplot2d.mouseDown[QtGui.QMouseEvent,tuple].connect(self.plot_mouse)
+		self.wplot2d.mousedown[QtGui.QMouseEvent,tuple].connect(self.plot_mouse)
 		self.wplot2d.mouseUp[QtGui.QMouseEvent,tuple].connect(self.plot_mouse)
 		self.wplot2d.mouseDrag[QtGui.QMouseEvent,tuple].connect(self.plot_mouse)
 		E2loadappwin("e2gmm","main",self)
@@ -374,7 +374,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		prog=QtWidgets.QProgressDialog("Running networks. Progress updates here are limited. See the Console for detailed output.","Abort",0,9)
 		prog.show()
 		# First step with very coarse model, gradually increasing size improves convergence
-		run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --npt {self.currun['ngauss']} --maxboxsz 24 --modelout {modelout} --niter 20 --mask {self.currun['mask']} --nmid {self.currun['dim']}")
+		run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --npt {self.currun['ngauss']} --maxboxsz 24 --modelout {modelout} --niter {self.currun['trainiter']*4} --mask {self.currun['mask']} --nmid {self.currun['dim']}")
 		prog.setValue(1)
 		self.app().processEvents()
 		
@@ -389,7 +389,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			else: s=""
 				
 			# iterate until box size is the full size of the particles
-			run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --npt {self.currun['ngauss']} --maxboxsz {box} --model {self.gmm}/{self.currunkey}_model_gmm.txt --modelout {modelout} --niter {self.currun['trainiter']} --mask {self.currun['mask']} --nmid {self.currun['dim']} {s}")
+			run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --npt {self.currun['ngauss']} --maxboxsz {box} --model {self.gmm}/{self.currunkey}_model_gmm.txt --modelout {modelout} --niter {self.currun['trainiter']*2} --mask {self.currun['mask']} --nmid {self.currun['dim']} {s}")
 			prog.setValue(n)
 			self.app().processEvents()
 			n+=1
@@ -400,7 +400,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.app().processEvents()
 
 		# heterogeneity analysis
-		run(f"e2gmm_refine.py --model {modelout} --ptclsin {self.gmm}/particles.lst --heter --maxboxsz {self.jsparm['boxsize']} --gradout {self.gmm}/{self.currunkey}_grads.hdf --mask {self.currun['mask']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {self.gmm}/{self.currunkey}_decoder.h5 --pas {self.currun['pas']}")
+		run(f"e2gmm_refine.py --model {modelout} --ptclsin {self.gmm}/particles.lst --heter --maxboxsz {self.jsparm['boxsize']} --gradout {self.gmm}/{self.currunkey}_grads.hdf --mask {self.currun['mask']} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {self.gmm}/{self.currunkey}_decoder.h5 --pas {self.currun['pas']}")
 		prog.setValue(9)
 		self.app().processEvents()
 

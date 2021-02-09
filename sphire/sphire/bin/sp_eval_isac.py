@@ -186,7 +186,7 @@ Advanced Parameters:
     STACKFILEDIR, CLASS_STACK_PREFIX, STACKFILEDIR, CLASS_STACK_PREFIX, 
     __file__,__file__,__file__,__file__,__file__,__file__,)
 
-MODIFIED="Modified 2021-01-01"
+MODIFIED="Modified 2021-02-02"
 
 """
 Modifications log:
@@ -1387,7 +1387,7 @@ def check_isac_or_beautify(processed_imgs_file, isac_dir, partstack, classavgsta
     all_params_exists= os.path.exists(all_isac_params_file)
     isac_shrink_exists= os.path.exists(isac_shrink_path)
     
-    # If all three files exist, then proceed
+    # If all four files exist, then proceed
     if classed_imglist_exists and init_params_exists and all_params_exists and isac_shrink_exists:
         isacTF= True
         params_type='isac'
@@ -1488,7 +1488,7 @@ def check_isac_or_beautify(processed_imgs_file, isac_dir, partstack, classavgsta
     
     # Neither ISAC nor beautified
     if not isacTF and not beautifiedTF:
-        mesg=  "\nERROR!! Directory '%s' is missing files that ISAC or beautified directories should have!" % options.align_isac_dir
+        mesg=  "\nERROR!! Directory '%s' is missing files that ISAC or beautified directories should have!" % isac_dir
         
         mesg+= "\n\nISAC directory should have:"
         mesg+= "\n  %s %s" % (processed_imgs_file, classed_imglist_exists)
@@ -1507,10 +1507,10 @@ def check_isac_or_beautify(processed_imgs_file, isac_dir, partstack, classavgsta
     
     # Both types of files are present
     elif isacTF and beautifiedTF:
-        mesg= "WARNING!! Directory '%s' has files of both ISAC or beautified directories" % options.align_isac_dir
+        mesg= "WARNING!! Directory '%s' has files of both ISAC or beautified directories" % isac_dir
         print_log_msg(mesg, log)
         print_log_msg('Will proceed without applying alignments...', log)
-        options.align_isac_dir= None
+        isac_dir= None
         
     # One or the other
     elif isacTF and not beautifiedTF:
@@ -3007,26 +3007,17 @@ def avgvar(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use_eve
     inmem = True
     if type(data) == type(""):
         inmem = False
-        from sp_utilities    import get_im	
 
     img2D = True
     if inmem:
         img = data[0]
     else:
-        img = get_im(data,0)
+        img = sp_utilities.get_im(data,0)
     nx = img.get_xsize()
     ny = img.get_ysize()
     nz = img.get_zsize()
     if nz > 1:
         img2D = False
-
-    if mode == 'a':
-        if img2D:
-            from sp_utilities import get_params2D
-            from sp_fundamentals import rot_shift2D
-        else:
-            from sp_utilities import get_params3D
-            from sp_fundamentals import rot_shift3D
 
     if inmem:
         data_nima = len(data)
@@ -3046,13 +3037,13 @@ def avgvar(data, mode='a', interp='quadratic', i1=0, i2=0, use_odd=True, use_eve
         if inmem:
             img = data[i]
         else:
-            img = get_im(data, i)
+            img = sp_utilities.get_im(data, i)
         if (mode == 'a'):
             if img2D:
-                angle, sx, sy, mirror, scale = get_params2D(img)
-                img = rot_shift2D(img, angle, sx, sy, mirror, scale, interp)
+                angle, sx, sy, mirror, scale = sp_utilities.get_params2D(img)
+                img = sp_fundamentals.rot_shift2D(img, angle, sx, sy, mirror, scale, interp)
             else:
-                phi, theta, psi, s3x, s3y, s3z, mirror, scale = get_params3D(img)
+                phi, theta, psi, s3x, s3y, s3z, mirror, scale = sp_utilities.get_params3D(img)
                 img = rot_shift3D(img, phi, theta, psi, s3x, s3y, s3z, scale)
         EMAN2.Util.add_img(ave, img)
         EMAN2.Util.add_img2(var, img)
