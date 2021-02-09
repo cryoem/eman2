@@ -290,8 +290,8 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wsbxcol.valueChanged[int].connect(self.wplot2d.setXAxisAll)
 		self.wsbycol.valueChanged[int].connect(self.wplot2d.setYAxisAll)
 		self.wplot2d.mousedown[QtGui.QMouseEvent,tuple].connect(self.plot_mouse)
-		self.wplot2d.mouseUp[QtGui.QMouseEvent,tuple].connect(self.plot_mouse)
-		self.wplot2d.mouseDrag[QtGui.QMouseEvent,tuple].connect(self.plot_mouse)
+		self.wplot2d.mouseup[QtGui.QMouseEvent,tuple].connect(self.plot_mouse)
+		self.wplot2d.mousedrag[QtGui.QMouseEvent,tuple].connect(self.plot_mouse)
 		E2loadappwin("e2gmm","main",self)
 
 		self.gaussplot=EMScatterPlot3D()

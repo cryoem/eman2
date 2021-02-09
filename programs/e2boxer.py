@@ -1488,6 +1488,10 @@ class boxerTopaz(QtCore.QObject):
 		return
 
 
+#####################
+## Gauss boxer ported from e2boxer.old by Vadim Kotov
+##########
+
 class boxerGauss(QtCore.QObject):
 	# default parameters values
 	defaults = {'use_variance':True,
@@ -1501,6 +1505,9 @@ class boxerGauss(QtCore.QObject):
 		# the utility input/output pixel size settings is not clear, do not expose
 		# how about the CTF estimation in Gauss window? It should also work globally?
 		# NOTE also set here default values for params - must be floats!
+		boxerGauss.lbl=QtWidgets.QLabel("Simple, fast reference-free picker which may work for some particles")
+		gridlay.addWidget(boxerGauss.lbl,0,0,1,2)
+
 		boxerGauss.use_variance = CheckBox(label="Use variance", value=boxerGauss.defaults['use_variance'])
 		#boxerGauss.use_variance.
 		boxerGauss.gauss_width = ValBox(label="Gaussian width:",value=boxerGauss.defaults['gauss_width'])
@@ -1509,10 +1516,10 @@ class boxerGauss(QtCore.QObject):
 		boxerGauss.thr_low.setToolTip("Increase if too much background is picked")
 		boxerGauss.thr_hgh = ValBox(label="Threshold high:",value=boxerGauss.defaults['thr_hgh'])
 		boxerGauss.thr_hgh.setToolTip("Decrease if too much aggregates are picked")
-		gridlay.addWidget(boxerGauss.use_variance,0,0)
-		gridlay.addWidget(boxerGauss.gauss_width,0,1)
-		gridlay.addWidget(boxerGauss.thr_low,1,0)
-		gridlay.addWidget(boxerGauss.thr_hgh,1,1)
+		gridlay.addWidget(boxerGauss.use_variance,2,0)
+		gridlay.addWidget(boxerGauss.gauss_width,2,1)
+		gridlay.addWidget(boxerGauss.thr_low,4,0)
+		gridlay.addWidget(boxerGauss.thr_hgh,4,1)
 		# keep a reference the main window of e2boxer to access box size and maybe other values
 		boxerGauss.boxerwindow = boxerwindow
 	
