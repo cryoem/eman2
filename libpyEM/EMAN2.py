@@ -1071,7 +1071,7 @@ def kill_process(pid):
 def run(cmd,quiet=False):
 	"""shortcut redefined all over the place. Might as well put it in one location."""
 	if not quiet: print(cmd)
-	launch_childprocess(cmd)
+	return launch_childprocess(cmd)
 
 def launch_childprocess(cmd,handle_err=0):
 	'''
