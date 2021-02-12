@@ -519,7 +519,7 @@ class EMFilterTool(QtWidgets.QMainWindow):
 		if self.viewer==None: return
 		self.viewer.append(EMScene3D())
 		self.sgdata = EMDataItem3D(test_image_3d(3), transform=Transform())
-		self.viewer[-1].insertNewNode('Data', self.sgdata, parentnode=self.viewer[0])
+		self.viewer[-1].insertNewNode('Data', self.sgdata, parentnode=self.viewer[-1])
 		isosurface = EMIsosurface(self.sgdata, transform=Transform())
 		self.viewer[-1].insertNewNode("Iso", isosurface, parentnode=self.sgdata)
 		volslice = EMSliceItem3D(self.sgdata, transform=Transform())

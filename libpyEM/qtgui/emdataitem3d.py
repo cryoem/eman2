@@ -142,6 +142,10 @@ class EMDataItem3D(EMItem3D):
 		return self.data
 
 	def setData(self, data, n=0):
+		if data==None : 
+			self.data=None
+			return
+	
 		if isinstance(data, EMData):
 			self.data = data
 			if data.has_attr("source_path"):
@@ -1285,7 +1289,7 @@ class EMIsosurface(EMItem3D,EM3DModel):
 		When the EMData changes for EMDataItem3D parent node, this method is called. It is responsible for updating the state of the slice node.
 		"""
 		data = self.getParent().getData()
-
+		if data==None or data["sigma"]==0 : return
 
 		#This computes initial threshold. Steven Murray does seem to have much success with this though.
 		if self.isothr!=None: #there was data previously

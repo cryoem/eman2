@@ -112,9 +112,9 @@ class EMPlot2DWidget(EMGLWidget):
 	"""A QT widget for drawing 2-D plots using matplotlib
 	"""
 	selected_sg = QtCore.pyqtSignal()
-	mouseDown = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
-	mouseDrag = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
-	mouseUp = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
+	mousedown = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
+	mousedrag = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
+	mouseup = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
 
 	def __init__(self,application=None,winid=None,parent=None):
 
@@ -874,7 +874,7 @@ lc is the cursor selection point in plot coords"""
 			self.update_selected((event.x(),event.y()),lc)
 			self.updateGL()
 			
-			if self.mouseemit : self.mouseDown.emit(event,self.scr2plot(event.x(),event.y()))
+			if self.mouseemit : self.mousedown.emit(event,self.scr2plot(event.x(),event.y()))
 			#if self.mmode==0:
 				#self.emit(QtCore.SIGNAL("mousedown"), event)
 				#return
@@ -899,7 +899,7 @@ lc is the cursor selection point in plot coords"""
 			self.add_shape("lcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-220,self.scrlim[3]-10,"%1.5g (%s), %1.5g"%(lc[0],recip,lc[1]),120.0,-1)))
 			self.update_selected((event.x(),event.y()),lc)
 			self.updateGL()
-			if self.mouseemit : self.mouseDrag.emit(event,self.scr2plot(event.x(),event.y()))
+			if self.mouseemit : self.mousedrag.emit(event,self.scr2plot(event.x(),event.y()))
 #			self.add_shape("mcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-80,self.scrlim[3]-20,"%1.3g, %1.3g"%(self.plot2scr(*lc)[0],self.plot2scr(*lc)[1]),1.5,1)))
 
 	def mouseReleaseEvent(self, event):
@@ -910,7 +910,7 @@ lc is the cursor selection point in plot coords"""
 			else : self.rescale(min(lc[0],lc2[0]),max(lc[0],lc2[0]),min(lc[1],lc2[1]),max(lc[1],lc2[1]))
 			self.rmousedrag=None
 		elif event.buttons()&Qt.LeftButton:
-			if self.mouseemit : self.mouseUp.emit(event,self.scr2plot(event.x(),event.y()))
+			if self.mouseemit : self.mouseup.emit(event,self.scr2plot(event.x(),event.y()))
 
 		#elif event.button()==Qt.LeftButton:
 			#if self.mmode==0:

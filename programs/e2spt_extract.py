@@ -797,12 +797,20 @@ def parse_json(options):
 	for k in keys:
 		src, ii = eval(k)
 		e=EMData(src, ii, True)
-		data.append({"k":k,
-			"src":e["data_source"],
-			"srci":e["data_n"],
-			"pos":e["ptcl_source_coord"],
-			"xf":js[k]["xform.align3d"], 
-			"score":js[k]["score"]})
+		if src[-4:]==".lst" :
+			data.append({"k":k,
+				"src":e["data_source"],
+				"srci":e["data_n"],
+				"pos":e["ptcl_source_coord"],
+				"xf":js[k]["xform.align3d"], 
+				"score":js[k]["score"]})
+		else:
+			data.append({"k":k,
+				"src":src,
+				"srci":ii,
+				"pos":e["ptcl_source_coord"],
+				"xf":js[k]["xform.align3d"], 
+				"score":js[k]["score"]})
 	
 	fs=[d["src"] for d in data]
 	fnames, count=np.unique(fs, return_counts=True)

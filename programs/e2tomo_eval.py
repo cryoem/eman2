@@ -342,6 +342,7 @@ class TomoEvalGUI(QtWidgets.QWidget):
 			self.cur_tlt=EMData.read_images(info["tltfile"])
 			self.wg_tltimage.list_idx=int(len(self.cur_tlt)/2)
 
+		for i in self.cur_tlt: i.process_inplace("normalize")
 		self.wg_tltimage.set_data(self.cur_tlt)
 		self.wg_tltimage.show()
 

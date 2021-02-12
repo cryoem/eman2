@@ -224,6 +224,10 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 
 	(options, args) = parser.parse_args()
 
+	if options.parallel!=None and options.parallel[:6]=="thread":
+		options.threads=int(options.parallel.split(":")[1])
+		options.parallel=None
+		print("--parallel converted to --threads for efficiency")
 
 	if options.path == None:
 		fls=[int(i[-2:]) for i in os.listdir(".") if i[:4]=="spt_" and len(i)==6 and str.isdigit(i[-2:])]
@@ -280,6 +284,7 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 
 	
 	if options.parallel:
+		print("Running in parallel mode. Warning, memory consumption may be high!")
 		if options.randnclass>0:
 			nref=options.randnclass
 		else:
@@ -368,7 +373,7 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 			output.depad()
 			avs.append(output)
 	else:
-		
+		print("Running in thread mode")
 		n=len(args)
 		args=[comma(i) for i in args]
 		refs=[EMData(i[0],i[1]) for i in args]

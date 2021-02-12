@@ -21,6 +21,11 @@ Current build status
 <img alt="windows" src="https://img.shields.io/appveyor/ci/cryoem/eman2/master.svg?label=Windows">
 </a>
 
+Installation
+====================
+EMAN2 is now built within Anaconda, trying to compile using system dependencies (without Anaconda) is not
+supported. Building from source with Anaconda takes just a few simple steps and is normally fairly foolproof.
+Instructions at <a href="http://eman2.org">http://eman2.org</a>
 
 Coding Style
 ====================

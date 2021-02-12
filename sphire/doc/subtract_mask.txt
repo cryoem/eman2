@@ -1,0 +1,90 @@
+~~NOTOC~~
+
+===== sp_signalsubtract sp_mask =====
+
+Generate and Apply Mask : Make a soft mask of the region to be excluded.
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  	sp_signalsubtract.py sp_mask --map2mask=map_to_make_mask_from --fullmap=full_map --outdir=output_subtraction_directory --mapthresh=threshold --verbosity=verbosity_level
+
+
+\\
+===== Typical usage =====
+
+sp_signalsubtract comprises the steps needed to subtract masked regions from a map in order to focus on the remaining features from that map.  There are six steps for this process (five within SPHIRE):
+
+\\ __1. Average and low-pass filter a map for segmentation __
+
+\\ __2. Locate regions to be subtracted __
+
+\\ __3. Mask a soft mask of the region to be excluded __:
+
+  sp_signalsubtract.py sp_mask --map2mask=map_to_make_mask_from --outdir=output_subtraction_directory --fullmap=full_map --mapthresh=threshold
+
+The map to make a mask from (--map2mask) corresponds to the region that you want to subtract. 
+
+!!!IMPORTANT!!! The full map which is to be multiplied by the mask (--fullmap) must NOT have been postprocessed (e.g., sharpened).  Otherwise, re-projections will not be optimally comparable to the experimental images.  
+  
+\\ __4. Compute re-projections of map to be subtracted, and subtract them from the original images __
+
+\\ __5. Compute reconstruction of density remaining after signal-subtraction __
+
+\\ __6. Center map of the remaining density __
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; %%--%%map2mask : Map to mask : Map from which a mask will be generated. (default None) : subtraction_mode==sp_mask
+  ; %%--%%fullmap : Full map : Map which will be multiplied by the mask. (default None) : subtraction_mode==sp_mask
+  ; %%--%%outdir : Output directory : Directory where outputs will be written. (default required string)
+  ; %%--%%mapthresh : Map threshold : Full map will be initially binarized at this threshold. (default None) : subtraction_mode==sp_mask
+  
+\\
+=== Advanced Parameters ===
+  ; %%--%%verbosity : Verbosity level : Controls how much information will be written to the screen. (default 2)
+  
+\\
+===== Output =====
+  ; mask_final.hdf : Final mask
+  ; vol_masked.hdf : Diagnostic masked input map
+  ; ctf_params.txt : CTF parameter file
+ 
+\\
+===== Description =====
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+
+\\
+==== Developer Notes ====
+
+\\
+==== Author / Maintainer ====
+Tapu Shaikh
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_signalsubtract.py
+
+\\
+==== See also ====
+
+\\
+==== Maturity ====
+Beta:: Under evaluation and testing. Please let us know if there are any bugs.
+
+\\
+==== Bugs ====
+
+\\

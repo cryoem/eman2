@@ -106,7 +106,7 @@ produce new sets/ for each class, which could be further-refined.
 	parser.add_argument("--layers",type=int,help="number of 1 pixel layers about the center to use for the projection in each direction (size in reduced image if --shrink used), ie 0->1, 1->3, 2->5. Default=2",default=2,guitype="intbox", row=2, col=1, rowspan=1, colspan=1,mode="gui")	
 	parser.add_argument("--sym",type=str,default="c1",help="Symmetry of the input. Must be aligned in standard orientation to work properly.")
 	parser.add_argument("--shrink", default=1,type=int,help="shrink the particles before processing",guitype="intbox", row=2, col=0, rowspan=1, colspan=1,mode="gui")
-	parser.add_argument("--mask", default=None,type=str,help="Apply a 3D mask file to each particle prior to making projections")
+	parser.add_argument("--mask", default=None,type=str,help="A 3D mask file or a single mask processor specification to apply prior to local projection generation")
 	parser.add_argument("--threads", default=4,type=int,help="Number of alignment threads to run in parallel on a single computer. This is the only parallelism supported by e2spt_align at present.", guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--hp",default=-1,type=float,help="Apply a high-pass filter at the specified resolution when generating projections. Specify as resolution in A, eg - 100")
 	parser.add_argument("--lp",default=-1,type=float,help="Apply a low-pass filter at the specified resolution when generating projections. Specify the resolution in A, eg - 25")
@@ -125,12 +125,24 @@ produce new sets/ for each class, which could be further-refined.
 		except: pass
 
 	if options.iter<=0 :
-		fls=[int(i[15:17]) for i in os.listdir(options.path) if i[:15]=="particle_parms_" and str.isdigit(i[15:17])]
+		fls=[int(i[7:9]) for i in os.listdir(options.path) if i[:7]=="threed_" and str.isdigit(i[7:9])]
 		if len(fls)==0 : options.iter=1
-		else: options.iter=max(fls)+1
-		if options.verbose : print("Using iteration ",options.iter)
+		else: options.iter=max(fls)
+		print("Using iteration ",options.iter)
 
-	if options.mask!=None: initmask=EMData(options.mask,0)
+	cruns=[int(i[15:17]) for i in os.listdir(options.path) if i[:12]=="classes_sec_" and len(i)>=21 and str.isdigit(i[15:17])]
+	if len(cruns)==0: crun=0
+	else: crun=max(cruns)+1
+	print("crun: ",crun)
+
+	if options.mask!=None: 
+		try: initmask=EMData(options.mask,0)
+		except: 
+			nx=EMData(f"{options.path}/model_input.hdf",0,True)["nx"]
+			nm,opt=parsemodopt(options.mask)
+			initmask=EMData(nx,nx,nx)
+			initmask.to_one();
+			initmask.process_inplace(nm,opt)
 	else: initmask=None
 
 	db=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,options.iter))
@@ -170,9 +182,9 @@ produce new sets/ for each class, which could be further-refined.
 			#print("{}% complete".format(100.0*frac))
 	
 		while not jsd.empty():
-			i,k,apll=jsd.get()
+			i,k,pall=jsd.get()
 			prjs[i]=pall
-			pall.write_compressed("{}/alisecs_{:02d}.hdf".format(options.path,options.iter),i,8)
+			pall.write_compressed(f"{options.path}/alisecs_{options.iter:02d}_{crun:02d}.hdf",i,8)
 			#all.write_image("{}/alisecs_{:02d}.hdf".format(options.path,options.iter),i)
 
 	for t in thrds:
@@ -181,6 +193,7 @@ produce new sets/ for each class, which could be further-refined.
 	if options.verbose: print("Performing PCA")
 
 	mask=sum(prjs)
+	if prjs[0]==0 : print("ERROR: likely trying to use an incomplete or nonexistent iteration")
 	mask.process_inplace("threshold.notzero")
 	prjsary=np.zeros((len(prjs),int(mask["square_sum"]+0.5)))		# input to PCA
 	for i,p in enumerate(prjs):
@@ -203,14 +216,14 @@ produce new sets/ for each class, which could be further-refined.
 	# Generate new averages from the original particles
 	# Write new sets/ for each class
 	for i in range(options.ncls):
-		try: os.unlink("sets/{}_{:02d}_{:02d}.lst".format(options.path,options.iter,i))
+		try: os.unlink("sets/{}_{:02d}_{:02d}_{:02d}.lst".format(options.path,options.iter,crun,i))
 		except: pass
 
 	hdr=EMData(ks[0][1][0],ks[0][1][1],True)
 	nx=hdr["nx"]
 	ny=hdr["ny"]
 	nz=hdr["nz"]
-	sets=[LSXFile("sets/{}_{:02d}_{:02d}.lst".format(options.path,options.iter,i)) for i in range(options.ncls)]
+	sets=[LSXFile("sets/{}_{:02d}_{:02d}_{:02d}.lst".format(options.path,options.iter,crun,i)) for i in range(options.ncls)]
 	
 	# Initialize averages
 #	avgs=[EMData(nx,ny,nz) for i in range(options.ncls)]
@@ -237,25 +250,27 @@ produce new sets/ for each class, which could be further-refined.
 		# If requested, we save the aligned (shrunken) volume to the stack for this class
 		if options.saveali: 
 			if options.shrink>1 : ptcl.process_inplace("math.meanshrink",{"n":options.shrink})
-			ptcl.write_image("{}/aliptcl_{:02d}_{:02d}.hdf".format(options.path,options.iter,cls),-1)
+			ptcl.write_image("{}/aliptcl_{:02d}_{:02d}_{:02d}.hdf".format(options.path,options.iter,crun,cls),-1)
 		
 		sets[cls].write(-1,im["orig_n"],im["orig_file"],str(db[im["orig_key"]]["xform.align3d"].get_params("eman")))
 	
 	if options.verbose: print("\nSaving classes")
-	try: os.unlink("{}/classes_sec_{:02d}.hdf".format(options.path,options.iter))
+	try: os.unlink("{}/classes_sec_{:02d}_{:02d}.hdf".format(options.path,options.iter,crun))
 	except: pass
-	try: os.unlink("{}/classes_{:02d}.hdf".format(options.path,options.iter))
+	try: os.unlink("{}/classes_{:02d}_{:02d}.hdf".format(options.path,options.iter,crun))
 	except: pass
 	# write class averages
 	for i in range(options.ncls):
 		n=centers[i]["ptcl_repr"]
 		print("Class {}: {}".format(i,n))
-		centers[i].write_image("{}/classes_sec_{:02d}.hdf".format(options.path,options.iter),i)
+#		centers[i].write_image("{}/classes_sec_{:02d}.hdf".format(options.path,options.iter),i)
+		centers[i].write_compressed("{}/classes_sec_{:02d}_{:02d}.hdf".format(options.path,options.iter,crun),i,8)
 		if n>0 : avgs[i].mult(1.0/n)
 		avg=avgs[i].finish()
 		if options.hp>0 : avg.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/options.hp})
 		if options.lp>0 : avg.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.lp})
-		avg.write_image("{}/classes_{:02d}.hdf".format(options.path,options.iter),i)
+#		avg.write_image("{}/classes_{:02d}.hdf".format(options.path,options.iter),i)
+		avg.write_compressed("{}/classes_{:02d}_{:02d}.hdf".format(options.path,options.iter,crun),i,12)
 		
 	if options.verbose: print("Done")
 
@@ -263,12 +278,3 @@ produce new sets/ for each class, which could be further-refined.
 
 if __name__ == "__main__":
 	main()
-
-
-
-
-
-
-
-
-

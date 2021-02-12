@@ -346,7 +346,12 @@ namespace EMAN
 	{
 	  public:
 		TomoAverager();
-
+		virtual ~ TomoAverager()
+		{
+			if (norm_image!=0) delete norm_image;
+			if (result!=0) delete result;
+		}
+		
 		void add_image( EMData * image);
 		EMData * finish();
 

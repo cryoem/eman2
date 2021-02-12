@@ -640,6 +640,7 @@ class SptAlignTask(JSTask):
 				for si in range(nsym):
 					ref=refasym[data[3]][si]
 					if options.maxshift>0:
+						print(b.get_attr_dict(),ref.get_attr_dict())
 						bb=b.align("translational",ref,{"intonly":1, "maxshift":options.maxshift})
 						ts=bb["xform.align3d"]
 						bb=b.process("xform",{"transform":ts})

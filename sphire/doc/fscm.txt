@@ -1,0 +1,83 @@
+~~NOTOC~~
+
+===== sxresolution =====
+Compute mFSC: Compute overall and local resolution measures using a pair of half-maps.
+
+\\
+===== Usage =====
+
+Usage in command line
+
+	sxresolution.py firstvolume secondvolume maskfile outputdir --wn=window_size --step=shell_step_size --cutoff=res_cutoff --radius=radius --local_fsc=local_fsc --sigmag=sigmag --lfi=lfi --hfi=hfi --significance=significance --ndf_reduce=ndf_reduce --nthreads=nthreads --MPI
+
+\\
+===== Typical usage =====
+
+sxresolution exists in for both MPI and non-MPI versions (Running MPI version requires --MPI flag).
+
+\\ 
+
+  mpirun -np 16 sxresolution.py firstvolume secondvolume maskfile outputdir --wn=window_size --step=shell_step_size --cutoff=res_cutoff --radius=radius --MPI
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; firstvolume : Volume #1 : First unfiltered half-map.  (default required string)
+  ; secondvolume : Volume #2 : Second unfiltered half-map. (default required string)
+  ; maskfile : 3D mask : Defines the region within which FSCM will be computed. (default None)
+  ; outputdir : Output directory : Directory where output files will be written. (default required string)
+  ; %%--%%radius : Mask radius : If there is no maskfile, sphere with r=radius will be used. By default, the radius is nx/2-wn. (default None) : maskfile==None
+  ; %%--%%wn : Window size : Size of window within which local real-space FSC is computed. (default 15)
+  ; %%--%%local_fsc : Compute local resolution : Set to 1 to compute local resolution volume. (default 0|||1)
+  ; %%--%%sigmag : Sigma of Gaussian window: Sigma of the Fourier space Gaussian window in pixels. Local resolution values are computed within small windowed areas (size wn^15). Due to small sample size the values are inaccurate and outcome tends to be noisy. It is thus suggested to use broader Gaussian window when local resolution is computed, say sigmag=3.0. (default 1.0)
+  ; %%--%%MPI : Use MPI : Use MPI parallelization. (default False)
+
+\\
+=== Advanced Parameters ===
+  ; %%--%%step : Shell step : Shell step in Fourier size in pixels (integer). (default 1)
+  ; %%--%%lfi : Inner radius : First Fourier index from which to begin calculation (in Fourier pixels) (default 1)
+  ; %%--%%hfi : Outer radius : Last Fourier index to end calculation (in Fourier pixels). Default radius is nx//2-2. (default None)
+  ; %%--%%significance : Significance level : Significance level for the upper confidence interval (default 0.99)
+  ; %%--%%ndf_reduce : Number of asymmetric units : Reduction of number of degrees of freedom due to point group symmetry, for example for D3 set to 6. (default 1.0)
+  ; %%--%%cutoff : FSC criterion : Resolution cut-off for FSCM confidence interval. (default 0.143)
+  ; %%--%%nthreads : Number of threads : Number of threads (mainly for 3D FFT). (default 4)
+
+\\
+===== Output =====
+Output volume: Each voxel contains the resolution for this area in absolute frequency units.
+
+\\
+===== Description =====
+Local resolution values are computed within small windowed areas (size wn^15). Due to small sample size the values are inaccurate and outcome tends to be noisy. It is thus suggested to use broader Gaussian window when local resolution is computed, say sigmag=3.0.
+\\
+==== Method ====
+
+\\
+==== Reference ====
+Penczek PA (2020). "Reliable cryo-EM resolution estimation with modified Fourier shell correlation." IUCrJ 7: 995-1008.
+
+\\
+==== Developer Notes ====
+
+\\
+==== Author / Maintainer ====
+Pawel Penczek
+
+\\
+==== Keywords ====
+
+\\
+==== Files ====
+sparx/bin/sxresolution.py
+
+\\
+==== See also ====
+
+\\
+==== Maturity ====
+
+\\
+==== Bugs ====
+There are no known bugs so far.
+
+\\

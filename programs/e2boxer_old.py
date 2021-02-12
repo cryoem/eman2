@@ -2267,10 +2267,9 @@ class GaussPanel(object):
 		        self.target().set_gauss_width(float(self.gauss_width.text()))
 
 	def gauss_width_edited(self):
-		from string import atof
 		from math import log10
 		text = self.gauss_width.text()
-		v = int( log10(atof(text)) * 100)
+		v = int( log10(float(text)) * 100)
 		self.setgwbox = False
 		self.gauss_width_slider.setValue( v )
 		self.setgwbox = True
