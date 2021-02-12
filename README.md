@@ -6,21 +6,6 @@ Summary: A scientific image processing software suite with a focus on CryoEM and
 
 
 
-Current build status
-====================
-
-<a href="https://circleci.com/gh/cryoem/eman2">
-<img alt="Linux" src="https://img.shields.io/circleci/project/github/cryoem/eman2/master.svg?label=Linux">
-</a>
-
-<a href="https://travis-ci.org/cryoem/eman2">
-<img alt="macOS" src="https://img.shields.io/travis/cryoem/eman2/master.svg?label=macOS">
-</a>
-
-<a href="https://ci.appveyor.com/project/cryoem/eman2/branch/master">
-<img alt="windows" src="https://img.shields.io/appveyor/ci/cryoem/eman2/master.svg?label=Windows">
-</a>
-
 Installation
 ====================
 EMAN2 is now built within Anaconda, trying to compile using system dependencies (without Anaconda) is not
