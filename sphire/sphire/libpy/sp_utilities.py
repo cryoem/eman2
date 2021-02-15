@@ -73,8 +73,8 @@ import zlib
 def makerelpath(p1, p2):
     """Takes a pair of paths /a/b/c/d and /a/b/e/f/g and returns a relative path to b from a, ../../e/f/g"""
 
-    p1s = [i for i in os.path.realpath(p1).split("/") if len(i) > 0]
-    p2s = [i for i in os.path.realpath(p2).split("/") if len(i) > 0]
+    p1s = [i for i in os.path.abspath(p1).split("/") if len(i) > 0]
+    p2s = [i for i in os.path.abspath(p2).split("/") if len(i) > 0]
 
     for dv in range(min(len(p1s), len(p2s))):
         if p1s[dv] != p2s[dv]:
@@ -146,7 +146,7 @@ def make_v_stack_header(path, vstack_path, verbose=False):
                 continue
             # This block converts an absolute path to the actual data to a relative path
             try:
-                dpath = os.path.realpath(dct.get_data_path(n))
+                dpath = os.path.abspath(dct.get_data_path(n))
                 if os.name == "nt":
                     vspath = vspath.replace("\\", "/")
                     dpath = dpath.replace("\\", "/")

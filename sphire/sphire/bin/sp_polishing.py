@@ -21,7 +21,6 @@ except:
 
 from pyStarDB import sp_pystardb as star
 import mpi
-
 os.unsetenv('OMPI_COMM_WORLD_RANK')
 RUNNING_UNDER_MPI = "OMPI_COMM_WORLD_SIZE" in os.environ
 if RUNNING_UNDER_MPI :
@@ -32,6 +31,9 @@ else :
     rank  =0
     size = 1
 
+
+env = os.environ
+new_env = {k: v for k, v in env.items() if "MPI" not in k}
 
 
 def parse_parameters(args):
@@ -98,7 +100,21 @@ def parse_parameters(args):
     )
 
     parser.add_argument(
-        "--relion_mpi_procs",
+        "--submission_template",
+        type = str,
+        help ="",
+        default = ""
+    )
+
+    parser.add_argument(
+        "--submission_commnad",
+        type=str,
+        help="",
+        default=""
+    )
+
+    parser.add_argument(
+        "--mpi_procs",
         type= int,
         help ="",
         default = 1
@@ -387,7 +403,7 @@ def run(args):
 
                 subprocess.run(args=[sph2rel_call], shell=True, text=True)
 
-                """
+
                 #### This wont be necessary in cases where the entire pipeline was run with MotionCorr shifts
                 bdb_star = star.StarFile(os.path.join(os.path.join(os.getcwd(), os.path.join(str(options.Output_folder), "BDB2STAR")),
                                                       'sphire2relion.star'))
@@ -404,7 +420,7 @@ def run(args):
 
                 bdb_star.write_star_file(overwrite=True)
                 
-                """
+
 
             ####### SPHIRE 2 RELION Parts ends here
 
@@ -417,59 +433,56 @@ def run(args):
             final_motion_path = os.path.join(main_location, options.corr_mic)
             time.sleep(5)
 
-                #######Corrected micrograph part end here
-            ####  For applying polishing on the particles and estimating bfactor
-            if options.training_params != None:
-                if options.relion_mpi_procs > 1:
-                    polishing_call = (
-                            "mpirun"
-                            + " " + "-np"
-                            + " " + str(options.relion_mpi_procs)
-                            + " " + "relion_motion_refine_mpi"
-                            + " --i "
-                            + os.path.join(os.getcwd(),os.path.join(str(options.Output_folder),"BDB2STAR/sphire2relion.star"))
-                            + " " + "--f " + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder),"PostProcess/postprocess.star"))
-                            + " " + "--corr_mic " + os.path.join(final_motion_path)
-                            + " " + "--first_frame " + str(options.first_frame)
-                            + " " + "--last_frame " + str(options.last_frame)
-                            + " " + "--o " + str(os.path.join(os.getcwd(), str(options.Output_folder)))
-                            + " " + "--params_file " + str(options.training_params)
-                            + " " + "--combine_frames"
-                            + " " + "--bfac_minfreq " + str(options.bfac_minfreq)
-                            + " " + "--bfac_maxfreq " + str(options.bfac_maxfreq)
-                            + " " + "--angpix_ref " + str(post_refine_options.pixel_size[0])
-                            + " " + "--j " + str(options.no_of_threads)
-                    )
-                else :
-                    polishing_call = (
-                            "relion_motion_refine"
-                            + " --i "
-                            + os.path.join(os.getcwd(),os.path.join(str(options.Output_folder),"BDB2STAR/sphire2relion.star"))
-                            + " " + "--f " + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder),"PostProcess/postprocess.star"))
-                            + " " + "--corr_mic " + os.path.join(final_motion_path)
-                            + " " + "--first_frame " + str(options.first_frame)
-                            + " " + "--last_frame " + str(options.last_frame)
-                            + " " + "--o " + str(os.path.join(os.getcwd(), str(options.Output_folder)))
-                            + " " + "--params_file " + str(options.training_params)
-                            + " " + "--combine_frames"
-                            + " " + "--bfac_minfreq " + str(options.bfac_minfreq)
-                            + " " + "--bfac_maxfreq " + str(options.bfac_maxfreq)
-                            + " " + "--angpix_ref " + str(post_refine_options.pixel_size[0])
-                            + " " + "--j " + str(options.no_of_threads)
-                    )
-                rel2sph_call = (
-                    "sp_relion2sphire.py"
-                    + " " + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder), "shiny.star"))
-                    + " " + "Polish_Stack"
-                    + " " + "--relion_project_dir='.'"
-                    + " " + "--box_size=-1"
-                )
 
-                import sys
-                print("Polishing command is called", polishing_call)
-                subprocess.run(args=[polishing_call],  shell=True, text= True)
-                subprocess.run(args=[rel2sph_call], shell=True, text=True)
-            ### For running the training part of polishing
+
+            if options.training_params != None:
+                polishing_call = "relion_motion_refine_mpi"\
+                                 + " --i " + os.path.join(os.getcwd(),os.path.join(str(options.Output_folder),
+                                                                                   "BDB2STAR/sphire2relion.star"))\
+                                 + " " + "--f " + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder),
+                                                                                "PostProcess/postprocess.star"))\
+                                 + " " + "--corr_mic " + os.path.join(final_motion_path)\
+                                 + " " + "--first_frame " + str(options.first_frame)\
+                                 + " " + "--last_frame " + str(options.last_frame)\
+                                 + " " + "--o " + str(os.path.join(os.getcwd(), str(options.Output_folder)))\
+                                 + " " + "--params_file " + str(options.training_params)\
+                                 + " " + "--combine_frames"\
+                                 + " " + "--bfac_minfreq " + str(options.bfac_minfreq)\
+                                 + " " + "--bfac_maxfreq " + str(options.bfac_maxfreq)\
+                                 + " " + "--angpix_ref " + str(post_refine_options.pixel_size[0])\
+                                 + " " + "--j " + str(options.no_of_threads)
+                try:
+                    with open(options.submission_template) as read:
+                        lines = read.readlines()
+                except Exception as e:
+                    sp_global_def.ERROR(str(e) + '\nCannot open mpi_submission template!', action=1)
+
+                cmd_lines = []
+                for idx, entry in enumerate(lines):
+                    if "XXX_SXCMD_LINE_XXX" in entry and "mpirun" in entry:
+                        cmd_lines.append(idx)
+
+                    if not cmd_lines:
+                        sp_global_def.sxprint("Could not find a suitable command line for exchange.")
+                        sp_global_def.sxprint("The line should contain XXX_SXCMD_LINE_XXX.")
+                        sys.exit(1)
+
+                    line = (lines[cmd_lines[-1]].replace("XXX_SXCMD_LINE_XXX", polishing_call))
+
+                    mod_sub_script = "".join(lines).replace("XXX_SXMPI_NPROC_XXX", str(options.mpi_procs)
+                                                            ).replace("XXX_SXMPI_JOB_NAME_XXX", "sp_polishing"
+                                                                      ).replace(lines[cmd_lines[-1]], line)
+
+                    out_submission = "{0}/submission_script.sh".format(options.Output_folder)
+                    with open(out_submission, "w") as w:
+                        w.write("".join(mod_sub_script))
+
+                    sp_global_def.sxprint(
+                        subprocess.check_output(
+                            options.submission_commnad.split() + [out_submission]
+                        )
+                    )
+
             else:
                 print("Parameter file not provided, hence training is performed")
                 polishing_call = (
@@ -490,6 +503,62 @@ def run(args):
                         + " " + "--pipeline_control " + str(options.Output_folder)
                 )
                 subprocess.run(args=[polishing_call], shell=True, text=True)
+
+
+
+            #     #######Corrected micrograph part end here
+            # ####  For applying polishing on the particles and estimating bfactor
+            # if options.training_params != None:
+            #     if options.mpi_procs > 1:
+            #         polishing_call = (
+            #                 "mpirun"
+            #                 + " " + "-np"
+            #                 + " " + str(options.mpi_procs)
+            #                 + " " + "relion_motion_refine_mpi"
+            #                 + " --i "
+            #                 + os.path.join(os.getcwd(),os.path.join(str(options.Output_folder),"BDB2STAR/sphire2relion.star"))
+            #                 + " " + "--f " + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder),"PostProcess/postprocess.star"))
+            #                 + " " + "--corr_mic " + os.path.join(final_motion_path)
+            #                 + " " + "--first_frame " + str(options.first_frame)
+            #                 + " " + "--last_frame " + str(options.last_frame)
+            #                 + " " + "--o " + str(os.path.join(os.getcwd(), str(options.Output_folder)))
+            #                 + " " + "--params_file " + str(options.training_params)
+            #                 + " " + "--combine_frames"
+            #                 + " " + "--bfac_minfreq " + str(options.bfac_minfreq)
+            #                 + " " + "--bfac_maxfreq " + str(options.bfac_maxfreq)
+            #                 + " " + "--angpix_ref " + str(post_refine_options.pixel_size[0])
+            #                 + " " + "--j " + str(options.no_of_threads)
+            #         )
+            #     else :
+            #         polishing_call = (
+            #                 "relion_motion_refine"
+            #                 + " --i "
+            #                 + os.path.join(os.getcwd(),os.path.join(str(options.Output_folder),"BDB2STAR/sphire2relion.star"))
+            #                 + " " + "--f " + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder),"PostProcess/postprocess.star"))
+            #                 + " " + "--corr_mic " + os.path.join(final_motion_path)
+            #                 + " " + "--first_frame " + str(options.first_frame)
+            #                 + " " + "--last_frame " + str(options.last_frame)
+            #                 + " " + "--o " + str(os.path.join(os.getcwd(), str(options.Output_folder)))
+            #                 + " " + "--params_file " + str(options.training_params)
+            #                 + " " + "--combine_frames"
+            #                 + " " + "--bfac_minfreq " + str(options.bfac_minfreq)
+            #                 + " " + "--bfac_maxfreq " + str(options.bfac_maxfreq)
+            #                 + " " + "--angpix_ref " + str(post_refine_options.pixel_size[0])
+            #                 + " " + "--j " + str(options.no_of_threads)
+            #         )
+            #     rel2sph_call = (
+            #         "sp_relion2sphire.py"
+            #         + " " + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder), "shiny.star"))
+            #         + " " + "Polish_Stack"
+            #         + " " + "--relion_project_dir='.'"
+            #         + " " + "--box_size=-1"
+            #     )
+
+                # print("Polishing command is called", polishing_call)
+                # subprocess.run(args=[polishing_call],  shell=True, text= True, env=new_env)
+                # subprocess.run(args=[rel2sph_call], shell=True, text=True)
+            ### For running the training part of polishing
+
     else:
         pass
 
@@ -498,8 +567,8 @@ def main():
 
     try:
         sp_global_def.print_timestamp("Start")
-        if rank == 0:
-            run(sys.argv[1:])
+        # if rank == 0:
+        run(sys.argv[1:])
 
         # mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
     finally:

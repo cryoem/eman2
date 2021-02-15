@@ -14499,7 +14499,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         sxcmd.subset_config = "";
         sxcmd.label = "Relion Polishing";
         sxcmd.short_info = "Apply relion polishing on SPHIRE generated stacks";
-        sxcmd.mpi_support = True;
+        sxcmd.mpi_support = False;
         sxcmd.mpi_add_flag = False;
         sxcmd.category = "sxc_meridien";
         sxcmd.role = "sxr_pipe";
@@ -14649,9 +14649,41 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         sxcmd.token_list.append(token);
         sxcmd.token_dict[token.key_base] = token
         token = SXcmd_token();
-        token.key_base = "relion_mpi_procs";
+        token.key_base = "submission_template";
         token.key_prefix = "--";
-        token.label = "Relion MPI Procs";
+        token.label = "Submission template";
+        token.help = "Submission template for mpi command ";
+        token.group = "main";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', '']];
+        token.default = "none";
+        token.restore = [['none'], ['none']];
+        token.type = "string";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token
+        token = SXcmd_token();
+        token.key_base = "submission_command";
+        token.key_prefix = "--";
+        token.label = "Submission command";
+        token.help = "Submission commmand for cluster ";
+        token.group = "main";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', '']];
+        token.default = "none";
+        token.restore = [['none'], ['none']];
+        token.type = "string";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token
+        token = SXcmd_token();
+        token.key_base = "mpi_procs";
+        token.key_prefix = "--";
+        token.label = "MPI Procs";
         token.help = "The number of MPI processors used for Relion multiprocessing. ";
         token.group = "main";
         token.is_required = False;
