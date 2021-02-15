@@ -473,7 +473,7 @@ def run(args):
                                                             ).replace("XXX_SXMPI_JOB_NAME_XXX", "sp_polishing"
                                                                       ).replace(lines[cmd_lines[-1]], line)
 
-                    out_submission = "{0}/submission_script.sh".format(options.Output_folder)
+                    out_submission = "{0}/polishing_submission_script.sh".format(str(options.Output_folder))
                     with open(out_submission, "w") as w:
                         w.write("".join(mod_sub_script))
 
