@@ -2185,7 +2185,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			TypeDict d;
 			d.put("wiener", EMObject::INT, "If set, returns Wiener image, default returns SNR");
-			d.put("scalesnr", EMObject::INT, "Scales SSNR by provided value prior to return or use in Wiener calculation. Default 2");
+			d.put("scalesnr", EMObject::FLOAT, "Scales SSNR by provided value prior to return or use in Wiener calculation. Default 2 (compensates for FSC on 1/2 volumes)");
 			return d;
 		}
 				

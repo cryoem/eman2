@@ -99,7 +99,9 @@ def main():
 	parser.add_option("--calcsf", type="string", metavar="outputfile", help="Calculate a radial structure factor. Must specify apix.")
 	parser.add_option("--calcradial", type="int",default=-1,help="Calculate the radial density by shell. Output file becomes a text file. 0 - mean amp, 2 - min, 3 - max, 4 - sigma")
 	parser.add_option("--clip", metavar="x[,y,z[,xc,yc,zc]]", type='string', action="callback", callback=intvararg_callback, help="Make the output have this size by padding/clipping. 1, 3 or 6 arguments. ")
-	parser.add_option("--compressbits", type=int,help="HDF only. Bits to keep for compression. -1 for no compression",default=-1)
+	parser.add_option("--compressbits", type=int,help="HDF only. Bits to keep for compression. -1 for no compression. This overrides --outmode and related options.",default=-1)
+	parser.add_option("--nooutliers", type=int,help="With --compressbits, if set will truncate outlier values to preserve sigfigs for more useful values. default 1 (enabled)",default=1)
+	parser.add_option("--diffmap", type="string", help="Will match the power spectrum of the specified file to the input file, then subtract it from the input file")
 
 	parser.add_option("--fftclip", metavar="x, y, z", type="string", action="callback", callback=floatvararg_callback, help="Make the output have this size, rescaling by padding FFT.")
 	parser.add_option("--filtertable", type="string", action="append",help="Applies a 2 column (S,amp) file as a filter in Fourier space, assumed 0 outside the defined range.")
@@ -252,7 +254,7 @@ def main():
 			out["render_max"]=file_mode_range[stype][1]
 
 		if options.compressbits>=0:
-			out.write_compressed(outfile,0,options.compressbits,nooutliers=True)
+			out.write_compressed(outfile,0,options.compressbits,nooutliers=options.nooutliers,erase=erase)
 		else:
 			try: out.write_image(outfile,0,IMAGE_UNKNOWN,0,None,EMUtil.EMDataType(stype))
 			except:
@@ -305,6 +307,13 @@ def main():
 	if infile[0]==":" : nimg=1
 	else : nimg = EMUtil.get_image_count(infile)
 	if n1 > nimg or n1<0: n1=nimg-1
+	
+	# If the output file exists and has exactly one image we delete the file later if writing compressed
+	try:
+		if EMUtil.get_image_count(outfile)==1 : erase=True
+		else: erase=False
+	except:
+		erase=False
 
 	if options.step != None:
 		n0=int(options.step.split(",")[0])
@@ -354,7 +363,7 @@ def main():
 			pass
 
 		if options.compressbits>=0:
-			avg.write_compressed(outfile,0,options.compressbits,nooutliers=True)
+			avg.write_compressed(outfile,0,options.compressbits,nooutliers=options.nooutliers,erase=erase)
 		else:
 			avg.write_image(outfile,0)
 		sys.exit(1)
@@ -443,6 +452,12 @@ def main():
 			elif option1 == "matchto":
 				mt=EMData(options.matchto[0])
 				data.process_inplace("filter.matchto",{"to":mt})
+				mt=None
+
+			elif option1 == "diffmap":
+				mt=EMData(options.diffmap)
+				mt.process_inplace("filter.matchto",{"to":data})
+				data.sub(mt)
 				mt=None
 
 			elif option1 == "calcfsc" :
@@ -792,18 +807,18 @@ def main():
 
 		if options.unstacking:	#output a series numbered single image files
 			if options.compressbits>=0:
-				data.write_compressed(os.path.splitext(outfile)[0]+'-'+str(img_index+1).zfill(len(str(nimg)))+ os.path.splitext(outfile)[-1],0,options.compressbits,nooutliers=True)
+				data.write_compressed(os.path.splitext(outfile)[0]+'-'+str(img_index+1).zfill(len(str(nimg)))+ os.path.splitext(outfile)[-1],0,options.compressbits,nooutliers=options.nooutliers,erase=erase)
 			else:
 				data.write_image(os.path.splitext(outfile)[0]+'-'+str(img_index+1).zfill(len(str(nimg)))+ os.path.splitext(outfile)[-1], -1, EMUtil.ImageType.IMAGE_UNKNOWN, False, None, file_mode_map[options.outmode], not(options.swap))
 		else:   #output a single 2D image or a 2D stack
 			if options.append:
 				if options.compressbits>=0:
-					data.write_compressed(outfile,-1,options.compressbits,nooutliers=True)
+					data.write_compressed(outfile,-1,options.compressbits,nooutliers=options.nooutliers,erase=erase)
 				else:
 					data.write_image(outfile, -1, EMUtil.get_image_ext_type(options.outtype), False, None, file_mode_map[options.outmode], not(options.swap))
 			else:
 				if options.compressbits>=0:
-					data.write_compressed(outfile,img_index,options.compressbits,nooutliers=True)
+					data.write_compressed(outfile,img_index,options.compressbits,nooutliers=options.nooutliers,erase=erase)
 				else:
 					data.write_image(outfile, img_index, EMUtil.get_image_ext_type(options.outtype), False, None, file_mode_map[options.outmode], not(options.swap))
 

@@ -196,20 +196,15 @@ def idfft2(v,u,amp,phase,nx=256,ny=256,dtype=np.float32,usedegrees=False):
 
 
 def make_path(suffix):
-	### make a suffix_xx folder and return the folder name
-	for i in range(100):
-		path="{}_{:02d}/".format(suffix, i)
-		if os.path.exists(path):
-			continue
-		else:
-			os.mkdir(path)
-			break
-	else:
-		print("Too many {} folders in the project, or something odd happened....Exit.".format(suffix))
-		exit()
-		
+	### make a suffix_xx (or suffix_xxx) folder and return the folder name
+	if suffix[-1]!="_" : suffix+="_"
+	
+	pthns=[int(i.rsplit("_",1)[-1]) for i in os.listdir(".") if i[:len(suffix)]==suffix]
+	try: newn=max(pthns)+1
+	except: newn=0
+	path=f"{suffix}{newn}"
+	
 	return path
-
 
 def mid_points(length,segment,step):
 	"""Returns the mid points of consecutive sections of size "segment" along the "length" of a line

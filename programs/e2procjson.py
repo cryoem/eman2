@@ -47,9 +47,11 @@ def main():
 	
 	parser.add_argument("--allinfo", action="store_true", default=False, help="Uses all of the .json files in info/ rather than specifying a list on the command line")
 	parser.add_argument("--listkeys",action="store_true", default=False, help="Lists all of the keys in all of the specified info files")
+	parser.add_argument("--remaplstkeys",action="store_true", default=False, help="For JSON files where the keys are image name,# pairs referencing a .lst file, will replace each key with the original image")
+	parser.add_argument("--retype",type=str, default=None, help="For JSON files where the keys are image name,# pairs, will change the __type value in the image name in all keys")
 	parser.add_argument("--extractkey", type=str, default=None, help="This will extract a single named value from each specified file. Output will be multicolumn if the referenced label is an object, such as CTF.")
 	parser.add_argument("--removekey", type=str, default=None, help="DANGER! This will remove all data associated with the named key from all listed .json files.")
-	parser.add_argument("--output", type=str, default="jsoninfo.txt", help="Output filename. default = jsoninfo.txt")
+	parser.add_argument("--output", type=str, default="jsoninfo.txt", help="Output for text operations (not JSON) filename. default = jsoninfo.txt")
 	parser.add_argument("--setoption",type=str, default=None, help="Set a single option in application preferences, eg - display2d.autocontrast:true")
 	parser.add_argument("--listoptions",action="store_true", default=False, help="List all currently set user application preferences")
 	
@@ -72,6 +74,45 @@ def main():
 			print("ERROR: could not write preferences. Must be of form 'program.option:value'")
 			sys.exit(1)
 		sys.exit(0)
+		
+	if options.remaplstkeys:
+		try: os.remove("tmp_tmp.json")
+		except: pass
+		for ifsp in args:
+			ls=None
+			js=js_open_dict(ifsp)
+			jsout=js_open_dict("tmp_tmp.json")
+			for k in js.keys():
+				fsp,n=eval(k)
+				if ls!=fsp:
+					ls=fsp
+					lsx=LSXFile(fsp)
+				n2,fsp2,tmp=lsx.read(n)
+				jsout.setval(str((fsp2,n2)),js[k],True)
+				
+			jsout.sync()
+			jsout=None
+			js=None
+			os.remove(ifsp)
+			os.rename("tmp_tmp.json",ifsp)
+
+	if options.retype!=None:
+		try: os.remove("tmp_tmp.json")
+		except: pass
+		for ifsp in args:
+			ls=None
+			js=js_open_dict(ifsp)
+			jsout=js_open_dict("tmp_tmp.json")
+			for k in js.keys():
+				fsp,n=eval(k)
+				fsp2=fsp.rsplit("__",1)[0]+"__"+options.retype+".hdf"
+				jsout.setval(str((fsp2,n)),js[k],True)
+				
+			jsout.sync()
+			jsout=None
+			js=None
+			os.remove(ifsp)
+			os.rename("tmp_tmp.json",ifsp)
 		
 	if options.listoptions:
 		prefs=E2getappvals()

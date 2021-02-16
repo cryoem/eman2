@@ -47,7 +47,8 @@ from eman2_gui.emapplication import get_application, EMApp
 from eman2_gui.emplot2d import EMPlot2DWidget
 from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emscene3d import EMScene3D
-from eman2_gui.emshapeitem3d import EMScatterPlot3D 
+from eman2_gui.emshapeitem3d import EMScatterPlot3D
+from eman2_gui.emdataitem3d import EMDataItem3D,EMIsosurface
 from eman2_gui.valslider import *
 import queue
 from eman2_gui import embrowser
@@ -84,7 +85,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 #	parser.add_argument("--path",type=str,default=None,help="Path for the gmm_XX folder to work in, by default a new folder will be created")
-	parser.add_argument("--threads", default=-1,type=int,help="Number of alignment threads to run in parallel on a single computer. This is the only parallelism supported by e2spt_align at present.")
+	parser.add_argument("--threads", default=-1,type=int,help="Number of alignment threads to run in parallel on a single computer.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	global options
@@ -108,6 +109,7 @@ def main():
 	emgmm=EMGMM(app,options)
 	emgmm.show()
 	emgmm.raise_()
+	QtWidgets.QMessageBox.warning(None,"Warning","This program is still experimental. While functional\nmany capabilities of the underlying e2gmm_refine program\n are not yet available through this interface")
 	app.execute()
 	
 	E2end(pid)
@@ -148,7 +150,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		
 		# 3-D View
 		self.wview3d = EMScene3D()
-		self.gbl.addWidget(self.wview3d,0,4,4,1)
+		self.gbl.addWidget(self.wview3d,0,4,3,1)
 		
 		# Left pane for GMM folder and parameters
 		self.gbll = QtWidgets.QGridLayout()
@@ -179,19 +181,26 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.gblrun.addWidget(self.wlistrun,0,0,1,2)
 		
 		self.wbutrerun=QtWidgets.QPushButton("Rerun")
-		self.gblrun.addWidget(self.wbutrerun,1,0)
+		self.gblrun.addWidget(self.wbutrerun,1,1)
 		
 		self.wbutnewrun=QtWidgets.QPushButton("New Run")
-		self.gblrun.addWidget(self.wbutnewrun,1,1)
+		self.gblrun.addWidget(self.wbutnewrun,1,0)
 		
 		# The form with details about the selected gmm_XX folder
 		self.gflparm = QtWidgets.QFormLayout()
 		self.gbll.addLayout(self.gflparm,2,0)
 		
+		self.wlpath = QtWidgets.QLabel("-")
+		self.wlpath.setToolTip("Path this GMM is based on")
+		self.gflparm.addRow("Path:",self.wlpath)
 		
 		self.wedbox = QtWidgets.QLineEdit("256")
 		self.wedbox.setToolTip("Box size of input particles in pixels")
 		self.gflparm.addRow("Box Size:",self.wedbox)
+
+		self.wedsym = QtWidgets.QLineEdit("c1")
+		self.wedsym.setToolTip("Symmetry used during refinement")
+		self.gflparm.addRow("Symmetry:",self.wedsym)
 		
 		self.wedapix = QtWidgets.QLineEdit("1.0")
 		self.wedapix.setToolTip("A/pix of input particles")
@@ -201,7 +210,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wedmask.setToolTip("3-D volume mask")
 		self.gflparm.addRow("Mask:",self.wedmask)
 		
-		self.wedngauss = QtWidgets.QLineEdit("256")
+		self.wedngauss = QtWidgets.QLineEdit("64")
 		self.wedngauss.setToolTip("Number of Gaussians")
 		self.gflparm.addRow("N Gauss:",self.wedngauss)
 		
@@ -278,9 +287,29 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wcbpntpln.addItem("Point")
 		self.wcbpntpln.addItem("Region")
 		self.gblpltctl.addWidget(self.wcbpntpln,1,2)
+
+		# Widgets below 3D
+		self.gbl3dctl = QtWidgets.QGridLayout()
+		self.gbl.addLayout(self.gbl3dctl,3,4)
+		
+		#self.wbutmap=QtWidgets.QPushButton("Map")
+		#self.wbutmap.setCheckable(True)
+		#self.wbutmap.setChecked(True)
+		#self.gbl3dctl.addWidget(self.wbutmap,0,0)
+
+		#self.wbutspheres=QtWidgets.QPushButton("Sphere Mdl")
+		#self.wbutspheres.setCheckable(True)
+		#self.wbutspheres.setChecked(True)
+		#self.gbl3dctl.addWidget(self.wbutspheres,0,1)
+
+		self.wvssphsz=ValSlider(self,(1,50),"Size:",3.0,90)
+		self.gbl3dctl.addWidget(self.wvssphsz,0,2)
 		
 		# Connections
 		self.wlistgmm.currentRowChanged[int].connect(self.sel_gmm)
+		#self.wbutspheres.clicked[bool].connect(self.new_3d_opt)
+		#self.wbutmap.clicked[bool].connect(self.new_3d_opt)
+		self.wvssphsz.valueChanged.connect(self.new_sph_size)
 		self.wbutnewgmm.clicked[bool].connect(self.add_gmm)
 		self.wbutrefine.clicked[bool].connect(self.setgmm_refine)
 		self.wlistrun.currentRowChanged[int].connect(self.sel_run)
@@ -289,16 +318,30 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wbutdrgrp.buttonClicked[QtWidgets.QAbstractButton].connect(self.plot_mode_sel)
 		self.wsbxcol.valueChanged[int].connect(self.wplot2d.setXAxisAll)
 		self.wsbycol.valueChanged[int].connect(self.wplot2d.setYAxisAll)
-		self.wplot2d.mouseDown[QtGui.QMouseEvent,tuple].connect(self.plot_mouse)
-		self.wplot2d.mouseUp[QtGui.QMouseEvent,tuple].connect(self.plot_mouse)
-		self.wplot2d.mouseDrag[QtGui.QMouseEvent,tuple].connect(self.plot_mouse)
+		self.wplot2d.mousedown[QtGui.QMouseEvent,tuple].connect(self.plot_mouse)
+		self.wplot2d.mouseup[QtGui.QMouseEvent,tuple].connect(self.plot_mouse)
+		self.wplot2d.mousedrag[QtGui.QMouseEvent,tuple].connect(self.plot_mouse)
 		E2loadappwin("e2gmm","main",self)
 
 		self.gaussplot=EMScatterPlot3D()
+		self.mapdataitem=EMDataItem3D(None)
+		self.mapiso=EMIsosurface(self.mapdataitem)
+		self.wview3d.insertNewNode("Neutral Map",self.mapdataitem)
+		self.wview3d.insertNewNode("Isosurface",self.mapiso,parentnode=self.mapdataitem)
 		self.wview3d.insertNewNode("Gauss Model",self.gaussplot)
 
 		#QtCore.QTimer.singleShot(500,self.afterStart)
 
+	def do_events(self,delay=0.1):
+		"""process the event loop with a small delay to allow user abort, etc."""
+		t=time.time()
+		while (time.time()-t<delay): 
+			self.app().processEvents()
+	
+	def new_sph_size(self,newval=10):
+		self.gaussplot.setPointSize(newval)
+		self.wview3d.update()
+	
 	def plot_mouse(self,event,loc):
 		mmode=str(self.wcbpntpln.currentText())
 		dim=self.currun.get("dim",4)
@@ -325,7 +368,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		gauss=np.array(self.decoder(latent[None,...]))[0].transpose()
 		box=int(self.wedbox.text())
 		gauss[:3]*=box
-		self.gaussplot.setData(gauss,gauss[4][0])
+		self.gaussplot.setData(gauss,self.wvssphsz.value)
 		self.wview3d.update()
 
 	def plot_mode_sel(self,but):
@@ -351,6 +394,12 @@ class EMGMM(QtWidgets.QMainWindow):
 		
 		self.wplot2d.set_data(self.data,"map")
 
+	def new_3d_opt(self,clk=False):
+		"""When the user changes selections for the 3-D display"""
+		self.gaussplot.setVisibleItem(butval(self.wbutspheres))
+		self.mapdataitem.setVisibleItem(butval(self.wbutmap))
+		print(self.gaussplot.isVisibleItem(),self.mapdataitem.isVisibleItem())
+
 	def new_run(self,clk=False):
 		"""Create a new run and run() it"""
 		name=str(QtWidgets.QInputDialog.getText(self,"Run Name","Enter a name for this run. Current parameters will be used.")[0])
@@ -373,11 +422,14 @@ class EMGMM(QtWidgets.QMainWindow):
 		
 		prog=QtWidgets.QProgressDialog("Running networks. Progress updates here are limited. See the Console for detailed output.","Abort",0,9)
 		prog.show()
+		self.do_events(1)
 		# First step with very coarse model, gradually increasing size improves convergence
-		run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --npt {self.currun['ngauss']} --maxboxsz 24 --modelout {modelout} --niter 20 --mask {self.currun['mask']} --nmid {self.currun['dim']}")
+		run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --npt {self.currun['ngauss']} --maxboxsz 24 --modelout {modelout} --niter {self.currun['trainiter']*2} --mask {self.currun['mask']} --nmid {self.currun['dim']}")
 		prog.setValue(1)
-		self.app().processEvents()
+		self.do_events()
+		if prog.wasCanceled() : return
 		
+		sym=self.jsparm["sym"]
 		box=24
 		n=2
 		while box<self.jsparm["boxsize"]:
@@ -389,20 +441,28 @@ class EMGMM(QtWidgets.QMainWindow):
 			else: s=""
 				
 			# iterate until box size is the full size of the particles
-			run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --npt {self.currun['ngauss']} --maxboxsz {box} --model {self.gmm}/{self.currunkey}_model_gmm.txt --modelout {modelout} --niter {self.currun['trainiter']} --mask {self.currun['mask']} --nmid {self.currun['dim']} {s}")
+			er=run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --npt {self.currun['ngauss']} --sym {sym} --maxboxsz {box} --model {self.gmm}/{self.currunkey}_model_gmm.txt --modelout {modelout} --niter {self.currun['trainiter']} --mask {self.currun['mask']} --nmid {self.currun['dim']} {s}")
+			if er :
+				showerror("Error running e2gmm_refine, see console for details. Memory is a common issue.")
+				return
 			prog.setValue(n)
-			self.app().processEvents()
+			self.do_events()
+			if prog.wasCanceled() : return
 			n+=1
 
 		# make3d on gaussian output for comparison
-		run(f"e2make3dpar.py --input {self.gmm}/{self.currunkey}_model_projs.hdf --output {self.gmm}/{self.currunkey}_model_recon.hdf --pad {good_size(self.jsparm['boxsize']*1.25)} --mode trilinear --keep 1 --threads {self.options.threads}")
+		er=run(f"e2make3dpar.py --input {self.gmm}/{self.currunkey}_model_projs.hdf --output {self.gmm}/{self.currunkey}_model_recon.hdf --pad {good_size(self.jsparm['boxsize']*1.25)} --mode trilinear --keep 1 --threads {self.options.threads}")
 		prog.setValue(8)
-		self.app().processEvents()
+		self.do_events()
+		if prog.wasCanceled() : return
 
 		# heterogeneity analysis
-		run(f"e2gmm_refine.py --model {modelout} --ptclsin {self.gmm}/particles.lst --heter --maxboxsz {self.jsparm['boxsize']} --gradout {self.gmm}/{self.currunkey}_grads.hdf --mask {self.currun['mask']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {self.gmm}/{self.currunkey}_decoder.h5 --pas {self.currun['pas']}")
+		er=run(f"e2gmm_refine.py --model {modelout} --ptclsin {self.gmm}/particles.lst --heter --sym {sym} --maxboxsz {self.jsparm['boxsize']} --gradout {self.gmm}/{self.currunkey}_grads.hdf --mask {self.currun['mask']} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {self.gmm}/{self.currunkey}_decoder.h5 --pas {self.currun['pas']}")
+		if er :
+			showerror("Error running e2gmm_refine, see console for details. Memory is a common issue.")
+			return
 		prog.setValue(9)
-		self.app().processEvents()
+		self.do_events()
 
 	def update_gmms(self):
 		"""Updates the display of gmm_XX folders"""
@@ -419,13 +479,17 @@ class EMGMM(QtWidgets.QMainWindow):
 		if line<0 : 
 			self.wedbox.setText("")
 			self.wedapix.setText("")
+			self.wedsym.setText("c1")
 			self.wlistrun.clear()
 			return
 		self.gmm=str(self.wlistgmm.item(line).text())
 		self.jsparm=js_open_dict(f"{self.gmm}/0_gmm_parms.json")
 		# These are associated with the whole GMM
+		self.wlpath.setText(f'{self.jsparm.getdefault("refinepath","-")}')
 		self.wedbox.setText(f'{self.jsparm.getdefault("boxsize",128)}')
 		self.wedapix.setText(f'{self.jsparm.getdefault("apix","")}')
+		self.wedsym.setText(f'{self.jsparm.getdefault("sym","c1")}')
+		self.wedmask.setText(f'{self.jsparm.getdefault("mask",f"{self.gmm}/mask.hdf")}')
 		
 		# these may vary from run to run
 		self.wlistrun.clear()
@@ -433,6 +497,9 @@ class EMGMM(QtWidgets.QMainWindow):
 			if k[:4]!="run_": continue
 			self.wlistrun.addItem(k[4:])
 		self.sel_run(self.wlistrun.count()-1)
+		
+		try: self.mapdataitem.setData(EMData(f'{self.gmm}/input_map.hdf'))
+		except: print("Error: input_map.hdf missing")
 			
 	def sel_run(self,line):
 		"""Called when the user selects a new run from the list"""
@@ -441,7 +508,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		if line<0: return
 		self.currunkey=str(self.wlistrun.item(line).text())
 		self.currun=self.jsparm.getdefault("run_"+self.currunkey,{"dim":4,"mask":f"{self.gmm}/mask.hdf","trainiter":10,"pas":"100","time":"-"})
-		self.wedngauss.setText(f'{self.currun.get("ngauss",256)}')
+		self.wedngauss.setText(f'{self.currun.get("ngauss",64)}')
 		self.weddim.setText(f'{self.currun.get("dim",4)}')
 		self.wedmask.setText(f'{self.currun.get("mask",self.jsparm.getdefault("mask",f"{self.gmm}/mask.hdf"))}')
 		self.wedtrainiter.setText(f'{self.currun.get("trainiter",10)}')
@@ -487,7 +554,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			if ans==QtWidgets.QMessageBox.No: return
 			
 		# Get the name of an existing refinement
-		rpath=str(QtWidgets.QFileDialog.getExistingDirectory(self,"Please select an existing refine_xx folder to seed the analysis"))
+		rpath=os.path.relpath(str(QtWidgets.QFileDialog.getExistingDirectory(self,"Please select an existing refine_xx folder to seed the analysis")))
 		if not os.path.isdir(rpath) : 
 			showerror("Invalid path")
 			return
@@ -499,6 +566,11 @@ class EMGMM(QtWidgets.QMainWindow):
 		except:
 			showerror("No projections in refine folder")
 			return
+
+		self.app().setOverrideCursor(Qt.BusyCursor)
+		rparm=js_open_dict(f"{rpath}/0_refine_parms.json")
+		if rparm["breaksym"] : self.jsparm["sym"]="c1"
+		else: self.jsparm["sym"]=rparm["sym"]
 		
 		# Copy projections from refine folder
 		eprj=f"{rpath}/projections_{itr:02d}_even.hdf"
@@ -514,6 +586,11 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.jsparm["apix"]=a["apix_x"]
 #		self.jsparm["res"]=file_resolution(f"{rpath}/fsc_maskedtight_{itr:02d}.txt")
 
+		# Copy map from refine folder
+		a=EMData(f"{rpath}/threed_{itr:02d}.hdf")
+		a.write_compressed(f"{self.gmm}/input_map.hdf",0,12)
+		self.jsparm["source_map"]=f"{rpath}/threed_{itr:02d}.hdf"
+		
 		# Copy mask from refine folder
 		a=EMData(f"{rpath}/mask_tight.hdf")
 		a.write_compressed(f"{self.gmm}/mask.hdf",0,8)
@@ -521,6 +598,7 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		# Extract particles from refine folder
 		run(f"e2evalrefine.py {rpath} --extractorientptcl {self.gmm}/particles.lst")
+		self.app().setOverrideCursor(Qt.ArrowCursor)		
 		
 	
 	def closeEvent(self,event):

@@ -55,24 +55,39 @@ import optparse
 import os
 import random
 import shutil
-from ..libpy import sp_alignment
-from ..libpy import sp_applications
-from ..libpy import sp_filter
-from ..libpy import sp_fundamentals
-from ..libpy import sp_global_def
-from ..libpy import sp_logger
-from ..libpy import sp_morphology
-from ..libpy import sp_projection
-from ..libpy import sp_reconstruction
-from ..libpy import sp_statistics
-from ..libpy import sp_utilities
 import string
 import subprocess
 import sys
 import time
-from ..libpy import sp_user_functions
 from builtins import range
 import ctypes
+try:
+    from sphire.libpy import sp_alignment
+    from sphire.libpy import sp_applications
+    from sphire.libpy import sp_filter
+    from sphire.libpy import sp_fundamentals
+    from sphire.libpy import sp_global_def
+    from sphire.libpy import sp_logger
+    from sphire.libpy import sp_morphology
+    from sphire.libpy import sp_projection
+    from sphire.libpy import sp_reconstruction
+    from sphire.libpy import sp_statistics
+    from sphire.libpy import sp_utilities
+    from sphire.libpy import sp_user_functions
+except ImportError:
+    import sp_alignment
+    import sp_applications
+    import sp_filter
+    import sp_fundamentals
+    import sp_global_def
+    import sp_logger
+    import sp_morphology
+    import sp_projection
+    import sp_reconstruction
+    import sp_statistics
+    import sp_utilities
+    import sp_user_functions
+    
 """
 There are four ways to run the program:
 
@@ -9015,7 +9030,7 @@ def do3d_final(
     return
 
 
-def recons3d_final(masterdir, do_final_iter_init, memory_per_node, orgstack=None):
+def recons3d_final(masterdir, do_final_iter_init, memory_per_node, orgstack=None, voldir=None):
     """
     Allocates memory and computes 3D reconstruction.
 
@@ -9024,6 +9039,7 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node, orgstack=None
         do_final_iter_init : Iteration number to use
         memory_per_node : Memory to use (GB)
         orgstack : Original image stack filename
+        voldir : Where reconstructions will be written (i.e., for signal-subtraction)
 
     Returns:
         None
@@ -9088,6 +9104,10 @@ def recons3d_final(masterdir, do_final_iter_init, memory_per_node, orgstack=None
                 os.path.join(final_dir, "Tracker_%03d.json" % do_final_iter), "r"
             ) as fout:
                 Tracker = sp_utilities.convert_json_fromunicode(json.load(fout))
+                
+                # Mainly for signal-subtraction
+                if voldir : Tracker["constants"]["voldir"] = voldir
+                
             fout.close()
         except:
             carryon = 0
@@ -10039,7 +10059,7 @@ def rec3d_make_maps(compute_fsc=True, regularized=True):
                     if iproc == 0:
                         tvol0.write_image(
                             os.path.join(
-                                Tracker["constants"]["masterdir"],
+                                recondir,
                                 "vol_%d_unfil_%03d.hdf"
                                 % (iproc, Tracker["mainiteration"]),
                             )
@@ -10047,7 +10067,7 @@ def rec3d_make_maps(compute_fsc=True, regularized=True):
                     else:
                         tvol1.write_image(
                             os.path.join(
-                                Tracker["constants"]["masterdir"],
+                                recondir,
                                 "vol_%d_unfil_%03d.hdf"
                                 % (iproc, Tracker["mainiteration"]),
                             )
@@ -10056,6 +10076,16 @@ def rec3d_make_maps(compute_fsc=True, regularized=True):
         
         # If more than one group
         else:
+            if 'voldir' in Tracker["constants"]:
+                assert Tracker["constants"]["voldir"] != None, "ERROR! 'voldir' is None"
+                recondir = Tracker["constants"]["voldir"]
+                
+                if Blockdata["myid"] == Blockdata["main_node"] and not os.path.isdir(recondir):
+                    os.makedirs(recondir)
+                mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
+            else:
+                recondir = Tracker["constants"]["masterdir"]
+            
             if Blockdata["myid"] == Blockdata["main_shared_nodes"][1]:
                 # post-insertion operations, done only in main_node
                 tvol0 = sp_utilities.get_im(
@@ -10159,7 +10189,7 @@ def rec3d_make_maps(compute_fsc=True, regularized=True):
                 if Blockdata["myid_on_node"] == 0:
                     tvol0.write_image(
                         os.path.join(
-                            Tracker["constants"]["masterdir"],
+                            recondir,
                             "vol_0_unfil_%03d.hdf" % Tracker["mainiteration"],
                         )
                     )
@@ -10189,7 +10219,7 @@ def rec3d_make_maps(compute_fsc=True, regularized=True):
                 if Blockdata["myid_on_node"] == 0:
                     tvol1.write_image(
                         os.path.join(
-                            Tracker["constants"]["masterdir"],
+                            recondir,
                             "vol_1_unfil_%03d.hdf" % Tracker["mainiteration"],
                         )
                     )
@@ -10887,6 +10917,12 @@ mpirun -np 64 --hostfile four_nodes.txt  sp_meridien.py --local_refinement  vton
         default=False,
         help="Perform local refinement starting from user-provided orientation parameters",
     )
+    parser.add_option(
+        "--voldir",
+        type="str",
+        default=None,
+        help="Directory where half-maps will be written (default master directory)",
+    )
 
     do_final_mode = False
     for q in sys.argv[1:]:
@@ -11575,6 +11611,8 @@ mpirun -np 64 --hostfile four_nodes.txt  sp_meridien.py --local_refinement  vton
             mainiteration = 0
             Tracker["mainiteration"] = mainiteration
 
+        # End restart/do_final if-then
+        
         Tracker["previousoutputdir"] = initdir
 
         # ------------------------------------------------------------------------------------
@@ -11984,7 +12022,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sp_meridien.py --local_refinement  vton
             sp_global_def.sxprint(line)
         # ------------------------------------------------------------------------------------
         #  INPUT PARAMETERS
-        ###  VARIOUS SANITY CHECKES <-----------------------
+        ###  VARIOUS SANITY CHECKS <-----------------------
         if options.delta > 3.75:
             sp_global_def.ERROR(
                 "Local searches requested, delta cannot be larger than 3.73.",
@@ -12634,9 +12672,9 @@ mpirun -np 64 --hostfile four_nodes.txt  sp_meridien.py --local_refinement  vton
         # print( "  args  ",args)
         checking_flag = 1
         orgstack = None
-        if len(args) == 3:
+        if len(args) >= 3:
             sp_global_def.ERROR(
-                "do_final option requires only one or two arguments ",
+                "do_final option requires only 1, 2, or 3 arguments ",
                 "meridien",
                 1,
                 Blockdata["myid"],
@@ -12682,6 +12720,13 @@ mpirun -np 64 --hostfile four_nodes.txt  sp_meridien.py --local_refinement  vton
             )
             return 1
 
+        # End do_final/signalsubtract if-then
+
+        if options.voldir:
+            voldir = options.voldir
+        else:
+            voldir = masterdir
+        
         if Blockdata["myid"] == Blockdata["main_node"]:
             sp_global_def.write_command(masterdir)
 
@@ -12721,9 +12766,11 @@ mpirun -np 64 --hostfile four_nodes.txt  sp_meridien.py --local_refinement  vton
             options.memory_per_node = 2.0 * Blockdata["no_of_processes_per_group"]
 
         Blockdata["accumulatepw"] = [[], []]
-        recons3d_final(masterdir, options.do_final, options.memory_per_node, orgstack)
+        recons3d_final(masterdir, options.do_final, options.memory_per_node, orgstack, voldir=voldir)
     else:
         sp_global_def.ERROR("Incorrect input options", "meridien", 1, Blockdata["myid"])
+    
+    # End restart/continuation/do_final if-then
 
 def main():
     sp_global_def.BATCH = True

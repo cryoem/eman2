@@ -49,6 +49,7 @@ def calc_oneres(jsd,vol1f,vol2f,apix,freq,ftsize,tophat=False,cutoff=0.143,rmask
 	this would normally be called multiple times (for each spatial frequency) and the results merged. rmask, if provided
 	will also compute a correlation value under a single masked region. This could be done separately, but it is more 
 	efficient when done here"""
+	global curvol,minvol
 	nx,ny,nz=vol1f["nx"],vol1f["ny"],vol1f["nz"]
 	band=EMData(nx,ny,nz)
 	band.set_complex(1)
@@ -91,7 +92,16 @@ def calc_oneres(jsd,vol1f,vol2f,apix,freq,ftsize,tophat=False,cutoff=0.143,rmask
 		filt=volcor.process("threshold.binary",{"value":cutoff})
 	else:
 		# Now let's turn that into a Wiener filter
-		filt=volcor.process("math.ccc_snr_wiener",{"wiener":1})
+		if freq==4: 
+			minvol=volcor.copy()
+			curvol=4
+		elif freq>4:
+			while curvol<freq-1: time.sleep(0.1)		# we wait until we have all lower frequency calculations done to insure monotonic decrease
+			minvol.update_min(volcor)
+			volcor.update_min(minvol)	# could just copy, but timing is likely about the same
+			curvol=max(freq,curvol)		# should always be freq, but just to be safe...
+			
+		filt=volcor.process("math.ccc_snr_wiener",{"wiener":1,"scalesnr":3.0})
 
 	filt1=vol1b*filt
 	filt2=vol2b*filt
@@ -187,6 +197,11 @@ input volumes.
 	# These averagers will contain the final filtered volumes
 	filtvol1=Averagers.get("mean")
 	filtvol2=Averagers.get("mean")
+	
+	# These are used to guarantee sequence and monotonic reduction after a certain threshold in Wiener filtration
+	global curvol,minvol
+	curvol=0
+	minvol=None
 
 	# used for overall FSC curves
 	fscum=[0]*(box//2)
