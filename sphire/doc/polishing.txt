@@ -15,7 +15,7 @@ Usage in command line
 
 \\ __1. Applying polishing using exisiting training data __:
 
-  sp_polishing.py 12_POSTREFINER MotionCorr/job030/corrected_micrographs.star Polish/job156 Polish/job083/opt_params.txt --first_frame=1 --last_frame=-1 --bfac_minfreq=20 --bfac_maxfreq=-1 --mpi_procs=1 --no_of_threads=12
+  sp_polishing.py 12_POSTREFINER MotionCorr/job030/corrected_micrographs.star Polish/job156 Polish/job083/opt_params.txt --first_frame=1 --last_frame=-1 --bfac_minfreq=20 --bfac_maxfreq=-1 --submission_template='asdf' --submission_command='fasd' --mpi_procs=1 --no_of_threads=12
 
 Note: The above case will use the optimize parameters from the training part.
 

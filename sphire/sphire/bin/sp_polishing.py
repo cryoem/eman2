@@ -107,7 +107,7 @@ def parse_parameters(args):
     )
 
     parser.add_argument(
-        "--submission_commnad",
+        "--submission_command",
         type=str,
         help="",
         default=""
@@ -264,245 +264,244 @@ def parse_postrefiner(args_post):
 
 
 def run(args):
-    if rank == 0 :
-        options = parse_parameters(args)
+    options = parse_parameters(args)
 
-        #################################################
-        ############Post process call#################
-        #################################################
-        ###### Post process part starts here
-        if os.path.isdir(options.post_refiner):
-            with open(os.path.join(os.getcwd(), os.path.join(options.post_refiner, 'command.txt')), 'r') as commandfile:
-                read_command_txt = commandfile.read()
+    #################################################
+    ############Post process call#################
+    #################################################
+    ###### Post process part starts here
+    if os.path.isdir(options.post_refiner):
+        with open(os.path.join(os.getcwd(), os.path.join(options.post_refiner, 'command.txt')), 'r') as commandfile:
+            read_command_txt = commandfile.read()
 
-            post_refine_options = parse_postrefiner(read_command_txt)
+        post_refine_options = parse_postrefiner(read_command_txt)
 
-            if post_refine_options.mask is not "":
-                use_mask = os.path.join(os.getcwd(), os.path.join(options.post_refiner, post_refine_options.mask))
+        if post_refine_options.mask is not "":
+            use_mask = os.path.join(os.getcwd(), os.path.join(options.post_refiner, post_refine_options.mask))
+        else:
+            use_mask = os.path.join(os.getcwd(), os.path.join(options.post_refiner, 'vol_adaptive_mask.hdf'))
+
+        try:
+            shutil.rmtree(os.path.join(os.getcwd(), os.path.join(str(options.Output_folder),'PostProcess')))
+        except FileNotFoundError:
+            os.makedirs(os.path.join(os.getcwd(), os.path.join(str(options.Output_folder),'PostProcess')))
+            pass
+
+        pp_star_file = star.StarFile(os.path.join(os.path.join(os.getcwd(), os.path.join(str(options.Output_folder),'PostProcess')),
+                                                  'postprocess.star'))
+
+        half_map1 = os.path.join(os.getcwd(), post_refine_options.combinemaps[0])
+        half_map2 = os.path.join(os.getcwd(), post_refine_options.combinemaps[1])
+
+        if half_map1.endswith('hdf'):
+            half_1_call = (
+                    "e2proc3d.py"
+                    + " " + str(half_map1)
+                    + " " + str(half_map1).replace('hdf', 'mrc')
+            )
+
+            half_2_call = (
+                    "e2proc3d.py"
+                    + " " + str(half_map2)
+                    + " " + str(half_map2).replace('hdf', 'mrc')
+            )
+            subprocess.run(args=[half_1_call], shell=True, text=True)
+            subprocess.run(args=[half_2_call], shell=True, text=True)
+            half_map1 = half_map1.replace('hdf', 'mrc')
+            half_map2 = half_map2.replace('hdf', 'mrc')
+
+
+        if use_mask.endswith('hdf'):
+            mask_call = (
+                    "e2proc3d.py"
+                    + " " + str(use_mask)
+                    + " " + str(use_mask).replace('hdf', 'mrc')
+            )
+            subprocess.run(args=[mask_call], shell=True, text=True)
+            use_mask = use_mask.replace('hdf', 'mrc')
+
+        general_pp = pd.DataFrame([[half_map1, half_map2, use_mask]],
+                                  columns=['_rlnUnfilteredMapHalf1', '_rlnUnfilteredMapHalf2', '_rlnMaskName'])
+
+        pp_star_file.update('general', general_pp, False)
+
+        fsc_halves = np.loadtxt(os.path.join(os.getcwd(), os.path.join(options.post_refiner, 'halves.txt')))
+        fsc_masked_halves = np.loadtxt(
+            os.path.join(os.getcwd(), os.path.join(options.post_refiner, 'masked_halves.txt')))
+        fsc_full = np.loadtxt(os.path.join(os.getcwd(), os.path.join(options.post_refiner, 'full.txt')))
+
+        spectral_index = fsc_halves[:, 0]
+        angs_resolution = fsc_halves[:, 1]
+        resolution = np.divide(1, angs_resolution)
+        fsc_corrected = fsc_full[:, 2]
+        fsc_unmasked_maps = fsc_halves[:, 2]
+        fsc_masked_maps = fsc_masked_halves[:, 2]
+
+        fsc_data_pp = pd.DataFrame(np.array([spectral_index, resolution, angs_resolution, fsc_corrected,
+                                             fsc_unmasked_maps, fsc_masked_maps]).swapaxes(0, 1).tolist(),
+                                   columns=['_rlnSpectralIndex', '_rlnResolution', '_rlnAngstromResolution',
+                                            '_rlnFourierShellCorrelationCorrected',
+                                            '_rlnFourierShellCorrelationUnmaskedMaps',
+                                            '_rlnFourierShellCorrelationMaskedMaps'
+                                            ])
+
+        for col in fsc_data_pp.columns:
+            if col == '_rlnSpectralIndex':
+                fsc_data_pp[col] = fsc_data_pp[col].map(lambda x: int(x))
             else:
-                use_mask = os.path.join(os.getcwd(), os.path.join(options.post_refiner, 'vol_adaptive_mask.hdf'))
+                fsc_data_pp[col] = fsc_data_pp[col].map(lambda x: '{0:0.4f}'.format(x))
 
+        pp_star_file.update('fsc', fsc_data_pp, True)
+
+        guiner = np.loadtxt(os.path.join(os.getcwd(), os.path.join(options.post_refiner, 'guinierlines.txt')),
+                            skiprows=1)
+        if post_refine_options.mtf is not "":
+            resol_sq = guiner[:, 0]
+            log_amp_orig = guiner[:, 1]
+            log_amp_weight = guiner[:, 2]
+            log_amp_sharpened = guiner[:, 3]
+
+            guiner_data_pp = pd.DataFrame(
+                np.array([resol_sq, log_amp_orig, log_amp_weight, log_amp_sharpened]).swapaxes(0, 1).tolist(),
+                columns=['_rlnResolutionSquared', '_rlnLogAmplitudesOriginal', '_rlnLogAmplitudesWeighted',
+                         '_rlnLogAmplitudesSharpened'
+                         ])
+        else :
+            resol_sq = guiner[:, 0]
+            log_amp_orig = guiner[:, 1]
+            log_amp_weight = guiner[:, 2]
+
+            guiner_data_pp = pd.DataFrame(
+                np.array([resol_sq, log_amp_orig, log_amp_weight]).swapaxes(0, 1).tolist(),
+                columns=['_rlnResolutionSquared', '_rlnLogAmplitudesOriginal', '_rlnLogAmplitudesSharpened'
+                         ])
+
+        pp_star_file.update('guiner', guiner_data_pp, True)
+        pp_star_file.write_star_file()
+
+        ##### Post Process part ends here
+
+        #################################################
+        ############SPHIRE 2 RELION#################
+        #################################################
+        ###### SPHIRE 2 RELION Parts starts here
+        meridien_folder = post_refine_options.combinemaps[0].split('/vol')[0]
+        meridien_folder = os.path.join(os.getcwd(), meridien_folder)
+        iter_files, bdbfile = get_final_iter_files(meridien_folder)
+        ##Note sphire2relion requires the 3dparams file and the chunk
+
+        if os.path.isdir(meridien_folder):
+            sph2rel_call = (
+                    "sp_sphire2relion.py"
+                    + " " + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder), "BDB2STAR"))
+                    + " " + "--particle_stack=" + str(bdbfile)
+                    + " " + "--params_3d_file=" + str(iter_files[0])
+                    + " " + "--params_3d_chunk_file_0=" + str(iter_files[1])
+                    + " " + "--params_3d_chunk_file_1=" + str(iter_files[2])
+            )
+
+            subprocess.run(args=[sph2rel_call], shell=True, text=True)
+
+
+            #### This wont be necessary in cases where the entire pipeline was run with MotionCorr shifts
+            bdb_star = star.StarFile(os.path.join(os.path.join(os.getcwd(), os.path.join(str(options.Output_folder), "BDB2STAR")),
+                                                  'sphire2relion.star'))
+
+
+            old_micrograph_name = bdb_star[""]['_rlnMicrographName']
+            newloc = os.path.join(os.path.dirname(options.corr_mic), 'Movies/')
+            new_micrograph_name = old_micrograph_name.apply(lambda x: os.path.join(
+                                                            os.path.join(os.getcwd(),
+                                                                                   newloc)
+                                                                                  , os.path.basename(x)
+                                                                                   ))
+            bdb_star[""]['_rlnMicrographName'] = new_micrograph_name
+
+            bdb_star.write_star_file(overwrite=True)
+
+
+
+        ####### SPHIRE 2 RELION Parts ends here
+
+        #################################################
+        ############Corrected micrograph#################
+        #################################################
+        #######Corrected micrograph part starts here
+        main_location = os.getcwd()
+        # This will be later set in case we have motion corr data
+        final_motion_path = os.path.join(main_location, options.corr_mic)
+        time.sleep(5)
+
+
+
+        if options.training_params != None:
+            polishing_call = "relion_motion_refine_mpi"\
+                             + " --i " + os.path.join(os.getcwd(),os.path.join(str(options.Output_folder),
+                                                                               "BDB2STAR/sphire2relion.star"))\
+                             + " " + "--f " + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder),
+                                                                            "PostProcess/postprocess.star"))\
+                             + " " + "--corr_mic " + os.path.join(final_motion_path)\
+                             + " " + "--first_frame " + str(options.first_frame)\
+                             + " " + "--last_frame " + str(options.last_frame)\
+                             + " " + "--o " + str(os.path.join(os.getcwd(), str(options.Output_folder)))\
+                             + " " + "--params_file " + str(options.training_params)\
+                             + " " + "--combine_frames"\
+                             + " " + "--bfac_minfreq " + str(options.bfac_minfreq)\
+                             + " " + "--bfac_maxfreq " + str(options.bfac_maxfreq)\
+                             + " " + "--angpix_ref " + str(post_refine_options.pixel_size[0])\
+                             + " " + "--j " + str(options.no_of_threads)
             try:
-                shutil.rmtree(os.path.join(os.getcwd(), os.path.join(str(options.Output_folder),'PostProcess')))
-            except FileNotFoundError:
-                os.makedirs(os.path.join(os.getcwd(), os.path.join(str(options.Output_folder),'PostProcess')))
-                pass
+                with open(options.submission_template) as read:
+                    lines = read.readlines()
+            except Exception as e:
+                sp_global_def.ERROR(str(e) + '\nCannot open mpi_submission template!', action=1)
 
-            pp_star_file = star.StarFile(os.path.join(os.path.join(os.getcwd(), os.path.join(str(options.Output_folder),'PostProcess')),
-                                                      'postprocess.star'))
+            cmd_lines = []
+            for idx, entry in enumerate(lines):
+                if "XXX_SXCMD_LINE_XXX" in entry and "mpirun" in entry:
+                    cmd_lines.append(idx)
 
-            half_map1 = os.path.join(os.getcwd(), post_refine_options.combinemaps[0])
-            half_map2 = os.path.join(os.getcwd(), post_refine_options.combinemaps[1])
+                if not cmd_lines:
+                    sp_global_def.sxprint("Could not find a suitable command line for exchange.")
+                    sp_global_def.sxprint("The line should contain XXX_SXCMD_LINE_XXX.")
+                    sys.exit(1)
 
-            if half_map1.endswith('hdf'):
-                half_1_call = (
-                        "e2proc3d.py"
-                        + " " + str(half_map1)
-                        + " " + str(half_map1).replace('hdf', 'mrc')
-                )
+                line = (lines[cmd_lines[-1]].replace("XXX_SXCMD_LINE_XXX", polishing_call))
 
-                half_2_call = (
-                        "e2proc3d.py"
-                        + " " + str(half_map2)
-                        + " " + str(half_map2).replace('hdf', 'mrc')
-                )
-                subprocess.run(args=[half_1_call], shell=True, text=True)
-                subprocess.run(args=[half_2_call], shell=True, text=True)
-                half_map1 = half_map1.replace('hdf', 'mrc')
-                half_map2 = half_map2.replace('hdf', 'mrc')
+                mod_sub_script = "".join(lines).replace("XXX_SXMPI_NPROC_XXX", str(options.mpi_procs)
+                                                        ).replace("XXX_SXMPI_JOB_NAME_XXX", "sp_polishing"
+                                                                  ).replace(lines[cmd_lines[-1]], line)
 
+                out_submission = "{0}/polishing_submission_script.sh".format(str(options.Output_folder))
+                with open(out_submission, "w") as w:
+                    w.write("".join(mod_sub_script))
 
-            if use_mask.endswith('hdf'):
-                mask_call = (
-                        "e2proc3d.py"
-                        + " " + str(use_mask)
-                        + " " + str(use_mask).replace('hdf', 'mrc')
-                )
-                subprocess.run(args=[mask_call], shell=True, text=True)
-                use_mask = use_mask.replace('hdf', 'mrc')
-
-            general_pp = pd.DataFrame([[half_map1, half_map2, use_mask]],
-                                      columns=['_rlnUnfilteredMapHalf1', '_rlnUnfilteredMapHalf2', '_rlnMaskName'])
-
-            pp_star_file.update('general', general_pp, False)
-
-            fsc_halves = np.loadtxt(os.path.join(os.getcwd(), os.path.join(options.post_refiner, 'halves.txt')))
-            fsc_masked_halves = np.loadtxt(
-                os.path.join(os.getcwd(), os.path.join(options.post_refiner, 'masked_halves.txt')))
-            fsc_full = np.loadtxt(os.path.join(os.getcwd(), os.path.join(options.post_refiner, 'full.txt')))
-
-            spectral_index = fsc_halves[:, 0]
-            angs_resolution = fsc_halves[:, 1]
-            resolution = np.divide(1, angs_resolution)
-            fsc_corrected = fsc_full[:, 2]
-            fsc_unmasked_maps = fsc_halves[:, 2]
-            fsc_masked_maps = fsc_masked_halves[:, 2]
-
-            fsc_data_pp = pd.DataFrame(np.array([spectral_index, resolution, angs_resolution, fsc_corrected,
-                                                 fsc_unmasked_maps, fsc_masked_maps]).swapaxes(0, 1).tolist(),
-                                       columns=['_rlnSpectralIndex', '_rlnResolution', '_rlnAngstromResolution',
-                                                '_rlnFourierShellCorrelationCorrected',
-                                                '_rlnFourierShellCorrelationUnmaskedMaps',
-                                                '_rlnFourierShellCorrelationMaskedMaps'
-                                                ])
-
-            for col in fsc_data_pp.columns:
-                if col == '_rlnSpectralIndex':
-                    fsc_data_pp[col] = fsc_data_pp[col].map(lambda x: int(x))
-                else:
-                    fsc_data_pp[col] = fsc_data_pp[col].map(lambda x: '{0:0.4f}'.format(x))
-
-            pp_star_file.update('fsc', fsc_data_pp, True)
-
-            guiner = np.loadtxt(os.path.join(os.getcwd(), os.path.join(options.post_refiner, 'guinierlines.txt')),
-                                skiprows=1)
-            if post_refine_options.mtf is not "":
-                resol_sq = guiner[:, 0]
-                log_amp_orig = guiner[:, 1]
-                log_amp_weight = guiner[:, 2]
-                log_amp_sharpened = guiner[:, 3]
-
-                guiner_data_pp = pd.DataFrame(
-                    np.array([resol_sq, log_amp_orig, log_amp_weight, log_amp_sharpened]).swapaxes(0, 1).tolist(),
-                    columns=['_rlnResolutionSquared', '_rlnLogAmplitudesOriginal', '_rlnLogAmplitudesWeighted',
-                             '_rlnLogAmplitudesSharpened'
-                             ])
-            else :
-                resol_sq = guiner[:, 0]
-                log_amp_orig = guiner[:, 1]
-                log_amp_weight = guiner[:, 2]
-
-                guiner_data_pp = pd.DataFrame(
-                    np.array([resol_sq, log_amp_orig, log_amp_weight]).swapaxes(0, 1).tolist(),
-                    columns=['_rlnResolutionSquared', '_rlnLogAmplitudesOriginal', '_rlnLogAmplitudesSharpened'
-                             ])
-
-            pp_star_file.update('guiner', guiner_data_pp, True)
-            pp_star_file.write_star_file()
-
-            ##### Post Process part ends here
-
-            #################################################
-            ############SPHIRE 2 RELION#################
-            #################################################
-            ###### SPHIRE 2 RELION Parts starts here
-            meridien_folder = post_refine_options.combinemaps[0].split('/vol')[0]
-            meridien_folder = os.path.join(os.getcwd(), meridien_folder)
-            iter_files, bdbfile = get_final_iter_files(meridien_folder)
-            ##Note sphire2relion requires the 3dparams file and the chunk
-
-            if os.path.isdir(meridien_folder):
-                sph2rel_call = (
-                        "sp_sphire2relion.py"
-                        + " " + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder), "BDB2STAR"))
-                        + " " + "--particle_stack=" + str(bdbfile)
-                        + " " + "--params_3d_file=" + str(iter_files[0])
-                        + " " + "--params_3d_chunk_file_0=" + str(iter_files[1])
-                        + " " + "--params_3d_chunk_file_1=" + str(iter_files[2])
-                )
-
-                subprocess.run(args=[sph2rel_call], shell=True, text=True)
-
-
-                #### This wont be necessary in cases where the entire pipeline was run with MotionCorr shifts
-                bdb_star = star.StarFile(os.path.join(os.path.join(os.getcwd(), os.path.join(str(options.Output_folder), "BDB2STAR")),
-                                                      'sphire2relion.star'))
-
-
-                old_micrograph_name = bdb_star[""]['_rlnMicrographName']
-                newloc = os.path.join(os.path.dirname(options.corr_mic), 'Movies/')
-                new_micrograph_name = old_micrograph_name.apply(lambda x: os.path.join(
-                                                                os.path.join(os.getcwd(),
-                                                                                       newloc)
-                                                                                      , os.path.basename(x)
-                                                                                       ))
-                bdb_star[""]['_rlnMicrographName'] = new_micrograph_name
-
-                bdb_star.write_star_file(overwrite=True)
-                
-
-
-            ####### SPHIRE 2 RELION Parts ends here
-
-            #################################################
-            ############Corrected micrograph#################
-            #################################################
-            #######Corrected micrograph part starts here
-            main_location = os.getcwd()
-            # This will be later set in case we have motion corr data
-            final_motion_path = os.path.join(main_location, options.corr_mic)
-            time.sleep(5)
-
-
-
-            if options.training_params != None:
-                polishing_call = "relion_motion_refine_mpi"\
-                                 + " --i " + os.path.join(os.getcwd(),os.path.join(str(options.Output_folder),
-                                                                                   "BDB2STAR/sphire2relion.star"))\
-                                 + " " + "--f " + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder),
-                                                                                "PostProcess/postprocess.star"))\
-                                 + " " + "--corr_mic " + os.path.join(final_motion_path)\
-                                 + " " + "--first_frame " + str(options.first_frame)\
-                                 + " " + "--last_frame " + str(options.last_frame)\
-                                 + " " + "--o " + str(os.path.join(os.getcwd(), str(options.Output_folder)))\
-                                 + " " + "--params_file " + str(options.training_params)\
-                                 + " " + "--combine_frames"\
-                                 + " " + "--bfac_minfreq " + str(options.bfac_minfreq)\
-                                 + " " + "--bfac_maxfreq " + str(options.bfac_maxfreq)\
-                                 + " " + "--angpix_ref " + str(post_refine_options.pixel_size[0])\
-                                 + " " + "--j " + str(options.no_of_threads)
-                try:
-                    with open(options.submission_template) as read:
-                        lines = read.readlines()
-                except Exception as e:
-                    sp_global_def.ERROR(str(e) + '\nCannot open mpi_submission template!', action=1)
-
-                cmd_lines = []
-                for idx, entry in enumerate(lines):
-                    if "XXX_SXCMD_LINE_XXX" in entry and "mpirun" in entry:
-                        cmd_lines.append(idx)
-
-                    if not cmd_lines:
-                        sp_global_def.sxprint("Could not find a suitable command line for exchange.")
-                        sp_global_def.sxprint("The line should contain XXX_SXCMD_LINE_XXX.")
-                        sys.exit(1)
-
-                    line = (lines[cmd_lines[-1]].replace("XXX_SXCMD_LINE_XXX", polishing_call))
-
-                    mod_sub_script = "".join(lines).replace("XXX_SXMPI_NPROC_XXX", str(options.mpi_procs)
-                                                            ).replace("XXX_SXMPI_JOB_NAME_XXX", "sp_polishing"
-                                                                      ).replace(lines[cmd_lines[-1]], line)
-
-                    out_submission = "{0}/polishing_submission_script.sh".format(str(options.Output_folder))
-                    with open(out_submission, "w") as w:
-                        w.write("".join(mod_sub_script))
-
-                    sp_global_def.sxprint(
-                        subprocess.check_output(
-                            options.submission_commnad.split() + [out_submission]
-                        )
+                sp_global_def.sxprint(
+                    subprocess.check_output(
+                        options.submission_commnad.split() + [out_submission]
                     )
-
-            else:
-                print("Parameter file not provided, hence training is performed")
-                polishing_call = (
-                        "relion_motion_refine"
-                        + " --i "
-                        + os.path.join(os.getcwd(),os.path.join(str(options.Output_folder), "BDB2STAR/sphire2relion.star") )
-                        + " " + "--f " + os.path.join(os.getcwd(),os.path.join(str(options.Output_folder),"PostProcess/postprocess.star"))
-                        + " " + "--corr_mic " + os.path.join(os.getcwd(), os.path.join(final_motion_path))
-                        + " " + "--first_frame " + str(options.first_frame)
-                        + " " + "--last_frame " + str(options.last_frame)
-                        + " " + "--o " + str(options.Output_folder)
-                        + " " + "--min_p " + str(options.min_no_particles)
-                        + " " + "--eval_frac " + str(0.5)
-                        + " " + "--align_frac " + str(0.5)
-                        + " " + "--angpix_ref " + str(post_refine_options.pixel_size[0])
-                        + " " + "--params3"
-                        + " " + "--j " + str(options.no_of_threads)
-                        + " " + "--pipeline_control " + str(options.Output_folder)
                 )
-                subprocess.run(args=[polishing_call], shell=True, text=True)
+
+        else:
+            print("Parameter file not provided, hence training is performed")
+            polishing_call = (
+                    "relion_motion_refine"
+                    + " --i "
+                    + os.path.join(os.getcwd(),os.path.join(str(options.Output_folder), "BDB2STAR/sphire2relion.star") )
+                    + " " + "--f " + os.path.join(os.getcwd(),os.path.join(str(options.Output_folder),"PostProcess/postprocess.star"))
+                    + " " + "--corr_mic " + os.path.join(os.getcwd(), os.path.join(final_motion_path))
+                    + " " + "--first_frame " + str(options.first_frame)
+                    + " " + "--last_frame " + str(options.last_frame)
+                    + " " + "--o " + str(options.Output_folder)
+                    + " " + "--min_p " + str(options.min_no_particles)
+                    + " " + "--eval_frac " + str(0.5)
+                    + " " + "--align_frac " + str(0.5)
+                    + " " + "--angpix_ref " + str(post_refine_options.pixel_size[0])
+                    + " " + "--params3"
+                    + " " + "--j " + str(options.no_of_threads)
+                    + " " + "--pipeline_control " + str(options.Output_folder)
+            )
+            subprocess.run(args=[polishing_call], shell=True, text=True)
 
 
 
@@ -558,9 +557,6 @@ def run(args):
                 # subprocess.run(args=[polishing_call],  shell=True, text= True, env=new_env)
                 # subprocess.run(args=[rel2sph_call], shell=True, text=True)
             ### For running the training part of polishing
-
-    else:
-        pass
 
 ##
 def main():
