@@ -20,6 +20,8 @@ except:
     from sphire.libpy import sp_utilities
 
 from pyStarDB import sp_pystardb as star
+
+"""
 import mpi
 os.unsetenv('OMPI_COMM_WORLD_RANK')
 RUNNING_UNDER_MPI = "OMPI_COMM_WORLD_SIZE" in os.environ
@@ -34,7 +36,7 @@ else :
 
 env = os.environ
 new_env = {k: v for k, v in env.items() if "MPI" not in k}
-
+"""
 
 def parse_parameters(args):
     parser = argparse.ArgumentParser(args, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -407,7 +409,7 @@ def run(args):
             bdb_star = star.StarFile(os.path.join(os.path.join(os.getcwd(), os.path.join(str(options.Output_folder), "BDB2STAR")),
                                                   'sphire2relion.star'))
 
-
+            """
             old_micrograph_name = bdb_star[""]['_rlnMicrographName']
             newloc = os.path.join(os.path.dirname(options.corr_mic), 'Movies/')
             new_micrograph_name = old_micrograph_name.apply(lambda x: os.path.join(
@@ -419,7 +421,7 @@ def run(args):
 
             bdb_star.write_star_file(overwrite=True)
 
-
+            """
 
         ####### SPHIRE 2 RELION Parts ends here
 
@@ -435,7 +437,7 @@ def run(args):
 
 
         if options.training_params != None:
-            polishing_call = "relion_motion_refine_mpi"\
+            polishing_call = "/mnt/beegfs/software/em/relion/relion-3.1.0_gcc_7.2.0/bin/relion_motion_refine_mpi"\
                              + " --i " + os.path.join(os.getcwd(),os.path.join(str(options.Output_folder),
                                                                                "BDB2STAR/sphire2relion.star"))\
                              + " " + "--f " + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder),
@@ -474,7 +476,11 @@ def run(args):
 
             mod_sub_script = "".join(lines).replace("XXX_SXMPI_NPROC_XXX", str(options.mpi_procs)
                                                     ).replace("XXX_SXMPI_JOB_NAME_XXX", "sp_polishing"
-                                                              ).replace(lines[cmd_lines[-1]], line)
+                                                              ).replace(lines[cmd_lines[-1]], line
+                                                                        ).replace("mpirun", "/mnt/beegfs/software/em/openmpi/openmpi-2.0.4_gcc_7.2.0_cuda_10.0/bin/mpirun")
+
+
+
 
             out_submission = "{0}/polishing_submission_script.sh".format(str(options.Output_folder))
             with open(out_submission, "w") as w:
@@ -482,7 +488,7 @@ def run(args):
 
             sp_global_def.sxprint(
                 subprocess.check_output(
-                    options.submission_commnad.split() + [out_submission]
+                    options.submission_command.split() + [out_submission]
                 )
             )
 
