@@ -465,26 +465,26 @@ def run(args):
                 if "XXX_SXCMD_LINE_XXX" in entry and "mpirun" in entry:
                     cmd_lines.append(idx)
 
-                if not cmd_lines:
-                    sp_global_def.sxprint("Could not find a suitable command line for exchange.")
-                    sp_global_def.sxprint("The line should contain XXX_SXCMD_LINE_XXX.")
-                    sys.exit(1)
+            if not cmd_lines:
+                sp_global_def.sxprint("Could not find a suitable command line for exchange.")
+                sp_global_def.sxprint("The line should contain XXX_SXCMD_LINE_XXX.")
+                sys.exit(1)
 
-                line = (lines[cmd_lines[-1]].replace("XXX_SXCMD_LINE_XXX", polishing_call))
+            line = (lines[cmd_lines[-1]].replace("XXX_SXCMD_LINE_XXX", polishing_call))
 
-                mod_sub_script = "".join(lines).replace("XXX_SXMPI_NPROC_XXX", str(options.mpi_procs)
-                                                        ).replace("XXX_SXMPI_JOB_NAME_XXX", "sp_polishing"
-                                                                  ).replace(lines[cmd_lines[-1]], line)
+            mod_sub_script = "".join(lines).replace("XXX_SXMPI_NPROC_XXX", str(options.mpi_procs)
+                                                    ).replace("XXX_SXMPI_JOB_NAME_XXX", "sp_polishing"
+                                                              ).replace(lines[cmd_lines[-1]], line)
 
-                out_submission = "{0}/polishing_submission_script.sh".format(str(options.Output_folder))
-                with open(out_submission, "w") as w:
-                    w.write("".join(mod_sub_script))
+            out_submission = "{0}/polishing_submission_script.sh".format(str(options.Output_folder))
+            with open(out_submission, "w") as w:
+                w.write("".join(mod_sub_script))
 
-                sp_global_def.sxprint(
-                    subprocess.check_output(
-                        options.submission_commnad.split() + [out_submission]
-                    )
+            sp_global_def.sxprint(
+                subprocess.check_output(
+                    options.submission_commnad.split() + [out_submission]
                 )
+            )
 
         else:
             print("Parameter file not provided, hence training is performed")
