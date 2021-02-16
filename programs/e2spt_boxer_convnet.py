@@ -164,8 +164,12 @@ class NNet:
 		bsz=16
 		nb=len(img)//bsz+1
 		out=[]
+		print(img.shape)
 		for i in range(nb):
-			o=modelbig.predict(img[i*bsz:(i+1)*bsz])
+			m=img[i*bsz:(i+1)*bsz]
+			if m.shape[0]==0: continue
+			#print(m.shape)
+			o=modelbig.predict(m)
 			out.append(o)
 			
 		out=np.concatenate(out,axis=0)
