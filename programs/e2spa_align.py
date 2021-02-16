@@ -207,7 +207,7 @@ class SpaAlignTask(JSTask):
 			info=infos[1]
 			
 			img=EMData(info[1],info[0])
-				
+			img.clip_inplace(Region((img["nx"]-ny)//2, (img["ny"]-ny)//2, ny, ny))
 			img.process_inplace("mask.soft",{"outer_radius":-10,"width":10})
 			img=img.do_fft()
 			img.process_inplace("xform.phaseorigin.tocenter")
