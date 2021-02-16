@@ -456,8 +456,12 @@ def run(args):
             except Exception as e:
                 sp_global_def.ERROR(str(e) + '\nCannot open mpi_submission template!', action=1)
 
+            sp_global_def.sxprint("Lines are", lines)
+            sp_global_def.sxprint("options.submission_template is ", options.submission_template)
+
             cmd_lines = []
             for idx, entry in enumerate(lines):
+                sp_global_def.sxprint("entry values are ", entry)
                 if "XXX_SXCMD_LINE_XXX" in entry and "mpirun" in entry:
                     cmd_lines.append(idx)
 
