@@ -60,45 +60,59 @@ def parse_parameters(args):
     )
 
     parser.add_argument(
-        "--training_params",
+        "--estimate_magnification",
         type=str,
         help="",
-        default=None
+        default=False
     )
 
     parser.add_argument(
-        "--first_frame",
-        type=int,
+        "--estimate_beamtilt",
+        type=str,
         help="",
-        default = 1,
+        default = False,
     )
 
     parser.add_argument(
-        "--last_frame",
-        type=int,
+        "--estimate_trefoil",
+        type=str,
         help="",
-        default=-1
+        default=False
 
     )
     parser.add_argument(
-        "--bfac_minfreq",
-        type=int,
+        "--estimate_order_aberation",
+        type=str,
         help="",
-        default=20
+        default=False
     )
 
     parser.add_argument(
-        "--bfac_maxfreq",
-        type=int,
+        "--perform_CTF_params_fit",
+        type=str,
         help="",
-        default=-1
+        default=False
     )
 
     parser.add_argument(
-        "--min_no_particles",
-        type=int,
+        "--fit_defcous_micrograph",
+        type=str,
         help="",
-        default=5000
+        default=False
+    )
+
+    parser.add_argument(
+        "--fit_defcous_particle",
+        type=str,
+        help="",
+        default=False
+    )
+
+    parser.add_argument(
+        "--fit_astigmatism_micrograph",
+        type=str,
+        help="",
+        default=False
     )
 
     parser.add_argument(
@@ -450,12 +464,12 @@ rel2sph_call = "\n\n" + "sp_relion2sphire.py" \
                + " " + "--relion_project_dir='.'" \
                + " " + "--box_size=-1"
 
-polishing_rel2sphire_command = [polishing_call, rel2sph_call]
+polishing_rel2sphire_command = []
 
 print(polishing_rel2sphire_command)
 
 with open("test_appending_commands", "w") as w:
-    w.write("".join(polishing_rel2sphire_command))
+    w.write("".join(polishing_call + rel2sph_call))
 
 
 
