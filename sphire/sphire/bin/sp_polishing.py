@@ -116,6 +116,20 @@ def parse_parameters(args):
     )
 
     parser.add_argument(
+        "--relion_mpirun_executable",
+        type=str,
+        help="",
+        default="mpirun"
+    )
+
+    parser.add_argument(
+        "--relion_polishing_executable",
+        type=str,
+        help="",
+        default="relion_motion_refine_mpi"
+    )
+
+    parser.add_argument(
         "--mpi_procs",
         type= int,
         help ="",
@@ -420,8 +434,9 @@ def run(args):
             bdb_star[""]['_rlnMicrographName'] = new_micrograph_name
 
             bdb_star.write_star_file(overwrite=True)
-
+            
             """
+
 
         ####### SPHIRE 2 RELION Parts ends here
 
@@ -436,61 +451,113 @@ def run(args):
 
 
 
+
         if options.training_params != None:
-            polishing_call = "/mnt/beegfs/software/em/relion/relion-3.1.0_gcc_7.2.0/bin/relion_motion_refine_mpi"\
-                             + " --i " + os.path.join(os.getcwd(),os.path.join(str(options.Output_folder),
-                                                                               "BDB2STAR/sphire2relion.star"))\
-                             + " " + "--f " + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder),
-                                                                            "PostProcess/postprocess.star"))\
-                             + " " + "--corr_mic " + os.path.join(final_motion_path)\
-                             + " " + "--first_frame " + str(options.first_frame)\
-                             + " " + "--last_frame " + str(options.last_frame)\
-                             + " " + "--o " + str(os.path.join(os.getcwd(), str(options.Output_folder)))\
-                             + " " + "--params_file " + str(options.training_params)\
-                             + " " + "--combine_frames"\
-                             + " " + "--bfac_minfreq " + str(options.bfac_minfreq)\
-                             + " " + "--bfac_maxfreq " + str(options.bfac_maxfreq)\
-                             + " " + "--angpix_ref " + str(post_refine_options.pixel_size[0])\
-                             + " " + "--j " + str(options.no_of_threads)
-            try:
-                with open(options.submission_template) as read:
-                    lines = read.readlines()
-            except Exception as e:
-                sp_global_def.ERROR(str(e) + '\nCannot open mpi_submission template!', action=1)
+            ### now we need to decide we want to run it on a single PC workstation or on cluster
+            if options.submission_template is not "":
+                polishing_call = options.relion_polishing_executable\
+                                 + " --i " + os.path.join(os.getcwd(),os.path.join(str(options.Output_folder),
+                                                                                   "BDB2STAR/sphire2relion.star"))\
+                                 + " " + "--f " + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder),
+                                                                                "PostProcess/postprocess.star"))\
+                                 + " " + "--corr_mic " + os.path.join(final_motion_path)\
+                                 + " " + "--first_frame " + str(options.first_frame)\
+                                 + " " + "--last_frame " + str(options.last_frame)\
+                                 + " " + "--o " + str(os.path.join(os.getcwd(), str(options.Output_folder)))\
+                                 + " " + "--params_file " + str(options.training_params)\
+                                 + " " + "--combine_frames"\
+                                 + " " + "--bfac_minfreq " + str(options.bfac_minfreq)\
+                                 + " " + "--bfac_maxfreq " + str(options.bfac_maxfreq)\
+                                 + " " + "--angpix_ref " + str(post_refine_options.pixel_size[0])\
+                                 + " " + "--j " + str(options.no_of_threads)
 
-            sp_global_def.sxprint("Lines are", lines)
-            sp_global_def.sxprint("options.submission_template is ", options.submission_template)
+                rel2sph_call = "\n\n" + "sp_relion2sphire.py"\
+                               + " " + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder), "shiny.star"))\
+                               + " " + "Polish_Stack"\
+                               + " " + "--relion_project_dir='.'"\
+                               + " " + "--box_size=-1"
 
-            cmd_lines = []
-            for idx, entry in enumerate(lines):
-                sp_global_def.sxprint("entry values are ", entry)
-                if "XXX_SXCMD_LINE_XXX" in entry and "mpirun" in entry:
-                    cmd_lines.append(idx)
+                polishing_rel2sphire_command =[polishing_call, rel2sph_call]
 
-            if not cmd_lines:
-                sp_global_def.sxprint("Could not find a suitable command line for exchange.")
-                sp_global_def.sxprint("The line should contain XXX_SXCMD_LINE_XXX.")
-                sys.exit(1)
+                try:
+                    with open(options.submission_template) as read:
+                        lines = read.readlines()
+                except Exception as e:
+                    sp_global_def.ERROR(str(e) + '\nCannot open mpi_submission template!', action=1)
 
-            line = (lines[cmd_lines[-1]].replace("XXX_SXCMD_LINE_XXX", polishing_call))
+                cmd_lines = []
+                for idx, entry in enumerate(lines):
+                    if "XXX_SXCMD_LINE_XXX" in entry and "mpirun" in entry:
+                        cmd_lines.append(idx)
 
-            mod_sub_script = "".join(lines).replace("XXX_SXMPI_NPROC_XXX", str(options.mpi_procs)
-                                                    ).replace("XXX_SXMPI_JOB_NAME_XXX", "sp_polishing"
-                                                              ).replace(lines[cmd_lines[-1]], line
-                                                                        ).replace("mpirun", "/mnt/beegfs/software/em/openmpi/openmpi-2.0.4_gcc_7.2.0_cuda_10.0/bin/mpirun")
+                if not cmd_lines:
+                    sp_global_def.sxprint("Could not find a suitable command line for exchange.")
+                    sp_global_def.sxprint("The line should contain XXX_SXCMD_LINE_XXX.")
+                    sys.exit(1)
+
+                line = (lines[cmd_lines[-1]].replace("XXX_SXCMD_LINE_XXX", polishing_rel2sphire_command))
+
+                mod_sub_script = "".join(lines).replace("XXX_SXMPI_NPROC_XXX", str(options.mpi_procs)
+                                                        ).replace("XXX_SXMPI_JOB_NAME_XXX", "sp_polishing"
+                                                                  ).replace(lines[cmd_lines[-1]], line
+                                                                            ).replace("mpirun", options.relion_mpirun_executable)
 
 
+                out_submission = "{0}/polishing_submission_script.sh".format(str(options.Output_folder))
+                with open(out_submission, "w") as w:
+                    w.write("".join(mod_sub_script))
 
-
-            out_submission = "{0}/polishing_submission_script.sh".format(str(options.Output_folder))
-            with open(out_submission, "w") as w:
-                w.write("".join(mod_sub_script))
-
-            sp_global_def.sxprint(
-                subprocess.check_output(
-                    options.submission_command.split() + [out_submission]
+                sp_global_def.sxprint(
+                    subprocess.check_output(
+                        options.submission_command.split() + [out_submission]
+                    )
                 )
-            )
+            else:
+                # if we want to run it on a workstation
+                import mpi
+                os.unsetenv('OMPI_COMM_WORLD_RANK')
+                RUNNING_UNDER_MPI = "OMPI_COMM_WORLD_SIZE" in os.environ
+                if RUNNING_UNDER_MPI:
+                    mpi.mpi_init(0, [])
+                    rank = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
+                    size = mpi.mpi_comm_size(mpi.MPI_COMM_WORLD)
+                else:
+                    rank = 0
+                    size = 1
+
+                env = os.environ
+                new_env = {k: v for k, v in env.items() if "MPI" not in k}
+
+                polishing_call = (
+                        "mpirun"
+                        + " " + "-np"
+                        + " " + str(options.mpi_procs)
+                        + " " + "relion_motion_refine_mpi"
+                        + " --i "
+                        + os.path.join(os.getcwd(),os.path.join(str(options.Output_folder),"BDB2STAR/sphire2relion.star"))
+                        + " " + "--f " + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder),"PostProcess/postprocess.star"))
+                        + " " + "--corr_mic " + os.path.join(final_motion_path)
+                        + " " + "--first_frame " + str(options.first_frame)
+                        + " " + "--last_frame " + str(options.last_frame)
+                        + " " + "--o " + str(os.path.join(os.getcwd(), str(options.Output_folder)))
+                        + " " + "--params_file " + str(options.training_params)
+                        + " " + "--combine_frames"
+                        + " " + "--bfac_minfreq " + str(options.bfac_minfreq)
+                        + " " + "--bfac_maxfreq " + str(options.bfac_maxfreq)
+                        + " " + "--angpix_ref " + str(post_refine_options.pixel_size[0])
+                        + " " + "--j " + str(options.no_of_threads)
+                )
+                rel2sph_call = (
+                    "sp_relion2sphire.py"
+                    + " " + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder), "shiny.star"))
+                    + " " + "Polish_Stack"
+                    + " " + "--relion_project_dir='.'"
+                    + " " + "--box_size=-1"
+                )
+
+                print("Polishing command is called", polishing_call)
+                subprocess.run(args=[polishing_call],  shell=True, text= True, env=new_env)
+                subprocess.run(args=[rel2sph_call], shell=True, text=True)
 
         else:
             print("Parameter file not provided, hence training is performed")
@@ -573,13 +640,8 @@ def main():
 
     try:
         sp_global_def.print_timestamp("Start")
-        # if rank == 0:
         run(sys.argv[1:])
-
-        # mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
     finally:
-        # mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
-        # mpi.mpi_finalize()
         sp_global_def.print_timestamp("Finish")
 
 

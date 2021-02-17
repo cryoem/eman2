@@ -8,7 +8,7 @@ Relion Polishing: Apply relion polishing on SPHIRE generated stacks
 
 Usage in command line
 
-  sp_polishing.py post_refine_folder motioncorr_starfile output_folder training_params --first_frame --last_frame --bfac_minfreq --bfac_maxfreq --min_no_particles --submission_template --submission_command --mpi_procs --no_of_threads
+  sp_polishing.py post_refine_folder motioncorr_starfile output_folder training_params --first_frame --last_frame --bfac_minfreq --bfac_maxfreq --min_no_particles --submission_template --submission_command --relion_mpirun_executable --relion_polishing_executable --mpi_procs --no_of_threads
   
 \\
 ===== Typical usage =====
@@ -39,7 +39,9 @@ Note: In case you want to do training part of polishing then dont provide the op
   ; %%--%%bfac_maxfreq : bfactor_maximum_frequency : The minimum frequency range which is normally the maximum outer shell to include in enhancement. (default -1)
   ; %%--%%min_no_particles : Minimum no of particles : Number of particles to inlcude for training. (default 5000)
   ; %%--%%submission_template : Submission template : Submission template for mpi command (default none)
-  ; %%--%%submission_command : Submission command : Submission commmand for cluster (default none)
+  ; %%--%%submission_command : Submission command : Submission commmand for cluster (default sbatch)
+  ; %%--%%relion_mpirun_executable : relion mpirun executable : Since there can be more than one mpirun environment installed on a workstation or on a cluster. It can be sometimes necessary to provide the relion specific mpirun executable. Just type which mpirun -a in a terminal and choose the one which relion requies. (default mpirun)
+  ; %%--%%relion_polishing_executable : relion polishing executable : Similar to the issue of relion mpirun executable, it can be sometime necessary to provide the specific relion polishing executable also. Just type which relion_motion_refine_mpi and copy the path here. (default relion_motion_refine_mpi)
   ; %%--%%mpi_procs : MPI Procs : The number of MPI processors used for Relion multiprocessing. (default 1)
   ; %%--%%no_of_threads : number of threads : The number of threads use during the polishing. (default 1)
 

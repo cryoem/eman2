@@ -14675,8 +14675,40 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.is_reversed = False;
         token.filament_tab = "";
         token.dependency_group = [['', '', '']];
-        token.default = "none";
-        token.restore = [['none'], ['none']];
+        token.default = "sbatch";
+        token.restore = [['sbatch'], ['sbatch']];
+        token.type = "string";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token
+        token = SXcmd_token();
+        token.key_base = "relion_mpirun_executable";
+        token.key_prefix = "--";
+        token.label = "relion mpirun executable";
+        token.help = "Since there can be more than one mpirun environment installed on a workstation or on a cluster. It can be sometimes necessary to provide the relion specific mpirun executable. Just type which mpirun -a in a terminal and choose the one which relion requies. ";
+        token.group = "main";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', '']];
+        token.default = "mpirun";
+        token.restore = [['mpirun'], ['mpirun']];
+        token.type = "string";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token
+        token = SXcmd_token();
+        token.key_base = "relion_polishing_executable";
+        token.key_prefix = "--";
+        token.label = "relion polishing executable";
+        token.help = "Similar to the issue of relion mpirun executable, it can be sometime necessary to provide the specific relion polishing executable also. Just type which relion_motion_refine_mpi and copy the path here. ";
+        token.group = "main";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', '']];
+        token.default = "relion_motion_refine_mpi";
+        token.restore = [['relion_motion_refine_mpi'], ['relion_motion_refine_mpi']];
         token.type = "string";
         sxcmd.token_list.append(token);
         sxcmd.token_dict[token.key_base] = token
@@ -20504,7 +20536,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.group = "main";
         token.is_required = False;
         token.is_locked = False;
-        token.is_reversed = False; \
+        token.is_reversed = False;
         token.filament_tab = "";
         token.dependency_group = [['', '', '']];
         token.default = "0.0";
@@ -24655,7 +24687,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
                                   ['use_second_mask', 'True', 'False'], ['second_mask', 'none', 'True']];
         token.default = "none";
         token.restore = [['none'], ['none']];
-        token.type = "string";
+        token.type = "string"; \
         sxcmd.token_list.append(token);
         sxcmd.token_dict[token.key_base] = token;
         sxcmd.dependency_dict.setdefault('s_threshold', []).append([token.key_base, 'none', 'False']);
@@ -29189,7 +29221,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.is_required = False;
         token.is_locked = False;
         token.is_reversed = False;
-        token.filament_tab = "";
+        token.filament_tab = ""; \
         token.dependency_group = [['', '', '']];
         token.default = False;
         token.restore = [[False], [False]];
