@@ -467,6 +467,9 @@ def handle_exceptional_cases(sxcmd):
 		sxcmd.token_dict["post_refine_folder"].type = "dir"
 		sxcmd.token_dict["motioncorr_starfile"].type = "params_star"
 		sxcmd.token_dict["training_params"].type = "params_any_txt"
+		sxcmd.token_dict["relion_mpirun_executable"].type = "exe"
+		sxcmd.token_dict["relion_polishing_executable"].type ="exe"
+		sxcmd.token_dict["submission_template"].type = "submission_temp"
 	elif sxcmd.name == "sp_higher_ord_abber":
 		sxcmd.token_dict["post_refine_folder"].type = "dir"
 	elif sxcmd.name == "sp_sort3d_depth":

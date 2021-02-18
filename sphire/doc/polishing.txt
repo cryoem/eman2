@@ -31,20 +31,26 @@ Note: In case you want to do training part of polishing then dont provide the op
   ; post_refine_folder : Post Refine Folder: Input folder is the directory where the results of the post refiner are present. Python routine automatically locates all the required files used for polishing. (default required string)
   ; motioncorr_starfile : MotionCorr Starfile: MotionCorr generated star file which normally is saved as corrected_micrographs.star (default required string)
   ; output_folder : Output folder : Output folder is the directory where all the results of the polishing are saved. (default required string)
-
   ;%%--%%training_params : training params : In case if the user wants to do the training part of the polishing then this is None. Otherwise provide the optimize_params.txt file. (default none)
-  ; %%--%%first_frame : first frame [number] : The 1st frame number from where it should start. (default 1)
-  ; %%--%%last_frame : last frame [number] : The last frame number where it should end. (default -1)
-  ; %%--%%bfac_minfreq : bfactor_minimum_frequency : The minimum frequency range which is normally the maximum inner shell to include in enhancement. (default 20)
-  ; %%--%%bfac_maxfreq : bfactor_maximum_frequency : The minimum frequency range which is normally the maximum outer shell to include in enhancement. (default -1)
-  ; %%--%%min_no_particles : Minimum no of particles : Number of particles to inlcude for training. (default 5000)
+  
+  ; %%--%%min_no_particles : Minimum no of particles : Number of particles to inlcude for training. (default 5000) : %%--%%training_params==none 
+  
   ; %%--%%submission_template : Submission template : Submission template for mpi command (default none)
   ; %%--%%submission_command : Submission command : Submission commmand for cluster (default sbatch)
   ; %%--%%relion_mpirun_executable : relion mpirun executable : Since there can be more than one mpirun environment installed on a workstation or on a cluster. It can be sometimes necessary to provide the relion specific mpirun executable. Just type which mpirun -a in a terminal and choose the one which relion requies. (default mpirun)
   ; %%--%%relion_polishing_executable : relion polishing executable : Similar to the issue of relion mpirun executable, it can be sometime necessary to provide the specific relion polishing executable also. Just type which relion_motion_refine_mpi and copy the path here. (default relion_motion_refine_mpi)
-  ; %%--%%mpi_procs : MPI Procs : The number of MPI processors used for Relion multiprocessing. (default 1)
-  ; %%--%%no_of_threads : number of threads : The number of threads use during the polishing. (default 1)
+  ; %%--%%mpi_procs :relion MPI Procs : The number of MPI processors used for Relion multiprocessing. (default 1) : %%--%%training_params!=none 
+  ; %%--%%no_of_threads : relion number of threads : The number of threads use during the polishing. (default 1)
 
+  
+\\
+=== Advanced Parameters ===
+  ; %%--%%first_frame : first frame [number] : The 1st frame number from where it should start. (default 1)
+  ; %%--%%last_frame : last frame [number] : The last frame number where it should end. (default -1)
+  ; %%--%%bfac_minfreq : minimum resolution for B-factor fit [A] : The minimum frequency range which is normally the maximum inner shell to include in enhancement. (default 20)
+  ; %%--%%bfac_maxfreq : maximum resolution for B-factor fit [A] : The minimum frequency range which is normally the maximum outer shell to include in enhancement. (default -1)
+
+  
 \\
 ===== Output =====
 The output is the result of the polishing saved in the output_folder directory.

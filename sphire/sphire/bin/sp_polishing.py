@@ -452,8 +452,6 @@ def run(args):
         time.sleep(5)
 
 
-
-
         if options.training_params != None:
             ### now we need to decide we want to run it on a single PC workstation or on cluster
             if options.submission_template is not "":

@@ -3061,6 +3061,27 @@ class SXCmdTab(QWidget):
                             grid_layout.addWidget(temp_btn, grid_row,
                                                   grid_col_origin + token_label_col_span + token_widget_col_span * 3,
                                                   token_widget_row_span, token_widget_col_span)
+                        elif cmd_token.type == "submission_temp":
+                            file_format = cmd_token.type
+                            temp_btn = QPushButton("Select template")
+                            temp_btn.setMinimumWidth(func_btn_min_width)
+                            temp_btn.setToolTip(
+                                '<FONT>' + "Display open file dialog to select a parameters text file</FONT>")
+                            grid_layout.addWidget(temp_btn, grid_row,
+                                                  grid_col_origin + token_label_col_span + token_widget_col_span * 2,
+                                                  token_widget_row_span, token_widget_col_span)
+                            temp_btn.clicked.connect(
+                                partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+                            file_format = "INVISIBLE"
+                            temp_btn = QPushButton("%s" % file_format)
+                            temp_btn.setToolTip('<FONT>' + "This is %s button</FONT>" % file_format)
+                            temp_btn.setEnabled(False)
+                            temp_btn.setStyleSheet(
+                                'background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
+                            temp_btn.setMinimumWidth(func_btn_min_width)
+                            grid_layout.addWidget(temp_btn, grid_row,
+                                                  grid_col_origin + token_label_col_span + token_widget_col_span * 3,
+                                                  token_widget_row_span, token_widget_col_span)
                         elif cmd_token.type == "params_any_json":
                             file_format = cmd_token.type
                             temp_btn = QPushButton("Select JSON file")
@@ -14569,11 +14590,125 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         sxcmd.token_list.append(token);
         sxcmd.token_dict[token.key_base] = token
         token = SXcmd_token();
+        token.key_base = "min_no_particles";
+        token.key_prefix = "--";
+        token.label = "Minimum no of particles";
+        token.help = "Number of particles to inlcude for training. ";
+        token.group = "main";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', ''], ['training_params', 'none', 'False']];
+        token.default = "5000";
+        token.restore = [['5000'], ['5000']];
+        token.type = "int";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token;
+        sxcmd.dependency_dict.setdefault('training_params', []).append([token.key_base, 'none', 'False'])
+        token = SXcmd_token();
+        token.key_base = "submission_template";
+        token.key_prefix = "--";
+        token.label = "Submission template";
+        token.help = "Submission template for mpi command ";
+        token.group = "main";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', '']];
+        token.default = "none";
+        token.restore = [['none'], ['none']];
+        token.type = "submission_temp";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token
+        token = SXcmd_token();
+        token.key_base = "submission_command";
+        token.key_prefix = "--";
+        token.label = "Submission command";
+        token.help = "Submission commmand for cluster ";
+        token.group = "main";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', '']];
+        token.default = "sbatch";
+        token.restore = [['sbatch'], ['sbatch']];
+        token.type = "string";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token
+        token = SXcmd_token();
+        token.key_base = "relion_mpirun_executable";
+        token.key_prefix = "--";
+        token.label = "relion mpirun executable";
+        token.help = "Since there can be more than one mpirun environment installed on a workstation or on a cluster. It can be sometimes necessary to provide the relion specific mpirun executable. Just type which mpirun -a in a terminal and choose the one which relion requies. ";
+        token.group = "main";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', '']];
+        token.default = "mpirun";
+        token.restore = [['mpirun'], ['mpirun']];
+        token.type = "exe";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token
+        token = SXcmd_token();
+        token.key_base = "relion_polishing_executable";
+        token.key_prefix = "--";
+        token.label = "relion polishing executable";
+        token.help = "Similar to the issue of relion mpirun executable, it can be sometime necessary to provide the specific relion polishing executable also. Just type which relion_motion_refine_mpi and copy the path here. ";
+        token.group = "main";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', '']];
+        token.default = "relion_motion_refine_mpi";
+        token.restore = [['relion_motion_refine_mpi'], ['relion_motion_refine_mpi']];
+        token.type = "exe";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token
+        token = SXcmd_token();
+        token.key_base = "mpi_procs";
+        token.key_prefix = "--";
+        token.label = "relion MPI Procs";
+        token.help = "The number of MPI processors used for Relion multiprocessing. ";
+        token.group = "main";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', ''], ['training_params', 'none', 'True']];
+        token.default = "1";
+        token.restore = [['1'], ['1']];
+        token.type = "int";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token;
+        sxcmd.dependency_dict.setdefault('training_params', []).append([token.key_base, 'none', 'True'])
+        token = SXcmd_token();
+        token.key_base = "no_of_threads";
+        token.key_prefix = "--";
+        token.label = "relion number of threads";
+        token.help = "The number of threads use during the polishing. ";
+        token.group = "main";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', '']];
+        token.default = "1";
+        token.restore = [['1'], ['1']];
+        token.type = "int";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token
+        token = SXcmd_token();
         token.key_base = "first_frame";
         token.key_prefix = "--";
         token.label = "first frame [number]";
         token.help = "The 1st frame number from where it should start. ";
-        token.group = "main";
+        token.group = "advanced";
         token.is_required = False;
         token.is_locked = False;
         token.is_reversed = False;
@@ -14589,7 +14724,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.key_prefix = "--";
         token.label = "last frame [number]";
         token.help = "The last frame number where it should end. ";
-        token.group = "main";
+        token.group = "advanced";
         token.is_required = False;
         token.is_locked = False;
         token.is_reversed = False;
@@ -14603,9 +14738,9 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token = SXcmd_token();
         token.key_base = "bfac_minfreq";
         token.key_prefix = "--";
-        token.label = "bfactor_minimum_frequency";
+        token.label = "minimum resolution for B-factor fit [A]";
         token.help = "The minimum frequency range which is normally the maximum inner shell to include in enhancement. ";
-        token.group = "main";
+        token.group = "advanced";
         token.is_required = False;
         token.is_locked = False;
         token.is_reversed = False;
@@ -14619,9 +14754,9 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token = SXcmd_token();
         token.key_base = "bfac_maxfreq";
         token.key_prefix = "--";
-        token.label = "bfactor_maximum_frequency";
+        token.label = "maximum resolution for B-factor fit [A]";
         token.help = "The minimum frequency range which is normally the maximum outer shell to include in enhancement. ";
-        token.group = "main";
+        token.group = "advanced";
         token.is_required = False;
         token.is_locked = False;
         token.is_reversed = False;
@@ -14632,20 +14767,275 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.type = "int";
         sxcmd.token_list.append(token);
         sxcmd.token_dict[token.key_base] = token
+
+        sxcmd_list.append(sxcmd)
+
+        sxcmd = SXcmd();
+        sxcmd.name = "sp_higher_ord_abber";
+        sxcmd.subname = "";
+        sxcmd.mode = "";
+        sxcmd.subset_config = "";
+        sxcmd.label = "Relion CTF Refinement call";
+        sxcmd.short_info = "Apply relion ctf refinement for higher order aberration correction";
+        sxcmd.mpi_support = False;
+        sxcmd.mpi_add_flag = False;
+        sxcmd.category = "sxc_meridien";
+        sxcmd.role = "sxr_pipe";
+        sxcmd.is_submittable = True
         token = SXcmd_token();
-        token.key_base = "min_no_particles";
+        token.key_base = "post_refine_folder";
+        token.key_prefix = "";
+        token.label = "Post Refine Folder";
+        token.help = "Input folder is the directory where the results of the post refiner are present. Python routine automatically locates all the required files used for polishing. ";
+        token.group = "main";
+        token.is_required = True;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', '']];
+        token.default = "";
+        token.restore = [[""], [""]];
+        token.type = "dir";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token
+        token = SXcmd_token();
+        token.key_base = "output_folder";
+        token.key_prefix = "";
+        token.label = "Output folder";
+        token.help = "Output folder is the directory where all the results of the polishing are saved. ";
+        token.group = "main";
+        token.is_required = True;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', '']];
+        token.default = "";
+        token.restore = [[""], [""]];
+        token.type = "output";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token
+        token = SXcmd_token();
+        token.key_base = "estimate_magnification";
         token.key_prefix = "--";
-        token.label = "Minimum no of particles";
-        token.help = "Number of particles to inlcude for training. ";
+        token.label = "estimate_magnification";
+        token.help = "";
         token.group = "main";
         token.is_required = False;
         token.is_locked = False;
         token.is_reversed = False;
         token.filament_tab = "";
         token.dependency_group = [['', '', '']];
-        token.default = "5000";
-        token.restore = [['5000'], ['5000']];
-        token.type = "int";
+        token.default = False;
+        token.restore = [[False], [False]];
+        token.type = "bool";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token
+        token = SXcmd_token();
+        token.key_base = "estimate_beamtilt";
+        token.key_prefix = "--";
+        token.label = "estimate_beamtilt";
+        token.help = "";
+        token.group = "main";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', '']];
+        token.default = False;
+        token.restore = [[False], [False]];
+        token.type = "bool";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token
+        token = SXcmd_token();
+        token.key_base = "estimate_trefoil";
+        token.key_prefix = "--";
+        token.label = "estimate_trefoil";
+        token.help = "";
+        token.group = "main";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', '']];
+        token.default = False;
+        token.restore = [[False], [False]];
+        token.type = "bool";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token
+        token = SXcmd_token();
+        token.key_base = "estimate_order_aberation";
+        token.key_prefix = "--";
+        token.label = "estimate_order_aberation";
+        token.help = ". ";
+        token.group = "main";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', '']];
+        token.default = False;
+        token.restore = [[False], [False]];
+        token.type = "bool";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token
+        token = SXcmd_token();
+        token.key_base = "perform_CTF_params_fit";
+        token.key_prefix = "--";
+        token.label = "perform_CTF_params_fit";
+        token.help = ". ";
+        token.group = "main";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', '']];
+        token.default = False;
+        token.restore = [[False], [False]];
+        token.type = "bool";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token
+        token = SXcmd_token();
+        token.key_base = "fit_defocus_micrograph";
+        token.key_prefix = "--";
+        token.label = "fit_defocus_micrograph";
+        token.help = ". ";
+        token.group = "main";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', '']];
+        token.default = False;
+        token.restore = [[False], [False]];
+        token.type = "bool";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token
+        token = SXcmd_token();
+        token.key_base = "fit_defocus_particle";
+        token.key_prefix = "--";
+        token.label = "fit_defocus_particle";
+        token.help = ". ";
+        token.group = "main";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', '']];
+        token.default = False;
+        token.restore = [[False], [False]];
+        token.type = "bool";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token
+        token = SXcmd_token();
+        token.key_base = "fit_astigmatism_micrograph";
+        token.key_prefix = "--";
+        token.label = "fit_astigmatism_micrograph";
+        token.help = ". ";
+        token.group = "main";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', '']];
+        token.default = False;
+        token.restore = [[False], [False]];
+        token.type = "bool";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token
+        token = SXcmd_token();
+        token.key_base = "fit_astigmatism_particle";
+        token.key_prefix = "--";
+        token.label = "fit_astigmatism_particle";
+        token.help = ". ";
+        token.group = "main";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', '']];
+        token.default = False;
+        token.restore = [[False], [False]];
+        token.type = "bool";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token
+        token = SXcmd_token();
+        token.key_base = "fit_bfactor_micrograph";
+        token.key_prefix = "--";
+        token.label = "fit_bfactor_micrograph";
+        token.help = ". ";
+        token.group = "main";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', '']];
+        token.default = False;
+        token.restore = [[False], [False]];
+        token.type = "bool";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token
+        token = SXcmd_token();
+        token.key_base = "fit_bfactor_particle";
+        token.key_prefix = "--";
+        token.label = "fit_bfactor_particle";
+        token.help = ". ";
+        token.group = "main";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', '']];
+        token.default = False;
+        token.restore = [[False], [False]];
+        token.type = "bool";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token
+        token = SXcmd_token();
+        token.key_base = "fit_phase_shift_micrograph";
+        token.key_prefix = "--";
+        token.label = "fit_phase_shift_micrograph";
+        token.help = ". ";
+        token.group = "main";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', '']];
+        token.default = False;
+        token.restore = [[False], [False]];
+        token.type = "bool";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token
+        token = SXcmd_token();
+        token.key_base = "fit_phase_shift_particle";
+        token.key_prefix = "--";
+        token.label = "fit_phase_shift_particle";
+        token.help = ". ";
+        token.group = "main";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', '']];
+        token.default = False;
+        token.restore = [[False], [False]];
+        token.type = "bool";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token
+        token = SXcmd_token();
+        token.key_base = "min_res_fit";
+        token.key_prefix = "--";
+        token.label = "min_res_fit";
+        token.help = ". ";
+        token.group = "main";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', '']];
+        token.default = "30.0";
+        token.restore = [['30.0'], ['30.0']];
+        token.type = "float";
         sxcmd.token_list.append(token);
         sxcmd.token_dict[token.key_base] = token
         token = SXcmd_token();
@@ -14697,18 +15087,18 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         sxcmd.token_list.append(token);
         sxcmd.token_dict[token.key_base] = token
         token = SXcmd_token();
-        token.key_base = "relion_polishing_executable";
+        token.key_base = "relion_ctfrefine_executable";
         token.key_prefix = "--";
-        token.label = "relion polishing executable";
-        token.help = "Similar to the issue of relion mpirun executable, it can be sometime necessary to provide the specific relion polishing executable also. Just type which relion_motion_refine_mpi and copy the path here. ";
+        token.label = "relion ctf refine executable";
+        token.help = "Similar to the issue of relion mpirun executable, it can be sometime necessary to provide the specific relion ctf refine executable also. Just type which relion_ctf_refine_mpi and copy the path here. ";
         token.group = "main";
         token.is_required = False;
         token.is_locked = False;
         token.is_reversed = False;
         token.filament_tab = "";
         token.dependency_group = [['', '', '']];
-        token.default = "relion_motion_refine_mpi";
-        token.restore = [['relion_motion_refine_mpi'], ['relion_motion_refine_mpi']];
+        token.default = "relion_ctf_refine_mpi";
+        token.restore = [['relion_ctf_refine_mpi'], ['relion_ctf_refine_mpi']];
         token.type = "string";
         sxcmd.token_list.append(token);
         sxcmd.token_dict[token.key_base] = token
@@ -29221,7 +29611,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.is_required = False;
         token.is_locked = False;
         token.is_reversed = False;
-        token.filament_tab = ""; \
+        token.filament_tab = "";
         token.dependency_group = [['', '', '']];
         token.default = False;
         token.restore = [[False], [False]];
@@ -29312,7 +29702,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.key_base = "npad";
         token.key_prefix = "--";
         token.label = "Padding";
-        token.help = "Number of times padding ";
+        token.help = "Number of times padding "; \
         token.group = "advanced";
         token.is_required = False;
         token.is_locked = False;

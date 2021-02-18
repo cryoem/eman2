@@ -2644,6 +2644,27 @@ class SXCmdTab(QWidget):
 							grid_layout.addWidget(temp_btn, grid_row,
 												  grid_col_origin + token_label_col_span + token_widget_col_span * 3,
 												  token_widget_row_span, token_widget_col_span)
+						elif cmd_token.type == "submission_temp":
+							file_format = cmd_token.type
+							temp_btn = QPushButton("Select template")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							temp_btn.setToolTip(
+								'<FONT>' + "Display open file dialog to select a parameters text file</FONT>")
+							grid_layout.addWidget(temp_btn, grid_row,
+												  grid_col_origin + token_label_col_span + token_widget_col_span * 2,
+												  token_widget_row_span, token_widget_col_span)
+							temp_btn.clicked.connect(
+								partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+							file_format = "INVISIBLE"
+							temp_btn = QPushButton("%s" % file_format)
+							temp_btn.setToolTip('<FONT>' + "This is %s button</FONT>" % file_format)
+							temp_btn.setEnabled(False)
+							temp_btn.setStyleSheet(
+								'background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							grid_layout.addWidget(temp_btn, grid_row,
+												  grid_col_origin + token_label_col_span + token_widget_col_span * 3,
+												  token_widget_row_span, token_widget_col_span)
 						elif cmd_token.type == "params_any_json":
 							file_format = cmd_token.type
 							temp_btn = QPushButton("Select JSON file")
