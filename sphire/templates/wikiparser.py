@@ -467,6 +467,8 @@ def handle_exceptional_cases(sxcmd):
 		sxcmd.token_dict["post_refine_folder"].type = "dir"
 		sxcmd.token_dict["motioncorr_starfile"].type = "params_star"
 		sxcmd.token_dict["training_params"].type = "params_any_txt"
+	elif sxcmd.name == "sp_higher_ord_abber":
+		sxcmd.token_dict["post_refine_folder"].type = "dir"
 	elif sxcmd.name == "sp_sort3d_depth":
 		assert(sxcmd.token_dict["output_dir"].key_base == "output_dir")
 		assert(sxcmd.token_dict["output_dir"].type == "output")
@@ -2534,6 +2536,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_config_list.append(SXcmd_config("../doc/gui_meridien.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_postrefiner_halfset_vol()))
 	sxcmd_config_list.append(SXcmd_config("../doc/polishing.txt", "DokuWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/higher_ord_abber.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 
 	sxcmd_role = "sxr_alt"
 	sxcmd_config_list.append(SXcmd_config("../doc/header.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_header_import_xform_projection()))

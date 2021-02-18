@@ -260,6 +260,8 @@ def parse_postrefiner(args_post):
         "--mtf",
         type=str,
         help="",
+        default = "",
+        nargs = 1
     )
 
     parser_post.add_argument(
