@@ -14633,8 +14633,8 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.is_reversed = False;
         token.filament_tab = "";
         token.dependency_group = [['', '', '']];
-        token.default = "sbatch";
-        token.restore = [['sbatch'], ['sbatch']];
+        token.default = "sbatch ";
+        token.restore = [['sbatch ', ' qsub ', ' bash'], ['sbatch ', ' qsub ', ' bash']];
         token.type = "string";
         sxcmd.token_list.append(token);
         sxcmd.token_dict[token.key_base] = token

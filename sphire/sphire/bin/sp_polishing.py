@@ -112,7 +112,7 @@ def parse_parameters(args):
         "--submission_command",
         type=str,
         help="",
-        default=""
+        default="sbatch"
     )
 
     parser.add_argument(
