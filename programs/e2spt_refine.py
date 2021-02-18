@@ -40,6 +40,7 @@ def main():
 
 
 	parser.add_argument("--path", type=str,help="Specify name of refinement folder. Default is spt_XX.", default=None)#, guitype='strbox', row=10, col=0,rowspan=1, colspan=3, mode="model")
+	parser.add_argument("--smooth", type=float,help="smoothing factor for subtlt.", default=40)
 	parser.add_argument("--maxang",type=float,help="maximum anglular difference in refine mode.",default=-1)
 	parser.add_argument("--maxshift",type=float,help="maximum shift in pixel.",default=-1)
 
@@ -93,8 +94,12 @@ def main():
 		print("Start resolution {:.1f}".format(curres))
 		
 	else:
-		if options.maxres!=0 : curres=options.maxres
-		else: curres=60
+		if options.maxres!=0 : 
+			curres=options.maxres
+		elif options.goldstandard>0:
+			curres=options.goldstandard
+		else: 
+			curres=60
 		startitr=1
 		
 	if options.localfilter:
@@ -127,6 +132,7 @@ def main():
 		ptcls=ptcllst
 		ep=EMData(ptcls,0)
 
+	boxsize=ep["ny"]
 	options.input_ptcls=ptcls
 	options.input_ref=ref
 	options.cmd=' '.join(sys.argv)
@@ -178,21 +184,23 @@ def main():
 
 				ar=EMData(refo,0)
 				ar.write_compressed(f"{options.path}/alignref_odd.hdf",0,12,erase=True)
+
 		else:
 			ar=EMData(ref,0)
 			#if (len(options.maskalign)>0):
 				#m=EMData(options.maskalign,0)
 				#ar.mult(m)
-			ar.write_compressed(f"{options.path}/alignref.hdf",0,12,erase=True)
+			ar.write_compressed(f"{options.path}/alignref_even.hdf",0,12,erase=True)
+			ar.write_compressed(f"{options.path}/alignref_odd.hdf",0,12,erase=True)
+		
+		refsize=ar["ny"]
+		if refsize!=boxsize:
+			print("reference and particle have different box size. something must be wrong...")
+			exit()
 		
 		#### generate alignment command first
-		gd=""
-		if options.goldstandard>0 and itr==1:
-			curres=options.goldstandard*1.5
-			if curres>75.: curres=75
-			gd=" --goldstandard {}".format(options.goldstandard)
-		if options.goldcontinue or (options.goldstandard>0 and itr>1):
-			gd=" --goldcontinue".format(options.goldstandard)
+		### just deal with gold standard references in spt_refine instead of spt_align..
+		gd=" --goldcontinue"		
 		
 		if options.refine:
 			gd+=" --refine --maxang {:.1f}".format(options.maxang)
@@ -215,13 +223,14 @@ def main():
 		
 		if options.maxshift>0:
 			gd+=" --maxshift {:.1f}".format(options.maxshift)
-		if options.scipy:
-			gd+=" --scipy"
 		
 		if options.maskalign!=None:
 			gd+=f" --mask {options.maskalign}" 
 
 		cmd="e2spt_align.py {} {}/alignref.hdf --parallel {} --path {} --iter {} --sym {} --minres {} --maxres {} {}".format(ptcls, options.path,  options.parallel, options.path, itr, options.sym, options.minres, curres*.75, gd)
+		
+		if options.scipy:
+			cmd="e2spt_align_subtlt.py {} {}/alignref.hdf --parallel {} --path {} --iter {} --sym {} --minres {} --maxres {} --smooth {} --fromscratch --goldcontinue".format(ptcls, options.path,  options.parallel, options.path, itr, options.sym, options.minres, curres*.75, options.smooth)
 		
 		ret=run(cmd)
 		
@@ -236,13 +245,16 @@ def main():
 			run(cmd)
 			s+=f" --symalimasked={options.path}/ref_mono.hdf"
 			
-		
-		#run("e2spt_average.py --threads {} --path {} --sym {} --skippostp {}".format(options.threads, options.path, options.sym, s))
-		run("e2spt_average.py --parallel {} --path {} --sym {} --keep {:.3f} --iter {} --skippostp {}".format(options.parallel, options.path, options.sym, options.pkeep, itr, s))
-		
 		even=os.path.join(options.path, "threed_{:02d}_even.hdf".format(itr))
 		odd=os.path.join(options.path, "threed_{:02d}_odd.hdf".format(itr))
 		combine=os.path.join(options.path, "threed_{:02d}.hdf".format(itr))
+		
+		if options.scipy:
+			run(f"e2spa_make3d.py --parallel {options.parallel} --input {options.path}/aliptcls_{itr:02d}.lst --output {even} --keep {options.pkeep:.3f} --clsid 0 --outsize {boxsize}")
+			run(f"e2spa_make3d.py --parallel {options.parallel} --input {options.path}/aliptcls_{itr:02d}.lst --output {odd} --keep {options.pkeep:.3f} --clsid 1 --outsize {boxsize}")
+		
+		else:
+			run("e2spt_average.py --parallel {} --path {} --sym {} --keep {:.3f} --iter {} --skippostp {}".format(options.parallel, options.path, options.sym, options.pkeep, itr, s))
 		
 		if options.setsf==None:
 			#### do a simple amplitute correction when no sf provided
