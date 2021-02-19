@@ -104,11 +104,7 @@ If --goldstandard is specified, even and odd variants of the alignment reference
 	(options, args) = parser.parse_args()
 	
 	if options.path == None:
-		fls=[int(i[-2:]) for i in os.listdir(".") if i[:4]=="spt_" and len(i)==6 and str.isdigit(i[-2:])]
-		if len(fls)==0 : fls=[0]
-		options.path = "spt_{:02d}".format(max(fls)+1)
-		try: os.mkdir(options.path)
-		except: pass
+		options.path=num_path_new("spt_")
 
 	if options.iter<=0 :
 		fls=[int(i[15:17]) for i in os.listdir(options.path) if i[:15]=="particle_parms_" and str.isdigit(i[15:17])]

@@ -30,7 +30,7 @@ def main():
 	tophat=""
 	npt=EMUtil.get_image_count(options.ptcl)
 	
-	if options.path==None: options.path=make_path("r3d_")
+	if options.path==None: options.path=num_path_new("r3d_")
 	
 	if options.slow:
 		slow=" --slow"

@@ -55,7 +55,7 @@ def main():
 	parser.add_argument("--reslimit",type=float,help="Low-pass filter the individual maps to target the variance to the specified resolution in A. Variance maps cannot be filtered as a post-processing operation. Default = 10",default=10.0)
 	parser.add_argument("--input", dest="input", default=None,type=str, help="The name of the image containing the particle data")
 	parser.add_argument("--usefilt", dest="usefilt", type=str,default=None, help="Specify a particle data file that has been low pass or Wiener filtered. Has a one to one correspondence with your particle data. If specified will be used in projection matching routines, and elsewhere.")
-	parser.add_argument("--path", default=None, type=str,help="The name of a directory where results of e2refine_easy.py are placed. If unspecified will generate one automatically of type refine_??.")
+	parser.add_argument("--path", default=None, type=str,help="The name of an existing refine_XX folder to use for input and output")
 	parser.add_argument("--output", default=None, type=str,help="The name of a directory where the variance calculated should be placed. If unspecified will generate one automatically of type refinevar_??.")
 	parser.add_argument("--mass", default=None, type=float,help="The mass of the particle in kilodaltons, used to run normalize.bymass. If unspecified nothing happens. Requires the --apix argument.")
 	parser.add_argument("--apix", default=None, type=float,help="The angstrom per pixel of the input particles. This argument is required if you specify the --mass argument. If unspecified, the convergence plot is generated using either the project apix, or if not an apix of 1.")

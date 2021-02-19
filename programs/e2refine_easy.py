@@ -283,9 +283,8 @@ not need to specify any of the following other than the ones already listed abov
 		m3dpreprocess="--preprocess "+options.m3dpreprocess
 
 	if options.path == None:
-		fls=[int(i[-2:]) for i in os.listdir(".") if i[:7]=="refine_" and len(i)==9 and str.isdigit(i[-2:])]
-		if len(fls)==0 : fls=[0]
-		options.path = "refine_{:02d}".format(max(fls)+1)
+		options.path = num_path_new("refine_")
+
 	global output_path
 	output_path="{}/report".format(options.path)
 	try: os.makedirs(output_path)
