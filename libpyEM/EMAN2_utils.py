@@ -195,14 +195,14 @@ def idfft2(v,u,amp,phase,nx=256,ny=256,dtype=np.float32,usedegrees=False):
 	return np.sum(np.real(AA*np.exp(2*np.pi*1j*(uuxx+vvyy)+pp)).reshape(len(u),nx,ny),axis=0)
 
 
-def make_path(suffix):
-	### make a suffix_xx (or suffix_xxx) folder and return the folder name
-	if suffix[-1]!="_" : suffix+="_"
+def make_path(prefix):
+	### make a prefix_xx (or prefix_xxx) folder and return the folder name
+	if prefix[-1]!="_" : prefix+="_"
 	
-	pthns=[int(i.rsplit("_",1)[-1]) for i in os.listdir(".") if i[:len(suffix)]==suffix]
+	pthns=[int(i.rsplit("_",1)[-1]) for i in os.listdir(".") if i[:len(prefix)]==prefix]
 	try: newn=max(pthns)+1
 	except: newn=0
-	path=f"{suffix}{newn}"
+	path=f"{prefix}{newn:02d}"
 	
 	return path
 
