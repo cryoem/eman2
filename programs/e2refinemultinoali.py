@@ -47,7 +47,7 @@ def main():
 	Perform a 3d classification like e2refine_multi using the orientation of each particle in an e2refine_easy"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--oldpath", type=str,help="Path to the original refinement (input, required)", default=None,guitype='filebox', filecheck=False,browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=2, col=0, rowspan=1, colspan=3)
-	parser.add_argument("--path","--newpath", dest="newpath" type=str,help="Path to the classified results (output). Default = multinoali_XX", default=None)
+	parser.add_argument("--path","--newpath", dest="newpath",type=str,help="Path to the classified results (output). Default = multinoali_XX", default=None)
 	parser.add_argument("--models","--model", dest="model", type=str,help="Comma separated list of reference maps used for classification. If a single map is provided, data will be split into two groups based on similarity to the single map.", default=None,guitype='filebox', browser='EMModelsTable(withmodal=True,multiselect=True)', filecheck=False, row=7, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--simcmp",type=str,help="The name of a 'cmp' to be used in comparing the aligned images. eg- frc:minres=80:maxres=20. Default=ccc", default="ccc", guitype='strbox', row=10, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--threads", type=int,help="Number of threads.", default=4, guitype='intbox', row=12, col=0, rowspan=1, colspan=1)
