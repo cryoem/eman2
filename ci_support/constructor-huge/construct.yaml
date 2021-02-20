@@ -17,7 +17,7 @@ ignore_duplicate_files: True
 
 specs:
   - eman2        2.91
-  - eman-deps    24.1
+  - eman-deps    26
   - conda
   - conda-build
   - pip
