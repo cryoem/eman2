@@ -2590,14 +2590,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_role = "sxr_pipe"
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_standard_fresh()))
 	sxcmd_config_list.append(SXcmd_config("../doc/gui_meridien.txt", "DokuWiki", sxcmd_category, sxcmd_role, is_submittable = False))
-	sxcmd_config_list.append(
-		SXcmd_config(
-			"../doc/fscm.txt",
-			"DokuWiki",
-			sxcmd_category,
-			sxcmd_role
-			)
-		)
+	sxcmd_config_list.append(SXcmd_config("../doc/fscm.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_postrefiner_halfset_vol()))
 	sxcmd_config_list.append(SXcmd_config("../doc/polishing.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/higher_ord_abber.txt", "DokuWiki", sxcmd_category, sxcmd_role))
