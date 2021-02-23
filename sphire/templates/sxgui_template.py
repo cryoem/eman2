@@ -2645,7 +2645,7 @@ class SXCmdTab(QWidget):
 												  grid_col_origin + token_label_col_span + token_widget_col_span * 3,
 												  token_widget_row_span, token_widget_col_span)
 						elif cmd_token.type == "submission_temp":
-							file_format = cmd_token.type
+							file_format = "sh"
 							temp_btn = QPushButton("Select template")
 							temp_btn.setMinimumWidth(func_btn_min_width)
 							temp_btn.setToolTip(
