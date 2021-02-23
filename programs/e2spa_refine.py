@@ -20,6 +20,7 @@ def main():
 	parser.add_argument("--niter", type=int,help="iter", default=10)
 	parser.add_argument("--setsf", type=str,help="structure factor", default="strucfac.txt")
 	parser.add_argument("--slow", action="store_true", default=False ,help="slow but finer search. not used yet")
+	parser.add_argument("--tophat", type=str, default="local" ,help="Default=local, can also specify localwiener")
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -57,7 +58,7 @@ def main():
 			res/=2
 			
 		if i>0:
-			tophat=" --tophat local"
+			tophat=" --tophat {}".format(options.tophat)
 		run("e2refine_postprocess.py --even {pt}/threed_{i1:02d}_even.hdf --sym {s} --setsf {sf} --restarget {rs:.1f} {tp}".format(pt=options.path, i1=i+1, s=sym, sf=options.setsf, rs=res*.8, tp=tophat))
 		
 		fsc=np.loadtxt("{}/fsc_masked_{:02d}.txt".format(options.path, i+1))
