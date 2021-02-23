@@ -21,6 +21,7 @@ def main():
 	parser.add_argument("--setsf", type=str,help="structure factor", default="strucfac.txt")
 	parser.add_argument("--slow", action="store_true", default=False ,help="slow but finer search. not used yet")
 	parser.add_argument("--tophat", type=str, default="local" ,help="Default=local, can also specify localwiener")
+	parser.add_argument("--threads", type=int,help="threads to use during postprocessing of 3d volumes", default=2)
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -59,7 +60,7 @@ def main():
 			
 		if i>0:
 			tophat=" --tophat {}".format(options.tophat)
-		run("e2refine_postprocess.py --even {pt}/threed_{i1:02d}_even.hdf --sym {s} --setsf {sf} --restarget {rs:.1f} {tp}".format(pt=options.path, i1=i+1, s=sym, sf=options.setsf, rs=res*.8, tp=tophat))
+		run("e2refine_postprocess.py --even {pt}/threed_{i1:02d}_even.hdf --sym {s} --setsf {sf} --restarget {rs:.1f} {tp} --threads {th}".format(pt=options.path, i1=i+1, s=sym, sf=options.setsf, rs=res*.8, tp=tophat, th=options.threads))
 		
 		fsc=np.loadtxt("{}/fsc_masked_{:02d}.txt".format(options.path, i+1))
 		fi=fsc[:,1]<0.2
