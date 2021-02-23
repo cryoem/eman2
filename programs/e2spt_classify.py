@@ -37,20 +37,7 @@ def main():
 	
 	
 	if options.path==None:
-		for i in range(100):
-			pname="spt_{:02d}".format(i)
-			if not os.path.isdir(pname):
-				os.mkdir(pname)
-				options.path=pname
-				break
-		else:
-			print("something is wrong...")
-			exit()
-	else:
-		try: 
-			os.mkdir(options.path)
-		except:
-			pass
+		options.path=num_path_last("spt_")
 	
 	path=options.path
 	print("Working in path {}...".format(path))

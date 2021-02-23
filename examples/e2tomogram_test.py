@@ -235,7 +235,8 @@ def main():
 		if options.tmppath:
 			path=options.tmppath
 		else:
-			options.tmppath=path=make_path("tomorecon")
+			path=num_path_new("tomorecon")
+			options.tmppath=path
 		print("Temporary files will be written in {}".format(options.tmppath))
 		
 	#### save 1k input only.

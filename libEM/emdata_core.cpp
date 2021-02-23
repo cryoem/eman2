@@ -662,7 +662,6 @@ void EMData::div(float f)
 	EXITFUNC;
 }
 
-
 void EMData::div(const EMData & em)
 {
 	ENTERFUNC;
@@ -705,6 +704,25 @@ void EMData::div(const EMData & em)
 		}
 		update();
 	}
+
+	EXITFUNC;
+}
+
+void EMData::update_min(const EMData & em)
+{
+	ENTERFUNC;
+
+	if (nx != em.get_xsize() || ny != em.get_ysize() || nz != em.get_zsize()) {
+		throw ImageFormatException( "images not same sizes");
+	}
+	if( !is_real() || !em.is_real() )
+	{
+		throw ImageFormatException( "update_min does not support complex images");
+	}
+	
+	for (size_t i = 0; i < nxyz; i++) set_value_at_index(i,Util::get_min(get_value_at_index(i),em.get_value_at_index(i)));
+	
+	update();
 
 	EXITFUNC;
 }

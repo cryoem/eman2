@@ -194,23 +194,6 @@ def idfft2(v,u,amp,phase,nx=256,ny=256,dtype=np.float32,usedegrees=False):
 	vvyy = np.multiply(vv.ravel()[:,np.newaxis],yy.ravel()[np.newaxis,:])
 	return np.sum(np.real(AA*np.exp(2*np.pi*1j*(uuxx+vvyy)+pp)).reshape(len(u),nx,ny),axis=0)
 
-
-def make_path(suffix):
-	### make a suffix_xx folder and return the folder name
-	for i in range(100):
-		path="{}_{:02d}/".format(suffix, i)
-		if os.path.exists(path):
-			continue
-		else:
-			os.mkdir(path)
-			break
-	else:
-		print("Too many {} folders in the project, or something odd happened....Exit.".format(suffix))
-		exit()
-		
-	return path
-
-
 def mid_points(length,segment,step):
 	"""Returns the mid points of consecutive sections of size "segment" along the "length" of a line
 	Author: Jesus Montoya, jgalaz@gmail.com, September 2019

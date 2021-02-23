@@ -431,42 +431,74 @@ def get_temp_name():
 	if os.path.exists(fsp) : return get_temp_name()		# risky? shouldn't really ever recurse forever...
 	return fsp
 
-def numbered_path(prefix,makenew=False):
-	"""Finds or creates folders of the form prefix_NN. If makenew is set, will create a new folder with NN one
-	larger than the largest existing path. If makenew is not set, returns the highest existing numbered path of that form."""
-	if prefix[-1]=="_" : prefix=prefix[:-1]
-	cur=[int(p.split("_")[-1]) for p in os.listdir(".") if p.rsplit("_",1)[0]==prefix and p.split("_")[-1].isdigit()]
+def num_path_new(prefix):
+	"""make a new prefix_xx (or prefix_xxx) folder and return the folder name, underscore added to prefix if not present"""
+	if prefix[-1]!="_" : prefix+="_"
 	
-	if makenew:
-		cur.append(0)		# in case of no matches
-		path=f"{prefix}_{max(cur)+1:02d}"
-		try: os.mkdir(path)
-		except: 
-			raise Exception(f"ERROR: numbered_path() could not create {path}")
-		return path
-	if len(cur)==0 : raise Exception(f"ERROR: no paths of the form {prefix}_NN found")
-	return f"{prefix}_{max(cur):02d}"
+	pthns=[int(i.rsplit("_",1)[-1]) for i in os.listdir(".") if i[:len(prefix)]==prefix]
+	try: newn=max(pthns)+1
+	except: newn=0
+	path=f"{prefix}{newn:02d}"
+	try: os.mkdir(path)
+	except:
+		raise Exception("Error: could not create "+path)
+	
+	return path
 
-def get_numbered_directories(prefix,wd=e2getcwd()):
-	'''
-	Gets the numbered directories starting with prefix in the given working directory (wd)
-	A prefix example would be "refine_" or "r2d_" etc. Used originally form within the workflow context
-	'''
-	dirs, files = get_files_and_directories(wd)
-	dirs.sort()
-	l = len(prefix)
-	for i in range(len(dirs)-1,-1,-1):
-		if len(dirs[i]) != l+2:# plus two because we only check for two numbered directories
-			dirs.pop(i)
-		elif dirs[i][:l] != prefix:
-			dirs.pop(i)
-		else:
-			try: int(dirs[i][l:])
-			except: dirs.pop(i)
+def num_path_last(prefix,create=False):
+	"""find the highest numbered path starting with prefix and return it. If create is set, will create a new one if none exists. underscore added to prefix if not present"""
+	if prefix[-1]!="_" : prefix+="_"
+	
+	pthns=[int(i.rsplit("_",1)[-1]) for i in os.listdir(".") if i[:len(prefix)]==prefix]
+	try: n=max(pthns)
+	except:
+		if create: 
+			path=f"{prefix}00"
+			try: os.mkdir(path)
+			except: raise Exception("Error: could not create "+path)
+			return path
+		else: raise Exeception("Error: could not find paths beginning with "+prefix)
+	
+	path=f"{prefix}{n:02d}"
+	
+	return path
 
-	# allright everything left in dirs is "refine_??" where the ?? is castable to an int, so we should be safe now
+#def numbered_path(prefix,makenew=False):
+	#"""Finds or creates folders of the form prefix_NN. If makenew is set, will create a new folder with NN one
+	#larger than the largest existing path. If makenew is not set, returns the highest existing numbered path of that form."""
+	#if prefix[-1]=="_" : prefix=prefix[:-1]
+	#cur=[int(p.split("_")[-1]) for p in os.listdir(".") if p.rsplit("_",1)[0]==prefix and p.split("_")[-1].isdigit()]
+	
+	#if makenew:
+		#cur.append(0)		# in case of no matches
+		#path=f"{prefix}_{max(cur)+1:02d}"
+		#try: os.mkdir(path)
+		#except: 
+			#raise Exception(f"ERROR: numbered_path() could not create {path}")
+		#return path
+	#if len(cur)==0 : raise Exception(f"ERROR: no paths of the form {prefix}_NN found")
+	#return f"{prefix}_{max(cur):02d}"
 
-	return dirs
+#def get_numbered_directories(prefix,wd=e2getcwd()):
+	#'''
+	#Gets the numbered directories starting with prefix in the given working directory (wd)
+	#A prefix example would be "refine_" or "r2d_" etc. Used originally form within the workflow context
+	#'''
+	#dirs, files = get_files_and_directories(wd)
+	#dirs.sort()
+	#l = len(prefix)
+	#for i in range(len(dirs)-1,-1,-1):
+		#if len(dirs[i]) != l+2:# plus two because we only check for two numbered directories
+			#dirs.pop(i)
+		#elif dirs[i][:l] != prefix:
+			#dirs.pop(i)
+		#else:
+			#try: int(dirs[i][l:])
+			#except: dirs.pop(i)
+
+	## allright everything left in dirs is "refine_??" where the ?? is castable to an int, so we should be safe now
+
+	#return dirs
 
 def get_prefixed_directories(prefix,wd=e2getcwd()):
 	'''
@@ -1071,7 +1103,7 @@ def kill_process(pid):
 def run(cmd,quiet=False):
 	"""shortcut redefined all over the place. Might as well put it in one location."""
 	if not quiet: print(cmd)
-	launch_childprocess(cmd)
+	return launch_childprocess(cmd)
 
 def launch_childprocess(cmd,handle_err=0):
 	'''
@@ -1540,6 +1572,16 @@ def get_platform():
 
 if get_platform() == "Darwin":
 	glut_inited = True # this is a hack for the time being
+
+def display_path(path):
+	"""Will generate a suitable reduced path for use in title-bars on windows, etc."""
+	
+	try: full=os.path.abspath(path)
+	except: full=path
+	
+	full=full.replace("\\","/").split("/")
+	if len(full)==1: return full
+	return "/".join(full[-2:])
 
 def remove_directories_from_name(file_name,ntk=0):
 	'''

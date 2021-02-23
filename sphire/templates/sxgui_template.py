@@ -54,8 +54,8 @@ except ImportError:
 from EMAN2 import *
 from EMAN2_cppwrap import *
 try:
-	from ..libpy.sp_global_def import *
-	from ..libpy.sp_sparx import *
+	from sphire.libpy import sp_global_def  #### from ..libpy.sp_global_def import *
+	from sphire.libpy.sp_sparx import *     #### from ..libpy.sp_sparx import *
 	import sphire
 except ImportError as e:
 	from sphire.libpy import sp_global_def

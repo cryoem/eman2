@@ -46,8 +46,8 @@ def main():
 	usage="""prog --model model1.hdf,model2.hdf --oldpath refine_01
 	Perform a 3d classification like e2refine_multi using the orientation of each particle in an e2refine_easy"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--newpath", type=str,help="Path to the classified results. Default = multinoali_XX", default=None)
-	parser.add_argument("--oldpath", type=str,help="Path to the original refinement", default=None,guitype='filebox', filecheck=False,browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=2, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--oldpath", type=str,help="Path to the original refinement (input, required)", default=None,guitype='filebox', filecheck=False,browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=2, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--path","--newpath", dest="newpath",type=str,help="Path to the classified results (output). Default = multinoali_XX", default=None)
 	parser.add_argument("--models","--model", dest="model", type=str,help="Comma separated list of reference maps used for classification. If a single map is provided, data will be split into two groups based on similarity to the single map.", default=None,guitype='filebox', browser='EMModelsTable(withmodal=True,multiselect=True)', filecheck=False, row=7, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--simcmp",type=str,help="The name of a 'cmp' to be used in comparing the aligned images. eg- frc:minres=80:maxres=20. Default=ccc", default="ccc", guitype='strbox', row=10, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--threads", type=int,help="Number of threads.", default=4, guitype='intbox', row=12, col=0, rowspan=1, colspan=1)
@@ -89,9 +89,7 @@ def main():
 
 	### make new folder
 	if options.newpath == None:
-		fls=[int(i[-2:]) for i in os.listdir(".") if i[:11]=="multinoali_" and len(i)==13 and str.isdigit(i[-2:])]
-		if len(fls)==0 : fls=[0]
-		options.newpath = "multinoali_{:02d}".format(max(fls)+1)
+		options.newpath=num_path_new("multinoali_")
 
 	print("Working directory: {}".format(options.newpath))
 	try: os.mkdir(options.newpath)

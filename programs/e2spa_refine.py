@@ -11,7 +11,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--ptcl", type=str,help="particle input", default="")
 	parser.add_argument("--ref", type=str,help="reference", default="")
-	parser.add_argument("--path", type=str,help="path. default is r3d_00", default="r3d_00")
+	parser.add_argument("--path", type=str,help="path. default is r3d_00", default=None)
 	parser.add_argument("--parallel", type=str,help="", default="thread:1")
 	parser.add_argument("--sym", type=str,help="sym", default="c1")
 	parser.add_argument("--res", type=float,help="The resolution that reference map is lowpass filtered to (with phase randomization) at the begining of the refinement. ", default=10)
@@ -29,6 +29,8 @@ def main():
 		
 	tophat=""
 	npt=EMUtil.get_image_count(options.ptcl)
+	
+	if options.path==None: options.path=num_path_new("r3d_")
 	
 	if options.slow:
 		slow=" --slow"

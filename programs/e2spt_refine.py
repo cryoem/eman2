@@ -40,6 +40,7 @@ def main():
 
 
 	parser.add_argument("--path", type=str,help="Specify name of refinement folder. Default is spt_XX.", default=None)#, guitype='strbox', row=10, col=0,rowspan=1, colspan=3, mode="model")
+	parser.add_argument("--smooth", type=float,help="smoothing factor for subtlt.", default=40)
 	parser.add_argument("--maxang",type=float,help="maximum anglular difference in refine mode.",default=-1)
 	parser.add_argument("--maxshift",type=float,help="maximum shift in pixel.",default=-1)
 
@@ -57,6 +58,7 @@ def main():
 	parser.add_argument("--breaksym",action="store_true",help="break symmetry",default=False)
 	parser.add_argument("--breaksymsym", type=str,help="Specify a different symmetry for breaksym.", default=None)
 	parser.add_argument("--symalimask",type=str,default=None,help="This will translationally realign each asymmetric unit to the previous map masked by the specified mask. While this invokes symalimasked in e2spt_average, this isn't the same, it is a mask, not a masked reference. ")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	
 	#parser.add_argument("--masktight", type=str,help="Mask_tight file", default="")
 
@@ -92,14 +94,18 @@ def main():
 		print("Start resolution {:.1f}".format(curres))
 		
 	else:
-		if options.maxres!=0 : curres=options.maxres
-		else: curres=60
+		if options.maxres!=0 : 
+			curres=options.maxres
+		elif options.goldstandard>0:
+			curres=options.goldstandard
+		else: 
+			curres=60
 		startitr=1
 		
 	if options.localfilter:
 		if options.tophat==None: options.tophat="local"
 		
-	if options.path==None: options.path = make_path("spt") 
+	if options.path==None: options.path = num_path_new("spt") 
 	if options.parallel=="":
 		options.parallel="thread:{}".format(options.threads)
 	
@@ -126,6 +132,7 @@ def main():
 		ptcls=ptcllst
 		ep=EMData(ptcls,0)
 
+	boxsize=ep["ny"]
 	options.input_ptcls=ptcls
 	options.input_ref=ref
 	options.cmd=' '.join(sys.argv)
@@ -158,34 +165,42 @@ def main():
 
 		# the alignment ref may be masked using a different file, or just copied
 		if options.goldstandard>0 or options.goldcontinue :
-			if itr==1: refe,refo=ref,ref
+			if itr==1: 
+				if options.verbose>1: print(f"{ref} -> alignref_even.hdf & odd with random phase past {options.goldstandard} A")
+				ar=EMData(ref,0)
+				ar.process_inplace("filter.lowpass.randomphase",{"cutoff_freq":1.0/options.goldstandard})
+				ar.write_compressed(f"{options.path}/alignref_even.hdf",0,12,erase=True)
+				
+				# no harm in repeating
+				ar.process_inplace("filter.lowpass.randomphase",{"cutoff_freq":1.0/options.goldstandard})
+				ar.write_compressed(f"{options.path}/alignref_odd.hdf",0,12,erase=True)
 			else:
 				refe=ref[:-4]+"_even.hdf"
 				refo=ref[:-4]+"_odd.hdf"
+				if options.verbose>1: print(f"{refe} -> alignref_even.hdf    {refo} -> alignref_odd.hdf")
 				
-			ar=EMData(refe,0)
-			if itr==1 : ar.process_inplace("filter.lowpass.randomphase",{"cutoff_freq":1.0/options.goldstandard})
-			#if (len(options.maskalign)>0): ar.mult(maskalign)
-			ar.write_image(f"{options.path}/alignref_even.hdf",0)
-			ar=EMData(refo,0)
-			if itr==1 : ar.process_inplace("filter.lowpass.randomphase",{"cutoff_freq":1.0/options.goldstandard})
-			#if (len(options.maskalign)>0): ar.mult(maskalign)
-			ar.write_image(f"{options.path}/alignref_odd.hdf",0)
+				ar=EMData(refe,0)
+				ar.write_compressed(f"{options.path}/alignref_even.hdf",0,12,erase=True)
+
+				ar=EMData(refo,0)
+				ar.write_compressed(f"{options.path}/alignref_odd.hdf",0,12,erase=True)
+
 		else:
 			ar=EMData(ref,0)
 			#if (len(options.maskalign)>0):
 				#m=EMData(options.maskalign,0)
 				#ar.mult(m)
-			ar.write_image(f"{options.path}/alignref.hdf",0)
+			ar.write_compressed(f"{options.path}/alignref_even.hdf",0,12,erase=True)
+			ar.write_compressed(f"{options.path}/alignref_odd.hdf",0,12,erase=True)
+		
+		refsize=ar["ny"]
+		if refsize!=boxsize:
+			print("reference and particle have different box size. something must be wrong...")
+			exit()
 		
 		#### generate alignment command first
-		gd=""
-		if options.goldstandard>0 and itr==1:
-			curres=options.goldstandard*1.5
-			if curres>75.: curres=75
-			gd=" --goldstandard {}".format(options.goldstandard)
-		if options.goldcontinue or (options.goldstandard>0 and itr>1):
-			gd=" --goldcontinue".format(options.goldstandard)
+		### just deal with gold standard references in spt_refine instead of spt_align..
+		gd=" --goldcontinue"		
 		
 		if options.refine:
 			gd+=" --refine --maxang {:.1f}".format(options.maxang)
@@ -208,13 +223,14 @@ def main():
 		
 		if options.maxshift>0:
 			gd+=" --maxshift {:.1f}".format(options.maxshift)
-		if options.scipy:
-			gd+=" --scipy"
 		
 		if options.maskalign!=None:
 			gd+=f" --mask {options.maskalign}" 
 
 		cmd="e2spt_align.py {} {}/alignref.hdf --parallel {} --path {} --iter {} --sym {} --minres {} --maxres {} {}".format(ptcls, options.path,  options.parallel, options.path, itr, options.sym, options.minres, curres*.75, gd)
+		
+		if options.scipy:
+			cmd="e2spt_align_subtlt.py {} {}/alignref.hdf --parallel {} --path {} --iter {} --sym {} --minres {} --maxres {} --smooth {} --fromscratch --goldcontinue".format(ptcls, options.path,  options.parallel, options.path, itr, options.sym, options.minres, curres*.75, options.smooth)
 		
 		ret=run(cmd)
 		
@@ -229,13 +245,16 @@ def main():
 			run(cmd)
 			s+=f" --symalimasked={options.path}/ref_mono.hdf"
 			
-		
-		#run("e2spt_average.py --threads {} --path {} --sym {} --skippostp {}".format(options.threads, options.path, options.sym, s))
-		run("e2spt_average.py --parallel {} --path {} --sym {} --keep {:.3f} --iter {} --skippostp {}".format(options.parallel, options.path, options.sym, options.pkeep, itr, s))
-		
 		even=os.path.join(options.path, "threed_{:02d}_even.hdf".format(itr))
 		odd=os.path.join(options.path, "threed_{:02d}_odd.hdf".format(itr))
 		combine=os.path.join(options.path, "threed_{:02d}.hdf".format(itr))
+		
+		if options.scipy:
+			run(f"e2spa_make3d.py --parallel {options.parallel} --input {options.path}/aliptcls_{itr:02d}.lst --output {even} --keep {options.pkeep:.3f} --clsid 0 --outsize {boxsize}")
+			run(f"e2spa_make3d.py --parallel {options.parallel} --input {options.path}/aliptcls_{itr:02d}.lst --output {odd} --keep {options.pkeep:.3f} --clsid 1 --outsize {boxsize}")
+		
+		else:
+			run("e2spt_average.py --parallel {} --path {} --sym {} --keep {:.3f} --iter {} --skippostp {}".format(options.parallel, options.path, options.sym, options.pkeep, itr, s))
 		
 		if options.setsf==None:
 			#### do a simple amplitute correction when no sf provided
@@ -248,15 +267,16 @@ def main():
 			s=np.arange(len(curve))*1./(apix*bxsz)
 			sf=XYData()
 			sf.set_xy_list(s.tolist(), curve.tolist())
+			if options.verbose>1: print("No structure factor so computing simple SF curve for correction")
 			
 			
 		for f in [even, odd]:
 			e=EMData(f)
 			e.del_attr("xform.align3d")
-			e.write_image(f.replace("threed_{:02d}_".format(itr), "threed_raw_"))
+			e.write_compressed(f.replace("threed_{:02d}_".format(itr), "threed_raw_"),0,12,erase=True)
 			if options.setsf==None:
 				e.process_inplace("filter.setstrucfac",{"apix":e["apix_x"],"strucfac":sf})
-			e.write_image(f)
+			e.write_compressed(f,0,12,erase=True)
 			
 		
 		s=""
@@ -304,19 +324,17 @@ def main():
 		if options.realign:
 			print("Realigning to initial reference")
 			os.rename(f"{combine}","tmp.hdf")
-			run(f"e2proc3d.py tmp.hdf {combine} --alignref {options.path}/model_input.hdf --align rotate_translate_3d_tree --compressbits 10")	# align
+			run(f"e2proc3d.py tmp.hdf {combine} --alignref {options.path}/model_input.hdf --align rotate_translate_3d_tree --compressbits 12")	# align
 			xform=EMData(combine,0,True)["xform.align3d"]		# recover alignment orientation
 			
 			# this is critical for the next round, but also makes sense for self-consistency
 			a=EMData(even)
 			a.process_inplace("xform",{"transform":xform})
-			os.unlink(even)										# writing compressed, need to remove original
-			a.write_compressed(even,0,10)
+			a.write_compressed(even,0,12,erase=True)
 
 			a=EMData(odd)
 			a.process_inplace("xform",{"transform":xform})
-			os.unlink(odd)
-			a.write_compressed(odd,0,10)
+			a.write_compressed(odd,0,12,erase=True)
 			
 			print("Updating particle orientations from alignment")
 			angs=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,itr))		# now we want to update the particle orientations as well for the next round

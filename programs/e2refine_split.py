@@ -78,11 +78,9 @@ def main():
 			print("--nbasis adjusted to ",options.nbasis)
 
 	if options.path==None:
-		paths=[i for i in os.listdir(".") if "refine_" in i and len(i)==9]
-		paths.sort()
-		options.path=paths[-1]
+		options.path=num_path_last("refine_")
 
-	pathnum=options.path[-2:]
+	pathnum=options.path.rsplit("_",1)[-1]
 
 	# check the specified path for the files we need
 	try:

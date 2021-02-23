@@ -1,33 +1,4 @@
 #!/usr/bin/env python
-# align all particles to reference and store alignment results
-# Author: Steven Ludtke (sludtke@bcm.edu)
-# Copyright (c) 2000- Baylor College of Medicine
-#
-# This software is issued under a joint BSD/GNU license. You may use the
-# source code in this file under either license. However, note that the
-# complete EMAN2 and SPARX software packages have some GPL dependencies,
-# so you are responsible for compliance with the licenses of these packages
-# if you opt to use BSD licensing. The warranty disclaimer below holds
-# in either instance.
-#
-# This complete copyright notice must be included in any revised version of the
-# source code. Additional authorship citations may be added, but existing
-# author citations must be preserved.
-#
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
-#
 
 from past.utils import old_div
 from future import standard_library
@@ -75,11 +46,7 @@ The reference may be <volume> or <volume>,<n>
 	(options, args) = parser.parse_args()
 	
 	if options.path == None:
-		fls=[int(i[-2:]) for i in os.listdir(".") if i[:4]=="spt_" and len(i)==6 and str.isdigit(i[-2:])]
-		if len(fls)==0 : fls=[0]
-		options.path = "spt_{:02d}".format(max(fls)+1)
-		try: os.mkdir(options.path)
-		except: pass
+		options.path=num_path_new("spt_")
 
 	if options.iter<=0 :
 		fls=[int(i[15:17]) for i in os.listdir(options.path) if i[:15]=="particle_parms_" and str.isdigit(i[15:17])]

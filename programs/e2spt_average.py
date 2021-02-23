@@ -153,11 +153,7 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 	(options, args) = parser.parse_args()
 
 	if options.path == None:
-		fls=[int(i[-2:]) for i in os.listdir(".") if i[:4]=="spt_" and len(i)==6 and str.isdigit(i[-2:])]
-		if len(fls)==0 : 
-			print("Error, cannot find any spt_XX folders")
-			sys.exit(2)
-		options.path = "spt_{:02d}".format(max(fls))
+		options.path=num_path_last("spt_")
 		if options.verbose : print("Working in : ",options.path)
 
 	if options.iter<0 :
@@ -347,15 +343,15 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 	av.mult(0.5)
 
 	if options.outfile:
-		av.write_image(options.outfile)
+		av.write_compressed(options.outfile,0,12,erase=True)
 		sys.exit(0)
 
 	evenfile="{}/threed_{:02d}_even.hdf".format(options.path,options.iter)
 	oddfile="{}/threed_{:02d}_odd.hdf".format(options.path,options.iter)
 	combfile="{}/threed_{:02d}.hdf".format(options.path,options.iter)
-	ave.write_image(evenfile,0)
-	avo.write_image(oddfile,0)
-	av.write_image(combfile,0)
+	ave.write_compressed(evenfile,0,12,erase=True)
+	avo.write_compressed(oddfile,0,12,erase=True)
+	av.write_compressed(combfile,0,12,erase=True)
 
 
 	cmd="e2proc3d.py {evenfile} {path}/fsc_unmasked_{itr:02d}.txt --calcfsc={oddfile}".format(path=options.path,itr=options.iter,evenfile=evenfile,oddfile=oddfile)
@@ -401,15 +397,15 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 	mask=vol.process("mask.auto3d",{"threshold":vmax*.15,"radius":0,"nshells":int(nx*0.05+0.5+old_div(20,apix))+options.automaskexpand,"nmaxseed":24,"return_mask":1})
 
 	mask.process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,(40.0))})
-	mask.write_image("{path}/mask.hdf".format(path=options.path),0)
+	mask.write_compressed("{path}/mask.hdf".format(path=options.path),0,8,erase=True)
 
 	# compute masked fsc and refilter
 	ave.mult(mask)
-	ave.write_image("{path}/tmp_even.hdf".format(path=options.path),0)
+	ave.write_compressed("{path}/tmp_even.hdf".format(path=options.path),0,12,erase=True)
 	avo.mult(mask)
-	avo.write_image("{path}/tmp_odd.hdf".format(path=options.path),0)
+	avo.write_compressed("{path}/tmp_odd.hdf".format(path=options.path),0,12,erase=True)
 	av.mult(mask)
-	av.write_image(combfile,0)
+	av.write_compressed(combfile,0,12,erase=True)
 
 	cmd="e2proc3d.py {path}/tmp_even.hdf {path}/fsc_masked_{itr:02d}.txt --calcfsc={path}/tmp_odd.hdf".format(path=options.path,itr=options.iter)
 	launch_childprocess(cmd)

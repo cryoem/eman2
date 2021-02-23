@@ -197,7 +197,7 @@ input volumes.
 	if options.localsize==-1 : 
 		lnx=32//apix
 		if lnx<16: lnx=16
-		lnx=(((lnx-1)//overlap)+1)*overlap
+		lnx=int((((lnx-1)//overlap)+1)*overlap)
 	else: lnx=options.localsize
 	if apix*lnx/2.0<10.0 :
 		print("WARNING: Local sampling box is <10 A. Adjusting to 16 A.")

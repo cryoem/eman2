@@ -350,6 +350,15 @@
         "CHILDREN": []
       },
       {
+        "ICON": "refine",
+        "MODE": "refinement",
+        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2gmm",
+        "PROGRAM": "e2gmm.py",
+        "NAME": "GMM Variability (e2gmm - experimental)",
+        "NOTELEVEL": "1",
+        "CHILDREN": []
+      },
+      {
 	"ICON": "single_image",
 	"PROGRAM":"e2evalparticles.py",
 	"WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2evalparticles",
