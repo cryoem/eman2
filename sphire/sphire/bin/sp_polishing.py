@@ -144,13 +144,6 @@ def parse_parameters(args):
     )
 
     parser.add_argument(
-        "--no_of_threads",
-        type=int,
-        help="",
-        default= 1,
-    )
-
-    parser.add_argument(
         "--mrc_reloc_folder",
         type=str,
         help="",
@@ -442,9 +435,8 @@ def run(args):
             if options.mrc_reloc_folder is not "":
 
                 old_micrograph_name = bdb_star[""]['_rlnMicrographName']
-                new_micrograph_name = old_micrograph_name.apply(lambda x: os.path.join(
-                                                                options.mrc_reloc_folder
-                                                                                      , os.path.basename(x)
+                new_micrograph_name = old_micrograph_name.apply(lambda x: os.path.join(options.mrc_reloc_folder
+                                                                                       , os.path.basename(x)
                                                                                        ))
                 bdb_star[""]['_rlnMicrographName'] = new_micrograph_name
 
