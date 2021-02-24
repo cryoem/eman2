@@ -435,7 +435,7 @@ def num_path_new(prefix):
 	"""make a new prefix_xx (or prefix_xxx) folder and return the folder name, underscore added to prefix if not present"""
 	if prefix[-1]!="_" : prefix+="_"
 	
-	pthns=[int(i.rsplit("_",1)[-1]) for i in os.listdir(".") if i[:len(prefix)]==prefix]
+	pthns=[int(i.rsplit("_",1)[-1]) for i in os.listdir(".") if i[:len(prefix)]==prefix and i.rsplit("_",1)[-1].isdigit()]
 	try: newn=max(pthns)+1
 	except: newn=0
 	path=f"{prefix}{newn:02d}"
@@ -449,7 +449,7 @@ def num_path_last(prefix,create=False):
 	"""find the highest numbered path starting with prefix and return it. If create is set, will create a new one if none exists. underscore added to prefix if not present"""
 	if prefix[-1]!="_" : prefix+="_"
 	
-	pthns=[int(i.rsplit("_",1)[-1]) for i in os.listdir(".") if i[:len(prefix)]==prefix]
+	pthns=[int(i.rsplit("_",1)[-1]) for i in os.listdir(".") if i[:len(prefix)]==prefix and i.rsplit("_",1)[-1].isdigit()]
 	try: n=max(pthns)
 	except:
 		if create: 
