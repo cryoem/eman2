@@ -450,18 +450,6 @@ def run(args):
 
                 bdb_star.write_star_file(overwrite=True)
             
-            """
-                old_micrograph_name = bdb_star[""]['_rlnMicrographName']
-                newloc = os.path.join(os.path.dirname(options.corr_mic), 'Movies/')
-                new_micrograph_name = old_micrograph_name.apply(lambda x: os.path.join(
-                                                                os.path.join(os.getcwd(),
-                                                                                       newloc)
-                                                                                      , os.path.basename(x)
-                                                                                       ))
-                bdb_star[""]['_rlnMicrographName'] = new_micrograph_name
-
-                bdb_star.write_star_file(overwrite=True)
-
 
         ####### SPHIRE 2 RELION Parts ends here
 
