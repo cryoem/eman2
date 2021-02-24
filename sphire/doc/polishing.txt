@@ -49,6 +49,7 @@ Note: In case you want to do training part of polishing then dont provide the op
   ; %%--%%last_frame : last frame [number] : The last frame number where it should end. (default -1)
   ; %%--%%bfac_minfreq : minimum resolution for B-factor fit [A] : The minimum frequency range which is normally the maximum inner shell to include in enhancement. (default 20)
   ; %%--%%bfac_maxfreq : maximum resolution for B-factor fit [A] : The minimum frequency range which is normally the maximum outer shell to include in enhancement. (default -1)
+  ; %%--%%mrc_reloc_folder : mrc relocation folder : In case if the mrcs images were moved from original location where they were generated to a new location. Then the user has to provide a path directory link to the new location . (default none)
 
   
 \\

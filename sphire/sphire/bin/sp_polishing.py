@@ -143,6 +143,20 @@ def parse_parameters(args):
         default= 1,
     )
 
+    parser.add_argument(
+        "--no_of_threads",
+        type=int,
+        help="",
+        default= 1,
+    )
+
+    parser.add_argument(
+        "--mrc_reloc_folder",
+        type=str,
+        help="",
+        default=""
+    )
+
     return parser.parse_args()
 
 
@@ -425,19 +439,28 @@ def run(args):
             bdb_star = star.StarFile(os.path.join(os.path.join(os.getcwd(), os.path.join(str(options.Output_folder), "BDB2STAR")),
                                                   'sphire2relion.star'))
 
-            """
-            old_micrograph_name = bdb_star[""]['_rlnMicrographName']
-            newloc = os.path.join(os.path.dirname(options.corr_mic), 'Movies/')
-            new_micrograph_name = old_micrograph_name.apply(lambda x: os.path.join(
-                                                            os.path.join(os.getcwd(),
-                                                                                   newloc)
-                                                                                  , os.path.basename(x)
-                                                                                   ))
-            bdb_star[""]['_rlnMicrographName'] = new_micrograph_name
+            if options.mrc_reloc_folder is not "":
 
-            bdb_star.write_star_file(overwrite=True)
+                old_micrograph_name = bdb_star[""]['_rlnMicrographName']
+                new_micrograph_name = old_micrograph_name.apply(lambda x: os.path.join(
+                                                                options.mrc_reloc_folder
+                                                                                      , os.path.basename(x)
+                                                                                       ))
+                bdb_star[""]['_rlnMicrographName'] = new_micrograph_name
+
+                bdb_star.write_star_file(overwrite=True)
             
             """
+                old_micrograph_name = bdb_star[""]['_rlnMicrographName']
+                newloc = os.path.join(os.path.dirname(options.corr_mic), 'Movies/')
+                new_micrograph_name = old_micrograph_name.apply(lambda x: os.path.join(
+                                                                os.path.join(os.getcwd(),
+                                                                                       newloc)
+                                                                                      , os.path.basename(x)
+                                                                                       ))
+                bdb_star[""]['_rlnMicrographName'] = new_micrograph_name
+
+                bdb_star.write_star_file(overwrite=True)
 
 
         ####### SPHIRE 2 RELION Parts ends here

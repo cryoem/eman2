@@ -15344,6 +15344,22 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.type = "int";
         sxcmd.token_list.append(token);
         sxcmd.token_dict[token.key_base] = token
+        token = SXcmd_token();
+        token.key_base = "mrc_reloc_folder";
+        token.key_prefix = "--";
+        token.label = "mrc relocation folder";
+        token.help = "In case if the mrcs images were moved from original location where they were generated to a new location. Then the user has to provide a path directory link to the new location . ";
+        token.group = "advanced";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', '']];
+        token.default = "none";
+        token.restore = [['none'], ['none']];
+        token.type = "dir";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token
 
         sxcmd_list.append(sxcmd)
 
