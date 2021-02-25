@@ -230,11 +230,7 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 		print("--parallel converted to --threads for efficiency")
 
 	if options.path == None:
-		fls=[int(i[-2:]) for i in os.listdir(".") if i[:4]=="spt_" and len(i)==6 and str.isdigit(i[-2:])]
-		if len(fls)==0 : 
-			print("Error, cannot find any spt_XX folders")
-			sys.exit(2)
-		options.path = "spt_{:02d}".format(max(fls))
+		options.path=num_path_last("spt_")
 		if options.verbose : print("Working in : ",options.path)
 		
 	options.path=options.path.strip('/\\')

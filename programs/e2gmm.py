@@ -467,7 +467,7 @@ class EMGMM(QtWidgets.QMainWindow):
 	def update_gmms(self):
 		"""Updates the display of gmm_XX folders"""
 		#self.gmm=str(self.wlistgmm.currentItem().text())
-		self.gmms=[i for i in sorted(os.listdir(".")) if i[:4]=="gmm_"]
+		self.gmms=[i for i in sorted(os.listdir(".")) if i[:4]=="gmm_" and os.path.isdir(i)]
 		self.wlistgmm.clear()
 		for i in self.gmms:
 			self.wlistgmm.addItem(i)
@@ -532,12 +532,8 @@ class EMGMM(QtWidgets.QMainWindow):
 
 	def add_gmm(self,clk=False):
 		"""Creates a new numbered gmm_XX folder"""
-		self.update_gmms()
-		if len(self.gmms)==0 : crt=1
-		else: crt=int(self.gmms[-1][-2:])+1
-		newgmm=f"gmm_{crt:02d}"
-		try: os.mkdir(newgmm)
-		except:
+		try: newgmm=num_path_new("gmm")
+		except: 
 			showerror(f"Cannot create {newgmm}",self)
 			return
 		self.gmm=newgmm

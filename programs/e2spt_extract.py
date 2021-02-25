@@ -11,6 +11,7 @@ from EMAN2_utils import *
 from EMAN2jsondb import JSTask
 import os
 import sys
+import traceback
 
 global thrdone
 thrdone=0
@@ -163,8 +164,16 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 	
 	#### reading alignment info...
 	js=js_open_dict(info_name(pfile))
-	ttparams=np.array(js["tlt_params"])
-	ttparams[:,:2]/=options.shrink
+	try: 
+		ttparams=np.array(js["tlt_params"])
+		ttparams[:,:2]/=options.shrink
+	except:
+		traceback.print_exc()
+		print(f"""\nERROR: tlt_params missing in {info_name(pfile)}. The most likely cause for this is trying to use a tomogram
+reconstructed in another program. Subtomogram averaging in EMAN2 makes extensive use of the original tilt series
+as well as alignment parameters, so use of tomograms from other software is not supported in the normal sequence.""")
+		sys.exit(1)
+
 	
 	if options.noctf==False and "defocus" in js:
 		#### read ctf info when exist

@@ -105,7 +105,7 @@ def main():
 	if options.localfilter:
 		if options.tophat==None: options.tophat="local"
 		
-	if options.path==None: options.path = make_path("spt") 
+	if options.path==None: options.path = num_path_new("spt") 
 	if options.parallel=="":
 		options.parallel="thread:{}".format(options.threads)
 	
