@@ -55,21 +55,21 @@ def parse_parameters(args):
 
     parser.add_argument(
         "--estimate_magnification",
-        type=str,
+        action="store_true",
         help="",
         default=False
     )
 
     parser.add_argument(
         "--estimate_beamtilt",
-        type=str,
+        action="store_true",
         help="",
-        default = False,
+        default=False
     )
 
     parser.add_argument(
         "--estimate_trefoil",
-        type=str,
+        action="store_true",
         help="If set to True, then relion_ctf_refine will also estimate the trefoil (3-fold astigmatism) per optics group."
              "This option is only recommended for data sets that extend beyond 3.5 Angstrom resolution",
         default=False
@@ -77,70 +77,70 @@ def parse_parameters(args):
 
     parser.add_argument(
         "--estimate_order_aberation",
-        type=str,
+        action="store_true",
         help="4th order aberration",
         default=False
     )
 
     parser.add_argument(
         "--perform_CTF_params_fit",
-        type=str,
+        action="store_true",
         help="",
         default=False
     )
 
     parser.add_argument(
         "--fit_defocus_micrograph",
-        type=str,
+        action="store_true",
         help="",
         default=False
     )
 
     parser.add_argument(
         "--fit_defocus_particle",
-        type=str,
+        action="store_true",
         help="",
         default=False
     )
 
     parser.add_argument(
         "--fit_astigmatism_micrograph",
-        type=str,
+        action="store_true",
         help="",
         default=False
     )
 
     parser.add_argument(
         "--fit_astigmatism_particle",
-        type=str,
+        action="store_true",
         help="",
         default=False
     )
 
     parser.add_argument(
         "--fit_bfactor_micrograph",
-        type=str,
+        action="store_true",
         help="",
         default=False
     )
 
     parser.add_argument(
         "--fit_bfactor_particle",
-        type=str,
+        action="store_true",
         help="",
         default=False
     )
 
     parser.add_argument(
         "--fit_phase_shift_micrograph",
-        type=str,
+        action="store_true",
         help="",
         default=False
     )
 
     parser.add_argument(
         "--fit_phase_shift_particle",
-        type=str,
+        action="store_true",
         help="",
         default=False
     )
@@ -177,7 +177,7 @@ def parse_parameters(args):
         "--relion_ctfrefine_executable",
         type=str,
         help="",
-        default="relion_motion_refine_mpi"
+        default="relion_ctf_refine_mpi"
     )
 
     parser.add_argument(
@@ -471,50 +471,48 @@ def run(args):
 
 
             #### This wont be necessary in cases where the entire pipeline was run with MotionCorr shifts
-            bdb_star = star.StarFile(os.path.join(os.path.join(os.getcwd(), os.path.join(str(options.Output_folder), "BDB2STAR")),
-                                                  'sphire2relion.star'))
+            # bdb_star = star.StarFile(os.path.join(os.path.join(os.getcwd(), os.path.join(str(options.Output_folder), "BDB2STAR")),
+            #                                       'sphire2relion.star'))
 
         """
         Till here it is generic script where we convert the stack and create the postprocess star file.
         """
-
-
         flag_defocus ='f'
         flag_astig = 'f'
         flag_bfactor = 'f'
         flag_phase_shift = 'f'
         total_flag = ""
 
-        if options.estimate_magnification == 'True' :
+        if options.estimate_magnification:
             total_flag += "--fit_aniso" + " " + "--kmin_mag " + str(options.min_res_fit)
         else:
             pass
 
-        if options.perform_CTF_params_fit == 'True' and options.estimate_magnification == 'False':
-            if options.fit_defocus_micrograph == 'True':
+        if options.perform_CTF_params_fit and not options.estimate_magnification:
+            if options.fit_defocus_micrograph:
                 flag_defocus = 'm'
-            elif options.fit_defocus_particle == 'True':
+            elif options.fit_defocus_particle:
                 flag_defocus = 'p'
             else:
                 pass
 
-            if options.fit_astigmatism_micrograph == 'True' :
+            if options.fit_astigmatism_micrograph:
                 flag_astig = 'm'
-            elif options.fit_astigmatism_particle == 'True' :
+            elif options.fit_astigmatism_particle:
                 flag_astig = 'p'
             else :
                 pass
 
-            if options.fit_bfactor_micrograph == 'True' :
+            if options.fit_bfactor_micrograph:
                 flag_bfactor = 'm'
-            elif options.fit_bfactor_particle == 'True' :
+            elif options.fit_bfactor_particle:
                 flag_bfactor = 'p'
             else :
                 pass
 
-            if options.fit_phase_shift_micrograph == 'True' :
+            if options.fit_phase_shift_micrograph:
                 flag_phase_shift = 'm'
-            elif options.fit_phase_shift_particle == 'True' :
+            elif options.fit_phase_shift_particle:
                 flag_phase_shift = 'p'
             else :
                 pass
@@ -523,132 +521,121 @@ def run(args):
             total_flag += "--fit_defocus" + " " + "--kmin_defocus " + str(options.min_res_fit) + \
                           " " + "--fit_mode " + str(fit_mode)
 
-        if options.estimate_order_aberation and options.estimate_magnification == 'False':
+        if options.estimate_order_aberation and not options.estimate_magnification:
             total_flag += "--fit_aberr"
 
 
-        main_location = os.getcwd()
-        # This will be later set in case we have motion corr data
-        final_motion_path = os.path.join(main_location, options.corr_mic)
         time.sleep(5)
 
+        ### now we need to decide we want to run it on a single PC workstation or on cluster
+        if options.submission_template is not "":
+            ctfrefine_call = options.relion_ctfrefine_executable\
+                             + " --i " + os.path.join(os.getcwd(),os.path.join(str(options.Output_folder),
+                                                                               "BDB2STAR/sphire2relion.star"))\
+                             + " " + "--f " + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder),
+                                                                            "PostProcess/postprocess.star")) \
+                             + " " + "--o " + str(os.path.join(os.getcwd(), str(options.Output_folder))) \
+                             + " " + total_flag \
+                             + " " + "--angpix_ref " + str(post_refine_options.pixel_size[0]) \
+                             + " " + "--j " + str(options.no_of_threads)
 
-        ctf_refine_call = (
-                + " " + "relion_ctf_refine"
-                + " --i "
-                + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder), "BDB2STAR/sphire2relion.star"))
-                + " " + "--f " + os.path.join(os.getcwd(),
-                                              os.path.join(str(options.Output_folder), "PostProcess/postprocess.star"))
-                + " " + total_flag
-                + " " + "--j " + str(options.no_of_threads)
-                + " " + "--pipeline_control " + str(options.Output_folder)
-        )
+            # rel2sph_call = "\n\n" + "sp_relion2sphire.py"\
+            #                + " " + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder), "shiny.star"))\
+            #                + " " + "Polish_Stack"\
+            #                + " " + "--relion_project_dir='.'"\
+            #                + " " + "--box_size=-1"
+
+            try:
+                with open(options.submission_template) as read:
+                    lines = read.readlines()
+            except Exception as e:
+                sp_global_def.ERROR(str(e) + '\nCannot open mpi_submission template!', action=1)
+
+            cmd_lines = []
+            for idx, entry in enumerate(lines):
+                if "XXX_SXCMD_LINE_XXX" in entry and "mpirun" in entry:
+                    cmd_lines.append(idx)
+
+            if not cmd_lines:
+                sp_global_def.sxprint("Could not find a suitable command line for exchange.")
+                sp_global_def.sxprint("The line should contain XXX_SXCMD_LINE_XXX.")
+                sys.exit(1)
+
+            line = (lines[cmd_lines[-1]].replace("XXX_SXCMD_LINE_XXX", ctfrefine_call )) # + rel2sph_call
+
+            mod_sub_script = "".join(lines).replace("XXX_SXMPI_NPROC_XXX", str(options.mpi_procs)
+                                                    ).replace("XXX_SXMPI_JOB_NAME_XXX", "sp_polishing"
+                                                              ).replace(lines[cmd_lines[-1]], line
+                                                                        ).replace("mpirun", options.relion_mpirun_executable)
+
+            out_submission = "{0}/polishing_submission_script.sh".format(str(options.Output_folder))
+            with open(out_submission, "w") as w:
+                w.write("".join(mod_sub_script))
+
+            sp_global_def.sxprint(
+                subprocess.check_output(
+                    options.submission_command.split() + [out_submission]
+                )
+            )
+
+        else:
+            if options.mpi_procs > 1 :
+                # if we want to run it on a workstation
+                import mpi
+                os.unsetenv('OMPI_COMM_WORLD_RANK')
+                RUNNING_UNDER_MPI = "OMPI_COMM_WORLD_SIZE" in os.environ
+                if RUNNING_UNDER_MPI:
+                    mpi.mpi_init(0, [])
+                    rank = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
+                    size = mpi.mpi_comm_size(mpi.MPI_COMM_WORLD)
+                else:
+                    rank = 0
+                    size = 1
+
+                env = os.environ
+                new_env = {k: v for k, v in env.items() if "MPI" not in k}
 
 
+                ctfrefine_call = (
+                        "mpirun"
+                        + " " + "-np"
+                        + " " + str(options.mpi_procs)
+                        + " " + options.relion_ctfrefine_executable
+                        + " --i " + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder),
+                                                                           "BDB2STAR/sphire2relion.star"))
+                        + " " + "--f " + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder),
+                                                                                "PostProcess/postprocess.star"))
+                        + " " + "--o " + str(os.path.join(os.getcwd(), str(options.Output_folder)))
+                        + " " + total_flag
+                        + " " + "--angpix_ref " + str(post_refine_options.pixel_size[0])
+                        + " " + "--j " + str(options.no_of_threads)
+                )
+                # rel2sph_call = (
+                #     "sp_relion2sphire.py"
+                #     + " " + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder), "shiny.star"))
+                #     + " " + "Polish_Stack"
+                #     + " " + "--relion_project_dir='.'"
+                #     + " " + "--box_size=-1"
+                # )
 
-        # if options.submission_template is not "":
-        #     polishing_call = options.relion_polishing_executable \
-        #                      + " --i " + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder),
-        #                                                                         "BDB2STAR/sphire2relion.star")) \
-        #                      + " " + "--f " + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder),
-        #                                                                              "PostProcess/postprocess.star")) \
-        #                      + " " + "--corr_mic " + os.path.join(final_motion_path) \
-        #                      + " " + "--first_frame " + str(options.first_frame) \
-        #                      + " " + "--last_frame " + str(options.last_frame) \
-        #                      + " " + "--o " + str(os.path.join(os.getcwd(), str(options.Output_folder))) \
-        #                      + " " + "--params_file " + str(options.training_params) \
-        #                      + " " + "--combine_frames" \
-        #                      + " " + "--bfac_minfreq " + str(options.bfac_minfreq) \
-        #                      + " " + "--bfac_maxfreq " + str(options.bfac_maxfreq) \
-        #                      + " " + "--angpix_ref " + str(post_refine_options.pixel_size[0]) \
-        #                      + " " + "--j " + str(options.no_of_threads)
-        #
-        #     rel2sph_call = "\n\n" + "sp_relion2sphire.py" \
-        #                    + " " + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder), "shiny.star")) \
-        #                    + " " + "Polish_Stack" \
-        #                    + " " + "--relion_project_dir='.'" \
-        #                    + " " + "--box_size=-1"
-        #
-        #     try:
-        #         with open(options.submission_template) as read:
-        #             lines = read.readlines()
-        #     except Exception as e:
-        #         sp_global_def.ERROR(str(e) + '\nCannot open mpi_submission template!', action=1)
-        #
-        #     cmd_lines = []
-        #     for idx, entry in enumerate(lines):
-        #         if "XXX_SXCMD_LINE_XXX" in entry and "mpirun" in entry:
-        #             cmd_lines.append(idx)
-        #
-        #     if not cmd_lines:
-        #         sp_global_def.sxprint("Could not find a suitable command line for exchange.")
-        #         sp_global_def.sxprint("The line should contain XXX_SXCMD_LINE_XXX.")
-        #         sys.exit(1)
-        #
-        #     line = (lines[cmd_lines[-1]].replace("XXX_SXCMD_LINE_XXX", polishing_call + rel2sph_call))
-        #
-        #     mod_sub_script = "".join(lines).replace("XXX_SXMPI_NPROC_XXX", str(options.mpi_procs)
-        #                                             ).replace("XXX_SXMPI_JOB_NAME_XXX", "sp_polishing"
-        #                                                       ).replace(lines[cmd_lines[-1]], line
-        #                                                                 ).replace("mpirun",
-        #                                                                           options.relion_mpirun_executable)
-        #
-        #     out_submission = "{0}/polishing_submission_script.sh".format(str(options.Output_folder))
-        #     with open(out_submission, "w") as w:
-        #         w.write("".join(mod_sub_script))
-        #
-        #     sp_global_def.sxprint(
-        #         subprocess.check_output(
-        #             options.submission_command.split() + [out_submission]
-        #         )
-        #     )
-        # else:
-        #     # if we want to run it on a workstation
-        #     import mpi
-        #     os.unsetenv('OMPI_COMM_WORLD_RANK')
-        #     RUNNING_UNDER_MPI = "OMPI_COMM_WORLD_SIZE" in os.environ
-        #     if RUNNING_UNDER_MPI:
-        #         mpi.mpi_init(0, [])
-        #         rank = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
-        #         size = mpi.mpi_comm_size(mpi.MPI_COMM_WORLD)
-        #     else:
-        #         rank = 0
-        #         size = 1
-        #
-        #     env = os.environ
-        #     new_env = {k: v for k, v in env.items() if "MPI" not in k}
-        #
-        #     polishing_call = (
-        #             "mpirun"
-        #             + " " + "-np"
-        #             + " " + str(options.mpi_procs)
-        #             + " " + "relion_motion_refine_mpi"
-        #             + " --i "
-        #             + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder), "BDB2STAR/sphire2relion.star"))
-        #             + " " + "--f " + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder),
-        #                                                                     "PostProcess/postprocess.star"))
-        #             + " " + "--corr_mic " + os.path.join(final_motion_path)
-        #             + " " + "--first_frame " + str(options.first_frame)
-        #             + " " + "--last_frame " + str(options.last_frame)
-        #             + " " + "--o " + str(os.path.join(os.getcwd(), str(options.Output_folder)))
-        #             + " " + "--params_file " + str(options.training_params)
-        #             + " " + "--combine_frames"
-        #             + " " + "--bfac_minfreq " + str(options.bfac_minfreq)
-        #             + " " + "--bfac_maxfreq " + str(options.bfac_maxfreq)
-        #             + " " + "--angpix_ref " + str(post_refine_options.pixel_size[0])
-        #             + " " + "--j " + str(options.no_of_threads)
-        #     )
-        #     rel2sph_call = (
-        #             "sp_relion2sphire.py"
-        #             + " " + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder), "shiny.star"))
-        #             + " " + "Polish_Stack"
-        #             + " " + "--relion_project_dir='.'"
-        #             + " " + "--box_size=-1"
-        #     )
-        #
-        #     print("Polishing command is called", polishing_call)
-        #     subprocess.run(args=[polishing_call], shell=True, text=True, env=new_env)
-        #     subprocess.run(args=[rel2sph_call], shell=True, text=True)
+                print("Ctf refine with mpi command is called", ctfrefine_call)
+                subprocess.run(args=[ctfrefine_call],  shell=True, text= True, env=new_env)
+                # subprocess.run(args=[rel2sph_call], shell=True, text=True)
+            else :
+                ctfrefine_call = (
+                        "relion_ctf_refine"
+                        + " --i " + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder),
+                                                                           "BDB2STAR/sphire2relion.star"))
+                        + " " + "--f " + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder),
+                                                                                "PostProcess/postprocess.star"))
+                        + " " + "--o " + str(os.path.join(os.getcwd(), str(options.Output_folder)))
+                        + " " + total_flag
+                        + " " + "--angpix_ref " + str(post_refine_options.pixel_size[0])
+                        + " " + "--j " + str(options.no_of_threads)
+                )
+                print("Ctf refine without mpi command is called", ctfrefine_call)
+                subprocess.run(args=[ctfrefine_call], shell=True, text=True)
+
 
 
 def main():
@@ -663,40 +650,6 @@ def main():
 if __name__ == "__main__":
     main()
 
-
-
-
-####
-# import os
-#
-# polishing_call = "relion_polishing_executable" \
-#                  + " --i " + os.path.join(os.getcwd(), os.path.join(str("Output_folder"),
-#                                                                     "BDB2STAR/sphire2relion.star")) \
-#                  + " " + "--f " + os.path.join(os.getcwd(), os.path.join(str("Output_folder"),
-#                                                                          "PostProcess/postprocess.star")) \
-#                  + " " + "--corr_mic " + os.path.join("final_motion_path") \
-#                  + " " + "--first_frame " + str("first_frame") \
-#                  + " " + "--last_frame " + str("last_frame") \
-#                  + " " + "--o " + str(os.path.join(os.getcwd(), str("Output_folder"))) \
-#                  + " " + "--params_file " + str("training_params") \
-#                  + " " + "--combine_frames" \
-#                  + " " + "--bfac_minfreq " + str("bfac_minfreq") \
-#                  + " " + "--bfac_maxfreq " + str("bfac_maxfreq") \
-#                  + " " + "--angpix_ref " + str("pixel_size[0]") \
-#                  + " " + "--j " + str("no_of_threads")
-#
-# rel2sph_call = "\n\n" + "sp_relion2sphire.py" \
-#                + " " + os.path.join(os.getcwd(), os.path.join(str("Output_folder"), "shiny.star")) \
-#                + " " + "Polish_Stack" \
-#                + " " + "--relion_project_dir='.'" \
-#                + " " + "--box_size=-1"
-#
-# polishing_rel2sphire_command = []
-#
-# print(polishing_rel2sphire_command)
-#
-# with open("test_appending_commands", "w") as w:
-#     w.write("".join(polishing_call + rel2sph_call))
 
 
 

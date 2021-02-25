@@ -571,7 +571,7 @@ def run(args):
                     + " " + "--corr_mic " + os.path.join(os.getcwd(), os.path.join(final_motion_path))
                     + " " + "--first_frame " + str(options.first_frame)
                     + " " + "--last_frame " + str(options.last_frame)
-                    + " " + "--o " + str(options.Output_folder)
+                    + " " + "--o " + str(os.path.join(os.getcwd(), str(options.Output_folder)))
                     + " " + "--min_p " + str(options.min_no_particles)
                     + " " + "--eval_frac " + str(0.5)
                     + " " + "--align_frac " + str(0.5)
