@@ -228,6 +228,9 @@ file_mode_range={
 	int(EMUtil.EMDataType.EM_COMPRESSED):(-3.40282347e+38,3.40282347e+38 )
 	}
 
+class NotImplementedException(Exception):
+	def __init__(self,val=None): pass
+
 def E2init(argv, ppid=-1) :
 	"""E2init(argv)
 This function is called to log information about the current job to the local logfile. The flags stored for each process

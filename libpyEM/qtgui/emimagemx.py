@@ -53,6 +53,7 @@ from .emimageutil import ImgHistogram, EMParentWin
 from weakref import WeakKeyDictionary
 from pickle import dumps,loads
 from libpyGLUtils2 import *
+import traceback
 
 from .emglobjects import EMOpenGLFlagsAndTools,EMGLProjectionViewMatrices,EMBasicOpenGLObjects,init_glut
 from .emapplication import EMGLWidget, get_application, EMApp
@@ -301,6 +302,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			self.set_data(data)
 
 		self.auto_contrast = True
+		self.setAcceptDrops(True)
 
 	def initializeGL(self):
 		glClearColor(0,0,0,0)
@@ -1568,6 +1570,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 #		for i in f:
 #			print str(i)
 
+#		print("enter drag ",str(event))
 		if event.source()==self:
 			event.setDropAction(Qt.MoveAction)
 			event.accept()
@@ -1622,28 +1625,35 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 	def dropEvent(self,event):
 		lc=self.scr_to_img((event.pos().x(),event.pos().y()))
-		if event.source()==self:
-#			print lc
-			n=int(event.mime_data().text())
-			if not lc : lc=[len(self.data)]
-			if n>lc[0] :
-				self.data.insert(lc[0],self.data[n])
-				del self.data[n+1]
-			else :
-				self.data.insert(lc[0]+1,self.data[n])
-				del self.data[n]
-			event.setDropAction(Qt.MoveAction)
-			event.accept()
-		elif EMAN2.GUIbeingdragged:
-			self.data.append(EMAN2.GUIbeingdragged)
-			self.set_data(self.data)
-			EMAN2.GUIbeingdragged=None
-		elif event.mimeData().hasFormat("application/x-eman"):
-			x=loads(event.mime_data().data("application/x-eman"))
-			if not lc : self.data.append(x)
-			else : self.data.insert(lc[0],x)
-			self.set_data(self.data)
-			event.acceptProposedAction()
+#		print("drop drag",str(event),lc,event.source(),self,self.parent())
+		try:
+			if event.source()==self or event.source()==self.parent():
+				n=int(event.mimeData().text())
+				if not lc : lc=[len(self.data)]
+				if n>lc[0] :
+					self.data.insert(lc[0],self.data[n])
+					del self.data[n+1]
+				else :
+					self.data.insert(lc[0]+1,self.data[n])
+					del self.data[n]
+				event.setDropAction(Qt.MoveAction)
+				event.accept()
+			#elif EMAN2.GUIbeingdragged:
+				#self.data.append(EMAN2.GUIbeingdragged)
+				#self.set_data(self.data)
+				#EMAN2.GUIbeingdragged=None
+			elif event.mimeData().hasFormat("application/x-eman"):
+				x=loads(event.mimeData().data("application/x-eman"))
+				if not lc : self.data.append(x)
+				else : self.data.insert(lc[0],x)
+#				self.set_data(self.data)
+				event.acceptProposedAction()
+		except:
+			traceback.print_exc()
+			print("Warning: Failed drop")
+			
+		self.display_states = []
+		self.updateGL()
 
 	def keyPressEvent(self,event):
 		if self.data == None: return
@@ -1762,9 +1772,10 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 #		return
 	   	# this is currently disabled because it causes seg faults on MAC. FIXME investigate and establish the functionality that we want for mouse dragging and dropping
 		if event.button()==Qt.LeftButton:
+#			print("drag begin ",str(event))
 			lc= self.scr_to_img((event.x(),event.y()))
 			if lc == None:
-				print("strange lc error")
+#				print("strange lc error")
 				return
 			box_image = self.get_box_image(lc[0])
 			xs=int(box_image.get_xsize())
@@ -1774,7 +1785,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 			mime_data.setData("application/x-eman", dumps(box_image))
 
-			EMAN2.GUIbeingdragged= box_image	# This deals with within-application dragging between windows
+#			EMAN2.GUIbeingdragged= box_image	# This deals with within-application dragging between windows
 			mime_data.setText( str(lc[0])+"\n")
 			di=QtGui.QImage(GLUtil.render_amp8(box_image, 0,0,xs,ys,xs*4,1.0,0,255,self.get_density_min(),self.get_density_max(),1.0,14),xs,ys,QtGui.QImage.Format_RGB32)
 			mime_data.setImageData(QtCore.QVariant(di))
@@ -2740,6 +2751,16 @@ class EMMXDataCache(object):
 		and let the calling program display the deleted box differently
 		'''
 		raise NotImplementedException
+	
+	def insert(self,idx,obj):
+		raise NotImplementedException
+		
+	def append(self,obj):
+		raise NotImplementedException
+		
+	def __delitem__(self,idx):
+		raise NotImplementedException
+			
 	def __getitem__(self,idx):
 		'''
 		operator[] must be supported
@@ -2860,6 +2881,7 @@ class EMLightWeightParticleCache(EMMXDataCache):
 	schemes, not random.
 
 	'''
+	
 	def from_file(file_name):
 		'''
 		If this was C++ this would be the constructor for this class that took a single file name
@@ -2882,7 +2904,7 @@ class EMLightWeightParticleCache(EMMXDataCache):
 		self.data = data
 		self.cache_start = 0
 		self.cache_max = cache_max
-		self.cache = [None for i in range(self.cache_max)]
+		self.reset_cache()
 		self.xsize = None
 		self.ysize = None
 		self.zsize = None
@@ -2899,6 +2921,24 @@ class EMLightWeightParticleCache(EMMXDataCache):
 
 	def is_complex(self): return False
 
+	def insert(self,idx,obj):
+		if isinstance(obj,EMData): obj=[obj["source_path"],obj["source_n"],[]]
+		self.data.insert(idx,obj)
+		self.reset_cache()
+		
+	def append(self,obj):
+		if isinstance(obj,EMData): obj=[obj["source_path"],obj["source_n"],[]]
+		self.data.append(obj)
+		self.reset_cache()
+		
+	def __delitem__(self,idx):
+		del self.data[idx]
+		self.reset_cache()
+	
+	def reset_cache(self):
+		self.cache = [None for i in range(self.cache_max)]
+		
+	
 	def delete_box(self,idx):
 		'''
 		@ must return a value = 1 indicates the box is permanently gone, 0 indicates the class is happy to do nothing

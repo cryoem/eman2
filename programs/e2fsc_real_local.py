@@ -93,18 +93,25 @@ def calc_oneres(jsd,vol1f,vol2f,apix,freq,ftsize,tophat=False,cutoff=0.143,rmask
 		filt=volcor.process("threshold.binary",{"value":cutoff})
 	else:
 		# Now let's turn that into a Wiener filter
-		if freq==8: 
+		if freq==3: 
 			minvol=volcor.copy()
-			curvol=8
-		elif freq>8:
+			curvol=3
+		elif freq>3:
 			while curvol<freq-1: time.sleep(0.1)		# we wait until we have all lower frequency calculations done to insure monotonic decrease
 			minvol.update_min(volcor)
 #			volcor.update_min(minvol)	# could just copy, but timing is likely about the same
+			# if we find a low resolution patch where the FSC falls below zero, but then rises above 0.5, we reset our below zero threshold
+			msk=volcor.process("threshold.binary",{"value":.5})
+			minvol.add(msk)
+			# Then we zero the FSC in any regions which have previously fallen below zero to avoid spurious high resolution info in 
 			msk=minvol.process("threshold.binary",{"value":.01})
 			volcor.mult(msk)
 			msk=None
-			curvol=max(freq,curvol)		# should always be freq, but just to be safe...
 			
+			curvol=max(freq,curvol)		# should always be freq, but just to be safe...
+		
+		# Setting scalesnr here is slightly under-filtering the Wiener filter. This is emperical to help permit convergence
+		# of higher frequency information
 		filt=volcor.process("math.ccc_snr_wiener",{"wiener":1,"scalesnr":3.0})
 
 	filt1=vol1b*filt
