@@ -426,7 +426,8 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 	if options.mask: mask=EMData(options.mask)
 	for i,v in enumerate(avs):
 		if options.mask: v.mult(mask)
-		v.write_image("{}/threed_{:02d}_{:02d}.hdf".format(options.path,options.iter,i),0)
+#		v.write_image("{}/threed_{:02d}_{:02d}.hdf".format(options.path,options.iter,i),0)
+		v.write_compressed("{}/threed_{:02d}_{:02d}.hdf".format(options.path,options.iter,i),0,12)
 
 	print("Done")
 	E2end(logid)
