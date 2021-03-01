@@ -481,6 +481,7 @@ def handle_exceptional_cases(sxcmd):
 		sxcmd.token_dict["mrc_reloc_folder"].type = "dir"
 	elif sxcmd.name == "sp_higher_ord_abber":
 		sxcmd.token_dict["post_refine_folder"].type = "dir"
+		sxcmd.token_dict["mrc_reloc_folder"].type = "dir"
 	elif sxcmd.name == "sp_sort3d_depth":
 		assert(sxcmd.token_dict["output_dir"].key_base == "output_dir")
 		assert(sxcmd.token_dict["output_dir"].type == "output")

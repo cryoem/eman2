@@ -15379,7 +15379,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.key_base = "post_refine_folder";
         token.key_prefix = "";
         token.label = "Post Refine Folder";
-        token.help = "Input folder is the directory where the results of the post refiner are present. Python routine automatically locates all the required files used for polishing. ";
+        token.help = "Input folder is the directory where the results of the post refiner are present and python routine automatically locates all the required files used for polishing. ";
         token.group = "main";
         token.is_required = True;
         token.is_locked = False;
@@ -15411,7 +15411,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.key_base = "estimate_magnification";
         token.key_prefix = "--";
         token.label = "estimate_magnification";
-        token.help = "";
+        token.help = "Estimate magnification of dataset . ";
         token.group = "main";
         token.is_required = False;
         token.is_locked = False;
@@ -15427,7 +15427,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.key_base = "estimate_beamtilt";
         token.key_prefix = "--";
         token.label = "estimate_beamtilt";
-        token.help = "";
+        token.help = "Estimate beamtilt from the dataset. ";
         token.group = "main";
         token.is_required = False;
         token.is_locked = False;
@@ -15443,7 +15443,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.key_base = "estimate_trefoil";
         token.key_prefix = "--";
         token.label = "estimate_trefoil";
-        token.help = "";
+        token.help = "estimate 3-fold astigmatism per optics group .";
         token.group = "main";
         token.is_required = False;
         token.is_locked = False;
@@ -15459,7 +15459,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.key_base = "estimate_order_aberation";
         token.key_prefix = "--";
         token.label = "estimate_order_aberation";
-        token.help = ". ";
+        token.help = "Estimate the 4th order aberation .";
         token.group = "main";
         token.is_required = False;
         token.is_locked = False;
@@ -15475,7 +15475,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.key_base = "perform_CTF_params_fit";
         token.key_prefix = "--";
         token.label = "perform_CTF_params_fit";
-        token.help = ". ";
+        token.help = "Perform CTF parameter fitting. ";
         token.group = "main";
         token.is_required = False;
         token.is_locked = False;
@@ -15491,7 +15491,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.key_base = "fit_defocus_micrograph";
         token.key_prefix = "--";
         token.label = "fit_defocus_micrograph";
-        token.help = ". ";
+        token.help = "Fit defocus based on micrographs. ";
         token.group = "main";
         token.is_required = False;
         token.is_locked = False;
@@ -15507,7 +15507,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.key_base = "fit_defocus_particle";
         token.key_prefix = "--";
         token.label = "fit_defocus_particle";
-        token.help = ". ";
+        token.help = "Fit defocus based on particles. ";
         token.group = "main";
         token.is_required = False;
         token.is_locked = False;
@@ -15523,7 +15523,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.key_base = "fit_astigmatism_micrograph";
         token.key_prefix = "--";
         token.label = "fit_astigmatism_micrograph";
-        token.help = ". ";
+        token.help = "Fit astigmatism based on micrographs .";
         token.group = "main";
         token.is_required = False;
         token.is_locked = False;
@@ -15539,7 +15539,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.key_base = "fit_astigmatism_particle";
         token.key_prefix = "--";
         token.label = "fit_astigmatism_particle";
-        token.help = ". ";
+        token.help = "Fit astigmatism based on particles. ";
         token.group = "main";
         token.is_required = False;
         token.is_locked = False;
@@ -15555,7 +15555,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.key_base = "fit_bfactor_micrograph";
         token.key_prefix = "--";
         token.label = "fit_bfactor_micrograph";
-        token.help = ". ";
+        token.help = "Fit bfactor based on micrographs. ";
         token.group = "main";
         token.is_required = False;
         token.is_locked = False;
@@ -15571,7 +15571,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.key_base = "fit_bfactor_particle";
         token.key_prefix = "--";
         token.label = "fit_bfactor_particle";
-        token.help = ". ";
+        token.help = "Fit bfactor based on particles. ";
         token.group = "main";
         token.is_required = False;
         token.is_locked = False;
@@ -15587,7 +15587,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.key_base = "fit_phase_shift_micrograph";
         token.key_prefix = "--";
         token.label = "fit_phase_shift_micrograph";
-        token.help = ". ";
+        token.help = "Fit phase shift estimation for micrographs .";
         token.group = "main";
         token.is_required = False;
         token.is_locked = False;
@@ -15603,7 +15603,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.key_base = "fit_phase_shift_particle";
         token.key_prefix = "--";
         token.label = "fit_phase_shift_particle";
-        token.help = ". ";
+        token.help = "Fit phase shift estimation for particles. ";
         token.group = "main";
         token.is_required = False;
         token.is_locked = False;
@@ -15619,7 +15619,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.key_base = "min_res_fit";
         token.key_prefix = "--";
         token.label = "min_res_fit";
-        token.help = ". ";
+        token.help = "minimum resolution value for fitting ";
         token.group = "main";
         token.is_required = False;
         token.is_locked = False;
@@ -15683,7 +15683,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.key_base = "relion_ctfrefine_executable";
         token.key_prefix = "--";
         token.label = "relion ctf refine executable";
-        token.help = "Similar to the issue of relion mpirun executable, it can be sometime necessary to provide the specific relion ctf refine executable also. Just type which relion_ctf_refine_mpi and copy the path here. ";
+        token.help = "Similar to the issue of relion mpirun executable, it can be sometime necessary to provide the specific relion ctf refine executable also for that just type which relion_ctf_refine_mpi and copy the path here. ";
         token.group = "main";
         token.is_required = False;
         token.is_locked = False;
@@ -15725,6 +15725,22 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.default = "1";
         token.restore = [['1'], ['1']];
         token.type = "int";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token
+        token = SXcmd_token();
+        token.key_base = "mrc_reloc_folder";
+        token.key_prefix = "--";
+        token.label = "mrc relocation folder";
+        token.help = "In case if the mrcs images were moved from original location where they were generated to a new location. Then the user has to provide a path directory link to the new location . ";
+        token.group = "advanced";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', '']];
+        token.default = "none";
+        token.restore = [['none'], ['none']];
+        token.type = "dir";
         sxcmd.token_list.append(token);
         sxcmd.token_dict[token.key_base] = token
 

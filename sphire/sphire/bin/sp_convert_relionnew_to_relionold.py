@@ -209,6 +209,13 @@ def main():
     except KeyError:
         return 1
 
+    rename_keys = (('_rlnHelicalTrackLengthAngst', '_rlnHelicalTrackLength'),)
+    for new_key, old_key in rename_keys:
+        try:
+            star_file[tag_key].loc[:, old_key] = star_file[tag_key].loc[:, new_key]
+        except KeyError:
+            pass
+
     for val_particles, df_particles in particle_keys:
         for val_optics, df_optics in optics_keys:
             if val_particles == val_optics:
@@ -216,8 +223,8 @@ def main():
                     if key == '_rlnImagePixelSize':
                         new_key = '_rlnDetectorPixelSize'
                         star_file[tag_key].loc[df_particles.index, '_rlnMagnification'] = 10000
-                    elif key == '_rlnHelicalTrackLengthAngst':
-                        new_key = '_rlnHelicalTrackLength'
+                    # elif key == '_rlnHelicalTrackLengthAngst':
+                    #     new_key = '_rlnHelicalTrackLength'
                     else:
                         new_key = key
 

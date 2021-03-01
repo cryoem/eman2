@@ -194,6 +194,13 @@ def parse_parameters(args):
         default= 1,
     )
 
+    parser.add_argument(
+        "--mrc_reloc_folder",
+        type=str,
+        help="",
+        default=""
+    )
+
     return parser.parse_args()
 
 
@@ -469,6 +476,18 @@ def run(args):
 
             subprocess.run(args=[sph2rel_call], shell=True, text=True)
 
+            if options.mrc_reloc_folder is not "":
+                bdb_star = star.StarFile(
+                    os.path.join(os.path.join(os.getcwd(), os.path.join(str(options.Output_folder), "BDB2STAR")),
+                                 'sphire2relion.star'))
+                old_micrograph_name = bdb_star[""]['_rlnMicrographName']
+                new_micrograph_name = old_micrograph_name.apply(lambda x: os.path.join(options.mrc_reloc_folder
+                                                                                       , os.path.basename(x)
+                                                                                       ))
+                bdb_star[""]['_rlnMicrographName'] = new_micrograph_name
+
+                bdb_star.write_star_file(overwrite=True)
+
 
             #### This wont be necessary in cases where the entire pipeline was run with MotionCorr shifts
             # bdb_star = star.StarFile(os.path.join(os.path.join(os.getcwd(), os.path.join(str(options.Output_folder), "BDB2STAR")),
@@ -486,45 +505,49 @@ def run(args):
         if options.estimate_magnification:
             total_flag += "--fit_aniso" + " " + "--kmin_mag " + str(options.min_res_fit)
         else:
-            pass
+            if options.perform_CTF_params_fit:
+                if options.fit_defocus_micrograph:
+                    flag_defocus = 'm'
+                    total_flag += "--fit_defocus" + " " + "--kmin_defocus " + str(options.min_res_fit)
+                elif options.fit_defocus_particle:
+                    flag_defocus = 'p'
+                    total_flag += "--fit_defocus" + " " + "--kmin_defocus " + str(options.min_res_fit)
+                else:
+                    flag_defocus = 'f'
 
-        if options.perform_CTF_params_fit and not options.estimate_magnification:
-            if options.fit_defocus_micrograph:
-                flag_defocus = 'm'
-            elif options.fit_defocus_particle:
-                flag_defocus = 'p'
-            else:
-                pass
+                if options.fit_astigmatism_micrograph:
+                    flag_astig = 'm'
+                elif options.fit_astigmatism_particle:
+                    flag_astig = 'p'
+                else :
+                    pass
 
-            if options.fit_astigmatism_micrograph:
-                flag_astig = 'm'
-            elif options.fit_astigmatism_particle:
-                flag_astig = 'p'
-            else :
-                pass
+                if options.fit_bfactor_micrograph:
+                    flag_bfactor = 'm'
+                elif options.fit_bfactor_particle:
+                    flag_bfactor = 'p'
+                else :
+                    pass
 
-            if options.fit_bfactor_micrograph:
-                flag_bfactor = 'm'
-            elif options.fit_bfactor_particle:
-                flag_bfactor = 'p'
-            else :
-                pass
+                if options.fit_phase_shift_micrograph:
+                    flag_phase_shift = 'm'
+                elif options.fit_phase_shift_particle:
+                    flag_phase_shift = 'p'
+                else :
+                    pass
 
-            if options.fit_phase_shift_micrograph:
-                flag_phase_shift = 'm'
-            elif options.fit_phase_shift_particle:
-                flag_phase_shift = 'p'
-            else :
-                pass
+                fit_mode = flag_phase_shift + flag_defocus + flag_astig + 'f' + flag_bfactor
+                total_flag += " " + "--fit_mode " + str(fit_mode)
 
-            fit_mode = flag_phase_shift + flag_defocus + flag_astig + 'f' + flag_bfactor
-            total_flag += "--fit_defocus" + " " + "--kmin_defocus " + str(options.min_res_fit) + \
-                          " " + "--fit_mode " + str(fit_mode)
+                if options.estimate_beamtilt and not options.estimate_trefoil:
+                    total_flag += " " +  "--fit_beamtilt" + " " + "--kmin_tilt " + str(options.min_res_fit)
+                else :
+                    total_flag += " " + "--fit_beamtilt" + " " + "--kmin_tilt " + str(options.min_res_fit) + " " + "--odd_aberr_max_n 3"
+                if options.estimate_order_aberation:
+                    total_flag += " " + "--fit_aberr"
 
-        if options.estimate_order_aberation and not options.estimate_magnification:
-            total_flag += "--fit_aberr"
-
-
+        print("flags for the all commands is", total_flag)
+        print("pixel size obtained is" , post_refine_options.pixel_size[0])
         time.sleep(5)
 
         ### now we need to decide we want to run it on a single PC workstation or on cluster

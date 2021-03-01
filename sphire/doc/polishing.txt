@@ -8,7 +8,7 @@ Relion Polishing: Apply relion polishing on SPHIRE generated stacks
 
 Usage in command line
 
-  sp_polishing.py post_refine_folder motioncorr_starfile output_folder training_params --first_frame --last_frame --bfac_minfreq --bfac_maxfreq --min_no_particles --submission_template --submission_command --relion_mpirun_executable --relion_polishing_executable --mpi_procs --no_of_threads
+  sp_polishing.py post_refine_folder motioncorr_starfile output_folder training_params --first_frame --last_frame --bfac_minfreq --bfac_maxfreq --min_no_particles --submission_template --submission_command --relion_mpirun_executable --relion_polishing_executable --mpi_procs --no_of_threads --mrc_reloc_folder
   
 \\
 ===== Typical usage =====
