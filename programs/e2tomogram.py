@@ -358,7 +358,7 @@ def main():
 			ttparams, loss0= do_patch_tracking(imgs, ttparams, options)
 			#ttparams, loss0= do_patch_tracking(imgs, ttparams, options)
 			if options.writetmp:
-				make_ali(imgs_500, ttparams, options, outname=os.path.join(path,f"patch_ali_{itr:02d}.hdf"))
+				make_ali(imgs_500, ttparams, options, outname=os.path.join(options.tmppath,f"patch_ali_{itr:02d}.hdf"))
 			
 			
 	pks=np.zeros((options.npk, 3))
@@ -1934,6 +1934,8 @@ def refine_one_iter(imgs, allparams, options, idx=[]):
 		#### this refines the global rotation around z axis 
 		res=minimize(global_rot, [0], (ptclpos, apms, options), method='Powell',options={'ftol': 1e-4, 'disp': False, "maxiter":30})
 		res=res.x*1
+		try: res=res[0]
+		except: pass
 		print("refine global tilt_z {:.2f}, loss {:.2f} -> {:.2f}".format(
 			float(res), float(global_rot([0],ptclpos,apms, options)),
 			float(global_rot([res],ptclpos,apms, options))))
@@ -2093,6 +2095,8 @@ def refine_lowres(imgs, allparams, options):
 		print("   {},{}".format(res.x, res.fun))
 		
 		rt=res.x
+		try:rt=rt[0]
+		except:pass
 		tpm[:,2]+=rt
 		r=-rt*np.pi/180.
 		rotmat=np.array([[np.cos(r), -np.sin(r)], [np.sin(r), np.cos(r)]])
