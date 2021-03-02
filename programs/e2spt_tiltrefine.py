@@ -43,7 +43,7 @@ def main():
 	parser.add_argument("--maxalt", type=float,help="max altitude to insert to volume", default=45.0, guitype='floatbox',row=3, col=2,rowspan=1, colspan=1)	
 	
 	parser.add_argument("--mask", type=str, default="auto" ,help="Refinement and reprojection masking. Default uses mask from source",guitype='filebox',browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=4, col=0,rowspan=1, colspan=2)	
-	parser.add_argument("--maskalign", type=str,help="Mask to apply during alignment, but not the final model. Default is to use the same mask.", default="auto", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=5, col=0,rowspan=1, colspan=2)
+	parser.add_argument("--maskalign", type=str,help="Mask to apply during alignment, but not the final model. Default is to use the same mask.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=5, col=0,rowspan=1, colspan=2)
 	
 	parser.add_argument("--nogs", action="store_true", default=False ,help="Skip gold standard. This is not a great idea...", guitype='boolbox',row=4, col=2,rowspan=1, colspan=1)
 	
