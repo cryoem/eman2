@@ -2292,6 +2292,9 @@ class EMImageInspectorMX(QtWidgets.QWidget):
 		self.bsavedata = QtWidgets.QPushButton("Save")
 		self.vbl2.addWidget(self.bsavedata)
 
+		self.bshow2d = QtWidgets.QPushButton("Open 2D")
+		self.vbl2.addWidget(self.bshow2d)
+		
 		if allow_opt_button:
 			self.opt_fit = QtWidgets.QPushButton("Opt. Fit")
 			self.vbl2.addWidget(self.opt_fit)
@@ -2390,6 +2393,7 @@ class EMImageInspectorMX(QtWidgets.QWidget):
 		self.mouse_mode_but_grp.buttonClicked[QtWidgets.QAbstractButton].connect(self.mouse_mode_button_clicked)
 
 		self.bsavedata.clicked[bool].connect(self.save_data)
+		self.bshow2d.clicked[bool].connect(self.show_2d)
 		if allow_opt_button:
 			self.opt_fit.clicked[bool].connect(self.target().optimize_fit)
 		self.bsnapshot.clicked[bool].connect(self.snapShot)
@@ -2520,6 +2524,13 @@ class EMImageInspectorMX(QtWidgets.QWidget):
 
 	def save_data(self):
 		self.target().save_data()
+
+	def show_2d(self):
+		from .emimage2d import EMImage2DWidget
+		view=EMImage2DWidget()
+		view.set_data(self.target().data)
+		view.show()
+#		view._raise()
 
 	def save_lst(self):
 		self.target().save_lst()
