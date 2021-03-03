@@ -49,6 +49,7 @@ def main():
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default="")
 	parser.add_argument("--transonly",action="store_true",help="translational alignment only",default=False)
 	parser.add_argument("--refine",action="store_true",help="local refinement from xform in header.",default=False)
+	parser.add_argument("--refinetry",type=int,help="Number of local perturbations to initialize local alignment with (default=8)",default=8)
 	parser.add_argument("--realign",action="store_true",help="realigns the average to the initial reference to prevent drift in C1 refinements",default=False)
 	parser.add_argument("--randphi",action="store_true",help="randomize phi for refine search",default=False)
 	parser.add_argument("--rand180",action="store_true",help="include 180 degree rotation for refine search",default=False)
@@ -203,7 +204,7 @@ def main():
 		gd=" --goldcontinue"		
 		
 		if options.refine:
-			gd+=" --refine --maxang {:.1f}".format(options.maxang)
+			gd+=" --refine --maxang {:.1f} --refinetry {:d} ".format(options.maxang,options.refinetry)
 			if options.randphi:
 				gd+=" --randphi"
 			if options.rand180:

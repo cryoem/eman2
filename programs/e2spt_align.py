@@ -560,9 +560,11 @@ class SptAlignTask(JSTask):
 					initxf=b["xform.align3d"]
 				xfs=[initxf]
 				
+				print("a ",xfs)
 				if options.test180:
 					xfs.extend([r180*o for o in xfs])
 				
+				print("b ",xfs)
 				for ii in range(len(xfs), ntry):
 					ixf=initxf.get_params("eman")
 					if options.randphi:
@@ -579,6 +581,7 @@ class SptAlignTask(JSTask):
 						v=(0,0,1)
 					xf=Transform({"type":"spin", "n1":v[0], "n2":v[1], "n3":v[2],"omega":options.maxang*np.random.randn()/3.0})
 					xfs.append(xf*ixf)
+				print("c ",xfs, ntry)
 				
 				## rotate back to the first asym unit
 				xfs=[reduce_sym(xf, options.sym) for xf in xfs]
