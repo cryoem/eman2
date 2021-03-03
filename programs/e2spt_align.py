@@ -624,6 +624,7 @@ class SptAlignTask(JSTask):
 #					print("rotate_translate_3d_tree",b, aligndic, options.nsoln)
 					c=ref.xform_align_nbest("rotate_translate_3d_tree",b, aligndic, options.nsoln)
 			
+			c[0]["xform.start"]=[x.inverse() for x in xfs]		# since we do this for the output...
 			
 			
 			for cc in c : cc["xform.align3d"]=cc["xform.align3d"].inverse()
