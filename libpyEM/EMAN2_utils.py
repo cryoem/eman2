@@ -202,7 +202,13 @@ def make_path(suffix):
 	pthns=[int(i.rsplit("_",1)[-1]) for i in os.listdir(".") if i[:len(suffix)]==suffix]
 	try: newn=max(pthns)+1
 	except: newn=0
-	path=f"{suffix}{newn}"
+	if newn>99:
+		path=f"{suffix}{newn:03d}"
+	else:
+		path=f"{suffix}{newn:02d}"
+	
+	try: os.mkdir(path)
+	except: pass
 	
 	return path
 
