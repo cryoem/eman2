@@ -475,7 +475,7 @@ def main():
 			run("e2proc3d.py {oddfile} {oddfile}  --multfile {path}mask.hdf {normproc} {postproc} {symopt} ".format(oddfile=oddfile,path=path,itr=options.iter,normproc=massnorm,postproc=m3dpostproc,symopt=symopt))
 			
 		else:
-			print("ERROR: invalid tophat option. Must be 'global' or 'local'.")
+			print("ERROR: invalid tophat option. Must be: global, local or localwiener. localreal and localold available for backwards compatibility")
 			sys.exit(1)
 		
 		compress_hdf(evenfile,options.compressbits)

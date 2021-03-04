@@ -153,11 +153,7 @@ Will read metadata from the specified spt_XX directory, as produced by e2spt_ali
 	(options, args) = parser.parse_args()
 
 	if options.path == None:
-		fls=[int(i[-2:]) for i in os.listdir(".") if i[:4]=="spt_" and len(i)==6 and str.isdigit(i[-2:])]
-		if len(fls)==0 : 
-			print("Error, cannot find any spt_XX folders")
-			sys.exit(2)
-		options.path = "spt_{:02d}".format(max(fls))
+		options.path=num_path_last("spt_")
 		if options.verbose : print("Working in : ",options.path)
 
 	if options.iter<0 :

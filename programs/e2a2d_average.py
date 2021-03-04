@@ -33,11 +33,7 @@ def main():
 	(options, args) = parser.parse_args()
 
 	if options.path == None:
-		fls=[int(i[-2:]) for i in os.listdir(".") if i[:4]=="m2d_" and len(i)==6 and str.isdigit(i[-2:])]
-		if len(fls)==0 : 
-			print("Error: No m2d_* folders found")
-			sys.exit(1)
-		options.path = "m2d_{:02d}".format(max(fls))
+		options.path = num_path_last("m2d_")
 		if options.verbose : print("Working in folder: ",options.path)
 
 	if options.iter<=0 :

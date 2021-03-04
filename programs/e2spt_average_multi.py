@@ -230,11 +230,7 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 		print("--parallel converted to --threads for efficiency")
 
 	if options.path == None:
-		fls=[int(i[-2:]) for i in os.listdir(".") if i[:4]=="spt_" and len(i)==6 and str.isdigit(i[-2:])]
-		if len(fls)==0 : 
-			print("Error, cannot find any spt_XX folders")
-			sys.exit(2)
-		options.path = "spt_{:02d}".format(max(fls))
+		options.path=num_path_last("spt_")
 		if options.verbose : print("Working in : ",options.path)
 		
 	options.path=options.path.strip('/\\')
@@ -430,7 +426,8 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 	if options.mask: mask=EMData(options.mask)
 	for i,v in enumerate(avs):
 		if options.mask: v.mult(mask)
-		v.write_image("{}/threed_{:02d}_{:02d}.hdf".format(options.path,options.iter,i),0)
+#		v.write_image("{}/threed_{:02d}_{:02d}.hdf".format(options.path,options.iter,i),0)
+		v.write_compressed("{}/threed_{:02d}_{:02d}.hdf".format(options.path,options.iter,i),0,12)
 
 	print("Done")
 	E2end(logid)

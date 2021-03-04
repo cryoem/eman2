@@ -35,7 +35,6 @@ from builtins import range
 
 from EMAN2 import *
 
-from EMAN2_utils import make_path
 import numpy as np
 import matplotlib.pyplot as plt
 import sklearn.decomposition as skdc
@@ -196,7 +195,7 @@ def main():
 	imgsnp=np.hstack([dv.real, dv.imag])
 	print(dv.real.shape, imgsnp.shape)
 	
-	options.outpath = make_path("sptcls")
+	options.outpath = num_path_new("sptcls")
 	print("Output will be written to {}".format(options.outpath))
 
 	#### real space version:

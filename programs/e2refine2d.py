@@ -141,16 +141,9 @@ def main():
 	if options.classrefsf :
 		print("Warning: classrefsf option has no effect on e2refine2d.py")
 
-	if options.path and ("/" in options.path or "#" in options.path) :
-		print("Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. ")
-		sys.exit(1)
 	if options.path == None:
-		fls=[int(i[-2:]) for i in os.listdir(".") if i[:4]=="r2d_" and len(i)==6]
-		if len(fls)==0 : fls=[0]
-		options.path = "r2d_{:02d}".format(max(fls)+1)
-		try: os.mkdir(options.path)
-		except: pass
-
+		options.path=num_path_new("r2d_")
+		
 	if options.centeracf : 
 		print("Warning: the --centeracf option has been removed from e2refine2d in favor of a new centering scheme. Ignoring option.")
 		

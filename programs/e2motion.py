@@ -78,7 +78,7 @@ def main():
 	(options, args) = parser.parse_args()
 	
 	if options.path==None:
-		options.path=numbered_path("m2d",False)
+		options.path=num_path_last("m2d",False)
 #		os.makedirs(options.path)
 
 	if options.threads<1 : options.threads=num_cpus()

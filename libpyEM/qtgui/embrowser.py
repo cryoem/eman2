@@ -478,7 +478,17 @@ class EMFileType(object) :
 			# for z in range(self.dim[2]) :
 				# data.append(EMData(self.path, 0, False, Region(0, 0, z, self.dim[0], self.dim[1], 1)))
 		# else : data = EMData.read_images(self.path)
-		data=[EMData(self.path,i).process("misc.directional_sum",{"axis":"z"}) for i in range(self.nimg)]
+		modifiers = QtWidgets.QApplication.keyboardModifiers()
+		if modifiers == QtCore.Qt.ShiftModifier:
+			#print("rotate x")
+			xyz="y"
+		elif modifiers == QtCore.Qt.ControlModifier:
+			#print("rotate y")
+			xyz="x"
+		else:
+			xyz="z"
+
+		data=[EMData(self.path,i).process("misc.directional_sum",{"axis":xyz}) for i in range(self.nimg)]
 
 		try :
 			target = brws.view2ds[-1]
