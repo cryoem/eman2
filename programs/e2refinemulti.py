@@ -227,9 +227,7 @@ satisfied with the results with speed=5 you may consider reducing this number, t
 
 	
 	if options.path == None:
-		fls=[int(i[-2:]) for i in os.listdir(".") if i[:6]=="multi_" and len(i)==8]
-		if len(fls)==0 : fls=[0]
-		options.path = "multi_{:02d}".format(max(fls)+1)
+		options.path=num_path_new("multi_")
 
 	if options.threads<1 :
 		print("WARNING: threads set to an invalid value. Changing to 1, but you should really provide a reasonable number.")

@@ -50,6 +50,7 @@ def main():
 	parser.add_argument("--remaplstkeys",action="store_true", default=False, help="For JSON files where the keys are image name,# pairs referencing a .lst file, will replace each key with the original image")
 	parser.add_argument("--retype",type=str, default=None, help="For JSON files where the keys are image name,# pairs, will change the __type value in the image name in all keys")
 	parser.add_argument("--extractkey", type=str, default=None, help="This will extract a single named value from each specified file. Output will be multicolumn if the referenced label is an object, such as CTF.")
+	parser.add_argument("--extractspt", action="store_true", default=False, help="This will extract the parameters from a particle_parms JSON file in SPT projects as a multicolumn text file.")
 	parser.add_argument("--removekey", type=str, default=None, help="DANGER! This will remove all data associated with the named key from all listed .json files.")
 	parser.add_argument("--output", type=str, default="jsoninfo.txt", help="Output for text operations (not JSON) filename. default = jsoninfo.txt")
 	parser.add_argument("--setoption",type=str, default=None, help="Set a single option in application preferences, eg - display2d.autocontrast:true")
@@ -142,6 +143,18 @@ def main():
 		
 		for k in sorted(list(allkeys)): print(k)
 		
+	if options.extractspt :
+		out=open(options.output,"w")
+		out.write("# file_ptcl,score,pre_trans_x,pre_trans_y,pre_trans_z,alt,az,phi,trans_x,trans_y,trans_z\n")
+		nf=0
+		for fsp in args:
+			js=js_open_dict(fsp)
+			ks=[(eval(k)[1],eval(k)[0],k) for k in js.keys()]
+			for k in sorted(ks):
+				xf=js[k[2]]["xform.align3d"]
+				pt=xf.get_pre_trans()
+				rt=xf.get_rotation()
+				out.write(f"{k[0]}\t{js[k[2]]['score']}\t{pt[0]}\t{pt[1]}\t{pt[2]}\t{rt['az']}\t{rt['alt']}\t{rt['phi']}\t{xf.get_trans()[0]}\t{xf.get_trans()[1]}\t{xf.get_trans()[2]}\t# {k[2]}\n")
 
 	if options.extractkey :
 		out=open(options.output,"w")

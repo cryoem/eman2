@@ -9,7 +9,6 @@ import queue
 import threading
 from EMAN2jsondb import JSTask
 import re
-from EMAN2_utils import make_path
 from shutil import copy2
 
 def do_copy(a,b):
@@ -28,7 +27,7 @@ def main():
 	#parser.add_header(name="orblock0", help='Just a visual separation', title="Inputs", row=0, col=1, rowspan=1, colspan=3, mode="model")
 
 
-	parser.add_argument("--path", type=str,help="Path to the previous spt/subtlt refinement", default=None, guitype='filebox',  browser="EMBrowserWidget(withmodal=True,multiselect=False)",row=1, col=0,rowspan=1, colspan=2)
+	parser.add_argument("--path", type=str,help="Path to the previous spt/subtlt refinement (required)", default=None, guitype='filebox',  browser="EMBrowserWidget(withmodal=True,multiselect=False)",row=1, col=0,rowspan=1, colspan=2)
 	parser.add_argument("--iter", type=int,help="Start from iteration X of previous refinement", default=-1, guitype='intbox',row=1, col=2,rowspan=1, colspan=1)
 	
 	
@@ -44,7 +43,7 @@ def main():
 	parser.add_argument("--maxalt", type=float,help="max altitude to insert to volume", default=45.0, guitype='floatbox',row=3, col=2,rowspan=1, colspan=1)	
 	
 	parser.add_argument("--mask", type=str, default="auto" ,help="Refinement and reprojection masking. Default uses mask from source",guitype='filebox',browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=4, col=0,rowspan=1, colspan=2)	
-	parser.add_argument("--maskalign", type=str,help="Mask to apply during alignment, but not the final model. Default is to use the same mask.", default="auto", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=5, col=0,rowspan=1, colspan=2)
+	parser.add_argument("--maskalign", type=str,help="Mask to apply during alignment, but not the final model. Default is to use the same mask.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=5, col=0,rowspan=1, colspan=2)
 	
 	parser.add_argument("--nogs", action="store_true", default=False ,help="Skip gold standard. This is not a great idea...", guitype='boolbox',row=4, col=2,rowspan=1, colspan=1)
 	
@@ -67,7 +66,6 @@ def main():
 
 
 	parser.add_argument("--padby", type=float,default=1.5, help="pad by factor. default is 1.5")
-	parser.add_argument("--output", type=str,help="Write results to this directory. We do not recommend changing this.", default="subtlt")#, guitype='intbox',row=2, col=1,rowspan=1, colspan=1)
 	parser.add_argument("--debug", action="store_true", default=False ,help="Turn on debug mode. This will only process a small subset of the data (threads * 8 particles)")
 	parser.add_argument("--localnorm",action="store_true",help="local normalization. do not use yet....",default=False)
 	parser.add_argument("--sym", type=str,help="symmetry. will use symmetry from spt refinement by default", default="")
@@ -123,8 +121,8 @@ def main():
 		path=oldpath
 		e=EMData(os.path.join(path,"threed_{:02d}.hdf".format(itr)))
 	else:
-		path = make_path(options.output)
-		print("Writing in {}...".format(path))
+		path = num_path_new(options.path)
+		print("Writing to {}...".format(path))
 	
 		oldmap = os.path.join(oldpath,"threed_{:02d}.hdf".format(itr))
 		oem = os.path.join(oldpath,"threed_{:02d}_even.hdf".format(itr))

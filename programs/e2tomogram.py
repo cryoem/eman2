@@ -221,7 +221,7 @@ def main():
 		if options.tmppath:
 			path=options.tmppath
 		else:
-			options.tmppath=path=make_path("tomorecon")
+			options.tmppath=num_path_new("tomorecon")
 		print("Temporary files will be written in {}".format(options.tmppath))
 		
 	#### save 1k input only.
@@ -2088,8 +2088,8 @@ def refine_lowres(imgs, allparams, options):
 		print("   {},{}".format(res.x, res.fun))
 		
 		rt=res.x
-		try: rt=rt[0]
-		except: pass
+		try:rt=rt[0]
+		except:pass
 		tpm[:,2]+=rt
 		r=-rt*np.pi/180.
 		rotmat=np.array([[np.cos(r), -np.sin(r)], [np.sin(r), np.cos(r)]])

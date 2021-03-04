@@ -130,17 +130,8 @@ def main():
 			print("--threads set to match --parallel")
 	else : parstr=""
 
-	if options.path and ("/" in options.path or "#" in options.path) :
-		print("Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. ")
-		sys.exit(1)
-
 	if options.path == None:
-		fls=[int(i[-2:]) for i in os.listdir(".") if i[:5]=="r2db_" and len(i)==7]
-		if len(fls)==0 : fls=[0]
-		options.path = "r2db_{:02d}".format(max(fls)+1)
-		try: os.mkdir(options.path)
-		except: pass
-
+		options.path=num_path_new("r2db_")
 
 	fit=1
 	dcts=os.listdir(options.path)

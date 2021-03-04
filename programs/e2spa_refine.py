@@ -11,7 +11,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--ptcl", type=str,help="particle input", default="")
 	parser.add_argument("--ref", type=str,help="reference", default="")
-	parser.add_argument("--path", type=str,help="path. default is r3d_00", default="r3d_00")
+	parser.add_argument("--path", type=str,help="path. default is r3d_00", default=None)
 	parser.add_argument("--parallel", type=str,help="", default="thread:1")
 	parser.add_argument("--sym", type=str,help="sym", default="c1")
 	parser.add_argument("--res", type=float,help="The resolution that reference map is lowpass filtered to (with phase randomization) at the begining of the refinement. ", default=10)
@@ -19,7 +19,8 @@ def main():
 	parser.add_argument("--startiter", type=int,help="iter", default=0)
 	parser.add_argument("--niter", type=int,help="iter", default=10)
 	parser.add_argument("--setsf", type=str,help="structure factor", default="strucfac.txt")
-	#parser.add_argument("--slow", action="store_true", default=False ,help="slow but finer search. not used yet")
+	parser.add_argument("--tophat", type=str, default="local" ,help="Default=local, can also specify localwiener")
+	parser.add_argument("--threads", type=int,help="threads to use during postprocessing of 3d volumes", default=2)
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -29,6 +30,8 @@ def main():
 		
 	tophat=""
 	npt=EMUtil.get_image_count(options.ptcl)
+	if options.path==None: options.path=num_path_new("r3d_")
+	
 	if options.startiter==0:
 		if not os.path.isdir(options.path):
 			os.mkdir(options.path)
@@ -50,8 +53,8 @@ def main():
 			res/=2
 			
 		if i>0:
-			tophat=" --tophat local"
-		run("e2refine_postprocess.py --even {pt}/threed_{i1:02d}_even.hdf --sym {s} --setsf {sf} --restarget {rs:.1f} {tp}".format(pt=options.path, i1=i+1, s=sym, sf=options.setsf, rs=res*.8, tp=tophat))
+			tophat=" --tophat {}".format(options.tophat)
+		run("e2refine_postprocess.py --even {pt}/threed_{i1:02d}_even.hdf --sym {s} --setsf {sf} --restarget {rs:.1f} {tp} --threads {th}".format(pt=options.path, i1=i+1, s=sym, sf=options.setsf, rs=res*.8, tp=tophat, th=options.threads))
 		
 		fsc=np.loadtxt("{}/fsc_masked_{:02d}.txt".format(options.path, i+1))
 		fi=fsc[:,1]<0.2

@@ -9,7 +9,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--ptcl", type=str,help="particle input", default="")
 	parser.add_argument("--ncls", type=int,help="number of classes", default=2)
-	parser.add_argument("--path", type=str,help="path", default="r3dcls_00")
+	parser.add_argument("--path", type=str,help="path", default=None)
 	parser.add_argument("--parallel", type=str,help="", default="thread:1")
 	parser.add_argument("--sym", type=str,help="sym", default="c1")
 	parser.add_argument("--mask", type=str,help="mask file", default=None)
@@ -22,6 +22,7 @@ def main():
 	logid=E2init(sys.argv)
 	
 	sym=options.sym
+	if options.path==None: options.path=num_path_new("r3dcls_")
 	path=options.path
 	ncls=options.ncls
 	if not os.path.isdir(path):
