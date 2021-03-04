@@ -2185,7 +2185,7 @@ class EMDirEntry(object) :
 			try : 
 				tmp = EMData(self.path(), 0, True)		# try to read an image header for the file
 			except :
-				print("Error: first image missing ! : ",self.path())
+				#print("Error: first image missing ! : ",self.path())
 				return 0
 				#for i in range(1, 10) :
 					#try : tmp = EMData(self.path(), i, True)
