@@ -331,7 +331,8 @@ def main():
 			if automask3d2!=None : mask.process_inplace(automask3d2[0],automask3d2[1])
 			mask.write_compressed("{path}mask_tight.hdf".format(path=path),0,8,erase=True)
 		else:
-			mask=EMData(nx,ny,nz)
+			#mask=EMData(nx,ny,nz)
+			mask=combined.copy()
 			mask.to_one()
 			mask.process_inplace(amask3d[0],amask3d[1])
 			if automask3d2!=None : mask.process_inplace(automask3d2[0],automask3d2[1])
@@ -369,7 +370,7 @@ def main():
 
 	### Masked FSC, and tmp_ files for later filtration
 	run("e2proc3d.py {evenfile} {path}tmp_even.hdf --multfile {path}mask.hdf".format(evenfile=evenfile,path=path))
-	run("e2proc3d.py {oddfile} {path}tmp_odd.hdf --multfile {path}mask.hdf".format(oddfile=oddfile,path=path))
+	run("e2proc3d.py {oddfile} {path}tmp_odd.hdf --multfile {path}mask.hdf".format(oddfile=oddfile,path=path))	
 
 	# New FSC between the two masked volumes, which we will use for the final filter
 	cmd="e2proc3d.py {path}tmp_even.hdf {path}fsc_masked_{itr:02d}.txt --calcfsc {path}tmp_odd.hdf".format(path=path,itr=options.iter)
@@ -471,8 +472,9 @@ def main():
 			run(cmd)
 			
 			run("e2proc3d.py {path}threed_{itr:02d}.hdf {path}threed_{itr:02d}.hdf --multfile {path}mask.hdf {normproc} {postproc} {symopt} ".format(path=path,itr=options.iter,normproc=massnorm,postproc=m3dpostproc,symopt=symopt))
+						
 			run("e2proc3d.py {evenfile} {evenfile} --multfile {path}mask.hdf {normproc} {postproc} {symopt} ".format(evenfile=evenfile,path=path,itr=options.iter,normproc=massnorm,postproc=m3dpostproc,symopt=symopt))
-			run("e2proc3d.py {oddfile} {oddfile}  --multfile {path}mask.hdf {normproc} {postproc} {symopt} ".format(oddfile=oddfile,path=path,itr=options.iter,normproc=massnorm,postproc=m3dpostproc,symopt=symopt))
+			run("e2proc3d.py {oddfile} {oddfile} --multfile {path}mask.hdf {normproc} {postproc} {symopt} ".format(oddfile=oddfile,path=path,itr=options.iter,normproc=massnorm,postproc=m3dpostproc,symopt=symopt))
 			
 		else:
 			print("ERROR: invalid tophat option. Must be 'global' or 'local'.")
@@ -487,13 +489,16 @@ def main():
 		run("e2proc3d.py {oddfile} {path}threed_odd_unmasked.hdf {ampcorrect} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq} --process filter.lowpass.tophat:cutoff_abs=0.5".format(oddfile=oddfile,path=path,itr=options.iter,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=old_div(1.0,options.restarget)))
 
 		# Technically snrmult should be 1 here, but we use 2 to help speed convergence
-		cmd="e2proc3d.py {path}tmp_even.hdf {evenfile} {ampcorrect} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq} --multfile {path}mask.hdf {normproc} {postproc}".format(
+		cmd="e2proc3d.py {evenfile} {evenfile} {ampcorrect} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq}".format(
 		evenfile=evenfile,path=path,itr=options.iter,normproc=massnorm,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=old_div(1.0,options.restarget),postproc=m3dpostproc)
 		run(cmd)
 
-		cmd="e2proc3d.py {path}tmp_odd.hdf {oddfile} {ampcorrect} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq} --multfile {path}mask.hdf {normproc} {postproc}".format(
+		cmd="e2proc3d.py {oddfile} {oddfile} {ampcorrect} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq}".format(
 		oddfile=oddfile,path=path,itr=options.iter,normproc=massnorm,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=old_div(1.0,options.restarget),postproc=m3dpostproc)
 		run(cmd)
+		
+		run("e2proc3d.py {path}mask.hdf {evenfile} --process filter.lowpass.randomphase:cutoff_freq={noisecutoff} --multfile {evenfile} {normproc} {postproc}".format(evenfile=evenfile,path=path, normproc=massnorm,postproc=m3dpostproc,noisecutoff=noisecutoff))
+		run("e2proc3d.py {path}mask.hdf {oddfile} --process filter.lowpass.randomphase:cutoff_abs={noisecutoff} --multfile {oddfile} {normproc} {postproc}".format(oddfile=oddfile,path=path, normproc=massnorm,postproc=m3dpostproc,noisecutoff=noisecutoff))
 
 		### Refilter/mask
 		combined.write_compressed(combfile,0,options.compressbits,erase=True)	# write the original average back to disk
