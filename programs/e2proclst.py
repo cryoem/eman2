@@ -138,8 +138,16 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 		if '.lst' not in options.create and '.lsx' not in options.create:
 			print("\nERROR: the extension of the output file in --create must be .lst or .lsx")
 			sys.exit(1)
-
-		lst=LSXFile(options.create,False)
+			
+		### use the file comment of the first list if exist
+		if args[0].endswith(".lst"):
+			l=LSXFile(args[0], True)
+			cmt=l.filecomment.strip()
+		else:
+			cmt=""
+		
+		print(cmt)
+		lst=LSXFile(options.create,False,cmt)
 		
 		if options.mergeeo:
 			print("Merging two image stacks...")
