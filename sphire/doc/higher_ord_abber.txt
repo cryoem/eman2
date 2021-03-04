@@ -13,23 +13,16 @@ Usage in command line
 \\
 ===== Typical usage =====
 
-\\ __1. Applying polishing using exisiting training data __:
+\\ __1. Applying ctf refinement __:
 
   sp_higher_ord_abber.py 12_POSTREFINER --submission_template='asdf' --submission_command='fasd' --mpi_procs=1 --no_of_threads=12
 
-Note: The above case will use the optimize parameters from the training part.
-
-\\ __2. Applying training part of the polishing __:
-
-  sp_higher_ord_abber.py 12_POSTREFINER --mpi_procs=1 --no_of_threads=12
-
-Note: In case you want to do training part of polishing then dont provide the optimize parameter txt file
 
 \\
 ===== Input =====
 === Main Parameters ===
-  ; post_refine_folder : Post Refine Folder: Input folder is the directory where the results of the post refiner are present and python routine automatically locates all the required files used for polishing. (default required string)
-  ; output_folder : Output folder : Output folder is the directory where all the results of the polishing are saved. (default required string)
+  ; post_refine_folder : Post Refine Folder: Input folder is the directory where the results of the post refiner are present and python routine automatically locates all the required files used for ctf refinement. (default required string)
+  ; output_folder : Output folder : Output folder is the directory where all the results of the ctf refinement are saved. (default required string)
   ; %%--%%estimate_magnification : estimate_magnification  : Estimate magnification of dataset . (default False)
   ; %%--%%estimate_beamtilt : estimate_beamtilt : Estimate beamtilt from the dataset. (default False)
   ; %%--%%estimate_trefoil : estimate_trefoil : estimate 3-fold astigmatism per optics group .(default False) 
@@ -49,7 +42,7 @@ Note: In case you want to do training part of polishing then dont provide the op
   ; %%--%%relion_mpirun_executable : relion mpirun executable : Since there can be more than one mpirun environment installed on a workstation or on a cluster. It can be sometimes necessary to provide the relion specific mpirun executable. Just type which mpirun -a in a terminal and choose the one which relion requies. (default mpirun)
   ; %%--%%relion_ctfrefine_executable : relion ctf refine executable : Similar to the issue of relion mpirun executable, it can be sometime necessary to provide the specific relion ctf refine executable also for that just type which relion_ctf_refine_mpi and copy the path here. (default relion_ctf_refine_mpi)
   ; %%--%%mpi_procs : MPI Procs : The number of MPI processors used for Relion multiprocessing. (default 1)
-  ; %%--%%no_of_threads : number of threads : The number of threads use during the polishing. (default 1)
+  ; %%--%%no_of_threads : number of threads : The number of threads use during the ctf refinement. (default 1)
 
   
 \\
@@ -58,7 +51,7 @@ Note: In case you want to do training part of polishing then dont provide the op
 
 \\
 ===== Output =====
-The output is the result of the polishing saved in the output_folder directory.
+The output is the result of the ctf refinement saved in the output_folder directory.
 
 \\
 === List of Output Files ===
@@ -70,7 +63,7 @@ The output is the result of the polishing saved in the output_folder directory.
   * Let me know if you find some bugs or want some modifications or improvement in the implementation.
 \\
 ==== Reference ====
-Jasenko Zivanov, Takanori Nakane and Sjors H W Scheres: A Bayesian approach to beam-induced motion correction in cryo-EM single-particle analysis, ''IUCrJ'' 6, 5-17, January, 2019.
+Jasenko Zivanov, Takanori Nakane and Sjors H W Scheres: Estimation of high-order aberrations and anisotropic magnification from cryo-EM data sets in RELION-3.1, ''IUCrJ'' 7, 253-267, March, 2020.
 
 \\
 ==== Author / Maintainer ====
