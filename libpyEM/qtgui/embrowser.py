@@ -1612,38 +1612,38 @@ class EMStackFileType(EMFileType) :
 		
 		self.xfparms=False
 		if path.endswith(".lst"):
-			try: 
-				lst=LSXFile(path, True)
-				l=lst.read(0)
-				dic=eval(l[2].split(';')[0])
-				if isinstance(dic, dict) and 'type' in dic:
+			#try: 
+			lst=LSXFile(path, True)
+			cmt=lst.filecomment
+			if cmt.startswith("#keys: "):
+				if ("xform.align3d" in cmt) or ("xform.projection" in cmt):
 					self.xfparms=True
-				
-			except:
-				self.xfparms=False
-				pass
+			
+			#except: pass
 		
 	def actions(self) :
 		"""Returns a list of (name, callback) tuples detailing the operations the user can call on the current file"""
 		# 3-D stack
 		if self.nimg > 1 and self.dim[2] > 1:
-			return [("Show all 3D", "Show all in a single 3D window", self.show3DAll), ("Show 1st 3D", "Show only the first volume", self.show3DNew),("Show 1st 2D", "Show first volume as 2D stack", self.show2dSingle30),("Show 2nd 2D", "Show second volume as 2D stack", self.show2dSingle31),("Show All Zproj", "Show Z projection of all volumes", self.show2dStack3z),("All XYZ", "Show restricted XYZ projections of all", self.show2dStack3sec), ("Chimera", "Open in chimera (if installed)", self.showChimera), ("Save As", "Saves images in new file format", self.saveAs)]
+			rtr= [("Show all 3D", "Show all in a single 3D window", self.show3DAll), ("Show 1st 3D", "Show only the first volume", self.show3DNew),("Show 1st 2D", "Show first volume as 2D stack", self.show2dSingle30),("Show 2nd 2D", "Show second volume as 2D stack", self.show2dSingle31),("Show All Zproj", "Show Z projection of all volumes", self.show2dStack3z),("All XYZ", "Show restricted XYZ projections of all", self.show2dStack3sec), ("Chimera", "Open in chimera (if installed)", self.showChimera), ("Save As", "Saves images in new file format", self.saveAs)]
 		# 2-D stack
 		elif self.nimg > 1 and self.dim[1] > 1:
 			rtr=[("Show Stack", "Show all images together in one window", self.show2dStack), ("Show Stack+", "Show all images together in a new window", self.show2dStackNew), 
 				("Show 2D", "Show all images, one at a time in current window", self.show2dSingle), ("Show 2D+", "Show all images, one at a time in a new window", self.show2dSingleNew), 
 				("Avg All", "Unaligned average of entire stack",self.show2dAvg),("Avg Rnd Subset","Averages random min(1/4 of images,1000) multiple times",self.show2dAvgRnd),
 				("FilterTool", "Open in e2filtertool.py", self.showFilterTool), ("Save As", "Saves images in new file format", self.saveAs)]
-			if self.xfparms:
-				rtr.extend([("Plot 2D", "Plot xform", self.plot2dLstApp),("Plot 2D+", "plot xform in new window", self.plot2dLstNew)])
-			return rtr
 			
 		# 1-D stack
 		elif self.nimg > 1:
-			return [("Plot 2D", "Plot all on a single 2-D plot", self.plot2dNew), ("Save As", "Saves images in new file format", self.saveAs)]
-		else : print("Error: stackfile with < 2 images ? (%s)"%self.path)
+			rtr= [("Plot 2D", "Plot all on a single 2-D plot", self.plot2dNew), ("Save As", "Saves images in new file format", self.saveAs)]
+		else : 
+			rtr=[]
+			print("Error: stackfile with < 2 images ? (%s)"%self.path)
+			
+		if self.xfparms:
+			rtr.extend([("Plot 2D", "Plot xform", self.plot2dLstApp),("Plot 2D+", "plot xform in new window", self.plot2dLstNew)])
 
-		return []
+		return rtr
 
 	def showChimera(self, brws):
 		"""Open in Chimera"""
@@ -1695,27 +1695,26 @@ class EMStackFileType(EMFileType) :
 		brws.busy()
 		rows = []
 		print("Reading from {}...".format(self.path))
-		lst=LSXFile(self.path, True)
-		#print(lst.read(0))
-		for i in range(lst.n):
-			l=lst.read(i)
+		params=load_lst_params(self.path)
+		keys=list(params[0].keys())
+		if "xform.align3d" in keys:
+			xfs=[p["xform.align3d"].inverse().get_params("eman") for p in params]
+		elif "xform.projection" in keys:
+			xfs=[p["xform.projection"].get_params("eman") for p in params]
 			
-			for lc in l[2].split(';'):
-				dic=eval(lc)
-				if 'score' in dic:
-					scr=dic.pop('score')
-				else:
-					scr=0
-				xfkey=["type","alt","az","phi","tx","ty","tz","alpha","scale"]
-				tf=Transform({k:dic[k] for k in dic.keys() if k in xfkey})
-				t = tf.get_trans()
-				r = tf.get_rotation()
-				rows.append( [r["az"],r["alt"],r["phi"],t[0],t[1],t[2], scr])
-			sys.stdout.write("\r {}/{}".format(len(rows), lst.n))
-			sys.stdout.flush()
-		lst=None
-		data=np.array(rows).T.tolist()
-		#print(data)
+		xfkeys=["az", "alt", "phi", "tx", "ty", "tz"]
+		
+		data=[[x[k] for k in xfkeys] for x in xfs]
+		data=np.array(data)
+		
+		if "score" in keys:
+			xfkeys+=["score"]
+			scr=np.array([p["score"] for p in params])
+			data=np.hstack([data, scr[:,None]])
+		
+		data=data.T.tolist()
+		print("The {} columns are {}".format(len(xfkeys), xfkeys))
+		
 		if new:
 			target = EMPlot2DWidget()
 			brws.viewplot2d.append(target)
