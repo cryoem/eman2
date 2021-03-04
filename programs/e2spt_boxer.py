@@ -143,13 +143,13 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		self.gbl = QtWidgets.QGridLayout(self.centralWidget())
 
 		# relative stretch factors
-		self.gbl.setColumnMinimumWidth(0,200)
-		self.gbl.setRowMinimumHeight(0,200)
-		self.gbl.setColumnStretch(0,0)
-		self.gbl.setColumnStretch(1,100)
-		self.gbl.setColumnStretch(2,0)
-		self.gbl.setRowStretch(1,0)
-		self.gbl.setRowStretch(0,100)
+		#self.gbl.setColumnMinimumWidth(0,200)
+		#self.gbl.setRowMinimumHeight(0,200)
+		#self.gbl.setColumnStretch(0,0)
+		#self.gbl.setColumnStretch(1,100)
+		#self.gbl.setColumnStretch(2,0)
+		#self.gbl.setRowStretch(1,0)
+		#self.gbl.setRowStretch(0,100)
 		
 
 		# 3 orthogonal restricted projection views
@@ -390,9 +390,9 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		self.datasize=(data["nx"],data["ny"],data["nz"])
 		self.x_loc, self.y_loc, self.z_loc=data["nx"]//2,data["ny"]//2,data["nz"]//2
 
-		self.gbl.setRowMinimumHeight(1,max(250,data["nz"]))
-		self.gbl.setColumnMinimumWidth(0,max(250,data["nz"]))
-		print(data["nx"],data["ny"],data["nz"])
+		#self.gbl.setRowMinimumHeight(1,max(250,data["nz"]))
+		#self.gbl.setColumnMinimumWidth(0,max(250,data["nz"]))
+		#print(data["nx"],data["ny"],data["nz"])
 
 		self.wdepth.setRange(0,data["nz"]-1)
 		self.wdepth.setValue(data["nz"]//2)
