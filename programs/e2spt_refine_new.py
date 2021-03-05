@@ -20,8 +20,12 @@ def main():
 	parser.add_argument("--startres", type=float,help="starting maximum resolution. required when goldstandard is not specified", default=-1)
 	parser.add_argument("--ssnrwt", action="store_true", default=False ,help="weight particles by SSNR accroding to references")
 	parser.add_argument("--goldcontinue", action="store_true", default=False ,help="ues the _even/_odd version of the given reference")
+	parser.add_argument("--localrefine", action="store_true", default=False ,help="only perform local search around the solution from the last iteration")
 	parser.add_argument("--loadali2d", type=str,help="load previous 2d alignment", default=None)
 	parser.add_argument("--loadali3d", type=str,help="load previous 3d alignment", default=None)
+	parser.add_argument("--mask", type=str,help="use a customized mask for post process", default=None)
+	parser.add_argument("--maxshift", type=int, help="maximum shift. default box size/6",default=-1)
+	parser.add_argument("--maxang", type=int, help="maximum angle difference from starting point for localrefine. ",default=30)
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -49,7 +53,7 @@ def main():
 	
 	print("Preparing references...")
 	opt=""
-	if options.goldstandard>0:
+	if options.goldstandard>0 and options.goldcontinue==False:
 		res=options.goldstandard
 		refs={"even":options.ref, "odd":options.ref}
 		opt+="--process filter.lowpass.gauss:cutoff_freq={r:.4f} --process filter.lowpass.randomphase:cutoff_freq={r:.4f}".format(r=1./res)
@@ -73,6 +77,9 @@ def main():
 
 	if abs(1-ep["apix_x"]/er["apix_x"])>0.01 or ep["ny"]!=er["ny"]:
 		print("Reference-particle apix or box size mismatch. will scale/clip reference to match particles")
+		if options.mask:
+			print(" Please note the given mask will NOT be rescaled. Please scale/clip manually if needed")
+			
 		rs=er["apix_x"]/ep["apix_x"]
 		if rs>1.:
 			opt+=" --clip {} --scale {} --process mask.soft:outer_radius=-1".format(ep["nx"], rs)
@@ -86,18 +93,25 @@ def main():
 	p2=EMData(info2dname,0,True)
 	padsize=p2["ny"]
 	
-	last3d=options.loadali3d
-	last2d=options.loadali2d
+	last3d=last2d=None
 	
+	if options.loadali3d:
+		fout=f"{path}/aliptcls3d_00.lst"
+		run(f"e2proclst.py {options.loadali3d} --create {fout} --force")
+		last3d=fout
+		
+	if options.loadali2d:
+		fout=f"{path}/aliptcls2d_00.lst"
+		run(f"e2proclst.py {options.loadali2d} --create {fout} --force")
+		last2d=fout
+		
+	ppmask=setsf=tophat=""
 	if options.setsf:
 		setsf=f" --setsf {options.setsf}"
-	else:
-		setsf=""
-		
 	if options.tophat:
 		tophat=f" --tophat {options.tophat}"
-	else:
-		tophat=""
+	if options.mask:
+		ppmask=f" --mask {options.mask}"
 	
 	iters=options.iters.split(',')
 	keydic={'p':"Subtomogram alignment", 't': "Subtilt translational refinement", 'r': "Subtilt rotational refinement", 'd':"Defocus refinement"}
@@ -109,12 +123,20 @@ def main():
 		print("### {}....".format(keydic[itype]))
 		
 		if itype=='p':
-			ptcls=f"{path}/particle_info_3d.lst"
-			cmd=f"e2spt_align_subtlt.py {ptcls} {ref} --path {path} --iter {itr} --goldcontinue --fromscratch --maxres {res} --parallel {options.parallel}"
+			opt=""
+			if options.localrefine and last3d:
+				ptcls=last3d
+				opt+=f" --maxshift {options.maxshift} --maxang {options.maxang}"
+			else:
+				ptcls=info3dname
+				opt+=" --fromscratch"
+			
 			if last2d:
-				cmd+=f" --plst {last2d}"
+				opt+=f" --plst {last2d}"
 				
+			cmd=f"e2spt_align_subtlt.py {ptcls} {ref} --path {path} --iter {itr} --goldcontinue --maxres {res} --parallel {options.parallel} {opt}"
 			run(cmd)
+			
 			last3d=f"{path}/aliptcls3d_{itr:02d}.lst"
 			
 		if itype=='t' or itype=='r':
@@ -125,6 +147,8 @@ def main():
 			cmd=f"e2spt_subtlt_local.py --ref {ref} --path {path} --iter {itr} --maxres {res} --parallel {options.parallel} --goldcontinue --refine_trans --aliptcls3d {last3d}"
 			if itype=='r':
 				cmd+=" --refine_rot"
+			if options.maxshift>0:
+				cmd+=f" --maxshift {options.maxshift}"
 				
 			run(cmd)
 			last2d=f"{path}/aliptcls2d_{itr:02d}.lst"
@@ -144,12 +168,12 @@ def main():
 			run(f"e2spa_make3d.py --input {path}/aliptcls2d_{itr:02d}.lst --output {path}/threed_{itr:02d}_{eo}.hdf --keep {options.keep} --clsid {eo} --parallel thread:{options.threads} --outsize {boxsize} --pad {padsize}")
 			
 		if options.ssnrwt and itr==len(iters):
-			run(f"e2refine_postprocess.py --even {path}/threed_{itr:02d}_even.hdf {setsf} --threads {options.threads}")
+			run(f"e2refine_postprocess.py --even {path}/threed_{itr:02d}_even.hdf {setsf} --threads {options.threads} {ppmask}")
 			res=calc_resolution(f"{path}/fsc_masked_{itr:02d}.txt")
 			for eo in ["even", "odd"]:
 				run(f"e2spa_make3d.py --input {path}/aliptcls2d_{itr:02d}.lst --output {path}/threed_{itr:02d}_{eo}.hdf --keep {options.keep} --clsid {eo} --parallel thread:{options.threads} --outsize {boxsize} --pad {padsize} --ref {path}/threed_{itr:02d}_{eo}.hdf --maxres {res}")
 			
-		run(f"e2refine_postprocess.py --even {path}/threed_{itr:02d}_even.hdf {setsf} {tophat} --threads {options.threads}")
+		run(f"e2refine_postprocess.py --even {path}/threed_{itr:02d}_even.hdf {setsf} {tophat} --threads {options.threads} {ppmask}")
 		res=calc_resolution(f"{path}/fsc_masked_{itr:02d}.txt")
 	
 	E2end(logid)

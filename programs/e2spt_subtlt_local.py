@@ -19,7 +19,7 @@ def main():
 	parser.add_argument("--minres",type=float,help="Minimum resolution to consider in alignment (in A, not 1/A)",default=0)
 	parser.add_argument("--smooth",type=float,help="smooth local motion by this factor. smoother local motion with larger numbers. default 100",default=100)
 	parser.add_argument("--smoothN",type=int,help="number of neighboring particles used for smoothing. default 15",default=15)
-	parser.add_argument("--maxshift",type=float,help="max shift in pixel. default 16",default=16)
+	parser.add_argument("--maxshift",type=float,help="max shift in pixel. default default box size/6",default=-1)
 	parser.add_argument("--refine_trans",action="store_true",help="do translational alignment.",default=False)
 	parser.add_argument("--refine_rot",action="store_true",help="do translational-rotational alignment. better to start from an existing translational alignment.",default=False)
 	parser.add_argument("--refine_defocus",action="store_true",help="do defocus refinement. need aliptcls input. doesn't work with refine_trans or rot yet..",default=False)
@@ -201,6 +201,9 @@ class SptAlignTask(JSTask):
 		for r in refs:
 			a=r.get_clip(Region(0,(ny-ss)//2, (ny-ss)//2, ss+2, ss, ss))
 			refsmall.append(a)	
+		
+		if options.maxshift<0:
+			options.maxshift=ss//6
 		
 		if options.debug: print("max res: {:.2f}, max box size {}".format(options.maxres, maxy))
 		

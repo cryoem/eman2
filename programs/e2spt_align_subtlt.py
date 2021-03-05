@@ -29,6 +29,11 @@ def main():
 	parser.add_argument("--use3d",action="store_true",help="use projection of 3d particles instead of 2d sub tilt series",default=False)
 	parser.add_argument("--debug",action="store_true",help=".",default=False)
 	parser.add_argument("--plst",type=str,default=None,help="list of 2d particle with alignment parameters. will reconstruct before alignment.")
+	
+	parser.add_argument("--maxshift", type=int, help="maximum shift. default box size/6",default=-1)
+	parser.add_argument("--maxang", type=int, help="maximum angle difference from starting point. ignored when fromscratch is on",default=30)
+
+	
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
@@ -111,9 +116,19 @@ class SptAlignTask(JSTask):
 				txf=x
 			else:
 				txf=Transform({"type":"eman", "tx":x[0], "ty":x[1], "tz":x[2],"alt":x[3], "az":x[4], "phi":x[5]})
-				
-			sft=np.linalg.norm(txf.get_trans())
-			#if sft>mxsft: return 1
+			
+			if return_2d==False:
+				if initxf:
+					t=Transform(initxf.inverse())
+					t.set_trans(t.get_trans()*ss/ny)
+					t=t*txf
+					sft=np.linalg.norm(t.get_trans())
+					a=t.get_rotation("spin")["omega"]
+					if sft>mxsft or a>options.maxang: return 1
+					
+				else:
+					sft=np.linalg.norm(txf.get_trans())
+					if sft>mxsft: return 1
 		
 			xfs=[p*txf for p in pjxfsmall]
 			pjs=[refsmall.project('gauss_fft',{"transform":x, "returnfft":1}) for x in xfs]
@@ -122,16 +137,16 @@ class SptAlignTask(JSTask):
 			fscs=fscs.reshape((len(fscs), 3, -1))[:,1,:]
 			scr=-np.mean(fscs[:, minp:maxp], axis=1)
 			
-			if not return_2d:
-				scr=np.mean(scr)
-			
-			return scr
+			if return_2d:
+				return scr
+			else:
+				return np.mean(scr)
 		
 		callback(0)
 		rets=[]
 		options=self.options
 		info3d=load_lst_params(options.info3dname)
-		if "xform.align3d" not in info3d[0]:
+		if "xform.align3d" not in self.data[0]:
 			options.fromscratch=True
 		
 		reffile=options.ref
@@ -234,11 +249,13 @@ class SptAlignTask(JSTask):
 			
 			#### start from coarse alignment / do refine search around previous solution
 			if options.fromscratch:
+				initxf=None
 				curxfs=[]
 				npos=32
 				ifirst=0
 			else:
-				curxfs=[info["xform.align3d"].inverse()]
+				initxf=data["xform.align3d"].inverse()
+				curxfs=[initxf]
 				npos=1
 				ifirst=len(ssrg)-1
 			
@@ -251,7 +268,11 @@ class SptAlignTask(JSTask):
 				if ss>=maxy: 
 					ss=maxy
 			
-				mxsft=ss//6
+				if options.maxshift<0:
+					mxsft=ss//6
+				else:
+					mxsft=int(options.maxshift*ss/ny)
+					
 				astep=89.999/floor((np.pi/(3*np.arctan(2./ss)))) ### copied from spt tree aligner
 				newxfs=[]
 				score=[]
