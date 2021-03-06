@@ -284,7 +284,7 @@ class EMSliceItem3D(EMItem3D):
 		self.force_texture_update = True
 
 		self.colors = get_default_gl_colors()
-		self.isocolor = "bluewhite"
+		self.isocolor = "custom"
 
 		# color Needed for inspector to work John Flanagan
 		self.diffuse = self.colors[self.isocolor]["diffuse"]
@@ -655,7 +655,7 @@ class EMVolumeItem3D(EMItem3D):
 
 		self.texture_name = 0
 		self.colors = get_default_gl_colors()
-		self.isocolor = "bluewhite"
+		self.isocolor = "custom"
 		self.isothr = None #Will be set in self.dataChanged()
 
 		# color Needed for inspector to work John Flanagan
@@ -1101,7 +1101,7 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		cbmframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		cbmlayout = QtWidgets.QGridLayout()
 		cbmlayout.setAlignment(QtCore.Qt.AlignTop)
-		self.colorbymap = QtWidgets.QCheckBox("Color By Map")
+		self.colorbymap = QtWidgets.QCheckBox("Color by Map     low R->G->B hi")
 		self.colorbymap.setEnabled(False)
 		self.colormap = QtWidgets.QLineEdit("")
 		self.cmapbrowse = QtWidgets.QPushButton("Browse")
@@ -1372,7 +1372,7 @@ class EMIsosurface(EMItem3D,EM3DModel):
 	def loadColors(self):
 		self.colors = get_default_gl_colors()
 
-		self.isocolor = "bluewhite"
+		self.isocolor = "custom"
 
 	def setSample(self,val):
 		if ( self.smpval != int(val)):

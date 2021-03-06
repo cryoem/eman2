@@ -310,6 +310,7 @@ class EMFileType(object) :
 
 		target.insertNewNode(display_path(self.path), data, parentnode = target)
 		iso = emdataitem3d.EMIsosurface(data)
+		self.loadIsoColor(iso)
 		target.insertNewNode('Isosurface', iso, parentnode = data)
 		target.initialViewportDims(data.getData().get_xsize())	# Scale viewport to object size
 		target.setCurrentSelection(iso)				# Set isosurface to display upon inspector loading
@@ -333,14 +334,30 @@ class EMFileType(object) :
 
 		target.insertNewNode(display_path(self.path), data)
 		iso = emdataitem3d.EMIsosurface(data)
+		self.loadIsoColor(iso)
 		target.insertNewNode('Isosurface', iso, parentnode = data)
 		target.initialViewportDims(data.getData().get_xsize())	# Scale viewport to object size
 		target.setCurrentSelection(iso)				# Set isosurface to display upon inspector loading
+		
 		brws.notbusy()
 		target.setWindowTitle(display_path(self.path))
 
 		target.show()
 		target.raise_()
+
+	def loadIsoColor(self,iso):
+		"""Common routine to look for a fscvol file we can associate with the loaded volume to use as a colormap"""
+		base,fsp=os.path.split(self.path)
+		if base=="": base="."
+		n=fsp.rsplit("_",1)[-1][:-4]
+		if not n.isdigit(): return
+		resfsp=f"{base}/fscvol_{n}.hdf"
+		if not os.path.isfile(resfsp): 
+			print("doesn't exist",resfsp)
+			return
+		print("loading ",resfsp)
+		iso.setCmapData(resfsp)
+		iso.setRGBmode(2)
 
 	def show3DAll(self, brws) :
 		"""All in new 3-D window (3-D stacks)"""
@@ -353,6 +370,7 @@ class EMFileType(object) :
 			data = emdataitem3d.EMDataItem3D(self.path, n = n)
 			target.insertNewNode("{} #{}".format(display_path(self.path), n), data)
 			iso = emdataitem3d.EMIsosurface(data)
+#			self.loadIsoColor(iso)
 			target.insertNewNode('Isosurface', iso, parentnode = data)
 
 		target.initialViewportDims(data.getData().get_xsize())	# Scale viewport to object size

@@ -1962,9 +1962,9 @@ def get_default_gl_colors():
 	bluewhite["emission"] = [0.0, 0.0,0.368]
 	
 	custom = {}
-	custom["ambient"] = [0.3, 0.3, 0.0,1]
-	custom["diffuse"] = [0.5, 0.5, 0.0,1]
-	custom["specular"] = [0.7, 0.7, 0.0,1]
+	custom["ambient"] = [0.4, 0.4, 0.4,1]
+	custom["diffuse"] = [30/255,204/255,96/255,1]
+	custom["specular"] = [0.7, 0.7, 0.7,1]
 	custom["shininess"] =  60
 	custom["emission"] = [0,0,0]
 	
