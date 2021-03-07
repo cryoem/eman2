@@ -1825,172 +1825,113 @@ def get_gl_lights_vector():
 		lights.append(v)		
 	return lights
 
+_gl_colors = {'ruby': {'ambient': [0.1745, 0.01175, 0.01175, 1.0],
+  'diffuse': [0.61424, 0.04136, 0.04136, 1.0],
+  'specular': [0.927811, 0.826959, 0.826959, 1.0],
+  'shininess': 32,
+  'emission': [0, 0, 0]},
+ 'emerald': {'ambient': [0.0215, 0.1745, 0.0215, 1.0],
+  'diffuse': [0.07568, 0.61424, 0.07568, 1.0],
+  'specular': [0.833, 0.927811, 0.833, 1.0],
+  'shininess': 32,
+  'emission': [0, 0, 0]},
+ 'pearl': {'ambient': [0.25, 0.20725, 0.20725, 1.0],
+  'diffuse': [1.0, 0.829, 0.829, 1.0],
+  'specular': [0.296648, 0.296648, 0.296648, 1.0],
+  'shininess': 128.0,
+  'emission': [0, 0, 0]},
+ 'silver': {'ambient': [0.25, 0.25, 0.25, 1.0],
+  'diffuse': [0.4, 0.4, 0.4, 1.0],
+  'specular': [0.974597, 0.974597, 0.974597, 1.0],
+  'shininess': 4,
+  'emission': [0.1, 0.1, 0.1]},
+ 'gold': {'ambient': [0.24725, 0.2245, 0.0645, 1.0],
+  'diffuse': [0.34615, 0.3143, 0.0903, 1.0],
+  'specular': [1.0, 0.9079885, 0.26086934, 1.0],
+  'shininess': 4,
+  'emission': [0, 0, 0]},
+ 'copper': {'ambient': [0.2295, 0.08825, 0.0275, 1.0],
+  'diffuse': [0.5508, 0.2118, 0.066, 1.0],
+  'specular': [0.9, 0.5, 0.2, 1.0],
+  'shininess': 20.0,
+  'emission': [0, 0, 0]},
+ 'obsidian': {'ambient': [0.05375, 0.05, 0.06625, 1.0],
+  'diffuse': [0.18275, 0.17, 0.22525, 1.0],
+  'specular': [0.66, 0.65, 0.69, 1.0],
+  'shininess': 128.0,
+  'emission': [0, 0, 0]},
+ 'turquoise': {'ambient': [0.1, 0.18725, 0.1745, 1.0],
+  'diffuse': [0.396, 0.74151, 0.69102, 1.0],
+  'specular': [0.297254, 0.30829, 0.306678, 1.0],
+  'shininess': 128.0,
+  'emission': [0, 0, 0]},
+ 'yellow': {'ambient': [1, 1, 0.0, 1],
+  'diffuse': [1, 1, 0.0, 1],
+  'specular': [1, 1, 0.0, 1],
+  'shininess': 16,
+  'emission': [0, 0, 0]},
+ 'cyan': {'ambient': [0.0, 1, 1, 1],
+  'diffuse': [0.0, 1, 1, 1],
+  'specular': [0.0, 1, 1, 1],
+  'shininess': 16,
+  'emission': [0, 0, 0]},
+ 'purple': {'ambient': [1, 0.0, 1, 1],
+  'diffuse': [1, 0.0, 1, 1],
+  'specular': [1, 0.0, 1, 1],
+  'shininess': 16,
+  'emission': [0, 0, 0]},
+ 'red': {'ambient': [1, 0.0, 0.0, 1],
+  'diffuse': [1, 0.0, 0.0, 1],
+  'specular': [1, 0.0, 0.0, 1],
+  'shininess': 16,
+  'emission': [0, 0, 0]},
+ 'green': {'ambient': [0.0, 1, 0.0, 1],
+  'diffuse': [0.0, 1, 0.0, 1],
+  'specular': [0.0, 1, 0.0, 1],
+  'shininess': 16,
+  'emission': [0, 0, 0]},
+ 'blue': {'ambient': [0.0, 0.0, 1, 1],
+  'diffuse': [0.0, 0.0, 1, 1],
+  'specular': [0.0, 0.0, 1, 1],
+  'shininess': 16,
+  'emission': [0, 0, 0]},
+ 'black': {'ambient': [0.0, 0.0, 0.0, 1],
+  'diffuse': [0.0, 0.0, 0.0, 1],
+  'specular': [0.0, 0.0, 0.0, 1],
+  'shininess': 16,
+  'emission': [0, 0, 0]},
+ 'white': {'ambient': [1.0, 1.0, 1.0, 1],
+  'diffuse': [1.0, 1.0, 1.0, 1],
+  'specular': [1.0, 1.0, 1.0, 1],
+  'shininess': 16,
+  'emission': [0, 0, 0]},
+ 'dark grey': {'ambient': [0.2, 0.2, 0.2, 1],
+  'diffuse': [0.2, 0.2, 0.2, 1],
+  'specular': [0.2, 0.2, 0.2, 1],
+  'shininess': 16,
+  'emission': [0, 0, 0]},
+ 'orange': {'ambient': [1, 0.5, 0.0, 1],
+  'diffuse': [1.0, 0.5, 0.0, 1],
+  'specular': [1.0, 0.5, 0.0, 1],
+  'shininess': 16,
+  'emission': [0, 0, 0]},
+ 'bluewhite': {'ambient': [0.66, 0.95, 0.62, 1],
+  'diffuse': [0.8, 0.92, 0.56, 1],
+  'specular': [0.27, 0.04, 0.55, 1],
+  'shininess': 32,
+  'emission': [0.0, 0.0, 0.368]},
+ 'custom': {'ambient': [0.4, 0.4, 0.4, 1],
+  'diffuse': [0.11764705882352941, 0.8, 0.3764705882352941, 1],
+  'specular': [0.7, 0.7, 0.7, 1],
+  'shininess': 60,
+  'emission': [0, 0, 0]}}
+
+_gl_colors["custom"]=E2getappval("e2display","isosurface_color",{'ambient': [0.4, 0.4, 0.4, 1],'diffuse': [0.11764705882352941, 0.8, 0.3764705882352941, 1],
+  'specular': [0.7, 0.7, 0.7, 1],'shininess': 60,'emission': [0, 0, 0]})
+
 
 def get_default_gl_colors():
-	ruby = {}
-	ruby["ambient"] = [0.1745, 0.01175, 0.01175,1.0]
-	ruby["diffuse"] = [0.61424, 0.04136, 0.04136,1.0]
-	ruby["specular"] = [0.927811, 0.826959, 0.826959,1.0]
-	ruby["shininess"] = 32
-	ruby["emission"] = [0,0,0]
-	
-	emerald = {}
-	emerald["ambient"] = [0.0215, 0.1745, 0.0215,1.0]
-	emerald["diffuse"] = [0.07568, 0.61424,  0.07568,1.0]
-	emerald["specular"] = [0.833, 0.927811, 0.833,1.0]
-	emerald["shininess"] = 32
-	emerald["emission"] = [0,0,0]
-	
-	pearl = {}
-	pearl["ambient"] = [0.25, 0.20725, 0.20725,1.0]
-	pearl["diffuse"] = [1.0, 0.829, 0.829,1.0]
-	pearl["specular"] = [0.296648, 0.296648, 0.296648,1.0]
-	pearl["shininess"] = 128.0
-	pearl["emission"] = [0,0,0]
-	
-	silver = {}
-	silver["ambient"] = [0.25, 0.25, 0.25,1.0]
-	silver["diffuse"] = [0.4, 0.4, 0.4,1.0]
-	silver["specular"] = [0.974597, 0.974597, 0.974597,1.0]
-	silver["shininess"] = 4
-	silver["emission"] = [0.1,0.1,0.1]
-	
-	gold = {}
-	gold["ambient"] = [0.24725, 0.2245, 0.0645,1.0]
-	gold["diffuse"] = [0.34615, 0.3143, 0.0903,1.0]
-	gold["specular"] = [1.000, 0.9079885, 0.26086934,1.0]
-	gold["shininess"] = 4
-	gold["emission"] = [0,0,0]
-	
-	copper = {}
-	copper["ambient"] = [0.2295, 0.08825, 0.0275,1.0]
-	copper["diffuse"] = [0.5508, 0.2118, 0.066,1.0]
-	copper["specular"] = [0.9, 0.5, 0.2,1.0]
-	copper["shininess"] = 20.0
-	copper["emission"] = [0,0,0]
-	
-	obsidian = {}
-	obsidian["ambient"] = [0.05375,  0.05,	 0.06625 ,1.0]
-	obsidian["diffuse"] = [0.18275,  0.17,	 0.22525,1.0]
-	obsidian["specular"] = [0.66, 0.65, 0.69,1.0]
-	obsidian["shininess"] = 128.0
-	obsidian["emission"] = [0,0,0]
-	
-	turquoise = {}
-	turquoise["ambient"] = [0.1, 0.18725, 0.1745 ,1.0]
-	turquoise["diffuse"] = [0.396, 0.74151, 0.69102,1.0]
-	turquoise["specular"] = [0.297254, 0.30829, 0.306678,1.0]
-	turquoise["shininess"] = 128.0
-	turquoise["emission"] = [0,0,0]
-	
-	yellow = {}
-	yellow["ambient"] = [1,1,0.0,1]
-	yellow["diffuse"] = [1,1,0.0,1]
-	yellow["specular"] = [1,1,0.0,1]
-	yellow["shininess"] =  16
-	yellow["emission"] = [0,0,0]
-	
-	orange = {}
-	orange["ambient"] = [1,0.5,0.0,1]
-	orange["diffuse"] = [1.0,0.5,0.0,1]
-	orange["specular"] = [1.0,0.5,0.0,1]
-	orange["shininess"] =  16
-	orange["emission"] = [0,0,0]
-
-	cyan = {}
-	cyan["ambient"] = [0.0,1,1,1]
-	cyan["diffuse"] = [0.0,1,1,1]
-	cyan["specular"] = [0.0,1,1,1]
-	cyan["shininess"] =  16
-	cyan["emission"] = [0,0,0]
-	
-	
-	purple = {}
-	purple["ambient"] = [1,0.0,1,1]
-	purple["diffuse"] = [1,0.0,1,1]
-	purple["specular"] = [1,0.0,1,1]
-	purple["shininess"] =  16
-	purple["emission"] = [0,0,0]
-	
-	red = {}
-	red["ambient"] = [1,0.0,0.0,1]
-	red["diffuse"] = [1,0.0,0.0,1]
-	red["specular"] = [1,0.0,0.0,1]
-	red["shininess"] =  16
-	red["emission"] = [0,0,0]
-	
-	green = {}
-	green["ambient"] = [0.0,1,0.0,1]
-	green["diffuse"] = [0.0,1,0.0,1]
-	green["specular"] = [0.0,1,0.0,1]
-	green["shininess"] =  16
-	green["emission"] = [0,0,0]
-	
-	blue = {}
-	blue["ambient"] = [0.0,0.0,1,1]
-	blue["diffuse"] = [0.0,0.0,1,1]
-	blue["specular"] = [0.0,0.0,1,1]
-	blue["shininess"] =  16
-	blue["emission"] = [0,0,0]
-	
-	black = {}
-	black["ambient"] = [0.0,0.0,0.0,1]
-	black["diffuse"] = [0.0,0.0,0.0,1]
-	black["specular"] = [0.0,0.0,0.0,1]
-	black["shininess"] =  16
-	black["emission"] = [0,0,0]
-	
-	white = {}
-	white["ambient"] = [1.0,1.0,1.0,1]
-	white["diffuse"] = [1.0,1.0,1.0,1]
-	white["specular"] = [1.0,1.0,1.0,1]
-	white["shininess"] =  16
-	white["emission"] = [0,0,0]
-	
-	dark_grey = {}
-	dark_grey["ambient"] = [0.2,0.2,0.2,1]
-	dark_grey["diffuse"] = [0.2,0.2,0.2,1]
-	dark_grey["specular"] = [0.2,0.2,0.2,1]
-	dark_grey["shininess"] =  16
-	dark_grey["emission"] = [0,0,0]
-	
-	bluewhite = {}
-	bluewhite["ambient"] = [0.66, 0.95,0.62,1]
-	bluewhite["diffuse"] = [0.80, 0.92, 0.56,1]
-	bluewhite["specular"] = [0.27, 0.04, 0.55,1]
-	bluewhite["shininess"] =  32
-	bluewhite["emission"] = [0.0, 0.0,0.368]
-	
-	custom = {}
-	custom["ambient"] = [0.4, 0.4, 0.4,1]
-	custom["diffuse"] = [30/255,204/255,96/255,1]
-	custom["specular"] = [0.7, 0.7, 0.7,1]
-	custom["shininess"] =  60
-	custom["emission"] = [0,0,0]
-	
-	colors = {}
-	colors["ruby"] = ruby
-	colors["emerald"] = emerald
-	colors["pearl"] = pearl
-	colors["silver"] = silver
-	colors["gold"] = gold
-	colors["copper"] = copper
-	colors["obsidian"] = obsidian
-	colors["turquoise"] = turquoise
-	colors["yellow"] = yellow
-	colors["cyan"] = cyan
-	colors["purple"] = purple
-	colors["red"] = red
-	colors["green"] = green
-	colors["blue"] = blue
-	colors["black"] = black
-	colors["white"] = white
-	colors["dark grey"] = dark_grey
-	colors["orange"] = orange
-	colors["bluewhite"] = bluewhite
-	colors["custom"] = custom
-	
-	return colors
+	return _gl_colors
 
 class EM3DModel(QtCore.QObject):
 	inspector_shown = QtCore.pyqtSignal()

@@ -347,6 +347,8 @@ class EMFileType(object) :
 
 	def loadIsoColor(self,iso):
 		"""Common routine to look for a fscvol file we can associate with the loaded volume to use as a colormap"""
+		if not E2getappval("e2display","isosurface_autocolor_res",True) : return
+	
 		base,fsp=os.path.split(self.path)
 		if base=="": base="."
 		n=fsp.rsplit("_",1)[-1][:-4]
