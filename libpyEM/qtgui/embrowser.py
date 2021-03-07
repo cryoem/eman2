@@ -354,6 +354,7 @@ class EMFileType(object) :
 		n=fsp.rsplit("_",1)[-1][:-4]
 		if not n.isdigit(): return
 		resfsp=f"{base}/fscvol_{n}.hdf"
+		if resfsp==self.path or fsp[:6]=="fscvol": return
 		if not os.path.isfile(resfsp): 
 			print("doesn't exist",resfsp)
 			return
