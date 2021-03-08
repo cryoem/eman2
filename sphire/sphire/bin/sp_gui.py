@@ -15379,7 +15379,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.key_base = "post_refine_folder";
         token.key_prefix = "";
         token.label = "Post Refine Folder";
-        token.help = "Input folder is the directory where the results of the post refiner are present and python routine automatically locates all the required files used for polishing. ";
+        token.help = "Input folder is the directory where the results of the post refiner are present and python routine automatically locates all the required files used for ctf refinement. ";
         token.group = "main";
         token.is_required = True;
         token.is_locked = False;
@@ -15395,7 +15395,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.key_base = "output_folder";
         token.key_prefix = "";
         token.label = "Output folder";
-        token.help = "Output folder is the directory where all the results of the polishing are saved. ";
+        token.help = "Output folder is the directory where all the results of the ctf refinement are saved. ";
         token.group = "main";
         token.is_required = True;
         token.is_locked = False;
@@ -15644,7 +15644,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.dependency_group = [['', '', '']];
         token.default = "none";
         token.restore = [['none'], ['none']];
-        token.type = "string";
+        token.type = "submission_temp";
         sxcmd.token_list.append(token);
         sxcmd.token_dict[token.key_base] = token
         token = SXcmd_token();
@@ -15676,7 +15676,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.dependency_group = [['', '', '']];
         token.default = "mpirun";
         token.restore = [['mpirun'], ['mpirun']];
-        token.type = "string";
+        token.type = "exe";
         sxcmd.token_list.append(token);
         sxcmd.token_dict[token.key_base] = token
         token = SXcmd_token();
@@ -15692,7 +15692,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.dependency_group = [['', '', '']];
         token.default = "relion_ctf_refine_mpi";
         token.restore = [['relion_ctf_refine_mpi'], ['relion_ctf_refine_mpi']];
-        token.type = "string";
+        token.type = "exe";
         sxcmd.token_list.append(token);
         sxcmd.token_dict[token.key_base] = token
         token = SXcmd_token();
@@ -15715,7 +15715,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.key_base = "no_of_threads";
         token.key_prefix = "--";
         token.label = "number of threads";
-        token.help = "The number of threads use during the polishing. ";
+        token.help = "The number of threads use during the ctf refinement. ";
         token.group = "main";
         token.is_required = False;
         token.is_locked = False;

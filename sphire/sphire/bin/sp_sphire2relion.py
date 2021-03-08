@@ -473,7 +473,12 @@ def import_partres_file(partres_file):
         partres_import_array["amplitude_contrast"], 100
     )
     partres_array["_rlnVoltage"] = partres_import_array["voltage"]
-    partres_array["_rlnSphericalAberration"] = partres_import_array["cs"]
+
+    if partres_import_array["cs"] == 0 :
+        partres_array["_rlnSphericalAberration"] = 0.1
+    else :
+        partres_array["_rlnSphericalAberration"] = partres_import_array["cs"]
+
     partres_array["_rlnPhaseShift"] = partres_import_array["phase_shift"]
     partres_array["_rlnDetectorPixelSize"] = partres_import_array["pixel_size"]
     partres_array["_rlnMagnification"] = 10000
@@ -716,9 +721,14 @@ def create_stack_array(dtype_list, header_dict, output_dir, project_dir):
             particle_array["_rlnVoltage"] = numpy.array(
                 [entry["voltage"] for entry in dict_list]
             )
+
             particle_array["_rlnSphericalAberration"] = numpy.array(
-                [entry["cs"] for entry in dict_list]
+                [0.1 if entry["cs"] == 0 else entry["cs"] for entry in dict_list]
             )
+                # numpy.array(
+                # [entry["cs"] for entry in dict_list]
+            # )
+
             particle_array["_rlnDefocusU"] = old_div(
                 (20000 * defocus - 10000 * astigmatism_amp), 2
             )

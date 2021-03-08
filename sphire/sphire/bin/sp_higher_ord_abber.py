@@ -339,33 +339,32 @@ def parse_postrefiner(args_post):
 
 def run(args):
     options = parse_parameters(args)
-
     #################################################
     ############Post process call#################
     #################################################
     ###### Post process part starts here
     if os.path.isdir(options.post_refiner):
-        with open(os.path.join(os.getcwd(), os.path.join(options.post_refiner, 'command.txt')), 'r') as commandfile:
+        with open(os.path.join(options.post_refiner, 'command.txt'), 'r') as commandfile:
             read_command_txt = commandfile.read()
 
         post_refine_options = parse_postrefiner(read_command_txt)
 
         if post_refine_options.mask is not "":
-            use_mask = os.path.join(os.getcwd(), os.path.join(options.post_refiner, post_refine_options.mask))
+            use_mask = os.path.join(options.post_refiner, post_refine_options.mask)
         else:
-            use_mask = os.path.join(os.getcwd(), os.path.join(options.post_refiner, 'vol_adaptive_mask.hdf'))
+            use_mask = os.path.join(options.post_refiner, 'vol_adaptive_mask.hdf')
 
         try:
-            shutil.rmtree(os.path.join(os.getcwd(), os.path.join(str(options.Output_folder),'PostProcess')))
+            shutil.rmtree(os.path.join(str(options.Output_folder),'PostProcess'))
         except FileNotFoundError:
-            os.makedirs(os.path.join(os.getcwd(), os.path.join(str(options.Output_folder),'PostProcess')))
+            os.makedirs( os.path.join(str(options.Output_folder),'PostProcess'))
             pass
 
-        pp_star_file = star.StarFile(os.path.join(os.path.join(os.getcwd(), os.path.join(str(options.Output_folder),'PostProcess')),
-                                                  'postprocess.star'))
+        pp_star_file = star.StarFile(os.path.join( os.path.join(str(options.Output_folder),'PostProcess'),
+                                                   'postprocess.star'))
 
-        half_map1 = os.path.join(os.getcwd(), post_refine_options.combinemaps[0])
-        half_map2 = os.path.join(os.getcwd(), post_refine_options.combinemaps[1])
+        half_map1 = post_refine_options.combinemaps[0]
+        half_map2 = post_refine_options.combinemaps[1]
 
         if half_map1.endswith('hdf'):
             half_1_call = (
@@ -399,10 +398,9 @@ def run(args):
 
         pp_star_file.update('general', general_pp, False)
 
-        fsc_halves = np.loadtxt(os.path.join(os.getcwd(), os.path.join(options.post_refiner, 'halves.txt')))
-        fsc_masked_halves = np.loadtxt(
-            os.path.join(os.getcwd(), os.path.join(options.post_refiner, 'masked_halves.txt')))
-        fsc_full = np.loadtxt(os.path.join(os.getcwd(), os.path.join(options.post_refiner, 'full.txt')))
+        fsc_halves = np.loadtxt( os.path.join(options.post_refiner, 'halves.txt'))
+        fsc_masked_halves = np.loadtxt(os.path.join(options.post_refiner, 'masked_halves.txt'))
+        fsc_full = np.loadtxt( os.path.join(options.post_refiner, 'full.txt'))
 
         spectral_index = fsc_halves[:, 0]
         angs_resolution = fsc_halves[:, 1]
@@ -427,8 +425,7 @@ def run(args):
 
         pp_star_file.update('fsc', fsc_data_pp, True)
 
-        guiner = np.loadtxt(os.path.join(os.getcwd(), os.path.join(options.post_refiner, 'guinierlines.txt')),
-                            skiprows=1)
+        guiner = np.loadtxt(os.path.join(options.post_refiner, 'guinierlines.txt'), skiprows=1)
         if post_refine_options.mtf is not "":
             resol_sq = guiner[:, 0]
             log_amp_orig = guiner[:, 1]
@@ -460,14 +457,13 @@ def run(args):
         #################################################
         ###### SPHIRE 2 RELION Parts starts here
         meridien_folder = post_refine_options.combinemaps[0].split('/vol')[0]
-        meridien_folder = os.path.join(os.getcwd(), meridien_folder)
         iter_files, bdbfile = get_final_iter_files(meridien_folder)
         ##Note sphire2relion requires the 3dparams file and the chunk
 
         if os.path.isdir(meridien_folder):
             sph2rel_call = (
                     "sp_sphire2relion.py"
-                    + " " + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder), "BDB2STAR"))
+                    + " " + os.path.join(str(options.Output_folder), "BDB2STAR")
                     + " " + "--particle_stack=" + str(bdbfile)
                     + " " + "--params_3d_file=" + str(iter_files[0])
                     + " " + "--params_3d_chunk_file_0=" + str(iter_files[1])
@@ -477,8 +473,7 @@ def run(args):
             subprocess.run(args=[sph2rel_call], shell=True, text=True)
 
             if options.mrc_reloc_folder is not "":
-                bdb_star = star.StarFile(
-                    os.path.join(os.path.join(os.getcwd(), os.path.join(str(options.Output_folder), "BDB2STAR")),
+                bdb_star = star.StarFile(os.path.join( os.path.join(str(options.Output_folder), "BDB2STAR"),
                                  'sphire2relion.star'))
                 old_micrograph_name = bdb_star[""]['_rlnMicrographName']
                 new_micrograph_name = old_micrograph_name.apply(lambda x: os.path.join(options.mrc_reloc_folder
@@ -488,10 +483,6 @@ def run(args):
 
                 bdb_star.write_star_file(overwrite=True)
 
-
-            #### This wont be necessary in cases where the entire pipeline was run with MotionCorr shifts
-            # bdb_star = star.StarFile(os.path.join(os.path.join(os.getcwd(), os.path.join(str(options.Output_folder), "BDB2STAR")),
-            #                                       'sphire2relion.star'))
 
         """
         Till here it is generic script where we convert the stack and create the postprocess star file.
@@ -553,20 +544,12 @@ def run(args):
         ### now we need to decide we want to run it on a single PC workstation or on cluster
         if options.submission_template is not "":
             ctfrefine_call = options.relion_ctfrefine_executable\
-                             + " --i " + os.path.join(os.getcwd(),os.path.join(str(options.Output_folder),
-                                                                               "BDB2STAR/sphire2relion.star"))\
-                             + " " + "--f " + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder),
-                                                                            "PostProcess/postprocess.star")) \
-                             + " " + "--o " + str(os.path.join(os.getcwd(), str(options.Output_folder))) \
+                             + " --i " + os.path.join(str(options.Output_folder),"BDB2STAR/sphire2relion.star")\
+                             + " " + "--f " + os.path.join(str(options.Output_folder), "PostProcess/postprocess.star")\
+                             + " " + "--o " + str(options.Output_folder) \
                              + " " + total_flag \
                              + " " + "--angpix_ref " + str(post_refine_options.pixel_size[0]) \
                              + " " + "--j " + str(options.no_of_threads)
-
-            # rel2sph_call = "\n\n" + "sp_relion2sphire.py"\
-            #                + " " + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder), "shiny.star"))\
-            #                + " " + "Polish_Stack"\
-            #                + " " + "--relion_project_dir='.'"\
-            #                + " " + "--box_size=-1"
 
             try:
                 with open(options.submission_template) as read:
@@ -624,18 +607,16 @@ def run(args):
                         + " " + "-np"
                         + " " + str(options.mpi_procs)
                         + " " + options.relion_ctfrefine_executable
-                        + " --i " + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder),
-                                                                           "BDB2STAR/sphire2relion.star"))
-                        + " " + "--f " + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder),
-                                                                                "PostProcess/postprocess.star"))
-                        + " " + "--o " + str(os.path.join(os.getcwd(), str(options.Output_folder)))
+                        + " --i " + os.path.join(str(options.Output_folder), "BDB2STAR/sphire2relion.star")
+                        + " " + "--f " + os.path.join(str(options.Output_folder), "PostProcess/postprocess.star")
+                        + " " + "--o " + str(options.Output_folder)
                         + " " + total_flag
                         + " " + "--angpix_ref " + str(post_refine_options.pixel_size[0])
                         + " " + "--j " + str(options.no_of_threads)
                 )
                 # rel2sph_call = (
                 #     "sp_relion2sphire.py"
-                #     + " " + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder), "shiny.star"))
+                #     + " " +  os.path.join(str(options.Output_folder), "shiny.star")
                 #     + " " + "Polish_Stack"
                 #     + " " + "--relion_project_dir='.'"
                 #     + " " + "--box_size=-1"
@@ -647,11 +628,9 @@ def run(args):
             else :
                 ctfrefine_call = (
                         "relion_ctf_refine"
-                        + " --i " + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder),
-                                                                           "BDB2STAR/sphire2relion.star"))
-                        + " " + "--f " + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder),
-                                                                                "PostProcess/postprocess.star"))
-                        + " " + "--o " + str(os.path.join(os.getcwd(), str(options.Output_folder)))
+                        + " --i " + os.path.join(str(options.Output_folder), "BDB2STAR/sphire2relion.star")
+                        + " " + "--f " + os.path.join(str(options.Output_folder), "PostProcess/postprocess.star")
+                        + " " + "--o " +  str(options.Output_folder)
                         + " " + total_flag
                         + " " + "--angpix_ref " + str(post_refine_options.pixel_size[0])
                         + " " + "--j " + str(options.no_of_threads)
