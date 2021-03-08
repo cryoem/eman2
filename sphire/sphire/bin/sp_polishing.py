@@ -533,7 +533,7 @@ def run(args):
                         + " --i "
                         + os.path.join(str(options.Output_folder),"BDB2STAR/sphire2relion.star")
                         + " " + "--f " + os.path.join(str(options.Output_folder),"PostProcess/postprocess.star")
-                        + " " + "--corr_mic " + os.path.join(final_motion_path)
+                        + " " + "--corr_mic " + options.corr_mic
                         + " " + "--first_frame " + str(options.first_frame)
                         + " " + "--last_frame " + str(options.last_frame)
                         + " " + "--o " + str(options.Output_folder)
@@ -563,7 +563,7 @@ def run(args):
                     + " --i "
                     + os.path.join(str(options.Output_folder), "BDB2STAR/sphire2relion.star")
                     + " " + "--f " + os.path.join(str(options.Output_folder),"PostProcess/postprocess.star")
-                    + " " + "--corr_mic " + os.path.join(final_motion_path)
+                    + " " + "--corr_mic " + options.corr_mic
                     + " " + "--first_frame " + str(options.first_frame)
                     + " " + "--last_frame " + str(options.last_frame)
                     + " " + "--o " + str(options.Output_folder)
