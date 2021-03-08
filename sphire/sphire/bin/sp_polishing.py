@@ -302,7 +302,7 @@ def run(args):
         post_refine_options = parse_postrefiner(read_command_txt)
 
         if post_refine_options.mask is not "":
-            use_mask =  post_refine_options.mask
+            use_mask =  post_refine_options.mask[0]
         else:
             use_mask = os.path.join(options.post_refiner, 'vol_adaptive_mask.hdf')
 

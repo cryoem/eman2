@@ -392,21 +392,20 @@ def run(args):
     options = parse_parameters(args)
 
     if os.path.isdir(options.post_refiner):
-        with open(os.path.join(os.getcwd(), os.path.join(options.post_refiner, 'command.txt')), 'r') as commandfile:
+        with open(os.path.join(options.post_refiner, 'command.txt'), 'r') as commandfile:
             read_command_txt = commandfile.read()
 
         post_refine_options = parse_postrefiner(read_command_txt)
 
         ###### SPHIRE 2 RELION Parts starts here
         meridien_folder = post_refine_options.combinemaps[0].split('/vol')[0]
-        meridien_folder = os.path.join(os.getcwd(), meridien_folder)
         iter_files, bdbfile = get_final_iter_files(meridien_folder)
         ##Note sphire2relion requires the 3dparams file and the chunk
 
         if os.path.isdir(meridien_folder):
             sph2rel_call = (
                     "sp_sphire2relion.py"
-                    + " " + os.path.join(os.getcwd(), os.path.join(str(options.Output_folder), "BDB2STAR"))
+                    + " " + os.path.join(str(options.Output_folder), "BDB2STAR")
                     + " " + "--particle_stack=" + str(bdbfile)
                     + " " + "--params_3d_file=" + str(iter_files[0])
                     + " " + "--params_3d_chunk_file_0=" + str(iter_files[1])
@@ -417,8 +416,7 @@ def run(args):
 
         if options.mrc_reloc_folder is not "":
             bdb_star = star.StarFile(
-                os.path.join(os.path.join(os.getcwd(), os.path.join(str(options.Output_folder), "BDB2STAR")),
-                             'sphire2relion.star'))
+                os.path.join(os.path.join(str(options.Output_folder), "BDB2STAR"), 'sphire2relion.star'))
             old_micrograph_name = bdb_star[""]['_rlnMicrographName']
             new_micrograph_name = old_micrograph_name.apply(lambda x: os.path.join(options.mrc_reloc_folder
                                                                                    , os.path.basename(x)

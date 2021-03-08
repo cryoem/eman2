@@ -163,7 +163,7 @@ def parse_parameters(args):
         "--submission_command",
         type=str,
         help="",
-        default=""
+        default="sbatch"
     )
 
     parser.add_argument(
@@ -529,13 +529,20 @@ def run(args):
 
                 fit_mode = flag_phase_shift + flag_defocus + flag_astig + 'f' + flag_bfactor
                 total_flag += " " + "--fit_mode " + str(fit_mode)
+            else :
+                pass
 
-                if options.estimate_beamtilt and not options.estimate_trefoil:
-                    total_flag += " " +  "--fit_beamtilt" + " " + "--kmin_tilt " + str(options.min_res_fit)
-                else :
-                    total_flag += " " + "--fit_beamtilt" + " " + "--kmin_tilt " + str(options.min_res_fit) + " " + "--odd_aberr_max_n 3"
-                if options.estimate_order_aberation:
-                    total_flag += " " + "--fit_aberr"
+            if options.estimate_beamtilt and not options.estimate_trefoil:
+                total_flag += " " +  "--fit_beamtilt" + " " + "--kmin_tilt " + str(options.min_res_fit)
+            elif options.estimate_beamtilt and options.estimate_trefoil :
+                total_flag += " " + "--fit_beamtilt" + " " + "--kmin_tilt " + str(options.min_res_fit) + " " + "--odd_aberr_max_n 3"
+            else :
+                pass
+
+            if options.estimate_order_aberation:
+                total_flag += " " + "--fit_aberr"
+            else :
+                pass
 
         print("flags for the all commands is", total_flag)
         print("pixel size obtained is" , post_refine_options.pixel_size[0])
@@ -544,7 +551,7 @@ def run(args):
         ### now we need to decide we want to run it on a single PC workstation or on cluster
         if options.submission_template is not "":
             ctfrefine_call = options.relion_ctfrefine_executable\
-                             + " --i " + os.path.join(str(options.Output_folder),"BDB2STAR/sphire2relion.star")\
+                             + " --i " + os.path.join(options.Output_folder,"BDB2STAR/sphire2relion.star")\
                              + " " + "--f " + os.path.join(str(options.Output_folder), "PostProcess/postprocess.star")\
                              + " " + "--o " + str(options.Output_folder) \
                              + " " + total_flag \
@@ -567,14 +574,14 @@ def run(args):
                 sp_global_def.sxprint("The line should contain XXX_SXCMD_LINE_XXX.")
                 sys.exit(1)
 
-            line = (lines[cmd_lines[-1]].replace("XXX_SXCMD_LINE_XXX", ctfrefine_call )) # + rel2sph_call
+            line = (lines[cmd_lines[-1]].replace("XXX_SXCMD_LINE_XXX", ctfrefine_call ))
 
             mod_sub_script = "".join(lines).replace("XXX_SXMPI_NPROC_XXX", str(options.mpi_procs)
                                                     ).replace("XXX_SXMPI_JOB_NAME_XXX", "sp_polishing"
                                                               ).replace(lines[cmd_lines[-1]], line
                                                                         ).replace("mpirun", options.relion_mpirun_executable)
 
-            out_submission = "{0}/polishing_submission_script.sh".format(str(options.Output_folder))
+            out_submission = "{0}/ctfrefine_submission_script.sh".format(str(options.Output_folder))
             with open(out_submission, "w") as w:
                 w.write("".join(mod_sub_script))
 
