@@ -424,6 +424,7 @@ class EMFilterTool(QtWidgets.QMainWindow):
 		self.apix=apix
 		self.force2d=force2d
 		self.dataidx=idx
+		self.safemode=safemode
 		self.setWindowTitle("e2filtertool.py")
 
 		# Menu Bar
@@ -765,7 +766,7 @@ class EMFilterTool(QtWidgets.QMainWindow):
 		if self.viewer!=None : 
 			for v in self.viewer: v.close()
 			
-		if self.nz==1 or self.force2d or self.nx>320:
+		if self.nz==1 or self.force2d or (self.nx>320 and self.safemode==False):
 			if len(self.origdata)>1 :
 				self.viewer=[EMImageMXWidget()]
 				self.mfile_save_stack.setEnabled(True)

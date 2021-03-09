@@ -645,26 +645,14 @@ def get_optionlist(argv):
 	return optionlist
 
 def intvararg_callback(option, opt_str, value, parser):
-#    print 'vararg_callback:'
-#    print '\toption:', repr(option)
-#    print '\topt_str:', opt_str
-#    print '\tvalue:', value
-#    print '\tparser:', parser
-    
-    v = [int(i) for i in value.split(',')]
-    setattr(parser.values, option.dest, v)
-    return
+	v = [int(i) for i in value.split(',')]
+	setattr(parser.values, option.dest, v)
+	return
 
 def floatvararg_callback(option, opt_str, value, parser):
-#    print 'vararg_callback:'
-#    print '\toption:', repr(option)
-#    print '\topt_str:', opt_str
-#    print '\tvalue:', value
-#    print '\tparser:', parser
-    
-    v = [float(i) for i in value.split(',')]
-    setattr(parser.values, option.dest, v)
-    return
+	v = [float(i) for i in value.split(',')]
+	setattr(parser.values, option.dest, v)
+	return
 
 def commandoptions(options,exclude=[]):
 	"""This will reconstruct command-line options, excluding any options in exclude"""
@@ -2107,11 +2095,13 @@ The file begins with
 number<\t>filename<\t>comment
 ...
 """
-	def __init__(self,path,ifexists=False):
+	def __init__(self,path,ifexists=False, comments=""):
 		"""Initialize the object using the .lst file in 'path'. If 'ifexists' is set, an exception will be raised
 if the lst file does not exist."""
 
 		self.path=path
+		if len(comments)==0:
+			comments="# This file is in fast LST format. All lines after the next line have exactly the number of characters shown on the next line. This MUST be preserved if editing."
 
 		if os.path.isfile(path):
 			self.ptr=open(path,"r+")		# file exists
@@ -2121,7 +2111,7 @@ if the lst file does not exist."""
 			try: os.makedirs(os.path.dirname(path))
 			except: pass
 			self.ptr=open(path,"w+")	# file doesn't exist
-			self.ptr.write("#LSX\n# This file is in fast LST format. All lines after the next line have exactly the number of characters shown on the next line. This MUST be preserved if editing.\n# 20\n")
+			self.ptr.write("#LSX\n{}\n# 20\n".format(comments))
 
 		self.ptr.seek(0)
 		l=self.ptr.readline()
@@ -2130,7 +2120,7 @@ if the lst file does not exist."""
 				#### This is very similar to rewrite(), but is used to convert LST files to LSX files
 				self.seekbase=self.ptr.tell()
 				tmpfile=open(self.path+".tmp","w")
-				tmpfile.write("#LSX\n# This file is in fast LST format. All lines after the next line have exactly the number of characters shown on the next line. This MUST be preserved if editing.\n")
+				tmpfile.write("#LSX\n{}\n".format(comments))
 
 				# we read the entire file, checking the length of each line
 				maxlen=0
@@ -2348,6 +2338,61 @@ corresponding to each 1/2 of the data."""
 		oute=None
 
 	return (eset,oset)
+
+def save_lst_params(dct, nm):
+	if os.path.isfile(nm):
+		os.remove(nm)	
+	allkeys=set()
+	for i in dct[:5]:
+		for k in i.keys():
+			allkeys.add(k)
+
+	allkeys.remove('src')
+	allkeys.remove('idx')
+	allkeys=sorted(list(allkeys))
+
+	cmt=';'.join(allkeys)
+	cmt="#keys: "+cmt
+	lout=LSXFile(nm, False, comments=cmt)
+	for dc in dct:
+		s=[dc[k] for k in allkeys]
+		for i,t in enumerate(s):
+			if isinstance(t, Transform):
+				s[i]="Transform({})".format(t.get_matrix())
+				
+		s=';'.join([str(t) for t in s])
+		lout.write(-1, dc["idx"], dc["src"], s)
+
+	lout.close()
+	
+def load_lst_params(nm ,rng=[]):
+	
+	lst=LSXFile(nm, True)
+	s=lst.filecomment.strip()
+	if s.startswith("#keys: "):
+		s=s[7:].split(';')
+	else:
+		s=[]	
+	
+	allkeys=["idx", "src"]+s
+	dct=[]
+	if len(rng)==0:
+		rng=range(lst.n)
+	
+	for i in rng:
+		l=lst.read(i)
+		cmt=[l[0], l[1]]
+		if l[2]:
+			m=l[2].split(';')
+			cmt=cmt+[eval(c) for c in m]
+			
+		d={k:c for k,c in zip(allkeys, cmt)}
+		dct.append(d)	
+
+	lst.close()
+	
+	return dct
+
 
 __doc__ = \
 "EMAN classes and routines for image/volume processing in \n\

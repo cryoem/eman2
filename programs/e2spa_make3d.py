@@ -27,18 +27,28 @@ def main():
 	
 	parser.add_argument("--ref", type=str,help="ref", default=None)
 	parser.add_argument("--tidrange", type=str,help="range of tilt id to include", default="-1,-1")
-	parser.add_argument("--minres", type=float,help="", default=200)
-	parser.add_argument("--maxres", type=float,help="", default=5)
+	parser.add_argument("--minres", type=float,help="", default=50)
+	parser.add_argument("--maxres", type=float,help="", default=-1)
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default="thread:1")
 	
 	parser.add_argument("--debug", action="store_true", default=False, help="")
-	parser.add_argument("--clsid", default=-1, type=int, help="only reconstruct a class of particles")
+	parser.add_argument("--clsid", default=None, type=str, help="only reconstruct a class of particles")
+	parser.add_argument("--listsel", default=None, type=str, help="only reconstruct particles of indices from the given list")
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
 
 	logger=E2init(sys.argv,options.ppid)
+	
+	# so it recognize even/odd or 0/1
+	if options.clsid:
+		options.clsid=options.clsid.replace("even","0").replace("odd","1")
+		try: options.clsid=int(options.clsid)
+		except:options.clsid=-1
+	else:
+		options.clsid=-1
+		
 	
 	# get basic image parameters
 	tmp=EMData(options.input,0,True)
@@ -58,12 +68,14 @@ def main():
 	
 	data=initialize_data(options.input, options)
 	padvol=options.pad
-		
 
 	from EMAN2PAR import EMTaskCustomer
 	if options.ref:
 		print("weighting by reference...")
 		ref=EMData(options.ref)
+		ny=options.pad
+		by=ref["ny"]
+		ref=ref.get_clip(Region((by-ny)/2, (by-ny)/2,(by-ny)/2, ny, ny,ny))
 		ref=ref.do_fft()
 		ref.process_inplace("xform.phaseorigin.tocenter")
 		ref.process_inplace("xform.fourierorigin.tocenter")
@@ -73,7 +85,6 @@ def main():
 		print("{} total CPUs available".format(num_cpus))
 		tasks=[data[i::num_cpus] for i in range(num_cpus)]
 		print("{} jobs".format(len(tasks)))
-		
 		
 		tids=[]
 		for t in tasks:
@@ -97,22 +108,33 @@ def main():
 				try:
 					wts[w[0]]=w[1]
 				except:
-					print(len(wts), w)
+					print(w)
 				
+		
 		wts=np.array(wts)
+		wts[wts<0]=0
+		if options.minres>0:
+			r0=int(apix*ny/options.minres)
+			wts[:,:r0]=np.mean(wts[:,:r0], axis=0)
+		
+		if options.maxres>0:
+			r1=int(apix*ny/options.maxres)
+			wts[:,r1:]=np.mean(wts[:,r1:], axis=0)
+			
+		
+		
+		print(wts.shape)
 		del etc
 		
-		r0=int(apix*boxsz/options.minres)
-		r1=int(apix*boxsz/options.maxres)
-		print(r0,r1)
-		scrs=np.mean(wts[:,r0:r1], axis=1)
-		if options.keep<1:
-			thr=np.sort(scrs)[int(len(scrs)*(1-options.keep))-1]
-			scrs[scrs<thr]=-1
+		#print(r0,r1)
+		#scrs=np.mean(wts[:,r0:r1], axis=1)
+		#if options.keep<1:
+			#thr=np.sort(scrs)[int(len(scrs)*(1-options.keep))-1]
+			#scrs[scrs<thr]=-1
 		
 		for i,d in enumerate(data):
 			d["curve"]=wts[i]
-			d["weight"]=float(scrs[i])
+			#d["weight"]=float(scrs[i])
 			
 			
 	etc=EMTaskCustomer(options.parallel, module="e2spa_make3d.Make3dTask")
@@ -175,43 +197,58 @@ def main():
 
 def initialize_data(inputfile, options):
 	#returned list will contain dictionaries containing metadata about each image
-
-	n_input=EMUtil.get_image_count(inputfile)
-	lst=LSXFile(inputfile)
-
-	data=[]
-	xfkey=["type","alt","az","phi","tx","ty","tz","alpha","scale"]
-
-	for i in range(n_input):
+	if options.listsel:
+		sel=np.loadtxt(options.listsel)
+		sel=sel.astype(int).tolist()
+	else:
+		sel=[]
 		
-		lstinfo=lst.read(i)
-		for d in lstinfo[2].split(';'):
-			dc=eval(d)
-			if (options.clsid>=0) and ("class" in dc):
-				if dc["class"]!=options.clsid:
-					continue
-			if ("tid" in dc) and (options.tidrange[0]>=0):
-				if dc["tid"]<options.tidrange[0] or dc["tid"]>options.tidrange[1]:
-					continue
-					
-			if "score" in dc:
-				score=dc["score"]
-			else:
-				score=-1
-				
-			dcxf={k:dc[k] for k in dc.keys() if k in xfkey}
-				
-			elem={
-				"xform":Transform(dcxf),
-				"score":score,
-				"filename":inputfile,
-				"filenum":i,
-				"idx":len(data)
-			}
-			data.append(elem)
+	rawdata=load_lst_params(inputfile, sel)
+	trg=options.tidrange
+	
+	data=[]
+	for dc in rawdata:
+		if (options.clsid>=0) and ("class" in dc): 
+			if dc["class"]!=options.clsid:
+				continue
 			
+		if ("tilt_id" in dc) and (trg[0]>0):
+			if (dc["tilt_id"]<trg[0]) or (dc["tilt_id"]>trg[1]):
+				continue
+		
+		data.append(dc)
+		
+	tokeep=np.ones(len(data), dtype=bool)
+	print("{} particles total".format(np.sum(tokeep)))
+	
 	scrs=np.array([d["score"] for d in data])
-	print(len(data)," input images")
+	if np.std(scrs)>0 and ("ptcl3d_id" in data[0]):
+		idx3d=np.array([d["ptcl3d_id"] for d in data])
+		idx3d, invid=np.unique(idx3d, return_inverse=True)
+		scr3d=np.array([np.mean(scrs[invid==i]) for i in range(len(idx3d))])
+		thr=np.sort(scr3d)[int(len(scr3d)*options.keep)-1]
+		for i,s in enumerate(scr3d):
+			if s>thr:
+				tokeep[invid==i]=False
+		
+		print("  Excluding particles on 3D particle score. Now {:.1f}%  left".format(100*np.mean(tokeep)))
+	
+	if np.std(scrs)>0:
+		s=scrs[tokeep]
+		thr=np.sort(s)[int(len(s)*options.keep)-1]
+		tokeep[scrs>thr]=False
+		print("  Excluding particles on 2D score. Now {:.1f}%  left".format(100*np.mean(tokeep)))
+		
+	if  "dxf" in data[0]:
+		dt=np.array([d["dxf"].get_trans() for d in data])
+		dt=np.linalg.norm(dt, axis=1)
+		s=dt[tokeep]
+		thr=np.sort(s)[int(len(s)*options.keep)-1]
+		tokeep[dt>thr]=False
+		print("  Excluding particles on translation. Now {:.1f}%  left".format(100*np.mean(tokeep)))
+		
+	data=[d for i,d in enumerate(data) if tokeep[i]]
+	scrs=np.array([d["score"] for d in data])
 	if np.min(scrs)>=0:
 		print("positive score. assume this is weight...")
 	else:
@@ -220,13 +257,10 @@ def initialize_data(inputfile, options):
 		scrs=scrs/np.max(scrs)
 	
 	print("score max {:.2f}, min {:.2f}".format(np.max(scrs), np.min(scrs)))
-	if options.keep<1:
-		s=np.sort(scrs[scrs>0])
-		thr=s[int(len(s)*(1-options.keep))-1]
-		scrs[scrs<thr]=-1
 	
 	for i in range(len(data)):
 		data[i]["weight"]=float(scrs[i])
+		data[i]["ii"]=i
 		
 	return data
 
@@ -238,24 +272,37 @@ def reconstruct(data,recon,pad,ref=None):
 		if wt<=0:
 			continue
 		
-		img=EMData(elem["filename"],elem["filenum"])
+		img=EMData(elem["src"],elem["idx"])
 		if img["sigma"]==0 : continue
 	
 		img-=img.get_edge_mean()
 		img.clip_inplace(Region((img["nx"]-pad)//2, (img["ny"]-pad)//2, pad, pad))
+	
+		if ("defocus" in elem) and abs(elem["defocus"])>1e-4 and img.has_attr("ctf"):
+			ctf=img["ctf"]
+			fft1=img.do_fft()
+			flipim=fft1.copy()
+			ctf.compute_2d_complex(flipim,Ctf.CtfType.CTF_SIGN)
+			fft1.mult(flipim)
+			ctf1=EMAN2Ctf(ctf)
+			ctf1.defocus=ctf1.defocus+elem["defocus"]
+			ctf1.compute_2d_complex(flipim,Ctf.CtfType.CTF_SIGN)
+			fft1.mult(flipim)
+			img=fft1.do_ift()
+	
+		img-=img.get_edge_mean()
 		
 		if "curve" in elem:
 			c=elem["curve"]
 			img.process_inplace("filter.radialtable", {"table":c.tolist()})
-			#wt=1
 		
-		ts=Transform(elem["xform"])
+		ts=Transform(elem["xform.projection"])
 		ts.set_rotation({"type":"eman"})
 		ts.invert()   #### inverse the translation so make3d matches projection 
 		img=recon.preprocess_slice(img,ts)
 		
 
-		recon.insert_slice(img,elem["xform"],wt)
+		recon.insert_slice(img,elem["xform.projection"],wt)
 
 	return
 
@@ -320,29 +367,34 @@ class WeightptclTask(JSTask):
 		data=self.data["data"]
 		ref=self.data["ref"]
 		options=self.options
+		pad=options.pad
 		wts=[]
 		for i,elem in enumerate(data):
-			img=EMData(elem["filename"],elem["filenum"])
+			img=EMData(elem["src"],elem["idx"])
+			img-=img.get_edge_mean()
+			img.clip_inplace(Region((img["nx"]-pad)//2, (img["ny"]-pad)//2, pad, pad))
+			
 			img=img.do_fft()
 			img.process_inplace("xform.phaseorigin.tocenter")
 			
-			xf=Transform(elem["xform"])
+			xf=Transform(elem["xform.projection"])
 			pj=ref.project('gauss_fft',{"transform":xf, "returnfft":1})
 
 			fsc=img.calc_fourier_shell_correlation(pj)
 			w=np.array(fsc).reshape((3,-1))[1]
 			
-			x=np.arange(len(w)*2)
-			p=argrelextrema(w, np.greater)[0]
-			p=p[w[p]>0]
-			p=p[p>4]
-			cfit = np.polyfit(x[p], np.log(w[p]), 1)
-			w=np.exp(x*cfit[0])*np.exp(cfit[1])
+			#x=np.arange(len(w)*2)
+			#p=argrelextrema(w, np.greater)[0]
+			#p=p[w[p]>0]
+			#p=p[p>4]
+			#cfit = np.polyfit(x[p], np.log(w[p]), 1)
+			#w=np.exp(x*cfit[0])*np.exp(cfit[1])
 			#wts.append([elem["filenum"], c])
 			
-			wts.append([elem["idx"], w])
+			wts.append([elem["ii"], w])
 			
-			
+			if options.debug:
+				print(elem["ii"], w, np.mean(w[2:70]))
 		
 		return wts
 

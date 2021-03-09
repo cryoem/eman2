@@ -19,7 +19,6 @@ def main():
 	parser.add_argument("--startiter", type=int,help="iter", default=0)
 	parser.add_argument("--niter", type=int,help="iter", default=10)
 	parser.add_argument("--setsf", type=str,help="structure factor", default="strucfac.txt")
-	parser.add_argument("--slow", action="store_true", default=False ,help="slow but finer search. not used yet")
 	parser.add_argument("--tophat", type=str, default="local" ,help="Default=local, can also specify localwiener")
 	parser.add_argument("--threads", type=int,help="threads to use during postprocessing of 3d volumes", default=2)
 
@@ -31,13 +30,7 @@ def main():
 		
 	tophat=""
 	npt=EMUtil.get_image_count(options.ptcl)
-	
 	if options.path==None: options.path=num_path_new("r3d_")
-	
-	if options.slow:
-		slow=" --slow"
-	else:
-		slow=""
 	
 	if options.startiter==0:
 		if not os.path.isdir(options.path):
@@ -52,7 +45,8 @@ def main():
 	for i in range(options.startiter, options.startiter+options.niter):
 		
 		for eo in ["even","odd"]:
-			run("e2spa_align.py --ptclin {pt}/ptcls_{i0:02d}_{eo}.lst --ptclout {pt}/ptcls_{i1:02d}_{eo}.lst --ref {pt}/threed_{i0:02d}_{eo}.hdf --parallel {par} --sym {s} --maxres {rs:.2f} {sl}".format(pt=options.path, i0=i, i1=i+1, rs=res, eo=eo, s=sym, par=options.parallel,sl=slow))
+			run("e2spa_align.py --ptclin {pt}/ptcls_{i0:02d}_{eo}.lst --ptclout {pt}/ptcls_{i1:02d}_{eo}.lst --ref {pt}/threed_{i0:02d}_{eo}.hdf --parallel {par} --sym {s} --maxres {rs:.2f}".format(pt=options.path, i0=i, i1=i+1, rs=res, eo=eo, s=sym, par=options.parallel))
+			
 			run("e2spa_make3d.py --input {pt}/ptcls_{i1:02d}_{eo}.lst --output {pt}/threed_{i1:02d}_{eo}.hdf --keep {kp} --sym {s} --parallel {par}".format(pt=options.path, i1=i+1, eo=eo, s=sym, par=options.parallel, kp=options.keep))
 
 		if i==options.startiter:
