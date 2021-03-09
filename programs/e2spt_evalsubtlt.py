@@ -214,10 +214,7 @@ class EMSptEval(QtWidgets.QMainWindow):
 		ax.plot(self.tltang, self.plt_dxy,'--r')
 		plot.vlines(self.tltang[tid], np.min(self.plt_scr), np.max(self.plt_scr))
 		
-		
-		
 		self.plotwinx.draw()
-		
 		
 		
 	def update_list(self):
