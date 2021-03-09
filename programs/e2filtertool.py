@@ -601,14 +601,18 @@ class EMFilterTool(QtWidgets.QMainWindow):
 		self.delProcessor(tag)
 		
 	def on_doprocess(self):
-		self.reprocess()
+		try:
+			self.reprocess()
+		except:
+			traceback.print_exc()
+			print("processing abort")
 		self.redisplay()
 
 	def timeOut(self):
 		if self.busy : return
 
 		# Spawn a thread to reprocess the data
-		if self.needupdate and self.procthread==None:
+		if self.needupdate and (self.procthread==None or not self.procthread.is_alive()):
 			self.procthread=threading.Thread(target=self.reprocess)
 			self.procthread.start()
 

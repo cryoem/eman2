@@ -389,6 +389,8 @@ This function will get an application default by first checking the local direct
 		return ret
 	except: pass
 
+	if dfl!=None: E2setappval(app,key,dfl)		# so the user will know what may be available
+
 	return dfl
 
 def E2getappvals():

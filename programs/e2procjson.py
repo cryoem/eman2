@@ -145,16 +145,23 @@ def main():
 		
 	if options.extractspt :
 		out=open(options.output,"w")
-		out.write("# file_ptcl,score,pre_trans_x,pre_trans_y,pre_trans_z,alt,az,phi,trans_x,trans_y,trans_z\n")
+		out.write("# file_ptcl,score,trans_x,trans_y,trans_z,az,alt,phi,rel_trans_x,rel_trans_y,rel_trans_z,rel_alt,rel_az,rel_phi\n")
 		nf=0
 		for fsp in args:
 			js=js_open_dict(fsp)
 			ks=[(eval(k)[1],eval(k)[0],k) for k in js.keys()]
 			for k in sorted(ks):
 				xf=js[k[2]]["xform.align3d"]
-				pt=xf.get_pre_trans()
+				if "xform.start" in js[k[2]] : xfd=xf*js[k[2]]["xform.start"][0].inverse()
+				else: xfd=None
+				tr=xf.get_trans()
 				rt=xf.get_rotation()
-				out.write(f"{k[0]}\t{js[k[2]]['score']}\t{pt[0]}\t{pt[1]}\t{pt[2]}\t{rt['az']}\t{rt['alt']}\t{rt['phi']}\t{xf.get_trans()[0]}\t{xf.get_trans()[1]}\t{xf.get_trans()[2]}\t# {k[2]}\n")
+				out.write(f"{k[0]}\t{js[k[2]]['score']}\t{tr[0]}\t{tr[1]}\t{tr[2]}\t{rt['az']}\t{rt['alt']}\t{rt['phi']}")
+				if xfd!=None:
+					tr=xfd.get_trans()
+					rt=xfd.get_rotation()
+					out.write(f"\t{tr[0]}\t{tr[1]}\t{tr[2]}\t{rt['az']}\t{rt['alt']}\t{rt['phi']}")
+				out.write(f"\t# {k[2]}\n")
 
 	if options.extractkey :
 		out=open(options.output,"w")

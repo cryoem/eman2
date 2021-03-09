@@ -13,7 +13,7 @@ def main():
 	parser.add_argument("--path", type=str,help="spt_xx path", default="",guitype='strbox',row=0, col=0,rowspan=1, colspan=1)
 	parser.add_argument("--iter", type=int,help="iteration number", default=1,guitype='intbox',row=0, col=1,rowspan=1, colspan=1)
 	parser.add_argument("--tomo", type=str,help="tomogram file name", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True, startpath='tomograms')", row=2, col=0,rowspan=1, colspan=2,)
-	parser.add_argument("--avg", type=str,help="3D average. will use spt_xx/threed_xx by default", default="")
+	parser.add_argument("--avg", type=str,help="3D volume to insert. spt_xx/threed_xx if unspecified", default="",guitype='filebox', browser="EMBrowserWidget(withmodal=True, startpath='.')", row=3, col=0,rowspan=1, colspan=2)
 	parser.add_argument("--postxf", type=str,help="extra shift after alignment", default="")
 	parser.add_argument("--keep", type=float,help="propotion to keep. will exclude bad particles if this is smaller than 1.0", default=1.0)
 	parser.add_argument("--gui",action="store_true",help="open the resulting map and tomogram in a GUI display",default=False,guitype="boolbox",row=4, col=0,rowspan=1, colspan=1)

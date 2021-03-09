@@ -109,7 +109,11 @@ def main():
 	emgmm=EMGMM(app,options)
 	emgmm.show()
 	emgmm.raise_()
-	QtWidgets.QMessageBox.warning(None,"Warning","This program is still experimental. While functional\nmany capabilities of the underlying e2gmm_refine program\n are not yet available through this interface")
+	QtWidgets.QMessageBox.warning(None,"Warning","""This program is still experimental. While functional
+many capabilities of the underlying e2gmm_refine program
+are not yet available through this interface. Matching number
+of gaussians to resolution/volume is key in obtaining good
+distributions.""")
 	app.execute()
 	
 	E2end(pid)
@@ -197,6 +201,10 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wedbox = QtWidgets.QLineEdit("256")
 		self.wedbox.setToolTip("Box size of input particles in pixels")
 		self.gflparm.addRow("Box Size:",self.wedbox)
+
+		self.wedres = QtWidgets.QLineEdit("25")
+		self.wedres.setToolTip("Maximum resolution to use for gaussian fitting")
+		self.gflparm.addRow("Target Res:",self.wedres)
 
 		self.wedsym = QtWidgets.QLineEdit("c1")
 		self.wedsym.setToolTip("Symmetry used during refinement")
@@ -410,6 +418,10 @@ class EMGMM(QtWidgets.QMainWindow):
 	def do_run(self,clk=False):
 		"""Run the current job with current parameters"""
 		self.currun={}
+		self.currun["boxsize"]=int(self.wedbox.text())
+		self.currun["targres"]=float(self.wedres.text())
+		self.currun["apix"]=float(self.wedapix.text())
+		self.currun["sym"]=str(self.wedsym.text())
 		self.currun["ngauss"]=int(self.wedngauss.text())
 		self.currun["dim"]=int(self.weddim.text())
 		self.currun["mask"]=str(self.wedmask.text())
@@ -418,32 +430,34 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.currun["time"]=local_datetime()
 		self.jsparm["run_"+self.currunkey]=self.currun
 		
+		maxbox=(int(self.currun["boxsize"]*(2*self.currun["apix"])/self.currun["targres"])//2)*2
+		print(f"Target res {self.currun['targres']} -> max box size {maxbox}")
 		modelout=f"{self.gmm}/{self.currunkey}_model_gmm.txt"
 		
+		sym=self.currun["sym"]
 		prog=QtWidgets.QProgressDialog("Running networks. Progress updates here are limited. See the Console for detailed output.","Abort",0,9)
 		prog.show()
 		self.do_events(1)
 		# First step with very coarse model, gradually increasing size improves convergence
-		run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --npt {self.currun['ngauss']} --maxboxsz 24 --modelout {modelout} --niter {self.currun['trainiter']*2} --mask {self.currun['mask']} --nmid {self.currun['dim']}")
+		run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --npt {self.currun['ngauss']} --sym {sym} --maxboxsz 24 --modelout {modelout} --niter {self.currun['trainiter']*2} --mask {self.currun['mask']} --nmid {self.currun['dim']}")
 		prog.setValue(1)
 		self.do_events()
 		if prog.wasCanceled() : return
 		
-		sym=self.jsparm["sym"]
 		box=24
 		n=2
-		while box<self.jsparm["boxsize"]:
+		while box<maxbox:
 			box=good_size(box*2)
 			# in the last iteration we do some additional things
-			if box>=self.jsparm["boxsize"]:
-				box=self.jsparm["boxsize"]
+			if box>=maxbox:
+				box=maxbox
 				s=f"--evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']}"		# in the final iteration
 			else: s=""
 				
 			# iterate until box size is the full size of the particles
 			er=run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --npt {self.currun['ngauss']} --sym {sym} --maxboxsz {box} --model {self.gmm}/{self.currunkey}_model_gmm.txt --modelout {modelout} --niter {self.currun['trainiter']} --mask {self.currun['mask']} --nmid {self.currun['dim']} {s}")
 			if er :
-				showerror("Error running e2gmm_refine, see console for details. Memory is a common issue.")
+				showerror("Error running e2gmm_refine, see console for details. GPU memory exhaustion is a common issue. Consider reducing the target resolution.")
 				return
 			prog.setValue(n)
 			self.do_events()
@@ -457,9 +471,9 @@ class EMGMM(QtWidgets.QMainWindow):
 		if prog.wasCanceled() : return
 
 		# heterogeneity analysis
-		er=run(f"e2gmm_refine.py --model {modelout} --ptclsin {self.gmm}/particles.lst --heter --sym {sym} --maxboxsz {self.jsparm['boxsize']} --gradout {self.gmm}/{self.currunkey}_grads.hdf --mask {self.currun['mask']} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {self.gmm}/{self.currunkey}_decoder.h5 --pas {self.currun['pas']}")
+		er=run(f"e2gmm_refine.py --model {modelout} --ptclsin {self.gmm}/particles.lst --heter --sym {sym} --maxboxsz {maxbox} --gradout {self.gmm}/{self.currunkey}_grads.hdf --mask {self.currun['mask']} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {self.gmm}/{self.currunkey}_decoder.h5 --pas {self.currun['pas']}")
 		if er :
-			showerror("Error running e2gmm_refine, see console for details. Memory is a common issue.")
+			showerror("Error running e2gmm_refine, see console for details. Memory is a common issue. Consider reducing the target resolution.")
 			return
 		prog.setValue(9)
 		self.do_events()
@@ -508,6 +522,8 @@ class EMGMM(QtWidgets.QMainWindow):
 		if line<0: return
 		self.currunkey=str(self.wlistrun.item(line).text())
 		self.currun=self.jsparm.getdefault("run_"+self.currunkey,{"dim":4,"mask":f"{self.gmm}/mask.hdf","trainiter":10,"pas":"100","time":"-"})
+		self.wedres.setText(f'{self.currun.get("targres",20)}')
+		self.wedapix.setText(f'{self.currun.get("apix",self.jsparm.getdefault("apix",""))}')
 		self.wedngauss.setText(f'{self.currun.get("ngauss",64)}')
 		self.weddim.setText(f'{self.currun.get("dim",4)}')
 		self.wedmask.setText(f'{self.currun.get("mask",self.jsparm.getdefault("mask",f"{self.gmm}/mask.hdf"))}')
@@ -550,7 +566,9 @@ class EMGMM(QtWidgets.QMainWindow):
 			if ans==QtWidgets.QMessageBox.No: return
 			
 		# Get the name of an existing refinement
-		rpath=os.path.relpath(str(QtWidgets.QFileDialog.getExistingDirectory(self,"Please select an existing refine_xx folder to seed the analysis")))
+		try:
+			rpath=os.path.relpath(str(QtWidgets.QFileDialog.getExistingDirectory(self,"Please select an existing refine_xx folder to seed the analysis")))
+		except: return
 		if not os.path.isdir(rpath) : 
 			showerror("Invalid path")
 			return

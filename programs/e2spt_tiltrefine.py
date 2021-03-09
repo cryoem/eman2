@@ -59,7 +59,7 @@ def main():
 	parser.add_argument("--reprj_offset", type=str, default="" ,help="Offset translation before reprojection")
 	parser.add_argument("--reprj_clip", type=int, default=-1 ,help="clip after reprojection")
 
-	parser.add_argument("--tophat", type=str, default="auto" ,help="Filter option for refine_postprocess. auto: same as spt refinement; local; global;")
+	parser.add_argument("--tophat", type=str, default="localwiener" ,help="'local', 'localwiener' or 'global'. Instead of imposing a uniform Wiener filter, use a tophat filter ('global' similar to Relion). local is a local tophat filter, localwiener is a local Wiener filter",guitype='strbox', row=5, col=2,rowspan=1, colspan=1)
 	parser.add_argument("--refineastep", type=float,help="Mean angular variation for refine alignment", default=1.)
 	parser.add_argument("--refinentry", type=int,help="number of starting points for refine alignment", default=8)
 	parser.add_argument("--maxshift", type=int,help="maximum shift allowed", default=8)
@@ -167,7 +167,6 @@ def main():
 		jd["mass"] = oldjd["mass"]
 		jd["setsf"] = oldjd["setsf"]
 		jd["sym"] = oldjd["sym"]
-		jd["localfilter"]=oldjd["localfilter"]
 		jd["mask"]=oldjd.getdefault("mask","")
 		jd["maskalign"]=oldjd.getdefault("maskalign","")
 		if "radref" in oldjd:
@@ -181,7 +180,6 @@ def main():
 		print("Cannot find {}. Using default parameters.".format(sptparms))
 		jd["mass"] = -1
 		jd["sym"] = "c1"
-		jd["localfilter"]=False
 		jd["mask"]="auto"
 			
 		if fromspt:
@@ -420,14 +418,10 @@ def main():
 			s += " --setsf {}".format(jd['setsf']) #options.setsf)
 		
 		
-		if options.tophat=="auto" and ("localfilter" in jd) and jd["localfilter"]==True:
-			s += " --tophat local"
-		elif options.tophat=="localwiener":
-			s += " --tophat localwiener"
-		elif options.tophat=="local":
-			s += " --tophat local"
-		elif options.tophat=="global":
-			s += " --tophat global"
+		if options.tophat=="" or options.tophat.lower()=="none": pass
+		elif options.tophat=="localwiener": s += " --tophat localwiener"
+		elif options.tophat=="local":       s += " --tophat local"
+		elif options.tophat=="global":      s += " --tophat global"
 			
 		msk = jd["mask"] 	#{}/mask_tight.hdf".format(path)
 		if len(msk)>0:
