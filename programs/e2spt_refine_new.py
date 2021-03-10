@@ -90,7 +90,7 @@ def main():
 		else:
 			opt+=" --scale {} --clip {} --process mask.soft:outer_radius=-1".format(rs, ep["nx"])
 		
-	if option.maskalign!=None: opt+=f" --multfile {options.maskalign}"
+	if options.maskalign!=None: opt+=f" --multfile {options.maskalign}"
 	
 	for eo in ["even", "odd"]:
 		rf=refs[eo]
