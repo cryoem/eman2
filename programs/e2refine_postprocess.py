@@ -54,7 +54,7 @@ def main():
 	parser.add_argument("--output", dest="output", type=str,default=None, help="Filename for the final averaged/filtered result.")
 	parser.add_argument("--compressbits", type=int,help="Bits to keep when writing (most) volumes with compression. 0->lossless floating point. Default 12 (3 significant figures)", default=12)
 	parser.add_argument("--mass", default=0, type=float,help="The rough mass of the particle in kilodaltons, used to run normalize.bymass. Due to resolution effects, not always the true mass.")
-	parser.add_argument("--restarget", default=5, type=float,help="The specified target resolution to avoid underfiltering artifacts.")
+	parser.add_argument("--restarget", default=-1, type=float,help="The specified target resolution to avoid underfiltering artifacts.")
 	parser.add_argument("--setsf",type=str,help="Force the structure factor to match a 'known' curve prior to postprocessing (<filename>, none). default=none",default="none")
 	parser.add_argument("--iter", dest = "iter", type = int, default=-1, help = "Iteration number to generate FSC filenames")
 	parser.add_argument("--align",action="store_true",default=False,help="Will do o to e alignment and test for handedness flips. Should not be repeated as it overwrites the odd file with the aligned result.")
@@ -88,7 +88,6 @@ def main():
 	if options.m3dpostprocess==None or len(options.m3dpostprocess.strip())==0 : m3dpostproc=""
 	else : m3dpostproc="--process "+options.m3dpostprocess
 
-	lpfilt=1.15/max(10.0,options.restarget)	# low-pass for alignment
 	
 	
 	
@@ -113,6 +112,8 @@ def main():
 	oddfile=options.odd
 	combfile=options.output
 	
+	hdr=EMData(evenfile,0,1)
+	apix=hdr["apix_x"]
 	
 	if options.mergelowres>0:
 		even=EMData(evenfile,0)
@@ -126,6 +127,13 @@ def main():
 		odd.add(c)
 		even.write_image(evenfile)
 		odd.write_image(oddfile)
+
+	# if not specified we use 3/4 Nyquist
+	if options.restarget<=0: 
+		options.restarget=apix*1.5
+		print("Using restarget=",options.restarget)
+		
+	lpfilt=1.15/max(10.0,options.restarget)	# low-pass for alignment
 		
 	path=os.path.dirname(combfile)+"/"
 	if (path=="/") : path="./"

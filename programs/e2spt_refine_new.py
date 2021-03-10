@@ -10,6 +10,7 @@ def main():
 	parser.add_argument("--ptcls", type=str,help="3d particle input", default=None)
 	parser.add_argument("--ref", type=str,help="reference map", default=None)
 	parser.add_argument("--goldstandard", type=float,help="starting resolution for gold standard refinement. default 50", default=50)
+	parser.add_argument("--restarget", default=0, type=float,help="The resolution you reasonably expect to achieve in the current refinement run in A.")
 	parser.add_argument("--path", type=str,help="path", default=None)
 	parser.add_argument("--iters", type=str,help="iterations. Types of refinement separated by comma. p - 3d particle translation-rotation. t - subtilt translation. r - subtilt translation-rotation. d - subtilt defocus. Default is p,p,p,t,r,p,r,d", default="p,p,p,t,r,p,r,d")
 	parser.add_argument("--keep", type=float,help="fraction to keep", default=0.95)
@@ -23,7 +24,8 @@ def main():
 	parser.add_argument("--localrefine", action="store_true", default=False ,help="only perform local search around the solution from the last iteration")
 	parser.add_argument("--loadali2d", type=str,help="load previous 2d alignment", default=None)
 	parser.add_argument("--loadali3d", type=str,help="load previous 3d alignment", default=None)
-	parser.add_argument("--mask", type=str,help="use a customized mask for post process", default=None)
+	parser.add_argument("--mask", type=str,help="Mask applied to the results (instead of automasking)", default=None)
+	parser.add_argument("--maskalign", type=str,help="Mask file applied to 3D alignment reference in each iteration. Not applied to the average, which will follow normal masking routine.", default=None, guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=4, col=0,rowspan=1, colspan=3, mode="model")
 	parser.add_argument("--maxshift", type=int, help="maximum shift. default box size/6",default=-1)
 	parser.add_argument("--maxang", type=int, help="maximum angle difference from starting point for localrefine. ",default=30)
 	parser.add_argument("--smooth",type=float,help="smooth local motion by this factor. smoother local motion with larger numbers. default 100",default=100)
@@ -71,7 +73,7 @@ def main():
 		else:
 			print("WARNING: running without even/odd spliting. this could introduce model bias...")
 			refs={"even":options.ref, "odd":options.ref}
-		
+	
 	
 	er=EMData(refs["even"],0,True)
 	ep=EMData(info3dname,0,True)
@@ -88,6 +90,8 @@ def main():
 		else:
 			opt+=" --scale {} --clip {} --process mask.soft:outer_radius=-1".format(rs, ep["nx"])
 		
+	if option.maskalign!=None: opt+=f" --multfile {options.maskalign}"
+	
 	for eo in ["even", "odd"]:
 		rf=refs[eo]
 		run(f"e2proc3d.py {rf} {path}/threed_00_{eo}.hdf {opt}")
@@ -114,6 +118,8 @@ def main():
 		tophat=f" --tophat {options.tophat}"
 	if options.mask:
 		ppmask=f" --mask {options.mask}"
+	if options.maskalign!=None: maskalign=EMData(options.maskalign,0)
+	else: maskalign=None
 	
 	iters=options.iters.split(',')
 	keydic={'p':"Subtomogram alignment", 't': "Subtilt translational refinement", 'r': "Subtilt rotational refinement", 'd':"Defocus refinement"}
@@ -124,6 +130,16 @@ def main():
 		print(f"######## iter {itr} ##########")
 		print("### {}....".format(keydic[itype]))
 		
+		# Ok, this is a hack to avoid adding a new option to each subprogram. May be a little confusing if the program gets interrupted
+		if options.maskalign!=None:
+			for eo in ("even","odd"):
+				tmp=f"{path}/tmp_{eo}.hdf"
+				refeo=f"{path}/threed{ii:02d}.hdf"
+				refv=EMData(refeo,0)
+				refv.write_compressed(tmp,0,12)
+				refv.mult(maskalign)
+				refv.write_compressed(refeo,0,12)
+	
 		if itype=='p':
 			opt=""
 			if options.localrefine and last3d:
@@ -177,6 +193,14 @@ def main():
 			
 		run(f"e2refine_postprocess.py --even {path}/threed_{itr:02d}_even.hdf {setsf} {tophat} --threads {options.threads} {ppmask}")
 		res=calc_resolution(f"{path}/fsc_masked_{itr:02d}.txt")
+
+		# put the unmasked file back again once we finish the iteration
+		if options.maskalign!=None:
+			for eo in ("even","odd"):
+				tmp=f"{path}/tmp_{eo}.hdf"
+				refeo=f"{path}/threed{ii:02d}.hdf"
+				os.unlink(refeo)
+				os.rename(tmp,refeo)
 	
 	E2end(logid)
 	
@@ -200,26 +224,41 @@ def gather_metadata(pfile):
 	
 	info3d=[]
 	info2d=[]
+	last_pm=None
+	pmn=[]
 	for ii,pm in enumerate(params):
-		img=EMData(pm[0], pm[1], True)
-		imgsrc=img["class_ptcl_src"]
-		imgidx=img["class_ptcl_idxs"]
-		coord=img["ptcl_source_coord"]
-		
-		idx2d=[]
-		for i in imgidx: 
-			e=EMData(imgsrc, i, True)
-			dc={"src":imgsrc,"idx":i,
-				"idx3d":ii, "xform.projection":e["xform.projection"], "tilt_id":e["tilt_id"]}
-			idx2d.append(len(info2d))
-			info2d.append(dc)
-		
-		dc={"src":pm[0], "idx":pm[1], "coord":coord, "idx2d":idx2d}
-		
-		info3d.append(dc)
+		if (pm[0]!=last_pm or len(pmn)>1000) and len(pmn)>0:
+			try: hdrs=EMData.read_images(pm[0],pmn,IMAGE_UNKNOWN,True)
+			except:
+				print(f"couldnt read {pmn} from {pm[0]}")
+				sys.exit(1)
+			for j,pm1 in enumerate(pmn):
+				imgsrc=hdrs[j]["class_ptcl_src"]
+				imgidx=hdrs[j]["class_ptcl_idxs"]
+				coord=hdrs[j]["ptcl_source_coord"]
+				
+				try: rhdrs=EMData.read_images(imgsrc,imgidx,IMAGE_UNKNOWN,True)
+				except:
+					print(f"couldnt read {imgidx} from {imgsrc}")
+					sys.exit(1)
+				idx2d=[]
+				for k,i in enumerate(imgidx): 
+					e=rhdrs[k]
+					dc={"src":imgsrc,"idx":i,
+						"idx3d":ii, "xform.projection":e["xform.projection"], "tilt_id":e["tilt_id"]}
+					idx2d.append(len(info2d))
+					info2d.append(dc)
+				
+				dc={"src":pm[0], "idx":pm[1], "coord":coord, "idx2d":idx2d}
+				
+				info3d.append(dc)
 
-		sys.stdout.write("\r {}/{}".format(ii, len(params)))
-		sys.stdout.flush()
+			sys.stdout.write("\r {}/{}".format(ii, len(params)))
+			sys.stdout.flush()
+			pmn=[]
+		else: 
+			pmn.append(pm[1])
+		last_pm=pm[0]
 	print()
 		
 	return info2d, info3d
