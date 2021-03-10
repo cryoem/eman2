@@ -249,7 +249,7 @@ def gather_metadata(pfile):
 					idx2d.append(len(info2d))
 					info2d.append(dc)
 				
-				dc={"src":last_pm, "idx":pm[1], "coord":coord, "idx2d":idx2d}
+				dc={"src":last_pm, "idx":pm1, "coord":coord, "idx2d":idx2d}
 				
 				info3d.append(dc)
 
