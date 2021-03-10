@@ -230,7 +230,7 @@ def gather_metadata(pfile):
 		if (pm[0]!=last_pm or len(pmn)>1000) and len(pmn)>0:
 			try: hdrs=EMData.read_images(last_pm,pmn,IMAGE_UNKNOWN,True)
 			except:
-				print(f"Couldn't read {pmn} from {pm[0]}")
+				print(f"Couldn't read {pmn} from {last_pm}")
 				sys.exit(1)
 			for j,pm1 in enumerate(pmn):
 				imgsrc=hdrs[j]["class_ptcl_src"]
@@ -249,7 +249,7 @@ def gather_metadata(pfile):
 					idx2d.append(len(info2d))
 					info2d.append(dc)
 				
-				dc={"src":pm[0], "idx":pm[1], "coord":coord, "idx2d":idx2d}
+				dc={"src":last_pm, "idx":pm[1], "coord":coord, "idx2d":idx2d}
 				
 				info3d.append(dc)
 
