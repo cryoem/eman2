@@ -134,7 +134,7 @@ def main():
 		if options.maskalign!=None:
 			for eo in ("even","odd"):
 				tmp=f"{path}/tmp_{eo}.hdf"
-				refeo=f"{path}/threed{ii:02d}.hdf"
+				refeo=f"{path}/threed_{ii:02d}.hdf"
 				refv=EMData(refeo,0)
 				refv.write_compressed(tmp,0,12)
 				refv.mult(maskalign)
@@ -198,7 +198,7 @@ def main():
 		if options.maskalign!=None:
 			for eo in ("even","odd"):
 				tmp=f"{path}/tmp_{eo}.hdf"
-				refeo=f"{path}/threed{ii:02d}.hdf"
+				refeo=f"{path}/threed_{ii:02d}.hdf"
 				os.unlink(refeo)
 				os.rename(tmp,refeo)
 	
