@@ -133,7 +133,7 @@ def main():
 		# Ok, this is a hack to avoid adding a new option to each subprogram. May be a little confusing if the program gets interrupted
 		if options.maskalign!=None:
 			for eo in ("even","odd"):
-				tmp=f"{path}/tmp_{eo}.hdf"
+				tmp=f"{path}/tmpmsk_{eo}.hdf"
 				refeo=f"{path}/threed_{ii:02d}_{eo}.hdf"
 				refv=EMData(refeo,0)
 				refv.write_compressed(tmp,0,12)
@@ -197,7 +197,7 @@ def main():
 		# put the unmasked file back again once we finish the iteration
 		if options.maskalign!=None:
 			for eo in ("even","odd"):
-				tmp=f"{path}/tmp_{eo}.hdf"
+				tmp=f"{path}/tmpmsk_{eo}.hdf"
 				refeo=f"{path}/threed_{ii:02d}_{eo}.hdf"
 				os.unlink(refeo)
 				os.rename(tmp,refeo)
