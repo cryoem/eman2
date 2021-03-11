@@ -226,6 +226,7 @@ def gather_metadata(pfile):
 	info2d=[]
 	last_pm=None
 	pmn=[]
+	pmii=[]
 	for ii,pm in enumerate(params):
 		if (pm[0]!=last_pm or len(pmn)>1000) and len(pmn)>0:
 			try: hdrs=EMData.read_images(last_pm,pmn,IMAGE_UNKNOWN,True)
@@ -245,7 +246,7 @@ def gather_metadata(pfile):
 				for k,i in enumerate(imgidx): 
 					e=rhdrs[k]
 					dc={"src":imgsrc,"idx":i,
-						"idx3d":ii, "xform.projection":e["xform.projection"], "tilt_id":e["tilt_id"]}
+						"idx3d":pmii[j], "xform.projection":e["xform.projection"], "tilt_id":e["tilt_id"]}
 					idx2d.append(len(info2d))
 					info2d.append(dc)
 				
@@ -256,7 +257,9 @@ def gather_metadata(pfile):
 			sys.stdout.write("\r {}/{}".format(ii, len(params)))
 			sys.stdout.flush()
 			pmn=[]
+			pmii=[]
 		pmn.append(pm[1])
+		pmii.append(ii)
 		last_pm=pm[0]
 	print()
 		
