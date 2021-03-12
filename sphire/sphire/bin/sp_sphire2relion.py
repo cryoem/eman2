@@ -475,7 +475,7 @@ def import_partres_file(partres_file):
     partres_array["_rlnVoltage"] = partres_import_array["voltage"]
 
 
-    partres_import_array["cs"] = numpy.where(partres_import_array["cs"] == 0, 0.1, partres_import_array["cs"])
+    partres_import_array["cs"][partres_import_array["cs"] == 0] = 0.1
 
     partres_array["_rlnSphericalAberration"] = partres_import_array["cs"]
 
