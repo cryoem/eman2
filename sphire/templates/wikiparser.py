@@ -485,6 +485,14 @@ def handle_exceptional_cases(sxcmd):
 		sxcmd.token_dict["relion_ctfrefine_executable"].type ="exe"
 		sxcmd.token_dict["submission_template"].type = "submission_temp"
 		sxcmd.token_dict["mrc_reloc_folder"].type = "dir"
+	elif sxcmd.name == "sp_relion_3dclassifi":
+		sxcmd.token_dict["post_refine_folder"].type = "dir"
+		sxcmd.token_dict["reference_map"].type = "data3d_one"
+		sxcmd.token_dict["reference_mask"].type = "data3d_one"
+		sxcmd.token_dict["relion_mpirun_executable"].type = "exe"
+		sxcmd.token_dict["relion_3dclassification_executable"].type ="exe"
+		sxcmd.token_dict["submission_template"].type = "submission_temp"
+		sxcmd.token_dict["mrc_reloc_folder"].type = "dir"
 	elif sxcmd.name == "sp_sort3d_depth":
 		assert(sxcmd.token_dict["output_dir"].key_base == "output_dir")
 		assert(sxcmd.token_dict["output_dir"].type == "output")
@@ -2599,6 +2607,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_config_list.append(SXcmd_config("../doc/process.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_postrefiner_halfset_vol()))
 	sxcmd_config_list.append(SXcmd_config("../doc/polishing.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/higher_ord_abber.txt", "DokuWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/relion_3dclassifi.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 
 	sxcmd_role = "sxr_alt"
 	sxcmd_config_list.append(SXcmd_config("../doc/header.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_header_import_xform_projection()))

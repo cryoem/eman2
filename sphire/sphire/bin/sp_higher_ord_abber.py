@@ -21,22 +21,6 @@ except:
 
 from pyStarDB import sp_pystardb as star
 
-"""
-import mpi
-os.unsetenv('OMPI_COMM_WORLD_RANK')
-RUNNING_UNDER_MPI = "OMPI_COMM_WORLD_SIZE" in os.environ
-if RUNNING_UNDER_MPI :
-    mpi.mpi_init(0, [])
-    rank = mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD)
-    size = mpi.mpi_comm_size(mpi.MPI_COMM_WORLD)
-else :
-    rank  =0
-    size = 1
-
-
-env = os.environ
-new_env = {k: v for k, v in env.items() if "MPI" not in k}
-"""
 
 def parse_parameters(args):
     parser = argparse.ArgumentParser(args, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -156,7 +140,7 @@ def parse_parameters(args):
         "--submission_template",
         type = str,
         help ="",
-        default = ""
+        default = None
     )
 
     parser.add_argument(
@@ -198,7 +182,7 @@ def parse_parameters(args):
         "--mrc_reloc_folder",
         type=str,
         help="",
-        default=""
+        default= None
     )
 
     return parser.parse_args()
@@ -282,7 +266,7 @@ def parse_postrefiner(args_post):
 
     parser_post.add_argument(
         "--mask",
-        default="",
+        default=None,
         type=str,
         help="",
         nargs=1
@@ -318,6 +302,8 @@ def parse_postrefiner(args_post):
         "--mtf",
         type=str,
         help="",
+        default = None,
+        nargs=1
     )
 
     parser_post.add_argument(
@@ -349,7 +335,7 @@ def run(args):
 
         post_refine_options = parse_postrefiner(read_command_txt)
 
-        if post_refine_options.mask is not "":
+        if post_refine_options.mask != None:
             use_mask = post_refine_options.mask[0]
         else:
             use_mask = os.path.join(options.post_refiner, 'vol_adaptive_mask.hdf')
@@ -426,7 +412,7 @@ def run(args):
         pp_star_file.update('fsc', fsc_data_pp, True)
 
         guiner = np.loadtxt(os.path.join(options.post_refiner, 'guinierlines.txt'), skiprows=1)
-        if post_refine_options.mtf is not "":
+        if post_refine_options.mtf != None:
             resol_sq = guiner[:, 0]
             log_amp_orig = guiner[:, 1]
             log_amp_weight = guiner[:, 2]
@@ -472,7 +458,7 @@ def run(args):
 
             subprocess.run(args=[sph2rel_call], shell=True, text=True)
 
-            if options.mrc_reloc_folder is not "":
+            if options.mrc_reloc_folder != None:
                 bdb_star = star.StarFile(os.path.join( os.path.join(str(options.Output_folder), "BDB2STAR"),
                                  'sphire2relion.star'))
                 old_micrograph_name = bdb_star[""]['_rlnMicrographName']
@@ -504,7 +490,7 @@ def run(args):
                     flag_defocus = 'p'
                     total_flag += "--fit_defocus" + " " + "--kmin_defocus " + str(options.min_res_fit)
                 else:
-                    flag_defocus = 'f'
+                    pass
 
                 if options.fit_astigmatism_micrograph:
                     flag_astig = 'm'
@@ -549,7 +535,7 @@ def run(args):
         time.sleep(5)
 
         ### now we need to decide we want to run it on a single PC workstation or on cluster
-        if options.submission_template is not "":
+        if options.submission_template != None:
             ctfrefine_call = options.relion_ctfrefine_executable\
                              + " --i " + os.path.join(options.Output_folder,"BDB2STAR/sphire2relion.star")\
                              + " " + "--f " + os.path.join(str(options.Output_folder), "PostProcess/postprocess.star")\

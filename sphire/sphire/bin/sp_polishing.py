@@ -105,7 +105,7 @@ def parse_parameters(args):
         "--submission_template",
         type = str,
         help ="",
-        default = ""
+        default = None
     )
 
     parser.add_argument(
@@ -147,7 +147,7 @@ def parse_parameters(args):
         "--mrc_reloc_folder",
         type=str,
         help="",
-        default=""
+        default= None
     )
 
     return parser.parse_args()
@@ -231,7 +231,7 @@ def parse_postrefiner(args_post):
 
     parser_post.add_argument(
         "--mask",
-        default="",
+        default=None,
         type=str,
         help="",
         nargs=1
@@ -267,7 +267,7 @@ def parse_postrefiner(args_post):
         "--mtf",
         type=str,
         help="",
-        default = "",
+        default = None,
         nargs = 1
     )
 
@@ -301,7 +301,7 @@ def run(args):
 
         post_refine_options = parse_postrefiner(read_command_txt)
 
-        if post_refine_options.mask is not "":
+        if post_refine_options.mask != None:
             use_mask =  post_refine_options.mask[0]
         else:
             use_mask = os.path.join(options.post_refiner, 'vol_adaptive_mask.hdf')
@@ -378,7 +378,7 @@ def run(args):
         pp_star_file.update('fsc', fsc_data_pp, True)
 
         guiner = np.loadtxt(os.path.join(options.post_refiner, 'guinierlines.txt'), skiprows=1)
-        if post_refine_options.mtf is not "":
+        if post_refine_options.mtf != None:
             resol_sq = guiner[:, 0]
             log_amp_orig = guiner[:, 1]
             log_amp_weight = guiner[:, 2]
@@ -429,7 +429,7 @@ def run(args):
             bdb_star = star.StarFile(os.path.join(os.path.join(str(options.Output_folder), "BDB2STAR"),
                                                   'sphire2relion.star'))
 
-            if options.mrc_reloc_folder is not "":
+            if options.mrc_reloc_folder != None:
 
                 old_micrograph_name = bdb_star[""]['_rlnMicrographName']
                 new_micrograph_name = old_micrograph_name.apply(lambda x: os.path.join(options.mrc_reloc_folder
@@ -452,7 +452,7 @@ def run(args):
 
         if options.training_params != None:
             ### now we need to decide we want to run it on a single PC workstation or on cluster
-            if options.submission_template is not "":
+            if options.submission_template != None:
                 polishing_call = options.relion_polishing_executable\
                                  + " --i " + os.path.join(str(options.Output_folder),
                                                                                    "BDB2STAR/sphire2relion.star")\

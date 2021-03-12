@@ -1,0 +1,105 @@
+~~NOTOC~~
+
+===== sp_relion_3dclassifi =====
+Relion 3D Classfication: A wrapper to call the relion 3D classification from the SPHIRE gui. 
+\\
+===== Usage =====
+
+Usage in command line
+
+  sp_relion_3dclassifi.py post_refine_folder output_folder reference_map --reference_mask --abs_greyscale_map --ini_high --sym --do_ctf --ctf_corr_ref --ctf_ignore_peak --no_of_class --tau_val --no_of_iter --use_fast_sets --mask_diam --mask_zeros --limit_resol_estep --skip_img_align --heal_pix_order --off_range --off_step --ang_search --ang_search_range --ang_search_relax_sym --coarse_sampling --para_io --no_of_pool_part --skip_pad --skip_grid --pre_read_img --scratch_dir --combine_iter_disc --use_gpu --which_gpu --submission_template --submission_command --relion_mpirun_executable --relion_3dclassification_executable --mpi_procs --no_of_threads --mrc_reloc_folder
+  
+\\
+===== Typical usage =====
+
+\\ __1. Applying 3d classification __:
+
+  sp_relion_3dclassifi.py 12_POSTREFINER --submission_template='asdf' --submission_command='fasd' --mpi_procs=1 --no_of_threads=12
+
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; post_refine_folder : Post Refine Folder: Input folder is the directory where the results of the post refiner are present and python routine automatically locates all the required files used for relion 3d classification. (default required string)
+  ; output_folder : Output folder : Output folder is the directory where all the results of the relion 3d classification are saved. (default required string)
+  ; reference_map : Reference map : Reference map to be used. (default required string)
+  ; %%--%%reference_mask : Reference mask (optional) : In case reference mask is provided by user . (default none)
+  ; %%--%%ini_high : initial low-pass filter (A) : Estimate beamtilt from the dataset. (default 60)
+  ; %%--%%sym : symmetry : symmetry use for classification. (default C1)
+  ; %%--%%do_ctf : Do CTF-correction : Whether to apply CTF correction or not. (default True)
+  ; %%--%%ctf_corr_ref : Has reference been  CTF-corrected : Whether reference was CTF correction or not. (default False) 
+  ; %%--%%ctf_ignore_peak : Ignore CTFs until first peak : Whether or not the first peak should be ignored or not .(default False) 
+  ; %%--%%no_of_class : Number of classes : Number of classes to have. (default 1) 
+  ; %%--%%tau_val : Regularisation parameter T : Regularized paramter adjusted. (default 4)
+  ; %%--%%no_of_iter : Number of iterations : Number of iterations to be perfromed. (default 25)
+  ; %%--%%mask_diam: Mask diameter (A) : The diameter of the mask which use. (default 200)
+  ; %%--%%mask_zeros : Mask on individual particles with zeros : in case padding with zeros is required. (default True) 
+  ; %%--%%limit_resol_estep: Limit resolution E-step to (A): to limit the resolution for fitting (default -1)
+  ; %%--%%heal_pix_order : Angular sampling interval in degrees : output value can be from 8 to 0 depends on selection of values from 0.1 to 30 degrees (default 7.5 ||| 0.1 ||| 0.2 ||| 0.5 ||| 0.9 ||| 1.8 ||| 3.7 ||| 15 ||| 30)
+  ; %%--%%off_range : Offset search range (pix) : Probabilities will be calculated only for translations in a circle with this radius in pixels. (default 5)
+  ; %%--%%off_step : Offset search step (pix) : Translations will be sampled with this step size in pixels. (default 1)
+  ; %%--%%coarse_sampling : Allow coarser sampling : flag only , if allow coarser sampling is set to Yes. (default False)
+  ; %%--%%no_of_pool_part : Number of pooled particles :  The nr_pooled_particles parameter controls how many particles are read together for each thread. (default 3)
+  ; %%--%%use_gpu : Use GPU acceleration : Whether to use gpu for computation or not. (default False)
+  ; %%--%%which_gpu : Which GPU to use : the index value of the GPU to use. (default None)
+  ; %%--%%submission_template : Submission template : Submission template for mpi command (default None)
+  ; %%--%%submission_command : Submission command : Submission commmand for cluster (default sbatch ||| qsub ||| bash)
+  ; %%--%%relion_mpirun_executable : relion mpirun executable : Since there can be more than one mpirun environment installed on a workstation or on a cluster. It can be sometimes necessary to provide the relion specific mpirun executable. Just type which mpirun -a in a terminal and choose the one which relion requies. (default mpirun)
+  ; %%--%%relion_3dclassification_executable : relion 3dclassification executable : Similar to the issue of relion mpirun executable, it can be sometime necessary to provide the specific relion ctf refine executable also for that just type which relion_ctf_refine_mpi and copy the path here. (default relion_refine_mpi)
+  ; %%--%%mpi_procs : MPI Procs : The number of MPI processors used for Relion multiprocessing. (default 1)
+  ; %%--%%no_of_threads : number of threads : The number of threads use during the ctf refinement. (default 1)
+  
+  
+\\
+=== Advanced Parameters ===
+  ; %%--%%abs_greyscale_map : Ref map is on absolute greyscale : Whether the reference map is on absolute greyscale level or not. (default False)
+  ; %%--%%use_fast_sets : Use fast subsets for large datasets : if selected the first 5 iterations will be done with random subsets of only K*1500 particles. (default False)
+  ; %%--%%skip_img_align : Skip image alignment : Whether to skip image alignment or not . (default False)
+  ; %%--%%ang_search : Perform local angular searches : Whether to perform angular search or not. (default False)
+  ; %%--%%ang_search_range : Local angular search range: in case if is set to Yes, value is multiplied by 0.33333. (default 5)
+  ; %%--%%ang_search_relax_sym : Relax Symmetry : to relax symmetry . (default None)
+  ; %%--%%para_io : Use parallel disc I/O :if use parallel disc I/O is set to No. (default True)
+  ; %%--%%skip_pad : Skip padding : depends on the answer for skip padding, if set to No , then pad is 2 , if set to yes then pad is 1. (default False)
+  ; %%--%%skip_grid : Skip gridding : Whether to skip the grid or not. (default True)
+  ; %%--%%pre_read_img : Pre-read all particles into RAM : reading all particles images in memory. (default False)
+  ; %%--%%scratch_dir : Copy particles to search directory : if --preread_images is set to No and if a directory link is provided in Copy particles to scratch directory (default None)
+  ; %%--%%combine_iter_disc : Combine iterations through disc : Whether to combine iterations or not. (default False)
+  ; %%--%%mrc_reloc_folder : mrc relocation folder : In case if the mrcs images were moved from original location where they were generated to a new location. Then the user has to provide a path directory link to the new location . (default None)
+
+\\
+===== Output =====
+The output is the result of the ctf refinement saved in the output_folder directory.
+
+\\
+=== List of Output Files ===
+|| **File Name** || **Discription** ||
+
+\\
+==== Developer Notes ====
+=== 2020/01/06 Adnan Ali ===
+  * Let me know if you find some bugs or want some modifications or improvement in the implementation.
+\\
+==== Reference ====
+Jasenko Zivanov, Takanori Nakane and Sjors H W Scheres: Estimation of high-order aberrations and anisotropic magnification from cryo-EM data sets in RELION-3.1, ''IUCrJ'' 7, 253-267, March, 2020.
+
+\\
+==== Author / Maintainer ====
+Jasenko Zivanov, Takanori Nakane and Sjors H W Scheres
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_relion_3dclassifi.py
+
+\\
+==== Maturity ====
+Beta:: Under evaluation and testing. Please let us know if there are any bugs.
+
+\\
+==== Bugs ====
+None right now.
+
+\\
