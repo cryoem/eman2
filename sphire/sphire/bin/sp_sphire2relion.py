@@ -474,10 +474,10 @@ def import_partres_file(partres_file):
     )
     partres_array["_rlnVoltage"] = partres_import_array["voltage"]
 
-    if partres_import_array["cs"] == 0 :
-        partres_array["_rlnSphericalAberration"] = 0.1
-    else :
-        partres_array["_rlnSphericalAberration"] = partres_import_array["cs"]
+
+    partres_import_array["cs"] = numpy.where(partres_import_array["cs"] == 0, 0.1, partres_import_array["cs"])
+
+    partres_array["_rlnSphericalAberration"] = partres_import_array["cs"]
 
     partres_array["_rlnPhaseShift"] = partres_import_array["phase_shift"]
     partres_array["_rlnDetectorPixelSize"] = partres_import_array["pixel_size"]

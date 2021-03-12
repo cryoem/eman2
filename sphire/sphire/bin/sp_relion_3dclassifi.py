@@ -632,8 +632,7 @@ def run(args):
         ### Adding unknown flags which i can still not debugg
         total_str += " " +"--flatten_solvent --oversampling 1 --norm  --scale"
 
-        #
-        # ### Now helical parts start
+        ### Now helical parts start
         # if options.sym :
         #     total_str += " " + "--sym" + " " + options.sym
         # else:
