@@ -41,22 +41,22 @@ Place, Suite 330, Boston, MA  02111-1307 USA
 
 import EMAN2
 import EMAN2_cppwrap
-from EMAN2db import db_open_dict
+import EMAN2db
 import ctypes
 import mpi
 import numpy
 import os
 import optparse
-from ..libpy import sp_statistics
-from ..libpy import sp_alignment
-from ..libpy import sp_applications
-from ..libpy import sp_filter
-from ..libpy import sp_fundamentals
-from ..libpy import sp_global_def
-from ..libpy import sp_logger
-from ..libpy import sp_pixel_error
-from ..libpy import sp_utilities
-from ..libpy import sp_isac
+from sphire.libpy import sp_statistics
+from sphire.libpy import sp_alignment
+from sphire.libpy import sp_applications
+from sphire.libpy import sp_filter
+from sphire.libpy import sp_fundamentals
+from sphire.libpy import sp_global_def
+from sphire.libpy import sp_logger
+from sphire.libpy import sp_pixel_error
+from sphire.libpy import sp_utilities
+from sphire.libpy import sp_isac
 import string
 import subprocess
 import sys
@@ -840,14 +840,14 @@ def isac_MPI_pap(
         Iter += 1
         if my_abs_id == main_node:
             sp_global_def.sxprint(
-                "Iteration within isac_MPI Iter =>",
+                "K-means iteration within isac_MPI =>",
                 Iter,
-                "	main_iter = ",
+                ", main_iter = ",
                 main_iter,
-                "	len data = ",
+                ", len data = ",
                 image_end - image_start,
-                "   ",
-                time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()),
+                ", fl = ",
+                fl,
             )
         mashi = cnx - ou - 2
 
@@ -2206,9 +2206,6 @@ def run(args):
 
     # ------------------------------------------------------[ gather image parameters ]
 
-    if options.CTF and options.VPP:
-        sp_global_def.ERROR("Options CTF and VPP cannot be used together", myid=myid)
-
     # former options
     indep_run = 0
     match_first = 0
@@ -2581,16 +2578,28 @@ def run(args):
                 )
             # for phase plate data we force images to match the rotational power spectrum (provided to us from the outside)
             elif options.VPP:
-                aligned_images[im] = sp_fundamentals.fft(
-                    sp_filter.filt_table(
-                        sp_filter.filt_ctf(
-                            sp_fundamentals.fft(aligned_images[im]),
-                            aligned_images[im].get_attr("ctf"),
-                            binary=True,
-                        ),
-                        rpw,
+                img_obj = aligned_images[im]
+                
+                # One may want to use the phase-plate option even without CTF-correction (e.g., tomograms).
+                if img_obj.has_attr("ctf") and options.CTF:
+                    aligned_images[im] = sp_fundamentals.fft(
+                        sp_filter.filt_table(
+                            sp_filter.filt_ctf(
+                                sp_fundamentals.fft(img_obj), 
+                                img_obj.get_attr("ctf"), 
+                                binary = True
+                            ), 
+                            rpw
+                        ) 
                     )
-                )
+                else:
+                    aligned_images[im] = sp_fundamentals.fft(
+                        sp_filter.filt_table(
+                            sp_fundamentals.fft(img_obj), 
+                            rpw
+                        ) 
+                    )
+                #(filt_table can supposedly work on real-space images, but I'm keeping the original convention for now.)
 
         if options.VPP:
             del rpw
@@ -2627,8 +2636,9 @@ def run(args):
             for i in range(Blockdata["total_nima"]):
                 aligned_images[i].write_image(Blockdata["stack_ali2d"], i)
             del aligned_images
+            
             #  It has to be explicitly closed
-            DB = db_open_dict(Blockdata["stack_ali2d"])
+            DB = EMAN2db.db_open_dict(Blockdata["stack_ali2d"])
             DB.close()
 
             fp = open(
@@ -2653,10 +2663,13 @@ def run(args):
             fp.flush()
             fp.close()
             sp_global_def.sxprint(output_text)
-            junk = sp_utilities.cmdexecute(
+
+            # Running sp_header as a function rather than subprocess
+            sp_global_def.sxprint(
                 "sp_header.py  --consecutive  --params=originalid   %s"
                 % Blockdata["stack_ali2d"]
             )
+            sp_applications.header(Blockdata["stack_ali2d"], 'originalid', consecutive=True)
 
             fp = open(os.path.join(init2dir, "Finished_initial_2d_alignment.txt"), "w")
             fp.flush()
