@@ -194,6 +194,7 @@ class SptAlignTask(JSTask):
 		ssrg[:2]=ssrg[:2]*3/2
 		ssrg=np.append(ssrg[ssrg<maxy], maxy)
 		ssrg=ssrg.tolist()
+		if options.fromscratch and len(ssrg)==1: ssrg.append(maxy)
 		#ssrg=[24]+ssrg
 		
 			
@@ -282,7 +283,7 @@ class SptAlignTask(JSTask):
 
 				refsmall=ref.get_clip(Region(0,(ny-ss)//2, (ny-ss)//2, ss+2, ss, ss))	
 				
-				if si==0:
+				if si==0 and options.fromscratch:
 					## coarse alignment using 3d particles
 					## need to shift origin to rotate 3d volume
 					imgsmall=img.get_clip(Region(0,(ny-ss)//2, (ny-ss)//2, ss+2, ss, ss))
@@ -368,7 +369,7 @@ class SptAlignTask(JSTask):
 					
 				npos=max(1, npos//2)
 				curxfs=newxfs
-				if ss>=maxy:
+				if ss>=maxy and si>0:
 					break
 				
 			
@@ -377,7 +378,7 @@ class SptAlignTask(JSTask):
 			xfout=Transform(curxfs[0])
 			score=newscore[0]
 			
-			
+			print(score)
 			imgxfs=[p*xfout for p in pjxfs]
 			data["src"], data["idx"]
 			c3d={	"src":data["src"], "idx":data["idx"], 
