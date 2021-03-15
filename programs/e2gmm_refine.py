@@ -322,6 +322,7 @@ def train_decoder(gen_model, trainset, options):
 	
 	for itr in range(options.niter):
 		cost=[]
+		truecost=[]
 		for pjr,pji,xf in trainset:
 			if xf.shape[0]==1: continue
 			pj_cpx=(pjr,pji)
@@ -332,17 +333,21 @@ def train_decoder(gen_model, trainset, options):
 				imgs_cpx=pts2img(pout, xf, sym=options.sym)
 				fval=calc_frc(pj_cpx, imgs_cpx)
 				loss=-tf.reduce_mean(fval)
+#				l=loss+std[4]*options.sigmareg+std[3]*5*(options.niter-itr)/options.niter
 				l=loss+std[4]*options.sigmareg
+				if itr<options.niter//2: l+=std[3]*options.ampreg*options.ampreg
+#				print(std)
 			
-			cost.append(loss)   
+			cost.append(loss)  
+			truecost.append(l)
 			grad=gt.gradient(l, wts)
 			opt.apply_gradients(zip(grad, wts))
 			
-			sys.stdout.write("\r {}/{}\t{:.3f}	 ".format(len(cost), nbatch, loss))
+			sys.stdout.write("\r {}/{}\t{:.3f} ({:.3f})         ".format(len(cost), nbatch, loss,l))
 			sys.stdout.flush()
 		sys.stdout.write("\r")
 		
-		print("iter {}, loss : {:.3f}	  ".format(itr, np.mean(cost)))
+		print("iter {}, loss : {:.4f} ({:.4f})         ".format(itr, np.mean(cost), np.mean(truecost)))
 
 def eval_model(gen_model, options):
 	
@@ -552,6 +557,7 @@ def main():
 	parser.add_argument("--ptclsout", type=str,help="aligned particle output", default="")
 	parser.add_argument("--learnrate", type=float,help="learning rate for model training only. Default is 1e-4. ", default=1e-4)
 	parser.add_argument("--sigmareg", type=float,help="regularizer for the sigma of gaussian width. Larger value means all Gaussian functions will have essentially the same width. Smaller value may help compensating local resolution difference.", default=.5)
+	parser.add_argument("--ampreg", type=float,help="regularizer for the Gaussian amplitudes in the first 1/2 of the iterations. Large values will encourage all Gaussians to have similar amplitudes. default = 40", default=40)
 	parser.add_argument("--niter", type=int,help="number of iterations", default=10)
 	parser.add_argument("--npts", type=int,help="number of points to initialize. ", default=-1)
 	parser.add_argument("--batchsz", type=int,help="batch size", default=32)

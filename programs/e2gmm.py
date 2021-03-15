@@ -439,12 +439,12 @@ class EMGMM(QtWidgets.QMainWindow):
 		prog.show()
 		self.do_events(1)
 		# First step with very coarse model, gradually increasing size improves convergence
-		run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --npt {self.currun['ngauss']} --sym {sym} --maxboxsz 24 --modelout {modelout} --niter {self.currun['trainiter']*2} --mask {self.currun['mask']} --nmid {self.currun['dim']}")
+		run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --npt {self.currun['ngauss']} --sym {sym} --maxboxsz 16 --modelout {modelout} --niter {self.currun['trainiter']*2} --mask {self.currun['mask']} --nmid {self.currun['dim']}")
 		prog.setValue(1)
 		self.do_events()
 		if prog.wasCanceled() : return
 		
-		box=24
+		box=16
 		n=2
 		while box<maxbox:
 			box=good_size(box*2)
@@ -526,6 +526,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wedapix.setText(f'{self.currun.get("apix",self.jsparm.getdefault("apix",""))}')
 		self.wedngauss.setText(f'{self.currun.get("ngauss",64)}')
 		self.weddim.setText(f'{self.currun.get("dim",4)}')
+		self.wedsym.setText(f'{self.currun.get("sym","c1")}')
 		self.wedmask.setText(f'{self.currun.get("mask",self.jsparm.getdefault("mask",f"{self.gmm}/mask.hdf"))}')
 		self.wedtrainiter.setText(f'{self.currun.get("trainiter",10)}')
 		pas=self.currun.get("pas","100")
@@ -541,9 +542,10 @@ class EMGMM(QtWidgets.QMainWindow):
 			return
 
 		# Middle layer for every particle
-		
 		self.midresult=np.loadtxt(f"{self.gmm}/{self.currunkey}_mid.txt")[:,1:].transpose()
 		self.wbutdrmid.click()
+		
+		self.plot_mouse(None,(0,0))
 		
 
 	def add_gmm(self,clk=False):
