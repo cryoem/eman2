@@ -645,6 +645,21 @@ def main():
 if __name__ == "__main__":
     main()
 
+####
+
+# from pyStarDB import sp_pystardb as star
+# import os
+# import pandas as pd
+# given_file = os.path.join('/home/adnan/DemoResults/Relion_CTF_REFINE_Test_v1/BDB2STAR/',
+#                                       'sphire2relion.star')
+# outputfile = os.path.join('/home/adnan/DemoResults/Relion_CTF_REFINE_Test_v1/BDB2STAR/','test_newfile.star')
+# starfile  = star.StarFile(given_file)
+#
+# a = [[0, 1], [2, 3]]
+# dd = pd.DataFrame(a, columns=['_c1', '_c2'])
+# starfile["newtag"] = dd
+#
+# starfile.write_star_file(outputfile, overwrite=True)
 
 
 

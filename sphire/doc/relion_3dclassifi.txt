@@ -7,7 +7,7 @@ Relion 3D Classfication: A wrapper to call the relion 3D classification from the
 
 Usage in command line
 
-  sp_relion_3dclassifi.py post_refine_folder output_folder reference_map --reference_mask --abs_greyscale_map --ini_high --sym --do_ctf --ctf_corr_ref --ctf_ignore_peak --no_of_class --tau_val --no_of_iter --use_fast_sets --mask_diam --mask_zeros --limit_resol_estep --skip_img_align --heal_pix_order --off_range --off_step --ang_search --ang_search_range --ang_search_relax_sym --coarse_sampling --para_io --no_of_pool_part --skip_pad --skip_grid --pre_read_img --scratch_dir --combine_iter_disc --use_gpu --which_gpu --submission_template --submission_command --relion_mpirun_executable --relion_3dclassification_executable --mpi_procs --no_of_threads --mrc_reloc_folder
+  sp_relion_3dclassifi.py post_refine_folder output_folder reference_map --reference_mask --abs_greyscale_map --ini_high --sym --do_ctf --ctf_corr_ref --ctf_ignore_peak --no_of_class --tau_val --no_of_iter --use_fast_sets --mask_diam --mask_zeros --limit_resol_estep --skip_img_align --heal_pix_order --off_range --off_step --ang_search --ang_search_range --ang_search_relax_sym --coarse_sampling --para_io --no_of_pool_part --skip_pad --skip_grid --pre_read_img --scratch_dir --combine_iter_disc --use_gpu --which_gpu --submission_template --submission_command --relion_mpirun_executable --relion_3dclassification_executable --mpi_procs --no_of_threads --mrc_reloc_folder --helical_recons --inner_diam --outer_diam --sig_tilt --sig_psi --sig_rot --sigma_dist --keep_tilt_fix --apply_helical_sym --unique_asym_unit --initial_twist --initial_rise --z_percent --do_local_search --twist_min --twist_max --twist_inistep --rise_min --rise_max --rise_inistep
   
 \\
 ===== Typical usage =====
@@ -32,8 +32,8 @@ Usage in command line
   ; %%--%%no_of_class : Number of classes : Number of classes to have. (default 1) 
   ; %%--%%tau_val : Regularisation parameter T : Regularized paramter adjusted. (default 4)
   ; %%--%%no_of_iter : Number of iterations : Number of iterations to be perfromed. (default 25)
-  ; %%--%%mask_diam: Mask diameter (A) : The diameter of the mask which use. (default 200)
-  ; %%--%%mask_zeros : Mask on individual particles with zeros : in case padding with zeros is required. (default True) 
+  ; %%--%%diam_mas: Mask diameter (A) : The diameter of the mask which use. (default 200)
+  ; %%--%%zeros_mas : Mask on individual particles with zeros : in case padding with zeros is required. (default True) 
   ; %%--%%limit_resol_estep: Limit resolution E-step to (A): to limit the resolution for fitting (default -1)
   ; %%--%%heal_pix_order : Angular sampling interval in degrees : output value can be from 8 to 0 depends on selection of values from 0.1 to 30 degrees (default 7.5 ||| 0.1 ||| 0.2 ||| 0.5 ||| 0.9 ||| 1.8 ||| 3.7 ||| 15 ||| 30)
   ; %%--%%off_range : Offset search range (pix) : Probabilities will be calculated only for translations in a circle with this radius in pixels. (default 5)
@@ -41,7 +41,7 @@ Usage in command line
   ; %%--%%coarse_sampling : Allow coarser sampling : flag only , if allow coarser sampling is set to Yes. (default False)
   ; %%--%%no_of_pool_part : Number of pooled particles :  The nr_pooled_particles parameter controls how many particles are read together for each thread. (default 3)
   ; %%--%%use_gpu : Use GPU acceleration : Whether to use gpu for computation or not. (default False)
-  ; %%--%%which_gpu : Which GPU to use : the index value of the GPU to use. (default None)
+  ; %%--%%which_gpu : Which GPU to use : the index value of the GPU to use. (default None) : %%--%%use_gpu==True
   ; %%--%%submission_template : Submission template : Submission template for mpi command (default None)
   ; %%--%%submission_command : Submission command : Submission commmand for cluster (default sbatch ||| qsub ||| bash)
   ; %%--%%relion_mpirun_executable : relion mpirun executable : Since there can be more than one mpirun environment installed on a workstation or on a cluster. It can be sometimes necessary to provide the relion specific mpirun executable. Just type which mpirun -a in a terminal and choose the one which relion requies. (default mpirun)
@@ -56,8 +56,8 @@ Usage in command line
   ; %%--%%use_fast_sets : Use fast subsets for large datasets : if selected the first 5 iterations will be done with random subsets of only K*1500 particles. (default False)
   ; %%--%%skip_img_align : Skip image alignment : Whether to skip image alignment or not . (default False)
   ; %%--%%ang_search : Perform local angular searches : Whether to perform angular search or not. (default False)
-  ; %%--%%ang_search_range : Local angular search range: in case if is set to Yes, value is multiplied by 0.33333. (default 5)
-  ; %%--%%ang_search_relax_sym : Relax Symmetry : to relax symmetry . (default None)
+  ; %%--%%ang_search_range : Local angular search range: in case if is set to Yes, value is multiplied by 0.33333. (default 5) : %%--%%ang_search==True
+  ; %%--%%ang_search_relax_sym : Relax Symmetry : to relax symmetry . (default None) : %%--%%ang_search==True
   ; %%--%%para_io : Use parallel disc I/O :if use parallel disc I/O is set to No. (default True)
   ; %%--%%skip_pad : Skip padding : depends on the answer for skip padding, if set to No , then pad is 2 , if set to yes then pad is 1. (default False)
   ; %%--%%skip_grid : Skip gridding : Whether to skip the grid or not. (default True)
@@ -65,6 +65,26 @@ Usage in command line
   ; %%--%%scratch_dir : Copy particles to search directory : if --preread_images is set to No and if a directory link is provided in Copy particles to scratch directory (default None)
   ; %%--%%combine_iter_disc : Combine iterations through disc : Whether to combine iterations or not. (default False)
   ; %%--%%mrc_reloc_folder : mrc relocation folder : In case if the mrcs images were moved from original location where they were generated to a new location. Then the user has to provide a path directory link to the new location . (default None)
+  ; %%--%%helical_recons : Do helical reconstruction : If selected then perform 3D helical reconstruction. (default False)
+  ; %%--%%inner_diam : Tube inner diameter (A) : Helical tube inner diameter. (default -1)  : %%--%%helical_recons==True 
+  ; %%--%%outer_diam : Tube outer diameter (A) : Helical tube outer diameter. (default -1) : %%--%%helical_recons==True 
+  ; %%--%%sig_tilt : Angular search range for tilt (deg) : angular search range value in degrees for tilt. (default 15) : %%--%%helical_recons==True 
+  ; %%--%%sig_psi : Angular search range for psi (deg) : angular search range value in degrees for psi. (default 10) : %%--%%helical_recons==True 
+  ; %%--%%sig_rot : Angular search range for rot (deg) : angular search range value in degrees for rot. (default -1) : %%--%%helical_recons==True 
+  ; %%--%%sigma_dist : Range factor of local averaging : Local averaging of orientations and translations will be performed within a range of +/- this value * the box size.(default 1.5) : %%--%%helical_recons==True 
+  ; %%--%%keep_tilt_fix : Keep tilt-prior fixed : Tilt priort will not change during the optimization. (default True) : %%--%%helical_recons==True 
+ ; %%--%%apply_helical_sym : Apply helical symmetry : Whether to apply helical symmetry or not . (default False) : %%--%%helical_recons==True 
+  ; %%--%%unique_asym_unit : Number of unique asymmetrical units : No of unique units in each segment box. (default 1) : %%--%%helical_recons==True %%--%%apply_helical_sym==True
+  ; %%--%%initial_twist : Initial twist (deg) : set to positive value if it is a right-handed helix. (default 0) : %%--%%helical_recons==True %%--%%apply_helical_sym==True
+  ; %%--%%initial_rise : Initial rise (A) : set to positivie value .(default 0) : %%--%%helical_recons==True %%--%%apply_helical_sym==True
+  ; %%--%%z_percent : Central Z length (%) : Information from the central part of the box is used for search and imposing helical symmetry in real space. (default 30) : %%--%%helical_recons==True %%--%%apply_helical_sym==True
+  ; %%--%%do_local_search : Do local searches of symmetry : Peform local searches of helical twist and rise within given range . (default False) : %%--%%helical_recons==True 
+  ; %%--%%twist_min :  Twist search minimum (deg) : Miniumum value for twist search. Set it to a positive value if it is a right-handed helix. (default 0) : %%--%%helical_recons==True %%--%%do_local_search==True
+  ; %%--%%twist_max : Twist search maxiumum (deg) : Maxiumum value for twist search. (default 0) : %%--%%helical_recons==True %%--%%do_local_search==True
+  ; %%--%%twist_inistep : Twist search initial step (deg): Need to set manually set if the default value does not guarantee convergence. (default 0) : %%--%%helical_recons==True %%--%%do_local_search==True
+  ; %%--%%rise_min : Rise search minimum (A) : Minimum value for rise search . Set is to a positive value in angstorms. (default 0) : %%--%%helical_recons==True %%--%%do_local_search==True
+  ; %%--%%rise_max : Rise search maxiumum (A) : Maximum value for rise search. (default 0)  : %%--%%helical_recons==True %%--%%do_local_search==True
+  ; %%--%%rise_inistep : Rise search initial step (A) : Need to set manually set if the default value does not guarantee convergence. (default 0) : %%--%%helical_recons==True %%--%%do_local_search==True
 
 \\
 ===== Output =====

@@ -23,20 +23,20 @@ Usage in command line
 === Main Parameters ===
   ; post_refine_folder : Post Refine Folder: Input folder is the directory where the results of the post refiner are present and python routine automatically locates all the required files used for ctf refinement. (default required string)
   ; output_folder : Output folder : Output folder is the directory where all the results of the ctf refinement are saved. (default required string)
-  ; %%--%%estimate_magnification : estimate_magnification  : Estimate magnification of dataset . (default False)
-  ; %%--%%estimate_beamtilt : estimate_beamtilt : Estimate beamtilt from the dataset. (default False)
-  ; %%--%%estimate_trefoil : estimate_trefoil : estimate 3-fold astigmatism per optics group .(default False) 
-  ; %%--%%estimate_order_aberation : estimate_order_aberation :  Estimate the 4th order aberation .(default False)
-  ; %%--%%perform_CTF_params_fit : perform_CTF_params_fit : Perform CTF parameter fitting. (default False) 
-  ; %%--%%fit_defocus_micrograph : fit_defocus_micrograph : Fit defocus based on micrographs. (default False) 
-  ; %%--%%fit_defocus_particle : fit_defocus_particle : Fit defocus based on particles. (default False) 
-  ; %%--%%fit_astigmatism_micrograph : fit_astigmatism_micrograph : Fit astigmatism based on micrographs .(default False) 
-  ; %%--%%fit_astigmatism_particle : fit_astigmatism_particle : Fit astigmatism based on particles. (default False) 
-  ; %%--%%fit_bfactor_micrograph : fit_bfactor_micrograph : Fit bfactor based on micrographs. (default False) 
-  ; %%--%%fit_bfactor_particle : fit_bfactor_particle : Fit bfactor based on particles. (default False) 
-  ; %%--%%fit_phase_shift_micrograph : fit_phase_shift_micrograph : Fit phase shift estimation for micrographs .(default False) 
-  ; %%--%%fit_phase_shift_particle : fit_phase_shift_particle : Fit phase shift estimation for particles. (default False) 
-  ; %%--%%min_res_fit : min_res_fit : minimum resolution value for fitting (default 30.0)
+  ; %%--%%estimate_magnification : Estimate (anisotropic) magnification  : Estimate magnification of dataset . (default False)
+  ; %%--%%estimate_beamtilt : Estimate beamtilt : Estimate beamtilt from the dataset. (default False) : %%--%%estimate_magnification==False
+  ; %%--%%estimate_trefoil : Also estimate trefoil : estimate 3-fold astigmatism per optics group .(default False) : %%--%%estimate_magnification==False
+  ; %%--%%estimate_order_aberation : Estimate the 4th order aberrations  :  Estimate the 4th order aberation .(default False) : %%--%%estimate_magnification==False
+  ; %%--%%perform_CTF_params_fit : Perform CTF parameter fitting : Perform CTF parameter fitting. (default False) : %%--%%estimate_magnification==False 
+  ; %%--%%fit_defocus_micrograph : Fit defocus based on micrographs : Fit defocus based on micrographs. (default False) : %%--%%estimate_magnification==False %%--%%perform_CTF_params_fit==True
+  ; %%--%%fit_defocus_particle : Fit defocus based on particles : Fit defocus based on particles. (default False) : %%--%%estimate_magnification==False %%--%%perform_CTF_params_fit==True
+  ; %%--%%fit_astigmatism_micrograph :  Fit astigmatism based on micrographs : Fit astigmatism based on micrographs .(default False) : %%--%%estimate_magnification==False %%--%%perform_CTF_params_fit==True
+  ; %%--%%fit_astigmatism_particle : Fit astigmatism based on particles : Fit astigmatism based on particles. (default False) : %%--%%estimate_magnification==False %%--%%perform_CTF_params_fit==True
+  ; %%--%%fit_bfactor_micrograph : Fit bfactor based on micrographs : Fit bfactor based on micrographs. (default False) : %%--%%estimate_magnification==False %%--%%perform_CTF_params_fit==True
+  ; %%--%%fit_bfactor_particle : Fit bfactor based on particles : Fit bfactor based on particles. (default False) : %%--%%estimate_magnification==False %%--%%perform_CTF_params_fit==True
+  ; %%--%%fit_phase_shift_micrograph : Fit phase shift estimation for micrographs : Fit phase shift estimation for micrographs .(default False) : %%--%%estimate_magnification==False %%--%%perform_CTF_params_fit==True
+  ; %%--%%fit_phase_shift_particle : Fit phase shift estimation for particles : Fit phase shift estimation for particles. (default False) : %%--%%estimate_magnification==False %%--%%perform_CTF_params_fit==True
+  ; %%--%%min_res_fit : minimum resolution value for fitting (A) : minimum resolution value for fitting (default 30.0)
   ; %%--%%submission_template : Submission template : Submission template for mpi command (default none)
   ; %%--%%submission_command : Submission command : Submission commmand for cluster (default sbatch ||| qsub ||| bash)
   ; %%--%%relion_mpirun_executable : relion mpirun executable : Since there can be more than one mpirun environment installed on a workstation or on a cluster. It can be sometimes necessary to provide the relion specific mpirun executable. Just type which mpirun -a in a terminal and choose the one which relion requies. (default mpirun)

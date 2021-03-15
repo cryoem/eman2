@@ -15410,7 +15410,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token = SXcmd_token();
         token.key_base = "estimate_magnification";
         token.key_prefix = "--";
-        token.label = "estimate_magnification";
+        token.label = "Estimate (anisotropic) magnification";
         token.help = "Estimate magnification of dataset . ";
         token.group = "main";
         token.is_required = False;
@@ -15426,199 +15426,227 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token = SXcmd_token();
         token.key_base = "estimate_beamtilt";
         token.key_prefix = "--";
-        token.label = "estimate_beamtilt";
+        token.label = "Estimate beamtilt";
         token.help = "Estimate beamtilt from the dataset. ";
         token.group = "main";
         token.is_required = False;
         token.is_locked = False;
         token.is_reversed = False;
         token.filament_tab = "";
-        token.dependency_group = [['', '', '']];
+        token.dependency_group = [['', '', ''], ['estimate_magnification', 'False', 'False']];
         token.default = False;
         token.restore = [[False], [False]];
         token.type = "bool";
         sxcmd.token_list.append(token);
-        sxcmd.token_dict[token.key_base] = token
+        sxcmd.token_dict[token.key_base] = token;
+        sxcmd.dependency_dict.setdefault('estimate_magnification', []).append([token.key_base, 'False', 'False'])
         token = SXcmd_token();
         token.key_base = "estimate_trefoil";
         token.key_prefix = "--";
-        token.label = "estimate_trefoil";
+        token.label = "Also estimate trefoil";
         token.help = "estimate 3-fold astigmatism per optics group .";
         token.group = "main";
         token.is_required = False;
         token.is_locked = False;
         token.is_reversed = False;
         token.filament_tab = "";
-        token.dependency_group = [['', '', '']];
+        token.dependency_group = [['', '', ''], ['estimate_magnification', 'False', 'False']];
         token.default = False;
         token.restore = [[False], [False]];
         token.type = "bool";
         sxcmd.token_list.append(token);
-        sxcmd.token_dict[token.key_base] = token
+        sxcmd.token_dict[token.key_base] = token;
+        sxcmd.dependency_dict.setdefault('estimate_magnification', []).append([token.key_base, 'False', 'False'])
         token = SXcmd_token();
         token.key_base = "estimate_order_aberation";
         token.key_prefix = "--";
-        token.label = "estimate_order_aberation";
+        token.label = "Estimate the 4th order aberrations";
         token.help = "Estimate the 4th order aberation .";
         token.group = "main";
         token.is_required = False;
         token.is_locked = False;
         token.is_reversed = False;
         token.filament_tab = "";
-        token.dependency_group = [['', '', '']];
+        token.dependency_group = [['', '', ''], ['estimate_magnification', 'False', 'False']];
         token.default = False;
         token.restore = [[False], [False]];
         token.type = "bool";
         sxcmd.token_list.append(token);
-        sxcmd.token_dict[token.key_base] = token
+        sxcmd.token_dict[token.key_base] = token;
+        sxcmd.dependency_dict.setdefault('estimate_magnification', []).append([token.key_base, 'False', 'False'])
         token = SXcmd_token();
         token.key_base = "perform_CTF_params_fit";
         token.key_prefix = "--";
-        token.label = "perform_CTF_params_fit";
+        token.label = "Perform CTF parameter fitting";
         token.help = "Perform CTF parameter fitting. ";
         token.group = "main";
         token.is_required = False;
         token.is_locked = False;
         token.is_reversed = False;
         token.filament_tab = "";
-        token.dependency_group = [['', '', '']];
+        token.dependency_group = [['', '', ''], ['estimate_magnification', 'False', 'False']];
         token.default = False;
         token.restore = [[False], [False]];
         token.type = "bool";
         sxcmd.token_list.append(token);
-        sxcmd.token_dict[token.key_base] = token
+        sxcmd.token_dict[token.key_base] = token;
+        sxcmd.dependency_dict.setdefault('estimate_magnification', []).append([token.key_base, 'False', 'False'])
         token = SXcmd_token();
         token.key_base = "fit_defocus_micrograph";
         token.key_prefix = "--";
-        token.label = "fit_defocus_micrograph";
+        token.label = "Fit defocus based on micrographs";
         token.help = "Fit defocus based on micrographs. ";
         token.group = "main";
         token.is_required = False;
         token.is_locked = False;
         token.is_reversed = False;
         token.filament_tab = "";
-        token.dependency_group = [['', '', '']];
+        token.dependency_group = [['', '', ''], ['estimate_magnification', 'False', 'False'],
+                                  ['perform_CTF_params_fit', 'True', 'False']];
         token.default = False;
         token.restore = [[False], [False]];
         token.type = "bool";
         sxcmd.token_list.append(token);
-        sxcmd.token_dict[token.key_base] = token
+        sxcmd.token_dict[token.key_base] = token;
+        sxcmd.dependency_dict.setdefault('estimate_magnification', []).append([token.key_base, 'False', 'False']);
+        sxcmd.dependency_dict.setdefault('perform_CTF_params_fit', []).append([token.key_base, 'True', 'False'])
         token = SXcmd_token();
         token.key_base = "fit_defocus_particle";
         token.key_prefix = "--";
-        token.label = "fit_defocus_particle";
+        token.label = "Fit defocus based on particles";
         token.help = "Fit defocus based on particles. ";
         token.group = "main";
         token.is_required = False;
         token.is_locked = False;
         token.is_reversed = False;
         token.filament_tab = "";
-        token.dependency_group = [['', '', '']];
+        token.dependency_group = [['', '', ''], ['estimate_magnification', 'False', 'False'],
+                                  ['perform_CTF_params_fit', 'True', 'False']];
         token.default = False;
         token.restore = [[False], [False]];
         token.type = "bool";
         sxcmd.token_list.append(token);
-        sxcmd.token_dict[token.key_base] = token
+        sxcmd.token_dict[token.key_base] = token;
+        sxcmd.dependency_dict.setdefault('estimate_magnification', []).append([token.key_base, 'False', 'False']);
+        sxcmd.dependency_dict.setdefault('perform_CTF_params_fit', []).append([token.key_base, 'True', 'False'])
         token = SXcmd_token();
         token.key_base = "fit_astigmatism_micrograph";
         token.key_prefix = "--";
-        token.label = "fit_astigmatism_micrograph";
+        token.label = "Fit astigmatism based on micrographs";
         token.help = "Fit astigmatism based on micrographs .";
         token.group = "main";
         token.is_required = False;
         token.is_locked = False;
         token.is_reversed = False;
         token.filament_tab = "";
-        token.dependency_group = [['', '', '']];
+        token.dependency_group = [['', '', ''], ['estimate_magnification', 'False', 'False'],
+                                  ['perform_CTF_params_fit', 'True', 'False']];
         token.default = False;
         token.restore = [[False], [False]];
         token.type = "bool";
         sxcmd.token_list.append(token);
-        sxcmd.token_dict[token.key_base] = token
+        sxcmd.token_dict[token.key_base] = token;
+        sxcmd.dependency_dict.setdefault('estimate_magnification', []).append([token.key_base, 'False', 'False']);
+        sxcmd.dependency_dict.setdefault('perform_CTF_params_fit', []).append([token.key_base, 'True', 'False'])
         token = SXcmd_token();
         token.key_base = "fit_astigmatism_particle";
         token.key_prefix = "--";
-        token.label = "fit_astigmatism_particle";
+        token.label = "Fit astigmatism based on particles";
         token.help = "Fit astigmatism based on particles. ";
         token.group = "main";
         token.is_required = False;
         token.is_locked = False;
         token.is_reversed = False;
         token.filament_tab = "";
-        token.dependency_group = [['', '', '']];
+        token.dependency_group = [['', '', ''], ['estimate_magnification', 'False', 'False'],
+                                  ['perform_CTF_params_fit', 'True', 'False']];
         token.default = False;
         token.restore = [[False], [False]];
         token.type = "bool";
         sxcmd.token_list.append(token);
-        sxcmd.token_dict[token.key_base] = token
+        sxcmd.token_dict[token.key_base] = token;
+        sxcmd.dependency_dict.setdefault('estimate_magnification', []).append([token.key_base, 'False', 'False']);
+        sxcmd.dependency_dict.setdefault('perform_CTF_params_fit', []).append([token.key_base, 'True', 'False'])
         token = SXcmd_token();
         token.key_base = "fit_bfactor_micrograph";
         token.key_prefix = "--";
-        token.label = "fit_bfactor_micrograph";
+        token.label = "Fit bfactor based on micrographs";
         token.help = "Fit bfactor based on micrographs. ";
         token.group = "main";
         token.is_required = False;
         token.is_locked = False;
         token.is_reversed = False;
         token.filament_tab = "";
-        token.dependency_group = [['', '', '']];
+        token.dependency_group = [['', '', ''], ['estimate_magnification', 'False', 'False'],
+                                  ['perform_CTF_params_fit', 'True', 'False']];
         token.default = False;
         token.restore = [[False], [False]];
         token.type = "bool";
         sxcmd.token_list.append(token);
-        sxcmd.token_dict[token.key_base] = token
+        sxcmd.token_dict[token.key_base] = token;
+        sxcmd.dependency_dict.setdefault('estimate_magnification', []).append([token.key_base, 'False', 'False']);
+        sxcmd.dependency_dict.setdefault('perform_CTF_params_fit', []).append([token.key_base, 'True', 'False'])
         token = SXcmd_token();
         token.key_base = "fit_bfactor_particle";
         token.key_prefix = "--";
-        token.label = "fit_bfactor_particle";
+        token.label = "Fit bfactor based on particles";
         token.help = "Fit bfactor based on particles. ";
         token.group = "main";
         token.is_required = False;
         token.is_locked = False;
         token.is_reversed = False;
         token.filament_tab = "";
-        token.dependency_group = [['', '', '']];
+        token.dependency_group = [['', '', ''], ['estimate_magnification', 'False', 'False'],
+                                  ['perform_CTF_params_fit', 'True', 'False']];
         token.default = False;
         token.restore = [[False], [False]];
         token.type = "bool";
         sxcmd.token_list.append(token);
-        sxcmd.token_dict[token.key_base] = token
+        sxcmd.token_dict[token.key_base] = token;
+        sxcmd.dependency_dict.setdefault('estimate_magnification', []).append([token.key_base, 'False', 'False']);
+        sxcmd.dependency_dict.setdefault('perform_CTF_params_fit', []).append([token.key_base, 'True', 'False'])
         token = SXcmd_token();
         token.key_base = "fit_phase_shift_micrograph";
         token.key_prefix = "--";
-        token.label = "fit_phase_shift_micrograph";
+        token.label = "Fit phase shift estimation for micrographs";
         token.help = "Fit phase shift estimation for micrographs .";
         token.group = "main";
         token.is_required = False;
         token.is_locked = False;
         token.is_reversed = False;
         token.filament_tab = "";
-        token.dependency_group = [['', '', '']];
+        token.dependency_group = [['', '', ''], ['estimate_magnification', 'False', 'False'],
+                                  ['perform_CTF_params_fit', 'True', 'False']];
         token.default = False;
         token.restore = [[False], [False]];
         token.type = "bool";
         sxcmd.token_list.append(token);
-        sxcmd.token_dict[token.key_base] = token
+        sxcmd.token_dict[token.key_base] = token;
+        sxcmd.dependency_dict.setdefault('estimate_magnification', []).append([token.key_base, 'False', 'False']);
+        sxcmd.dependency_dict.setdefault('perform_CTF_params_fit', []).append([token.key_base, 'True', 'False'])
         token = SXcmd_token();
         token.key_base = "fit_phase_shift_particle";
         token.key_prefix = "--";
-        token.label = "fit_phase_shift_particle";
+        token.label = "Fit phase shift estimation for particles";
         token.help = "Fit phase shift estimation for particles. ";
         token.group = "main";
         token.is_required = False;
         token.is_locked = False;
         token.is_reversed = False;
         token.filament_tab = "";
-        token.dependency_group = [['', '', '']];
+        token.dependency_group = [['', '', ''], ['estimate_magnification', 'False', 'False'],
+                                  ['perform_CTF_params_fit', 'True', 'False']];
         token.default = False;
         token.restore = [[False], [False]];
         token.type = "bool";
         sxcmd.token_list.append(token);
-        sxcmd.token_dict[token.key_base] = token
+        sxcmd.token_dict[token.key_base] = token;
+        sxcmd.dependency_dict.setdefault('estimate_magnification', []).append([token.key_base, 'False', 'False']);
+        sxcmd.dependency_dict.setdefault('perform_CTF_params_fit', []).append([token.key_base, 'True', 'False'])
         token = SXcmd_token();
         token.key_base = "min_res_fit";
         token.key_prefix = "--";
-        token.label = "min_res_fit";
+        token.label = "minimum resolution value for fitting (A)";
         token.help = "minimum resolution value for fitting ";
         token.group = "main";
         token.is_required = False;
@@ -15951,7 +15979,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         sxcmd.token_list.append(token);
         sxcmd.token_dict[token.key_base] = token
         token = SXcmd_token();
-        token.key_base = "mask_diam";
+        token.key_base = "diam_mas";
         token.key_prefix = "--";
         token.label = "Mask diameter (A)";
         token.help = "The diameter of the mask which use. ";
@@ -15963,11 +15991,11 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.dependency_group = [['', '', '']];
         token.default = "200";
         token.restore = [['200'], ['200']];
-        token.type = "data3d_one";
+        token.type = "int";
         sxcmd.token_list.append(token);
         sxcmd.token_dict[token.key_base] = token
         token = SXcmd_token();
-        token.key_base = "mask_zeros";
+        token.key_base = "zeros_mas";
         token.key_prefix = "--";
         token.label = "Mask on individual particles with zeros";
         token.help = "in case padding with zeros is required. ";
@@ -15977,9 +16005,9 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.is_reversed = False;
         token.filament_tab = "";
         token.dependency_group = [['', '', '']];
-        token.default = "True";
-        token.restore = [['True'], ['True']];
-        token.type = "data3d_one";
+        token.default = True;
+        token.restore = [[True], [True]];
+        token.type = "bool";
         sxcmd.token_list.append(token);
         sxcmd.token_dict[token.key_base] = token
         token = SXcmd_token();
@@ -16105,12 +16133,13 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.is_locked = False;
         token.is_reversed = False;
         token.filament_tab = "";
-        token.dependency_group = [['', '', '']];
+        token.dependency_group = [['', '', ''], ['use_gpu', 'True', 'False']];
         token.default = "None";
         token.restore = [['None'], ['None']];
         token.type = "string";
         sxcmd.token_list.append(token);
-        sxcmd.token_dict[token.key_base] = token
+        sxcmd.token_dict[token.key_base] = token;
+        sxcmd.dependency_dict.setdefault('use_gpu', []).append([token.key_base, 'True', 'False'])
         token = SXcmd_token();
         token.key_base = "submission_template";
         token.key_prefix = "--";
@@ -16281,12 +16310,13 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.is_locked = False;
         token.is_reversed = False;
         token.filament_tab = "";
-        token.dependency_group = [['', '', '']];
+        token.dependency_group = [['', '', ''], ['ang_search', 'True', 'False']];
         token.default = "5";
         token.restore = [['5'], ['5']];
         token.type = "int";
         sxcmd.token_list.append(token);
-        sxcmd.token_dict[token.key_base] = token
+        sxcmd.token_dict[token.key_base] = token;
+        sxcmd.dependency_dict.setdefault('ang_search', []).append([token.key_base, 'True', 'False'])
         token = SXcmd_token();
         token.key_base = "ang_search_relax_sym";
         token.key_prefix = "--";
@@ -16297,12 +16327,13 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.is_locked = False;
         token.is_reversed = False;
         token.filament_tab = "";
-        token.dependency_group = [['', '', '']];
+        token.dependency_group = [['', '', ''], ['ang_search', 'True', 'False']];
         token.default = "None";
         token.restore = [['None'], ['None']];
         token.type = "string";
         sxcmd.token_list.append(token);
-        sxcmd.token_dict[token.key_base] = token
+        sxcmd.token_dict[token.key_base] = token;
+        sxcmd.dependency_dict.setdefault('ang_search', []).append([token.key_base, 'True', 'False'])
         token = SXcmd_token();
         token.key_base = "para_io";
         token.key_prefix = "--";
@@ -16415,6 +16446,365 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.type = "dir";
         sxcmd.token_list.append(token);
         sxcmd.token_dict[token.key_base] = token
+        token = SXcmd_token();
+        token.key_base = "helical_recons";
+        token.key_prefix = "--";
+        token.label = "Do helical reconstruction";
+        token.help = "If selected then perform 3D helical reconstruction. ";
+        token.group = "advanced";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', '']];
+        token.default = False;
+        token.restore = [[False], [False]];
+        token.type = "bool";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token
+        token = SXcmd_token();
+        token.key_base = "inner_diam";
+        token.key_prefix = "--";
+        token.label = "Tube inner diameter (A)";
+        token.help = "Helical tube inner diameter. ";
+        token.group = "advanced";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', ''], ['helical_recons', 'True', 'False']];
+        token.default = "-1";
+        token.restore = [['-1'], ['-1']];
+        token.type = "int";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token;
+        sxcmd.dependency_dict.setdefault('helical_recons', []).append([token.key_base, 'True', 'False'])
+        token = SXcmd_token();
+        token.key_base = "outer_diam";
+        token.key_prefix = "--";
+        token.label = "Tube outer diameter (A)";
+        token.help = "Helical tube outer diameter. ";
+        token.group = "advanced";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', ''], ['helical_recons', 'True', 'False']];
+        token.default = "-1";
+        token.restore = [['-1'], ['-1']];
+        token.type = "int";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token;
+        sxcmd.dependency_dict.setdefault('helical_recons', []).append([token.key_base, 'True', 'False'])
+        token = SXcmd_token();
+        token.key_base = "sig_tilt";
+        token.key_prefix = "--";
+        token.label = "Angular search range for tilt (deg)";
+        token.help = "angular search range value in degrees for tilt. ";
+        token.group = "advanced";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', ''], ['helical_recons', 'True', 'False']];
+        token.default = "15";
+        token.restore = [['15'], ['15']];
+        token.type = "int";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token;
+        sxcmd.dependency_dict.setdefault('helical_recons', []).append([token.key_base, 'True', 'False'])
+        token = SXcmd_token();
+        token.key_base = "sig_psi";
+        token.key_prefix = "--";
+        token.label = "Angular search range for psi (deg)";
+        token.help = "angular search range value in degrees for psi. ";
+        token.group = "advanced";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', ''], ['helical_recons', 'True', 'False']];
+        token.default = "10";
+        token.restore = [['10'], ['10']];
+        token.type = "int";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token;
+        sxcmd.dependency_dict.setdefault('helical_recons', []).append([token.key_base, 'True', 'False'])
+        token = SXcmd_token();
+        token.key_base = "sig_rot";
+        token.key_prefix = "--";
+        token.label = "Angular search range for rot (deg)";
+        token.help = "angular search range value in degrees for rot. ";
+        token.group = "advanced";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', ''], ['helical_recons', 'True', 'False']];
+        token.default = "-1";
+        token.restore = [['-1'], ['-1']];
+        token.type = "int";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token;
+        sxcmd.dependency_dict.setdefault('helical_recons', []).append([token.key_base, 'True', 'False'])
+        token = SXcmd_token();
+        token.key_base = "sigma_dist";
+        token.key_prefix = "--";
+        token.label = "Range factor of local averaging";
+        token.help = "Local averaging of orientations and translations will be performed within a range of +/- this value * the box size.";
+        token.group = "advanced";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', ''], ['helical_recons', 'True', 'False']];
+        token.default = "1.5";
+        token.restore = [['1.5'], ['1.5']];
+        token.type = "float";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token;
+        sxcmd.dependency_dict.setdefault('helical_recons', []).append([token.key_base, 'True', 'False'])
+        token = SXcmd_token();
+        token.key_base = "keep_tilt_fix";
+        token.key_prefix = "--";
+        token.label = "Keep tilt-prior fixed";
+        token.help = "Tilt priort will not change during the optimization. ";
+        token.group = "advanced";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', ''], ['helical_recons', 'True', 'False']];
+        token.default = True;
+        token.restore = [[True], [True]];
+        token.type = "bool";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token;
+        sxcmd.dependency_dict.setdefault('helical_recons', []).append([token.key_base, 'True', 'False'])
+        token = SXcmd_token();
+        token.key_base = "apply_helical_sym";
+        token.key_prefix = "--";
+        token.label = "Apply helical symmetry";
+        token.help = "Whether to apply helical symmetry or not . ";
+        token.group = "advanced";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', ''], ['helical_recons', 'True', 'False']];
+        token.default = False;
+        token.restore = [[False], [False]];
+        token.type = "bool";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token;
+        sxcmd.dependency_dict.setdefault('helical_recons', []).append([token.key_base, 'True', 'False'])
+        token = SXcmd_token();
+        token.key_base = "unique_asym_unit";
+        token.key_prefix = "--";
+        token.label = "Number of unique asymmetrical units";
+        token.help = "No of unique units in each segment box. ";
+        token.group = "advanced";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', ''], ['helical_recons', 'True', 'False'],
+                                  ['apply_helical_sym', 'True', 'False']];
+        token.default = "1";
+        token.restore = [['1'], ['1']];
+        token.type = "int";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token;
+        sxcmd.dependency_dict.setdefault('helical_recons', []).append([token.key_base, 'True', 'False']);
+        sxcmd.dependency_dict.setdefault('apply_helical_sym', []).append([token.key_base, 'True', 'False'])
+        token = SXcmd_token();
+        token.key_base = "initial_twist";
+        token.key_prefix = "--";
+        token.label = "Initial twist (deg)";
+        token.help = "set to positive value if it is a right-handed helix. ";
+        token.group = "advanced";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', ''], ['helical_recons', 'True', 'False'],
+                                  ['apply_helical_sym', 'True', 'False']];
+        token.default = "0";
+        token.restore = [['0'], ['0']];
+        token.type = "int";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token;
+        sxcmd.dependency_dict.setdefault('helical_recons', []).append([token.key_base, 'True', 'False']);
+        sxcmd.dependency_dict.setdefault('apply_helical_sym', []).append([token.key_base, 'True', 'False'])
+        token = SXcmd_token();
+        token.key_base = "initial_rise";
+        token.key_prefix = "--";
+        token.label = "Initial rise (A)";
+        token.help = "set to positivie value .";
+        token.group = "advanced";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', ''], ['helical_recons', 'True', 'False'],
+                                  ['apply_helical_sym', 'True', 'False']];
+        token.default = "0";
+        token.restore = [['0'], ['0']];
+        token.type = "int";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token;
+        sxcmd.dependency_dict.setdefault('helical_recons', []).append([token.key_base, 'True', 'False']);
+        sxcmd.dependency_dict.setdefault('apply_helical_sym', []).append([token.key_base, 'True', 'False'])
+        token = SXcmd_token();
+        token.key_base = "z_percent";
+        token.key_prefix = "--";
+        token.label = "Central Z length (%)";
+        token.help = "Information from the central part of the box is used for search and imposing helical symmetry in real space. ";
+        token.group = "advanced";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', ''], ['helical_recons', 'True', 'False'],
+                                  ['apply_helical_sym', 'True', 'False']];
+        token.default = "30";
+        token.restore = [['30'], ['30']];
+        token.type = "int";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token;
+        sxcmd.dependency_dict.setdefault('helical_recons', []).append([token.key_base, 'True', 'False']);
+        sxcmd.dependency_dict.setdefault('apply_helical_sym', []).append([token.key_base, 'True', 'False'])
+        token = SXcmd_token();
+        token.key_base = "do_local_search";
+        token.key_prefix = "--";
+        token.label = "Do local searches of symmetry";
+        token.help = "Peform local searches of helical twist and rise within given range . ";
+        token.group = "advanced";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', ''], ['helical_recons', 'True', 'False']];
+        token.default = False;
+        token.restore = [[False], [False]];
+        token.type = "bool";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token;
+        sxcmd.dependency_dict.setdefault('helical_recons', []).append([token.key_base, 'True', 'False'])
+        token = SXcmd_token();
+        token.key_base = "twist_min";
+        token.key_prefix = "--";
+        token.label = "Twist search minimum (deg)";
+        token.help = "Miniumum value for twist search. Set it to a positive value if it is a right-handed helix. ";
+        token.group = "advanced";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', ''], ['helical_recons', 'True', 'False'],
+                                  ['do_local_search', 'True', 'False']];
+        token.default = "0";
+        token.restore = [['0'], ['0']];
+        token.type = "int";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token;
+        sxcmd.dependency_dict.setdefault('helical_recons', []).append([token.key_base, 'True', 'False']);
+        sxcmd.dependency_dict.setdefault('do_local_search', []).append([token.key_base, 'True', 'False'])
+        token = SXcmd_token();
+        token.key_base = "twist_max";
+        token.key_prefix = "--";
+        token.label = "Twist search maxiumum (deg)";
+        token.help = "Maxiumum value for twist search. ";
+        token.group = "advanced";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', ''], ['helical_recons', 'True', 'False'],
+                                  ['do_local_search', 'True', 'False']];
+        token.default = "0";
+        token.restore = [['0'], ['0']];
+        token.type = "int";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token;
+        sxcmd.dependency_dict.setdefault('helical_recons', []).append([token.key_base, 'True', 'False']);
+        sxcmd.dependency_dict.setdefault('do_local_search', []).append([token.key_base, 'True', 'False'])
+        token = SXcmd_token();
+        token.key_base = "twist_inistep";
+        token.key_prefix = "--";
+        token.label = "Twist search initial step (deg)";
+        token.help = "Need to set manually set if the default value does not guarantee convergence. ";
+        token.group = "advanced";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', ''], ['helical_recons', 'True', 'False'],
+                                  ['do_local_search', 'True', 'False']];
+        token.default = "0";
+        token.restore = [['0'], ['0']];
+        token.type = "int";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token;
+        sxcmd.dependency_dict.setdefault('helical_recons', []).append([token.key_base, 'True', 'False']);
+        sxcmd.dependency_dict.setdefault('do_local_search', []).append([token.key_base, 'True', 'False'])
+        token = SXcmd_token();
+        token.key_base = "rise_min";
+        token.key_prefix = "--";
+        token.label = "Rise search minimum (A)";
+        token.help = "Minimum value for rise search . Set is to a positive value in angstorms. ";
+        token.group = "advanced";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', ''], ['helical_recons', 'True', 'False'],
+                                  ['do_local_search', 'True', 'False']];
+        token.default = "0";
+        token.restore = [['0'], ['0']];
+        token.type = "int";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token;
+        sxcmd.dependency_dict.setdefault('helical_recons', []).append([token.key_base, 'True', 'False']);
+        sxcmd.dependency_dict.setdefault('do_local_search', []).append([token.key_base, 'True', 'False'])
+        token = SXcmd_token();
+        token.key_base = "rise_max";
+        token.key_prefix = "--";
+        token.label = "Rise search maxiumum (A)";
+        token.help = "Maximum value for rise search. ";
+        token.group = "advanced";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', ''], ['helical_recons', 'True', 'False'],
+                                  ['do_local_search', 'True', 'False']];
+        token.default = "0";
+        token.restore = [['0'], ['0']];
+        token.type = "int";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token;
+        sxcmd.dependency_dict.setdefault('helical_recons', []).append([token.key_base, 'True', 'False']);
+        sxcmd.dependency_dict.setdefault('do_local_search', []).append([token.key_base, 'True', 'False'])
+        token = SXcmd_token();
+        token.key_base = "rise_inistep";
+        token.key_prefix = "--";
+        token.label = "Rise search initial step (A)";
+        token.help = "Need to set manually set if the default value does not guarantee convergence. ";
+        token.group = "advanced";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', ''], ['helical_recons', 'True', 'False'],
+                                  ['do_local_search', 'True', 'False']];
+        token.default = "0";
+        token.restore = [['0'], ['0']];
+        token.type = "int";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token;
+        sxcmd.dependency_dict.setdefault('helical_recons', []).append([token.key_base, 'True', 'False']);
+        sxcmd.dependency_dict.setdefault('do_local_search', []).append([token.key_base, 'True', 'False'])
 
         sxcmd_list.append(sxcmd)
 
@@ -27130,7 +27520,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.help = "Output folder name ";
         token.group = "main";
         token.is_required = True;
-        token.is_locked = False; \
+        token.is_locked = False;
         token.is_reversed = False;
         token.filament_tab = "";
         token.dependency_group = [['', '', '']];
