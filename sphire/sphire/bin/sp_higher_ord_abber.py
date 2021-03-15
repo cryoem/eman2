@@ -563,7 +563,7 @@ def run(args):
             line = (lines[cmd_lines[-1]].replace("XXX_SXCMD_LINE_XXX", ctfrefine_call ))
 
             mod_sub_script = "".join(lines).replace("XXX_SXMPI_NPROC_XXX", str(options.mpi_procs)
-                                                    ).replace("XXX_SXMPI_JOB_NAME_XXX", "sp_polishing"
+                                                    ).replace("XXX_SXMPI_JOB_NAME_XXX", "sp_higher_ord_abber"
                                                               ).replace(lines[cmd_lines[-1]], line
                                                                         ).replace("mpirun", options.relion_mpirun_executable)
 
