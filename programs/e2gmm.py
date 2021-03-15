@@ -477,6 +477,8 @@ class EMGMM(QtWidgets.QMainWindow):
 			return
 		prog.setValue(9)
 		self.do_events()
+		
+		self.sel_run(0)
 
 	def update_gmms(self):
 		"""Updates the display of gmm_XX folders"""
