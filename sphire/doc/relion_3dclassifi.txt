@@ -24,14 +24,14 @@ Usage in command line
   ; output_folder : Output folder : Output folder is the directory where all the results of the relion 3d classification are saved. (default required string)
   ; reference_map : Reference map : Reference map to be used. (default required string)
   ; %%--%%reference_mask : Reference mask (optional) : In case reference mask is provided by user . (default none)
-  ; %%--%%ini_high : initial low-pass filter (A) : Estimate beamtilt from the dataset. (default 60)
+  ; %%--%%ini_high : initial low-pass filter (A) : initial low pass filter in angstroms. (default 60)
   ; %%--%%sym : symmetry : symmetry use for classification. (default C1)
   ; %%--%%do_ctf : Do CTF-correction : Whether to apply CTF correction or not. (default True)
   ; %%--%%ctf_corr_ref : Has reference been  CTF-corrected : Whether reference was CTF correction or not. (default False) 
   ; %%--%%ctf_ignore_peak : Ignore CTFs until first peak : Whether or not the first peak should be ignored or not .(default False) 
   ; %%--%%no_of_class : Number of classes : Number of classes to have. (default 1) 
-  ; %%--%%tau_val : Regularisation parameter T : Regularized paramter adjusted. (default 4)
-  ; %%--%%no_of_iter : Number of iterations : Number of iterations to be perfromed. (default 25)
+  ; %%--%%tau_val : Regularisation parameter T : Regularized parameter adjusted. (default 4)
+  ; %%--%%no_of_iter : Number of iterations : Number of iterations to be performed. (default 25)
   ; %%--%%diam_mas: Mask diameter (A) : The diameter of the mask which use. (default 200)
   ; %%--%%zeros_mas : Mask on individual particles with zeros : in case padding with zeros is required. (default True) 
   ; %%--%%limit_resol_estep: Limit resolution E-step to (A): to limit the resolution for fitting (default -1)
@@ -72,7 +72,7 @@ Usage in command line
   ; %%--%%sig_psi : Angular search range for psi (deg) : angular search range value in degrees for psi. (default 10) : %%--%%helical_recons==True 
   ; %%--%%sig_rot : Angular search range for rot (deg) : angular search range value in degrees for rot. (default -1) : %%--%%helical_recons==True 
   ; %%--%%sigma_dist : Range factor of local averaging : Local averaging of orientations and translations will be performed within a range of +/- this value * the box size.(default 1.5) : %%--%%helical_recons==True 
-  ; %%--%%keep_tilt_fix : Keep tilt-prior fixed : Tilt priort will not change during the optimization. (default True) : %%--%%helical_recons==True 
+  ; %%--%%keep_tilt_fix : Keep tilt-prior fixed : Tilt prior will not change during the optimization. (default True) : %%--%%helical_recons==True 
  ; %%--%%apply_helical_sym : Apply helical symmetry : Whether to apply helical symmetry or not . (default False) : %%--%%helical_recons==True 
   ; %%--%%unique_asym_unit : Number of unique asymmetrical units : No of unique units in each segment box. (default 1) : %%--%%helical_recons==True %%--%%apply_helical_sym==True
   ; %%--%%initial_twist : Initial twist (deg) : set to positive value if it is a right-handed helix. (default 0) : %%--%%helical_recons==True %%--%%apply_helical_sym==True

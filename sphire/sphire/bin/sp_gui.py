@@ -15854,7 +15854,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.key_base = "ini_high";
         token.key_prefix = "--";
         token.label = "initial low-pass filter (A)";
-        token.help = "Estimate beamtilt from the dataset. ";
+        token.help = "initial low pass filter in angstroms. ";
         token.group = "main";
         token.is_required = False;
         token.is_locked = False;
@@ -15950,7 +15950,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.key_base = "tau_val";
         token.key_prefix = "--";
         token.label = "Regularisation parameter T";
-        token.help = "Regularized paramter adjusted. ";
+        token.help = "Regularized parameter adjusted. ";
         token.group = "main";
         token.is_required = False;
         token.is_locked = False;
@@ -15966,7 +15966,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.key_base = "no_of_iter";
         token.key_prefix = "--";
         token.label = "Number of iterations";
-        token.help = "Number of iterations to be perfromed. ";
+        token.help = "Number of iterations to be performed. ";
         token.group = "main";
         token.is_required = False;
         token.is_locked = False;
@@ -16568,7 +16568,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.key_base = "keep_tilt_fix";
         token.key_prefix = "--";
         token.label = "Keep tilt-prior fixed";
-        token.help = "Tilt priort will not change during the optimization. ";
+        token.help = "Tilt prior will not change during the optimization. ";
         token.group = "advanced";
         token.is_required = False;
         token.is_locked = False;
@@ -17381,7 +17381,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         sxcmd.token_list.append(token);
         sxcmd.token_dict[token.key_base] = token
         token = SXcmd_token();
-        token.key_base = "ccfpercentage";
+        token.key_base = "ccfpercentage"; \
         token.key_prefix = "--";
         token.label = "Correlation peaks to be included [%]";
         token.help = "Percentage of correlation peaks to be included. 0.0 corresponds to hard matching. Ignored in final reconstruction. This value will be adjusted during helical refinement. ";
@@ -27622,7 +27622,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.dependency_group = [['', '', '']];
         token.default = "3.75";
         token.restore = [['3.75', '15', '7.5', '1.875', '0.9375', '0.46875', '0.234375'],
-                         ['3.75', '15', '7.5', '1.875', '0.9375', '0.46875', '0.234375']];
+                         ['3.75', '15', '7.5', '1.875', '0.9375', '0.46875', '0.234375']]; \
         token.type = "float";
         sxcmd.token_list.append(token);
         sxcmd.token_dict[token.key_base] = token
@@ -31721,6 +31721,22 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.default = "none";
         token.restore = [['none'], ['none']];
         token.type = "bdb2d_stack";
+        sxcmd.token_list.append(token);
+        sxcmd.token_dict[token.key_base] = token
+        token = SXcmd_token();
+        token.key_base = "partres_file";
+        token.key_prefix = "--";
+        token.label = "Partres file";
+        token.help = "Partres file containing the CTF information from the data set. ";
+        token.group = "main";
+        token.is_required = False;
+        token.is_locked = False;
+        token.is_reversed = False;
+        token.filament_tab = "";
+        token.dependency_group = [['', '', '']];
+        token.default = "none";
+        token.restore = [['none'], ['none']];
+        token.type = "string";
         sxcmd.token_list.append(token);
         sxcmd.token_dict[token.key_base] = token
         token = SXcmd_token();

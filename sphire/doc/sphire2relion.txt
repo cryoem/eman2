@@ -8,7 +8,7 @@ SPHIRE to RELION Conversion : Convert SPHIRE parameters to RELION.
 
 Usage in command line
 
-  sp_sphire2relion.py relion_project_dir output_directory --output_name=OUTPUT_NAME --particle_stack=PARTICLE_STACK  --params_2d_file=PARAMS_2D_FILE --params_3d_file=PARAMS_3D_FILE -params_3d_index_file=PARAMS_3D_INDEX_FILE  --params_3d_chunk_file_0=CHUNKFILE0 --params_3d_chunk_file_1=CHUNKFILE1 --list=INCLUDE_LIST --exlist=EXCLUDE_LIST --force
+  sp_sphire2relion.py relion_project_dir output_directory --output_name=OUTPUT_NAME --particle_stack=PARTICLE_STACK --partres_file=PARTRES_FILE --params_2d_file=PARAMS_2D_FILE --params_3d_file=PARAMS_3D_FILE -params_3d_index_file=PARAMS_3D_INDEX_FILE  --params_3d_chunk_file_0=CHUNKFILE0 --params_3d_chunk_file_1=CHUNKFILE1 --list=INCLUDE_LIST --exlist=EXCLUDE_LIST --force
 \\
 ===== Typical usage =====
 
@@ -21,6 +21,7 @@ Fill it.
   ; %%--%%relion_project_dir : Relion project directory: Relion project directory. (default .)
   ; %%--%%output_name : Output star file name:  Output star file name. (default sphire2relion.star)
   ; %%--%%particle_stack : Particle stack:  Particle stack in bdb or hdf format. (default none)
+  ; %%--%%partres_file : Partres file: Partres file containing the CTF information from the data set. (default none)
   ; %%--%%params_2d_file : 2D params file:  2D alignment parameters. (default none) : %%--%%particle_stack!=none %%--%%params_3d_file==none
   ; %%--%%params_3d_file : 3D params file:  3D projection parameters. (default none) : %%--%%particle_stack!=none %%--%%params_2d_file==none
   ; %%--%%params_3d_index_file : 3D params index file:  Index file for the 3d params. Used to find the associated particle stack entry in the params file. In the meridien directories, this file is either called chunk or index.(default none) : %%--%%particle_stack!=none %%--%%params_3d_file!=none

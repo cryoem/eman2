@@ -476,7 +476,6 @@ def import_partres_file(partres_file):
 
 
     partres_import_array["cs"][partres_import_array["cs"] == 0] = 0.1
-
     partres_array["_rlnSphericalAberration"] = partres_import_array["cs"]
 
     partres_array["_rlnPhaseShift"] = partres_import_array["phase_shift"]
