@@ -662,8 +662,133 @@ if __name__ == "__main__":
 # starfile.write_star_file(outputfile, overwrite=True)
 
 
+####
 
-
+# try:
+#     from ..libpy import sp_global_def
+#     from ..libpy import sp_utilities
+# except:
+#     from sphire.libpy import sp_global_def
+#     from sphire.libpy import sp_utilities
+# import numpy
+# from past.utils import old_div
+#
+# patres_file = '/home/adnan/DemoResults/CTFFIND4_v4.1.X_combined.txt'
+# with open(patres_file, "r") as partres_reader:
+#     number_of_columns = len(partres_reader.readline().split())
+#
+# if number_of_columns == 22:
+#     columns = [0, 1, 2, 3, 6, 7, 17, 19, 20, 21]
+#     dtype_import_list = [
+#         ("defocus", float),
+#         ("cs", float),
+#         ("voltage", float),
+#         ("pixel_size", float),
+#         ("astig_amp", float),
+#         ("astig_angle", float),
+#         ("max_resolution", float),
+#         ("amplitude_contrast", float),
+#         ("phase_shift", float),
+#         ("micrograph_name", "|U1000"),
+#     ]
+#     dtype_output_list = [
+#         ("_rlnDefocusU", float),
+#         ("_rlnDefocusV", float),
+#         ("_rlnDefocusAngle", float),
+#         ("_rlnMicrographName", "|U1000"),
+#         ("_rlnDetectorPixelSize", float),
+#         ("_rlnMagnification", float),
+#         ("_rlnCtfMaxResolution", float),
+#         ("_rlnPhaseShift", float),
+#         ("_rlnAmplitudeContrast", float),
+#         ("_rlnSphericalAberration", float),
+#         ("_rlnVoltage", float),
+#     ]
+# else:
+#     sp_global_def.ERROR(
+#         "Number of columns in partres file not known: {0}".format(
+#             number_of_columns
+#         ),
+#         "sp_sphire2relion",
+#     )
+#
+# assert len(columns) == len(dtype_import_list)
+# partres_import_array = numpy.genfromtxt(
+#     patres_file, dtype=dtype_import_list, usecols=columns
+# )
+# partres_data = numpy.empty(
+#     partres_import_array.shape[0], sorted(dtype_output_list)
+# )
+#
+# partres_data["_rlnDefocusU"] = old_div(
+#     (
+#             20000 * partres_import_array["defocus"]
+#             - 10000 * partres_import_array["astig_amp"]
+#     ),
+#     2,
+# )
+# partres_data["_rlnDefocusV"] = (
+#         20000 * partres_import_array["defocus"] - partres_data["_rlnDefocusU"]
+# )
+# partres_data["_rlnDefocusAngle"] = 45 - partres_import_array["astig_angle"]
+# partres_data["_rlnMicrographName"] = partres_import_array["micrograph_name"]
+# partres_data["_rlnAmplitudeContrast"] = old_div(
+#     partres_import_array["amplitude_contrast"], 100
+# )
+# partres_data["_rlnVoltage"] = partres_import_array["voltage"]
+#
+# partres_import_array["cs"][partres_import_array["cs"] == 0] = 0.1
+# partres_data["_rlnSphericalAberration"] = partres_import_array["cs"]
+#
+# partres_data["_rlnPhaseShift"] = partres_import_array["phase_shift"]
+# partres_data["_rlnDetectorPixelSize"] = partres_import_array["pixel_size"]
+# partres_data["_rlnMagnification"] = 10000
+# partres_data["_rlnCtfMaxResolution"] = old_div(
+#     1, partres_import_array["max_resolution"]
+# )
+#
+# output_dtype = []
+# output_dtype.extend(partres_data.dtype.descr)
+# params_index_data = numpy.arange(partres_data.shape[0])
+#
+# output_data = numpy.empty(
+#     params_index_data.shape[0], dtype=sorted(list(set(output_dtype)))
+# )
+#
+# if partres_data is not None:
+#     for row in partres_data:
+#         mask = output_data["_rlnMicrographName"] == row["_rlnMicrographName"]
+#         for name in partres_data.dtype.names:
+#             output_data[name][mask] = row[name]
+#
+# header = ["", "data_", "", "loop_"]
+# header.extend(
+#     [
+#         "{0} #{1}".format(name, idx + 1)
+#         for idx, name in enumerate(output_data.dtype.names)
+#     ]
+# )
+# dtype_dict = output_data.dtype.fields
+# fmt = []
+# for name in output_data.dtype.names:
+#     max_length = (
+#             len(
+#                 max([str(entry).split(".")[0] for entry in output_data[name]], key=len)
+#             )
+#             + 2
+#     )
+#     if "float" in str(dtype_dict[name][0]):
+#         fmt.append("%{0}.6f".format(max_length + 7))
+#     elif "int" in str(dtype_dict[name][0]):
+#         fmt.append("%{0}d".format(max_length))
+#     elif "|U" in str(dtype_dict[name][0]) or "<U" in str(dtype_dict[name][0]):
+#         fmt.append("%{0}s".format(max_length))
+#     else:
+#         assert False
+#
+#
+# numpy.savetxt("original_mask.txt", output_data, fmt=" ".join(fmt),
+#               header="\n".join(header), comments="",)
 
 
 

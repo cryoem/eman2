@@ -46,8 +46,13 @@ import EMAN2_cppwrap
 import argparse
 import numpy
 import os
-from ..libpy import sp_global_def
-from ..libpy import sp_utilities
+
+try:
+    from ..libpy import sp_global_def
+    from ..libpy import sp_utilities
+except:
+    from sphire.libpy import sp_global_def
+    from sphire.libpy import sp_utilities
 
 
 def parse_args():
@@ -238,9 +243,12 @@ def run(args):
 
     if partres_data is not None:
         for row in partres_data:
-            mask = output_data["_rlnMicrographName"] == row["_rlnMicrographName"]
+            # mask = output_data["_rlnMicrographName"] == row["_rlnMicrographName"]
+            mask = numpy.array([os.path.basename(entry) for entry in output_data["_rlnMicrographName"]], dtype=str) \
+                == os.path.basename(row["_rlnMicrographName"])
             for name in partres_data.dtype.names:
                 output_data[name][mask] = row[name]
+
 
     final_output = output_data[mask_array_params]
 
