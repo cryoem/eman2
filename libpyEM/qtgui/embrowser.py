@@ -356,7 +356,7 @@ class EMFileType(object) :
 		resfsp=f"{base}/fscvol_{n}.hdf"
 		if resfsp==self.path or fsp[:6]=="fscvol": return
 		if not os.path.isfile(resfsp): 
-			print("doesn't exist",resfsp)
+			#print("doesn't exist",resfsp)
 			return
 		print("loading ",resfsp)
 		iso.setCmapData(resfsp)

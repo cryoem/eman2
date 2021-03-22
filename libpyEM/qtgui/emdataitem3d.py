@@ -1372,7 +1372,7 @@ class EMIsosurface(EMItem3D,EM3DModel):
 	def loadColors(self):
 		self.colors = get_default_gl_colors()
 
-		self.isocolor = "custom"
+		self.isocolor = "bluewhite"
 
 	def setSample(self,val):
 		if ( self.smpval != int(val)):

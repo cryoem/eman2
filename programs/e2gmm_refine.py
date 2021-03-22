@@ -131,7 +131,7 @@ def pts2img(pts, ang, lp=.1, sym="c1"):
 
 #### compute particle-projection FRC 
 #@tf.function
-def calc_frc(data_cpx, imgs_cpx, return_curve=False):
+def calc_frc(data_cpx, imgs_cpx, return_curve=False,minpx=4):
 	mreal, mimag=imgs_cpx
 	dreal, dimag=data_cpx
 	#### normalization per ring
@@ -151,7 +151,7 @@ def calc_frc(data_cpx, imgs_cpx, return_curve=False):
 	if return_curve:
 		return frc
 	else:
-		frcval=tf.reduce_mean(frc[:, 4:], axis=1)
+		frcval=tf.reduce_mean(frc[:, minpx:], axis=1)
 		return frcval
 	
 #### load particles from file and fourier transform them
