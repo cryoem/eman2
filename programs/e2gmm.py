@@ -580,7 +580,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		
 		### setup the folder
 		try:
-			itr=max([int(i.split("_")[1]) for i in os.listdir(rpath) if i[:12]=="projections_" and i.split("_")[1].isdigit()])
+			itr=max([int(i.split("_")[1]) for i in os.listdir(rpath) if i[:7]=="threed_" and i.split("_")[1].isdigit()])
 		except:
 			showerror("No projections in refine folder")
 			return
