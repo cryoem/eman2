@@ -792,7 +792,15 @@ if __name__ == "__main__":
 
 
 
+####
 
+# import EMAN2_cppwrap
+# img = EMAN2_cppwrap.EMData()
+# from sphire.libpy import sp_utilities
+# particle_stack = "bdb:/home/adnan/DemoResults/SphrieBDBStack_v1/home/adnan/DemoResults/MotionCorr/job003/Movies/Particles/sphire_stack"
+# img.read_image(particle_stack, 0)
+#
+# sd  =sp_utilities.get_image(particle_stack)
 
 
 

@@ -40,7 +40,7 @@ from __future__ import division
 import unittest
 from numpy import allclose, array_equal
 from mpi import *
-import sp_global_def
+from sphire.libpy import sp_global_def
 import numpy
 import weakref
 import EMAN2db
@@ -471,50 +471,27 @@ class Test_Stacks(unittest.TestCase):
         # print(newimg.get_2dview())
         newimg.write_image(str('bdb:' + bdb_path.replace('/EMAN2DB','') + '#' + 'test_img'))
 
-    def test_read_new_file(self):
-        imgnew = EMAN2db.EMData()
-        imgnew.read_image(str('bdb:' + bdb_path.replace('/EMAN2DB', '') + '#' + 'test_img'))
-        EMAN2.display(imgnew)
+    def test_beamtilt_correction(self):
+        from sphire.libpy import sp_utilities
+        particle_stack = "bdb:/home/adnan/DemoResults/SphrieBDBStack_v1/home/adnan/DemoResults/MotionCorr/job003/Movies/Particles/sphire_stack"
+        img = EMAN2db.EMData()
+        img.read_image(particle_stack, 5)
+
+        ls = [ num for num in range(50)]
+        img1 = EMAN2db.EMData()
+        newimg = img1.read_images(particle_stack, ls)
+
+        print(img.get_attr('beamtiltx'))
+        print(img.get_attr('beamtilty'))
+
+        print(numpy.array_equal(img.get_2dview(), newimg[0].get_2dview()))
 
 
-    # def test_read_stack_with_write(self):
-    #     a = EMAN2db.EMData()
-    #     a.read_data('/home/adnan/PycharmProjects/DoseWeighting/Newfolder/EMAN2DB/test_img_360x360x1', 0)
-    #
-    #     print(a.get_3dview())
-
-        # img = EMAN2db.EMData()
-        # img.read_image(str('bdb:' + bdb_path.replace('/EMAN2DB','') + '#' + 'test_img'))
-        # display(img)
-
-        # img = EMAN2db.EMData()
-        # img.read_image(str('bdb:' + bdb_path.replace('/EMAN2DB','') + '#' + 'test_img'), 0)
-        # # display(img)
-        # a = EMAN2db.DBDict(name='test_img',
-        #                    path=str('bdb:' + bdb_path.replace('/EMAN2DB','') + '#' + 'test_img'), ro=True)
-        # # print(a.__dict__.keys())
-        #
-        # a.realopen()
-        # print(a.keys())
-        # print(a.__dict__.keys())
-        # print(a)
-        # EMAN2db.db_close_dict(a)
+        for i in range (len(newimg)) :
+            newimg[i].write_image("bdb:/home/adnan/DemoResults/corrected_stack", i)
 
 
-    # def test_ctypes_work_ornot(self):
-    #     import ctypes
-    #     import numpy
-    #
-    #     base_ptr = 139888466854280
-    #     size = 40368464
-    #     nimastack = 6989
-    #     target_nx = 76
-    #
-    #     ptr = ctypes.cast(base_ptr, ctypes.POINTER(ctypes.c_int * size))
-    #     buffer = numpy.frombuffer(ptr.contents, dtype="f4")
-    #
-    #     # buffer = buffer.reshape(nimastack, target_nx, target_nx)
-    #     print(buffer)
-    #     print(buffer.shape)
+
+
 
 

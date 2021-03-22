@@ -58,6 +58,11 @@ except ImportError as e:
 from libpyEMData2 import EMData
 from libpyUtils2 import EMUtil
 
+
+import scipy
+import numpy
+import math
+
 # If set, fairly verbose debugging information will be written to the console
 # larger numbers will increase the amount of output
 DBDEBUG = 0
@@ -419,6 +424,171 @@ EMData.__init__ = db_emd_init
 # return s
 
 # Transform.__str__ = transform_to_str
+def apply_tilt(img, tilt_x, tilt_y, wavelength, Cs, angpix, mode='scipy', log=None, verbose=False, debug=None):
+    assert img['nx'] == img['ny'], "ERROR!! Assuming square images! %s x %s" % (img['nx'], img['ny'])
+    # (I don't want to deal with unequal resolution in x & y. Maybe we could pad the image to a square.)
+
+    # Convert to numpy
+    imgarray = img.get_2dview()
+
+    if mode == 'scipy':
+        imgfft = scipy.fft.rfft2(imgarray)
+        ####print('imgfft', type(imgfft))
+        imgfft = numpy.transpose(imgfft)
+        ####print('imgfft', imgfft.shape)
+    else:
+        imgfft = numpy.fft.fft2(imgarray)
+
+    xdim = imgfft.shape[0]
+    ydim = imgfft.shape[1]
+    ####printvars(['xdim','ydim'], True)
+
+    boxsize = angpix * ydim
+    centerx = xdim // 2 + 1
+    centery = ydim // 2 + 1
+
+    # Convert from milliradians to degrees
+    factor = 0.360 * Cs * 10000000 * wavelength * wavelength / (boxsize * boxsize * boxsize)
+
+    if verbose: print("xc yc jp ip   magnitd  old_phase      delta   new_real  new_phase")
+    if debug == 'spider': print("jp ip   oldreal    oldimag      delta    newreal    oldimag")
+
+    if mode == 'scipy':
+        # Loop through y
+        for ycoord in range(ydim):
+            if ycoord < centery:
+                ip = ycoord
+            else:
+                ip = ycoord - ydim
+
+            # Loop through x
+            for xcoord in range(xdim):
+                jp = xcoord
+
+                # Calculate phase shift in degrees
+                delta_phase = factor * (ip * ip + jp * jp) * (ip * tilt_y + jp * tilt_x)
+
+                realval = imgfft[xcoord, ycoord].real
+                imagval = imgfft[xcoord, ycoord].imag
+                mag = numpy.sqrt((realval * realval) + (imagval * imagval))
+                old_phase = numpy.arctan2(imagval, realval)
+
+                # Convert phase shift from degrees to radians
+                new_phase = old_phase + numpy.deg2rad(delta_phase)
+
+                newrealval = mag * numpy.cos(new_phase)
+                newimagval = mag * numpy.sin(new_phase)
+
+                imgfft[xcoord, ycoord] = newrealval + (1j * newimagval)
+
+                if verbose:
+                    print(
+                        f"{xcoord}, {ycoord}, {jp}, {ip}, {mag: 9.4f}, {numpy.rad2deg(old_phase): 9.4f}, {delta_phase: 9.4f}, {newrealval: 9.4f}, {newimagval: 9.4f}")
+
+                if debug == 'spider':
+                    print(
+                        f'{jp}, {ip}, {realval: 9.4f}, {imagval: 9.4f}, {delta_phase: 9.4f}, {newrealval: 9.4f}, {newimagval: 9.4f}')
+
+        imgfft = numpy.transpose(imgfft)
+        real_array = scipy.fft.irfft2(imgfft)
+
+    else:
+        # Loop through y
+        for ycoord in range(ydim):
+            if ycoord < centery:
+                ip = ycoord
+            else:
+                ip = ycoord - ydim
+
+            # Loop through x
+            for xcoord in range(centerx):
+                jp = xcoord
+
+                # Calculate phase shift in degrees
+                delta_phase = factor * (ip * ip + jp * jp) * (ip * tilt_y + jp * tilt_x)
+
+                realval = imgfft[ycoord, xcoord].real
+                imagval = imgfft[ycoord, xcoord].imag
+                mag = numpy.sqrt((realval * realval) + (imagval * imagval))
+                old_phase = numpy.arctan2(imagval, realval)
+
+                # Convert phase shift from degrees to radians
+                new_phase = old_phase + numpy.deg2rad(delta_phase)
+
+                newrealval = mag * numpy.cos(new_phase)
+                newimagval = mag * numpy.sin(new_phase)
+
+                imgfft[ycoord, xcoord] = newrealval + (1j * newimagval)
+
+                if verbose:
+                    print(
+                        f"{xcoord}, {ycoord}, {jp}, {ip}, {mag: 9.4f}, {numpy.rad2deg(old_phase): 9.4f}, {delta_phase: 9.4f}, {newrealval: 9.4f}, {newimagval: 9.4f}")
+
+                if debug == 'spider':
+                    print(
+                        f'{jp}, {ip}, {realval: 9.4f}, {imagval: 9.4f}, {delta_phase: 9.4f}, {newrealval: 9.4f}, {newimagval: 9.4f}')
+
+        real_array = numpy.fft.ifft2(imgfft)
+    # End scipy if-then
+    img.get_2dview()[...] = real_array
+    img.update()
+    return
+
+def getElectronWavelength(voltage):
+    # voltage in Volts, length unit in meters
+    # Adapted from Anchi Cheng's fftfun.py
+
+    h = 6.6e-34
+    m = 9.1e-31
+    charge = 1.6e-19
+    c = 3e8
+    wavelength = h / math.sqrt(2 * m * charge * voltage)
+    relativistic_correction = 1 / math.sqrt(1 + voltage * charge / (2 * m * c * c))
+
+    return wavelength * relativistic_correction
+
+
+def apply_beam_tilt(img, return_img = False):
+    is_beamtilt = True
+    is_ctf = True
+    tilt_corrected = True
+    try:
+        img.get_attr('beamtiltx')
+    except RuntimeError:
+        is_beamtilt = False
+    try:
+        ctf_dict = img.get_attr('ctf').to_dict()
+    except RuntimeError:
+        is_ctf = False
+    try:
+        tilt_corrected = img.get_attr('beamtilt_correct')
+    except:
+        tilt_corrected = False
+    if is_beamtilt == True and is_ctf == True and tilt_corrected == False:
+        tilt_x = img.get_attr('beamtiltx')
+        tilt_y = img.get_attr('beamtilty')
+        cs = ctf_dict['cs']
+        vol = ctf_dict['voltage']
+        wavelength = 1e10 * getElectronWavelength(vol * 1000)
+        angpix = ctf_dict['apix']
+        apply_tilt(
+            img,
+            tilt_x,
+            tilt_y,
+            wavelength,
+            cs,
+            angpix,
+            log=None,
+            verbose=False
+        )
+        img.set_attr('beamtilt_correct', True)
+    else:
+        pass
+
+    if return_img == True:
+        return img
+    else :
+        return
 
 def db_read_image(self, fsp, *parms, **kparms):
     """read_image(filespec,image #,[header only],[region],[is_3d])
@@ -454,6 +624,9 @@ def db_read_image(self, fsp, *parms, **kparms):
         if x == None: raise Exception("Could not access " + str(fsp) + " " + str(key))
         #		except:
         #			raise Exception("Could not access "+str(fsp)+" "+str(key))
+        #
+        apply_beam_tilt(self, False)
+
         return None
     if len(kparms) != 0:
         if 'img_index' not in kparms:
@@ -495,7 +668,10 @@ def db_read_images(fsp, *parms):
             else:
                 keys = parms[0]
             if not keys or len(keys) == 0: keys = list(range(len(db)))
-        return [db.get(i, nodata=nodata) for i in keys]
+        if nodata:
+            return [db.get(i, nodata=nodata) for i in keys]
+        else:
+            return [apply_beam_tilt(db.get(i, nodata=nodata), True) for i in keys]
     if len(parms) > 0 and (parms[0] == None or len(parms[0]) == 0):
         parms = (list(range(EMUtil.get_image_count(fsp))),) + parms[1:]
     return EMData.read_images_c(fsp, *parms)

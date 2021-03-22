@@ -345,6 +345,14 @@ def run():
         -1,
         "#     Ang. Psi. Flip Ratio := %2d (%s)",
     ]  # Helical    # For Helical Reconstruction Support
+    relion_dict["_rlnBeamTiltX"] = [
+        -1,
+        "#     X BeamTilt        := %2d (%s)",
+    ]  # Ctfrefine
+    relion_dict["_rlnBeamTiltY"] = [
+        -1,
+        "#     Y BeamTilt        := %2d (%s)",
+    ]  # Ctfrefine
 
     idx_relion_process = 0
     idx_is_category_found = 1
@@ -408,6 +416,14 @@ def run():
         True,
         ["_rlnHelicalTubeID", "_rlnHelicalTrackLength"],
         ["mic", "window"],
+        [],
+    ]
+
+    relion_category_dict["beamtilt"] = [
+        "Beam Tilt Values",
+        True,
+        ["_rlnBeamTiltX", "_rlnBeamTiltY"],
+        [],
         [],
     ]
 
@@ -1240,6 +1256,20 @@ def run():
                     # 	sphire_chunk_dict[micrograph_dirname][sphire_chunk_key] = []
                     # sphire_chunk_dict[micrograph_dirname][sphire_chunk_key].append(i_relion_particle)
 
+                if relion_category_dict["beamtilt"][idx_is_category_found]:
+                    relion_beam_tilt_x = float(
+                        tokens_line[relion_dict["_rlnBeamTiltX"][idx_col] - 1]
+                    )
+
+                    relion_beam_tilt_y = float(
+                        tokens_line[relion_dict["_rlnBeamTiltY"][idx_col] - 1]
+                    )
+
+                else:
+                    relion_beam_tilt_x = 0.0
+                    relion_beam_tilt_y = 0.0
+
+
                 ##### Set the header information #####
                 if is_enable_create_stack:
                     assert relion_category_dict["window"][
@@ -1333,6 +1363,15 @@ def run():
                         sphire_header[
                             "i_sphire_stack_particle_img"
                         ] = i_sphire_stack_particle_img
+
+
+                        if relion_category_dict["beamtilt"][idx_is_category_found]:
+                            sphire_header["beamtiltx"] = relion_beam_tilt_x
+                            sphire_header["beamtilty"] = relion_beam_tilt_y
+                        else:
+                            sphire_header["beamtiltx"] = relion_beam_tilt_x
+                            sphire_header["beamtilty"] = relion_beam_tilt_y
+
 
                         if micrograph_dirname not in sphire_header_dict:
                             sphire_header_dict[micrograph_dirname] = {}
@@ -2240,6 +2279,10 @@ def run():
                             ]
                         if relion_category_dict["chunk"][idx_is_category_found] == True:
                             img_particles_dict["chunk_id"] = sphire_header["chunk_id"]
+
+                        if relion_category_dict["beamtilt"][idx_is_category_found] == True:
+                            img_particles_dict["beamtiltx"] = sphire_header["beamtiltx"]
+                            img_particles_dict["beamtilty"] = sphire_header["beamtilty"]
 
                         # Write the particle image to local stack file
                         local_bdb_stack[sphire_header_id] = img_particles_dict
