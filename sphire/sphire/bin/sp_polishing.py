@@ -529,7 +529,7 @@ def run(args):
                         "mpirun"
                         + " " + "-np"
                         + " " + str(options.mpi_procs)
-                        + " " + "relion_motion_refine_mpi"
+                        + " " + options.relion_polishing_executable
                         + " --i "
                         + os.path.join(str(options.Output_folder),"BDB2STAR/sphire2relion.star")
                         + " " + "--f " + os.path.join(str(options.Output_folder),"PostProcess/postprocess.star")
@@ -559,7 +559,7 @@ def run(args):
         else:
             print("Parameter file not provided, hence training is performed")
             polishing_call = (
-                    "relion_motion_refine"
+                    options.relion_polishing_executable
                     + " --i "
                     + os.path.join(str(options.Output_folder), "BDB2STAR/sphire2relion.star")
                     + " " + "--f " + os.path.join(str(options.Output_folder),"PostProcess/postprocess.star")
@@ -575,6 +575,7 @@ def run(args):
                     + " " + "--j " + str(options.no_of_threads)
                     + " " + "--pipeline_control " + str(options.Output_folder)
             )
+            print("Polishing command is ", polishing_call)
             subprocess.run(args=[polishing_call], shell=True, text=True)
 
 

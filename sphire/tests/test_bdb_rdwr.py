@@ -487,9 +487,9 @@ class Test_Stacks(unittest.TestCase):
         print(numpy.array_equal(img.get_2dview(), newimg[0].get_2dview()))
 
 
-        for i in range (len(newimg)) :
-            newimg[i].write_image("bdb:/home/adnan/DemoResults/corrected_stack", i)
-
+        # for i in range (len(newimg)) :
+        #     newimg[i].write_image("bdb:/home/adnan/DemoResults/corrected_stack", i)
+        #
 
 
 
