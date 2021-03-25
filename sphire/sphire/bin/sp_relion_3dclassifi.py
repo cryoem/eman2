@@ -924,7 +924,7 @@ def run(args):
                 # subprocess.run(args=[rel2sph_call], shell=True, text=True)
             else:
                 classification_call = (
-                        "relion_refine"
+                        options.relion_3dclassification_executable
                         + " " + "--o " + str(options.Output_folder)
                         + " --i " + os.path.join(str(options.Output_folder), "BDB2STAR/sphire2relion.star")
                         + " " + "--ref " + str(options.reference_map)

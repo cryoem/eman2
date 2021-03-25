@@ -620,7 +620,7 @@ def run(args):
                 # subprocess.run(args=[rel2sph_call], shell=True, text=True)
             else :
                 ctfrefine_call = (
-                        "relion_ctf_refine"
+                        options.relion_ctfrefine_executable
                         + " --i " + os.path.join(str(options.Output_folder), "BDB2STAR/sphire2relion.star")
                         + " " + "--f " + os.path.join(str(options.Output_folder), "PostProcess/postprocess.star")
                         + " " + "--o " +  str(options.Output_folder)
