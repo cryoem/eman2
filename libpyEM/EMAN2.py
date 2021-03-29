@@ -52,6 +52,7 @@ import EMAN2db, EMAN2jsondb
 import argparse, copy
 import glob
 import random
+from struct import pack,unpack
 
 import threading
 #from Sparx import *
@@ -914,6 +915,82 @@ def angle_ab_sym(sym,a,b,c=None,d=None):
 		#raise Exception,"angle_ab_sym requries two transforms or 4 angles"
 
 	return min([(A*s*Bi).get_rotation("spin")["omega"] for s in sym])
+
+def sock_sendobj(sock,obj):
+	"""Sends an object as a (binary) size then a binary pickled object to a socket file object"""
+	if obj==None :
+		sock.sendall(pack("<I",0))
+		return
+	strobj=pickle.dumps(obj,-1)
+	sock.sendall(pack("<I",len(strobj)))
+	sock.sendall(strobj)
+
+	# uses socket 'file'
+	#if obj==None :
+		#sock.write(pack("<I",0))
+		#return
+	#strobj=pickle.dumps(obj,-1)
+	#sock.write(pack("<I",len(strobj)))
+	#sock.write(strobj)
+
+	
+def sock_recvobj(sock):
+	"""receives a packed length followed by a binary (pickled) object from a socket file object and returns"""
+	l=sock.recv(4,socket.MSG_WAITALL)
+	
+	try :
+		datlen=unpack("<I",l)[0]
+	except:
+		print("Format error in unpacking (%d) '%s'"%(len(l),l))
+		raise Exception("Network error receiving object")
+	if datlen<=0 :return None
+	return pickle.loads(sock.recv(datlen,socket.MSG_WAITALL))
+
+	# uses socket 'file'
+	#l=sock.read(4)
+	#try :
+		#datlen=unpack("<I",l)[0]
+	#except:
+		#print("Format error in unpacking (%d) '%s'"%(len(l),l))
+		#raise Exception("Network error receiving object")
+	#if datlen<=0 :return None
+	#return pickle.loads(sock.read(datlen))
+
+display_magic=None		# VERY basic security for e3display
+
+def e3display(data,vtype="auto",vname=None,dname="Unknown",settings={},port=31980):
+	"""Server-based display function, mainly designed for use with Jupyter Lab sessions, but availble for
+	background monitoring of running jobs as well. 
+	data - data object of any (appropriate) type
+	vtype - "image","imagemx","volume","plot2d","plot3d","histogram"
+	vname - name of a new or existing (type specific) display widget to use, if None a new widget will be created 
+	dname - name for the data set, may be used as window title, or to support multiple object display in the same widget
+	settings - a dictionary of widget-specific settings
+	"""
+	import ipywidgets
+	global display_magic
+	
+	if display_magic==None:
+		magicpath=f"{e2gethome()}/.eman2/server_magic"
+		with open(magicpath,"rb") as fin:
+			display_magic=fin.read(8)
+
+	try: sock=socket.create_connection(("localhost",port))
+	except:
+		print(sys.exc_info())
+		return False
+
+	sock.sendall(display_magic)
+
+	sock_sendobj(sock,(data,vtype,vname,dname,settings))
+	ret=sock_recvobj(sock)
+	if ret[0]=="error": raise Exception(f"e3display error: {ret[1]}")
+	elif ret[0]=="png": 
+		nx,ny,png=ret[1]
+		
+	return ipywidgets.Image(value=png,format="png",width=nx,height=ny)
+	
+	
 
 def display(img,force_2d=False,force_plot=False):
 	"""Generic display function for images or sets of images. You can force images to be displayed in 2-D or as a plot with

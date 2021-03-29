@@ -380,7 +380,7 @@ class EMImage2DWidget(EMGLWidget):
 		return self.data
 
 	def set_data(self,incoming_data,file_name="",retain_current_settings=True, keepcontrast=False, xyz=2):
-		"""You may pass a single 2D image or a list of images"""
+		"""You may pass a single 2D image, a list of images or a single 3-D volume"""
 		from .emimagemx import EMDataListCache,EMLightWeightParticleCache
 		#if self.data != None and self.file_name != "":
 			#self.__write_display_settings_to_db()

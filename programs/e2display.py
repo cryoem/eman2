@@ -60,6 +60,7 @@ def main():
 	parser.add_argument("--classes",type=str,help="<rawptcl>,<classmx> Show particles associated class-averages")
 	parser.add_argument("--pdb",type=str,help="<pdb file> Show PDB structure.")
 	parser.add_argument("--singleimage",action="store_true",default=False,help="Display a stack in a single image view")
+	parser.add_argument("--server",action="store_true",default=False,help="Launch a display server which can communicate with other EMAN3 programs")
 	parser.add_argument("--plot",action="store_true",default=False,help="Data file(s) should be plotted rather than displayed in 2-D")
 	parser.add_argument("--hist",action="store_true",default=False,help="Data file(s) should be plotted as a histogram rather than displayed in 2-D.")
 	parser.add_argument("--plot3d",action="store_true",default=False,help="Data file(s) should be plotted rather than displayed in 3-D")
@@ -83,7 +84,14 @@ e2procjson.py --setoption display2d.autocontrast:true
 """)
 		sys.exit(0)
 	
-	if len(args) < 1:
+	if options.server:
+		from eman2_gui.emdisplayserver import EMDisplayServerWidget
+		
+		panel=EMDisplayServerWidget()
+		panel.show()
+		panel.raise_()
+		
+	elif len(args) < 1:
 		global dialog
 		file_list = []
 		dialog = embrowser.EMBrowserWidget(withmodal=False,multiselect=False)
