@@ -1322,14 +1322,20 @@ def run():
                                     relion_dict["_rlnHelicalTrackLength"][idx_col] - 1
                                 ]
                             )
-                            if relion_dict["_rlnAnglePsiPrior"][idx_col] == -1:
-                                sphire_header["segment_angle"] = None
-                            else:
+                            if relion_dict["_rlnAnglePsi"][idx_col] != -1 :
+                                sphire_header["segment_angle"] = float(
+                                    tokens_line[
+                                        relion_dict["_rlnAnglePsi"][idx_col] - 1
+                                        ]
+                                )
+                            elif relion_dict["_rlnAnglePsiPrior"][idx_col] != -1:
                                 sphire_header["segment_angle"] = float(
                                     tokens_line[
                                         relion_dict["_rlnAnglePsiPrior"][idx_col] - 1
                                     ]
                                 )
+                            else:
+                                sphire_header["segment_angle"] = None
                         if (
                             relion_category_dict["ctf"][idx_is_category_found]
                             or options.negative_stain
