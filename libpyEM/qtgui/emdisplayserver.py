@@ -32,7 +32,7 @@ from EMAN2 import *
 from EMAN2db import e2gethome
 from EMAN2jsondb import js_open_dict
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtCore import Qt, QTimer, QBuffer
 from .emapplication import EMApp
 from .emimage2d import *
 from .emimagemx import *
@@ -110,14 +110,6 @@ class EMDisplayServerWidget(QtWidgets.QWidget):
 		print("Server exiting. Waiting for network shutdown.")
 		self.quit=True
 		self.serverthread.join()
-
-	# EMImage2DWidget - set_data(self,incoming_data,file_name="",retain_current_settings=True, keepcontrast=False, xyz=2)
-	# EMImageMXWidget - def set_data(self, obj, filename = '', update_gl = True, soft_delete = False) :
-	# EMScene3D - insertNewNode(self, name, node, parentnode=None, parentidx=None)
-	# EMDataItem3D - setData(self, data, n=0)
-	# EMPlot2DWidget - set_data(self,input_data,key="data",replace=False,quiet=False,color=-1,linewidth=1,linetype=-2,symtype=-2,symsize=10,comments=None)
-	# EMPlot3DWidget - set_data(self,input_data,key="data",replace=False,quiet=False,color=-1,linewidth=1,linetype=-2,symtype=-2,symsize=10,comments=None)
-	# EMHistogramWidget - set_data(self,input_data,key="data",replace=False,quiet=False,color=-1,alpha=0.8,rwidth=0.8)
 	
 	def rawtopng(self,depth,nx,ny,data):
 		if depth==1: 
@@ -133,14 +125,19 @@ class EMDisplayServerWidget(QtWidgets.QWidget):
 		return png
 	
 	def time_out(self):
-		"""This runs in the main thread, so it can talk to Qt safely. It handles incoming data"""
+		""" This is the routine which actually displays incoming data.
+		This runs in the main thread, so it can talk to Qt safely."""
 		if self.quit: self.app.quit()
 		if self.msg==None: return
-		try: data,vtype,vname,dname,settings=self.msg
+		try: 
+			data,vtype,vname,dname,settings=self.msg
 		except:
 			print("Error :",self.msg)
 			self.reply=["error","Bad Parameters"]
+			self.msg=None
 			return
+		
+		self.msg=None
 		
 		if vtype not in self.widget_types:
 			self.reply=["error","bad visualization type"]
@@ -157,11 +154,37 @@ class EMDisplayServerWidget(QtWidgets.QWidget):
 	
 		if vtype=="image":
 			widget.set_data(data,dname)
-			depth,nx,ny,raw=widget.render_bitmap()
-			png=self.rawtopng(depth,nx,ny,raw)
-			self.reply=["png",(nx,ny,png)]
+			#depth,nx,ny,raw=widget.render_bitmap()
+			#png=self.rawtopng(depth,nx,ny,raw)
+		elif vtype=="imagemx":
+			widget.set_data(data, dname)
+		elif vtype=="volume":
+			pass
+		elif vtype=="plot2d":
+			widget.set_data(data,key=dname)
+#			widget.set_data(data,key=dname,replace=False,quiet=False,color=-1,linewidth=1,linetype=-2,symtype=-2,symsize=10,comments=None)
+		elif vtype=="plot3d":
+			widget.set_data(data,key=dname)
+		elif vtype=="histogram":
+			pass
 		
+		pix=widget.renderPixmap()
+		nx=pix.size().width()
+		ny=pix.size().height()
+		buffer=QBuffer();
+		buffer.open(QBuffer.ReadWrite)
+		pix.save(buffer,"PNG")
+		png=buffer.data().data()	# this is correct. The first data gets the QByteArray, the second gets it's data
+
+		self.reply=["png",(nx,ny,png)]
 		
+	# EMImage2DWidget - set_data(self,incoming_data,file_name="",retain_current_settings=True, keepcontrast=False, xyz=2)
+	# EMImageMXWidget - def set_data(self, obj, filename = '', update_gl = True, soft_delete = False) :
+	# EMScene3D - insertNewNode(self, name, node, parentnode=None, parentidx=None)
+	# EMDataItem3D - setData(self, data, n=0)
+	# EMPlot2DWidget - set_data(self,input_data,key="data",replace=False,quiet=False,color=-1,linewidth=1,linetype=-2,symtype=-2,symsize=10,comments=None)
+	# EMPlot3DWidget - set_data(self,input_data,key="data",replace=False,quiet=False,color=-1,linewidth=1,linetype=-2,symtype=-2,symsize=10,comments=None)
+	# EMHistogramWidget - set_data(self,input_data,key="data",replace=False,quiet=False,color=-1,alpha=0.8,rwidth=0.8)
 	
 	def wdgSel(self,row):
 		"""When the user highlights a new widget"""
@@ -206,6 +229,7 @@ class EMDisplayServerWidget(QtWidgets.QWidget):
 					lsock.close()
 					break		# gives us the opportunity for the program to exit every 2 seconds
 #				lsock.shutdown(socket.SHUT_RDWR)
+#				print("timeout")
 				continue
 			msg=sock2[0].recv(8)	# receive 8 bytes as a security check
 			if msg!=self.magic:
