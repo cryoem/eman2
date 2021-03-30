@@ -51,7 +51,6 @@ import weakref
 import random
 import struct
 import socket
-from PIL import Image
 import io
 
 
@@ -100,7 +99,7 @@ class EMDisplayServerWidget(QtWidgets.QWidget):
 		self.reply=None				# the main thread sets this with a response for the requesting program
 		self.timer = QtCore.QTimer()
 		self.timer.timeout.connect(self.time_out)
-		self.timer.start(0.5)		# check for new data twice a second
+		self.timer.start(500)		# check for new data twice a second
 		
 		# Launch the server thread
 		self.serverthread=threading.Thread(target=self.listenthread)
