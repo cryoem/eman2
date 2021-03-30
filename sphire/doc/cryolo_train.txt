@@ -8,7 +8,7 @@ crYOLO - training: Training of crYOLO, a deep learning high accuracy particle pi
 
 Usage in command line
 
-  sp_cryolo_train.py particle_diameter training_dir annot_dir output_directory --cryolo_train_path=CRYOLO_PATH --architecture=architecture --input_size=input_size --num_patches=num_patches --overlap_patches=overlap_patches --train_times=train_times --pretrained_weights_name=PRETRAINED_NAME --saved_weights_name=SAVE_WEIGHTS_NAME --batch_size=batch_size --learning_rate=learning_rate --np_epoch=np_epoch --object_scale=object_scale --no_object_scale=no_object_scale --coord_scale=coord_scale --valid_image_dir=valid_image_dir --valid_annot_dir=valid_annot_dir --warmup=warmup --gpu=gpu --fine_tune --gpu_fraction=GPU_FRACTION --num_cpu=NUM_CPU --skiplowpass=SKIP_LOW_PASS  --usejanni=USE_JANNI --janni_model=PATH_MODEL_JANNI --cutoff=CUT_OFF --filtered_dir=FILTERED_DIR --janni_overlap=OVERLAP --janni_batches=NUM_BATCHES
+  sp_cryolo_train.py particle_diameter training_dir annot_dir output_directory --cryolo_train_path=CRYOLO_PATH --architecture=architecture --input_size=input_size --num_patches=num_patches --overlap_patches=overlap_patches --train_times=train_times --pretrained_weights_name=PRETRAINED_NAME --saved_weights_name=SAVE_WEIGHTS_NAME --batch_size=batch_size --learning_rate=learning_rate --np_epoch=np_epoch --object_scale=object_scale --no_object_scale=no_object_scale --coord_scale=coord_scale --valid_image_dir=valid_image_dir --valid_annot_dir=valid_annot_dir --warmup=warmup --gpu=gpu --fine_tune --gpu_fraction=GPU_FRACTION --num_cpu=NUM_CPU --skiplowpass=SKIP_LOW_PASS  --usejanni=USE_JANNI --janni_model=PATH_MODEL_JANNI --cutoff=CUT_OFF --filtered_dir=FILTERED_DIR --janni_overlap=OVERLAP --janni_batches=NUM_BATCHES --early=EARLY
 
 \\
 ===== Typical usage =====
@@ -39,6 +39,7 @@ Then the training typcial happens in two steps:
   ; %%--%%input_size : Input image dimension [Pixel] : Dimension of the image used as input by the network. (default 1024)
   ; %%--%%num_patches : Number of patches : The number of patches (e.g 2x2) the image is divided into and classified separately. (default 1)
   ; %%--%%overlap_patches: Patch overlap [Pixel]: The amount of overlap the patches will overlap (default 0)
+  ; %%--%%early: Early stop patience : If the validation loss did not improve longer than the early stop patience, the training is stopped. (default 10)
   ; %%--%%train_times : Repeat images :  How often a images is augmented and repeated in one epoch. (default 10)
   ; %%--%%pretrained_weights_name: Pretrained weights name : Name of the pretrained model (default cryolo_model.h5)
   ; %%--%%saved_weights_name: Saved weights name : Name of the model to save (default cryolo_model.h5)

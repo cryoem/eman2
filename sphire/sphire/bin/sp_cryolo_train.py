@@ -139,7 +139,7 @@ argparser.add_argument(
 
 argparser.add_argument(
     "--early",
-    default=5,
+    default=10,
     type=int,
     help="Early stop patience. If the validation loss did not improve longer than the early stop patience, "
     "the training is stopped.",
