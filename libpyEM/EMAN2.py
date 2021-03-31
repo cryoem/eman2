@@ -961,9 +961,9 @@ display_magic=None		# VERY basic security for e3display
 def e3display(data,vtype="auto",vname=None,dname="Unknown",settings={},port=31980):
 	"""Server-based display function, mainly designed for use with Jupyter Lab sessions, but availble for
 	background monitoring of running jobs as well. 
-	data - data object of any (appropriate) type
+	data - data object of any (appropriate) type, if None will simply update the widget and return a PNG, 
 	vtype - "image","imagemx","volume","plot2d","plot3d","histogram"
-	vname - name of a new or existing (type specific) display widget to use, if None a new widget will be created 
+	vname - name of a new or existing (type specific) display widget to use, if None 'default' will be used 
 	dname - name for the data set, may be used as window title, or to support multiple object display in the same widget
 	settings - a dictionary of widget-specific settings
 	"""

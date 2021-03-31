@@ -279,8 +279,9 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.valstodisp=["Img #"]
 
 		self.inspector=None
-		self.usetexture=True
-
+		#self.usetexture=True
+		self.usetexture=False
+		
 		self.font_size = 11
 		self.font_renderer.set_face_size(self.font_size)
 

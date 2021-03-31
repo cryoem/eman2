@@ -88,7 +88,7 @@ e2procjson.py --setoption display2d.autocontrast:true
 	if options.server:
 		from eman2_gui.emdisplayserver import EMDisplayServerWidget
 		
-		panel=EMDisplayServerWidget(port=self.serverport)
+		panel=EMDisplayServerWidget(port=options.serverport)
 		panel.show()
 		panel.raise_()
 		

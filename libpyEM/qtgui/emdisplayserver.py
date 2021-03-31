@@ -99,7 +99,7 @@ class EMDisplayServerWidget(QtWidgets.QWidget):
 		self.reply=None				# the main thread sets this with a response for the requesting program
 		self.timer = QtCore.QTimer()
 		self.timer.timeout.connect(self.time_out)
-		self.timer.start(500)		# check for new data twice a second
+		self.timer.start(250)		# check for new data twice a second
 		
 		# Launch the server thread
 		self.serverthread=threading.Thread(target=self.listenthread)
@@ -150,23 +150,40 @@ class EMDisplayServerWidget(QtWidgets.QWidget):
 		widget=self.widgets[vtype][vname]
 		widget.show()
 		widget.raise_()
-	
-		if vtype=="image":
-			widget.set_data(data,dname)
-			#depth,nx,ny,raw=widget.render_bitmap()
-			#png=self.rawtopng(depth,nx,ny,raw)
-		elif vtype=="imagemx":
-			widget.set_data(data, dname)
-		elif vtype=="volume":
-			pass
-		elif vtype=="plot2d":
-			widget.set_data(data,key=dname)
-#			widget.set_data(data,key=dname,replace=False,quiet=False,color=-1,linewidth=1,linetype=-2,symtype=-2,symsize=10,comments=None)
-		elif vtype=="plot3d":
-			widget.set_data(data,key=dname)
-		elif vtype=="histogram":
-			pass
+
+		# With data==None, settings can be adjusted and the rendered image returned
+		if data!=None:
+			if vtype=="image":
+				widget.set_data(data,dname)
+				#depth,nx,ny,raw=widget.render_bitmap()
+				#png=self.rawtopng(depth,nx,ny,raw)
+			elif vtype=="imagemx":
+				widget.set_data(data, dname)
+			elif vtype=="volume":
+				nodes=widget.getAllNodes()
+				for n in nodes: 
+					if n.getLabel()==dname:
+						n.set_data(data)
+						break
+				else:
+					di=EMDataItem3D(data,n=0,name=dname)
+					widget.insertNewNode(dname,di,parentnode=widget)
+					iso=EMIsosurface(di)
+					widget.insertNewNode('Isosurface', iso, parentnode = di)
+					widget.initialViewportDims(data["nx"])	# Scale viewport to object size
+					widget.setCurrentSelection(iso)				# Set isosurface to display upon inspector loading
+					widget.updateSG()	# this is needed because this might just be an addition to the SG rather than initialization
+			elif vtype=="plot2d":
+				widget.set_data(data,key=dname)
+	#			widget.set_data(data,key=dname,replace=False,quiet=False,color=-1,linewidth=1,linetype=-2,symtype=-2,symsize=10,comments=None)
+			elif vtype=="plot3d":
+				widget.set_data(data,key=dname)
+			elif vtype=="histogram":
+				widget.set_data(data,key=dname)
 		
+		widget.setWindowTitle(vname)
+		
+		# This renders the current widget and creates a PNG to ship back to the requestor
 		pix=widget.renderPixmap()
 		nx=pix.size().width()
 		ny=pix.size().height()
