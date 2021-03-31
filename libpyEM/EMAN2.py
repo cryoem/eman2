@@ -919,10 +919,10 @@ def angle_ab_sym(sym,a,b,c=None,d=None):
 def sock_sendobj(sock,obj):
 	"""Sends an object as a (binary) size then a binary pickled object to a socket file object"""
 	if obj==None :
-		sock.sendall(pack("<I",0))
+		sock.sendall(pack("<Q",0))
 		return
 	strobj=pickle.dumps(obj,-1)
-	sock.sendall(pack("<I",len(strobj)))
+	sock.sendall(pack("<Q",len(strobj)))
 	sock.sendall(strobj)
 
 	# uses socket 'file'
@@ -936,10 +936,10 @@ def sock_sendobj(sock,obj):
 	
 def sock_recvobj(sock):
 	"""receives a packed length followed by a binary (pickled) object from a socket file object and returns"""
-	l=sock.recv(4,socket.MSG_WAITALL)
+	l=sock.recv(8,socket.MSG_WAITALL)
 	
 	try :
-		datlen=unpack("<I",l)[0]
+		datlen=unpack("<Q",l)[0]
 	except:
 		print("Format error in unpacking (%d) '%s'"%(len(l),l))
 		raise Exception("Network error receiving object")

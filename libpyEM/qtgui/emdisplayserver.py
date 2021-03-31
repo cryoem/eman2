@@ -45,6 +45,7 @@ from .emdataitem3d import *
 from libpyUtils2 import EMUtil
 from .matching import matches_pats
 from .valslider import StringBox
+import numpy as np
 import os
 import threading
 import weakref
@@ -152,14 +153,19 @@ class EMDisplayServerWidget(QtWidgets.QWidget):
 		widget.raise_()
 
 		# With data==None, settings can be adjusted and the rendered image returned
-		if data!=None:
+		# For numpy arrays ==None doesn't work correctly
+		if not isinstance(data,type(None)):
 			if vtype=="image":
+				if isinstance(data,np.ndarray): 
+					data=from_numpy(data)
 				widget.set_data(data,dname)
 				#depth,nx,ny,raw=widget.render_bitmap()
 				#png=self.rawtopng(depth,nx,ny,raw)
 			elif vtype=="imagemx":
 				widget.set_data(data, dname)
 			elif vtype=="volume":
+				if isinstance(data,np.ndarray): 
+					data=from_numpy(data)
 				nodes=widget.getAllNodes()
 				for n in nodes: 
 					if n.getLabel()==dname:
