@@ -225,10 +225,20 @@ input volumes.
 	thrds=[(jsd,v1f,v2f,apix,f,options.localsizea,options.tophat,options.cutoff,mask) for f in range(1,box//2)]
 
 	if options.sampfscs:
+		steps=int(box//(2*options.localsizea/apix))
+		step=int(box//steps)
+		print(f"Sample FSCs saved with {step} pixel spacing") 
 		#list of locations to sample full FSC curves, relative to middle of box
-		samplocs=((0,0,0),(10,0,0),(0,0,10),(50,0,0),(0,0,50),(10,25,25),(0,box//4,0),(-box//6,-box//6,-box//6))
-		samplocs=[(i[0]+box//2,i[1]+box//2,i[2]+box//2) for i in samplocs]
-		samps=[[0]*(box//2) for i in range(len(samplocs))]
+		samplocs=[]
+		for z in range(step//2,box,step):
+			for y in range(step//2,box,step):
+				for x in range(step//2,box,step):
+					if sqrt((z-box/2)**2+(y-box/2)**2+(x-box/2)**2)<box//3:
+						samplocs.append((x,y,z))
+		#samplocs=((0,0,0),(10,0,0),(0,0,10),(50,0,0),(0,0,50),(10,25,25),(0,box//4,0),(-box//6,-box//6,-box//6))
+		#samplocs=[(i[0]+box//2,i[1]+box//2,i[2]+box//2) for i in samplocs]
+		samps=[zeros(box//2) for i in range(len(samplocs))]
+		print("Saving ",len(samplocs)," FSC curves")
 
 	# here we run the threads and save the results, no actual alignment done here
 	if options.verbose: print(len(thrds)," threads")
@@ -273,10 +283,15 @@ input volumes.
 		t.join()
 
 	if options.sampfscs:
-		for i,s in enumerate(samplocs):
-			out=open(f"fsc-{i}_{s[0]}_{s[1]}_{s[2]}.txt","w")
-			for j in range(len(samps[i])):
-				out.write(f"{j}\t{samps[i][j]}\n")
+		out=open(f"fscs.txt","w")
+		out.write("# ")
+		for i,s in enumerate(samplocs): out.write(f'{s[0]},{s[1]},{s[2]}; ')
+		out.write("\n")
+		for j in range(1,len(samps[i])):
+			out.write(f"{j/(box*apix)}")
+			for i,s in enumerate(samplocs):
+				out.write(f"\t{samps[i][j]}")
+			out.write("\n")
 	
 	av1=filtvol1.finish()
 	if options.outfilte!=None: av1.write_compressed(options.outfilte,0,options.compressbits,erase=True)

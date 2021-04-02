@@ -356,7 +356,7 @@ class EMFileType(object) :
 		resfsp=f"{base}/fscvol_{n}.hdf"
 		if resfsp==self.path or fsp[:6]=="fscvol": return
 		if not os.path.isfile(resfsp): 
-			#print("doesn't exist",resfsp)
+			print("doesn't exist",resfsp)
 			return
 		print("loading ",resfsp)
 		iso.setCmapData(resfsp)
@@ -2234,7 +2234,7 @@ class EMDirEntry(object) :
 
 		# Ok, we need to try to figure out what kind of file this is
 		else :
-			head = open(self.path(), "rb").read(4096)		# Most FileTypes should be able to identify themselves using the first 4K block of a file
+			head = open(self.path(), "rb").read(16384)		# Most FileTypes should be able to identify themselves using the first 4K block of a file
 			ext=os.path.splitext(self.path())[1]
 			if ext not in EMFileType.extbyft:
 				return 0
