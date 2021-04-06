@@ -32,6 +32,9 @@ def main():
 	
 	parser.add_argument("--maxshift", type=int, help="maximum shift. default box size/6",default=-1)
 	parser.add_argument("--maxang", type=int, help="maximum angle difference from starting point. ignored when fromscratch is on",default=30)
+	parser.add_argument("--curve",action="store_true",help=".",default=False)
+	parser.add_argument("--skipali",action="store_true",help=".",default=False)
+	parser.add_argument("--breaksym",type=str,default=None,help="specify symmetry to break. only in localsearch mode")
 
 	
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
@@ -146,8 +149,8 @@ class SptAlignTask(JSTask):
 		rets=[]
 		options=self.options
 		info3d=load_lst_params(options.info3dname)
-		if "xform.align3d" not in self.data[0]:
-			options.fromscratch=True
+		#if "xform.align3d" not in self.data[0]:
+			#options.fromscratch=True
 		
 		reffile=options.ref
 		if options.goldcontinue:
@@ -202,8 +205,13 @@ class SptAlignTask(JSTask):
 		for di,data in enumerate(self.data):
 			
 			#### prepare inputs
-			ref=refs[data["ii"]%2]
-			info=info3d[data["ii"]]
+			if "rawid" in data:
+				dii=data["rawid"]
+			else:
+				dii=data["ii"]
+				
+			ref=refs[dii%2]
+			info=info3d[dii]
 			
 			## 3D particle
 			img=EMData(data["src"], data["idx"])
@@ -219,7 +227,6 @@ class SptAlignTask(JSTask):
 			imgsrc=img["class_ptcl_src"]
 			imgidx=img["class_ptcl_idxs"]
 			imgcoord=img["ptcl_source_coord"]
-			
 			## projection transforms for the 2d particles
 			info2d=load_lst_params(options.info2dname, info["idx2d"])
 			pjxfs=[d["xform.projection"] for d in info2d]
@@ -239,6 +246,7 @@ class SptAlignTask(JSTask):
 					imgpjs.append(m)
 			else:
 				for i, pxf in enumerate(pjxfs): 
+					#print(imgsrc, imgidx[i])
 					m=EMData(imgsrc, imgidx[i])
 					m.clip_inplace(Region((m["nx"]-ny)//2, (m["ny"]-ny)//2, ny, ny))
 					m=m.do_fft()
@@ -248,20 +256,39 @@ class SptAlignTask(JSTask):
 					imgpjs.append(m)
 					
 			
-			#### start from coarse alignment / do refine search around previous solution
+			initxf=None
+			localsearch=False
+			#### start from coarse alignment 
 			if options.fromscratch:
-				initxf=None
 				curxfs=[]
 				npos=32
 				ifirst=0
+			
+			### read curve direction from header
+			elif options.curve:
+				xf=img["xform.align3d"]#.inverse()
+				npos=36
+				xfs=[xf.get_params("eman") for i in range(npos)]
+				for i,x in enumerate(xfs):
+					x["phi"]+=(i*360*2/npos)%360
+					x["alt"]+=(i>npos/2)*180				
+				curxfs=[Transform(x).inverse() for x in xfs]
+				ifirst=1
+				
+			### do refine search around previous solution
 			else:
-				initxf=data["xform.align3d"].inverse()
-				curxfs=[initxf]
-				npos=1
+				xf=data["xform.align3d"].inverse()
+				if options.breaksym==None:
+					curxfs=[xf]
+				else:
+					nsym=xf.get_nsym(options.breaksym)
+					curxfs=[xf.get_sym(options.breaksym, i) for i in range(nsym)]
+				npos=len(curxfs)
 				ifirst=len(ssrg)-1
+				localsearch=True
 			
 			ilast=len(ssrg)
-			
+
 			#### 3d alignment loop. increase fourier box size and reduce solutions every iteration
 			if options.debug: print("Align particle ( {}, {} )".format(data["src"], data["idx"]))
 			for si in range(ifirst, ilast):
@@ -321,16 +348,24 @@ class SptAlignTask(JSTask):
 					for xf in curxfs:
 						x=xf.get_params("eman")
 						x0=[x["tx"]*ss/ny, x["ty"]*ss/ny, x["tz"]*ss/ny, x["alt"], x["az"], x["phi"]]
+						if localsearch:
+							initxf=Transform(xf)
 						
-						simplex=np.vstack([[0,0,0,0,0,0], np.eye(6)])
-						simplex[4:]*=astep
+						if options.skipali:
+							x=x0
+							s=testxf(x)
+						else:
+							simplex=np.vstack([[0,0,0,0,0,0], np.eye(6)])
+							simplex[4:]*=astep
+							
+							res=minimize(testxf, x0,  method='Nelder-Mead', options={'ftol': 1e-3, 'disp': False, "maxiter":50,"initial_simplex":simplex+x0})
+							
+							x=res.x
+							s=float(res.fun)
 						
-						res=minimize(testxf, x0,  method='Nelder-Mead', options={'ftol': 1e-3, 'disp': False, "maxiter":50,"initial_simplex":simplex+x0})
-						
-						x=res.x
 						txf=Transform({"type":"eman", "tx":x[0], "ty":x[1], "tz":x[2],"alt":x[3], "az":x[4], "phi":x[5]})
 						newxfs.append(txf)
-						score.append(float(res.fun))
+						score.append(s)
 						
 						if options.debug: 
 							scr0 = testxf(x0)
@@ -365,20 +400,22 @@ class SptAlignTask(JSTask):
 						x=xf.get_params("eman")
 						x1=[np.mean(newscore[xi]),x["tx"], x["ty"], x["tz"], x["alt"], x["az"], x["phi"]]
 						x1=["{:.4f}".format(a) for a in x1]
-						print(' {} - ( {} )'.format(x1[0], ', '.join(x1[1:])))
+						print(' {} : {} - ( {} )'.format(idx[xi], x1[0], ', '.join(x1[1:])))
 					
 				npos=max(1, npos//2)
 				curxfs=newxfs
 				if ss>=maxy and si>0:
 					break
 				
-			
 			##############
 			
 			xfout=Transform(curxfs[0])
 			score=newscore[0]
+			try: s=score[0]
+			except: score=[score for i in range(len(imgidx))]
 			
-			print(score)
+			
+			#print(score)
 			imgxfs=[p*xfout for p in pjxfs]
 			data["src"], data["idx"]
 			c3d={	"src":data["src"], "idx":data["idx"], 
@@ -397,13 +434,13 @@ class SptAlignTask(JSTask):
 			if options.debug:
 				x=xfout.get_params("eman")
 				x0=[x["tx"], x["ty"], x["tz"], x["alt"], x["az"], x["phi"]]
-				s0 = testxf(x0)
+				#s0 = testxf(x0)
 				x0=["{:.4f}".format(a) for a in x0]
-				print('{} : {:.4f} - ( {} )'.format(data["ii"], s0, ', '.join(x0[1:])))
+				print('{} : {:.4f} - ( {} )'.format(data["ii"], np.mean(score), ', '.join(x0[1:])))
 				
 				
 				print('#############')
-				exit()
+				#exit()
 				
 			else:
 				callback(len(rets)*100//len(self.data))
