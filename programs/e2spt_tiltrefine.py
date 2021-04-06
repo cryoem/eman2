@@ -121,7 +121,7 @@ def main():
 		path=oldpath
 		e=EMData(os.path.join(path,"threed_{:02d}.hdf".format(itr)))
 	else:
-		path = num_path_new(options.path)
+		path = num_path_new("subtlt")
 		print("Writing to {}...".format(path))
 	
 		oldmap = os.path.join(oldpath,"threed_{:02d}.hdf".format(itr))

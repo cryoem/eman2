@@ -235,11 +235,23 @@ def run(args):
         if array is not None:
             for name in array.dtype.names:
                 output_data[name] = array[name]
-
+		
+    em_img = EMAN2_cppwrap.EMData()
+    em_img.read_image(args.particle_stack, 0, True)
+    is_ctf = True
+    try:
+        em_img.get_attr('ctf').to_dict()
+    except RuntimeError:
+        is_ctf = False
+    if is_ctf:
+        names = ['_rlnAmplitudeContrast', '_rlnPhaseShift']
+    else:
+        names = partres_data.dtype.names
     if partres_data is not None:
         for row in partres_data:
-            mask = output_data["_rlnMicrographName"] == row["_rlnMicrographName"]
-            for name in partres_data.dtype.names:
+            mask = numpy.array([os.path.basename(entry) for entry in output_data["_rlnMicrographName"]], dtype=str) \
+                == os.path.basename(row["_rlnMicrographName"])
+            for name in names:
                 output_data[name][mask] = row[name]
 
     final_output = output_data[mask_array_params]

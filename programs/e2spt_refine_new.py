@@ -10,7 +10,7 @@ def main():
 	parser.add_argument("--ptcls", type=str,help="3d particle input", default=None)
 	parser.add_argument("--ref", type=str,help="reference map", default=None)
 	parser.add_argument("--goldstandard", type=float,help="starting resolution for gold standard refinement. default 50", default=50)
-	parser.add_argument("--restarget", default=0, type=float,help="The resolution you reasonably expect to achieve in the current refinement run in A.")
+	parser.add_argument("--restarget", default=0, type=float,help="The resolution you reasonably expect to achieve in the current refinement run (in A).")
 	parser.add_argument("--path", type=str,help="path", default=None)
 	parser.add_argument("--sym", type=str,help="symmetry", default="c1")
 	parser.add_argument("--iters", type=str,help="iterations. Types of refinement separated by comma. p - 3d particle translation-rotation. t - subtilt translation. r - subtilt translation-rotation. d - subtilt defocus. Default is p,p,p,t,r,p,r,d", default="p,p,p,t,r,p,r,d")
@@ -40,6 +40,10 @@ def main():
 	if options.path==None: options.path=num_path_new("spt_")
 	path=options.path
 	print(f"Writing in {path}...")
+	
+	if options.restarget<1:
+		if options.goldstandard>1: options.restarget=options.goldstandard/2.0
+		else: options.restarget=options.startres/2.0
 	
 	info2dname=f"{path}/particle_info_2d.lst"
 	info3dname=f"{path}/particle_info_3d.lst"
@@ -199,7 +203,8 @@ def main():
 			for eo in ["even", "odd"]:
 				run(f"e2spa_make3d.py --input {path}/aliptcls2d_{itr:02d}.lst --output {path}/threed_{itr:02d}_{eo}.hdf --keep {options.keep} --clsid {eo} --parallel thread:{options.threads} --outsize {boxsize} --pad {padsize} --ref {path}/threed_{itr:02d}_{eo}.hdf --maxres {res} --sym {options.sym}")
 			
-		run(f"e2refine_postprocess.py --even {path}/threed_{itr:02d}_even.hdf {setsf} {tophat} --threads {options.threads} {ppmask} --sym {options.sym}")
+		run(f"e2refine_postprocess.py --even {path}/threed_{itr:02d}_even.hdf {setsf} {tophat} --threads {options.threads} --restarget {options.restarget} --sym {options.sym} {ppmask}")
+
 		res=calc_resolution(f"{path}/fsc_masked_{itr:02d}.txt")
 
 		# put the unmasked file back again once we finish the iteration
