@@ -20,7 +20,8 @@ def main():
 	parser.add_argument("--niter", type=int,help="iter", default=10)
 	parser.add_argument("--setsf", type=str,help="structure factor", default="strucfac.txt")
 	parser.add_argument("--tophat", type=str, default="local" ,help="Default=local, can also specify localwiener")
-	parser.add_argument("--threads", type=int,help="threads to use during postprocessing of 3d volumes", default=2)
+	parser.add_argument("--threads", type=int,help="threads to use during postprocessing of 3d volumes", default=4)
+	parser.add_argument("--automask3d", default=None, type=str,help="Default=None. Specify as a processor, eg - mask.auto3d:threshold=1.1:radius=30:nshells=5:nshellsgauss=5.")
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -54,7 +55,7 @@ def main():
 			
 		if i>0:
 			tophat=" --tophat {}".format(options.tophat)
-		run("e2refine_postprocess.py --even {pt}/threed_{i1:02d}_even.hdf --sym {s} --setsf {sf} --restarget {rs:.1f} {tp} --threads {th}".format(pt=options.path, i1=i+1, s=sym, sf=options.setsf, rs=res*.8, tp=tophat, th=options.threads))
+		run("e2refine_postprocess.py --even {pt}/threed_{i1:02d}_even.hdf --sym {s} --setsf {sf} --restarget {rs:.1f} {tp} --threads {th} --automask3d {amask}".format(pt=options.path, i1=i+1, s=sym, sf=options.setsf, rs=res*.8, tp=tophat, th=options.threads, amask=options.automask3d))
 		
 		fsc=np.loadtxt("{}/fsc_masked_{:02d}.txt".format(options.path, i+1))
 		fi=fsc[:,1]<0.2
