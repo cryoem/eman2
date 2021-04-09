@@ -591,12 +591,12 @@ def do_patch_tracking(imgs, ttparams, options, niter=4):
 	
 	options.npk=len(pks)
 	maskc=make_mask(sz)
-	
+	imgshp=[m.process("filter.highpass.gauss",{"cutoff_pixels":options.highpass}) for m in imgs]
 	
 	for itr in range(niter):
 
 		allparams=np.hstack([tpm.flatten(), pks.flatten()])
-		ptclpos,ptclimgs=ali_ptcls(imgs, allparams, options, doali=False,return_imgs=True)
+		ptclpos,ptclimgs=ali_ptcls(imgshp, allparams, options, doali=False,return_imgs=True)
 		ptclimgs=np.array([p.numpy().copy() for p in ptclimgs])
 		ptclimgs=ptclimgs.reshape((len(pks), -1, sz,sz))
 

@@ -97,6 +97,8 @@ def main():
 				idx=info3d[i]["idx2d"]
 				for x in idx:
 					ali2dpms[ia][x]["class"]=clsid[i]
+			
+			ali3dpms[ia]=[a for a in ali if a["class"]==ia]
 					
 		for i in range(nref):
 			save_lst_params(ali2dpms[i], ali2d[i])
