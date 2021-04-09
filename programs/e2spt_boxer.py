@@ -480,7 +480,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		self.update_all()
 
 	def event_localbox(self,tog):
-		self.update_sliceview(['x','y'])
+		self.update_sliceview()
 
 	def get_boxsize(self, clsid=-1):
 		if clsid<0:
@@ -642,7 +642,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 				inplane=dst<bs//2
 				rad=bs//2-dst
 				
-				if ax!='z' and allside:
+				if allside:
 					## display all side view boxes in this mode
 					inplane=True
 					rad=bs//2
@@ -820,6 +820,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		if rad<0:
 			rad=self.eraser_width()
 		
+		#print(x,y,z, rad)
 		delids=[]
 		boxes=self.get_rotated_boxes()
 		for i,b in enumerate(boxes):
@@ -855,7 +856,13 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		#print(x,y,z,xr,yr,zr)
 	
 		if self.optionviewer.erasercheckbox.isChecked():
-			self.del_region_xy(x,y,z)
+			
+			side=self.wlocalbox.isChecked()
+			xyz={'x':x,'y':y,'z':z}
+			if not side:
+				xyz[axis]=-1
+				
+			self.del_region_xy(xyz['x'],xyz['y'],xyz['z'],-1)
 			return
 			
 		for i in range(len(self.boxes)):
