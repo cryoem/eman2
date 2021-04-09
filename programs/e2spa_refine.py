@@ -21,7 +21,7 @@ def main():
 	parser.add_argument("--setsf", type=str,help="structure factor", default="strucfac.txt")
 	parser.add_argument("--tophat", type=str, default="local" ,help="Default=local, can also specify localwiener")
 	parser.add_argument("--threads", type=int,help="threads to use during postprocessing of 3d volumes", default=4)
-	parser.add_argument("--automask3d", default=None, type=str,help="Default=None. Specify as a processor, eg - mask.auto3d:threshold=1.1:radius=30:nshells=5:nshellsgauss=5.")
+	parser.add_argument("--automask3d", default="auto", type=str,help="Default=auto. Specify as a processor, eg - mask.auto3d:threshold=1.1:radius=30:nshells=5:nshellsgauss=5.")
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
