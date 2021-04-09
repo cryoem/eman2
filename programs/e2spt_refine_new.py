@@ -12,7 +12,6 @@ def main():
 	parser.add_argument("--goldstandard", type=float,help="starting resolution for gold standard refinement. default 50", default=50)
 	parser.add_argument("--restarget", default=0, type=float,help="The resolution you reasonably expect to achieve in the current refinement run (in A).")
 	parser.add_argument("--path", type=str,help="path", default=None)
-	parser.add_argument("--sym", type=str,help="symmetry", default="c1")
 	parser.add_argument("--iters", type=str,help="iterations. Types of refinement separated by comma. p - 3d particle translation-rotation. t - subtilt translation. r - subtilt translation-rotation. d - subtilt defocus. Default is p,p,p,t,r,p,r,d", default="p,p,p,t,r,p,r,d")
 	parser.add_argument("--keep", type=float,help="fraction to keep", default=0.95)
 	parser.add_argument("--parallel", type=str,help="parallel", default="thread:10")
@@ -22,13 +21,12 @@ def main():
 	parser.add_argument("--startres", type=float,help="starting maximum resolution. required when goldstandard is not specified", default=-1)
 	parser.add_argument("--ssnrwt", action="store_true", default=False ,help="weight particles by SSNR accroding to references")
 	parser.add_argument("--goldcontinue", action="store_true", default=False ,help="ues the _even/_odd version of the given reference")
-	parser.add_argument("--curve", action="store_true", default=False ,help="curve refinement. still testing")
 	parser.add_argument("--localrefine", action="store_true", default=False ,help="only perform local search around the solution from the last iteration")
 	parser.add_argument("--loadali2d", type=str,help="load previous 2d alignment", default=None)
 	parser.add_argument("--loadali3d", type=str,help="load previous 3d alignment", default=None)
+	parser.add_argument("--use3d",action="store_true",help="use projection of 3d particles instead of 2d sub tilt series",default=False)
 	parser.add_argument("--mask", type=str,help="Mask applied to the results (instead of automasking)", default=None)
-	parser.add_argument("--breaksym", type=str,help="symmetry to break", default=None)
-	parser.add_argument("--maskalign", type=str,help="Mask file applied to 3D alignment reference in each iteration. Not applied to the average, which will follow normal masking routine.", default=None)
+	parser.add_argument("--maskalign", type=str,help="Mask file applied to 3D alignment reference in each iteration. Not applied to the average, which will follow normal masking routine.", default=None, guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=4, col=0,rowspan=1, colspan=3, mode="model")
 	parser.add_argument("--maxshift", type=int, help="maximum shift. default box size/6",default=-1)
 	parser.add_argument("--maxang", type=int, help="maximum angle difference from starting point for localrefine. ",default=30)
 	parser.add_argument("--smooth",type=float,help="smooth local motion by this factor. smoother local motion with larger numbers. default 100",default=100)
@@ -152,19 +150,17 @@ def main():
 			if options.localrefine and last3d:
 				ptcls=last3d
 				opt+=f" --maxshift {options.maxshift} --maxang {options.maxang}"
-			elif options.curve:
-				ptcls=info3dname
-				opt+=" --curve"
 			else:
 				ptcls=info3dname
 				opt+=" --fromscratch"
 			
 			if last2d:
 				opt+=f" --plst {last2d}"
-			if options.breaksym:
-				opt+=f" --breaksym {options.breaksym}"
 				
-			cmd=f"e2spt_align_subtlt.py {ptcls} {ref} --path {path} --iter {itr} --goldcontinue --maxres {res:.2f} --parallel {options.parallel} {opt}"
+			if options.use3d:
+				opt+=" --use3d"
+				
+			cmd=f"e2spt_align_subtlt.py {ptcls} {ref} --path {path} --iter {itr} --goldcontinue --maxres {res} --parallel {options.parallel} {opt}"
 			run(cmd)
 			
 			last3d=f"{path}/aliptcls3d_{itr:02d}.lst"
@@ -179,6 +175,9 @@ def main():
 				cmd+=" --refine_rot"
 			if options.maxshift>0:
 				cmd+=f" --maxshift {options.maxshift}"
+			
+			if options.use3d: 
+				cmd+=" --use3d"
 				
 			run(cmd)
 			last2d=f"{path}/aliptcls2d_{itr:02d}.lst"
@@ -190,21 +189,23 @@ def main():
 				
 			cmd=f"e2spt_subtlt_local.py --ref {ref} --path {path} --iter {itr} --maxres {res} --parallel {options.parallel} --goldcontinue --refine_defocus --aliptcls3d {last3d} --aliptcls2d {last2d}  --smooth {options.smooth} --smoothN {options.smoothN}"
 			
+			if options.use3d: 
+				cmd+=" --use3d"
+				
 			run(cmd)
 			last2d=f"{path}/aliptcls2d_{itr:02d}.lst"
 			
 			
 		for eo in ["even", "odd"]:
-			run(f"e2spa_make3d.py --input {path}/aliptcls2d_{itr:02d}.lst --output {path}/threed_{itr:02d}_{eo}.hdf --keep {options.keep} --clsid {eo} --parallel thread:{options.threads} --outsize {boxsize} --pad {padsize} --sym {options.sym}")
+			run(f"e2spa_make3d.py --input {path}/aliptcls2d_{itr:02d}.lst --output {path}/threed_{itr:02d}_{eo}.hdf --keep {options.keep} --clsid {eo} --parallel thread:{options.threads} --outsize {boxsize} --pad {padsize}")
 			
 		if options.ssnrwt and itr==len(iters):
 			run(f"e2refine_postprocess.py --even {path}/threed_{itr:02d}_even.hdf {setsf} --threads {options.threads} {ppmask}")
 			res=calc_resolution(f"{path}/fsc_masked_{itr:02d}.txt")
 			for eo in ["even", "odd"]:
-				run(f"e2spa_make3d.py --input {path}/aliptcls2d_{itr:02d}.lst --output {path}/threed_{itr:02d}_{eo}.hdf --keep {options.keep} --clsid {eo} --parallel thread:{options.threads} --outsize {boxsize} --pad {padsize} --ref {path}/threed_{itr:02d}_{eo}.hdf --maxres {res} --sym {options.sym}")
+				run(f"e2spa_make3d.py --input {path}/aliptcls2d_{itr:02d}.lst --output {path}/threed_{itr:02d}_{eo}.hdf --keep {options.keep} --clsid {eo} --parallel thread:{options.threads} --outsize {boxsize} --pad {padsize} --ref {path}/threed_{itr:02d}_{eo}.hdf --maxres {res}")
 			
-		run(f"e2refine_postprocess.py --even {path}/threed_{itr:02d}_even.hdf {setsf} {tophat} --threads {options.threads} --restarget {options.restarget} --sym {options.sym} {ppmask}")
-
+		run(f"e2refine_postprocess.py --even {path}/threed_{itr:02d}_even.hdf {setsf} {tophat} --threads {options.threads} --restarget {options.restarget} {ppmask}")
 		res=calc_resolution(f"{path}/fsc_masked_{itr:02d}.txt")
 
 		# put the unmasked file back again once we finish the iteration
@@ -219,6 +220,7 @@ def main():
 	
 	
 def gather_metadata(pfile):
+	
 	print("Gathering metadata...")
 	params=[]
 	if pfile.endswith(".lst"):
@@ -236,31 +238,43 @@ def gather_metadata(pfile):
 	
 	info3d=[]
 	info2d=[]
+	last_pm=None
+	pmn=[]
+	pmii=[]
 	for ii,pm in enumerate(params):
-		img=EMData(pm[0], pm[1], True)
-		imgsrc=img["class_ptcl_src"]
-		imgidx=img["class_ptcl_idxs"]
-		coord=img["ptcl_source_coord"]
-		
-		try: rhdrs=EMData.read_images(imgsrc,imgidx,IMAGE_UNKNOWN,True)
-		except:
-			print(f"couldn't read {imgidx} from {imgsrc}")
-			sys.exit(1)
-			
-		idx2d=[]
-		for k,i in enumerate(imgidx): 
-			e=rhdrs[k]
-			dc={"src":imgsrc,"idx":i,
-				"idx3d":ii, "xform.projection":e["xform.projection"], "tilt_id":e["tilt_id"]}
-			idx2d.append(len(info2d))
-			info2d.append(dc)
-		
-		dc={"src":pm[0], "idx":pm[1], "coord":coord, "idx2d":idx2d}
-		
-		info3d.append(dc)
+		if (pm[0]!=last_pm or len(pmn)>1000) and len(pmn)>0:
+			try: hdrs=EMData.read_images(last_pm,pmn,IMAGE_UNKNOWN,True)
+			except:
+				print(f"Couldn't read {pmn} from {last_pm}")
+				sys.exit(1)
+			for j,pm1 in enumerate(pmn):
+				imgsrc=hdrs[j]["class_ptcl_src"]
+				imgidx=hdrs[j]["class_ptcl_idxs"]
+				coord=hdrs[j]["ptcl_source_coord"]
+				
+				try: rhdrs=EMData.read_images(imgsrc,imgidx,IMAGE_UNKNOWN,True)
+				except:
+					print(f"couldn't read {imgidx} from {imgsrc}")
+					sys.exit(1)
+				idx2d=[]
+				for k,i in enumerate(imgidx): 
+					e=rhdrs[k]
+					dc={"src":imgsrc,"idx":i,
+						"idx3d":pmii[j], "xform.projection":e["xform.projection"], "tilt_id":e["tilt_id"]}
+					idx2d.append(len(info2d))
+					info2d.append(dc)
+				
+				dc={"src":last_pm, "idx":pm1, "coord":coord, "idx2d":idx2d}
+				
+				info3d.append(dc)
 
-		sys.stdout.write("\r {}/{}".format(ii, len(params)))
-		sys.stdout.flush()
+			sys.stdout.write("\r {}/{}".format(ii, len(params)))
+			sys.stdout.flush()
+			pmn=[]
+			pmii=[]
+		pmn.append(pm[1])
+		pmii.append(ii)
+		last_pm=pm[0]
 	print()
 		
 	return info2d, info3d
