@@ -562,6 +562,7 @@ def main():
 	parser.add_argument("--npts", type=int,help="number of points to initialize. ", default=-1)
 	parser.add_argument("--batchsz", type=int,help="batch size", default=32)
 	parser.add_argument("--maxboxsz", type=int,help="maximum fourier box size to use. 2 x target Fourier radius. ", default=64)
+	parser.add_argument("--maxres", type=float,help="maximum resolution. will overwrite maxboxsz. ", default=-1)
 	parser.add_argument("--align", action="store_true", default=False ,help="align particles.")
 	parser.add_argument("--heter", action="store_true", default=False ,help="heterogeneity analysis.")
 	parser.add_argument("--fromscratch", action="store_true", default=False ,help="start from coarse alignment. otherwise will only do refinement from last round")
@@ -616,6 +617,10 @@ def main():
 		e=EMData(options.projs, 0, True)
 		raw_apix, raw_boxsz = e["apix_x"], e["ny"]
 		options.raw_apix=raw_apix
+		if options.maxres>0:
+			maxboxsz=options.maxboxsz=ceil(raw_boxsz*raw_apix*2/options.maxres)//2*2
+			print("using box size {}, max resolution {:.1f}".format(maxboxsz, options.maxres))
+			
 		data_cpx, xfsnp = load_particles(options.projs, shuffle=True, hdrxf=True)
 		set_indices_boxsz(data_cpx[0].shape[1], raw_apix, True)
 		
@@ -660,6 +665,9 @@ def main():
 	if options.ptclsin:
 		e=EMData(options.ptclsin, 0, True)
 		raw_apix, raw_boxsz = e["apix_x"], e["ny"]
+		if options.maxres>0:
+			maxboxsz=options.maxboxsz=ceil(raw_boxsz*raw_apix*2/options.maxres)//2*2
+			print("using box size {}, max resolution {:.1f}".format(maxboxsz, options.maxres))
 		
 	if options.ptclsin and options.align:
 		pts=tf.constant(pts)
