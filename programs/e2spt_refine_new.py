@@ -11,6 +11,8 @@ def main():
 	parser.add_argument("--ref", type=str,help="reference map", default=None)
 	parser.add_argument("--goldstandard", type=float,help="starting resolution for gold standard refinement. default 50", default=50)
 	parser.add_argument("--restarget", default=0, type=float,help="The resolution you reasonably expect to achieve in the current refinement run (in A).")
+	parser.add_argument("--maxres",type=float,help="Maximum resolution to consider in alignment (in A, not 1/A)",default=0)
+	parser.add_argument("--minres",type=float,help="Minimum resolution to consider in alignment (in A, not 1/A)",default=0)
 	parser.add_argument("--path", type=str,help="path", default=None)
 	parser.add_argument("--sym", type=str,help="symmetry", default="c1")
 	parser.add_argument("--iters", type=str,help="iterations. Types of refinement separated by comma. p - 3d particle translation-rotation. t - subtilt translation. r - subtilt translation-rotation. d - subtilt defocus. Default is p,p,p,t,r,p,r,d", default="p,p,p,t,r,p,r,d")
@@ -81,7 +83,7 @@ def main():
 		else:
 			print("WARNING: running without even/odd spliting. this could introduce model bias...")
 			refs={"even":options.ref, "odd":options.ref}
-	
+	if options.maxres!=0: res=options.maxres
 	
 	er=EMData(refs["even"],0,True)
 	ep=EMData(info3dname,0,True)
@@ -147,7 +149,13 @@ def main():
 				refv.write_compressed(tmp,0,12)
 				refv.mult(maskalign)
 				refv.write_compressed(refeo,0,12)
-	
+
+		# if there is a lot of variability, the overall resolution from the FSC may be a massive underestimate
+		# which would then trigger the next iteration to not be aligned as well. This permits the user to
+		# override the automatic value
+		if options.maxres>0:
+			res=options.maxres
+			
 		if itype=='p':
 			opt=""
 			if options.localrefine and last3d:
@@ -166,6 +174,8 @@ def main():
 				opt+=f" --breaksym {options.breaksym}"
 			if options.use3d:
 				opt+=" --use3d"
+			if options.minres>0:
+				opt+=f" --minres={options.minres}"
 				
 			cmd=f"e2spt_align_subtlt.py {ptcls} {ref} --path {path} --iter {itr} --goldcontinue --maxres {res:.2f} --parallel {options.parallel} {opt}"
 			run(cmd)
@@ -184,6 +194,8 @@ def main():
 				cmd+=f" --maxshift {options.maxshift}"
 			if options.use3d:
 				cmd+=" --use3d"
+			if options.minres>0:
+				cmd+=f" --minres={options.minres}"
 				
 			run(cmd)
 			last2d=f"{path}/aliptcls2d_{itr:02d}.lst"
@@ -195,6 +207,8 @@ def main():
 				
 			cmd=f"e2spt_subtlt_local.py --ref {ref} --path {path} --iter {itr} --maxres {res} --parallel {options.parallel} --goldcontinue --refine_defocus --aliptcls3d {last3d} --aliptcls2d {last2d}  --smooth {options.smooth} --smoothN {options.smoothN}"
 			
+			if options.minres>0:
+				cmd+=f" --minres={options.minres}"
 			run(cmd)
 			last2d=f"{path}/aliptcls2d_{itr:02d}.lst"
 			
