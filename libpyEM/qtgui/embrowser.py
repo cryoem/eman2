@@ -3464,6 +3464,12 @@ class SortSelTree(QtWidgets.QTreeView) :
 
 class EMSliceParamDialog(QtWidgets.QDialog):
 	"""This modal dialog asks the user for parameters required for the XYZ 3-D stack viewer"""
+	dlay=-1
+	dlp="-1"
+	dhp="-1"
+	dmask=""
+	
+	
 	def __init__(self, parent = None,nimg = 1) :
 		QtWidgets.QDialog.__init__(self,parent)
 		
@@ -3495,19 +3501,19 @@ class EMSliceParamDialog(QtWidgets.QDialog):
 
 		self.wspinlayers=QtWidgets.QSpinBox()
 		self.wspinlayers.setRange(-1,256)
-		self.wspinlayers.setValue(-1)
+		self.wspinlayers.setValue(self.dlay)
 		self.wspinlayers.setToolTip("Projection about center +- selected number of layers, eg- 0 -> central section only, -1 full projection")
 		self.fol.addRow("Sum Layers (0->1, 1->3, 2->5, ...):",self.wspinlayers)
 
-		self.wlelp=QtWidgets.QLineEdit("-1")
+		self.wlelp=QtWidgets.QLineEdit(self.dlp)
 		self.wlelp.setToolTip("If >0 applies a low-pass filter in 2D. Specify in A.")
 		self.fol.addRow("Lowpass (A):",self.wlelp)
 
-		self.wlehp=QtWidgets.QLineEdit("-1")
+		self.wlehp=QtWidgets.QLineEdit(self.dhp)
 		self.wlehp.setToolTip("If >0 applies a high-pass filter in 2D. Specify in A.")
 		self.fol.addRow("Highpass (A):",self.wlehp)
 
-		self.wlemask=QtWidgets.QLineEdit("")
+		self.wlemask=QtWidgets.QLineEdit(self.dmask)
 		self.wlemask.setToolTip("Optional filename of a mask volume (same dimensions)")
 		self.fol.addRow("Mask volume:",self.wlemask)
 
@@ -3528,9 +3534,16 @@ class EMSliceParamDialog(QtWidgets.QDialog):
 		self.wbutcancel = QtWidgets.QPushButton("Cancel")
 		self.bhb.addWidget(self.wbutcancel)
 	
-		self.wbutok.clicked[bool].connect(self.accept)
+		self.wbutok.clicked[bool].connect(self.okpress)
 		self.wbutcancel.clicked[bool].connect(self.reject)
 		self.wbutok.setDefault(1)
+		
+	def okpress(self,state):
+		EMSliceParamDialog.dlay=self.wspinlayers.value()
+		EMSliceParamDialog.dlp=self.wlelp.text()
+		EMSliceParamDialog.dhp=self.wlehp.text()
+		EMSliceParamDialog.dmask=self.wlemask.text()
+		self.accept()
 
 class EMBrowserWidget(QtWidgets.QWidget) :
 	"""This widget is a file browser for EMAN2. In addition to being a regular file browser, it supports:
