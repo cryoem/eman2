@@ -20,7 +20,7 @@ def main():
 	
 	Usage:
 		e2tomogram.py <tilt series stack> --rawtlt <raw tilt file> [options]
-	or:
+		e2tomogram.py <tilt series> <tilt series> <tilt series> ... --rawtlt <folder with .tlt files> [options]
 		e2tomogram.py <tilt series stack> --tltstep <angle between tilts> [options]
 	
 	Note: Tiltseries must have the correct Apix values in their headers.
@@ -37,6 +37,7 @@ def main():
 	parser.add_argument("--zeroid", type=int,help="Index of the center tilt. Ignored when rawtlt is provided.", default=-1)#,guitype='intbox',row=3, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--tltstep", type=float,help="Step between tilts. Ignored when rawtlt is provided. Default is 2.0.", default=2.0,guitype='floatbox',row=3, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--rawtlt", type=str,help="Specify a text file contains raw tilt angles. Will look for files with the same name as the tilt series if a directory is provided", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", filecheck=False, row=4, col=0, rowspan=1, colspan=2)#,mode="easy")
+	parser.add_argument("--mdoc", type=str,help="Specify a SerialEM .mdoc file or a folder containing same-named .mdoc files", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", filecheck=False, row=4, col=0, rowspan=1, colspan=2)#,mode="easy")
 
 	parser.add_argument("--npk", type=int,help="Number of landmarks to use (such as gold fiducials). Default is 20.", default=20,guitype='intbox',row=5, col=0, rowspan=1, colspan=1, mode="easy")
 
@@ -278,6 +279,39 @@ def main():
 				
 			#### load raw tilt file
 			tlts=np.loadtxt(options.rawtlt)
+			
+			if len(tlts)!=len(imgs_500):
+				print("Number of tilt angles and tilt images do no match. Your inputs have {} tilt angles and {} tilt images.\nStopping reconstruction.".format(len(tlts),len(imgs_500)))
+				return
+			
+		elif (options.mdoc!=None and len(options.mdoc)>0) :
+			
+			if os.path.isdir(options.mdoc):
+				print("Looking for mdoc file matching {} in {}...".format(options.inputname, options.rawtlt))
+				bnm=options.basename.split('/')[-1]
+				rl=[f for f in os.listdir(options.mdoc) if f.startswith(bnm) and f[-5:]==".mdoc"]
+				if len(rl)==0:
+					print(f"Cannot find mdoc file for {bnm} in the directory {options.mdoc}. exit...")
+					return
+				elif len(rl)>1:
+					print("Found multiple matching files...")
+					print(rl)
+					
+				options.mdoc=os.path.join(options.mdoc, rl[0])
+				print("Using {}".format(rl[0]))
+
+			with file(options.mdoc,"r") as mdoc:
+				tltdic={}
+				idx=0
+				for line in mdoc:
+					if line.startswith("[ZValue"): idx=int(line.split("=")[1][:-1])
+					if line.startswith("TiltAngle"): tltdic[idx]=float(line.split("=")[1])
+			
+			try:
+				tlts=[tltdic[i] for i in range(max(tltdic))]
+			except:
+				print(f"Error: incomplete tilt list in mdoc file ",options.mdoc)
+				return
 			
 			if len(tlts)!=len(imgs_500):
 				print("Number of tilt angles and tilt images do no match. Your inputs have {} tilt angles and {} tilt images.\nStopping reconstruction.".format(len(tlts),len(imgs_500)))
