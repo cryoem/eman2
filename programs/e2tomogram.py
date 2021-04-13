@@ -300,18 +300,21 @@ def main():
 				options.mdoc=os.path.join(options.mdoc, rl[0])
 				print("Using {}".format(rl[0]))
 
-			with file(options.mdoc,"r") as mdoc:
+			with open(options.mdoc,"r") as mdoc:
 				tltdic={}
 				idx=0
 				for line in mdoc:
-					if line.startswith("[ZValue"): idx=int(line.split("=")[1][:-1])
+					if line.startswith("[ZValue"): idx=int(line.split("=")[1].split("]")[0])
 					if line.startswith("TiltAngle"): tltdic[idx]=float(line.split("=")[1])
 			
 			try:
-				tlts=[tltdic[i] for i in range(max(tltdic))]
+				tlts=[tltdic[i] for i in range(max(tltdic)+1)]
+				tlts=np.array(tlts)
 			except:
 				print(f"Error: incomplete tilt list in mdoc file ",options.mdoc)
 				return
+
+			options.zeroid=zeroid=np.argmin(np.abs(tlts))
 			
 			if len(tlts)!=len(imgs_500):
 				print("Number of tilt angles and tilt images do no match. Your inputs have {} tilt angles and {} tilt images.\nStopping reconstruction.".format(len(tlts),len(imgs_500)))
