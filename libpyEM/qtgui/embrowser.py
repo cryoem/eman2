@@ -356,7 +356,7 @@ class EMFileType(object) :
 		resfsp=f"{base}/fscvol_{n}.hdf"
 		if resfsp==self.path or fsp[:6]=="fscvol": return
 		if not os.path.isfile(resfsp): 
-			print("doesn't exist",resfsp)
+			#print("doesn't exist",resfsp)
 			return
 		print("loading ",resfsp)
 		iso.setCmapData(resfsp)
@@ -530,6 +530,13 @@ class EMFileType(object) :
 
 	def show2dStack3sec(self, brws) :
 		"""A set of 2-D images derived from a stack of 3-D Volumes"""
+		
+		modifiers = QtWidgets.QApplication.keyboardModifiers()
+		
+		if modifiers == QtCore.Qt.ShiftModifier:
+			self.showProjXYZ(brws)
+			return
+		
 		try:
 			ret=self.secparm.exec_()
 		except:

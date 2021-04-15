@@ -137,7 +137,8 @@ def main():
 		
 	if "apix_unbin" in js:
 		options.boxsz=options.boxsz*apix/apix_unbin
-	clst[int(mytag)]={"name":options.featurename, "boxsize":options.boxsz}
+	clst[str(mytag)]={"name":options.featurename, "boxsize":options.boxsz}
+	#print(clst)
 	js["class_list"]=clst
 	#js["boxes"]=allbox
 	js.close()

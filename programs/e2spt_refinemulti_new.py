@@ -9,6 +9,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--ptcls", type=str,help="path", default=None)
 	parser.add_argument("--path", type=str,help="path", default=None)
+	parser.add_argument("--nref", type=int,help="duplicate the first ref N times with phase randomization at 2xres", default=-1)
 	parser.add_argument("--niter", type=int,help="number of iterations", default=5)
 	parser.add_argument("--loadali3d", type=str,help="load previous 3d alignment", default=None)
 	parser.add_argument("--res", type=float,help="target resolution", default=20.)
@@ -17,10 +18,8 @@ def main():
 	parser.add_argument("--parallel", type=str,help="parallel", default="thread:12")
 	parser.add_argument("--sym", type=str,help="symmetry", default="c1")
 
-
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
-
 
 	if options.path==None: options.path=num_path_new("sptcls_")
 	path=options.path
@@ -46,8 +45,17 @@ def main():
 	js.update(vars(options))
 	js.close()
 	
-	refs=[EMData(a) for a in args]
-	nref=len(refs)
+	if options.nref>0:
+		r=EMData(args[0])
+		nref=options.nref
+		refs=[]
+		for i in range(nref):
+			e=r.process("filter.lowpass.randomphase",{"cutoff_freq":options.res*2})
+			refs.append(e)
+	else:
+		refs=[EMData(a) for a in args]
+		nref=len(refs)
+		
 	for i,r in enumerate(refs):
 		r.write_image(f"{path}/threed_00_{i:02d}.hdf")
 		
