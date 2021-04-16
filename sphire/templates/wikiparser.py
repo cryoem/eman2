@@ -2608,7 +2608,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_final()))
 	
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien_alpha.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_standard_fresh(beta=True)))
-	sxcmd_config_list.append(SXcmd_config("../doc/meridien_alpha.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local_stack(beta=True)))
+	# sxcmd_config_list.append(SXcmd_config("../doc/meridien_alpha.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local_stack(beta=True)))
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien_alpha.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_local_iteration(beta=True)))
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien_alpha.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_standard_continuation(beta=True)))
 	sxcmd_config_list.append(SXcmd_config("../doc/meridien_alpha.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_final(beta=True)))
