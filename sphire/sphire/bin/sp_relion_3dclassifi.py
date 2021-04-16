@@ -309,153 +309,147 @@ def parse_parameters(args):
     )
 
     ###### Here the helical part starts
-    parser.add_argument(
-        "--helical_recons",
-        action="store_true",
-        help="Do helical reconstruction",
-        default = False
-    )
+    # parser.add_argument(
+    #     "--helical_recons",
+    #     action="store_true",
+    #     help="Do helical reconstruction",
+    #     default = False
+    # )
 
 
-    parser.add_argument(
-        "--inner_diam",
-        type=float,
-        help="Helical Tube inner diameter",
-        default= -1,
-    )
+    # parser.add_argument(
+    #     "--inner_diam",
+    #     type=float,
+    #     help="Helical Tube inner diameter",
+    #     default= -1,
+    # )
 
 
-    parser.add_argument(
-        "--outer_diam",
-        type=float,
-        help="Helical Tube outer diameter",
-        default= -1,
-    )
+    # parser.add_argument(
+    #     "--outer_diam",
+    #     type=float,
+    #     help="Helical Tube outer diameter",
+    #     default= -1,
+    # )
 
-    parser.add_argument(
-        "--sig_tilt",
-        type=float,
-        help="Angular search range for tilt (deg)",
-        default= 15,
-    )
+    # parser.add_argument(
+    #     "--sig_tilt",
+    #     type=float,
+    #     help="Angular search range for tilt (deg)",
+    #     default= 15,
+    # )
 
-    parser.add_argument(
-        "--sig_psi",
-        type=float,
-        help="Angular search range for psi (deg)",
-        default= 10,
-    )
+    # parser.add_argument(
+    #     "--sig_psi",
+    #     type=float,
+    #     help="Angular search range for psi (deg)",
+    #     default= 10,
+    # )
 
-    parser.add_argument(
-        "--sig_rot",
-        type=float,
-        help="Angular search range for rot (deg)",
-        default= -1,
-    )
+    # parser.add_argument(
+    #     "--sig_rot",
+    #     type=float,
+    #     help="Angular search range for rot (deg)",
+    #     default= -1,
+    # )
 
-    parser.add_argument(
-        "--sigma_dist",
-        type=float,
-        help="Range factor of local average",
-        default= 1.5,
-    )
+    # parser.add_argument(
+    #     "--sigma_dist",
+    #     type=float,
+    #     help="Range factor of local average",
+    #     default= 1.5,
+    # )
+    #
+    # parser.add_argument(
+    #     "--keep_tilt_fix",
+    #     action="store_true",
+    #     help="Keep tilt-prior fixed",
+    #     default= True,
+    # )
 
-    parser.add_argument(
-        "--keep_tilt_fix",
-        action="store_true",
-        help="Keep tilt-prior fixed",
-        default= True,
-    )
+    # parser.add_argument(
+    #     "--apply_helical_sym",
+    #     action="store_true",
+    #     help="Apply helical symmetry",
+    #     default= False,
+    # )
+    #
+    # parser.add_argument(
+    #     "--unique_asym_unit",
+    #     type=int,
+    #     help="Number of unique asymmetrical units",
+    #     default= 1,
+    # )
+    #
+    # parser.add_argument(
+    #     "--initial_twist",
+    #     type=float,
+    #     help="Initial twise (deg)",
+    #     default= 0,
+    # )
+    #
+    # parser.add_argument(
+    #     "--initial_rise",
+    #     type=float,
+    #     help="Initial rise (A)",
+    #     default= 0,
+    # )
 
-    parser.add_argument(
-        "--apply_helical_sym",
-        action="store_true",
-        help="Apply helical symmetry",
-        default= False,
-    )
-
-    parser.add_argument(
-        "--unique_asym_unit",
-        type=int,
-        help="Number of unique asymmetrical units",
-        default= 1,
-    )
-
-    parser.add_argument(
-        "--initial_twist",
-        type=float,
-        help="Initial twise (deg)",
-        default= 0,
-    )
-
-    parser.add_argument(
-        "--initial_rise",
-        type=float,
-        help="Initial rise (A)",
-        default= 0,
-    )
-
-    parser.add_argument(
-        "--z_percent",
-        type=int,
-        help="Central Z length (%)",
-        default= 30,
-    )
-
-    parser.add_argument(
-        "--do_local_search",
-        action="store_true",
-        help="Do local searches of symmetry",
-        default= False,
-    )
-
-    parser.add_argument(
-        "--twist_min",
-        type=float,
-        help="Twist search min (deg)",
-        default= 0,
-    )
-
-    parser.add_argument(
-        "--twist_max",
-        type=float,
-        help="Twist search max (deg)",
-        default= 0,
-    )
-
-    parser.add_argument(
-        "--twist_inistep",
-        type=float,
-        help="Twist search step (deg)",
-        default= 0,
-    )
-
-    parser.add_argument(
-        "--rise_min",
-        type=float,
-        help="Rise search min (A)",
-        default= 0,
-    )
-
-    parser.add_argument(
-        "--rise_max",
-        type=float,
-        help="Rise search max (A)",
-        default= 0,
-    )
-
-    parser.add_argument(
-        "--rise_inistep",
-        type=float,
-        help="Rise search max (A)",
-        default= 0,
-    )
-
-
-
-
-
-
+    # parser.add_argument(
+    #     "--z_percent",
+    #     type=int,
+    #     help="Central Z length (%)",
+    #     default= 30,
+    # )
+    #
+    # parser.add_argument(
+    #     "--do_local_search",
+    #     action="store_true",
+    #     help="Do local searches of symmetry",
+    #     default= False,
+    # )
+    #
+    # parser.add_argument(
+    #     "--twist_min",
+    #     type=float,
+    #     help="Twist search min (deg)",
+    #     default= 0,
+    # )
+    #
+    # parser.add_argument(
+    #     "--twist_max",
+    #     type=float,
+    #     help="Twist search max (deg)",
+    #     default= 0,
+    # )
+    #
+    # parser.add_argument(
+    #     "--twist_inistep",
+    #     type=float,
+    #     help="Twist search step (deg)",
+    #     default= 0,
+    # )
+    #
+    # parser.add_argument(
+    #     "--rise_min",
+    #     type=float,
+    #     help="Rise search min (A)",
+    #     default= 0,
+    # )
+    #
+    # parser.add_argument(
+    #     "--rise_max",
+    #     type=float,
+    #     help="Rise search max (A)",
+    #     default= 0,
+    # )
+    #
+    # parser.add_argument(
+    #     "--rise_inistep",
+    #     type=float,
+    #     help="Rise search max (A)",
+    #     default= 0,
+    # )
 
     return parser.parse_args()
 
@@ -782,58 +776,58 @@ def run(args):
         total_str += " " +"--flatten_solvent --oversampling 1 --norm  --scale"
 
         ### Now helical parts start
-        if options.helical_recons :
-            total_str += " " + "--helix"
-            total_str += " " + "--helical_outer_diameter" + " " + str(options.outer_diam)
-            if options.inner_diam != -1:
-                total_str += " " + "--helical_inner_diameter" + " " + str(options.inner_diam)
-            else :
-                pass
-            if options.sig_tilt >= 3 :
-                total_str += " " + "--sigma_tilt" + " " + str(options.sig_tilt / 3)
-            else :
-                total_str += " " + "--sigma_tilt" + " " + str(0)
-            if options.sig_rot >= 3 :
-                total_str += " " + "--sigma_rot" + " " + str(options.sig_rot / 3)
-            else :
-                total_str += " " + "--sigma_rot" + " " + str(0)
-            if options.sig_psi >= 3 :
-                total_str += " " + "--sigma_psi" + " " + str(options.sig_psi / 3)
-            else :
-                total_str += " " + "--sigma_rot" + " " + str(0)
-            if options.sigma_dist >=1 :
-                total_str += " " + "--helical_sigma_distance" + " " + str(options.sigma_dist / 3)
-            else :
-                pass
-            if options.keep_tilt_fix :
-                total_str += " " + "--helical_keep_tilt_prior_fixed"
-            else :
-                pass
-
-            if options.apply_helical_sym :
-
-                total_str += " " + "--helical_nr_asu" + " " + str(options.unique_asym_unit)
-                total_str += " " + "--helical_twist_initial" + " " + str(options.initial_twist)
-                total_str += " " + "--helical_rise_initial" + " " + str(options.initial_rise)
-                total_str += " " + "--helical_z_percentage" + " " + str(options.z_percent/100)
-            else :
-                pass
-
-            if options.do_local_search :
-                total_str += " " + "--helical_symmetry_search"
-                total_str += " " + "--helical_twist_min" + " " + str(options.twist_min)
-                total_str += " " + "--helical_twist_max" + " " + str(options.twist_max)
-                total_str += " " + "--helical_twist_inistep" + " " + str(options.twist_inistep)
-                total_str += " " + "--helical_rise_min" + " " + str(options.rise_min)
-                total_str += " " + "--helical_rise_max" + " " + str(options.rise_max)
-                if options.rise_inistep != 0 :
-                    total_str += " " + "--helical_rise_inistep" + " " + str(options.rise_inistep)
-                else :
-                    pass
-            else:
-                pass
-        else:
-            pass
+        # if options.helical_recons :
+        #     total_str += " " + "--helix"
+        #     total_str += " " + "--helical_outer_diameter" + " " + str(options.outer_diam)
+        #     if options.inner_diam != -1:
+        #         total_str += " " + "--helical_inner_diameter" + " " + str(options.inner_diam)
+        #     else :
+        #         pass
+        #     if options.sig_tilt >= 3 :
+        #         total_str += " " + "--sigma_tilt" + " " + str(options.sig_tilt / 3)
+        #     else :
+        #         total_str += " " + "--sigma_tilt" + " " + str(0)
+        #     if options.sig_rot >= 3 :
+        #         total_str += " " + "--sigma_rot" + " " + str(options.sig_rot / 3)
+        #     else :
+        #         total_str += " " + "--sigma_rot" + " " + str(0)
+        #     if options.sig_psi >= 3 :
+        #         total_str += " " + "--sigma_psi" + " " + str(options.sig_psi / 3)
+        #     else :
+        #         total_str += " " + "--sigma_rot" + " " + str(0)
+        #     if options.sigma_dist >=1 :
+        #         total_str += " " + "--helical_sigma_distance" + " " + str(options.sigma_dist / 3)
+        #     else :
+        #         pass
+        #     if options.keep_tilt_fix :
+        #         total_str += " " + "--helical_keep_tilt_prior_fixed"
+        #     else :
+        #         pass
+        #
+        #     if options.apply_helical_sym :
+        #
+        #         total_str += " " + "--helical_nr_asu" + " " + str(options.unique_asym_unit)
+        #         total_str += " " + "--helical_twist_initial" + " " + str(options.initial_twist)
+        #         total_str += " " + "--helical_rise_initial" + " " + str(options.initial_rise)
+        #         total_str += " " + "--helical_z_percentage" + " " + str(options.z_percent/100)
+        #     else :
+        #         pass
+        #
+        #     if options.do_local_search :
+        #         total_str += " " + "--helical_symmetry_search"
+        #         total_str += " " + "--helical_twist_min" + " " + str(options.twist_min)
+        #         total_str += " " + "--helical_twist_max" + " " + str(options.twist_max)
+        #         total_str += " " + "--helical_twist_inistep" + " " + str(options.twist_inistep)
+        #         total_str += " " + "--helical_rise_min" + " " + str(options.rise_min)
+        #         total_str += " " + "--helical_rise_max" + " " + str(options.rise_max)
+        #         if options.rise_inistep != 0 :
+        #             total_str += " " + "--helical_rise_inistep" + " " + str(options.rise_inistep)
+        #         else :
+        #             pass
+        #     else:
+        #         pass
+        # else:
+        #     pass
 
 
         print("flags for the all commands is", total_str)
