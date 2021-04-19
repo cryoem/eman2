@@ -16997,7 +16997,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.dependency_group = [['', '', '']];
         token.default = "";
         token.restore = [[""], [""]];
-        token.type = "output";
+        token.type = "output_continue";
         sxcmd.token_list.append(token);
         sxcmd.token_dict[token.key_base] = token
         token = SXcmd_token();
@@ -17413,7 +17413,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.dependency_group = [['', '', '']];
         token.default = "";
         token.restore = [[""], [""]];
-        token.type = "output";
+        token.type = "output_continue";
         sxcmd.token_list.append(token);
         sxcmd.token_dict[token.key_base] = token
         token = SXcmd_token();
@@ -17701,7 +17701,7 @@ class SXMainWindow(QMainWindow):  # class SXMainWindow(QWidget):
         token.dependency_group = [['', '', '']];
         token.default = "";
         token.restore = [[""], [""]];
-        token.type = "output";
+        token.type = "output_continue";
         sxcmd.token_list.append(token);
         sxcmd.token_dict[token.key_base] = token
         token = SXcmd_token();
