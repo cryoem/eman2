@@ -2110,7 +2110,7 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
                 if input_typ == "Unblur":
                     arrCoord = matplotlib.numpy.genfromtxt(file, unpack=True)
                 elif input_typ == "Unblur_for_logFile":
-                    arrCoord = values_from_logFile[file].values()[0]
+                    arrCoord = list(values_from_logFile[file].values())[0]
                 elif input_typ == "MotionCor2":
                     arrCoord = matplotlib.numpy.genfromtxt(file, unpack=True)[1:]
                     # Transpose the array
