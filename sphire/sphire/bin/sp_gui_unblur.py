@@ -31,7 +31,7 @@ import glob
 import matplotlib
 import matplotlib.pyplot
 import os
-from ..libpy import sp_global_def
+from sphire.libpy import sp_global_def
 import sys
 from builtins import range
 from builtins import object
@@ -857,14 +857,14 @@ class SXUnblurPlot(PyQt5.QtWidgets.QWidget):
             # and the Frame number.
             self.dictFrames.update(
                 {
-                    "{:s}".format(canvasUpper): "{:s} {:d}".format(
+                    "{:s}".format(str(canvasUpper)): "{:s} {:d}".format(
                         name, framestart + number
                     )
                 }
             )
             self.dictFrames.update(
                 {
-                    "{:s}".format(canvasLower): "{:s} {:d}".format(
+                    "{:s}".format(str(canvasLower)): "{:s} {:d}".format(
                         name, framestop - 1 - number
                     )
                 }
@@ -902,7 +902,7 @@ class SXUnblurPlot(PyQt5.QtWidgets.QWidget):
             # and the Frame number.
             self.dictFrames.update(
                 {
-                    "{:s}".format(canvasUpper): "{:s} {:d}".format(
+                    "{:s}".format(str(canvasUpper)): "{:s} {:d}".format(
                         name, framestart + number + 1
                     )
                 }
@@ -1921,8 +1921,7 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
 
         # Select the first item
         # self.lsFiles.setItemSelected(self.lsFiles.item(0), True)   todo> it should be for default ... test it monday 11feb
-        if self.lsFiles.item(0) is not None:
-            self._current_info(item=self.lsFiles.item(0))
+        self._current_info(item=self.lsFiles.item(0))
 
         # Fill the General widgets with maximum and minimum values
         arrFrames = matplotlib.numpy.array(
@@ -2011,9 +2010,9 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         # Fill the listDType with the right number of frames and angles.
         # Add entrys to the lists and fill the translation Dictionary.
         self.listDType = [
-            (self.dFile, "|S200"),
-            (self.dFileRaw, "|S200"),
-            (self.dMic, "|S200"),
+            (self.dFile, "|U200"),
+            (self.dFileRaw, "|U200"),
+            (self.dMic, "|U200"),
             (self.dOverall, "<f8"),
             (self.dFrame, "<f8"),
             (self.dEnd, "<f8"),
