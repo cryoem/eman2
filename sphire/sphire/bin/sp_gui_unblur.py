@@ -1921,7 +1921,8 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
 
         # Select the first item
         # self.lsFiles.setItemSelected(self.lsFiles.item(0), True)   todo> it should be for default ... test it monday 11feb
-        self._current_info(item=self.lsFiles.item(0))
+        if self.lsFiles.item(0) is not None:
+            self._current_info(item=self.lsFiles.item(0))
 
         # Fill the General widgets with maximum and minimum values
         arrFrames = matplotlib.numpy.array(
