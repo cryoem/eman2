@@ -31,7 +31,7 @@ import glob
 import matplotlib
 import matplotlib.pyplot
 import os
-from ..libpy import sp_global_def
+from sphire.libpy import sp_global_def
 import sys
 from builtins import range
 from builtins import object
@@ -857,14 +857,14 @@ class SXUnblurPlot(PyQt5.QtWidgets.QWidget):
             # and the Frame number.
             self.dictFrames.update(
                 {
-                    "{:s}".format(canvasUpper): "{:s} {:d}".format(
+                    "{:s}".format(str(canvasUpper)): "{:s} {:d}".format(
                         name, framestart + number
                     )
                 }
             )
             self.dictFrames.update(
                 {
-                    "{:s}".format(canvasLower): "{:s} {:d}".format(
+                    "{:s}".format(str(canvasLower)): "{:s} {:d}".format(
                         name, framestop - 1 - number
                     )
                 }
@@ -902,7 +902,7 @@ class SXUnblurPlot(PyQt5.QtWidgets.QWidget):
             # and the Frame number.
             self.dictFrames.update(
                 {
-                    "{:s}".format(canvasUpper): "{:s} {:d}".format(
+                    "{:s}".format(str(canvasUpper)): "{:s} {:d}".format(
                         name, framestart + number + 1
                     )
                 }
@@ -2010,9 +2010,9 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
         # Fill the listDType with the right number of frames and angles.
         # Add entrys to the lists and fill the translation Dictionary.
         self.listDType = [
-            (self.dFile, "|S200"),
-            (self.dFileRaw, "|S200"),
-            (self.dMic, "|S200"),
+            (self.dFile, "|U200"),
+            (self.dFileRaw, "|U200"),
+            (self.dMic, "|U200"),
             (self.dOverall, "<f8"),
             (self.dFrame, "<f8"),
             (self.dEnd, "<f8"),
@@ -2110,7 +2110,7 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
                 if input_typ == "Unblur":
                     arrCoord = matplotlib.numpy.genfromtxt(file, unpack=True)
                 elif input_typ == "Unblur_for_logFile":
-                    arrCoord = values_from_logFile[file].values()[0]
+                    arrCoord = list(values_from_logFile[file].values())[0]
                 elif input_typ == "MotionCor2":
                     arrCoord = matplotlib.numpy.genfromtxt(file, unpack=True)[1:]
                     # Transpose the array
@@ -2136,7 +2136,7 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
                     with open(file, "r") as f:
                         self.arrData[self.dMic][number] = f.readline().split()[-1]
                 if input_typ == "Unblur_for_logFile":
-                    self.arrData[self.dMic][number] = values_from_logFile[file].keys()[
+                    self.arrData[self.dMic][number] = list(values_from_logFile[file].keys())[
                         0
                     ]
                 elif input_typ == "MotionCor2":
