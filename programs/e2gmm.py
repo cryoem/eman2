@@ -433,40 +433,76 @@ class EMGMM(QtWidgets.QMainWindow):
 		maxbox=(int(self.currun["boxsize"]*(2*self.currun["apix"])/self.currun["targres"])//2)*2
 		print(f"Target res {self.currun['targres']} -> max box size {maxbox}")
 		modelout=f"{self.gmm}/{self.currunkey}_model_gmm.txt"
+		modelseg=f"{self.gmm}/{self.currunkey}_model_seg.txt"
 		
 		sym=self.currun["sym"]
-		prog=QtWidgets.QProgressDialog("Running networks. Progress updates here are limited. See the Console for detailed output.","Abort",0,9)
+		prog=QtWidgets.QProgressDialog("Running networks. Progress updates here are limited. See the Console for detailed output.","Abort",0,3)
 		prog.show()
 		self.do_events(1)
-		# First step with very coarse model, gradually increasing size improves convergence
-		run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --npt {self.currun['ngauss']} --sym {sym} --maxboxsz 16 --modelout {modelout} --niter {self.currun['trainiter']*2} --mask {self.currun['mask']} --nmid {self.currun['dim']}")
-		prog.setValue(1)
-		self.do_events()
-		if prog.wasCanceled() : return
+		curngauss=self.currun["ngauss"]//2**(int(log(maxbox/16)/log(2.0))+1)
 		
-		box=16
-		n=2
-		while box<maxbox:
-			box=good_size(box*2)
-			# in the last iteration we do some additional things
-			if box>=maxbox:
-				box=maxbox
-				s=f"--evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']}"		# in the final iteration
-			else: s=""
+		#### Original method, pure network approach
+		## First step with very coarse model, gradually increasing size improves convergence
+		#run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --npt {curngauss} --sym {sym} --maxboxsz 16 --modelout {modelout} --niter {self.currun['trainiter']*2} --mask {self.currun['mask']} --nmid {self.currun['dim']}")
+		#prog.setValue(1)
+		#self.do_events()
+		#if prog.wasCanceled() : return
+		
+		#box=16
+		#n=2
+		#while box<maxbox:
+			#box=good_size(box*2)
+			#curngauss*=2
+			#cungauss=min(curngauss,self.currun["ngauss"])
+
+			## in the last iteration we do some additional things
+			#if box>=maxbox:
+				#box=maxbox
+				#s=f"--evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']}"		# in the final iteration
+			#else: s=""
 				
-			# iterate until box size is the full size of the particles
-			er=run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --npt {self.currun['ngauss']} --sym {sym} --maxboxsz {box} --model {self.gmm}/{self.currunkey}_model_gmm.txt --modelout {modelout} --niter {self.currun['trainiter']} --mask {self.currun['mask']} --nmid {self.currun['dim']} {s}")
-			if er :
-				showerror("Error running e2gmm_refine, see console for details. GPU memory exhaustion is a common issue. Consider reducing the target resolution.")
-				return
-			prog.setValue(n)
-			self.do_events()
-			if prog.wasCanceled() : return
-			n+=1
+			## iterate until box size is the full size of the particles
+			#er=run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --npt {curngauss} --sym {sym} --maxboxsz {box} --model {modelout} --modelout {modelout} --niter {self.currun['trainiter']} --mask {self.currun['mask']} --nmid {self.currun['dim']} {s}")
+			#if er :
+				#showerror("Error running e2gmm_refine, see console for details. GPU memory exhaustion is a common issue. Consider reducing the target resolution.")
+				#return
+			#prog.setValue(n)
+			#self.do_events()
+			#if prog.wasCanceled() : return
+			#n+=1
+		#### New method using segmentation for initial seed
+		print("segmentation to initialize")
+		inmap=EMData(f"{self.gmm}/input_map.hdf")
+		inmask=EMData(self.currun["mask"])
+		inmap.mult(inmask)
+		std=inmap["sigma_nonzero"]
+		#seg=inmap.process("segment.kmeans",{"nseg":self.currun["ngauss"]/4,"thr":std,"maxiter":40,"verbose":1})
+		apix=self.currun["apix"]
+		seg=inmap.process("segment.distance",{"minsegsep":self.currun['targres']/apix*0.7,"maxsegsep":self.currun['targres']/apix*1.3,"thr":std})
+		nx=seg["nx"]
+		coord=seg["segment_centers"]
+		ng=len(coord)//3
+		with open(modelseg,"w") as mdl:
+			#for i in range(self.currun["ngauss"]//4):
+			for i in range(ng):
+				mdl.write(f"{coord[i*3]/nx-0.5:0.4f}\t{coord[i*3+1]/nx-0.5:0.4f}\t{coord[i*3+2]/nx-0.5:0.4f}\t1.0\t1.0\n")
+			
+			coord=None
+			seg=None
+		
+		print(ng," Gaussian seeds")
+		prog.setValue(1)
+		if prog.wasCanceled() : return
+
+		er=run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --npt {max(self.currun['ngauss'],ng)} --sym {sym} --maxboxsz {maxbox} --model {modelseg} --modelout {modelout} --niter {self.currun['trainiter']} --mask {self.currun['mask']} --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']}")
+		if er :
+			showerror("Error running e2gmm_refine, see console for details. GPU memory exhaustion is a common issue. Consider reducing the target resolution.")
+			return
+
 
 		# make3d on gaussian output for comparison
 		er=run(f"e2make3dpar.py --input {self.gmm}/{self.currunkey}_model_projs.hdf --output {self.gmm}/{self.currunkey}_model_recon.hdf --pad {good_size(self.jsparm['boxsize']*1.25)} --mode trilinear --keep 1 --threads {self.options.threads}")
-		prog.setValue(8)
+		prog.setValue(2)
 		self.do_events()
 		if prog.wasCanceled() : return
 
@@ -475,7 +511,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		if er :
 			showerror("Error running e2gmm_refine, see console for details. Memory is a common issue. Consider reducing the target resolution.")
 			return
-		prog.setValue(9)
+		prog.setValue(3)
 		self.do_events()
 		
 		self.sel_run(0)
