@@ -50,7 +50,7 @@ def main():
 		nref=options.nref
 		refs=[]
 		for i in range(nref):
-			e=r.process("filter.lowpass.randomphase",{"cutoff_freq":options.res*2})
+			e=r.process("filter.lowpass.randomphase",{"cutoff_freq":1./(options.res*2)})
 			refs.append(e)
 	else:
 		refs=[EMData(a) for a in args]

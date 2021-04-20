@@ -49,7 +49,8 @@ def main():
 	else:
 		options.clsid=-1
 		
-	
+	if options.sym.startswith("h"):
+		options.sym="c1"
 	# get basic image parameters
 	tmp=EMData(options.input,0,True)
 	boxsz=tmp["nx"]
