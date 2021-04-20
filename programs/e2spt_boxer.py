@@ -146,10 +146,10 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		#self.gbl.setColumnMinimumWidth(0,200)
 		#self.gbl.setRowMinimumHeight(0,200)
 		#self.gbl.setColumnStretch(0,0)
-		#self.gbl.setColumnStretch(1,100)
-		#self.gbl.setColumnStretch(2,0)
-		#self.gbl.setRowStretch(1,0)
-		#self.gbl.setRowStretch(0,100)
+		self.gbl.setColumnStretch(1,100)
+		self.gbl.setColumnStretch(0,1)
+		self.gbl.setRowStretch(0,100)
+		self.gbl.setRowStretch(1,1)
 		
 
 		# 3 orthogonal restricted projection views
@@ -176,9 +176,13 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		#self.wypos = QtWidgets.QSlider(Qt.Vertical)
 		#self.gbl2.addWidget(self.wypos,0,3,6,1)
 		
+		self.wzheight=ValBox(label="Z height:",value=256)
+		self.gbl2.addWidget(self.wzheight,1,0)
+		
 		# box size
 		self.wboxsize=ValBox(label="Box Size:",value=0)
 		self.gbl2.addWidget(self.wboxsize,2,0)
+		
 
 		# max or mean
 		#self.wmaxmean=QtWidgets.QPushButton("MaxProj")
@@ -220,7 +224,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 
 		##coordinate display
 		self.wcoords=QtWidgets.QLabel("")
-		self.gbl2.addWidget(self.wcoords, 1, 0, 1, 2)
+		self.gbl2.addWidget(self.wcoords, 0, 0, 1, 2)
 		
 		self.button_flat.clicked[bool].connect(self.flatten_tomo)
 		self.button_reset.clicked[bool].connect(self.reset_flatten_tomo)
@@ -238,6 +242,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		self.wdepth.valueChanged[int].connect(self.event_depth)
 		self.wnlayers.valueChanged[int].connect(self.event_nlayers)
 		self.wboxsize.valueChanged.connect(self.event_boxsize)
+		self.wzheight.valueChanged.connect(self.event_zheight)
 		#self.wmaxmean.clicked[bool].connect(self.event_projmode)
 		#self.wscale.valueChanged.connect(self.event_scale)
 		self.wfilt.valueChanged.connect(self.event_filter)
@@ -393,6 +398,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		#self.gbl.setRowMinimumHeight(1,max(250,data["nz"]))
 		#self.gbl.setColumnMinimumWidth(0,max(250,data["nz"]))
 		#print(data["nx"],data["ny"],data["nz"])
+		self.wzheight.setValue(data["nz"])
 
 		self.wdepth.setRange(0,data["nz"]-1)
 		self.wdepth.setValue(data["nz"]//2)
@@ -443,6 +449,14 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 			r["apix_x"]=r["apix_y"]=r["apix_z"]=self.apix
 		return r
 
+	def event_zheight(self):
+		z=self.wzheight.getValue()
+		self.gbl.setRowMinimumHeight(1,z)
+		self.gbl.setColumnMinimumWidth(0,z)
+		#print(data["nx"],data["ny"],data["nz"])
+		return
+		
+		
 	def event_boxsize(self):
 		if self.get_boxsize()==int(self.wboxsize.getValue()):
 			return
