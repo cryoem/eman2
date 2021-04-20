@@ -90,6 +90,7 @@ def main():
 	parser.add_argument("--highpass", type=int,help="initial highpass filter for alignment in pixels. default if 3", default=3)
 	parser.add_argument("--badone", action="store_true",help="Remove one bad tilt during coarse alignment. seem to work better with smaller maxshift...", default=False)#, guitype='boolbox',row=9, col=0, rowspan=1, colspan=1,mode="easy")
 	
+	parser.add_argument("--flip", action="store_true",help="Flip the tomogram by rotating the tilt axis. need --load existing alignment", default=False)
 	parser.add_argument("--autoclipxy", action="store_true",help="Optimize the x-y shape of the tomogram to fit in the tilt images. only works in bytile reconstruction. useful for non square cameras.", default=False)
 
 
@@ -257,6 +258,9 @@ def main():
 			loss0=abs(ttparams[:,3])
 			
 		options.zeroid=zeroid=np.argmin(abs(tlts))
+		if options.flip:
+			print("Flipping tilt axis...")
+			ttparams[:,2]=(ttparams[:,2]+180)%360
 	
 	else:
 		#### determine alignment parameters from scratch
@@ -388,7 +392,6 @@ def main():
 	
 	
 	if options.patchtrack>0:
-		print("Alignment by patch tracking")
 		toitr=[imgs_500, imgs_1k]
 		toitr=toitr[:options.patchtrack]
 		for itr,imgs in enumerate(toitr):
@@ -606,10 +609,12 @@ def do_patch_tracking(imgs, ttparams, options, niter=4):
 		#s=min(imgs0[0]["nx"], imgs0[0]["ny"])
 		#imgs=[m.get_clip(Region((m["nx"]-s)//2, (m["ny"]-s)//2, s,s)) for m in imgs0]
 	
+	print("\n******************************")
+	print("Doing patch tracking")
 	scale=int(np.round(imgs[0]["apix_x"]/options.apix_init))
 	rawnpk=options.npk
 	rawboxsz=options.bxsz
-	print("scale by {}".format(scale))
+	print("  shrink by {}".format(scale))
 	
 	ntile=int(np.round(8/scale*2+1))
 	tpm=ttparams.copy()
@@ -733,7 +738,7 @@ def do_patch_tracking(imgs, ttparams, options, niter=4):
 				ptclz.append(dzrg[np.argmin(dp)])
 
 			ptclz=np.array(ptclz)
-			print("    dz: ",np.mean(abs(ptclz)))
+			print("    iter {}:  dz = {:.02f}".format(itr, np.mean(abs(ptclz))))
 			#print(ptclz)
 
 			pks1=pks.copy()
@@ -791,7 +796,7 @@ def do_patch_tracking(imgs, ttparams, options, niter=4):
 			tx=tilex[:,::-1]
 			tpm[:,:2]-=tx*scale
 			loss=np.linalg.norm(tx*scale, axis=1)
-			print("    loss: ",np.mean(loss))
+			print("    iter {}:  loss = {:.2f}".format(itr, np.mean(loss)))
 
 	
 	options.npk=rawnpk
@@ -1173,6 +1178,7 @@ def get_xf_pos(tpm, pk):
 
 #### coarse translational alignment
 def calc_global_trans(imgs, options, excludes=[], tltax=None,tlts=[]):
+	print("Coarse translational alignment...")
 	data=[]
 	nz=len(imgs)
 	sz=256
@@ -1185,7 +1191,6 @@ def calc_global_trans(imgs, options, excludes=[], tltax=None,tlts=[]):
 		
 	data=np.array(data)
 	data00=data.copy()
-	print(data.shape)
 
 	ix, iy=np.indices((sz,sz))
 
@@ -1222,7 +1227,8 @@ def calc_global_trans(imgs, options, excludes=[], tltax=None,tlts=[]):
 		
 		ts=-np.cumsum(ts, axis=0)
 		ts-=ts[nz//2]
-		print(itr, np.mean(abs(ts), axis=0))
+		meants=np.mean(abs(ts), axis=0)
+		print(f"  iter {itr}:  tx = {meants[0]:.2f}, ty = {meants[1]:.2f}")
 		ts=ts.astype(float)+trans
 		tx=-np.round(ts).astype(int)
 		
@@ -2099,7 +2105,7 @@ def refine_lowres(imgs, allparams, options):
 		trans=np.array(trans)
 		dt=np.mean(np.linalg.norm(trans, axis=1))
 		tpm[:,:2]+=trans
-		print("   {}, {}".format(dt, np.mean(loss)))
+		print("  trans = {:.2f}, loss = {:.2f}".format(dt, np.mean(loss)))
 		
 		allparams=np.hstack([tpm.flatten(), pks.flatten()])
 		#make_samples(imgs, allparams, options, outname=options.tmppath+f"/smp_{itr}_1.hdf", refinepos=False);
@@ -2112,7 +2118,7 @@ def refine_lowres(imgs, allparams, options):
 			ptrans.append(res.x)
 		
 		ptrans=np.array(ptrans)
-		print("   {}".format(np.mean(np.linalg.norm(ptrans, axis=1))))
+		print("  landmark shift = {:.2f}".format(np.mean(np.linalg.norm(ptrans, axis=1))))
 		
 		pks+=ptrans
 		allparams=np.hstack([tpm.flatten(), pks.flatten()])		
@@ -2122,11 +2128,12 @@ def refine_lowres(imgs, allparams, options):
 		
 		res=minimize(global_rot, [0], (ptclpos, allparams, options) ,
 			method='Powell',options={'ftol': 1e-3, 'disp': False, "maxiter":10})
-		print("   {},{}".format(res.x, res.fun))
 		
 		rt=res.x
 		try:rt=rt[0]
 		except:pass
+	
+		print("  tilt axis rotation = {:.02f}, loss = {:.02f}".format(rt, res.fun))
 		tpm[:,2]+=rt
 		r=-rt*np.pi/180.
 		rotmat=np.array([[np.cos(r), -np.sin(r)], [np.sin(r), np.cos(r)]])
