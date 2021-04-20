@@ -1648,6 +1648,48 @@ The basic design of EMAN Processors: <br>\
 		int bgsize;
 	};
 
+	/** Segment a volume by sequentially finding the highest peak and subtracting a Gaussian at that point from the density
+	 * after strongly filtering the map to a specified resolvability. 
+	 *
+	 *@author Steve Ludtke
+	 *@date 2021/04/18
+	 */
+	class GaussSegmentProcessor:public Processor
+	{
+	  public:
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual EMData* process(const EMData * const image);
+		void process_inplace( EMData * image);
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d ;
+			d.put("minratio",EMObject::FLOAT,"The ratio of the smallest amplitude segment to locate relative to the strongest peak (default=0.5)");
+			d.put("maxnseg",EMObject::INT,"Maximum number of segments to return (default = unlimited)");
+			d.put("width",EMObject::FLOAT,"Required: full width of Gaussians in A at 1/e (FWHM). Also used to determine map prefiltration.");
+			d.put("mask",EMObject::EMDATA,"Optional: mask to apply to map after filtration to limit where centers are placed");
+			d.put("verbose",EMObject::INT,"Be verbose while running");
+			return d;
+		}
+
+		static Processor *NEW()
+		{
+			return new GaussSegmentProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Segments a volume by sequentially finding and subtracting Gaussians at a specified resolvability.";
+		}
+
+		static const string NAME;
+
+	};
+
 	/** Segment a volume about:homeinto subvolumes based on a center separation value. For linear densities
 	 * such as skeletons this should fill linear regions with uniformly separated points
 	 *

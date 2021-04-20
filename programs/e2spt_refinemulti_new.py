@@ -5,11 +5,14 @@ import numpy as np
 
 def main():
 	
-	usage=" "
+	usage="Pass references as direct arguments (no --)"
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--ptcls", type=str,help="path", default=None)
 	parser.add_argument("--path", type=str,help="path", default=None)
 	parser.add_argument("--nref", type=int,help="duplicate the first ref N times with phase randomization at 2xres", default=-1)
+	parser.add_argument("--maskalign", type=str,default=None,help="Mask file applied to 3D alignment reference in each iteration. Not applied to the average, which will follow normal masking routine.")
+	parser.add_argument("--maxres",type=float,help="Maximum resolution (the smaller number) to consider in alignment (in A, not 1/A)",default=0)
+	parser.add_argument("--minres",type=float,help="Minimum resolution (the larger number) to consider in alignment (in A, not 1/A)",default=0)
 	parser.add_argument("--niter", type=int,help="number of iterations", default=5)
 	parser.add_argument("--loadali3d", type=str,help="load previous 3d alignment", default=None)
 	parser.add_argument("--res", type=float,help="target resolution", default=20.)
@@ -38,6 +41,7 @@ def main():
 		save_lst_params(info3d, info3dname)
 		save_lst_params(info2d, info2dname)
 		
+	if options.maskalign!=None: options.maskalign=EMData(options.maskalign)
 
 	options.cmd=' '.join(sys.argv)
 	fm=f"{path}/0_spt_params.json"
@@ -74,13 +78,25 @@ def main():
 		ptcls=info3dname
 		opt+=" --fromscratch"
 		
+	if options.minres>0: opt+=f" --minres {options.minres}"
+	if options.maxres>0: opt+=f" --maxres {options.maxres}"
 		
 	for itr in range(1,1+options.niter):
 		ali2d=[]
 		ali3d=[]
 		
 		for ir in range(nref):
-			ref=f"{path}/threed_{itr-1:02d}_{ir:02d}.hdf"
+			oref=f"{path}/threed_{itr-1:02d}_{ir:02d}.hdf"
+			ref=f"aliref_{ir:02d}.hdf"		# overwrite each iteration
+
+			modref=EMData(oref)
+			if options.maskalign!=None: 
+				# These initial filters are to reduce the artifacts produced by masking
+				if options.maxres>0: modref.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.maxres})
+				if options.minres>0: modref.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/options.minres})
+				modref.mult(options.maskalign)
+			modref.write_compressed(ref,0,12,erase=True)
+			
 			run(f"e2spt_align_subtlt.py {ptcls} {ref} --path {path} --iter {itr} --maxres {options.res:.2f} --parallel {options.parallel} {opt}")
 			
 			ali2d.append(f"{path}/aliptcls2d_{itr:02d}_{ir:02d}.lst")

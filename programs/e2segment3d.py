@@ -45,7 +45,7 @@ def main():
 	usage = """prog <input volume> [options] 
 	This program provides access to various algorithms for segmenting a 3-D volume into multiple pieces automatically.
 	Note that you MUST have sufficient RAM to hold at least two copies of the volume in memory. Some segmentation algorithms
-	may require more. The actual segmentation is performed using one of the segment.* processors. 'e2help.py processors |grep segment'
+	may require more. The actual segmentation is performed using one of the segment.* processors. 'e2help.py processor segment'
 	for more information (-v 1 will give even more)."""
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
@@ -54,6 +54,7 @@ def main():
 	parser.add_argument("--process", metavar="processor_name:param1=value1:param2=value2", type=str,default="segment.kmeans:ampweight=1:nseg=50:thr=0.8",
 						help="The name and parameters of a processor to perform the segmentation. 'e2help.py processor segment -v 1' for a full list. Default=segment.kmeans:ampweight=1:nseg=50:thr=0.8 ")
 	parser.add_argument("--output", default=None, type=str,help="Name of output file for segmentation map")
+	parser.add_argument("--mask", default=None, type=str,help="A mask to be used in segmentaion, specific use varies with segmentation method")
 	parser.add_argument("--segout", default=None, type=str,help="Output stack for individual segmented volumes")
 	parser.add_argument("--chimeraout", default=None, type=str,help="Name of file to write center of segments in UCSF Chimera marker format.")
 	parser.add_argument("--pdbout", default=None, type=str,help="Name of file to write center of segments in PDB format.")
@@ -115,6 +116,7 @@ def main():
 	
 	if options.verbose>0: print("Executing segmentation")
 	(processorname, param_dict) = parsemodopt(options.process)
+	if options.mask!=None and processorname=="segment.gauss": param_dict["mask"]=EMData(options.mask)
 	seg=volume.process(processorname,param_dict)
 	seg["apix_x"]=volume["apix_x"]
 	seg["apix_y"]=volume["apix_y"]
