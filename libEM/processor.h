@@ -1672,6 +1672,7 @@ The basic design of EMAN Processors: <br>\
 			d.put("maxnseg",EMObject::INT,"Maximum number of segments to return (default = unlimited)");
 			d.put("width",EMObject::FLOAT,"Required: full width of Gaussians in A at 1/e (FWHM). Also used to determine map prefiltration.");
 			d.put("mask",EMObject::EMDATA,"Optional: mask to apply to map after filtration to limit where centers are placed");
+			d.put("skipseg",EMObject::INT,"Normally the returned map is a segmentation map, but this is unnecessary if only the center coordinates are needed. If set, the returned map will be a residual volume, not a segmentation map, but the centers will be valid.");
 			d.put("verbose",EMObject::INT,"Be verbose while running");
 			return d;
 		}
