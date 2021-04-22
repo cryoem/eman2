@@ -13,7 +13,7 @@ RUN yum install -y mesa-libGLU-devel && \
 USER eman
 WORKDIR /home/eman
 
-RUN curl -v -L https://cryoem.bcm.edu/cryoem/static/software/continuous_build/eman2_sphire_sparx.linux.unstable.sh -o eman.sh && \
+RUN curl -v -L https://cryoem.bcm.edu/cryoem/static/software/release-2.91/eman2.91_sphire1.4_sparx.linux64.sh -o eman.sh && \
     export EMAN_INSTALL_DONT_UPDATE_DEPS=1 && bash eman.sh -bp /home/eman/eman2_sphire_sparx && \
     rm eman.sh && \
     source /home/eman/eman2_sphire_sparx/etc/profile.d/conda.sh && \
