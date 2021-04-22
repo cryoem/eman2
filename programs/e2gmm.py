@@ -418,10 +418,10 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.currunkey=name
 		self.do_run()
 
-	def new_res(self):
+	def new_res(self,save=None):
 		"""Resolution changed. Update the initial points"""
 		res=float(self.wedres.text())
-		if res==self.lastres: return
+		if res==self.lastres and save==None: return
 		self.lastres=res
 		
 		map3d=EMData(f"{self.gmm}/input_map.hdf")
@@ -437,9 +437,10 @@ class EMGMM(QtWidgets.QMainWindow):
 		
 		self.wedngauss.setText(str(len(amps)))
 
-		if self.currunkey==None: return
+		print(f"Resolution={res} -> Ngauss={len(amps)}  ({self.currunkey})")
+		if self.currunkey==None or save==None: return
 		nx=map3d["nx"]
-		out=open(f"{self.gmm}/{self.currunkey}_model_seg.txt","w")
+		out=open(f"{self.gmm}/{save}_model_seg.txt","w")
 		for i in range(len(amps)):
 			out.write(f"{centers[i*3]/nx-0.5:1.2f}\t{centers[i*3+1]/nx-0.5:1.2f}\t{centers[i*3+2]/nx-0.5:1.2f}\t{amps[i]:1.3f}\t1.0\n")
 
@@ -519,7 +520,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			#seg=None
 		
 		#print(ng," Gaussian seeds")
-		self.new_res()
+		self.new_res(save=self.currunkey)
 		self.currun["ngauss"]=int(self.wedngauss.text())
 		prog.setValue(1)
 		if prog.wasCanceled() : return
