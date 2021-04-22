@@ -323,6 +323,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wlistrun.currentRowChanged[int].connect(self.sel_run)
 		self.wbutnewrun.clicked[bool].connect(self.new_run)
 		self.wbutrerun.clicked[bool].connect(self.do_run)
+		self.wedres.editingFinished.connect(self.new_res)
 		self.wbutdrgrp.buttonClicked[QtWidgets.QAbstractButton].connect(self.plot_mode_sel)
 		self.wsbxcol.valueChanged[int].connect(self.wplot2d.setXAxisAll)
 		self.wsbycol.valueChanged[int].connect(self.wplot2d.setYAxisAll)
@@ -337,6 +338,8 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wview3d.insertNewNode("Neutral Map",self.mapdataitem)
 		self.wview3d.insertNewNode("Isosurface",self.mapiso,parentnode=self.mapdataitem)
 		self.wview3d.insertNewNode("Gauss Model",self.gaussplot)
+		self.currunkey=None
+		self.lastres=0
 
 		#QtCore.QTimer.singleShot(500,self.afterStart)
 
@@ -415,6 +418,31 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.currunkey=name
 		self.do_run()
 
+	def new_res(self):
+		"""Resolution changed. Update the initial points"""
+		res=float(self.wedres.text())
+		if res==self.lastres: return
+		self.lastres=res
+		
+		map3d=EMData(f"{self.gmm}/input_map.hdf")
+		try: mask=EMData(str(self.wedmask.text()))
+		except: mask=None
+		opt={"minratio":0.4,"width":res,"skipseg":1}
+		if mask!=None: opt["mask"]=mask
+		
+		seg=map3d.process("segment.gauss",opt)
+		centers=seg["segment_centers"]
+		amps=np.array(seg["segment_amps"])
+		amps/=max(amps)
+		
+		self.wedngauss.setText(str(len(amps)))
+
+		if self.currunkey==None: return
+		nx=map3d["nx"]
+		out=open(f"{self.gmm}/{self.currunkey}_model_seg.txt","w")
+		for i in range(len(amps)):
+			out.write(f"{centers[i*3]/nx-0.5:1.2f}\t{centers[i*3+1]/nx-0.5:1.2f}\t{centers[i*3+2]/nx-0.5:1.2f}\t{amps[i]:1.3f}\t1.0\n")
+
 	def do_run(self,clk=False):
 		"""Run the current job with current parameters"""
 		self.currun={}
@@ -471,30 +499,32 @@ class EMGMM(QtWidgets.QMainWindow):
 			#if prog.wasCanceled() : return
 			#n+=1
 		#### New method using segmentation for initial seed
-		print("segmentation to initialize")
-		inmap=EMData(f"{self.gmm}/input_map.hdf")
-		inmask=EMData(self.currun["mask"])
-		inmap.mult(inmask)
-		std=inmap["sigma_nonzero"]
-		#seg=inmap.process("segment.kmeans",{"nseg":self.currun["ngauss"]/4,"thr":std,"maxiter":40,"verbose":1})
-		apix=self.currun["apix"]
-		seg=inmap.process("segment.distance",{"minsegsep":self.currun['targres']/apix*0.7,"maxsegsep":self.currun['targres']/apix*1.3,"thr":std})
-		nx=seg["nx"]
-		coord=seg["segment_centers"]
-		ng=len(coord)//3
-		with open(modelseg,"w") as mdl:
-			#for i in range(self.currun["ngauss"]//4):
-			for i in range(ng):
-				mdl.write(f"{coord[i*3]/nx-0.5:0.4f}\t{coord[i*3+1]/nx-0.5:0.4f}\t{coord[i*3+2]/nx-0.5:0.4f}\t1.0\t1.0\n")
+		#print("segmentation to initialize")
+		#inmap=EMData(f"{self.gmm}/input_map.hdf")
+		#inmask=EMData(self.currun["mask"])
+		#inmap.mult(inmask)
+		#std=inmap["sigma_nonzero"]
+		##seg=inmap.process("segment.kmeans",{"nseg":self.currun["ngauss"]/4,"thr":std,"maxiter":40,"verbose":1})
+		#apix=self.currun["apix"]
+		#seg=inmap.process("segment.distance",{"minsegsep":self.currun['targres']/apix*0.7,"maxsegsep":self.currun['targres']/apix*1.3,"thr":std})
+		#nx=seg["nx"]
+		#coord=seg["segment_centers"]
+		#ng=len(coord)//3
+		#with open(modelseg,"w") as mdl:
+			##for i in range(self.currun["ngauss"]//4):
+			#for i in range(ng):
+				#mdl.write(f"{coord[i*3]/nx-0.5:0.4f}\t{coord[i*3+1]/nx-0.5:0.4f}\t{coord[i*3+2]/nx-0.5:0.4f}\t1.0\t1.0\n")
 			
-			coord=None
-			seg=None
+			#coord=None
+			#seg=None
 		
-		print(ng," Gaussian seeds")
+		#print(ng," Gaussian seeds")
+		self.new_res()
+		self.currun["ngauss"]=int(self.wedngauss.text())
 		prog.setValue(1)
 		if prog.wasCanceled() : return
 
-		er=run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --npt {max(self.currun['ngauss'],ng)} --sym {sym} --maxboxsz {maxbox} --model {modelseg} --modelout {modelout} --niter {self.currun['trainiter']} --mask {self.currun['mask']} --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']}")
+		er=run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --npt {self.currun['ngauss']} --sym {sym} --maxboxsz {maxbox} --model {modelseg} --modelout {modelout} --niter {self.currun['trainiter']} --mask {self.currun['mask']} --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']}")
 		if er :
 			showerror("Error running e2gmm_refine, see console for details. GPU memory exhaustion is a common issue. Consider reducing the target resolution.")
 			return
