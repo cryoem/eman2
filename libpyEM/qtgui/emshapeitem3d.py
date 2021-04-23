@@ -478,7 +478,7 @@ class EMScatterPlot3D(EMShapeBase):
 				brtcol=max(self.data[3][i]/cmax,0.0)		# color is black for values of 0 ranging to white at max
 				glMaterialfv(GL_FRONT, GL_DIFFUSE, [brtcol*0.75,brtcol*0.75,brtcol*0.75,1.0])
 				glMaterialfv(GL_FRONT, GL_AMBIENT, [brtcol,brtcol,brtcol,1.0])
-			glTranslatef(self.data[0][i],self.data[1][i],self.data[2][i])
+			glTranslatef(self.data[0][i],self.data[1][i],-self.data[2][i])
 			gluSphere(quadratic,self.pointsize,self.slices,self.stacks)
 			
 			glPopMatrix()

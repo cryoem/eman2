@@ -592,7 +592,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.currunkey=str(self.wlistrun.item(line).text())
 		self.currun=self.jsparm.getdefault("run_"+self.currunkey,{"dim":4,"mask":f"{self.gmm}/mask.hdf","trainiter":10,"pas":"100","time":"-"})
 		self.wedres.setText(f'{self.currun.get("targres",20)}')
-		self.wedapix.setText(f'{self.currun.get("apix",self.jsparm.getdefault("apix",""))}')
+		self.wedapix.setText(f'{self.currun.get("apix",self.jsparm.getdefault("apix","")):0.4f}')
 		self.wedngauss.setText(f'{self.currun.get("ngauss",64)}')
 		self.weddim.setText(f'{self.currun.get("dim",4)}')
 		self.wedsym.setText(f'{self.currun.get("sym","c1")}')
