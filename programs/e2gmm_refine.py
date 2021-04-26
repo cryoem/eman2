@@ -157,22 +157,27 @@ def calc_frc(data_cpx, imgs_cpx, return_curve=False,minpx=4):
 #### load particles from file and fourier transform them
 #### particles need to have their transform in file header or comment of list file
 def load_particles(fname, shuffle=False, hdrxf=False):
-	projs=[]
-	n=EMUtil.get_image_count(fname)
-	e=EMData(fname, 0, True)
-	nx=e["nx"]
-	bx=nx
-	print("Loading {} particles of box size {}".format(n, bx))
-	for i in range(n):
-		e=EMData(fname, i)
-		e.clip_inplace(Region((nx-bx)//2,(nx-bx)//2, bx,bx))
-		projs.append(e)
+	# The following block seems utterly stupid... I guess it must have been for debugging or something?
+	# Returned it to the original read_images form
+	#projs=[]
+	#n=EMUtil.get_image_count(fname)
+	#e=EMData(fname, 0, True)
+	#nx=e["nx"]
+	#bx=nx
+	#print("Loading {} particles of box size {}".format(n, bx))
+	#for i in range(n):
+		#e=EMData(fname, i)
+		#e.clip_inplace(Region((nx-bx)//2,(nx-bx)//2, bx,bx))
+		#projs.append(e)
 		
-	#projs=EMData.read_images(fname)#[:200]
+	projs=EMData.read_images(fname)
+	print("Loaded {} particles of box size {}".format(len(projs), projs[0]["nx"]))
+	
 	if shuffle:
-		rnd=np.arange(len(projs))
-		np.random.shuffle(rnd)
-		projs=[projs[i] for i in rnd]
+		random.shuffle(projs)
+		#rnd=np.arange(len(projs))
+		#np.random.shuffle(rnd)
+		#projs=[projs[i] for i in rnd]
 
 	hdrs=[p.get_attr_dict() for p in projs]
 	projs=np.array([p.numpy().copy() for p in projs], dtype=floattype)/1e3

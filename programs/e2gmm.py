@@ -379,6 +379,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		gauss=np.array(self.decoder(latent[None,...]))[0].transpose()
 		box=int(self.wedbox.text())
 		gauss[:3]*=box
+		gauss[2]*=-1.0
 		self.gaussplot.setData(gauss,self.wvssphsz.value)
 		self.wview3d.update()
 
@@ -431,18 +432,23 @@ class EMGMM(QtWidgets.QMainWindow):
 		if mask!=None: opt["mask"]=mask
 		
 		seg=map3d.process("segment.gauss",opt)
-		centers=seg["segment_centers"]
 		amps=np.array(seg["segment_amps"])
+		centers=np.array(seg["segment_centers"]).reshape((len(amps),3)).transpose()
 		amps/=max(amps)
 		
 		self.wedngauss.setText(str(len(amps)))
 
 		print(f"Resolution={res} -> Ngauss={len(amps)}  ({self.currunkey})")
-		if self.currunkey==None or save==None: return
+		
 		nx=map3d["nx"]
+		centers[0]-=nx/2
+		centers[1]-=nx/2
+		centers[2]-=nx/2
+		self.gaussplot.setData(centers,self.wvssphsz.value)
+		if self.currunkey==None or save==None: return
 		out=open(f"{self.gmm}/{save}_model_seg.txt","w")
 		for i in range(len(amps)):
-			out.write(f"{centers[i*3]/nx-0.5:1.2f}\t{centers[i*3+1]/nx-0.5:1.2f}\t{centers[i*3+2]/nx-0.5:1.2f}\t{amps[i]:1.3f}\t1.0\n")
+			out.write(f"{centers[0,i]/nx:1.2f}\t{centers[1,i]/nx:1.2f}\t{centers[2,i]/nx:1.2f}\t{amps[i]:1.3f}\t1.0\n")
 
 	def do_run(self,clk=False):
 		"""Run the current job with current parameters"""
@@ -638,52 +644,85 @@ class EMGMM(QtWidgets.QMainWindow):
 			
 		# Get the name of an existing refinement
 		try:
-			rpath=os.path.relpath(str(QtWidgets.QFileDialog.getExistingDirectory(self,"Please select an existing refine_xx folder to seed the analysis")))
+			rpath=os.path.relpath(str(QtWidgets.QFileDialog.getExistingDirectory(self,"Please select an existing refine_xx or r3d_xx folder to seed the analysis")))
 		except: return
 		if not os.path.isdir(rpath) : 
 			showerror("Invalid path")
 			return
 		self.jsparm["refinepath"]=rpath
 		
-		### setup the folder
-		try:
-			itr=max([int(i.split("_")[1]) for i in os.listdir(rpath) if i[:7]=="threed_" and i.split("_")[1].isdigit()])
-		except:
-			showerror("No projections in refine folder")
-			return
+		if rpath[:6]=="refine":
+			### setup the folder
+			try:
+				itr=max([int(i.split("_")[1]) for i in os.listdir(rpath) if i[:7]=="threed_" and i.split("_")[1].isdigit()])
+			except:
+				showerror("No projections in refine folder")
+				return
 
-		self.app().setOverrideCursor(Qt.BusyCursor)
-		rparm=js_open_dict(f"{rpath}/0_refine_parms.json")
-		if rparm["breaksym"] : self.jsparm["sym"]="c1"
-		else: self.jsparm["sym"]=rparm["sym"]
-		
-		# Copy projections from refine folder
-		eprj=f"{rpath}/projections_{itr:02d}_even.hdf"
-		oprj=f"{rpath}/projections_{itr:02d}_odd.hdf"
-		n=EMUtil.get_image_count(eprj)
-		for i in range(n):
-			a1=EMData(eprj,i)
-			a2=EMData(oprj,i)
-			a=a1+a2
-			a.mult(0.5)
-			a.write_compressed(f"{self.gmm}/proj_in.hdf",i,10)
-		self.jsparm["boxsize"]=a["nx"]
-		self.jsparm["apix"]=a["apix_x"]
-#		self.jsparm["res"]=file_resolution(f"{rpath}/fsc_maskedtight_{itr:02d}.txt")
+			self.app().setOverrideCursor(Qt.BusyCursor)
+			rparm=js_open_dict(f"{rpath}/0_refine_parms.json")
+			if rparm["breaksym"] : self.jsparm["sym"]="c1"
+			else: self.jsparm["sym"]=rparm["sym"]
+			
+			# Copy projections from refine folder
+			eprj=f"{rpath}/projections_{itr:02d}_even.hdf"
+			oprj=f"{rpath}/projections_{itr:02d}_odd.hdf"
+			n=EMUtil.get_image_count(eprj)
+			for i in range(n):
+				a1=EMData(eprj,i)
+				a2=EMData(oprj,i)
+				a=a1+a2
+				a.mult(0.5)
+				a.write_compressed(f"{self.gmm}/proj_in.hdf",i,10)
+			self.jsparm["boxsize"]=a["nx"]
+			self.jsparm["apix"]=a["apix_x"]
+	#		self.jsparm["res"]=file_resolution(f"{rpath}/fsc_maskedtight_{itr:02d}.txt")
 
-		# Copy map from refine folder
-		a=EMData(f"{rpath}/threed_{itr:02d}.hdf")
-		a.write_compressed(f"{self.gmm}/input_map.hdf",0,12)
-		self.jsparm["source_map"]=f"{rpath}/threed_{itr:02d}.hdf"
-		
-		# Copy mask from refine folder
-		a=EMData(f"{rpath}/mask_tight.hdf")
-		a.write_compressed(f"{self.gmm}/mask.hdf",0,8)
-		self.jsparm["mask"]=f"{self.gmm}/mask.hdf"
+			# Copy map from refine folder
+			a=EMData(f"{rpath}/threed_{itr:02d}.hdf")
+			a.write_compressed(f"{self.gmm}/input_map.hdf",0,12)
+			self.jsparm["source_map"]=f"{rpath}/threed_{itr:02d}.hdf"
+			
+			# Copy mask from refine folder
+			a=EMData(f"{rpath}/mask_tight.hdf")
+			a.write_compressed(f"{self.gmm}/mask.hdf",0,8)
+			self.jsparm["mask"]=f"{self.gmm}/mask.hdf"
 
-		# Extract particles from refine folder
-		run(f"e2evalrefine.py {rpath} --extractorientptcl {self.gmm}/particles.lst")
-		self.app().setOverrideCursor(Qt.ArrowCursor)		
+			# Extract particles from refine folder
+			run(f"e2evalrefine.py {rpath} --extractorientptcl {self.gmm}/particles.lst")
+			self.app().setOverrideCursor(Qt.ArrowCursor)
+		elif rpath[:3]=="r3d":
+			### setup the folder
+			try:
+				itr=max([int(i.split("_")[1]) for i in os.listdir(rpath) if i[:7]=="threed_" and i.split("_")[1].isdigit()])
+			except:
+				showerror("No threed_xx files in refine folder")
+				return
+
+			self.app().setOverrideCursor(Qt.BusyCursor)
+			#rparm=js_open_dict(f"{rpath}/0_refine_parms.json")
+			#if rparm["breaksym"] : self.jsparm["sym"]="c1"
+			#else: self.jsparm["sym"]=rparm["sym"]
+			
+			# Copy map from refine folder
+			a=EMData(f"{rpath}/threed_{itr:02d}.hdf")
+			a.write_compressed(f"{self.gmm}/input_map.hdf",0,12)
+			self.jsparm["source_map"]=f"{rpath}/threed_{itr:02d}.hdf"
+			self.jsparm["boxsize"]=a["nx"]
+			self.jsparm["apix"]=a["apix_x"]
+			
+			# make projection from threed
+			run(f"e2project3d.py {rpath}/threed_{itr:02d}.hdf --outfile {self.gmm}/proj_in.hdf --orientgen eman:n=500 --sym c1 -f --parallel thread:4")
+			
+			# Copy mask from refine folder
+			a=EMData(f"{rpath}/mask_tight.hdf")
+			a.write_compressed(f"{self.gmm}/mask.hdf",0,8)
+			self.jsparm["mask"]=f"{self.gmm}/mask.hdf"
+
+			# Extract particles from refine folder
+			run(f"e2proclst.py {rpath}/ptcls_{itr:02d}_even.lst {rpath}/ptcls_{itr:02d}_odd.lst --merge {self.gmm}/particles.lst")
+			self.app().setOverrideCursor(Qt.ArrowCursor)
+			
 		
 	
 	def closeEvent(self,event):
