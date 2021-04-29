@@ -617,7 +617,7 @@ class SptAlignTask(JSTask):
 					x=x*(initxf.inverse())
 				
 				c[0]["xform.align3d"]=x
-				c[0]["score"]=a["score.align"]
+				c[0]["score"]=a["score_align"]
 			else:
 				if options.flcf: c=ref.xform_align_nbest("rotate_translate_3d_local_tree",b, aligndic, options.nsoln)
 				else:

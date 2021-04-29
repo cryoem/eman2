@@ -50,10 +50,10 @@ import threading
 import traceback
 
 try:
-    from bsddb3 import db
+	from bsddb3 import db
 except ImportError as e:
-    #	print "WARNING: Could not import bsddb3; falling back on the older bsddb. Consider installing BerkeleyDB and bsddb3:", e
-    from bsddb import db
+	#	print "WARNING: Could not import bsddb3; falling back on the older bsddb. Consider installing BerkeleyDB and bsddb3:", e
+	from bsddb import db
 
 from libpyEMData2 import EMData
 from libpyUtils2 import EMUtil
@@ -420,6 +420,7 @@ EMData.__init__ = db_emd_init
 
 # Transform.__str__ = transform_to_str
 
+#lsxcache=None
 def db_read_image(self, fsp, *parms, **kparms):
     """read_image(filespec,image #,[header only],[region],[is_3d])
 
@@ -455,6 +456,12 @@ def db_read_image(self, fsp, *parms, **kparms):
         #		except:
         #			raise Exception("Could not access "+str(fsp)+" "+str(key))
         return None
+    if fsp[-4:].lower()==".lst":
+        return LSXFile(fsp).read_image(*parms)
+        #global lsxcache
+        #if lsxcache==None or lsxcache.path!=fsp: lsxcache=LSXFile(fsp,True)
+        #return lsxcache.read_image(parms[0])
+
     if len(kparms) != 0:
         if 'img_index' not in kparms:
             kparms['img_index'] = 0
@@ -496,6 +503,12 @@ def db_read_images(fsp, *parms):
                 keys = parms[0]
             if not keys or len(keys) == 0: keys = list(range(len(db)))
         return [db.get(i, nodata=nodata) for i in keys]
+    if fsp[-4:].lower()==".lst":
+        return LSXFile(fsp).read_images(*parms)
+        #global lsxcache
+        #if lsxcache==None or lsxcache.path!=fsp: lsxcache=LSXFile(fsp,True)
+        #return lsxcache.read_images(*parms)
+
     if len(parms) > 0 and (parms[0] == None or len(parms[0]) == 0):
         parms = (list(range(EMUtil.get_image_count(fsp))),) + parms[1:]
     return EMData.read_images_c(fsp, *parms)

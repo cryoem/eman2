@@ -53,6 +53,7 @@ import argparse, copy
 import glob
 import random
 from struct import pack,unpack
+import json
 
 import threading
 #from Sparx import *
@@ -2230,13 +2231,20 @@ if the lst file does not exist."""
 				self.ptr.readline()
 
 			else: raise Exception("ERROR: The file {} is not in #LSX format".format(self.path))
-		self.filecomment=self.ptr.readline()
+		self.filecomment=self.ptr.readline().strip()
 		try: self.linelen=int(self.ptr.readline()[1:])
 		except:
 			print("ERROR: invalid line length in #LSX file {}".format(self.path))
 			raise Exception
 		self.seekbase=self.ptr.tell()
 
+		# legacy LST file support
+		if self.filecomment.startswith("#keys: "):
+			print("WARNING: legacy .lst file containing old-style parameters. Support may be removed in future. Consider rewriting file with e2proclst.py")
+			self.filekeys=self.filecomment[7:].split(';')
+		else: self.filekeys=None
+
+		# potentially time consuming, but this also gives us self.n
 		self.normalize()
 
 	def __del__(self):
@@ -2255,15 +2263,27 @@ if the lst file does not exist."""
 			self.normalize()
 			self.ptr=None
 
-	def write(self,n,nextfile,extfile,comment=None):
+	def write(self,n,nextfile,extfile,jsondict=None):
 		"""Writes a record to any location in a valid #LSX file.
 n : image number in #LSX file, -1 appends, as does n>= current file len
 nextfile : the image number in the referenced image file
 extfile : the path to the referenced image file (can be relative or absolute, depending on purpose)
-comment : optional comment string"""
+jsondict : optional string in JSON format or a JSON compatible dictionary. values will override header values when an image is read.
+"""
 
-		if comment==None : outln="{}\t{}".format(nextfile,extfile)
-		else: outln="{}\t{}\t{}".format(nextfile,extfile,comment)
+		if jsondict==None : 
+			outln="{}\t{}".format(nextfile,extfile)
+		elif isinstance(jsondict,str) and jsondict[0]=="{" and jsondict[-1]=='}' : 
+			outln="{}\t{}\t{}".format(nextfile,extfile,jsondict)
+		else:
+			if not isinstance(jsondict,dict) and jsondict!=None: 
+				jsondict={"__default__":jsondict}
+			if jsondict!=None:
+				jss=json.dumps(jsondict,indent=None,sort_keys=True,separators=(',',':'),default=EMAN2jsondb.obj_to_json)			
+				outln="{}\t{}\t{}".format(nextfile,extfile,jss)
+			else: outln="{}\t{}".format(nextfile,extfile)
+			
+		# We can't write in the middle of the file if the existing linelength is too short
 		if len(outln)+1>self.linelen : self.rewrite(len(outln))
 
 
@@ -2279,25 +2299,84 @@ comment : optional comment string"""
 
 	def read(self,n):
 		"""Reads the nth record in the file. Note that this does not read the referenced image, which can be
-performed with read_image either here or in the EMData class. Returns a tuple (n extfile,extfile,comment)"""
+performed with read_image either here or in the EMData class. Returns a tuple (n extfile,extfile,dict). dict
+contains decoded information from the stored JSON dictionary. Will also read certain other legacy comments
+and translate them into a dictionary."""
 		if n>=self.n : raise Exception("Attempt to read record {} from #LSX {} with {} records".format(n,self.path,self.n))
+		n=int(n)
 		self.ptr.seek(self.seekbase+self.linelen*n)
 		ln=self.ptr.readline().strip().split("\t")
 		if len(ln)==2 : ln.append(None)
-		ln[0]=int(ln[0])
-
+		try: ln[0]=int(ln[0])
+		except:
+			print(f"Error LSXFile.read({n}). {self.seekbase},{self.linelen},{ln}")
+			raise(Exception)
+		if len(ln[2])<2: ln[2]={}
+		else:
+			try: ln[2]=json.loads(ln[2],object_hook=EMAN2jsondb.json_to_obj)
+			except:
+				if ';Transform' in ln[2]:
+					score=float(ln[2].split(";")[0])
+					xf=eval(ln[2].split(";")[1])
+					ln[2]={"score_align":score,"xform.projection":xf}
+				elif ln[2][:9]=="Transform":
+					ln[2]={"xform.projection":eval(ln[2])}
+				elif self.filekeys!=None:
+					vals=l[2].split(";")
+					l[2]={self.filekeys[i]:vals[i] for i in range(len(self.filekeys))}
+				else:
+					ln[2]={"lst_comment":ln[2]}
 		return ln
 
-	def read_image(self,n):
+	def read_image(self,n,hdronly=False,region=None):
 		"""This reads the image referenced by the nth record in the #LSX file. The same task can be accomplished with EMData.read_image,
 but this method prevents multiple open/close operations on the #LSX file."""
 
-		n,fsp,cmt=self.read(n)
+		n,fsp,jsondict=self.read(n)
 		ret=EMData()
-		ret=EMData(fsp,n)
-		if cmt!=None and len(cmt)>0 : ret["lst_comment"]=cmt
+		ret.read_image_c(fsp,n,hdronly,region)
+		if len(jsondict)>0 :
+			for k in jsondict: ret[k]=jsondict[k]
 
 		return ret
+
+	def read_images(self,nlst=None,hdronly=False):
+		"""This reads a set of images referenced by the nth record in the #LSX file. This is used by read_images in Python when the file is a LST file
+		if nlst is None, the entire file is read."""
+
+		# organize the images to read by path to take advantage of read_images performance
+		# d2r contains tuples (image number in returned array,image number in file (key),extra data dictionary)
+		d2r={}
+		if nlst==None:
+			for i in range(self.n):
+				j,p,d=self.read(i)
+				try: d2r[p].append(i,j,d)
+				except: d2r[p]=[(i,j,d)]
+			ii=self.n
+		else:
+			# ii is the index of the image in the array we will eventually return, i is the index of the image
+			# in the lst file. j is the index in the referenced image file, p. d is the dictionary of 
+			# override values from the lst comment field
+			for ii,i in enumerate(nlst):
+				j,p,d=self.read(int(i))
+				try: d2r[p].append((ii,j,d))
+				except: d2r[p]=[(ii,j,d)]
+			ii+=1
+
+		# we read the actual images with calls to read_images for speed
+		# then overlay the metadata overrides from the LST file, and put them in the requested read order
+		ret=[None]*ii	# ii is left with the total number of images to be returned
+		for fsp in d2r:
+			tpls=d2r[fsp]
+			imgs=EMData.read_images_c(fsp,[i[1] for i in tpls],IMAGE_UNKNOWN,hdronly)
+			for i,tpl in enumerate(tpls):
+				for k in tpl[2]: imgs[i][k]=tpl[2][k]
+				ret[tpl[0]]=imgs[i]
+
+		if None in ret: raise(Exception(f"Error reading {nlst} from {self.path}, {ret.index(None)} is None"))
+
+		return ret
+
 
 	def __len__(self): return self.n
 
@@ -2416,60 +2495,33 @@ corresponding to each 1/2 of the data."""
 
 	return (eset,oset)
 
-def save_lst_params(dct, nm):
-	if os.path.isfile(nm):
-		os.remove(nm)	
-	allkeys=set()
-	for i in dct[:5]:
-		for k in i.keys():
-			allkeys.add(k)
+def save_lst_params(lst,fsp):
+	"""Saves a LSX file (fsp) with metadata represented by a list of dictionaries (lst).
+	each dictionary must contain 'src', the image file containing the actual image and
+	'idx' the index in that file. Additional keys will be stored in the LSX metadata
+	region."""
+	if len(lst)==0: raise(Exception,"ERROR: save_lst_params with empty list")
 
-	allkeys.remove('src')
-	allkeys.remove('idx')
-	allkeys=sorted(list(allkeys))
+	lsx=LSXFile(fsp)
+	for d in lst:
+		dct=d.copy()
+		p=dct.pop("src")
+		n=dct.pop("idx")
+		lsx.write(-1,n,p,dct)
 
-	cmt=';'.join(allkeys)
-	cmt="#keys: "+cmt
-	lout=LSXFile(nm, False, comments=cmt)
-	for dc in dct:
-		s=[dc[k] for k in allkeys]
-		for i,t in enumerate(s):
-			if isinstance(t, Transform):
-				s[i]="Transform({})".format(t.get_matrix())
-				
-		s=';'.join([str(t) for t in s])
-		lout.write(-1, dc["idx"], dc["src"], s)
-
-	lout.close()
+def load_lst_params(fsp , imgns=None):
+	"""Reads the metadata for all of the images in an LSX file (fsp) with an optional list of
+	image numbers (imgns, iterable or None)"""
+	lsx=LSXFile(fsp,True)
+	if imgns==None: imgns=range(lsx.n)
 	
-def load_lst_params(nm ,rng=[]):
+	ret=[]
+	for i in imgns:
+		n,p,d=lsx.read(i)
+		ret.append({"idx":n,"src":p,**d})
+		
+	return ret
 	
-	lst=LSXFile(nm, True)
-	s=lst.filecomment.strip()
-	if s.startswith("#keys: "):
-		s=s[7:].split(';')
-	else:
-		s=[]	
-	
-	allkeys=["idx", "src"]+s
-	dct=[]
-	if len(rng)==0:
-		rng=range(lst.n)
-	
-	for i in rng:
-		l=lst.read(i)
-		cmt=[l[0], l[1]]
-		if l[2]:
-			m=l[2].split(';')
-			cmt=cmt+[eval(c) for c in m]
-			
-		d={k:c for k,c in zip(allkeys, cmt)}
-		dct.append(d)	
-
-	lst.close()
-	
-	return dct
-
 
 __doc__ = \
 "EMAN classes and routines for image/volume processing in \n\
