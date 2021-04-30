@@ -6,7 +6,6 @@
 # them in a wiki-friendly format
 
 import sys
-#from optparse import OptionParser
 #from EMAN2 import *
 global intvararg_callback
 global floatvararg_callback
