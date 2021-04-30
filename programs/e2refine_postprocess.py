@@ -54,7 +54,7 @@ def main():
 	parser.add_argument("--output", dest="output", type=str,default=None, help="Filename for the final averaged/filtered result.")
 	parser.add_argument("--compressbits", type=int,help="Bits to keep when writing (most) volumes with compression. 0->lossless floating point. Default 12 (3 significant figures)", default=12)
 	parser.add_argument("--mass", default=0, type=float,help="The rough mass of the particle in kilodaltons, used to run normalize.bymass. Due to resolution effects, not always the true mass.")
-	parser.add_argument("--restarget", default=5, type=float,help="The specified target resolution to avoid underfiltering artifacts.")
+	parser.add_argument("--restarget", default=-1, type=float,help="The specified target resolution to avoid underfiltering artifacts.")
 	parser.add_argument("--setsf",type=str,help="Force the structure factor to match a 'known' curve prior to postprocessing (<filename>, none). default=none",default="none")
 	parser.add_argument("--iter", dest = "iter", type = int, default=-1, help = "Iteration number to generate FSC filenames")
 	parser.add_argument("--align",action="store_true",default=False,help="Will do o to e alignment and test for handedness flips. Should not be repeated as it overwrites the odd file with the aligned result.")
@@ -88,7 +88,6 @@ def main():
 	if options.m3dpostprocess==None or len(options.m3dpostprocess.strip())==0 : m3dpostproc=""
 	else : m3dpostproc="--process "+options.m3dpostprocess
 
-	lpfilt=1.15/max(10.0,options.restarget)	# low-pass for alignment
 	
 	
 	
@@ -113,6 +112,8 @@ def main():
 	oddfile=options.odd
 	combfile=options.output
 	
+	hdr=EMData(evenfile,0,1)
+	apix=hdr["apix_x"]
 	
 	if options.mergelowres>0:
 		even=EMData(evenfile,0)
@@ -126,6 +127,13 @@ def main():
 		odd.add(c)
 		even.write_image(evenfile)
 		odd.write_image(oddfile)
+
+	# if not specified we use 3/4 Nyquist
+	if options.restarget<=0: 
+		options.restarget=apix*1.5
+		print("Using restarget=",options.restarget)
+		
+	lpfilt=1.15/max(10.0,options.restarget)	# low-pass for alignment
 		
 	path=os.path.dirname(combfile)+"/"
 	if (path=="/") : path="./"
@@ -331,7 +339,8 @@ def main():
 			if automask3d2!=None : mask.process_inplace(automask3d2[0],automask3d2[1])
 			mask.write_compressed("{path}mask_tight.hdf".format(path=path),0,8,erase=True)
 		else:
-			mask=EMData(nx,ny,nz)
+			#mask=EMData(nx,ny,nz)
+			mask=combined.copy()
 			mask.to_one()
 			mask.process_inplace(amask3d[0],amask3d[1])
 			if automask3d2!=None : mask.process_inplace(automask3d2[0],automask3d2[1])
@@ -369,7 +378,7 @@ def main():
 
 	### Masked FSC, and tmp_ files for later filtration
 	run("e2proc3d.py {evenfile} {path}tmp_even.hdf --multfile {path}mask.hdf".format(evenfile=evenfile,path=path))
-	run("e2proc3d.py {oddfile} {path}tmp_odd.hdf --multfile {path}mask.hdf".format(oddfile=oddfile,path=path))
+	run("e2proc3d.py {oddfile} {path}tmp_odd.hdf --multfile {path}mask.hdf".format(oddfile=oddfile,path=path))	
 
 	# New FSC between the two masked volumes, which we will use for the final filter
 	cmd="e2proc3d.py {path}tmp_even.hdf {path}fsc_masked_{itr:02d}.txt --calcfsc {path}tmp_odd.hdf".format(path=path,itr=options.iter)
@@ -428,7 +437,7 @@ def main():
 		elif options.tophat=="local":
 
 			# compute local resolution and locally filter averaged volume, using new local fsc
-			localsizea=max(options.restarget*5,15)
+			localsizea=max(options.restarget*4,15)
 			if options.localsize>0 : localsizea=options.localsize
 			cmd="e2fsc_real_local.py {path}threed_even_unmasked.hdf {path}threed_odd_unmasked.hdf --output {path}fscvol_{itr:02d}.hdf --outfilt {path}threed_{itr:02d}.hdf --outfilte {path}threed_{itr:02d}_even.hdf --outfilto {path}threed_{itr:02d}_odd.hdf --mask {path}mask.hdf --threads {threads} --localsizea {localsizea} --compressbits {bits} --tophat -v 1".format(
 				path=path,itr=options.iter,threads=smlthreads,localsizea=int(localsizea),bits=options.compressbits)
@@ -441,7 +450,7 @@ def main():
 		elif options.tophat=="localwiener":
 
 			# compute local resolution and locally filter averaged volume, using new local fsc
-			localsizea=max(options.restarget*5,15)
+			localsizea=max(options.restarget*4,15)
 			if options.localsize>0 : localsizea=options.localsize
 			cmd="e2fsc_real_local.py {path}threed_even_unmasked.hdf {path}threed_odd_unmasked.hdf --output {path}fscvol_{itr:02d}.hdf --outfilt {path}threed_{itr:02d}.hdf --outfilte {path}threed_{itr:02d}_even.hdf --outfilto {path}threed_{itr:02d}_odd.hdf --mask {path}mask.hdf --threads {threads} --localsizea {localsizea} --compressbits {bits} -v 1".format(
 				path=path,itr=options.iter,threads=smlthreads,localsizea=int(localsizea),bits=options.compressbits)
@@ -471,11 +480,12 @@ def main():
 			run(cmd)
 			
 			run("e2proc3d.py {path}threed_{itr:02d}.hdf {path}threed_{itr:02d}.hdf --multfile {path}mask.hdf {normproc} {postproc} {symopt} ".format(path=path,itr=options.iter,normproc=massnorm,postproc=m3dpostproc,symopt=symopt))
+						
 			run("e2proc3d.py {evenfile} {evenfile} --multfile {path}mask.hdf {normproc} {postproc} {symopt} ".format(evenfile=evenfile,path=path,itr=options.iter,normproc=massnorm,postproc=m3dpostproc,symopt=symopt))
-			run("e2proc3d.py {oddfile} {oddfile}  --multfile {path}mask.hdf {normproc} {postproc} {symopt} ".format(oddfile=oddfile,path=path,itr=options.iter,normproc=massnorm,postproc=m3dpostproc,symopt=symopt))
+			run("e2proc3d.py {oddfile} {oddfile} --multfile {path}mask.hdf {normproc} {postproc} {symopt} ".format(oddfile=oddfile,path=path,itr=options.iter,normproc=massnorm,postproc=m3dpostproc,symopt=symopt))
 			
 		else:
-			print("ERROR: invalid tophat option. Must be 'global' or 'local'.")
+			print("ERROR: invalid tophat option. Must be: global, local or localwiener. localreal and localold available for backwards compatibility")
 			sys.exit(1)
 		
 		compress_hdf(evenfile,options.compressbits)
@@ -487,13 +497,16 @@ def main():
 		run("e2proc3d.py {oddfile} {path}threed_odd_unmasked.hdf {ampcorrect} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq} --process filter.lowpass.tophat:cutoff_abs=0.5".format(oddfile=oddfile,path=path,itr=options.iter,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=old_div(1.0,options.restarget)))
 
 		# Technically snrmult should be 1 here, but we use 2 to help speed convergence
-		cmd="e2proc3d.py {path}tmp_even.hdf {evenfile} {ampcorrect} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq} --multfile {path}mask.hdf {normproc} {postproc}".format(
+		cmd="e2proc3d.py {evenfile} {evenfile} {ampcorrect} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq}".format(
 		evenfile=evenfile,path=path,itr=options.iter,normproc=massnorm,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=old_div(1.0,options.restarget),postproc=m3dpostproc)
 		run(cmd)
 
-		cmd="e2proc3d.py {path}tmp_odd.hdf {oddfile} {ampcorrect} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq} --multfile {path}mask.hdf {normproc} {postproc}".format(
+		cmd="e2proc3d.py {oddfile} {oddfile} {ampcorrect} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq}".format(
 		oddfile=oddfile,path=path,itr=options.iter,normproc=massnorm,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=old_div(1.0,options.restarget),postproc=m3dpostproc)
 		run(cmd)
+		
+		run("e2proc3d.py {path}mask.hdf {evenfile} --process filter.lowpass.randomphase:cutoff_freq={noisecutoff} --multfile {evenfile} {normproc} {postproc}".format(evenfile=evenfile,path=path, normproc=massnorm,postproc=m3dpostproc,noisecutoff=noisecutoff))
+		run("e2proc3d.py {path}mask.hdf {oddfile} --process filter.lowpass.randomphase:cutoff_abs={noisecutoff} --multfile {oddfile} {normproc} {postproc}".format(oddfile=oddfile,path=path, normproc=massnorm,postproc=m3dpostproc,noisecutoff=noisecutoff))
 
 		### Refilter/mask
 		combined.write_compressed(combfile,0,options.compressbits,erase=True)	# write the original average back to disk

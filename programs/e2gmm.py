@@ -109,7 +109,11 @@ def main():
 	emgmm=EMGMM(app,options)
 	emgmm.show()
 	emgmm.raise_()
-	QtWidgets.QMessageBox.warning(None,"Warning","This program is still experimental. While functional\nmany capabilities of the underlying e2gmm_refine program\n are not yet available through this interface")
+	QtWidgets.QMessageBox.warning(None,"Warning","""This program is still experimental. While functional
+many capabilities of the underlying e2gmm_refine program
+are not yet available through this interface. Matching number
+of gaussians to resolution/volume is key in obtaining good
+distributions.""")
 	app.execute()
 	
 	E2end(pid)
@@ -197,6 +201,10 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wedbox = QtWidgets.QLineEdit("256")
 		self.wedbox.setToolTip("Box size of input particles in pixels")
 		self.gflparm.addRow("Box Size:",self.wedbox)
+
+		self.wedres = QtWidgets.QLineEdit("25")
+		self.wedres.setToolTip("Maximum resolution to use for gaussian fitting")
+		self.gflparm.addRow("Target Res:",self.wedres)
 
 		self.wedsym = QtWidgets.QLineEdit("c1")
 		self.wedsym.setToolTip("Symmetry used during refinement")
@@ -315,6 +323,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wlistrun.currentRowChanged[int].connect(self.sel_run)
 		self.wbutnewrun.clicked[bool].connect(self.new_run)
 		self.wbutrerun.clicked[bool].connect(self.do_run)
+		self.wedres.editingFinished.connect(self.new_res)
 		self.wbutdrgrp.buttonClicked[QtWidgets.QAbstractButton].connect(self.plot_mode_sel)
 		self.wsbxcol.valueChanged[int].connect(self.wplot2d.setXAxisAll)
 		self.wsbycol.valueChanged[int].connect(self.wplot2d.setYAxisAll)
@@ -329,6 +338,8 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wview3d.insertNewNode("Neutral Map",self.mapdataitem)
 		self.wview3d.insertNewNode("Isosurface",self.mapiso,parentnode=self.mapdataitem)
 		self.wview3d.insertNewNode("Gauss Model",self.gaussplot)
+		self.currunkey=None
+		self.lastres=0
 
 		#QtCore.QTimer.singleShot(500,self.afterStart)
 
@@ -368,6 +379,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		gauss=np.array(self.decoder(latent[None,...]))[0].transpose()
 		box=int(self.wedbox.text())
 		gauss[:3]*=box
+		gauss[2]*=-1.0
 		self.gaussplot.setData(gauss,self.wvssphsz.value)
 		self.wview3d.update()
 
@@ -407,9 +419,44 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.currunkey=name
 		self.do_run()
 
+	def new_res(self,save=None):
+		"""Resolution changed. Update the initial points"""
+		res=float(self.wedres.text())
+		if res==self.lastres and save==None: return
+		self.lastres=res
+		
+		map3d=EMData(f"{self.gmm}/input_map.hdf")
+		try: mask=EMData(str(self.wedmask.text()))
+		except: mask=None
+		opt={"minratio":0.4,"width":res,"skipseg":1}
+		if mask!=None: opt["mask"]=mask
+		
+		seg=map3d.process("segment.gauss",opt)
+		amps=np.array(seg["segment_amps"])
+		centers=np.array(seg["segment_centers"]).reshape((len(amps),3)).transpose()
+		amps/=max(amps)
+		
+		self.wedngauss.setText(str(len(amps)))
+
+		print(f"Resolution={res} -> Ngauss={len(amps)}  ({self.currunkey})")
+		
+		nx=map3d["nx"]
+		centers[0]-=nx/2
+		centers[1]-=nx/2
+		centers[2]-=nx/2
+		self.gaussplot.setData(centers,self.wvssphsz.value)
+		if self.currunkey==None or save==None: return
+		out=open(f"{self.gmm}/{save}_model_seg.txt","w")
+		for i in range(len(amps)):
+			out.write(f"{centers[0,i]/nx:1.2f}\t{centers[1,i]/nx:1.2f}\t{centers[2,i]/nx:1.2f}\t{amps[i]:1.3f}\t1.0\n")
+
 	def do_run(self,clk=False):
 		"""Run the current job with current parameters"""
 		self.currun={}
+		self.currun["boxsize"]=int(self.wedbox.text())
+		self.currun["targres"]=float(self.wedres.text())
+		self.currun["apix"]=float(self.wedapix.text())
+		self.currun["sym"]=str(self.wedsym.text())
 		self.currun["ngauss"]=int(self.wedngauss.text())
 		self.currun["dim"]=int(self.weddim.text())
 		self.currun["mask"]=str(self.wedmask.text())
@@ -418,51 +465,93 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.currun["time"]=local_datetime()
 		self.jsparm["run_"+self.currunkey]=self.currun
 		
+		maxbox=(int(self.currun["boxsize"]*(2*self.currun["apix"])/self.currun["targres"])//2)*2
+		print(f"Target res {self.currun['targres']} -> max box size {maxbox}")
 		modelout=f"{self.gmm}/{self.currunkey}_model_gmm.txt"
+		modelseg=f"{self.gmm}/{self.currunkey}_model_seg.txt"
 		
-		prog=QtWidgets.QProgressDialog("Running networks. Progress updates here are limited. See the Console for detailed output.","Abort",0,9)
+		sym=self.currun["sym"]
+		prog=QtWidgets.QProgressDialog("Running networks. Progress updates here are limited. See the Console for detailed output.","Abort",0,3)
 		prog.show()
 		self.do_events(1)
-		# First step with very coarse model, gradually increasing size improves convergence
-		run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --npt {self.currun['ngauss']} --maxboxsz 24 --modelout {modelout} --niter {self.currun['trainiter']*2} --mask {self.currun['mask']} --nmid {self.currun['dim']}")
-		prog.setValue(1)
-		self.do_events()
-		if prog.wasCanceled() : return
+		curngauss=self.currun["ngauss"]//2**(int(log(maxbox/16)/log(2.0))+1)
 		
-		sym=self.jsparm["sym"]
-		box=24
-		n=2
-		while box<self.jsparm["boxsize"]:
-			box=good_size(box*2)
-			# in the last iteration we do some additional things
-			if box>=self.jsparm["boxsize"]:
-				box=self.jsparm["boxsize"]
-				s=f"--evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']}"		# in the final iteration
-			else: s=""
+		#### Original method, pure network approach
+		## First step with very coarse model, gradually increasing size improves convergence
+		#run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --npt {curngauss} --sym {sym} --maxboxsz 16 --modelout {modelout} --niter {self.currun['trainiter']*2} --mask {self.currun['mask']} --nmid {self.currun['dim']}")
+		#prog.setValue(1)
+		#self.do_events()
+		#if prog.wasCanceled() : return
+		
+		#box=16
+		#n=2
+		#while box<maxbox:
+			#box=good_size(box*2)
+			#curngauss*=2
+			#cungauss=min(curngauss,self.currun["ngauss"])
+
+			## in the last iteration we do some additional things
+			#if box>=maxbox:
+				#box=maxbox
+				#s=f"--evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']}"		# in the final iteration
+			#else: s=""
 				
-			# iterate until box size is the full size of the particles
-			er=run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --npt {self.currun['ngauss']} --sym {sym} --maxboxsz {box} --model {self.gmm}/{self.currunkey}_model_gmm.txt --modelout {modelout} --niter {self.currun['trainiter']} --mask {self.currun['mask']} --nmid {self.currun['dim']} {s}")
-			if er :
-				showerror("Error running e2gmm_refine, see console for details. Memory is a common issue.")
-				return
-			prog.setValue(n)
-			self.do_events()
-			if prog.wasCanceled() : return
-			n+=1
+			## iterate until box size is the full size of the particles
+			#er=run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --npt {curngauss} --sym {sym} --maxboxsz {box} --model {modelout} --modelout {modelout} --niter {self.currun['trainiter']} --mask {self.currun['mask']} --nmid {self.currun['dim']} {s}")
+			#if er :
+				#showerror("Error running e2gmm_refine, see console for details. GPU memory exhaustion is a common issue. Consider reducing the target resolution.")
+				#return
+			#prog.setValue(n)
+			#self.do_events()
+			#if prog.wasCanceled() : return
+			#n+=1
+		#### New method using segmentation for initial seed
+		#print("segmentation to initialize")
+		#inmap=EMData(f"{self.gmm}/input_map.hdf")
+		#inmask=EMData(self.currun["mask"])
+		#inmap.mult(inmask)
+		#std=inmap["sigma_nonzero"]
+		##seg=inmap.process("segment.kmeans",{"nseg":self.currun["ngauss"]/4,"thr":std,"maxiter":40,"verbose":1})
+		#apix=self.currun["apix"]
+		#seg=inmap.process("segment.distance",{"minsegsep":self.currun['targres']/apix*0.7,"maxsegsep":self.currun['targres']/apix*1.3,"thr":std})
+		#nx=seg["nx"]
+		#coord=seg["segment_centers"]
+		#ng=len(coord)//3
+		#with open(modelseg,"w") as mdl:
+			##for i in range(self.currun["ngauss"]//4):
+			#for i in range(ng):
+				#mdl.write(f"{coord[i*3]/nx-0.5:0.4f}\t{coord[i*3+1]/nx-0.5:0.4f}\t{coord[i*3+2]/nx-0.5:0.4f}\t1.0\t1.0\n")
+			
+			#coord=None
+			#seg=None
+		
+		#print(ng," Gaussian seeds")
+		self.new_res(save=self.currunkey)
+		self.currun["ngauss"]=int(self.wedngauss.text())
+		prog.setValue(1)
+		if prog.wasCanceled() : return
+
+		er=run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --npt {self.currun['ngauss']} --sym {sym} --maxboxsz {maxbox} --model {modelseg} --modelout {modelout} --niter {self.currun['trainiter']} --mask {self.currun['mask']} --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']}")
+		if er :
+			showerror("Error running e2gmm_refine, see console for details. GPU memory exhaustion is a common issue. Consider reducing the target resolution.")
+			return
+
 
 		# make3d on gaussian output for comparison
 		er=run(f"e2make3dpar.py --input {self.gmm}/{self.currunkey}_model_projs.hdf --output {self.gmm}/{self.currunkey}_model_recon.hdf --pad {good_size(self.jsparm['boxsize']*1.25)} --mode trilinear --keep 1 --threads {self.options.threads}")
-		prog.setValue(8)
+		prog.setValue(2)
 		self.do_events()
 		if prog.wasCanceled() : return
 
 		# heterogeneity analysis
-		er=run(f"e2gmm_refine.py --model {modelout} --ptclsin {self.gmm}/particles.lst --heter --sym {sym} --maxboxsz {self.jsparm['boxsize']} --gradout {self.gmm}/{self.currunkey}_grads.hdf --mask {self.currun['mask']} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {self.gmm}/{self.currunkey}_decoder.h5 --pas {self.currun['pas']}")
+		er=run(f"e2gmm_refine.py --model {modelout} --ptclsin {self.gmm}/particles.lst --heter --sym {sym} --maxboxsz {maxbox} --gradout {self.gmm}/{self.currunkey}_grads.hdf --mask {self.currun['mask']} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {self.gmm}/{self.currunkey}_decoder.h5 --pas {self.currun['pas']}")
 		if er :
-			showerror("Error running e2gmm_refine, see console for details. Memory is a common issue.")
+			showerror("Error running e2gmm_refine, see console for details. Memory is a common issue. Consider reducing the target resolution.")
 			return
-		prog.setValue(9)
+		prog.setValue(3)
 		self.do_events()
+		
+		self.sel_run(0)
 
 	def update_gmms(self):
 		"""Updates the display of gmm_XX folders"""
@@ -508,8 +597,11 @@ class EMGMM(QtWidgets.QMainWindow):
 		if line<0: return
 		self.currunkey=str(self.wlistrun.item(line).text())
 		self.currun=self.jsparm.getdefault("run_"+self.currunkey,{"dim":4,"mask":f"{self.gmm}/mask.hdf","trainiter":10,"pas":"100","time":"-"})
+		self.wedres.setText(f'{self.currun.get("targres",20)}')
+		self.wedapix.setText(f'{self.currun.get("apix",self.jsparm.getdefault("apix","")):0.4f}')
 		self.wedngauss.setText(f'{self.currun.get("ngauss",64)}')
 		self.weddim.setText(f'{self.currun.get("dim",4)}')
+		self.wedsym.setText(f'{self.currun.get("sym","c1")}')
 		self.wedmask.setText(f'{self.currun.get("mask",self.jsparm.getdefault("mask",f"{self.gmm}/mask.hdf"))}')
 		self.wedtrainiter.setText(f'{self.currun.get("trainiter",10)}')
 		pas=self.currun.get("pas","100")
@@ -525,9 +617,10 @@ class EMGMM(QtWidgets.QMainWindow):
 			return
 
 		# Middle layer for every particle
-		
 		self.midresult=np.loadtxt(f"{self.gmm}/{self.currunkey}_mid.txt")[:,1:].transpose()
 		self.wbutdrmid.click()
+		
+		self.plot_mouse(None,(0,0))
 		
 
 	def add_gmm(self,clk=False):
@@ -550,51 +643,86 @@ class EMGMM(QtWidgets.QMainWindow):
 			if ans==QtWidgets.QMessageBox.No: return
 			
 		# Get the name of an existing refinement
-		rpath=os.path.relpath(str(QtWidgets.QFileDialog.getExistingDirectory(self,"Please select an existing refine_xx folder to seed the analysis")))
+		try:
+			rpath=os.path.relpath(str(QtWidgets.QFileDialog.getExistingDirectory(self,"Please select an existing refine_xx or r3d_xx folder to seed the analysis")))
+		except: return
 		if not os.path.isdir(rpath) : 
 			showerror("Invalid path")
 			return
 		self.jsparm["refinepath"]=rpath
 		
-		### setup the folder
-		try:
-			itr=max([int(i.split("_")[1]) for i in os.listdir(rpath) if i[:12]=="projections_" and i.split("_")[1].isdigit()])
-		except:
-			showerror("No projections in refine folder")
-			return
+		if rpath[:6]=="refine":
+			### setup the folder
+			try:
+				itr=max([int(i.split("_")[1]) for i in os.listdir(rpath) if i[:7]=="threed_" and i.split("_")[1].isdigit()])
+			except:
+				showerror("No projections in refine folder")
+				return
 
-		self.app().setOverrideCursor(Qt.BusyCursor)
-		rparm=js_open_dict(f"{rpath}/0_refine_parms.json")
-		if rparm["breaksym"] : self.jsparm["sym"]="c1"
-		else: self.jsparm["sym"]=rparm["sym"]
-		
-		# Copy projections from refine folder
-		eprj=f"{rpath}/projections_{itr:02d}_even.hdf"
-		oprj=f"{rpath}/projections_{itr:02d}_odd.hdf"
-		n=EMUtil.get_image_count(eprj)
-		for i in range(n):
-			a1=EMData(eprj,i)
-			a2=EMData(oprj,i)
-			a=a1+a2
-			a.mult(0.5)
-			a.write_compressed(f"{self.gmm}/proj_in.hdf",i,10)
-		self.jsparm["boxsize"]=a["nx"]
-		self.jsparm["apix"]=a["apix_x"]
-#		self.jsparm["res"]=file_resolution(f"{rpath}/fsc_maskedtight_{itr:02d}.txt")
+			self.app().setOverrideCursor(Qt.BusyCursor)
+			rparm=js_open_dict(f"{rpath}/0_refine_parms.json")
+			if rparm["breaksym"] : self.jsparm["sym"]="c1"
+			else: self.jsparm["sym"]=rparm["sym"]
+			
+			# Copy projections from refine folder
+			eprj=f"{rpath}/projections_{itr:02d}_even.hdf"
+			oprj=f"{rpath}/projections_{itr:02d}_odd.hdf"
+			n=EMUtil.get_image_count(eprj)
+			for i in range(n):
+				a1=EMData(eprj,i)
+				a2=EMData(oprj,i)
+				a=a1+a2
+				a.mult(0.5)
+				a.write_compressed(f"{self.gmm}/proj_in.hdf",i,10)
+			self.jsparm["boxsize"]=a["nx"]
+			self.jsparm["apix"]=a["apix_x"]
+	#		self.jsparm["res"]=file_resolution(f"{rpath}/fsc_maskedtight_{itr:02d}.txt")
 
-		# Copy map from refine folder
-		a=EMData(f"{rpath}/threed_{itr:02d}.hdf")
-		a.write_compressed(f"{self.gmm}/input_map.hdf",0,12)
-		self.jsparm["source_map"]=f"{rpath}/threed_{itr:02d}.hdf"
-		
-		# Copy mask from refine folder
-		a=EMData(f"{rpath}/mask_tight.hdf")
-		a.write_compressed(f"{self.gmm}/mask.hdf",0,8)
-		self.jsparm["mask"]=f"{self.gmm}/mask.hdf"
+			# Copy map from refine folder
+			a=EMData(f"{rpath}/threed_{itr:02d}.hdf")
+			a.write_compressed(f"{self.gmm}/input_map.hdf",0,12)
+			self.jsparm["source_map"]=f"{rpath}/threed_{itr:02d}.hdf"
+			
+			# Copy mask from refine folder
+			a=EMData(f"{rpath}/mask_tight.hdf")
+			a.write_compressed(f"{self.gmm}/mask.hdf",0,8)
+			self.jsparm["mask"]=f"{self.gmm}/mask.hdf"
 
-		# Extract particles from refine folder
-		run(f"e2evalrefine.py {rpath} --extractorientptcl {self.gmm}/particles.lst")
-		self.app().setOverrideCursor(Qt.ArrowCursor)		
+			# Extract particles from refine folder
+			run(f"e2evalrefine.py {rpath} --extractorientptcl {self.gmm}/particles.lst")
+			self.app().setOverrideCursor(Qt.ArrowCursor)
+		elif rpath[:3]=="r3d":
+			### setup the folder
+			try:
+				itr=max([int(i.split("_")[1]) for i in os.listdir(rpath) if i[:7]=="threed_" and i.split("_")[1].isdigit()])
+			except:
+				showerror("No threed_xx files in refine folder")
+				return
+
+			self.app().setOverrideCursor(Qt.BusyCursor)
+			#rparm=js_open_dict(f"{rpath}/0_refine_parms.json")
+			#if rparm["breaksym"] : self.jsparm["sym"]="c1"
+			#else: self.jsparm["sym"]=rparm["sym"]
+			
+			# Copy map from refine folder
+			a=EMData(f"{rpath}/threed_{itr:02d}.hdf")
+			a.write_compressed(f"{self.gmm}/input_map.hdf",0,12)
+			self.jsparm["source_map"]=f"{rpath}/threed_{itr:02d}.hdf"
+			self.jsparm["boxsize"]=a["nx"]
+			self.jsparm["apix"]=a["apix_x"]
+			
+			# make projection from threed
+			run(f"e2project3d.py {rpath}/threed_{itr:02d}.hdf --outfile {self.gmm}/proj_in.hdf --orientgen eman:n=500 --sym c1 -f --parallel thread:4")
+			
+			# Copy mask from refine folder
+			a=EMData(f"{rpath}/mask_tight.hdf")
+			a.write_compressed(f"{self.gmm}/mask.hdf",0,8)
+			self.jsparm["mask"]=f"{self.gmm}/mask.hdf"
+
+			# Extract particles from refine folder
+			run(f"e2proclst.py {rpath}/ptcls_{itr:02d}_even.lst {rpath}/ptcls_{itr:02d}_odd.lst --merge {self.gmm}/particles.lst")
+			self.app().setOverrideCursor(Qt.ArrowCursor)
+			
 		
 	
 	def closeEvent(self,event):

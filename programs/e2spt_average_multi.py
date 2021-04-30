@@ -28,7 +28,7 @@ def rotfncompete(jsd,avgs,fsp,fspn,a,refs, shrinkrefs, options):
 	shrink=options.shrinkcompare
 	if shrink<2: shrink=0
 	b=EMData(fsp,fspn).process("normalize.edgemean")
-	if options.maxres>0: b.process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,options.maxres)})
+	if options.maxres>0: b.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.maxres})
 	if options.maxtilt<90.0 :
 		bf=b.do_fft()
 		bf.process_inplace("mask.wedgefill",{"thresh_sigma":0.0,"maxtilt":options.maxtilt})
@@ -39,7 +39,7 @@ def rotfncompete(jsd,avgs,fsp,fspn,a,refs, shrinkrefs, options):
 	xf = Transform()
 	xf.to_identity()
 	nsym=xf.get_nsym(options.sym)
-	best=(1.0e50,None,None)
+	best=(1.0e50,None,None,-1)
 	for r,ref in enumerate(shrinkrefs):
 		for i in range(nsym):
 			c=bs.process("xform",{"transform":xf.get_sym(options.sym,i)})
@@ -59,8 +59,16 @@ def rotfncompete(jsd,avgs,fsp,fspn,a,refs, shrinkrefs, options):
 	else :
 		d=best[2]
 	
+	x0=Transform()
 	if best[0]<options.simthr2 : 
-		avgs[best[1]].add_image(d)
+		nsym1=x0.get_nsym(options.applysym)
+		if nsym1==1:
+			avgs[best[1]].add_image(d)
+		else:
+			for k in range(nsym1):
+				x=x0.get_sym(options.applysym, k)
+				c=d.process("xform",{"transform":x})
+				avgs[best[1]].add_image(c)
 		print("{} -> ref {} sym {}   {}".format(fspn,best[1],best[3],best[0]))
 	else: print("** {} -> ref {} sym {}   {}".format(fspn,best[1],best[3],best[0]))
 	jsd.put((fspn,best[0],best[1],best[3]))
@@ -224,7 +232,7 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 
 	(options, args) = parser.parse_args()
 
-	if options.parallel!=None and options.parallel[:6]=="thread":
+	if options.parallel!=None and options.parallel[:6]=="thread" and options.randnclass<1:
 		options.threads=int(options.parallel.split(":")[1])
 		options.parallel=None
 		print("--parallel converted to --threads for efficiency")
@@ -426,7 +434,8 @@ If --sym is specified, each possible symmetric orientation is tested starting wi
 	if options.mask: mask=EMData(options.mask)
 	for i,v in enumerate(avs):
 		if options.mask: v.mult(mask)
-		v.write_image("{}/threed_{:02d}_{:02d}.hdf".format(options.path,options.iter,i),0)
+#		v.write_image("{}/threed_{:02d}_{:02d}.hdf".format(options.path,options.iter,i),0)
+		v.write_compressed("{}/threed_{:02d}_{:02d}.hdf".format(options.path,options.iter,i),0,12)
 
 	print("Done")
 	E2end(logid)

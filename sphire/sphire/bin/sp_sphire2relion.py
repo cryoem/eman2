@@ -241,7 +241,6 @@ def run(args):
             for name in array.dtype.names:
                 output_data[name] = array[name]
 
-
     em_img = EMAN2_cppwrap.EMData()
     em_img.read_image(args.particle_stack, 0, True)
     is_ctf = True
@@ -255,20 +254,10 @@ def run(args):
         names = partres_data.dtype.names
     if partres_data is not None:
         for row in partres_data:
-            # mask = output_data["_rlnMicrographName"] == row["_rlnMicrographName"]
             mask = numpy.array([os.path.basename(entry) for entry in output_data["_rlnMicrographName"]], dtype=str) \
                 == os.path.basename(row["_rlnMicrographName"])
             for name in names:
                 output_data[name][mask] = row[name]
-
-    ##original code
-    # if partres_data is not None:
-    #     for row in partres_data:
-    #         # mask = output_data["_rlnMicrographName"] == row["_rlnMicrographName"]
-    #         mask = numpy.array([os.path.basename(entry) for entry in output_data["_rlnMicrographName"]], dtype=str) \
-    #             == os.path.basename(row["_rlnMicrographName"])
-    #         for name in partres_data.dtype.names:
-    #             output_data[name][mask] = row[name]
 
     final_output = output_data[mask_array_params]
 
@@ -505,7 +494,6 @@ def import_partres_file(partres_file):
 
     partres_import_array["cs"][partres_import_array["cs"] == 0] = 0.1
     partres_array["_rlnSphericalAberration"] = partres_import_array["cs"]
-
     partres_array["_rlnPhaseShift"] = partres_import_array["phase_shift"]
     partres_array["_rlnDetectorPixelSize"] = partres_import_array["pixel_size"]
     partres_array["_rlnMagnification"] = 10000
@@ -748,14 +736,9 @@ def create_stack_array(dtype_list, header_dict, output_dir, project_dir):
             particle_array["_rlnVoltage"] = numpy.array(
                 [entry["voltage"] for entry in dict_list]
             )
-
             particle_array["_rlnSphericalAberration"] = numpy.array(
                 [0.1 if entry["cs"] == 0 else entry["cs"] for entry in dict_list]
             )
-                # numpy.array(
-                # [entry["cs"] for entry in dict_list]
-            # )
-
             particle_array["_rlnDefocusU"] = old_div(
                 (20000 * defocus - 10000 * astigmatism_amp), 2
             )

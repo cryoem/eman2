@@ -380,7 +380,7 @@ class EMImage2DWidget(EMGLWidget):
 		return self.data
 
 	def set_data(self,incoming_data,file_name="",retain_current_settings=True, keepcontrast=False, xyz=2):
-		"""You may pass a single 2D image or a list of images"""
+		"""You may pass a single 2D image, a list of images or a single 3-D volume"""
 		from .emimagemx import EMDataListCache,EMLightWeightParticleCache
 		#if self.data != None and self.file_name != "":
 			#self.__write_display_settings_to_db()
@@ -1461,7 +1461,17 @@ class EMImage2DWidget(EMGLWidget):
 				GL.glEnable(GL.GL_DEPTH_TEST)
 
 		if self.eraser_shape != None:
-			self.eraser_shape.draw()
+			
+			GL.glPushMatrix()
+			p=self.eraser_shape.shape
+			GL.glColor(*p[1:4])
+			v= (p[4],p[5])
+			GL.glLineWidth(p[7]*self.devicePixelRatio())
+			GL.glTranslate(v[0],v[1],0)
+			GL.glScalef(p[6],p[6],1.0)
+			glCallList(self.circle_dl)
+			GL.glPopMatrix()
+			#self.eraser_shape.draw()
 
 		glEndList()
 

@@ -180,6 +180,7 @@ def main():
 	parser.add_argument("--nolog",action="store_true",default=False,help="Default=False. Turn off recording of the command ran for this program onto the .eman2log.txt file")	
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=1, help="verbose level [0-9], higher number means higher level of verboseness")
 
+	parser.add_argument("--bgcurve", type=str, help="load a curve of background power spectrum to substract for ctf estimation.",default=None)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	
 	(options, args) = parser.parse_args()
@@ -276,6 +277,14 @@ def main():
 	npt=options.stepy
 	nstep=options.stepx
 	powerspecs=[]
+	if options.bgcurve:
+		bgcurve=np.loadtxt(options.bgcurve)
+		rg0=np.arange(len(bgcurve))
+		rg1=np.arange(box//2)
+		rg0=rg0/np.max(rg0)
+		rg1=rg1/np.max(rg1)
+		bgcurve=np.interp(rg1, rg0, bgcurve)
+	
 	if options.verbose>0:print("Generating power spectrum of tiles from tilt series...")
 	for imgi in range(nz):
 		rawimg=imgs[imgi]
@@ -315,6 +324,11 @@ def main():
 			
 			if len(rds) == 0: rd = np.zeros(box//2)
 			else: rd=np.mean(rds, axis=0)
+			
+			if options.bgcurve:
+				rd-=bgcurve
+				rd=rd-np.min(rd)+1e-3
+			
 			allrd.append(rd)
 			pzus.append(np.mean(pz*upix))
 
@@ -349,6 +363,9 @@ def main():
 						idx[outb]=0
 				
 						s=scr[idx, np.arange(scr.shape[1])].copy()
+						if len(s)==0: 
+							stilt[i]=1
+							continue
 						sinf=np.isinf(s)
 						s[outb]=np.max(s)
 						sval=s[np.isinf(s)==0]

@@ -58,7 +58,8 @@ def main():
 	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on the local computer")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-
+	parser.add_argument("--invar",default=False, action="store_true",help="create the invar file for the newsets. The newsets option must be used.")
+	
 	(options, args) = parser.parse_args()
 	
 	if (len(args)<1 ): parser.error("Please specify an input stack/set to operate on")
@@ -100,7 +101,7 @@ def main():
 		imd.set_data(im2d)
 		app.show_specific(imd)
 		app.exec_()
-
+	"""
 	if options.newsets:
 		lstin=LSXFile(args[0])
 
@@ -119,10 +120,62 @@ def main():
 		for i,z in enumerate(Z):
 			if z>options.threshold: lstlines[-1]=lstin[i]
 			else: lstnolines[-1]=lstin[i]
+	"""
+	if options.newsets and not options.invar:
+		lstin=LSXFile(args[0])
+
+		# output containing images with lines
+		linesfsp=args[0].split("__",1)[0]+"_lines__"+args[0].split("__",1)[1]
+		try: os.unlink(linesfsp)
+		except: pass
+		lstlines=LSXFile(linesfsp)	
+
+		# output containin images without lines
+		nolinesfsp=args[0].split("__",1)[0]+"_nolines__"+args[0].split("__",1)[1]
+		try: os.unlink(nolinesfsp)
+		except: pass
+		lstnolines=LSXFile(nolinesfsp)	
+
+		for i,z in enumerate(Z):
+			if z>options.threshold: lstlines[-1]=lstin[i]
+			else: lstnolines[-1]=lstin[i]
+
+	if options.newsets and options.invar:
+		lstin=LSXFile(args[0])
+
+		# output containing images with lines
+		fnamemod=input("Type the filename modifier:   ")
+		linesfsp=args[0].split("__",1)[0]+f"_lines_{fnamemod}__"+args[0].split("__",1)[1]
+		try: os.unlink(linesfsp)
+		except: pass
+		lstlines=LSXFile(linesfsp)	
+
+		# output containing images without lines
+		nolinesfsp=args[0].split("__",1)[0]+f"_nolines_{fnamemod}__"+args[0].split("__",1)[1]
+		try: os.unlink(nolinesfsp)
+		except: pass
+		lstnolines=LSXFile(nolinesfsp)	
+		
+		# output copy of nolines folder
+		invarfsp = nolinesfsp.rsplit("_",1)[0] + "_invar.lst"
+		try: os.unlink(invarfsp)
+		except: pass
+		lstinvar=LSXFile(invarfsp)	
+		
+	
+		for i,z in enumerate(Z):
+			if z>options.threshold: lstlines[-1]=lstin[i]
+			else: 
+				lstnolines[-1]=lstin[i]
+				lstinvar[-1]=lstin[i]
+	
+		print(f"running: e2proclst.py {invarfsp} --retype ctf_flip_invar" )
+		os.system(f"e2proclst.py {invarfsp} --retype ctf_flip_invar" )
+		print("invar file created.")
 	
 		
 	E2end(E2n)
-
+	
 
 
 if __name__ == "__main__":

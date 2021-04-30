@@ -33,12 +33,8 @@ def main():
 
 
 	threedname=args
-	lst=LSXFile(options.ptclin, True)
-	pinfo=[]
-	nptcl=lst.n
-	for i in range(nptcl):
-		pinfo.append(lst.read(i))
-	lst=None
+	pinfo=load_lst_params(options.ptclin)
+	nptcl=len(pinfo)
 	
 	e=EMData(options.ptclin,0,True)
 	nx=e["nx"]
@@ -150,16 +146,19 @@ class SpaClassifyTask(JSTask):
 		for infoi, infos in enumerate(data["info"]):
 			ii=infos[0]
 			info=infos[1]
-			img=EMData(info[1],info[0])
+			img=EMData(info["src"],info["idx"])
 			img=img.do_fft()
 			img.process_inplace("xform.phaseorigin.tocenter")
 			img.process_inplace("xform.fourierorigin.tocenter")
 			img=img.get_clip(Region(0,(ny-ss)//2, ss+2, ss))
 			img.process_inplace("xform.fourierorigin.tocenter")
 				
-			initxf=eval(info[-1])
+			initxf=Transform(info["xform.projection"])
+			xf=Transform(initxf)
+			xf.set_trans(xf.get_trans()/shrink)
+
 				
-			xf=Transform({"type":"eman","tx":initxf["tx"]/shrink, "ty":initxf["ty"]/shrink, "alt":initxf["alt"],"az":initxf["az"],"phi":initxf["phi"]})
+			#xf=Transform({"type":"eman","tx":initxf["tx"]/shrink, "ty":initxf["ty"]/shrink, "alt":initxf["alt"],"az":initxf["az"],"phi":initxf["phi"]})
 				
 			#trans=np.indices((m*2+1, m*2+1)).reshape((2,-1)).T-m
 			scr=[]

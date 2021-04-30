@@ -131,7 +131,7 @@ def pts2img(pts, ang, lp=.1, sym="c1"):
 
 #### compute particle-projection FRC 
 #@tf.function
-def calc_frc(data_cpx, imgs_cpx, return_curve=False):
+def calc_frc(data_cpx, imgs_cpx, return_curve=False,minpx=4):
 	mreal, mimag=imgs_cpx
 	dreal, dimag=data_cpx
 	#### normalization per ring
@@ -151,28 +151,33 @@ def calc_frc(data_cpx, imgs_cpx, return_curve=False):
 	if return_curve:
 		return frc
 	else:
-		frcval=tf.reduce_mean(frc[:, 4:], axis=1)
+		frcval=tf.reduce_mean(frc[:, minpx:], axis=1)
 		return frcval
 	
 #### load particles from file and fourier transform them
 #### particles need to have their transform in file header or comment of list file
 def load_particles(fname, shuffle=False, hdrxf=False):
-	projs=[]
-	n=EMUtil.get_image_count(fname)
-	e=EMData(fname, 0, True)
-	nx=e["nx"]
-	bx=nx
-	print("Loading {} particles of box size {}".format(n, bx))
-	for i in range(n):
-		e=EMData(fname, i)
-		e.clip_inplace(Region((nx-bx)//2,(nx-bx)//2, bx,bx))
-		projs.append(e)
+	# The following block seems utterly stupid... I guess it must have been for debugging or something?
+	# Returned it to the original read_images form
+	#projs=[]
+	#n=EMUtil.get_image_count(fname)
+	#e=EMData(fname, 0, True)
+	#nx=e["nx"]
+	#bx=nx
+	#print("Loading {} particles of box size {}".format(n, bx))
+	#for i in range(n):
+		#e=EMData(fname, i)
+		#e.clip_inplace(Region((nx-bx)//2,(nx-bx)//2, bx,bx))
+		#projs.append(e)
 		
-	#projs=EMData.read_images(fname)#[:200]
+	projs=EMData.read_images(fname)
+	print("Loaded {} particles of box size {}".format(len(projs), projs[0]["nx"]))
+	
 	if shuffle:
-		rnd=np.arange(len(projs))
-		np.random.shuffle(rnd)
-		projs=[projs[i] for i in rnd]
+		random.shuffle(projs)
+		#rnd=np.arange(len(projs))
+		#np.random.shuffle(rnd)
+		#projs=[projs[i] for i in rnd]
 
 	hdrs=[p.get_attr_dict() for p in projs]
 	projs=np.array([p.numpy().copy() for p in projs], dtype=floattype)/1e3
@@ -322,6 +327,7 @@ def train_decoder(gen_model, trainset, options):
 	
 	for itr in range(options.niter):
 		cost=[]
+		truecost=[]
 		for pjr,pji,xf in trainset:
 			if xf.shape[0]==1: continue
 			pj_cpx=(pjr,pji)
@@ -332,17 +338,21 @@ def train_decoder(gen_model, trainset, options):
 				imgs_cpx=pts2img(pout, xf, sym=options.sym)
 				fval=calc_frc(pj_cpx, imgs_cpx)
 				loss=-tf.reduce_mean(fval)
+#				l=loss+std[4]*options.sigmareg+std[3]*5*(options.niter-itr)/options.niter
 				l=loss+std[4]*options.sigmareg
+				if itr<options.niter//2: l+=std[3]*options.ampreg*options.ampreg
+#				print(std)
 			
-			cost.append(loss)   
+			cost.append(loss)  
+			truecost.append(l)
 			grad=gt.gradient(l, wts)
 			opt.apply_gradients(zip(grad, wts))
 			
-			sys.stdout.write("\r {}/{}\t{:.3f}	 ".format(len(cost), nbatch, loss))
+			sys.stdout.write("\r {}/{}\t{:.3f} ({:.3f})         ".format(len(cost), nbatch, loss,l))
 			sys.stdout.flush()
 		sys.stdout.write("\r")
 		
-		print("iter {}, loss : {:.3f}	  ".format(itr, np.mean(cost)))
+		print("iter {}, loss : {:.4f} ({:.4f})         ".format(itr, np.mean(cost), np.mean(truecost)))
 
 def eval_model(gen_model, options):
 	
@@ -552,10 +562,12 @@ def main():
 	parser.add_argument("--ptclsout", type=str,help="aligned particle output", default="")
 	parser.add_argument("--learnrate", type=float,help="learning rate for model training only. Default is 1e-4. ", default=1e-4)
 	parser.add_argument("--sigmareg", type=float,help="regularizer for the sigma of gaussian width. Larger value means all Gaussian functions will have essentially the same width. Smaller value may help compensating local resolution difference.", default=.5)
+	parser.add_argument("--ampreg", type=float,help="regularizer for the Gaussian amplitudes in the first 1/2 of the iterations. Large values will encourage all Gaussians to have similar amplitudes. default = 40", default=40)
 	parser.add_argument("--niter", type=int,help="number of iterations", default=10)
 	parser.add_argument("--npts", type=int,help="number of points to initialize. ", default=-1)
 	parser.add_argument("--batchsz", type=int,help="batch size", default=32)
 	parser.add_argument("--maxboxsz", type=int,help="maximum fourier box size to use. 2 x target Fourier radius. ", default=64)
+	parser.add_argument("--maxres", type=float,help="maximum resolution. will overwrite maxboxsz. ", default=-1)
 	parser.add_argument("--align", action="store_true", default=False ,help="align particles.")
 	parser.add_argument("--heter", action="store_true", default=False ,help="heterogeneity analysis.")
 	parser.add_argument("--fromscratch", action="store_true", default=False ,help="start from coarse alignment. otherwise will only do refinement from last round")
@@ -610,6 +622,10 @@ def main():
 		e=EMData(options.projs, 0, True)
 		raw_apix, raw_boxsz = e["apix_x"], e["ny"]
 		options.raw_apix=raw_apix
+		if options.maxres>0:
+			maxboxsz=options.maxboxsz=ceil(raw_boxsz*raw_apix*2/options.maxres)//2*2
+			print("using box size {}, max resolution {:.1f}".format(maxboxsz, options.maxres))
+			
 		data_cpx, xfsnp = load_particles(options.projs, shuffle=True, hdrxf=True)
 		set_indices_boxsz(data_cpx[0].shape[1], raw_apix, True)
 		
@@ -654,6 +670,9 @@ def main():
 	if options.ptclsin:
 		e=EMData(options.ptclsin, 0, True)
 		raw_apix, raw_boxsz = e["apix_x"], e["ny"]
+		if options.maxres>0:
+			maxboxsz=options.maxboxsz=ceil(raw_boxsz*raw_apix*2/options.maxres)//2*2
+			print("using box size {}, max resolution {:.1f}".format(maxboxsz, options.maxres))
 		
 	if options.ptclsin and options.align:
 		pts=tf.constant(pts)

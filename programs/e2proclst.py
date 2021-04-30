@@ -57,6 +57,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 
 	parser.add_argument("--include", type=str, default=None, help="only works if --create is supplied. comma-separated list of indexes to take from the input file(s) to INCLUDE in the created .lst file. if you have the list of indexes to include in a .txt file, you can provide it through --list.")
 	parser.add_argument("--inplace", action="store_true", default=False, help="only works with --create. if the stack specified in --create already exists, this will prevent appending to it. rather, the file will be modified in place.")
+	parser.add_argument("--force", action="store_true", default=False, help="only works with --create. if the stack specified in --create already exists, it will be removed and rewritten.")
 
 	#parser.add_argument("--last", type=str, default=-1, help="Default=-1 (last image index in input (s)). This will be the first particle index in the input images to put in the output lsx/lst file.")
 	parser.add_argument("--list", type=str, default=None, help="only works if --create is supplied. .txt file with a list of indexes (one per line/row) to take from the input file(s) to INCLUDE in the created .lst file.")
@@ -138,8 +139,19 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 		if '.lst' not in options.create and '.lsx' not in options.create:
 			print("\nERROR: the extension of the output file in --create must be .lst or .lsx")
 			sys.exit(1)
-
-		lst=LSXFile(options.create,False)
+			
+		### use the file comment of the first list if exist
+		if args[0].endswith(".lst"):
+			l=LSXFile(args[0], True)
+			cmt=l.filecomment.strip()
+		else:
+			cmt=""
+		
+		if options.force:
+			try: os.remove(options.create)
+			except: pass
+		
+		lst=LSXFile(options.create,False,cmt)
 		
 		if options.mergeeo:
 			print("Merging two image stacks...")

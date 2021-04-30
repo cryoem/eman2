@@ -166,6 +166,18 @@ void Transform::copy_matrix_into_array(float* const array) const {
 	}
 }
 
+string Transform::get_matrix_string(int precision) {
+	if (precision<2||precision>9) precision=9;
+	char fmt[256];
+	char buf[256];	// sufficient for any potential result
+	sprintf(fmt,"[%%1.%0dg,%%1.%0dg,%%1.%0dg,%%1.%0dg,%%1.%0dg,%%1.%0dg,%%1.%0dg,%%1.%0dg,%%1.%0dg,%%1.%0dg,%%1.%0dg,%%1.%0dg]",
+			precision,precision,precision,precision,precision,precision,precision,precision,precision,precision,precision,precision);
+	sprintf(buf,fmt,matrix[0][0],matrix[0][1],matrix[0][2],matrix[0][3],matrix[1][0],matrix[1][1],matrix[1][2],matrix[1][3],
+			matrix[2][0],matrix[2][1],matrix[2][2],matrix[2][3]);
+	return string(buf);
+}
+
+
 vector<float> Transform::get_matrix() const
 {
 	vector<float> ret(12);

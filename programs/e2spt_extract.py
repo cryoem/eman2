@@ -11,6 +11,7 @@ from EMAN2_utils import *
 from EMAN2jsondb import JSTask
 import os
 import sys
+import traceback
 
 global thrdone
 thrdone=0
@@ -71,12 +72,11 @@ def main():
 	parser.add_argument("--keep", type=float,help="fraction of particles to keep fron previous alignment. for reextraction only.", default=.9)
 	parser.add_argument("--postproc", type=str,help="processor after 3d particle reconstruction", default="")
 	parser.add_argument("--postmask", type=str,help="masking after 3d particle reconstruction. The mask is transformed if json ", default="")
-	parser.add_argument("--textin", type=str,help="text file for particle coordinates. do not use..", default=None)
+	#parser.add_argument("--textin", type=str,help="text file for particle coordinates. do not use..", default=None)
 	parser.add_argument("--compressbits", type=int,help="Bits to keep for compression. default is -1 meaning uncompressed floating point. 8 bit seems fine...", default=-1,guitype='intbox',row=5, col=1, rowspan=1, colspan=1, mode="extract[8]")
-#	parser.add_argument("--saveint", action="store_true", default=False ,help="save particles in uint8 format to save space. still under testing.")
 	parser.add_argument("--norewrite", action="store_true", default=False ,help="skip existing files. do not rewrite.")
+	parser.add_argument("--append", action="store_true", default=False ,help="append to existing files.")
 	parser.add_argument("--parallel", type=str,help="parallel", default="")
-	#parser.add_argument("--alioffset", type=str,help="coordinate offset when re-extract particles. (x,y,z)", default="0,0,0", guitype='strbox', row=12, col=0,rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--postxf", type=str,help="a file listing post transforms (see http://eman2.org/e2tomo_more), or for simple symmetry, <sym>,<cx>,<cy>,<cz> where the coordinates specify the center of a single subunit", default=None)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)	
 	parser.add_argument("--skip3d", action="store_true", default=False ,help="do not make 3d particles. only generate 2d particles and 3d header. ")
@@ -88,8 +88,8 @@ def main():
 	logid=E2init(sys.argv)
 	
 	allxfs={}; allinfo={}
-	if options.textin:
-		allxfs,allinfo=parse_text(options)
+	#if options.textin:
+		#allxfs,allinfo=parse_text(options)
 	
 	if len(options.jsonali)>0:
 		allxfs,allinfo=parse_json(options)
@@ -163,8 +163,16 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 	
 	#### reading alignment info...
 	js=js_open_dict(info_name(pfile))
-	ttparams=np.array(js["tlt_params"])
-	ttparams[:,:2]/=options.shrink
+	try: 
+		ttparams=np.array(js["tlt_params"])
+		ttparams[:,:2]/=options.shrink
+	except:
+		traceback.print_exc()
+		print(f"""\nERROR: tlt_params missing in {info_name(pfile)}. The most likely cause for this is trying to use a tomogram
+reconstructed in another program. Subtomogram averaging in EMAN2 makes extensive use of the original tilt series
+as well as alignment parameters, so use of tomograms from other software is not supported in the normal sequence.""")
+		sys.exit(1)
+
 	
 	if options.noctf==False and "defocus" in js:
 		#### read ctf info when exist
@@ -447,11 +455,13 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 		
 		print("Writing {} particles to {}".format(nptcl, outname))
 		if options.verbose>0:print("Box size {}, padded to {}".format(int(boxsz*2), pad))
-		
-		try: os.remove(options.output)
-		except: pass
-		try: os.remove(options.output2d)
-		except: pass
+		if options.append:
+			print(" appending to existing file")
+		else:
+			try: os.remove(options.output)
+			except: pass
+			try: os.remove(options.output2d)
+			except: pass
 
 		jsd=queue.Queue(0)
 		jobs=[]
@@ -467,14 +477,7 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 			jobs.append([jsd, ids, imgs, ttparams, pinfo, options, ctf, tltkeep, pmask])
 		
 		
-		hdftype=EMUtil.get_image_ext_type("hdf")
-		#if options.compress>0:
-			#outmode=EM_COMPRESSED
-		#elif options.saveint:
-			#outmode=file_mode_map["uint8"]
-		#else:
-			#outmode=file_mode_map["float"]
-		
+		hdftype=EMUtil.get_image_ext_type("hdf")		
 		
 		thrds=[threading.Thread(target=make3d,args=(i)) for i in jobs]
 		global thrdone
@@ -489,16 +492,8 @@ def do_extraction(pfile, options, xfs=[], info=[]):
 		while thrdone<len(thrds) or not jsd.empty():
 			while not jsd.empty():
 				pid, threed, projs=jsd.get()
-				
-				
-				
-				#if options.compress>0:
-					#sig=5.0
-					#for im in projs+[threed]:
-						#im["render_bits"]=options.compress
-						#im["render_compress_level"]=1
-						#im["render_min"]=im["mean"]-im["sigma"]*sig
-						#im["render_max"]=im["mean"]+im["sigma"]*sig
+				if options.append:
+					pid=-1
 
 				try: pji=EMUtil.get_image_count(options.output2d)
 				except: pji=0
@@ -905,63 +900,9 @@ def parse_json(options):
 		allinfo[fname]=info
 		
 		
-		print("{} : ptcls {} -> {}".format(base_name(fname), len(pos), len(allxfs[fname])))
+		print("{} : ptcls {} -> {}".format(fname, len(pos), len(allxfs[fname])))
 		
-	
-	##### sort by score 
-	#keys=natural_sort(js.keys())
-	#score=[js[k]["score"] for k in keys]
-	#srt=np.argsort(score)
-	
-	
-	#keys=[keys[i] for i in srt]
-		
-	
-	#nptcl=0
-	#nexclude=0
-	#for ky in keys:
-		#src, ii = eval(ky)
-		#e=EMData(src, ii, True)
-		#tomo=e["class_ptcl_src"]
-		#dic=js[ky]
-		#dxf=dic["xform.align3d"]
-		#c=e["ptcl_source_coord"]
-		
-		#ptcls=[]
-		#info=[]
-		#for xf in postxfs:
-			#ali=Transform(dxf)
-			#ali=xf.inverse()*ali
-			#a=ali.inverse()
-			#a.translate(c[0], c[1], c[2])
-			
-			
-			#if options.mindist>0 and (tomo in allxfs):
-				#pos=np.array([x.get_trans() for x in allxfs[tomo]])
-				#p0=np.array(a.get_trans())
-				#mindst=np.min(np.linalg.norm(pos-p0, axis=1))
-				#mindst*=e["apix_x"]
-				
-				#if mindst<options.mindist:
-					#nexclude+=1
-					#continue
-			
-			#ptcls.append(a)
-			#info.append({"orig_ptcl":e["data_source"],"orig_idx":e["data_n"],"orig_xf":dxf})
-			#nptcl+=1
 
-		
-		#if len(ptcls)>0:
-			
-			#if (tomo in allxfs):	
-				#allxfs[tomo].extend(ptcls)
-				#allinfo[tomo].extend(info)
-			#else:
-				#allxfs[tomo]=ptcls
-				#allinfo[tomo]=info
-				
-				
-				
 			
 			
 	js.close()

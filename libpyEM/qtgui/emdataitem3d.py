@@ -102,10 +102,10 @@ class EMDataItem3D(EMItem3D):
 		"""
 		return EMDataItem3D(str(attribdict["data_path"].text()), transform=EMItem3D.getTransformFromDict(attribdict))
 
-	def __init__(self, data, parent = None, children = set(), transform=None, n=0):
+	def __init__(self, data, parent = None, children = set(), transform=None, n=0, name=None):
 		if not transform: transform = Transform()	# Object initialization should not be put in the constructor. Causes issues
 		EMItem3D.__init__(self, parent, children, transform=transform)
-		self.setData(data,n)
+		self.setData(data,n,name)
 		self.renderBoundingBox = False
 
 	def setSelectedItem(self, is_selected):
@@ -141,21 +141,26 @@ class EMDataItem3D(EMItem3D):
 	def getData(self):
 		return self.data
 
-	def setData(self, data, n=0):
+	def set_data(self,data,n=0,name=None):
+		"""alias to match other widgets"""
+		self.setData(data,n,name)
+
+	def setData(self, data, n=0, name=None):
 		if data==None : 
 			self.data=None
 			return
 	
 		if isinstance(data, EMData):
 			self.data = data
-			if data.has_attr("source_path"):
+			if name==None and data.has_attr("source_path"):
 				self.path = data["source_path"]
 			else:
-				self.path = None
+				self.path = name
 		else:
 			if n>0: self.data = EMData(str(data),n)
 			else: self.data = EMData(str(data))
-			self.path = str(data)
+			if name==None: self.path = str(data)
+			else:self.path=name
 
 		for child in self.getChildren():
 			try:	# What if child ins't a data type?
@@ -284,7 +289,7 @@ class EMSliceItem3D(EMItem3D):
 		self.force_texture_update = True
 
 		self.colors = get_default_gl_colors()
-		self.isocolor = "bluewhite"
+		self.isocolor = "custom"
 
 		# color Needed for inspector to work John Flanagan
 		self.diffuse = self.colors[self.isocolor]["diffuse"]
@@ -655,7 +660,7 @@ class EMVolumeItem3D(EMItem3D):
 
 		self.texture_name = 0
 		self.colors = get_default_gl_colors()
-		self.isocolor = "bluewhite"
+		self.isocolor = "custom"
 		self.isothr = None #Will be set in self.dataChanged()
 
 		# color Needed for inspector to work John Flanagan
@@ -1101,7 +1106,7 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		cbmframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		cbmlayout = QtWidgets.QGridLayout()
 		cbmlayout.setAlignment(QtCore.Qt.AlignTop)
-		self.colorbymap = QtWidgets.QCheckBox("Color By Map")
+		self.colorbymap = QtWidgets.QCheckBox("Color by Map     low R->G->B hi")
 		self.colorbymap.setEnabled(False)
 		self.colormap = QtWidgets.QLineEdit("")
 		self.cmapbrowse = QtWidgets.QPushButton("Browse")

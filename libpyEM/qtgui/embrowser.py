@@ -310,6 +310,7 @@ class EMFileType(object) :
 
 		target.insertNewNode(display_path(self.path), data, parentnode = target)
 		iso = emdataitem3d.EMIsosurface(data)
+		self.loadIsoColor(iso)
 		target.insertNewNode('Isosurface', iso, parentnode = data)
 		target.initialViewportDims(data.getData().get_xsize())	# Scale viewport to object size
 		target.setCurrentSelection(iso)				# Set isosurface to display upon inspector loading
@@ -333,14 +334,33 @@ class EMFileType(object) :
 
 		target.insertNewNode(display_path(self.path), data)
 		iso = emdataitem3d.EMIsosurface(data)
+		self.loadIsoColor(iso)
 		target.insertNewNode('Isosurface', iso, parentnode = data)
 		target.initialViewportDims(data.getData().get_xsize())	# Scale viewport to object size
 		target.setCurrentSelection(iso)				# Set isosurface to display upon inspector loading
+		
 		brws.notbusy()
 		target.setWindowTitle(display_path(self.path))
 
 		target.show()
 		target.raise_()
+
+	def loadIsoColor(self,iso):
+		"""Common routine to look for a fscvol file we can associate with the loaded volume to use as a colormap"""
+		if not E2getappval("e2display","isosurface_autocolor_res",True) : return
+	
+		base,fsp=os.path.split(self.path)
+		if base=="": base="."
+		n=fsp.rsplit("_",1)[-1][:-4]
+		if not n.isdigit(): return
+		resfsp=f"{base}/fscvol_{n}.hdf"
+		if resfsp==self.path or fsp[:6]=="fscvol": return
+		if not os.path.isfile(resfsp): 
+			#print("doesn't exist",resfsp)
+			return
+		print("loading ",resfsp)
+		iso.setCmapData(resfsp)
+		iso.setRGBmode(2)
 
 	def show3DAll(self, brws) :
 		"""All in new 3-D window (3-D stacks)"""
@@ -353,6 +373,7 @@ class EMFileType(object) :
 			data = emdataitem3d.EMDataItem3D(self.path, n = n)
 			target.insertNewNode("{} #{}".format(display_path(self.path), n), data)
 			iso = emdataitem3d.EMIsosurface(data)
+#			self.loadIsoColor(iso)
 			target.insertNewNode('Isosurface', iso, parentnode = data)
 
 		target.initialViewportDims(data.getData().get_xsize())	# Scale viewport to object size
@@ -478,7 +499,17 @@ class EMFileType(object) :
 			# for z in range(self.dim[2]) :
 				# data.append(EMData(self.path, 0, False, Region(0, 0, z, self.dim[0], self.dim[1], 1)))
 		# else : data = EMData.read_images(self.path)
-		data=[EMData(self.path,i).process("misc.directional_sum",{"axis":"z"}) for i in range(self.nimg)]
+		modifiers = QtWidgets.QApplication.keyboardModifiers()
+		if modifiers == QtCore.Qt.ShiftModifier:
+			#print("rotate x")
+			xyz="y"
+		elif modifiers == QtCore.Qt.ControlModifier:
+			#print("rotate y")
+			xyz="x"
+		else:
+			xyz="z"
+
+		data=[EMData(self.path,i).process("misc.directional_sum",{"axis":xyz}) for i in range(self.nimg)]
 
 		try :
 			target = brws.view2ds[-1]
@@ -499,6 +530,13 @@ class EMFileType(object) :
 
 	def show2dStack3sec(self, brws) :
 		"""A set of 2-D images derived from a stack of 3-D Volumes"""
+		
+		modifiers = QtWidgets.QApplication.keyboardModifiers()
+		
+		if modifiers == QtCore.Qt.ShiftModifier:
+			self.showProjXYZ(brws)
+			return
+		
 		try:
 			ret=self.secparm.exec_()
 		except:
@@ -1602,38 +1640,38 @@ class EMStackFileType(EMFileType) :
 		
 		self.xfparms=False
 		if path.endswith(".lst"):
-			try: 
-				lst=LSXFile(path, True)
-				l=lst.read(0)
-				dic=eval(l[2].split(';')[0])
-				if isinstance(dic, dict) and 'type' in dic:
+			#try: 
+			lst=LSXFile(path, True)
+			cmt=lst.filecomment
+			if cmt.startswith("#keys: "):
+				if ("xform.align3d" in cmt) or ("xform.projection" in cmt):
 					self.xfparms=True
-				
-			except:
-				self.xfparms=False
-				pass
+			
+			#except: pass
 		
 	def actions(self) :
 		"""Returns a list of (name, callback) tuples detailing the operations the user can call on the current file"""
 		# 3-D stack
 		if self.nimg > 1 and self.dim[2] > 1:
-			return [("Show all 3D", "Show all in a single 3D window", self.show3DAll), ("Show 1st 3D", "Show only the first volume", self.show3DNew),("Show 1st 2D", "Show first volume as 2D stack", self.show2dSingle30),("Show 2nd 2D", "Show second volume as 2D stack", self.show2dSingle31),("Show All Zproj", "Show Z projection of all volumes", self.show2dStack3z),("All XYZ", "Show restricted XYZ projections of all", self.show2dStack3sec), ("Chimera", "Open in chimera (if installed)", self.showChimera), ("Save As", "Saves images in new file format", self.saveAs)]
+			rtr= [("Show all 3D", "Show all in a single 3D window", self.show3DAll), ("Show 1st 3D", "Show only the first volume", self.show3DNew),("Show 1st 2D", "Show first volume as 2D stack", self.show2dSingle30),("Show 2nd 2D", "Show second volume as 2D stack", self.show2dSingle31),("Show All Zproj", "Show Z projection of all volumes", self.show2dStack3z),("All XYZ", "Show restricted XYZ projections of all", self.show2dStack3sec), ("Chimera", "Open in chimera (if installed)", self.showChimera), ("Save As", "Saves images in new file format", self.saveAs)]
 		# 2-D stack
 		elif self.nimg > 1 and self.dim[1] > 1:
 			rtr=[("Show Stack", "Show all images together in one window", self.show2dStack), ("Show Stack+", "Show all images together in a new window", self.show2dStackNew), 
 				("Show 2D", "Show all images, one at a time in current window", self.show2dSingle), ("Show 2D+", "Show all images, one at a time in a new window", self.show2dSingleNew), 
 				("Avg All", "Unaligned average of entire stack",self.show2dAvg),("Avg Rnd Subset","Averages random min(1/4 of images,1000) multiple times",self.show2dAvgRnd),
 				("FilterTool", "Open in e2filtertool.py", self.showFilterTool), ("Save As", "Saves images in new file format", self.saveAs)]
-			if self.xfparms:
-				rtr.extend([("Plot 2D", "Plot xform", self.plot2dLstApp),("Plot 2D+", "plot xform in new window", self.plot2dLstNew)])
-			return rtr
 			
 		# 1-D stack
 		elif self.nimg > 1:
-			return [("Plot 2D", "Plot all on a single 2-D plot", self.plot2dNew), ("Save As", "Saves images in new file format", self.saveAs)]
-		else : print("Error: stackfile with < 2 images ? (%s)"%self.path)
+			rtr= [("Plot 2D", "Plot all on a single 2-D plot", self.plot2dNew), ("Save As", "Saves images in new file format", self.saveAs)]
+		else : 
+			rtr=[]
+			print("Error: stackfile with < 2 images ? (%s)"%self.path)
+			
+		if self.xfparms:
+			rtr.extend([("Plot 2D", "Plot xform", self.plot2dLstApp),("Plot 2D+", "plot xform in new window", self.plot2dLstNew)])
 
-		return []
+		return rtr
 
 	def showChimera(self, brws):
 		"""Open in Chimera"""
@@ -1685,27 +1723,26 @@ class EMStackFileType(EMFileType) :
 		brws.busy()
 		rows = []
 		print("Reading from {}...".format(self.path))
-		lst=LSXFile(self.path, True)
-		#print(lst.read(0))
-		for i in range(lst.n):
-			l=lst.read(i)
+		params=load_lst_params(self.path)
+		keys=list(params[0].keys())
+		if "xform.align3d" in keys:
+			xfs=[p["xform.align3d"].inverse().get_params("eman") for p in params]
+		elif "xform.projection" in keys:
+			xfs=[p["xform.projection"].get_params("eman") for p in params]
 			
-			for lc in l[2].split(';'):
-				dic=eval(lc)
-				if 'score' in dic:
-					scr=dic.pop('score')
-				else:
-					scr=0
-				xfkey=["type","alt","az","phi","tx","ty","tz","alpha","scale"]
-				tf=Transform({k:dic[k] for k in dic.keys() if k in xfkey})
-				t = tf.get_trans()
-				r = tf.get_rotation()
-				rows.append( [r["az"],r["alt"],r["phi"],t[0],t[1],t[2], scr])
-			sys.stdout.write("\r {}/{}".format(len(rows), lst.n))
-			sys.stdout.flush()
-		lst=None
-		data=np.array(rows).T.tolist()
-		#print(data)
+		xfkeys=["az", "alt", "phi", "tx", "ty", "tz"]
+		
+		data=[[x[k] for k in xfkeys] for x in xfs]
+		data=np.array(data)
+		
+		if "score" in keys:
+			xfkeys+=["score"]
+			scr=np.array([p["score"] for p in params])
+			data=np.hstack([data, scr[:,None]])
+		
+		data=data.T.tolist()
+		print("The {} columns are {}".format(len(xfkeys), xfkeys))
+		
 		if new:
 			target = EMPlot2DWidget()
 			brws.viewplot2d.append(target)
@@ -2185,7 +2222,7 @@ class EMDirEntry(object) :
 			try : 
 				tmp = EMData(self.path(), 0, True)		# try to read an image header for the file
 			except :
-				print("Error: first image missing ! : ",self.path())
+				#print("Error: first image missing ! : ",self.path())
 				return 0
 				#for i in range(1, 10) :
 					#try : tmp = EMData(self.path(), i, True)
@@ -2204,7 +2241,7 @@ class EMDirEntry(object) :
 
 		# Ok, we need to try to figure out what kind of file this is
 		else :
-			head = open(self.path(), "rb").read(4096)		# Most FileTypes should be able to identify themselves using the first 4K block of a file
+			head = open(self.path(), "rb").read(16384)		# Most FileTypes should be able to identify themselves using the first 4K block of a file
 			ext=os.path.splitext(self.path())[1]
 			if ext not in EMFileType.extbyft:
 				return 0
@@ -3434,6 +3471,12 @@ class SortSelTree(QtWidgets.QTreeView) :
 
 class EMSliceParamDialog(QtWidgets.QDialog):
 	"""This modal dialog asks the user for parameters required for the XYZ 3-D stack viewer"""
+	dlay=-1
+	dlp="-1"
+	dhp="-1"
+	dmask=""
+	
+	
 	def __init__(self, parent = None,nimg = 1) :
 		QtWidgets.QDialog.__init__(self,parent)
 		
@@ -3465,19 +3508,19 @@ class EMSliceParamDialog(QtWidgets.QDialog):
 
 		self.wspinlayers=QtWidgets.QSpinBox()
 		self.wspinlayers.setRange(-1,256)
-		self.wspinlayers.setValue(-1)
+		self.wspinlayers.setValue(self.dlay)
 		self.wspinlayers.setToolTip("Projection about center +- selected number of layers, eg- 0 -> central section only, -1 full projection")
 		self.fol.addRow("Sum Layers (0->1, 1->3, 2->5, ...):",self.wspinlayers)
 
-		self.wlelp=QtWidgets.QLineEdit("-1")
+		self.wlelp=QtWidgets.QLineEdit(self.dlp)
 		self.wlelp.setToolTip("If >0 applies a low-pass filter in 2D. Specify in A.")
 		self.fol.addRow("Lowpass (A):",self.wlelp)
 
-		self.wlehp=QtWidgets.QLineEdit("-1")
+		self.wlehp=QtWidgets.QLineEdit(self.dhp)
 		self.wlehp.setToolTip("If >0 applies a high-pass filter in 2D. Specify in A.")
 		self.fol.addRow("Highpass (A):",self.wlehp)
 
-		self.wlemask=QtWidgets.QLineEdit("")
+		self.wlemask=QtWidgets.QLineEdit(self.dmask)
 		self.wlemask.setToolTip("Optional filename of a mask volume (same dimensions)")
 		self.fol.addRow("Mask volume:",self.wlemask)
 
@@ -3498,9 +3541,16 @@ class EMSliceParamDialog(QtWidgets.QDialog):
 		self.wbutcancel = QtWidgets.QPushButton("Cancel")
 		self.bhb.addWidget(self.wbutcancel)
 	
-		self.wbutok.clicked[bool].connect(self.accept)
+		self.wbutok.clicked[bool].connect(self.okpress)
 		self.wbutcancel.clicked[bool].connect(self.reject)
 		self.wbutok.setDefault(1)
+		
+	def okpress(self,state):
+		EMSliceParamDialog.dlay=self.wspinlayers.value()
+		EMSliceParamDialog.dlp=self.wlelp.text()
+		EMSliceParamDialog.dhp=self.wlehp.text()
+		EMSliceParamDialog.dmask=self.wlemask.text()
+		self.accept()
 
 class EMBrowserWidget(QtWidgets.QWidget) :
 	"""This widget is a file browser for EMAN2. In addition to being a regular file browser, it supports:

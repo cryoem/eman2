@@ -64,7 +64,7 @@ def main():
 			for fm in pts:
 				n=EMUtil.get_image_count(fm)
 				p=[]
-				imgs=EMData.read_images(fm, (), True)
+				imgs=EMData.read_images(fm, [], IMAGE_UNKNOWN, True)
 				p=np.array([e["ptcl_source_coord"] for e in imgs])
 				#for i in range(n):
 					#e=EMData(fm, i, True)
@@ -72,7 +72,7 @@ def main():
 				#p=np.array(p)
 				m=np.median(p[:,0])+np.random.randn()*0.01
 				for i in range(n):
-					lsts[p[i,0]<m].write(-1, i, fm)
+					lsts[int(p[i,0]<m)].write(-1, i, fm)
 					
 				print("{} : center: {:.1f}, even {}, odd {}".format(base_name(fm), m, np.sum(p[:,0]<m), np.sum(p[:,0]>m)))
 			

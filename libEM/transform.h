@@ -359,6 +359,9 @@ namespace EMAN
 			 */
 			void set_matrix(const vector<float>& v);
 
+			// returns a Python/JSON string representation of the matrix form
+			string get_matrix_string(int precision);
+			
 			/** Get the transformation matrix using a vector.
 			 * @return a vector - 3 rows of 4 - that stores the values of the transformation matrix
 			 */

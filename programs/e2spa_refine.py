@@ -19,7 +19,9 @@ def main():
 	parser.add_argument("--startiter", type=int,help="iter", default=0)
 	parser.add_argument("--niter", type=int,help="iter", default=10)
 	parser.add_argument("--setsf", type=str,help="structure factor", default="strucfac.txt")
-	parser.add_argument("--slow", action="store_true", default=False ,help="slow but finer search. not used yet")
+	parser.add_argument("--tophat", type=str, default="local" ,help="Default=local, can also specify localwiener")
+	parser.add_argument("--threads", type=int,help="threads to use during postprocessing of 3d volumes", default=4)
+	parser.add_argument("--automask3d", default="auto", type=str,help="Default=auto. Specify as a processor, eg - mask.auto3d:threshold=1.1:radius=30:nshells=5:nshellsgauss=5.")
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -29,13 +31,7 @@ def main():
 		
 	tophat=""
 	npt=EMUtil.get_image_count(options.ptcl)
-	
 	if options.path==None: options.path=num_path_new("r3d_")
-	
-	if options.slow:
-		slow=" --slow"
-	else:
-		slow=""
 	
 	if options.startiter==0:
 		if not os.path.isdir(options.path):
@@ -50,15 +46,16 @@ def main():
 	for i in range(options.startiter, options.startiter+options.niter):
 		
 		for eo in ["even","odd"]:
-			run("e2spa_align.py --ptclin {pt}/ptcls_{i0:02d}_{eo}.lst --ptclout {pt}/ptcls_{i1:02d}_{eo}.lst --ref {pt}/threed_{i0:02d}_{eo}.hdf --parallel {par} --sym {s} --maxres {rs:.2f} {sl}".format(pt=options.path, i0=i, i1=i+1, rs=res, eo=eo, s=sym, par=options.parallel,sl=slow))
+			run("e2spa_align.py --ptclin {pt}/ptcls_{i0:02d}_{eo}.lst --ptclout {pt}/ptcls_{i1:02d}_{eo}.lst --ref {pt}/threed_{i0:02d}_{eo}.hdf --parallel {par} --sym {s} --maxres {rs:.2f}".format(pt=options.path, i0=i, i1=i+1, rs=res, eo=eo, s=sym, par=options.parallel))
+			
 			run("e2spa_make3d.py --input {pt}/ptcls_{i1:02d}_{eo}.lst --output {pt}/threed_{i1:02d}_{eo}.hdf --keep {kp} --sym {s} --parallel {par}".format(pt=options.path, i1=i+1, eo=eo, s=sym, par=options.parallel, kp=options.keep))
 
 		if i==options.startiter:
 			res/=2
 			
 		if i>0:
-			tophat=" --tophat local"
-		run("e2refine_postprocess.py --even {pt}/threed_{i1:02d}_even.hdf --sym {s} --setsf {sf} --restarget {rs:.1f} {tp}".format(pt=options.path, i1=i+1, s=sym, sf=options.setsf, rs=res*.8, tp=tophat))
+			tophat=" --tophat {}".format(options.tophat)
+		run("e2refine_postprocess.py --even {pt}/threed_{i1:02d}_even.hdf --sym {s} --setsf {sf} --restarget {rs:.1f} {tp} --threads {th} --automask3d {amask}".format(pt=options.path, i1=i+1, s=sym, sf=options.setsf, rs=res*.8, tp=tophat, th=options.threads, amask=options.automask3d))
 		
 		fsc=np.loadtxt("{}/fsc_masked_{:02d}.txt".format(options.path, i+1))
 		fi=fsc[:,1]<0.2

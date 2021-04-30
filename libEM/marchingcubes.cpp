@@ -490,6 +490,7 @@ void ColorRGBGenerator::generateRadialColorMap()
 
 float* ColorRGBGenerator::getRGBColor(int x, int y, int z)
 {
+	const float brt=0.7;
 	// Get data using radial color info
 	if (rgbmode == 1){
 		//calculate radius
@@ -509,16 +510,16 @@ float* ColorRGBGenerator::getRGBColor(int x, int y, int z)
 		value = 4.189f*(value - minimum)/(maximum - minimum);
 		if(value < 2.094){
 			if (value < 0.0) value = 0.0;
-			rgb[0] = 0.5f*(1 + cos(value)/cos(1.047f - value));
-			rgb[1] = 1.5f - rgb[0];
+			rgb[0] = brt* 0.5f*(1 + cos(value)/cos(1.047f - value));
+			rgb[1] = brt* (1.5f - rgb[0]);
 			rgb[2] = 0.0;
 		}
 		if(value >= 2.094){
 			if (value > 4.189f) value = 4.189f;
 			value -= 2.094f;
 			rgb[0] = 0.0;
-			rgb[1] = 0.5f*(1 + cos(value)/cos(1.047f - value));
-			rgb[2] = 1.5f - rgb[1];
+			rgb[1] = brt * 0.5f*(1 + cos(value)/cos(1.047f - value));
+			rgb[2] = brt * (1.5f - rgb[1]);
 		}
 
 		return &rgb[0];

@@ -99,6 +99,7 @@ const string CCCSNRProcessor::NAME = "math.ccc_snr_wiener";
 const string FloorValueProcessor::NAME = "math.floor";
 const string BooleanProcessor::NAME = "threshold.notzero";
 const string KmeansSegmentProcessor::NAME = "segment.kmeans";
+const string GaussSegmentProcessor::NAME = "segment.gauss";
 const string DistanceSegmentProcessor::NAME = "segment.distance";
 const string WatershedProcessor::NAME = "segment.watershed";
 const string SegmentSubunitProcessor::NAME = "segment.subunit";
@@ -350,6 +351,7 @@ template <> Factory < Processor >::Factory()
 	force_add<FloorValueProcessor>();
 	force_add<BooleanProcessor>();
 	force_add<KmeansSegmentProcessor>();
+	force_add<GaussSegmentProcessor>();
 	force_add<SegmentSubunitProcessor>();
 	force_add<DistanceSegmentProcessor>();
 	force_add<ValuePowProcessor>();
@@ -1411,6 +1413,143 @@ void AmpweightFourierProcessor::process_inplace(EMData * image)
 	sum->update();
 	image->update();
 
+}
+
+void GaussSegmentProcessor::process_inplace(EMData *)
+{
+	printf("Process inplace not implemented. Please use process.\n");
+	return;
+}
+
+
+EMData *GaussSegmentProcessor::process(const EMData * const image)
+{
+
+	float minratio = params.set_default("minratio",0.5f);
+	int maxnseg = params.set_default("maxnseg",0);
+	int skipseg = params.set_default("skipseg",0);
+	float width = params.set_default("width",10.0f);
+	int verbose = params.set_default("verbose",0);
+	EMData *mask= (EMData *)params.set_default("mask",(EMData *)NULL);
+	float apix=image->get_attr("apix_x");
+	int nx=image->get_xsize();
+	int ny=image->get_ysize();
+	int nz=image->get_zsize();
+
+	EMData * result = image->process("threshold.belowtozero",Dict("minval",0.0f));
+	// The intent of these filters is to insure that the map effectively 
+//	result->process_inplace("filter.lowpass.gauss",Dict("cutoff_freq",0.45/width));	// 0.45 = sqrt(2)/pi, resolvability threshold
+//	result->process_inplace("filter.lowpass.gauss",Dict("cutoff_freq",0.637/width));	// 0.637 = 2/pi, (may be Rayleigh criterion?)
+	XYData gsf;
+	gsf.make_gauss(nx*4,1.0f/apix,0.45/width);
+//	gsf.make_gauss(nx*4,1.0f/apix,0.637/width);
+	result->process_inplace("filter.setstrucfac",Dict("apix",apix,"strucfac",&gsf));
+	if (mask!=NULL) {
+		result->mult(*mask);
+		result->process_inplace("normalize.local",Dict("radius",nx*apix/(3.0f*width),"threshold",(float)result->get_attr("sigma_nonzero")*1.2));
+	}
+		
+	// Generate a Gaussian we can subtract out of the volume quickly
+	int gs=2*width/(float)image->get_attr("apix_x");
+	EMData gsub(gs,gs,gs);
+	gsub.to_one();
+	gsub.process_inplace("mask.gaussian",Dict("outer_radius",int(width/(2.0*apix))));
+
+	if (verbose>2) {
+		result->set_attr("render_bits",12);
+		result->set_attr("render_min",(float)result->get_attr("minimum"));
+		result->set_attr("render_max",(float)result->get_attr("maximum"));
+		result->write_image("segfilt.hdf",0,EMUtil::IMAGE_UNKNOWN,false,0,EMUtil::EM_COMPRESSED);
+	}
+	
+	// original version of the code. A bit slow but works very well
+// 	vector<float> centers;
+// 	vector<float> amps;
+// 	if (maxnseg==0) maxnseg=2000000000;
+// 	float maxval=0.0f;
+// 	
+// 	while (amps.size()<maxnseg) {
+// 		IntPoint p = result->calc_max_location();
+// 		FloatPoint fp(p[0],p[1],p[2]);
+// 		
+// 		float amp=result->get_value_at(p[0],p[1],p[2]);
+// 		if (amp<maxval*minratio) break;
+// 		amps.push_back(amp);
+// 		centers.push_back(p[0]);
+// 		centers.push_back(p[1]);
+// 		centers.push_back(p[2]);
+// 		if (amp>maxval) maxval=amp;		// really this should only happen once...
+// 		
+// 		result->insert_scaled_sum(&gsub,fp,1.0,-amp);
+// 	}
+	
+	// This was an alternate version, to improve speed. While it is faster, the approximations its making
+	// produce slightly less optimal results.
+	vector<float> centers;
+	vector<float> amps;
+	if (maxnseg==0) maxnseg=2000000000;
+	
+	float thr=(float)result->get_attr("maximum")*minratio;
+	while (amps.size()<maxnseg) {
+		if ((float)result->get_attr("maximum")<=thr) break;
+		// We find all peak values greater than our threshold
+		vector<Pixel> pixels=result->calc_highest_locations(thr);
+		if (pixels.size()==0) break;
+		if (verbose>1) printf("%d %f %f %f %d\n",pixels.size(),pixels[0].get_value(),pixels[1].get_value(),pixels[2].get_value(),amps.size());
+		
+		for (int i=0; i<pixels.size(); i++) {
+			IntPoint p = pixels[i].get_point();
+			FloatPoint fp(p[0],p[1],p[2]);
+			
+			float amp=result->get_value_at(p[0],p[1],p[2]);
+			if (amp!=pixels[i].get_value()) continue;	// skip any values near a value we've just changed, should come back in the next round
+			//			printf("%d %d %d     %f  %f   %f\n",p[0],p[1],p[2],amp,pixels[i].get_value(),pixels[i+1].get_value());
+//			if (i<pixels.size()-1 && amp<pixels[i+1].get_value()) continue;	// if one of the identified peaks has been reduced by a nearby peak too much
+			if (amp<thr) continue;
+//			if (amp<thr) { maxnseg=amps.size(); break; }
+			amps.push_back(amp);
+			centers.push_back(p[0]);
+			centers.push_back(p[1]);
+			centers.push_back(p[2]);
+			
+			result->insert_scaled_sum(&gsub,fp,1.0,-amp);
+		}
+	}
+
+	if (verbose) printf("Found %d centers\n",amps.size());
+	
+	if (verbose>2) {
+		result->set_attr("render_bits",12);
+		result->set_attr("render_min",(float)result->get_attr("minimum"));
+		result->set_attr("render_max",(float)result->get_attr("maximum"));
+		result->write_image("segfilt.hdf",1,EMUtil::IMAGE_UNKNOWN,false,0,EMUtil::EM_COMPRESSED);
+	}
+	if (!skipseg) {
+	// after we have our list of centers classify pixels
+	for (int z=0; z<nz; z++) {
+		for (int y=0; y<ny; y++) {
+			for (int x=0; x<nz; x++) {
+// 				if (image->get_value_at(x,y,z)<thr) {
+// 					result->set_value_at(x,y,z,-1.0);		//below threshold -> -1 (unclassified)
+// 					continue;
+// 				}
+				int bcls=-1;			// best matching class
+				float bdist=(float)(nx+ny+nz);	// distance for best class
+				for (unsigned int c=0; c<centers.size()/3; c++) {
+					float d=Util::hypot3(x-centers[c*3],y-centers[c*3+1],z-centers[c*3+2]);
+					if (d<bdist) { bdist=d; bcls=c; }
+				}
+				result->set_value_at(x,y,z,(float)bcls);		// set the pixel to the class number
+			}
+		}
+	}
+	if (verbose) printf("segmented\n");
+	}
+
+	result->set_attr("segment_centers",centers);
+	result->set_attr("segment_amps",amps);
+	
+	return result;
 }
 
 void DistanceSegmentProcessor::process_inplace(EMData *)

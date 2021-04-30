@@ -398,8 +398,8 @@ def run():
             "_rlnAngleRot",
             "_rlnAngleTilt",
             "_rlnAnglePsi",
-            # "_rlnMaxValueProbDistribution",
-            # "_rlnNormCorrection",
+           #"_rlnMaxValueProbDistribution",
+           # "_rlnNormCorrection",
         ],
         [],
         [],
@@ -1322,11 +1322,11 @@ def run():
                                     relion_dict["_rlnHelicalTrackLength"][idx_col] - 1
                                 ]
                             )
-                            if relion_dict["_rlnAnglePsi"][idx_col] != -1 :
+                            if relion_dict["_rlnAnglePsi"][idx_col] != -1:
                                 sphire_header["segment_angle"] = float(
                                     tokens_line[
                                         relion_dict["_rlnAnglePsi"][idx_col] - 1
-                                        ]
+                                    ]
                                 )
                             elif relion_dict["_rlnAnglePsiPrior"][idx_col] != -1:
                                 sphire_header["segment_angle"] = float(

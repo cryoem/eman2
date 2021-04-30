@@ -26,6 +26,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
+from __future__ import print_function
+from __future__ import division
+from optparse import OptionParser
+from past.utils import old_div
 from builtins import range
 from EMAN2_utils import *
 from EMAN2 import *
@@ -54,6 +58,8 @@ def main():
 
 	parser.add_argument("--anglesindxinfilename",type=int,default=None,help="""Default=None. The filename of the images will be split at any occurence of the following delimiters: '_', '-', '+', '[' , ']' , ',' , ' ' (the two last ones are a comma and a blank space). Provide the index (position) of the angle in the split filename. For example, if the filename of an image is "my_specimen-oct-10-2015_-50_deg-from_k2 camera.mrc", it will be split into ['my','specimen','oct','10','2015','','50','deg','from','k2','camera','mrc']. The angle '-50', is at position 6 (starting from 0). Therefore, you would provide --anglesindxinfilename=6, assuming all images to be stacked/processed are similarly named. No worries about the minus sign disappearing. The program will look at whether there's a minus sign immediately preceeding the position where the angle info is.""")
 	parser.add_argument("--apix",type=float,default=0.0,help="""True apix of images to be written on final stack.""")
+
+	parser.add_argument("--exclude_extremes",action='store_true',default=False,help="""Default=False. Will exclude images with a mean value 3 standard deviations away from the "mean of means" of all images.""")
 
 	parser.add_argument("--highesttilt",type=float,default=0.0,help="""Highest tilt angle. If not supplied, it will be assumed to be 1* --tiltrange.""")
 	
@@ -87,10 +93,11 @@ def main():
 	dirname = os.path.dirname( options.input.replace('*','') )
 	if not dirname:
 		dirname='.'
-	files2process = fsindir(directory=dirname,stem=stem)
+	#files2process = fsindir(directory=dirname,stem=stem)
+	files2process = fsindir(dirname)
 	print("\nfound raw files2process={}".format(files2process))
 
-	files2process = [dirname + '/' + f for f in files2process]
+	files2process = [dirname + '/' + f for f in files2process if stem in f]
 	print("\nwith full path, files2process={}".format(files2process))
 
 	if options.precheckfiles:
@@ -166,10 +173,13 @@ def main():
 		minimum = img['minimum']
 		maximum = img['maximum']
 
-		if mean > mean_avg - 2.0*mean_std and mean < mean_avg + 2.0*mean_std:
+		if mean > mean_avg - 3.0*mean_std and mean < mean_avg + 3.0*mean_std:
 			files2process_good.append(f)
-		else:
-			print("\nWARNING: bad image={} excluded; mean={}, sigma={}, max={}, min={}".format(f,mean,sigma,minimum,maximum))
+		if options.exclude_extremes:
+			print("\nWARNING: bad image={} excluded; mean={}, mean_avg={}, sigma={}, max={}, min={}".format(f, mean, mean_avg, sigma, minimum, maximum))
+		elif not options.exclude_extremes:
+			files2process_good.append(f)
+
 
 	kk=0
 	
@@ -300,16 +310,14 @@ def getangles( options, ntilts, raworder=False ):
 	return angles
 
 
-def writetlt( angles, options, raworder=False ):
+def writetlt( angles, options ):
 	
 	print("(writetlt) these many angles", len(angles))
 	angless = list( angles )
 	
-	if not raworder:
-		angless.sort()
-	
-	if not raworder:
-		angless.reverse()
+	#if not raworder:
+	#	angless.sort()
+	#	angless.reverse()
 		
 	lines = []
 	
@@ -323,8 +331,10 @@ def writetlt( angles, options, raworder=False ):
 	tltfilepath = options.path + '/stack.rawtlt'
 	if options.tag:
 		tltfilepath = options.path + '/' + options.tag + 'stack.rawtlt'
+		#print("""\n(writetlt) tltfilepath={}""".format(tltfilepath))
 		if "_" not in options.tag[-1:]:
-			outstackhdf = options.path + '/' + options.tag + '_stack.rawtlt'
+			tltfilepath = options.path + '/' + options.tag + '_stack.rawtlt'
+
 	textwriter(lines,options,tltfilepath,invert=0,xvals=None,onlydata=True)
 
 	return
@@ -384,7 +394,17 @@ def organizetilts( options, intilts, raworder=False ):
 										#collectionindex needs to continue to increase even if the repeat images are excluded to properly dose weight later
 		
 		angles.sort()
-		angles.reverse()
+		print("\nSORTED angles={}".format(angles))
+
+		colindx_most_neg = anglesdict[min(angles)][-1]
+		colindx_most_pos = anglesdict[max(angles)][-1]
+		if colindx_most_pos < colindx_most_neg:
+			print("\nWARNING: colindx_most_pos={} < colindx_most_neg={}. REVERSING angles".format(colindx_most_pos, colindx_most_neg))
+			angles.reverse()
+			print("\nREVERSED angles={}".format(angles))
+		else:
+			print("\ncolindx_most_pos={},colindx_most_neg={}".format(colindx_most_pos, colindx_most_neg))
+
 		
 		writetlt( angles, options )
 

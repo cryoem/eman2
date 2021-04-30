@@ -2136,7 +2136,9 @@ class SXDriftUnblur(PyQt5.QtWidgets.QMainWindow, Ui_MSMainWidget):
                     with open(file, "r") as f:
                         self.arrData[self.dMic][number] = f.readline().split()[-1]
                 if input_typ == "Unblur_for_logFile":
-                    self.arrData[self.dMic][number] = list(values_from_logFile[file].keys())[0]
+                    self.arrData[self.dMic][number] = list(values_from_logFile[file].keys())[
+                        0
+                    ]
                 elif input_typ == "MotionCor2":
                     self.arrData[self.dMic][number] = (
                         file.split("/")[-1]

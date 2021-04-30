@@ -50,6 +50,7 @@ def main():
 	parser.add_argument("--remaplstkeys",action="store_true", default=False, help="For JSON files where the keys are image name,# pairs referencing a .lst file, will replace each key with the original image")
 	parser.add_argument("--retype",type=str, default=None, help="For JSON files where the keys are image name,# pairs, will change the __type value in the image name in all keys")
 	parser.add_argument("--extractkey", type=str, default=None, help="This will extract a single named value from each specified file. Output will be multicolumn if the referenced label is an object, such as CTF.")
+	parser.add_argument("--extractspt", action="store_true", default=False, help="This will extract the parameters from a particle_parms JSON file in SPT projects as a multicolumn text file.")
 	parser.add_argument("--removekey", type=str, default=None, help="DANGER! This will remove all data associated with the named key from all listed .json files.")
 	parser.add_argument("--output", type=str, default="jsoninfo.txt", help="Output for text operations (not JSON) filename. default = jsoninfo.txt")
 	parser.add_argument("--setoption",type=str, default=None, help="Set a single option in application preferences, eg - display2d.autocontrast:true")
@@ -142,6 +143,25 @@ def main():
 		
 		for k in sorted(list(allkeys)): print(k)
 		
+	if options.extractspt :
+		out=open(options.output,"w")
+		out.write("# file_ptcl,score,trans_x,trans_y,trans_z,az,alt,phi,rel_trans_x,rel_trans_y,rel_trans_z,rel_alt,rel_az,rel_phi\n")
+		nf=0
+		for fsp in args:
+			js=js_open_dict(fsp)
+			ks=[(eval(k)[1],eval(k)[0],k) for k in js.keys()]
+			for k in sorted(ks):
+				xf=js[k[2]]["xform.align3d"]
+				if "xform.start" in js[k[2]] : xfd=xf*js[k[2]]["xform.start"][0].inverse()
+				else: xfd=None
+				tr=xf.get_trans()
+				rt=xf.get_rotation()
+				out.write(f"{k[0]}\t{js[k[2]]['score']}\t{tr[0]}\t{tr[1]}\t{tr[2]}\t{rt['az']}\t{rt['alt']}\t{rt['phi']}")
+				if xfd!=None:
+					tr=xfd.get_trans()
+					rt=xfd.get_rotation()
+					out.write(f"\t{tr[0]}\t{tr[1]}\t{tr[2]}\t{rt['az']}\t{rt['alt']}\t{rt['phi']}")
+				out.write(f"\t# {k[2]}\n")
 
 	if options.extractkey :
 		out=open(options.output,"w")
@@ -151,7 +171,7 @@ def main():
 			if options.extractkey in js:
 				v=js[options.extractkey]
 				nf+=1
-				if isinstance(v,list) and isinstance(v[0],EMAN2Ctf): v=v[0]
+				if isinstance(v,list) and len(v)>0 and isinstance(v[0],EMAN2Ctf): v=v[0]
 				
 				if isinstance(v,EMAN2Ctf) :
 					out.write("{:1.5f}\t{:1.1f}\t{:1.4f}\t{:1.5f}\t{:1.2f}\t{:1.1f}\t{:1.3f}\t{:1.2f}\t# {}\n".format(v.defocus,v.bfactor,v.apix,v.dfdiff,v.dfang,v.voltage,v.cs,v.get_phase(),fsp[:-5]))

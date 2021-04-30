@@ -25,7 +25,7 @@ def main():
 	parser.add_argument("--maxshift", type=int,help="maximum shift allowed", default=-1)
 	parser.add_argument("--localrefine", action="store_true", default=False ,help="local refinement")
 	#parser.add_argument("--ctfweight", action="store_true", default=False ,help="weight by ctf. not used yet...")
-	parser.add_argument("--slow", action="store_true", default=False ,help="slow but finer search")
+	#parser.add_argument("--slow", action="store_true", default=False ,help="slow but finer search")
 	parser.add_argument("--maxres", type=float,default=-1, help="max resolution for cmp")
 	parser.add_argument("--minrespx", type=int,default=4, help="skip the first x pixel in fourier space")
 	parser.add_argument("--sym", type=str,help="symmetry. ", default="c1")
@@ -35,19 +35,14 @@ def main():
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
-
-	lstname=options.ptclin
-	threedname=options.ref
-	lname=options.ptclout
 	
-	lst=LSXFile(lstname, True)
-	m=EMData(threedname)
+	m=EMData(options.ref)
 	bxsz=m["nx"]
 	apix=m["apix_x"]
 	
 	options.shrink=1
-	pinfo=[]
-	nptcl=lst.n
+	pinfo=load_lst_params(options.ptclin)
+	nptcl=len(pinfo)
 	if options.maxshift<0:
 		options.maxshift=bxsz//2
 	
@@ -61,9 +56,6 @@ def main():
 		nptcl=min(4*num_cpus, nptcl)
 		print("Debugging mode. running on one thread with 8 particles")
 		
-	for i in range(nptcl):
-		pinfo.append(lst.read(i))
-	lst=None
 	
 	nbatch=min(nptcl//4, num_cpus)
 	
@@ -75,7 +67,7 @@ def main():
 	
 	tids=[]
 	for info in infos:
-		task = SpaAlignTask(info, threedname, options)
+		task = SpaAlignTask(info, options.ref, options)
 			
 		if options.debug:
 			task.execute(print)
@@ -93,38 +85,17 @@ def main():
 		if np.min(st_vals) == 100: break
 		time.sleep(5)
 	
-	dics=[0]*nptcl
+	output=[None]*nptcl
 	for i in tids:
 		ret=etc.get_results(i)[1]
 		for r in ret:
-			ii=r.pop("idx")
-			dics[ii]=r
+			output[r[0]]=r[1]
 	
 	del etc
 	
+	fm=options.ptclout
+	save_lst_params(output, fm)
 	
-	allscr=[d["score"] for d in dics]
-	maxl=np.max([len(s) for s in allscr])
-	maxv=np.max(np.concatenate(allscr))
-	for s in allscr:
-		s.extend([maxv]*(maxl-len(s)))
-	allscr=np.array(allscr)
-	
-	
-	try: os.remove(lname)
-	except: pass
-	lout=LSXFile(lname, False)
-	for i, dc in enumerate(dics):
-		lc=""
-		for j,xf in enumerate(dc["xform.align3d"]):
-			d=xf.get_params("eman")
-			d["score"]=float(allscr[i,j])
-			lc=lc+str(d)+';'
-			
-		l=pinfo[i]
-		lout.write(-1, l[0], l[1], lc[:-1])
-
-	lout=None
 	E2end(logid)
 
 def run(cmd):
@@ -149,7 +120,7 @@ class SpaAlignTask(JSTask):
 			else:
 				x=list(x)
 				x.extend(curxf[len(x):])
-				xf=Transform({"type":"eman", "alt":x[0], "az":x[1], "phi":x[2],"tx":x[3], "ty":x[4]})
+				xf=Transform({"type":"xyz", "xtilt":x[0], "ytilt":x[1], "ztilt":x[2],"tx":x[3], "ty":x[4]})
 			
 			pj=refsmall.project('gauss_fft',{"transform":xf, "returnfft":1})
 			x0=options.minrespx; x1=int(ss*.4)
@@ -206,7 +177,7 @@ class SpaAlignTask(JSTask):
 			ii=infos[0]
 			info=infos[1]
 			
-			img=EMData(info[1],info[0])
+			img=EMData(info["src"],info["idx"])
 			img.clip_inplace(Region((img["nx"]-ny)//2, (img["ny"]-ny)//2, ny, ny))
 			img.process_inplace("mask.soft",{"outer_radius":-10,"width":10})
 			img=img.do_fft()
@@ -217,24 +188,20 @@ class SpaAlignTask(JSTask):
 			istart=0
 			initxfs=[]
 				
-			if isinstance(info[-1], str):
-				for xfs in info[-1].split(';'):
-					initxf=eval(xfs)
-					if "score" in initxf:
-						initxf.pop('score')
-					initxfs.append(Transform(initxf))
+			if "xform.projection" in info:
+				initxfs.append(info["xform.projection"])
 					
 			if options.localrefine:	
 				newxfs=[]
 				istart=1
 				npos=npos//2
 				for ixf in initxfs:
-					ix=ixf.get_params("eman")
+					ix=ixf.get_params("xyz")
 					newxfs.append(Transform(ix))
 
 					for i in range(npos-1):
-						d={"type":"eman","tx":ix["tx"], "ty":ix["ty"]}
-						for ky in ["alt", "az", "phi"]:
+						d={"type":"xyz","tx":ix["tx"], "ty":ix["ty"]}
+						for ky in ["xtilt", "ytilt", "ztilt"]:
 							d[ky]=ix[ky]+np.random.randn()*5./np.pi*2
 						newxfs.append(Transform(d))
 				
@@ -281,10 +248,10 @@ class SpaAlignTask(JSTask):
 					newxfs=[]
 					simplex=np.vstack([[0,0,0], np.eye(3)*astep])
 					for xf0 in xfs:
-						x=xf0.get_params("eman")
-						curxf=[x["alt"], x["az"], x["phi"],x["tx"]*ss/ny,x["ty"]*ss/ny]
+						x=xf0.get_params("xyz")
+						curxf=[x["xtilt"], x["ytilt"], x["ztilt"],x["tx"]*ss/ny,x["ty"]*ss/ny]
 						x0=curxf[:3]
-						res=minimize(test_rot, x0, method='Nelder-Mead', options={'ftol': 1e-2, 'disp': False, "maxiter":50, "initial_simplex":simplex+x0})
+						res=minimize(test_rot, x0, method='Powell', options={'ftol': 1e-3, 'disp': False, "maxiter":20})
 						scr, x=test_rot(res.x, True)
 						score.append(scr)
 						newxfs.append(x)
@@ -314,17 +281,17 @@ class SpaAlignTask(JSTask):
 				if options.verbose>1:
 					print("size: {}, xfs: {}".format(ss, len(newxfs)))
 					for x in newxfs:
-						xf=x.get_params("eman")
-						print("\t{:.1f} {:.1f} {:.1f} {:.1f} {:.1f}".format(xf["alt"], xf["az"], xf["phi"], xf['tx'], xf['ty']))
+						xf=x.get_params("xyz")
+						print("\t{:.1f} {:.1f} {:.1f} {:.1f} {:.1f}".format(xf["xtilt"], xf["ytilt"], xf["ztilt"], xf['tx'], xf['ty']))
 				
 				npos=max(1, npos//2)
 				lastastep=astep
 				if ss>=maxy:
 					break
 				
-			r={"idx":ii, "xform.align3d":newxfs[:1], "score":newscore[:1]}
+			r={"src":info["src"], "idx":info["idx"], "xform.projection":newxfs[0], "score":newscore[0]}
 			callback(100*float(infoi/len(self.data["info"])))
-			rets.append(r)
+			rets.append((ii, r))
 			if options.debug:
 				print('time',time.time()-time0)
 				print(newxfs[0])

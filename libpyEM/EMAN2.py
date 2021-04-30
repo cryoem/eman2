@@ -52,6 +52,8 @@ import EMAN2db, EMAN2jsondb
 import argparse, copy
 import glob
 import random
+from struct import pack,unpack
+import json
 
 import threading
 #from Sparx import *
@@ -228,6 +230,9 @@ file_mode_range={
 	int(EMUtil.EMDataType.EM_COMPRESSED):(-3.40282347e+38,3.40282347e+38 )
 	}
 
+class NotImplementedException(Exception):
+	def __init__(self,val=None): pass
+
 def E2init(argv, ppid=-1) :
 	"""E2init(argv)
 This function is called to log information about the current job to the local logfile. The flags stored for each process
@@ -386,6 +391,8 @@ This function will get an application default by first checking the local direct
 		return ret
 	except: pass
 
+	if dfl!=None: E2setappval(app,key,dfl)		# so the user will know what may be available
+
 	return dfl
 
 def E2getappvals():
@@ -435,7 +442,7 @@ def num_path_new(prefix):
 	"""make a new prefix_xx (or prefix_xxx) folder and return the folder name, underscore added to prefix if not present"""
 	if prefix[-1]!="_" : prefix+="_"
 	
-	pthns=[int(i.rsplit("_",1)[-1]) for i in os.listdir(".") if i[:len(prefix)]==prefix]
+	pthns=[int(i.rsplit("_",1)[-1]) for i in os.listdir(".") if i[:len(prefix)]==prefix and i.rsplit("_",1)[-1].isdigit()]
 	try: newn=max(pthns)+1
 	except: newn=0
 	path=f"{prefix}{newn:02d}"
@@ -449,7 +456,7 @@ def num_path_last(prefix,create=False):
 	"""find the highest numbered path starting with prefix and return it. If create is set, will create a new one if none exists. underscore added to prefix if not present"""
 	if prefix[-1]!="_" : prefix+="_"
 	
-	pthns=[int(i.rsplit("_",1)[-1]) for i in os.listdir(".") if i[:len(prefix)]==prefix]
+	pthns=[int(i.rsplit("_",1)[-1]) for i in os.listdir(".") if i[:len(prefix)]==prefix and i.rsplit("_",1)[-1].isdigit()]
 	try: n=max(pthns)
 	except:
 		if create: 
@@ -640,26 +647,14 @@ def get_optionlist(argv):
 	return optionlist
 
 def intvararg_callback(option, opt_str, value, parser):
-#    print 'vararg_callback:'
-#    print '\toption:', repr(option)
-#    print '\topt_str:', opt_str
-#    print '\tvalue:', value
-#    print '\tparser:', parser
-    
-    v = [int(i) for i in value.split(',')]
-    setattr(parser.values, option.dest, v)
-    return
+	v = [int(i) for i in value.split(',')]
+	setattr(parser.values, option.dest, v)
+	return
 
 def floatvararg_callback(option, opt_str, value, parser):
-#    print 'vararg_callback:'
-#    print '\toption:', repr(option)
-#    print '\topt_str:', opt_str
-#    print '\tvalue:', value
-#    print '\tparser:', parser
-    
-    v = [float(i) for i in value.split(',')]
-    setattr(parser.values, option.dest, v)
-    return
+	v = [float(i) for i in value.split(',')]
+	setattr(parser.values, option.dest, v)
+	return
 
 def commandoptions(options,exclude=[]):
 	"""This will reconstruct command-line options, excluding any options in exclude"""
@@ -921,6 +916,82 @@ def angle_ab_sym(sym,a,b,c=None,d=None):
 		#raise Exception,"angle_ab_sym requries two transforms or 4 angles"
 
 	return min([(A*s*Bi).get_rotation("spin")["omega"] for s in sym])
+
+def sock_sendobj(sock,obj):
+	"""Sends an object as a (binary) size then a binary pickled object to a socket file object"""
+	if obj==None :
+		sock.sendall(pack("<Q",0))
+		return
+	strobj=pickle.dumps(obj,-1)
+	sock.sendall(pack("<Q",len(strobj)))
+	sock.sendall(strobj)
+
+	# uses socket 'file'
+	#if obj==None :
+		#sock.write(pack("<I",0))
+		#return
+	#strobj=pickle.dumps(obj,-1)
+	#sock.write(pack("<I",len(strobj)))
+	#sock.write(strobj)
+
+	
+def sock_recvobj(sock):
+	"""receives a packed length followed by a binary (pickled) object from a socket file object and returns"""
+	l=sock.recv(8,socket.MSG_WAITALL)
+	
+	try :
+		datlen=unpack("<Q",l)[0]
+	except:
+		print("Format error in unpacking (%d) '%s'"%(len(l),l))
+		raise Exception("Network error receiving object")
+	if datlen<=0 :return None
+	return pickle.loads(sock.recv(datlen,socket.MSG_WAITALL))
+
+	# uses socket 'file'
+	#l=sock.read(4)
+	#try :
+		#datlen=unpack("<I",l)[0]
+	#except:
+		#print("Format error in unpacking (%d) '%s'"%(len(l),l))
+		#raise Exception("Network error receiving object")
+	#if datlen<=0 :return None
+	#return pickle.loads(sock.read(datlen))
+
+display_magic=None		# VERY basic security for e3display
+
+def e3display(data,vtype="auto",vname=None,dname="Unknown",settings={},port=31980):
+	"""Server-based display function, mainly designed for use with Jupyter Lab sessions, but availble for
+	background monitoring of running jobs as well. 
+	data - data object of any (appropriate) type, if None will simply update the widget and return a PNG, 
+	vtype - "image","imagemx","volume","plot2d","plot3d","histogram"
+	vname - name of a new or existing (type specific) display widget to use, if None 'default' will be used 
+	dname - name for the data set, may be used as window title, or to support multiple object display in the same widget
+	settings - a dictionary of widget-specific settings
+	"""
+	import ipywidgets
+	global display_magic
+	
+	if display_magic==None:
+		magicpath=f"{e2gethome()}/.eman2/server_magic"
+		with open(magicpath,"rb") as fin:
+			display_magic=fin.read(8)
+
+	try: sock=socket.create_connection(("localhost",port))
+	except:
+		print(sys.exc_info())
+		return False
+
+	sock.sendall(display_magic)
+
+	sock_sendobj(sock,(data,vtype,vname,dname,settings))
+	ret=sock_recvobj(sock)
+	if ret[0]=="error": raise Exception(f"e3display error: {ret[1]}")
+	elif ret[0]=="png": 
+		nx,ny,png=ret[1]
+		
+	return ipywidgets.Image(value=png,format="png",width=nx,height=ny)
+	
+	
 
 def display(img,force_2d=False,force_plot=False):
 	"""Generic display function for images or sets of images. You can force images to be displayed in 2-D or as a plot with
@@ -2102,11 +2173,13 @@ The file begins with
 number<\t>filename<\t>comment
 ...
 """
-	def __init__(self,path,ifexists=False):
+	def __init__(self,path,ifexists=False, comments=""):
 		"""Initialize the object using the .lst file in 'path'. If 'ifexists' is set, an exception will be raised
 if the lst file does not exist."""
 
 		self.path=path
+		if len(comments)==0:
+			comments="# This file is in fast LST format. All lines after the next line have exactly the number of characters shown on the next line. This MUST be preserved if editing."
 
 		if os.path.isfile(path):
 			self.ptr=open(path,"r+")		# file exists
@@ -2116,7 +2189,7 @@ if the lst file does not exist."""
 			try: os.makedirs(os.path.dirname(path))
 			except: pass
 			self.ptr=open(path,"w+")	# file doesn't exist
-			self.ptr.write("#LSX\n# This file is in fast LST format. All lines after the next line have exactly the number of characters shown on the next line. This MUST be preserved if editing.\n# 20\n")
+			self.ptr.write("#LSX\n{}\n# 20\n".format(comments))
 
 		self.ptr.seek(0)
 		l=self.ptr.readline()
@@ -2125,7 +2198,7 @@ if the lst file does not exist."""
 				#### This is very similar to rewrite(), but is used to convert LST files to LSX files
 				self.seekbase=self.ptr.tell()
 				tmpfile=open(self.path+".tmp","w")
-				tmpfile.write("#LSX\n# This file is in fast LST format. All lines after the next line have exactly the number of characters shown on the next line. This MUST be preserved if editing.\n")
+				tmpfile.write("#LSX\n{}\n".format(comments))
 
 				# we read the entire file, checking the length of each line
 				maxlen=0
@@ -2158,13 +2231,20 @@ if the lst file does not exist."""
 				self.ptr.readline()
 
 			else: raise Exception("ERROR: The file {} is not in #LSX format".format(self.path))
-		self.filecomment=self.ptr.readline()
+		self.filecomment=self.ptr.readline().strip()
 		try: self.linelen=int(self.ptr.readline()[1:])
 		except:
 			print("ERROR: invalid line length in #LSX file {}".format(self.path))
 			raise Exception
 		self.seekbase=self.ptr.tell()
 
+		# legacy LST file support
+		if self.filecomment.startswith("#keys: "):
+			print("WARNING: legacy .lst file containing old-style parameters. Support may be removed in future. Consider rewriting file with e2proclst.py")
+			self.filekeys=self.filecomment[7:].split(';')
+		else: self.filekeys=None
+
+		# potentially time consuming, but this also gives us self.n
 		self.normalize()
 
 	def __del__(self):
@@ -2183,15 +2263,27 @@ if the lst file does not exist."""
 			self.normalize()
 			self.ptr=None
 
-	def write(self,n,nextfile,extfile,comment=None):
+	def write(self,n,nextfile,extfile,jsondict=None):
 		"""Writes a record to any location in a valid #LSX file.
 n : image number in #LSX file, -1 appends, as does n>= current file len
 nextfile : the image number in the referenced image file
 extfile : the path to the referenced image file (can be relative or absolute, depending on purpose)
-comment : optional comment string"""
+jsondict : optional string in JSON format or a JSON compatible dictionary. values will override header values when an image is read.
+"""
 
-		if comment==None : outln="{}\t{}".format(nextfile,extfile)
-		else: outln="{}\t{}\t{}".format(nextfile,extfile,comment)
+		if jsondict==None : 
+			outln="{}\t{}".format(nextfile,extfile)
+		elif isinstance(jsondict,str) and jsondict[0]=="{" and jsondict[-1]=='}' : 
+			outln="{}\t{}\t{}".format(nextfile,extfile,jsondict)
+		else:
+			if not isinstance(jsondict,dict) and jsondict!=None: 
+				jsondict={"__default__":jsondict}
+			if jsondict!=None:
+				jss=json.dumps(jsondict,indent=None,sort_keys=True,separators=(',',':'),default=EMAN2jsondb.obj_to_json)			
+				outln="{}\t{}\t{}".format(nextfile,extfile,jss)
+			else: outln="{}\t{}".format(nextfile,extfile)
+			
+		# We can't write in the middle of the file if the existing linelength is too short
 		if len(outln)+1>self.linelen : self.rewrite(len(outln))
 
 
@@ -2207,25 +2299,86 @@ comment : optional comment string"""
 
 	def read(self,n):
 		"""Reads the nth record in the file. Note that this does not read the referenced image, which can be
-performed with read_image either here or in the EMData class. Returns a tuple (n extfile,extfile,comment)"""
+performed with read_image either here or in the EMData class. Returns a tuple (n extfile,extfile,dict). dict
+contains decoded information from the stored JSON dictionary. Will also read certain other legacy comments
+and translate them into a dictionary."""
 		if n>=self.n : raise Exception("Attempt to read record {} from #LSX {} with {} records".format(n,self.path,self.n))
+		n=int(n)
 		self.ptr.seek(self.seekbase+self.linelen*n)
 		ln=self.ptr.readline().strip().split("\t")
 		if len(ln)==2 : ln.append(None)
-		ln[0]=int(ln[0])
-
+		try: ln[0]=int(ln[0])
+		except:
+			print(f"Error LSXFile.read({n}). {self.seekbase},{self.linelen},{ln}")
+			raise(Exception)
+		if len(ln[2])<2: ln[2]={}
+		else:
+			try: ln[2]=json.loads(ln[2],object_hook=EMAN2jsondb.json_to_obj)
+			except:
+				if ';Transform' in ln[2]:
+					score=float(ln[2].split(";")[0])
+					xf=eval(ln[2].split(";")[1])
+					ln[2]={"score_align":score,"xform.projection":xf}
+				elif ln[2][:9]=="Transform":
+					ln[2]={"xform.projection":eval(ln[2])}
+				elif self.filekeys!=None:
+					vals=l[2].split(";")
+					l[2]={self.filekeys[i]:vals[i] for i in range(len(self.filekeys))}
+				else:
+					ln[2]={"lst_comment":ln[2]}
 		return ln
 
-	def read_image(self,n):
+	def read_image(self,n,hdronly=False,region=None):
 		"""This reads the image referenced by the nth record in the #LSX file. The same task can be accomplished with EMData.read_image,
 but this method prevents multiple open/close operations on the #LSX file."""
 
-		n,fsp,cmt=self.read(n)
+		n,fsp,jsondict=self.read(n)
 		ret=EMData()
-		ret=EMData(fsp,n)
-		if cmt!=None and len(cmt)>0 : ret["lst_comment"]=cmt
+		ret.read_image_c(fsp,n,hdronly,region)
+		if len(jsondict)>0 :
+			for k in jsondict: ret[k]=jsondict[k]
 
 		return ret
+
+	def read_images(self,nlst=None,hdronly=False):
+		"""This reads a set of images referenced by the nth record in the #LSX file. This is used by read_images in Python when the file is a LST file
+		if nlst is None, the entire file is read."""
+
+		# organize the images to read by path to take advantage of read_images performance
+		# d2r contains tuples (image number in returned array,image number in file (key),extra data dictionary)
+		d2r={}
+		if nlst==None:
+			for i in range(self.n):
+				j,p,d=self.read(i)
+				try: d2r[p].append((i,j,d))
+				except: d2r[p]=[(i,j,d)]
+			ii=self.n
+		else:
+			# ii is the index of the image in the array we will eventually return, i is the index of the image
+			# in the lst file. j is the index in the referenced image file, p. d is the dictionary of 
+			# override values from the lst comment field
+			for ii,i in enumerate(nlst):
+				j,p,d=self.read(int(i))
+				try: d2r[p].append((ii,j,d))
+				except: d2r[p]=[(ii,j,d)]
+			ii+=1
+
+#		out=open("dbug.txt","w")
+		# we read the actual images with calls to read_images for speed
+		# then overlay the metadata overrides from the LST file, and put them in the requested read order
+		ret=[None]*ii	# ii is left with the total number of images to be returned
+		for fsp in d2r:
+			tpls=d2r[fsp]
+			imgs=EMData.read_images_c(fsp,[i[1] for i in tpls],IMAGE_UNKNOWN,hdronly)
+			for i,tpl in enumerate(tpls):
+				for k in tpl[2]: imgs[i][k]=tpl[2][k]
+				ret[tpl[0]]=imgs[i]
+#				out.write(f"{tpl[0]}\t{i}\t{fsp}\n")
+
+		if None in ret: raise(Exception(f"Error reading {nlst} from {self.path}, {ret.index(None)} is None"))
+
+		return ret
+
 
 	def __len__(self): return self.n
 
@@ -2343,6 +2496,330 @@ corresponding to each 1/2 of the data."""
 		oute=None
 
 	return (eset,oset)
+
+def save_lst_params(lst,fsp):
+	"""Saves a LSX file (fsp) with metadata represented by a list of dictionaries (lst).
+	each dictionary must contain 'src', the image file containing the actual image and
+	'idx' the index in that file. Additional keys will be stored in the LSX metadata
+	region."""
+	if len(lst)==0: raise(Exception,"ERROR: save_lst_params with empty list")
+
+	lsx=LSXFile(fsp)
+	for d in lst:
+		dct=d.copy()
+		p=dct.pop("src")
+		n=dct.pop("idx")
+		lsx.write(-1,n,p,dct)
+
+def load_lst_params(fsp , imgns=None):
+	"""Reads the metadata for all of the images in an LSX file (fsp) with an optional list of
+	image numbers (imgns, iterable or None)"""
+	lsx=LSXFile(fsp,True)
+	if imgns==None: imgns=range(lsx.n)
+	
+	ret=[]
+	for i in imgns:
+		n,p,d=lsx.read(i)
+		ret.append({"idx":n,"src":p,**d})
+		
+	return ret
+	
+	##########
+#### replace a few EMData methods with python versions to intercept 'bdb:' filenames
+##########
+def db_emd_init(self, *parms):
+	"""
+	__init__( (object)arg1) -> object :
+
+		C++ signature :
+			void* __init__(_object*)
+
+	__init__( (object)arg1, (object)that) -> object :
+		Construct from an EMData (copy constructor).
+		Performs a deep copy.
+
+		that - the EMData to copy
+
+		C++ signature :
+			void* __init__(_object*,EMAN::EMData)
+
+	__init__( (object)arg1, (str) filespec,(int)image_idx,[(int) header_only],[(Region) region],[(int) is_3d]) -> object :
+		Construct from an image file.
+
+		filename - the image file name
+		image_index the image index for stack image file(default = 0)
+
+		C++ signature :
+			void* __init__(_object*,std::string [,int])
+
+	__init__( (object)arg1, (object)nx, (object)ny [, (object)nz [, (object)is_real]]) -> object :
+		makes an image of the specified size, either real or complex.
+		For complex image, the user would specify the real-space dimensions.
+
+		nx - size for x dimension
+		ny - size for y dimension
+		nz size for z dimension(default=1)
+		is_real - boolean to specify real(true) or complex(false) image(default=True)
+
+		C++ signature :
+			void* __init__(_object*,int,int [,int [,bool]])
+"""
+	if len(parms) < 5 and len(parms) > 0 and isinstance(parms[0], str) and parms[0][:4].lower() == "bdb:":
+		self.__initc()
+		self.read_image(*parms)
+		return
+	else:
+		#		print "toC:", parms
+		if len(parms) > 2 and isinstance(parms[0], str):
+			self.__initc()
+			self.read_image_c(*parms)
+		# try: self.read_image_c(*parms)			# this handles Region reading, which isn't supported in the C++ constructor
+		# except:
+		# traceback.print_exc()
+		# print "Error reading: ",parms," (if the program does not crash, this may be normal)"
+		# raise Exception
+		else:
+			self.__initc(*parms)
+		# try: self.__initc(*parms)
+		# except:
+		# traceback.print_exc()
+		# print "Error reading: ",parms," (if the program does not crash, this may be normal)"
+		# raise Exception
+		return
+
+
+EMData.__initc = EMData.__init__
+EMData.__init__ = db_emd_init
+
+
+# def transform_to_str(self):
+## I added the initial return so that it looks good in the eman2 file browser
+# s = "\n%.3f %.3f %.3f %.3f\n" %(self.at(0,0),self.at(0,1),self.at(0,2),self.at(0,3))
+# s += "%.3f %.3f %.3f %.3f\n" %(self.at(1,0),self.at(1,1),self.at(1,2),self.at(1,3))
+# s += "%.3f %.3f %.3f %.3f\n" %(self.at(2,0),self.at(2,1),self.at(2,2),self.at(2,3))
+# s += "0.000 0.000 0.000 1.000"
+# return s
+
+# Transform.__str__ = transform_to_str
+
+#lsxcache=None
+def db_read_image(self, fsp, *parms, **kparms):
+	"""read_image(filespec,image #,[header only],[region],[is_3d])
+
+	This function can be used to read a set of images from a file or bdb: database. Pass in
+	the filename, or bdb: specification, optionally a list of image numbers to read (or None),
+	and a flag indicating that only the image headers should be read in. If only the headers
+	are read, accesses to the image data in the resulting EMData objects will be invalid."""
+	#	print "RI ",fsp,str(parms)
+
+	if fsp[:4].lower() == "bdb:":
+		db, keys = db_open_dict(fsp, True, True)
+
+		if len(parms) > 1 and parms[1]:
+			nodata = 1
+		else:
+			nodata = 0
+
+		if len(parms) > 2 and parms[2]:
+			region = parms[2]
+		else:
+			region = None
+
+		if keys:
+			key = keys[parms[0]]
+		else:
+			try:
+				key = parms[0]
+			except:
+				key = 0
+
+		x = db.get(key, target=self, nodata=nodata, region=region)
+		if x == None: raise Exception("Could not access " + str(fsp) + " " + str(key))
+		#		except:
+		#			raise Exception("Could not access "+str(fsp)+" "+str(key))
+		return None
+	if fsp[-4:].lower()==".lst":
+		return LSXFile(fsp).read_image(*parms)
+		#global lsxcache
+		#if lsxcache==None or lsxcache.path!=fsp: lsxcache=LSXFile(fsp,True)
+		#return lsxcache.read_image(parms[0])
+
+	if len(kparms) != 0:
+		if 'img_index' not in kparms:
+			kparms['img_index'] = 0
+		if 'header_only' not in kparms:
+			kparms['header_only'] = False
+		if 'region' not in kparms:
+			kparms['region'] = None
+		if 'is_3d' not in kparms:
+			kparms['is_3d'] = False
+	return self.read_image_c(fsp, *parms, **kparms)
+
+
+EMData.read_image_c = EMData.read_image
+EMData.read_image = db_read_image
+
+
+def db_read_images(fsp, *parms):
+	"""EMData.read_images(filespec,[image # list],[header only])
+
+	This function can be used to read a set of images from a file or bdb: database. Pass in
+	the filename, or bdb: specification, optionally a list of image numbers to read (or None),
+	and a flag indicating that only the image headers should be read in. If only the headers
+	are read, accesses to the image data in the resulting EMData objects will be invalid"""
+	if fsp[:4].lower() == "bdb:":
+		db, keys = db_open_dict(fsp, True, True)
+		if len(parms) > 1:
+			nodata = parms[1]
+		else:
+			nodata = 0
+		if keys:
+			if len(parms) > 0:
+				if not parms[0] or len(parms[0]) == 0: parms[0] = keys
+				return [db.get(keys[i]) for i in parms[0]]
+			return [db.get(i, nodata=nodata) for i in keys]
+		else:
+			if len(parms) == 0:
+				keys = list(range(0, len(db)))
+			else:
+				keys = parms[0]
+			if not keys or len(keys) == 0: keys = list(range(len(db)))
+		return [db.get(i, nodata=nodata) for i in keys]
+	if fsp[-4:].lower()==".lst":
+		return LSXFile(fsp).read_images(*parms)
+		#global lsxcache
+		#if lsxcache==None or lsxcache.path!=fsp: lsxcache=LSXFile(fsp,True)
+		#return lsxcache.read_images(*parms)
+
+	if len(parms) > 0 and (parms[0] == None or len(parms[0]) == 0):
+		parms = (list(range(EMUtil.get_image_count(fsp))),) + parms[1:]
+	return EMData.read_images_c(fsp, *parms)
+
+
+EMData.read_images_c = staticmethod(EMData.read_images)
+EMData.read_images = staticmethod(db_read_images)
+
+
+def db_write_image(self, fsp, *parms):
+	"""write_image(fsp,image #,[image type],[header only],[region],[storage type],[use host endian])
+
+	help(EMUtil.ImageType) for a list of valid image types, eg EMUtil.ImageType.IMAGE_MRC
+	help(EMUtil.EMDataType) for a list of valid storage types
+
+	Writes an image to a file or a bdb: entry. Note that for bdb: specifications, only image # is supported.
+	the remaining options are ignored
+	"""
+	#	print "In db_write_image, WI ",fsp,str(parms)
+
+	if fsp[:4].lower() == "bdb:":
+		db, keys = db_open_dict(fsp, False, True)
+		if keys:  # if the user specifies the key in fsp, we ignore parms
+			if len(keys) > 1: raise Exception("Too many keys provided in write_image %s" % str(keys))
+			if isinstance(keys[0], int) and keys[0] < 0: raise Exception(
+				"Negative integer keys not allowed %d" % keys[0])
+			db[keys[0]] = self
+			return
+		if len(parms) == 0: parms = [0]
+		if parms[0] < 0: parms = (len(db),) + parms[1:]
+
+		key = 0
+		region = None
+		if len(parms) > 0: key = parms[0]
+		# if len(parms) > 1: read_header = parms[1]
+		# parsm[2] is unused : image_type=EMUtil.ImageType.IMAGE_UNKNOWN
+		if len(parms) > 3: region = parms[3]
+
+		db.set(self, key=key, region=region, txn=None)  # this makes region writing work
+		#		db[parms[0]] = self # this means region writing does not work
+		return
+	return self.write_image_c(fsp, *parms)
+
+
+EMData.write_image_c = EMData.write_image
+EMData.write_image = db_write_image
+
+def im_write_compressed(self,fsp,n,bits=8,minval=0,maxval=0,nooutliers=False,level=1,erase=False):
+	"""write_compressed(self or list,fsp,n,bits=8,minval=0,maxval=0,nooutliers=False,level=1)
+
+This flexible image writing routine will write compressed HDF images (or a single image). It may be called
+on an instance:
+
+img.write_compressed(fsp,n,bits,...)
+
+or a list of images:
+
+EMData.write_compressed(list,fsp,n_first_img,bits,...)
+
+Compression itself is lossless, but uses variable bit reduction which is (usually) lossy. 
+
+Ignores any render_min/render_max already in the image header. To use those values, pass them as arguments
+and do not specify nooutliers.
+
+If nooutliers is set, this will override any specified minval/maxval. If maxval<=minval then the full range of 
+image values will be included in the bit reduced image. If large outliers are present, this may effectively remove 
+almost all of the information in the image. Nooutliers will eliminate up to ~0.01% of the extreme pixel values from the
+histogram by clamping the values at the extrema. For integrating mode raw micrograph data, nooutliers is 
+highly recommended, though it is probably unnecessary with counting mode images, unless there is an extremely
+bad normalization value.
+
+Compression level (0-9) is passed to the gzip routine. While all levels are lossless, higher levels will
+achieve progressively less additional compression and progressively more time. The default level of 1
+provides good compression without having a significant performance impact.
+
+Somewhat counterintuitively, the noisier the data, the fewer bits that are required to fully represent the
+image. That is, raw micorgraphs can safely be stored as 3-4 bits, whereas a reconstructed, filtered volume
+may require 8 or more bits.
+
+If erase is set, the file will be deleted if it exists, before writing. Obviously this must be used with caution,
+but a problem with overwriting existing compressed HDF images is that the original images are not truly deleted
+and the file size will increase.
+"""
+	if isinstance(self,EMData) : 
+		self=[self]
+	
+	if erase:
+		try: os.unlink(fsp)
+		except: pass
+	
+	if n==-1: 
+		try: n=EMUtil.get_image_count_c(fsp)
+		except: n=0
+	
+	# Maybe should have this revert to normal write_image, if a different format?
+	if fsp[-4:].lower()!=".hdf" : raise(Exception,"Only HDF format is supported by im_write_compressed")
+	
+	for i,im in enumerate(self):
+		if not isinstance(im,EMData) : raise(Exception,"write_compressed() requires a list of EMData objects")
+		im["render_bits"]=bits
+		im["render_compress_level"]=level
+		if nooutliers :
+			nxyz=im.get_size()
+			maxout=max(nxyz//20000,8)		# at most 1 in 20000 pixels should be considered an outlier on each end
+			h0=im["minimum"]
+			h1=im["maximum"]
+			hs=(h1-h0)/1023
+			hist=im.calc_hist(1024,h0,h1)
+			
+			#ok, we're doing this approximately
+			for sl in range(512):
+				if sum(hist[:sl+1])>maxout: break
+			for sh in range(1023,512,-1):
+				if sum(hist[sh:])>maxout: break
+
+			im["render_min"]=sl*hs+h0
+			im["render_max"]=(sh)*hs+h0
+		elif maxval>minval:
+			im["render_min"]=float(minval)
+			im["render_max"]=float(maxval)
+		else:
+			im["render_min"]=im["minimum"]
+			im["render_max"]=im["maximum"]
+		
+		# would like to use the new write_images, but it isn't quite ready yet.
+		im.write_image(fsp,i+n,EMUtil.ImageType.IMAGE_UNKNOWN,0,None,EMUtil.EMDataType.EM_COMPRESSED)
+	
+EMData.write_compressed=im_write_compressed
+
 
 __doc__ = \
 "EMAN classes and routines for image/volume processing in \n\

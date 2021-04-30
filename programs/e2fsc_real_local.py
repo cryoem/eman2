@@ -56,7 +56,8 @@ def calc_oneres(jsd,vol1f,vol2f,apix,freq,ftsize,tophat=False,cutoff=0.143,rmask
 	band.set_ri(1)
 	
 	# bandpass volume we apply as a filter to each image FFT
-	band.process_inplace("testimage.fourier.gaussianband",{"center":freq,"width":sqrt(2.0)})
+#	band.process_inplace("testimage.fourier.gaussianband",{"center":freq,"width":sqrt(2.0)})
+	band.process_inplace("testimage.fourier.gaussianband",{"center":freq,"width":3})
 	vol1b=(vol1f*band).do_ift()
 	vol2b=(vol2f*band).do_ift()
 	
@@ -92,15 +93,25 @@ def calc_oneres(jsd,vol1f,vol2f,apix,freq,ftsize,tophat=False,cutoff=0.143,rmask
 		filt=volcor.process("threshold.binary",{"value":cutoff})
 	else:
 		# Now let's turn that into a Wiener filter
-		if freq==4: 
+		if freq==3: 
 			minvol=volcor.copy()
-			curvol=4
-		elif freq>4:
+			curvol=3
+		elif freq>3:
 			while curvol<freq-1: time.sleep(0.1)		# we wait until we have all lower frequency calculations done to insure monotonic decrease
 			minvol.update_min(volcor)
-			volcor.update_min(minvol)	# could just copy, but timing is likely about the same
-			curvol=max(freq,curvol)		# should always be freq, but just to be safe...
+#			volcor.update_min(minvol)	# could just copy, but timing is likely about the same
+			# if we find a low resolution patch where the FSC falls below zero, but then rises above 0.5, we reset our below zero threshold
+			msk=volcor.process("threshold.binary",{"value":.5})
+			minvol.add(msk)
+			# Then we zero the FSC in any regions which have previously fallen below zero to avoid spurious high resolution info in 
+			msk=minvol.process("threshold.binary",{"value":.01})
+			volcor.mult(msk)
+			msk=None
 			
+			curvol=max(freq,curvol)		# should always be freq, but just to be safe...
+		
+		# Setting scalesnr here is slightly under-filtering the Wiener filter. This is emperical to help permit convergence
+		# of higher frequency information
 		filt=volcor.process("math.ccc_snr_wiener",{"wiener":1,"scalesnr":3.0})
 
 	filt1=vol1b*filt
@@ -135,6 +146,7 @@ input volumes.
 	parser.add_argument("--cutoff", type=float, help="fsc cutoff. default is 0.143",default=0.143)
 	parser.add_argument("--mask",type=str,help="Optional mask to produce masked overall FSC curve. Must have the same dimensions as the input volumes.",default=None)
 	parser.add_argument("--tophat",action="store_true",help="If set, the local filter is a tophat filter, otherwise a local Wiener filter is applied",default=False)
+	parser.add_argument("--sampfscs",action="store_true",help="If set, full fsc curves are stored for a range of specific locations within the volume",default=False)
 	#parser.add_argument("--refs",type=str,help="Reference images from the similarity matrix (projections)",default=None)
 	#parser.add_argument("--inimgs",type=str,help="Input image file",default=None)
 	#parser.add_argument("--outimgs",type=str,help="Output image file",default="imgs.hdf")
@@ -212,6 +224,22 @@ input volumes.
 	jsd=queue.Queue(0)
 	thrds=[(jsd,v1f,v2f,apix,f,options.localsizea,options.tophat,options.cutoff,mask) for f in range(1,box//2)]
 
+	if options.sampfscs:
+		steps=int(box//(2*options.localsizea/apix))
+		step=int(box//steps)
+		print(f"Sample FSCs saved with {step} pixel spacing") 
+		#list of locations to sample full FSC curves, relative to middle of box
+		samplocs=[]
+		for z in range(step//2,box,step):
+			for y in range(step//2,box,step):
+				for x in range(step//2,box,step):
+					if sqrt((z-box/2)**2+(y-box/2)**2+(x-box/2)**2)<box//3:
+						samplocs.append((x,y,z))
+		#samplocs=((0,0,0),(10,0,0),(0,0,10),(50,0,0),(0,0,50),(10,25,25),(0,box//4,0),(-box//6,-box//6,-box//6))
+		#samplocs=[(i[0]+box//2,i[1]+box//2,i[2]+box//2) for i in samplocs]
+		samps=[zeros(box//2) for i in range(len(samplocs))]
+		print("Saving ",len(samplocs)," FSC curves")
+
 	# here we run the threads and save the results, no actual alignment done here
 	if options.verbose: print(len(thrds)," threads")
 	thrtolaunch=0
@@ -243,13 +271,28 @@ input volumes.
 			# replace the value with spatial freq. Max of all of the individual resolution maps
 			# should represent the local resolution map
 			#volcor.get_clip(Region(0,0,nz*2//3,nx,ny,1)).write_image("res_slice.hdf",freq-1)
+			if options.sampfscs:
+				for i,s in enumerate(samplocs):
+					samps[i][freq]=volcor[s]
+			
 			volcor.process_inplace("threshold.binary",{"value":0.143})
 			volcor.mult(freq/(ny*apix))
 			resvola.add_image(volcor)
 
 	for t in thrds:
 		t.join()
-		
+
+	if options.sampfscs:
+		out=open(f"fscs.txt","w")
+		out.write("# ")
+		for i,s in enumerate(samplocs): out.write(f'{s[0]},{s[1]},{s[2]}; ')
+		out.write("\n")
+		for j in range(1,len(samps[i])):
+			out.write(f"{j/(box*apix)}")
+			for i,s in enumerate(samplocs):
+				out.write(f"\t{samps[i][j]}")
+			out.write("\n")
+	
 	av1=filtvol1.finish()
 	if options.outfilte!=None: av1.write_compressed(options.outfilte,0,options.compressbits,erase=True)
 	av2=filtvol2.finish()

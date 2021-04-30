@@ -108,8 +108,8 @@ produce new sets/ for each class, which could be further-refined.
 	parser.add_argument("--shrink", default=1,type=int,help="shrink the particles before processing",guitype="intbox", row=2, col=0, rowspan=1, colspan=1,mode="gui")
 	parser.add_argument("--mask", default=None,type=str,help="A 3D mask file or a single mask processor specification to apply prior to local projection generation")
 	parser.add_argument("--threads", default=4,type=int,help="Number of alignment threads to run in parallel on a single computer. This is the only parallelism supported by e2spt_align at present.", guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="refinement")
-	parser.add_argument("--hp",default=-1,type=float,help="Apply a high-pass filter at the specified resolution when generating projections. Specify as resolution in A, eg - 100")
-	parser.add_argument("--lp",default=-1,type=float,help="Apply a low-pass filter at the specified resolution when generating projections. Specify the resolution in A, eg - 25")
+	parser.add_argument("--hp",default=-1,type=float,help="Apply a high-pass filter at the specified resolution when generating projections. Specify as resolution in A, eg - 100",guitype="floatbox", row=3, col=0, rowspan=1, colspan=1,mode="gui")
+	parser.add_argument("--lp",default=-1,type=float,help="Apply a low-pass filter at the specified resolution when generating projections. Specify the resolution in A, eg - 25",guitype="floatbox", row=3, col=1, rowspan=1, colspan=1,mode="gui")
 	parser.add_argument("--saveali",action="store_true",help="In addition to the unaligned sets/ for each class, generate aligned particle stacks per class",default=False)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -203,7 +203,15 @@ produce new sets/ for each class, which could be further-refined.
 	# run PCA and reproject in one step, then we will classidy the projections
 	P=skdc.PCA(options.nbasis)
 	prjsprjs=[from_numpy(i) for i in P.fit_transform(prjsary)]
-		
+	
+	# write basis to file for examination
+	for i,eig in enumerate(P.components_):
+		basis=from_numpy(eig.astype('f4')).process("misc.mask.pack",{"mask":mask,"unpack":1})
+		try: basis["eigval"]=P.singular_values_[i]
+		except: pass
+		basis.write_compressed("{}/classes_basis_{:02d}_{:02d}.hdf".format(options.path,options.iter,crun),i,10)
+			
+	
 	if options.verbose: print("Classifying")
 	# classification
 	an=Analyzers.get("kmeans")
