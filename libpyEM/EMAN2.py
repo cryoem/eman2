@@ -2306,7 +2306,7 @@ and translate them into a dictionary."""
 		n=int(n)
 		self.ptr.seek(self.seekbase+self.linelen*n)
 		ln=self.ptr.readline().strip().split("\t")
-		if len(ln)==2 : ln.append(None)
+		if len(ln)==2 : ln.append("")
 		try: ln[0]=int(ln[0])
 		except:
 			print(f"Error LSXFile.read({n}). {self.seekbase},{self.linelen},{ln}")
