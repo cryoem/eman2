@@ -171,7 +171,7 @@ def main():
 			if options.extractkey in js:
 				v=js[options.extractkey]
 				nf+=1
-				if isinstance(v,list) and isinstance(v[0],EMAN2Ctf): v=v[0]
+				if isinstance(v,list) and len(v)>0 and isinstance(v[0],EMAN2Ctf): v=v[0]
 				
 				if isinstance(v,EMAN2Ctf) :
 					out.write("{:1.5f}\t{:1.1f}\t{:1.4f}\t{:1.5f}\t{:1.2f}\t{:1.1f}\t{:1.3f}\t{:1.2f}\t# {}\n".format(v.defocus,v.bfactor,v.apix,v.dfdiff,v.dfang,v.voltage,v.cs,v.get_phase(),fsp[:-5]))

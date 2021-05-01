@@ -159,6 +159,15 @@ float XYData::calc_correlation(XYData * xy, float minx, float maxx) const
 	return result;
 }
 
+void XYData::make_gauss(int n,float xmax, float width)
+{
+	set_size(n);
+	for (int i=0; i<n; i++) {
+		float x=i*xmax/n;
+		data[i].x=x;
+		data[i].y=exp(-x*x/(width*width));
+	}
+}
 
 float XYData::get_yatx(float x,bool outzero)
 {

@@ -17,6 +17,7 @@ def main():
 	parser.add_argument("--postxf", type=str,help="extra shift after alignment", default="")
 	parser.add_argument("--keep", type=float,help="propotion to keep. will exclude bad particles if this is smaller than 1.0", default=1.0)
 	parser.add_argument("--gui",action="store_true",help="open the resulting map and tomogram in a GUI display",default=False,guitype="boolbox",row=4, col=0,rowspan=1, colspan=1)
+	parser.add_argument("--new",action="store_true",help="new pipeline format")
 	parser.add_argument("--ppid", type=int,help="ppid...", default=-1)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -32,7 +33,7 @@ def main():
 	
 	
 	
-	js=js_open_dict("{}/particle_parms_{:02d}.json".format(path, itr))
+	
 		
 	tomo=EMData(options.tomo)
 	if options.gui: tomo_orig=tomo.copy()
@@ -56,21 +57,27 @@ def main():
 	tomo.to_zero()
 	
 	ptcl=[]
-	scr=[]
 	llfile=""
 	bname=base_name(options.tomo)
-	for k in js.keys():
-		fsp,i=eval(k)
-		if fsp[-4:]==".lst" :
-			if llfile!=fsp : 
-				llfile=fsp
-				lsx=LSXFile(fsp,True)
-			i,fsp,x=lsx.read(i)
-		if base_name(fsp)==bname:
-			ptcl.append((js[k]["score"],fsp,i,js[k]["xform.align3d"]))
+	if options.new:
+		alipm=load_lst_params("{}/aliptcls3d_{:02d}.lst".format(path, itr))
+		for p in alipm:
+			if base_name(p["src"])==bname:
+				ptcl.append((p["score"], p["src"], p["idx"], p["xform.align3d"]))
+	else:
+		js=js_open_dict("{}/particle_parms_{:02d}.json".format(path, itr))
+		for k in js.keys():
+			fsp,i=eval(k)
+			if fsp[-4:]==".lst" :
+				if llfile!=fsp : 
+					llfile=fsp
+					lsx=LSXFile(fsp,True)
+				i,fsp,x=lsx.read(i)
+			if base_name(fsp)==bname:
+				ptcl.append((js[k]["score"],fsp,i,js[k]["xform.align3d"]))
 	
 	ptcl.sort()
-	print(ptcl)
+	#print(ptcl)
 			
 	nptcl=int(len(ptcl)*options.keep)
 	if options.keep<1.0:

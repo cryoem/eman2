@@ -388,13 +388,13 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 //		Transform* t = get_set_align_attr("xform.align3d",cf,this_img);
 //		t->set_trans(cur_trans);
 		cf->set_attr("xform.align3d",&t);
-		cf->set_attr("score.align",-maxvalue);
+		cf->set_attr("score_align",-maxvalue);
 	} else if ( ny != 1 ) {
 		//Transform* t = get_set_align_attr("xform.align2d",cf,this_img);
 		cur_trans[2] = 0; // just make sure of it
 		t.set_trans(cur_trans);
 		cf->set_attr("xform.align2d",&t);
-		cf->set_attr("score.align",-maxvalue);
+		cf->set_attr("score_align",-maxvalue);
 	}
 	return cf;
 }

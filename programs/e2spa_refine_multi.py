@@ -38,7 +38,7 @@ def main():
 		print("Merging even/odd particle list")
 		run("e2proclst.py {} {} --create {} --mergeeo".format(options.ptcl, options.ptcl.replace("even", "odd"), pinput))
 	else:
-		run("e2proclst.py {} {} --create {}".format(options.ptcl,options.ptcl, pinput))
+		run("e2proclst.py {} --create {}".format(options.ptcl, pinput))
 	
 	npt=EMUtil.get_image_count(pinput)
 	cls=np.random.randint(0, ncls, npt)
@@ -53,6 +53,7 @@ def main():
 	if options.mask:
 		etc+=" --mask {}".format(options.mask)
 	
+	par0="thread:24"
 	for itr in range(options.niter+1):
 		classify_list(pinput, cls, "{}/ptcls_{:02d}".format(path, itr))
 		
@@ -64,7 +65,7 @@ def main():
 			threed="{}/threed_{:02d}_{:02d}.hdf".format(path, itr, ic)
 			refs.append(threed)
 			
-			run("e2spa_make3d.py --input {inp} --output {out} --keep 1 --sym {sm} --parallel {par}".format(inp=lname, out=threed, sm=sym, par=options.parallel))
+			run("e2spa_make3d.py --input {inp} --output {out} --keep 1 --sym {sm} --parallel {par}".format(inp=lname, out=threed, sm=sym, par=par0))
 			
 			run("e2proc3d.py {} {} {} --process filter.lowpass.gauss:cutoff_freq={:.4f} --process normalize.edgemean".format(threed, threed, setsf, 1./options.maxres))
 			
@@ -84,10 +85,12 @@ def main():
 		print("iter {}, {:.1f}% particles change class".format(itr, 100*np.mean(c0!=cls)))
 		
 	
-	ps=classify_list("r3dcls_02/ptcls_input.lst", cls, "r3dcls_02/ptcls_final", True)
+	ps=classify_list(f"{path}/ptcls_input.lst", cls, f"{path}/ptcls_final")
 	thd=[p.replace("ptcls_final","threed_final")[:-3]+"hdf" for p in ps]
 	for pt,td, in zip(ps, thd):
-		run("e2spa_make3d.py --input {inp} --output {out} --keep 1 --sym {sm} --parallel {par}".format(inp=pt, out=td, sm=sym, par=options.parallel))
+		run("e2spa_make3d.py --input {inp} --output {out} --keep 1 --sym {sm} --parallel {par}".format(inp=pt, out=td, sm=sym, par=par0))
+		
+		run("e2proc3d.py {} {} {} --process filter.lowpass.gauss:cutoff_freq={:.4f} --process normalize.edgemean".format(td, td, setsf, 1./options.maxres))
 		
 	E2end(logid)
 	
@@ -97,31 +100,16 @@ def run(cmd):
 	
 	
 def classify_list(lstname, cls, outprefix, spliteo=False):
-	lst=LSXFile(lstname)
+	lst=load_lst_params(lstname)
 	ncls=np.max(cls)+1
-	outnames=["{}_{:02d}.lst".format(outprefix, i) for i in range(ncls)]
-	if spliteo:
-		om=[]
-		for o in outnames:
-			om.append(o[:-4]+"_even.lst")
-			om.append(o[:-4]+"_odd.lst")
-		outnames=om	
+	outnames=[]
+	
+	for ic in range(ncls):
+		out=[l for i,l in enumerate(lst) if cls[i]==ic]
+		outname="{}_{:02d}.lst".format(outprefix, ic)
+		save_lst_params(out, outname)
+		outnames.append(outname)
 		
-	for o in outnames:
-		if os.path.isfile(o):
-			os.remove(o)
-
-	lout=[LSXFile(o, False) for o in outnames]
-	for i in range(lst.n):
-		l=lst.read(i)
-		ii=int(cls[i])
-		
-		if spliteo:
-			ii=ii*2+i%2
-			
-		lout[ii].write(-1, l[0], l[1], l[2])
-
-	lout=None
 	return outnames
 		
 	

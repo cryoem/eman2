@@ -254,7 +254,11 @@ def sym_search(e, options):
 	ntry=20
 	sym=options.sym
 	s=parsesym(sym)
-	oris=s.gen_orientations("rand",{"n":ntry, "phitoo":True})
+	if options.refine:
+		oris=[Transform()]
+	else:
+		oris=s.gen_orientations("rand",{"n":ntry, "phitoo":True})
+		
 	jsd=queue.Queue(0)
 	thrds=[threading.Thread(target=sym_ali,args=([e, o, sym, jsd])) for o in oris]
 	for t in thrds: t.start()

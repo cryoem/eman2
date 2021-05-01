@@ -146,10 +146,10 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		#self.gbl.setColumnMinimumWidth(0,200)
 		#self.gbl.setRowMinimumHeight(0,200)
 		#self.gbl.setColumnStretch(0,0)
-		#self.gbl.setColumnStretch(1,100)
-		#self.gbl.setColumnStretch(2,0)
-		#self.gbl.setRowStretch(1,0)
-		#self.gbl.setRowStretch(0,100)
+		self.gbl.setColumnStretch(1,100)
+		self.gbl.setColumnStretch(0,1)
+		self.gbl.setRowStretch(0,100)
+		self.gbl.setRowStretch(1,1)
 		
 
 		# 3 orthogonal restricted projection views
@@ -176,9 +176,13 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		#self.wypos = QtWidgets.QSlider(Qt.Vertical)
 		#self.gbl2.addWidget(self.wypos,0,3,6,1)
 		
+		self.wzheight=ValBox(label="Z height:",value=256)
+		self.gbl2.addWidget(self.wzheight,1,0)
+		
 		# box size
 		self.wboxsize=ValBox(label="Box Size:",value=0)
 		self.gbl2.addWidget(self.wboxsize,2,0)
+		
 
 		# max or mean
 		#self.wmaxmean=QtWidgets.QPushButton("MaxProj")
@@ -220,7 +224,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 
 		##coordinate display
 		self.wcoords=QtWidgets.QLabel("")
-		self.gbl2.addWidget(self.wcoords, 1, 0, 1, 2)
+		self.gbl2.addWidget(self.wcoords, 0, 0, 1, 2)
 		
 		self.button_flat.clicked[bool].connect(self.flatten_tomo)
 		self.button_reset.clicked[bool].connect(self.reset_flatten_tomo)
@@ -238,6 +242,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		self.wdepth.valueChanged[int].connect(self.event_depth)
 		self.wnlayers.valueChanged[int].connect(self.event_nlayers)
 		self.wboxsize.valueChanged.connect(self.event_boxsize)
+		self.wzheight.valueChanged.connect(self.event_zheight)
 		#self.wmaxmean.clicked[bool].connect(self.event_projmode)
 		#self.wscale.valueChanged.connect(self.event_scale)
 		self.wfilt.valueChanged.connect(self.event_filter)
@@ -393,6 +398,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		#self.gbl.setRowMinimumHeight(1,max(250,data["nz"]))
 		#self.gbl.setColumnMinimumWidth(0,max(250,data["nz"]))
 		#print(data["nx"],data["ny"],data["nz"])
+		self.wzheight.setValue(data["nz"])
 
 		self.wdepth.setRange(0,data["nz"]-1)
 		self.wdepth.setValue(data["nz"]//2)
@@ -443,6 +449,14 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 			r["apix_x"]=r["apix_y"]=r["apix_z"]=self.apix
 		return r
 
+	def event_zheight(self):
+		z=self.wzheight.getValue()
+		self.gbl.setRowMinimumHeight(1,z)
+		self.gbl.setColumnMinimumWidth(0,z)
+		#print(data["nx"],data["ny"],data["nz"])
+		return
+		
+		
 	def event_boxsize(self):
 		if self.get_boxsize()==int(self.wboxsize.getValue()):
 			return
@@ -480,7 +494,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		self.update_all()
 
 	def event_localbox(self,tog):
-		self.update_sliceview(['x','y'])
+		self.update_sliceview()
 
 	def get_boxsize(self, clsid=-1):
 		if clsid<0:
@@ -642,7 +656,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 				inplane=dst<bs//2
 				rad=bs//2-dst
 				
-				if ax!='z' and allside:
+				if allside:
 					## display all side view boxes in this mode
 					inplane=True
 					rad=bs//2
@@ -820,6 +834,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		if rad<0:
 			rad=self.eraser_width()
 		
+		#print(x,y,z, rad)
 		delids=[]
 		boxes=self.get_rotated_boxes()
 		for i,b in enumerate(boxes):
@@ -855,7 +870,13 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		#print(x,y,z,xr,yr,zr)
 	
 		if self.optionviewer.erasercheckbox.isChecked():
-			self.del_region_xy(x,y,z)
+			
+			side=self.wlocalbox.isChecked()
+			xyz={'x':x,'y':y,'z':z}
+			if not side:
+				xyz[axis]=-1
+				
+			self.del_region_xy(xyz['x'],xyz['y'],xyz['z'],-1)
 			return
 			
 		for i in range(len(self.boxes)):

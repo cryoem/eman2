@@ -188,14 +188,15 @@ def eman2ctf_from_jsondict(dct):
 
 def transform_to_jsondict(obj):
 	ret={"__class__":"Transform"}
-	ret["matrix"]=obj.get_matrix()
+	ret["matrix"]=obj.get_matrix_string(7)
 	return ret
 
 Transform.to_jsondict=transform_to_jsondict
 
 def transform_from_jsondict(dct):
 	ret=Transform()
-	ret.set_matrix(dct["matrix"])
+	lst=[float(v) for v in dct["matrix"][1:-1].split(',')]
+	ret.set_matrix(lst)
 	return ret
 
 ############

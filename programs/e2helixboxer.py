@@ -1205,7 +1205,7 @@ if ENABLE_GUI:
 			else:
 				self.img_quality_combobox.setCurrentIndex( 2 )
 
-			self.main_image.optimally_resize()
+#			self.main_image.optimally_resize()
 
 			width = self.box_width
 			if self.helices_dict:

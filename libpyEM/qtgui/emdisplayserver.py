@@ -139,6 +139,18 @@ class EMDisplayServerWidget(QtWidgets.QWidget):
 		
 		self.msg=None
 		
+		if vtype=="auto":
+			if isinstance(data,EMData):
+				if data["nz"]==1: vtype="image"
+				else: vtype="volume"
+			elif isinstance(data,list) or isinstance(data,tuple):
+				if isinstance(data[0],EMData):
+					if data["nz"]==1: vtype="imagemx"
+					else: vtype="volume"
+			else: 
+				self.reply=["error","auto mode doesn't work for this type. Please specify vtype."]
+				return
+			
 		if vtype not in self.widget_types:
 			self.reply=["error","bad visualization type"]
 			return
