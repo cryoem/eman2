@@ -39,6 +39,9 @@ import sys
 from EMAN2 import *
 import queue
 import numpy as np
+from skimage.transform import radon
+from skimage.feature import blob_log
+import threading
 
 def main():
 	
@@ -59,6 +62,10 @@ def main():
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--invar",default=False, action="store_true",help="create the invar file for the newsets. The newsets option must be used.")
+	parser.add_argument("--zscore", default=True, action="store_true", help="run Z-score-based line finding.")
+	parser.add_argument("--rdnxform", default=False, action="store_true", help="detect lines via radon transform")
+	parser.add_argument("--rthreshold",default=25, help="see scikit-image.transform.radon() parameter documentation.")
+	parser.add_argument("--rsigma", default=3, help="see scikit-image.transform.radon() parameter documentation.")
 	
 	(options, args) = parser.parse_args()
 	
@@ -68,39 +75,108 @@ def main():
 	
 	options.threads+=1		# one extra thread for storing results
 
-	im0=EMData(args[0],0)	# first image
-	r2=im0["ny"]/4	# outer radius
+	if options.rdnxform:
+		options.zscore=False
+		print("running e2findlines.py with Radon transform method.")
+		
+		n=EMUtil.get_image_count(args[0])
+		lines=[]
+		
+		if options.threads-1==0: 
+			t1 = time.time()
+			for i in range(n):
+				im=EMData(args[0],i)
+				radon_im=radon(im.numpy(), preserve_range=True)
+				laplacian=blob_log(radon_im, threshold=options.rthreshold, min_sigma=options.rsigma)
+				if len(laplacian)==0:
+					lines.append(0)
+				else:
+					lines.append(1)
+				print(f"{i} out of {n} images analyzed"+' '*20, end ='\b'*(len(str(f"{i} out of {n} images analyzed"))+20), flush=True)
+			t2=time.time()
+			print(f"Total time for rdnxform (nonthreaded): {t2-t1}s")
+		
+		if options.threads-1>0 and options.threads<=n: 
+			t1=time.time()
+			print("running threaded rdnxform")
+			threaded_indices = [[] for x in range(options.threads-1)]
+			for i in range(n):
+				threaded_indices[i%(options.threads-1)].append(i)
+			
+			#completed = 0
+			
+			class ImageBatch(threading.Thread):
+				def __init__(self, threadId, name, data_indices):
+					threading.Thread.__init__(self)
+					self.threadId = threadId
+					self.name = name
+					self.data_indices = data_indices
+					
+				def run(self):
+					for i in self.data_indices:
+						im=EMData(args[0],i)
+						radon_im=radon(im.numpy(), preserve_range=True)
+						laplacian=blob_log(radon_im, threshold=options.rthreshold, min_sigma=options.rsigma)
+						if len(laplacian)==0:
+							lines.append(0)
+						else:
+							lines.append(1)
+						print(f"{i} out of {n} images analyzed"+' '*20, end ='\b'*(len(str(f"{i} out of {n} images analyzed"))+20), flush=True)
+							
+			threads = [ImageBatch(x, "thread_%s" % x, threaded_indices[x]) for x in range(options.threads-1)] 
+			for thread in threads:
+				thread.start()
+			for thread in threads:
+				thread.join()
+			t2=time.time()
+			print(f"Total time rdnxform (threaded): {t2-t1}s")
+				
+			"""for i in range(n):
+				im=EMData(args[0],i)
+				radon_im=radon(im.numpy(), preserve_range=True)
+				laplacian=blob_log(radon_im, threshold=options.rthreshold, min_sigma=options.rsigma)
+				if len(laplacian)==0:
+					lines.append(0)
+				else:
+					lines.append(1)
+				print(f"{i} out of {n} images analyzed"+' '*20, end ='\b'*(len(str(f"{i} out of {n} images analyzed"))+20), flush=True)"""
+		
 
-	# we build up a list of 'Z scores' which should be larger for images containing one or more parallel lines.
-	# if 2 lines aren't parallel the number may be lower, even if the lines are strong, but should still be higher
-	# than images without lines in most cases
-	n=EMUtil.get_image_count(args[0])
-	step=max(n//500,1)
-	Z=[]
-	im2d=[]
-	for i in range(n):
-		im=EMData(args[0],i)
-		a=im.do_fft().calc_az_dist(60,-88.5,3,4,r2)
-		d=np.array(a)
-		Z.append((d.max()-d.mean())/d.std())
-		if i%step==0: 
-			im["zscore"]=(d.max()-d.mean())/d.std()
-			im2d.append(im)
+	if options.zscore:
+		print("running e2findlines.py with Z-score method.")
+		im0=EMData(args[0],0)	# first image
+		r2=im0["ny"]/4	# outer radius
 
-	if options.gui:
-		# GUI display of a histogram of the Z scores
-		from eman2_gui.emhist import EMHistogramWidget
-		from eman2_gui.emimagemx import EMImageMXWidget
-		from eman2_gui.emapplication import EMApp
-		app = EMApp()
-		histw=EMHistogramWidget(application=app)
-		histw.set_data(Z)
-		app.show_specific(histw)
-		imd=EMImageMXWidget(application=app)
-		im2d.sort(key=lambda x:x["zscore"])
-		imd.set_data(im2d)
-		app.show_specific(imd)
-		app.exec_()
+		# we build up a list of 'Z scores' which should be larger for images containing one or more parallel lines.
+		# if 2 lines aren't parallel the number may be lower, even if the lines are strong, but should still be higher
+		# than images without lines in most cases
+		n=EMUtil.get_image_count(args[0])
+		step=max(n//500,1)
+		Z=[]
+		im2d=[]
+		for i in range(n):
+			im=EMData(args[0],i)
+			a=im.do_fft().calc_az_dist(60,-88.5,3,4,r2)
+			d=np.array(a)
+			Z.append((d.max()-d.mean())/d.std())
+			if i%step==0: 
+				im["zscore"]=(d.max()-d.mean())/d.std()
+				im2d.append(im)
+
+		if options.gui:
+			# GUI display of a histogram of the Z scores
+			from eman2_gui.emhist import EMHistogramWidget
+			from eman2_gui.emimagemx import EMImageMXWidget
+			from eman2_gui.emapplication import EMApp
+			app = EMApp()
+			histw=EMHistogramWidget(application=app)
+			histw.set_data(Z)
+			app.show_specific(histw)
+			imd=EMImageMXWidget(application=app)
+			im2d.sort(key=lambda x:x["zscore"])
+			imd.set_data(im2d)
+			app.show_specific(imd)
+			app.exec_()
 	"""
 	if options.newsets:
 		lstin=LSXFile(args[0])
@@ -135,10 +211,15 @@ def main():
 		try: os.unlink(nolinesfsp)
 		except: pass
 		lstnolines=LSXFile(nolinesfsp)	
-
-		for i,z in enumerate(Z):
-			if z>options.threshold: lstlines[-1]=lstin[i]
-			else: lstnolines[-1]=lstin[i]
+		
+		if options.zscore:
+			for i,z in enumerate(Z):
+				if z>options.threshold: lstlines[-1]=lstin[i]
+				else: lstnolines[-1]=lstin[i]
+		if options.rdnxform:
+			for i,r in enumerate(lines):
+				if r!=0: lstlines[-1]=lstin[i]
+				else: lstnolines[-1]=lstin[i]
 
 	if options.newsets and options.invar:
 		lstin=LSXFile(args[0])
@@ -162,12 +243,19 @@ def main():
 		except: pass
 		lstinvar=LSXFile(invarfsp)	
 		
-	
-		for i,z in enumerate(Z):
-			if z>options.threshold: lstlines[-1]=lstin[i]
-			else: 
-				lstnolines[-1]=lstin[i]
-				lstinvar[-1]=lstin[i]
+		
+		if options.zscore:
+			for i,z in enumerate(Z):
+				if z>options.threshold: lstlines[-1]=lstin[i]
+				else: 
+					lstnolines[-1]=lstin[i]
+					lstinvar[-1]=lstin[i]
+		if options.rdnxform:
+			for i,r in enumerate(lines):
+				if r!=0: lstlines[-1]=lstin[i]
+				else: 
+					lstnolines[-1]=lstin[i]
+					lstinvar[-1]=lstin[i]
 	
 		print(f"running: e2proclst.py {invarfsp} --retype ctf_flip_invar" )
 		os.system(f"e2proclst.py {invarfsp} --retype ctf_flip_invar" )
