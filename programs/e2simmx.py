@@ -853,8 +853,8 @@ def check(options,verbose):
 			error = True
 
 		if ( file_exists(options.datafile) and file_exists(options.reffile) ):
-			(xsize, ysize ) = gimme_image_dimensions2D(options.datafile);
-			(pxsize, pysize ) = gimme_image_dimensions2D(options.reffile);
+			(xsize, ysize ) = gimme_image_dimensions2D(options.reffile);
+			(pxsize, pysize ) = gimme_image_dimensions2D(options.datafile);
 			if ( xsize != pxsize ):
 				if verbose>0:
 					print("Error - the (x) dimension of the reference images %d does not match that of the particle data %d" %(xsize,pxsize))

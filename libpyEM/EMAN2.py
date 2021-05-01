@@ -2328,12 +2328,13 @@ and translate them into a dictionary."""
 					ln[2]={"lst_comment":ln[2]}
 		return ln
 
-	def read_image(self,n,hdronly=False,region=None):
+	def read_image(self,n,hdronly=False,region=None,ret=None):
 		"""This reads the image referenced by the nth record in the #LSX file. The same task can be accomplished with EMData.read_image,
 but this method prevents multiple open/close operations on the #LSX file."""
 
 		n,fsp,jsondict=self.read(n)
-		ret=EMData()
+#		print(self.path,n,fsp,jsondict,hdronly,region)
+		if ret==None: ret=EMData()
 		ret.read_image_c(fsp,n,hdronly,region)
 		if len(jsondict)>0 :
 			for k in jsondict: ret[k]=jsondict[k]
@@ -2639,7 +2640,7 @@ def db_read_image(self, fsp, *parms, **kparms):
 		#			raise Exception("Could not access "+str(fsp)+" "+str(key))
 		return None
 	if fsp[-4:].lower()==".lst":
-		return LSXFile(fsp).read_image(*parms)
+		return LSXFile(fsp).read_image(*parms,ret=self)
 		#global lsxcache
 		#if lsxcache==None or lsxcache.path!=fsp: lsxcache=LSXFile(fsp,True)
 		#return lsxcache.read_image(parms[0])

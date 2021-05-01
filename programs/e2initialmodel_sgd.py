@@ -192,6 +192,7 @@ def make_model(jsd,myid, options):
 			
 		map0ft=map0.do_fft()
 		map1ft=map1.do_fft()
+#		print(f"wedgefill {map0ft['nx']} {map1ft['nx']} ") 
 		map1ft.process_inplace("mask.wedgefill",{"fillsource":map0ft, "thresh_sigma":.9})
 		dmap=map1ft-map0ft
 		
