@@ -2348,7 +2348,7 @@ but this method prevents multiple open/close operations on the #LSX file."""
 		# organize the images to read by path to take advantage of read_images performance
 		# d2r contains tuples (image number in returned array,image number in file (key),extra data dictionary)
 		d2r={}
-		if nlst==None:
+		if nlst==None or len(nlst)==0:
 			for i in range(self.n):
 				j,p,d=self.read(i)
 				try: d2r[p].append((i,j,d))
@@ -2516,7 +2516,7 @@ def load_lst_params(fsp , imgns=None):
 	"""Reads the metadata for all of the images in an LSX file (fsp) with an optional list of
 	image numbers (imgns, iterable or None)"""
 	lsx=LSXFile(fsp,True)
-	if imgns==None: imgns=range(lsx.n)
+	if imgns==None or len(imgns)==0: imgns=range(lsx.n)
 	
 	ret=[]
 	for i in imgns:
