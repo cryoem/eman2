@@ -960,6 +960,7 @@ def obj_to_json(obj):
 		obj.write_image(fnm[0],fnm[1])
 		return {"__image__":fnm}
 	if np.isscalar(obj) : return obj.item()
+#	if isinstance(obj,dict) or isinstance(obj,list) or isinstance(obj,tuple): return obj.item()   # shouldn't be necessary
 	if hasattr(obj, "to_jsondict"):
 		return obj.to_jsondict()
 	else:
