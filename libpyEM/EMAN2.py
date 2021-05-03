@@ -2328,7 +2328,7 @@ and translate them into a dictionary."""
 					ln[2]={"lst_comment":ln[2]}
 		return ln
 
-	def read_image(self,n,hdronly=False,region=None,ret=None):
+	def read_image(self,n,hdronly=False,region=None):
 		"""This reads the image referenced by the nth record in the #LSX file. The same task can be accomplished with EMData.read_image,
 but this method prevents multiple open/close operations on the #LSX file."""
 
@@ -2340,6 +2340,16 @@ but this method prevents multiple open/close operations on the #LSX file."""
 			for k in jsondict: ret[k]=jsondict[k]
 
 		return ret
+
+	def read_into_image(self,ret=None,n=0,hdronly=False,region=None,is_3d=False,imgtype=IMAGE_UNKNOWN):
+		"""This reads the image referenced by the nth record in the #LSX file. The same task can be accomplished with EMData.read_image,
+but this method prevents multiple open/close operations on the #LSX file."""
+
+		n,fsp,jsondict=self.read(n)
+#		print(self.path,n,fsp,jsondict,hdronly,region)
+		ret.read_image_c(fsp,n,hdronly,region,is_3d,imgtype)
+		if len(jsondict)>0 :
+			for k in jsondict: ret[k]=jsondict[k]
 
 	def read_images(self,nlst=None,hdronly=False):
 		"""This reads a set of images referenced by the nth record in the #LSX file. This is used by read_images in Python when the file is a LST file
@@ -2525,7 +2535,7 @@ def load_lst_params(fsp , imgns=None):
 		
 	return ret
 	
-	##########
+##########
 #### replace a few EMData methods with python versions to intercept 'bdb:' filenames
 ##########
 def db_emd_init(self, *parms):
@@ -2565,28 +2575,32 @@ def db_emd_init(self, *parms):
 		C++ signature :
 			void* __init__(_object*,int,int [,int [,bool]])
 """
-	if len(parms) < 5 and len(parms) > 0 and isinstance(parms[0], str) and parms[0][:4].lower() == "bdb:":
-		self.__initc()
-		self.read_image(*parms)
-		return
-	else:
-		#		print "toC:", parms
-		if len(parms) > 2 and isinstance(parms[0], str):
+	if len(parms) > 0 and len(parms) < 5:
+		if  isinstance(parms[0], str) and parms[0][:4].lower() == "bdb:":
 			self.__initc()
-			self.read_image_c(*parms)
-		# try: self.read_image_c(*parms)			# this handles Region reading, which isn't supported in the C++ constructor
-		# except:
-		# traceback.print_exc()
-		# print "Error reading: ",parms," (if the program does not crash, this may be normal)"
-		# raise Exception
-		else:
-			self.__initc(*parms)
-		# try: self.__initc(*parms)
-		# except:
-		# traceback.print_exc()
-		# print "Error reading: ",parms," (if the program does not crash, this may be normal)"
-		# raise Exception
-		return
+			self.read_image(*parms)
+			return
+		elif isinstance(parms[0], str) and parms[0].endswith(".lst"):
+			self.__initc()
+			self.read_image(*parms)
+			return
+	#		print "toC:", parms
+	if len(parms) > 2 and isinstance(parms[0], str):
+		self.__initc()
+		self.read_image_c(*parms)
+	# try: self.read_image_c(*parms)			# this handles Region reading, which isn't supported in the C++ constructor
+	# except:
+	# traceback.print_exc()
+	# print "Error reading: ",parms," (if the program does not crash, this may be normal)"
+	# raise Exception
+	else:
+		self.__initc(*parms)
+	# try: self.__initc(*parms)
+	# except:
+	# traceback.print_exc()
+	# print "Error reading: ",parms," (if the program does not crash, this may be normal)"
+	# raise Exception
+	return
 
 
 EMData.__initc = EMData.__init__
@@ -2605,7 +2619,7 @@ EMData.__init__ = db_emd_init
 
 #lsxcache=None
 def db_read_image(self, fsp, *parms, **kparms):
-	"""read_image(filespec,image #,[header only],[region],[is_3d])
+	"""read_image(filespec,image #,[header only],[region],[is_3d],[imgtype])
 
 	This function can be used to read a set of images from a file or bdb: database. Pass in
 	the filename, or bdb: specification, optionally a list of image numbers to read (or None),
@@ -2640,7 +2654,7 @@ def db_read_image(self, fsp, *parms, **kparms):
 		#			raise Exception("Could not access "+str(fsp)+" "+str(key))
 		return None
 	if fsp[-4:].lower()==".lst":
-		return LSXFile(fsp).read_image(*parms,ret=self)
+		return LSXFile(fsp).read_into_image(self,*parms)
 		#global lsxcache
 		#if lsxcache==None or lsxcache.path!=fsp: lsxcache=LSXFile(fsp,True)
 		#return lsxcache.read_image(parms[0])
@@ -2654,6 +2668,9 @@ def db_read_image(self, fsp, *parms, **kparms):
 			kparms['region'] = None
 		if 'is_3d' not in kparms:
 			kparms['is_3d'] = False
+		if 'imgtype' not in kparms:
+			kparms['imgtype'] = IMAGE_UNKNOWN
+
 	return self.read_image_c(fsp, *parms, **kparms)
 
 
