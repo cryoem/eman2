@@ -108,7 +108,7 @@ def askFileExists() :
 	elif box.clickedButton() == b2 : return "overwrite"
 	else : return "cancel"
 
-def makeOrthoProj(ptcl,layers,highpass,lowpass):
+def makeOrthoProj(ptcl,layers,highpass,lowpass,stkout):
 	"""makes restricted orthogonal projections from a 3-D volume and returns as a single 2d image
 	ptcl - 3D input ovlume
 	layers - +- layer range about center for integration, -1 is full projection
@@ -143,11 +143,15 @@ def makeOrthoProj(ptcl,layers,highpass,lowpass):
 	z.process_inplace("normalize")
 	
 	get_application().processEvents()
-	# we pack the 3 projections into a single 2D image
-	hall=EMData(x["nx"]*3,x["ny"],1)
-	hall.insert_clip(x,(0,0))
-	hall.insert_clip(y,(x["nx"],0))
-	hall.insert_clip(z,(x["nx"]*2,0))
+	
+	if stkout:
+		hall=[x,y,z]
+	else:
+		# we pack the 3 projections into a single 2D image
+		hall=EMData(x["nx"]*3,x["ny"],1)
+		hall.insert_clip(x,(0,0))
+		hall.insert_clip(y,(x["nx"],0))
+		hall.insert_clip(z,(x["nx"]*2,0))
 
 	return hall
 
@@ -558,6 +562,7 @@ class EMFileType(object) :
 			imgstep=1
 		layers=self.secparm.wspinlayers.value()
 		applyxf=self.secparm.wcheckxf.checkState()
+		stkout=self.secparm.wcheckstk.checkState()
 		highpass=float(self.secparm.wlehp.text())
 		lowpass=float(self.secparm.wlelp.text())
 		
@@ -587,8 +592,9 @@ class EMFileType(object) :
 		data=[]
 		if ref!=None:
 			if mask!=None: ref.mult(mask)
-			hall=makeOrthoProj(ref,layers,highpass,lowpass)
-			data.append(hall)
+			hall=makeOrthoProj(ref,layers,highpass,lowpass,stkout)
+			if isinstance(hall,EMData): data.append(hall)
+			else: data.extend(hall)
 			
 		for i in range(img0,img1,imgstep):
 			try: ptcl=EMData(self.path,i)
@@ -612,12 +618,15 @@ class EMFileType(object) :
 			time.sleep(0.001)
 			get_application().processEvents()
 			
-			hall=makeOrthoProj(ptcl,layers,highpass,lowpass)
+			hall=makeOrthoProj(ptcl,layers,highpass,lowpass,stkout)
 			
-			for k in ["ptcl_repr","class_ptcl_idxs","class_ptlc_src","orig_file","orig_n","source_path","source_n"]:
-				try: hall[k]=ptcl[k]
-				except: pass
-			data.append(hall)
+			if isinstance(hall,EMData):
+				for k in ["ptcl_repr","class_ptcl_idxs","class_ptlc_src","orig_file","orig_n","source_path","source_n"]:
+					try: hall[k]=ptcl[k]
+					except: pass
+				data.append(hall)
+			else:
+				data.extend(hall)
 			
 			progress.setValue(i-img0)
 			
@@ -625,7 +634,7 @@ class EMFileType(object) :
 #				progress.close()
 				return
 
-		if self.nimg==1:
+		if self.nimg==1 or stkout:
 			target = EMImage2DWidget()
 			target.set_data(data,self.path)
 			brws.view2d.append(target)
@@ -1338,6 +1347,7 @@ class EMJSONFileType(EMFileType) :
 		lowpass=float(self.secparm.wlelp.text())
 		highpass=float(self.secparm.wlehp.text())
 		applyxf=self.secparm.wcheckxf.checkState()
+		stkout=self.secparm.wcheckstk.checkState()
 		
 		maskfsp=str(self.secparm.wlemask.text())
 		mask=None
@@ -1360,8 +1370,9 @@ class EMJSONFileType(EMFileType) :
 		data=[]
 		if ref!=None:
 			if mask!=None: ref.mult(mask)
-			hall=makeOrthoProj(ref,layers,highpass,lowpass)
-			data.append(hall)
+			hall=makeOrthoProj(ref,layers,highpass,lowpass,stkout)
+			if isinstance(hall,EMData): data.append(hall)
+			else: data.extend(hall)
 			
 		i=0
 		for k in self.keys:
@@ -1390,13 +1401,16 @@ class EMJSONFileType(EMFileType) :
 			time.sleep(0.001)
 			get_application().processEvents()
 
-			hall=makeOrthoProj(ptcl,layers,highpass,lowpass)
+			hall=makeOrthoProj(ptcl,layers,highpass,lowpass,stkout)
 			
-			# copy some parameters from the original image header
-			for kh in ["ptcl_repr","class_ptcl_idxs","class_ptlc_src","orig_file","orig_n","source_path","source_n"]:
-				try: hall[kh]=ptcl[kh]
-				except: pass
-			data.append(hall)
+			if isinstance(hall,EMData):
+				# copy some parameters from the original image header
+				for kh in ["ptcl_repr","class_ptcl_idxs","class_ptlc_src","orig_file","orig_n","source_path","source_n"]:
+					try: hall[kh]=ptcl[kh]
+					except: pass
+				data.append(hall)
+			else:
+				data.extend(hall)
 			
 			# copy some parameters from the JSON file to the final image for possible display
 			hall["xform.align3d"]=xf
@@ -1412,10 +1426,15 @@ class EMJSONFileType(EMFileType) :
 #				progress.close()
 				return
 
-		target = EMImageMXWidget()
-		target.set_data(data,self.path)
-		target.mx_image_double.connect(target.mouse_double_click)		# this makes class average viewing work in app mode
-		brws.view2ds.append(target)
+		if stkout:
+			target = EMImage2DWidget()
+			target.set_data(data,self.path)
+			brws.view2d.append(target)
+		else:
+			target = EMImageMXWidget()
+			target.set_data(data,self.path)
+			target.mx_image_double.connect(target.mouse_double_click)		# this makes class average viewing work in app mode
+			brws.view2ds.append(target)
 
 		target.qt_parent.setWindowTitle("Stack - "+display_path(self.path))
 
@@ -3538,6 +3557,11 @@ class EMSliceParamDialog(QtWidgets.QDialog):
 		self.wcheckxf.setChecked(0)
 		self.wcheckxf.setToolTip("If set, applies the xform from the JSON/lst file or image header before making projections")
 		self.fol.addRow("Apply xform.align3d from image:",self.wcheckxf)
+
+		self.wcheckstk=QtWidgets.QCheckBox("enable")
+		self.wcheckstk.setChecked(0)
+		self.wcheckstk.setToolTip("If set, makes 3 square images instead of a single rectangular image. Good for FFTs.")
+		self.fol.addRow("Stack output:",self.wcheckstk)
 
 		self.bhb = QtWidgets.QHBoxLayout()
 		self.vbl.addLayout(self.bhb)
