@@ -2,6 +2,7 @@
 # Muyuan Chen 2021-04
 from EMAN2 import *
 import numpy as np
+from e2spt_refine_new import gather_metadata
 
 def main():
 	
@@ -14,12 +15,14 @@ def main():
 	parser.add_argument("--maxres",type=float,help="Maximum resolution (the smaller number) to consider in alignment (in A, not 1/A)",default=0)
 	parser.add_argument("--minres",type=float,help="Minimum resolution (the larger number) to consider in alignment (in A, not 1/A)",default=0)
 	parser.add_argument("--niter", type=int,help="number of iterations", default=5)
-	parser.add_argument("--loadali3d", type=str,help="load previous 3d alignment", default=None)
+	parser.add_argument("--loadali3d",help="load previous 3d alignment from --ptcls input.",action="store_true",default=False)
 	parser.add_argument("--res", type=float,help="target resolution", default=20.)
 	parser.add_argument("--skipali",action="store_true",help=".",default=False)
 	parser.add_argument("--threads", type=int,help="", default=12)
 	parser.add_argument("--parallel", type=str,help="parallel", default="thread:12")
-	parser.add_argument("--sym", type=str,help="symmetry", default="c1")
+	parser.add_argument("--sym", type=str,help="symmetry to apply to the average structure", default="c1")
+	parser.add_argument("--breaksym", type=str,help="break specified symmetry", default=None)
+	parser.add_argument("--setsf", type=str,help="set structure factor", default=None)
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -41,7 +44,16 @@ def main():
 		save_lst_params(info3d, info3dname)
 		save_lst_params(info2d, info2dname)
 		
+	ep=EMData(info3dname,0,True)
+	boxsize=ep["ny"]
+	p2=EMData(info2dname,0,True)
+	padsize=p2["ny"]
+		
 	if options.maskalign!=None: options.maskalign=EMData(options.maskalign)
+	if options.setsf!=None:
+		setsf=" --setsf {}".format(options.setsf)
+	else:
+		setsf=""
 
 	options.cmd=' '.join(sys.argv)
 	fm=f"{path}/0_spt_params.json"
@@ -49,34 +61,46 @@ def main():
 	js.update(vars(options))
 	js.close()
 	
-	if options.nref>0:
-		r=EMData(args[0])
+	if options.loadali3d and options.nref>0:
+		print("Generating initial references by random classification...")
 		nref=options.nref
-		refs=[]
-		for i in range(nref):
-			e=r.process("filter.lowpass.randomphase",{"cutoff_freq":1./(options.res*2)})
-			refs.append(e)
+		ali3d=load_lst_params(options.ptcls)
+		ali2d,ali3d=classify_ptcls(ali3d, info2d, options)
+		save_lst_params(ali2d, f"{path}/aliptcls2d_00.lst")
+		save_lst_params(ali3d, f"{path}/aliptcls3d_00.lst")
+		options.ptcls=f"{path}/aliptcls3d_00.lst"
+		for i in range(options.nref):
+			threed=f"{path}/threed_00_{i:02d}.hdf"
+			run(f"e2spa_make3d.py --input {path}/aliptcls2d_00.lst --output {threed} --keep 1 --parallel thread:{options.threads} --outsize {boxsize} --pad {padsize} --sym {options.sym} --clsid {i}")
+			run(f"e2proc3d.py {threed} {threed} {setsf} --process filter.lowpass.gauss:cutoff_freq={1./options.res} --process normalize.edgemean")
 	else:
-		refs=[EMData(a) for a in args]
-		nref=len(refs)
+		print("Loading references...")
+		if options.nref>0:
+			r=EMData(args[0])
+			nref=options.nref
+			refs=[]
+			for i in range(nref):
+				e=r.process("filter.lowpass.randomphase",{"cutoff_freq":1./(options.res*2)})
+				refs.append(e)
+		else:
+			refs=[EMData(a) for a in args]
+			nref=len(refs)
+			
+		for i,r in enumerate(refs):
+			r.write_image(f"{path}/threed_00_{i:02d}.hdf")
 		
-	for i,r in enumerate(refs):
-		r.write_image(f"{path}/threed_00_{i:02d}.hdf")
-		
-	ep=EMData(info3dname,0,True)
-	boxsize=ep["ny"]
-	p2=EMData(info2dname,0,True)
-	padsize=p2["ny"]
 		
 	opt=""
 	if options.skipali:
 		opt+=" --skipali"
 		
 	if options.loadali3d:
-		ptcls=options.loadali3d
+		ptcls=options.ptcls
 	else:
 		ptcls=info3dname
 		opt+=" --fromscratch"
+	if options.breaksym!=None:
+		opt+=" --breaksym {}".format(options.breaksym)
 		
 	if options.minres>0: opt+=f" --minres {options.minres}"
 	if options.maxres>0: opt+=f" --maxres {options.maxres}"
@@ -87,7 +111,7 @@ def main():
 		
 		for ir in range(nref):
 			oref=f"{path}/threed_{itr-1:02d}_{ir:02d}.hdf"
-			ref=f"aliref_{ir:02d}.hdf"		# overwrite each iteration
+			ref=f"{path}/aliref_{ir:02d}.hdf"		# overwrite each iteration
 
 			modref=EMData(oref)
 			if options.maskalign!=None: 
@@ -134,63 +158,42 @@ def main():
 			a2=ali2d[ir]
 			run(f"e2spa_make3d.py --input {a2} --output {threed} --keep 1 --parallel thread:{options.threads} --outsize {boxsize} --pad {padsize} --sym {options.sym} --clsid {ir}")
 			
-			run(f"e2proc3d.py {threed} {threed} --process filter.lowpass.gauss:cutoff_freq={1./options.res} --process normalize.edgemean")
+			run(f"e2proc3d.py {threed} {threed} {setsf} --process filter.lowpass.gauss:cutoff_freq={1./options.res} --process normalize.edgemean")
 		
 
 	E2end(logid)
 	
+def classify_ptcls(ali3d, info2d, options):
+	ali2d=[]
+	cls=np.arange(len(ali3d))%options.nref
+	np.random.shuffle(cls)
+	if options.breaksym!=None:
+		xf=Transform()
+		nsym=xf.get_nsym(options.breaksym)
+		symidx=np.arange(len(ali3d))%nsym
+		np.random.shuffle(symidx)
+		for i,a in enumerate(ali3d):
+			xf3d=a["xform.align3d"].inverse()
+			xf3d=xf3d.get_sym(options.breaksym, int(symidx[i]))
+			a["xform.align3d"]=xf3d.inverse()
+		
+	for p in info2d:
+		pid=p["idx3d"]
+		a={"src":p["src"], "idx":p["idx"],
+			"tilt_id":p["tilt_id"], "ptcl3d_id":pid, "score":-1}
+		xf3d=ali3d[pid]["xform.align3d"].inverse()
+		
+		pjxf=p["xform.projection"]*xf3d
+		a["xform.projection"]=pjxf
+		a["class"]=cls[pid]
+		ali2d.append(a)
+		
+	return ali2d,ali3d
+	
+	
 def run(cmd):
 	print(cmd)
 	launch_childprocess(cmd)
-	
-	
-def gather_metadata(pfile):
-	print("Gathering metadata...")
-	params=[]
-	if pfile.endswith(".lst"):
-		lst=LSXFile(pfile, True)
-		nptcl=lst.n
-		for i in range(nptcl):
-			l=lst.read(i)
-			params.append([l[1], l[0]])
-			
-		lst.close()
-	
-	else:
-		nptcl=EMUtil.get_image_count(pfile)
-		params=[[pfile, i] for i in range(nptcl)]
-	
-	info3d=[]
-	info2d=[]
-	for ii,pm in enumerate(params):
-		img=EMData(pm[0], pm[1], True)
-		imgsrc=img["class_ptcl_src"]
-		imgidx=img["class_ptcl_idxs"]
-		coord=img["ptcl_source_coord"]
-		
-		try: rhdrs=EMData.read_images(imgsrc,imgidx,IMAGE_UNKNOWN,True)
-		except:
-			print(f"couldn't read {imgidx} from {imgsrc}")
-			sys.exit(1)
-			
-		idx2d=[]
-		for k,i in enumerate(imgidx): 
-			e=rhdrs[k]
-			dc={"src":imgsrc,"idx":i,
-				"idx3d":ii, "xform.projection":e["xform.projection"], "tilt_id":e["tilt_id"]}
-			idx2d.append(len(info2d))
-			info2d.append(dc)
-		
-		dc={"src":pm[0], "idx":pm[1], "coord":coord, "idx2d":idx2d}
-		
-		info3d.append(dc)
-
-		sys.stdout.write("\r {}/{}".format(ii, len(params)))
-		sys.stdout.flush()
-	print()
-		
-	return info2d, info3d
-
 
 if __name__ == '__main__':
 	main()
