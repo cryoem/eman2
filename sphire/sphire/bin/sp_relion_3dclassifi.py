@@ -633,11 +633,11 @@ def run(args):
 
         ##Now reference part starts
         if options.ini_high:
-            total_str += " " + "--ini_high" + " " + options.ini_high
+            total_str += " " + "--ini_high" + " " + str(options.ini_high)
         else:
             pass
         if options.sym :
-            total_str += " " + "--sym" + " " + options.sym
+            total_str += " " + "--sym" + " " + str(options.sym)
         else:
             pass
         if options.abs_greyscale_map :
@@ -657,15 +657,15 @@ def run(args):
 
         ### Now Optimization part starts
         if options.no_of_class:
-            total_str += " " + "--K" + " " + options.no_of_class
+            total_str += " " + "--K" + " " + str(options.no_of_class)
         else:
             pass
         if options.tau_val:
-            total_str += " " + "--tau2_fudge" + " " + options.tau_val
+            total_str += " " + "--tau2_fudge" + " " + str(options.tau_val)
         else:
             pass
         if options.no_of_iter:
-            total_str += " " + "--iter" + " " + options.no_of_iter
+            total_str += " " + "--iter" + " " + str(options.no_of_iter)
         else:
             pass
         if options.use_fast_sets:
@@ -673,7 +673,7 @@ def run(args):
         else:
             pass
         if options.diam_mas:
-            total_str += " " + "--particle_diameter" + " " + options.diam_mas
+            total_str += " " + "--particle_diameter" + " " + str(options.diam_mas)
         else:
             pass
         if options.zeros_mas:
@@ -681,13 +681,13 @@ def run(args):
         else:
             pass
         if options.limit_resol_estep:
-            total_str += " " + "--strict_highres_exp" + " " + options.limit_resol_estep
+            total_str += " " + "--strict_highres_exp" + " " + str(options.limit_resol_estep)
         else:
             pass
 
         ### Now Sampling part starts
         if options.skip_img_align :
-            total_str += " " + "--skip_align" + " " + options.skip_img_align
+            total_str += " " + "--skip_align" + " " + str(options.skip_img_align)
         else:
             if options.heal_pix_order :
                 sample_value = 2
@@ -712,19 +712,19 @@ def run(args):
                 else :
                     print("Please specify the right value from the drop down menu, the value can be either \
                           0.1, 0.2, 0.5, 0.9, 1.8, 3.7, 7.5, 15, 30")
-                total_str += " " + "--healpix_order" + " " + sample_value
+                total_str += " " + "--healpix_order" + " " + str(sample_value)
             else:
                 pass
             if options.off_range :
-                total_str += " " + "--offset_range" + " " + options.off_range
+                total_str += " " + "--offset_range" + " " + str(options.off_range)
             else:
                 pass
             if options.off_step :
-                total_str += " " + "--offset_step" + " " + options.off_step*2
+                total_str += " " + "--offset_step" + " " + str(options.off_step*2)
             else:
                 pass
             if options.ang_search :
-                total_str += " " + "--sigma_ang" + " " + options.ang_search_range*0.3333
+                total_str += " " + "--sigma_ang" + " " + str(options.ang_search_range*0.3333)
                 if ang_search_relax_sym :
                     total_str += " " + "--relax_sym" + " " + str(ang_search_relax_sym)
                 else :
@@ -742,7 +742,7 @@ def run(args):
         else:
             total_str += " " + "--no_parallel_disc_io"
         if options.no_of_pool_part :
-            total_str += " " + "--pool" + " " + options.no_of_pool_part
+            total_str += " " + "--pool" + " " + str(options.no_of_pool_part)
         else:
             pass
         if options.skip_pad :
@@ -767,7 +767,6 @@ def run(args):
             total_str += " " + "--dont_combine_weights_via_disc"
 
         if options.use_gpu :
-            total_str += " " + "--use_gpu"
             if options.which_gpu !=None :
                 total_str += " " + "--gpu" + " " + str(options.which_gpu)
         else:
