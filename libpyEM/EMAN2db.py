@@ -1915,206 +1915,206 @@ class DBDict(object):
 			return dfl
 
 
-        if isinstance(r, dict) and "is_complex_x" in r:
-            pkey = "%s/%s_" % (self.path, self.name)
-            rnx, rny, rnz = r["nx"], r["ny"], r["nz"]
-            fkey = "%dx%dx%d" % (rnx, rny, rnz)
+		if isinstance(r, dict) and "is_complex_x" in r:
+			pkey = "%s/%s_" % (self.path, self.name)
+			rnx, rny, rnz = r["nx"], r["ny"], r["nz"]
+			fkey = "%dx%dx%d" % (rnx, rny, rnz)
 
-            #			print "r",fkey
-            if region != None:
-                size = region.get_size()
-                # zeros are annoyingly necessary
-                for i in range(len(size)):
-                    if size[i] == 0: size[i] = 1
-                nx, ny, nz = int(size[0]), int(size[1]), int(size[2])
-            else:
-                nx, ny, nz = rnx, rny, rnz
+			#			print "r",fkey
+			if region != None:
+				size = region.get_size()
+				# zeros are annoyingly necessary
+				for i in range(len(size)):
+					if size[i] == 0: size[i] = 1
+				nx, ny, nz = int(size[0]), int(size[1]), int(size[2])
+			else:
+				nx, ny, nz = rnx, rny, rnz
 
-            if target:
-                ret = target
-            else:
-                ret = EMData()
+			if target:
+				ret = target
+			else:
+				ret = EMData()
 
-            # metadata
-            k = set(r.keys())
-            #			k-=DBDict.fixedkeys
-            for i in k:
-                if i not in ('nx', 'ny', 'nz'):
-                    ret.set_attr(i, r[i])
-            ret["source_path"] = "bdb:" + pkey[:-1].replace("/EMAN2DB/", "#")
-            ret["source_n"] = key
+			# metadata
+			k = set(r.keys())
+			#			k-=DBDict.fixedkeys
+			for i in k:
+				if i not in ('nx', 'ny', 'nz'):
+					ret.set_attr(i, r[i])
+			ret["source_path"] = "bdb:" + pkey[:-1].replace("/EMAN2DB/", "#")
+			ret["source_n"] = key
 
-            # binary data
-            ret.set_size(nx, ny, nz, nodata)
-            if not nodata:
+			# binary data
+			ret.set_size(nx, ny, nz, nodata)
+			if not nodata:
 
-                if region != None: ret.to_zero()  # this has to occur in situations where the clip region goes outside the image
-                if "data_path" in r:
-                    if r["data_path"].endswith('.mrcs'):
-                        p = r["data_path"]
-                        l = r["ptcl_source_coord_id"]
-                        if p[0] == '/' or p[0] == '\\' or p[1] == ':':
-                            ret.read_image(p, int(l))  # absolute path
-                        else:
-                            ret.read_image(self.path + "/" + p, int(l))  # relative path
-                    else:
-                        p, l = r["data_path"].split("*")
-                        if p[0] == '/' or p[0] == '\\' or p[1] == ':':
-                            ret.read_data(p, int(l), region, rnx, rny, rnz)  # absolute path
-                        else:
-                            ret.read_data(self.path + "/" + p, int(l), region, rnx, rny, rnz)  # relative path
-                else:
-                    try:
-                        n = self.load_item(key, fkey)
-                    except:
-                        # print("key,pkey,fkey", key, pkey, fkey, pkey+fkey)
-                        raise KeyError("Undefined data location key %s for %s" % (key, pkey + fkey))
-                    try:
-                        ret.read_data(pkey + fkey, n * 4 * rnx * rny * rnz, region, rnx, rny,
-                                      rnz)  # note that this uses n, NOT 'key'. Images cannot be located in the binary file based on their numerical key
-                    except:
-                        import socket
-                        print("Data read error (%s) on %s (%d)" % (
-                            socket.gethostname(), pkey + fkey, key * 4 * rnx * rny * rnz))
-                        traceback.print_exc()
-                        sys.stderr.flush()
-                        sys.stdout.flush()
-                        os._exit(1)
-            return ret
-        return r
+				if region != None: ret.to_zero()  # this has to occur in situations where the clip region goes outside the image
+				if "data_path" in r:
+					if r["data_path"].endswith('.mrcs'):
+						p = r["data_path"]
+						l = r["ptcl_source_coord_id"]
+						if p[0] == '/' or p[0] == '\\' or p[1] == ':':
+							ret.read_image(p, int(l))  # absolute path
+						else:
+							ret.read_image(self.path + "/" + p, int(l))  # relative path
+					else:
+						p, l = r["data_path"].split("*")
+						if p[0] == '/' or p[0] == '\\' or p[1] == ':':
+							ret.read_data(p, int(l), region, rnx, rny, rnz)  # absolute path
+						else:
+							ret.read_data(self.path + "/" + p, int(l), region, rnx, rny, rnz)  # relative path
+				else:
+					try:
+						n = self.load_item(key, fkey)
+					except:
+						# print("key,pkey,fkey", key, pkey, fkey, pkey+fkey)
+						raise KeyError("Undefined data location key %s for %s" % (key, pkey + fkey))
+					try:
+						ret.read_data(pkey + fkey, n * 4 * rnx * rny * rnz, region, rnx, rny,
+									  rnz)  # note that this uses n, NOT 'key'. Images cannot be located in the binary file based on their numerical key
+					except:
+						import socket
+						print("Data read error (%s) on %s (%d)" % (
+							socket.gethostname(), pkey + fkey, key * 4 * rnx * rny * rnz))
+						traceback.print_exc()
+						sys.stderr.flush()
+						sys.stdout.flush()
+						os._exit(1)
+			return ret
+		return r
 
-    def get_header(self, key, txn=None, target=None):
-        """Alternate method for retrieving metadata for EMData records."""
-        self.realopen(self.rohint)
-        try:
-            return self.load_item(key, txn=self.txn)
-        except:
-            return None
+	def get_header(self, key, txn=None, target=None):
+		"""Alternate method for retrieving metadata for EMData records."""
+		self.realopen(self.rohint)
+		try:
+			return self.load_item(key, txn=self.txn)
+		except:
+			return None
 
-    def set(self, val, key, region=None, txn=None):
-        '''
-        I have to support the image_type and read_header parameters even though they are not used -
-        this is so this function can be used interchangeably with EMData.write_image
+	def set(self, val, key, region=None, txn=None):
+		'''
+		I have to support the image_type and read_header parameters even though they are not used -
+		this is so this function can be used interchangeably with EMData.write_image
 
-        Alternative to x[key]=val with transaction set'''
-        self.realopen()
-        if (val == None):
-            try:
-                self.__delitem__(key)
-            except:
-                return
-        elif isinstance(val, EMData):
-            # decide where to put the binary data
-            if region:
-                ad = self.get_header(key)
-            # except: raise RuntimeError("If you're using a region the file must already exist")
-            else:
-                ad = val.get_attr_dict()
+		Alternative to x[key]=val with transaction set'''
+		self.realopen()
+		if (val == None):
+			try:
+				self.__delitem__(key)
+			except:
+				return
+		elif isinstance(val, EMData):
+			# decide where to put the binary data
+			if region:
+				ad = self.get_header(key)
+			# except: raise RuntimeError("If you're using a region the file must already exist")
+			else:
+				ad = val.get_attr_dict()
 
-            pkey = "%s/%s_" % (self.path, self.name)
-            fkey = "%dx%dx%d" % (ad["nx"], ad["ny"], ad["nz"])
-            #			print "w",fkey
-            try:
-                n = self.load_item(key, fkey, txn=self.txn)
-            except Exception as e:
-                # print(e)
-                if fkey not in self:
-                    self[fkey] = 0
-                else:
-                    self[fkey] += 1
-                n = self[fkey]
-            # self.put(fkey+dumps(key,-1),dumps(n,-1),txn=txn)		# a special key for the binary location
-            # self.put(fkey.encode('utf8') + self.get_key(key), dumps(n, 2), txn=txn)  # a special key for the binary location
-            self.dump_item(key, n, fkey, txn=txn)
-            # write the metadata
-            try:
-                del ad["data_path"]
-            except:
-                pass
+			pkey = "%s/%s_" % (self.path, self.name)
+			fkey = "%dx%dx%d" % (ad["nx"], ad["ny"], ad["nz"])
+			#			print "w",fkey
+			try:
+				n = self.load_item(key, fkey, txn=self.txn)
+			except Exception as e:
+				# print(e)
+				if fkey not in self:
+					self[fkey] = 0
+				else:
+					self[fkey] += 1
+				n = self[fkey]
+			# self.put(fkey+dumps(key,-1),dumps(n,-1),txn=txn)		# a special key for the binary location
+			# self.put(fkey.encode('utf8') + self.get_key(key), dumps(n, 2), txn=txn)  # a special key for the binary location
+			self.dump_item(key, n, fkey, txn=txn)
+			# write the metadata
+			try:
+				del ad["data_path"]
+			except:
+				pass
 
-            t = time.localtime(time.time())
-            ad["timestamp"] = "%04d/%02d/%02d %02d:%02d:%02d" % t[:6]
-            # self.put(dumps(key,-1),dumps(ad,-1),txn=txn)
-            self.dump_item(key, ad, txn=self.txn)
+			t = time.localtime(time.time())
+			ad["timestamp"] = "%04d/%02d/%02d %02d:%02d:%02d" % t[:6]
+			# self.put(dumps(key,-1),dumps(ad,-1),txn=txn)
+			self.dump_item(key, ad, txn=self.txn)
 
-            if isinstance(key, int) and ("maxrec" not in self or key > self["maxrec"]):
-                self["maxrec"] = key
+			if isinstance(key, int) and ("maxrec" not in self or key > self["maxrec"]):
+				self["maxrec"] = key
 
-                # update the image count cache
-                db2 = db_open_dict("bdb:%s#%s" % (self.path[:-8], "00image_counts"))
-                try:
-                    im = self[0]
-                    sz = (im["nx"], im["ny"], im["nz"])
-                except Exception as e:
-                    # print(e)
-                    sz = (0, 0, 0)
-                db2[self.name] = (time.time(), len(self), sz)
-            else:
-                # Updates the count cache time, to show it's up to date
-                try:
-                    db2 = db_open_dict("bdb:%s#%s" % (self.path[:-8], "00image_counts"))
-                    db2[self.name] = (time.time(), db2[self.name][1], db2[self.name][2])
-                except:
-                    pass
+				# update the image count cache
+				db2 = db_open_dict("bdb:%s#%s" % (self.path[:-8], "00image_counts"))
+				try:
+					im = self[0]
+					sz = (im["nx"], im["ny"], im["nz"])
+				except Exception as e:
+					# print(e)
+					sz = (0, 0, 0)
+				db2[self.name] = (time.time(), len(self), sz)
+			else:
+				# Updates the count cache time, to show it's up to date
+				try:
+					db2 = db_open_dict("bdb:%s#%s" % (self.path[:-8], "00image_counts"))
+					db2[self.name] = (time.time(), db2[self.name][1], db2[self.name][2])
+				except:
+					pass
 
-            # write the binary data
-            if region:
-                val.write_data(pkey + fkey, n * 4 * ad["nx"] * ad["ny"] * ad["nz"], region, ad["nx"], ad["ny"],
-                               ad["nz"])
-            else:
-                val.write_data(pkey + fkey, n * 4 * ad["nx"] * ad["ny"] * ad["nz"])
-        #			print "WI ",self.path,self.name,key,val,BDB_CACHE_DISABLE,pkey+fkey,n*4*ad["nx"]*ad["ny"]*ad["nz"]
+			# write the binary data
+			if region:
+				val.write_data(pkey + fkey, n * 4 * ad["nx"] * ad["ny"] * ad["nz"], region, ad["nx"], ad["ny"],
+							   ad["nz"])
+			else:
+				val.write_data(pkey + fkey, n * 4 * ad["nx"] * ad["ny"] * ad["nz"])
+		#			print "WI ",self.path,self.name,key,val,BDB_CACHE_DISABLE,pkey+fkey,n*4*ad["nx"]*ad["ny"]*ad["nz"]
 
-        else:
-            # self.put(dumps(key,-1),dumps(val,-1),txn=txn)
-            self.dump_item(key, val, txn=self.txn)
-            if isinstance(key, int) and ("maxrec" not in self or key > self["maxrec"]): self["maxrec"] = key
+		else:
+			# self.put(dumps(key,-1),dumps(val,-1),txn=txn)
+			self.dump_item(key, val, txn=self.txn)
+			if isinstance(key, int) and ("maxrec" not in self or key > self["maxrec"]): self["maxrec"] = key
 
-    def set_header(self, key, val, txn=None):
-        "Alternative to x[key]=val with transaction set"
-        self.realopen()
-        # make sure the object exists and is an EMData object
-        try:
-            r = self.load_item(key, txn=txn)
-        except:
-            raise Exception("set_header can only be used to update existing EMData objects")
-        if not isinstance(r, dict) or "is_complex_ri" not in r:
-            raise Exception("set_header can only be used to update existing EMData objects")
+	def set_header(self, key, val, txn=None):
+		"Alternative to x[key]=val with transaction set"
+		self.realopen()
+		# make sure the object exists and is an EMData object
+		try:
+			r = self.load_item(key, txn=txn)
+		except:
+			raise Exception("set_header can only be used to update existing EMData objects")
+		if not isinstance(r, dict) or "is_complex_ri" not in r:
+			raise Exception("set_header can only be used to update existing EMData objects")
 
-        if (val == None):
-            raise Exception("You cannot delete an EMData object header")
-        elif isinstance(val, EMData):
-            # write the metadata
-            ad = val.get_attr_dict()
-            self.dump_item(key, ad, txn=self.txn)
-        # self.bdb.put(dumps(key,-1),dumps(ad,-1),txn=txn)
-        elif isinstance(val, dict):
-            self.dump_item(key, ad, txn=self.txn)
-        # self.bdb.put(dumps(key,-1),dumps(val,-1),txn=txn)
-        else:
-            raise Exception("set_header is only valid for EMData objects or dictionaries")
+		if (val == None):
+			raise Exception("You cannot delete an EMData object header")
+		elif isinstance(val, EMData):
+			# write the metadata
+			ad = val.get_attr_dict()
+			self.dump_item(key, ad, txn=self.txn)
+		# self.bdb.put(dumps(key,-1),dumps(ad,-1),txn=txn)
+		elif isinstance(val, dict):
+			self.dump_item(key, ad, txn=self.txn)
+		# self.bdb.put(dumps(key,-1),dumps(val,-1),txn=txn)
+		else:
+			raise Exception("set_header is only valid for EMData objects or dictionaries")
 
-    def update(self, dict):
-        self.realopen()
-        for i, j in list(dict.items()): self[i] = j
+	def update(self, dict):
+		self.realopen()
+		for i, j in list(dict.items()): self[i] = j
 
-    def get_key(self, key):
-        try:
-            key = self.key_translation_dict[dumps(key, 2)]
-        except KeyError:
-            key = dumps(key, 2)
-        return key
+	def get_key(self, key):
+		try:
+			key = self.key_translation_dict[dumps(key, 2)]
+		except KeyError:
+			key = dumps(key, 2)
+		return key
 
-    def dump_item(self, key, value, fkey=b'', txn=None):
-        if not isinstance(fkey, bytes):
-            fkey = fkey.encode('utf-8')
-        return self.put(fkey + self.get_key(key), val=dumps(value, 2), txn=txn)
+	def dump_item(self, key, value, fkey=b'', txn=None):
+		if not isinstance(fkey, bytes):
+			fkey = fkey.encode('utf-8')
+		return self.put(fkey + self.get_key(key), val=dumps(value, 2), txn=txn)
 
-    def load_item(self, key, fkey=b'', txn=None):
-        if not isinstance(fkey, bytes):
-            fkey = fkey.encode('utf-8')
-        # print("print value is", self.bdb.get(fkey+ self.get_key(key), txn=txn))
-        return loads(self.bdb.get(fkey + self.get_key(key), txn=txn))
+	def load_item(self, key, fkey=b'', txn=None):
+		if not isinstance(fkey, bytes):
+			fkey = fkey.encode('utf-8')
+		# print("print value is", self.bdb.get(fkey+ self.get_key(key), txn=txn))
+		return loads(self.bdb.get(fkey + self.get_key(key), txn=txn))
 
 
 # def load_item(self, key , fkey=b'', txn = None):
