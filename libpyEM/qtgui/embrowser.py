@@ -1919,6 +1919,8 @@ EMFileType.extbyft = {
 	".pdb"  : (EMPDBFileType,  EMTextFileType),
 	".ent"  : (EMPDBFileType,  EMTextFileType),
 	".txt"  : (EMPlotFileType, EMTextFileType),
+	".mdoc"  : (EMTextFileType,),
+	".rawtlt": (EMTextFileType,),
 	".pdf"  : (EMPDFFileType,),
 	".htm"  : (EMHTMLFileType, EMTextFileType),
 	".html" : (EMHTMLFileType, EMTextFileType)

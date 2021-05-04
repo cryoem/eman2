@@ -421,7 +421,8 @@ class EMGMM(QtWidgets.QMainWindow):
 
 	def new_res(self,save=None):
 		"""Resolution changed. Update the initial points"""
-		res=float(self.wedres.text())
+		try: res=float(self.wedres.text())
+		except: return
 		if res==self.lastres and save==None: return
 		self.lastres=res
 		
@@ -448,7 +449,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		if self.currunkey==None or save==None: return
 		out=open(f"{self.gmm}/{save}_model_seg.txt","w")
 		for i in range(len(amps)):
-			out.write(f"{centers[0,i]/nx:1.2f}\t{centers[1,i]/nx:1.2f}\t{centers[2,i]/nx:1.2f}\t{amps[i]:1.3f}\t1.0\n")
+			out.write(f"{centers[0,i]/nx:1.2f}\t{centers[1,i]/nx:1.2f}\t{-centers[2,i]/nx:1.2f}\t{amps[i]:1.3f}\t1.0\n")
 
 	def do_run(self,clk=False):
 		"""Run the current job with current parameters"""
@@ -530,8 +531,10 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.currun["ngauss"]=int(self.wedngauss.text())
 		prog.setValue(1)
 		if prog.wasCanceled() : return
+		if (len(self.currun["mask"])>4) : mask=f"--mask {self.currun['mask']}"
+		else: mask=""
 
-		er=run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --npt {self.currun['ngauss']} --sym {sym} --maxboxsz {maxbox} --model {modelseg} --modelout {modelout} --niter {self.currun['trainiter']} --mask {self.currun['mask']} --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']}")
+		er=run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --npt {self.currun['ngauss']} --sym {sym} --maxboxsz {maxbox} --model {modelseg} --modelout {modelout} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']}")
 		if er :
 			showerror("Error running e2gmm_refine, see console for details. GPU memory exhaustion is a common issue. Consider reducing the target resolution.")
 			return
@@ -544,7 +547,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		if prog.wasCanceled() : return
 
 		# heterogeneity analysis
-		er=run(f"e2gmm_refine.py --model {modelout} --ptclsin {self.gmm}/particles.lst --heter --sym {sym} --maxboxsz {maxbox} --gradout {self.gmm}/{self.currunkey}_grads.hdf --mask {self.currun['mask']} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {self.gmm}/{self.currunkey}_decoder.h5 --pas {self.currun['pas']}")
+		er=run(f"e2gmm_refine.py --model {modelout} --ptclsin {self.gmm}/particles.lst --heter --sym {sym} --maxboxsz {maxbox} --gradout {self.gmm}/{self.currunkey}_grads.hdf {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {self.gmm}/{self.currunkey}_decoder.h5 --pas {self.currun['pas']}")
 		if er :
 			showerror("Error running e2gmm_refine, see console for details. Memory is a common issue. Consider reducing the target resolution.")
 			return

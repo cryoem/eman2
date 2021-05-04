@@ -197,7 +197,8 @@ def transform_from_jsondict(dct):
 	ret=Transform()
 	lst=dct["matrix"]
 	if isinstance(lst,str):
-		lst=[float(v) for v in dct["matrix"][1:-1].split(',')]
+		lst=[float(v) for v in lst[1:-1].split(',')]
+		
 	ret.set_matrix(lst)
 	return ret
 
