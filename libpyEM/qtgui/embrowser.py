@@ -595,8 +595,17 @@ class EMFileType(object) :
 			except:
 				print(f"Error reading {self.path} {i}")
 				continue
+			
 			try: xf=ptcl["xform.align3d"]
 			except: xf=Transform()
+			
+			if self.path.endswith(".lst"):
+				try:
+					pm=load_lst_params(self.path, [i])[0]
+					xf=pm["xform.align3d"]
+				except:
+					pass
+			
 			if applyxf: ptcl.process_inplace("xform",{"transform":xf})
 			if mask!=None : ptcl.mult(mask)
 			
@@ -1640,14 +1649,9 @@ class EMStackFileType(EMFileType) :
 		
 		self.xfparms=False
 		if path.endswith(".lst"):
-			#try: 
-			lst=LSXFile(path, True)
-			cmt=lst.filecomment
-			if cmt.startswith("#keys: "):
-				if ("xform.align3d" in cmt) or ("xform.projection" in cmt):
-					self.xfparms=True
-			
-			#except: pass
+			info=load_lst_params(path, [0])[0]
+			if ("xform.align3d" in info) or ("xform.projection" in info):
+				self.xfparms=True
 		
 	def actions(self) :
 		"""Returns a list of (name, callback) tuples detailing the operations the user can call on the current file"""

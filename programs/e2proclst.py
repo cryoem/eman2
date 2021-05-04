@@ -144,6 +144,10 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 		if args[0].endswith(".lst"):
 			l=LSXFile(args[0], True)
 			cmt=l.filecomment.strip()
+			if cmt.startswith("#keys:"):
+				print("Converting lst file to the new style...")
+				cmt=""
+				
 		else:
 			cmt=""
 		

@@ -2315,15 +2315,15 @@ and translate them into a dictionary."""
 		else:
 			try: ln[2]=json.loads(ln[2],object_hook=EMAN2jsondb.json_to_obj)
 			except:
-				if ';Transform' in ln[2]:
+				if self.filekeys!=None:
+					vals=ln[2].split(";")
+					ln[2]={self.filekeys[i]:eval(vals[i]) for i in range(len(self.filekeys))}
+				elif ';Transform' in ln[2]:
 					score=float(ln[2].split(";")[0])
 					xf=eval(ln[2].split(";")[1])
 					ln[2]={"score_align":score,"xform.projection":xf}
 				elif ln[2][:9]=="Transform":
 					ln[2]={"xform.projection":eval(ln[2])}
-				elif self.filekeys!=None:
-					vals=l[2].split(";")
-					l[2]={self.filekeys[i]:vals[i] for i in range(len(self.filekeys))}
 				else:
 					ln[2]={"lst_comment":ln[2]}
 		return ln
@@ -2508,13 +2508,17 @@ corresponding to each 1/2 of the data."""
 
 	return (eset,oset)
 
-def save_lst_params(lst,fsp):
+def save_lst_params(lst,fsp, overwrite=True):
 	"""Saves a LSX file (fsp) with metadata represented by a list of dictionaries (lst).
 	each dictionary must contain 'src', the image file containing the actual image and
 	'idx' the index in that file. Additional keys will be stored in the LSX metadata
-	region."""
+	region. Overwrite existing file by default."""
 	if len(lst)==0: raise(Exception,"ERROR: save_lst_params with empty list")
-
+	
+	if overwrite:
+		if os.path.isfile(fsp):
+			os.remove(fsp)
+	
 	lsx=LSXFile(fsp)
 	for d in lst:
 		dct=d.copy()
