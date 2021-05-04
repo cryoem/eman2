@@ -266,14 +266,25 @@ class SptAlignTask(JSTask):
 			
 			### read curve direction from header
 			elif options.curve:
-				xf=img["xform.align3d"]#.inverse()
-				npos=36
-				xfs=[xf.get_params("eman") for i in range(npos)]
+				if img.has_attr("xform.align3d"):
+					xf=img["xform.align3d"]#.inverse()
+				else:
+					xf=data["xform.align3d"]#.inverse()
+				npos=120
+				#ts=Transform()
+				#ts.translate(-20,9,0)
+				xfs=[Transform().get_params("eman") for i in range(npos)]
 				for i,x in enumerate(xfs):
 					x["phi"]+=(i*360*2/npos)%360
-					x["alt"]+=(i>npos/2)*180				
-				curxfs=[Transform(x).inverse() for x in xfs]
-				ifirst=1
+					x["alt"]+=(i>npos/2)*180
+					
+				#curxfs=[Transform(x)*(ts*xf) for x in xfs]
+				#curxfs=[(ts.inverse()*x) for x in curxfs]
+				curxfs=[Transform(x)*xf for x in xfs]
+				curxfs=[x.inverse() for x in curxfs]
+				xfcrs=[Transform(x) for x in curxfs]
+				ifirst=0
+				npos=32
 				
 			### do refine search around previous solution
 			else:
@@ -284,7 +295,7 @@ class SptAlignTask(JSTask):
 					nsym=xf.get_nsym(options.breaksym)
 					curxfs=[xf.get_sym(options.breaksym, i) for i in range(nsym)]
 				npos=len(curxfs)
-				ifirst=len(ssrg)-1
+				ifirst=max(1,len(ssrg)-1)
 				localsearch=True
 			
 			ilast=len(ssrg)
@@ -310,7 +321,7 @@ class SptAlignTask(JSTask):
 
 				refsmall=ref.get_clip(Region(0,(ny-ss)//2, (ny-ss)//2, ss+2, ss, ss))	
 				
-				if si==0 and options.fromscratch:
+				if si==0:# and options.fromscratch:
 					## coarse alignment using 3d particles
 					## need to shift origin to rotate 3d volume
 					imgsmall=img.get_clip(Region(0,(ny-ss)//2, (ny-ss)//2, ss+2, ss, ss))
@@ -319,6 +330,7 @@ class SptAlignTask(JSTask):
 					
 					for xf0 in xfcrs:
 						xf=Transform(xf0)
+						xf.set_trans(xf.get_trans()*ss/ny)
 						refrot=refsmall.process("xform", {"transform":xf})
 						ccf=imgsmall.calc_ccf(refrot)
 						pos=ccf.calc_max_location_wrap(mxsft, mxsft, mxsft)
@@ -326,6 +338,8 @@ class SptAlignTask(JSTask):
 						refrot=refrot.process("xform", {"tx":pos[0], "ty":pos[1], "tz":pos[2]})
 						scr=imgsmall.cmp("ccc.tomo.thresh", refrot)
 						score.append(scr)
+						xf.translate(pos)
+						#print(xf.get_trans(), pos)
 						
 						newxfs.append(xf)
 						if options.debug: 
@@ -354,6 +368,7 @@ class SptAlignTask(JSTask):
 						if options.skipali:
 							x=x0
 							s=testxf(x)
+							#s=-np.random.rand()
 						else:
 							simplex=np.vstack([[0,0,0,0,0,0], np.eye(6)])
 							simplex[4:]*=astep
