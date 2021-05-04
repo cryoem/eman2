@@ -421,7 +421,8 @@ class EMGMM(QtWidgets.QMainWindow):
 
 	def new_res(self,save=None):
 		"""Resolution changed. Update the initial points"""
-		res=float(self.wedres.text())
+		try: res=float(self.wedres.text())
+		except: return
 		if res==self.lastres and save==None: return
 		self.lastres=res
 		
@@ -448,7 +449,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		if self.currunkey==None or save==None: return
 		out=open(f"{self.gmm}/{save}_model_seg.txt","w")
 		for i in range(len(amps)):
-			out.write(f"{centers[0,i]/nx:1.2f}\t{centers[1,i]/nx:1.2f}\t{centers[2,i]/nx:1.2f}\t{amps[i]:1.3f}\t1.0\n")
+			out.write(f"{centers[0,i]/nx:1.2f}\t{centers[1,i]/nx:1.2f}\t{-centers[2,i]/nx:1.2f}\t{amps[i]:1.3f}\t1.0\n")
 
 	def do_run(self,clk=False):
 		"""Run the current job with current parameters"""
