@@ -435,10 +435,12 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		return r
 
 	def get_slice(self,idx,thk=1,axis="z"):
-		if self.globalxf.is_identity():
-			data=self.data
-		else:
+		if not self.globalxf.is_identity():
 			data=self.dataxf
+		elif self.wfilt.getValue()!=0.0:
+			data=self.datalp
+		else:
+			data=self.data
 			
 		t=int(thk-1)
 		idx=int(idx)
@@ -491,6 +493,12 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		self.update_all()
 
 	def event_filter(self):
+		if self.wfilt.getValue()!=0.0:
+			print("Filtering tomogram...")
+			self.datalp=self.data.process("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue()})
+		else:
+			self.datalp=self.data
+			
 		self.update_all()
 
 	def event_localbox(self,tog):
@@ -680,8 +688,8 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 				
 			view.shapechange=1
 			img=self.get_slice(loc, self.nlayers(), ax)
-			if self.wfilt.getValue()!=0.0:
-				img.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue(),"apix":self.apix})
+			#if self.wfilt.getValue()!=0.0:
+				#img.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue(),"apix":self.apix})
 
 			view.set_data(img)
 			
@@ -1102,7 +1110,11 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		print("xtilt {:.02f}, ytilt {:.02f}".format(xyz["xtilt"], xyz["ytilt"]))
 		t=Transform(xyz)
 		self.globalxf=t
-		self.dataxf=self.data.process("xform",{"transform":t})
+		if self.wfilt.getValue()!=0.0:
+			data=self.datalp
+		else:
+			data=self.data
+		self.dataxf=data.process("xform",{"transform":t})
 		
 		self.xyview.shapes={}
 		self.zyview.shapes={}
