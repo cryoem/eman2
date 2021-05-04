@@ -767,6 +767,7 @@ def run(args):
             total_str += " " + "--dont_combine_weights_via_disc"
 
         if options.use_gpu :
+            total_str += " " + "--use_gpu"
             if options.which_gpu !=None :
                 total_str += " " + "--gpu" + " " + str(options.which_gpu)
         else:
