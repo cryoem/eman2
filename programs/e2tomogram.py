@@ -37,7 +37,7 @@ def main():
 	parser.add_argument("--zeroid", type=int,help="Index of the center tilt. Ignored when rawtlt is provided.", default=-1)#,guitype='intbox',row=3, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--tltstep", type=float,help="Step between tilts. Ignored when rawtlt is provided. Default is 2.0.", default=2.0,guitype='floatbox',row=3, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--rawtlt", type=str,help="Specify a text file contains raw tilt angles. Will look for files with the same name as the tilt series if a directory is provided", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", filecheck=False, row=4, col=0, rowspan=1, colspan=2)#,mode="easy")
-	parser.add_argument("--mdoc", type=str,help="Specify a SerialEM .mdoc file or a folder containing same-named .mdoc files", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", filecheck=False, row=4, col=0, rowspan=1, colspan=2)#,mode="easy")
+	parser.add_argument("--mdoc", type=str,help="Specify a SerialEM .mdoc file or a folder containing same-named .mdoc files", default="")#,mode="easy")
 
 	parser.add_argument("--npk", type=int,help="Number of landmarks to use (such as gold fiducials). Default is 20.", default=20,guitype='intbox',row=5, col=0, rowspan=1, colspan=1, mode="easy")
 
@@ -67,7 +67,7 @@ def main():
 
 	parser.add_argument("--correctrot", action="store_true",help="correct for global rotation and position sample flat in tomogram.", default=False,guitype='boolbox',row=12, col=0, rowspan=1, colspan=1,mode="easy")
 
-	parser.add_argument("--normslice", action="store_true",help="normalize each 2D slice.", default=False)
+	#parser.add_argument("--normslice", action="store_true",help="normalize each 2D slice.", default=False)
 	parser.add_argument("--filterto", type=float,help="filter to abs.", default=0.45,guitype='floatbox',row=13, col=1, rowspan=1, colspan=1,mode="easy")
 
 	parser.add_argument("--extrapad", action="store_true",help="Use extra padding for tilted reconstruction. slower and cost more memory, but reduce boundary artifacts when the sample is thick", default=False,guitype='boolbox',row=15, col=0, rowspan=1, colspan=1,mode="easy")
@@ -1540,8 +1540,8 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 	
 	apix=imgs[0]["apix_x"]
 	full3d["apix_x"]=full3d["apix_y"]=full3d["apix_z"]=apix
-	if options.normslice:
-		full3d.process_inplace("normalize.rows")
+	#if options.normslice:
+		#full3d.process_inplace("normalize.rows")
 		
 	print("Reconstruction done ({:.1f} s). Now writting tomogram to disk...".format(time.time()-time0))
 	return full3d
@@ -1618,8 +1618,8 @@ def make_tomogram(imgs, tltpm, options, outname=None, padr=1.2,  errtlt=[], clip
 	apix=imgs[0]["apix_x"]
 	threed["apix_x"]=threed["apix_y"]=threed["apix_z"]=apix
 
-	if options.normslice and outxy>1000:
-		threed.process_inplace("normalize.rows")
+	#if options.normslice and outxy>1000:
+		#threed.process_inplace("normalize.rows")
 	if outname:
 		if options.compressbits<0: threed.write_image(outname)
 		else: threed.write_compressed(outname,0,options.compressbits,nooutliers=True)

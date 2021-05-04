@@ -210,7 +210,7 @@ def main():
 			ddm=dmap*dmap
 			cc.append(ddm["mean_nonzero"])
 			
-			ref0=ref#.copy()
+			ref0=ref.copy()
 			if options.mask:
 				if os.path.isfile(options.mask):
 				
@@ -218,9 +218,12 @@ def main():
 				else:
 					pdict=parsemodopt(options.mask)
 					ref0.process_inplace(pdict[0], pdict[1])
+					
+				ref.write_image(os.path.join(path,"output_nomask.hdf"))
 
 			#ref.write_image(tmpout,-1)
 			ref0.write_image(os.path.join(path,"output.hdf"))
+			
 			
 			if options.writemovie:
 				#ref0.write_image(os.path.join(path,"output_all.hdf"), -1)

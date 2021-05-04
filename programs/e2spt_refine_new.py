@@ -131,7 +131,14 @@ def main():
 	if options.maskalign!=None: maskalign=EMData(options.maskalign,0)
 	else: maskalign=None
 	
-	iters=options.iters.split(',')
+	it0=options.iters.split(',')
+	iters=[]
+	for i in it0:
+		if len(i)>1:
+			r=int(i[1:])
+			iters.extend([i[0]]*r)
+		else:
+			iters.append(i)
 	keydic={'p':"Subtomogram alignment", 't': "Subtilt translational refinement", 'r': "Subtilt rotational refinement", 'd':"Defocus refinement"}
 	for ii,itype in enumerate(iters):
 		
@@ -158,14 +165,13 @@ def main():
 			
 		if itype=='p':
 			opt=""
+			ptcls=info3dname
 			if options.localrefine and last3d:
 				ptcls=last3d
 				opt+=f" --maxshift {options.maxshift} --maxang {options.maxang}"
-			elif options.curve:
-				ptcls=info3dname
+			if options.curve:
 				opt+=" --curve"
-			else:
-				ptcls=info3dname
+			if options.localrefine==False and options.curve==False:
 				opt+=" --fromscratch"
 			
 			if last2d:
