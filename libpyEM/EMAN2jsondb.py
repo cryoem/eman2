@@ -195,7 +195,8 @@ Transform.to_jsondict=transform_to_jsondict
 
 def transform_from_jsondict(dct):
 	ret=Transform()
-	lst=[float(v) for v in dct["matrix"][1:-1].split(',')]
+	if isinstance(dct["matrix"],str) : lst=[float(v) for v in dct["matrix"][1:-1].split(',')]
+	else: lst=dct["matrix"]
 	ret.set_matrix(lst)
 	return ret
 
@@ -960,6 +961,7 @@ def obj_to_json(obj):
 		obj.write_image(fnm[0],fnm[1])
 		return {"__image__":fnm}
 	if np.isscalar(obj) : return obj.item()
+#	if isinstance(obj,dict) or isinstance(obj,list) or isinstance(obj,tuple): return obj.item()   # shouldn't be necessary
 	if hasattr(obj, "to_jsondict"):
 		return obj.to_jsondict()
 	else:

@@ -37,11 +37,11 @@ def main():
 	parser.add_argument("--zeroid", type=int,help="Index of the center tilt. Ignored when rawtlt is provided.", default=-1)#,guitype='intbox',row=3, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--tltstep", type=float,help="Step between tilts. Ignored when rawtlt is provided. Default is 2.0.", default=2.0,guitype='floatbox',row=3, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--rawtlt", type=str,help="Specify a text file contains raw tilt angles. Will look for files with the same name as the tilt series if a directory is provided", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", filecheck=False, row=4, col=0, rowspan=1, colspan=2)#,mode="easy")
-	parser.add_argument("--mdoc", type=str,help="Specify a SerialEM .mdoc file or a folder containing same-named .mdoc files", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", filecheck=False, row=4, col=0, rowspan=1, colspan=2)#,mode="easy")
+	parser.add_argument("--mdoc", type=str,help="Specify a SerialEM .mdoc file or a folder containing same-named .mdoc files", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", filecheck=False, row=5, col=0, rowspan=1, colspan=2)#,mode="easy")
 
-	parser.add_argument("--npk", type=int,help="Number of landmarks to use (such as gold fiducials). Default is 20.", default=20,guitype='intbox',row=5, col=0, rowspan=1, colspan=1, mode="easy")
+	parser.add_argument("--npk", type=int,help="Number of landmarks to use (such as gold fiducials). Default is 20.", default=20,guitype='intbox',row=6, col=0, rowspan=1, colspan=1, mode="easy")
 
-	parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=6, col=0, rowspan=1, colspan=2,mode="easy")
+#	parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=6, col=0, rowspan=1, colspan=2,mode="easy")
 
 	parser.add_argument("--tltax", type=float,help="Angle of the tilt axis. Note the angle stored internally will have an opposite sign. The program will calculate one if this option is not provided.", default=None,guitype='floatbox',row=7, col=1, rowspan=1, colspan=1,mode="easy")
 	
@@ -60,7 +60,7 @@ def main():
 	parser.add_argument("--compressbits", type=int,help="Number of bits of precision in output tomogram with lossless compression. -1 -> uncompressed float", default=-1,guitype='intbox',row=11, col=0, rowspan=1, colspan=1,mode="easy[8]")
 
 	parser.add_argument("--clipz", type=int,help="Z thickness of the final tomogram output. default is -1, (5/16 of tomogram length)", default=-1,guitype='intbox',row=9, col=0, rowspan=1, colspan=1,mode="easy")
-	parser.add_argument("--bxsz", type=int,help="Box size of the particles for tracking. Default is 32. Maybe helpful to use a larger one for fiducial-less cases..", default=32, guitype='intbox',row=5, col=1, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--bxsz", type=int,help="Box size of the particles for tracking. Default is 32. Maybe helpful to use a larger one for fiducial-less cases..", default=32, guitype='intbox',row=6, col=1, rowspan=1, colspan=1,mode="easy")
 
 	parser.add_argument("--pk_maxval", type=float,help="Maximum Density value of landmarks (n sigma). Default is -5", default=-5.)
 	parser.add_argument("--pk_mindist", type=float,help="Minimum distance between landmarks, as fraction of micrograph length. Default is 0.125", default=0.125)
@@ -304,11 +304,11 @@ def main():
 				options.mdoc=os.path.join(options.mdoc, rl[0])
 				print("Using {}".format(rl[0]))
 
-			with file(options.mdoc,"r") as mdoc:
+			with open(options.mdoc,"r") as mdoc:
 				tltdic={}
 				idx=0
 				for line in mdoc:
-					if line.startswith("[ZValue"): idx=int(line.split("=")[1][:-1])
+					if line.startswith("[ZValue"): idx=int(line.split("=")[1].split("]")[0])
 					if line.startswith("TiltAngle"): tltdic[idx]=float(line.split("=")[1])
 			
 			try:

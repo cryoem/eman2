@@ -1061,6 +1061,7 @@ void WedgeFillProcessor::process_inplace(EMData * image)
 //	if (!source) throw InvalidParameterException("WedgeFillProcessor: fillsource required");
 
 	if (source && !source->is_complex()) throw ImageFormatException("WedgeFillProcessor: fillsource must be complex");
+	if (image->get_xsize()!=source->get_xsize()||image->get_ysize()!=source->get_ysize()||image->get_zsize()!=source->get_zsize()) throw ImageFormatException("WedgeFillProcessor: image/fill size mismatch");
 
 	int nx=image->get_xsize();
 	int ny=image->get_ysize();
