@@ -96,7 +96,7 @@ def main():
 
 	#lowmem!
 	parser.add_argument("--lowmem", default=False, action="store_true",help="Make limited use of memory when possible - useful on lower end machines")
-	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None)
+	parser.add_argument("--parallel",type=str,help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	(options, args) = parser.parse_args()

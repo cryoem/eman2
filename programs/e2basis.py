@@ -59,21 +59,21 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 	parser.add_argument("--normcomponent",action="store_true",help="Normalize the dot product for each component of the output vector. If the basis spans the input vector, then the projected vector length will be 1, otherwise it will be less than 1.",default=False)
 	parser.add_argument("--normalize",type=str,help="Normalize the input images using the named processor. Specify 'tomean' for mean-based scaling. Specify None to disable.",default="normalize.unitlen")
 	parser.add_argument("--mask",type=int,help="Mask radius",default=-2)
-	parser.add_argument("--maskfile","-M",type=str,help="File containing a mask to apply to the particles before normalization", default=None)
+	parser.add_argument("--maskfile",type=str,help="File containing a mask to apply to the particles before normalization", default=None)
 	parser.add_argument("--mean1",action="store_true",help="Indicates that the first image in the basis set is actually the mean image, which should be subtracted prior to projection. Output from e2msa requires this flag.")
 	parser.add_argument("--recalcmean",action="store_true",help="This will recompute the mean from the input set and subtract before projection. Useful if a different normalization is used than in the original basis file.")
 	parser.add_argument("--txtout",action="store_true",help="Output will be a multicolumn text file suitable for plotting")
 	parser.add_argument("--oneout",action="store_true",help="Output is a single 2-D image rather than a set of 1-D images",default=False)
-	parser.add_argument("--nbasis","-n",type=int,help="Will use the first n basis images from the input, excluding the mean if present",default=-1)
+	parser.add_argument("--nbasis",type=int,help="Will use the first n basis images from the input, excluding the mean if present",default=-1)
 
-	parser.add_argument("--basislist","-z",type=str,help="List of basis vectors to use, comma delimited.",default=None)
+	parser.add_argument("--basislist",type=str,help="List of basis vectors to use, comma delimited.",default=None)
 
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	#parser.add_argument("--gui",action="store_true",help="Start the GUI for interactive boxing",default=False)
-	#parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=-1)
-	#parser.add_argument("--dbin","-D",type=str,help="Filename to read an existing box database from",default=None)
+	#parser.add_argument("--boxsize",type=int,help="Box size in pixels",default=-1)
+	#parser.add_argument("--dbin",type=str,help="Filename to read an existing box database from",default=None)
 	
 	(options, args) = parser.parse_args()
 #	if len(args)>0 : parser.error("e2basis.py takes no arguments, only options")
