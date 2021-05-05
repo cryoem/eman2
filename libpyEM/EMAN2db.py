@@ -585,58 +585,58 @@ def apply_beam_tilt(img, return_img = False):
     else :
         return
 
-def db_read_image(self, fsp, *parms, **kparms):
-    """read_image(filespec,image #,[header only],[region],[is_3d])
-
-    This function can be used to read a set of images from a file or bdb: database. Pass in
-    the filename, or bdb: specification, optionally a list of image numbers to read (or None),
-    and a flag indicating that only the image headers should be read in. If only the headers
-    are read, accesses to the image data in the resulting EMData objects will be invalid."""
-    #	print "RI ",fsp,str(parms)
-
-    if fsp[:4].lower() == "bdb:":
-        db, keys = db_open_dict(fsp, True, True)
-
-        if len(parms) > 1 and parms[1]:
-            nodata = 1
-        else:
-            nodata = 0
-
-        if len(parms) > 2 and parms[2]:
-            region = parms[2]
-        else:
-            region = None
-
-        if keys:
-            key = keys[parms[0]]
-        else:
-            try:
-                key = parms[0]
-            except:
-                key = 0
-
-        x = db.get(key, target=self, nodata=nodata, region=region)
-        if x == None: raise Exception("Could not access " + str(fsp) + " " + str(key))
-        #		except:
-        #			raise Exception("Could not access "+str(fsp)+" "+str(key))
-        #
-        apply_beam_tilt(self, False)
-
-        return None
-    if len(kparms) != 0:
-        if 'img_index' not in kparms:
-            kparms['img_index'] = 0
-        if 'header_only' not in kparms:
-            kparms['header_only'] = False
-        if 'region' not in kparms:
-            kparms['region'] = None
-        if 'is_3d' not in kparms:
-            kparms['is_3d'] = False
-    return self.read_image_c(fsp, *parms, **kparms)
-
-
-EMData.read_image_c = EMData.read_image
-EMData.read_image = db_read_image
+# def db_read_image(self, fsp, *parms, **kparms):
+#     """read_image(filespec,image #,[header only],[region],[is_3d])
+#
+#     This function can be used to read a set of images from a file or bdb: database. Pass in
+#     the filename, or bdb: specification, optionally a list of image numbers to read (or None),
+#     and a flag indicating that only the image headers should be read in. If only the headers
+#     are read, accesses to the image data in the resulting EMData objects will be invalid."""
+#     #	print "RI ",fsp,str(parms)
+#
+#     if fsp[:4].lower() == "bdb:":
+#         db, keys = db_open_dict(fsp, True, True)
+#
+#         if len(parms) > 1 and parms[1]:
+#             nodata = 1
+#         else:
+#             nodata = 0
+#
+#         if len(parms) > 2 and parms[2]:
+#             region = parms[2]
+#         else:
+#             region = None
+#
+#         if keys:
+#             key = keys[parms[0]]
+#         else:
+#             try:
+#                 key = parms[0]
+#             except:
+#                 key = 0
+#
+#         x = db.get(key, target=self, nodata=nodata, region=region)
+#         if x == None: raise Exception("Could not access " + str(fsp) + " " + str(key))
+#         #		except:
+#         #			raise Exception("Could not access "+str(fsp)+" "+str(key))
+#         #
+#         apply_beam_tilt(self, False)
+#
+#         return None
+#     if len(kparms) != 0:
+#         if 'img_index' not in kparms:
+#             kparms['img_index'] = 0
+#         if 'header_only' not in kparms:
+#             kparms['header_only'] = False
+#         if 'region' not in kparms:
+#             kparms['region'] = None
+#         if 'is_3d' not in kparms:
+#             kparms['is_3d'] = False
+#     return self.read_image_c(fsp, *parms, **kparms)
+#
+#
+# EMData.read_image_c = EMData.read_image
+# EMData.read_image = db_read_image
 
 
 def db_read_images(fsp, *parms):
@@ -672,8 +672,8 @@ def db_read_images(fsp, *parms):
     return EMData.read_images_c(fsp, *parms)
 
 
-EMData.read_images_c = staticmethod(EMData.read_images)
-EMData.read_images = staticmethod(db_read_images)
+# EMData.read_images_c = staticmethod(EMData.read_images)
+# EMData.read_images = staticmethod(db_read_images)
 
 
 def db_write_image(self, fsp, *parms):
@@ -711,8 +711,8 @@ def db_write_image(self, fsp, *parms):
     return self.write_image_c(fsp, *parms)
 
 
-EMData.write_image_c = EMData.write_image
-EMData.write_image = db_write_image
+# EMData.write_image_c = EMData.write_image
+# EMData.write_image = db_write_image
 
 def im_write_compressed(self,fsp,n,bits=8,minval=0,maxval=0,nooutliers=False,level=1,erase=False):
 	"""write_compressed(self or list,fsp,n,bits=8,minval=0,maxval=0,nooutliers=False,level=1)
