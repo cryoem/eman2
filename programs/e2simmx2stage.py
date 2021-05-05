@@ -74,7 +74,7 @@ def main():
 	parser.add_argument("--finalstage",action="store_true",help="Assume that existing preliminary particle classifications are correct, and only recompute final local orientations",default=False)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--parallel",type=str,help="Parallelism string",default="thread:1")
-	parser.add_argument("--force", "-f",dest="force",default=True, action="store_true",help="Deprecated. Value ignored")
+	parser.add_argument("--force",dest="force",default=True, action="store_true",help="Deprecated. Value ignored")
 
 	(options, args) = parser.parse_args()
 
