@@ -6,7 +6,7 @@ from sklearn.decomposition import PCA
 floattype=np.float32
 os.environ["CUDA_VISIBLE_DEVICES"]='0' 
 os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]='true' 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' #### reduce log output
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' #### reduce log output
 if ('-h' in sys.argv) or ('--help' in sys.argv):
 	tf=type('empty', (object,), {})()
 	tf.function=lambda f: f
@@ -156,60 +156,55 @@ def calc_frc(data_cpx, imgs_cpx, return_curve=False,minpx=4):
 	
 #### load particles from file and fourier transform them
 #### particles need to have their transform in file header or comment of list file
-def load_particles(fname, shuffle=False, hdrxf=False):
-	# The following block seems utterly stupid... I guess it must have been for debugging or something?
-	# Returned it to the original read_images form
-	#projs=[]
-	#n=EMUtil.get_image_count(fname)
-	#e=EMData(fname, 0, True)
-	#nx=e["nx"]
-	#bx=nx
-	#print("Loading {} particles of box size {}".format(n, bx))
-	#for i in range(n):
-		#e=EMData(fname, i)
-		#e.clip_inplace(Region((nx-bx)//2,(nx-bx)//2, bx,bx))
-		#projs.append(e)
+def load_particles(fname, options, shuffle=False):
+	
+	nptcl=EMUtil.get_image_count(fname)
+	boxsz=options.maxboxsz
+	projs=[]
+	hdrs=[]
+	e=EMData(fname, 0, True)
+	rawbox=e["nx"]
+	print("Loaded {} particles of box size {}. shrink to {}".format(nptcl, rawbox, boxsz))
+	for i in range(nptcl):
+		e=EMData(fname, i)
+		e.process_inplace("math.fft.resample",{"n":rawbox/boxsz})
+		nx=e["nx"]
+		e.clip_inplace(Region((nx-boxsz)//2,(nx-boxsz)//2, boxsz,boxsz))
+		#e.process_inplace("xform.scale", {"scale":boxsz/rawbox,"clip":boxsz})
+		hdrs.append(e.get_attr_dict())
+		projs.append(e.numpy().copy())
 		
-	projs=EMData.read_images(fname)
-	print("Loaded {} particles of box size {}".format(len(projs), projs[0]["nx"]))
+	projs=np.array(projs)/1e3
 	
 	if shuffle:
-		random.shuffle(projs)
-		#rnd=np.arange(len(projs))
-		#np.random.shuffle(rnd)
-		#projs=[projs[i] for i in rnd]
-
-	hdrs=[p.get_attr_dict() for p in projs]
-	projs=np.array([p.numpy().copy() for p in projs], dtype=floattype)/1e3
+		rndidx=np.arange(len(projs))
+		random.shuffle(rndidx)
+		projs=projs[rndidx]
+		hdrs=[hdrs[i] for i in rndidx]
+		
 	data_cpx=np.fft.rfft2(projs)
-	data_cpx=(data_cpx.real.astype(floattype), data_cpx.imag.astype(floattype))	
-	
-	if hdrxf:
-		xflst=False
-		if fname.endswith(".lst"):
-			lst=LSXFile(fname, True)
-			l=lst.read(0)
-			if isinstance(l[2], str):
-				xflst=True
-		
-		if xflst:
-			
-			xfs=[]
-			for i in range(len(projs)):
-				l=lst.read(i)
-				xfs.append(eval(l[2]))
+	data_cpx=(data_cpx.real.astype(floattype), data_cpx.imag.astype(floattype))
+
+	xflst=False
+	if fname.endswith(".lst"):
+		info=load_lst_params(fname)
+		if "xform.projection" in info[0]:
+			xflst=True
+			xfs=[p["xform.projection"].get_params("eman") for p in info]
 			if shuffle:
-				xfs=[xfs[i] for i in rnd]
-		else:
-			xfs=[p["xform.projection"].get_params("eman") for p in hdrs]
-		xfsnp=np.array([[x["az"],x["alt"],x["phi"], x["tx"], x["ty"]] for x in xfs], dtype=floattype)
-		xfsnp[:,:3]=xfsnp[:,:3]*np.pi/180.
-		xfsnp[:,3:]/=projs.shape[-1]
-		print(projs.shape)
-		
-		return data_cpx,xfsnp
+				xfs=[xfs[i] for i in rndidx]
+			
+	if xflst==False and ("xform.projection" in hdrs[0]):
+		xfs=[p["xform.projection"].get_params("eman") for p in hdrs]
 	else:
-		return data_cpx
+		xfs=[Transform() for p in hdrs]
+		print("No existing transform from particles...")
+		
+	xfsnp=np.array([[x["az"],x["alt"],x["phi"], x["tx"], x["ty"]] for x in xfs], dtype=floattype)
+	xfsnp[:,:3]=xfsnp[:,:3]*np.pi/180.
+	xfsnp[:,3:]/=float(rawbox)
+	
+	return data_cpx,xfsnp
 	
 #### do fourier clipping in numpy than export to tf to save memory...
 def get_clip(datacpx, newsz):
@@ -250,26 +245,43 @@ def set_indices_boxsz(boxsz, apix=0, return_freq=False):
 		
 		return idxft, rrft, rings
 
-def build_encoder(mid=512, nout=4):
+def build_encoder(mid=512, nout=4, conv=False):
 	l2=tf.keras.regularizers.l2(1e-3)
 	kinit=tf.keras.initializers.RandomNormal(0,1e-2)
-
-	layers=[
-	tf.keras.layers.Flatten(),
-	tf.keras.layers.Dense(mid, activation="relu", kernel_regularizer=l2),
-	tf.keras.layers.Dense(mid, activation="relu", kernel_regularizer=l2),
-	tf.keras.layers.Dense(mid, activation="relu", kernel_regularizer=l2),
-	tf.keras.layers.Dropout(.3),
-	tf.keras.layers.BatchNormalization(),
-	tf.keras.layers.Dense(nout, kernel_regularizer=l2, kernel_initializer=kinit),
-	]
+	
+	if conv:
+		ss=64
+		layers=[
+			tf.keras.layers.Flatten(),
+			tf.keras.layers.Dense(ss*ss, kernel_regularizer=l2),
+			tf.keras.layers.Reshape((ss,ss,1)),
+			
+			tf.keras.layers.Conv2D(4, 5, activation="relu", strides=(2,2), padding="same"),
+			tf.keras.layers.Conv2D(8, 5, activation="relu", strides=(2,2), padding="same"),
+			tf.keras.layers.Conv2D(16, 3, activation="relu", strides=(2,2), padding="same"),
+			tf.keras.layers.Conv2D(16, 3, activation="relu", strides=(2,2), padding="same"),
+			tf.keras.layers.Flatten(),
+			tf.keras.layers.Dropout(.1),
+			tf.keras.layers.BatchNormalization(),
+			tf.keras.layers.Dense(nout, kernel_initializer=kinit),
+		]
+	else:
+		layers=[
+		tf.keras.layers.Flatten(),
+		tf.keras.layers.Dense(mid, activation="relu", kernel_regularizer=l2),
+		tf.keras.layers.Dense(mid, activation="relu", kernel_regularizer=l2),
+		tf.keras.layers.Dense(mid, activation="relu", kernel_regularizer=l2),
+		tf.keras.layers.Dropout(.3),
+		tf.keras.layers.BatchNormalization(),
+		tf.keras.layers.Dense(nout, kernel_regularizer=l2, kernel_initializer=kinit),
+		]
 	encode_model=tf.keras.Sequential(layers)
 	return encode_model
 
 #### build decoder network. 
 ## input integer to initialize as zeros with N points
 ## input point list to initialize to match input
-def build_decoder(pts, mid=512, ninp=4):
+def build_decoder(pts, mid=512, ninp=4, conv=False):
 	if isinstance(pts, int):
 		npt=pts
 		initpts=False
@@ -281,19 +293,36 @@ def build_decoder(pts, mid=512, ninp=4):
 	x0=tf.keras.Input(shape=(ninp))
 	
 	kinit=tf.keras.initializers.RandomNormal(0,1e-2)
+	l2=tf.keras.regularizers.l2(1e-3)
 	layer_output=tf.keras.layers.Dense(npt*5, kernel_initializer=kinit, activation="sigmoid")
-	
-	layers=[
-		tf.keras.layers.Dense(mid,activation="relu",
-					bias_initializer=kinit),
-		tf.keras.layers.Dense(mid,activation="relu"),
-		tf.keras.layers.Dense(mid,activation="relu"),
-		#tf.keras.layers.Dense(mid,activation="relu"),
-		tf.keras.layers.Dropout(.3),
-		tf.keras.layers.BatchNormalization(),
-		layer_output,
-		tf.keras.layers.Reshape((npt,5))
-	]
+	if conv:
+			
+		layers=[
+			tf.keras.layers.Dense(256, activation="relu"),
+			tf.keras.layers.Reshape((4,4,16)),
+			tf.keras.layers.Conv2DTranspose(16, 3, activation="relu", strides=(2,2), padding="same"),
+			tf.keras.layers.Conv2DTranspose(16, 3, activation="relu", strides=(2,2), padding="same"),
+			tf.keras.layers.Conv2DTranspose(8, 5, activation="relu", strides=(2,2), padding="same"),
+			tf.keras.layers.Conv2DTranspose(4, 5, activation="relu", strides=(2,2), padding="same"),
+			tf.keras.layers.Flatten(),
+			tf.keras.layers.Dropout(.1),
+			tf.keras.layers.BatchNormalization(),
+			layer_output,
+			tf.keras.layers.Reshape((npt,5)),
+		]
+
+	else:
+		layers=[
+			tf.keras.layers.Dense(mid,activation="relu",
+						bias_initializer=kinit),
+			tf.keras.layers.Dense(mid,activation="relu"),
+			tf.keras.layers.Dense(mid,activation="relu"),
+			#tf.keras.layers.Dense(mid,activation="relu"),
+			tf.keras.layers.Dropout(.3),
+			tf.keras.layers.BatchNormalization(),
+			layer_output,
+			tf.keras.layers.Reshape((npt,5))
+		]
 	
 	## the five columns are for x,y,z,amp,sigma
 	## the range for x,y,z is [-.5, .5]
@@ -570,6 +599,7 @@ def main():
 	parser.add_argument("--maxres", type=float,help="maximum resolution. will overwrite maxboxsz. ", default=-1)
 	parser.add_argument("--align", action="store_true", default=False ,help="align particles.")
 	parser.add_argument("--heter", action="store_true", default=False ,help="heterogeneity analysis.")
+	parser.add_argument("--conv", action="store_true", default=False ,help="use convolutional network for heterogeneity analysis.")
 	parser.add_argument("--fromscratch", action="store_true", default=False ,help="start from coarse alignment. otherwise will only do refinement from last round")
 	parser.add_argument("--gradout", type=str,help="gradient output", default="")
 	parser.add_argument("--gradin", type=str,help="reading from gradient output instead of recomputing", default="")
@@ -621,12 +651,12 @@ def main():
 		print("Train model from ptcl-xfrom pairs...")
 		e=EMData(options.projs, 0, True)
 		raw_apix, raw_boxsz = e["apix_x"], e["ny"]
-		options.raw_apix=raw_apix
 		if options.maxres>0:
 			maxboxsz=options.maxboxsz=ceil(raw_boxsz*raw_apix*2/options.maxres)//2*2
 			print("using box size {}, max resolution {:.1f}".format(maxboxsz, options.maxres))
 			
-		data_cpx, xfsnp = load_particles(options.projs, shuffle=True, hdrxf=True)
+		data_cpx, xfsnp = load_particles(options.projs, options, shuffle=True)
+		options.raw_apix=raw_apix=raw_apix*raw_boxsz/maxboxsz
 		set_indices_boxsz(data_cpx[0].shape[1], raw_apix, True)
 		
 		if options.niter>0:
@@ -638,9 +668,7 @@ def main():
 			train_decoder(gen_model, trainset, options)
 			pout=gen_model(tf.zeros((1,options.nmid), dtype=floattype)).numpy()[0]
 			
-			pout[:,3]/=np.max(pout[:,3])
-			#pout=pout[pout[:,3]>.1]
-			
+			pout[:,3]/=np.max(pout[:,3])			
 			
 			if options.mask:
 				
@@ -662,10 +690,7 @@ def main():
 			gen_model=build_decoder(pout, ninp=options.nmid)
 		
 		if options.evalmodel:
-			
-			set_indices_boxsz(raw_boxsz)
 			eval_model(gen_model, options)
-		
 		
 	if options.ptclsin:
 		e=EMData(options.ptclsin, 0, True)
@@ -673,13 +698,15 @@ def main():
 		if options.maxres>0:
 			maxboxsz=options.maxboxsz=ceil(raw_boxsz*raw_apix*2/options.maxres)//2*2
 			print("using box size {}, max resolution {:.1f}".format(maxboxsz, options.maxres))
+			
+		data_cpx, xfsnp = load_particles(options.ptclsin,options,shuffle=False)
+		options.raw_apix=raw_apix=raw_apix*raw_boxsz/maxboxsz
+		set_indices_boxsz(data_cpx[0].shape[1], raw_apix, True)
 		
 	if options.ptclsin and options.align:
 		pts=tf.constant(pts)
 		print("Align particles...")
 		if options.fromscratch:
-			data_cpx = load_particles(options.ptclsin, shuffle=False, hdrxf=False)
-			set_indices_boxsz(data_cpx[0].shape[1], raw_apix, True)
 			set_indices_boxsz(32)
 			dcpx=get_clip(data_cpx, sz)
 			xfs=coarse_align(dcpx, pts, options)
@@ -697,11 +724,7 @@ def main():
 			set_indices_boxsz(64)
 			dcpx=get_clip(data_cpx, sz)
 			xfsnp, frcs=refine_align(dcpx, xfsnp, pts, options)
-			
-		else:
-			data_cpx, xfsnp = load_particles(options.ptclsin, shuffle=False, hdrxf=True)
-			set_indices_boxsz(data_cpx[0].shape[1], raw_apix, True)
-			
+					
 		set_indices_boxsz(maxboxsz)
 		dcpx=get_clip(data_cpx, sz)
 		xfsnp, frcs=refine_align(dcpx, xfsnp, pts, options, lr=1e-4)
@@ -712,8 +735,6 @@ def main():
 		
 	if options.ptclsin and options.heter:
 		pts=tf.constant(pts[None,:,:])
-		data_cpx, xfsnp = load_particles(options.ptclsin, shuffle=False, hdrxf=True)
-		set_indices_boxsz(data_cpx[0].shape[1], raw_apix, True)
 		set_indices_boxsz(maxboxsz)
 		dcpx=get_clip(data_cpx, sz)
 		if options.gradin:
@@ -746,14 +767,14 @@ def main():
 				allgrds.append(grad.numpy().copy())
 				allscr.append(fval.numpy().copy())
 				n+=len(allscr[-1])
-				sys.stdout.write("\r {}/{} : {:.4f}		".format(n, len(dcpx[0]), np.mean(fval)))
+				sys.stdout.write("\r {}/{} : {:.4f}        ".format(n, len(dcpx[0]), np.mean(fval)))
 				sys.stdout.flush()
 				
 				
 			allgrds=np.concatenate(allgrds, axis=0)
 			allscr=np.concatenate(allscr, axis=0)
 			allgrds=allgrds/np.std(allgrds)
-			
+			print(" mean score: {:.3f}".format(np.mean(allscr)))
 			if options.gradout:
 				allgrds=allgrds.reshape((len(allgrds),-1))
 				print(allgrds.shape, allscr.shape) 
@@ -762,8 +783,8 @@ def main():
 				del ag
 				allgrds=allgrds.reshape((len(allgrds), npt, 5))
 				
-		encode_model=build_encoder(nout=options.nmid)
-		decode_model=build_decoder(pts[0].numpy(), ninp=options.nmid)
+		encode_model=build_encoder(nout=options.nmid, conv=options.conv)
+		decode_model=build_decoder(pts[0].numpy(), ninp=options.nmid, conv=options.conv)
 		
 		mid=encode_model(allgrds[:32])
 		print(mid.shape)
@@ -777,8 +798,8 @@ def main():
 		print(pas)
 		
 		trainset=tf.data.Dataset.from_tensor_slices((allgrds[ptclidx], dcpx[0][ptclidx], dcpx[1][ptclidx], xfsnp[ptclidx]))
-		trainset=trainset.shuffle(1000).batch(bsz)
-		opt=tf.keras.optimizers.Adam(learning_rate=2e-5)
+		trainset=trainset.batch(bsz)
+		opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate)
 		wts=encode_model.trainable_variables + decode_model.trainable_variables
 		nbatch=0
 		for t in trainset: nbatch+=1
@@ -791,6 +812,10 @@ def main():
 				pj_cpx=(pjr, pji)
 				with tf.GradientTape() as gt:
 					conf=encode_model(grd, training=True)
+					
+					cl=tf.math.sqrt(tf.reduce_sum(conf**2, axis=1))
+					cl=tf.reduce_mean(tf.maximum(cl-1,0))
+					
 					conf=.1*tf.random.normal(conf.shape)+conf
 					pout=decode_model(conf, training=True)
 					p0=tf.zeros((xf.shape[0],npt, 5))+pts
@@ -798,16 +823,15 @@ def main():
 					#pout=tf.concat([pout[:,:,:3], p0[:,:,3:]], axis=2)
 					#pout=tf.concat([p0[:,:,:3],pout[:,:,3:4],p0[:,:,4:]], axis=2)
 					
-					
 					imgs_cpx=pts2img(pout, xf, sym=options.sym)
 					fval=calc_frc(pj_cpx, imgs_cpx)
-					loss=-tf.reduce_mean(fval)#+reg
+					loss=-tf.reduce_mean(fval)+cl*1e-2
 				
 				cost.append(loss)
 				grad=gt.gradient(loss, wts)
 				opt.apply_gradients(zip(grad, wts))
 				
-				sys.stdout.write("\r {}/{}\t{:.3f}		 ".format(len(cost), nbatch, loss))
+				sys.stdout.write("\r {}/{}\t{:.3f}         ".format(len(cost), nbatch, loss))
 				sys.stdout.flush()
 				
 			sys.stdout.write("\r")
