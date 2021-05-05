@@ -414,16 +414,17 @@ class EMGMM(QtWidgets.QMainWindow):
 
 	def new_run(self,clk=False):
 		"""Create a new run and run() it"""
-		name=str(QtWidgets.QInputDialog.getText(self,"Run Name","Enter a name for this run. Current parameters will be used.")[0])
+		nm=QtWidgets.QInputDialog.getText(self,"Run Name","Enter a name for this run. Current parameters will be used.")
+		if not nm[1]: return
+		name=str(nm[0])
 		if not self.jsparm.has_key("run_"+name) : self.wlistrun.addItem(name)
 		self.currunkey=name
 		self.do_run()
 
-	def new_res(self,save=None):
+	def new_res(self):
 		"""Resolution changed. Update the initial points"""
 		try: res=float(self.wedres.text())
 		except: return
-		if res==self.lastres and save==None: return
 		self.lastres=res
 		
 		map3d=EMData(f"{self.gmm}/input_map.hdf")
@@ -437,7 +438,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		centers=np.array(seg["segment_centers"]).reshape((len(amps),3)).transpose()
 		amps/=max(amps)
 		
-		self.wedngauss.setText(str(len(amps)))
+		self.wedngauss.setText(str(len(amps)*4//3))
 
 		print(f"Resolution={res} -> Ngauss={len(amps)}  ({self.currunkey})")
 		
@@ -446,10 +447,9 @@ class EMGMM(QtWidgets.QMainWindow):
 		centers[1]-=nx/2
 		centers[2]-=nx/2
 		self.gaussplot.setData(centers,self.wvssphsz.value)
-		if self.currunkey==None or save==None: return
-		out=open(f"{self.gmm}/{save}_model_seg.txt","w")
-		for i in range(len(amps)):
-			out.write(f"{centers[0,i]/nx:1.2f}\t{centers[1,i]/nx:1.2f}\t{-centers[2,i]/nx:1.2f}\t{amps[i]:1.3f}\t1.0\n")
+		self.centers=centers
+		self.amps=amps
+		self.wview3d.update()
 
 	def do_run(self,clk=False):
 		"""Run the current job with current parameters"""
@@ -472,12 +472,12 @@ class EMGMM(QtWidgets.QMainWindow):
 		modelseg=f"{self.gmm}/{self.currunkey}_model_seg.txt"
 		
 		sym=self.currun["sym"]
-		prog=QtWidgets.QProgressDialog("Running networks. Progress updates here are limited. See the Console for detailed output.","Abort",0,3)
+		prog=QtWidgets.QProgressDialog("Running networks. Progress updates here are limited. See the Console for detailed output.","Abort",0,5)
 		prog.show()
 		self.do_events(1)
 		curngauss=self.currun["ngauss"]//2**(int(log(maxbox/16)/log(2.0))+1)
 		
-		#### Original method, pure network approach
+		#### Original method, pure network approach, replaced by segmentation seeding
 		## First step with very coarse model, gradually increasing size improves convergence
 		#run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --npt {curngauss} --sym {sym} --maxboxsz 16 --modelout {modelout} --niter {self.currun['trainiter']*2} --mask {self.currun['mask']} --nmid {self.currun['dim']}")
 		#prog.setValue(1)
@@ -527,22 +527,45 @@ class EMGMM(QtWidgets.QMainWindow):
 			#seg=None
 		
 		#print(ng," Gaussian seeds")
-		self.new_res(save=self.currunkey)
-		self.currun["ngauss"]=int(self.wedngauss.text())
-		prog.setValue(1)
-		if prog.wasCanceled() : return
-		if (len(self.currun["mask"])>4) : mask=f"--mask {self.currun['mask']}"
-		else: mask=""
-
-		er=run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --npt {self.currun['ngauss']} --sym {sym} --maxboxsz {maxbox} --model {modelseg} --modelout {modelout} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']}")
-		if er :
-			showerror("Error running e2gmm_refine, see console for details. GPU memory exhaustion is a common issue. Consider reducing the target resolution.")
+		# Compute and save initial centers
+		self.new_res()
+		self.wedngauss.setText(str(self.currun["ngauss"]))
+		nx=int(self.currun["boxsize"])
+		ncen=len(self.amps)		# number of centers from original segmentation
+		if (ncen==0) :
+			showerror("No centers determined at current resolution!")
 			return
+		for it in range(3):
+			with open(modelseg,"w") as out:
+				for i in range(len(self.amps)):
+					try: out.write(f"{self.centers[0,i]/nx:1.2f}\t{self.centers[1,i]/nx:1.2f}\t{-self.centers[2,i]/nx:1.2f}\t{self.amps[i]:1.3f}\t1.0\n")
+					except: print("write errror: ",self.centers[:,i],self.amps[i],self.amps.shape,i)
+
+			prog.setValue(it+1)
+			self.do_events()
+			if prog.wasCanceled() : return
+			if (len(self.currun["mask"])>4) : mask=f"--mask {self.currun['mask']}"
+			else: mask=""
+
+			er=run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --npt {self.currun['ngauss']} --sym {sym} --maxboxsz {maxbox} --model {modelseg} --modelout {modelout} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']}")
+			if er :
+				showerror("Error running e2gmm_refine, see console for details. GPU memory exhaustion is a common issue. Consider reducing the target resolution.")
+				return
+			
+			pts=np.loadtxt(modelout).transpose()
+			pts[2]*=-1.0
+			pts[:3,:ncen]=self.centers[:,:ncen]
+			pts[3:4,:ncen]=self.amps[:ncen]
+			self.centers=pts[:3,:]
+			self.amps=pts[3]
+			
+			self.gaussplot.setData(self.centers,self.wvssphsz.value)
+			self.wview3d.update()
 
 
 		# make3d on gaussian output for comparison
 		er=run(f"e2make3dpar.py --input {self.gmm}/{self.currunkey}_model_projs.hdf --output {self.gmm}/{self.currunkey}_model_recon.hdf --pad {good_size(self.jsparm['boxsize']*1.25)} --mode trilinear --keep 1 --threads {self.options.threads}")
-		prog.setValue(2)
+		prog.setValue(4)
 		self.do_events()
 		if prog.wasCanceled() : return
 
@@ -551,7 +574,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		if er :
 			showerror("Error running e2gmm_refine, see console for details. Memory is a common issue. Consider reducing the target resolution.")
 			return
-		prog.setValue(3)
+		prog.setValue(5)
 		self.do_events()
 		
 		self.sel_run(0)
