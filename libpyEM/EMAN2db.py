@@ -345,69 +345,69 @@ def db_list_dicts(url):
 ##########
 #### replace a few EMData methods with python versions to intercept 'bdb:' filenames
 ##########
-def db_emd_init(self, *parms):
-    """
-    __init__( (object)arg1) -> object :
-
-        C++ signature :
-            void* __init__(_object*)
-
-    __init__( (object)arg1, (object)that) -> object :
-        Construct from an EMData (copy constructor).
-        Performs a deep copy.
-
-        that - the EMData to copy
-
-        C++ signature :
-            void* __init__(_object*,EMAN::EMData)
-
-    __init__( (object)arg1, (str) filespec,(int)image_idx,[(int) header_only],[(Region) region],[(int) is_3d]) -> object :
-        Construct from an image file.
-
-        filename - the image file name
-        image_index the image index for stack image file(default = 0)
-
-        C++ signature :
-            void* __init__(_object*,std::string [,int])
-
-    __init__( (object)arg1, (object)nx, (object)ny [, (object)nz [, (object)is_real]]) -> object :
-        makes an image of the specified size, either real or complex.
-        For complex image, the user would specify the real-space dimensions.
-
-        nx - size for x dimension
-        ny - size for y dimension
-        nz size for z dimension(default=1)
-        is_real - boolean to specify real(true) or complex(false) image(default=True)
-
-        C++ signature :
-            void* __init__(_object*,int,int [,int [,bool]])
-"""
-    if len(parms) < 5 and len(parms) > 0 and isinstance(parms[0], str) and parms[0][:4].lower() == "bdb:":
-        self.__initc()
-        self.read_image(*parms)
-        return
-    else:
-        #		print "toC:", parms
-        if len(parms) > 2 and isinstance(parms[0], str):
-            self.__initc()
-            self.read_image_c(*parms)
-        # try: self.read_image_c(*parms)			# this handles Region reading, which isn't supported in the C++ constructor
-        # except:
-        # traceback.print_exc()
-        # print "Error reading: ",parms," (if the program does not crash, this may be normal)"
-        # raise Exception
-        else:
-            self.__initc(*parms)
-        # try: self.__initc(*parms)
-        # except:
-        # traceback.print_exc()
-        # print "Error reading: ",parms," (if the program does not crash, this may be normal)"
-        # raise Exception
-        return
-
-
-EMData.__initc = EMData.__init__
-EMData.__init__ = db_emd_init
+# def db_emd_init(self, *parms):
+#     """
+#     __init__( (object)arg1) -> object :
+#
+#         C++ signature :
+#             void* __init__(_object*)
+#
+#     __init__( (object)arg1, (object)that) -> object :
+#         Construct from an EMData (copy constructor).
+#         Performs a deep copy.
+#
+#         that - the EMData to copy
+#
+#         C++ signature :
+#             void* __init__(_object*,EMAN::EMData)
+#
+#     __init__( (object)arg1, (str) filespec,(int)image_idx,[(int) header_only],[(Region) region],[(int) is_3d]) -> object :
+#         Construct from an image file.
+#
+#         filename - the image file name
+#         image_index the image index for stack image file(default = 0)
+#
+#         C++ signature :
+#             void* __init__(_object*,std::string [,int])
+#
+#     __init__( (object)arg1, (object)nx, (object)ny [, (object)nz [, (object)is_real]]) -> object :
+#         makes an image of the specified size, either real or complex.
+#         For complex image, the user would specify the real-space dimensions.
+#
+#         nx - size for x dimension
+#         ny - size for y dimension
+#         nz size for z dimension(default=1)
+#         is_real - boolean to specify real(true) or complex(false) image(default=True)
+#
+#         C++ signature :
+#             void* __init__(_object*,int,int [,int [,bool]])
+# """
+#     if len(parms) < 5 and len(parms) > 0 and isinstance(parms[0], str) and parms[0][:4].lower() == "bdb:":
+#         self.__initc()
+#         self.read_image(*parms)
+#         return
+#     else:
+#         #		print "toC:", parms
+#         if len(parms) > 2 and isinstance(parms[0], str):
+#             self.__initc()
+#             self.read_image_c(*parms)
+#         # try: self.read_image_c(*parms)			# this handles Region reading, which isn't supported in the C++ constructor
+#         # except:
+#         # traceback.print_exc()
+#         # print "Error reading: ",parms," (if the program does not crash, this may be normal)"
+#         # raise Exception
+#         else:
+#             self.__initc(*parms)
+#         # try: self.__initc(*parms)
+#         # except:
+#         # traceback.print_exc()
+#         # print "Error reading: ",parms," (if the program does not crash, this may be normal)"
+#         # raise Exception
+#         return
+#
+#
+# EMData.__initc = EMData.__init__
+# EMData.__init__ = db_emd_init
 
 
 # def transform_to_str(self):
