@@ -62,7 +62,7 @@ feature from all slices. Generally best for uniform objects like vesicles."""
 	parser.add_option("--seqali",action="store_true",default=False,help="Average particles in previous slices for better alignments of near-spherical objects")
 	parser.add_option("--invert",action="store_true",default=False,help="Inverts image data contrast on the fly")
 
-	#parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=64)
+	#parser.add_option("--boxsize",type="int",help="Box size in pixels",default=64)
 	#parser.add_option("--writeoutput",action="store_true",default=False,help="Uses coordinates stored in the tomoboxer database to write output")
 	#parser.add_option("--stack",action="store_true",default=False,help="Causes the output images to be written to a stack")
 	#parser.add_option("--force",action="store_true",default=False,help="Force overwrite output")
