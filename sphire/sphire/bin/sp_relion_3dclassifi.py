@@ -746,9 +746,9 @@ def run(args):
         else:
             pass
         if options.skip_pad :
-            total_str += " " + "--pad" + " " + 1
+            total_str += " " + "--pad" + " " + str(1)
         else:
-            total_str += " " + "--pad" + " " + 2
+            total_str += " " + "--pad" + " " + str(2)
         if options.skip_grid :
             total_str += " " + "--skip_gridding"
         else:
@@ -774,60 +774,6 @@ def run(args):
 
         ### Adding unknown flags which i can still not debugg
         total_str += " " +"--flatten_solvent --oversampling 1 --norm  --scale"
-
-        ### Now helical parts start
-        # if options.helical_recons :
-        #     total_str += " " + "--helix"
-        #     total_str += " " + "--helical_outer_diameter" + " " + str(options.outer_diam)
-        #     if options.inner_diam != -1:
-        #         total_str += " " + "--helical_inner_diameter" + " " + str(options.inner_diam)
-        #     else :
-        #         pass
-        #     if options.sig_tilt >= 3 :
-        #         total_str += " " + "--sigma_tilt" + " " + str(options.sig_tilt / 3)
-        #     else :
-        #         total_str += " " + "--sigma_tilt" + " " + str(0)
-        #     if options.sig_rot >= 3 :
-        #         total_str += " " + "--sigma_rot" + " " + str(options.sig_rot / 3)
-        #     else :
-        #         total_str += " " + "--sigma_rot" + " " + str(0)
-        #     if options.sig_psi >= 3 :
-        #         total_str += " " + "--sigma_psi" + " " + str(options.sig_psi / 3)
-        #     else :
-        #         total_str += " " + "--sigma_rot" + " " + str(0)
-        #     if options.sigma_dist >=1 :
-        #         total_str += " " + "--helical_sigma_distance" + " " + str(options.sigma_dist / 3)
-        #     else :
-        #         pass
-        #     if options.keep_tilt_fix :
-        #         total_str += " " + "--helical_keep_tilt_prior_fixed"
-        #     else :
-        #         pass
-        #
-        #     if options.apply_helical_sym :
-        #
-        #         total_str += " " + "--helical_nr_asu" + " " + str(options.unique_asym_unit)
-        #         total_str += " " + "--helical_twist_initial" + " " + str(options.initial_twist)
-        #         total_str += " " + "--helical_rise_initial" + " " + str(options.initial_rise)
-        #         total_str += " " + "--helical_z_percentage" + " " + str(options.z_percent/100)
-        #     else :
-        #         pass
-        #
-        #     if options.do_local_search :
-        #         total_str += " " + "--helical_symmetry_search"
-        #         total_str += " " + "--helical_twist_min" + " " + str(options.twist_min)
-        #         total_str += " " + "--helical_twist_max" + " " + str(options.twist_max)
-        #         total_str += " " + "--helical_twist_inistep" + " " + str(options.twist_inistep)
-        #         total_str += " " + "--helical_rise_min" + " " + str(options.rise_min)
-        #         total_str += " " + "--helical_rise_max" + " " + str(options.rise_max)
-        #         if options.rise_inistep != 0 :
-        #             total_str += " " + "--helical_rise_inistep" + " " + str(options.rise_inistep)
-        #         else :
-        #             pass
-        #     else:
-        #         pass
-        # else:
-        #     pass
 
 
         print("flags for the all commands is", total_str)
