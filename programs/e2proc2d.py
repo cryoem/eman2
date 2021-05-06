@@ -146,7 +146,7 @@ def main():
 	':<nx>:<ny>:<expression_in_x_y>' or ':<nx>:<ny>:<nz>:<expression_in_x_y_z>' as an input filename,
 	where 0 <= x < nx, 0 <= y < ny, 0 <= z < nz, and the expression can be just a number.
 
-        If performing certain operations which do not require an output file, specify "none" as the output file.
+	If performing certain operations which do not require an output file, specify "none" as the output file.
 
 	Examples:
 
@@ -158,7 +158,7 @@ def main():
 
 	convert a 'set' (.lst file) to an MRC stack file:
 	e2proc2d.py sets/myset.lst myset.mrcs
-	
+
 	create a new image, initialized with 1.0, then mask it:
 	e2proc2d.py :128:128:1 mymask.hdf --process mask.soft:outer_radius=50
 
@@ -231,11 +231,10 @@ def main():
 	parser.add_argument("--step",type=str,default="0,1",help="Specify <init>,<step>. Processes only a subset of the input data. For example, 0,2 would process only the even numbered particles")
 
 	eer_input_group = parser.add_mutually_exclusive_group()
-	eer_input_group.add_argument("--eer2x",  action="store_true", help="Render EER file on 8k grid.")
+	eer_input_group.add_argument("--eer2x", action="store_true", help="Render EER file on 8k grid.")
 	eer_input_group.add_argument("--eer4x", action="store_true", help="Render EER file on 16k grid.")
 
 	# Parallelism
-
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:n=<proc>:option:option",default=None)
 
 	append_options = ["anisotropic","clip", "process", "meanshrink", "medianshrink", "fouriershrink", "scale", "randomize", "rotate", "translate", "multfile","addfile","add", "headertransform"]
