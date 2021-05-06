@@ -122,7 +122,7 @@ def image_from_formula(n_x, n_y, n_z, formula) :
 
 				if nz > 1 :
 					emdn[z][y][x] = v
-				else :
+				else:
 					emdn[y][x] = v
 
 	return EMNumPy.numpy2em(emdn)
@@ -268,7 +268,7 @@ def main():
 		print("Deprecated option mrc8bit, please use outmode=int8|uint8")
 		options.outmode = "int8"
 
-	if options.outmode not in file_mode_map :
+	if options.outmode not in file_mode_map:
 		print("Invalid output mode, please specify one of :\n",str(list(file_mode_map.keys())).translate(None,'"[]'))
 		sys.exit(1)
 
@@ -287,33 +287,33 @@ def main():
 
 	inp_num = 0
 
-	for infile in args[0 : num_input_files] :
+	for infile in args[0 : num_input_files]:
 		inp_num = inp_num + 1
 
-		if outpattern.lower()=="none" :
+		if outpattern.lower()=="none":
 			outfile=None
 			is_inp_bdb = False
 			is_out_bdb = False
 
 			if (infile[0]==":") : inp_ext=".hdf"
-			else : inp_ext = os.path.splitext(infile)[1]
+			else: inp_ext = os.path.splitext(infile)[1]
 			out_ext = None
 
-		else :
+		else:
 			outfile = changed_file_name(infile, outpattern, inp_num, multiple_files)
 
 			is_inp_bdb = (len (infile)  >= 4 and infile.lower() [0:4] == "bdb:")
 			is_out_bdb = (len (outfile) >= 4 and outfile.lower()[0:4] == "bdb:")
 
-			if (infile[0]==":") : inp_ext=".hdf"
-			else : inp_ext = os.path.splitext(infile)[1]
+			if (infile[0]==":"): inp_ext=".hdf"
+			else: inp_ext = os.path.splitext(infile)[1]
 			out_ext = os.path.splitext(outfile)[1]
 
 			if out_ext == "" and multiple_files and not is_out_bdb :
 					out_ext = inp_ext
 					outfile = outfile + out_ext
 
-			if out_ext == ".lst" :
+			if out_ext == ".lst":
 					print("Output file extension may not be .lst: " + outfile)
 					continue
 
@@ -321,66 +321,66 @@ def main():
 
 		if is_inp_bdb :
 			num_inp_images = -1
-		elif infile[0] == ":" : 	# special flag to create a new image
+		elif infile[0] == ":": 	# special flag to create a new image
 			num_inp_images = 2
-		elif os.path.isfile(infile) :
-			try :
+		elif os.path.isfile(infile):
+			try:
 				num_inp_images = EMUtil.get_image_count(infile)
-			except :
+			except:
 				num_inp_images = -1
 
-			if num_inp_images == 1 :
+			if num_inp_images == 1:
 				[nxinp, nyinp, nzinp] = gimme_image_dimensions3D(infile)
 
-				if nzinp == 1 :
+				if nzinp == 1:
 					is_single_2d_image = True
 					num_inp_images = 2
 
-					if out_ext == ".mrc" :
-						if os.path.isfile(outfile) :
-							if infile == outfile :
+					if out_ext == ".mrc":
+						if os.path.isfile(outfile):
+							if infile == outfile:
 								options.inplace = True
-							else :
+							else:
 								os.remove(outfile)
-		else :
+		else:
 			num_inp_images = -1
 			print("Input file '" + infile + "' does not exist.")
 			continue
 
-		if out_ext == inp_ext :
+		if out_ext == inp_ext:
 			num_out_images = num_inp_images
-		elif out_ext == ".mrc" :
-			if num_inp_images > 1 :
-				if is_single_2d_image :
+		elif out_ext == ".mrc":
+			if num_inp_images > 1:
+				if is_single_2d_image:
 					num_out_images = 2
-				else :
+				else:
 					num_out_images = 1
-			else :
+			else:
 				num_out_images = 1
-		else :
+		else:
 			num_out_images = 2
 
 		inp3d = (num_inp_images == 1)
 		out3d = (num_out_images == 1)
 
-		if options.verbose > 1 :
+		if options.verbose > 1:
 			print("input 3d, output 3d =", inp3d, out3d)
 
 		opt3to3 = options.threed2threed
 		opt3to2 = options.threed2twod
 		opt2to3 = options.twod2threed
 
-		if no_2d_3d_options :
-			if inp3d and out3d :
+		if no_2d_3d_options:
+			if inp3d and out3d:
 				options.threed2threed = True
 
-			if inp3d and not out3d :
+			if inp3d and not out3d:
 				options.threed2twod = True
 
-			if out3d and not inp3d :
+			if out3d and not inp3d:
 				options.twod2threed = True
 
-		if options.parallel :
+		if options.parallel:
 			r = doparallel(sys.argv,options.parallel,args)
 			E2end(logid)
 			sys.exit(r)
@@ -388,7 +388,7 @@ def main():
 		if options.average or options.avgseq>0:
 			averager = parsemodopt(options.averager)
 			average = Averagers.get(averager[0], averager[1])
-		else : average = None
+		else: average = None
 
 		fftavg = None
 
@@ -433,7 +433,7 @@ def main():
 				threed_xsize = d.get_xsize()
 				threed_ysize = d.get_ysize()
 				isthreed = False
-		elif infile[0]==":" :
+		elif infile[0]==":":
 			nimg=1
 			isthreed=False
 		else:
@@ -540,7 +540,7 @@ def main():
 				if i < len(imagelist) :
 					if not imagelist[i] :
 						continue
-				else :
+				else:
 					continue
 
 			if options.split and options.split > 1:
@@ -586,7 +586,7 @@ def main():
 
 					d = image_from_formula(n_x, n_y, n_z, func)
 				else:
-					if options.verbose > 1 :
+					if options.verbose > 1:
 						print("Read image #", i, "from input file:")
 
 					d = EMData()
@@ -628,11 +628,11 @@ def main():
 			for append_option in append_options:
 				index_d[append_option] = 0
 
-			if options.verbose > 1 :
+			if options.verbose > 1:
 				print("option list =", optionlist)
 
 			for option1 in optionlist:
-				if options.verbose > 1 :
+				if options.verbose > 1:
 					print("option in option list =", option1)
 				nx = d.get_xsize()
 				ny = d.get_ysize()
@@ -678,7 +678,7 @@ def main():
 						bf=base_name(d["ptcl_source_image"])
 						bl=d["ptcl_source_coord"]
 						if bf in boxes : boxes[bf].append(bl)
-						else : boxes[bf]=[bl]
+						else: boxes[bf]=[bl]
 						boxsize=d["nx"]
 					except:
 						boxesbad+=1
@@ -853,7 +853,7 @@ def main():
 				elif option1 == "headertransform":
 					xfmode = options.headertransform[index_d[option1]]
 
-					if xfmode not in (0,1) :
+					if xfmode not in (0,1):
 						print("Error: headertransform must be set to 0 or 1")
 						sys.exit(1)
 
@@ -967,7 +967,7 @@ def main():
 						elif options.fixintscaling == "full" :
 							d["render_min"]=d["minimum"]*1.001
 							d["render_max"]=d["maximum"]*1.001
-						else :
+						else:
 							try :
 								sca = float(options.fixintscaling)
 							except :
@@ -979,7 +979,7 @@ def main():
 							d["render_max"] = d["mean"] + d["sigma"]*sca
 
 						min_max_set = True
-					else :
+					else:
 						min_max_set = False
 
 					if options.outmode != "float" or dont_scale :
@@ -993,7 +993,7 @@ def main():
 							d["render_min"] = file_mode_range[outmode][0]
 							d["render_max"] = file_mode_range[outmode][1]
 
-						else :
+						else:
 							if not min_max_set :
 								d["render_min"] = d["minimum"]
 								d["render_max"] = d["maximum"]
@@ -1126,7 +1126,7 @@ def main():
 				if options.compressbits>=0:
 					avg.write_compressed(outfile,0,options.compressbits,nooutliers=True)
 				else: avg.write_image(outfile,0)
-			else :
+			else:
 				if options.compressbits>=0:
 					avg.write_compressed(outfile,-1,options.compressbits,nooutliers=True)
 				else: avg.write_image(outfile,-1)
