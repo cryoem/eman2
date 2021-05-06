@@ -127,7 +127,6 @@ def image_from_formula(n_x, n_y, n_z, formula) :
 
 	return EMNumPy.numpy2em(emdn)
 
-# usage: e2proc2d.py [options] input ... input output
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -321,13 +320,6 @@ def main():
 		is_single_2d_image = False
 
 		if is_inp_bdb :
-#			if os.path.isdir("EMAN2DB") :
-#				if not os.path.isfile("EMAN2DB"+"/"+infile[4:]+".bdb") :
-#					print "Input BDB file '" + infile[4:] + "' does not exist."
-#					continue
-#			else :
-#				print "BDB directory EMAN2DB does not exist."
-#				continue
 			num_inp_images = -1
 		elif infile[0] == ":" : 	# special flag to create a new image
 			num_inp_images = 2
@@ -387,9 +379,6 @@ def main():
 
 			if out3d and not inp3d :
 				options.twod2threed = True
-
-#		print "copy file '" + infile + "' to file '" + outfile + "'."
-#		continue
 
 		if options.parallel :
 			r = doparallel(sys.argv,options.parallel,args)
@@ -993,12 +982,7 @@ def main():
 					else :
 						min_max_set = False
 
-					#print_iminfo(data, "Final")
-
 					if options.outmode != "float" or dont_scale :
-	#					if outfile[-4:] != ".hdf" :
-	#						print "WARNING: outmode is not working correctly for non HDF images in"
-	#						print "2.1beta3. We expect to have this fixed in the next few days."
 
 						if options.outnorescale or dont_scale :
 							# This sets the minimum and maximum values to the range
@@ -1009,25 +993,6 @@ def main():
 							d["render_min"] = file_mode_range[outmode][0]
 							d["render_max"] = file_mode_range[outmode][1]
 
-							#if   options.outmode == "int8" :
-								#u =   -128.0
-								#v =    127.0
-							#elif options.outmode == "uint8" :
-								#u =      0.0
-								#v =    255.0
-							#elif options.outmode == "int16" :
-								#u = -32768.0
-								#v =  32767.0
-							#elif options.outmode == "uint16" :
-								#u =      0.0
-								#v =  65535.0
-							#else :
-								#u =      1.0
-								#v =      0.0
-
-							#if u < v :
-								#d["render_min"] = u
-								#d["render_max"] = v
 						else :
 							if not min_max_set :
 								d["render_min"] = d["minimum"]
@@ -1082,8 +1047,6 @@ def main():
 
 								out3d_img = EMData(d.get_xsize(), d.get_ysize(), z)
 
-								#print "Writing dummy"
-
 								try:
 									out3d_img["apix_x"] = d["apix_x"]
 									out3d_img["apix_y"] = d["apix_y"]
@@ -1093,10 +1056,6 @@ def main():
 
 								out3d_img.write_image(outfile, 0, out_type, False, None, out_mode, not_swap)
 								dummy = 1
-
-								#print "Wrote dummy"
-
-							#print "imagelist is", imagelist
 
 							if options.list or options.exclude:
 								if imagelist[i] != 0:
@@ -1112,8 +1071,6 @@ def main():
 
 								region = Region(0, 0, i, d.get_xsize(), d.get_ysize(), 1)
 
-							#print "outtype is", options.outtype
-
 							d.write_image(outfile, 0, out_type, False, region, out_mode, not_swap)
 
 						elif options.unstacking:	# output a series numbered single image files
@@ -1128,8 +1085,6 @@ def main():
 									continue
 
 							d.write_image(out_name, 0, out_type, False, None, out_mode, not_swap)
-
-							#print "I will unstack to HDF" # JESUS
 
 						else:   # output a single 2D image or a 2D stack
 							# optionally replace the output image with its rotational average
