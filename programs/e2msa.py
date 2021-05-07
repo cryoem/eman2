@@ -134,6 +134,7 @@ handled this way."""
 	# Read all image data into numpy array
 	if options.simmx : data=simmx_get(args[0],options.simmx,mask,step)
 	else : data=normal_get(args[0],mask,step)
+	if options.verbose: print("Data read complete")
 	
 	if options.normalize:
 		for i in range(len(data)): data[i]/=np.linalg.norm(data[i])
@@ -303,8 +304,9 @@ def normal_get(images,mask,step):
 	n=(step[2]-step[0])//step[1]
 
 	ret=EMData(int(mask["square_sum"]),n)
-	for i in range(n):
-		im=EMData(images,i*step[1]+step[0])
+	chunk=EMData.read_images(images,[i*step[1]+step[0] for i in range(n)])
+
+	for i,im in enumerate(chunk):
 		imm=im.process("misc.mask.pack",{"mask":mask})
 		ret.insert_clip(imm,(0,i,0))
 	
