@@ -167,10 +167,12 @@ def load_particles(fname, options, shuffle=False):
 	print("Loaded {} particles of box size {}. shrink to {}".format(nptcl, rawbox, boxsz))
 	for i in range(nptcl):
 		e=EMData(fname, i)
-		e.process_inplace("math.fft.resample",{"n":rawbox/boxsz})
-		nx=e["nx"]
-		e.clip_inplace(Region((nx-boxsz)//2,(nx-boxsz)//2, boxsz,boxsz))
-		#e.process_inplace("xform.scale", {"scale":boxsz/rawbox,"clip":boxsz})
+		if rawbox!=boxsz:
+			#### there is some fourier artifact with xform.scale. maybe worth switching to fft.resample?
+			#e.process_inplace("math.fft.resample",{"n":rawbox/boxsz})
+			#nx=e["nx"]
+			#e.clip_inplace(Region((nx-boxsz)//2,(nx-boxsz)//2, boxsz,boxsz))
+			e.process_inplace("xform.scale", {"scale":boxsz/rawbox,"clip":boxsz})
 		hdrs.append(e.get_attr_dict())
 		projs.append(e.numpy().copy())
 		
@@ -195,9 +197,11 @@ def load_particles(fname, options, shuffle=False):
 				xfs=[xfs[i] for i in rndidx]
 			
 	if xflst==False and ("xform.projection" in hdrs[0]):
+		xflst=True
 		xfs=[p["xform.projection"].get_params("eman") for p in hdrs]
-	else:
-		xfs=[Transform() for p in hdrs]
+		
+	if xflst==False:
+		xfs=[Transform().get_params("eman") for p in hdrs]
 		print("No existing transform from particles...")
 		
 	xfsnp=np.array([[x["az"],x["alt"],x["phi"], x["tx"], x["ty"]] for x in xfs], dtype=floattype)
@@ -586,12 +590,12 @@ def main():
 	parser.add_argument("--modelout", type=str,help="output trained model file. only used when --projs is provided", default="")
 	parser.add_argument("--projs", type=str,help="projections with orientations (in hdf header or comment column of lst file) to train model", default="")
 	parser.add_argument("--evalmodel", type=str,help="generate model projection images to the given file name", default="")
-	parser.add_argument("--evalsize", type=int,help="Box size for the projections for evaluation.", default=128)
+	parser.add_argument("--evalsize", type=int,help="Box size for the projections for evaluation.", default=-1)
 	parser.add_argument("--ptclsin", type=str,help="particles input for alignment", default="")
 	parser.add_argument("--ptclsout", type=str,help="aligned particle output", default="")
 	parser.add_argument("--learnrate", type=float,help="learning rate for model training only. Default is 1e-4. ", default=1e-4)
 	parser.add_argument("--sigmareg", type=float,help="regularizer for the sigma of gaussian width. Larger value means all Gaussian functions will have essentially the same width. Smaller value may help compensating local resolution difference.", default=.5)
-	parser.add_argument("--ampreg", type=float,help="regularizer for the Gaussian amplitudes in the first 1/2 of the iterations. Large values will encourage all Gaussians to have similar amplitudes. default = 40", default=40)
+	parser.add_argument("--ampreg", type=float,help="regularizer for the Gaussian amplitudes in the first 1/2 of the iterations. Large values will encourage all Gaussians to have similar amplitudes. default = 0", default=0)
 	parser.add_argument("--niter", type=int,help="number of iterations", default=10)
 	parser.add_argument("--npts", type=int,help="number of points to initialize. ", default=-1)
 	parser.add_argument("--batchsz", type=int,help="batch size", default=32)
@@ -690,6 +694,8 @@ def main():
 			gen_model=build_decoder(pout, ninp=options.nmid)
 		
 		if options.evalmodel:
+			if options.evalsize<0:
+				options.evalsize=raw_boxsz
 			eval_model(gen_model, options)
 		
 	if options.ptclsin:

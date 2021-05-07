@@ -46,16 +46,13 @@ def main():
 		rg=rg*mx+np.mean(p)
 		
 		
-	#exit()
 	onames=[]
 	fname=options.ptclsin
 	lstinp=fname.endswith(".lst")
 	
 	if lstinp:
-		lin=LSXFile(lstinp)
+		lin=LSXFile(fname)
 		
-		
-	#for j,l in enumerate(np.unique(lbs)):
 	for j in range(options.ncls):
 		
 		onm="{}_{:02d}.lst".format(options.ptclsout, j)
@@ -70,8 +67,6 @@ def main():
 			print(onm, rg[j], d[ii[-1]])
 		
 		idx=pts[ii,0].astype(int)
-		
-		
 		
 		if os.path.isfile(onm):
 			os.remove(onm)
@@ -92,7 +87,7 @@ def main():
 		options.setsf=" --setsf "+options.setsf
 	
 	for o in onames:
-		t=o.replace("ptcl", "threed")[:-3]+"hdf"
+		t=o[:-3]+"hdf"
 		print(o,t)
 		cmd="e2make3dpar.py --input {} --output {} --pad {} --mode trilinear --no_wt --keep 1 --threads {} {}".format(o,t, options.pad, options.threads, options.setsf)
 		launch_childprocess(cmd)
