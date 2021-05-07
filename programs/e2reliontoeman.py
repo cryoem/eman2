@@ -81,7 +81,7 @@ CTF autoprocessing after importing is complete.
 
 	if options.apix<=0 :
 		try:
-			options.apix=old_div(star["rlnDetectorPixelSize"][0],star["rlnMagnification"][0])*10000.0
+			options.apix=star["rlnDetectorPixelSize"][0]*10000.0/star["rlnMagnification"][0]
 			print("Using {} A/pix from Relion file".format(options.apix))
 		except:
 			print("A/pix not specified and not found in STAR file")
@@ -96,9 +96,26 @@ CTF autoprocessing after importing is complete.
 		print("V={} Cs={}".format(prj["global.microscope_voltage"],prj["global.microscope_cs"]))
 	except:
 		print("Did not find Voltage and Cs in Relion file")
+		
+	nptcl=len(star["rlnImageName"])
+	try: nfile=len(set(star["rlnMicrographName"]))
+	except: nfile=0
+	if options.verbose>0 :print(f"{nptcl} particles stored in {nfile} micrograph(s)")
+
+	ndfu=len(set(star["rlnDefocusU"]))
+	if options.verbose>0 :print(f"{ndfu} different defocusU values identified")
 	
-	if "rlnMicrographName" in star : difkey="rlnMicrographName"
-	else: difkey="rlnDefocusU"
+	ndfang=len(set(star["rlnDefocusAngle"]))
+	if options.verbose>0 :print(f"{ndfang} different defocus angles identified")
+	
+	if nfile>1 and nfile<nptcl: difkey="rlnMicrographName"
+	elif ndfu>1 and ndfu<nptcl//2: difkey="rlnDefocusU"
+	elif ndfang>1 and ndfang<nptcl//2: difkey="rlnDefocusAngle"
+	else: 
+		print("Can't find a key to identify different micrographs. This may not work well.")
+		difkey="rlnVoltage"
+
+	print("Identifying different micrographs using ",difkey)
 	
 	oldname=""
 	olddf=-1.0
@@ -107,13 +124,18 @@ CTF autoprocessing after importing is complete.
 	for i in range(len(star["rlnImageName"])):
 		name=star["rlnImageName"][i].split("@")[1]
 		imgnum=int(star["rlnImageName"][i].split("@")[0])-1
+		try:
+			dfu=star["rlnDefocusU"][i]
+			dfv=star["rlnDefocusV"][i]
+			dfang=star["rlnDefocusAngle"][i]
+		except: pass
 	
 		if name!=oldname:
 			hdr=EMData("../"+name,0,True)
 			nx=hdr["nx"]
 			ny=hdr["ny"]
 			oldname=name
-			if options.verbose>0 : print("Particle dimensions: {}x{}".format(nx,ny))
+			#if options.verbose>0 : print("Particle dimensions: {}x{}".format(nx,ny))
 		
 		if i==0 or star[difkey][i-1]!=star[difkey][i]:
 			if micronum>0 and options.verbose>0 : print("Image {}: {} particles processed, df={}".format(micronum,fnum,ctf.defocus))
@@ -123,9 +145,6 @@ CTF autoprocessing after importing is complete.
 			jdb=js_open_dict(info_name(microname))
 			
 			# Make a "micrograph" CTF entry for each set of different defocuses to use when fitting
-			dfu=star["rlnDefocusU"][i]
-			dfv=star["rlnDefocusV"][i]
-			dfang=star["rlnDefocusAngle"][i]
 			ctf=EMAN2Ctf()
 			ctf.from_dict({"defocus":old_div((dfu+dfv),20000.0),"dfang":dfang,"dfdiff":old_div((dfu-dfv),10000.0),"voltage":star["rlnVoltage"][i],"cs":max(star["rlnSphericalAberration"][i],0.0001),"ampcont":star["rlnAmplitudeContrast"][i]*100.0,"apix":options.apix})
 			jdb["ctf_frame"]=[512,ctf,(256,256),tuple(),5,1]
@@ -133,6 +152,9 @@ CTF autoprocessing after importing is complete.
 		# copy the image
 		if name[-5:]==".mrcs" : img=EMData("../"+name,imgnum)		# read one slice from the MRC stack
 		else: img=EMData("../"+name,0,False,Region(0,0,imgnum,nx,ny,1))		# read one slice from the MRC stack
+		ctf=EMAN2Ctf()
+		ctf.from_dict({"defocus":old_div((dfu+dfv),20000.0),"dfang":dfang,"dfdiff":old_div((dfu-dfv),10000.0),"voltage":star["rlnVoltage"][i],"cs":max(star["rlnSphericalAberration"][i],0.0001),"ampcont":star["rlnAmplitudeContrast"][i]*100.0,"apix":options.apix})
+		img["ctf"]=ctf
 		img.write_image(microname,fnum)
 		fnum+=1
 

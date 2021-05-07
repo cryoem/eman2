@@ -621,7 +621,9 @@ def main():
 		pts=np.loadtxt(options.model).astype(floattype)
 		npt=len(pts)
 		print("{} gaussian in the model".format(len(pts)))
-		
+	
+	# This initializes the decoder directly from a set of coordinates
+	# This method is used rather than saving the decoder model itself
 	if options.model and options.projs:
 		print("Recompute model from coordinates...")
 		
@@ -645,7 +647,9 @@ def main():
 			
 		print("Abs loss from loaded model : {:.05f}".format(loss[-1]))
 	
+	# Decoder training from generated projections of a 3-D map
 	if options.projs:
+		# The shape of the decoder is defined by the number of Gaussians (npts) and the number of latent variables (nmid) 
 		if gen_model==None:
 			gen_model=build_decoder(options.npts, ninp=options.nmid)
 		print("Train model from ptcl-xfrom pairs...")
