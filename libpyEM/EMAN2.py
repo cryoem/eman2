@@ -2328,30 +2328,30 @@ and translate them into a dictionary."""
 					ln[2]={"lst_comment":ln[2]}
 		return ln
 
-	def read_image(self,n,hdronly=False,region=None):
+	def read_image(self,N,hdronly=False,region=None):
 		"""This reads the image referenced by the nth record in the #LSX file. The same task can be accomplished with EMData.read_image,
 but this method prevents multiple open/close operations on the #LSX file."""
 
-		n,fsp,jsondict=self.read(n)
+		n,fsp,jsondict=self.read(N)
 #		print(self.path,n,fsp,jsondict,hdronly,region)
 		if ret==None: ret=EMData()
 		ret.read_image_c(fsp,n,hdronly,region)
 		ret["source_path"]=self.path
-		ret["source_n"]=n
+		ret["source_n"]=N
 		if len(jsondict)>0 :
 			for k in jsondict: ret[k]=jsondict[k]
 
 		return ret
 
-	def read_into_image(self,ret=None,n=0,hdronly=False,region=None,is_3d=False,imgtype=IMAGE_UNKNOWN):
+	def read_into_image(self,ret=None,N=0,hdronly=False,region=None,is_3d=False,imgtype=IMAGE_UNKNOWN):
 		"""This reads the image referenced by the nth record in the #LSX file. The same task can be accomplished with EMData.read_image,
 but this method prevents multiple open/close operations on the #LSX file."""
 
-		n,fsp,jsondict=self.read(n)
+		n,fsp,jsondict=self.read(N)
 #		print(self.path,n,fsp,jsondict,hdronly,region)
 		ret.read_image_c(fsp,n,hdronly,region,is_3d,imgtype)
 		ret["source_path"]=self.path
-		ret["source_n"]=n
+		ret["source_n"]=N
 		if len(jsondict)>0 :
 			for k in jsondict: ret[k]=jsondict[k]
 
