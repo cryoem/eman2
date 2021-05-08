@@ -2336,6 +2336,8 @@ but this method prevents multiple open/close operations on the #LSX file."""
 #		print(self.path,n,fsp,jsondict,hdronly,region)
 		if ret==None: ret=EMData()
 		ret.read_image_c(fsp,n,hdronly,region)
+		ret["source_path"]=self.path
+		ret["source_n"]=n
 		if len(jsondict)>0 :
 			for k in jsondict: ret[k]=jsondict[k]
 
@@ -2348,6 +2350,8 @@ but this method prevents multiple open/close operations on the #LSX file."""
 		n,fsp,jsondict=self.read(n)
 #		print(self.path,n,fsp,jsondict,hdronly,region)
 		ret.read_image_c(fsp,n,hdronly,region,is_3d,imgtype)
+		ret["source_path"]=self.path
+		ret["source_n"]=n
 		if len(jsondict)>0 :
 			for k in jsondict: ret[k]=jsondict[k]
 
@@ -2361,8 +2365,8 @@ but this method prevents multiple open/close operations on the #LSX file."""
 		if nlst==None or len(nlst)==0:
 			for i in range(self.n):
 				j,p,d=self.read(i)
-				try: d2r[p].append((i,j,d))
-				except: d2r[p]=[(i,j,d)]
+				try: d2r[p].append((i,j,d,i))
+				except: d2r[p]=[(i,j,d,i)]
 			ii=self.n
 		else:
 			# ii is the index of the image in the array we will eventually return, i is the index of the image
@@ -2370,8 +2374,8 @@ but this method prevents multiple open/close operations on the #LSX file."""
 			# override values from the lst comment field
 			for ii,i in enumerate(nlst):
 				j,p,d=self.read(int(i))
-				try: d2r[p].append((ii,j,d))
-				except: d2r[p]=[(ii,j,d)]
+				try: d2r[p].append((ii,j,d,i))
+				except: d2r[p]=[(ii,j,d,i)]
 			ii+=1
 
 #		out=open("dbug.txt","w")
@@ -2382,7 +2386,10 @@ but this method prevents multiple open/close operations on the #LSX file."""
 			tpls=d2r[fsp]
 			imgs=EMData.read_images_c(fsp,[i[1] for i in tpls],IMAGE_UNKNOWN,hdronly)
 			for i,tpl in enumerate(tpls):
-				for k in tpl[2]: imgs[i][k]=tpl[2][k]
+				for k in tpl[2]: 
+					imgs[i][k]=tpl[2][k]
+				imgs[i]["source_path"]=self.path
+				imgs[i]["source_n"]=tpl[3]
 				ret[tpl[0]]=imgs[i]
 #				out.write(f"{tpl[0]}\t{i}\t{fsp}\n")
 
