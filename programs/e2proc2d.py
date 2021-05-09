@@ -319,7 +319,7 @@ def main():
 
 		is_single_2d_image = False
 
-		if is_inp_bdb :
+		if is_inp_bdb:
 			num_inp_images = -1
 		elif infile[0] == ":": 	# special flag to create a new image
 			num_inp_images = 2
@@ -480,7 +480,7 @@ def main():
 			print("%d images, processing %d-%d stepping by %d"%(nimg,n0,n1,options.step[1]))
 
 		# Now we deal with inclusion/exclusion lists
-		if options.list or options.select :
+		if options.list or options.select:
 			imagelist = [0]*nimg
 
 			if options.list:
@@ -498,7 +498,7 @@ def main():
 				nk=0
 				while nk<options.randomn:
 					i=random.randrange(nimg)
-					if imagelist[i] : continue
+					if imagelist[i]: continue
 					imagelist[i]=1
 					nk+=1
 		else: imagelist = [1]*nimg
@@ -508,14 +508,14 @@ def main():
 				for i in options.exclude.split(","):
 					imagelist[int(i)]=0
 			else:
-				for i in read_number_file(options.exclude) : imagelist[i] = 0
+				for i in read_number_file(options.exclude): imagelist[i] = 0
 
 			if options.verbose: print("inclusion list:",str(imagelist))
 
 		sfcurve1 = None
 
 		lasttime = time.time()
-		if outfile!=None :
+		if outfile!=None:
 			outfilename_no_ext = outfile[:-4]
 			outfilename_ext = outfile[-3:]
 
@@ -524,7 +524,7 @@ def main():
 
 		dummy = 0										#JESUS
 
-		if options.verbose > 1 :
+		if options.verbose > 1:
 			print("input file, output file, is three-d =", infile, outfile, isthreed)
 
 		count=0
@@ -536,9 +536,9 @@ def main():
 					sys.stdout.flush()
 					lasttime = time.time()
 
-			if imagelist :
-				if i < len(imagelist) :
-					if not imagelist[i] :
+			if imagelist:
+				if i < len(imagelist):
+					if not imagelist[i]:
 						continue
 				else:
 					continue
@@ -550,26 +550,26 @@ def main():
 				if options.threed2threed or options.threed2twod:
 					d = EMData()
 					d.read_image(infile, 0, False, Region(0,0,i,threed_xsize,threed_ysize,1))
-				elif infile[0] == ":" :
+				elif infile[0] == ":":
 					vals = infile.split(":")
 
-					if len(vals) not in (3,4,5) :
+					if len(vals) not in (3,4,5):
 						print("Error: Specify new images as ':X:Y:f(x,y)' or ':X:Y:Z:f(x,y,z)', 0<=x<X, 0<=y<Y, 0<=z<Z")
 						sys.exit(1)
 
 					n_x = int(vals[1])
 					n_y = int(vals[2])
 					n_z = 1
-					if len(vals) > 4 : n_z = int(vals[3])
+					if len(vals) > 4: n_z = int(vals[3])
 
-					if n_x <= 0 or n_y <= 0 or n_z <= 0 :
+					if n_x <= 0 or n_y <= 0 or n_z <= 0:
 						print("Error: Image dimensions must be positive integers:", n_x, n_y, n_z)
 						sys.exit(1)
 
 					func = "0"
-					if len(vals) >= 4 : func = vals[-1]
+					if len(vals) >= 4: func = vals[-1]
 
-					try :
+					try:
 						x  = 0.0
 						y  = 0.0
 						z  = 0.0
@@ -580,7 +580,7 @@ def main():
 						ny = 1
 						nz = 1
 						w = eval(func)
-					except :
+					except:
 						print("Error: Syntax error in image expression '" + func + "'")
 						sys.exit(1)
 
@@ -644,7 +644,7 @@ def main():
 					d.set_attr('apix_z', apix)
 
 					try:
-						if i == n0 and d["ctf"].apix != apix :
+						if i == n0 and d["ctf"].apix != apix:
 							if options.verbose > 0:
 								print("Warning: A/pix value in CTF was %1.2f, changing to %1.2f. May impact CTF parameters."%(d["ctf"].apix,apix))
 
@@ -692,7 +692,7 @@ def main():
 					d.add(options.add[index_d[option1]])
 					af=None
 					index_d[option1] += 1
-				elif option1 == "mult" :
+				elif option1 == "mult":
 					d.mult(options.mult)
 				elif option1 == "multfile":
 					mf = EMData(options.multfile[index_d[option1]],0)
@@ -705,13 +705,13 @@ def main():
 					f = dd.do_fft()
 					#f = d.do_fft()
 
-					if d["apix_x"] <= 0 : raise Exception("Error: 'calccont' requires an A/pix value, which is missing in the input images")
+					if d["apix_x"] <= 0: raise Exception("Error: 'calccont' requires an A/pix value, which is missing in the input images")
 
 					lopix = int(d["nx"]*d["apix_x"]/150.0)
 					hipix = int(d["nx"]*d["apix_x"]/25.0)
-					if hipix>old_div(d["ny"],2)-6 : hipix=old_div(d["ny"],2)-6	# if A/pix is very large, this makes sure we get at least some info
+					if hipix>old_div(d["ny"],2)-6: hipix=old_div(d["ny"],2)-6	# if A/pix is very large, this makes sure we get at least some info
 
-					if lopix == hipix : lopix,hipix = 3,old_div(d["nx"],5)	# in case the A/pix value is drastically out of range
+					if lopix == hipix: lopix,hipix = 3,old_div(d["nx"],5)	# in case the A/pix value is drastically out of range
 
 					r = f.calc_radial_dist(old_div(d["ny"],2),0,1.0,1)
 					lo = old_div(sum(r[lopix:hipix]),(hipix-lopix))
@@ -780,7 +780,7 @@ def main():
 				elif option1 == "rotate":
 					rotatef = options.rotate[index_d[option1]]
 
-					if rotatef != 0.0 : d.rotate(rotatef,0,0)
+					if rotatef != 0.0: d.rotate(rotatef,0,0)
 
 					index_d[option1] += 1
 
@@ -788,7 +788,7 @@ def main():
 					tdx,tdy = options.translate[index_d[option1]].split(",")
 					tdx,tdy = float(tdx),float(tdy)
 
-					if tdx != 0.0 or tdy != 0.0 :
+					if tdx != 0.0 or tdy != 0.0:
 						d.translate(tdx,tdy,0.0)
 						#print(f"translate {tdx},{tdy}")
 
@@ -813,7 +813,7 @@ def main():
 					d = e
 					index_d[option1] += 1
 
-				elif option1 == "randomize" :
+				elif option1 == "randomize":
 					ci = index_d[option1]
 					rnd = options.randomize[ci].split(",")
 					rnd[0] = float(rnd[0])
@@ -860,7 +860,7 @@ def main():
 					try: xform=d["xform.align2d"]
 					except: print("Error: particle has no xform.align2d header value")
 
-					if xfmode == 1 : xform.invert()
+					if xfmode == 1: xform.invert()
 
 					d.process_inplace("xform",{"transform":xform})
 
@@ -931,7 +931,7 @@ def main():
 					if not options.outtype:
 						options.outtype = "unknown"
 
-					if options.verbose > 1 :
+					if options.verbose > 1:
 						print("output type =", options.outtype)
 
 					if i == 0:
@@ -959,8 +959,8 @@ def main():
 
 					dont_scale = (options.fixintscaling == "noscale")
 
-					if options.fixintscaling != None and not dont_scale :
-						if options.fixintscaling == "sane" :
+					if options.fixintscaling != None and not dont_scale:
+						if options.fixintscaling == "sane":
 							sca = 2.5
 							d["render_min"] = d["mean"] - d["sigma"]*sca
 							d["render_max"] = d["mean"] + d["sigma"]*sca
@@ -968,9 +968,9 @@ def main():
 							d["render_min"]=d["minimum"]*1.001
 							d["render_max"]=d["maximum"]*1.001
 						else:
-							try :
+							try:
 								sca = float(options.fixintscaling)
-							except :
+							except:
 								sca = 2.5
 
 								print("Warning: bad fixintscaling value - 2.5 used")
@@ -982,9 +982,9 @@ def main():
 					else:
 						min_max_set = False
 
-					if options.outmode != "float" or dont_scale :
+					if options.outmode != "float" or dont_scale:
 
-						if options.outnorescale or dont_scale :
+						if options.outnorescale or dont_scale:
 							# This sets the minimum and maximum values to the range
 							# for the specified type, which should result in no rescaling
 
@@ -994,7 +994,7 @@ def main():
 							d["render_max"] = file_mode_range[outmode][1]
 
 						else:
-							if not min_max_set :
+							if not min_max_set:
 								d["render_min"] = d["minimum"]
 								d["render_max"] = d["maximum"]
 
