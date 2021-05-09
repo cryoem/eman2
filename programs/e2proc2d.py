@@ -295,7 +295,7 @@ def main():
 			is_inp_bdb = False
 			is_out_bdb = False
 
-			if (infile[0]==":") : inp_ext=".hdf"
+			if infile[0]==":": inp_ext=".hdf"
 			else: inp_ext = os.path.splitext(infile)[1]
 			out_ext = None
 
@@ -305,7 +305,7 @@ def main():
 			is_inp_bdb = (len (infile)  >= 4 and infile.lower() [0:4] == "bdb:")
 			is_out_bdb = (len (outfile) >= 4 and outfile.lower()[0:4] == "bdb:")
 
-			if (infile[0]==":"): inp_ext=".hdf"
+			if infile[0]==":": inp_ext=".hdf"
 			else: inp_ext = os.path.splitext(infile)[1]
 			out_ext = os.path.splitext(outfile)[1]
 
@@ -739,10 +739,10 @@ def main():
 							if sfcurve1[j] > 0 and sfcurve2[j] > 0:
 								sfcurve2[j] = sqrt(old_div(sfcurve1[j], sfcurve2[j]))
 							else:
-								sfcurve2[j] = 0;
+								sfcurve2[j] = 0
 
-							dataf.apply_radial_func(x0, step, sfcurve2);
-							d = dataf.do_ift();
+							dataf.apply_radial_func(x0, step, sfcurve2)
+							d = dataf.do_ift()
 	#						dataf.gimme_fft();
 
 				elif option1 == "rfp":
@@ -821,9 +821,9 @@ def main():
 					rnd[2] = int(rnd[2])
 
 					t = Transform()
-					t.set_params({"type":"2d", "alpha":random.uniform(-rnd[0],rnd[0]), \
-									"mirror":random.randint(0,rnd[2]), "tx":random.uniform(-rnd[1],rnd[1]), \
-									"ty":random.uniform(-rnd[1],rnd[1])})
+					t.set_params({"type":"2d", "alpha":random.uniform(-rnd[0],rnd[0]),
+								  "mirror":random.randint(0,rnd[2]), "tx":random.uniform(-rnd[1],rnd[1]),
+								  "ty":random.uniform(-rnd[1],rnd[1])})
 					d.transform(t)
 
 				elif option1 == "medianshrink":
