@@ -385,7 +385,7 @@ def main():
 			E2end(logid)
 			sys.exit(r)
 
-		if options.average or options.avgseq>0:
+		if options.average or options.avgseq > 0:
 			averager = parsemodopt(options.averager)
 			average = Averagers.get(averager[0], averager[1])
 		else: average = None
@@ -490,17 +490,17 @@ def main():
 				db = db_open_dict("bdb:.#select",ro=True)
 
 				for i in db[options.select]: imagelist[i] = 1
-		elif options.randomn>0:
+		elif options.randomn > 0:
 			imagelist = [0]*nimg
-			if options.randomn>=nimg :
+			if options.randomn >= nimg:
 				imagelist = [1]*nimg
 			else:
-				nk=0
-				while nk<options.randomn:
-					i=random.randrange(nimg)
+				nk = 0
+				while nk < options.randomn:
+					i = random.randrange(nimg)
 					if imagelist[i]: continue
-					imagelist[i]=1
-					nk+=1
+					imagelist[i] = 1
+					nk += 1
 		else: imagelist = [1]*nimg
 
 		if options.exclude :
@@ -510,7 +510,7 @@ def main():
 			else:
 				for i in read_number_file(options.exclude): imagelist[i] = 0
 
-			if options.verbose: print("inclusion list:",str(imagelist))
+			if options.verbose: print("inclusion list:", str(imagelist))
 
 		sfcurve1 = None
 
@@ -527,9 +527,9 @@ def main():
 		if options.verbose > 1:
 			print("input file, output file, is three-d =", infile, outfile, isthreed)
 
-		count=0
+		count = 0
 		for i in range(n0, n1+1, options.step[1]):
-			count+=1
+			count += 1
 			if options.verbose >= 1:
 				if time.time()-lasttime > 3 or options.verbose > 2 :
 					sys.stdout.write(" %7d\r" %i)
@@ -669,28 +669,28 @@ def main():
 								pass
 
 					if processorname in outplaceprocs:
-						d=d.process(processorname, param_dict)
+						d = d.process(processorname, param_dict)
 					else: d.process_inplace(processorname, param_dict)
 					index_d[option1] += 1
 
 				elif option1 == "extractboxes":
 					try:
-						bf=base_name(d["ptcl_source_image"])
-						bl=d["ptcl_source_coord"]
+						bf = base_name(d["ptcl_source_image"])
+						bl = d["ptcl_source_coord"]
 						if bf in boxes : boxes[bf].append(bl)
 						else: boxes[bf]=[bl]
-						boxsize=d["nx"]
+						boxsize = d["nx"]
 					except:
-						boxesbad+=1
+						boxesbad += 1
 
 				elif option1 == "addfile":
 					af=EMData(options.addfile[index_d[option1]],0)
 					d.add(af)
-					af=None
+					af = None
 					index_d[option1] += 1
 				elif option1 == "add":
 					d.add(options.add[index_d[option1]])
-					af=None
+					af = None
 					index_d[option1] += 1
 				elif option1 == "mult":
 					d.mult(options.mult)
@@ -998,9 +998,9 @@ def main():
 								d["render_min"] = d["minimum"]
 								d["render_max"] = d["maximum"]
 
-					if options.avgseq>1:
+					if options.avgseq > 1:
 						average.add_image(d)
-						if count%options.avgseq==0:
+						if count%options.avgseq == 0:
 							d=average.finish()
 #							print(f"{count} {d['ptcl_repr']}")
 
@@ -1075,7 +1075,7 @@ def main():
 
 						elif options.unstacking:	# output a series numbered single image files
 							out_name = os.path.splitext(outfile)[0]+'-'+str(i+1).zfill(len(str(nimg)))+os.path.splitext(outfile)[-1]
-							if d["sigma"]==0:
+							if d["sigma"] == 0:
 								if options.verbose > 0:
 									print("Warning: sigma = 0 for image ",i)
 
@@ -1095,7 +1095,7 @@ def main():
 
 								for x in range(len(rd)): d[x] = rd[x]
 
-							if d["sigma"]==0:
+							if d["sigma"] == 0:
 								if options.verbose > 0:
 									print("Warning: sigma = 0 for image ",i)
 
@@ -1104,7 +1104,7 @@ def main():
 										print("Use the writejunk option to force writing this image to disk")
 									continue
 
-							if outfile!=None :
+							if outfile != None:
 								if options.inplace:
 									if options.compressbits>=0:
 										d.write_compressed(outfile,i,options.compressbits,nooutliers=True)
@@ -1123,11 +1123,11 @@ def main():
 	#		average.process_inplace("normalize");
 
 			if options.inplace:
-				if options.compressbits>=0:
+				if options.compressbits >= 0:
 					avg.write_compressed(outfile,0,options.compressbits,nooutliers=True)
 				else: avg.write_image(outfile,0)
 			else:
-				if options.compressbits>=0:
+				if options.compressbits >= 0:
 					avg.write_compressed(outfile,-1,options.compressbits,nooutliers=True)
 				else: avg.write_image(outfile,-1)
 
@@ -1135,7 +1135,7 @@ def main():
 			fftavg.mult(old_div(1.0, sqrt(n1 - n0 + 1)))
 			fftavg.write_image(options.fftavg, 0)
 
-			curve = fftavg.calc_radial_dist(ny, 0, 0.5,1)
+			curve = fftavg.calc_radial_dist(ny, 0, 0.5, 1)
 			outfile2 = options.fftavg+".txt"
 
 			sf_dx = old_div(1.0, (apix * 2.0 * ny))
