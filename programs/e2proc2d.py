@@ -310,12 +310,12 @@ def main():
 			out_ext = os.path.splitext(outfile)[1]
 
 			if out_ext == "" and multiple_files and not is_out_bdb :
-					out_ext = inp_ext
-					outfile = outfile + out_ext
+				out_ext = inp_ext
+				outfile = outfile + out_ext
 
 			if out_ext == ".lst":
-					print("Output file extension may not be .lst: " + outfile)
-					continue
+				print("Output file extension may not be .lst: " + outfile)
+				continue
 
 		is_single_2d_image = False
 
