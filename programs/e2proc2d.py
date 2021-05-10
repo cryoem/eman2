@@ -51,7 +51,7 @@ xzplanes = ['xz', 'zx']
 yzplanes = ['yz', 'yz']
 threedplanes = xyplanes + xzplanes + yzplanes
 
-def changed_file_name (input_name, output_pattern, input_number, multiple_inputs) :
+def changed_file_name(input_name, output_pattern, input_number, multiple_inputs):
 	# convert an input file name to an output file name
 	# by replacing every @ or * in output_pattern with
 	# the input file base name (no extension)
@@ -88,7 +88,7 @@ def changed_file_name (input_name, output_pattern, input_number, multiple_inputs
 
 	return outname
 
-def image_from_formula(n_x, n_y, n_z, formula) :
+def image_from_formula(n_x, n_y, n_z, formula):
 	# Create a 2D or 3D image from a formula in x, y, z,
 	# with 0 <= x <= n_x-1, 0 <= y <= n_y-1, 0 <= z <= n_z-1,
 	# with a formula like "x+y+z" or "x*y+10*z" or "x+y".
@@ -309,7 +309,7 @@ def main():
 			else: inp_ext = os.path.splitext(infile)[1]
 			out_ext = os.path.splitext(outfile)[1]
 
-			if out_ext == "" and multiple_files and not is_out_bdb :
+			if out_ext == "" and multiple_files and not is_out_bdb:
 				out_ext = inp_ext
 				outfile = outfile + out_ext
 
@@ -484,7 +484,7 @@ def main():
 			imagelist = [0]*nimg
 
 			if options.list:
-				for i in read_number_file(options.list) : imagelist[i] = 1
+				for i in read_number_file(options.list): imagelist[i] = 1
 
 			if options.select:
 				db = db_open_dict("bdb:.#select",ro=True)
