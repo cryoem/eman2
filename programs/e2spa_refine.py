@@ -41,7 +41,7 @@ def main():
 		r=1/res
 		for i,eo in enumerate(["even","odd"]):
 			run("e2proclst.py {} --create {}/ptcls_00_{}.lst --range {},{},2".format(options.ptcl, options.path, eo, i, npt))
-			run("e2proc3d.py {} {}/threed_00_{}.hdf --process filter.lowpass.gauss:cutoff_freq={:.4f} --process filter.lowpass.randomphase:cutoff_freq={:.4f} --compressbits {}".format(options.ref, options.path, eo, r,r,options.compressbits))
+			run("e2proc3d.py {} {}/threed_00_{}.hdf --process filter.lowpass.gauss:cutoff_freq={:.4f} --process filter.lowpass.randomphase:cutoff_freq={:.4f}".format(options.ref, options.path, eo, r,r))
 	
 	
 	for i in range(options.startiter, options.startiter+options.niter):
@@ -56,7 +56,7 @@ def main():
 			
 		if i>0:
 			tophat=" --tophat {}".format(options.tophat)
-		run("e2refine_postprocess.py --even {pt}/threed_{i1:02d}_even.hdf --sym {s} --setsf {sf} --restarget {rs:.1f} {tp} --threads {th} --automask3d {amask} --compressbits {bits}".format(pt=options.path, i1=i+1, s=sym, sf=options.setsf, rs=res*.8, tp=tophat, th=options.threads, amask=options.automask3d, bits=options.compressbits))
+		run("e2refine_postprocess.py --even {pt}/threed_{i1:02d}_even.hdf --sym {s} --setsf {sf} --restarget {rs:.1f} {tp} --threads {th} --automask3d {amask}".format(pt=options.path, i1=i+1, s=sym, sf=options.setsf, rs=res*.8, tp=tophat, th=options.threads, amask=options.automask3d))
 		
 		fsc=np.loadtxt("{}/fsc_masked_{:02d}.txt".format(options.path, i+1))
 		fi=fsc[:,1]<0.2
