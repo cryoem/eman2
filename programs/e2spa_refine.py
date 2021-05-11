@@ -22,7 +22,8 @@ def main():
 	parser.add_argument("--tophat", type=str, default="local" ,help="Default=local, can also specify localwiener")
 	parser.add_argument("--threads", type=int,help="threads to use during postprocessing of 3d volumes", default=4)
 	parser.add_argument("--automask3d", default="auto", type=str,help="Default=auto. Specify as a processor, eg - mask.auto3d:threshold=1.1:radius=30:nshells=5:nshellsgauss=5.")
-
+	parser.add_argument("--compressbits", type=int,help="Bits to keep when writing images. 4 generally safe for raw data. 0-> true lossless (floating point). Default 6", default=6, guitype='intbox', row=10, col=1, rowspan=1, colspan=1, mode='filter[6]')
+	
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	
@@ -40,7 +41,7 @@ def main():
 		r=1/res
 		for i,eo in enumerate(["even","odd"]):
 			run("e2proclst.py {} --create {}/ptcls_00_{}.lst --range {},{},2".format(options.ptcl, options.path, eo, i, npt))
-			run("e2proc3d.py {} {}/threed_00_{}.hdf --process filter.lowpass.gauss:cutoff_freq={:.4f} --process filter.lowpass.randomphase:cutoff_freq={:.4f}".format(options.ref, options.path, eo, r,r))
+			run("e2proc3d.py {} {}/threed_00_{}.hdf --process filter.lowpass.gauss:cutoff_freq={:.4f} --process filter.lowpass.randomphase:cutoff_freq={:.4f} --compressbits {}".format(options.ref, options.path, eo, r,r,options.compressbits))
 	
 	
 	for i in range(options.startiter, options.startiter+options.niter):
@@ -55,7 +56,7 @@ def main():
 			
 		if i>0:
 			tophat=" --tophat {}".format(options.tophat)
-		run("e2refine_postprocess.py --even {pt}/threed_{i1:02d}_even.hdf --sym {s} --setsf {sf} --restarget {rs:.1f} {tp} --threads {th} --automask3d {amask}".format(pt=options.path, i1=i+1, s=sym, sf=options.setsf, rs=res*.8, tp=tophat, th=options.threads, amask=options.automask3d))
+		run("e2refine_postprocess.py --even {pt}/threed_{i1:02d}_even.hdf --sym {s} --setsf {sf} --restarget {rs:.1f} {tp} --threads {th} --automask3d {amask} --compressbits {bits}".format(pt=options.path, i1=i+1, s=sym, sf=options.setsf, rs=res*.8, tp=tophat, th=options.threads, amask=options.automask3d, bits=options.compressbits))
 		
 		fsc=np.loadtxt("{}/fsc_masked_{:02d}.txt".format(options.path, i+1))
 		fi=fsc[:,1]<0.2
