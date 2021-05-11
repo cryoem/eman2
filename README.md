@@ -22,3 +22,4 @@ Coding Style
    3) All functions use lower cases with '_' as the word separator.
    4) All parameter names for modular class use lower cases with '_' 
    as the word separator.
+ 
