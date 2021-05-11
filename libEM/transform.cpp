@@ -837,6 +837,7 @@ Dict Transform::get_rotation(const string& euler_type) const
 	if (scale == 0) throw UnexpectedBehaviorException("The determinant of the Transform is 0. This is unexpected.");
 
 	double cosalt = matrix[2][2]/scale;
+    double sinalt =  sqrt(matrix[2][0]*matrix[2][0]+matrix[2][1]*matrix[2][1])/scale; // PRB May 2021
 	double x_mirror_scale = (x_mirror ? -1.0f : 1.0f);
 	double inv_scale = 1.0f/scale;
 
@@ -944,20 +945,26 @@ Dict Transform::get_rotation(const string& euler_type) const
 //		printf("%f %f %f",matrix[0][0],matrix[1][1],matrix[2][2]);
 		double traceR = matrix[0][0]+matrix[1][1]+matrix[2][2]; // This should be 1 + 2 cos omega
 	        double cosomega =  (traceR-1.0)/2.0;
-		if (cosomega>1.0) cosomega=1.0;
+            
+        double A0 =(matrix[1][2]-matrix[2][1])/2.0;
+        double A1 =(matrix[2][0]-matrix[0][2])/2.0;
+        double A2 =(matrix[1][2]-matrix[2][0])/2.0;
+        double sinomega = sqrt(A0*A0+A1*A1+A2*A2);
+
+        if (cosomega>1.0) cosomega=1.0;
 		if (cosomega<-1.0) cosomega=-1.0;
 		
 		  // matrix(x,y)-matrix(y,x) = 2 n_z   sin(omega) etc
 		 // trace matrix = 1 + 2 cos(omega)
-		double sinOover2= sqrt((1.0 -cosomega)/2.0);
-		double cosOover2= sqrt(1.0 -sinOover2*sinOover2);
-		double sinomega = 2* sinOover2*cosOover2; 
-	        double n1 = 0; double n2 = 0;   double n3 = 0;
-		if (sinomega>0) {
-		      n1 = (matrix[1][2]-matrix[2][1])/2.0/sinomega ;
-		      n2 = (matrix[2][0]-matrix[0][2])/2.0/sinomega ;
-		      n3 = (matrix[0][1]-matrix[1][0])/2.0/sinomega ;
-		}
+		double cosOover2= sqrt( (1.0 +cosomega)/2.0);
+		double sinOover2= sinomega/cosOover2/2.0;
+		//double sinOover2= sqrt((1.0 -cosomega)/2.0);
+        //double sinomega = 2* sinOover2*cosOover2;    // Not a  great formula. See above
+        
+        double n1 = A0/sinomega; 
+        double n2 = A1/sinomega;   
+        double n3 = A2/sinomega;
+            
 		
 		
 		if (sinOover2==1) {// This will also mean sinomega=0, omega =pi, 
@@ -976,7 +983,7 @@ Dict Transform::get_rotation(const string& euler_type) const
 		}
 
 		if (type == "spin"){
-		    result["omega"] = EMConsts::rad2deg * acos(cosomega);
+		    result["omega"] = EMConsts::rad2deg * asin(sinomega); //Changed by PRB
 		    result["n1"] = n1;
 		    result["n2"] = n2;
 		    result["n3"] = n3;
