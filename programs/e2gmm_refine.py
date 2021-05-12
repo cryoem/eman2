@@ -164,18 +164,21 @@ def load_particles(fname, options, shuffle=False):
 	hdrs=[]
 	e=EMData(fname, 0, True)
 	rawbox=e["nx"]
-	print("Loaded {} particles of box size {}. shrink to {}".format(nptcl, rawbox, boxsz))
-	for i in range(nptcl):
-		e=EMData(fname, i)
-		if rawbox!=boxsz:
-			#### there is some fourier artifact with xform.scale. maybe worth switching to fft.resample?
-			#e.process_inplace("math.fft.resample",{"n":rawbox/boxsz})
-			#nx=e["nx"]
-			#e.clip_inplace(Region((nx-boxsz)//2,(nx-boxsz)//2, boxsz,boxsz))
-			e.process_inplace("xform.scale", {"scale":boxsz/rawbox,"clip":boxsz})
-		hdrs.append(e.get_attr_dict())
-		projs.append(e.numpy().copy())
-		
+	print("Loading {} particles of box size {}. shrink to {}".format(nptcl, rawbox, boxsz))
+	for j in range(0,nptcl,1000):
+		print(f"{j}/{nptcl}      \r",end="")
+		sys.stdout.flush()
+		el=EMData.read_images(fname,range(j,min(j+1000,nptcl)))
+		for e in el:
+			if rawbox!=boxsz:
+				#### there is some fourier artifact with xform.scale. maybe worth switching to fft.resample?
+				e.process_inplace("math.fft.resample",{"n":rawbox/boxsz})
+				#nx=e["nx"]
+				#e.clip_inplace(Region((nx-boxsz)//2,(nx-boxsz)//2, boxsz,boxsz))
+				#e.process_inplace("xform.scale", {"scale":boxsz/rawbox,"clip":boxsz})
+			hdrs.append(e.get_attr_dict())
+			projs.append(e.numpy().copy())
+	print(f"{nptcl}/{nptcl}")
 	projs=np.array(projs)/1e3
 	
 	if shuffle:
@@ -208,6 +211,7 @@ def load_particles(fname, options, shuffle=False):
 	xfsnp[:,:3]=xfsnp[:,:3]*np.pi/180.
 	xfsnp[:,3:]/=float(rawbox)
 	
+	print("Data read complete")
 	return data_cpx,xfsnp
 	
 #### do fourier clipping in numpy than export to tf to save memory...
