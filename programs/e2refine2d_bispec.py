@@ -126,7 +126,7 @@ def main():
 	if options.parallel :
 		parstr="--parallel="+options.parallel
 		if options.parallel[:6]=="thread" :
-			options.threads=int(options.parallel.split(":")[-1])
+			options.threads=int(options.parallel.split(":")[1])
 			print("--threads set to match --parallel")
 	else : parstr=""
 

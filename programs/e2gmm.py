@@ -229,6 +229,12 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wedtrainiter = QtWidgets.QLineEdit("10")
 		self.wedtrainiter.setToolTip("Training iterations per stage")
 		self.gflparm.addRow("Train iter:",self.wedtrainiter)
+
+		self.wbutconv = QtWidgets.QPushButton("Convolutional")
+		self.wbutconv.setCheckable(True)
+		self.wbutconv.setChecked(True)
+		self.wbutconv.setToolTip("Use a convolutional neural network structure)")
+		self.gflparm.addRow(" ",self.wbutconv)
 		
 		self.wbutpos = QtWidgets.QPushButton("Position")
 		self.wbutpos.setCheckable(True)
@@ -463,6 +469,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.currun["dim"]=int(self.weddim.text())
 		self.currun["mask"]=str(self.wedmask.text())
 		self.currun["trainiter"]=int(self.wedtrainiter.text())
+		self.currun["conv"]=butval(self.wbutconv)
 		self.currun["pas"]=butval(self.wbutpos)+butval(self.wbutamp)+butval(self.wbutsig)
 		self.currun["time"]=local_datetime()
 		self.jsparm["run_"+self.currunkey]=self.currun
@@ -574,7 +581,9 @@ class EMGMM(QtWidgets.QMainWindow):
 		if prog.wasCanceled() : return
 
 		# heterogeneity analysis
-		er=run(f"e2gmm_refine.py --model {modelout} --ptclsin {self.gmm}/particles.lst --heter --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} --gradout {self.gmm}/{self.currunkey}_grads.hdf {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {self.gmm}/{self.currunkey}_decoder.h5 --pas {self.currun['pas']}")
+		if self.currun["conv"]: conv="--conv"
+		else: conv=""
+		er=run(f"e2gmm_refine.py --model {modelout} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} --gradout {self.gmm}/{self.currunkey}_grads.hdf {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {self.gmm}/{self.currunkey}_decoder.h5 --pas {self.currun['pas']}")
 		if er :
 			showerror("Error running e2gmm_refine, see console for details. Memory is a common issue. Consider reducing the target resolution.")
 			return
@@ -634,6 +643,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wedsym.setText(f'{self.currun.get("sym","c1")}')
 		self.wedmask.setText(f'{self.currun.get("mask",self.jsparm.getdefault("mask",f"{self.gmm}/mask.hdf"))}')
 		self.wedtrainiter.setText(f'{self.currun.get("trainiter",10)}')
+		self.wbutconv.setChecked(self.currun.get("conv",True))
 		pas=self.currun.get("pas","100")
 		self.wbutpos.setChecked(int(pas[0]))
 		self.wbutamp.setChecked(int(pas[1]))
