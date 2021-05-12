@@ -449,6 +449,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.gaussplot.setData(centers,self.wvssphsz.value)
 		self.centers=centers
 		self.amps=amps
+		self.wids=np.full(len(amps),1.0)
 		self.wview3d.update()
 
 	def do_run(self,clk=False):
@@ -538,7 +539,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		for it in range(3):
 			with open(modelseg,"w") as out:
 				for i in range(len(self.amps)):
-					try: out.write(f"{self.centers[0,i]/nx:1.2f}\t{self.centers[1,i]/nx:1.2f}\t{-self.centers[2,i]/nx:1.2f}\t{self.amps[i]:1.3f}\t1.0\n")
+					try: out.write(f"{self.centers[0,i]/nx:1.2f}\t{self.centers[1,i]/nx:1.2f}\t{-self.centers[2,i]/nx:1.2f}\t{self.amps[i]:1.3f}\t{self.wids[i]:1.3f}\n")
 					except: print("write errror: ",self.centers[:,i],self.amps[i],self.amps.shape,i)
 
 			prog.setValue(it+1)
@@ -547,17 +548,20 @@ class EMGMM(QtWidgets.QMainWindow):
 			if (len(self.currun["mask"])>4) : mask=f"--mask {self.currun['mask']}"
 			else: mask=""
 
-			er=run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --npt {self.currun['ngauss']} --sym {sym} --maxboxsz {maxbox} --model {modelseg} --modelout {modelout} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']}")
+			er=run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --npt {self.currun['ngauss']} --sym {sym} --maxboxsz {maxbox} --model {modelseg} --modelout {modelout} --niter 15 {mask} --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']}")
 			if er :
 				showerror("Error running e2gmm_refine, see console for details. GPU memory exhaustion is a common issue. Consider reducing the target resolution.")
 				return
 			
 			pts=np.loadtxt(modelout).transpose()
 			pts[2]*=-1.0
-			pts[:3,:ncen]=self.centers[:,:ncen]
-			pts[3:4,:ncen]=self.amps[:ncen]
+			n2c=min(ncen,pts.shape[1])
+			pts[:3,:n2c]=self.centers[:,:n2c]
+			pts[3:4,:n2c]=self.amps[:n2c]
+			pts[4,:n2c]=1.0
 			self.centers=pts[:3,:]
 			self.amps=pts[3]
+			self.wids=pts[4]
 			
 			self.gaussplot.setData(self.centers,self.wvssphsz.value)
 			self.wview3d.update()
@@ -570,7 +574,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		if prog.wasCanceled() : return
 
 		# heterogeneity analysis
-		er=run(f"e2gmm_refine.py --model {modelout} --ptclsin {self.gmm}/particles.lst --heter --sym {sym} --maxboxsz {maxbox} --gradout {self.gmm}/{self.currunkey}_grads.hdf {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {self.gmm}/{self.currunkey}_decoder.h5 --pas {self.currun['pas']}")
+		er=run(f"e2gmm_refine.py --model {modelout} --ptclsin {self.gmm}/particles.lst --heter --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} --gradout {self.gmm}/{self.currunkey}_grads.hdf {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {self.gmm}/{self.currunkey}_decoder.h5 --pas {self.currun['pas']}")
 		if er :
 			showerror("Error running e2gmm_refine, see console for details. Memory is a common issue. Consider reducing the target resolution.")
 			return
@@ -656,17 +660,20 @@ class EMGMM(QtWidgets.QMainWindow):
 			showerror(f"Cannot create {newgmm}",self)
 			return
 		self.gmm=newgmm
-		self.setgmm_refine()
-		self.wlistgmm.addItem(newgmm)
+		ok=self.setgmm_refine(remove=True)
+		if ok: self.wlistgmm.addItem(newgmm)
 		
-	def setgmm_refine(self,clk=False):
-		"""Allows the user to base the refine_XX folder for the currently selected gmm_XX folder""" 
+	def setgmm_refine(self,clk=False,remove=False):
+		"""Allows the user to base the refine_XX folder for the currently selected gmm_XX folder.
+		if remove is set and the user hits cancel, the folder will be removed.""" 
 		self.jsparm=js_open_dict(f"{self.gmm}/0_gmm_parms.json")
 		
 		# double check if the user will be destroying results
 		if self.jsparm.has_key("refinepath"):
 			ans=QtWidgets.QMessageBox.question(self,"Are you sure?",f"{self.gmm} has already been configured to work on {self.jsparm['refinepath']}. Continuing may invalidate current results. Proceed?")
-			if ans==QtWidgets.QMessageBox.No: return
+			if ans==QtWidgets.QMessageBox.No:
+				if remove: os.unlink(self.gmm)
+				return False
 			
 		# Get the name of an existing refinement
 		try:
@@ -674,7 +681,8 @@ class EMGMM(QtWidgets.QMainWindow):
 		except: return
 		if not os.path.isdir(rpath) : 
 			showerror("Invalid path")
-			return
+			if remove: os.unlink(self.gmm)
+			return False
 		self.jsparm["refinepath"]=rpath
 		
 		if rpath[:6]=="refine":
@@ -749,7 +757,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			run(f"e2proclst.py {rpath}/ptcls_{itr:02d}_even.lst {rpath}/ptcls_{itr:02d}_odd.lst --merge {self.gmm}/particles.lst")
 			self.app().setOverrideCursor(Qt.ArrowCursor)
 			
-		
+		return True
 	
 	def closeEvent(self,event):
 		E2saveappwin("e2gmm","main",self)
