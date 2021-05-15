@@ -1672,7 +1672,7 @@ The basic design of EMAN Processors: <br>\
 			d.put("maxnseg",EMObject::INT,"Maximum number of segments to return (default = unlimited)");
 			d.put("width",EMObject::FLOAT,"Required: full width of Gaussians in A at 1/e (FWHM). Also used to determine map prefiltration.");
 			d.put("mask",EMObject::EMDATA,"Optional: mask to apply to map after filtration to limit where centers are placed");
-			d.put("skipseg",EMObject::INT,"Normally the returned map is a segmentation map, but this is unnecessary if only the center coordinates are needed. If set, the returned map will be a residual volume, not a segmentation map, but the centers will be valid.");
+			d.put("skipseg",EMObject::INT,"Normally the returned map is a segmentation map, but this is unnecessary if only the center coordinates are needed. If 1, the returned map will be a residual volume, not a segmentation map. If 2, it will be the filtered map before segmentation");
 			d.put("verbose",EMObject::INT,"Be verbose while running");
 			return d;
 		}
@@ -7927,6 +7927,7 @@ symmetric phase flipping can optionally be performed.";
 		{
 			TypeDict d;
 			d.put("strucfac", EMObject::XYDATA, "An XYData object contaning the intensity (not amplitude) to be imposed as a function of S");
+			d.put("filename", EMObject::STRING, "Filename of a text file containing s,y data as an alternative to passing an XYData object.");
 			d.put("scale", EMObject::XYDATA, "A constant to multiply strucfac by to rescale the output. Setting to 1/ny^3 provides an alternative normalization. default = 1.0");
 			d.put("apix", EMObject::FLOAT, " Override A/pix in the image header (changes x,y and z)");
 			return d;

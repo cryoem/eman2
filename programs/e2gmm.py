@@ -338,11 +338,12 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wplot2d.mousedrag[QtGui.QMouseEvent,tuple].connect(self.plot_mouse)
 		E2loadappwin("e2gmm","main",self)
 
-		self.gaussplot=EMScatterPlot3D()
 		self.mapdataitem=EMDataItem3D(None)
 		self.mapiso=EMIsosurface(self.mapdataitem)
 		self.wview3d.insertNewNode("Neutral Map",self.mapdataitem)
 		self.wview3d.insertNewNode("Isosurface",self.mapiso,parentnode=self.mapdataitem)
+		self.fmapdataitem=None
+		self.gaussplot=EMScatterPlot3D()
 		self.wview3d.insertNewNode("Gauss Model",self.gaussplot)
 		self.currunkey=None
 		self.lastres=0
@@ -436,14 +437,22 @@ class EMGMM(QtWidgets.QMainWindow):
 		map3d=EMData(f"{self.gmm}/input_map.hdf")
 		try: mask=EMData(str(self.wedmask.text()))
 		except: mask=None
-		opt={"minratio":0.4,"width":res,"skipseg":1}
+		opt={"minratio":0.4,"width":res,"skipseg":2}
 		if mask!=None: opt["mask"]=mask
-		
-		seg=map3d.process("segment.gauss",opt)
+
+		seg=self.map3d.process("segment.gauss",opt)
 		amps=np.array(seg["segment_amps"])
 		centers=np.array(seg["segment_centers"]).reshape((len(amps),3)).transpose()
 		amps/=max(amps)
 		
+		if self.fmapdataitem==None:
+			self.fmapdataitem=EMDataItem3D(seg)
+			self.fmapiso=EMIsosurface(self.fmapdataitem)
+			self.wview3d.insertNewNode("Filt Neutral Map",self.fmapdataitem)
+			self.wview3d.insertNewNode("Isosurface",self.fmapiso,parentnode=self.fmapdataitem)
+		else:
+			self.fmapdataitem.setData(seg)
+			
 		self.wedngauss.setText(str(len(amps)*4//3))
 
 		print(f"Resolution={res} -> Ngauss={len(amps)}  ({self.currunkey})")
@@ -581,7 +590,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		if prog.wasCanceled() : return
 
 		# heterogeneity analysis
-		if self.currun["conv"]: conv="--conv"
+		if int(self.currun["conv"]): conv="--conv"
 		else: conv=""
 		er=run(f"e2gmm_refine.py --model {modelout} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} --gradout {self.gmm}/{self.currunkey}_grads.hdf {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {self.gmm}/{self.currunkey}_decoder.h5 --pas {self.currun['pas']}")
 		if er :
@@ -625,8 +634,9 @@ class EMGMM(QtWidgets.QMainWindow):
 			if k[:4]!="run_": continue
 			self.wlistrun.addItem(k[4:])
 		self.sel_run(self.wlistrun.count()-1)
-		
-		try: self.mapdataitem.setData(EMData(f'{self.gmm}/input_map.hdf'))
+		try: 
+			self.map3d=EMData(f'{self.gmm}/input_map.hdf')
+			self.mapdataitem.setData(self.map3d)
 		except: print("Error: input_map.hdf missing")
 			
 	def sel_run(self,line):
@@ -643,7 +653,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wedsym.setText(f'{self.currun.get("sym","c1")}')
 		self.wedmask.setText(f'{self.currun.get("mask",self.jsparm.getdefault("mask",f"{self.gmm}/mask.hdf"))}')
 		self.wedtrainiter.setText(f'{self.currun.get("trainiter",10)}')
-		self.wbutconv.setChecked(self.currun.get("conv",True))
+		self.wbutconv.setChecked(int(self.currun.get("conv",1)))
 		pas=self.currun.get("pas","100")
 		self.wbutpos.setChecked(int(pas[0]))
 		self.wbutamp.setChecked(int(pas[1]))

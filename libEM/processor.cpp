@@ -1441,14 +1441,15 @@ EMData *GaussSegmentProcessor::process(const EMData * const image)
 	// The intent of these filters is to insure that the map effectively 
 //	result->process_inplace("filter.lowpass.gauss",Dict("cutoff_freq",0.45/width));	// 0.45 = sqrt(2)/pi, resolvability threshold
 //	result->process_inplace("filter.lowpass.gauss",Dict("cutoff_freq",0.637/width));	// 0.637 = 2/pi, (may be Rayleigh criterion?)
-	XYData gsf;
-	gsf.make_gauss(nx*4,1.0f/apix,0.45/width);
-//	gsf.make_gauss(nx*4,1.0f/apix,0.637/width);
-	result->process_inplace("filter.setstrucfac",Dict("apix",apix,"strucfac",&gsf));
 	if (mask!=NULL) {
 		result->mult(*mask);
 		result->process_inplace("normalize.local",Dict("radius",nx*apix/(3.0f*width),"threshold",(float)result->get_attr("sigma_nonzero")*1.2));
 	}
+	
+	XYData gsf;
+	gsf.make_gauss(nx*4,1.0f/apix,0.45/width);
+//	gsf.make_gauss(nx*4,1.0f/apix,0.637/width);
+	result->process_inplace("filter.setstrucfac",Dict("apix",apix,"strucfac",&gsf));
 		
 	// Generate a Gaussian we can subtract out of the volume quickly
 	int gs=2*width/(float)image->get_attr("apix_x");
@@ -1462,6 +1463,9 @@ EMData *GaussSegmentProcessor::process(const EMData * const image)
 		result->set_attr("render_max",(float)result->get_attr("maximum"));
 		result->write_image("segfilt.hdf",0,EMUtil::IMAGE_UNKNOWN,false,0,EMUtil::EM_COMPRESSED);
 	}
+	
+	EMData *cache = NULL;
+	if (skipseg==2) cache=result->copy();
 	
 	// original version of the code. A bit slow but works very well
 // 	vector<float> centers;
@@ -1547,6 +1551,12 @@ EMData *GaussSegmentProcessor::process(const EMData * const image)
 	if (verbose) printf("segmented\n");
 	}
 
+	//if skipseg is set to 2, we return the filtered, unsegmented map (with valid centers)
+	if (skipseg==2) {
+		delete result;
+		result=cache;
+	}
+	
 	result->set_attr("segment_centers",centers);
 	result->set_attr("segment_amps",amps);
 	
@@ -8342,7 +8352,12 @@ void SetSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *ima
 	// The radial mask comes in with the existing radial image profile
 	// The radial mask runs from 0 to the corner in Fourier space
 
-	XYData *sf = params["strucfac"];
+	XYData *sf = 0;
+	if (params.has_key("filename")) {
+		sf=new XYData;
+		sf->read_file((const char *)params["filename"]);
+	}
+	else sf = params["strucfac"];
 	if(params.has_key("apix")) {
 		image->set_attr("apix_x", (float)params["apix"]);
 		image->set_attr("apix_y", (float)params["apix"]);
@@ -8385,6 +8400,7 @@ void SetSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *ima
 		i++;
 	}
 
+	if (params.has_key("filename")) delete sf;
 }
 
 void SmartMaskProcessor::process_inplace(EMData * image)
