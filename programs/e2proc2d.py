@@ -223,7 +223,7 @@ def main():
 	parser.add_argument("--plane", metavar=threedplanes, type=str, default='xy', help="Change the plane of image processing, useful for processing 3D mrcs as 2D images.")
 	parser.add_argument("--writejunk", action="store_true", help="Writes the image even if its sigma is 0.", default=False)
 	parser.add_argument("--swap", action="store_true", help="Swap the byte order", default=False)
-	parser.add_argument("--threed2threed", action="store_true", help="Process 3D image as a stack of 2D slices, then output as a 3D image", default=False)	
+	parser.add_argument("--threed2threed", action="store_true", help="Process 3D image as a stack of 2D slices, then output as a 3D image", default=False)
 	parser.add_argument("--threed2twod", action="store_true", help="Process 3D image as a stack of 2D slices, then output as a 2D stack", default=False)
 	parser.add_argument("--twod2threed", action="store_true", help="Process a stack of 2D images, then output as a 3D image.", default=False)
 	parser.add_argument("--unstacking", action="store_true", help="Process a stack of 2D images, then output as a series of numbered single image files", default=False)
@@ -292,7 +292,7 @@ def main():
 	for infile in args[0 : num_input_files] :
 		inp_num = inp_num + 1
 		
-		if outpattern.lower()=="none" : 
+		if outpattern.lower()=="none" :
 			outfile=None
 			is_inp_bdb = False
 			is_out_bdb = False
@@ -301,7 +301,7 @@ def main():
 			else : inp_ext = os.path.splitext(infile)[1]
 			out_ext = None
 
-		else : 
+		else :
 			outfile = changed_file_name(infile, outpattern, inp_num, multiple_files)
 
 			is_inp_bdb = (len (infile)  >= 4 and infile.lower() [0:4] == "bdb:")
@@ -445,7 +445,7 @@ def main():
 				threed_xsize = d.get_xsize()
 				threed_ysize = d.get_ysize()
 				isthreed = False
-		elif infile[0]==":" : 
+		elif infile[0]==":" :
 			nimg=1
 			isthreed=False
 		else:
@@ -565,7 +565,7 @@ def main():
 				elif infile[0] == ":" :
 					vals = infile.split(":")
 
-					if len(vals) not in (3,4,5) : 
+					if len(vals) not in (3,4,5) :
 						print("Error: Specify new images as ':X:Y:f(x,y)' or ':X:Y:Z:f(x,y,z)', 0<=x<X, 0<=y<Y, 0<=z<Z")
 						sys.exit(1)
 
@@ -676,7 +676,7 @@ def main():
 
 						if str(param_dict[key]).find('bdb:') != -1 or not str(param_dict[key]).isdigit():
 							try:
-								param_dict[key] = EMData(param_dict[key])			
+								param_dict[key] = EMData(param_dict[key])
 							except:
 								pass
 
@@ -764,7 +764,7 @@ def main():
 					d = d.make_footprint(options.fp)
 
 				elif option1 == "anisotropic":
-					try: 
+					try:
 						amount,angle = (options.anisotropic[index_d[option1]]).split(",")
 						amount=float(amount)
 						angle=float(angle)
@@ -1034,7 +1034,7 @@ def main():
 								d["render_min"] = d["minimum"]
 								d["render_max"] = d["maximum"]
 
-					if options.avgseq>1: 
+					if options.avgseq>1:
 						average.add_image(d)
 						if count%options.avgseq==0:
 							d=average.finish()
@@ -1132,7 +1132,7 @@ def main():
 
 							#print "I will unstack to HDF" # JESUS
 
-						else:   # output a single 2D image or a 2D stack			
+						else:   # output a single 2D image or a 2D stack
 							# optionally replace the output image with its rotational average
 
 							if options.rotavg:
@@ -1168,11 +1168,11 @@ def main():
 	#		avg.mult(1.0/(n1-n0+1.0))
 	#		average.process_inplace("normalize");
 
-			if options.inplace: 
+			if options.inplace:
 				if options.compressbits>=0:
 					avg.write_compressed(outfile,0,options.compressbits,nooutliers=True)
 				else: avg.write_image(outfile,0)
-			else : 
+			else :
 				if options.compressbits>=0:
 					avg.write_compressed(outfile,-1,options.compressbits,nooutliers=True)
 				else: avg.write_image(outfile,-1)
