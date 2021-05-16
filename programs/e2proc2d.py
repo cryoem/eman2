@@ -281,7 +281,7 @@ def main():
 	outpattern = args[num_input_files]
 
 	multiple_files = (num_input_files > 1)
-	
+
 	if options.extractboxes:
 			boxes={}
 			boxesbad=0
@@ -291,7 +291,7 @@ def main():
 
 	for infile in args[0 : num_input_files] :
 		inp_num = inp_num + 1
-		
+
 		if outpattern.lower()=="none" :
 			outfile=None
 			is_inp_bdb = False
@@ -521,7 +521,7 @@ def main():
 					imagelist[int(i)]=0
 			else:
 				for i in read_number_file(options.exclude) : imagelist[i] = 0
-			
+
 			if options.verbose: print("inclusion list:",str(imagelist))
 
 		sfcurve1 = None
@@ -600,20 +600,20 @@ def main():
 				else:
 					if options.verbose > 1 :
 						print("Read image #", i, "from input file:")
-					
+
 					d = EMData()
 
 					if (options.eer2x or options.eer4x) and infile[-4:] != ".eer":
 						print("Error: --eer2x and --eer4x options can be used only with EER files.")
 						sys.exit(1)
-					
+
 					if options.eer2x:
 						img_type = IMAGE_EER2X
 					elif options.eer4x:
 						img_type = IMAGE_EER4X
 					else:
 						img_type = IMAGE_UNKNOWN
-					
+
 					d.read_image(infile, i, False, None, False, img_type)
 			else:
 				if plane in xyplanes:
@@ -773,7 +773,7 @@ def main():
 						print(options.anisotropic[index_d[option1]])
 						print("Error: --anisotropic specify amount,angle")
 						sys.exit(1)
-						
+
 					rt=Transform({"type":"2d","alpha":angle})
 					xf=rt*Transform([amount,0,0,0,0,old_div(1,amount),0,0,0,0,1,0])*rt.inverse()
 					d.transform(xf)
@@ -864,16 +864,16 @@ def main():
 
 				elif option1 == "headertransform":
 					xfmode = options.headertransform[index_d[option1]]
-					
+
 					if xfmode not in (0,1) :
 						print("Error: headertransform must be set to 0 or 1")
 						sys.exit(1)
-					
+
 					try: xform=d["xform.align2d"]
 					except: print("Error: particle has no xform.align2d header value")
 
 					if xfmode == 1 : xform.invert()
-					
+
 					d.process_inplace("xform",{"transform":xform})
 
 				elif option1 == "selfcl":
@@ -905,7 +905,7 @@ def main():
 				elif option1 == "average":
 					average.add_image(d)
 					continue
-				
+
 				elif option1 == "fftavg":
 					if not fftavg:
 						fftavg = EMData()
@@ -1039,7 +1039,7 @@ def main():
 						if count%options.avgseq==0:
 							d=average.finish()
 #							print(f"{count} {d['ptcl_repr']}")
-						
+
 					if not options.average and (options.avgseq<=1 or count%options.avgseq==0):	# skip writing the input image to output file
 						# write processed image to file
 
