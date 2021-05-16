@@ -51,6 +51,7 @@ xzplanes = ['xz', 'zx']
 yzplanes = ['yz', 'yz']
 threedplanes = xyplanes + xzplanes + yzplanes
 
+
 def changed_file_name(input_name, output_pattern, input_number, multiple_inputs):
 	# convert an input file name to an output file name
 	# by replacing every @ or * in output_pattern with
@@ -87,6 +88,7 @@ def changed_file_name(input_name, output_pattern, input_number, multiple_inputs)
 			outname = outname.replace('%%', '%')
 
 	return outname
+
 
 def image_from_formula(n_x, n_y, n_z, formula):
 	# Create a 2D or 3D image from a formula in x, y, z,
@@ -275,9 +277,7 @@ def main():
 	no_2d_3d_options = (not (options.threed2threed or options.threed2twod or options.twod2threed))
 
 	num_input_files = len(args) - 1
-
 	outpattern = args[num_input_files]
-
 	multiple_files = (num_input_files > 1)
 
 	if options.extractboxes:
@@ -301,7 +301,6 @@ def main():
 
 		else:
 			outfile = changed_file_name(infile, outpattern, inp_num, multiple_files)
-
 			is_inp_bdb = (len (infile)  >= 4 and infile.lower() [0:4] == "bdb:")
 			is_out_bdb = (len (outfile) >= 4 and outfile.lower()[0:4] == "bdb:")
 
@@ -688,12 +687,15 @@ def main():
 					d.add(af)
 					af = None
 					index_d[option1] += 1
+
 				elif option1 == "add":
 					d.add(options.add[index_d[option1]])
 					af = None
 					index_d[option1] += 1
+
 				elif option1 == "mult":
 					d.mult(options.mult)
+
 				elif option1 == "multfile":
 					mf = EMData(options.multfile[index_d[option1]],0)
 					d.mult(mf)
@@ -767,7 +769,6 @@ def main():
 					d.transform(xf)
 
 					index_d[option1] += 1
-
 
 				elif option1 == "scale":
 					scale_f = options.scale[index_d[option1]]
