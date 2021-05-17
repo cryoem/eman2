@@ -204,7 +204,8 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		self.wedres = QtWidgets.QLineEdit("25")
 		self.wedres.setToolTip("Maximum resolution to use for gaussian fitting")
-		self.gflparm.addRow("Target Res:",self.wedres)
+		self.wbutres = QtWidgets.QPushButton("Target Res")
+		self.gflparm.addRow(self.wbutres,self.wedres)
 
 		self.wedsym = QtWidgets.QLineEdit("c1")
 		self.wedsym.setToolTip("Symmetry used during refinement")
@@ -319,17 +320,22 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wvssphsz=ValSlider(self,(1,50),"Size:",3.0,90)
 		self.gbl3dctl.addWidget(self.wvssphsz,0,2)
 		
+		self.wvssphth=ValSlider(self,(1,50),"Min Sz:",3.0,90)
+		self.gbl3dctl.addWidget(self.wvssphth,0,3)
+		
 		# Connections
 		self.wlistgmm.currentRowChanged[int].connect(self.sel_gmm)
 		#self.wbutspheres.clicked[bool].connect(self.new_3d_opt)
 		#self.wbutmap.clicked[bool].connect(self.new_3d_opt)
 		self.wvssphsz.valueChanged.connect(self.new_sph_size)
+		self.wvssphth.valueChanged.connect(self.new_sph_size)
 		self.wbutnewgmm.clicked[bool].connect(self.add_gmm)
 		self.wbutrefine.clicked[bool].connect(self.setgmm_refine)
 		self.wlistrun.currentRowChanged[int].connect(self.sel_run)
 		self.wbutnewrun.clicked[bool].connect(self.new_run)
 		self.wbutrerun.clicked[bool].connect(self.do_run)
-		self.wedres.editingFinished.connect(self.new_res)
+#		self.wedres.editingFinished.connect(self.new_res)
+		self.wbutres.clicked[bool].connect(self.new_res)
 		self.wbutdrgrp.buttonClicked[QtWidgets.QAbstractButton].connect(self.plot_mode_sel)
 		self.wsbxcol.valueChanged[int].connect(self.wplot2d.setXAxisAll)
 		self.wsbycol.valueChanged[int].connect(self.wplot2d.setYAxisAll)
@@ -357,7 +363,8 @@ class EMGMM(QtWidgets.QMainWindow):
 			self.app().processEvents()
 	
 	def new_sph_size(self,newval=10):
-		self.gaussplot.setPointSize(newval)
+		self.gaussplot.setPointSize(self.wvssphsz)
+		self.gaussplot.setPointThr(self.wvssphth)
 		self.wview3d.update()
 	
 	def plot_mouse(self,event,loc):
@@ -387,6 +394,9 @@ class EMGMM(QtWidgets.QMainWindow):
 		box=int(self.wedbox.text())
 		gauss[:3]*=box
 		gauss[2]*=-1.0
+		if not butval(self.wbutpos): gauss[:3]=self.model[:3]
+		if not butval(self.wbutamp): gauss[3]=self.model[3]
+		if not butval(self.wbutsig): gauss[4]=self.model[4]
 		self.gaussplot.setData(gauss,self.wvssphsz.value)
 		self.wview3d.update()
 
@@ -669,6 +679,9 @@ class EMGMM(QtWidgets.QMainWindow):
 		# Middle layer for every particle
 		self.midresult=np.loadtxt(f"{self.gmm}/{self.currunkey}_mid.txt")[:,1:].transpose()
 		self.wbutdrmid.click()
+		
+		# Neutral Gaussian model (needed when PAS != 111)
+		self.model=np.loadtxt(f"{self.gmm}/{self.currunkey}_model_gmm.txt").transpose()
 		
 		self.plot_mouse(None,(0,0))
 		
