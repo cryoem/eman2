@@ -2190,6 +2190,7 @@ if the lst file does not exist."""
 			except: pass
 			self.ptr=open(path,"w+")	# file doesn't exist
 			self.ptr.write("#LSX\n{}\n# 20\n".format(comments))
+			self.ptr.flush()
 
 		self.ptr.seek(0)
 		l=self.ptr.readline()
