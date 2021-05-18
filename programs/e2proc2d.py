@@ -51,7 +51,8 @@ xzplanes = ['xz', 'zx']
 yzplanes = ['yz', 'yz']
 threedplanes = xyplanes + xzplanes + yzplanes
 
-def changed_file_name (input_name, output_pattern, input_number, multiple_inputs) :
+
+def changed_file_name(input_name, output_pattern, input_number, multiple_inputs):
 	# convert an input file name to an output file name
 	# by replacing every @ or * in output_pattern with
 	# the input file base name (no extension)
@@ -88,7 +89,8 @@ def changed_file_name (input_name, output_pattern, input_number, multiple_inputs
 
 	return outname
 
-def image_from_formula(n_x, n_y, n_z, formula) :
+
+def image_from_formula(n_x, n_y, n_z, formula):
 	# Create a 2D or 3D image from a formula in x, y, z,
 	# with 0 <= x <= n_x-1, 0 <= y <= n_y-1, 0 <= z <= n_z-1,
 	# with a formula like "x+y+z" or "x*y+10*z" or "x+y".
@@ -99,9 +101,9 @@ def image_from_formula(n_x, n_y, n_z, formula) :
 	ny = int(n_y)
 	nz = int(n_z)
 
-	x1 = old_div(1.0, max(nx-1, 1))
-	y1 = old_div(1.0, max(ny-1, 1))
-	z1 = old_div(1.0, max(nz-1, 1))
+	x1 = 1.0 / max(nx-1, 1)
+	y1 = 1.0 / max(ny-1, 1)
+	z1 = 1.0 / max(nz-1, 1)
 
 	emd  = EMData(nx, ny, nz)
 	emdn = EMNumPy.em2numpy(emd)
@@ -122,12 +124,11 @@ def image_from_formula(n_x, n_y, n_z, formula) :
 
 				if nz > 1 :
 					emdn[z][y][x] = v
-				else :
+				else:
 					emdn[y][x] = v
 
 	return EMNumPy.numpy2em(emdn)
 
-# usage: e2proc2d.py [options] input ... input output
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -146,7 +147,7 @@ def main():
 	':<nx>:<ny>:<expression_in_x_y>' or ':<nx>:<ny>:<nz>:<expression_in_x_y_z>' as an input filename,
 	where 0 <= x < nx, 0 <= y < ny, 0 <= z < nz, and the expression can be just a number.
 
-        If performing certain operations which do not require an output file, specify "none" as the output file.
+	If performing certain operations which do not require an output file, specify "none" as the output file.
 
 	Examples:
 
@@ -158,7 +159,7 @@ def main():
 
 	convert a 'set' (.lst file) to an MRC stack file:
 	e2proc2d.py sets/myset.lst myset.mrcs
-	
+
 	create a new image, initialized with 1.0, then mask it:
 	e2proc2d.py :128:128:1 mymask.hdf --process mask.soft:outer_radius=50
 
@@ -223,7 +224,7 @@ def main():
 	parser.add_argument("--plane", metavar=threedplanes, type=str, default='xy', help="Change the plane of image processing, useful for processing 3D mrcs as 2D images.")
 	parser.add_argument("--writejunk", action="store_true", help="Writes the image even if its sigma is 0.", default=False)
 	parser.add_argument("--swap", action="store_true", help="Swap the byte order", default=False)
-	parser.add_argument("--threed2threed", action="store_true", help="Process 3D image as a stack of 2D slices, then output as a 3D image", default=False)	
+	parser.add_argument("--threed2threed", action="store_true", help="Process 3D image as a stack of 2D slices, then output as a 3D image", default=False)
 	parser.add_argument("--threed2twod", action="store_true", help="Process 3D image as a stack of 2D slices, then output as a 2D stack", default=False)
 	parser.add_argument("--twod2threed", action="store_true", help="Process a stack of 2D images, then output as a 3D image.", default=False)
 	parser.add_argument("--unstacking", action="store_true", help="Process a stack of 2D images, then output as a series of numbered single image files", default=False)
@@ -231,11 +232,10 @@ def main():
 	parser.add_argument("--step",type=str,default="0,1",help="Specify <init>,<step>. Processes only a subset of the input data. For example, 0,2 would process only the even numbered particles")
 
 	eer_input_group = parser.add_mutually_exclusive_group()
-	eer_input_group.add_argument("--eer2x",  action="store_true", help="Render EER file on 8k grid.")
+	eer_input_group.add_argument("--eer2x", action="store_true", help="Render EER file on 8k grid.")
 	eer_input_group.add_argument("--eer4x", action="store_true", help="Render EER file on 16k grid.")
 
 	# Parallelism
-
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:n=<proc>:option:option",default=None)
 
 	append_options = ["anisotropic","clip", "process", "meanshrink", "medianshrink", "fouriershrink", "scale", "randomize", "rotate", "translate", "multfile","addfile","add", "headertransform"]
@@ -270,18 +270,16 @@ def main():
 		print("Deprecated option mrc8bit, please use outmode=int8|uint8")
 		options.outmode = "int8"
 
-	if options.outmode not in file_mode_map :
+	if options.outmode not in file_mode_map:
 		print("Invalid output mode, please specify one of :\n",str(list(file_mode_map.keys())).translate(None,'"[]'))
 		sys.exit(1)
 
 	no_2d_3d_options = (not (options.threed2threed or options.threed2twod or options.twod2threed))
 
 	num_input_files = len(args) - 1
-
 	outpattern = args[num_input_files]
-
 	multiple_files = (num_input_files > 1)
-	
+
 	if options.extractboxes:
 			boxes={}
 			boxesbad=0
@@ -289,118 +287,107 @@ def main():
 
 	inp_num = 0
 
-	for infile in args[0 : num_input_files] :
+	for infile in args[0 : num_input_files]:
 		inp_num = inp_num + 1
-		
-		if outpattern.lower()=="none" : 
+
+		if outpattern.lower()=="none":
 			outfile=None
 			is_inp_bdb = False
 			is_out_bdb = False
 
-			if (infile[0]==":") : inp_ext=".hdf"
-			else : inp_ext = os.path.splitext(infile)[1]
+			if infile[0]==":": inp_ext=".hdf"
+			else: inp_ext = os.path.splitext(infile)[1]
 			out_ext = None
 
-		else : 
+		else:
 			outfile = changed_file_name(infile, outpattern, inp_num, multiple_files)
-
 			is_inp_bdb = (len (infile)  >= 4 and infile.lower() [0:4] == "bdb:")
 			is_out_bdb = (len (outfile) >= 4 and outfile.lower()[0:4] == "bdb:")
 
-			if (infile[0]==":") : inp_ext=".hdf"
-			else : inp_ext = os.path.splitext(infile)[1]
+			if infile[0]==":": inp_ext=".hdf"
+			else: inp_ext = os.path.splitext(infile)[1]
 			out_ext = os.path.splitext(outfile)[1]
 
-			if out_ext == "" and multiple_files and not is_out_bdb :
-					out_ext = inp_ext
-					outfile = outfile + out_ext
+			if out_ext == "" and multiple_files and not is_out_bdb:
+				out_ext = inp_ext
+				outfile = outfile + out_ext
 
-			if out_ext == ".lst" :
-					print("Output file extension may not be .lst: " + outfile)
-					continue
+			if out_ext == ".lst":
+				print("Output file extension may not be .lst: " + outfile)
+				continue
 
 		is_single_2d_image = False
 
-		if is_inp_bdb :
-#			if os.path.isdir("EMAN2DB") :
-#				if not os.path.isfile("EMAN2DB"+"/"+infile[4:]+".bdb") :
-#					print "Input BDB file '" + infile[4:] + "' does not exist."
-#					continue
-#			else :
-#				print "BDB directory EMAN2DB does not exist."
-#				continue
+		if is_inp_bdb:
 			num_inp_images = -1
-		elif infile[0] == ":" : 	# special flag to create a new image
+		elif infile[0] == ":": 	# special flag to create a new image
 			num_inp_images = 2
-		elif os.path.isfile(infile) :
-			try :
+		elif os.path.isfile(infile):
+			try:
 				num_inp_images = EMUtil.get_image_count(infile)
-			except :
+			except:
 				num_inp_images = -1
 
-			if num_inp_images == 1 :
+			if num_inp_images == 1:
 				[nxinp, nyinp, nzinp] = gimme_image_dimensions3D(infile)
 
-				if nzinp == 1 :
+				if nzinp == 1:
 					is_single_2d_image = True
 					num_inp_images = 2
 
-					if out_ext == ".mrc" :
-						if os.path.isfile(outfile) :
-							if infile == outfile :
+					if out_ext == ".mrc":
+						if os.path.isfile(outfile):
+							if infile == outfile:
 								options.inplace = True
-							else :
+							else:
 								os.remove(outfile)
-		else :
+		else:
 			num_inp_images = -1
 			print("Input file '" + infile + "' does not exist.")
 			continue
 
-		if out_ext == inp_ext :
+		if out_ext == inp_ext:
 			num_out_images = num_inp_images
-		elif out_ext == ".mrc" :
-			if num_inp_images > 1 :
-				if is_single_2d_image :
+		elif out_ext == ".mrc":
+			if num_inp_images > 1:
+				if is_single_2d_image:
 					num_out_images = 2
-				else :
+				else:
 					num_out_images = 1
-			else :
+			else:
 				num_out_images = 1
-		else :
+		else:
 			num_out_images = 2
 
 		inp3d = (num_inp_images == 1)
 		out3d = (num_out_images == 1)
 
-		if options.verbose > 1 :
+		if options.verbose > 1:
 			print("input 3d, output 3d =", inp3d, out3d)
 
 		opt3to3 = options.threed2threed
 		opt3to2 = options.threed2twod
 		opt2to3 = options.twod2threed
 
-		if no_2d_3d_options :
-			if inp3d and out3d :
+		if no_2d_3d_options:
+			if inp3d and out3d:
 				options.threed2threed = True
 
-			if inp3d and not out3d :
+			if inp3d and not out3d:
 				options.threed2twod = True
 
-			if out3d and not inp3d :
+			if out3d and not inp3d:
 				options.twod2threed = True
 
-#		print "copy file '" + infile + "' to file '" + outfile + "'."
-#		continue
-
-		if options.parallel :
+		if options.parallel:
 			r = doparallel(sys.argv,options.parallel,args)
 			E2end(logid)
 			sys.exit(r)
 
-		if options.average or options.avgseq>0:
+		if options.average or options.avgseq > 0:
 			averager = parsemodopt(options.averager)
 			average = Averagers.get(averager[0], averager[1])
-		else : average = None
+		else: average = None
 
 		fftavg = None
 
@@ -445,7 +432,7 @@ def main():
 				threed_xsize = d.get_xsize()
 				threed_ysize = d.get_ysize()
 				isthreed = False
-		elif infile[0]==":" : 
+		elif infile[0]==":":
 			nimg=1
 			isthreed=False
 		else:
@@ -492,27 +479,27 @@ def main():
 			print("%d images, processing %d-%d stepping by %d"%(nimg,n0,n1,options.step[1]))
 
 		# Now we deal with inclusion/exclusion lists
-		if options.list or options.select :
+		if options.list or options.select:
 			imagelist = [0]*nimg
 
 			if options.list:
-				for i in read_number_file(options.list) : imagelist[i] = 1
+				for i in read_number_file(options.list): imagelist[i] = 1
 
 			if options.select:
 				db = db_open_dict("bdb:.#select",ro=True)
 
 				for i in db[options.select]: imagelist[i] = 1
-		elif options.randomn>0:
+		elif options.randomn > 0:
 			imagelist = [0]*nimg
-			if options.randomn>=nimg :
+			if options.randomn >= nimg:
 				imagelist = [1]*nimg
 			else:
-				nk=0
-				while nk<options.randomn:
-					i=random.randrange(nimg)
-					if imagelist[i] : continue
-					imagelist[i]=1
-					nk+=1
+				nk = 0
+				while nk < options.randomn:
+					i = random.randrange(nimg)
+					if imagelist[i]: continue
+					imagelist[i] = 1
+					nk += 1
 		else: imagelist = [1]*nimg
 
 		if options.exclude :
@@ -520,14 +507,14 @@ def main():
 				for i in options.exclude.split(","):
 					imagelist[int(i)]=0
 			else:
-				for i in read_number_file(options.exclude) : imagelist[i] = 0
-			
-			if options.verbose: print("inclusion list:",str(imagelist))
+				for i in read_number_file(options.exclude): imagelist[i] = 0
+
+			if options.verbose: print("inclusion list:", str(imagelist))
 
 		sfcurve1 = None
 
 		lasttime = time.time()
-		if outfile!=None :
+		if outfile!=None:
 			outfilename_no_ext = outfile[:-4]
 			outfilename_ext = outfile[-3:]
 
@@ -536,23 +523,23 @@ def main():
 
 		dummy = 0										#JESUS
 
-		if options.verbose > 1 :
+		if options.verbose > 1:
 			print("input file, output file, is three-d =", infile, outfile, isthreed)
 
-		count=0
+		count = 0
 		for i in range(n0, n1+1, options.step[1]):
-			count+=1
+			count += 1
 			if options.verbose >= 1:
 				if time.time()-lasttime > 3 or options.verbose > 2 :
 					sys.stdout.write(" %7d\r" %i)
 					sys.stdout.flush()
 					lasttime = time.time()
 
-			if imagelist :
-				if i < len(imagelist) :
-					if not imagelist[i] :
+			if imagelist:
+				if i < len(imagelist):
+					if not imagelist[i]:
 						continue
-				else :
+				else:
 					continue
 
 			if options.split and options.split > 1:
@@ -562,26 +549,26 @@ def main():
 				if options.threed2threed or options.threed2twod:
 					d = EMData()
 					d.read_image(infile, 0, False, Region(0,0,i,threed_xsize,threed_ysize,1))
-				elif infile[0] == ":" :
+				elif infile[0] == ":":
 					vals = infile.split(":")
 
-					if len(vals) not in (3,4,5) : 
+					if len(vals) not in (3,4,5):
 						print("Error: Specify new images as ':X:Y:f(x,y)' or ':X:Y:Z:f(x,y,z)', 0<=x<X, 0<=y<Y, 0<=z<Z")
 						sys.exit(1)
 
 					n_x = int(vals[1])
 					n_y = int(vals[2])
 					n_z = 1
-					if len(vals) > 4 : n_z = int(vals[3])
+					if len(vals) > 4: n_z = int(vals[3])
 
-					if n_x <= 0 or n_y <= 0 or n_z <= 0 :
+					if n_x <= 0 or n_y <= 0 or n_z <= 0:
 						print("Error: Image dimensions must be positive integers:", n_x, n_y, n_z)
 						sys.exit(1)
 
 					func = "0"
-					if len(vals) >= 4 : func = vals[-1]
+					if len(vals) >= 4: func = vals[-1]
 
-					try :
+					try:
 						x  = 0.0
 						y  = 0.0
 						z  = 0.0
@@ -592,28 +579,28 @@ def main():
 						ny = 1
 						nz = 1
 						w = eval(func)
-					except :
+					except:
 						print("Error: Syntax error in image expression '" + func + "'")
 						sys.exit(1)
 
 					d = image_from_formula(n_x, n_y, n_z, func)
 				else:
-					if options.verbose > 1 :
+					if options.verbose > 1:
 						print("Read image #", i, "from input file:")
-					
+
 					d = EMData()
 
 					if (options.eer2x or options.eer4x) and infile[-4:] != ".eer":
 						print("Error: --eer2x and --eer4x options can be used only with EER files.")
 						sys.exit(1)
-					
+
 					if options.eer2x:
 						img_type = IMAGE_EER2X
 					elif options.eer4x:
 						img_type = IMAGE_EER4X
 					else:
 						img_type = IMAGE_UNKNOWN
-					
+
 					d.read_image(infile, i, False, None, False, img_type)
 			else:
 				if plane in xyplanes:
@@ -640,11 +627,11 @@ def main():
 			for append_option in append_options:
 				index_d[append_option] = 0
 
-			if options.verbose > 1 :
+			if options.verbose > 1:
 				print("option list =", optionlist)
 
 			for option1 in optionlist:
-				if options.verbose > 1 :
+				if options.verbose > 1:
 					print("option in option list =", option1)
 				nx = d.get_xsize()
 				ny = d.get_ysize()
@@ -656,7 +643,7 @@ def main():
 					d.set_attr('apix_z', apix)
 
 					try:
-						if i == n0 and d["ctf"].apix != apix :
+						if i == n0 and d["ctf"].apix != apix:
 							if options.verbose > 0:
 								print("Warning: A/pix value in CTF was %1.2f, changing to %1.2f. May impact CTF parameters."%(d["ctf"].apix,apix))
 
@@ -676,36 +663,39 @@ def main():
 
 						if str(param_dict[key]).find('bdb:') != -1 or not str(param_dict[key]).isdigit():
 							try:
-								param_dict[key] = EMData(param_dict[key])			
+								param_dict[key] = EMData(param_dict[key])
 							except:
 								pass
 
 					if processorname in outplaceprocs:
-						d=d.process(processorname, param_dict)
+						d = d.process(processorname, param_dict)
 					else: d.process_inplace(processorname, param_dict)
 					index_d[option1] += 1
 
 				elif option1 == "extractboxes":
 					try:
-						bf=base_name(d["ptcl_source_image"])
-						bl=d["ptcl_source_coord"]
+						bf = base_name(d["ptcl_source_image"])
+						bl = d["ptcl_source_coord"]
 						if bf in boxes : boxes[bf].append(bl)
-						else : boxes[bf]=[bl]
-						boxsize=d["nx"]
+						else: boxes[bf]=[bl]
+						boxsize = d["nx"]
 					except:
-						boxesbad+=1
+						boxesbad += 1
 
 				elif option1 == "addfile":
 					af=EMData(options.addfile[index_d[option1]],0)
 					d.add(af)
-					af=None
+					af = None
 					index_d[option1] += 1
+
 				elif option1 == "add":
 					d.add(options.add[index_d[option1]])
-					af=None
+					af = None
 					index_d[option1] += 1
-				elif option1 == "mult" :
+
+				elif option1 == "mult":
 					d.mult(options.mult)
+
 				elif option1 == "multfile":
 					mf = EMData(options.multfile[index_d[option1]],0)
 					d.mult(mf)
@@ -717,13 +707,13 @@ def main():
 					f = dd.do_fft()
 					#f = d.do_fft()
 
-					if d["apix_x"] <= 0 : raise Exception("Error: 'calccont' requires an A/pix value, which is missing in the input images")
+					if d["apix_x"] <= 0: raise Exception("Error: 'calccont' requires an A/pix value, which is missing in the input images")
 
 					lopix = int(d["nx"]*d["apix_x"]/150.0)
 					hipix = int(d["nx"]*d["apix_x"]/25.0)
-					if hipix>old_div(d["ny"],2)-6 : hipix=old_div(d["ny"],2)-6	# if A/pix is very large, this makes sure we get at least some info
+					if hipix>old_div(d["ny"],2)-6: hipix=old_div(d["ny"],2)-6	# if A/pix is very large, this makes sure we get at least some info
 
-					if lopix == hipix : lopix,hipix = 3,old_div(d["nx"],5)	# in case the A/pix value is drastically out of range
+					if lopix == hipix: lopix,hipix = 3,old_div(d["nx"],5)	# in case the A/pix value is drastically out of range
 
 					r = f.calc_radial_dist(old_div(d["ny"],2),0,1.0,1)
 					lo = old_div(sum(r[lopix:hipix]),(hipix-lopix))
@@ -751,10 +741,10 @@ def main():
 							if sfcurve1[j] > 0 and sfcurve2[j] > 0:
 								sfcurve2[j] = sqrt(old_div(sfcurve1[j], sfcurve2[j]))
 							else:
-								sfcurve2[j] = 0;
+								sfcurve2[j] = 0
 
-							dataf.apply_radial_func(x0, step, sfcurve2);
-							d = dataf.do_ift();
+							dataf.apply_radial_func(x0, step, sfcurve2)
+							d = dataf.do_ift()
 	#						dataf.gimme_fft();
 
 				elif option1 == "rfp":
@@ -764,7 +754,7 @@ def main():
 					d = d.make_footprint(options.fp)
 
 				elif option1 == "anisotropic":
-					try: 
+					try:
 						amount,angle = (options.anisotropic[index_d[option1]]).split(",")
 						amount=float(amount)
 						angle=float(angle)
@@ -773,13 +763,12 @@ def main():
 						print(options.anisotropic[index_d[option1]])
 						print("Error: --anisotropic specify amount,angle")
 						sys.exit(1)
-						
+
 					rt=Transform({"type":"2d","alpha":angle})
 					xf=rt*Transform([amount,0,0,0,0,old_div(1,amount),0,0,0,0,1,0])*rt.inverse()
 					d.transform(xf)
 
 					index_d[option1] += 1
-
 
 				elif option1 == "scale":
 					scale_f = options.scale[index_d[option1]]
@@ -792,7 +781,7 @@ def main():
 				elif option1 == "rotate":
 					rotatef = options.rotate[index_d[option1]]
 
-					if rotatef != 0.0 : d.rotate(rotatef,0,0)
+					if rotatef != 0.0: d.rotate(rotatef,0,0)
 
 					index_d[option1] += 1
 
@@ -800,7 +789,7 @@ def main():
 					tdx,tdy = options.translate[index_d[option1]].split(",")
 					tdx,tdy = float(tdx),float(tdy)
 
-					if tdx != 0.0 or tdy != 0.0 :
+					if tdx != 0.0 or tdy != 0.0:
 						d.translate(tdx,tdy,0.0)
 						#print(f"translate {tdx},{tdy}")
 
@@ -825,7 +814,7 @@ def main():
 					d = e
 					index_d[option1] += 1
 
-				elif option1 == "randomize" :
+				elif option1 == "randomize":
 					ci = index_d[option1]
 					rnd = options.randomize[ci].split(",")
 					rnd[0] = float(rnd[0])
@@ -833,9 +822,9 @@ def main():
 					rnd[2] = int(rnd[2])
 
 					t = Transform()
-					t.set_params({"type":"2d", "alpha":random.uniform(-rnd[0],rnd[0]), \
-									"mirror":random.randint(0,rnd[2]), "tx":random.uniform(-rnd[1],rnd[1]), \
-									"ty":random.uniform(-rnd[1],rnd[1])})
+					t.set_params({"type":"2d", "alpha":random.uniform(-rnd[0],rnd[0]),
+								  "mirror":random.randint(0,rnd[2]), "tx":random.uniform(-rnd[1],rnd[1]),
+								  "ty":random.uniform(-rnd[1],rnd[1])})
 					d.transform(t)
 
 				elif option1 == "medianshrink":
@@ -864,16 +853,16 @@ def main():
 
 				elif option1 == "headertransform":
 					xfmode = options.headertransform[index_d[option1]]
-					
-					if xfmode not in (0,1) :
+
+					if xfmode not in (0,1):
 						print("Error: headertransform must be set to 0 or 1")
 						sys.exit(1)
-					
+
 					try: xform=d["xform.align2d"]
 					except: print("Error: particle has no xform.align2d header value")
 
-					if xfmode == 1 : xform.invert()
-					
+					if xfmode == 1: xform.invert()
+
 					d.process_inplace("xform",{"transform":xform})
 
 				elif option1 == "selfcl":
@@ -905,7 +894,7 @@ def main():
 				elif option1 == "average":
 					average.add_image(d)
 					continue
-				
+
 				elif option1 == "fftavg":
 					if not fftavg:
 						fftavg = EMData()
@@ -943,7 +932,7 @@ def main():
 					if not options.outtype:
 						options.outtype = "unknown"
 
-					if options.verbose > 1 :
+					if options.verbose > 1:
 						print("output type =", options.outtype)
 
 					if i == 0:
@@ -971,18 +960,18 @@ def main():
 
 					dont_scale = (options.fixintscaling == "noscale")
 
-					if options.fixintscaling != None and not dont_scale :
-						if options.fixintscaling == "sane" :
+					if options.fixintscaling != None and not dont_scale:
+						if options.fixintscaling == "sane":
 							sca = 2.5
 							d["render_min"] = d["mean"] - d["sigma"]*sca
 							d["render_max"] = d["mean"] + d["sigma"]*sca
 						elif options.fixintscaling == "full" :
 							d["render_min"]=d["minimum"]*1.001
 							d["render_max"]=d["maximum"]*1.001
-						else :
-							try :
+						else:
+							try:
 								sca = float(options.fixintscaling)
-							except :
+							except:
 								sca = 2.5
 
 								print("Warning: bad fixintscaling value - 2.5 used")
@@ -991,17 +980,12 @@ def main():
 							d["render_max"] = d["mean"] + d["sigma"]*sca
 
 						min_max_set = True
-					else :
+					else:
 						min_max_set = False
 
-					#print_iminfo(data, "Final")
+					if options.outmode != "float" or dont_scale:
 
-					if options.outmode != "float" or dont_scale :
-	#					if outfile[-4:] != ".hdf" :
-	#						print "WARNING: outmode is not working correctly for non HDF images in"
-	#						print "2.1beta3. We expect to have this fixed in the next few days."
-
-						if options.outnorescale or dont_scale :
+						if options.outnorescale or dont_scale:
 							# This sets the minimum and maximum values to the range
 							# for the specified type, which should result in no rescaling
 
@@ -1010,36 +994,17 @@ def main():
 							d["render_min"] = file_mode_range[outmode][0]
 							d["render_max"] = file_mode_range[outmode][1]
 
-							#if   options.outmode == "int8" :
-								#u =   -128.0
-								#v =    127.0
-							#elif options.outmode == "uint8" :
-								#u =      0.0
-								#v =    255.0
-							#elif options.outmode == "int16" :
-								#u = -32768.0
-								#v =  32767.0
-							#elif options.outmode == "uint16" :
-								#u =      0.0
-								#v =  65535.0
-							#else :
-								#u =      1.0
-								#v =      0.0
-
-							#if u < v :
-								#d["render_min"] = u
-								#d["render_max"] = v
-						else :
-							if not min_max_set :
+						else:
+							if not min_max_set:
 								d["render_min"] = d["minimum"]
 								d["render_max"] = d["maximum"]
 
-					if options.avgseq>1: 
+					if options.avgseq > 1:
 						average.add_image(d)
-						if count%options.avgseq==0:
+						if count%options.avgseq == 0:
 							d=average.finish()
 #							print(f"{count} {d['ptcl_repr']}")
-						
+
 					if not options.average and (options.avgseq<=1 or count%options.avgseq==0):	# skip writing the input image to output file
 						# write processed image to file
 
@@ -1083,8 +1048,6 @@ def main():
 
 								out3d_img = EMData(d.get_xsize(), d.get_ysize(), z)
 
-								#print "Writing dummy"
-
 								try:
 									out3d_img["apix_x"] = d["apix_x"]
 									out3d_img["apix_y"] = d["apix_y"]
@@ -1094,10 +1057,6 @@ def main():
 
 								out3d_img.write_image(outfile, 0, out_type, False, None, out_mode, not_swap)
 								dummy = 1
-
-								#print "Wrote dummy"
-
-							#print "imagelist is", imagelist
 
 							if options.list or options.exclude:
 								if imagelist[i] != 0:
@@ -1113,13 +1072,11 @@ def main():
 
 								region = Region(0, 0, i, d.get_xsize(), d.get_ysize(), 1)
 
-							#print "outtype is", options.outtype
-
 							d.write_image(outfile, 0, out_type, False, region, out_mode, not_swap)
 
 						elif options.unstacking:	# output a series numbered single image files
 							out_name = os.path.splitext(outfile)[0]+'-'+str(i+1).zfill(len(str(nimg)))+os.path.splitext(outfile)[-1]
-							if d["sigma"]==0:
+							if d["sigma"] == 0:
 								if options.verbose > 0:
 									print("Warning: sigma = 0 for image ",i)
 
@@ -1130,9 +1087,7 @@ def main():
 
 							d.write_image(out_name, 0, out_type, False, None, out_mode, not_swap)
 
-							#print "I will unstack to HDF" # JESUS
-
-						else:   # output a single 2D image or a 2D stack			
+						else:   # output a single 2D image or a 2D stack
 							# optionally replace the output image with its rotational average
 
 							if options.rotavg:
@@ -1141,7 +1096,7 @@ def main():
 
 								for x in range(len(rd)): d[x] = rd[x]
 
-							if d["sigma"]==0:
+							if d["sigma"] == 0:
 								if options.verbose > 0:
 									print("Warning: sigma = 0 for image ",i)
 
@@ -1150,7 +1105,7 @@ def main():
 										print("Use the writejunk option to force writing this image to disk")
 									continue
 
-							if outfile!=None :
+							if outfile != None:
 								if options.inplace:
 									if options.compressbits>=0:
 										d.write_compressed(outfile,i,options.compressbits,nooutliers=True)
@@ -1168,23 +1123,23 @@ def main():
 	#		avg.mult(1.0/(n1-n0+1.0))
 	#		average.process_inplace("normalize");
 
-			if options.inplace: 
-				if options.compressbits>=0:
+			if options.inplace:
+				if options.compressbits >= 0:
 					avg.write_compressed(outfile,0,options.compressbits,nooutliers=True)
 				else: avg.write_image(outfile,0)
-			else : 
-				if options.compressbits>=0:
+			else:
+				if options.compressbits >= 0:
 					avg.write_compressed(outfile,-1,options.compressbits,nooutliers=True)
 				else: avg.write_image(outfile,-1)
 
 		if options.fftavg:
-			fftavg.mult(old_div(1.0, sqrt(n1 - n0 + 1)))
+			fftavg.mult(1.0 / sqrt(n1 - n0 + 1))
 			fftavg.write_image(options.fftavg, 0)
 
-			curve = fftavg.calc_radial_dist(ny, 0, 0.5,1)
+			curve = fftavg.calc_radial_dist(ny, 0, 0.5, 1)
 			outfile2 = options.fftavg+".txt"
 
-			sf_dx = old_div(1.0, (apix * 2.0 * ny))
+			sf_dx = 1.0 / (apix * 2.0 * ny)
 			Util.save_data(0, sf_dx, curve, outfile2)
 
 		try:
