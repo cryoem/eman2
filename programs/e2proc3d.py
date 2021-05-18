@@ -146,7 +146,6 @@ def main():
 
 	(options, args) = parser.parse_args()
 
-
 	if len(args) != 2:
 		print("usage: " + usage)
 		print("Please run '" + progname + " -h' for detailed options")
@@ -202,7 +201,6 @@ def main():
 		model2=None
 		print("Fragmentization complete! Exiting")
 		sys.exit(0)
-
 
 	# This is a specialized option which doesn't play nice with ANY other options in the command
 	# it will do piecewise shrinking of a map which is too large for RAM
@@ -289,7 +287,6 @@ def main():
 		print("Complete !")
 		sys.exit(0)
 
-
 	n0 = options.first
 	n1 = options.last
 	if infile[0]==":" : nimg=1
@@ -311,7 +308,6 @@ def main():
 	if options.alignref : alignref=EMData(options.alignref,0)
 	else : alignref=None
 
-
 	if options.calcradial>=0 :
 		print("Computing radial real-space distribution. All other options ignored!")
 		curves=[]
@@ -328,7 +324,6 @@ def main():
 				out.write("\t{}".format(c[l]))
 
 		sys.exit(0)
-
 
 	if options.average:
 		print("Averaging particles from %d to %d stepping by %d. All other options ignored !"%(n0,n1,n2))
@@ -639,7 +634,6 @@ def main():
 				xf.invert()
 				data.process_inplace("xform",{"transform":xf})
 
-
 			elif option1 == "trans":
 				fi = index_d[option1]
 				dx,dy,dz=options.trans[fi].split(",")
@@ -693,7 +687,6 @@ def main():
 				nsym=xf.get_nsym(sym)
 				avg_dict=parsemodopt(options.averager)
 				symavgr = Averagers.get(avg_dict[0],avg_dict[1])
-
 
 				for i in range(nsym):
 					ref=data.copy()
