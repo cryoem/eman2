@@ -621,8 +621,8 @@ def main():
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	#parser.add_argument("--apix", "-A", type=float, help="A/voxel", default=1.0)
-	#parser.add_argument("--box", "-B", type=str, help="Box size in pixels, <xyz> or <x>,<y>,<z>")
+	#parser.add_argument("--apix", type=float, help="A/voxel", default=1.0)
+	#parser.add_argument("--box", type=str, help="Box size in pixels, <xyz> or <x>,<y>,<z>")
 	#parser.add_argument("--het", action="store_true", help="Include HET atoms in the map", default=False)
 	parser.add_argument("--align",type=str,help="The name of an 'aligner' to use prior to comparing the images", default=None)
 	parser.add_argument("--aligncmp",type=str,help="Name of the aligner along with its construction arguments",default="dot")
@@ -639,11 +639,11 @@ def main():
 #	parser.add_argument("--lowmem",action="store_true",help="prevent the bulk reading of the reference images - this will save memory but potentially increase CPU time",default=False)
 	parser.add_argument("--init",action="store_true",help="Initialize the output matrix file before performing 'range' calculations",default=False)
 	parser.add_argument("--fillzero",action="store_true",help="Checks the existing output file, and fills only matrix elements which are exactly zero.",default=False)
-	parser.add_argument("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
+	parser.add_argument("--force",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
 	parser.add_argument("--exclude", type=str,default=None,help="The named file should contain a set of integers, each representing an image from the input file to exclude. Matrix elements will still be created, but will be zeroed.")
 	parser.add_argument("--shrink", type=float,default=None,help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. This will speed the process up.")
 	parser.add_argument("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
-	parser.add_argument("--check","-c",action="store_true",help="Performs a command line argument check only.",default=False)
+	parser.add_argument("--check",action="store_true",help="Performs a command line argument check only.",default=False)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--parallel",type=str,help="Parallelism string",default=None)
 

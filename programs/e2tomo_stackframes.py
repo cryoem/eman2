@@ -52,7 +52,7 @@ def main():
 	parser.add_argument('--nframes', type=int, default=0, help="""default=0 (not used). Number of expected frames per tilt angle, used to check whether errors occur in the stacking of images.""")
 
 	parser.add_argument('--outputstem', type=str, default='stack', help="""default=stack. Output filename stem/root to write stacked frames out to; e.g., "stack_01", "stack_02", "stack_03", etc. Explicitly choose an extension/format by supplying --extension; e.g., --extension=.hdf, and the output will be 'stack_01_angle+02.hdf','stack_02_angle+00.hdf','stack_03_angle-02.hdf', etc, etc.""")
-	#parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None, guitype='strbox', row=8, col=0, rowspan=1, colspan=2, mode="align")
+	#parser.add_argument("--parallel",type=str,help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None, guitype='strbox', row=8, col=0, rowspan=1, colspan=2, mode="align")
 
 	parser.add_argument("--ppid", type=int, default=-1, help="Set the PID of the parent process, used for cross platform PPID")
 

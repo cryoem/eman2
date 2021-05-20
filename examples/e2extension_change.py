@@ -51,7 +51,7 @@ def main():
 	parser.add_argument('--inputstring', type=str, default='', help="""default=empty string (not used to filter/select input files). String common to all images to be processed. E.g., if --inputstring=.mrc, all files in the directory ending in '.mrc' (or containing this as part of the filename) will be analyzed.""")
 
 	parser.add_argument('--outputextension', type=str, default=None, help="""default=None. Required, and must be different from the extension of the input images. Possible options are: '.hdf','.mrc','.mrcs','.st','.ali','.rec','.tiff'""")
-	#parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None, guitype='strbox', row=8, col=0, rowspan=1, colspan=2, mode="align")
+	#parser.add_argument("--parallel",type=str,help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None, guitype='strbox', row=8, col=0, rowspan=1, colspan=2, mode="align")
 
 	parser.add_argument("--ppid", type=int, default=-1, help="Set the PID of the parent process, used for cross platform PPID")
 

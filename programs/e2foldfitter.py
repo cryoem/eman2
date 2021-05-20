@@ -124,9 +124,9 @@ both box sizes should be multiples of 8."""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_argument("--shrink", "-S", type=int, help="shrink factor for initial search, default=auto", default=0)
-	parser.add_argument("--num", "-N", type=int, help="Number of initial alternative positions, default=5", default=5)
-	parser.add_argument("--epsilon","-E", type=float,help="final target accuracy, default=.01",default=.01)
+	parser.add_argument("--shrink", type=int, help="shrink factor for initial search, default=auto", default=0)
+	parser.add_argument("--num", type=int, help="Number of initial alternative positions, default=5", default=5)
+	parser.add_argument("--epsilon", type=float,help="final target accuracy, default=.01",default=.01)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 

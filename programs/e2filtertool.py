@@ -58,7 +58,7 @@ def main():
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-#	parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=64)
+#	parser.add_argument("--boxsize",type=int,help="Box size in pixels",default=64)
 #	parser.add_argument("--shrink",type=int,help="Shrink factor for full-frame view, default=0 (auto)",default=0)
 	parser.add_argument("--apix",type=float,help="Override the A/pix value stored in the file header",default=0.0)
 #	parser.add_argument("--force2d",action="store_true",help="Display 3-D data as 2-D slices",default=False)

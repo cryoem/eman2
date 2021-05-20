@@ -119,9 +119,9 @@ Finds isolated spots in the image and uses them as a basis for alignment"""
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
 	parser.add_option("--saveali", action="store_true", help="Save aligned images in ali.hed", default=False)
-	parser.add_option("--scale", "-S", type="float", help="scale factor", default=1.0)
-	parser.add_option("--threshold", "-T", type="float", help="Dot threshold for discarding image", default=0.1)
-	parser.add_option("--out", "-o", type="string", help="Output filespec", default="out.mrc")
+	parser.add_option("--scale", type="float", help="scale factor", default=1.0)
+	parser.add_option("--threshold", type="float", help="Dot threshold for discarding image", default=0.1)
+	parser.add_option("--out", type="string", help="Output filespec", default="out.mrc")
 	parser.add_option("--maxerr",type="float",help="Maximum error in point pair matching",default=-1)
 	
 	(options, args) = parser.parse_args()

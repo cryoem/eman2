@@ -65,7 +65,7 @@ def main():
 	parser.add_header(name="modelheader", help='Options below this label are specific to e2refine Model', title="### e2refine model options ###", row=4, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--iter", dest = "iter", type = int, default=0, help = "The total number of refinement iterations to perform", guitype='intbox', row=2, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--startiter", dest = "startiter", type = int, default=0, help = "If a refinement crashes, this can be used to pick it up where it left off. This should NOT be used to change parameters, but only to resume an incomplete run.")
-	parser.add_argument("--check", "-c", dest="check", default=False, action="store_true",help="Checks the contents of the current directory to verify that e2refine.py command will work - checks for the existence of the necessary starting files and checks their dimensions. Performs no work ")
+	parser.add_argument("--check", dest="check", default=False, action="store_true",help="Checks the contents of the current directory to verify that e2refine.py command will work - checks for the existence of the necessary starting files and checks their dimensions. Performs no work ")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--input", dest="input", default=None,type=str, help="The name of the set containing the particle data", browser='EMSetsTable(withmodal=True,multiselect=False)', guitype='filebox', row=0, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--model", dest="model", type=str,default="threed.0a.mrc", help="The name of the 3D image that will seed the refinement", guitype='filebox', browser='EMModelsTable(withmodal=True,multiselect=False)', row=5, col=0, rowspan=1, colspan=3, mode="refinement")
@@ -130,7 +130,7 @@ def main():
 	
 	#lowmem!
 	parser.add_argument("--lowmem", default=False, action="store_true",help="Make limited use of memory when possible - useful on lower end machines", guitype='boolbox', row=3, col=2, rowspan=1, colspan=1, mode="refinement")
-	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>:<value> EX thread:4",default=None, guitype='strbox', row=3, col=0, rowspan=1, colspan=2, mode="refinement")
+	parser.add_argument("--parallel",type=str,help="Run in parallel, specify type:<option>=<value>:<option>:<value> EX thread:4",default=None, guitype='strbox', row=3, col=0, rowspan=1, colspan=2, mode="refinement")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	(options, args) = parser.parse_args()
