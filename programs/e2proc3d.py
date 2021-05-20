@@ -43,18 +43,6 @@ from time import time
 from numpy import arange
 import traceback
 
-def print_iminfo(data, label):
-	print("%s image : %dx%dx%d Mean=%1.3g Sigma=%1.3g Min=%1.3g Max=%1.3g" % \
-	(label, data.get_xsize(), data.get_ysize(), data.get_zsize(),
-	data.get_attr("mean"), data.get_attr("sigma"),
-	data.get_attr("minimum"), data.get_attr("maximum")))
-
-def calcsf(data):
-	dataf = data.do_fft()
-	curve = dataf.calc_radial_dist(old_div(ny,2), 0, 1.0,True)
-	curve=[old_div(i,(dataf["nx"]*dataf["ny"]*dataf["nz"])) for i in curve]
-	Util.save_data(0, old_div(1.0,(apix*ny)), curve, options.calcsf)
-	return()
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -387,8 +375,6 @@ def main():
 
 	datlst = parse_infile(infile, n0, n1, n2, options.apix)
 
-	#datlst = parse_infile(infile, indxs)
-
 	logid=E2init(sys.argv,options.ppid)
 
 	x = datlst[0].get_xsize()
@@ -406,8 +392,6 @@ def main():
 	origin_x = 0
 	origin_y = 0
 	origin_z = 0
-
-	#print_iminfo(datlst[0], "Original")
 
 	apix = datlst[0]["apix_x"]	# default to apix_x from file
 	if options.apix:
@@ -482,20 +466,6 @@ def main():
 				sf=XYData()
 				sf.read_file(options.setsf)
 				data.process_inplace("filter.setstrucfac",{"apix":data["apix_x"],"strucfac":sf})
-				#dataf = data.do_fft()
-				#curve = dataf.calc_radial_dist(ny, 0, 0.5,True)
-				#filt=[]
-				#norm=data["nx"]*data["ny"]*data["nz"]
-				#for i,j in enumerate(curve):
-					#if j==0 : filt.append(0.0)
-					#else :
-						#filt.append(sqrt(norm*sf.get_yatx(i/(apix*2.0*dataf["ny"]))/j))
-						#print i,sqrt(norm*sf.get_yatx(i/(apix*2.0*dataf["ny"]))/j)
-				#dataf.apply_radial_func(0,0.5/len(filt),filt)
-				#data=dataf.do_ift()
-
-				#curve2 = dataf.calc_radial_dist(ny, 0, 0.5,True)
-#				plot((curve,curve2))
 			elif option1 == "setisosf":
 				if options.verbose>1 : print("setisosf -> ",options.setsf)
 				sf=XYData()
@@ -657,12 +627,6 @@ def main():
 				mf=None
 				index_d[option1] += 1
 
-#            elif option1 == "tomoshrink":
-#                from e2spt_boxer import ShrunkenTomogram
-#                st = ShrunkenTomogram(args[0])
-#                st.set_cache_to_db(False)
-#                tmp = st.get_image()
-
 			elif option1 == "add":
 				data.add(options.add)
 
@@ -793,7 +757,6 @@ def main():
 				if not options.outtype:
 					options.outtype = "unknown"
 
-		#print_iminfo(data, "Final")
 		if options.outmode not in ("float","compressed") :
 			if options.outnorescale :
 				# This sets the minimum and maximum values to the range for the specified type, which should result in no rescaling
