@@ -82,6 +82,16 @@ def safe_float(v) :
 		except :
 			return sys.float_info.min
 
+def size_sortable(s):
+	try: return int(s)
+	except: return 0
+#	try:
+	#if s.endswith("g"): return int(s[:-1])*1000000000
+	#elif s.endswith("m"): return int(s[:-1])*1000000
+	#elif s.endswith("k"): return int(s[:-1])*1000
+	#else: return int(s)
+#	except: return 0
+
 def isprint(s) :
 	"""returns True if the string contains only printable ascii characters"""
 	# Seems like no isprint() in python, this does basically the same thing
@@ -1954,7 +1964,7 @@ class EMDirEntry(object) :
 	"""Represents a directory entry in the filesystem"""
 
 	# list of lambda functions to extract column values for sorting
-	col = (lambda x:int(x.index), lambda x:x.name, lambda x:x.filetype, lambda x:x.size, lambda x:x.dim, lambda x:safe_int(x.nimg), lambda x:x.date)
+	col = (lambda x:int(x.index), lambda x:x.name, lambda x:x.filetype if x.filetype!=None else "", lambda x:size_sortable(x.size), lambda x:str(x.dim), lambda x:safe_int(x.nimg), lambda x:x.date)
 #	classcount = 0
 
 	def __init__(self, root, name, index, parent = None, hidedot = True, dirregex = None) :
