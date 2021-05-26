@@ -200,7 +200,7 @@ as well as alignment parameters, so use of tomograms from other software is not 
 	img=EMData(tfile,0, True)
 	apix_ptcl=ptcl["apix_x"]
 	apix_tlt=img["apix_x"] * float(options.shrink)
-	
+	print(tfile, pfile)
 	
 	try:
 		zshift=ptcl["zshift"]#/2
@@ -386,11 +386,7 @@ as well as alignment parameters, so use of tomograms from other software is not 
 		else:
 			boxsz=int(options.boxsz//2*scale)
 		
-		
-		
 		towrite=[(ptclpos,outname, boxsz,[])]
-	
-	
 	
 	
 	if options.norewrite:
@@ -785,27 +781,53 @@ def parse_text(options):
 def parse_json(options):
 	print("re-extracting particles based on previous alignment. Ignoring particle/tomogram input...")
 	import scipy.spatial.distance as scipydst
-	### read json
-	js=js_open_dict(options.jsonali)
-	keys=natural_sort(js.keys())
-	data=[]
-	for k in keys:
-		src, ii = eval(k)
-		e=EMData(src, ii, True)
-		if src[-4:]==".lst" :
-			data.append({"k":k,
-				"src":e["data_source"],
-				"srci":e["data_n"],
-				"pos":e["ptcl_source_coord"],
-				"xf":js[k]["xform.align3d"], 
-				"score":js[k]["score"]})
-		else:
-			data.append({"k":k,
-				"src":src,
-				"srci":ii,
-				"pos":e["ptcl_source_coord"],
-				"xf":js[k]["xform.align3d"], 
-				"score":js[k]["score"]})
+	
+	if options.jsonali.endswith("json"):
+		### read json
+		js=js_open_dict(options.jsonali)
+		keys=natural_sort(js.keys())
+		data=[]
+		for k in keys:
+			src, ii = eval(k)
+			e=EMData(src, ii, True)
+			if src[-4:]==".lst" :
+				data.append({"k":k,
+					"src":e["data_source"],
+					"srci":e["data_n"],
+					"pos":e["ptcl_source_coord"],
+					"xf":js[k]["xform.align3d"], 
+					"score":js[k]["score"]})
+			else:
+				data.append({"k":k,
+					"src":src,
+					"srci":ii,
+					"pos":e["ptcl_source_coord"],
+					"xf":js[k]["xform.align3d"], 
+					"score":js[k]["score"]})
+		js.close()
+	
+	elif options.jsonali.endswith("lst"):
+		info=load_lst_params(options.jsonali)
+		data=[]
+		e=EMData(info[0]["src"], info[0]["idx"], True)
+		for i,nf in enumerate(info):
+			if "coord" in nf:
+				coord=nf["coord"]
+			else:
+				e=EMData(nf["src"], nf["idx"], True)
+				coord=e["ptcl_source_coord"]
+			
+			if "score" in nf:
+				score=nf["score"]
+			else:
+				score=-1
+				
+			data.append({"src":nf["src"],
+				"srci":nf["idx"],
+				"pos":coord,
+				"xf":nf["xform.align3d"],
+				"score":score})
+			
 	
 	fs=[d["src"] for d in data]
 	fnames, count=np.unique(fs, return_counts=True)
@@ -863,10 +885,10 @@ def parse_json(options):
 		ids=np.array([d["srci"] for d in data if d["src"]==fname])
 		ptclxfs=[Transform(d["xf"]) for d in data if d["src"]==fname]
 		score=np.array([d["score"] for d in data if d["src"]==fname])
-		sid=np.argsort(score)
-		pos=pos[sid]
-		ptclxfs=[ptclxfs[s] for s in sid]
-		score=score[sid]
+		#sid=np.argsort(score)
+		#pos=pos[sid]
+		#ptclxfs=[ptclxfs[s] for s in sid]
+		#score=score[sid]
 		
 		info=[]
 		newxfs=[]
@@ -901,11 +923,9 @@ def parse_json(options):
 		
 		
 		print("{} : ptcls {} -> {}".format(fname, len(pos), len(allxfs[fname])))
-		
-
 			
 			
-	js.close()
+	
 	print("Writing {} particles, excluding {} particles too close to each other.".format(nptcl, nexclude))
 	return allxfs,allinfo
 	
