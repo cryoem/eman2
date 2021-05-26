@@ -17,10 +17,10 @@ def main():
 	parser.add_argument("--sym", type=str,help="symmetry", default="c1")
 	parser.add_argument("--iters", type=str,help="iterations. Types of refinement separated by comma. p - 3d particle translation-rotation. t - subtilt translation. r - subtilt translation-rotation. d - subtilt defocus. Default is p,p,p,t,r,p,r,d", default="p,p,p,t,r,p,r,d")
 	parser.add_argument("--keep", type=float,help="fraction to keep", default=0.95)
-	parser.add_argument("--parallel", type=str,help="parallel", default="thread:10")
+	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>=<value>. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel",default="thread:4", guitype='strbox', row=30, col=0, rowspan=1, colspan=2, mode="refinement[thread:4]")
+	parser.add_argument("--threads", type=int,help="threads for post-processing", default=10)
 	parser.add_argument("--setsf", type=str,help="structure factor for sharpening", default=None)
 	parser.add_argument("--tophat", type=str,help="tophat filter options", default=None)
-	parser.add_argument("--threads", type=int,help="thread for make3d and post process", default=10)
 	parser.add_argument("--startres", type=float,help="starting maximum resolution. required when goldstandard is not specified", default=-1)
 	parser.add_argument("--ssnrwt", action="store_true", default=False ,help="weight particles by SSNR accroding to references")
 	parser.add_argument("--goldcontinue", action="store_true", default=False ,help="ues the _even/_odd version of the given reference")
@@ -228,7 +228,7 @@ def main():
 			
 			
 		for eo in ["even", "odd"]:
-			run(f"e2spa_make3d.py --input {path}/aliptcls2d_{itr:02d}.lst --output {path}/threed_{itr:02d}_{eo}.hdf --keep {options.keep} --clsid {eo} --parallel thread:{options.threads} --outsize {boxsize} --pad {padsize} --sym {options.sym}")
+			run(f"e2spa_make3d.py --input {path}/aliptcls2d_{itr:02d}.lst --output {path}/threed_{itr:02d}_{eo}.hdf --keep {options.keep} --clsid {eo} --parallel {options.parallel} --outsize {boxsize} --pad {padsize} --sym {options.sym}")
 			
 		if options.ssnrwt and itr==len(iters):
 			run(f"e2refine_postprocess.py --even {path}/threed_{itr:02d}_even.hdf {setsf} --threads {options.threads} {ppmask}")

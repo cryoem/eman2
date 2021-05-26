@@ -1840,17 +1840,15 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 					pass
 				get_application().setOverrideCursor(Qt.BusyCursor)
 
-				i = 0
-				for idx in idxs:
-					data.append(EMData(name,idx))
+				data=EMData.read_images(name,idxs+idxse)		# read all if the images in one operation for speed
+				for i,idx in enumerate(idxs):
 					if mx!=None:
 						xfm=Transform({"type":"2d","tx":mx[0][0,idx],"ty":mx[1][0,idx],"alpha":mx[2][0,idx],"mirror":bool(mx[3][0,idx])})
 						#ad=data[-1].align("rotate_translate_flip",a,{},"ccc",{})
-						data[-1].transform(xfm)
+						data[i].transform(xfm)
 						#data.append(ad)
 						#print "%6d %s\n       %s"%(idx,str(xfm),str(ad["xform.align2d"]))
-					i+=1
-					progress.setValue(i)
+					progress.setValue(i+1)
 					get_application().processEvents()
 
 					if progress.wasCanceled():
@@ -1859,14 +1857,12 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 						return
 
 				idxseim = []
-				for idx in idxse:
-					data.append(EMData(name,idx))
+				for j,idx in enumerate(idxse):
 					if mx!=None:
 						xfm=Transform({"type":"2d","tx":mx[0][0,idx],"ty":mx[1][0,idx],"alpha":mx[2][0,idx],"mirror":bool(mx[3][0,idx])})
-						data[-1].transform(xfm)
-					idxseim.append(i)
-					i+=1
-					progress.setValue(i)
+						data[j+i].transform(xfm)
+					idxseim.append(i+j)
+					progress.setValue(i+j)
 					get_application().processEvents()
 
 					if progress.wasCanceled():

@@ -88,7 +88,7 @@ e2compress.py --nooutliers --outpath ../micrographs_5bit --threads 32 -v 2 --bit
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_argument("--bits",type=int,help="Bits to retain in the output file, 0 or 2-16. 0 is a flag indicating the native floating point format.",default=10)
+	parser.add_argument("--bits",type=int,help="Bits to retain in the output file, 0 or 2-16. 0 is lossless floating point compression. <0 will store completely uncompressed",default=10)
 	parser.add_argument("--compresslevel",type=int,help="Compression level to use when writing. No impact on image quality, but large impact on speed. Default = 1",default=None)
 	parser.add_argument("--nooutliers",action="store_true",default=False,help="will set --range to eliminate a few of the most extreme values from both ends of the histogram")
 	parser.add_argument("--range",type=str,help="Specify <minval>,<maxval> representing the largest and smallest values to be saved in the output file. Automatic if unspecified.",default=None)
@@ -162,31 +162,35 @@ e2compress.py --nooutliers --outpath ../micrographs_5bit --threads 32 -v 2 --bit
 				im=EMData(f,i)
 
 				im["render_bits"]=options.bits
+				if options.bits<0:
+					im.write_image(tmpname,i)
+					continue
 				if options.compresslevel!=None : im["render_compress_level"]=options.compresslevel
-				if options.nooutliers :
-					nxyz=im.get_size()
-					maxout=max(nxyz//20000,8)		# at most 1 in 20000 pixels should be considered an outlier on each end
-					h0=im["minimum"]
-					h1=im["maximum"]
-					hs=(h1-h0)/1023
-					hist=im.calc_hist(1024,h0,h1)
-					
-					#ok, we're doing this approximately
-					for sl in range(512):
-						if sum(hist[:sl+1])>maxout: break
-					for sh in range(1023,512,-1):
-						if sum(hist[sh:])>maxout: break
+				if options.bits>0:
+					if options.nooutliers :
+						nxyz=im.get_size()
+						maxout=max(nxyz//20000,8)		# at most 1 in 20000 pixels should be considered an outlier on each end
+						h0=im["minimum"]
+						h1=im["maximum"]
+						hs=(h1-h0)/1023
+						hist=im.calc_hist(1024,h0,h1)
+						
+						#ok, we're doing this approximately
+						for sl in range(512):
+							if sum(hist[:sl+1])>maxout: break
+						for sh in range(1023,512,-1):
+							if sum(hist[sh:])>maxout: break
 
-					im["render_min"]=sl*hs+h0
-					im["render_max"]=(sh)*hs+h0
-				elif options.range!=None:
-					rendermin,rendermax=options.range.split(",")
-					im["render_min"]=float(rendermin)
-					im["render_max"]=float(rendermax)
-				elif options.sigrange!=None:
-					renderminsig,rendermaxsig=options.sigrange.split(",")
-					im["render_min"]=im["mean"]-im["sigma"]*float(renderminsig)
-					im["render_max"]=im["mean"]+im["sigma"]*float(rendermaxsig)
+						im["render_min"]=sl*hs+h0
+						im["render_max"]=(sh)*hs+h0
+					elif options.range!=None:
+						rendermin,rendermax=options.range.split(",")
+						im["render_min"]=float(rendermin)
+						im["render_max"]=float(rendermax)
+					elif options.sigrange!=None:
+						renderminsig,rendermaxsig=options.sigrange.split(",")
+						im["render_min"]=im["mean"]-im["sigma"]*float(renderminsig)
+						im["render_max"]=im["mean"]+im["sigma"]*float(rendermaxsig)
 				im.write_image(tmpname,i,IMAGE_UNKNOWN,0,None,EM_COMPRESSED)
 				
 			if options.verbose>1 : print("{:0.1f} s".format(time.time()-t0))

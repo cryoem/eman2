@@ -228,7 +228,6 @@ def main():
 	(optionsUnparsed, args) = parser.parse_args()
 
 	
-	
 	options.nopreprocprefft = False
 	
 	'''
@@ -1023,7 +1022,7 @@ def allvsall(options,preproc):
 						subp1_forFinalAliStack['xform.align3d']=pastt
 						
 						FinalAliStack.update({int(p):subp1_forFinalAliStack})		#But let's keep track of them, and write them out only when the LAST iteration has been reached
-						print("I have CHANGED a particle1 in final_ali_stack to have this transform", totalt)
+						print("I have CHANGED a particle1 in final_ali_stack to have this transform", pastt)
 
 					indx_trans_pairs.update({p:pastt})
 					

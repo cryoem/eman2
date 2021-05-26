@@ -63,8 +63,6 @@ def main():
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	#parser = OptionParser(usage=usage,version=EMANVERSION)
-	
 	parser.add_argument("--path",type=str,default='spt_simjobs',help="Directory to store results in. The default is a numbered series of directories containing the prefix 'sptsimjob'; for example, sptsimjob_02 will be the directory by default if 'sptsimjob_01' already exists.")
 	
 	parser.add_argument("--snrlowerlimit", type=float,default=0.00,help="Minimum weight for noise compared to singal.")

@@ -109,6 +109,7 @@ def main():
 	if options.ac!=None :     opts+="--ac {} ".format(options.ac)
 	if options.defocusmin!=None : opts+="--defocusmin {} ".format(options.defocusmin)
 	if options.defocusmax!=None : opts+="--defocusmax {} ".format(options.defocusmax)
+	if options.compressbits!=None:	opts+="--compressbits {} ".format(options.compressbits)
 	
 	blk=len(args)//options.threads+1
 	thrds=[threading.Thread(target=launch_childprocess,args=["e2rawdata.py "+opts+" ".join(args[i*blk:(i+1)*blk])]) for i in range(options.threads)]

@@ -18,20 +18,27 @@ def main():
 		info3d=[]
 		n=EMUtil.get_image_count(src)
 
-		lst=LSXFile(src)
-		for ii in range(n):
-			l=lst.read(ii)
+		if src.endswith(".lst"):
+			lst=LSXFile(src)
+			for ii in range(n):
+				l=lst.read(ii)
+					
+				k=str((src, ii))
+				j=js[k]
+				dc={"idx":l[0],"src":l[1], "class":ii%2,
+					"xform.align3d":j["xform.align3d"], "score":j["score"]}
 				
-			k=str((src, ii))
-			j=js[k]
-			dc={"idx":l[0],"src":l[1], "class":ii%2,
-				"xform.align3d":j["xform.align3d"], "score":j["score"]}
-			
-			info3d.append(dc)
+				info3d.append(dc)
 
-			sys.stdout.write("\r {}/{}".format(ii, n))
-			sys.stdout.flush()
-
+				sys.stdout.write("\r {}/{}".format(ii, n))
+				sys.stdout.flush()
+		# JSON file not referencing a .lst file, unusual, but sometimes happens
+		else:
+			for i,k in enumerate(keys):
+				fsp,n=eval(k)
+				d=js[k]
+				dc={"idx":n,"src":fsp,"class":i%2,"xform.align3d":d["xform.align3d"],"score":d["score"]}
+				info3d.append(dc)
 
 		fm3d=args[1]
 		save_lst_params(info3d, fm3d)

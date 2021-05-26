@@ -22,7 +22,8 @@ def main():
 	parser.add_argument("--tophat", type=str, default="local" ,help="Default=local, can also specify localwiener")
 	parser.add_argument("--threads", type=int,help="threads to use during postprocessing of 3d volumes", default=4)
 	parser.add_argument("--automask3d", default="auto", type=str,help="Default=auto. Specify as a processor, eg - mask.auto3d:threshold=1.1:radius=30:nshells=5:nshellsgauss=5.")
-
+	parser.add_argument("--compressbits", type=int,help="Bits to keep when writing images. 4 generally safe for raw data. 0-> true lossless (floating point). Default 6", default=6, guitype='intbox', row=10, col=1, rowspan=1, colspan=1, mode='filter[6]')
+	
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	

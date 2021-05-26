@@ -428,6 +428,7 @@ class EMScatterPlot3D(EMShapeBase):
 	
 	def __init__(self, transform=None):
 		EMShapeBase.__init__(self, parent=None, children=set(), transform=transform)
+		self.pointthr=0
 		self.data=[[],[],[]]
 		
 	def setData(self, data, pointsize=1.0):
@@ -443,7 +444,17 @@ class EMScatterPlot3D(EMShapeBase):
 		return self.pointsize
 		
 	def setPointSize(self, pointsize):
+		"""Sets the default size of each sphere, or the size scaling factor if a size parameter is provided"""
 		self.pointsize = pointsize
+		self.slices = 8
+		self.stacks = 8
+		
+	def getPointThr(self):
+		return self.pointthr
+		
+	def setPointThr(self, pointthr):
+		"""Sets a point intensity threshold. Points will be hidden if they have a value below the threshold"""
+		self.pointthr = pointthr
 		self.slices = 8
 		self.stacks = 8
 		
@@ -476,10 +487,14 @@ class EMScatterPlot3D(EMShapeBase):
 			glPushMatrix()
 			if len(self.data)>3:
 				brtcol=max(self.data[3][i]/cmax,0.0)		# color is black for values of 0 ranging to white at max
+				if self.data[3][i]<self.pointthr : 
+					glPopMatrix()
+					continue
 				glMaterialfv(GL_FRONT, GL_DIFFUSE, [brtcol*0.75,brtcol*0.75,brtcol*0.75,1.0])
 				glMaterialfv(GL_FRONT, GL_AMBIENT, [brtcol,brtcol,brtcol,1.0])
 			glTranslatef(self.data[0][i],self.data[1][i],self.data[2][i])
-			gluSphere(quadratic,self.pointsize,self.slices,self.stacks)
+			if len(self.data)>4: gluSphere(quadratic,self.pointsize*self.data[4][i],self.slices,self.stacks)
+			else: gluSphere(quadratic,self.pointsize,self.slices,self.stacks)
 			
 			glPopMatrix()
 

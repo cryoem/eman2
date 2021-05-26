@@ -64,7 +64,7 @@ Simulates the effects of a 3D reconstruction by including noise and rotational u
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_argument("--apix", "-A", type=float, help="A/voxel", default=0.0)
+	parser.add_argument("--apix", type=float, help="A/voxel", default=0.0)
 	parser.add_argument("--fsc", type=str, help="A text file containing a FSC curve to simulate",default=None)
 	parser.add_argument("--anglesigma", type=float, help="Uncertainty in orientation determination in degrees")
 	parser.add_argument("--sym", dest = "sym", default="c1",help = "Specify symmetry - choices are: c<n>, d<n>, tet, oct, icos.")

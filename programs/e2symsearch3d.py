@@ -78,7 +78,7 @@ def main():
 	parser.add_argument("--nopreprocprefft",action="store_true",default=False,help="""Turns off all preprocessing that happens only once before alignment (--normproc, --mask, --maskfile, --clip, --threshold; i.e., all preprocessing excepting filters --highpass, --lowpass, --preprocess, and --shrink.""")
 	parser.add_argument("--normproc",type=str,default='',help="""Normalization processor applied to particles before alignment. Default is to use normalize. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'""")	
 	
-	parser.add_argument("--parallel","-P",type=str,default=None,help="""Default=thread:2. Run in parallel, see http://eman2.org/Parallel""", guitype='strbox', row=8, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--parallel",type=str,default=None,help="""Default=thread:2. Run in parallel, see http://eman2.org/Parallel""", guitype='strbox', row=8, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--path",type=str, default='', help="""Name of path for output file""", guitype='strbox', row=2, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--plots", action='store_true', default=False,help="""Default=False. Turn this option on to generate a plot of the ccc scores if --average is supplied. Running on a cluster or via ssh remotely might not support plotting.""")
 	parser.add_argument("--ppid", type=int, help="""Set the PID of the parent process, used for cross platform PPID.""",default=-1)	
