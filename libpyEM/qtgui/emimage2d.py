@@ -1745,13 +1745,24 @@ class EMImage2DWidget(EMGLWidget):
 					inspector = self.get_inspector()
 					if inspector:
 						apix=inspector.mtapix.value
-						inspector.mtshoworigin.setText("Start: %d , %d"%(current_shapes["MEAS"].shape[4],current_shapes["MEAS"].shape[5]))
-						inspector.mtshowend.setText("  End: %d , %d"%(lc[0],lc[1]))
-						inspector.mtshowlen.setText("dx,dy: %1.2f A, %1.2f A"%(dx*apix,dy*apix))
-						inspector.mtshowlen2.setText("Len: %1.3f A"%(hypot(dx,dy)*apix))
-
+						
 						# displays the pixel value at the current endpoint
 						if inspector.target().curfft :
+							nx,ny=inspector.target().data["nx"],inspector.target().data["ny"]
+							p=[current_shapes["MEAS"].shape[4]-nx//2,current_shapes["MEAS"].shape[5]-ny//2,lc[0]-nx//2,lc[1]-ny//2]
+							p=[round(x) for x in p]
+							q=[p[0]/nx,p[1]/ny,p[2]/nx,p[3]/ny] 
+							q=[f"{apix/x:.1f}" if x!=0 else "INF" for x in q]
+							
+							w=[hypot(p[0]/nx,p[1]/ny),hypot(p[2]/nx,p[3]/ny)]
+							w=[f"{apix/x:.1f}" if x!=0 else "INF" for x in w]
+							
+							inspector.mtshoworigin.setText("Start: %d , %d ( %s A, %s A) "%(p[0],p[1], q[0], q[1]))
+							inspector.mtshowend.setText("  End: %d , %d ( %s A, %s A) "%(p[2],p[3], q[2], q[3]))
+							
+							inspector.mtshowlen.setText("dx,dy: %1.0f px, %1.0f px"%(dx,dy))
+							inspector.mtshowlen2.setText("Len: %1.1f px ( %s A -> %s A)"%(hypot(dx,dy), w[0], w[1] ))
+							
 							fft=inspector.target().fft
 							if fft==None :
 								fft=inspector.target().list_fft_data[inspector.target().list_idx]
@@ -1766,6 +1777,11 @@ class EMImage2DWidget(EMGLWidget):
 							inspector.mtshowval.setText("Value: %1.4g + %1.4g i  @(%d,%d)"%(val.real,val.imag,x,y))
 							inspector.mtshowval2.setText("       (%1.4g, %1.4g)"%(abs(val),atan2(val.imag,val.real)*57.295779513))
 						else :
+							inspector.mtshoworigin.setText("Start: %d , %d"%(current_shapes["MEAS"].shape[4],current_shapes["MEAS"].shape[5]))
+							inspector.mtshowend.setText("  End: %d , %d"%(lc[0],lc[1]))
+							inspector.mtshowlen.setText("dx,dy: %1.2f A, %1.2f A"%(dx*apix,dy*apix))
+							inspector.mtshowlen2.setText("Len: %1.3f A"%(hypot(dx,dy)*apix))
+							
 							try: inspector.mtshowval.setText("Value: %1.4g"%inspector.target().data[int(lc[0]),int(lc[1])])
 							except:
 								idx=inspector.target().list_idx
