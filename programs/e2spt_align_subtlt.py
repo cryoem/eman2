@@ -270,7 +270,7 @@ class SptAlignTask(JSTask):
 					xf=img["xform.align3d"]#.inverse()
 				else:
 					xf=data["xform.align3d"]#.inverse()
-				npos=120
+				npos=32
 				#ts=Transform()
 				#ts.translate(-20,9,0)
 				xfs=[Transform().get_params("eman") for i in range(npos)]
@@ -283,7 +283,7 @@ class SptAlignTask(JSTask):
 				curxfs=[Transform(x)*xf for x in xfs]
 				curxfs=[x.inverse() for x in curxfs]
 				xfcrs=[Transform(x) for x in curxfs]
-				ifirst=0
+				ifirst=1
 				npos=32
 				
 			### do refine search around previous solution

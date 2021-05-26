@@ -146,12 +146,15 @@ def makeOrthoProj(ptcl,layers,highpass,lowpass,stkout):
 	
 	if stkout:
 		hall=[x,y,z]
+		for h in hall:
+			h.set_attr_dict(ptcl.get_attr_dict())
 	else:
 		# we pack the 3 projections into a single 2D image
 		hall=EMData(x["nx"]*3,x["ny"],1)
 		hall.insert_clip(x,(0,0))
 		hall.insert_clip(y,(x["nx"],0))
 		hall.insert_clip(z,(x["nx"]*2,0))
+		hall.set_attr_dict(ptcl.get_attr_dict())
 
 	return hall
 
@@ -604,13 +607,6 @@ class EMFileType(object) :
 			
 			try: xf=ptcl["xform.align3d"]
 			except: xf=Transform()
-			
-			if self.path.endswith(".lst"):
-				try:
-					pm=load_lst_params(self.path, [i])[0]
-					xf=pm["xform.align3d"]
-				except:
-					pass
 			
 			if applyxf: ptcl.process_inplace("xform",{"transform":xf})
 			if mask!=None : ptcl.mult(mask)

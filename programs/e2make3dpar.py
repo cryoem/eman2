@@ -545,11 +545,11 @@ def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,preprocess):
 		
 		#### deal with lst input with transform in comment
 		getlst=False
-		if inputfile.endswith(".lst"):
-			lst=LSXFile(inputfile, True)
-			lstinfo=lst.read(0)
-			if lstinfo[2]:
-				getlst=True
+		#if inputfile.endswith(".lst"):
+			#lst=LSXFile(inputfile, True)
+			#lstinfo=lst.read(0)
+			#if lstinfo[2]:
+				#getlst=True
 
 		for i in range(n_input):
 			

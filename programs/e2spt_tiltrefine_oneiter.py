@@ -155,14 +155,14 @@ def main():
 		else:
 			alilist=[dc["xform.align3d"]]
 			scorelist=[dc["score"]]
-		for j,xf in enumerate(alilist):
-			d=xf.get_params("eman")
-			d["score"]=float(allscr[i,j])
-			if d["score"]>.05 or j==0:
-				lc=lc+str(d)+';'
 			
+		j=0
+		xf=dc["xform.align3d"][0]
+		scr=dc["score"][0]
+		
+		lc={"xform.projection":xf, "score":scr}
 		l=pinfo[i]
-		lout.write(-1, l[0], l[1], lc[:-1])
+		lout.write(-1, l[0], l[1], lc)
 
 	lout=None
 
@@ -224,10 +224,9 @@ class SptTltRefineTask(JSTask):
 			if img["ny"]!=ref["ny"]: # box size mismatch. simply clip the box
 				img=img.get_clip(Region((img["nx"]-ref["ny"])//2, (img["ny"]-ref["ny"])//2, ref["ny"],ref["ny"]))
 				
-			if type(info[-1])==str:
-				initxf=eval(info[-1])
-					
-				xf=Transform({"type":"eman","tx":initxf["tx"], "ty":initxf["ty"], "alt":initxf["alt"],"az":initxf["az"],"phi":initxf["phi"]})
+			if "xform.projection" in info[-1]:
+				initxf=info[-1]["xform.projection"]
+				xf=Transform(initxf)
 				
 			if options.transonly:
 				pj=ref.project('standard', xf)

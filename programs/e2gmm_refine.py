@@ -659,13 +659,14 @@ def main():
 		print("Train model from ptcl-xfrom pairs...")
 		e=EMData(options.projs, 0, True)
 		raw_apix, raw_boxsz = e["apix_x"], e["ny"]
+		options.raw_apix=raw_apix
 		if options.maxres>0:
 			maxboxsz=options.maxboxsz=ceil(raw_boxsz*raw_apix*2/options.maxres)//2*2
 			print("using box size {}, max resolution {:.1f}".format(maxboxsz, options.maxres))
 			
 		data_cpx, xfsnp = load_particles(options.projs, options, shuffle=True)
-		options.raw_apix=raw_apix=raw_apix*raw_boxsz/maxboxsz
-		set_indices_boxsz(data_cpx[0].shape[1], raw_apix, True)
+		apix=raw_apix*raw_boxsz/maxboxsz
+		set_indices_boxsz(data_cpx[0].shape[1], apix, True)
 		
 		if options.niter>0:
 			set_indices_boxsz(maxboxsz)
@@ -705,13 +706,14 @@ def main():
 	if options.ptclsin:
 		e=EMData(options.ptclsin, 0, True)
 		raw_apix, raw_boxsz = e["apix_x"], e["ny"]
+		options.raw_apix=raw_apix
 		if options.maxres>0:
 			maxboxsz=options.maxboxsz=ceil(raw_boxsz*raw_apix*2/options.maxres)//2*2
 			print("using box size {}, max resolution {:.1f}".format(maxboxsz, options.maxres))
 			
 		data_cpx, xfsnp = load_particles(options.ptclsin,options,shuffle=False)
-		options.raw_apix=raw_apix=raw_apix*raw_boxsz/maxboxsz
-		set_indices_boxsz(data_cpx[0].shape[1], raw_apix, True)
+		apix=raw_apix*raw_boxsz/maxboxsz
+		set_indices_boxsz(data_cpx[0].shape[1], apix, True)
 		
 	if options.ptclsin and options.align:
 		pts=tf.constant(pts)

@@ -95,7 +95,7 @@ def main():
 
 	parser.add_argument("--ppid", type=int,help="ppid", default=-2)
 	
-	parser.add_argument("--refine", action="store_true", default=False ,help="start from xform.align3d in header")
+	parser.add_argument("--refine", action="store_true", default=False ,help="start from xform.align3d in header", guitype='boolbox',row=12, col=0,rowspan=1, colspan=1, mode="model")
 
 
 	(options, args) = parser.parse_args()
