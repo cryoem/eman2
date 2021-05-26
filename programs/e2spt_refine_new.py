@@ -106,6 +106,8 @@ def main():
 		rf=refs[eo]
 		run(f"e2proc3d.py {rf} {path}/threed_00_{eo}.hdf {opt}")
 		
+	run(f"e2proc3d.py {path}/threed_00_even.hdf {path}/threed_00.hdf --addfile {path}/threed_00_odd.hdf --mult 0.5")
+		
 	p2=EMData(info2dname,0,True)
 	padsize=p2["ny"]
 	
@@ -182,8 +184,10 @@ def main():
 				opt+=" --use3d"
 			if options.minres>0:
 				opt+=f" --minres={options.minres}"
+			if options.goldstandard>0 or options.goldcontinue:
+				opt+=" --goldcontinue"
 				
-			cmd=f"e2spt_align_subtlt.py {ptcls} {ref} --path {path} --iter {itr} --goldcontinue --maxres {res:.2f} --parallel {options.parallel} {opt}"
+			cmd=f"e2spt_align_subtlt.py {ptcls} {ref} --path {path} --iter {itr} --maxres {res:.2f} --parallel {options.parallel} {opt}"
 			run(cmd)
 			
 			last3d=f"{path}/aliptcls3d_{itr:02d}.lst"
@@ -193,7 +197,7 @@ def main():
 				print("Need 3D particle alignment before subtilt refinement. exit.")
 				exit()
 				
-			cmd=f"e2spt_subtlt_local.py --ref {ref} --path {path} --iter {itr} --maxres {res} --parallel {options.parallel} --goldcontinue --refine_trans --aliptcls3d {last3d} --smooth {options.smooth} --smoothN {options.smoothN}"
+			cmd=f"e2spt_subtlt_local.py --ref {ref} --path {path} --iter {itr} --maxres {res} --parallel {options.parallel} --refine_trans --aliptcls3d {last3d} --smooth {options.smooth} --smoothN {options.smoothN}"
 			if itype=='r':
 				cmd+=" --refine_rot"
 			if options.maxshift>0:
@@ -202,6 +206,8 @@ def main():
 				cmd+=" --use3d"
 			if options.minres>0:
 				cmd+=f" --minres={options.minres}"
+			if options.goldstandard>0 or options.goldcontinue:
+				cmd+=" --goldcontinue"
 				
 			run(cmd)
 			last2d=f"{path}/aliptcls2d_{itr:02d}.lst"
@@ -211,10 +217,12 @@ def main():
 				print("Need 3D and 2D particle alignment before defocus refinement. exit.")
 				exit()
 				
-			cmd=f"e2spt_subtlt_local.py --ref {ref} --path {path} --iter {itr} --maxres {res} --parallel {options.parallel} --goldcontinue --refine_defocus --aliptcls3d {last3d} --aliptcls2d {last2d}  --smooth {options.smooth} --smoothN {options.smoothN}"
+			cmd=f"e2spt_subtlt_local.py --ref {ref} --path {path} --iter {itr} --maxres {res} --parallel {options.parallel} --refine_defocus --aliptcls3d {last3d} --aliptcls2d {last2d}  --smooth {options.smooth} --smoothN {options.smoothN}"
 			
 			if options.minres>0:
 				cmd+=f" --minres={options.minres}"
+			if options.goldstandard>0 or options.goldcontinue:
+				cmd+=" --goldcontinue"
 			run(cmd)
 			last2d=f"{path}/aliptcls2d_{itr:02d}.lst"
 			
