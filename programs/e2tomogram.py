@@ -290,8 +290,8 @@ def main():
 		elif (options.mdoc!=None and len(options.mdoc)>0) :
 			
 			if os.path.isdir(options.mdoc):
-				print("Looking for mdoc file matching {} in {}...".format(options.inputname, options.rawtlt))
-				bnm=options.basename.split('/')[-1]
+				print("Looking for mdoc file matching {} in {}...".format(options.inputname, options.mdoc))
+				bnm=options.inputname.split('/')[-1].rsplit(".",1)[0]
 				rl=[f for f in os.listdir(options.mdoc) if f.startswith(bnm) and f[-5:]==".mdoc"]
 				if len(rl)==0:
 					print(f"Cannot find mdoc file for {bnm} in the directory {options.mdoc}. exit...")
@@ -308,10 +308,12 @@ def main():
 				idx=0
 				for line in mdoc:
 					if line.startswith("[ZValue"): idx=int(line.split("=")[1].split("]")[0])
-					if line.startswith("TiltAngle"): tltdic[idx]=float(line.split("=")[1])
+					if line.startswith("TiltAngle"): 
+						tltdic[idx]=float(line.split("=")[1])
+						if tltdic[idx]==0: options.zeroid=idx
 			
 			try:
-				tlts=[tltdic[i] for i in range(max(tltdic))]
+				tlts=np.array([tltdic[i] for i in range(len(tltdic))])
 			except:
 				print(f"Error: incomplete tilt list in mdoc file ",options.mdoc)
 				return
