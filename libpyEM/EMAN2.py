@@ -664,8 +664,8 @@ def commandoptions(options,exclude=[]):
 		if val==True and isinstance(val,bool) : opts.append("--"+opt)
 		else: opts.append("--{}={}".format(opt,val))
 
-	return(" ".join(opts))
-	
+	return " ".join(opts)
+
 
 class EMArgumentParser(argparse.ArgumentParser):
 	""" subclass of argparser to masquerade as optparser and run the GUI """
@@ -676,7 +676,6 @@ class EMArgumentParser(argparse.ArgumentParser):
 		self.optionslist = []
 		self.tablist = []
 
-		# This stuff is to make argparser masquerade as optparser
 		if version:
 			self.add_argument('--version', action='version', version=version)
 		self.add_argument("positionalargs", nargs="*")
@@ -721,7 +720,6 @@ class EMArgumentParser(argparse.ArgumentParser):
 			if "dirbasename" in kwargs: del kwargs["dirbasename"]
 			if "nosharedb" in kwargs: del kwargs["nosharedb"]
 			if "returnNone" in kwargs: del kwargs["returnNone"]
-
 
 		argparse.ArgumentParser.add_argument(self, *args, **kwargs)
 
@@ -837,14 +835,14 @@ def parsemodopt_logical(optstr):
 	p_1 = re.findall( parseparmobj_logical_words, optstr )
 
 	if len(p_1)==0: return (optstr,{})
-	if ( len(p_1) != 2 ):
+	if len(p_1) != 2:
 		print("ERROR: parsemodopt_logical currently only supports single logical expressions")
 		print("Could not handle %s" %optstr)
 		return (None,None,None)
 
 	p_2 = re.findall( parseparmobj_logical, optstr )
 
-	if ( len(p_2) != 1 ):
+	if len(p_2) != 1:
 		print("ERROR: could not find logical expression in %s" %optstr)
 		return (None,None,None)
 
@@ -854,7 +852,8 @@ def parsemodopt_logical(optstr):
 		print("Must be one of \"==\", \"<=\", \">=\", \"<\", \">\" \"!=\" or \~=\" ")
 		return (None,None,None)
 
-	return (p_1[0], p_2[0], p_1[1])
+	return p_1[0], p_2[0], p_1[1]
+
 
 def parsemodopt_operation(optstr):
 
@@ -863,13 +862,13 @@ def parsemodopt_operation(optstr):
 	p_1 = re.findall( parseparmobj_op_words, optstr )
 	if len(p_1)==0: return (optstr,{})
 
-	if ( len(p_1) != 2 ):
+	if len(p_1) != 2:
 		print("ERROR: parsemodopt_logical currently only supports single logical expressions")
 		print("Could not handle %s" %optstr)
 		return (None,None,None)
 
 	p_2 = re.findall( parseparmobj_op, optstr )
-	if ( len(p_2) != 1 ):
+	if len(p_2) != 1:
 		print("ERROR: could not find logical expression in %s" %optstr)
 		return (None,None,None)
 
@@ -970,7 +969,7 @@ def e3display(data,vtype="auto",vname=None,dname="Unknown",settings={},port=3198
 	"""
 	import ipywidgets
 	global display_magic
-	
+
 	if display_magic==None:
 		magicpath=f"{e2gethome()}/.eman2/server_magic"
 		with open(magicpath,"rb") as fin:
@@ -990,8 +989,8 @@ def e3display(data,vtype="auto",vname=None,dname="Unknown",settings={},port=3198
 		nx,ny,png=ret[1]
 		
 	return ipywidgets.Image(value=png,format="png",width=nx,height=ny)
-	
-	
+
+
 
 def display(img,force_2d=False,force_plot=False):
 	"""Generic display function for images or sets of images. You can force images to be displayed in 2-D or as a plot with
@@ -1392,13 +1391,13 @@ def remove_file( file_name, img_couples_too=True ):
 	You can disable the img coupling feature with the the image_couples_too flag
 	'''
 
-	if ( os.path.exists(file_name) ):
+	if os.path.exists(file_name):
 
 		parts = file_name.split('.')
 
 		file_tag = parts[len(parts)-1]
 
-		if ( file_tag == 'hed' or file_tag == 'img' ):
+		if file_tag == 'hed' or file_tag == 'img':
 			# get everything that isn't the tag
 			name = ''
 			for i in range(0,len(parts)-1):
@@ -1525,10 +1524,10 @@ def check_files_are_em_images(filenames):
 	'''
 	for file in filenames:
 		if not os.path.exists(file):
-		  	try:
-		  		is_db = db_check_dict(file)
-		  		if not is_db: raise
-		  	except: return False, "File doesn't exist:"+file
+			try:
+				is_db = db_check_dict(file)
+				if not is_db: raise
+			except: return False, "File doesn't exist:"+file
 
 		read_header_only = True
 		a = EMData()
@@ -1905,7 +1904,6 @@ def test_image(type=0,size=(128,128)):
 		ret.transform(t)
 	else:
 		raise
-
 
 	return ret
 test_image.broken = True
