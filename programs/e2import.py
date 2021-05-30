@@ -37,6 +37,23 @@ from EMAN2 import *
 from EMAN2star import StarFile
 import numpy as np
 
+def read_mdoc(path):
+	with open(path,"r") as mdoc:
+		tltdic={}
+		idx=0
+		for line in mdoc:
+			if line.startswith("[ZValue"): idx=int(line.split("=")[1].split("]")[0])
+			if line.startswith("TiltAngle"): 
+				tltdic[idx]=float(line.split("=")[1])
+
+	try:
+		tlts=np.array([(tltdic[i],i) for i in range(len(tltdic))])
+	except:
+		print(f"Error: incomplete tilt list in mdoc file ",path)
+		sys.exit(1)
+		
+	return tlts
+
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] files
@@ -71,6 +88,7 @@ def main():
 	parser.add_argument("--apix",help="Specify the apix of the tiltseries you are importing. If -1 (default), the apix in the header will not be changed.",type=float,default=-1,guitype='floatbox', row=5, col=1, rowspan=1, colspan=1,mode='tiltseries[-1]')
 
 	parser.add_argument("--import_tiltseries",action="store_true",help="Import tiltseries",default=False, guitype='boolbox', row=5, col=2, rowspan=1, colspan=1, mode='tiltseries[True]')
+	parser.add_argument("--mdoc", type=str,help="Specify a SerialEM .mdoc file or a folder containing same-named .mdoc files, or 'auto' to try and find .mdoc files automatically", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", filecheck=False, row=2, col=0, rowspan=1, colspan=2,mode='tiltseries')#,mode="easy")
 	parser.add_argument("--rawtlt",help="Specify an imod/serialem rawtlt file, and imported tilt series will be sorted in tilt sequence instead of collection sequence, 'auto' will attempt to find a .tlt file automatically", default=None, guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)",  row=1, col=0, rowspan=1, colspan=2, mode='tiltseries')
 	parser.add_argument("--import_tomos",action="store_true",help="Import tomograms for segmentation and/or subtomogram averaging",default=False, guitype='boolbox', row=4, col=2, rowspan=1, colspan=1, mode='tomos[True]')
 	parser.add_argument("--compressbits", type=int,help="Bits to keep for compression. default is 8 bits. Use 0 for lossless compression. Currently used only on tiltseries, eman1 and particles", default=8,guitype='intbox',row=9, col=2, rowspan=1, colspan=1, mode="tiltseries[8]")
@@ -426,11 +444,35 @@ with the same name, you should specify only the .hed files (no renaming is neces
 				tpos=filename.rfind('.')
 				if tpos>0: newname=os.path.join(stdir,os.path.basename(filename[:tpos]+'.hdf'))
 				else: newname=os.path.join(stdir,os.path.basename(filename))
-				if options.rawtlt==None:
+				if options.rawtlt==None and options.mdoc==None:
 					cmd="e2proc2d.py {} {} --inplace ".format(filename, newname)
 					if options.invert: cmd+=" --mult -1 --process normalize "
 					if options.apix != -1: cmd += " --apix {} ".format(options.apix)
 					run(cmd)
+				elif options.mdoc!=None:
+					if options.mdoc=="auto" :
+						tlts=read_mdoc(filename.rsplit(".",1)[0]+".mdoc")
+					else:
+						tlts=read_mdoc(options.mdoc)
+						
+					hdr=EMData(filename,0,True)
+					nx=hdr["nx"]
+					ny=hdr["ny"]
+					nz=hdr["nz"]
+
+					seq=0
+					for tlt,n in sorted(tlts,key=lambda x:x[0]):
+						if nz==1 : img=EMData(filename,n)
+						else: img=EMData(filename,0,False, Region(0,0,n,nx,ny,1))
+						if options.invert: img.mult(-1.0)
+						if options.apix!=-1:
+							img["apix_x"]=options.apix
+							img["apix_y"]=options.apix
+							img["apix_z"]=options.apix
+						img["rawtlt"]=tlt
+						if options.compressbits<0: img.write_image(newname,seq)
+						else: img.write_compressed(newname,seq,options.compressbits,nooutliers=True)
+						seq+=1
 				else: 
 					if options.rawtlt=="auto" :
 						try: rawtlt=[(float(l.strip()),i) for i,l in enumerate(open(filename.rsplit(".",1)[0]+".tlt","r"))]

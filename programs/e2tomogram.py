@@ -35,7 +35,7 @@ def main():
 	parser.add_header(name="orblock1", help='Just a visual separation', title="Specify either zeroid/tltstep OR rawtlt:", row=2, col=0, rowspan=1, colspan=2,mode="easy")
 
 	parser.add_argument("--zeroid", type=int,help="Index of the center tilt. Ignored when rawtlt is provided.", default=-1)#,guitype='intbox',row=3, col=0, rowspan=1, colspan=1,mode="easy")
-	parser.add_argument("--tltstep", type=float,help="Step between tilts. Ignored when rawtlt is provided. Default is 2.0.", default=2.0,guitype='floatbox',row=3, col=0, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--tltstep", type=float,help="Step between tilts. Ignored when rawtlt/mdoc is provided. Set to 0 if tilt present in header.", default=2.0,guitype='floatbox',row=3, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--rawtlt", type=str,help="Specify a text file contains raw tilt angles. Will look for files with the same name as the tilt series if a directory is provided", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", filecheck=False, row=4, col=0, rowspan=1, colspan=2)#,mode="easy")
 	parser.add_argument("--mdoc", type=str,help="Specify a SerialEM .mdoc file or a folder containing same-named .mdoc files", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", filecheck=False, row=5, col=0, rowspan=1, colspan=2)#,mode="easy")
 	parser.add_argument("--npk", type=int,help="Number of landmarks to use (such as gold fiducials). Default is 20.", default=20,guitype='intbox',row=6, col=0, rowspan=1, colspan=1, mode="easy")
@@ -324,7 +324,14 @@ def main():
 		else: 
 			#### parse tilt step
 			options.rawtlt=None
-			tlts=np.arange(-len(imgs_2k)*options.tltstep/2,len(imgs_2k)*options.tltstep/2,options.tltstep)
+			if options.tltstep>0:
+				print("Using fixed tilt step of ",option.tltstep)
+				tlts=np.arange(-len(imgs_2k)*options.tltstep/2,len(imgs_2k)*options.tltstep/2,options.tltstep)
+			else:
+				print("Using rawtlt from header")
+				tlts=np.array([i["rawtlt"] for i in imgs_1k])
+				try: options.zeroid=np.where(tlts==0)[0]
+				except: options.zeroid=len(tlts)//2
 		
 		if options.writetmp: np.savetxt(os.path.join(options.tmppath,"rawtilt.txt"), tlts)
 		
@@ -348,7 +355,7 @@ def main():
 		
 		else:
 			#### do an initial course alignment before common line
-			if options.rawtlt:
+			if options.rawtlt!=None or options.mdoc!=None:
 				srtid=np.argsort(tlts).tolist()
 				imgs_500_sort=[imgs_500[i] for i in srtid]
 				ret=calc_global_trans(imgs_500_sort, options)

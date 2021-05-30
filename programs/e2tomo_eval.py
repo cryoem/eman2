@@ -364,8 +364,8 @@ class TomoEvalGUI(QtWidgets.QWidget):
 			self.wg_tltimage.list_idx=int(len(self.cur_tlt)/2)
 
 		for i,t in enumerate(info["tlt_params"]):
-			self.cur_tlt[i].translate(-t[0],-t[1],0);
 			self.cur_tlt[i].process_inplace("normalize.edgemean")
+			self.cur_tlt[i].translate(-t[0],-t[1],0);
 
 		self.wg_tltimage.set_data(self.cur_tlt)
 		self.wg_tltimage.show()
