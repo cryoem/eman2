@@ -304,6 +304,7 @@ def main():
 				print("Using {}".format(rl[0]))
 
 			with open(options.mdoc,"r") as mdoc:
+				if imgs_1k[0].has_attr("tilt_angle"): print("WARNING: .mdoc specified, but tilt_angle already in header. May lead to incorrect results!")
 				tltdic={}
 				idx=0
 				for line in mdoc:
@@ -328,8 +329,8 @@ def main():
 				print("Using fixed tilt step of ",option.tltstep)
 				tlts=np.arange(-len(imgs_2k)*options.tltstep/2,len(imgs_2k)*options.tltstep/2,options.tltstep)
 			else:
-				print("Using rawtlt from header")
-				tlts=np.array([i["rawtlt"] for i in imgs_1k])
+				print("Using tilt_angle from header")
+				tlts=np.array([i["tilt_angle"] for i in imgs_1k])
 				try: options.zeroid=np.where(tlts==0)[0]
 				except: options.zeroid=len(tlts)//2
 		

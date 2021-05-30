@@ -38,16 +38,23 @@ from EMAN2star import StarFile
 import numpy as np
 
 def read_mdoc(path):
+	"""Reads mdoc metadata. Returns list of [tilt,seq#,dose in current tilt,dose at beginning of current tilt,defocus"""
 	with open(path,"r") as mdoc:
 		tltdic={}
 		idx=0
 		for line in mdoc:
 			if line.startswith("[ZValue"): idx=int(line.split("=")[1].split("]")[0])
 			if line.startswith("TiltAngle"): 
-				tltdic[idx]=float(line.split("=")[1])
+				tltdic[idx]=[float(line.split("=")[1]),None,None,None]
+			if line.startswith("ExposureDose"):
+				tltdic[idx][1]=float(line.split("=")[1])
+			if line.startswith("PriorRecordDose"):
+				tltdic[idx][2]=float(line.split("=")[1])
+			if line.startswith("Defocus"):
+				tltdic[idx][3]=float(line.split("=")[1])
 
 	try:
-		tlts=np.array([(tltdic[i],i) for i in range(len(tltdic))])
+		tlts=[(tltdic[i][0],i,tltdic[i][1],tltdic[i][2],tltdic[i][3]) for i in range(len(tltdic))]
 	except:
 		print(f"Error: incomplete tilt list in mdoc file ",path)
 		sys.exit(1)
@@ -461,7 +468,7 @@ with the same name, you should specify only the .hed files (no renaming is neces
 					nz=hdr["nz"]
 
 					seq=0
-					for tlt,n in sorted(tlts,key=lambda x:x[0]):
+					for tlt,n,dose,dose0,defocus in sorted(tlts,key=lambda x:x[0]):
 						if nz==1 : img=EMData(filename,n)
 						else: img=EMData(filename,0,False, Region(0,0,n,nx,ny,1))
 						if options.invert: img.mult(-1.0)
@@ -469,7 +476,11 @@ with the same name, you should specify only the .hed files (no renaming is neces
 							img["apix_x"]=options.apix
 							img["apix_y"]=options.apix
 							img["apix_z"]=options.apix
-						img["rawtlt"]=tlt
+						img["tilt_angle"]=tlt
+						img["tilt_seq"]=n
+						if dose0!=None: img["tilt_dose_begin"]=dose0
+						if dose!=None: img["tilt_dose"]=dose
+						if defocus!=None: img["tilt_defocus_est"]=defocus
 						if options.compressbits<0: img.write_image(newname,seq)
 						else: img.write_compressed(newname,seq,options.compressbits,nooutliers=True)
 						seq+=1
@@ -493,7 +504,7 @@ with the same name, you should specify only the .hed files (no renaming is neces
 							img["apix_x"]=options.apix
 							img["apix_y"]=options.apix
 							img["apix_z"]=options.apix
-						img["rawtlt"]=tlt
+						img["tilt_angle"]=tlt
 						if options.compressbits<0: img.write_image(newname,seq)
 						else: img.write_compressed(newname,seq,options.compressbits,nooutliers=True)
 						seq+=1
