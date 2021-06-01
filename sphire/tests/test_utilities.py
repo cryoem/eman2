@@ -62,13 +62,13 @@ from __future__ import division
 
 from os import path, mkdir
 from mpi import *
-import sp_global_def
+from sphire.libpy import sp_global_def
 from numpy import allclose, array_equal
 from numpy import full as numpy_full
 from numpy import float32 as numpy_float32
 
 from sphire.libpy_py3 import sp_utilities as oldfu
-from sphire.sphire.libpy import sp_utilities as fu
+from sphire.libpy import sp_utilities as fu
 
 mpi_init(0, [])
 sp_global_def.BATCH = True

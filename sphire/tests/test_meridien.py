@@ -29,7 +29,6 @@ import subprocess
 ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
 MPI_PATH = "/home/adnan/applications/sphire/miniconda3/envs/py3_v6/bin/mpirun" #"/home/adnan/applications/sphire/v1.1/envs/conda_fresh/bin/"
 NUM_PROC = 8
-
 TOLERANCE =0.15
 
 class Test_run(unittest.TestCase):
