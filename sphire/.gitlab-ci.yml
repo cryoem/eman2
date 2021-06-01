@@ -5,4 +5,4 @@ unittest: # Name of the job
   stage: test
   image: sphiredevel/sphire-ut:eman24 # Image that should be used
   script:
-     - source activate sphire; pip uninstall sphire -y; python setup.py sdist; pip install dist/*.tar.gz; pip install coverage pytest pytest-cov; pytest --cov=sphire/bin/; coverage xml --ignore-errors
+     - cd sphire/; source activate sphire; pip uninstall sphire -y; python setup.py sdist; pip install dist/*.tar.gz; pip install coverage pytest pytest-cov; pytest --cov=sphire/bin/; coverage xml --ignore-errors
