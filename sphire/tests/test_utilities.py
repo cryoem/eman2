@@ -62,7 +62,7 @@ from __future__ import division
 
 from os import path, mkdir
 from mpi import *
-import sp_global_def
+import sphire.libpy.sp_global_def as sp_global_def
 from numpy import allclose, array_equal
 from numpy import full as numpy_full
 from numpy import float32 as numpy_float32
