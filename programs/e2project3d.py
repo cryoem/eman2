@@ -247,7 +247,7 @@ def main():
 	parser.add_argument("--smear", dest = "smear", type = int, default=0,help="Used in conjunction with --phitoo, this will rotationally smear between phi steps. The user must specify the amount of smearing (typically 2-10)")
 	parser.add_argument("--projector", dest = "projector", default = "standard",help = "Projector to use")
 	#parser.add_argument("--verifymirror",action="store_true",help="Used for testing the accuracy of mirror projects",default=False)
-	parser.add_argument("--force",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
+#	parser.add_argument("--force",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
 	parser.add_argument("--append",dest="append",default=False, action="store_true",help="Append to the output file")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--check", default=False, action="store_true",help="Checks to see if the command line arguments will work.")
@@ -297,8 +297,8 @@ def main():
 
 	# just remove the file - if the user didn't specify force then the error should have been found in the check function
 	if ( os.path.exists(options.outfile )):
-		if ( options.force ):
-			remove_file(options.outfile)
+#		if ( options.force ):
+		remove_file(options.outfile)
 
 	logger=E2init(sys.argv,options.ppid)
 
@@ -417,16 +417,16 @@ def check(options, verbose=0):
 				print("Error: 3D image %s does not exist" %f)
 			error = True
 
-	if ( options.force and options.append):
-		if verbose>0:
-			print("Error: cannot specify both append and force")
-		error = True
+#	if ( options.force and options.append):
+#		if verbose>0:
+#			print("Error: cannot specify both append and force")
+#		error = True
 
-	if ( options.nofilecheck == False and os.path.exists(options.outfile )):
-		if ( not options.force and not options.append):
-			if verbose>0:
-				print("Error: output file exists, use -f to overwrite or -a to append. No action taken")
-			error = True
+#	if ( options.nofilecheck == False and os.path.exists(options.outfile )):
+#		if ( not options.force and not options.append):
+#			if verbose>0:
+#				print("Error: output file exists, use -f to overwrite or -a to append. No action taken")
+#			error = True
 
 	if hasattr(options,"parallel") and options.parallel != None:
   		if len(options.parallel) < 2:

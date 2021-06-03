@@ -216,7 +216,7 @@ def main():
 		# make class-averages
 		#run("e2classaverage.py %s %s#classmx_%02d %s#classes_%02d --iter=%d --align=%s:maxshift=%d --averager=%s -vf  --keep=%f --cmp=%s --aligncmp=%s"%(options.input,options.path,it,options.path,it,options.classiter,options.classalign,options.maxshift,options.classaverager,options.classkeep,options.classcmp,options.classaligncmp))
 
-		cls_cmd = "e2classaverage.py --input=%s --classmx=%s/classmx_00.hdf --output=%s/classes_init.hdf --iter=8 --force --storebad --center=%s" %(options.input,options.path,options.path,options.center)
+		cls_cmd = "e2classaverage.py --input=%s --classmx=%s/classmx_00.hdf --output=%s/classes_init.hdf --iter=8 --storebad --center=%s" %(options.input,options.path,options.path,options.center)
 		cls_cmd += get_classaverage_extras(options)
 
 		#run("e2classaverage.py %s %s#classmx_00 %s#classes_init --iter=6 --align=%s:maxshift=%d --averager=%s -vf --bootstrap --keep=%f --cmp=%s --aligncmp=%s --normproc=%s"%(options.input,options.path,options.path,options.classalign,options.maxshift,options.classaverager,options.classkeep,options.classcmp,options.classaligncmp,options.classnormproc))
@@ -291,7 +291,7 @@ def main():
 		if logid : E2progress(logid,old_div(proc_tally,total_procs))
 
 		# make class-averages
-		cls_cmd = "e2classaverage.py --input=%s --classmx=%s/classmx_%02d.hdf --output=%s/classes_%02d.hdf --force --center %s --iter=%d " %(options.input,options.path,it,options.path,it,options.center,options.classiter)
+		cls_cmd = "e2classaverage.py --input=%s --classmx=%s/classmx_%02d.hdf --output=%s/classes_%02d.hdf --center %s --iter=%d " %(options.input,options.path,it,options.path,it,options.center,options.classiter)
 		cls_cmd += get_classaverage_extras(options)
 		#run("e2classaverage.py %s %s#classmx_%02d %s#classes_%02d --iter=%d --align=%s:maxshift=%d --averager=%s -vf  --keep=%f --cmp=%s --aligncmp=%s"%(options.input,options.path,it,options.path,it,options.classiter,options.classalign,options.maxshift,options.classaverager,options.classkeep,options.classcmp,options.classaligncmp))
 		run(cls_cmd)
@@ -339,7 +339,7 @@ def get_simmx_cmd(options,refs,simmx,check=False,nofilecheck=False):
 
 def get_classaverage_cmd(options,check=False,nofilecheck=False):
 
-	e2cacmd = "e2classaverage.py --input=%s --classmx=%s --force --output=%s --keep=.75 --center %s" %(options.startimg,options.classifyfile,options.cafile,options.center)
+	e2cacmd = "e2classaverage.py --input=%s --classmx=%s --output=%s --keep=.75 --center %s" %(options.startimg,options.classifyfile,options.cafile,options.center)
 
 	e2cacmd += " --ref=%s --iter=%d -f" %(options.projfile,options.classiter)
 

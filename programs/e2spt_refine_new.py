@@ -115,12 +115,12 @@ def main():
 	
 	if options.loadali3d:
 		fout=f"{path}/aliptcls3d_00.lst"
-		run(f"e2proclst.py {options.loadali3d} --create {fout} --force")
+		run(f"e2proclst.py {options.loadali3d} --create {fout} ")
 		last3d=fout
 		
 	if options.loadali2d:
 		fout=f"{path}/aliptcls2d_00.lst"
-		run(f"e2proclst.py {options.loadali2d} --create {fout} --force")
+		run(f"e2proclst.py {options.loadali2d} --create {fout} ")
 		last2d=fout
 		
 	ppmask=setsf=tophat=""

@@ -190,8 +190,8 @@ def buildtree(projs,par,nodes,incomplete,verbose):
 	tmplist='/'.join([nodepath,"tmplist.lst"])
 	par="--parallel "+par
 	### Building the similarity matrix for all projections
-	#cmd="e2simmx.py {pj} {pj} {smx} --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali -v {vb:d} --force {parallel}".format(pj=projs,smx=tmpsim, parallel=par, vb=verbose-1)
-	cmd="e2simmx.py {pj} {pj} {smx} --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=frc:maxres=10.0 --ralign=refine --raligncmp=frc:maxres=10.0 --saveali -v {vb:d} --force {parallel}".format(pj=projs,smx=tmpsim, parallel=par, vb=verbose-1)
+	#cmd="e2simmx.py {pj} {pj} {smx} --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali -v {vb:d} {parallel}".format(pj=projs,smx=tmpsim, parallel=par, vb=verbose-1)
+	cmd="e2simmx.py {pj} {pj} {smx} --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=frc:maxres=10.0 --ralign=refine --raligncmp=frc:maxres=10.0 --saveali -v {vb:d} {parallel}".format(pj=projs,smx=tmpsim, parallel=par, vb=verbose-1)
 	print(cmd)
 	launch_childprocess(cmd)
 	
@@ -237,9 +237,9 @@ def buildtree(projs,par,nodes,incomplete,verbose):
 			#print len(ai)
 			if len(ai)<10:
 				par=""
-			cmd="e2simmx.py {lst} {lst} {sim} --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1  --ralign=refine --raligncmp=frc:maxres=10.0 --cmp=frc:maxres=10.0 --saveali -v {vb:d} --force {parallel}".format(lst=tmplist, sim=tmpsim, parallel=par, vb=verbose-1)
+			cmd="e2simmx.py {lst} {lst} {sim} --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1  --ralign=refine --raligncmp=frc:maxres=10.0 --cmp=frc:maxres=10.0 --saveali -v {vb:d} {parallel}".format(lst=tmplist, sim=tmpsim, parallel=par, vb=verbose-1)
 			launch_childprocess(cmd)
-			#launch_childprocess("e2simmx.py {lst} {lst} {sim} --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali -v {vb:d} --force {parallel}".format(lst=tmplist, sim=tmpsim, parallel=par, vb=verbose-1))
+			#launch_childprocess("e2simmx.py {lst} {lst} {sim} --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali -v {vb:d} {parallel}".format(lst=tmplist, sim=tmpsim, parallel=par, vb=verbose-1))
 			simmx=EMData(tmpsim,0)
 			dst=EMNumPy.em2numpy(simmx)
 			#print dst

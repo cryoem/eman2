@@ -153,8 +153,7 @@ class EMParallelSimMX(object):
 		output = self.args[2]
 
 		if file_exists(output) and not options.fillzero:
-			if options.force: remove_file(output)
-			else: raise RuntimeError("The output file exists. Please remove it or specify the force option")
+			remove_file(output)
 
 		e = EMData(self.clen,self.rlen)
 		e.to_zero()
@@ -639,7 +638,7 @@ def main():
 #	parser.add_argument("--lowmem",action="store_true",help="prevent the bulk reading of the reference images - this will save memory but potentially increase CPU time",default=False)
 	parser.add_argument("--init",action="store_true",help="Initialize the output matrix file before performing 'range' calculations",default=False)
 	parser.add_argument("--fillzero",action="store_true",help="Checks the existing output file, and fills only matrix elements which are exactly zero.",default=False)
-	parser.add_argument("--force",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
+#	parser.add_argument("--force",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
 	parser.add_argument("--exclude", type=str,default=None,help="The named file should contain a set of integers, each representing an image from the input file to exclude. Matrix elements will still be created, but will be zeroed.")
 	parser.add_argument("--shrink", type=float,default=None,help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. This will speed the process up.")
 	parser.add_argument("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
@@ -689,8 +688,8 @@ def main():
 
 	# just remove the file - if the user didn't specify force then the error should have been found in the check function
 	if file_exists(options.outfile):
-		if (options.force):
-			remove_file(options.outfile)
+#		if (options.force):
+		remove_file(options.outfile)
 
 	options.align=parsemodopt(options.align)
 	options.aligncmp=parsemodopt(options.aligncmp)
@@ -864,11 +863,11 @@ def check(options,verbose):
 					print("Error - the (y) dimension of the reference images %d does not match that of the particle data %d" %(ysize,pysize))
 				error = True
 
-		if  file_exists(options.outfile):
-			if ( not options.force):
-				if verbose>0:
-					print("Error: File %s exists, will not write over - specify the force option" %options.outfile)
-				error = True
+#		if  file_exists(options.outfile):
+#			if ( not options.force):
+#				if verbose>0:
+#					print("Error: File %s exists, will not write over - specify the force option" %options.outfile)
+#				error = True
 
 	if (options.cmp == None or options.cmp == ""):
 		if verbose>0:

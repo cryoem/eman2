@@ -93,7 +93,7 @@ def main():
 	parser.add_argument("--odd", default=False, help="Used by EMAN2 when running eotests. Includes only odd numbered particles in class averages.", action="store_true")
 	parser.add_argument("--even", default=False, help="Used by EMAN2 when running eotests. Includes only even numbered particles in class averages.", action="store_true")
 	parser.add_argument("--parallel", default=None, help="parallelism argument")
-	parser.add_argument("--force",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists.")
+#	parser.add_argument("--force",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists.")
 	parser.add_argument("--saveali",action="store_true",help="Writes aligned particle images to aligned.hdf. Normally resultmx produces more useful information. This can be used for debugging.",default=False)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--debug",action="store_true",help="Print debugging information while the program is running. Default is off.",default=False)
@@ -711,10 +711,10 @@ def check(options,verbose=0):
 			print("Error: you must specify the output file")
 			error = True
 		elif file_exists(options.output):
-			if not options.force:
-				error = True
-				if (verbose):
-					print("Error: output file %s exists, force not specified, will not overwrite, exiting" %options.output)
+#			if not options.force:
+#				error = True
+#				if (verbose):
+#					print("Error: output file %s exists, force not specified, will not overwrite, exiting" %options.output)
 
 		if options.classmx == None:
 			options.bootstrap = True # turn on boot strapping

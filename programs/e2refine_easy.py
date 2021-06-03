@@ -817,14 +817,14 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 			omap=EMData(fspe)
 			omap.mult(fmask)
 			omap.write_image("{path}/tmp.hdf".format(path=options.path),0)
-			cmd = "e2project3d.py {path}/tmp.hdf  --outfile {path}/projections_masked_even.hdf -f --projector {projector} --orientgen {orient} --sym {sym} {prethr} --parallel thread:{threads} --compressbits {compressbits} {verbose}".format(
+			cmd = "e2project3d.py {path}/tmp.hdf  --outfile {path}/projections_masked_even.hdf --projector {projector} --orientgen {orient} --sym {sym} {prethr} --parallel thread:{threads} --compressbits {compressbits} {verbose}".format(
 				path=options.path,itrm1=it-1,itr=it,projector=options.projector,orient=options.orientgen,sym=projsym,prethr=prethreshold,threads=options.threads,compressbits=options.compressbits,verbose=verbose)
 			run(cmd)
 			
 			omap=EMData(fspo)
 			omap.mult(fmask)
 			omap.write_image("{path}/tmp.hdf".format(path=options.path),0)
-			cmd = "e2project3d.py {path}/tmp.hdf  --outfile {path}/projections_masked_odd.hdf -f --projector {projector} --orientgen {orient} --sym {sym} {prethr} --parallel thread:{threads} --compressbits {compressbits} {verbose}".format(
+			cmd = "e2project3d.py {path}/tmp.hdf  --outfile {path}/projections_masked_odd.hdf --projector {projector} --orientgen {orient} --sym {sym} {prethr} --parallel thread:{threads} --compressbits {compressbits} {verbose}".format(
 				path=options.path,itrm1=it-1,itr=it,projector=options.projector,orient=options.orientgen,sym=projsym,prethr=prethreshold,threads=options.threads,compressbits=options.compressbits,verbose=verbose)
 			run(cmd)
 			
@@ -833,11 +833,11 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 			try: os.unlink("{path}/tmp.hdf".format(path=options.path))
 			except: pass
 			
-		cmd = "e2project3d.py {path}/threed_{itrm1:02d}_even.hdf  --outfile {path}/projections_{itr:02d}_even.hdf -f --projector {projector} --orientgen {orient} --sym {sym} {prethr} --parallel thread:{threads} --compressbits {compressbits} {verbose}".format(
+		cmd = "e2project3d.py {path}/threed_{itrm1:02d}_even.hdf  --outfile {path}/projections_{itr:02d}_even.hdf --projector {projector} --orientgen {orient} --sym {sym} {prethr} --parallel thread:{threads} --compressbits {compressbits} {verbose}".format(
 			path=options.path,itrm1=it-1,itr=it,projector=options.projector,orient=options.orientgen,sym=projsym,prethr=prethreshold,threads=options.threads,compressbits=options.compressbits,verbose=verbose)
 		run(cmd)
 		
-		cmd = "e2project3d.py  {path}/threed_{itrm1:02d}_odd.hdf --outfile {path}/projections_{itr:02d}_odd.hdf -f --projector {projector} --orientgen {orient} --sym {sym} {prethr} --parallel thread:{threads} --compressbits {compressbits} {verbose}".format(
+		cmd = "e2project3d.py  {path}/threed_{itrm1:02d}_odd.hdf --outfile {path}/projections_{itr:02d}_odd.hdf --projector {projector} --orientgen {orient} --sym {sym} {prethr} --parallel thread:{threads} --compressbits {compressbits} {verbose}".format(
 			path=options.path,itrm1=it-1,itr=it,projector=options.projector,orient=options.orientgen,sym=projsym,prethr=prethreshold,threads=options.threads,compressbits=options.compressbits,verbose=verbose)
 		run(cmd)
 		
@@ -907,10 +907,10 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 
 			### Classify
 			append_html("<p>* Based on the similarity values, put each particle in to 1 or more classes (depending on --sep)</p>",True)
-			cmd = "e2classify.py {path}/simmx_{itr:02d}_even.hdf {path}/classmx_{itr:02d}_even.hdf -f --sep {sep} {verbose}".format(
+			cmd = "e2classify.py {path}/simmx_{itr:02d}_even.hdf {path}/classmx_{itr:02d}_even.hdf --sep {sep} {verbose}".format(
 				path=options.path,itr=it,sep=options.sep,verbose=verbose)
 			run(cmd)
-			cmd = "e2classify.py {path}/simmx_{itr:02d}_odd.hdf {path}/classmx_{itr:02d}_odd.hdf -f --sep {sep} {verbose}".format(
+			cmd = "e2classify.py {path}/simmx_{itr:02d}_odd.hdf {path}/classmx_{itr:02d}_odd.hdf --sep {sep} {verbose}".format(
 				path=options.path,itr=it,sep=options.sep,verbose=verbose)
 			run(cmd)
 			progress += 1.0
@@ -940,7 +940,7 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 			if options.focused : focused="--focused {path}/projections_even_masked.hdf".format(path=options.path)
 			else: focused =""
 			cmd="e2classaverage.py {inputfile} --classmx {path}/classmx_{itr:02d}_even.hdf --decayedge --storebad --output {path}/classes_{itr:02d}_even.hdf --ref {path}/projections_{itr:02d}_even.hdf --iter {classiter} \
-	-f --resultmx {path}/cls_result_{itr:02d}_even.hdf --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} \
+	--resultmx {path}/cls_result_{itr:02d}_even.hdf --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} \
 	--align {classalign} --aligncmp {classaligncmp} {classralign} {prefilt} {focused} {verbose} --compressbits {compressbits} {parallel}".format(
 				inputfile=cainput[0], path=options.path, itr=it, classiter=classiter, normproc=options.classnormproc, averager=options.classaverager, classrefsf=classrefsf,
 				classautomask=classautomask,classkeep=options.classkeep, classkeepsig=classkeepsig, classcmp=options.classcmp, classalign=options.classalign, classaligncmp=options.classaligncmp,
@@ -949,7 +949,7 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 			
 			if options.focused : focused="--focused {path}/projections_odd_masked.hdf".format(path=options.path)
 			cmd="e2classaverage.py {inputfile} --classmx {path}/classmx_{itr:02d}_odd.hdf --decayedge --storebad --output {path}/classes_{itr:02d}_odd.hdf --ref {path}/projections_{itr:02d}_odd.hdf --iter {classiter} \
-	-f --resultmx {path}/cls_result_{itr:02d}_odd.hdf --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} \
+	--resultmx {path}/cls_result_{itr:02d}_odd.hdf --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} \
 	--align {classalign} --aligncmp {classaligncmp} {classralign} {prefilt} {focused} {verbose} --compressbits {compressbits} {parallel}".format(
 				inputfile=cainput[1], path=options.path, itr=it, classiter=classiter, normproc=options.classnormproc, averager=options.classaverager, classrefsf=classrefsf,
 				classautomask=classautomask,classkeep=options.classkeep, classkeepsig=classkeepsig, classcmp=options.classcmp, classalign=options.classalign, classaligncmp=options.classaligncmp,
@@ -983,7 +983,7 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 			m3dpad=options.pad,fillangle=astep ,threads=options.threads, apix=apix, compressbits=options.compressbits, verbose=verbose)
 			if it>1 : cmd=cmd+" --itermask {path}/mask.hdf".format(path=options.path)
 		else:
-			cmd="e2make3d.py --input {path}/classes_{itr:02d}_even.hdf --iter 2 -f --sym {sym} --output {path}/threed_{itr:02d}_even.hdf --recon {recon} {preprocess} \
+			cmd="e2make3d.py --input {path}/classes_{itr:02d}_even.hdf --iter 2 --sym {sym} --output {path}/threed_{itr:02d}_even.hdf --recon {recon} {preprocess} \
  --keep={m3dkeep} {keepsig} --apix={apix} --pad={m3dpad} {verbose}".format(
 			path=options.path, itr=it, sym=m3dsym, recon=options.recon, preprocess=m3dpreprocess,  m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
 			m3dpad=options.pad, apix=apix, verbose=verbose)
@@ -1004,7 +1004,7 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 			m3dpad=options.pad, apix=apix, fillangle=astep ,threads=options.threads, compressbits=options.compressbits, verbose=verbose)
 			if it>1 : cmd=cmd+" --itermask {path}/mask.hdf".format(path=options.path)
 		else:
-			cmd="e2make3d.py --input {path}/classes_{itr:02d}_odd.hdf --iter 2 -f --sym {sym} --output {path}/threed_{itr:02d}_odd.hdf --recon {recon} {preprocess} \
+			cmd="e2make3d.py --input {path}/classes_{itr:02d}_odd.hdf --iter 2 --sym {sym} --output {path}/threed_{itr:02d}_odd.hdf --recon {recon} {preprocess} \
  --keep={m3dkeep} {keepsig} --apix={apix} --pad={m3dpad} {verbose}".format(
 			path=options.path, itr=it, sym=m3dsym, recon=options.recon, preprocess=m3dpreprocess, m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
 			m3dpad=options.pad, apix=apix, verbose=verbose)
