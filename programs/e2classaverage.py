@@ -710,7 +710,7 @@ def check(options,verbose=0):
 		if options.output == None:
 			print("Error: you must specify the output file")
 			error = True
-		elif file_exists(options.output):
+#		elif file_exists(options.output):
 #			if not options.force:
 #				error = True
 #				if (verbose):
@@ -815,7 +815,6 @@ def check(options,verbose=0):
 		error = True
 
 	if ( options.iter > 0 ):
-
 		if ( check_eman2_type(options.cmp,Cmps,"Comparitor") == False ):
 			error = True
 
