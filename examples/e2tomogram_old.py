@@ -135,9 +135,9 @@ def main():
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_argument("--tilt", type=float, help="Angular spacing between tilts (fixed)",default=0.0)
-	parser.add_argument("--maxshift", type=int, help="Maximum translational error between images (pixels), default=64",default=64.0)
-	parser.add_argument("--box", type=int, help="Box size for alignment probe (pixels), default=96",default=96.0)
+	parser.add_argument("--tilt", "-T", type=float, help="Angular spacing between tilts (fixed)",default=0.0)
+	parser.add_argument("--maxshift","-M", type=int, help="Maximum translational error between images (pixels), default=64",default=64.0)
+	parser.add_argument("--box","-B", type=int, help="Box size for alignment probe (pixels), default=96",default=96.0)
 	parser.add_argument("--highpass",type=float,help="Highpass Gaussian processor radius (pixels), default none", default=-1.0)
 	parser.add_argument("--lowpass",type=float,help="Lowpass Gaussian processor radius (pixels), default none",default=-1.0)
 	parser.add_argument("--mode",type=str,help="centering mode 'modeshift', 'censym' or 'region,<x>,<y>,<clipsize>,<alisize>",default="censym")

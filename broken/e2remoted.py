@@ -60,7 +60,7 @@ def main():
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	#parser.add_argument("--cleanup",action="store_true",default=False,help="This option will clean up the database cache so files can safely be moved or accessed on another computer via NFS.")
+	#parser.add_argument("--cleanup","-c",action="store_true",default=False,help="This option will clean up the database cache so files can safely be moved or accessed on another computer via NFS.")
 	parser.add_argument("--kill",action="store_true",default=False,help="This will kill an existing server instance before any other operations.")
 	parser.add_argument("--ssh",type=str,help="Connect to a remote ssh server",default=None)
 	parser.add_argument("--emen2",type=str,help="Connect to a remote EMEN2 server",default=None)

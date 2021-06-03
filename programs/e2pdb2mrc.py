@@ -69,9 +69,9 @@ def main():
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_argument("--apix", type=float, help="A/voxel", default=1.0)
-	parser.add_argument("--res", type=float, help="Resolution in A, equivalent to Gaussian lowpass with 1/e width at 1/res",default=2.8)
-	parser.add_argument("--box", type=str, help="Box size in pixels, <xyz> or <x>,<y>,<z>")
+	parser.add_argument("--apix", "-A", type=float, help="A/voxel", default=1.0)
+	parser.add_argument("--res", "-R", type=float, help="Resolution in A, equivalent to Gaussian lowpass with 1/e width at 1/res",default=2.8)
+	parser.add_argument("--box", "-B", type=str, help="Box size in pixels, <xyz> or <x>,<y>,<z>")
 	parser.add_argument("--het", action="store_true", help="Include HET atoms in the map", default=False)
 	parser.add_argument("--center", action="store_true", help="Move the atomic center to the center of the box", default=False)
 	parser.add_argument("--chains",type=str,help="String list of chain identifiers to include, eg 'ABEFG'")

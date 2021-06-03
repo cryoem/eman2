@@ -60,7 +60,7 @@ def main():
 	parser.add_argument("--path",default='',type=str,help="Name of directory where to save the output file.")
 	#parser.add_argument("--alifile",default='',type=str,help=".json file with alingment parameters, if raw stack supplied via --input.")
 	
-	parser.add_argument("--boxsize",type=int,default=0,help="""Default=0 (option not used). Provide a value for the boxsize of the output average in pixels. If not provided, the boxsize of --stacks will be used.""")
+	parser.add_argument("--boxsize","-B",type=int,default=0,help="""Default=0 (option not used). Provide a value for the boxsize of the output average in pixels. If not provided, the boxsize of --stacks will be used.""")
 	
 	parser.add_argument("--normproc",type=str,default='normalize.edgemean',help="""Normalization processor applied to particles before extraction. Default=normalize.edgemean. If using the latter, you must provide --masknorm, otherwise, a default --masknorm=mask.sharp:outer_radius=-2 will be used.""")
 	

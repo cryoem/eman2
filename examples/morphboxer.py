@@ -46,7 +46,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_pos_argument(name="micrographs",help="List the file to process with e2boxer here.", default="", guitype='filebox', browser="EMBoxesTable(withmodal=True,multiselect=True)",row=0,col=0,rowspan=1,colspan=3,mode="boxing,extraction")
 	parser.add_header(name="boxerheader", help='Options below this label are specific to e2boxer', title="### e2boxer options ###", row=1, col=0, rowspan=1, colspan=3, mode="boxing,extraction")
-	parser.add_argument("--boxsize",type=int,help="Box size in pixels",default=-1, guitype='intbox', row=2, col=0, rowspan=1, colspan=3, mode="boxing,extraction")
+	parser.add_argument("--boxsize","-b",type=int,help="Box size in pixels",default=-1, guitype='intbox', row=2, col=0, rowspan=1, colspan=3, mode="boxing,extraction")
 	parser.add_argument("--xmin",type=int,default=0)
 	parser.add_argument("--xmax",type=int,default=-1)
 	parser.add_argument("--xstep",type=int,default=16)

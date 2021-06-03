@@ -66,7 +66,7 @@ Usage: e2RCTboxer.py untilted.hdf tilted.hdf options.
 	parser.add_pos_argument(name="untilted micrograph",help="List the untilted micrograph here.", default="", guitype='filebox', browser="EMRCTBoxesTable(withmodal=True,multiselect=False)", row=0, col=0,rowspan=1, colspan=3, mode="boxing,extraction")
 	parser.add_pos_argument(name="tilted micrograph",help="List the tilted micrograph here.", default="", guitype='filebox', browser="EMRCTBoxesTable(withmodal=True,multiselect=False)", row=1, col=0,rowspan=1, colspan=3, mode="boxing,extraction")
 	parser.add_header(name="RCTboxerheader", help='Options below this label are specific to e2RCTboxer', title="### e2RCTboxer options ###", row=2, col=0, rowspan=1, colspan=3, mode="boxing,extraction")
-	parser.add_argument("--boxsize",type=int,help="Box size in pixels",default=-1, guitype='intbox', row=3, col=0, rowspan=1, colspan=3, mode="boxing,extraction")
+	parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=-1, guitype='intbox', row=3, col=0, rowspan=1, colspan=3, mode="boxing,extraction")
 	parser.add_argument("--write_boxes",action="store_true",help="Write coordinate file (eman1 dbbox) files",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode="extraction")
 	parser.add_argument("--write_ptcls",action="store_true",help="Write particles to disk",default=False, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode="extraction[True]")
 	parser.add_argument("--format", help="Format of the output particles images, should be hdf", default="hdf", guitype='combobox', choicelist="['hdf']", row=7, col=0, rowspan=1, colspan=2, mode="extraction")
