@@ -1,6 +1,6 @@
 before_script:
  - apt-get update --yes
- - apt-get install --yes cmake
+ - apt-get install --yes make
 
 stages:
  - test
