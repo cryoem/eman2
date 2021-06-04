@@ -7,8 +7,11 @@ unittest: # Name of the job
   script:
      - source activate sphire;
      - pip uninstall sphire -y;
+     - pwd;
+     - ls;
      - cd ..;
-     - pwd
+     - pwd;
+     - ls;
      - mkdir build_test;
      - cd build_test;
      - cmake ../ -DENABLE_OPTIMIZE_MACHINE=ON;
