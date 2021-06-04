@@ -5,19 +5,20 @@ unittest: # Name of the job
   stage: test
   image: sphiredevel/sphire-ut:eman24 # Image that should be used
   script:
+     - rm -r build_test;
      - source activate sphire;
      - pip uninstall sphire -y;
      - cd ..
      - rm -r build_test
-     - cd eman2mirror
      - pwd;
      - ls;
      - mkdir build_test;
      - cd build_test;
-     - cmake ../ -DENABLE_OPTIMIZE_MACHINE=ON;
+     - cmake /builds/mpi-dortmund/sphire/eman2mirror -DENABLE_OPTIMIZE_MACHINE=ON;
      - make -j 8;
      - make install;
      - cd ..;
+     - cd eman2mirror;
      - cd sphire/;
      - python setup.py sdist; pip install dist/*.tar.gz; pip install coverage pytest pytest-cov; pytest --cov=sphire/bin/; coverage xml --ignore-errors
      - cd ..;
