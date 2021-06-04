@@ -7,7 +7,9 @@ unittest: # Name of the job
   script:
      - source activate sphire;
      - pip uninstall sphire -y;
+     - rm -rf build_test
      - cd ..
+     - rm -rf build_test
      - pwd;
      - ls;
      - mkdir build_test;
@@ -20,4 +22,4 @@ unittest: # Name of the job
      - cd sphire/;
      - python setup.py sdist; pip install dist/*.tar.gz; pip install coverage pytest pytest-cov; pytest --cov=sphire/bin/; coverage xml --ignore-errors
      - cd ..;
-     - rm -r build_test;
+     - rm -rf build_test;
