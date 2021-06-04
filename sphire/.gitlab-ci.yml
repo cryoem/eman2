@@ -1,6 +1,7 @@
 before_script:
  - apt-get update --yes
  - apt-get install --yes make
+ - apt-get install -y build-essential
 
 stages:
  - test
