@@ -7,9 +7,9 @@ unittest: # Name of the job
   script:
      - source activate sphire;
      - pip uninstall sphire -y;
-     - pwd;
-     - ls;
-     - cd ..;
+     - cd ..
+     - rm -r build_test
+     - cd eman2mirror
      - pwd;
      - ls;
      - mkdir build_test;
@@ -17,7 +17,8 @@ unittest: # Name of the job
      - cmake ../ -DENABLE_OPTIMIZE_MACHINE=ON;
      - make -j 8;
      - make install;
-     - cd ../sphire/;
+     - cd ..;
+     - cd sphire/;
      - python setup.py sdist; pip install dist/*.tar.gz; pip install coverage pytest pytest-cov; pytest --cov=sphire/bin/; coverage xml --ignore-errors
-     - cd ../..
-     - rm -r build_test
+     - cd ..;
+     - rm -r build_test;
