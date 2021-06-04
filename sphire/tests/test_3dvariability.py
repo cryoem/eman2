@@ -4,9 +4,9 @@ from __future__ import division
 from numpy import allclose,array_equal
 
 from os import path
-from sphire.tests.test_module import ABSOLUTE_OLDBIN_PATH,ABSOLUTE_BIN_PATH,remove_dir,ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW
+# from sphire.tests.test_module import ABSOLUTE_OLDBIN_PATH,ABSOLUTE_BIN_PATH,remove_dir,ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW
 import unittest
-from sp_utilities import get_im
+from sphire.libpy.sp_utilities import get_im
 import EMAN2db
 try:
     # python 3.4+ should use builtin unittest.mock not mock package
