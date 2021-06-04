@@ -5,11 +5,9 @@ unittest: # Name of the job
   stage: test
   image: sphiredevel/sphire-ut:eman24 # Image that should be used
   script:
-     - rm -r build_test;
      - source activate sphire;
      - pip uninstall sphire -y;
      - cd ..
-     - rm -r build_test
      - pwd;
      - ls;
      - mkdir build_test;
