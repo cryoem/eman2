@@ -1,16 +1,16 @@
-before_script:
- - apt-get update --yes
- - apt-get install --yes make
- - apt-get install -y build-essential
- - apt-get install libgl1-mesa-dev --yes
- - apt-get install libglu1-mesa-dev --yes
+#before_script:
+# - apt-get update --yes
+# - apt-get install --yes make
+# - apt-get install -y build-essential
+# - apt-get install libgl1-mesa-dev --yes
+# - apt-get install libglu1-mesa-dev --yes
 
 stages:
  - test
 
 unittest: # Name of the job
   stage: test
-  image: sphiredevel/sphire-ut:eman24 # Image that should be used
+  image: sphiredevel/sphire-ut:latest # Image that should be used
   script:
      - source activate sphire;
      - pip uninstall sphire -y;

@@ -4,3 +4,8 @@ RUN apt-get install libgl1-mesa-glx --yes
 RUN conda create -n sphire eman-deps-dev=24 -c cryoem -c defaults -c conda-forge --yes
 RUN conda init bash
 RUN echo "conda activate sphire" > ~/.bashrc
+RUN apt-get update --yes
+RUN apt-get install --yes make
+RUN apt-get install -y build-essential
+RUN apt-get install libgl1-mesa-dev --yes
+RUN apt-get install libglu1-mesa-dev --yes
