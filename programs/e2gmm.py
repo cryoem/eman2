@@ -363,8 +363,8 @@ class EMGMM(QtWidgets.QMainWindow):
 			self.app().processEvents()
 	
 	def new_sph_size(self,newval=10):
-		self.gaussplot.setPointSize(self.wvssphsz)
-		self.gaussplot.setPointThr(self.wvssphth)
+		self.gaussplot.setPointSize(self.wvssphsz.value)
+		self.gaussplot.setPointThr(self.wvssphth.value)
 		self.wview3d.update()
 	
 	def plot_mouse(self,event,loc):
