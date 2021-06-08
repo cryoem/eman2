@@ -117,15 +117,15 @@ class Test_functions_outside_class(unittest.TestCase):
         case 1
         """
         img = EMAN2.EMData()
-        EMAN2db.db_read_image(img,bdbfile,0 )
-        img1 = EMAN2db.db_read_images(bdbfile)
+        EMAN2.db_read_image(img,bdbfile,0 )
+        img1 = EMAN2.db_read_images(bdbfile)
         self.assertTrue(numpy.array_equal(img1[0].get_2dview(), img.get_2dview()))
 
         """
         case 2
         """
         img = EMAN2.EMData()
-        EMAN2db.db_read_image(img, bdbfile,0 )
+        EMAN2.db_read_image(img, bdbfile,0 )
         img2 = EMAN2.EMData().read_images(bdbfile)
         self.assertTrue(numpy.array_equal(img2[0].get_2dview(), img.get_2dview()))
 
@@ -139,7 +139,7 @@ class Test_functions_outside_class(unittest.TestCase):
 
 
     def test_db_get_image_count(self):
-        case1_bdb_count = EMAN2db.db_get_image_count(bdbfile)
+        case1_bdb_count = EMAN2.db_get_image_count(bdbfile)
         self.assertEqual(case1_bdb_count, 127)
 
     def test_get_image_info(self):
@@ -309,27 +309,27 @@ class Test_Dbdict(unittest.TestCase):
 
 class Test_Stacks(unittest.TestCase):
     def test_stack_substack(self):
-        e = EMAN2_cppwrap.EMData()
+        e = EMAN2.EMData()
         e.read_image(bdbfile, 5)
-        d = EMAN2_cppwrap.EMData()
+        d = EMAN2.EMData()
         d.read_image(bdbfile, 5)
-        img = EMAN2db.EMData.read_images(bdbfile)
+        img = EMAN2.EMData.read_images(bdbfile)
         self.assertTrue(numpy.array_equal(e.get_2dview(), d.get_2dview()))
         self.assertTrue(numpy.array_equal(img[5].get_2dview(), d.get_2dview()))
 
     @unittest.skip
     def test_stack_dict_reading(self):
         a = EMAN2db.DBDict(name=bdbname, path=bdb_path, ro=True)
-        img = EMAN2db.EMData()
-        EMAN2db.db_read_image(img,bdbfile,0)
-        EMAN2db.db_close_dict(a)
+        img = EMAN2.EMData()
+        EMAN2.db_read_image(img,bdbfile,0)
+        EMAN2.db_close_dict(a)
 
 
     def test_stack_writing(self):
-        img = EMAN2db.EMData()
+        img = EMAN2.EMData()
         img.read_image(str('bdb:' + bdb_path.replace('/EMAN2DB','') + '#' + bdbname))
         EMAN2db.db_close_dict(str('bdb:' + bdb_path.replace('/EMAN2DB','') + '#' + bdbname))
-        newimg = EMAN2db.EMData()
+        newimg = EMAN2.EMData()
         newimg = copy.deepcopy(img)
         if os.path.isfile(bdb_path+'test_img'):
             os.remove(bdb_path+'test_img')
@@ -345,7 +345,7 @@ class Test_Stacks(unittest.TestCase):
 
     @unittest.skip('display not necessry to check')
     def test_read_new_file(self):
-        imgnew = EMAN2db.EMData()
+        imgnew = EMAN2.EMData()
         imgnew.read_image(str('bdb:' + bdb_path.replace('/EMAN2DB', '') + '#' + 'test_img'))
         EMAN2.display(imgnew)
 
