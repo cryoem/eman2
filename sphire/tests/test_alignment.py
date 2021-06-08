@@ -61,12 +61,12 @@ from .test_module import (
     give_ormq_data,
 )
 
-from sphire.sphire.libpy.sp_fundamentals import fft  # ccf,rot_shift2D
-from sphire.sphire.libpy.sp_utilities import model_circle, model_blank, even_angles
-from sphire.sphire.libpy.sp_projection import prep_vol
+from sphire.libpy.sp_fundamentals import fft  # ccf,rot_shift2D
+from sphire.libpy.sp_utilities import model_circle, model_blank, even_angles
+from sphire.libpy.sp_projection import prep_vol
 
 from sphire.libpy_py3 import sp_alignment as oldfu
-from sphire.sphire.libpy import sp_alignment as fu, sp_utilities
+from sphire.libpy import sp_alignment as fu, sp_utilities
 
 from mpi import *
 
