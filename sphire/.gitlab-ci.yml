@@ -30,7 +30,7 @@ unittest: # Name of the job
      - python setup.py sdist;
      - pip install dist/*.tar.gz;
      - pip install coverage pytest pytest-cov;
-     - pytest --cov=sphire/bin/; coverage xml --ignore-errors;
+     - pytest tests --cov=sphire/bin; coverage xml --ignore-errors;
 #     - coverage run -m pytest test_bdb_rdwr.py ; coverage xml --ignore-errors;
      - cd ../..;
      - rm -rf build_test;
