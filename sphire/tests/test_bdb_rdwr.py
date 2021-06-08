@@ -64,10 +64,9 @@ import copy
 Input to this class is a bdb file with images
 """
 
-bdb_path = "../resources_tests/03_PARTICLES_BDB/mpi_proc_007/EMAN2DB"
+bdb_path = "resources_tests/03_PARTICLES_BDB/mpi_proc_007/EMAN2DB"
 bdbname = "TcdA1-0187_frames_ptcls"
-bdbfile = 'bdb:'+os.path.join(os.path.dirname(__file__), "../resources_tests/03_PARTICLES_BDB/mpi_proc_007/TcdA1-0187_frames_ptcls")
-
+bdbfile = 'bdb:'+os.path.join(os.getcwd(), "resources_tests/03_PARTICLES_BDB/mpi_proc_007/TcdA1-0187_frames_ptcls")
 
 class Test_functions_outside_class(unittest.TestCase):
 
