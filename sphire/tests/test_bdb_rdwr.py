@@ -43,7 +43,6 @@ from sphire.libpy import sp_global_def
 import numpy
 import weakref
 import EMAN2db
-import EMAN2_cppwrap
 from os import path, mkdir
 
 

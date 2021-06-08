@@ -26,11 +26,12 @@ unittest: # Name of the job
      - make install;
      - cd ..;
      - cd eman2mirror;
-     - cd sphire/tests;
+     - cd sphire;
      - python setup.py sdist;
      - pip install dist/*.tar.gz;
      - pip install coverage pytest pytest-cov;
+     - cd tests
 #     - pytest --cov=sphire/bin/; coverage xml --ignore-errors;
      - coverage run -m pytest test_bdb_rdwr.py ; coverage xml --ignore-errors;
-     - cd ..;
+     - cd ../..;
      - rm -rf build_test;
