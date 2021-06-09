@@ -23,18 +23,11 @@ import sys
 WHAT IS MISSING:
 1) 'prepare_outdir_log' is just crating the output directory for log stuff. I 'm not going to test it
 2) cannot run from pyvharm because it cannot find 'e2proc2d.py'
-
 RESULT AND KNOWN ISSUES
 Some compatibility tests for the following functions fail!!!
-
-
 In these tests there is a bug --> syntax error:
-
-
 In these tests there is a strange behavior:
-
 """
-
 
 class Test_helperFunctions(unittest.TestCase):
 	@unittest.skip('initial test')
@@ -49,38 +42,38 @@ class Test_helperFunctions(unittest.TestCase):
 	@unittest.skip("initial test")
 	def test_makerealpath(self):
 		return_new = fu.makerelpath(p1="aa/vv",p2="aa2/vv2")
-        return_old = oldfu.makerelpath(p1="aa/vv",p2="aa2/vv2")
-        self.assertEqual(return_new, return_old)
-        self.assertEqual(return_new, '../../aa2/vv2')
+		return_old = oldfu.makerelpath(p1="aa/vv",p2="aa2/vv2")
+		self.assertEqual(return_new, return_old)
+		self.assertEqual(return_new, '../../aa2/vv2')
 
 	@unittest.skip("initial test")
 	def test_estimate_angle(self):
 		return_new = fu.estimate_angle(coords_a=[15,32], coords_b=[18,38])
-        return_old = oldfu.estimate_angle(coords_a=[15,32], coords_b=[18,38])
-        self.assertEqual(return_new, return_old)
-        self.assertEqual(return_new, -63.43494882292201)
+		return_old = oldfu.estimate_angle(coords_a=[15,32], coords_b=[18,38])
+		self.assertEqual(return_new, return_old)
+		self.assertEqual(return_new, -63.43494882292201)\
 
 	@unittest.skip("initial test")
 	def test_estimate_angle_same_coords(self):
 		return_new = fu.estimate_angle(coords_a=[15,32], coords_b=[15,32])
-        return_old = oldfu.estimate_angle(coords_a=[15,32], coords_b=[15,32])
-        self.assertEqual(return_new, return_old)
-        self.assertEqual(return_new, -0.0)
+		return_old = oldfu.estimate_angle(coords_a=[15,32], coords_b=[15,32])
+		self.assertEqual(return_new, return_old)
+		self.assertEqual(return_new, -0.0)
 
 	@unittest.skip("initial test")
 	def test_estimate_angle_index_error_coords_a(self):
 		with self.assertRaises(IndexError) as cm_new:
 			fu.estimate_angle(coords_a=[], coords_b=[18,38])
-        with self.assertRaises(IndexError) as cm_old:
+		with self.assertRaises(IndexError) as cm_old:
 			oldfu.estimate_angle(coords_a=[], coords_b=[18,38])
-        self.assertEqual(str(cm_new.exception), "list index out of range")
-        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
+		self.assertEqual(str(cm_new.exception), "list index out of range")
+		self.assertEqual(str(cm_new.exception), str(cm_old.exception))\
 
 	@unittest.skip("initial test")
 	def test_estimate_angle_index_error_coords_b(self):
 		with self.assertRaises(IndexError) as cm_new:
 			fu.estimate_angle(coords_b=[], coords_a=[18,38])
-        with self.assertRaises(IndexError) as cm_old:
-            oldfu.estimate_angle(coords_b=[], coords_a=[18,38])
-        self.assertEqual(str(cm_new.exception), "list index out of range")
-        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
+		with self.assertRaises(IndexError) as cm_old:
+			oldfu.estimate_angle(coords_b=[], coords_a=[18,38])
+		self.assertEqual(str(cm_new.exception), "list index out of range")
+		self.assertEqual(str(cm_new.exception), str(cm_old.exception))
