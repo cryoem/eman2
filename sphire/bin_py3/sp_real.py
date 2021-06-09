@@ -50,7 +50,7 @@ import PyQt5
 import eman2_gui.emapplication
 import eman2_gui.emimage
 import os
-import sp_global_def
+from libpy_py3 import sp_global_def
 
 GUIUSE = True
 

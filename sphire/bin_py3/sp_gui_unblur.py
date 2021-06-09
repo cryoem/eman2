@@ -31,7 +31,7 @@ import glob
 import matplotlib
 import matplotlib.pyplot
 import os
-import sp_global_def
+from libpy_py3 import sp_global_def
 import sys
 from builtins import range
 from builtins import object

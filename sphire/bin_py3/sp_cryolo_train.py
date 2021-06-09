@@ -36,7 +36,7 @@ from __future__ import print_function
 from __future__ import division
 import argparse
 import json
-import sp_global_def
+from libpy_py3 import sp_global_def
 import subprocess
 
 

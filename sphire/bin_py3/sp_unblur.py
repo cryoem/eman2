@@ -40,9 +40,9 @@ import argparse
 import glob
 import mpi
 import os
-import sp_global_def
-import sp_utilities
-import sp_applications
+from libpy_py3 import sp_global_def
+from libpy_py3 import sp_utilities
+from libpy_py3 import sp_applications
 import subprocess
 import time
 

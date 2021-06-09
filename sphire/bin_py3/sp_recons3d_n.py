@@ -44,9 +44,9 @@ from __future__ import division
 import EMAN2_cppwrap
 import mpi
 import optparse
-import sp_applications
-import sp_global_def
-import sp_utilities
+from libpy_py3 import sp_applications
+from libpy_py3 import sp_global_def
+from libpy_py3 import sp_utilities
 import string
 import sys
 from builtins import range

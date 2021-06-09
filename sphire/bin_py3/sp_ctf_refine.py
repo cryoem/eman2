@@ -47,13 +47,13 @@ import argparse
 import copy
 import multiprocessing
 import numpy
-import sp_global_def
-import sp_projection
-import sp_statistics
-import sp_utilities
-import sp_ctf_refine_io
-import sp_ctf_refine_plotting
-import sp_filter
+from libpy_py3 import sp_global_def
+from libpy_py3 import sp_projection
+from libpy_py3 import sp_statistics
+from libpy_py3 import sp_utilities
+from libpy_py3 import sp_ctf_refine_io
+from libpy_py3 import sp_ctf_refine_plotting
+from libpy_py3 import sp_filter
 import itertools
 import sys
 import time

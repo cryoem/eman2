@@ -52,14 +52,14 @@ import os
 import random
 import shutil
 import six
-import sp_applications
-import sp_fundamentals
-import sp_global_def
-import sp_logger
-import sp_multi_shc
-import sp_statistics
-import sp_user_functions
-import sp_utilities
+from libpy_py3 import sp_applications
+from libpy_py3 import sp_fundamentals
+from libpy_py3 import sp_global_def
+from libpy_py3 import sp_logger
+from libpy_py3 import sp_multi_shc
+from libpy_py3 import sp_statistics
+from libpy_py3 import sp_user_functions
+from libpy_py3 import sp_utilities
 import string
 import sys
 import time

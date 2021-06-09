@@ -43,16 +43,16 @@ from past.utils import old_div
 #
 
 from builtins import range
-import sp_global_def
-from sp_global_def import sxprint, ERROR
+from libpy_py3 import sp_global_def
+from libpy_py3.sp_global_def import sxprint, ERROR
 
-from sp_global_def import *
+from libpy_py3.sp_global_def import *
 from EMAN2 import EMUtil, parsemodopt, EMAN2Ctf, EMData
 from EMAN2jsondb import js_open_dict
 from EMAN2_cppwrap import Transform
-from sp_utilities import *
-from sp_utilities import write_text_row
-from sp_statistics import mono
+from libpy_py3.sp_utilities import *
+from libpy_py3.sp_utilities import write_text_row
+from libpy_py3.sp_statistics import mono
 import os
 
 import sys

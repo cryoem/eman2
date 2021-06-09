@@ -52,9 +52,9 @@ import numpy
 import optparse
 import os
 import scipy.interpolate
-import sp_global_def
-import sp_statistics
-import sp_utilities
+from libpy_py3 import sp_global_def
+from libpy_py3 import sp_statistics
+from libpy_py3 import sp_utilities
 import sys
 import traceback
 import eman2_gui.valslider

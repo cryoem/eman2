@@ -50,19 +50,19 @@ import math
 import numpy
 import os
 import shutil
-import sp_alignment
-import sp_applications
-import sp_filter
-import sp_fundamentals
-import sp_global_def
-import sp_logger
-import sp_pixel_error
-import sp_projection
-import sp_statistics
-import sp_utilities
+from libpy_py3 import sp_alignment
+from libpy_py3 import sp_applications
+from libpy_py3 import sp_filter
+from libpy_py3 import sp_fundamentals
+from libpy_py3 import sp_global_def
+from libpy_py3 import sp_logger
+from libpy_py3 import sp_pixel_error
+from libpy_py3 import sp_projection
+from libpy_py3 import sp_statistics
+from libpy_py3 import sp_utilities
 
 from EMAN2_cppwrap import Util
-from sp_global_def import sxprint
+from libpy_py3.sp_global_def import sxprint
 
 # from EMAN2 import EMUtil, EMArgumentParser, EMANVERSION
 

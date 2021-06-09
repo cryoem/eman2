@@ -43,7 +43,7 @@ from __future__ import division
 import argparse
 import glob
 import os
-import sp_global_def
+from libpy_py3 import sp_global_def
 import subprocess
 
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)

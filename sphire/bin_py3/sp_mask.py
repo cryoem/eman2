@@ -37,10 +37,10 @@ from past.utils import old_div
 
 import argparse
 import os
-import sp_global_def
-import sp_utilities
-import sp_morphology
-import sp_filter
+from libpy_py3 import sp_global_def
+from libpy_py3 import sp_utilities
+from libpy_py3 import sp_morphology
+from libpy_py3 import sp_filter
 
 
 class NotSmallerZeroAction(argparse.Action):

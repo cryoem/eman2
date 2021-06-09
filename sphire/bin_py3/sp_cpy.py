@@ -44,9 +44,9 @@ from past.utils import old_div
 
 
 import optparse
-import sp_applications
-import sp_global_def
-import sp_utilities
+from libpy_py3 import sp_applications
+from libpy_py3 import sp_global_def
+from libpy_py3 import sp_utilities
 import sys
 
 

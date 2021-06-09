@@ -58,7 +58,7 @@ class Test_helperFunctions(unittest.TestCase):
 		self.assertEqual(return_new, return_old)
 		self.assertEqual(return_new, -0.0)
 
-	@unittest.skip("initial test")
+
 	def test_estimate_angle_index_error_coords_a(self):
 		with self.assertRaises(IndexError) as cm_new:
 			fu.estimate_angle(coords_a=[], coords_b=[18,38])
@@ -67,7 +67,7 @@ class Test_helperFunctions(unittest.TestCase):
 		self.assertEqual(str(cm_new.exception), "list index out of range")
 		self.assertEqual(str(cm_new.exception), str(cm_old.exception))\
 
-	@unittest.skip("initial test")
+
 	def test_estimate_angle_index_error_coords_b(self):
 		with self.assertRaises(IndexError) as cm_new:
 			fu.estimate_angle(coords_b=[], coords_a=[18,38])

@@ -41,7 +41,7 @@ from past.utils import old_div
 
 
 import argparse
-import sp_global_def
+from libpy_py3 import sp_global_def
 import subprocess
 import collections
 import sys

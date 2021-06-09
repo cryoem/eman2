@@ -46,8 +46,8 @@ import EMAN2_cppwrap
 import argparse
 import numpy
 import os
-import sp_global_def
-import sp_utilities
+from libpy_py3 import sp_global_def
+from libpy_py3 import sp_utilities
 
 
 def parse_args():

@@ -60,8 +60,8 @@ try:
 except ImportError as e:
 	#####print("Import error raised. Ignore.")
 	#####print(e)
-	from sp_global_def import *
-	from sp_sparx import *
+	from libpy_py3.sp_global_def import *
+	from libpy_py3.sp_sparx import *
 from optparse import OptionParser
 from functools import partial  # Use to connect event-source widget and event handler
 from subprocess import *

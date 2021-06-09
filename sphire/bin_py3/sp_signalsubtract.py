@@ -25,13 +25,13 @@ try:
     from sphire.libpy import sp_filter
     from sphire.libpy import sp_projection
 except ImportError:
-    import sp_global_def
-    import sp_utilities
-    import sp_fundamentals
-    import sp_applications
-    import sp_morphology
-    import sp_filter
-    import sp_projection
+    from libpy_py3 import sp_global_def
+    from libpy_py3 import sp_utilities
+    from libpy_py3 import sp_fundamentals
+    from libpy_py3 import sp_applications
+    from libpy_py3 import sp_morphology
+    from libpy_py3 import sp_filter
+    from libpy_py3 import sp_projection
     
 # Set default values (global variables written in ALL CAPS)
 TIMESTAMP_LENGTH= 23  # chars

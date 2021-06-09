@@ -36,8 +36,8 @@ import glob
 import numpy
 import optparse
 import os
-import sp_global_def
-import sp_utilities
+from libpy_py3 import sp_global_def
+from libpy_py3 import sp_utilities
 import subprocess
 import sys
 import time

@@ -68,14 +68,14 @@ try:
     from sphire.libpy import sp_morphology
     ##from sp_utilities import montage_scale  #### Moved to sp_utilities in SPHIRE 1.3
 except ImportError:
-    import sp_global_def
-    import sp_utilities
-    import sp_logger
-    import sp_applications
-    import sp_fundamentals
-    import sp_filter
-    import sp_statistics
-    import sp_morphology
+    from libpy_py3 import sp_global_def
+    from libpy_py3 import sp_utilities
+    from libpy_py3 import sp_logger
+    from libpy_py3 import sp_applications
+    from libpy_py3 import sp_fundamentals
+    from libpy_py3 import sp_filter
+    from libpy_py3 import sp_statistics
+    from libpy_py3 import sp_morphology
     ##from sp_utilities import montage_scale  #### Moved to sp_utilities in SPHIRE 1.3
     
 # Set default values (global variables written in ALL CAPS)

@@ -44,14 +44,14 @@ import mpi
 import numpy
 import optparse
 import os
-import sp_applications
-import sp_filter
-import sp_fundamentals
-import sp_global_def
-import sp_logger
-import sp_morphology
-import sp_statistics
-import sp_utilities
+from libpy_py3 import sp_applications
+from libpy_py3 import sp_filter
+from libpy_py3 import sp_fundamentals
+from libpy_py3 import sp_global_def
+from libpy_py3 import sp_logger
+from libpy_py3 import sp_morphology
+from libpy_py3 import sp_statistics
+from libpy_py3 import sp_utilities
 import string
 import sys
 import time

@@ -44,11 +44,11 @@ from past.utils import old_div
 import EMAN2_cppwrap
 import mpi
 import optparse
-import sp_global_def
-import sp_logger
-import sp_multi_shc
-import sp_user_functions
-import sp_utilities
+from libpy_py3 import sp_global_def
+from libpy_py3 import sp_logger
+from libpy_py3 import sp_multi_shc
+from libpy_py3 import sp_user_functions
+from libpy_py3 import sp_utilities
 import sys
 from builtins import range
 
