@@ -58,10 +58,10 @@ import re
 import scipy.spatial
 
 import six
-import sp_applications
-import sp_fundamentals
-import sp_global_def
-import sp_morphology
+from libpy_py3 import sp_applications
+from libpy_py3 import sp_fundamentals
+from libpy_py3 import sp_global_def
+from libpy_py3 import sp_morphology
 import string
 import struct
 import sys

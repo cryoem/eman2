@@ -47,18 +47,18 @@ import mpi
 import numpy
 import os
 import random
-import sp_alignment
-import sp_filter
-import sp_fundamentals
-import sp_global_def
-import sp_logger
-import sp_morphology
-import sp_pixel_error
-import sp_projection
-import sp_reconstruction
-import sp_statistics
-import sp_user_functions
-import sp_utilities
+from libpy_py3 import sp_alignment
+from libpy_py3 import sp_filter
+from libpy_py3 import sp_fundamentals
+from libpy_py3 import sp_global_def
+from libpy_py3 import sp_logger
+from libpy_py3 import sp_morphology
+from libpy_py3 import sp_pixel_error
+from libpy_py3 import sp_projection
+from libpy_py3 import sp_reconstruction
+from libpy_py3 import sp_statistics
+from libpy_py3 import sp_user_functions
+from libpy_py3 import sp_utilities
 import sys
 import time
 

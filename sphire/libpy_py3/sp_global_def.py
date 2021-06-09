@@ -46,7 +46,7 @@ import mpi
 import random
 import sys
 import time
-import sp_utilities as util
+from libpy_py3 import sp_utilities as util
 
 
 def get_timestamp(file_format=False):

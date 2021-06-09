@@ -47,9 +47,9 @@ import EMAN2
 import EMAN2db
 import numpy
 import os
-import sp_global_def
-import sp_projection
-import sp_utilities
+from libpy_py3 import sp_global_def
+from libpy_py3 import sp_projection
+from libpy_py3 import sp_utilities
 
 
 def read_meridien_data(meridien_path):

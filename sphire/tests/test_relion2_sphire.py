@@ -30,7 +30,7 @@ In these tests there is a strange behavior:
 """
 
 class Test_helperFunctions(unittest.TestCase):
-	@unittest.skip('initial test')
+
 	def test_get_cmd_line(self):
 		cmdLine=["this", "is", "a", "test"]
 		with patch.object(sys, 'argv', cmdLine):
@@ -39,19 +39,17 @@ class Test_helperFunctions(unittest.TestCase):
 			self.assertEqual(return_new,return_old)
 			self.assertEqual(return_new, 'Shell line command: this  is  a  test  ')
 
-	@unittest.skip("initial test")
 	def test_makerealpath(self):
 		return_new = fu.makerelpath(p1="aa/vv",p2="aa2/vv2")
 		return_old = oldfu.makerelpath(p1="aa/vv",p2="aa2/vv2")
 		self.assertEqual(return_new, return_old)
 		self.assertEqual(return_new, '../../aa2/vv2')
 
-	@unittest.skip("initial test")
 	def test_estimate_angle(self):
 		return_new = fu.estimate_angle(coords_a=[15,32], coords_b=[18,38])
 		return_old = oldfu.estimate_angle(coords_a=[15,32], coords_b=[18,38])
 		self.assertEqual(return_new, return_old)
-		self.assertEqual(return_new, -63.43494882292201)\
+		self.assertEqual(return_new, -63.43494882292201)
 
 	@unittest.skip("initial test")
 	def test_estimate_angle_same_coords(self):

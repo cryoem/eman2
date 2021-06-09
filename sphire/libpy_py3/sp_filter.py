@@ -44,10 +44,10 @@ from past.utils import old_div
 import EMAN2_cppwrap
 import math
 import mpi
-import sp_fundamentals
-import sp_global_def
-import sp_morphology
-import sp_utilities
+from libpy_py3 import sp_fundamentals
+from libpy_py3 import sp_global_def
+from libpy_py3 import sp_morphology
+from libpy_py3 import sp_utilities
 
 
 def filt_tophatb(e, freql, freqh, pad=False):
