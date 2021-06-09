@@ -44,11 +44,11 @@ import EMAN2_cppwrap
 import copy
 import mpi
 import numpy
-import sp_filter
-import sp_fundamentals
-import sp_global_def
-import sp_morphology
-import sp_utilities
+from libpy_py3 import sp_filter
+from libpy_py3 import sp_fundamentals
+from libpy_py3 import sp_global_def
+from libpy_py3 import sp_morphology
+from libpy_py3 import sp_utilities
 import sys
 from future import standard_library
 from itertools import zip_longest

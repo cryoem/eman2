@@ -45,9 +45,9 @@ import EMAN2_cppwrap
 import math
 import numpy
 import past.utils
-import sp_filter
-import sp_global_def
-import sp_utilities
+from libpy_py3 import sp_filter
+from libpy_py3 import sp_global_def
+from libpy_py3 import sp_utilities
 
 
 def ccf(e, f, center=True):

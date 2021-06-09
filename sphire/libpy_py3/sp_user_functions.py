@@ -51,15 +51,15 @@ import EMAN2_cppwrap
 import math
 import mpi
 import os
-import sp_alignment
-import sp_applications
-import sp_filter
-import sp_fundamentals
-import sp_global_def
-import sp_morphology
-import sp_reconstruction
-import sp_utilities
-import sp_user_functions_meridien
+from libpy_py3 import sp_alignment
+from libpy_py3 import sp_applications
+from libpy_py3 import sp_filter
+from libpy_py3 import sp_fundamentals
+from libpy_py3 import sp_global_def
+from libpy_py3 import sp_morphology
+from libpy_py3 import sp_reconstruction
+from libpy_py3 import sp_utilities
+from libpy_py3 import sp_user_functions_meridien
 import time
 
 

@@ -48,9 +48,9 @@ from past.utils import old_div
 #   from appropriate application, in this case "sxali2d_c.py ...  --function=wei_func
 #
 
-import sp_morphology
-import sp_utilities
-import sp_global_def
+from libpy_py3 import sp_morphology
+from libpy_py3 import sp_utilities
+from libpy_py3 import sp_global_def
 import past
 from past.utils import old_div
 import numpy

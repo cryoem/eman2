@@ -73,9 +73,9 @@ from past.utils import old_div
 import EMAN2_cppwrap
 import math
 import numpy
-import sp_global_def
-import sp_statistics
-import sp_utilities
+from libpy_py3 import sp_global_def
+from libpy_py3 import sp_statistics
+from libpy_py3 import sp_utilities
 
 
 def pixel_error_2D(ali_params1, ali_params2, r=1.0):
