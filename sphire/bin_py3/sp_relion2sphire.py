@@ -53,11 +53,11 @@ import numpy
 import operator
 import optparse
 import os
-from ..libpy_py3 import sp_global_def
-from ..libpy_py3 import sp_morphology
-from ..libpy_py3 import sp_pixel_error
-from ..libpy_py3 import sp_statistics
-from ..libpy_py3 import sp_utilities
+from libpy_py3 import sp_global_def
+from libpy_py3 import sp_morphology
+from libpy_py3 import sp_pixel_error
+from libpy_py3 import sp_statistics
+from libpy_py3 import sp_utilities
 import sys
 from builtins import range
 from past.builtins import cmp
