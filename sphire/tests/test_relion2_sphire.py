@@ -2,7 +2,7 @@ from __future__ import print_function
 from __future__ import division
 
 from ..bin_py3 import sp_relion2sphire as oldfu
-from  sphire.bin import sp_relion2sphire as fu
+from sphire.bin import sp_relion2sphire as fu
 import unittest
 
 try:
@@ -45,7 +45,7 @@ class Test_helperFunctions(unittest.TestCase):
             return_new = fu.get_cmd_line()
             return_old = oldfu.get_cmd_line()
             self.assertEqual(return_new,return_old)
-            self.assertEqual(return_new, 'Shell line command: this  is  a  test  ')\
+            self.assertEqual(return_new, 'Shell line command: this  is  a  test  ')
 
 	@unittest.skip("initial test")
 	def test_makerealpath(self):
@@ -66,7 +66,7 @@ class Test_helperFunctions(unittest.TestCase):
 		return_new = fu.estimate_angle(coords_a=[15,32], coords_b=[15,32])
         return_old = oldfu.estimate_angle(coords_a=[15,32], coords_b=[15,32])
         self.assertEqual(return_new, return_old)
-        self.assertEqual(return_new, -0.0)\
+        self.assertEqual(return_new, -0.0)
 
 	@unittest.skip("initial test")
 	def test_estimate_angle_index_error_coords_a(self):
@@ -75,7 +75,7 @@ class Test_helperFunctions(unittest.TestCase):
         with self.assertRaises(IndexError) as cm_old:
             oldfu.estimate_angle(coords_a=[], coords_b=[18,38])
         self.assertEqual(str(cm_new.exception), "list index out of range")
-        self.assertEqual(str(cm_new.exception), str(cm_old.exception))\
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 	@unittest.skip("initial test")
 	def test_estimate_angle_index_error_coords_b(self):
