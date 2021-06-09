@@ -37,15 +37,14 @@ In these tests there is a strange behavior:
 
 
 class Test_helperFunctions(unittest.TestCase):
-
 	@unittest.skip('initial test')
 	def test_get_cmd_line(self):
 		cmdLine=["this", "is", "a", "test"]
-        with patch.object(sys, 'argv', cmdLine):
-            return_new = fu.get_cmd_line()
-            return_old = oldfu.get_cmd_line()
-            self.assertEqual(return_new,return_old)
-            self.assertEqual(return_new, 'Shell line command: this  is  a  test  ')
+		with patch.object(sys, 'argv', cmdLine):
+			return_new = fu.get_cmd_line()
+			return_old = oldfu.get_cmd_line()
+			self.assertEqual(return_new,return_old)
+			self.assertEqual(return_new, 'Shell line command: this  is  a  test  ')
 
 	@unittest.skip("initial test")
 	def test_makerealpath(self):
@@ -73,7 +72,7 @@ class Test_helperFunctions(unittest.TestCase):
 		with self.assertRaises(IndexError) as cm_new:
 			fu.estimate_angle(coords_a=[], coords_b=[18,38])
         with self.assertRaises(IndexError) as cm_old:
-            oldfu.estimate_angle(coords_a=[], coords_b=[18,38])
+			oldfu.estimate_angle(coords_a=[], coords_b=[18,38])
         self.assertEqual(str(cm_new.exception), "list index out of range")
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
