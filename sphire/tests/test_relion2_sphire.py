@@ -1,7 +1,7 @@
 from __future__ import print_function
 from __future__ import division
 
-from ..bin_py3 import sp_relion2sphire as oldfu
+from bin_py3 import sp_relion2sphire as oldfu
 from sphire.bin import sp_relion2sphire as fu
 import unittest
 
