@@ -1,6 +1,6 @@
 
-[![pipeline status](https://gitlab.gwdg.de/mpi-dortmund/sphire/sphire-mirror/badges/Dose_Py3/pipeline.svg)](https://gitlab.gwdg.de/mpi-dortmund/sphire/sphire-mirror/-/commits/gitlab-ci)
-[![coverage report](https://gitlab.gwdg.de/mpi-dortmund/sphire/sphire-mirror/badges/Dose_Py3/coverage.svg)](https://gitlab.gwdg.de/mpi-dortmund/sphire/sphire-mirror/-/commits/gitlab-ci) 
+[![pipeline status](https://gitlab.gwdg.de/mpi-dortmund/sphire/eman2mirror/badges/fix_unittests/pipeline.svg)](https://gitlab.gwdg.de/mpi-dortmund/sphire/eman2mirror/-/commits/fix_unittests)
+[![coverage report](https://gitlab.gwdg.de/mpi-dortmund/sphire/eman2mirror/badges/fix_unittests/coverage.svg)](https://gitlab.gwdg.de/mpi-dortmund/sphire/eman2mirror/-/commits/fix_unittests) 
 # SPHIRE
 
 This package contains the python executables and libraries of the SPHIRE Software Package. 
