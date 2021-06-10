@@ -1,11 +1,9 @@
 from __future__ import print_function
 from builtins import range
 import unittest
-from optparse import OptionParser
 from sphire.libpy.sp_utilities import rotation_between_anglesets
 from sphire.libpy.sp_utilities import angle_between_projections_directions
 from EMAN2_cppwrap import Util
-
 IS_TEST_EXCEPTION = False
 
 # ====================================================================================================================
@@ -13,8 +11,6 @@ class Test_Util_diff_between_matrix_of_3D_parameters_angles(unittest.TestCase):
     """this is unit test of diff_between_matrix_of_3D_parameters_angles function from Util"""
 
     def internal_calculate_avg_diff(self, projs, matrix_rot):
-
-
         n = len(projs[0])
         sc = len(projs)
         matrix_diff = [0] * sc
@@ -179,23 +175,23 @@ class Test_Util_diff_between_matrix_of_3D_parameters_angles(unittest.TestCase):
             self.assertAlmostEqual(results[i], control[i], delta=1.0)
 
 
-def test_main():
-    from EMAN2 import Log
+# def test_main():
+#
+#
+#     p = OptionParser()
+#     p.add_option("--t", action="store_true", help="test exception", default=False)
+#     global IS_TEST_EXCEPTION
+#     opt, args = p.parse_args()
+#     if opt.t:
+#         IS_TEST_EXCEPTION = True
+#     Log.logger().set_level(
+#         -1
+#     )  # perfect solution for quenching the Log error information, thank Liwei
+#     suite = unittest.TestLoader().loadTestsFromTestCase(
+#         Test_Util_diff_between_matrix_of_3D_parameters_angles
+#     )
+#     unittest.TextTestRunner(verbosity=2).run(suite)
 
-    p = OptionParser()
-    p.add_option("--t", action="store_true", help="test exception", default=False)
-    global IS_TEST_EXCEPTION
-    opt, args = p.parse_args()
-    if opt.t:
-        IS_TEST_EXCEPTION = True
-    Log.logger().set_level(
-        -1
-    )  # perfect solution for quenching the Log error information, thank Liwei
-    suite = unittest.TestLoader().loadTestsFromTestCase(
-        Test_Util_diff_between_matrix_of_3D_parameters_angles
-    )
-    unittest.TextTestRunner(verbosity=2).run(suite)
 
-
-if __name__ == "__main__":
-    test_main()
+# if __name__ == "__main__":
+#     unittest.main()

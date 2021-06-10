@@ -31,7 +31,6 @@ unittest: # Name of the job
      - pip install dist/*.tar.gz;
      - pip install coverage pytest pytest-cov;
      - pytest tests --cov=sphire/; coverage xml --ignore-errors;
-#     - coverage run -m pytest test_bdb_rdwr.py ; coverage xml --ignore-errors;
      - ls
      - pwd
      - cd ../..;

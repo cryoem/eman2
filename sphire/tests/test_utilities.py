@@ -1,24 +1,24 @@
 # """
-#
+# 
 # from __future__ import print_function
 # from __future__ import division
 # from past.utils import old_div
 # import numpy
 # import copy
 # import global_def
-#
+# 
 # import unittest
 # import os
 # import shutil
 # from sparx.libpy import utilities as fu
-#
+# 
 # ABSOLUTE_PATH = os.path.dirname(os.path.realpath(__file__))
 # print(ABSOLUTE_PATH)
-#
-#
+# 
+# 
 # class MyTestCase(unittest.TestCase):
 #    def test_angular_distribution_returns_same_results(self):
-#
+# 
 #        params_file = ABSOLUTE_PATH + "/final_params_032.txt"
 #        output_folder_new = "Angular_distribution_New"
 #        output_folder_old = "Angular_distribution_Old"
@@ -30,13 +30,13 @@
 #        box_size = 320
 #        particle_radius = 140
 #        dpi  = 72
-#
+# 
 #        if os.path.isdir(output_folder_new):
 #            shutil.rmtree(output_folder_new)
-#
+# 
 #        if os.path.isdir(output_folder_old):
 #            shutil.rmtree(output_folder_old)
-#
+# 
 #        import time
 #        start = time.time()
 #        return_new = fu.angular_distribution(params_file, output_folder_new, prefix, method, \
@@ -49,33 +49,33 @@
 #                                             dpi, do_print=True)
 #        print(time.time() - start)
 #        self.assertEqual(return_new, return_old)
-#
-#
-#
-#
+# 
+# 
+# 
+# 
 # if __name__ == '__main__':
 #     unittest.main()
 # """
-#
+# 
 # from __future__ import print_function
 # from __future__ import division
-#
+# 
 # from os import path, mkdir
 # from mpi import *
 # from sphire.libpy import sp_global_def
 # from numpy import allclose, array_equal
 # from numpy import full as numpy_full
 # from numpy import float32 as numpy_float32
-#
+# 
 # from sphire.libpy_py3 import sp_utilities as oldfu
 # from sphire.libpy import sp_utilities as fu
-#
+# 
 # mpi_init(0, [])
 # sp_global_def.BATCH = True
 # sp_global_def.MPI = False
-#
+# 
 # ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
-#
+# 
 # import unittest
 # from sphire.tests.test_module import (
 #     get_arg_from_pickle_file,
@@ -91,12 +91,12 @@
 #     IMAGE_BLANK_3D,
 # )
 # from sphire.sphire.libpy.sp_fundamentals import symclass as foundamental_symclasss
-#
+# 
 # from EMAN2_cppwrap import EMData
 # from EMAN2 import EMNumPy
 # from copy import deepcopy
 # from json import load as json_load
-#
+# 
 # try:
 #     from StringIO import StringIO  # python2 case
 # except:
@@ -104,17 +104,17 @@
 #         StringIO,
 #     )  # python3 case. You will get an error because 'sys.stdout.write(msg)' presents in the library not in the test!!
 # import sys
-#
+# 
 # TOLERANCE = 0.0075
 # TRACKER = (
 #     0
 # )  # get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/user_functions.do_volume_mask"))[0][0][1] # cannot use it. search another one
-#
-#
+# 
+# 
 # """
 # There are some tests where I have to write to a file. At the end of the tests, sometimes at the end of each tests, I remove them.
 # You cannot run these tests multipkle times in parallel (i.e: use only "-np 1"
-#
+# 
 # WHAT IS MISSING:
 # 0) in all the cases where the input file is an image. I did not test the case with a complex image. I was not able to generate it
 # 1) because mpi stuff are involved:
@@ -127,31 +127,31 @@
 # 6) make_v_stack_header --> no idea how fill the params
 # 7) get_params3D --> I need an img woth 'xform.align3d' key
 # 8) set_params3D --> I need an img woth 'xform.align3d' key
-#
-#
+# 
+# 
 # RESULT AND KNOWN ISSUES
 # Some compatibility tests for the following functions fail!!!
 # 1) even_angles --> default value with P method leads to a deadlock
 # 2) even_angles_cd --> default value with P method leads to a deadlock
 # 3) get_image_data --> with EMData() as input value the results has the first value a random value
 # 4) Test_balance_angular_distribution --> some compatibility tests fail
-#
+# 
 # IN THESE TESS COULD BE A BUG:
 # 1) center_2D --> with center_method=4 (or 7) parameters 'self_defined_reference' will be used as EMData::EMData* (the reference parameter) by 'fondamentals.ccf(image_to_be_centered, reference) but it is a boolean
 # 2) model_circle --> with negative radius we have a results (already strange), anyway it should not have positive value
 # 3) Test_angular_histogram:test_with_sym_oct_method_S --> BUG in sp_fundamentals.py -->symmetry_neighbors --> local variable 'neighbors' referenced before assignment
 #         It seems to be a problem with 'sym=oct1'
-#
+# 
 # In these tests there is a strange behavior:
 # 1) Test_bcast_list_to_all
 #     -) test_with_empty_list --> the compatibility test in the nosetests feiled
 #     -) test_myid_equal_sourcenode_and_wrong_type_in_listsender_returns_ValueError --> the  exception is not raised
 # """
-#
+# 
 # """
 # pickle files stored under smb://billy.storage.mpi-dortmund.mpg.de/abt3/group/agraunser/transfer/Adnan/pickle files
 # """
-#
+# 
 # """
 # There are some opened issues in:
 # 2) even_angles --> default value with P method leads to a deadlock
@@ -185,10 +185,10 @@
 # 22) get_shrink_data_huang,recons_mref --> the file gave me does not work see the reasons in the test
 # 23) do_two_way_comparison -->  I cannot run the Adnan reference test. I had to insert random data --> I cannot test it deeply,
 # 24) Test_get_stat_proj.test_myid_not_the_same_value_as_main_Node_TypeError is it due to a bad implemntation?
-#
+# 
 # """
-#
-#
+# 
+# 
 # """ start: new in sphire 1.3
 # There are some opened issues in:
 # 1) center_2D -->
@@ -200,8 +200,8 @@
 #     -) send_string_to_all
 #     -) wrap_mpi_split_shared_memory
 # """
-#
-#
+# 
+# 
 # class Test_makerelpath(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -212,14 +212,14 @@
 #             str(cm_new.exception), "makerelpath() missing 2 required positional arguments: 'p1' and 'p2'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_makerelpath(self):
 #         return_new = oldfu.makerelpath(p1="/a/g", p2="/a/g/s/d.txt")
 #         return_old = fu.makerelpath(p1="/a/g", p2="/a/g/s/d.txt")
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_new, "s/d.txt")
-#
-#
+# 
+# 
 # # todo: need data
 # class Test_make_v_stack_header(unittest.TestCase):
 #     def test_wrong_number_params(self):
@@ -232,8 +232,8 @@
 #             "make_v_stack_header() missing 2 required positional arguments: 'path' and 'vstack_path'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
+# 
+# 
 # #   THESE FUNCTIONS ARE COMMENTED BECAUSE NOT INVOLVED IN THE PYTHON3 CONVERSION. THEY HAVE TO BE TESTED ANYWAY
 # """
 # class Test_params_2D_3D(unittest.TestCase):
@@ -244,21 +244,21 @@
 #             oldfu.params_2D_3D()
 #         self.assertEqual(str(cm_new.exception), "params_2D_3D() takes exactly 4 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_positive_mirror(self):
 #         return_old = oldfu.params_2D_3D(alpha=0.1, sx=2, sy=1, mirror=1)
 #         return_new = fu.params_2D_3D(alpha=0.1, sx=2, sy=1, mirror=1)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, (180.0, 180.0, 179.89999999403244, 1.9982515573501587, 1.0034891366958618)))
-#
+# 
 #     def test_NOTpositive_mirror(self):
 #         return_old = oldfu.params_2D_3D(alpha=0.1, sx=2, sy=1, mirror=0)
 #         return_new = fu.params_2D_3D(alpha=0.1, sx=2, sy=1, mirror=0)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, (0, 0, 359.89999999403244, 1.9982515573501587, 1.0034891366958618)))
-#
-#
-#
+# 
+# 
+# 
 # class Test_params_3D_2D(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -267,32 +267,32 @@
 #             oldfu.params_3D_2D()
 #         self.assertEqual(str(cm_new.exception), "params_3D_2D() takes exactly 4 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_theta_lower90(self):
 #         return_old = oldfu.params_3D_2D(phi="not_used",theta=50, s2x=2, s2y=1, psi=1)
 #         return_new = fu.params_3D_2D(phi="not_used",theta=50, s2x=2, s2y=1, psi=1)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, (359.0000000534512, 1.9822430610656738, 1.0347524881362915, 0)))
-#
+# 
 #     def test_theta_highr90(self):
 #         return_old = oldfu.params_3D_2D(phi="not_used",theta=150, s2x=2, s2y=1, psi=1)
 #         return_new = fu.params_3D_2D(phi="not_used",theta=150, s2x=2, s2y=1, psi=1)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, (179.0000000534512, -1.9822430610656738, -1.0347524881362915, 1)))
-#
-#
-#
+# 
+# 
+# 
 # class Test_amoeba_multi_level(unittest.TestCase):
 #     argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.amoeba"))
-#
+# 
 #     @staticmethod
 #     def wrongfunction(a,b):
 #         return a+b
-#
+# 
 #     @staticmethod
 #     def function_lessParam():
 #         return 0
-#
+# 
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.amoeba_multi_level()
@@ -300,7 +300,7 @@
 #             oldfu.amoeba_multi_level()
 #         self.assertEqual(str(cm_new.exception), "amoeba_multi_level() takes at least 3 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_amoeba_multi_level(self):
 #         '''
 #         I did not use 'self.assertTrue(allclose(return_new, return_old, atol=TOLERANCE,equal_nan=True))' because the 'nosetets' spawns the following error
@@ -312,7 +312,7 @@
 #         self.assertTrue(allclose(return_new[0], return_old[0], atol=TOLERANCE,equal_nan=True))
 #         self.assertTrue(abs(return_new[1]- return_old[1]) <TOLERANCE)
 #         self.assertEqual(return_new[2],return_old[2])
-#
+# 
 #     def test_amoeba_multi_level_with_wrongfunction(self):
 #         (var, scale, func, ftolerance, xtolerance, itmax , data) = self.argum[0]
 #         with self.assertRaises(TypeError) as cm_new:
@@ -321,7 +321,7 @@
 #             oldfu.amoeba_multi_level (var, scale, self.wrongfunction, ftolerance, xtolerance, itmax , None)
 #         self.assertEqual(str(cm_new.exception), "wrongfunction() got an unexpected keyword argument 'data'")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_amoeba_multi_level_with_function_lessParam_TypeError(self):
 #         (var, scale, func, ftolerance, xtolerance, itmax , data) = self.argum[0]
 #         with self.assertRaises(TypeError) as cm_new:
@@ -330,7 +330,7 @@
 #             oldfu.amoeba_multi_level (var, scale, self.function_lessParam, ftolerance, xtolerance, itmax , None)
 #         self.assertEqual(str(cm_new.exception), "function_lessParam() takes no arguments (2 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_amoeba_multi_level_with_NoneType_data_returns_TypeError_NoneType_obj_hasnot_attribute__getitem__(self):
 #         (var, scale, func, ftolerance, xtolerance, itmax , data) = self.argum[0]
 #         with self.assertRaises(TypeError) as cm_new:
@@ -339,9 +339,9 @@
 #             oldfu.amoeba_multi_level (var, scale, func, ftolerance, xtolerance, itmax , None)
 #         self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute '__getitem__'")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
-#
+# 
+# 
+# 
 # class Test_ce_fit(unittest.TestCase):
 #     def test_mixed_array(self,a1=None, a2=None):
 #         if a1 is not None
@@ -350,7 +350,7 @@
 #                     self.assertTrue(array_equal(i,j))
 #                 else:
 #                     self.assertEqual(i, j)
-#
+# 
 #     def test_NoneType_inp_imagecrashes_because_signal11SIGSEV(self):
 #         pass
 #         '''
@@ -359,7 +359,7 @@
 #         self.assertEqual(return_new,return_old)
 #         self.assertEqual(return_new,None)
 #         '''
-#
+# 
 #     def test_Empty_inp_image(self):
 #         with self.assertRaises(RuntimeError)as cm_new:
 #             fu.ce_fit(inp_image=EMData(), ref_image= IMAGE_2D_REFERENCE, mask_image=MASK)
@@ -371,7 +371,7 @@
 #         self.assertEqual(msg[3], 'x size <= 0')
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
-#
+# 
 #     def test_NoneType_ref_imagecrashes_because_signal11SIGSEV(self):
 #         pass
 #         '''
@@ -380,7 +380,7 @@
 #         self.assertEqual(return_new,return_old)
 #         self.assertEqual(return_new,None)
 #         '''
-#
+# 
 #     def test_Empty_ref_image(self):
 #         with self.assertRaises(RuntimeError)as cm_new:
 #             fu.ce_fit(inp_image=IMAGE_2D, ref_image= EMData(), mask_image=MASK)
@@ -392,7 +392,7 @@
 #         self.assertEqual(msg[3], 'x size <= 0')
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
-#
+# 
 #     def test_NoneType_mask_imagee(self):
 #         return_new = fu.ce_fit(inp_image=IMAGE_2D, ref_image= IMAGE_2D_REFERENCE, mask_image=None)
 #         return_old = oldfu.ce_fit(inp_image=IMAGE_2D, ref_image= IMAGE_2D_REFERENCE, mask_image=None)
@@ -401,7 +401,7 @@
 #         self.assertTrue(array_equal(return_new[2].get_3dview(), return_old[2].get_3dview()))
 #         self.test_mixed_array(return_new[0], ['Final Parameter [A,B]:', [1.0038907527923584, 0.0013515561586245894], 'Final Chi-square :', 8806394.0, 'Number of Iteration :', 0])
 #         self.assertEqual(return_new[1],'Corrected Image :')
-#
+# 
 #     def test_NoneType_with_mask_image(self):
 #         return_new = fu.ce_fit(inp_image=IMAGE_2D, ref_image= IMAGE_2D_REFERENCE, mask_image=MASK_2DIMAGE)
 #         return_old = oldfu.ce_fit(inp_image=IMAGE_2D, ref_image= IMAGE_2D_REFERENCE, mask_image=MASK_2DIMAGE)
@@ -410,7 +410,7 @@
 #         self.assertTrue(array_equal(return_new[2].get_3dview(), return_old[2].get_3dview()))
 #         self.test_mixed_array(return_new[0], ['Final Parameter [A,B]:', [1.0039470195770264, 0.0015781484544277191], 'Final Chi-square :', 8806394.0, 'Number of Iteration :', 0])
 #         self.assertEqual(return_new[1],'Corrected Image :')
-#
+# 
 #     def test_Empty_mask_image(self):
 #         with self.assertRaises(RuntimeError)as cm_new:
 #             fu.ce_fit(inp_image=IMAGE_2D, ref_image= IMAGE_2D_REFERENCE, mask_image=EMData())
@@ -422,7 +422,7 @@
 #         self.assertEqual(msg[3], 'x size <= 0')
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
-#
+# 
 #     def test_2DIMAGE_different_size_mask_runtimeError(self):
 #         with self.assertRaises(RuntimeError)as cm_new:
 #             fu.ce_fit(inp_image=IMAGE_2D, ref_image= IMAGE_2D_REFERENCE, mask_image=MASK)
@@ -434,8 +434,8 @@
 #         self.assertEqual(msg[1], "The size of mask image should be of same size as the input image")
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[1], msg_old[1])
-#
-#
+# 
+# 
 # class Test_common_line_in3D(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -444,15 +444,15 @@
 #             oldfu.common_line_in3D()
 #         self.assertEqual(str(cm_new.exception), "common_line_in3D() takes exactly 4 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_common_line_in3D(self):
 #         return_old = oldfu.common_line_in3D(phiA=2, thetaA=1, phiB=4, thetaB=3)
 #         return_new = fu.common_line_in3D(phiA=2, thetaA=1, phiB=4, thetaB=3)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_old, (45.11342420305066, 89.00320412303714)))
-#
-#
-#
+# 
+# 
+# 
 # class Test_compose_transform2m(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -461,15 +461,15 @@
 #             oldfu.compose_transform2m()
 #         self.assertEqual(str(cm_new.exception), "compose_transform2m() takes exactly 10 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_compose_transform2m(self):
 #         return_old = oldfu.compose_transform2m(alpha1=1.0,sx1=2.0,sy1=3.0,mirror1=0,scale1=1.0,alpha2=2.0,sx2=3.0,sy2=4.0,mirror2=0,scale2=1.0)
 #         return_new = fu.compose_transform2m(alpha1=1.0,sx1=2.0,sy1=3.0,mirror1=0,scale1=1.0,alpha2=2.0,sx2=3.0,sy2=4.0,mirror2=0,scale2=1.0)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_old, (2.999999834763278, 5.103480339050293, 6.928373336791992, 0, 1.0)))
-#
-#
-#
+# 
+# 
+# 
 # class Test_create_smooth_mask(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -478,13 +478,13 @@
 #             oldfu.create_smooth_mask()
 #         self.assertEqual(str(cm_new.exception), "create_smooth_mask() takes at least 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_create_smooth_mask(self):
 #         return_old = oldfu.create_smooth_mask( radius=2, img_dim=500, size=8 )
 #         return_new = fu.create_smooth_mask( radius=2, img_dim=500, size=8 )
 #         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
-#
-#
+# 
+# 
 # #todo: how test it? it is writing an image
 # class Test_drop_png_image(unittest.TestCase):
 #     def test_wrong_number_params(self):
@@ -494,7 +494,7 @@
 #             oldfu.drop_png_image()
 #         self.assertEqual(str(cm_new.exception), "drop_png_image() takes exactly 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_Empty_im(self):
 #         with self.assertRaises(RuntimeError)as cm_new:
 #             fu.drop_png_image(im=EMData(), trg='png')
@@ -506,14 +506,14 @@
 #         self.assertEqual(msg[3], 'x size <= 0')
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
-#
+# 
 #     def test_NoneType_ref_image(self):
 #         return_new = fu.drop_png_image(im=IMAGE_2D, trg='png')
 #         return_old = oldfu.drop_png_image(im=IMAGE_2D, trg='png')
 #         self.assertEqual(return_new,return_old)
 #         self.assertEqual(return_new,None)
-#
-#
+# 
+# 
 # #todo: it is writing on a file
 # class Test_dump_row(unittest.TestCase):
 #     def test_wrong_number_params(self):
@@ -523,7 +523,7 @@
 #             oldfu.dump_row()
 #         self.assertEqual(str(cm_new.exception), "dump_row() takes exactly 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_Empty_input(self):
 #         with self.assertRaises(RuntimeError)as cm_new:
 #             fu.dump_row(input=EMData(), fname="filename", ix=0, iz=0)
@@ -535,14 +535,14 @@
 #         self.assertEqual(msg[3], 'x size <= 0')
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
-#
+# 
 #     def test_NoneType_ref_inputage(self):
 #         return_new = fu.dump_row(input=IMAGE_2D, fname="filename", ix=0, iz=0)
 #         return_old = oldfu.dump_row(input=IMAGE_2D, fname="filename", ix=0, iz=0)
 #         self.assertEqual(return_new,return_old)
 #         self.assertEqual(return_new,None)
-#
-#
+# 
+# 
 # #todo: it writes an image
 # class Test_eigen_images_get(unittest.TestCase):
 #     def test_wrong_number_params(self):
@@ -552,14 +552,14 @@
 #             oldfu.eigen_images_get()
 #         self.assertEqual(str(cm_new.exception), "eigen_images_get() takes exactly 5 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_eigen_images_get(self):
 #         oldv = oldfu.eigen_images_get(stack="", eigenstack="", mask="", num="", avg="")
 #         v = fu.eigen_images_get(stack="", eigenstack="", mask="", num="", avg="")
 #         pass
-#
-#
-#
+# 
+# 
+# 
 # class Test_find_inplane_to_match(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -568,15 +568,15 @@
 #             oldfu.find_inplane_to_match()
 #         self.assertEqual(str(cm_new.exception), "find_inplane_to_match() takes at least 4 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_find_inplane_to_match(self):
 #         return_old = oldfu.find_inplane_to_match(phiA=1, thetaA=1, phiB=2, thetaB=2, psiA=0, psiB=0)
 #         return_new = fu.find_inplane_to_match(phiA=1, thetaA=1, phiB=2, thetaB=2, psiA=0, psiB=0)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_old, (-359.0003071638985, 1.0003045023348265)))
-#
-#
-#
+# 
+# 
+# 
 # class Test_get_sym(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -585,15 +585,15 @@
 #             oldfu.get_sym()
 #         self.assertEqual(str(cm_new.exception), "get_sym() takes exactly 1 argument (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_get_sym(self):
 #         return_old = oldfu.get_sym(symmetry="c1")
 #         return_new = fu.get_sym(symmetry="c1")
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_old, [[0.0, 0.0, 0.0]]))
-#
-#
-#
+# 
+# 
+# 
 # #todo: need a file
 # class Test_get_textimage(unittest.TestCase):
 #     def test_wrong_number_params(self):
@@ -603,13 +603,13 @@
 #             oldfu.get_textimage()
 #         self.assertEqual(str(cm_new.exception), "get_textimage() takes exactly 1 argument (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_get_textimage(self):
 #         oldv = oldfu.get_textimage(fname="")
 #         v = fu.get_textimage(fname="")
 #         pass
-#
-#
+# 
+# 
 # #todo: need to run it to see the output values
 # class Test_hist_func(unittest.TestCase):
 #     def test_wrong_number_params(self):
@@ -619,7 +619,7 @@
 #             oldfu.hist_func()
 #         self.assertEqual(str(cm_new.exception), "hist_func() takes exactly 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_empty_data_returns_IndexError_list_index_out_of_range(self):
 #         with self.assertRaises(IndexError) as cm_new:
 #             fu.hist_func(data=[], args=[1,2,3])
@@ -627,7 +627,7 @@
 #             oldfu.hist_func(data=[], args=[1,2,3])
 #         self.assertEqual(str(cm_new.exception), "list index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_empty_data0_returns_IndexError_list_index_out_of_range(self):
 #         with self.assertRaises(IndexError) as cm_new:
 #             fu.hist_func(data=[[], [1, 2, 3]], args=[1,2,3])
@@ -635,7 +635,7 @@
 #             oldfu.hist_func(data=[[], [1, 2, 3]], args=[1,2,3])
 #         self.assertEqual(str(cm_new.exception), "list index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_empty_args_returns_IndexError_list_index_out_of_range(self):
 #         with self.assertRaises(IndexError) as cm_new:
 #             fu.hist_func(data=[[1, 2, 3], [1, 2, 3]], args=[])
@@ -643,9 +643,9 @@
 #             oldfu.hist_func(data=[[1, 2, 3], [1, 2, 3]], args=[])
 #         self.assertEqual(str(cm_new.exception), "list index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
-#
+# 
+# 
+# 
 # class Test_info(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -654,13 +654,13 @@
 #             oldfu.info()
 #         self.assertEqual(str(cm_new.exception), "info() takes at least 1 argument (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_2dImg(self):
 #         return_old = oldfu.info(image=IMAGE_2D, mask=None, Comment="")
 #         return_new = fu.info(image=IMAGE_2D, mask=None, Comment="")
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_old, (-0.34738418459892273, 1.3910515308380127, -4.196987152099609, 6.156104564666748, 352, 352, 1)))
-#
+# 
 #     def test_2dImgwith_wrongsize_mask_RuntimeError_ImageDimensionException(self):
 #         with self.assertRaises(RuntimeError) as cm_new:
 #             oldfu.info(image=IMAGE_2D, mask=MASK, Comment="")
@@ -673,13 +673,13 @@
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[1], msg_old[1])
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_2dImg_withMask(self):
 #         return_old = oldfu.info(image=IMAGE_2D, mask=None, Comment="")
 #         return_new = fu.info(image=IMAGE_2D, mask=None, Comment="")
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_old, (1.617922306060791, 0.3879293203353882, 1.0218865871429443, 2.2291574478149414, 352, 352, 1)))
-#
+# 
 #     def test_2dImgBlankwith_wrongsize_mask_RuntimeError_ImageDimensionException(self):
 #         with self.assertRaises(RuntimeError) as cm_new:
 #             oldfu.info(image=IMAGE_BLANK_2D, mask=MASK, Comment="")
@@ -692,25 +692,25 @@
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[1], msg_old[1])
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_2dblankImg(self):
 #         return_old = oldfu.info(image=IMAGE_BLANK_2D, mask=None, Comment="")
 #         return_new = fu.info(image=IMAGE_BLANK_2D, mask=None, Comment="")
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_old, (0.0, 0.0, 0.0, 0.0, 10, 10, 1)))
-#
+# 
 #     def test_2dblankImgwith_mask(self):
 #         return_old = oldfu.info(image=IMAGE_BLANK_2D, mask=MASK_IMAGE_BLANK_2D, Comment="")
 #         return_new = fu.info(image=IMAGE_BLANK_2D, mask=MASK_IMAGE_BLANK_2D, Comment="")
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_old, (0.0, 0.0, 0.0, 0.0, 10, 10, 1)))
-#
+# 
 #     def test_3dImg(self):
 #         return_old = oldfu.info(image=IMAGE_3D, mask=None, Comment="")
 #         return_new = fu.info(image=IMAGE_3D, mask=None, Comment="")
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_old, (1.640047550201416, 8.512676239013672, -10.731719017028809, 144.96165466308594, 76, 76, 76)))
-#
+# 
 #     def test_3dImgwith_wrongsize_mask_RuntimeError_ImageDimensionException(self):
 #         with self.assertRaises(RuntimeError) as cm_new:
 #             oldfu.info(image=IMAGE_3D, mask=MASK, Comment="")
@@ -723,25 +723,25 @@
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[1], msg_old[1])
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_3dImgwith_mask(self):
 #         return_old = oldfu.info(image=IMAGE_3D, mask=MASK_3DIMAGE, Comment="")
 #         return_new = fu.info(image=IMAGE_3D, mask=MASK_3DIMAGE, Comment="")
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_old, (24.25007438659668, 14.403861045837402, -10.731719017028809, 45.90932083129883, 76, 76, 76)))
-#
+# 
 #     def test_3dblankImg(self):
 #         return_old = oldfu.info(image=IMAGE_BLANK_3D, mask=None, Comment="")
 #         return_new = fu.info(image=IMAGE_BLANK_3D, mask=None, Comment="")
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_old, (0.0, 0.0, 0.0, 0.0, 10, 10, 10)))
-#
+# 
 #     def test_3dblankImgwith_mask(self):
 #         return_old = oldfu.info(image=IMAGE_BLANK_3D, mask=MASK_IMAGE_BLANK_3D, Comment="")
 #         return_new = fu.info(image=IMAGE_BLANK_3D, mask=MASK_IMAGE_BLANK_3D, Comment="")
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_old, (0.0, 0.0, 0.0, 0.0, 10, 10, 10)))
-#
+# 
 #     def test_3dImgBlankwith_wrongsize_mask_RuntimeError_ImageDimensionException(self):
 #         with self.assertRaises(RuntimeError) as cm_new:
 #             oldfu.info(image=IMAGE_BLANK_3D, mask=MASK, Comment="")
@@ -754,9 +754,9 @@
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[1], msg_old[1])
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
-#
+# 
+# 
+# 
 # class Test_model_square(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -765,13 +765,13 @@
 #             oldfu.model_square()
 #         self.assertEqual(str(cm_new.exception), "model_square() takes at least 3 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_model_square(self):
 #         return_old = oldfu.model_square(d=3, nx=100, ny=100, nz=1)
 #         return_new = fu.model_square(d=3, nx=100, ny=100, nz=1)
 #         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
-#
-#
+# 
+# 
 # #todo: need files
 # class Test_parse_spider_fname(unittest.TestCase):
 #     def test_wrong_number_params(self):
@@ -781,8 +781,8 @@
 #             oldfu.parse_spider_fname()
 #         self.assertEqual(str(cm_new.exception), "parse_spider_fname() takes exactly 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
+# 
+# 
 # #todo: it is not running because a --> UnboundLocalError: local variable 'image_mask_applied' referenced before assignment
 # class Test_reconstitute_mask(unittest.TestCase):
 #     def test_wrong_number_params(self):
@@ -792,15 +792,15 @@
 #             oldfu.reconstitute_mask()
 #         self.assertEqual(str(cm_new.exception), "reconstitute_mask() takes at least 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_reconstitute_mask(self):
 #         return_old = oldfu.reconstitute_mask(image_mask_applied_file=[],new_mask_file=3,save_file_on_disk=False,saved_file_name="image_in_reconstituted_mask.hdf")
 #         return_new = fu.reconstitute_mask(image_mask_applied_file=[],new_mask_file=3,save_file_on_disk=False,saved_file_name="image_in_reconstituted_mask.hdf")
 #         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
-#
-#
-#
-#
+# 
+# 
+# 
+# 
 # class Test_rotate_about_center(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -809,14 +809,14 @@
 #             oldfu.rotate_about_center()
 #         self.assertEqual(str(cm_new.exception), "rotate_about_center() takes exactly 3 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_rotate_about_center(self):
 #         return_old = oldfu.rotate_about_center(alpha=1, cx=2, cy=3)
 #         return_new = fu.rotate_about_center(alpha=1, cx=2, cy=3)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_old, (0.9999999465488011, -0.05205273628234863, 0.035361528396606445, 1.0)))
-#
-#
+# 
+# 
 # # not able to test it. why??
 # class Test_estimate_3D_center(unittest.TestCase):
 #     argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.rotate_3D_shift"))
@@ -830,14 +830,14 @@
 #             oldfu.estimate_3D_center()
 #         self.assertEqual(str(cm_new.exception), "estimate_3D_center() takes exactly 1 argument (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_estimate_3D_center(self):
 #         return_old = oldfu.estimate_3D_center(data=[self.data,"xform.projection"])
 #         return_new = fu.estimate_3D_center(data=[self.data,"xform.projection"])
 #         self.assertTrue(array_equal(return_new, return_old))
-#
-#
-#
+# 
+# 
+# 
 # class Test_sym_vol(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -846,7 +846,7 @@
 #             oldfu.sym_vol()
 #         self.assertEqual(str(cm_new.exception), "sym_vol() takes at least 1 argument (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_Empty_image(self):
 #         with self.assertRaises(RuntimeError)as cm_new:
 #             fu.sym_vol(image=EMData(),symmetry="c1")
@@ -858,7 +858,7 @@
 #         self.assertEqual(msg[3], 'x size <= 0')
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
-#
+# 
 #     def test_NoneType_as_img_returns_AttributeError_NoneType_obj_hasnot_attribute_copy(self):
 #         with self.assertRaises(AttributeError) as cm_new:
 #             fu.sym_vol(image=IMAGE_3D, symmetry="c1")
@@ -866,28 +866,28 @@
 #             oldfu.sym_vol(image=IMAGE_3D, symmetry="c1")
 #         self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'copy'")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_sym_vol_c1_3Dimg(self):
 #         return_old = oldfu.sym_vol(image=IMAGE_3D, symmetry="c1")
 #         return_new = fu.sym_vol(image=IMAGE_3D, symmetry="c1")
 #         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
-#
+# 
 #     def test_sym_vol_c1_2Dimg(self):
 #         return_old = oldfu.sym_vol(image=IMAGE_2D, symmetry="c1")
 #         return_new = fu.sym_vol(image=IMAGE_2D, symmetry="c1")
 #         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
-#
+# 
 #     def test_sym_vol_d1_3Dimg(self):
 #         return_old = oldfu.sym_vol(image=IMAGE_3D, symmetry="d1")
 #         return_new = fu.sym_vol(image=IMAGE_3D, symmetry="d1")
 #         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
-#
+# 
 #     def test_sym_vol_d1_2Dimg(self):
 #         return_old = oldfu.sym_vol(image=IMAGE_2D, symmetry="d1")
 #         return_new = fu.sym_vol(image=IMAGE_2D, symmetry="d1")
 #         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
-#
-#
+# 
+# 
 # #todo: node involved, i cannot test
 # class Test_gather_EMData(unittest.TestCase):
 #     def test_wrong_number_params(self):
@@ -897,14 +897,14 @@
 #             oldfu.gather_EMData()
 #         self.assertEqual(str(cm_new.exception), "gather_EMData() takes exactly 4 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_gather_EMData(self):
 #         return_old = oldfu.gather_EMData(data=[EMData(),EMData()], number_of_proc=2, myid=1, main_node=0)
 #         return_new = fu.gather_EMData(data=[EMData(),EMData()], number_of_proc=2, myid=1, main_node=0)
 #         for i,j in zip(return_new, return_old):
 #             self.assertTrue(array_equal(i, j))
-#
-#
+# 
+# 
 # class Test_set_seed(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -913,15 +913,15 @@
 #             oldfu.set_seed()
 #         self.assertEqual(str(cm_new.exception), "set_seed() takes exactly 1 argument (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_set_seed(self):
 #         return_old = oldfu.set_seed(sde=10)
 #         return_new = fu.set_seed(sde=10)
 #         self.assertIsNone(return_new)
 #         self.assertIsNone(return_old)
-#
-#
-#
+# 
+# 
+# 
 # class Test_check_attr(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -930,21 +930,21 @@
 #             oldfu.check_attr()
 #         self.assertEqual(str(cm_new.exception), "check_attr() takes at least 4 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_check_attr_returns_true(self):
 #         return_old = oldfu.check_attr(ima=IMAGE_2D, num=1, params="apix_x", default_value=2, action="Warning")
 #         return_new = fu.check_attr(ima=IMAGE_2D, num=1, params="apix_x", default_value=2, action="Warning")
 #         self.assertTrue(return_new)
 #         self.assertTrue(return_old)
-#
-#
+# 
+# 
 #     def test_check_attr_returns_false(self):
 #         return_old = oldfu.check_attr(ima=IMAGE_2D, num=1, params="para", default_value=2, action="Warning")
 #         return_new = fu.check_attr(ima=IMAGE_2D, num=1, params="para", default_value=2, action="Warning")
 #         self.assertFalse(return_new)
 #         self.assertFalse(return_old)
-#
-#
+# 
+# 
 # #todo: how tst it??
 # class Test_copy_attr(unittest.TestCase):
 #     def test_wrong_number_params(self):
@@ -954,12 +954,12 @@
 #             oldfu.copy_attr()
 #         self.assertEqual(str(cm_new.exception), "copy_attr() takes exactly 3 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_copy_attr(self):
 #         return_old = oldfu.copy_attr(pin=0, name=0, pot=0)
 #         return_new = fu.copy_attr(pin=0, name=0, pot=0)
-#
-#
+# 
+# 
 # #todo: how tst it??
 # class Test_set_ctf(unittest.TestCase):
 #     def test_wrong_number_params(self):
@@ -969,13 +969,13 @@
 #             oldfu.set_ctf()
 #         self.assertEqual(str(cm_new.exception), "set_ctf() takes exactly 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_set_ctf(self):
 #         return_old = oldfu.set_ctf(ima=IMAGE_2D, p=[0,1,1,1,1,1,1,1])
 #         return_new = fu.set_ctf(ima=IMAGE_2D, p=[0,1,1,1,1,1,1,1])
-#
-#
-#
+# 
+# 
+# 
 # class Test_parse_user_function(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -984,33 +984,33 @@
 #             oldfu.parse_user_function()
 #         self.assertEqual(str(cm_new.exception), "parse_user_function() takes exactly argument (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_not_str(self):
 #         return_old = oldfu.parse_user_function(opt_string=3)
 #         return_new = fu.parse_user_function(opt_string=3)
 #         self.assertIsNone(return_new)
 #         self.assertIsNone(return_old)
-#
+# 
 #     def test_not_valid_optstr(self):
 #         return_old = oldfu.parse_user_function(opt_string="invalid")
 #         return_new = fu.parse_user_function(opt_string="invalid")
 #         self.assertEqual(return_old,"invalid")
 #         self.assertEqual(return_new,return_old)
-#
+# 
 #     def test__2str_in_optstr(self):
 #         return_old = oldfu.parse_user_function(opt_string="[valid,valid2]")
 #         return_new = fu.parse_user_function(opt_string="[valid,valid2]")
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_old, ["valid","valid2"]))
-#
+# 
 #     def test__3str_in_optstr(self):
 #         return_old = oldfu.parse_user_function(opt_string="[valid,valid2,valid3]")
 #         return_new = fu.parse_user_function(opt_string="[valid,valid2,valid3]")
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_old, ['valid2', 'valid3', 'valid']))
-#
-#
-#
+# 
+# 
+# 
 # class Test_getang(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -1019,15 +1019,15 @@
 #             oldfu.getang()
 #         self.assertEqual(str(cm_new.exception), "getang() takes at least 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_getang(self):
 #         return_old = oldfu.getang(n=[0.1,0.13,0.15])
 #         return_new = fu.getang(n=[0.1,0.13,0.15])
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_old, [52.43140797117251, 81.37307344132137]))
-#
-#
-#
+# 
+# 
+# 
 # class Test_nearest_ang(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -1036,7 +1036,7 @@
 #             oldfu.nearest_ang()
 #         self.assertEqual(str(cm_new.exception), "nearest_ang() takes exactly 3 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_returns_IndexError_list_index_out_of_range(self):
 #         with self.assertRaises(IndexError) as cm_new:
 #             fu.nearest_ang(vecs=[], phi=3, tht=4)
@@ -1044,15 +1044,15 @@
 #             oldfu.nearest_ang(vecs=[], phi=3, tht=4)
 #         self.assertEqual(str(cm_new.exception), "tuple index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_nearest_ang(self):
 #         return_old = oldfu.nearest_ang(vecs=[1,2,3], phi=3, tht=4)
 #         return_new = fu.nearest_ang(vecs=[1,2,3], phi=3, tht=4)
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_old, 0)
-#
-#
-#
+# 
+# 
+# 
 # class Test_nearestk_projangles(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -1061,7 +1061,7 @@
 #             oldfu.nearestk_projangles()
 #         self.assertEqual(str(cm_new.exception), "nearestk_projangles() takes at least 1 argument (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_returns_IndexError_list_index_out_of_range(self):
 #         with self.assertRaises(IndexError) as cm_new:
 #             fu.nearestk_projangles(projangles=[], whichone=0, howmany=1, sym="c1")
@@ -1069,26 +1069,26 @@
 #             oldfu.nearestk_projangles(projangles=[], whichone=0, howmany=1, sym="c1")
 #         self.assertEqual(str(cm_new.exception), "tuple index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_nearestk_projangles_c1(self):
 #         return_old = oldfu.nearestk_projangles(projangles=[[1,2,3,4,5],[1,2,30,4,5],[11,2,3,4,5]], whichone=0, howmany=1, sym="c1")
 #         return_new = fu.nearestk_projangles(projangles=[[1,2,3,4,5],[1,2,30,4,5],[11,2,3,4,5]], whichone=0, howmany=1, sym="c1")
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_old, [1]))
-#
+# 
 #     def test_nearestk_projangles_d1(self):
 #         return_old = oldfu.nearestk_projangles(projangles=[[1,2,3,4,5],[1,2,30,4,5],[11,2,3,4,5]], whichone=0, howmany=1, sym="d1")
 #         return_new = fu.nearestk_projangles(projangles=[[1,2,3,4,5],[1,2,30,4,5],[11,2,3,4,5]], whichone=0, howmany=1, sym="d1")
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_old, [1]))
-#
+# 
 #     def test_nearestk_projangles_error_symmetry(self):
 #         return_old = oldfu.nearestk_projangles(projangles=[[1,2,3,4,5],[1,2,30,4,5],[11,2,3,4,5]], whichone=0, howmany=1, sym="invalid")
 #         return_new = fu.nearestk_projangles(projangles=[[1,2,3,4,5],[1,2,30,4,5],[11,2,3,4,5]], whichone=0, howmany=1, sym="invalid")
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_old, []))
-#
-#
+# 
+# 
 # #todo: i cannot test it
 # class Test_assign_projangles_slow(unittest.TestCase):
 #     def test_wrong_number_params(self):
@@ -1098,7 +1098,7 @@
 #             oldfu.assign_projangles_slow()
 #         self.assertEqual(str(cm_new.exception), "assign_projangles_slow() takes exactly 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_empty_projangles_returns_IndexError_list_index_out_of_range(self):
 #         with self.assertRaises(IndexError) as cm_new:
 #             fu.assign_projangles_slow(projangles=[], refangles=[1, 2, 3])
@@ -1106,7 +1106,7 @@
 #             oldfu.assign_projangles_slow(projangles=[], refangles=[1, 2, 3])
 #         self.assertEqual(str(cm_new.exception), "tuple index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_empty_refangles_returns_IndexError_list_index_out_of_range(self):
 #         with self.assertRaises(IndexError) as cm_new:
 #             fu.assign_projangles_slow(refangles=[], projangles=[1, 2, 3])
@@ -1114,13 +1114,13 @@
 #             oldfu.assign_projangles_slow(refangles=[], projangles=[1, 2, 3])
 #         self.assertEqual(str(cm_new.exception), "tuple index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_nearestk_projangles_error_symmetry(self):
 #         return_old = oldfu.assign_projangles_slow(projangles=[[1,2,3,4,5],[1,2,30,4,5],[11,2,3,4,5],[11,2,3,4,5]], refangles=[[1,2,3,4,5],[1,2,3,4,5],[1,2,3,4,5],[11,2,3,4,5]])
 #         return_new = fu.assign_projangles_slow(projangles=[[1,2,3,4,5],[1,2,30,4,5],[11,2,3,4,5],[11,2,3,4,5]], refangles=[[1,2,3,4,5],[1,2,3,4,5],[1,2,3,4,5],[11,2,3,4,5]])
 #         self.assertTrue(array_equal(return_new, return_old))
-#
-#
+# 
+# 
 # #todo: i cannot test it
 # class Test_nearest_full_k_projangles(unittest.TestCase):
 #     def test_wrong_number_params(self):
@@ -1130,7 +1130,7 @@
 #             oldfu.assign_projangles_slow()
 #         self.assertEqual(str(cm_new.exception), "assign_projangles_slow() takes at least 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_empty_projangles_returns_IndexError_list_index_out_of_range(self):
 #         with self.assertRaises(IndexError) as cm_new:
 #             fu.nearest_full_k_projangles(angles=[], reference_ang=[1, 2, 3], howmany=1, sym_class=None)
@@ -1138,7 +1138,7 @@
 #             oldfu.nearest_full_k_projangles(angles=[], reference_ang=[1, 2, 3], howmany=1, sym_class=None)
 #         self.assertEqual(str(cm_new.exception), "tuple index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_empty_refangles_returns_IndexError_list_index_out_of_range(self):
 #         with self.assertRaises(IndexError) as cm_new:
 #             fu.nearest_full_k_projangles(reference_ang=[], angles=[1, 2, 3], howmany=1, sym_class=None)
@@ -1146,20 +1146,20 @@
 #             oldfu.nearest_full_k_projangles(reference_ang=[], angles=[1, 2, 3], howmany=1, sym_class=None)
 #         self.assertEqual(str(cm_new.exception), "tuple index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
+# 
+# 
 #     def test_sym_notC1(self):
 #         return_old = oldfu.nearest_full_k_projangles(reference_ang=[1,3,5], angles=[1,3,2], howmany=1, sym_class=None)
 #         return_new = fu.nearest_full_k_projangles(reference_ang=[1,3,5], angles=[1,3,2], howmany=1, sym_class=None)
 #         self.assertTrue(array_equal(return_new, return_old))
-#
+# 
 #     def test_sym_C1(self):
 #         return_old = oldfu.nearest_full_k_projangles(reference_ang=[1,3,5], angles=[1,3,2], howmany=1, sym_class="c1")
 #         return_new = fu.nearest_full_k_projangles(reference_ang=[1,3,5], angles=[1,3,2], howmany=1, sym_class="c1")
 #         self.assertTrue(array_equal(return_new, return_old))
-#
-#
-#
+# 
+# 
+# 
 # class Test_nearestk_to_refdir(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -1168,7 +1168,7 @@
 #             oldfu.nearestk_to_refdir()
 #         self.assertEqual(str(cm_new.exception), "nearestk_to_refdir() takes at least 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_empty_refdir_returns_IndexError_list_index_out_of_range(self):
 #         with self.assertRaises(IndexError) as cm_new:
 #             fu.nearestk_to_refdir(refdir=[], refnormal=[1, 2, 3], howmany=1)
@@ -1176,7 +1176,7 @@
 #             oldfu.nearestk_to_refdir(refdir=[], refnormal=[1, 2, 3], howmany=1)
 #         self.assertEqual(str(cm_new.exception), "tuple index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_empty_refnormal_returns_IndexError_list_index_out_of_range(self):
 #         with self.assertRaises(IndexError) as cm_new:
 #             fu.nearestk_to_refdir(refnormal=[], refdir=[1, 2, 3], howmany=1)
@@ -1184,15 +1184,15 @@
 #             oldfu.nearestk_to_refdir(refnormal=[], refdir=[1, 2, 3], howmany=1)
 #         self.assertEqual(str(cm_new.exception), "tuple index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_nearestk_to_refdir(self):
 #         return_old = oldfu.nearestk_to_refdir(refnormal=[1,3,5], refdir=[1,3,2], howmany=1)
 #         return_new = fu.nearestk_to_refdir(refnormal=[1,3,5], refdir=[1,3,2], howmany=1)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal([0], return_old))
-#
-#
-#
+# 
+# 
+# 
 # class Test_nearestk_to_refdirs(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -1201,7 +1201,7 @@
 #             oldfu.nearestk_to_refdirs()
 #         self.assertEqual(str(cm_new.exception), "nearestk_to_refdir() takes at least 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_empty_refdir_returns_IndexError_list_index_out_of_range(self):
 #         with self.assertRaises(IndexError) as cm_new:
 #             fu.nearestk_to_refdirs(refdir=[], refnormal=[1, 2, 3], howmany=1)
@@ -1209,7 +1209,7 @@
 #             oldfu.nearestk_to_refdirs(refdir=[], refnormal=[1, 2, 3], howmany=1)
 #         self.assertEqual(str(cm_new.exception), "tuple index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_empty_refnormal_returns_IndexError_list_index_out_of_range(self):
 #         with self.assertRaises(IndexError) as cm_new:
 #             fu.nearestk_to_refdirs(refnormal=[], refdir=[1, 2, 3], howmany=1)
@@ -1217,14 +1217,14 @@
 #             oldfu.nearestk_to_refdirs(refnormal=[], refdir=[1, 2, 3], howmany=1)
 #         self.assertEqual(str(cm_new.exception), "tuple index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_nearestk_to_refdir(self):
 #         return_old = oldfu.nearestk_to_refdirs(refnormal=[1, 3, 5,1, 3, 5,1, 3, 5,1, 3, 5,1, 3, 5], refdir=[[1, 3, 2], [1, 3, 2]], howmany=1)
 #         return_new = fu.nearestk_to_refdirs(refnormal=[1, 3, 5,1, 3, 5,1, 3, 5,1, 3, 5,1, 3, 5], refdir=[[1, 3, 2], [1, 3, 2]], howmany=1)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_old, [[0], [1]]))
-#
-#
+# 
+# 
 # #todo: how can i test it?
 # class Test_assign_projangles_f(unittest.TestCase):
 #     def test_wrong_number_params(self):
@@ -1234,7 +1234,7 @@
 #             oldfu.assign_projangles_f()
 #         self.assertEqual(str(cm_new.exception), "assign_projangles_f() takes at least 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_empty_refangles_returns_IndexError_list_index_out_of_range(self):
 #         with self.assertRaises(IndexError) as cm_new:
 #             fu.assign_projangles_f(refangles=[], projangles=[1, 2, 3], return_asg=False)
@@ -1242,7 +1242,7 @@
 #             oldfu.assign_projangles_f(refangles=[], projangles=[1, 2, 3], return_asg=False)
 #         self.assertEqual(str(cm_new.exception), "tuple index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_empty_projangles_returns_IndexError_list_index_out_of_range(self):
 #         with self.assertRaises(IndexError) as cm_new:
 #             fu.assign_projangles_f(projangles=[], refangles=[1, 2, 3], return_asg=False)
@@ -1250,18 +1250,18 @@
 #             oldfu.assign_projangles_f(projangles=[], refangles=[1, 2, 3], return_asg=False)
 #         self.assertEqual(str(cm_new.exception), "tuple index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_assign_projangles_f_notreturnASG(self):
 #         return_old = oldfu.assign_projangles_f(projangles=[1, 2, 3], refangles=[1, 2, 2], return_asg=False)
 #         return_new = fu.assign_projangles_f(projangles=[1, 2, 3], refangles=[1, 2, 2], return_asg=False)
 #         self.assertTrue(array_equal(return_new, return_old))
-#
+# 
 #     def test_assign_projangles_f_returnASG(self):
 #         return_old = oldfu.assign_projangles_f(projangles=[1, 2, 3], refangles=[1, 2, 2], return_asg=True)
 #         return_new = fu.assign_projangles_f(projangles=[1, 2, 3], refangles=[1, 2, 2], return_asg=True)
 #         self.assertTrue(array_equal(return_new, return_old))
-#
-#
+# 
+# 
 # class Test_cone_ang(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -1270,7 +1270,7 @@
 #             oldfu.cone_ang()
 #         self.assertEqual(str(cm_new.exception), "cone_ang() takes at least 4 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_empty_projangles_returns_IndexError_list_index_out_of_range(self):
 #         with self.assertRaises(IndexError) as cm_new:
 #             fu.cone_ang(projangles=[], phi = 1, tht=2 , ant=3, symmetry="c1")
@@ -1278,27 +1278,27 @@
 #             oldfu.cone_ang(projangles=[], phi = 1, tht=2 , ant=3, symmetry="c1")
 #         self.assertEqual(str(cm_new.exception), "tuple index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_sym_c1(self):
 #         return_old = oldfu.cone_ang(projangles=[[1,2,3,4],[21,22,23,24],[11,12,13,14]], phi = 1, tht=2 , ant=3, symmetry="c1")
 #         return_new = fu.cone_ang(projangles=[[1,2,3,4],[21,22,23,24],[11,12,13,14]], phi = 1, tht=2 , ant=3, symmetry="c1")
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_old, [[1, 2, 3, 4]]))
-#
+# 
 #     def test_sym_c2(self):
 #         return_old = oldfu.cone_ang(projangles=[[1,2,3,4],[21,22,23,24],[11,12,13,14]], phi = 1, tht=2 , ant=3, symmetry="c2")
 #         return_new = fu.cone_ang(projangles=[[1,2,3,4],[21,22,23,24],[11,12,13,14]], phi = 1, tht=2 , ant=3, symmetry="c2")
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_old, [[1, 2, 3, 4]]))
-#
+# 
 #     def test_sym_d2(self):
 #         return_old = oldfu.cone_ang(projangles=[[1, 2, 3, 4], [21, 22, 23, 24], [11, 12, 13, 14]], phi=1, tht=2, ant=3,symmetry="d2")
 #         return_new = fu.cone_ang(projangles=[[1, 2, 3, 4], [21, 22, 23, 24], [11, 12, 13, 14]], phi=1, tht=2, ant=3,symmetry="d2")
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_old, [[1, 2, 3, 4]]))
-#
-#
-#
+# 
+# 
+# 
 # class Test_cone_ang_f(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -1307,7 +1307,7 @@
 #             oldfu.cone_ang_f()
 #         self.assertEqual(str(cm_new.exception), "cone_ang_f() takes at least 4 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_empty_projangles_returns_IndexError_list_index_out_of_range(self):
 #         with self.assertRaises(IndexError) as cm_new:
 #             fu.cone_ang_f(projangles=[], phi = 1, tht=2 , ant=3, symmetry="c1")
@@ -1315,27 +1315,27 @@
 #             oldfu.cone_ang_f(projangles=[], phi = 1, tht=2 , ant=3, symmetry="c1")
 #         self.assertEqual(str(cm_new.exception), "tuple index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_sym_c1(self):
 #         return_old = oldfu.cone_ang_f(projangles=[[1,2,3,4],[21,22,23,24],[11,12,13,14]], phi = 1, tht=2 , ant=3, symmetry="c1")
 #         return_new = fu.cone_ang_f(projangles=[[1,2,3,4],[21,22,23,24],[11,12,13,14]], phi = 1, tht=2 , ant=3, symmetry="c1")
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_old, [[1, 2, 3, 4]]))
-#
+# 
 #     def test_sym_c(self):
 #         return_old = oldfu.cone_ang_f(projangles=[[1,2,3,4],[21,22,23,24],[11,12,13,14]], phi = 1, tht=2 , ant=3, symmetry="c2")
 #         return_new = fu.cone_ang_f(projangles=[[1,2,3,4],[21,22,23,24],[11,12,13,14]], phi = 1, tht=2 , ant=3, symmetry="c2")
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_old, [[1, 2, 3, 4]]))
-#
+# 
 #     def test_sym_d(self):
 #         return_old = oldfu.cone_ang_f(projangles=[[1, 2, 3, 4], [21, 22, 23, 24], [11, 12, 13, 14]], phi=1, tht=2, ant=3,symmetry="d2")
 #         return_new = fu.cone_ang_f(projangles=[[1, 2, 3, 4], [21, 22, 23, 24], [11, 12, 13, 14]], phi=1, tht=2, ant=3,symmetry="d2")
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_old, [[1, 2, 3, 4]]))
-#
-#
-#
+# 
+# 
+# 
 # class Test_cone_ang_with_index(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -1344,7 +1344,7 @@
 #             oldfu.cone_ang_with_index()
 #         self.assertEqual(str(cm_new.exception), "cone_ang_with_index() takes exactly 4 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_empty_projangles_returns_IndexError_list_index_out_of_range(self):
 #         with self.assertRaises(IndexError) as cm_new:
 #             fu.cone_ang_with_index(projangles=[], phi = 1, tht=2 , ant=3)
@@ -1352,7 +1352,7 @@
 #             oldfu.cone_ang_with_index(projangles=[], phi = 1, tht=2 , ant=3)
 #         self.assertEqual(str(cm_new.exception), "tuple index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_sym_c1(self):
 #         return_old = oldfu.cone_ang_with_index(projangles=[[1,2,3,4],[21,22,23,24],[11,12,13,14]], phi = 1, tht=2 , ant=3)
 #         return_new = fu.cone_ang_with_index(projangles=[[1,2,3,4],[21,22,23,24],[11,12,13,14]], phi = 1, tht=2 , ant=3)
@@ -1360,14 +1360,14 @@
 #         self.assertEqual(return_new[1], return_old[1])
 #         self.assertTrue(array_equal(return_old[0], [[1, 2, 3, 4, 0]]))
 #         self.assertEqual(return_old[1], 1)
-#
-#
-#
+# 
+# 
+# 
 # class Test_angles_between_anglesets(unittest.TestCase):
 #     agls1 =  [[0.0, 0.0, 1.0], [0.6804220676422119, 0.6526213884353638, 0.3333333432674408], [-0.4104178845882416, 0.8487909436225891, 0.3333333432674408], [-0.9340742230415344, -0.12803982198238373, 0.3333333432674408], [-0.16687190532684326, -0.927923858165741, 0.3333333432674408], [0.8309417366981506, -0.4454488158226013, 0.3333333432674408], [8.742277657347586e-08, 7.64274186065882e-15, -1.0], [0.9340742230415344, 0.12803970277309418, -0.3333333134651184], [0.16687177121639252, 0.927923858165741, -0.3333333134651184], [-0.8309418559074402, 0.44544869661331177, -0.3333333134651184], [-0.6804221272468567, -0.652621328830719, -0.3333333134651184], [0.41041797399520874, -0.8487908840179443, -0.3333333134651184]]
 #     agls2 = [[0.0, 0.0, 0.66], [0.44907856464385987, 0.4307301163673401, 0.22000000655651095], [-0.27087580382823945, 0.5602020227909088, 0.22000000655651095], [-0.6164889872074127, -0.08450628250837326, 0.22000000655651095], [-0.11013545751571656, -0.6124297463893891, 0.22000000655651095], [0.5484215462207794, -0.2939962184429169, 0.22000000655651095], [5.7699032538494066e-08, 5.044209628034821e-15, -0.66], [0.6164889872074127, 0.08450620383024215, -0.21999998688697817], [0.11013536900281906, 0.6124297463893891, -0.21999998688697817], [-0.5484216248989106, 0.2939961397647858, -0.21999998688697817], [-0.44907860398292543, -0.43073007702827454, -0.21999998688697817], [0.2708758628368378, -0.5602019834518432, -0.21999998688697817]]
-#
-#
+# 
+# 
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.angles_between_anglesets()
@@ -1375,7 +1375,7 @@
 #             oldfu.angles_between_anglesets()
 #         self.assertEqual(str(cm_new.exception), "angles_between_anglesets() takes at least 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_empty_angleset1_returns_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.angles_between_anglesets(angleset1=[], angleset2=[1,2,3,4], indexes=None)
@@ -1383,7 +1383,7 @@
 #             oldfu.angles_between_anglesets(angleset1=[], angleset2=[1,2,3,4], indexes=None)
 #         self.assertEqual(str(cm_new.exception), "object has no attribute")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_empty_angleset2_returns_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.angles_between_anglesets(angleset2=[], angleset1=[1,2,3,4], indexes=None)
@@ -1391,7 +1391,7 @@
 #             oldfu.angles_between_anglesets(angleset2=[], angleset1=[1,2,3,4], indexes=None)
 #         self.assertEqual(str(cm_new.exception), "object has no attribute")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_empty_indexes_returns_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.angles_between_anglesets(angleset2=[1,2,3,4], angleset1=[1,2,3,4], indexes=[])
@@ -1399,20 +1399,20 @@
 #             oldfu.angles_between_anglesets(angleset2=[1,2,3,4], angleset1=[1,2,3,4], indexes=[])
 #         self.assertEqual(str(cm_new.exception), "object has no attribute")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_angles_between_anglesets_noIndex(self):
 #         return_old = oldfu.angles_between_anglesets(angleset1=self.agls1, angleset2=self.agls2, indexes=None)
 #         return_new = fu.angles_between_anglesets(angleset1=self.agls1, angleset2=self.agls2, indexes=None)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_old, [0.0, 0.22190159831597722, 0.28859380708484916, 0.04353735746084626, 0.3154949948578467, 0.15146310888536912, 0.0, 0.04353731692694007, 0.31549499485669147, 0.15146306834889342, 0.22190157805124192, 0.28859378682155445]))
-#
+# 
 #     def test_angles_between_anglesets_Index(self):
 #         return_old = oldfu.angles_between_anglesets(angleset1=[1,2,3,4], angleset2=[1,2,3,4], indexes=[1,2,3,4])
 #         return_new = fu.angles_between_anglesets(angleset1=[1,2,3,4], angleset2=[1,2,3,4], indexes=[1,2,3,4])
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_old, [0.18403868911316032, 0.2507530674355067, 0.08137682850104319, 0.35334686263089815]))
-#
-#
+# 
+# 
 # #todo: i cannot test it
 # class Test_group_proj_by_phitheta_slow(unittest.TestCase):
 #     proj_angles_list = numpy_full((900, 4), 0.0, dtype=numpy_float32)
@@ -1423,25 +1423,25 @@
 #             oldfu.group_proj_by_phitheta_slow()
 #         self.assertEqual(str(cm_new.exception), "group_proj_by_phitheta_slow() takes at least 1 argument (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_sym_c1(self):
 #         return_old = oldfu.group_proj_by_phitheta_slow(proj_ang=self.proj_angles_list, symmetry="c1", img_per_grp=100, verbose=False)
 #         return_new = fu.group_proj_by_phitheta_slow(proj_ang=self.proj_angles_list, symmetry="c1", img_per_grp=100, verbose=False)
 #         self.assertTrue(array_equal(return_new[0], return_old[0]))
 #         self.assertTrue(array_equal(return_new[1], return_old[1]))
-#
+# 
 #     def test_sym_d1(self):
 #         return_old = oldfu.group_proj_by_phitheta_slow(proj_ang=self.proj_angles_list, symmetry="d1", img_per_grp=100, verbose=False)
 #         return_new = fu.group_proj_by_phitheta_slow(proj_ang=self.proj_angles_list, symmetry="d1", img_per_grp=100, verbose=False)
 #         self.assertTrue(array_equal(return_new[0], return_old[0]))
 #         self.assertTrue(array_equal(return_new[1], return_old[1]))
-#
-#
-#
+# 
+# 
+# 
 # class Test_class_iterImagesStack(unittest.TestCase):
 #     pass
-#
-#
+# 
+# 
 # #todo: i cannot test it
 # class Test_group_proj_by_phitheta(unittest.TestCase):
 #     proj_angles_list = numpy_full((900, 4), 0.0, dtype=numpy_float32)
@@ -1452,20 +1452,20 @@
 #             oldfu.group_proj_by_phitheta()
 #         self.assertEqual(str(cm_new.exception), "group_proj_by_phitheta() takes at least 1 argument (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_sym_c1(self):
 #         return_old = oldfu.group_proj_by_phitheta(proj_ang=self.proj_angles_list, symmetry="c1", img_per_grp=100, verbose=False)
 #         return_new = fu.group_proj_by_phitheta(proj_ang=self.proj_angles_list, symmetry="c1", img_per_grp=100, verbose=False)
 #         self.assertTrue(array_equal(return_new[0], return_old[0]))
 #         self.assertTrue(array_equal(return_new[1], return_old[1]))
-#
+# 
 #     def test_sym_d1(self):
 #         return_old = oldfu.group_proj_by_phitheta(proj_ang=self.proj_angles_list, symmetry="d1", img_per_grp=100, verbose=False)
 #         return_new = fu.group_proj_by_phitheta(proj_ang=self.proj_angles_list, symmetry="d1", img_per_grp=100, verbose=False)
 #         self.assertTrue(array_equal(return_new[0], return_old[0]))
 #         self.assertTrue(array_equal(return_new[1], return_old[1]))
-#
-#
+# 
+# 
 # class Test_mulvec(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -1474,7 +1474,7 @@
 #             oldfu.mulvec()
 #         self.assertEqual(str(cm_new.exception), "mulvec() takes exactly arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_empty_v1_returns_IndexError_list_index_out_of_range(self):
 #         with self.assertRaises(IndexError) as cm_new:
 #             fu.mulvec(v1=[], v2=[1, 2, 3])
@@ -1482,7 +1482,7 @@
 #                 oldfu.mulvec(v1=[], v2=[1, 2, 3])
 #         self.assertEqual(str(cm_new.exception), "list index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_empty_v2_returns_IndexError_list_index_out_of_range(self):
 #         with self.assertRaises(IndexError) as cm_new:
 #             fu.mulvec(v2=[], v1=[1, 2, 3])
@@ -1490,15 +1490,15 @@
 #             oldfu.mulvec(v2=[], v1=[1, 2, 3])
 #         self.assertEqual(str(cm_new.exception), "list index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_mulvec(self):
 #         return_old = oldfu.mulvec(v1=[0.1,0.13,0.15],v2=[0.1,0.13,0.15])
 #         return_new = fu.mulvec(v1=[0.1,0.13,0.15],v2=[0.1,0.13,0.15])
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_old, 0.0494)
-#
-#
-#
+# 
+# 
+# 
 # class Test_assignments_to_groups(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -1507,21 +1507,21 @@
 #             oldfu.assignments_to_groups()
 #         self.assertEqual(str(cm_new.exception), "assignments_to_groups() takes at least 1 argument (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_valid_n(self):
 #         return_old = oldfu.assignments_to_groups(assignments=[1,2,3,4,5,6,7,8,9,], n=20)
 #         return_new = fu.assignments_to_groups(assignments=[1,2,3,4,5,6,7,8,9,], n=20)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_old, [[], [0], [1], [2], [3], [4], [5], [6], [7], [8], [], [], [], [], [], [], [], [], [], [], []]))
-#
+# 
 #     def test_default_n(self):
 #         return_old = oldfu.assignments_to_groups(assignments=[1,2,3,4,5,6,7,8,9,], n=-1)
 #         return_new = fu.assignments_to_groups(assignments=[1,2,3,4,5,6,7,8,9,], n=-1)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_old,[[], [0], [1], [2], [3], [4], [5], [6], [7], [8]]))
-#
-#
-#
+# 
+# 
+# 
 # class Test_groups_assignments(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -1530,21 +1530,21 @@
 #             oldfu.groups_assignments()
 #         self.assertEqual(str(cm_new.exception), "groups_assignments() takes at least 1 argument (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_default_n(self):
 #         return_old = oldfu.groups_assignments(groups=[ [0], [1], [2], [3], [4], [5], [6], [7], [8]], n=-1)
 #         return_new = fu.groups_assignments(groups=[ [0], [1], [2], [3], [4], [5], [6], [7], [8]], n=-1)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_old, [0, 1, 2, 3, 4, 5, 6, 7, 8]))
-#
+# 
 #     def test_n(self):
 #         return_old = oldfu.groups_assignments(groups=[[0], [1], [2], [3], [4], [5], [6], [7], [8]], n=13)
 #         return_new = fu.groups_assignments(groups=[[0], [1], [2], [3], [4], [5], [6], [7], [8]], n=-13)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_old, [0, 1, 2, 3, 4, 5, 6, 7, 8, -1, -1, -1, -1, -1]))
-#
-#
-#
+# 
+# 
+# 
 # class Test_chunks_distribution(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -1553,7 +1553,7 @@
 #             oldfu.chunks_distribution()
 #         self.assertEqual(str(cm_new.exception), "chunks_distribution() takes exactly 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_empty_chunks_returns_IndexError_list_index_out_of_range(self):
 #         with self.assertRaises(IndexError) as cm_new:
 #             fu.chunks_distribution(chunks=[], procs=[1, 2, 3])
@@ -1561,7 +1561,7 @@
 #                 oldfu.chunks_distribution(chunks=[], procs=[1, 2, 3])
 #         self.assertEqual(str(cm_new.exception), "list index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_empty_chunks0_returns_IndexError_list_index_out_of_range(self):
 #         with self.assertRaises(IndexError) as cm_new:
 #             fu.chunks_distribution(chunks=[[],[1,2,3]], procs=[1, 2, 3])
@@ -1569,7 +1569,7 @@
 #                 oldfu.chunks_distribution(chunks=[[],[1,2,3]], procs=[1, 2, 3])
 #         self.assertEqual(str(cm_new.exception), "list index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_empty_procs_returns_IndexError_list_index_out_of_range(self):
 #         with self.assertRaises(IndexError) as cm_new:
 #             fu.chunks_distribution(procs=[], chunks=[1, 2, 3])
@@ -1577,15 +1577,15 @@
 #             oldfu.chunks_distribution(procs=[], chunks=[1, 2, 3])
 #         self.assertEqual(str(cm_new.exception), "list index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_chunks_distribution(self):
 #         return_old = oldfu.chunks_distribution(chunks=[[1,2,3],[1,2,3]],procs=5)
 #         return_new = fu.chunks_distribution(chunks=[[1,2,3],[1,2,3]],procs=5)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_old, [[[1, 2, 3]], [[1, 2, 3]], [], [], []]))
-#
-#
-#
+# 
+# 
+# 
 # class Test_rearrange_ranks_of_processors(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -1594,21 +1594,21 @@
 #             oldfu.rearrange_ranks_of_processors()
 #         self.assertEqual(str(cm_new.exception), "rearrange_ranks_of_processors() takes exactly 1 argument (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_rearrange_ranks_of_processors_rrAssignment(self):
 #         return_old = oldfu.rearrange_ranks_of_processors(mode="to fit round-robin assignment")
 #         return_new = fu.rearrange_ranks_of_processors(mode="")
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_old, 139702819159776)
-#
+# 
 #     def test_rearrange_ranks_of_processors_NodeAssignment(self):
 #         return_old = oldfu.rearrange_ranks_of_processors(mode="to fit by-node assignment")
 #         return_new = fu.rearrange_ranks_of_processors(mode="")
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_old, 140095636451040)
-#
-#
-#
+# 
+# 
+# 
 # # todo: node involved, i cannot test
 # class Test_wrap_mpi_split_shared_memory(unittest.TestCase):
 #     def test_wrong_number_params(self):
@@ -1618,18 +1618,18 @@
 #             oldfu.wrap_mpi_split_shared_memory()
 #         self.assertEqual(str(cm_new.exception), "wrap_mpi_split_shared_memory() takes exactly 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_wrap_mpi_split_shared_memory(self):
 #         return_old = oldfu.wrap_mpi_split_shared_memory(mpi_comm=MPI_COMM_WORLD)
 #         return_new = fu.wrap_mpi_split_shared_memory(mpi_comm="")
 #         self.assertTrue(array_equal(return_new, return_old))
-#
-#
+# 
+# 
 # #it is genereting a random string, it is not unit-testable
 # class Test_random_string(unittest.TestCase):
 #     pass
-#
-#
+# 
+# 
 # #todo: how test it?
 # class Test_get_nonexistent_directory_increment_value(unittest.TestCase):
 #     def test_wrong_number_params(self):
@@ -1639,13 +1639,13 @@
 #             oldfu.get_nonexistent_directory_increment_value()
 #         self.assertEqual(str(cm_new.exception), "get_nonexistent_directory_increment_value() takes at least 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_get_nonexistent_directory_increment_value(self):
 #         return_old = oldfu.get_nonexistent_directory_increment_value(directory_location="", directory_name="", start_value=1, myformat="%03d")
 #         return_new = fu.get_nonexistent_directory_increment_value(directory_location="", directory_name="", start_value=1, myformat="%03d")
 #         self.assertTrue(array_equal(return_new, return_old))
-#
-#
+# 
+# 
 # #todo: need a file
 # class Test_store_program_state(unittest.TestCase):
 #     def test_wrong_number_params(self):
@@ -1655,13 +1655,13 @@
 #             oldfu.store_program_state()
 #         self.assertEqual(str(cm_new.exception), "store_program_state() takes exactly 3 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_store_program_state(self):
 #         return_old = oldfu.store_program_state(filename="", state="", stack="")
 #         return_new = fu.store_program_state(filename="", state="", stack="")
 #         self.assertTrue(array_equal(return_new, return_old))
-#
-#
+# 
+# 
 # #todo: need a file
 # class Test_restore_program_stack_and_state(unittest.TestCase):
 #     def test_wrong_number_params(self):
@@ -1671,13 +1671,13 @@
 #             oldfu.restore_program_stack_and_state()
 #         self.assertEqual(str(cm_new.exception), "restore_program_stack_and_state() takes exactly 1 argument (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_restore_program_stack_and_state(self):
 #         return_old = oldfu.restore_program_stack_and_state(file_name_of_saved_state="")
 #         return_new = fu.restore_program_stack_and_state(file_name_of_saved_state="")
 #         self.assertTrue(array_equal(return_new, return_old))
-#
-#
+# 
+# 
 # #todo need data
 # class Test_program_state_stack(unittest.TestCase):
 #     def test_wrong_number_params(self):
@@ -1687,14 +1687,14 @@
 #             oldfu.program_state_stack()
 #         self.assertEqual(str(cm_new.exception), "program_state_stack() takes at least 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_program_state_stack(self):
 #         return_old = oldfu.program_state_stack(full_current_state="",frameinfo="",file_name_of_saved_state=None,last_call="",force_starting_execution=False)
 #         return_new = fu.program_state_stack(full_current_state="",frameinfo="",file_name_of_saved_state=None,last_call="",force_starting_execution=False)
 #         self.assertTrue(array_equal(return_new, return_old))
-#
-#
-#
+# 
+# 
+# 
 # class Test_qw(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -1703,17 +1703,17 @@
 #             oldfu.qw()
 #         self.assertEqual(str(cm_new.exception), "qw() takes exactly 1 argument (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_qw(self):
 #         return_old = oldfu.qw(s="ciao\nciao\t")
 #         return_new = fu.qw(s="ciao\nciao\t")
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(['ciao', 'ciao'], return_old))
-#
-#
-#
+# 
+# 
+# 
 # class Test_list_prod(unittest.TestCase):
-#
+# 
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.list_prod()
@@ -1721,15 +1721,15 @@
 #             oldfu.list_prod()
 #         self.assertEqual(str(cm_new.exception), "list_prod() takes exactly 1 argument1 (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_list_prod(self):
 #         return_old = oldfu.list_prod(list_whose_elements_are_going_to_be_multiplied=[1,2,3,4])
 #         return_new = fu.list_prod(list_whose_elements_are_going_to_be_multiplied=[1,2,3,4])
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(24, return_old)
-#
-#
-#
+# 
+# 
+# 
 # class Test_calculate_space_size(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -1738,23 +1738,23 @@
 #             oldfu.calculate_space_size()
 #         self.assertEqual(str(cm_new.exception), "calculate_space_size() takes exactly 3 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_calculate_space_size(self):
 #         return_old = oldfu.calculate_space_size(x_half_size=3, y_half_size=2, psi_half_size=5)
 #         return_new = fu.calculate_space_size(x_half_size=3, y_half_size=2, psi_half_size=5)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal([7, 5, 11], return_old))
-#
-#
-#
+# 
+# 
+# 
 # #cannot test it, mpi stuff are involved
 # class Test_mpi_exit(unittest.TestCase):
 #     def test_mpi_exit(self):
 #         return_old = oldfu.mpi_exit()
 #         return_new = fu.mpi_exit()
-#
-#
-#
+# 
+# 
+# 
 # class Test_get_attr_stack(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -1763,7 +1763,7 @@
 #             oldfu.get_attr_stack()
 #         self.assertEqual(str(cm_new.exception), "get_attr_stack() takes exactly 1 argument (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_attribute_no_found_runTimeError(self):
 #         with self.assertRaises(RuntimeError) as cm_new:
 #             fu.get_attr_stack(data_stack=[IMAGE_2D,IMAGE_2D], attr_string="notfound")
@@ -1776,14 +1776,14 @@
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_get_attr_stack(self):
 #         return_old = oldfu.get_attr_stack(data_stack=[IMAGE_2D,IMAGE_2D], attr_string="apix_x")
 #         return_new = fu.get_attr_stack(data_stack=[IMAGE_2D,IMAGE_2D], attr_string="")
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal([1.0, 1.0], return_old))
-#
-#
+# 
+# 
 # #todo: need a stack with  'group' key -->  error with 'group': 'The requested key does not exist' caught
 # class Test_get_sorting_params(unittest.TestCase):
 #     def test_wrong_number_params(self):
@@ -1793,7 +1793,7 @@
 #             oldfu.get_sorting_params()
 #         self.assertEqual(str(cm_new.exception), "get_sorting_params() takes at least 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_get_sorting_params(self):
 #         Tracker = deepcopy(TRACKER)
 #         Tracker["constants"]["myid"] = 0
@@ -1803,9 +1803,9 @@
 #         return_old =oldfu.get_sorting_params(Tracker=TRACKER, data=[IMAGE_2D,IMAGE_2D])
 #         return_new = fu.get_sorting_params(Tracker=TRACKER, data=[IMAGE_2D,IMAGE_2D])
 #         self.assertTrue(array_equal(return_new, return_old))
-#
-#
-#
+# 
+# 
+# 
 # class Test_remove_small_groups(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -1814,21 +1814,21 @@
 #             oldfu.remove_small_groups()
 #         self.assertEqual(str(cm_new.exception), "remove_small_groups() takes at least 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_empty_class_list(self):
 #         return_old = oldfu.remove_small_groups(class_list=[], minimum_number_of_objects_in_a_group=4)
 #         return_new = fu.remove_small_groups(class_list=[], minimum_number_of_objects_in_a_group=4)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal([[], []], return_old))
-#
+# 
 #     def test_remove_small_groups(self):
 #         return_old = oldfu.remove_small_groups(class_list=[[1,2,3,4,5],[1,20,40,50]], minimum_number_of_objects_in_a_group=4)
 #         return_new = fu.remove_small_groups(class_list=[[1,2,3,4,5],[1,20,40,50]], minimum_number_of_objects_in_a_group=4)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal([[1, 1, 2, 3, 4, 5, 20, 40, 50], [[1, 2, 3, 4, 5], [1, 20, 40, 50]]], return_old))
-#
-#
-#
+# 
+# 
+# 
 # class Test_get_outliers(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -1837,7 +1837,7 @@
 #             oldfu.get_outliers()
 #         self.assertEqual(str(cm_new.exception), "get_outliers() takes at least 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_too_few_total_number_return_KeyError(self):
 #         with self.assertRaises(KeyError) as cm_new:
 #             fu.oldfu.get_outliers(total_number=5, plist=range(20))
@@ -1845,14 +1845,14 @@
 #             oldfu.get_outliers(total_number=5, plist=range(20))
 #         self.assertEqual(str(cm_new.exception), "5")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_get_outliers(self):
 #         return_old = oldfu.get_outliers(total_number=50, plist=range(20))
 #         return_new = fu.get_outliers(total_number=50, plist=range(20))
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal([20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49], return_old))
-#
-#
+# 
+# 
 # ##todo: need a stack with  Tracker["P_chunk0"] .... which attribute can have it?
 # class Test_get_margin_of_error(unittest.TestCase):
 #     def test_wrong_number_params(self):
@@ -1862,13 +1862,13 @@
 #             oldfu.get_margin_of_error()
 #         self.assertEqual(str(cm_new.exception), "get_margin_of_error() takes at least 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_get_margin_of_error(self):
 #         return_old = oldfu.get_margin_of_error(this_group_of_data="", Tracker="")
 #         return_new = fu.get_margin_of_error(this_group_of_data="", Tracker="")
 #         self.assertTrue(array_equal(return_new, return_old))
-#
-#
+# 
+# 
 # #todo need a test file
 # class Test_get_ali3d_params(unittest.TestCase):
 #     def test_wrong_number_params(self):
@@ -1878,14 +1878,14 @@
 #             oldfu.get_ali3d_params()
 #         self.assertEqual(str(cm_new.exception), "get_ali3d_params() takes at least 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_get_ali3d_params(self):
 #         return_old = oldfu.get_ali3d_params(ali3d_old_text_file="", shuffled_list="")
 #         return_new = fu.get_ali3d_params(ali3d_old_text_file="", shuffled_list="")
 #         self.assertTrue(array_equal(return_new, return_old))
-#
-#
-#
+# 
+# 
+# 
 # class Test_get_number_of_groups(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -1894,15 +1894,15 @@
 #             oldfu.get_number_of_groups()
 #         self.assertEqual(str(cm_new.exception), "get_number_of_groups() takes at least 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_get_number_of_groups(self):
 #         return_old = oldfu.get_number_of_groups(total_particles=1000, number_of_images_per_group=20)
 #         return_new = fu.get_number_of_groups(total_particles=1000, number_of_images_per_group=20)
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(50, return_old)
-#
-#
-#
+# 
+# 
+# 
 # class Test_get_complementary_elements_total(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -1911,20 +1911,20 @@
 #             oldfu.get_complementary_elements_total()
 #         self.assertEqual(str(cm_new.exception), "get_complementary_elements_total() takes exactly 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_get_complementary_elements_total(self):
 #         return_old = oldfu.get_complementary_elements_total(total_stack=10, data_list=[1,8,3,4,5])
 #         return_new = fu.get_complementary_elements_total(total_stack=10, data_list=[1,8,3,4,5])
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal([0, 2, 6, 7, 9], return_old))
-#
+# 
 #     def test_empty_list(self):
 #         return_old = oldfu.get_complementary_elements_total(total_stack=10, data_list=[])
 #         return_new = fu.get_complementary_elements_total(total_stack=10, data_list=[])
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], return_old))
-#
-#
+# 
+# 
 # #todo: need a tracker with valid values in Tracker["orgstack"]
 # class Test_get_two_chunks_from_stack(unittest.TestCase):
 #     def test_wrong_number_params(self):
@@ -1934,13 +1934,13 @@
 #             oldfu.get_two_chunks_from_stack()
 #         self.assertEqual(str(cm_new.exception), "get_two_chunks_from_stack() takes exactly 1 argument (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_get_two_chunks_from_stack(self):
 #         return_old = oldfu.get_two_chunks_from_stack(Tracker="")
 #         return_new = fu.get_two_chunks_from_stack(Tracker='')
 #         self.assertTrue(array_equal(return_new, return_old))
-#
-#
+# 
+# 
 # #todo: cannot test it becasue NameError: global name 'adjust_fsc_down' is not defined
 # class Test_set_filter_parameters_from_adjusted_fsc(unittest.TestCase):
 #     def test_wrong_number_params(self):
@@ -1950,13 +1950,13 @@
 #             oldfu.set_filter_parameters_from_adjusted_fsc()
 #         self.assertEqual(str(cm_new.exception), "set_filter_parameters_from_adjusted_fsc() takes exactly 3 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_set_filter_parameters_from_adjusted_fsc(self):
 #         return_old = oldfu.set_filter_parameters_from_adjusted_fsc(n1="", n2="", Tracker="")
 #         return_new = fu.set_filter_parameters_from_adjusted_fsc(n1="", n2="", Tracker="")
 #         self.assertTrue(array_equal(return_new, return_old))
-#
-#
+# 
+# 
 # #todo: need a valid directory
 # class Test_get_class_members(unittest.TestCase):
 #     def test_wrong_number_params(self):
@@ -1966,20 +1966,20 @@
 #             oldfu.get_class_members()
 #         self.assertEqual(str(cm_new.exception), "get_class_members() takes exactly 1 argument (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_get_class_members(self):
 #         return_old = oldfu.get_class_members(sort3d_dir="")
 #         return_new = fu.get_class_members(sort3d_dir="")
 #         self.assertTrue(array_equal(return_new, return_old))
-#
+# 
 #     def test_dir_not_found(self):
 #         return_old = oldfu.get_class_members(sort3d_dir="invalid_dir")
 #         return_new = fu.get_class_members(sort3d_dir="invalid_dir")
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal([], return_old))
-#
-#
-#
+# 
+# 
+# 
 # class Test_get_stable_members_from_two_runs(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -1988,7 +1988,7 @@
 #             oldfu.get_stable_members_from_two_runs()
 #         self.assertEqual(str(cm_new.exception), "get_stable_members_from_two_runs() takes exactly 3 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_dir_not_found_returns_indexError(self):
 #         with self.assertRaises(IndexError) as cm_new:
 #             fu.get_stable_members_from_two_runs(SORT3D_rootdirs="", ad_hoc_number=1, log_main=1)
@@ -1996,8 +1996,8 @@
 #             oldfu.get_stable_members_from_two_runs(SORT3D_rootdirs="", ad_hoc_number=1, log_main=1)
 #         self.assertEqual(str(cm_new.exception), "tuple index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
+# 
+# 
 # #todo: need data
 # class Test_two_way_comparison_single(unittest.TestCase):
 #     def test_wrong_number_params(self):
@@ -2007,14 +2007,14 @@
 #             oldfu.two_way_comparison_single()
 #         self.assertEqual(str(cm_new.exception), "two_way_comparison_single() takes exactly 3 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_two_way_comparison_single(self):
 #         return_old = oldfu.two_way_comparison_single(partition_A="", partition_B="", Tracker="")
 #         return_new = fu.two_way_comparison_single(partition_A="", partition_B="", Tracker="")
 #         self.assertTrue(array_equal(return_new, return_old))
-#
-#
-#
+# 
+# 
+# 
 # class Test_get_leftover_from_stable(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -2023,7 +2023,7 @@
 #             oldfu.get_leftover_from_stable()
 #         self.assertEqual(str(cm_new.exception), "get_leftover_from_stable() takes exactly 3 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_empty_stable_list_returns_IndexError_list_index_out_of_range(self):
 #         with self.assertRaises(IndexError) as cm_new:
 #             fu.get_leftover_from_stable(stable_list=[], N_total=10, smallest_group=3)
@@ -2031,13 +2031,13 @@
 #             oldfu.get_leftover_from_stable(stable_list=[], N_total=10, smallest_group=3)
 #         self.assertEqual(str(cm_new.exception), "tuple index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_get_leftover_from_stable(self):
 #         return_old = oldfu.get_leftover_from_stable(stable_list=[range(10),range(10,20),range(20,30)], N_total=35, smallest_group=5)
 #         return_new = fu.get_leftover_from_stable(stable_list=[range(10),range(10,20),range(20,30)], N_total=35, smallest_group=5)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal([[30, 31, 32, 33, 34], [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9], [10, 11, 12, 13, 14, 15, 16, 17, 18, 19], [20, 21, 22, 23, 24, 25, 26, 27, 28, 29]]], return_old))
-#
+# 
 #     def test_N_total_lower_than_elements_in_list(self):
 #         part_list = [0, 1, 20]
 #         with self.assertRaises(KeyError) as cm_new:
@@ -2046,9 +2046,9 @@
 #             oldfu.get_leftover_from_stable(stable_list=[range(10),range(10,20),range(20,30)], N_total=3, smallest_group=5)
 #         self.assertEqual(str(cm_new.exception), 3)
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
-#
+# 
+# 
+# 
 # #todo: how can i run it?
 # class Test_Kmeans_exhaustive_run(unittest.TestCase):
 #     def test_wrong_number_params(self):
@@ -2058,13 +2058,13 @@
 #             oldfu.Kmeans_exhaustive_run()
 #         self.assertEqual(str(cm_new.exception), "Kmeans_exhaustive_run() takes exactly 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_Kmeans_exhaustive_run(self):
 #         return_old = oldfu.Kmeans_exhaustive_run(ref_vol_list="", Tracker="")
 #         return_new = fu.Kmeans_exhaustive_run(ref_vol_list="", Tracker="")
 #         self.assertTrue(array_equal(return_new, return_old))
-#
-#
+# 
+# 
 # #todo: cannot test because NameError: global name 'data_list' is not defined
 # class Test_split_a_group(unittest.TestCase):
 #     def test_wrong_number_params(self):
@@ -2074,18 +2074,18 @@
 #             oldfu.split_a_group()
 #         self.assertEqual(str(cm_new.exception), "split_a_group() takes exactly 3 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_split_a_group(self):
 #         Tracker = deepcopy(TRACKER)
 #         Tracker["constants"]["myid"] = 0
 #         Tracker["constants"]["main_node"] = 0
 #         Tracker["constants"]["nproc"] = 3
-#
+# 
 #         return_old = oldfu.split_a_group(workdir="", list_of_a_group=[1,2,3], Tracker=Tracker)
 #         return_new = fu.split_a_group(workdir="", list_of_a_group=[1,2,3], Tracker=Tracker)
 #         self.assertTrue(array_equal(return_new, return_old))
-#
-#
+# 
+# 
 # class Test_search_lowpass(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -2094,13 +2094,13 @@
 #             oldfu.search_lowpass()
 #         self.assertEqual(str(cm_new.exception), "search_lowpass() takes exactly 1 argument (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_empty_first(self):
 #         return_old = oldfu.search_lowpass(fsc=[[],[1,2]])
 #         return_new = fu.search_lowpass(fsc=[[],[1,2]])
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(0.45, return_old)
-#
+# 
 #     def test_empty_second_returns_UnboundLocalError_imgtype_referenced_before_assignment(self):
 #         destination ='output.hdf'
 #         with self.assertRaises(UnboundLocalError) as cm_new:
@@ -2109,16 +2109,16 @@
 #             oldfu.search_lowpass(fsc=[[1,2],[]])
 #         self.assertEqual(str(cm_new.exception), "local variable 'i' referenced before assignment")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_search_lowpass(self):
 #         fsc = [[1, 2, 3, 4, 5, 6], [1.1, 2.1, 3.1, 4.1, 5.1, 6.1]]
 #         return_old = oldfu.search_lowpass(fsc=fsc)
 #         return_new = fu.search_lowpass(fsc=fsc)
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(0.45, return_old)
-#
-#
-#
+# 
+# 
+# 
 # class Test_split_chunks_bad(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -2127,13 +2127,13 @@
 #             oldfu.split_chunks_bad()
 #         self.assertEqual(str(cm_new.exception), "split_chunks_bad() takes exactly 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_split_chunks_bad(self):
 #         return_old = oldfu.split_chunks_bad(l=range(100), n=10)
 #         return_new = fu.split_chunks_bad(l=range(100), n=10)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal([[0, 1, 11, 21, 31, 41, 51, 61, 71, 81, 91], [2, 12, 22, 32, 42, 52, 62, 72, 82, 92], [3, 13, 23, 33, 43, 53, 63, 73, 83, 93], [4, 14, 24, 34, 44, 54, 64, 74, 84, 94], [5, 15, 25, 35, 45, 55, 65, 75, 85, 95], [6, 16, 26, 36, 46, 56, 66, 76, 86, 96], [7, 17, 27, 37, 47, 57, 67, 77, 87, 97], [8, 18, 28, 38, 48, 58, 68, 78, 88, 98], [9, 19, 29, 39, 49, 59, 69, 79, 89, 99], [10, 20, 30, 40, 50, 60, 70, 80, 90]], return_old))
-#
+# 
 #     def test_emptylist_returns_IndexError_list_index_out_of_range(self):
 #         with self.assertRaises(IndexError) as cm_new:
 #             fu.split_chunks_bad(l=[], n=10)
@@ -2141,9 +2141,9 @@
 #             oldfu.split_chunks_bad(l=[], n=10)
 #         self.assertEqual(str(cm_new.exception), "tuple index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
-#
+# 
+# 
+# 
 # class Test_convert_to_float(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -2152,13 +2152,13 @@
 #             oldfu.convert_to_float()
 #         self.assertEqual(str(cm_new.exception), "convert_to_float() takes exactly 1 argument (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_convert_to_float(self):
 #         return_old=oldfu.convert_to_float(value=30)
 #         return_new = fu.convert_to_float(value=30)
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(0.0, return_old)
-#
+# 
 #     def test_not_integer_value(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.convert_to_float(value=30)
@@ -2166,9 +2166,9 @@
 #             oldfu.convert_to_float(value=30)
 #         self.assertEqual(str(cm_new.exception), "hex() argument can't be converted to hex")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
-#
+# 
+# 
+# 
 # class Test_numpy2em_python(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -2177,13 +2177,13 @@
 #             oldfu.numpy2em_python()
 #         self.assertEqual(str(cm_new.exception), "numpy2em_python() takes exactly 1 argument (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_numpy2em_python(self):
 #         return_old = oldfu.numpy2em_python(numpy_ones((3,100,100)))
 #         return_new = fu.numpy2em_python(numpy_ones((3,100,100)))
 #         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
-#
-#
+# 
+# 
 # #todo: need data
 # class Test_create_summovie_command(unittest.TestCase):
 #     def test_wrong_number_params(self):
@@ -2193,16 +2193,16 @@
 #             oldfu.reconstitute_mask()
 #         self.assertEqual(str(cm_new.exception), "reconstitute_mask() takes at least 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_create_summovie_command(self):
 #         return_old = oldfu.create_summovie_command(temp_name="", micrograph_name="", shift_name="", frc_name="", opt="")
 #         return_new = fu.create_summovie_command(temp_name="", micrograph_name="", shift_name="", frc_name="", opt="")
 #         self.assertTrue(array_equal(return_new, return_old))
-#
-#
+# 
+# 
 # """
-#
-#
+# 
+# 
 # class Test_center_2D(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -2213,7 +2213,7 @@
 #             str(cm_new.exception), "center_2D() missing 1 required positional argument: 'image_to_be_centered'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_empty_input_image(self):
 #         with self.assertRaises(RuntimeError) as cm_new:
 #             fu.center_2D(
@@ -2239,7 +2239,7 @@
 #         self.assertEqual(msg[3], "x size <= 0")
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
-#
+# 
 #     def test_NoneType_Img(self):
 #         with self.assertRaises(AttributeError) as cm_new:
 #             fu.center_2D(
@@ -2263,7 +2263,7 @@
 #             str(cm_new.exception), "'NoneType' object has no attribute 'phase_cog'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_2DImg(self):
 #         return_new = fu.center_2D(
 #             image_to_be_centered=IMAGE_2D,
@@ -2395,7 +2395,7 @@
 #         self.assertTrue(array_equal(return_new[2], return_old[2]))
 #         self.assertTrue(array_equal(return_new[1], -2.616443395614624))
 #         self.assertTrue(array_equal(return_new[2], -2.5323870182037354))
-#
+# 
 #     def test_2DBlankImg(self):
 #         return_new = fu.center_2D(
 #             image_to_be_centered=IMAGE_BLANK_2D,
@@ -2827,7 +2827,7 @@
 #         self.assertTrue(array_equal(return_new[2], return_old[2]))
 #         self.assertTrue(array_equal(return_old[1], -10.0))
 #         self.assertTrue(array_equal(return_old[2], -10.0))
-#
+# 
 #     # todo: should be error??
 #     def test_3DImg(self):
 #         return_new = fu.center_2D(
@@ -3860,7 +3860,7 @@
 #         self.assertTrue(array_equal(return_new[2], return_old[2]))
 #         self.assertTrue(array_equal(return_old[1], 0.7548537254333496))
 #         self.assertTrue(array_equal(return_old[2], -2.5345394611358643))
-#
+# 
 #     def test_2DImgcenter_method0(self):
 #         return_new = fu.center_2D(
 #             image_to_be_centered=IMAGE_2D,
@@ -3992,7 +3992,7 @@
 #         self.assertEqual(return_new[2], return_old[2])
 #         self.assertTrue(array_equal(return_old[1], 0.0))
 #         self.assertTrue(array_equal(return_old[2], 0.0))
-#
+# 
 #     def test_2DImgcenter_method1searching_range_negativeself_defined_referenceTrue(
 #         self
 #     ):
@@ -4126,7 +4126,7 @@
 #         self.assertEqual(return_new[2], return_old[2])
 #         self.assertTrue(array_equal(return_old[1], -2.616443395614624))
 #         self.assertTrue(array_equal(return_old[2], -2.5323870182037354))
-#
+# 
 #     def test_2DImgcenter_method2searching_range_negativeself_defined_referenceTrue(
 #         self
 #     ):
@@ -4260,7 +4260,7 @@
 #         self.assertEqual(return_new[2], return_old[2])
 #         self.assertTrue(array_equal(return_old[1], 0))
 #         self.assertTrue(array_equal(return_old[2], -3.0))
-#
+# 
 #     def test_2DImgcenter_method3searching_range_negativeself_defined_referenceTrue(
 #         self
 #     ):
@@ -4394,7 +4394,7 @@
 #         self.assertEqual(return_new[2], return_old[2])
 #         self.assertTrue(array_equal(return_new[1], 2.0))
 #         self.assertTrue(array_equal(return_new[2], 3.0))
-#
+# 
 #     # todo: BUG! with center_method=4 the parameters 'self_defined_reference' will be used as EMData::EMData* (the reference parameter) by 'fondamentals.ccf(image_to_be_centered, reference) but it is a boolean
 #     def test_2DImgcenter_method4searching_range_negativeself_defined_referenceTrue(
 #         self
@@ -4408,7 +4408,7 @@
 #         self.assertEqual(return_new[1], return_old[1])
 #         self.assertEqual(return_new[2], return_old[2])
 #         """
-#
+# 
 #     def test_2DImgcenter_method5searching_range_negativeself_defined_referenceTrue(
 #         self
 #     ):
@@ -4542,7 +4542,7 @@
 #         self.assertEqual(return_new[2], return_old[2])
 #         self.assertTrue(array_equal(return_new[1], -2))
 #         self.assertTrue(array_equal(return_new[2], -2))
-#
+# 
 #     def test_2DImgcenter_method6searching_range_negativeself_defined_referenceTrue(
 #         self
 #     ):
@@ -4676,7 +4676,7 @@
 #         self.assertEqual(return_new[2], return_old[2])
 #         self.assertTrue(array_equal(return_old[1], 1.1435747146606445))
 #         self.assertTrue(array_equal(return_old[2], -2.897319793701172))
-#
+# 
 #     # todo: BUG! with center_method=7 the parameters 'self_defined_reference' will be used as EMData::EMData* (the reference parameter) by 'fondamentals.ccf(image_to_be_centered, reference) but it is a boolean
 #     def test_2DImgcenter_method7searching_range_negativeself_defined_referenceTrue(
 #         self
@@ -4690,7 +4690,7 @@
 #         self.assertEqual(return_new[1], return_old[1])
 #         self.assertEqual(return_new[2], return_old[2])
 #         """
-#
+# 
 #     def test_2DImgcenter_method1searching_range_positiveself_defined_referenceTrue(
 #         self
 #     ):
@@ -4824,7 +4824,7 @@
 #         self.assertEqual(return_new[2], return_old[2])
 #         self.assertTrue(array_equal(return_old[1], 0))
 #         self.assertTrue(array_equal(return_old[2], 0))
-#
+# 
 #     def test_2DImgcenter_method2searching_range_positiveself_defined_referenceTrue(
 #         self
 #     ):
@@ -4958,7 +4958,7 @@
 #         self.assertEqual(return_new[2], return_old[2])
 #         self.assertTrue(array_equal(return_old[1], 0))
 #         self.assertTrue(array_equal(return_old[2], 0))
-#
+# 
 #     def test_2DImgcenter_method3searching_range_positiveself_defined_referenceTrue(
 #         self
 #     ):
@@ -5092,7 +5092,7 @@
 #         self.assertEqual(return_new[2], return_old[2])
 #         self.assertTrue(array_equal(return_old[1], 0.0))
 #         self.assertTrue(array_equal(return_old[2], 0.0))
-#
+# 
 #     # todo: BUG! with center_method=7 the parameters 'self_defined_reference' will be used as EMData::EMData* (the reference parameter) by 'fondamentals.ccf(image_to_be_centered, reference) but it is a boolean
 #     def test_2DImgcenter_method4searching_range_positiveself_defined_referenceTrue(
 #         self
@@ -5106,7 +5106,7 @@
 #         self.assertEqual(return_new[1], return_old[1])
 #         self.assertEqual(return_new[2], return_old[2])
 #         """
-#
+# 
 #     def test_2DImgcenter_method5searching_range_positiveself_defined_referenceTrue(
 #         self
 #     ):
@@ -5240,7 +5240,7 @@
 #         self.assertEqual(return_new[2], return_old[2])
 #         self.assertTrue(array_equal(return_old[1], 0.0))
 #         self.assertTrue(array_equal(return_old[2], 0.0))
-#
+# 
 #     def test_2DImgcenter_method6searching_range_positiveself_defined_referenceTrue(
 #         self
 #     ):
@@ -5374,7 +5374,7 @@
 #         self.assertEqual(return_new[2], return_old[2])
 #         self.assertTrue(array_equal(return_new[1], 1.1435747146606445))
 #         self.assertTrue(array_equal(return_new[2], 0))
-#
+# 
 #     # todo: BUG! with center_method=7 the parameters 'self_defined_reference=True' will be used as EMData::EMData* (the reference parameter) by 'fondamentals.ccf(image_to_be_centered, reference) but it is a boolean
 #     def test_2DImgcenter_method7searching_range_positiveself_defined_referenceTrue(
 #         self
@@ -5388,7 +5388,7 @@
 #         self.assertEqual(return_new[1], return_old[1])
 #         self.assertEqual(return_new[2], return_old[2])
 #         """
-#
+# 
 #     def test_2DImgcenter_method1searching_range_negativeself_defined_referenceFalse(
 #         self
 #     ):
@@ -5522,7 +5522,7 @@
 #         self.assertEqual(return_new[2], return_old[2])
 #         self.assertTrue(array_equal(return_old[1], -2.616443395614624))
 #         self.assertTrue(array_equal(return_old[2], -2.5323870182037354))
-#
+# 
 #     def test_2DImgcenter_method2searching_range_negativeself_defined_referenceFalse(
 #         self
 #     ):
@@ -5656,7 +5656,7 @@
 #         self.assertEqual(return_new[2], return_old[2])
 #         self.assertTrue(array_equal(return_old[1], 0))
 #         self.assertTrue(array_equal(return_old[2], -3))
-#
+# 
 #     def test_2DImgcenter_method3searching_range_negativeself_defined_referenceFalse(
 #         self
 #     ):
@@ -5790,9 +5790,9 @@
 #         self.assertEqual(return_new[2], return_old[2])
 #         self.assertTrue(array_equal(return_old[1], 2))
 #         self.assertTrue(array_equal(return_old[2], 3))
-#
+# 
 #     "same bug as above"
-#
+# 
 #     def test_2DImgcenter_method4searching_range_negativeself_defined_referenceFalse(
 #         self
 #     ):
@@ -5807,7 +5807,7 @@
 #         self.assertTrue(array_equal(return_old[1], 15.868728637695312))
 #         self.assertTrue(array_equal(return_old[2], -13.827560424804688))
 #         """
-#
+# 
 #     def test_2DImgcenter_method5searching_range_negativeself_defined_referenceFalse(
 #         self
 #     ):
@@ -5941,7 +5941,7 @@
 #         self.assertEqual(return_new[2], return_old[2])
 #         self.assertTrue(array_equal(return_old[1], -2))
 #         self.assertTrue(array_equal(return_old[2], -2))
-#
+# 
 #     def test_2DImgcenter_method6searching_range_negativeself_defined_referenceFalse(
 #         self
 #     ):
@@ -6075,7 +6075,7 @@
 #         self.assertEqual(return_new[2], return_old[2])
 #         self.assertTrue(array_equal(return_old[1], 1.1435747146606445))
 #         self.assertTrue(array_equal(return_old[2], -2.897319793701172))
-#
+# 
 #     # same bug as above
 #     def test_2DImgcenter_method7searching_range_negativeself_defined_referenceFalse(
 #         self
@@ -6091,7 +6091,7 @@
 #         self.assertTrue(array_equal(return_old[1], -0.8430328369140625))
 #         self.assertTrue(array_equal(return_old[2], 8.518508911132812))
 #         """
-#
+# 
 #     def test_2DImgcenter_method1searching_range_positiveself_defined_referenceFalse(
 #         self
 #     ):
@@ -6225,7 +6225,7 @@
 #         self.assertEqual(return_new[2], return_old[2])
 #         self.assertTrue(array_equal(return_old[1], 0.0))
 #         self.assertTrue(array_equal(return_old[2], 0.0))
-#
+# 
 #     def test_2DImgcenter_method2searching_range_positiveself_defined_referenceFalse(
 #         self
 #     ):
@@ -6359,7 +6359,7 @@
 #         self.assertEqual(return_new[2], return_old[2])
 #         self.assertTrue(array_equal(return_old[1], 0.0))
 #         self.assertTrue(array_equal(return_old[2], 0.0))
-#
+# 
 #     def test_2DImgcenter_method3searching_range_positiveself_defined_referenceFalse(
 #         self
 #     ):
@@ -6493,7 +6493,7 @@
 #         self.assertEqual(return_new[2], return_old[2])
 #         self.assertTrue(array_equal(return_old[1], 0.0))
 #         self.assertTrue(array_equal(return_old[2], 0.0))
-#
+# 
 #     # todo: BUG! with center_method=4 the parameters 'self_defined_reference' will be used as EMData::EMData* (the reference parameter) by 'fondamentals.ccf(image_to_be_centered, reference) but it is a boolean
 #     def test_2DImgcenter_method4searching_range_positiveself_defined_referenceFalse(
 #         self
@@ -6509,7 +6509,7 @@
 #         self.assertTrue(array_equal(return_old[1], 0.0))
 #         self.assertTrue(array_equal(return_old[2], 0.0))
 #         """
-#
+# 
 #     def test_2DImgcenter_method5searching_range_positiveself_defined_referenceFalse(
 #         self
 #     ):
@@ -6643,7 +6643,7 @@
 #         self.assertEqual(return_new[2], return_old[2])
 #         self.assertTrue(array_equal(return_old[1], 0.0))
 #         self.assertTrue(array_equal(return_old[2], 0.0))
-#
+# 
 #     def test_2DImgcenter_method6searching_range_positiveself_defined_referenceFalse(
 #         self
 #     ):
@@ -6777,7 +6777,7 @@
 #         self.assertEqual(return_new[2], return_old[2])
 #         self.assertTrue(array_equal(return_old[1], 1.1435747146606445))
 #         self.assertTrue(array_equal(return_old[2], 0.0))
-#
+# 
 #     # same bug as above
 #     def test_2DImgcenter_method7searching_range_positiveself_defined_referenceFalse(
 #         self
@@ -6793,8 +6793,8 @@
 #         self.assertTrue(array_equal(return_old[1], 0.0))
 #         self.assertTrue(array_equal(return_old[2], 0.0))
 #         """
-#
-#
+# 
+# 
 # class Test_compose_transform3m(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -6806,7 +6806,7 @@
 #             "compose_transform3() missing 14 required positional arguments: 'phi1', 'theta1', 'psi1', 'sx1', 'sy1', 'sz1', 'scale1', 'phi2', 'theta2', 'psi2', 'sx2', 'sy2', 'sz2', and 'scale2'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_compose_transform3m(self):
 #         return_old = oldfu.compose_transform3(
 #             phi1=1.0,
@@ -6855,8 +6855,8 @@
 #                 ],
 #             )
 #         )
-#
-#
+# 
+# 
 # class Test_model_cylinder(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -6868,7 +6868,7 @@
 #             "model_cylinder() missing 4 required positional arguments: 'radius', 'nx', 'ny', and 'nz'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_model_cylinder(self):
 #         return_old = oldfu.model_cylinder(radius=2, nx=5, ny=5, nz=5)
 #         return_new = fu.model_cylinder(radius=2, nx=5, ny=5, nz=5)
@@ -7005,8 +7005,8 @@
 #                 ],
 #             )
 #         )
-#
-#
+# 
+# 
 # class Test_model_rotated_rectangle2D(unittest.TestCase):
 #     def test_wrong_number_params(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -7018,7 +7018,7 @@
 #             "model_rotated_rectangle2D() missing 4 required positional arguments: 'radius_long', 'radius_short', 'nx', and 'ny'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_return_img(self):
 #         return_old = oldfu.model_rotated_rectangle2D(
 #             radius_long=4, radius_short=2, nx=10, ny=10, angle=90, return_numpy=False
@@ -7134,7 +7134,7 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     def test_return_numpy(self):
 #         return_old = oldfu.model_rotated_rectangle2D(
 #             radius_long=4, radius_short=2, nx=10, ny=10, angle=90, return_numpy=True
@@ -7250,8 +7250,8 @@
 #                 ],
 #             )
 #         )
-#
-#
+# 
+# 
 # """
 # @unittest.skip("node involved, i cannot test")
 # class Test_send_string_to_all(unittest.TestCase):
@@ -7262,23 +7262,23 @@
 #             oldfu.send_string_to_all()
 #         self.assertEqual(str(cm_new.exception), "send_string_to_all() takes at least 1 argument (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_send_string_to_all(self):
 #         return_old = oldfu.send_string_to_all(str_to_send="sphire", source_node=0)
 #         return_new = fu.send_string_to_all(str_to_send="sphire", source_node=0)
 #         self.assertEqual(return_new, return_old)
 # """
-#
+# 
 # """ end: new in sphire 1.3"""
-#
-#
+# 
+# 
 # class Test_amoeba(unittest.TestCase):
-#
+# 
 #     # copied from filter.py --> fit_tanh
 #     @staticmethod
 #     def fit_tanh_func(args, data):
 #         from math import pi, tanh
-#
+# 
 #         v = 0.0
 #         if data[1][0] < 0.0:
 #             data[1][0] *= -1.0
@@ -7293,15 +7293,15 @@
 #                 )
 #             v -= qt * qt
 #         return v
-#
+# 
 #     @staticmethod
 #     def wrongfunction(a, b):
 #         return a + b
-#
+# 
 #     @staticmethod
 #     def function_lessParam():
 #         return 0
-#
+# 
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.amoeba()
@@ -7311,13 +7311,13 @@
 #             str(cm_new.exception), "amoeba() missing 3 required positional arguments: 'var', 'scale', and 'func'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_amoeba(self):
 #         """
 #         I did not use 'self.assertTrue(allclose(return_new, return_old, atol=TOLERANCE,equal_nan=True))' because the 'nosetets' spawns the following error
 #                 TypeError: ufunc 'isfinite' not supported for the input types, and the inputs could not be safely coerced to any supported types according to the casting rule ''safe''
 #         """
-#
+# 
 #         return_new = fu.amoeba(
 #             var=[0.0, 0.1],
 #             scale=[0.05, 0.05],
@@ -7346,7 +7346,7 @@
 #         )
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, ([0.0, 0.1], 0.0, 500)))
-#
+# 
 #     def test_amoeba_with_wrongfunction(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.amoeba(
@@ -7381,7 +7381,7 @@
 #             "wrongfunction() got an unexpected keyword argument 'data'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_amoeba_with_function_lessParam_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.amoeba(
@@ -7415,7 +7415,7 @@
 #             str(cm_new.exception), "function_lessParam() got an unexpected keyword argument 'data'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_amoeba_with_NoneType_data_returns_TypeError_NoneType_obj_hasnot_attribute__getitem__(
 #         self
 #     ):
@@ -7443,8 +7443,8 @@
 #             str(cm_new.exception), "'NoneType' object is not subscriptable"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
+# 
+# 
 # class Test_compose_transform2(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -7456,7 +7456,7 @@
 #             "compose_transform2() missing 8 required positional arguments: 'alpha1', 'sx1', 'sy1', 'scale1', 'alpha2', 'sx2', 'sy2', and 'scale2'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_pickle_file_values(self):
 #         """ values got from 'pickle files/utilities/utilities.compose_transform2'"""
 #         return_new = fu.compose_transform2(
@@ -7486,7 +7486,7 @@
 #                 (156.51260982858517, -3.0179426670074463, -0.35223737359046936, 1.0),
 #             )
 #         )
-#
+# 
 #     def test_null_scaleFactor_returns_RunTimeError_scale_factor_must_be_positive(self):
 #         with self.assertRaises(RuntimeError) as cm_new:
 #             fu.compose_transform2(
@@ -7520,7 +7520,7 @@
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_negative_scaleFactor_returns_RunTimeError_scale_factor_must_be_positive(
 #         self
 #     ):
@@ -7556,8 +7556,8 @@
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
+# 
+# 
 # class Test_compose_transform3(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -7569,7 +7569,7 @@
 #             "compose_transform3() missing 14 required positional arguments: 'phi1', 'theta1', 'psi1', 'sx1', 'sy1', 'sz1', 'scale1', 'phi2', 'theta2', 'psi2', 'sx2', 'sy2', 'sz2', and 'scale2'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_pickle_file_values(self):
 #         """ values got from 'pickle files/utilities/utilities.compose_transform3'"""
 #         return_new = fu.compose_transform3(
@@ -7619,7 +7619,7 @@
 #                 ),
 #             )
 #         )
-#
+# 
 #     def test_null_scaleFactor_returns_RunTimeError_scale_factor_must_be_positive(self):
 #         with self.assertRaises(RuntimeError) as cm_new:
 #             fu.compose_transform3(
@@ -7665,7 +7665,7 @@
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_negative_scaleFactor_returns_RunTimeError_scale_factor_must_be_positive(
 #         self
 #     ):
@@ -7713,11 +7713,11 @@
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
+# 
+# 
 # class Test_combine_params2(unittest.TestCase):
 #     """ I did not use the 'pickle files/utilities/utilities.combine_params2' values because they are all 0 values"""
-#
+# 
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.combine_params2()
@@ -7728,7 +7728,7 @@
 #             "combine_params2() missing 8 required positional arguments: 'alpha1', 'sx1', 'sy1', 'mirror1', 'alpha2', 'sx2', 'sy2', and 'mirror2'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_combine_params2(self):
 #         return_new = fu.combine_params2(
 #             alpha1=0.0,
@@ -7757,11 +7757,11 @@
 #                 (359.0000000534512, -1.0176047086715698, 1.0173001289367676, 1),
 #             )
 #         )
-#
-#
+# 
+# 
 # class Test_inverse_transform2(unittest.TestCase):
 #     """ I did not use the 'pickle files/utilities/utilities.inverse_transform2' values because they are all 0 values"""
-#
+# 
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.inverse_transform2()
@@ -7772,7 +7772,7 @@
 #             "inverse_transform2() missing 1 required positional argument: 'alpha'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_inverse_transform2(self):
 #         return_new = fu.inverse_transform2(alpha=1.0, tx=2.2, ty=1.0, mirror=0)
 #         return_old = oldfu.inverse_transform2(alpha=1.0, tx=2.2, ty=1.0, mirror=0)
@@ -7783,8 +7783,8 @@
 #                 (358.9999999938496, -2.1822125911712646, -1.0382429361343384, 0),
 #             )
 #         )
-#
-#
+# 
+# 
 # """ How may I REALLY test it?"""
 # """
 # class Test_drop_image(unittest.TestCase):
@@ -7795,7 +7795,7 @@
 #             oldfu.drop_image()
 #         self.assertEqual(str(cm_new.exception), "drop_image() takes at least 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_invalid_type_returns_UnboundLocalError_imgtype_referenced_before_assignment(self):
 #         destination ='output.hdf'
 #         with self.assertRaises(UnboundLocalError) as cm_new:
@@ -7804,7 +7804,7 @@
 #             oldfu.drop_image(IMAGE_2D, destination, itype="invalid")
 #         self.assertEqual(str(cm_new.exception), "local variable 'imgtype' referenced before assignment")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     @unittest.skip("it does not work under nosetests , anyway im not able to test it properly")
 #     def test_destination_is_not_a_file_returns_error_msg(self):
 #         destination = 3
@@ -7812,37 +7812,37 @@
 #         return_old = oldfu.drop_image(IMAGE_2D, destination, itype="h")
 #         self.assertTrue(return_new is None)
 #         self.assertTrue(return_old is None)
-#
+# 
 #     @unittest.skip("it does not work under nosetests , anyway im not able to test it properly")
 #     def test_drop_image2D_true_should_return_equal_objects1(self):
 #         destination ='output.hdf'
 #         return_new = fu.drop_image(IMAGE_2D, destination, itype="h")
 #         return_old = oldfu.drop_image(IMAGE_2D, destination, itype="h")
-#
+# 
 #         if return_new is not None   and  return_old is not None:
 #             self.assertTrue(return_new, return_old)
-#
+# 
 #     @unittest.skip("it does not work under nosetests , anyway im not able to test it properly")
 #     def test_drop_image_true_should_return_equal_objects2(self):
 #         filepath = path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.drop_image")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle_load(rb)
-#
+# 
 #         print(argum)
-#
+# 
 #         (imagename, destination) = argum[0]
 #         destination = 'output.hdf'
 #         return_new = fu.drop_image(imagename, destination, itype="h")
 #         return_old = oldfu.drop_image(imagename, destination, itype="h")
-#
+# 
 #         if return_new is not None   and  return_old is not None:
 #             self.assertTrue(return_new, return_old)
 # """
-#
-#
+# 
+# 
 # class Test_even_angles(unittest.TestCase):
 #     """ I did not changed the 'phiEqpsi' params because it is used in 'even_angles_cd' I'll test it there"""
-#
+# 
 #     def test_default_values(self):
 #         return_new = fu.even_angles(
 #             delta=15.0,
@@ -7967,7 +7967,7 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     def test_null_delta_returns_ZeroDivisionError(self):
 #         with self.assertRaises(ZeroDivisionError) as cm_new:
 #             fu.even_angles(
@@ -7995,7 +7995,7 @@
 #             )
 #         self.assertEqual(str(cm_new.exception), "float division by zero")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_default_values_with_not_minus(self):
 #         return_new = fu.even_angles(
 #             delta=15.0,
@@ -8120,7 +8120,7 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     def test_default_values_with_P_method_leads_to_deadlock(self):
 #         self.assertTrue(True)
 #         """
@@ -8128,7 +8128,7 @@
 #         return_old = oldfu.even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, method = 'P', phiEqpsi = "Minus", symmetry='c1', ant = 0.0)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         """
-#
+# 
 #     def test_with_D_symmetry(self):
 #         return_new = fu.even_angles(
 #             delta=15.0,
@@ -8207,7 +8207,7 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     def test_with_S_symmetry(self):
 #         return_new = fu.even_angles(
 #             delta=15.0,
@@ -8245,7 +8245,7 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     def test_with_S_symmetry_tooBig_theta1_value_error_msg(self):
 #         return_new = fu.even_angles(
 #             delta=15.0,
@@ -8283,7 +8283,7 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     def test_with_S_invalid_symmetry_returns_UnboundLocalError_local_var_referenced_before_assignment(
 #         self
 #     ):
@@ -8317,7 +8317,7 @@
 #             str(cm_new.exception), str(1)
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_with_S_invalid_symmetry_returns_ValueError_invalid_literal(self):
 #         with self.assertRaises(ValueError) as cm_new:
 #             fu.even_angles(
@@ -8347,7 +8347,7 @@
 #             str(cm_new.exception), "invalid literal for int() with base 10: 'ct'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_not_supported_symmetry_Warning_output_msg(self):
 #         return_new = fu.even_angles(
 #             delta=15.0,
@@ -8373,8 +8373,8 @@
 #         )
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, []))
-#
-#
+# 
+# 
 # class Test_even_angles_cd(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -8386,7 +8386,7 @@
 #             "even_angles_cd() missing 1 required positional argument: 'delta'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_null_delta_returns_ZeroDivisionError(self):
 #         with self.assertRaises(ZeroDivisionError) as cm_new:
 #             fu.even_angles_cd(
@@ -8410,7 +8410,7 @@
 #             )
 #         self.assertEqual(str(cm_new.exception), "float division by zero")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_default_values_leads_to_deadlock(self):
 #         self.assertTrue(True)
 #         """
@@ -8418,7 +8418,7 @@
 #         return_old = oldfu.even_angles_cd(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, method = 'P', phiEQpsi='Minus')
 #         self.assertTrue(array_equal(return_new, return_old))
 #         """
-#
+# 
 #     def test_with_S_method(self):
 #         return_new = fu.even_angles_cd(
 #             delta=15.0,
@@ -8539,7 +8539,7 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     def test_with_S_method_with_not_Minus(self):
 #         return_new = fu.even_angles_cd(
 #             delta=15.0,
@@ -8660,8 +8660,8 @@
 #                 ],
 #             )
 #         )
-#
-#
+# 
+# 
 # class Test_gauss_edge(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -8672,7 +8672,7 @@
 #             str(cm_new.exception), "gauss_edge() missing 1 required positional argument: 'sharp_edge_image'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_NoneType_as_img_returns_AttributeError_NoneType_obj_hasnot_attribute_process(
 #         self
 #     ):
@@ -8684,7 +8684,7 @@
 #             str(cm_new.exception), "'NoneType' object has no attribute 'get_ndim'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_default_value_2Dreal_img(self):
 #         return_new = fu.gauss_edge(
 #             sharp_edge_image=IMAGE_2D, kernel_size=7, gauss_standard_dev=3
@@ -8800,7 +8800,7 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     def test_default_value_3Dreal_img(self):
 #         return_new = fu.gauss_edge(
 #             sharp_edge_image=IMAGE_3D, kernel_size=7, gauss_standard_dev=3
@@ -8808,7 +8808,7 @@
 #         return_old = oldfu.gauss_edge(
 #             sharp_edge_image=IMAGE_3D, kernel_size=7, gauss_standard_dev=3
 #         )
-#
+# 
 #         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 #         self.assertTrue(
 #             array_equal(
@@ -9817,7 +9817,7 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     def test_null_kernel_size_returns_RuntimeError_InvalidValueException(self):
 #         with self.assertRaises(RuntimeError) as cm_new:
 #             fu.gauss_edge(
@@ -9833,7 +9833,7 @@
 #         self.assertEqual(msg[3], "x size <= 0")
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
-#
+# 
 #     def test_negative_kernel_size_returns_RuntimeError_InvalidValueException(self):
 #         with self.assertRaises(RuntimeError) as cm_new:
 #             fu.gauss_edge(
@@ -9849,8 +9849,8 @@
 #         self.assertEqual(msg[3], "x size <= 0")
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
-#
-#
+# 
+# 
 # class Test_get_image(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -9861,13 +9861,13 @@
 #             str(cm_new.exception), "get_image() missing 1 required positional argument: 'imagename'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_returns_input_img(self):
 #         """ I do not insert all the params because in this case they are not used"""
 #         return_new = fu.get_image(imagename=IMAGE_2D, nx=0, ny=1, nz=1, im=0)
 #         return_old = oldfu.get_image(imagename=IMAGE_2D, nx=0, ny=1, nz=1, im=0)
 #         self.assertTrue(array_equal(return_new.get_2dview(), return_old.get_2dview()))
-#
+# 
 #         self.assertTrue(
 #             array_equal(
 #                 return_new.get_2dview().flatten(),
@@ -9975,7 +9975,7 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     def test_None_input_img_returns_new_EMData_with_default_size(self):
 #         """ I do not insert all the params because in this case they are not used"""
 #         nx = 0
@@ -9983,7 +9983,7 @@
 #         return_old = oldfu.get_image(imagename=None, nx=nx, ny=1, nz=1, im=0)
 #         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 #         self.assertEqual(return_new.get_3dview().flatten().tolist(), [])
-#
+# 
 #     def test_None_input_img_returns_new_EMData__with_given_size(self):
 #         """ I do not insert all the params because in this case they are not used"""
 #         nx, ny, nz = 3, 4, 3
@@ -10033,7 +10033,7 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     def test_invalid_path_returns_RuntimeError_FileAccessException(self):
 #         """ I do not insert all the params because in this case they are not used"""
 #         with self.assertRaises(RuntimeError) as cm_new:
@@ -10046,11 +10046,11 @@
 #         self.assertEqual(msg[3], "cannot access file ")
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
-#
-#
+# 
+# 
 # class Test_get_im(unittest.TestCase):
 #     img_list = [IMAGE_3D, IMAGE_2D]
-#
+# 
 #     def test_NoneType_as_img_returns_AttributeError_NoneType_obj_hasnot_attribute_process(
 #         self
 #     ):
@@ -10062,7 +10062,7 @@
 #             str(cm_new.exception), "'NoneType' object is not subscriptable"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.get_im()
@@ -10072,14 +10072,14 @@
 #             str(cm_new.exception), "get_im() missing 1 required positional argument: 'stackname'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_returns_first_img_of_a_list(self):
 #         return_new = fu.get_im(stackname=self.img_list, im=0)
 #         return_old = oldfu.get_im(stackname=self.img_list, im=0)
-#
+# 
 #         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 #         self.assertTrue(array_equal(return_new.get_3dview(), IMAGE_3D.get_3dview()))
-#
+# 
 #     def test_returns_IndexError_list_index_out_of_range(self):
 #         with self.assertRaises(IndexError) as cm_new:
 #             fu.get_im(stackname=self.img_list, im=10)
@@ -10087,8 +10087,8 @@
 #             oldfu.get_im(stackname=self.img_list, im=10)
 #         self.assertEqual(str(cm_new.exception), "list index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
+# 
+# 
 # class Test_get_image_data(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -10099,7 +10099,7 @@
 #             str(cm_new.exception), "get_image_data() missing 1 required positional argument: 'img'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_get_image_data(self):
 #         return_new = fu.get_image_data(img=IMAGE_2D)
 #         return_old = oldfu.get_image_data(img=IMAGE_2D)
@@ -10211,10 +10211,10 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     def test_NoneType_as_input_image_crashes_because_signal11SIGSEV(self):
 #         self.assertTrue(True)
-#
+# 
 #     # the first value is a random value
 #     def test_emptyimage_as_input_image(self):
 #         return_old = oldfu.get_image_data(img=EMData(5, 5, 5))
@@ -10327,8 +10327,8 @@
 #                 ],
 #             )
 #         )
-#
-#
+# 
+# 
 # class Test_get_symt(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -10339,12 +10339,12 @@
 #             str(cm_new.exception), "get_symt() missing 1 required positional argument: 'symmetry'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_get_symt(self):
 #         self.assertTrue(True)
 #         return_new = fu.get_symt(symmetry="c3")
 #         return_old = oldfu.get_symt(symmetry="c3")
-#
+# 
 #     def test_get_symt_with_invaliSym_returns_IndexError(self):
 #         sp_global_def.BATCH = True
 #         with self.assertRaises(SystemExit) as cm_new:
@@ -10352,14 +10352,14 @@
 #         sp_global_def.BATCH = True
 #         with self.assertRaises(SystemExit) as cm_old:
 #             oldfu.get_symt(symmetry="invaliSym")
-#
+# 
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #         self.assertEqual(
 #             str(cm_new.exception), str(1)
 #         )
-#
-#
+# 
+# 
 # class Test_get_input_from_string(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -10371,25 +10371,25 @@
 #             "get_input_from_string() missing 1 required positional argument: 'str_input'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_get_input_from_string_integer_case(self):
 #         return_new = fu.get_input_from_string(str_input="5")
 #         return_old = oldfu.get_input_from_string(str_input="5")
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_new, [5])
-#
+# 
 #     def test_get_input_from_string_negative_number_case(self):
 #         return_new = fu.get_input_from_string(str_input="-5")
 #         return_old = oldfu.get_input_from_string(str_input="-5")
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_new, [-5])
-#
+# 
 #     def test_get_input_from_string_float_case(self):
 #         return_new = fu.get_input_from_string(str_input="5.3")
 #         return_old = oldfu.get_input_from_string(str_input="5.3")
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_new, [5.3])
-#
+# 
 #     def test_get_input_from_string_invalid_case(self):
 #         with self.assertRaises(ValueError) as cm_new:
 #             fu.get_input_from_string(str_input="not_a_number")
@@ -10400,14 +10400,14 @@
 #             "invalid literal for int() with base 10: 'not_a_number'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_get_input_from_string_list_of_values_number_case(self):
 #         return_new = fu.get_input_from_string(str_input="-5,3.11,5")
 #         return_old = oldfu.get_input_from_string(str_input="-5,3.11,5")
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_new, [-5, 3.11, 5])
-#
-#
+# 
+# 
 # class Test_model_circle(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -10418,7 +10418,7 @@
 #             str(cm_new.exception), "model_circle() missing 3 required positional arguments: 'r', 'nx', and 'ny'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_pickle_file_values(self):
 #         return_new = fu.model_circle(r=2, nx=5, ny=5, nz=1)
 #         return_old = oldfu.model_circle(r=2, nx=5, ny=5, nz=1)
@@ -10455,7 +10455,7 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     def test_null_Y_size_returns_RuntimeError_InvalidValueException(self):
 #         with self.assertRaises(RuntimeError) as cm_new:
 #             fu.model_circle(r=145, nx=352, ny=0, nz=1)
@@ -10467,7 +10467,7 @@
 #         self.assertEqual(msg[3], "y size <= 0")
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
-#
+# 
 #     def test_null_X_size_returns_RuntimeError_InvalidValueException(self):
 #         with self.assertRaises(RuntimeError) as cm_new:
 #             fu.model_circle(r=145, nx=0, ny=252, nz=1)
@@ -10479,7 +10479,7 @@
 #         self.assertEqual(msg[3], "x size <= 0")
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
-#
+# 
 #     def test_null_Z_size_returns_RuntimeError_InvalidValueException(self):
 #         with self.assertRaises(RuntimeError) as cm_new:
 #             fu.model_circle(r=145, nx=252, ny=252, nz=0)
@@ -10491,7 +10491,7 @@
 #         self.assertEqual(msg[3], "z size <= 0")
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
-#
+# 
 #     def test_null_R_size_(self):
 #         return_new = fu.model_circle(r=0, nx=5, ny=5, nz=1)
 #         return_old = oldfu.model_circle(r=0, nx=5, ny=5, nz=1)
@@ -10528,7 +10528,7 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     # todo: how can it be possible??? is it a bug???
 #     def test_negative_R_size_(self):
 #         return_new = fu.model_circle(r=-1, nx=5, ny=5, nz=1)
@@ -10566,8 +10566,8 @@
 #                 ],
 #             )
 #         )
-#
-#
+# 
+# 
 # class Test_model_gauss(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -10578,7 +10578,7 @@
 #             str(cm_new.exception), "model_gauss() missing 2 required positional arguments: 'xsigma' and 'nx'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_default_values(self):
 #         return_new = fu.model_gauss(
 #             xsigma=2,
@@ -10620,7 +10620,7 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     def test_null_Xsigma_returns_Nan_matrix(self):
 #         return_new = fu.model_gauss(
 #             xsigma=0,
@@ -10665,7 +10665,7 @@
 #                 equal_nan=True,
 #             )
 #         )
-#
+# 
 #     def test_null_Ysigma_returns_Nan_matrix(self):
 #         return_new = fu.model_gauss(
 #             xsigma=2,
@@ -10710,7 +10710,7 @@
 #                 equal_nan=True,
 #             )
 #         )
-#
+# 
 #     def test_null_Zsigma_returns_Nan_matrix(self):
 #         return_new = fu.model_gauss(
 #             xsigma=2,
@@ -10755,7 +10755,7 @@
 #                 equal_nan=True,
 #             )
 #         )
-#
+# 
 #     def test_null_Y_size_returns_RuntimeError_InvalidValueException(self):
 #         with self.assertRaises(RuntimeError) as cm_new:
 #             fu.model_gauss(
@@ -10787,7 +10787,7 @@
 #         self.assertEqual(msg[3], "y size <= 0")
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
-#
+# 
 #     def test_null_X_size_returns_RuntimeError_InvalidValueException(self):
 #         with self.assertRaises(RuntimeError) as cm_new:
 #             fu.model_gauss(
@@ -10819,7 +10819,7 @@
 #         self.assertEqual(msg[3], "x size <= 0")
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
-#
+# 
 #     def test_null_Z_size_returns_RuntimeError_InvalidValueException(self):
 #         with self.assertRaises(RuntimeError) as cm_new:
 #             fu.model_gauss(
@@ -10851,8 +10851,8 @@
 #         self.assertEqual(msg[3], "z size <= 0")
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
-#
-#
+# 
+# 
 # class Test_model_gauss_noise(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -10864,7 +10864,7 @@
 #             "model_gauss_noise() missing 2 required positional arguments: 'sigma' and 'nx'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     @unittest.skip("for definition it is a random value matrix. not testabel")
 #     def test_model_gauss_noise(self):
 #         self.assertTrue(True)
@@ -10874,7 +10874,7 @@
 #         return_old = oldfu.model_gauss_noise(sigma =1, nx = 352, ny=1, nz=1)
 #         self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(), atol=1000))
 #         """
-#
+# 
 #     def test_null_sigma(self):
 #         return_new = fu.model_gauss_noise(sigma=0.0, nx=10, ny=1, nz=1)
 #         return_old = oldfu.model_gauss_noise(sigma=0.0, nx=10, ny=1, nz=1)
@@ -10885,7 +10885,7 @@
 #                 [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
 #             )
 #         )
-#
+# 
 #     def test_null_Y_size_returns_RuntimeError_InvalidValueException(self):
 #         with self.assertRaises(RuntimeError) as cm_new:
 #             fu.model_gauss_noise(sigma=1, nx=1, ny=0, nz=1)
@@ -10897,7 +10897,7 @@
 #         self.assertEqual(msg[3], "y size <= 0")
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
-#
+# 
 #     def test_null_X_size_returns_RuntimeError_InvalidValueException(self):
 #         with self.assertRaises(RuntimeError) as cm_new:
 #             fu.model_gauss_noise(sigma=1, nx=0, ny=10, nz=1)
@@ -10909,7 +10909,7 @@
 #         self.assertEqual(msg[3], "x size <= 0")
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
-#
+# 
 #     def test_null_Z_size_returns_RuntimeError_InvalidValueException(self):
 #         with self.assertRaises(RuntimeError) as cm_new:
 #             fu.model_gauss_noise(sigma=1, nx=352, ny=1, nz=0)
@@ -10921,8 +10921,8 @@
 #         self.assertEqual(msg[3], "z size <= 0")
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
-#
-#
+# 
+# 
 # class Test_model_blank(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -10933,7 +10933,7 @@
 #             str(cm_new.exception), "model_blank() missing 1 required positional argument: 'nx'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_default_values(self):
 #         return_new = fu.model_blank(nx=10, ny=1, nz=1, bckg=0.0)
 #         return_old = oldfu.model_blank(nx=10, ny=1, nz=1, bckg=0.0)
@@ -10944,7 +10944,7 @@
 #                 [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
 #             )
 #         )
-#
+# 
 #     def test_default_values_with_bckg(self):
 #         return_new = fu.model_blank(nx=10, ny=1, nz=1, bckg=10.0)
 #         return_old = oldfu.model_blank(nx=10, ny=1, nz=1, bckg=10.0)
@@ -10955,7 +10955,7 @@
 #                 [10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0],
 #             )
 #         )
-#
+# 
 #     def test_null_X_size_returns_RuntimeError_InvalidValueException(self):
 #         with self.assertRaises(RuntimeError) as cm_new:
 #             fu.model_blank(nx=0, ny=1, nz=1, bckg=0.0)
@@ -10967,7 +10967,7 @@
 #         self.assertEqual(msg[3], "x size <= 0")
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
-#
+# 
 #     def test_null_Y_size_returns_RuntimeError_InvalidValueException(self):
 #         with self.assertRaises(RuntimeError) as cm_new:
 #             fu.model_blank(nx=10, ny=0, nz=1, bckg=0.0)
@@ -10979,7 +10979,7 @@
 #         self.assertEqual(msg[3], "y size <= 0")
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
-#
+# 
 #     def test_null_Z_size_returns_RuntimeError_InvalidValueException(self):
 #         with self.assertRaises(RuntimeError) as cm_new:
 #             fu.model_blank(nx=10, ny=1, nz=0, bckg=0.0)
@@ -10991,8 +10991,8 @@
 #         self.assertEqual(msg[3], "z size <= 0")
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
-#
-#
+# 
+# 
 # class Test_peak_search(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -11003,7 +11003,7 @@
 #             str(cm_new.exception), "peak_search() missing 1 required positional argument: 'e'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_default_values(self):
 #         return_new = fu.peak_search(e=IMAGE_2D, npeak=3, invert=1, print_screen=0)
 #         return_old = oldfu.peak_search(e=IMAGE_2D, npeak=3, invert=1, print_screen=0)
@@ -11018,13 +11018,13 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     def test_inverted_sort(self):
 #         return_new = fu.peak_search(e=IMAGE_2D, npeak=3, invert=-1, print_screen=0)
 #         return_old = oldfu.peak_search(e=IMAGE_2D, npeak=3, invert=-1, print_screen=0)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, [[1.0, 5.0, 5.0, 1.0, 0.0, 0.0]]))
-#
+# 
 #     def test_null_npeak_crashes_because_signal11SIGSEV(self):
 #         self.assertTrue(True)
 #         """
@@ -11033,7 +11033,7 @@
 #         return_old = oldfu.peak_search(img, npeak = 0, invert = 1, print_screen = 0)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         """
-#
+# 
 #     def test_NoneType_as_img_returns_AttributeError_NoneType_obj_hasnot_attribute_process(
 #         self
 #     ):
@@ -11045,15 +11045,15 @@
 #             str(cm_new.exception), "'NoneType' object has no attribute 'peak_search'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_Empty_img_crashes_because_signal11SIGSEV(self):
 #         self.assertTrue(True)
 #         """
 #         fu.peak_search(EMData(), npeak = 3, invert = -1, print_screen = 0)
 #         oldfu.peak_search(EMData(), npeak = 3, invert = -1, print_screen = 0)
 #         """
-#
-#
+# 
+# 
 # class Test_pad(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -11064,7 +11064,7 @@
 #             str(cm_new.exception), "pad() missing 2 required positional arguments: 'image_to_be_padded' and 'new_nx'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_returns_RuntimeError_ImageDimensionException_padder_cannot_be_lower_than_sizee_img(
 #         self
 #     ):
@@ -11100,7 +11100,7 @@
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[1], msg_old[1])
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_returns_RuntimeError_ImageDimensionException_offset_inconsistent(self):
 #         with self.assertRaises(RuntimeError) as cm_new:
 #             fu.pad(
@@ -11134,7 +11134,7 @@
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[1], msg_old[1])
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_default_values(self):
 #         return_new = fu.pad(
 #             image_to_be_padded=IMAGE_2D,
@@ -11406,7 +11406,7 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     def test_default_values_with_circumference_bckg(self):
 #         return_new = fu.pad(
 #             image_to_be_padded=IMAGE_2D,
@@ -11678,7 +11678,7 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     def test_default_values_with_unknown_bckg(self):
 #         return_new = fu.pad(
 #             image_to_be_padded=IMAGE_2D,
@@ -11950,7 +11950,7 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     def test_NoneType_as_img_returns_RuntimeError_NullPointerException(self):
 #         with self.assertRaises(RuntimeError) as cm_new:
 #             fu.pad(
@@ -11981,7 +11981,7 @@
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[1], msg_old[1])
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_Empty_img_returns_RuntimeError_InvalidValueException(self):
 #         with self.assertRaises(RuntimeError) as cm_new:
 #             fu.pad(
@@ -12012,8 +12012,8 @@
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
+# 
+# 
 # class Test_chooseformat(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -12024,7 +12024,7 @@
 #             str(cm_new.exception), "chooseformat() missing 1 required positional argument: 't'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_exponential_number(self):
 #         return_new = fu.chooseformat(
 #             t=0.00000000000000000000000000003, form_float="  %12.5f"
@@ -12034,13 +12034,13 @@
 #         )
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_new, "  %12.5e")
-#
+# 
 #     def test_float(self):
 #         return_new = fu.chooseformat(t=0.3, form_float="  %12.5f")
 #         return_old = fu.chooseformat(t=0.3, form_float="  %12.5f")
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_new, "  %12.5f")
-#
+# 
 #     def test_typeError_float_argument_required(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.chooseformat(t="w", form_float="  %12.5f")
@@ -12048,8 +12048,8 @@
 #             oldfu.chooseformat(t="w", form_float="  %12.5f")
 #         self.assertEqual(str(cm_new.exception), "must be real number, not str")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
+# 
+# 
 # class Test_read_text_row(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -12060,7 +12060,7 @@
 #             str(cm_new.exception), "read_text_row() missing 1 required positional argument: 'fnam'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_file_not_found(self):
 #         with self.assertRaises(IOError) as cm_new:
 #             fu.read_text_row(fnam="no_file.txt", format="", skip=";")
@@ -12068,8 +12068,8 @@
 #             oldfu.read_text_row(fnam="no_file.txt", format="", skip=";")
 #         self.assertEqual(cm_new.exception.strerror, "No such file or directory")
 #         self.assertEqual(cm_new.exception.strerror, cm_old.exception.strerror)
-#
-#
+# 
+# 
 #     def test_default_case(self):
 #         partids = path.join(
 #             ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,
@@ -12188,8 +12188,8 @@
 #                 ],
 #             )
 #         )
-#
-#
+# 
+# 
 # class Test_write_text_row(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -12201,7 +12201,7 @@
 #             "write_text_row() missing 2 required positional arguments: 'data' and 'file_name'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_write_text_row(self):
 #         data = [[1, 1, 1, 1], [2, 2, 2, 2], [3, 3, 3, 3]]
 #         f = path.join(ABSOLUTE_PATH, "filefu.txt")
@@ -12214,8 +12214,8 @@
 #         )
 #         self.assertEqual(returns_values_in_file(f), returns_values_in_file(fold))
 #         remove_list_of_file([f, fold])
-#
-#
+# 
+# 
 # class Test_read_text_file(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -12227,7 +12227,7 @@
 #             "read_text_file() missing 1 required positional argument: 'file_name'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_file_not_found(self):
 #         with self.assertRaises(IOError) as cm_new:
 #             fu.read_text_file(file_name="no_file.txt", ncol=0)
@@ -12235,7 +12235,7 @@
 #             oldfu.read_text_file(file_name="no_file.txt", ncol=0)
 #         self.assertEqual(cm_new.exception.strerror, "No such file or directory")
 #         self.assertEqual(cm_new.exception.strerror, cm_old.exception.strerror)
-#
+# 
 #     def test_default_case(self):
 #         partids = path.join(
 #             ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,
@@ -12354,8 +12354,8 @@
 #                 ],
 #             )
 #         )
-#
-#
+# 
+# 
 # class Test_write_text_file(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -12367,7 +12367,7 @@
 #             "write_text_file() missing 2 required positional arguments: 'data' and 'file_name'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_write_text_row(self):
 #         data = [[1, 1, 1, 1], [2, 2, 2, 2], [3, 3, 3, 3]]
 #         f = path.join(ABSOLUTE_PATH, "filefu.txt")
@@ -12380,8 +12380,8 @@
 #         )
 #         self.assertEqual(returns_values_in_file(f), returns_values_in_file(fold))
 #         remove_list_of_file([f, fold])
-#
-#
+# 
+# 
 # class Test_rotate_shift_params(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -12393,7 +12393,7 @@
 #             "rotate_shift_params() missing 2 required positional arguments: 'paramsin' and 'transf'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_rotate_shift_params(self):
 #         paramsin = [[0.25, 1.25, 0.5]]
 #         transf = [0.25, 1.25, 0.5]
@@ -12401,7 +12401,7 @@
 #         return_old = oldfu.rotate_shift_params(paramsin=paramsin, transf=transf)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, [[0.0, 0.0, 1.2820115403810843e-08]]))
-#
+# 
 #     def test_rotate_shift_params2(self):
 #         paramsin = [[0.25, 1.25, 0, 0, 0.5]]
 #         transf = [0.25, 1.25, 0.5, 0.25, 1.25, 0.5]
@@ -12422,7 +12422,7 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     def test_less_transf_params_returns_IndexError_list_index_out_of_range(self):
 #         paramsin = [[0.25, 1.25, 0, 0, 0.5]]
 #         transf = [0.25, 1.25, 0.5]
@@ -12432,7 +12432,7 @@
 #             oldfu.rotate_shift_params(paramsin=paramsin, transf=transf)
 #         self.assertEqual(str(cm_new.exception), "list index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_less_transf_params2_returns_IndexError_list_index_out_of_range(self):
 #         paramsin = [[0.25, 1.25, 0]]
 #         transf = [0.25, 1.25]
@@ -12442,7 +12442,7 @@
 #             oldfu.rotate_shift_params(paramsin=paramsin, transf=transf)
 #         self.assertEqual(str(cm_new.exception), "list index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_less_paramsin_params_returns_IndexError_list_index_out_of_range(self):
 #         paramsin = [[0.25]]
 #         transf = [0.25, 1.25, 0.5]
@@ -12452,11 +12452,11 @@
 #             oldfu.rotate_shift_params(paramsin=paramsin, transf=transf)
 #         self.assertEqual(str(cm_new.exception), "list index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
+# 
+# 
 # class Test_reshape_1d(unittest.TestCase):
 #     """ values got from 'pickle files/utilities/utilities.reshape_1d'"""
-#
+# 
 #     input_obj = [
 #         0.999,
 #         0.999,
@@ -12638,7 +12638,7 @@
 #     ]
 #     length_current = 2 * len(input_obj)
 #     length_interpolated = 4 * len(input_obj)
-#
+# 
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.reshape_1d()
@@ -12648,7 +12648,7 @@
 #             str(cm_new.exception), "reshape_1d() missing 1 required positional argument: 'input_object'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_null_list_as_input_obj(self):
 #         sp_global_def.BATCH = True
 #         with self.assertRaises(IndexError) as cm_new:
@@ -12670,7 +12670,7 @@
 #             )
 #         self.assertEqual(str(cm_new.exception), str('list index out of range'))
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_pickle_file_values(self):
 #         return_new = fu.reshape_1d(
 #             input_object=self.input_obj,
@@ -13402,7 +13402,7 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     def test_null_length_interpolated_pixel_sizes_identical_error_msg(self):
 #         return_new = fu.reshape_1d(
 #             input_object=self.input_obj,
@@ -13420,7 +13420,7 @@
 #         )
 #         self.assertEqual(return_new, [])
 #         self.assertEqual(return_old, [])
-#
+# 
 #     def test_null_length_current(self):
 #         return_new = fu.reshape_1d(
 #             input_object=self.input_obj,
@@ -14152,7 +14152,7 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     def test_all_the_values_are_null_or_empty_list_error_msg(self):
 #         sp_global_def.BATCH = True
 #         with self.assertRaises(SystemExit) as cm_new:
@@ -14175,7 +14175,7 @@
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 #         # self.assertEqual(return_new, [])
 #         # self.assertEqual(return_old, [])
-#
+# 
 #     def test_invalid_pixel_sizes_combination_in_null_value_as_length_interpolated_returns_ZeroDivisionError(
 #         self
 #     ):
@@ -14197,14 +14197,14 @@
 #             )
 #         self.assertEqual(str(cm_new.exception), "float division by zero")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
+# 
+# 
 # '''
 # @unittest.skip("I m not sure how test them")
 # class Test_estimate_3D_center_MPI(unittest.TestCase):
 #     """ values got from 'pickle files/utilities/utilities.estimate_3D_center_MPI'"""
 #     argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.estimate_3D_center_MPI"))
-#
+# 
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.estimate_3D_center_MPI()
@@ -14212,14 +14212,14 @@
 #             oldfu.estimate_3D_center_MPI()
 #         self.assertEqual(str(cm_new.exception), "estimate_3D_center_MPI() takes at least 5 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_myid_not_identical_to_main_node(self):
 #         (data, nima, myid, number_of_proc, main_node) = self.argum[0]
 #         return_new = fu.estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node)
 #         return_old = oldfu.estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node)
 #         self.assertTrue(array_equal(return_old, [0.0, 0.0, 0.0, 0.0, 0.0]))
 #         self.assertTrue(array_equal(return_new, [0.0, 0.0, 0.0, 0.0, 0.0]))
-#
+# 
 #     def test_myid_not_identical_to_main_node1(self):
 #         (data, nima, myid, number_of_proc, main_node) = self.argum[0]
 #         main_node=myid
@@ -14228,17 +14228,17 @@
 #         self.assertTrue(array_equal(return_old, [0.0, 0.0, 0.0, 0.0, 0.0]))
 #         self.assertTrue(array_equal(return_new, [0.0, 0.0, 0.0, 0.0, 0.0]))
 # '''
-#
-#
+# 
+# 
 # class Test_rotate_3D_shift(unittest.TestCase):
 #     """ values got from 'pickle files/utilities/utilities.rotate_3D_shift'"""
-#
+# 
 #     argum = get_arg_from_pickle_file(
 #         path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.rotate_3D_shift")
 #     )
 #     (data, notUsed) = argum[0]
 #     shift3d = [10.1, 0.2, 10.0]
-#
+# 
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.rotate_3D_shift()
@@ -14249,7 +14249,7 @@
 #             "rotate_3D_shift() missing 2 required positional arguments: 'data' and 'shift3d'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_wrong_image(self):
 #         data, not_used = get_real_data(dim=3)
 #         with self.assertRaises(RuntimeError) as cm_new:
@@ -14263,7 +14263,7 @@
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_Nonetype_image(self):
 #         with self.assertRaises(AttributeError) as cm_new:
 #             fu.rotate_3D_shift(data=[None], shift3d=self.shift3d)
@@ -14273,20 +14273,20 @@
 #             str(cm_new.exception), "'NoneType' object has no attribute 'get_attr'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_pickle_file_values(self):
-#
+# 
 #         fu_data = [EMNumPy.numpy2em(deepcopy(self.data[0].get_3dview()))]
 #         fu_data[0].set_attr_dict(self.data[0].get_attr_dict())
 #         oldfu_data = [EMNumPy.numpy2em(deepcopy(self.data[0].get_3dview()))]
 #         oldfu_data[0].set_attr_dict(self.data[0].get_attr_dict())
-#
-#
+# 
+# 
 #         return_new = fu.rotate_3D_shift(data=fu_data, shift3d=self.shift3d)
 #         return_old = oldfu.rotate_3D_shift(data=oldfu_data, shift3d=self.shift3d)
 #         self.assertEqual(return_new, None)
 #         self.assertEqual(return_old, None)
-#
+# 
 #         for i in range(len(fu_data)):
 #             self.assertTrue(
 #                 array_equal(
@@ -14300,7 +14300,7 @@
 #                     fu_data[i].get_attr("xform.projection"),
 #                 )
 #             )
-#
+# 
 #     def test_returns_IndexError_list_index_out_of_range(self):
 #         shift3d = [0, 0.1]
 #         with self.assertRaises(IndexError) as cm_new:
@@ -14309,8 +14309,8 @@
 #             oldfu.rotate_3D_shift(data=self.data, shift3d=shift3d)
 #         self.assertEqual(str(cm_new.exception), "list index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
+# 
+# 
 # class Test_set_arb_params(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -14322,7 +14322,7 @@
 #             "set_arb_params() missing 3 required positional arguments: 'img', 'params', and 'par_str'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_with_1Attr(self):
 #         fu_img = EMData()
 #         oldfu_img = EMData()
@@ -14334,7 +14334,7 @@
 #         self.assertEqual(return_old, None)
 #         self.assertEqual(fu_img.get_attr(par_str), fu_img.get_attr(par_str))
 #         self.assertEqual(fu_img.get_attr(par_str), params)
-#
+# 
 #     def test_with_ListAttr(self):
 #         fu_img = EMData()
 #         oldfu_img = EMData()
@@ -14348,7 +14348,7 @@
 #         self.assertEqual(fu_img.get_attr(par_str[1]), fu_img.get_attr(par_str[1]))
 #         self.assertEqual(fu_img.get_attr(par_str[0]), params[0])
 #         self.assertEqual(fu_img.get_attr(par_str[1]), params[1])
-#
+# 
 #     def test_with_BadListAttr_returns_IndexError_list_index_out_of_range(self):
 #         fu_img = EMData()
 #         oldfu_img = EMData()
@@ -14360,8 +14360,8 @@
 #             oldfu.set_arb_params(oldfu_img, params, par_str)
 #         self.assertEqual(str(cm_new.exception), "list index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
+# 
+# 
 # class Test_get_arb_params(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -14373,13 +14373,13 @@
 #             "get_arb_params() missing 2 required positional arguments: 'img' and 'par_str'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_with_1Attr(self):
 #         return_new = fu.get_arb_params(EMData(), ["datatype"])
 #         return_old = oldfu.get_arb_params(EMData(), ["datatype"])
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_new, [EMData().get_attr("datatype")])
-#
+# 
 #     def test_with_ListAttr(self):
 #         list_of_attribute = ["datatype", "is_complex_ri"]
 #         return_new = fu.get_arb_params(EMData(), list_of_attribute)
@@ -14387,7 +14387,7 @@
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertEqual(return_new[0], EMData().get_attr("datatype"))
 #         self.assertEqual(return_new[1], EMData().get_attr("is_complex_ri"))
-#
+# 
 #     def test_notValid_params_returns_RuntimeError_NotExistingObjectException_key_doesnot_exist(
 #         self
 #     ):
@@ -14402,15 +14402,15 @@
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
+# 
+# 
 # class Test_reduce_EMData_to_root(unittest.TestCase):
-#
+# 
 #     argum = get_arg_from_pickle_file(
 #         path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.rotate_3D_shift")
 #     )
 #     (data, notUsed) = argum[0]
-#
+# 
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.reduce_EMData_to_root()
@@ -14421,7 +14421,7 @@
 #             "reduce_EMData_to_root() missing 2 required positional arguments: 'data' and 'myid'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_NoneType_as_img_crashes_because_signal11SIGSEV(self):
 #         self.assertTrue(True)
 #         """
@@ -14429,29 +14429,29 @@
 #         return_old = oldfu.reduce_EMData_to_root(None, myid=74, main_node=0, comm = -1)
 #         self.assertEqual(return_new, return_old)
 #         """
-#
+# 
 #     def test_default_values(self):
 #         new_data = [EMNumPy.numpy2em(deepcopy(self.data[0].get_3dview()))]
 #         new_data[0].set_attr_dict(self.data[0].get_attr_dict())
 #         old_data = [EMNumPy.numpy2em(deepcopy(self.data[0].get_3dview()))]
 #         old_data[0].set_attr_dict(self.data[0].get_attr_dict())
-#
+# 
 #         # data = deepcopy(IMAGE_2D_REFERENCE)
 #         return_new = fu.reduce_EMData_to_root(new_data[0], myid=74, main_node=0, comm=-1)
 #         return_old = oldfu.reduce_EMData_to_root(old_data[0], myid=74, main_node=0, comm=-1)
-#
+# 
 #         # self.assertTrue(array_equal(new_data[0].get_2dview(), old_data[0].get_2dview()))
 #         self.assertEqual(return_new, return_old)
 #         self.assertTrue(return_new is None)
-#
+# 
 #     def test_with_MPI_COMM_WORLD(self):
 #         # data = deepcopy(IMAGE_2D_REFERENCE)
-#
+# 
 #         new_data = [EMNumPy.numpy2em(deepcopy(self.data[0].get_3dview()))]
 #         new_data[0].set_attr_dict(self.data[0].get_attr_dict())
 #         old_data = [EMNumPy.numpy2em(deepcopy(self.data[0].get_3dview()))]
 #         old_data[0].set_attr_dict(self.data[0].get_attr_dict())
-#
+# 
 #         return_new = fu.reduce_EMData_to_root(
 #             new_data[0], myid=74, main_node=0, comm=MPI_COMM_WORLD
 #         )
@@ -14461,8 +14461,8 @@
 #         # self.assertTrue(array_equal(new_data[0].get_3dview(), old_data[0].get_3dview()))
 #         self.assertEqual(return_new, return_old)
 #         self.assertTrue(return_new is None)
-#
-#
+# 
+# 
 # class Test_bcast_compacted_EMData_all_to_all(unittest.TestCase):
 #     """
 #     It does not matter which of my images I-ll use, I got always the following typeerror:
@@ -14476,7 +14476,7 @@
 #     em_dict = dict_received["em_dict"]
 # TypeError: 'NoneType' object has no attribute '__getitem__'
 #     """
-#
+# 
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.bcast_compacted_EMData_all_to_all()
@@ -14487,7 +14487,7 @@
 #             "bcast_compacted_EMData_all_to_all() missing 2 required positional arguments: 'list_of_em_objects' and 'myid'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_with_NoneType_data_returns_TypeError_NoneType_obj_hasnot_attribute__getitem__(
 #         self
 #     ):
@@ -14499,21 +14499,21 @@
 #             str(cm_new.exception), "'NoneType' object is not subscriptable"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_wrong_image(self):
 #         data = [IMAGE_3D, IMAGE_3D]
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.bcast_compacted_EMData_all_to_all(data, myid=74, comm=-1)
 #         with self.assertRaises(TypeError) as cm_old:
 #             oldfu.bcast_compacted_EMData_all_to_all(data, myid=74, comm=-1)
-#
+# 
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 #         self.assertEqual(
 #             str(cm_new.exception), "'NoneType' object is not subscriptable"
 #         )
-#
-#
-#
+# 
+# 
+# 
 # """
 # has been cleaned
 # class Test_gather_compacted_EMData_to_root(unittest.TestCase):
@@ -14525,27 +14525,27 @@
 #             oldfu.gather_compacted_EMData_to_root()
 #         self.assertEqual(str(cm_new.exception), "gather_compacted_EMData_to_root() takes at least 3 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_pickle_file_values(self):
 #         (no_of_emo, list_of_emo, myid) = self.argum[0]
 #         return_new = fu.gather_compacted_EMData_to_root(no_of_emo, list_of_emo, myid, comm=-1)
 #         return_old = oldfu.gather_compacted_EMData_to_root(no_of_emo, list_of_emo, myid, comm=-1)
 #         self.assertEqual(return_new, return_old)
-#
+# 
 #     def test_with_MPI_COMM_WORLD(self):
 #         (no_of_emo, list_of_emo, myid) = self.argum[0]
 #         return_new = fu.gather_compacted_EMData_to_root(no_of_emo, list_of_emo, myid, comm=MPI_COMM_WORLD)
 #         return_old = oldfu.gather_compacted_EMData_to_root(no_of_emo, list_of_emo, myid, comm=MPI_COMM_WORLD)
 #         self.assertEqual(return_new, return_old)
 #         self.assertTrue(return_new is None)
-#
+# 
 #     def test_pickle_file_values_wrong_number_of_number_of_all_em_objects_distributed_across_processes(self):
 #         (no_of_emo, list_of_emo, myid) = self.argum[0]
 #         return_new = fu.gather_compacted_EMData_to_root(0, list_of_emo, myid,  comm=-1)
 #         return_old = oldfu.gather_compacted_EMData_to_root(0, list_of_emo, myid, comm=-1)
 #         self.assertEqual(return_new, return_old)
 #         self.assertTrue(return_new is None)
-#
+# 
 #     def test_NoneType_as_img_returns_IndexError_list_index_out_of_range(self):
 #         (no_of_emo, list_of_emo, myid) = self.argum[0]
 #         with self.assertRaises(IndexError) as cm_new:
@@ -14555,15 +14555,15 @@
 #         self.assertEqual(str(cm_new.exception), "list index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 # """
-#
-#
+# 
+# 
 # class Test_bcast_EMData_to_all(unittest.TestCase):
 #     argum = get_arg_from_pickle_file(
 #         path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.rotate_3D_shift")
 #     )
 #     (data, notUsed) = argum[0]
-#
-#
+# 
+# 
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.bcast_EMData_to_all()
@@ -14574,52 +14574,52 @@
 #             "bcast_EMData_to_all() missing 2 required positional arguments: 'tavg' and 'myid'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_with_default_values(self):
 #         # tavg = deepcopy(IMAGE_2D_REFERENCE)
 #         tavg_new = [EMNumPy.numpy2em(deepcopy(self.data[0].get_3dview()))]
 #         tavg_new[0].set_attr_dict(self.data[0].get_attr_dict())
 #         tavg_old = [EMNumPy.numpy2em(deepcopy(self.data[0].get_3dview()))]
 #         tavg_old[0].set_attr_dict(self.data[0].get_attr_dict())
-#
+# 
 #         return_new = fu.bcast_EMData_to_all(tavg_new[0], myid=11, source_node=0, comm=-1)
 #         return_old = oldfu.bcast_EMData_to_all(tavg_old[0], myid=11, source_node=0, comm=-1)
 #         # self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
 #         self.assertEqual(return_new, return_old)
 #         self.assertTrue(return_new is None)
-#
+# 
 #     def test_with_myid_equal_sourcenode_default_valuqes(self):
 #         # tavg = deepcopy(IMAGE_2D_REFERENCE)
 #         tavg_new = [EMNumPy.numpy2em(deepcopy(self.data[0].get_3dview()))]
 #         tavg_new[0].set_attr_dict(self.data[0].get_attr_dict())
 #         tavg_old = [EMNumPy.numpy2em(deepcopy(self.data[0].get_3dview()))]
 #         tavg_old[0].set_attr_dict(self.data[0].get_attr_dict())
-#
+# 
 #         return_new = fu.bcast_EMData_to_all(tavg_new[0], myid=0, source_node=0, comm=-1)
 #         return_old = oldfu.bcast_EMData_to_all(tavg_old[0], myid=0, source_node=0, comm=-1)
-#
+# 
 #         # self.assertTrue(array_equal(IMAGE_2D_REFERENCE.get_3dview(), tavg.get_3dview()))
 #         self.assertEqual(return_new, return_old)
 #         self.assertTrue(return_new is None)
-#
+# 
 #     def test_with_MPI_COMM_WORLD(self):
 #         # tavg = deepcopy(IMAGE_2D_REFERENCE)
 #         tavg_new = [EMNumPy.numpy2em(deepcopy(self.data[0].get_3dview()))]
 #         tavg_new[0].set_attr_dict(self.data[0].get_attr_dict())
 #         tavg_old = [EMNumPy.numpy2em(deepcopy(self.data[0].get_3dview()))]
 #         tavg_old[0].set_attr_dict(self.data[0].get_attr_dict())
-#
+# 
 #         return_new = fu.bcast_EMData_to_all(
 #             tavg_new[0], myid=0, source_node=0, comm=MPI_COMM_WORLD
 #         )
-#
+# 
 #         return_old = oldfu.bcast_EMData_to_all(
 #             tavg_old[0], myid=0, source_node=0, comm=MPI_COMM_WORLD
 #         )
 #         # self.assertTrue(array_equal(IMAGE_2D_REFERENCE.get_3dview(), tavg.get_3dview()))
 #         self.assertEqual(return_new, return_old)
 #         self.assertTrue(return_new is None)
-#
+# 
 #     def test_NoneType_as_img_crashes_because_signal11SIGSEV(self):
 #         self.assertTrue(True)
 #         """
@@ -14627,8 +14627,8 @@
 #         return_old = oldfu.bcast_EMData_to_all(None, 11, source_node =0, comm= -1)
 #         self.assertEqual(return_new, return_old)
 #         """
-#
-#
+# 
+# 
 # class Test_send_EMData(unittest.TestCase):
 #     # argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.send_EMData"))
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
@@ -14640,7 +14640,7 @@
 #             str(cm_new.exception), "send_EMData() missing 3 required positional arguments: 'img', 'dst', and 'tag'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_NoneType_as_img_crashes_because_signal11SIGSEV(self):
 #         with self.assertRaises(AttributeError) as cm_new:
 #             fu.send_EMData(None, 0, 0)
@@ -14650,7 +14650,7 @@
 #             str(cm_new.exception), "'NoneType' object has no attribute 'get_xsize'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     """  Can only be tested on the mpi. Wait too long on normal workstation"""
 #     # def test_send_EMData_true_should_return_equal_objects(self):
 #     #     filepath = path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.send_EMData")
@@ -14669,8 +14669,8 @@
 #     #     mpi_barrier(MPI_COMM_WORLD)
 #     #
 #     #     self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 # class Test_recv_EMData(unittest.TestCase):
 #     # argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.recv_EMData"))
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
@@ -14682,7 +14682,7 @@
 #             str(cm_new.exception), "recv_EMData() missing 2 required positional arguments: 'src' and 'tag'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     """  Can only be tested on the mpi. Wait too long on normal workstation"""
 #     # def test_recv_EMData_true_should_return_equal_objects(self):
 #     #     filepath = path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.recv_EMData")
@@ -14701,8 +14701,8 @@
 #     #     mpi_barrier(MPI_COMM_WORLD)
 #     #
 #     #     self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 # class Test_bcast_number_to_all(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -14714,7 +14714,7 @@
 #             "bcast_number_to_all() missing 1 required positional argument: 'number_to_send'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_number_to_send_is_null(self):
 #         return_new = fu.bcast_number_to_all(
 #             number_to_send=0, source_node=0, mpi_comm=-1
@@ -14724,7 +14724,7 @@
 #         )
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_new, 0)
-#
+# 
 #     def test_with_MPI_COMM_WORLD(self):
 #         return_new = fu.bcast_number_to_all(
 #             number_to_send=0, source_node=0, mpi_comm=MPI_COMM_WORLD
@@ -14734,7 +14734,7 @@
 #         )
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_new, 0)
-#
+# 
 #     def test_number_to_send_is_not_null(self):
 #         return_new = fu.bcast_number_to_all(
 #             number_to_send=3, source_node=0, mpi_comm=-1
@@ -14744,7 +14744,7 @@
 #         )
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_new, 3)
-#
+# 
 #     def test_invalid_number_to_send_error_msg(self):
 #         return_new = fu.bcast_number_to_all(
 #             number_to_send=None, source_node=0, mpi_comm=-1
@@ -14754,13 +14754,13 @@
 #         )
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_new, None)
-#
-#
+# 
+# 
 # class Test_bcast_list_to_all(unittest.TestCase):
 #     myid = 74
 #     source_node = 0
 #     list_to_send = [1, 2]
-#
+# 
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.bcast_list_to_all()
@@ -14771,7 +14771,7 @@
 #             "bcast_list_to_all() missing 2 required positional arguments: 'list_to_send' and 'myid'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     """
 #     the compatibility test in the nosetests feiled
 #     def test_with_empty_list(self):
@@ -14780,7 +14780,7 @@
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new,[]))
 #     """
-#
+# 
 #     def test_defualt_values(self):
 #         return_new = fu.bcast_list_to_all(
 #             self.list_to_send, myid=self.myid, source_node=self.source_node, mpi_comm=-1
@@ -14790,7 +14790,7 @@
 #         )
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, []))
-#
+# 
 #     def test_defualt_values_with_MPI_COMM_WORLD(self):
 #         return_new = fu.bcast_list_to_all(
 #             self.list_to_send,
@@ -14806,7 +14806,7 @@
 #         )
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, []))
-#
+# 
 #     def test_myid_equal_sourcenode(self):
 #         return_new = fu.bcast_list_to_all(
 #             self.list_to_send,
@@ -14822,7 +14822,7 @@
 #         )
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, self.list_to_send))
-#
+# 
 #     """
 #     in the nosetests the exception is not raised
 #     def test_myid_equal_sourcenode_and_wrong_type_in_listsender_returns_ValueError(self):
@@ -14834,7 +14834,7 @@
 #         self.assertEqual(str(cm_new.exception), "setting an array element with a sequence.")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 #     """
-#
+# 
 #     def test_wrong_type_in_listsender(self):
 #         list_to_send = [IMAGE_2D]
 #         return_new = fu.bcast_list_to_all(
@@ -14851,8 +14851,8 @@
 #         )
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, []))
-#
-#
+# 
+# 
 # class Test_recv_attr_dict(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -14864,8 +14864,8 @@
 #             "recv_attr_dict() missing 7 required positional arguments: 'main_node', 'stack', 'data', 'list_params', 'image_start', 'image_end', and 'number_of_proc'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
+# 
+# 
 # class Test_send_attr_dict(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -14877,8 +14877,8 @@
 #             "send_attr_dict() missing 5 required positional arguments: 'main_node', 'data', 'list_params', 'image_start', and 'image_end'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
+# 
+# 
 # class Test_recv_attr_dict_bdb(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -14890,11 +14890,11 @@
 #             "recv_attr_dict_bdb() missing 7 required positional arguments: 'main_node', 'stack', 'data', 'list_params', 'image_start', 'image_end', and 'number_of_proc'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
+# 
+# 
 # class Test_print_begin_msg(unittest.TestCase):
 #     """ see https://wrongsideofmemphis.com/2010/03/01/store-standard-output-on-a-variable-in-python/"""
-#
+# 
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.print_begin_msg()
@@ -14905,7 +14905,7 @@
 #             "print_begin_msg() missing 1 required positional argument: 'program_name'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_print_begin_msg(self):
 #         old_stdout = sys.stdout
 #         print_new = StringIO()
@@ -14918,7 +14918,7 @@
 #         self.assertTrue(return_new is None)
 #         self.assertEqual(print_new.getvalue(), print_old.getvalue())
 #         sys.stdout = old_stdout
-#
+# 
 #     def test_print_begin_msg_onscreen_True(self):
 #         old_stdout = sys.stdout
 #         print_new = StringIO()
@@ -14931,11 +14931,11 @@
 #         self.assertTrue(return_new is None)
 #         self.assertEqual(print_new.getvalue(), print_old.getvalue())
 #         sys.stdout = old_stdout
-#
-#
+# 
+# 
 # class Test_print_end_msg(unittest.TestCase):
 #     """ see https://wrongsideofmemphis.com/2010/03/01/store-standard-output-on-a-variable-in-python/"""
-#
+# 
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.print_end_msg()
@@ -14945,7 +14945,7 @@
 #             str(cm_new.exception), "print_end_msg() missing 1 required positional argument: 'program_name'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_print_end_msg(self):
 #         old_stdout = sys.stdout
 #         print_new = StringIO()
@@ -14958,7 +14958,7 @@
 #         self.assertTrue(return_new is None)
 #         self.assertEqual(print_new.getvalue(), print_old.getvalue())
 #         sys.stdout = old_stdout
-#
+# 
 #     def test_print_end_msg_onscreen_True(self):
 #         old_stdout = sys.stdout
 #         print_new = StringIO()
@@ -14971,11 +14971,11 @@
 #         self.assertTrue(return_new is None)
 #         self.assertEqual(print_new.getvalue(), print_old.getvalue())
 #         sys.stdout = old_stdout
-#
-#
+# 
+# 
 # class Test_print_msg(unittest.TestCase):
 #     """ see https://wrongsideofmemphis.com/2010/03/01/store-standard-output-on-a-variable-in-python/"""
-#
+# 
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.print_msg()
@@ -14985,7 +14985,7 @@
 #             str(cm_new.exception), "print_msg() missing 1 required positional argument: 'msg'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_print_msg(self):
 #         old_stdout = sys.stdout
 #         print_new = StringIO()
@@ -14998,8 +14998,8 @@
 #         self.assertTrue(return_new is None)
 #         self.assertEqual(print_new.getvalue(), print_old.getvalue())
 #         sys.stdout = old_stdout
-#
-#
+# 
+# 
 # class Test_read_fsc(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -15010,7 +15010,7 @@
 #             str(cm_new.exception), "read_fsc() missing 1 required positional argument: 'filename'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_write_text_row(self):
 #         data = [[1, 1, 1, 1], [2, 2, 2, 2], [3, 3, 3, 3]]
 #         f = path.join(ABSOLUTE_PATH, "filefu.txt")
@@ -15020,8 +15020,8 @@
 #         remove_list_of_file([f])
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, data))
-#
-#
+# 
+# 
 # class Test_circumference(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -15032,17 +15032,17 @@
 #             str(cm_new.exception), "circumference() missing 1 required positional argument: 'img'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_with_default_values_2Dimg(self):
 #         return_new = fu.circumference(deepcopy(IMAGE_BLANK_2D), inner=-1, outer=-1)
 #         return_old = oldfu.circumference(deepcopy(IMAGE_BLANK_2D), inner=-1, outer=-1)
 #         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
-#
+# 
 #     def test_with_default_values_3Dimg(self):
 #         return_new = fu.circumference(deepcopy(IMAGE_BLANK_3D), inner=-1, outer=-1)
 #         return_old = oldfu.circumference(deepcopy(IMAGE_BLANK_3D), inner=-1, outer=-1)
 #         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
-#
+# 
 #     def test_with_invalid_mask_returns_RuntimeError_ImageFormatException(self):
 #         with self.assertRaises(RuntimeError) as cm_new:
 #             fu.circumference(
@@ -15063,7 +15063,7 @@
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[1], msg_old[1])
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_with_wrong_outer_value(self):
 #         return_new = fu.circumference(
 #             deepcopy(IMAGE_BLANK_2D), inner=-1, outer=IMAGE_BLANK_2D.get_xsize() + 10
@@ -15072,8 +15072,8 @@
 #             deepcopy(IMAGE_BLANK_2D), inner=-1, outer=IMAGE_BLANK_2D.get_xsize() + 10
 #         )
 #         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
-#
-#
+# 
+# 
 # class Test_write_headers(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -15084,7 +15084,7 @@
 #             str(cm_new.exception), "write_headers() missing 3 required positional arguments: 'filename', 'data', and 'lima'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     # The following tests sometimes failed in the nosetests
 #     def test_hdf_type(self):
 #         path_fu = path.join(ABSOLUTE_PATH, "test.hdf")
@@ -15097,7 +15097,7 @@
 #         self.assertTrue(path.isfile(path_fu))
 #         self.assertTrue(path.isfile(path_oldfu))
 #         remove_list_of_file([path_fu, path_oldfu])
-#
+# 
 #     def test_overwrite_hdf_file(self):
 #         path_fu = path.join(ABSOLUTE_PATH, "test.hdf")
 #         path_oldfu = path.join(ABSOLUTE_PATH, "test1.hdf")
@@ -15113,7 +15113,7 @@
 #         self.assertTrue(path.isfile(path_fu))
 #         self.assertTrue(path.isfile(path_oldfu))
 #         remove_list_of_file([path_fu, path_oldfu])
-#
+# 
 #     def test_hdf_type_AssertError_list_differ(self):
 #         path_fu = path.join(ABSOLUTE_PATH, "test.hdf")
 #         path_oldfu = path.join(ABSOLUTE_PATH, "test1.hdf")
@@ -15131,14 +15131,14 @@
 #             msg[8], "\n\nDiff is 45477 characters long. Set self.maxDiff to None to see it."
 #         )
 #         remove_list_of_file([path_fu, path_oldfu])
-#
+# 
 #     def test_bdf_type(self):
 #         """
 #         in the code they inserted the following comment:
 #         #  For unknown reasons this does not work on Linux, but works on Mac ??? Really?
 #         """
 #         self.assertTrue(True)
-#
+# 
 #     def test_invalid_filetype_error_msg(self):
 #         path_fu = path.join(ABSOLUTE_PATH, "test.txt")
 #         path_oldfu = path.join(ABSOLUTE_PATH, "test1.txt")
@@ -15148,12 +15148,12 @@
 #         sp_global_def.BATCH = True
 #         with self.assertRaises(SystemExit) as cm_old:
 #             oldfu.write_headers(path_oldfu, [IMAGE_2D], [1])
-#
+# 
 #         # self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 #         # self.assertFalse(path.isfile(path_fu))
 #         # self.assertFalse(path.isfile(path_oldfu))
-#
-#
+# 
+# 
 # class Test_write_header(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -15164,7 +15164,7 @@
 #             str(cm_new.exception), "write_header() missing 3 required positional arguments: 'filename', 'data', and 'lima'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_hdf_type(self):
 #         path_fu = path.join(ABSOLUTE_PATH, "test.hdf")
 #         path_oldfu = path.join(ABSOLUTE_PATH, "test1.hdf")
@@ -15176,7 +15176,7 @@
 #         self.assertTrue(path.isfile(path_fu))
 #         self.assertTrue(path.isfile(path_oldfu))
 #         remove_list_of_file([path_fu, path_oldfu])
-#
+# 
 #     def test_overwrite_hdf_file(self):
 #         path_fu = path.join(ABSOLUTE_PATH, "test.hdf")
 #         path_oldfu = path.join(ABSOLUTE_PATH, "test1.hdf")
@@ -15192,7 +15192,7 @@
 #         self.assertTrue(path.isfile(path_fu))
 #         self.assertTrue(path.isfile(path_oldfu))
 #         remove_list_of_file([path_fu, path_oldfu])
-#
+# 
 #     def test_hdf_type_AssertError_list_differ(self):
 #         path_fu = path.join(ABSOLUTE_PATH, "test.hdf")
 #         path_oldfu = path.join(ABSOLUTE_PATH, "test1.hdf")
@@ -15210,23 +15210,23 @@
 #             msg[8], "\n\nDiff is 45477 characters long. Set self.maxDiff to None to see it."
 #         )
 #         remove_list_of_file([path_fu, path_oldfu])
-#
+# 
 #     def test_invalid_systemexit_error_msg(self):
 #         path_fu = path.join(ABSOLUTE_PATH, "test.txt")
 #         path_oldfu = path.join(ABSOLUTE_PATH, "test1.txt")
 #         sp_global_def.BATCH = True
 #         with self.assertRaises(SystemExit) as cm_new:
 #             fu.write_header(path_fu, IMAGE_2D, 1)
-#
+# 
 #         sp_global_def.BATCH = True
 #         with self.assertRaises(SystemExit) as cm_old:
 #             oldfu.write_header(path_oldfu, IMAGE_2D, 1)
-#
+# 
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 #         # self.assertFalse(path.isfile(path_fu))
 #         # self.assertFalse(path.isfile(path_oldfu))
-#
-#
+# 
+# 
 # class Test_file_type(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -15237,34 +15237,34 @@
 #             str(cm_new.exception), "file_type() missing 1 required positional argument: 'name'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_bdb_filetype(self):
 #         fu.file_type("bdb:bdbfile")
 #         oldfu.file_type("bdb:bdbfile")
 #         self.assertTrue(True)
-#
+# 
 #     def test_valid_filetype(self):
 #         fu.file_type("hdf.hdf")
 #         oldfu.file_type("hdf.hdf")
 #         self.assertTrue(True)
-#
+# 
 #     def test_invalid_filetype_error_msg(self):
 #         sp_global_def.BATCH = True
 #         with self.assertRaises(SystemExit) as cm_new:
 #             fu.file_type("invalid.cc")
-#
+# 
 #         sp_global_def.BATCH = True
 #         with self.assertRaises(SystemExit) as cm_old:
 #             oldfu.file_type("invalid.cc")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 #         self.assertTrue(True)
-#
-#
+# 
+# 
 # class Test_get_params2D(unittest.TestCase):
 #     argum = get_arg_from_pickle_file(
 #         path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.get_params2D")
 #     )
-#
+# 
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.get_params2D()
@@ -15274,14 +15274,14 @@
 #             str(cm_new.exception), "get_params2D() missing 1 required positional argument: 'ima'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_get_params2D(self):
 #         (ima,) = self.argum[0]
 #         return_new = fu.get_params2D(ima, xform="xform.align2d")
 #         return_old = oldfu.get_params2D(ima, xform="xform.align2d")
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, (0.0, 0.0, 0.0, 0, 1.0)))
-#
+# 
 #     def test_wrong_xform_returns_NotExistingObjectException_key_doesnot_exist(self):
 #         (ima,) = self.argum[0]
 #         with self.assertRaises(RuntimeError) as cm_new:
@@ -15295,7 +15295,7 @@
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_wrong_input_2dimg_returns_NotExistingObjectException_key_doesnot_exist(
 #         self
 #     ):
@@ -15310,7 +15310,7 @@
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_wrong_input_3dimg_returns_NotExistingObjectException_key_doesnot_exist(
 #         self
 #     ):
@@ -15325,7 +15325,7 @@
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_NoneType_as_img_crashes_because_signal11SIGSEV(self):
 #         self.assertTrue(True)
 #         """
@@ -15336,19 +15336,19 @@
 #         self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_attr'")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 #         """
-#
-#
+# 
+# 
 # class Test_set_params2D(unittest.TestCase):
 #     # argum = get_arg_from_pickle_file(
 #     #     path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.get_params2D")
 #     # )
 #     params = [1, 2, 3, 4, 5]
-#
+# 
 #     argum = get_arg_from_pickle_file(
 #         path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.rotate_3D_shift")
 #     )
 #     (data, notUsed) = argum[0]
-#
+# 
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.set_params2D()
@@ -15358,14 +15358,14 @@
 #             str(cm_new.exception), "set_params2D() missing 2 required positional arguments: 'ima' and 'p'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_set_params2D_using_wrongxform(self):
-#
+# 
 #         fu_img = [EMNumPy.numpy2em(deepcopy(self.data[0].get_2dview()))]
 #         fu_img[0].set_attr_dict(self.data[0].get_attr_dict())
 #         fu2_img = [EMNumPy.numpy2em(deepcopy(self.data[0].get_2dview()))]
 #         fu2_img[0].set_attr_dict(self.data[0].get_attr_dict())
-#
+# 
 #         fu.set_params2D(fu_img[0], self.params, xform="xform.align2d")
 #         oldfu.set_params2D(
 #             fu2_img[0], self.params, xform="xform.projection"
@@ -15373,13 +15373,13 @@
 #         self.assertFalse(
 #             array_equal(fu.get_params2D(fu_img[0]), oldfu.get_params2D(fu2_img[0]))
 #         )
-#
+# 
 #     def test_set_params2D_using_wrongxform2(self):
 #         fu_img = [EMNumPy.numpy2em(deepcopy(self.data[0].get_2dview()))]
 #         fu_img[0].set_attr_dict(self.data[0].get_attr_dict())
 #         fu2_img = [EMNumPy.numpy2em(deepcopy(self.data[0].get_2dview()))]
 #         fu2_img[0].set_attr_dict(self.data[0].get_attr_dict())
-#
+# 
 #         fu.set_params2D(
 #             fu_img[0], self.params, xform="xform.projection"
 #         )  # is not setting the params
@@ -15389,38 +15389,38 @@
 #         self.assertTrue(
 #             array_equal(fu.get_params2D(fu_img[0]), oldfu.get_params2D(fu2_img[0]))
 #         )
-#
+# 
 #     def test_set_params2D(self):
 #         fu_img = [EMNumPy.numpy2em(deepcopy(self.data[0].get_2dview()))]
 #         fu_img[0].set_attr_dict(self.data[0].get_attr_dict())
 #         oldfu_img = [EMNumPy.numpy2em(deepcopy(self.data[0].get_2dview()))]
 #         oldfu_img[0].set_attr_dict(self.data[0].get_attr_dict())
-#
+# 
 #         fu.set_params2D(fu_img[0], self.params, xform="xform.align2d")
 #         oldfu.set_params2D(oldfu_img[0], self.params, xform="xform.align2d")
 #         self.assertTrue(
 #             array_equal(fu.get_params2D(fu_img[0]), oldfu.get_params2D(oldfu_img[0]))
 #         )
-#
+# 
 #     def test_less_params(self):
 #         fu_img = [EMNumPy.numpy2em(deepcopy(self.data[0].get_2dview()))]
 #         fu_img[0].set_attr_dict(self.data[0].get_attr_dict())
 #         oldfu_img = [EMNumPy.numpy2em(deepcopy(self.data[0].get_2dview()))]
 #         oldfu_img[0].set_attr_dict(self.data[0].get_attr_dict())
-#
+# 
 #         with self.assertRaises(IndexError) as cm_new:
 #             fu.set_params2D(fu_img, [0, 1], xform="xform.align2d")
 #         with self.assertRaises(IndexError) as cm_old:
 #             oldfu.set_params2D(oldfu_img, [0, 1], xform="xform.align2d")
 #         self.assertEqual(str(cm_new.exception), "list index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_wrong_xform_does_not_change_the_values_IS_IT_OK_OR_NOT(self):
 #         fu_img = [EMNumPy.numpy2em(deepcopy(self.data[0].get_2dview()))]
 #         fu_img[0].set_attr_dict(self.data[0].get_attr_dict())
 #         oldfu_img = [EMNumPy.numpy2em(deepcopy(self.data[0].get_2dview()))]
 #         oldfu_img[0].set_attr_dict(self.data[0].get_attr_dict())
-#
+# 
 #         fu.set_params2D(
 #             fu_img[0], self.params, xform="xform.align3d"
 #         )  # is not setting the params
@@ -15430,20 +15430,20 @@
 #         self.assertTrue(
 #             array_equal(fu.get_params2D(fu_img[0]), oldfu.get_params2D(oldfu_img[0]))
 #         )
-#
+# 
 #     def test_wrong_input_img(self):
 #         # I called it wrong image just because in the 'get_params2D' there was an error due to the missing xform key
 #         fu_img = [EMNumPy.numpy2em(deepcopy(self.data[0].get_2dview()))]
 #         fu_img[0].set_attr_dict(self.data[0].get_attr_dict())
 #         oldfu_img = [EMNumPy.numpy2em(deepcopy(self.data[0].get_2dview()))]
 #         oldfu_img[0].set_attr_dict(self.data[0].get_attr_dict())
-#
+# 
 #         fu.set_params2D(fu_img[0], self.params, xform="xform.align2d")
 #         oldfu.set_params2D(oldfu_img[0], self.params, xform="xform.align2d")
 #         self.assertTrue(
 #             array_equal(fu.get_params2D(fu_img[0]), oldfu.get_params2D(oldfu_img[0]))
 #         )
-#
+# 
 #     def test_NoneType_as_img_returns_AttributeError_NoneType_obj_hasnot_attribute_process(
 #         self
 #     ):
@@ -15455,8 +15455,8 @@
 #             str(cm_new.exception), "'NoneType' object has no attribute 'set_attr'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
+# 
+# 
 # class Test_get_params3D(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -15467,7 +15467,7 @@
 #             str(cm_new.exception), "get_params3D() missing 1 required positional argument: 'ima'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     # todo: I need a 3D image with 'xform.align3d' key
 #     """
 #     def test_get_params3D(self):
@@ -15476,7 +15476,7 @@
 #         self.assertTrue(array_equal(return_new,return_old))
 #         self.assertTrue(array_equal(return_new,(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 1.0)))
 #     """
-#
+# 
 #     def test_wrong_xform_returns_NotExistingObjectException_key_doesnot_exist(self):
 #         with self.assertRaises(RuntimeError) as cm_new:
 #             fu.get_params3D(IMAGE_3D, xform="xform.align2d")
@@ -15489,7 +15489,7 @@
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_wrong_input_img_returns_NotExistingObjectException_key_doesnot_exist(self):
 #         with self.assertRaises(RuntimeError) as cm_new:
 #             fu.get_params3D(IMAGE_2D, xform="xform.align3d")
@@ -15502,7 +15502,7 @@
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_NoneType_as_img_crashes_because_signal11SIGSEV(self):
 #         self.assertTrue(True)
 #         """
@@ -15513,8 +15513,8 @@
 #         self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_attr'")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 #         """
-#
-#
+# 
+# 
 # # todo: I need a 3D image with 'xform.align3d' key
 # """
 # class Test_set_params3D(unittest.TestCase):
@@ -15526,7 +15526,7 @@
 #             oldfu.set_params3D()
 #         self.assertEqual(str(cm_new.exception), "set_params3D() takes at least 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_set_params3D(self):
 #         fu_img = deepcopy(IMAGE_3D)
 #         oldfu_img = deepcopy(IMAGE_3D)
@@ -15534,7 +15534,7 @@
 #         oldfu.set_params3D(oldfu_img, self.params, xform="xform.align3d")
 #         self.assertTrue(array_equal(fu.get_params3D(fu_img), oldfu.get_params3D(oldfu_img)))
 #         self.assertFalse(array_equal(fu.get_params3D(fu_img), oldfu.get_params3D(IMAGE_3D)))
-#
+# 
 #     def test_less_params(self):
 #         fu_img = deepcopy(IMAGE_3D)
 #         oldfu_img = deepcopy(IMAGE_3D)
@@ -15544,7 +15544,7 @@
 #             oldfu.set_params3D(oldfu_img, [0,1], xform="xform.align3d")
 #         self.assertEqual(str(cm_new.exception), "list index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_wrong_xform_does_not_change_the_values_IS_IT_OK_OR_NOT(self):
 #         fu_img = deepcopy(IMAGE_3D)
 #         oldfu_img = deepcopy(IMAGE_3D)
@@ -15552,7 +15552,7 @@
 #         oldfu.set_params3D(oldfu_img, self.params, xform="xform.align2d")
 #         self.assertTrue(array_equal(fu.get_params3D(fu_img), oldfu.get_params3D(oldfu_img)))
 #         #self.assertFalse(array_equal(fu.get_params3D(fu_img), oldfu.get_params3D(IMAGE_3D)))
-#
+# 
 #     def test_wrong_input_img(self):
 #         # I called it wrong image just because in the 'get_params2D' there was an error due to the missing xform key
 #         fu_img = deepcopy(IMAGE_2D)
@@ -15561,7 +15561,7 @@
 #         oldfu.set_params3D(oldfu_img, self.params, xform="xform.align3d")
 #         self.assertTrue(array_equal(fu.get_params3D(fu_img), oldfu.get_params3D(oldfu_img)))
 #         self.assertFalse(array_equal(fu.get_params3D(fu_img), oldfu.get_params3D(IMAGE_3D)))
-#
+# 
 #     def test_NoneType_as_img_returns_AttributeError_NoneType_obj_hasnot_attribute_process(self):
 #         with self.assertRaises(AttributeError) as cm_new:
 #             fu.set_params3D(None, self.params, xform="xform.align3d")
@@ -15570,13 +15570,13 @@
 #         self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'set_attr'")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 # """
-#
-#
+# 
+# 
 # class Test_get_params_proj(unittest.TestCase):
 #     argum = get_arg_from_pickle_file(
 #         path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.get_params_proj")
 #     )
-#
+# 
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.get_params_proj()
@@ -15587,7 +15587,7 @@
 #             "get_params_proj() missing 1 required positional argument: 'ima'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_get_params_proj(self):
 #         (ima,) = self.argum[0]
 #         return_new = fu.get_params_proj(ima, xform="xform.projection")
@@ -15599,7 +15599,7 @@
 #                 (14.71329548619616, 101.3719902962565, 220.4187405823029, -0.0, -0.0),
 #             )
 #         )
-#
+# 
 #     def test_wrong_xform_returns_NotExistingObjectException_key_doesnot_exist(self):
 #         (ima,) = self.argum[0]
 #         with self.assertRaises(RuntimeError) as cm_new:
@@ -15613,7 +15613,7 @@
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_wrong_input_2dimg_returns_NotExistingObjectException_key_doesnot_exist(
 #         self
 #     ):
@@ -15628,7 +15628,7 @@
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_wrong_input_3dimg_returns_NotExistingObjectException_key_doesnot_exist(
 #         self
 #     ):
@@ -15643,7 +15643,7 @@
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_NoneType_as_img_crashes_because_signal11SIGSEV(self):
 #         self.assertTrue(True)
 #         """
@@ -15654,15 +15654,15 @@
 #         self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_attr'")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 #         """
-#
-#
+# 
+# 
 # class Test_set_params_proj(unittest.TestCase):
 #     params = [1, 2, 3, 4, 5]
 #     argum = get_arg_from_pickle_file(
 #         path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.rotate_3D_shift")
 #     )
 #     (data, notUsed) = argum[0]
-#
+# 
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.set_params_proj()
@@ -15673,19 +15673,19 @@
 #             "set_params_proj() missing 2 required positional arguments: 'ima' and 'p'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_set_params_proj_using_wrongxform_returns_NotExistingObjectException_key_doesnot_exist(
 #         self
 #     ):  # error is ok
 #         # fu_img = deepcopy(IMAGE_2D)
-#
+# 
 #         fu_img = [EMNumPy.numpy2em(deepcopy(self.data[0].get_2dview()))]
 #         fu_img[0].set_attr_dict(self.data[0].get_attr_dict())
 #         oldfu_img = [EMNumPy.numpy2em(deepcopy(self.data[0].get_2dview()))]
 #         oldfu_img[0].set_attr_dict(self.data[0].get_attr_dict())
-#
+# 
 #         return_new = fu.set_params_proj(fu_img[0], self.params, xform="xform.align2d")
-#
+# 
 #         return_old = fu.set_params_proj(oldfu_img[0], self.params, xform="xform.align2d")
 #         self.assertEqual(return_new, return_old)
 #         # with self.assertRaises(RuntimeError) as cm:
@@ -15693,19 +15693,19 @@
 #         # msg = str(cm.exception).split("'")
 #         # self.assertEqual(msg[0].split(" ")[0], "NotExistingObjectException")
 #         # self.assertEqual(msg[3], "The requested key does not exist")
-#
+# 
 #     def test_set_params_proj_using_wrongxform2returns_NotExistingObjectException_key_doesnot_exist(
 #         self
 #     ):
 #         # fu_img = deepcopy(IMAGE_2D)
 #         # fu2_img = deepcopy(IMAGE_2D)
-#
+# 
 #         fu_img = [EMNumPy.numpy2em(deepcopy(self.data[0].get_2dview()))]
 #         fu_img[0].set_attr_dict(self.data[0].get_attr_dict())
 #         oldfu_img = [EMNumPy.numpy2em(deepcopy(self.data[0].get_2dview()))]
 #         oldfu_img[0].set_attr_dict(self.data[0].get_attr_dict())
-#
-#
+# 
+# 
 #         return_new = fu.set_params_proj(
 #             fu_img[0], self.params, xform="xform.align2d"
 #         )  # is not setting the params
@@ -15713,12 +15713,12 @@
 #             oldfu_img[0], self.params, xform="xform.align2d"
 #         )  # is not setting the params
 #         # with self.assertRaises(RuntimeError) as cm_new:
-#
+# 
 #         self.assertEqual(return_new,return_old )
 #         return_new = fu.get_params_proj(fu_img[0], xform="xform.projection")
 #         # with self.assertRaises(RuntimeError) as cm_old:
 #         return_old = oldfu.get_params_proj(oldfu_img[0], xform="xform.projection")
-#
+# 
 #         self.assertEqual(return_new, return_old)
 #         # msg = str(cm_new.exception).split("'")
 #         # msg_old = str(cm_old.exception).split("'")
@@ -15727,16 +15727,16 @@
 #         # self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         # self.assertEqual(msg[3], msg_old[3])
 #         # self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_set_params_proj(self):
 #         # fu_img = deepcopy(IMAGE_2D)
 #         # oldfu_img = deepcopy(IMAGE_2D)
-#
+# 
 #         fu_img = [EMNumPy.numpy2em(deepcopy(self.data[0].get_2dview()))]
 #         fu_img[0].set_attr_dict(self.data[0].get_attr_dict())
 #         oldfu_img = [EMNumPy.numpy2em(deepcopy(self.data[0].get_2dview()))]
 #         oldfu_img[0].set_attr_dict(self.data[0].get_attr_dict())
-#
+# 
 #         fu.set_params_proj(fu_img[0], self.params, xform="xform.projection")
 #         oldfu.set_params_proj(oldfu_img[0], self.params, xform="xform.projection")
 #         self.assertTrue(
@@ -15746,24 +15746,24 @@
 #             )
 #         )
 #         # self.assertFalse(array_equal(fu.get_params_proj(fu_img), fu.get_params_proj(IMAGE_2D))) # IMAGE2D has not key ''xform.projection'
-#
+# 
 #     def test_less_params(self):
 #         # fu_img = deepcopy(IMAGE_2D)
 #         # oldfu_img = deepcopy(IMAGE_2D)
-#
+# 
 #         fu_img = [EMNumPy.numpy2em(deepcopy(self.data[0].get_2dview()))]
 #         fu_img[0].set_attr_dict(self.data[0].get_attr_dict())
 #         oldfu_img = [EMNumPy.numpy2em(deepcopy(self.data[0].get_2dview()))]
 #         oldfu_img[0].set_attr_dict(self.data[0].get_attr_dict())
-#
-#
+# 
+# 
 #         with self.assertRaises(IndexError) as cm_new:
 #             fu.set_params_proj(fu_img[0], [0, 1], xform="xform.projection")
 #         with self.assertRaises(IndexError) as cm_old:
 #             oldfu.set_params_proj(oldfu_img[0], [0, 1], xform="xform.projection")
 #         self.assertEqual(str(cm_new.exception), "list index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_NoneType_as_img_returns_AttributeError_NoneType_obj_hasnot_attribute_process(
 #         self
 #     ):
@@ -15775,8 +15775,8 @@
 #             str(cm_new.exception), "'NoneType' object has no attribute 'set_attr'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
+# 
+# 
 # class Test_get_ctf(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -15787,7 +15787,7 @@
 #             str(cm_new.exception), "get_ctf() missing 1 required positional argument: 'ima'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_wrong_img_returns_NotExistingObjectException_key_doesnot_exist(self):
 #         with self.assertRaises(RuntimeError) as cm_new:
 #             fu.get_ctf(IMAGE_2D)
@@ -15800,7 +15800,7 @@
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_get_ctf(self):
 #         img_with_ctf = get_arg_from_pickle_file(
 #             path.join(ABSOLUTE_PATH, "pickle files/alignment.ali2d_single_iter")
@@ -15823,7 +15823,7 @@
 #                 ),
 #             )
 #         )
-#
+# 
 #     def test_NoneType_as_img_returns_AttributeError_NoneType_obj_hasnot_attribute_process(
 #         self
 #     ):
@@ -15835,11 +15835,11 @@
 #             str(cm_new.exception), "'NoneType' object has no attribute 'get_attr'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
+# 
+# 
 # class Test_same_ctf(unittest.TestCase):
 #     params = [1, 2, 3, 4, 5, 6]
-#
+# 
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.same_ctf()
@@ -15849,23 +15849,23 @@
 #             str(cm_new.exception), "same_ctf() missing 2 required positional arguments: 'c1' and 'c2'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_same_ctf(self):
 #         self.assertTrue(
 #             fu.same_ctf(fu.generate_ctf(self.params), oldfu.generate_ctf(self.params))
 #         )
-#
+# 
 #     def test_not_same_ctf(self):
 #         self.assertFalse(
 #             fu.same_ctf(
 #                 fu.generate_ctf(self.params), oldfu.generate_ctf([0, 1, 2, 3, 4, 5])
 #             )
 #         )
-#
-#
+# 
+# 
 # class Test_generate_ctf(unittest.TestCase):
 #     """ params = [defocus, cs, voltage, apix, bfactor, ampcont, astigmatism_amplitude, astigmatism_angle] """
-#
+# 
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.generate_ctf()
@@ -15875,7 +15875,7 @@
 #             str(cm_new.exception), "generate_ctf() missing 1 required positional argument: 'p'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_generate_ctf_with6Values(self):
 #         self.assertTrue(
 #             fu.same_ctf(
@@ -15883,7 +15883,7 @@
 #                 oldfu.generate_ctf([1, 2, 3, 4, 5, 6]),
 #             )
 #         )
-#
+# 
 #     def test_generate_ctf_with8Values(self):
 #         self.assertTrue(
 #             fu.same_ctf(
@@ -15891,12 +15891,12 @@
 #                 oldfu.generate_ctf([1, 2, 3, 4, 5, 6, 7, 8]),
 #             )
 #         )
-#
+# 
 #     def test_generate_ctf_with_incorrect_number_of_params_warning_msg(self):
 #         self.assertTrue(fu.generate_ctf([1, 2, 3, 4, 5, 6, 7]) is None)
 #         self.assertTrue(oldfu.generate_ctf([1, 2, 3, 4, 5, 6, 7]) is None)
-#
-#
+# 
+# 
 # class Test_delete_bdb(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -15907,8 +15907,8 @@
 #             str(cm_new.exception), "delete_bdb() missing 1 required positional argument: 'name'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
+# 
+# 
 # class Test_disable_bdb_cache(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -15919,10 +15919,10 @@
 #             str(cm_new.exception), "disable_bdb_cache() takes 0 positional arguments but 1 was given"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_disable_bdb_cache(self):
 #         import EMAN2db
-#
+# 
 #         EMAN2db.BDB_CACHE_DISABLE = False
 #         self.assertFalse(EMAN2db.BDB_CACHE_DISABLE)
 #         fu.disable_bdb_cache()
@@ -15931,8 +15931,8 @@
 #         self.assertFalse(EMAN2db.BDB_CACHE_DISABLE)
 #         oldfu.disable_bdb_cache()
 #         self.assertTrue(EMAN2db.BDB_CACHE_DISABLE)
-#
-#
+# 
+# 
 # class Test_getvec(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -15943,7 +15943,7 @@
 #             str(cm_new.exception), "getvec() missing 2 required positional arguments: 'phi' and 'tht'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_tht_between_90_180(self):
 #         return_new = fu.getvec(0, 100)
 #         return_old = oldfu.getvec(0, 100)
@@ -15954,7 +15954,7 @@
 #                 (-0.98480775301220802, 1.2060416625018976e-16, 0.17364817766693041),
 #             )
 #         )
-#
+# 
 #     def test_tht_bigger_than_180(self):
 #         return_new = fu.getvec(0, 200)
 #         return_old = oldfu.getvec(0, 200)
@@ -15965,14 +15965,14 @@
 #                 (-0.34202014332566871, 4.1885387376769918e-17, 0.93969262078590843),
 #             )
 #         )
-#
+# 
 #     def test_tht_lower_than_90(self):
 #         return_new = fu.getvec(0, 0)
 #         return_old = oldfu.getvec(0, 0)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, (0.0, 0.0, 1.0)))
-#
-#
+# 
+# 
 # class Test_getfvec(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -15983,7 +15983,7 @@
 #             str(cm_new.exception), "getfvec() missing 2 required positional arguments: 'phi' and 'tht'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_tht_between_90_180(self):
 #         return_new = fu.getfvec(0, 100)
 #         return_old = oldfu.getfvec(0, 100)
@@ -15991,7 +15991,7 @@
 #         self.assertTrue(
 #             array_equal(return_new, (0.98480775301220802, 0.0, -0.1736481776669303))
 #         )
-#
+# 
 #     def test_tht_bigger_than_180(self):
 #         return_new = fu.getfvec(0, 200)
 #         return_old = oldfu.getfvec(0, 200)
@@ -15999,14 +15999,14 @@
 #         self.assertTrue(
 #             array_equal(return_new, (-0.34202014332566866, -0.0, -0.93969262078590843))
 #         )
-#
+# 
 #     def test_tht_lower_than_90(self):
 #         return_new = fu.getfvec(0, 0)
 #         return_old = oldfu.getfvec(0, 0)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, (0.0, 0.0, 1.0)))
-#
-#
+# 
+# 
 # class Test_nearest_fang(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -16017,7 +16017,7 @@
 #             str(cm_new.exception), "nearest_fang() missing 3 required positional arguments: 'vecs', 'phi', and 'tht'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_nearest_fang_true_should_return_equal_objects(self):
 #         """ values got from pickle files/utilities/utilities.nearest_fang """
 #         vecs = [
@@ -16040,15 +16040,15 @@
 #         return_old = oldfu.nearest_fang(vecs, phi, tht)
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_new, 1)
-#
+# 
 #     def test_empty_vectore(self):
 #         """ values got from pickle files/utilities/utilities.nearest_fang """
 #         self.assertEqual(
 #             fu.nearest_fang([], 100, 100), oldfu.nearest_fang([], 100, 100)
 #         )
 #         self.assertEqual(fu.nearest_fang([], 100, 100), -1)
-#
-#
+# 
+# 
 # class Test_nearest_many_full_k_projangles(unittest.TestCase):
 #     reference_normals = [
 #         [0.606369137763977, 0.7754802703857422, 0.17591717839241028],
@@ -16150,7 +16150,7 @@
 #     angles = [[41.921590970437258, 91.23979851375101, 333.346436124961, -0.0, -0.0]]
 #     howmany = 47
 #     symclass = foundamental_symclasss("c1")
-#
+# 
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.nearest_many_full_k_projangles()
@@ -16161,7 +16161,7 @@
 #             "nearest_many_full_k_projangles() missing 2 required positional arguments: 'reference_normals' and 'angles'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_pickle_file_values(self):
 #         symclass = foundamental_symclasss(
 #             "c5"
@@ -16229,7 +16229,7 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     def test_with_class_c1(self):
 #         return_new = fu.nearest_many_full_k_projangles(
 #             self.reference_normals, self.angles, self.howmany, self.symclass
@@ -16294,7 +16294,7 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     def test_with_null_howmany(self):
 #         return_new = fu.nearest_many_full_k_projangles(
 #             self.reference_normals, self.angles, 0, self.symclass
@@ -16304,7 +16304,7 @@
 #         )
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, [[]]))
-#
+# 
 #     def test_with_empty_list_returns_RuntimeError_InvalidValueException(self):
 #         with self.assertRaises(RuntimeError) as cm_new:
 #             fu.nearest_many_full_k_projangles(
@@ -16324,14 +16324,14 @@
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
+# 
+# 
 # class Test_assign_projdirs_f(unittest.TestCase):
 #     """
 #     Since 'projdirs' and 'refdirs' are got in the sxmeridian from  angles_to_normals(list_of_angles) I used the
 #     output of the angles_to_normals tests to fill the 'projdirs' variable. the refdirs values are 2/3 of projdirs values
 #     """
-#
+# 
 #     projdirs = [
 #         [0.0, 0.0, 1.0],
 #         [0.6804220676422119, 0.6526213884353638, 0.3333333432674408],
@@ -16360,7 +16360,7 @@
 #         [-0.44907860398292543, -0.43073007702827454, -0.21999998688697817],
 #         [0.2708758628368378, -0.5602019834518432, -0.21999998688697817],
 #     ]
-#
+# 
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.assign_projdirs_f()
@@ -16371,7 +16371,7 @@
 #             "assign_projdirs_f() missing 3 required positional arguments: 'projdirs', 'refdirs', and 'neighbors'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_with_real_data(self):
 #         neighbors = int(len(self.projdirs) / len(self.refdirs))
 #         return_new = fu.assign_projdirs_f(self.projdirs, self.refdirs, neighbors)
@@ -16383,7 +16383,7 @@
 #                 [[0], [1], [2], [3], [4], [5], [6], [7], [8], [9], [10], [11]],
 #             )
 #         )
-#
+# 
 #     def test_with_null_neighboor_value_crashes_because_signal11SIGSEV(self):
 #         self.assertTrue(True)
 #         """
@@ -16391,7 +16391,7 @@
 #         return_old = oldfu.assign_projdirs_f(self.projdirs, self.refdirs, 0)
 #         self.assertTrue(array_equal(return_new,return_old))
 #         """
-#
+# 
 #     def test_with_negative_neighboor_value_returns_IndexError_list_index_out_of_range(
 #         self
 #     ):
@@ -16401,7 +16401,7 @@
 #             oldfu.assign_projdirs_f(self.projdirs, self.refdirs, -1)
 #         self.assertEqual(str(cm_new.exception), "list index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_with_too_high_neighboor_value_returns_IndexError_list_index_out_of_range(
 #         self
 #     ):
@@ -16411,7 +16411,7 @@
 #             oldfu.assign_projdirs_f(self.projdirs, self.refdirs, 5)
 #         self.assertEqual(str(cm_new.exception), "list index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_invalid_neighbors_type(self):
 #         neighbors = len(self.projdirs) / len(self.refdirs)
 #         with self.assertRaises(TypeError) as cm_new:
@@ -16425,7 +16425,7 @@
 #             "Python argument types in    None.assign_projdirs_f(list, list, float)",
 #         )
 #         self.assertEqual(msg[0] + msg[1], msg_old[0] + msg_old[1])
-#
+# 
 #     def test_with_projdirs_refdirs_have_different_length(self):
 #         refdirs = self.refdirs[:10]
 #         neighbors = int(len(self.projdirs) / len(refdirs))
@@ -16437,7 +16437,7 @@
 #                 return_new, [[0], [1], [2], [3, 10], [4], [5, 11], [6], [7], [8], [9]]
 #             )
 #         )
-#
+# 
 #     def test_empty_projdirs(self):
 #         return_new = fu.assign_projdirs_f([], self.refdirs, 1)
 #         return_old = oldfu.assign_projdirs_f([], self.refdirs, 1)
@@ -16445,7 +16445,7 @@
 #         self.assertTrue(
 #             array_equal(return_new, [[], [], [], [], [], [], [], [], [], [], [], []])
 #         )
-#
+# 
 #     def test_empty_refdirs_crashes_because_signal11SIGSEV(self):
 #         self.assertTrue(True)
 #         """
@@ -16453,8 +16453,8 @@
 #         return_old = oldfu.assign_projdirs_f(self.projdirs, [], 1)
 #         self.assertTrue(array_equal(return_new,return_old))
 #         """
-#
-#
+# 
+# 
 # class Test_angles_to_normals(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -16466,7 +16466,7 @@
 #             "angles_to_normals() missing 1 required positional argument: 'angles'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_with_pickle_file_values(self):
 #         angles = [
 #             [0.0, 0.0, 0.0],
@@ -16504,14 +16504,14 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     def test_with_empty_angles_list(self):
 #         return_new = fu.angles_to_normals([])
 #         return_old = oldfu.angles_to_normals([])
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, []))
-#
-#
+# 
+# 
 # class Test_angular_occupancy(unittest.TestCase):
 #     params = [
 #         [12, 1, 32],
@@ -16524,7 +16524,7 @@
 #         [9, 16, 32],
 #     ]
 #     angstep = 15
-#
+# 
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.angular_occupancy()
@@ -16535,7 +16535,7 @@
 #             "angular_occupancy() missing 1 required positional argument: 'params'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_with_less_angles_returns_IndexError_list_index_out_of_range(self):
 #         angles = [[0.1], [21.1], [30.11], [1.1]]
 #         with self.assertRaises(IndexError) as cm_new:
@@ -16546,7 +16546,7 @@
 #             str(cm_new.exception), "index 1 is out of bounds for axis 1 with size 1"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_with_sym_c5_method_S(self):
 #         return_new = fu.angular_occupancy(self.params, self.angstep, "c5", "S")
 #         return_old = oldfu.angular_occupancy(self.params, self.angstep, "c5", "S")
@@ -16579,7 +16579,7 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     def test_with_sym_c1_method_S(self):
 #         return_new = fu.angular_occupancy(self.params, self.angstep, "c1", "S")
 #         return_old = oldfu.angular_occupancy(self.params, self.angstep, "c1", "S")
@@ -16687,7 +16687,7 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     def test_with_sym_oct_method_S(self):
 #         return_new = fu.angular_occupancy(self.params, self.angstep, "oct", "S")
 #         return_old = oldfu.angular_occupancy(self.params, self.angstep, "oct", "S")
@@ -16704,7 +16704,7 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     def test_with_sym_invalid_method_S_returns_IndexError(self):
 #         with self.assertRaises(IndexError) as cm_new:
 #             fu.angular_occupancy(self.params, self.angstep, "invalid", "S")
@@ -16714,7 +16714,7 @@
 #             str(cm_new.exception), "index 0 is out of bounds for axis 1 with size 0"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_with_sym_c5_method_P(self):
 #         return_new = fu.angular_occupancy(self.params, self.angstep, "c5", "P")
 #         return_old = oldfu.angular_occupancy(self.params, self.angstep, "c5", "P")
@@ -16753,7 +16753,7 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     def test_with_sym_c1_method_P(self):
 #         return_new = fu.angular_occupancy(self.params, self.angstep, "c1", "P")
 #         return_old = oldfu.angular_occupancy(self.params, self.angstep, "c1", "P")
@@ -16873,7 +16873,7 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     def test_with_sym_oct_method_P(self):
 #         return_new = fu.angular_occupancy(self.params, self.angstep, "oct", "P")
 #         return_old = oldfu.angular_occupancy(self.params, self.angstep, "oct", "P")
@@ -16894,7 +16894,7 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     def test_with_sym_c5_method_invalid(self):
 #         return_new = fu.angular_occupancy(self.params, self.angstep, "c5", "invalid")
 #         return_old = oldfu.angular_occupancy(self.params, self.angstep, "c5", "invalid")
@@ -16927,7 +16927,7 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     def test_with_empty_params_list_returns_indexError(self):
 #         with self.assertRaises(IndexError) as cm_new:
 #             fu.angular_occupancy([], self.angstep, "c5", "S")
@@ -16937,7 +16937,7 @@
 #             str(cm_new.exception), "index 1 is out of bounds for axis 1 with size 0"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_with_null_angstep_returns_SystemExit_error_msg(self):
 #         sp_global_def.BATCH = True
 #         with self.assertRaises(SystemExit) as cm_new:
@@ -16947,8 +16947,8 @@
 #             oldfu.angular_occupancy(self.params, 0, "c5", "S")
 #         self.assertEqual(str(cm_new.exception), "1")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
+# 
+# 
 # # I did not changged the inc_mirror because it is only called to 'angular_occupancy'. I'll change it there
 # class Test_angular_histogram(unittest.TestCase):
 #     params = [
@@ -16962,7 +16962,7 @@
 #         [9, 16, 32],
 #     ]
 #     angstep = 15
-#
+# 
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.angular_histogram()
@@ -16973,7 +16973,7 @@
 #             "angular_histogram() missing 1 required positional argument: 'params'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_with_less_angles_returns_IndexError_list_index_out_of_range(self):
 #         angles = [[0.1], [21.1], [30.11], [1.1]]
 #         with self.assertRaises(IndexError) as cm_new:
@@ -16988,7 +16988,7 @@
 #             str(cm_new.exception), "index 1 is out of bounds for axis 1 with size 1"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_with_sym_c5_method_S(self):
 #         return_new = fu.angular_histogram(
 #             params=deepcopy(self.params),
@@ -17037,7 +17037,7 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     def test_with_sym_c1_method_S(self):
 #         return_new = fu.angular_histogram(
 #             params=deepcopy(self.params),
@@ -17257,7 +17257,7 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     @unittest.skip(
 #         "BUG in sp_fundamentals.py -->symmetry_neighbors --> local variable 'neighbors' referenced before assignment"
 #     )
@@ -17271,7 +17271,7 @@
 #         self.assertTrue(array_equal(return_new[0], [1215, 4645, 560]))
 #         self.assertTrue(array_equal(return_new[1], [[0.0, 0.0, 0.0], [18.060151356949547, 32.700469931476135, 0.0], [42.457926460773422, 37.938127427185499, 0.0]]))
 #         """
-#
+# 
 #     def test_with_sym_invalid_method_S_returns_IndexError(self):
 #         with self.assertRaises(IndexError) as cm_new:
 #             fu.angular_histogram(
@@ -17293,7 +17293,7 @@
 #             str(cm_new.exception), "index 0 is out of bounds for axis 1 with size 0"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_with_sym_c5_method_P(self):
 #         return_new = fu.angular_histogram(
 #             params=deepcopy(self.params),
@@ -17375,7 +17375,7 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     def test_with_sym_c1_method_P(self):
 #         return_new = fu.angular_histogram(
 #             params=deepcopy(self.params),
@@ -17619,7 +17619,7 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     @unittest.skip(
 #         "BUG in sp_fundamentals.py -->symmetry_neighbors --> local variable 'neighbors' referenced before assignment"
 #     )
@@ -17633,7 +17633,7 @@
 #         self.assertTrue(array_equal(return_new[0], [7, 2700, 296, 3068, 41, 206, 102]))
 #         self.assertTrue(array_equal(return_new[1], [[0.0, 0.0, 0.0], [0.0, 15.0, 0.0], [0.0, 30.0, 0.0], [30.000000000000004, 30.0, 0.0], [0.0, 45.0, 0.0], [21.213203435596427, 45.0, 0.0], [42.426406871192853, 45.0, 0.0]]))
 #         """
-#
+# 
 #     def test_with_sym_c5_method_invalid(self):
 #         return_new = fu.angular_histogram(
 #             params=deepcopy(self.params),
@@ -17682,7 +17682,7 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     def test_with_empty_params_list_returns_IndexError(self):
 #         with self.assertRaises(IndexError) as cm_new:
 #             fu.angular_histogram(
@@ -17696,9 +17696,9 @@
 #             str(cm_new.exception), "index 1 is out of bounds for axis 1 with size 0"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_with_null_angstep_returns_SystemExit_error_msg(self):
-#
+# 
 #         with self.assertRaises(SystemExit) as cm_new:
 #             fu.angular_histogram(
 #                 params=deepcopy(self.params),
@@ -17718,8 +17718,8 @@
 #             )
 #         self.assertEqual(str(cm_new.exception), "1")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
+# 
+# 
 # class Test_balance_angular_distribution(unittest.TestCase):
 #     params = [
 #         [12, 1, 32],
@@ -17732,7 +17732,7 @@
 #         [9, 16, 32],
 #     ]
 #     angstep = 15
-#
+# 
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.balance_angular_distribution()
@@ -17743,7 +17743,7 @@
 #             "balance_angular_distribution() missing 1 required positional argument: 'params'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_with_sym_c5_not_positive_maxOccupy(self):
 #         return_new = fu.balance_angular_distribution(
 #             params=self.params, max_occupy=-1, angstep=self.angstep, sym="c5"
@@ -17754,7 +17754,7 @@
 #         self.assertTrue(array_equal(return_new, return_old))
 #         print(return_new.flatten())
 #         self.assertTrue(array_equal(return_new.flatten(), [0, 0, 0, 1, 0, 0, 0, 1]))
-#
+# 
 #     @unittest.skip("compatibility test FAILED")
 #     def test_with_sym_c5_positive_maxOccupy(self):
 #         self.assertTrue(True)
@@ -17766,7 +17766,7 @@
 #         self.assertTrue(array_equal(return_new[0], [0, 2, 3, 4, 7]))
 #         self.assertTrue(array_equal(return_new[1].flatten(),[12.0, 1.0, 32.0, 2.0, 1.0, 32.0, 121.0, 19.0, 32.0, 1.2, 1.0, 3.2, 9.0, 16.0, 32.0]))
 #         """
-#
+# 
 #     def test_with_sym_c1_not_positive_maxOccupy(self):
 #         return_new = fu.balance_angular_distribution(
 #             self.params, max_occupy=-1, angstep=self.angstep, sym="c1"
@@ -17776,7 +17776,7 @@
 #         )
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new.flatten(), [0, 6, 0, 9, 0, 0, 0, 6]))
-#
+# 
 #     def test_with_sym_c1_positive_maxOccupy(self):
 #         return_new = fu.balance_angular_distribution(
 #             self.params, max_occupy=-1, angstep=self.angstep, sym="c1"
@@ -17788,7 +17788,7 @@
 #         self.assertTrue(array_equal(return_new[1], return_old[1]))
 #         self.assertTrue(array_equal(return_new[0], [0]))
 #         self.assertTrue(array_equal(return_new[1].flatten(), [6]))
-#
+# 
 #     def test_with_sym_oct_not_positive_maxOccupy(self):
 #         return_new = fu.balance_angular_distribution(
 #             self.params, max_occupy=-1, angstep=self.angstep, sym="oct"
@@ -17800,7 +17800,7 @@
 #         self.assertTrue(array_equal(return_new[1], return_old[1]))
 #         self.assertTrue(array_equal(return_new[0], [0]))
 #         self.assertTrue(array_equal(return_new[1].flatten(), [0]))
-#
+# 
 #     @unittest.skip("compatibility test FAILED")
 #     def test_with_sym_oct_positive_maxOccupy(self):
 #         self.assertTrue(True)
@@ -17812,7 +17812,7 @@
 #         self.assertTrue(array_equal(return_new[0], [3, 4, 6, 7]))
 #         self.assertTrue(array_equal(return_new[1].flatten(), [121.0, 19.0, 32.0, 1.2, 1.0, 3.2, 12.0, 10.0, 32.0, 9.0, 16.0, 32.0]))
 #         """
-#
+# 
 #     def test_with_empty_list_returns_IndexError(self):
 #         with self.assertRaises(IndexError) as cm_new:
 #             fu.balance_angular_distribution(
@@ -17825,7 +17825,7 @@
 #         print(str(cm_new.exception))
 #         self.assertEqual(str(cm_new.exception), "too many indices for array")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_with_null_angstepy_error_msg(self):
 #         sp_global_def.BATCH = True
 #         with self.assertRaises(SystemExit) as cm_new:
@@ -17839,7 +17839,7 @@
 #             )
 #         self.assertEqual(str(cm_new.exception), "1")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_with_sym_c5_positive_maxOccupy_not_testabel(self):
 #         """
 #         It use to process random value that lead the function to returns always different va;ues
@@ -17850,8 +17850,8 @@
 #         return_old = oldfu.balance_angular_distribution(deepcopy(self.params), max_occupy = 1, angstep = self.angstep, sym= 'c5')
 #         self.assertTrue(array_equal(return_new, return_old))
 #         """
-#
-#
+# 
+# 
 # class Test_symmetry_neighbors(unittest.TestCase):
 #     angles = [
 #         [0.0, 0.0, 1.0],
@@ -17867,7 +17867,7 @@
 #         [-0.6804221272468567, -0.652621328830719, -0.3333333134651184],
 #         [0.41041797399520874, -0.8487908840179443, -0.3333333134651184],
 #     ]
-#
+# 
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.symmetry_neighbors()
@@ -17878,7 +17878,7 @@
 #             "symmetry_neighbors() missing 2 required positional arguments: 'angles' and 'symmetry'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_with_empty_list_crashes_because_signal11SIGSEV(self):
 #         self.assertTrue(True)
 #         """
@@ -17886,7 +17886,7 @@
 #         return_old = oldfu.symmetry_neighbors([], symmetry= "c1")
 #         self.assertTrue(array_equal(return_new, return_old))
 #         """
-#
+# 
 #     def test_with_less_angles_returns_RuntimeError_3_angles_are_required(self):
 #         angles = [[0.1], [21.1], [30.11], [1.1]]
 #         with self.assertRaises(RuntimeError) as cm_new:
@@ -17900,7 +17900,7 @@
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_with_sym_c1(self):
 #         return_new = fu.symmetry_neighbors(angles=self.angles, symmetry="c1")
 #         return_old = oldfu.symmetry_neighbors(angles=self.angles, symmetry="c1")
@@ -17924,7 +17924,7 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     def test_with_sym_c5(self):
 #         return_new = fu.symmetry_neighbors(angles=self.angles, symmetry="c5")
 #         return_old = oldfu.symmetry_neighbors(angles=self.angles, symmetry="c5")
@@ -17972,7 +17972,7 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     def test_with_sym_d1(self):
 #         return_new = fu.symmetry_neighbors(angles=self.angles, symmetry="d1")
 #         return_old = oldfu.symmetry_neighbors(angles=self.angles, symmetry="d1")
@@ -18008,7 +18008,7 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     def test_with_sym_not_c_or_d(self):
 #         angles = [
 #             [0.0, 0.0, 1.0],
@@ -18017,11 +18017,11 @@
 #         return_new = fu.symmetry_neighbors(angles=angles, symmetry="invalid")
 #         return_old = oldfu.symmetry_neighbors(angles=angles, symmetry="invalid")
 #         self.assertTrue(array_equal(return_new, return_old))
-#
-#
+# 
+# 
 # class Test_rotation_between_anglesets(unittest.TestCase):
 #     """  used the value used in 'Test_assign_projdirs_f' """
-#
+# 
 #     agls1 = [
 #         [0.0, 0.0, 1.0],
 #         [0.6804220676422119, 0.6526213884353638, 0.3333333432674408],
@@ -18050,7 +18050,7 @@
 #         [-0.44907860398292543, -0.43073007702827454, -0.21999998688697817],
 #         [0.2708758628368378, -0.5602019834518432, -0.21999998688697817],
 #     ]
-#
+# 
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.rotation_between_anglesets()
@@ -18061,7 +18061,7 @@
 #             "rotation_between_anglesets() missing 2 required positional arguments: 'agls1' and 'agls2'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_rotation_between_anglesets(self):
 #         return_new = fu.rotation_between_anglesets(agls1=self.agls1, agls2=self.agls2)
 #         return_old = oldfu.rotation_between_anglesets(
@@ -18069,14 +18069,14 @@
 #         )
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, (2.215e-09, 0.0, 0.0)))
-#
+# 
 #     def test_sets_have_different_length(self):
 #         agls2 = self.agls2[:30]
 #         return_new = fu.rotation_between_anglesets(agls1=self.agls1, agls2=agls2)
 #         return_old = oldfu.rotation_between_anglesets(agls1=self.agls1, agls2=agls2)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, (2.215e-09, 0.0, 0.0)))
-#
+# 
 #     def test_angls1_empty_list_error_msg(self):
 #         with self.assertRaises(SystemExit) as cm_new:
 #             return_new = fu.rotation_between_anglesets(agls1=[], agls2=self.agls2)
@@ -18086,14 +18086,14 @@
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 #         # self.assertTrue(array_equal(return_new, return_old))
 #         # self.assertEqual(return_new, -1)
-#
+# 
 #     def test_angls2_empty_list_error_msg(self):
 #         return_new = fu.rotation_between_anglesets(agls1=self.agls1, agls2=[])
 #         return_old = oldfu.rotation_between_anglesets(agls1=self.agls1, agls2=[])
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertEqual(return_new, -1)
-#
-#
+# 
+# 
 # class Test_angle_between_projections_directions(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -18105,7 +18105,7 @@
 #             "angle_between_projections_directions() missing 2 required positional arguments: 'proj1' and 'proj2'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_with_3angles(self):
 #         agls1 = [20, 60, 0]
 #         agls2 = [45, 75, 5]
@@ -18115,7 +18115,7 @@
 #         )
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_new, 27.432927773655976)
-#
+# 
 #     def test_with_2angles(self):
 #         agls1 = [20, 60]
 #         agls2 = [45, 75]
@@ -18125,7 +18125,7 @@
 #         )
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_new, 27.432927773655976)
-#
+# 
 #     def test_with_list1_empty(self):
 #         agls2 = [45, 75]
 #         with self.assertRaises(IndexError) as cm_new:
@@ -18134,7 +18134,7 @@
 #             oldfu.angle_between_projections_directions(proj1=[], proj2=agls2)
 #         self.assertEqual(str(cm_new.exception), "list index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_with_list2_empty(self):
 #         agls1 = [45, 75]
 #         with self.assertRaises(IndexError) as cm_new:
@@ -18143,8 +18143,8 @@
 #             oldfu.angle_between_projections_directions(proj1=agls1, proj2=[])
 #         self.assertEqual(str(cm_new.exception), "list index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
+# 
+# 
 # class Test_get_pixel_size(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -18155,25 +18155,25 @@
 #             str(cm_new.exception), "get_pixel_size() missing 1 required positional argument: 'img'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_get_pixel_size_img2d(self):
 #         return_new = fu.get_pixel_size(img=IMAGE_2D)
 #         return_old = oldfu.get_pixel_size(img=IMAGE_2D)
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_new, 1)
-#
+# 
 #     def test_get_pixel_size_img3d(self):
 #         return_new = fu.get_pixel_size(img=IMAGE_3D)
 #         return_old = oldfu.get_pixel_size(img=IMAGE_3D)
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_new, 1)
-#
+# 
 #     def test_get_pixel_size_imgEmpty(self):
 #         return_new = fu.get_pixel_size(img=EMData())
 #         return_old = oldfu.get_pixel_size(img=EMData())
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_new, 1)
-#
+# 
 #     def test_NoneType_as_img_returns_AttributeError_NoneType_obj_hasnot_attribute_process(
 #         self
 #     ):
@@ -18186,15 +18186,15 @@
 #             "'NoneType' object has no attribute 'get_attr_default'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
+# 
+# 
 # class Test_set_pixel_size(unittest.TestCase):
-#
+# 
 #     argum = get_arg_from_pickle_file(
 #         path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.rotate_3D_shift")
 #     )
 #     (data, notUsed) = argum[0]
-#
+# 
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.set_pixel_size()
@@ -18205,17 +18205,17 @@
 #             "set_pixel_size() missing 2 required positional arguments: 'img' and 'pixel_size'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_set_pixel_size(self):
 #         # img_fu = deepcopy(IMAGE_2D)
 #         # img_fu_old = deepcopy(IMAGE_2D)
-#
+# 
 #         img_fu = [EMNumPy.numpy2em(deepcopy(self.data[0].get_2dview()))]
 #         img_fu[0].set_attr_dict(self.data[0].get_attr_dict())
 #         img_fu_old = [EMNumPy.numpy2em(deepcopy(self.data[0].get_2dview()))]
 #         img_fu_old[0].set_attr_dict(self.data[0].get_attr_dict())
-#
-#
+# 
+# 
 #         fu.set_pixel_size(img=img_fu[0], pixel_size=2.1)
 #         oldfu.set_pixel_size(img=img_fu_old[0], pixel_size=2.1)
 #         self.assertEqual(img_fu[0].get_attr("apix_x"), img_fu_old[0].get_attr("apix_x"))
@@ -18224,13 +18224,13 @@
 #         self.assertEqual(img_fu[0].get_attr("apix_x"), 2.1)
 #         self.assertEqual(img_fu[0].get_attr("apix_y"), 2.1)
 #         self.assertEqual(img_fu[0].get_attr("apix_z"), 2.1)
-#
+# 
 #     def test_set_pixel_size_truncated_value(self):
 #         img_fu = [EMNumPy.numpy2em(deepcopy(self.data[0].get_2dview()))]
 #         img_fu[0].set_attr_dict(self.data[0].get_attr_dict())
 #         img_fu_old = [EMNumPy.numpy2em(deepcopy(self.data[0].get_2dview()))]
 #         img_fu_old[0].set_attr_dict(self.data[0].get_attr_dict())
-#
+# 
 #         fu.set_pixel_size(img=img_fu[0], pixel_size=2.1111)
 #         oldfu.set_pixel_size(img=img_fu_old[0], pixel_size=2.1111)
 #         self.assertEqual(img_fu[0].get_attr("apix_x"), img_fu_old[0].get_attr("apix_x"))
@@ -18239,7 +18239,7 @@
 #         self.assertEqual(img_fu[0].get_attr("apix_x"), 2.111)
 #         self.assertEqual(img_fu[0].get_attr("apix_y"), 2.111)
 #         self.assertEqual(img_fu[0].get_attr("apix_z"), 2.111)
-#
+# 
 #     def test_NoneType_as_img_returns_AttributeError_NoneType_obj_hasnot_attribute_process(
 #         self
 #     ):
@@ -18251,8 +18251,8 @@
 #             str(cm_new.exception), "'NoneType' object has no attribute 'get_zsize'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
+# 
+# 
 # class Test_lacos(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -18263,35 +18263,35 @@
 #             str(cm_new.exception), "lacos() missing 1 required positional argument: 'x'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_null_angle(self):
 #         return_new = fu.lacos(x=0)
 #         return_old = oldfu.lacos(x=0)
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_new, 90.0)
-#
+# 
 #     def test_negative_angle(self):
 #         return_new = fu.lacos(x=-0.12)
 #         return_old = oldfu.lacos(x=-0.12)
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_new, 96.892102579346385)
-#
+# 
 #     def test_positive_angle(self):
 #         return_new = fu.lacos(x=0.12)
 #         return_old = oldfu.lacos(x=0.12)
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_new, 83.107897420653629)
-#
+# 
 #     def test_outOfRange_angle(self):
 #         return_new = fu.lacos(x=12)
 #         return_old = oldfu.lacos(x=12)
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_new, 0.0)
-#
-#
+# 
+# 
 # class Test_findall(unittest.TestCase):
 #     l = [1, 2, 3, 4, 5, 5, 5, 4, 3, 2, 1]
-#
+# 
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.findall()
@@ -18301,20 +18301,20 @@
 #             str(cm_new.exception), "findall() missing 2 required positional arguments: 'value' and 'L'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_findall_5(self):
 #         return_new = fu.findall(value=5, L=self.l, start=0)
 #         return_old = oldfu.findall(value=5, L=self.l, start=0)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, [4, 5, 6]))
-#
+# 
 #     def test_findall_noValues(self):
 #         return_new = fu.findall(value=0, L=self.l, start=0)
 #         return_old = oldfu.findall(value=0, L=self.l, start=0)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, []))
-#
-#
+# 
+# 
 # class Test_class_iterImagesList(unittest.TestCase):
 #     list_of_imgs = [
 #         IMAGE_2D,
@@ -18323,7 +18323,7 @@
 #         IMAGE_BLANK_3D,
 #         IMAGE_2D_REFERENCE,
 #     ]
-#
+# 
 #     def test_invalid_init(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.iterImagesList()
@@ -18333,7 +18333,7 @@
 #             str(cm_new.exception), "__init__() missing 1 required positional argument: 'list_of_images'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_valid_init(self):
 #         fu_obj = fu.iterImagesList(
 #             list_of_images=self.list_of_imgs, list_of_indexes=None
@@ -18343,7 +18343,7 @@
 #         )
 #         self.assertEqual(type(fu_obj).__name__, "iterImagesList")
 #         self.assertEqual(type(fu_obj).__name__, type(oldfu_obj).__name__)
-#
+# 
 #     def test_valid_init2(self):
 #         fu_obj = fu.iterImagesList(
 #             list_of_images=self.list_of_imgs, list_of_indexes=[1, 2]
@@ -18353,7 +18353,7 @@
 #         )
 #         self.assertEqual(type(fu_obj).__name__, "iterImagesList")
 #         self.assertEqual(type(fu_obj).__name__, type(oldfu_obj).__name__)
-#
+# 
 #     def test_wrong_init_list_of_index_leads_IndexError(self):
 #         with self.assertRaises(IndexError) as cm_new:
 #             fu.iterImagesList(
@@ -18365,7 +18365,7 @@
 #             )
 #         self.assertEqual(str(cm_new.exception), "list index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_iterNo(self):
 #         fu_obj = fu.iterImagesList(
 #             list_of_images=self.list_of_imgs, list_of_indexes=None
@@ -18375,7 +18375,7 @@
 #         )
 #         self.assertEqual(fu_obj.iterNo(), oldfu_obj.iterNo())
 #         self.assertEqual(fu_obj.iterNo(), -1)
-#
+# 
 #     def test_imageIndex(self):
 #         """ since the position is -1 it is returning the index of the last image hence 4"""
 #         fu_obj = fu.iterImagesList(
@@ -18386,7 +18386,7 @@
 #         )
 #         self.assertEqual(fu_obj.imageIndex(), oldfu_obj.imageIndex())
 #         self.assertEqual(fu_obj.imageIndex(), 4)
-#
+# 
 #     def test_image(self):
 #         """ since the position is -1 it is returning the last image hence the 4th"""
 #         fu_obj = fu.iterImagesList(
@@ -18400,7 +18400,7 @@
 #         expectedimg = self.list_of_imgs[fu_obj.imageIndex()]
 #         self.assertTrue(array_equal(fu_img.get_3dview(), oldfu_img.get_3dview()))
 #         self.assertTrue(array_equal(fu_img.get_3dview(), expectedimg.get_3dview()))
-#
+# 
 #     def test_goToNext(self):
 #         fu_obj = fu.iterImagesList(
 #             list_of_images=self.list_of_imgs, list_of_indexes=None
@@ -18408,26 +18408,26 @@
 #         oldfu_obj = oldfu.iterImagesList(
 #             list_of_images=self.list_of_imgs, list_of_indexes=None
 #         )
-#
+# 
 #         """ I'm testing all the data in the obj in order to test the return False"""
 #         fu_counter = 0
 #         while fu_obj.goToNext():  # I'm , implicitly, testing the return True
 #             self.assertEqual(fu_obj.iterNo(), fu_counter)
 #             fu_counter += 1
-#
+# 
 #         oldfu_counter = 0
 #         while oldfu_obj.goToNext():
 #             self.assertEqual(oldfu_obj.iterNo(), oldfu_counter)
 #             oldfu_counter += 1
-#
+# 
 #         """ no more img in the object"""
 #         self.assertFalse(fu_obj.goToNext())
 #         self.assertFalse(oldfu_obj.goToNext())
-#
+# 
 #         """ check if both of the classes tested all the images"""
 #         self.assertTrue(fu_counter, oldfu_counter)
 #         self.assertTrue(fu_counter, len(self.list_of_imgs))
-#
+# 
 #     def test_goToPrev(self):
 #         fu_obj = fu.iterImagesList(
 #             list_of_images=self.list_of_imgs, list_of_indexes=None
@@ -18440,18 +18440,18 @@
 #         self.assertFalse(oldfu_obj.goToPrev())
 #         self.assertEqual(fu_obj.iterNo(), oldfu_obj.iterNo())
 #         self.assertEqual(fu_obj.iterNo(), -1)
-#
+# 
 #         """ We are on the first image, it means that we have still no previous image"""
 #         fu_obj.goToNext()
 #         oldfu_obj.goToNext()
 #         self.assertEqual(fu_obj.iterNo(), oldfu_obj.iterNo())
 #         self.assertEqual(fu_obj.iterNo(), 0)
-#
+# 
 #         self.assertFalse(fu_obj.goToPrev())
 #         self.assertFalse(oldfu_obj.goToPrev())
 #         self.assertEqual(fu_obj.iterNo(), oldfu_obj.iterNo())
 #         self.assertEqual(fu_obj.iterNo(), -1)
-#
+# 
 #         """ We are on the second image, it means that we have an previous image"""
 #         fu_obj.goToNext()
 #         oldfu_obj.goToNext()
@@ -18459,13 +18459,13 @@
 #         oldfu_obj.goToNext()
 #         self.assertEqual(fu_obj.iterNo(), oldfu_obj.iterNo())
 #         self.assertEqual(fu_obj.iterNo(), 1)
-#
+# 
 #         self.assertTrue(fu_obj.goToPrev())
 #         self.assertTrue(oldfu_obj.goToPrev())
 #         self.assertEqual(fu_obj.iterNo(), oldfu_obj.iterNo())
 #         self.assertEqual(fu_obj.iterNo(), 0)
-#
-#
+# 
+# 
 # class Test_pack_message(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -18476,56 +18476,56 @@
 #             str(cm_new.exception), "pack_message() missing 1 required positional argument: 'data'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_data_is_a_string(self):
 #         data = "case S:I am a string!!!"
 #         return_new = fu.pack_message(data=data)
 #         return_old = oldfu.pack_message(data=data)
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_new, b"Scase S:I am a string!!!")
-#
+# 
 #     def test_data_is_a_very_long_string(self):
 #         long_data = "I am a stringggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg!!!"
 #         return_new = fu.pack_message(data=long_data)
 #         return_old = oldfu.pack_message(data=long_data)
-#
+# 
 #         test = fu.unpack_message(return_new)
 #         self.assertEqual(test, long_data)
 #         self.assertEqual(return_new, return_old)
-#
+# 
 #     def test_data_is_a_notstring(self):
 #         data = 5555
 #         return_new = fu.pack_message(data=data)
 #         return_old = oldfu.pack_message(data=data)
 #         self.assertEqual(return_new , return_old)
-#
+# 
 #     def test_data_is_a_notstring_long_version(self):
 #         data = 555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555
 #         return_new = fu.pack_message(data=data)
 #         return_old = oldfu.pack_message(data=data)
 #         self.assertEqual(return_new , return_old)
-#
-#
+# 
+# 
 #     def test_list_of_data(self):
 #         data = [[ 0 ,2 ,3, [0]]]
 #         return_new = fu.pack_message(data=data)
 #         return_old = oldfu.pack_message(data=data)
-#
+# 
 #         test  = fu.unpack_message(return_new)
 #         self.assertEqual(return_new , return_old)
 #         self.assertEqual(test, data)
-#
+# 
 #     def test_small_list_of_data(self):
 #         data = 2
 #         return_new = fu.pack_message(data=data)
 #         return_old = oldfu.pack_message(data=data)
-#
+# 
 #         test = fu.unpack_message(return_new)
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(test, data)
-#
-#
-#
+# 
+# 
+# 
 # class Test_unpack_message(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -18536,45 +18536,45 @@
 #             str(cm_new.exception), "unpack_message() missing 1 required positional argument: 'msg'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_O_list_of_data(self):
 #         datas = b'O\x80\x02]q\x00(K\x00K\x02K\x03K/e.'
 #         return_new = fu.unpack_message(datas)
 #         return_old = oldfu.unpack_message(datas)
-#
+# 
 #         test = fu.pack_message(return_new)
 #         self.assertEqual(test, datas)
 #         self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_Z_list_of_data(self):
 #         datas = b'Zx\x01k`\xea\xde\xc5\xc4\xc0\xf0\xd8\xa2o\x98\xa1\x03\xdb\xbc\xff<\x8b\xb2Y\xfb\xe6E\xf4\x94\x13\'\xdb\xa6\xccb\\Z\x97{x\xc2yy\xe3\x8ek\x11\xbf\xcfEd\xbd\xf0\xb3\xcf\xfb\xc7\xf0\xc2\xd4\xf0\xa3\xf8%\xfe\x87\xd7s\xf6\xff]\xd9\xb4r\xe2\x17-\xb5k\xe9\x92\xabw\xf3I\x06\xefOS\xb9Y\xcc\xf5\xf6\xe7\x04\x1e[;\x8e\xd3F\xfbr\xf6\xb7\xc8y\xac\xfe\xf8\xfc\xe7\xcb\x8b\x8c\x93d\xb9\xdc\xa75\xd7\xc8\xa8\xdeJt\x9ac\xa5\xf7H\xf7\xc0\x13\x07#\xcbf\x1f\xe7/\x12\x8d\x9b\xcbD\x8cWO\x0f\xad\xf8juJ\xb1\xdb\xff\xc2\xf6\x8cw\x9d&:w\xb6\x16<\x0f\xd7\xddj\xb9>\xab\xf9\xb5\x01\xbfx\xc7\xa3E\xbb6G\x1eY:\xf9k\xb1v\x81Z"\xe3\xa4\xab3\xfe~\xb2\xbb\x96~\xe2\x7f\x9fd\t\xa7\xd0\xe4\xd0o\xeb\x93\x97\xa6kFo\xe3l\xf6_\xfc\xc1]K\xff\xd1\\\xb1\xaa\x98t\xdb\x1f\xfd\x0f\x04\xb6\xef{\xa3\xb4\xbb%\xe8_C\xa4\xcd\xb3\x83u\xac\xd3\xb4\x1e\xad\xd8]\x95\x96\xfe\xa5sY\xef\xce\x8f|i7\x98\n"\x14\xcc\x8a\x18\xca\xf5\x8e\xbf\xbcsh\xe6$Y\xc1\x1c\xd9\xb8\xaas\xb3\r\xeb\xc2\x9f\xd9\xb5\xf8|\xdfQ*mW\xa2\x7ft\xcd\xbd\xe3\x95\x0f?\xd9G\xcc-~\xa3\xd1 \x10\x9f\xf6\xa8\x82\xcd\xed\x04\xd7\x9a\x18K\x8f\xd3\xa5\xf7\x1d\x1c\xbcbw\t1F\xee\xda\xf9/z\xdb\x9fs\xf3\x97=\xd0\xd2\xfc\xef]|Q\x9e;\xfd\xd9\xcd\xdb"\xb2\xc5&\xa9\x0b\x9ew/\x17;\xa5Vh\xff\x91\xc7*i\x96z\x93\xebd\x8f\x98\xe9\xbe\xbb\xda\xdf54OoZ^\xe8m\xa5\xe4v\xe9x\xc0\x9b\x93\xe76jsg:\xbc:b\xbcl\xef\xbe\x84\xbf\xd5S\xad~U\xdf\x94|(\xb1\x9fo\x9byL\x80^\xd7\x81\xd6\tu\xa1\xb3\x05\xe3\xf6mP\x14\xcdo\n9<\xd1\xa6\xdf \xfa\xc6\xb3\x96\xc9\xb1\x06\x15\xfas\x12\x04\xedRv\x19}LM)17~wz\xce\xa4\x84\xd4E\xc7\xabmSNi\x17p\xfe\xef\x8fu\xf2\x90|\xce\xaf\x07\x00X\xf2g\xa0'
 #         return_new = fu.unpack_message(datas)
 #         return_old = oldfu.unpack_message(datas)
-#
+# 
 #         test = fu.pack_message(return_new)
 #         self.assertEqual(test, datas)
 #         self.assertEqual(return_new, return_old)
-#
+# 
 #     def test_S_string_of_data(self):
 #         datas = b"Scase S:I am a string!!!"
 #         return_new = fu.unpack_message(datas)
 #         return_old = oldfu.unpack_message(datas)
-#
+# 
 #         test = fu.pack_message(return_new)
 #         self.assertEqual(test, datas)
 #         self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_C_string_of_data(self):
 #         datas = b'Cx\x01\xf3TH\xccUHT(.)\xca\xccK\x1f\x05D\x87\x80\xa2\xa2"\x00Ca} '
 #         return_new = fu.unpack_message(datas)
 #         return_old = oldfu.unpack_message(datas)
-#
+# 
 #         test = fu.pack_message(return_new)
 #         self.assertEqual(test, datas)
 #         self.assertEqual(return_new, return_old)
-#
+# 
 #     def test_wrongvalue_of_data(self):
 #         sp_global_def.BATCH = True
 #         datas = 'Cx\x01\xf3TH\xccUHT(.)\xca\xccK\x1f\x05D\x87\x80\xa2\xa2"\x00Ca'
@@ -18583,10 +18583,10 @@
 #         sp_global_def.BATCH =True
 #         with self.assertRaises(SystemExit) as cm_old:
 #             oldfu.unpack_message(datas)
-#
+# 
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
+# 
+# 
 #     def test_data_is_a_string_BUG(self):
 #         self.assertTrue(True)
 #         """
@@ -18595,7 +18595,7 @@
 #         return_old = oldfu.unpack_message(data)
 #         self.assertEqual(return_new,return_old)
 #         """
-#
+# 
 #     def test_data_is_a_very_long_string(self):
 #         self.assertTrue(True)
 #         """
@@ -18605,7 +18605,7 @@
 #         return_old = oldfu.unpack_message(data)
 #         self.assertEqual(return_new,return_old)
 #         """
-#
+# 
 #     def test_data_is_a_notstring(self):
 #         self.assertTrue(True)
 #         """
@@ -18614,7 +18614,7 @@
 #         return_old = oldfu.unpack_message(data)
 #         self.assertEqual(return_new,return_old)
 #         """
-#
+# 
 #     def test_data_is_a_notstring_long_version(self):
 #         self.assertTrue(True)
 #         """
@@ -18623,19 +18623,19 @@
 #         return_old = oldfu.unpack_message(data)
 #         self.assertEqual(return_new, return_old)
 #         """
-#
+# 
 #     # data is a numpy array with the following value: ['O', '\x80' ,'\x02' ,']', 'q', '', 'K', 'I', 'a', '.'] and dtype = '|S1'. I cannot create it
 #     def test_pickle_file_values(self):
 #         (data,) = get_arg_from_pickle_file(
 #             path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.unpack_message")
 #         )[0]
-#
+# 
 #         return_new = fu.unpack_message(msg=data)
 #         return_old = oldfu.unpack_message(msg=data)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 # class Test_wrap_mpi_send(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -18647,14 +18647,14 @@
 #             "wrap_mpi_send() missing 2 required positional arguments: 'data' and 'destination'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_default_value(self):
 #         """ values got via pickle files/utilities/utilities.wrap_mpi_send"""
 #         return_new = fu.wrap_mpi_send(data=[9], destination=0, communicator=None)
 #         return_old = oldfu.wrap_mpi_send(data=[9], destination=0, communicator=None)
 #         self.assertEqual(return_new, return_old)
 #         self.assertTrue(return_new is None)
-#
+# 
 #     def test_with_MPI_COMM_WORLD(self):
 #         return_new = fu.wrap_mpi_send(
 #             data=[9], destination=0, communicator=MPI_COMM_WORLD
@@ -18664,7 +18664,7 @@
 #         )
 #         self.assertEqual(return_new, return_old)
 #         self.assertTrue(return_new is None)
-#
+# 
 #     def test_invalid_communicator_crashes_because_signal11SIGSEV(self):
 #         self.assertTrue(True)
 #         """
@@ -18672,8 +18672,8 @@
 #         return_old = oldfu.wrap_mpi_send(data =[9], destination = 0, communicator = -1)
 #         self.assertEqual(return_new, return_old)
 #         """
-#
-#
+# 
+# 
 # class Test_wrap_mpi_recv(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -18684,7 +18684,7 @@
 #             str(cm_new.exception), "wrap_mpi_recv() missing 1 required positional argument: 'source'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     "Can only test on cluster , cannot work on workstation"
 #     # def test_wrap_mpi_recv_true_should_return_equal_objects(self):
 #     #     filepath = path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.wrap_mpi_recv")
@@ -18701,11 +18701,11 @@
 #     #     return_old = oldfu.wrap_mpi_recv(data, communicator)
 #     #
 #     #     self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 # class Test_wrap_mpi_bcast(unittest.TestCase):
 #     """ Values got running Test_get_sorting_params_refine.test_default_case"""
-#
+# 
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.wrap_mpi_bcast()
@@ -18716,7 +18716,7 @@
 #             "wrap_mpi_bcast() missing 2 required positional arguments: 'data' and 'root'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_None_data(self):
 #         """ values got via pickle files/utilities/utilities.wrap_mpi_send"""
 #         mpi_barrier(MPI_COMM_WORLD)
@@ -18726,7 +18726,7 @@
 #         mpi_barrier(MPI_COMM_WORLD)
 #         self.assertEqual(return_new, return_old)
 #         self.assertTrue(return_new is None)
-#
+# 
 #     def test_default_case(self):
 #         attr_value_list = [
 #             [0, 27.84771510918482, 49.09925034711038, 236.702241194244, 0.0, 0.0],
@@ -18775,7 +18775,7 @@
 #                 ],
 #             )
 #         )
-#
+# 
 #     def test_data_is_a_string(self):
 #         mpi_barrier(MPI_COMM_WORLD)
 #         data = "case S:I am a string!!!"
@@ -18785,8 +18785,8 @@
 #         mpi_barrier(MPI_COMM_WORLD)
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_new, data)
-#
-#
+# 
+# 
 #     def test_data_is_a_very_long_string(self):
 #         long_data = "I am a stringggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg!!!"
 #         mpi_barrier(MPI_COMM_WORLD)
@@ -18797,7 +18797,7 @@
 #         print(return_new)
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_new, long_data)
-#
+# 
 #     def test_data_is_a_notstring(self):
 #         data = 5555
 #         return_new = fu.wrap_mpi_bcast(data=data, root=0, communicator=MPI_COMM_WORLD)
@@ -18806,7 +18806,7 @@
 #         mpi_barrier(MPI_COMM_WORLD)
 #         self.assertEqual(return_new , return_old)
 #         self.assertEqual(return_new, data)
-#
+# 
 #     def test_data_is_a_notstring_float(self):
 #         data = 5555.6543
 #         return_new = fu.wrap_mpi_bcast(data=data, root=0, communicator=MPI_COMM_WORLD)
@@ -18815,8 +18815,8 @@
 #         mpi_barrier(MPI_COMM_WORLD)
 #         self.assertEqual(return_new , return_old)
 #         self.assertEqual(return_new, data)
-#
-#
+# 
+# 
 #     def test_data_is_a_notstring_long_version(self):
 #         data = 555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555
 #         return_new = fu.wrap_mpi_bcast(data=data, root=0, communicator=MPI_COMM_WORLD)
@@ -18825,7 +18825,7 @@
 #         mpi_barrier(MPI_COMM_WORLD)
 #         self.assertEqual(return_new , return_old)
 #         self.assertEqual(return_new, data)
-#
+# 
 #     def test_list_of_data(self):
 #         data = [[ 0 ,2 ,3, [0]]]
 #         return_new = fu.wrap_mpi_bcast(data=data, root=0, communicator=MPI_COMM_WORLD)
@@ -18834,7 +18834,7 @@
 #         mpi_barrier(MPI_COMM_WORLD)
 #         self.assertEqual(return_new , return_old)
 #         self.assertEqual(return_new, data)
-#
+# 
 #     def test_list_of_data(self):
 #         data = 2
 #         return_new = fu.wrap_mpi_bcast(data=data, root=0, communicator=MPI_COMM_WORLD)
@@ -18843,33 +18843,33 @@
 #         mpi_barrier(MPI_COMM_WORLD)
 #         self.assertEqual(return_new , return_old)
 #         self.assertEqual(return_new, data)
-#
-#
+# 
+# 
 #     def test_dict_as_data(self):
 #         import struct
 #         import mpi
-#
+# 
 #         communicator = mpi.MPI_COMM_WORLD
 #         rank = mpi.mpi_comm_rank(communicator)
 #         root = 0
 #         data =  {'size_of_one_refring_assumed_common_to_all': 4024, 'em_dict': {'apix_x': 1.0, 'apix_y': 1.0, 'apix_z': 1.0, 'changecount': 2, 'datatype': 7, 'is_complex': 0, 'is_complex_ri': 1, 'is_complex_x': 0, 'maximum': 587.822021484375, 'mean': 0.6893557906150818, 'mean_nonzero': 0.6893557906150818, 'minimum': -145.76242065429688, 'nx': 4024, 'ny': 1, 'nz': 1, 'sigma': 20.112226486206055, 'sigma_nonzero': 20.112226486206055, 'square_sum': 1629222.375}, 'nx': 4024, 'ny': 1, 'nz': 1}
 #         return_new = fu.wrap_mpi_bcast(data=data, root=0, communicator=MPI_COMM_WORLD)
 #         # print(return_new.items())
-#
+# 
 #         msg = fu.pack_message(data)
 #         n = struct.pack("I", len(msg))
 #         print("msg", msg)
 #         print("n", n)
-#
+# 
 #         sizeofdata = mpi.mpi_bcast(
 #             n, 4, mpi.MPI_CHAR, root, communicator
 #         )
 #         if mpi.mpi_comm_rank(mpi.MPI_COMM_WORLD) == 0:
 #             sizeofdata = n
-#
+# 
 #         print("sizeofdata", sizeofdata)
 #         n = struct.unpack("I", sizeofdata)[0]
-#
+# 
 #     def test_invalid_communicator_crashes_because_signal11SIGSEV(self):
 #         self.assertTrue(True)
 #         """
@@ -18877,9 +18877,9 @@
 #         return_old = oldfu.wrap_mpi_bcast(data =[9], root= 0, communicator = -1)
 #         self.assertEqual(return_new, return_old)
 #         """
-#
-#
-#
+# 
+# 
+# 
 # class Test_wrap_mpi_gatherv(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -18891,13 +18891,13 @@
 #             "wrap_mpi_gatherv() missing 2 required positional arguments: 'data' and 'root'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_with_pickle_file_values(self):
 #         return_new = fu.wrap_mpi_gatherv(data=[45, 3], root=0, communicator=None)
 #         return_old = oldfu.wrap_mpi_gatherv(data=[45, 3], root=0, communicator=None)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, [45, 3]))
-#
+# 
 #     def test_with_MPI_COMM_WORLD(self):
 #         return_new = fu.wrap_mpi_gatherv(
 #             data=[45, 3], root=0, communicator=MPI_COMM_WORLD
@@ -18907,7 +18907,7 @@
 #         )
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, [45, 3]))
-#
+# 
 #     def test_invalid_communicator_crashes_because_signal11SIGSEV(self):
 #         self.assertTrue(True)
 #         """
@@ -18915,8 +18915,8 @@
 #         return_old = oldfu.wrap_mpi_gatherv(data= [45,3], root = 0, communicator= -1)
 #         self.assertEqual(return_new, return_old)
 #         """
-#
-#
+# 
+# 
 # class Test_get_colors_and_subsets(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -18928,7 +18928,7 @@
 #             "get_colors_and_subsets() missing 6 required positional arguments: 'main_node', 'mpi_comm', 'my_rank', 'shared_comm', 'sh_my_rank', and 'masters_from_groups_vs_everything_else_comm'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_mainMode_equal_my_rank(self):
 #         main_node = 0
 #         my_rank = mpi_comm_rank(MPI_COMM_WORLD)
@@ -18936,7 +18936,7 @@
 #         sh_my_rank = mpi_comm_rank(shared_comm)
 #         masters = mpi_comm_split(MPI_COMM_WORLD, sh_my_rank == main_node, my_rank)
 #         shared_comm = mpi_comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL)
-#
+# 
 #         return_new = fu.get_colors_and_subsets(
 #             main_node, MPI_COMM_WORLD, my_rank, shared_comm, sh_my_rank, masters
 #         )
@@ -18945,7 +18945,7 @@
 #         )
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, (0, 1, True)))
-#
+# 
 #     def test_mainMode_not_equal_my_rank_returns_TypeError_obj_Nonetype_hasnot_len(self):
 #         main_node = 0
 #         my_rank = mpi_comm_rank(MPI_COMM_WORLD)
@@ -18970,8 +18970,8 @@
 #             str(cm_new.exception), "object of type 'NoneType' has no len()"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
+# 
+# 
 # class Test_wrap_mpi_split(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -18983,9 +18983,9 @@
 #             "wrap_mpi_split() missing 2 required positional arguments: 'comm' and 'no_of_groups'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #         """ Can only be tested in mpi not on workstation   """
-#
+# 
 #     # def test_wrap_mpi_split_true_should_return_equal_objects(self):
 #     #     filepath = path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.wrap_mpi_split")
 #     #     with open(filepath, 'rb') as rb:
@@ -19000,8 +19000,8 @@
 #     #     return_old = oldfu.wrap_mpi_split(comm, no_of_groups)
 #     #
 #     #     self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 # class Test_get_dist(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -19012,13 +19012,13 @@
 #             str(cm_new.exception), "get_dist() missing 2 required positional arguments: 'c1' and 'c2'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_get_dist(self):
 #         return_new = fu.get_dist(c1=[2, 4], c2=[5, 1])
 #         return_old = oldfu.get_dist(c1=[2, 4], c2=[5, 1])
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_new, 4.2426406871192848)
-#
+# 
 #     def test_returns_IndexError_list_index_out_of_range(self):
 #         with self.assertRaises(IndexError) as cm_new:
 #             fu.get_dist(c1=[2], c2=[5])
@@ -19026,8 +19026,8 @@
 #             oldfu.get_dist(c1=[2], c2=[5])
 #         self.assertEqual(str(cm_new.exception), "list index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
+# 
+# 
 # class Test_eliminate_moons(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -19039,21 +19039,21 @@
 #             "eliminate_moons() missing 2 required positional arguments: 'my_volume' and 'moon_elimination_params'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_real_case_IMAGE_3D(self):
 #         moon_params = [0.4, 1]
 #         b, non = get_real_data(dim=3)
 #         b.set_size(10, 10, 10)
 #         a, non = get_real_data(dim=3)
 #         a.set_size(10, 10, 10)
-#
+# 
 #         return_new = fu.eliminate_moons(
 #             my_volume=a, moon_elimination_params=moon_params
 #         )
 #         return_old = oldfu.eliminate_moons(
 #             my_volume=b, moon_elimination_params=moon_params
 #         )
-#
+# 
 #         self.assertTrue(allclose(return_old.get_3dview(), b.get_3dview(), atol = 0.1))
 #         self.assertTrue(allclose(return_old.get_3dview(), return_new.get_3dview(), atol = 0.1))
 #         # self.assertTrue(
@@ -20063,15 +20063,15 @@
 #         #         ],
 #         #     )
 #         # )
-#
+# 
 #     def test_real_case_IMAGE_3D_no_change(self):
 #         moon_params = [0.4, 1]
 #         b, non = get_real_data(dim=3)
 #         b.set_size(10, 10, 10)
 #         a, non = get_real_data(dim=3)
 #         a.set_size(10, 10, 10)
-#
-#
+# 
+# 
 #         return_new = fu.eliminate_moons(
 #             my_volume=a, moon_elimination_params=moon_params
 #         )
@@ -20080,14 +20080,14 @@
 #         )
 #         self.assertTrue(allclose(return_old.get_3dview(), b.get_3dview(), atol = 0.1))
 #         self.assertTrue(allclose(return_old.get_3dview(), return_new.get_3dview(), atol = 0.1))
-#
+# 
 #     def test_returns_IndexError_list_index_out_of_range(self):
 #         moon_params = [0.4]
 #         b, non = get_real_data(dim=3)
 #         b.set_size(10, 10, 10)
 #         a, non = get_real_data(dim=3)
 #         a.set_size(10, 10, 10)
-#
+# 
 #         with self.assertRaises(IndexError) as cm_new:
 #             fu.eliminate_moons(
 #                 my_volume=a, moon_elimination_params=moon_params
@@ -20098,7 +20098,7 @@
 #             )
 #         self.assertEqual(str(cm_new.exception), "list index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_empty_img_returns_RuntimeError_the_img_should_be_a_3D_img(self):
 #         moon_params = [0.4, 0.7]
 #         with self.assertRaises(RuntimeError) as cm_new:
@@ -20114,7 +20114,7 @@
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[1], msg_old[1])
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_NoneType_img_returns_AttributeError_NoneType_obj_hasnot_attribute_find_3d_threshold(
 #         self
 #     ):
@@ -20128,8 +20128,8 @@
 #             "'NoneType' object has no attribute 'find_3d_threshold'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
+# 
+# 
 # class Test_combinations_of_n_taken_by_k(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -20141,14 +20141,14 @@
 #             "combinations_of_n_taken_by_k() missing 2 required positional arguments: 'n' and 'k'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_combinations_of_n_taken_by_k(self):
 #         return_new = fu.combinations_of_n_taken_by_k(5, 3)
 #         return_old = oldfu.combinations_of_n_taken_by_k(5, 3)
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_new, 10)
-#
-#
+# 
+# 
 # class Test_cmdexecute(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -20158,26 +20158,26 @@
 #         self.assertEqual(
 #             str(cm_new.exception), "cmdexecute() missing 1 required positional argument: 'cmd'")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_correct_cmd_without_printing_on_success(self):
 #         return_new = fu.cmdexecute("ls", False)
 #         return_old = oldfu.cmdexecute("ls", False)
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_new, None)
-#
+# 
 #     def test_correct_cmd_with_printing_on_success(self):
 #         return_new = fu.cmdexecute("ls", True)
 #         return_old = oldfu.cmdexecute("ls", True)
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_new, 1)
-#
+# 
 #     def test_wrong_cmd(self):
 #         return_new = fu.cmdexecute("quack", True)
 #         return_old = oldfu.cmdexecute("quack", True)
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_new, 0)
-#
-#
+# 
+# 
 # class Test_string_found_in_file(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -20189,7 +20189,7 @@
 #             "string_found_in_file() missing 2 required positional arguments: 'myregex' and 'filename'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_file_not_found_returns_IOError(self):
 #         with self.assertRaises(IOError) as cm_new:
 #             fu.string_found_in_file("search smth", "not_a_file.txt")
@@ -20197,7 +20197,7 @@
 #             oldfu.string_found_in_file("search smth", "not_a_file.txt")
 #         self.assertEqual(cm_new.exception.strerror, "No such file or directory")
 #         self.assertEqual(cm_new.exception.strerror, cm_old.exception.strerror)
-#
+# 
 #     def test_found_value(self):
 #         f = "f.txt"
 #         data = [["hallo", 1, 1, 1], [2, 2, 2, 2], [3, 3, 3, 3]]
@@ -20208,7 +20208,7 @@
 #         remove_list_of_file([f])
 #         self.assertEqual(return_new, return_old)
 #         self.assertTrue(return_new)
-#
+# 
 #     def test_notfound_value(self):
 #         f = "f.txt"
 #         data = [["ds", 1, 1, 1], [2, 2, 2, 2], [3, 3, 3, 3]]
@@ -20219,12 +20219,12 @@
 #         remove_list_of_file([f])
 #         self.assertEqual(return_new, return_old)
 #         self.assertFalse(return_new)
-#
-#
+# 
+# 
 # class Test_get_latest_directory_increment_value(unittest.TestCase):
 #     start_value = 1
 #     folder_name = "d"
-#
+# 
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.get_latest_directory_increment_value()
@@ -20235,7 +20235,7 @@
 #             "get_latest_directory_increment_value() missing 2 required positional arguments: 'directory_location' and 'directory_name'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_nothing_to_count(self):
 #         return_new = fu.get_latest_directory_increment_value(
 #             ABSOLUTE_PATH,
@@ -20251,7 +20251,7 @@
 #         )
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_new, self.start_value)
-#
+# 
 #     def test_count_something(self):
 #         mkdir(path.join(ABSOLUTE_PATH, self.folder_name + "001"))
 #         mkdir(path.join(ABSOLUTE_PATH, self.folder_name + "002"))
@@ -20271,7 +20271,7 @@
 #         self.assertEqual(return_new, 2)
 #         remove_dir(path.join(ABSOLUTE_PATH, self.folder_name + "001"))
 #         remove_dir(path.join(ABSOLUTE_PATH, self.folder_name + "002"))
-#
+# 
 # # @unittest.skip
 # # class Test_if_error_then_all_processes_exit_program(unittest.TestCase):
 # #     def test_wrong_number_params_too_few_parameters_TypeError(self):
@@ -20284,8 +20284,8 @@
 # #             "if_error_then_all_processes_exit_program() missing 1 required positional argument: 'error_status'",
 # #         )
 # #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
+# 
+# 
 # """ this function has been cleaned
 # class Test_get_shrink_data_huang(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
@@ -20295,7 +20295,7 @@
 #             oldfu.get_shrink_data_huang()
 #         self.assertEqual(str(cm_new.exception), "get_shrink_data_huang() takes at least 7 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     @unittest.skip("it cannot find something in the ADNAN file")
 #     def test_get_shrink_data_huang_true_should_return_equal_objects(self):
 #         '''
@@ -20318,18 +20318,18 @@
 #         partids = path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Refine3D-Substack-Local_001/main010/indexes_010.txt")
 #         partstack =  path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, "Refine3D-Substack-Local_001/main010/params_010.txt")
 #         nxinit = 2
-#
+# 
 #         return_new = fu.get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, m_node, nproc)
-#
+# 
 #         return_old = oldfu.get_shrink_data_huang(Tracker, nxinit, partids, partstack, myid, m_node, nproc)
-#
+# 
 #         self.assertTrue(allclose(return_new[0][0].get_3dview(), return_old[0][0].get_3dview(), 0.5))
 # """
-#
-#
+# 
+# 
 # class Test_getindexdata(unittest.TestCase):
 #     """ nproc and myid valeus got from "pickle files/utilities/utilities.getindexdata"""
-#
+# 
 #     nproc = 95
 #     myid = 22
 #     stack = "bdb:" + path.join(
@@ -20343,7 +20343,7 @@
 #         ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,
 #         "07_RVIPER//main001/run000/rotated_reduced_params.txt",
 #     )
-#
+# 
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.getindexdata()
@@ -20353,7 +20353,7 @@
 #             str(cm_new.exception), "getindexdata() missing 5 required positional arguments: 'stack', 'partids', 'partstack', 'myid', and 'nproc'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     """
 #     def test_nproc_greater_than_ndata(self):
 #         return_new = fu.getindexdata(
@@ -20366,8 +20366,8 @@
 #         self.assertTrue(
 #             array_equal(return_new[0].get_3dview(), return_old[0].get_3dview())
 #         )
-#
-#
+# 
+# 
 #     def test_nproc_and_myid_greater_than_ndata_(self):
 #         return_new = fu.getindexdata(
 #             self.stack, self.partids, self.partstack, 100, self.nproc
@@ -20378,7 +20378,7 @@
 #         self.assertTrue(
 #             array_equal(return_new[0].get_3dview(), return_old[0].get_3dview())
 #         )
-#
+# 
 #     def test_nproc_lower_than_ndata(self):
 #         return_new = fu.getindexdata(
 #             self.stack, self.partids, self.partstack, self.myid, nproc=10
@@ -20390,7 +20390,7 @@
 #             array_equal(return_new[0].get_3dview(), return_old[0].get_3dview())
 #         )
 #     """
-#
+# 
 # class Test_store_value_of_simple_vars_in_json_file(unittest.TestCase):
 #     f = path.join(ABSOLUTE_PATH, "fu.json")
 #     f_old = path.join(ABSOLUTE_PATH, "oldfu.json")
@@ -20400,7 +20400,7 @@
 #         "bool_var": False,
 #         "list_var": [2, 3, 4],
 #     }
-#
+# 
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.store_value_of_simple_vars_in_json_file()
@@ -20411,7 +20411,7 @@
 #             "store_value_of_simple_vars_in_json_file() missing 2 required positional arguments: 'filename' and 'local_vars'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_default_value(self):
 #         fu.store_value_of_simple_vars_in_json_file(
 #             filename=self.f,
@@ -20431,12 +20431,12 @@
 #             returns_values_in_file(self.f), returns_values_in_file(self.f_old)
 #         )
 #         self.assertTrue(fu.string_found_in_file(next(iter(self.var_to_save)), self.f))
-#
+# 
 #         self.assertTrue(
 #             oldfu.string_found_in_file(next(iter(self.var_to_save)), self.f_old)
 #         )
 #         remove_list_of_file([self.f, self.f_old])
-#
+# 
 #     def test_exclude_a_variable(self):
 #         # var = self.var_to_save.keys()[0]
 #         var = next(iter(self.var_to_save))
@@ -20460,7 +20460,7 @@
 #         self.assertFalse(fu.string_found_in_file(var, self.f))
 #         self.assertFalse(oldfu.string_found_in_file(var, self.f_old))
 #         remove_list_of_file([self.f, self.f_old])
-#
+# 
 #     def test_onlySize_a_variable(self):
 #         var = "list_var"
 #         fu.store_value_of_simple_vars_in_json_file(
@@ -20482,13 +20482,13 @@
 #         )
 #         print(self.f)
 #         self.assertTrue(fu.string_found_in_file("<class 'list'> with length: 3", self.f))
-#
+# 
 #         self.assertTrue(
 #             oldfu.string_found_in_file("<class 'list'> with length: 3", self.f_old)
 #         )
 #         remove_list_of_file([self.f, self.f_old])
-#
-#
+# 
+# 
 # class Test_convert_json_fromunicode(unittest.TestCase):
 #     f = path.join(ABSOLUTE_PATH, "f.json")
 #     var_to_save = {
@@ -20497,7 +20497,7 @@
 #         "bool_var": False,
 #         "list_var": [2, 3, 4],
 #     }
-#
+# 
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.convert_json_fromunicode()
@@ -20508,7 +20508,7 @@
 #             "convert_json_fromunicode() missing 1 required positional argument: 'data'",
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_with_loaded_jsonFile(self):
 #         fu.store_value_of_simple_vars_in_json_file(
 #             filename=self.f,
@@ -20519,20 +20519,20 @@
 #         )
 #         with open(self.f, "r") as f1:
 #             values = json_load(f1)
-#
+# 
 #         return_new = fu.convert_json_fromunicode(values)
 #         return_old = oldfu.convert_json_fromunicode(values)
 #         self.assertDictEqual(return_new, return_old)
 #         remove_list_of_file([self.f])
-#
+# 
 #     def test_with_string(self):
 #         data = "ciaone"
 #         return_new = fu.convert_json_fromunicode(data)
 #         return_old = oldfu.convert_json_fromunicode(data)
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_new, data)
-#
-#
+# 
+# 
 # """ the following tests have been cleaned
 # class Test_get_sorting_attr_stack(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
@@ -20542,7 +20542,7 @@
 #             oldfu.get_sorting_attr_stack()
 #         self.assertEqual(str(cm_new.exception), "get_sorting_attr_stack() takes exactly 1 argument (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_default_case(self):
 #         stack = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/multi_shc/multi_shc.ali3d_multishc"))[0][0]
 #         for i in range(len(stack)):
@@ -20551,12 +20551,12 @@
 #         return_old = oldfu.get_sorting_attr_stack(stack)
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_new,[[0, 27.84771510918482, 49.09925034711038, 236.702241194244, 0.0, 0.0], [1, 54.496982231553545, 150.6989385443887, 95.77312314162165, 0.0, 0.0], [2, 67.0993779295224, 52.098986136572584, 248.45843717750148, 0.0, 0.0], [3, 48.329977109192356, 117.5705850518134, 351.86937664408134, 0.0, 0.0], [4, 27.69691819268928, 43.27031745806075, 221.01598994487352, 0.0, 0.0], [5, 21.310076601702065, 171.03012732754505, 171.96680859829712, 0.0, 0.0], [6, 15.29265945235332, 52.64344620523427, 261.77408611622946, 0.0, 0.0], [7, 5.167600687104752, 102.82730387712962, 342.39939706174914, 0.0, 0.0], [8, 24.790317531012022, 99.47564893121846, 197.28160868317875, 0.0, 0.0], [9, 63.6110637166135, 57.82849773806232, 46.28909621816683, 0.0, 0.0], [10, 43.0541340885994, 99.96781920338643, 268.6955892945691, 0.0, 0.0], [11, 61.17678429642095, 90.75462285273008, 146.44621665024576, 0.0, 0.0], [12, 42.21290066966395, 144.5552830212904, 307.2072172161095, 0.0, 0.0], [13, 66.842043722353, 151.03106106540827, 74.69558471790953, 0.0, 0.0], [14, 57.13253366620802, 77.06211216981875, 14.078738028151804, 0.0, 0.0], [15, 23.41658890400403, 33.44337707006545, 302.5719333204403, 0.0, 0.0], [16, 31.39639453397831, 51.13633353440325, 208.30249398432636, 0.0, 0.0], [17, 29.02858651478833, 35.5375562136724, 142.0210172114356, 0.0, 0.0], [18, 33.0380714821259, 25.92835772588129, 56.941091101308245, 0.0, 0.0], [19, 33.154703792393036, 119.10157237670761, 289.65555324857974, 0.0, 0.0], [20, 51.7488556189989, 61.390756979764014, 50.60060397900594, 0.0, 0.0], [21, 13.14807567561769, 87.51982195330109, 196.43451185108586, 0.0, 0.0], [22, 44.16102088511332, 70.89045303205856, 173.69722943005007, 0.0, 0.0], [23, 5.203725557624949, 124.16777353839416, 274.3070842951357, 0.0, 0.0], [24, 71.40261567268388, 94.91091772300047, 193.279386674675, 0.0, 0.0], [25, 37.759166538330405, 64.89547557023316, 126.31095971850405, 0.0, 0.0], [26, 69.73110445824167, 36.63569177645915, 141.5284940422194, 0.0, 0.0], [27, 13.404248750628184, 64.23894693338787, 268.45800591947955, 0.0, 0.0], [28, 36.768338316193336, 142.47038328015265, 328.30282713390517, 0.0, 0.0], [29, 49.40940654524283, 57.44562945197844, 225.5720769552322, 0.0, 0.0], [30, 42.05392118654274, 111.5816596879126, 229.38783889376506, 0.0, 0.0], [31, 4.413172142330993, 36.815963893301586, 219.42779280502356, 0.0, 0.0], [32, 21.93687623164496, 101.33898701867622, 10.389958811519477, 0.0, 0.0], [33, 7.238104232102415, 93.18173962163453, 297.8577786238534, 0.0, 0.0], [34, 33.74128043831372, 136.57263972662804, 251.97793890785513, 0.0, 0.0], [35, 13.24801500355332, 93.3437024073173, 83.42851157658254, 0.0, 0.0], [36, 68.98968742383678, 137.52188147974766, 131.28953414678818, 0.0, 0.0], [37, 6.656739020518444, 83.46392407516454, 108.36199175910278, 0.0, 0.0], [38, 55.08043065083436, 77.00680292359846, 276.94285028405614, 0.0, 0.0], [39, 68.11877000276846, 170.36329302918105, 110.40575965943643, 0.0, 0.0], [40, 14.384107688958224, 37.08496112731635, 226.66984538039912, 0.0, 0.0], [41, 34.82364685570731, 22.08565956767624, 67.24551437397145, 0.0, 0.0], [42, 54.90981252536744, 84.76440954646556, 246.244958672071, 0.0, 0.0], [43, 65.74869436077404, 96.69886072311077, 48.8693101954874, 0.0, 0.0], [44, 56.61431355350081, 127.49229486891034, 352.1753011958611, 0.0, 0.0], [45, 13.363329087310646, 50.6501020880211, 254.4766641608211, 0.0, 0.0], [46, 37.52831980476232, 57.12531740572374, 63.945298445442404, 0.0, 0.0], [47, 65.89658161668316, 81.17948835034154, 12.404945110092683, 0.0, 0.0], [48, 34.31531685691827, 82.26885039884172, 160.73300049337337, 0.0, 0.0], [49, 17.681190265485114, 105.10467265590191, 119.8614020125277, 0.0, 0.0], [50, 15.31103266122065, 54.585177368223576, 271.6740281746854, 0.0, 0.0], [51, 36.283176319068986, 62.914786915921084, 104.54889787946392, 0.0, 0.0], [52, 3.4069623341830635, 157.06953327943953, 258.63938748179646, 0.0, 0.0], [53, 15.818597678822641, 101.17411462087938, 124.36987185667502, 0.0, 0.0], [54, 5.145354760978023, 145.49560881782645, 259.29832164314917, 0.0, 0.0], [55, 56.769249564633384, 49.87909869978583, 339.7947584207519, 0.0, 0.0], [56, 22.02743770985016, 60.589524188603185, 329.76575466706055, 0.0, 0.0], [57, 13.845198933255048, 108.88152968318862, 266.16552396525003, 0.0, 0.0], [58, 26.256731825057074, 50.99774992620399, 103.53874757271407, 0.0, 0.0], [59, 59.518223120645075, 44.12851528850411, 350.54914168406856, 0.0, 0.0], [60, 14.6120857430749, 134.118368756269, 190.99542187117007, 0.0, 0.0], [61, 54.53681589479305, 104.15765119485769, 218.94808795789788, 0.0, 0.0], [62, 43.81366478468314, 167.8017617509876, 184.31279489033895, 0.0, 0.0], [63, 43.93387611407539, 37.88212967171051, 78.06736658579604, 0.0, 0.0], [64, 59.09189637303123, 75.17428928858558, 359.3010696556519, 0.0, 0.0], [65, 22.179552852855508, 58.65260316036829, 181.70124261889157, 0.0, 0.0], [66, 69.29897204983331, 164.63384795897073, 186.55493640315802, 0.0, 0.0], [67, 7.70600634119414, 135.8714860404165, 200.73045260049025, 0.0, 0.0], [68, 8.093148293539642, 106.7864434015925, 31.46848962081191, 0.0, 0.0], [69, 63.21178451811289, 172.1347585895757, 221.8787228503647, 0.0, 0.0], [70, 39.26708106177247, 109.5665308139106, 212.0178242621771, 0.0, 0.0], [71, 5.334919831202555, 65.96229606168743, 191.2185522118338, 0.0, 0.0], [72, 69.25239015969382, 127.83273678349846, 258.0599500142225, 0.0, 0.0], [73, 33.5544474437572, 95.83126974465429, 185.6297961209063, 0.0, 0.0], [74, 23.26676870455981, 93.61370037103086, 45.28778441021137, 0.0, 0.0], [75, 23.043517141348772, 85.84605595290141, 49.47880592292438, 0.0, 0.0], [76, 32.29696863642283, 82.2144519927641, 195.90500589451506, 0.0, 0.0], [77, 61.75569747009288, 59.71952915315906, 200.08880634568584, 0.0, 0.0], [78, 55.77388609688742, 80.90666038882988, 348.03178571828937, 0.0, 0.0], [79, 59.29148816095736, 112.04611759714986, 337.00885101339793, 0.0, 0.0], [80, 35.1758933715832, 90.05390008227911, 128.26317896036022, 0.0, 0.0], [81, 11.86605599859547, 137.92249001802958, 246.76615643070795, 0.0, 0.0], [82, 67.2881097166682, 69.57308961723741, 148.17043074761835, 0.0, 0.0], [83, 47.19123431038949, 61.2678939843427, 17.806652177535398, 0.0, 0.0], [84, 10.603352096546047, 99.09333923199034, 100.16174984508127, 0.0, 0.0], [85, 9.711739202292577, 66.0802792775635, 344.0008163242261, 0.0, 0.0], [86, 62.633048929359376, 108.2560649627951, 233.64751565667922, 0.0, 0.0], [87, 15.973356105036785, 167.05874406098954, 9.692510439987075, 0.0, 0.0], [88, 29.510920813596286, 39.4352946112764, 315.9396310062408, 0.0, 0.0], [89, 47.105447134414106, 131.1150313645737, 169.44623231632715, 0.0, 0.0], [90, 70.08997625761248, 54.12087833087295, 191.55760589075828, 0.0, 0.0], [91, 30.490916355709714, 49.17052385044576, 157.3015888880858, 0.0, 0.0], [92, 69.16740894604052, 46.33040988241775, 276.01316541962285, 0.0, 0.0], [93, 11.38232151100766, 19.50450649105371, 65.58885592786618, 0.0, 0.0], [94, 49.76300543857437, 131.18661434631423, 209.89458600184605, 0.0, 0.0]])
-#
+# 
 #     def test_empty_stack(self):
 #         return_new=fu.get_sorting_attr_stack([])
 #         self.assertTrue(array_equal(return_new, oldfu.get_sorting_attr_stack([])))
 #         self.assertTrue(array_equal(return_new, []))
-#
+# 
 #     def test_wrong_images_in_the_stack_RunTimeError(self):
 #         stack=[IMAGE_2D,IMAGE_2D]
 #         for i in range(len(stack)):
@@ -20572,8 +20572,8 @@
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
+# 
+# 
 # class Test_get_sorting_params_refine(unittest.TestCase):
 #     stack = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/multi_shc/multi_shc.ali3d_multishc"))[0][0]
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
@@ -20583,7 +20583,7 @@
 #             oldfu.get_sorting_params_refine()
 #         self.assertEqual(str(cm_new.exception), "get_sorting_params_refine() takes exactly 3 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_default_case(self):
 #         for i in range(len(self.stack)):
 #             self.stack[i].set_attr("group",i)
@@ -20595,7 +20595,7 @@
 #         return_old = oldfu.get_sorting_params_refine(Tracker, self.stack, len(self.stack))
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new,  [[0, 27.84771510918482, 49.09925034711038, 236.702241194244, 0.0, 0.0], [1, 54.496982231553545, 150.6989385443887, 95.77312314162165, 0.0, 0.0], [2, 67.0993779295224, 52.098986136572584, 248.45843717750148, 0.0, 0.0], [3, 48.329977109192356, 117.5705850518134, 351.86937664408134, 0.0, 0.0], [4, 27.69691819268928, 43.27031745806075, 221.01598994487352, 0.0, 0.0], [5, 21.310076601702065, 171.03012732754505, 171.96680859829712, 0.0, 0.0], [6, 15.29265945235332, 52.64344620523427, 261.77408611622946, 0.0, 0.0], [7, 5.167600687104752, 102.82730387712962, 342.39939706174914, 0.0, 0.0], [8, 24.790317531012022, 99.47564893121846, 197.28160868317875, 0.0, 0.0], [9, 63.6110637166135, 57.82849773806232, 46.28909621816683, 0.0, 0.0], [10, 43.0541340885994, 99.96781920338643, 268.6955892945691, 0.0, 0.0], [11, 61.17678429642095, 90.75462285273008, 146.44621665024576, 0.0, 0.0], [12, 42.21290066966395, 144.5552830212904, 307.2072172161095, 0.0, 0.0], [13, 66.842043722353, 151.03106106540827, 74.69558471790953, 0.0, 0.0], [14, 57.13253366620802, 77.06211216981875, 14.078738028151804, 0.0, 0.0], [15, 23.41658890400403, 33.44337707006545, 302.5719333204403, 0.0, 0.0], [16, 31.39639453397831, 51.13633353440325, 208.30249398432636, 0.0, 0.0], [17, 29.02858651478833, 35.5375562136724, 142.0210172114356, 0.0, 0.0], [18, 33.0380714821259, 25.92835772588129, 56.941091101308245, 0.0, 0.0], [19, 33.154703792393036, 119.10157237670761, 289.65555324857974, 0.0, 0.0], [20, 51.7488556189989, 61.390756979764014, 50.60060397900594, 0.0, 0.0], [21, 13.14807567561769, 87.51982195330109, 196.43451185108586, 0.0, 0.0], [22, 44.16102088511332, 70.89045303205856, 173.69722943005007, 0.0, 0.0], [23, 5.203725557624949, 124.16777353839416, 274.3070842951357, 0.0, 0.0], [24, 71.40261567268388, 94.91091772300047, 193.279386674675, 0.0, 0.0], [25, 37.759166538330405, 64.89547557023316, 126.31095971850405, 0.0, 0.0], [26, 69.73110445824167, 36.63569177645915, 141.5284940422194, 0.0, 0.0], [27, 13.404248750628184, 64.23894693338787, 268.45800591947955, 0.0, 0.0], [28, 36.768338316193336, 142.47038328015265, 328.30282713390517, 0.0, 0.0], [29, 49.40940654524283, 57.44562945197844, 225.5720769552322, 0.0, 0.0], [30, 42.05392118654274, 111.5816596879126, 229.38783889376506, 0.0, 0.0], [31, 4.413172142330993, 36.815963893301586, 219.42779280502356, 0.0, 0.0], [32, 21.93687623164496, 101.33898701867622, 10.389958811519477, 0.0, 0.0], [33, 7.238104232102415, 93.18173962163453, 297.8577786238534, 0.0, 0.0], [34, 33.74128043831372, 136.57263972662804, 251.97793890785513, 0.0, 0.0], [35, 13.24801500355332, 93.3437024073173, 83.42851157658254, 0.0, 0.0], [36, 68.98968742383678, 137.52188147974766, 131.28953414678818, 0.0, 0.0], [37, 6.656739020518444, 83.46392407516454, 108.36199175910278, 0.0, 0.0], [38, 55.08043065083436, 77.00680292359846, 276.94285028405614, 0.0, 0.0], [39, 68.11877000276846, 170.36329302918105, 110.40575965943643, 0.0, 0.0], [40, 14.384107688958224, 37.08496112731635, 226.66984538039912, 0.0, 0.0], [41, 34.82364685570731, 22.08565956767624, 67.24551437397145, 0.0, 0.0], [42, 54.90981252536744, 84.76440954646556, 246.244958672071, 0.0, 0.0], [43, 65.74869436077404, 96.69886072311077, 48.8693101954874, 0.0, 0.0], [44, 56.61431355350081, 127.49229486891034, 352.1753011958611, 0.0, 0.0], [45, 13.363329087310646, 50.6501020880211, 254.4766641608211, 0.0, 0.0], [46, 37.52831980476232, 57.12531740572374, 63.945298445442404, 0.0, 0.0], [47, 65.89658161668316, 81.17948835034154, 12.404945110092683, 0.0, 0.0], [48, 34.31531685691827, 82.26885039884172, 160.73300049337337, 0.0, 0.0], [49, 17.681190265485114, 105.10467265590191, 119.8614020125277, 0.0, 0.0], [50, 15.31103266122065, 54.585177368223576, 271.6740281746854, 0.0, 0.0], [51, 36.283176319068986, 62.914786915921084, 104.54889787946392, 0.0, 0.0], [52, 3.4069623341830635, 157.06953327943953, 258.63938748179646, 0.0, 0.0], [53, 15.818597678822641, 101.17411462087938, 124.36987185667502, 0.0, 0.0], [54, 5.145354760978023, 145.49560881782645, 259.29832164314917, 0.0, 0.0], [55, 56.769249564633384, 49.87909869978583, 339.7947584207519, 0.0, 0.0], [56, 22.02743770985016, 60.589524188603185, 329.76575466706055, 0.0, 0.0], [57, 13.845198933255048, 108.88152968318862, 266.16552396525003, 0.0, 0.0], [58, 26.256731825057074, 50.99774992620399, 103.53874757271407, 0.0, 0.0], [59, 59.518223120645075, 44.12851528850411, 350.54914168406856, 0.0, 0.0], [60, 14.6120857430749, 134.118368756269, 190.99542187117007, 0.0, 0.0], [61, 54.53681589479305, 104.15765119485769, 218.94808795789788, 0.0, 0.0], [62, 43.81366478468314, 167.8017617509876, 184.31279489033895, 0.0, 0.0], [63, 43.93387611407539, 37.88212967171051, 78.06736658579604, 0.0, 0.0], [64, 59.09189637303123, 75.17428928858558, 359.3010696556519, 0.0, 0.0], [65, 22.179552852855508, 58.65260316036829, 181.70124261889157, 0.0, 0.0], [66, 69.29897204983331, 164.63384795897073, 186.55493640315802, 0.0, 0.0], [67, 7.70600634119414, 135.8714860404165, 200.73045260049025, 0.0, 0.0], [68, 8.093148293539642, 106.7864434015925, 31.46848962081191, 0.0, 0.0], [69, 63.21178451811289, 172.1347585895757, 221.8787228503647, 0.0, 0.0], [70, 39.26708106177247, 109.5665308139106, 212.0178242621771, 0.0, 0.0], [71, 5.334919831202555, 65.96229606168743, 191.2185522118338, 0.0, 0.0], [72, 69.25239015969382, 127.83273678349846, 258.0599500142225, 0.0, 0.0], [73, 33.5544474437572, 95.83126974465429, 185.6297961209063, 0.0, 0.0], [74, 23.26676870455981, 93.61370037103086, 45.28778441021137, 0.0, 0.0], [75, 23.043517141348772, 85.84605595290141, 49.47880592292438, 0.0, 0.0], [76, 32.29696863642283, 82.2144519927641, 195.90500589451506, 0.0, 0.0], [77, 61.75569747009288, 59.71952915315906, 200.08880634568584, 0.0, 0.0], [78, 55.77388609688742, 80.90666038882988, 348.03178571828937, 0.0, 0.0], [79, 59.29148816095736, 112.04611759714986, 337.00885101339793, 0.0, 0.0], [80, 35.1758933715832, 90.05390008227911, 128.26317896036022, 0.0, 0.0], [81, 11.86605599859547, 137.92249001802958, 246.76615643070795, 0.0, 0.0], [82, 67.2881097166682, 69.57308961723741, 148.17043074761835, 0.0, 0.0], [83, 47.19123431038949, 61.2678939843427, 17.806652177535398, 0.0, 0.0], [84, 10.603352096546047, 99.09333923199034, 100.16174984508127, 0.0, 0.0], [85, 9.711739202292577, 66.0802792775635, 344.0008163242261, 0.0, 0.0], [86, 62.633048929359376, 108.2560649627951, 233.64751565667922, 0.0, 0.0], [87, 15.973356105036785, 167.05874406098954, 9.692510439987075, 0.0, 0.0], [88, 29.510920813596286, 39.4352946112764, 315.9396310062408, 0.0, 0.0], [89, 47.105447134414106, 131.1150313645737, 169.44623231632715, 0.0, 0.0], [90, 70.08997625761248, 54.12087833087295, 191.55760589075828, 0.0, 0.0], [91, 30.490916355709714, 49.17052385044576, 157.3015888880858, 0.0, 0.0], [92, 69.16740894604052, 46.33040988241775, 276.01316541962285, 0.0, 0.0], [93, 11.38232151100766, 19.50450649105371, 65.58885592786618, 0.0, 0.0], [94, 49.76300543857437, 131.18661434631423, 209.89458600184605, 0.0, 0.0]]))
-#
+# 
 #     def returns_too_ndata_vlaue_respect_the_number_of_data_IndexError_list_index_out_of_range(self):
 #         for i in range(len(self.stack)):
 #             self.stack[i].set_attr("group",i)
@@ -20609,7 +20609,7 @@
 #             oldfu.get_sorting_params_refine(Tracker, self.stack, len(self.stack)+11)
 #         self.assertEqual(str(cm_new.exception), "list index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_empty_stack(self):
 #         stack=[]
 #         Tracker = deepcopy(TRACKER)
@@ -20620,7 +20620,7 @@
 #         return_old = oldfu.get_sorting_params_refine(Tracker, stack, len(stack))
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, []))
-#
+# 
 #     def test_wrong_images_in_the_stack_RunTimeError(self):
 #         stack=[IMAGE_2D,IMAGE_2D]
 #         for i in range(len(stack)):
@@ -20640,9 +20640,9 @@
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[3], msg_old[3])
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
-#
+# 
+# 
+# 
 # class Test_parsing_sorting_params(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -20651,13 +20651,13 @@
 #             oldfu.parsing_sorting_params()
 #         self.assertEqual(str(cm_new.exception), "parsing_sorting_params() takes exactly 1 argument (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_empty_list(self):
 #         return_new = fu.parsing_sorting_params([])
 #         return_old = oldfu.parsing_sorting_params([])
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, ([], [])))
-#
+# 
 #     def test_typeerror_int_hasnot_attribute__get_item__(self):
 #         l=[1,2,3,4,5]
 #         with self.assertRaises(TypeError) as cm_new:
@@ -20666,7 +20666,7 @@
 #             oldfu.parsing_sorting_params(l)
 #         self.assertEqual(str(cm_new.exception), "'int' object has no attribute '__getitem__'")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_default_values(self):
 #         l=[[1,2,3,4,5],[1,21,31,41,51]]
 #         return_new = fu.parsing_sorting_params(l)
@@ -20675,10 +20675,10 @@
 #         self.assertTrue(array_equal(return_new[1], return_old[1]))
 #         self.assertTrue(array_equal(return_new[0], [1, 1]))
 #         self.assertTrue(array_equal(return_new[1], [[2, 3, 4, 5], [21, 31, 41, 51]]))
-#
-#
-#
-#
+# 
+# 
+# 
+# 
 # class Test_fill_in_mpi_list(unittest.TestCase):
 #     # Values got running Test_get_sorting_params_refine.test_default_case
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
@@ -20688,7 +20688,7 @@
 #             oldfu.fill_in_mpi_list()
 #         self.assertEqual(str(cm_new.exception), "fill_in_mpi_list() takes exactly 4 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_default_case(self):
 #         total_attr_value_list=[[],[],[]]
 #         attr_value_list = [[0, 27.84771510918482, 49.09925034711038, 236.702241194244, 0.0, 0.0], [1, 54.496982231553545, 150.6989385443887, 95.77312314162165, 0.0, 0.0], [2, 67.0993779295224, 52.098986136572584, 248.45843717750148, 0.0, 0.0]]
@@ -20696,7 +20696,7 @@
 #         return_old = oldfu.fill_in_mpi_list(mpi_list = deepcopy(total_attr_value_list), data_list = attr_value_list, index_start = 0 ,index_end = len(total_attr_value_list))
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new,  [[0, 27.84771510918482, 49.09925034711038, 236.702241194244, 0.0, 0.0], [1, 54.496982231553545, 150.6989385443887, 95.77312314162165, 0.0, 0.0], [2, 67.0993779295224, 52.098986136572584, 248.45843717750148, 0.0, 0.0]]))
-#
+# 
 #     def test_index_start_negative_returns_IndexError_list_index_out_of_range(self):
 #         total_attr_value_list=[[],[],[]]
 #         attr_value_list = [[0, 27.84771510918482, 49.09925034711038, 236.702241194244, 0.0, 0.0], [1, 54.496982231553545, 150.6989385443887, 95.77312314162165, 0.0, 0.0], [2, 67.0993779295224, 52.098986136572584, 248.45843717750148, 0.0, 0.0]]
@@ -20715,7 +20715,7 @@
 #             oldfu.fill_in_mpi_list(mpi_list=deepcopy(total_attr_value_list), data_list=attr_value_list, index_start=0,index_end=len(total_attr_value_list)+2)
 #         self.assertEqual(str(cm_new.exception), "list index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_less_values_in_attr_value_list_returns_IndexError_list_index_out_of_range(self):
 #         total_attr_value_list=[[],[],[]]
 #         attr_value_list = [ [1, 54.496982231553545, 150.6989385443887, 95.77312314162165, 0.0, 0.0], [2, 67.0993779295224, 52.098986136572584, 248.45843717750148, 0.0, 0.0]]
@@ -20725,7 +20725,7 @@
 #             oldfu.fill_in_mpi_list(mpi_list=deepcopy(total_attr_value_list), data_list=attr_value_list, index_start=0, index_end=len(total_attr_value_list))
 #         self.assertEqual(str(cm_new.exception), "list index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_too_values_in_attr_value_list(self):
 #         total_attr_value_list=[[],[],[]]
 #         attr_value_list = [[0, 27.84771510918482, 49.09925034711038, 236.702241194244, 0.0, 0.0], [1, 54.496982231553545, 150.6989385443887, 95.77312314162165, 0.0, 0.0], [2, 67.0993779295224, 52.098986136572584, 248.45843717750148, 0.0, 0.0]]
@@ -20733,9 +20733,9 @@
 #         return_old = oldfu.fill_in_mpi_list(mpi_list = deepcopy(total_attr_value_list), data_list = attr_value_list, index_start = 0 ,index_end = len(total_attr_value_list))
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new,  [[0, 27.84771510918482, 49.09925034711038, 236.702241194244, 0.0, 0.0], [1, 54.496982231553545, 150.6989385443887, 95.77312314162165, 0.0, 0.0], [2, 67.0993779295224, 52.098986136572584, 248.45843717750148, 0.0, 0.0]]))
-#
-#
-#
+# 
+# 
+# 
 # class Test_sample_down_1D_curve(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -20744,13 +20744,13 @@
 #             oldfu.sample_down_1D_curve()
 #         self.assertEqual(str(cm_new.exception), "sample_down_1D_curve() takes exactly 3 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_default_case(self):
 #         return_new = fu.sample_down_1D_curve(nxinit=100, nnxo=180, pspcurv_nnxo_file=path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,"Sharpening-after-meridien/fsc_halves.txt"))
 #         return_old = oldfu.sample_down_1D_curve(nxinit=100, nnxo=180, pspcurv_nnxo_file=path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,"Sharpening-after-meridien/fsc_halves.txt"))
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new,  [0.4444444444444444, 3.3333333333333335, 6.444444444444444, 9.555555555555557, 12.666666666666663, 17.000000000000004, 19.333333333333343, 22.444444444444436, 25.555555555555543, 28.66666666666668, 34.00000000000001, 35.33333333333335, 38.444444444444464, 41.55555555555553, 44.66666666666664, 51.00000000000001, 51.33333333333331, 54.44444444444447, 57.55555555555558, 60.6666666666667, 68.00000000000001, 67.33333333333323, 70.44444444444449, 73.55555555555559, 76.66666666666671, 85.00000000000003, 83.33333333333337, 86.4444444444443, 89.55555555555559, 92.66666666666671, 102.00000000000003, 99.33333333333337, 102.44444444444429, 105.5555555555556, 108.66666666666671, 118.9999999999998, 115.33333333333384, 118.44444444444403, 121.5555555555556, 124.66666666666673, 135.99999999999977, 131.3333333333339, 134.44444444444397, 137.55555555555563, 140.66666666666674, 152.99999999999974, 147.333333333334, 150.4444444444439, 153.55555555555623, 156.66666666666612, 169.99999999999972, 163.33333333333405, 166.44444444444383, 169.5555555555563, 172.66666666666606, 186.9999999999997, 179.3333333333341, 182.4444444444438, 185.5555555555564, 188.666666666666, 203.99999999999966, 195.3333333333342, 198.44444444444377, 201.55555555555645, 204.66666666666595, 220.99999999999963, 211.33333333333258, 214.44444444444713, 217.5555555555548, 220.6666666666659, 237.9999999999996, 227.33333333333252, 230.4444444444473, 233.55555555555475, 236.66666666666583, 254.99999999999957, 243.33333333333246, 246.44444444444753, 249.5555555555547, 252.66666666666578, 271.99999999999955, 259.3333333333324, 262.4444444444477, 265.55555555555463, 268.6666666666657, 288.99999999999955, 275.33333333333235, 278.4444444444479, 281.5555555555546, 284.66666666666566, 305.9999999999995, 291.3333333333323, 294.44444444444815, 297.5555555555545, 300.6666666666656, 322.99999999999943, 307.33333333333474, 310.4444444444458, 175.77777777777527, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
-#
+# 
 #     def test_null_nxinit_returns_ZeroDivisionError(self):
 #         with self.assertRaises(ZeroDivisionError) as cm_new:
 #             fu.sample_down_1D_curve(nxinit=0, nnxo=180, pspcurv_nnxo_file=path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,"Sharpening-after-meridien/fsc_halves.txt"))
@@ -20758,7 +20758,7 @@
 #             oldfu.sample_down_1D_curve(nxinit=0, nnxo=180, pspcurv_nnxo_file=path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,"Sharpening-after-meridien/fsc_halves.txt"))
 #         self.assertEqual(str(cm_new.exception), "float division by zero")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_null_nnxo_returns_ZeroDivisionError(self):
 #         with self.assertRaises(ZeroDivisionError) as cm_new:
 #             fu.sample_down_1D_curve(nxinit=100, nnxo=0, pspcurv_nnxo_file=path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,"Sharpening-after-meridien/fsc_halves.txt"))
@@ -20766,7 +20766,7 @@
 #             oldfu.sample_down_1D_curve(nxinit=100, nnxo=0, pspcurv_nnxo_file=path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,"Sharpening-after-meridien/fsc_halves.txt"))
 #         self.assertEqual(str(cm_new.exception), "float division by zero")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_file_not_found(self):
 #         with self.assertRaises(IOError) as cm_new:
 #             fu.sample_down_1D_curve(nxinit=100, nnxo=180, pspcurv_nnxo_file="filenotfound.txt")
@@ -20774,12 +20774,12 @@
 #             oldfu.sample_down_1D_curve(nxinit=100, nnxo=180, pspcurv_nnxo_file="filenotfound.txt")
 #         self.assertEqual(cm_new.exception.strerror, "No such file or directory")
 #         self.assertEqual(cm_new.exception.strerror, cm_old.exception.strerror)
-#
-#
-#
+# 
+# 
+# 
 # class Test_get_initial_ID(unittest.TestCase):
 #     full_ID_dict = {0: 'ciao_0', 1: 'ciao_1', 2: 'ciao_2', 3: 'ciao_3'}
-#
+# 
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.get_initial_ID()
@@ -20787,19 +20787,19 @@
 #             oldfu.get_initial_ID()
 #         self.assertEqual(str(cm_new.exception), "get_initial_ID() takes exactly 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_valid_list_dict(self):
 #         part_list = [0,1,2]
 #         return_new  = fu.get_initial_ID(part_list, self.full_ID_dict)
 #         return_old = oldfu.get_initial_ID(part_list, self.full_ID_dict)
 #         self.assertTrue(array_equal(return_new, return_old))
-#
+# 
 #     def test_empty_list(self):
 #         return_new  = fu.get_initial_ID([], self.full_ID_dict)
 #         return_old = oldfu.get_initial_ID([], self.full_ID_dict)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, []))
-#
+# 
 #     def test_invalid_value_in_list_KeyError(self):
 #         part_list = [0, 1, 20]
 #         with self.assertRaises(KeyError) as cm_new:
@@ -20808,7 +20808,7 @@
 #             oldfu.get_initial_ID(part_list, self.full_ID_dict)
 #         self.assertEqual(str(cm_new.exception), 20)
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_empty_dict_KeyError(self):
 #         part_list = [0, 1, 20]
 #         with self.assertRaises(KeyError) as cm_new:
@@ -20817,9 +20817,9 @@
 #             oldfu.get_initial_ID(part_list, {})
 #         self.assertEqual(str(cm_new.exception), 0)
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
-#
+# 
+# 
+# 
 # class Test_print_upper_triangular_matrix(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -20828,7 +20828,7 @@
 #             oldfu.print_upper_triangular_matrix()
 #         self.assertEqual(str(cm_new.exception), "print_upper_triangular_matrix() takes exactly 3 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     @unittest.skip("which variable is the third parameter??")
 #     def test_print_upper_triangular_matrix(self):
 #         log_new =[]
@@ -20840,9 +20840,9 @@
 #                 data.append((i,j*j))
 #         fu.print_upper_triangular_matrix(data,size,log_new)
 #         oldfu.print_upper_triangular_matrix(data, size, log_old)
-#
-#
-#
+# 
+# 
+# 
 # class Test_convertasi(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -20851,22 +20851,22 @@
 #             oldfu.convertasi()
 #         self.assertEqual(str(cm_new.exception), "convertasi() takes exactly 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_empty_list(self):
 #         return_new = fu.convertasi([],3)
 #         return_old = oldfu.convertasi([],3)
 #         self.assertTrue(allclose(return_new, return_old))
 #         self.assertTrue(allclose(return_new, [array([], dtype=int), array([], dtype=int), array([], dtype=int)]))
-#
+# 
 #     def test_default_case(self):
 #         asig = [0,1,2,3,4,5,6]
 #         return_new = fu.convertasi(asig,7)
 #         return_old = oldfu.convertasi(asig,7)
 #         self.assertTrue(allclose(return_new,return_old))
 #         self.assertEqual(return_new, [array([0], dtype=int), array([1], dtype=int), array([2], dtype=int), array([3], dtype=int), array([4], dtype=int), array([5], dtype=int), array([6], dtype=int)])
-#
-#
-#
+# 
+# 
+# 
 # class Test_prepare_ptp(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -20875,13 +20875,13 @@
 #             oldfu.prepare_ptp()
 #         self.assertEqual(str(cm_new.exception), "prepare_ptp() takes exactly 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_empty_list(self):
 #         return_new = fu.prepare_ptp([],3)
 #         return_old = oldfu.prepare_ptp([],3)
 #         self.assertTrue(allclose(return_new, return_old))
 #         self.assertTrue(allclose(return_new, []))
-#
+# 
 #     def test_default_case(self):
 #         K = 7
 #         data_list = [[0, 1, 2, 3, 4, 5, 6],[0, 1, 2, 3, 4, 5, 6],[0, 1, 2, 3, 4, 5, 6]]
@@ -20889,9 +20889,9 @@
 #         return_old = oldfu.prepare_ptp(data_list, K)
 #         self.assertTrue(allclose(return_new, return_old))
 #         self.assertEqual(return_new, [[array([0], dtype=int), array([1], dtype=int), array([2], dtype=int), array([3], dtype=int), array([4], dtype=int), array([5], dtype=int), array([6], dtype=int)], [array([0], dtype=int), array([1], dtype=int), array([2], dtype=int), array([3], dtype=int), array([4], dtype=int), array([5], dtype=int), array([6], dtype=int)], [array([0], dtype=int), array([1], dtype=int), array([2], dtype=int), array([3], dtype=int), array([4], dtype=int), array([5], dtype=int), array([6], dtype=int)]])
-#
-#
-#
+# 
+# 
+# 
 # class Test_print_dict(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -20900,7 +20900,7 @@
 #             oldfu.print_dict()
 #         self.assertEqual(str(cm_new.exception), "print_dict() takes exactly 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_print_dict(self):
 #         dic = {'0': 'ciao_0', '1': 'ciao_1'}
 #         old_stdout = sys.stdout
@@ -20914,7 +20914,7 @@
 #         self.assertTrue(return_new is None)
 #         self.assertEqual(print_new.getvalue(), print_old.getvalue())
 #         sys.stdout = old_stdout
-#
+# 
 #     def test_error_key_type(self):
 #         dic = {0: 'ciao_0', 1: 'ciao_1', 2: 'ciao_2', 3: 'ciao_3'}
 #         with self.assertRaises(TypeError) as cm_new:
@@ -20923,9 +20923,9 @@
 #             oldfu.print_dict(dic, " Test_print_dict.test_error_key_type")
 #         self.assertEqual(str(cm_new.exception), "cannot concatenate 'str' and 'int' objects")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
-#
+# 
+# 
+# 
 # class Test_get_resolution_mrk01(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -20934,7 +20934,7 @@
 #             oldfu.get_resolution_mrk01()
 #         self.assertEqual(str(cm_new.exception), "get_resolution_mrk01() takes exactly 5 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_radi_not_integer(self):
 #         v = [IMAGE_2D,IMAGE_2D_REFERENCE]
 #         return_new = fu.get_resolution_mrk01(deepcopy(v), 0.5,0.15,ABSOLUTE_PATH, None)
@@ -20942,7 +20942,7 @@
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, (-0.0061, 0.1617, 0.01)))
 #         remove_list_of_file([path.join(ABSOLUTE_PATH,"fsc.txt")])
-#
+# 
 #     def test_radi_integer_no_mask(self):
 #         v = [IMAGE_3D,IMAGE_3D]
 #         return_new = fu.get_resolution_mrk01(deepcopy(v), 1,IMAGE_3D.get_xsize(),ABSOLUTE_PATH, None)
@@ -20950,7 +20950,7 @@
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, (0.2, 0.2, 0.47)))
 #         remove_list_of_file([path.join(ABSOLUTE_PATH, "fsc.txt")])
-#
+# 
 #     def test_radi_integer_with_mask(self):
 #         v = [IMAGE_3D,IMAGE_3D]
 #         mask_option = [fu.model_circle(1,IMAGE_3D.get_xsize(),IMAGE_3D.get_ysize(),IMAGE_3D.get_zsize())]
@@ -20959,7 +20959,7 @@
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, (0.2, 0.2, 0.47)))
 #         remove_list_of_file([path.join(ABSOLUTE_PATH, "fsc.txt")])
-#
+# 
 #     def test_with_invalid_mask_returns_RuntimeError_ImageFormatException(self):
 #         v = [IMAGE_3D,IMAGE_3D]
 #         mask_option = [fu.model_circle(1,IMAGE_3D.get_xsize()+10,IMAGE_3D.get_ysize(),IMAGE_3D.get_zsize())]
@@ -20974,9 +20974,9 @@
 #         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
 #         self.assertEqual(msg[1], msg_old[1])
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
-#
+# 
+# 
+# 
 # class Test_partition_to_groups(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -20985,13 +20985,13 @@
 #             oldfu.partition_to_groups()
 #         self.assertEqual(str(cm_new.exception), "partition_to_groups() takes exactly 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_empty_list(self):
 #         return_new = fu.partition_to_groups([],3)
 #         return_old = oldfu.partition_to_groups([],3)
 #         self.assertTrue(allclose(return_new, return_old))
 #         self.assertTrue(allclose(return_new, [[], [], []]))
-#
+# 
 #     def test_default_case(self):
 #         K = 7
 #         data_list = [[0, 1, 2, 3, 4, 5, 6],[0, 1, 2, 3, 4, 5, 6],[0, 1, 2, 3, 4, 5, 6]]
@@ -20999,9 +20999,9 @@
 #         return_old = oldfu.partition_to_groups(data_list, K)
 #         self.assertTrue(allclose(return_new, return_old))
 #         self.assertTrue(allclose(return_new, [[], [], [], [], [], [], []]))
-#
-#
-#
+# 
+# 
+# 
 # class Test_partition_independent_runs(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -21010,13 +21010,13 @@
 #             oldfu.partition_independent_runs()
 #         self.assertEqual(str(cm_new.exception), "partition_independent_runs() takes exactly 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_empty_list(self):
 #         return_new = fu.partition_independent_runs([],3)
 #         return_old = oldfu.partition_independent_runs([],3)
 #         self.assertDictEqual(return_new,return_old)
 #         self.assertEqual(return_new, {})
-#
+# 
 #     def test_default_case(self):
 #         K = 7
 #         data_list = [[0, 1, 2, 3, 4, 5, 6],[0, 1, 2, 3, 4, 5, 6],[0, 1, 2, 3, 4, 5, 6]]
@@ -21024,10 +21024,10 @@
 #         return_old = oldfu.partition_independent_runs(data_list, K)
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_new, {0: [[0], [1], [2], [3], [4], [5], [6]], 1: [[0], [1], [2], [3], [4], [5], [6]], 2: [[0], [1], [2], [3], [4], [5], [6]]})
-#
-#
-#
-#
+# 
+# 
+# 
+# 
 # class Test_merge_groups(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -21036,20 +21036,20 @@
 #             oldfu.merge_groups()
 #         self.assertEqual(str(cm_new.exception), "merge_groups() takes exactly 1 argument (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_empty_list(self):
 #         return_new = fu.merge_groups([])
 #         return_old = oldfu.merge_groups([])
 #         self.assertTrue(allclose(return_new, []))
-#
+# 
 #     def test_default_case(self):
 #         data_list = [[0, 1, 2, 3, 4, 5, 6],[0, 1, 2, 3, 4, 5, 6],[0, 1, 2, 3, 4, 5, 6]]
 #         return_new = fu.merge_groups(data_list)
 #         return_old = oldfu.merge_groups(data_list)
 #         self.assertEqual(return_new, [0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6])
-#
-#
-#
+# 
+# 
+# 
 # class Test_save_alist(unittest.TestCase):
 #     filename_new = "listfile.txt"
 #     filename_old = "listfile2.txt"
@@ -21061,34 +21061,34 @@
 #             oldfu.save_alist()
 #         self.assertEqual(str(cm_new.exception), "save_alist() takes exactly 3 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_create_files(self):
 #         Tracker = deepcopy(TRACKER)
 #         Tracker["this_dir"] = ABSOLUTE_PATH
 #         Tracker["constants"]["log_main"] = "logging"
 #         Tracker["constants"]["myid"] = "myid"
 #         Tracker["constants"]["main_node"] = "myid"
-#
+# 
 #         fu.save_alist(Tracker, self.filename_new, self.data_list)
 #         oldfu.save_alist(Tracker,self.filename_old, self.data_list)
 #         self.assertEqual(returns_values_in_file(path.join(ABSOLUTE_PATH,self.filename_new)),returns_values_in_file(path.join(ABSOLUTE_PATH,self.filename_old)))
 #         remove_list_of_file([path.join(ABSOLUTE_PATH,self.filename_new),path.join(ABSOLUTE_PATH,self.filename_old)])
-#
+# 
 #     def test_no_create_files(self):
 #         Tracker = deepcopy(TRACKER)
 #         Tracker["this_dir"] = ABSOLUTE_PATH
 #         Tracker["constants"]["log_main"] = "logging"
 #         Tracker["constants"]["myid"] = "myid"
 #         Tracker["constants"]["main_node"] = "different myid"
-#
+# 
 #         fu.save_alist(Tracker, self.filename_new, self.data_list)
 #         oldfu.save_alist(Tracker, self.filename_old, self.data_list)
-#
+# 
 #         self.assertFalse(path.isfile(path.join(ABSOLUTE_PATH, self.filename_new)))
 #         self.assertFalse(path.isfile(path.join(ABSOLUTE_PATH, self.filename_old)))
-#
-#
-#
+# 
+# 
+# 
 # class Test_margin_of_error(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -21097,14 +21097,14 @@
 #             oldfu.margin_of_error()
 #         self.assertEqual(str(cm_new.exception), "margin_of_error() takes exactly 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_default_case(self):
 #         return_new = fu.margin_of_error(0.2,0.1)
 #         return_old = oldfu.margin_of_error(0.2,0.1)
 #         self.assertEqual(return_new, 1.2649110640673518)
-#
-#
-#
+# 
+# 
+# 
 # class Test_do_two_way_comparison(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -21113,7 +21113,7 @@
 #             oldfu.do_two_way_comparison()
 #         self.assertEqual(str(cm_new.exception), "do_two_way_comparison() takes exactly 1 argument (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_defaault_case(self):
 #         Tracker = deepcopy(TRACKER)
 #         Tracker["this_dir"] = ABSOLUTE_PATH
@@ -21134,8 +21134,8 @@
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_new, None)
 #         self.assertTrue(array_equal(Tracker["score_of_this_comparison"], Tracker2["score_of_this_comparison"]))
-#
-#
+# 
+# 
 # class Test_select_two_runs(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -21144,14 +21144,14 @@
 #             oldfu.select_two_runs()
 #         self.assertEqual(str(cm_new.exception), "select_two_runs() takes exactly 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_default_case(self):
 #         summed_scores = [0,1,2,3,4]
 #         two_way_dict = [3.2,1.43,54,32,543]
 #         return_new = fu.select_two_runs(summed_scores,two_way_dict)
 #         return_old = oldfu.select_two_runs(summed_scores,two_way_dict)
 #         self.assertTrue(array_equal(return_new, (32, 543, 4, 3)))
-#
+# 
 #     def test_returns_IndexError_list_index_out_of_range(self):
 #         summed_scores = [0,1,2,3,4]
 #         two_way_dict = [3.2]
@@ -21161,7 +21161,7 @@
 #             oldfu.select_two_runs(summed_scores,two_way_dict)
 #         self.assertEqual(str(cm_new.exception), "list index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_summed_scores_empty_returns_IndexError_list_index_out_of_range(self):
 #         summed_scores = []
 #         two_way_dict = [3.2]
@@ -21171,7 +21171,7 @@
 #             oldfu.select_two_runs(summed_scores,two_way_dict)
 #         self.assertEqual(str(cm_new.exception), "list index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_two_way_dict_empty_returns_IndexError_list_index_out_of_range(self):
 #         summed_scores = [0,1,2,3,4]
 #         two_way_dict = []
@@ -21181,9 +21181,9 @@
 #             oldfu.select_two_runs(summed_scores,two_way_dict)
 #         self.assertEqual(str(cm_new.exception), "list index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
-#
+# 
+# 
+# 
 # class Test_counting_projections(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -21192,20 +21192,20 @@
 #             oldfu.counting_projections()
 #         self.assertEqual(str(cm_new.exception), "counting_projections() takes exactly 3 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_ali3d_params_empty(self):
 #         return_new = fu.counting_projections(delta = 0.5, ali3d_params =[], image_start = 1)
 #         return_old = oldfu.counting_projections(delta = 0.5, ali3d_params =[], image_start = 1)
 #         self.assertDictEqual(return_new,return_old)
-#
+# 
 #     def test_default_case(self):
 #         ali3d_params  = [[idx1, idx2, 0 , 0.25, 0.25] for idx1 in range(2) for idx2 in range(2)]
 #         return_new = fu.counting_projections(delta = 0.5, ali3d_params =ali3d_params, image_start = 1)
 #         return_old = oldfu.counting_projections(delta = 0.5, ali3d_params =ali3d_params, image_start = 1)
 #         self.assertDictEqual(return_new,return_old)
-#
-#
-#
+# 
+# 
+# 
 # class Test_unload_dict(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -21214,20 +21214,20 @@
 #             oldfu.unload_dict()
 #         self.assertEqual(str(cm_new.exception), "unload_dict() takes exactly 1 argument (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_default_case(self):
 #         dict_angles = {(0.64764598050589606, 53.04857999805229) : [], (10.262155636450808, 97.18016191759037) : [], (100.75772287892256, 50.274472062413594) : [], (101.11458591875028, 44.457078732458605) : []}
 #         return_new = fu.unload_dict(dict_angles)
 #         return_old = oldfu.unload_dict(dict_angles)
 #         self.assertTrue(allclose(return_new, [[101.11458591875028, 44.457078732458605], [10.262155636450808, 97.18016191759037], [0.6476459805058961, 53.04857999805229], [100.75772287892256, 50.274472062413594]]))
-#
+# 
 #     def test_empty_dict(self):
 #         return_new = fu.unload_dict({})
 #         return_old = oldfu.unload_dict({})
 #         self.assertTrue(allclose(return_new, []))
-#
-#
-#
+# 
+# 
+# 
 # class Test_load_dict(unittest.TestCase):
 #     ali3d_params = [[idx1, idx2, 0, 0.25, 0.25] for idx1 in range(2) for idx2 in range(2)]
 #     sampled = fu.counting_projections(delta=0.5, ali3d_params=ali3d_params, image_start=1)
@@ -21238,36 +21238,36 @@
 #             oldfu.load_dict()
 #         self.assertEqual(str(cm_new.exception), "load_dict() takes exactly 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_default_case(self):
 #         # result to big. could be used the pickle for storing this data?
 #         d = fu.unload_dict(self.sampled)
 #         return_new = fu.load_dict(deepcopy(self.sampled), d)
 #         return_old = oldfu.load_dict(deepcopy(self.sampled), d)
 #         self.assertDictEqual(return_new,return_old)
-#
+# 
 #     def test_empty_unloaded_dict_angles(self):
 #         # result to big. could be used the pickle for storing this data?
 #         return_new = fu.load_dict(deepcopy(self.sampled), [])
 #         return_old = oldfu.load_dict(deepcopy(self.sampled), [])
 #         self.assertDictEqual(return_new,return_old)
-#
+# 
 #     def test_dict_angle_main_node(self):
 #         d = fu.unload_dict([])
 #         return_new = fu.load_dict([], d)
 #         return_old = oldfu.load_dict([], d)
 #         self.assertTrue(array_equal(return_new,return_old))
 #         self.assertEqual(return_new, [])
-#
+# 
 #     def test_empty_all(self):
 #         return_new = fu.load_dict({}, [])
 #         return_old = oldfu.load_dict({}, [])
 #         self.assertDictEqual(return_new,{})
 #         self.assertDictEqual(return_new, return_old)
-#
-#
-#
-#
+# 
+# 
+# 
+# 
 # class Test_get_stat_proj(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -21276,7 +21276,7 @@
 #             oldfu.get_stat_proj()
 #         self.assertEqual(str(cm_new.exception), "get_stat_proj() takes exactly 3 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_myid_same_value_as_main_Node(self):
 #         Tracker = deepcopy(TRACKER)
 #         Tracker["constants"]["nproc"] = 1
@@ -21284,12 +21284,12 @@
 #         Tracker["constants"]["main_node"] = 0
 #         this_ali3d = path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER,'Initial3D//main001/run000/rotated_reduced_params.txt')
 #         Tracker2 = deepcopy(Tracker)
-#
+# 
 #         return_new = fu.get_stat_proj(Tracker,delta = 5,this_ali3d=this_ali3d)
 #         return_old = oldfu.get_stat_proj(Tracker2,delta = 5,this_ali3d=this_ali3d)
 #         self.assertDictEqual(return_new,return_old)
 #         self.assertDictEqual(return_new, {(239.83725161472682, 34.32194941451909): [], (103.77643540278966, 71.33707511505752): [], (290.07472254019615, 98.11592924080134): [], (231.75902476866551, 169.96644317376868): [], (316.37403003265143, 64.49510317767826): [], (217.88200331799396, 164.9903791502494): [], (19.774990665148692, 138.13384266895085): [], (171.17270056579099, 62.53695091221686): [], (298.91965634545465, 54.54945736082458): [], (205.59793167440634, 111.5343412661951): [], (274.08677259413264, 25.057615418303023): [], (148.03812218633067, 91.3482604150222): [], (220.82381017489928, 58.351554491017154): [], (285.10789217692422, 59.21855243579674): [], (353.76416679400427, 79.56170661556362): [], (24.269454053805148, 109.0903549428155): [], (158.24570214975125, 8.797410709991048): [], (4.8059923649976213, 137.93223765241342): [], (233.08905524636486, 92.49483987665928): [], (170.02801654661363, 149.84913781566883): [], (57.711800215689323, 61.00679557990334): [], (23.964522632106693, 104.23398403046221): [], (48.859473508421232, 133.6766908418426): [], (286.99787206579697, 83.51511053854594): [], (135.70568585980573, 81.4753269035727): [], (29.372858128566897, 152.79942233405984): [], (301.17196288329285, 35.15005577055701): [], (278.20469572610108, 49.414033012567195): [], (138.89747531787543, 96.07800505849684): [], (88.028894707696892, 90.53926235704517): [], (179.42556130364653, 130.5859669874328): [], (162.88642477271108, 86.69523471149502): [], (66.480143603374572, 65.97979188671809): [], (219.28735281900242, 9.638979412512889): [], (113.03102302456985, 90.87632255825744): [], (56.012713543928839, 46.4164370315091): [], (98.688579230489268, 95.53596711920669): [], (340.18270201767552, 40.53580211131656): [], (91.089162077835198, 124.54538217884104): [], (12.101938358714667, 55.536414070491674): [], (278.85939220298349, 107.66971165604207): [], (358.31045035675317, 94.18293633089255): [], (41.164988355290497, 41.358641634282336): [], (309.77696392019169, 69.26062329814772): [], (6.635592091699845, 123.40737773140071): [], (166.02223944612984, 81.88407075919865): [], (66.80054006660383, 99.95886951088143): [], (159.8987701243347, 62.38491044515201): [], (73.957214030031039, 114.61196062055488): [], (48.479149346457511, 94.85911217381467): [], (193.6929019742071, 53.13010235415598): [], (253.74668889043321, 121.8862981248596): [], (115.84059481900161, 27.784651210218723): [], (24.255837521063899, 79.97268528166225): [], (130.58413387642784, 110.52329842667419): [], (61.683519459101348, 27.052742429748992): [], (254.0176902387735, 160.65298274298343): [], (313.68377941649925, 112.99110606827777): [], (66.680532246070698, 109.66198848942666): [], (245.46935957966946, 73.2476648864461): [], (301.55180848630943, 40.014445966259665): [], (0.0, 180.0): [], (33.426538054435085, 94.65619249668148): [35, 38, 40, 41, 42], (183.41239535235781, 120.93849550806387): [], (68.457566605122167, 114.53783983593641): [], (137.19097785528206, 52.367951630852616): [], (158.24326067314547, 28.35763657632798): [], (325.41463022601221, 45.194212372091116): [], (108.73718395650583, 95.67142810391188): [], (234.68996393267071, 68.24810015441338): [], (232.90609070681143, 63.36948149499615): [], (109.3485901138684, 158.7115927728546): [], (164.04850552187077, 96.4170531430287): [], (28.338006382236287, 46.043053276232335): [], (250.40484272591269, 24.73738984490336): [], (8.3484743230485954, 94.31812178851712): [], (353.83937465764706, 132.93564514784396): [], (173.38661860949529, 111.10019602409304): [], (132.183780782642, 57.15604215404191): [], (169.08070315247133, 96.48488946145406): [], (167.89441620922022, 86.76275151200221): [], (202.34896395526158, 67.81198798502527): [], (61.493655266498749, 70.76692409795508): [], (145.99515875128782, 125.28521889393367): [], (12.63079718126211, 123.4881635959913): [], (60.118173705488402, 104.72130789481913): [], (118.12986574162949, 37.538775189688025): [], (36.107908134670652, 75.27869210518088): [], (39.060971933136237, 118.99320442009667): [], (107.77471045335651, 85.95222580318716): [], (294.19377383001898, 64.19598948463411): [], (302.78209993236607, 74.02045758436027): [], (313.01088966259755, 88.71916413332387): [], (304.45358925001398, 49.768136460819186): [], (196.94910213614438, 67.73917161350815): [], (7.4363802306108084, 84.59946283186504): [], (252.47079233020685, 15.00962084975062): [], (308.53850768871501, 15.771578129121457): [], (296.73344717316695, 59.375344374371615): [], (317.52675385749973, 49.944494843807384): [], (64.838512080371984, 80.51985099198731): [], (197.29968869723476, 58.03428124920305): [], (344.22467334365012, 35.73129197996368): [], (68.556432776294116, 95.12976725858039): [], (165.05124350872205, 47.887518669881516): [], (74.97396638965246, 80.65650418800205): [], (56.770340845241009, 75.55729380808995): [80], (221.18996704913354, 77.77421140684253): [], (51.416185998926338, 153.09584354095557): [], (242.16927819245598, 107.17517478604191): [], (142.62591597320181, 37.86942607214865): [], (79.196439534981025, 119.53408057909498): [], (160.97165504747156, 81.81597622686058): [], (114.31363701195421, 56.91501881321111): [], (35.272875665976649, 46.13661821040938): [], (200.71778902515814, 77.49818220833534): [], (9.2276980040757621, 31.207757164705757): [], (288.67295869133039, 127.20768036166155): [], (135.3954713461541, 71.76343085081976): [], (332.25821468765855, 84.12532052635393): [], (46.500905840133932, 99.68523115350966): [], (205.83785848021824, 77.56721689295962): [], (212.55060045308289, 116.47980528023409): [], (19.178277061502833, 79.90422561370437): [], (261.13575775861733, 155.915018231783): [], (138.18841363682904, 42.667925494108374): [], (112.53801057119246, 100.57540596643712): [], (28.847369333049425, 50.906465185304945): [], (341.49219889373057, 166.6409285859774): [], (292.78179864370168, 54.46666807706943): [], (92.199187797649415, 100.30124122384984): [], (335.66280435088044, 35.61570419541684): [], (271.54870296924105, 73.59931408796062): [], (2.1313762051486833, 16.499234491237342): [], (143.92637798874884, 96.14579720256098): [], (55.528911571385819, 65.83211186325346): [], (271.95750028221272, 63.8961188626601): [], (289.18601235497806, 122.36385994497876): [], (258.42671745330591, 49.14722090259065): [], (15.533219044475857, 6.81176397112579): [], (195.08565130834253, 121.09580190105879): [], (152.66826735362793, 23.415513615494444): [], (180.02306520910329, 149.98361164018726): [], (165.06415142701721, 140.09050345032978): [], (73.222185677649534, 167.86283423034675): [], (309.09173732802213, 25.530904571684264): [], (288.00322171288013, 88.38202178121018): [], (254.09727545152359, 112.18801201497473): [], (237.90605193378349, 111.96978853756661): [], (9.4964864968354838, 50.645427321467544): [], (291.3463676109854, 49.59131762469191): [], (148.95592504606157, 96.21359798470844): [], (221.24765740607717, 106.89317608794337): [], (198.60834792825469, 48.34023455390632): [], (218.14028688085656, 116.5551371256661): [], (300.24662965061759, 161.2729529337236): [], (285.02413814153783, 98.04784624731151): [], (125.59306753425598, 81.3389828169029): [], (152.90172696135178, 42.86646669570318): [], (153.64812903221284, 67.1552612722227): [], (349.5416098463387, 64.94238458169698): [], (232.51452607493604, 111.89712200707993): [], (251.7579317360395, 83.03999510763894): [], (87.722136823385455, 85.68187821148287): [], (131.11794115714292, 120.23378001146453): [], (173.66604756161036, 101.39939905494025): [], (230.22256741276868, 121.56929663612618): [], (110.16082286333564, 66.56883306532724): [], (251.11035087631589, 126.70156586098466): [], (137.98726234175163, 100.91845745808826): [], (12.458116306308446, 84.6671664128066): [], (313.85539973238582, 127.54698186688891): [], (92.867925646344929, 76.04401299573793): [], (43.461114520881047, 94.79146561951097): [7, 13, 14, 15, 16], (150.86789958278413, 81.67975213708839): [], (101.50476774132932, 114.98322787079482): [], (167.77986661619531, 57.63614005502124): [], (179.08887730545533, 116.02884175573367): [], (257.52101226480892, 165.5200718633996): [], (287.58033718459387, 78.66935591947826): [], (18.16039839578081, 55.61813025121971): [], (248.69741363240638, 112.11523336674097): [], (333.42083005465878, 79.287420163905): [], (143.08062329609169, 100.98711492012907): [], (281.96723618858442, 73.73979529168804): [], (123.81456080425421, 95.87467947364607): [], (214.95032676046532, 58.27233816862593): [], (54.388392307548557, 56.10676813739431): [], (172.84168186156688, 130.49726612326396): [], (283.15196137844748, 93.16973618723937): [], (123.96953694681255, 144.3842958045832): [], (174.11358172592222, 96.55273491050659): [], (227.96655657912046, 87.57262915997003): [], (187.92314944015664, 87.03277466243195): [], (61.931898811788102, 75.6268894771575): [], (237.52427790079255, 165.25289984054433): [], (27.520051608475871, 84.87023274141961): [], (91.102867322199529, 7.867094614176662): [], (136.90972853211784, 120.31183012598966): [], (243.09933058833366, 92.62978842947312): [], (158.26457894396614, 125.45054263917542): [], (181.78101418259575, 18.935875672060185): [], (195.13957220896046, 106.54126856799934): [], (353.88089290778584, 55.29078350193616): [], (199.9360267113519, 53.21431446882938): [], (268.16676699980218, 54.134651313658814): [], (227.31272156354498, 63.29405035317279): [], (164.40876412756523, 125.53333192293059): [], (285.82285083716408, 25.21630055349067): [], (68.369682527070367, 158.1613795692733): [], (102.3730223524984, 56.75396919001033): [], (174.9221306217286, 52.87690644592185): [], (201.38220816613409, 116.32928928221982): [], (266.33662668345016, 73.52903550813097): [], (328.27295917221625, 11.134526883912168): [], (109.3362031903938, 124.79125538196327): [], (103.24782158776546, 124.70921649806385): [], (168.72221288066618, 28.49922948656629): [], (118.59609489759697, 134.61608696072412): [], (340.19057721121033, 132.75177774588403): [], (343.57245315078728, 50.29585111213955): [], (67.336666873157739, 51.42566859549418): [], (27.632433642763591, 118.83918940061731): [], (81.278322005789164, 143.80955786623255): [], (179.60325736038098, 57.79560548470835): [], (254.73826235167201, 97.63958490353308): [], (323.24230222336593, 79.1501841370031): [], (171.75835586710488, 120.78144756420326): [], (83.505906930489175, 27.347674402796432): [], (126.31550017214971, 37.64926683894324): [], (311.17651817001064, 54.714781106066354): [], (194.85020552798031, 111.38948332618493): [], (271.02331237856487, 29.88136600679995): [], (2.1869879720285326, 157.27252663153487): [], (133.75079140312261, 125.12023203568327): [], (98.018460917784481, 76.11345963737101): [], (276.93279586174549, 83.37941041095732): [], (238.41440865375444, 58.58880004972134): [], (54.755849949280332, 124.05579774256792): [], (328.7020227543282, 147.1401196211109): [], (0.48871785429753345, 45.66730835583508): [], (336.40120015532671, 118.14890851298503): [], (320.627029759327, 25.68685746086934): [], (347.26994218487818, 108.59179184826024): [], (329.99587845237676, 113.21095532664631): [], (17.479302104120702, 84.7348625267671): [], (162.37341889633751, 52.70763791098592): [], (138.03548792507013, 91.2134130922969): [], (82.036459169537068, 100.16424862172349): [], (238.45626525457834, 24.5758120707033): [], (6.0900508127542219, 65.16541251029842): [], (188.97536673110949, 101.60576425897996): [], (96.394479131945388, 56.673333074420135): [], (246.75032281166293, 78.11884397898929): [], (213.14032565388447, 67.95750773402241): [], (172.18698538468433, 72.25953003499768): [], (322.20480358821698, 83.98977854565446): [], (82.623574986900337, 109.87687407007884): [], (202.94150145485958, 87.23524841730068): [], (294.61455804687171, 107.88207062500425): [], (314.13664905555009, 59.610057550672394): [], (323.62886284812663, 156.7546914823545): [], (87.942728089069021, 109.94856722604813): [], (231.04977489843247, 53.63399801370294): [], (236.93590314503373, 107.10463517664381): [], (171.07197171642221, 81.95215375268847): [], (357.59733040813308, 142.68304462711026): [], (250.82364715228749, 68.4656587338049): [], (308.08787549174303, 117.7673413729364): [], (130.13105281514032, 71.69244482292976): [], (158.36787378198849, 101.19318360568383): [], (42.577228241210186, 85.07323448156838): [], (119.90892063652066, 110.37941574777419): [], (39.078297353449912, 65.61027068821267): [], (84.947564995085756, 119.61158380277804): [], (216.02216813733671, 106.82274251625043): [], (104.7114599814381, 66.49534779993832): [], (220.41861924135287, 150.5270683415096): [], (281.07795162507426, 102.8472702420185): [], (279.26467679346052, 131.9310096357791): [], (348.68002734662377, 79.49315793130248): [], (231.93171665228002, 48.78978993661076): [], (266.86496652852856, 83.24367296941216): [], (277.89258360904199, 165.79215771960665): [], (186.14095122247952, 67.59342499386679): [], (318.86259680502593, 122.76376225936458): [], (47.472115233020823, 31.72429315759589): [], (193.67421212893859, 62.84040554975123): [], (142.50786989895289, 163.9822940432013): [], (8.4033163283465928, 108.87650363055921): [], (283.08270376729422, 64.04614966191718): [], (206.77830761152794, 121.25336921502438): [], (72.638375507113892, 138.84579803992781): [], (125.55339445744349, 8.345135047331667): [], (325.7156202565738, 59.76621998853546): [], (72.250218365959327, 75.76601596953779): [81], (72.895979191887079, 124.30023323625149): [], (24.375845341597149, 70.266415142624): [], (331.45063444934664, 108.37857031560964): [], (84.420785495968047, 56.511836404008726): [], (243.44839022599422, 53.80123771985467): [], (0.58055527873847268, 65.0911147032702): [], (313.80304699591966, 20.72428624890826): [], (71.560551917159188, 163.03252818147726): [], (51.574239052103614, 99.75361958475963): [74], (209.1862196961041, 160.0515564111973): [], (318.15129518105732, 79.08154254191174): [], (73.577075483546992, 95.19744872931129): [], (257.4921070453812, 34.56032177999784): [], (336.72154711731412, 108.44961470987212): [], (312.1489022697923, 83.85420279743904): [], (190.22834481072542, 116.1789687040125): [], (298.37811023404015, 156.41544091012184): [], (293.16828153759695, 93.304765288505): [], (335.20578276866661, 152.0710899641419): [], (206.17231225268213, 53.29843413901534): [], (255.82315639496687, 146.15921148511077): [], (357.38122846109559, 84.46403288079331): [], (178.50258263949843, 48.068990364220895): [], (281.96567443519638, 83.44726508949341): [], (198.06092401506152, 92.02262405306612): [], (276.17677743479589, 136.73865583226933): [], (140.65774662824035, 71.83438791265839): [], (69.13185660675083, 61.1608105993827): [], (310.30253501729129, 146.89248258290462): [], (72.621879966269461, 27.200577665940166): [91], (112.54708784476257, 115.13204814658945): [], (93.264303292564335, 110.02029295683069): [], (81.918187679666303, 158.34330476731753): [], (12.283150771243207, 138.0329415654861): [], (144.30510451979708, 76.73755763970688): [], (87.715842740912635, 75.97454542942798): [], (354.65189845572252, 123.24603080998969): [], (347.87892008090409, 103.74770937037358): [], (276.12424696593928, 127.0386011640495): [], (113.09812094683822, 32.610575141340405): [], (148.26427765530173, 105.90943859818117): [], (289.36074937300208, 107.81125624086954): [], (47.59526306678665, 85.14088782618536): [], (29.124478775879659, 104.30353650992527): [], (211.216839681446, 43.65335068158568): [], (44.781637195256998, 119.07029795747032): [], (163.84455029923464, 173.78234974806787): [], (204.90207668242789, 62.99182355071222): [], (110.41727341526739, 81.13437372795828): [], (17.368461937224005, 26.453766696731943): [88], (205.84922110487187, 130.9419552751764): [], (175.20957770346996, 135.3786786359204): [], (335.56958036287659, 98.72920771485336): [], (144.07033273568274, 57.31636115374206): [], (163.04315587478749, 91.55054563915826): [], (107.02424826080984, 115.05761541830303): [], (266.93324309646283, 68.68289181915962): [], (333.36749024888644, 6.217650251932134): [], (160.9850801975339, 135.18707502350586): [], (349.88160231816346, 30.946587522235692): [], (308.42046161446655, 142.02090146717967): [], (36.483012737133947, 172.1329053858233): [], (97.647473033971352, 168.187717772459): [], (91.056377587667441, 177.2204739127817): [], (8.172861632616808, 113.72535483366764): [], (315.34069172786201, 98.45651933527051): [], (64.365640182382634, 143.5818603253773): [], (353.02791666988333, 103.81711452484207): [], (268.70640914615984, 44.4290662668587): [], (225.38154038972957, 136.05448043769115): [], (8.0277043479715697, 89.46073764295483): [], (234.56391799190774, 97.36762859370157): [], (242.97857796876343, 87.77501643951139): [], (162.40638022597304, 115.80401051536589): [], (123.03248009188044, 91.01115447810518): [], (292.3783424416772, 73.88017610521102): [], (347.13161087578857, 69.7643328291164): [], (165.6280857140712, 159.46704235891468): [], (240.53603011719963, 116.85696213776339): [], (293.7755256946308, 39.9094965496702): [], (216.07393900622696, 77.70523137768241): [], (124.55663930774459, 52.19752564224628): [], (356.5457430177504, 50.47085921947303): [], (143.06513038081167, 105.83935922114321): [], (62.961171780489707, 114.46376280000737): [], (15.223859123096595, 157.44763729922224): [], (13.689762185445517, 108.94775691762473): [], (93.665149126572089, 95.4682483130948): [], (80.251746012135399, 138.94833133513646): [], (310.8341614590725, 64.42039495778339): [], (357.78207429510354, 69.90794858057335): [], (203.64172745742405, 72.68366530148162): [], (359.12478932335449, 118.45514313786411): [], (209.07182816271524, 58.193054072152925): [], (309.8316655942935, 35.26696909467743): [], (154.57474939747854, 76.87602601043702): [], (304.23795537435592, 44.90848520136727): [], (356.70990519773795, 152.36030027863254): [], (109.55417869393735, 13.06413616013794): [], (132.89508240661038, 100.84981586299692): [], (220.42211020237514, 29.197756850958083): [], (67.091854955561075, 75.69646349007473): [76], (226.56493960517409, 82.70033416870608): [], (150.7510565477842, 37.97909853282036): [], (0.68910577677166884, 133.0277849099381): [], (288.37581890050143, 68.97203749226544): [], (241.97454942495273, 121.72766183137408): [], (305.29083985507816, 64.34564007916009): [], (18.806159221708448, 104.1644529620738): [], (137.84126774007274, 86.35757989712816): [], (180.01289789107267, 159.66009223088608): [], (11.596248525534557, 65.23966575577474): [], (3.3405348467551335, 103.95598700426208): [], (56.063735567265887, 109.51889145641034): [], (36.300527638387557, 55.86280237288487): [], (328.01389749578726, 88.92142750852362): [], (71.28138692251953, 41.76505755948932): [], (160.23786680769851, 42.96545970387165): [], (282.32416470700201, 151.35981917194164): [], (20.593815538356651, 75.06950737836051): [], (253.11070291140618, 92.76475158269932): [], (40.156159449241429, 109.30448285858732): [60], (68.651331188450584, 129.0935348146951): [], (185.21394653371192, 48.15953276935937): [], (208.87709939521187, 72.75425875261716): [], (63.536325979191822, 95.06209296428466): [], (336.38662192512231, 156.926081934369): [], (31.287097398294378, 99.4801490080127): [], (186.2161312672936, 82.15633451879799): [], (70.238925084561288, 17.423490223339854): [], (134.02962319392185, 76.59901034973039): [], (115.4767972247912, 81.20258929000894): [], (205.29149792821127, 48.43039545657391): [], (125.33075733109416, 120.15579181286795): [], (48.127038482794568, 51.16654031857443): [], (295.12616663496306, 98.18402377313944): [], (60.245030083433733, 36.757405666750024): [], (98.498931266280294, 71.26591223753202): [], (182.43113376244321, 62.688781972182106): [], (341.7101743972741, 55.126624037462186): [], (109.92370324270705, 37.42800554304254): [], (204.29081303940117, 140.6187436136247): [], (226.20588703858218, 126.36600198629706): [], (295.11075145530333, 122.44369815071371): [], (159.70000997668254, 130.32021506997066): [], (77.41883604468768, 66.12730246898006): [], (310.96000672040856, 156.58448638450557): [], (338.49928974290549, 64.7934737360752): [], (222.07455570469142, 34.08211549275873): [], (15.419112906095913, 74.9997340042615): [], (66.786923533862705, 70.83830001952798): [], (103.18667799906341, 139.25720458351415): [], (63.423943944904394, 61.083831676468876): [], (87.117273251691472, 100.23273753178681): [], (298.66138914961391, 166.0694454376424): [], (319.79310007777514, 132.47699429396988): [], (98.029521064766726, 90.67408354467482): [], (141.73516620336895, 139.77633882050245): [], (272.99672266388899, 88.17971021689422): [], (18.027998478898603, 89.59555584468384): [], (345.68956399537012, 98.86562627204172): [], (53.497691427817827, 94.92676551843161): [75], (248.67801764017261, 34.441316364595345): [], (298.14465062631643, 137.03454029612834): [], (355.05774671534641, 65.01677212920518): [], (128.84157399945073, 95.94244629204616): [], (282.95506880557633, 44.62132136407959): [], (327.07684064085566, 35.49978996837964): [], (139.16809778818438, 76.66829391868033): [], (45.456350796572181, 109.37592100167409): [], (210.98440856695117, 135.8605573837922): [], (130.44660561979205, 149.31658289102418): [], (86.732123755820851, 17.647214550449316): [], (212.95231829939158, 87.37021157052688): [], (149.8744147043754, 144.73303090532258): [], (62.698207528039354, 22.198215412403602): [], (102.76220696064632, 85.88464760382183): [], (10.804631575532829, 40.94892424054838): [], (189.42582074266235, 9.22771094513194): [], (62.523018228723657, 153.24519281556678): [], (39.640191588741921, 26.754807184433204): [], (282.39509175642814, 127.12309355407817): [], (173.69415560269042, 57.71590782005459): [], (46.27474039241099, 60.852550795777596): [], (95.576864639938265, 158.52669651032028): [], (336.73274057571371, 123.0045669534804): [], (23.348971249231479, 60.54336329342544): [], (109.24367838714694, 110.2356671708836): [], (212.63196893391353, 121.33225149759427): [], (277.52187683625891, 63.971158244266334): [], (199.18788169908171, 101.7434257442841): [], (203.0604907516433, 169.58665915262745): [], (90.1697409980451, 80.86138373412997): [], (123.23636667253045, 158.89803317677553): [], (305.05121883638003, 54.63216155929397): [], (211.96535498846072, 48.520430704050725): [], (290.14282466044074, 15.521648490214371): [], (247.85808735044006, 121.80694592784707): [], (23.393904926113958, 94.52094538046123): [], (324.81390969043628, 122.84395784595806): [], (55.774597724153125, 128.9200454099483): [], (26.690737405285624, 36.30444486138627): [], (119.5957431383212, 71.55038529012788): [], (191.54643559828466, 67.6663173421947): [], (160.9035529272272, 164.22842187087855): [], (106.53047808588657, 163.50076550876267): [], (88.026217342052618, 129.3545726785325): [], (258.11681791735901, 92.83223887001554): [], (320.91532477252753, 108.23656914918026): [], (252.64202919958313, 107.31633469851836): [], (42.691514411343263, 123.89323186260569): [], (79.460129062133447, 114.68612535573058): [], (297.90425998437428, 49.67978493002937): [], (7.5504706571790621, 152.50595544641877): [], (93.449047179535228, 37.2056221167311): [], (299.87046748352151, 107.95291325921967): [], (51.889808300518204, 36.644617216858975): [], (291.33897259512742, 102.98558359600642): [], (152.86942301666608, 86.5601872324848): [], (62.904630607221932, 46.509421063145076): [], (322.15670562759971, 103.40098965026961): [], (357.82716941153575, 108.73408776246798): [], (262.07101085655825, 78.3254135411771): [], (234.97243858144074, 102.22578859315747): [], (263.60347561346072, 126.86989764584403): [], (251.75634021494776, 117.00817644928779): [], (336.47131850442764, 69.62058425222581): [], (140.05197323043569, 130.05550515619262): [], (319.40118148464512, 117.91980650550357): [], (194.08098846071491, 101.67458645882292): [], (199.29003737272023, 62.916140128926656): [], (223.07982100854724, 92.35990517113943): [], (272.54379494816959, 131.84046723064063): [], (85.169100686275385, 32.233403711145): [], (224.48143798249362, 97.23171339394995): [], (106.72118691122472, 105.34947701700813): [], (276.75890285525111, 73.66956730483035): [], (0.0, 0): [], (299.67361725699647, 20.532957641085307): [], (87.434357531830713, 12.762508024475173): [], (152.38498843805408, 13.647747811565198): [], (255.45002215869587, 102.50181779166469): [], (347.85969958860483, 40.63940767276773): [], (127.41751473954145, 23.07391806563097): [], (219.44134493441555, 97.16377118142788): [], (245.75487965945675, 131.4795692959493): [], (356.5355119609971, 147.51471518017905): [], (236.70964095126084, 155.5867682664132): [], (149.44065214459792, 76.8068016309927): [], (299.48500746821486, 132.2034121830804): [], (21.149639374443165, 99.34349581199798): [], (229.85641053853416, 102.15682655385): [], (141.26941366747627, 110.66731649351264): [], (357.33340646248968, 137.8317294688425): [], (22.405046399217284, 50.81956032872139): [], (17.606650729890923, 60.46591942090505): [], (192.61966013436211, 130.7637227868028): [], (5.9509175741846843, 99.13861626587004): [], (49.464110463608343, 22.019115505336572): [], (343.2716671343112, 93.98020163735025): [], (3.9391043359762534, 79.69875877615016): [], (250.32858856250957, 102.4327831070404): [], (297.15556629662012, 44.81292497649417): [], (178.74856337335603, 111.17246469727303): [], (214.40200661327691, 97.0958390936189): [], (284.77986277796384, 49.502733876736045): [], (33.028171492734728, 89.79777918188145): [], (180.70235681509996, 140.30109518664446): [], (90.567659733370505, 134.2385307135841): [], (210.95657230875111, 77.63623324452223): [], (298.00672875086593, 88.51688479229024): [], (76.890011219068953, 36.98209591003731): [], (223.73365602412301, 116.63051850500385): [], (66.418315707489427, 56.269024737378246): [], (105.55035973326325, 51.94114626935413): [], (204.20170260059487, 33.84078851488925): [], (43.028188793833856, 89.9325931850234): [1, 6], (100.98318830408304, 129.52914078052697): [], (141.21471199337475, 144.61645396116677): [], (142.95850209592493, 62.15645284857739): [], (156.08849242943828, 52.62286075799484): [], (29.562722321169105, 109.16169998047202): [], (76.956737579865901, 100.09577438629564): [], (221.52408439952413, 82.63237140629843): [], (120.48012930618346, 129.79181949955725): [], (82.88351595505118, 66.20099470652228): [], (267.99419826204428, 88.11226810806292): [], (313.05911524591608, 79.01288507987094): [], (315.12086813461809, 69.33268350648736): [], (182.91643698525863, 86.96527529344148): [], (246.7555645482671, 39.274896235157016): [], (301.14857793197945, 146.7692778411717): [], (188.76516054909101, 154.94238458169698): [], (180.73263583702999, 67.520494390596): [], (208.06779961890427, 92.1575274307866): [], (244.08179776151053, 63.52019471976591): [], (310.28573294353657, 98.38837762500559): [], (35.527466016282176, 114.09402684707179): [], (297.39824855545515, 112.77161415563809): [], (355.46951294772975, 21.288407227145427): [], (17.331867019905232, 128.40209757719177): [], (188.05489433817959, 91.8877318919371): [], (28.151746980446092, 133.3977378387021): [], (341.69778747379962, 21.101966823224448): [], (88.345104088070315, 66.27464516633238): [], (312.91665055850717, 122.68363884625795): [], (14.099640007801833, 79.83575137827653): [], (189.48034438596306, 111.31710818084036): [], (320.23533557308588, 137.33207450589163): [], (238.85719144775859, 39.1682940932813): [], (342.73145324524569, 103.67832477899668): [], (238.92511707414644, 160.45053257754293): [], (332.97307561081004, 64.71895002047737): [], (304.43051901244564, 69.18852875629335): [], (261.9969447520665, 54.051429995467295): [], (26.015772186214257, 41.154201960072214): [], (198.40434838808471, 72.61304472227201): [], (187.92352773055256, 72.47172162435507): [], (30.050275313198718, 114.02020811328191): [], (358.84718979001832, 79.63024019452257): [], (174.28747473241671, 106.26020470831196): [], (157.31641891695654, 110.88360028250784): [], (320.59977196787617, 30.551065330119105): [], (318.01201114706942, 88.78658690770312): [], (275.00859541286479, 175.18477471144197): [], (130.81104201458234, 42.56837461465705): [], (41.615091152698575, 12.13716576965323): [], (117.62554753300891, 100.64398518603878): [], (58.516747918653138, 94.99442574975981): [], (68.578363416767075, 36.86989764584401): [], (311.87827979948344, 103.26244236029312): [], (93.029175008082234, 90.60667253095421): [], (325.80110266111257, 69.47670157332581): [], (324.73087741551865, 142.24051701873574): [], (230.62775834631526, 29.335638207535784): [], (126.23246789723164, 57.075774041035096): [], (348.28417062702141, 94.04777419681285): [], (107.5411278050979, 153.85048677991878): [], (118.22855504170505, 52.11216510252713): [], (293.72995867071143, 69.04423601770183): [], (95.233055100735413, 80.9296506025042): [], (107.47392443688061, 129.61658952356146): [], (283.00122744079323, 88.31458695977737): [], (330.56624828148449, 50.12039801018334): [], (259.64037847532626, 121.96571875079697): [], (9.1381899080017206, 21.473303489679733): [], (232.59913680380188, 136.15169763777254): [], (350.06318928358485, 50.38341047643854): [], (260.57282842988303, 102.57087092426882): [], (189.44790915707961, 43.359611777428746): [], (186.01820372440122, 130.67478564699888): [], (324.77991640728925, 40.32793062016698): [], (60.406200384126471, 56.18793490569805): [], (249.69348454815761, 97.57157983574645): [], (17.09916355763696, 65.31387464426943): [], (14.435466009284163, 45.855479771078066): [], (37.55868615984987, 85.0055742502402): [], (199.28844585162818, 96.89210257934639): [], (256.79432526119814, 83.10789742065361): [], (97.282210793663438, 100.36975980547743): [], (224.74171269254646, 102.08788239050064): [], (49.627767858586999, 80.31476884649034): [], (143.49730998368204, 52.45301813311111): [], (319.85213788909959, 166.3522521884348): [], (4.3242538318470451, 162.131774069019): [], (231.60503265325212, 82.76828660605007): [], (62.718371205431737, 133.86338178959062): [], (49.780412827324056, 104.58196299087791): [73], (313.17858641291571, 74.16064077885679): [], (313.01388528429879, 132.38566786209728): [], (230.96952667000849, 34.202217091750974): [], (23.719710714510143, 128.48816303368184): [], (200.13662212225822, 150.25421240159724): [], (349.23529965615319, 157.09868442282556): [], (177.57861393791922, 23.75246976672186): [], (193.55427054228707, 145.32103056523948): [], (88.925001382519255, 163.2650559592932): [], (107.45161415628522, 100.50684206869752): [], (74.835557862217627, 61.23773261439896): [], (146.8084222133123, 134.9961141962564): [], (148.60919860342403, 62.23265862706361): [], (145.8147133472529, 81.61162237499441): [], (120.6483330989218, 149.18474436539535): [], (326.65875664463852, 16.017705956798686): [], (199.09188795333137, 38.63158149726329): [], (153.5556254908671, 154.46909542831574): [], (34.407760352415501, 80.10956134284628): [], (18.245871302251551, 36.19044213376744): [], (169.07914139908337, 106.19000181890854): [], (165.16507869525537, 23.584559089878177): [], (118.07330197685803, 115.2065262639248): [], (274.92551817276916, 97.91171446923524): [], (257.35347561346072, 126.78568553117061): [], (16.082411198015276, 99.27518936847825): [], (235.02420945033114, 73.10682391205664): [], (34.803157158204819, 138.33624237495556): [], (54.928591082651288, 157.98088449466343): [], (90.703123974797933, 119.68914665642902): [], (178.04965492377869, 91.75285019710286): [], (165.22352675050402, 154.62594214968027): [], (102.22762600390082, 119.84445237642747): [], (291.97557868184293, 112.69852873892223): [], (355.52060360562962, 40.74279541648585): [], (101.69682662827799, 37.31695537288978): [], (209.36341559825053, 97.02791703054572): [], (3.1755395953458674, 40.84596704505609): [], (341.99464607903468, 108.52068850541053): [], (123.74823528842032, 76.46038319389964): [], (265.8324310539561, 131.75005275572613): [], (104.55919173245792, 134.4270040008057): [], (127.47849839726021, 105.62926643165908): [], (247.98588683602475, 10.033556826231308): [], (308.25233534483374, 112.91790263764095): [], (203.80469892145663, 135.76384919322192): [], (352.35779835717841, 84.39630631629784): [], (142.79404224283428, 67.00889393172223): [], (209.40551603912024, 101.8811560210107): [], (24.638061880178466, 123.64996198723259): [], (177.1806110391486, 33.47592694188448): [], (64.800741990272741, 12.453700594268733): [], (86.477400585215022, 51.68386552633426): [], (98.283693792039557, 144.0384989919334): [], (229.79872018159068, 73.03636403560972): [], (265.69701592936894, 102.63994262003179): [], (290.80851077996971, 136.9357305834868): [], (256.5154174355776, 19.948443588802704): [], (162.67055868716653, 110.95576398229817): [], (140.21221612859551, 115.50489682232175): [], (57.629839533232612, 85.27617424079115): [], (5.8762041358461374, 142.79437788326888): [], (210.25627211935316, 150.39035456108076): [], (85.180173451822128, 37.094003174946835): [], (140.28319826813305, 149.44893466988088): [], (118.9485611348131, 154.00385375364885): [], (145.5519420800492, 42.76728907098434): [], (329.51515454517562, 54.962136128499914): [], (52.612797783827574, 85.20853438048904): [], (188.54754515902334, 140.4067412906422): [], (179.58798556408837, 164.47835150978565): [], (177.90941530127688, 86.8977717083867): [], (71.951050050163559, 66.05356826041776): [82], (41.946216991080483, 133.5835629684909): [], (160.1233510612212, 120.6246556256284): [], (73.449726857777051, 119.45663670657456): [], (36.357342862629736, 99.54849597086384): [26, 28, 30, 31, 32, 33, 34, 43, 44, 45, 46, 47], (218.6299741558642, 48.61034104164819): [], (201.35289303951009, 82.36041509646692): [], (226.30466489512125, 77.84317344615002): [], (172.87460628545733, 140.19568320791944): [], (211.20912597294148, 145.55868363540466): [], (161.8603652326899, 57.556301849286285): [], (218.44724078386628, 43.75091313509884): [], (24.668993566513315, 147.89319738758837): [], (75.523158543191755, 172.6417306081552): [], (353.39890455369652, 11.478340954533579): [], (2.4140866826890033, 84.5317516869052): [], (219.99660268923532, 126.28233733909887): [], (235.6022658507037, 4.815225288558088): [], (88.64229090497868, 95.40053716813499): [], (35.043664043739184, 133.49057893685494): [], (232.55582732733743, 58.509785109849595): [], (113.76237303280189, 95.7391704772668): [], (292.80311691452272, 151.50077051343374): [], (237.25239660058972, 53.71766266090113): [], (80.535067269562035, 61.31459798588107): [], (310.76317931953514, 30.418193542003948): [], (247.40465013024379, 107.24574124738284): [], (206.96457982615746, 116.40452274122003): [], (155.92021095270462, 81.7478700535747): [], (256.9653891269528, 78.25657425571592): [], (131.55947709302117, 32.85988037888911): [], (249.6641694215339, 63.595477258779994): [], (359.95721550983268, 55.37274110019694): [84, 85], (41.708321767439926, 51.07995459005171): [], (281.0183610410545, 30.016388359812776): [], (58.028206094932983, 90.1348137232501): [], (318.37412720006796, 74.23069584574881): [], (3.3342407642822423, 94.25052609647473): [], (276.03806524104368, 141.58487066479225): [], (18.631611187714228, 123.56902489020523): [], (72.077906530084633, 70.90964505718452): [], (122.80976035404203, 86.15492694329724): [], (306.74127306787074, 103.19319836900732): [], (159.01698150567989, 96.34922585649171): [], (179.49767461842674, 106.33043269516965): [], (345.49601785440461, 127.97329450958594): [], (169.90745908561135, 67.37451770392923): [], (111.89314173402443, 52.026705490414066): [], (85.105460013483054, 80.7931037786541): [], (245.44844591326162, 68.39317560031765): [], (285.50869613088702, 117.46304908778315): [], (338.50836701647523, 79.35601481396125): [], (238.64458317835818, 126.53360191948902): [], (227.12575297540045, 111.82449250077435): [], (94.50063456991748, 129.44180203759788): [], (185.34936165829873, 77.29096700560457): [], (335.61571750999224, 55.04442134645301): [], (9.0199184181306595, 79.7672624682132): [], (2.7112734995976666, 113.65174595912492): [], (97.165484679882056, 124.62725889980304): [], (248.8835938099312, 155.75037139749483): [], (135.92550945304984, 110.59529045586153): [], (227.06355713532957, 19.5494674224571): [], (37.963381019142986, 31.595869568188863): [], (278.17177130221091, 39.69890481335556): [], (297.49075209680103, 25.374057850319726): [], (26.255635597395173, 167.23749197552485): [], (87.937255172683038, 71.12349636944079): [], (330.7706154737773, 122.9242259589649): [], (157.27085189303739, 139.98555403374036): [], (92.842529559029089, 51.76972683401611): [], (212.40179440930962, 53.38246184921846): [], (77.693219455538298, 85.54666866527184): [], (330.73049450784964, 118.07248693585296): [], (348.67335523516954, 123.16546901838413): [], (30.811347504234526, 143.13010235415598): [], (77.306832361161412, 109.8052133324828): [], (218.53185151273192, 68.03021146243339): [], (309.31121138429927, 40.11916689840515): [], (8.4328026007675057, 70.05143277395187): [], (328.75985197879601, 74.37073356834092): [], (323.01301144716945, 88.8540080016114): [], (148.50720119240125, 120.46811727599487): [], (28.533359358944601, 26.604681689396497): [], (150.15861750822708, 149.58180645799604): [], (151.17591010414631, 71.97621571421496): [], (122.34435483334009, 32.73543868813297): [], (114.32483047035375, 71.47931149458947): [], (44.613994619473822, 104.51232364014308): [61, 62, 70, 72], (181.16891008702524, 82.08828553076475): [], (305.12848825297249, 108.02378428578504): [], (153.46524267537077, 105.97954241563974): [], (315.65090624151372, 108.16561208734163): [], (56.198090542652047, 70.69551714141268): [], (18.378299296297499, 94.45333133472819): [], (349.51014206775164, 74.65052298299187): [], (193.52536532285899, 14.207842280393383): [], (182.33996844150832, 135.47472419829353): [], (269.26536340507221, 160.85749107124585): [], (344.02212932685819, 64.86795185341055): [], (189.91061982905075, 23.91926961105897): [], (183.05524594988498, 38.41512933520774): [], (357.24276289793931, 113.57817847820183): [], (244.26806997614003, 58.66774850240574): [], (239.60631984434289, 97.43560178154884): [], (71.8781005261649, 100.02731471833775): [], (228.97182188297688, 145.79778290824905): [], (86.250385222670602, 41.9670584345139): [], (16.220819725450358, 118.68540201411892): [], (248.10487613280813, 92.69726813393666): [], (213.52209968687538, 14.479928136600423): [], (237.89433088773188, 145.91788450724127): [], (34.820517761729711, 60.69807409271599): [], (206.39687138154213, 82.42842016425355): [], (76.620911578383868, 134.05065921945857): [], (240.07055572789938, 68.32065613087137): [], (323.56787919040755, 74.30072673239849): [], (343.59476343138249, 79.42459403356288): [], (133.51962373016821, 129.96749699489374): [], (173.15379397862597, 13.930554562357656): [], (320.46224371124009, 69.4047095441385): [], (251.95448963433691, 141.26057540214435): [], (338.2595784516393, 93.91263462241528): [], (283.26651097147266, 122.28409217994543): [], (194.53096015209039, 159.854912928263): [], (354.85044883570833, 26.14951322008121): [], (13.649379478686107, 104.09494318269479): [], (22.598810982545825, 65.38803937944513): [], (97.608638462135687, 61.54485686213589): [], (165.93848541074362, 120.70301974591568): [], (204.32556447821042, 96.96000489236107): [], (115.4306600776757, 124.87337596253784): [], (337.07348836017638, 50.20818050044277): [], (53.540642347036595, 17.19694697938285): [], (332.81782254596283, 127.80247435775372): [], (202.16278377773691, 24.084981768217002): [], (241.86015789156389, 19.749922795642572): [], (305.49443550761902, 137.1335333042968): [], (298.17695457100166, 93.3722866834339): [], (93.803614689728676, 66.3482540408751): [], (332.45028269007116, 45.289140427423966): [], (164.83862762325003, 77.01441640399358): [], (331.49822219864285, 59.84420818713206): [], (30.650177203541421, 123.73097526262177): [], (138.03249230336917, 47.52300570603012): [], (137.24333059174833, 159.0860590929316): [], (234.93151052302656, 116.78143078081699): [], (287.20182728843298, 5.560689196425544): [], (246.1443009052401, 116.93254394957509): [], (85.018823591768509, 124.46358592950833): [], (112.78679913602839, 86.01979836264974): [], (300.17847800488357, 98.25212994642533): [], (230.624267385293, 150.6643617924642): [], (149.79646877041225, 52.53798766980202): [], (55.783501921691375, 133.76996347371292): [], (244.87406533498566, 126.61753815078154): [], (263.12284985711528, 107.4576031237221): [], (32.539629669014559, 84.93790703571536): [], (126.4908403641944, 66.7890446733537): [], (272.29781421431193, 68.75523130619787): [], (56.235859825938277, 119.2246584303491): [], (335.43921298921913, 113.28431868601098): [], (13.637541542980305, 113.79900529347772): [], (263.1232281475111, 92.89973009018784): [], (118.03170136327995, 90.94373786483854): [], (189.53910817919831, 28.780500085183924): [], (277.6597589781727, 68.82753530272697): [], (279.87367702187697, 117.3871075026539): [], (103.82041396614832, 32.48528481982093): [], (108.03043814687477, 90.80890846495919): [], (349.88528531689138, 137.73141557042754): [], (261.1226641217354, 73.45873143200066): [], (224.35407517831291, 121.49021489015043): [], (122.71423310454398, 100.712579836095): [], (359.94351026546855, 171.6548649526684): [], (197.02868734889449, 19.14250892875417): [], (246.84467498707343, 146.03835935308135): [], (89.769309360394757, 143.92387147863911): [], (57.468014615282421, 114.38972931178735): [], (81.559891090832394, 129.2674520919506): [], (175.39769137392364, 169.22010472778766): [], (99.259061945628488, 66.42182152179817): [], (204.29605477600478, 101.812282227541): [], (128.88967196006809, 76.52970681438882): [], (325.06382784118296, 117.9961196837149): [], (121.05049913529125, 66.71568131398902): [], (192.92955967030872, 87.10026990981217): [], (284.10429512025644, 141.6934841544017): [], (270.82259323002353, 102.70903299439543): [], (142.85101589730039, 86.42512061764633): [], (22.499944811373574, 84.80255127068871): [], (148.66495916571995, 168.86547311608786): [], (347.00988628108507, 132.84364304359633): [], (346.33491760622991, 113.43116693467277): [], (154.3129304145009, 120.5463549021541): [], (228.08431147967661, 92.42737084002997): [], (225.76096758099129, 131.21021006338927): [], (61.006102274469271, 65.90597315292821): [], (3.6220200558371971, 166.9358638398621): [], (318.21523045830082, 93.64242010287187): [], (91.921588264313499, 61.468159848811666): [], (191.26253047932843, 82.22437237487944): [], (41.428609729080726, 99.61685665081788): [11, 12, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 29, 52, 54, 63, 64, 65, 66, 67, 68, 69, 71], (144.80183647686997, 47.614332137902736): [], (261.50726940846982, 151.07980348351748): [], (26.217865507295745, 99.41181565681354): [], (108.31492434242213, 76.2522906296264): [], (337.94825664083004, 147.26456131186703): [], (221.73971977279624, 111.75189984558665): [], (218.62450873906079, 53.46639808051097): [], (76.65682467634646, 46.69496122574304): [], (285.98222616065101, 39.80431679208056): [], (134.67234755501661, 115.4302350471177): [], (114.64517743234121, 61.77461533254031): [], (223.98282045233842, 160.25007720435744): [], (359.56784878028941, 31.077419250370713): [87], (47.543885456969953, 143.35538278314104): [], (118.60530435935553, 76.39103936921708): [], (5.8872769013928519, 147.64043728796037): [], (41.007820648283356, 114.16788813674654): [], (182.16538540409934, 43.26134416773068): [], (51.978080234218083, 114.31573917117649): [], (354.69336182967436, 74.72041149571221): [], (36.629162125653494, 16.967471818522796): [], (325.45331005341177, 98.592839011356): [], (54.69903472503799, 80.38314334918212): [], (279.28802172056299, 59.14006061661744): [], (240.87383443002733, 150.80224314904194): [], (259.49994198938333, 112.26082838649187): [], (330.51098488103304, 98.66101718309712): [], (188.05458345339554, 62.76461957671463): [], (262.4988324286449, 39.487376551514686): [], (254.32911285467458, 136.44438621036832): [], (34.992642020401959, 70.4095759261488): [], (60.796713869880826, 124.13719762711513): [], (261.79976775914105, 58.90419809894123): [], (264.90542636518848, 112.3336826578053): [], (127.6379230826941, 125.03786387150011): [], (171.7817007942075, 47.978319257208824): [], (68.028292601333789, 90.26962819288237): [], (127.82064701800807, 86.22248315502372): [], (93.712971125178555, 42.06776234758659): [], (238.09405928827613, 92.56231237510126): [], (42.196904079246792, 46.2300365262871): [], (296.47162819018928, 103.05476910434224): [], (231.41804098314788, 77.91211760949938): [], (67.662472661553736, 85.41143426421418): [], (36.518404475202615, 128.6606032553309): [], (210.79862502290351, 106.7523351135539): [], (78.028503680898467, 90.40444415531614): [], (358.20384802863879, 128.14451310123005): [], (252.43802965941333, 131.56960454342607): [], (302.43717898424393, 117.69118892275974): [], (255.90680537870739, 73.38840172583328): [], (200.9295428418045, 121.17455278732378): [], (15.954766942506286, 50.732547908049405): [], (308.34023634615653, 59.53188272400513): [], (325.49298313022439, 171.20258929000894): [], (249.63779010450762, 53.88472365499568): [], (353.43773912553229, 118.37850172430018): [], (228.04015900224886, 140.93855207010134): [], (288.63999736169501, 64.12109333568951): [], (343.50524978257033, 25.99614624635114): [], (126.26646118037895, 139.56802299132198): [], (131.25327750989283, 47.43154579670649): [], (312.85796395083918, 137.23271092901567): [], (176.71624712490686, 125.6991674954162): [], (70.462562049311117, 104.86074189693989): [], (185.50719690723636, 57.87523338726993): [], (153.89081129104812, 135.09151479863272): [], (45.600026791095665, 70.55260951659467): [], (103.29157403431292, 61.62149827569983): [], (267.99113163778333, 141.4765161905836): [], (232.86971741924154, 43.945519562308846): [], (149.49456910135879, 139.88083310159487): [], (137.14078612993282, 28.07248693585296): [], (184.70975090421763, 106.40068591203939): [], (103.16745750676372, 76.18288547515793): [], (271.03347969659535, 20.145087071736995): [], (128.03336614049823, 91.07857249147638): [], (103.10797097525483, 2.7795260872183167): [], (101.16109227077686, 42.16827053115752): [], (40.366447653632392, 152.94725757025103): [], (33.598061534080372, 41.25652574874603): [], (332.09781645285511, 25.841932763167126): [], (177.43455485212738, 72.33028834395793): [], (42.335584508203404, 55.94420225743209): [], (345.93195179254047, 152.2153487897813): [], (69.906738213224571, 80.58818434318646): [77], (166.37315638504748, 18.727047066276423): [], (113.77011378550684, 120.00000000000001): [], (271.89244722094594, 151.21949991481608): [], (54.573364850533927, 7.358269391844776): [], (318.36740946226109, 45.0991278440273): [], (346.48718585521016, 45.4785312268004): [], (189.24660982852689, 121.01711624459145): [], (285.8812988924127, 156.24753023327813): [], (277.99906340693298, 88.24714980289714): [], (302.8712041754556, 78.87552211606689): [], (124.46413146733042, 47.339951588889726): [], (153.03964883680172, 91.41568683085299): [], (4.8259733025137166, 118.53184015118833): [], (344.51589950178135, 16.260204708311967): [], (212.59011233308976, 155.26261015509664): [], (240.24775256476434, 73.17725748374956): [], (348.01852426911194, 161.91337609753964): [], (18.84160642573255, 31.33760748190996): [], (43.512492130698305, 36.53152949915216): [], (55.943505033153876, 143.46847050084784): [], (193.05780691573889, 91.95517661733393): [], (90.410409263644112, 56.5926222685993): [], (271.62081628402143, 49.325214353001115): [], (110.86367556999269, 139.36059232723227): [], (359.87485939770949, 74.79027672734449): [], (219.62833660451983, 102.01895598946601): [], (266.27979743887556, 34.67896943476054): [], (165.53768145678094, 62.460956975613044): [], (251.16795269334546, 150.94072083789393): [], (197.93567467626153, 87.16776112998446): [], (65.040605401453973, 138.74347425125396): [], (84.911876845369193, 153.54623330326805): [], (274.24253220188126, 117.31121802781792): [], (191.08304974373573, 38.52348380941642): [], (159.02169044820522, 33.23072215882833): [], (183.87100819817246, 101.5369590328155): [], (173.04731418073467, 91.68541304022263): [], (72.424766399953668, 56.35003801276742): [], (29.332329313756276, 80.04113048911857): [], (21.392226596092272, 45.949340780541434): [], (54.427215462014402, 162.80305302061717): [], (34.286036742426752, 104.37311052284251): [], (3.1191224149848154, 108.80528062834026): [], (83.619997357056874, 95.33283358719343): [], (259.78384710833927, 97.70760079963482): [], (220.07685091765981, 145.6780505854809): [], (120.31588307981831, 61.85109148701495): [], (151.96485627658325, 110.81147124370663): [], (241.64086154854746, 78.04995276264827): [], (80.813652022868425, 105.00026599573852): [], (291.14760746333326, 117.53904302438696): [], (210.51034747046836, 63.06745605042491): [], (215.44411173696454, 174.43931080357453): [], (257.98857067192881, 87.97737594693389): [], (124.38762094302942, 163.739795291688): [], (130.41934782834119, 154.15806723683286): [], (198.57558525746109, 164.7322697613738): [], (275.72490137031144, 112.479505609404): [], (156.85260375764904, 115.72916167321645): [], (145.75553773258986, 115.57960504221663): [], (236.53010373362227, 77.981044010534): [], (310.99440435723221, 49.85637287967304): [], (135.05511915358241, 18.302502103072204): [], (169.9684259625935, 77.08358265250602): [], (29.685425874936481, 70.33801151057334): [], (259.96332784393257, 141.3684185027367): [], (83.517233929845105, 46.78751914791061): [], (191.91584946530025, 48.249947244273876): [], (281.13891850205658, 112.55247464626164): [], (190.47354915778467, 77.36005737996821): [], (224.61232227050863, 155.4241879292967): [], (102.36635024104392, 100.43829338443639): [], (48.720793079464485, 123.97447595029168): [], (80.104741311032754, 51.59790242280823): [], (33.588362972385575, 65.53623719999264): [], (6.1445007422990443, 26.302048554306968): [], (184.18141105913915, 96.6884535960378): [], (117.09632245461181, 105.48932439558183): [], (103.02785331855597, 17.86822593098097): [], (292.73522480071119, 132.1124813301185): [], (243.96445498307949, 141.15298471906954): [], (150.79974793705028, 18.51594874952375): [], (337.27626380216111, 59.92213476106632): [], (85.991733406211765, 105.07006214488884): [], (229.30665781487173, 68.17550749922567): [], (44.555471747533794, 80.24638041524037): [], (115.60716459844886, 66.64227750719763): [], (342.45152239876575, 137.63129452910428): [], (203.06425259546347, 92.09007429293743): [], (180.22378435764418, 77.22185783693352): [], (137.86779117475209, 105.76930415425119): [], (125.63174736165593, 134.71085957257606): [], (158.31115278695682, 47.79658781691964): [], (61.370951712731369, 109.5904240738512): [], (65.289534818238522, 104.79101369632585): [79], (337.28400455486582, 84.1930790987004): [], (133.03436644059826, 91.1459919983886): [], (72.810506285416707, 143.69555513861374): [], (49.110160596587541, 46.32330915815741): [], (222.96206610799109, 87.50516012334072): [], (189.04943283560129, 125.86534868634119): [], (0.64596832402378368, 123.32666692557987): [], (25.766842769429253, 75.13925810306013): [], (262.99179413427242, 117.15959445024878): [], (303.18597894413205, 93.4398127675152): [], (139.73783391297496, 134.9008721559727): [], (341.80269920052098, 69.69247522341864): [], (333.38138458809419, 132.6600484111103): [], (319.92843643052504, 59.68816987401035): [], (93.219208176132099, 71.19471937165976): [], (326.4897382799233, 127.71721235785645): [], (121.5312230424923, 124.955578653547): [], (351.84620849658126, 128.0588537306459): [], (226.43405531715948, 24.41323173358679): [], (139.86985941765724, 125.20268356818696): [], (252.98545357260619, 87.90992570706257): [], (352.54744632138755, 108.66292488494248): [], (158.66803514599059, 106.04967080416738): [], (251.8163956164677, 49.0580447248236): [], (260.98729869150981, 29.74578759840275): [], (292.48718253198308, 35.03280264665396): [], (30.259663717787063, 55.78132400588953): [], (332.44107322831229, 103.53961680610034): [], (255.24290886853322, 63.67071071778018): [], (352.45806532369301, 69.83615722859982): [], (239.0810225992073, 131.38965895835182): [], (84.966326774913782, 114.76033424422526): [], (326.58224612033757, 132.5684542032935): [], (9.7780555818790873, 36.076128521360886): [], (352.76268379562867, 35.84655653109822): [], (92.735927230914555, 85.74947390352528): [], (30.115209159691631, 128.57433140450584): [], (200.35733706814599, 106.61159827416674): [], (321.91046141594552, 64.5697649528823): [], (168.11585091406212, 33.35352383749118): [], (140.08637086725952, 23.245308517645505): [], (83.588723939533864, 134.14452022892195): [], (207.59798736167357, 126.11527634500433): [], (255.96072627932543, 58.82544721267624): [], (127.80407536430178, 100.78119002540916): [], (237.97480553759326, 87.70755722404412): [], (95.525773982038615, 139.15403295494392): [], (61.72404827391145, 99.89043865715374): [], (148.1751734122121, 101.05578835878299): [], (35.28177986351475, 50.993263074922794): [], (351.78731564203952, 113.5046522000617): [], (299.08152131108471, 69.11639971749217): [], (294.95788515822966, 127.29236208901408): [], (114.5750590832403, 110.30752477658137): [], (179.14714857944421, 96.6205895890427): [], (283.01908976387608, 68.89980397590698): [], (311.30854367469323, 45.00388580374361): [], (340.15849274745722, 30.815255634604668): [], (56.946645213574861, 31.85225279718823): [], (343.04976649405739, 60.00000000000001): [], (250.11683474586346, 58.746630784975636): [], (236.64437097439077, 82.83622881857214): [], (62.64639544964669, 85.34380750331852): [], (40.297505198826912, 70.48110854358967): [], (78.773226816425009, 41.86615733104918): [], (273.46776364974886, 156.08073038894105): [], (241.68296198941715, 82.90416090638111): [], (118.55689375620099, 139.46419788868343): [], (166.26651480970409, 130.4086823753081): [], (91.171518189958306, 105.13988119508276): [], (307.98124720685615, 74.09056140181883): [], (271.45839202357956, 15.267730238626182): [], (348.81875158376715, 60.077804192004145): [], (101.16477526950476, 148.92258074962928): [], (261.62055684500558, 170.3610205874871): [], (257.3721654587294, 117.08385987107336): [], (254.63606229853687, 39.381256386375306): [], (75.794736738808069, 32.106802612411634): [], (240.79010546831498, 29.47293165849043): [], (270.31374175063797, 112.40657500613321): [], (324.5305914577354, 151.92751306414704): [], (77.406998108981668, 75.8355470379262): [], (75.63726468157185, 104.93049262163949): [], (37.515735240631301, 162.57650977666017): [], (182.87961058786564, 125.78221466617617): [], (151.30232828007786, 115.6543599208399): [], (300.88776007944108, 30.28479484356964): [], (327.23181678341348, 84.05755370795386): [], (50.900218138426425, 70.62407899832593): [], (35.112872554514382, 36.4181396746227): [], (51.995405654531751, 60.92970204252969): [], (264.83008261055471, 146.2804450130663): [], (203.1882902372279, 58.11370187514041): [], (125.24527492655537, 110.45134024432323): [], (301.6057254430699, 103.123973989563): [], (215.05331356532611, 38.84701528093048): [], (46.44238296819394, 75.41803700912209): [], (273.61182273554044, 107.5989811730778): [], (327.2981422992475, 103.47029318561118): [], (13.363158132129408, 94.38572350268711): [], (283.77706881980816, 34.91520624744418): [], (138.12972702916076, 57.23623774063543): [], (97.74928158068046, 85.81706366910745): [], (153.98612378413753, 96.28140750322079): [], (245.19715648279617, 48.968747977675335): [], (292.80067543791665, 170.77228905486808): [], (57.458316053587851, 138.64135836571765): [], (219.34186280925576, 72.8953648233562): [], (95.988630872321622, 114.90888529672982): [], (267.6339822353101, 58.98288375540855): [], (23.028084986333923, 89.66296405915463): [], (324.55553722347361, 113.1376322278376): [], (132.6722503875998, 105.69927326760151): [], (232.41640343180381, 131.29987279170587): [], (205.57701800799839, 106.68195374450616): [], (214.11047444263411, 72.8248252139581): [], (8.4941743602709927, 104.02545457057204): [], (251.85849588858599, 78.18771777245901): [], (189.21637652009144, 96.75632703058784): [], (347.79855599990242, 55.20874461803673): [], (49.441286434969399, 167.5462994057313): [], (218.17666016842662, 135.95743407785082): [], (103.91476671187935, 110.16384277140018): [], (341.1226743449613, 142.461224810312): [], (101.53623551991616, 105.27958850428779): [], (212.4774298428415, 131.03125202232468): [], (10.951636276635131, 128.31613447366576): [], (285.41829187359679, 20.339907769113946): [], (168.02728782379188, 111.02796250773457): [], (39.482138535564111, 80.17797794942453): [], (80.040204398026134, 80.72481063152176): [], (327.6266510987133, 137.43162538534295): [], (184.76658014879271, 145.20273695958235): [], (195.22574725980706, 125.94857000453273): [], (313.205109847595, 93.57487938235369): [], (245.20851910744946, 102.36376675547777): [], (358.17845194132286, 103.88654036262899): [], (331.91310549910622, 161.6974978969278): [], (50.048556939384639, 65.75820782105102): [], (160.07338072307033, 149.71520515643036): [], (332.48948383146723, 40.431977008678025): [], (189.48256330902186, 135.5709337331413): [], (347.22596362151995, 147.3894248586596): [], (333.01467622438776, 88.9888455218948): [], (183.05217932562343, 91.82028978310579): [], (259.13052812236776, 131.65976544609367): [], (347.75480355335503, 118.30191565291722): [], (175.00831234662462, 38.30651584559832): [], (224.57127467324415, 72.96587771823836): [], (159.7074049925404, 76.94523089565776): [], (216.35641365499725, 111.67934386912866): [], (287.17371278751222, 73.80999818109146): [], (113.97288922749154, 129.70414888786047): [], (50.758872388840935, 109.44739048340534): [], (150.00562384242301, 57.39641274413914): [], (140.76064464413116, 81.54348066472949): [], (300.29532103988413, 141.91149724910278): [], (83.028673239696147, 90.47185292960899): [], (240.0898052789166, 102.29476862231759): [], (143.03673752831466, 91.28083586667616): [], (111.57193476327885, 134.52146877319962): [], (347.33378915498417, 84.32857189608814): [], (207.74603412272441, 67.88476663325903): [], (297.58113491229705, 73.95032919583262): [], (189.92371346593242, 106.47096449186903): [], (103.02993980248434, 90.7414954915562): [], (11.85993805268695, 60.388416197221964): [], (140.74384257037696, 32.983905041845176): [], (290.9729968645978, 30.15086218433121): [], (153.14211760329363, 130.23186353918084): [], (123.41972648895495, 42.468635067167675): [], (67.707406338436499, 119.37925190791073): [], (235.99306402234217, 141.0456443125976): [], (3.0274828799708189, 89.39332746904577): [], (145.91788933469533, 71.90531615257126): [], (184.11313449120513, 111.24476869380214): [], (212.12126051352155, 19.347017257016613): [], (72.678078291370198, 85.47905461953877): [], (348.01643778518337, 89.19109153504081): [], (27.281622287844584, 138.23494244051068): [], (339.15323585364342, 127.88783489747289): [], (38.028185333622652, 89.8651862767499): [2, 3, 5, 39], (284.10903092583231, 107.74046996500233): [], (203.97354445866173, 43.55561378963168): [], (158.04132441918284, 91.48311520770976): [], (273.86576654851973, 146.4020641188102): [], (246.72081310945725, 82.97208296945429): [], (51.607171942948305, 75.48767635985692): [], (50.506593132679193, 119.1474492042224): [], (21.924520980917148, 118.76226738560106): [], (107.99661109361058, 119.92219580799586): [], (33.344577371978666, 118.91616832353112): [], (355.81332248693235, 99.0020955118428): [], (275.04136184712553, 34.79726304041767): [], (247.98212499220423, 87.84247256921341): [], (106.82170424401814, 144.1534434689018): [], (111.90787939350365, 105.4193889381955): [], (103.7125884326835, 95.60369368370218): [], (207.94704699933405, 87.30273186606334): [], (254.40893212376415, 44.23615080677809): [], (39.166569287150054, 143.24259433325): [], (219.114660935388, 131.12067004700876): [], (91.478528807378822, 148.79224283529425): [], (0.8866365896226398, 99.07034939749582): [], (316.56558762522479, 142.13057392785137): [], (148.22254799458858, 67.08209736235906): [], (181.18599038570403, 52.96139883595049): [], (50.68992993403586, 26.904156459044472): [89], (302.82382959307944, 112.84473872777728): [], (225.6648371979386, 43.848302362227464): [], (177.58298496129345, 120.85993938338257): [], (195.22322119270143, 33.71955498693372): [], (75.101610645161585, 129.18043967127863): [], (277.38033002605732, 78.53182933137444): [], (339.47444282438926, 45.383913039275896): [], (350.75096752997297, 98.9338545047035): [], (131.92820211773676, 66.8623677721624): [], (48.716669493854241, 41.46055120122157): [], (132.57983528765214, 144.50021003162036): [], (115.3835732367878, 144.26870802003634): [], (126.51578612993282, 27.928910035858138): [], (43.5842623546474, 148.1477472028118): [], (317.1771678402705, 83.92199494150317): [], (194.25205232646957, 96.82420999191044): [], (82.653061259321262, 71.05224308237528): [], (199.87842489432268, 28.920196516482534): [], (331.13745695114727, 69.54865975567677): [], (163.87266480015558, 106.11982389478898): [], (19.063888959316632, 70.19478666751723): [], (131.64519610302281, 62.00388031628511): [], (172.9020773799933, 86.83026381276062): [], (29.086920125012345, 60.62074809208926): [], (98.588312263974885, 110.09205141942664): [], (116.0143652109043, 42.36870547089575): [], (307.96575429157599, 78.94421164121702): [], (168.56542892106498, 101.33064408052174): [], (226.69230240935505, 58.43070336387381): [], (78.95443922895322, 124.38186974878029): [], (149.89779965568883, 33.10751741709538): [], (94.510865626671176, 32.35956271203964): [], (218.07557685648342, 92.29244277595589): [], (134.48078996244354, 37.759482981264256): [], (28.409982138021007, 94.58856573578583): [], (63.774755299823639, 41.66375762504444): [86], (28.095205807178289, 65.4621601640636): [], (257.8814256735057, 107.38695527772799): [], (303.00825540133701, 88.58431316914701): [], (48.364863176324626, 56.025524049708324): [], (271.44312022728695, 122.12476661273007): [], (62.636356275012488, 148.40413043181113): [], (262.2812170385771, 24.897984639416855): [], (137.30384072545789, 62.080193494496456): [], (159.07079890582506, 67.22838584436191): [], (22.47801417090119, 143.01790408996268): [], (308.00964005935305, 88.6517395849778): [], (120.53539270663474, 81.27079228514664): [], (28.028140350575267, 89.73037180711763): [], (7.4676536481341715, 45.76146928641589): [], (17.834191910018376, 11.812282227540983): [], (223.00621858541942, 38.95435568740242): [], (157.87809605007078, 86.62771331656609): [], (201.40858748316018, 126.03187907247056): [], (69.785978840925182, 46.60226216129787): [], (337.58550725599713, 103.60896063078293): [], (82.707903264619105, 85.6142764973129): [], (250.90975546540992, 29.60964543891923): [], (168.04515014687442, 91.61797821878983): [], (36.667985280119332, 123.81206509430194): [], (224.84049054908562, 53.55024331056807): [], (307.54906760398586, 127.46201233019798): [], (342.07596354972321, 118.2253846674597): [], (275.64868621374433, 10.413340847372584): [], (273.13696228639083, 93.03472470655853): [], (340.88555472433234, 113.35772249280238): [], (238.56894774482652, 48.87932995299125): [], (109.05173150863318, 71.40820815173977): [], (117.67888733878119, 173.1882360288742): [], (324.05068590905893, 50.03250300510627): [], (96.353015757993447, 105.20972327265554): [], (39.449205644719456, 104.44270619191009): [48, 49, 50, 51, 53, 55, 56, 57, 58, 59], (125.98254974648498, 61.92751306414704): [], (88.869389615639506, 22.552362700777778): [], (216.11486706464143, 63.14303786223659): [], (124.86448032698755, 71.62142968439035): [], (313.9055914577354, 151.78460762065836): [], (146.59278833765393, 130.14362712032695): [], (213.07157205007445, 92.22498356048861): [], (265.02817386326677, 49.23627721319721): [], (307.11999959891892, 83.78640201529156): [], (146.61585857522232, 110.73937670185227): [], (167.26930876786005, 144.96719735334605): [], (61.96945746265564, 119.30192590728402): [], (14.399552911321567, 133.2124808520894): [], (225.28541000667673, 48.70012720829414): [], (232.42186884860701, 126.44975668943195): [], (10.521310318105943, 118.60859302318677): [], (293.00505316848478, 88.44945436084174): [], (261.5660332017049, 68.61051667381507): [], (196.3081152359957, 82.29239920036518): [], (256.19617205968768, 68.53810570172526): [], (210.97582185976859, 111.60682439968237): [], (3.1136494985988179, 69.97970704316931): [83], (264.8302463203741, 97.77562762512056): [], (243.30034346494355, 112.0424922659776): [], (262.99148324948811, 88.0448233826661): [], (152.12672124221319, 125.36783844070605): [], (216.48245959575996, 82.56439821845117): [], (69.664150991575752, 133.9569467237677): [92], (277.35222198497752, 122.20439451529167): [], (142.70614124151138, 120.38994244932762): [], (358.0172025795855, 89.32591645532518): [], (110.88788484021102, 149.0534124777643): [], (255.82063032786073, 53.96812092752944): [], (34.109732374093362, 148.0202458894059): [], (166.94208246741189, 38.197641081042256): [], (73.028379108769116, 90.33703594084538): [], (175.09680866322992, 77.1527297579815): [], (186.21629497711359, 33.59793588118984): [], (302.09045254160617, 83.71859249677924): [], (176.00501574054272, 145.08479375255584): [], (141.95464025964603, 154.31314253913067): [], (269.87746750064247, 97.84366548120201): [], (24.576233984293424, 113.94643173958224): [], (63.028237237092441, 90.20222081811856): [], (118.78816290000913, 95.8069209012996): [], (240.06196902071699, 44.04256592214917): [], (196.63744546390402, 135.66730835583508): [], (229.52229318814358, 97.29966583129391): [], (56.648617235252225, 99.82202205057547): [], (176.12085941489858, 82.02022530927793): [], (313.74253686221005, 117.84354715142261): [], (271.89922900822353, 83.3115464039622): [], (326.18189726068027, 108.30755517707027): [], (340.62910417240039, 98.79741070999106): [], (347.93840661241262, 176.06877086520694): [], (191.4059991123417, 57.95479186401049): [], (73.687915650444239, 153.3953183106035): [], (104.03649130658293, 47.06435485215604): [], (14.166366368599311, 142.90599682505317): [], (196.4103152891314, 140.51262344848533): [], (30.938203882179369, 75.20898630367415): [], (54.948469452997116, 104.6516243677746): [78], (19.495825670508726, 16.734944040706875): [], (282.48094866660267, 78.60060094505977): [], (261.83000106757629, 83.17579000808959): [], (296.79042904309784, 117.615089554848): [], (211.44005774332481, 82.4964145046525): [], (286.63761346010261, 54.38379327149306): [], (21.270398746742842, 133.30503877425699): [], (99.200169091086593, 51.855486898769975): [], (18.978471057583221, 109.01904063854006): [], (207.08192260458878, 38.73942459785565): [], (310.38863095942747, 108.09468384742874): [], (323.4084545049738, 54.879767964316734): [], (261.5638142786463, 44.33269164416491): [], (354.58324026422895, 60.15554762357253): [], (38.443579803840123, 94.72382575920884): [4, 8, 9, 10, 36, 37], (333.95005513305597, 74.44071648274546): [], (247.07283312900643, 136.34664931841434): [], (200.22273043538047, 111.46189429827476): [], (184.65681984529749, 116.1038811373399): [], (288.15995281495663, 93.2372484879978): [], (182.68006549985211, 72.4010188269222): [], (94.336472389930279, 27.49404455358124): [], (15.261640848860162, 147.766596288855): [], (349.34955095939034, 142.57199445695747): [], (250.68904051952185, 73.31804625549384): [], (353.01685652290098, 89.2585045084438): [], (13.027873906769246, 89.52814707039104): [], (133.99250805366242, 139.67206937983303): [], (137.36259817116877, 66.93565079651023): [], (48.028188793833856, 90.0): [], (272.27847302029352, 78.46304096718453): [], (173.52450075140916, 115.95385033808283): [], (155.93562613236463, 57.476392860474604): [], (10.242725564799336, 74.92993785511116): [], (154.25594854457009, 62.30881107724026): [], (279.97440587124549, 97.97977469072207): [], (158.8563875611226, 38.088502750897256): [], (266.38955774237053, 63.82103129598749): [], (297.77545673862613, 78.80681639431617): [], (275.83679988419823, 44.52527580170647): [], (114.65975566254572, 22.90131557717444): [], (176.8038453857867, 62.612892497346095): [], (166.93734666183551, 72.18874375913046): [], (290.92302652644662, 59.29698025408433): [], (338.01535456309784, 89.05626213516145): [], (339.13849819416413, 74.51067560441817): [], (315.99125843408547, 161.48405125047626): [], (19.105327537504429, 113.87269753101995): [], (170.55930928369384, 125.61620672850695): [], (193.16495191416215, 72.5423968762779): [], (49.348055820227948, 128.83345968142555): [], (214.51627385404544, 101.95004723735173): [], (41.592267124059681, 157.80178458759642): [], (217.95732234130284, 87.43768762489874): [], (110.85580037645769, 47.15635695640367): [], (302.38141842194796, 10.779895272212384): [], (196.71726473299358, 43.45770123427013): [], (6.0375539958993727, 55.454617821158976): [], (232.97080073118428, 87.6400948288606): [], (0.35325361287004853, 60.233230579635055): [], (317.01675439374594, 103.33170608131965): [], (244.64950620612558, 97.50358549534752): [], (199.22998197120035, 130.85277909740935): [], (268.12994060240908, 92.96722533756807): [], (280.48706830397401, 54.3008325045838): [], (261.59846843058853, 136.54229876572987): [], (105.35681359229768, 81.0661454952965): [], (18.418002080554334, 41.05166866486357): [], (46.491353827090911, 114.24179217894898): [], (86.230404285154265, 61.39140697681322): [], (319.4869004946471, 147.01609495815484): [], (318.4665423000161, 35.383546038833224): [], (126.99569167860901, 129.87960198981665): [], (330.39804448874645, 30.68341710897582): [], (59.769280189373347, 80.45150402913616): [], (195.59635542897183, 77.4291290757312): [], (290.06129739013431, 44.71720405803846): [], (270.34402077256829, 39.5932587093578): [], (190.05907889615835, 150.11863399320004): [], (274.33013046276096, 54.21778533382382): [], (306.97604485198519, 122.60358725586086): [], (151.37276033067155, 159.27571375109173): [], (301.24990881725569, 127.37713924200519): [], (233.16437426967397, 14.747100159455673): [], (327.81001091513752, 20.913940907068397): [], (66.387384021154915, 31.979754110594083): [90], (167.56045907266488, 43.06426941651319): [], (286.55580647738037, 112.6254822960708): [], (282.93052667360621, 146.52407305811556): [], (73.72451056776265, 51.51183696631818): [], (301.04075374524496, 122.52360713952542): [], (122.77341841545163, 168.52165904546644): [], (332.91651184603887, 142.35073316105678): [], (28.420021312655734, 31.466976293267564): [], (214.33673663640727, 24.249628602505194): [], (327.44347137669638, 64.64438049645341): [], (13.749545226506424, 70.12312592992117): [], (62.209008254618446, 129.0067369250772): [], (53.028192254045059, 90.06740681497661): [], (28.35817005962868, 157.62404627662053): [], (147.716361659814, 28.21539237934161): [], (221.71565270880683, 63.21856921918303): [], (40.549784454988796, 60.775341569650934): [], (260.81803277694257, 63.745895322095336): [], (229.33072487886116, 116.70594964682721): [], (18.43449762139878, 152.65232559720357): [], (187.4429019742071, 53.04579730702219): [], (247.24167866621153, 44.1394426162078): [], (133.86920974739724, 96.01022145434554): [], (153.2709208490416, 101.12447788393311): [], (129.13591617172253, 115.35561950354659): [], (284.67322120262043, 161.0641243279398): [], (164.49057111028759, 67.30147126107778): [], (236.09605082720265, 121.64844550898285): [], (20.817452503106612, 162.35278544955068): [], (176.03778217480439, 3.931229134792969): [], (168.09130878209186, 135.28279594196155): [], (299.74404930759016, 64.27083832678356): [], (151.56137011945313, 47.70552590603913): [], (167.96367382037383, 115.87890666431049): [], (231.70451477841209, 107.03412228176165): [], (275.94956892443781, 102.77814216306648): [], (292.02939608198784, 83.58294685697133): [], (42.339708093813982, 138.4377439844419): [], (297.0602538035302, 83.6507741435083): [], (226.4751029144237, 106.96363596439028): [], (353.29709600698726, 94.11535239617817): [], (292.02468713946308, 146.6464761625088): [], (163.46604040307381, 101.2619056343626): [], (267.17536938949524, 78.39423574102005): [], (303.33001592785422, 151.642363423672): [], (4.5789770024528593, 128.23027316598387): [], (54.537973112465259, 51.25302084383098): [], (268.88099218356882, 136.64038822257126): [], (178.76790456737416, 101.46817066862556): [], (335.03201237676393, 137.53136493283233): [], (319.11817546993126, 113.06434920348978): [], (333.24789750702359, 93.84507305670277): [], (343.01593944079292, 89.12367744174256): [], (213.15204669993642, 33.961640646918674): [], (87.880837992322355, 139.05107575945163): [], (1.2870682272734939, 35.961501008066584): [], (342.70031158003457, 123.0849811867889): [], (130.87743388987778, 52.28278764214354): [], (156.43181954079611, 72.04708674078033): [], (123.60290621097168, 115.28104997952263): [], (36.127786505016736, 21.838620430726724): [], (328.33214448312373, 79.21880997459087): [], (71.992488628351211, 109.73358485737599): [], (78.425580406405786, 56.430975109794765): [], (213.79398098707807, 126.19876228014533): [], (11.016173189641608, 99.2068962213459): [], (131.19423969856834, 13.359071414022612): [], (132.67896812540707, 134.8057876279089): [], (268.36631208781574, 107.52827837564496): [], (265.53918068043157, 122.04520813598953): [], (283.48591851500333, 136.83710285970835): [], (22.686695060597661, 21.65669523268248): [0], (3.0301602456152636, 50.558197962402126): [], (292.67850380567921, 78.73809436563741): [], (100.29541005769481, 80.9979044881572): [], (278.14430020767441, 93.10222829161332): [], (308.19536169036735, 93.50734363553852): [], (158.55919505568514, 144.84994422944297): [], (34.858287045015807, 109.23307590204492): [], (56.253220429463404, 41.56225601555808): [], (323.22573056965962, 93.70996589206685): [], (161.68562821466574, 72.11792937499577): [], (320.1689436977901, 127.63204836914738): [], (238.4957771345851, 63.444862874333886): [], (175.32147621735652, 67.44752535373838): [], (75.832518464571436, 22.37595372337949): [], (306.24454111079802, 132.29447409396087): [], (6.1088125925822183, 60.31085334357099): [], (132.83114712936688, 86.29003410793315): [], (268.61524382522475, 117.23538042328538): [], (353.4885862753502, 45.5729959991943): [], (174.86960015287229, 43.16289714029165): [], (7.5391436578229198, 133.12006318900518): [], (230.94079333600553, 39.06144792989868): [], (117.79848008064411, 86.0873653775847): [], (305.23166424041483, 98.32024786291163): [], (119.13327208856167, 18.086623902460392): [], (122.28652560887176, 105.55928351725456): [], (212.18918613990968, 140.725103764843): [], (24.212963711251479, 55.699766763748535): [], (113.46087033167071, 76.32167522100335): [], (223.92062461226752, 68.10287799292009): [], (285.99513407894597, 132.02168074279118): [], (119.5481553890251, 120.07786523893368): [], (42.929339104873307, 128.74697915616903): [], (210.1725431576408, 29.059279162106083): [], (200.64153486175542, 155.10201536058315): [], (101.81107793151486, 22.727473368465144): [], (60.941168427976244, 51.339396744669116): [], (328.23661723362568, 93.77751684497628): [], (90.475822308929537, 114.83458748970158): [], (108.97041403794472, 61.69808434708278): [], (96.195928751959926, 153.69795144569304): [], (77.366615402222337, 70.98095936145997): [], (96.463137323439042, 119.76676942036495): [], (320.39654821874899, 98.5246730964273): [], (317.2955861845453, 54.797316431813066): [], (5.0646441814560035, 74.86011880491724): [], (90.367271810896355, 46.87993681099482): [], (239.82953790622216, 136.24908686490116): [], (269.86038720196382, 126.95420269297779): [], (82.562203227396779, 75.90505681730521): [], (108.59485518890251, 42.26858442957247): [], (302.53917639526662, 59.4536450978459): [], (44.565023760577084, 65.68426082882353): [], (41.275964760343712, 75.3483756322254): [], (179.15393036672222, 28.640180828058384): [], (220.10558425166275, 140.83170590671872): [], (78.598261281359243, 95.2651374732329): [], (105.11442579512773, 27.639699721367478): [], (317.0538695340058, 40.223661179497554): [], (53.092996568525237, 148.2757068424041): [], (72.214771161935673, 148.53302370673245): [], (292.18999002654573, 141.80235891895774): [], (97.207002930020977, 46.972215090061894): [], (97.557791312317875, 134.3326916441649): [], (344.32519067644307, 74.5806110618045): [], (120.27576211389062, 56.995433046519615): [], (130.64982936891874, 81.40716098864402): [], (147.86039864353569, 86.49265636446148): [], (176.95960499353546, 154.78369944650936): [], (273.46339262637446, 59.06150449193615): [], (66.843413876416406, 124.21867599411047): [], (218.49055026033054, 121.41119995027866): [], (202.36835994749569, 145.43967822000215): [], (286.20774996441776, 102.916417347494): [], (342.30919363116186, 84.26082952273322): [], (81.828679583592461, 148.66239251809006): [], (117.66499299957383, 47.24822225411597): [], (195.80346871913477, 116.25410467790466): [], (168.65128583123976, 52.79231963833847): [], (49.891389232377726, 138.53944879877847): [], (108.34606600763334, 56.83453098161588): []})
-#
+# 
 #     def test_myid_not_the_same_value_as_main_Node_TypeError(self):
 #         Tracker = deepcopy(TRACKER)
 #         Tracker["constants"]["nproc"] = 1
@@ -21297,18 +21297,18 @@
 #         Tracker["constants"]["main_node"] = 0
 #         this_ali3d = path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER, 'Initial3D//main001/run000/rotated_reduced_params.txt')
 #         Tracker2 = deepcopy(Tracker)
-#
+# 
 #         with self.assertRaises(TypeError) as cm_new:
 #             fu.get_stat_proj(Tracker,delta = 5,this_ali3d=this_ali3d)
 #         with self.assertRaises(TypeError) as cm_old:
 #             oldfu.get_stat_proj(Tracker2,delta = 5,this_ali3d=this_ali3d)
 #         self.assertEqual(str(cm_new.exception), "object of type 'int' has no len()")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
-#
-#
-#
+# 
+# 
+# 
+# 
+# 
 # class Test_create_random_list(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -21317,7 +21317,7 @@
 #             oldfu.create_random_list()
 #         self.assertEqual(str(cm_new.exception), "create_random_list() takes exactly 1 argument (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_default_case(self):
 #         Tracker_new = deepcopy(TRACKER)
 #         Tracker_new["constants"]["nproc"] = 1
@@ -21327,15 +21327,15 @@
 #         Tracker_new["constants"]["seed"] = 1.4
 #         Tracker_new["constants"]["indep_runs"] = 2
 #         Tracker_new["this_data_list"] = [2,3,5]
-#
+# 
 #         Tracker_old = deepcopy(Tracker_new)
-#
+# 
 #         return_new = fu.create_random_list(Tracker_new)
 #         return_old = oldfu.create_random_list(Tracker_old)
 #         self.assertEqual(return_new, None)
 #         self.assertEqual(return_new, return_old)
 #         self.assertTrue(array_equal(Tracker_new["this_indep_list"],Tracker_old["this_indep_list"]))
-#
+# 
 #     def test_wrong_Tracker_KeyError(self):
 #         Tracker_new = deepcopy(TRACKER)
 #         Tracker_old = deepcopy(TRACKER)
@@ -21345,11 +21345,11 @@
 #             oldfu.create_random_list(Tracker_old)
 #         self.assertEqual(str(cm_new.exception), 'myid')
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
-#
-#
-#
+# 
+# 
+# 
+# 
+# 
 # class Test_recons_mref(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -21358,7 +21358,7 @@
 #             oldfu.recons_mref()
 #         self.assertEqual(str(cm_new.exception), "recons_mref() takes exactly 1 argument (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     @unittest.skip('same problem that we have in get_shrink_data_huang')
 #     def test_recons_mref_true_should_return_equal_objects(self):
 #         Tracker =  deepcopy(TRACKER)
@@ -21379,10 +21379,10 @@
 #         return_new = fu.recons_mref(Tracker)
 #         return_old = oldfu.recons_mref(Tracker2)
 #         self.assertTrue(return_new[0], return_old[0])
-#
-#
-#
-#
+# 
+# 
+# 
+# 
 # class Test_apply_low_pass_filter(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -21391,7 +21391,7 @@
 #             oldfu.apply_low_pass_filter()
 #         self.assertEqual(str(cm_new.exception), "apply_low_pass_filter() takes exactly 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_default_case(self):
 #         Tracker = deepcopy(TRACKER )
 #         Tracker["low_pass_filter"] = 0.087
@@ -21399,7 +21399,7 @@
 #         return_old = oldfu.apply_low_pass_filter(refvol=  [deepcopy(IMAGE_2D),deepcopy(IMAGE_2D)],Tracker=Tracker)
 #         for i,j in zip(return_new,return_old):
 #             self.assertTrue(array_equal(i.get_3dview(), j.get_3dview()))
-#
+# 
 #     def test_wrong_Tracker_KeyError(self):
 #         Tracker = deepcopy(TRACKER )
 #         with self.assertRaises(KeyError) as cm_new:
@@ -21408,7 +21408,7 @@
 #             oldfu.apply_low_pass_filter(refvol= [deepcopy(IMAGE_2D),deepcopy(IMAGE_2D)],Tracker=Tracker)
 #         self.assertEqual(str(cm_new.exception), 'low_pass_filter')
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_refvol_empty(self):
 #         Tracker = deepcopy(TRACKER )
 #         Tracker["low_pass_filter"] = 0.087
@@ -21416,8 +21416,8 @@
 #         return_old = oldfu.apply_low_pass_filter(refvol=  [],Tracker=Tracker)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertEqual(return_new, [])
-#
-#
+# 
+# 
 # class Test_get_groups_from_partition(unittest.TestCase):
 #     list_of_particles = [randint(0, 1000) for i in range(100)]
 #     group_list = [0, 1]
@@ -21428,12 +21428,12 @@
 #             oldfu.get_groups_from_partition()
 #         self.assertEqual(str(cm_new.exception), "get_groups_from_partition() takes exactly 3 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_default_value(self):
 #         return_new = fu.get_groups_from_partition(partition =self.group_list, initial_ID_list = self.list_of_particles, number_of_groups = 2)
 #         return_old = oldfu.get_groups_from_partition(partition = self.group_list, initial_ID_list =self.list_of_particles, number_of_groups = 2)
 #         self.assertTrue(array_equal(return_new, return_old))
-#
+# 
 #     def test_empty_initial_ID_list_KeyError(self):
 #         with self.assertRaises(KeyError) as cm_new:
 #             fu.get_groups_from_partition(partition =self.group_list, initial_ID_list = [], number_of_groups = 2)
@@ -21441,14 +21441,14 @@
 #             oldfu.get_groups_from_partition(partition =self.group_list, initial_ID_list = [], number_of_groups = 2)
 #         self.assertEqual(str(cm_new.exception), 0)
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_empty_partition_list_KeyError(self):
 #         return_new = fu.get_groups_from_partition(partition =[], initial_ID_list = self.list_of_particles, number_of_groups = 2)
 #         return_old = oldfu.get_groups_from_partition(partition = [], initial_ID_list =self.list_of_particles, number_of_groups = 2)
 #         self.assertTrue(array_equal(return_new, return_old))
-#
-#
-#
+# 
+# 
+# 
 # class Test_get_complementary_elements(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -21457,7 +21457,7 @@
 #             oldfu.get_complementary_elements()
 #         self.assertEqual(str(cm_new.exception), "get_complementary_elements() takes exactly 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_defalut_case(self):
 #         sub_data_list = [1,2,2]
 #         total_list = [1,2,2,4,5,6]
@@ -21465,7 +21465,7 @@
 #         return_old = oldfu.get_complementary_elements(total_list,sub_data_list)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, [4, 5, 6]))
-#
+# 
 #     def test_total_list_less_data_than_sub_data_list_error_msg(self):
 #         sub_data_list = [1,2,2]
 #         total_list = [1,2]
@@ -21473,9 +21473,9 @@
 #         return_old = oldfu.get_complementary_elements(total_list,sub_data_list)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, []))
-#
-#
-#
+# 
+# 
+# 
 # class Test_update_full_dict(unittest.TestCase):
 #     leftover_list = {0: 'ciao_10', 1: 'ciao_11'}
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
@@ -21485,7 +21485,7 @@
 #             oldfu.update_full_dict()
 #         self.assertEqual(str(cm_new.exception), "update_full_dict() takes exactly 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_default_case(self):
 #         Tracker_new = deepcopy(TRACKER)
 #         Tracker_new['full_ID_dict'] = {10: 'ciao_0', 11: 'ciao_1', 2: 'ciao_2', 3: 'ciao_3'}
@@ -21495,7 +21495,7 @@
 #         self.assertEqual(return_new, None)
 #         self.assertEqual(return_new, return_old)
 #         self.assertDictEqual(Tracker_new['full_ID_dict'] ,Tracker_old['full_ID_dict'] )
-#
+# 
 #     def test_no_full_ID_dict_in_tracker(self):
 #         Tracker_new = deepcopy(TRACKER)
 #         Tracker_old = deepcopy(Tracker_new)
@@ -21505,9 +21505,9 @@
 #         self.assertEqual(return_new, return_old)
 #         self.assertDictEqual(Tracker_new['full_ID_dict'] ,Tracker_old['full_ID_dict'] )
 #         self.assertDictEqual(Tracker_new['full_ID_dict'],self.leftover_list)
-#
-#
-#
+# 
+# 
+# 
 # class Test_count_chunk_members(unittest.TestCase):
 #     chunk_dict = [0, 1, 2, 3, 4, 5, 6]
 #     one_class = [0, 1, 2, 3, 4, 5, 6]
@@ -21518,25 +21518,25 @@
 #             oldfu.count_chunk_members()
 #         self.assertEqual(str(cm_new.exception), "count_chunk_members() takes exactly 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_default_case(self):
 #         return_new = fu.count_chunk_members(self.chunk_dict, self.one_class)
 #         return_old = oldfu.count_chunk_members(self.chunk_dict, self.one_class)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, (0.14285714285714285, 0.8571428571428571, 7)))
-#
+# 
 #     def test_one_class_empty(self):
 #         return_new = fu.count_chunk_members(self.chunk_dict, [])
 #         return_old = oldfu.count_chunk_members(self.chunk_dict, [])
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, (0.0, 0.0, 0)))
-#
+# 
 #     def test_all_empty(self):
 #         return_new = fu.count_chunk_members([], [])
 #         return_old = oldfu.count_chunk_members([], [])
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, (0.0, 0.0, 0)))
-#
+# 
 #     def test_chunk_dict_empty_returns_IndexError_list_index_out_of_range(self):
 #         with self.assertRaises(IndexError) as cm_new:
 #             fu.count_chunk_members([], self.one_class)
@@ -21544,9 +21544,9 @@
 #             oldfu.count_chunk_members([], self.one_class)
 #         self.assertEqual(str(cm_new.exception), "list index out of range")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
-#
-#
+# 
+# 
+# 
 # class Test_remove_small_groups(unittest.TestCase):
 #     chunk_dict = [[0, 1, 2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5, 6]]
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
@@ -21556,32 +21556,32 @@
 #             oldfu.remove_small_groups()
 #         self.assertEqual(str(cm_new.exception), "remove_small_groups() takes exactly 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_default_case(self):
 #         return_new = fu.remove_small_groups(self.chunk_dict, 2)
 #         return_old = oldfu.remove_small_groups(self.chunk_dict, 2)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, ([0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6], [[0, 1, 2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5, 6]])))
-#
+# 
 #     def test_too_many_minimum_number_of_objects_in_a_group(self):
 #         return_new = fu.remove_small_groups(self.chunk_dict, 20)
 #         return_old = oldfu.remove_small_groups(self.chunk_dict, 20)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, [[], []] ))
-#
+# 
 #     def test_empty_chunk_dict(self):
 #         return_new = fu.remove_small_groups([], 2)
 #         return_old = oldfu.remove_small_groups([], 2)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, ([], [])))
-#
+# 
 #     def test_minimum_number_of_objects_in_a_group_is_zero(self):
 #         return_new = fu.remove_small_groups(self.chunk_dict, 0)
 #         return_old = oldfu.remove_small_groups(self.chunk_dict, 0)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, ([0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6], [[0, 1, 2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5, 6]])))
-#
-#
+# 
+# 
 # class Test_get_number_of_groups(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -21590,12 +21590,12 @@
 #             oldfu.get_number_of_groups()
 #         self.assertEqual(str(cm_new.exception), "get_number_of_groups() takes exactly 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_default_case(self):
 #         return_new = fu.get_number_of_groups(total_particles = 1500, number_of_images_per_group = 5)
 #         return_old = oldfu.get_number_of_groups(total_particles = 1500, number_of_images_per_group = 5)
 #         self.assertEqual(return_new, return_old)
-#
+# 
 #     def test_null_number_of_images_per_group_returns_ZeroDivisionError(self):
 #         with self.assertRaises(ZeroDivisionError) as cm_new:
 #             fu.get_number_of_groups(total_particles = 1500, number_of_images_per_group = 0)
@@ -21603,15 +21603,15 @@
 #             oldfu.get_number_of_groups(total_particles = 1500, number_of_images_per_group = 0)
 #         self.assertEqual(str(cm_new.exception), "float division by zero")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_total_particles_null(self):
 #         return_new = fu.get_number_of_groups(total_particles = 0, number_of_images_per_group = 5)
 #         return_old = oldfu.get_number_of_groups(total_particles = 0, number_of_images_per_group = 5)
 #         self.assertEqual(return_new, return_old)
 #         self.assertEqual(return_new, 0)
-#
-#
-#
+# 
+# 
+# 
 # class Test_tabessel(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -21620,21 +21620,21 @@
 #             oldfu.tabessel()
 #         self.assertEqual(str(cm_new.exception), "tabessel() takes at least 2 arguments (0 given)")
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_default_case(self):
 #         return_new = fu.tabessel(None, None, nbel = 50)
 #         return_old = oldfu.tabessel(None, None, nbel = 50)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, [1.0, 0.9997910261154175, 0.9991644024848938, 0.9981207847595215, 0.9966614842414856, 0.9947881102561951, 0.9925029873847961, 0.9898086190223694, 0.9867082834243774, 0.9832054972648621, 0.979304313659668, 0.9750093221664429, 0.9703254699707031, 0.9652581810951233, 0.9598131775856018, 0.9539968371391296, 0.9478157758712769, 0.9412769675254822, 0.9343878626823425, 0.9271563291549683, 0.919590413570404, 0.9116986989974976, 0.903489887714386, 0.8949731588363647, 0.8861579895019531, 0.8770539164543152, 0.867671012878418, 0.8580194115638733, 0.8481094837188721, 0.8379519581794739, 0.8275576829910278, 0.8169375061988831, 0.8061026334762573, 0.795064389705658, 0.7838340401649475, 0.772423267364502, 0.7608435153961182, 0.7491064667701721, 0.7372238039970398, 0.7252071499824524, 0.7130682468414307, 0.7008189558982849, 0.688470721244812, 0.6760352849960327, 0.6635242104530334, 0.6509489417076111, 0.6383208632469177, 0.6256512999534607, 0.612951397895813, 0.6002320051193237]))
-#
+# 
 #     def test_null_nbel(self):
 #         return_new = fu.tabessel(None, None, nbel = 0)
 #         return_old = oldfu.tabessel(None, None, nbel = 0)
 #         self.assertTrue(array_equal(return_new, return_old))
 #         self.assertTrue(array_equal(return_new, []))
 # """
-#
-#
+# 
+# 
 # class Test_nearest_proj(unittest.TestCase):
 #     def test_wrong_number_params_too_few_parameters_TypeError(self):
 #         with self.assertRaises(TypeError) as cm_new:
@@ -21645,7 +21645,7 @@
 #             str(cm_new.exception), "nearest_proj() missing 1 required positional argument: 'proj_ang'"
 #         )
 #         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-#
+# 
 #     def test_default_value(self):
 #         # I calculated the value looking in the code of bin/sx3dvariability.py
 #         proj_angles = []
@@ -42077,140 +42077,140 @@
 #                 ],
 #             )
 #         )
-#
-#
+# 
+# 
 # """
-#
+# 
 # import shutil
 # @unittest.skip("Adnan reference tests")
 # class Test_lib_utilities_compare(unittest.TestCase):
-#
-#
+# 
+# 
 #     def test_amoeba_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.amoeba")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum)
-#
+# 
 #         (var, scale, func, ftolerance, xtolerance, itmax , data) = argum[0]
-#
+# 
 #         return_new = fu.amoeba (var, scale, func, ftolerance, xtolerance, itmax , data)
 #         return_old = oldfu.amoeba (var, scale, func, ftolerance, xtolerance, itmax , data)
-#
+# 
 #         self.assertTrue(return_new, return_old)
-#
+# 
 #     def test_compose_transform2_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.compose_transform2")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum)
-#
+# 
 #         (alpha1, sx1, sy1, scale1, alpha2, sx2, sy2, scale2) = argum[0]
-#
+# 
 #         return_new = fu.compose_transform2(alpha1, sx1, sy1, scale1, alpha2, sx2, sy2, scale2)
 #         return_old = oldfu.compose_transform2(alpha1, sx1, sy1, scale1, alpha2, sx2, sy2, scale2)
-#
+# 
 #         self.assertTrue(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_compose_transform3_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.compose_transform3")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum)
-#
+# 
 #         (phi1,theta1,psi1,sx1,sy1,sz1,scale1,phi2,theta2,psi2,sx2,sy2,sz2,scale2) = argum[0]
-#
+# 
 #         return_new = fu.compose_transform3(phi1,theta1,psi1,sx1,sy1,sz1,scale1,phi2,theta2,psi2,sx2,sy2,sz2,scale2)
 #         return_old = oldfu.compose_transform3(phi1,theta1,psi1,sx1,sy1,sz1,scale1,phi2,theta2,psi2,sx2,sy2,sz2,scale2)
-#
+# 
 #         self.assertTrue(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_combine_params2_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.combine_params2")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum)
-#
+# 
 #         (alpha1, sx1, sy1, mirror1, alpha2, sx2, sy2, mirror2) = argum[0]
-#
+# 
 #         return_new = fu.combine_params2(alpha1, sx1, sy1, mirror1, alpha2, sx2, sy2, mirror2)
 #         return_old = oldfu.combine_params2(alpha1, sx1, sy1, mirror1, alpha2, sx2, sy2, mirror2)
-#
+# 
 #         self.assertTrue(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_inverse_transform2_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.inverse_transform2")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum)
-#
+# 
 #         (alpha, tx, ty) = argum[0]
-#
+# 
 #         return_new = fu.inverse_transform2(alpha, tx, ty)
 #         return_old = oldfu.inverse_transform2(alpha, tx, ty)
-#
+# 
 #         self.assertTrue(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_drop_image_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.drop_image")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum)
-#
+# 
 #         (imagename, destination) = argum[0]
-#
+# 
 #         return_new = fu.drop_image(imagename, destination)
 #         return_old = oldfu.drop_image(imagename, destination)
-#
+# 
 #         if return_new is not None   and  return_old is not None:
 #             self.assertTrue(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_get_im_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.get_im")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum)
-#
+# 
 #         (stackname, im) = argum[0]
-#
+# 
 #         stackname = 'bdb:Substack/isac_substack'
-#
+# 
 #         return_new = fu.get_im(stackname, im)
 #         return_old = oldfu.get_im(stackname, im)
-#
+# 
 #         self.assertTrue(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_get_image_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.get_image")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum)
-#
+# 
 #         (imagename,) = argum[0]
-#
+# 
 #         return_new = fu.get_image(imagename)
 #         return_old = oldfu.get_image(imagename)
-#
+# 
 #         self.assertTrue(return_new, return_old)
-#
-#
-#
+# 
+# 
+# 
 #       #This function test works but takes too much time that is why for the time being it is   commented,  will uncomment it once everything is done
-#
+# 
 #     # def test_get_image_data_true_should_return_equal_objects(self):
 #     #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.get_image_data")
 #     #     with open(filepath, 'rb') as rb:
@@ -42224,87 +42224,87 @@
 #     #     return_old = oldfu.get_image_data(image)
 #     #
 #     #     self.assertTrue(numpy.array_equal(return_new, return_old))
-#
-#
+# 
+# 
 #     def test_get_symt_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.get_symt")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum)
-#
+# 
 #         (symmetry,) = argum[0]
-#
+# 
 #         return_new = fu.get_symt(symmetry)
 #         return_old = oldfu.get_symt(symmetry)
-#
+# 
 #         self.assertTrue(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_get_input_from_string_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.get_input_from_string")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum[0])
-#
+# 
 #         (str_input) = argum[0][0]
-#
+# 
 #         return_new = fu.get_input_from_string(str_input)
 #         return_old = oldfu.get_input_from_string(str_input)
-#
+# 
 #         self.assertTrue(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_model_circle_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.model_circle")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum)
-#
+# 
 #         (r, nx, ny) = argum[0]
-#
+# 
 #         return_new = fu.model_circle(r, nx, ny)
 #         return_old = oldfu.model_circle(r, nx, ny)
-#
+# 
 #         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
-#
-#
+# 
+# 
 #     def test_model_blank_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.model_blank")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum)
-#
+# 
 #         (nx,ny) = argum[0]
-#
+# 
 #         return_new = fu.model_blank(nx,ny)
 #         return_old = oldfu.model_blank(nx,ny)
-#
+# 
 #         self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
-#
-#
+# 
+# 
 #     def test_peak_search_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.peak_search")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum)
-#
+# 
 #         (e,) = argum[0]
-#
+# 
 #         return_new = fu.peak_search(e )
 #         return_old = oldfu.peak_search(e )
-#
+# 
 #         self.assertTrue(return_new, return_old)
-#
-#
-#
-#
+# 
+# 
+# 
+# 
 #     #  This function test works but takes too much time that is why for the time being it is       commented,  will uncomment it once everything is done
-#
+# 
 #     # def test_pad_true_should_return_equal_objects(self):
 #     #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.pad")
 #     #     with open(filepath, 'rb') as rb:
@@ -42318,133 +42318,133 @@
 #     #     return_old = oldfu.pad(image_to_be_padded, new_nx, new_ny, new_nz)
 #     #
 #     #     self.assertTrue(numpy.array_equal(return_new.get_3dview(), return_old.get_3dview()))
-#
-#
+# 
+# 
 #     def test_chooseformat_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.chooseformat")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum[0])
-#
+# 
 #         (t) = argum[0][0]
-#
+# 
 #         return_new = fu.chooseformat(t)
 #         return_old = oldfu.chooseformat(t)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
+# 
 #     def test_read_text_row_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.read_text_row")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum[0])
-#
+# 
 #         (fnam) = argum[0][0]
-#
+# 
 #         return_new = fu.read_text_row(fnam)
 #         return_old = oldfu.read_text_row(fnam)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_write_text_row_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.write_text_row")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum[0])
-#
+# 
 #         (data, filename) = argum[0]
-#
+# 
 #         return_new = fu.write_text_row(data, filename)
 #         return_old = oldfu.write_text_row(data, filename)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_read_text_file_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.read_text_file")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum[0])
-#
+# 
 #         (filename,) = argum[0]
-#
+# 
 #         return_new = fu.read_text_file(filename)
 #         return_old = oldfu.read_text_file(filename)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_write_text_file_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.write_text_file")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum[0])
-#
+# 
 #         (data, filename) = argum[0]
-#
+# 
 #         return_new = fu.write_text_file(data, filename)
 #         return_old = oldfu.write_text_file(data, filename)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_reshape_1d_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.reshape_1d")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum[0])
-#
+# 
 #         (input_object, length_current,Pixel_size_current) = argum[0]
-#
+# 
 #         return_new = fu.reshape_1d(input_object, length_current,Pixel_size_current)
 #         return_old = oldfu.reshape_1d(input_object, length_current,Pixel_size_current)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_estimate_3D_center_MPI_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.estimate_3D_center_MPI")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum)
-#
+# 
 #         (data, nima, myid, number_of_proc, main_node) = argum[0]
-#
+# 
 #         return_new = fu.estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node)
 #         return_old = oldfu.estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node)
-#
+# 
 #         self.assertTrue(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_rotate_3D_shift_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.rotate_3D_shift")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum)
-#
+# 
 #         (data, shift3d) = argum[0]
-#
+# 
 #         return_new = fu.rotate_3D_shift(data, shift3d)
 #         return_old = oldfu.rotate_3D_shift(data, shift3d)
-#
+# 
 #         if return_new is not None and return_old is not None:
 #             self.assertTrue(return_new, return_old)
 #         else:
 #             print('returns None')
-#
-#
-#
+# 
+# 
+# 
 #     #  This function test works but takes too much time that is why for the time being it is       commented,  will uncomment it once everything is done
-#
+# 
 #     # def test_reduce_EMData_to_root_true_should_return_equal_objects(self):
 #     #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.reduce_EMData_to_root")
 #     #     with open(filepath, 'rb') as rb:
@@ -42460,11 +42460,11 @@
 #     #
 #     #     mpi_barrier(MPI_COMM_WORLD)
 #     #     self.assertEqual(return_new, return_old)
-#
-#
-#
+# 
+# 
+# 
 #       #This function test works but takes too much time that is why for the time being it is   commented,  will uncomment it once everything is done
-#
+# 
 #     # def test_bcast_compacted_EMData_all_to_all_true_should_return_equal_objects(self):
 #     #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.bcast_compacted_EMData_all_to_all")
 #     #     with open(filepath, 'rb') as rb:
@@ -42480,43 +42480,43 @@
 #     #
 #     #     mpi_barrier(MPI_COMM_WORLD)
 #     #     self.assertEqual(return_new, return_old)
-#
-#
-#
+# 
+# 
+# 
 #     def test_gather_compacted_EMData_to_root_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.gather_compacted_EMData_to_root")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum[0])
-#
+# 
 #         (no_of_emo, list_of_emo, myid) = argum[0]
-#
+# 
 #         return_new = fu.gather_compacted_EMData_to_root(no_of_emo, list_of_emo, myid)
 #         return_old = oldfu.gather_compacted_EMData_to_root(no_of_emo, list_of_emo, myid)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_bcast_EMData_to_all_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.bcast_EMData_to_all")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum[0])
-#
+# 
 #         (tavg, myid, source_node, ) = argum[0]
-#
+# 
 #         return_new = fu.bcast_EMData_to_all(tavg, myid, source_node)
 #         mpi_barrier(MPI_COMM_WORLD)
-#
+# 
 #         return_old = oldfu.bcast_EMData_to_all(tavg, myid, source_node)
 #         mpi_barrier(MPI_COMM_WORLD)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
-#
-#
+# 
+# 
+# 
 #     #  Can only be tested on the mpi. Wait too long on normal workstation
 #     # def test_send_EMData_true_should_return_equal_objects(self):
 #     #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.send_EMData")
@@ -42535,7 +42535,7 @@
 #     #     mpi_barrier(MPI_COMM_WORLD)
 #     #
 #     #     self.assertEqual(return_new, return_old)
-#
+# 
 #     # Can only be tested on the mpi. Wait too long on normal workstation
 #     # def test_recv_EMData_true_should_return_equal_objects(self):
 #     #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.recv_EMData")
@@ -42554,363 +42554,363 @@
 #     #     mpi_barrier(MPI_COMM_WORLD)
 #     #
 #     #     self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_bcast_number_to_all_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.bcast_number_to_all")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum[0])
-#
+# 
 #         (number_to_send, source_node, mpi_comm) = argum[0]
-#
+# 
 #         return_new = fu.bcast_number_to_all(number_to_send, source_node)
 #         mpi_barrier(MPI_COMM_WORLD)
-#
+# 
 #         return_old = oldfu.bcast_number_to_all(number_to_send, source_node)
 #         mpi_barrier(MPI_COMM_WORLD)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_print_msg_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.print_msg")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum[0])
-#
+# 
 #         (msg) = argum[0][0]
-#
+# 
 #         return_new = fu.print_msg(msg)
-#
+# 
 #         return_old = oldfu.print_msg(msg)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_file_type_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.file_type")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum[0])
-#
+# 
 #         (name) = argum[0][0]
-#
+# 
 #         return_new = fu.file_type(name)
-#
+# 
 #         return_old = oldfu.file_type(name)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
-#
-#
+# 
+# 
+# 
 #     def test_get_params2D_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.get_params2D")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum[0])
 #         print(argum)
-#
+# 
 #         (ima,) = argum[0]
-#
+# 
 #         return_new = fu.get_params2D(ima )
-#
+# 
 #         return_old = oldfu.get_params2D(ima)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
+# 
 #     def test_set_params2D_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.set_params2D")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum[0])
-#
+# 
 #         (ima,p, xform) = argum[0]
-#
+# 
 #         return_new = fu.set_params2D(ima,p)
-#
+# 
 #         return_old = oldfu.set_params2D(ima,p)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_get_params3D_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.get_params3D")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum[0])
-#
+# 
 #         (ima,) = argum[0]
-#
+# 
 #         return_new = fu.get_params3D(ima )
-#
+# 
 #         return_old = oldfu.get_params3D(ima)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_set_params3D_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.set_params3D")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum[0])
-#
+# 
 #         (ima,p) = argum[0]
-#
+# 
 #         return_new = fu.set_params3D(ima,p)
-#
+# 
 #         return_old = oldfu.set_params3D(ima,p)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_get_params_proj_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.get_params_proj")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum[0])
-#
+# 
 #         (ima,) = argum[0]
-#
+# 
 #         return_new = fu.get_params_proj(ima )
-#
+# 
 #         return_old = oldfu.get_params_proj(ima)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_set_params_proj_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.set_params_proj")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum[0])
-#
+# 
 #         (ima,p) = argum[0]
-#
+# 
 #         return_new = fu.set_params_proj(ima,p)
-#
+# 
 #         return_old = oldfu.set_params_proj(ima,p)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_get_latest_directory_increment_value_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.get_latest_directory_increment_value")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum)
-#
+# 
 #         (directory_location, directory_name) = argum[0]
-#
+# 
 #         return_new = fu.get_latest_directory_increment_value(directory_location, directory_name)
-#
+# 
 #         return_old = oldfu.get_latest_directory_increment_value(directory_location, directory_name)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_same_ctf_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.same_ctf")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum)
-#
+# 
 #         (c1,c2) = argum[0]
-#
+# 
 #         return_new = fu.same_ctf(c1,c2)
-#
+# 
 #         return_old = oldfu.same_ctf(c1,c2)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
-#
-#
+# 
+# 
+# 
 #     def test_generate_ctf_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.generate_ctf")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum)
-#
+# 
 #         (p) = argum[0][0]
-#
+# 
 #         return_new = fu.generate_ctf(p)
-#
+# 
 #         return_old = oldfu.generate_ctf(p)
-#
+# 
 #         self.assertTrue(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_delete_bdb_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.delete_bdb")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum)
-#
+# 
 #         (name) = argum[0][0]
-#
+# 
 #         return_new = fu.delete_bdb(name)
-#
+# 
 #         return_old = oldfu.delete_bdb(name)
-#
+# 
 #         if return_new is not None and return_old is not None:
 #             self.assertTrue(return_new, return_old)
 #         else:
 #             print('returns None')
-#
-#
-#
+# 
+# 
+# 
 #     def test_getfvec_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.getfvec")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum)
-#
+# 
 #         (phi, tht) = argum[0]
-#
+# 
 #         return_new = fu.getfvec(phi, tht)
-#
+# 
 #         return_old = oldfu.getfvec(phi, tht)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_nearest_fang_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.nearest_fang")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum)
-#
+# 
 #         (vecs, phi, tht) = argum[0]
-#
+# 
 #         return_new = fu.nearest_fang(vecs, phi, tht)
-#
+# 
 #         return_old = oldfu.nearest_fang(vecs, phi, tht)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_nearest_many_full_k_projangles_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.nearest_many_full_k_projangles")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum)
-#
+# 
 #         (reference_normals, angles) = argum[0]
 #         symclass = argum[1]['sym_class']
 #         howmany = argum[1]['howmany']
-#
+# 
 #         return_new = fu.nearest_many_full_k_projangles(reference_normals, angles, howmany, symclass)
-#
+# 
 #         return_old = oldfu.nearest_many_full_k_projangles(reference_normals, angles, howmany, symclass)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_angles_to_normals_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.angles_to_normals")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum)
-#
+# 
 #         (angles) = argum[0][0]
-#
+# 
 #         return_new = fu.angles_to_normals(angles)
-#
+# 
 #         return_old = oldfu.angles_to_normals(angles)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 #       #This function test works but takes too much time that is why for the time being it is   commented,  will uncomment it once everything is done
-#
+# 
 #     #  Test works with sym = "c1 but fails with sym = "c5"
 #     def test_angular_occupancy_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.angular_occupancy")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         # print(argum[0])
-#
-#
+# 
+# 
 #         (params, angstep, sym, method) = argum[0]
-#
+# 
 #         print("params = ", params)
 #         print("angstep = ", angstep)
 #         print("sym = ", sym)
 #         print("method = ", method)
-#
+# 
 #         return_new = fu.angular_occupancy(params, angstep, sym, method)
-#
+# 
 #         return_old = oldfu.angular_occupancy(params, angstep, sym, method)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_get_pixel_size_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.get_pixel_size")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum[0])
-#
+# 
 #         (img,) = argum[0]
-#
+# 
 #         return_new = fu.get_pixel_size(img)
-#
+# 
 #         return_old = oldfu.get_pixel_size(img)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
+# 
 #     def test_set_pixel_size_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.set_pixel_size")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum[0])
-#
+# 
 #         (img,pixel_size) = argum[0]
-#
+# 
 #         return_new = fu.set_pixel_size(img,pixel_size)
-#
+# 
 #         return_old = oldfu.set_pixel_size(img,pixel_size)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
+# 
 #     def test_lacos_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.lacos")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum[0])
-#
+# 
 #         (x,) = argum[0]
-#
+# 
 #         return_new = fu.lacos(x)
-#
+# 
 #         return_old = oldfu.lacos(x)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 #       #This function test works but takes too much time that is why for the time being it is   commented,  will uncomment it once everything is done
-#
+# 
 #     # def test_nearest_proj_true_should_return_equal_objects(self):
 #     #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.nearest_proj")
 #     #     with open(filepath, 'rb') as rb:
@@ -42925,88 +42925,88 @@
 #     #     return_old = oldfu.nearest_proj(proj_ang,img_per_grp,List)
 #     #
 #     #     self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_findall_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.findall")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum[0])
-#
+# 
 #         (value, L) = argum[0]
-#
+# 
 #         return_new = fu.findall(value, L)
-#
+# 
 #         return_old = oldfu.findall(value, L)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_pack_message_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.pack_message")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum[0])
-#
+# 
 #         (data,) = argum[0]
-#
+# 
 #         return_new = fu.pack_message(data)
-#
+# 
 #         return_old = oldfu.pack_message(data)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_unpack_message_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.unpack_message")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum[0])
-#
+# 
 #         (data,) = argum[0]
-#
+# 
 #         return_new = fu.unpack_message(data)
-#
+# 
 #         return_old = oldfu.unpack_message(data)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_update_tag_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.update_tag")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum[0])
-#
+# 
 #         (communicator, target_rank) = argum[0]
-#
+# 
 #         return_new = fu.update_tag(communicator, target_rank)
-#
+# 
 #         return_old = oldfu.update_tag(communicator, target_rank)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_wrap_mpi_send_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.wrap_mpi_send")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum[0])
-#
+# 
 #         (data, destination,communicator) = argum[0]
-#
+# 
 #         return_new = fu.wrap_mpi_send(data, destination)
-#
+# 
 #         return_old = oldfu.wrap_mpi_send(data, destination)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 #     # Can only test on cluster , cannot work on workstation"
 #     # def test_wrap_mpi_recv_true_should_return_equal_objects(self):
 #     #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.wrap_mpi_recv")
@@ -43023,49 +43023,49 @@
 #     #     return_old = oldfu.wrap_mpi_recv(data, communicator)
 #     #
 #     #     self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_wrap_mpi_bcast_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.wrap_mpi_bcast")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum[0])
-#
+# 
 #         (data, root, communicator) = argum[0]
-#
+# 
 #         return_new = fu.wrap_mpi_bcast(data, root)
-#
+# 
 #         return_old = oldfu.wrap_mpi_bcast(data, root)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_wrap_mpi_gatherv_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.wrap_mpi_gatherv")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum[0])
-#
+# 
 #         (data, root, communicator) = argum[0]
-#
+# 
 #         return_new = fu.wrap_mpi_gatherv(data, root)
-#
+# 
 #         return_old = oldfu.wrap_mpi_gatherv(data, root)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_get_colors_and_subsets_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.get_colors_and_subsets")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum[0])
-#
+# 
 #         (main_node, mpi_comm, my_rank, shared_comm, sh_my_rank, masters) = argum[0]
-#
+# 
 #         mpi_comm = MPI_COMM_WORLD
 #         main_node = 0
 #         my_rank = mpi_comm_rank(mpi_comm)
@@ -43074,13 +43074,13 @@
 #         sh_my_rank = mpi_comm_rank(shared_comm)
 #         masters = mpi_comm_split(mpi_comm, sh_my_rank == main_node, my_rank)
 #         shared_comm = mpi_comm_split_type(mpi_comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL)
-#
+# 
 #         return_new = fu.get_colors_and_subsets(main_node, mpi_comm, my_rank, shared_comm, sh_my_rank,masters)
-#
+# 
 #         return_old = oldfu.get_colors_and_subsets(main_node, mpi_comm, my_rank, shared_comm, sh_my_rank,masters)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
+# 
 #         # Can only be tested in mpi not on workstation
 #     # def test_wrap_mpi_split_true_should_return_equal_objects(self):
 #     #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.wrap_mpi_split")
@@ -43096,112 +43096,112 @@
 #     #     return_old = oldfu.wrap_mpi_split(comm, no_of_groups)
 #     #
 #     #     self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_get_dist_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.get_dist")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum[0])
-#
+# 
 #         (c1, c2) = argum[0]
-#
+# 
 #         return_new = fu.get_dist(c1, c2)
-#
+# 
 #         return_old = oldfu.get_dist(c1, c2)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_combinations_of_n_taken_by_k_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.combinations_of_n_taken_by_k")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum[0])
-#
+# 
 #         (n, k) = argum[0]
-#
+# 
 #         return_new = fu.combinations_of_n_taken_by_k(n, k)
-#
+# 
 #         return_old = oldfu.combinations_of_n_taken_by_k(n, k)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_cmdexecute_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.cmdexecute")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         # print(argum[0])
-#
+# 
 #         (cmd,) = argum[0]
-#
+# 
 #         dirname = cmd.split(' ')[1]
-#
+# 
 #         current_path = os.getcwd()
 #         if os.path.isdir(dirname):
 #             print('directory exits')
 #             print('removing it')
 #             shutil.rmtree(dirname)
-#
+# 
 #         return_new = fu.cmdexecute(cmd)
-#
+# 
 #         if os.path.isdir(dirname):
 #             print('directory exits')
 #             print('removing it')
 #             shutil.rmtree(dirname)
-#
+# 
 #         return_old = oldfu.cmdexecute(cmd)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
-#
+# 
+# 
 #     def test_if_error_then_all_processes_exit_program_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.if_error_then_all_processes_exit_program")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum[0])
-#
+# 
 #         (error_status,) = argum[0]
-#
+# 
 #         return_new = fu.if_error_then_all_processes_exit_program(error_status)
-#
+# 
 #         return_old = oldfu.if_error_then_all_processes_exit_program(error_status)
-#
+# 
 #         self.assertEqual(return_new, return_old)
-#
+# 
 #     def test_getindexdata_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.getindexdata")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum[0])
-#
+# 
 #         (stack, partids, partstack, myid, nproc) = argum[0]
-#
+# 
 #         return_new = fu.getindexdata(stack, partids, partstack, myid, nproc)
-#
+# 
 #         return_old = oldfu.getindexdata(stack, partids, partstack, myid, nproc)
-#
+# 
 #         self.assertTrue(return_new, return_old)
-#
+# 
 #     def test_convert_json_fromunicode_true_should_return_equal_objects(self):
 #         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.convert_json_fromunicode")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
-#
+# 
 #         print(argum[0])
-#
+# 
 #         (data,) = argum[0]
-#
+# 
 #         return_new = fu.convert_json_fromunicode(data)
-#
+# 
 #         return_old = oldfu.convert_json_fromunicode(data)
-#
+# 
 #         self.assertEqual(return_new, return_old)
 # """
 # if __name__ == "__main__":

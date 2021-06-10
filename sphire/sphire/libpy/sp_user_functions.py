@@ -51,15 +51,15 @@ import EMAN2_cppwrap
 import math
 import mpi
 import os
-from . import sp_alignment
-from . import sp_applications
-from . import sp_filter
-from . import sp_fundamentals
-from . import sp_global_def
-from . import sp_morphology
-from . import sp_reconstruction
-from . import sp_utilities
-from . import sp_user_functions_meridien
+from sphire.libpy import sp_alignment
+from sphire.libpy import sp_applications
+from sphire.libpy import sp_filter
+from sphire.libpy import sp_fundamentals
+from sphire.libpy import sp_global_def
+from sphire.libpy import sp_morphology
+from sphire.libpy import sp_reconstruction
+from sphire.libpy import sp_utilities
+from sphire.libpy import sp_user_functions_meridien
 import time
 
 
