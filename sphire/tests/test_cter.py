@@ -5,7 +5,7 @@
 # from time import sleep
 #
 # from sphire.bin import sp_cter as fu
-# from sphire.bin_py3 import sp_cter as oldfu
+# from bin_py3 import sp_cter as oldfu
 #
 #
 # from sphire.libpy.sp_utilities import get_im

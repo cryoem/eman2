@@ -50,9 +50,15 @@
 #
 # from os import system as os_system
 # from numpy import arange, float32 as np_float32
-# from sphire.sphire.libpy.sp_utilities import model_blank, model_circle
+# from sphire.libpy.sp_utilities import model_blank, model_circle
 # from EMAN2_cppwrap import Util, EMData
 # from os import path, remove
+# import io
+# import pickle
+# from sphire.libpy import sp_utilities
+# import os
+# import dill
+#
 #
 # # import io
 # # with io.open("my_utf8_file.txt", "r", encoding="utf-8") as my_file:
@@ -288,11 +294,7 @@
 #
 #
 #
-# import io
-# import pickle
-# import sp_utilities
-# import os
-# import dill
+#
 #
 #
 # def give_ali2d_single_iter_data():

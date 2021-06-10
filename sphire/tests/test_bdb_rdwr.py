@@ -38,25 +38,13 @@ from __future__ import division
 #
 
 import unittest
-from mpi import *
-from sphire.libpy import sp_global_def
 import numpy
-import weakref
 import EMAN2db
-from os import path, mkdir
-
-
-from EMAN2_cppwrap import Transform
-from EMAN2 import EMAN2Ctf
 import EMAN2
-
-import matplotlib
-from matplotlib import pyplot
 from pickle import *
 import sys
 import os
 absolute_import = (sys.version_info[0] >= 3)
-from bsddb3 import db
 import copy
 
 
@@ -282,16 +270,6 @@ class Test_Dbdict(unittest.TestCase):
         record = a.get(keys[-9])
         self.assertTrue(numpy.array_equal(value_in_items[-9].get_2dview() , record.get_2dview() ))
 
-    # @unittest.skip
-    # def test_get_header_items_keys_values(self):
-    #     a = EMAN2db.DBDict(name=bdbname, path=bdb_path, ro=True)
-    #     header = a.get_header(0)
-    #     header_orig_keys = ['MRC.nzstart', 'apix_x', 'MRC.gamma', 'xform.projection', 'changecount', 'maximum', 'data_path', 'MRC.beta', 'data_n', 'ctf_applied', 'minimum', 'ptcl_source_coord_id', 'mean_nonzero', 'MRC.label0', 'MRC.mapr', 'MRC.maps', 'ny', 'MRC.ispg', 'apix_y', 'MRC.xlen', 'HostEndian', 'nx', 'MRC.nsymbt', 'nz', 'MRC.mapc', 'ptcl_source_coord', 'sigma_nonzero', 'MRC.nxstart', 'ptcl_source_image', 'is_complex_ri', 'relion_max_prob_dist', 'MRC.nz', 'MRC.nx', 'MRC.ny', 'MRC.maximum', 'apix_z', 'MRC.nlabels', 'source_n', 'MRC.mean', 'origin_z', 'is_complex', 'is_complex_x', 'relion_norm_correct', 'chunk_id', 'ImageEndian', 'origin_y', 'origin_x', 'MRC.nystart', 'MRC.zlen', 'MRC.rms', 'resample_ratio', 'MRC.machinestamp', 'data_source', 'ptcl_source_apix', 'adnan_n', 'datatype', 'sigma', 'ptcl_source_relion', 'source_path', 'MRC.minimum', 'ctf', 'square_sum', 'MRC.mz', 'MRC.my', 'MRC.mx', 'MRC.alpha', 'MRC.ylen', 'mean']        # print(list(sorted(header.keys())) == list(sorted(header_orig_keys)))
-    #     sb = '[(\'HostEndian\', \'little\'), (\'ImageEndian\', \'little\'), (\'MRC.alpha\', 90.0), (\'MRC.beta\', 90.0), (\'MRC.gamma\', 90.0), (\'MRC.ispg\', 0), (\'MRC.label0\', \'Relion    21-Oct-19  16:12:54\'), (\'MRC.machinestamp\', 16708), (\'MRC.mapc\', 1), (\'MRC.mapr\', 2), (\'MRC.maps\', 3), (\'MRC.maximum\', 4.168662071228027), (\'MRC.mean\', 0.0022823389153927565), (\'MRC.minimum\', -6.85170316696167), (\'MRC.mx\', 360), (\'MRC.my\', 360), (\'MRC.mz\', 1), (\'MRC.nlabels\', 1), (\'MRC.nsymbt\', 0), (\'MRC.nx\', 360), (\'MRC.nxstart\', 0), (\'MRC.ny\', 360), (\'MRC.nystart\', 0), (\'MRC.nz\', 1), (\'MRC.nzstart\', 0), (\'MRC.rms\', 1.0004879236221313), (\'MRC.xlen\', 318.6000061035156), (\'MRC.ylen\', 318.6000061035156), (\'MRC.zlen\', 1.0), (\'adnan_n\', 0), (\'apix_x\', 1.0), (\'apix_y\', 1.0), (\'apix_z\', 1.0), (\'changecount\', 0), (\'chunk_id\', 0), (\'ctf\', EMAN2Ctf().from_dict({"defocus":1.07294,"bfactor":0.0,"ampcont":10.00,"apix":0.885,"voltage":200.00,"cs":1.40}) ...), (\'ctf_applied\', 0), (\'data_n\', 0), (\'data_path\', \'/home/adnan/PycharmProjects/DoseWeighting/Newfolder/20170629_00021_frameImage_ptcls.mrcs\'), (\'data_source\', \'bdb:Relion_Stackv5/MotionCorr/job049/MOVIES_RELION/Particles#20170629_00021_frameImage_ptcls\'), (\'datatype\', 7), (\'is_complex\', 0), (\'is_complex_ri\', 1), (\'is_complex_x\', 0), (\'maximum\', 3.379175901412964), (\'mean\', 0.0033558777067810297), (\'mean_nonzero\', 0.0033558777067810297), (\'minimum\', -6.456167697906494), (\'nx\', 360), (\'ny\', 360), (\'nz\', 1), (\'origin_x\', 0.0), (\'origin_y\', 0.0), (\'origin_z\', 0.0), (\'ptcl_source_apix\', 0.885), (\'ptcl_source_coord\', [2937, 3437]), (\'ptcl_source_coord_id\', 0), (\'ptcl_source_image\', \'MotionCorr/job049/MOVIES_RELION/20170629_00021_frameImage.mrc\'), (\'ptcl_source_relion\', \'000001@Extract/job051/MOVIES_RELION/20170629_00021_frameImage.mrcs\'), (\'relion_max_prob_dist\', 0.390257), (\'relion_norm_correct\', 0.504526), (\'resample_ratio\', 1.0), (\'sigma\', 1.0007057189941406), (\'sigma_nonzero\', 1.0007057189941406), (\'source_n\', 0), (\'source_path\', \'bdb:/home/adnan/PycharmProjects/DoseWeighting/Relion_Stackv5/MotionCorr/job049/MOVIES_RELION/Particles#sphire_relion_stack\'), (\'square_sum\', 129783.453125), (\'xform.projection\', Transform({\'az\':259.319,\'alt\':77.866,\'phi\':23.693,\'tx\':-1.89,\'ty\':-0.30,\'tz\':0.00,\'mirror\':0,\'scale\':1.0000,\'type\':\'eman\'}))]'
-    #     val = ['-6.45616769791', '-6.85170316696', '/home/adnan/PycharmProjects/DoseWeighting/Newfolder/20170629_00021_frameImage_ptcls.mrcs', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0.0', '0.0', '0.0', '0.00228233891539', '0.00335587770678', '0.00335587770678', '0.390257', '0.504526', '0.885', '000001@Extract/job051/MOVIES_RELION/20170629_00021_frameImage.mrcs', '1', '1', '1', '1', '1', '1', '1.0', '1.0', '1.0', '1.0', '1.0', '1.00048792362', '1.00070571899', '1.00070571899', '129783.453125', '16708', '2', '3', '3.37917590141', '318.600006104', '318.600006104', '360', '360', '360', '360', '360', '360', '4.16866207123', '7', '90.0', '90.0', '90.0', 'EMAN2Ctf().from_dict({"defocus":1.07294,"bfactor":0.0,"ampcont":10.00,"apix":0.885,"voltage":200.00,"cs":1.40}) ...', 'MotionCorr/job049/MOVIES_RELION/20170629_00021_frameImage.mrc', 'Relion    21-Oct-19  16:12:54', "Transform({'az':259.319,'alt':77.866,'phi':23.693,'tx':-1.89,'ty':-0.30,'tz':0.00,'mirror':0,'scale':1.0000,'type':'eman'})", '[2937, 3437]', 'bdb:/home/adnan/PycharmProjects/DoseWeighting/Relion_Stackv5/MotionCorr/job049/MOVIES_RELION/Particles#sphire_relion_stack', 'bdb:Relion_Stackv5/MotionCorr/job049/MOVIES_RELION/Particles#20170629_00021_frameImage_ptcls', 'little', 'little']
-    #     self.assertEqual(list(sorted(header.keys())), list(sorted(header_orig_keys)))
-    #     self.assertTrue(sb, repr(sorted(header.items())))
-    #     self.assertTrue(repr(val), repr(list(sorted(map(str, header.values())))))
 
     def test_set(self):
         a = EMAN2db.DBDict(name=bdbname, path=bdb_path, ro=True)
