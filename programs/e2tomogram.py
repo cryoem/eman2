@@ -115,6 +115,7 @@ def main():
 		print("Processing {} tilt series in sequence..".format(len(args)))
 		cmd=sys.argv
 		opt=' '.join([s for s in cmd if s.startswith("-")])
+		#### note this is actually a bit unsafe here since incomplete option in command will cause infinite loops... hopefully people always spell alltiltseries correctly.
 		opt=opt.replace("--alltiltseries","")
 		for a in args:
 			run("{} {} {}".format(cmd[0], a, opt))
@@ -122,7 +123,7 @@ def main():
 		E2end(logid)
 		return
 		
-	#### testing multithread fft...
+	#### initializing multithread fft. whether this actually improves speed is untested.
 	Util.init_threads(options.threads)
 		
 		
@@ -141,12 +142,7 @@ def main():
 	else: 
 		options.tltrange = [-90.0,90.0] # all plausible tilts
 
-	dotpos=inputname.rfind('.')
-	linepos=inputname.rfind('__')
-	inputtag=inputname[linepos:dotpos]
-	bname=base_name(inputname)
-
-	options.basename=bname
+	options.basename=bname=base_name(inputname)
 	options.writetmp=not options.notmp
 	
 	#### read input. support both 2D image stack and 3D mrc/st files
@@ -163,12 +159,11 @@ def main():
 		m.process_inplace("normalize.edgemean")
 	img=None
 	
+	#### apix of raw input will be used to calculate scaling factor in various functions later
+	## the translation values used throughout the program are based on 2k tomograms. they will be scaled in individual function calls based on the apix difference
 	options.apix_init=float(imgs[0]["apix_x"])
 	
-	#### need to make sure this works for images of all sizes (2k, 4k 8k)
-	## the translation numbers used in this program are based on 2k tomograms. so binfac is the factor from the input to 2k images
-	#binfac=max(1, int(np.round(imgs[0]["nx"]/2048.)))
-	#options.binfac=binfac
+	#### need to make sure this works for images of all sizes (2k, 4k and hopefully 8k)
 	imgsz=min(imgs[0]["nx"],imgs[0]["ny"])
 	if imgsz<=512:
 		print("Tilt series image too small. Only support 2K or larger input images...")
@@ -246,7 +241,6 @@ def main():
 			print("\tprevious input :{}\t current input : {}".format(js["tlt_file"], options.inputname))
 			
 		tpm=np.array(js["tlt_params"])
-		#tpm[:,:2]/=options.binfac
 		ttparams=tpm.copy()
 		js.close()
 		tlts=ttparams[:,3].copy()
@@ -326,7 +320,7 @@ def main():
 			#### parse tilt step
 			options.rawtlt=None
 			if options.tltstep>0:
-				print("Using fixed tilt step of ",option.tltstep)
+				print("Using fixed tilt step of ",options.tltstep)
 				tlts=np.arange(-len(imgs_2k)*options.tltstep/2,len(imgs_2k)*options.tltstep/2,options.tltstep)
 			else:
 				print("Using tilt_angle from header")
@@ -680,27 +674,6 @@ def do_patch_tracking(imgs, ttparams, options, niter=4):
 				lasti=i
 				
 		if itr==1 and scale>6:
-			#f=np.mean(fts, axis=1)
-			#f=np.mean(abs(f), axis=0)
-			#sz=f.shape[-1]
-			#sm=f[:,sz//2:]
-			#rr=np.arange(min(sm.shape[1], sz*.25), dtype=float)
-			#tpm[:,2]=tpm[:,2]%360
-			##print(tpm[:,2])
-			#ttx=np.mean(tpm[:,2])
-			#angs=np.arange(ttx-10, ttx+10.1,.1)
-			#vs=[]
-			#for ang in angs:
-				#a=ang/180.*np.pi
-				#pts=[np.round(rr*np.sin(a)).astype(int), np.round(rr*np.cos(a)+old_div(sz,2)).astype(int) ]
-				#v=sm[pts[1], pts[0]]
-				#vs.append(np.mean(v))
-
-			#vs=np.array(vs)
-
-			#tltax=angs[np.argmax(vs)]
-			#tpm[:,2]=tltax
-			#print("    tilt axis:", ttx, '->',tltax)
 			
 			#### refine z position of tiles
 			

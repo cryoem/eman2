@@ -202,17 +202,7 @@ as well as alignment parameters, so use of tomograms from other software is not 
 	apix_tlt=img["apix_x"] * float(options.shrink)
 	print(tfile, pfile)
 	
-	try:
-		zshift=ptcl["zshift"]#/2
-	except:
-		zshift=0
-	#yt=ptcl["ytilt"]
-	yt=0
-	#options.ytilt=ttparams[np.argmin(abs(ttparams[:,3]-yt)),3]
-	options.ytilt=0
 	scale=apix_ptcl/apix_tlt
-
-	#print("Scaling factor: {:.1f}, y-tilt: {:.1f}, z-shift: {:d}.".format(scale, options.ytilt, int(zshift)))
 	
 	if options.shrink==1.5:
 		shrinklab="_bin1_5"
@@ -269,7 +259,6 @@ as well as alignment parameters, so use of tomograms from other software is not 
 						## this is to deal with the old metadata format...
 						pts[:,:3]-=[e["nx"]//2, e["ny"]//2, e["nz"]//2]
 						pts[:,:3]*=scale
-						pts[:,2]-=zshift
 					
 					if options.newlabel=="":
 						lab="curve"
@@ -337,7 +326,6 @@ as well as alignment parameters, so use of tomograms from other software is not 
 				else:
 					bxs-=[e["nx"]//2, e["ny"]//2, e["nz"]//2]
 					bxs*=scale
-					bxs[:,2]-=zshift
 					if options.boxsz<0:
 						sz=int(val["boxsize"])*scale//2
 					else:
@@ -377,7 +365,6 @@ as well as alignment parameters, so use of tomograms from other software is not 
 		ptclpos=np.array(ptclpos, dtype=float)
 		
 		ptclpos*=scale
-		ptclpos[:,2]-=zshift#-2
 		
 		#print("Reading {} particles".format(len(ptclpos)))
 		
@@ -432,12 +419,7 @@ as well as alignment parameters, so use of tomograms from other software is not 
 		if len(info)==0 and len(options.jsonali)>0: 
 			continue
 
-		if options.dotest:
-			nptcl=options.threads
-			batchsz=1
-		else:
-			nptcl=len(ptclpos)
-			batchsz=6
+		nptcl=len(ptclpos)
 	
 		options.output=os.path.join("particles3d", outname)
 		options.output2d=os.path.join("particles", outname)
@@ -462,7 +444,6 @@ as well as alignment parameters, so use of tomograms from other software is not 
 		jsd=queue.Queue(0)
 		jobs=[]
 		
-		
 		if len(defocus)>0:
 			ctf=[defocus, phase, voltage, cs]
 		else:
@@ -471,10 +452,7 @@ as well as alignment parameters, so use of tomograms from other software is not 
 		for tid in range(options.threads):
 			ids=list(range(tid, nptcl, options.threads))
 			jobs.append([jsd, ids, imgs, ttparams, pinfo, options, ctf, tltkeep, pmask])
-		
-		
-		hdftype=EMUtil.get_image_ext_type("hdf")		
-		
+				
 		thrds=[threading.Thread(target=make3d,args=(i)) for i in jobs]
 		global thrdone
 		thrdone=0
@@ -526,15 +504,9 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 	pad=options.pad
 	apix=imgs[0]["apix_x"]
 
-	if 1:#options.shrink3d<=1:
-		p3d=pad
-		bx=boxsz*2
-		apixout=apix
-	#else:
-		#bx=good_size(boxsz*2/options.shrink3d)
-		#p3d=good_size(boxsz*2/options.shrink3d*options.padtwod)
-		#apixout=apix*float(options.shrink3d)
-		##print('shrink3d!', bx, options.padtwod, options.shrink3d, p3d)
+	p3d=pad
+	bx=boxsz*2
+	apixout=apix
 		
 	if options.verbose>0: print(f"Begin make3d bx={bx} pad={pad} ")
 	
@@ -579,8 +551,7 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 			
 			tpm=ttparams[nid]
 			
-			yt=tpm[3]-options.ytilt
-			if abs(yt)>options.maxtilt: continue
+			if abs(tpm[3])>options.maxtilt: continue
 
 			pxf=get_xf_pos(ttparams[nid], pos)
 
@@ -719,15 +690,6 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 		if tf_dir:
 			threed["xform.align3d"]=tf_dir
 		
-		
-		#if options.saveint and options.compress<0:
-			##### save as integers
-			#lst=[threed]+projs
-			#outmode=file_mode_map["uint8"]
-			#for data in lst:
-				#data.process_inplace("math.setbits",{"nsigma":3, "bits":8})
-				#data["render_min"]=file_mode_range[outmode][0]
-				#data["render_max"]=file_mode_range[outmode][1]
 		
 		jsd.put((pid, threed, projs))
 		#recon.clear()
