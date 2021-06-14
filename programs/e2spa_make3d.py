@@ -29,6 +29,7 @@ def main():
 	parser.add_argument("--tidrange", type=str,help="range of tilt id to include", default="-1,-1")
 	parser.add_argument("--minres", type=float,help="", default=50)
 	parser.add_argument("--maxres", type=float,help="", default=-1)
+	parser.add_argument("--threads", type=int,help="", default=1)
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default="thread:1")
 	
 	parser.add_argument("--debug", action="store_true", default=False, help="")
@@ -40,7 +41,8 @@ def main():
 	(options, args) = parser.parse_args()
 
 	logger=E2init(sys.argv,options.ppid)
-	
+	time0=time.time()
+
 	# so it recognize even/odd or 0/1
 	if options.clsid:
 		options.clsid=options.clsid.replace("even","0").replace("odd","1")
@@ -194,7 +196,7 @@ def main():
 
 	E2end(logger)
 
-	print("Exiting")
+	print("Reconstruction finishend ({:.1f} s)".format(time.time()-time0))
 
 def initialize_data(inputfile, options):
 	#returned list will contain dictionaries containing metadata about each image
@@ -324,29 +326,34 @@ class Make3dTask(JSTask):
 		callback(0)
 		data=self.data["data"]
 		options=self.options
-
+		Util.init_threads(options.threads)
 		padvol=options.pad
 		normvol=EMData(padvol//2+1, padvol, padvol)
 		parms = {
 			"size":[padvol]*3,
 			"sym":options.sym,
 			"mode":options.mode,
-			"verbose":options.verbose-1,
+			"verbose":0,
+			"quiet":1,
 			"normout":normvol
 			}
 
 		recon=Reconstructors.get("fourier", parms)
 		recon.setup()
+		
+		threads=[threading.Thread(target=reconstruct,
+			    args=(data[i::options.threads],recon, padvol)) for i in range(options.threads)]
 
-		reconstruct(
-			data,
-			recon,
-			padvol,
-			)
+		for t in threads: t.start()
+		for t in threads: t.join()
+
+		#reconstruct(
+			#data,
+			#recon,
+			#padvol,
+			#)
 
 		output = recon.finish(False)
-
-		#callback(100)
 
 		return (output, normvol)
 
