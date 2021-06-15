@@ -10,12 +10,3 @@ python tests\test_imports.py"
 
 :: 3. Existence tests for data files like images, font files, JSON
 python tests\test_EMAN2DIR.py
-
-:: 3. Unit tests
-nosetests -vv --exe -m "^test_*" ^
-                    -e "^test_image_" ^
-                    -e "test_main" ^
-                    -e "test_result" ^
-                    -e "test_boxing" ^
-                    -a "!broken" ^
-                    rt\pyem
