@@ -90,7 +90,7 @@ def main():
 	parser.add_argument("--badone", action="store_true",help="Remove one bad tilt during coarse alignment. seem to work better with smaller maxshift...", default=False)#, guitype='boolbox',row=9, col=0, rowspan=1, colspan=1,mode="easy")
 	
 	parser.add_argument("--flip", action="store_true",help="Flip the tomogram by rotating the tilt axis. need --load existing alignment", default=False)
-	parser.add_argument("--autoclipxy", action="store_true",help="Optimize the x-y shape of the tomogram to fit in the tilt images. only works in bytile reconstruction. useful for non square cameras.", default=False)
+	parser.add_argument("--autoclipxy", action="store_true",help="Optimize the x-y shape of the tomogram to fit in the tilt images. only works in bytile reconstruction. useful for non square cameras.", default=False,guitype='boolbox',row=16, col=0, rowspan=1, colspan=1,mode="easy")
 
 
 	(options, args) = parser.parse_args()

@@ -12,16 +12,16 @@ def main():
 	parser.add_argument("--path", type=str,help="path", default=None)
 	parser.add_argument("--nref", type=int,help="duplicate the first ref N times with phase randomization at 2xres", default=-1)
 	parser.add_argument("--maskalign", type=str,default=None,help="Mask file applied to 3D alignment reference in each iteration. Not applied to the average, which will follow normal masking routine.")
-	parser.add_argument("--maxres",type=float,help="Maximum resolution (the smaller number) to consider in alignment (in A, not 1/A)",default=0)
+	parser.add_argument("--maxres",type=float,help="Maximum resolution (the smaller number) to consider in alignment (in A, not 1/A). Default is 20A",default=20.)
 	parser.add_argument("--minres",type=float,help="Minimum resolution (the larger number) to consider in alignment (in A, not 1/A)",default=0)
 	parser.add_argument("--niter", type=int,help="number of iterations", default=5)
 	parser.add_argument("--loadali3d",help="load previous 3d alignment from --ptcls input.",action="store_true",default=False)
-	parser.add_argument("--res", type=float,help="target resolution", default=20.)
+	#parser.add_argument("--res", type=float,help="target resolution", default=20.)
 	parser.add_argument("--skipali",action="store_true",help=".",default=False)
 	parser.add_argument("--threads", type=int,help="", default=12)
 	parser.add_argument("--parallel", type=str,help="parallel", default="thread:12")
 	parser.add_argument("--sym", type=str,help="symmetry to apply to the average structure", default="c1")
-	parser.add_argument("--breaksym", type=str,help="break specified symmetry", default=None)
+	parser.add_argument("--breaksym", type=str,help="Break specified symmetry. Only used when --loadali3d is on.", default=None)
 	parser.add_argument("--setsf", type=str,help="set structure factor", default=None)
 
 	(options, args) = parser.parse_args()
@@ -72,7 +72,7 @@ def main():
 		for i in range(options.nref):
 			threed=f"{path}/threed_00_{i:02d}.hdf"
 			run(f"e2spa_make3d.py --input {path}/aliptcls2d_00.lst --output {threed} --keep 1 --parallel thread:{options.threads} --outsize {boxsize} --pad {padsize} --sym {options.sym} --clsid {i}")
-			run(f"e2proc3d.py {threed} {threed} {setsf} --process filter.lowpass.gauss:cutoff_freq={1./options.res} --process normalize.edgemean")
+			run(f"e2proc3d.py {threed} {threed} {setsf} --process filter.lowpass.gauss:cutoff_freq={1./options.maxres} --process normalize.edgemean")
 	else:
 		print("Loading references...")
 		if options.nref>0:
@@ -80,7 +80,7 @@ def main():
 			nref=options.nref
 			refs=[]
 			for i in range(nref):
-				e=r.process("filter.lowpass.randomphase",{"cutoff_freq":1./(options.res*2)})
+				e=r.process("filter.lowpass.randomphase",{"cutoff_freq":1./(options.maxres*2)})
 				refs.append(e)
 		else:
 			refs=[EMData(a) for a in args]
@@ -121,7 +121,7 @@ def main():
 				modref.mult(options.maskalign)
 			modref.write_compressed(ref,0,12,erase=True)
 			
-			run(f"e2spt_align_subtlt.py {ptcls} {ref} --path {path} --iter {itr} --maxres {options.res:.2f} --parallel {options.parallel} {opt}")
+			run(f"e2spt_align_subtlt.py {ptcls} {ref} --path {path} --iter {itr} --parallel {options.parallel} {opt}")
 			
 			ali2d.append(f"{path}/aliptcls2d_{itr:02d}_{ir:02d}.lst")
 			os.rename(f"{path}/aliptcls2d_{itr:02d}.lst", ali2d[-1])
@@ -158,7 +158,7 @@ def main():
 			a2=ali2d[ir]
 			run(f"e2spa_make3d.py --input {a2} --output {threed} --keep 1 --parallel thread:{options.threads} --outsize {boxsize} --pad {padsize} --sym {options.sym} --clsid {ir}")
 			
-			run(f"e2proc3d.py {threed} {threed} {setsf} --process filter.lowpass.gauss:cutoff_freq={1./options.res} --process normalize.edgemean")
+			run(f"e2proc3d.py {threed} {threed} {setsf} --process filter.lowpass.gauss:cutoff_freq={1./options.maxres} --process normalize.edgemean")
 		
 
 	E2end(logid)

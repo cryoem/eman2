@@ -14,28 +14,29 @@ from scipy.optimize import minimize
 
 def main():
 	usage = """
+	Alternative to e2spt_align.py, but uses 2D subtilt images instead of 3D particle volume for alignment. Also a modified scipy minimizer is used in place of EMAN2 aligners. 
+	e2spt_align_subtlt.py sets/ptcls.lst reference.hdf --path spt_xx --iter x
 """
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
 	parser.add_argument("--path",type=str,default=None,help="Path to a folder where results should be stored, following standard naming conventions (default = spt_XX)")
-	parser.add_argument("--iter",type=int,help="Iteration number within path. Default = start a new iteration",default=0)
+	parser.add_argument("--iter",type=int,help="Iteration number within path. Default = 0",default=0)
 	parser.add_argument("--goldcontinue",action="store_true",help="Will use even/odd refs corresponding to specified reference to continue refining without phase randomizing again",default=False)
 	parser.add_argument("--sym",type=str,default="c1",help="Symmetry of the input. Must be aligned in standard orientation to work properly.")
 	parser.add_argument("--maxres",type=float,help="Maximum resolution to consider in alignment (in A, not 1/A)",default=0)
 	parser.add_argument("--minres",type=float,help="Minimum resolution to consider in alignment (in A, not 1/A)",default=0)
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default="thread:4")
-	parser.add_argument("--fromscratch",action="store_true",help=".",default=False)
+	parser.add_argument("--fromscratch",action="store_true",help="Start from exhaustive coarse alignment. Otherwise will use alignment from the previous rounds and do local search only.",default=False)
 	parser.add_argument("--use3d",action="store_true",help="use projection of 3d particles instead of 2d sub tilt series",default=False)
-	parser.add_argument("--debug",action="store_true",help=".",default=False)
-	parser.add_argument("--plst",type=str,default=None,help="list of 2d particle with alignment parameters. will reconstruct before alignment.")
+	parser.add_argument("--debug",action="store_true",help="Debug mode. Will run a small number of particles directly without parallelism with lots of print out. ",default=False)
+	parser.add_argument("--plst",type=str,default=None,help="list of 2d particle with alignment parameters. The program will reconstruct before alignment so it can be slower.")
 	
-	parser.add_argument("--maxshift", type=int, help="maximum shift. default box size/6",default=-1)
-	parser.add_argument("--maxang", type=int, help="maximum angle difference from starting point. ignored when fromscratch is on",default=30)
-	parser.add_argument("--curve",action="store_true",help=".",default=False)
-	parser.add_argument("--skipali",action="store_true",help=".",default=False)
-	parser.add_argument("--breaksym",type=str,default=None,help="specify symmetry to break. only in localsearch mode")
-
+	parser.add_argument("--maxshift", type=int, help="Maximum shift from the center of the box or the previous alignment. default box size//6",default=-1)
+	parser.add_argument("--maxang", type=int, help="Maximum angle difference from starting point. Ignored when --fromscratch is on.",default=30)
+	parser.add_argument("--curve",action="store_true",help="Mode for filament structure refinement. Still under testing. Ignored when --fromscratch is on.",default=False)
+	parser.add_argument("--skipali",action="store_true",help="Skip alignment and only calculate the score. Incompatible with --fromscratch, but --breaksym will still be considered.",default=False)
+	parser.add_argument("--breaksym",type=str,default=None,help="Specify symmetry to break. Ignored when --fromscratch is on.")
 	
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -44,23 +45,31 @@ def main():
 	logid=E2init(sys.argv, options.ppid)
 
 	options.ref=args[1]
+	#### we assume the particle_info files are in the right place so the bookkeeping is easier
+	##   they should be created by e2spt_refine_new or e2spt_refine_multi_new
 	options.info3dname="{}/particle_info_3d.lst".format(options.path)
 	options.info2dname="{}/particle_info_2d.lst".format(options.path)
 		
+	#### this should generate a list of dictionaries (one dictionary per 3d particle)
 	tasks=load_lst_params(args[0])
+	
+	#### keep a copy of the particle index here, so we can make sure the output list has the same order as the input list
 	for i,t in enumerate(tasks):
 		t["ii"]=i
 
 	from EMAN2PAR import EMTaskCustomer
 	etc=EMTaskCustomer(options.parallel, module="e2spt_align_subtlt.SptAlignTask")
-	
 	num_cpus = etc.cpu_est()
 	options.nowtime=time.time()
+	
+	#### only run a few particles for debugging
 	if options.debug:
 		tasks=tasks[:num_cpus*4]
+		
 	print("{} jobs on {} CPUs".format(len(tasks), num_cpus))
 	njob=num_cpus
 	
+	#### send out jobs
 	tids=[]
 	for i in range(njob):
 		t=tasks[i::njob]
@@ -81,6 +90,8 @@ def main():
 		if np.min(st_vals) == 100: break
 		time.sleep(5)
 	
+	#### each job returns a 3-object tuple: 
+	##     (index of 3d particle, 3d particle align info dict, list of dict for 2d particles align info)
 	output3d=[None]*len(tasks)
 	output2d=[None]*len(tasks)
 	for i in tids:
@@ -91,20 +102,19 @@ def main():
 		
 	del etc
 	
+	#### merge the 2d particle alignment info into one list
 	output2d=sum(output2d, [])
 	
+	#### just dump the list of dictionaries to list files
 	fm3d=f"{options.path}/aliptcls3d_{options.iter:02d}.lst"
 	save_lst_params(output3d, fm3d)
 	
 	fm2d=f"{options.path}/aliptcls2d_{options.iter:02d}.lst"
 	save_lst_params(output2d, fm2d)
 	
-
-
 	E2end(logid)
 
 class SptAlignTask(JSTask):
-	
 	
 	def __init__(self, data, options):
 		
@@ -114,6 +124,9 @@ class SptAlignTask(JSTask):
 	
 	def execute(self, callback):
 		
+		#### this is loss function for scipy minimizer. 
+		##   need to define this inside the function to use some local variables
+		##     (options, initxf, mxsft, refsmall, pjxfsmall, imgsmallpjs, minp, maxp)
 		def testxf(x, return_2d=False):
 			if isinstance(x, Transform):
 				txf=x
@@ -149,20 +162,21 @@ class SptAlignTask(JSTask):
 		rets=[]
 		options=self.options
 		info3d=load_lst_params(options.info3dname)
-		#if "xform.align3d" not in self.data[0]:
-			#options.fromscratch=True
 		
+		#### do the even/odd split if required
 		reffile=options.ref
 		if options.goldcontinue:
 			refnames=[reffile[:-4]+f"_{eo}.hdf" for eo in ["even", "odd"]]
 		else:
 			refnames=[reffile, reffile]
 		
+		#### maybe better to have some extra padding but haven't seen much benefit in tests
 		ref=EMData(refnames[0],0,True)
 		by=ref["ny"]
 		ny=by#good_size(by*1.2)
 		apix=ref["apix_x"]
 		
+		#### FT the references for faster projection later
 		refs=[]
 		for r in refnames:
 			ref=EMData(r,0)
@@ -172,10 +186,13 @@ class SptAlignTask(JSTask):
 			refft.process_inplace("xform.fourierorigin.tocenter")
 			refs.append(refft)
 		
-		#### for initial coarse alignment
+		#### keep the orientations to test for initial coarse alignment
+		##   this is suprising memory consuming, but still tolarable. generating the orientations is a bit slow since we are doing this in python
 		if options.fromscratch:
 			astep=7.5
 			sym=Symmetries.get(options.sym)
+			
+			#### saff seems slightly better in some tests (in the coverage of the edge of asymmetrical units) but it is not entirely clear. it does not matter much in most cases
 			xfcrs=sym.gen_orientations("saff",{"delta":astep,"phitoo":astep,"inc_mirror":1})
 		
 		#### resolution range
@@ -193,18 +210,21 @@ class SptAlignTask(JSTask):
 			maxp=int(ny*.4)
 			
 		#### fourier box sizes for iterative alignment
+		##   same as the tree aligner, 24, 48, 64, 128, ...
 		ssrg=2**np.arange(4,12, dtype=int)
 		ssrg[:2]=ssrg[:2]*3/2
 		ssrg=np.append(ssrg[ssrg<maxy], maxy)
 		ssrg=ssrg.tolist()
-		if options.fromscratch and len(ssrg)==1: ssrg.append(maxy)
-		#ssrg=[24]+ssrg
 		
-			
+		#### in case the resolution is very low or box size is versy small
+		##   still run one iteration of local search
+		if options.fromscratch and len(ssrg)==1: ssrg.append(maxy)
+		
 		if options.debug: print("max res: {:.2f}, max box size {}".format(options.maxres, maxy))
 		for di,data in enumerate(self.data):
 			
 			#### prepare inputs
+			##   rawid is actually never used in any programs, and this is just for some testing...
 			if "rawid" in data:
 				dii=data["rawid"]
 			else:
@@ -213,7 +233,8 @@ class SptAlignTask(JSTask):
 			ref=refs[dii%2]
 			info=info3d[dii]
 			
-			## 3D particle
+			#### read and FT the 3D particle
+			##   this is actually only used when fromscratch is on. maybe should skip it otherwise, but need some testing first
 			img=EMData(data["src"], data["idx"])
 			img.process_inplace("filter.highpass.gauss",{"cutoff_pixels":4})
 			img.process_inplace("normalize.edgemean")
@@ -227,16 +248,19 @@ class SptAlignTask(JSTask):
 			imgsrc=img["class_ptcl_src"]
 			imgidx=img["class_ptcl_idxs"]
 			imgcoord=img["ptcl_source_coord"]
-			## projection transforms for the 2d particles
+			
+			#### read projection transforms for the 2d particles
 			info2d=load_lst_params(options.info2dname, info["idx2d"])
 			pjxfs=[d["xform.projection"] for d in info2d]
 			tiltids=[d["tilt_id"] for d in info2d]
 			
+			#### if an existing aliptcls2d list is provided, replace the projection transforms
 			if options.plst:
 				pms=load_lst_params(options.plst, info["idx2d"])
 				dxf=[d["dxf"] for d in pms]
 				pjxfs=[d*p for d,p in zip(dxf, pjxfs)]
 			
+			#### prepare 2d subtilt particles
 			imgpjs=[]
 			if options.use3d:
 				#### make 2d particle projections from 3d particles
@@ -264,29 +288,26 @@ class SptAlignTask(JSTask):
 				npos=32
 				ifirst=0
 			
-			### read curve direction from header
+			#### read curve direction from header
+			##   this is really not too different than --breaksym d18. maybe get rid of this entirely after some testing...
 			elif options.curve:
 				if img.has_attr("xform.align3d"):
 					xf=img["xform.align3d"]#.inverse()
 				else:
 					xf=data["xform.align3d"]#.inverse()
 				npos=32
-				#ts=Transform()
-				#ts.translate(-20,9,0)
 				xfs=[Transform().get_params("eman") for i in range(npos)]
 				for i,x in enumerate(xfs):
 					x["phi"]+=(i*360*2/npos)%360
 					x["alt"]+=(i>npos/2)*180
 					
-				#curxfs=[Transform(x)*(ts*xf) for x in xfs]
-				#curxfs=[(ts.inverse()*x) for x in curxfs]
 				curxfs=[Transform(x)*xf for x in xfs]
 				curxfs=[x.inverse() for x in curxfs]
 				xfcrs=[Transform(x) for x in curxfs]
 				ifirst=1
 				npos=32
 				
-			### do refine search around previous solution
+			### do local search around the previous solution
 			else:
 				xf=data["xform.align3d"].inverse()
 				if options.breaksym==None:
@@ -322,8 +343,11 @@ class SptAlignTask(JSTask):
 				refsmall=ref.get_clip(Region(0,(ny-ss)//2, (ny-ss)//2, ss+2, ss, ss))	
 				
 				if si==0:# and options.fromscratch:
-					## coarse alignment using 3d particles
-					## need to shift origin to rotate 3d volume
+					
+					#### coarse alignment using 3d particles
+					##   3d particles are needed for fast translation alignment by ccf
+					##   at very low resolution the Fourier space has high coverage so it is probably fine...
+					##   need to shift origin to rotate 3d volume
 					imgsmall=img.get_clip(Region(0,(ny-ss)//2, (ny-ss)//2, ss+2, ss, ss))
 					refsmall.process_inplace("xform.fourierorigin.tocenter")
 					imgsmall.process_inplace("xform.fourierorigin.tocenter")
@@ -339,7 +363,6 @@ class SptAlignTask(JSTask):
 						scr=imgsmall.cmp("ccc.tomo.thresh", refrot)
 						score.append(scr)
 						xf.translate(pos)
-						#print(xf.get_trans(), pos)
 						
 						newxfs.append(xf)
 						if options.debug: 
@@ -347,7 +370,7 @@ class SptAlignTask(JSTask):
 							sys.stdout.flush()
 					
 				else:
-					## refine orientation by projections
+					#### local orientation search
 					## make small projections
 					imgsmallpjs=[]
 					for pj in imgpjs:
@@ -365,11 +388,14 @@ class SptAlignTask(JSTask):
 						if localsearch:
 							initxf=Transform(xf)
 						
+						#### still test the current orientation and return a score even if the alignmetn is skipped
 						if options.skipali:
 							x=x0
 							s=testxf(x)
 							#s=-np.random.rand()
+							
 						else:
+							#### some other minimizers maybe better but Simplex is easy and fast...
 							simplex=np.vstack([[0,0,0,0,0,0], np.eye(6)])
 							simplex[4:]*=astep
 							
@@ -389,8 +415,8 @@ class SptAlignTask(JSTask):
 				
 				if options.debug: print()
 					
+				#### now look for a number of best orientations that are not too close to each other
 				curxfs=newxfs
-
 				newxfs=[]
 				newscore=[]
 				idx=np.argsort(score)
@@ -398,17 +424,19 @@ class SptAlignTask(JSTask):
 					dt=[(x.inverse()*curxfs[i]).get_params("spin")["omega"] for x in newxfs]
 					if len(dt)==0 or np.min(dt)>astep*4:
 						newxfs.append(curxfs[i])
+						#### need to get the score per each 2d particle
+						##   although this is probably only needed at the last iteration
+						##   but it is safer to keep it here since we break out the loop in a number of places...
 						if si==0: newscore.append(score[i])
 						else: newscore.append(testxf(curxfs[i], True))
 					if len(newxfs)>=npos:
 						break
 				
 				for xi,xf in enumerate(newxfs):
-					## translation between -ny//2 and ny//2
+					#### limit translation between -ny//2 and ny//2
 					x=np.array(xf.get_trans()*ny/ss)
 					x=x%ny
 					x=x-ny*(x>ny//2)
-					
 					xf.set_trans(x.tolist())
 						
 					if options.debug: 
@@ -426,16 +454,19 @@ class SptAlignTask(JSTask):
 			
 			xfout=Transform(curxfs[0])
 			score=newscore[0]
+			#### to prevent some situation when we don't have score for each 2d particle
+			##   this really shouldn't happen but just to be safe...
 			try: s=score[0]
 			except: score=[score for i in range(len(imgidx))]
 			
-			
-			#print(score)
+			#### projection of the 2d particles with respect to the references
 			imgxfs=[p*xfout for p in pjxfs]
-			data["src"], data["idx"]
+			
+			#### alignment info for 3d particles.
 			c3d={	"src":data["src"], "idx":data["idx"], 
 				"xform.align3d":xfout.inverse(), "score":np.mean(score)}
 			
+			#### alignment info for 2d particles.
 			c2d=[]
 			for i in range(len(imgidx)):
 				c={	"src":imgsrc, "idx":imgidx[i],
@@ -453,9 +484,7 @@ class SptAlignTask(JSTask):
 				x0=["{:.4f}".format(a) for a in x0]
 				print('{} : {:.4f} - ( {} )'.format(data["ii"], np.mean(score), ', '.join(x0[1:])))
 				
-				
 				print('#############')
-				#exit()
 				
 			else:
 				callback(len(rets)*100//len(self.data))
