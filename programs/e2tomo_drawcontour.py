@@ -211,7 +211,7 @@ class Contour(EMShape):
 				p1=pts[(i+1)%len(pts)]
 				area+=p0[0]*p1[1]-p0[1]*p1[0]
 			area=abs(area/2.)
-			print("Contour {:d}, area {:.1f}".format(int(ci), area))
+			print("Contour {:d}, area {:.1f} px^2".format(int(ci), area))
 
 
 			glColor3f( 1, .3, .3 );
