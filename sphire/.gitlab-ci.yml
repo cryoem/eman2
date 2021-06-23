@@ -24,8 +24,8 @@ unittest: # Name of the job
      - cd ..;
      - cd eman2mirror;
      - cd sphire;
-#     - python setup.py sdist;
-#     - pip install dist/*.tar.gz;
+     - python setup.py sdist;
+     - pip install dist/*.tar.gz;
      - pip install coverage pytest pytest-cov;
      - pytest tests --cov=sphire/; coverage xml --ignore-errors;
      - ls
