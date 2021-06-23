@@ -1,9 +1,11 @@
-#before_script:
+before_script:
+ - conda install dill
 # - apt-get update --yes
 # - apt-get install --yes make
 # - apt-get install -y build-essential
 # - apt-get install libgl1-mesa-dev --yes
 # - apt-get install libglu1-mesa-dev --yes
+
 
 stages:
  - test
