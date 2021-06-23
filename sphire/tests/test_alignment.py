@@ -7834,6 +7834,7 @@ class Test_prepare_refrings(unittest.TestCase):
         self.assertEqual(str(cm_new.exception), output_msg)
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
+    @unittest.skip("it works but the output on the gitlab CI are not necessary")
     def test_with_sym_c1_MPI_flag_deprecationWarning_outputmsg_PyArray_FromDims_AND_NPYCHAR_type_num_is_deprecated(
         self
     ):
@@ -9879,6 +9880,7 @@ class Test_search_range(unittest.TestCase):
         self.assertTrue(array_equal(return_new, return_old))
         self.assertTrue(array_equal(return_new, [4, 4]))
 
+    @unittest.skip("It works but output is not necessary for CI")
     def test_no_image_size_warning_msg_shift_of_particle_too_large(self):
         return_new = fu.search_range(n=0, radius=29, shift=0.0, range=4, location="")
         return_old = oldfu.search_range(n=0, radius=29, shift=0.0, range=4, location="")
