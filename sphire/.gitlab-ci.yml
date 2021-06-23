@@ -9,6 +9,7 @@ unittest: # Name of the job
   image: sphiredevel/sphire-ut:latest # Image that should be used
   script:
      - source activate sphire;
+     - conda install dill
      - pip uninstall sphire -y;
      - rm -rf build_test
      - cd ..
