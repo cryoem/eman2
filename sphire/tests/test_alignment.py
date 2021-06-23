@@ -45,7 +45,7 @@ from EMAN2_cppwrap import EMData, Util, EMAN2Ctf
 import unittest
 from os import path
 
-from test_module import (
+from tests.test_module import (
     get_data,
     get_arg_from_pickle_file,
     IMAGE_2D,
