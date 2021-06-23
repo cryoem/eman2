@@ -27,7 +27,7 @@ unittest: # Name of the job
      - python setup.py sdist;
      - pip install dist/*.tar.gz;
      - pip install coverage pytest pytest-cov;
-     - pytest -s tests --cov=sphire/; coverage xml --ignore-errors;
+     - pytest -v tests --cov=sphire/; coverage xml --ignore-errors;
      - ls
      - pwd
      - cd ../..;

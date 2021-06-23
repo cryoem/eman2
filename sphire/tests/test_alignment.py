@@ -75,7 +75,7 @@ mpi_init(0, [])
 TOLERANCE = 0.005
 ABSOLUTE_PATH_TO_RESOURCES = "resources_tests/pickles/"
 ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
-print(ABSOLUTE_PATH)
+# print(ABSOLUTE_PATH)
 
 """
 WHAT IS MISSING:
@@ -5607,7 +5607,7 @@ class Test_ali2d_single_iter(unittest.TestCase):
             delta=0.0,
         )
         self.assertTrue(allclose(return_old, return_new, atol=TOLERANCE))
-        print(return_old)
+        # print(return_old)
         self.assertTrue(
             allclose(
                 return_old,
@@ -7916,7 +7916,9 @@ class Test_prepare_refrings(unittest.TestCase):
         self.test_all_the_conditions(return_new, return_old)
 
     @unittest.skip(
-        "\n***************************\n\t\t 'Test_prepare_refringstest_sym_c1_initialTheta_None. Even if this combination is it seems to lead the code to a deadlock, i waited more then an hour'\n***************************"
+        "\n***************************\n\t\t 'Test_prepare_refringstest_sym_c1_initialTheta_None. "
+        "Even if this combination is it seems to lead the code to a deadlock,"
+        " i waited more then an hour'\n***************************"
     )
     def test_sym_c1_initialTheta_None(self):
         volft, kb = prep_vol(self.volft)
