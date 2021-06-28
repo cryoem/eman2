@@ -6,27 +6,38 @@ from e2spt_refine_new import gather_metadata
 
 def main():
 	
-	usage="Pass references as direct arguments (no --)"
+	usage="""
+	Multi-reference classification for the new (2021) SPT refinement protocol. Since gold-standard validation is not used here, setting a --maxres is necessary. 
+	e2spt_refinemulti_new.py ref1.hdf ref2.hdf --ptcls sets/ptcls.lst --niter 5 --maxres 20
+	
+	Alternatively, specify a number of classes instead of providing multiple references
+	e2spt_refinemulti_new.py ref.hdf --ptcls sets/ptcls.lst --niter 5 --maxres 20 --nref 3
+	
+	If an existing single model refinement exist, provide the aliptcls3d_xx.lst file as particles and use --loadali3d. reference maps are not necessary in this case.
+	e2spt_refinemulti_new.py --ptcls spt_xx/aliptcls3d_yy.lst --niter 5 --maxres 20 --nref 3 --loadali3d
+	
+	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--ptcls", type=str,help="path", default=None)
-	parser.add_argument("--path", type=str,help="path", default=None)
-	parser.add_argument("--nref", type=int,help="duplicate the first ref N times with phase randomization at 2xres", default=-1)
+	parser.add_argument("--ptcls", type=str,help="Particle input. required", default=None)
+	parser.add_argument("--path", type=str,help="Path for the refinement", default=None)
+	parser.add_argument("--nref", type=int,help="Number of classes. Without --loadali3d, it duplicate the first ref N times with phase randomization at 2 x maxres. With --loadali3d, the particles are classified to N random classes at the begining.", default=-1)
 	parser.add_argument("--maskalign", type=str,default=None,help="Mask file applied to 3D alignment reference in each iteration. Not applied to the average, which will follow normal masking routine.")
 	parser.add_argument("--maxres",type=float,help="Maximum resolution (the smaller number) to consider in alignment (in A, not 1/A). Default is 20A",default=20.)
 	parser.add_argument("--minres",type=float,help="Minimum resolution (the larger number) to consider in alignment (in A, not 1/A)",default=0)
-	parser.add_argument("--niter", type=int,help="number of iterations", default=5)
+	parser.add_argument("--niter", type=int,help="number of iterations. default is 5.", default=5)
 	parser.add_argument("--loadali3d",help="load previous 3d alignment from --ptcls input.",action="store_true",default=False)
 	#parser.add_argument("--res", type=float,help="target resolution", default=20.)
-	parser.add_argument("--skipali",action="store_true",help=".",default=False)
-	parser.add_argument("--threads", type=int,help="", default=12)
-	parser.add_argument("--parallel", type=str,help="parallel", default="thread:12")
+	parser.add_argument("--skipali",action="store_true",help="Skip alignment entirely when --loadali3d is provided. Otherwise a local orientation search will still be performed.",default=False)
+	#parser.add_argument("--threads", type=int,help="", default=12)
+	parser.add_argument("--parallel", type=str,help="parallel options", default="thread:12")
 	parser.add_argument("--sym", type=str,help="symmetry to apply to the average structure", default="c1")
 	parser.add_argument("--breaksym", type=str,help="Break specified symmetry. Only used when --loadali3d is on.", default=None)
-	parser.add_argument("--setsf", type=str,help="set structure factor", default=None)
+	parser.add_argument("--setsf", type=str,help="set structure factor from text file", default=None)
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
-
+	
+	#### most of the pre-processing are copied from e2spt_refine_new
 	if options.path==None: options.path=num_path_new("sptcls_")
 	path=options.path
 	print(f"Writing in {path}...")
@@ -56,11 +67,12 @@ def main():
 		setsf=""
 
 	options.cmd=' '.join(sys.argv)
-	fm=f"{path}/0_spt_params.json"
+	fm=f"{path}/0_sptcls_params.json"
 	js=js_open_dict(fm)
 	js.update(vars(options))
 	js.close()
 	
+	#### generating references...
 	if options.loadali3d and options.nref>0:
 		print("Generating initial references by random classification...")
 		nref=options.nref
@@ -71,7 +83,7 @@ def main():
 		options.ptcls=f"{path}/aliptcls3d_00.lst"
 		for i in range(options.nref):
 			threed=f"{path}/threed_00_{i:02d}.hdf"
-			run(f"e2spa_make3d.py --input {path}/aliptcls2d_00.lst --output {threed} --keep 1 --parallel thread:{options.threads} --outsize {boxsize} --pad {padsize} --sym {options.sym} --clsid {i}")
+			run(f"e2spa_make3d.py --input {path}/aliptcls2d_00.lst --output {threed} --keep 1 --parallel {options.parallel} --outsize {boxsize} --pad {padsize} --sym {options.sym} --clsid {i}")
 			run(f"e2proc3d.py {threed} {threed} {setsf} --process filter.lowpass.gauss:cutoff_freq={1./options.maxres} --process normalize.edgemean")
 	else:
 		print("Loading references...")
@@ -105,10 +117,12 @@ def main():
 	if options.minres>0: opt+=f" --minres {options.minres}"
 	if options.maxres>0: opt+=f" --maxres {options.maxres}"
 		
+	#### refinement loop. most of the work is dealt with in e2spt_align_subtlt. here we just parse the input/output
 	for itr in range(1,1+options.niter):
 		ali2d=[]
 		ali3d=[]
 		
+		#### run alignment for each reference map
 		for ir in range(nref):
 			oref=f"{path}/threed_{itr-1:02d}_{ir:02d}.hdf"
 			ref=f"{path}/aliref_{ir:02d}.hdf"		# overwrite each iteration
@@ -128,6 +142,7 @@ def main():
 			ali3d.append(f"{path}/aliptcls3d_{itr:02d}_{ir:02d}.lst")
 			os.rename(f"{path}/aliptcls3d_{itr:02d}.lst", ali3d[-1])
 		
+		#### parse alignment output and classify particles
 		ali3dpms=[load_lst_params(a) for a in ali3d]
 		ali2dpms=[load_lst_params(a) for a in ali2d]
 		score=[]
@@ -148,21 +163,23 @@ def main():
 			
 			ali3dpms[ia]=[a for a in ali if a["class"]==ia]
 					
+		#### save two lists (2d & 3d) for each classi in ieach iteration
 		for i in range(nref):
 			save_lst_params(ali2dpms[i], ali2d[i])
 			save_lst_params(ali3dpms[i], ali3d[i])
 		
-		
+		#### reconstruct averaged maps and filter to target resolution.
 		for ir in range(nref):
 			threed=f"{path}/threed_{itr:02d}_{ir:02d}.hdf"
 			a2=ali2d[ir]
-			run(f"e2spa_make3d.py --input {a2} --output {threed} --keep 1 --parallel thread:{options.threads} --outsize {boxsize} --pad {padsize} --sym {options.sym} --clsid {ir}")
+			run(f"e2spa_make3d.py --input {a2} --output {threed} --keep 1 --parallel {options.parallel} --outsize {boxsize} --pad {padsize} --sym {options.sym} --clsid {ir}")
 			
 			run(f"e2proc3d.py {threed} {threed} {setsf} --process filter.lowpass.gauss:cutoff_freq={1./options.maxres} --process normalize.edgemean")
 		
 
 	E2end(logid)
 	
+#### for the random particle classification at the begining of program.
 def classify_ptcls(ali3d, info2d, options):
 	ali2d=[]
 	cls=np.arange(len(ali3d))%options.nref
