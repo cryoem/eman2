@@ -31,6 +31,7 @@ def main():
 	parser.add_argument("--maxres", type=float,help="", default=-1)
 	parser.add_argument("--threads", type=int,help="", default=1)
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default="thread:1")
+	parser.add_argument("--setsf", type=str,help="set structure factor from text file", default=None)
 	
 	parser.add_argument("--debug", action="store_true", default=False, help="")
 	parser.add_argument("--clsid", default=None, type=str, help="only reconstruct a class of particles")
@@ -191,6 +192,9 @@ def main():
 		os.remove(options.output)
 		
 	output.write_image(options.output,0)
+	if options.setsf:
+		launch_childprocess("e2proc3d.py {} {} --setsf {}".format(options.output,options.output,options.setsf))
+		
 	if options.verbose>0:
 			print("Output File: "+options.output)
 
@@ -224,7 +228,11 @@ def initialize_data(inputfile, options):
 	tokeep=np.ones(len(data), dtype=bool)
 	print("{} particles total".format(np.sum(tokeep)))
 	
-	scrs=np.array([d["score"] for d in data])
+	if "score" in data[0]:
+		scrs=np.array([d["score"] for d in data])
+	else:
+		scrs=np.zeros(len(data))-1
+	
 	if np.std(scrs)>0 and ("ptcl3d_id" in data[0]):
 		idx3d=np.array([d["ptcl3d_id"] for d in data])
 		idx3d, invid=np.unique(idx3d, return_inverse=True)
@@ -251,7 +259,7 @@ def initialize_data(inputfile, options):
 		print("  Excluding particles on translation. Now {:.1f}%  left".format(100*np.mean(tokeep)))
 		
 	data=[d for i,d in enumerate(data) if tokeep[i]]
-	scrs=np.array([d["score"] for d in data])
+	scrs=scrs[tokeep]
 	if np.min(scrs)>=0:
 		print("positive score. assume this is weight...")
 	else:
@@ -259,7 +267,7 @@ def initialize_data(inputfile, options):
 		scrs[scrs<0]=0
 		scrs=scrs/np.max(scrs)
 	
-	print("score max {:.2f}, min {:.2f}".format(np.max(scrs), np.min(scrs)))
+	print("{} particle, score max {:.2f}, min {:.2f}".format(len(data),np.max(scrs), np.min(scrs)))
 	
 	for i in range(len(data)):
 		data[i]["weight"]=float(scrs[i])
@@ -299,13 +307,18 @@ def reconstruct(data,recon,pad,ref=None):
 			c=elem["curve"]
 			img.process_inplace("filter.radialtable", {"table":c.tolist()})
 		
-		ts=Transform(elem["xform.projection"])
+		if "xform.projection" in elem:
+			pjxf=elem["xform.projection"]
+		else:
+			pjxf=img["xform.projection"]
+			
+		ts=Transform(pjxf)
 		ts.set_rotation({"type":"eman"})
 		ts.invert()   #### inverse the translation so make3d matches projection 
 		img=recon.preprocess_slice(img,ts)
 		
 
-		recon.insert_slice(img,elem["xform.projection"],wt)
+		recon.insert_slice(img,pjxf,wt)
 
 	return
 

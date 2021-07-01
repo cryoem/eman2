@@ -56,7 +56,7 @@ def get_sym_pts(sym, pts):
 ##   input:  pts - ( batch size, number of Gaussian, 3 (x,y,z) )
 ##                 ( number of Gaussian, 3) should also work
 ##           ang - ( batch size, 5 (az, alt, phi, tx, ty) )
-@tf.function
+#@tf.function
 def xf2pts(pts, ang):
 
 	#### input EMAN style euler angle (az, alt, phi) and make projection matrix
@@ -118,7 +118,7 @@ def xf2pts(pts, ang):
 ##                 this should not be necessary since we use FRC for loss
 ##                 but the dynamic range of values in Fourier space can sometimes be too high...
 ##           sym - symmetry string
-@tf.function
+#@tf.function
 def pts2img(pts, ang, params, lp=.1, sym="c1"):
 	bsz=ang.shape[0]
 	sz, idxft, rrft=params["sz"], params["idxft"], params["rrft"]
@@ -170,7 +170,7 @@ def pts2img(pts, ang, params, lp=.1, sym="c1"):
 ##   rings - indices of Fourier rings
 ##   return_curve - return the curve instead of average FRC score
 ##   minpx - skip the X initial low freq pixels
-@tf.function
+#@tf.function
 def calc_frc(data_cpx, imgs_cpx, rings, return_curve=False,minpx=4):
 	mreal, mimag=imgs_cpx
 	dreal, dimag=data_cpx
@@ -652,12 +652,13 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, options):
 	pas=[int(i) for i in options.pas]
 	pas=tf.constant(np.array([pas[0],pas[0],pas[0],pas[1],pas[2]], dtype=floattype))
 	
+	## initialize optimizer
 	opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate)
 	wts=encode_model.trainable_variables + decode_model.trainable_variables
 	nbatch=0
 	for t in trainset: nbatch+=1
 	
-	# Training
+	## Training
 	allcost=[]
 	for itr in range(options.niter):
 			
@@ -665,18 +666,29 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, options):
 		for grd,pjr,pji,xf in trainset:
 			pj_cpx=(pjr, pji)
 			with tf.GradientTape() as gt:
+				## from gradient input to the latent space
 				conf=encode_model(grd, training=True)
 				
+							
+				## regularization of the latent layer range
+				## ideally the output is within a 1-radius circle
+				## but we want to make the contraint more soft so it won't affect convergence
 				cl=tf.math.sqrt(tf.reduce_sum(conf**2, axis=1))
 				cl=tf.reduce_mean(tf.maximum(cl-1,0))
 				
+				
+				## preturb the conformation by a random value
+				## similar to the variational autoencoder,
+				## but we do not train the sigma of the random value here
+				## since we control the radius of latent space already, this seems enough
 				conf=.1*tf.random.normal(conf.shape)+conf
+				
+				## mask out the target columns based on --pas
 				pout=decode_model(conf, training=True)
 				p0=tf.zeros((xf.shape[0],npt, 5))+pts
 				pout=pout*pas+p0*(1-pas)
-				#pout=tf.concat([pout[:,:,:3], p0[:,:,3:]], axis=2)
-				#pout=tf.concat([p0[:,:,:3],pout[:,:,3:4],p0[:,:,4:]], axis=2)
 				
+				## finally generate images and calculate frc
 				imgs_cpx=pts2img(pout, xf, params, sym=options.sym)
 				fval=calc_frc(pj_cpx, imgs_cpx, params["rings"])
 				loss=-tf.reduce_mean(fval)+cl*1e-2
