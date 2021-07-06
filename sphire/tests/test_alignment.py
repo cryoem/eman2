@@ -2,7 +2,6 @@ from __future__ import print_function
 from __future__ import division
 from past.utils import old_div
 # Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)
-# Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
 # Author: Thorsten Wagner 2019 (thorsten.wagner@mpi-dortmund.mpg.de)
 # Author: Tapu Shaikh 2019 (tapu.shaikh@mpi-dortmund.mpg.de)
 # Author: Adnan Ali 2019 (adnan.ali@mpi-dortmund.mpg.de)
@@ -2401,14 +2400,7 @@ Comments from Adnan on reply of LUCA's comments
 
 """
 
-
-
-
 """ start: new in sphire 1.3"""
-
-
-
-
 
 class Test_crit2d(unittest.TestCase):
     # args=[] angle,shiftX,shifY --> 3 float

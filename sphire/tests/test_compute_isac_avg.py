@@ -3,14 +3,14 @@
 #
 # from numpy import array_equal,allclose
 #
-# from ..sphire.bin import sp_compute_isac_avg as fu
-# from sphire.bin_py3 import sp_compute_isac_avg as oldfu
+# from sphire.bin import sp_compute_isac_avg as fu
+# from bin_py3 import sp_compute_isac_avg as oldfu
 #
 #
 # from os import path
-# from .test_module import ABSOLUTE_OLDBIN_PATH,ABSOLUTE_BIN_PATH,remove_dir,IMAGE_2D,IMAGE_BLANK_2D,IMAGE_3D,ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW
+# from test_module import ABSOLUTE_OLDBIN_PATH,ABSOLUTE_BIN_PATH,remove_dir,IMAGE_2D,IMAGE_BLANK_2D,IMAGE_3D,ABSOLUTE_PATH_TO_RESOURCES
 # import unittest
-# from sp_utilities import get_im
+# from sphire.libpy.sp_utilities import get_im
 #
 # try:
 #     # python 3.4+ should use builtin unittest.mock not mock package
@@ -30,7 +30,7 @@
 # from copy import deepcopy
 # import subprocess
 # import mpi
-# import sp_global_def
+# from sphire.libpy import sp_global_def
 # mpi.mpi_init(0, [])
 # sp_global_def.BATCH = True
 # sp_global_def.MPI = False
@@ -144,14 +144,14 @@
 #     def test_negative_pixelSize(self):
 #         testargs_new= (
 #             path.join(ABSOLUTE_BIN_PATH, "sp_compute_isac_avg.py")
-#             +  " --stack=bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"03_Particles#stack")
-#             +" --isac_dir="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"04_ISAC")
+#             +  " --stack=bdb:"+path.join(ABSOLUTE_PATH_TO_RESOURCES,"03_Particles#stack")
+#             +" --isac_dir="+path.join(ABSOLUTE_PATH_TO_RESOURCES,"04_ISAC")
 #             +" --output_dir="+self.new_output_folder
 #             +" --pixel_size=-1")
 #         testargs_old= (
 #             path.join(ABSOLUTE_OLDBIN_PATH, "sp_compute_isac_avg.py")
-#             +  " --stack=bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"03_Particles#stack")
-#             +" --isac_dir="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"04_ISAC")
+#             +  " --stack=bdb:"+path.join(ABSOLUTE_PATH_TO_RESOURCES,"03_Particles#stack")
+#             +" --isac_dir="+path.join(ABSOLUTE_PATH_TO_RESOURCES,"04_ISAC")
 #             +" --output_dir="+self.old_output_folder
 #             +" --pixel_size=-1")
 #
@@ -181,16 +181,16 @@
 #     def test_(self):
 #         testargs_new= (
 #             path.join(ABSOLUTE_BIN_PATH, "sp_compute_isac_avg.py")
-#             +  " --stack=bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"03_Particles#stack")
-#             +" --isac_dir="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"04_ISAC")
+#             +  " --stack=bdb:"+path.join(ABSOLUTE_PATH_TO_RESOURCES,"03_Particles#stack")
+#             +" --isac_dir="+path.join(ABSOLUTE_PATH_TO_RESOURCES,"04_ISAC")
 #             +" --output_dir="+self.new_output_folder
 #             +" --pixel_size=1.14"
 #             +" --radius=145"
 #             +" --local_alignment")
 #         testargs_old= (
 #             path.join(ABSOLUTE_OLDBIN_PATH, "sp_compute_isac_avg.py")
-#             +  " --stack=bdb:"+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"03_Particles#stack")
-#             +" --isac_dir="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"04_ISAC")
+#             +  " --stack=bdb:"+path.join(ABSOLUTE_PATH_TO_RESOURCES,"03_Particles#stack")
+#             +" --isac_dir="+path.join(ABSOLUTE_PATH_TO_RESOURCES,"04_ISAC")
 #             +" --output_dir="+self.old_output_folder
 #             + " --pixel_size=1.14"
 #             + " --radius=145"

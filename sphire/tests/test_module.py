@@ -554,29 +554,44 @@ def give_ave_series_data():
 
 
 #####
-def write_pickle_extras():
-    argum = get_arg_from_pickle_file(ABSOLUTE_PATH_TO_RESOURCES + "alignment.shc")
-    (data, refrings, list_of_ref_ang, numr, xrng, yrng, step) = argum[0]
+def write_pickle_extras_loop():
+    argum = get_arg_from_pickle_file(ABSOLUTE_PATH_TO_RESOURCES + "applications.ali2d_base")
+    #(data, refrings, list_of_ref_ang, numr, xrng, yrng, step) = argum[0]
+    data = argum[0][0]
     # image and crefim should be EMAN2 image obj
     # i suppose that in this obj there are a method to collect:
     # 1) the numpy array represents the image
     # 2) and a dict with the header info of the image (e.g: particles number, type etc)
 
-    file_pi = open(ABSOLUTE_PATH_TO_RESOURCES + 'refrings_data.pkl', 'wb')
+    file_pi = open(ABSOLUTE_PATH_TO_RESOURCES + 'stack_values.pkl', 'wb')
     data_list = []
-    for i in range (87):
-        ormq_image_values = refrings[i].get_3dview()            # look for it
+    for i in range (117):
+        ormq_image_values = data[i].get_2dview()            # look for it
         data_list.append(ormq_image_values)
         # file_pi = open(ABSOLUTE_PATH_TO_RESOURCES +'align_data_values.pkl', 'wb')
     pickle.dump(data_list, file_pi)
 
-    file_pi = open(ABSOLUTE_PATH_TO_RESOURCES + 'refrings_head.pkl', 'wb')
+    file_pi = open(ABSOLUTE_PATH_TO_RESOURCES + 'stack_head.pkl', 'wb')
     head_list = []
-    for i in range(87):
-        ormq_head_values = refrings[i].get_attr_dict()     # look for it
+    for i in range(117):
+        ormq_head_values = data[i].get_attr_dict()     # look for it
         head_list.append(ormq_head_values)
     pickle.dump(head_list, file_pi)
 
 
+def write_pickle_all():
+    argum = get_arg_from_pickle_file(ABSOLUTE_PATH_TO_RESOURCES + "applications.ali2d_base")
+    (stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, nomirror, dst, center, maxit, CTF, snr,
+     Fourvar, user_func_name, random_method, log, number_of_proc, myid, main_node, mpi_comm) = argum[0]
+    # data = argum[0][0]
+    # image and crefim should be EMAN2 image obj
+    # i suppose that in this obj there are a method to collect:
+    # 1) the numpy array represents the image
+    # 2) and a dict with the header info of the image (e.g: particles number, type etc)
 
-# write_pickle_extras()
+    # ormq_image_values = image.get_3dview()            # look for it
+    file_pi = open(ABSOLUTE_PATH_TO_RESOURCES +'applications.ali2d_base_new', 'wb')
+    pickle.dump(argum, file_pi)
+
+# write_pickle_extras_loop()
+# write_pickle_all()
