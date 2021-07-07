@@ -154,8 +154,42 @@ NAME_OF_MAIN_DIR = "generation_"
 DIR_DELIM = os.sep
 
 
-# create an mpi subgroup containing all nodes whith local/node mpi id zero (?)
+def reduce_shifts(sx, sy, rotation_angle, is_filament):
+    """
+    Reduce the shift along the helical axis to 0.
 
+    :param sx: Shift along the x axis.
+    :type sx: float
+    :param sy: Shift along the y axis.
+    :type sy: float
+    :param rotation_angle: Rotation angle of the filament relative to the x-axis.
+    :type rotation_angle: float
+    :param is_filament: If we are dealing with a filament or not
+    :type is_filament: bool
+
+    :return: Integer values of reduced sx and sy
+    :rtype: Tuple(int, int)
+    """
+    def rot_matrix(angle):
+        angle = numpy.radians(angle)
+        matrix = numpy.array(
+            [
+                [numpy.cos(angle), -numpy.sin(angle)],
+                [numpy.sin(angle), numpy.cos(angle)],
+            ]
+        )
+        return matrix
+
+    if is_filament:
+        point = numpy.array([sx, sy])
+        rot_point = numpy.dot(rot_matrix(rotation_angle), point.T)
+        rot_point[0] = 0
+        sx, sy = numpy.dot(rot_matrix(rotation_angle).T, rot_point.T)
+
+    return int(round(sx)), int(round(sy))
+
+
+# create an mpi subgroup containing all nodes whith local/node mpi id zero (?)
 
 def create_zero_group():
     if Blockdata["myid_on_node"] == 0:
@@ -2484,6 +2518,7 @@ def run(args):
                 main_node,
                 mpi.MPI_COMM_WORLD,
                 write_headers=False,
+                filament_width=options.filament_width * shrink_ratio if options.filament_width > 0 else None,
             )
 
             del original_images
@@ -2504,6 +2539,19 @@ def run(args):
         tmp = params2d[:]
         tmp = sp_utilities.wrap_mpi_gatherv(tmp, main_node, mpi.MPI_COMM_WORLD)
         if myid == main_node:
+            try:
+                EMAN2_cppwrap.EMUtil.get_all_attributes(Blockdata["stack"], "segment_angle")
+            except KeyError:
+                pass
+            else:
+                for idx, angle in enumerate(segment_angles):
+                    params2d[idx][1], params2d[idx][2] = reduce_shifts(
+                        params2d[idx][1],
+                        params2d[idx][2],
+                        angle,
+                        options.filament_width > 0,
+                    )
+                
             if options.skip_prealignment:
                 sp_global_def.sxprint("=========================================")
                 sp_global_def.sxprint(
@@ -2610,7 +2658,7 @@ def run(args):
             target_radius,
             target_nx,
             params,
-            filament_width=options.filament_width,
+            filament_width=options.filament_width*1.1,
             ignore_helical_mask=options.filament_mask_ignore,
         )
 
