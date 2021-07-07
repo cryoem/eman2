@@ -29,7 +29,7 @@ unittest: # Name of the job
      - pip install coverage pytest pytest-cov;
      - rm -rf resources_tests/applications_folder
      - mkdir resources_tests/applications_folder
-     - mpirun --allow-run-as-root -np 1 pytest -v tests --cov=sphire/; coverage xml --ignore-errors;
+     - mpirun -np 1 pytest -v tests --cov=sphire/; coverage xml --ignore-errors;
      - rm -rf resources_tests/applications_folder
      - ls
      - pwd

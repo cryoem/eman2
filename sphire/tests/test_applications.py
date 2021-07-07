@@ -53,12 +53,10 @@ import os
 
 
 
-
 # import mpi
 
 sp_global_def.BATCH = True
 sp_global_def.MPI = False
-mpi.mpi_init(0, [])
 
 
 from tests.test_module import (
