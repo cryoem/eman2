@@ -2540,14 +2540,15 @@ def run(args):
         tmp = sp_utilities.wrap_mpi_gatherv(tmp, main_node, mpi.MPI_COMM_WORLD)
         if myid == main_node:
             try:
-                EMAN2_cppwrap.EMUtil.get_all_attributes(Blockdata["stack"], "segment_angle")
+                segment_angles = EMAN2_cppwrap.EMUtil.get_all_attributes(Blockdata["stack"], "segment_angle")
             except KeyError:
                 pass
             else:
+                print(len(segment_angles), len(params2d), len(tmp))
                 for idx, angle in enumerate(segment_angles):
-                    params2d[idx][1], params2d[idx][2] = reduce_shifts(
-                        params2d[idx][1],
-                        params2d[idx][2],
+                    tmp[idx][1], tmp[idx][2] = reduce_shifts(
+                        tmp[idx][1],
+                        tmp[idx][2],
                         angle,
                         options.filament_width > 0,
                     )
