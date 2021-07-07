@@ -11,7 +11,7 @@
 # from sphire.libpy.sp_utilities import get_im
 # from numpy import array_equal
 # from os import path,listdir
-# from .test_module import ABSOLUTE_OLDBIN_PATH,ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,ABSOLUTE_BIN_PATH,remove_list_of_file,remove_dir
+# from test_module import ABSOLUTE_OLDBIN_PATH,ABSOLUTE_PATH_TO_RESOURCES,ABSOLUTE_BIN_PATH,remove_list_of_file,remove_dir
 # import unittest
 #
 # from sphire.libpy import sp_global_def
@@ -72,8 +72,8 @@
 #     def test_lowest_resolution_error(self):
 #         sp_global_def.BATCH = True
 #         self.remove_folders()
-#         testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_cter.py"),path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"CorrectedSums","corrsum_dw","TcdA1-001*_frames.mrc"),self.new_output_folder, '--apix=1.0', '--f_start=0.3' ]
-#         testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_cter.py"),path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"CorrectedSums","corrsum_dw","TcdA1-001*_frames.mrc"), self.old_output_folder, '--apix=1.0','--f_start=0.3']
+#         testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_cter.py"),path.join(ABSOLUTE_PATH_TO_RESOURCES,"../../03_PARTICLES_BDB/TcdA1-0187_frames_ptcls.mrcs"),self.new_output_folder, '--apix=1.0', '--f_start=0.3' ]
+#         testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_cter.py"),path.join(ABSOLUTE_PATH_TO_RESOURCES, "../03_PARTICLES_BDB/TcdA1-0187_frames_ptcls.mrcs"), self.old_output_folder, '--apix=1.0','--f_start=0.3']
 #         with patch.object(sys, 'argv', testargs_new):
 #             with self.assertRaises(SystemExit):
 #                 old_stdout = sys.stdout
@@ -94,8 +94,8 @@
 #     def test_highest_resolution_error(self):
 #         sp_global_def.BATCH = True
 #         self.remove_folders()
-#         testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_cter.py"),path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"CorrectedSums","corrsum_dw","TcdA1-001*_frames.mrc"), self.new_output_folder, '--apix=1.0', '--f_stop=0.3']
-#         testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_cter.py"),path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"CorrectedSums","corrsum_dw","TcdA1-001*_frames.mrc"), self.old_output_folder, '--apix=1.0', '--f_stop=0.3']
+#         testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_cter.py"),path.join(ABSOLUTE_PATH_TO_RESOURCES,"../03_PARTICLES_BDB/TcdA1-0187_frames_ptcls.mrcs"), self.new_output_folder, '--apix=1.0', '--f_stop=0.3']
+#         testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_cter.py"),path.join(ABSOLUTE_PATH_TO_RESOURCES,"../03_PARTICLES_BDB/TcdA1-0187_frames_ptcls.mrcs"), self.old_output_folder, '--apix=1.0', '--f_stop=0.3']
 #         with patch.object(sys, 'argv', testargs_new):
 #             with self.assertRaises(SystemExit):
 #                 old_stdout = sys.stdout
@@ -115,8 +115,8 @@
 #
 #     def test_too_few_params_error(self):
 #         sp_global_def.BATCH = True
-#         testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_cter.py"),path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"CorrectedSums","corrsum_dw","TcdA1-001*_frames.mrc")]
-#         testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_cter.py"),path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW,"CorrectedSums","corrsum_dw","TcdA1-001*_frames.mrc")]
+#         testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_cter.py"),path.join(ABSOLUTE_PATH_TO_RESOURCES,"CorrectedSums","corrsum_dw","TcdA1-001*_frames.mrc")]
+#         testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_cter.py"),path.join(ABSOLUTE_PATH_TO_RESOURCES,"CorrectedSums","corrsum_dw","TcdA1-001*_frames.mrc")]
 #         with patch.object(sys, 'argv', testargs_new):
 #             with self.assertRaises(SystemExit) as cnew:
 #                 old_stdout = sys.stdout
@@ -154,8 +154,8 @@
 #     def test_cter_mrk(self):
 #         sp_global_def.BATCH = True
 #         self.remove_folders()
-#         testargs_new = [path.join(ABSOLUTE_BIN_PATH, "sp_cter.py"),path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "CorrectedSums", "corrsum_dw","TcdA1-001*_frames.mrc"),self.new_output_folder,"--selection_list="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "01_CTER","Tutorial_micrographs_select.txt"), "--apix=1.14", "--Cs=0", "--f_start=40", "--f_stop=34"]
-#         testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_cter.py"),path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "CorrectedSums", "corrsum_dw","TcdA1-001*_frames.mrc"),self.old_output_folder,"--selection_list="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "01_CTER","Tutorial_micrographs_select.txt"), "--apix=1.14", "--Cs=0", "--f_start=40", "--f_stop=34"]
+#         testargs_new = [path.join(ABSOLUTE_BIN_PATH, "sp_cter.py"),path.join(ABSOLUTE_PATH_TO_RESOURCES, "CorrectedSums", "corrsum_dw","TcdA1-001*_frames.mrc"),self.new_output_folder,"--selection_list="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "01_CTER","Tutorial_micrographs_select.txt"), "--apix=1.14", "--Cs=0", "--f_start=40", "--f_stop=34"]
+#         testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_cter.py"),path.join(ABSOLUTE_PATH_TO_RESOURCES, "CorrectedSums", "corrsum_dw","TcdA1-001*_frames.mrc"),self.old_output_folder,"--selection_list="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "01_CTER","Tutorial_micrographs_select.txt"), "--apix=1.14", "--Cs=0", "--f_start=40", "--f_stop=34"]
 #         with patch.object(sys, 'argv', testargs_new):
 #             fu.main()
 #         sp_global_def.BATCH = True
@@ -171,8 +171,8 @@
 #     def test_cter_vpp(self):
 #         sp_global_def.BATCH = True
 #         self.remove_folders()
-#         testargs_new = [path.join(ABSOLUTE_BIN_PATH, "sp_cter.py"),path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "CorrectedSums", "corrsum_dw","TcdA1-001*_frames.mrc"),self.new_output_folder+"vpp","--selection_list="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "01_CTER","Tutorial_micrographs_select.txt"), "--apix=1.14", "--Cs=0", "--vpp", "--f_start=40", "--f_stop=34"]
-#         testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_cter.py"),path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "CorrectedSums", "corrsum_dw","TcdA1-001*_frames.mrc"),self.old_output_folder+"vpp","--selection_list="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "01_CTER","Tutorial_micrographs_select.txt"), "--apix=1.14", "--Cs=0", "--vpp", "--f_start=40", "--f_stop=34"]
+#         testargs_new = [path.join(ABSOLUTE_BIN_PATH, "sp_cter.py"),path.join(ABSOLUTE_PATH_TO_RESOURCES, "CorrectedSums", "corrsum_dw","TcdA1-001*_frames.mrc"),self.new_output_folder+"vpp","--selection_list="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "01_CTER","Tutorial_micrographs_select.txt"), "--apix=1.14", "--Cs=0", "--vpp", "--f_start=40", "--f_stop=34"]
+#         testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_cter.py"),path.join(ABSOLUTE_PATH_TO_RESOURCES, "CorrectedSums", "corrsum_dw","TcdA1-001*_frames.mrc"),self.old_output_folder+"vpp","--selection_list="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "01_CTER","Tutorial_micrographs_select.txt"), "--apix=1.14", "--Cs=0", "--vpp", "--f_start=40", "--f_stop=34"]
 #         with patch.object(sys, 'argv', testargs_new):
 #             fu.main()
 #         sp_global_def.BATCH = True
@@ -188,8 +188,8 @@
 #     def test_cter_pap(self):
 #         sp_global_def.BATCH = True
 #         self.remove_folders()
-#         testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_cter.py"),path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "CorrectedSums", "corrsum_dw","TcdA1-001*_frames.mrc"),self.new_output_folder+"pap","--selection_list="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "01_CTER","Tutorial_micrographs_select.txt"), "--apix=1.14", "--Cs=0", "--pap", "--f_start=40", "--f_stop=34"]
-#         testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_cter.py"),path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "CorrectedSums", "corrsum_dw","TcdA1-001*_frames.mrc"),self.old_output_folder+"pap","--selection_list="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "01_CTER","Tutorial_micrographs_select.txt"), "--apix=1.14", "--Cs=0", "--pap", "--f_start=40", "--f_stop=34"]
+#         testargs_new =  [path.join(ABSOLUTE_BIN_PATH, "sp_cter.py"),path.join(ABSOLUTE_PATH_TO_RESOURCES, "CorrectedSums", "corrsum_dw","TcdA1-001*_frames.mrc"),self.new_output_folder+"pap","--selection_list="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "01_CTER","Tutorial_micrographs_select.txt"), "--apix=1.14", "--Cs=0", "--pap", "--f_start=40", "--f_stop=34"]
+#         testargs_old = [path.join(ABSOLUTE_OLDBIN_PATH, "sp_cter.py"),path.join(ABSOLUTE_PATH_TO_RESOURCES, "CorrectedSums", "corrsum_dw","TcdA1-001*_frames.mrc"),self.old_output_folder+"pap","--selection_list="+path.join(ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW, "01_CTER","Tutorial_micrographs_select.txt"), "--apix=1.14", "--Cs=0", "--pap", "--f_start=40", "--f_stop=34"]
 #         with patch.object(sys, 'argv', testargs_new):
 #             fu.main()
 #         sp_global_def.BATCH = True

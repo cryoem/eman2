@@ -40,7 +40,7 @@ from __future__ import division
 
 import unittest
 from numpy import allclose, array_equal
-import mpi
+# import mpi
 from sphire.libpy import sp_global_def
 import numpy
 from sphire.libpy import sp_utilities

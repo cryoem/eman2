@@ -67,9 +67,9 @@ from sphire.libpy.sp_projection import prep_vol
 from libpy_py3 import sp_alignment as oldfu
 from sphire.libpy import sp_alignment as fu, sp_utilities
 
-from mpi import *
-
-mpi_init(0, [])
+# from mpi import *
+#
+# mpi_init(0, [])
 
 TOLERANCE = 0.005
 ABSOLUTE_PATH_TO_RESOURCES = "resources_tests/pickles/"
@@ -7871,7 +7871,7 @@ class Test_prepare_refrings(unittest.TestCase):
         self
     ):
         volft, kb = prep_vol(self.volft)
-        mpi_barrier(MPI_COMM_WORLD)
+        # mpi_barrier(MPI_COMM_WORLD)
         return_new = fu.prepare_refrings(
             volft=volft,
             kb=kb,
@@ -7888,7 +7888,7 @@ class Test_prepare_refrings(unittest.TestCase):
             delta_theta=0.5,
             initial_phi=0.1,
         )
-        mpi_barrier(MPI_COMM_WORLD)
+        # mpi_barrier(MPI_COMM_WORLD)
         return_old = oldfu.prepare_refrings(
             volft=volft,
             kb=kb,
