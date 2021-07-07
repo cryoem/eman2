@@ -40,7 +40,7 @@ from __future__ import division
 
 import unittest
 from numpy import allclose, array_equal
-from mpi import *
+import mpi
 from sphire.libpy import sp_global_def
 import numpy
 from sphire.libpy import sp_utilities
@@ -58,7 +58,7 @@ import os
 
 sp_global_def.BATCH = True
 sp_global_def.MPI = False
-mpi_init(0, [])
+mpi.mpi_init(0, [])
 
 
 from tests.test_module import (
@@ -87,8 +87,8 @@ TOLERANCE = 0.0005
 import dill
 dill._dill._reverse_typemap["ObjectType"] = object
 
-ABSOLUTE_PATH_TO_STACK = 'bdb:'+os.path.join(os.getcwd(), "../resources_tests/03_PARTICLES_BDB/mpi_proc_007/TcdA1-0187_frames_ptcls")
-ABSOLUTE_PATH = '../resources_tests/applications_folder/'
+ABSOLUTE_PATH_TO_STACK = 'bdb:'+os.path.join(os.getcwd(), "resources_tests/03_PARTICLES_BDB/mpi_proc_007/TcdA1-0187_frames_ptcls")
+ABSOLUTE_PATH = 'resources_tests/applications_folder/'
 
 
 
