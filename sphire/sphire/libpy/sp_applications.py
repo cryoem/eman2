@@ -698,6 +698,7 @@ def ali2d_base(
     main_node=0,
     mpi_comm=None,
     write_headers=False,
+    filament_width=None,
 ):
 
     if log == None:
@@ -1035,6 +1036,12 @@ def ali2d_base(
                 for im in range(nima):
                     alpha, sx, sy, mirror, scale = sp_utilities.get_params2D(data[im])
                     old_ali_params.extend([alpha, sx, sy, mirror])
+
+                if Iter < 5 and filament_width is not None:
+                    filament_radius = filament_width // 2
+                    cylinder_numpy = numpy.zeros((nx, nx))
+                    cylinder_numpy[int(nx // 2 - filament_radius):int(nx//2 + filament_radius)] = 1
+                    tavg = sp_utilities.numpy2em_python(cylinder_numpy)
 
                 if Iter % 4 != 0 or total_iter > max_iter * len(xrng) - 10:
                     delta = 0.0
