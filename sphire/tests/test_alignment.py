@@ -67,9 +67,9 @@ from sphire.libpy.sp_projection import prep_vol
 from libpy_py3 import sp_alignment as oldfu
 from sphire.libpy import sp_alignment as fu, sp_utilities
 
-# from mpi import *
-#
-# mpi_init(0, [])
+from mpi import *
+
+mpi_init(0, [])
 
 TOLERANCE = 0.005
 ABSOLUTE_PATH_TO_RESOURCES = "resources_tests/pickles/"
@@ -9884,6 +9884,8 @@ class Test_search_range(unittest.TestCase):
         self.assertTrue(array_equal(return_new, [0, 0]))
 
 
+
+
 """
 # this function has been cleaned
 class Test_generate_list_of_reference_angles_for_search(unittest.TestCase):
@@ -10277,3 +10279,4 @@ class Test_lib_alignment_compare(unittest.TestCase):
 """
 if __name__ == "__main__":
     unittest.main()
+

@@ -4583,4 +4583,12 @@ class Test_lib_applications_compare(unittest.TestCase):
 """
 
 if __name__ == "__main__":
+    RUNNING_UNDER_MPI = "OMPI_COMM_WORLD_SIZE" in os.environ
+    if RUNNING_UNDER_MPI:
+        mpi_init(
+            0, []
+        )
     unittest.main()
+
+    if RUNNING_UNDER_MPI:
+        mpi_finalize()
