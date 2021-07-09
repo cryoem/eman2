@@ -146,7 +146,7 @@ input volumes.
 	parser.add_argument("--cutoff", type=float, help="fsc cutoff. default is 0.143",default=0.143)
 	parser.add_argument("--mask",type=str,help="Optional mask to produce masked overall FSC curve. Must have the same dimensions as the input volumes.",default=None)
 	parser.add_argument("--tophat",action="store_true",help="If set, the local filter is a tophat filter, otherwise a local Wiener filter is applied",default=False)
-	parser.add_argument("--sampfscs",action="store_true",help="If set, full fsc curves are stored for a range of specific locations within the volume",default=False)
+	parser.add_argument("--sampfscs",type=int,help="Will generate samples at n^3 different locations across the volume",default=0)
 	#parser.add_argument("--refs",type=str,help="Reference images from the similarity matrix (projections)",default=None)
 	#parser.add_argument("--inimgs",type=str,help="Input image file",default=None)
 	#parser.add_argument("--outimgs",type=str,help="Output image file",default="imgs.hdf")
@@ -224,8 +224,10 @@ input volumes.
 	jsd=queue.Queue(0)
 	thrds=[(jsd,v1f,v2f,apix,f,options.localsizea,options.tophat,options.cutoff,mask) for f in range(1,box//2)]
 
-	if options.sampfscs:
-		steps=int(box//(2*options.localsizea/apix))
+	if options.sampfscs>0:
+		steps=options.sampfscs
+#		steps=int(box//(2*options.localsizea/apix))
+#		steps=max(steps,5)
 		step=int(box//steps)
 		print(f"Sample FSCs saved with {step} pixel spacing") 
 		#list of locations to sample full FSC curves, relative to middle of box
