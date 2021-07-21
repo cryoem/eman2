@@ -55,6 +55,7 @@ from EMAN2 import *
 from EMAN2_cppwrap import *
 try:
 	from sphire.libpy import sp_global_def  #### from ..libpy.sp_global_def import *
+	from sphire.libpy.sp_global_def import sp_get_image_path
 	from sphire.libpy.sp_sparx import *     #### from ..libpy.sp_sparx import *
 	import sphire
 except ImportError as e:
@@ -73,18 +74,6 @@ import re
 # 
 # This function is added here because db_convert_path in EMAN2db.py has a bug.
 #
-
-def sp_get_image_path(image_path):
-	"""
-	Searches for the image file in the SPHIRE image dir,
-	otherwise it will return the EMAN image path
-	"""
-
-	sphire_pth = os.path.join(os.path.abspath(os.path.dirname(__file__)),"../../images/",image_path)
-	if os.path.isfile(sphire_pth):
-		return sphire_pth
-	eman_pth = os.path.join(get_image_directory(), image_path)
-	return eman_pth
 
 def translate_to_bdb_path(std_path):
 	'''
