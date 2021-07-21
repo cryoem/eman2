@@ -613,7 +613,6 @@ class SXMenuItemBtnAreaWidget(QWidget):
 	def add_sxmenu_item_btn_widget(self, sxmenu_item, sxmenu_item_btn_subarea_widget):
 		assert(isinstance(sxmenu_item, SXmenu_item) == True) # Assuming the sxmenu_item is an instance of class SXmenu_item
 
-		#sxmenu_item_btn_pictograph_file_path = "{0}sxgui_pictograph_{1}.png".format(get_image_directory(), sxmenu_item.name.replace("sxc_", ""))
 		sxmenu_item_btn_pictograph_file_path = sp_get_image_path(f'sxgui_pictograph_{sxmenu_item.name.replace("sxc_", "")}.png')
 
 		sxmenu_item.btn = SXPictogramButton(sxmenu_item.name.replace("sxc_", ""), sxmenu_item_btn_pictograph_file_path, self)
