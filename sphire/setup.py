@@ -43,15 +43,18 @@ def get_longdescription():
     with open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
         long_description = f.read()
     return long_description
-
+my_packages = find_packages()
+sphire_images = glob.glob("images/*.png")
+sphire_images = [os.path.abspath(img) for img in sphire_images]
 setup(
     name='sphire',
     version=find_version("sphire", "__init__.py"),
     python_requires='>3.4.0',
-    packages=find_packages(),
+    packages=my_packages,
     url='https://github.com/cryoem/eman2',
     license='GPLv3',
     author='SPHIRE Development Team',
+    package_data={'sphire': sphire_images},
     author_email='sphire-devel@mpi-dortmund.mpg.de',
     description='Python binaries and libraries for the SPHIRE cryo-EM package',
     long_description=get_longdescription(),
