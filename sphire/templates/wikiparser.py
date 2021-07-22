@@ -472,6 +472,28 @@ def handle_exceptional_cases(sxcmd):
 	elif sxcmd.name == "sxresolution":
 		sxcmd.token_dict["radius"].type = "int"
 		sxcmd.token_dict["wn"].type = "int"
+	elif sxcmd.name == "sp_polishing":
+		sxcmd.token_dict["post_refine_folder"].type = "dir"
+		sxcmd.token_dict["motioncorr_starfile"].type = "params_star"
+		sxcmd.token_dict["training_params"].type = "params_any_txt"
+		sxcmd.token_dict["relion_mpirun_executable"].type = "exe"
+		sxcmd.token_dict["relion_polishing_executable"].type ="exe"
+		sxcmd.token_dict["submission_template"].type = "submission_temp"
+		sxcmd.token_dict["mrc_reloc_folder"].type = "dir"
+	elif sxcmd.name == "sp_higher_ord_abber":
+		sxcmd.token_dict["post_refine_folder"].type = "dir"
+		sxcmd.token_dict["relion_mpirun_executable"].type = "exe"
+		sxcmd.token_dict["relion_ctfrefine_executable"].type ="exe"
+		sxcmd.token_dict["submission_template"].type = "submission_temp"
+		sxcmd.token_dict["mrc_reloc_folder"].type = "dir"
+	elif sxcmd.name == "sp_relion_3dclassifi":
+		sxcmd.token_dict["post_refine_folder"].type = "dir"
+		sxcmd.token_dict["reference_map"].type = "data3d_one"
+		sxcmd.token_dict["reference_mask"].type = "data3d_one"
+		sxcmd.token_dict["relion_mpirun_executable"].type = "exe"
+		sxcmd.token_dict["relion_3dclassification_executable"].type ="exe"
+		sxcmd.token_dict["submission_template"].type = "submission_temp"
+		sxcmd.token_dict["mrc_reloc_folder"].type = "dir"
 	elif sxcmd.name == "sp_sort3d_depth":
 		assert(sxcmd.token_dict["output_dir"].key_base == "output_dir")
 		assert(sxcmd.token_dict["output_dir"].type == "output")
@@ -2398,6 +2420,8 @@ def build_config_list_MoinMoinWiki():
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/e2display.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/process.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_adaptive_mask3d()))
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/pipe_angular_distribution.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/higher_ord_abber.txt", "DokuWiki", sxcmd_category, sxcmd_role))
+	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/polishing.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 
 	# --------------------------------------------------------------------------------
 	sxcmd_category = "sxc_sort3d"
@@ -2419,6 +2443,7 @@ def build_config_list_MoinMoinWiki():
 ### # post-refiner embedded sort3d_depth is removed recently.
 ###	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/sort3d_depth.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_sort3d_depth_postrefiner()))
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/meridien.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, subconfig = create_sxcmd_subconfig_meridien_final()))
+	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/relion_3dclassifi.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 
 	sxcmd_role = "sxr_util"
 	sxcmd_config_list.append(SXcmd_config("../doc/MoinMoinWiki/e2display.txt", "MoinMoinWiki", sxcmd_category, sxcmd_role, exclude_list = create_exclude_list_display(), is_submittable = False))
