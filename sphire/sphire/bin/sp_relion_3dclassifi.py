@@ -19,8 +19,10 @@ except:
     from sphire.libpy import sp_global_def
     from sphire.libpy import sp_utilities
 
-from pyStarDB import sp_pystardb as star
-
+try:
+    from pyStarDB import sp_pystardb as star
+except :
+    print("Please install pyStarDB package to run this")
 
 def parse_parameters(args):
     parser = argparse.ArgumentParser(args, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
