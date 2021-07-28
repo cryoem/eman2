@@ -727,7 +727,7 @@ def run(args):
                 pass
             if options.ang_search :
                 total_str += " " + "--sigma_ang" + " " + str(options.ang_search_range*0.3333)
-                if ang_search_relax_sym :
+                if ang_search_relax_sym != None:
                     total_str += " " + "--relax_sym" + " " + str(ang_search_relax_sym)
                 else :
                     pass
@@ -759,7 +759,7 @@ def run(args):
             total_str += " " + "--preread_images"
         else:
             pass
-        if options.scratch_dir :
+        if options.scratch_dir != None:
             total_str += " " + "--scratch_dir" + " " + str(options.scratch_dir)
         else:
             pass
@@ -870,7 +870,7 @@ def run(args):
                         + " " + "--o " + str(options.Output_folder)
                         + " --i " + os.path.join(str(options.Output_folder), "BDB2STAR/sphire2relion.star")
                         + " " + "--ref " + str(options.reference_map)
-                        + " " + total_flag
+                        + " " + total_str
                         + " " + "--j " + str(options.no_of_threads)
                 )
                 print("3dclasification without mpi command is called", classification_call)
