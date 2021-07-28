@@ -29,3 +29,4 @@ fi
 
 # 6. Run e2*.py -h
 bash "${MYDIR}/run_prog_tests.sh"
+ 
