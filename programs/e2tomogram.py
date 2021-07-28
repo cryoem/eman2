@@ -392,13 +392,16 @@ def main():
 	
 	
 	if options.patchtrack>0:
-		toitr=[imgs_500, imgs_1k]
-		toitr=toitr[:options.patchtrack]
-		for itr,imgs in enumerate(toitr):
-			ttparams, loss0= do_patch_tracking(imgs, ttparams, options)
+		ttparams, loss0= do_patch_tracking(imgs_500, ttparams, options)
+		for itr in range(options.patchtrack-1):
+			ttparams, loss0= do_patch_tracking_3d(imgs_500, ttparams, options)
+		#toitr=[imgs_500, imgs_1k]
+		#toitr=toitr[:options.patchtrack]
+		#for itr,imgs in enumerate(toitr):
 			#ttparams, loss0= do_patch_tracking(imgs, ttparams, options)
-			if options.writetmp:
-				make_ali(imgs_500, ttparams, options, outname=os.path.join(options.tmppath,f"patch_ali_{itr:02d}.hdf"))
+			##ttparams, loss0= do_patch_tracking(imgs, ttparams, options)
+		if options.writetmp:
+			make_ali(imgs_500, ttparams, options, outname=os.path.join(options.tmppath,"ali_patchtrack.hdf"))
 			
 			
 	pks=np.zeros((options.npk, 3))
@@ -717,7 +720,7 @@ def do_patch_tracking(imgs, ttparams, options, niter=4):
 				ptclz.append(dzrg[np.argmin(dp)])
 
 			ptclz=np.array(ptclz)
-			print("    iter {}:  dz = {:.02f}".format(itr, np.mean(abs(ptclz))))
+			print("	iter {}:  dz = {:.02f}".format(itr, np.mean(abs(ptclz))))
 			#print(ptclz)
 
 			pks1=pks.copy()
@@ -775,11 +778,135 @@ def do_patch_tracking(imgs, ttparams, options, niter=4):
 			tx=tilex[:,::-1]
 			tpm[:,:2]-=tx*scale
 			loss=np.linalg.norm(tx*scale, axis=1)
-			print("    iter {}:  loss = {:.2f}".format(itr, np.mean(loss)))
+			print("	iter {}:  loss = {:.2f}".format(itr, np.mean(loss)))
 
-	
+	if options.writetmp:
+		allparams=np.hstack([tpm.flatten(), pks.flatten()])
+		ptclpos,ptclimgs=ali_ptcls(imgshp, allparams, options, doali=False,return_imgs=True)
+		fname=os.path.join(options.tmppath,"patchtrack_ptclali.hdf")
+		if os.path.isfile(fname): os.remove(fname)
+		for p in ptclimgs:
+			p.write_image(fname, -1)
+		
 	options.npk=rawnpk
 	options.bxsz=rawboxsz
+	return tpm, loss
+
+def do_patch_tracking_3d(imgs, ttparams, options, niter=4):
+	
+	print("\n******************************")
+	print("Doing patch tracking in 3d")
+	scale=int(np.round(imgs[0]["apix_x"]/options.apix_init))
+	rawnpk=options.npk
+	rawboxsz=options.bxsz
+	print("  shrink by {}".format(scale))
+	
+	ntile=int(np.round(8/scale*2+1))
+	tpm=ttparams.copy()
+	nx=ny=imgs[0]["nx"]
+	nz=len(imgs)
+	options.bxsz=sz=128
+	
+	mxsft=8
+	pks=np.indices((ntile,ntile)).reshape((2,-1)).T-(ntile-1)/2
+	pks=pks[:,::-1]
+	pks=np.hstack([pks, np.zeros((len(pks),1))])
+	dx=(ny*.4-sz//2)/np.max(pks)
+	pks=np.round(pks*dx*scale)
+	
+	options.npk=len(pks)
+	maskc=make_mask(sz)
+	imgshp=[m.process("filter.highpass.gauss",{"cutoff_pixels":options.highpass}) for m in imgs]
+	allparams=np.hstack([tpm.flatten(), pks.flatten()])
+	ptclpos,ptclimgs=ali_ptcls(imgshp, allparams, options, doali=False,return_imgs=True)
+	nt=len(ptclimgs)//len(imgs)
+	
+	trg=tpm[:,3]
+	n=len(trg)
+	
+	nrange=np.arange(len(trg))
+	nrange=nrange[np.argsort(abs(np.array(trg)))]
+	pad=good_size(sz*1.4)
+	dxys=np.zeros((nt, len(trg), 2))
+	
+	if options.writetmp:
+		pjname=os.path.join(options.tmppath,"patchtrack_projs.hdf")
+		if os.path.isfile(pjname): os.remove(pjname)
+		tdname=os.path.join(options.tmppath,"patchtrack_tiles.hdf")
+		if os.path.isfile(tdname): os.remove(tdname)
+
+	for it in range(nt):
+		pimgs=[ptclimgs[i] for i in np.arange(n)+n*it]
+
+		dxy=dxys[it]
+		normvol=EMData(pad//2+1, pad, pad)
+		recon=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":"trilinear", "normout":normvol})
+		recon.setup()
+		# for i,p in enumerate(ptclimgs):
+		for i in nrange:
+			if i>nrange[0]:
+				iix=np.arange(i,len(trg))
+			else:
+				iix=np.arange(i+1)
+
+			m=pimgs[i].copy()
+			m.process_inplace("filter.ramp")
+			m.process_inplace("normalize.edgemean")
+			m.process_inplace("xform",{"tx":int(dxy[i,0]),"ty":int(dxy[i,1])})
+			dy=(sz//2)-np.cos(trg[i]*np.pi/180.)*sz/2
+			msk=m.copy()
+			msk.to_one()
+			edge=sz//10
+			msk.process_inplace("mask.zeroedge2d",{"x0":dy+edge, "x1":dy+edge, "y0":edge, "y1":edge})
+			msk.process_inplace("mask.addshells.gauss",{"val1":0, "val2":edge})
+			m.mult(msk)
+			xf=Transform({"type":"xyz","ytilt":trg[i],"xtilt":tpm[i,4]})
+
+			if abs(i-nrange[0])>1:
+				pj=recon.projection(xf, 0)
+				pj=pj.get_clip(Region(pad//2-sz//2, pad//2-sz//2, sz,sz))
+
+				if options.writetmp: pj.write_image(pjname,int(n*it+i))
+
+				cf=pj.calc_ccf(m)
+				c=cf.calc_max_location_wrap(mxsft, mxsft, 0)
+				xf.translate(c)
+				dxy[iix]+=[c[0], c[1]]
+			
+			else:
+				if options.writetmp: m.write_image(pjname,int(n*it+i))
+
+			m=m.get_clip(Region(sz//2-pad//2,sz//2-pad//2, pad, pad), fill=0)
+			mp=recon.preprocess_slice(m, xf)
+			recon.insert_slice(mp,xf,1)
+
+		print(it, np.mean(abs(dxys[it]), axis=0))
+		if options.writetmp:
+			avg=recon.finish(True)
+			avg=avg.get_clip(Region(pad//2-sz//2,pad//2-sz//2,pad//2-sz//2, sz,sz,sz), fill=0)
+			avg.write_image(tdname, it)
+			
+	dxy=np.mean(dxys, axis=0)
+	d=dxy[-1,0]-dxy[0,0]
+	xd=np.sin(np.array(trg)*np.pi/180)
+	nd=d/(xd[-1]-xd[0])
+	dxy[:,0]-=nd*xd
+	dxy-=dxy[len(dxy)//2]
+
+	tpm[:,:2]-=dxy*scale
+	x=np.mean(abs(dxy*scale), axis=0)
+	print("	mean dx = {:.1f}, dy = {:.1f}".format(x[0], x[1]))
+	if options.writetmp:
+		allparams=np.hstack([tpm.flatten(), pks.flatten()])
+		ptclpos,ptclimgs=ali_ptcls(imgshp, allparams, options, doali=False,return_imgs=True)
+		fname=os.path.join(options.tmppath,"patchtrack_ptclali.hdf")
+		if os.path.isfile(fname): os.remove(fname)
+		for p in ptclimgs:
+			p.write_image(fname, -1)
+
+	options.npk=rawnpk
+	options.bxsz=rawboxsz
+	loss=np.linalg.norm(dxy*scale, axis=1)
 	return tpm, loss
 	
 def correct_zpos(tomo, ttparams, options):
@@ -2061,7 +2188,7 @@ def global_rot(rt, ptclpos, allpms, options):
 		dst.append(np.mean(d))
 
 	return np.mean(dst)*options.apix_init/10.
-    
+	
 
 def refine_lowres(imgs, allparams, options):
 	
