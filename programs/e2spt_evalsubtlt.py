@@ -15,13 +15,19 @@ from eman2_gui.valslider import ValSlider, ValBox
 
 def main():
 	
-	usage=" "
+	usage="""
+	Visualize particle motion in individual tilts. After a refinement with the new spt protocol, run 
+	
+	e2spt_evalsubtlt.py --path spt_xx --loadali2d spt_xx/aliptcls2d_yy.lst --loadali3d spt_xx/aliptcls3d_zz.lst
+	
+	It will take a while to load all metadata, and plot the trajectory of each particle on each tilt image in each tomogram. 
+	
+	In the top panel, the blue curve represents the average score of all 2D particles in that tilt, and the red curve represents the average distance of the subtilt motion with respect to the alignment of the 3D particle. The quiver plot below shows the trajectory of each individual particle, colored by its alignment score.
+	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--path", type=str,help="path", default=None)
 	parser.add_argument("--loadali2d", type=str,help="previous 2d alignment", default=None)
 	parser.add_argument("--loadali3d", type=str,help="previous 3d alignment", default=None)
-	#parser.add_argument("--inplace", action="store_true", default=False ,help="overwrite input.")
-	#parser.add_argument("--invert", action="store_true", default=False ,help="invert direction.")
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)

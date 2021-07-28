@@ -606,7 +606,9 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 			## 6 columns list - the last 3 columes are the direction of the curve
 			drs=pos[3:].copy()
 			pos=pos[:3].copy()
-			drs/=np.linalg.norm(drs)
+			v=np.linalg.norm(drs)
+			if v==0: continue
+			drs/=v
 			drs=drs.tolist()
 			tf_dir=Transform()
 			tf_dir.set_rotation(drs)
