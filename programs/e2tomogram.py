@@ -745,7 +745,7 @@ def do_patch_tracking(imgs, ttparams, options, niter=4):
 				xf=Transform({"type":"xyz","ytilt":tp[3],"xtilt":tp[4], "ztilt":tp[2]})
 				xf=xf*t.inverse()
 				x=xf.get_params("xyz")
-				tpm1[i][2]=x["ztilt"]
+				#tpm1[i][2]=x["ztilt"]
 				tpm1[i][3]=x["ytilt"]
 				tpm1[i][4]=x["xtilt"]
 				

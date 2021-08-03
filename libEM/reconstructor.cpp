@@ -1432,6 +1432,9 @@ EMData* FourierReconstructor::projection(const Transform &euler, int ret_fourier
 		}
 	}
 	
+	Transform translation;
+	translation.set_trans(euler.get_trans());
+	ret->process_inplace("xform",Dict("transform",&translation));
 	if (!ret_fourier) {
 		ret->process_inplace("xform.phaseorigin.tocenter");
 		EMData *tmp=ret->do_ift();
