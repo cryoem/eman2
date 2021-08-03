@@ -15,7 +15,7 @@ def main():
 	
 	parser.add_argument("--outsize", default=-1, type=int, help="Defines the dimensions of the final volume written to disk")
 	
-	parser.add_argument("--keep", type=float, dest="keep", help="The fraction of slices to keep, based on quality scores (1.0 = use all slices). See keepsig.",default=.9)
+	parser.add_argument("--keep", type=str, dest="keep", help="The fraction of slices to keep, based on quality scores (1.0 = use all slices).",default=".9")
 	
 	parser.add_argument("--no_wt", action="store_true", dest="no_wt", default=False, help="This argument turns automatic weighting off causing all images to be weighted by 1.")
 	
@@ -54,6 +54,10 @@ def main():
 		
 	if options.sym.startswith("h"):
 		options.sym="c1"
+		
+	options.keep=[float(k) for k in options.keep.split(',')]
+	if len(options.keep)<3: options.keep=[options.keep[0]]*3
+	
 	# get basic image parameters
 	tmp=EMData(options.input,0,True)
 	boxsz=tmp["nx"]
@@ -237,7 +241,7 @@ def initialize_data(inputfile, options):
 		idx3d=np.array([d["ptcl3d_id"] for d in data])
 		idx3d, invid=np.unique(idx3d, return_inverse=True)
 		scr3d=np.array([np.mean(scrs[invid==i]) for i in range(len(idx3d))])
-		thr=np.sort(scr3d)[int(len(scr3d)*options.keep)-1]
+		thr=np.sort(scr3d)[int(len(scr3d)*options.keep[0])-1]
 		for i,s in enumerate(scr3d):
 			if s>thr:
 				tokeep[invid==i]=False
@@ -246,7 +250,7 @@ def initialize_data(inputfile, options):
 	
 	if np.std(scrs)>0:
 		s=scrs[tokeep]
-		thr=np.sort(s)[int(len(s)*options.keep)-1]
+		thr=np.sort(s)[int(len(s)*options.keep[1])-1]
 		tokeep[scrs>thr]=False
 		print("  Excluding particles on 2D score. Now {:.1f}%  left".format(100*np.mean(tokeep)))
 		
@@ -254,7 +258,7 @@ def initialize_data(inputfile, options):
 		dt=np.array([d["dxf"].get_trans() for d in data])
 		dt=np.linalg.norm(dt, axis=1)
 		s=dt[tokeep]
-		thr=np.sort(s)[int(len(s)*options.keep)-1]
+		thr=np.sort(s)[int(len(s)*options.keep[2])-1]
 		tokeep[dt>thr]=False
 		print("  Excluding particles on translation. Now {:.1f}%  left".format(100*np.mean(tokeep)))
 		
