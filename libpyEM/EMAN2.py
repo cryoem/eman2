@@ -1651,7 +1651,7 @@ def display_path(path):
 	
 	full=full.replace("\\","/").split("/")
 	if len(full)==1: return full
-	return "/".join(full[-2:])
+	return "/".join(full[-3:])
 
 def remove_directories_from_name(file_name,ntk=0):
 	'''

@@ -385,7 +385,7 @@ class EMPlot2DWidget(EMGLWidget):
 				ny=len(rdata)
 				data=[[rdata[j][i] for j in range(ny)] for i in range(nx)]
 
-				self.set_data(data,remove_directories_from_name(filename,1),quiet=quiet,comments=comments)
+				self.set_data(data,display_path(filename),quiet=quiet,comments=comments)
 			except:
 				traceback.print_exc()
 				print("couldn't read",filename)
