@@ -818,7 +818,7 @@ def do_patch_tracking_3d(imgs, ttparams, options, niter=4):
 	maskc=make_mask(sz)
 	imgshp=[m.process("filter.highpass.gauss",{"cutoff_pixels":options.highpass}) for m in imgs]
 	allparams=np.hstack([tpm.flatten(), pks.flatten()])
-	ptclpos,ptclimgs=ali_ptcls(imgshp, allparams, options, doali=False,return_imgs=True)
+	ptclpos,ptclimgs=ali_ptcls(imgshp, allparams, options, doali=False,return_imgs=True, do_rotation=False)
 	nt=len(ptclimgs)//len(imgs)
 	
 	trg=tpm[:,3]
@@ -854,13 +854,13 @@ def do_patch_tracking_3d(imgs, ttparams, options, niter=4):
 			m.process_inplace("normalize.edgemean")
 			m.process_inplace("xform",{"tx":int(dxy[i,0]),"ty":int(dxy[i,1])})
 			dy=(sz//2)-np.cos(trg[i]*np.pi/180.)*sz/2
-			msk=m.copy()
-			msk.to_one()
-			edge=sz//10
-			msk.process_inplace("mask.zeroedge2d",{"x0":dy+edge, "x1":dy+edge, "y0":edge, "y1":edge})
-			msk.process_inplace("mask.addshells.gauss",{"val1":0, "val2":edge})
-			m.mult(msk)
-			xf=Transform({"type":"xyz","ytilt":trg[i],"xtilt":tpm[i,4]})
+			#msk=m.copy()
+			#msk.to_one()
+			#edge=sz//10
+			#msk.process_inplace("mask.zeroedge2d",{"x0":dy+edge, "x1":dy+edge, "y0":edge, "y1":edge})
+			#msk.process_inplace("mask.addshells.gauss",{"val1":0, "val2":edge})
+			#m.mult(msk)
+			xf=Transform({"type":"xyz","ztilt":tpm[i,2],"ytilt":tpm[i,3],"xtilt":tpm[i,4]})
 
 			if abs(i-nrange[0])>1:
 				pj=recon.projection(xf, 0)
@@ -1987,7 +1987,7 @@ def get_center(img, lowres=True, maxshift=64):
 	return pk
 
 #### this is the main function that calculate the offset of landmarks in tilt series given images and alignment parameters 
-def ali_ptcls(imgs, allpms, options, outname=None, doali=True, return_imgs=False):
+def ali_ptcls(imgs, allpms, options, outname=None, doali=True, return_imgs=False, do_rotation=False):
 	zeroid=options.zeroid
 	num=options.num
 	nrange=np.hstack([np.arange(zeroid, num), np.arange(zeroid, -1, -1)])
@@ -2036,7 +2036,11 @@ def ali_ptcls(imgs, allpms, options, outname=None, doali=True, return_imgs=False
 			else:
 				tlast=np.array([0,0])
 
-			xf=Transform({"type":"2d","tx":pxf[0],"ty":pxf[1]})
+			if do_rotation:
+				xf=Transform({"type":"2d","tx":pxf[0],"ty":pxf[1],"alpha":-ttparams[nid, 2]})
+			else:
+				xf=Transform({"type":"2d","tx":pxf[0],"ty":pxf[1]})
+			
 			e=imgs[nid].get_rotated_clip(xf,(bx*2,bx*2,1)).process("normalize")
 			e["apix_x"]=e["apix_y"]=e["apix_z"]=imgs[0]["apix_x"]
 
