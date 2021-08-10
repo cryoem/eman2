@@ -2259,6 +2259,7 @@ if the lst file does not exist."""
 
 		# potentially time consuming, but this also gives us self.n
 		self.normalize()
+		self.lock=threading.Lock()
 
 	def __del__(self):
 		self.close()
@@ -2284,6 +2285,7 @@ extfile : the path to the referenced image file (can be relative or absolute, de
 jsondict : optional string in JSON format or a JSON compatible dictionary. values will override header values when an image is read.
 """
 
+		self.lock.acquire()
 		if jsondict==None : 
 			outln="{}\t{}".format(nextfile,extfile)
 		elif isinstance(jsondict,str) and jsondict[0]=="{" and jsondict[-1]=='}' : 
@@ -2309,6 +2311,7 @@ jsondict : optional string in JSON format or a JSON compatible dictionary. value
 		else : self.ptr.seek(self.seekbase+self.linelen*n)		# otherwise find the correct location
 
 		self.ptr.write(outln)
+		self.lock.release()
 
 	def read(self,n):
 		"""Reads the nth record in the file. Note that this does not read the referenced image, which can be
@@ -2316,6 +2319,7 @@ performed with read_image either here or in the EMData class. Returns a tuple (n
 contains decoded information from the stored JSON dictionary. Will also read certain other legacy comments
 and translate them into a dictionary."""
 		if n>=self.n : raise Exception("Attempt to read record {} from #LSX {} with {} records".format(n,self.path,self.n))
+		self.lock.acquire()
 		n=int(n)
 		self.ptr.seek(self.seekbase+self.linelen*n)
 		ln=self.ptr.readline().strip().split("\t")
@@ -2323,6 +2327,7 @@ and translate them into a dictionary."""
 		try: ln[0]=int(ln[0])
 		except:
 			print(f"Error LSXFile.read({n}). {self.seekbase},{self.linelen},{ln}")
+			self.lock.release()
 			raise(Exception)
 		if len(ln[2])<2: ln[2]={}
 		else:
@@ -2339,6 +2344,7 @@ and translate them into a dictionary."""
 					ln[2]={"xform.projection":eval(ln[2])}
 				else:
 					ln[2]={"lst_comment":ln[2]}
+		self.lock.release()
 		return ln
 
 	def read_image(self,N,hdronly=False,region=None):
@@ -2347,7 +2353,7 @@ but this method prevents multiple open/close operations on the #LSX file."""
 
 		n,fsp,jsondict=self.read(N)
 #		print(self.path,n,fsp,jsondict,hdronly,region)
-		if ret==None: ret=EMData()
+		ret=EMData()
 		ret.read_image_c(fsp,n,hdronly,region)
 		ret["source_path"]=self.path
 		ret["source_n"]=N
