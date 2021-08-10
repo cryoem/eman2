@@ -319,7 +319,7 @@ def gather_metadata(pfile):
 		
 		info3d.append(dc)
 
-		sys.stdout.write("\r {}/{}".format(ii, len(params)))
+		sys.stdout.write("\r {}/{}".format(ii+1, len(params)))
 		sys.stdout.flush()
 	print()
 		
