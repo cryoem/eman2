@@ -612,6 +612,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("get_ysize", &EMAN::EMData::get_ysize, "Get the image y-dimensional size.\n \nreturn Image y-dimensional size.")
 	.def("get_zsize", &EMAN::EMData::get_zsize, "Get the image z-dimensional size.\n \nreturn Image z-dimensional size.")
 	.def("get_size", &EMAN::EMData::get_size, "Get the number of allocated floats in the image (nx*ny*nz)\n \nreturn nx*ny*nz")
+	.def("get_sizes", &EMAN::EMData::get_sizes, "Get the image x-, y-, z-dimensional sizes.\n \nreturn IntSize(x-dim size, y-dim size, z-dim size).")
 // 	.def("get_data_char", &EMAN::EMData::get_data_char, return_value_policy<reference_existing_object>(),"Get the binary pixel data as a raw uchar pointer")
 	.def("get_data_as_vector", &EMAN::EMData::get_data_as_vector, "Get the pixel data as a vector\n \nreturn a vector containing the pixel data.")
 	.def("get_data_string",&EMAN::EMData::get_data_pickle,"Returns a string representation of the floating point data in the image")
@@ -933,4 +934,3 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	delete EMAN_EMData_scope;
 
 }
-
