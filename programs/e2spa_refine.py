@@ -38,6 +38,12 @@ def main():
 	npt=EMUtil.get_image_count(options.ptcl)
 	if options.path==None: options.path=num_path_new("r3d_")
 	
+	options.cmd=' '.join(sys.argv)
+	fm=f"{options.path}/0_spt_params.json"
+	js=js_open_dict(fm)
+	js.update(vars(options))
+	js.close()
+	
 	if options.startiter==0:
 		if not os.path.isdir(options.path):
 			os.mkdir(options.path)

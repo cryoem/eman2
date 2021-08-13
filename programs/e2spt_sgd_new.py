@@ -30,10 +30,16 @@ def main():
 	lr=options.learnrate
 	shrink=options.shrink
 	batch=options.batch
-	ncls=options.ncls	
+	ncls=options.ncls
 	
 	if options.path==None: options.path=num_path_new("sptsgd_")
 	path=options.path
+	
+	options.cmd=' '.join(sys.argv)
+	fm=f"{path}/0_spt_params.json"
+	js=js_open_dict(fm)
+	js.update(vars(options))
+	js.close()
 	
 	info2dname=f"{path}/particle_info_2d.lst"
 	info3dname=f"{path}/particle_info_3d.lst"
