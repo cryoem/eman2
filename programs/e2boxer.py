@@ -1096,7 +1096,7 @@ class boxerConvNet(QtCore.QObject):
 		pks[:,1:]=pks[:,1:]*nnet.labelshrink
 		
 		if nnet1==None:
-			tstout=np.ones(len(pks)//3+1)
+			tstout=np.ones(len(pks))
 		else:
 			coord=np.array(pks).reshape((-1,3))
 			imgs=[]

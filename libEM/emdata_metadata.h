@@ -565,6 +565,12 @@ inline int get_zsize() const
 }
 
 
+inline IntSize get_sizes() const
+{
+	return IntSize(get_xsize(), get_ysize(), get_zsize());
+}
+
+
 /** Get the number of allocated floats in the image (nx*ny*nz)
  * @return nx*ny*nz
  */

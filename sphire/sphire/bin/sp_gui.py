@@ -55,6 +55,7 @@ from EMAN2 import *
 from EMAN2_cppwrap import *
 try:
 	from sphire.libpy import sp_global_def  #### from ..libpy.sp_global_def import *
+	from sphire.libpy.sp_global_def import sp_get_image_path
 	from sphire.libpy.sp_sparx import *     #### from ..libpy.sp_sparx import *
 	import sphire
 except ImportError as e:
@@ -72,7 +73,8 @@ import re
 # Helper Functions
 # 
 # This function is added here because db_convert_path in EMAN2db.py has a bug.
-# 
+#
+
 def translate_to_bdb_path(std_path):
 	'''
 	Translate a standard file path (std_path) to bdb syntax (return value). 
@@ -582,9 +584,9 @@ class SXMenuItemBtnAreaWidget(QWidget):
 
 		# Add menu item button for application information
 		if helical:
-			sxmenu_item_btn_pictograph_file_path = '{0}sxgui_logo_sphire_helix.png'.format(get_image_directory())
+			sxmenu_item_btn_pictograph_file_path = sp_get_image_path("sxgui_logo_sphire_helix.png")
 		else:
-			sxmenu_item_btn_pictograph_file_path = '{0}sxgui_logo_sphire.png'.format(get_image_directory())
+			sxmenu_item_btn_pictograph_file_path = sp_get_image_path("sxgui_logo_sphire.png")
 		sxmenu_item_btn = SXLogoButton(sxmenu_item_btn_pictograph_file_path)
 		sxinfo.btn = sxmenu_item_btn
 
@@ -611,7 +613,8 @@ class SXMenuItemBtnAreaWidget(QWidget):
 	def add_sxmenu_item_btn_widget(self, sxmenu_item, sxmenu_item_btn_subarea_widget):
 		assert(isinstance(sxmenu_item, SXmenu_item) == True) # Assuming the sxmenu_item is an instance of class SXmenu_item
 
-		sxmenu_item_btn_pictograph_file_path = "{0}sxgui_pictograph_{1}.png".format(get_image_directory(), sxmenu_item.name.replace("sxc_", ""))
+		sxmenu_item_btn_pictograph_file_path = sp_get_image_path(f'sxgui_pictograph_{sxmenu_item.name.replace("sxc_", "")}.png')
+
 		sxmenu_item.btn = SXPictogramButton(sxmenu_item.name.replace("sxc_", ""), sxmenu_item_btn_pictograph_file_path, self)
 		cur_widget_counts = sxmenu_item_btn_subarea_widget.layout().count()
 		sxmenu_item_btn_subarea_widget.layout().addWidget(sxmenu_item.btn, cur_widget_counts // 2, cur_widget_counts % 2)
@@ -3731,7 +3734,7 @@ class SXInfoWidget(QWidget):
 		widget = QWidget(self)
 
 		# Get the picture name
-		pic_name = '{0}sxgui_info.png'.format(get_image_directory())
+		pic_name = sp_get_image_path("sxgui_info.png")
 		# Import the picture as pixmap to get the right dimensions
 		self.pixmap = QPixmap(pic_name)
 		width = self.pixmap.width()
@@ -4610,7 +4613,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		# --------------------------------------------------------------------------------
 		# Setup Window Layout
 		# --------------------------------------------------------------------------------
-		background_image_file_path = '{0}sxgui_background.png'.format(get_image_directory())
+		background_image_file_path = sp_get_image_path("sxgui_background.png")
 
 		central_widget_global = QWidget(self)
 		central_widget_global.setObjectName('central')
@@ -4687,7 +4690,8 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 			logo_container = QtGui.QWidget()
 			layout_start_widget = QtGui.QHBoxLayout()
 			layout_logo_container = QtGui.QVBoxLayout()
-			logo_container.setStyleSheet('border-image: url("{0}sxgui_pictograph_info.png")'.format(get_image_directory()))
+
+			logo_container.setStyleSheet(f'border-image: url("{sp_get_image_path("sxgui_pictograph_info.png")}")')
 			logo_container.setFixedSize(100, 100)
 			layout_start_widget.setContentsMargins(0, 0, 0, 20)
 
@@ -6613,6 +6617,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		token = SXcmd_token(); token.key_base = "relion_project_dir"; token.key_prefix = "--"; token.label = "Relion project directory"; token.help = "Relion project directory. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "."; token.restore = [['.'], ['.']]; token.type = "dir"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "output_name"; token.key_prefix = "--"; token.label = "Output star file name"; token.help = "Output star file name. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "sphire2relion.star"; token.restore = [['sphire2relion.star'], ['sphire2relion.star']]; token.type = "output"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "particle_stack"; token.key_prefix = "--"; token.label = "Particle stack"; token.help = "Particle stack in bdb or hdf format. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "none"; token.restore = [['none'], ['none']]; token.type = "bdb2d_stack"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
+		token = SXcmd_token(); token.key_base = "partres_file"; token.key_prefix = "--"; token.label = "Partres file"; token.help = "Partres file containing the CTF information from the data set. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', '']]; token.default = "none"; token.restore = [['none'], ['none']]; token.type = "string"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token
 		token = SXcmd_token(); token.key_base = "params_2d_file"; token.key_prefix = "--"; token.label = "2D params file"; token.help = "2D alignment parameters. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', ''], ['particle_stack', 'none', 'True'], ['params_3d_file', 'none', 'False']]; token.default = "none"; token.restore = [['none'], ['none']]; token.type = "params_any_txt"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token; sxcmd.dependency_dict.setdefault('particle_stack', []).append([token.key_base, 'none', 'True']); sxcmd.dependency_dict.setdefault('params_3d_file', []).append([token.key_base, 'none', 'False'])
 		token = SXcmd_token(); token.key_base = "params_3d_file"; token.key_prefix = "--"; token.label = "3D params file"; token.help = "3D projection parameters. "; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', ''], ['particle_stack', 'none', 'True'], ['params_2d_file', 'none', 'False']]; token.default = "none"; token.restore = [['none'], ['none']]; token.type = "params_any_txt"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token; sxcmd.dependency_dict.setdefault('particle_stack', []).append([token.key_base, 'none', 'True']); sxcmd.dependency_dict.setdefault('params_2d_file', []).append([token.key_base, 'none', 'False'])
 		token = SXcmd_token(); token.key_base = "params_3d_index_file"; token.key_prefix = "--"; token.label = "3D params index file"; token.help = "Index file for the 3d params. Used to find the associated particle stack entry in the params file. In the meridien directories, this file is either called chunk or index."; token.group = "main"; token.is_required = False; token.is_locked = False; token.is_reversed = False; token.filament_tab = ""; token.dependency_group = [['', '', ''], ['particle_stack', 'none', 'True'], ['params_3d_file', 'none', 'True']]; token.default = "none"; token.restore = [['none'], ['none']]; token.type = "params_any_txt"; sxcmd.token_list.append(token); sxcmd.token_dict[token.key_base] = token; sxcmd.dependency_dict.setdefault('particle_stack', []).append([token.key_base, 'none', 'True']); sxcmd.dependency_dict.setdefault('params_3d_file', []).append([token.key_base, 'none', 'True'])
@@ -7141,7 +7146,7 @@ def main():
 	# 		print "MRK_DEBUG: !!!USING THE STYLE: %s!!!" % str(key)
 	# print "MRK_DEBUG:"
 
-	sxapp.setWindowIcon(QIcon(get_image_directory()+"sxgui_icon_sphire.png"))
+	sxapp.setWindowIcon(QIcon(sp_get_image_path("sxgui_icon_sphire.png")))
 
 	sxapp_font = sxapp.font()
 	sxapp_font_info = QFontInfo(sxapp.font())

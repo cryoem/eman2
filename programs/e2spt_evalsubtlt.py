@@ -15,13 +15,21 @@ from eman2_gui.valslider import ValSlider, ValBox
 
 def main():
 	
-	usage=" "
+	usage="""
+	Visualize particle motion in individual tilts. After a refinement with the new spt protocol, run 
+	
+	e2spt_evalsubtlt.py --path spt_xx --loadali2d spt_xx/aliptcls2d_yy.lst --loadali3d spt_xx/aliptcls3d_zz.lst
+	
+	It will take a while to load all metadata, and plot the trajectory of each particle on each tilt image in each tomogram. 
+	
+	In the top panel, the blue curve represents the average score of all 2D particles in that tilt, and the red curve represents the average distance of the subtilt motion with respect to the alignment of the 3D particle. The quiver plot below shows the trajectory of each individual particle, colored by its alignment score.
+	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--path", type=str,help="path", default=None)
 	parser.add_argument("--loadali2d", type=str,help="previous 2d alignment", default=None)
 	parser.add_argument("--loadali3d", type=str,help="previous 3d alignment", default=None)
-	#parser.add_argument("--inplace", action="store_true", default=False ,help="overwrite input.")
-	#parser.add_argument("--invert", action="store_true", default=False ,help="invert direction.")
+	parser.add_argument("--submean", action="store_true", default=False ,help="substract mean movement of the vector field")
+
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -79,11 +87,14 @@ class EMSptEval(QtWidgets.QMainWindow):
 		self.gbl = QtWidgets.QGridLayout(self.centralWidget())
 		self.gbl.setColumnStretch( 2, 10 ) 
 		
+		self.bt_submean=QtWidgets.QPushButton("SubMean")
+		self.gbl.addWidget(self.bt_submean, 0,0,1,1)
+		
 		self.imglst=QtWidgets.QTableWidget(1, 1, self)
 		self.imglst.setMinimumSize(450, 100)
 		self.gbl.addWidget(self.imglst, 0,1,10,1)
 		self.imglst.cellClicked[int, int].connect(self.on_list_selected)
-		
+		self.bt_submean.clicked[bool].connect(self.substract_mean)
 
 		self.update_list()
 		
@@ -139,25 +150,28 @@ class EMSptEval(QtWidgets.QMainWindow):
 		#self.tiltid.setRange(np.min(tid), np.max(tid))
 		#self.tiltid.setValue(int(np.mean(tid)), quiet=1)
 		
-		coord=np.array([d["coord"] for d in d3d])
-		txfs=[d["xform.align3d"].inverse() for d in d3d]
-		coord-=np.array([t.get_trans() for t in txfs])
 		
-		self.sel_coord=coord
+		self.sel_coord=[]
 		self.sel_score=[]
 		self.sel_dxy=[]
 		self.tltang=[]
 		for td in tid:
 		
-			d3d=[d for d in self.info3d if d["src"]==fname]
+			d3ds=[d for d in self.info3d if d["src"]==fname]
 			d2d=[]
-			for d3 in d3d:
+			d3d=[]
+			for d3 in d3ds:
 				d2=[self.info2d[d] for d in d3["idx2d"]]
 				d2=[d for d in d2 if d["tilt_id"]==td]
 				if len(d2)==0: continue
 				d2d.append(d2[0])
+				d3d.append(d3)
 
 			xfali=[d["pastxf"] for d in d2d]
+			
+			coord=np.array([d["coord"] for d in d3d])
+			txfs=[d["xform.align3d"].inverse() for d in d3d]
+			coord-=np.array([t.get_trans() for t in txfs])
 			
 			xfpj=[d["xform.projection"] for d in d2d]
 			self.tltang.append(np.mean([x.get_params("xyz")["ytilt"] for x in xfpj]))
@@ -170,6 +184,7 @@ class EMSptEval(QtWidgets.QMainWindow):
 			
 			self.sel_score.append(score)
 			self.sel_dxy.append(dxy)
+			self.sel_coord.append(coord)
 		
 		self.plt_scr=[np.mean(s) for s in self.sel_score]
 		self.plt_dxy=[np.mean(np.linalg.norm(d, axis=1)) for d in self.sel_dxy]
@@ -190,13 +205,22 @@ class EMSptEval(QtWidgets.QMainWindow):
 			
 			self.check_orient()
 		
-	def check_orient(self):
+	def substract_mean(self):
+		self.options.submean=~self.options.submean
+		self.check_orient()
 		
+		
+	def check_orient(self):		
 		#tid=int(self.tiltid.getValue())
 		tid=self.sel_tid
-		coord=self.sel_coord
-		dxy=self.sel_dxy[tid]
+		coord=self.sel_coord[tid]
+		dxy=self.sel_dxy[tid].copy()
 		score=self.sel_score[tid]
+		
+		if self.options.submean:
+			md=np.mean(dxy, axis=0)
+			print("tilt {} : mean x - {:.2f}, y - {:.2f}".format(tid, md[0], md[1]))
+			dxy-=md
 
 		plot=self.ploty
 		plot.cla()

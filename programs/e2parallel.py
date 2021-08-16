@@ -83,9 +83,15 @@ def main():
 			
 
 		task=load(open(options.taskin,"rb"))
-		try: dump(task.execute(empty_func),open(options.taskout,"wb"),-1)
+		try: 
+			ret=task.execute(empty_func)
+			dump(ret,open(options.taskout,"wb"),-1)
 		except:
+			#### print to both stdout and text file
+			print("Error executing: ",task)
 			traceback.print_exc()
+			err=traceback.format_exc()
+			print(err)
 			sys.exit(1)
 		
 	else:

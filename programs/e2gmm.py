@@ -779,7 +779,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			self.jsparm["apix"]=a["apix_x"]
 			
 			# make projection from threed
-			run(f"e2project3d.py {rpath}/threed_{itr:02d}.hdf --outfile {self.gmm}/proj_in.hdf --orientgen eman:n=500 --sym c1 -f --parallel thread:4")
+			run(f"e2project3d.py {rpath}/threed_{itr:02d}.hdf --outfile {self.gmm}/proj_in.hdf --orientgen eman:n=500 --sym c1 --parallel thread:4")
 			
 			# Copy mask from refine folder
 			a=EMData(f"{rpath}/mask_tight.hdf")
