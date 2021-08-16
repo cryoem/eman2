@@ -2162,6 +2162,7 @@ def calculate_2d_params_for_centering(kwargs):
             Blockdata["main_node"],
             mpi_comm,
             write_headers=False,
+            filament_width=kwargs['filament_width'] * 1.1 if kwargs['filament_width'] is not None else None,
         )
 
         del original_images
@@ -2183,6 +2184,18 @@ def calculate_2d_params_for_centering(kwargs):
             params2d, Blockdata["main_node"], mpi.MPI_COMM_WORLD
         )
         if Blockdata["myid"] == Blockdata["main_node"]:
+            try:
+                segment_angles = EMAN2_cppwrap.EMUtil.get_all_attributes(Blockdata["stack"], "segment_angle")
+            except KeyError:
+                pass
+            else:
+                for idx, angle in enumerate(segment_angles):
+                    params2d[idx][1], params2d[idx][2] = reduce_shifts(
+                        params2d[idx][1],
+                        params2d[idx][2],
+                        angle,
+                        options.filament_width > 0,
+                    )
             sp_utilities.write_text_row(
                 params2d, os.path.join(init2dir, "initial2Dparams.txt")
             )
@@ -10412,7 +10425,7 @@ def refinement_one_iteration(
 #
 
 
-def reduce_shifts(sx, sy, img):
+def reduce_shifts(sx, sy, img, rise=None):
     def rot_matrix(angle):
         angle = sp_helix_sphire.np.radians(angle)
         matrix = sp_helix_sphire.np.array(
@@ -10422,15 +10435,17 @@ def reduce_shifts(sx, sy, img):
             ]
         )
         return matrix
+    if rise is None:
+        rise=Tracker["constants"]["helical_rise"]
 
-    if Tracker["constants"]["helical_rise"] is not None:
+    if rise is not None:
         try:
             rotation_angle = img.get_attr("segment_angle")
         except AttributeError:
             pass
         else:
             rise = old_div(
-                Tracker["constants"]["helical_rise"],
+                rise,
                 float(Tracker["constants"]["pixel_size"]),
             )
             rise_half = old_div(rise, 2.0)

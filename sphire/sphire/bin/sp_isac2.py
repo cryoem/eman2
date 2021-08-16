@@ -2544,7 +2544,6 @@ def run(args):
             except KeyError:
                 pass
             else:
-                print(len(segment_angles), len(params2d), len(tmp))
                 for idx, angle in enumerate(segment_angles):
                     tmp[idx][1], tmp[idx][2] = reduce_shifts(
                         tmp[idx][1],
