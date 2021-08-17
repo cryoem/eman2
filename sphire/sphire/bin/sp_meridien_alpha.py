@@ -1663,26 +1663,30 @@ def get_refangs_and_shifts():
 
     """Multiline Comment8"""
 
-    k = int(numpy.ceil(old_div(Tracker["xr"], Tracker["ts"])))
-    radi = (Tracker["xr"] + Tracker["ts"]) ** 2
-    rshifts = []
-    for ix in range(-k, k, 1):
-        six = ix * Tracker["ts"] + old_div(Tracker["ts"], 2)
-        for iy in range(-k, k, 1):
-            siy = iy * Tracker["ts"] + old_div(Tracker["ts"], 2)
-            if six * six + siy * siy <= radi:
-                rshifts.append([six, siy])
+    if Tracker["xr"] == 0:
+        rshifts = [[0, 0]]
+        coarse_shifts = [[0, 0]]
+    else:
+        k = int(numpy.ceil(old_div(Tracker["xr"], Tracker["ts"])))
+        radi = (Tracker["xr"] + Tracker["ts"]) ** 2
+        rshifts = []
+        for ix in range(-k, k, 1):
+            six = ix * Tracker["ts"] + old_div(Tracker["ts"], 2)
+            for iy in range(-k, k, 1):
+                siy = iy * Tracker["ts"] + old_div(Tracker["ts"], 2)
+                if six * six + siy * siy <= radi:
+                    rshifts.append([six, siy])
 
-    ts_coarse = 2 * Tracker["ts"]
-    k = int(numpy.ceil(old_div(Tracker["xr"], ts_coarse)))
-    radi = Tracker["xr"] * Tracker["xr"]
-    coarse_shifts = []
-    for ix in range(-k, k + 1, 1):
-        six = ix * ts_coarse
-        for iy in range(-k, k + 1, 1):
-            siy = iy * ts_coarse
-            if six * six + siy * siy <= radi:
-                coarse_shifts.append([six, siy])
+        ts_coarse = 2 * Tracker["ts"]
+        k = int(numpy.ceil(old_div(Tracker["xr"], ts_coarse)))
+        radi = Tracker["xr"] * Tracker["xr"]
+        coarse_shifts = []
+        for ix in range(-k, k + 1, 1):
+            six = ix * ts_coarse
+            for iy in range(-k, k + 1, 1):
+                siy = iy * ts_coarse
+                if six * six + siy * siy <= radi:
+                    coarse_shifts.append([six, siy])
 
     return refang, rshifts, coarse, coarse_shifts
 
@@ -2162,7 +2166,7 @@ def calculate_2d_params_for_centering(kwargs):
             Blockdata["main_node"],
             mpi_comm,
             write_headers=False,
-            filament_width=kwargs['filament_width'] * 1.1 if kwargs['filament_width'] is not None else None,
+            filament_width=kwargs['filament_width'],
         )
 
         del original_images
@@ -9497,14 +9501,14 @@ def rec3d_make_maps(compute_fsc=True, regularized=True):
                         tvol0.write_image(
                             os.path.join(
                                 Tracker["constants"]["masterdir"],
-                                "vol_%d_unfil_%03d.hdf" % (iproc, final_iter),
+                                "vol_%d_unfil_%03d.hdf" % (iproc, Tracker["mainiteration"]),
                             )
                         )
                     else:
                         tvol1.write_image(
                             os.path.join(
                                 Tracker["constants"]["masterdir"],
-                                "vol_%d_unfil_%03d.hdf" % (iproc, final_iter),
+                                "vol_%d_unfil_%03d.hdf" % (iproc, Tracker["mainiteration"]),
                             )
                         )
                 mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
@@ -10204,7 +10208,7 @@ def refinement_one_iteration(
             exclude.append(
                 [
                     None,
-                    os.path.join(Tracker["directory"], "ang_dist_{0}".format(procid)),
+                    os.path.join(Tracker["directory"], "ang_dist_{0}_{1:03d}".format(procid, Tracker["mainiteration"])),
                     "",
                 ]
             )
@@ -10213,7 +10217,7 @@ def refinement_one_iteration(
                     [
                         outlier_full,
                         os.path.join(
-                            Tracker["directory"], "ang_dist_{0}_outlier".format(procid)
+                            Tracker["directory"], "ang_dist_{0}_{1:03d}_outlier".format(procid, Tracker["mainiteration"])
                         ),
                         "_outlier",
                     ]
@@ -11192,7 +11196,10 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
                     "mask3D file does  not exists ", "meridien", 1, Blockdata["myid"]
                 )
 
-            if old_div(options.xr, options.ts) < 1.0:
+            if options.xr == 0:
+                pass
+
+            elif old_div(options.xr, options.ts) < 1.0:
                 sp_global_def.ERROR(
                     "Incorrect translational searching settings, search range cannot be smaller than translation step ",
                     "meridien",
@@ -11328,6 +11335,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
             # kwargs["masterdir"] = masterdir
 
             kwargs["options_skip_prealignment"] = options.skip_prealignment
+            kwargs["filament_width"] = options.filament_width
             kwargs["options_CTF"] = True
 
             kwargs["mpi_comm"] = mpi.MPI_COMM_WORLD
@@ -12102,7 +12110,10 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
                     "mask3D file does  not exists ", "meridien", 1, Blockdata["myid"]
                 )
 
-            if old_div(options.xr, options.ts) < 1.0:
+            if options.xr == 0:
+                pass
+
+            elif old_div(options.xr, options.ts) < 1.0:
                 sp_global_def.ERROR(
                     "Incorrect translational searching settings, search range cannot be smaller than translation step ",
                     "meridien",
