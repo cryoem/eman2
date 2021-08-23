@@ -42,6 +42,12 @@ def main():
 	path=options.path
 	print(f"Writing in {path}...")
 	
+	options.cmd=' '.join(sys.argv)
+	fm=f"{path}/0_sptcls_params.json"
+	js=js_open_dict(fm)
+	js.update(vars(options))
+	js.close()
+	
 	info2dname=f"{path}/particle_info_2d.lst"
 	info3dname=f"{path}/particle_info_3d.lst"
 	
@@ -65,12 +71,6 @@ def main():
 		setsf=" --setsf {}".format(options.setsf)
 	else:
 		setsf=""
-
-	options.cmd=' '.join(sys.argv)
-	fm=f"{path}/0_sptcls_params.json"
-	js=js_open_dict(fm)
-	js.update(vars(options))
-	js.close()
 	
 	#### generating references...
 	if options.loadali3d and options.nref>0:

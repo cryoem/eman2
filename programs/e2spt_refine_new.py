@@ -28,7 +28,7 @@ def main():
 	parser.add_argument("--minres",type=float,help="Minimum resolution to consider in alignment (in A, not 1/A)",default=0)
 	parser.add_argument("--path", type=str,help="Directory of the refinement.", default=None)
 	parser.add_argument("--sym", type=str,help="symmetry", default="c1")
-	parser.add_argument("--iters", type=str,help="Iteration information. Input types of refinement separated by comma. p - 3d particle translation-rotation. t - subtilt translation. r - subtilt translation-rotation. d - subtilt defocus. Default is p,p,p,t,r,p,r,d. Character followed by number is also acceptable. p3 = p,p,p", default="p,p,p,t,r,p,r,d")
+	parser.add_argument("--iters", type=str,help="Iteration information. Input types of refinement separated by comma. p - 3d particle translation-rotation. t - subtilt translation. r - subtilt translation-rotation. d - subtilt defocus. Default is p,p,p,t,p,p,t,r,d. Character followed by number is also acceptable. p3 = p,p,p", default="p,p,p,t,p,p,t,r,d")
 	parser.add_argument("--keep", type=str,help="Fraction of particles to keep. Note this is controlled at three separate steps. When default --keep=.95, it removes the worst 0.05 3D particles, 0.05 2D subtilt with the worst score, and 0.05 of subtilt with the largest drift. Also accept comma separated values (0.9,0.5,0.5) to set different keep thresholds for the three classes", default="0.95")
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>=<value>. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel",default="thread:4")
 	parser.add_argument("--threads", type=int,help="threads for post-processing", default=10)
@@ -261,7 +261,7 @@ def main():
 			for eo in ["even", "odd"]:
 				run(f"e2spa_make3d.py --input {path}/aliptcls2d_{itr:02d}.lst --output {path}/threed_{itr:02d}_{eo}.hdf --keep {options.keep} --clsid {eo} --parallel thread:{options.threads} --outsize {boxsize} --pad {padsize} --ref {path}/threed_{itr:02d}_{eo}.hdf --maxres {res} --sym {options.sym}")
 			
-		run(f"e2refine_postprocess.py --even {path}/threed_{itr:02d}_even.hdf {setsf} {tophat} --threads {options.threads} --restarget {res} --sym {options.sym} {ppmask}")
+		run(f"e2refine_postprocess.py --even {path}/threed_{itr:02d}_even.hdf {setsf} {tophat} --threads {options.threads} --restarget {res:.2f} --sym {options.sym} {ppmask}")
 
 		res=calc_resolution(f"{path}/fsc_masked_{itr:02d}.txt")
 
