@@ -27,7 +27,7 @@ def main():
 	ncls=options.ncls
 	
 	options.cmd=' '.join(sys.argv)
-	fm=f"{path}/0_spt_params.json"
+	fm=f"{path}/0_spa_params.json"
 	js=js_open_dict(fm)
 	js.update(vars(options))
 	js.close()

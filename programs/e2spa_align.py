@@ -18,7 +18,7 @@ def main():
 	parser.add_argument("--ptclin", type=str,help="particle input", default=None)
 	parser.add_argument("--ptclout", type=str,help="particle output", default=None)
 	parser.add_argument("--ref", type=str,help="reference input", default=None)
-	parser.add_argument("--keep", type=float,help="propotion of tilts to keep. default is 0.8", default=0.8)
+	#parser.add_argument("--keep", type=float,help="propotion of tilts to keep. default is 0.8", default=0.8)
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use. Default is thread:12", default="thread:12")
 
 	parser.add_argument("--debug", action="store_true", default=False ,help="Turn on debug mode. This will only process a small subset of the data")
