@@ -1042,6 +1042,9 @@ def ali2d_base(
                     cylinder_numpy = numpy.zeros((nx, nx))
                     cylinder_numpy[int(nx // 2 - filament_radius):int(nx//2 + filament_radius)] = 1
                     tavg = sp_utilities.numpy2em_python(cylinder_numpy)
+                    if myid == main_node and outdir:
+                        tavg.append_image(os.path.join(outdir, "filament_ref.hdf"))
+
 
                 if Iter % 4 != 0 or total_iter > max_iter * len(xrng) - 10:
                     delta = 0.0

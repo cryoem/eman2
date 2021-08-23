@@ -2141,6 +2141,10 @@ def calculate_2d_params_for_centering(kwargs):
 
         # section ali2d_base
 
+        filament_width = kwargs['filament_width']
+        if filament_width is not None:
+            filament_width *= shrink_ratio
+
         params2d = sp_applications.ali2d_base(
             original_images,
             init2dir,
@@ -2166,7 +2170,7 @@ def calculate_2d_params_for_centering(kwargs):
             Blockdata["main_node"],
             mpi_comm,
             write_headers=False,
-            filament_width=kwargs['filament_width'],
+            filament_width=filament_width,
         )
 
         del original_images
