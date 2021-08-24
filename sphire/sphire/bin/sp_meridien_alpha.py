@@ -9732,9 +9732,9 @@ def refinement_one_iteration(
         refang = Blockdata["symclass"].reduce_anglesets(
             sp_fundamentals.rotate_params(refang, [-rangle, -rangle, -rangle])
         )
-        coarse_angles = Blockdata["symclass"].reduce_anglesets(
-            sp_fundamentals.rotate_params(coarse_angles, [-rangle, -rangle, -rangle])
-        )
+        #coarse_angles = Blockdata["symclass"].reduce_anglesets(
+        #    sp_fundamentals.rotate_params(coarse_angles, [-rangle, -rangle, -rangle])
+        #)
         shakegrid(rshifts, rshift)
         shakegrid(coarse_shifts, rshift)
 
