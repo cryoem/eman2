@@ -141,10 +141,10 @@ int LstFastIO::calc_ref_image_index(int image_index)
 		return last_ref_index;
 	}
 	else {
-		char buf[line_length+1];
+		vector<char> buf(line_length+1);
 
 		fseek(file,head_length+line_length*image_index,SEEK_SET);
-		if (!fgets(buf, line_length, file)) {
+		if (!fgets(buf.data(), line_length, file)) {
 			LOGERR("reach EOF in file '%s' before reading %dth image",
 				   filename.c_str(), image_index);
 			return 1;
@@ -152,8 +152,8 @@ int LstFastIO::calc_ref_image_index(int image_index)
 
 		int ref_image_index = 0;
 		char ref_image_path[MAXPATHLEN];
-		char unused[line_length];
-		sscanf(buf, " %d %s %[ .,0-9-]", &ref_image_index, ref_image_path, unused);
+		vector<char> unused(line_length);
+		sscanf(buf.data(), " %d %s %[ .,0-9-]", &ref_image_index, ref_image_path, unused.data());
 		string newrefname = string(ref_image_path);
 		if (newrefname.compare(ref_filename)==0) {	// use the existing imageio when possible, TODO: cache a few?
 			if (imageio==0) throw FileAccessException(ref_filename);
