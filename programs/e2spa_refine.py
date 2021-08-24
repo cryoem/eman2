@@ -39,19 +39,31 @@ def main():
 	if options.path==None: options.path=num_path_new("r3d_")
 	
 	options.cmd=' '.join(sys.argv)
-	fm=f"{options.path}/0_spt_params.json"
+	fm=f"{options.path}/0_spa_params.json"
 	js=js_open_dict(fm)
 	js.update(vars(options))
 	js.close()
 	
 	if options.startiter==0:
-		if not os.path.isdir(options.path):
-			os.mkdir(options.path)
 		
 		r=1/res
+		opt="--process filter.lowpass.gauss:cutoff_freq={:.4f} --process filter.lowpass.randomphase:cutoff_freq={:.4f}".format(r,r)
+		
+		er=EMData(options.ref,0,True)
+		ep=EMData(options.ptcl,0,True)
+		if abs(1-ep["apix_x"]/er["apix_x"])>0.01 or ep["ny"]!=er["ny"]:
+			print("Reference-particle apix or box size mismatch. will scale/clip reference to match particles")
+				
+			rs=er["apix_x"]/ep["apix_x"]
+			if rs>1.:
+				opt+=" --clip {} --scale {} --process mask.soft:outer_radius=-1".format(ep["nx"], rs)
+			else:
+				opt+=" --scale {} --clip {} --process mask.soft:outer_radius=-1".format(rs, ep["nx"])
+		
+		
 		for i,eo in enumerate(["even","odd"]):
 			run("e2proclst.py {} --create {}/ptcls_00_{}.lst --range {},{},2".format(options.ptcl, options.path, eo, i, npt))
-			run("e2proc3d.py {} {}/threed_00_{}.hdf --process filter.lowpass.gauss:cutoff_freq={:.4f} --process filter.lowpass.randomphase:cutoff_freq={:.4f}".format(options.ref, options.path, eo, r,r))
+			run("e2proc3d.py {} {}/threed_00_{}.hdf {}".format(options.ref, options.path, eo, opt))
 	
 	
 	for i in range(options.startiter, options.startiter+options.niter):

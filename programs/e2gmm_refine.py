@@ -3,6 +3,7 @@
 from EMAN2 import *
 import numpy as np
 from sklearn.decomposition import PCA
+from EMAN2_utils import pdb2numpy
 
 #### need to unify the float type across tenforflow and numpy
 ##   in theory float16 also works but it can be unsafe especially when the network is deeper...
@@ -772,7 +773,21 @@ def main():
 	
 	## load GMM from text file
 	if options.model:
-		pts=np.loadtxt(options.model).astype(floattype)
+		if options.model.endswith(".pdb"):
+			
+			p=pdb2numpy(options.model)
+			pts=np.zeros((len(p),5))
+			e=EMData(options.projs, 0, True)
+			#sz=e["ny"]
+			p=p/e["ny"]/e["apix_x"]-0.5
+			pts[:,:3]=p
+			pts[:,3]=.5
+			pts[:,4]=1
+			
+			print(pts)
+		else:
+			
+			pts=np.loadtxt(options.model).astype(floattype)
 		npt=len(pts)
 		print("{} gaussian in the model".format(len(pts)))
 	

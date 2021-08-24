@@ -9,7 +9,7 @@ def main():
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--path", type=str,help="path", default=None)
-	parser.add_argument("--niter", type=int,help="iterations", default=50)
+	parser.add_argument("--niter", type=int,help="iterations", default=100)
 	parser.add_argument("--parallel", type=str,help="parallel", default="thread:12")
 	parser.add_argument("--shrink", type=int,help="shrink", default=1)
 	parser.add_argument("--batch", type=int,help="batch size", default=12)
