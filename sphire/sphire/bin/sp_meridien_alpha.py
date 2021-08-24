@@ -477,6 +477,8 @@ def AI(fff, anger, shifter, chout=False):
                     Tracker["howmany"] = 4
                     Tracker["theta_min"] = -1
                     Tracker["theta_max"] = -1
+                    Tracker["ccfpercentage"] = 0.999
+                    Tracker["prior"]["force_outlier"] = False
                     if Tracker["delta"] <= numpy.degrees(
                         math.atan(old_div(0.25, Tracker["constants"]["radius"]))
                     ):
@@ -3770,7 +3772,7 @@ def ali3D_primary_polar(
             lit = len(xod1)
             for j in range(len(xod1)):
                 cumprob += xod1[j]
-                if cumprob > Tracker["constants"]["ccfpercentage"]:
+                if cumprob > Tracker["ccfpercentage"]:
                     lit = j + 1
                     break
             # keepf = mpi_reduce(keepf, 1, MPI_INT, MPI_MAX, Blockdata["main_node"], MPI_COMM_WORLD)
@@ -3864,7 +3866,7 @@ def ali3D_primary_polar(
             lit = len(xod1)
             for j in range(len(xod1)):
                 cumprob += xod1[j]
-                if cumprob > Tracker["constants"]["ccfpercentage"]:
+                if cumprob > Tracker["ccfpercentage"]:
                     lit = j + 1
                     break
 
@@ -4012,7 +4014,7 @@ def ali3D_primary_polar(
         cumprob = 0.0
         for j in range(len(cod1)):
             cumprob += cod1[j]
-            if cumprob > Tracker["constants"]["ccfpercentage"]:
+            if cumprob > Tracker["ccfpercentage"]:
                 lit = j + 1
                 break
 
@@ -4808,7 +4810,7 @@ def ali3D_polar(
             lit = len(xod1)
             for j in range(len(xod1)):
                 cumprob += xod1[j]
-                if cumprob > Tracker["constants"]["ccfpercentage"]:
+                if cumprob > Tracker["ccfpercentage"]:
                     lit = j + 1
                     break
             # keepf = mpi_reduce(keepf, 1, MPI_INT, MPI_MAX, Blockdata["main_node"], MPI_COMM_WORLD)
@@ -4902,7 +4904,7 @@ def ali3D_polar(
             lit = len(xod1)
             for j in range(len(xod1)):
                 cumprob += xod1[j]
-                if cumprob > Tracker["constants"]["ccfpercentage"]:
+                if cumprob > Tracker["ccfpercentage"]:
                     lit = j + 1
                     break
 
@@ -5050,7 +5052,7 @@ def ali3D_polar(
         cumprob = 0.0
         for j in range(len(cod1)):
             cumprob += cod1[j]
-            if cumprob > Tracker["constants"]["ccfpercentage"]:
+            if cumprob > Tracker["ccfpercentage"]:
                 lit = j + 1
                 break
 
@@ -6127,7 +6129,7 @@ def ali3D_primary_local_polar(
                         ###print("  STARTING3    ",Blockdata["myid"],lit)
                         for j in range(len(xod1)):
                             cumprob += xod1[j]
-                            if cumprob > Tracker["constants"]["ccfpercentage"]:
+                            if cumprob > Tracker["ccfpercentage"]:
                                 lit = j + 1
                                 break
 
@@ -6272,7 +6274,7 @@ def ali3D_primary_local_polar(
                         lit = len(xod1)
                         for j in range(len(xod1)):
                             cumprob += xod1[j]
-                            if cumprob > Tracker["constants"]["ccfpercentage"]:
+                            if cumprob > Tracker["ccfpercentage"]:
                                 lit = j + 1
                                 break
 
@@ -6490,7 +6492,7 @@ def ali3D_primary_local_polar(
                     cumprob = 0.0
                     for j in range(len(cod1)):
                         cumprob += cod1[j]
-                        if cumprob > Tracker["constants"]["ccfpercentage"]:
+                        if cumprob > Tracker["ccfpercentage"]:
                             lit = j + 1
                             break
 
@@ -7614,7 +7616,7 @@ def ali3D_local_polar(
                         ###print("  STARTING3    ",Blockdata["myid"],lit)
                         for j in range(len(xod1)):
                             cumprob += xod1[j]
-                            if cumprob > Tracker["constants"]["ccfpercentage"]:
+                            if cumprob > Tracker["ccfpercentage"]:
                                 lit = j + 1
                                 break
 
@@ -7757,7 +7759,7 @@ def ali3D_local_polar(
                         lit = len(xod1)
                         for j in range(len(xod1)):
                             cumprob += xod1[j]
-                            if cumprob > Tracker["constants"]["ccfpercentage"]:
+                            if cumprob > Tracker["ccfpercentage"]:
                                 lit = j + 1
                                 break
 
@@ -7971,7 +7973,7 @@ def ali3D_local_polar(
                     cumprob = 0.0
                     for j in range(len(cod1)):
                         cumprob += cod1[j]
-                        if cumprob > Tracker["constants"]["ccfpercentage"]:
+                        if cumprob > Tracker["ccfpercentage"]:
                             lit = j + 1
                             break
 
@@ -9086,10 +9088,10 @@ def update_tracker(shell_line_command):
         Tracker["constants"]["mask3D"] = options_no_default_value.mask3D
         tempdict["mask3D"] = Tracker["constants"]["mask3D"]
     if options_no_default_value.ccfpercentage != None:
-        Tracker["constants"]["ccfpercentage"] = old_div(
+        Tracker["ccfpercentage"] = old_div(
             options_no_default_value.ccfpercentage, 100.0
         )
-        tempdict["ccfpercentage"] = Tracker["constants"]["ccfpercentage"]
+        tempdict["ccfpercentage"] = Tracker["ccfpercentage"]
     if options_no_default_value.nonorm != None:
         Tracker["constants"]["nonorm"] = options_no_default_value.nonorm
         tempdict["nonorm"] = Tracker["constants"]["nonorm"]
@@ -10980,7 +10982,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
             Prior["tol_mean"] = 30
             Prior["outlier_method"] = "deg"
             Prior["prior_method"] = "running"
-            Prior["force_outlier"] = False
+            Prior["force_outlier"] = True
             Prior["remove_outlier"] = False
             Prior["apply_prior"] = False
             Prior["window_size"] = 3
@@ -11023,7 +11025,6 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
             ]  # will add two states, CONINUATION_INITIAL, CONINUATION_PRIMARY
             Constants["user_func"] = options.function
             Constants["hardmask"] = True  # options.hardmask
-            Constants["ccfpercentage"] = old_div(options.ccfpercentage, 100.0)
             Constants["expthreshold"] = -10
             Constants[
                 "number_of_groups"
@@ -11079,6 +11080,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
             Tracker = {}
             Tracker["constants"] = Constants
             Tracker["prior"] = Prior
+            Tracker["ccfpercentage"] = old_div(options.ccfpercentage, 100.0)
             Tracker["maxit"] = Tracker["constants"]["maxit"]
 
             Tracker["xr"] = options.xr
@@ -11978,7 +11980,6 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
             Constants["states"] = ["PRIMARY", "RESTRICTED", "FINAL"]
             Constants["user_func"] = options.function
             Constants["hardmask"] = True  # options.hardmask
-            Constants["ccfpercentage"] = old_div(options.ccfpercentage, 100.0)
             Constants["expthreshold"] = -10
             Constants[
                 "number_of_groups"
@@ -11998,6 +11999,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
             # Initialize Tracker Dictionary with input options
             Tracker = {}
             Tracker["constants"] = Constants
+            Tracker["ccfpercentage"] = old_div(options.ccfpercentage, 100.0)
             Tracker["maxit"] = Tracker["constants"]["maxit"]
 
             Tracker["xr"] = options.xr
