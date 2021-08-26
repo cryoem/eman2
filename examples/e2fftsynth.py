@@ -33,6 +33,8 @@ from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from optparse import OptionParser
+import numpy as np
+import traceback
 
 try:
 	from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
@@ -46,6 +48,31 @@ try:
 except:
 	print("Unable to import Python GUI libraries, PYTHONPATH ?")
 	sys.exit(1)
+
+soundout=None
+
+def fixang(x):
+	x=fmod(x,360.0)
+	if x>180.0: x-=360.0
+	if x<=-180.0: x+=360.0
+	return x
+
+def initsound():
+	global soundout
+	if soundout!=None: return
+
+	try:
+		import sounddevice
+	except:
+		print("Unable to import sounddevice module. Please insure it is installed.")
+		return
+
+	try:
+		soundout=sounddevice.OutputStream(samplerate=44100,channels=1,dtype="int16")
+	except:
+		traceback.print_exc()
+		print("Unable to open output stream")
+		return
 
 def main():
 	global debug,logid
@@ -111,6 +138,12 @@ class GUIFourierSynth(QtWidgets.QWidget):
 		self.cbshifted=QtWidgets.QCheckBox("Shifted")
 		self.hbl1.addWidget(self.cbshifted)
 
+		self.bphaseleft=QtWidgets.QPushButton("\u2190")
+		self.hbl1.addWidget(self.bphaseleft)
+
+		self.bphaseright=QtWidgets.QPushButton("\u2192")
+		self.hbl1.addWidget(self.bphaseright)
+
 		self.cbtargfn=QtWidgets.QComboBox(self)
 		self.cbtargfn.addItem("None")
 		self.cbtargfn.addItem("triangle")
@@ -130,6 +163,9 @@ class GUIFourierSynth(QtWidgets.QWidget):
 		self.cbtargfn.addItem("square imp dx")
 		self.cbtargfn.addItem("square imp 2")
 		self.hbl1.addWidget(self.cbtargfn)
+
+		self.bsound=QtWidgets.QPushButton("Snd")
+		self.hbl1.addWidget(self.bsound)
 		
 		# Widget containing valsliders
 		self.wapsliders=QtWidgets.QWidget(self)
@@ -153,6 +189,9 @@ class GUIFourierSynth(QtWidgets.QWidget):
 		self.cbshowall.stateChanged[int].connect(self.recompute)
 		self.cbshifted.stateChanged[int].connect(self.recompute)
 		self.cbtargfn.activated[int].connect(self.newtargfn)
+		self.bphaseleft.clicked.connect(self.phaseleft)
+		self.bphaseright.clicked.connect(self.phaseright)
+		self.bsound.clicked.connect(self.playsound)
 
 
 		self.wamp=[]
@@ -175,6 +214,28 @@ class GUIFourierSynth(QtWidgets.QWidget):
 		self.total=EMData(64,1)
 	
 		self.nsinchange()
+
+	def phaseleft(self,v):
+		sft=360.0/len(self.xvals)
+		for i in range(1,len(self.wpha)):
+			self.wpha[i].setValue(fixang(self.wpha[i].getValue()-sft*i),1)
+		self.recompute()
+			
+
+	def phaseright(self,v):
+		sft=360.0/len(self.xvals)
+		for i in range(1,len(self.wpha)):
+			self.wpha[i].setValue(fixang(self.wpha[i].getValue()+sft*i),1)
+		self.recompute()
+
+	def playsound(self,v):
+		global soundout
+		initsound()
+		soundout.start()
+		soundout.write(self.assound)
+		soundout.write(self.assound)
+		soundout.stop()
+
 		
 	def newtargfn(self,index):
 		"This function has a number of hardcoded 'target' functions"
@@ -182,7 +243,7 @@ class GUIFourierSynth(QtWidgets.QWidget):
 		if index==0 : 
 			self.targfn=None
 			nsin=int(self.vnsin.getValue())
-			for i in range(nsin): self.wamp[i].setValue(0)
+			for i in range(nsin): self.wamp[i].setValue(0,1)
 
 		else :
 			nx=int(self.vcell.getValue())
@@ -323,6 +384,8 @@ class GUIFourierSynth(QtWidgets.QWidget):
 				csum-=self.wamp[i].getValue()*1.1
 
 		self.synthplot.updateGL()
+
+		self.assound=np.tile((np.array(self.total.get_data_as_vector())*10000).astype("int16"),750)
 		
 if __name__ == "__main__":
 	main()
