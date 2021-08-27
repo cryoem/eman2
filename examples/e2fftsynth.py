@@ -53,8 +53,7 @@ soundout=None
 
 def fixang(x):
 	x=fmod(x,360.0)
-	if x>180.0: x-=360.0
-	if x<=-180.0: x+=360.0
+	if x<0.0: x+=360.0
 	return x
 
 def initsound():
@@ -108,6 +107,11 @@ class GUIFourierSynth(QtWidgets.QWidget):
 
 		self.synthplot=EMPlot2DWidget(self.app)
 		self.synthplot.show()
+
+		self.fftplot=EMPlot2DWidget(self.app)	# not shown initially
+		self.fftplot.show()
+
+	#	self.bispecimg=EMImage2DWidget(self.app) # not shown initially
 		
 		# overall layout
 		self.vbl1=QtWidgets.QVBoxLayout()
@@ -209,8 +213,8 @@ class GUIFourierSynth(QtWidgets.QWidget):
 		
 			self.curves.append(EMData(64,1))
 		
-			if self.cbshowall.isChecked() :
-				self.synthplot
+#			if self.cbshowall.isChecked() :
+#				self.synthplot
 		self.total=EMData(64,1)
 	
 		self.nsinchange()
@@ -356,6 +360,10 @@ class GUIFourierSynth(QtWidgets.QWidget):
 		oversamp=int(self.voversamp.getValue())
 		samples=int(cell*ncells*oversamp)
 		
+		# arrays since we're using them several ways
+		self.wamps=np.array([v.getValue() for v in self.wamp[:nsin+1]])
+		self.wphas=np.array([v.getValue() for v in self.wpha[:nsin+1]])
+
 		self.xvals=[old_div(xn,float(oversamp)) for xn in range(samples)]
 		self.total.set_size(samples)
 		self.total.to_zero()
@@ -363,9 +371,9 @@ class GUIFourierSynth(QtWidgets.QWidget):
 			self.curves[i].set_size(samples)
 			if i==0: 
 				self.curves[i].to_one()
-				if self.wpha[0].getValue()>180.0 : self.curves[i].mult(-1.0)
+				if self.wphas[0]>180.0 : self.curves[i].mult(-1.0)
 			else: self.curves[i].process_inplace("testimage.sinewave",{"wavelength":old_div(cell*oversamp,float(i)),"phase":self.wpha[i].getValue()*pi/180.0})
-			self.curves[i].mult(self.wamp[i].getValue())
+			self.curves[i].mult(self.wamps[i])
 			
 			self.total.add(self.curves[i])
 		
@@ -377,13 +385,18 @@ class GUIFourierSynth(QtWidgets.QWidget):
 		if self.cbshowall.isChecked() :
 			csum=self.total["minimum"]*1.1
 			for i in range(nsin):
-				if self.wamp[i].getValue()==0: continue
-				csum-=self.wamp[i].getValue()*1.1
+				if self.wamps[i]==0: continue
+				csum-=self.wamps[i]*1.1
 				if self.cbshifted.isChecked() : self.curves[i].add(csum)
 				self.synthplot.set_data((self.xvals,self.curves[i].get_data_as_vector()),"%d"%i,quiet=True,linewidth=1,color=2)
-				csum-=self.wamp[i].getValue()*1.1
+				csum-=self.wamps[i]*1.1
 
 		self.synthplot.updateGL()
+
+		self.fftplot.set_data((np.arange(len(self.wamps)),self.wamps),"Amp",color=1)
+		self.wphas*=pi/180.0
+		self.fftplot.set_data((np.arange(len(self.wphas)),self.wphas),"Pha",color=2)
+		self.fftplot.updateGL()
 
 		self.assound=np.tile((np.array(self.total.get_data_as_vector())*10000).astype("int16"),750)
 		
