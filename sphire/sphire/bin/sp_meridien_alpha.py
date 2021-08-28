@@ -9738,8 +9738,9 @@ def refinement_one_iteration(
         #coarse_angles = Blockdata["symclass"].reduce_anglesets(
         #    sp_fundamentals.rotate_params(coarse_angles, [-rangle, -rangle, -rangle])
         #)
-        shakegrid(rshifts, rshift)
-        shakegrid(coarse_shifts, rshift)
+        if Tracker["xr"] != 0:
+            shakegrid(rshifts, rshift)
+            shakegrid(coarse_shifts, rshift)
 
         if Blockdata["myid"] == Blockdata["main_node"]:
             sp_utilities.write_text_row(
