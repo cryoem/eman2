@@ -332,6 +332,9 @@ def AI(fff, anger, shifter, chout=False):
     else:
         if Tracker["mainiteration"] == 2:
             Tracker["state"] = "PRIMARY"
+        if Tracker["mainiteration"] == 5 and Tracker["state"] != "RESTRICTED":
+            print("Iteration 5: Move to EXHAUSTIVE search")
+            Tracker["state"] = "EXHAUSTIVE"
         l05 = -1
         l01 = -1
         for i in range(len(fff)):
@@ -470,7 +473,7 @@ def AI(fff, anger, shifter, chout=False):
                     and Tracker["constants"]["do_exhaustive"]
                 ):
                     Tracker["state"] = "EXHAUSTIVE"
-                    Tracker["delta"] *= 2.0
+                    #Tracker["delta"] *= 2.0
                     Tracker["changed_delta"] = False
                 elif Tracker["delta"] <= old_div(3.75, 2.0):  # MOVE DOWN TO RESTRICTED
                     Tracker["an"] = 6 * Tracker["delta"]
@@ -11038,7 +11041,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
             Constants["helical_rise"] = options.helical_rise
             Constants["filament_width"] = options.filament_width
             Constants["outlier_by"] = options.outlier_by
-            Constants["do_exhaustive"] = False
+            Constants["do_exhaustive"] = True
 
             if options.outlier_by is None:
                 Constants["stack_prior"] = None
