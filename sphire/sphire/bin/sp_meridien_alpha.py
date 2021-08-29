@@ -332,9 +332,10 @@ def AI(fff, anger, shifter, chout=False):
     else:
         if Tracker["mainiteration"] == 2:
             Tracker["state"] = "PRIMARY"
-        if Tracker["mainiteration"] == 5 and Tracker["state"] != "RESTRICTED":
-            print("Iteration 5: Move to EXHAUSTIVE search")
-            Tracker["state"] = "EXHAUSTIVE"
+        # Markus: Allowing EXHAUSTIVE destroys convergence
+        #if Tracker["mainiteration"] == 5 and Tracker["state"] != "RESTRICTED":
+        #    print("Iteration 5: Move to EXHAUSTIVE search")
+        #    Tracker["state"] = "EXHAUSTIVE"
         l05 = -1
         l01 = -1
         for i in range(len(fff)):
@@ -11042,7 +11043,8 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
             Constants["helical_rise"] = options.helical_rise
             Constants["filament_width"] = options.filament_width
             Constants["outlier_by"] = options.outlier_by
-            Constants["do_exhaustive"] = True
+            # Markus: Made it worse to put to True
+            Constants["do_exhaustive"] = False
 
             if options.outlier_by is None:
                 Constants["stack_prior"] = None
