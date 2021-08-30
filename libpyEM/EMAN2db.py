@@ -58,6 +58,16 @@ except ImportError as e:
 from libpyEMData2 import EMData
 from libpyUtils2 import EMUtil
 
+try:
+    from pyStarDB import sp_pystardb as star
+
+    STAR_AVAILABLE = True
+except ImportError:
+    STAR_AVAILABLE = False
+
+import pandas as pd
+import numpy as np
+
 # If set, fairly verbose debugging information will be written to the console
 # larger numbers will increase the amount of output
 DBDEBUG = 0
@@ -271,17 +281,22 @@ def db_open_dict(url, ro=False, with_keys=False):
 	comma-separated list of keys. Thus it is impossible to access data items
 	with keys like '1' instead of (int)1 using this mechanism. ro is a read only flag, which will disable caching as well."""
 
-	path, dictname, keys = db_parse_path(url)
+	if url[:4].lower() == "bdb:" :
+		path, dictname, keys = db_parse_path(url)
 
-	ddb = EMAN2DB.open_db(path)
-	ddb.open_dict(dictname, ro=ro)
+		ddb = EMAN2DB.open_db(path)
+		ddb.open_dict(dictname, ro=ro)
 
-	if with_keys:
-		if ro: return (ddb[dictname + "__ro"], keys)
-		return (ddb[dictname], keys)
+		if with_keys:
+			if ro: return (ddb[dictname + "__ro"], keys)
+			return (ddb[dictname], keys)
 
-	if ro: return ddb[dictname + "__ro"]
-	return ddb[dictname]
+		if ro: return ddb[dictname + "__ro"]
+		return ddb[dictname]
+	elif url.endswith('.star'):
+		return Pd_to_Db_conversion.open_db(url)
+	else:
+		pass
 
 
 def db_close_dict(url):
@@ -289,15 +304,21 @@ def db_close_dict(url):
 	After closing, a dict CAN be reopened, but references to existing dict objects should not be used
 	after closing. Ignores non bdb: urls"""
 
-	try:
-		path, dictname, keys = db_parse_path(url)
-	except:
+	if url[:4].lower() == "bdb:" :
+		try:
+			path, dictname, keys = db_parse_path(url)
+		except:
+			return
+
+		ddb = EMAN2DB.open_db(path)
+		ddb.close_dict(dictname)
 		return
-
-	ddb = EMAN2DB.open_db(path)
-	ddb.close_dict(dictname)
-
-	return
+	elif url.endswith('.star'):
+		data = Pd_to_Db_conversion.open_db(url)
+		data.star.write_star_file(out_star_file=url, overwrite=True)
+		return
+	else:
+		pass
 
 
 def db_remove_dict(url):
@@ -371,6 +392,14 @@ Takes a path or bdb: specifier and returns the number of images in the reference
 			for i in keys:
 				if i in db: n += 1
 			return n
+	elif fsp.endswith('.star'):
+		star_file = star.StarFile(fsp)
+		try:
+			data = star_file['particles']
+		except:
+			data = star_file['']
+		return data.shape[0]
+
 	try:
 		ret = EMUtil.get_image_count_c(fsp)
 	except:
@@ -478,6 +507,58 @@ def db_get_all_attributes(fsp, *parms):
 			else:
 				keys = parms[0]
 		return [db.get_attr(i, attr_name) for i in keys]
+
+	elif fsp.endswith('.star'):
+		star_file = star.StarFile(fsp)
+		try:
+			data = star_file['particles']
+		except KeyError:
+			data = star_file['']
+		special_keys = star_file.special_keys
+		if parms[0] in special_keys:
+			if parms[0] == 'ctf':
+				ctf_list = []
+				for idx in range(data.shape[0]):
+					star_data = data.iloc[idx]
+					ctfdict = get_emdata_ctf(star_data)
+					ctf = EMAN2Ctf()
+					ctf.from_dict(ctfdict)
+					ctf_list.append(ctf)
+					del ctfdict
+					del star_data
+				return ctf_list
+			elif parms[0] == 'xform.projection':
+				trans_list = []
+				for idx in range(data.shape[0]):
+					star_data = data.iloc[idx]
+					transdict = get_emdata_transform(star_data)
+					trans = Transform(transdict)
+					trans_list.append(trans)
+					del transdict
+					del star_data
+				return trans_list
+			elif parms[0] == 'xform.align2d':
+				trans_list = []
+				for idx in range(data.shape[0]):
+					star_data = data.iloc[idx]
+					transdict = get_emdata_transform_2d(star_data)
+					trans = Transform(transdict)
+					trans_list.append(trans)
+					del transdict
+					del star_data
+				return trans_list
+			elif parms[0] == 'ptcl_source_coord':
+				cord_list = []
+				for idx in range(data.shape[0]):
+					star_data = data.iloc[idx]
+					cord_list.append([int(star_data["_rlnCoordinateX"]), int(star_data["_rlnCoordinateY"])])
+				return cord_list
+			else:
+				assert False, 'Missing rule for {}'.format(parms[0])
+		else:
+			key = star.sphire_header_magic(parms[0], special_keys)
+			return data[key]
+
 	return EMUtil.get_all_attributes_c(fsp, *parms)
 
 
@@ -1725,6 +1806,359 @@ __doc__ = \
 	database may be extracted into standard flat-files, but use of a database
 	with standard naming conventions, etc. helps provide the capability to log
 	the entire refinement process."""
+
+
+######## Part of Code which is only required for Star support ################
+
+def db_set_header_star(img, dataframe, star_cla):
+    """
+    Uses the dataframe and the starclass to insert the data into
+    the EMData image with respect to specific keys.
+    """
+    star_dict = star_cla.sphire_keys
+    fixed_keys = ['_rlnImageName']
+    for key in dataframe.keys():
+        if key in fixed_keys:
+            continue
+        else:
+            if key in star_dict:
+                value = dataframe[key]
+                img.set_attr(star_dict[key], value)
+            else:
+                sphire_key = star.sphire_header_magic(key, star_dict)
+                if sphire_key:
+                    continue
+                else:
+                    value = dataframe[key]
+                    if type(value) == np.int64:
+                        value = np.int32(value)
+                    else:
+                        value = value
+                    img.set_attr(key, float(value))
+
+    try:
+        image_name = dataframe['_rlnImageName']
+        number, file_name = image_name.split('@')
+        img.set_attr("data_path", file_name)
+        img.set_attr("ptcl_source_coord_id", int(number) - 1)
+    except Exception as e:
+        pass
+
+    try:
+        ctfimg = EMAN2Ctf()
+        ctfdict = get_emdata_ctf(dataframe)
+        ctfimg.from_dict(ctfdict)
+        img.set_attr("ctf", ctfimg)
+    except Exception as e:
+        pass
+
+    try:
+        transdict = get_emdata_transform(dataframe)
+        trans = Transform(transdict)
+        img.set_attr("xform.projection", trans)
+    except Exception as e:
+        pass
+
+    try:
+        transdict = get_emdata_transform_2d(dataframe)
+        trans = Transform(transdict)
+        img.set_attr("xform.align2d", trans)
+    except Exception as e:
+        pass
+
+    try:
+        cor = [int(dataframe["_rlnCoordinateX"]), int(dataframe["_rlnCoordinateY"])]
+        img.set_attr('ptcl_source_coord', cor)
+    except Exception as e:
+        pass
+    img.update()
+    return
+
+def db_em_to_star_header(em_dict, dataframe, ptcl_no, special_keys, ignored_keys):
+    """
+    It converts the data from EMAN dictionary and pass it all
+    to pandas dataframe after conversion of keys.
+    """
+    # print("Particle number", ptcl_no)
+    for key in list(em_dict.keys()):
+        em_key = star.sphire_header_magic(key, special_keys)
+        if em_key:
+            dataframe.loc[ptcl_no, em_key] = em_dict[key]
+        elif key[0:2] == '_r':
+            dataframe.loc[ptcl_no, key] = em_dict[key]
+        else:
+            if key in special_keys:
+                if key == 'ctf':
+                    ctfdict = em_dict[key].to_dict()
+                    defocus = ctfdict['defocus']
+                    dataframe.loc[ptcl_no, "_rlnDefocusU"] = (
+                            (20000 * ctfdict["defocus"] - 10000 * ctfdict["dfdiff"]) / 2
+                    )
+
+                    dataframe.loc[ptcl_no, "_rlnDefocusV"] = (
+                            20000 * ctfdict["defocus"] -
+                            dataframe.loc[ptcl_no, "_rlnDefocusU"]
+                    )
+                    dataframe.loc[ptcl_no, "_rlnCtfBfactor"] = ctfdict["bfactor"]
+                    dataframe.loc[ptcl_no , "_rlnAmplitudeContrast"] = ctfdict["ampcont"] / 100
+                    dataframe.loc[ptcl_no , "_rlnDetectorPixelSize"] = ctfdict["apix"]
+                    dataframe.loc[ptcl_no , "_rlnMagnification"] = 10000
+                    dataframe.loc[ptcl_no , "_rlnVoltage"] = ctfdict["voltage"]
+                    dataframe.loc[ptcl_no , "_rlnSphericalAberration"] = ctfdict["cs"]
+                    dataframe.loc[ptcl_no , "_rlnDefocusAngle"] = 45 - ctfdict["dfang"]
+                elif key == 'xform.projection':
+                    trans = em_dict[key].get_params("spider")
+                    dataframe.loc[ptcl_no , "_rlnAngleRot"] = trans["phi"]
+                    dataframe.loc[ptcl_no , "_rlnAngleTilt"] = trans["theta"]
+                    dataframe.loc[ptcl_no , "_rlnAnglePsi"] = trans["psi"]
+                    dataframe.loc[ptcl_no , "_rlnOriginX"] = -trans["tx"]
+                    dataframe.loc[ptcl_no , "_rlnOriginY"] = -trans["ty"]
+                elif key == 'xform.align2d':
+                    trans = em_dict[key].get_params("2d")
+                    dataframe.loc[ptcl_no , "_rlnAnglePsi"] = trans["alpha"]
+                    dataframe.loc[ptcl_no , "_rlnOriginX"] = -trans["tx"]
+                    dataframe.loc[ptcl_no , "_rlnOriginY"] = -trans["ty"]
+                elif key == 'ptcl_source_coord':
+                    dataframe.loc[ptcl_no , "_rlnCoordinateX"] = int(em_dict[key][0])
+                    dataframe.loc[ptcl_no , "_rlnCoordinateY"] = int(em_dict[key][1])
+                elif key == 'data_path':
+                    try:
+                        part_path = str("{:08n}".format(em_dict["ptcl_source_coord_id"] + 1)) + '@' + em_dict[
+                            "data_path"]
+                        dataframe.loc[ptcl_no, '_rlnImageName'] = part_path
+                    except Exception as e:  # if datapath is not provided
+                        print(e)
+                        pass
+                elif key == 'originalid':
+                    try:
+                        dataframe.loc[ptcl_no , '_rlnOriginalid'] = em_dict[key]
+                    except Exception as e:  # if datapath is not provided
+                        print(e)
+                        pass
+                else:
+                    assert False, 'Missing rule for {}'.format(key)
+            elif key in ignored_keys:
+                pass
+
+            else:
+                print("Missing Keys are {}".format(key))
+    return
+
+class Pd_to_Db_conversion():
+    """
+    The class helps the starfile class in adopting the behavior of db_open_dict and
+    db_close_dict.
+    In general this class should wrap around the starclass so that if you pass dict
+    to a pandas dataframe at particular index, it should do its magic and save the dictionary
+    properly in the pandas dataframe
+    """
+
+    opendbs = {}
+    lock = threading.Lock()
+
+    def open_db(path=None):
+        """This is an alternate constructor which may return a cached (already open)
+        sphire instance"""
+
+        Pd_to_Db_conversion.lock.acquire()
+
+        if not path: path = e2gethome() + "/.eman2"
+        if path == "." or path == "./": path = e2getcwd()
+        if path in Pd_to_Db_conversion.opendbs:
+            Pd_to_Db_conversion.lock.release()
+            return Pd_to_Db_conversion.opendbs[path]
+        ret = Pd_to_Db_conversion(star.StarFile(path))
+        Pd_to_Db_conversion.lock.release()
+        return ret
+
+    def __init__(self, StarFile, special_key=None):
+        self.index = 0
+        self.star = StarFile
+        if special_key != None:
+            self.converter = StarFile[special_key]
+        else:
+            try:
+                try:
+                    self.converter = StarFile['particles']
+                except KeyError:
+                    self.converter = StarFile['']
+            except:
+                self.star.update('particles', pd.DataFrame(), True)
+                self.converter = self.star['particles']
+
+        # Keep a cache of opened database environments
+        Pd_to_Db_conversion.opendbs[self.star.star_file] = self
+
+        # Make the database directory
+        if not os.access(os.path.dirname(self.star.star_file), os.F_OK):
+            try:
+                os.makedirs(os.path.dirname(self.star.star_file))
+            except:
+                # perhaps there is another process running that just made it?
+                if not os.access(os.path.dirname(self.star.star_file), os.F_OK):
+                    raise RuntimeError("Error - there was a problem creating the Starfile directory")
+
+    # Set the values of dict 'in_data' at a particualr index
+    def set(self, index, in_data):
+        if isinstance(in_data, dict):
+            special_keys = self.star.special_keys
+            ignored_keys = self.star.ignored_keys
+            db_em_to_star_header(in_data, self.converter, index, special_keys, ignored_keys)
+        else:
+            pass
+
+    def __setitem__(self, index, data):
+        self.set(index, data)
+
+    def get(self, index):
+        sp_keys = self.star.sphire_keys
+        return db_star_to_em_header(self.converter, index, sp_keys)
+
+    def __getitem__(self, index):
+        return self.get(index)
+
+    def get_attr(self, n, attr):
+        sp_keys = self.star.sphire_keys
+        newdict = db_star_to_em_header(self.converter, n, sp_keys)
+        return newdict[attr]
+
+    def set_attr(self, n, attr, value):
+        sp_keys = self.star.special_keys
+        ign_keys = self.star.ignored_keys
+        em_dict = {attr: value}
+        db_em_to_star_header(em_dict, self.converter, n, sp_keys, ign_keys)
+        return
+
+def db_star_to_em_header(dataframe, idx, sphire_keys):
+    special_keys = ('ctf', 'xform.projection', 'ptcl_source_coord', 'xform.align2d', "data_path")
+    em_dict = {}
+    for key in special_keys:
+        if key == 'ctf':
+            ctfdict = get_emdata_ctf(dataframe.iloc[idx])
+            ctf = EMAN2Ctf()
+            ctf.from_dict(ctfdict)
+            em_dict[key] = ctf
+            del ctfdict
+
+        elif key == 'xform.projection':
+            transdict = get_emdata_transform(dataframe.iloc[idx])
+            trans = Transform(transdict)
+            em_dict[key] = trans
+            del transdict
+
+        elif key == 'xform.align2d':
+            transdict = get_emdata_transform_2d(dataframe.iloc[idx])
+            trans = Transform(transdict)
+            em_dict[key] = trans
+            del transdict
+        elif key == 'ptcl_source_coord':
+            coord = [int(dataframe.iloc[idx]["_rlnCoordinateX"]), int(dataframe.iloc[idx]["_rlnCoordinateY"])]
+            em_dict[key] = coord
+
+        elif key == 'data_path':
+            image_name = dataframe.iloc[idx]['_rlnImageName']
+            number, file_name = image_name.split('@')
+            em_dict[key] = file_name
+            em_dict["ptcl_source_coord_id"] = int(number) - 1
+
+        else:
+            assert False, 'Missing rule for {}'.format(key)
+
+    for keys in dataframe:
+        try:
+            if keys in sphire_keys:
+                new_key = sphire_keys[keys]
+            else:
+                sp = special_keys
+                new_key = star.sphire_header_magic(keys, sp)
+            if new_key == keys:
+                continue
+            else:
+                value = dataframe.iloc[idx][keys]
+                if isinstance(value, np.int64):
+                    value = np.int32(value)
+                else:
+                    value = value
+                em_dict[new_key] = value
+        except KeyError:
+            pass
+
+    return em_dict
+
+"""
+Conversion functions
+"""
+
+def get_emdata_ctf(star_data):
+    idx_cter_astig_ang = 45 - star_data["_rlnDefocusAngle"]
+    if idx_cter_astig_ang >= 180:
+        idx_cter_astig_ang -= 180
+    else:
+        idx_cter_astig_ang += 180
+
+    try:
+        ctfdict = {"defocus": ((star_data["_rlnDefocusU"] +
+                                star_data["_rlnDefocusV"]) / 20000),
+                   "bfactor": star_data["_rlnCtfBfactor"],
+                   "ampcont": 100 * star_data["_rlnAmplitudeContrast"],
+                   "apix": (10000 * star_data["_rlnDetectorPixelSize"]) /
+                           star_data["_rlnMagnification"],
+                   "voltage": star_data["_rlnVoltage"],
+                   "cs": star_data["_rlnSphericalAberration"],
+                   "dfdiff": ((-star_data["_rlnDefocusU"] +
+                               star_data["_rlnDefocusV"]) / 10000),
+                   "dfang": idx_cter_astig_ang
+                   }
+    except:
+        ctfdict = {"defocus": ((star_data["_rlnDefocusU"] +
+                                star_data["_rlnDefocusV"]) / 20000),
+                   "bfactor": 0.0,
+                   "ampcont": 100 * star_data["_rlnAmplitudeContrast"],
+                   "apix": (10000 * star_data["_rlnDetectorPixelSize"]) /
+                           star_data["_rlnMagnification"],
+                   "voltage": star_data["_rlnVoltage"],
+                   "cs": star_data["_rlnSphericalAberration"],
+                   "dfdiff": ((-star_data["_rlnDefocusU"] +
+                               star_data["_rlnDefocusV"]) / 10000),
+                   "dfang": idx_cter_astig_ang
+                   }
+    return ctfdict
+
+def get_emdata_transform(star_data):
+    try:
+        trans_dict = {
+            "type": "spider",
+            "phi": star_data["_rlnAngleRot"],
+            "theta": star_data["_rlnAngleTilt"],
+            "psi": star_data["_rlnAnglePsi"],
+            "tx": -star_data["_rlnOriginX"],
+            "ty": -star_data["_rlnOriginY"],
+            "tz": 0.0,
+            "mirror": 0,
+            "scale": 1.0
+        }
+    except Exception as e :
+        pass
+    return trans_dict
+
+def get_emdata_transform_2d(star_data):
+    try:
+        trans_dict = {
+            "type": "2d",
+            "tx": -star_data["_rlnOriginX"],
+            "ty": -star_data["_rlnOriginY"],
+            "alpha": star_data["_rlnAnglePsi"],
+            "mirror": 0,
+            "scale": 1.0
+        }
+    except Exception as e:
+        pass
+    return trans_dict
+
+
+from EMAN2 import EMAN2Ctf
+from EMAN2 import Transform
+
 
 
 

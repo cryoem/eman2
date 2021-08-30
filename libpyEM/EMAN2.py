@@ -60,6 +60,16 @@ import threading
 
 HOMEDB=None
 
+try:
+    from pyStarDB import sp_pystardb as star
+
+    STAR_AVAILABLE = True
+except ImportError:
+    STAR_AVAILABLE = False
+
+import pandas as pd
+import numpy as np
+
 # This next line is to initialize the Transform object for threadsafety. Utterly stupid approach, but a functional hack
 T=Transform({"type":"2d","alpha":0})
 
@@ -81,7 +91,7 @@ except: pass
 # behavior appropriately
 #try:
 #import EMAN2db
-from EMAN2db import EMAN2DB,db_open_dict,db_close_dict,db_remove_dict,db_list_dicts,db_check_dict,db_parse_path,db_convert_path,db_get_image_info,e2gethome, e2getcwd
+from EMAN2db import EMAN2DB,db_open_dict,db_close_dict,db_remove_dict,db_list_dicts,db_check_dict,db_parse_path,db_convert_path,db_get_image_info,e2gethome, e2getcwd, db_set_header_star
 from EMAN2jsondb import JSDict,js_open_dict,js_close_dict,js_remove_dict,js_list_dicts,js_check_dict,js_one_key
 #except:
 #	HOMEDB=None
@@ -2669,6 +2679,41 @@ def db_read_image(self, fsp, *parms, **kparms):
 		#if lsxcache==None or lsxcache.path!=fsp: lsxcache=LSXFile(fsp,True)
 		#return lsxcache.read_image(parms[0])
 
+	if fsp.endswith('.star'):
+		star_file = star.StarFile(fsp)
+		import_header = False
+		try:
+			data = star_file['particles']
+		except:
+			data = star_file['']
+		try:
+			if parms[2] == True:  # for retrun starfileclass (for header only)
+				return star_file
+		except IndexError:
+			pass
+		try:
+			if parms[1] == True: # for return header in EMData object
+				import_header = True
+		except IndexError:
+			pass
+		# if no index value is passed then read at index 0, otherwise read at specified index by parms
+		if len(parms) == 0 :
+			parms = list()
+			parms.append(0)
+		elif len(parms) > 0 :
+			parms = list(parms)
+		else:
+			assert False, 'Unreachable code'
+
+		numbers = int(data.iloc[parms[0]]['_rlnImageName'].split('@')[0])
+		filename = data.iloc[parms[0]]['_rlnImageName'].split('@')[1]
+		if import_header == False: # if returning an EMData object with header + images
+			self.read_image_c(filename, (int(numbers)-1), **kparms)
+		else:
+			self.read_image_c(filename, (int(numbers)-1), True)
+		db_set_header_star(self, data.iloc[parms[0]], star_file)
+		self.update()
+
 	if len(kparms) != 0:
 		if 'img_index' not in kparms:
 			kparms['img_index'] = 0
@@ -2719,6 +2764,37 @@ def db_read_images(fsp, *parms):
 		#if lsxcache==None or lsxcache.path!=fsp: lsxcache=LSXFile(fsp,True)
 		#return lsxcache.read_images(*parms)
 
+	if fsp.endswith('.star'):
+		star_file = star.StarFile(fsp)
+		import_header = False
+		try:
+			data = star_file['particles']
+		except KeyError:
+			data = star_file['']
+		try:
+			if parms[2] == True: # for returning starfile class (for header only)
+				return star_file
+		except IndexError:
+			pass
+		try:
+			if parms[1] == True:
+				import_header = True
+		except IndexError:
+			pass
+		# if no index value is passed then read everything, otherwie read images from list no's
+		if len(parms) > 0:
+			image_data = data.iloc[parms[0]]
+		elif len(parms) == 0:
+			image_data = data
+		else:
+			pass
+		total_imgs = []
+		for index in range(image_data.shape[0]):
+			img = EMData()
+			img.read_image(fsp, parms[0][index], image_header)
+			total_imgs.append(img)
+		return total_imgs
+
 	if len(parms) > 0 and (parms[0] == None or len(parms[0]) == 0):
 		parms = (list(range(EMUtil.get_image_count(fsp))),) + parms[1:]
 	return EMData.read_images_c(fsp, *parms)
@@ -2760,11 +2836,44 @@ def db_write_image(self, fsp, *parms):
 		db.set(self, key=key, region=region, txn=None)  # this makes region writing work
 		#		db[parms[0]] = self # this means region writing does not work
 		return
+	elif fsp.endswith('.star'):
+		# if no index value is passed then write at index 0, otherwise write at index specified by parms
+		if len(parms) == 0:
+			parms = [0]
+		else:
+			pass
+		if isinstance(self, list):
+			pass
+		else:
+			self = [self]
+		db_write_images(self, fsp, parms)
+		return
 	return self.write_image_c(fsp, *parms)
 
 
 EMData.write_image_c = EMData.write_image
 EMData.write_image = db_write_image
+
+def db_write_images(EM_data_list, fsp, indices):
+    local_bdb_stack = db_open_dict(fsp)
+    special_keys = star.StarFile(fsp).special_keys
+    ignored_keys = star.StarFile(fsp).ignored_keys
+    try:
+        local_bdb_stack.star['particles']
+    except:
+        local_bdb_stack.star.update('particles', pd.DataFrame(), True)
+
+    for loc_part_id, loc_part_value in enumerate(indices):
+        particle_img_dict = EM_data_list[loc_part_id].get_attr_dict()
+        particle_img_dict["ptcl_source_coord_id"] = loc_part_value
+        particle_img_dict['data_path'] = fsp.split('.star')[0] + '.mrcs'
+        db_em_to_star_header(particle_img_dict, local_bdb_stack.star['particles'], loc_part_value, special_keys, ignored_keys)
+        EM_data_list[loc_part_id].write_image_c(particle_img_dict['data_path'], loc_part_value)
+
+    local_bdb_stack.star.write_star_file(out_star_file=fsp, overwrite=True)
+    db_close_dict(fsp)
+
+EMData.write_images = staticmethod(db_write_images)
 
 def im_write_compressed(self,fsp,n,bits=8,minval=0,maxval=0,nooutliers=False,level=1,erase=False):
 	"""write_compressed(self or list,fsp,n,bits=8,minval=0,maxval=0,nooutliers=False,level=1)
