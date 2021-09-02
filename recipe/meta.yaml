@@ -11,7 +11,6 @@ source:
 
 requirements:
     build:
-        - cmake     3.14.*
         - {{ compiler('cxx') }}           # [not win]
         - {{ cdt('mesa-libgl-devel') }}   # [linux]
 
