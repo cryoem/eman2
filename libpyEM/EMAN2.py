@@ -978,6 +978,7 @@ def e3display(data,vtype="auto",vname=None,dname="Unknown",settings={},port=3198
 	try: sock=socket.create_connection(("localhost",port))
 	except:
 		print(sys.exc_info())
+		print("\nFailed to connect. Do you have e2display.py --server running?")
 		return False
 
 	sock.sendall(display_magic)
