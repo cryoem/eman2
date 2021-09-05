@@ -9740,8 +9740,8 @@ def refinement_one_iteration(
         #    sp_fundamentals.rotate_params(coarse_angles, [-rangle, -rangle, -rangle])
         #)
         if Tracker["xr"] != 0:
-            shakegrid(rshifts, rshift)
             shakegrid(coarse_shifts, rshift)
+        shakegrid(rshifts, rshift)
 
         if Blockdata["myid"] == Blockdata["main_node"]:
             sp_utilities.write_text_row(
