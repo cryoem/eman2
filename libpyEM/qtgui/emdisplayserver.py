@@ -168,9 +168,15 @@ class EMDisplayServerWidget(QtWidgets.QWidget):
 		# For numpy arrays ==None doesn't work correctly
 		if not isinstance(data,type(None)):
 			if vtype=="image":
+				# image transported as a numpy array
 				if isinstance(data,np.ndarray): 
 					data=from_numpy(data)
-				widget.set_data(data,dname)
+					widget.set_data(data,dname)
+				# vector overlay
+				elif (isinstance(data,list) or isinstance(data,tuple)) and len(data) in (4,5):
+					widget.add_vector_overlay(*data)
+				else:
+					widget.set_data(data,dname)
 				#depth,nx,ny,raw=widget.render_bitmap()
 				#png=self.rawtopng(depth,nx,ny,raw)
 			elif vtype=="imagemx":

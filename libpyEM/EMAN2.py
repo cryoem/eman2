@@ -966,6 +966,19 @@ def e3display(data,vtype="auto",vname=None,dname="Unknown",settings={},port=3198
 	vname - name of a new or existing (type specific) display widget to use, if None 'default' will be used 
 	dname - name for the data set, may be used as window title, or to support multiple object display in the same widget
 	settings - a dictionary of widget-specific settings
+
+	image - 2-D image display, one at a time. data may be a single 2-D or 3-D image, list/tuple of images or
+		a list of 4 or 5 np.arrays which will be passed to add a vector overlay to the image display
+
+	imagemx - multiple tiled 2-D image display, pass a list of 2-D images or a 3-D image
+
+	volume - 3-D display, pass a 3-D EMData object
+
+	plot2d - X/Y scatter/line plot. Pass a list of N numpy arrays
+
+	plot3d - X/Y/Z 3-D scatter plot. Pass a list of N numpy arrays
+
+	histogram - 1-D histogram. Pass a single numpy array or a list of N numpy arrays
 	"""
 	import ipywidgets
 	global display_magic

@@ -911,55 +911,77 @@ void FFTPeakProcessor::process_inplace(EMData * image)
 	if (!image->is_complex()) fft = image->do_fft();
 	else fft = image;
 
-
 	int nx=fft->get_xsize();
 	int ny=fft->get_ysize();
 	int nz=fft->get_zsize();
 	float thresh_sigma = (float)params.set_default("thresh_sigma", 1.0);
 	bool removepeaks = (bool)params.set_default("removepeaks",0);
+	bool to_mean = (bool)params.set_default("to_mean",0);
 	
-	vector<float> sigmaimg;
-	sigmaimg=fft->calc_radial_dist(nx/2,0,1,4);
-	for (int i=0; i<nx/2; i++) sigmaimg[i]*=sigmaimg[i]*thresh_sigma;			// anything less than thresh_sigma * sigma is considered to be missing
+	vector<float> amp=fft->calc_radial_dist(nx/2,0,1,0);	// amplitude
+	vector<float> thr=fft->calc_radial_dist(nx/2,0,1,1);	// start with inten (avg of amp^2)
+	
+	for (int i=0; i<nx/2; i++) thr[i]=thresh_sigma*sqrt(thr[i]-amp[i]*amp[i])+amp[i];	// sqrt(inten-amp^2) is st
 
 	if (nz>1) {
-		for (int z=0; z<nz; z++) {
-			for (int y=0; y<ny; y++) {
-				for (int x=0; x<nx; x+=2) {
-					float r2=Util::hypot3(x/2,y<ny/2?y:ny-y,z<nz/2?z:nz-z);	// origin at 0,0; periodic
+		for (int z=-nz/2; z<nz/2; z++) {
+			for (int y=-ny/2; y<ny/2; y++) {
+				for (int x=0; x<nx/2; x++) {
+					float r2=Util::hypot3(x,y,z);
 					int r=int(r2);
-					
-					float v1r=fft->get_value_at(x,y,z);
-					float v1i=fft->get_value_at(x+1,y,z);
-					float v1=Util::square_sum(v1r,v1i);
-
-					if ((v1>sigmaimg[r]&&!removepeaks&&r>=4&&r<ny/2) || ((v1<=sigmaimg[r]||r<4)&&removepeaks)) continue;
-					
-					fft->set_value_at_fast(x,y,z,0);
-					fft->set_value_at_fast(x+1,y,z,0);
+					if (r>=nx/2) continue;
+					complex<float> v=fft->get_complex_at(x,y,z);
+					float va=std::abs(v);
+					if (va>=thr[r]) {
+						if (removepeaks) {
+							if (to_mean) {
+								v*=amp[r]/va;
+								fft->set_complex_at(x,y,z,v);
+							}
+							else fft->set_complex_at(x,y,z,0.0);
+						}
+					}
+					else {
+						if (!removepeaks) {
+							if (to_mean) {
+								v*=amp[r]/va;
+								fft->set_complex_at(x,y,z,v);
+							}
+							else fft->set_complex_at(x,y,z,0.0);
+						}
+					}
 				}
 			}
 		}
 	}
 	else {
-		for (int y=0; y<ny; y++) {
-			for (int x=0; x<nx; x+=2) {
-				float r2=Util::hypot2(x/2,y<ny/2?y:ny-y);	// origin at 0,0; periodic
-				int r=int(r2);
-				
-				float v1r=fft->get_value_at(x,y);
-				float v1i=fft->get_value_at(x+1,y);
-				float v1=Util::square_sum(v1r,v1i);
-
-//				if (r>60 && r<80) printf("%d %d %d\t%1.3g  %1.3g\n",x,y,r,v1,sigmaimg[r]);
-				if ((v1>sigmaimg[r]&&!removepeaks&&r>=4&&r<ny/2) || ((v1<=sigmaimg[r]||r<4)&&removepeaks)) continue;
-				
-				fft->set_value_at_fast(x,y,0);
-				fft->set_value_at_fast(x+1,y,0);
+		for (int y=-ny/2; y<ny/2; y++) {
+			for (int x=0; x<nx/2; x++) {
+				int r=Util::hypot_fast_int(x,y);
+				if (r>=nx/2) continue;
+				complex<float> v=fft->get_complex_at(x,y);
+				float va=std::abs(v);
+				if (va>=thr[r]) {
+					if (removepeaks) {
+						if (to_mean) {
+							v*=amp[r]/va;
+							fft->set_complex_at(x,y,v);
+						}
+						else fft->set_complex_at(x,y,0.0);
+					}
+				}
+				else {
+					if (!removepeaks) {
+						if (to_mean) {
+							v*=amp[r]/va;
+							fft->set_complex_at(x,y,v);
+						}
+						else fft->set_complex_at(x,y,0.0);
+					}
+				}
 			}
 		}
-	}
-	
+	}	
 	
 	if (fft!=image) {
 		EMData *ift=fft->do_ift();
