@@ -40,7 +40,7 @@ from __future__ import division
 import unittest
 from numpy import allclose, array_equal
 from mpi import *
-import sp_global_def
+from sphire.libpy import sp_global_def
 import numpy
 import weakref
 import EMAN2db

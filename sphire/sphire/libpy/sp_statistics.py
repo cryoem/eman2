@@ -1177,7 +1177,7 @@ def pearson(X, Y):
         Sxy += x * y
     return old_div(
         (Sxy - old_div(Sx * Sy, N)),
-        numpy.sqrt((Sxx - old_div(Sx * Sx, N)) * (Syy - old_div(Sy * Sy, N))),
+        numpy.sqrt((Sxx - old_div(Sx * Sx, N)) * (Syy - old_div(Sy * Sy, N)))
     )
 
 

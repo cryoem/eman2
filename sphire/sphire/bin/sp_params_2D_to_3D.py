@@ -38,11 +38,12 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 #
-from ..libpy import sp_global_def
-from ..libpy.sp_global_def import sxprint, ERROR
+from sphire.libpy import sp_global_def
+from sphire.libpy.sp_global_def import sxprint, ERROR
 import os
 from optparse import OptionParser
 import sys
+
 
 def run():
 	progname = os.path.basename( sys.argv[0] )
@@ -58,9 +59,9 @@ def run():
 		
 	else:
 		if sp_global_def.CACHE_DISABLE:
-			from ..libpy.sp_utilities import disable_bdb_cache
+			from sphire.libpy.sp_utilities import disable_bdb_cache
 			disable_bdb_cache()
-		from ..libpy.sp_applications import wrapper_params_2D_to_3D
+		from sphire.libpy.sp_applications import wrapper_params_2D_to_3D
 		sp_global_def.BATCH = True
 		wrapper_params_2D_to_3D(args[0])
 		sp_global_def.BATCH = False     

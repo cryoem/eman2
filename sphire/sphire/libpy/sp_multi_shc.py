@@ -45,19 +45,19 @@ import math
 import mpi
 import os
 import random
-from . import sp_alignment
-from . import sp_applications
-from . import sp_filter
-from . import sp_fundamentals
-from . import sp_global_def
-from . import sp_logger
-from . import sp_morphology
-from . import sp_pixel_error
-from . import sp_projection
-from . import sp_reconstruction
-from . import sp_statistics
-from . import sp_utilities
-from ..libpy.sp_utilities import getvec, getfvec, getang3, lacos, angles_to_normals
+from sphire.libpy import sp_alignment
+from sphire.libpy import sp_applications
+from sphire.libpy import sp_filter
+from sphire.libpy import sp_fundamentals
+from sphire.libpy import sp_global_def
+from sphire.libpy import sp_logger
+from sphire.libpy import sp_morphology
+from sphire.libpy import sp_pixel_error
+from sphire.libpy import sp_projection
+from sphire.libpy import sp_reconstruction
+from sphire.libpy import sp_statistics
+from sphire.libpy import sp_utilities
+from sphire.libpy.sp_utilities import getvec, getfvec, getang3, lacos, angles_to_normals
 import time
 
 

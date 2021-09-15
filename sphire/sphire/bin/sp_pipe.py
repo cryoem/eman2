@@ -47,12 +47,12 @@ import inspect
 import mpi
 import os
 import shutil
-from ..libpy import sp_applications
-from ..libpy import sp_filter
-from ..libpy import sp_fundamentals
-from ..libpy import sp_global_def
-from ..libpy import sp_morphology
-from ..libpy import sp_utilities
+from sphire.libpy import sp_applications
+from sphire.libpy import sp_filter
+from sphire.libpy import sp_fundamentals
+from sphire.libpy import sp_global_def
+from sphire.libpy import sp_morphology
+from sphire.libpy import sp_utilities
 import sys
 import time
 import numpy
@@ -149,11 +149,12 @@ def reorder_filaments(args, overwrite=False):
     with open('{0}_list{1}'.format(*os.path.splitext(output_file)), 'w') as write:
         numpy.savetxt(write, output_data['original_id'], fmt='%d')
 
-    substack_path = "bdb:{}#{}".format(args.output_directory, args.substack_basename)
+    # substack_path = "bdb:{}#{}".format(args.output_directory, args.substack_basename)
+    substack_path = "{}/{}.star".format(args.output_directory, args.substack_basename)
     filament_id = EMAN2_cppwrap.EMUtil.get_all_attributes(args.input_stack_path, 'filament_id')
 
-    if args.input_stack_path.startswith('bdb:'):
-        cmd_line = "e2bdb.py {} --makevstack={} --list={}".format(
+    if args.input_stack_path.endswith('.star'):
+        cmd_line = "sp_star.py {} --makevstack={} --list={}".format(
                 args.input_stack_path,  # source stack
                 substack_path,  # target stack
                 '{0}_list{1}'.format(*os.path.splitext(output_file))
@@ -292,12 +293,12 @@ def isac_substack(args):
     sp_global_def.BATCH = True
 
     # Check error conditions of arguments
-    args.input_bdb_stack_path = args.input_bdb_stack_path.strip()
-    if not EMAN2db.db_check_dict(args.input_bdb_stack_path, readonly=True):
-        sp_global_def.ERROR(
-            "Input BDB image stack file does not exist. Please check the file path and restart the program.",
-            where=subcommand_name,
-        )
+    args.input_star_stack_path = args.input_star_stack_path.strip()
+    # if not EMAN2db.db_check_dict(args.input_star_stack_path, readonly=True):
+    #     sp_global_def.ERROR(
+    #         "Input BDB image stack file does not exist. Please check the file path and restart the program.",
+    #         where=subcommand_name,
+    #     )
     args.input_run_dir = args.input_run_dir.strip()
     if not os.path.exists(args.input_run_dir):
         sp_global_def.ERROR(
@@ -344,7 +345,7 @@ def isac_substack(args):
     os.makedirs(args.output_directory)
     sp_global_def.write_command(args.output_directory)
     # Extract the number of images in the input BDB stack
-    n_fullstack_img = EMAN2_cppwrap.EMUtil.get_image_count(args.input_bdb_stack_path)
+    n_fullstack_img = EMAN2_cppwrap.EMUtil.get_image_count(args.input_star_stack_path)
     if n_fullstack_img == 0:
         sp_global_def.ERROR(
             "Input BDB image stack file does contain no images. Please check the file path and restart the program.",
@@ -572,7 +573,7 @@ def isac_substack(args):
         if len(fullstack_prealign2d_list) != n_fullstack_img:
             sp_global_def.ERROR(
                 "The number of entries in {} is not consistent with {}. Please check the consistency of input datasets.".format(
-                    fullstack_prealign2d_path, args.input_bdb_stack_path
+                    fullstack_prealign2d_path, args.input_star_stack_path
                 ),
                 where=subcommand_name,
             )  # action=1 - fatal error, exit
@@ -594,7 +595,7 @@ def isac_substack(args):
         if len(fullstack_shrunk_core_align2d_list) != n_fullstack_img:
             sp_global_def.ERROR(
                 "The number of entries in {} is not consistent with {}. Please check the consistency of input datasets.".format(
-                    fullstack_shrunk_core_align2d_path, args.input_bdb_stack_path
+                    fullstack_shrunk_core_align2d_path, args.input_star_stack_path
                 ),
                 where=subcommand_name,
             )  # action=1 - fatal error, exit
@@ -699,7 +700,7 @@ def isac_substack(args):
         if n_accounted_img > n_fullstack_img:
             sp_global_def.ERROR(
                 "The number of entries in {} is not consistent with {} (the number of accounted particles is larger than ones of particles in the original fullstack). Please check the consistency of input datasets.".format(
-                    accounted_local_total_align2d_path, args.input_bdb_stack_path
+                    accounted_local_total_align2d_path, args.input_star_stack_path
                 ),
                 where=subcommand_name,
             )  # action=1 - fatal error, exit
@@ -961,16 +962,17 @@ def isac_substack(args):
     # Create virtual stack for ISAC substack
     sp_global_def.sxprint(" ")
     sp_global_def.sxprint("Creating ISAC substack as a virtual stack...")
-    virtual_bdb_substack_path = "bdb:{}#{}".format(
-        args.output_directory, args.substack_basename
-    )
+    # virtual_bdb_substack_path = "bdb:{}#{}".format(
+    #     args.output_directory, args.substack_basename
+    # )
+    virtual_star_substack_path = "{}/{}.star".format(args.output_directory, args.substack_basename)
     if args.min_nr_segments:
-        virtual_bdb_substack_path_tmp = "bdb:{}#{}_original".format(args.output_directory, args.substack_basename)
+        virtual_star_substack_path_tmp = "{}/{}_original.star".format(args.output_directory, args.substack_basename)
     else:
-        virtual_bdb_substack_path_tmp = virtual_bdb_substack_path
-    cmd_line = "e2bdb.py {} --makevstack={} --list={}".format(
-        args.input_bdb_stack_path,  # source stack
-        virtual_bdb_substack_path_tmp,  # target stack
+        virtual_star_substack_path_tmp = virtual_star_substack_path
+    cmd_line = "sp_star.py {} --makevstack={} --list={}".format(
+        args.input_star_stack_path,  # source stack
+        virtual_star_substack_path_tmp,  # target stack
         fullstack_img_id_path_of_isac_substack,
     )  # indices to denote which images in the source stack to add to the target stack
     status = sp_utilities.cmdexecute(cmd_line)
@@ -985,7 +987,7 @@ def isac_substack(args):
         "Importing the total 2D alignment parameters in the original scale to the header entry..."
     )
     cmd_line = "sp_header.py {} --import={} --params={}".format(
-        virtual_bdb_substack_path_tmp,  # target stack
+        virtual_star_substack_path_tmp,  # target stack
         isac_substack_total_header_align2d_path,  # import sp_alignment parameters from .txt file
         "xform.align2d",
     )  # perform the import on the alignment parameters
@@ -1000,7 +1002,7 @@ def isac_substack(args):
     sp_global_def.sxprint(
         "Creating projection parameters header entry from imported 2D alignment parameters using 2D-to-3D transformation..."
     )
-    cmd_line = "sp_params_2D_to_3D.py {}".format(virtual_bdb_substack_path_tmp)
+    cmd_line = "sp_params_2D_to_3D.py {}".format(virtual_star_substack_path_tmp)
     status = sp_utilities.cmdexecute(cmd_line)
     if status == 0:
         sp_global_def.ERROR(
@@ -1014,7 +1016,7 @@ def isac_substack(args):
         args.output_directory, "{}_header_projection.txt".format(args.substack_basename)
     )
     cmd_line = "sp_header.py {} --export={} --params=xform.projection".format(
-        virtual_bdb_substack_path_tmp, isac_substack_total_header_projection_path
+        virtual_star_substack_path_tmp, isac_substack_total_header_projection_path
     )
     status = sp_utilities.cmdexecute(cmd_line)
     if status == 0:
@@ -1028,7 +1030,7 @@ def isac_substack(args):
         "Importing class membership information (also found in file 'particle_membership.txt')..."
     )
     cmd_line = "sp_header.py {} --import={} --params={}".format(
-        virtual_bdb_substack_path_tmp,  # target stack
+        virtual_star_substack_path_tmp,  # target stack
         class_membership_file_path,  # import sp_alignment parameters from .txt file
         "ISAC_class_id",
     )  # perform the import on the alignment parameters
@@ -1050,11 +1052,11 @@ def isac_substack(args):
     sp_global_def.sxprint("  Extracted class members : %6d" % (n_isac_substack_img))
     sp_global_def.sxprint(
         "  ISAC substack size      : %6d"
-        % (EMAN2_cppwrap.EMUtil.get_image_count(virtual_bdb_substack_path_tmp))
+        % (EMAN2_cppwrap.EMUtil.get_image_count(virtual_star_substack_path_tmp))
     )
 
     if args.min_nr_segments:
-        args.input_stack_path = virtual_bdb_substack_path_tmp
+        args.input_stack_path = virtual_star_substack_path_tmp
         n_filaments, ori_n_filaments = reorder_filaments(args, overwrite=True)
         sp_global_def.sxprint(" ")
         sp_global_def.sxprint("Summary of processing...")
@@ -2575,7 +2577,7 @@ def restacking(args):
     sp_global_def.BATCH = True
 
     # Check error conditions of arguments
-    if not EMAN2db.db_check_dict(args.input_bdb_stack_path, readonly=True):
+    if not EMAN2db.db_check_dict(args.input_star_stack_path, readonly=True):
         sp_global_def.ERROR(
             "Input BDB image stack file does not exist. Please check the input stack path and restart the program.",
             where=subcommand_name,
@@ -2606,7 +2608,7 @@ def restacking(args):
             )  # action=1 - fatal error, exit
     if not args.reboxing:
         img = EMAN2_cppwrap.EMData()
-        img.read_image(args.input_bdb_stack_path, 0, True)
+        img.read_image(args.input_star_stack_path, 0, True)
         img_size = img.get_xsize()
         if abs(args.shift3d_x) >= old_div(img_size, 2):
             sp_global_def.ERROR(
@@ -2736,13 +2738,13 @@ def restacking(args):
     # --------------------------------------------------------------------------------
     sp_global_def.sxprint(" ")
     sp_global_def.sxprint(
-        "Checking the input stack {}...".format(args.input_bdb_stack_path)
+        "Checking the input stack {}...".format(args.input_star_stack_path)
     )
-    n_img = EMAN2_cppwrap.EMUtil.get_image_count(args.input_bdb_stack_path)
+    n_img = EMAN2_cppwrap.EMUtil.get_image_count(args.input_star_stack_path)
     # sxprint(" ")
     sp_global_def.sxprint(
         "Found {} particle images in the input stack {}".format(
-            n_img, args.input_bdb_stack_path
+            n_img, args.input_star_stack_path
         )
     )
 
@@ -2756,8 +2758,8 @@ def restacking(args):
     img = EMAN2_cppwrap.EMData()
     for img_id in range(n_img):
         # Load images
-        # img = get_im(args.input_bdb_stack_path, img_id)
-        img.read_image(args.input_bdb_stack_path, img_id, True)
+        # img = get_im(args.input_star_stack_path, img_id)
+        img.read_image(args.input_star_stack_path, img_id, True)
         # Extract associated source micrograph path name from the image header
         mic_path = str(img.get_attr("ptcl_source_image"))
         mic_basename = os.path.basename(mic_path)
@@ -3025,13 +3027,13 @@ def restacking(args):
             global_mic_dict[mic_basename].centered_rebox_coords_list.append(line)
 
     # 	sxprint(" ")
-    # 	sxprint("Found total of {} assocaited micrographs in the input stack {}.".format(len(global_mic_dict), args.input_bdb_stack_path))
+    # 	sxprint("Found total of {} assocaited micrographs in the input stack {}.".format(len(global_mic_dict), args.input_star_stack_path))
 
     if missing_ctf_params_counter > 0:
         sp_global_def.sxprint(" ")
         sp_global_def.sxprint(
             "WARNING!!! The CTF parameters (ctf header entry) are missing from {} out of {} particle images in the input stack {}.".format(
-                missing_proj_params_counter, n_img, args.input_bdb_stack_path
+                missing_proj_params_counter, n_img, args.input_star_stack_path
             )
         )
         sp_global_def.sxprint(
@@ -3042,7 +3044,7 @@ def restacking(args):
         sp_global_def.sxprint(" ")
         sp_global_def.sxprint(
             "WARNING!!! The projection parameters (xform.projection header entry) are missing from {} out of {} particle images in the input stack {}.".format(
-                missing_proj_params_counter, n_img, args.input_bdb_stack_path
+                missing_proj_params_counter, n_img, args.input_star_stack_path
             )
         )
         sp_global_def.sxprint(
@@ -3084,7 +3086,7 @@ def restacking(args):
     sp_global_def.sxprint(" ")
     sp_global_def.sxprint(
         "Found total of {} micrographs in the input stack {}.".format(
-            len(mic_basename_list_of_input_stack), args.input_bdb_stack_path
+            len(mic_basename_list_of_input_stack), args.input_star_stack_path
         )
     )
 
@@ -3106,7 +3108,7 @@ def restacking(args):
     )
     sp_global_def.sxprint(
         "Saving the list of micrographs found in the input stack {} to {}...".format(
-            args.input_bdb_stack_path, input_mic_list_file_path
+            args.input_star_stack_path, input_mic_list_file_path
         )
     )
     input_mic_list_file = open(input_mic_list_file_path, "w")
@@ -3340,12 +3342,12 @@ def restacking(args):
         # Create virtual stack for output stack
         sp_global_def.sxprint(" ")
         sp_global_def.sxprint("Creating output stack as a virtual stack...")
-        virtual_bdb_stack_path = "bdb:{}#{}".format(
+        virtual_star_stack_path = "{}/{}.star".format(
             args.output_directory, args.sv_vstack_basename
         )
-        cmd_line = "e2bdb.py {} --makevstack={} --list={}".format(
-            args.input_bdb_stack_path,
-            virtual_bdb_stack_path,
+        cmd_line = "sp_star.py {} --makevstack={} --list={}".format(
+            args.input_star_stack_path,
+            virtual_star_stack_path,
             output_particle_id_list_file_path,
         )
         status = sp_utilities.cmdexecute(cmd_line)
@@ -3470,7 +3472,7 @@ def restacking(args):
     if args.save_vstack:
         sp_global_def.sxprint(
             "Save output stack as                                  : {}".format(
-                virtual_bdb_stack_path
+                virtual_star_stack_path
             )
         )
 
@@ -3959,17 +3961,17 @@ def desymmetrize(args):
     # Check error conditions
     subcommand_name = "desymmetrize"
 
-    args.input_bdb_stack_path = args.input_bdb_stack_path.strip()
-    if args.input_bdb_stack_path[: len("bdb:")].lower() != "bdb:":
-        sp_global_def.ERROR(
-            "Invalid input BDB stack file path %s.  The path must start with 'bdb:'. Please check the file path and restart the program."
-            % (args.input_bdb_stack_path),
-            where=subcommand_name,
-        )  # action=1 - fatal error, exit
-    if not EMAN2db.db_check_dict(args.input_bdb_stack_path, readonly=True):
+    args.input_star_stack_path = args.input_star_stack_path.strip()
+    # if args.input_star_stack_path[: len("bdb:")].lower() != "bdb:":
+    #     sp_global_def.ERROR(
+    #         "Invalid input BDB stack file path %s.  The path must start with 'bdb:'. Please check the file path and restart the program."
+    #         % (args.input_star_stack_path),
+    #         where=subcommand_name,
+    #     )  # action=1 - fatal error, exit
+    if not EMAN2db.db_check_dict(args.input_star_stack_path, readonly=True):
         sp_global_def.ERROR(
             "Input BDB image stack file %s does not exist. Please check the file path and restart the program."
-            % (args.input_bdb_stack_path),
+            % (args.input_star_stack_path),
             where=subcommand_name,
         )  # action=1 - fatal error, exit
     if not os.path.exists(args.input_cluster_path):
@@ -4015,7 +4017,7 @@ def desymmetrize(args):
 
     # Extract file path from the input BDB dictionary
     input_bdb_full_path, input_bdb_dictname, input_bdb_keys = EMAN2db.db_parse_path(
-        args.input_bdb_stack_path
+        args.input_star_stack_path
     )
     cwd = os.getcwd()
     if cwd[-1] != cwd[0] or cwd[-1] != cwd[0]:
@@ -4031,13 +4033,13 @@ def desymmetrize(args):
     #
     # NOTE: EMData.read_images() or get_im() of utilities works as well
     input_bdb_stack = EMAN2db.db_open_dict(
-        args.input_bdb_stack_path, ro=True
+        args.input_star_stack_path, ro=True
     )  # Read only
 
-    n_img_detected = EMAN2_cppwrap.EMUtil.get_image_count(args.input_bdb_stack_path)
+    n_img_detected = EMAN2_cppwrap.EMUtil.get_image_count(args.input_star_stack_path)
     sp_global_def.sxprint(
         "Detected %d particles in symmetrized input BDB stack %s."
-        % (n_img_detected, args.input_bdb_stack_path)
+        % (n_img_detected, args.input_star_stack_path)
     )
     sp_global_def.sxprint(" ")
 
@@ -4049,7 +4051,7 @@ def desymmetrize(args):
     except:
         sp_global_def.ERROR(
             "Failed to read image header of particle #%d from %s. Aborting..."
-            % (0, args.input_bdb_stack_path),
+            % (0, args.input_star_stack_path),
             where=subcommand_name,
         )  # action=1 - fatal error, exit
 
@@ -4059,7 +4061,7 @@ def desymmetrize(args):
     if "variabilitysymmetry" in img_header:
         sp_global_def.sxprint(
             "Detected %s point-group symmetry in specified input BDB stack %s."
-            % (img_header["variabilitysymmetry"], args.input_bdb_stack_path)
+            % (img_header["variabilitysymmetry"], args.input_star_stack_path)
         )
         sp_global_def.sxprint(" ")
 
@@ -4121,11 +4123,11 @@ def desymmetrize(args):
         data_source_path = img_header["data_source"]
         # sxprint("MRK_DEBUG: data_source_path := ", data_source_path)
         symmetrization_q_stack_path = (
-            "bdb:./Q"
+            "./Q.star"
         )  # Unfortunately, sx3dvariability.py --symmetrize uses "/" syntax instead of "#" before bdb dictionary name for this case... (2018/08/08 Toshio)
         if input_bdb_path != ".":
             if input_bdb_path != "":
-                symmetrization_q_stack_path = "bdb:{}#Q".format(input_bdb_path)
+                symmetrization_q_stack_path = "{}/Q.star".format(input_bdb_path)
             # else:
         # else:
         # 	# Do nothing
@@ -4281,7 +4283,7 @@ def main():
         help="ISAC2 Stack Subset: Create virtual subset stack consisting from ISAC2 accounted particles by retrieving particle numbers associated with the ISAC2 or Beautifier class averages. The command also saves a list text file containing the retrieved original image numbers and 2D alignment parameters. In addition, it stores the 2D alignment parameters to stack header.",
     )
     parser_isac_subset.add_argument(
-        "input_bdb_stack_path",
+        "input_star_stack_path",
         type=str,
         help="Input BDB image stack: Specify the same BDB image stack used for the associated ISAC2 run. (default required string)",
     )
@@ -4416,7 +4418,7 @@ def main():
         help="Restacking: Generate all necessary information to restack the input stack (i.e. particle image ID list and projection parameters list) while applying micrograph selection list. Optinally, the command can directly output the virtual stack.  Also, this command can be used to generate all parameters files for reboxing (i.e. original/centered particle coordinates list files, original/centered projection parameters list as well as micrograph selection file). Optionally, user can provided a 3D shift to recenter the projection parameters and so the particle coordinates.",
     )
     parser_restacking.add_argument(
-        "input_bdb_stack_path",
+        "input_star_stack_path",
         type=str,
         help="Input BDB image stack: Specify the input BDB image stack. (default required string)",
     )
@@ -4583,7 +4585,7 @@ def main():
     )
     parser_moon_eliminator.add_argument(
         "--edge_width",
-        type=float,
+        type=int,
         default=1,
         help="Soft-edge width [Pixels]: The pixel width of transition area for soft-edged masking.(default 1)",
     )
@@ -4613,7 +4615,7 @@ def main():
         help="UNDER DEVELOPMENT - Desymmetrize particle IDs of a specified cluster sorted by SORT3D. The output will contain the particle IDs of stack before symmetrization.",
     )
     parser_subcmd.add_argument(
-        "input_bdb_stack_path",
+        "input_star_stack_path",
         type=str,
         help="Input BDB image stack: Specify the symmetrized BDB stack used for the associated SORT3D run. (default required string)",
     )

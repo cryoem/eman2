@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+# Author: Adnan Ali 2019 (adnan.ali@mpi-dortmund.mpg.de)
 # Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)
 # Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
 # Author: Thorsten Wagner 2019 (thorsten.wagner@mpi-dortmund.mpg.de)
@@ -47,19 +48,22 @@ import numpy
 import optparse
 import os
 import shutil
-from ..libpy import sp_applications
-from ..libpy import sp_filter
-from ..libpy import sp_fundamentals
-from ..libpy import sp_global_def
-from ..libpy import sp_morphology
-from ..libpy import sp_statistics
-from ..libpy import sp_utilities
+from sphire.libpy import sp_applications
+from sphire.libpy import sp_filter
+from sphire.libpy import sp_fundamentals
+from sphire.libpy import sp_global_def
+from sphire.libpy import sp_morphology
+from sphire.libpy import sp_statistics
+from sphire.libpy import sp_utilities
 import sys
 import time
 from builtins import range
 
 
-
+try:
+    from pyStarDB import sp_pystardb as star
+except:
+    print("sp_window requires a python package pyStarDB")
 
 # ========================================================================================
 # Define functions for reading coordinates files of different formats.
@@ -683,6 +687,9 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
     # List keeps only id substrings of micrographs whose all necessary information are available
     valid_mic_id_substr_list = []
 
+    #Modified by Adnan (31/9/21)
+    # Inserting the names of the filenames in the list so that we can gather in the end
+    star_file_names = []
     # ====================================================================================
     # Obtain the list of micrograph id sustrings using a single CPU (i.e. main mpi process)
     # ====================================================================================
@@ -1625,12 +1632,17 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
             # --------------------------------------------------------------------------------
             # Generate the output file path of particle stack for this mpi process
             # --------------------------------------------------------------------------------
+        # Modified by Adnan (31/9/2021)
+        ## Modified code to integrate star file instead of bdb
         mic_baseroot = mic_baseroot_pattern.replace("*", mic_id_substr)
-        local_stack_path = "bdb:%s#" % mpi_proc_dir + mic_baseroot + "_ptcls"
+        # local_stack_path = "bdb:%s#" % mpi_proc_dir + mic_baseroot + "_ptcls"
+        local_stack_path = "%s/" % mpi_proc_dir + mic_baseroot + "_ptcls" + ".star"
         local_mrcs_name = mic_baseroot + "_ptcls.mrcs"
-        local_mrcs_path = os.path.join(mpi_proc_dir, local_mrcs_name)
-
+        # local_mrcs_path = os.path.join(mpi_proc_dir, local_mrcs_name)
+        local_mrcs_path = os.path.join(os.path.relpath(mpi_proc_dir, os.getcwd()), local_mrcs_name)
         local_bdb_stack = EMAN2db.db_open_dict(local_stack_path)
+
+        star_file_names.append(local_stack_path)
         # --------------------------------------------------------------------------------
         # Prepare coordinates loop variables
         # --------------------------------------------------------------------------------
@@ -1772,7 +1784,8 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
                 ] = (
                     coords_id
                 )  # NOTE: Toshio Moriya 2017/11/20: same as ptcl_source_coord_id but the other program uses this header entry key...
-                particle_img_dict["data_path"] = "../" + local_mrcs_name
+                # particle_img_dict["data_path"] = "../" + local_mrcs_name
+                particle_img_dict["data_path"] = local_mrcs_path
                 particle_img_dict["resample_ratio"] = resample_ratio
 
                 particle_img_dict["nx"] = box_size
@@ -1959,6 +1972,9 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
             main_mpi_proc,
             mpi.MPI_COMM_WORLD,
         )
+        all_star_files = sp_utilities.wrap_mpi_gatherv(star_file_names, 0, mpi.MPI_COMM_WORLD)
+    else:
+        all_star_files = star_file_names
 
         # Print out the summary of all micrographs
     if main_mpi_proc == my_mpi_proc_id:
@@ -2019,26 +2035,34 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
         """Multiline Comment0"""
 
         if RUNNING_UNDER_MPI:
-            e2bdb_command = (
-                "e2bdb.py  "
-                + root_out_dir
-                + "/mpi_proc_*  --makevstack=bdb:"
-                + root_out_dir
-                + "#data"
-            )
-            sp_global_def.sxprint(" ")
-            sp_global_def.sxprint(
-                "Please execute from the command line :  ", e2bdb_command
-            )
+            # e2bdb_command = (
+            #     "e2bdb.py  "
+            #     + root_out_dir
+            #     + "/mpi_proc_*  --makevstack=bdb:"
+            #     + root_out_dir
+            #     + "#data"
+            # )
+            # sp_global_def.sxprint(" ")
+            # sp_global_def.sxprint(
+            #     "Please execute from the command line :  ", e2bdb_command
+            # )
+            if main_mpi_proc == my_mpi_proc_id:
+                for name in all_star_files:
+                    while not os.path.exists(name):
+                        time.sleep(0.5)
+            newstar = star.StarFile.add_star(all_star_files)
+            newstar.write_star_file(os.path.join(root_out_dir, "data.star"))
         else:
-            e2bdb_command = (
-                "e2bdb.py  "
-                + root_out_dir
-                + "  --makevstack=bdb:"
-                + root_out_dir
-                + "#data"
-            )
-            sp_utilities.cmdexecute(e2bdb_command, printing_on_success=False)
+            # e2bdb_command = (
+            #     "e2bdb.py  "
+            #     + root_out_dir
+            #     + "  --makevstack=bdb:"
+            #     + root_out_dir
+            #     + "#data"
+            # )
+            newstar = star.StarFile.add_star(all_star_files)
+            newstar.write_star_file(os.path.join(root_out_dir, "data.star"))
+            # sp_utilities.cmdexecute(e2bdb_command, printing_on_success=False)
 
         sp_global_def.sxprint(" ")
         sp_global_def.sxprint("DONE!!!")

@@ -42,9 +42,9 @@ from past.utils import old_div
 #
 
 import optparse
-from ..libpy import sp_applications
-from ..libpy import sp_global_def
-from ..libpy import sp_utilities
+from sphire.libpy import sp_applications
+from sphire.libpy import sp_global_def
+from sphire.libpy import sp_utilities
 import sys
 
 

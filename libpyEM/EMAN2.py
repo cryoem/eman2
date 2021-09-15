@@ -62,7 +62,6 @@ HOMEDB=None
 
 try:
     from pyStarDB import sp_pystardb as star
-
     STAR_AVAILABLE = True
 except ImportError:
     STAR_AVAILABLE = False
@@ -91,7 +90,7 @@ except: pass
 # behavior appropriately
 #try:
 #import EMAN2db
-from EMAN2db import EMAN2DB,db_open_dict,db_close_dict,db_remove_dict,db_list_dicts,db_check_dict,db_parse_path,db_convert_path,db_get_image_info,e2gethome, e2getcwd, db_set_header_star
+from EMAN2db import EMAN2DB,db_open_dict,db_close_dict,db_remove_dict,db_list_dicts,db_check_dict,db_parse_path,db_convert_path,db_get_image_info,e2gethome, e2getcwd, db_set_header_star, db_em_to_star_header
 from EMAN2jsondb import JSDict,js_open_dict,js_close_dict,js_remove_dict,js_list_dicts,js_check_dict,js_one_key
 #except:
 #	HOMEDB=None
@@ -2713,6 +2712,7 @@ def db_read_image(self, fsp, *parms, **kparms):
 			self.read_image_c(filename, (int(numbers)-1), True)
 		db_set_header_star(self, data.iloc[parms[0]], star_file)
 		self.update()
+		return
 
 	if len(kparms) != 0:
 		if 'img_index' not in kparms:
@@ -2791,7 +2791,7 @@ def db_read_images(fsp, *parms):
 		total_imgs = []
 		for index in range(image_data.shape[0]):
 			img = EMData()
-			img.read_image(fsp, parms[0][index], image_header)
+			img.read_image(fsp, parms[0][index], import_header)
 			total_imgs.append(img)
 		return total_imgs
 

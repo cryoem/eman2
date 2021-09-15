@@ -9976,6 +9976,15 @@ def rec3d_make_maps(compute_fsc=True, regularized=True):
     
     # If not regularized
     else:
+        if 'voldir' in Tracker["constants"]:
+            assert Tracker["constants"]["voldir"] != None, "ERROR! 'voldir' is None"
+            recondir = Tracker["constants"]["voldir"]
+
+            if Blockdata["myid"] == Blockdata["main_node"] and not os.path.isdir(recondir):
+                os.makedirs(recondir)
+            mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
+        else:
+            recondir = Tracker["constants"]["masterdir"]
         if Blockdata["no_of_groups"] == 1:
             for iproc in range(2):
                 if Blockdata["myid_on_node"] == 0:
@@ -10076,16 +10085,6 @@ def rec3d_make_maps(compute_fsc=True, regularized=True):
         
         # If more than one group
         else:
-            if 'voldir' in Tracker["constants"]:
-                assert Tracker["constants"]["voldir"] != None, "ERROR! 'voldir' is None"
-                recondir = Tracker["constants"]["voldir"]
-                
-                if Blockdata["myid"] == Blockdata["main_node"] and not os.path.isdir(recondir):
-                    os.makedirs(recondir)
-                mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
-            else:
-                recondir = Tracker["constants"]["masterdir"]
-            
             if Blockdata["myid"] == Blockdata["main_shared_nodes"][1]:
                 # post-insertion operations, done only in main_node
                 tvol0 = sp_utilities.get_im(

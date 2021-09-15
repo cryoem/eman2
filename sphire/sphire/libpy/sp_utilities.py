@@ -58,10 +58,10 @@ import re
 import scipy.spatial
 
 import six
-from . import sp_applications
-from . import sp_fundamentals
-from . import sp_global_def
-from . import sp_morphology
+from sphire.libpy import sp_applications
+from sphire.libpy import sp_fundamentals
+from sphire.libpy import sp_global_def
+from sphire.libpy import sp_morphology
 import string
 import struct
 import sys
@@ -69,6 +69,10 @@ import time
 import traceback
 import zlib
 
+try:
+    from pyStarDB import sp_pystardb as star
+except ImportError:
+    print("You need pyStarDB package to run this tool, please run pip install pyStarDB")
 
 def makerelpath(p1, p2):
     """Takes a pair of paths /a/b/c/d and /a/b/e/f/g and returns a relative path to b from a, ../../e/f/g"""
@@ -940,6 +944,11 @@ def get_im(stackname, im=0):
         e = EMAN2_cppwrap.EMData()
         e.read_image(stackname, im)
         return e
+    # elif stackname.endswith(".star"):
+    #     if type(stackname) == type(""):
+    #         e = EMAN2.EMData()
+    #         pp = e.read_images(stackname, [im])
+    #         return pp[0]
     else:
         return stackname[im].copy()
 
@@ -2434,6 +2443,13 @@ def write_header(filename, data, lima):
     if ftp == "bdb":
         DB = EMAN2db.db_open_dict(filename)
         DB.set_header(lima, data)
+    elif ftp == "star":
+        DB = EMAN2db.db_open_dict(filename)
+        special_keys = star.StarFile(filename).special_keys
+        ignored_keys = star.StarFile(filename).ignored_keys
+        em_dict = data.get_attr_dict()
+        EMAN2db.db_em_to_star_header(em_dict, DB.converter, lima, special_keys, ignored_keys)
+        EMAN2db.db_close_dict(filename)
     elif ftp == "hdf":
         data.write_image(filename, lima, EMAN2_cppwrap.EMUtil.ImageType.IMAGE_HDF, True)
     else:
@@ -2448,6 +2464,8 @@ def file_type(name):
             return name[-3:]
         elif name[-5:] == ".mrcs":
             return "mrcs"
+        elif name.endswith('.star'):
+            return "star"
     sp_global_def.ERROR("Unacceptable file format", "file_type", 1)
 
 

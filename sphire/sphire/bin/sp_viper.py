@@ -44,11 +44,11 @@ from past.utils import old_div
 import EMAN2_cppwrap
 import mpi
 import optparse
-from ..libpy import sp_global_def
-from ..libpy import sp_logger
-from ..libpy import sp_multi_shc
-from ..libpy import sp_user_functions
-from ..libpy import sp_utilities
+from sphire.libpy import sp_global_def
+from sphire.libpy import sp_logger
+from sphire.libpy import sp_multi_shc
+from sphire.libpy import sp_user_functions
+from sphire.libpy import sp_utilities
 import sys
 from builtins import range
 
@@ -337,7 +337,7 @@ directory		output directory name: into which the results will be written (if it 
 def main():
     mpi.mpi_init(0, [])
     sp_global_def.print_timestamp("Start")
-    main(sys.argv[1:])
+    run(sys.argv[1:])
     sp_global_def.print_timestamp("Finish")
     mpi.mpi_finalize()
 

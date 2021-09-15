@@ -60,7 +60,6 @@ from libpyUtils2 import EMUtil
 
 try:
     from pyStarDB import sp_pystardb as star
-
     STAR_AVAILABLE = True
 except ImportError:
     STAR_AVAILABLE = False

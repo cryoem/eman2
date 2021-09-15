@@ -51,14 +51,14 @@ import os
 import random
 import shutil
 import six
-from ..libpy import sp_applications
-from ..libpy import sp_fundamentals
-from ..libpy import sp_global_def
-from ..libpy import sp_logger
-from ..libpy import sp_multi_shc
-from ..libpy import sp_statistics
-from ..libpy import sp_user_functions
-from ..libpy import sp_utilities
+from sphire.libpy import sp_applications
+from sphire.libpy import sp_fundamentals
+from sphire.libpy import sp_global_def
+from sphire.libpy import sp_logger
+from sphire.libpy import sp_multi_shc
+from sphire.libpy import sp_statistics
+from sphire.libpy import sp_user_functions
+from sphire.libpy import sp_utilities
 import string
 import sys
 import time

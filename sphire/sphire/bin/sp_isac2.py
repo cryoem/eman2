@@ -6,8 +6,8 @@ from past.utils import old_div
 Author: Markus Stabrin 2019 (markus.stabrin@mpi-dortmund.mpg.de)
 Author: Fabian Schoenfeld 2019 (fabian.schoenfeld@mpi-dortmund.mpg.de)
 Author: Thorsten Wagner 2019 (thorsten.wagner@mpi-dortmund.mpg.de)
+Author: Adnan Ali 2019 (adnan.ali@mpi-dortmund.mpg.de)
 # Author: Tapu Shaikh 2019 (tapu.shaikh@mpi-dortmund.mpg.de)
-# Author: Adnan Ali 2019 (adnan.ali@mpi-dortmund.mpg.de)
 # Author: Luca Lusnig 2019 (luca.lusnig@mpi-dortmund.mpg.de)
 Author: Toshio Moriya 2019 (toshio.moriya@kek.jp)
 Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
@@ -41,22 +41,24 @@ Place, Suite 330, Boston, MA  02111-1307 USA
 
 import EMAN2
 import EMAN2_cppwrap
-from EMAN2db import db_open_dict
+from EMAN2db import db_open_dict, db_close_dict
+from EMAN2 import db_write_images
+import tqdm
 import ctypes
 import mpi
 import numpy
 import os
 import optparse
-from ..libpy import sp_statistics
-from ..libpy import sp_alignment
-from ..libpy import sp_applications
-from ..libpy import sp_filter
-from ..libpy import sp_fundamentals
-from ..libpy import sp_global_def
-from ..libpy import sp_logger
-from ..libpy import sp_pixel_error
-from ..libpy import sp_utilities
-from ..libpy import sp_isac
+from sphire.libpy import sp_statistics
+from sphire.libpy import sp_alignment
+from sphire.libpy import sp_applications
+from sphire.libpy import sp_filter
+from sphire.libpy import sp_fundamentals
+from sphire.libpy import sp_global_def
+from sphire.libpy import sp_logger
+from sphire.libpy import sp_pixel_error
+from sphire.libpy import sp_utilities
+from sphire.libpy import sp_isac
 import string
 import subprocess
 import sys
@@ -264,7 +266,7 @@ def normalize_particle_images(
             mask = sp_utilities.model_circle(old_div(new_dim, 2) - 2, new_dim, new_dim)
 
     # pre-process all images
-    for im in range(len(aligned_images)):
+    for im in tqdm.tqdm(range(len(aligned_images)), desc="Normalizing Particle images"):
 
         # apply any available alignment parameters
         aligned_images[im] = sp_fundamentals.rot_shift2D(
@@ -1562,7 +1564,7 @@ def do_generation(
     if Blockdata["myid_on_node"] == 0:
         #  read data on process 0 of each node
         # print "  READING DATA FIRST :",Blockdata["myid"],Blockdata["stack_ali2d"],len(plist)
-        for i in range(nimastack):
+        for i in tqdm.tqdm(range(nimastack), desc="Reading stack for clipping"):
             bigbuffer.insert_clip(
                 sp_utilities.get_im(Blockdata["stack_ali2d"], plist[i]), (0, 0, i)
             )
@@ -2140,8 +2142,8 @@ def run(args):
         Blockdata["masterdir"] = string.join(Blockdata["masterdir"], "")
 
     # add stack_ali2d path to blockdata
-    Blockdata["stack_ali2d"] = "bdb:" + os.path.join(
-        Blockdata["masterdir"], "stack_ali2d"
+    Blockdata["stack_ali2d"] = os.path.join(
+        Blockdata["masterdir"], "stack_ali2d.star"
     )
 
     if myid == main_node:
@@ -2558,7 +2560,7 @@ def run(args):
         # defocus value correction for all images
         if Blockdata["myid"] == main_node:
             sp_global_def.sxprint("Apply CTF")
-        for im in range(nima):
+        for im in tqdm.tqdm(range(nima), desc="Applying CTF"):
             # create custom mask per particle in case we're processing filament images
             if options.filament_width != -1:
                 mask = sp_utilities.model_rotated_rectangle2D(
@@ -2618,18 +2620,24 @@ def run(args):
             sp_global_def.sxprint("Gather EMData")
 
         # gather normalized particles at the root node
-        sp_utilities.gather_compacted_EMData_to_root(
-            Blockdata["total_nima"], aligned_images, myid
-        )
+        # sp_utilities.gather_compacted_EMData_to_root(
+        #     Blockdata["total_nima"], aligned_images, myid
+        # )
+        mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
+        for pid in tqdm.tqdm(range(Blockdata["nproc"]), desc="Writing images"):
+            if myid == pid:
+                db_write_images(aligned_images, Blockdata["stack_ali2d"], list(range(image_start, image_end)))
+                del aligned_images
+            mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
 
         if Blockdata["myid"] == main_node:
-            sp_global_def.sxprint("Write aligned stack")
-            for i in range(Blockdata["total_nima"]):
-                aligned_images[i].write_image(Blockdata["stack_ali2d"], i)
-            del aligned_images
+            # sp_global_def.sxprint("Write aligned stack")
+            # for i in range(Blockdata["total_nima"]):
+            #     aligned_images[i].write_image(Blockdata["stack_ali2d"], i)
+            # del aligned_images
             #  It has to be explicitly closed
-            DB = db_open_dict(Blockdata["stack_ali2d"])
-            DB.close()
+            # DB = db_open_dict(Blockdata["stack_ali2d"])
+            # DB.close()
 
             fp = open(
                 os.path.join(Blockdata["masterdir"], "README_shrink_ratio.txt"), "w"

@@ -49,14 +49,14 @@ import numpy
 import optparse
 import os
 import random
-from ..libpy import sp_filter
-from ..libpy import sp_fundamentals
-from ..libpy import sp_global_def
-from ..libpy import sp_logger
-from ..libpy import sp_morphology
-from ..libpy import sp_projection
-from ..libpy import sp_statistics
-from ..libpy import sp_utilities
+from sphire.libpy import sp_filter
+from sphire.libpy import sp_fundamentals
+from sphire.libpy import sp_global_def
+from sphire.libpy import sp_logger
+from sphire.libpy import sp_morphology
+from sphire.libpy import sp_projection
+from sphire.libpy import sp_statistics
+from sphire.libpy import sp_utilities
 import sys
 import time
 import subprocess
@@ -1034,9 +1034,9 @@ def run():
             root, name = os.path.split(ctfs[kk][-1])
             ctfs[kk][-1] = name[:-4]
 
-        if options.input[:4] != "bdb:":
-            sp_global_def.ERROR("Sorry, only bdb files implemented")
-            return
+        # if options.input[:4] != "bdb:":
+        #     sp_global_def.ERROR("Sorry, only bdb files implemented")
+        #     return
 
         d = options.input[4:]
         # try:     str = d.index('*')
