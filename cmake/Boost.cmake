@@ -4,6 +4,7 @@ set(boost_py_ver ${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR})
 
 find_package(Boost COMPONENTS python${boost_py_ver} numpy${boost_py_ver} REQUIRED)
 
+message("Boost_VERSION: ${Boost_VERSION}")
 message("Boost_LIBRARIES:   ${Boost_LIBRARIES}")
 message("Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
 
