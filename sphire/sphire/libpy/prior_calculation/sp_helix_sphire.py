@@ -93,17 +93,13 @@ def import_sphire_params(input_file, symclass):
 
     dtype_import = [('phi', '<f8'), ('theta', '<f8'), ('psi', '<f8'), ('shift_x', '<f8'), ('shift_y', '<f8'), ('err1', '<f8'), ('err2', '<f8'), ('norm', '<f8')]
     dtype = dtype_import + [('source_n', '<i8')]
-    #dtype = dtype_import + [('source_n', '<i8'), ('phi_old', '<f8'), ('theta_old', '<f8'), ('psi_old', '<f8')]
 
     data_import = np.genfromtxt(input_file, dtype=dtype_import)
-    #reduced_angles = symclass.reduce_anglesets(data_import[['phi', 'theta', 'psi']].view(np.float64).reshape(data_import.shape + (-1,)), inc_mirror=0, tolistconv=False)
+    reduced_angles = symclass.reduce_anglesets(data_import[['phi', 'theta', 'psi']].tolist(), inc_mirror=0, tolistconv=False)
 
-    #data['phi_old'] = data_import['phi']
-    #data['theta_old'] = data_import['theta']
-    #data['psi_old'] = data_import['psi']
-    #data_import['phi'] = reduced_angles[:, 0]
-    #data_import['theta'] = reduced_angles[:, 1]
-    #data_import['psi'] = reduced_angles[:, 2]
+    data_import['phi'] = reduced_angles[:, 0]
+    data_import['theta'] = reduced_angles[:, 1]
+    data_import['psi'] = reduced_angles[:, 2]
 
     data = np.empty(len(data_import), dtype=dtype)
     data['source_n'] = np.arange(len(data))
