@@ -16,7 +16,7 @@ if [ -n "${CIRCLECI}" ];then
     conda activate eman
 fi
 
-python -m compileall -q -x .git .
+python -m compileall -q -x .git -x sparx -x sphire .
 
 if [ -n "$JENKINS_HOME" ];then
     export CPU_COUNT=4
@@ -27,7 +27,7 @@ fi
 conda info -a
 conda list
 conda list --explicit
-conda render ${recipe_dir}
+conda render ${recipe_dir} -c cryoem -c conda-forge -c defaults
 conda build purge-all
 
-conda build ${recipe_dir} -c cryoem -c defaults -c conda-forge
+conda build ${recipe_dir} -c cryoem -c conda-forge -c defaults
