@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 
 export EMAN_VERSION="2.99"
-export EMAN_DEPS_VERSION="26.0"
+export EMAN_DEPS_VERSION="29.0"
