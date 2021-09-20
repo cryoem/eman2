@@ -8,16 +8,16 @@ installer_filename: eman2_huge.win.exe   # [win]
 channels:
     - file:///place_holder_conda_prefix/conda-bld
     - https://conda.anaconda.org/cryoem
+    - https://conda.anaconda.org/conda-forge
     - https://repo.anaconda.com/pkgs/main
     - https://repo.anaconda.com/pkgs/msys2          # [win]
-    - https://conda.anaconda.org/conda-forge
 
 keep_pkgs: False
 ignore_duplicate_files: True
 
 specs:
   - eman2        2.99
-  - eman-deps    26.0
+  - eman-deps    29.0
   - conda
   - conda-build
   - pip
