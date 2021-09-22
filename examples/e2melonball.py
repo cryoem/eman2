@@ -213,7 +213,7 @@ def main():
 					scoopinsitu.write_image(outscoopsallfileinsitu,totalcount)
 
 			#scoopclip = scoop.copy()
-			scoop = clip3d(scoop,options.boxsize,[sx,sy,sz])
+			scoop = clip3d(scoop,options.boxsize,None,None,[sx,sy,sz])
 			#print("\nclipped scoop to boxsize={}".format(options.boxsize))
 			scoop.write_image(outscoopsallfile,totalcount)
 			print ("\nwrote out scoop {}/{}".format(totalcount,ntargetscoops))

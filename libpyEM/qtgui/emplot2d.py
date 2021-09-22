@@ -530,7 +530,11 @@ class EMPlot2DWidget(EMGLWidget):
 			if len(self.plottitle)>0 : ywid=0.94-ymin
 			else: ywid=0.98-ymin
 			xwid=0.98-xmin
-			ax=fig.add_axes((xmin,ymin,xwid,ywid),autoscale_on=False,xlim=self.xlimits,ylim=self.ylimits,xscale=self.axisparms[2],yscale=self.axisparms[3])
+			if self.xlimits[0]==self.xlimits[1]: xlimits=[self.xlimits[0],self.xlimits[0]+1.0]
+			else: xlimits=self.xlimits
+			if self.ylimits[0]==self.ylimits[1]: ylimits=[self.ylimits[0],self.ylimits[0]+1.0]
+			else: ylimits=self.ylimits
+			ax=fig.add_axes((xmin,ymin,xwid,ywid),autoscale_on=False,xlim=xlimits,ylim=ylimits,xscale=self.axisparms[2],yscale=self.axisparms[3])
 			#else : ax=fig.add_axes((.18,.18,.9,.9),autoscale_on=True,xscale=self.axisparms[2],yscale=self.axisparms[3])
 			if self.axisparms[0] and len(self.axisparms[0])>0 : ax.set_xlabel(self.axisparms[0],size="xx-large")
 			if self.axisparms[1] and len(self.axisparms[1])>0 : ax.set_ylabel(self.axisparms[1],size="xx-large")
@@ -921,8 +925,8 @@ lc is the cursor selection point in plot coords"""
 
 	def rescale(self,x0,x1,y0,y1,quiet=False):
 		"adjusts the value range for the x/y axes"
-		self.xlimits=(x0,x1)
-		self.ylimits=(y0,y1)
+		self.xlimits=[x0,x1]
+		self.ylimits=[y0,y1]
 		if x0>=x1 or y0>=y1 : self.autoscale()
 		self.needupd=1
 		self.del_shapes()  # also triggers an update
@@ -980,10 +984,10 @@ lc is the cursor selection point in plot coords"""
 					ymin=min(ymin,min(self.data[k][ax]))
 					ymax=max(ymax,max(self.data[k][ax]))
 
-			if self.axisparms[3]!="linear" : self.ylimits=(old_div(ymin,1.1),ymax*1.1)
+			if self.axisparms[3]!="linear" : self.ylimits=[ymin/1.1,ymax*1.1]
 			else:
 				margin=(ymax-ymin)*0.025
-				self.ylimits=(ymin-margin,ymax+margin)
+				self.ylimits=[ymin-margin,ymax+margin]
 
 		if force or self.climits==None or self.climits[1]<=self.climits[0] :
 			cmin=1.0e38

@@ -33,6 +33,11 @@ from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from optparse import OptionParser
+import numpy as np
+import scipy.fft as fft
+import traceback
+import cmath
+import random
 
 try:
 	from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
@@ -46,6 +51,31 @@ try:
 except:
 	print("Unable to import Python GUI libraries, PYTHONPATH ?")
 	sys.exit(1)
+
+soundout=None
+
+def fixang(x):
+	x=fmod(x,360.0)
+	if x>180.0: x-=360.0
+	if x<=-180.0: x+=360.0
+	return x
+
+def initsound():
+	global soundout
+	if soundout!=None: return
+
+	try:
+		import sounddevice
+	except:
+		print("Unable to import sounddevice module. Please insure it is installed.")
+		return
+
+	try:
+		soundout=sounddevice.OutputStream(samplerate=11025,channels=1,dtype="int16")
+	except:
+		traceback.print_exc()
+		print("Unable to open output stream")
+		return
 
 def main():
 	global debug,logid
@@ -81,6 +111,11 @@ class GUIFourierSynth(QtWidgets.QWidget):
 
 		self.synthplot=EMPlot2DWidget(self.app)
 		self.synthplot.show()
+
+		self.fftplot=EMPlot2DWidget(self.app)	# not shown initially
+		self.fftplot.show()
+
+	#	self.bispecimg=EMImage2DWidget(self.app) # not shown initially
 		
 		# overall layout
 		self.vbl1=QtWidgets.QVBoxLayout()
@@ -111,25 +146,37 @@ class GUIFourierSynth(QtWidgets.QWidget):
 		self.cbshifted=QtWidgets.QCheckBox("Shifted")
 		self.hbl1.addWidget(self.cbshifted)
 
+		self.bphaseleft=QtWidgets.QPushButton("\u2190")	# phase left
+		self.hbl1.addWidget(self.bphaseleft)
+
+		self.bphasecen=QtWidgets.QPushButton("O")
+		self.hbl1.addWidget(self.bphasecen)
+
+		self.bphaseright=QtWidgets.QPushButton("\u2192") # phase right
+		self.hbl1.addWidget(self.bphaseright)
+
 		self.cbtargfn=QtWidgets.QComboBox(self)
-		self.cbtargfn.addItem("None")
-		self.cbtargfn.addItem("triangle")
-		self.cbtargfn.addItem("square")
-		self.cbtargfn.addItem("square imp")
-		self.cbtargfn.addItem("delta")
+		self.cbtargfn.addItem("None")		# 0
+		self.cbtargfn.addItem("triangle")	# 1
+		self.cbtargfn.addItem("square")		# 2
+		self.cbtargfn.addItem("square imp")	# 3
+		self.cbtargfn.addItem("delta")		# 4
 		self.cbtargfn.addItem("noise")
 		self.cbtargfn.addItem("saw")
 		self.cbtargfn.addItem("sin")
 		self.cbtargfn.addItem("modsin")
 		self.cbtargfn.addItem("modsin2")
-		self.cbtargfn.addItem("modsin3")
+		self.cbtargfn.addItem("modsin3")	#10
 		self.cbtargfn.addItem("sin low")
 		self.cbtargfn.addItem("doubledelta")
 		self.cbtargfn.addItem("sin bad f")
 		self.cbtargfn.addItem("sin bad f2")
-		self.cbtargfn.addItem("square imp dx")
-		self.cbtargfn.addItem("square imp 2")
+		self.cbtargfn.addItem("0 phase")	#15
+		self.cbtargfn.addItem("rand phase")
 		self.hbl1.addWidget(self.cbtargfn)
+
+		self.bsound=QtWidgets.QPushButton("Snd")
+		self.hbl1.addWidget(self.bsound)
 		
 		# Widget containing valsliders
 		self.wapsliders=QtWidgets.QWidget(self)
@@ -153,6 +200,10 @@ class GUIFourierSynth(QtWidgets.QWidget):
 		self.cbshowall.stateChanged[int].connect(self.recompute)
 		self.cbshifted.stateChanged[int].connect(self.recompute)
 		self.cbtargfn.activated[int].connect(self.newtargfn)
+		self.bphaseleft.clicked.connect(self.phaseleft)
+		self.bphasecen.clicked.connect(self.phasecen)
+		self.bphaseright.clicked.connect(self.phaseright)
+		self.bsound.clicked.connect(self.playsound)
 
 
 		self.wamp=[]
@@ -170,11 +221,38 @@ class GUIFourierSynth(QtWidgets.QWidget):
 		
 			self.curves.append(EMData(64,1))
 		
-			if self.cbshowall.isChecked() :
-				self.synthplot
+#			if self.cbshowall.isChecked() :
+#				self.synthplot
 		self.total=EMData(64,1)
 	
 		self.nsinchange()
+
+	def phaseleft(self,v):	# fixed translation in minus direction
+		sft=360.0/len(self.xvals)
+		for i in range(1,len(self.wpha)):
+			self.wpha[i].setValue(fixang(self.wpha[i].getValue()-sft*i),1)
+		self.recompute()
+			
+	def phasecen(self,v):	# translation so phase of lowest freqeuncy is zero
+		sft=self.wpha[1].getValue()
+		for i in range(1,len(self.wpha)):
+			self.wpha[i].setValue(fixang(self.wpha[i].getValue()-sft*i),1)
+		self.recompute()
+
+	def phaseright(self,v):	# fixed translation in plus direction
+		sft=360.0/len(self.xvals)
+		for i in range(1,len(self.wpha)):
+			self.wpha[i].setValue(fixang(self.wpha[i].getValue()+sft*i),1)
+		self.recompute()
+
+	def playsound(self,v):
+		global soundout
+		initsound()
+		soundout.start()
+		soundout.write(self.assound)
+		soundout.write(self.assound)
+		soundout.stop()
+
 		
 	def newtargfn(self,index):
 		"This function has a number of hardcoded 'target' functions"
@@ -182,94 +260,94 @@ class GUIFourierSynth(QtWidgets.QWidget):
 		if index==0 : 
 			self.targfn=None
 			nsin=int(self.vnsin.getValue())
-			for i in range(nsin): self.wamp[i].setValue(0)
+			for i in range(nsin+1): 
+				self.wamp[i].setValue(0,1)
+				self.wpha[i].setValue(0,1)
 
+		elif index==15:		# zero phase
+			nsin=int(self.vnsin.getValue())
+			for i in range(nsin+1): 
+				self.wpha[i].setValue(0,1)
+
+		elif index==16:		# random phase
+			nsin=int(self.vnsin.getValue())
+			for i in range(nsin+1): 
+				self.wpha[i].setValue(random.uniform(-180.,180.),1)
 		else :
 			nx=int(self.vcell.getValue())
-			self.targfn=EMData(nx,1)
+			x=np.arange(0,1.0,1.0/nx)
+			y=np.zeros(nx)
 			
 			if index==1 : 	# triangle
-				for i in range(old_div(nx,2)):
-					self.targfn[i]=-1.0+old_div(4.0*i,nx)
-				for i in range(old_div(nx,2),nx):
-					self.targfn[i]=3.0-old_div(4.0*i,nx)
+				y[:nx//2]=x[:nx//2]*2.0
+				y[nx//2:]=(1.0-x[nx//2:])*2.0
 			
 			elif index==2 : # square
-				for i in range(old_div(nx,4)): self.targfn[i]=-1.0
-				for i in range(old_div(nx,4),old_div(nx*3,4)): self.targfn[i]=1.0
-				for i in range(old_div(nx*3,4),nx): self.targfn[i]=-1.0
+				y[:nx//4]=0
+				y[nx//4:nx*3//4]=1.0
+				y[nx*3//4:]=0
 				
 			elif index==3 : # square impulse
-				self.targfn.to_zero()
-				for i in range(old_div(nx,4)-2,old_div(nx,2)-2): self.targfn[i]=1.0
+				y[:nx//2]=0
+				y[nx//2:nx*3//5]=1.0
+				y[nx*3//5:]=0
 			
 			elif index==4 : # delta
-				self.targfn.to_zero()
-				self.targfn[old_div(nx*2,5)]=1.0
+				y[:]=0
+				y[nx//2]=10.0
 				
 			elif index==5 : # noise
-				self.targfn.process_inplace("testimage.noise.gauss",{"seed":0})
+				y=np.random.random_sample((nx,))-0.5
 			
 			elif index==6 : # saw
-				self.targfn.to_zero()
-				for i in range(old_div(nx,4),old_div(nx,2)): self.targfn[i]=4.0*(i-old_div(nx,4.0))/nx
-				for i in range(old_div(nx,2),old_div(nx*3,4)): self.targfn[i]=-1+4.0*(i-old_div(nx,2.0))/nx
+				y[:nx//4]=0
+				y[nx//4:nx//2]=x[:nx//4]
+				y[nx//2:nx*3//4]=-x[:nx//4]
+				y[nx*3//4:]=0
 				
 			elif index==7 : # sin
-				for i in range(nx): self.targfn[i]=sin(i*pi/4.0)
+				y=np.sin(x*16.0*pi)
 			
 			elif index==8 : # modulated sine
-				for i in range(nx): self.targfn[i]=sin(i*pi/4.0)*sin(i*pi/32)
+				y=np.sin(x*4.0*pi)*np.sin(x*32.0*pi)
 
 			elif index==9 : # modulated sine 2
-				for i in range(nx): self.targfn[i]=sin(i*pi/4.0)*sin(i*pi/29)
+				y=np.sin(x*2.0*pi)*np.sin(x*32.0*pi)
 
 			elif index==10 : # modulated sine 3
-				for i in range(nx): self.targfn[i]=sin(i*pi/4.0)*sin(i*pi/126)
+				y=np.sin(x*8.0*pi)*np.sin(x*32.0*pi)
 
 			elif index==11 : # sin low
-				for i in range(nx): self.targfn[i]=sin(i*pi/16.0)
+				y=np.sin(x*4.0*pi)
 
 			elif index==12 : # double delta
-				self.targfn.to_zero()
-				self.targfn[old_div(nx,16)]=4.0
-				self.targfn[old_div(nx*15,16)]=4.0
+				y[:]=0
+				y[16]=5.0
+				y[48]=5.0
 
 			elif index==13 : # sin bad f
-				for i in range(nx): self.targfn[i]=sin(i*pi/15.5)
+				y=np.sin(x*2.3*pi)
 			
 			elif index==14 : # sin bad f2
-				for i in range(nx): self.targfn[i]=sin(i*pi/19)
+				y=np.sin(x*17.15*pi)
 			
-			elif index==15 : # square impulse
-				self.targfn.to_zero()
-				for i in range(old_div(nx,2)+2,old_div(nx*3,4)+2): self.targfn[i]=1.0
-				
-			elif index==16 : # square impulse
-				self.targfn.to_zero()
-				for i in range(old_div(nx,4)-2,old_div(nx,2)-2): self.targfn[i]=1.0
-				for i in range(old_div(nx,2)+2,nx*3/4+2): self.targfn[i]=1.0
-
+			self.targfn=y
 			self.target2sliders()
 		
 		self.recompute()
 
 	def target2sliders(self):
-		
+		f=fft.rfft(self.targfn)*2.0/len(self.targfn)
 		nsin=int(self.vnsin.getValue())
-#		cp=self.targfn.process("xform.phaseorigin.tocenter")
-		cp=self.targfn.copy()
-		fft=cp.do_fft()
-		fft[0]=old_div(fft[0],2.0)
-		fft[old_div(fft["nx"],2)-1]=old_div(fft[old_div(fft["nx"],2)-1],2.0)
-		fft.ri2ap()
 		
-		for i in range(min(old_div(fft["nx"],2),nsin+1)):
+		for i in range(min(len(f),nsin+1)):
 #			print fft[i]
-			amp=fft[i].real
-			if fabs(amp)<1.0e-5 : amp=0.0
-			self.wamp[i].setValue(old_div(amp*2,(fft["nx"]-2)),quiet=1)
-			self.wpha[i].setValue(fft[i].imag*180.0/pi+90.0,quiet=1)
+			amp=abs(f[i])
+			if fabs(amp)<1.0e-6 : amp=0.0
+			if amp==0 : pha=0
+			else: pha=cmath.phase(f[i])
+			self.wamp[i].setValue(amp,quiet=1)
+			self.wpha[i].setValue(fixang(pha*180.0/pi),quiet=1)
 
 
 	def nsinchange(self,value=None):
@@ -291,38 +369,42 @@ class GUIFourierSynth(QtWidgets.QWidget):
 	def recompute(self,value=None):
 		nsin=int(self.vnsin.getValue())
 		cell=int(self.vcell.getValue())
-		ncells=self.vncells.getValue()
-		oversamp=int(self.voversamp.getValue())
-		samples=int(cell*ncells*oversamp)
+		ncells=int(self.vncells.getValue())
+		oversamp=max(1,int(self.voversamp.getValue()))
+		samples=int(cell*oversamp)
 		
-		self.xvals=[old_div(xn,float(oversamp)) for xn in range(samples)]
-		self.total.set_size(samples)
-		self.total.to_zero()
-		for i in range(nsin+1):
-			self.curves[i].set_size(samples)
-			if i==0: 
-				self.curves[i].to_one()
-				if self.wpha[0].getValue()>180.0 : self.curves[i].mult(-1.0)
-			else: self.curves[i].process_inplace("testimage.sinewave",{"wavelength":old_div(cell*oversamp,float(i)),"phase":self.wpha[i].getValue()*pi/180.0})
-			self.curves[i].mult(self.wamp[i].getValue())
-			
-			self.total.add(self.curves[i])
+		# arrays since we're using them several ways
+		self.svals=np.array([cmath.rect(self.wamp[i].getValue(),self.wpha[i].getValue()*pi/180.0) for i in range(nsin+1)])
+		#self.wamps=np.array([v.getValue() for v in self.wamp[:nsin+1]])
+		#self.wphas=np.array([v.getValue() for v in self.wpha[:nsin+1]])
+
+		self.xvals=np.array([xn/float(oversamp) for xn in range(samples)])
+		if samples//2>len(self.svals): svals=np.concatenate((self.svals,np.zeros(1+samples//2-len(self.svals))))
+		else: svals=self.svals
+		self.total=fft.irfft(svals)*(len(svals)-1)
+		if ncells>1: self.total=np.tile(self.total,ncells)
 		
-		self.synthplot.set_data((self.xvals,self.total.get_data_as_vector()),"Sum",replace=True,quiet=True,linewidth=2)
+		self.synthplot.set_data((np.arange(0,len(self.total)/oversamp,1.0/oversamp),self.total),"Sum",replace=True,quiet=True,linewidth=2)
 		
-		if self.targfn!=None:
-			self.synthplot.set_data(self.targfn,"Target",quiet=True,linewidth=1,linetype=2,symtype=0)
+		if not self.targfn is None:
+			self.synthplot.set_data((np.arange(len(self.targfn)),self.targfn),"Target",quiet=True,linewidth=1,linetype=2,symtype=0)
 		
-		if self.cbshowall.isChecked() :
-			csum=self.total["minimum"]*1.1
-			for i in range(nsin):
-				if self.wamp[i].getValue()==0: continue
-				csum-=self.wamp[i].getValue()*1.1
-				if self.cbshifted.isChecked() : self.curves[i].add(csum)
-				self.synthplot.set_data((self.xvals,self.curves[i].get_data_as_vector()),"%d"%i,quiet=True,linewidth=1,color=2)
-				csum-=self.wamp[i].getValue()*1.1
+#		if self.cbshowall.isChecked() :
+#			csum=self.total["minimum"]*1.1
+#			for i in range(nsin):
+#				if self.wamps[i]==0: continue
+#				csum-=self.wamps[i]*1.1
+#				if self.cbshifted.isChecked() : self.curves[i].add(csum)
+#				self.synthplot.set_data((self.xvals,self.curves[i].get_data_as_vector()),"%d"%i,quiet=True,linewidth=1,color=2)
+#				csum-=self.wamps[i]*1.1
 
 		self.synthplot.updateGL()
+
+		self.fftplot.set_data((np.arange(len(self.svals)),np.abs(self.svals)),"Amp",color=0,linetype=0,linewidth=2)
+		self.fftplot.set_data((np.arange(len(self.svals)),np.angle(self.svals)),"Pha",color=1,linetype=0,linewidth=2)
+		self.fftplot.updateGL()
+
+		self.assound=np.tile((self.total*10000.0).astype("int16"),200)
 		
 if __name__ == "__main__":
 	main()

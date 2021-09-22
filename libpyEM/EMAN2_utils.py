@@ -709,7 +709,7 @@ def origin2zero(img):
 	return img
 
 
-def clip3d( vol, size, center=None ):
+def clip3d( vol, sizex, sizey=None, sizez=None, center=None ):
 	"""
 	3d clipping function to avoid having to define a region in your code when you know the center and size of the box you want
 	Author: Jesus Montoya, jgalaz@gmail.com
@@ -718,6 +718,12 @@ def clip3d( vol, size, center=None ):
 	#if options.verbose:
 	#	print("\n(EMAN2_utils)(clip3d) starting")
 	
+	if not sizey:
+		sizey =  sizex
+
+	if not sizez:
+		sizez =  sizex
+
 	volxc = old_div(vol['nx'],2)
 	volyc = old_div(vol['ny'],2)
 	volzc = old_div(vol['nz'],2)
@@ -727,7 +733,7 @@ def clip3d( vol, size, center=None ):
 		volyc = int(center[1])
 		volzc = int(center[2])
 	
-	Rvol =  Region( old_div((2*volxc - size),2), old_div((2*volyc - size),2), old_div((2*volzc - size),2), size , size , size)
+	Rvol =  Region( old_div((2*volxc - sizex),2), old_div((2*volyc - sizey),2), old_div((2*volzc - sizez),2), sizex , sizey , sizez)
 	volclip = vol.get_clip( Rvol )
 	
 	#if options.verbose:
@@ -736,7 +742,7 @@ def clip3d( vol, size, center=None ):
 	return volclip
 
 
-def clip2d( img, size, center=None ):
+def clip2d( img, sizex, sizey=None, center=None ):
 	"""
 	2d clipping function to avoid having to define a region in your code when you know the center and size of the box you want
 	Author: Jesus Montoya, jgalaz@gmail.com
@@ -745,6 +751,9 @@ def clip2d( img, size, center=None ):
 	#if options.verbose:
 	#	print("\n(EMAN2_utils)(clip2d)")
 
+	if not sizey:
+		sizey =  sizex
+
 	imgxc = old_div(img['nx'],2)
 	imgyc = old_div(img['ny'],2)
 	
@@ -752,7 +761,7 @@ def clip2d( img, size, center=None ):
 		imgxc = int(center[0])
 		imgyc = int(center[1])
 	
-	Rimg = Region( old_div((2*imgxc - size),2), old_div((2*imgyc - size),2), size , size )
+	Rimg = Region( old_div((2*imgxc - sizex),2), old_div((2*imgyc - sizey),2), sizex , sizey )
 	imgclip = img.get_clip( Rimg )
 	
 	return imgclip
