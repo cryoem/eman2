@@ -37,6 +37,7 @@ def main():
 	parser.add_argument("--clsid", default=None, type=str, help="only reconstruct a class of particles")
 	parser.add_argument("--listsel", default=None, type=str, help="only reconstruct particles of indices from the given list")
 
+	parser.add_argument("--p3did", type=int, help="only reconstruct images for a 3d particles",default=-1)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
@@ -214,7 +215,11 @@ def initialize_data(inputfile, options):
 	else:
 		sel=[]
 		
-	rawdata=load_lst_params(inputfile, sel)
+	if inputfile.endswith(".lst"):
+		rawdata=load_lst_params(inputfile, sel)
+	else:
+		n=EMUtil.get_image_count(inputfile)
+		rawdata=[{"src":inputfile, "idx":i} for i in range(n)]
 	trg=options.tidrange
 	
 	data=[]
@@ -225,6 +230,10 @@ def initialize_data(inputfile, options):
 			
 		if ("tilt_id" in dc) and (trg[0]>0):
 			if (dc["tilt_id"]<trg[0]) or (dc["tilt_id"]>trg[1]):
+				continue
+			
+		if ("ptcl3d_id" in dc) and (options.p3did>=0):
+			if dc["ptcl3d_id"]!=options.p3did:
 				continue
 		
 		data.append(dc)
