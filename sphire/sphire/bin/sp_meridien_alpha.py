@@ -467,7 +467,7 @@ def AI(fff, anger, shifter, chout=False):
                 tmp,
             )
 
-        Tracker["nxinit"] = tmp
+        Tracker["nxinit"] = max(tmp, Tracker["nxinit"])
         Tracker["changed_delta"] = False
         #  decide angular step and translations
         if (
@@ -1409,7 +1409,6 @@ def getindexdata(
             Tracker["constants"]["stack"], partids
         )
         for im in range(len(original_data)):
-            original_data[im] = filter_vpp(original_data[im])
             original_data[im].set_attr("particle_group", group_reference[im])
     return original_data, partstack, [im_start, im_end]
 
@@ -2149,10 +2148,10 @@ def calculate_2d_params_for_centering(kwargs):
         original_images = EMAN2_cppwrap.EMData.read_images(
             command_line_provided_stack_filename, list(range(image_start, image_end))
         )
-        fill_rpw(original_images)
-        mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
-        for im in range(len(original_images)):
-            original_images[im] = filter_vpp(original_images[im])
+        #fill_rpw(original_images)
+        #mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
+        #for im in range(len(original_images)):
+        #    original_images[im] = filter_vpp(original_images[im])
 
         #  We assume the target radius will be 29, and xr = 1.
         shrink_ratio = old_div(float(target_radius), float(radi))
@@ -2658,7 +2657,7 @@ def ali3D_polar_ccc(
         temp = sp_projection.prgl(
             volprep, [coarse_angles[i][0], coarse_angles[i][1], 0.0, 0.0, 0.0], 1, True
         )
-        temp = filter_vpp(temp)
+        #temp = filter_vpp(temp)
         crefim = EMAN2_cppwrap.Util.Polar2Dm(temp, cnx, cnx, numr, mode)
         EMAN2_cppwrap.Util.Normalize_ring(crefim, numr, 0)
         EMAN2_cppwrap.Util.Frngs(crefim, numr)
@@ -2733,6 +2732,7 @@ def ali3D_polar_ccc(
         st = get_image_statistics(dataimage, mask2D, False)
         dataimage -= st[0]
         dataimage = old_div(dataimage, st[1])
+        #dataimage = filter_vpp(dataimage)
         ##if dataimage.get_attr_default("bckgnoise", None) :  dataimage.delete_attr("bckgnoise")
         #  Do bckgnoise if exists
         if apply_mask:
@@ -2875,7 +2875,7 @@ def ali3D_polar_ccc(
                         1,
                         False,
                     )
-                    temp = filter_vpp(temp)
+                    #temp = filter_vpp(temp)
                     nrmref = numpy.sqrt(
                         EMAN2_cppwrap.Util.innerproduct(temp, temp, None)
                     )
@@ -2965,7 +2965,7 @@ def ali3D_polar_ccc(
                         1,
                         False,
                     )
-                    temp = filter_vpp(temp)
+                    #temp = filter_vpp(temp)
                     temp.set_attr("is_complex", 0)
                     nrmref = numpy.sqrt(
                         EMAN2_cppwrap.Util.innerproduct(temp, temp, None)
@@ -3088,7 +3088,7 @@ def ali3D_polar_ccc(
                     1,
                     False,
                 )
-                temp = filter_vpp(temp)
+                #temp = filter_vpp(temp)
                 temp.set_attr("is_complex", 0)
                 nrmref = numpy.sqrt(EMAN2_cppwrap.Util.innerproduct(temp, temp, None))
                 johi += 1
@@ -3540,7 +3540,7 @@ def ali3D_primary_polar(
         temp = sp_projection.prgl(
             volprep, [coarse_angles[i][0], coarse_angles[i][1], 0.0, 0.0, 0.0], 1, True
         )
-        temp = filter_vpp(temp)
+        #temp = filter_vpp(temp)
         crefim = EMAN2_cppwrap.Util.Polar2Dm(temp, cnx, cnx, numr, mode)
         EMAN2_cppwrap.Util.Frngs(crefim, numr)
         EMAN2_cppwrap.Util.Applyws(crefim, numr, wr)
@@ -3639,6 +3639,8 @@ def ali3D_primary_polar(
         st = get_image_statistics(dataimage, mask2D, False)
         dataimage -= st[0]
         dataimage = old_div(dataimage, st[1])
+
+        #dataimage = filter_vpp(dataimage)
         if dataimage.get_attr_default("bckgnoise", None):
             dataimage.delete_attr("bckgnoise")
         #  Do bckgnoise if exists
@@ -3797,7 +3799,7 @@ def ali3D_primary_polar(
                         1,
                         False,
                     )
-                    temp = filter_vpp(temp)
+                    #temp = filter_vpp(temp)
                     temp.set_attr("is_complex", 0)
                 xod1[iln] = -EMAN2_cppwrap.Util.sqed(
                     data[ishift], temp, ctfa, bckgnoise
@@ -3896,7 +3898,7 @@ def ali3D_primary_polar(
                         1,
                         False,
                     )
-                    temp = filter_vpp(temp)
+                    #temp = filter_vpp(temp)
                     temp.set_attr("is_complex", 0)
                 peak = -EMAN2_cppwrap.Util.sqed(data[ishift], temp, ctfa, bckgnoise)
                 xod1[iln] = peak
@@ -4024,7 +4026,7 @@ def ali3D_primary_polar(
                     1,
                     False,
                 )
-                temp = filter_vpp(temp)
+                #temp = filter_vpp(temp)
                 temp.set_attr("is_complex", 0)
                 johi += 1
             while ipsiandiang == old_div(cod2[iln], 1000):
