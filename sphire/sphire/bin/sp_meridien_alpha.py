@@ -165,9 +165,10 @@ fp1=fft(Util.mulnclreal(p2,mask))
 Util.innerproduct(p2,p2,m)/(nx*nx/2) = Util.innerproduct(fp1,fp1,None)
 """
 
-global Tracker, Blockdata
+global Tracker, Blockdata, RPW
 global target_theta, refang
 
+RPW = None
 mpi.mpi_init(0, [])
 Tracker = {}
 Blockdata = {}
@@ -212,6 +213,39 @@ Blockdata["main_shared_nodes"] = [
 # end of Blockdata
 sp_global_def.BATCH = True
 sp_global_def.MPI = True
+
+
+def fill_rpw(original_images):
+    if not Tracker['constants']['VPP']:
+        return
+
+    ntp = len(sp_fundamentals.rops_table(original_images[0]))
+    rpw = [0.0] * ntp
+    for q in original_images:
+        tpw = sp_fundamentals.rops_table(q)
+        for i in range(ntp):
+            rpw[i] += numpy.sqrt(tpw[i])
+    del tpw
+    rpw = mpi.mpi_reduce(
+        rpw, ntp, mpi.MPI_FLOAT, mpi.MPI_SUM, main_node, mpi.MPI_COMM_WORLD
+    )
+    if Blockdata["myid"] == 0:
+        rpw = [float(old_div(Tracker["total_stack"], q)) for q in rpw]
+        rpw[0] = 1.0
+        sp_utilities.write_text_file(
+            rpw, os.path.join(Tracker["constants"]["masterdir"], "main000", "rpw.txt")
+        )
+
+def filter_vpp(image):
+    global RPW
+
+    if not Tracker['constants']['VPP']:
+        return original_images
+
+    if RPW is None:
+        RPW = sp_utilities.read_text_file(os.path.join(Tracker["constants"]["masterdir"], "main000", "rpw.txt"))
+
+    return sp_filter.filt_table(image, RPW)
 
 
 def create_subgroup():
@@ -1373,6 +1407,7 @@ def getindexdata(
             Tracker["constants"]["stack"], partids
         )
         for im in range(len(original_data)):
+            original_data[im] = filter_vpp(original_data[im])
             original_data[im].set_attr("particle_group", group_reference[im])
     return original_data, partstack, [im_start, im_end]
 
@@ -2112,6 +2147,11 @@ def calculate_2d_params_for_centering(kwargs):
         original_images = EMAN2_cppwrap.EMData.read_images(
             command_line_provided_stack_filename, list(range(image_start, image_end))
         )
+        fill_rpw(original_images)
+        mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
+        for im in range(len(original_images)):
+            original_images[im] = filter_vpp(original_images[im])
+
         #  We assume the target radius will be 29, and xr = 1.
         shrink_ratio = old_div(float(target_radius), float(radi))
 
@@ -2616,6 +2656,7 @@ def ali3D_polar_ccc(
         temp = sp_projection.prgl(
             volprep, [coarse_angles[i][0], coarse_angles[i][1], 0.0, 0.0, 0.0], 1, True
         )
+        temp = filter_vpp(temp)
         crefim = EMAN2_cppwrap.Util.Polar2Dm(temp, cnx, cnx, numr, mode)
         EMAN2_cppwrap.Util.Normalize_ring(crefim, numr, 0)
         EMAN2_cppwrap.Util.Frngs(crefim, numr)
@@ -2832,6 +2873,7 @@ def ali3D_polar_ccc(
                         1,
                         False,
                     )
+                    temp = filter_vpp(temp)
                     nrmref = numpy.sqrt(
                         EMAN2_cppwrap.Util.innerproduct(temp, temp, None)
                     )
@@ -2921,6 +2963,7 @@ def ali3D_polar_ccc(
                         1,
                         False,
                     )
+                    temp = filter_vpp(temp)
                     temp.set_attr("is_complex", 0)
                     nrmref = numpy.sqrt(
                         EMAN2_cppwrap.Util.innerproduct(temp, temp, None)
@@ -3043,6 +3086,7 @@ def ali3D_polar_ccc(
                     1,
                     False,
                 )
+                temp = filter_vpp(temp)
                 temp.set_attr("is_complex", 0)
                 nrmref = numpy.sqrt(EMAN2_cppwrap.Util.innerproduct(temp, temp, None))
                 johi += 1
@@ -3494,6 +3538,7 @@ def ali3D_primary_polar(
         temp = sp_projection.prgl(
             volprep, [coarse_angles[i][0], coarse_angles[i][1], 0.0, 0.0, 0.0], 1, True
         )
+        temp = filter_vpp(temp)
         crefim = EMAN2_cppwrap.Util.Polar2Dm(temp, cnx, cnx, numr, mode)
         EMAN2_cppwrap.Util.Frngs(crefim, numr)
         EMAN2_cppwrap.Util.Applyws(crefim, numr, wr)
@@ -3750,6 +3795,7 @@ def ali3D_primary_polar(
                         1,
                         False,
                     )
+                    temp = filter_vpp(temp)
                     temp.set_attr("is_complex", 0)
                 xod1[iln] = -EMAN2_cppwrap.Util.sqed(
                     data[ishift], temp, ctfa, bckgnoise
@@ -3848,6 +3894,7 @@ def ali3D_primary_polar(
                         1,
                         False,
                     )
+                    temp = filter_vpp(temp)
                     temp.set_attr("is_complex", 0)
                 peak = -EMAN2_cppwrap.Util.sqed(data[ishift], temp, ctfa, bckgnoise)
                 xod1[iln] = peak
@@ -3975,6 +4022,7 @@ def ali3D_primary_polar(
                     1,
                     False,
                 )
+                temp = filter_vpp(temp)
                 temp.set_attr("is_complex", 0)
                 johi += 1
             while ipsiandiang == old_div(cod2[iln], 1000):
@@ -10824,6 +10872,12 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
         )
 
         parser.add_option(
+            "--VPP",
+            action="store_true",
+            default=False,
+            help="Do VPP normalization. (default False)",
+        )
+        parser.add_option(
             "--plot_ang_dist",
             action="store_true",
             default=False,
@@ -10996,8 +11050,10 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
             #  Constant settings of the project
             Constants = {}
             Constants["stack"] = args[0]
+            Constants["total_stack"] = 0
             Constants["rs"] = 1
             Constants["radius"] = options.radius
+            Constants["VPP"] = options.vpp
             Constants["an"] = "-1"
             Constants["maxit"] = 1
             Constants["fuse_freq"] = 45  # Now in A, convert to absolute before using
@@ -11296,6 +11352,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
             total_stack = sp_utilities.bcast_number_to_all(
                 total_stack, source_node=Blockdata["main_node"]
             )
+            Tracker["constants"]["total_stack"] = total_stack
             # ------------------------------------------------------------------------------------
             #  	Fresh start INITIALIZATION
             initdir = os.path.join(Tracker["constants"]["masterdir"], "main000")
