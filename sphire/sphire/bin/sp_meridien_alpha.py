@@ -11053,7 +11053,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
             Constants["total_stack"] = 0
             Constants["rs"] = 1
             Constants["radius"] = options.radius
-            Constants["VPP"] = options.vpp
+            Constants["VPP"] = options.VPP
             Constants["an"] = "-1"
             Constants["maxit"] = 1
             Constants["fuse_freq"] = 45  # Now in A, convert to absolute before using
