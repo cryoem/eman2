@@ -92,16 +92,17 @@ def import_sphire_params(input_file, symclass):
     """Import the params and index file"""
 
     dtype_import = [('phi', '<f8'), ('theta', '<f8'), ('psi', '<f8'), ('shift_x', '<f8'), ('shift_y', '<f8'), ('err1', '<f8'), ('err2', '<f8'), ('norm', '<f8')]
-    dtype = dtype_import + [('mirror', '<i8'), ('source_n', '<i8')]
+    dtype = dtype_import + [('source_n', '<i8')]
+    #dtype = dtype_import + [('mirror', '<i8'), ('source_n', '<i8')]
 
     data_import = np.genfromtxt(input_file, dtype=dtype_import)
-    reduced_angles = symclass.reduce_anglesets(data_import[['phi', 'theta', 'psi']].tolist(), inc_mirror=0, tolistconv=False)
+    #reduced_angles = symclass.reduce_anglesets(data_import[['phi', 'theta', 'psi']].tolist(), inc_mirror=0, tolistconv=False)
 
-    data = np.empty(len(data_import), dtype=dtype)
-    data['mirror'] = (data_import['theta'] > 90) | ((data_import['theta'] == 90) & (data_import['phi'] < 180))
+    #data = np.empty(len(data_import), dtype=dtype)
+    #data['mirror'] = (data_import['theta'] > 90) | ((data_import['theta'] == 90) & (data_import['phi'] < 180))
     #data_import['phi'] = reduced_angles[:, 0]
     #data_import['theta'] = reduced_angles[:, 1]
-    data_import['psi'] = reduced_angles[:, 2]
+    #data_import['psi'] = reduced_angles[:, 2]
 
     data['source_n'] = np.arange(len(data))
     for name in data_import.dtype.names:
@@ -140,8 +141,8 @@ def write_params_file(array, names, file_name, file_name_old, prior_tracker):
         )
 
     # Undo the reduce operation on psi
-    array[array['mirror'], 'psi'] += 180
-    array[array['mirror'], 'psi'] %= 360
+    #array[array['mirror'], 'psi'] += 180
+    #array[array['mirror'], 'psi'] %= 360
 
     write_file(output_name=output_name, array=array, name_list=new_name_order, outlier_apply=prior_tracker['do_discard_outlier'], outlier_name=prior_tracker['outlier'])
 
