@@ -207,7 +207,7 @@ def main():
 			if options.goldstandard>0 or options.goldcontinue:
 				opt+=" --goldcontinue"
 				
-			cmd=f"e2spt_align_subtlt.py {ptcls} {ref} --path {path} --iter {itr} --maxres {res:.2f} --parallel {options.parallel} {opt}"
+			cmd=f"e2spt_align_subtlt.py {ptcls} {ref} --path {path} --iter {itr} --maxres {res:.2f} --sym {options.sym} --parallel {options.parallel} {opt}"
 			run(cmd)
 			
 			last3d=f"{path}/aliptcls3d_{itr:02d}.lst"
