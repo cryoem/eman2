@@ -161,10 +161,11 @@ class NNet:
 		modelbig=tf.keras.Sequential([ly]+self.layers[1:])
 		ly.weights[0].assign(self.layers[0].weights[0], read_value=False)
 		ly.weights[1].assign(self.layers[0].weights[1], read_value=False)
-		bsz=16
+		bsz=int(2e7/(img.shape[1]*img.shape[2]))
+		bsz=min(bsz,64)
 		nb=len(img)//bsz+1
 		out=[]
-		print(img.shape)
+		print("image shape: {}, batch size: {}".format(img.shape, bsz))
 		for i in range(nb):
 			m=img[i*bsz:(i+1)*bsz]
 			if m.shape[0]==0: continue
@@ -253,32 +254,22 @@ class NNet:
 			
 		return nnet	
 
-def get_image(img, pos=[], boxsz=-1, thick=9, ncopy=1, outsize=-1):
+def get_image(img, pos=[], boxsz=-1, thick=9, ncopy=1):
 	
 	if boxsz<0:
-		b=boxsz=img["nx"]
+		bx=img["nx"]
+		by=img["ny"]
+		b=max(bx,by)
+		
 	else:
-		b=boxsz
+		b=bx=by=boxsz
 		
 	t=thick
 	
 	if len(pos)==0:
 		pos=[img["nx"]//2, img["ny"]//2, img["nz"]//2]
 	
-	if outsize>=b:
-		outsize=-1
-		
-	if outsize<0:
-		m=img.get_clip(Region(pos[0]-b//2, pos[1]-b//2, pos[2]-t//2, b, b, t))
-	else:
-		#### need to clip a larger box then scale it
-		scale=b/outsize
-		t2=t*scale+1
-		b2=b
-		b=outsize
-		m=img.get_clip(Region(pos[0]-b2//2, pos[1]-b2//2, pos[2]-t//2, b2, b2, t2))
-		m.scale(1./scale)
-		m=m.get_clip(Region(b2//2-b//2, b2//2-b//2, t2//2-t//2, b, b, t))
+	m=img.get_clip(Region(pos[0]-b//2, pos[1]-b//2, pos[2]-t//2, b, b, t))
 	
 	if ncopy>1:
 		m.process_inplace("mask.soft",{"outer_radius":b//2-6,"width":4})
@@ -774,7 +765,7 @@ class EMTomobox(QtWidgets.QMainWindow):
 			#o=np.mean(o, axis=1)
 			o=out.transpose(0,2,1).copy()
 			o=from_numpy(o)
-			#o=o.get_clip(Region(o["nx"]//2-tshape[0]//8, o["ny"]//2-tshape[1]//8, o["nz"]//2-tshape[2]//8, tshape[0]//4, tshape[1]//4, tshape[2]//4))
+			o=o.get_clip(Region(o["nx"]//2-ts[0]//8, o["ny"]//2-ts[1]//8, o["nz"]//2-ts[2]//8, ts[0]//4, ts[1]//4, ts[2]//4))
 			#o.scale(self.boxsize/self.nnetsize)
 			o.process_inplace("mask.zeroedge3d",{"x0":bx,"x1":bx,"y0":bx,"y1":bx,"z0":thk,"z1":thk})
 			o.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.5})
@@ -798,7 +789,7 @@ class EMTomobox(QtWidgets.QMainWindow):
 		val=img[pnew[:,0], pnew[:,1], pnew[:,2]]
 		pnew=pnew[np.argsort(-val)]
 
-		pnew=pnew[:, ::-1]*4+4
+		pnew=pnew[:, ::-1]*4#+4
 		pnew=pnew*self.boxsize/self.nnetsize
 
 		dthr=self.val_circlesize.getval()
@@ -988,7 +979,7 @@ class EMTomobox(QtWidgets.QMainWindow):
 				clsid=0
 			else:
 				clsid=max([int(k) for k in clslst.keys()])+1
-			clslst[str(clsid)]={"name":label, "boxsize": int(self.boxshapes.circlesize*4)}
+			clslst[str(clsid)]={"name":label, "boxsize": int(self.boxshapes.circlesize*8)}
 			js["class_list"]=clslst
 			self.curinfo["clsid"]=clsid
 			
