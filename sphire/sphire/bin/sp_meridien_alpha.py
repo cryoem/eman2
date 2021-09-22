@@ -53,6 +53,7 @@ import numpy
 import operator
 import optparse
 import os
+import shutil
 import random
 from ..libpy import sp_alignment
 from ..libpy import sp_applications
@@ -216,7 +217,7 @@ sp_global_def.MPI = True
 
 
 def fill_rpw(original_images):
-    if not Tracker['constants']['VPP']:
+    if not Tracker['VPP']:
         return
 
     ntp = len(sp_fundamentals.rops_table(original_images[0]))
@@ -227,23 +228,23 @@ def fill_rpw(original_images):
             rpw[i] += numpy.sqrt(tpw[i])
     del tpw
     rpw = mpi.mpi_reduce(
-        rpw, ntp, mpi.MPI_FLOAT, mpi.MPI_SUM, main_node, mpi.MPI_COMM_WORLD
+        rpw, ntp, mpi.MPI_FLOAT, mpi.MPI_SUM, Blockdata["main_node"], mpi.MPI_COMM_WORLD
     )
     if Blockdata["myid"] == 0:
-        rpw = [float(old_div(Tracker["total_stack"], q)) for q in rpw]
+        rpw = [float(old_div(Tracker["constants"]["total_stack"], q)) for q in rpw]
         rpw[0] = 1.0
         sp_utilities.write_text_file(
-            rpw, os.path.join(Tracker["constants"]["masterdir"], "main000", "rpw.txt")
+            rpw, os.path.join(Tracker["constants"]["masterdir"], "rpw.txt")
         )
 
 def filter_vpp(image):
     global RPW
 
-    if not Tracker['constants']['VPP']:
+    if not Tracker['VPP']:
         return original_images
 
     if RPW is None:
-        RPW = sp_utilities.read_text_file(os.path.join(Tracker["constants"]["masterdir"], "main000", "rpw.txt"))
+        RPW = sp_utilities.read_text_file(os.path.join(Tracker["constants"]["masterdir"], "rpw.txt"))
 
     return sp_filter.filt_table(image, RPW)
 
@@ -511,6 +512,7 @@ def AI(fff, anger, shifter, chout=False):
                     #Tracker["delta"] *= 2.0
                     Tracker["changed_delta"] = False
                 elif Tracker["delta"] <= old_div(3.75, 2.0):  # MOVE DOWN TO RESTRICTED
+                    Tracker["VPP"] = False
                     Tracker["an"] = 6 * Tracker["delta"]
                     Tracker["howmany"] = 4
                     Tracker["theta_min"] = -1
@@ -11053,7 +11055,6 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
             Constants["total_stack"] = 0
             Constants["rs"] = 1
             Constants["radius"] = options.radius
-            Constants["VPP"] = options.VPP
             Constants["an"] = "-1"
             Constants["maxit"] = 1
             Constants["fuse_freq"] = 45  # Now in A, convert to absolute before using
@@ -11145,6 +11146,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
             Tracker["ccfpercentage"] = old_div(options.ccfpercentage, 100.0)
             Tracker["maxit"] = Tracker["constants"]["maxit"]
 
+            Tracker["VPP"] = options.VPP
             Tracker["xr"] = options.xr
             Tracker[
                 "yr"
@@ -11337,10 +11339,6 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
                 masterdir = string.join(masterdir, "")
 
             Tracker["constants"]["masterdir"] = masterdir
-            if Blockdata["myid"] == Blockdata["main_node"]:
-                print_dict(Tracker["constants"], "Permanent settings of meridien")
-                print_dict(Blockdata, "MPI settings of meridien")
-
             # Initialization of orgstack
             Tracker["constants"]["stack"] = orgstack
             if Blockdata["myid"] == Blockdata["main_node"]:
@@ -11353,6 +11351,11 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
                 total_stack, source_node=Blockdata["main_node"]
             )
             Tracker["constants"]["total_stack"] = total_stack
+
+            if Blockdata["myid"] == Blockdata["main_node"]:
+                print_dict(Tracker["constants"], "Permanent settings of meridien")
+                print_dict(Blockdata, "MPI settings of meridien")
+
             # ------------------------------------------------------------------------------------
             #  	Fresh start INITIALIZATION
             initdir = os.path.join(Tracker["constants"]["masterdir"], "main000")

@@ -96,9 +96,10 @@ def import_sphire_params(input_file, symclass):
     #dtype = dtype_import + [('mirror', '<i8'), ('source_n', '<i8')]
 
     data_import = np.genfromtxt(input_file, dtype=dtype_import)
+    data = np.empty(len(data_import), dtype=dtype)
+
     #reduced_angles = symclass.reduce_anglesets(data_import[['phi', 'theta', 'psi']].tolist(), inc_mirror=0, tolistconv=False)
 
-    #data = np.empty(len(data_import), dtype=dtype)
     #data['mirror'] = (data_import['theta'] > 90) | ((data_import['theta'] == 90) & (data_import['phi'] < 180))
     #data_import['phi'] = reduced_angles[:, 0]
     #data_import['theta'] = reduced_angles[:, 1]
