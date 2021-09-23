@@ -2865,7 +2865,7 @@ def ali3D_polar_ccc(
                 hashparams = int(xod2[iln])
                 ishift = hashparams % 1000
                 ipsiandiang = old_div(hashparams, 1000)
-                if -90 < ((psi_list[i1] - median_psi - 180) % 360) - 180 < 90:
+                if -90 < ((psi_list[iln] - median_psi - 180) % 360) - 180 < 90:
                     if ipsiandiang != pre_ipsiandiang:
                         pre_ipsiandiang = ipsiandiang
                         ipsi = ipsiandiang % 100000
@@ -2963,7 +2963,7 @@ def ali3D_polar_ccc(
                 hashparams = int(xod2[iln])
                 ishift = hashparams % 1000
                 ipsiandiang = old_div(hashparams, 1000)
-                if -90 < ((psi_list[i1] - median_psi - 180) % 360) - 180 < 90:
+                if -90 < ((psi_list[iln] - median_psi - 180) % 360) - 180 < 90:
                     if ipsiandiang != pre_ipsiandiang:
                         pre_ipsiandiang = ipsiandiang
                         ipsi = ipsiandiang % 100000
@@ -3804,7 +3804,7 @@ def ali3D_primary_polar(
                 hashparams = int(xod2[iln])
                 ishift = hashparams % 1000
                 ipsiandiang = old_div(hashparams, 1000)
-                if -90 < ((psi_list[i1] - median_psi - 180) % 360) - 180 < 90:
+                if -90 < ((psi_list[iln] - median_psi - 180) % 360) - 180 < 90:
                     if ipsiandiang != pre_ipsiandiang:
                         pre_ipsiandiang = ipsiandiang
                         ipsi = ipsiandiang % 100000
@@ -3905,12 +3905,13 @@ def ali3D_primary_polar(
             ipsiandiang = old_div(xod2, 1000)
             lina = numpy.argsort(ipsiandiang)
             xod2 = xod2[lina]  # order does not matter
+            psi_list = np.array(psi_list)[lina]
             pre_ipsiandiang = -1
             for iln in range(Tracker["keepfirst"]):
                 hashparams = int(xod2[iln])
                 ishift = hashparams % 1000
                 ipsiandiang = old_div(hashparams, 1000)
-                if -90 < ((psi_list[i1] - median_psi - 180) % 360) - 180 < 90:
+                if -90 < ((psi_list[iln] - median_psi - 180) % 360) - 180 < 90:
                     if ipsiandiang != pre_ipsiandiang:
                         pre_ipsiandiang = ipsiandiang
                         ipsi = ipsiandiang % 100000
