@@ -3041,25 +3041,25 @@ def ali3D_polar_ccc(
             ipsiandiang = old_div(hashparams, 1000)
             oldiang = old_div(ipsiandiang, 100000)
             ipsi = ipsiandiang % 100000
-                ishift = hashparams % 1000
-                tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
-                for i2 in range(Tracker["howmany"]):
-                    iang = ltabang[i1][i2]
-                    for i3 in range(2):  # psi
-                        itpsi_g = int(
-                            old_div(
-                                (
-                                    coarse_angles[oldiang][2]
-                                    + ipsi * coarse_delta
-                                    - refang[iang][2]
-                                    + 360.0
-                                ),
-                                Tracker["delta"],
-                            )
+            ishift = hashparams % 1000
+            tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
+            for i2 in range(Tracker["howmany"]):
+                iang = ltabang[i1][i2]
+                for i3 in range(2):  # psi
+                    itpsi_g = int(
+                        old_div(
+                            (
+                                coarse_angles[oldiang][2]
+                                + ipsi * coarse_delta
+                                - refang[iang][2]
+                                + 360.0
+                            ),
+                            Tracker["delta"],
                         )
-                        itpsi = (itpsi_g + i3) % npsi
-                        for i4 in range(len(tshifts)):
-                            cod2.append(iang * 100000000 + itpsi * 1000 + tshifts[i4])
+                    )
+                    itpsi = (itpsi_g + i3) % npsi
+                    for i4 in range(len(tshifts)):
+                        cod2.append(iang * 100000000 + itpsi * 1000 + tshifts[i4])
 
         del xod1, xod2
 
