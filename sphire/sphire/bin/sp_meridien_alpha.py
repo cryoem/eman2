@@ -2957,7 +2957,7 @@ def ali3D_polar_ccc(
             ipsiandiang = old_div(xod2, 1000)
             lina = numpy.argsort(ipsiandiang)
             xod2 = xod2[lina]  # order does not matter
-            psi_list = np.array(psi_list)[lina]
+            psi_list = numpy.array(psi_list)[lina]
             pre_ipsiandiang = -1
             for iln in range(Tracker["keepfirst"]):
                 hashparams = int(xod2[iln])
@@ -3073,8 +3073,8 @@ def ali3D_polar_ccc(
         cod2 = numpy.asarray([cod2[cod1[i][1]] for i in range(lit)])
 
         cod1 = numpy.ndarray(lit, dtype="f4", order="C")
-        # cod1.fill(np.finfo(dtype='f4').min)
-        # cod3 = np.ndarray(lit,dtype='f4',order="C")
+        # cod1.fill(numpy.finfo(dtype='f4').min)
+        # cod3 = numpy.ndarray(lit,dtype='f4',order="C")
         # cod3.fill(0.0)  #  varadj
 
         # if( Blockdata["myid"] == Blockdata["main_node"]): sxprint("  THIRD2   ",im,lit,cod2)
@@ -3133,13 +3133,13 @@ def ali3D_polar_ccc(
         cod2 = cod2[lina[::-1]]  # This sorts in reverse order
         ##cod3 = cod3[lina[::-1]]  # This sorts in reverse order
         ##cod1 -= cod1[0]
-        ##lina = np.argwhere(cod1 > Tracker["constants"]["expthreshold"])
+        ##lina = numpy.argwhere(cod1 > Tracker["constants"]["expthreshold"])
         cod1 = cod1[0]
         cod2 = cod2[0]
         # = cod3[lina]
         """Multiline Comment19"""
         #  New norm is a sum of eq distances multiplied by their probabilities augmented by PW.
-        ###norm_per_particle[im] = np.sum(cod1[:lit]*cod3[:lit]) + accumulatepw[im][reachpw]
+        ###norm_per_particle[im] = numpy.sum(cod1[:lit]*cod3[:lit]) + accumulatepw[im][reachpw]
 
         ###for iln in range(lit):
         newpar[im][2] = [[int(cod2), float(cod1)]]
@@ -3834,7 +3834,7 @@ def ali3D_primary_polar(
             lina = numpy.argwhere(
                 xod1 > Tracker["constants"]["expthreshold"]
             )
-            # if( Blockdata["myid"] == 0 ):  sxprint("  STARTING ",np.max(xod1),np.min(xod1),len(lina),lina[-1])
+            # if( Blockdata["myid"] == 0 ):  sxprint("  STARTING ",numpy.max(xod1),numpy.min(xod1),len(lina),lina[-1])
             lina = lina.reshape(lina.size)
             keepf = int(lina[-1]) + 1
 
@@ -3905,7 +3905,7 @@ def ali3D_primary_polar(
             ipsiandiang = old_div(xod2, 1000)
             lina = numpy.argsort(ipsiandiang)
             xod2 = xod2[lina]  # order does not matter
-            psi_list = np.array(psi_list)[lina]
+            psi_list = numpy.array(psi_list)[lina]
             pre_ipsiandiang = -1
             for iln in range(Tracker["keepfirst"]):
                 hashparams = int(xod2[iln])
@@ -4025,7 +4025,7 @@ def ali3D_primary_polar(
         cod2 = numpy.asarray([cod2[cod1[i][1]] for i in range(lit)])
 
         cod1 = numpy.ndarray(lit, dtype="f4", order="C")
-        # cod1.fill(np.finfo(dtype='f4').min)
+        # cod1.fill(numpy.finfo(dtype='f4').min)
         cod3 = numpy.ndarray(lit, dtype="f4", order="C")
         # cod3.fill(0.0)  #  varadj
 
@@ -4882,7 +4882,7 @@ def ali3D_polar(
                 xod1 > Tracker["constants"]["expthreshold"]
             )
             # if( Blockdata["myid"] == 0 ):
-            # print("  STARTING ",Blockdata["myid"],np.max(xod1),np.min(xod1),len(lina),lina[-1])
+            # print("  STARTING ",Blockdata["myid"],numpy.max(xod1),numpy.min(xod1),len(lina),lina[-1])
             lina = lina.reshape(lina.size)
             keepf = int(lina[-1]) + 1
 
@@ -5070,7 +5070,7 @@ def ali3D_polar(
         cod2 = numpy.asarray([cod2[cod1[i][1]] for i in range(lit)])
 
         cod1 = numpy.ndarray(lit, dtype="f4", order="C")
-        # cod1.fill(np.finfo(dtype='f4').min)
+        # cod1.fill(numpy.finfo(dtype='f4').min)
         cod3 = numpy.ndarray(lit, dtype="f4", order="C")
         # cod3.fill(0.0)  #  varadj
 
@@ -6197,7 +6197,7 @@ def ali3D_primary_local_polar(
                             xod1 > Tracker["constants"]["expthreshold"]
                         )
                         # if( Blockdata["myid"] == 0 ):
-                        ###print("  STARTING1   ",Blockdata["myid"],np.max(xod1),np.min(xod1),len(lina),lina[-1])
+                        ###print("  STARTING1   ",Blockdata["myid"],numpy.max(xod1),numpy.min(xod1),len(lina),lina[-1])
 
                         lina = lina.reshape(lina.size)
                         keepf = int(lina[-1]) + 1
@@ -6438,7 +6438,7 @@ def ali3D_primary_local_polar(
                     #      different shifts.  If so, we have to remove duplicates from the entire set.
                     lcod1 = lit * 4 * 2 * n_fine_shifts
 
-                    # cod2 = np.ndarray((lit,5,3,n_fine_shifts),dtype=int,order="C")
+                    # cod2 = numpy.ndarray((lit,5,3,n_fine_shifts),dtype=int,order="C")
                     # cod2.fill(-1)  #  hashparams
                     cod2 = []
                     # lol = 0
@@ -6486,7 +6486,7 @@ def ali3D_primary_local_polar(
                     )
 
                     cod1 = numpy.ndarray(lit, dtype="f4", order="C")
-                    # cod1.fill(np.finfo(dtype='f4').min)
+                    # cod1.fill(numpy.finfo(dtype='f4').min)
                     cod3 = numpy.ndarray(lit, dtype="f4", order="C")
                     # cod3.fill(0.0)  #  varadj
 
@@ -7684,7 +7684,7 @@ def ali3D_local_polar(
                             xod1 > Tracker["constants"]["expthreshold"]
                         )
                         # if( Blockdata["myid"] == 0 ):
-                        ###print("  STARTING1   ",Blockdata["myid"],np.max(xod1),np.min(xod1),len(lina),lina[-1])
+                        ###print("  STARTING1   ",Blockdata["myid"],numpy.max(xod1),numpy.min(xod1),len(lina),lina[-1])
 
                         lina = lina.reshape(lina.size)
                         keepf = int(lina[-1]) + 1
@@ -7923,7 +7923,7 @@ def ali3D_local_polar(
                     #      different shifts.  If so, we have to remove duplicates from the entire set.
                     lcod1 = lit * 4 * 2 * n_fine_shifts
 
-                    # cod2 = np.ndarray((lit,5,3,n_fine_shifts),dtype=int,order="C")
+                    # cod2 = numpy.ndarray((lit,5,3,n_fine_shifts),dtype=int,order="C")
                     # cod2.fill(-1)  #  hashparams
                     cod2 = []
                     # lol = 0
@@ -7971,7 +7971,7 @@ def ali3D_local_polar(
                     )
 
                     cod1 = numpy.ndarray(lit, dtype="f4", order="C")
-                    # cod1.fill(np.finfo(dtype='f4').min)
+                    # cod1.fill(numpy.finfo(dtype='f4').min)
                     cod3 = numpy.ndarray(lit, dtype="f4", order="C")
                     # cod3.fill(0.0)  #  varadj
 
