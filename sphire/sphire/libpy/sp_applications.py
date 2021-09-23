@@ -4300,6 +4300,32 @@ def wrapper_params_2D_to_3D(stack):
         sp_utilities.set_params_proj(ima, p)
         sp_utilities.write_header(stack, ima, im)
 
+def wrapper_params_2D_to_3D_star(stack):
+    from pyStarDB import sp_pystardb as star
+    nima = EMAN2.EMUtil.get_image_count(stack)
+    star_file = star.StarFile(stack)
+
+    try:
+        dataframes = star_file['particles']
+    except KeyError:
+        dataframes = star_file['']
+    for im in tqdm.tqdm(range(nima), desc="Wrapping params 2D to 3D"):
+        alpha = dataframes.loc[im, "_rlnAnglePsi"]
+        tx = dataframes.loc[im, "_rlnOriginX"]
+        ty = dataframes.loc[im, "_rlnOriginY"]
+        mirror = 0
+        scale = 1.0
+        phi, theta, psi, s2x, s2y = sp_utilities.params_2D_3D(alpha, tx, ty, mirror)
+        rowindex = dataframes.index[im]
+        dataframes.loc[rowindex, "_rlnAnglePsi"] = psi
+        dataframes.loc[rowindex, "_rlnAngleRot"] = phi
+        dataframes.loc[rowindex, "_rlnAngleTilt"] = theta
+        dataframes.loc[rowindex, "_rlnOriginX"] = -s2x
+        dataframes.loc[rowindex, "_rlnOriginY"] = -s2y
+
+    star_file.update('particles', dataframes, True)
+    print(star_file['particles']["_rlnAngleRot"])
+    star_file.write_star_file(overwrite=True)
 
 # print_end_msg("params_2D_to_3D")
 

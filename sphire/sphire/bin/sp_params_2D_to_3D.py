@@ -61,9 +61,9 @@ def run():
 		if sp_global_def.CACHE_DISABLE:
 			from sphire.libpy.sp_utilities import disable_bdb_cache
 			disable_bdb_cache()
-		from sphire.libpy.sp_applications import wrapper_params_2D_to_3D
+		from sphire.libpy.sp_applications import wrapper_params_2D_to_3D_star
 		sp_global_def.BATCH = True
-		wrapper_params_2D_to_3D(args[0])
+		wrapper_params_2D_to_3D_star(args[0])
 		sp_global_def.BATCH = False     
 			
 def main():
