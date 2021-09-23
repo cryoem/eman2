@@ -60,6 +60,7 @@ from ..libpy import sp_applications
 from ..libpy import sp_filter
 from ..libpy import sp_fundamentals
 from ..libpy.prior_calculation import sp_helix_fundamentals
+from ..libpy.prior_calculation import sp_helix_prior
 from ..libpy import sp_global_def
 from ..libpy.prior_calculation import sp_helix_sphire
 from ..libpy import sp_logger
@@ -2847,43 +2848,51 @@ def ali3D_polar_ccc(
 
             xod1 = numpy.ndarray((keepfirst), dtype="f4", order="C")
 
+
+            psi_list = []
             for iln in range(keepfirst):
                 m = xod2[iln]
                 j = m % n_coarse_psi
                 ic = (old_div(m, n_coarse_psi)) % n_coarse_ang
+                psi_list.append((coarse_angles[ic][2] + j * coarse_delta) % 360)
                 ib = old_div(m, (n_coarse_ang * n_coarse_psi))
                 xod2[iln] = j * 1000 + ic * 100000000 + ib  # hashparams
             # DO NOT order by angular directions to save time on reprojections.
+
+            median_psi = sp_helix_prior.rotate_angles_median(numpy.array(psi_list)-180)+180
             pre_ipsiandiang = -1
             for iln in range(keepfirst):
                 hashparams = int(xod2[iln])
                 ishift = hashparams % 1000
                 ipsiandiang = old_div(hashparams, 1000)
-                if ipsiandiang != pre_ipsiandiang:
-                    pre_ipsiandiang = ipsiandiang
-                    ipsi = ipsiandiang % 100000
-                    iang = old_div(ipsiandiang, 100000)
-                    temp = sp_projection.prgl(
-                        volinit,
-                        [
-                            coarse_angles[iang][0],
-                            coarse_angles[iang][1],
-                            (coarse_angles[iang][2] + ipsi * coarse_delta) % 360.0,
-                            0.0,
-                            0.0,
-                        ],
-                        1,
-                        False,
-                    )
-                    #temp = filter_vpp(temp)
-                    nrmref = numpy.sqrt(
-                        EMAN2_cppwrap.Util.innerproduct(temp, temp, None)
-                    )
-                    # Util.mul_scalar(temp, 1.0/nrmref)
+                if -90 < ((psi_list[i1] - median_psi - 180) % 360) - 180 < 90:
+                    if ipsiandiang != pre_ipsiandiang:
+                        pre_ipsiandiang = ipsiandiang
+                        ipsi = ipsiandiang % 100000
+                        iang = old_div(ipsiandiang, 100000)
+                        temp = sp_projection.prgl(
+                            volinit,
+                            [
+                                coarse_angles[iang][0],
+                                coarse_angles[iang][1],
+                                (coarse_angles[iang][2] + ipsi * coarse_delta) % 360.0,
+                                0.0,
+                                0.0,
+                            ],
+                            1,
+                            False,
+                        )
+                        #temp = filter_vpp(temp)
+                        nrmref = numpy.sqrt(
+                            EMAN2_cppwrap.Util.innerproduct(temp, temp, None)
+                        )
+                        # Util.mul_scalar(temp, 1.0/nrmref)
 
-                xod1[iln] = old_div(
-                    EMAN2_cppwrap.Util.innerproduct(data[ishift], temp, None), nrmref
-                )
+                    xod1[iln] = old_div(
+                        EMAN2_cppwrap.Util.innerproduct(data[ishift], temp, None), nrmref
+                    )
+                else:
+                    xod1[iln] = -numpy.inf
                 # peak
                 ##xod2[iln] = hashparams
 
@@ -2934,46 +2943,54 @@ def ali3D_polar_ccc(
                 (Tracker["keepfirst"]), dtype="f4", order="C"
             )
 
+            psi_list = []
             for iln in range(Tracker["keepfirst"]):
                 m = xod2[iln]
                 j = m % n_coarse_psi
                 ic = (old_div(m, n_coarse_psi)) % n_coarse_ang
+                psi_list.append((coarse_angles[ic][2] + j * coarse_delta) % 360)
                 ib = old_div(m, (n_coarse_ang * n_coarse_psi))
                 xod2[iln] = j * 1000 + ic * 100000000 + ib  # hashparams
+
+            median_psi = sp_helix_prior.rotate_angles_median(numpy.array(psi_list)-180)+180
             # order by angular directions to save time on reprojections.
             ipsiandiang = old_div(xod2, 1000)
             lina = numpy.argsort(ipsiandiang)
             xod2 = xod2[lina]  # order does not matter
+            psi_list = np.array(psi_list)[lina]
             pre_ipsiandiang = -1
             for iln in range(Tracker["keepfirst"]):
                 hashparams = int(xod2[iln])
                 ishift = hashparams % 1000
                 ipsiandiang = old_div(hashparams, 1000)
-                if ipsiandiang != pre_ipsiandiang:
-                    pre_ipsiandiang = ipsiandiang
-                    ipsi = ipsiandiang % 100000
-                    iang = old_div(ipsiandiang, 100000)
-                    temp = sp_projection.prgl(
-                        volinit,
-                        [
-                            coarse_angles[iang][0],
-                            coarse_angles[iang][1],
-                            (coarse_angles[iang][2] + ipsi * coarse_delta) % 360.0,
-                            0.0,
-                            0.0,
-                        ],
-                        1,
-                        False,
+                if -90 < ((psi_list[i1] - median_psi - 180) % 360) - 180 < 90:
+                    if ipsiandiang != pre_ipsiandiang:
+                        pre_ipsiandiang = ipsiandiang
+                        ipsi = ipsiandiang % 100000
+                        iang = old_div(ipsiandiang, 100000)
+                        temp = sp_projection.prgl(
+                            volinit,
+                            [
+                                coarse_angles[iang][0],
+                                coarse_angles[iang][1],
+                                (coarse_angles[iang][2] + ipsi * coarse_delta) % 360.0,
+                                0.0,
+                                0.0,
+                            ],
+                            1,
+                            False,
+                        )
+                        #temp = filter_vpp(temp)
+                        temp.set_attr("is_complex", 0)
+                        nrmref = numpy.sqrt(
+                            EMAN2_cppwrap.Util.innerproduct(temp, temp, None)
+                        )
+                    peak = old_div(
+                        EMAN2_cppwrap.Util.innerproduct(data[ishift], temp, None), nrmref
                     )
-                    #temp = filter_vpp(temp)
-                    temp.set_attr("is_complex", 0)
-                    nrmref = numpy.sqrt(
-                        EMAN2_cppwrap.Util.innerproduct(temp, temp, None)
-                    )
-                peak = old_div(
-                    EMAN2_cppwrap.Util.innerproduct(data[ishift], temp, None), nrmref
-                )
-                xod1[iln] = peak
+                    xod1[iln] = peak
+                else:
+                    xod1[iln] = -numpy.inf
                 ##xod2[iln] = hashparams
 
             lina = numpy.argsort(xod1)
@@ -2992,7 +3009,7 @@ def ali3D_polar_ccc(
             hashparams = int(xod2[iln])
             ishift = hashparams % 1000
             ipsiandiang = old_div(hashparams, 1000)
-            # ipsi = ipsiandiang%100000
+            ipsi = ipsiandiang%100000
             iang = old_div(ipsiandiang, 100000)
             firstdirections[iln] = [coarse_angles[iang][0], coarse_angles[iang][1], 0.0]
             firstshifts[iln] = ishift
@@ -3024,25 +3041,25 @@ def ali3D_polar_ccc(
             ipsiandiang = old_div(hashparams, 1000)
             oldiang = old_div(ipsiandiang, 100000)
             ipsi = ipsiandiang % 100000
-            ishift = hashparams % 1000
-            tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
-            for i2 in range(Tracker["howmany"]):
-                iang = ltabang[i1][i2]
-                for i3 in range(2):  # psi
-                    itpsi = int(
-                        old_div(
-                            (
-                                coarse_angles[oldiang][2]
-                                + ipsi * coarse_delta
-                                - refang[iang][2]
-                                + 360.0
-                            ),
-                            Tracker["delta"],
+                ishift = hashparams % 1000
+                tshifts = get_shifts_neighbors(shifts, coarse_shifts[ishift])
+                for i2 in range(Tracker["howmany"]):
+                    iang = ltabang[i1][i2]
+                    for i3 in range(2):  # psi
+                        itpsi_g = int(
+                            old_div(
+                                (
+                                    coarse_angles[oldiang][2]
+                                    + ipsi * coarse_delta
+                                    - refang[iang][2]
+                                    + 360.0
+                                ),
+                                Tracker["delta"],
+                            )
                         )
-                    )
-                    itpsi = (itpsi + i3) % npsi
-                    for i4 in range(len(tshifts)):
-                        cod2.append(iang * 100000000 + itpsi * 1000 + tshifts[i4])
+                        itpsi = (itpsi_g + i3) % npsi
+                        for i4 in range(len(tshifts)):
+                            cod2.append(iang * 100000000 + itpsi * 1000 + tshifts[i4])
 
         del xod1, xod2
 
@@ -3771,40 +3788,47 @@ def ali3D_primary_polar(
 
             xod1 = numpy.ndarray((keepfirst), dtype="f4", order="C")
 
+            psi_list = []
             for iln in range(keepfirst):
                 m = xod2[iln]
                 j = m % n_coarse_psi
                 ic = (old_div(m, n_coarse_psi)) % n_coarse_ang
+                psi_list.append((coarse_angles[ic][2] + j * coarse_delta) % 360)
                 ib = old_div(m, (n_coarse_ang * n_coarse_psi))
                 xod2[iln] = j * 1000 + ic * 100000000 + ib  # hashparams
             # DO NOT order by angular directions to save time on reprojections.
+
+            median_psi = sp_helix_prior.rotate_angles_median(numpy.array(psi_list)-180)+180
             pre_ipsiandiang = -1
             for iln in range(keepfirst):
                 hashparams = int(xod2[iln])
                 ishift = hashparams % 1000
                 ipsiandiang = old_div(hashparams, 1000)
-                if ipsiandiang != pre_ipsiandiang:
-                    pre_ipsiandiang = ipsiandiang
-                    ipsi = ipsiandiang % 100000
-                    iang = old_div(ipsiandiang, 100000)
-                    temp = sp_projection.prgl(
-                        volinit,
-                        [
-                            coarse_angles[iang][0],
-                            coarse_angles[iang][1],
-                            (coarse_angles[iang][2] + ipsi * coarse_delta) % 360.0,
-                            0.0,
-                            0.0,
-                        ],
-                        1,
-                        False,
-                    )
-                    #temp = filter_vpp(temp)
-                    temp.set_attr("is_complex", 0)
-                xod1[iln] = -EMAN2_cppwrap.Util.sqed(
-                    data[ishift], temp, ctfa, bckgnoise
-                )  # peak
-                ##xod2[iln] = hashparams
+                if -90 < ((psi_list[i1] - median_psi - 180) % 360) - 180 < 90:
+                    if ipsiandiang != pre_ipsiandiang:
+                        pre_ipsiandiang = ipsiandiang
+                        ipsi = ipsiandiang % 100000
+                        iang = old_div(ipsiandiang, 100000)
+                        temp = sp_projection.prgl(
+                            volinit,
+                            [
+                                coarse_angles[iang][0],
+                                coarse_angles[iang][1],
+                                (coarse_angles[iang][2] + ipsi * coarse_delta) % 360.0,
+                                0.0,
+                                0.0,
+                            ],
+                            1,
+                            False,
+                        )
+                        #temp = filter_vpp(temp)
+                        temp.set_attr("is_complex", 0)
+                    xod1[iln] = -EMAN2_cppwrap.Util.sqed(
+                        data[ishift], temp, ctfa, bckgnoise
+                    )  # peak
+                    ##xod2[iln] = hashparams
+                else:
+                    xod1[iln] = -numpy.inf
 
             xod1 -= numpy.max(xod1)
             lina = numpy.argwhere(
@@ -3867,13 +3891,17 @@ def ali3D_primary_polar(
                 (Tracker["keepfirst"]), dtype="f4", order="C"
             )
 
+            psi_list = []
             for iln in range(Tracker["keepfirst"]):
                 m = xod2[iln]
                 j = m % n_coarse_psi
                 ic = (old_div(m, n_coarse_psi)) % n_coarse_ang
+                psi_list.append((coarse_angles[ic][2] + j * coarse_delta) % 360)
                 ib = old_div(m, (n_coarse_ang * n_coarse_psi))
                 xod2[iln] = j * 1000 + ic * 100000000 + ib  # hashparams
             # order by angular directions to save time on reprojections.
+
+            median_psi = sp_helix_prior.rotate_angles_median(numpy.array(psi_list)-180)+180
             ipsiandiang = old_div(xod2, 1000)
             lina = numpy.argsort(ipsiandiang)
             xod2 = xod2[lina]  # order does not matter
@@ -3882,27 +3910,30 @@ def ali3D_primary_polar(
                 hashparams = int(xod2[iln])
                 ishift = hashparams % 1000
                 ipsiandiang = old_div(hashparams, 1000)
-                if ipsiandiang != pre_ipsiandiang:
-                    pre_ipsiandiang = ipsiandiang
-                    ipsi = ipsiandiang % 100000
-                    iang = old_div(ipsiandiang, 100000)
-                    temp = sp_projection.prgl(
-                        volinit,
-                        [
-                            coarse_angles[iang][0],
-                            coarse_angles[iang][1],
-                            (coarse_angles[iang][2] + ipsi * coarse_delta) % 360.0,
-                            0.0,
-                            0.0,
-                        ],
-                        1,
-                        False,
-                    )
-                    #temp = filter_vpp(temp)
-                    temp.set_attr("is_complex", 0)
-                peak = -EMAN2_cppwrap.Util.sqed(data[ishift], temp, ctfa, bckgnoise)
-                xod1[iln] = peak
-                ##xod2[iln] = hashparams
+                if -90 < ((psi_list[i1] - median_psi - 180) % 360) - 180 < 90:
+                    if ipsiandiang != pre_ipsiandiang:
+                        pre_ipsiandiang = ipsiandiang
+                        ipsi = ipsiandiang % 100000
+                        iang = old_div(ipsiandiang, 100000)
+                        temp = sp_projection.prgl(
+                            volinit,
+                            [
+                                coarse_angles[iang][0],
+                                coarse_angles[iang][1],
+                                (coarse_angles[iang][2] + ipsi * coarse_delta) % 360.0,
+                                0.0,
+                                0.0,
+                            ],
+                            1,
+                            False,
+                        )
+                        #temp = filter_vpp(temp)
+                        temp.set_attr("is_complex", 0)
+                    peak = -EMAN2_cppwrap.Util.sqed(data[ishift], temp, ctfa, bckgnoise)
+                    xod1[iln] = peak
+                    ##xod2[iln] = hashparams
+                else:
+                    xod1[iln] = -numpy.inf
 
             lina = numpy.argsort(xod1)
             xod1 = xod1[lina[::-1]]  # This sorts in reverse order
