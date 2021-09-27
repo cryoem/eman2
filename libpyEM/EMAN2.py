@@ -62,9 +62,8 @@ HOMEDB=None
 
 try:
     from pyStarDB import sp_pystardb as star
-    STAR_AVAILABLE = True
 except ImportError:
-    STAR_AVAILABLE = False
+    print("pyStarDB package is required in to use star files with EMData object")
 
 import pandas as pd
 import numpy as np
