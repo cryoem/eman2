@@ -1471,6 +1471,196 @@ def ali_vol_func_shift(params, data):
     return res
 
 
+def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None, sym="c1", delta_psi=0.0, rshift=0.0):
+    from sphire.libpy.sp_alignment import search_range
+    from EMAN2 import Vec2f
+    from EMAN2 import Util, Transform
+    if finfo:
+        from sphire.libpy.sp_utilities import get_params_proj
+        phi, theta, psi, s2x, s2y = get_params_proj(data)
+        finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n" % (phi, theta, psi, s2x, s2y))
+        finfo.flush()
+
+    mode = "F"
+    #  center is in SPIDER convention
+    nx = data.get_xsize()
+    ny = data.get_ysize()
+    cnx = nx // 2 + 1
+    cny = ny // 2 + 1
+
+    # phi, theta, psi, sxo, syo = get_params_proj(data)
+    t1 = data.get_attr("xform.projection")
+    dp = t1.get_params("spider")
+    ou = numr[-3]
+    sxi = round(-dp["tx"] + rshift, 2)
+    syi = round(-dp["ty"] + rshift, 2)
+    txrng = search_range(nx, ou, sxi, xrng)
+    tyrng = search_range(ny, ou, syi, yrng)
+
+    [ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_3d(data, refrings, txrng, tyrng, step, mode, numr,
+                                                                     cnx - sxi, cny - syi, delta_psi)
+    # print ang, sxs, sys, mirror, iref, peak
+    iref = int(iref)
+    #  What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
+    #  rotation has to be reversed
+    if mirror:
+        phi = (refrings[iref].get_attr("phi") + 540.0) % 360.0
+        theta = 180.0 - refrings[iref].get_attr("theta")
+        psi = (540.0 - refrings[iref].get_attr("psi") - ang) % 360.0
+    else:
+        phi = refrings[iref].get_attr("phi")
+        theta = refrings[iref].get_attr("theta")
+        psi = (360.0 + refrings[iref].get_attr("psi") - ang) % 360.0
+    s2x = sxs + sxi
+    s2y = sys + syi
+    # set_params_proj(data, [phi, theta, psi, s2x, s2y])
+    t2 = Transform({"type": "spider", "phi": phi, "theta": theta, "psi": psi})
+    t2.set_trans(Vec2f(-s2x, -s2y))
+    data.set_attr("xform.projection", t2)
+    data.set_attr("referencenumber", iref)
+
+    from sphire.libpy.sp_pixel_error import max_3D_pixel_error
+
+    ts = t2.get_sym_proj(sym)
+    if (len(ts) > 1):
+        # only do it if it is not c1
+        pixel_error = +1.0e23
+        for ut in ts:
+            # we do not care which position minimizes the error
+            pixel_error = min(max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
+    else:
+        pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
+
+    if finfo:
+        finfo.write("New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" % (
+        phi, theta, psi, s2x, s2y, peak, pixel_error))
+        finfo.flush()
+
+    return peak, pixel_error
+
+
+def proj_ali_incore_local(data, refrings, list_of_reference_angles, numr, xrng, yrng, step, an, finfo=None, sym='c1',
+                          delta_psi=0.0, rshift=0.0):
+    from sphire.libpy.sp_alignment import search_range
+    # from utilities    import set_params_proj, get_params_proj
+    from math import cos, sin, pi, radians
+    from EMAN2 import Vec2f
+    from EMAN2 import Util, Transform
+
+    mode = "F"
+    nx = data.get_xsize()
+    ny = data.get_ysize()
+    #  center is in SPIDER convention
+    cnx = nx // 2 + 1
+    cny = ny // 2 + 1
+
+    ant = cos(radians(an))
+    # phi, theta, psi, sxo, syo = get_params_proj(data)
+    t1 = data.get_attr("xform.projection")
+    dp = t1.get_params("spider")
+    ou = numr[-3]
+    sxi = round(-dp["tx"] + rshift, 2)
+    syi = round(-dp["ty"] + rshift, 2)
+    txrng = search_range(nx, ou, sxi, xrng)
+    tyrng = search_range(ny, ou, syi, yrng)
+    if finfo:
+        finfo.write("Old parameters: %6.2f %6.2f %6.2f %6.2f %6.2f\n" % (
+        dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
+        finfo.write(
+            "ou, nx, ny, xrng, yrng, cnx, cny, sxi, syi, txrng[0],txrng[1],tyrng[0],tyrng[1] : %3d  %3d  %3d    %4.1f  %4.1f %3d %3d   %4.1f  %4.1f     %4.1f  %4.1f %4.1f %4.1f\n" % (
+            ou, nx, ny, xrng, yrng, cnx, cny, sxi, syi, txrng[0], txrng[1], tyrng[0], tyrng[1]))
+        finfo.flush()
+
+    [ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_3d_local(data, refrings, list_of_reference_angles,
+                                                                           txrng, tyrng, step, ant, mode, numr,
+                                                                           cnx - sxi, cny - syi, sym, delta_psi)
+
+    iref = int(iref)
+    if iref > -1:
+        # What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
+        if mirror:
+            phi = (refrings[iref].get_attr("phi") + 540.0) % 360.0
+            theta = 180.0 - refrings[iref].get_attr("theta")
+            psi = (540.0 - refrings[iref].get_attr("psi") - ang) % 360.0
+        else:
+            phi = refrings[iref].get_attr("phi")
+            theta = refrings[iref].get_attr("theta")
+            psi = (360.0 + refrings[iref].get_attr("psi") - ang) % 360.0
+        s2x = sxs + sxi
+        s2y = sys + syi
+
+        # set_params_proj(data, [phi, theta, psi, s2x, s2y])
+        t2 = Transform({"type": "spider", "phi": phi, "theta": theta, "psi": psi})
+        t2.set_trans(Vec2f(-s2x, -s2y))
+        data.set_attr("xform.projection", t2)
+        from sphire.libpy.sp_pixel_error import max_3D_pixel_error
+        ts = t2.get_sym_proj(sym)
+        if (len(ts) > 1):
+            # only do it if it is not c1
+            pixel_error = +1.0e23
+            for ut in ts:
+                # we do not care which position minimizes the error
+                pixel_error = min(max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
+        else:
+            pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
+        # print phi, theta, psi, s2x, s2y, peak, pixel_error
+        if finfo:
+            from sphire.libpy.sp_utilities import get_params_proj
+            phi, theta, psi, s2x, s2y = get_params_proj(data)
+            finfo.write("New parameters: %6.2f %6.2f %6.2f %6.2f %6.2f   %10.5f  %11.3e\n\n" % (
+            phi, theta, psi, s2x, s2y, peak, pixel_error))
+            finfo.flush()
+        return peak, pixel_error
+    else:
+        return -1.0e23, 0.0
+
+
+def generate_list_of_reference_angles_for_search(input_angles, sym):
+    """
+	  Generate full set of reference angles, including mirror and symmetry related
+	  from a unique subrange generated by even_angles and stored in refrings.
+	  Input - input_angles [[angles],[angles]]
+	  Output - [[angles], [angles]] (no shifts)
+			Blocks - [[basic][mirrored basic]] [[basic sym1][mirrored basic sym1]] ...
+	"""
+    from EMAN2 import Transform
+    t2 = Transform()
+    nsym = t2.get_nsym(sym)
+
+    original_number_of_angles = len(input_angles)
+    # original_number_of_angles is the same as the number of refrings
+
+    list_of_reference_angles = [None] * original_number_of_angles
+    for i in range(original_number_of_angles):
+        list_of_reference_angles[i] = [input_angles[i][0], input_angles[i][1], 0]
+
+    #  add mirror related
+    list_of_reference_angles += [[0.0, 0.0, 0.0] for i in range(original_number_of_angles)]
+    for i in range(original_number_of_angles):
+        list_of_reference_angles[i + original_number_of_angles][0] = (list_of_reference_angles[i][0] + 180.0) % 360.0
+        list_of_reference_angles[i + original_number_of_angles][1] = 180.0 - list_of_reference_angles[i][1]
+        list_of_reference_angles[i + original_number_of_angles][2] = list_of_reference_angles[i][2]
+
+    #  add symmetry related
+    if (nsym > 1):
+        number_of_angles_original_and_mirror = len(list_of_reference_angles)
+        for l in range(1, nsym):
+            list_of_reference_angles += [[0.0, 0.0, 0.0] for i in range(number_of_angles_original_and_mirror)]
+
+        for i in range(number_of_angles_original_and_mirror):
+            t2 = Transform(
+                {"type": "spider", "phi": list_of_reference_angles[i][0], "theta": list_of_reference_angles[i][1]})
+            ts = t2.get_sym_proj(sym)
+            for ll in range(1, nsym, 1):
+                d = ts[ll].get_params("spider")
+                list_of_reference_angles[i + ll * number_of_angles_original_and_mirror][0] = round(d["phi"], 5)
+                list_of_reference_angles[i + ll * number_of_angles_original_and_mirror][1] = round(d["theta"], 5)
+                list_of_reference_angles[i + ll * number_of_angles_original_and_mirror][2] = round(d["psi"],
+                                                                                                   5)  # Not needed?
+
+    return list_of_reference_angles
+
+
 """Multiline Comment53"""
 
 

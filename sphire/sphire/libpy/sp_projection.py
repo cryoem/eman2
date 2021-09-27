@@ -265,3 +265,86 @@ def prep_vol(vol, npad=2, interpolation_method=-1):
         volft.fft_shuffle()
         volft.set_attr("npad", npad)
         return volft
+
+def prgq( volft, kb, nx, delta, ref_a, sym, MPI=False):
+    """
+      Generate set of projections based on even angles
+      The command returns list of ffts of projections
+    """
+    from sphire.libpy.sp_projection   import prep_vol, prgs
+    from sphire.libpy.sp_applications import MPI_start_end
+    from sphire.libpy.sp_utilities    import even_angles, model_blank
+    from sphire.libpy.sp_fundamentals import fft
+    # generate list of Eulerian angles for reference projections
+    #  phi, theta, psi
+    mode = "F"
+    ref_angles = even_angles(delta, symmetry=sym, method = ref_a, phiEqpsi = "Minus")
+    cnx = nx//2 + 1
+    cny = nx//2 + 1
+    num_ref = len(ref_angles)
+
+    if MPI:
+        from mpi import mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
+        myid = mpi_comm_rank( MPI_COMM_WORLD )
+        ncpu = mpi_comm_size( MPI_COMM_WORLD )
+    else:
+        ncpu = 1
+        myid = 0
+    from sphire.libpy.sp_applications import MPI_start_end
+    ref_start,ref_end = MPI_start_end( num_ref, ncpu, myid )
+
+    prjref = []     # list of (image objects) reference projections in Fourier representation
+
+    for i in range(num_ref):
+        prjref.append(model_blank(nx, nx))  # I am not sure why is that necessary, why not put None's??
+
+    for i in range(ref_start, ref_end):
+        prjref[i] = prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
+
+    if MPI:
+        from sphire.libpy.sp_utilities import bcast_EMData_to_all
+        for i in range(num_ref):
+            for j in range(ncpu):
+                ref_start,ref_end = MPI_start_end(num_ref,ncpu,j)
+                if i >= ref_start and i < ref_end: rootid = j
+            bcast_EMData_to_all( prjref[i], myid, rootid )
+
+    for i in range(len(ref_angles)):
+        prjref[i].set_attr_dict({"phi": ref_angles[i][0], "theta": ref_angles[i][1],"psi": ref_angles[i][2]})
+
+    return prjref
+
+def gen_rings_ctf( prjref, nx, ctf, numr):
+    """
+      Convert set of ffts of projections to Fourier rings with additional multiplication by a ctf
+      The command returns list of rings
+    """
+    from EMAN2 import Util
+    from math         import sin, cos, pi
+    from sphire.libpy.sp_fundamentals import fft
+    from sphire.libpy.sp_alignment    import ringwe
+    from sphire.libpy.sp_filter import filt_ctf
+    mode = "F"
+    wr_four  = ringwe(numr, "F")
+    cnx = nx//2 + 1
+    cny = nx//2 + 1
+    qv = pi/180.0
+
+    refrings = []     # list of (image objects) reference projections in Fourier representation
+
+    for i in range( len(prjref) ):
+        cimage = Util.Polar2Dm(filt_ctf(prjref[i], ctf, True) , cnx, cny, numr, mode)  # currently set to quadratic....
+        Util.Normalize_ring(cimage, numr, 0 )
+
+        Util.Frngs(cimage, numr)
+        Util.Applyws(cimage, numr, wr_four)
+        refrings.append(cimage)
+        phi   = prjref[i].get_attr('phi')
+        theta = prjref[i].get_attr('theta')
+        psi   = prjref[i].get_attr('psi')
+        n1 = sin(theta*qv)*cos(phi*qv)
+        n2 = sin(theta*qv)*sin(phi*qv)
+        n3 = cos(theta*qv)
+        refrings[i].set_attr_dict( {"n1":n1, "n2":n2, "n3":n3, "phi": phi, "theta": theta,"psi": psi} )
+
+    return refrings

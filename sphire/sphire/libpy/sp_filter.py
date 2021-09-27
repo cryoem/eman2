@@ -408,4 +408,51 @@ def filterlocal(ui, vi, m, falloff, myid, main_node, number_of_proc):
     return filteredvol
 
 
+def filt_params(dres, high = 0.95, low = 0.1):
+	"""
+		Name
+			filt_params - using the FSC curve establish two frequencies: stop-band, corresponding to the point where the curves drops below predefined high value, and pass-band, corresponding to the point where the curves drops below predefined low value
+		Input
+			dres - list produced by the fsc funcion
+			dres[0] - absolute frequencies
+			dres[1] - fsc, because it was calculated from half the dataset, convert it to full using rn = 2r/(1+r)
+			dres[2] - number of point use to calculate fsc coeff
+			low: cutoff of the fsc curve
+			high: cutoff of the fsc curve. Note: high and low values are optional.
+			return parameters of the Butterworth filter (low and high frequencies)
+		Output
+			freql: stop-band frequency
+			freqh: pass-band frequency
+	"""
+	n = len(dres[1])
+	if ( (2*dres[1][n-1]/(1.0+dres[1][n-1])) > low):
+		# the curve never falls below preset level, most likely something's wrong; however, return reasonable values
+		#  First, find out whether it actually does fall
+		nend = 0
+		for i in range(n-1,1,-1):
+			if ( (2*dres[1][i]/(1.0+dres[1][i]) ) < low):
+				nend = i
+				break
+		if( nend == 0 ):
+			#it does not fall anywhere
+			freql = 0.4
+			freqh = 0.4999
+			return freql,freqh
+		else:
+			n = nend +1
+	#  normal case
+	freql = 0.001 # this is in case the next loop does not work and the curve never drops below high
+	for i in range(1,n-1):
+		if ( (2*dres[1][i]/(1.0+dres[1][i]) ) < high):
+			freql = dres[0][i]
+			break
+	freqh = 0.1 # this is in case the next loop does not work and the curve never rises above low
+	for i in range(n-2,0,-1):
+		if ( (2*dres[1][i]/(1.0+dres[1][i]) ) > low):
+			freqh =min( max(dres[0][i], freql+0.1), 0.45)
+			break
+	return freql,freqh
+
+
+
 from builtins import range
