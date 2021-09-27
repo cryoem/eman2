@@ -23,7 +23,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_pos_argument(name="tomogram",help="Specify the tomogram to be segmented.", default="", guitype='filebox', browser="EMTomoTable(withmodal=True,multiselect=False)",  row=0, col=0,rowspan=1, colspan=2, mode="tomoseg")
 	#parser.add_argument("--load", type=str,help="Load previous contour segmentation.", default=None, guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)",  row=1, col=0,rowspan=1, colspan=2, mode="tomoseg")
-	#parser.add_argument("--noupdate", action="store_true",help="do not erase shapes", default=False)
+	parser.add_argument("--nooptimize", action="store_true",help="do not optimize path", default=False)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -56,7 +56,7 @@ class Contour(EMShape):
 	
 		
 
-	def add_point(self, newpt=[], newcontour=False):
+	def add_point(self, newpt=[], newcontour=False, optimize=True):
 
 
 
@@ -73,7 +73,7 @@ class Contour(EMShape):
 			pts=nppts[sel,:3].copy()
 			otherpts=nppts[sel==False].copy()
 
-			if len(pts)<3:
+			if len(pts)<3 or optimize==False:
 				if len(newpt)>0:
 					self.points.append([newpt[0], newpt[1], zpos, ci, self.classid])
 					return
@@ -109,7 +109,7 @@ class Contour(EMShape):
 			#idx=np.where(pts[:,3]==ci)[0]
 			pp=pts.copy()
 			path=np.arange(len(pp), dtype=int)
-
+		
 			dmat=scipydist.squareform(scipydist.pdist(pp))
 			dmat+=np.eye(len(dmat))*thr
 			if len(pp)>=3:
@@ -270,7 +270,7 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 		#self.gbl.addWidget(self.imgview,0,0)
 		self.options=options
 		self.app=weakref.ref(application)
-		
+		self.do_optimize=not options.nooptimize
 		
 		
 		self.datafile=datafile
@@ -456,7 +456,7 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 
 		else:
 			#### add point
-			self.contour.add_point([x, y]) #, self.imgview.list_idx
+			self.contour.add_point([x, y], optimize=self.do_optimize) #, self.imgview.list_idx
 		
 		self.do_update()
 		self.save_points()

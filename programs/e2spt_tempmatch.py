@@ -9,6 +9,8 @@ import numpy as np
 import scipy.spatial.distance as scidist
 import queue
 import threading
+from scipy import ndimage
+from scipy.spatial import KDTree
 
 def main():
 	
@@ -24,7 +26,7 @@ def main():
 	parser.add_argument("--nptcl", type=int,help="maximum number of particles", default=500, guitype='intbox', row=3, col=1,rowspan=1, colspan=1, mode="boxing")
 
 	parser.add_argument("--dthr", type=float,help="distance threshold", default=-1, guitype='floatbox', row=4, col=0,rowspan=1, colspan=1, mode="boxing")
-	parser.add_argument("--vthr", type=float,help="value threshold (n sigma)", default=2.0, guitype='floatbox', row=4, col=1,rowspan=1, colspan=1, mode="boxing")
+	parser.add_argument("--vthr", type=float,help="value threshold (n sigma)", default=10, guitype='floatbox', row=4, col=1,rowspan=1, colspan=1, mode="boxing")
 
 	parser.add_argument("--delta", type=float,help="delta angle", default=30.0, guitype='floatbox', row=5, col=0,rowspan=1, colspan=1, mode="boxing")
 	parser.add_argument("--sym", type=str,help="symmetry", default="c1", guitype='strbox', row=5, col=1,rowspan=1, colspan=1, mode="boxing")
@@ -47,134 +49,150 @@ def main():
 
 	sym=parsesym(options.sym)
 	dt=options.delta
-	oris=sym.gen_orientations("eman",{"delta":dt, "phitoo":dt})
-	print("Try {} orientations.".format(len(oris)*2))
+	oris=sym.gen_orientations("eman",{"delta":dt, "phitoo":dt,"inc_mirror":1})
+	print("Testing {} orientations...".format(len(oris)))
 	
-	
+	def do_match(jsd, xfs):
+		for xf in xfs:
+			r=ref.process("xform", {"transform":xf})
+			cf=tomo.calc_ccf(r)
+			jsd.put(cf)
 
 	for filenum,imgname in enumerate(args):
 		
 		print("Locating reference-like particles in {} (File {}/{})".format(imgname,filenum+1,len(args)))
-		img=EMData(imgname)
+		tomo=EMData(imgname)
 		if options.shrink>0:
 			nbin=options.shrink
 		else:
-			nbin=int(img["nx"]//450)
+			nbin=int(tomo["nx"]//450)
 		if nbin>1:
 			print("Will shrink tomogram by {}".format(nbin))
-			img.process_inplace("math.meanshrink",{'n':nbin})
-		tomo=img.copy()
-		img.mult(-1)
-		img.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.4})
-		img.process_inplace('normalize')
-		img.process_inplace('threshold.clampminmax.nsigma', {"nsigma":2})
-		
-		m=EMData(tmpname)
-		mbin=img["apix_x"]/m["apix_x"]
+			tomo.process_inplace("math.meanshrink",{'n':nbin})
+			
+			
+		ref=EMData(tmpname)
+		mbin=tomo["apix_x"]/ref["apix_x"]
 		print("Will shrink reference by {:.1f}".format(mbin))
-		m.process_inplace("math.fft.resample",{'n':mbin})
-		m.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.2})
-		m.process_inplace("mask.soft",{"outer_radius":-2})
-		m.process_inplace('normalize')
-		sz=m["nx"]
-		if options.dthr<0:
-			options.dthr=sz/np.sqrt(2)
+		ref.process_inplace("math.fft.resample",{'n':mbin})
+		ref.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.4})
+		ref.process_inplace("filter.highpass.gauss",{"cutoff_pixels":4})
+		ref.process_inplace('normalize.edgemean')
+		ref.mult(-1)
+		
+		boxsz=ref["ny"]//2
+		tomo.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.4})
+		tomo.process_inplace("filter.highpass.gauss",{"cutoff_pixels":boxsz})
+		tomo.process_inplace('normalize.edgemean')
+		tomo0=tomo.copy()
+		tomo.process_inplace('threshold.clampminmax.nsigma', {"nsigma":3})
+		
+		
+		nthrds=options.threads
+		rg=np.arange(len(oris))
+		tasks=[oris[i::nthrds] for i in range(nthrds)]
 
-		hdr=m.get_attr_dict()
-		ccc=img.copy()*0-65535
+		ccc=tomo.copy()*0-65535
 
 		jsd=queue.Queue(0)
-		thrds=[threading.Thread(target=do_match,args=(jsd, m,o, img)) for o in oris]
+		thrds=[threading.Thread(target=do_match,args=(jsd, o)) for o in tasks]
 		thrtolaunch=0
 		tsleep=threading.active_count()
 
 		ndone=0
-		while thrtolaunch<len(thrds) or threading.active_count()>tsleep or not jsd.empty():
-			if thrtolaunch<len(thrds) :
-				while (threading.active_count()==options.threads+tsleep ) : time.sleep(.1)
-				thrds[thrtolaunch].start()
-				thrtolaunch+=1
-			else: time.sleep(1)
-
+		for t in thrds:
+			t.start()
+		
+		while threading.active_count()>tsleep or not jsd.empty():
+		
 			while not jsd.empty():
 				cf=jsd.get()
 				ccc.process_inplace("math.max", {"with":cf})
 				ndone+=1
-				#if ndone%10==0:
-				sys.stdout.write("\r{}/{} finished.".format(ndone, 2*len(oris)))
+				sys.stdout.write("\r{}/{} finished.".format(ndone, len(oris)))
 				sys.stdout.flush()
+			
+			time.sleep(.5)
 		print("")
+		
+		ccc.process_inplace("xform.phaseorigin.tocenter")
+		ccc.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.3})
+		ccc.process_inplace("filter.highpass.gauss",{"cutoff_pixels":24})
+		ccc.process_inplace("normalize.edgemean")
+		ccc.process_inplace("threshold.belowtozero")
 
-		cbin=ccc.process("math.maxshrink", {"n":2})
-		msk=cbin.copy()
-		msk.to_one()
 		
 		if options.rmedge:
 			try:
-				js=js_open_dict(info_name(fname))
+				js=js_open_dict(info_name(imgname))
 				tpm=np.array(js["tlt_params"])
 				js.close()
 				rt=np.mean(tpm[:,2])
+				print("removing edge: rotation {:.1f}".format(rt))
 			except:
 				rt=0
 
-			eg=16
+			msk=ccc.copy()
+			msk.to_one()
+			eg=32
 			msk.process_inplace("mask.zeroedge3d",{"x0":eg,"x1":eg,"y0":eg,"y1":eg})
 			msk.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.1})
-			msk.rotate(0,0,-rt)
-			#msk.write_image("edgemask.hdf")
-			cbin.mult(msk)
+			msk.process_inplace("xform", {"phi":90-rt})
+			ccc.mult(msk)
 		
 		if options.rmgold:
-			tomo.process_inplace("math.meanshrink",{"n":2})
-			tomo.process_inplace("normalize")
-			tomo.mult(-1)
-			tomo.process_inplace("threshold.binary",{"value":10})
-			tomo.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.05})
-			tomo.process_inplace("normalize.edgemean")
-			tomo=1-tomo
 			
-			cbin.mult(tomo)
+			img=tomo0.copy()
+			img.mult(-1)
+			img.process_inplace("threshold.binary",{"value":8})
+			img.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.05})
+			img.process_inplace("normalize.edgemean")
+			img=1-img
+			ccc.mult(img)
 		
-		cbin.process_inplace("threshold.belowtozero")
-		cbin.process_inplace("normalize.edgemean")
-		#cbin.write_image("ccc.hdf")
-		cbin.process_inplace("mask.onlypeaks",{"npeaks":0})
 		
-		cc=cbin.numpy().copy()
-		cshp=cc.shape
-		ccf=cc.flatten()
-		asrt= np.argsort(-ccf)
-		pts=[]
-		vthr=np.mean(ccf)+np.std(ccf)*options.vthr
+		ccc.write_image("tmp_ccc.hdf")
+		img=ccc.numpy().copy()
+		img[img<options.vthr]=0
+		lb, nlb=ndimage.measurements.label(img)
+		pks=np.array(ndimage.maximum_position(img,lb,list(range(1,nlb))))
+		#pks=np.array(ndimage.center_of_mass(img,lb,list(range(1,nlb))))
+		pksize=np.array(ndimage.measurements.sum(img,lb,list(range(1,nlb))))
+		n=len(pks)
+		print(len(pks))
 		
-		dthr=options.dthr/4.
-		scr=[]
-		#print vthr,cc.shape
-		for i in range(len(asrt)):
-			aid=asrt[i]
-			pt=np.unravel_index(aid, cshp)
-			#if len(pts)>0:
-				#dst=scidist.cdist(pts, [pt])
-				#if np.min(dst)<dthr:
-					#continue
+		#### filter out small peaks
+		if options.boxsz>0:
+			boxsz=options.boxsz
+			
+		kpid=pksize>5
+		pks=pks[kpid]
+		pkscore=pksize[kpid]
+		
+		srt=np.argsort(-pkscore)
+		pks=pks[srt]
+		pkscore=pkscore[srt]
+		pkscore/=np.max(pkscore)
+		
+		
+		tree=KDTree(pks)
 
-			pts.append(pt)
-			scr.append(float(ccf[aid]))
-			if cc[pt]<vthr:
-				break
+		tokeep=np.ones(len(pks), dtype=bool)
+		if options.dthr>0:
+			dthr=options.dthr/4
+		else:
+			dthr=boxsz/2
 			
-		
-		
-		pts=np.array(pts)
-		#print(pts.shape)
-		dst=scidist.cdist(pts, pts)+(np.eye(len(pts))*dthr*100)
-		tokeep=np.ones(len(dst), dtype=bool)
-		for i in range(len(dst)):
+		for i in range(len(pks)):
 			if tokeep[i]:
-				tokeep[dst[i]<dthr]=False
+				k=tree.query_ball_point(pks[i], dthr)
+				tokeep[k]=False
+				tokeep[i]=True
 			
-		pts=pts[tokeep]
+		print(np.sum(tokeep))
+		pts=pks[tokeep]
+		scr=pkscore[tokeep]
+		
 		if len(pts)>options.nptcl:
 			pts=pts[:options.nptcl]
 		
@@ -195,22 +213,21 @@ def main():
 		else:
 			bxs=[]
 			
-		e=img
 		if "apix_unbin" in js:
 			apix_unbin=js["apix_unbin"]
-			apix=e["apix_x"]
-			shp=np.array([e["nz"], e["ny"], e["nx"]])
+			apix=tomo["apix_x"]
+			shp=np.array([tomo["nz"], tomo["ny"], tomo["nx"]])
 			#print(sz,nbin,apix, apix_unbin)
 			if options.boxsz<0:
-				boxsz=int(np.round(sz*apix/apix_unbin))
+				boxsz=int(np.round(boxsz*apix/apix_unbin))
 			else:
 				boxsz=options.boxsz
 			
-			box=(pts*2-shp/2)*apix/apix_unbin
+			box=(pts-shp/2)*apix/apix_unbin
 			bxs.extend([[p[2], p[1],p[0], 'tm', scr[i] ,kid] for i,p in enumerate(box[:n])])
 			
 		else:
-			bxs.extend([[p[2], p[1],p[0], 'tm', scr[i] ,kid] for i,p in enumerate(pts[:n]*2*nbin)])
+			bxs.extend([[p[2], p[1],p[0], 'tm', scr[i] ,kid] for i,p in enumerate(pts[:n]*nbin)])
 			if options.boxsz<0:
 				boxsz=sz*nbin
 			else:
@@ -229,16 +246,6 @@ def main():
 
 	E2end(logid)
 	
-def do_match(jsd, m, o, img):
-
-	for i in [0,1]:
-		e=m.copy()
-		e.transform(o)
-		cf=img.calc_ccf(e)
-		cf.process_inplace("xform.phaseorigin.tocenter")
-		jsd.put(cf)
-		o.rotate(Transform({"type":"eman","alt":180}))
-		
 def run(cmd):
 	print(cmd)
 	launch_childprocess(cmd)
