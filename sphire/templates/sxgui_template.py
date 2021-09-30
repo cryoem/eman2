@@ -1744,6 +1744,15 @@ class SXCmdWidget(QWidget):
 			# Use relative path.
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
+		elif file_format == "params_star":
+			name = QFileDialog.getOpenFileName(self, "Select STAR file", SXLookFeelConst.file_dialog_dir, "STAR files (*.star);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			if isinstance(name, tuple):
+				file_path = str(name[0])
+			else:
+				file_path = str(name)
+			# Use relative path.
+			if file_path:
+				file_path = SXLookFeelConst.format_path(file_path)
 		elif file_format == "params_any_json":
 			name = QFileDialog.getOpenFileName(self, "Select JSON file", SXLookFeelConst.file_dialog_dir, "JSON files (*.json);; All files (*)", options = QFileDialog.DontUseNativeDialog)
 			if isinstance(name, tuple):
@@ -2618,6 +2627,47 @@ class SXCmdTab(QWidget):
 							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
 							temp_btn.setMinimumWidth(func_btn_min_width)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+						elif cmd_token.type == "params_star":
+							file_format = cmd_token.type
+							temp_btn = QPushButton("Select STAR file")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							temp_btn.setToolTip('<FONT>' + "Display open file dialog to select a STAR file</FONT>")
+							grid_layout.addWidget(temp_btn, grid_row,grid_col_origin + token_label_col_span + token_widget_col_span * 2,
+												  token_widget_row_span, token_widget_col_span)
+							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file,
+															 cmd_token_widget, file_format))
+							file_format = "INVISIBLE"
+							temp_btn = QPushButton("%s" % file_format)
+							temp_btn.setToolTip('<FONT>' + "This is %s button</FONT>" % file_format)
+							temp_btn.setEnabled(False)
+							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0);'
+												   ' border: 0px rgba(0, 0, 0, 0) solid')
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							grid_layout.addWidget(temp_btn, grid_row,
+												  grid_col_origin + token_label_col_span + token_widget_col_span * 3,
+												  token_widget_row_span, token_widget_col_span)
+						elif cmd_token.type == "submission_temp":
+							file_format = cmd_token.type
+							file_format = "sh"
+							temp_btn = QPushButton("Select template")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							temp_btn.setToolTip(
+								'<FONT>' + "Display open file dialog to select a parameters text file</FONT>")
+							grid_layout.addWidget(temp_btn, grid_row,
+												  grid_col_origin + token_label_col_span + token_widget_col_span * 2,
+												  token_widget_row_span, token_widget_col_span)
+							temp_btn.clicked.connect(
+								partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+							file_format = "INVISIBLE"
+							temp_btn = QPushButton("%s" % file_format)
+							temp_btn.setToolTip('<FONT>' + "This is %s button</FONT>" % file_format)
+							temp_btn.setEnabled(False)
+							temp_btn.setStyleSheet(
+								'background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							grid_layout.addWidget(temp_btn, grid_row,
+												  grid_col_origin + token_label_col_span + token_widget_col_span * 3,
+												  token_widget_row_span, token_widget_col_span)
 						elif cmd_token.type == "params_any_json":
 							file_format = cmd_token.type
 							temp_btn = QPushButton("Select JSON file")
