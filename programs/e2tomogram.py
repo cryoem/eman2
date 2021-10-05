@@ -1327,8 +1327,7 @@ def calc_global_trans(imgs, options, excludes=[], tltax=None,tlts=[]):
 			
 			c=a*np.conj(b)
 			c=get_img(c)
-
-			p=np.array(np.where(c==np.max(c))).flatten()-sz//2
+			p=np.array(np.where(c==np.max(c))).T[0]-sz//2
 			ts.append(p)
 		
 		ts=-np.cumsum(ts, axis=0)
@@ -1351,6 +1350,7 @@ def calc_global_trans(imgs, options, excludes=[], tltax=None,tlts=[]):
 		t=trans[i]
 		e.translate(t[0], t[1],0)
 		imgout.append(e)
+		
 		
 	return [imgout, trans]
 
