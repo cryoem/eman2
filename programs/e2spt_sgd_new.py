@@ -6,7 +6,9 @@ from e2spt_refine_new import gather_metadata
 
 def main():
 	
-	usage=" "
+	usage="""prog <particle stack>
+	Generate initial model from subtomogram particles using stochastic gradient descent.
+	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--path", type=str,help="path", default=None)
 	parser.add_argument("--niter", type=int,help="iterations", default=100)

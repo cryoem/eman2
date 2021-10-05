@@ -26,7 +26,7 @@ def main():
 	parser.add_argument("--sym",type=str,default="c1",help="Symmetry of the input. Must be aligned in standard orientation to work properly.")
 	parser.add_argument("--maxres",type=float,help="Maximum resolution to consider in alignment (in A, not 1/A)",default=0)
 	parser.add_argument("--minres",type=float,help="Minimum resolution to consider in alignment (in A, not 1/A)",default=0)
-	parser.add_argument("--maxtilt",type=float,help="Excluding tilt images beyond the angle",default=-1)
+	#parser.add_argument("--maxtilt",type=float,help="Excluding tilt images beyond the angle",default=-1)
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default="thread:4")
 	parser.add_argument("--fromscratch",action="store_true",help="Start from exhaustive coarse alignment. Otherwise will use alignment from the previous rounds and do local search only.",default=False)
 	parser.add_argument("--use3d",action="store_true",help="use projection of 3d particles instead of 2d sub tilt series",default=False)
@@ -253,21 +253,6 @@ class SptAlignTask(JSTask):
 			#### read projection transforms for the 2d particles
 			info2d=load_lst_params(options.info2dname, info["idx2d"])
 			pjxfs=[d["xform.projection"] for d in info2d]
-			
-			
-			if options.maxtilt>0:
-				alt=[p.get_params("eman")["alt"] for p in pjxfs]
-				keepid=[a<options.maxtilt for a in alt]
-				if options.debug: 
-					print("Keeping {} out of {} sub-tilt for the particle".format(np.sum(keepid), len(alt)))
-					
-				#print(info2d[0]["src"], imgsrc)
-				#print(imgidx)
-				#print([i["idx"] for i in info2d])
-				info2d=[f for i,f in enumerate(info2d) if keepid[i]]
-				pjxfs=[d["xform.projection"] for d in info2d]
-				
-				
 			imgsrc=info2d[0]["src"]
 			imgidx=[i["idx"] for i in info2d]
 			tiltids=[d["tilt_id"] for d in info2d]

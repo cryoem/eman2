@@ -47,6 +47,7 @@ def main():
 	parser.add_argument("--maxang", type=int, help="maximum angle difference from starting point for localrefine. ",default=30)
 	parser.add_argument("--smooth",type=float,help="smooth local motion by this factor. smoother local motion with larger numbers. default 100",default=100)
 	parser.add_argument("--smoothN",type=int,help="number of neighboring particles used for smoothing. default 15",default=15)
+	parser.add_argument("--maxtilt",type=float,help="Excluding tilt images beyond the angle",default=-1)
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -67,7 +68,7 @@ def main():
 		print("Using existing metadata files within the directory...")
 		
 	else:
-		info2d, info3d = gather_metadata(options.ptcls)
+		info2d, info3d = gather_metadata(options.ptcls, options.maxtilt)
 		save_lst_params(info3d, info3dname)
 		save_lst_params(info2d, info2dname)
 		
@@ -206,6 +207,8 @@ def main():
 				opt+=f" --minres={options.minres}"
 			if options.goldstandard>0 or options.goldcontinue:
 				opt+=" --goldcontinue"
+			#if options.maxtilt>0:
+				#opt+=f" --maxtilt={options.maxtilt}"
 				
 			cmd=f"e2spt_align_subtlt.py {ptcls} {ref} --path {path} --iter {itr} --maxres {res:.2f} --sym {options.sym} --parallel {options.parallel} {opt}"
 			run(cmd)
@@ -219,7 +222,7 @@ def main():
 				print("Need 3D particle alignment before subtilt refinement. exit.")
 				exit()
 				
-			cmd=f"e2spt_subtlt_local.py --ref {ref} --path {path} --iter {itr} --maxres {res} --parallel {options.parallel} --refine_trans --aliptcls3d {last3d} --smooth {options.smooth} --smoothN {options.smoothN}"
+			cmd=f"e2spt_subtlt_local.py --ref {ref} --path {path} --iter {itr} --maxres {res:.2f} --parallel {options.parallel} --refine_trans --aliptcls3d {last3d} --smooth {options.smooth} --smoothN {options.smoothN}"
 			if itype=='r':
 				cmd+=" --refine_rot"
 			if options.maxshift>0:
@@ -240,7 +243,7 @@ def main():
 				print("Need 3D and 2D particle alignment before defocus refinement. exit.")
 				exit()
 				
-			cmd=f"e2spt_subtlt_local.py --ref {ref} --path {path} --iter {itr} --maxres {res} --parallel {options.parallel} --refine_defocus --aliptcls3d {last3d} --aliptcls2d {last2d}  --smooth {options.smooth} --smoothN {options.smoothN}"
+			cmd=f"e2spt_subtlt_local.py --ref {ref} --path {path} --iter {itr} --maxres {res:.2f} --parallel {options.parallel} --refine_defocus --aliptcls3d {last3d} --aliptcls2d {last2d}  --smooth {options.smooth} --smoothN {options.smoothN}"
 			
 			if options.minres>0:
 				cmd+=f" --minres={options.minres}"
@@ -278,7 +281,7 @@ def main():
 #### gather metadata from particles and return one dictionary for each 3d particle and one dictionary for each 2d one
 ##   for 3d particle, we keep the particle location coordinates, and a list of 2d particle indices that produces the 3d particle
 ##   for 2d particle, we keep the 3d particle index, the projection orientation with respect to the 3d particle, and the tilt id
-def gather_metadata(pfile):
+def gather_metadata(pfile, maxtilt=-1):
 	print("Gathering metadata...")
 	params=[]
 	if pfile.endswith(".lst"):
@@ -310,6 +313,9 @@ def gather_metadata(pfile):
 		idx2d=[]
 		for k,i in enumerate(imgidx): 
 			e=rhdrs[k]
+			alt=e["xform.projection"].get_params("eman")["alt"]
+			if maxtilt>0 and alt>maxtilt:
+				continue
 			dc={"src":imgsrc,"idx":i,
 				"idx3d":ii, "xform.projection":e["xform.projection"], "tilt_id":e["tilt_id"]}
 			idx2d.append(len(info2d))
