@@ -18,10 +18,10 @@ def main():
 	parser.add_argument("--keep", type=float,help="keep", default=.9)
 	parser.add_argument("--startiter", type=int,help="iter", default=0)
 	parser.add_argument("--niter", type=int,help="iter", default=10)
-	parser.add_argument("--setsf", type=str,help="structure factor", default="strucfac.txt")
+	parser.add_argument("--setsf", type=str,help="structure factor", default=None)
 	parser.add_argument("--tophat", type=str, default="local",help="Default=local, can also specify localwiener")
 	parser.add_argument("--threads", type=int,help="threads to use during postprocessing of 3d volumes", default=4)
-	parser.add_argument("--automask3d", default=None, type=str,help="Default=auto. Specify as a processor, eg - mask.auto3d:threshold=1.1:radius=30:nshells=5:nshellsgauss=5.")
+	parser.add_argument("--mask", default=None, type=str,help="specify a mask file.")
 	parser.add_argument("--compressbits", type=int,help="Bits to keep when writing images. 4 generally safe for raw data. 0-> true lossless (floating point). Default 6", default=6, guitype='intbox', row=10, col=1, rowspan=1, colspan=1, mode='filter[6]')
 	parser.add_argument("--localsize",type=float,default=-1,help="Override the automatic local region size (in A) used for local resolution calculation and filtration.")
 
@@ -31,9 +31,7 @@ def main():
 	res=options.res
 	sym=options.sym
 		
-	tophat=""
-	amask=""
-	localsize=""
+	tophat=amask=localsize=sf=""
 	
 	npt=EMUtil.get_image_count(options.ptcl)
 	if options.path==None: options.path=num_path_new("r3d_")
@@ -83,13 +81,16 @@ def main():
 		if i>0:
 			tophat="--tophat {}".format(options.tophat)	
 				
-		if options.automask3d:
-			amask="--automask3d {}".format(options.automask3d)
+		if options.mask:
+			amask="--mask {}".format(options.mask)
 
 		if options.localsize>0:
 			localsize="--localsize {}".format(options.localsize)
+			
+		if options.setsf:
+			sf="--setsf {}".format(options.setsf)
 
-		run("e2refine_postprocess.py --even {pt}/threed_{i1:02d}_even.hdf --sym {s} --setsf {sf} --restarget {rs:.1f} --threads {th} {top} {asize} {amask}".format(pt=options.path, i1=i+1, s=sym, sf=options.setsf, rs=res*.8, th=options.threads, top=tophat,  amask=amask, asize=localsize))
+		run("e2refine_postprocess.py --even {pt}/threed_{i1:02d}_even.hdf --sym {s} {sf} --restarget {rs:.1f} --threads {th} {top} {asize} {amask}".format(pt=options.path, i1=i+1, s=sym, sf=options.setsf, rs=res*.8, th=options.threads, top=tophat,  amask=amask, asize=localsize))
 
 		fsc=np.loadtxt("{}/fsc_masked_{:02d}.txt".format(options.path, i+1))
 		fi=fsc[:,1]<0.2
