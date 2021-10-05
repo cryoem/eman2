@@ -1928,7 +1928,7 @@ class EMImage2DWidget(EMGLWidget):
 			if delta > 0:
 				if (self.list_idx < (len(self.list_data)-1)):
 					self.list_idx += 1
-					self.get_inspector().set_image_idx(self.list_idx+1)
+					self.get_inspector().set_image_idx(self.list_idx+1,1)
 					self.__set_display_image(self.curfft)
 					self.setup_shapes()
 					self.force_display_update()
@@ -1936,7 +1936,7 @@ class EMImage2DWidget(EMGLWidget):
 			elif delta < 0:
 				if (self.list_idx > 0):
 					self.list_idx -= 1
-					self.get_inspector().set_image_idx(self.list_idx+1)
+					self.get_inspector().set_image_idx(self.list_idx-1,1)
 					self.__set_display_image(self.curfft)
 					self.setup_shapes()
 					self.force_display_update()
@@ -2597,8 +2597,8 @@ class EMImageInspector2D(QtWidgets.QWidget):
 
 		self.image_range.valueChanged.connect(self.target().image_range_changed)
 
-	def set_image_idx(self,val):
-		self.image_range.setValue(val)
+	def set_image_idx(self,val,quiet=0):
+		self.image_range.setValue(val,quiet=quiet)
 
 	def set_fft_amp_pressed(self):
 		self.ffttog2.setChecked(1)
