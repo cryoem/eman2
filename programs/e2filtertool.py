@@ -61,7 +61,7 @@ def main():
 #	parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=64)
 #	parser.add_argument("--shrink",type=int,help="Shrink factor for full-frame view, default=0 (auto)",default=0)
 	parser.add_argument("--apix",type=float,help="Override the A/pix value stored in the file header",default=0.0)
-#	parser.add_argument("--force2d",action="store_true",help="Display 3-D data as 2-D slices",default=False)
+	parser.add_argument("--force2d",action="store_true",help="Display 3-D data as 2-D slices",default=False)
 	parser.add_argument("--safemode",action="store_true",help="Safe mode without the timer...",default=False)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--idx", type=int, help="index for an image in a stack",default=-1)
@@ -79,7 +79,7 @@ def main():
 
 	app = EMApp()
 	pix_init()
-	control=EMFilterTool(datafile=args[0],apix=options.apix,force2d=False,verbose=options.verbose, safemode=options.safemode, idx=options.idx)
+	control=EMFilterTool(datafile=args[0],apix=options.apix,force2d=options.force2d,verbose=options.verbose, safemode=options.safemode, idx=options.idx)
 #	control=EMFilterTool(datafile=args[0],apix=options.apix,force2d=options.force2d,verbose=options.verbose)
 	control.show()
 	try: control.raise_()
