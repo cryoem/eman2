@@ -18,7 +18,7 @@ amino_dict.update(dict((v, k) for k, v in list(amino_dict.items())))
 amino_dict.update({'A': 0, 'C': 4, 'E': 5, 'D': 3, 'G': 7, 'F': 13, 'I': 9, 'H': 8, 'K': 11, 'M': 12, 'L': 10, 'N': 2, 'Q': 6, 'P': 14, 'S': 15, 'R': 1, 'T': 16, 'W': 17, 'V': 19, 'Y': 18, 'X':20, 'U': 22})
 
 
-def pdb2numpy(fname, readres=False, readocc=False, readbfac=False, readchain=False):
+def pdb2numpy(fname, readres=False, readocc=False, readbfac=False, readchain=False, readid=False):
 	f=open(fname,'r')
 	lines=f.readlines()
 	f.close()
@@ -29,6 +29,8 @@ def pdb2numpy(fname, readres=False, readocc=False, readbfac=False, readchain=Fal
 			if l[13:15]!="CA": continue
 			atom=[l[30:38],l[38:46],l[46:54]]
 			a=[float(a) for a in atom]
+			if readid:
+				a.append(float(l[6:13].strip()))
 			if readres:
 				#print l[17:20].strip()
 				a.append(amino_dict[l[17:20].strip()])
