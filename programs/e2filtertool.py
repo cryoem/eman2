@@ -739,7 +739,7 @@ class EMFilterTool(QtWidgets.QMainWindow):
 				if self.nimg>20 and hdr["ny"]>512:
 					self.origdata=EMData.read_images(data,list(range(0,self.nimg,self.nimg//20)))		# read regularly separated images from the file totalling ~20
 				elif self.nimg>100:
-					self.origdata=EMData.read_images(data,list(range(0,self.nimg,self.nimg//100)))		# read regularly separated images from the file					
+					self.origdata=EMData.read_images(data,list(range(0,72))+list(range(72,self.nimg,self.nimg//100)))		# read the first 36 then regularly separated images from the file					
 				elif self.nimg>1 :
 					self.origdata=EMData.read_images(data,list(range(self.nimg)))
 				else: self.origdata=[self.origdata]
