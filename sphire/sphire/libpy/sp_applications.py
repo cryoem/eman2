@@ -4360,7 +4360,7 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus=None, maxit=1, 
         from sphire.libpy.sp_logger import Logger
         log = Logger()
 
-    if os.path.exists(outdir): ERROR('Output directory exists, please change the name and restart the program',
+    if os.path.exists(outdir): sp_global_def.ERROR('Output directory exists, please change the name and restart the program',
                                      "Kmref_ali3d_MPI ", 1, myid)
     mpi_barrier(MPI_COMM_WORLD)
 
@@ -4442,7 +4442,8 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus=None, maxit=1, 
         log.add("User function               : %s" % (user_func_name))
 
     if maskfile:
-        if type(maskfile) is bytes:
+        #if type(maskfile) is bytes or str:
+        if isinstance(maskfile, (bytes, str)):
             mask3D = get_image(maskfile)
         else:
             mask3D = maskfile
@@ -4504,7 +4505,7 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus=None, maxit=1, 
     mpi_barrier(MPI_COMM_WORLD)
 
     if CTF:
-        if (data[0].get_attr("ctf_applied") > 0.0):  ERROR("Kmref_ali3d_MPI does not work for CTF-applied data",
+        if (data[0].get_attr("ctf_applied") > 0.0):  sp_global_def.ERROR("Kmref_ali3d_MPI does not work for CTF-applied data",
                                                            "Kmref_ali3d_MPI", 1, myid)
         from sphire.libpy.sp_reconstruction import rec3D_MPI
     else:

@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 
-import EMAN2_cppwrap
-import EMAN2db
-
 import glob
 import argparse
 from sphire.libpy import sp_global_def
@@ -24,7 +21,6 @@ def run():
     parser.add_argument(
         "--version", action="version", version=sp_global_def.SPARXVERSION
     )
-
 
     parser.add_argument(
         "root_dir",

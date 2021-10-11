@@ -8,7 +8,7 @@ Restacking: Generate all necessary information to restack the input stack (i.e.,
 
 Usage in command line
 
-  sp_pipe.py  restacking  input_bdb_stack_path  output_directory  --selection_list=FILE_PATH  --shift3d_x=SHIFT3D_X  --shift3d_y=SHIFT3D_Y  --shift3d_z=SHIFT3D_Z  --save_vstack  --sv_vstack_basename=BASENAME  --reboxing  --rb_box_size=BOX_SIZE
+  sp_pipe.py  restacking  input_star_stack_path  output_directory  --selection_list=FILE_PATH  --shift3d_x=SHIFT3D_X  --shift3d_y=SHIFT3D_Y  --shift3d_z=SHIFT3D_Z  --save_vstack  --sv_vstack_basename=BASENAME  --reboxing  --rb_box_size=BOX_SIZE
 
 \\
 ===== Typical usage =====
@@ -34,7 +34,7 @@ Do both restacking and reboxing to generate both the virtual stack and reboxing 
 \\
 ===== Input =====
 === Main Parameters ===
-  ; input_bdb_stack_path : Input bdb image stack: Specify the input bdb image stack. (default required string)
+  ; input_star_stack_path : Input star image stack: Specify the input star image stack. (default required string)
   ; output_directory : Output directory: The results will be written here. It cannot be an existing one. (default required string)
 
   ; %%--%%selection_list : Micrograph/Movie selection file: Specify path to text file containing a list of selected micrograph/movie names or paths. The particles associated with the micrographs/movies in this list will be processed. The file extension must be //.txt//. The directory path of each entry will be ignored if there is any. (default none)

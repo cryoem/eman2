@@ -1549,7 +1549,7 @@ class SXCmdWidget(QWidget):
 			# Read not supported: ;; JPEG (*.jpg *.jpeg)
 			# 2D image stack not supported: ;; Gatan (*.dm2 *.dm3);; EM (*.em);; ICOS (*.icos);; Amira (*.am);; DF3 (*.d3);; FITS (*.fts);; OMAP (*.omap);; PGM (*.pgm);; PNG (*.png);; SAL (*.hdr *.img);; SITUS (*.situs);; TIFF (*.tif *.tiff);; V4L (*.v4l);; VTK (*.vtk);; XPLOR (*.xplor)
 			# Maybe only single 2D image: ;; MRC (*.mrc)
-			name = QFileDialog.getOpenFileName(self, "Select any image stack file", SXLookFeelConst.file_dialog_dir, "Typical image stack files (*.bdb *.hdf *.mrcs *.spi *.img );; BDB (*.bdb);; HDF (*.hdf);; MRCS (*.mrcs);; Spider (*.spi);; Imagic (*.img *hed);; Gatan (*.dm4);; FEI (*.ser);; LST (*.lst);; LSTFAST (*.lsx *.lst);; PIF (*.pif);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			name = QFileDialog.getOpenFileName(self, "Select any image stack file", SXLookFeelConst.file_dialog_dir, "Typical image stack files (*.star *.bdb *.hdf *.mrcs *.spi *.img );; STAR (*.star);; BDB (*.bdb);; HDF (*.hdf);; MRCS (*.mrcs);; Spider (*.spi);; Imagic (*.img *hed);; Gatan (*.dm4);; FEI (*.ser);; LST (*.lst);; LSTFAST (*.lsx *.lst);; PIF (*.pif);; All files (*)", options = QFileDialog.DontUseNativeDialog)
 			if isinstance(name, tuple):
 				file_path = str(name[0])
 			else:
@@ -2395,8 +2395,8 @@ class SXCmdTab(QWidget):
 							temp_btn.setMinimumWidth(func_btn_min_width)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
 						elif cmd_token.type == "data2d_stack":
-							file_format = "bdb2d_stack"
-							temp_btn = QPushButton("Select BDB image stack")
+							file_format = cmd_token.type
+							temp_btn = QPushButton("Select Star image stack")
 							temp_btn.setMinimumWidth(func_btn_min_width)
 							temp_btn.setToolTip('<FONT>'+"Display open file dialog to select a BDB format image stack file</FONT>")
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 2, token_widget_row_span, token_widget_col_span)

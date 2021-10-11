@@ -4285,7 +4285,7 @@ def main():
     parser_isac_subset.add_argument(
         "input_star_stack_path",
         type=str,
-        help="Input BDB image stack: Specify the same BDB image stack used for the associated ISAC2 run. (default required string)",
+        help="Input Star image stack: Specify the same Star image stack used for the associated ISAC2 run. (default required string)",
     )
     parser_isac_subset.add_argument(
         "input_run_dir",
