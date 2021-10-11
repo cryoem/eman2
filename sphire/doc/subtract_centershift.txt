@@ -40,12 +40,12 @@ The output centered parameter file will be combine the Meridien parameters with 
 \\
 ===== Input =====
 === Main Parameters ===
-  ; %%--%%cvol1 : Center map #1 : First map to average and center. (default None) : subtraction_mode==centershift
+  ; %%--%%cvol1 : Center map #1 : First map to average and center. (default required string) : subtraction_mode==centershift
   ; %%--%%cvol2 : Center map #2 : Second map to average and center. (default None) : subtraction_mode==centershift
   ; %%--%%shiftparams : Shift parameters : Meridien parameters to combine with centering parameters. (default None) : subtraction_mode==centershift
   ; %%--%%diffimgs : Subtracted images : Images from signal subtraction to reconstruct. (default None) : subtraction_mode==centershift
   ; %%--%%outdir : Output directory : Directory where outputs will be written. (default required string)
-  ; %%--%%volradius : Structure radius : Radius to use for centering reconstruction. If the structure is not globular, try the shortest dimension. (default None) : subtraction_mode==centershift
+  ; %%--%%volradius : Structure radius : Radius to use for centering reconstruction. If the structure is not globular, try the shortest dimension. (default required string) : subtraction_mode==centershift
   ; %%--%%apix : Pixel size : Pixel size in Angstroms. (default None)
   
 \\
