@@ -24,6 +24,7 @@ def main():
 	parser.add_argument("--refine_rot",action="store_true",help="do translational-rotational alignment. better to start from an existing translational alignment.",default=False)
 	parser.add_argument("--refine_defocus",action="store_true",help="do defocus refinement. need aliptcls input. doesn't work with refine_trans or rot yet..",default=False)
 	parser.add_argument("--use3d",action="store_true",help="use projection of 3d particles instead of 2d ones..",default=False)
+	parser.add_argument("--preprocess", metavar="processor_name:param1=value1:param2=value2", type=str, default=None, help="Preprocess each 2-D subtilt while loading (alignment only)")
 	
 	parser.add_argument("--aliptcls2d",type=str,help="optional aliptcls input. the program can start search from the position from last run.",default="")
 	parser.add_argument("--aliptcls3d",type=str,help="optional aliptcls input.",default="")
@@ -41,6 +42,8 @@ def main():
 	options.info3dname="{}/particle_info_3d.lst".format(options.path)
 	n=EMUtil.get_image_count(options.info2dname)
 	tasks=list(range(n))
+
+	if options.preprocess!=None: options.preprocess = parsemodopt(options.preprocess)
 
 	from EMAN2PAR import EMTaskCustomer
 	etc=EMTaskCustomer(options.parallel, module="e2spt_subtlt_local.SptAlignTask")
@@ -276,6 +279,10 @@ class SptAlignTask(JSTask):
 			else:
 				## just read 2d particles. maybe unsafe for thick sample
 				imgs=[EMData(d["src"], d["idx"]) for d in d2dsel]
+				if options.preprocess!=None:
+					for i in imgs:
+						i.process_inplace(options.preprocess[0],options.preprocess[1])
+						#i.process_inplace("mask.fft.peak",{"removepeaks":1,"thresh_sigma":1.8}) # STEVE, NPC TESTING
 				imgsmall=[]
 				
 				for e in imgs:

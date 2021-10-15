@@ -787,7 +787,9 @@ class EMGMM(QtWidgets.QMainWindow):
 			self.jsparm["mask"]=f"{self.gmm}/mask.hdf"
 
 			# Extract particles from refine folder
-			run(f"e2proclst.py {rpath}/ptcls_{itr:02d}_even.lst {rpath}/ptcls_{itr:02d}_odd.lst --merge {self.gmm}/particles.lst")
+			if os.path.isfile(f"{rpath}/ptcls_{itr:02d}_even.lst") :
+				run(f"e2proclst.py {rpath}/ptcls_{itr:02d}_even.lst {rpath}/ptcls_{itr:02d}_odd.lst --merge {self.gmm}/particles.lst")
+			else: run(f"cp {rpath}/ptcls_{itr:02d}.lst {self.gmm}/particles.lst; echo ")
 			self.app().setOverrideCursor(Qt.ArrowCursor)
 			
 		return True

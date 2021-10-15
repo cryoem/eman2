@@ -41,6 +41,8 @@ def main():
 	parser.add_argument("--loadali2d", type=str,help="load previous 2d alignment from an aliptcls2d_xx.lst file", default=None)
 	parser.add_argument("--loadali3d", type=str,help="load previous 3d alignment from an aliptcls3d_xx.lst file", default=None)
 	parser.add_argument("--mask", type=str,help="Mask applied to the results (instead of automasking)", default=None)
+	parser.add_argument("--preprocess", metavar="processor_name:param1=value1:param2=value2", type=str, default=None, help="Preprocess each 2-D subtilt while loading (alignment only)")
+	
 	#parser.add_argument("--breaksym", type=str,help="Specify a symmetry to break", default=None) ## seems better to move this to e2spt_refinemulti_new.py
 	parser.add_argument("--maskalign", type=str,help="Mask file applied to 3D alignment reference in each iteration. Not applied to the average, which will follow normal masking routine.", default=None)
 	parser.add_argument("--maxshift", type=int, help="maximum shift. default box size/6",default=-1)
@@ -229,6 +231,8 @@ def main():
 				cmd+=f" --maxshift {options.maxshift}"
 			if options.use3d:
 				cmd+=" --use3d"
+			if options.preprocess!=None:
+				cmd+=f" --preprocess {options.preprocess}"
 			if options.minres>0:
 				cmd+=f" --minres={options.minres}"
 			if options.goldstandard>0 or options.goldcontinue:
