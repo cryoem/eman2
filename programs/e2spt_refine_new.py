@@ -205,6 +205,8 @@ def main():
 				#opt+=f" --breaksym {options.breaksym}"
 			if options.use3d:
 				opt+=" --use3d"
+			if options.preprocess!=None:
+				opt+=f" --preprocess {options.preprocess}"
 			if options.minres>0:
 				opt+=f" --minres={options.minres}"
 			if options.goldstandard>0 or options.goldcontinue:

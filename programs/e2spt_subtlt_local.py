@@ -280,6 +280,7 @@ class SptAlignTask(JSTask):
 				## just read 2d particles. maybe unsafe for thick sample
 				imgs=[EMData(d["src"], d["idx"]) for d in d2dsel]
 				if options.preprocess!=None:
+#					print(f"Applying {options.preprocess} to subtilts")
 					for i in imgs:
 						i.process_inplace(options.preprocess[0],options.preprocess[1])
 						#i.process_inplace("mask.fft.peak",{"removepeaks":1,"thresh_sigma":1.8}) # STEVE, NPC TESTING
