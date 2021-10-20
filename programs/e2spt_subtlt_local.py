@@ -21,6 +21,7 @@ def main():
 	parser.add_argument("--smoothN",type=int,help="number of neighboring particles used for smoothing. default 15",default=15)
 	parser.add_argument("--maxshift",type=float,help="max shift in pixel. default default box size/6",default=-1)
 	parser.add_argument("--refine_trans",action="store_true",help="do translational alignment.",default=False)
+	parser.add_argument("--refine_trans_ccf",action="store_true",help="do translational alignment using simple ccf.",default=False)
 	parser.add_argument("--refine_rot",action="store_true",help="do translational-rotational alignment. better to start from an existing translational alignment.",default=False)
 	parser.add_argument("--refine_defocus",action="store_true",help="do defocus refinement. need aliptcls input. doesn't work with refine_trans or rot yet..",default=False)
 	parser.add_argument("--use3d",action="store_true",help="use projection of 3d particles instead of 2d ones..",default=False)
@@ -283,6 +284,9 @@ class SptAlignTask(JSTask):
 #					print(f"Applying {options.preprocess} to subtilts")
 					for i in imgs:
 						i.process_inplace(options.preprocess[0],options.preprocess[1])
+						if options.refine_trans_ccf: 
+							i.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/options.minres})
+							i.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.maxres})
 						#i.process_inplace("mask.fft.peak",{"removepeaks":1,"thresh_sigma":1.8}) # STEVE, NPC TESTING
 				imgsmall=[]
 				
@@ -350,9 +354,21 @@ class SptAlignTask(JSTask):
 						method='Powell',options={'ftol': 1e-3, 'disp': False, "maxiter":10})
 
 				if options.debug: print("{} - {} : {} -> {}".format(di, np.round(xout[3:],4), test_trans([xout[3], xout[4]]), res.fun))
+#				print(len(pjsmall),len(imgsmall),pjsmall[0]["nx"],imgsmall[0]["nx"],res)
 				
 				xout[3:]=res.x
 				score=res.fun
+
+			## translational alignment using ccf aligner
+			if options.refine_trans_ccf:
+				pjsmall=make_projs(refsmall, refid, xfrawsel)
+				
+				ali=imgsmall[0].align("translational",pjsmall[0],{"maxshift":options.maxshift})
+				xf=ali["xform.align2d"]
+				xout[3],xout[4]=xf.get_trans_2d()
+				xout[3]*=-1
+				xout[4]*=-1
+				score=ali["score_align"]
 			
 			## now full transform alignment 
 			if options.refine_rot:

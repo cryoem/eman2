@@ -160,7 +160,7 @@ def main():
 			iters.extend([i[0]]*r)
 		else:
 			iters.append(i)
-	keydic={'p':"Subtomogram alignment", 't': "Subtilt translational refinement", 'r': "Subtilt rotational refinement", 'd':"Defocus refinement"}
+	keydic={'p':"Subtomogram alignment", 't': "Subtilt translational refinement", 'T': "Subtilt translational CCF alignment", 'r': "Subtilt rotational refinement", 'd':"Defocus refinement"}
 	
 	#### now start the actual refinement loop
 	for ii,itype in enumerate(iters):
@@ -221,14 +221,18 @@ def main():
 			
 		#### subtilt alignment, either including the rotation or not
 		##   note a subtomogram alignment need to exist first
-		if itype=='t' or itype=='r':
+		if itype=='t' or itype=='r' or itype=="T":
 			if last3d==None:
 				print("Need 3D particle alignment before subtilt refinement. exit.")
 				exit()
 				
-			cmd=f"e2spt_subtlt_local.py --ref {ref} --path {path} --iter {itr} --maxres {res:.2f} --parallel {options.parallel} --refine_trans --aliptcls3d {last3d} --smooth {options.smooth} --smoothN {options.smoothN}"
+			cmd=f"e2spt_subtlt_local.py --ref {ref} --path {path} --iter {itr} --maxres {res:.2f} --parallel {options.parallel} --aliptcls3d {last3d} --smooth {options.smooth} --smoothN {options.smoothN}"
+			if itype=="t":
+				cmd+=" --refine_trans"
+			if itype=="T":
+				cmd+=" --refine_trans_ccf"
 			if itype=='r':
-				cmd+=" --refine_rot"
+				cmd+=" --refine_trans --refine_rot"
 			if options.maxshift>0:
 				cmd+=f" --maxshift {options.maxshift}"
 			if options.use3d:
