@@ -216,7 +216,7 @@ def main():
 
 
 	# the actual final classification
-	cmd = "e2simmx.py %s %s %s -f --saveali --cmp=%s --align=%s --aligncmp=%s --fillzero --nofilecheck --verbose=%d"  %(args[0],args[1],args[2],options.cmp,options.align,options.aligncmp, options.verbose-1)
+	cmd = "e2simmx.py %s %s %s --saveali --cmp=%s --align=%s --aligncmp=%s --fillzero --nofilecheck --verbose=%d"  %(args[0],args[1],args[2],options.cmp,options.align,options.aligncmp, options.verbose-1)
 	if options.mask!=None : cmd += " --mask=%s"%options.mask
 	if options.colmasks!=None : cmd += " --colmasks=%s"%options.colmasks
 
