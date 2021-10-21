@@ -2369,6 +2369,8 @@ but this method prevents multiple open/close operations on the #LSX file."""
 		n,fsp,jsondict=self.read(N)
 #		print(self.path,n,fsp,jsondict,hdronly,region)
 		ret.read_image_c(fsp,n,hdronly,region,is_3d,imgtype)
+		ret["data_n"]=ret["source_n"]
+		ret["data_source"]=ret["source_path"]
 		ret["source_path"]=self.path
 		ret["source_n"]=N
 		if len(jsondict)>0 :
