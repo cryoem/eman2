@@ -940,12 +940,23 @@ def parse_list_arg(*possible_types):
     return arg_to_list
 
 
+def parse_string_to_slices(seq):
+    slices = []
+
+    return slices
+
+
 def parse_infile_arg(arg):
     fname, _, seq = arg.partition(':')
     idxs = []
 
     if not (fname and os.path.isfile(fname)):
         raise argparse.ArgumentTypeError(f"{fname} is not an existing regular file!")
+
+    seq_inc, _, seq_exc = seq.partition('^')
+
+    slices_inc = parse_string_to_slices(seq_inc)
+    slices_exc = parse_string_to_slices(seq_exc)
 
     return fname, idxs
 
