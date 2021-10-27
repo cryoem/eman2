@@ -941,6 +941,25 @@ def parse_list_arg(*possible_types):
 
 
 def parse_string_to_slices(seq):
+    """
+    >>> parse_string_to_slices("3,4")
+    [3, 4]
+    >>> parse_string_to_slices("3,4,2:5")
+    [3, 4, slice(2, 5, None)]
+    >>> parse_string_to_slices("3,4,2:5:")
+    [3, 4, slice(2, 5, None)]
+    >>> parse_string_to_slices("3,4,2:5:2")
+    [3, 4, slice(2, 5, 2)]
+    >>> parse_string_to_slices("3,4,2:5:2,8,14")
+    [3, 4, slice(2, 5, 2), 8, 14]
+    >>> parse_string_to_slices("3,4,2::2,8,14")
+    [3, 4, slice(2, None, 2), 8, 14]
+    >>> parse_string_to_slices("3,4,::2,8,14")
+    [3, 4, slice(None, None, 2), 8, 14]
+    >>> parse_string_to_slices("3,4,:11:2,8,14")
+    [3, 4, slice(None, 11, 2), 8, 14]
+    """
+
     seq = filter(None, seq.split(','))
     slices = []
 
