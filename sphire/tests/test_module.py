@@ -63,6 +63,9 @@ import os
 import dill
 
 
+from sphire.libpy import sp_morphology
+import sys
+sys.modules['sp_morphology'] = sp_morphology
 # import io
 # with io.open("my_utf8_file.txt", "r", encoding="utf-8") as my_file:
 #      my_unicode_string = my_file.read()
@@ -580,9 +583,9 @@ def write_pickle_extras_loop():
 
 
 def write_pickle_all():
-    argum = get_arg_from_pickle_file(ABSOLUTE_PATH_TO_RESOURCES + "applications.ali2d_base")
-    (stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, nomirror, dst, center, maxit, CTF, snr,
-     Fourvar, user_func_name, random_method, log, number_of_proc, myid, main_node, mpi_comm) = argum[0]
+    argum = get_arg_from_pickle_file(ABSOLUTE_PATH_TO_RESOURCES + "utilities.amoeba")
+    # (stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, nomirror, dst, center, maxit, CTF, snr,
+    #  Fourvar, user_func_name, random_method, log, number_of_proc, myid, main_node, mpi_comm) = argum[0]
     # data = argum[0][0]
     # image and crefim should be EMAN2 image obj
     # i suppose that in this obj there are a method to collect:
@@ -590,7 +593,7 @@ def write_pickle_all():
     # 2) and a dict with the header info of the image (e.g: particles number, type etc)
 
     # ormq_image_values = image.get_3dview()            # look for it
-    file_pi = open(ABSOLUTE_PATH_TO_RESOURCES +'applications.ali2d_base_new', 'wb')
+    file_pi = open(ABSOLUTE_PATH_TO_RESOURCES +'utilities.amoeba.pkl', 'wb')
     pickle.dump(argum, file_pi)
 
 # write_pickle_extras_loop()
