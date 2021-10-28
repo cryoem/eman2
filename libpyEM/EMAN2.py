@@ -940,6 +940,13 @@ def parse_list_arg(*possible_types):
     return arg_to_list
 
 
+def parse_infile_arg(arg):
+    fname, _, seq = arg.partition(':')
+    idxs = []
+
+    return fname, idxs
+
+
 def angle_ab_sym(sym,a,b,c=None,d=None):
 	"""Computes the angle of the rotation required to go from Transform A to Transform B under symmetry,
 	such that the smallest symmetry-related angle is returned. sym may be either a list of Transforms
