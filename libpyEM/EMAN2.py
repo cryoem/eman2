@@ -1066,9 +1066,20 @@ def parse_outfile_arg(arg):
 	out.hdf:6:f
 
 	Returns (filename, outbits, rendermin(absolute), rendermax(absolute), rendermin(times std dev), rendermin(times std dev))
+
+	>>> parse_outfile_arg('')
+	Traceback (most recent call last):
+	argparse.ArgumentTypeError: Please, specify an output file!
+	>>> parse_outfile_arg('out.hdf')
+	('out.hdf', None, None, None, None, None)
 	"""
 
-	return (fname, outbit, *rng)
+	fname, _, _ = arg.partition(':')
+
+	if not fname:
+		raise argparse.ArgumentTypeError("Please, specify an output file!")
+
+	return (fname, None, None, None, None, None)
 
 
 def angle_ab_sym(sym,a,b,c=None,d=None):
