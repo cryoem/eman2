@@ -941,7 +941,17 @@ def parse_list_arg(*possible_types):
 
 
 def parse_string_to_slices(seq):
+    seq = filter(None, seq.split(','))
     slices = []
+
+    for s in seq:
+        if s.isnumeric():
+            slices.append(int(s))
+        elif ":" in s:
+            sl = [None] * 3
+            for i, k in enumerate(s.split(":")):
+                sl[i] = int(k) if len(k) > 0 else None
+            slices.append(slice(*sl))
 
     return slices
 
