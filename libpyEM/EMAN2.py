@@ -1009,6 +1009,10 @@ def parse_infile_arg(arg):
         else:
             ids_exc.update(range(*(i.indices(nimg))))
 
+    for i in ids_exc:
+        if i in idxs:
+            idxs.pop(i)
+
     return fname, idxs.keys()
 
 
