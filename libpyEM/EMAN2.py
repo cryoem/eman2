@@ -944,6 +944,9 @@ def parse_infile_arg(arg):
     fname, _, seq = arg.partition(':')
     idxs = []
 
+    if not (fname and os.path.isfile(fname)):
+        raise argparse.ArgumentTypeError(f"{fname} is not an existing regular file!")
+
     return fname, idxs
 
 
