@@ -41,7 +41,7 @@ FULLVERSIONSTRING = EMAN2_meta.FULLVERSIONSTRING
 def main():
 	print(FULLVERSIONSTRING)
 
-	if sys.platform=='linux2':
+	if sys.platform=='linux':
 		print(('Your EMAN2 is running on: {} {}'.format(platform.platform(), os.uname()[2], os.uname()[-1])))
 
 	elif sys.platform=='darwin':
