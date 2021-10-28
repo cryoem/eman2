@@ -943,6 +943,8 @@ def parse_list_arg(*possible_types):
 
 def parse_string_to_slices(seq):
     """
+    >>> parse_string_to_slices("")
+    [slice(None, None, None)]
     >>> parse_string_to_slices("3,4")
     [3, 4]
     >>> parse_string_to_slices("3,4,2:5")
@@ -960,6 +962,9 @@ def parse_string_to_slices(seq):
     >>> parse_string_to_slices("3,4,:11:2,8,14")
     [3, 4, slice(None, 11, 2), 8, 14]
     """
+
+    if not seq:
+        return [slice(None, None, None)]
 
     seq = filter(None, seq.split(','))
     slices = []
@@ -990,7 +995,7 @@ def parse_infile_arg(arg):
     seq_inc, _, seq_exc = seq.partition('^')
 
     slices_inc = parse_string_to_slices(seq_inc)
-    slices_exc = parse_string_to_slices(seq_exc)
+    slices_exc = parse_string_to_slices(seq_exc) if seq_exc else []
 
     nimg = EMUtil.get_image_count(fname)
 
