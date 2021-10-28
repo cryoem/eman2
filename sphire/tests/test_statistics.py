@@ -1042,7 +1042,7 @@ class Test_add_ave_varf_MPI(unittest.TestCase):
 # #todo: I need a list of image with ''xform.align2d'
 class Test_sum_oe(unittest.TestCase):
     data, = get_arg_from_pickle_file(
-        path.join(ABSOLUTE_PATH_TO_RESOURCES, "statistics/statistics.ave_series")
+        path.join(ABSOLUTE_PATH_TO_RESOURCES, "statistics.ave_series.pkl")
     )[0]
 
     # data  = give_ave_series_data()
@@ -1205,7 +1205,7 @@ class Test_sum_oe(unittest.TestCase):
 
 class Test_ave_var(unittest.TestCase):
     data = get_arg_from_pickle_file(
-        path.join(ABSOLUTE_PATH_TO_RESOURCES, "statistics/statistics.ave_var")
+        path.join(ABSOLUTE_PATH_TO_RESOURCES, "statistics.ave_var.pkl")
     )[0][0]
 
     # data = give_ave_series_data()
@@ -1251,7 +1251,7 @@ class Test_ave_var(unittest.TestCase):
 # #todo: I cannot performe the unit test
 # class Test_ave_series(unittest.TestCase):
 #     data1, = get_arg_from_pickle_file(
-#         path.join(ABSOLUTE_PATH, "pickle files/statistics/statistics.ave_series")
+#         path.join(ABSOLUTE_PATH, "pickle files/statistics.ave_series.pkl")
 #     )[0]
 #
 #     data = give_ave_series_data()
@@ -1313,7 +1313,7 @@ class Test_ave_var(unittest.TestCase):
 #
 class Test_varf2d_MPI(unittest.TestCase):
     data, = get_arg_from_pickle_file(
-        path.join(ABSOLUTE_PATH_TO_RESOURCES, "statistics/statistics.ave_series")
+        path.join(ABSOLUTE_PATH_TO_RESOURCES, "statistics.ave_series.pkl")
     )[0]
     main_node = 0
     # data  = give_ave_series_data()
@@ -1722,7 +1722,7 @@ class Test_varf2d_MPI(unittest.TestCase):
 
 class Test_ccc(unittest.TestCase):
     (img1, img2, mask) = get_arg_from_pickle_file(
-        path.join(ABSOLUTE_PATH_TO_RESOURCES, "statistics/statistics.ccc")
+        path.join(ABSOLUTE_PATH_TO_RESOURCES, "statistics.ccc.pkl")
     )[0]
 
     def test_wrong_number_params_returns_TypeError_too_few_parameters(self):
@@ -1801,7 +1801,7 @@ class Test_ccc(unittest.TestCase):
 
 class Test_fsc(unittest.TestCase):
     (img1, img2) = get_arg_from_pickle_file(
-        path.join(ABSOLUTE_PATH_TO_RESOURCES, "statistics/statistics.fsc")
+        path.join(ABSOLUTE_PATH_TO_RESOURCES, "statistics.fsc.pkl")
     )[0]
 
     def test_wrong_number_params_returns_TypeError_too_few_parameters(self):
@@ -2124,7 +2124,7 @@ class Test_fsc(unittest.TestCase):
 
 class Test_fsc_mask(unittest.TestCase):
     (img1, img2, mask, w, not_used) = get_arg_from_pickle_file(
-        path.join(ABSOLUTE_PATH_TO_RESOURCES, "statistics/statistics.fsc_mask")
+        path.join(ABSOLUTE_PATH_TO_RESOURCES, "statistics.fsc_mask.pkl")
     )[0]
 
     def test_wrong_number_params_returns_TypeError_too_few_parameters(self):
@@ -2251,55 +2251,55 @@ class Test_fsc_mask(unittest.TestCase):
         )
         self.assertTrue(array_equal(return_new, return_old))
 
-
-
-class Test_locres(unittest.TestCase):
-    (
-        vi,
-        ui,
-        m,
-        nk,
-        cutoff,
-        step,
-        myid,
-        main_node,
-        number_of_proc,
-    ) = get_arg_from_pickle_file(
-        path.join(ABSOLUTE_PATH_TO_RESOURCES, "statistics/statistics.locres")
-    )[
-        0
-    ]
-
-    def test_wrong_number_params_returns_TypeError_too_few_parameters(self):
-        with self.assertRaises(TypeError) as cm_new:
-            fu.locres()
-        with self.assertRaises(TypeError) as cm_old:
-            oldfu.locres()
-        self.assertEqual(
-            str(cm_new.exception), "locres() missing 9 required positional arguments: 'vi', 'ui', 'm', 'nk', 'cutoff', 'step', 'myid', 'main_node', and 'number_of_proc'"
-        )
-        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-
-    def test_pickle_value(self):
-        self.assertTrue(True)
-        """
-        Connected to pydev debugger (build 183.6156.13)
-        Launching unittests with arguments python -m unittest sphire.tests.test_statistics.Test_locres.test_pickle_value in /home/lusnig/EMAN2/eman2
-        [rtxr2:22191] *** An error occurred in MPI_Recv
-        [rtxr2:22191] *** reported by process [1715994625,140423955742720]
-        [rtxr2:22191] *** on communicator MPI_COMM_WORLD
-        [rtxr2:22191] *** MPI_ERR_RANK: invalid rank
-        [rtxr2:22191] *** MPI_ERRORS_ARE_FATAL (processes in this communicator will now abort,
-        [rtxr2:22191] ***    and potentially your MPI job)
-
-        Process finished with exit code 6
-
-        return_new = fu.locres(vi=self.vi, ui=self.ui, m=self.m, nk=self.nk, cutoff=self.nk, step=self.step, myid=0, main_node=0, number_of_proc=self.number_of_proc)
-        mpi_barrier(MPI_COMM_WORLD)
-        return_old = oldfu.locres(vi=self.vi, ui=self.ui, m=self.m, nk=self.nk, cutoff=self.nk, step=self.step, myid=0, main_node=0, number_of_proc=self.number_of_proc)
-        mpi_barrier(MPI_COMM_WORLD)
-        """
-
+#
+# @unittest.skip("the file is too big, almost a gigabyte")
+# class Test_locres(unittest.TestCase):
+#     (
+#         vi,
+#         ui,
+#         m,
+#         nk,
+#         cutoff,
+#         step,
+#         myid,
+#         main_node,
+#         number_of_proc,
+#     ) = get_arg_from_pickle_file(
+#         path.join(ABSOLUTE_PATH_TO_RESOURCES, "statistics/statistics.locres")
+#     )[
+#         0
+#     ]
+#
+#     def test_wrong_number_params_returns_TypeError_too_few_parameters(self):
+#         with self.assertRaises(TypeError) as cm_new:
+#             fu.locres()
+#         with self.assertRaises(TypeError) as cm_old:
+#             oldfu.locres()
+#         self.assertEqual(
+#             str(cm_new.exception), "locres() missing 9 required positional arguments: 'vi', 'ui', 'm', 'nk', 'cutoff', 'step', 'myid', 'main_node', and 'number_of_proc'"
+#         )
+#         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
+#
+#     def test_pickle_value(self):
+#         self.assertTrue(True)
+#         """
+#         Connected to pydev debugger (build 183.6156.13)
+#         Launching unittests with arguments python -m unittest sphire.tests.test_statistics.Test_locres.test_pickle_value in /home/lusnig/EMAN2/eman2
+#         [rtxr2:22191] *** An error occurred in MPI_Recv
+#         [rtxr2:22191] *** reported by process [1715994625,140423955742720]
+#         [rtxr2:22191] *** on communicator MPI_COMM_WORLD
+#         [rtxr2:22191] *** MPI_ERR_RANK: invalid rank
+#         [rtxr2:22191] *** MPI_ERRORS_ARE_FATAL (processes in this communicator will now abort,
+#         [rtxr2:22191] ***    and potentially your MPI job)
+#
+#         Process finished with exit code 6
+#
+#         return_new = fu.locres(vi=self.vi, ui=self.ui, m=self.m, nk=self.nk, cutoff=self.nk, step=self.step, myid=0, main_node=0, number_of_proc=self.number_of_proc)
+#         mpi_barrier(MPI_COMM_WORLD)
+#         return_old = oldfu.locres(vi=self.vi, ui=self.ui, m=self.m, nk=self.nk, cutoff=self.nk, step=self.step, myid=0, main_node=0, number_of_proc=self.number_of_proc)
+#         mpi_barrier(MPI_COMM_WORLD)
+#         """
+#
 
 
 
@@ -3465,7 +3465,7 @@ def get_data(num):
 # class Test_lib_statistics_compare(unittest.TestCase):
 #
 #     def test_add_ave_varf_MPI_true_should_return_equal_objects(self):
-#         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/statistics/statistics.ave_series")
+#         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/statistics.ave_series.pkl")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
 #
@@ -3484,7 +3484,7 @@ def get_data(num):
 #
 #     #Unable to read the file
 #     def test_sum_oe_true_should_return_equal_objects(self):
-#         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/statistics/statistics.ave_series")
+#         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/statistics.ave_series.pkl")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
 #
@@ -3500,7 +3500,7 @@ def get_data(num):
 #
 #
 #     def test_ave_var_true_should_return_equal_objects(self):
-#         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/statistics/statistics.ave_var")
+#         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/statistics.ave_var.pkl")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
 #
@@ -3515,7 +3515,7 @@ def get_data(num):
 #
 #
 #     def test_ave_series_true_should_return_equal_objects(self):
-#         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/statistics/statistics.ave_series")
+#         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/statistics.ave_series.pkl")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
 #
@@ -3530,7 +3530,7 @@ def get_data(num):
 #
 #
 #     def test_varf2d_MPI_true_should_return_equal_objects(self):
-#         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/statistics/statistics.ave_series")
+#         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/statistics.ave_series.pkl")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
 #
@@ -3565,7 +3565,7 @@ def get_data(num):
 #
 #
 #     def test_ccc_true_should_return_equal_objects(self):
-#         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/statistics/statistics.ccc")
+#         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/statistics/statistics.ccc.pkl")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
 #
@@ -3595,7 +3595,7 @@ def get_data(num):
 #
 #
 #     def test_fsc_mask_true_should_return_equal_objects(self):
-#         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/statistics/statistics.fsc_mask")
+#         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/statistics.fsc_mask.pkl")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
 #
@@ -3632,7 +3632,7 @@ def get_data(num):
 #
 #
 #     def test_histogram_true_should_return_equal_objects(self):
-#         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/statistics/statistics.ave_var")
+#         filepath = os.path.join(ABSOLUTE_PATH, "pickle files/statistics/statistics.ave_var.pkl")
 #         with open(filepath, 'rb') as rb:
 #             argum = pickle.load(rb)
 #

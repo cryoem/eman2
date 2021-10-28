@@ -14249,7 +14249,7 @@ class Test_rotate_3D_shift(unittest.TestCase):
     """ values got from 'pickle files/utilities/utilities.rotate_3D_shift'"""
 
     argum = get_arg_from_pickle_file(
-        path.join(ABSOLUTE_PATH_TO_RESOURCES, "utilities/utilities.rotate_3D_shift")
+        path.join(ABSOLUTE_PATH_TO_RESOURCES, "utilities.rotate_3D_shift.pkl")
     )
     (data, notUsed) = argum[0]
     shift3d = [10.1, 0.2, 10.0]
@@ -14422,7 +14422,7 @@ class Test_get_arb_params(unittest.TestCase):
 class Test_reduce_EMData_to_root(unittest.TestCase):
 
     argum = get_arg_from_pickle_file(
-        path.join(ABSOLUTE_PATH_TO_RESOURCES, "utilities/utilities.rotate_3D_shift")
+        path.join(ABSOLUTE_PATH_TO_RESOURCES, "utilities.rotate_3D_shift.pkl")
     )
     (data, notUsed) = argum[0]
 
@@ -14574,7 +14574,7 @@ class Test_gather_compacted_EMData_to_root(unittest.TestCase):
 
 class Test_bcast_EMData_to_all(unittest.TestCase):
     argum = get_arg_from_pickle_file(
-        path.join(ABSOLUTE_PATH_TO_RESOURCES, "utilities/utilities.rotate_3D_shift")
+        path.join(ABSOLUTE_PATH_TO_RESOURCES, "utilities.rotate_3D_shift.pkl")
     )
     (data, notUsed) = argum[0]
 
@@ -15290,7 +15290,7 @@ class Test_file_type(unittest.TestCase):
 
 class Test_get_params2D(unittest.TestCase):
     argum = get_arg_from_pickle_file(
-        path.join(ABSOLUTE_PATH_TO_RESOURCES, "utilities/utilities.get_params2D")
+        path.join(ABSOLUTE_PATH_TO_RESOURCES, "utilities.get_params2D.pkl")
     )
 
     def test_wrong_number_params_too_few_parameters_TypeError(self):
@@ -15373,7 +15373,7 @@ class Test_set_params2D(unittest.TestCase):
     params = [1, 2, 3, 4, 5]
 
     argum = get_arg_from_pickle_file(
-        path.join(ABSOLUTE_PATH_TO_RESOURCES, "utilities/utilities.rotate_3D_shift")
+        path.join(ABSOLUTE_PATH_TO_RESOURCES, "utilities.rotate_3D_shift.pkl")
     )
     (data, notUsed) = argum[0]
 
@@ -15602,7 +15602,7 @@ class Test_set_params3D(unittest.TestCase):
 
 class Test_get_params_proj(unittest.TestCase):
     argum = get_arg_from_pickle_file(
-        path.join(ABSOLUTE_PATH_TO_RESOURCES, "utilities/utilities.get_params_proj")
+        path.join(ABSOLUTE_PATH_TO_RESOURCES, "utilities.get_params_proj.pkl")
     )
 
     def test_wrong_number_params_too_few_parameters_TypeError(self):
@@ -15687,7 +15687,7 @@ class Test_get_params_proj(unittest.TestCase):
 class Test_set_params_proj(unittest.TestCase):
     params = [1, 2, 3, 4, 5]
     argum = get_arg_from_pickle_file(
-        path.join(ABSOLUTE_PATH_TO_RESOURCES, "utilities/utilities.rotate_3D_shift")
+        path.join(ABSOLUTE_PATH_TO_RESOURCES, "utilities.rotate_3D_shift.pkl")
     )
     (data, notUsed) = argum[0]
 
@@ -18226,7 +18226,7 @@ class Test_get_pixel_size(unittest.TestCase):
 class Test_set_pixel_size(unittest.TestCase):
 
     argum = get_arg_from_pickle_file(
-        path.join(ABSOLUTE_PATH_TO_RESOURCES, "utilities/utilities.rotate_3D_shift")
+        path.join(ABSOLUTE_PATH_TO_RESOURCES, "utilities.rotate_3D_shift.pkl")
     )
     (data, notUsed) = argum[0]
 
@@ -18663,7 +18663,7 @@ class Test_unpack_message(unittest.TestCase):
     # data is a numpy array with the following value: ['O', '\x80' ,'\x02' ,']', 'q', '', 'K', 'I', 'a', '.'] and dtype = '|S1'. I cannot create it
     def test_pickle_file_values(self):
         (data,) = get_arg_from_pickle_file(
-            path.join(ABSOLUTE_PATH_TO_RESOURCES, "utilities/utilities.unpack_message")
+            path.join(ABSOLUTE_PATH_TO_RESOURCES, "utilities.unpack_message")
         )[0]
 
         return_new = fu.unpack_message(msg=data)
