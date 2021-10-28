@@ -952,6 +952,11 @@ def parse_string_to_slices(seq):
             for i, k in enumerate(s.split(":")):
                 sl[i] = int(k) if len(k) > 0 else None
             slices.append(slice(*sl))
+        else:
+            with open(s) as fin:
+                file_content = fin.read().replace('\n', ',').replace(' ', ',')
+
+            slices.extend(parse_string_to_slices(file_content))
 
     return slices
 
