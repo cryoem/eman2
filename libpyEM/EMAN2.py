@@ -1056,6 +1056,21 @@ def parse_infile_arg(arg):
 	return fname, idxs.keys()
 
 
+def parse_outfile_arg(arg):
+	"""
+	Input:
+	filename:outbits:rendermin:rendermax
+
+	out.hdf:6:20:1000
+	out.hdf:6:-3s:5s
+	out.hdf:6:f
+
+	Returns (filename, outbits, rendermin(absolute), rendermax(absolute), rendermin(times std dev), rendermin(times std dev))
+	"""
+
+	return (fname, outbit, *rng)
+
+
 def angle_ab_sym(sym,a,b,c=None,d=None):
 	"""Computes the angle of the rotation required to go from Transform A to Transform B under symmetry,
 	such that the smallest symmetry-related angle is returned. sym may be either a list of Transforms
