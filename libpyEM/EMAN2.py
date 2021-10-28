@@ -987,6 +987,41 @@ def parse_string_to_slices(seq):
 
 
 def parse_infile_arg(arg):
+    """
+    Parses a string of file name with inclusion and exclusion lists
+    Returns the file name and a list of image indices
+
+    Format of the input string:
+
+    filename:inclusion_list^exclusion_list
+
+    inclusion_list/exclusion_list may contain comma-seperated
+    1. integers
+    2. slices (Python's built-in slice representation)
+    3. file names
+
+    No spaces are allowed in the passed string.
+    Negative integers are allowed as in Python slices.
+    However, listed files may contain multi-lines and may contain spaces.
+
+    Slice examples for an image file with N images where N>20:
+    2:    -> 2,3,...,N-1
+    :3:   -> 0,1,2
+    ::5   -> 0,5,10,15,...,<N
+    :10:2 -> 0,2,4,6,8
+    ::-1  -> N-1,N-2,N-3,...,2,1,0
+    2:9   -> 2,3,4,5,6,7,8
+
+    If a file named test_images.hdf contains 100 images,
+    "test_images.hdf:2,4:11:,9,6^25:28,30" will be interpreted as follows.
+    filename: test_images.hdf
+    inclusion_list: 2,4:11:,19,26:32:2 -> 2,3,4,5,6,7,8,9,10,19,26,28,30
+    exclusion_list: 25:28,30      -> 25,26,27,30
+
+    Returned index list: [2,3,4,5,6,7,8,9,10,19,26,28,30] - [25,26,27,30] ->
+                       : [2,3,4,5,6,7,8,9,10,19,28]
+    """
+
     fname, _, seq = arg.partition(':')
 
     if not (fname and os.path.isfile(fname)):
