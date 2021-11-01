@@ -30,6 +30,7 @@ def main():
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default="thread:4")
 	parser.add_argument("--fromscratch",action="store_true",help="Start from exhaustive coarse alignment. Otherwise will use alignment from the previous rounds and do local search only.",default=False)
 	parser.add_argument("--use3d",action="store_true",help="use projection of 3d particles instead of 2d sub tilt series",default=False)
+	parser.add_argument("--preprocess", metavar="processor_name:param1=value1:param2=value2", type=str, default=None, help="Preprocess each 2-D subtilt while loading (alignment only)")
 	parser.add_argument("--debug",action="store_true",help="Debug mode. Will run a small number of particles directly without parallelism with lots of print out. ",default=False)
 	parser.add_argument("--plst",type=str,default=None,help="list of 2d particle with alignment parameters. The program will reconstruct before alignment so it can be slower.")
 	
@@ -50,6 +51,7 @@ def main():
 	##   they should be created by e2spt_refine_new or e2spt_refine_multi_new
 	options.info3dname="{}/particle_info_3d.lst".format(options.path)
 	options.info2dname="{}/particle_info_2d.lst".format(options.path)
+	if options.preprocess!=None: options.preprocess = parsemodopt(options.preprocess)
 		
 	#### this should generate a list of dictionaries (one dictionary per 3d particle)
 	tasks=load_lst_params(args[0])
@@ -221,6 +223,9 @@ class SptAlignTask(JSTask):
 		##   still run one iteration of local search
 		if options.fromscratch and len(ssrg)==1: ssrg.append(maxy)
 		
+		#if options.preprocess!=None:
+			#print(f"Applying {options.preprocess} to subtilts")
+
 		if options.debug: print("max res: {:.2f}, max box size {}".format(options.maxres, maxy))
 		for di,data in enumerate(self.data):
 			
@@ -275,6 +280,9 @@ class SptAlignTask(JSTask):
 				for i, pxf in enumerate(pjxfs): 
 					#print(imgsrc, imgidx[i])
 					m=EMData(imgsrc, imgidx[i])
+					if options.preprocess!=None:
+						m.process_inplace(options.preprocess[0],options.preprocess[1])
+
 					m.clip_inplace(Region((m["nx"]-ny)//2, (m["ny"]-ny)//2, ny, ny))
 					m=m.do_fft()
 					m.process_inplace("xform.phaseorigin.tocenter")

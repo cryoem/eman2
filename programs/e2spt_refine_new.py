@@ -41,6 +41,8 @@ def main():
 	parser.add_argument("--loadali2d", type=str,help="load previous 2d alignment from an aliptcls2d_xx.lst file", default=None)
 	parser.add_argument("--loadali3d", type=str,help="load previous 3d alignment from an aliptcls3d_xx.lst file", default=None)
 	parser.add_argument("--mask", type=str,help="Mask applied to the results (instead of automasking)", default=None)
+	parser.add_argument("--preprocess", metavar="processor_name:param1=value1:param2=value2", type=str, default=None, help="Preprocess each 2-D subtilt while loading (alignment only)")
+	
 	#parser.add_argument("--breaksym", type=str,help="Specify a symmetry to break", default=None) ## seems better to move this to e2spt_refinemulti_new.py
 	parser.add_argument("--maskalign", type=str,help="Mask file applied to 3D alignment reference in each iteration. Not applied to the average, which will follow normal masking routine.", default=None)
 	parser.add_argument("--maxshift", type=int, help="maximum shift. default box size/6",default=-1)
@@ -158,7 +160,7 @@ def main():
 			iters.extend([i[0]]*r)
 		else:
 			iters.append(i)
-	keydic={'p':"Subtomogram alignment", 't': "Subtilt translational refinement", 'r': "Subtilt rotational refinement", 'd':"Defocus refinement"}
+	keydic={'p':"Subtomogram alignment", 't': "Subtilt translational refinement", 'T': "Subtilt translational CCF alignment", 'r': "Subtilt rotational refinement", 'd':"Defocus refinement"}
 	
 	#### now start the actual refinement loop
 	for ii,itype in enumerate(iters):
@@ -203,6 +205,8 @@ def main():
 				#opt+=f" --breaksym {options.breaksym}"
 			if options.use3d:
 				opt+=" --use3d"
+			if options.preprocess!=None:
+				opt+=f" --preprocess {options.preprocess}"
 			if options.minres>0:
 				opt+=f" --minres={options.minres}"
 			if options.goldstandard>0 or options.goldcontinue:
@@ -217,18 +221,24 @@ def main():
 			
 		#### subtilt alignment, either including the rotation or not
 		##   note a subtomogram alignment need to exist first
-		if itype=='t' or itype=='r':
+		if itype=='t' or itype=='r' or itype=="T":
 			if last3d==None:
 				print("Need 3D particle alignment before subtilt refinement. exit.")
 				exit()
 				
-			cmd=f"e2spt_subtlt_local.py --ref {ref} --path {path} --iter {itr} --maxres {res:.2f} --parallel {options.parallel} --refine_trans --aliptcls3d {last3d} --smooth {options.smooth} --smoothN {options.smoothN}"
+			cmd=f"e2spt_subtlt_local.py --ref {ref} --path {path} --iter {itr} --maxres {res:.2f} --parallel {options.parallel} --aliptcls3d {last3d} --smooth {options.smooth} --smoothN {options.smoothN}"
+			if itype=="t":
+				cmd+=" --refine_trans"
+			if itype=="T":
+				cmd+=" --refine_trans_ccf"
 			if itype=='r':
-				cmd+=" --refine_rot"
+				cmd+=" --refine_trans --refine_rot"
 			if options.maxshift>0:
 				cmd+=f" --maxshift {options.maxshift}"
 			if options.use3d:
 				cmd+=" --use3d"
+			if options.preprocess!=None:
+				cmd+=f" --preprocess {options.preprocess}"
 			if options.minres>0:
 				cmd+=f" --minres={options.minres}"
 			if options.goldstandard>0 or options.goldcontinue:
