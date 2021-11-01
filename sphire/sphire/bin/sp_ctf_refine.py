@@ -46,13 +46,13 @@ import argparse
 import copy
 import multiprocessing
 import numpy
-from ..libpy import sp_global_def
-from ..libpy import sp_projection
-from ..libpy import sp_statistics
-from ..libpy import sp_utilities
-from ..libpy import sp_ctf_refine_io
-from ..libpy import sp_ctf_refine_plotting
-from ..libpy import sp_filter
+from sphire.libpy import sp_global_def
+from sphire.libpy import sp_projection
+from sphire.libpy import sp_statistics
+from sphire.libpy import sp_utilities
+from sphire.libpy import sp_ctf_refine_io
+from sphire.libpy import sp_ctf_refine_plotting
+from sphire.libpy import sp_filter
 import itertools
 import sys
 import time
@@ -740,9 +740,10 @@ def run():
         os.makedirs(output_folder)
         sp_global_def.write_command(output_folder)
 
-    output_virtual_stack_path = "bdb:" + os.path.join(
-        output_folder, "ctf_refined"
-    )
+    # output_virtual_stack_path = "bdb:" + os.path.join(
+    #     output_folder, "ctf_refined"
+    # )
+    output_virtual_stack_path =  os.path.join(output_folder, "ctf_refined.star")
 
     output_stats_path = os.path.join(output_folder, "statistics")
 

@@ -398,12 +398,19 @@ def handle_exceptional_cases(sxcmd):
 		assert(sxcmd.token_dict["selection_list"].key_base == "selection_list")
 		assert(sxcmd.token_dict["selection_list"].type == "select_mic_stack")
 		sxcmd.token_dict["selection_list"].type = "select_mic_one"
+	elif sxcmd.name == "sp_star":
+		sxcmd.token_dict["root_dir"].type = "dir"
+		sxcmd.token_dict["makevstack"].type = "output"
+		sxcmd.token_dict["list"].type = "params_any_txt"
+		sxcmd.token_dict["exlist"].type = "params_any_txt"
 	elif sxcmd.name == "sp_cter":
 		assert(sxcmd.token_dict["selection_list"].key_base == "selection_list")
 		assert(sxcmd.token_dict["selection_list"].type == "select_mic_stack")
 		sxcmd.token_dict["selection_list"].type = "select_mic_one_ext"
 	elif sxcmd.name == "sp_gpu_isac2":
-		sxcmd.token_dict["stack_file"].type = "data2d_stack"
+		sxcmd.token_dict["stack_file"].type = "bdb2d_stack"
+	elif sxcmd.name == "sp_header":
+		sxcmd.token_dict["stack"].type = "params_star"
 	elif sxcmd.name == "sp_isac2":
 		assert(sxcmd.token_dict["output_directory"].key_base == "output_directory")
 		assert(sxcmd.token_dict["output_directory"].type == "output")
@@ -412,6 +419,8 @@ def handle_exceptional_cases(sxcmd):
 		assert(sxcmd.token_dict["output_directory"].key_base == "output_directory")
 		assert(sxcmd.token_dict["output_directory"].type == "output")
 		sxcmd.token_dict["output_directory"].type = "output_continue"
+	elif sxcmd.name == "sp_compute_isac_avg":
+		sxcmd.token_dict["stack"].type = "params_star"
 	elif sxcmd.name == "sp_mask":
 		sxcmd.token_dict["output_directory"].type = "dir"
 	elif sxcmd.name == "sp_rviper":
@@ -465,6 +474,7 @@ def handle_exceptional_cases(sxcmd):
 		assert(sxcmd.token_dict["output_directory"].key_base == "output_directory")
 		assert(sxcmd.token_dict["output_directory"].type == "output")
 		sxcmd.token_dict["output_directory"].type = "output_continue"
+		sxcmd.token_dict["stack"].type = "params_star"
 	elif sxcmd.name == "sp_meridien_alpha":
 		assert(sxcmd.token_dict["output_directory"].key_base == "output_directory")
 		assert(sxcmd.token_dict["output_directory"].type == "output")
@@ -472,6 +482,8 @@ def handle_exceptional_cases(sxcmd):
 	elif sxcmd.name == "sxresolution":
 		sxcmd.token_dict["radius"].type = "int"
 		sxcmd.token_dict["wn"].type = "int"
+	elif sxcmd.name == "sp_ctf_refine":
+		sxcmd.token_dict["path_to_input_stack"].type = "params_star"
 	elif sxcmd.name == "sp_polishing":
 		sxcmd.token_dict["post_refine_folder"].type = "dir"
 		sxcmd.token_dict["motioncorr_starfile"].type = "params_star"
@@ -544,6 +556,10 @@ def handle_exceptional_cases(sxcmd):
 			assert(sxcmd.token_dict["fl"].key_base == "fl")
 			assert(sxcmd.token_dict["fl"].type == "abs_freq")
 			sxcmd.token_dict["fl"].type = "float"
+		elif sxcmd.subname == "isac_substack":
+			sxcmd.token_dict["input_star_stack_path"].type = "params_star"
+		elif sxcmd.subname == "restacking":
+			sxcmd.token_dict["input_star_stack_path"].type = "params_star"
 
 # ----------------------------------------------------------------------------------------
 def remove_MoinMoinWiki_makeup(target_text):
@@ -1550,9 +1566,10 @@ def create_sxcmd_subconfig_window_makevstack():
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("input_bdb_stack_pattern"); token_edit.key_prefix = ""; token_edit.label = "Input BDB image stack pattern"; token_edit.help = "Specify file path pattern of stack subsets created in particle extraction using a wild card /'*/' (e.g. /'//sp_window_output_dir//*/'). The stack subsets are located in the sp_window output directory."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "dir_list"; token_edit_list.append(token_edit)
 
 	sxsubcmd_mpi_support = False
-	sxcmd_subconfig = SXsubcmd_config("Particle Stack", None, token_edit_list, sxsubcmd_mpi_support, subset_config="fullset")
+	sxcmd_subconfig = SXsubcmd_config("Particle Stack BDB", None, token_edit_list, sxsubcmd_mpi_support, subset_config="fullset")
 
 	return sxcmd_subconfig
+
 
 ### def create_sxcmd_subconfig_isacselect():
 ### 	token_edit_list = []
@@ -2535,6 +2552,7 @@ def build_config_list_DokuWiki(is_dev_mode = False):
 	sxcmd_config_list.append(SXcmd_config("../doc/cryolo_predict.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/window.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 	sxcmd_config_list.append(SXcmd_config("../doc/e2bdb.txt", "DokuWiki", sxcmd_category, sxcmd_role, subconfig=create_sxcmd_subconfig_window_makevstack()))
+	sxcmd_config_list.append(SXcmd_config("../doc/star.txt", "DokuWiki", sxcmd_category, sxcmd_role))
 
 	sxcmd_role = "sxr_alt"
 	sxcmd_config_list.append(SXcmd_config("../doc/cryolo_train.txt", "DokuWiki", sxcmd_category, sxcmd_role))

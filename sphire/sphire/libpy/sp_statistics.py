@@ -1177,7 +1177,7 @@ def pearson(X, Y):
         Sxy += x * y
     return old_div(
         (Sxy - old_div(Sx * Sy, N)),
-        numpy.sqrt((Sxx - old_div(Sx * Sx, N)) * (Syy - old_div(Sy * Sy, N))),
+        numpy.sqrt((Sxx - old_div(Sx * Sx, N)) * (Syy - old_div(Sy * Sy, N)))
     )
 
 
@@ -1574,6 +1574,114 @@ def mono(k1,k2):
 	return  min(k1,k2) + old_div(mk*(mk-1),2)
 # match is a list, where every five tuple corresponds to a match
 
+def varf3d_MPI(prjlist, ssnr_text_file=None, mask2D=None, reference_structure=None, ou=-1, rw=1.0, npad=1, CTF=False,
+               sign=1, sym="c1", myid=0, mpi_comm=None):
+    """
+	  Calculate variance in Fourier space of an object reconstructed from sp_projections
+
+	  Known problems: properly speaking, the SSNR has to be calculated using snr=inf and this is what recons3d_nn_SSNR_MPI does.
+	  So, when one computes reference structure, snr should be 1.0e20.  However, when the reference structure is passed
+	  from the reconstruction program, it was computed using different snr.  I tested it and in practice there is no difference,
+	  as this only changes the background variance due to reconstruction algorithm, which is much lower anyway.  PAP.
+	"""
+    from sphire.libpy.sp_reconstruction import recons3d_nn_SSNR_MPI, recons3d_4nn_MPI, recons3d_4nn_ctf_MPI
+    from sphire.libpy.sp_utilities import bcast_EMData_to_all, model_blank
+    from sphire.libpy.sp_projection import prep_vol, prgs
+    from mpi import MPI_COMM_WORLD
+
+    if mpi_comm == None:
+        mpi_comm = MPI_COMM_WORLD
+
+    if myid == 0:
+        [ssnr1, vol_ssnr1] = recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF, mpi_comm=mpi_comm)
+    else:
+        recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF, mpi_comm=mpi_comm)
+
+    nx = prjlist[0].get_xsize()
+    if ou == -1:
+        radius = int(nx / 2) - 2
+    else:
+        radius = int(ou)
+    if (reference_structure == None):
+        if CTF:
+            snr = 1.0  # e20
+            if myid == 0:
+                reference_structure = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, mpi_comm=mpi_comm)
+            else:
+                recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, mpi_comm=mpi_comm)
+                reference_structure = model_blank(nx, nx, nx)
+        else:
+            if myid == 0:
+                reference_structure = recons3d_4nn_MPI(myid, prjlist, sym, snr=snr, mpi_comm=mpi_comm)
+            else:
+                recons3d_4nn_MPI(myid, prjlist, sym, snr=snr, mpi_comm=mpi_comm)
+                reference_structure = model_blank(nx, nx, nx)
+        bcast_EMData_to_all(reference_structure, myid, 0, mpi_comm)
+    # if myid == 0:  reference_structure.write_image("refer.hdf",0)
+    # vol *= model_circle(radius, nx, nx, nx)
+    volft, kb = prep_vol(reference_structure)
+    del reference_structure
+    from sphire.libpy.sp_utilities import get_params_proj
+    if CTF: from sphire.libpy.sp_filter import filt_ctf
+    re_prjlist = []
+    for prj in prjlist:
+        phi, theta, psi, tx, ty = get_params_proj(prj)
+        proj = prgs(volft, kb, [phi, theta, psi, -tx, -ty])
+        if CTF:
+            ctf_params = prj.get_attr("ctf")
+            proj = filt_ctf(proj, ctf_params)
+            proj.set_attr('sign', 1)
+        re_prjlist.append(proj)
+    del volft
+    if myid == 0:
+        [ssnr2, vol_ssnr2] = recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF, mpi_comm=mpi_comm)
+    else:
+        recons3d_nn_SSNR_MPI(myid, re_prjlist, mask2D, rw, npad, sign, sym, CTF, mpi_comm=mpi_comm)
+    del re_prjlist
+
+    if myid == 0 and ssnr_text_file != None:
+        outf = open(ssnr_text_file, "w")
+        for i in range(len(ssnr2[0])):
+            datstrings = []
+            datstrings.append("  %15f" % ssnr1[0][i])  # have to subtract 0.5 as in C code there is round.
+            datstrings.append("  %15e" % ssnr1[1][i])  # SSNR
+            datstrings.append("  %15e" % ssnr1[2][i])  # variance
+            datstrings.append("  %15f" % ssnr1[3][i])  # number of points in the shell
+            datstrings.append("  %15f" % ssnr1[4][i])  # number of added Fourier points
+            datstrings.append("  %15e" % ssnr1[5][i])  # square of signal
+            datstrings.append("  %15e" % ssnr2[1][i])  # SSNR
+            datstrings.append("  %15e" % ssnr2[2][i])  # variance
+            datstrings.append("  %15e" % ssnr2[5][i])  # square of signal
+            datstrings.append("\n")
+            outf.write("".join(datstrings))
+        outf.close()
+    if myid == 0:
+        vol_ssnr1 = Util.subn_img(Util.pack_complex_to_real(vol_ssnr1), Util.pack_complex_to_real(vol_ssnr2))
+        del vol_ssnr2
+        # what follows is a risky business.  There should be a better way to deal with negative values. but for the time being...
+        nc = nx // 2
+        r2 = radius ** 2
+        for i in range(nx):
+            for j in range(nx):
+                for k in range(nx):
+                    if (((i - nc) ** 2 + (j - nc) ** 2 + (k - nc) ** 2) < r2):
+                        if (vol_ssnr1.get_value_at(i, j, k) <= 0.0):
+                            bm = -1.0
+                            for i1 in range(-1, 2):
+                                for i2 in range(-1, 2):
+                                    for i3 in range(-1, 2):
+                                        tm = vol_ssnr1.get_value_at(i + i1, j + i2, k + i3)
+                                        if (tm > bm):
+                                            bm = tm
+                            vol_ssnr1.set_value_at(i, j, k, bm)
+
+                    else:
+                        vol_ssnr1.set_value_at(i, j, k, 1.0)
+        return vol_ssnr1
+    # from morphology import threshold_to_minval
+    # return  threshold_to_minval( Util.subn_img(Util.pack_complex_to_real(vol_ssnr1), Util.pack_complex_to_real(vol_ssnr2)), 1.0)
+    else:
+        return model_blank(2, 2, 2)
 
 from builtins import range
 from builtins import object

@@ -69,6 +69,8 @@ import sys
 import time
 from builtins import range
 
+from scipy import stats
+
 """
 There are two ways to run the program:
 
@@ -1646,49 +1648,49 @@ def do_one_way_anova_scipy(
         pass
 
     if K == 2:
-        res = scipy.stats.f_oneway(x0, x1)
+        res = stats.f_oneway(x0, x1)
     elif K == 3:
-        res = scipy.stats.f_oneway(x0, x1, x2)
+        res = stats.f_oneway(x0, x1, x2)
     elif K == 4:
-        res = scipy.stats.f_oneway(x0, x1, x2, x3)
+        res = stats.f_oneway(x0, x1, x2, x3)
     elif K == 5:
-        res = scipy.stats.f_oneway(x0, x1, x2, x3, x4)
+        res = stats.f_oneway(x0, x1, x2, x3, x4)
     elif K == 6:
-        res = scipy.stats.f_oneway(x0, x1, x2, x3, x4, x5)
+        res = stats.f_oneway(x0, x1, x2, x3, x4, x5)
     elif K == 7:
-        res = scipy.stats.f_oneway(x0, x1, x2, x3, x4, x5, x6)
+        res = stats.f_oneway(x0, x1, x2, x3, x4, x5, x6)
     elif K == 8:
-        res = scipy.stats.f_oneway(x0, x1, x2, x3, x4, x5, x6, x7)
+        res = stats.f_oneway(x0, x1, x2, x3, x4, x5, x6, x7)
     elif K == 9:
-        res = scipy.stats.f_oneway(x0, x1, x2, x3, x4, x5, x6, x7, x8)
+        res = stats.f_oneway(x0, x1, x2, x3, x4, x5, x6, x7, x8)
     elif K == 10:
-        res = scipy.stats.f_oneway(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9)
+        res = stats.f_oneway(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9)
     elif K == 11:
-        res = scipy.stats.f_oneway(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10)
+        res = stats.f_oneway(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10)
     elif K == 12:
-        res = scipy.stats.f_oneway(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11)
+        res = stats.f_oneway(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11)
     elif K == 13:
-        res = scipy.stats.f_oneway(
+        res = stats.f_oneway(
             x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12
         )
     elif K == 14:
-        res = scipy.stats.f_oneway(
+        res = stats.f_oneway(
             x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13
         )
     elif K == 15:
-        res = scipy.stats.f_oneway(
+        res = stats.f_oneway(
             x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14
         )
     elif K == 16:
-        res = scipy.stats.f_oneway(
+        res = stats.f_oneway(
             x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15
         )
     elif K == 17:
-        res = scipy.stats.f_oneway(
+        res = stats.f_oneway(
             x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16
         )
     elif K == 18:
-        res = scipy.stats.f_oneway(
+        res = stats.f_oneway(
             x0,
             x1,
             x2,
@@ -1709,7 +1711,7 @@ def do_one_way_anova_scipy(
             x17,
         )
     elif K == 19:
-        res = scipy.stats.f_oneway(
+        res = stats.f_oneway(
             x0,
             x1,
             x2,
@@ -1731,7 +1733,7 @@ def do_one_way_anova_scipy(
             x18,
         )
     elif K == 20:
-        res = scipy.stats.f_oneway(
+        res = stats.f_oneway(
             x0,
             x1,
             x2,
@@ -1754,7 +1756,7 @@ def do_one_way_anova_scipy(
             x19,
         )
     elif K == 21:
-        res = scipy.stats.f_oneway(
+        res = stats.f_oneway(
             x0,
             x1,
             x2,
@@ -1778,7 +1780,7 @@ def do_one_way_anova_scipy(
             x20,
         )
     elif K == 22:
-        res = scipy.stats.f_oneway(
+        res = stats.f_oneway(
             x0,
             x1,
             x2,
@@ -1803,7 +1805,7 @@ def do_one_way_anova_scipy(
             x21,
         )
     elif K == 23:
-        res = scipy.stats.f_oneway(
+        res = stats.f_oneway(
             x0,
             x1,
             x2,
@@ -1829,7 +1831,7 @@ def do_one_way_anova_scipy(
             x22,
         )
     elif K == 24:
-        res = scipy.stats.f_oneway(
+        res = stats.f_oneway(
             x0,
             x1,
             x2,
@@ -1856,7 +1858,7 @@ def do_one_way_anova_scipy(
             x23,
         )
     elif K == 25:
-        res = scipy.stats.f_oneway(
+        res = stats.f_oneway(
             x0,
             x1,
             x2,
@@ -1884,7 +1886,7 @@ def do_one_way_anova_scipy(
             x24,
         )
     elif K == 26:
-        res = scipy.stats.f_oneway(
+        res = stats.f_oneway(
             x0,
             x1,
             x2,
@@ -1913,7 +1915,7 @@ def do_one_way_anova_scipy(
             x25,
         )
     elif K == 27:
-        res = scipy.stats.f_oneway(
+        res = stats.f_oneway(
             x0,
             x1,
             x2,
@@ -1943,7 +1945,7 @@ def do_one_way_anova_scipy(
             x26,
         )
     elif K == 28:
-        res = scipy.stats.f_oneway(
+        res = stats.f_oneway(
             x0,
             x1,
             x2,
@@ -1974,7 +1976,7 @@ def do_one_way_anova_scipy(
             x27,
         )
     elif K == 29:
-        res = scipy.stats.f_oneway(
+        res = stats.f_oneway(
             x0,
             x1,
             x2,
@@ -2006,7 +2008,7 @@ def do_one_way_anova_scipy(
             x28,
         )
     elif K == 30:
-        res = scipy.stats.f_oneway(
+        res = stats.f_oneway(
             x0,
             x1,
             x2,
@@ -2114,7 +2116,7 @@ def do_one_way_anova_scipy(
     )
     for ires in range(K - 1):
         for jres in range(ires + 1, K):
-            cres = scipy.stats.f_oneway(replicas[ires], replicas[jres])
+            cres = stats.f_oneway(replicas[ires], replicas[jres])
             log_main.add(
                 "{:5} {:^3d} {:^3d} {:12.4f} {:12.4f} {:12.3f} {:12.4f} ".format(
                     "ANOVA",

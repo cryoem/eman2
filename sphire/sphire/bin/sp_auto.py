@@ -40,7 +40,7 @@ from __future__ import division
 
 
 import argparse
-from ..libpy import sp_global_def
+from sphire.libpy import sp_global_def
 import subprocess
 import collections
 import sys
@@ -915,9 +915,9 @@ def get_window(status_dict, negative_stain, filament_mode, **kwargs):
 
 def get_window_stack(**kwargs):
     cmd = []
-    cmd.append("e2bdb.py")
+    cmd.append("sp_star.py")
     cmd.append("XXX_SP_WINDOW_OUTPUT_DIR_XXX/mpi_proc_*")
-    cmd.append("--makevstack=bdb:XXX_SP_WINDOW_OUTPUT_DIR_XXX/stack")
+    cmd.append("--makevstack=XXX_SP_WINDOW_OUTPUT_DIR_XXX/stack.star")
     return cmd
 
 
@@ -925,7 +925,7 @@ def get_isac2(status_dict, phase_plate, negative_stain, **kwargs):
     cmd = []
     cmd.append("sp_isac2.py")
     if status_dict["do_window"]:
-        cmd.append("bdb:XXX_SP_WINDOW_OUTPUT_DIR_XXX/stack")
+        cmd.append("XXX_SP_WINDOW_OUTPUT_DIR_XXX/stack.star")
     else:
         cmd.append("XXX_SP_ISAC_STACK_XXX")
     cmd.append("XXX_SP_ISAC_OUTPUT_DIR_XXX")
@@ -962,7 +962,7 @@ def get_isac2_substack(status_dict, **kwargs):
     cmd.append("sp_pipe.py")
     cmd.append("isac_substack")
     if status_dict["do_window"]:
-        cmd.append("bdb:XXX_SP_WINDOW_OUTPUT_DIR_XXX/stack")
+        cmd.append("XXX_SP_WINDOW_OUTPUT_DIR_XXX/stack.star")
     else:
         cmd.append("XXX_SP_ISAC_STACK_XXX")
 
@@ -1044,7 +1044,7 @@ def get_meridien(status_dict, filament_mode, **kwargs):
         cmd.append('sp_meridien.py')
 
     if status_dict["do_isac2"]:
-        cmd.append("bdb:XXX_SP_SUBSTACK_OUTPUT_DIR_XXX/isac_substack")
+        cmd.append("XXX_SP_SUBSTACK_OUTPUT_DIR_XXX/isac_substack.star")
     else:
         cmd.append("XXX_SP_MERIDIEN_INPUT_STACK_XXX")
     cmd.append("XXX_SP_MERIDIEN_OUTPUT_DIR_XXX")
@@ -1106,7 +1106,7 @@ def get_restack_import_params(status_dict, **kwargs):
     if status_dict["do_meridien"] and status_dict["do_restack"]:
         cmd.append("sp_header.py")
         if status_dict["do_isac2"]:
-            cmd.append("bdb:XXX_SP_SUBSTACK_OUTPUT_DIR_XXX/isac_substack")
+            cmd.append("XXX_SP_SUBSTACK_OUTPUT_DIR_XXX/isac_substack.star")
         else:
             cmd.append("XXX_SP_MERIDIEN_INPUT_STACK_XXX")
         cmd.append("--import=$(ls XXX_SP_MERIDIEN_OUTPUT_DIR_XXX/final_params_*.txt)")
@@ -1120,7 +1120,7 @@ def get_restack_box_files(status_dict, **kwargs):
         cmd.append("sp_pipe.py")
         cmd.append("restacking")
         if status_dict["do_isac2"]:
-            cmd.append("bdb:XXX_SP_SUBSTACK_OUTPUT_DIR_XXX/isac_substack")
+            cmd.append("XXX_SP_SUBSTACK_OUTPUT_DIR_XXX/isac_substack.star")
         else:
             cmd.append("XXX_SP_MERIDIEN_INPUT_STACK_XXX")
         cmd.append("XXX_SP_RESTACK_OUTPUT_DIR_XXX")
@@ -1162,9 +1162,9 @@ def get_restack_window(status_dict, **kwargs):
 
 def get_restack_stack(status_dict, **kwargs):
     cmd = []
-    cmd.append("e2bdb.py")
+    cmd.append("sp_star.py")
     cmd.append("XXX_SP_RESTACK_WINDOW_OUTPUT_DIR_XXX/mpi_proc_*")
-    cmd.append("--makevstack=bdb:XXX_SP_RESTACK_WINDOW_OUTPUT_DIR_XXX/stack")
+    cmd.append("--makevstack=XXX_SP_RESTACK_WINDOW_OUTPUT_DIR_XXX/stack.star")
     return cmd
 
 
@@ -1172,7 +1172,7 @@ def get_restack_meridien(status_dict, **kwargs):
     cmd = []
     if status_dict["do_meridien"] and status_dict["do_restack"]:
         cmd.append("sp_meridien.py")
-        cmd.append("bdb:XXX_SP_RESTACK_WINDOW_OUTPUT_DIR_XXX#stack")
+        cmd.append("XXX_SP_RESTACK_WINDOW_OUTPUT_DIR_XXX/stack.star")
         cmd.append("XXX_SP_RESTACK_MERIDIEN_OUTPUT_DIR_XXX")
         cmd.append("XXX_SP_SHARPENING_MERIDIEN_OUTPUT_DIR_XXX/vol_combined.hdf")
         cmd.append("--skip_prealignment")
@@ -1213,7 +1213,7 @@ def get_ctf_import_params(status_dict, **kwargs):
         and status_dict["do_restack"]
     ):
         cmd.append("sp_header.py")
-        cmd.append("bdb:XXX_SP_RESTACK_WINDOW_OUTPUT_DIR_XXX#stack")
+        cmd.append("XXX_SP_RESTACK_WINDOW_OUTPUT_DIR_XXX/stack.star")
         cmd.append(
             "--import=$(ls XXX_SP_RESTACK_MERIDIEN_OUTPUT_DIR_XXX/final_params_*.txt)"
         )
@@ -1230,7 +1230,7 @@ def get_ctf_refine(status_dict, **kwargs):
     ):
         cmd.append("sp_ctf_refine.py")
         cmd.append("meridien")
-        cmd.append("bdb:XXX_SP_RESTACK_WINDOW_OUTPUT_DIR_XXX#stack")
+        cmd.append("XXX_SP_RESTACK_WINDOW_OUTPUT_DIR_XXX/stack.star")
         cmd.append("XXX_SP_CTF_REFINE_OUTPUT_DIR_XXX")
         cmd.append("XXX_SP_RESTACK_MERIDIEN_OUTPUT_DIR_XXX")
         cmd.append(
@@ -1246,7 +1246,7 @@ def get_ctf_meridien(status_dict, **kwargs):
     cmd = []
     if status_dict["do_meridien"] and status_dict["do_restack"]:
         cmd.append("sp_meridien.py")
-        cmd.append("bdb:XXX_SP_CTF_REFINE_OUTPUT_DIR_XXX#ctf_refined")
+        cmd.append("XXX_SP_CTF_REFINE_OUTPUT_DIR_XXX/ctf_refined.star")
         cmd.append("XXX_SP_CTF_MERIDIEN_OUTPUT_DIR_XXX")
         cmd.append("XXX_SP_RESTACK_SHARPENING_OUTPUT_DIR_XXX/vol_combined.hdf")
         cmd.append("--skip_prealignment")
