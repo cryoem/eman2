@@ -54,6 +54,7 @@ import glob
 import random
 from struct import pack,unpack
 import json
+from collections import OrderedDict
 
 import threading
 #from Sparx import *
@@ -982,7 +983,6 @@ def parse_string_to_slices(seq):
 
 def parse_infile_arg(arg):
     fname, _, seq = arg.partition(':')
-    idxs = []
 
     if not (fname and os.path.isfile(fname)):
         raise argparse.ArgumentTypeError(f"{fname} is not an existing regular file!")
@@ -992,7 +992,24 @@ def parse_infile_arg(arg):
     slices_inc = parse_string_to_slices(seq_inc)
     slices_exc = parse_string_to_slices(seq_exc)
 
-    return fname, idxs
+    nimg = EMUtil.get_image_count(fname)
+
+    idxs = OrderedDict()
+    for i in slices_inc:
+        if isinstance(i, int):
+            idxs.update({i: None})
+        else:
+            for k in range(*(i.indices(nimg))):
+                idxs.update({k: None})
+
+    ids_exc = set()
+    for i in slices_exc:
+        if isinstance(i, int):
+            ids_exc.add(i)
+        else:
+            ids_exc.update(range(*(i.indices(nimg))))
+
+    return fname, idxs.keys()
 
 
 def angle_ab_sym(sym,a,b,c=None,d=None):
