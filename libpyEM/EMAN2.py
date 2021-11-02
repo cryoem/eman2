@@ -54,6 +54,7 @@ import glob
 import random
 from struct import pack,unpack
 import json
+from collections import OrderedDict
 
 import threading
 #from Sparx import *
@@ -889,6 +890,171 @@ def read_number_file(path):
 		return [int(i) for i in regex.findall(open(path,"r").read())]
 	except:
 		return []
+
+
+def parse_list_arg(*possible_types):
+	"""Return a function that can be passed to argparse.add_argument() as an argument to 'type'.
+	The returned function's return type is a list of instances in possible_types, i.e., the parsed
+	arguments are converted to the types given in possible_types.
+
+	>>> parse_list_arg(int,float)("3, 4")
+	[3, 4.0]
+	>>> parse_list_arg(int,int)("3, 4")
+	[3, 4]
+	>>> parse_list_arg([int,int],[int,int,int])("3,4,5")
+	[3, 4, 5]
+	>>> parse_list_arg([int,int],[int,int,int])("3,4")
+	[3, 4]
+	>>> parse_list_arg([int,str],[int,int,int])("3,4")
+	[3, '4']
+	>>> parse_list_arg([int,str],[int,int,int])("3,4,5")
+	[3, 4, 5]
+	>>> parse_list_arg([int],[int,int],[int,int,int])("3,4")
+	[3, 4]
+	>>> parse_list_arg([int],[int,int],[int,int,int])("3")
+	[3]
+	"""
+
+	types_dict = {}
+
+	# If a single possible set of types is given, they don't have to be wrapped in a list/tuple
+	# To determine that, the first item in possible_types is checked if it is a list/tuple instance
+	if not isinstance(possible_types[0], (tuple, list)):
+		types_dict[len(possible_types)] = possible_types
+	else:
+		for i in possible_types:
+			types_dict[len(i)] = i
+
+	# This is the function that will be passed to argparse.add_argument()'s 'type' argument
+	def arg_to_list(s):
+		user_input_str = s.split(',')
+
+		if not any(len(user_input_str) == k for k in types_dict.keys()):
+			raise argparse.ArgumentTypeError(f"provide {' or '.join(str(i) for i in types_dict.keys())} arguments! See --help for details.")
+		else:
+			types = types_dict[len(user_input_str)]
+
+		return [type_to_convert(usr_input_val)
+				for type_to_convert, usr_input_val
+				in zip(types, user_input_str)]
+
+	return arg_to_list
+
+
+def parse_string_to_slices(seq):
+	"""
+	>>> parse_string_to_slices("")
+	[slice(None, None, None)]
+	>>> parse_string_to_slices("3,4")
+	[3, 4]
+	>>> parse_string_to_slices("3,4,2:5")
+	[3, 4, slice(2, 5, None)]
+	>>> parse_string_to_slices("3,4,2:5:")
+	[3, 4, slice(2, 5, None)]
+	>>> parse_string_to_slices("3,4,2:5:2")
+	[3, 4, slice(2, 5, 2)]
+	>>> parse_string_to_slices("3,4,2:5:2,8,14")
+	[3, 4, slice(2, 5, 2), 8, 14]
+	>>> parse_string_to_slices("3,4,2::2,8,14")
+	[3, 4, slice(2, None, 2), 8, 14]
+	>>> parse_string_to_slices("3,4,::2,8,14")
+	[3, 4, slice(None, None, 2), 8, 14]
+	>>> parse_string_to_slices("3,4,:11:2,8,14")
+	[3, 4, slice(None, 11, 2), 8, 14]
+	"""
+
+	if not seq:
+		return [slice(None, None, None)]
+
+	seq = filter(None, seq.split(','))
+	slices = []
+
+	for s in seq:
+		if s.isnumeric():
+			slices.append(int(s))
+		elif ":" in s:
+			sl = [None] * 3
+			for i, k in enumerate(s.split(":")):
+				sl[i] = int(k) if len(k) > 0 else None
+			slices.append(slice(*sl))
+		else:
+			with open(s) as fin:
+				file_content = fin.read().replace('\n', ',').replace(' ', ',')
+
+			slices.extend(parse_string_to_slices(file_content))
+
+	return slices
+
+
+def parse_infile_arg(arg):
+	"""
+	Parses a string of file name with inclusion and exclusion lists
+	Returns the file name and a list of image indices
+
+	Format of the input string:
+
+	filename:inclusion_list^exclusion_list
+
+	inclusion_list/exclusion_list may contain comma-seperated
+	1. integers
+	2. slices (Python's built-in slice representation)
+	3. file names
+
+	No spaces are allowed in the passed string.
+	Negative integers are allowed as in Python slices.
+	However, listed files may contain multi-lines and may contain spaces.
+
+	Slice examples for an image file with N images where N>20:
+	2:    -> 2,3,...,N-1
+	:3:   -> 0,1,2
+	::5   -> 0,5,10,15,...,<N
+	:10:2 -> 0,2,4,6,8
+	::-1  -> N-1,N-2,N-3,...,2,1,0
+	2:9   -> 2,3,4,5,6,7,8
+
+	If a file named test_images.hdf contains 100 images,
+	"test_images.hdf:2,4:11:,9,6^25:28,30" will be interpreted as follows.
+	filename: test_images.hdf
+	inclusion_list: 2,4:11:,19,26:32:2 -> 2,3,4,5,6,7,8,9,10,19,26,28,30
+	exclusion_list: 25:28,30      -> 25,26,27,30
+
+	Returned index list: [2,3,4,5,6,7,8,9,10,19,26,28,30] - [25,26,27,30] ->
+					   : [2,3,4,5,6,7,8,9,10,19,28]
+	"""
+
+	fname, _, seq = arg.partition(':')
+
+	if not (fname and os.path.isfile(fname)):
+		raise argparse.ArgumentTypeError(f"{fname} is not an existing regular file!")
+
+	seq_inc, _, seq_exc = seq.partition('^')
+
+	slices_inc = parse_string_to_slices(seq_inc)
+	slices_exc = parse_string_to_slices(seq_exc) if seq_exc else []
+
+	nimg = EMUtil.get_image_count(fname)
+
+	idxs = OrderedDict()
+	for i in slices_inc:
+		if isinstance(i, int):
+			idxs.update({i: None})
+		else:
+			for k in range(*(i.indices(nimg))):
+				idxs.update({k: None})
+
+	ids_exc = set()
+	for i in slices_exc:
+		if isinstance(i, int):
+			ids_exc.add(i)
+		else:
+			ids_exc.update(range(*(i.indices(nimg))))
+
+	for i in ids_exc:
+		if i in idxs:
+			idxs.pop(i)
+
+	return fname, idxs.keys()
+
 
 def angle_ab_sym(sym,a,b,c=None,d=None):
 	"""Computes the angle of the rotation required to go from Transform A to Transform B under symmetry,
