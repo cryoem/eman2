@@ -56,8 +56,9 @@ For more information on ctffind3 please see: Mindell, JA, Grigorieff N.  2003.  
 	parser.add_argument("--ac", default=0.0, type=float,help="The amplitude contrast of the micrographs", guitype='floatbox', row=4, col=1, rowspan=1, colspan=1, mode="import,run")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness", guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="import,run")
 	parser.add_argument("--importrelionstar", default=False, action="store_true",help="Import CTFFIND3 data in Relion STAR format. Put STAR files in 'ctffind3' folder", guitype='boolbox', row=6, col=0, rowspan=1, colspan=1, mode='import[True]')
-	parser.add_argument("--importctffind3", default=False, action="store_true",help="Import ctffind3 data?", guitype='boolbox', row=6, col=0, rowspan=1, colspan=1, mode='import[True]')
-	parser.add_argument("--importctffind4", default=False, action="store_true",help="Import ctffind4 data?", guitype='boolbox', row=6, col=1, rowspan=1, colspan=1, mode='import[False]')
+	#parser.add_argument("--importctffind3", default=False, action="store_true",help="Import ctffind3 data?", guitype='boolbox', row=6, col=0, rowspan=1, colspan=1, mode='import[True]')
+	parser.add_argument("--ctfversion", default="ctffind4", type=str,help="version of ctffind. default is ctffind4", guitype='strbox', row=6, col=0, rowspan=1, colspan=1, mode="import,run")
+	parser.add_argument("--importctffind", default=False, action="store_true",help="Import ctffind4 data?", guitype='boolbox', row=6, col=1, rowspan=1, colspan=1, mode='import[False]')
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	parser.add_pos_argument(name="micrographs",help="List the micrographs to run ctffind3 on here.", default="", guitype='filebox', browser="EMRawDataTable(withmodal=True,multiselect=True)", filecheck=False, row=1, col=0,rowspan=1, colspan=2, mode='run')
@@ -67,10 +68,11 @@ For more information on ctffind3 please see: Mindell, JA, Grigorieff N.  2003.  
 	parser.add_argument("--defocusmin", default=0.0, type=float,help="The starting defocus value for grid search (microns)", guitype='floatbox', row=7, col=0, rowspan=1, colspan=1, mode="run")
 	parser.add_argument("--defocusmax", default=0.0, type=float,help="The end defocus value for grid search (microns)", guitype='floatbox', row=7, col=1, rowspan=1, colspan=1, mode="run")
 	parser.add_argument("--defocusstep", default=0.0, type=float,help="The step width for grid search (microns)", guitype='floatbox', row=8, col=0, rowspan=1, colspan=1, mode="run")
-	parser.add_argument("--runctffind3", default=False, action="store_true",help="Run ctffind3 on the selected micrographs?", guitype='boolbox', row=9, col=0, rowspan=1, colspan=1, mode='run[True]')
-	parser.add_argument("--runctffind4", default=False, action="store_true",help="Run ctffind4 on the selected micrographs?", guitype='boolbox', row=9, col=1, rowspan=1, colspan=1, mode='run[False]')
-	parser.add_argument("--windowsize", default=0, type=int,help="The amplitude contrast of the micrographs", guitype='intbox', row=8, col=1, rowspan=1, colspan=1, mode="run")
-	
+	#parser.add_argument("--runctffind3", default=False, action="store_true",help="Run ctffind3 on the selected micrographs?", guitype='boolbox', row=9, col=0, rowspan=1, colspan=1, mode='run[True]')
+	parser.add_argument("--runctffind", default=False, action="store_true",help="Run ctffind on the selected micrographs?", guitype='boolbox', row=9, col=1, rowspan=1, colspan=1, mode='run[False]')
+	parser.add_argument("--windowsize", default=0, type=int,help="window size", guitype='intbox', row=8, col=1, rowspan=1, colspan=1, mode="run")
+	parser.add_argument("--flipmicrograph", default=False, action="store_true",help="phase flip micrographs using the imported ctf information")
+
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv,options.ppid)
 
@@ -127,20 +129,16 @@ For more information on ctffind3 please see: Mindell, JA, Grigorieff N.  2003.  
 			except:
 				pass
 	
-		
+	version=options.ctfversion
 	
-	if options.runctffind4:
-		version = "ctffind4"
+	if options.runctffind:
 		run_ctffind(options.apix, args, options.cs, options.voltage, options.ac, options.windowsize, options.minres, options.maxres, options.defocusmin*10000, options.defocusmax*10000, options.defocusstep*10000, options.verbose,version)
-	elif options.runctffind3:
-		version = "ctffind3"
-		run_ctffind(options.apix, args, options.cs, options.voltage, options.ac, options.windowsize, options.minres, options.maxres, options.defocusmin*10000, options.defocusmax*10000, options.defocusstep*10000, options.verbose, version)
-
-	if options.importctffind4 or options.runctffind4:
-		version = "ctffind4"
-	else:
-		version = "ctffind3"
-	import_ctf(options.voltage, options.cs, options.ac, options.apix, options.verbose, version)
+		
+	if options.importctffind:
+		import_ctf(options.voltage, options.cs, options.ac, options.apix, options.verbose, version)
+		
+	if options.flipmicrograph:
+		flip_micrograph(args)
 
 	print("e2ctffind3util.py complete!")
 	E2end(logid)
@@ -243,6 +241,32 @@ def run_ctffind(apix, args, cs, voltage, ac, windowsize, minres, maxres, defocus
 			os.remove(image[:-4] + ".mrc")
 			created = False
 	#os.remove("card.txt")
+	
+def flip_micrograph(args):
+	print("phase flipping micrographs...")
+	for ii,fm in enumerate(args):
+		info=js_open_dict(info_name(fm))
+		ctf=info["ctf_frame"][1]
+		
+		e=EMData(fm)
+		e.process_inplace("normalize.edgemean")
+		nx,ny=e["nx"], e["ny"]
+		mx=good_size(max(nx, ny))
+		e.clip_inplace(Region((nx-mx)//2,(ny-mx)//2,mx,mx))
+		
+		fft1=e.do_fft()
+		flipim=fft1.copy()
+		ctf.compute_2d_complex(flipim,Ctf.CtfType.CTF_SIGN)
+		fft1.mult(flipim)
+		e=fft1.do_ift()
+		e["ctf"]=ctf
+		e.clip_inplace(Region((mx-nx)//2,(mx-ny)//2,nx,ny))
+		e.process_inplace("normalize.edgemean")
+		e.write_compressed(fm[:-4]+"__flip.hdf", 0, 12, nooutliers=True)
+		#e.write_image(f[:-4]+"__flip.hdf")
+		sys.stdout.write("\r  {}/{}".format(ii, len(args)))
+		sys.stdout.flush()
+	
 	
 if __name__=="__main__":
 	main()

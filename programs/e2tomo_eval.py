@@ -357,15 +357,15 @@ class TomoEvalGUI(QtWidgets.QWidget):
 			nx=tmp["nx"]
 			ny=tmp["ny"]
 			n=tmp["nz"]
-			self.cur_tlt=[EMData(info["tltfile"],0,Region([0,0,i,nx,ny,1])) for i in range(n)]
-			self.wg_tltimage.list_idx=int(old_div(self.cur_tlt["nz"],2))
+			self.cur_tlt=[EMData(info["tltfile"],0, False,Region(0,0,i,nx,ny,1)) for i in range(n)]
+			self.wg_tltimage.list_idx=int(len(self.cur_tlt)/2)
 		else:
 			self.cur_tlt=EMData.read_images(info["tltfile"])
 			self.wg_tltimage.list_idx=int(len(self.cur_tlt)/2)
 
 		for i,t in enumerate(info["tlt_params"]):
-			self.cur_tlt[i].translate(-t[0],-t[1],0);
 			self.cur_tlt[i].process_inplace("normalize.edgemean")
+			self.cur_tlt[i].translate(-t[0],-t[1],0);
 
 		self.wg_tltimage.set_data(self.cur_tlt)
 		self.wg_tltimage.show()

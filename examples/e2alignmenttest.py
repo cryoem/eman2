@@ -59,13 +59,13 @@ def main():
 	parser.add_option("--rotmax",type="float",help="The maximum rotation angle applied. Default is 360.0",default=360.0)
 	parser.add_option("--rotmin",type="float",help="The minimum rotation angle applied. Default is 0.0",default=0.0)
 	
-	parser.add_option("--stopflip",action="store_true",help="Stop randomized flipping. Default is off.",default=False)
+	parser.add_option("--stopflip","-s",action="store_true",help="Stop randomized flipping. Default is off.",default=False)
 	
 	parser.add_option("--num",type="int",help="The number of randomized tests to perform. Default is 20",default=20)
 
 	parser.add_option("--projector", dest = "projector", default = "standard",help = "Projector to use. Default is standard.")
 	
-	parser.add_option("--writeout",action="store_true",help="Write the projection + noise images to projections_and_noise.hdf. Default is off.",default=False)
+	parser.add_option("--writeout","-w",action="store_true",help="Write the projection + noise images to projections_and_noise.hdf. Default is off.",default=False)
 	
 	(options, args) = parser.parse_args()
 	

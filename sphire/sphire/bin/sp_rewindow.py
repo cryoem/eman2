@@ -731,7 +731,7 @@ For negative staining data, use --skip_invert.
                     break
                 assert len(selected_mic_path_list) > 1
                 if error_status is None and not isinstance(
-                    selected_mic_path_list[0], basestring
+                    selected_mic_path_list[0], str
                 ):
                     error_status = (
                         "Invalid format of the selection list file. The first column must contain micrograph paths in string type. Please check selection_list option. Run %s -h for help."

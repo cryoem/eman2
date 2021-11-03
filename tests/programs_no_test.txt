@@ -5,3 +5,4 @@
  e2fhstat.py                  # no -h
  e2projectmanager.py          # no -h
  e2unwrap3d.py                # no -h
+ e2spt_autoboxer.py

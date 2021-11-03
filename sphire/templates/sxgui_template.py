@@ -55,6 +55,7 @@ from EMAN2 import *
 from EMAN2_cppwrap import *
 try:
 	from sphire.libpy import sp_global_def  #### from ..libpy.sp_global_def import *
+	from sphire.libpy.sp_global_def import sp_get_image_path
 	from sphire.libpy.sp_sparx import *     #### from ..libpy.sp_sparx import *
 	import sphire
 except ImportError as e:
@@ -582,9 +583,9 @@ class SXMenuItemBtnAreaWidget(QWidget):
 
 		# Add menu item button for application information
 		if helical:
-			sxmenu_item_btn_pictograph_file_path = '{0}sxgui_logo_sphire_helix.png'.format(get_image_directory())
+			sxmenu_item_btn_pictograph_file_path = sp_get_image_path("sxgui_logo_sphire_helix.png")
 		else:
-			sxmenu_item_btn_pictograph_file_path = '{0}sxgui_logo_sphire.png'.format(get_image_directory())
+			sxmenu_item_btn_pictograph_file_path = sp_get_image_path("sxgui_logo_sphire.png")
 		sxmenu_item_btn = SXLogoButton(sxmenu_item_btn_pictograph_file_path)
 		sxinfo.btn = sxmenu_item_btn
 
@@ -611,7 +612,7 @@ class SXMenuItemBtnAreaWidget(QWidget):
 	def add_sxmenu_item_btn_widget(self, sxmenu_item, sxmenu_item_btn_subarea_widget):
 		assert(isinstance(sxmenu_item, SXmenu_item) == True) # Assuming the sxmenu_item is an instance of class SXmenu_item
 
-		sxmenu_item_btn_pictograph_file_path = "{0}sxgui_pictograph_{1}.png".format(get_image_directory(), sxmenu_item.name.replace("sxc_", ""))
+		sxmenu_item_btn_pictograph_file_path = sp_get_image_path(f'sxgui_pictograph_{sxmenu_item.name.replace("sxc_", "")}.png')
 		sxmenu_item.btn = SXPictogramButton(sxmenu_item.name.replace("sxc_", ""), sxmenu_item_btn_pictograph_file_path, self)
 		cur_widget_counts = sxmenu_item_btn_subarea_widget.layout().count()
 		sxmenu_item_btn_subarea_widget.layout().addWidget(sxmenu_item.btn, cur_widget_counts // 2, cur_widget_counts % 2)
@@ -1743,6 +1744,15 @@ class SXCmdWidget(QWidget):
 			# Use relative path.
 			if file_path:
 				file_path = SXLookFeelConst.format_path(file_path)
+		elif file_format == "params_star":
+			name = QFileDialog.getOpenFileName(self, "Select STAR file", SXLookFeelConst.file_dialog_dir, "STAR files (*.star);; All files (*)", options = QFileDialog.DontUseNativeDialog)
+			if isinstance(name, tuple):
+				file_path = str(name[0])
+			else:
+				file_path = str(name)
+			# Use relative path.
+			if file_path:
+				file_path = SXLookFeelConst.format_path(file_path)
 		elif file_format == "params_any_json":
 			name = QFileDialog.getOpenFileName(self, "Select JSON file", SXLookFeelConst.file_dialog_dir, "JSON files (*.json);; All files (*)", options = QFileDialog.DontUseNativeDialog)
 			if isinstance(name, tuple):
@@ -2617,6 +2627,47 @@ class SXCmdTab(QWidget):
 							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
 							temp_btn.setMinimumWidth(func_btn_min_width)
 							grid_layout.addWidget(temp_btn, grid_row, grid_col_origin + token_label_col_span + token_widget_col_span * 3, token_widget_row_span, token_widget_col_span)
+						elif cmd_token.type == "params_star":
+							file_format = cmd_token.type
+							temp_btn = QPushButton("Select STAR file")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							temp_btn.setToolTip('<FONT>' + "Display open file dialog to select a STAR file</FONT>")
+							grid_layout.addWidget(temp_btn, grid_row,grid_col_origin + token_label_col_span + token_widget_col_span * 2,
+												  token_widget_row_span, token_widget_col_span)
+							temp_btn.clicked.connect(partial(self.sxcmdwidget.select_file,
+															 cmd_token_widget, file_format))
+							file_format = "INVISIBLE"
+							temp_btn = QPushButton("%s" % file_format)
+							temp_btn.setToolTip('<FONT>' + "This is %s button</FONT>" % file_format)
+							temp_btn.setEnabled(False)
+							temp_btn.setStyleSheet('background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0);'
+												   ' border: 0px rgba(0, 0, 0, 0) solid')
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							grid_layout.addWidget(temp_btn, grid_row,
+												  grid_col_origin + token_label_col_span + token_widget_col_span * 3,
+												  token_widget_row_span, token_widget_col_span)
+						elif cmd_token.type == "submission_temp":
+							file_format = cmd_token.type
+							file_format = "sh"
+							temp_btn = QPushButton("Select template")
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							temp_btn.setToolTip(
+								'<FONT>' + "Display open file dialog to select a parameters text file</FONT>")
+							grid_layout.addWidget(temp_btn, grid_row,
+												  grid_col_origin + token_label_col_span + token_widget_col_span * 2,
+												  token_widget_row_span, token_widget_col_span)
+							temp_btn.clicked.connect(
+								partial(self.sxcmdwidget.select_file, cmd_token_widget, file_format))
+							file_format = "INVISIBLE"
+							temp_btn = QPushButton("%s" % file_format)
+							temp_btn.setToolTip('<FONT>' + "This is %s button</FONT>" % file_format)
+							temp_btn.setEnabled(False)
+							temp_btn.setStyleSheet(
+								'background: rgba(0, 0, 0, 0); color: rgba(0, 0, 0, 0); border: 0px rgba(0, 0, 0, 0) solid')
+							temp_btn.setMinimumWidth(func_btn_min_width)
+							grid_layout.addWidget(temp_btn, grid_row,
+												  grid_col_origin + token_label_col_span + token_widget_col_span * 3,
+												  token_widget_row_span, token_widget_col_span)
 						elif cmd_token.type == "params_any_json":
 							file_format = cmd_token.type
 							temp_btn = QPushButton("Select JSON file")
@@ -3731,7 +3782,7 @@ class SXInfoWidget(QWidget):
 		widget = QWidget(self)
 
 		# Get the picture name
-		pic_name = '{0}sxgui_info.png'.format(get_image_directory())
+		pic_name = sp_get_image_path("sxgui_info.png")
 		# Import the picture as pixmap to get the right dimensions
 		self.pixmap = QPixmap(pic_name)
 		width = self.pixmap.width()
@@ -4610,7 +4661,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 		# --------------------------------------------------------------------------------
 		# Setup Window Layout
 		# --------------------------------------------------------------------------------
-		background_image_file_path = '{0}sxgui_background.png'.format(get_image_directory())
+		background_image_file_path = sp_get_image_path("sxgui_background.png")
 
 		central_widget_global = QWidget(self)
 		central_widget_global.setObjectName('central')
@@ -4687,7 +4738,7 @@ class SXMainWindow(QMainWindow): # class SXMainWindow(QWidget):
 			logo_container = QtGui.QWidget()
 			layout_start_widget = QtGui.QHBoxLayout()
 			layout_logo_container = QtGui.QVBoxLayout()
-			logo_container.setStyleSheet('border-image: url("{0}sxgui_pictograph_info.png")'.format(get_image_directory()))
+			logo_container.setStyleSheet(f'border-image: url("{sp_get_image_path("sxgui_pictograph_info.png")}")')
 			logo_container.setFixedSize(100, 100)
 			layout_start_widget.setContentsMargins(0, 0, 0, 20)
 
@@ -4860,7 +4911,7 @@ def main():
 	# 		print "MRK_DEBUG: !!!USING THE STYLE: %s!!!" % str(key)
 	# print "MRK_DEBUG:"
 
-	sxapp.setWindowIcon(QIcon(get_image_directory()+"sxgui_icon_sphire.png"))
+	sxapp.setWindowIcon(QIcon(sp_get_image_path("sxgui_icon_sphire.png")))
 
 	sxapp_font = sxapp.font()
 	sxapp_font_info = QFontInfo(sxapp.font())

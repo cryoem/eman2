@@ -44,7 +44,7 @@ import EMAN2db
 from EMAN2 import *
 import EMAN2
 import sys
-import numpy
+import numpy as np
 import struct
 from .emimageutil import ImgHistogram, EMParentWin
 from . import emshape
@@ -376,7 +376,11 @@ class EMImage2DWidget(EMGLWidget):
 		if wasexcluded or self.isexcluded: return True
 		else: return False
 
-	def get_data(self):
+	def get_data(self,getlist=False):
+		if getlist:
+			if self.list_data!=None : return self.list_data
+			elif self.data!=None : return[self.data]
+			else : return None
 		return self.data
 
 	def set_data(self,incoming_data,file_name="",retain_current_settings=True, keepcontrast=False, xyz=2):
@@ -402,7 +406,7 @@ class EMImage2DWidget(EMGLWidget):
 		
 		apix=1.0
 		# it's a 3D image
-		if not isinstance(data,list) and not isinstance(data,EMDataListCache) and not isinstance(data,EMLightWeightParticleCache) and data.get_zsize() != 1:
+		if not isinstance(data,list) and not isinstance(data,tuple) and not isinstance(data,EMDataListCache) and not isinstance(data,EMLightWeightParticleCache) and data.get_zsize() != 1:
 			
 			if xyz==0:
 				incoming_data.transform(Transform({"type":"xyz", "xtilt":90}))
@@ -445,7 +449,7 @@ class EMImage2DWidget(EMGLWidget):
 				self.list_fft_data = []
 				for i in range(len(data)):self.list_fft_data.append(None)
 
-			self.get_inspector().enable_image_range(1,len(data),self.list_idx+1)
+			self.get_inspector().enable_image_range(0,len(data),self.list_idx)
 		else:
 			self.list_data = None
 			self.list_fft_data = None
@@ -730,7 +734,7 @@ class EMImage2DWidget(EMGLWidget):
 
 	def register_scroll_motion(self,x,y,z=0):
 		if self.list_data!=None:
-			self.image_range_changed(z+1)
+			self.image_range_changed(z)
 			#self.setup_shapes()
 		animation = LineAnimation(self,self.origin,(x*self.scale-old_div(self.width(),2),y*self.scale-old_div(self.height(),2)))
 		self.qt_parent.register_animatable(animation)
@@ -1551,6 +1555,26 @@ class EMImage2DWidget(EMGLWidget):
 
 		return ret
 
+	def add_vector_overlay(self,x0,y0,x1,y1,v=None):
+		"""Add an array of vectors to the image as a shape overlay. This can be used to make pixel-centered vector plots
+		on top of images. This will be represented as additions to the shape list for the image. Only a single vector
+		overlay may be added to an image at a time. If provided, v will map to color (red low, blue high)"""
+		
+		if len(x0)!=len(y0) or len(x0)!=len(x1) or len(x0)!=len(y1):
+			raise Exception("Error, vector overlays must have 4 equal-length arrays")
+
+		if v is None: newshapes={f"vl({i})":EMShape(["line",0.2,0.8,0.2,x0[i],y0[i],x1[i],y1[i],1.0]) for i in range(len(x0))}
+		else:
+			vmin=min(v)
+			vmax=max(v)
+			v=(np.array(v)-vmin)/(vmax-vmin)
+			newshapes={f"vl({i})":EMShape(["line",1.0-v[i],0.2,v[i],x0[i],y0[i],x1[i],y1[i],1.5]) for i in range(len(x0))}
+			newshapes2={f"vp({i})":EMShape(["point",1.0-v[i],0.2,v[i],x0[i],y0[i],1.5]) for i in range(len(x0))}
+		self.del_shapes()
+		self.add_shapes(newshapes)
+		self.add_shapes(newshapes2)
+		self.updateGL()
+
 	def add_shape(self,k,s):
 		"""Add an EMShape object to be overlaid on the image. Each shape is
 		keyed into a dictionary, so different types of shapes for different
@@ -1904,7 +1928,7 @@ class EMImage2DWidget(EMGLWidget):
 			if delta > 0:
 				if (self.list_idx < (len(self.list_data)-1)):
 					self.list_idx += 1
-					self.get_inspector().set_image_idx(self.list_idx+1)
+					self.get_inspector().set_image_idx(self.list_idx+1,1)
 					self.__set_display_image(self.curfft)
 					self.setup_shapes()
 					self.force_display_update()
@@ -1912,14 +1936,14 @@ class EMImage2DWidget(EMGLWidget):
 			elif delta < 0:
 				if (self.list_idx > 0):
 					self.list_idx -= 1
-					self.get_inspector().set_image_idx(self.list_idx+1)
+					self.get_inspector().set_image_idx(self.list_idx-1,1)
 					self.__set_display_image(self.curfft)
 					self.setup_shapes()
 					self.force_display_update()
 
 
 	def image_range_changed(self,val):
-		l_val = int(val-1)
+		l_val = int(val)
 
 		if l_val == self.list_idx: return
 		else:
@@ -2189,6 +2213,9 @@ class EMImageInspector2D(QtWidgets.QWidget):
 		self.psbsing = QtWidgets.QPushButton("Single")
 		self.pstlay.addWidget(self.psbsing,0,0)
 
+		self.psbaz = QtWidgets.QPushButton("Azimuthal")
+		self.pstlay.addWidget(self.psbaz,1,0)
+
 		self.psbstack = QtWidgets.QPushButton("Stack")
 		self.pstlay.addWidget(self.psbstack,0,1)
 
@@ -2324,6 +2351,7 @@ class EMImageInspector2D(QtWidgets.QWidget):
 
 		self.psbsing.clicked[bool].connect(self.do_pspec_single)
 		self.psbstack.clicked[bool].connect(self.do_pspec_stack)
+		self.psbaz.clicked[bool].connect(self.do_pspec_az)
 		self.scale.valueChanged.connect(target.set_scale)
 		self.mins.valueChanged.connect(self.new_min)
 		self.maxs.valueChanged.connect(self.new_max)
@@ -2355,6 +2383,31 @@ class EMImageInspector2D(QtWidgets.QWidget):
 		pspec=fft.calc_radial_dist(fft["ny"]//2,0.0,1.0,1)
 		ds=1.0/(fft["ny"]*data["apix_x"])
 		s=[ds*i for i in range(fft["ny"]//2)]
+
+		from .emplot2d import EMDataFnPlotter
+
+		try: 
+			dfp=self.pspecwins[-1]
+			dfp.set_data((s,pspec),lbl)
+		except: 
+			dfp=EMDataFnPlotter(data=(s,pspec),key=lbl)
+			self.pspecwins.append(dfp)
+		dfp.show()
+
+	def do_pspec_az(self,ign):
+		"""Compute azimuthal power spectrum of single image and plot"""
+		try: 
+			data=self.target().list_data[self.target().list_idx]
+			imgn=self.target().list_idx
+			lbl=f"img_{imgn}"
+		except: 
+			data=self.target().get_data()
+			lbl=time.strftime("%H:%M:%S")
+		if data==None: return
+#		print data
+		fft=data.do_fft()
+		pspec=fft.calc_az_dist(180,-90,1.0,4,fft["ny"]//3)
+		s=np.arange(-90.0,90.0,1)
 
 		from .emplot2d import EMDataFnPlotter
 
@@ -2544,8 +2597,8 @@ class EMImageInspector2D(QtWidgets.QWidget):
 
 		self.image_range.valueChanged.connect(self.target().image_range_changed)
 
-	def set_image_idx(self,val):
-		self.image_range.setValue(val)
+	def set_image_idx(self,val,quiet=0):
+		self.image_range.setValue(val,quiet=quiet)
 
 	def set_fft_amp_pressed(self):
 		self.ffttog2.setChecked(1)

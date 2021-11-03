@@ -25,8 +25,12 @@ def main():
 	if options.path==None: options.path=num_path_new("r3dcls_")
 	path=options.path
 	ncls=options.ncls
-	if not os.path.isdir(path):
-		os.mkdir(path)
+	
+	options.cmd=' '.join(sys.argv)
+	fm=f"{path}/0_spa_params.json"
+	js=js_open_dict(fm)
+	js.update(vars(options))
+	js.close()
 		
 	if options.setsf:
 		setsf=" --setsf {}".format(options.setsf)

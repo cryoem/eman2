@@ -55,9 +55,9 @@ def main():
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_argument("--apix", type=float, help="A/voxel", default=1.0)
-	parser.add_argument("--res", type=float, help="Resolution in A, equivalent to Gaussian lowpass with 1/e width at 1/res",default=2.8)
-	parser.add_argument("--box", type=int, help="Box size in pixels",default=0)
+	parser.add_argument("--apix", "-A", type=float, help="A/voxel", default=1.0)
+	parser.add_argument("--res", "-R", type=float, help="Resolution in A, equivalent to Gaussian lowpass with 1/e width at 1/res",default=2.8)
+	parser.add_argument("--box", "-B", type=int, help="Box size in pixels",default=0)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
 	(options, args) = parser.parse_args()

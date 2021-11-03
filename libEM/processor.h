@@ -5400,14 +5400,15 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 
 		string get_desc() const
 		{
-			return "Identifies pixels corresponding to peaks in Fourier space based on the standard deviation of the corresponding Fourier ring. These pixels are masked out or in depending on options.";
+			return "Identifies pixels corresponding to peaks in Fourier space based on the mean & standard deviation of the corresponding Fourier amplitude in each ring/shell. These pixels are masked out or in depending on options.";
 		}
 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("thresh_sigma", EMObject::FLOAT, "Multiplied by the standard deviation in each Fourier shell as a threshold for identifying peaks. Default 1.0");
+			d.put("thresh_sigma", EMObject::FLOAT, "Values above mean + thresh_sigma * sigma are identified. Default 1.0");
 			d.put("removepeaks", EMObject::BOOL, "Instead of keeping peaks and removing everything else, this will remove peaks and keep everything else.");
+			d.put("to_mean", EMObject::BOOL, "Instead of setting identified pixels to zero, set the amplitude to the mean amplitude.");
 			return d;
 		}
 

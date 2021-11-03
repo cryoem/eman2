@@ -74,7 +74,7 @@ def main():
 	parser.add_argument("--finalstage",action="store_true",help="Assume that existing preliminary particle classifications are correct, and only recompute final local orientations",default=False)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--parallel",type=str,help="Parallelism string",default="thread:1")
-	parser.add_argument("--force",dest="force",default=True, action="store_true",help="Deprecated. Value ignored")
+#	parser.add_argument("--force", "-f",dest="force",default=True, action="store_true",help="Deprecated. Value ignored")
 
 	(options, args) = parser.parse_args()
 
@@ -102,8 +102,8 @@ def main():
 
 		E2progress(E2n,0.001)
 		# compute the reference self-similarity matrix
-#		cmd="e2simmx.py %s %s %s %s --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali --force --verbose=%d"%(args[0],args[0],args[3],options.shrinks1, options.verbose-1)
-		cmd="e2simmx.py %s %s %s %s --align=rotate_translate_tree --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali --force --verbose=%d"%(args[0],args[0],args[3],options.shrinks1, options.verbose-1)
+#		cmd="e2simmx.py %s %s %s %s --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali --verbose=%d"%(args[0],args[0],args[3],options.shrinks1, options.verbose-1)
+		cmd="e2simmx.py %s %s %s %s --align=rotate_translate_tree --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali --verbose=%d"%(args[0],args[0],args[3],options.shrinks1, options.verbose-1)
 		if options.parallel!=None : cmd+=" --parallel="+options.parallel
 		print("executing ",cmd)
 		launch_childprocess(cmd)
@@ -171,7 +171,7 @@ def main():
 		E2progress(E2n,0.15)
 		############### Step 2 - classify the particles against the averaged references
 		print("First stage particle classification")
-		cmd="e2simmx.py %s %s %s %s --align=%s --aligncmp=%s  --cmp=%s  --saveali --force --verbose=%d"%(args[4],args[1],args[5],options.shrinks1,
+		cmd="e2simmx.py %s %s %s %s --align=%s --aligncmp=%s  --cmp=%s  --saveali --verbose=%d"%(args[4],args[1],args[5],options.shrinks1,
 			options.align,options.aligncmp,options.cmp, options.verbose-1)
 		if options.prefilt : cmd+=" --prefilt"
 		if options.prectf : cmd+=" --prectf"
@@ -216,7 +216,7 @@ def main():
 
 
 	# the actual final classification
-	cmd = "e2simmx.py %s %s %s -f --saveali --cmp=%s --align=%s --aligncmp=%s --fillzero --nofilecheck --force --verbose=%d"  %(args[0],args[1],args[2],options.cmp,options.align,options.aligncmp, options.verbose-1)
+	cmd = "e2simmx.py %s %s %s --saveali --cmp=%s --align=%s --aligncmp=%s --fillzero --nofilecheck --verbose=%d"  %(args[0],args[1],args[2],options.cmp,options.align,options.aligncmp, options.verbose-1)
 	if options.mask!=None : cmd += " --mask=%s"%options.mask
 	if options.colmasks!=None : cmd += " --colmasks=%s"%options.colmasks
 

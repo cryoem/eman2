@@ -58,10 +58,10 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--sep", type=int, help="The number of classes a particle can contribute towards (default is 1)", default=1)
 	parser.add_argument("--simvec",action="store_true",help="Instead of using the class for the peak value, uses the pattern of similarities for each orientation for assignment.",default=False)
-	parser.add_argument("--force",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
+#	parser.add_argument("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
-	parser.add_argument("--check",action="store_true",help="Performs a command line argument check only.",default=False)
+	parser.add_argument("--check","-c",action="store_true",help="Performs a command line argument check only.",default=False)
 	parser.add_argument("--noalign",action="store_true",help="Ignore the alignments",default=False)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
@@ -94,8 +94,8 @@ def main():
 	E2n=E2init(sys.argv, options.ppid)
 
 	if os.path.exists(args[1]):
-		if (options.force):
-			remove_file(args[1])
+#		if (options.force):
+		remove_file(args[1])
 
 	num_sim =  EMUtil.get_image_count(args[0])
 	if (num_sim < 5):
@@ -210,11 +210,11 @@ def check(options,verbose):
 
 	
 	if ( options.nofilecheck == False ):
-		if os.path.exists(options.outfile):
-			if (not options.force):
-				if verbose>0:
-					print("File %s exists, will not write over, exiting" %options.outfile)
-				error = True
+#		if os.path.exists(options.outfile):
+#			if (not options.force):
+#				if verbose>0:
+#					print("File %s exists, will not write over, exiting" %options.outfile)
+#				error = True
 		
 		if not os.path.exists(options.simmxfile) and not db_check_dict(options.simmxfile):
 			if verbose>0:

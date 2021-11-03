@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+###!/usr/bin/env python
 #
 # Author: Steven Ludtke (sludtke@bcm.edu)
 # Copyright (c) 2011- Baylor College of Medicine
@@ -576,6 +576,7 @@ class EMFileType(object) :
 		layers=self.secparm.wspinlayers.value()
 		applyxf=self.secparm.wcheckxf.checkState()
 		stkout=self.secparm.wcheckstk.checkState()
+		oldwin=self.secparm.wcheckoldwin.checkState()
 		highpass=float(self.secparm.wlehp.text())
 		lowpass=float(self.secparm.wlelp.text())
 		
@@ -641,9 +642,21 @@ class EMFileType(object) :
 				return
 
 		if self.nimg==1 or stkout:
-			target = EMImage2DWidget()
-			target.set_data(data,self.path)
-			brws.view2d.append(target)
+			if oldwin : 
+				try: target=brws.view2d[-1]
+				except:
+					target = EMImage2DWidget()
+					brws.view2d.append(target)
+				old=target.get_data(True)
+				if isinstance(old,list) : old.extend(data)
+				else: 
+					if old!=None: print("embrowser.py error: old is type ",type(old))
+					old=data
+				target.set_data(old,self.path)
+			else:
+				target = EMImage2DWidget()
+				target.set_data(data,self.path)
+				brws.view2d.append(target)
 		else:
 			target = EMImageMXWidget()
 			target.set_data(data,self.path)
@@ -3506,6 +3519,7 @@ class EMSliceParamDialog(QtWidgets.QDialog):
 	dlp="-1"
 	dhp="-1"
 	dmask=""
+	oldcheck=0
 	
 	
 	def __init__(self, parent = None,nimg = 1) :
@@ -3569,6 +3583,12 @@ class EMSliceParamDialog(QtWidgets.QDialog):
 		self.wcheckstk.setToolTip("If set, makes 3 square images instead of a single rectangular image. Good for FFTs.")
 		self.fol.addRow("Stack output:",self.wcheckstk)
 
+		self.wcheckoldwin=QtWidgets.QCheckBox("enable")
+		self.wcheckoldwin.setChecked(self.oldcheck)
+		self.wcheckoldwin.setToolTip("If set, adds the new projection set to the last existing window")
+		self.fol.addRow("Same window:",self.wcheckoldwin)
+
+
 		self.bhb = QtWidgets.QHBoxLayout()
 		self.vbl.addLayout(self.bhb)
 		self.wbutok = QtWidgets.QPushButton("OK")
@@ -3586,6 +3606,7 @@ class EMSliceParamDialog(QtWidgets.QDialog):
 		EMSliceParamDialog.dlp=self.wlelp.text()
 		EMSliceParamDialog.dhp=self.wlehp.text()
 		EMSliceParamDialog.dmask=self.wlemask.text()
+		EMSliceParamDialog.oldcheck=self.wcheckoldwin.checkState()
 		self.accept()
 
 class EMBrowserWidget(QtWidgets.QWidget) :

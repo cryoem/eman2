@@ -1559,7 +1559,7 @@ def run():
 
                     N = old_div(image_size, 2)
                     sigma_of_inverse = numpy.sqrt(
-                        old_div(2.0, (old_div(B_factor, pixel_size) ** 2))
+                        old_div(2.0, (old_div(B_factor, pixel_size ** 2)))
                     )
                     values = []
                     if cutoff > 0.5:

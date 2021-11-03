@@ -34,8 +34,8 @@ def main():
 
 	parser.add_header(name="orblock1", help='Just a visual separation', title="Specify either zeroid/tltstep OR rawtlt:", row=2, col=0, rowspan=1, colspan=2,mode="easy")
 
-	parser.add_argument("--zeroid", type=int,help="Index of the center tilt. Ignored when rawtlt is provided.", default=-1)#,guitype='intbox',row=3, col=0, rowspan=1, colspan=1,mode="easy")
-	parser.add_argument("--tltstep", type=float,help="Step between tilts. Ignored when rawtlt is provided. Default is 2.0.", default=2.0,guitype='floatbox',row=3, col=0, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--zeroid", type=int,help="Index of the center tilt. Ignored when rawtlt is provided.", default=-1,guitype='intbox',row=3, col=1, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--tltstep", type=float,help="Step between tilts. Ignored when rawtlt/mdoc is provided. Set to 0 if tilt present in header.", default=2.0,guitype='floatbox',row=3, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--rawtlt", type=str,help="Specify a text file contains raw tilt angles. Will look for files with the same name as the tilt series if a directory is provided", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", filecheck=False, row=4, col=0, rowspan=1, colspan=2)#,mode="easy")
 	parser.add_argument("--mdoc", type=str,help="Specify a SerialEM .mdoc file or a folder containing same-named .mdoc files", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", filecheck=False, row=5, col=0, rowspan=1, colspan=2)#,mode="easy")
 	parser.add_argument("--npk", type=int,help="Number of landmarks to use (such as gold fiducials). Default is 20.", default=20,guitype='intbox',row=6, col=0, rowspan=1, colspan=1, mode="easy")
@@ -90,7 +90,7 @@ def main():
 	parser.add_argument("--badone", action="store_true",help="Remove one bad tilt during coarse alignment. seem to work better with smaller maxshift...", default=False)#, guitype='boolbox',row=9, col=0, rowspan=1, colspan=1,mode="easy")
 	
 	parser.add_argument("--flip", action="store_true",help="Flip the tomogram by rotating the tilt axis. need --load existing alignment", default=False)
-	parser.add_argument("--autoclipxy", action="store_true",help="Optimize the x-y shape of the tomogram to fit in the tilt images. only works in bytile reconstruction. useful for non square cameras.", default=False)
+	parser.add_argument("--autoclipxy", action="store_true",help="Optimize the x-y shape of the tomogram to fit in the tilt images. only works in bytile reconstruction. useful for non square cameras.", default=False,guitype='boolbox',row=16, col=0, rowspan=1, colspan=1,mode="easy")
 
 
 	(options, args) = parser.parse_args()
@@ -115,6 +115,7 @@ def main():
 		print("Processing {} tilt series in sequence..".format(len(args)))
 		cmd=sys.argv
 		opt=' '.join([s for s in cmd if s.startswith("-")])
+		#### note this is actually a bit unsafe here since incomplete option in command will cause infinite loops... hopefully people always spell alltiltseries correctly.
 		opt=opt.replace("--alltiltseries","")
 		for a in args:
 			run("{} {} {}".format(cmd[0], a, opt))
@@ -122,7 +123,7 @@ def main():
 		E2end(logid)
 		return
 		
-	#### testing multithread fft...
+	#### initializing multithread fft. whether this actually improves speed is untested.
 	Util.init_threads(options.threads)
 		
 		
@@ -141,12 +142,7 @@ def main():
 	else: 
 		options.tltrange = [-90.0,90.0] # all plausible tilts
 
-	dotpos=inputname.rfind('.')
-	linepos=inputname.rfind('__')
-	inputtag=inputname[linepos:dotpos]
-	bname=base_name(inputname)
-
-	options.basename=bname
+	options.basename=bname=base_name(inputname)
 	options.writetmp=not options.notmp
 	
 	#### read input. support both 2D image stack and 3D mrc/st files
@@ -163,12 +159,11 @@ def main():
 		m.process_inplace("normalize.edgemean")
 	img=None
 	
+	#### apix of raw input will be used to calculate scaling factor in various functions later
+	## the translation values used throughout the program are based on 2k tomograms. they will be scaled in individual function calls based on the apix difference
 	options.apix_init=float(imgs[0]["apix_x"])
 	
-	#### need to make sure this works for images of all sizes (2k, 4k 8k)
-	## the translation numbers used in this program are based on 2k tomograms. so binfac is the factor from the input to 2k images
-	#binfac=max(1, int(np.round(imgs[0]["nx"]/2048.)))
-	#options.binfac=binfac
+	#### need to make sure this works for images of all sizes (2k, 4k and hopefully 8k)
 	imgsz=min(imgs[0]["nx"],imgs[0]["ny"])
 	if imgsz<=512:
 		print("Tilt series image too small. Only support 2K or larger input images...")
@@ -246,7 +241,6 @@ def main():
 			print("\tprevious input :{}\t current input : {}".format(js["tlt_file"], options.inputname))
 			
 		tpm=np.array(js["tlt_params"])
-		#tpm[:,:2]/=options.binfac
 		ttparams=tpm.copy()
 		js.close()
 		tlts=ttparams[:,3].copy()
@@ -290,8 +284,8 @@ def main():
 		elif (options.mdoc!=None and len(options.mdoc)>0) :
 			
 			if os.path.isdir(options.mdoc):
-				print("Looking for mdoc file matching {} in {}...".format(options.inputname, options.rawtlt))
-				bnm=options.basename.split('/')[-1]
+				print("Looking for mdoc file matching {} in {}...".format(options.inputname, options.mdoc))
+				bnm=options.inputname.split('/')[-1].rsplit(".",1)[0]
 				rl=[f for f in os.listdir(options.mdoc) if f.startswith(bnm) and f[-5:]==".mdoc"]
 				if len(rl)==0:
 					print(f"Cannot find mdoc file for {bnm} in the directory {options.mdoc}. exit...")
@@ -304,14 +298,17 @@ def main():
 				print("Using {}".format(rl[0]))
 
 			with open(options.mdoc,"r") as mdoc:
+				if imgs_1k[0].has_attr("tilt_angle"): print("WARNING: .mdoc specified, but tilt_angle already in header. May lead to incorrect results!")
 				tltdic={}
 				idx=0
 				for line in mdoc:
 					if line.startswith("[ZValue"): idx=int(line.split("=")[1].split("]")[0])
-					if line.startswith("TiltAngle"): tltdic[idx]=float(line.split("=")[1])
+					if line.startswith("TiltAngle"): 
+						tltdic[idx]=float(line.split("=")[1])
+						if tltdic[idx]==0: options.zeroid=idx
 			
 			try:
-				tlts=[tltdic[i] for i in range(max(tltdic))]
+				tlts=np.array([tltdic[i] for i in range(len(tltdic))])
 			except:
 				print(f"Error: incomplete tilt list in mdoc file ",options.mdoc)
 				return
@@ -322,7 +319,14 @@ def main():
 		else: 
 			#### parse tilt step
 			options.rawtlt=None
-			tlts=np.arange(-len(imgs_2k)*options.tltstep/2,len(imgs_2k)*options.tltstep/2,options.tltstep)
+			if options.tltstep>0:
+				print("Using fixed tilt step of ",options.tltstep)
+				tlts=np.arange(-len(imgs_2k)*options.tltstep/2,len(imgs_2k)*options.tltstep/2,options.tltstep)
+			else:
+				print("Using tilt_angle from header")
+				tlts=np.array([i["tilt_angle"] for i in imgs_1k])
+				try: options.zeroid=np.where(tlts==0)[0]
+				except: options.zeroid=len(tlts)//2
 		
 		if options.writetmp: np.savetxt(os.path.join(options.tmppath,"rawtilt.txt"), tlts)
 		
@@ -346,7 +350,7 @@ def main():
 		
 		else:
 			#### do an initial course alignment before common line
-			if options.rawtlt:
+			if options.rawtlt!=None or options.mdoc!=None:
 				srtid=np.argsort(tlts).tolist()
 				imgs_500_sort=[imgs_500[i] for i in srtid]
 				ret=calc_global_trans(imgs_500_sort, options)
@@ -388,13 +392,16 @@ def main():
 	
 	
 	if options.patchtrack>0:
-		toitr=[imgs_500, imgs_1k]
-		toitr=toitr[:options.patchtrack]
-		for itr,imgs in enumerate(toitr):
-			ttparams, loss0= do_patch_tracking(imgs, ttparams, options)
+		ttparams, loss0= do_patch_tracking(imgs_500, ttparams, options)
+		for itr in range(options.patchtrack-1):
+			ttparams, loss0= do_patch_tracking_3d(imgs_500, ttparams, options)
+		#toitr=[imgs_500, imgs_1k]
+		#toitr=toitr[:options.patchtrack]
+		#for itr,imgs in enumerate(toitr):
 			#ttparams, loss0= do_patch_tracking(imgs, ttparams, options)
-			if options.writetmp:
-				make_ali(imgs_500, ttparams, options, outname=os.path.join(options.tmppath,f"patch_ali_{itr:02d}.hdf"))
+			##ttparams, loss0= do_patch_tracking(imgs, ttparams, options)
+		if options.writetmp:
+			make_ali(imgs_500, ttparams, options, outname=os.path.join(options.tmppath,"ali_patchtrack.hdf"))
 			
 			
 	pks=np.zeros((options.npk, 3))
@@ -670,27 +677,6 @@ def do_patch_tracking(imgs, ttparams, options, niter=4):
 				lasti=i
 				
 		if itr==1 and scale>6:
-			#f=np.mean(fts, axis=1)
-			#f=np.mean(abs(f), axis=0)
-			#sz=f.shape[-1]
-			#sm=f[:,sz//2:]
-			#rr=np.arange(min(sm.shape[1], sz*.25), dtype=float)
-			#tpm[:,2]=tpm[:,2]%360
-			##print(tpm[:,2])
-			#ttx=np.mean(tpm[:,2])
-			#angs=np.arange(ttx-10, ttx+10.1,.1)
-			#vs=[]
-			#for ang in angs:
-				#a=ang/180.*np.pi
-				#pts=[np.round(rr*np.sin(a)).astype(int), np.round(rr*np.cos(a)+old_div(sz,2)).astype(int) ]
-				#v=sm[pts[1], pts[0]]
-				#vs.append(np.mean(v))
-
-			#vs=np.array(vs)
-
-			#tltax=angs[np.argmax(vs)]
-			#tpm[:,2]=tltax
-			#print("    tilt axis:", ttx, '->',tltax)
 			
 			#### refine z position of tiles
 			
@@ -734,7 +720,7 @@ def do_patch_tracking(imgs, ttparams, options, niter=4):
 				ptclz.append(dzrg[np.argmin(dp)])
 
 			ptclz=np.array(ptclz)
-			print("    iter {}:  dz = {:.02f}".format(itr, np.mean(abs(ptclz))))
+			print("	iter {}:  dz = {:.02f}".format(itr, np.mean(abs(ptclz))))
 			#print(ptclz)
 
 			pks1=pks.copy()
@@ -759,7 +745,7 @@ def do_patch_tracking(imgs, ttparams, options, niter=4):
 				xf=Transform({"type":"xyz","ytilt":tp[3],"xtilt":tp[4], "ztilt":tp[2]})
 				xf=xf*t.inverse()
 				x=xf.get_params("xyz")
-				tpm1[i][2]=x["ztilt"]
+				#tpm1[i][2]=x["ztilt"]
 				tpm1[i][3]=x["ytilt"]
 				tpm1[i][4]=x["xtilt"]
 				
@@ -792,11 +778,135 @@ def do_patch_tracking(imgs, ttparams, options, niter=4):
 			tx=tilex[:,::-1]
 			tpm[:,:2]-=tx*scale
 			loss=np.linalg.norm(tx*scale, axis=1)
-			print("    iter {}:  loss = {:.2f}".format(itr, np.mean(loss)))
+			print("	iter {}:  loss = {:.2f}".format(itr, np.mean(loss)))
 
-	
+	if options.writetmp:
+		allparams=np.hstack([tpm.flatten(), pks.flatten()])
+		ptclpos,ptclimgs=ali_ptcls(imgshp, allparams, options, doali=False,return_imgs=True)
+		fname=os.path.join(options.tmppath,"patchtrack_ptclali.hdf")
+		if os.path.isfile(fname): os.remove(fname)
+		for p in ptclimgs:
+			p.write_image(fname, -1)
+		
 	options.npk=rawnpk
 	options.bxsz=rawboxsz
+	return tpm, loss
+
+def do_patch_tracking_3d(imgs, ttparams, options, niter=4):
+	
+	print("\n******************************")
+	print("Doing patch tracking in 3d")
+	scale=int(np.round(imgs[0]["apix_x"]/options.apix_init))
+	rawnpk=options.npk
+	rawboxsz=options.bxsz
+	print("  shrink by {}".format(scale))
+	
+	ntile=int(np.round(8/scale*2+1))
+	tpm=ttparams.copy()
+	nx=ny=imgs[0]["nx"]
+	nz=len(imgs)
+	options.bxsz=sz=128
+	
+	mxsft=8
+	pks=np.indices((ntile,ntile)).reshape((2,-1)).T-(ntile-1)/2
+	pks=pks[:,::-1]
+	pks=np.hstack([pks, np.zeros((len(pks),1))])
+	dx=(ny*.4-sz//2)/np.max(pks)
+	pks=np.round(pks*dx*scale)
+	
+	options.npk=len(pks)
+	maskc=make_mask(sz)
+	imgshp=[m.process("filter.highpass.gauss",{"cutoff_pixels":options.highpass}) for m in imgs]
+	allparams=np.hstack([tpm.flatten(), pks.flatten()])
+	ptclpos,ptclimgs=ali_ptcls(imgshp, allparams, options, doali=False,return_imgs=True, do_rotation=False)
+	nt=len(ptclimgs)//len(imgs)
+	
+	trg=tpm[:,3]
+	n=len(trg)
+	
+	nrange=np.arange(len(trg))
+	nrange=nrange[np.argsort(abs(np.array(trg)))]
+	pad=good_size(sz*1.4)
+	dxys=np.zeros((nt, len(trg), 2))
+	
+	if options.writetmp:
+		pjname=os.path.join(options.tmppath,"patchtrack_projs.hdf")
+		if os.path.isfile(pjname): os.remove(pjname)
+		tdname=os.path.join(options.tmppath,"patchtrack_tiles.hdf")
+		if os.path.isfile(tdname): os.remove(tdname)
+
+	for it in range(nt):
+		pimgs=[ptclimgs[i] for i in np.arange(n)+n*it]
+
+		dxy=dxys[it]
+		normvol=EMData(pad//2+1, pad, pad)
+		recon=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":"trilinear", "normout":normvol})
+		recon.setup()
+		# for i,p in enumerate(ptclimgs):
+		for i in nrange:
+			if i>nrange[0]:
+				iix=np.arange(i,len(trg))
+			else:
+				iix=np.arange(i+1)
+
+			m=pimgs[i].copy()
+			m.process_inplace("filter.ramp")
+			m.process_inplace("normalize.edgemean")
+			m.process_inplace("xform",{"tx":int(dxy[i,0]),"ty":int(dxy[i,1])})
+			dy=(sz//2)-np.cos(trg[i]*np.pi/180.)*sz/2
+			#msk=m.copy()
+			#msk.to_one()
+			#edge=sz//10
+			#msk.process_inplace("mask.zeroedge2d",{"x0":dy+edge, "x1":dy+edge, "y0":edge, "y1":edge})
+			#msk.process_inplace("mask.addshells.gauss",{"val1":0, "val2":edge})
+			#m.mult(msk)
+			xf=Transform({"type":"xyz","ztilt":tpm[i,2],"ytilt":tpm[i,3],"xtilt":tpm[i,4]})
+
+			if abs(i-nrange[0])>1:
+				pj=recon.projection(xf, 0)
+				pj=pj.get_clip(Region(pad//2-sz//2, pad//2-sz//2, sz,sz))
+
+				if options.writetmp: pj.write_image(pjname,int(n*it+i))
+
+				cf=pj.calc_ccf(m)
+				c=cf.calc_max_location_wrap(mxsft, mxsft, 0)
+				xf.translate(c)
+				dxy[iix]+=[c[0], c[1]]
+			
+			else:
+				if options.writetmp: m.write_image(pjname,int(n*it+i))
+
+			m=m.get_clip(Region(sz//2-pad//2,sz//2-pad//2, pad, pad), fill=0)
+			mp=recon.preprocess_slice(m, xf)
+			recon.insert_slice(mp,xf,1)
+
+		print(it, np.mean(abs(dxys[it]), axis=0))
+		if options.writetmp:
+			avg=recon.finish(True)
+			avg=avg.get_clip(Region(pad//2-sz//2,pad//2-sz//2,pad//2-sz//2, sz,sz,sz), fill=0)
+			avg.write_image(tdname, it)
+			
+	dxy=np.mean(dxys, axis=0)
+	d=dxy[-1,0]-dxy[0,0]
+	xd=np.sin(np.array(trg)*np.pi/180)
+	nd=d/(xd[-1]-xd[0])
+	dxy[:,0]-=nd*xd
+	dxy-=dxy[len(dxy)//2]
+
+	tpm[:,:2]-=dxy*scale
+	x=np.mean(abs(dxy*scale), axis=0)
+	print("	mean dx = {:.1f}, dy = {:.1f}".format(x[0], x[1]))
+	if options.writetmp:
+		allparams=np.hstack([tpm.flatten(), pks.flatten()])
+		ptclpos,ptclimgs=ali_ptcls(imgshp, allparams, options, doali=False,return_imgs=True)
+		fname=os.path.join(options.tmppath,"patchtrack_ptclali.hdf")
+		if os.path.isfile(fname): os.remove(fname)
+		for p in ptclimgs:
+			p.write_image(fname, -1)
+
+	options.npk=rawnpk
+	options.bxsz=rawboxsz
+	loss=np.linalg.norm(dxy*scale, axis=1)
 	return tpm, loss
 	
 def correct_zpos(tomo, ttparams, options):
@@ -1217,8 +1327,7 @@ def calc_global_trans(imgs, options, excludes=[], tltax=None,tlts=[]):
 			
 			c=a*np.conj(b)
 			c=get_img(c)
-
-			p=np.array(np.where(c==np.max(c))).flatten()-sz//2
+			p=np.array(np.where(c==np.max(c))).T[0]-sz//2
 			ts.append(p)
 		
 		ts=-np.cumsum(ts, axis=0)
@@ -1241,6 +1350,7 @@ def calc_global_trans(imgs, options, excludes=[], tltax=None,tlts=[]):
 		t=trans[i]
 		e.translate(t[0], t[1],0)
 		imgout.append(e)
+		
 		
 	return [imgout, trans]
 
@@ -1877,7 +1987,7 @@ def get_center(img, lowres=True, maxshift=64):
 	return pk
 
 #### this is the main function that calculate the offset of landmarks in tilt series given images and alignment parameters 
-def ali_ptcls(imgs, allpms, options, outname=None, doali=True, return_imgs=False):
+def ali_ptcls(imgs, allpms, options, outname=None, doali=True, return_imgs=False, do_rotation=False):
 	zeroid=options.zeroid
 	num=options.num
 	nrange=np.hstack([np.arange(zeroid, num), np.arange(zeroid, -1, -1)])
@@ -1926,7 +2036,11 @@ def ali_ptcls(imgs, allpms, options, outname=None, doali=True, return_imgs=False
 			else:
 				tlast=np.array([0,0])
 
-			xf=Transform({"type":"2d","tx":pxf[0],"ty":pxf[1]})
+			if do_rotation:
+				xf=Transform({"type":"2d","tx":pxf[0],"ty":pxf[1],"alpha":-ttparams[nid, 2]})
+			else:
+				xf=Transform({"type":"2d","tx":pxf[0],"ty":pxf[1]})
+			
 			e=imgs[nid].get_rotated_clip(xf,(bx*2,bx*2,1)).process("normalize")
 			e["apix_x"]=e["apix_y"]=e["apix_z"]=imgs[0]["apix_x"]
 
@@ -2078,7 +2192,7 @@ def global_rot(rt, ptclpos, allpms, options):
 		dst.append(np.mean(d))
 
 	return np.mean(dst)*options.apix_init/10.
-    
+	
 
 def refine_lowres(imgs, allparams, options):
 	

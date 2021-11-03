@@ -541,10 +541,16 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		fsp=str(QtWidgets.QFileDialog.getSaveFileName(self, "Select output text file")[0])
 		if len(fsp)==0:
 			return
-
+		
+		clsid=list(self.sets_visible.keys())
+		if len(clsid)==0:
+			print("No visible particles to save")
+			return
+		
 		out=open(fsp,"w")
 		for b in self.boxes:
-			out.write("%d\t%d\t%d\n"%(b[0]*shrinkf,b[1]*shrinkf,b[2]*shrinkf))
+			if int(b[5]) in clsid:
+				out.write("%d\t%d\t%d\n"%(b[0]*shrinkf,b[1]*shrinkf,b[2]*shrinkf))
 		out.close()
 		
 	def menu_file_save_boxpdb(self):

@@ -19,7 +19,7 @@ def main():
 	parser.add_argument("--bfactor", type=float, help="Bfactor to simulate",default=200)
 	parser.add_argument("--defocus", type=float, help="Amount of defocus to simulate",default=1.4)
 	parser.add_argument("--ampcont", type=float, help="Amount of amplitude contrast to simulate",default=0.1)
-	parser.add_argument("--nptcls",type=int, help="Number of particles to include in simulated micrograph",default=80)
+	parser.add_argument("--nptcls","-n",type=int, help="Number of particles to include in simulated micrograph",default=80)
 	parser.add_argument("--resolution", type=int, help="Resolution to use during pdb to mrc conversion. Defaults to 2.5*apix.",default=None)
 	parser.add_argument("--sym", type=str, help="Symmetry of specimen. Default is c1.",default="c1")
 	parser.add_argument("--grid",action="store_true",default=False,help="Place particles in a grid")

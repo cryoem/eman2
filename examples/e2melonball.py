@@ -79,7 +79,7 @@ def main():
 	
 	parser.add_argument("--vertexes", action='store_true', default=False,help="""Only works if --sym=icos. This flag will make the program extract only the 12 vertexes from among all 60 symmetry related units.""") 
 	
-	#parser.add_argument("--parallel",type=str,help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None, guitype='strbox', row=8, col=0, rowspan=1, colspan=2, mode="align")
+	#parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None, guitype='strbox', row=8, col=0, rowspan=1, colspan=2, mode="align")
 	
 	parser.add_argument("--ppid", type=int, default=-1, help="Set the PID of the parent process, used for cross platform PPID")
 
@@ -213,7 +213,7 @@ def main():
 					scoopinsitu.write_image(outscoopsallfileinsitu,totalcount)
 
 			#scoopclip = scoop.copy()
-			scoop = clip3d(scoop,options.boxsize,[sx,sy,sz])
+			scoop = clip3d(scoop,options.boxsize,None,None,[sx,sy,sz])
 			#print("\nclipped scoop to boxsize={}".format(options.boxsize))
 			scoop.write_image(outscoopsallfile,totalcount)
 			print ("\nwrote out scoop {}/{}".format(totalcount,ntargetscoops))

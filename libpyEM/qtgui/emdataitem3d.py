@@ -1400,6 +1400,9 @@ class EMIsosurface(EMItem3D,EM3DModel):
 		else:
 			self.cmapdata = EMData(str(data))
 			self.cmapfilename = os.path.abspath(data)
+			
+		if self.cmapdata["ny"]!=self.parent.data["ny"]:
+			self.cmapdata.process_inplace("math.fft.resample",{"n":self.cmapdata["ny"]/self.parent.data["ny"]})
 
 		self.isorender.set_cmap_data(self.cmapdata)
 		self.setCmapMinMax(self.cmapdata.get_attr('minimum'), self.cmapdata.get_attr('maximum'))

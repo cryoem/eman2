@@ -63,6 +63,7 @@ def main():
 	#parser.add_argument("--rawtlt",type=str,help="Name of tilt angles text file.\nNote, angles must correspond to stack file names in alphabetical/numerical order.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=True)",row=3, col=0, rowspan=1, colspan=1, mode="tomo")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higher number means higher level of verboseness",default=1)
+	parser.add_argument("--tltang",type=str,help="a text file for tilt angle. will sort the images in each stack accrodingly", default=None)
 
 	(options, args) = parser.parse_args()
 
@@ -163,6 +164,12 @@ def main():
 				prefix=fnames[0][fnames[0].rfind('/')+1:p]
 				lstname=os.path.join("tiltseries", prefix+'.lst')
 				print("{} : {} images -> {}".format(prefix, len(fnames), lstname))
+				if options.tltang:
+					ang=np.loadtxt(options.tltang)
+					if len(ang)==len(fnames):
+						print("Sorting by tilt angle file")
+						srt=np.argsort(ang)
+						fnames=[fnames[i] for i in srt]
 				
 				if os.path.isfile(lstname):
 					os.remove(lstname)

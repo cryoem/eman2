@@ -83,8 +83,8 @@ e2classifyligand.py sets/myset_even.lst refine_01/classmx_04_even.hdf refine_01/
 	parser.add_argument("--tstcls",type=int,help="Will generate tst.hdf containing test images for a specified class-number",default=-1)
 	parser.add_argument("--debug",action="store_true",default=False,help="Enable debugging mode with verbose output and image display. Not suitable for real runs.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	#parser.add_argument("--ncls",type=int,help="Number of classes to generate",default=-1)
-	#parser.add_argument("--average",action="store_true",help="Average the particles within each class",default=False)
+	#parser.add_argument("--ncls","-N",type=int,help="Number of classes to generate",default=-1)
+	#parser.add_argument("--average","-A",action="store_true",help="Average the particles within each class",default=False)
 
 	(options, args) = parser.parse_args()
 #	if len(args)<4 : parser.error("Please specify <raw particle file> <class mx> <projections> <mask> <output file> ")

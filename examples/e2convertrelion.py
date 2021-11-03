@@ -4,20 +4,30 @@ from EMAN2 import *
 import numpy as np
 
 def main():
-	req=[
-		"_rlnImageName", "_rlnDefocusU", "_rlnDefocusV",
-		"_rlnDefocusAngle","_rlnAnglePsi", "_rlnAngleTilt",
-		"_rlnAngleRot","_rlnOriginXAngst","_rlnOriginYAngst",
-		]
+	req={
+		"name":"_rlnImageName", 
+		"dfu":"_rlnDefocusU", 
+		"dfv":"_rlnDefocusV",
+		"dfang":"_rlnDefocusAngle",
+		"psi":"_rlnAnglePsi", 
+		"tilt":"_rlnAngleTilt",
+		"rot":"_rlnAngleRot",
+		"txa":"_rlnOriginXAngst",
+		"tya":"_rlnOriginYAngst",
+		"tx":"_rlnOriginX",
+		"ty":"_rlnOriginY",
+		}
 	
-	usage=" read a relion refinement star file and convert to a EMAN list format. currently only read {}".format(','.join(req))
+	usage=" read a relion refinement star file and convert to a EMAN list format. currently only read {}".format(','.join(req.values()))
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--skipheader", type=int,help="skip the first N lines of the star file (before the parameter names starting with _). default is 5", default=5)
+	parser.add_argument("--skipheader", type=int,help="skip the first N lines of the star file (before the parameter names starting with _). default is 1", default=1)
 	parser.add_argument("--voltage", type=int,help="voltage", default=300)
 	parser.add_argument("--cs", type=float,help="cs", default=2.7)
 	parser.add_argument("--amp", type=float,help="amplitude contrast. default 0", default=0)
 	parser.add_argument("--apix", type=float,help="apix", default=1.0)
 	parser.add_argument("--output", type=str,help="output lst file", default="sets/all_relion.lst")
+	parser.add_argument("--skipwrite", action="store_true", default=False ,help="skip file writing")
+
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	
@@ -37,16 +47,28 @@ def main():
 			
 	lines=lines[starti:]
 	l=lines[0].split()
-	
-	rid=[-1]*len(req)
-	for i, k in enumerate(keys):
-		li=l[i]
-		for j,r in enumerate(req):
-			if k.startswith(r):
-				rid[j]=i
+	print(keys)
+	rid={}
+	for r in req.keys():
+		
+		for i, k in enumerate(keys):
+			if k.startswith(req[r]+' '):
+				rid[r]=i
+				break
+		else:
+			print("key {} does not exist".format(req[r]))
 
-	for i,ri in enumerate(rid):
-		print(i, ri, keys[ri], l[ri])
+	print("##################")
+	print("found keys:")
+	for r in rid.keys():
+		print(r, req[r], rid[r])
+		
+	if "tx" in rid:
+		txa=False
+		print("translation in pixel")
+	else:
+		txa=True
+		print("translation in angstrom")
 
 	apix=options.apix
 	fnames=[]
@@ -59,54 +81,71 @@ def main():
 		if len(ln)<5: 
 			continue
 		l=ln.split()
-		ii,src=l[rid[0]].split('@')
+		ii,src=l[rid["name"]].split('@')
 		ii=int(ii)-1
-	#	 src="data/"+src
-		e=EMData(src, ii)
-		
-		du, dv, ang=float(l[rid[1]]), float(l[rid[2]]), float(l[rid[3]])
-
-		ctf = EMAN2Ctf()
-		ctf.from_dict({"defocus":(du+dv)/20000.,"dfang":ang,
-					"dfdiff":abs(du-dv)/10000,"voltage":options.voltage,"cs":options.cs,"ampcont":options.amp,"apix":options.apix})
-		
-		fft1=e.do_fft()
-		flipim=fft1.copy()
-		ctf.compute_2d_complex(flipim,Ctf.CtfType.CTF_SIGN)
-		fft1.mult(flipim)
-		e=fft1.do_ift()
-		e["ctf"]=ctf
-		e.process_inplace("normalize.edgemean")
-		e.process_inplace("mask.soft",{"outer_radius":-4,"width":4})
-		e["src"]=src
-		e["srci"]=ii
-		e["apix_x"]=options.apix
-		e["apix_y"]=options.apix
-		
 		fm="particles"+src[src.rfind('/'):src.rfind('.')]+".hdf"
 		
-		e.write_image(fm,ii)
+		if not os.path.isfile(src):
+			print("{} does exist".format(src))
+			continue
+
+		if not options.skipwrite:
+			e=EMData(src, ii)
+			
+			du, dv, ang=float(l[rid["dfu"]]), float(l[rid["dfv"]]), float(l[rid["dfang"]])
+
+			ctf = EMAN2Ctf()
+			ctf.from_dict({"defocus":(du+dv)/20000.,"dfang":ang,
+					"dfdiff":abs(du-dv)/10000,"voltage":options.voltage,
+					"cs":options.cs,"ampcont":options.amp,"apix":options.apix})
+			
+			fft1=e.do_fft()
+			flipim=fft1.copy()
+			ctf.compute_2d_complex(flipim,Ctf.CtfType.CTF_SIGN)
+			fft1.mult(flipim)
+			e=fft1.do_ift()
+			e["ctf"]=ctf
+			e.process_inplace("normalize.edgemean")
+			e.process_inplace("mask.soft",{"outer_radius":-4,"width":4})
+			e["src"]=src
+			e["srci"]=ii
+			e["apix_x"]=options.apix
+			e["apix_y"]=options.apix
+			
+			
+			
+			e.write_compressed(fm, ii,12,nooutliers=True)
+			
 		fnames.append([i, fm ,ii])
 		sys.stdout.write("\r{}/{}	  ".format(i, len(lines)))
 		sys.stdout.flush()
 	
 	print()
 
-	lst=LSXFile(options.output)
-	for i in range(len(lines)):
+	#lst=LSXFile(options.output)
+	towrite=[]
+	for fm in fnames:
+		i=fm[0]
 		ln=lines[i]
 		if len(ln)<5: 
 			continue
 		l=ln.split()
-		psi,tlt,rot=float(l[rid[4]]), float(l[rid[5]]), float(l[rid[6]])
-		tx,ty=float(l[rid[7]])/apix, float(l[rid[8]])/apix
+		psi,tlt,rot=float(l[rid["psi"]]), float(l[rid["tilt"]]), float(l[rid["rot"]])
+		if txa:
+			tx,ty=float(l[rid["txa"]])/apix, float(l[rid["tya"]])/apix
+		else:
+			tx,ty=float(l[rid["tx"]]), float(l[rid["ty"]])
+			
 		d={"type":"spider", "psi":psi, "theta":tlt, "phi":rot,"tx":-tx, "ty":-ty}
-		d=Transform(d).get_params("eman")
+		d=Transform(d)
 		
-		fm=fnames[i]
-		lst.write(i, fm[2], fm[1], str(d))
+		#fm=fnames[i]
+		dic={"src":fm[1], "idx":fm[2], "xform.projection":d}
+		towrite.append(dic)
+		#lst.write(i, fm[2], fm[1], str(d))
 		
-	lst=None
+	
+	save_lst_params(towrite, options.output)
 	print("aligned list written to {}".format(options.output))
 	E2end(logid)
 	

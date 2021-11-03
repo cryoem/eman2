@@ -74,8 +74,8 @@ handled this way."""
 	parser.add_argument("--mode",type=str,help="Mode should be one of: pca, sparsepca, fastica, factan, lda, nmf",default="pca")
 	parser.add_argument("--nomean",action="store_true",help="Suppress writing the average image as the first output image",default=False)
 	parser.add_argument("--nomeansub",action="store_true",help="Suppress subtracting the mean from each input image, also implies --nomean",default=False)
-	parser.add_argument("--nbasis",type=int,help="Number of basis images to generate.",default=20)
-	parser.add_argument("--maskfile",type=str,help="File containing a mask defining the pixels to include in the Eigenimages")
+	parser.add_argument("--nbasis","-n",type=int,help="Number of basis images to generate.",default=20)
+	parser.add_argument("--maskfile","-M",type=str,help="File containing a mask defining the pixels to include in the Eigenimages")
 	parser.add_argument("--projin",type=str,default=None,help="When generating subspace projections, use this file instead of the input used for the MSA")
 	parser.add_argument("--normproj",action="store_true",help="When generating subspace projections, normalize each projection vector to unit length",default=False)
 	parser.add_argument("--mask",type=int,help="Mask radius, negative values imply ny/2+1+mask, --mask=0 disables, --maskfile overrides",default=0)
@@ -86,8 +86,8 @@ handled this way."""
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	#parser.add_argument("--gui",action="store_true",help="Start the GUI for interactive boxing",default=False)
-	#parser.add_argument("--boxsize",type=int,help="Box size in pixels",default=-1)
-	#parser.add_argument("--dbin",type=str,help="Filename to read an existing box database from",default=None)
+	#parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=-1)
+	#parser.add_argument("--dbin","-D",type=str,help="Filename to read an existing box database from",default=None)
 
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Input and output filenames required")

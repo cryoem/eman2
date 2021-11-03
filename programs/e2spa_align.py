@@ -18,12 +18,13 @@ def main():
 	parser.add_argument("--ptclin", type=str,help="particle input", default=None)
 	parser.add_argument("--ptclout", type=str,help="particle output", default=None)
 	parser.add_argument("--ref", type=str,help="reference input", default=None)
-	parser.add_argument("--keep", type=float,help="propotion of tilts to keep. default is 0.8", default=0.8)
+	#parser.add_argument("--keep", type=float,help="propotion of tilts to keep. default is 0.8", default=0.8)
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use. Default is thread:12", default="thread:12")
 
 	parser.add_argument("--debug", action="store_true", default=False ,help="Turn on debug mode. This will only process a small subset of the data")
-	parser.add_argument("--maxshift", type=int,help="maximum shift allowed", default=-1)
-	parser.add_argument("--localrefine", action="store_true", default=False ,help="local refinement")
+	#parser.add_argument("--maxshift", type=int,help="maximum shift allowed", default=-1)
+	parser.add_argument("--localrefine", type=int, default=-1 ,help="local refinement. larger value correspond to smaller local region")
+	parser.add_argument("--goldcontinue", action="store_true", default=False ,help="split even/odd subset and references.")
 	#parser.add_argument("--ctfweight", action="store_true", default=False ,help="weight by ctf. not used yet...")
 	#parser.add_argument("--slow", action="store_true", default=False ,help="slow but finer search")
 	parser.add_argument("--maxres", type=float,default=-1, help="max resolution for cmp")
@@ -36,15 +37,15 @@ def main():
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	
-	m=EMData(options.ref)
-	bxsz=m["nx"]
-	apix=m["apix_x"]
+	#m=EMData(options.ref)
+	#bxsz=m["nx"]
+	#apix=m["apix_x"]
 	
 	options.shrink=1
 	pinfo=load_lst_params(options.ptclin)
 	nptcl=len(pinfo)
-	if options.maxshift<0:
-		options.maxshift=bxsz//2
+	#if options.maxshift<0:
+		#options.maxshift=bxsz//2
 	
 	print("Initializing parallelism...")
 	etc=EMTaskCustomer(options.parallel, module="e2spa_align.SpaAlignTask")	
@@ -67,7 +68,7 @@ def main():
 	
 	tids=[]
 	for info in infos:
-		task = SpaAlignTask(info, options.ref, options)
+		task = SpaAlignTask(info, options)
 			
 		if options.debug:
 			task.execute(print)
@@ -106,10 +107,10 @@ def run(cmd):
 class SpaAlignTask(JSTask):
 	
 	
-	def __init__(self, info, ref, options):
+	def __init__(self, info, options):
 		
-		data={"info":info, "ref": ref}
-		JSTask.__init__(self,"SptNewTltRefine",data,{},"")
+		data={"info":info}
+		JSTask.__init__(self,"SpaAlignTask",data,{},"")
 		self.options=options
 	
 	def execute(self, callback):
@@ -151,9 +152,23 @@ class SpaAlignTask(JSTask):
 		callback(0)
 		rets=[]
 		
-		ref=EMData(data["ref"],0)
-		ny0=ny=ref["ny"]
+		#### do the even/odd split if required
+		reffile=options.ref
+		if options.goldcontinue:
+			refnames=[reffile[:-4]+f"_{eo}.hdf" for eo in ["even", "odd"]]
+		else:
+			refnames=[reffile, reffile]
+			
+		refs=[]
+		for r in refnames:
+			ref=EMData(r)
+			ref=ref.do_fft()
+			ref.process_inplace("xform.phaseorigin.tocenter")
+			ref.process_inplace("xform.fourierorigin.tocenter")
+			refs.append(ref)
 		
+		ref=EMData(refnames[0], 0, True)
+		ny0=ny=ref["ny"]
 		if options.maxres>0:
 			maxrescut=ceil(ny*ref["apix_x"]/options.maxres)
 			maxy=good_size(maxrescut*3)
@@ -162,9 +177,6 @@ class SpaAlignTask(JSTask):
 			maxy=ny
 			maxrescut=1e5
 		
-		ref=ref.do_fft()
-		ref.process_inplace("xform.phaseorigin.tocenter")
-		ref.process_inplace("xform.fourierorigin.tocenter")
 		ssrg=2**np.arange(4,12, dtype=int)
 		ssrg[:2]=ssrg[:2]*3/2
 		ssrg=ssrg.tolist()
@@ -176,6 +188,10 @@ class SpaAlignTask(JSTask):
 		for infoi, infos in enumerate(data["info"]):
 			ii=infos[0]
 			info=infos[1]
+			if "class" in info:
+				clsid=info["class"]
+			else:
+				clsid=ii%2
 			
 			img=EMData(info["src"],info["idx"])
 			img.clip_inplace(Region((img["nx"]-ny)//2, (img["ny"]-ny)//2, ny, ny))
@@ -191,10 +207,12 @@ class SpaAlignTask(JSTask):
 			if "xform.projection" in info:
 				initxfs.append(info["xform.projection"])
 					
-			if options.localrefine:	
+			if options.localrefine>0:	
 				newxfs=[]
-				istart=1
-				npos=npos//2
+				istart=min(options.localrefine, len(ssrg)-1)
+				npos=npos//(2**istart)
+				npos=max(npos, 1)
+				
 				for ixf in initxfs:
 					ix=ixf.get_params("xyz")
 					newxfs.append(Transform(ix))
@@ -221,7 +239,7 @@ class SpaAlignTask(JSTask):
 				if ss>=maxy: 
 					ss=maxy
 					
-				refsmall=ref.get_clip(Region(0,(ny-ss)//2, (ny-ss)//2, ss+2, ss, ss))
+				refsmall=refs[clsid].get_clip(Region(0,(ny-ss)//2, (ny-ss)//2, ss+2, ss, ss))
 				imgsmall=img.get_clip(Region(0,(ny-ss)//2, ss+2, ss))
 				imgsmall.process_inplace("xform.fourierorigin.tocenter")
 					
@@ -289,7 +307,8 @@ class SpaAlignTask(JSTask):
 				if ss>=maxy:
 					break
 				
-			r={"src":info["src"], "idx":info["idx"], "xform.projection":newxfs[0], "score":newscore[0]}
+			r={	"src":info["src"], "idx":info["idx"], 
+				"xform.projection":newxfs[0], "score":newscore[0],"class":clsid}
 			callback(100*float(infoi/len(self.data["info"])))
 			rets.append((ii, r))
 			if options.debug:

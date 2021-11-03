@@ -15,7 +15,7 @@ def main():
 	
 	parser.add_argument("--outsize", default=-1, type=int, help="Defines the dimensions of the final volume written to disk")
 	
-	parser.add_argument("--keep", type=float, dest="keep", help="The fraction of slices to keep, based on quality scores (1.0 = use all slices). See keepsig.",default=.9)
+	parser.add_argument("--keep", type=str, dest="keep", help="The fraction of slices to keep, based on quality scores (1.0 = use all slices).",default=".9")
 	
 	parser.add_argument("--no_wt", action="store_true", dest="no_wt", default=False, help="This argument turns automatic weighting off causing all images to be weighted by 1.")
 	
@@ -29,18 +29,22 @@ def main():
 	parser.add_argument("--tidrange", type=str,help="range of tilt id to include", default="-1,-1")
 	parser.add_argument("--minres", type=float,help="", default=50)
 	parser.add_argument("--maxres", type=float,help="", default=-1)
+	parser.add_argument("--threads", type=int,help="", default=1)
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default="thread:1")
+	parser.add_argument("--setsf", type=str,help="set structure factor from text file", default=None)
 	
 	parser.add_argument("--debug", action="store_true", default=False, help="")
 	parser.add_argument("--clsid", default=None, type=str, help="only reconstruct a class of particles")
 	parser.add_argument("--listsel", default=None, type=str, help="only reconstruct particles of indices from the given list")
 
+	parser.add_argument("--p3did", type=int, help="only reconstruct images for a 3d particles",default=-1)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
 
 	logger=E2init(sys.argv,options.ppid)
-	
+	time0=time.time()
+
 	# so it recognize even/odd or 0/1
 	if options.clsid:
 		options.clsid=options.clsid.replace("even","0").replace("odd","1")
@@ -51,6 +55,10 @@ def main():
 		
 	if options.sym.startswith("h"):
 		options.sym="c1"
+		
+	options.keep=[float(k) for k in options.keep.split(',')]
+	if len(options.keep)<3: options.keep=[options.keep[0]]*3
+	
 	# get basic image parameters
 	tmp=EMData(options.input,0,True)
 	boxsz=tmp["nx"]
@@ -189,12 +197,15 @@ def main():
 		os.remove(options.output)
 		
 	output.write_image(options.output,0)
+	if options.setsf:
+		launch_childprocess("e2proc3d.py {} {} --setsf {}".format(options.output,options.output,options.setsf))
+		
 	if options.verbose>0:
 			print("Output File: "+options.output)
 
 	E2end(logger)
 
-	print("Exiting")
+	print("Reconstruction finishend ({:.1f} s)".format(time.time()-time0))
 
 def initialize_data(inputfile, options):
 	#returned list will contain dictionaries containing metadata about each image
@@ -204,7 +215,11 @@ def initialize_data(inputfile, options):
 	else:
 		sel=[]
 		
-	rawdata=load_lst_params(inputfile, sel)
+	if inputfile.endswith(".lst"):
+		rawdata=load_lst_params(inputfile, sel)
+	else:
+		n=EMUtil.get_image_count(inputfile)
+		rawdata=[{"src":inputfile, "idx":i} for i in range(n)]
 	trg=options.tidrange
 	
 	data=[]
@@ -216,18 +231,26 @@ def initialize_data(inputfile, options):
 		if ("tilt_id" in dc) and (trg[0]>0):
 			if (dc["tilt_id"]<trg[0]) or (dc["tilt_id"]>trg[1]):
 				continue
+			
+		if ("ptcl3d_id" in dc) and (options.p3did>=0):
+			if dc["ptcl3d_id"]!=options.p3did:
+				continue
 		
 		data.append(dc)
 		
 	tokeep=np.ones(len(data), dtype=bool)
 	print("{} particles total".format(np.sum(tokeep)))
 	
-	scrs=np.array([d["score"] for d in data])
+	if "score" in data[0]:
+		scrs=np.array([d["score"] for d in data])
+	else:
+		scrs=np.zeros(len(data))-1
+	
 	if np.std(scrs)>0 and ("ptcl3d_id" in data[0]):
 		idx3d=np.array([d["ptcl3d_id"] for d in data])
 		idx3d, invid=np.unique(idx3d, return_inverse=True)
 		scr3d=np.array([np.mean(scrs[invid==i]) for i in range(len(idx3d))])
-		thr=np.sort(scr3d)[int(len(scr3d)*options.keep)-1]
+		thr=np.sort(scr3d)[int(len(scr3d)*options.keep[0])-1]
 		for i,s in enumerate(scr3d):
 			if s>thr:
 				tokeep[invid==i]=False
@@ -236,7 +259,7 @@ def initialize_data(inputfile, options):
 	
 	if np.std(scrs)>0:
 		s=scrs[tokeep]
-		thr=np.sort(s)[int(len(s)*options.keep)-1]
+		thr=np.sort(s)[int(len(s)*options.keep[1])-1]
 		tokeep[scrs>thr]=False
 		print("  Excluding particles on 2D score. Now {:.1f}%  left".format(100*np.mean(tokeep)))
 		
@@ -244,12 +267,12 @@ def initialize_data(inputfile, options):
 		dt=np.array([d["dxf"].get_trans() for d in data])
 		dt=np.linalg.norm(dt, axis=1)
 		s=dt[tokeep]
-		thr=np.sort(s)[int(len(s)*options.keep)-1]
+		thr=np.sort(s)[int(len(s)*options.keep[2])-1]
 		tokeep[dt>thr]=False
 		print("  Excluding particles on translation. Now {:.1f}%  left".format(100*np.mean(tokeep)))
 		
 	data=[d for i,d in enumerate(data) if tokeep[i]]
-	scrs=np.array([d["score"] for d in data])
+	scrs=scrs[tokeep]
 	if np.min(scrs)>=0:
 		print("positive score. assume this is weight...")
 	else:
@@ -257,7 +280,7 @@ def initialize_data(inputfile, options):
 		scrs[scrs<0]=0
 		scrs=scrs/np.max(scrs)
 	
-	print("score max {:.2f}, min {:.2f}".format(np.max(scrs), np.min(scrs)))
+	print("{} particle, score max {:.2f}, min {:.2f}".format(len(data),np.max(scrs), np.min(scrs)))
 	
 	for i in range(len(data)):
 		data[i]["weight"]=float(scrs[i])
@@ -297,13 +320,18 @@ def reconstruct(data,recon,pad,ref=None):
 			c=elem["curve"]
 			img.process_inplace("filter.radialtable", {"table":c.tolist()})
 		
-		ts=Transform(elem["xform.projection"])
+		if "xform.projection" in elem:
+			pjxf=elem["xform.projection"]
+		else:
+			pjxf=img["xform.projection"]
+			
+		ts=Transform(pjxf)
 		ts.set_rotation({"type":"eman"})
 		ts.invert()   #### inverse the translation so make3d matches projection 
 		img=recon.preprocess_slice(img,ts)
 		
 
-		recon.insert_slice(img,elem["xform.projection"],wt)
+		recon.insert_slice(img,pjxf,wt)
 
 	return
 
@@ -324,29 +352,34 @@ class Make3dTask(JSTask):
 		callback(0)
 		data=self.data["data"]
 		options=self.options
-
+		Util.init_threads(options.threads)
 		padvol=options.pad
 		normvol=EMData(padvol//2+1, padvol, padvol)
 		parms = {
 			"size":[padvol]*3,
 			"sym":options.sym,
 			"mode":options.mode,
-			"verbose":options.verbose-1,
+			"verbose":0,
+			"quiet":1,
 			"normout":normvol
 			}
 
 		recon=Reconstructors.get("fourier", parms)
 		recon.setup()
+		
+		threads=[threading.Thread(target=reconstruct,
+			    args=(data[i::options.threads],recon, padvol)) for i in range(options.threads)]
 
-		reconstruct(
-			data,
-			recon,
-			padvol,
-			)
+		for t in threads: t.start()
+		for t in threads: t.join()
+
+		#reconstruct(
+			#data,
+			#recon,
+			#padvol,
+			#)
 
 		output = recon.finish(False)
-
-		#callback(100)
 
 		return (output, normvol)
 

@@ -18,46 +18,80 @@ def main():
 	parser.add_argument("--keep", type=float,help="keep", default=.9)
 	parser.add_argument("--startiter", type=int,help="iter", default=0)
 	parser.add_argument("--niter", type=int,help="iter", default=10)
-	parser.add_argument("--setsf", type=str,help="structure factor", default="strucfac.txt")
-	parser.add_argument("--tophat", type=str, default="local" ,help="Default=local, can also specify localwiener")
+	parser.add_argument("--setsf", type=str,help="structure factor", default=None)
+	parser.add_argument("--tophat", type=str, default="local",help="Default=local, can also specify localwiener")
 	parser.add_argument("--threads", type=int,help="threads to use during postprocessing of 3d volumes", default=4)
-	parser.add_argument("--automask3d", default="auto", type=str,help="Default=auto. Specify as a processor, eg - mask.auto3d:threshold=1.1:radius=30:nshells=5:nshellsgauss=5.")
+	parser.add_argument("--mask", default=None, type=str,help="specify a mask file.")
 	parser.add_argument("--compressbits", type=int,help="Bits to keep when writing images. 4 generally safe for raw data. 0-> true lossless (floating point). Default 6", default=6, guitype='intbox', row=10, col=1, rowspan=1, colspan=1, mode='filter[6]')
-	
+	parser.add_argument("--localsize",type=float,default=-1,help="Override the automatic local region size (in A) used for local resolution calculation and filtration.")
+
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	
 	res=options.res
 	sym=options.sym
 		
-	tophat=""
+	tophat=amask=localsize=sf=""
+	
 	npt=EMUtil.get_image_count(options.ptcl)
 	if options.path==None: options.path=num_path_new("r3d_")
 	
+	options.cmd=' '.join(sys.argv)
+	fm=f"{options.path}/0_spa_params.json"
+	js=js_open_dict(fm)
+	js.update(vars(options))
+	js.close()
+	
 	if options.startiter==0:
-		if not os.path.isdir(options.path):
-			os.mkdir(options.path)
 		
 		r=1/res
-		for i,eo in enumerate(["even","odd"]):
-			run("e2proclst.py {} --create {}/ptcls_00_{}.lst --range {},{},2".format(options.ptcl, options.path, eo, i, npt))
-			run("e2proc3d.py {} {}/threed_00_{}.hdf --process filter.lowpass.gauss:cutoff_freq={:.4f} --process filter.lowpass.randomphase:cutoff_freq={:.4f}".format(options.ref, options.path, eo, r,r))
+		opt="--process filter.lowpass.gauss:cutoff_freq={:.4f} --process filter.lowpass.randomphase:cutoff_freq={:.4f}".format(r,r)
+		
+		er=EMData(options.ref,0,True)
+		ep=EMData(options.ptcl,0,True)
+		if abs(1-ep["apix_x"]/er["apix_x"])>0.01 or ep["ny"]!=er["ny"]:
+			print("Reference-particle apix or box size mismatch. will scale/clip reference to match particles")
+				
+			rs=er["apix_x"]/ep["apix_x"]
+			if rs>1.:
+				opt+=" --clip {} --scale {} --process mask.soft:outer_radius=-1".format(ep["nx"], rs)
+			else:
+				opt+=" --scale {} --clip {} --process mask.soft:outer_radius=-1".format(rs, ep["nx"])
+		
+		#### prepare even/odd split
+		lst=load_lst_params(options.ptcl)
+		for i, l in enumerate(lst):
+			l["class"]=i%2
+		save_lst_params(lst,"{}/ptcls_00.lst".format(options.path))
+		
+		for eo in ["even","odd"]:
+			run("e2proc3d.py {} {}/threed_00_{}.hdf {}".format(options.ref, options.path, eo, opt))
 	
 	
 	for i in range(options.startiter, options.startiter+options.niter):
 		
-		for eo in ["even","odd"]:
-			run("e2spa_align.py --ptclin {pt}/ptcls_{i0:02d}_{eo}.lst --ptclout {pt}/ptcls_{i1:02d}_{eo}.lst --ref {pt}/threed_{i0:02d}_{eo}.hdf --parallel {par} --sym {s} --maxres {rs:.2f}".format(pt=options.path, i0=i, i1=i+1, rs=res, eo=eo, s=sym, par=options.parallel))
+		run("e2spa_align.py --ptclin {pt}/ptcls_{i0:02d}.lst --ptclout {pt}/ptcls_{i1:02d}.lst --ref {pt}/threed_{i0:02d}.hdf --parallel {par} --sym {s} --maxres {rs:.2f} --goldcontinue".format(pt=options.path, i0=i, i1=i+1, rs=res, eo=eo, s=sym, par=options.parallel))
 			
-			run("e2spa_make3d.py --input {pt}/ptcls_{i1:02d}_{eo}.lst --output {pt}/threed_{i1:02d}_{eo}.hdf --keep {kp} --sym {s} --parallel {par}".format(pt=options.path, i1=i+1, eo=eo, s=sym, par=options.parallel, kp=options.keep))
+		for eo in ["even","odd"]:
+			run("e2spa_make3d.py --input {pt}/ptcls_{i1:02d}.lst --output {pt}/threed_{i1:02d}_{eo}.hdf --keep {kp} --sym {s} --parallel {par} --clsid {eo}".format(pt=options.path, i1=i+1, eo=eo, s=sym, par=options.parallel, kp=options.keep))
 
 		if i==options.startiter:
 			res/=2
-			
-		if i>0:
-			tophat=" --tophat {}".format(options.tophat)
-		run("e2refine_postprocess.py --even {pt}/threed_{i1:02d}_even.hdf --sym {s} --setsf {sf} --restarget {rs:.1f} {tp} --threads {th} --automask3d {amask}".format(pt=options.path, i1=i+1, s=sym, sf=options.setsf, rs=res*.8, tp=tophat, th=options.threads, amask=options.automask3d))
 		
+		if i>0:
+			tophat="--tophat {}".format(options.tophat)	
+				
+		if options.mask:
+			amask="--mask {}".format(options.mask)
+
+		if options.localsize>0:
+			localsize="--localsize {}".format(options.localsize)
+			
+		if options.setsf:
+			sf="--setsf {}".format(options.setsf)
+
+		run("e2refine_postprocess.py --even {pt}/threed_{i1:02d}_even.hdf --sym {s} {sf} --restarget {rs:.1f} --threads {th} {top} {asize} {amask}".format(pt=options.path, i1=i+1, s=sym, sf=options.setsf, rs=res*.8, th=options.threads, top=tophat,  amask=amask, asize=localsize))
+
 		fsc=np.loadtxt("{}/fsc_masked_{:02d}.txt".format(options.path, i+1))
 		fi=fsc[:,1]<0.2
 		res=1./fsc[fi, 0][0]

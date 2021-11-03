@@ -42,6 +42,7 @@ Suite 330, Boston, MA  02111-1307 USA
 # --------------------------------------------------------------------[ header ]
 import EMAN2_cppwrap
 import EMAN2_meta
+import EMAN2
 import inspect
 import mpi
 import random
@@ -50,6 +51,18 @@ import time
 from . import sp_utilities as util
 import os
 import sphire
+
+def sp_get_image_path(image_path):
+	"""
+	Searches for the image file in the SPHIRE image dir,
+	otherwise it will return the EMAN image path
+	"""
+
+	sphire_pth = os.path.join(os.path.abspath(os.path.dirname(__file__)),"../../images/",image_path)
+	if os.path.isfile(sphire_pth):
+		return sphire_pth
+	eman_pth = os.path.join(EMAN2.get_image_directory(), image_path)
+	return eman_pth
 
 def get_timestamp(file_format=False):
     """

@@ -35,46 +35,46 @@ def main():
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	####################
-	parser.add_argument("--animorph", type=str, help="This will use a morph vector file (segment3d) to morph atom positions,#P [animorph=<n>,<apix>,<vecfile>]",default=None)
-	parser.add_argument("--scale", type=float, help="scale", default=1.0)
-	parser.add_argument("--center", type=str, help="center of the rotation, (0,0,0)", default='0.0,0.0,0.0')
+	parser.add_argument("--animorph", "-AN", type=str, help="This will use a morph vector file (segment3d) to morph atom positions,#P [animorph=<n>,<apix>,<vecfile>]",default=None)
+	parser.add_argument("--scale", "-S", type=float, help="scale", default=1.0)
+	parser.add_argument("--center", "-C", type=str, help="center of the rotation, (0,0,0)", default='0.0,0.0,0.0')
 	parser.add_argument("--chains",type=str,help="String list of chain identifiers to include, eg 'ABEFG'", default=None)
-	parser.add_argument("--trans", type=str, help="transform, (0,0,0)",default='0,0,0')
+	parser.add_argument("--trans", "-TR", type=str, help="transform, (0,0,0)",default='0,0,0')
 	parser.add_argument("--include", type=str,help="savetype", default=["helix","sheet","other"])
 	parser.add_argument("--mirror",type=bool, help="mirror",default=0)
 #matrix
-	parser.add_argument("--matrix", type=str, help="transform matrix.", default='0,0,0,0,0,0,0,0,0,0,0,0')
+	parser.add_argument("--matrix", "-matrix", type=str, help="transform matrix.", default='0,0,0,0,0,0,0,0,0,0,0,0')
 	parser.add_argument("--rot",type=str,metavar="az,alt,phi or convention:par=val:...",help="Rotate map. Specify az,alt,phi or convention:par=val:par=val:...  eg - mrc:psi=22:theta=15:omega=7", action="append",default=None)
-	parser.add_argument("--type", type=str, help="convention type", default='eman')
+	parser.add_argument("--type", "-T", type=str, help="convention type", default='eman')
 
 #eman input, default setting
-	parser.add_argument("--az", type=float, help="az in eman convention.", default=0)
-	parser.add_argument("--alt", type=float, help="alt in eman convention.", default=0)
-	parser.add_argument("--phi", type=float, help="phi.", default=0)
+	parser.add_argument("--az", "-az", type=float, help="az in eman convention.", default=0)
+	parser.add_argument("--alt", "-alt", type=float, help="alt in eman convention.", default=0)
+	parser.add_argument("--phi", "-phi", type=float, help="phi.", default=0)
 #imagic
-	parser.add_argument("--alpha", type=float, help="alpha in imagic convention.", default=0)
-	parser.add_argument("--beta", type=float, help="beta in imagic convention.", default=0)
-	parser.add_argument("--gamma", type=float, help="gamma in imagic convention.", default=0)
+	parser.add_argument("--alpha", "-alpha", type=float, help="alpha in imagic convention.", default=0)
+	parser.add_argument("--beta", "-beta", type=float, help="beta in imagic convention.", default=0)
+	parser.add_argument("--gamma", "-gamma", type=float, help="gamma in imagic convention.", default=0)
 #spider
-	parser.add_argument("--theta", type=float, help="theta.", default=0)
-	parser.add_argument("--psi", type=float, help="psi in spider convention.", default=0)
+	parser.add_argument("--theta", "-theta", type=float, help="theta.", default=0)
+	parser.add_argument("--psi", "-psi", type=float, help="psi in spider convention.", default=0)
 #xyz
-	parser.add_argument("--xtilt", type=float, help="xtilt in xyz convention.", default=0)
-	parser.add_argument("--ytilt", type=float, help="ytilt in xyz convention.", default=0)
-	parser.add_argument("--ztilt", type=float, help="ztilt in xyz convention.", default=0)
+	parser.add_argument("--xtilt", "-xtilt", type=float, help="xtilt in xyz convention.", default=0)
+	parser.add_argument("--ytilt", "-ytilt", type=float, help="ytilt in xyz convention.", default=0)
+	parser.add_argument("--ztilt", "-ztilt", type=float, help="ztilt in xyz convention.", default=0)
 #mrc
-	parser.add_argument("--omega", type=float, help="omega.", default=0)
+	parser.add_argument("--omega", "-omega", type=float, help="omega.", default=0)
 #quaternion
-	parser.add_argument("--e0", type=float, help="e0 in quaternion convention.", default=0)
-	parser.add_argument("--e1", type=float, help="e1 in quaternion convention.", default=0)
-	parser.add_argument("--e2", type=float, help="e2 in quaternion convention.", default=0)
-	parser.add_argument("--e3", type=float, help="e3 in quaternion convention.", default=0)
+	parser.add_argument("--e0", "-e0", type=float, help="e0 in quaternion convention.", default=0)
+	parser.add_argument("--e1", "-e1", type=float, help="e1 in quaternion convention.", default=0)
+	parser.add_argument("--e2", "-e2", type=float, help="e2 in quaternion convention.", default=0)
+	parser.add_argument("--e3", "-e3", type=float, help="e3 in quaternion convention.", default=0)
 #spin
-	parser.add_argument("--n1", type=float, help="n1.", default=0)
-	parser.add_argument("--n2", type=float, help="n2.", default=0)
-	parser.add_argument("--n3", type=float, help="n3.", default=0)
+	parser.add_argument("--n1", "-n1", type=float, help="n1.", default=0)
+	parser.add_argument("--n2", "-n2", type=float, help="n2.", default=0)
+	parser.add_argument("--n3", "-n3", type=float, help="n3.", default=0)
 #sigrot
-	parser.add_argument("--q", type=float, help="q in sgirot convention.", default=0)
+	parser.add_argument("--q", "-q", type=float, help="q in sgirot convention.", default=0)
 
 	(options, args) = parser.parse_args()
 	

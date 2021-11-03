@@ -48,9 +48,9 @@ Note: If the "--voldir" flag is not specified, the resulting reconstructions wil
 \\
 ===== Input =====
 === Main Parameters ===
-  ; %%--%%origparts : Particle stack : Original particle stack before signal subtraction. (default None) : subtraction_mode==projsubtract
-  ; %%--%%map2subtract : Map to subtract : Map whose projections will be subtracted from the original images. (default None) : subtraction_mode==projsubtract
-  ; %%--%%projparams : Projection parameters : Angles and shifts, from Meridien. (default None) : subtraction_mode==projsubtract
+  ; %%--%%origparts : Particle stack : Original particle stack before signal subtraction. (default required string) : subtraction_mode==projsubtract
+  ; %%--%%map2subtract : Map to subtract : Map whose projections will be subtracted from the original images. (default required string) : subtraction_mode==projsubtract
+  ; %%--%%projparams : Projection parameters : Angles and shifts, from Meridien. (default required string) : subtraction_mode==projsubtract
   ; %%--%%outdir : Output directory : Directory where outputs will be written. (default required string)
   
 \\
