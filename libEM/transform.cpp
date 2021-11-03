@@ -873,8 +873,8 @@ Dict Transform::get_rotation(const string& euler_type) const
 
 	} // ends separate cases: alt close to 0, 180, or neither
 
-	phi = phi-360.0*floor(phi/360.0);
-	az  = az -360.0*floor(az/360.0);
+    //phi = phi-360.0*floor(phi/360.0);
+	//az  = az -360.0*floor(az/360.0);
 
 //  get phiS, psiS (SPIDER)
 	if (cosalt >= 1) {  // that is, alt close to 0
@@ -948,7 +948,7 @@ Dict Transform::get_rotation(const string& euler_type) const
             
         double A0 =(matrix[1][2]-matrix[2][1])/2.0;
         double A1 =(matrix[2][0]-matrix[0][2])/2.0;
-        double A2 =(matrix[1][2]-matrix[2][0])/2.0;
+        double A2 =(matrix[0][1]-matrix[1][0])/2.0;
         double sinomega = sqrt(A0*A0+A1*A1+A2*A2);
 
         if (cosomega>1.0) cosomega=1.0;
