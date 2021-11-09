@@ -20,9 +20,9 @@ def main():
 	parser.add_argument("--learnrate", type=float,help="learning rate", default=.2)
 	parser.add_argument("--res", type=float,help="resolution", default=50)
 	parser.add_argument("--ref", type=str,help="reference", default=None)
+	parser.add_argument("--sym", type=str,help="symmetry. do not use without ref", default="c1")
 	parser.add_argument("--classify",action="store_true",help="classify particles to the best class. there is the risk that some classes may end up with no particle. by default each class will include the best batch particles, and different classes can overlap.",default=False)
 
-	#parser.add_argument("--sym", type=str,help="sym", default='c1')
 	
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -94,7 +94,7 @@ def main():
 		ali3d=[info3d[i] for i in idx]
 		save_lst_params(ali3d, info3dname)
 		
-		launch_childprocess(f"e2spt_align_subtlt.py {path}/particle_info_3d.lst {options.ref} --path {path} --maxres {res} --parallel {options.parallel} --fromscratch --iter 0")
+		launch_childprocess(f"e2spt_align_subtlt.py {path}/particle_info_3d.lst {options.ref} --path {path} --maxres {res} --parallel {options.parallel} --fromscratch --iter 0  --sym {options.sym}")
 		ali2d=load_lst_params(f"{path}/aliptcls2d_00.lst")
 		thrd0=make_3d(ali2d, options)
 		thrd0s.append(thrd0)
@@ -115,7 +115,7 @@ def main():
 		a2dout=[]
 		for ic in range(ncls):
 			print(f"iter {itr}, class {ic}: ")
-			launch_childprocess(f"e2spt_align_subtlt.py {path}/particle_info_3d.lst {path}/output_cls{ic}.hdf --path {path} --maxres {res} --parallel {options.parallel} --fromscratch --iter 0")
+			launch_childprocess(f"e2spt_align_subtlt.py {path}/particle_info_3d.lst {path}/output_cls{ic}.hdf --path {path} --maxres {res} --parallel {options.parallel} --fromscratch --iter 0 --sym {options.sym}")
 			
 			a3dout.append(load_lst_params(f"{path}/aliptcls3d_00.lst"))
 			a2dout.append(load_lst_params(f"{path}/aliptcls2d_00.lst"))
@@ -158,7 +158,7 @@ def main():
 def make_3d(ali2d, options):
 	#normvol=EMData(pad//2+1, pad, pad)
 	pad=options.pad
-	recon=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":"trilinear"})
+	recon=Reconstructors.get("fourier", {"sym":options.sym,"size":[pad,pad,pad], "mode":"trilinear"})
 	recon.setup()
 	for a in ali2d:
 		e=EMData(a["src"],a["idx"])
