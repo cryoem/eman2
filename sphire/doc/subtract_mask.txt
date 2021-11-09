@@ -38,7 +38,7 @@ The map to make a mask from (--map2mask) corresponds to the region that you want
 \\
 ===== Input =====
 === Main Parameters ===
-  ; %%--%%map2mask : Map to mask : Map from which a mask will be generated. (default None) : subtraction_mode==sp_mask
+  ; %%--%%map2mask : Map to mask : Map from which a mask will be generated. (default required string) : subtraction_mode==sp_mask
   ; %%--%%fullmap : Full map : Map which will be multiplied by the mask. (default None) : subtraction_mode==sp_mask
   ; %%--%%outdir : Output directory : Directory where outputs will be written. (default required string)
   ; %%--%%mapthresh : Map threshold : Full map will be initially binarized at this threshold. (default None) : subtraction_mode==sp_mask
