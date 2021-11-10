@@ -188,7 +188,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 #				if parms==None : raise Exception
 			except:
 				ctf = EMAN2Ctf()
-				ctf.from_dict({'defocus':0.0,'dfdiff':0.0,'dfang':0.0,'bfactor':200.0,'ampcont':self.defaultac,'voltage':200.0,'cs':4.1,'apix':1.0,'dsbg':-1})
+				ctf.from_dict({'defocus':0.0,'dfdiff':0.0,'dfang':0.0,'bfactor':200.0,'ampcont':self.defaultac,'voltage':0,'cs':4.1,'apix':1.0,'dsbg':-1})	# voltage zero here to trigger initialization
 				if self.defaultvoltage!=None : ctf.voltage=self.defaultvoltage
 				if self.defaultcs!=None : ctf.cs=self.defaultcs
 				if self.defaultapix!=None : ctf.apix=self.defaultapix
@@ -732,6 +732,22 @@ class GUIEvalImage(QtWidgets.QWidget):
 		if "," in fsp :
 			fsp,n=fsp.split(",")
 			self.data=EMData(fsp,int(n))	# read the image from disk
+			if not self.data.has_attr("microscope_voltage"):
+				if self.data.has_attr("ctf"):
+					ctf=self.data["ctf"]
+					self.data["microscope_voltage"]=ctf.voltage
+					self.data["microscope_cs"]=ctf.cs
+				else:
+					js=js_open_dict(info_name(fsp))
+					try:
+						self.data["microscope_cs"]=js["cs"]
+						self.data["microscope_voltage"]=js["voltage"]
+					except:
+						js=js_open_dict("info/project.json")
+						try:
+							self.data["microscope_cs"]=js["global.microscope_cs"]
+							self.data["microscope_voltage"]=js["global.microscope_voltage"]
+						except:pass
 		elif ";" in fsp :
 			fsp,n=fsp.split(";")
 			hdr=EMData(fsp,0,True)
