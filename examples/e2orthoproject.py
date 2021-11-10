@@ -244,10 +244,13 @@ def main():
 			if options.normproc:
 				#if options["normproc"][0]=="normalize.mask": 
 				#	options["normproc"][1]["mask"]=mask
-				
+				print("\n!!!! applying normalization = {}".format(options.normproc))
 				submodel.process_inplace(options.normproc[0],options.normproc[1])
 			
 				submodel.mult(mask)
+			else:
+				print("\nNO normalization = {}".format(options.normproc))
+
 			
 			if options.lowpass:
 				submodel.process_inplace(options.lowpass[0],options.lowpass[1])
