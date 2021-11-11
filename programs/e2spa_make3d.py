@@ -273,6 +273,8 @@ def initialize_data(inputfile, options):
 		
 	data=[d for i,d in enumerate(data) if tokeep[i]]
 	scrs=scrs[tokeep]
+	if np.all(scrs==0):
+		scrs+=1
 	if np.min(scrs)>=0:
 		print("positive score. assume this is weight...")
 	else:
