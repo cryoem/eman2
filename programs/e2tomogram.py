@@ -125,7 +125,7 @@ def main():
 		
 	#### initializing multithread fft. whether this actually improves speed is untested.
 	Util.init_threads(options.threads)
-		
+	options.ctf=None
 		
 	#### parse options.
 	itnum=[int(i) for i in options.niter.split(',')] ### number of iterations for each mag
@@ -231,7 +231,7 @@ def main():
 		#### loading parameters from json file
 		jsname=info_name(options.inputname)
 		print("Loading parameters from {}...".format(jsname))
-		js=js_open_dict(jsname)
+		js=dict(js_open_dict(jsname)).copy()
 		if "tlt_params" not in js:
 			print("Failed to load saved parameterss. Exit.")
 			return
@@ -242,19 +242,24 @@ def main():
 			
 		tpm=np.array(js["tlt_params"])
 		ttparams=tpm.copy()
-		js.close()
+		
+		if "defocus" in js:
+			print("Loading CTF information. will do phase flipping for tomograms")
+			options.ctf={	"defocus":js["defocus"], "phase":js["phase"], 
+					"cs":js["cs"], "voltage":js["voltage"]}
+			
 		tlts=ttparams[:,3].copy()
 		#### some old version may not save loss
 		try: 
 			loss0=np.array(js["ali_loss"])
 		except: 
-			loss0=abs(ttparams[:,3])
+			loss0=abs(ttparams[:,3])*.1
 			
 		options.zeroid=zeroid=np.argmin(abs(tlts))
 		if options.flip:
 			print("Flipping tilt axis...")
 			ttparams[:,2]=(ttparams[:,2]+180)%360
-	
+			
 	else:
 		#### determine alignment parameters from scratch
 		if (options.rawtlt!=None and len(options.rawtlt)>0) :
@@ -1469,6 +1474,15 @@ def make_tile(args):
 		m=imgs[i]
 		if m["nx"]==1:
 			continue
+		
+		if m.has_attr('ctf'):
+			ctf=m["ctf"]
+			fft1=m.do_fft()
+			flipim=fft1.copy()
+			ctf.compute_2d_complex(flipim,Ctf.CtfType.CTF_SIGN)
+			fft1.mult(flipim)
+			m=fft1.do_ift()
+			
 		m.process_inplace("filter.ramp")
 		m.process_inplace("xform",{"alpha":-t[2]})
 		xf=Transform({"type":"xyz","ytilt":t[3],"xtilt":t[4]})
@@ -1578,6 +1592,11 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 	nstepx=int(outx/step/2)
 	nstepy=int(outy/step/2)
 	
+	if options.ctf!=None:
+		print("ctf correction")
+		ctf=EMAN2Ctf()
+		ctf.from_dict({
+			"defocus":1.0, "voltage":options.ctf["voltage"], "bfactor":0., "cs":options.ctf["cs"],"ampcont":0, "apix":imgs[0]["apix_x"]})
 		
 	for stepx in range(-nstepx,nstepx+1):
 		#### shift y by half a tile
@@ -1590,9 +1609,18 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 			for i in range(num):
 				if i in nrange:
 					t=tpm[i]
-					pxf=get_xf_pos(t, [stepx*step,stepy*step,0])
+					pos=[stepx*step,stepy*step,0]
+					pxf=get_xf_pos(t, pos)
 					img=imgs[i]
 					m=img.get_clip(Region(img["nx"]//2-pad//2+pxf[0],img["ny"]//2-pad//2+pxf[1], pad, pad), fill=0)
+					if options.ctf!=None:
+						rot=Transform({"type":"xyz","xtilt":float(t[4]),"ytilt":float(t[3])})
+						p1=rot.transform(pos)
+						pz=p1[2]*img["apix_x"]/10000.
+						ctf.defocus=options.ctf["defocus"][i]-pz
+						ctf.set_phase(options.ctf["phase"][i]*np.pi/180.)
+						m["ctf"]=ctf
+						
 					tiles.append(m)
 				else:
 					tiles.append(EMData(1,1))
