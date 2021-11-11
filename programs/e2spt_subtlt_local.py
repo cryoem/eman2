@@ -336,6 +336,7 @@ class SptAlignTask(JSTask):
 					scr.append(-np.sum(s*wt))
 					
 				defocus=zrg[np.argmin(scr)]
+				score=np.min(scr)
 				if options.debug: print("{} - {} : {} -> {}".format(di,defocus, scr[len(scr)//2], np.min(scr)))
 			else:
 				defocus=0
