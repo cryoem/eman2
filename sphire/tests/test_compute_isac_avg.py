@@ -29,7 +29,7 @@ TOLERANCE=1
 
 from copy import deepcopy
 import subprocess
-import mpi
+
 from sphire.libpy import sp_global_def
 
 sp_global_def.BATCH = True
