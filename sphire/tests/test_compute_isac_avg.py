@@ -31,7 +31,7 @@ from copy import deepcopy
 import subprocess
 import mpi
 from sphire.libpy import sp_global_def
-mpi.mpi_init(0, [])
+
 sp_global_def.BATCH = True
 sp_global_def.MPI = False
 
