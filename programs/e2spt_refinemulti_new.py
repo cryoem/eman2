@@ -33,6 +33,8 @@ def main():
 	parser.add_argument("--sym", type=str,help="symmetry to apply to the average structure", default="c1")
 	parser.add_argument("--breaksym", type=str,help="Break specified symmetry. Only used when --loadali3d is on.", default=None)
 	parser.add_argument("--setsf", type=str,help="set structure factor from text file", default=None)
+	parser.add_argument("--maxshift", type=int, help="maximum shift for local alignment. default box size/6",default=-1)
+	parser.add_argument("--maxang", type=int, help="maximum angle difference for local alignment. ",default=-1)
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -114,6 +116,8 @@ def main():
 	if options.breaksym!=None:
 		opt+=" --breaksym {}".format(options.breaksym)
 		
+	if options.maxang>0: opt+=f" --maxang {options.maxang}"
+	if options.maxshift>0: opt+=f" --maxshift {options.maxshift}"
 	if options.minres>0: opt+=f" --minres {options.minres}"
 	if options.maxres>0: opt+=f" --maxres {options.maxres}"
 		
