@@ -70,7 +70,7 @@ def main():
 	
 	for i in range(options.startiter, options.startiter+options.niter):
 		
-		run("e2spa_align.py --ptclin {pt}/ptcls_{i0:02d}.lst --ptclout {pt}/ptcls_{i1:02d}.lst --ref {pt}/threed_{i0:02d}.hdf --parallel {par} --sym {s} --maxres {rs:.2f} --goldcontinue".format(pt=options.path, i0=i, i1=i+1, rs=res, eo=eo, s=sym, par=options.parallel))
+		run("e2spa_align.py --ptclin {pt}/ptcls_{i0:02d}.lst --ptclout {pt}/ptcls_{i1:02d}.lst --ref {pt}/threed_{i0:02d}.hdf --parallel {par} --sym {s} --maxres {rs:.2f} --goldcontinue".format(pt=options.path, i0=i, i1=i+1, rs=res, s=sym, par=options.parallel))
 			
 		for eo in ["even","odd"]:
 			run("e2spa_make3d.py --input {pt}/ptcls_{i1:02d}.lst --output {pt}/threed_{i1:02d}_{eo}.hdf --keep {kp} --sym {s} --parallel {par} --clsid {eo}".format(pt=options.path, i1=i+1, eo=eo, s=sym, par=options.parallel, kp=options.keep))
