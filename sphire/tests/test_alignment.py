@@ -2612,27 +2612,29 @@ class Test_fine_2D_refinement(unittest.TestCase):
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[3], msg_old[3])
 
-    def test_Nonemask_crash_because_SIGSEGV(self):
-        pass
-        """
-        with self.assertRaises(AttributeError) as cm_old:
+    def test_Nonemask_crash_because_RuntimeError_InvalidValueException(self):
+
+        with self.assertRaises(RuntimeError) as cm_old:
             oldfu.fine_2D_refinement(data=[deepcopy(IMAGE_2D)], br=1.75, mask=None, tavg=IMAGE_2D_REFERENCE,group=-1)
-        with self.assertRaises(AttributeError) as cm_new:
+        with self.assertRaises(RuntimeError) as cm_new:
             fu.fine_2D_refinement(data=[deepcopy(IMAGE_2D)], br=1.75, mask=None, tavg=IMAGE_2D_REFERENCE,group=-1)
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_xsize'")
-        """
+        self.assertEqual(str(cm_new.exception).split(" ")[0].replace("\'",""), "NotExistingObjectException")
+        self.assertEqual(str(cm_new.exception).split(":")[2], " error with 'alpha'")
+        self.assertEqual(str(cm_new.exception).split(":")[3].replace("\n",""), " 'The requested key does not exist' caught")
 
-    def test_emptymask_crash_because_SIGSEGV(self):
-        pass
-        """
-        with self.assertRaises(AttributeError) as cm_old:
+
+    def test_emptymask_crash_because_RuntimeError_InvalidValueException(self):
+
+        with self.assertRaises(RuntimeError) as cm_old:
             oldfu.fine_2D_refinement(data=[deepcopy(IMAGE_2D)], br=1.75, mask=EMData(), tavg=IMAGE_2D_REFERENCE,group=-1)
-        with self.assertRaises(AttributeError) as cm_new:
+        with self.assertRaises(RuntimeError) as cm_new:
             fu.fine_2D_refinement(data=[deepcopy(IMAGE_2D)], br=1.75, mask=EMData(), tavg=IMAGE_2D_REFERENCE,group=-1)
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_xsize'")
-        """
+        self.assertEqual(str(cm_new.exception).split(" ")[0].replace("\'",""), "NotExistingObjectException")
+        self.assertEqual(str(cm_new.exception).split(":")[2], " error with 'alpha'")
+        self.assertEqual(str(cm_new.exception).split(":")[3].replace("\n",""), " 'The requested key does not exist' caught")
+
 
     def test_None_data_returns_AttributeError(self):
         with self.assertRaises(AttributeError) as cm_old:
