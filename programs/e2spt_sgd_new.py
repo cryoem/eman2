@@ -140,8 +140,6 @@ def main():
 				if a["ptcl3d_id"] in scrid:
 					ali2d.append(a)
 					
-			#print(len(ali2d))
-									
 			thrd1=make_3d(ali2d, options)
 			thrd0=thrd0s[ic]
 			
@@ -160,22 +158,41 @@ def make_3d(ali2d, options):
 	pad=options.pad
 	recon=Reconstructors.get("fourier", {"sym":options.sym,"size":[pad,pad,pad], "mode":"trilinear"})
 	recon.setup()
-	for a in ali2d:
-		e=EMData(a["src"],a["idx"])
-		xf=Transform(a["xform.projection"])
-		xf.set_trans(-xf.get_trans())
+	
+	thrds=[threading.Thread(target=do_insert,args=(recon, a, options.shrink)) for a in ali2d]
+	for t in thrds:  t.start()
+	for t in thrds:  t.join()
 		
-		if options.shrink>1:
-			e.process_inplace("math.meanshrink",{"n":options.shrink})
-			xf.set_trans(xf.get_trans()/options.shrink)
+	#for a in ali2d:
+		#e=EMData(a["src"],a["idx"])
+		#xf=Transform(a["xform.projection"])
+		#xf.set_trans(-xf.get_trans())
 		
-		ep=recon.preprocess_slice(e, xf)
-		recon.insert_slice(ep,xf,1)
-
+		#if options.shrink>1:
+			#e.process_inplace("math.meanshrink",{"n":options.shrink})
+			#xf.set_trans(xf.get_trans()/options.shrink)
+		
+		#ep=recon.preprocess_slice(e, xf)
+		#recon.insert_slice(ep,xf,1)
+	
 	threed=recon.finish(False)
 
 	return threed
 
+def do_insert(recon, a, shrink):
+	
+	e=EMData(a["src"],a["idx"])
+	xf=Transform(a["xform.projection"])
+	xf.set_trans(-xf.get_trans())
+	
+	if shrink>1:
+		e.process_inplace("math.meanshrink",{"n":shrink})
+		xf.set_trans(xf.get_trans()/shrink)
+	
+	ep=recon.preprocess_slice(e, xf)
+	recon.insert_slice(ep,xf,1)
+	
+	return
 
 def post_process(threed, options):
 	pad=options.pad
