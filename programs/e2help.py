@@ -195,6 +195,14 @@ act as a filter on the names of the algorithms."""
 
 	elif args[0] in ("version"):
 		print(FULLVERSIONSTRING) 
+
+	elif args[0] in ("tophat"):
+		print("There are multiple ways to filter the 3D maps in SPA or SPT refinements:")
+		print("    wiener: wiener filter based on FSC curve. default mode in most programs.")
+		print("    global: tophat filter across the map at the resolution cutoff 0.143 from fsc_masked_xx.txt.") 
+		print("    localwiener: wiener filter based on the fsc curve of local regions from the even/odd maps. see e2fsc_real_local.py")
+		print("    local: tophat filter based on local resolution calculated from the even/odd maps at 0.143 cutoff. see e2fsc_real_local.py") 
+		print("    localold: an old version of local resolution based filter. see e2fsc_local.py") 
 	else:
 		print(helpstring)
 		print("unknown option:",args[0])

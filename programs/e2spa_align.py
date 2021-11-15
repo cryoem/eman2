@@ -7,8 +7,6 @@ import threading
 from EMAN2jsondb import JSTask
 from EMAN2PAR import EMTaskCustomer
 from scipy.optimize import minimize
-import gc
-#from memory_profiler import profile
 
 def main():
 	
@@ -18,7 +16,6 @@ def main():
 	parser.add_argument("--ptclin", type=str,help="particle input", default=None)
 	parser.add_argument("--ptclout", type=str,help="particle output", default=None)
 	parser.add_argument("--ref", type=str,help="reference input", default=None)
-	#parser.add_argument("--keep", type=float,help="propotion of tilts to keep. default is 0.8", default=0.8)
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use. Default is thread:12", default="thread:12")
 
 	parser.add_argument("--debug", action="store_true", default=False ,help="Turn on debug mode. This will only process a small subset of the data")
@@ -31,7 +28,6 @@ def main():
 	parser.add_argument("--minrespx", type=int,default=4, help="skip the first x pixel in fourier space")
 	parser.add_argument("--sym", type=str,help="symmetry. ", default="c1")
 	parser.add_argument("--ppid", type=int,help="ppid...", default=-1)
-	#parser.add_argument("--nkeep", type=int,help="", default=1)
 	parser.add_argument("--verbose","-v", type=int,help="Verbose", default=0)
 
 	(options, args) = parser.parse_args()

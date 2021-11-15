@@ -33,7 +33,7 @@ def main():
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>=<value>. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel",default="thread:4")
 	parser.add_argument("--threads", type=int,help="threads for post-processing", default=10)
 	parser.add_argument("--setsf", type=str,help="structure factor for sharpening", default=None)
-	parser.add_argument("--tophat", type=str,help="tophat filter options, same as the single particle reconstruction.", default=None)
+	parser.add_argument("--tophat", type=str,help="Options for filtering maps. Run 'e2help.py tophat' for more information. Default=wiener.", default=None)
 	parser.add_argument("--ssnrwt", action="store_true", default=False ,help="weight particles during reconstruction by SSNR accroding to references.")
 	parser.add_argument("--curve", action="store_true", default=False ,help="Filament refinement mode. still under testing")
 	parser.add_argument("--use3d", action="store_true", default=False ,help="Use projection of 3d particles instead of 2d sub tilt series. This may be more useful for thicker sample but can be significantly slower.")
