@@ -2466,12 +2466,11 @@ class Test_crit2d(unittest.TestCase):
                 args=[3, 3, 4], data=[None, MASK_2DIMAGE, 2, self.img2D, self.img2D]
             )
 
-        # print(str(cm_old.exception))
         output_msg_old = "Python argument types in\n    EMData.rot_scale_conv_new(EMData, numpy.float64, int, int, NoneType, float)\ndid not match C++ signature:\n    rot_scale_conv_new(EMAN::EMData {lvalue}, float ang, float delx, float dely, EMAN::Util::KaiserBessel {lvalue} kb)\n    rot_scale_conv_new(EMAN::EMData {lvalue}, float ang, float delx, float dely, EMAN::Util::KaiserBessel {lvalue} kb, float scale)"
         output_msg_new = "Python argument types in\n    EMData.rot_scale_conv_new(EMData, numpy.float64, int, int, NoneType, float)\ndid not match C++ signature:\n    rot_scale_conv_new(EMAN::EMData {lvalue}, float ang, float delx, float dely, EMAN::Util::KaiserBessel {lvalue} kb)\n    rot_scale_conv_new(EMAN::EMData {lvalue}, float ang, float delx, float dely, EMAN::Util::KaiserBessel {lvalue} kb, float scale)"
         self.assertEqual(str(cm_old.exception), output_msg_old)
         self.assertEqual(str(cm_new.exception), output_msg_new)
-        # self.assertEqual(str(cm_new.exception), str(cm_old.exception))
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_crit2dIMG(self):
         return_old = oldfu.crit2d(
@@ -2483,7 +2482,7 @@ class Test_crit2d(unittest.TestCase):
             data=[KB_IMAGE2D_SIZE, MASK_2DIMAGE, 2, self.img2D, self.img2D],
         )
         self.assertEqual(return_old, return_new)
-        # self.assertEqual(return_old, 0.031176071614027023)
+        self.assertEqual(return_old, 0.031176071614027023)
 
 
 class Test_kbt(unittest.TestCase):
@@ -2522,11 +2521,11 @@ class Test_ali_vol_func_rotate(unittest.TestCase):
 
     def test_ali_vol_func_rotate(self):
         params = [250.0, 25.0 , 2.0]
-        # print(IMAGE_3D.get_3dview().shape)
-        # print(MASK_3DIMAGE.get_3dview().shape)
         data = [ IMAGE_3D, IMAGE_3D, MASK_3DIMAGE, [25.0, 45.0, 22.0, 0.5, 0.8, 1.2, 0 , 1.0], "ccc" ]
-        v = fu.ali_vol_func_rotate(params, data)
-        # pass
+        res_new = fu.ali_vol_func_rotate(params, data)
+        res_old = oldfu.ali_vol_func_rotate(params, data)
+        self.assertEqual(res_new, res_old)
+        self.assertEqual(res_new, 0.10380586981773376)
 
 
 class Test_ali_vol_func_shift(unittest.TestCase):
@@ -2545,8 +2544,12 @@ class Test_ali_vol_func_shift(unittest.TestCase):
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_ali_vol_func_shift(self):
-        # v = oldfu.ali_vol_func_shift(params="", data="")
-        pass
+        params = [250.0, 25.0 , 2.0]
+        data = [ IMAGE_3D, IMAGE_3D, MASK_3DIMAGE, [25.0, 45.0, 22.0, 0.5, 0.8, 1.2, 0 , 1.0], "ccc" ]
+        res_new = fu.ali_vol_func_shift(params, data)
+        res_old = oldfu.ali_vol_func_shift(params, data)
+        self.assertEqual(res_new, res_old)
+        self.assertEqual(res_new, 0.8404278755187988)
 
 
 class Test_fine_2D_refinement(unittest.TestCase):
@@ -2998,27 +3001,27 @@ class Test_align2d_direct3(unittest.TestCase):
             CTF=True,
         )
         self.assertTrue(array_equal(return_old, return_new))
-        # self.assertTrue(
-        #     array_equal(
-        #         return_old,
-        #         [
-        #             [
-        #                 316.9999994395314,
-        #                 0.026203064247965813,
-        #                 -0.2627040147781372,
-        #                 0,
-        #                 0.4272246869622954,
-        #             ],
-        #             [
-        #                 316.9999994395314,
-        #                 0.026203064247965813,
-        #                 -0.2627040147781372,
-        #                 0,
-        #                 0.4272246869622954,
-        #             ],
-        #         ],
-        #     )
-        # )
+        self.assertTrue(
+            array_equal(
+                return_new,
+                [
+                    [
+                        316.9999994395314,
+                        0.026203064247965813,
+                        -0.2627040147781372,
+                        0,
+                        0.4272247022774591
+                    ],
+                    [
+                        316.9999994395314,
+                        0.026203064247965813,
+                        -0.2627040147781372,
+                        0,
+                        0.4272247022774591
+                    ],
+                ]
+            )
+        )
 
 
 class Test_ali_nvol(unittest.TestCase):
@@ -3061,17 +3064,6 @@ class Test_ali_nvol(unittest.TestCase):
         self.assertEqual(
             str(cm_new.exception), "'NoneType' object has no attribute 'set_attr'"
         )
-
-
-    # def test_luca_ali_nvol(self):
-    #     from sphire.libpy import sp_utilities
-    #     p = [180.0,1.0, 30.0, 0.5, 0.5, 1.2, 0,1]
-    #
-    #     new_mask = sp_utilities.model_circle(2, 10, 10, 10)
-    #
-    #     sp_utilities.set_params3D(IMAGE_3D, p)
-    #
-    #     rr = fu.ali_nvol([IMAGE_3D, IMAGE_3D], new_mask)
 
 
 class Test_alivol_mask_getref(unittest.TestCase):
@@ -4252,7 +4244,7 @@ class Test_alivol_mask_getref(unittest.TestCase):
             )
         )
 
-    def test_2DimgBlank(self):
+    def test_3DimgBlank(self):
         mask = model_circle(
             2,
             IMAGE_BLANK_3D.get_xsize(),
@@ -4344,18 +4336,8 @@ class Test_alivol_mask(unittest.TestCase):
         self.assertEqual(msg[1], "can not multiply images that are not the same size")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[1], msg_old[1])
-
-    def test_luca_ali_vol_mask(self):
-        p = [180.0,0.0, 30.0, 0.5, 0.5, 1.2, 0,1]
-
-        new_mask = sp_utilities.model_circle(2, 10, 10, 10)
-
-        sp_utilities.set_params3D(IMAGE_3D, p)
-
-        rr = fu.alivol_mask(IMAGE_3D, IMAGE_3D, new_mask)
-
-
 """ end: new in sphire 1.3"""
+
 
 @unittest.skip("Somehow the pickle file is corrupted")
 class Test_ali2d_single_iter(unittest.TestCase):
