@@ -58,6 +58,7 @@ from tests.test_module import (
     give_ali2d_single_iter_data,
     give_ornq_data,
     give_ormq_data,
+    give_alignment_shc_data
 )
 
 from sphire.libpy.sp_fundamentals import fft  # ccf,rot_shift2D
@@ -9359,36 +9360,26 @@ class Test_parabl(unittest.TestCase):
         self.assertTrue(array_equal(return_new, (0.0, 0.0, 0.0)))
 
 
-@unittest.skip("sometimes the output values change")
 class Test_shc(unittest.TestCase):
-    # argum = get_arg_from_pickle_file(
-    #     path.join(ABSOLUTE_PATH_TO_RESOURCES, "alignment.shc")
-    # )
-
     def test_wrong_number_params_returns_TypeError_too_few_parameters(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.shc()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.shc()
         self.assertEqual(
-            str(cm_new.exception), "shc() takes at least 7 arguments (0 given)"
+            str(cm_new.exception), "shc() missing 7 required positional arguments: 'data', 'refrings', 'list_of_reference_angles', 'numr', 'xrng', 'yrng', and 'step'"
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
+    @unittest.skip('segmentation fault raised')
     def test_empty_input_image_refringscrashes_because_signal11SIGSEV(self):
-        """
-        (data, refrings, list_of_ref_ang, numr, xrng, yrng, step) = self.argum[0]
+        data, refrings, list_of_ref_ang, numr, xrng, yrng, step = give_alignment_shc_data(True)
         refrings = [EMData(), EMData()]
         return_new = fu.shc(data, refrings, list_of_ref_ang, numr, xrng, yrng, step, an =-1.0)
         return_old = oldfu.shc(data, refrings, list_of_ref_ang, numr, xrng, yrng, step, an =-1.0)
-
         self.assertTrue(array_equal(return_new, return_old))
-        """
-        self.assertTrue(True)
 
-    def test_empty_image_returns_RuntimeError_the_key_xform_projection_doesnot_exist(
-        self
-    ):
+    def test_empty_image_returns_RuntimeError_the_key_xform_projection_doesnot_exist(self):
         data, refrings, list_of_ref_ang, numr, xrng, yrng, step = give_alignment_shc_data(True)
         data = EMData()
         with self.assertRaises(RuntimeError) as cm_new:
@@ -9413,40 +9404,35 @@ class Test_shc(unittest.TestCase):
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
-    # def test_sym_c1_failed(self):
-    #     (data, refrings, list_of_ref_ang, numr, xrng, yrng, step) = self.argum[0]
-    #
-    #     # return_new = fu.shc(deepcopy(data), deepcopy(refrings), list_of_ref_ang, numr, xrng, yrng, step, an =-1.0, sym = "c1", finfo=None)
-    #     # return_old = oldfu.shc(deepcopy(data), deepcopy(refrings), list_of_ref_ang, numr, xrng, yrng, step, an =-1.0, sym = "c1", finfo=None)
-    #     self.assertTrue(True)
-    #     # self.assertTrue(array_equal(return_new, return_old))
+    @unittest.skip("EMAN2_cppwrap.Util.shc returns different value for iref")
+    def test_sym_c1_failed(self):
+        data, refrings, list_of_ref_ang, numr, xrng, yrng, step = give_alignment_shc_data(True)
+        return_new = fu.shc(deepcopy(data), deepcopy(refrings), list_of_ref_ang, numr, xrng, yrng, step, an =-1.0, sym = "c1", finfo=None)
+        return_old = oldfu.shc(deepcopy(data), deepcopy(refrings), list_of_ref_ang, numr, xrng, yrng, step, an =-1.0, sym = "c1", finfo=None)
+        self.assertTrue(array_equal(return_new, return_old))
 
-    # def test_empty_list_of_ref_ang_failed(self):
-    #     (data, refrings, list_of_ref_ang, numr, xrng, yrng, step) = self.argum[0]
-    #     list_of_ref_ang = []
-    #
-    #     # return_new = fu.shc(deepcopy(data), deepcopy(refrings), list_of_ref_ang, numr, xrng, yrng, step, an =-1.0, sym = "c1", finfo=None)
-    #     # return_old = oldfu.shc(deepcopy(data), deepcopy(refrings), list_of_ref_ang, numr, xrng, yrng, step, an =-1.0, sym = "c1", finfo=None)
-    #     self.assertTrue(True)
-    #     # self.assertTrue(array_equal(return_new, return_old))
+    @unittest.skip("EMAN2_cppwrap.Util.shc returns different value for iref")
+    def test_empty_list_of_ref_ang_failed(self):
+        (data, refrings, list_of_ref_ang, numr, xrng, yrng, step) = give_alignment_shc_data(True)
+        list_of_ref_ang = []
+        return_new = fu.shc(deepcopy(data), deepcopy(refrings), list_of_ref_ang, numr, xrng, yrng, step, an =-1.0, sym = "c1", finfo=None)
+        return_old = oldfu.shc(deepcopy(data), deepcopy(refrings), list_of_ref_ang, numr, xrng, yrng, step, an =-1.0, sym = "c1", finfo=None)
+        self.assertTrue(array_equal(return_new, return_old))
 
-    # def test_added_one_ref_ang_failed(self):
-    #     (data, refrings, list_of_ref_ang, numr, xrng, yrng, step) = self.argum[0]
-    #     list_of_ref_ang[0].append(2.0)
-    #     # return_new = fu.shc(data, refrings, list_of_ref_ang, numr, xrng, yrng, step, an =-1.0, sym = "c1", finfo=None)
-    #     # return_old = oldfu.shc(data, refrings, list_of_ref_ang, numr, xrng, yrng, step, an =-1.0, sym = "c1", finfo=None)
-    #
-    #     self.assertTrue(True)
-    #     # self.assertTrue(array_equal(return_new, return_old))
-    #
-    # def test_sym_nomirror_failed(self):
-    #     (data, refrings, list_of_ref_ang, numr, xrng, yrng, step) = self.argum[0]
-    #
-    #     # return_new = fu.shc(data, refrings, list_of_ref_ang, numr, xrng, yrng, step, an =-1.0, sym = "nomirror", finfo=None)
-    #     # return_old = oldfu.shc(data, refrings, list_of_ref_ang, numr, xrng, yrng, step, an =-1.0, sym = "nomirror", finfo=None)
-    #
-    #     self.assertTrue(True)
-    #     # self.assertTrue(array_equal(return_new, return_old))
+    @unittest.skip("EMAN2_cppwrap.Util.shc returns different value for iref")
+    def test_added_one_ref_ang_failed(self):
+        (data, refrings, list_of_ref_ang, numr, xrng, yrng, step) = give_alignment_shc_data(True)
+        list_of_ref_ang[0].append(2.0)
+        return_new = fu.shc(data, refrings, list_of_ref_ang, numr, xrng, yrng, step, an =-1.0, sym = "c1", finfo=None)
+        return_old = oldfu.shc(data, refrings, list_of_ref_ang, numr, xrng, yrng, step, an =-1.0, sym = "c1", finfo=None)
+        self.assertTrue(array_equal(return_new, return_old))
+
+    @unittest.skip("EMAN2_cppwrap.Util.shc returns different value for iref")
+    def test_sym_nomirror_failed(self):
+        (data, refrings, list_of_ref_ang, numr, xrng, yrng, step) = give_alignment_shc_data(True)
+        return_new = fu.shc(data, refrings, list_of_ref_ang, numr, xrng, yrng, step, an =-1.0, sym = "nomirror", finfo=None)
+        return_old = oldfu.shc(data, refrings, list_of_ref_ang, numr, xrng, yrng, step, an =-1.0, sym = "nomirror", finfo=None)
+        self.assertTrue(array_equal(return_new, return_old))
 
 
 class Test_search_range(unittest.TestCase):
