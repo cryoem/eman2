@@ -8495,24 +8495,18 @@ class Test_ali_vol_func(unittest.TestCase):
 
 
 class Test_align2d(unittest.TestCase):
+    @unittest.skip('segmentation fault raised')
     def test_empty_image_to_align_crashes_because_signal11SIGSEV(self):
-        """
-        (image, refim, xrng, yrng) = self.argum[0]
         image = EMData()
-        return_new = fu.align2d(image, refim, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=1, last_ring=0, rstep=1, mode = "F")
-        return_old = oldfu.align2d(image, refim, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=1, last_ring=0, rstep=1, mode = "F")
+        return_new = fu.align2d(image, IMAGE_2D_REFERENCE, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=1, last_ring=0, rstep=1, mode = "F")
+        return_old = oldfu.align2d(image, IMAGE_2D_REFERENCE, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=1, last_ring=0, rstep=1, mode = "F")
         self.assertTrue(array_equal(return_new, return_old))
-        """
-        self.assertTrue(True)
 
+    @unittest.skip('segmentation fault raised')
     def test_NoneType_image_to_align_crashes_because_signal11SIGSEV(self):
-        """
-        (image, refim, xrng, yrng) = self.argum[0]
-        return_new = fu.align2d(None, refim, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=1, last_ring=0, rstep=1, mode = "F")
-        return_old = oldfu.align2d(None, refim, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=1, last_ring=0, rstep=1, mode = "F")
+        return_new = fu.align2d(None, IMAGE_2D_REFERENCE, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=1, last_ring=0, rstep=1, mode = "F")
+        return_old = oldfu.align2d(None, IMAGE_2D_REFERENCE, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=1, last_ring=0, rstep=1, mode = "F")
         self.assertTrue(array_equal(return_new, return_old))
-        """
-        self.assertTrue(True)
 
     def test_NoneType__image_to_align_creturns_AttributeError_NoneType_obj_hasnot_attribute_get_xsize(
         self
@@ -8640,14 +8634,11 @@ class Test_align2d(unittest.TestCase):
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
+    @unittest.skip('segmentation fault raised')
     def test_wrong_enumerate_rings_error_crashes_because_signal11SIGSEV(self):
-        """
-        (image, refim, xrng, yrng) = self.argum[0]
-        return_new = fu.align2d(image, refim, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=0, last_ring=1, rstep=1, mode = "F")
-        return_old = oldfu.align2d(image, refim, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=0, last_ring=1, rstep=1, mode = "F")
+        return_new = fu.align2d(IMAGE_2D, IMAGE_2D_REFERENCE, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=0, last_ring=1, rstep=1, mode = "F")
+        return_old = oldfu.align2d(IMAGE_2D, IMAGE_2D_REFERENCE, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=0, last_ring=1, rstep=1, mode = "F")
         self.assertTrue(array_equal(return_new, return_old))
-        """
-        self.assertTrue(True)
 
     def test_null_rstep_value_returns_ValueError_arg_af_max_f_is_empty_list(self):
         with self.assertRaises(ValueError) as cm_new:
