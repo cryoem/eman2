@@ -1072,6 +1072,9 @@ def parse_outfile_arg(arg):
 	argparse.ArgumentTypeError: Please, specify an output file!
 	>>> parse_outfile_arg('out.hdf')
 	('out.hdf', None, None, None, None, None)
+
+	>>> parse_outfile_arg('out.hdf:3')
+	('out.hdf', 3, None, None, None, None)
 	"""
 
 	fname, _, outbit_rng = arg.partition(':')
@@ -1083,8 +1086,10 @@ def parse_outfile_arg(arg):
 
 	if not outbit:
 		outbit = None
+	elif outbit.isdigit():
+		outbit = int(outbit)
 
-	return (fname, None, None, None, None, None)
+	return (fname, outbit, None, None, None, None)
 
 
 def angle_ab_sym(sym,a,b,c=None,d=None):
