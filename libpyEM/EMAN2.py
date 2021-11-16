@@ -1089,6 +1089,16 @@ def parse_outfile_arg(arg):
 	('out.hdf', 3, 'FULL', 'FULL', None, None)
 	>>> parse_outfile_arg('out.hdf:3:F')
 	('out.hdf', 3, 'FULL', 'FULL', None, None)
+
+	>>> parse_outfile_arg('out.hdf:3::')
+	Traceback (most recent call last):
+	argparse.ArgumentTypeError: Min/max fields are expected to be non-empty if specified. Got ':'
+	>>> parse_outfile_arg('out.hdf:3:20:')
+	Traceback (most recent call last):
+	argparse.ArgumentTypeError: Min/max fields are expected to be non-empty if specified. Got '20:'
+	>>> parse_outfile_arg('out.hdf:3::400')
+	Traceback (most recent call last):
+	argparse.ArgumentTypeError: Min/max fields are expected to be non-empty if specified. Got ':400'
 	"""
 
 	fname, _, outbit_rng = arg.partition(':')
@@ -1112,6 +1122,12 @@ def parse_outfile_arg(arg):
 		rng = None, None, -5.0, 5.0
 	elif rng.lower() == "f":
 		rng = "FULL", "FULL", None, None
+	else:
+		min, _, max = rng.partition(':')
+		rng = (min, max)
+
+		if not all(rng):
+			raise argparse.ArgumentTypeError(f"Min/max fields are expected to be non-empty if specified. Got '{':'.join(rng)}'")
 
 	return (fname, outbit, *rng)
 
