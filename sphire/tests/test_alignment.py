@@ -9021,47 +9021,26 @@ class Test_multialign2d_scf(unittest.TestCase):
         256,
     ]
 
-    def test_empty_input_image_refrings_crashes_because_signal11SIGSEV(self):
-        """
-        (dataa, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
 
-        dataa = deepcopy(self.argum[0][0])
-        cimage = EMData()
-        frotim = [fft(tavg)]
-
-        return_new = fu.multalign2d_scf(dataa[0], [cimage], frotim, numr, xrng, yrng, ou=174)
-        return_old = oldfu.multalign2d_scf(dataa[0], [cimage], frotim, numr, xrng, yrng, ou=174)
-        self.assertEqual(return_old, return_new)
-        """
-        self.assertTrue(True)
-
-    def test_NoneType_as_input_image_crashes_because_signal11SIGSEV(self):
-        """
-        (dataa, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
-
-        dataa = deepcopy(self.argum[0][0])
-        cimage = None
-        frotim = [fft(tavg)]
-
-        return_new = fu.multalign2d_scf(dataa[0], [cimage], frotim, numr, xrng, yrng, ou=174)
-        return_old = oldfu.multalign2d_scf(dataa[0], [cimage], frotim, numr, xrng, yrng, ou=174)
-        self.assertEqual(return_old, return_new)
-        """
-        self.assertTrue(True)
-
+    @unittest.skip('segmentation fault raised')
     def test_empty_image_reference_crashes_because_signal11SIGSEV(self):
-        """
-        (dataa, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
-
-        dataa = deepcopy(self.argum[0][0])
-        cimage = Util.Polar2Dm(tavg, float(cnx), float(cny), numr, "F")
-        frotim = EMData()
-
-        return_new = fu.multalign2d_scf(dataa[0], [cimage], frotim, numr, xrng, yrng, ou=174)
-        return_old = oldfu.multalign2d_scf(dataa[0], [cimage], frotim, numr, xrng, yrng, ou=174)
+        frotim = [fft(IMAGE_2D_REFERENCE)]
+        return_new = fu.multalign2d_scf(IMAGE_2D, [EMData()], frotim, self.numr, 4, 4, ou=174)
+        return_old = oldfu.multalign2d_scf(IMAGE_2D, [EMData()], frotim, self.numr, 4, 4, ou=174)
         self.assertEqual(return_old, return_new)
-        """
-        self.assertTrue(True)
+
+    @unittest.skip('segmentation fault raised')
+    def test_NoneType_as_input_image_crashes_because_signal11SIGSEV(self):
+        frotim = [fft(IMAGE_2D_REFERENCE)]
+        return_new = fu.multalign2d_scf(IMAGE_2D, [None], frotim, self.numr, 4, 4, ou=174)
+        return_old = oldfu.multalign2d_scf(IMAGE_2D, [None], frotim, self.numr, 4, 4, ou=174)
+        self.assertEqual(return_old, return_new)
+
+    @unittest.skip('segmentation fault raised')
+    def test_empty_input_image_refrings_crashes_because_signal11SIGSEV(self):
+        return_new = fu.multalign2d_scf(IMAGE_2D, [IMAGE_2D], EMData(),  self.numr, 4, 4, ou=174)
+        return_old = oldfu.multalign2d_scf(IMAGE_2D, [IMAGE_2D], EMData(),  self.numr, 4, 4, ou=174)
+        self.assertEqual(return_old, return_new)
 
     def test_NoneType__image_reference_typeError_NoneType_obj_hasnot_attribute___getitem__(
         self
@@ -9093,19 +9072,12 @@ class Test_multialign2d_scf(unittest.TestCase):
             str(cm_new.exception), "'NoneType' object is not subscriptable"
         )
 
+    @unittest.skip('segmentation fault raised')
     def test_empty_list_Numrinit_crashes_because_signal11SIGSEV(self):
-        """
-        (dataa, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step) = self.argum[0]
-        dataa = deepcopy(self.argum[0][0])
-        cimage = Util.Polar2Dm(tavg, float(cnx), float(cny), numr, "F")
-        frotim = [fft(tavg)]
-        numr = []
-
-        return_new = fu.multalign2d_scf(dataa[0], [cimage], frotim, numr, xrng, yrng, ou=174)
-        return_old = oldfu.multalign2d_scf(dataa[0], [cimage], frotim, numr, xrng, yrng, ou=174)
+        frotim = [fft(IMAGE_2D_REFERENCE)]
+        return_new = fu.multalign2d_scf(IMAGE_2D, [IMAGE_2D], frotim,  [], 4, 4, ou=174)
+        return_old = oldfu.multalign2d_scf(IMAGE_2D, [IMAGE_2D], frotim, [], 4, 4, ou=174)
         self.assertTrue(array_equal(return_new, return_old))
-        """
-        self.assertTrue(True)
 
     def test_wrong_number_params_returns_TypeError_too_few_parameters(self):
         with self.assertRaises(TypeError) as cm_new:
