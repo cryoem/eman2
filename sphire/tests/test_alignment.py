@@ -7193,7 +7193,7 @@ class Test_prepref(unittest.TestCase):
         self.assertEqual(str(cm_new.exception), "list index out of range")
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
-    @unittest.skip("SKipped because of pickle file corrupted")
+    @unittest.skip("SKipped because the data in the pickle file lead to a RuntimeError")
     def test_full_mode_without_mask(self):
         """
         The output is an array of array of image. Without the TOLERANCE  even if I compare 2 results got launching the same function the test fail
@@ -7224,7 +7224,7 @@ class Test_prepref(unittest.TestCase):
         )
         self.test_all_the_conditions(return_new, return_old)
 
-    @unittest.skip("SKipped because of pickle file corrupted")
+    @unittest.skip("SKipped because the data in the pickle file lead to a RuntimeError")
     def test_half_mode_without_mask(self):
         """
         The output is an array of array of image. Without the TOLERANCE  even if I compare 2 results got launching the same function the test fail
@@ -7296,7 +7296,7 @@ class Test_prepref(unittest.TestCase):
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[1], msg_old[1])
 
-    @unittest.skip("SKipped because of pickle file corrupted")
+    @unittest.skip("SKipped because the data in the pickle file lead to a RuntimeError")
     def test_Full_mode_withMask(self):
         """
         The output is an array of array of image. Without the TOLERANCE  even if I compare 2 results got launching the same function the test fail
@@ -7328,7 +7328,7 @@ class Test_prepref(unittest.TestCase):
         )
         self.test_all_the_conditions(return_new, return_old)
 
-    @unittest.skip("SKipped because of pickle file corrupted")
+    @unittest.skip("SKipped because the data in the pickle file lead to a RuntimeError")
     def test_Half_mode_withMask(self):
         """
         The output is an array of array of image. Without the TOLERANCE  even if I compare 2 results got launching the same function the test fail
@@ -7361,7 +7361,7 @@ class Test_prepref(unittest.TestCase):
         self.test_all_the_conditions(return_new, return_old)
 
 
-    @unittest.skip("SKipped because of pickle file corrupted")
+    @unittest.skip("SKipped because the data in the pickle file lead to a RuntimeError")
     def test_with_invalid_mode(self):
         """
         The output is an array of array of image. Without the TOLERANCE  even if I compare 2 results got launching the same function the test fail
