@@ -6426,41 +6426,33 @@ class Test_ornq(unittest.TestCase):
         path.join(ABSOLUTE_PATH_TO_RESOURCES, "alignment.ornq")
     )
 
+    @unittest.skip('segmentation fault raised')
     def test_empty_image_to_align_crashes_because_signal11SIGSEV(self):
-        """
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         return_new = fu.ornq(EMData(), crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
         return_old = oldfu.ornq(EMData(), crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
         self.assertTrue(array_equal(return_new, return_old))
-        """
-        self.assertTrue(True)
 
+    @unittest.skip('segmentation fault raised')
     def test_empty_image_reference_crashes_because_signal11SIGSEV(self):
-        """
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         return_new = fu.ornq(image, EMData(),  xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
         return_old = oldfu.ornq(image, EMData(),  xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
         self.assertTrue(array_equal(return_new, return_old))
-        """
-        self.assertTrue(True)
 
+    @unittest.skip('segmentation fault raised')
     def test_NoneType_as_input_image_crashes_because_signal11SIGSEV(self):
-        """
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         return_new = fu.ornq(image=None, crefim=crefim, xrng=xrng, yrng=yrng, step=step, mode=mode, numr=numr, cnx=cnx, cny=cny, deltapsi = 0.0)
         return_old = oldfu.ornq(image=None, crefim=crefim, xrng=xrng, yrng=yrng, step=step, mode=mode, numr=numr, cnx=cnx, cny=cny, deltapsi = 0.0)
         self.assertTrue(array_equal(return_new, return_old))
-        """
-        self.assertTrue(True)
 
+    @unittest.skip('segmentation fault raised')
     def test_NoneType_as_image_reference_crashes_because_signal11SIGSEV(self):
-        """
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         return_new = fu.ornq(image=image, crefim=None, xrng=xrng, yrng=yrng, step=step, mode=mode, numr=numr, cnx=cnx, cny=cny, deltapsi = 0.0)
         return_old = oldfu.ornq(image=image, crefim=None, xrng=xrng, yrng=yrng, step=step, mode=mode, numr=numr, cnx=cnx, cny=cny, deltapsi = 0.0)
         self.assertTrue(array_equal(return_new, return_old))
-        """
-        self.assertTrue(True)
 
     def test_wrong_number_params_returns_TypeError_too_few_parameters(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -6472,15 +6464,13 @@ class Test_ornq(unittest.TestCase):
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
+    @unittest.skip('segmentation fault raised')
     def test_empty_list_Numrinit_crashes_because_signal11SIGSEV(self):
-        """
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         numr = []
         return_new = fu.ornq(image=image, crefim=crefim, xrng=xrng, yrng=yrng, step=step, mode=mode, numr=numr, cnx=cnx, cny=cny, deltapsi = 0.0)
         return_old = oldfu.ornq(image=image, crefim=crefim, xrng=xrng, yrng=yrng, step=step, mode=mode, numr=numr, cnx=cnx, cny=cny, deltapsi = 0.0)
         self.assertTrue(array_equal(return_new, return_old))
-        """
-        self.assertTrue(True)
 
     def test_empty_list_xrng_returns_IndexError_list_index_out_of_range(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
@@ -6547,7 +6537,6 @@ class Test_ornq(unittest.TestCase):
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_with_negative_center(self):
-        # I cannot write a unit test because the output seems to be randon
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         return_new = fu.ornq(
             image=image,
@@ -6574,6 +6563,7 @@ class Test_ornq(unittest.TestCase):
             deltapsi=0.0,
         )
         self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(array_equal(return_new, (178.59375, 0.0, 0.0, 0, -1e+20)))
 
     def test_null_step_value_returns_ZeroDivisionError(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[
@@ -6636,11 +6626,7 @@ class Test_ornq(unittest.TestCase):
             deltapsi=0.0,
         )
         self.assertTrue(array_equal(return_new, return_old))
-        # self.assertTrue(
-        #     array_equal(
-        #         return_new, (90.659458637237549, 0.0, 0.0, 0, 147.43201554741904)
-        #     )
-        # )
+        self.assertTrue(array_equal(return_new, (178.59375, 0.0, 0.0, 0, -1e+20)))
 
     def test_Full_mode(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
@@ -6671,11 +6657,7 @@ class Test_ornq(unittest.TestCase):
             deltapsi=0.0,
         )
         self.assertTrue(array_equal(return_new, return_old))
-        # self.assertTrue(
-        #     array_equal(
-        #         return_new, (271.47330522537231, 0.0, -0.0, 0, 136.83287092834385)
-        #     )
-        # )
+        self.assertTrue(array_equal(return_new, (357.1875, 0.0, -0.0, 0, -1e+20)))
 
     def test_invalid_mode(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
@@ -6706,11 +6688,7 @@ class Test_ornq(unittest.TestCase):
             deltapsi=0.0,
         )
         self.assertTrue(array_equal(return_new, return_old))
-        # self.assertTrue(
-        #     array_equal(
-        #         return_new, (90.659458637237549, 0.0, 0.0, 0, 147.43201554741904)
-        #     )
-        # )
+        self.assertTrue(array_equal(return_new, (178.59375, 0.0, 0.0, 0, -1e+20)))
 
 
 class Test_ormq(unittest.TestCase):
