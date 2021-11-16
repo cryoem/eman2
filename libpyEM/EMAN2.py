@@ -1078,6 +1078,9 @@ def parse_outfile_arg(arg):
 	>>> parse_outfile_arg('out.hdf:3.')
 	Traceback (most recent call last):
 	argparse.ArgumentTypeError: outputbit field is required to be an int if specified! Got '3.'!
+	>>> parse_outfile_arg('out.hdf:33:')
+	Traceback (most recent call last):
+	argparse.ArgumentTypeError: outputbit field is required to be an int between 0 and 16! Got '33'!
 	"""
 
 	fname, _, outbit_rng = arg.partition(':')
@@ -1091,6 +1094,9 @@ def parse_outfile_arg(arg):
 		outbit = None
 	elif outbit.isdigit():
 		outbit = int(outbit)
+
+		if outbit not in range(17):
+			raise argparse.ArgumentTypeError(f"outputbit field is required to be an int between 0 and 16! Got '{outbit}'!")
 	else:
 		raise argparse.ArgumentTypeError(f"outputbit field is required to be an int if specified! Got '{outbit}'!")
 
