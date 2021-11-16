@@ -6692,47 +6692,37 @@ class Test_ornq(unittest.TestCase):
 
 
 class Test_ormq(unittest.TestCase):
-    # argum = get_arg_from_pickle_file(
-    #     path.join(ABSOLUTE_PATH_TO_RESOURCES, "alignment.ormq")
-    # )
 
+    @unittest.skip('segmentation fault raised')
     def test_empty_image_to_align_crashes_because_signal11SIGSEV(self):
-        """
-        (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = self.argum[0]
+        (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = give_ormq_data(True)
         image =EMData()
         return_new = fu.ormq(image=image, crefim=crefim, xrng=xrng, yrng=yrng, step=step, mode=mode, numr=numr, cnx=cnx, cny=cny, delta=delta)
         return_old = oldfu.ormq(image=image, crefim=crefim, xrng=xrng, yrng=yrng, step=step, mode=mode, numr=numr, cnx=cnx, cny=cny, delta=delta)
         self.assertTrue(array_equal(return_new, return_old))
-        """
-        self.assertTrue(True)
 
+    @unittest.skip('segmentation fault raised')
     def test_NoneType_as_input_image_crashes_because_signal11SIGSEV(self):
-        """
-        (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = self.argum[0]
+        (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = give_ormq_data(True)
         return_new = fu.ormq(image=None, crefim=crefim, xrng=xrng, yrng=yrng, step=step, mode=mode, numr=numr, cnx=cnx, cny=cny, delta=delta)
         return_old = oldfu.ormq(image=None, crefim=crefim, xrng=xrng, yrng=yrng, step=step, mode=mode, numr=numr, cnx=cnx, cny=cny, delta=delta)
         self.assertTrue(array_equal(return_new, return_old))
-        """
-        self.assertTrue(True)
 
+    @unittest.skip('segmentation fault raised')
     def test_empty_image_reference_crashes_because_signal11SIGSEV(self):
-        """
-        (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = self.argum[0]
+        (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = give_ormq_data(True)
         crefim =EMData()
         return_new = fu.ormq(image=image, crefim=crefim, xrng=xrng, yrng=yrng, step=step, mode=mode, numr=numr, cnx=cnx, cny=cny, delta=delta)
         return_old = oldfu.ormq(image=image, crefim=crefim, xrng=xrng, yrng=yrng, step=step, mode=mode, numr=numr, cnx=cnx, cny=cny, delta=delta)
         self.assertTrue(array_equal(return_new, return_old))
-        """
-        self.assertTrue(True)
 
+    @unittest.skip('segmentation fault raised')
     def test_NoneType_as_image_reference_crashes_because_signal11SIGSEV(self):
-        """
-        (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = self.argum[0]
+        (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = give_ormq_data(True)
         return_new = fu.ormq(image=image, crefim=None, xrng=xrng, yrng=yrng, step=step, mode=mode, numr=numr, cnx=cnx, cny=cny, delta=delta)
         return_old = oldfu.ormq(image=image, crefim=None, xrng=xrng, yrng=yrng, step=step, mode=mode, numr=numr, cnx=cnx, cny=cny, delta=delta)
         self.assertTrue(array_equal(return_new, return_old))
-        """
-        self.assertTrue(True)
+
 
     def test_wrong_number_params_returns_TypeError_too_few_parameters(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -6820,9 +6810,9 @@ class Test_ormq(unittest.TestCase):
         self.assertEqual(str(cm_new.exception), "list index out of range")
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
+    @unittest.skip('segmentation fault raised')
     def test_empty_list_Numrinit_crashes_because_signal11SIGSEV(self):
-        """
-        (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = self.argum[0]
+        (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = give_ormq_data(True)
         numr=[]
         with self.assertRaises(IndexError) as cm_new:
             fu.ormq(image=image, crefim=crefim, xrng=xrng, yrng=yrng, step=step, mode=mode, numr=numr, cnx=cnx, cny=cny, delta=delta)
@@ -6830,8 +6820,6 @@ class Test_ormq(unittest.TestCase):
             oldfu.ormq(image=image, crefim=crefim, xrng=xrng, yrng=yrng, step=step, mode=mode, numr=numr, cnx=cnx, cny=cny, delta=delta)
         self.assertEqual(str(cm_new.exception), "list index out of range")
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-        """
-        self.assertTrue(True)
 
     def test_null_skip_value_returns_ZeroDivisionError(self):
         image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = give_ormq_data(True)
@@ -6865,9 +6853,9 @@ class Test_ormq(unittest.TestCase):
         self.assertEqual(str(cm_new.exception), "integer division or modulo by zero")
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
+
     def test_Full_mode(self):
         image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = give_ormq_data(True)  # mode is F
-        # image, crefim = give_ormq_data()
         return_new = fu.ormq(
             image=image,
             crefim=crefim,
@@ -6893,15 +6881,10 @@ class Test_ormq(unittest.TestCase):
             delta=delta,
         )
         self.assertTrue(array_equal(return_new, return_old))
-        # self.assertTrue(
-        #     array_equal(
-        #         return_new, (180.0, -2.0, -2.4492935982947064e-16, 1, 23.19550078262219)
-        #     )
-        # )
+        self.assertTrue(array_equal(return_new, (358.59375, -3.9006303606931674, -4.096960188876467, 0, -1e+20)))
 
     def test_Half_mode(self):
         image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = give_ormq_data(True)
-        # image, crefim = give_ormq_data()
         mode = "H"
         return_new = fu.ormq(
             image=image,
@@ -6928,15 +6911,9 @@ class Test_ormq(unittest.TestCase):
             delta=delta,
         )
         self.assertTrue(array_equal(return_new, return_old))
-        # self.assertTrue(
-        #     array_equal(
-        #         return_new,
-        #         (135.0, 0.70710678118654768, -2.1213203435596424, 0, 32.54668225191281),
-        #     )
-        # )
+        self.assertTrue(array_equal(return_new, (179.296875, 3.950612654213698, 4.048784960499458, 0, -1e+20)))
 
     def test_with_negative_center(self):
-        # I cannot run unit test because it returns random values
         image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = give_ormq_data(True)
         return_new = fu.ormq(
             image=image,
@@ -6963,11 +6940,11 @@ class Test_ormq(unittest.TestCase):
             delta=delta,
         )
         self.assertTrue(array_equal(return_new, return_old))
-        # self.assertTrue(array_equal(return_new, (358.59375, -3.9006303606931674, -4.0969601888764666, 0, -1e+20)))
+        self.assertTrue(array_equal(return_new, (358.59375, -3.9006303606931674, -4.096960188876467, 0, -1e+20)))
+
 
     def test_with_invalid_mode(self):
         image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = give_ormq_data(True)
-        # image, crefim = give_ormq_data()
         mode = "invalid"
         return_new = fu.ormq(
             image=image,
@@ -6994,16 +6971,10 @@ class Test_ormq(unittest.TestCase):
             delta=delta,
         )
         self.assertTrue(array_equal(return_new, return_old))
-        # self.assertTrue(
-        #     array_equal(
-        #         return_new,
-        #         (135.0, 0.70710678118654768, -2.1213203435596424, 0, 32.54668225191281),
-        #     )
-        # )
+        self.assertTrue(array_equal(return_new, (179.296875, 3.950612654213698, 4.048784960499458, 0, -1e+20)))
 
     def test_Full_mode_and_zero_delta(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = give_ormq_data(True)
-        # image, crefim = give_ormq_data()
         return_new = fu.ormq(
             image=image,
             crefim=crefim,
@@ -7029,22 +7000,10 @@ class Test_ormq(unittest.TestCase):
             delta=0.0,
         )
         self.assertTrue(array_equal(return_new, return_old))
-        # self.assertTrue(
-        #     array_equal(
-        #         return_new,
-        #         (
-        #             206.98280811309814,
-        #             -0.89114270620982317,
-        #             0.45372312831619327,
-        #             0,
-        #             23.462145424755487,
-        #         ),
-        #     )
-        # )
+        self.assertTrue(array_equal(return_new, (358.59375, -3.9006303606931674, -4.096960188876467, 0, -1e+20)))
 
     def test_Half_mode_and_zero_delta(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = give_ormq_data(True)
-        # image, crefim = give_ormq_data()
         mode = "H"
         return_new = fu.ormq(
             image=image,
@@ -7071,22 +7030,10 @@ class Test_ormq(unittest.TestCase):
             delta=0.0,
         )
         self.assertTrue(array_equal(return_new, return_old))
-        # self.assertTrue(
-        #     array_equal(
-        #         return_new,
-        #         (
-        #             82.811969518661499,
-        #             2.1094076960564689,
-        #             -0.74188892148201036,
-        #             1,
-        #             33.042001487198405,
-        #         ),
-        #     )
-        # )
+        self.assertTrue(array_equal(return_new, (179.296875, 3.950612654213698, 4.048784960499458, 0, -1e+20)))
 
     def test_with_invalid_mode_and_zero_delta(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta) = give_ormq_data(True)
-        # image, crefim = give_ormq_data()
         mode = "invalid"
         return_new = fu.ormq(
             image=image,
@@ -7113,18 +7060,6 @@ class Test_ormq(unittest.TestCase):
             delta=0.0,
         )
         self.assertTrue(array_equal(return_new, return_old))
-        # self.assertTrue(
-        #     array_equal(
-        #         return_new,
-        #         (
-        #             82.811969518661499,
-        #             2.1094076960564689,
-        #             -0.74188892148201036,
-        #             1,
-        #             33.042001487198405,
-        #         ),
-        #     )
-        # )
 
 
 class Test_prepref(unittest.TestCase):
