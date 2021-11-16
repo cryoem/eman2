@@ -1074,10 +1074,15 @@ def parse_outfile_arg(arg):
 	('out.hdf', None, None, None, None, None)
 	"""
 
-	fname, _, _ = arg.partition(':')
+	fname, _, outbit_rng = arg.partition(':')
 
 	if not fname:
 		raise argparse.ArgumentTypeError("Please, specify an output file!")
+
+	outbit, _, _ = outbit_rng.partition(':')
+
+	if not outbit:
+		outbit = None
 
 	return (fname, None, None, None, None, None)
 
