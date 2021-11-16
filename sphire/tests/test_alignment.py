@@ -8872,23 +8872,19 @@ class Test_align2d_scf(unittest.TestCase):
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[3], msg_old[3])
 
+    @unittest.skip('segmentation fault raised')
     def test_NoneType_as_reference_image_crashes_because_signal11SIGSEV(self):
-        self.assertTrue(True)
-        """
-        (image, refim, xrng, yrng) = self.argum[0]
         with self.assertRaises(RuntimeError) as cm_old:
-            fu.align2d_scf(image, None, xrng, yrng, self.argum[1]['ou'])
+            fu.align2d_scf(IMAGE_2D, None, 4, 4, 174)
         with self.assertRaises(RuntimeError) as cm_new:
-            oldfu.align2d_scf(image, None, xrng, yrng, self.argum[1]['ou'])
+            oldfu.align2d_scf(IMAGE_2D, None, 4, 4, 174)
         msg = str(cm_new.exception).split("'")
         msg_old = str(cm_old.exception).split("'")
         self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
         self.assertEqual(msg[3], "x size <= 0")
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[3], msg_old[3])
-        """
 
-    @unittest.skip("align2d_scf not working properly")
     def test_with_valid_params(self):
         return_new = fu.align2d_scf(
             image=IMAGE_2D, refim=IMAGE_2D_REFERENCE, xrng=4, yrng=4, ou=174
@@ -8897,20 +8893,8 @@ class Test_align2d_scf(unittest.TestCase):
             image=IMAGE_2D, refim=IMAGE_2D_REFERENCE, xrng=4, yrng=4, ou=174
         )
         self.assertTrue(array_equal(return_new, return_old))
-        # self.assertTrue(
-        #     array_equal(
-        #         return_new,
-        #         (
-        #             0.17578125,
-        #             2.9674494882377935,
-        #             -0.05141488826358742,
-        #             1,
-        #             4.90025769648605,
-        #         ),
-        #     )
-        # )
+        self.assertTrue(array_equal(return_new, (0.17578125, 2.967458209736547, -0.05141508990802324, 1, 4.900257208771058)))
 
-    @unittest.skip("It works but skip because of long output")
     def test_with_invalid_ou_error_msg_output(self):
         return_new = fu.align2d_scf(
             image=IMAGE_2D, refim=IMAGE_2D_REFERENCE, xrng=4, yrng=4, ou=1
@@ -8919,30 +8903,8 @@ class Test_align2d_scf(unittest.TestCase):
             image=IMAGE_2D, refim=IMAGE_2D_REFERENCE, xrng=4, yrng=4, ou=1
         )
         self.assertTrue(array_equal(return_new, return_old))
-        self.assertTrue(
-            array_equal(
-                return_new,
-                (
-                    0.2789926528930664,
-                    -0.482177873659118,
-                    -0.048944523282220764,
-                    0,
-                    4.883454103473488,
-                ),
-            )
-        )
-
-    """
-    the following testa are not able to work. It'd be a bug.
-    error message:
-        File "/home/lusnig/EMAN2/eman2/sphire/tests/sparx_lib/sparx_alignment.py", line 784, in align2d_scf
-        sxs = -p2[0][4]
-        IndexError: list index out of range
-    BUT p2 is the ouput of:
-        -) ccf2 = EMAN2_cppwrap.Util.window(ccf(rot_shift2D(image, alpha+180.0, 0.0, 0.0, mirr), frotim),nrx,nry)
-	    -) p2 = sparx_utilities.peak_search(ccf2)
-	in these casea it is a list of 4 elements and it is trying to get the 5th
-    """
+        self.assertTrue(array_equal(return_new, (
+        0.2789926528930664, -0.482177873659118, -0.048944523282220764, 0, 4.883454103473488)))
 
     def test_with_DEFAULT_params_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
@@ -8956,9 +8918,7 @@ class Test_align2d_scf(unittest.TestCase):
         self.assertEqual(str(cm_new.exception), "list index out of range")
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
-    def test_with_DEFAULT_params_but_validOU_returns_IndexError_list_index_out_of_range(
-        self
-    ):
+    def test_with_DEFAULT_params_but_validOU_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
             fu.align2d_scf(
                 image=IMAGE_2D, refim=IMAGE_2D_REFERENCE, xrng=-1, yrng=-1, ou=174
@@ -8969,7 +8929,6 @@ class Test_align2d_scf(unittest.TestCase):
             )
         self.assertEqual(str(cm_new.exception), "list index out of range")
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-
 
 class Test_multialign2d_scf(unittest.TestCase):
     numr = [
