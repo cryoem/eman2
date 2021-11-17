@@ -21632,44 +21632,6 @@ class Test_fit_tanh(unittest.TestCase):
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
-""" not in use
-class Test_fit_tanh1(unittest.TestCase):
-    dres = ((0.0, 0.05, 0, 10, 0.15, 0.20), (0, 0.2, 0.4, 0.6, 0.8, 1.0), (8, 9, 5, 77, 98, 200))
-    def test_wrong_number_params(self):
-        with self.assertRaises(TypeError) as cm_new:
-            fu.fit_tanh1()
-        with self.assertRaises(TypeError) as cm_old:
-            oldfu.fit_tanh1()
-        self.assertEqual(str(cm_new.exception), "fit_tanh1() takes at least 1 argument (0 given)")
-        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-
-    def test_emptyList_returns_IndexError_list_index_out_of_range(self):
-        with self.assertRaises(IndexError) as cm_new:
-            fu.fit_tanh1([])
-        with self.assertRaises(IndexError) as cm_old:
-            oldfu.fit_tanh1([])
-        self.assertEqual(str(cm_new.exception), "list index out of range")
-        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-
-    def test_fit_tanh1(self):
-        return_new = fu.fit_tanh1(self.dres, low=0.1)
-        return_old = oldfu.fit_tanh1(self.dres, low=0.1 )
-
-        self.assertEqual(return_new[0] , return_old[0])
-        self.assertEqual(return_new[1], return_old[1])
-        self.assertEqual(return_new[0] , 0)
-        self.assertEqual(return_new[1], 0.1)
-
-    def test_tooHighLow_leads_TypeError(self):
-        with self.assertRaises(TypeError) as cm_new:
-            fu.fit_tanh1(self.dres, low=10)
-        with self.assertRaises(TypeError) as cm_old:
-            oldfu.fit_tanh(self.dres, low=10 )
-        self.assertEqual(str(cm_new.exception), "'tuple' object does not support item assignment")
-        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-"""
-
-
 class Test_filt_vols(unittest.TestCase):
     dres = (
         (0.0, 0.05, 0, 10, 0.15, 0.20),
