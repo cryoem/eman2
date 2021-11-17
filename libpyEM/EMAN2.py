@@ -1109,6 +1109,17 @@ def parse_outfile_arg(arg):
 	('out.hdf', 3, None, None, 4.0, 5.0)
 	>>> parse_outfile_arg('out.hdf:3:4.2s:5.3s')
 	('out.hdf', 3, None, None, 4.2, 5.3)
+
+	>>> parse_outfile_arg('out.hdf:3:4s:5')
+	Traceback (most recent call last):
+	argparse.ArgumentTypeError: Min/max fields are expected to be both absolute values or both sigma multipliers. Expected :(num):(num) or :(num)s:(num)s, got :4s:5
+	>>> parse_outfile_arg('out.hdf:3:4:5s')
+	Traceback (most recent call last):
+	argparse.ArgumentTypeError: Min/max fields are expected to be both absolute values or both sigma multipliers. Expected :(num):(num) or :(num)s:(num)s, got :4:5s
+	>>> parse_outfile_arg('out.hdf:3:4:5.')
+	('out.hdf', 3, 4.0, 5.0, None, None)
+	>>> parse_outfile_arg('out.hdf:3:4.:5')
+	('out.hdf', 3, 4.0, 5.0, None, None)
 	"""
 
 	fname, _, outbit_rng = arg.partition(':')
@@ -1150,6 +1161,8 @@ def parse_outfile_arg(arg):
 			rng = *(float(i) for i in rng), None, None
 		elif all(i[-1] == sigma_multiplier_char and isfloat(i[:-1]) for i in rng):
 			rng = None, None, *(float(i[:-1]) for i in rng)
+		else:
+			raise argparse.ArgumentTypeError(f"Min/max fields are expected to be both absolute values or both sigma multipliers. Expected :(num):(num) or :(num){sigma_multiplier_char}:(num){sigma_multiplier_char}, got :{':'.join(rng)}")
 
 	return (fname, outbit, *rng)
 
