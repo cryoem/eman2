@@ -1084,6 +1084,11 @@ def parse_outfile_arg(arg):
 
 	>>> parse_outfile_arg('out.hdf:3:')
 	('out.hdf', 3, None, None, -5.0, 5.0)
+
+	>>> parse_outfile_arg('out.hdf:3:f')
+	('out.hdf', 3, 'FULL', 'FULL', None, None)
+	>>> parse_outfile_arg('out.hdf:3:F')
+	('out.hdf', 3, 'FULL', 'FULL', None, None)
 	"""
 
 	fname, _, outbit_rng = arg.partition(':')
@@ -1105,6 +1110,8 @@ def parse_outfile_arg(arg):
 
 	if not rng:
 		rng = None, None, -5.0, 5.0
+	elif rng.lower() == "f":
+		rng = "FULL", "FULL", None, None
 
 	return (fname, outbit, *rng)
 
