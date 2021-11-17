@@ -173,25 +173,3 @@ class Test_Util_diff_between_matrix_of_3D_parameters_angles(unittest.TestCase):
         self.assertEqual(len(results), len(control))
         for i in range(len(results)):
             self.assertAlmostEqual(results[i], control[i], delta=1.0)
-
-
-# def test_main():
-#
-#
-#     p = OptionParser()
-#     p.add_option("--t", action="store_true", help="test exception", default=False)
-#     global IS_TEST_EXCEPTION
-#     opt, args = p.parse_args()
-#     if opt.t:
-#         IS_TEST_EXCEPTION = True
-#     Log.logger().set_level(
-#         -1
-#     )  # perfect solution for quenching the Log error information, thank Liwei
-#     suite = unittest.TestLoader().loadTestsFromTestCase(
-#         Test_Util_diff_between_matrix_of_3D_parameters_angles
-#     )
-#     unittest.TextTestRunner(verbosity=2).run(suite)
-
-
-# if __name__ == "__main__":
-#     unittest.main()
