@@ -1071,16 +1071,19 @@ def parse_outfile_arg(arg):
 	Traceback (most recent call last):
 	argparse.ArgumentTypeError: Please, specify an output file!
 	>>> parse_outfile_arg('out.hdf')
-	('out.hdf', None, None, None, None, None)
+	('out.hdf', None, None, None, -5.0, 5.0)
 
 	>>> parse_outfile_arg('out.hdf:3')
-	('out.hdf', 3, None, None, None, None)
+	('out.hdf', 3, None, None, -5.0, 5.0)
 	>>> parse_outfile_arg('out.hdf:3.')
 	Traceback (most recent call last):
 	argparse.ArgumentTypeError: outputbit field is required to be an int if specified! Got '3.'!
 	>>> parse_outfile_arg('out.hdf:33:')
 	Traceback (most recent call last):
 	argparse.ArgumentTypeError: outputbit field is required to be an int between 0 and 16! Got '33'!
+
+	>>> parse_outfile_arg('out.hdf:3:')
+	('out.hdf', 3, None, None, -5.0, 5.0)
 	"""
 
 	fname, _, outbit_rng = arg.partition(':')
@@ -1088,7 +1091,7 @@ def parse_outfile_arg(arg):
 	if not fname:
 		raise argparse.ArgumentTypeError("Please, specify an output file!")
 
-	outbit, _, _ = outbit_rng.partition(':')
+	outbit, _, rng = outbit_rng.partition(':')
 
 	if not outbit:
 		outbit = None
@@ -1100,7 +1103,10 @@ def parse_outfile_arg(arg):
 	else:
 		raise argparse.ArgumentTypeError(f"outputbit field is required to be an int if specified! Got '{outbit}'!")
 
-	return (fname, outbit, None, None, None, None)
+	if not rng:
+		rng = None, None, -5.0, 5.0
+
+	return (fname, outbit, *rng)
 
 
 def angle_ab_sym(sym,a,b,c=None,d=None):
