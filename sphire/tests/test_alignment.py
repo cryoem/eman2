@@ -3005,7 +3005,7 @@ class Test_align2d_direct3(unittest.TestCase):
         )
         self.assertTrue(array_equal(return_old, return_new))
         self.assertTrue(
-            array_equal(
+            allclose(
                 return_new,
                 [
                     [
@@ -8894,8 +8894,9 @@ class Test_align2d_scf(unittest.TestCase):
             image=IMAGE_2D, refim=IMAGE_2D_REFERENCE, xrng=4, yrng=4, ou=174
         )
         self.assertTrue(array_equal(return_new, return_old))
-        self.assertTrue(array_equal(return_new, (0.17578125, 2.967458209736547, -0.05141508990802324, 1, 4.900257208771058)))
+        self.assertTrue(allclose(return_new, (0.17578125, 2.967458209736547, -0.05141508990802324, 1, 4.900257208771058)))
 
+    @unittest.skip("In GIT it exits because the different setting in 'sp_global_def.py'")
     def test_with_invalid_ou_error_msg_output(self):
         return_new = fu.align2d_scf(
             image=IMAGE_2D, refim=IMAGE_2D_REFERENCE, xrng=4, yrng=4, ou=1
