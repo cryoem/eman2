@@ -1104,6 +1104,11 @@ def parse_outfile_arg(arg):
 	('out.hdf', 3, 4.0, 5.0, None, None)
 	>>> parse_outfile_arg('out.hdf:3:4.2:5.3')
 	('out.hdf', 3, 4.2, 5.3, None, None)
+
+	>>> parse_outfile_arg('out.hdf:3:4s:5s')
+	('out.hdf', 3, None, None, 4.0, 5.0)
+	>>> parse_outfile_arg('out.hdf:3:4.2s:5.3s')
+	('out.hdf', 3, None, None, 4.2, 5.3)
 	"""
 
 	fname, _, outbit_rng = arg.partition(':')
@@ -1138,10 +1143,13 @@ def parse_outfile_arg(arg):
 			except ValueError:
 				return False
 
+		sigma_multiplier_char = 's'
 		if not all(rng):
 			raise argparse.ArgumentTypeError(f"Min/max fields are expected to be non-empty if specified. Got '{':'.join(rng)}'")
 		elif all(isfloat(i) for i in rng):
 			rng = *(float(i) for i in rng), None, None
+		elif all(i[-1] == sigma_multiplier_char and isfloat(i[:-1]) for i in rng):
+			rng = None, None, *(float(i[:-1]) for i in rng)
 
 	return (fname, outbit, *rng)
 
