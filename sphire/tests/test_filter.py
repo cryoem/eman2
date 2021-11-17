@@ -1478,7 +1478,7 @@ class Test_filt_ctf(unittest.TestCase):
         return_old = oldfu.filt_ctf(IMAGE_2D, ctf, dopad=False, sign=1, binary=0)
         self.assertTrue(array_equal(return_new.get_2dview(), return_old.get_2dview()))
         self.assertTrue(
-            array_equal(
+            allclose(
                 return_old.get_2dview().flatten(),
                 [
                     -0.12716904282569885,
@@ -2626,7 +2626,7 @@ class Test_filt_ctf(unittest.TestCase):
         return_old = oldfu.filt_ctf(IMAGE_3D, ctf, dopad=False, sign=1, binary=0)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
         self.assertTrue(
-            array_equal(
+            allclose(
                 return_old.get_3dview().flatten(),
                 [
                     -0.24125555157661438,
@@ -6676,7 +6676,7 @@ class Test_filt_tophatb(unittest.TestCase):
         return_old = oldfu.filt_tophatb(e=IMAGE_2D, freql=0.25, freqh=0.35, pad=False)
         self.assertTrue(array_equal(return_new.get_2dview(), return_old.get_2dview()))
         self.assertTrue(
-            array_equal(
+            allclose(
                 return_old.get_2dview().flatten(),
                 [
                     0.03803342953324318,
@@ -7822,7 +7822,7 @@ class Test_filt_tophatb(unittest.TestCase):
         return_old = oldfu.filt_tophatb(e=IMAGE_3D, freql=0.25, freqh=0.35, pad=False)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
         self.assertTrue(
-            array_equal(
+            allclose(
                 return_old.get_3dview().flatten(),
                 [
                     0.29554757475852966,
@@ -8886,7 +8886,7 @@ class Test_filt_gaussl(unittest.TestCase):
         return_old = oldfu.filt_gaussl(e=IMAGE_2D, sigma=0.23, pad=False)
         self.assertTrue(array_equal(return_new.get_2dview(), return_old.get_2dview()))
         self.assertTrue(
-            array_equal(
+            allclose(
                 return_old.get_2dview().flatten(),
                 [
                     -0.07254021614789963,
@@ -9126,7 +9126,7 @@ class Test_filt_gaussl(unittest.TestCase):
         return_old = oldfu.filt_gaussl(e=IMAGE_3D, sigma=0.23, pad=False)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
         self.assertTrue(
-            array_equal(
+            allclose(
                 return_old.get_3dview().flatten(),
                 [
                     -0.31184864044189453,
@@ -11197,7 +11197,7 @@ class Test_filt_gaussinv(unittest.TestCase):
         return_old = oldfu.filt_gaussinv(e=IMAGE_2D, sigma=0.23, pad=False)
         self.assertTrue(array_equal(return_new.get_2dview(), return_old.get_2dview()))
         self.assertTrue(
-            array_equal(
+            allclose(
                 return_old.get_2dview().flatten(),
                 [
                     0.45262575149536133,
@@ -11437,7 +11437,7 @@ class Test_filt_gaussinv(unittest.TestCase):
         return_old = oldfu.filt_gaussinv(e=IMAGE_3D, sigma=0.23, pad=False)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
         self.assertTrue(
-            array_equal(
+            allclose(
                 return_new.get_3dview().flatten(),
                 [
                     4.358497142791748,
@@ -13507,7 +13507,7 @@ class Test_filt_gaussh(unittest.TestCase):
         return_old = oldfu.filt_gaussh(e=IMAGE_2D, sigma=0.23, pad=False)
         self.assertTrue(array_equal(return_new.get_2dview(), return_old.get_2dview()))
         self.assertTrue(
-            array_equal(
+            allclose(
                 return_old.get_2dview().flatten(),
                 [
                     0.08204471319913864,
@@ -13747,7 +13747,7 @@ class Test_filt_gaussh(unittest.TestCase):
         return_old = oldfu.filt_gaussh(e=IMAGE_3D, sigma=0.23, pad=False)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
         self.assertTrue(
-            array_equal(
+            allclose(
                 return_old.get_3dview().flatten(),
                 [
                     0.32135313749313354,
@@ -15817,7 +15817,7 @@ class Test_filt_btwl(unittest.TestCase):
         return_old = oldfu.filt_btwl(e=IMAGE_2D, freql=0.25, freqh=0.35, pad=False)
         self.assertTrue(array_equal(return_new.get_2dview(), return_old.get_2dview()))
         self.assertTrue(
-            array_equal(
+            allclose(
                 return_old.get_2dview().flatten(),
                 [
                     -0.07504992187023163,
@@ -16059,7 +16059,7 @@ class Test_filt_btwl(unittest.TestCase):
         return_old = oldfu.filt_btwl(e=IMAGE_3D, freql=0.25, freqh=0.35, pad=False)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
         self.assertTrue(
-            array_equal(
+            allclose(
                 return_old.get_3dview().flatten(),
                 [
                     -0.4030480980873108,
@@ -18131,7 +18131,7 @@ class Test_filt_tanl(unittest.TestCase):
         return_old = oldfu.filt_tanl(e=IMAGE_2D, freq=0.25, fall_off=0.35, pad=False)
         self.assertTrue(array_equal(return_new.get_2dview(), return_old.get_2dview()))
         self.assertTrue(
-            array_equal(
+            allclose(
                 return_old.get_2dview().flatten(),
                 [
                     -0.08797279745340347,
@@ -18375,7 +18375,7 @@ class Test_filt_tanl(unittest.TestCase):
         return_old = oldfu.filt_tanl(e=IMAGE_3D, freq=0.25, fall_off=0.35, pad=False)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
         self.assertTrue(
-            array_equal(
+            allclose(
                 return_old.get_3dview().flatten(),
                 [
                     -0.43888184428215027,
@@ -20451,7 +20451,7 @@ class Test_filt_table(unittest.TestCase):
         return_old = oldfu.filt_table(e=IMAGE_2D, table=self.table)
         self.assertTrue(array_equal(return_new.get_2dview(), return_old.get_2dview()))
         self.assertTrue(
-            array_equal(
+            allclose(
                 return_old.get_2dview().flatten(),
                 [
                     0.004537484142929316,
@@ -20571,7 +20571,7 @@ class Test_filt_table(unittest.TestCase):
         return_old = oldfu.filt_table(e=IMAGE_3D, table=self.table)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
         self.assertTrue(
-            array_equal(
+            allclose(
                 return_old.get_3dview().flatten(),
                 [
                     0.017490774393081665,
