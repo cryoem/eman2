@@ -1457,6 +1457,7 @@ class Test_filt_ctf(unittest.TestCase):
                     -0.05682983249425888,
                     -0.02800676040351391,
                 ],
+                atol=1.e-5
             )
         )
 
@@ -1581,6 +1582,7 @@ class Test_filt_ctf(unittest.TestCase):
                     0.06600607931613922,
                     0.07522052526473999,
                 ],
+                atol=1.e-5
             )
         )
 
@@ -3630,6 +3632,7 @@ class Test_filt_ctf(unittest.TestCase):
                     -0.007195961195975542,
                     -0.030620649456977844,
                 ],
+                atol=1.e-5
             )
         )
 
@@ -6780,6 +6783,7 @@ class Test_filt_tophatb(unittest.TestCase):
                     -0.03202885016798973,
                     -0.04181987792253494,
                 ],
+                atol=1.e-5
             )
         )
 
@@ -8826,6 +8830,7 @@ class Test_filt_tophatb(unittest.TestCase):
                     0.18274210393428802,
                     0.17184047400951385,
                 ],
+                atol=1.e-5
             )
         )
 
@@ -8990,6 +8995,7 @@ class Test_filt_gaussl(unittest.TestCase):
                     -0.32677531242370605,
                     -0.3340654671192169,
                 ],
+                atol=1.e-5
             )
         )
 
@@ -10130,6 +10136,7 @@ class Test_filt_gaussl(unittest.TestCase):
                     -0.39244961738586426,
                     -0.40500396490097046,
                 ],
+                atol=1.e-5
             )
         )
 
@@ -11301,6 +11308,7 @@ class Test_filt_gaussinv(unittest.TestCase):
                     -1.157007098197937,
                     -0.5729562640190125,
                 ],
+                atol=1.e-5
             )
         )
 
@@ -12441,6 +12449,7 @@ class Test_filt_gaussinv(unittest.TestCase):
                     4.90288782119751,
                     2.6755735874176025,
                 ],
+                atol=1.e-5
             )
         )
 
@@ -13611,6 +13620,7 @@ class Test_filt_gaussh(unittest.TestCase):
                     -0.11087579280138016,
                     -0.1028645783662796,
                 ],
+                atol=1.e-5
             )
         )
 
@@ -14751,6 +14761,7 @@ class Test_filt_gaussh(unittest.TestCase):
                     0.31690627336502075,
                     0.3427478075027466,
                 ],
+                atol=1.e-5
             )
         )
 
@@ -15921,6 +15932,7 @@ class Test_filt_btwl(unittest.TestCase):
                     -0.33820703625679016,
                     -0.3461339771747589,
                 ],
+                atol=1.e-5
             )
         )
 
@@ -17063,6 +17075,7 @@ class Test_filt_btwl(unittest.TestCase):
                     -0.47335946559906006,
                     -0.4942760467529297,
                 ],
+                atol=1.e-5
             )
         )
 
@@ -18235,6 +18248,7 @@ class Test_filt_tanl(unittest.TestCase):
                     -0.32503584027290344,
                     -0.3304584324359894,
                 ],
+                atol=1.e-5
             )
         )
 
@@ -19379,6 +19393,7 @@ class Test_filt_tanl(unittest.TestCase):
                     -0.5010133981704712,
                     -0.5204765796661377,
                 ],
+                atol=1.e-5
             )
         )
 
@@ -20555,6 +20570,7 @@ class Test_filt_table(unittest.TestCase):
                     -0.006959202699363232,
                     -0.006404730025678873,
                 ],
+                atol=1.e-5
             )
         )
 
