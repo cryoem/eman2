@@ -203,7 +203,7 @@ int EerIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 	dict["nz"] = 1;
 
 	dict["EER.compression"] = read_compression(tiff_file);
-	
+
 	for(auto &d : acquisition_data_dict)
 		dict[d.first] = d.second;
 
