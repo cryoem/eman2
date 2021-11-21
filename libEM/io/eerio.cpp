@@ -67,12 +67,11 @@ auto decode_eer_data(EerWord *data, Decoder &decoder) {
 
 void TIFFOutputWarning(const char* module, const char* fmt, va_list ap)
 {
-	if(string(fmt).rfind("Unknown field with tag %d (0x%x) encountered") != string::npos)
-		return;
-
+#ifdef DEBUG
 	cout << module << ": ";
 	vprintf(fmt, ap);
 	cout << endl;
+#endif  //DEBUG
 }
 
 string read_acquisition_metadata(TIFF *tiff) {
