@@ -89,8 +89,10 @@ string to_snake_case(const string &s) {
 	int sh = 0;
 	for(int i=0; i<s.size(); i++) {
 		if(isupper(s[i])) {
-			ret.insert(i+sh, "_");
-			sh++;
+			if(!isupper(s[i-1])) {
+				ret.insert(i + sh, "_");
+				sh++;
+			}
 			ret[i + sh] = ::tolower(s[i]);
 		}
 	}
