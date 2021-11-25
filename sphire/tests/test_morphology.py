@@ -73334,60 +73334,6 @@ class Test_threshold_outside(unittest.TestCase):
         self.assertTrue(array_equal(return_old.get_3dview().flatten(), []))
 
 
-"""
-Not use after the cleaning
-class Test_notzero(unittest.TestCase):
-
-    def test_NoneType_as_img_returns_AttributeError_NoneType_obj_hasnot_attribute_process(self):
-        with self.assertRaises(AttributeError) as cm_new:
-            fu.notzero(None)
-        with self.assertRaises(AttributeError) as cm_old:
-            oldfu.notzero(None)
-        self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'process'")
-        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-
-    def test_empty_input_image_returns_RuntimeError_stdException_and_NotExistingObjectException_the_key_maximum_doesnot_exist(self):
-        with self.assertRaises(RuntimeError) as cm_new:
-            fu.notzero(EMData())
-        with self.assertRaises(RuntimeError) as cm_old:
-            oldfu.notzero(EMData())
-        self.assertEqual(str(cm_new.exception), "std::exception")
-        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-
-    def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError) as cm_new:
-            fu.notzero()
-        with self.assertRaises(TypeError) as cm_old:
-            oldfu.notzero()
-        self.assertEqual(str(cm_new.exception), "notzero() takes exactly 1 argument (0 given)")
-        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-
-    def test_notzero_2Dimg(self):
-        return_new = fu.notzero(img=IMAGE_2D)
-        return_old = oldfu.notzero(img=IMAGE_2D)
-        self.assertTrue(array_equal(return_new.get_2dview(), return_old.get_2dview()))
-        self.assertTrue(array_equal(return_old.get_2dview().flatten(), ))
-
-    def test_notzero_3Dimg(self):
-        return_new = fu.notzero(img=IMAGE_3D)
-        return_old = oldfu.notzero(img=IMAGE_3D)
-        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
-        self.assertTrue(array_equal(return_old.get_3dview().flatten(), ))
-
-    def test_notzero_img_blank2D(self):
-        return_new = fu.notzero(img=IMAGE_BLANK_2D)
-        return_old = oldfu.notzero(img=IMAGE_BLANK_2D)
-        self.assertTrue(array_equal(return_new.get_2dview(), return_old.get_2dview()))
-        self.assertTrue(array_equal(return_old.get_2dview().flatten(), ))
-
-    def test_notzero_img_blank3D(self):
-        return_new = fu.notzero(img=IMAGE_BLANK_3D)
-        return_old = oldfu.notzero(img=IMAGE_BLANK_3D)
-        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
-        self.assertTrue(array_equal(return_old.get_2dview().flatten(), ))
-"""
-
-
 class Test_rotavg_ctf(unittest.TestCase):
     """
     See http://sparx-em.org/sparxwiki/CTF_info for the meaning of the params
