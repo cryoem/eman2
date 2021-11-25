@@ -122942,9 +122942,7 @@ class Test_ornq_vpp(unittest.TestCase):
             deltapsi=0.0,
         )
         self.assertTrue(array_equal(return_new, return_old))
-        # self.assertTrue(
-        #     allclose(return_old, (90.661003589630127, 0.0, 0.0, 0, 130.8737071466116))
-        # )
+        self.assertTrue(allclose(return_old, (178.59375, 0.0, 0.0, 0, -1e+20),atol=1.e-5))
 
     def test_Full_mode(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
@@ -122974,9 +122972,7 @@ class Test_ornq_vpp(unittest.TestCase):
             deltapsi=0.0,
         )
         self.assertTrue(allclose(return_new, return_old))
-        # self.assertTrue(
-        #     allclose(return_old, (271.48785352706909, 0.0, -0.0, 0, 119.75029623666397))
-        # )
+        self.assertTrue(allclose(return_old, (357.1875, 0.0, -0.0, 0, -1e+20),atol=1.e-5))
 
     def test_invalid_mode(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
@@ -123006,7 +123002,5 @@ class Test_ornq_vpp(unittest.TestCase):
             deltapsi=0.0,
         )
         self.assertTrue(array_equal(return_new, return_old))
-        # self.assertTrue(
-        #     allclose(return_old, (90.661003589630127, 0.0, 0.0, 0, 130.8737071466116))
-        # )
+        self.assertTrue(allclose(return_old, (178.59375, 0.0, 0.0, 0, -1e+20),atol=1.e-5))
 
