@@ -122374,12 +122374,11 @@ class Test_fupw(unittest.TestCase):
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
+    @unittest.skip("skip because segmentation fault")
     def test_empty_input_image_crashes_because_signal11SIGSEGV(self):
-        # (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
-        # data = [EMData(), numr, self.nx, self.defocus, self.Cs, self.voltage, self.pixel_size, self.bfactor, self.amp_contrast,1]
-        # self.assertTrue(TOLERANCE > numpy_abs(fu.fupw(args=self.args, data=data) - oldfu.fupw(args=self.args, data=data)))
-
-        self.assertTrue(True)
+        (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
+        data = [EMData(), numr, self.nx, self.defocus, self.Cs, self.voltage, self.pixel_size, self.bfactor, self.amp_contrast,1]
+        self.assertTrue(TOLERANCE > numpy_abs(fu.fupw(args=self.args, data=data) - oldfu.fupw(args=self.args, data=data)))
 
     @unittest.skip("sometimes the output values change")
     def test_fupw_fails_randomly(self):
@@ -122756,23 +122755,19 @@ class Test_ornq_vpp(unittest.TestCase):
         path.join(ABSOLUTE_PATH_TO_RESOURCES, "alignment.ornq")
     )
 
+    @unittest.skip("skip because segmentation fault")
     def test_empty_image_to_align_crashes_because_signal11SIGSEV(self):
-        """
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         return_new = fu.ornq_vpp(EMData(), crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
         return_old = oldfu.ornq_vpp(EMData(), crefim, xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
         self.assertTrue(array_equal(return_new, return_old))
-        """
-        self.assertTrue(True)
 
+    @unittest.skip("skip because segmentation fault")
     def test_empty_image_reference_crashes_because_signal11SIGSEV(self):
-        """
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         return_new = fu.ornq_vpp(image, EMData(),  xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
         return_old = oldfu.ornq_vpp(image, EMData(),  xrng, yrng, step, mode, numr, cnx, cny, deltapsi = 0.0)
         self.assertTrue(array_equal(return_new, return_old))
-        """
-        self.assertTrue(True)
 
     def test_wrong_number_params_returns_TypeError_too_few_parameters(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -122784,15 +122779,13 @@ class Test_ornq_vpp(unittest.TestCase):
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
+    @unittest.skip("skip because segmentation fault")
     def test_empty_list_Numrinit_crashes_because_signal11SIGSEV(self):
-        """
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
         numr = []
         return_new = fu.ornq_vpp(image=image, crefim=crefim, xrng=xrng, yrng=yrng, step=step, mode=mode, numr=numr, cnx=cnx, cny=cny, deltapsi = 0.0)
         return_old = oldfu.ornq_vpp(image=image, crefim=crefim, xrng=xrng, yrng=yrng, step=step, mode=mode, numr=numr, cnx=cnx, cny=cny, deltapsi = 0.0)
         self.assertTrue(array_equal(return_new, return_old))
-        """
-        self.assertTrue(True)
 
     def test_empty_list_xrng_returns_IndexError_list_index_out_of_range(self):
         (image, crefim, xrng, yrng, step, mode, numr, cnx, cny) = self.argum[0]
