@@ -52567,24 +52567,20 @@ class Test_collapse(unittest.TestCase):
 
 
 class Test_dilatation(unittest.TestCase):
+    @unittest.skip("skip because segmentation fault")
     def test_empty_input_image_crashes_because_signal11SIGSEV(self):
-        """
         img =EMData()
         return_new = fu.dilation(img)
         return_old = oldfu.dilation(img)
         self.assertTrue(return_old is None)
         self.assertTrue(return_new is None)
-        """
-        self.assertTrue(True)
 
+    @unittest.skip("skip because segmentation fault")
     def test_NoneType_as_input_image_crashes_because_signal11SIGSEV(self):
-        self.assertTrue(True)
-        """
         with self.assertRaises(AttributeError) as cm_new:
             fu.dilation(f=None, mask = MASK, morphtype="BINARY")
         with self.assertRaises(AttributeError) as cm_old:
             oldfu.dilation(f=None, mask = MASK, morphtype="BINARY")
-        """
 
     def test_empty_mask_image_returns_RuntimeError_ImageDimensionException_center_isnot_welldefined(
         self
