@@ -96484,34 +96484,27 @@ class Test_cosinemask(unittest.TestCase):
         self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
         self.assertEqual(msg[3], msg_old[3])
 
+    @unittest.skip("skip because segmentation fault")
     def test_empty_bckg_image_crashes_because_signal11SIGSEV(self):
-        """
-        bckg = EMData()
-        return_new = fu.cosinemask(im=IMAGE_3D, bckg=bckg)
-        return_old = oldfu.cosinemask(im=IMAGE_3D, bckg=bckg)
+        return_new = fu.cosinemask(im=IMAGE_3D, bckg=EMData())
+        return_old = oldfu.cosinemask(im=IMAGE_3D, bckg=EMData())
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
-        """
-        self.assertTrue(True)
 
+    @unittest.skip("skip because segmentation fault")
     def test_3d_img_with_bckg_crashes_because_signal11SIGSEV(self):
-        """
         bckg = model_gauss_noise(0.25 , 10,10,10)
         return_new = fu.cosinemask(im=IMAGE_3D, bckg=bckg)
         return_old = oldfu.cosinemask(im=IMAGE_3D, bckg=bckg)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
-        """
-        self.assertTrue(True)
 
+    @unittest.skip("skip because segmentation fault")
     def test_NoneType_as_input_image_crashes_because_signal11SIGSEV(self):
-        self.assertTrue(True)
-        """
         with self.assertRaises(AttributeError) as cm_new:
             fu.cosinemask(im=None, radius = -1, cosine_width = 5, bckg = None, s=999999.0)
         with self.assertRaises(AttributeError) as cm_old:
             oldfu.cosinemask(im=None, radius = -1, cosine_width = 5, bckg = None, s=999999.0)
         self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'process'")
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-        """
 
     def test_3d_img_default_values(self):
         return_new = fu.cosinemask(
@@ -103634,14 +103627,12 @@ class Test_cosinemask(unittest.TestCase):
         #     )
         # )
 
+    @unittest.skip("skip because segmentation fault")
     def test_2d_img_with_bckg_crashes_because_signal11SIGSEV(self):
-        """
         bckg = model_gauss_noise(0.25 , 10,10,10)
         return_new = fu.cosinemask(im=IMAGE_2D, bckg=bckg)
         return_old = oldfu.cosinemask(im=IMAGE_2D, bckg=bckg)
         self.assertTrue(array_equal(return_new.get_2dview(), return_old.get_2dview()))
-        """
-        self.assertTrue(True)
 
     def test_2d_img_default_values(self):
         return_new = fu.cosinemask(
@@ -105560,14 +105551,12 @@ class Test_cosinemask(unittest.TestCase):
         #     )
         # )
 
+    @unittest.skip("skip because segmentation fault")
     def test_img_blank2D_with_bckg_crashes_because_signal11SIGSEV(self):
-        """
         bckg = model_gauss_noise(0.25 , 10,10,10)
         return_new = fu.cosinemask(im=IMAGE_BLANK_2D, bckg=bckg)
         return_old = oldfu.cosinemask(im=IMAGE_BLANK_2D, bckg=bckg)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
-        """
-        self.assertTrue(True)
 
     def test_img_blank2D_default_values(self):
         return_new = fu.cosinemask(
