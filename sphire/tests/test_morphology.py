@@ -47279,7 +47279,7 @@ class Test_simctf(unittest.TestCase):
         return_new = fu.simctf(amp=self.amp, data=data)
         return_old = oldfu.simctf(amp=self.amp, data=data)
         self.assertEqual(return_new, return_old)
-        self.assertAlmostEqual(return_new, -0.06771274656057358)
+        self.assertAlmostEqual(return_new, -0.06771274656057358,delta=1.e-5)
 
 
 class Test_simctf2out(unittest.TestCase):
@@ -75560,7 +75560,7 @@ class Test_ctf_img(unittest.TestCase):
                     -0.4039967954158783,
                     0.0,
                 ],
-                atol=1.e-5
+                atol=1.e-4
             )
         )
 
@@ -75580,7 +75580,7 @@ class Test_ctf_img(unittest.TestCase):
         return_old = oldfu.ctf_img(nx=20, ctf=ctf, sign=0, ny=0, nz=1)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
         self.assertTrue(
-            array_equal(
+            allclose(
                 return_new.get_3dview().flatten(),
                 [
                     0.0,
@@ -76024,6 +76024,7 @@ class Test_ctf_img(unittest.TestCase):
                     -0.0,
                     0.0,
                 ],
+                atol=1.e-5
             )
         )
 
@@ -76697,7 +76698,7 @@ class Test_ctf_img_real(unittest.TestCase):
                     0.9997809529304504,
                     -0.060083337128162384,
                 ],
-                atol=1.e-5
+                atol=1.e-4
             )
         )
 
@@ -76941,7 +76942,7 @@ class Test_ctf_img_real(unittest.TestCase):
                     -0.815983772277832,
                     -0.4039967954158783,
                 ],
-                atol=1.e-5
+                atol=1.e-4
             )
         )
 
@@ -76961,7 +76962,7 @@ class Test_ctf_img_real(unittest.TestCase):
         return_old = oldfu.ctf_img_real(nx=20, ctf=ctf, sign=0, ny=0, nz=1)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
         self.assertTrue(
-            array_equal(
+            allclose(
                 return_old.get_3dview().flatten(),
                 [
                     0.0,
@@ -77185,6 +77186,7 @@ class Test_ctf_img_real(unittest.TestCase):
                     -0.0,
                     -0.0,
                 ],
+                atol=1.e-5
             )
         )
 
@@ -77736,7 +77738,7 @@ class Test_ctf_rimg(unittest.TestCase):
                     -0.7344433665275574,
                     0.11147265136241913,
                 ],
-                atol=1.e-5
+                atol=1.e-4
             )
         )
 
@@ -77800,7 +77802,7 @@ class Test_ctf_rimg(unittest.TestCase):
                     -0.9365577697753906,
                     -0.31024980545043945,
                 ],
-                atol=1.e-5
+                atol=1.e-4
             )
         )
 
@@ -78224,7 +78226,7 @@ class Test_ctf_rimg(unittest.TestCase):
                     -0.7344433665275574,
                     0.11147265136241913,
                 ],
-                atol=1.e-5
+                atol=1.e-4
             )
         )
 
@@ -78648,7 +78650,7 @@ class Test_ctf_rimg(unittest.TestCase):
                     0.7344433665275574,
                     0.11147265136241913,
                 ],
-                atol=1.e-5
+                atol=1.e-4
             )
         )
 
@@ -78712,7 +78714,7 @@ class Test_ctf_rimg(unittest.TestCase):
                     0.9365577697753906,
                     0.31024980545043945,
                 ],
-                atol=1.e-5
+                atol=1.e-4
             )
         )
 
@@ -109680,7 +109682,7 @@ class Test_simpw1d(unittest.TestCase):
         ]
         return_new = fu.simpw1d(defocus=self.defocus, data=datanew)
         return_old = oldfu.simpw1d(defocus=self.defocus, data=datanew)
-        self.assertAlmostEqual(return_old, -25.465647785195642)
+        self.assertAlmostEqual(return_old, -25.465647785195642,delta=1.e-5)
         self.assertEqual(return_old, return_new)
 
     def test_negative_defocus(self):
@@ -109699,7 +109701,7 @@ class Test_simpw1d(unittest.TestCase):
         return_new = fu.simpw1d(defocus=-1, data=datanew)
         return_old = oldfu.simpw1d(defocus=-1, data=datanew)
         self.assertEqual(return_old, return_new)
-        self.assertAlmostEqual(return_old, -27.245557477546001)
+        self.assertAlmostEqual(return_old, -27.245557477546001,delta=1.e-5)
 
     def test_empty_array_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
@@ -109787,7 +109789,7 @@ class Test_simpw1d_pap(unittest.TestCase):
         return_new = fu.simpw1d_pap(defocus=self.defocus, data=datanew)
         return_old = oldfu.simpw1d_pap(defocus=self.defocus, data=datanew)
         self.assertEqual(return_new, return_old)
-        self.assertAlmostEqual(return_new, -3.0662456814744594)
+        self.assertAlmostEqual(return_new, -3.0662456814744594,delta=1.e-5)
 
     def test_negative_focus(self):
         datanew = [
@@ -109805,7 +109807,7 @@ class Test_simpw1d_pap(unittest.TestCase):
         return_new = fu.simpw1d_pap(defocus=-1, data=datanew)
         return_old = oldfu.simpw1d_pap(defocus=-1, data=datanew)
         self.assertEqual(return_new, return_old)
-        self.assertAlmostEqual(return_new, -2.9715058544041693)
+        self.assertAlmostEqual(return_new, -2.9715058544041693,delta=1.e-5)
 
     def test_empty_array_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
@@ -109893,7 +109895,7 @@ class Test_simpw1d_print(unittest.TestCase):
         return_new = fu.simpw1d_print(defocus=self.defocus, data=datanew)
         return_old = oldfu.simpw1d_print(defocus=self.defocus, data=datanew)
         self.assertEqual(return_new, return_old)
-        self.assertAlmostEqual(return_new, -3.0662456814744594)
+        self.assertAlmostEqual(return_new, -3.0662456814744594,delta=1.e-5)
 
     def test_negative_focus(self):
         datanew = [
@@ -109911,7 +109913,7 @@ class Test_simpw1d_print(unittest.TestCase):
         return_new = fu.simpw1d_print(defocus=-1, data=datanew)
         return_old = oldfu.simpw1d_print(defocus=-1, data=datanew)
         self.assertEqual(return_new, return_old)
-        self.assertAlmostEqual(return_new, -2.9715058544041693)
+        self.assertAlmostEqual(return_new, -2.9715058544041693,delta=1.e-5)
 
     def test_empty_array_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
@@ -122352,7 +122354,7 @@ class Test_simctf2(unittest.TestCase):
         return_new = fu.simctf2(dz=self.defocus, data=data)
         return_old = oldfu.simctf2(dz=self.defocus, data=data)
         self.assertEqual(return_new, return_old)
-        self.assertAlmostEqual(return_new, 0.21727311611175537)
+        self.assertAlmostEqual(return_new, 0.21727311611175537,delta=1.e-5)
 
 
 class Test_fupw(unittest.TestCase):
