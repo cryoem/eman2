@@ -80411,13 +80411,11 @@ class Test_imf_params_cl1(unittest.TestCase):
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
+    @unittest.skip("skip because SIGABRT error")
     def test_empty_list_crashes_because_signal6SIGABRT(self):
-        """
-        return_new = fu.imf_params_cl1([], n=2, iswi=3, Pixel_size=1)
-        return_old = oldfu.imf_params_cl1([], n=2, iswi=3, Pixel_size=1)
-        self.test_all_the_conditions(return_old,return_new, False)
-        """
-        self.assertTrue(True)
+        fu.imf_params_cl1([], n=2, iswi=3, Pixel_size=1)
+        oldfu.imf_params_cl1([], n=2, iswi=3, Pixel_size=1)
+
 
     def test_no_pixel_size_error(self):
         return_new = fu.imf_params_cl1(pw=self.pw, n=4, iswi=3, Pixel_size=0)
@@ -80535,13 +80533,11 @@ class Test_imf_params_cl1(unittest.TestCase):
             )
         )
 
+    @unittest.skip("skip because SIGABRT error")
     def test_negative_rank_error_because_signal6SIGABRT(self):
-        """
-        return_new = fu.imf_params_cl1(pw=self.pw, n=-2, iswi=2, Pixel_size=1)
-        return_old = oldfu.imf_params_cl1(pw=self.pw, n=-2, iswi=2, Pixel_size=1)
-        self.test_all_the_conditions(return_old,return_new, False)
-        """
-        self.assertTrue(True)
+        fu.imf_params_cl1(pw=self.pw, n=-2, iswi=2, Pixel_size=1)
+        oldfu.imf_params_cl1(pw=self.pw, n=-2, iswi=2, Pixel_size=1)
+
 
     def test_with_invalid_iswi(self):
         return_new = fu.imf_params_cl1(pw=self.pw, n=2, iswi=-2, Pixel_size=1)
