@@ -47247,15 +47247,13 @@ class Test_simctf(unittest.TestCase):
         self.assertTrue(isnan(fu.simctf(amp=self.amp, data=data)))
         self.assertTrue(isnan(oldfu.simctf(amp=self.amp, data=data)))
 
+    @unittest.skip("skip because segmentation fault")
     def test_empty_input_image_crashes_because_signal11SIGSEGV(self):
-        """
         image = get_data(1, self.nx)[0]
         data = [image, EMData(), self.nx,  self.dfdiff, self.cs, self.voltage, self.pixel_size, self.amp_contrast ,self.dfang ]
         with self.assertRaises(RuntimeError):
             fu.simctf(amp=self.amp, data=data)
             oldfu.simctf(amp=self.amp,data=data)
-        """
-        self.assertTrue(True)
 
     def test_simctf(self):
         image = get_data(1, self.nx)[0]
