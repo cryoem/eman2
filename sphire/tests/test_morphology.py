@@ -5,6 +5,7 @@ from numpy import inf as numpy_inf
 from numpy import full as numpy_full
 from numpy import ones as numpy_ones
 from numpy import float32 as numpy_float32
+from numpy import linalg
 from random import sample as random_sample
 
 import unittest
@@ -80352,13 +80353,12 @@ class Test_ctflimit(unittest.TestCase):
         self.assertTrue(array_equal(return_new, return_old))
 
     def test_null_voltage_crashes_because_LinAlgError(self):
-        """ How can I catch the '"LinAlgError
-        with self.assertRaises(ValueError):
-            return_new = fu.ctflimit(nx=30, defocus=1, cs=2, voltage=0, pix=1.5)
-            return_old = oldfu.ctflimit(nx=30, defocus=1, cs=2, voltage=0, pix=1.5)
-            self.assertTrue(array_equal(return_new, return_old))
-        """
-        self.assertTrue(True)
+        with self.assertRaises(linalg.LinAlgError)  as cm_new:
+            fu.ctflimit(nx=30, defocus=1, cs=2, voltage=0, pix=1.5)
+        with self.assertRaises(linalg.LinAlgError)  as cm_old:
+            oldfu.ctflimit(nx=30, defocus=1, cs=2, voltage=0, pix=1.5)
+        self.assertEqual(str(cm_new.exception), "Array must not contain infs or NaNs")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_null_defocus(self):
         return_new = fu.ctflimit(nx=30, defocus=0, cs=2, voltage=300, pix=1.5)
