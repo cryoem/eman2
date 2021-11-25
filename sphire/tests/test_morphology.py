@@ -47274,9 +47274,6 @@ class Test_simctf(unittest.TestCase):
         self.assertAlmostEqual(return_new, -0.06771274656057358)
 
 
-@unittest.skip(
-    "sometimes the exception is raised sometimes not because the internal call to 'localvariance'"
-)
 class Test_simctf2out(unittest.TestCase):
     amp = 4
     defocus = 0
@@ -47295,7 +47292,7 @@ class Test_simctf2out(unittest.TestCase):
         with self.assertRaises(TypeError) as cm_old:
             oldfu.simctf2out()
         self.assertEqual(
-            str(cm_new.exception), "simctf2out() takes exactly 2 arguments (0 given)"
+            str(cm_new.exception), "simctf2out() missing 2 required positional arguments: 'dz' and 'data'"
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
@@ -47340,8 +47337,15 @@ class Test_simctf2out(unittest.TestCase):
             self.amp_contrast,
             self.dfang,
         ]
-        return_new = fu.simctf2out(dz=self.defocus, data=data)
-        return_old = oldfu.simctf2out(dz=self.defocus, data=deepcopy(data))
+        with self.assertRaises(TypeError) as cm_new:
+            fu.simctf2out(dz=self.defocus, data=data)
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.simctf2out(dz=self.defocus, data=deepcopy(data))
+
+        self.assertEqual(str(cm_new.exception), "unsupported operand type(s) for ** or pow(): 'EMData' and 'int'")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
+
+
 
     def test_empty_input_image2_crashes_because_signal11SIGSEGV(self):
         """
@@ -47366,10 +47370,13 @@ class Test_simctf2out(unittest.TestCase):
             self.amp_contrast,
             self.dfang,
         ]
-        return_new = fu.simctf2out(dz=self.defocus, data=data)
-        return_old = oldfu.simctf2out(dz=self.defocus, data=data)
-        self.assertEqual(return_new, return_old)
-        self.assertEqual(return_new, -0.7641812562942505)
+        with self.assertRaises(TypeError) as cm_new:
+            fu.simctf2out(dz=self.defocus, data=data)
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.simctf2out(dz=self.defocus, data=data)
+
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
+        self.assertEqual(str(cm_new.exception), "object of type 'EMData' has no len()")
 
 
 @unittest.skip("it is saving an image in the DB. How test it?")
