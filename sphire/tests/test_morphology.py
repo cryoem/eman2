@@ -58007,28 +58007,22 @@ class Test_dilatation(unittest.TestCase):
 
 
 class Test_erosion(unittest.TestCase):
+    @unittest.skip("skip because segmentation fault")
     def test_empty_input_image_crashes_because_signal11SIGSEV(self):
-        """
-        It seems not possible to test it without getting an segmentation fault. We should return None after the first error message
-        in order to avoid to run in the second if/else and get the segmentation fault in the c+++ code
-        img =EMData()
-        return_new = fu.erosion(img)
-        return_old = oldfu.erosion(img)
+        # It seems not possible to test it without getting an segmentation fault. We should return None after the first error message in order to avoid to run in the second if/else and get the segmentation fault in the c+++ code
+        return_new = fu.erosion(EMData())
+        return_old = oldfu.erosion(EMData())
         self.assertTrue(return_old is None)
         self.assertTrue(return_new is None)
-        """
-        self.assertTrue(True)
 
+    @unittest.skip("skip because segmentation fault")
     def test_NoneType_as_input_image_crashes_because_signal11SIGSEV(self):
-        self.assertTrue(True)
-        """
         with self.assertRaises(AttributeError) as cm_new:
             fu.erosion(f=None, mask = MASK, morphtype="BINARY")
         with self.assertRaises(AttributeError) as cm_old:
             fu.erosion(f=None, mask = MASK, morphtype="BINARY")
         self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'process'")
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-        """
 
     def test_empty_mask_image_RuntimeError_ImageDimensionException_center_isnot_welldefined(
         self
