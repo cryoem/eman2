@@ -73497,18 +73497,13 @@ class Test_rotavg_ctf(unittest.TestCase):
             img=IMAGE_2D, defocus=1, Cs=2, voltage=300, Pixel_size=1.5, amp=0.0, ang=0.0
         )
         self.assertTrue(array_equal(return_new, return_old))
-        # self.assertTrue(
-        #     array_equal(
-        #         return_new,
-        #         [
-        #             -0.1273496150970459,
-        #             -0.1284470557014267,
-        #             -0.12941872358318976,
-        #             -0.14287365059095114,
-        #             -0.15848365069040088,
-        #         ],
-        #     )
-        # )
+        self.assertTrue(
+            allclose(
+                return_new,
+                [-0.14705371059163633, -0.15134136199274933, 0.0, 0.0, 0.0],
+                atol=1.e-5
+            )
+        )
 
     def test_3DImg_with_spherical_abberation(self):
         return_new = fu.rotavg_ctf(
@@ -73518,18 +73513,13 @@ class Test_rotavg_ctf(unittest.TestCase):
             img=IMAGE_3D, defocus=1, Cs=2, voltage=300, Pixel_size=1.5, amp=0.0, ang=0.0
         )
         self.assertTrue(array_equal(return_new, return_old))
-        # self.assertTrue(
-        #     array_equal(
-        #         return_new,
-        #         [
-        #             -0.1273496150970459,
-        #             -0.1284470557014267,
-        #             -0.12941872358318976,
-        #             -0.14287365059095114,
-        #             -0.15848365069040088,
-        #         ],
-        #     )
-        # )
+        self.assertTrue(
+            allclose(
+                return_new,
+                [-0.14705371059163633, -0.15134136199274933, 0.0, 0.0, 0.0],
+                atol=1.e-5
+            )
+        )
 
     def test_2DImg_null_spherical_abberation_and_defocus_RuntimeWarning_msg_invalid_value_encountered(
         self
