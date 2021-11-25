@@ -45707,7 +45707,6 @@ class Test_fill_cavities(unittest.TestCase):
         )
 
 
-# todo: the 2 versions are returnong always the same value ... this values sometimes change ... why ?
 class Test_localvariance(unittest.TestCase):
     data = random_sample((range(100), 3000), 1)
 
@@ -45730,13 +45729,13 @@ class Test_localvariance(unittest.TestCase):
         self.assertEqual(str(cm_new.exception), "list index out of range")
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
-    @unittest.skip("sometimes we have a result sometimes the other one.")
     def test_localvariance(self):
+        # cannot perform the real data test because the output sometimes change
         return_old = oldfu.localvariance(data=self.data, window_size=10, skip=3)
         return_new = fu.localvariance(data=self.data, window_size=10, skip=3)
         self.assertTrue(array_equal(return_new, return_old))
-        # self.assertTrue(array_equal([-0.93704259], return_old))
-        # self.assertTrue(array_equal([-1.30930734], return_old))-1.30930734
+        #self.assertTrue(allclose([[-1.3093073]], return_new))
+
 
     def test_windowsSize0_returns_ZeroDivisionError(self):
         with self.assertRaises(ZeroDivisionError) as cm_new:
@@ -45746,18 +45745,11 @@ class Test_localvariance(unittest.TestCase):
         self.assertEqual(str(cm_new.exception), "float division by zero")
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
-    @unittest.skip("sometimes the exception is raised sometimes not.")
     def test_skip0(self):
-        with self.assertRaises(TypeError) as cm_new:
-            fu.localvariance(data=self.data, window_size=10, skip=0)
-        with self.assertRaises(TypeError) as cm_old:
-            oldfu.localvariance(data=self.data, window_size=10, skip=0)
-        self.assertEqual(
-            str(cm_new.exception),
-            "unsupported operand type(s) for +: 'int' and 'xrange'",
-        )
-        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-
+        return_new = fu.localvariance(data=self.data, window_size=10, skip=0)
+        return_old = oldfu.localvariance(data=self.data, window_size=10, skip=0)
+        self.assertTrue(array_equal(return_new, return_old))
+        self.assertTrue(allclose([-3.3289592], return_new))
 
 @unittest.skip(
     "because a bug in the code I cannot performe the unittest --> 'sub' is not defined"
