@@ -1,7 +1,7 @@
 
 from numpy import array_equal, allclose, array, isnan, arange
 from numpy import all as numpy_all
-from numpy import inf as numpy_inf
+from numpy import inf
 from numpy import full as numpy_full
 from numpy import ones as numpy_ones
 from numpy import float32 as numpy_float32
@@ -109268,6 +109268,7 @@ class Test_goldsearch_astigmatism(unittest.TestCase):
         return_new = fu.goldsearch_astigmatism(
             f=self.function1, dat=5, a=3, b=4, tol=1.0e-3
         )
+
         return_old = oldfu.goldsearch_astigmatism(
             f=self.function1, dat=5, a=3, b=4, tol=1.0e-3
         )
@@ -109583,27 +109584,9 @@ class Test_defocus_baseline_fit(unittest.TestCase):
         return_old = oldfu.defocus_baseline_fit(
             roo=self.roo, i_start=0, i_stop=10, nrank=6, iswi=3
         )
-        expected_output = numpy_full(257, numpy_inf)
-        cont = 0
-        for value in [
-            2.47491812e-07,
-            2.57499129e-01,
-            1.13008652e01,
-            1.17266912e01,
-            7.23312950e00,
-            7.44119501e00,
-            9.95157623e00,
-            9.32174778e00,
-            5.66901159e00,
-            8.88306713e00,
-            1.51658350e03,
-            3.16336230e10,
-            5.96541553e27,
-        ]:
-            expected_output[cont] = value
-            cont += 1
         self.assertTrue(array_equal(return_new, return_old))
-        # self.assertTrue(allclose(return_new, expected_output, atol=TOLERANCE))
+        self.assertTrue(allclose(return_new, [2.4749181193328695e-07, 0.2575007379055023, 11.300841331481934, 11.726638793945312, 7.2331156730651855, 7.441152095794678, 9.951284408569336, 9.321024894714355, 5.668232440948486, 8.881571769714355, 1516.4447021484375, 31640563712.0, 5.971038690283157e+27, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf], atol=1.e-5))
+
 
     def test_iswi_not3(self):
         return_new = fu.defocus_baseline_fit(
