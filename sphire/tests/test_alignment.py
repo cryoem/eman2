@@ -7077,25 +7077,7 @@ class Test_prepref(unittest.TestCase):
             for q, r in zip(i, j):
                 self.assertEqual(len(q), len(r))
                 for img1, img2 in zip(q, r):
-                    try:
-                        self.assertTrue(
-                            allclose(
-                                img1.get_3dview(),
-                                img2.get_3dview(),
-                                atol=tolerance,
-                                equal_nan=True,
-                            )
-                        )
-                        self.assertTrue(
-                            array_equal(img1.get_3dview(), img2.get_3dview())
-                        )
-                    except AssertionError:
-                        self.assertTrue(
-                            TOLERANCE
-                            > numpy_abs(
-                                numpy_sum(img1.get_3dview() - img2.get_3dview())
-                            )
-                        )
+                    self.assertTrue(allclose(img1.get_3dview(), img2.get_3dview(), atol=tolerance, equal_nan=True))
 
     def test_wrong_number_params_returns_TypeError_too_few_parameters(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -7444,13 +7426,7 @@ class Test_prepare_refrings(unittest.TestCase):
     def test_all_the_conditions(self, return_new=(), return_old=()):
         self.assertEqual(len(return_new), len(return_old))
         for img1, img2 in zip(return_new, return_old):
-            try:
-                self.assertTrue(array_equal(img1.get_3dview(), img2.get_3dview()))
-            except AssertionError:
-                # since sometimes we get  img1.get_3dview()= [[[ nan  nan  nan ...,  nan  nan  nan]]] we skip these cases
-                res = numpy_sum(img1.get_3dview() - img2.get_3dview())
-                if math_isnan(res) is False:
-                    self.assertTrue(TOLERANCE > numpy_abs(res))
+            self.assertTrue(allclose(img1.get_3dview(),img2.get_3dview(),equal_nan=True,atol=TOLERANCE))
 
     def test_wrong_number_params_returns_TypeError_too_few_parameters(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -7975,7 +7951,6 @@ class Test_prepare_refrings(unittest.TestCase):
         )
         self.test_all_the_conditions(return_new, return_old)
 
-    @unittest.skip("Somehow it fails in CI but works on pycharm")
     def test_kb_cubic_sym_c1_and_referenceAngles_got_via_Penczek_algorithm_and_Minus(
         self
     ):
@@ -8272,7 +8247,6 @@ class Test_prepare_refrings(unittest.TestCase):
         )
         self.test_all_the_conditions(return_new, return_old)
 
-    @unittest.skip("Somehow it fails in CI but works on pycharm")
     def test_kb_cubic_sym_c1_and_referenceAngles_got_via_Penczek_algorithm_and_Zero(
         self
     ):
