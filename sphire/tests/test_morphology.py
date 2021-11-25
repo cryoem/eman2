@@ -109681,7 +109681,7 @@ class Test_simpw1d(unittest.TestCase):
         ]
         return_new = fu.simpw1d(defocus=self.defocus, data=datanew)
         return_old = oldfu.simpw1d(defocus=self.defocus, data=datanew)
-        self.assertAlmostEqual(return_old, -25.465647785195642,delta=1.e-5)
+        self.assertAlmostEqual(return_old, -25.465647785195642,delta=1.e-4)
         self.assertEqual(return_old, return_new)
 
     def test_negative_defocus(self):
@@ -109700,7 +109700,7 @@ class Test_simpw1d(unittest.TestCase):
         return_new = fu.simpw1d(defocus=-1, data=datanew)
         return_old = oldfu.simpw1d(defocus=-1, data=datanew)
         self.assertEqual(return_old, return_new)
-        self.assertAlmostEqual(return_old, -27.245557477546001,delta=1.e-5)
+        self.assertAlmostEqual(return_old, -27.245557477546001,delta=1.e-4)
 
     def test_empty_array_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
