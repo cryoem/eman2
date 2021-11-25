@@ -64630,13 +64630,11 @@ class Test_square_root(unittest.TestCase):
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
+    @unittest.skip("skip because segmentation fault")
     def test_NoneType_img_crashes_because_signal11SIGSEV(self):
-        self.assertTrue(True)
-        """
         return_new = fu.square_root(img=None)
         return_old = oldfu.square_root(img=None)
         self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(),equal_nan=True))
-        """
 
     def test_positive_2Dimg(self):
         return_new = fu.square_root(img=IMAGE_2D)
