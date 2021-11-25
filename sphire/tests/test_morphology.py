@@ -109615,29 +109615,23 @@ class Test_defocus_baseline_fit(unittest.TestCase):
         self.assertTrue(array_equal(return_new, return_old))
         self.assertTrue(array_equal(return_new, numpy_ones((257,), dtype=float)))
 
+    @unittest.skip("skip because SIGABRT error")
     def test_start_is_bigger_than_stop_error_because_signal6SIGABRT(self):
-        """
         return_new = fu.defocus_baseline_fit(roo=self.roo, i_start=10, i_stop=7, nrank=2, iswi=3)
         return_old = oldfu.defocus_baseline_fit(roo=self.roo, i_start=10, i_stop=7, nrank=2, iswi=3)
         self.assertTrue(array_equal(return_new, return_old))
-        """
-        self.assertTrue(True)
 
+    @unittest.skip("skip because SIGABRT error")
     def test_start_is_equal_stop_error_because_signal6SIGABRT(self):
-        """
         return_new = fu.defocus_baseline_fit(roo=self.roo, i_start=9, i_stop=9, nrank=2, iswi=3)
         return_old = oldfu.defocus_baseline_fit(roo=self.roo, i_start=9, i_stop=9, nrank=2, iswi=3)
         self.assertTrue(array_equal(return_new, return_old))
-        """
-        self.assertTrue(True)
 
+    @unittest.skip("skip because SIGABRT error")
     def test_negative_rank_error_because_signal6SIGABRT(self):
-        """
         return_new = fu.defocus_baseline_fit(roo=self.roo, i_start=0, i_stop=10, nrank=-1, iswi=2)
         return_old = oldfu.defocus_baseline_fit(roo=self.roo, i_start=0, i_stop=10, nrank=-1, iswi=2)
         self.assertTrue(array_equal(return_new, return_old))
-        """
-        self.assertTrue(True)
 
     def test_null_rank_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
@@ -110334,13 +110328,11 @@ class Test_defocusgett(unittest.TestCase):
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
+    @unittest.skip("skip because SIGABRT error")
     def test_empty_array_crashes_because_signal6SIGABRT(self):
-        """
         with self.assertRaises(IndexError):
             fu.defocusgett([], self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
             oldfu.defocusgett([], self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
-        """
-        self.assertTrue(True)
 
     def test_no_pixel_size_returns_ZeroDivisionError(self):
         with self.assertRaises(ZeroDivisionError) as cm_new:
@@ -111285,13 +111277,11 @@ class Test_defocusgett(unittest.TestCase):
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
+    @unittest.skip("skip because SIGABRT error")
     def test_negative_rank_crashes_because_signal6SIGABRT(self):
-        """
         return_new = fu.defocusgett(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=-2)
         return_old = oldfu.defocusgett(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=-2)
         self.test_all_the_conditions(return_new,return_old,False)
-        """
-        self.assertTrue(True)
 
     def test_null_fstart_returns_ValueError_operand_couldnotbe_broadcast_togethe_with_shape(
         self
@@ -111650,13 +111640,11 @@ class Test_defocusgett_pap(unittest.TestCase):
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
+    @unittest.skip("skip because SIGABRT error")
     def test_empty_array_crashes_because_signal6SIGABRT(self):
-        """
         with self.assertRaises(IndexError):
             fu.defocusgett_pap([], self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
             oldfu.defocusgett_pap([], self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=self.nr2)
-        """
-        self.assertTrue(True)
 
     def test_no_pixel_size_returns_ZeroDivisionError(self):
         with self.assertRaises(ZeroDivisionError) as cm_new:
@@ -115266,13 +115254,11 @@ class Test_defocusgett_pap(unittest.TestCase):
             False,
         )
 
+    @unittest.skip("skip because SIGABRT error")
     def test_negative_rank_crashes_because_signal6SIGABRT(self):
-        """
         return_new = fu.defocusgett_pap(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=-2)
         return_old = oldfu.defocusgett_pap(self.roo, self.nx, self.voltage, self.pixel_size, self.Cs, self.amp_contrast, self.f_start, self.f_stop, nr2=-2)
         self.test_all_the_conditions(return_new,return_old,False)
-        """
-        self.assertTrue(True)
 
     def test_null_fstart(self):
         return_new = fu.defocusgett_pap(
@@ -115627,13 +115613,11 @@ class Test_defocusgett_vpp(unittest.TestCase):
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
+    @unittest.skip("skip because SIGABRT error")
     def test_empty_spectrum_array_crashes_because_signal6SIGABRT(self):
-        """
         with self.assertRaises(IndexError):
             fu.defocusgett_vpp([], self.nx, self.voltage, self.pixel_size, self.Cs, self.f_start,self.f_stop, self.vpp_options)
             oldfu.defocusgett_vpp([], self.nx, self.voltage, self.pixel_size, self.Cs, self.f_start,self.f_stop, self.vpp_options)
-        """
-        self.assertTrue(True)
 
     def test_empty_vpp_array_returns_IndexError_list_index_out_of_range(self):
         with self.assertRaises(IndexError) as cm_new:
