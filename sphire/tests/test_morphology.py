@@ -81195,13 +81195,11 @@ class Test_adaptive_mask(unittest.TestCase):
             )
         )
 
+    @unittest.skip("skip because segmentation fault")
     def test_2dimg_negative_edge_width_crashes_because_signal11SIGSEV(self):
-        """
         return_new = fu.adaptive_mask(vol=IMAGE_2D,nsigma = 1.0, threshold = -9999.0,  ndilation = 3, edge_width = -5)
         return_old = oldfu.adaptive_mask(vol=IMAGE_2D,nsigma = 1.0, threshold = -9999.0,  ndilation = 3, edge_width = -5)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
-        """
-        self.assertTrue(True)
 
     def test_2dimg_null_edge_width(self):
         return_new = fu.adaptive_mask(
@@ -86399,13 +86397,11 @@ class Test_adaptive_mask(unittest.TestCase):
             )
         )
 
+    @unittest.skip("skip because segmentation fault")
     def test_3dimg_negative_edge_width_crashes_because_signal11SIGSEV(self):
-        """
         return_new = fu.adaptive_mask(vol=IMAGE_3D,nsigma = 1.0, threshold = -9999.0,  ndilation = 3, edge_width = -5)
         return_old = oldfu.adaptive_mask(vol=IMAGE_3D,nsigma = 1.0, threshold = -9999.0,  ndilation = 3, edge_width = -5)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
-        """
-        self.assertTrue(True)
 
     def test_3dimg_null_edge_width(self):
         return_new = fu.adaptive_mask(
@@ -95439,13 +95435,11 @@ class Test_adaptive_mask(unittest.TestCase):
             )
         )
 
+    @unittest.skip("skip because segmentation fault")
     def test_img_blank3D_negative_edge_width_crashes_because_signal11SIGSEV(self):
-        """
         return_new = fu.adaptive_mask(vol=IMAGE_BLANK_3D,nsigma = 1.0, threshold = -9999.0,  ndilation = 3, edge_width = -5)
         return_old = oldfu.adaptive_mask(vol=IMAGE_BLANK_3D,nsigma = 1.0, threshold = -9999.0,  ndilation = 3, edge_width = -5)
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
-        """
-        self.assertTrue(True)
 
     def test_img_blank3D_null_edge_width(self):
         return_new = fu.adaptive_mask(
@@ -105646,86 +105640,6 @@ class Test_cosinemask(unittest.TestCase):
         self.assertTrue(
             array_equal(return_old.get_2dview(), IMAGE_BLANK_2D.get_2dview())
         )
-
-
-"""
-This function is not in use
-class Test_get_shrink_3dmask(unittest.TestCase):
-
-    def test_wrong_number_params_too_few_parameters(self):
-        with self.assertRaises(TypeError) as cm_new:
-            fu.get_shrink_3dmask()
-        with self.assertRaises(TypeError) as cm_old:
-            oldfu.get_shrink_3dmask()
-        self.assertEqual(str(cm_new.exception), "get_shrink_3dmask() takes exactly 2 arguments (0 given)")
-        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-
-    def test_empty_input_image_crashes_because_signal11SIGSEV(self):
-        pass
-        with self.assertRaises(RuntimeError):
-            fu.get_shrink_3dmask(3, EMData())
-            oldfu.get_shrink_3dmask(3, EMData())
-
-        self.assertTrue(True)
-
-    def test_No_xinit_error_returns_RuntimeError_InvalidValueException(self):
-        with self.assertRaises(RuntimeError) as cm_new:
-            fu.get_shrink_3dmask(nxinit = 0, mask_file_name = [IMAGE_BLANK_3D])
-        with self.assertRaises(RuntimeError) as cm_old:
-            oldfu.get_shrink_3dmask(nxinit = 0, mask_file_name = [IMAGE_BLANK_3D])
-
-        msg = str(cm_new.exception).split("'")
-        msg_old = str(cm_old.exception).split("'")
-        self.assertEqual(msg[0].split(" ")[0], "InvalidValueException")
-        self.assertEqual(msg[3], "x size <= 0")
-        self.assertEqual(msg[0].split(" ")[0], msg_old[0].split(" ")[0])
-        self.assertEqual(msg[3], msg_old[3])
-
-    def test_3Dmask_format_error_returns_RuntimeError_float_hasnot_attribute_copy(self):
-        # the Image3D is an EMdata
-        with self.assertRaises(AttributeError) as cm_new:
-            fu.get_shrink_3dmask(nxinit=4, mask_file_name=IMAGE_3D)
-        with self.assertRaises(AttributeError) as cm_old:
-            oldfu.get_shrink_3dmask(nxinit = 4, mask_file_name = IMAGE_3D)
-        self.assertEqual(str(cm_new.exception), "'float' object has no attribute 'copy'")
-        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-
-    def test_2Dmask_format_error_returns_RuntimeError_float_hasnot_attribute_copy(self):
-        # the Image3D is an EMdata
-        with self.assertRaises(AttributeError) as cm_new:
-            fu.get_shrink_3dmask(nxinit = 4, mask_file_name = IMAGE_2D)
-        with self.assertRaises(AttributeError) as cm_old:
-            oldfu.get_shrink_3dmask(nxinit = 4, mask_file_name = IMAGE_2D)
-        self.assertEqual(str(cm_new.exception), "'float' object has no attribute 'copy'")
-        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-
-    def test_3Dmask(self):
-        # the get_data_3d(1) is a list with one EMdata element
-        return_new = fu.get_shrink_3dmask(nxinit = 4, mask_file_name = [MASK_3DIMAGE])
-        return_old = oldfu.get_shrink_3dmask(nxinit = 4, mask_file_name = [MASK_3DIMAGE])
-        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
-        self.assertTrue(array_equal( return_old.get_3dview(),[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
-
-    def test_2Dmask(self):
-        return_new = fu.get_shrink_3dmask(nxinit = 4, mask_file_name = [MASK_2DIMAGE])
-        return_old = oldfu.get_shrink_3dmask(nxinit = 4, mask_file_name = [MASK_2DIMAGE])
-        self.assertTrue(array_equal(return_new.get_2dview(), return_old.get_2dview()))
-        self.assertTrue(array_equal([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0], return_old.get_2dview()))
-
-
-    def test_2Dimage_blank_mask(self):
-        return_new = fu.get_shrink_3dmask(nxinit = 4, mask_file_name = [IMAGE_BLANK_2D])
-        return_old = oldfu.get_shrink_3dmask(nxinit = 4, mask_file_name = [IMAGE_BLANK_2D])
-        self.assertTrue(array_equal(return_new.get_2dview(), return_old.get_2dview()))
-        self.assertTrue(array_equal([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], return_old.get_2dview()))
-
-    def test_3Dimage_blank_mask(self):
-        # the get_data_3d(1) is a list with one EMdata element
-        return_new = fu.get_shrink_3dmask(nxinit = 4, mask_file_name = [IMAGE_BLANK_3D])
-        return_old = oldfu.get_shrink_3dmask(nxinit = 4, mask_file_name = [IMAGE_BLANK_3D])
-        self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
-        self.assertTrue(array_equal(return_old.get_3dview(), [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] ))
-"""
 
 
 class Test_get_biggest_cluster(unittest.TestCase):
