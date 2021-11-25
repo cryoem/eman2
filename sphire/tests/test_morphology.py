@@ -108003,16 +108003,16 @@ class Test_compute_bfactor(unittest.TestCase):
         self.assertEqual(str(cm_new.exception), "float division by zero")
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
-    # def test_few_value_in_power_spectrum_list_returns_SystermExitError(self):
-    #     with self.assertRaises(SystemExit) as cm_new:
-    #         fu.compute_bfactor(pws=[1, 1], freq_min=0.15, freq_max=0.25, pixel_size=1.0)
-    #     #sp_global_def.BATCH = True
-    #     with self.assertRaises(SystemExit) as cm_old:
-    #         oldfu.compute_bfactor(
-    #             pws=[1, 1], freq_min=0.15, freq_max=0.25, pixel_size=1.0
-    #         )
-    #     self.assertEqual(str(cm_new.exception), "1")
-    #     self.assertEqual(str(cm_new.exception), str(cm_old.exception))
+    def test_few_value_in_power_spectrum_list_returns_SystermExitError(self):
+        with self.assertRaises(ZeroDivisionError) as cm_new:
+            fu.compute_bfactor(pws=[1, 1], freq_min=0.15, freq_max=0.25, pixel_size=1.0)
+        with self.assertRaises(ZeroDivisionError) as cm_old:
+            oldfu.compute_bfactor(
+                pws=[1, 1], freq_min=0.15, freq_max=0.25, pixel_size=1.0
+            )
+        a=str(cm_new.exception)
+        self.assertEqual(str(cm_new.exception), 'float division by zero')
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_Empty_array_error(self):
         with self.assertRaises(ValueError) as cm_new:
