@@ -110300,7 +110300,8 @@ class Test_defocusgett(unittest.TestCase):
 
     def test_all_the_conditions(self, return_new=None, return_old=None, skip=True):
         if skip is False:
-            for i in [0, 5, 6]:
+            # 0 depends from goldsearch_astigmatism and is not testable
+            for i in [5, 6]:
                 self.assertEqual(return_new[i], return_old[i])
             for i in [1, 2, 3, 4]:
                 self.assertTrue(
