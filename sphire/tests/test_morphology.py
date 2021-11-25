@@ -122321,15 +122321,13 @@ class Test_simctf2(unittest.TestCase):
         self.assertTrue(isnan(fu.simctf2(dz=self.defocus, data=data)))
         self.assertTrue(isnan(oldfu.simctf2(dz=self.defocus, data=data)))
 
+    @unittest.skip("skip because segmentation fault")
     def test_empty_input_image_crashes_because_signal11SIGSEGV(self):
-        """
         image = get_data(1, self.nx)[0]
         data = [image, EMData(), self.nx,  self.dfdiff, self.cs, self.voltage, self.pixel_size, self.amp_contrast ,self.dfang ]
         with self.assertRaises(RuntimeError):
             fu.simctf2(dz=self.defocus, data=data)
             oldfu.simctf2(dz=self.defocus,data=data)
-        """
-        self.assertTrue(True)
 
     def test_simctf2(self):
         image = get_data(1, self.nx)[0]
