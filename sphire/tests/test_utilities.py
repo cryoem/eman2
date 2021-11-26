@@ -10621,23 +10621,24 @@ class Test_model_gauss(unittest.TestCase):
             zcenter=None,
         )
         self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
-        # self.assertTrue(
-        #     array_equal(
-        #         return_old.get_3dview().flatten(),
-        #         [
-        #             0.00876415055245161,
-        #             0.02699548378586769,
-        #             0.06475879997015,
-        #             0.12098536640405655,
-        #             0.1760326623916626,
-        #             0.1994711458683014,
-        #             0.1760326623916626,
-        #             0.12098536640405655,
-        #             0.06475879997015,
-        #             0.02699548378586769,
-        #         ],
-        #     )
-        # )
+        self.assertTrue(
+            allclose(
+                return_old.get_3dview().flatten(),
+                [
+                    0.00876415055245161,
+                    0.02699548378586769,
+                    0.06475879997015,
+                    0.12098536640405655,
+                    0.1760326623916626,
+                    0.1994711458683014,
+                    0.1760326623916626,
+                    0.12098536640405655,
+                    0.06475879997015,
+                    0.02699548378586769,
+                ],
+                atol=1.e-5
+            )
+        )
 
     def test_null_Xsigma_returns_Nan_matrix(self):
         return_new = fu.model_gauss(
