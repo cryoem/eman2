@@ -7767,12 +7767,7 @@ class Test_combine_params2(unittest.TestCase):
             mirror2=0,
         )
         self.assertTrue(array_equal(return_new, return_old))
-        # self.assertTrue(
-        #     array_equal(
-        #         return_new,
-        #         (359.0000000534512, -1.0176047086715698, 1.0173001289367676, 1),
-        #     )
-        # )
+        self.assertTrue(allclose(return_new,(359.0000000534512, -1.0176047086715698, 1.0173001289367676, 1),atol=1.e-5))
 
 
 class Test_inverse_transform2(unittest.TestCase):
