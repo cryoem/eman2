@@ -10424,7 +10424,6 @@ class Test_get_input_from_string(unittest.TestCase):
         self.assertEqual(return_new, return_old)
         self.assertEqual(return_new, [-5, 3.11, 5])
 
-
 class Test_model_circle(unittest.TestCase):
     def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -10440,38 +10439,39 @@ class Test_model_circle(unittest.TestCase):
         return_new = fu.model_circle(r=2, nx=5, ny=5, nz=1)
         return_old = oldfu.model_circle(r=2, nx=5, ny=5, nz=1)
         self.assertTrue(array_equal(return_new.get_2dview(), return_old.get_2dview()))
-        # self.assertTrue(
-        #     array_equal(
-        #         return_new.get_2dview().flatten(),
-        #         [
-        #             0.0,
-        #             0.0,
-        #             1.0,
-        #             0.0,
-        #             0.0,
-        #             0.0,
-        #             1.0,
-        #             1.0,
-        #             1.0,
-        #             0.0,
-        #             1.0,
-        #             1.0,
-        #             1.0,
-        #             1.0,
-        #             1.0,
-        #             0.0,
-        #             1.0,
-        #             1.0,
-        #             1.0,
-        #             0.0,
-        #             0.0,
-        #             0.0,
-        #             1.0,
-        #             0.0,
-        #             0.0,
-        #         ],
-        #     )
-        # )
+        self.assertTrue(
+            allclose(
+                return_new.get_2dview().flatten(),
+                [
+                    0.0,
+                    0.0,
+                    1.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    0.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    0.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    1.0,
+                    0.0,
+                    0.0,
+                ],
+                atol=1.e-5
+            )
+        )
 
     def test_null_Y_size_returns_RuntimeError_InvalidValueException(self):
         with self.assertRaises(RuntimeError) as cm_new:
@@ -10513,78 +10513,79 @@ class Test_model_circle(unittest.TestCase):
         return_new = fu.model_circle(r=0, nx=5, ny=5, nz=1)
         return_old = oldfu.model_circle(r=0, nx=5, ny=5, nz=1)
         self.assertTrue(array_equal(return_new.get_2dview(), return_old.get_2dview()))
-        # self.assertTrue(
-        #     array_equal(
-        #         return_new.get_2dview().flatten(),
-        #         [
-        #             0.0,
-        #             0.0,
-        #             0.0,
-        #             0.0,
-        #             0.0,
-        #             0.0,
-        #             0.0,
-        #             0.0,
-        #             0.0,
-        #             0.0,
-        #             0.0,
-        #             0.0,
-        #             0.0,
-        #             0.0,
-        #             0.0,
-        #             0.0,
-        #             0.0,
-        #             0.0,
-        #             0.0,
-        #             0.0,
-        #             0.0,
-        #             0.0,
-        #             0.0,
-        #             0.0,
-        #             0.0,
-        #         ],
-        #     )
-        # )
+        self.assertTrue(
+            allclose(
+                return_new.get_2dview().flatten(),
+                [
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                ],
+                atol=1.e-5
+            )
+        )
 
-#     # todo: how can it be possible??? is it a bug???
-#     def test_negative_R_size_(self):
-#         return_new = fu.model_circle(r=-1, nx=5, ny=5, nz=1)
-#         return_old = oldfu.model_circle(r=-1, nx=5, ny=5, nz=1)
-#         self.assertTrue(array_equal(return_new.get_2dview(), return_old.get_2dview()))
-#         self.assertTrue(
-#             array_equal(
-#                 return_new.get_2dview().flatten(),
-#                 [
-#                     0.0,
-#                     0.0,
-#                     0.0,
-#                     0.0,
-#                     0.0,
-#                     0.0,
-#                     0.0,
-#                     1.0,
-#                     0.0,
-#                     0.0,
-#                     0.0,
-#                     1.0,
-#                     1.0,
-#                     1.0,
-#                     0.0,
-#                     0.0,
-#                     0.0,
-#                     1.0,
-#                     0.0,
-#                     0.0,
-#                     0.0,
-#                     0.0,
-#                     0.0,
-#                     0.0,
-#                     0.0,
-#                 ],
-#             )
-#         )
-# 
-# 
+    def test_negative_R_size_(self):
+        return_new = fu.model_circle(r=-1, nx=5, ny=5, nz=1)
+        return_old = oldfu.model_circle(r=-1, nx=5, ny=5, nz=1)
+        self.assertTrue(array_equal(return_new.get_2dview(), return_old.get_2dview()))
+        self.assertTrue(
+            allclose(
+                return_new.get_2dview().flatten(),
+                [
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    1.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    1.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                ],
+                atol=1.e-5
+            )
+        )
+
+
 class Test_model_gauss(unittest.TestCase):
     def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
