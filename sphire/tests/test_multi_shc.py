@@ -7,6 +7,7 @@ from os import path
 ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
 
 from numpy import array_equal as numpy_array_equal
+from numpy import allclose
 from copy import deepcopy
 from EMAN2_cppwrap import EMData
 
@@ -2696,7 +2697,7 @@ class Test_orient_params(unittest.TestCase):
         )
         self.assertTrue(numpy_array_equal(return_new, return_old))
         self.assertTrue(
-            numpy_array_equal(
+            allclose(
                 return_new,
                 [
                     [44.99733148063, 111.626097592307, 54.53584503306297, -0.0, -0.0],
