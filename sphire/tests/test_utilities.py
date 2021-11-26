@@ -7500,12 +7500,7 @@ class Test_compose_transform2(unittest.TestCase):
             scale2=1.0,
         )
         self.assertTrue(array_equal(return_new, return_old))
-        # self.assertTrue(
-        #     array_equal(
-        #         return_new,
-        #         (156.51260982858517, -3.0179426670074463, -0.35223737359046936, 1.0),
-        #     )
-        # )
+        self.assertTrue(allclose(return_new,(156.51260982858517, -3.0179426670074463, -0.35223737359046936, 1.0),atol=1.e-5))
 
     def test_null_scaleFactor_returns_RunTimeError_scale_factor_must_be_positive(self):
         with self.assertRaises(RuntimeError) as cm_new:
