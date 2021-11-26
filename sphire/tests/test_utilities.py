@@ -7275,22 +7275,19 @@ class Test_model_rotated_rectangle2D(unittest.TestCase):
         )
 
 
-"""
-@unittest.skip("node involved, i cannot test")
 class Test_send_string_to_all(unittest.TestCase):
     def test_wrong_number_params(self):
         with self.assertRaises(TypeError) as cm_new:
             fu.send_string_to_all()
         with self.assertRaises(TypeError) as cm_old:
             oldfu.send_string_to_all()
-        self.assertEqual(str(cm_new.exception), "send_string_to_all() takes at least 1 argument (0 given)")
+        self.assertEqual(str(cm_new.exception), "send_string_to_all() missing 1 required positional argument: 'str_to_send'")
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_send_string_to_all(self):
         return_old = oldfu.send_string_to_all(str_to_send="sphire", source_node=0)
         return_new = fu.send_string_to_all(str_to_send="sphire", source_node=0)
         self.assertEqual(return_new, return_old)
-"""
 
 """ end: new in sphire 1.3"""
 
