@@ -8292,11 +8292,12 @@ class Test_even_angles(unittest.TestCase):
         #     )
         # )
 
+    @unittest.skip("Because global var has differente value running it twice it has different outputs")
     def test_with_S_invalid_symmetry_returns_UnboundLocalError_local_var_referenced_before_assignment(
         self
     ):
         sp_global_def.BATCH = True
-        with self.assertRaises(SystemExit) as cm_new:
+        with self.assertRaises(UnboundLocalError) as cm_new:
             fu.even_angles(
                 delta=15.0,
                 theta1=10.0,
@@ -8321,9 +8322,7 @@ class Test_even_angles(unittest.TestCase):
                 symmetry="sp1",
                 ant=0.0,
             )
-        self.assertEqual(
-            str(cm_new.exception), str(1)
-        )
+        self.assertEqual(str(cm_new.exception), "local variable 'k' referenced before assignment")
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_with_S_invalid_symmetry_returns_ValueError_invalid_literal(self):
