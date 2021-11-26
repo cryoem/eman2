@@ -11027,16 +11027,17 @@ class Test_peak_search(unittest.TestCase):
         return_new = fu.peak_search(e=IMAGE_2D, npeak=3, invert=1, print_screen=0)
         return_old = oldfu.peak_search(e=IMAGE_2D, npeak=3, invert=1, print_screen=0)
         self.assertTrue(array_equal(return_new, return_old))
-        # self.assertTrue(
-        #     array_equal(
-        #         return_new,
-        #         [
-        #             [0.12692593038082123, 5.0, 3.0, 1.0, 0.0, -2.0],
-        #             [0.12153391540050507, 7.0, 2.0, 0.9575183987617493, 2.0, -3.0],
-        #             [0.08500781655311584, 2.0, 2.0, 0.6697434782981873, -3.0, -3.0],
-        #         ],
-        #     )
-        # )
+        self.assertTrue(
+            allclose(
+                return_new,
+                [
+                    [0.12692593038082123, 5.0, 3.0, 1.0, 0.0, -2.0],
+                    [0.12153391540050507, 7.0, 2.0, 0.9575183987617493, 2.0, -3.0],
+                    [0.08500781655311584, 2.0, 2.0, 0.6697434782981873, -3.0, -3.0],
+                ],
+                atol=1.e-5
+            )
+        )
 
     def test_inverted_sort(self):
         return_new = fu.peak_search(e=IMAGE_2D, npeak=3, invert=-1, print_screen=0)
@@ -11044,14 +11045,12 @@ class Test_peak_search(unittest.TestCase):
         self.assertTrue(array_equal(return_new, return_old))
         self.assertTrue(array_equal(return_new, [[1.0, 5.0, 5.0, 1.0, 0.0, 0.0]]))
 
+    @unittest.skip("skip because segmentation fault")
     def test_null_npeak_crashes_because_signal11SIGSEV(self):
-        self.assertTrue(True)
-        """
         img, NotUsed = get_real_data(dim=2)
         return_new = fu.peak_search(img, npeak = 0, invert = 1, print_screen = 0)
         return_old = oldfu.peak_search(img, npeak = 0, invert = 1, print_screen = 0)
         self.assertTrue(array_equal(return_new, return_old))
-        """
 
     def test_NoneType_as_img_returns_AttributeError_NoneType_obj_hasnot_attribute_process(
         self
@@ -11065,12 +11064,10 @@ class Test_peak_search(unittest.TestCase):
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
+    @unittest.skip("skip because segmentation fault")
     def test_Empty_img_crashes_because_signal11SIGSEV(self):
-        self.assertTrue(True)
-        """
         fu.peak_search(EMData(), npeak = 3, invert = -1, print_screen = 0)
         oldfu.peak_search(EMData(), npeak = 3, invert = -1, print_screen = 0)
-        """
 
 
 class Test_pad(unittest.TestCase):
