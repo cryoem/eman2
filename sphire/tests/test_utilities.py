@@ -7788,12 +7788,7 @@ class Test_inverse_transform2(unittest.TestCase):
         return_new = fu.inverse_transform2(alpha=1.0, tx=2.2, ty=1.0, mirror=0)
         return_old = oldfu.inverse_transform2(alpha=1.0, tx=2.2, ty=1.0, mirror=0)
         self.assertTrue(array_equal(return_new, return_old))
-        # self.assertTrue(
-        #     array_equal(
-        #         return_new,
-        #         (358.9999999938496, -2.1822125911712646, -1.0382429361343384, 0),
-        #     )
-        # )
+        self.assertTrue(allclose(return_new,(358.9999999938496, -2.1822125911712646, -1.0382429361343384, 0),atol=1.e-5))
 
 
 """ How may I REALLY test it?"""
