@@ -6860,20 +6860,21 @@ class Test_compose_transform3m(unittest.TestCase):
             sz2=2,
         )
         self.assertTrue(array_equal(return_new, return_old))
-        # self.assertTrue(
-        #     array_equal(
-        #         return_old,
-        #         [
-        #             3.402106069683171,
-        #             4.997074136852235,
-        #             5.60154991083283,
-        #             5.24754524230957,
-        #             6.778360366821289,
-        #             3.108717203140259,
-        #             1.0,
-        #         ],
-        #     )
-        # )
+        self.assertTrue(
+            allclose(
+                return_old,
+                [
+                    3.402106069683171,
+                    4.997074136852235,
+                    5.60154991083283,
+                    5.24754524230957,
+                    6.778360366821289,
+                    3.108717203140259,
+                    1.0,
+                ],
+                atol=1.e-5
+            )
+        )
 
 
 class Test_model_cylinder(unittest.TestCase):
