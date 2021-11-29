@@ -273,7 +273,7 @@ def main():
 		# We use e2simmx to compute the optimal particle orientations
 		# ERROR e2simmxy doesn't support parallel
 		#e2simmxcmd = "e2simmx.py %s#aliref_%02d %s %s#simmx_%02d -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d %s %s"%(options.path,it, options.input,options.path,it,options.simcmp,options.simalign,options.simaligncmp,subverbose,excludestr,parstr) # e2simmx doesn't do parallel
-		e2simmxcmd = "e2simmx.py %s/aliref_%02d.hdf %s %s/simmx_%02d.hdf -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d %s"%(options.path,it, options.input,options.path,it,options.simcmp,options.simalign,options.simaligncmp,subverbose,excludestr)
+		e2simmxcmd = "e2simmx.py %s/aliref_%02d.hdf %s %s/simmx_%02d.hdf --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d %s"%(options.path,it, options.input,options.path,it,options.simcmp,options.simalign,options.simaligncmp,subverbose,excludestr)
 		if options.simralign : e2simmxcmd += " --ralign=%s --raligncmp=%s" %(options.simralign,options.simraligncmp)
 		if options.parallel: e2simmxcmd += " --parallel=%s" %options.parallel
 		if options.shrink: e2simmxcmd += " --shrink=%d" %options.shrink
@@ -341,7 +341,7 @@ def get_classaverage_cmd(options,check=False,nofilecheck=False):
 
 	e2cacmd = "e2classaverage.py --input=%s --classmx=%s --output=%s --keep=.75 --center %s" %(options.startimg,options.classifyfile,options.cafile,options.center)
 
-	e2cacmd += " --ref=%s --iter=%d -f" %(options.projfile,options.classiter)
+	e2cacmd += " --ref=%s --iter=%d " %(options.projfile,options.classiter)
 
 	#if (options.classkeepsig):
 		#e2cacmd += " --keepsig=%f" %options.classkeepsig
