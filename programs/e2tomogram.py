@@ -67,7 +67,8 @@ def main():
 	parser.add_argument("--correctrot", action="store_true",help="correct for global rotation and position sample flat in tomogram.", default=False,guitype='boolbox',row=12, col=0, rowspan=1, colspan=1,mode="easy")
 
 	#parser.add_argument("--normslice", action="store_true",help="normalize each 2D slice.", default=False)
-	parser.add_argument("--filterto", type=float,help="filter to abs.", default=0.45,guitype='floatbox',row=13, col=1, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--filterto", type=float,help="filter to abs.", default=-1)
+	parser.add_argument("--filterres", type=float,help="filter final tomogram to target resolution (in A). Default is 40", default=40,guitype='floatbox',row=13, col=1, rowspan=1, colspan=1,mode="easy")
 
 	parser.add_argument("--extrapad", action="store_true",help="Use extra padding for tilted reconstruction. slower and cost more memory, but reduce boundary artifacts when the sample is thick", default=False,guitype='boolbox',row=15, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--moretile", action="store_true",help="Sample more tiles during reconstruction. Slower, but reduce boundary artifacts when the sample is thick", default=False,guitype='boolbox',row=15, col=1, rowspan=1, colspan=1,mode="easy")
@@ -125,9 +126,10 @@ def main():
 		
 	#### initializing multithread fft. whether this actually improves speed is untested.
 	Util.init_threads(options.threads)
-	options.ctf=None
 		
 	#### parse options.
+	options.ctf=None
+	
 	itnum=[int(i) for i in options.niter.split(',')] ### number of iterations for each mag
 	itnum+=[0,0,0,0,0] ### skip later iters when not specified.
 	options.inputname=inputname
@@ -202,7 +204,7 @@ def main():
 		m.process_inplace("filter.highpass.gauss",{"cutoff_pixels":options.highpass})
 		m.process_inplace("normalize.edgemean")
 		sz=512
-		m.clip_inplace(Region((m["nx"]-sz)//2, (m["ny"]-sz)//2, sz,sz))
+		m.clip_inplace(Region((m["nx"]-sz-200)//2, (m["ny"]-sz)//2, sz,sz))
 		m.process_inplace("normalize.edgemean")
 		m["apix_x"]=m["apix_y"]=p["apix_x"]*2.
 		imgs_500.append(m)
@@ -330,8 +332,7 @@ def main():
 			else:
 				print("Using tilt_angle from header")
 				tlts=np.array([i["tilt_angle"] for i in imgs_1k])
-				try: options.zeroid=np.where(tlts==0)[0]
-				except: options.zeroid=len(tlts)//2
+				options.zeroid=np.argmin(abs(tlts))
 		
 		if options.writetmp: np.savetxt(os.path.join(options.tmppath,"rawtilt.txt"), tlts)
 		
@@ -563,6 +564,11 @@ def main():
 			imgout=imgs_500
 		else:
 			imgout=imgs_1k
+		
+		if options.filterto<=0:
+			options.filterto=imgout[0]["apix_x"]/options.filterres
+			print("filter to {:.2f} of Nyquist.".format(options.filterto))
+			
 			
 		if options.rmbeadthr>0:
 			remove_beads(imgs_500, imgout, ttparams, options)
@@ -1312,6 +1318,10 @@ def calc_global_trans(imgs, options, excludes=[], tltax=None,tlts=[]):
 	maskc=maskc/np.max(maskc)
 	maskc[maskc>1]=1
 	
+	maskd=np.sqrt((ix-sz//2)**2+(iy-sz//2)**2)
+	#print(np.min(maskd), np.max(maskd))
+	maskd=(maskd<sz*options.maxshift).astype(float)
+	
 	trans=np.zeros((nz, 2))
 	for itr in range(3):
 		fts=[]
@@ -1332,6 +1342,7 @@ def calc_global_trans(imgs, options, excludes=[], tltax=None,tlts=[]):
 			
 			c=a*np.conj(b)
 			c=get_img(c)
+			c=c*maskd
 			p=np.array(np.where(c==np.max(c))).T[0]-sz//2
 			ts.append(p)
 		
@@ -1593,10 +1604,10 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 	nstepy=int(outy/step/2)
 	
 	if options.ctf!=None:
-		print("ctf correction")
 		ctf=EMAN2Ctf()
 		ctf.from_dict({
 			"defocus":1.0, "voltage":options.ctf["voltage"], "bfactor":0., "cs":options.ctf["cs"],"ampcont":0, "apix":imgs[0]["apix_x"]})
+		dfs=[]
 		
 	for stepx in range(-nstepx,nstepx+1):
 		#### shift y by half a tile
@@ -1619,6 +1630,7 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 						pz=p1[2]*img["apix_x"]/10000.
 						ctf.defocus=options.ctf["defocus"][i]-pz
 						ctf.set_phase(options.ctf["phase"][i]*np.pi/180.)
+						dfs.append(ctf.defocus)
 						m["ctf"]=ctf
 						
 					tiles.append(m)
@@ -1627,6 +1639,10 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 
 			jobs.append((jsd, tiles, tpm, sz, pad, stepx, stepy, outz, options))
 	
+	if options.ctf!=None:
+		print("Doing Ctf correction. Average defocus {:.2f}".format(np.mean(dfs)))
+		
+		
 	thrds=[threading.Thread(target=make_tile,args=([i])) for i in jobs]
 	print("now start threads...")
 	thrtolaunch=0
