@@ -24,6 +24,7 @@ def main():
 	parser.add_argument("--mask", default=None, type=str,help="Specify a mask file for each iteration of refinement. Otherwise will generate mask automatically.")
 	parser.add_argument("--compressbits", type=int,help="Bits to keep when writing images. 4 generally safe for raw data. 0-> true lossless (floating point). Default 6", default=6)
 	parser.add_argument("--localsize",type=float,default=-1,help="Override the automatic local region size (in A) used for local resolution calculation and filtration.")
+	parser.add_argument("--m3dthread",action="store_true", default=False ,help="do make3d in threading mode with shared memory. safer for large boxes")
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -42,6 +43,11 @@ def main():
 	js.update(vars(options))
 	js.close()
 	
+	if options.m3dthread:
+		m3dpar=f" --threads {options.threads}"
+	else:
+		m3dpar=f" --parallel {options.parallel}"
+		
 	if options.startiter==0:
 		
 		r=1/res
@@ -73,7 +79,7 @@ def main():
 		run("e2spa_align.py --ptclin {pt}/ptcls_{i0:02d}.lst --ptclout {pt}/ptcls_{i1:02d}.lst --ref {pt}/threed_{i0:02d}.hdf --parallel {par} --sym {s} --maxres {rs:.2f} --goldcontinue".format(pt=options.path, i0=i, i1=i+1, rs=res, s=sym, par=options.parallel))
 			
 		for eo in ["even","odd"]:
-			run("e2spa_make3d.py --input {pt}/ptcls_{i1:02d}.lst --output {pt}/threed_{i1:02d}_{eo}.hdf --keep {kp} --sym {s} --parallel {par} --clsid {eo}".format(pt=options.path, i1=i+1, eo=eo, s=sym, par=options.parallel, kp=options.keep))
+			run("e2spa_make3d.py --input {pt}/ptcls_{i1:02d}.lst --output {pt}/threed_{i1:02d}_{eo}.hdf --keep {kp} --sym {s} {par} --clsid {eo}".format(pt=options.path, i1=i+1, eo=eo, s=sym, par=m3dpar, kp=options.keep))
 
 		if i==options.startiter:
 			res/=2

@@ -49,6 +49,7 @@ def main():
 	parser.add_argument("--maxang", type=int, help="maximum angle difference from starting point for localrefine. ",default=30)
 	parser.add_argument("--smooth",type=float,help="smooth local motion by this factor. smoother local motion with larger numbers. default 100",default=100)
 	parser.add_argument("--smoothN",type=int,help="number of neighboring particles used for smoothing. default 15",default=15)
+	parser.add_argument("--m3dthread",action="store_true", default=False ,help="do make3d in threading mode with shared memory. safer for large boxes")
 	parser.add_argument("--maxtilt",type=float,help="Excluding tilt images beyond the angle",default=-1)
 
 	(options, args) = parser.parse_args()
@@ -263,8 +264,13 @@ def main():
 			last2d=f"{path}/aliptcls2d_{itr:02d}.lst"
 			
 		#### always reconstruct 3d maps from 2d particles
+		if options.m3dthread:
+			m3dpar=f" --threads {options.threads}"
+		else:
+			m3dpar=f" --parallel {options.parallel}"
+			
 		for eo in ["even", "odd"]:
-			run(f"e2spa_make3d.py --input {path}/aliptcls2d_{itr:02d}.lst --output {path}/threed_{itr:02d}_{eo}.hdf --keep {options.keep} --clsid {eo} --parallel {options.parallel} --outsize {boxsize} --pad {padsize} --sym {options.sym}")
+			run(f"e2spa_make3d.py --input {path}/aliptcls2d_{itr:02d}.lst --output {path}/threed_{itr:02d}_{eo}.hdf --keep {options.keep} --clsid {eo} --outsize {boxsize} --pad {padsize} --sym {options.sym} {m3dpar}")
 		
 		#### only do SSNR weighting for the last iteration to avoid potential model bias
 		##   simply run make3d a second time using the previous map as reference.
@@ -272,7 +278,7 @@ def main():
 			run(f"e2refine_postprocess.py --even {path}/threed_{itr:02d}_even.hdf {setsf} --threads {options.threads} {ppmask}")
 			res=calc_resolution(f"{path}/fsc_masked_{itr:02d}.txt")
 			for eo in ["even", "odd"]:
-				run(f"e2spa_make3d.py --input {path}/aliptcls2d_{itr:02d}.lst --output {path}/threed_{itr:02d}_{eo}.hdf --keep {options.keep} --clsid {eo} --parallel thread:{options.threads} --outsize {boxsize} --pad {padsize} --ref {path}/threed_{itr:02d}_{eo}.hdf --maxres {res} --sym {options.sym}")
+				run(f"e2spa_make3d.py --input {path}/aliptcls2d_{itr:02d}.lst --output {path}/threed_{itr:02d}_{eo}.hdf --keep {options.keep} --clsid {eo} --outsize {boxsize} --pad {padsize} --ref {path}/threed_{itr:02d}_{eo}.hdf --maxres {res} --sym {options.sym}  {m3dpar}")
 			
 		run(f"e2refine_postprocess.py --even {path}/threed_{itr:02d}_even.hdf {setsf} {tophat} --threads {options.threads} --restarget {res:.2f} --sym {options.sym} {ppmask}")
 
