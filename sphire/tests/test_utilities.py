@@ -12322,20 +12322,21 @@ class Test_rotate_shift_params(unittest.TestCase):
         return_new = fu.rotate_shift_params(paramsin=paramsin, transf=transf)
         return_old = oldfu.rotate_shift_params(paramsin=paramsin, transf=transf)
         self.assertTrue(array_equal(return_new, return_old))
-        # self.assertTrue(
-        #     array_equal(
-        #         return_new,
-        #         [
-        #             [
-        #                 0.0,
-        #                 0.0,
-        #                 359.50000008558703,
-        #                 0.23908232152462006,
-        #                 1.752134084701538,
-        #             ]
-        #         ],
-        #     )
-        # )
+        self.assertTrue(
+            allclose(
+                return_new,
+                [
+                    [
+                        0.0,
+                        0.0,
+                        359.50000008558703,
+                        0.23908232152462006,
+                        1.752134084701538,
+                    ]
+                ],
+                atol=1.e-5
+            )
+        )
 
     def test_less_transf_params_returns_IndexError_list_index_out_of_range(self):
         paramsin = [[0.25, 1.25, 0, 0, 0.5]]
