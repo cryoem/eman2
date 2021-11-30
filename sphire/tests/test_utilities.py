@@ -14317,50 +14317,6 @@ TypeError: 'NoneType' object has no attribute '__getitem__'
         )
 
 
-
-"""
-has been cleaned
-class Test_gather_compacted_EMData_to_root(unittest.TestCase):
-    argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH, "pickle files/utilities/utilities.gather_compacted_EMData_to_root"))
-    def test_wrong_number_params_too_few_parameters_TypeError(self):
-        with self.assertRaises(TypeError) as cm_new:
-            fu.gather_compacted_EMData_to_root()
-        with self.assertRaises(TypeError) as cm_old:
-            oldfu.gather_compacted_EMData_to_root()
-        self.assertEqual(str(cm_new.exception), "gather_compacted_EMData_to_root() takes at least 3 arguments (0 given)")
-        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-
-    def test_pickle_file_values(self):
-        (no_of_emo, list_of_emo, myid) = self.argum[0]
-        return_new = fu.gather_compacted_EMData_to_root(no_of_emo, list_of_emo, myid, comm=-1)
-        return_old = oldfu.gather_compacted_EMData_to_root(no_of_emo, list_of_emo, myid, comm=-1)
-        self.assertEqual(return_new, return_old)
-
-    def test_with_MPI_COMM_WORLD(self):
-        (no_of_emo, list_of_emo, myid) = self.argum[0]
-        return_new = fu.gather_compacted_EMData_to_root(no_of_emo, list_of_emo, myid, comm=MPI_COMM_WORLD)
-        return_old = oldfu.gather_compacted_EMData_to_root(no_of_emo, list_of_emo, myid, comm=MPI_COMM_WORLD)
-        self.assertEqual(return_new, return_old)
-        self.assertTrue(return_new is None)
-
-    def test_pickle_file_values_wrong_number_of_number_of_all_em_objects_distributed_across_processes(self):
-        (no_of_emo, list_of_emo, myid) = self.argum[0]
-        return_new = fu.gather_compacted_EMData_to_root(0, list_of_emo, myid,  comm=-1)
-        return_old = oldfu.gather_compacted_EMData_to_root(0, list_of_emo, myid, comm=-1)
-        self.assertEqual(return_new, return_old)
-        self.assertTrue(return_new is None)
-
-    def test_NoneType_as_img_returns_IndexError_list_index_out_of_range(self):
-        (no_of_emo, list_of_emo, myid) = self.argum[0]
-        with self.assertRaises(IndexError) as cm_new:
-            fu.gather_compacted_EMData_to_root(no_of_emo, [], myid, comm=-1)
-        with self.assertRaises(IndexError) as cm_old:
-            oldfu.gather_compacted_EMData_to_root(no_of_emo, [], myid, comm=-1)
-        self.assertEqual(str(cm_new.exception), "list index out of range")
-        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-"""
-
-
 class Test_bcast_EMData_to_all(unittest.TestCase):
     argum = get_arg_from_pickle_file(
         path.join(ABSOLUTE_PATH_TO_RESOURCES, "utilities.rotate_3D_shift.pkl")
