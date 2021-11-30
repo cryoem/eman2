@@ -14233,13 +14233,11 @@ class Test_reduce_EMData_to_root(unittest.TestCase):
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
+    @unittest.skip("skip because segmentation fault")
     def test_NoneType_as_img_crashes_because_signal11SIGSEV(self):
-        self.assertTrue(True)
-        """
         return_new = fu.reduce_EMData_to_root(None, myid=74, main_node=0, comm = -1)
         return_old = oldfu.reduce_EMData_to_root(None, myid=74, main_node=0, comm = -1)
         self.assertEqual(return_new, return_old)
-        """
 
     def test_default_values(self):
         new_data = [EMNumPy.numpy2em(deepcopy(self.data[0].get_3dview()))]
@@ -14247,17 +14245,13 @@ class Test_reduce_EMData_to_root(unittest.TestCase):
         old_data = [EMNumPy.numpy2em(deepcopy(self.data[0].get_3dview()))]
         old_data[0].set_attr_dict(self.data[0].get_attr_dict())
 
-        # data = deepcopy(IMAGE_2D_REFERENCE)
         return_new = fu.reduce_EMData_to_root(new_data[0], myid=74, main_node=0, comm=-1)
         return_old = oldfu.reduce_EMData_to_root(old_data[0], myid=74, main_node=0, comm=-1)
 
-        # self.assertTrue(array_equal(new_data[0].get_2dview(), old_data[0].get_2dview()))
         self.assertEqual(return_new, return_old)
         self.assertTrue(return_new is None)
 
     def test_with_MPI_COMM_WORLD(self):
-        # data = deepcopy(IMAGE_2D_REFERENCE)
-
         new_data = [EMNumPy.numpy2em(deepcopy(self.data[0].get_3dview()))]
         new_data[0].set_attr_dict(self.data[0].get_attr_dict())
         old_data = [EMNumPy.numpy2em(deepcopy(self.data[0].get_3dview()))]
@@ -14269,7 +14263,6 @@ class Test_reduce_EMData_to_root(unittest.TestCase):
         return_old = oldfu.reduce_EMData_to_root(
             old_data[0], myid=74, main_node=0, comm=MPI_COMM_WORLD
         )
-        # self.assertTrue(array_equal(new_data[0].get_3dview(), old_data[0].get_3dview()))
         self.assertEqual(return_new, return_old)
         self.assertTrue(return_new is None)
 
