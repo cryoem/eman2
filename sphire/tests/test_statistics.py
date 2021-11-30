@@ -2766,13 +2766,11 @@ class Test_k_means_match_bbenum(unittest.TestCase):
 
         self.assertTrue(array_equal(return_new, [[0, 0, 0, 0], [1, 1, 1, 1]]))
 
+    @unittest.skip("skip because segmentation fault")
     def test_J0_crashes_because_signal11SIGSEV(self):
-        self.assertTrue(True)
-        """
         return_new = fu.k_means_match_bbenum(self.PART, T=10, J=0, max_branching=40, stmult=0.25, nguesses=5,branchfunc=2, LIM=-0, DoMPI_init=False, Njobs=-1, DoMPI=False, K=-1, np=-1,c_dim=[], N_start=-1, N_stop=-1, topMatches=[])
         return_old = oldfu.k_means_match_bbenum(self.PART, T=10, J=0, max_branching=40, stmult=0.25, nguesses=5,branchfunc=2, LIM=-0, DoMPI_init=False, Njobs=-1, DoMPI=False, K=-1, np=-1,c_dim=[], N_start=-1, N_stop=-1, topMatches=[])
         self.assertTrue(array_equal(return_new, return_old))
-        """
 
     def test_branchfunc0(self):
         return_new = fu.k_means_match_bbenum(
