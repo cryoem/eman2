@@ -14318,11 +14318,8 @@ TypeError: 'NoneType' object has no attribute '__getitem__'
 
 
 class Test_bcast_EMData_to_all(unittest.TestCase):
-    argum = get_arg_from_pickle_file(
-        path.join(ABSOLUTE_PATH_TO_RESOURCES, "utilities.rotate_3D_shift.pkl")
-    )
+    argum = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH_TO_RESOURCES, "utilities.rotate_3D_shift.pkl"))
     (data, notUsed) = argum[0]
-
 
     def test_wrong_number_params_too_few_parameters_TypeError(self):
         with self.assertRaises(TypeError) as cm_new:
@@ -14336,7 +14333,6 @@ class Test_bcast_EMData_to_all(unittest.TestCase):
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_with_default_values(self):
-        # tavg = deepcopy(IMAGE_2D_REFERENCE)
         tavg_new = [EMNumPy.numpy2em(deepcopy(self.data[0].get_3dview()))]
         tavg_new[0].set_attr_dict(self.data[0].get_attr_dict())
         tavg_old = [EMNumPy.numpy2em(deepcopy(self.data[0].get_3dview()))]
@@ -14344,12 +14340,11 @@ class Test_bcast_EMData_to_all(unittest.TestCase):
 
         return_new = fu.bcast_EMData_to_all(tavg_new[0], myid=11, source_node=0, comm=-1)
         return_old = oldfu.bcast_EMData_to_all(tavg_old[0], myid=11, source_node=0, comm=-1)
-        # self.assertTrue(array_equal(return_new.get_3dview(), return_old.get_3dview()))
+
         self.assertEqual(return_new, return_old)
         self.assertTrue(return_new is None)
 
     def test_with_myid_equal_sourcenode_default_valuqes(self):
-        # tavg = deepcopy(IMAGE_2D_REFERENCE)
         tavg_new = [EMNumPy.numpy2em(deepcopy(self.data[0].get_3dview()))]
         tavg_new[0].set_attr_dict(self.data[0].get_attr_dict())
         tavg_old = [EMNumPy.numpy2em(deepcopy(self.data[0].get_3dview()))]
@@ -14358,35 +14353,28 @@ class Test_bcast_EMData_to_all(unittest.TestCase):
         return_new = fu.bcast_EMData_to_all(tavg_new[0], myid=0, source_node=0, comm=-1)
         return_old = oldfu.bcast_EMData_to_all(tavg_old[0], myid=0, source_node=0, comm=-1)
 
-        # self.assertTrue(array_equal(IMAGE_2D_REFERENCE.get_3dview(), tavg.get_3dview()))
         self.assertEqual(return_new, return_old)
         self.assertTrue(return_new is None)
 
     def test_with_MPI_COMM_WORLD(self):
-        # tavg = deepcopy(IMAGE_2D_REFERENCE)
         tavg_new = [EMNumPy.numpy2em(deepcopy(self.data[0].get_3dview()))]
         tavg_new[0].set_attr_dict(self.data[0].get_attr_dict())
         tavg_old = [EMNumPy.numpy2em(deepcopy(self.data[0].get_3dview()))]
         tavg_old[0].set_attr_dict(self.data[0].get_attr_dict())
 
-        return_new = fu.bcast_EMData_to_all(
-            tavg_new[0], myid=0, source_node=0, comm=MPI_COMM_WORLD
-        )
+        return_new = fu.bcast_EMData_to_all(tavg_new[0], myid=0, source_node=0, comm=MPI_COMM_WORLD)
 
-        return_old = oldfu.bcast_EMData_to_all(
-            tavg_old[0], myid=0, source_node=0, comm=MPI_COMM_WORLD
-        )
-        # self.assertTrue(array_equal(IMAGE_2D_REFERENCE.get_3dview(), tavg.get_3dview()))
+        return_old = oldfu.bcast_EMData_to_all(tavg_old[0], myid=0, source_node=0, comm=MPI_COMM_WORLD)
+
         self.assertEqual(return_new, return_old)
         self.assertTrue(return_new is None)
 
+    @unittest.skip("skip because segmentation fault")
     def test_NoneType_as_img_crashes_because_signal11SIGSEV(self):
-        self.assertTrue(True)
-        """
         return_new = fu.bcast_EMData_to_all(None, 11, source_node =0, comm= -1)
         return_old = oldfu.bcast_EMData_to_all(None, 11, source_node =0, comm= -1)
         self.assertEqual(return_new, return_old)
-        """
+
 
 
 class Test_send_EMData(unittest.TestCase):
