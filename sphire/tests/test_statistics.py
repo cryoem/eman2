@@ -2418,36 +2418,6 @@ class Test_table_stat(unittest.TestCase):
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
-""" this function has been cleaned
-class Test_mono(unittest.TestCase):
-    def test_wrong_number_params_returns_TypeError_too_few_parameters(self):
-        with self.assertRaises(TypeError) as cm_new:
-            fu.mono()
-        with self.assertRaises(TypeError) as cm_old:
-            oldfu.mono()
-        self.assertEqual(str(cm_new.exception), "mono() takes exactly 2 arguments (0 given)")
-        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-
-    def test_(self):
-        return_new = fu.mono(k1=10,k2=20)
-        return_old = oldfu.mono(k1=10,k2=20)
-        self.assertEqual(return_new,return_old)
-        self.assertEqual(return_new, 200)
-
-    def test_m1_equalm2(self):
-        return_new = fu.mono(k1=20,k2=20)
-        return_old = oldfu.mono(k1=20,k2=20)
-        self.assertEqual(return_new,return_old)
-        self.assertEqual(return_new,210)
-
-    def test_both_zero(self):
-        return_new = fu.mono(k1=0,k2=0)
-        return_old = oldfu.mono(k1=0,k2=0)
-        self.assertEqual(return_new,return_old)
-        self.assertEqual(return_new,0)
-"""
-
-
 class Test_k_means_stab_bbenum(unittest.TestCase):
     PART = [
         [numpy_asarray([50, 73, 79]), numpy_asarray(range(100))],
