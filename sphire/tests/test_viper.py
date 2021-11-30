@@ -27,8 +27,7 @@ except ImportError:
 ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
 TOLERANCE=190
 
-import mpi
-mpi.mpi_init(0, [])
+
 from sphire.libpy import sp_global_def
 
 sp_global_def.BATCH = True
