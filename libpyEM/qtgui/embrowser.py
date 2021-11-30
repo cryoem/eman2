@@ -2327,10 +2327,15 @@ def humansize(val) :
 	try : val = int(val)
 	except : return val
 
-	if val > 1000000000 : return "%d g"%(old_div(val,1000000000))
-	elif val > 1000000 : return "%d m"%(old_div(val,1000000))
-	elif val > 1000 : return "%d k"%(old_div(val,1000))
+	if val > 2**30 : return "%d g"%(val/(2**30))
+	elif val > 2**20 : return "%d m"%(val/(2**20))
+	elif val > 2**10 : return "%d k"%(val/(2**10))
 	return str(val)
+
+	#if val > 1000000000 : return "%d g"%(old_div(val,1000000000))
+	#elif val > 1000000 : return "%d m"%(old_div(val,1000000))
+	#elif val > 1000 : return "%d k"%(old_div(val,1000))
+	#return str(val)
 
 class EMFileItemModel(QtCore.QAbstractItemModel) :
 	"""This ItemModel represents the local filesystem. We don't use the normal filesystem item model because we want
