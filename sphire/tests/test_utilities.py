@@ -16127,13 +16127,12 @@ class Test_assign_projdirs_f(unittest.TestCase):
             )
         )
 
+    @unittest.skip("skip because segmentation fault")
     def test_with_null_neighboor_value_crashes_because_signal11SIGSEV(self):
-        self.assertTrue(True)
-        """
         return_new = fu.assign_projdirs_f(self.projdirs, self.refdirs, 0)
         return_old = oldfu.assign_projdirs_f(self.projdirs, self.refdirs, 0)
         self.assertTrue(array_equal(return_new,return_old))
-        """
+
 
     def test_with_negative_neighboor_value_returns_IndexError_list_index_out_of_range(
         self
@@ -16189,13 +16188,11 @@ class Test_assign_projdirs_f(unittest.TestCase):
             array_equal(return_new, [[], [], [], [], [], [], [], [], [], [], [], []])
         )
 
+    @unittest.skip("skip because segmentation fault")
     def test_empty_refdirs_crashes_because_signal11SIGSEV(self):
-        self.assertTrue(True)
-        """
         return_new = fu.assign_projdirs_f(self.projdirs, [], 1)
         return_old = oldfu.assign_projdirs_f(self.projdirs, [], 1)
         self.assertTrue(array_equal(return_new,return_old))
-        """
 
 
 class Test_angles_to_normals(unittest.TestCase):
