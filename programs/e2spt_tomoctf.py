@@ -179,6 +179,7 @@ def main():
 	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on the local computer",guitype='intbox', row=8, col=2, rowspan=1, colspan=1, mode='model')
 	parser.add_argument("--nolog",action="store_true",default=False,help="Default=False. Turn off recording of the command ran for this program onto the .eman2log.txt file")	
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=1, help="verbose level [0-9], higher number means higher level of verboseness")
+	parser.add_argument("--writetmp", action="store_true", help="Write temporary files. For --checkhand only.", default=False,guitype='boolbox',row=10, col=1, rowspan=1, colspan=1,mode="model")
 
 	parser.add_argument("--bgcurve", type=str, help="load a curve of background power spectrum to substract for ctf estimation.",default=None)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
@@ -342,6 +343,8 @@ def main():
 	tltsrt=np.argsort(abs(tltparams[:,3]))	
 	if options.checkhand:
 		print("Checking handedness of the tomogram. Will NOT write metadata output...")
+		if options.writetmp:
+			path=num_path_new("tomoctf")
 		rot=tltparams[nz//2,2]
 		print("Current tilt axis rotation {:.2f}".format(-rot))
 		signs=[-1, 1]
@@ -381,6 +384,9 @@ def main():
 				scores[si].append((np.mean(allscr)-np.min(allscr))*100)
 				dfs[si].append(pm[0])
 				
+				if options.writetmp:
+					sv=np.vstack([defrg, allscr[0]]).T
+					np.savetxt(f"{path}/score_tilt_{it:03d}_hand_{si}.txt", sv)
 			#for si in [0,1]:
 				#scr=[compute_score((d, np.mean(pshift)), powerspecs[it], options, signs[si]) for d in defrg]
 				#scores[si].append((np.mean(scr)-np.min(scr))*100)
