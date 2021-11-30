@@ -14520,14 +14520,12 @@ class Test_bcast_list_to_all(unittest.TestCase):
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
-    """
-    the compatibility test in the nosetests feiled
+
     def test_with_empty_list(self):
         return_new = fu.bcast_list_to_all([], myid = self.myid, source_node =self.source_node, mpi_comm= -1)
         return_old = oldfu.bcast_list_to_all([], myid= self.myid, source_node = self.source_node, mpi_comm= -1)
         self.assertTrue(array_equal(return_new, return_old))
         self.assertTrue(array_equal(return_new,[]))
-    """
 
     def test_defualt_values(self):
         return_new = fu.bcast_list_to_all(
@@ -14571,17 +14569,17 @@ class Test_bcast_list_to_all(unittest.TestCase):
         self.assertTrue(array_equal(return_new, return_old))
         self.assertTrue(array_equal(return_new, self.list_to_send))
 
-    """
-    in the nosetests the exception is not raised
+
     def test_myid_equal_sourcenode_and_wrong_type_in_listsender_returns_ValueError(self):
         list_to_send=[IMAGE_2D]
+        sp_global_def.BATCH = False
         with self.assertRaises(ValueError) as cm_new:
             fu.bcast_list_to_all(list_to_send, myid = self.source_node, source_node =self.source_node, mpi_comm= MPI_COMM_WORLD)
+        sp_global_def.BATCH = False
         with self.assertRaises(ValueError) as cm_old:
             oldfu.bcast_list_to_all(list_to_send, myid= self.source_node, source_node = self.source_node, mpi_comm= MPI_COMM_WORLD)
         self.assertEqual(str(cm_new.exception), "setting an array element with a sequence.")
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-    """
 
     def test_wrong_type_in_listsender(self):
         list_to_send = [IMAGE_2D]
