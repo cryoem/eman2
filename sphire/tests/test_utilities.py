@@ -17796,24 +17796,22 @@ class Test_rotation_between_anglesets(unittest.TestCase):
         self.assertTrue(array_equal(return_new, return_old))
         self.assertTrue(array_equal(return_new, (2.215e-09, 0.0, 0.0)))
 
-    @unittest.skip("SystemExit is not raised in one case")
-    def test_angls1_empty_list_error_msg(self):
-        with self.assertRaises(SystemExit) as cm_new:
-            return_new = fu.rotation_between_anglesets(agls1=[], agls2=self.agls2)
-        sp_global_def.BATCH = True
-        with self.assertRaises(SystemExit) as cm_old:
-            return_old = oldfu.rotation_between_anglesets(agls1=[], agls2=self.agls2)
-        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-        # self.assertTrue(array_equal(return_new, return_old))
-        # self.assertEqual(return_new, -1)
+    def test_angls1_empty_list(self):
+        sp_global_def.BATCH = False
+        return_new = fu.rotation_between_anglesets(agls1=[], agls2=self.agls2)
+        sp_global_def.BATCH = False
+        return_old = oldfu.rotation_between_anglesets(agls1=[], agls2=self.agls2)
+        self.assertEqual(return_new,return_old)
+        self.assertEqual(return_new, -1)
 
-    @unittest.skip("System exit being raised")
-    def test_angls2_empty_list_error_msg(self):
+
+    def test_angls2_empty_list_error(self):
+        sp_global_def.BATCH = False
         return_new = fu.rotation_between_anglesets(agls1=self.agls1, agls2=[])
+        sp_global_def.BATCH = False
         return_old = oldfu.rotation_between_anglesets(agls1=self.agls1, agls2=[])
         self.assertTrue(array_equal(return_new, return_old))
         self.assertEqual(return_new, -1)
-
 
 class Test_angle_between_projections_directions(unittest.TestCase):
     def test_wrong_number_params_too_few_parameters_TypeError(self):
