@@ -16445,10 +16445,11 @@ class Test_angular_occupancy(unittest.TestCase):
             )
         )
 
-    @unittest.skip("Returns systemexit instead of indexerror")
     def test_with_sym_invalid_method_S_returns_IndexError(self):
+        sp_global_def.BATCH = False
         with self.assertRaises(IndexError) as cm_new:
             fu.angular_occupancy(self.params, self.angstep, "invalid", "S")
+        sp_global_def.BATCH = False
         with self.assertRaises(IndexError) as cm_old:
             oldfu.angular_occupancy(self.params, self.angstep, "invalid", "S")
         self.assertEqual(
@@ -16679,15 +16680,15 @@ class Test_angular_occupancy(unittest.TestCase):
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
-    @unittest.skip("Returns zero division eror instead of systemexit")
-    def test_with_null_angstep_returns_SystemExit_error_msg(self):
-        sp_global_def.BATCH = True
-        with self.assertRaises(SystemExit) as cm_new:
+    def test_with_null_angstep_returns_ZeroDivisionError_error_msg(self):
+        sp_global_def.BATCH = False
+        with self.assertRaises(ZeroDivisionError) as cm_new:
             fu.angular_occupancy(self.params, 0, "c5", "S")
-        sp_global_def.BATCH = True
-        with self.assertRaises(SystemExit) as cm_old:
+        sp_global_def.BATCH = False
+        with self.assertRaises(ZeroDivisionError) as cm_old:
             oldfu.angular_occupancy(self.params, 0, "c5", "S")
-        self.assertEqual(str(cm_new.exception), "1")
+
+        self.assertEqual(str(cm_new.exception), 'float division by zero')
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
