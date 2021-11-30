@@ -15085,16 +15085,15 @@ class Test_get_params2D(unittest.TestCase):
         self.assertEqual(msg[3], msg_old[3])
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
+    @unittest.skip("skip because segmentation fault")
     def test_NoneType_as_img_crashes_because_signal11SIGSEV(self):
-        self.assertTrue(True)
-        """
         with self.assertRaises(AttributeError) as cm_new:
             fu.get_params2D(None, xform="xform.align2d")
         with self.assertRaises(AttributeError) as cm_old:
             oldfu.get_params2D(None, xform="xform.align2d")
         self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_attr'")
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-        """
+
 
 
 class Test_set_params2D(unittest.TestCase):
