@@ -18385,13 +18385,11 @@ class Test_wrap_mpi_send(unittest.TestCase):
         self.assertEqual(return_new, return_old)
         self.assertTrue(return_new is None)
 
+    @unittest.skip("skip because segmentation fault")
     def test_invalid_communicator_crashes_because_signal11SIGSEV(self):
-        self.assertTrue(True)
-        """
         return_new = fu.wrap_mpi_send(data = [9], destination = 0, communicator = -1)
         return_old = oldfu.wrap_mpi_send(data =[9], destination = 0, communicator = -1)
         self.assertEqual(return_new, return_old)
-        """
 
 
 class Test_wrap_mpi_recv(unittest.TestCase):
