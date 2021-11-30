@@ -15564,33 +15564,22 @@ class Test_get_ctf(unittest.TestCase):
         return_new = fu.get_ctf(img_with_ctf)
         return_old = oldfu.get_ctf(img_with_ctf)
         self.assertTrue(array_equal(return_new, return_old))
-        # self.assertTrue(
-        #     array_equal(
-        #         return_new,
-        #         (
-        #             1.1349999904632568,
-        #             0.009999999776482582,
-        #             300.0,
-        #             5.699999809265137,
-        #             0.0,
-        #             10.0,
-        #             0.04473999887704849,
-        #             130.39999389648438,
-        #         ),
-        #     )
-        # )
-
-    def test_NoneType_as_img_returns_AttributeError_NoneType_obj_hasnot_attribute_process(
-        self
-    ):
-        with self.assertRaises(AttributeError) as cm_new:
-            fu.get_ctf(None)
-        with self.assertRaises(AttributeError) as cm_old:
-            oldfu.get_ctf(None)
-        self.assertEqual(
-            str(cm_new.exception), "'NoneType' object has no attribute 'get_attr'"
+        self.assertTrue(
+            allclose(
+                return_new,
+                (
+                    1.1349999904632568,
+                    0.009999999776482582,
+                    300.0,
+                    5.699999809265137,
+                    0.0,
+                    10.0,
+                    0.04473999887704849,
+                    130.39999389648438,
+                ),
+                atol=1.e-5
+            )
         )
-        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
 class Test_same_ctf(unittest.TestCase):
