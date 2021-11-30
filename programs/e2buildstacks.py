@@ -162,6 +162,7 @@ def main():
 				fnames=[args[i] for i in tid[aid]]
 				p=lstpos[tid[0]][it+1]
 				prefix=fnames[0][fnames[0].rfind('/')+1:p]
+				prefix=prefix.replace("__", "_")
 				lstname=os.path.join("tiltseries", prefix+'.lst')
 				print("{} : {} images -> {}".format(prefix, len(fnames), lstname))
 				if options.tltang:
