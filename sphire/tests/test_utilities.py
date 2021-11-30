@@ -17600,13 +17600,11 @@ class Test_symmetry_neighbors(unittest.TestCase):
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
+    @unittest.skip("skip because segmentation fault")
     def test_with_empty_list_crashes_because_signal11SIGSEV(self):
-        self.assertTrue(True)
-        """
         return_new = fu.symmetry_neighbors([] , symmetry= "c1")
         return_old = oldfu.symmetry_neighbors([], symmetry= "c1")
         self.assertTrue(array_equal(return_new, return_old))
-        """
 
     def test_with_less_angles_returns_RuntimeError_3_angles_are_required(self):
         angles = [[0.1], [21.1], [30.11], [1.1]]
