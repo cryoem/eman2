@@ -17485,20 +17485,16 @@ class Test_balance_angular_distribution(unittest.TestCase):
             params=self.params, max_occupy=-1, angstep=self.angstep, sym="c5"
         )
         self.assertTrue(array_equal(return_new, return_old))
-        print(return_new.flatten())
         self.assertTrue(array_equal(return_new.flatten(), [0, 0, 0, 1, 0, 0, 0, 1]))
 
-    @unittest.skip("compatibility test FAILED")
+    @unittest.skip("Because the matplotlib.numpy.random.shuffle command is called the compatibility test fails")
     def test_with_sym_c5_positive_maxOccupy(self):
-        self.assertTrue(True)
-        """
         return_new = fu.balance_angular_distribution(params=self.params, max_occupy = 3, angstep = self.angstep, sym= 'c5')
         return_old=     oldfu.balance_angular_distribution(params=self.params, max_occupy = 3, angstep = self.angstep, sym= 'c5')
         self.assertTrue(array_equal(return_new[0], return_old[0]))
         self.assertTrue(array_equal(return_new[1], return_old[1]))
         self.assertTrue(array_equal(return_new[0], [0, 2, 3, 4, 7]))
         self.assertTrue(array_equal(return_new[1].flatten(),[12.0, 1.0, 32.0, 2.0, 1.0, 32.0, 121.0, 19.0, 32.0, 1.2, 1.0, 3.2, 9.0, 16.0, 32.0]))
-        """
 
     def test_with_sym_c1_not_positive_maxOccupy(self):
         return_new = fu.balance_angular_distribution(
@@ -17534,17 +17530,14 @@ class Test_balance_angular_distribution(unittest.TestCase):
         self.assertTrue(array_equal(return_new[0], [0]))
         self.assertTrue(array_equal(return_new[1].flatten(), [0]))
 
-    @unittest.skip("compatibility test FAILED")
+    @unittest.skip("Because the matplotlib.numpy.random.shuffle command is called the compatibility test fails")
     def test_with_sym_oct_positive_maxOccupy(self):
-        self.assertTrue(True)
-        """
         return_new = fu.balance_angular_distribution(self.params, max_occupy = 3, angstep = self.angstep, sym= 'oct')
         return_old = oldfu.balance_angular_distribution(self.params, max_occupy = 3, angstep = self.angstep, sym= 'oct')
         self.assertTrue(array_equal(return_new[0], return_old[0]))  #failed
         self.assertTrue(array_equal(return_new[1], return_old[1]))
         self.assertTrue(array_equal(return_new[0], [3, 4, 6, 7]))
         self.assertTrue(array_equal(return_new[1].flatten(), [121.0, 19.0, 32.0, 1.2, 1.0, 3.2, 12.0, 10.0, 32.0, 9.0, 16.0, 32.0]))
-        """
 
     def test_with_empty_list_returns_IndexError(self):
         with self.assertRaises(IndexError) as cm_new:
@@ -17559,31 +17552,25 @@ class Test_balance_angular_distribution(unittest.TestCase):
         self.assertEqual(str(cm_new.exception), "too many indices for array")
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
-    @unittest.skip("ZeroDivision Error raised instead of SystemExit")
-    def test_with_null_angstepy_error_msg(self):
-        sp_global_def.BATCH = True
-        with self.assertRaises(SystemExit) as cm_new:
+    def test_with_null_angstepy_ZeroDivisionError_is_raised(self):
+        sp_global_def.BATCH = False
+        with self.assertRaises(ZeroDivisionError) as cm_new:
             fu.balance_angular_distribution(
                 self.params, max_occupy=-1, angstep=0, sym="c5"
             )
-        sp_global_def.BATCH = True
-        with self.assertRaises(SystemExit) as cm_old:
+        sp_global_def.BATCH = False
+        with self.assertRaises(ZeroDivisionError) as cm_old:
             oldfu.balance_angular_distribution(
                 self.params, max_occupy=-1, angstep=0, sym="c5"
             )
-        self.assertEqual(str(cm_new.exception), "1")
+        self.assertEqual(str(cm_new.exception), 'float division by zero')
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
+    @unittest.skip("Because the matplotlib.numpy.random.shuffle command is called the compatibility test fails")
     def test_with_sym_c5_positive_maxOccupy_not_testabel(self):
-        """
-        It use to process random value that lead the function to returns always different va;ues
-        """
-        self.assertTrue(True)
-        """
         return_new = fu.balance_angular_distribution(deepcopy(self.params), max_occupy = 1, angstep = self.angstep, sym= 'c5')
         return_old = oldfu.balance_angular_distribution(deepcopy(self.params), max_occupy = 1, angstep = self.angstep, sym= 'c5')
         self.assertTrue(array_equal(return_new, return_old))
-        """
 
 
 class Test_symmetry_neighbors(unittest.TestCase):
