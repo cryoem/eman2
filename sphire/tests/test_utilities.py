@@ -15261,16 +15261,14 @@ class Test_get_params3D(unittest.TestCase):
         self.assertEqual(msg[3], msg_old[3])
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
+    @unittest.skip("skip because segmentation fault")
     def test_NoneType_as_img_crashes_because_signal11SIGSEV(self):
-        self.assertTrue(True)
-        """
         with self.assertRaises(AttributeError) as cm_new:
             fu.get_params3D(IMAGE_3D, xform="xform.align3d")
         with self.assertRaises(AttributeError) as cm_old:
             oldfu.get_params3D(IMAGE_3D, xform="xform.align3d")
         self.assertEqual(str(cm_new.exception), "'NoneType' object has no attribute 'get_attr'")
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-        """
 
 
 # # todo: I need a 3D image with 'xform.align3d' key
