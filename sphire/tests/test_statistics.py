@@ -790,8 +790,6 @@ class Test_add_ave_varf_MPI(unittest.TestCase):
         path.join(ABSOLUTE_PATH_TO_RESOURCES, "alignment.ali2d_single_iter")
     )[0][0]
 
-    data = give_ali2d_single_iter_data()[0]
-
     def test_all_the_conditions(
         self, return_new=(), return_old=(), tolerance=TOLERANCE
     ):
@@ -879,10 +877,9 @@ class Test_add_ave_varf_MPI(unittest.TestCase):
         self.assertEqual(msg[3], msg_old[3])
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
-    @unittest.skip('System Exit not raised in one case')
-    def test_default_value_msg_Error_negative_variance(self):
-        with self.assertRaises(SystemExit) as cm_new:
-            fu.add_ave_varf_MPI(
+
+    def test_default_value_negative_variance(self):
+        return_new=fu.add_ave_varf_MPI(
             self.main_node,
             self.data,
             mask=None,
@@ -891,11 +888,9 @@ class Test_add_ave_varf_MPI(unittest.TestCase):
             ctf_2_sum=None,
             ali_params="xform.align2d",
             main_node=self.main_node,
-            comm=-1,
-        )
-        sp_global_def.BATCH =True
-        with self.assertRaises(SystemExit) as cm_old:
-            oldfu.add_ave_varf_MPI(
+            comm=-1)
+
+        return_old=    oldfu.add_ave_varf_MPI(
             self.main_node,
             self.data,
             mask=None,
@@ -904,11 +899,9 @@ class Test_add_ave_varf_MPI(unittest.TestCase):
             ctf_2_sum=None,
             ali_params="xform.align2d",
             main_node=self.main_node,
-            comm=-1,
-        )
-        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
-        # self.test_all_the_conditions(return_new, return_old, tolerance=0)
-        # self.assertEqual(len(return_new), 5)
+            comm=-1)
+        self.test_all_the_conditions(return_new, return_old, tolerance=0)
+        self.assertEqual(len(return_new), 5)
 
     def test_with_mask(self):
         mpi_barrier(MPI_COMM_WORLD)
@@ -936,7 +929,7 @@ class Test_add_ave_varf_MPI(unittest.TestCase):
             comm=-1,
         )
         self.test_all_the_conditions(return_new, return_old, tolerance=0)
-        # self.assertEqual(len(return_new), 5)
+        self.assertEqual(len(return_new), 5)
 
     def test_no_on_main_node(self):
         mpi_barrier(MPI_COMM_WORLD)
@@ -1006,7 +999,7 @@ class Test_add_ave_varf_MPI(unittest.TestCase):
             comm=-1,
         )
         self.test_all_the_conditions(return_new, return_old, tolerance=0)
-        # self.assertEqual(len(return_new), 5)
+        self.assertEqual(len(return_new), 5)
 
     def test_without_mask_and_not_current_alignment_parameters_msg_Error_negative_variance(
         self
@@ -1036,7 +1029,7 @@ class Test_add_ave_varf_MPI(unittest.TestCase):
             comm=-1,
         )
         self.test_all_the_conditions(return_new, return_old, tolerance=0)
-        # self.assertEqual(len(return_new), 5)
+        self.assertEqual(len(return_new), 5)
 
 
 # #todo: I need a list of image with ''xform.align2d'
