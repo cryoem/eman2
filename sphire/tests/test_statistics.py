@@ -1196,6 +1196,7 @@ class Test_sum_oe(unittest.TestCase):
 
 
 
+
 class Test_ave_var(unittest.TestCase):
     data = get_arg_from_pickle_file(
         path.join(ABSOLUTE_PATH_TO_RESOURCES, "statistics.ave_var.pkl")
@@ -1204,12 +1205,13 @@ class Test_ave_var(unittest.TestCase):
     # data = give_ave_series_data()
 
     def test_all_the_conditions(self, return_new=(), return_old=()):
+
         if len(return_new) > 0:
             self.assertTrue(
-                array_equal(return_new[0].get_3dview(), return_old[0].get_3dview())
+                allclose(return_new[0].get_3dview().flatten(), return_old[0].get_3dview().flatten(),equal_nan=True,atol=1.e-5)
             )
             self.assertTrue(
-                array_equal(return_new[1].get_3dview(), return_old[1].get_3dview())
+                allclose(return_new[1].get_3dview(), return_old[1].get_3dview(),equal_nan=True,atol=1.e-2)
             )
 
     def test_wrong_number_params_returns_TypeError_too_few_parameters(self):
@@ -1225,20 +1227,18 @@ class Test_ave_var(unittest.TestCase):
     def test_default_value(self):
         return_new = fu.ave_var(self.data, mode="a", listID=None)
         return_old = oldfu.ave_var(self.data, mode="a", listID=None)
-        # self.test_all_the_conditions(return_new, return_old)
-        pass
+        self.test_all_the_conditions(return_new, return_old)
 
     def test_not_current_alignment_parameters(self):
         return_new = fu.ave_var(self.data, mode="nota", listID=None)
         return_old = oldfu.ave_var(self.data, mode="nota", listID=None)
-        # self.test_all_the_conditions(return_new, return_old)
-        pass
+        self.test_all_the_conditions(return_new, return_old)
 
     def test_with_listID(self):
         return_new = fu.ave_var(self.data, mode="a", listID=[1, 2])
         return_old = oldfu.ave_var(self.data, mode="a", listID=[1, 2])
-        # self.test_all_the_conditions(return_new, return_old)
-        pass
+        self.test_all_the_conditions(return_new, return_old)
+
 #
 #
 # #todo: I cannot performe the unit test
