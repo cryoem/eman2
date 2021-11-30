@@ -15693,23 +15693,21 @@ class Test_getvec(unittest.TestCase):
         return_new = fu.getvec(0, 100)
         return_old = oldfu.getvec(0, 100)
         self.assertTrue(array_equal(return_new, return_old))
-        # self.assertTrue(
-        #     array_equal(
-        #         return_new,
-        #         (-0.98480775301220802, 1.2060416625018976e-16, 0.17364817766693041),
-        #     )
-        # )
+        self.assertTrue(
+            allclose(
+                return_new,
+                (-0.98480775301220802, 1.2060416625018976e-16, 0.17364817766693041),atol=1.e-5)
+        )
 
     def test_tht_bigger_than_180(self):
         return_new = fu.getvec(0, 200)
         return_old = oldfu.getvec(0, 200)
         self.assertTrue(array_equal(return_new, return_old))
-        # self.assertTrue(
-        #     array_equal(
-        #         return_new,
-        #         (-0.34202014332566871, 4.1885387376769918e-17, 0.93969262078590843),
-        #     )
-        # )
+        self.assertTrue(
+            allclose(
+                return_new,
+                (-0.34202014332566871, 4.1885387376769918e-17, 0.93969262078590843),atol=1.e-5)
+        )
 
     def test_tht_lower_than_90(self):
         return_new = fu.getvec(0, 0)
