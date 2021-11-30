@@ -320,7 +320,14 @@ class SptAlignTask(JSTask):
 				
 			### do local search around the previous solution
 			else:
-				xf=data["xform.align3d"].inverse()
+				
+				if "xform.align3d" in data:
+					xf=data["xform.align3d"].inverse()
+				else:
+					e=EMData(data["src"],data["idx"], True)
+					xf=e["xform.align3d"].inverse()
+					
+				#xf=data["xform.align3d"].inverse()
 				if options.breaksym==None:
 					curxfs=[xf]
 				else:

@@ -194,7 +194,11 @@ def classify_ptcls(ali3d, info2d, options):
 		symidx=np.arange(len(ali3d))%nsym
 		np.random.shuffle(symidx)
 		for i,a in enumerate(ali3d):
-			xf3d=a["xform.align3d"].inverse()
+			if "xform.align3d" in a:
+				xf3d=a["xform.align3d"].inverse()
+			else:
+				e=EMData(a["src"],a["idx"], True)
+				xf3d=e["xform.align3d"].inverse()
 			xf3d=xf3d.get_sym(options.breaksym, int(symidx[i]))
 			a["xform.align3d"]=xf3d.inverse()
 		
