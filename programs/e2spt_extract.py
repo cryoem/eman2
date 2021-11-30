@@ -756,7 +756,11 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 		else:
 			#### finish reconstruction and do some postprocesing
 			threed=recon.finish(True)
-			threed=threed.get_clip(Region((p3d-bx)//2,(p3d-bx)//2,(p3d-bx)//2,bx,bx,bx))
+			try: threed=threed.get_clip(Region((p3d-bx)//2,(p3d-bx)//2,(p3d-bx)//2,bx,bx,bx))
+			except:
+				traceback.print_exc()
+				print(f"get_clip(Region({(p3d-bx)//2},{(p3d-bx)//2},{(p3d-bx)//2},{bx},{bx},{bx}))")
+				sys.exit(1)
 		
 			threed.process_inplace("normalize.edgemean")
 		

@@ -112,6 +112,10 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		self.bt_plotctf.setToolTip("Plot CTF estimation")
 		self.gbl.addWidget(self.bt_plotctf, 7,2)
 		
+		self.bt_evalimage=QtWidgets.QPushButton("EvalImage")
+		self.bt_evalimage.setToolTip("Power spectrum analysis of individual tilt images")
+		self.gbl.addWidget(self.bt_evalimage, 8,1)
+		
 		self.bt_clearptcl=QtWidgets.QPushButton("ClearPtcls")
 		self.bt_clearptcl.setToolTip("Clear all ptcls")
 		self.gbl.addWidget(self.bt_clearptcl, 8,2)
@@ -125,6 +129,7 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		self.bt_showatlts.clicked[bool].connect(self.show_ali_tlts)
 		self.bt_refresh.clicked[bool].connect(self.update_files)
 		self.bt_plotctf.clicked[bool].connect(self.plot_ctf)
+		self.bt_evalimage.clicked[bool].connect(self.eval_image)
 		self.bt_clearptcl.clicked[bool].connect(self.clear_ptcls)
 		
 		self.wg_2dimage=EMImage2DWidget()
@@ -387,6 +392,11 @@ class TomoEvalGUI(QtWidgets.QWidget):
 			self.wg_plot2d.setAxes(info["e2basename"], 1, 2)
 			self.wg_plot2d.show()
 			
+	def eval_image(self):
+		idx, info=self.get_id_info()
+		if idx==None: return
+		js=js_open_dict(info_name(info["e2basename"]))
+		subprocess.Popen(f"e2evalimage.py {info['tltfile']} --voltage {js.getdefault('voltage',300.0)} --cs {js.getdefault('cs',2.7)} --box 256 --constbfactor 400",shell=True)
 	
 	def runboxer(self):
 		idx, info=self.get_id_info()
