@@ -17001,22 +17001,17 @@ class Test_angular_histogram(unittest.TestCase):
             )
         )
 
-    @unittest.skip(
-        "BUG in sp_fundamentals.py -->symmetry_neighbors --> local variable 'neighbors' referenced before assignment"
-    )
+    @unittest.skip("BUG in sp_fundamentals.py -->symmetry_neighbors --> local variable 'neighbors' referenced before assignment")
     def test_with_sym_oct_method_S(self):
-        self.assertTrue(True)
-        """
         return_new = fu.angular_histogram(params=deepcopy(self.params),angstep= self.angstep, sym='oct1', method="S", inc_mirror=0)
         return_old = oldfu.fu.angular_histogram(params=deepcopy(self.params),angstep= self.angstep, sym='oct1', method="S", inc_mirror=0)
         self.assertTrue(array_equal(return_new[0], return_old[0]))
         self.assertTrue(array_equal(return_new[1], return_old[1]))
         self.assertTrue(array_equal(return_new[0], [1215, 4645, 560]))
         self.assertTrue(array_equal(return_new[1], [[0.0, 0.0, 0.0], [18.060151356949547, 32.700469931476135, 0.0], [42.457926460773422, 37.938127427185499, 0.0]]))
-        """
 
-    @unittest.skip("System Exit being raised instead of IndexError ")
     def test_with_sym_invalid_method_S_returns_IndexError(self):
+        sp_global_def.BATCH=False
         with self.assertRaises(IndexError) as cm_new:
             fu.angular_histogram(
                 params=self.params,
@@ -17025,6 +17020,7 @@ class Test_angular_histogram(unittest.TestCase):
                 method="S",
                 inc_mirror=0,
             )
+        sp_global_def.BATCH = False
         with self.assertRaises(IndexError) as cm_old:
             oldfu.angular_histogram(
                 params=self.params,
@@ -17033,9 +17029,7 @@ class Test_angular_histogram(unittest.TestCase):
                 method="S",
                 inc_mirror=0,
             )
-        self.assertEqual(
-            str(cm_new.exception), "index 0 is out of bounds for axis 1 with size 0"
-        )
+        self.assertEqual(str(cm_new.exception), "index 0 is out of bounds for axis 1 with size 0")
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_with_sym_c5_method_P(self):
@@ -17364,19 +17358,14 @@ class Test_angular_histogram(unittest.TestCase):
             )
         )
 
-    @unittest.skip(
-        "BUG in sp_fundamentals.py -->symmetry_neighbors --> local variable 'neighbors' referenced before assignment"
-    )
+    @unittest.skip("BUG in sp_fundamentals.py -->symmetry_neighbors --> local variable 'neighbors' referenced before assignment")
     def test_with_sym_oct_method_P(self):
-        self.assertTrue(True)
-        """
         return_new = fu.angular_histogram(params=deepcopy(self.params), angstep=self.angstep, sym='oct1', method="P", inc_mirror=0)
         return_old = oldfu.angular_histogram(params=deepcopy(self.params), angstep=self.angstep, sym='oct1', method="P", inc_mirror=0)
         self.assertTrue(array_equal(return_new[0], return_old[0]))
         self.assertTrue(array_equal(return_new[1], return_old[1]))
         self.assertTrue(array_equal(return_new[0], [7, 2700, 296, 3068, 41, 206, 102]))
         self.assertTrue(array_equal(return_new[1], [[0.0, 0.0, 0.0], [0.0, 15.0, 0.0], [0.0, 30.0, 0.0], [30.000000000000004, 30.0, 0.0], [0.0, 45.0, 0.0], [21.213203435596427, 45.0, 0.0], [42.426406871192853, 45.0, 0.0]]))
-        """
 
     def test_with_sym_c5_method_invalid(self):
         return_new = fu.angular_histogram(
@@ -17441,10 +17430,9 @@ class Test_angular_histogram(unittest.TestCase):
         )
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
-    @unittest.skip("Returns zero division error instead of systemexit")
-    def test_with_null_angstep_returns_SystemExit_error_msg(self):
-
-        with self.assertRaises(SystemExit) as cm_new:
+    def test_with_null_angstep_returns_ZeroDivisionError_error_msg(self):
+        sp_global_def.BATCH = False
+        with self.assertRaises(ZeroDivisionError) as cm_new:
             fu.angular_histogram(
                 params=deepcopy(self.params),
                 angstep=0,
@@ -17452,8 +17440,8 @@ class Test_angular_histogram(unittest.TestCase):
                 method="S",
                 inc_mirror=0,
             )
-        sp_global_def.BATCH = True
-        with self.assertRaises(SystemExit) as cm_old:
+        sp_global_def.BATCH=False
+        with self.assertRaises(ZeroDivisionError) as cm_old:
             oldfu.angular_histogram(
                 params=deepcopy(self.params),
                 angstep=0,
@@ -17461,7 +17449,7 @@ class Test_angular_histogram(unittest.TestCase):
                 method="S",
                 inc_mirror=0,
             )
-        self.assertEqual(str(cm_new.exception), "1")
+        self.assertEqual(str(cm_new.exception), 'float division by zero')
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
