@@ -1634,22 +1634,20 @@ class Test_ccc(unittest.TestCase):
         return_new = fu.ccc(self.img1, self.img2, self.mask)
         return_old = oldfu.ccc(self.img1, self.img2, self.mask)
         self.assertEqual(return_new, return_old)
-        # self.assertEqual(return_new, 0.8129369020462036)
+        self.assertAlmostEqual(return_new, -2)
 
     def test_None_mask(self):
         return_new = fu.ccc(self.img1, self.img2, None)
         return_old = oldfu.ccc(self.img1, self.img2, None)
         self.assertEqual(return_new, return_old)
-        # self.assertEqual(return_new, 0.8021121621131897)
+        self.assertAlmostEqual(return_new, -2)
 
+    @unittest.skip("skip because segmentation fault")
     def test_empty_mask_crashes_because_signal11SIGSEV(self):
-        self.assertTrue(True)
-        """
         return_new = fu.ccc(self.img1, self.img2, EMData())
         return_old = oldfu.ccc(self.img1, self.img2, EMData())
         self.assertEqual(return_new, return_old)
         self.assertEqual(return_new, 0)
-        """
 
     def test_Noneimg1(self):
         with self.assertRaises(AttributeError) as cm_new:
