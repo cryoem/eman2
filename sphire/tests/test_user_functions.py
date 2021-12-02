@@ -195,28 +195,6 @@ class Test_lib_user_functions_compare(unittest.TestCase):
         self.assertTrue(allclose(return_new[0].get_3dview(), full((70,70),nan),equal_nan=True))
         self.assertTrue(array_equal(return_new[1], [0.0, 0.0, 0.0]))
 
-    @unittest.skip('dont have mask.hdf')
-    def test_do_volume_mask_true_should_return_equal_objects(self):
-        filepath = os.path.join(
-            ABSOLUTE_PATH, "pickle files/user_functions.do_volume_mask"
-        )
-        with open(filepath, "rb") as rb:
-            argum = pickle.load(rb)
-        refdata = []
-        refdata.append(argum[0][0][0])
-        refdata.append(argum[0][0][1])
-        refdata.append(argum[0][0][2])
-
-        refdata[1]["constants"][
-            "mask3D"
-        ] = "sphire/tests/Sharpening/vol_adaptive_mask.hdf"
-
-        return_new = fu.do_volume_mask(deepcopy(refdata))
-        return_old = oldfu.do_volume_mask(deepcopy(refdata))
-
-        self.assertTrue(
-            numpy.array_equal(return_new.get_3dview(), return_old.get_3dview())
-        )
 
     @unittest.skip('dont have mask.hdf')
     def test_do_volume_mrk03_true_should_return_equal_objects(self):
