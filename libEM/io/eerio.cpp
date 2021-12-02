@@ -32,9 +32,10 @@
 #include "eerio.h"
 
 #include <tiffio.h>
-#include <regex>
+#include <boost/property_tree/xml_parser.hpp>
 
 
+using boost::property_tree::ptree;
 using namespace EMAN;
 
 
@@ -67,12 +68,11 @@ auto decode_eer_data(EerWord *data, Decoder &decoder) {
 
 void TIFFOutputWarning(const char* module, const char* fmt, va_list ap)
 {
-	if(string(fmt).rfind("Unknown field with tag %d (0x%x) encountered") != string::npos)
-		return;
-
+#ifdef DEBUG
 	cout << module << ": ";
 	vprintf(fmt, ap);
 	cout << endl;
+#endif  //DEBUG
 }
 
 string read_acquisition_metadata(TIFF *tiff) {
@@ -90,8 +90,10 @@ string to_snake_case(const string &s) {
 	int sh = 0;
 	for(int i=0; i<s.size(); i++) {
 		if(isupper(s[i])) {
-			ret.insert(i+sh, "_");
-			sh++;
+			if(!isupper(s[i-1])) {
+				ret.insert(i + sh, "_");
+				sh++;
+			}
 			ret[i + sh] = ::tolower(s[i]);
 		}
 	}
@@ -101,23 +103,18 @@ string to_snake_case(const string &s) {
 
 Dict parse_acquisition_data(string metadata) {
 	Dict dict;
-	metadata = to_snake_case(metadata);
-	
-	std::regex re("<item name=\"\(.*?\)\".*?>\(.*?\)</item>");
-	std::sregex_iterator next(metadata.begin(), metadata.end(), re);
-	std::sregex_iterator end;
+	std::istringstream ins(metadata);
+	ptree pt;
 
-	set<string> floats {"exposure_time", "mean_dose_rate", "total_dose"};
-	set<string> ints {"number_of_frames", "sensor_image_height", "sensor_image_width"};
-	
-	for( ; next != end; ++next) {
-		std::smatch m = *next;
+	read_xml(ins, pt);
 
-		auto key = m[1].str();
-		if(find(floats.begin(), floats.end(), key) != floats.end())
-			dict["EER." + key] = stof(m[2]);
-		else
-			dict["EER." + key] = stoi(m[2]);
+	for(auto &v : pt.get_child("metadata")) {
+		auto xml_item_name = v.second.get_child("<xmlattr>.name").data();
+		auto xml_item_value = v.second.data();
+
+		auto key = "EER." + to_snake_case(xml_item_name);
+
+		dict[key] = xml_item_value;
 	}
 	
 	return dict;
@@ -203,7 +200,7 @@ int EerIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 	dict["nz"] = 1;
 
 	dict["EER.compression"] = read_compression(tiff_file);
-	
+
 	for(auto &d : acquisition_data_dict)
 		dict[d.first] = d.second;
 
