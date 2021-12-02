@@ -87,26 +87,17 @@ class Test_lib_user_functions_compare(unittest.TestCase):
         self.assertTrue(allclose(return_new[0].get_3dview(), full((70,70),nan),equal_nan=True))
         self.assertTrue(array_equal(return_new[1], [0.0, 0.0]))
 
-    # def test_ref_ali3dm_true_should_return_equal_objects(self):
-    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/user_functions.ref_ali2d")
-    #     with open(filepath, 'rb') as rb:
-    #         argum = pickle.load(rb)
-    #
-    #     (refdata) = argum[0][0]
-    #
-    #     print('a', refdata[0])
-    #     print('b', refdata[1])
-    #     print('b', refdata[2])
-    #     print('d', refdata[3])
-    #
-    #     refdata.extend("varf")
-    #     refdata.extend("mask")
-    #
-    #     return_new = fu.ref_ali3dm(refdata)
-    #     return_old = oldfu.ref_ali3dm(refdata)
+    def test_ref_ali3dm_TypeError(self):
+        refdata_ = deepcopy(refdata)
+        refdata_.extend("varf")
+        refdata_.extend("mask")
 
-    # self.assertTrue(numpy.array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
-    # self.assertTrue(numpy.array_equal(return_new[1], return_old[1]))
+        with self.assertRaises(TypeError) as cm_new:
+            fu.ref_ali3dm(refdata_)(refdata)
+        with self.assertRaises(TypeError) as cm_old:
+            oldfu.ref_ali3dm(refdata_)(refdata)
+        self.assertEqual(str(cm_new.exception), "'EMData' object cannot be interpreted as an integer")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
     def test_ref_ali3d_true_should_return_equal_objects(self):
         return_new = fu.ref_ali3d(refdata)
@@ -144,21 +135,15 @@ class Test_lib_user_functions_compare(unittest.TestCase):
         self.assertTrue(allclose(return_new[0].get_3dview(), full((70,70),nan),equal_nan=True))
         self.assertTrue(array_equal(return_new[1], [0.0, 0.0, 0.0]))
 
-    # def test_ref_aliB_cone_true_should_return_equal_objects(self):
-    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/user_functions.ref_ali2d")
-    #     with open(filepath, 'rb') as rb:
-    #         argum = pickle.load(rb)
-    #
-    #     (refdata) = argum[0][0]
-    #     refdata[1] = 1
-    #
-    #     return_new = fu.ref_aliB_cone(refdata)
-    #     return_old = oldfu.ref_aliB_cone(refdata)
-    #
-    #     self.assertTrue(numpy.array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
-    #     self.assertTrue(numpy.array_equal(return_new[1], return_old[1]))
+    def test_ref_aliB_cone_ZeroDivisionError(self):
+        with self.assertRaises(ZeroDivisionError) as cm_new:
+            fu.ref_aliB_cone(refdata)
+        with self.assertRaises(ZeroDivisionError) as cm_old:
+            oldfu.ref_aliB_cone(refdata)
+        self.assertEqual(str(cm_new.exception), "float division by zero")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
-    def test_ref_7grp_true_ZeroDivisionError(self):
+    def test_ref_7grp_ZeroDivisionError(self):
         refdata_=deepcopy(refdata)
         refdata_[1] = 1
         with self.assertRaises(ZeroDivisionError) as cm_new:
@@ -169,18 +154,14 @@ class Test_lib_user_functions_compare(unittest.TestCase):
         self.assertEqual(str(cm_new.exception), str(cm_old.exception))
 
 
-    # def test_spruce_up_true_should_return_equal_objects(self):
-    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/user_functions.ref_ali2d")
-    #     with open(filepath, 'rb') as rb:
-    #         argum = pickle.load(rb)
-    #
-    #     (refdata) = argum[0][0]
-    #
-    #     return_new = fu.spruce_up(refdata)
-    #     return_old = oldfu.spruce_up(refdata)
-    #
-    #     self.assertTrue(numpy.array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
-    #     self.assertTrue(numpy.array_equal(return_new[1], return_old[1]))
+    def test_spruce_up_ZeroDivisionError(self):
+        with self.assertRaises(ZeroDivisionError) as cm_new:
+            fu.spruce_up(refdata)
+        with self.assertRaises(ZeroDivisionError) as cm_old:
+            oldfu.spruce_up(refdata)
+        self.assertEqual(str(cm_new.exception), "float division by zero")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
+
 
     def test_steady_true_should_return_equal_objects(self):
         return_new = fu.steady(refdata)
