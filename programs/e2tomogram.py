@@ -204,7 +204,7 @@ def main():
 		m.process_inplace("filter.highpass.gauss",{"cutoff_pixels":options.highpass})
 		m.process_inplace("normalize.edgemean")
 		sz=512
-		m.clip_inplace(Region((m["nx"]-sz-200)//2, (m["ny"]-sz)//2, sz,sz))
+		m.clip_inplace(Region((m["nx"]-sz)//2, (m["ny"]-sz)//2, sz,sz))
 		m.process_inplace("normalize.edgemean")
 		m["apix_x"]=m["apix_y"]=p["apix_x"]*2.
 		imgs_500.append(m)
