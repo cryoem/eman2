@@ -1,31 +1,15 @@
 from __future__ import print_function
 from __future__ import division
 
-
-
-# import pickle
-import os
-import os.path as path
-# from mpi import *
-from sphire.libpy import sp_global_def
-import numpy
+from os import path
+from numpy import allclose,array_equal,full,nan
 from copy import deepcopy
-
 
 from sphire.libpy import sp_user_functions as fu
 from libpy_py3 import sp_user_functions as oldfu
-
-
-from tests.test_module import get_arg_from_pickle_file
+from tests.test_module import get_arg_from_pickle_file,ABSOLUTE_PATH_TO_RESOURCES
 
 import unittest
-# mpi_init(0, [])
-sp_global_def.BATCH = True
-sp_global_def.MPI = True
-
-# ABSOLUTE_PATH = os.path.dirname(os.path.realpath(__file__))
-
-
 
 
 """
@@ -64,322 +48,247 @@ All the functions implemented but not used:
 
 """
 
-ABSOLUTE_PATH_TO_RESOURCES = "resources_tests/pickles/"
-ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
-# filepath = os.path.join(ABSOLUTE_PATH, "pickle files/user_functions.ref_ali2d")
-filepath = os.path.join(ABSOLUTE_PATH_TO_RESOURCES, "user_functions.ref_ali2d_new")
-# filepath_mask = os.path.join(os.getcwd(),  "resources_tests/pickles/user_functions.do_volume_mask_new")
-# average_vol = os.path.join(os.getcwd(),  "resources_tests/average_volume.hdf")
+refdata = get_arg_from_pickle_file(path.join(ABSOLUTE_PATH_TO_RESOURCES, "user_functions.ref_ali2d_new"))[0][0]
+
+class Test_lib_user_functions_compare(unittest.TestCase):
+
+    def test_ref_ali2d_should_return_equal_objects(self):
+
+        return_new = fu.ref_ali2d(deepcopy(refdata))
+        return_old = oldfu.ref_ali2d(deepcopy(refdata))
+        self.assertTrue(allclose(return_new[0].get_3dview(), return_old[0].get_3dview(),atol=1.e-5,equal_nan=True))
+        self.assertTrue(array_equal(return_new[1], return_old[1]))
+
+        self.assertTrue(allclose(return_new[0].get_3dview(), full((70,70),nan),equal_nan=True))
+        self.assertTrue(array_equal(return_new[1], [0.0, 0.0]))
 
 
-argum = get_arg_from_pickle_file(filepath)
-(refdata) = argum[0][0]
+    def test_ref_ali2d_c_true_should_return_equal_objects(self):
+        return_new = fu.ref_ali2d_c(refdata)
+        return_old = oldfu.ref_ali2d_c(refdata)
+        self.assertTrue(allclose(return_new[0].get_3dview(), return_old[0].get_3dview(),atol=1.e-5,equal_nan=True))
+        self.assertTrue(array_equal(return_new[1], return_old[1]))
 
+    def test_julien_true_should_return_equal_objects(self):
+        return_new = fu.julien(refdata)
+        return_old = oldfu.julien(refdata)
+        self.assertTrue(allclose(return_new[0].get_3dview(), return_old[0].get_3dview(),atol=1.e-5,equal_nan=True))
+        self.assertTrue(array_equal(return_new[1], return_old[1]))
 
-# class Test_lib_user_functions_compare(unittest.TestCase):
-#
-#     print("Abdbsb")
-#
-#     def test_ref_ali2d_should_return_equal_objects(self):
-#         print("Hello")
-#         argum = get_arg_from_pickle_file(filepath)
-#         (refdata) = argum[0][0]
-#
-#         return_new = fu.ref_ali2d(refdata)
-#         return_old = oldfu.ref_ali2d(refdata)
-#         self.assertTrue(
-#             numpy.array_equal(return_new[0].get_3dview(), return_old[0].get_3dview())
-#         )
-#         self.assertTrue(numpy.array_equal(return_new[1], return_old[1]))
+    def test_ref_ali2d_m_true_should_return_equal_objects(self):
+        return_new = fu.ref_ali2d_m(refdata)
+        return_old = oldfu.ref_ali2d_m(refdata)
+        self.assertTrue(allclose(return_new[0].get_3dview(), return_old[0].get_3dview(), atol=1.e-5, equal_nan=True))
+        self.assertTrue(array_equal(return_new[1], return_old[1]))
 
-    # def test_ref_ali2d_c_true_should_return_equal_objects(self):
-    #     with open(filepath, "rb") as rb:
-    #         argum = pickle.load(rb, encoding='latin1')
-    #     (refdata) = argum[0][0]
-    #     return_new = fu.ref_ali2d_c(refdata)
-    #     return_old = oldfu.ref_ali2d_c(refdata)
-    #     self.assertTrue(
-    #         numpy.array_equal(return_new[0].get_3dview(), return_old[0].get_3dview())
-    #     )
-    #     self.assertTrue(numpy.array_equal(return_new[1], return_old[1]))
-    #
-    # def test_julien_true_should_return_equal_objects(self):
+    # def test_ref_ali3dm_true_should_return_equal_objects(self):
     #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/user_functions.ref_ali2d")
-    #     with open(filepath, "rb") as rb:
-    #         argum = pickle.load(rb, encoding='latin1')
-    #     (refdata) = argum[0][0]
-    #     return_new = fu.julien(refdata)
-    #     return_old = oldfu.julien(refdata)
-    #     self.assertTrue(
-    #         numpy.array_equal(return_new[0].get_3dview(), return_old[0].get_3dview())
-    #     )
-    #     self.assertTrue(numpy.array_equal(return_new[1], return_old[1]))
+    #     with open(filepath, 'rb') as rb:
+    #         argum = pickle.load(rb)
     #
-    # def test_ref_ali2d_m_true_should_return_equal_objects(self):
-    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/user_functions.ref_ali2d")
-    #     with open(filepath, "rb") as rb:
-    #         argum = pickle.load(rb, encoding='latin1')
     #     (refdata) = argum[0][0]
-    #     return_new = fu.ref_ali2d_m(refdata)
-    #     return_old = oldfu.ref_ali2d_m(refdata)
-    #     self.assertTrue(
-    #         numpy.array_equal(return_new[0].get_3dview(), return_old[0].get_3dview())
-    #     )
-    #     self.assertTrue(numpy.array_equal(return_new[1], return_old[1]))
+    #
+    #     print('a', refdata[0])
+    #     print('b', refdata[1])
+    #     print('b', refdata[2])
+    #     print('d', refdata[3])
+    #
+    #     refdata.extend("varf")
+    #     refdata.extend("mask")
+    #
+    #     return_new = fu.ref_ali3dm(refdata)
+    #     return_old = oldfu.ref_ali3dm(refdata)
 
-    # # def test_ref_ali3dm_true_should_return_equal_objects(self):
-    # #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/user_functions.ref_ali2d")
-    # #     with open(filepath, 'rb') as rb:
-    # #         argum = pickle.load(rb)
-    # #
-    # #     (refdata) = argum[0][0]
-    # #
-    # #     print('a', refdata[0])
-    # #     print('b', refdata[1])
-    # #     print('b', refdata[2])
-    # #     print('d', refdata[3])
-    # #
-    # #     refdata.extend("varf")
-    # #     refdata.extend("mask")
-    # #
-    # #     return_new = fu.ref_ali3dm(refdata)
-    # #     return_old = oldfu.ref_ali3dm(refdata)
+    # self.assertTrue(numpy.array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
+    # self.assertTrue(numpy.array_equal(return_new[1], return_old[1]))
+
+    def test_ref_ali3d_true_should_return_equal_objects(self):
+        return_new = fu.ref_ali3d(refdata)
+        return_old = oldfu.ref_ali3d(refdata)
+        self.assertTrue(allclose(return_new[0].get_3dview(), return_old[0].get_3dview(),atol=1.e-5,equal_nan=True))
+        self.assertTrue(array_equal(return_new[1], return_old[1]))
+
+    def test_helical_true_should_return_equal_objects(self):
+        return_new = fu.helical(refdata)
+        return_old = oldfu.helical(refdata)
+        self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(),atol=1.e-5,equal_nan=True))
+
+    def test_helical2_true_should_return_equal_objects(self):
+        return_new = fu.helical2(refdata)
+        return_old = oldfu.helical2(refdata)
+        self.assertTrue(allclose(return_new.get_3dview(), return_old.get_3dview(), atol=1.e-5, equal_nan=True))
+
+    def test_reference3_true_should_return_equal_objects(self):
+        return_new = fu.reference3(refdata)
+        return_old = oldfu.reference3(refdata)
+        self.assertTrue(allclose(return_new[0].get_3dview(), return_old[0].get_3dview(),atol=1.e-5,equal_nan=True))
+        self.assertTrue(array_equal(return_new[1], return_old[1]))
+
+    def test_reference4_true_should_return_equal_objects(self):
+        return_new = fu.reference4(refdata)
+        return_old = oldfu.reference4(refdata)
+        self.assertTrue(allclose(return_new[0].get_3dview(), return_old[0].get_3dview(),atol=1.e-5,equal_nan=True))
+        self.assertTrue(array_equal(return_new[1], return_old[1]))
+
+    # def test_ref_aliB_cone_true_should_return_equal_objects(self):
+    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/user_functions.ref_ali2d")
+    #     with open(filepath, 'rb') as rb:
+    #         argum = pickle.load(rb)
     #
-    # # self.assertTrue(numpy.array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
-    # # self.assertTrue(numpy.array_equal(return_new[1], return_old[1]))
-    #
-    # def test_ref_ali3d_true_should_return_equal_objects(self):
-    #     with open(filepath, "rb") as rb:
-    #         argum = pickle.load(rb, encoding='latin1')
-    #     (refdata) = argum[0][0]
-    #     return_new = fu.ref_ali3d(refdata)
-    #     return_old = oldfu.ref_ali3d(refdata)
-    #     self.assertTrue(
-    #         numpy.array_equal(return_new[0].get_3dview(), return_old[0].get_3dview())
-    #     )
-    #     self.assertTrue(numpy.array_equal(return_new[1], return_old[1]))
-    #
-    # def test_helical_true_should_return_equal_objects(self):
-    #     with open(filepath, "rb") as rb:
-    #         argum = pickle.load(rb, encoding='latin1')
-    #     (refdata) = argum[0][0]
-    #     return_new = fu.helical(refdata)
-    #     return_old = oldfu.helical(refdata)
-    #     self.assertTrue(
-    #         numpy.array_equal(return_new.get_3dview(), return_old.get_3dview())
-    #     )
-    #
-    # def test_helical2_true_should_return_equal_objects(self):
-    #     with open(filepath, "rb") as rb:
-    #         argum = pickle.load(rb, encoding='latin1')
-    #     (refdata) = argum[0][0]
-    #     return_new = fu.helical2(refdata)
-    #     return_old = oldfu.helical2(refdata)
-    #     self.assertTrue(
-    #         numpy.array_equal(return_new.get_3dview(), return_old.get_3dview())
-    #     )
-    #
-    # def test_reference3_true_should_return_equal_objects(self):
-    #     with open(filepath, "rb") as rb:
-    #         argum = pickle.load(rb, encoding='latin1')
-    #     (refdata) = argum[0][0]
-    #     return_new = fu.reference3(refdata)
-    #     return_old = oldfu.reference3(refdata)
-    #     self.assertTrue(
-    #         numpy.array_equal(return_new[0].get_3dview(), return_old[0].get_3dview())
-    #     )
-    #     self.assertTrue(numpy.array_equal(return_new[1], return_old[1]))
-    #
-    # def test_reference4_true_should_return_equal_objects(self):
-    #     with open(filepath, "rb") as rb:
-    #         argum = pickle.load(rb, encoding='latin1')
-    #     (refdata) = argum[0][0]
-    #     return_new = fu.reference4(refdata)
-    #     return_old = oldfu.reference4(refdata)
-    #     self.assertTrue(
-    #         numpy.array_equal(return_new[0].get_3dview(), return_old[0].get_3dview())
-    #     )
-    #     self.assertTrue(numpy.array_equal(return_new[1], return_old[1]))
-    #
-    # # def test_ref_aliB_cone_true_should_return_equal_objects(self):
-    # #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/user_functions.ref_ali2d")
-    # #     with open(filepath, 'rb') as rb:
-    # #         argum = pickle.load(rb)
-    # #
-    # #     (refdata) = argum[0][0]
-    # #     refdata[1] = 1
-    # #
-    # #     return_new = fu.ref_aliB_cone(refdata)
-    # #     return_old = oldfu.ref_aliB_cone(refdata)
-    # #
-    # #     self.assertTrue(numpy.array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
-    # #     self.assertTrue(numpy.array_equal(return_new[1], return_old[1]))
-    #
-    # def test_ref_7grp_true_should_return_equal_objects(self):
-    #     with open(filepath, "rb") as rb:
-    #         argum = pickle.load(rb, encoding='latin1')
     #     (refdata) = argum[0][0]
     #     refdata[1] = 1
-    #     return_new = fu.ref_7grp(refdata)
-    #     return_old = oldfu.ref_7grp(refdata)
-    #     self.assertTrue(
-    #         numpy.array_equal(return_new[0].get_3dview(), return_old[0].get_3dview())
-    #     )
+    #
+    #     return_new = fu.ref_aliB_cone(refdata)
+    #     return_old = oldfu.ref_aliB_cone(refdata)
+    #
+    #     self.assertTrue(numpy.array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
     #     self.assertTrue(numpy.array_equal(return_new[1], return_old[1]))
-    #
-    # # def test_spruce_up_true_should_return_equal_objects(self):
-    # #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/user_functions.ref_ali2d")
-    # #     with open(filepath, 'rb') as rb:
-    # #         argum = pickle.load(rb)
-    # #
-    # #     (refdata) = argum[0][0]
-    # #
-    # #     return_new = fu.spruce_up(refdata)
-    # #     return_old = oldfu.spruce_up(refdata)
-    # #
-    # #     self.assertTrue(numpy.array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
-    # #     self.assertTrue(numpy.array_equal(return_new[1], return_old[1]))
-    #
-    # def test_steady_true_should_return_equal_objects(self):
-    #     with open(filepath, "rb") as rb:
-    #         argum = pickle.load(rb, encoding='latin1')
-    #     (refdata) = argum[0][0]
-    #     return_new = fu.steady(refdata)
-    #     return_old = oldfu.steady(refdata)
-    #     self.assertTrue(
-    #         numpy.array_equal(return_new[0].get_3dview(), return_old[0].get_3dview())
-    #     )
-    #     self.assertTrue(numpy.array_equal(return_new[1], return_old[1]))
-    #
-    # def test_constant_true_should_return_equal_objects(self):
-    #     with open(filepath, "rb") as rb:
-    #         argum = pickle.load(rb, encoding='latin1')
-    #     (refdata) = argum[0][0]
-    #     return_new = fu.constant(deepcopy(refdata))
-    #     return_old = oldfu.constant(deepcopy(refdata))
-    #     self.assertTrue(
-    #         numpy.array_equal(return_new[0].get_3dview(), return_old[0].get_3dview())
-    #     )
-    #     self.assertTrue(numpy.array_equal(return_new[1], return_old[1]))
-    #
-    # def test_temp_dovolume_true_should_return_equal_objects(self):
-    #     with open(filepath, "rb") as rb:
-    #         argum = pickle.load(rb, encoding='latin1')
-    #     (refdata) = argum[0][0]
-    #     return_new = fu.temp_dovolume(deepcopy(refdata))
-    #     return_old = oldfu.temp_dovolume(deepcopy(refdata))
-    #     self.assertTrue(
-    #         numpy.array_equal(return_new[0].get_3dview(), return_old[0].get_3dview())
-    #     )
-    #     self.assertTrue(numpy.array_equal(return_new[1], return_old[1]))
-    #
-    # def test_dovolume_true_should_return_equal_objects(self):
-    #     with open(filepath, "rb") as rb:
-    #         argum = pickle.load(rb, encoding='latin1')
-    #     (refdata) = argum[0][0]
-    #     return_new = fu.dovolume(deepcopy(refdata))
-    #     return_old = oldfu.dovolume(deepcopy(refdata))
-    #     self.assertTrue(
-    #         numpy.array_equal(return_new[0].get_3dview(), return_old[0].get_3dview())
-    #     )
-    #     self.assertTrue(numpy.array_equal(return_new[1], return_old[1]))
-    #
-    # @unittest.skip('dont have mask.hdf')
-    # def test_do_volume_mask_true_should_return_equal_objects(self):
-    #     filepath = os.path.join(
-    #         ABSOLUTE_PATH, "pickle files/user_functions.do_volume_mask"
-    #     )
-    #     with open(filepath, "rb") as rb:
-    #         argum = pickle.load(rb)
-    #     refdata = []
-    #     refdata.append(argum[0][0][0])
-    #     refdata.append(argum[0][0][1])
-    #     refdata.append(argum[0][0][2])
-    #
-    #     refdata[1]["constants"][
-    #         "mask3D"
-    #     ] = "sphire/tests/Sharpening/vol_adaptive_mask.hdf"
-    #
-    #     return_new = fu.do_volume_mask(deepcopy(refdata))
-    #     return_old = oldfu.do_volume_mask(deepcopy(refdata))
-    #
-    #     self.assertTrue(
-    #         numpy.array_equal(return_new.get_3dview(), return_old.get_3dview())
-    #     )
-    #
-    # @unittest.skip('dont have mask.hdf')
-    # def test_do_volume_mrk03_true_should_return_equal_objects(self):
-    #     with open(filepath_mask, "rb") as rb:
-    #         argum = pickle.load(rb, encoding='latin1')
-    #
-    #     argum[0][0][1]["lowpass"] = 0.08
-    #     argum[0][0][1]["falloff"] = 0.1
-    #     refdata = []
-    #     refdata.append(argum[0][0][0])
-    #     refdata.append(argum[0][0][1])
-    #     refdata.append(0)
-    #     refdata.append(12)
-    #
-    #     refdata[1]["constants"][
-    #         "mask3D"
-    #     ] = "sphire/tests/Sharpening/vol_adaptive_mask.hdf"
-    #
-    #     return_new = fu.do_volume_mrk03(deepcopy(refdata))
-    #     return_old = oldfu.do_volume_mrk03(deepcopy(refdata))
-    #
-    #     self.assertTrue(
-    #         numpy.array_equal(return_new[0].get_3dview(), return_old[0].get_3dview())
-    #     )
-    #
-    # @unittest.skip('dont have mask.hdf')
-    # def test_do_volume_mrk04_true_should_return_equal_objects(self):
-    #     filepath = os.path.join(
-    #         ABSOLUTE_PATH, "pickle files/user_functions.do_volume_mask"
-    #     )
-    #     with open(filepath, "rb") as rb:
+
+    def test_ref_7grp_true_ZeroDivisionError(self):
+        refdata_=deepcopy(refdata)
+        refdata_[1] = 1
+        with self.assertRaises(ZeroDivisionError) as cm_new:
+            fu.ref_7grp(refdata_)
+        with self.assertRaises(ZeroDivisionError) as cm_old:
+            oldfu.ref_7grp(refdata_)
+        self.assertEqual(str(cm_new.exception), "float division by zero")
+        self.assertEqual(str(cm_new.exception), str(cm_old.exception))
+
+
+    # def test_spruce_up_true_should_return_equal_objects(self):
+    #     filepath = os.path.join(ABSOLUTE_PATH, "pickle files/user_functions.ref_ali2d")
+    #     with open(filepath, 'rb') as rb:
     #         argum = pickle.load(rb)
     #
-    #     argum[0][0][1]["lowpass"] = 0.08
-    #     argum[0][0][1]["falloff"] = 0.1
-    #     refdata = []
-    #     refdata.append(argum[0][0][0])
-    #     refdata.append(argum[0][0][1])
-    #     refdata.append(0)
-    #     refdata.append(12)
+    #     (refdata) = argum[0][0]
     #
-    #     refdata[1]["constants"][
-    #         "mask3D"
-    #     ] = "sphire/tests/Sharpening/vol_adaptive_mask.hdf"
+    #     return_new = fu.spruce_up(refdata)
+    #     return_old = oldfu.spruce_up(refdata)
     #
-    #     return_new = fu.do_volume_mrk04(deepcopy(refdata))
-    #     return_old = oldfu.do_volume_mrk04(deepcopy(refdata))
-    #
-    #     self.assertTrue(
-    #         numpy.array_equal(return_new.get_3dview(), return_old.get_3dview())
-    #     )
-    #
-    # @unittest.skip('dont have mask.hdf')
-    # def test_do_volume_mrk05_true_should_return_equal_objects(self):
-    #     filepath = os.path.join(
-    #         ABSOLUTE_PATH, "pickle files/user_functions.do_volume_mask"
-    #     )
-    #     with open(filepath, "rb") as rb:
-    #         argum = pickle.load(rb)
-    #
-    #     refdata = []
-    #     refdata.append(argum[0][0][0])
-    #     refdata.append(argum[0][0][1])
-    #
-    #     refdata[1]["constants"][
-    #         "mask3D"
-    #     ] = "sphire/tests/Sharpening/vol_adaptive_mask.hdf"
-    #
-    #     return_new = fu.do_volume_mrk05(deepcopy(refdata))
-    #     return_old = oldfu.do_volume_mrk05(deepcopy(refdata))
-    #
-    #     self.assertTrue(
-    #         numpy.array_equal(return_new.get_3dview(), return_old.get_3dview())
-    #     )
+    #     self.assertTrue(numpy.array_equal(return_new[0].get_3dview(), return_old[0].get_3dview()))
+    #     self.assertTrue(numpy.array_equal(return_new[1], return_old[1]))
+
+    def test_steady_true_should_return_equal_objects(self):
+        return_new = fu.steady(refdata)
+        return_old = oldfu.steady(refdata)
+        self.assertTrue(allclose(return_new[0].get_3dview(), return_old[0].get_3dview(),atol=1.e-5,equal_nan=True))
+        self.assertTrue(array_equal(return_new[1], return_old[1]))
+
+    def test_constant_true_should_return_equal_objects(self):
+        return_new = fu.constant(deepcopy(refdata))
+        return_old = oldfu.constant(deepcopy(refdata))
+        self.assertTrue(allclose(return_new[0].get_3dview(), return_old[0].get_3dview(),atol=1.e-5,equal_nan=True))
+        self.assertTrue(array_equal(return_new[1], return_old[1]))
+
+    def test_temp_dovolume_true_should_return_equal_objects(self):
+        return_new = fu.temp_dovolume(deepcopy(refdata))
+        return_old = oldfu.temp_dovolume(deepcopy(refdata))
+        self.assertTrue(allclose(return_new[0].get_3dview(), return_old[0].get_3dview(),atol=1.e-5,equal_nan=True))
+        self.assertTrue(array_equal(return_new[1], return_old[1]))
+
+    def test_dovolume_true_should_return_equal_objects(self):
+        return_new = fu.dovolume(deepcopy(refdata))
+        return_old = oldfu.dovolume(deepcopy(refdata))
+        self.assertTrue(allclose(return_new[0].get_3dview(), return_old[0].get_3dview(),atol=1.e-5,equal_nan=True))
+        self.assertTrue(array_equal(return_new[1], return_old[1]))
+
+    @unittest.skip('dont have mask.hdf')
+    def test_do_volume_mask_true_should_return_equal_objects(self):
+        filepath = os.path.join(
+            ABSOLUTE_PATH, "pickle files/user_functions.do_volume_mask"
+        )
+        with open(filepath, "rb") as rb:
+            argum = pickle.load(rb)
+        refdata = []
+        refdata.append(argum[0][0][0])
+        refdata.append(argum[0][0][1])
+        refdata.append(argum[0][0][2])
+
+        refdata[1]["constants"][
+            "mask3D"
+        ] = "sphire/tests/Sharpening/vol_adaptive_mask.hdf"
+
+        return_new = fu.do_volume_mask(deepcopy(refdata))
+        return_old = oldfu.do_volume_mask(deepcopy(refdata))
+
+        self.assertTrue(
+            numpy.array_equal(return_new.get_3dview(), return_old.get_3dview())
+        )
+
+    @unittest.skip('dont have mask.hdf')
+    def test_do_volume_mrk03_true_should_return_equal_objects(self):
+        with open(filepath_mask, "rb") as rb:
+            argum = pickle.load(rb, encoding='latin1')
+
+        argum[0][0][1]["lowpass"] = 0.08
+        argum[0][0][1]["falloff"] = 0.1
+        refdata = []
+        refdata.append(argum[0][0][0])
+        refdata.append(argum[0][0][1])
+        refdata.append(0)
+        refdata.append(12)
+
+        refdata[1]["constants"][
+            "mask3D"
+        ] = "sphire/tests/Sharpening/vol_adaptive_mask.hdf"
+
+        return_new = fu.do_volume_mrk03(deepcopy(refdata))
+        return_old = oldfu.do_volume_mrk03(deepcopy(refdata))
+
+        self.assertTrue(
+            numpy.array_equal(return_new[0].get_3dview(), return_old[0].get_3dview())
+        )
+
+    @unittest.skip('dont have mask.hdf')
+    def test_do_volume_mrk04_true_should_return_equal_objects(self):
+        filepath = os.path.join(
+            ABSOLUTE_PATH, "pickle files/user_functions.do_volume_mask"
+        )
+        with open(filepath, "rb") as rb:
+            argum = pickle.load(rb)
+
+        argum[0][0][1]["lowpass"] = 0.08
+        argum[0][0][1]["falloff"] = 0.1
+        refdata = []
+        refdata.append(argum[0][0][0])
+        refdata.append(argum[0][0][1])
+        refdata.append(0)
+        refdata.append(12)
+
+        refdata[1]["constants"][
+            "mask3D"
+        ] = "sphire/tests/Sharpening/vol_adaptive_mask.hdf"
+
+        return_new = fu.do_volume_mrk04(deepcopy(refdata))
+        return_old = oldfu.do_volume_mrk04(deepcopy(refdata))
+
+        self.assertTrue(
+            numpy.array_equal(return_new.get_3dview(), return_old.get_3dview())
+        )
+
+    @unittest.skip('dont have mask.hdf')
+    def test_do_volume_mrk05_true_should_return_equal_objects(self):
+        filepath = os.path.join(
+            ABSOLUTE_PATH, "pickle files/user_functions.do_volume_mask"
+        )
+        with open(filepath, "rb") as rb:
+            argum = pickle.load(rb)
+
+        refdata = []
+        refdata.append(argum[0][0][0])
+        refdata.append(argum[0][0][1])
+
+        refdata[1]["constants"][
+            "mask3D"
+        ] = "sphire/tests/Sharpening/vol_adaptive_mask.hdf"
+
+        return_new = fu.do_volume_mrk05(deepcopy(refdata))
+        return_old = oldfu.do_volume_mrk05(deepcopy(refdata))
+
+        self.assertTrue(
+            numpy.array_equal(return_new.get_3dview(), return_old.get_3dview())
+        )
+
 
 
 if __name__ == "__main__":
