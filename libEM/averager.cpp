@@ -329,13 +329,15 @@ EMData * ImageAverager::finish()
 
 		result->update();
 
-	}		
-	result->set_attr("ptcl_repr",nimg);
+		result->set_attr("ptcl_repr",nimg);
 
-	if (freenorm) { delete normimage; normimage=(EMData*)0; }
-	nimg=0;
+		if (freenorm) { delete normimage; normimage=(EMData*)0; }
+		nimg=0;
 
-	return result;
+		return result;
+	}
+
+	return nullptr;
 }
 
 
