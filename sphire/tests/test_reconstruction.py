@@ -45,39 +45,13 @@ WHAT IS MISSING:
 3) recons3d_4nnw_MPI  no idea how test it
 
 
-RESULT AND KNOWN ISSUES
-Some compatibility tests for the following functions fail!!!
-1)
-
 In these tests there is a bug --> syntax error:
 1) Test_recons3d_4nn_ctf_MPI
   a) there is a KNOWN BUG --> with sizeprojection  PAP 10/22/2014
   b) if you call this function twice, or in the tests case twice in the same class test, the second time that it runs crashed beacuse del sparx_utilities.pad
      This happen because 'sparx_utilities.pad' obj was destroyed in the first call
 
-In these tests there is a strange behavior:
-1)
 """
-
-""" old comment about function that we cleaned
-There are some opened issues in:
-1) insert_slices and insert_slices_pdf seems to have the same behaviour. See Test_insert_slices_VS_insert_slices_pdf
-2) Test_recons3d_4nn_MPI.test_default_case_z_size_both_not_negative_FAILEd failed even if I set the Tollerance to a high value (e.g.: 5)
-    but Test_recons3d_4nn_MPI.test_default_case_xy_size_not_negative_myid_not_null does not failed. WHY????
-4) recons3d_4nn_ctf it seems to be not used. I did not tested it
-6) Test_recons3d_nn_SSNR_MPI.test_withMask2D, I cannot test the 2Dmask case because:
-    I cannot provide it a valid mask. I tried with 'mask2D = sparx_utilities.model_circle(0.1, nx, ny) - sparx_utilities.model_circle(1, nx, ny)'
-7) Test_prepare_recons.test_main_node_half_NOTequal_myid_crashes_because_MPI_ERRORS_ARE_FATAL
-7_1)    --> in test_index_equal_group and test_symC1 the unittest sometimes does not work because I look into the hdf file as it was a txt file. I have to improve it
-8) Test_prepare_recons_ctf are crashing using di 'PRJLIST' beacause 'half.insert_slice(data[i], xform_proj )' ...maybe changing the image we get no crash ... WHICH ONE?
-                --> in practice all the cases with param 'half_start'<len(data)
-9) Test_rec3D_MPI -->same problem as (8) when  set  odd_start=0 becuase it is used as 'half_start' when it calls 'prepare_recons_ctf'
-10) Test_rec3D_two_chunks_MPI:
-    a) How can I create a valid mask?
-    b) where can I find a valid file with for  the fsc curve"
-    c) how can I reach the nproc !+ 1? --> I have to use mpi_comm !=MPI_COMM_WORLD. But I got always MPI_ERRORS_ARE_FATAL
-"""
-
 
 """
 pickle files stored under smb://billy.storage.mpi-dortmund.mpg.de/abt3/group/agraunser/transfer/Adnan/pickle files
