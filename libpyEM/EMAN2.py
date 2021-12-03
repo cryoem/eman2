@@ -995,7 +995,7 @@ def parse_infile_arg(arg):
 
 	filename:inclusion_list^exclusion_list
 
-	inclusion_list/exclusion_list may contain comma-seperated
+	inclusion_list/exclusion_list may contain comma-separated
 	1. integers
 	2. slices (Python's built-in slice representation)
 	3. file names
@@ -3012,6 +3012,7 @@ def db_read_images(fsp, *parms):
 				keys = parms[0]
 			if not keys or len(keys) == 0: keys = list(range(len(db)))
 		return [db.get(i, nodata=nodata) for i in keys]
+
 	if fsp[-4:].lower()==".lst":
 		return LSXFile(fsp).read_images(*parms)
 		#global lsxcache
@@ -3020,6 +3021,7 @@ def db_read_images(fsp, *parms):
 
 	if len(parms) > 0 and (parms[0] == None or len(parms[0]) == 0):
 		parms = (list(range(EMUtil.get_image_count(fsp))),) + parms[1:]
+
 	return EMData.read_images_c(fsp, *parms)
 
 
