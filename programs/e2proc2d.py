@@ -1117,7 +1117,7 @@ def main():
 
 		# end of image loop
 
-		if average:
+		if average and count%options.avgseq != 0:
 			avg = average.finish()
 	#		avg["ptcl_repr"] = (n1-n0+1)	# should be set by averager, and this may be wrong in avgseq mode
 	#		avg.mult(1.0/(n1-n0+1.0))
