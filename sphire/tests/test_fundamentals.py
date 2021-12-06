@@ -54,6 +54,17 @@ from numpy import full,nan
 from libpy_py3 import sp_fundamentals as oldfu
 from sphire.libpy import sp_fundamentals as fu
 
+from sphire.libpy import sp_global_def
+from libpy_py3 import sp_global_def as sp_global_def3
+import pytest
+@pytest.fixture(autouse=True)
+def run_around_tests():
+    sp_global_def.BATCH = False
+    sp_global_def3.BATCH = False
+    yield
+    sp_global_def.BATCH = False
+    sp_global_def3.BATCH = False
+
 """
 WHAT IS MISSING:
 0) in all the cases where the input file is an image. I did not test the case with a complex image. I was not able to generate it 
