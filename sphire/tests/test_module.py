@@ -51,6 +51,7 @@ List:
 7) returns_values_in_file --> read the file and give back the text
 """
 
+from pandas import read_pickle
 from os import system as os_system
 from numpy import arange, float32 as np_float32
 from sphire.libpy.sp_utilities import model_blank, model_circle
@@ -459,17 +460,15 @@ def give_rotate_3D_shift_data():
     data_head_name =   "data_head.pkl"
     dill._dill._reverse_typemap["ObjectType"] = object
 
-    with io.open(os.path.join(ABSOLUTE_PATH_TO_RESOURCES , data_values_name), "rb") as f1:
-        data_arras = pickle.load(f1, encoding='latin1')
+    data_arras = read_pickle(os.path.join(ABSOLUTE_PATH_TO_RESOURCES , data_values_name))
 
-    with io.open(os.path.join(ABSOLUTE_PATH_TO_RESOURCES , data_head_name), "rb") as f2:
-        data_heads = pickle.load(f2, encoding='latin1')
+    data_heads = read_pickle(os.path.join(ABSOLUTE_PATH_TO_RESOURCES , data_head_name))
 
     data = []
     for i in range(len(data_arras)):
         data.append(sp_utilities.numpy2em_python(data_arras[i]))
-        for key in data_heads[i]:
-            data[i].set_attr(key , data_heads[i][key])
+        for key,value in data_heads.items():
+            data[i].set_attr(key , value)
 
     return data
 
