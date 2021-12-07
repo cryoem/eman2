@@ -31,8 +31,8 @@ unittest: # Name of the job
      - rm -rf resources_tests/applications_folder
      - mkdir resources_tests/applications_folder
      - chmod -R 755 bin_py3/
-     - mpirun --allow-run-as-root -quiet -np 1 pytest -v tests --cov=sphire/; coverage xml --ignore-errors;
      - pytest -v tests_bin --cov=sphire/; coverage xml --ignore-errors;
+     - mpirun --allow-run-as-root -quiet -np 1 pytest -v tests --cov=sphire/; coverage xml --ignore-errors;
      - rm -rf resources_tests/applications_folder
      - ls
      - pwd
