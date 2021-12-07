@@ -5,7 +5,7 @@ from numpy import allclose
 from sphire.libpy.sp_utilities import get_im
 
 
-from tests.test_module import ABSOLUTE_OLDBIN_PATH,ABSOLUTE_BIN_PATH,remove_dir
+from tests.test_module import remove_dir
 import unittest
 from os import path
 
@@ -27,6 +27,10 @@ except ImportError:
 
 import subprocess
 ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
+
+ABSOLUTE_SPHIRE_PATH= ABSOLUTE_PATH.split("/tests")[0]
+ABSOLUTE_OLDBIN_PATH = path.join(ABSOLUTE_SPHIRE_PATH, "bin_py3")
+ABSOLUTE_BIN_PATH = path.join(ABSOLUTE_SPHIRE_PATH,"sphire/bin")
 
 
 
