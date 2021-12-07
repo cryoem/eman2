@@ -29,11 +29,12 @@ TOLERANCE=190
 
 
 from sphire.libpy import sp_global_def
+import shutil
 
 sp_global_def.BATCH = True
 sp_global_def.MPI = True
 
-MPI_PATH = "/home/adnan/applications/sphire/miniconda3/envs/py3_v5/bin/mpirun" #"/home/adnan/applications/sphire/v1.1/envs/conda_fresh/bin/"
+MPI_PATH = shutil.which("mpi_run")
 NUM_PROC = 6  # has to be a multiple of 3
 
 import subprocess

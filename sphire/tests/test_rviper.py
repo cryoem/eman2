@@ -11,6 +11,7 @@ from os import path
 from bin_py3 import sp_rviper as oldfu
 from sphire.bin import sp_rviper as fu
 
+import shutil
 
 ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW = " Adnan removed this folder"
 
@@ -31,7 +32,7 @@ ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
 
 
 
-MPI_PATH = "/home/lusnig/SPHIRE_1_1/envs/sphire_py3transition/bin/mpirun" #"/home/adnan/applications/sphire/v1.1/envs/conda_fresh/bin/"
+MPI_PATH = shutil.which("mpi_run")
 NUM_PROC = 8
 
 """

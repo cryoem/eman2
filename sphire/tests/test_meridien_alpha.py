@@ -24,11 +24,11 @@ except ImportError:
 
 import subprocess
 import os
-
+import shutil
 from tests.test_module import ABSOLUTE_OLDBIN_PATH,ABSOLUTE_PATH_TO_RESOURCES,ABSOLUTE_BIN_PATH,remove_dir
 
 
-MPI_PATH = "/home/adnan/applications/sphire/miniconda3/envs/py3_v6/bin/mpirun" #"/home/adnan/applications/sphire/v1.1/envs/conda_fresh/bin/"
+MPI_PATH = shutil.which("mpi_run")
 
 NUM_PROC = 8
 

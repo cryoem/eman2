@@ -7,6 +7,7 @@ from os import path
 from tests.test_module import ABSOLUTE_OLDBIN_PATH,ABSOLUTE_BIN_PATH,remove_dir
 import unittest
 from sphire.libpy.sp_utilities import get_im
+import shutil
 import EMAN2db
 try:
     # python 3.4+ should use builtin unittest.mock not mock package
@@ -49,7 +50,7 @@ In these tests there is a strange behavior:
 -) 'Test_run::test_symmetrize' it cannot recognize the db of the precalculated results because in the new tutorial
     the folder name's are renamed. Replacing "03_PARTICLES" in "03_Particles" it works
 """
-MPI_PATH = "/home/lusnig/SPHIRE_1_1/envs/sphire_py3transition/bin/mpirun" #"/home/adnan/applications/sphire/v1.1/envs/conda_fresh/bin/"
+MPI_PATH = shutil.which("mpi_run")
 NUM_PROC = 8
 
 @unittest.skip("Adnan removed the ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW folder link")

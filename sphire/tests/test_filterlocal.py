@@ -4,17 +4,16 @@ from __future__ import division
 
 
 from numpy import allclose,array_equal
-
-
-
 from os import path
 from tests.test_module import ABSOLUTE_OLDBIN_PATH,ABSOLUTE_BIN_PATH,remove_list_of_file
 import unittest
 from sphire.libpy.sp_utilities import get_im
-
-
+import shutil
 import subprocess
-MPI_PATH = "/home/adnan/applications/sphire/miniconda3/envs/py3_v5/bin/mpirun"#"/home/lusnig/SPHIRE_1_1/envs/sphire_py3transition/bin/mpirun"
+
+ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW = "Adnan removed it"
+
+MPI_PATH = shutil.which("mpi_run")
 NUM_PROC = 8
 try:
     # python 3.4+ should use builtin unittest.mock not mock package

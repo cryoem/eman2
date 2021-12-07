@@ -3,9 +3,9 @@ from __future__ import division
 
 
 import subprocess
-MPI_PATH = "/home/adnan/applications/sphire/miniconda3/envs/py3_v5/bin/mpirun"
-from numpy import allclose
 
+from numpy import allclose
+import shutil
 from sphire.libpy.sp_utilities import get_im
 from os import path
 from tests.test_module import ABSOLUTE_OLDBIN_PATH,ABSOLUTE_PATH_TO_RESOURCES,ABSOLUTE_BIN_PATH,remove_dir
@@ -43,7 +43,7 @@ In these tests there is a strange behavior:
 """
 
 
-MPI_PATH = "/home/adnan/applications/sphire/miniconda3/envs/py3_v5/bin/mpirun" #"/home/adnan/applications/sphire/v1.1/envs/conda_fresh/bin/"
+MPI_PATH = shutil.which("mpi_run")
 NUM_PROC = 8
 TOLERANCE =2.5
 

@@ -6,7 +6,7 @@ from numpy import allclose
 from libpy_py3.sp_utilities import get_im
 from os import listdir,path,mkdir
 
-
+import shutil
 from tests.test_module import ABSOLUTE_OLDBIN_PATH,ABSOLUTE_PATH_TO_RESOURCES,ABSOLUTE_BIN_PATH,remove_dir
 import unittest
 
@@ -27,7 +27,7 @@ import subprocess
 
 
 ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
-MPI_PATH = "/home/adnan/applications/sphire/miniconda3/envs/py3_v6/bin/mpirun" #"/home/adnan/applications/sphire/v1.1/envs/conda_fresh/bin/"
+MPI_PATH = shutil.which("mpi_run")
 NUM_PROC = 8
 TOLERANCE =0.15
 
