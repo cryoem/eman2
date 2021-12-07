@@ -742,7 +742,7 @@ class Test_align2d_direct3(unittest.TestCase):
                         0,
                         0.4272247022774591
                     ],
-                ]
+                ],atol=1.e-5
             )
         )
 
