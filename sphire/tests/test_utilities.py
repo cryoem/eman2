@@ -427,7 +427,7 @@ class Test_center_2D(unittest.TestCase):
                     -0.33298560976982117,
                     -0.33319368958473206,
                 ],
-                atol=1.e-5
+                atol=1.e-4
             )
         )
         self.assertTrue(array_equal(return_new[1], return_old[1]))
@@ -1894,7 +1894,7 @@ class Test_center_2D(unittest.TestCase):
                     -0.14590947329998016,
                     -0.22373013198375702,
                 ],
-            atol = 1.e-5)
+            atol = 1.e-4)
         )
         self.assertTrue(array_equal(return_new[1], return_old[1]))
         self.assertTrue(array_equal(return_new[2], return_old[2]))
@@ -2161,7 +2161,7 @@ class Test_center_2D(unittest.TestCase):
                     -0.33298560976982117,
                     -0.33319368958473206,
                 ],
-                atol=1.e-5
+                atol=1.e-4
             )
         )
         self.assertEqual(return_new[1], return_old[1])
@@ -2712,7 +2712,7 @@ class Test_center_2D(unittest.TestCase):
                     -0.29030466079711914,
                     -0.18199211359024048,
                 ],
-            atol = 1.e-5)
+            atol = 1.e-4)
         )
         self.assertEqual(return_new[1], return_old[1])
         self.assertEqual(return_new[2], return_old[2])
@@ -3412,7 +3412,7 @@ class Test_center_2D(unittest.TestCase):
                     -0.43915462493896484,
                     -0.46282583475112915,
                 ],
-                atol = 1.e-5
+                atol = 1.e-4
             )
         )
         self.assertEqual(return_new[1], return_old[1])
@@ -3561,7 +3561,7 @@ class Test_center_2D(unittest.TestCase):
                     -0.33298560976982117,
                     -0.33319368958473206,
                 ],
-            atol = 1.e-5)
+            atol = 1.e-4)
         )
         self.assertEqual(return_new[1], return_old[1])
         self.assertEqual(return_new[2], return_old[2])
@@ -4114,7 +4114,7 @@ class Test_center_2D(unittest.TestCase):
                     -0.29030466079711914,
                     -0.18199211359024048,
                 ],
-                atol= 1.e-5
+                atol= 1.e-4
             )
         )
         self.assertEqual(return_new[1], return_old[1])
@@ -4821,6 +4821,7 @@ class Test_center_2D(unittest.TestCase):
                     -0.43915462493896484,
                     -0.46282583475112915,
                 ],
+                atol=1.e-5
             )
         )
         self.assertEqual(return_new[1], return_old[1])
