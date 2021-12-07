@@ -8,8 +8,6 @@ from sphire.libpy.sp_utilities import get_im
 from tests.test_module import ABSOLUTE_OLDBIN_PATH,ABSOLUTE_BIN_PATH,remove_dir
 import unittest
 from os import path
-from bin_py3 import sp_rviper as oldfu
-from sphire.bin import sp_rviper as fu
 
 import shutil
 
@@ -183,12 +181,12 @@ class Test_helperFunctions(unittest.TestCase):
 '''
 
 class Test_Error_cases(unittest.TestCase):
-    @unittest.skip("Path not found,i ll fix it ")
+
     def test_invalid_number_params(self):
         a = subprocess.run(args=[path.join(ABSOLUTE_BIN_PATH, "sp_rviper.py")], shell=True, capture_output=True)
-        b = subprocess.run(args=[path.join(ABSOLUTE_BIN_PATH, "sp_rviper.py")], shell=True,  capture_output=True)
-        self.assertTrue(' => Invalid number of parameters used. Please see usage information above.' in b.stdout.decode('utf8'))
+        b = subprocess.run(args=[path.join(ABSOLUTE_OLDBIN_PATH, "sp_rviper.py")], shell=True,  capture_output=True)
         self.assertTrue(' => Invalid number of parameters used. Please see usage information above.' in a.stdout.decode('utf8'))
+        self.assertTrue(" => Please run 'sp_rviper.py -h' for detailed options" in b.stdout.decode('utf8'))
 
     @unittest.skip("Adnan removed the ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW folder link, No MPI_path")
     def test_invalid_numbers_of_processor(self):
