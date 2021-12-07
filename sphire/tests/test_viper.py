@@ -34,7 +34,7 @@ import shutil
 sp_global_def.BATCH = True
 sp_global_def.MPI = True
 
-MPI_PATH = shutil.which("mpi_run")
+MPI_PATH = shutil.which("mpirun")
 NUM_PROC = 6  # has to be a multiple of 3
 
 import subprocess

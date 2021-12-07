@@ -50,7 +50,7 @@ In these tests there is a strange behavior:
 -) 'Test_run::test_symmetrize' it cannot recognize the db of the precalculated results because in the new tutorial
     the folder name's are renamed. Replacing "03_PARTICLES" in "03_Particles" it works
 """
-MPI_PATH = shutil.which("mpi_run")
+MPI_PATH = shutil.which("mpirun")
 NUM_PROC = 8
 
 @unittest.skip("Adnan removed the ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW folder link")

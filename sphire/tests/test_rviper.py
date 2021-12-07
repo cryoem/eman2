@@ -34,7 +34,7 @@ ABSOLUTE_BIN_PATH = path.join(ABSOLUTE_SPHIRE_PATH,"sphire/bin")
 
 
 
-MPI_PATH = shutil.which("mpi_run")
+MPI_PATH = shutil.which("mpirun")
 NUM_PROC = 8
 
 """

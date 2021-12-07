@@ -27,7 +27,7 @@ import subprocess
 
 
 ABSOLUTE_PATH = path.dirname(path.realpath(__file__))
-MPI_PATH = shutil.which("mpi_run")
+MPI_PATH = shutil.which("mpirun")
 NUM_PROC = 8
 TOLERANCE =0.15
 

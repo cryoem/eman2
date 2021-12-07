@@ -28,7 +28,7 @@ import shutil
 from tests.test_module import ABSOLUTE_OLDBIN_PATH,ABSOLUTE_PATH_TO_RESOURCES,ABSOLUTE_BIN_PATH,remove_dir
 
 
-MPI_PATH = shutil.which("mpi_run")
+MPI_PATH = shutil.which("mpirun")
 
 NUM_PROC = 8
 

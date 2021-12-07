@@ -13,7 +13,7 @@ import subprocess
 
 ABSOLUTE_PATH_TO_SPHIRE_DEMO_RESULTS_FOLDER_NEW = "Adnan removed it"
 
-MPI_PATH = shutil.which("mpi_run")
+MPI_PATH = shutil.which("mpirun")
 NUM_PROC = 8
 try:
     # python 3.4+ should use builtin unittest.mock not mock package

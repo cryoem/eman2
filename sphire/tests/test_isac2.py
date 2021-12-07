@@ -43,7 +43,7 @@ In these tests there is a strange behavior:
 """
 
 
-MPI_PATH = shutil.which("mpi_run")
+MPI_PATH = shutil.which("mpirun")
 NUM_PROC = 8
 TOLERANCE =2.5
 
