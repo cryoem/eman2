@@ -3022,11 +3022,11 @@ def db_read_images(fsp, *parms):
 	fsp, idxs = parse_infile_arg(fsp)
 
 	if len(parms) > 0 and parms[0]:
-		parms0 = [idxs[i] for i in parms[0]]
+		idxs = [idxs[i] for i in parms[0]]
 	else:
-		parms0 = idxs
+		idxs = idxs
 
-	parms = parms0, *parms[1:]
+	parms = idxs, *parms[1:]
 
 	return EMData.read_images_c(fsp, *parms)
 
