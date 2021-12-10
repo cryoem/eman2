@@ -1053,7 +1053,7 @@ def parse_infile_arg(arg):
 		if i in idxs:
 			idxs.pop(i)
 
-	return fname, idxs.keys()
+	return fname, tuple(idxs.keys())
 
 
 def parse_outfile_arg(arg):
