@@ -3023,8 +3023,6 @@ def db_read_images(fsp, *parms):
 
 	if len(parms) > 0 and parms[0]:
 		idxs = [idxs[i] for i in parms[0]]
-	else:
-		idxs = idxs
 
 	parms = idxs, *parms[1:]
 
