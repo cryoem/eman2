@@ -3019,10 +3019,12 @@ def db_read_images(fsp, *parms):
 		#if lsxcache==None or lsxcache.path!=fsp: lsxcache=LSXFile(fsp,True)
 		#return lsxcache.read_images(*parms)
 
+	fsp, idxs = parse_infile_arg(fsp)
+
 	if len(parms) > 0 and parms[0]:
-		parms0 = parms[0]
+		parms0 = [idxs[i] for i in parms[0]]
 	else:
-		parms0 = range(EMUtil.get_image_count(fsp))
+		parms0 = idxs
 
 	parms = parms0, *parms[1:]
 
