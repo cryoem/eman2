@@ -3020,9 +3020,11 @@ def db_read_images(fsp, *parms):
 		#return lsxcache.read_images(*parms)
 
 	if len(parms) > 0 and parms[0]:
-		parms = (parms[0],) + parms[1:]
+		parms0 = parms[0]
 	else:
-		parms = (list(range(EMUtil.get_image_count(fsp))),) + parms[1:]
+		parms0 = range(EMUtil.get_image_count(fsp))
+
+	parms = parms0, *parms[1:]
 
 	return EMData.read_images_c(fsp, *parms)
 
