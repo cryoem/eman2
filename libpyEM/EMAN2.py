@@ -1066,7 +1066,7 @@ def parse_outfile_arg(arg):
 	out.hdf:6:-3s:5s
 	out.hdf:6:f
 
-	Returns (filename, outbits, rendermin(absolute), rendermax(absolute), rendermin(times std dev), rendermin(times std dev))
+	Returns (filename, outbits, rendermin(absolute), rendermax(absolute), rendermin(times std dev), rendermax(times std dev))
 
 	>>> parse_outfile_arg('')
 	Traceback (most recent call last):
@@ -3104,7 +3104,7 @@ achieve progressively less additional compression and progressively more time. T
 provides good compression without having a significant performance impact.
 
 Somewhat counterintuitively, the noisier the data, the fewer bits that are required to fully represent the
-image. That is, raw micorgraphs can safely be stored as 3-4 bits, whereas a reconstructed, filtered volume
+image. That is, raw micrographs can safely be stored as 3-4 bits, whereas a reconstructed, filtered volume
 may require 8 or more bits.
 
 If erase is set, the file will be deleted if it exists, before writing. Obviously this must be used with caution,
