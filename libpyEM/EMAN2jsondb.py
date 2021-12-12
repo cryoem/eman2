@@ -62,16 +62,19 @@ def js_one_key(url,key):
 
 	return JSDict.one_key(url,key)
 
-def js_open_dict(url):
+def js_open_dict(url,create=True):
 	"""Opens a JSON file as a dict-like database object. The interface is almost identical to the BDB db_* functions.
 If opened. Writes to JDB dictionaries may be somewhat inefficient due to the lack of a good model (as BDB has) for
 multithreaded access. Default behavior is to write the entire dictionary to disk when any element is changed. File
 locking is attempted to avoid conflicts, but may not work in all situations. read-only access is a meaningless concept
 because file pointers are not held open beyond discrete transitions. While it is possible to store images in JSON files
-it is not recommended due to inefficiency, and making files which are difficult to read."""
+it is not recommended due to inefficiency, and making files which are difficult to read. If create is false, an exception
+will be raised if the file doesn't exist."""
 
 	if url[-5:]!=".json" :
 		raise Exception("JSON databases must have .json extension")
+
+	if not create and not os.path.isfile(url): raise Exception(f"Attempt to open missing JSON file for reading ({url})")
 
 	return JSDict.open_db(url)
 
