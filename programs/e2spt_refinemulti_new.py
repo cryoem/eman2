@@ -71,7 +71,6 @@ def main():
 	
 		
 	if options.maskalign!=None: options.maskalign=EMData(options.maskalign)
-	if options.maskref!=None: options.maskref=EMData(options.maskref)
 	if options.setsf!=None:
 		setsf=" --setsf {}".format(options.setsf)
 	else:
