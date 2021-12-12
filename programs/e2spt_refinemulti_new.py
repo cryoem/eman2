@@ -22,6 +22,7 @@ def main():
 	parser.add_argument("--path", type=str,help="Path for the refinement", default=None)
 	parser.add_argument("--nref", type=int,help="Number of classes. Without --loadali3d, it duplicate the first ref N times with phase randomization at 2 x maxres. With --loadali3d, the particles are classified to N random classes at the begining.", default=-1)
 	parser.add_argument("--maskalign", type=str,default=None,help="Mask file applied to 3D alignment reference in each iteration. Not applied to the average, which will follow normal masking routine.")
+	parser.add_argument("--maskref", type=str,help="Mask applied to the references prior to classification ", default=None)
 	parser.add_argument("--maxres",type=float,help="Maximum resolution (the smaller number) to consider in alignment (in A, not 1/A). Default is 20A",default=20.)
 	parser.add_argument("--minres",type=float,help="Minimum resolution (the larger number) to consider in alignment (in A, not 1/A)",default=0)
 	parser.add_argument("--niter", type=int,help="number of iterations. default is 5.", default=5)
@@ -67,8 +68,10 @@ def main():
 	boxsize=ep["ny"]
 	p2=EMData(info2dname,0,True)
 	padsize=p2["ny"]
+	
 		
 	if options.maskalign!=None: options.maskalign=EMData(options.maskalign)
+	if options.maskref!=None: options.maskref=EMData(options.maskref)
 	if options.setsf!=None:
 		setsf=" --setsf {}".format(options.setsf)
 	else:
@@ -83,10 +86,11 @@ def main():
 		save_lst_params(ali2d, f"{path}/aliptcls2d_00.lst")
 		save_lst_params(ali3d, f"{path}/aliptcls3d_00.lst")
 		options.ptcls=f"{path}/aliptcls3d_00.lst"
+		refmask=f"--multfile {options.maskref}" if options.maskref!=None else "" 
 		for i in range(options.nref):
 			threed=f"{path}/threed_00_{i:02d}.hdf"
 			run(f"e2spa_make3d.py --input {path}/aliptcls2d_00.lst --output {threed} --keep 1 --parallel {options.parallel} --outsize {boxsize} --pad {padsize} --sym {options.sym} --clsid {i}")
-			run(f"e2proc3d.py {threed} {threed} {setsf} --process filter.lowpass.gauss:cutoff_freq={1./options.maxres} --process normalize.edgemean")
+			run(f"e2proc3d.py {threed} {threed} {setsf} --process filter.lowpass.gauss:cutoff_freq={1./options.maxres} --process normalize.edgemean {refmask}")
 	else:
 		print("Loading references...")
 		if options.nref>0:
@@ -178,7 +182,8 @@ def main():
 			a2=ali2d[ir]
 			run(f"e2spa_make3d.py --input {a2} --output {threed} --keep 1 --parallel {options.parallel} --outsize {boxsize} --pad {padsize} --sym {options.sym} --clsid {ir}")
 			
-			run(f"e2proc3d.py {threed} {threed} {setsf} --process filter.lowpass.gauss:cutoff_freq={1./options.maxres} --process normalize.edgemean")
+			refmask=f"--multfile {options.maskref}" if options.maskref!=None and itr<options.niter else "" 
+			run(f"e2proc3d.py {threed} {threed} {setsf} --process filter.lowpass.gauss:cutoff_freq={1./options.maxres} --process normalize.edgemean {refmask}")
 		
 
 	E2end(logid)
