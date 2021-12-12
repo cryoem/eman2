@@ -220,11 +220,6 @@ def classify_ptcls(ali3d, info2d, options):
 		
 	return ali2d,ali3d
 	
-	
-def run(cmd):
-	print(cmd)
-	launch_childprocess(cmd)
-
 if __name__ == '__main__':
 	main()
 	
