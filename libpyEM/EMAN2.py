@@ -995,7 +995,7 @@ def parse_infile_arg(arg):
 
 	filename:inclusion_list^exclusion_list
 
-	inclusion_list/exclusion_list may contain comma-seperated
+	inclusion_list/exclusion_list may contain comma-separated
 	1. integers
 	2. slices (Python's built-in slice representation)
 	3. file names
@@ -1053,7 +1053,7 @@ def parse_infile_arg(arg):
 		if i in idxs:
 			idxs.pop(i)
 
-	return fname, idxs.keys()
+	return fname, tuple(idxs.keys())
 
 
 def parse_outfile_arg(arg):
@@ -3012,14 +3012,20 @@ def db_read_images(fsp, *parms):
 				keys = parms[0]
 			if not keys or len(keys) == 0: keys = list(range(len(db)))
 		return [db.get(i, nodata=nodata) for i in keys]
+
 	if fsp[-4:].lower()==".lst":
 		return LSXFile(fsp).read_images(*parms)
 		#global lsxcache
 		#if lsxcache==None or lsxcache.path!=fsp: lsxcache=LSXFile(fsp,True)
 		#return lsxcache.read_images(*parms)
 
-	if len(parms) > 0 and (parms[0] == None or len(parms[0]) == 0):
-		parms = (list(range(EMUtil.get_image_count(fsp))),) + parms[1:]
+	fsp, idxs = parse_infile_arg(fsp)
+
+	if len(parms) > 0 and parms[0]:
+		idxs = [idxs[i] for i in parms[0]]
+
+	parms = idxs, *parms[1:]
+
 	return EMData.read_images_c(fsp, *parms)
 
 
