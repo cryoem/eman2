@@ -21,6 +21,7 @@ def main():
 	usage="This is a GUI program that allows users inspect tomograms easily. Simply run without argument in a tomogram project directory."
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--ppid", type=int,help="", default=None)
+	parser.add_argument("--zshift", type=float,help="shift thumbnail image along z. range -.5 to .5. default 0.", default=0)
 
 	parser.add_header(name="orblock1", help='', title="Click launch to evaluate reconstructed tomograms", row=1, col=0, rowspan=1, colspan=2, mode="")
 
@@ -50,6 +51,7 @@ class TomoEvalGUI(QtWidgets.QWidget):
 
 		self.win_size=[1000,680]
 		self.setMinimumSize(self.win_size[0], self.win_size[1])
+		self.options=options
 
 		# This object is itself a widget we need to set up
 		self.gbl = QtWidgets.QGridLayout(self)
@@ -330,7 +332,11 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		print("Showing 2D for image {} : {}".format(int(idx), info["filename"]))
 		
 		self.cur_data=EMData(info["filename"])
-		self.wg_2dimage.list_idx=int(old_div(self.cur_data["nz"],2))
+		iz=self.cur_data["nz"]//2
+		if self.options.zshift!=0:
+			iz+=int(self.options.zshift*self.cur_data["nz"])
+			
+		self.wg_2dimage.list_idx=iz
 		self.wg_2dimage.setWindowTitle(info["filename"])
 		self.wg_2dimage.set_data(self.cur_data)
 		self.wg_2dimage.show()
@@ -446,7 +452,9 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		idx=self.imglst.item(row, 0).text()
 		info=self.imginfo[int(idx)]
 		hdr=EMData(info["filename"], 0,True)
-		iz=old_div(hdr["nz"],2)
+		iz=hdr["nz"]//2
+		if self.options.zshift!=0:
+			iz+=int(self.options.zshift*hdr["nz"])
 		e=EMData(info["filename"], 0, False, Region(0,0,iz, hdr["nx"], hdr["ny"],1))
 		
 		fac=float(hdr["nx"])/self.bt_show2d.width()*.55
