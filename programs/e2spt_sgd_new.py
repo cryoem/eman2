@@ -22,6 +22,7 @@ def main():
 	parser.add_argument("--ref", type=str,help="reference", default=None)
 	parser.add_argument("--sym", type=str,help="symmetry. do not use without ref", default="c1")
 	parser.add_argument("--classify",action="store_true",help="classify particles to the best class. there is the risk that some classes may end up with no particle. by default each class will include the best batch particles, and different classes can overlap.",default=False)
+	parser.add_argument("--curve",action="store_true",help="Mode for filament structure refinement.",default=False)
 
 	
 	(options, args) = parser.parse_args()
@@ -70,8 +71,19 @@ def main():
 			idx=np.arange(npt)
 			np.random.shuffle(idx)
 			idx=np.sort(idx[:batch])
-			tt=parsesym("c1")
-			xfs=tt.gen_orientations("rand",{"n":batch,"phitoo":True})
+			if options.curve:
+				xfs=[]
+				for ii in idx:
+					s=info3d[ii]
+					e=EMData(s["src"], s["idx"], True)
+					xf=Transform(e["xform.align3d"])
+					r=Transform({"type":"eman", "phi":np.random.rand()*360})
+					xfs.append((r*xf).inverse())
+				
+			else:
+				tt=parsesym("c1")
+				xfs=tt.gen_orientations("rand",{"n":batch,"phitoo":True})
+				
 			ali2d=[]
 			for ii,xf in zip(idx,xfs):
 				i2d=info3d[ii]["idx2d"]
@@ -115,7 +127,13 @@ def main():
 		a2dout=[]
 		for ic in range(ncls):
 			print(f"iter {itr}, class {ic}: ")
-			launch_childprocess(f"e2spt_align_subtlt.py {path}/particle_info_3d.lst {path}/output_cls{ic}.hdf --path {path} --maxres {res} --parallel {options.parallel} --fromscratch --iter 0 --sym {options.sym}")
+			cmd=f"e2spt_align_subtlt.py {path}/particle_info_3d.lst {path}/output_cls{ic}.hdf --path {path} --maxres {res} --parallel {options.parallel} --iter 0 --sym {options.sym}"
+			if options.curve:
+				cmd+=" --curve"
+			else:
+				cmd+=" --fromscratch"
+				
+			launch_childprocess(cmd)
 			
 			a3dout.append(load_lst_params(f"{path}/aliptcls3d_00.lst"))
 			a2dout.append(load_lst_params(f"{path}/aliptcls2d_00.lst"))
