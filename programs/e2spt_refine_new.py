@@ -43,7 +43,7 @@ def main():
 	parser.add_argument("--mask", type=str,help="Mask applied to the results (instead of automasking)", default=None)
 	parser.add_argument("--preprocess", metavar="processor_name:param1=value1:param2=value2", type=str, default=None, help="Preprocess each 2-D subtilt while loading (alignment only)")
 	
-	#parser.add_argument("--breaksym", type=str,help="Specify a symmetry to break", default=None) ## seems better to move this to e2spt_refinemulti_new.py
+	parser.add_argument("--breaksym", type=str,help="Specify a symmetry to break", default=None) ## seems better to move this to e2spt_refinemulti_new.py
 	parser.add_argument("--maskalign", type=str,help="Mask file applied to 3D alignment reference in each iteration. Not applied to the average, which will follow normal masking routine.", default=None)
 	parser.add_argument("--maxshift", type=int, help="maximum shift. default box size/6",default=-1)
 	parser.add_argument("--maxang", type=int, help="maximum angle difference from starting point for localrefine. ",default=30)
@@ -202,8 +202,8 @@ def main():
 			#### if there is a subtilt alignment run before this, also use the 2d alignment info
 			if last2d:
 				opt+=f" --plst {last2d}"
-			#if options.breaksym:
-				#opt+=f" --breaksym {options.breaksym}"
+			if options.breaksym:
+				opt+=f" --breaksym {options.breaksym}"
 			if options.use3d:
 				opt+=" --use3d"
 			if options.preprocess!=None:
