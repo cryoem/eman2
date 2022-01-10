@@ -171,7 +171,8 @@ class EMPlot3DWidget(EMGLWidget):
 	def resizeGL(self, width, height):
 		#print "resize ",self.width(), self.height()
 		side = min(width, height)
-		GL.glViewport(0,0,self.width(),self.height())
+		dpr=self.devicePixelRatio()
+		GL.glViewport(0,0,self.width()*dpr,self.height()*dpr)
 
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()

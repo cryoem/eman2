@@ -53,6 +53,7 @@ except:
 	sys.exit(1)
 
 soundout=None
+soundin=None
 
 def fixang(x):
 	x=fmod(x,360.0)
@@ -62,6 +63,7 @@ def fixang(x):
 
 def initsound():
 	global soundout
+	global soundin
 	if soundout!=None: return
 
 	try:
@@ -71,10 +73,17 @@ def initsound():
 		return
 
 	try:
-		soundout=sounddevice.OutputStream(samplerate=11025,channels=1,dtype="int16")
+		soundout=sounddevice.OutputStream(samplerate=44100,channels=1,dtype="int16")
 	except:
 		traceback.print_exc()
 		print("Unable to open output stream")
+		return
+
+	try:
+		soundin=sounddevice.InputStream(samplerate=44100,channels=1,dtype="int16")
+	except:
+		traceback.print_exc()
+		print("Unable to open input stream")
 		return
 
 def main():
@@ -83,28 +92,28 @@ def main():
 	usage = """%prog [options]
 
 This program allows the user to play around with Fourier synthesis graphically
-	
+
 """
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
 #	parser.add_option("--gui",action="store_true",help="Start the GUI for interactive fitting",default=False)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higher number means higher level of verboseness")
-	
+
 	(options, args) = parser.parse_args()
 
 	app=EMApp()
 	win=GUIFourierSynth(app)
 	win.show()
-	try: 
+	try:
 		win.raise_()
 		win.synthplot.raise_()
 	except: pass
 	app.exec_()
-	
+
 class GUIFourierSynth(QtWidgets.QWidget):
 	"""This class represents an application for interactive Fourier synthesis"""
-	
+
 	def __init__(self,app):
 		self.app=app
 		QtWidgets.QWidget.__init__(self,None)
@@ -116,30 +125,30 @@ class GUIFourierSynth(QtWidgets.QWidget):
 		self.fftplot.show()
 
 	#	self.bispecimg=EMImage2DWidget(self.app) # not shown initially
-		
+
 		# overall layout
 		self.vbl1=QtWidgets.QVBoxLayout()
 		self.setLayout(self.vbl1)
-		
+
 		# First row contains general purpose controls
 		self.hbl1=QtWidgets.QHBoxLayout()
 		self.vbl1.addLayout(self.hbl1)
-		
+
 		self.vcell=ValBox(self,(0,128.0),"Cell:",64)
 		self.hbl1.addWidget(self.vcell)
-		
+
 		self.vncells=ValBox(self,(0,128.0),"n Cells:",1)
 		self.hbl1.addWidget(self.vncells)
-		
+
 		self.voversamp=ValBox(self,(0,128.0),"Oversample:",1)
 		self.hbl1.addWidget(self.voversamp)
-		
+
 		self.targfn=None
-		
+
 		self.vnsin=ValBox(self,(1,64),"# Sin:",32)
 		self.vnsin.intonly=1
 		self.hbl1.addWidget(self.vnsin)
-		
+
 		self.cbshowall=QtWidgets.QCheckBox("Show All")
 		self.hbl1.addWidget(self.cbshowall)
 
@@ -175,9 +184,16 @@ class GUIFourierSynth(QtWidgets.QWidget):
 		self.cbtargfn.addItem("rand phase")
 		self.hbl1.addWidget(self.cbtargfn)
 
-		self.bsound=QtWidgets.QPushButton("Snd")
+		self.bsound=QtWidgets.QPushButton("Play")
 		self.hbl1.addWidget(self.bsound)
-		
+
+		self.bsoundr=QtWidgets.QPushButton("Rec")
+		self.hbl1.addWidget(self.bsoundr)
+
+		self.vrootf=ValBox(self,(1,64),"Root F:",264)	# 264 is middle C
+		#self.vrootf.intonly=1
+		self.hbl1.addWidget(self.vrootf)
+
 		# Widget containing valsliders
 		self.wapsliders=QtWidgets.QWidget(self)
 #		self.wapsliders.setMinimumSize(800,640)
@@ -186,7 +202,7 @@ class GUIFourierSynth(QtWidgets.QWidget):
 		self.gblap.setColumnMinimumWidth(0,250)
 		self.gblap.setColumnMinimumWidth(1,250)
 		self.wapsliders.setLayout(self.gblap)
-		
+
 		# ScrollArea providing view on slider container widget
 		self.wapsarea=QtWidgets.QScrollArea(self)
 		self.wapsarea.setWidgetResizable(True)
@@ -204,6 +220,7 @@ class GUIFourierSynth(QtWidgets.QWidget):
 		self.bphasecen.clicked.connect(self.phasecen)
 		self.bphaseright.clicked.connect(self.phaseright)
 		self.bsound.clicked.connect(self.playsound)
+		self.bsoundr.clicked.connect(self.recsound)
 
 
 		self.wamp=[]
@@ -214,17 +231,17 @@ class GUIFourierSynth(QtWidgets.QWidget):
 			self.wamp.append(ValSlider(self,(0.0,1.0),"%2d:"%i,0.0))
 			self.gblap.addWidget(self.wamp[-1],i,0)
 			self.wamp[-1].valueChanged.connect(self.recompute)
-			
+
 			self.wpha.append(ValSlider(self,(-180.0,180.0),"%2d:"%i,0.0))
 			self.gblap.addWidget(self.wpha[-1],i,1)
 			self.wpha[-1].valueChanged.connect(self.recompute)
-		
+
 			self.curves.append(EMData(64,1))
-		
+
 #			if self.cbshowall.isChecked() :
 #				self.synthplot
 		self.total=EMData(64,1)
-	
+
 		self.nsinchange()
 
 	def phaseleft(self,v):	# fixed translation in minus direction
@@ -232,7 +249,7 @@ class GUIFourierSynth(QtWidgets.QWidget):
 		for i in range(1,len(self.wpha)):
 			self.wpha[i].setValue(fixang(self.wpha[i].getValue()-sft*i),1)
 		self.recompute()
-			
+
 	def phasecen(self,v):	# translation so phase of lowest freqeuncy is zero
 		sft=self.wpha[1].getValue()
 		for i in range(1,len(self.wpha)):
@@ -247,67 +264,86 @@ class GUIFourierSynth(QtWidgets.QWidget):
 
 	def playsound(self,v):
 		global soundout
+		f0=int(self.vrootf.getValue())
+		nsam2=44100//(2*f0)					# 1/2 the samples in one cycle at the lowest frequency
+		
+		svals=self.svals.copy()
+		svals.resize(nsam2)
+		if len(self.svals)<nsam2: svals[len(self.svals):]=0.0		# zero fill if we extended the array
+		total=fft.irfft(svals)*(len(svals)-1)
+		self.assound=np.tile((total*10000.0).astype("int16"),44100//nsam2)
+		
+		#print nsam2,len(self.svals),len(svals),len(total)
 		initsound()
 		soundout.start()
 		soundout.write(self.assound)
-		soundout.write(self.assound)
 		soundout.stop()
 
+	def recsound(self,v):
+		global soundin
+		initsound()
+		soundin.start()
+		snd=soundin.read(65536)[0]
+		soundin.stop()
+		np.savetxt("real.txt",snd)
 		
+		f=fft.rfft(snd)
+		np.savetxt("fft.txt",np.absolute(f))
+
 	def newtargfn(self,index):
 		"This function has a number of hardcoded 'target' functions"
-	
-		if index==0 : 
+
+		if index==0 :
 			self.targfn=None
 			nsin=int(self.vnsin.getValue())
-			for i in range(nsin+1): 
+			for i in range(nsin+1):
 				self.wamp[i].setValue(0,1)
 				self.wpha[i].setValue(0,1)
 
 		elif index==15:		# zero phase
 			nsin=int(self.vnsin.getValue())
-			for i in range(nsin+1): 
+			for i in range(nsin+1):
 				self.wpha[i].setValue(0,1)
 
 		elif index==16:		# random phase
 			nsin=int(self.vnsin.getValue())
-			for i in range(nsin+1): 
+			for i in range(nsin+1):
 				self.wpha[i].setValue(random.uniform(-180.,180.),1)
 		else :
 			nx=int(self.vcell.getValue())
 			x=np.arange(0,1.0,1.0/nx)
 			y=np.zeros(nx)
-			
+
 			if index==1 : 	# triangle
 				y[:nx//2]=x[:nx//2]*2.0
 				y[nx//2:]=(1.0-x[nx//2:])*2.0
-			
+
 			elif index==2 : # square
 				y[:nx//4]=0
 				y[nx//4:nx*3//4]=1.0
 				y[nx*3//4:]=0
-				
+
 			elif index==3 : # square impulse
 				y[:nx//2]=0
 				y[nx//2:nx*3//5]=1.0
 				y[nx*3//5:]=0
-			
+
 			elif index==4 : # delta
 				y[:]=0
 				y[nx//2]=10.0
-				
+
 			elif index==5 : # noise
 				y=np.random.random_sample((nx,))-0.5
-			
+
 			elif index==6 : # saw
 				y[:nx//4]=0
 				y[nx//4:nx//2]=x[:nx//4]
 				y[nx//2:nx*3//4]=-x[:nx//4]
 				y[nx*3//4:]=0
-				
+
 			elif index==7 : # sin
 				y=np.sin(x*16.0*pi)
-			
+
 			elif index==8 : # modulated sine
 				y=np.sin(x*4.0*pi)*np.sin(x*32.0*pi)
 
@@ -327,19 +363,19 @@ class GUIFourierSynth(QtWidgets.QWidget):
 
 			elif index==13 : # sin bad f
 				y=np.sin(x*2.3*pi)
-			
+
 			elif index==14 : # sin bad f2
 				y=np.sin(x*17.15*pi)
-			
+
 			self.targfn=y
 			self.target2sliders()
-		
+
 		self.recompute()
 
 	def target2sliders(self):
 		f=fft.rfft(self.targfn)*2.0/len(self.targfn)
 		nsin=int(self.vnsin.getValue())
-		
+
 		for i in range(min(len(f),nsin+1)):
 #			print fft[i]
 			amp=abs(f[i])
@@ -352,27 +388,27 @@ class GUIFourierSynth(QtWidgets.QWidget):
 
 	def nsinchange(self,value=None):
 		if value==None : value=int(self.vnsin.getValue())
-		
+
 		for i in range(65):
-			if i>value: 
+			if i>value:
 				self.wamp[i].hide()
 				self.wpha[i].hide()
 			else :
 				self.wamp[i].show()
 				self.wpha[i].show()
-		
+
 		if self.targfn!=None :
 			self.target2sliders()
-			
+
 		self.recompute()
-	
+
 	def recompute(self,value=None):
 		nsin=int(self.vnsin.getValue())
 		cell=int(self.vcell.getValue())
 		ncells=int(self.vncells.getValue())
 		oversamp=max(1,int(self.voversamp.getValue()))
 		samples=int(cell*oversamp)
-		
+
 		# arrays since we're using them several ways
 		self.svals=np.array([cmath.rect(self.wamp[i].getValue(),self.wpha[i].getValue()*pi/180.0) for i in range(nsin+1)])
 		#self.wamps=np.array([v.getValue() for v in self.wamp[:nsin+1]])
@@ -383,12 +419,12 @@ class GUIFourierSynth(QtWidgets.QWidget):
 		else: svals=self.svals
 		self.total=fft.irfft(svals)*(len(svals)-1)
 		if ncells>1: self.total=np.tile(self.total,ncells)
-		
+
 		self.synthplot.set_data((np.arange(0,len(self.total)/oversamp,1.0/oversamp),self.total),"Sum",replace=True,quiet=True,linewidth=2)
-		
+
 		if not self.targfn is None:
 			self.synthplot.set_data((np.arange(len(self.targfn)),self.targfn),"Target",quiet=True,linewidth=1,linetype=2,symtype=0)
-		
+
 #		if self.cbshowall.isChecked() :
 #			csum=self.total["minimum"]*1.1
 #			for i in range(nsin):
@@ -404,8 +440,8 @@ class GUIFourierSynth(QtWidgets.QWidget):
 		self.fftplot.set_data((np.arange(len(self.svals)),np.angle(self.svals)),"Pha",color=1,linetype=0,linewidth=2)
 		self.fftplot.updateGL()
 
-		self.assound=np.tile((self.total*10000.0).astype("int16"),200)
-		
+#		self.assound=np.tile((self.total*10000.0).astype("int16"),200)
+
 if __name__ == "__main__":
 	main()
-	
+

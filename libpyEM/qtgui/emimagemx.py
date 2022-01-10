@@ -342,7 +342,8 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		width = width // self.devicePixelRatio()
 		height = height // self.devicePixelRatio()
 		
-		GL.glViewport(0,0,width,height)
+		dpr=self.devicePixelRatio()
+		GL.glViewport(0,0,self.width()*dpr,self.height()*dpr)
 
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()
