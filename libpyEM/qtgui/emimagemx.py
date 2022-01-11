@@ -283,8 +283,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.usetexture=False
 		
 		self.font_size = 11
-		dpr=self.devicePixelRatio()
-		self.font_renderer.set_face_size(self.font_size*dpr)
+		self.font_renderer.set_face_size(self.font_size)
 
 
 		self.text_bbs = {} # bounding box cache - key is a string, entry is a list of 6 values defining a
@@ -616,8 +615,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		return self.font_renderer.get_face_size()
 
 	def set_font_size(self,value):
-		dpr=self.devicePixelRatio()
-		self.font_renderer.set_face_size(value*dpr)
+		self.font_renderer.set_face_size(value)
 		self.force_display_update() # only for redoing the fonts, this could be made more efficient :(
 		self.updateGL()
 
