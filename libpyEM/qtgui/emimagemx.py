@@ -283,7 +283,8 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.usetexture=False
 		
 		self.font_size = 11
-		self.font_renderer.set_face_size(self.font_size)
+		dpr=self.devicePixelRatio()
+		self.font_renderer.set_face_size(self.font_size*dpr)
 
 
 		self.text_bbs = {} # bounding box cache - key is a string, entry is a list of 6 values defining a
@@ -615,7 +616,8 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		return self.font_renderer.get_face_size()
 
 	def set_font_size(self,value):
-		self.font_renderer.set_face_size(value)
+		dpr=self.devicePixelRatio()
+		self.font_renderer.set_face_size(value*dpr)
 		self.force_display_update() # only for redoing the fonts, this could be made more efficient :(
 		self.updateGL()
 
@@ -1131,6 +1133,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			invscale=1.0/self.scale
 			self.set_label_ratio = 0.1
 			self.coords = {}
+			dpr=self.devicePixelRatio()
 
 			if self.matrix_panel.visiblerows:
 				for row in range(self.matrix_panel.ystart,self.matrix_panel.visiblerows):
@@ -1179,6 +1182,9 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 							#print col,row,
 							continue
 
+						
+						tw*=dpr
+						th*=dpr
 						self.coords[i]=(tx,ty,tw,th)
 
 						draw_tex = True
@@ -1190,10 +1196,10 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 						if not excluded:
 							#print rx,ry,tw,th,self.width(),self.height(),self.origin
 							if self.usetexture and (not self.glflags.npt_textures_unsupported()):
-								a=GLUtil.render_amp8(self.data[i],rx,ry,tw,th,(tw-1)//4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
+								a=GLUtil.render_amp8(self.data[i],rx,ry,tw,th,(tw-1)//4*4+4,self.scale*dpr,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
 								self.texture(a,tx,ty,tw,th)
 							else:
-								a=GLUtil.render_amp8(self.data[i],rx,ry,tw,th,(tw-1)//4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,6)
+								a=GLUtil.render_amp8(self.data[i],rx,ry,tw,th,(tw-1)//4*4+4,self.scale*dpr,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,6)
 								glRasterPos(tx,ty)
 								glDrawPixels(tw,th,GL_LUMINANCE,GL_UNSIGNED_BYTE,a)
 
