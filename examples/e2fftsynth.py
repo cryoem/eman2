@@ -111,6 +111,8 @@ This program allows the user to play around with Fourier synthesis graphically
 	except: pass
 	app.exec_()
 
+#kaiser=np.kaiser(65536,15)	# precompute once
+
 class GUIFourierSynth(QtWidgets.QWidget):
 	"""This class represents an application for interactive Fourier synthesis"""
 
@@ -294,42 +296,67 @@ class GUIFourierSynth(QtWidgets.QWidget):
 		soundout.write(self.assound)
 		soundout.stop()
 
+	
 	def recsound(self,v):
 		global soundin
+#		global kaiser
 		initsound()
 		soundin.start()
-		snd=soundin.read(65536)[0]
+		snd=soundin.read(65536)[0][:,0]
 		soundin.stop()
 		np.savetxt("real.txt",snd)
 		
-		ft=fft.rfft(snd,65536,0)
+#		snd*=kaiser			# window didn't really help
+		ft=fft.rfft(snd)
 		a=np.absolute(ft)
 		np.savetxt("fft.txt",a)
+		p=np.angle(ft)*180./pi
+		np.savetxt("pha.txt",p)
 		
-		np.savetxt("pha.txt",np.angle(ft))
+		# If there is only a single strong peak (or maybe 2) the CCF approach won't work very well, but the peak itself should be good
+#		h=np.argwhere(a>np.max(a)/20.0)
+#		if len(h)<3: h=np.min(h)
+#		else:	
+		fta=fft.rfft(a)
+		fta=fta*np.conj(fta)
+		fta=fft.irfft(fta)
+		np.savetxt("fta.txt",fta)
+
+		# peak filter, but wasn't useful
+#		ftap=np.roll(fta,1,0)
+#		ftam=np.roll(fta,-1,0)
+#		fta=np.where(fta>ftap,fta,np.zeros(len(fta)))
+#		fta=np.where(fta>ftam,fta,np.zeros(len(fta)))
+#		np.savetxt("ftaf.txt",fta)
+
+#		ftac=fta.copy()
+#		# need a clever way to do this in numpy
+#		for i in range(1,32767):
+#			if fta[i-1]>fta[i] or fta[i+1]>fta[i] : ftac[i]=0
+		h=(np.argmax(fta[200:20000])+200)//2
 		
 		f1=22050.0/32768.0		# lowest frequency pixel, scaling factor for frequency axis
 
 		# sum the first 8 harmonics for each fundamental
-		hsum=a[:4096]*1.25						# *1.25 helps make sure a solo peak shows up as the first harmonic not a higher one
-		for i in range(2,9): hsum+=a[:4096*i:i]
-		#hsum=np.fmin(hsum,a[:4096]*25.0)
-		np.savetxt("fsum.txt",hsum)
+#		hsum=a[:4096]*1.25						# *1.25 helps make sure a solo peak shows up as the first harmonic not a higher one
+#		for i in range(2,9): hsum+=a[:4096*i:i]
+#		hsum=np.fmin(hsum,a[:4096]*25.0)
+#		np.savetxt("fsum.txt",hsum)
 		
-		hsum=hsum[100:]
-		h=np.min(np.argwhere(hsum>np.std(hsum)*2.0))+100
+#		hsum=hsum[100:]
+#		h=np.min(np.argwhere(hsum>np.std(hsum)*2.0))+100
 #		h=np.argmax(hsum[100:])+100
 		maxf=f1*h				# should correspond to the strongest single frequency based on harmonic sum
 		print(f"peak {h} -> {maxf}")
 		self.vrootf.setValue(floor(maxf))
 
 		# pull out the values for up to the first 33 harmonics
+		sca=0.5/np.max(a[h::h])
 		for i in range(1,33):				
 			j=h*i			# harmonic peak index (rounded)
 			if j>32767 : 
 				self.wamp[i].setValue(0,True)
 				continue
-			if i==1: sca=0.2/float(abs(ft[j]))
 			amp=float(abs(ft[j]))*sca
 			pha=float(cmath.phase(ft[j]))*180.0/pi
 			self.wamp[i].setValue(amp,True)
