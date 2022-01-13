@@ -54,6 +54,7 @@ import glob
 import random
 from struct import pack,unpack
 import json
+from collections import OrderedDict
 
 import threading
 #from Sparx import *
@@ -890,6 +891,282 @@ def read_number_file(path):
 	except:
 		return []
 
+
+def parse_list_arg(*possible_types):
+	"""Return a function that can be passed to argparse.add_argument() as an argument to 'type'.
+	The returned function's return type is a list of instances in possible_types, i.e., the parsed
+	arguments are converted to the types given in possible_types.
+
+	>>> parse_list_arg(int,float)("3, 4")
+	[3, 4.0]
+	>>> parse_list_arg(int,int)("3, 4")
+	[3, 4]
+	>>> parse_list_arg([int,int],[int,int,int])("3,4,5")
+	[3, 4, 5]
+	>>> parse_list_arg([int,int],[int,int,int])("3,4")
+	[3, 4]
+	>>> parse_list_arg([int,str],[int,int,int])("3,4")
+	[3, '4']
+	>>> parse_list_arg([int,str],[int,int,int])("3,4,5")
+	[3, 4, 5]
+	>>> parse_list_arg([int],[int,int],[int,int,int])("3,4")
+	[3, 4]
+	>>> parse_list_arg([int],[int,int],[int,int,int])("3")
+	[3]
+	"""
+
+	types_dict = {}
+
+	# If a single possible set of types is given, they don't have to be wrapped in a list/tuple
+	# To determine that, the first item in possible_types is checked if it is a list/tuple instance
+	if not isinstance(possible_types[0], (tuple, list)):
+		types_dict[len(possible_types)] = possible_types
+	else:
+		for i in possible_types:
+			types_dict[len(i)] = i
+
+	# This is the function that will be passed to argparse.add_argument()'s 'type' argument
+	def arg_to_list(s):
+		user_input_str = s.split(',')
+
+		if not any(len(user_input_str) == k for k in types_dict.keys()):
+			raise argparse.ArgumentTypeError(f"provide {' or '.join(str(i) for i in types_dict.keys())} arguments! See --help for details.")
+		else:
+			types = types_dict[len(user_input_str)]
+
+		return [type_to_convert(usr_input_val)
+				for type_to_convert, usr_input_val
+				in zip(types, user_input_str)]
+
+	return arg_to_list
+
+
+def parse_string_to_slices(seq):
+	"""
+	>>> parse_string_to_slices("")
+	[slice(None, None, None)]
+	>>> parse_string_to_slices("3,4")
+	[3, 4]
+	>>> parse_string_to_slices("3,4,2:5")
+	[3, 4, slice(2, 5, None)]
+	>>> parse_string_to_slices("3,4,2:5:")
+	[3, 4, slice(2, 5, None)]
+	>>> parse_string_to_slices("3,4,2:5:2")
+	[3, 4, slice(2, 5, 2)]
+	>>> parse_string_to_slices("3,4,2:5:2,8,14")
+	[3, 4, slice(2, 5, 2), 8, 14]
+	>>> parse_string_to_slices("3,4,2::2,8,14")
+	[3, 4, slice(2, None, 2), 8, 14]
+	>>> parse_string_to_slices("3,4,::2,8,14")
+	[3, 4, slice(None, None, 2), 8, 14]
+	>>> parse_string_to_slices("3,4,:11:2,8,14")
+	[3, 4, slice(None, 11, 2), 8, 14]
+	"""
+
+	if not seq:
+		return [slice(None, None, None)]
+
+	seq = filter(None, seq.split(','))
+	slices = []
+
+	for s in seq:
+		if s.isnumeric():
+			slices.append(int(s))
+		elif ":" in s:
+			sl = [None] * 3
+			for i, k in enumerate(s.split(":")):
+				sl[i] = int(k) if len(k) > 0 else None
+			slices.append(slice(*sl))
+		else:
+			with open(s) as fin:
+				file_content = fin.read().replace('\n', ',').replace(' ', ',')
+
+			slices.extend(parse_string_to_slices(file_content))
+
+	return slices
+
+
+def parse_infile_arg(arg):
+	"""
+	Parses a string of file name with inclusion and exclusion lists
+	Returns the file name and a list of image indices
+
+	Format of the input string:
+
+	filename:inclusion_list^exclusion_list
+
+	inclusion_list/exclusion_list may contain comma-separated
+	1. integers
+	2. slices (Python's built-in slice representation)
+	3. file names
+
+	No spaces are allowed in the passed string.
+	Negative integers are allowed as in Python slices.
+	However, listed files may contain multi-lines and may contain spaces.
+
+	Slice examples for an image file with N images where N>20:
+	2:    -> 2,3,...,N-1
+	:3:   -> 0,1,2
+	::5   -> 0,5,10,15,...,<N
+	:10:2 -> 0,2,4,6,8
+	::-1  -> N-1,N-2,N-3,...,2,1,0
+	2:9   -> 2,3,4,5,6,7,8
+
+	If a file named test_images.hdf contains 100 images,
+	"test_images.hdf:2,4:11:,9,6^25:28,30" will be interpreted as follows.
+	filename: test_images.hdf
+	inclusion_list: 2,4:11:,19,26:32:2 -> 2,3,4,5,6,7,8,9,10,19,26,28,30
+	exclusion_list: 25:28,30      -> 25,26,27,30
+
+	Returned index list: [2,3,4,5,6,7,8,9,10,19,26,28,30] - [25,26,27,30] ->
+					   : [2,3,4,5,6,7,8,9,10,19,28]
+	"""
+
+	fname, _, seq = arg.partition(':')
+
+	if not (fname and os.path.isfile(fname)):
+		raise argparse.ArgumentTypeError(f"{fname} is not an existing regular file!")
+
+	seq_inc, _, seq_exc = seq.partition('^')
+
+	slices_inc = parse_string_to_slices(seq_inc)
+	slices_exc = parse_string_to_slices(seq_exc) if seq_exc else []
+
+	nimg = EMUtil.get_image_count(fname)
+
+	idxs = OrderedDict()
+	for i in slices_inc:
+		if isinstance(i, int):
+			idxs.update({i: None})
+		else:
+			for k in range(*(i.indices(nimg))):
+				idxs.update({k: None})
+
+	ids_exc = set()
+	for i in slices_exc:
+		if isinstance(i, int):
+			ids_exc.add(i)
+		else:
+			ids_exc.update(range(*(i.indices(nimg))))
+
+	for i in ids_exc:
+		if i in idxs:
+			idxs.pop(i)
+
+	return fname, tuple(idxs.keys())
+
+
+def parse_outfile_arg(arg):
+	"""
+	Input:
+	filename:outbits:rendermin:rendermax
+
+	out.hdf:6:20:1000
+	out.hdf:6:-3s:5s
+	out.hdf:6:f
+
+	Returns (filename, outbits, rendermin(absolute), rendermax(absolute), rendermin(times std dev), rendermin(times std dev))
+
+	>>> parse_outfile_arg('')
+	Traceback (most recent call last):
+	argparse.ArgumentTypeError: Please, specify an output file!
+	>>> parse_outfile_arg('out.hdf')
+	('out.hdf', None, None, None, -5.0, 5.0)
+
+	>>> parse_outfile_arg('out.hdf:3')
+	('out.hdf', 3, None, None, -5.0, 5.0)
+	>>> parse_outfile_arg('out.hdf:3.')
+	Traceback (most recent call last):
+	argparse.ArgumentTypeError: outputbit field is required to be an int if specified! Got '3.'!
+	>>> parse_outfile_arg('out.hdf:33:')
+	Traceback (most recent call last):
+	argparse.ArgumentTypeError: outputbit field is required to be an int between 0 and 16! Got '33'!
+
+	>>> parse_outfile_arg('out.hdf:3:')
+	('out.hdf', 3, None, None, -5.0, 5.0)
+
+	>>> parse_outfile_arg('out.hdf:3:f')
+	('out.hdf', 3, 'FULL', 'FULL', None, None)
+	>>> parse_outfile_arg('out.hdf:3:F')
+	('out.hdf', 3, 'FULL', 'FULL', None, None)
+
+	>>> parse_outfile_arg('out.hdf:3::')
+	Traceback (most recent call last):
+	argparse.ArgumentTypeError: Min/max fields are expected to be non-empty if specified. Got ':'
+	>>> parse_outfile_arg('out.hdf:3:20:')
+	Traceback (most recent call last):
+	argparse.ArgumentTypeError: Min/max fields are expected to be non-empty if specified. Got '20:'
+	>>> parse_outfile_arg('out.hdf:3::400')
+	Traceback (most recent call last):
+	argparse.ArgumentTypeError: Min/max fields are expected to be non-empty if specified. Got ':400'
+
+	>>> parse_outfile_arg('out.hdf:3:4:5')
+	('out.hdf', 3, 4.0, 5.0, None, None)
+	>>> parse_outfile_arg('out.hdf:3:4.2:5.3')
+	('out.hdf', 3, 4.2, 5.3, None, None)
+
+	>>> parse_outfile_arg('out.hdf:3:4s:5s')
+	('out.hdf', 3, None, None, 4.0, 5.0)
+	>>> parse_outfile_arg('out.hdf:3:4.2s:5.3s')
+	('out.hdf', 3, None, None, 4.2, 5.3)
+
+	>>> parse_outfile_arg('out.hdf:3:4s:5')
+	Traceback (most recent call last):
+	argparse.ArgumentTypeError: Min/max fields are expected to be both absolute values or both sigma multipliers. Expected :(num):(num) or :(num)s:(num)s, got :4s:5
+	>>> parse_outfile_arg('out.hdf:3:4:5s')
+	Traceback (most recent call last):
+	argparse.ArgumentTypeError: Min/max fields are expected to be both absolute values or both sigma multipliers. Expected :(num):(num) or :(num)s:(num)s, got :4:5s
+	>>> parse_outfile_arg('out.hdf:3:4:5.')
+	('out.hdf', 3, 4.0, 5.0, None, None)
+	>>> parse_outfile_arg('out.hdf:3:4.:5')
+	('out.hdf', 3, 4.0, 5.0, None, None)
+	"""
+
+	fname, _, outbit_rng = arg.partition(':')
+
+	if not fname:
+		raise argparse.ArgumentTypeError("Please, specify an output file!")
+
+	outbit, _, rng = outbit_rng.partition(':')
+
+	if not outbit:
+		outbit = None
+	elif outbit.isdigit():
+		outbit = int(outbit)
+
+		if outbit not in range(17):
+			raise argparse.ArgumentTypeError(f"outputbit field is required to be an int between 0 and 16! Got '{outbit}'!")
+	else:
+		raise argparse.ArgumentTypeError(f"outputbit field is required to be an int if specified! Got '{outbit}'!")
+
+	if not rng:
+		rng = None, None, -5.0, 5.0
+	elif rng.lower() == "f":
+		rng = "FULL", "FULL", None, None
+	else:
+		min, _, max = rng.partition(':')
+		rng = (min, max)
+
+		def isfloat(s):
+			try:
+				float(s)
+				return True
+			except ValueError:
+				return False
+
+		sigma_multiplier_char = 's'
+		if not all(rng):
+			raise argparse.ArgumentTypeError(f"Min/max fields are expected to be non-empty if specified. Got '{':'.join(rng)}'")
+		elif all(isfloat(i) for i in rng):
+			rng = *(float(i) for i in rng), None, None
+		elif all(i[-1] == sigma_multiplier_char and isfloat(i[:-1]) for i in rng):
+			rng = None, None, *(float(i[:-1]) for i in rng)
+		else:
+			raise argparse.ArgumentTypeError(f"Min/max fields are expected to be both absolute values or both sigma multipliers. Expected :(num):(num) or :(num){sigma_multiplier_char}:(num){sigma_multiplier_char}, got :{':'.join(rng)}")
+
+	return (fname, outbit, *rng)
+
+
 def angle_ab_sym(sym,a,b,c=None,d=None):
 	"""Computes the angle of the rotation required to go from Transform A to Transform B under symmetry,
 	such that the smallest symmetry-related angle is returned. sym may be either a list of Transforms
@@ -966,6 +1243,19 @@ def e3display(data,vtype="auto",vname=None,dname="Unknown",settings={},port=3198
 	vname - name of a new or existing (type specific) display widget to use, if None 'default' will be used 
 	dname - name for the data set, may be used as window title, or to support multiple object display in the same widget
 	settings - a dictionary of widget-specific settings
+
+	image - 2-D image display, one at a time. data may be a single 2-D or 3-D image, list/tuple of images or
+		a list of 4 or 5 np.arrays which will be passed to add a vector overlay to the image display
+
+	imagemx - multiple tiled 2-D image display, pass a list of 2-D images or a 3-D image
+
+	volume - 3-D display, pass a 3-D EMData object
+
+	plot2d - X/Y scatter/line plot. Pass a list of N numpy arrays
+
+	plot3d - X/Y/Z 3-D scatter plot. Pass a list of N numpy arrays
+
+	histogram - 1-D histogram. Pass a single numpy array or a list of N numpy arrays
 	"""
 	import ipywidgets
 	global display_magic
@@ -978,6 +1268,7 @@ def e3display(data,vtype="auto",vname=None,dname="Unknown",settings={},port=3198
 	try: sock=socket.create_connection(("localhost",port))
 	except:
 		print(sys.exc_info())
+		print("\nFailed to connect. Do you have e2display.py --server running?")
 		return False
 
 	sock.sendall(display_magic)
@@ -2245,6 +2536,7 @@ if the lst file does not exist."""
 
 		# potentially time consuming, but this also gives us self.n
 		self.normalize()
+		self.lock=threading.Lock()
 
 	def __del__(self):
 		self.close()
@@ -2270,6 +2562,7 @@ extfile : the path to the referenced image file (can be relative or absolute, de
 jsondict : optional string in JSON format or a JSON compatible dictionary. values will override header values when an image is read.
 """
 
+		self.lock.acquire()
 		if jsondict==None : 
 			outln="{}\t{}".format(nextfile,extfile)
 		elif isinstance(jsondict,str) and jsondict[0]=="{" and jsondict[-1]=='}' : 
@@ -2295,6 +2588,7 @@ jsondict : optional string in JSON format or a JSON compatible dictionary. value
 		else : self.ptr.seek(self.seekbase+self.linelen*n)		# otherwise find the correct location
 
 		self.ptr.write(outln)
+		self.lock.release()
 
 	def read(self,n):
 		"""Reads the nth record in the file. Note that this does not read the referenced image, which can be
@@ -2302,6 +2596,7 @@ performed with read_image either here or in the EMData class. Returns a tuple (n
 contains decoded information from the stored JSON dictionary. Will also read certain other legacy comments
 and translate them into a dictionary."""
 		if n>=self.n : raise Exception("Attempt to read record {} from #LSX {} with {} records".format(n,self.path,self.n))
+		self.lock.acquire()
 		n=int(n)
 		self.ptr.seek(self.seekbase+self.linelen*n)
 		ln=self.ptr.readline().strip().split("\t")
@@ -2309,6 +2604,7 @@ and translate them into a dictionary."""
 		try: ln[0]=int(ln[0])
 		except:
 			print(f"Error LSXFile.read({n}). {self.seekbase},{self.linelen},{ln}")
+			self.lock.release()
 			raise(Exception)
 		if len(ln[2])<2: ln[2]={}
 		else:
@@ -2325,6 +2621,7 @@ and translate them into a dictionary."""
 					ln[2]={"xform.projection":eval(ln[2])}
 				else:
 					ln[2]={"lst_comment":ln[2]}
+		self.lock.release()
 		return ln
 
 	def read_image(self,N,hdronly=False,region=None):
@@ -2333,7 +2630,7 @@ but this method prevents multiple open/close operations on the #LSX file."""
 
 		n,fsp,jsondict=self.read(N)
 #		print(self.path,n,fsp,jsondict,hdronly,region)
-		if ret==None: ret=EMData()
+		ret=EMData()
 		ret.read_image_c(fsp,n,hdronly,region)
 		ret["source_path"]=self.path
 		ret["source_n"]=N
@@ -2349,6 +2646,8 @@ but this method prevents multiple open/close operations on the #LSX file."""
 		n,fsp,jsondict=self.read(N)
 #		print(self.path,n,fsp,jsondict,hdronly,region)
 		ret.read_image_c(fsp,n,hdronly,region,is_3d,imgtype)
+		ret["data_n"]=ret["source_n"]
+		ret["data_source"]=ret["source_path"]
 		ret["source_path"]=self.path
 		ret["source_n"]=N
 		if len(jsondict)>0 :
@@ -2713,14 +3012,20 @@ def db_read_images(fsp, *parms):
 				keys = parms[0]
 			if not keys or len(keys) == 0: keys = list(range(len(db)))
 		return [db.get(i, nodata=nodata) for i in keys]
+
 	if fsp[-4:].lower()==".lst":
 		return LSXFile(fsp).read_images(*parms)
 		#global lsxcache
 		#if lsxcache==None or lsxcache.path!=fsp: lsxcache=LSXFile(fsp,True)
 		#return lsxcache.read_images(*parms)
 
-	if len(parms) > 0 and (parms[0] == None or len(parms[0]) == 0):
-		parms = (list(range(EMUtil.get_image_count(fsp))),) + parms[1:]
+	fsp, idxs = parse_infile_arg(fsp)
+
+	if len(parms) > 0 and parms[0]:
+		idxs = [idxs[i] for i in parms[0]]
+
+	parms = idxs, *parms[1:]
+
 	return EMData.read_images_c(fsp, *parms)
 
 

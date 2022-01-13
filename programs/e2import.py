@@ -455,6 +455,7 @@ with the same name, you should specify only the .hed files (no renaming is neces
 					cmd="e2proc2d.py {} {} --inplace ".format(filename, newname)
 					if options.invert: cmd+=" --mult -1 --process normalize "
 					if options.apix != -1: cmd += " --apix {} ".format(options.apix)
+					if options.compressbits>0: cmd+=" --compressbits {} ".format(options.compressbits)
 					run(cmd)
 				elif options.mdoc!=None:
 					if options.mdoc=="auto" :

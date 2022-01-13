@@ -33,7 +33,7 @@ def main():
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>=<value>. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel",default="thread:4")
 	parser.add_argument("--threads", type=int,help="threads for post-processing", default=10)
 	parser.add_argument("--setsf", type=str,help="structure factor for sharpening", default=None)
-	parser.add_argument("--tophat", type=str,help="tophat filter options, same as the single particle reconstruction.", default=None)
+	parser.add_argument("--tophat", type=str,help="Options for filtering maps. Run 'e2help.py tophat' for more information. Default=wiener.", default=None)
 	parser.add_argument("--ssnrwt", action="store_true", default=False ,help="weight particles during reconstruction by SSNR accroding to references.")
 	parser.add_argument("--curve", action="store_true", default=False ,help="Filament refinement mode. still under testing")
 	parser.add_argument("--use3d", action="store_true", default=False ,help="Use projection of 3d particles instead of 2d sub tilt series. This may be more useful for thicker sample but can be significantly slower.")
@@ -41,12 +41,16 @@ def main():
 	parser.add_argument("--loadali2d", type=str,help="load previous 2d alignment from an aliptcls2d_xx.lst file", default=None)
 	parser.add_argument("--loadali3d", type=str,help="load previous 3d alignment from an aliptcls3d_xx.lst file", default=None)
 	parser.add_argument("--mask", type=str,help="Mask applied to the results (instead of automasking)", default=None)
-	#parser.add_argument("--breaksym", type=str,help="Specify a symmetry to break", default=None) ## seems better to move this to e2spt_refinemulti_new.py
+	parser.add_argument("--preprocess", metavar="processor_name:param1=value1:param2=value2", type=str, default=None, help="Preprocess each 2-D subtilt while loading (alignment only)")
+	
+	parser.add_argument("--breaksym", type=str,help="Specify a symmetry to break", default=None) ## seems better to move this to e2spt_refinemulti_new.py
 	parser.add_argument("--maskalign", type=str,help="Mask file applied to 3D alignment reference in each iteration. Not applied to the average, which will follow normal masking routine.", default=None)
 	parser.add_argument("--maxshift", type=int, help="maximum shift. default box size/6",default=-1)
 	parser.add_argument("--maxang", type=int, help="maximum angle difference from starting point for localrefine. ",default=30)
 	parser.add_argument("--smooth",type=float,help="smooth local motion by this factor. smoother local motion with larger numbers. default 100",default=100)
 	parser.add_argument("--smoothN",type=int,help="number of neighboring particles used for smoothing. default 15",default=15)
+	parser.add_argument("--m3dthread",action="store_true", default=False ,help="do make3d in threading mode with shared memory. safer for large boxes")
+	parser.add_argument("--maxtilt",type=float,help="Excluding tilt images beyond the angle",default=-1)
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -67,7 +71,7 @@ def main():
 		print("Using existing metadata files within the directory...")
 		
 	else:
-		info2d, info3d = gather_metadata(options.ptcls)
+		info2d, info3d = gather_metadata(options.ptcls, options.maxtilt)
 		save_lst_params(info3d, info3dname)
 		save_lst_params(info2d, info2dname)
 		
@@ -157,7 +161,7 @@ def main():
 			iters.extend([i[0]]*r)
 		else:
 			iters.append(i)
-	keydic={'p':"Subtomogram alignment", 't': "Subtilt translational refinement", 'r': "Subtilt rotational refinement", 'd':"Defocus refinement"}
+	keydic={'p':"Subtomogram alignment", 't': "Subtilt translational refinement", 'T': "Subtilt translational CCF alignment", 'r': "Subtilt rotational refinement", 'd':"Defocus refinement"}
 	
 	#### now start the actual refinement loop
 	for ii,itype in enumerate(iters):
@@ -198,34 +202,44 @@ def main():
 			#### if there is a subtilt alignment run before this, also use the 2d alignment info
 			if last2d:
 				opt+=f" --plst {last2d}"
-			#if options.breaksym:
-				#opt+=f" --breaksym {options.breaksym}"
+			if options.breaksym:
+				opt+=f" --breaksym {options.breaksym}"
 			if options.use3d:
 				opt+=" --use3d"
+			if options.preprocess!=None:
+				opt+=f" --preprocess {options.preprocess}"
 			if options.minres>0:
 				opt+=f" --minres={options.minres}"
 			if options.goldstandard>0 or options.goldcontinue:
 				opt+=" --goldcontinue"
+			#if options.maxtilt>0:
+				#opt+=f" --maxtilt={options.maxtilt}"
 				
-			cmd=f"e2spt_align_subtlt.py {ptcls} {ref} --path {path} --iter {itr} --maxres {res:.2f} --parallel {options.parallel} {opt}"
+			cmd=f"e2spt_align_subtlt.py {ptcls} {ref} --path {path} --iter {itr} --maxres {res:.2f} --sym {options.sym} --parallel {options.parallel} {opt}"
 			run(cmd)
 			
 			last3d=f"{path}/aliptcls3d_{itr:02d}.lst"
 			
 		#### subtilt alignment, either including the rotation or not
 		##   note a subtomogram alignment need to exist first
-		if itype=='t' or itype=='r':
+		if itype=='t' or itype=='r' or itype=="T":
 			if last3d==None:
 				print("Need 3D particle alignment before subtilt refinement. exit.")
 				exit()
 				
-			cmd=f"e2spt_subtlt_local.py --ref {ref} --path {path} --iter {itr} --maxres {res} --parallel {options.parallel} --refine_trans --aliptcls3d {last3d} --smooth {options.smooth} --smoothN {options.smoothN}"
+			cmd=f"e2spt_subtlt_local.py --ref {ref} --path {path} --iter {itr} --maxres {res:.2f} --parallel {options.parallel} --aliptcls3d {last3d} --smooth {options.smooth} --smoothN {options.smoothN}"
+			if itype=="t":
+				cmd+=" --refine_trans"
+			if itype=="T":
+				cmd+=" --refine_trans_ccf"
 			if itype=='r':
-				cmd+=" --refine_rot"
+				cmd+=" --refine_trans --refine_rot"
 			if options.maxshift>0:
 				cmd+=f" --maxshift {options.maxshift}"
 			if options.use3d:
 				cmd+=" --use3d"
+			if options.preprocess!=None:
+				cmd+=f" --preprocess {options.preprocess}"
 			if options.minres>0:
 				cmd+=f" --minres={options.minres}"
 			if options.goldstandard>0 or options.goldcontinue:
@@ -240,7 +254,7 @@ def main():
 				print("Need 3D and 2D particle alignment before defocus refinement. exit.")
 				exit()
 				
-			cmd=f"e2spt_subtlt_local.py --ref {ref} --path {path} --iter {itr} --maxres {res} --parallel {options.parallel} --refine_defocus --aliptcls3d {last3d} --aliptcls2d {last2d}  --smooth {options.smooth} --smoothN {options.smoothN}"
+			cmd=f"e2spt_subtlt_local.py --ref {ref} --path {path} --iter {itr} --maxres {res:.2f} --parallel {options.parallel} --refine_defocus --aliptcls3d {last3d} --aliptcls2d {last2d}  --smooth {options.smooth} --smoothN {options.smoothN}"
 			
 			if options.minres>0:
 				cmd+=f" --minres={options.minres}"
@@ -250,8 +264,13 @@ def main():
 			last2d=f"{path}/aliptcls2d_{itr:02d}.lst"
 			
 		#### always reconstruct 3d maps from 2d particles
+		if options.m3dthread:
+			m3dpar=f" --threads {options.threads}"
+		else:
+			m3dpar=f" --parallel {options.parallel}"
+			
 		for eo in ["even", "odd"]:
-			run(f"e2spa_make3d.py --input {path}/aliptcls2d_{itr:02d}.lst --output {path}/threed_{itr:02d}_{eo}.hdf --keep {options.keep} --clsid {eo} --parallel {options.parallel} --outsize {boxsize} --pad {padsize} --sym {options.sym}")
+			run(f"e2spa_make3d.py --input {path}/aliptcls2d_{itr:02d}.lst --output {path}/threed_{itr:02d}_{eo}.hdf --keep {options.keep} --clsid {eo} --outsize {boxsize} --pad {padsize} --sym {options.sym} {m3dpar}")
 		
 		#### only do SSNR weighting for the last iteration to avoid potential model bias
 		##   simply run make3d a second time using the previous map as reference.
@@ -259,7 +278,7 @@ def main():
 			run(f"e2refine_postprocess.py --even {path}/threed_{itr:02d}_even.hdf {setsf} --threads {options.threads} {ppmask}")
 			res=calc_resolution(f"{path}/fsc_masked_{itr:02d}.txt")
 			for eo in ["even", "odd"]:
-				run(f"e2spa_make3d.py --input {path}/aliptcls2d_{itr:02d}.lst --output {path}/threed_{itr:02d}_{eo}.hdf --keep {options.keep} --clsid {eo} --parallel thread:{options.threads} --outsize {boxsize} --pad {padsize} --ref {path}/threed_{itr:02d}_{eo}.hdf --maxres {res} --sym {options.sym}")
+				run(f"e2spa_make3d.py --input {path}/aliptcls2d_{itr:02d}.lst --output {path}/threed_{itr:02d}_{eo}.hdf --keep {options.keep} --clsid {eo} --outsize {boxsize} --pad {padsize} --ref {path}/threed_{itr:02d}_{eo}.hdf --maxres {res} --sym {options.sym}  {m3dpar}")
 			
 		run(f"e2refine_postprocess.py --even {path}/threed_{itr:02d}_even.hdf {setsf} {tophat} --threads {options.threads} --restarget {res:.2f} --sym {options.sym} {ppmask}")
 
@@ -278,7 +297,7 @@ def main():
 #### gather metadata from particles and return one dictionary for each 3d particle and one dictionary for each 2d one
 ##   for 3d particle, we keep the particle location coordinates, and a list of 2d particle indices that produces the 3d particle
 ##   for 2d particle, we keep the 3d particle index, the projection orientation with respect to the 3d particle, and the tilt id
-def gather_metadata(pfile):
+def gather_metadata(pfile, maxtilt=-1):
 	print("Gathering metadata...")
 	params=[]
 	if pfile.endswith(".lst"):
@@ -310,6 +329,9 @@ def gather_metadata(pfile):
 		idx2d=[]
 		for k,i in enumerate(imgidx): 
 			e=rhdrs[k]
+			alt=e["xform.projection"].get_params("eman")["alt"]
+			if maxtilt>0 and alt>maxtilt:
+				continue
 			dc={"src":imgsrc,"idx":i,
 				"idx3d":ii, "xform.projection":e["xform.projection"], "tilt_id":e["tilt_id"]}
 			idx2d.append(len(info2d))

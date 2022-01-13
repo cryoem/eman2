@@ -151,7 +151,7 @@ class Contour(EMShape):
 		if pts[ii,2]==mi: return
 		last=pts[ii,2]
 		pts=pts[pts[:,2]==last]
-		print(mi, last, pts.shape)
+		#print(mi, last, pts.shape)
 		img=self.image.data.numpy()
 
 		vec=[]
@@ -197,8 +197,8 @@ class Contour(EMShape):
 
 		zpos=self.image.list_idx
 		allpts=[[p[0], p[1], p[3]] for p in self.points if p[2]==zpos]
-		print(np.array(self.points))
-		print("#########")
+		#print(np.array(self.points))
+		#print("#########")
 		cid=np.unique([p[2] for p in allpts])
 		for ci in cid:
 			pts=[[p[0], p[1]] for p in allpts if p[2]==ci]

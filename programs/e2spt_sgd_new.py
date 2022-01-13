@@ -6,7 +6,9 @@ from e2spt_refine_new import gather_metadata
 
 def main():
 	
-	usage=" "
+	usage="""prog <particle stack>
+	Generate initial model from subtomogram particles using stochastic gradient descent.
+	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--path", type=str,help="path", default=None)
 	parser.add_argument("--niter", type=int,help="iterations", default=100)
@@ -18,9 +20,10 @@ def main():
 	parser.add_argument("--learnrate", type=float,help="learning rate", default=.2)
 	parser.add_argument("--res", type=float,help="resolution", default=50)
 	parser.add_argument("--ref", type=str,help="reference", default=None)
+	parser.add_argument("--sym", type=str,help="symmetry. do not use without ref", default="c1")
 	parser.add_argument("--classify",action="store_true",help="classify particles to the best class. there is the risk that some classes may end up with no particle. by default each class will include the best batch particles, and different classes can overlap.",default=False)
+	parser.add_argument("--curve",action="store_true",help="Mode for filament structure refinement.",default=False)
 
-	#parser.add_argument("--sym", type=str,help="sym", default='c1')
 	
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -68,8 +71,19 @@ def main():
 			idx=np.arange(npt)
 			np.random.shuffle(idx)
 			idx=np.sort(idx[:batch])
-			tt=parsesym("c1")
-			xfs=tt.gen_orientations("rand",{"n":batch,"phitoo":True})
+			if options.curve:
+				xfs=[]
+				for ii in idx:
+					s=info3d[ii]
+					e=EMData(s["src"], s["idx"], True)
+					xf=Transform(e["xform.align3d"])
+					r=Transform({"type":"eman", "phi":np.random.rand()*360})
+					xfs.append((r*xf).inverse())
+				
+			else:
+				tt=parsesym("c1")
+				xfs=tt.gen_orientations("rand",{"n":batch,"phitoo":True})
+				
 			ali2d=[]
 			for ii,xf in zip(idx,xfs):
 				i2d=info3d[ii]["idx2d"]
@@ -92,7 +106,7 @@ def main():
 		ali3d=[info3d[i] for i in idx]
 		save_lst_params(ali3d, info3dname)
 		
-		launch_childprocess(f"e2spt_align_subtlt.py {path}/particle_info_3d.lst {options.ref} --path {path} --maxres {res} --parallel {options.parallel} --fromscratch --iter 0")
+		launch_childprocess(f"e2spt_align_subtlt.py {path}/particle_info_3d.lst {options.ref} --path {path} --maxres {res} --parallel {options.parallel} --fromscratch --iter 0  --sym {options.sym}")
 		ali2d=load_lst_params(f"{path}/aliptcls2d_00.lst")
 		thrd0=make_3d(ali2d, options)
 		thrd0s.append(thrd0)
@@ -113,7 +127,13 @@ def main():
 		a2dout=[]
 		for ic in range(ncls):
 			print(f"iter {itr}, class {ic}: ")
-			launch_childprocess(f"e2spt_align_subtlt.py {path}/particle_info_3d.lst {path}/output_cls{ic}.hdf --path {path} --maxres {res} --parallel {options.parallel} --fromscratch --iter 0")
+			cmd=f"e2spt_align_subtlt.py {path}/particle_info_3d.lst {path}/output_cls{ic}.hdf --path {path} --maxres {res} --parallel {options.parallel} --iter 0 --sym {options.sym}"
+			if options.curve:
+				cmd+=" --curve"
+			else:
+				cmd+=" --fromscratch"
+				
+			launch_childprocess(cmd)
 			
 			a3dout.append(load_lst_params(f"{path}/aliptcls3d_00.lst"))
 			a2dout.append(load_lst_params(f"{path}/aliptcls2d_00.lst"))
@@ -138,8 +158,6 @@ def main():
 				if a["ptcl3d_id"] in scrid:
 					ali2d.append(a)
 					
-			#print(len(ali2d))
-									
 			thrd1=make_3d(ali2d, options)
 			thrd0=thrd0s[ic]
 			
@@ -156,24 +174,43 @@ def main():
 def make_3d(ali2d, options):
 	#normvol=EMData(pad//2+1, pad, pad)
 	pad=options.pad
-	recon=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":"trilinear"})
+	recon=Reconstructors.get("fourier", {"sym":options.sym,"size":[pad,pad,pad], "mode":"trilinear"})
 	recon.setup()
-	for a in ali2d:
-		e=EMData(a["src"],a["idx"])
-		xf=Transform(a["xform.projection"])
-		xf.set_trans(-xf.get_trans())
+	
+	thrds=[threading.Thread(target=do_insert,args=(recon, a, options.shrink)) for a in ali2d]
+	for t in thrds:  t.start()
+	for t in thrds:  t.join()
 		
-		if options.shrink>1:
-			e.process_inplace("math.meanshrink",{"n":options.shrink})
-			xf.set_trans(xf.get_trans()/options.shrink)
+	#for a in ali2d:
+		#e=EMData(a["src"],a["idx"])
+		#xf=Transform(a["xform.projection"])
+		#xf.set_trans(-xf.get_trans())
 		
-		ep=recon.preprocess_slice(e, xf)
-		recon.insert_slice(ep,xf,1)
-
+		#if options.shrink>1:
+			#e.process_inplace("math.meanshrink",{"n":options.shrink})
+			#xf.set_trans(xf.get_trans()/options.shrink)
+		
+		#ep=recon.preprocess_slice(e, xf)
+		#recon.insert_slice(ep,xf,1)
+	
 	threed=recon.finish(False)
 
 	return threed
 
+def do_insert(recon, a, shrink):
+	
+	e=EMData(a["src"],a["idx"])
+	xf=Transform(a["xform.projection"])
+	xf.set_trans(-xf.get_trans())
+	
+	if shrink>1:
+		e.process_inplace("math.meanshrink",{"n":shrink})
+		xf.set_trans(xf.get_trans()/shrink)
+	
+	ep=recon.preprocess_slice(e, xf)
+	recon.insert_slice(ep,xf,1)
+	
+	return
 
 def post_process(threed, options):
 	pad=options.pad

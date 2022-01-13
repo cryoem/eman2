@@ -40,8 +40,9 @@ using std::cout;
 using std::endl;
 
 #include <memory>
-using std::shared_ptr;
+#include <sys/stat.h>
 
+using std::shared_ptr;
 using namespace EMAN;
 
 void EMData::_read_image(ImageIO *imageio, int img_index, bool nodata,
@@ -196,8 +197,6 @@ void EMData::read_binedimage(const string & filename, int img_index, int binfact
 	EXITFUNC;
 }
 
-#include <sys/stat.h>
-
 void EMData::_write_image(ImageIO *imageio, int img_index,
 						 EMUtil::ImageType imgtype,
 						 bool header_only, const Region * region,
@@ -300,8 +299,6 @@ void EMData::_write_image(ImageIO *imageio, int img_index,
 	if (imgtype != EMUtil::IMAGE_PNG)
 		imageio->flush();
 }
-
-#include <sys/stat.h>
 
 void EMData::write_image(const string & filename, int img_index,
 						 EMUtil::ImageType imgtype,

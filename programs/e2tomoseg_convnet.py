@@ -225,9 +225,9 @@ def apply_neuralnet(convnet, options, tomogram=None):
 	tomo_in=[]
 	for nf in range(nframe):
 		if is3d:
-			e0=EMData(tomogram, 0, False, Region(0,0,nf,tsz,tsz,1))
+			e0=EMData(tomogram, 0, False, Region((enx-tsz)//2,(eny-tsz)//2,nf,tsz,tsz,1))
 		else:
-			e0=EMData(tomogram, nf, False, Region(0,0,tsz,tsz))
+			e0=EMData(tomogram, nf, False, Region((enx-tsz)//2,(eny-tsz)//2,tsz,tsz))
 		tomo_in.append(e0)
 	
 	for idx, img in enumerate(tomo_in):
@@ -235,7 +235,7 @@ def apply_neuralnet(convnet, options, tomogram=None):
 		p=convnet.model.predict(m[None, :, :, None]/3.)
 		p[p<0]=0
 		cout=from_numpy(p[0,:,:,0])
-		cout=cout.get_clip(Region(((cout["nx"]-enx)//2),((cout["ny"]-eny)//2) ,enx, eny))
+		cout=cout.get_clip(Region((cout["nx"]-enx)//2,(cout["ny"]-eny)//2 ,enx, eny))
 		cout.scale(int(options.labelshrink))
 		output.insert_clip(cout, [0,0,idx])
 		

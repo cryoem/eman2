@@ -35,23 +35,23 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import range
 ploticon = [
-    '15 14 2 1',
-    'b c #000055',
-    'c c None',
-    'ccccccccccccccc',
-    'ccccccccccccccc',
-    'ccccccbbbbccccc',
-    'ccccbbccccbbccc',
-    'cccbccccccccbcc',
-    'ccbccccccccccbc',
-    'ccbccccccccccbc',
-    'ccbccccccccccbc',
-    'ccbccccccccccbc',
-    'cccbccccccccbcc',
-    'ccccbbccccbbccc',
-    'ccccccbbbbccccc',
-    'ccccccccccccccc',
-    'ccccccccccccccc'
+	'15 14 2 1',
+	'b c #000055',
+	'c c None',
+	'ccccccccccccccc',
+	'ccccccccccccccc',
+	'ccccccbbbbccccc',
+	'ccccbbccccbbccc',
+	'cccbccccccccbcc',
+	'ccbccccccccccbc',
+	'ccbccccccccccbc',
+	'ccbccccccccccbc',
+	'ccbccccccccccbc',
+	'cccbccccccccbcc',
+	'ccccbbccccbbccc',
+	'ccccccbbbbccccc',
+	'ccccccccccccccc',
+	'ccccccccccccccc'
 ]
 
 def safe_float(x):
@@ -169,9 +169,13 @@ class EMPlot2DWidget(EMGLWidget):
 		self.render()
 
 	def resizeGL(self, width, height):
+		EMGLWidget.resizeGL(self,width,height)
 		#print "resize ",self.width(), self.height()
-		side = min(width, height)
-		GL.glViewport(0,0,self.width(),self.height())
+#		width = width 
+#		height = height
+#
+		dpr=self.devicePixelRatio()
+		GL.glViewport(0,0,self.width()*dpr,self.height()*dpr)
 
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()
@@ -488,13 +492,14 @@ class EMPlot2DWidget(EMGLWidget):
 	is_file_readable = staticmethod(is_file_readable)
 
 	def render(self):
-
+#		print(self.width(),self.height(),self.devicePixelRatio(),self.qt_parent.__dict__)
 		try:
 			if self.data==None or len(self.data)==0 : return
 			if self.xlimits==None or self.ylimits==None or self.climits==None or self.slimits==None : return
 		except:
 			return
 
+		dpr=self.devicePixelRatio()
 		render = False
 
 		if self.needupd or not self.plotimg:
@@ -522,7 +527,7 @@ class EMPlot2DWidget(EMGLWidget):
 		GL.glPopMatrix()
 
 		if render:
-			fig=Figure((old_div(self.width(),72.0),old_div(self.height(),72.0)),dpi=72.0)
+			fig=Figure((self.width()/72.0,self.height()/72.0),dpi=72.0)
 			if self.axisparms[0] and len(self.axisparms[0])>0: ymin=.1
 			else: ymin= .05
 			if self.axisparms[1] and len(self.axisparms[1])>0 : xmin=.12
@@ -612,19 +617,21 @@ class EMPlot2DWidget(EMGLWidget):
 			else:
 				GL.glRasterPos(0,self.height()-1)
 				GL.glPixelZoom(1.0,-1.0)
-		#		print "paint ",self.width(),self.height(), self.width()*self.height(),len(a)
 				GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT,1)
 				GL.glDrawPixels(self.width(),self.height(),GL.GL_RGB,GL.GL_UNSIGNED_BYTE,self.plotimg)
-		else:
-			try:
-				glCallList(self.main_display_list)
-			except: pass
 
-		if render :
 			glEndList()
-			try: glCallList(self.main_display_list)
-			except: pass
 
+		try: 
+#			GL.glPushMatrix()
+#			glScale(dpr,dpr,dpr)
+			glCallList(self.main_display_list)
+#			GL.glPopMatrix()
+		except: pass
+
+#			projm = glGetFloatv(GL_PROJECTION_MATRIX);					# // Grab the projection matrix
+#			modelm = glGetFloatv(GL_MODELVIEW_MATRIX);				# // Grab the modelview matrix
+#			print(projm,modelm)
 
 
 		if lighting : glEnable(GL_LIGHTING)
@@ -1097,7 +1104,8 @@ class EMPolarPlot2DWidget(EMGLWidget):
 	def resizeGL(self, width, height):
 		#print "resize ",self.width(), self.height()
 		side = min(width, height)
-		GL.glViewport(0,0,self.width(),self.height())
+		dpr=self.devicePixelRatio()
+		GL.glViewport(0,0,self.width()*dpr,self.height()*dpr)
 
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()

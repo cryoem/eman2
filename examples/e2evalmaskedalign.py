@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Author: Steven Ludtke, 07/28/2011 (sludtke@bcm.edu)
+# Author: Steven Ludtke, 08/25/21 (sludtke@bcm.edu)
 # Copyright (c) 2011- Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -69,10 +69,9 @@ envelopes=[]		# simplex minimizer needs to use a global at the moment
 def main():
 	global debug,logid
 	progname = os.path.basename(sys.argv[0])
-	usage = """prog [options] <single image file> ...
+	usage = """prog [options] <image1> <image2>
 
-This program will allow you to evaluate an individual scanned micrograph or CCD frame, by looking at its
-power spectrum in various ways."""
+Allows you to evaluate how image alignment varies with local masking via an interactive GUI"""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
@@ -188,10 +187,10 @@ class GUIEvalImage(QtWidgets.QWidget):
 #				if parms==None : raise Exception
 			except:
 				ctf = EMAN2Ctf()
-				ctf.from_dict({'defocus':0.0,'dfdiff':0.0,'dfang':0.0,'bfactor':200.0,'ampcont':self.defaultac,'voltage':0,'cs':4.1,'apix':1.0,'dsbg':-1})	# voltage zero here to trigger initialization
-#				if self.defaultvoltage!=None : ctf.voltage=self.defaultvoltage		# default initialization is later! this screws it up
-#				if self.defaultcs!=None : ctf.cs=self.defaultcs
-#				if self.defaultapix!=None : ctf.apix=self.defaultapix
+				ctf.from_dict({'defocus':0.0,'dfdiff':0.0,'dfang':0.0,'bfactor':200.0,'ampcont':self.defaultac,'voltage':200.0,'cs':4.1,'apix':1.0,'dsbg':-1})
+				if self.defaultvoltage!=None : ctf.voltage=self.defaultvoltage
+				if self.defaultcs!=None : ctf.cs=self.defaultcs
+				if self.defaultapix!=None : ctf.apix=self.defaultapix
 				parms=[int(box),ctf,(256,256),set(),5,1]
 				print("Initialize new parms for: ",base_name(i))
 
@@ -241,8 +240,6 @@ class GUIEvalImage(QtWidgets.QWidget):
 		self.scalcmode=QtWidgets.QComboBox(self)
 		self.scalcmode.addItem("Single Region")
 		self.scalcmode.addItem("Tiled Boxes")
-		self.scalcmode.addItem("Y Strip")
-		self.scalcmode.addItem("X Strip")
 		self.scalcmode.setCurrentIndex(1)
 		self.gbl.addWidget(self.scalcmode,10,1)
 
@@ -650,13 +647,12 @@ class GUIEvalImage(QtWidgets.QWidget):
 		ds=old_div(1.0,(apix*parms[0]*parms[5]))
 		astig=int(self.castig.getValue())
 		phasep=int(self.cphasep.getValue())
-		hint=(0.5,7.0)	# defocus fitting range
 
 		try:
-			parms[1]=e2ctf.ctf_fit(self.fft1d,parms[1].background,parms[1].background,self.fft,self.fftbg,parms[1].voltage,parms[1].cs,parms[1].ampcont,phasep,apix,bgadj=False,autohp=True,dfhint=hint,verbose=1)
+			parms[1]=e2ctf.ctf_fit(self.fft1d,parms[1].background,parms[1].background,self.fft,self.fftbg,parms[1].voltage,parms[1].cs,parms[1].ampcont,phasep,apix,bgadj=False,autohp=True,verbose=1)
 			if self.cbgadj.getValue() :
 				self.bgAdj()
-				parms[1]=e2ctf.ctf_fit(self.fft1d,parms[1].background,parms[1].background,self.fft,self.fftbg,parms[1].voltage,parms[1].cs,parms[1].ampcont,phasep,apix,bgadj=False,autohp=True,dfhint=hint,verbose=1)
+				parms[1]=e2ctf.ctf_fit(self.fft1d,parms[1].background,parms[1].background,self.fft,self.fftbg,parms[1].voltage,parms[1].cs,parms[1].ampcont,phasep,apix,bgadj=False,autohp=True,verbose=1)
 				if astig : e2ctf.ctf_fit_stig(self.fft,self.fftbg,parms[1],verbose=1)
 				self.bgAdj()
 			else:
@@ -735,22 +731,6 @@ class GUIEvalImage(QtWidgets.QWidget):
 		if "," in fsp :
 			fsp,n=fsp.split(",")
 			self.data=EMData(fsp,int(n))	# read the image from disk
-			if not self.data.has_attr("microscope_voltage"):
-				if self.data.has_attr("ctf"):
-					ctf=self.data["ctf"]
-					self.data["microscope_voltage"]=ctf.voltage
-					self.data["microscope_cs"]=ctf.cs
-				else:
-					js=js_open_dict(info_name(fsp))
-					try:
-						self.data["microscope_cs"]=js["cs"]
-						self.data["microscope_voltage"]=js["voltage"]
-					except:
-						js=js_open_dict("info/project.json")
-						try:
-							self.data["microscope_cs"]=js["global.microscope_cs"]
-							self.data["microscope_voltage"]=js["global.microscope_voltage"]
-						except:pass
 		elif ";" in fsp :
 			fsp,n=fsp.split(";")
 			hdr=EMData(fsp,0,True)
@@ -828,6 +808,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 
 		# Mode where user drags the box around the parent image
 		if self.calcmode==0:
+
 			# extract the data and do an fft
 			clip=self.data.get_clip(Region(parms[2][0],parms[2][1],parms[0],parms[0]))
 			clip.process_inplace("normalize.edgemean")
@@ -837,38 +818,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 			self.fft=clip.do_fft()
 #			self.fft.mult(1.0/parms[0]**2)
 			self.fft.mult(old_div(1.0,parms[0]))
-		elif self.calcmode==2:
-			nx=self.data["nx"]
-			nbx=0
-			for x in range(0,nx-parms[0]//2,parms[0]//2):
-				clip=self.data.get_clip(Region(x,parms[2][1],parms[0],parms[0]))
-				clip.process_inplace("normalize.edgemean")
-				fft=clip.do_fft()
-				fft.mult(parms[0])
-				fft.ri2inten()
-				if self.fft==None: self.fft=fft
-				else: self.fft+=fft
-				nbx+=1
 
-			self.fft.mult(1.0/(nbx*parms[0]**2))
-			self.fft.process_inplace("math.sqrt")
-			self.fft["is_intensity"]=0                              # These 2 steps are done so the 2-D display of the FFT looks better. Things would still work properly in 1-D without it
-		elif self.calcmode==3:
-			ny=self.data["ny"]
-			nbx=0
-			for y in range(0,ny-parms[0]//2,parms[0]//2):
-				clip=self.data.get_clip(Region(parms[2][0],y,parms[0],parms[0]))
-				clip.process_inplace("normalize.edgemean")
-				fft=clip.do_fft()
-				fft.mult(parms[0])
-				fft.ri2inten()
-				if self.fft==None: self.fft=fft
-				else: self.fft+=fft
-				nbx+=1
-
-			self.fft.mult(1.0/(nbx*parms[0]**2))
-			self.fft.process_inplace("math.sqrt")
-			self.fft["is_intensity"]=0                              # These 2 steps are done so the 2-D display of the FFT looks better. Things would still work properly in 1-D without it
 		# mode where user selects/deselcts tiled image set
 		elif self.calcmode==1:
 			# update the box display on the image
@@ -964,16 +914,6 @@ class GUIEvalImage(QtWidgets.QWidget):
 			self.wimage.del_shapes()
 			self.wimage.add_shape("box",EMShape(("rect",.3,.9,.3,parms[2][0],parms[2][1],parms[2][0]+parms[0],parms[2][1]+parms[0],1)))
 			self.wimage.updateGL()
-		elif self.calcmode==2:
-			# update the box display on the image
-			self.wimage.del_shapes()
-			self.wimage.add_shape("box",EMShape(("rect",.3,.9,.3,0,parms[2][1],self.data["nx"]-1,parms[2][1]+parms[0],1)))
-			self.wimage.updateGL()
-		elif self.calcmode==3:
-			# update the box display on the image
-			self.wimage.del_shapes()
-			self.wimage.add_shape("box",EMShape(("rect",.3,.9,.3,parms[2][0],0,parms[2][0]+parms[0],self.data["ny"]-1,1)))
-			self.wimage.updateGL()
 		elif self.calcmode==1:
 			# update the box display on the image
 			nx=old_div(self.data["nx"],parms[0])-1
@@ -999,7 +939,6 @@ class GUIEvalImage(QtWidgets.QWidget):
 		self.busy=False
 
 	def newCalcMode(self,mode):
-		print("cm=",mode)
 		self.calcmode=mode
 		self.recalc()
 
@@ -1094,19 +1033,19 @@ class GUIEvalImage(QtWidgets.QWidget):
 
 
 	def imgmousedown(self,event) :
-		if self.calcmode in (0,2,3):
+		if self.calcmode==0:
 			m=self.wimage.scr_to_img((event.x(),event.y()))
 			parms=self.parms[self.curset]
-			parms[2]=(m[0]-parms[0]//2,m[1]-parms[0]//2)
+			parms[2]=(m[0]-old_div(parms[0],2),m[1]-old_div(parms[0],2))
 			self.recalc()
 			self.needredisp=True
 		#self.guiim.add_shape("cen",["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0])
 
 	def imgmousedrag(self,event) :
-		if self.calcmode in (0,2,3):
+		if self.calcmode==0:
 			m=self.wimage.scr_to_img((event.x(),event.y()))
 			parms=self.parms[self.curset]
-			parms[2]=(m[0]-parms[0]//2,m[1]-parms[0]//2)
+			parms[2]=(m[0]-old_div(parms[0],2),m[1]-old_div(parms[0],2))
 			self.needredisp=True
 			self.recalc()
 

@@ -218,20 +218,20 @@ def testDeployedPackage(size_type) {
 
 // For debugging purposes
 def isSkipStage() {
-    return 0
+//     return 0
 //     return NODE_NAME != "linux-1"
 //     return AGENT_OS_NAME != "mac"
 //     return STAGE_NAME != "package"
 // 
-//     stages = [
-//         'build-local',
+    stages = [
+        'build-local',
 //         'build-recipe',
 //         'package',
 //         'test-package',
 //         'deploy',
 //         'test-continuous'
-//     ]
-//     return !stages.contains(STAGE_NAME)
+    ]
+    return stages.contains(STAGE_NAME) || AGENT_OS_NAME == "win"
 }
 
 pipeline {

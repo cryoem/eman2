@@ -275,7 +275,7 @@ def main():
 				if abs(dc["ytilt"])>options.maxalt:
 					continue
 				rot=xf*xali.inverse()
-				lst[eo].write(-1, i, fname, str(rot.get_params("eman")))
+				lst[eo].write(-1, i, fname, {"xform.projection":rot})
 		for l in lst:
 			l.close()
 		js=None
@@ -361,7 +361,7 @@ def main():
 			for i in range(n):
 				e=EMData(ptclfile[k], i, True)
 				rot=e["xform.align3d"]
-				lst.write(-1, i, ptclfile[k], str(rot.get_params("eman")))
+				lst.write(-1, i, ptclfile[k],  {"xform.projection":rot})
 			
 			lst=None
 			

@@ -171,7 +171,8 @@ class EMPlot3DWidget(EMGLWidget):
 	def resizeGL(self, width, height):
 		#print "resize ",self.width(), self.height()
 		side = min(width, height)
-		GL.glViewport(0,0,self.width(),self.height())
+		dpr=self.devicePixelRatio()
+		GL.glViewport(0,0,self.width()*dpr,self.height()*dpr)
 
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()
@@ -284,7 +285,7 @@ class EMPlot3DWidget(EMGLWidget):
 			if len(data)>1 :
 				if len(data)>2:
 					try:
-						if data[0][2]-data[0][1]==1 : self.axes[key]=(1,2,3,-2,-2)	# if it looks like the first axis is a boring count
+						if data[0][2]-data[0][1]==1 and len(data)>=4 : self.axes[key]=(1,2,3,-2,-2)	# if it looks like the first axis is a boring count
 						else : self.axes[key]=(0,1,2,-2,-2)
 					except: self.axes[key]=(0,1,2,-2,-2)
 				else : self.axes[key]=(0,1,2,-2,-2)
@@ -973,7 +974,10 @@ lc is the cursor selection point in plot coords"""
 			for k in list(self.axes.keys()):
 				if not self.visibility[k]: continue
 #				print(k,self.axes,self.data)
-				zmin=min(zmin,min(self.data[k][self.axes[k][2]]))
+				try: zmin=min(zmin,min(self.data[k][self.axes[k][2]]))
+				except: 
+					traceback.print_exc()
+					print(k,self.axes,self.data)
 				zmax=max(zmax,max(self.data[k][self.axes[k][2]]))
 
 			if self.axisparms[4]!="linear" : self.zlimits=(old_div(zmin,1.1),zmax*1.1)

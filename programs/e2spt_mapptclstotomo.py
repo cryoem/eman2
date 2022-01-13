@@ -61,6 +61,7 @@ def main():
 	bname=base_name(options.tomo)
 	if options.new:
 		alipm=load_lst_params("{}/aliptcls3d_{:02d}.lst".format(path, itr))
+		
 		for p in alipm:
 			if base_name(p["src"])==bname:
 				ptcl.append((p["score"], p["src"], p["idx"], p["xform.align3d"]))

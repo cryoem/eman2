@@ -815,7 +815,7 @@ def main():
 		gen_model.compile(optimizer=opt, loss=tf.losses.MeanAbsoluteError())
 		loss=[]
 		for i in range(500):
-			loss.append(gen_model.train_on_batch(conf, pts))
+			loss.append(gen_model.train_on_batch(conf, pts.reshape(1,pts.shape[0],pts.shape[1])))
 			
 		print("Abs loss from loaded model : {:.05f}".format(loss[-1]))
 	

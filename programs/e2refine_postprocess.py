@@ -399,7 +399,7 @@ def main():
 
 
 
-	if options.tophat!=None:
+	if options.tophat!=None and options.tophat!="wiener":
 		# _unmasked volumes are NOT tophat filtered
 		run("e2proc3d.py {evenfile} {path}threed_even_unmasked.hdf {ampcorrect} --process filter.lowpass.tophat:cutoff_abs=0.5".format(evenfile=evenfile,path=path,itr=options.iter,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=old_div(1.0,options.restarget),noisecutoff=noisecutoff))
 		run("e2proc3d.py {oddfile} {path}threed_odd_unmasked.hdf {ampcorrect} --process filter.lowpass.tophat:cutoff_abs=0.5".format(oddfile=oddfile,path=path,itr=options.iter,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=old_div(1.0,options.restarget),noisecutoff=noisecutoff))

@@ -9,21 +9,22 @@ def main():
 	e2spa_refine.py --ptcl <particle list file> --ref <reference map> --res <inital resoution>
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--ptcl", type=str,help="particle input", default="")
-	parser.add_argument("--ref", type=str,help="reference", default="")
-	parser.add_argument("--path", type=str,help="path. default is r3d_00", default=None)
-	parser.add_argument("--parallel", type=str,help="", default="thread:1")
+	parser.add_argument("--ptcl", type=str,help="Input particle stack.", default="")
+	parser.add_argument("--ref", type=str,help="Reference map. This will be scaled/clipped to match the particles automatically.", default="")
+	parser.add_argument("--path", type=str,help="Path for refinement output files. default is r3d_xx", default=None)
+	parser.add_argument("--parallel", type=str,help="Run in parallel, specify type:<option>=<value>:<option>=<value>.", default="thread:1")
 	parser.add_argument("--sym", type=str,help="sym", default="c1")
 	parser.add_argument("--res", type=float,help="The resolution that reference map is lowpass filtered to (with phase randomization) at the begining of the refinement. ", default=10)
-	parser.add_argument("--keep", type=float,help="keep", default=.9)
-	parser.add_argument("--startiter", type=int,help="iter", default=0)
-	parser.add_argument("--niter", type=int,help="iter", default=10)
-	parser.add_argument("--setsf", type=str,help="structure factor", default="strucfac.txt")
-	parser.add_argument("--tophat", type=str, default="local",help="Default=local, can also specify localwiener")
-	parser.add_argument("--threads", type=int,help="threads to use during postprocessing of 3d volumes", default=4)
-	parser.add_argument("--automask3d", default=None, type=str,help="Default=auto. Specify as a processor, eg - mask.auto3d:threshold=1.1:radius=30:nshells=5:nshellsgauss=5.")
-	parser.add_argument("--compressbits", type=int,help="Bits to keep when writing images. 4 generally safe for raw data. 0-> true lossless (floating point). Default 6", default=6, guitype='intbox', row=10, col=1, rowspan=1, colspan=1, mode='filter[6]')
+	parser.add_argument("--keep", type=float,help="Fraction of best particles to keep in each iteration.", default=.9)
+	parser.add_argument("--niter", type=int,help="Number of iterations. Default is 10.", default=10)
+	parser.add_argument("--startiter", type=int,help="Start from a specified iteration in an existing refinement ", default=0)
+	parser.add_argument("--setsf", type=str,help="Text file containing structure factor for map sharpening. Can be produced during CTF estimation, or from an existing high resolution map.", default=None)
+	parser.add_argument("--tophat", type=str, default="local",help="Options for filtering maps. Run 'e2help.py tophat' for more information. Default=local.")
+	parser.add_argument("--threads", type=int,help="Threads to use during postprocessing of 3d volumes", default=4)
+	parser.add_argument("--mask", default=None, type=str,help="Specify a mask file for each iteration of refinement. Otherwise will generate mask automatically.")
+	parser.add_argument("--compressbits", type=int,help="Bits to keep when writing images. 4 generally safe for raw data. 0-> true lossless (floating point). Default 6", default=6)
 	parser.add_argument("--localsize",type=float,default=-1,help="Override the automatic local region size (in A) used for local resolution calculation and filtration.")
+	parser.add_argument("--m3dthread",action="store_true", default=False ,help="do make3d in threading mode with shared memory. safer for large boxes")
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -31,9 +32,7 @@ def main():
 	res=options.res
 	sym=options.sym
 		
-	tophat=""
-	amask=""
-	localsize=""
+	tophat=amask=localsize=sf=""
 	
 	npt=EMUtil.get_image_count(options.ptcl)
 	if options.path==None: options.path=num_path_new("r3d_")
@@ -44,6 +43,11 @@ def main():
 	js.update(vars(options))
 	js.close()
 	
+	if options.m3dthread:
+		m3dpar=f" --threads {options.threads}"
+	else:
+		m3dpar=f" --parallel {options.parallel}"
+		
 	if options.startiter==0:
 		
 		r=1/res
@@ -60,18 +64,22 @@ def main():
 			else:
 				opt+=" --scale {} --clip {} --process mask.soft:outer_radius=-1".format(rs, ep["nx"])
 		
+		#### prepare even/odd split
+		lst=load_lst_params(options.ptcl)
+		for i, l in enumerate(lst):
+			l["class"]=i%2
+		save_lst_params(lst,"{}/ptcls_00.lst".format(options.path))
 		
-		for i,eo in enumerate(["even","odd"]):
-			run("e2proclst.py {} --create {}/ptcls_00_{}.lst --range {},{},2".format(options.ptcl, options.path, eo, i, npt))
+		for eo in ["even","odd"]:
 			run("e2proc3d.py {} {}/threed_00_{}.hdf {}".format(options.ref, options.path, eo, opt))
 	
 	
 	for i in range(options.startiter, options.startiter+options.niter):
 		
-		for eo in ["even","odd"]:
-			run("e2spa_align.py --ptclin {pt}/ptcls_{i0:02d}_{eo}.lst --ptclout {pt}/ptcls_{i1:02d}_{eo}.lst --ref {pt}/threed_{i0:02d}_{eo}.hdf --parallel {par} --sym {s} --maxres {rs:.2f}".format(pt=options.path, i0=i, i1=i+1, rs=res, eo=eo, s=sym, par=options.parallel))
+		run("e2spa_align.py --ptclin {pt}/ptcls_{i0:02d}.lst --ptclout {pt}/ptcls_{i1:02d}.lst --ref {pt}/threed_{i0:02d}.hdf --parallel {par} --sym {s} --maxres {rs:.2f} --goldcontinue".format(pt=options.path, i0=i, i1=i+1, rs=res, s=sym, par=options.parallel))
 			
-			run("e2spa_make3d.py --input {pt}/ptcls_{i1:02d}_{eo}.lst --output {pt}/threed_{i1:02d}_{eo}.hdf --keep {kp} --sym {s} --parallel {par}".format(pt=options.path, i1=i+1, eo=eo, s=sym, par=options.parallel, kp=options.keep))
+		for eo in ["even","odd"]:
+			run("e2spa_make3d.py --input {pt}/ptcls_{i1:02d}.lst --output {pt}/threed_{i1:02d}_{eo}.hdf --keep {kp} --sym {s} {par} --clsid {eo}".format(pt=options.path, i1=i+1, eo=eo, s=sym, par=m3dpar, kp=options.keep))
 
 		if i==options.startiter:
 			res/=2
@@ -79,13 +87,16 @@ def main():
 		if i>0:
 			tophat="--tophat {}".format(options.tophat)	
 				
-		if options.automask3d:
-			amask="--automask3d {}".format(options.automask3d)
+		if options.mask:
+			amask="--mask {}".format(options.mask)
 
 		if options.localsize>0:
 			localsize="--localsize {}".format(options.localsize)
+			
+		if options.setsf:
+			sf="--setsf {}".format(options.setsf)
 
-		run("e2refine_postprocess.py --even {pt}/threed_{i1:02d}_even.hdf --sym {s} --setsf {sf} --restarget {rs:.1f} --threads {th} {top} {asize} {amask}".format(pt=options.path, i1=i+1, s=sym, sf=options.setsf, rs=res*.8, th=options.threads, top=tophat,  amask=amask, asize=localsize))
+		run("e2refine_postprocess.py --even {pt}/threed_{i1:02d}_even.hdf --sym {s} {sf} --restarget {rs:.1f} --threads {th} {top} {asize} {amask}".format(pt=options.path, i1=i+1, s=sym, sf=options.setsf, rs=res*.8, th=options.threads, top=tophat,  amask=amask, asize=localsize))
 
 		fsc=np.loadtxt("{}/fsc_masked_{:02d}.txt".format(options.path, i+1))
 		fi=fsc[:,1]<0.2

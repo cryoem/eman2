@@ -207,7 +207,7 @@ def main():
 	if logid : E2progress(logid,old_div(proc_tally,total_procs))
 
 	# Make class averages
-	cls_cmd = "e2classaverage.py --input=%s --classmx=%s/classmx_00.hdf --output=%s/classes_00.hdf --iter=%d --storebad --center=%s " %(options.input,options.path,options.path,options.classiter,options.center)
+	cls_cmd = "e2classaverage.py --input=%s --classmx=%s/classmx_00.hdf --output=%s/classes_00.hdf --iter=%d  --center=%s " %(options.input,options.path,options.path,options.classiter,options.center)
 	cls_cmd += get_classaverage_extras(options)
 	run (cls_cmd)
 
@@ -238,7 +238,7 @@ def main():
 
 
 		# Make class averages
-		cls_cmd = "e2classaverage.py --input=%s --classmx=%s/classmx_%02d.hdf --output=%s/classes_%02d.hdf --iter=%d --storebad --center=%s" %(options.input,options.path,it,options.path,it,options.classiter,options.center)
+		cls_cmd = "e2classaverage.py --input=%s --classmx=%s/classmx_%02d.hdf --output=%s/classes_%02d.hdf --iter=%d --center=%s" %(options.input,options.path,it,options.path,it,options.classiter,options.center)
 		cls_cmd += get_classaverage_extras(options)
 		run (cls_cmd)
 		proc_tally += 1.0

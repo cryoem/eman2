@@ -34,7 +34,7 @@ def main():
 
 	parser.add_header(name="orblock1", help='Just a visual separation', title="Specify either zeroid/tltstep OR rawtlt:", row=2, col=0, rowspan=1, colspan=2,mode="easy")
 
-	parser.add_argument("--zeroid", type=int,help="Index of the center tilt. Ignored when rawtlt is provided.", default=-1)#,guitype='intbox',row=3, col=0, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--zeroid", type=int,help="Index of the center tilt. Ignored when rawtlt is provided.", default=-1,guitype='intbox',row=3, col=1, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--tltstep", type=float,help="Step between tilts. Ignored when rawtlt/mdoc is provided. Set to 0 if tilt present in header.", default=2.0,guitype='floatbox',row=3, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--rawtlt", type=str,help="Specify a text file contains raw tilt angles. Will look for files with the same name as the tilt series if a directory is provided", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", filecheck=False, row=4, col=0, rowspan=1, colspan=2)#,mode="easy")
 	parser.add_argument("--mdoc", type=str,help="Specify a SerialEM .mdoc file or a folder containing same-named .mdoc files", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", filecheck=False, row=5, col=0, rowspan=1, colspan=2)#,mode="easy")
@@ -67,7 +67,8 @@ def main():
 	parser.add_argument("--correctrot", action="store_true",help="correct for global rotation and position sample flat in tomogram.", default=False,guitype='boolbox',row=12, col=0, rowspan=1, colspan=1,mode="easy")
 
 	#parser.add_argument("--normslice", action="store_true",help="normalize each 2D slice.", default=False)
-	parser.add_argument("--filterto", type=float,help="filter to abs.", default=0.45,guitype='floatbox',row=13, col=1, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--filterto", type=float,help="filter to abs.", default=-1)
+	parser.add_argument("--filterres", type=float,help="filter final tomogram to target resolution (in A). Default is 40", default=40,guitype='floatbox',row=13, col=1, rowspan=1, colspan=1,mode="easy")
 
 	parser.add_argument("--extrapad", action="store_true",help="Use extra padding for tilted reconstruction. slower and cost more memory, but reduce boundary artifacts when the sample is thick", default=False,guitype='boolbox',row=15, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--moretile", action="store_true",help="Sample more tiles during reconstruction. Slower, but reduce boundary artifacts when the sample is thick", default=False,guitype='boolbox',row=15, col=1, rowspan=1, colspan=1,mode="easy")
@@ -126,8 +127,9 @@ def main():
 	#### initializing multithread fft. whether this actually improves speed is untested.
 	Util.init_threads(options.threads)
 		
-		
 	#### parse options.
+	options.ctf=None
+	
 	itnum=[int(i) for i in options.niter.split(',')] ### number of iterations for each mag
 	itnum+=[0,0,0,0,0] ### skip later iters when not specified.
 	options.inputname=inputname
@@ -231,7 +233,7 @@ def main():
 		#### loading parameters from json file
 		jsname=info_name(options.inputname)
 		print("Loading parameters from {}...".format(jsname))
-		js=js_open_dict(jsname)
+		js=dict(js_open_dict(jsname)).copy()
 		if "tlt_params" not in js:
 			print("Failed to load saved parameterss. Exit.")
 			return
@@ -242,19 +244,24 @@ def main():
 			
 		tpm=np.array(js["tlt_params"])
 		ttparams=tpm.copy()
-		js.close()
+		
+		if "defocus" in js:
+			print("Loading CTF information. will do phase flipping for tomograms")
+			options.ctf={	"defocus":js["defocus"], "phase":js["phase"], 
+					"cs":js["cs"], "voltage":js["voltage"]}
+			
 		tlts=ttparams[:,3].copy()
 		#### some old version may not save loss
 		try: 
 			loss0=np.array(js["ali_loss"])
 		except: 
-			loss0=abs(ttparams[:,3])
+			loss0=abs(ttparams[:,3])*.1
 			
 		options.zeroid=zeroid=np.argmin(abs(tlts))
 		if options.flip:
 			print("Flipping tilt axis...")
 			ttparams[:,2]=(ttparams[:,2]+180)%360
-	
+			
 	else:
 		#### determine alignment parameters from scratch
 		if (options.rawtlt!=None and len(options.rawtlt)>0) :
@@ -325,8 +332,7 @@ def main():
 			else:
 				print("Using tilt_angle from header")
 				tlts=np.array([i["tilt_angle"] for i in imgs_1k])
-				try: options.zeroid=np.where(tlts==0)[0]
-				except: options.zeroid=len(tlts)//2
+				options.zeroid=np.argmin(abs(tlts))
 		
 		if options.writetmp: np.savetxt(os.path.join(options.tmppath,"rawtilt.txt"), tlts)
 		
@@ -558,6 +564,11 @@ def main():
 			imgout=imgs_500
 		else:
 			imgout=imgs_1k
+		
+		if options.filterto<=0:
+			options.filterto=imgout[0]["apix_x"]/options.filterres
+			print("filter to {:.2f} of Nyquist.".format(options.filterto))
+			
 			
 		if options.rmbeadthr>0:
 			remove_beads(imgs_500, imgout, ttparams, options)
@@ -1307,6 +1318,10 @@ def calc_global_trans(imgs, options, excludes=[], tltax=None,tlts=[]):
 	maskc=maskc/np.max(maskc)
 	maskc[maskc>1]=1
 	
+	maskd=np.sqrt((ix-sz//2)**2+(iy-sz//2)**2)
+	#print(np.min(maskd), np.max(maskd))
+	maskd=(maskd<sz*options.maxshift).astype(float)
+	
 	trans=np.zeros((nz, 2))
 	for itr in range(3):
 		fts=[]
@@ -1327,8 +1342,8 @@ def calc_global_trans(imgs, options, excludes=[], tltax=None,tlts=[]):
 			
 			c=a*np.conj(b)
 			c=get_img(c)
-
-			p=np.array(np.where(c==np.max(c))).flatten()-sz//2
+			c=c*maskd
+			p=np.array(np.where(c==np.max(c))).T[0]-sz//2
 			ts.append(p)
 		
 		ts=-np.cumsum(ts, axis=0)
@@ -1351,6 +1366,7 @@ def calc_global_trans(imgs, options, excludes=[], tltax=None,tlts=[]):
 		t=trans[i]
 		e.translate(t[0], t[1],0)
 		imgout.append(e)
+		
 		
 	return [imgout, trans]
 
@@ -1469,6 +1485,15 @@ def make_tile(args):
 		m=imgs[i]
 		if m["nx"]==1:
 			continue
+		
+		if m.has_attr('ctf'):
+			ctf=m["ctf"]
+			fft1=m.do_fft()
+			flipim=fft1.copy()
+			ctf.compute_2d_complex(flipim,Ctf.CtfType.CTF_SIGN)
+			fft1.mult(flipim)
+			m=fft1.do_ift()
+			
 		m.process_inplace("filter.ramp")
 		m.process_inplace("xform",{"alpha":-t[2]})
 		xf=Transform({"type":"xyz","ytilt":t[3],"xtilt":t[4]})
@@ -1578,6 +1603,11 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 	nstepx=int(outx/step/2)
 	nstepy=int(outy/step/2)
 	
+	if options.ctf!=None:
+		ctf=EMAN2Ctf()
+		ctf.from_dict({
+			"defocus":1.0, "voltage":options.ctf["voltage"], "bfactor":0., "cs":options.ctf["cs"],"ampcont":0, "apix":imgs[0]["apix_x"]})
+		dfs=[]
 		
 	for stepx in range(-nstepx,nstepx+1):
 		#### shift y by half a tile
@@ -1590,15 +1620,29 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 			for i in range(num):
 				if i in nrange:
 					t=tpm[i]
-					pxf=get_xf_pos(t, [stepx*step,stepy*step,0])
+					pos=[stepx*step,stepy*step,0]
+					pxf=get_xf_pos(t, pos)
 					img=imgs[i]
 					m=img.get_clip(Region(img["nx"]//2-pad//2+pxf[0],img["ny"]//2-pad//2+pxf[1], pad, pad), fill=0)
+					if options.ctf!=None:
+						rot=Transform({"type":"xyz","xtilt":float(t[4]),"ytilt":float(t[3])})
+						p1=rot.transform(pos)
+						pz=p1[2]*img["apix_x"]/10000.
+						ctf.defocus=options.ctf["defocus"][i]-pz
+						ctf.set_phase(options.ctf["phase"][i]*np.pi/180.)
+						dfs.append(ctf.defocus)
+						m["ctf"]=ctf
+						
 					tiles.append(m)
 				else:
 					tiles.append(EMData(1,1))
 
 			jobs.append((jsd, tiles, tpm, sz, pad, stepx, stepy, outz, options))
 	
+	if options.ctf!=None:
+		print("Doing Ctf correction. Average defocus {:.2f}".format(np.mean(dfs)))
+		
+		
 	thrds=[threading.Thread(target=make_tile,args=([i])) for i in jobs]
 	print("now start threads...")
 	thrtolaunch=0

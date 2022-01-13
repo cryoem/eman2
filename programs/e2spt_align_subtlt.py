@@ -26,9 +26,11 @@ def main():
 	parser.add_argument("--sym",type=str,default="c1",help="Symmetry of the input. Must be aligned in standard orientation to work properly.")
 	parser.add_argument("--maxres",type=float,help="Maximum resolution to consider in alignment (in A, not 1/A)",default=0)
 	parser.add_argument("--minres",type=float,help="Minimum resolution to consider in alignment (in A, not 1/A)",default=0)
+	#parser.add_argument("--maxtilt",type=float,help="Excluding tilt images beyond the angle",default=-1)
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default="thread:4")
 	parser.add_argument("--fromscratch",action="store_true",help="Start from exhaustive coarse alignment. Otherwise will use alignment from the previous rounds and do local search only.",default=False)
 	parser.add_argument("--use3d",action="store_true",help="use projection of 3d particles instead of 2d sub tilt series",default=False)
+	parser.add_argument("--preprocess", metavar="processor_name:param1=value1:param2=value2", type=str, default=None, help="Preprocess each 2-D subtilt while loading (alignment only)")
 	parser.add_argument("--debug",action="store_true",help="Debug mode. Will run a small number of particles directly without parallelism with lots of print out. ",default=False)
 	parser.add_argument("--plst",type=str,default=None,help="list of 2d particle with alignment parameters. The program will reconstruct before alignment so it can be slower.")
 	
@@ -49,6 +51,7 @@ def main():
 	##   they should be created by e2spt_refine_new or e2spt_refine_multi_new
 	options.info3dname="{}/particle_info_3d.lst".format(options.path)
 	options.info2dname="{}/particle_info_2d.lst".format(options.path)
+	if options.preprocess!=None: options.preprocess = parsemodopt(options.preprocess)
 		
 	#### this should generate a list of dictionaries (one dictionary per 3d particle)
 	tasks=load_lst_params(args[0])
@@ -189,7 +192,7 @@ class SptAlignTask(JSTask):
 		#### keep the orientations to test for initial coarse alignment
 		##   this is suprising memory consuming, but still tolarable. generating the orientations is a bit slow since we are doing this in python
 		if options.fromscratch:
-			astep=7.5
+			astep=7.5-1e-5
 			sym=Symmetries.get(options.sym)
 			
 			#### saff seems slightly better in some tests (in the coverage of the edge of asymmetrical units) but it is not entirely clear. it does not matter much in most cases
@@ -220,6 +223,9 @@ class SptAlignTask(JSTask):
 		##   still run one iteration of local search
 		if options.fromscratch and len(ssrg)==1: ssrg.append(maxy)
 		
+		#if options.preprocess!=None:
+			#print(f"Applying {options.preprocess} to subtilts")
+
 		if options.debug: print("max res: {:.2f}, max box size {}".format(options.maxres, maxy))
 		for di,data in enumerate(self.data):
 			
@@ -245,13 +251,15 @@ class SptAlignTask(JSTask):
 			img.process_inplace("xform.phaseorigin.tocenter")
 			img.process_inplace("xform.fourierorigin.tocenter")
 			
-			imgsrc=img["class_ptcl_src"]
-			imgidx=img["class_ptcl_idxs"]
-			imgcoord=img["ptcl_source_coord"]
+			#imgsrc=img["class_ptcl_src"]
+			#imgidx=img["class_ptcl_idxs"]
+			#imgcoord=img["ptcl_source_coord"]
 			
 			#### read projection transforms for the 2d particles
 			info2d=load_lst_params(options.info2dname, info["idx2d"])
 			pjxfs=[d["xform.projection"] for d in info2d]
+			imgsrc=info2d[0]["src"]
+			imgidx=[i["idx"] for i in info2d]
 			tiltids=[d["tilt_id"] for d in info2d]
 			
 			#### if an existing aliptcls2d list is provided, replace the projection transforms
@@ -272,6 +280,9 @@ class SptAlignTask(JSTask):
 				for i, pxf in enumerate(pjxfs): 
 					#print(imgsrc, imgidx[i])
 					m=EMData(imgsrc, imgidx[i])
+					if options.preprocess!=None:
+						m.process_inplace(options.preprocess[0],options.preprocess[1])
+
 					m.clip_inplace(Region((m["nx"]-ny)//2, (m["ny"]-ny)//2, ny, ny))
 					m=m.do_fft()
 					m.process_inplace("xform.phaseorigin.tocenter")
@@ -309,7 +320,14 @@ class SptAlignTask(JSTask):
 				
 			### do local search around the previous solution
 			else:
-				xf=data["xform.align3d"].inverse()
+				
+				if "xform.align3d" in data:
+					xf=data["xform.align3d"].inverse()
+				else:
+					e=EMData(data["src"],data["idx"], True)
+					xf=e["xform.align3d"].inverse()
+					
+				#xf=data["xform.align3d"].inverse()
 				if options.breaksym==None:
 					curxfs=[xf]
 				else:
