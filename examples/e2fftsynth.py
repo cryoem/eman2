@@ -80,7 +80,7 @@ def initsound():
 		return
 
 	try:
-		soundin=sounddevice.InputStream(samplerate=44100,channels=1,dtype="int16")
+		soundin=sounddevice.InputStream(samplerate=44100,channels=1,dtype="float32")
 	except:
 		traceback.print_exc()
 		print("Unable to open input stream")
@@ -243,6 +243,17 @@ class GUIFourierSynth(QtWidgets.QWidget):
 		self.total=EMData(64,1)
 
 		self.nsinchange()
+		
+		E2loadappwin("e2fftsynth","main",self)
+		E2loadappwin("e2fftsynth","synth",self.synthplot.qt_parent)
+		E2loadappwin("e2fftsynth","fft",self.fftplot.qt_parent)
+
+	def closeEvent(self,event):
+#		QtWidgets.QWidget.closeEvent(self,event)
+		E2saveappwin("e2fftsynth","main",self)
+		E2saveappwin("e2fftsynth","synth",self.synthplot.qt_parent)
+		E2saveappwin("e2fftsynth","fft",self.fftplot.qt_parent)
+		QtWidgets.qApp.exit(0)
 
 	def phaseleft(self,v):	# fixed translation in minus direction
 		sft=360.0/len(self.xvals)
@@ -265,13 +276,17 @@ class GUIFourierSynth(QtWidgets.QWidget):
 	def playsound(self,v):
 		global soundout
 		f0=int(self.vrootf.getValue())
-		nsam2=44100//(2*f0)					# 1/2 the samples in one cycle at the lowest frequency
+		nsam2=8*44100//(2*f0)					# 8x oversampling so high fundamental frequencies come out closer to correct
+		print(f"play: {f0}  ({nsam2})")
 		
-		svals=self.svals.copy()
-		svals.resize(nsam2)
-		if len(self.svals)<nsam2: svals[len(self.svals):]=0.0		# zero fill if we extended the array
-		total=fft.irfft(svals)*(len(svals)-1)
-		self.assound=np.tile((total*10000.0).astype("int16"),44100//nsam2)
+		svals=np.zeros_like(self.svals,shape=nsam2)
+		if len(self.svals)>=nsam2//8: svals[::8]=self.svals[:(nsam2-1)//8+1]		# interleave zeros for 8 repetitions of the wave. Gives better frequency accuracy at high frequency
+		else: svals[:len(self.svals)*8:8]=self.svals
+#		svals=self.svals.copy()
+#		svals.resize(nsam2)
+#		if len(self.svals)<nsam2: svals[len(self.svals):]=0.0		# zero fill if we extended the array
+		total=fft.irfft(svals)*(len(svals)-1)*10000.0
+		self.assound=np.tile(total.astype("int16"),44100//nsam2)
 		
 		#print nsam2,len(self.svals),len(svals),len(total)
 		initsound()
@@ -287,8 +302,39 @@ class GUIFourierSynth(QtWidgets.QWidget):
 		soundin.stop()
 		np.savetxt("real.txt",snd)
 		
-		f=fft.rfft(snd)
-		np.savetxt("fft.txt",np.absolute(f))
+		ft=fft.rfft(snd,65536,0)
+		a=np.absolute(ft)
+		np.savetxt("fft.txt",a)
+		
+		np.savetxt("pha.txt",np.angle(ft))
+		
+		f1=22050.0/32768.0		# lowest frequency pixel, scaling factor for frequency axis
+
+		# sum the first 8 harmonics for each fundamental
+		hsum=a[:4096]*1.25						# *1.25 helps make sure a solo peak shows up as the first harmonic not a higher one
+		for i in range(2,9): hsum+=a[:4096*i:i]
+		#hsum=np.fmin(hsum,a[:4096]*25.0)
+		np.savetxt("fsum.txt",hsum)
+		
+		hsum=hsum[100:]
+		h=np.min(np.argwhere(hsum>np.std(hsum)*2.0))+100
+#		h=np.argmax(hsum[100:])+100
+		maxf=f1*h				# should correspond to the strongest single frequency based on harmonic sum
+		print(f"peak {h} -> {maxf}")
+		self.vrootf.setValue(floor(maxf))
+
+		# pull out the values for up to the first 33 harmonics
+		for i in range(1,33):				
+			j=h*i			# harmonic peak index (rounded)
+			if j>32767 : 
+				self.wamp[i].setValue(0,True)
+				continue
+			if i==1: sca=0.2/float(abs(ft[j]))
+			amp=float(abs(ft[j]))*sca
+			pha=float(cmath.phase(ft[j]))*180.0/pi
+			self.wamp[i].setValue(amp,True)
+			self.wpha[i].setValue(pha,True)
+		self.recompute()
 
 	def newtargfn(self,index):
 		"This function has a number of hardcoded 'target' functions"
