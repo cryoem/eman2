@@ -112,12 +112,10 @@ def main():
 			e["apix_x"]=options.apix
 			e["apix_y"]=options.apix
 			
-			
-			
 			e.write_compressed(fm, ii,12,nooutliers=True)
 			
 		fnames.append([i, fm ,ii])
-		sys.stdout.write("\r{}/{}	  ".format(i, len(lines)))
+		if i%100==0 or i==len(lines)-1 : sys.stdout.write("\r{}/{}	  ".format(i, len(lines)))
 		sys.stdout.flush()
 	
 	print()
@@ -132,7 +130,8 @@ def main():
 		l=ln.split()
 		psi,tlt,rot=float(l[rid["psi"]]), float(l[rid["tilt"]]), float(l[rid["rot"]])
 		if txa:
-			tx,ty=float(l[rid["txa"]])/apix, float(l[rid["tya"]])/apix
+			try: tx,ty=float(l[rid["txa"]])/apix, float(l[rid["tya"]])/apix
+			except: tx,ty=0,0		# for symmetry replicated files, this may be right?
 		else:
 			tx,ty=float(l[rid["tx"]]), float(l[rid["ty"]])
 			
