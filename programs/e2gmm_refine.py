@@ -399,7 +399,8 @@ def build_decoder(pts, mid=512, ninp=4, conv=False):
 	return gen_model
 
 #### training decoder on projections
-def train_decoder(gen_model, trainset, params, options):
+def train_decoder(gen_model, trainset, params, options, pts=None):
+	"""pts input can optionally be used as a regularizer if they are known to be good"""
 	opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate) 
 	wts=gen_model.trainable_variables
 	
@@ -421,6 +422,9 @@ def train_decoder(gen_model, trainset, params, options):
 				loss=-tf.reduce_mean(fval)
 #				l=loss+std[4]*options.sigmareg+std[3]*5*(options.niter-itr)/options.niter
 				l=loss+std[4]*options.sigmareg
+				if options.modelreg>0: 
+					#print(tf.reduce_sum(pout[0,:,:3]*pts[:,:3]),tf.reduce_sum((pout[0,:,:3]-pts[:,:3])**2),len(pts))
+					l+=tf.reduce_sum((pout[0,:,:3]-pts[:,:3])**2)/len(pts)*options.modelreg
 				if itr<options.niter//2: l+=std[3]*options.ampreg*options.ampreg
 #				print(std)
 			
@@ -738,6 +742,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--sym", type=str,help="symmetry. currently only support c and d", default="c1")
 	parser.add_argument("--model", type=str,help="load from an existing model file", default="")
+	parser.add_argument("--decoderin", type=str,help="rather than initializing the decoder with a model, read an existing trained decoder", default="")
 	parser.add_argument("--modelout", type=str,help="output trained model file. only used when --projs is provided", default="")
 	parser.add_argument("--projs", type=str,help="projections with orientations (in hdf header or comment column of lst file) to train model", default="")
 	parser.add_argument("--evalmodel", type=str,help="generate model projection images to the given file name", default="")
@@ -746,6 +751,7 @@ def main():
 	parser.add_argument("--ptclsout", type=str,help="aligned particle output", default="")
 	parser.add_argument("--learnrate", type=float,help="learning rate for model training only. Default is 1e-4. ", default=1e-4)
 	parser.add_argument("--sigmareg", type=float,help="regularizer for the sigma of gaussian width. Larger value means all Gaussian functions will have essentially the same width. Smaller value may help compensating local resolution difference.", default=.5)
+	parser.add_argument("--modelreg", type=float,help="regularizer for for Gaussian positions based on the starting model, ie the result will be biased towards the starting model when training the decoder (0-1 typ). Default 0", default=0)
 	parser.add_argument("--ampreg", type=float,help="regularizer for the Gaussian amplitudes in the first 1/2 of the iterations. Large values will encourage all Gaussians to have similar amplitudes. default = 0", default=0)
 	parser.add_argument("--niter", type=int,help="number of iterations", default=10)
 	parser.add_argument("--npts", type=int,help="number of points to initialize. ", default=-1)
@@ -792,8 +798,8 @@ def main():
 		print("{} gaussian in the model".format(len(pts)))
 	
 	#### This initializes the decoder directly from a set of coordinates
-	#    This method is used rather than saving the decoder model itself
-	if options.model and options.projs:
+	#    This method (may be) used rather than saving the decoder model itself
+	if (not options.decoderin) and options.model and options.projs:
 		print("Recompute model from coordinates...")
 		
 		## duplicates points if we ask for more points than exist in text file
@@ -819,6 +825,10 @@ def main():
 			
 		print("Abs loss from loaded model : {:.05f}".format(loss[-1]))
 	
+	# Read the complete decoder rather than reinitializing from the model
+	if options.decoderin:
+		gen_model=tf.keras.models.load_model(f"{options.decoderin}")
+	
 	#### Decoder training from generated projections of a 3-D map
 	if options.projs:
 		# The shape of the decoder is defined by the number of Gaussians (npts) and the number of latent variables (nmid) 
@@ -843,7 +853,7 @@ def main():
 			trainset=tf.data.Dataset.from_tensor_slices((dcpx[0], dcpx[1], xfsnp))
 			trainset=trainset.batch(options.batchsz)
 		
-			train_decoder(gen_model, trainset, params, options)
+			train_decoder(gen_model, trainset, params, options, pts)
 			pout=gen_model(tf.zeros((1,options.nmid), dtype=floattype)).numpy()[0]
 			
 			pout[:,3]/=np.max(pout[:,3])			
@@ -863,9 +873,15 @@ def main():
 				v=m[o[:,0], o[:,1], o[:,2]]
 				pout=pout[v>.9]
 
+			#### save decoder if requested
+			if options.decoderout!=None: 
+				gen_model.save(options.decoderout)
+				print("Decoder saved as ",options.decoderout)
+				
 			#### save model to text file
 			np.savetxt(options.modelout, pout)
 			gen_model=build_decoder(pout, ninp=options.nmid)
+
 		
 		#### make projection images from GMM
 		if options.evalmodel:
