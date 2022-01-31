@@ -516,15 +516,23 @@ class EMPlot2DWidget(EMGLWidget):
 		lighting = glIsEnabled(GL_LIGHTING)
 		glDisable(GL_LIGHTING)
 
+
 		EMShape.font_renderer=self.font_renderer		# Important !  Each window has to have its own font_renderer. Only one context active at a time, so this is ok.
 		GL.glPushMatrix()
-		# overcome depth issues
 		glTranslate(0,0,5)
 		for k,s in list(self.shapes.items()):
 #			print k,s
-			s.draw(self.scr2plot)
-
+			# overcome depth issues
+			s.draw(self.plot2draw)
+			
 		GL.glPopMatrix()
+		
+		#GL.glBegin(GL.GL_LINE_LOOP)
+		#try:
+			#GL.glVertex(self.scrlim[0],self.scrlim[1],1)
+			#GL.glVertex(self.scrlim[0]+self.scrlim[2],self.scrlim[1]+self.scrlim[3],1)
+		#except: pass
+		#GL.glEnd()
 
 		if render:
 			fig=Figure((self.width()/72.0,self.height()/72.0),dpi=72.0)
@@ -675,9 +683,9 @@ class EMPlot2DWidget(EMGLWidget):
 	def scr2plot(self,x,y) :
 		""" converts screen coordinates to plot coordinates """
 		try:
-			if self.axisparms[2]=="linear" : x2=old_div((x-self.scrlim[0]),self.scrlim[2])*self.plotlim[2]+self.plotlim[0]
+			if self.axisparms[2]=="linear" : x2=((x-self.scrlim[0])/self.scrlim[2])*self.plotlim[2]+self.plotlim[0]
 			else : x2=10.0**(old_div((x-self.scrlim[0]),self.scrlim[2])*(log10(self.plotlim[2]+self.plotlim[0])-log10(self.plotlim[0]))+log10(self.plotlim[0]))
-			if self.axisparms[3]=="linear" : y2=old_div((self.height()-y-self.scrlim[1]),self.scrlim[3])*self.plotlim[3]+self.plotlim[1]
+			if self.axisparms[3]=="linear" : y2=((self.height()-y-self.scrlim[1])/self.scrlim[3])*self.plotlim[3]+self.plotlim[1]
 			else : y2=10.0**(old_div((self.height()-y-self.scrlim[1]),self.scrlim[3])*(log10(self.plotlim[3]+self.plotlim[1])-log10(self.plotlim[1]))+log10(self.plotlim[1]))
 			return (x2,y2)
 		except: return (0,0)
@@ -685,10 +693,21 @@ class EMPlot2DWidget(EMGLWidget):
 	def plot2scr(self,x,y) :
 		""" converts plot coordinates to screen coordinates """
 		try:
-			if self.axisparms[2]=="linear" : x2=old_div((x-self.plotlim[0]),self.plotlim[2])*self.scrlim[2]+self.scrlim[0]
+			if self.axisparms[2]=="linear" : x2=((x-self.plotlim[0])/self.plotlim[2])*self.scrlim[2]+self.scrlim[0]
 			else : x2=old_div((-(self.scrlim[2]*log(x)) + (self.scrlim[0] + self.scrlim[2])*log(10)*log10(self.plotlim[0])-self.scrlim[0]*log(10)*log10(self.plotlim[0] +self.plotlim[2])),(log(10)*(log10(self.plotlim[0]) - log10(self.plotlim[0] + self.plotlim[2]))))
-			if self.axisparms[3]=="linear" :y2=self.height()-(old_div((y-self.plotlim[1]),self.plotlim[3])*self.scrlim[3]+self.scrlim[1])
+			if self.axisparms[3]=="linear" :y2=self.height()-self.scrlim[1]+(self.plotlim[1]-y)*self.scrlim[3]/self.plotlim[3]
 			else : y2=old_div((self.scrlim[3]*log(y) + self.height()*log(10.0)*log10(self.plotlim[1])-self.scrlim[1]*log(10.0)*log10(self.plotlim[1])-self.scrlim[3]*log(10.0)*log10(self.plotlim[1]) - self.height()*log(10.0)*log10(self.plotlim[1]+self.plotlim[3]) + self.scrlim[1]*log(10)*log10(self.plotlim[1]+self.plotlim[3])), (log(10)*(log10(self.plotlim[1]) - log10(self.plotlim[1]+self.plotlim[3]))))
+			return (x2,y2)
+		except:
+			return (0,0)
+
+	def plot2draw(self,x,y) :
+		""" converts plot coordinates to screen coordinates, inverted on y for drawing """
+		try:
+			if self.axisparms[2]=="linear" : x2=(x-self.plotlim[0])/self.plotlim[2]*self.scrlim[2]+self.scrlim[0]
+			else : x2=old_div((-(self.scrlim[2]*log(x)) + (self.scrlim[0] + self.scrlim[2])*log(10)*log10(self.plotlim[0])-self.scrlim[0]*log(10)*log10(self.plotlim[0] +self.plotlim[2])),(log(10)*(log10(self.plotlim[0]) - log10(self.plotlim[0] + self.plotlim[2]))))
+			if self.axisparms[3]=="linear" :y2=(y-self.plotlim[1])/self.plotlim[3]*self.scrlim[3]+self.scrlim[1]
+			else : y2=self.height()-old_div((self.scrlim[3]*log(y) + self.height()*log(10.0)*log10(self.plotlim[1])-self.scrlim[1]*log(10.0)*log10(self.plotlim[1])-self.scrlim[3]*log(10.0)*log10(self.plotlim[1]) - self.height()*log(10.0)*log10(self.plotlim[1]+self.plotlim[3]) + self.scrlim[1]*log(10)*log10(self.plotlim[1]+self.plotlim[3])), (log(10)*(log10(self.plotlim[1]) - log10(self.plotlim[1]+self.plotlim[3]))))
 			return (x2,y2)
 		except:
 			return (0,0)
@@ -885,7 +904,7 @@ lc is the cursor selection point in plot coords"""
 			self.update_selected((event.x(),event.y()),lc)
 			self.updateGL()
 			
-			if self.mouseemit : self.mousedown.emit(event,self.scr2plot(event.x(),event.y()))
+			if self.mouseemit : self.mousedown.emit(event,lc)
 			#if self.mmode==0:
 				#self.emit(QtCore.SIGNAL("mousedown"), event)
 				#return
@@ -1411,7 +1430,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		glTranslate(0,0,5)
 		for k,s in list(self.shapes.items()):
 #			print k,s
-			s.draw(self.scr2plot)
+			s.draw(self.scr2draw)
 
 		GL.glPopMatrix()
 
@@ -1543,6 +1562,17 @@ class EMPolarPlot2DWidget(EMGLWidget):
 			else : x2=old_div((-(self.scrlim[2]*log(x)) + (self.scrlim[0] + self.scrlim[2])*log(10)*log10(self.plotlim[0])-self.scrlim[0]*log(10)*log10(self.plotlim[0] +self.plotlim[2])),(log(10)*(log10(self.plotlim[0]) - log10(self.plotlim[0] + self.plotlim[2]))))
 			if self.axisparms[3]=="linear" :y2=self.height()-(old_div((y-self.plotlim[1]),self.plotlim[3])*self.scrlim[3]+self.scrlim[1])
 			else : y2=old_div((self.scrlim[3]*log(y) + self.height()*log(10.0)*log10(self.plotlim[1])-self.scrlim[1]*log(10.0)*log10(self.plotlim[1])-self.scrlim[3]*log(10.0)*log10(self.plotlim[1]) - self.height()*log(10.0)*log10(self.plotlim[1]+self.plotlim[3]) + self.scrlim[1]*log(10)*log10(self.plotlim[1]+self.plotlim[3])), (log(10)*(log10(self.plotlim[1]) - log10(self.plotlim[1]+self.plotlim[3]))))
+			return (x2,y2)
+		except:
+			return (0,0)
+
+	def plot2draw(self,x,y) :
+		""" converts plot coordinates to screen coordinates """
+		try:
+			if self.axisparms[2]=="linear" : x2=old_div((x-self.plotlim[0]),self.plotlim[2])*self.scrlim[2]+self.scrlim[0]
+			else : x2=old_div((-(self.scrlim[2]*log(x)) + (self.scrlim[0] + self.scrlim[2])*log(10)*log10(self.plotlim[0])-self.scrlim[0]*log(10)*log10(self.plotlim[0] +self.plotlim[2])),(log(10)*(log10(self.plotlim[0]) - log10(self.plotlim[0] + self.plotlim[2]))))
+			if self.axisparms[3]=="linear" :y2=(((y-self.plotlim[1])/self.plotlim[3])*self.scrlim[3]+self.scrlim[1])
+			else : y2=self.height()-old_div((self.scrlim[3]*log(y) + self.height()*log(10.0)*log10(self.plotlim[1])-self.scrlim[1]*log(10.0)*log10(self.plotlim[1])-self.scrlim[3]*log(10.0)*log10(self.plotlim[1]) - self.height()*log(10.0)*log10(self.plotlim[1]+self.plotlim[3]) + self.scrlim[1]*log(10)*log10(self.plotlim[1]+self.plotlim[3])), (log(10)*(log10(self.plotlim[1]) - log10(self.plotlim[1]+self.plotlim[3]))))
 			return (x2,y2)
 		except:
 			return (0,0)

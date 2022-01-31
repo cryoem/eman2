@@ -38,22 +38,26 @@ OpenGL.ERROR_CHECKING = False
 from OpenGL import GL,GLUT
 from math import *
 import warnings
+import numpy as np
 
 from libpyGLUtils2 import *
 
 pixelratio=1.0
 
-def initCircle():
-	"""Call this static function once to initialize necessary display lists"""
-	if EMShape.dlists>=0 and GL.glIsList(EMShape.dlists): return
-	EMShape.dlists=GL.glGenLists(1)
-	GL.glNewList(EMShape.dlists,GL.GL_COMPILE)
-	GL.glBegin(GL.GL_LINE_LOOP)
-	d2r=old_div(pi,180.0)
-	for i in range(90):
-		GL.glVertex(sin(i*d2r*4.0),cos(i*d2r*4.0))
-	GL.glEnd()
-	GL.glEndList()
+#def initCircle():
+	#"""Call this static function once to initialize necessary display lists"""
+	#if EMShape.dlists>=0 and GL.glIsList(EMShape.dlists): return
+	#EMShape.dlists=GL.glGenLists(1)
+	#GL.glNewList(EMShape.dlists,GL.GL_COMPILE)
+	#GL.glBegin(GL.GL_LINE_LOOP)
+	#d2r=old_div(pi,180.0)
+	#for i in range(90):
+		#GL.glVertex(sin(i*d2r*4.0),cos(i*d2r*4.0))
+	#GL.glEnd()
+	#GL.glEndList()
+
+X=np.arange(0,2.0*pi,2.0*pi/60.0)
+CIRCLE=(np.cos(X),np.sin(X))
 
 def shidentity(x,y) : return x,y
 
@@ -99,7 +103,7 @@ class EMShape(object):
 		if init : self.shape=list(init)
 		else : self.shape=["None",0,0,0,0,0,0,0,0]
 		
-		initCircle()
+		#initCircle()
 		self.blend = 1.0
 		self.blendinc = 0.2
 		self.isanimated = False
@@ -118,6 +122,9 @@ class EMShape(object):
 		
 	def __setitem__(self,key,value):
 		self.shape[key]=value
+		
+	def __repr__(self):
+		return f"<{self.shape[0]} {self.shape[4:]}>"
 	
 	def draw(self,d2s=None,col=None):
 		"""This function causes the shape to render itself into the current GL context.
@@ -136,6 +143,10 @@ class EMShape(object):
 		v=d2s(s[4],s[5])
 		v2=d2s(s[4]+1,s[5]+1)
 		sc=v2[0]-v[0]
+
+		GL.glPopMatrix()
+		GL.glPushMatrix()
+
 		
 		if  self.isanimated:
 #			print self.blend, "was the blend value"
@@ -262,7 +273,9 @@ class EMShape(object):
 			#circle inscribed in the rectangle
 			GL.glTranslate(old_div((v[0]+v2[0]),2.0),old_div((v[1]+v2[1]),2.0),0)
 			GL.glScalef(old_div((v2[0]-v[0]),2.0),old_div((v2[1]-v[1]),2.0),1.0)
-			GL.glCallList(EMShape.dlists)
+			GL.glBegin(GL.GL_LINE_LOOP)
+			for i in range(60): GL.glVertex(CIRCLE[0][i],CIRCLE[1][i])
+			GL.glEnd()
 			GL.glPopMatrix()
 			
 		elif s[0]=="rcircle":
@@ -275,7 +288,9 @@ class EMShape(object):
 			
 			GL.glTranslate(old_div((v[0]+v2[0]),2.0),old_div((v[1]+v2[1]),2.0),0)
 			GL.glScalef(old_div((v2[0]-v[0]),2.0),old_div((v2[1]-v[1]),2.0),1.0)
-			GL.glCallList(EMShape.dlists)
+			GL.glBegin(GL.GL_LINE_LOOP)
+			for i in range(60): GL.glVertex(CIRCLE[0][i],CIRCLE[1][i])
+			GL.glEnd()
 			GL.glPopMatrix()
 		
 		elif s[0]=="point":
@@ -372,14 +387,17 @@ class EMShape(object):
 			GL.glPopMatrix()
 			
 		elif s[0]=="circle":
-#			print s[6],v
+#			print(s[6],v)
 			GL.glPushMatrix()
 			GL.glColor(*col)
 			GL.glLineWidth(s[7]*pixelratio)
 			GL.glTranslate(v[0],v[1],0)
 #			GL.glScalef(s[6]*(v2[0]-v[0]),s[6]*(v2[1]-v[1]),1.0)
-			GL.glScalef(s[6],s[6],1.0)
-			GL.glCallList(EMShape.dlists)
+			GL.glScalef(sc*s[6],sc*s[6],1.0)
+			GL.glBegin(GL.GL_LINE_LOOP)
+			for i in range(60): GL.glVertex(CIRCLE[0][i],CIRCLE[1][i])
+			GL.glEnd()
+
 			GL.glPopMatrix()
 		elif s[0]=="ellipse":
 #			print s[6],v,v2
@@ -390,12 +408,14 @@ class EMShape(object):
 			GL.glScalef((v2[0]-v[0]),(v2[1]-v[1]),1.0)
 			GL.glRotatef(s[8],0,0,1.0)
 			GL.glScalef(s[6],s[7],1.0)
-			GL.glCallList(EMShape.dlists)
+			GL.glBegin(GL.GL_LINE_LOOP)
+			for i in range(60): GL.glVertex(CIRCLE[0][i],CIRCLE[1][i])
+			GL.glEnd()
 			GL.glPopMatrix()
 		else:
 			#mx=GL.glGetFloatv(GL.GL_MODELVIEW_MATRIX)
-			GL.glPopMatrix()
-			GL.glPushMatrix()
+			#GL.glPopMatrix()
+			#GL.glPushMatrix()
 			if s[0]=="scrrect":
 				x1 = int( round(s[4]) )
 				y1 = int( round(s[5]) )
