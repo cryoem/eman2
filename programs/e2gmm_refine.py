@@ -424,7 +424,7 @@ def train_decoder(gen_model, trainset, params, options, pts=None):
 				l=loss+std[4]*options.sigmareg
 				if options.modelreg>0: 
 					#print(tf.reduce_sum(pout[0,:,:3]*pts[:,:3]),tf.reduce_sum((pout[0,:,:3]-pts[:,:3])**2),len(pts))
-					l+=tf.reduce_sum((pout[0,:,:3]-pts[:,:3])**2)/len(pts)*options.modelreg
+					l+=tf.reduce_sum((pout[0,:,:3]-pts[:,:3])**2)/len(pts)*options.modelreg*10.0		# modelreg needs to be larger here than in --heterog
 				if itr<options.niter//2: l+=std[3]*options.ampreg*options.ampreg
 #				print(std)
 			
@@ -666,7 +666,8 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, options):
 	## Training
 	allcost=[]
 	for itr in range(options.niter):
-			
+		
+		i=0
 		cost=[]
 		for grd,pjr,pji,xf in trainset:
 			pj_cpx=(pjr, pji)
@@ -682,11 +683,12 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, options):
 				cl=tf.reduce_mean(tf.maximum(cl-1,0))
 				
 				
-				## preturb the conformation by a random value
+				## perturb the conformation by a random value
 				## similar to the variational autoencoder,
 				## but we do not train the sigma of the random value here
 				## since we control the radius of latent space already, this seems enough
-				conf=.1*tf.random.normal(conf.shape)+conf
+				conf=options.perturb*tf.random.normal(conf.shape)+conf		# 0.1 is a pretty big perturbation for this range, maybe responsible for the random churn in the models? --steve
+#				conf=.1*tf.random.normal(conf.shape)+conf
 				
 				## mask out the target columns based on --pas
 				pout=decode_model(conf, training=True)
@@ -697,13 +699,18 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, options):
 				imgs_cpx=pts2img(pout, xf, params, sym=options.sym)
 				fval=calc_frc(pj_cpx, imgs_cpx, params["rings"])
 				loss=-tf.reduce_mean(fval)+cl*1e-2
+				
+				if options.modelreg>0: 
+					loss+=tf.reduce_sum((pout[:,:,:3]-pts[:,:,:3])**2)/len(pts)/xf.shape[0]*options.modelreg
 			
 			cost.append(loss)
 			grad=gt.gradient(loss, wts)
 			opt.apply_gradients(zip(grad, wts))
 			
-			sys.stdout.write("\r {}/{}\t{:.3f}         ".format(len(cost), nbatch, loss))
-			sys.stdout.flush()
+			i+=1
+			if i%10==0: 
+				sys.stdout.write("\r {}/{}\t{:.3f}         ".format(len(cost), nbatch, loss))
+				sys.stdout.flush()
 			
 		sys.stdout.write("\r")
 		
@@ -742,8 +749,9 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--sym", type=str,help="symmetry. currently only support c and d", default="c1")
 	parser.add_argument("--model", type=str,help="load from an existing model file", default="")
-	parser.add_argument("--decoderin", type=str,help="rather than initializing the decoder with a model, read an existing trained decoder", default="")
 	parser.add_argument("--modelout", type=str,help="output trained model file. only used when --projs is provided", default="")
+	parser.add_argument("--decoderin", type=str,help="Rather than initializing the decoder from a model, read an existing trained decoder", default="")
+	parser.add_argument("--decoderout", type=str,help="Save the trained decoder model. Filename should be .h5", default=None)
 	parser.add_argument("--projs", type=str,help="projections with orientations (in hdf header or comment column of lst file) to train model", default="")
 	parser.add_argument("--evalmodel", type=str,help="generate model projection images to the given file name", default="")
 	parser.add_argument("--evalsize", type=int,help="Box size for the projections for evaluation.", default=-1)
@@ -760,12 +768,12 @@ def main():
 	parser.add_argument("--maxres", type=float,help="maximum resolution. will overwrite maxboxsz. ", default=-1)
 	parser.add_argument("--align", action="store_true", default=False ,help="align particles.")
 	parser.add_argument("--heter", action="store_true", default=False ,help="heterogeneity analysis.")
-	parser.add_argument("--conv", action="store_true", default=False ,help="use convolutional network for heterogeneity analysis.")
+	parser.add_argument("--perturb", type=float, default=0.1 ,help="Relative perturbation level to apply in each iteration during --heter training. Default = 0.1, decrease if models are too disordered")
+	parser.add_argument("--conv", action="store_true", default=False ,help="Use a convolutional network for heterogeneity analysis.")
 	parser.add_argument("--fromscratch", action="store_true", default=False ,help="start from coarse alignment. otherwise will only do refinement from last round")
 	parser.add_argument("--gradout", type=str,help="gradient output", default="")
 	parser.add_argument("--gradin", type=str,help="reading from gradient output instead of recomputing", default="")
 	parser.add_argument("--midout", type=str,help="middle layer output", default="")
-	parser.add_argument("--decoderout", type=str,help="Save the trained decoder model. Filename should be .h5 or .tf", default=None)
 	parser.add_argument("--pas", type=str,help="choose whether to adjust position, amplitude, sigma. use 3 digit 0/1 input. default is 110, i.e. only adjusting position and amplitude", default="110")
 	parser.add_argument("--nmid", type=int,help="size of the middle layer", default=4)
 	parser.add_argument("--mask", type=str,help="remove points outside mask", default="")
@@ -827,7 +835,7 @@ def main():
 	
 	# Read the complete decoder rather than reinitializing from the model
 	if options.decoderin:
-		gen_model=tf.keras.models.load_model(f"{options.decoderin}")
+		gen_model=tf.keras.models.load_model(f"{options.decoderin}",compile=False)
 	
 	#### Decoder training from generated projections of a 3-D map
 	if options.projs:

@@ -433,6 +433,9 @@ class EMScatterPlot3D(EMShapeBase):
 		
 	def setData(self, data, pointsize=1.0):
 		""" Set the dat to plot. Format is a [X, Y, Z] whereX Y and Z are lists of the same length """
+		if data is None:
+			self.data=[[],[],[]]
+			return
 		if len(data) < 3:
 			raise ValueError("Data must have 3 dimensions")
 		if len(data[0]) != len(data[1]) or len(data[1]) != len(data[2]):
