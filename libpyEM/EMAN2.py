@@ -55,6 +55,7 @@ import random
 from struct import pack,unpack
 import json
 from collections import OrderedDict
+import traceback
 
 import threading
 #from Sparx import *
@@ -2660,7 +2661,7 @@ but this method prevents multiple open/close operations on the #LSX file."""
 		# organize the images to read by path to take advantage of read_images performance
 		# d2r contains tuples (image number in returned array,image number in file (key),extra data dictionary)
 		d2r={}
-		if nlst==None or len(nlst)==0:
+		if nlst is None or len(nlst)==0:
 			for i in range(self.n):
 				j,p,d=self.read(i)
 				try: d2r[p].append((i,j,d,i))
@@ -2684,10 +2685,13 @@ but this method prevents multiple open/close operations on the #LSX file."""
 			tpls=d2r[fsp]
 			imgs=EMData.read_images_c(fsp,[i[1] for i in tpls],IMAGE_UNKNOWN,hdronly)
 			for i,tpl in enumerate(tpls):
+				imgs[i]["source_path"]=self.path
+				try: imgs[i]["source_n"]=int(tpl[3])
+				except:
+					traceback.print_exc()
+					raise Exception(f"Error in read_images: {i},{tpl}")
 				for k in tpl[2]: 
 					imgs[i][k]=tpl[2][k]
-				imgs[i]["source_path"]=self.path
-				imgs[i]["source_n"]=tpl[3]
 				ret[tpl[0]]=imgs[i]
 #				out.write(f"{tpl[0]}\t{i}\t{fsp}\n")
 

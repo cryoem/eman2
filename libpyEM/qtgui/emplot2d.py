@@ -896,6 +896,7 @@ lc is the cursor selection point in plot coords"""
 			self.updateGL()
 			self.rmousedrag=(event.x(),event.y())
 		elif event.button()==Qt.LeftButton:
+			self.lmousedrag=(event.x(),event.y())
 			self.add_shape("xcross",EMShape(("scrline",0,0,0,self.scrlim[0],self.height()-event.y(),self.scrlim[2]+self.scrlim[0],self.height()-event.y(),1)))
 			self.add_shape("ycross",EMShape(("scrline",0,0,0,event.x(),self.scrlim[1],event.x(),self.scrlim[3]+self.scrlim[1],1)))
 			try: recip="%1.2f"%(old_div(1.0,lc[0]))
@@ -939,8 +940,9 @@ lc is the cursor selection point in plot coords"""
 			if fabs(event.x()-self.rmousedrag[0])+fabs(event.y()-self.rmousedrag[1])<3 : self.rescale(0,0,0,0)
 			else : self.rescale(min(lc[0],lc2[0]),max(lc[0],lc2[0]),min(lc[1],lc2[1]),max(lc[1],lc2[1]))
 			self.rmousedrag=None
-		elif event.buttons()&Qt.LeftButton:
+		elif self.lmousedrag:
 			if self.mouseemit : self.mouseup.emit(event,self.scr2plot(event.x(),event.y()))
+			self.lmousedrag=None
 
 		#elif event.button()==Qt.LeftButton:
 			#if self.mmode==0:
@@ -1082,6 +1084,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		self.climits=None
 		self.slimits=None
 		self.rmousedrag=None
+		self.lmousedrag=None
 		self.axisparms=(None,None,"linear","linear")
 		self.selected=[]
 

@@ -42,7 +42,7 @@ import time
 from sys import argv
 from EMAN2 import *
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt,QTimer
 from eman2_gui.emapplication import get_application, EMApp
 from eman2_gui.emplot2d import EMPlot2DWidget
 from eman2_gui.emimage2d import EMImage2DWidget
@@ -54,6 +54,7 @@ from eman2_gui.valslider import *
 import queue
 from eman2_gui import embrowser
 import sklearn.decomposition as skdc
+from queue import Queue
 
 
 os.environ["CUDA_VISIBLE_DEVICES"]='0' 
@@ -72,6 +73,31 @@ def butval(widg):
 # shortcut, if we had a central GUI file like EMAN2.py, it could go there...
 def showerror(msg,parent=None):
 	QtWidgets.QMessageBox.warning(parent,"ERROR",msg)
+
+def make3d_thr(que,tskn,fsp,imgns,rparms,latent):
+	"""Thread for 3-D reconstruction in background"
+	que - Queue to return result in
+	tskn - task number to identify result
+	fsp - filename of image file with per particle orientations
+	imgns - list of image numbers from fsp to include
+	rparms - recosntructor parameters, include size,sym,mode,usessnr,verbose
+	
+	returns in que (tskn,% complete, volume (when 100%)
+	"""
+	
+	print(rparms)
+	recon=Reconstructors.get("fourier",rparms)
+	recon.setup()
+	
+	# read images in chunks of 100 for (maybe) increased efficiency
+	for i in range(len(imgns)//100+1):
+		que.put((tskn,9900*i//len(imgns),None,None))  # don't want to accidentally return 100, this is for progress display
+		imgs=EMData.read_images(fsp,imgns[i*100:i*100+100])
+		for im in imgs:
+			imf=recon.preprocess_slice(im,im["xform.projection"])
+			recon.insert_slice(imf,im["xform.projection"],1.0)
+			
+	que.put((tskn,100,recon.finish(True),latent,imgns))
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -287,8 +313,8 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.gblpltctl.addWidget(self.wsbycol,1,1,Qt.AlignLeft)
 		self.wsbycol.setValue(1)
 		
-		self.wedrad=QtWidgets.QLineEdit("0.1")
-		self.wedrad.setToolTip("")
+		self.wedrad=QtWidgets.QLineEdit("0.2")
+		self.wedrad.setToolTip("Radius for including points adjacent to selected point (sphere/cylinder mode)")
 		self.gblpltctl.addWidget(self.wedrad,1,2,Qt.AlignRight)
 		
 		self.wbutdrgrp=QtWidgets.QButtonGroup()
@@ -361,29 +387,85 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wsbxcol.valueChanged[int].connect(self.wplot2d.setXAxisAll)
 		self.wsbycol.valueChanged[int].connect(self.wplot2d.setYAxisAll)
 		self.wplot2d.mousedown[QtGui.QMouseEvent,tuple].connect(self.plot_mouse)
-		self.wplot2d.mouseup[QtGui.QMouseEvent,tuple].connect(self.plot_mouse)
-		self.wplot2d.mousedrag[QtGui.QMouseEvent,tuple].connect(self.plot_mouse)
+		self.wplot2d.mouseup[QtGui.QMouseEvent,tuple].connect(self.plot_mouse_up)
+		self.wplot2d.mousedrag[QtGui.QMouseEvent,tuple].connect(self.plot_mouse_drag)
 		E2loadappwin("e2gmm","main",self)
 
+		# map used to generate the neutral map, ie - the seed for the GMM
 		self.mapdataitem=EMDataItem3D(None)
 		self.mapiso=EMIsosurface(self.mapdataitem)
 		self.wview3d.insertNewNode("Neutral Map",self.mapdataitem)
 		self.wview3d.insertNewNode("Isosurface",self.mapiso,parentnode=self.mapdataitem)
+		
+		# the current selected dynamic map generated from a subset of particles
+		self.dmapdataitem=EMDataItem3D(None)
+		self.dmapiso=EMIsosurface(self.dmapdataitem)
+		self.wview3d.insertNewNode("Dynamic Map",self.dmapdataitem)
+		self.wview3d.insertNewNode("Isosurface",self.dmapiso,parentnode=self.mapdataitem)
+
+		# shows the filtered map when appropriate
 		self.fmapdataitem=None
+		
+		# Gaussian dynamic coordinates as spheres
 		self.gaussplot=EMScatterPlot3D()
 		self.wview3d.insertNewNode("Gauss Model",self.gaussplot)
 		self.neutralplot=EMScatterPlot3D()
+		
+		# Gaussian neutral model (for comparison with the map and with the dynamic model
 		self.wview3d.insertNewNode("Neutral Model",self.neutralplot)
 		self.currunkey=None
 		self.lastres=0
-
-		#QtCore.QTimer.singleShot(500,self.afterStart)
+		
+		# Active threads used for 3-D reconstructions, once joined they are removed from the list
+		self.threads=[]
+		self.threadq=Queue()
+		
+		# This is used to update reconstruction thread results
+		self.timer=QTimer()
+		self.timer.timeout.connect(self.timeout)
+		self.timer.start(500)
 
 	def do_events(self,delay=0.1):
 		"""process the event loop with a small delay to allow user abort, etc."""
 		t=time.time()
 		while (time.time()-t<delay): 
 			self.app().processEvents()
+
+	def timeout(self):
+		"""Handles the results of completed threads"""
+		
+		while not self.threadq.empty():
+			ret=self.threadq.get()
+			if ret[1]==100:
+				bs=self.jsparm["boxsize"]
+				ps=(ret[2]["nx"]-bs)//2
+				vol=ret[2].get_clip(Region(ps,ps,ps,bs,bs,bs))
+				
+				# store the reconstructed map
+				try: nmaps=EMUtil.get_image_count(f"{self.gmm}/dynamic_maps.hdf")
+				except: nmaps=0
+				vol.write_compressed(f"{self.gmm}/dynamic_maps.hdf",nmaps,8)
+				
+				# store metadata to identify maps in dynamic_maps.hdf
+				newmap=[nmaps,local_datetime(),ret[3],len(ret[4])]		# map #, timestamp, latent coordinates, number of particles
+#				newmap=[ret[2],local_datetime(),ret[3],ret[4]]		# map, timestamp, latent coordinates, particle # list
+				maps=self.jsparm.getdefault("maps",{})
+				try: 
+					maps[self.currunkey].append(newmap)
+				except:
+					maps[self.currunkey]=[newmap]
+				self.jsparm["maps"]=maps
+				
+				# display the map
+				self.fmapdataitem.setData(vol)
+				self.wview3d.update()
+
+				# clean up the thread
+				t=self.threads[ret[0]]
+				t.join()
+				self.threads[ret[0]]=None		# just gets longer and longer...
+			else:
+				print(f"Thread {ret[0]} at {ret[1]}%")
 
 	def saveparm(self,mode=None):
 		"""mode is used to decide which parameters to update. neutral, dynamics or None"""
@@ -443,13 +525,13 @@ class EMGMM(QtWidgets.QMainWindow):
 			self.gaussplot.setData(gauss,self.wvssphsz.value)
 			self.wview3d.update()
 			
-			
 			return
-		elif mmode=="Sphere":
+		elif mmode=="Sphere" or mmode=="Map-sphere":
 			# This will produce a list of indices where the distance in latent space is less than the specified rad
 			ptdist=(np.sum((self.midresult.transpose()-latent)**2,1)<(rad**2)).nonzero()[0]
-			self.wplot2d.add_shape("count",EMShape(["scrlabel",0.1,0.1,0.1,10.,10.,f"{len(ptdist)} points",120.0,-1]))
+			self.wplot2d.add_shape("count",EMShape(["scrlabel",0.1,0.1,0.1,10.,10.,f"{len(ptdist)} ptcls",120.0,-1]))
 			self.wplot2d.add_shape("region",EMShape(["circle",0.1,0.8,0.1,loc[0],loc[1],rad,1]))
+			self.wplot2d.update()
 #			print(loc,self.wplot2d.plot2draw(loc[0],loc[1]),event.x(),event.y(),self.wplot2d.scrlim,rad)
 
 			gauss=np.mean(self.decoder(self.midresult.transpose()[ptdist]),0).transpose()		# run all of the selected latent vectors through the decoder at once
@@ -462,25 +544,82 @@ class EMGMM(QtWidgets.QMainWindow):
 			self.gaussplot.setData(gauss,self.wvssphsz.value)
 			self.wview3d.update()
 			return
-		elif mmode=="Cyl":
+		elif mmode=="Cyl" or mmode=="Map-cyl":
 			if self.plotmode==1:
 				print("PCA incompatible with Cyl")
 				return
 			# This will produce a list of indices where the distance in the plane is less than the specified rad
-			ptdist=((self.midresult[xcol]-latent[xcol])**2+(self.midresult[ycol]-latent[ycol])**2<(rad**2)).nonzero()
-			self.wplot2d.add_shape("count",EMShape(["scrlabel",0.1,0.1,0.1,15.,15.,f"{len(ptdist)} points",120.0,-1]))
+			ptdist=((self.midresult[xcol]-latent[xcol])**2+(self.midresult[ycol]-latent[ycol])**2<(rad**2)).nonzero()[0]
+			self.wplot2d.add_shape("count",EMShape(["scrlabel",0.1,0.1,0.1,15.,15.,f"{len(ptdist)} ptcls",120.0,-1]))
 			self.wplot2d.add_shape("region",EMShape(["circle",0.1,0.8,0.1,loc[0],loc[1],rad,1]))
+			self.wplot2d.update()
 
+			gauss=np.mean(self.decoder(self.midresult.transpose()[ptdist]),0).transpose()		# run all of the selected latent vectors through the decoder at once
+			box=int(self.wedbox.text())
+			gauss[:3]*=box
+			gauss[2]*=-1.0
+			if not butval(self.wbutpos): gauss[:3]=self.model[:3]
+			if not butval(self.wbutamp): gauss[3]=self.model[3]
+			if not butval(self.wbutsig): gauss[4]=self.model[4]
+			self.gaussplot.setData(gauss,self.wvssphsz.value)
+			self.wview3d.update()
 			return
-		elif mmode=="Map-sphere":
+		elif mmode=="Map-line":
+			self.line_origin=loc
+			return
+		else: print("mode error")
+
+	def plot_mouse_drag(self,event,loc):
+		mmode=str(self.wcbpntpln.currentText())
+		if mmode!="Map-line" :
+			self.plot_mouse(event,loc)
+			return
+		
+		self.wplot2d.add_shape("genline",EMShape(["line",0.1,0.8,0.1,self.line_origin[0],self.line_origin[1],loc[0],loc[1],1]))
+		self.wplot2d.update()
+		
+		
+	def plot_mouse_up(self,event,loc):
+		mmode=str(self.wcbpntpln.currentText())
+		dim=self.currun.get("dim",4)
+		xcol=self.wsbxcol.value()
+		ycol=self.wsbycol.value()
+		
+		# we only need this so we can record it in the reconstruction
+		latent=np.zeros(dim)		# latent coordinates of the selected point
+		if self.plotmode==0:
+			latent[xcol]=loc[0]
+			latent[ycol]=loc[1]
+		if self.plotmode==1:
+			newdim=self.wsbnewdim.value()
+			sel=np.zeros(newdim)
+			sel[xcol]=loc[0]
+			sel[ycol]=loc[1]
+			latent=self.decomp.inverse_transform(sel)
+			
+		try: rad=float(self.wedrad.text())
+		except: 
+			print("invalid radius, using 0.05")
+			rad=0.05
+		xcol=self.wsbxcol.value()
+		ycol=self.wsbycol.value()
+		self.wplot2d.del_shapes(["region","genline"])
+
+		if mmode=="Map-sphere":
+			# This will produce a list of indices where the distance in latent space is less than the specified rad
+			ptdist=(np.sum((self.midresult.transpose()-latent)**2,1)<(rad**2)).nonzero()[0]
+			sz=good_size(self.jsparm["boxsize"]*5//4)
+			rparms={"size":(sz,sz,sz),"sym":self.jsparm["sym"],"mode":"gauss_2","usessnr":0,"verbose":0}
+			self.threads.append(threading.Thread(target=make3d_thr,args=(self.threadq,len(self.threads),f"{self.gmm}/particles.lst",ptdist,rparms,latent)))
+			self.threads[-1].start()
+			print(f"Thread {len(self.threads)} started with {len(ptdist)} particles")
 			return
 		elif mmode=="Map-cyl":
 			return
 		elif mmode=="Map-line":
 			return
-		else: print("mode error")
-		
-
+			
+			
 	def plot_mode_sel(self,but):
 		"""Plot mode selected"""
 		
@@ -743,8 +882,10 @@ class EMGMM(QtWidgets.QMainWindow):
 		"""Called when the user selects a new run from the list. If called with -1, reloads the current run"""
 		
 #		print("sel_run",line)
-		if line>=0: self.currunkey=str(self.wlistrun.item(line).text())
-		self.currun=self.jsparm.getdefault("run_"+self.currunkey,{"dim":4,"mask":f"{self.gmm}/mask.hdf","trainiter":10,"pas":"100","time":"-"})
+		if line<0: return
+		if line>=0: 
+			self.currunkey=str(self.wlistrun.item(line).text())
+			self.currun=self.jsparm.getdefault("run_"+self.currunkey,{"dim":4,"mask":f"{self.gmm}/mask.hdf","trainiter":10,"pas":"100","time":"-"})
 		self.wedres.setText(f'{self.currun.get("targres",20)}')
 		self.wedapix.setText(f'{self.currun.get("apix",self.jsparm.getdefault("apix","")):0.4f}')
 		self.wedngauss.setText(f'{self.currun.get("ngauss",64)}')
@@ -887,7 +1028,7 @@ class EMGMM(QtWidgets.QMainWindow):
 				return
 
 			self.app().setOverrideCursor(Qt.BusyCursor)
-			#rparm=js_open_dict(f"{rpath}/0_refine_parms.json")
+			rparm=js_open_dict(f"{rpath}/0_spa_params.json")
 			#if rparm["breaksym"] : self.jsparm["sym"]="c1"
 			#else: self.jsparm["sym"]=rparm["sym"]
 			
@@ -897,6 +1038,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			self.jsparm["source_map"]=f"{rpath}/threed_{itr:02d}.hdf"
 			self.jsparm["boxsize"]=a["nx"]
 			self.jsparm["apix"]=a["apix_x"]
+			self.jsparm["sym"]=rparm["sym"]
 			
 			# make projection from threed
 			run(f"e2project3d.py {rpath}/threed_{itr:02d}.hdf --outfile {self.gmm}/proj_in.hdf --orientgen eman:n=500 --sym c1 --parallel thread:4")
