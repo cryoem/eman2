@@ -27,7 +27,6 @@ fi
 conda info -a
 conda list
 conda list --explicit
-conda render ${recipe_dir} -c cryoem -c conda-forge -c defaults
 conda build purge-all
 
-conda build ${recipe_dir} -c cryoem -c conda-forge -c defaults
+conda mambabuild ${recipe_dir}
