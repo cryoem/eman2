@@ -30,4 +30,4 @@ conda list --explicit
 conda render ${recipe_dir}
 conda build purge-all
 
-conda build ${recipe_dir}
+conda mambabuild ${recipe_dir}
