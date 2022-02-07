@@ -27,7 +27,6 @@ fi
 conda info -a
 conda list
 conda list --explicit
-conda render ${recipe_dir}
 conda build purge-all
 
 conda mambabuild ${recipe_dir}
