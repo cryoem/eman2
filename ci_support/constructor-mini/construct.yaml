@@ -18,7 +18,6 @@ specs:
   - eman2        2.99
   - python       3.9.*
   - conda
-  - conda-build
   - pip
   - console_shortcut  # [win]
   - menuinst          # [win]
