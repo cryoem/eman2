@@ -19,6 +19,7 @@ specs:
   - eman2        2.99
   - eman-deps    31.1
   - conda
+  - mamba
   - pip
   - console_shortcut  # [win]
   - menuinst          # [win]
