@@ -208,9 +208,11 @@ def load_particles(fname, boxsz, shuffle=False):
 	rawbox=e["nx"]
 	print("Loading {} particles of box size {}. shrink to {}".format(nptcl, rawbox, boxsz))
 	for j in range(0,nptcl,1000):
-		print(f"{j}/{nptcl}      \r",end="")
+		print(f"\r {j}/{nptcl} ",end="")
 		sys.stdout.flush()
 		el=EMData.read_images(fname,range(j,min(j+1000,nptcl)))
+		print(f"R     ",end="")
+		sys.stdout.flush()
 		for e in el:
 			if rawbox!=boxsz:
 				#### there is some fourier artifact with xform.scale. maybe worth switching to fft.resample?
@@ -321,6 +323,8 @@ def build_encoder(mid=512, nout=4, conv=False):
 		layers=[
 		tf.keras.layers.Flatten(),
 		tf.keras.layers.Dense(mid, activation="relu", kernel_regularizer=l2),
+		#tf.keras.layers.Dense(min(mid*4,nout), activation="relu", kernel_regularizer=l2),
+		#tf.keras.layers.Dense(min(mid*16,nout), activation="relu", kernel_regularizer=l2),
 		tf.keras.layers.Dense(mid, activation="relu", kernel_regularizer=l2),
 		tf.keras.layers.Dense(mid, activation="relu", kernel_regularizer=l2),
 		tf.keras.layers.Dropout(.3),
@@ -365,9 +369,10 @@ def build_decoder(pts, mid=512, ninp=4, conv=False):
 
 	else:
 		layers=[
-			tf.keras.layers.Dense(mid,activation="relu",
-						bias_initializer=kinit),
+			tf.keras.layers.Dense(mid,activation="relu",bias_initializer=kinit),
 			tf.keras.layers.Dense(mid,activation="relu"),
+			#tf.keras.layers.Dense(min(ninp,mid*16),activation="relu",bias_initializer=kinit),
+			#tf.keras.layers.Dense(min(ninp,mid*4),activation="relu"),
 			tf.keras.layers.Dense(mid,activation="relu"),
 			#tf.keras.layers.Dense(mid,activation="relu"),
 			tf.keras.layers.Dropout(.3),
@@ -424,7 +429,7 @@ def train_decoder(gen_model, trainset, params, options, pts=None):
 				l=loss+std[4]*options.sigmareg
 				if options.modelreg>0: 
 					#print(tf.reduce_sum(pout[0,:,:3]*pts[:,:3]),tf.reduce_sum((pout[0,:,:3]-pts[:,:3])**2),len(pts))
-					l+=tf.reduce_sum((pout[0,:,:3]-pts[:,:3])**2)/len(pts)*options.modelreg*10.0		# modelreg needs to be larger here than in --heterog
+					l+=tf.reduce_sum((pout[0,:,:3]-pts[:,:3])**2)/len(pts)*options.modelreg*20.0		# factor of 20 is a rough calibration relative to the dynamic training
 				if itr<options.niter//2: l+=std[3]*options.ampreg*options.ampreg
 #				print(std)
 			

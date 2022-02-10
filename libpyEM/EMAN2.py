@@ -662,7 +662,7 @@ def commandoptions(options,exclude=[]):
 	"""This will reconstruct command-line options, excluding any options in exclude"""
 	opts=[]
 	for opt,val in vars(options).items():
-		if opt in exclude or opt=="positionalargs" or val==False or val==None: continue
+		if opt in exclude or opt=="positionalargs" or val is False or val==None: continue
 		if val==True and isinstance(val,bool) : opts.append("--"+opt)
 		else: opts.append("--{}={}".format(opt,val))
 

@@ -111,10 +111,13 @@ qt_color_map["gray"] = QtGui.QBrush(QtGui.QColor(127,127,127))
 class EMPlot2DWidget(EMGLWidget):
 	"""A QT widget for drawing 2-D plots using matplotlib
 	"""
+	
+	# Widget signals
 	selected_sg = QtCore.pyqtSignal()
 	mousedown = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
 	mousedrag = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
 	mouseup = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
+	keypress = QtCore.pyqtSignal(QtGui.QKeyEvent)
 
 	def __init__(self,application=None,winid=None,parent=None):
 
@@ -149,6 +152,7 @@ class EMPlot2DWidget(EMGLWidget):
 		self.main_display_list = 0
 		self.savepdf=None			# when set to a string, the next render will write a PDF file, this contains the filename
 		self.savepng=None			# when set to a string, the next render will write a PNG file, this contains the filename
+		self.annotate=None			# a function which can be used to add custom annotations to the figure in matplotlib
 
 		self.resize(640,480)
 
@@ -517,15 +521,6 @@ class EMPlot2DWidget(EMGLWidget):
 		glDisable(GL_LIGHTING)
 
 
-		EMShape.font_renderer=self.font_renderer		# Important !  Each window has to have its own font_renderer. Only one context active at a time, so this is ok.
-		GL.glPushMatrix()
-		glTranslate(0,0,5)
-		for k,s in list(self.shapes.items()):
-#			print k,s
-			# overcome depth issues
-			s.draw(self.plot2draw)
-			
-		GL.glPopMatrix()
 		
 		#GL.glBegin(GL.GL_LINE_LOOP)
 		#try:
@@ -590,6 +585,8 @@ class EMPlot2DWidget(EMGLWidget):
 					except:
 						print("Error: Plot failed\n%d %s\n%d %s"%(len(x),x,len(y),y))
 
+			# additional program-specific annotations
+			if not self.annotate is None: self.annotate(fig,ax)
 
 			canvas.draw()
 			if self.savepdf!=None:
@@ -617,6 +614,18 @@ class EMPlot2DWidget(EMGLWidget):
 					return
 			self.plotlim=(ax.get_xlim()[0],ax.get_ylim()[0],ax.get_xlim()[1]-ax.get_xlim()[0],ax.get_ylim()[1]-ax.get_ylim()[0])
 
+			# can't draw plot coord shapes until limits updated
+			EMShape.font_renderer=self.font_renderer		# Important !  Each window has to have its own font_renderer. Only one context active at a time, so this is ok.
+			GL.glPushMatrix()
+			glTranslate(0,0,5)
+			for k,s in list(self.shapes.items()):
+	#			print k,s
+				# overcome depth issues
+				s.draw(self.plot2draw)
+				
+			GL.glPopMatrix()
+
+
 	#		print ax.get_window_extent().xmin(),ax.get_window_extent().ymin()
 	#		print ax.get_window_extent().xmax(),ax.get_window_extent().ymax()
 	#		print ax.get_position()
@@ -629,6 +638,19 @@ class EMPlot2DWidget(EMGLWidget):
 				GL.glDrawPixels(self.width(),self.height(),GL.GL_RGB,GL.GL_UNSIGNED_BYTE,self.plotimg)
 
 			glEndList()
+
+		else:
+			# can't draw plot coord shapes until limits updated
+			EMShape.font_renderer=self.font_renderer		# Important !  Each window has to have its own font_renderer. Only one context active at a time, so this is ok.
+			GL.glPushMatrix()
+			glTranslate(0,0,5)
+			for k,s in list(self.shapes.items()):
+	#			print k,s
+				# overcome depth issues
+				s.draw(self.plot2draw)
+				
+			GL.glPopMatrix()
+
 
 		try: 
 #			GL.glPushMatrix()
@@ -742,21 +764,23 @@ class EMPlot2DWidget(EMGLWidget):
 		self.needupd=1
 		if not quiet : self.updateGL()
 
-	def setXAxisAll(self,xa):
+	def setXAxisAll(self,xa,quiet=False):
 		for k in self.axes.keys():
 			v=self.axes[k]
 			self.axes[k]=(xa,v[1],v[2],v[3])
 		self.autoscale(True)
 		self.needupd=1
-		self.updateGL()
+		self.del_shapes()
+		if not quiet: self.updateGL()
 		
-	def setYAxisAll(self,ya):
+	def setYAxisAll(self,ya,quiet=False):
 		for k in self.axes.keys():
 			v=self.axes[k]
 			self.axes[k]=(v[0],ya,v[2],v[3])
 		self.autoscale(True)
 		self.needupd=1
-		self.updateGL()
+		self.del_shapes()
+		if not quiet: self.updateGL()
 
 	def setPlotParms(self,key,color,line,linetype,linewidth,sym,symtype,symsize,quiet=False):
 		if color==None : color=self.pparm[key][0]
@@ -770,6 +794,14 @@ class EMPlot2DWidget(EMGLWidget):
 		self.pparm[key]=(color,line,linetype,linewidth,sym,symtype,symsize)
 		self.needupd=1
 		if not quiet: self.updateGL()
+
+	def set_annotate(self,fn):
+		"""sets a callback function to render additional shapes on the provided axes using
+		matplotlib calls. This permits a variety of complex customizations which will be 
+		retained in printed figures. 
+		fn(figure,axes)
+		"""
+		self.annotate=fn
 
 	def add_shape(self,k,s):
 		"""Add a 'shape' object to be overlaid on the image. Each shape is
@@ -796,7 +828,8 @@ class EMPlot2DWidget(EMGLWidget):
 		self.shapechange=1
 		#self.updateGL()
 
-	def del_shapes(self,k=None):
+	def del_shapes(self,k=None,scronly=False):
+		"""if scronly is set, then only shapes using screen coordinates will be deleted when k is not set"""
 		if k:
 			try:
 				for i in k:
@@ -804,6 +837,11 @@ class EMPlot2DWidget(EMGLWidget):
 			except:
 				try: del self.shapes[k]
 				except: return
+		elif scronly:
+			try: self.shapes={k:s for (k,s) in self.shapes.items() if s[0][:3]!="scr"}
+			except:
+				traceback.print_exc()
+				print(self.shapes)
 		else:
 			self.shapes={}
 
@@ -951,13 +989,17 @@ lc is the cursor selection point in plot coords"""
 			#elif self.mmode==1 :
 				#self.add_shape("MEAS",("line",.5,.1,.5,self.shapes["MEAS"][4],self.shapes["MEAS"][5],lc[0],lc[1],2))
 
+	def keyPressEvent(self,event):
+		"In case applications need keyboard events"
+		self.keypress.emit(event)
+
 	def rescale(self,x0,x1,y0,y1,quiet=False):
 		"adjusts the value range for the x/y axes"
 		self.xlimits=[x0,x1]
 		self.ylimits=[y0,y1]
 		if x0>=x1 or y0>=y1 : self.autoscale()
 		self.needupd=1
-		self.del_shapes()  # also triggers an update
+		self.del_shapes(scronly=True)
 		self.updateGL()
 		if self.inspector: self.inspector.update()
 
@@ -1622,7 +1664,8 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		self.shapechange=1
 		#self.updateGL()
 
-	def del_shapes(self,k=None):
+	def del_shapes(self,k=None,scronly=False):
+		"""if scronly is set, then only shapes using screen coordinates will be deleted when k is not set"""
 		if k:
 			try:
 				for i in k:
@@ -1630,6 +1673,8 @@ class EMPolarPlot2DWidget(EMGLWidget):
 			except:
 				try: del self.shapes[k]
 				except: return
+		elif scronly:
+			self.shapes=[s for s in shapes if s[0][:3]!="scr"]
 		else:
 			self.shapes={}
 

@@ -430,6 +430,7 @@ class EMScatterPlot3D(EMShapeBase):
 		EMShapeBase.__init__(self, parent=None, children=set(), transform=transform)
 		self.pointthr=0
 		self.data=[[],[],[]]
+		self.setPointSize(1)
 		
 	def setData(self, data, pointsize=1.0):
 		""" Set the dat to plot. Format is a [X, Y, Z] whereX Y and Z are lists of the same length """

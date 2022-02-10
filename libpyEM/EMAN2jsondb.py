@@ -965,12 +965,16 @@ def obj_to_json(obj):
 			fnm=["BAD_JSON.hdf",0]
 		obj.write_image(fnm[0],fnm[1])
 		return {"__image__":fnm}
+	if isinstance(obj,np.ndarray): obj=obj.tolist()
 	if np.isscalar(obj) : return obj.item()
 #	if isinstance(obj,dict) or isinstance(obj,list) or isinstance(obj,tuple): return obj.item()   # shouldn't be necessary
 	if hasattr(obj, "to_jsondict"):
 		return obj.to_jsondict()
 	else:
-		return {"__pickle__":pickle.dumps(obj,0).decode("utf-8") }
+		try: return {"__pickle__":pickle.dumps(obj,0).decode("utf-8") }
+		except:
+			print(f"error pickling {type(obj)} {obj}")
+			return {"__pickle__":pickle.dumps(None,0).decode("utf-8") }
 
 __doc__ = \
 """This module provides a dict-like wrapper for JSON files on disk, with full support for file locking and other
