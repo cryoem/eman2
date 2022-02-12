@@ -506,8 +506,8 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.currun["gausthr"]=float(self.wedgthr.text())
 		try: self.currun["ngauss"]=len(self.amps)
 		except: self.currun["ngauss"]=0
-		self.currun["boxsize"]=int(self.wedbox.text())
-		self.currun["apix"]=float(self.wedapix.text())
+		#self.currun["boxsize"]=int(self.wedbox.text())
+		#self.currun["apix"]=float(self.wedapix.text())
 		self.currun["sym"]=str(self.wedsym.text())
 		self.currun["mask"]=str(self.wedmask.text())
 		self.currun["dim"]=int(self.weddim.text())
@@ -827,12 +827,12 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.saveparm("neutral")  # updates self.currun with current user input
 		
 		sym=self.currun["sym"]
-		maxbox=(int(self.currun["boxsize"]*(2*self.currun["apix"])/self.currun["targres"])//2)*2
+		maxbox=(int(self.jsparm["boxsize"]*(2*self.jsparm["apix"])/self.currun["targres"])//2)*2
 		modelout=f"{self.gmm}/{self.currunkey}_model_gmm.txt"
 		modelseg=f"{self.gmm}/{self.currunkey}_model_seg.txt"
 		prog.setValue(1)
 
-		nx=int(self.currun["boxsize"])
+		nx=int(self.jsparm["boxsize"])
 		ncen=len(self.amps)		# number of centers from original segmentation
 		if (ncen==0) :
 			showerror("No centers determined at current resolution!")
@@ -912,7 +912,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		prog=QtWidgets.QProgressDialog("Running neutral model network. Progress updates here are limited. See the Console for detailed output.","Abort",0,4)
 		prog.show()
 		
-		maxbox=(int(self.currun["boxsize"]*(2*self.currun["apix"])/self.currun["targres"])//2)*2
+		maxbox=(int(self.jsparm["boxsize"]*(2*self.jsparm["apix"])/self.currun["targres"])//2)*2
 		print(f"Target res {self.currun['targres']} -> max box size {maxbox}")
 		modelout=f"{self.gmm}/{self.currunkey}_model_gmm.txt"		# note that this is from the neutral training above, we do not regenerate modelout at the "run" stage
 		modelseg=f"{self.gmm}/{self.currunkey}_model_seg.txt"
@@ -932,18 +932,18 @@ class EMGMM(QtWidgets.QMainWindow):
 		
 		# if positions and amplitudes being updated, we start with positions only, accomodate as much as we can, then shift to both
 		if self.currun['pas'][0]=="1" and self.currun['pas'][1]=="1":
-			er=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']//2} --gradout {self.gmm}/{self.currunkey}_grads.hdf {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas 100")
+			er=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']//2} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas 100")
 			if er :
 				showerror("Error running e2gmm_refine, see console for details. Memory is a common issue. Consider reducing the target resolution.")
 				return
 			prog.setValue(1)
-			er=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']//2} --gradout {self.gmm}/{self.currunkey}_grads.hdf {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']}")
+			er=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']//2}  {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']}")
 			if er :
 				showerror("Error running e2gmm_refine, see console for details. Memory is a common issue. Consider reducing the target resolution.")
 				return
 		# otherwise we just do it in one step
 		else:
-			er=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} --gradout {self.gmm}/{self.currunkey}_grads.hdf {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']}")
+			er=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']}")
 			if er :
 				showerror("Error running e2gmm_refine, see console for details. Memory is a common issue. Consider reducing the target resolution.")
 				return
@@ -983,7 +983,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		# These are associated with the whole GMM
 		self.wlpath.setText(f'{self.jsparm.getdefault("refinepath","-")}')
 		self.wedbox.setText(f'{self.jsparm.getdefault("boxsize",128)}')
-		self.wedapix.setText(f'{self.jsparm.getdefault("apix","")}')
+		self.wedapix.setText(f'{self.jsparm.getdefault("apix","0"):0.5f}')
 		self.wedsym.setText(f'{self.jsparm.getdefault("sym","c1")}')
 		self.wedmask.setText(f'{self.jsparm.getdefault("mask",f"{self.gmm}/mask.hdf")}')
 		
@@ -992,6 +992,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		for k in self.jsparm.keys():
 			if k[:4]!="run_": continue
 			self.wlistrun.addItem(k[4:])
+		self.currunkey=None
 		self.sel_run(self.wlistrun.count()-1)
 		try: 
 			self.map3d=EMData(f'{self.gmm}/input_map.hdf')
@@ -1008,7 +1009,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		elif self.currunkey is None or len(self.currunkey)==0 or self.currun is None: return
 	
 		self.wedres.setText(f'{self.currun.get("targres",20)}')
-		self.wedapix.setText(f'{self.currun.get("apix",self.jsparm.getdefault("apix","")):0.4f}')
+		self.wedapix.setText(f'{self.jsparm.getdefault("apix","0"):0.5f}')
 		self.wedngauss.setText(f'{self.currun.get("ngauss",64)}')
 		self.weddim.setText(f'{self.currun.get("dim",4)}')
 		self.wedsym.setText(f'{self.currun.get("sym","c1")}')

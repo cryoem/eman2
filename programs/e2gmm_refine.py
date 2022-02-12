@@ -323,10 +323,10 @@ def build_encoder(mid=512, nout=4, conv=False):
 		layers=[
 		tf.keras.layers.Flatten(),
 		tf.keras.layers.Dense(mid, activation="relu", kernel_regularizer=l2),
-		#tf.keras.layers.Dense(min(mid*4,nout), activation="relu", kernel_regularizer=l2),
-		#tf.keras.layers.Dense(min(mid*16,nout), activation="relu", kernel_regularizer=l2),
-		tf.keras.layers.Dense(mid, activation="relu", kernel_regularizer=l2),
-		tf.keras.layers.Dense(mid, activation="relu", kernel_regularizer=l2),
+		#tf.keras.layers.Dense(mid, activation="relu", kernel_regularizer=l2),
+		#tf.keras.layers.Dense(mid, activation="relu", kernel_regularizer=l2),
+		tf.keras.layers.Dense(max(mid/4,nout), activation="relu", kernel_regularizer=l2),
+		tf.keras.layers.Dense(max(mid/16,nout), activation="relu", kernel_regularizer=l2),
 		tf.keras.layers.Dropout(.3),
 		tf.keras.layers.BatchNormalization(),
 		tf.keras.layers.Dense(nout, kernel_regularizer=l2, kernel_initializer=kinit),
@@ -369,11 +369,11 @@ def build_decoder(pts, mid=512, ninp=4, conv=False):
 
 	else:
 		layers=[
-			tf.keras.layers.Dense(mid,activation="relu",bias_initializer=kinit),
+			tf.keras.layers.Dense(max(mid/16,ninp),activation="relu",bias_initializer=kinit),
+			tf.keras.layers.Dense(max(mid/4,ninp),mid,activation="relu"),
 			tf.keras.layers.Dense(mid,activation="relu"),
-			#tf.keras.layers.Dense(min(ninp,mid*16),activation="relu",bias_initializer=kinit),
-			#tf.keras.layers.Dense(min(ninp,mid*4),activation="relu"),
-			tf.keras.layers.Dense(mid,activation="relu"),
+			#tf.keras.layers.Dense(mid,activation="relu",bias_initializer=kinit),
+			#tf.keras.layers.Dense(mid,activation="relu"),
 			#tf.keras.layers.Dense(mid,activation="relu"),
 			tf.keras.layers.Dropout(.3),
 			tf.keras.layers.BatchNormalization(),
