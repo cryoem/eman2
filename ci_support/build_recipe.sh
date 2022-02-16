@@ -24,6 +24,9 @@ else
     export CPU_COUNT=2
 fi
 
+source $(conda info --root)/etc/profile.d/conda.sh
+conda activate base
+
 conda info -a
 conda list
 conda list --explicit
