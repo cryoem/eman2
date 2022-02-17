@@ -97,8 +97,11 @@ def make3d_thr(que,tskn,fsp,imgns,rparms,latent,currun,rad):
 		for im in imgs:
 			imf=recon.preprocess_slice(im,im["xform.projection"])
 			recon.insert_slice(imf,im["xform.projection"],1.0)
+	
+	ret=recon.finish(True)
+	ret["ptcl_repr"]=len(imgns)
 			
-	que.put((tskn,100,recon.finish(True),latent,imgns,currun,rad))
+	que.put((tskn,100,ret,latent,imgns,currun,rad))
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -467,13 +470,14 @@ class EMGMM(QtWidgets.QMainWindow):
 				
 				# store metadata to identify maps in dynamic_maps.hdf
 				# map #, timestamp, latent coordinates, number of particles, selection radius
-				newmap=[nmaps,local_datetime(),list(ret[3]),len(ret[4]),ret[6]]		
+				newmap=[nmaps,local_datetime(),ret[3],len(ret[4]),ret[6]]		
 				maps=self.jsparm.getdefault("maps",{})
 				try: 
 					maps[self.currunkey].append(newmap)
 				except:
 					maps[self.currunkey]=[newmap]
 				self.jsparm["maps"]=maps
+				self.curmaps=maps[self.currunkey]
 				
 				# display the map
 				self.display_dynamic(vol)
@@ -597,6 +601,8 @@ class EMGMM(QtWidgets.QMainWindow):
 			self.wplot2d.update()
 #			print(loc,self.wplot2d.plot2draw(loc[0],loc[1]),event.x(),event.y(),self.wplot2d.scrlim,rad)
 
+			#Limit ourselves to a random subset of ~500 of the points to average
+			if len(ptdist)>500: ptdist=ptdist[::len(ptdist)//500]
 			gauss=np.mean(self.decoder(self.midresult.transpose()[ptdist]),0).transpose()		# run all of the selected latent vectors through the decoder at once
 			box=int(self.wedbox.text())
 			gauss[:3]*=box
@@ -617,6 +623,9 @@ class EMGMM(QtWidgets.QMainWindow):
 			self.wplot2d.add_shape("region",EMShape(["circle",0.1,0.8,0.1,loc[0],loc[1],rad,1]))
 			self.wplot2d.update()
 
+			#gauss=np.mean(self.decoder(self.midresult.transpose()[ptdist]),0).transpose()		# run all of the selected latent vectors through the decoder at once
+			#Limit ourselves to a random subset of ~500 of the points to average
+			if len(ptdist)>500: ptdist=ptdist[::len(ptdist)//500]
 			gauss=np.mean(self.decoder(self.midresult.transpose()[ptdist]),0).transpose()		# run all of the selected latent vectors through the decoder at once
 			box=int(self.wedbox.text())
 			gauss[:3]*=box
@@ -747,13 +756,16 @@ class EMGMM(QtWidgets.QMainWindow):
 		xa=self.wsbxcol.value()
 		ya=self.wsbycol.value()
 		for i,m in enumerate(self.curmaps):
-			if self.plotmode==1:
-				xm=self.decomp.transform(m[2].reshape(1,len(m[2])))[0]	# expects an array of vectors
-				c=Circle((xm[xa],xm[ya]),m[4],edgecolor="gold",facecolor="none")
-			else:
-				c=Circle((m[2][xa],m[2][ya]),m[4],edgecolor="gold",facecolor="none")
-			ax.add_artist(c)
-#			print((m[2][xa],m[2][ya]),m[4])
+			try:
+				if self.plotmode==1:
+					xm=self.decomp.transform(m[2].reshape(1,len(m[2])))[0]	# expects an array of vectors
+					c=Circle((xm[xa],xm[ya]),m[4],edgecolor="gold",facecolor="none")
+				else:
+					c=Circle((m[2][xa],m[2][ya]),m[4],edgecolor="gold",facecolor="none")
+				ax.add_artist(c)
+	#			print((m[2][xa],m[2][ya]),m[4])
+			except:
+				print(f"Plot error '{m}' {xa} {ya}")
 
 	def new_3d_opt(self,clk=False):
 		"""When the user changes selections for the 3-D display"""
@@ -860,8 +872,8 @@ class EMGMM(QtWidgets.QMainWindow):
 		lsx=None
 		lsxs=None
 
-		# refine the neutral model against some real data
-		er=run(f"e2gmm_refine.py --projs {self.gmm}/particles_subset.lst --decoderin {decoder} --npt {self.currun['ngauss']} --sym {sym} --maxboxsz {maxbox} --model {modelseg} --modelout {modelout} --niter 10  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --modelreg {self.currun['modelreg']} --ampreg 1.0")
+		# refine the neutral model against some real data in entropy training mode
+		er=run(f"e2gmm_refine.py --projs {self.gmm}/particles_subset.lst --decoderin {decoder} --decoderentropy --npt {self.currun['ngauss']} --sym {sym} --maxboxsz {maxbox} --model {modelseg} --modelout {modelout} --niter 10  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --ampreg 0.1 --sigmareg 1.0")
 		if er :
 			showerror("Error running e2gmm_refine, see console for details. GPU memory exhaustion is a common issue. Consider reducing the target resolution.")
 			return
@@ -983,7 +995,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		# These are associated with the whole GMM
 		self.wlpath.setText(f'{self.jsparm.getdefault("refinepath","-")}')
 		self.wedbox.setText(f'{self.jsparm.getdefault("boxsize",128)}')
-		self.wedapix.setText(f'{self.jsparm.getdefault("apix","0"):0.5f}')
+		self.wedapix.setText(f'{self.jsparm.getdefault("apix",0.0):0.5f}')
 		self.wedsym.setText(f'{self.jsparm.getdefault("sym","c1")}')
 		self.wedmask.setText(f'{self.jsparm.getdefault("mask",f"{self.gmm}/mask.hdf")}')
 		
@@ -1009,7 +1021,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		elif self.currunkey is None or len(self.currunkey)==0 or self.currun is None: return
 	
 		self.wedres.setText(f'{self.currun.get("targres",20)}')
-		self.wedapix.setText(f'{self.jsparm.getdefault("apix","0"):0.5f}')
+		self.wedapix.setText(f'{self.jsparm.getdefault("apix",0.0):0.5f}')
 		self.wedngauss.setText(f'{self.currun.get("ngauss",64)}')
 		self.weddim.setText(f'{self.currun.get("dim",4)}')
 		self.wedsym.setText(f'{self.currun.get("sym","c1")}')
