@@ -18,5 +18,3 @@ echo "Done"
 
 rm -rf doc/doxygen_html
 mv -f doc/html doc/doxygen_html
-
-#echo "Documentation is at $PWD/doc/html/index.html"
