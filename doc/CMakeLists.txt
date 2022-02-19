@@ -1,5 +1,4 @@
 IF(ENABLE_AUTODOC)
-    ADD_SUBDIRECTORY(latex)
     ADD_SUBDIRECTORY(modular_class_html)
     ADD_SUBDIRECTORY(doxygen)
 ENDIF()

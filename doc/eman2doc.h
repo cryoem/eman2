@@ -32,7 +32,6 @@
  *    <li> <a href="../exception_faq.html"> EMAN2 Exception FAQ</a>
  *    <li> <a href="../header_naming.html"> EMAN2 Header Naming</a>
  *    <li> <a href="../testing.html"> EMAN2 Tesing Framework</a>
- *    <li> Documentation (<a href="../EMAN2.dvi"> dvi</a>, <a href="../EMAN2.ps"> ps</a>, <a href="../EMAN2.pdf"> pdf</a>, <a href="../EMAN2.html/index.html"> html</a>)
  *  </ul>
  */
 /** @defgroup CUDA_ENABLED a function or class that is CUDA enabled */
