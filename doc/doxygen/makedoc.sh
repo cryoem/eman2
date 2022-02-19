@@ -16,5 +16,7 @@ cd ../..
 doxygen  doc/doxygen/Doxyfile
 echo "Done"
 
+set -xe
+
 rm -rf doc/doxygen_html
 mv -f doc/html doc/doxygen_html

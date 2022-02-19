@@ -43,163 +43,163 @@ import time
 
     
 def write_header(output, name):
-    output.write("<head><title>EMAN2 " + name + " Manual</title></head><body>\n")
-    output.write("<h1> <center> <font color=\"blue\">EMAN2 " + name + " Manual </font></center></h1>\n")
-    output.write("<br>")
-    output.write("<i>Last modified on " + time.strftime('%a, %d %b %Y %H:%M:%S %Z'))
-    output.write("<br>")
-    output.write("<i>This document is automatically generated. Please don't edit it.</i>\n")
+    output.write(b"<head><title>EMAN2 " + name.encode() + b" Manual</title></head><body>\n")
+    output.write(b"<h1> <center> <font color=\"blue\">EMAN2 " + name.encode() + b" Manual </font></center></h1>\n")
+    output.write(b"<br>")
+    output.write(b"<i>Last modified on " + time.strftime('%a, %d %b %Y %H:%M:%S %Z').encode())
+    output.write(b"<br>")
+    output.write(b"<i>This document is automatically generated. Please don't edit it.</i>\n")
 
-    output.write("<br><br>")
-    output.write("<table border=1 cellspacing=4 cellpadding=4>")
-    output.write("<tr>\n")
-    output.write("  <td align=center> <font size='+1'><b>" + name + " Name </b></font></td>\n")
-    output.write("  <td align=center> <font size='+1'><b>Parameters </b></font></td>\n")
-    output.write("  <td align=center> <font size='+1'><b>Description </b></font> </td>\n")
-    output.write("</tr>\n")
+    output.write(b"<br><br>")
+    output.write(b"<table border=1 cellspacing=4 cellpadding=4>")
+    output.write(b"<tr>\n")
+    output.write(b"  <td align=center> <font size='+1'><b>" + name.encode() + b" Name </b></font></td>\n")
+    output.write(b"  <td align=center> <font size='+1'><b>Parameters </b></font></td>\n")
+    output.write(b"  <td align=center> <font size='+1'><b>Description </b></font> </td>\n")
+    output.write(b"</tr>\n")
 
 def write_tail(output):
-    output.write("</table>\n</body>\n")
+    output.write(b"</table>\n</body>\n")
 
 def write_processor(processorname, output, bgcolor):
-    output.write("<tr bgcolor=" + bgcolor + ">\n")
-    output.write("  <td> <font color='0000a0'> <b>"  + processorname + " </b></font> </td>\n")
+    output.write(b"<tr bgcolor=" + bgcolor.encode() + b">\n")
+    output.write(b"  <td> <font color='0000a0'> <b>"  + processorname.encode() + b" </b></font> </td>\n")
 
     processor = Processors.get(processorname)
 
     typedict = processor.get_param_types()
-    output.write("  <td>")
+    output.write(b"  <td>")
     typekeys = list(typedict.keys())
 
     for typekey in typekeys:
-        output.write(typedict.get_type(typekey).lower() + " ")
-        output.write("<font color=green> <b>" + typekey + "</b></font>")
-        output.write(": " + typedict.get_desc(typekey))
-        output.write("<br>")
+        output.write(typedict.get_type(typekey).lower().encode() + b" ")
+        output.write(b"<font color=green> <b>" + typekey.encode() + b"</b></font>")
+        output.write(b": " + typedict.get_desc(typekey).encode())
+        output.write(b"<br>")
 
-    output.write("</td>\n")
-    output.write("  <td>" + processor.get_desc() + "</td>\n")
-    output.write("</tr>\n")
+    output.write(b"</td>\n")
+    output.write(b"  <td>" + processor.get_desc().encode() + b"</td>\n")
+    output.write(b"</tr>\n")
 
 def write_cmp(cmp_name, output, bgcolor):
-    output.write("<tr bgcolor=" + bgcolor + ">\n")
-    output.write("  <td> <font color='0000a0'> <b>"  + cmp_name + " </b></font> </td>\n")
+    output.write(b"<tr bgcolor=" + bgcolor.encode() + b">\n")
+    output.write(b"  <td> <font color='0000a0'> <b>"  + cmp_name.encode() + b" </b></font> </td>\n")
     
     cmp = Cmps.get(cmp_name)
     
     typedict = cmp.get_param_types()
-    output.write("  <td>")
+    output.write(b"  <td>")
     typekeys = list(typedict.keys())
     
     for typekey in typekeys:
-        output.write(typedict.get_type(typekey).lower() + " ")
-        output.write("<font color=green> <b>" + typekey + "</b></font>")
-        output.write(": " + typedict.get_desc(typekey))
-        output.write("<br>")
+        output.write(typedict.get_type(typekey).lower().encode() + b" ")
+        output.write(b"<font color=green> <b>" + typekey.encode() + b"</b></font>")
+        output.write(b": " + typedict.get_desc(typekey).encode())
+        output.write(b"<br>")
     
-    output.write("</td>\n")
-    output.write("  <td>" + cmp.get_desc() + "</td>\n")
-    output.write("</tr>\n")
+    output.write(b"</td>\n")
+    output.write(b"  <td>" + cmp.get_desc().encode() + b"</td>\n")
+    output.write(b"</tr>\n")
 
 def write_aligner(aligner_name, output, bgcolor):
-    output.write("<tr bgcolor=" + bgcolor + ">\n")
-    output.write("  <td> <font color='0000a0'> <b>"  + aligner_name + " </b></font> </td>\n")
+    output.write(b"<tr bgcolor=" + bgcolor.encode() + b">\n")
+    output.write(b"  <td> <font color='0000a0'> <b>"  + aligner_name.encode() + b" </b></font> </td>\n")
     
     align = Aligners.get(aligner_name)
     
     typedict = align.get_param_types()
-    output.write("  <td>")
+    output.write(b"  <td>")
     typekeys = list(typedict.keys())
     
     for typekey in typekeys:
-        output.write(typedict.get_type(typekey).lower() + " ")
-        output.write("<font color=green> <b>" + typekey + "</b></font>")
-        output.write(": " + typedict.get_desc(typekey))
-        output.write("<br>")
+        output.write(typedict.get_type(typekey).lower().encode() + b" ")
+        output.write(b"<font color=green> <b>" + typekey.encode() + b"</b></font>")
+        output.write(b": " + typedict.get_desc(typekey).encode())
+        output.write(b"<br>")
     
-    output.write("</td>\n")
-    output.write("  <td>" + align.get_desc() + "</td>\n")
-    output.write("</tr>\n")
+    output.write(b"</td>\n")
+    output.write(b"  <td>" + align.get_desc().encode() + b"</td>\n")
+    output.write(b"</tr>\n")
 
 def write_projector(projector_name, output, bgcolor):
-    output.write("<tr bgcolor=" + bgcolor + ">\n")
-    output.write("  <td> <font color='0000a0'> <b>"  + projector_name + " </b></font> </td>\n")
+    output.write(b"<tr bgcolor=" + bgcolor.encode() + b">\n")
+    output.write(b"  <td> <font color='0000a0'> <b>"  + projector_name.encode() + b" </b></font> </td>\n")
     
     project = Projectors.get(projector_name)
     
     typedict = project.get_param_types()
-    output.write("  <td>")
+    output.write(b"  <td>")
     typekeys = list(typedict.keys())
     
     for typekey in typekeys:
-        output.write(typedict.get_type(typekey).lower() + " ")
-        output.write("<font color=green> <b>" + typekey + "</b></font>")
-        output.write(": " + typedict.get_desc(typekey))
-        output.write("<br>")
+        output.write(typedict.get_type(typekey).lower().encode() + b" ")
+        output.write(b"<font color=green> <b>" + typekey.encode() + b"</b></font>")
+        output.write(b": " + typedict.get_desc(typekey).encode())
+        output.write(b"<br>")
     
-    output.write("</td>\n")
-    output.write("  <td>" + project.get_desc() + "</td>\n")
-    output.write("</tr>\n")
+    output.write(b"</td>\n")
+    output.write(b"  <td>" + project.get_desc().encode() + b"</td>\n")
+    output.write(b"</tr>\n")
 
 def write_reconstructor(reconstructor_name, output, bgcolor):
-    output.write("<tr bgcolor=" + bgcolor + ">\n")
-    output.write("  <td> <font color='0000a0'> <b>"  + reconstructor_name + " </b></font> </td>\n")
+    output.write(b"<tr bgcolor=" + bgcolor.encode() + b">\n")
+    output.write(b"  <td> <font color='0000a0'> <b>"  + reconstructor_name.encode() + b" </b></font> </td>\n")
     
     reconstruct = Reconstructors.get(reconstructor_name)
     
     typedict = reconstruct.get_param_types()
-    output.write("  <td>")
+    output.write(b"  <td>")
     typekeys = list(typedict.keys())
     
     for typekey in typekeys:
-        output.write(typedict.get_type(typekey).lower() + " ")
-        output.write("<font color=green> <b>" + typekey + "</b></font>")
-        output.write(": " + typedict.get_desc(typekey))
-        output.write("<br>")
+        output.write(typedict.get_type(typekey).lower().encode() + b" ")
+        output.write(b"<font color=green> <b>" + typekey.encode() + b"</b></font>")
+        output.write(b": " + typedict.get_desc(typekey).encode())
+        output.write(b"<br>")
 
-    output.write("</td>\n")
-    output.write("  <td>" + reconstruct.get_desc() + "</td>\n")
-    output.write("</tr>\n")
+    output.write(b"</td>\n")
+    output.write(b"  <td>" + reconstruct.get_desc().encode() + b"</td>\n")
+    output.write(b"</tr>\n")
 
 def write_averager(averager_name, output, bgcolor):
-    output.write("<tr bgcolor=" + bgcolor + ">\n")
-    output.write("  <td> <font color='0000a0'> <b>"  + averager_name + " </b></font> </td>\n")
+    output.write(b"<tr bgcolor=" + bgcolor.encode() + b">\n")
+    output.write(b"  <td> <font color='0000a0'> <b>"  + averager_name.encode() + b" </b></font> </td>\n")
     
     average = Averagers.get(averager_name)
 
     typedict = average.get_param_types()
-    output.write("  <td>")
+    output.write(b"  <td>")
     typekeys = list(typedict.keys())
     
     for typekey in typekeys:
-        output.write(typedict.get_type(typekey).lower() + " ")
-        output.write("<font color=green> <b>" + typekey + "</b></font>")
-        output.write(": " + typedict.get_desc(typekey))
-        output.write("<br>")
+        output.write(typedict.get_type(typekey).lower().encode() + b" ")
+        output.write(b"<font color=green> <b>" + typekey.encode() + b"</b></font>")
+        output.write(b": " + typedict.get_desc(typekey).encode())
+        output.write(b"<br>")
     
-    output.write("</td>\n")
-    output.write("  <td>" + average.get_desc() + "</td>\n")
-    output.write("</tr>\n")
+    output.write(b"</td>\n")
+    output.write(b"  <td>" + average.get_desc().encode() + b"</td>\n")
+    output.write(b"</tr>\n")
 
 def write_analyzer(analyzer_name, output, bgcolor):
-    output.write("<tr bgcolor=" + bgcolor + ">\n")
-    output.write("  <td> <font color='0000a0'> <b>"  + analyzer_name + " </b></font> </td>\n")
+    output.write(b"<tr bgcolor=" + bgcolor.encode() + b">\n")
+    output.write(b"  <td> <font color='0000a0'> <b>"  + analyzer_name.encode() + b" </b></font> </td>\n")
     
     analyze = Analyzers.get(analyzer_name)
     
     typedict = analyze.get_param_types()
-    output.write("  <td>")
+    output.write(b"  <td>")
     typekeys = list(typedict.keys())
     
     for typekey in typekeys:
-        output.write(typedict.get_type(typekey).lower() + " ")
-        output.write("<font color=green> <b>" + typekey + "</b></font>")
-        output.write(": " + typedict.get_desc(typekey))
-        output.write("<br>")
+        output.write(typedict.get_type(typekey).lower().encode() + b" ")
+        output.write(b"<font color=green> <b>" + typekey.encode() + b"</b></font>")
+        output.write(b": " + typedict.get_desc(typekey).encode())
+        output.write(b"<br>")
     
-    output.write("</td>\n")
-    output.write("  <td>" + analyze.get_desc() + "</td>\n")
-    output.write("</tr>\n")
+    output.write(b"</td>\n")
+    output.write(b"  <td>" + analyze.get_desc().encode() + b"</td>\n")
+    output.write(b"</tr>\n")
     
 def write_group(groupname, output):
     groupclass = None
@@ -221,15 +221,15 @@ def write_group(groupname, output):
         groupclass = NormalizeFilter
 
     groupbg = "a0a0f0"
-    output.write("<tr bgcolor=" + groupbg + ">\n")
-    output.write("  <td> <font color='a000a0' size=+1> <b>"  + groupname + " </b></font> </td>\n")
-    output.write("  <td> </td>")
-    output.write("  <td><b>");
+    output.write(b"<tr bgcolor=" + groupbg.encode() + b">\n")
+    output.write(b"  <td> <font color='a000a0' size=+1> <b>"  + groupname.encode() + b" </b></font> </td>\n")
+    output.write(b"  <td> </td>")
+    output.write(b"  <td><b>");
     if groupclass:
-        output.write(groupclass.get_group_desc())
+        output.write(groupclass.get_group_desc().encode())
         
-    output.write("</b></td>\n")
-    output.write("</tr>\n")
+    output.write(b"</b></td>\n")
+    output.write(b"</tr>\n")
 
 def write_single_processors():
     out = open("processors.html", "wb")
