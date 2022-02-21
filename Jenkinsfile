@@ -231,7 +231,7 @@ def isSkipStage() {
 //         'deploy',
 //         'test-continuous'
     ]
-    return stages.contains(STAGE_NAME) || AGENT_OS_NAME == "win"
+    return stages.contains(STAGE_NAME) || (AGENT_OS_NAME == "win" && (STAGE_NAME == 'test-package' || STAGE_NAME == 'test-continuous'))
 }
 
 pipeline {
