@@ -513,7 +513,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		if self.dmapdataitem is None:
 			self.dmapdataitem=EMDataItem3D(vol)
 			self.dmapiso=EMIsosurface(self.dmapdataitem)
-			self.wview3d.insertNewNode("Dynamic Map",self.dmapdataitem)
+			self.wview3d.insertNewNode("Dynamic Map",self.dmapdataitem,parentnode=self.wview3d)
 			self.wview3d.insertNewNode("Isosurface",self.dmapiso,parentnode=self.dmapdataitem)
 		else:
 			self.dmapdataitem.setData(vol)
@@ -821,7 +821,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		if self.fmapdataitem==None:
 			self.fmapdataitem=EMDataItem3D(seg)
 			self.fmapiso=EMIsosurface(self.fmapdataitem)
-			self.wview3d.insertNewNode("Filt or Gauss Map",self.fmapdataitem)
+			self.wview3d.insertNewNode("Filt or Gauss Map",self.fmapdataitem,parentnode=self.wview3d)
 			self.wview3d.insertNewNode("Isosurface",self.fmapiso,parentnode=self.fmapdataitem)
 		else:
 			self.fmapdataitem.setData(seg)
@@ -1104,7 +1104,8 @@ class EMGMM(QtWidgets.QMainWindow):
 		try: 
 			self.decoder = tf.keras.models.load_model(f"{self.gmm}/{self.currunkey}_decoder.h5",compile=False)
 		except: 
-			print(f"Run {self.currunkey} results incomplete. No stored decoder found.",self)
+			traceback.print_exc()
+			print(f"Run {self.gmm} -> {self.currunkey} results incomplete. No stored decoder found.",self)
 			return
 
 		# list of all computed dynamic maps for this run

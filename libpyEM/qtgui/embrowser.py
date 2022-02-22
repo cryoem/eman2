@@ -603,13 +603,19 @@ class EMFileType(object) :
 		progress = QtWidgets.QProgressDialog("Generating projections", "Cancel", 0, img1-img0-1,None)
 #		progress.show()
 		
-		data=[]
+		# make an empty array so we can easily interleave
+		data=[None for i in range(img0,img1,imgstep)]
+		nd=len(data)
+		if stkout: data=data*3
+		
+		# reference goes last!
 		if ref!=None:
 			if mask!=None: ref.mult(mask)
 			hall=makeOrthoProj(ref,layers,highpass,lowpass,stkout)
 			if isinstance(hall,EMData): data.append(hall)
 			else: data.extend(hall)
-			
+		
+		c=0
 		for i in range(img0,img1,imgstep):
 			try: ptcl=EMData(self.path,i)
 			except:
@@ -631,10 +637,13 @@ class EMFileType(object) :
 				for k in ["ptcl_repr","class_ptcl_idxs","class_ptlc_src","orig_file","orig_n","source_path","source_n"]:
 					try: hall[k]=ptcl[k]
 					except: pass
-				data.append(hall)
+				data[c]=hall
 			else:
-				data.extend(hall)
+				data[c]=hall[0]
+				data[c+nd]=hall[1]
+				data[c+2*nd]=hall[2]
 			
+			c+=1
 			progress.setValue(i-img0)
 			
 			if progress.wasCanceled():
