@@ -58,12 +58,14 @@ def write_header(output, name):
     output.write(b"  <td align=center> <font size='+1'><b>Description </b></font> </td>\n")
     output.write(b"</tr>\n")
 
+
 def write_tail(output):
     output.write(b"</table>\n</body>\n")
 
+
 def write_processor(processorname, output, bgcolor):
     output.write(b"<tr bgcolor=" + bgcolor.encode() + b">\n")
-    output.write(b"  <td> <font color='0000a0'> <b>"  + processorname.encode() + b" </b></font> </td>\n")
+    output.write(b"  <td> <font color='0000a0'> <b>" + processorname.encode() + b" </b></font> </td>\n")
 
     processor = Processors.get(processorname)
 
@@ -81,9 +83,10 @@ def write_processor(processorname, output, bgcolor):
     output.write(b"  <td>" + processor.get_desc().encode() + b"</td>\n")
     output.write(b"</tr>\n")
 
+
 def write_cmp(cmp_name, output, bgcolor):
     output.write(b"<tr bgcolor=" + bgcolor.encode() + b">\n")
-    output.write(b"  <td> <font color='0000a0'> <b>"  + cmp_name.encode() + b" </b></font> </td>\n")
+    output.write(b"  <td> <font color='0000a0'> <b>" + cmp_name.encode() + b" </b></font> </td>\n")
     
     cmp = Cmps.get(cmp_name)
     
@@ -101,9 +104,10 @@ def write_cmp(cmp_name, output, bgcolor):
     output.write(b"  <td>" + cmp.get_desc().encode() + b"</td>\n")
     output.write(b"</tr>\n")
 
+
 def write_aligner(aligner_name, output, bgcolor):
     output.write(b"<tr bgcolor=" + bgcolor.encode() + b">\n")
-    output.write(b"  <td> <font color='0000a0'> <b>"  + aligner_name.encode() + b" </b></font> </td>\n")
+    output.write(b"  <td> <font color='0000a0'> <b>" + aligner_name.encode() + b" </b></font> </td>\n")
     
     align = Aligners.get(aligner_name)
     
@@ -121,9 +125,10 @@ def write_aligner(aligner_name, output, bgcolor):
     output.write(b"  <td>" + align.get_desc().encode() + b"</td>\n")
     output.write(b"</tr>\n")
 
+
 def write_projector(projector_name, output, bgcolor):
     output.write(b"<tr bgcolor=" + bgcolor.encode() + b">\n")
-    output.write(b"  <td> <font color='0000a0'> <b>"  + projector_name.encode() + b" </b></font> </td>\n")
+    output.write(b"  <td> <font color='0000a0'> <b>" + projector_name.encode() + b" </b></font> </td>\n")
     
     project = Projectors.get(projector_name)
     
@@ -141,9 +146,10 @@ def write_projector(projector_name, output, bgcolor):
     output.write(b"  <td>" + project.get_desc().encode() + b"</td>\n")
     output.write(b"</tr>\n")
 
+
 def write_reconstructor(reconstructor_name, output, bgcolor):
     output.write(b"<tr bgcolor=" + bgcolor.encode() + b">\n")
-    output.write(b"  <td> <font color='0000a0'> <b>"  + reconstructor_name.encode() + b" </b></font> </td>\n")
+    output.write(b"  <td> <font color='0000a0'> <b>" + reconstructor_name.encode() + b" </b></font> </td>\n")
     
     reconstruct = Reconstructors.get(reconstructor_name)
     
@@ -161,9 +167,10 @@ def write_reconstructor(reconstructor_name, output, bgcolor):
     output.write(b"  <td>" + reconstruct.get_desc().encode() + b"</td>\n")
     output.write(b"</tr>\n")
 
+
 def write_averager(averager_name, output, bgcolor):
     output.write(b"<tr bgcolor=" + bgcolor.encode() + b">\n")
-    output.write(b"  <td> <font color='0000a0'> <b>"  + averager_name.encode() + b" </b></font> </td>\n")
+    output.write(b"  <td> <font color='0000a0'> <b>" + averager_name.encode() + b" </b></font> </td>\n")
     
     average = Averagers.get(averager_name)
 
@@ -181,9 +188,10 @@ def write_averager(averager_name, output, bgcolor):
     output.write(b"  <td>" + average.get_desc().encode() + b"</td>\n")
     output.write(b"</tr>\n")
 
+
 def write_analyzer(analyzer_name, output, bgcolor):
     output.write(b"<tr bgcolor=" + bgcolor.encode() + b">\n")
-    output.write(b"  <td> <font color='0000a0'> <b>"  + analyzer_name.encode() + b" </b></font> </td>\n")
+    output.write(b"  <td> <font color='0000a0'> <b>" + analyzer_name.encode() + b" </b></font> </td>\n")
     
     analyze = Analyzers.get(analyzer_name)
     
@@ -200,7 +208,8 @@ def write_analyzer(analyzer_name, output, bgcolor):
     output.write(b"</td>\n")
     output.write(b"  <td>" + analyze.get_desc().encode() + b"</td>\n")
     output.write(b"</tr>\n")
-    
+
+
 def write_group(groupname, output):
     groupclass = None
     processor_names = Processors.get_list()
@@ -222,14 +231,15 @@ def write_group(groupname, output):
 
     groupbg = "a0a0f0"
     output.write(b"<tr bgcolor=" + groupbg.encode() + b">\n")
-    output.write(b"  <td> <font color='a000a0' size=+1> <b>"  + groupname.encode() + b" </b></font> </td>\n")
+    output.write(b"  <td> <font color='a000a0' size=+1> <b>" + groupname.encode() + b" </b></font> </td>\n")
     output.write(b"  <td> </td>")
-    output.write(b"  <td><b>");
+    output.write(b"  <td><b>")
     if groupclass:
         output.write(groupclass.get_group_desc().encode())
         
     output.write(b"</b></td>\n")
     output.write(b"</tr>\n")
+
 
 def write_single_processors():
     out = open("processors.html", "wb")
@@ -247,7 +257,8 @@ def write_single_processors():
 
         write_processor(processorname, out, bgcolor)
     write_tail(out)
-    
+
+
 def write_single_comparators():
     out = open("cmps.html", "wb")
     write_header(out, 'Cmp')
@@ -264,6 +275,7 @@ def write_single_comparators():
         
         write_cmp(cmp_name, out, bgcolor)
     write_tail(out)
+
 
 def write_single_aligners():
     out = open("aligners.html", "wb")
@@ -282,6 +294,7 @@ def write_single_aligners():
         write_aligner(aligner_name, out, bgcolor)
     write_tail(out)
 
+
 def write_single_projectors():
     out = open("projectors.html", "wb")
     write_header(out, 'Projector')
@@ -298,6 +311,7 @@ def write_single_projectors():
     
         write_projector(projector_name, out, bgcolor)
     write_tail(out)
+
 
 def write_single_reconstructors():
     out = open("reconstructors.html", "wb")
@@ -316,6 +330,7 @@ def write_single_reconstructors():
         write_reconstructor(reconstructor_name, out, bgcolor)
     write_tail(out)
 
+
 def write_single_averagers():
     out = open("averagers.html", "wb")
     write_header(out, 'Averager')
@@ -333,6 +348,7 @@ def write_single_averagers():
         write_averager(averager_name, out, bgcolor)
     write_tail(out)
 
+
 def write_single_analyzers():
     out = open("analyzers.html", "wb")
     write_header(out, 'Analyzer')
@@ -349,7 +365,8 @@ def write_single_analyzers():
     
         write_analyzer(analyzer_name, out, bgcolor)
     write_tail(out)
-    
+
+
 def write_group_processors():
     gout = open("processor_groups.html", "wb")
     write_header(gout, 'Processor Group')
@@ -381,7 +398,8 @@ def write_group_processors():
 
             write_processor(processorname, gout, bgcolor)
 
-def main():    
+
+def main():
     write_single_processors()
     write_group_processors()
     write_single_comparators()
@@ -390,6 +408,7 @@ def main():
     write_single_reconstructors()
     write_single_averagers()
     write_single_analyzers()
-    
+
+
 if __name__ == '__main__':
     main()
