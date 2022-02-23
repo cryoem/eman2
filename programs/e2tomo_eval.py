@@ -82,49 +82,54 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		self.wg_thumbnail.setMinimumHeight(330)
 		self.gbl.addWidget(self.wg_thumbnail, 0,1,3,2)
 		
-		self.bt_show2d=QtWidgets.QPushButton("Show2D")
-		self.bt_show2d.setToolTip("Show 2D images")
-		self.gbl.addWidget(self.bt_show2d, 4,1)
-		
-		self.bt_runboxer=QtWidgets.QPushButton("Boxer")
-		self.bt_runboxer.setToolTip("Run spt_boxer")
-		self.gbl.addWidget(self.bt_runboxer, 5,1)
-		
 		self.bt_refresh=QtWidgets.QPushButton("Refresh")
 		self.bt_refresh.setToolTip("Refresh")
-		self.gbl.addWidget(self.bt_refresh, 4,2)
-		
+		self.gbl.addWidget(self.bt_refresh, 4,1)
+
 		self.bt_showtlts=QtWidgets.QPushButton("ShowTilts")
 		self.bt_showtlts.setToolTip("Show raw tilt series")
-		self.gbl.addWidget(self.bt_showtlts, 6,1)
+		self.gbl.addWidget(self.bt_showtlts, 5,1)
 		
 		self.bt_showatlts=QtWidgets.QPushButton("ShowAliTilts")
 		self.bt_showatlts.setToolTip("Show raw tilt series")
-		self.gbl.addWidget(self.bt_showatlts, 6,2)
+		self.gbl.addWidget(self.bt_showatlts, 5,2)
 		
-		self.bt_plottpm=QtWidgets.QPushButton("TiltParams")
-		self.bt_plottpm.setToolTip("Plot tilt parameters")
-		self.gbl.addWidget(self.bt_plottpm, 5,2)
-		
-		self.bt_plotloss=QtWidgets.QPushButton("PlotLoss")
-		self.bt_plotloss.setToolTip("Plot alignment loss")
-		self.gbl.addWidget(self.bt_plotloss, 7,1)
-		
-		self.bt_plotctf=QtWidgets.QPushButton("PlotCtf")
-		self.bt_plotctf.setToolTip("Plot CTF estimation")
-		self.gbl.addWidget(self.bt_plotctf, 7,2)
-		
-		self.bt_evalimage=QtWidgets.QPushButton("EvalImage")
-		self.bt_evalimage.setToolTip("Power spectrum analysis of individual tilt images")
-		self.gbl.addWidget(self.bt_evalimage, 8,1)
+		self.bt_show2d=QtWidgets.QPushButton("Show Tomo 2D")
+		self.bt_show2d.setToolTip("Show tomogram by Z slices")
+		self.gbl.addWidget(self.bt_show2d, 6,1)
 		
 		self.bt_clearptcl=QtWidgets.QPushButton("ClearPtcls")
 		self.bt_clearptcl.setToolTip("Clear all ptcls")
-		self.gbl.addWidget(self.bt_clearptcl, 8,2)
+		self.gbl.addWidget(self.bt_clearptcl, 6,2)
+		
+		self.bt_runboxer=QtWidgets.QPushButton("Boxer")
+		self.bt_runboxer.setToolTip("Run spt_boxer")
+		self.gbl.addWidget(self.bt_runboxer, 7,1)
+		
+		self.bt_runboxercnn=QtWidgets.QPushButton("CNN Boxer")
+		self.bt_runboxercnn.setToolTip("Run spt_boxer_convnet (deep learning particle picker)")
+		self.gbl.addWidget(self.bt_runboxercnn, 7,2)
+		
+		self.bt_plottpm=QtWidgets.QPushButton("TiltParams")
+		self.bt_plottpm.setToolTip("Plot tilt parameters")
+		self.gbl.addWidget(self.bt_plottpm, 8,1)
+		
+		self.bt_plotloss=QtWidgets.QPushButton("PlotLoss")
+		self.bt_plotloss.setToolTip("Plot alignment loss")
+		self.gbl.addWidget(self.bt_plotloss, 8,2)
+		
+		self.bt_plotctf=QtWidgets.QPushButton("PlotCtf")
+		self.bt_plotctf.setToolTip("Plot CTF estimation")
+		self.gbl.addWidget(self.bt_plotctf, 9,1)
+		
+		self.bt_evalimage=QtWidgets.QPushButton("EvalImage")
+		self.bt_evalimage.setToolTip("Power spectrum analysis of individual tilt images")
+		self.gbl.addWidget(self.bt_evalimage, 9,2)
 		
 
 		self.bt_show2d.clicked[bool].connect(self.show2d)
 		self.bt_runboxer.clicked[bool].connect(self.runboxer)
+		self.bt_runboxercnn.clicked[bool].connect(self.runboxercnn)
 		self.bt_plotloss.clicked[bool].connect(self.plot_loss)
 		self.bt_plottpm.clicked[bool].connect(self.plot_tltparams)
 		self.bt_showtlts.clicked[bool].connect(self.show_tlts)
@@ -404,6 +409,14 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		js=js_open_dict(info_name(info["e2basename"]))
 		subprocess.Popen(f"e2evalimage.py {info['tltfile']} --voltage {js.getdefault('voltage',300.0)} --cs {js.getdefault('cs',2.7)} --box 256 --constbfactor 400",shell=True)
 	
+	def runboxercnn(self):
+		idx, info=self.get_id_info()
+		if idx==None: return
+		modifiers = QtWidgets.QApplication.keyboardModifiers()
+		### do not use launch_childprocess so the gui wont be frozen when boxer is opened
+		subprocess.Popen("e2spt_boxer_convnet.py --ppid {}".format(os.getpid()),shell=True)
+#		subprocess.Popen("e2spt_boxer_convnet.py {} --ppid {}".format(info["filename"], os.getpid()),shell=True)
+
 	def runboxer(self):
 		idx, info=self.get_id_info()
 		if idx==None: return
