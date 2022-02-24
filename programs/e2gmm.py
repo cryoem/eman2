@@ -92,32 +92,36 @@ def make3d_thr(que,tskn,fsp,imgns,rparms,latent,currun,rad):
 	recono=Reconstructors.get("fourier",rparms)
 	recono.setup()
 	
+	pad=rparms["size"][0]
+	
 	# read images in chunks of 100 for (maybe) increased efficiency
 	for i in range(len(imgns)//100+1):
 		que.put((tskn,9900*i//len(imgns),None,None))  # don't want to accidentally return 100, this is for progress display
 		imgs=EMData.read_images(fsp,imgns[i*100:i*100+100])
 		for j,im in enumerate(imgs):
+			im2=im.get_clip(Region((im["nx"]-pad)//2,(im["ny"]-pad)//2,(im["nz"]-pad)//2,pad,pad,pad))
 			if j%2==0:
-				imf=recone.preprocess_slice(im,im["xform.projection"])
+				imf=recone.preprocess_slice(im2,im["xform.projection"])
 				recone.insert_slice(imf,im["xform.projection"],1.0)
 			else:
-				imf=recono.preprocess_slice(im,im["xform.projection"])
+				imf=recono.preprocess_slice(im2,im["xform.projection"])
 				recono.insert_slice(imf,im["xform.projection"],1.0)
 	
 	rete=recone.finish(True)
 	reto=recono.finish(True)
 	fscf=rete.calc_fourier_shell_correlation(reto)
 	fsc=fscf[len(fscf)//3:len(fscf)*2//3]
-	print(fsc)
+#	print(fsc)
 	for r,v in enumerate(fsc): 
 		if v<0.143: break
-	ret=rete+reto
+	ret=rete.copy()
+	ret.add(reto)
 	ret.process_inplace("filter.lowpass.tophat",{"cutoff_pixels":r})
 #	ret=ret.do_ift()
 	ret["ptcl_repr"]=len(imgns)
 	print(f"Resolution {r} {1.0/fscf[r]}")
 			
-	que.put((tskn,100,ret,latent,imgns,currun,rad))
+	que.put((tskn,100,ret,latent,imgns,currun,rad,rete,reto))
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -476,6 +480,8 @@ class EMGMM(QtWidgets.QMainWindow):
 				bs=self.jsparm["boxsize"]
 				ps=(ret[2]["nx"]-bs)//2
 				vol=ret[2].get_clip(Region(ps,ps,ps,bs,bs,bs))
+				vole=ret[7].get_clip(Region(ps,ps,ps,bs,bs,bs))
+				volo=ret[8].get_clip(Region(ps,ps,ps,bs,bs,bs))
 				#vol.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/currun["targres"]})	# e/o fsc filter now handled in reconstructor
 				vol.process_inplace("normalize")
 				
@@ -483,6 +489,8 @@ class EMGMM(QtWidgets.QMainWindow):
 				try: nmaps=EMUtil.get_image_count(f"{self.gmm}/dynamic_maps.hdf")
 				except: nmaps=0
 				vol.write_compressed(f"{self.gmm}/dynamic_maps.hdf",nmaps,8)
+				vole.write_compressed(f"{self.gmm}/dynamic_even.hdf",nmaps,8)
+				volo.write_compressed(f"{self.gmm}/dynamic_odd.hdf",nmaps,8)
 				
 				# store metadata to identify maps in dynamic_maps.hdf
 				# map #, timestamp, latent coordinates, number of particles, selection radius
