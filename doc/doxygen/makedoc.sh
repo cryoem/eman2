@@ -17,5 +17,5 @@ echo "Done"
 
 set -xe
 
-rm -rf doc/doxygen_html
-mv -f doc/html doc/doxygen_html
+rm -rf doxygen_html
+mv -f html doxygen_html
