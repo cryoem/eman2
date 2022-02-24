@@ -1,10 +1,10 @@
 ADD_CUSTOM_TARGET(mkdoc ALL
-	DEPENDS	${CMAKE_SOURCE_DIR}/doc/doxygen/Doxyfile
+	DEPENDS	${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile
 )
 
 ADD_CUSTOM_COMMAND(
 	COMMAND cp
-	ARGS -f ${CMAKE_SOURCE_DIR}/doc/doxygen/makedoc.sh .
+	ARGS -f ${CMAKE_CURRENT_SOURCE_DIR}/makedoc.sh .
 	TARGET mkdoc
 )
 

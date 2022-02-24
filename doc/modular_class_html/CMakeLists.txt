@@ -1,10 +1,10 @@
 ADD_CUSTOM_TARGET(mkdoc ALL
-	DEPENDS	${CMAKE_SOURCE_DIR}/doc/modular_class_html/docgen.py
+	DEPENDS	${CMAKE_CURRENT_SOURCE_DIR}/docgen.py
 )
 
 ADD_CUSTOM_COMMAND(
 	COMMAND cp
-	ARGS -f ${CMAKE_SOURCE_DIR}/doc/modular_class_html/*.py .
+	ARGS -f ${CMAKE_CURRENT_SOURCE_DIR}/*.py .
 	TARGET mkdoc
 )
 
