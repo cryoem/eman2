@@ -3,6 +3,6 @@ ADD_CUSTOM_TARGET(mkdoc ALL
 )
 
 ADD_CUSTOM_COMMAND(
-	COMMAND ./makedoc.sh
 	TARGET mkdoc
+	COMMAND ./makedoc.sh
 )
