@@ -12,8 +12,7 @@ if test ! $? = 0; then
 fi
 
 echo -n "Start to generate Doxygen documentation. Be patient ... "
-cd ../..
-doxygen  doc/doxygen/Doxyfile
+doxygen
 echo "Done"
 
 set -xe

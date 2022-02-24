@@ -5,6 +5,7 @@ ADD_CUSTOM_TARGET(mkdoc-modular-class
 ADD_CUSTOM_COMMAND(
 	TARGET mkdoc-modular-class
 	COMMAND ./docgen.py
+	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 FILE(GLOB modular_html "${CMAKE_CURRENT_SOURCE_DIR}/*.html")
