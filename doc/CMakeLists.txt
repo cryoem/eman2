@@ -1,6 +1,10 @@
 IF(ENABLE_AUTODOC)
     ADD_SUBDIRECTORY(modular_class_html)
     ADD_SUBDIRECTORY(doxygen)
+
+    add_custom_target(mkdoc
+            DEPENDS mkdoc-doxy
+            )
 ENDIF()
 
 FILE(GLOB static_html "${CMAKE_CURRENT_SOURCE_DIR}/*.html")
