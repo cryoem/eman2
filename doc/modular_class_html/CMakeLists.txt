@@ -1,9 +1,9 @@
-ADD_CUSTOM_TARGET(mkdoc ALL
+ADD_CUSTOM_TARGET(mkdoc-modular-class
 	DEPENDS	${CMAKE_CURRENT_SOURCE_DIR}/docgen.py
 )
 
 ADD_CUSTOM_COMMAND(
-	TARGET mkdoc
+	TARGET mkdoc-modular-class
 	COMMAND ./docgen.py
 )
 
