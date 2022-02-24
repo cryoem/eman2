@@ -1,7 +1,7 @@
 #!/bin/sh
 
-# to generate Doxygen documentation under eman2/doc
-# usage: makedoc.sh
+# Generate Doxygen documentation under eman2/doc
+# Usage: makedoc.sh
 
 which doxygen 2>/dev/null 1>/dev/null
 if test ! $? = 0; then
