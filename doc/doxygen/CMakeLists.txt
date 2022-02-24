@@ -3,12 +3,6 @@ ADD_CUSTOM_TARGET(mkdoc ALL
 )
 
 ADD_CUSTOM_COMMAND(
-	COMMAND cp
-	ARGS -f ${CMAKE_CURRENT_SOURCE_DIR}/makedoc.sh .
-	TARGET mkdoc
-)
-
-ADD_CUSTOM_COMMAND(
 	COMMAND ./makedoc.sh
 	TARGET mkdoc
 )
