@@ -3,14 +3,12 @@ ADD_CUSTOM_TARGET(mkdoc ALL
 )
 
 ADD_CUSTOM_COMMAND(
-	SOURCE  mkdoc
 	COMMAND cp
 	ARGS -f ${CMAKE_SOURCE_DIR}/doc/modular_class_html/*.py .
 	TARGET mkdoc
 )
 
 ADD_CUSTOM_COMMAND(
-	SOURCE  mkdoc
 	COMMAND ./docgen.py
 	TARGET mkdoc
 )
