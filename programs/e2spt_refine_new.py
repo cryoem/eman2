@@ -39,6 +39,7 @@ def main():
 	parser.add_argument("--loadali2d", type=str,help="load previous 2d alignment from an aliptcls2d_xx.lst file", default=None)
 	parser.add_argument("--loadali3d", type=str,help="load previous 3d alignment from an aliptcls3d_xx.lst file", default=None)
 	parser.add_argument("--mask", type=str,help="Mask applied to the results (instead of automasking)", default=None)
+	parser.add_argument("--automaskexpand", default=-1, type=int,help="Default=boxsize/20. Specify number of voxels to expand mask before soft edge." )
 	parser.add_argument("--preprocess", metavar="processor_name:param1=value1:param2=value2", type=str, default=None, help="Preprocess each 2-D subtilt while loading (alignment only)")
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>=<value>. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel",default="thread:4", guitype='strbox', row=30, col=0, rowspan=1, colspan=2, mode="refinement[thread:4]")
 	parser.add_argument("--threads", type=int,help="threads for post-processing", default=10)
@@ -147,7 +148,9 @@ def main():
 		setsf=f" --setsf {options.setsf}"
 	if options.tophat:
 		tophat=f" --tophat {options.tophat}"
-	if options.mask:
+	if options.automaskexpand>0: 
+		ppmask=f" --automaskexpand {options.automaskexpand}"
+	elif options.mask:
 		ppmask=f" --mask {options.mask}"
 	if options.maskalign!=None: maskalign=EMData(options.maskalign,0)
 	else: maskalign=None
