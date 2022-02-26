@@ -170,6 +170,11 @@
         "CHILDREN": []
       },
       {
+        "PROGRAM": "e2spt_refine_new.py",
+        "NAME": "new 3D refinement",
+        "CHILDREN": []
+      },
+      {
         "PROGRAM": "e2spt_refine.py",
         "NAME": "3D refinement",
         "CHILDREN": []
