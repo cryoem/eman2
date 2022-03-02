@@ -52,6 +52,8 @@ def main():
 	parser.add_argument("--smoothN",type=int,help="number of neighboring particles used for smoothing. default 15",default=15)
 	parser.add_argument("--m3dthread",action="store_true", default=False ,help="do make3d in threading mode with shared memory. safer for large boxes")
 	parser.add_argument("--maxtilt",type=float,help="Excluding tilt images beyond the angle",default=-1)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
