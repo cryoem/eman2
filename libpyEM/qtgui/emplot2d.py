@@ -138,6 +138,7 @@ class EMPlot2DWidget(EMGLWidget):
 		self.climits=None
 		self.slimits=None
 		self.rmousedrag=None
+		self.lmousedrag=None
 		self.axisparms=(None,None,"linear","linear")
 		self.plottitle=""
 		self.selected=[]
