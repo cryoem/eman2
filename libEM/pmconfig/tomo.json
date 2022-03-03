@@ -158,9 +158,20 @@
         "CHILDREN": []
       },
       {
+        "PROGRAM": "e2spt_sgd_new.py",
+        "NAME": "New initial model generator",
+        "MODE": "model",
+        "CHILDREN": []
+      },
+      {
         "PROGRAM": "e2spt_sgd.py",
         "NAME": "Generate initial model",
         "MODE": "model",
+        "CHILDREN": []
+      },
+      {
+        "PROGRAM": "e2spt_refine_new.py",
+        "NAME": "new 3D refinement",
         "CHILDREN": []
       },
       {

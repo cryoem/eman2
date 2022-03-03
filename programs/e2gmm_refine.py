@@ -299,9 +299,9 @@ def set_indices_boxsz(boxsz, apix=0, return_freq=False):
 		params={"sz":sz, "idxft":idxft, "rrft":rrft, "rings":rings}
 		return params
 
-def build_encoder(mid=512, nout=4, conv=False):
+def build_encoder(mid=512, nout=4, conv=False, ninp=-1):
 	l2=tf.keras.regularizers.l2(1e-3)
-	kinit=tf.keras.initializers.RandomNormal(0,1e-2)
+	kinit=tf.keras.initializers.RandomNormal(0,0.1)	# was 0.01
 	
 	if conv:
 		ss=64
@@ -319,18 +319,30 @@ def build_encoder(mid=512, nout=4, conv=False):
 			tf.keras.layers.BatchNormalization(),
 			tf.keras.layers.Dense(nout, kernel_initializer=kinit),
 		]
-	else:
+	elif ninp<0:
 		layers=[
 		tf.keras.layers.Flatten(),
 		tf.keras.layers.Dense(mid, activation="relu", kernel_regularizer=l2),
-		#tf.keras.layers.Dense(min(mid*4,nout), activation="relu", kernel_regularizer=l2),
-		#tf.keras.layers.Dense(min(mid*16,nout), activation="relu", kernel_regularizer=l2),
 		tf.keras.layers.Dense(mid, activation="relu", kernel_regularizer=l2),
 		tf.keras.layers.Dense(mid, activation="relu", kernel_regularizer=l2),
+		#tf.keras.layers.Dense(max(mid/4,nout), activation="relu", kernel_regularizer=l2),
+		#tf.keras.layers.Dense(max(mid/16,nout), activation="relu", kernel_regularizer=l2),
 		tf.keras.layers.Dropout(.3),
 		tf.keras.layers.BatchNormalization(),
 		tf.keras.layers.Dense(nout, kernel_regularizer=l2, kernel_initializer=kinit),
 		]
+	else:
+		print(f"Encoder {max(ninp//2,nout)} {max(ninp//8,nout)} {max(ninp//32,nout)}")
+		layers=[
+		tf.keras.layers.Flatten(),
+		tf.keras.layers.Dense(max(ninp//2,nout*2), activation="relu", kernel_regularizer=l2,use_bias=True,bias_initializer=kinit),
+		tf.keras.layers.Dropout(.3),
+		tf.keras.layers.Dense(max(ninp//8,nout*2), activation="relu", kernel_regularizer=l2,use_bias=True),
+		tf.keras.layers.Dense(max(ninp//32,nout*2), activation="relu", kernel_regularizer=l2,use_bias=True),
+		tf.keras.layers.BatchNormalization(),
+		tf.keras.layers.Dense(nout, kernel_regularizer=l2, kernel_initializer=kinit,use_bias=True),
+		]
+		
 	encode_model=tf.keras.Sequential(layers)
 	return encode_model
 
@@ -350,7 +362,7 @@ def build_decoder(pts, mid=512, ninp=4, conv=False):
 	
 	kinit=tf.keras.initializers.RandomNormal(0,1e-2)
 	l2=tf.keras.regularizers.l2(1e-3)
-	layer_output=tf.keras.layers.Dense(npt*5, kernel_initializer=kinit, activation="sigmoid")
+	layer_output=tf.keras.layers.Dense(npt*5, kernel_initializer=kinit, activation="sigmoid",use_bias=True)
 	if conv:
 			
 		layers=[
@@ -367,19 +379,32 @@ def build_decoder(pts, mid=512, ninp=4, conv=False):
 			tf.keras.layers.Reshape((npt,5)),
 		]
 
-	else:
+	elif mid>0:
 		layers=[
+			#tf.keras.layers.Dense(max(mid/16,ninp),activation="relu",bias_initializer=kinit),
+			#tf.keras.layers.Dense(max(mid/4,ninp),activation="relu"),
+			#tf.keras.layers.Dense(mid,activation="relu"),
 			tf.keras.layers.Dense(mid,activation="relu",bias_initializer=kinit),
 			tf.keras.layers.Dense(mid,activation="relu"),
-			#tf.keras.layers.Dense(min(ninp,mid*16),activation="relu",bias_initializer=kinit),
-			#tf.keras.layers.Dense(min(ninp,mid*4),activation="relu"),
 			tf.keras.layers.Dense(mid,activation="relu"),
-			#tf.keras.layers.Dense(mid,activation="relu"),
 			tf.keras.layers.Dropout(.3),
 			tf.keras.layers.BatchNormalization(),
 			layer_output,
 			tf.keras.layers.Reshape((npt,5))
 		]
+	else:
+		print(f"Decoder {max(npt//32,ninp)} {max(npt//8,ninp)} {max(npt//2,ninp)}")
+		layers=[
+#			tf.keras.layers.Dense(max(npt//64,ninp),activation="relu"),
+			tf.keras.layers.Dense(max(npt//32,ninp*2),activation="relu",use_bias=True,bias_initializer=kinit),
+			tf.keras.layers.Dense(max(npt//8,ninp*2),activation="relu",use_bias=True),
+			tf.keras.layers.Dense(max(npt//2,ninp),activation="relu",use_bias=True),
+			tf.keras.layers.Dropout(.3),
+			tf.keras.layers.BatchNormalization(),
+			layer_output,
+			tf.keras.layers.Reshape((npt,5))
+		]
+
 	
 	## the five columns are for x,y,z,amp,sigma
 	## the range for x,y,z is [-.5, .5]
@@ -419,7 +444,10 @@ def train_decoder(gen_model, trainset, params, options, pts=None):
 			if xf.shape[0]==1: continue
 			pj_cpx=(pjr,pji)
 			with tf.GradientTape() as gt:
-				conf=tf.zeros((xf.shape[0],options.nmid), dtype=floattype)
+				# training entropy into the decoder by training individual particles towards random points in latent space
+				if options.decoderentropy: conf=tf.random.normal((xf.shape[0],options.nmid),stddev=0.1)
+				# normal behavior, training the neutral map to a latent vector of 0
+				else: conf=tf.zeros((xf.shape[0],options.nmid), dtype=floattype)
 				pout=gen_model(conf)
 				std=tf.reduce_mean(tf.math.reduce_std(pout, axis=1), axis=0)
 				imgs_cpx=pts2img(pout, xf, params, sym=options.sym)
@@ -773,6 +801,7 @@ def main():
 	parser.add_argument("--maxres", type=float,help="maximum resolution. will overwrite maxboxsz. ", default=-1)
 	parser.add_argument("--align", action="store_true", default=False ,help="align particles.")
 	parser.add_argument("--heter", action="store_true", default=False ,help="heterogeneity analysis.")
+	parser.add_argument("--decoderentropy", action="store_true", default=False ,help="This will train some entropy into the decoder using particles to reduce vanishing gradient problems")
 	parser.add_argument("--perturb", type=float, default=0.1 ,help="Relative perturbation level to apply in each iteration during --heter training. Default = 0.1, decrease if models are too disordered")
 	parser.add_argument("--conv", action="store_true", default=False ,help="Use a convolutional network for heterogeneity analysis.")
 	parser.add_argument("--fromscratch", action="store_true", default=False ,help="start from coarse alignment. otherwise will only do refinement from last round")
@@ -781,6 +810,7 @@ def main():
 	parser.add_argument("--midout", type=str,help="middle layer output", default="")
 	parser.add_argument("--pas", type=str,help="choose whether to adjust position, amplitude, sigma. use 3 digit 0/1 input. default is 110, i.e. only adjusting position and amplitude", default="110")
 	parser.add_argument("--nmid", type=int,help="size of the middle layer", default=4)
+	parser.add_argument("--ndense", type=int,help="size of the layers between the middle and in/out, variable if -1. Default 512", default=512)
 	parser.add_argument("--mask", type=str,help="remove points outside mask", default="")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
@@ -825,7 +855,7 @@ def main():
 		   
 		## randomize it a bit so we dont have all zero weights
 		rnd=np.random.randn(pts.shape[0], pts.shape[1])*1e-3
-		gen_model=build_decoder(pts+rnd, ninp=options.nmid)
+		gen_model=build_decoder(pts+rnd, ninp=options.nmid, conv=options.conv,mid=options.ndense)
 		print("{} gaussian in the model".format(len(pts)))
 		
 		## train the model from coordinates first
@@ -842,11 +872,12 @@ def main():
 	if options.decoderin:
 		gen_model=tf.keras.models.load_model(f"{options.decoderin}",compile=False)
 	
-	#### Decoder training from generated projections of a 3-D map
+	#### Decoder training from generated projections of a 3-D map or particles
+	#### Note that train_decoder takes options.decoderentropy into account internally
 	if options.projs:
 		# The shape of the decoder is defined by the number of Gaussians (npts) and the number of latent variables (nmid) 
 		if gen_model==None:
-			gen_model=build_decoder(options.npts, ninp=options.nmid)
+			gen_model=build_decoder(options.npts, ninp=options.nmid, conv=options.conv,mid=options.ndense)
 		print("Train model from ptcl-xfrom pairs...")
 		e=EMData(options.projs, 0, True)
 		raw_apix, raw_boxsz = e["apix_x"], e["ny"]
@@ -893,7 +924,7 @@ def main():
 				
 			#### save model to text file
 			np.savetxt(options.modelout, pout)
-			gen_model=build_decoder(pout, ninp=options.nmid)
+			gen_model=build_decoder(pout, ninp=options.nmid, conv=options.conv,mid=options.ndense)
 
 		
 		#### make projection images from GMM
@@ -901,6 +932,7 @@ def main():
 			if options.evalsize<0:
 				options.evalsize=raw_boxsz
 			eval_model(gen_model, options)
+
 	
 	#### Load particles with xforms in header
 	if options.ptclsin:
@@ -978,8 +1010,11 @@ def main():
 				allgrds=allgrds.reshape((len(allgrds), npt, 5))
 				
 		#### build deep networks and make sure they work
-		encode_model=build_encoder(nout=options.nmid, conv=options.conv)
-		decode_model=build_decoder(pts[0].numpy(), ninp=options.nmid, conv=options.conv)
+		encode_model=build_encoder(nout=options.nmid, conv=options.conv,ninp=len(pts[0]))
+		if options.decoderin:
+			decode_model=tf.keras.models.load_model(f"{options.decoderin}",compile=False)
+		else:
+			decode_model=build_decoder(pts[0].numpy(), ninp=options.nmid, conv=options.conv,mid=options.ndense)
 		
 		mid=encode_model(allgrds[:bsz])
 		print("Latent space shape: ", mid.shape)

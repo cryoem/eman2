@@ -9,7 +9,7 @@ channels:
     - file:///place_holder_conda_prefix/conda-bld
     - https://conda.anaconda.org/cryoem
     - https://conda.anaconda.org/conda-forge
-    - https://repo.anaconda.com/pkgs/main
+    - https://repo.anaconda.com/pkgs/main           # [win]
     - https://repo.anaconda.com/pkgs/msys2          # [win]
 
 keep_pkgs: False
@@ -19,7 +19,7 @@ specs:
   - eman2        2.99
   - eman-deps    31.1
   - conda
-  - conda-build
+  - mamba
   - pip
   - console_shortcut  # [win]
   - menuinst          # [win]
