@@ -603,13 +603,19 @@ class EMFileType(object) :
 		progress = QtWidgets.QProgressDialog("Generating projections", "Cancel", 0, img1-img0-1,None)
 #		progress.show()
 		
-		data=[]
+		# make an empty array so we can easily interleave
+		data=[None for i in range(img0,img1,imgstep)]
+		nd=len(data)
+		if stkout: data=data*3
+		
+		# reference goes last!
 		if ref!=None:
 			if mask!=None: ref.mult(mask)
 			hall=makeOrthoProj(ref,layers,highpass,lowpass,stkout)
 			if isinstance(hall,EMData): data.append(hall)
 			else: data.extend(hall)
-			
+		
+		c=0
 		for i in range(img0,img1,imgstep):
 			try: ptcl=EMData(self.path,i)
 			except:
@@ -631,10 +637,13 @@ class EMFileType(object) :
 				for k in ["ptcl_repr","class_ptcl_idxs","class_ptlc_src","orig_file","orig_n","source_path","source_n"]:
 					try: hall[k]=ptcl[k]
 					except: pass
-				data.append(hall)
+				data[c]=hall
 			else:
-				data.extend(hall)
+				data[c]=hall[0]
+				data[c+nd]=hall[1]
+				data[c+2*nd]=hall[2]
 			
+			c+=1
 			progress.setValue(i-img0)
 			
 			if progress.wasCanceled():
@@ -2327,10 +2336,15 @@ def humansize(val) :
 	try : val = int(val)
 	except : return val
 
-	if val > 1000000000 : return "%d g"%(old_div(val,1000000000))
-	elif val > 1000000 : return "%d m"%(old_div(val,1000000))
-	elif val > 1000 : return "%d k"%(old_div(val,1000))
+	if val > 2**30 : return "%d g"%(val/(2**30))
+	elif val > 2**20 : return "%d m"%(val/(2**20))
+	elif val > 2**10 : return "%d k"%(val/(2**10))
 	return str(val)
+
+	#if val > 1000000000 : return "%d g"%(old_div(val,1000000000))
+	#elif val > 1000000 : return "%d m"%(old_div(val,1000000))
+	#elif val > 1000 : return "%d k"%(old_div(val,1000))
+	#return str(val)
 
 class EMFileItemModel(QtCore.QAbstractItemModel) :
 	"""This ItemModel represents the local filesystem. We don't use the normal filesystem item model because we want

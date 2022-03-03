@@ -10,19 +10,23 @@ def main():
 	Generate initial model from subtomogram particles using stochastic gradient descent.
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
+	parser.add_pos_argument(name="particles",help="Specify particles to use to generate an initial model.", default="", guitype='filebox', browser="EMSetsTable(withmodal=True,multiselect=False)", row=0, col=1,rowspan=1, colspan=2, mode="model")
 	parser.add_argument("--path", type=str,help="path", default=None)
-	parser.add_argument("--niter", type=int,help="iterations", default=100)
-	parser.add_argument("--parallel", type=str,help="parallel", default="thread:12")
-	parser.add_argument("--shrink", type=int,help="shrink", default=1)
-	parser.add_argument("--batch", type=int,help="batch size", default=12)
-	parser.add_argument("--ncls", type=int,help="number of class", default=1)
-	parser.add_argument("--keep", type=float,help="keep fraction of good particles. will actually align more particles and use the number of particles specified by batch", default=.7)
-	parser.add_argument("--learnrate", type=float,help="learning rate", default=.2)
-	parser.add_argument("--res", type=float,help="resolution", default=50)
-	parser.add_argument("--ref", type=str,help="reference", default=None)
+	parser.add_argument("--res", type=float,help="target resolution", default=50,guitype='floatbox',row=2, col=1,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--niter", type=int,help="iterations", default=100, guitype='intbox',row=2, col=2,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--shrink", type=int,help="shrink", default=1, guitype='intbox',row=4, col=1,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>=<value>. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel",default="thread:8", guitype='strbox', row=6, col=1, rowspan=1, colspan=2, mode="model[thread:8]")
+	parser.add_argument("--ncls", type=int,help="number of classes", default=1,guitype='intbox',row=8, col=1,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--batch", type=int,help="batch size", default=12,guitype='intbox',row=8, col=2,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--keep", type=float,help="Fraction of particles to keep. will actually align more particles and use the number of particles specified by batch", default=.7)
+	parser.add_argument("--learnrate", type=float,help="learning rate, default 0.2", default=.2,guitype='floatbox',row=10, col=1,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--ref", type=str,help="Reference volume, not required. default=none", default=None,guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=11, col=1,rowspan=1, colspan=2, mode="model")
+	parser.add_argument("--sym", type=str,help="symmetry. Only c1 unless --ref used", default="c1",guitype='strbox',row=12, col=1,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--classify",action="store_true",help="classify particles to the best class. there is the risk that some classes may end up with no particle. by default each class will include the best batch particles, and different classes can overlap.",default=False)
+	parser.add_argument("--curve",action="store_true",help="Mode for filament structure refinement.",default=False)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--ppid", type=int,help="ppid", default=-2)
 
-	#parser.add_argument("--sym", type=str,help="sym", default='c1')
 	
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -70,8 +74,19 @@ def main():
 			idx=np.arange(npt)
 			np.random.shuffle(idx)
 			idx=np.sort(idx[:batch])
-			tt=parsesym("c1")
-			xfs=tt.gen_orientations("rand",{"n":batch,"phitoo":True})
+			if options.curve:
+				xfs=[]
+				for ii in idx:
+					s=info3d[ii]
+					e=EMData(s["src"], s["idx"], True)
+					xf=Transform(e["xform.align3d"])
+					r=Transform({"type":"eman", "phi":np.random.rand()*360})
+					xfs.append((r*xf).inverse())
+				
+			else:
+				tt=parsesym("c1")
+				xfs=tt.gen_orientations("rand",{"n":batch,"phitoo":True})
+				
 			ali2d=[]
 			for ii,xf in zip(idx,xfs):
 				i2d=info3d[ii]["idx2d"]
@@ -94,7 +109,7 @@ def main():
 		ali3d=[info3d[i] for i in idx]
 		save_lst_params(ali3d, info3dname)
 		
-		launch_childprocess(f"e2spt_align_subtlt.py {path}/particle_info_3d.lst {options.ref} --path {path} --maxres {res} --parallel {options.parallel} --fromscratch --iter 0")
+		launch_childprocess(f"e2spt_align_subtlt.py {path}/particle_info_3d.lst {options.ref} --path {path} --maxres {res} --parallel {options.parallel} --fromscratch --iter 0  --sym {options.sym}")
 		ali2d=load_lst_params(f"{path}/aliptcls2d_00.lst")
 		thrd0=make_3d(ali2d, options)
 		thrd0s.append(thrd0)
@@ -115,7 +130,13 @@ def main():
 		a2dout=[]
 		for ic in range(ncls):
 			print(f"iter {itr}, class {ic}: ")
-			launch_childprocess(f"e2spt_align_subtlt.py {path}/particle_info_3d.lst {path}/output_cls{ic}.hdf --path {path} --maxres {res} --parallel {options.parallel} --fromscratch --iter 0")
+			cmd=f"e2spt_align_subtlt.py {path}/particle_info_3d.lst {path}/output_cls{ic}.hdf --path {path} --maxres {res} --parallel {options.parallel} --iter 0 --sym {options.sym}"
+			if options.curve:
+				cmd+=" --curve"
+			else:
+				cmd+=" --fromscratch"
+				
+			launch_childprocess(cmd)
 			
 			a3dout.append(load_lst_params(f"{path}/aliptcls3d_00.lst"))
 			a2dout.append(load_lst_params(f"{path}/aliptcls2d_00.lst"))
@@ -140,8 +161,6 @@ def main():
 				if a["ptcl3d_id"] in scrid:
 					ali2d.append(a)
 					
-			#print(len(ali2d))
-									
 			thrd1=make_3d(ali2d, options)
 			thrd0=thrd0s[ic]
 			
@@ -158,24 +177,43 @@ def main():
 def make_3d(ali2d, options):
 	#normvol=EMData(pad//2+1, pad, pad)
 	pad=options.pad
-	recon=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":"trilinear"})
+	recon=Reconstructors.get("fourier", {"sym":options.sym,"size":[pad,pad,pad], "mode":"trilinear"})
 	recon.setup()
-	for a in ali2d:
-		e=EMData(a["src"],a["idx"])
-		xf=Transform(a["xform.projection"])
-		xf.set_trans(-xf.get_trans())
+	
+	thrds=[threading.Thread(target=do_insert,args=(recon, a, options.shrink)) for a in ali2d]
+	for t in thrds:  t.start()
+	for t in thrds:  t.join()
 		
-		if options.shrink>1:
-			e.process_inplace("math.meanshrink",{"n":options.shrink})
-			xf.set_trans(xf.get_trans()/options.shrink)
+	#for a in ali2d:
+		#e=EMData(a["src"],a["idx"])
+		#xf=Transform(a["xform.projection"])
+		#xf.set_trans(-xf.get_trans())
 		
-		ep=recon.preprocess_slice(e, xf)
-		recon.insert_slice(ep,xf,1)
-
+		#if options.shrink>1:
+			#e.process_inplace("math.meanshrink",{"n":options.shrink})
+			#xf.set_trans(xf.get_trans()/options.shrink)
+		
+		#ep=recon.preprocess_slice(e, xf)
+		#recon.insert_slice(ep,xf,1)
+	
 	threed=recon.finish(False)
 
 	return threed
 
+def do_insert(recon, a, shrink):
+	
+	e=EMData(a["src"],a["idx"])
+	xf=Transform(a["xform.projection"])
+	xf.set_trans(-xf.get_trans())
+	
+	if shrink>1:
+		e.process_inplace("math.meanshrink",{"n":shrink})
+		xf.set_trans(xf.get_trans()/shrink)
+	
+	ep=recon.preprocess_slice(e, xf)
+	recon.insert_slice(ep,xf,1)
+	
+	return
 
 def post_process(threed, options):
 	pad=options.pad

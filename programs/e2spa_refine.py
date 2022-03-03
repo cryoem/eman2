@@ -9,21 +9,23 @@ def main():
 	e2spa_refine.py --ptcl <particle list file> --ref <reference map> --res <inital resoution>
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--ptcl", type=str,help="particle input", default="")
-	parser.add_argument("--ref", type=str,help="reference", default="")
-	parser.add_argument("--path", type=str,help="path. default is r3d_00", default=None)
-	parser.add_argument("--parallel", type=str,help="", default="thread:1")
+	parser.add_argument("--ptcl", type=str,help="Input particle stack.", default="")
+	parser.add_argument("--ref", type=str,help="Reference map. This will be scaled/clipped to match the particles automatically.", default="")
+	parser.add_argument("--path", type=str,help="Path for refinement output files. default is r3d_xx", default=None)
+	parser.add_argument("--parallel", type=str,help="Run in parallel, specify type:<option>=<value>:<option>=<value>.", default="thread:1")
 	parser.add_argument("--sym", type=str,help="sym", default="c1")
 	parser.add_argument("--res", type=float,help="The resolution that reference map is lowpass filtered to (with phase randomization) at the begining of the refinement. ", default=10)
-	parser.add_argument("--keep", type=float,help="keep", default=.9)
-	parser.add_argument("--startiter", type=int,help="iter", default=0)
-	parser.add_argument("--niter", type=int,help="iter", default=10)
-	parser.add_argument("--setsf", type=str,help="structure factor", default=None)
-	parser.add_argument("--tophat", type=str, default="local",help="Default=local, can also specify localwiener")
-	parser.add_argument("--threads", type=int,help="threads to use during postprocessing of 3d volumes", default=4)
-	parser.add_argument("--mask", default=None, type=str,help="specify a mask file.")
-	parser.add_argument("--compressbits", type=int,help="Bits to keep when writing images. 4 generally safe for raw data. 0-> true lossless (floating point). Default 6", default=6, guitype='intbox', row=10, col=1, rowspan=1, colspan=1, mode='filter[6]')
+	parser.add_argument("--keep", type=float,help="Fraction of best particles to keep in each iteration.", default=.9)
+	parser.add_argument("--niter", type=int,help="Number of iterations. Default is 10.", default=10)
+	parser.add_argument("--startiter", type=int,help="Start from a specified iteration in an existing refinement ", default=0)
+	parser.add_argument("--setsf", type=str,help="Text file containing structure factor for map sharpening. Can be produced during CTF estimation, or from an existing high resolution map.", default=None)
+	parser.add_argument("--tophat", type=str, default="local",help="Options for filtering maps. Run 'e2help.py tophat' for more information. Default=local.")
+	parser.add_argument("--threads", type=int,help="Threads to use during postprocessing of 3d volumes", default=4)
+	parser.add_argument("--mask", default=None, type=str,help="Specify a mask file for each iteration of refinement. Otherwise will generate mask automatically.")
+	parser.add_argument("--compressbits", type=int,help="Bits to keep when writing images. 4 generally safe for raw data. 0-> true lossless (floating point). Default 6", default=6)
 	parser.add_argument("--localsize",type=float,default=-1,help="Override the automatic local region size (in A) used for local resolution calculation and filtration.")
+	parser.add_argument("--m3dthread",action="store_true", default=False ,help="do make3d in threading mode with shared memory. safer for large boxes")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -42,6 +44,11 @@ def main():
 	js.update(vars(options))
 	js.close()
 	
+	if options.m3dthread:
+		m3dpar=f" --threads {options.threads}"
+	else:
+		m3dpar=f" --parallel {options.parallel}"
+		
 	if options.startiter==0:
 		
 		r=1/res
@@ -70,10 +77,10 @@ def main():
 	
 	for i in range(options.startiter, options.startiter+options.niter):
 		
-		run("e2spa_align.py --ptclin {pt}/ptcls_{i0:02d}.lst --ptclout {pt}/ptcls_{i1:02d}.lst --ref {pt}/threed_{i0:02d}.hdf --parallel {par} --sym {s} --maxres {rs:.2f} --goldcontinue".format(pt=options.path, i0=i, i1=i+1, rs=res, eo=eo, s=sym, par=options.parallel))
+		run("e2spa_align.py --ptclin {pt}/ptcls_{i0:02d}.lst --ptclout {pt}/ptcls_{i1:02d}.lst --ref {pt}/threed_{i0:02d}.hdf --parallel {par} --sym {s} --maxres {rs:.2f} --goldcontinue --verbose {verbose}".format(pt=options.path, i0=i, i1=i+1, rs=res, s=sym, par=options.parallel, verbose=options.verbose))
 			
 		for eo in ["even","odd"]:
-			run("e2spa_make3d.py --input {pt}/ptcls_{i1:02d}.lst --output {pt}/threed_{i1:02d}_{eo}.hdf --keep {kp} --sym {s} --parallel {par} --clsid {eo}".format(pt=options.path, i1=i+1, eo=eo, s=sym, par=options.parallel, kp=options.keep))
+			run("e2spa_make3d.py --input {pt}/ptcls_{i1:02d}.lst --output {pt}/threed_{i1:02d}_{eo}.hdf --keep {kp} --sym {s} {par} --clsid {eo}".format(pt=options.path, i1=i+1, eo=eo, s=sym, par=m3dpar, kp=options.keep))
 
 		if i==options.startiter:
 			res/=2

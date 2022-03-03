@@ -1691,12 +1691,15 @@ EMData *DistanceSegmentProcessor::process(const EMData * const image)
 
 EMData* ApplySymProcessor::process(const EMData * const image)
 {
+	string s=(string)params.set_default("sym","c1");
+	if (s.length()<2) return image->copy();
+	int n=atoi(s.c_str()+1);
+	if ((s[0]=='c' || s[0]=='C') && n==1) return image->copy();
+	
 	Averager* imgavg = Factory<Averager>::get((string)params.set_default("averager","mean"));
 
 	if (image->get_zsize()==1) {
-		string s=(string)params["sym"];
 		if (s[0]!='c' && s[0]!='C') throw ImageDimensionException("xform.applysym: Cn symmetry required for 2-D symmetrization");
-		int n=atoi(s.c_str()+1);
 		if (n<=0) throw InvalidValueException(n,"xform.applysym: Cn symmetry, n>0");
 
 		for (int i=0; i<n; i++) {

@@ -21,6 +21,7 @@ def main():
 	usage="This is a GUI program that allows users inspect tomograms easily. Simply run without argument in a tomogram project directory."
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--ppid", type=int,help="", default=None)
+	parser.add_argument("--zshift", type=float,help="shift thumbnail image along z. range -.5 to .5. default 0.", default=0)
 
 	parser.add_header(name="orblock1", help='', title="Click launch to evaluate reconstructed tomograms", row=1, col=0, rowspan=1, colspan=2, mode="")
 
@@ -50,6 +51,7 @@ class TomoEvalGUI(QtWidgets.QWidget):
 
 		self.win_size=[1000,680]
 		self.setMinimumSize(self.win_size[0], self.win_size[1])
+		self.options=options
 
 		# This object is itself a widget we need to set up
 		self.gbl = QtWidgets.QGridLayout(self)
@@ -80,51 +82,61 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		self.wg_thumbnail.setMinimumHeight(330)
 		self.gbl.addWidget(self.wg_thumbnail, 0,1,3,2)
 		
-		self.bt_show2d=QtWidgets.QPushButton("Show2D")
-		self.bt_show2d.setToolTip("Show 2D images")
-		self.gbl.addWidget(self.bt_show2d, 4,1)
-		
-		self.bt_runboxer=QtWidgets.QPushButton("Boxer")
-		self.bt_runboxer.setToolTip("Run spt_boxer")
-		self.gbl.addWidget(self.bt_runboxer, 5,1)
-		
 		self.bt_refresh=QtWidgets.QPushButton("Refresh")
 		self.bt_refresh.setToolTip("Refresh")
-		self.gbl.addWidget(self.bt_refresh, 4,2)
-		
+		self.gbl.addWidget(self.bt_refresh, 4,1)
+
 		self.bt_showtlts=QtWidgets.QPushButton("ShowTilts")
 		self.bt_showtlts.setToolTip("Show raw tilt series")
-		self.gbl.addWidget(self.bt_showtlts, 6,1)
+		self.gbl.addWidget(self.bt_showtlts, 5,1)
 		
 		self.bt_showatlts=QtWidgets.QPushButton("ShowAliTilts")
 		self.bt_showatlts.setToolTip("Show raw tilt series")
-		self.gbl.addWidget(self.bt_showatlts, 6,2)
+		self.gbl.addWidget(self.bt_showatlts, 5,2)
 		
-		self.bt_plottpm=QtWidgets.QPushButton("TiltParams")
-		self.bt_plottpm.setToolTip("Plot tilt parameters")
-		self.gbl.addWidget(self.bt_plottpm, 5,2)
-		
-		self.bt_plotloss=QtWidgets.QPushButton("PlotLoss")
-		self.bt_plotloss.setToolTip("Plot alignment loss")
-		self.gbl.addWidget(self.bt_plotloss, 7,1)
-		
-		self.bt_plotctf=QtWidgets.QPushButton("PlotCtf")
-		self.bt_plotctf.setToolTip("Plot CTF estimation")
-		self.gbl.addWidget(self.bt_plotctf, 7,2)
+		self.bt_show2d=QtWidgets.QPushButton("Show Tomo 2D")
+		self.bt_show2d.setToolTip("Show tomogram by Z slices")
+		self.gbl.addWidget(self.bt_show2d, 6,1)
 		
 		self.bt_clearptcl=QtWidgets.QPushButton("ClearPtcls")
 		self.bt_clearptcl.setToolTip("Clear all ptcls")
-		self.gbl.addWidget(self.bt_clearptcl, 8,2)
+		self.gbl.addWidget(self.bt_clearptcl, 6,2)
+		
+		self.bt_runboxer=QtWidgets.QPushButton("Boxer")
+		self.bt_runboxer.setToolTip("Run spt_boxer")
+		self.gbl.addWidget(self.bt_runboxer, 7,1)
+		
+		self.bt_runboxercnn=QtWidgets.QPushButton("CNN Boxer")
+		self.bt_runboxercnn.setToolTip("Run spt_boxer_convnet (deep learning particle picker)")
+		self.gbl.addWidget(self.bt_runboxercnn, 7,2)
+		
+		self.bt_plottpm=QtWidgets.QPushButton("TiltParams")
+		self.bt_plottpm.setToolTip("Plot tilt parameters")
+		self.gbl.addWidget(self.bt_plottpm, 8,1)
+		
+		self.bt_plotloss=QtWidgets.QPushButton("PlotLoss")
+		self.bt_plotloss.setToolTip("Plot alignment loss")
+		self.gbl.addWidget(self.bt_plotloss, 8,2)
+		
+		self.bt_plotctf=QtWidgets.QPushButton("PlotCtf")
+		self.bt_plotctf.setToolTip("Plot CTF estimation")
+		self.gbl.addWidget(self.bt_plotctf, 9,1)
+		
+		self.bt_evalimage=QtWidgets.QPushButton("EvalImage")
+		self.bt_evalimage.setToolTip("Power spectrum analysis of individual tilt images")
+		self.gbl.addWidget(self.bt_evalimage, 9,2)
 		
 
 		self.bt_show2d.clicked[bool].connect(self.show2d)
 		self.bt_runboxer.clicked[bool].connect(self.runboxer)
+		self.bt_runboxercnn.clicked[bool].connect(self.runboxercnn)
 		self.bt_plotloss.clicked[bool].connect(self.plot_loss)
 		self.bt_plottpm.clicked[bool].connect(self.plot_tltparams)
 		self.bt_showtlts.clicked[bool].connect(self.show_tlts)
 		self.bt_showatlts.clicked[bool].connect(self.show_ali_tlts)
 		self.bt_refresh.clicked[bool].connect(self.update_files)
 		self.bt_plotctf.clicked[bool].connect(self.plot_ctf)
+		self.bt_evalimage.clicked[bool].connect(self.eval_image)
 		self.bt_clearptcl.clicked[bool].connect(self.clear_ptcls)
 		
 		self.wg_2dimage=EMImage2DWidget()
@@ -325,7 +337,11 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		print("Showing 2D for image {} : {}".format(int(idx), info["filename"]))
 		
 		self.cur_data=EMData(info["filename"])
-		self.wg_2dimage.list_idx=int(old_div(self.cur_data["nz"],2))
+		iz=self.cur_data["nz"]//2
+		if self.options.zshift!=0:
+			iz+=int(self.options.zshift*self.cur_data["nz"])
+			
+		self.wg_2dimage.list_idx=iz
 		self.wg_2dimage.setWindowTitle(info["filename"])
 		self.wg_2dimage.set_data(self.cur_data)
 		self.wg_2dimage.show()
@@ -387,7 +403,20 @@ class TomoEvalGUI(QtWidgets.QWidget):
 			self.wg_plot2d.setAxes(info["e2basename"], 1, 2)
 			self.wg_plot2d.show()
 			
+	def eval_image(self):
+		idx, info=self.get_id_info()
+		if idx==None: return
+		js=js_open_dict(info_name(info["e2basename"]))
+		subprocess.Popen(f"e2evalimage.py {info['tltfile']} --voltage {js.getdefault('voltage',300.0)} --cs {js.getdefault('cs',2.7)} --box 256 --constbfactor 400",shell=True)
 	
+	def runboxercnn(self):
+		idx, info=self.get_id_info()
+		if idx==None: return
+		modifiers = QtWidgets.QApplication.keyboardModifiers()
+		### do not use launch_childprocess so the gui wont be frozen when boxer is opened
+		subprocess.Popen("e2spt_boxer_convnet.py --ppid {}".format(os.getpid()),shell=True)
+#		subprocess.Popen("e2spt_boxer_convnet.py {} --ppid {}".format(info["filename"], os.getpid()),shell=True)
+
 	def runboxer(self):
 		idx, info=self.get_id_info()
 		if idx==None: return
@@ -436,7 +465,9 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		idx=self.imglst.item(row, 0).text()
 		info=self.imginfo[int(idx)]
 		hdr=EMData(info["filename"], 0,True)
-		iz=old_div(hdr["nz"],2)
+		iz=hdr["nz"]//2
+		if self.options.zshift!=0:
+			iz+=int(self.options.zshift*hdr["nz"])
 		e=EMData(info["filename"], 0, False, Region(0,0,iz, hdr["nx"], hdr["ny"],1))
 		
 		fac=float(hdr["nx"])/self.bt_show2d.width()*.55

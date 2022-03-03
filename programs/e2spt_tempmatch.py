@@ -23,21 +23,23 @@ def main():
 	parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=2, col=0, rowspan=1, colspan=1, mode="boxing")
 
 	parser.add_argument("--label", type=str,help="Assign unique label to particles resembling specified reference. This allows specific particles to be extracted in the next step and aids project organization with easily interpreted filenames.\nIf --label is not specified, this set of particles will be labeled according to the file name of the reference without file extension.", default=None, guitype='strbox',row=3, col=0, rowspan=1, colspan=1, mode="boxing")
-	parser.add_argument("--nptcl", type=int,help="maximum number of particles", default=500, guitype='intbox', row=3, col=1,rowspan=1, colspan=1, mode="boxing")
+	parser.add_argument("--nptcl", type=int,help="maximum number of particles per tomogram", default=500, guitype='intbox', row=3, col=1,rowspan=1, colspan=1, mode="boxing")
 
-	parser.add_argument("--dthr", type=float,help="distance threshold", default=-1, guitype='floatbox', row=4, col=0,rowspan=1, colspan=1, mode="boxing")
-	parser.add_argument("--vthr", type=float,help="value threshold (n sigma)", default=10, guitype='floatbox', row=4, col=1,rowspan=1, colspan=1, mode="boxing")
+	parser.add_argument("--dthr", type=float,help="The program will remove particles closer than this distance threshold. By default, this will be 1/2 of box size or the reference. Otherwise, specify the distance in Angstrom.", default=-1, guitype='floatbox', row=4, col=0,rowspan=1, colspan=1, mode="boxing")
+	
+	parser.add_argument("--vthr", type=float,help="template matching value threshold (n sigma). Particles with score lower than this will be removed.", default=10, guitype='floatbox', row=4, col=1,rowspan=1, colspan=1, mode="boxing")
 
-	parser.add_argument("--delta", type=float,help="delta angle", default=30.0, guitype='floatbox', row=5, col=0,rowspan=1, colspan=1, mode="boxing")
-	parser.add_argument("--sym", type=str,help="symmetry", default="c1", guitype='strbox', row=5, col=1,rowspan=1, colspan=1, mode="boxing")
+	parser.add_argument("--delta", type=float,help="Anglular sampling to rotate the reference.", default=30.0, guitype='floatbox', row=5, col=0,rowspan=1, colspan=1, mode="boxing")
+	
+	parser.add_argument("--sym", type=str,help="Symmetry of reference.", default="c1", guitype='strbox', row=5, col=1,rowspan=1, colspan=1, mode="boxing")
 	
 	parser.add_argument("--rmedge", action="store_true",help="Remove particles on the edge.", default=False, guitype='boolbox', row=6, col=0,rowspan=1, colspan=1, mode="boxing[True]")
 	parser.add_argument("--rmgold", action="store_true",help="Remove particles near gold fiducial.", default=False, guitype='boolbox', row=6, col=1,rowspan=1, colspan=1, mode="boxing[True]")
 
-	parser.add_argument("--boxsz", type=int,help="Overwrite box size", default=-1, guitype='intbox', row=7, col=0,rowspan=1, colspan=1, mode="boxing")
+	parser.add_argument("--boxsz", type=int,help="Overwrite box size of the reference. This should be the box size of unbinned micrographs if specified.", default=-1, guitype='intbox', row=7, col=0,rowspan=1, colspan=1, mode="boxing")
 	parser.add_argument("--threads", type=int,help="number of threads to use", default=12, guitype='intbox', row=8, col=0,rowspan=1, colspan=1, mode="boxing")
 
-	parser.add_argument("--shrink", type=int,help="binning factor. Default (-1) will downsample to ~500", default=-1)
+	parser.add_argument("--shrink", type=int,help="binning factor. Default (-1) will downsample the tomograms to ~500px for template matching", default=-1)
 	parser.add_argument("--ppid", type=int,help="ppid", default=-2)
 
 	(options, args) = parser.parse_args()
@@ -179,24 +181,27 @@ def main():
 
 		tokeep=np.ones(len(pks), dtype=bool)
 		if options.dthr>0:
-			dthr=options.dthr/4
+			dthr=options.dthr/tomo["apix_x"]
 		else:
-			dthr=boxsz/2
+			dthr=boxsz
 			
+		print(np.min(pks, axis=0), np.max(pks, axis=0), boxsz, dthr)
 		for i in range(len(pks)):
 			if tokeep[i]:
 				k=tree.query_ball_point(pks[i], dthr)
 				tokeep[k]=False
 				tokeep[i]=True
 			
-		print(np.sum(tokeep))
 		pts=pks[tokeep]
 		scr=pkscore[tokeep]
 		
 		if len(pts)>options.nptcl:
+			print("Found {} particles. Keep the best {}.".format(len(pts), options.nptcl))
 			pts=pts[:options.nptcl]
 		
-		print("Found {} particles".format(len(pts)))
+		else:
+			print("Found {} particles".format(len(pts)))
+			
 		js=js_open_dict(info_name(imgname))
 		n=min(options.nptcl, len(pts))
 		
@@ -219,7 +224,7 @@ def main():
 			shp=np.array([tomo["nz"], tomo["ny"], tomo["nx"]])
 			#print(sz,nbin,apix, apix_unbin)
 			if options.boxsz<0:
-				boxsz=int(np.round(boxsz*apix/apix_unbin))
+				boxsz=int(np.round(boxsz*apix/apix_unbin*2))
 			else:
 				boxsz=options.boxsz
 			

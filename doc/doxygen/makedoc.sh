@@ -12,11 +12,11 @@ if test ! $? = 0; then
 fi
 
 echo -n "Start to generate Doxygen documentation. Be patient ... "
-cd ${EMAN2DIR}/src/eman2
+cd ../..
 doxygen  doc/doxygen/Doxyfile
 echo "Done"
 
-rm -rf ${EMAN2DIR}/doc/doxygen_html
-mv -f ${EMAN2DIR}/src/eman2/doc/html ${EMAN2DIR}/doc/doxygen_html
+rm -rf doc/doxygen_html
+mv -f doc/html doc/doxygen_html
 
 #echo "Documentation is at $PWD/doc/html/index.html"

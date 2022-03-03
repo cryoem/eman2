@@ -224,7 +224,8 @@ class EMImage2DWidget(EMGLWidget):
 		width = width // self.devicePixelRatio()
 		height = height // self.devicePixelRatio()
 		side = min(width, height)
-		GL.glViewport(0,0,width,height)
+		dpr=self.devicePixelRatio()
+		GL.glViewport(0,0,self.width()*dpr,self.height()*dpr)
 
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()

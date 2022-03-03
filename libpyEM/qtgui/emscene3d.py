@@ -1506,8 +1506,8 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""
 		insertionpoint = None
 		node.setLabel(name)
-		if parentnode:
-			if parentidx:
+		if parentnode is not None:
+			if parentidx is not None:
 				parentnode.insertChild(node, parentidx)
 			else:
 				parentnode.addChild(node)

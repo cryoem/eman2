@@ -486,7 +486,7 @@ def main():
 				for key in list(param_dict.keys()):
 					if str(param_dict[key]).find('bdb:')!=-1 or not str(param_dict[key]).isdigit():
 						try:
-							if  os.path.is_file(param_dict[key]) :
+							if  os.path.isfile(param_dict[key]) :
 								param_dict[key] = EMData(param_dict[key])
 						except:
 							pass

@@ -29,6 +29,7 @@ def main():
 	parser.add_argument("--loadali2d", type=str,help="previous 2d alignment", default=None)
 	parser.add_argument("--loadali3d", type=str,help="previous 3d alignment", default=None)
 	parser.add_argument("--submean", action="store_true", default=False ,help="substract mean movement of the vector field")
+	parser.add_argument("--defocus", action="store_true", default=False ,help="plot defocus refinement result")
 
 
 	(options, args) = parser.parse_args()
@@ -123,11 +124,31 @@ class EMSptEval(QtWidgets.QMainWindow):
 		print("Gathering metadata...")
 		self.info3d=load_lst_params(f"{path}/particle_info_3d.lst")
 		self.info2d=load_lst_params(f"{path}/particle_info_2d.lst")
+		if self.options.loadali3d==None:
+			for i in range(99,0,-1):
+				fm=f"{path}/aliptcls3d_{i:02d}.lst"
+				if os.path.isfile(fm):
+					self.options.loadali3d=fm
+					break
+			print("using 3d alignment from {}".format(self.options.loadali3d))
+			
+		if self.options.loadali2d==None:
+			for i in range(99,0,-1):
+				fm=f"{path}/aliptcls2d_{i:02d}.lst"
+				if os.path.isfile(fm):
+					lst=load_lst_params(fm, range(10))
+					self.options.loadali2d=fm
+					break
+			print("using 2d alignment from {}".format(self.options.loadali2d))
 		
 		alipm=load_lst_params(self.options.loadali2d)
 		for i,a in zip(self.info2d, alipm):
 			i["pastxf"]=a["xform.projection"]
 			i["score"]=a["score"]
+			if "defocus" in a:
+				i["defocus"]=a["defocus"]
+			else:
+				i["defocus"]=0
 			
 		alipm=load_lst_params(self.options.loadali3d)
 		for i,a in zip(self.info3d, alipm):
@@ -153,6 +174,7 @@ class EMSptEval(QtWidgets.QMainWindow):
 		
 		self.sel_coord=[]
 		self.sel_score=[]
+		self.sel_defocus=[]
 		self.sel_dxy=[]
 		self.tltang=[]
 		for td in tid:
@@ -181,12 +203,15 @@ class EMSptEval(QtWidgets.QMainWindow):
 			pastxf=([b*a.inverse()for a,b in zip(xfraw, xfali)])
 			dxy=np.array([a.get_trans() for a in pastxf])
 			score=[d["score"] for d in d2d]
+			defocus=[d["defocus"] for d in d2d]
 			
 			self.sel_score.append(score)
 			self.sel_dxy.append(dxy)
 			self.sel_coord.append(coord)
+			self.sel_defocus.append(defocus)
 		
 		self.plt_scr=[np.mean(s) for s in self.sel_score]
+		self.plt_def=[np.mean(abs(np.array(s))) for s in self.sel_defocus]
 		self.plt_dxy=[np.mean(np.linalg.norm(d, axis=1)) for d in self.sel_dxy]
 		self.sel_tid=int(np.mean(tid))
 		self.tltang=np.array(self.tltang)
@@ -216,29 +241,50 @@ class EMSptEval(QtWidgets.QMainWindow):
 		coord=self.sel_coord[tid]
 		dxy=self.sel_dxy[tid].copy()
 		score=self.sel_score[tid]
-		
-		if self.options.submean:
-			md=np.mean(dxy, axis=0)
-			print("tilt {} : mean x - {:.2f}, y - {:.2f}".format(tid, md[0], md[1]))
-			dxy-=md
+		if self.options.defocus:
+			
+			defocus=self.sel_defocus[tid]
+			
+			plot=self.ploty
+			plot.cla()
+			plot.scatter(coord[:,0], coord[:,1], c=defocus, s=20,cmap='coolwarm')
+			plot.axis('square');
+			self.plotwiny.draw()
+			
+			plot=self.plotx
+			plot.cla()
+			plot.plot(self.tltang, self.plt_scr,'b')
+			ax=self.plotx2
+			ax.cla()
+			ax.plot(self.tltang, self.plt_def,'--r')
+			plot.vlines(self.tltang[tid], np.min(self.plt_scr), np.max(self.plt_scr))
+			
+			self.plotwinx.draw()
+			
+		else:
+			
+			if self.options.submean:
+				md=np.mean(dxy, axis=0)
+				print("tilt {} : mean x - {:.2f}, y - {:.2f}".format(tid, md[0], md[1]))
+				dxy-=md
 
-		plot=self.ploty
-		plot.cla()
-		plot.quiver(coord[:,0], coord[:,1], dxy[:,0], dxy[:,1], score,  scale=100,width=.005,cmap='coolwarm')
-				
-		plot.axis('square');
-		self.plotwiny.draw()
-		
-		
-		plot=self.plotx
-		plot.cla()
-		plot.plot(self.tltang, self.plt_scr,'b')
-		ax=self.plotx2
-		ax.cla()
-		ax.plot(self.tltang, self.plt_dxy,'--r')
-		plot.vlines(self.tltang[tid], np.min(self.plt_scr), np.max(self.plt_scr))
-		
-		self.plotwinx.draw()
+			plot=self.ploty
+			plot.cla()
+			plot.quiver(coord[:,0], coord[:,1], dxy[:,0], dxy[:,1], score,  scale=100,width=.005,cmap='coolwarm')
+					
+			plot.axis('square');
+			self.plotwiny.draw()
+			
+			
+			plot=self.plotx
+			plot.cla()
+			plot.plot(self.tltang, self.plt_scr,'b')
+			ax=self.plotx2
+			ax.cla()
+			ax.plot(self.tltang, self.plt_dxy,'--r')
+			plot.vlines(self.tltang[tid], np.min(self.plt_scr), np.max(self.plt_scr))
+			
+			self.plotwinx.draw()
 		
 		
 	def update_list(self):

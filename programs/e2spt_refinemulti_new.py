@@ -22,6 +22,7 @@ def main():
 	parser.add_argument("--path", type=str,help="Path for the refinement", default=None)
 	parser.add_argument("--nref", type=int,help="Number of classes. Without --loadali3d, it duplicate the first ref N times with phase randomization at 2 x maxres. With --loadali3d, the particles are classified to N random classes at the begining.", default=-1)
 	parser.add_argument("--maskalign", type=str,default=None,help="Mask file applied to 3D alignment reference in each iteration. Not applied to the average, which will follow normal masking routine.")
+	parser.add_argument("--maskref", type=str,help="Mask applied to the references prior to classification ", default=None)
 	parser.add_argument("--maxres",type=float,help="Maximum resolution (the smaller number) to consider in alignment (in A, not 1/A). Default is 20A",default=20.)
 	parser.add_argument("--minres",type=float,help="Minimum resolution (the larger number) to consider in alignment (in A, not 1/A)",default=0)
 	parser.add_argument("--niter", type=int,help="number of iterations. default is 5.", default=5)
@@ -33,6 +34,8 @@ def main():
 	parser.add_argument("--sym", type=str,help="symmetry to apply to the average structure", default="c1")
 	parser.add_argument("--breaksym", type=str,help="Break specified symmetry. Only used when --loadali3d is on.", default=None)
 	parser.add_argument("--setsf", type=str,help="set structure factor from text file", default=None)
+	parser.add_argument("--maxshift", type=int, help="maximum shift for local alignment. default box size/6",default=-1)
+	parser.add_argument("--maxang", type=int, help="maximum angle difference for local alignment. ",default=-1)
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -65,6 +68,7 @@ def main():
 	boxsize=ep["ny"]
 	p2=EMData(info2dname,0,True)
 	padsize=p2["ny"]
+	
 		
 	if options.maskalign!=None: options.maskalign=EMData(options.maskalign)
 	if options.setsf!=None:
@@ -81,10 +85,11 @@ def main():
 		save_lst_params(ali2d, f"{path}/aliptcls2d_00.lst")
 		save_lst_params(ali3d, f"{path}/aliptcls3d_00.lst")
 		options.ptcls=f"{path}/aliptcls3d_00.lst"
+		refmask=f"--multfile {options.maskref}" if options.maskref!=None else "" 
 		for i in range(options.nref):
 			threed=f"{path}/threed_00_{i:02d}.hdf"
 			run(f"e2spa_make3d.py --input {path}/aliptcls2d_00.lst --output {threed} --keep 1 --parallel {options.parallel} --outsize {boxsize} --pad {padsize} --sym {options.sym} --clsid {i}")
-			run(f"e2proc3d.py {threed} {threed} {setsf} --process filter.lowpass.gauss:cutoff_freq={1./options.maxres} --process normalize.edgemean")
+			run(f"e2proc3d.py {threed} {threed} {setsf} --process filter.lowpass.gauss:cutoff_freq={1./options.maxres} --process normalize.edgemean {refmask}")
 	else:
 		print("Loading references...")
 		if options.nref>0:
@@ -114,6 +119,8 @@ def main():
 	if options.breaksym!=None:
 		opt+=" --breaksym {}".format(options.breaksym)
 		
+	if options.maxang>0: opt+=f" --maxang {options.maxang}"
+	if options.maxshift>0: opt+=f" --maxshift {options.maxshift}"
 	if options.minres>0: opt+=f" --minres {options.minres}"
 	if options.maxres>0: opt+=f" --maxres {options.maxres}"
 		
@@ -174,7 +181,8 @@ def main():
 			a2=ali2d[ir]
 			run(f"e2spa_make3d.py --input {a2} --output {threed} --keep 1 --parallel {options.parallel} --outsize {boxsize} --pad {padsize} --sym {options.sym} --clsid {ir}")
 			
-			run(f"e2proc3d.py {threed} {threed} {setsf} --process filter.lowpass.gauss:cutoff_freq={1./options.maxres} --process normalize.edgemean")
+			refmask=f"--multfile {options.maskref}" if options.maskref!=None and itr<options.niter else "" 
+			run(f"e2proc3d.py {threed} {threed} {setsf} --process filter.lowpass.gauss:cutoff_freq={1./options.maxres} --process normalize.edgemean {refmask}")
 		
 
 	E2end(logid)
@@ -190,7 +198,11 @@ def classify_ptcls(ali3d, info2d, options):
 		symidx=np.arange(len(ali3d))%nsym
 		np.random.shuffle(symidx)
 		for i,a in enumerate(ali3d):
-			xf3d=a["xform.align3d"].inverse()
+			if "xform.align3d" in a:
+				xf3d=a["xform.align3d"].inverse()
+			else:
+				e=EMData(a["src"],a["idx"], True)
+				xf3d=e["xform.align3d"].inverse()
 			xf3d=xf3d.get_sym(options.breaksym, int(symidx[i]))
 			a["xform.align3d"]=xf3d.inverse()
 		
@@ -207,11 +219,6 @@ def classify_ptcls(ali3d, info2d, options):
 		
 	return ali2d,ali3d
 	
-	
-def run(cmd):
-	print(cmd)
-	launch_childprocess(cmd)
-
 if __name__ == '__main__':
 	main()
 	

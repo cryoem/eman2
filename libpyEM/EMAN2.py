@@ -55,6 +55,7 @@ import random
 from struct import pack,unpack
 import json
 from collections import OrderedDict
+import traceback
 
 import threading
 #from Sparx import *
@@ -136,8 +137,8 @@ def timer(fn,n=1):
 
 # This is to remove stdio buffering, only line buffering is done. This is what is done for the terminal, but this extends terminal behaviour to redirected stdio
 # try/except is to prevent errors with systems that already redirect stdio
-try: sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 1)
-except: pass
+#try: sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 1)
+#except: pass
 
 def stopautoflush():
 	""" Return to buffered stdout """
@@ -661,7 +662,7 @@ def commandoptions(options,exclude=[]):
 	"""This will reconstruct command-line options, excluding any options in exclude"""
 	opts=[]
 	for opt,val in vars(options).items():
-		if opt in exclude or opt=="positionalargs" or val==False or val==None: continue
+		if opt in exclude or opt=="positionalargs" or val is False or val==None: continue
 		if val==True and isinstance(val,bool) : opts.append("--"+opt)
 		else: opts.append("--{}={}".format(opt,val))
 
@@ -995,7 +996,7 @@ def parse_infile_arg(arg):
 
 	filename:inclusion_list^exclusion_list
 
-	inclusion_list/exclusion_list may contain comma-seperated
+	inclusion_list/exclusion_list may contain comma-separated
 	1. integers
 	2. slices (Python's built-in slice representation)
 	3. file names
@@ -1053,7 +1054,118 @@ def parse_infile_arg(arg):
 		if i in idxs:
 			idxs.pop(i)
 
-	return fname, idxs.keys()
+	return fname, tuple(idxs.keys())
+
+
+def parse_outfile_arg(arg):
+	"""
+	Input:
+	filename:outbits:rendermin:rendermax
+
+	out.hdf:6:20:1000
+	out.hdf:6:-3s:5s
+	out.hdf:6:f
+
+	Returns (filename, outbits, rendermin(absolute), rendermax(absolute), rendermin(times std dev), rendermin(times std dev))
+
+	>>> parse_outfile_arg('')
+	Traceback (most recent call last):
+	argparse.ArgumentTypeError: Please, specify an output file!
+	>>> parse_outfile_arg('out.hdf')
+	('out.hdf', None, None, None, -5.0, 5.0)
+
+	>>> parse_outfile_arg('out.hdf:3')
+	('out.hdf', 3, None, None, -5.0, 5.0)
+	>>> parse_outfile_arg('out.hdf:3.')
+	Traceback (most recent call last):
+	argparse.ArgumentTypeError: outputbit field is required to be an int if specified! Got '3.'!
+	>>> parse_outfile_arg('out.hdf:33:')
+	Traceback (most recent call last):
+	argparse.ArgumentTypeError: outputbit field is required to be an int between 0 and 16! Got '33'!
+
+	>>> parse_outfile_arg('out.hdf:3:')
+	('out.hdf', 3, None, None, -5.0, 5.0)
+
+	>>> parse_outfile_arg('out.hdf:3:f')
+	('out.hdf', 3, 'FULL', 'FULL', None, None)
+	>>> parse_outfile_arg('out.hdf:3:F')
+	('out.hdf', 3, 'FULL', 'FULL', None, None)
+
+	>>> parse_outfile_arg('out.hdf:3::')
+	Traceback (most recent call last):
+	argparse.ArgumentTypeError: Min/max fields are expected to be non-empty if specified. Got ':'
+	>>> parse_outfile_arg('out.hdf:3:20:')
+	Traceback (most recent call last):
+	argparse.ArgumentTypeError: Min/max fields are expected to be non-empty if specified. Got '20:'
+	>>> parse_outfile_arg('out.hdf:3::400')
+	Traceback (most recent call last):
+	argparse.ArgumentTypeError: Min/max fields are expected to be non-empty if specified. Got ':400'
+
+	>>> parse_outfile_arg('out.hdf:3:4:5')
+	('out.hdf', 3, 4.0, 5.0, None, None)
+	>>> parse_outfile_arg('out.hdf:3:4.2:5.3')
+	('out.hdf', 3, 4.2, 5.3, None, None)
+
+	>>> parse_outfile_arg('out.hdf:3:4s:5s')
+	('out.hdf', 3, None, None, 4.0, 5.0)
+	>>> parse_outfile_arg('out.hdf:3:4.2s:5.3s')
+	('out.hdf', 3, None, None, 4.2, 5.3)
+
+	>>> parse_outfile_arg('out.hdf:3:4s:5')
+	Traceback (most recent call last):
+	argparse.ArgumentTypeError: Min/max fields are expected to be both absolute values or both sigma multipliers. Expected :(num):(num) or :(num)s:(num)s, got :4s:5
+	>>> parse_outfile_arg('out.hdf:3:4:5s')
+	Traceback (most recent call last):
+	argparse.ArgumentTypeError: Min/max fields are expected to be both absolute values or both sigma multipliers. Expected :(num):(num) or :(num)s:(num)s, got :4:5s
+	>>> parse_outfile_arg('out.hdf:3:4:5.')
+	('out.hdf', 3, 4.0, 5.0, None, None)
+	>>> parse_outfile_arg('out.hdf:3:4.:5')
+	('out.hdf', 3, 4.0, 5.0, None, None)
+	"""
+
+	fname, _, outbit_rng = arg.partition(':')
+
+	if not fname:
+		raise argparse.ArgumentTypeError("Please, specify an output file!")
+
+	outbit, _, rng = outbit_rng.partition(':')
+
+	if not outbit:
+		outbit = None
+	elif outbit.isdigit():
+		outbit = int(outbit)
+
+		if outbit not in range(17):
+			raise argparse.ArgumentTypeError(f"outputbit field is required to be an int between 0 and 16! Got '{outbit}'!")
+	else:
+		raise argparse.ArgumentTypeError(f"outputbit field is required to be an int if specified! Got '{outbit}'!")
+
+	if not rng:
+		rng = None, None, -5.0, 5.0
+	elif rng.lower() == "f":
+		rng = "FULL", "FULL", None, None
+	else:
+		min, _, max = rng.partition(':')
+		rng = (min, max)
+
+		def isfloat(s):
+			try:
+				float(s)
+				return True
+			except ValueError:
+				return False
+
+		sigma_multiplier_char = 's'
+		if not all(rng):
+			raise argparse.ArgumentTypeError(f"Min/max fields are expected to be non-empty if specified. Got '{':'.join(rng)}'")
+		elif all(isfloat(i) for i in rng):
+			rng = *(float(i) for i in rng), None, None
+		elif all(i[-1] == sigma_multiplier_char and isfloat(i[:-1]) for i in rng):
+			rng = None, None, *(float(i[:-1]) for i in rng)
+		else:
+			raise argparse.ArgumentTypeError(f"Min/max fields are expected to be both absolute values or both sigma multipliers. Expected :(num):(num) or :(num){sigma_multiplier_char}:(num){sigma_multiplier_char}, got :{':'.join(rng)}")
+
+	return (fname, outbit, *rng)
 
 
 def angle_ab_sym(sym,a,b,c=None,d=None):
@@ -2549,7 +2661,7 @@ but this method prevents multiple open/close operations on the #LSX file."""
 		# organize the images to read by path to take advantage of read_images performance
 		# d2r contains tuples (image number in returned array,image number in file (key),extra data dictionary)
 		d2r={}
-		if nlst==None or len(nlst)==0:
+		if nlst is None or len(nlst)==0:
 			for i in range(self.n):
 				j,p,d=self.read(i)
 				try: d2r[p].append((i,j,d,i))
@@ -2573,10 +2685,13 @@ but this method prevents multiple open/close operations on the #LSX file."""
 			tpls=d2r[fsp]
 			imgs=EMData.read_images_c(fsp,[i[1] for i in tpls],IMAGE_UNKNOWN,hdronly)
 			for i,tpl in enumerate(tpls):
+				imgs[i]["source_path"]=self.path
+				try: imgs[i]["source_n"]=int(tpl[3])
+				except:
+					traceback.print_exc()
+					raise Exception(f"Error in read_images: {i},{tpl}")
 				for k in tpl[2]: 
 					imgs[i][k]=tpl[2][k]
-				imgs[i]["source_path"]=self.path
-				imgs[i]["source_n"]=tpl[3]
 				ret[tpl[0]]=imgs[i]
 #				out.write(f"{tpl[0]}\t{i}\t{fsp}\n")
 
@@ -2901,14 +3016,20 @@ def db_read_images(fsp, *parms):
 				keys = parms[0]
 			if not keys or len(keys) == 0: keys = list(range(len(db)))
 		return [db.get(i, nodata=nodata) for i in keys]
+
 	if fsp[-4:].lower()==".lst":
 		return LSXFile(fsp).read_images(*parms)
 		#global lsxcache
 		#if lsxcache==None or lsxcache.path!=fsp: lsxcache=LSXFile(fsp,True)
 		#return lsxcache.read_images(*parms)
 
-	if len(parms) > 0 and (parms[0] == None or len(parms[0]) == 0):
-		parms = (list(range(EMUtil.get_image_count(fsp))),) + parms[1:]
+	fsp, idxs = parse_infile_arg(fsp)
+
+	if len(parms) > 0 and parms[0]:
+		idxs = [idxs[i] for i in parms[0]]
+
+	parms = idxs, *parms[1:]
+
 	return EMData.read_images_c(fsp, *parms)
 
 

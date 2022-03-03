@@ -82,9 +82,10 @@ class EMTaskCustomer(object):
 	mpi:ncpu[:scratch_dir_on_nodes]
 	"""
 		origtarget=target
-		target=target.lower()
+		#target=target.lower()
 		self.servtype=target.split(":")[0]
 		self.servtype=self.servtype.replace("threads","thread")
+		self.servtype=self.servtype.lower()
 
 		if self.servtype=="thread":
 			self.groupn=0

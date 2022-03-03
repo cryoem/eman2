@@ -7,12 +7,10 @@ import threading
 from EMAN2jsondb import JSTask
 from EMAN2PAR import EMTaskCustomer
 from scipy.optimize import minimize
-import gc
-#from memory_profiler import profile
 
 def main():
 	
-	usage=" "
+	usage="Sub-frame alignment for single particle analysis. Need specific format for motion correction and refinement to work properly. The improvement in resolution seems marginal. Not ready to use yet."
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
 	parser.add_argument("--ptclin", type=str,help="particle input", default=None)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #====================
-#Author: Jesus Galaz-Montoya sep/2019 , Last update: oct/2019
+#Author: Jesus Galaz-Montoya sep/2019 , Last update: dec/2021
 #====================
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
@@ -172,10 +172,11 @@ def main():
 		minimum = img['minimum']
 		maximum = img['maximum']
 
-		if mean > mean_avg - 3.0*mean_std and mean < mean_avg + 3.0*mean_std:
-			files2process_good.append(f)
 		if options.exclude_extremes:
-			print("\nWARNING: bad image={} excluded; mean={}, mean_avg={}, sigma={}, max={}, min={}".format(f, mean, mean_avg, sigma, minimum, maximum))
+			if mean > mean_avg - 3.0*mean_std and mean < mean_avg + 3.0*mean_std:
+				files2process_good.append(f)
+			else:
+				print("\nWARNING: potentially bad image={} excluded; mean={}, mean_avg={}, sigma={}, max={}, min={}".format(f, mean, mean_avg, sigma, minimum, maximum))
 		elif not options.exclude_extremes:
 			files2process_good.append(f)
 
@@ -341,6 +342,7 @@ def writetlt( angles, options ):
 
 def organizetilts( options, intilts, raworder=False ):
 	
+	intilts = list(set(intilts)) #make extra sure there are no duplicate files
 	intilts.sort()
 
 	intiltsdict = {}
@@ -349,15 +351,19 @@ def organizetilts( options, intilts, raworder=False ):
 	if options.anglesindxinfilename:
 		collectionindex=0
 		anglesdict = {}
+		#print("\nthere are these many intilts n={}".format(len(intilts)))
+		#print("\nand they are {}".format(intilts))
 		for intilt in intilts:
 			
 			extension = os.path.splitext(os.path.basename(intilt))[-1]
 
 			parsedname = intilt.replace(extension,'').replace(',',' ').replace('-',' ').replace('_',' ').replace('[',' ').replace(']',' ').replace('+',' ').split()
 			#dividerstoadd = options.anglesindxinfilename - 1
+			
 			print('\n(e2spt_tomostacker)(organizetilts) parsedname is',parsedname)
+			angle = parsedname[options.anglesindxinfilename]
 			try:
-				angle = float(parsedname[options.anglesindxinfilename])
+				angle = float( re.sub('[^\d\.\-]', '', parsedname[options.anglesindxinfilename]).rstrip('.') ) #remove strings from number except dots and minuses, and any leftover trailing dots
 			except:
 				print("\n(e2spt_tomostacker)(organizetilts) invalid angle={}. make sure --anglesindxinfilename is correct! Remember, indexes start from 0".format(parsedname[options.anglesindxinfilename]))
 				sys.exit(1)
@@ -373,7 +379,6 @@ def organizetilts( options, intilts, raworder=False ):
 			sign = intilt[charsum]
 			#print("\nby position %d sign is %s" % (charsum+1,sign))
 
-			angle = float(parsedname[options.anglesindxinfilename])
 			#print("angle is".format(angle))
 			#print("sign is".format(sign))
 
@@ -386,7 +391,7 @@ def organizetilts( options, intilts, raworder=False ):
 			#print "by other means, sign2 is",sign2
 			
 			anglesdict.update({angle:[intilt,collectionindex]})
-			
+			print("\nadded collectionindex={} for angle={} and intilt={}".format(collectionindex,angle,intilt))
 			if angle not in angles:
 				angles.append( angle )
 			collectionindex+=1			#since there could be parasitic images (two or more images per tilt angle due to failed attempts)

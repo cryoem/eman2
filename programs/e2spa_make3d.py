@@ -24,20 +24,20 @@ def main():
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	parser.add_argument("--apix",metavar="A/pix",type=float,help="A/pix value for output, overrides automatic values",default=None)
+	parser.add_argument("--tidrange", type=str,help="Range of tilt id to include for particles from tilt series. Specify two integers separated by ','.", default="-1,-1")
 	
-	parser.add_argument("--ref", type=str,help="ref", default=None)
-	parser.add_argument("--tidrange", type=str,help="range of tilt id to include", default="-1,-1")
-	parser.add_argument("--minres", type=float,help="", default=50)
-	parser.add_argument("--maxres", type=float,help="", default=-1)
-	parser.add_argument("--threads", type=int,help="", default=1)
-	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default="thread:1")
-	parser.add_argument("--setsf", type=str,help="set structure factor from text file", default=None)
+	parser.add_argument("--ref", type=str,help="Weight each particle using a specified reference map.", default=None)
+	parser.add_argument("--minres", type=float,help="minimum resolution to compare when weighting by a reference map.", default=50)
+	parser.add_argument("--maxres", type=float,help="maximum resolution to compare when weighting by a reference map.", default=-1)
+	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use without shared memory. Each worker will reconstruct a map with a subset of particles and the results from workers will be averaged together with the corresponding Fourier weighting. Along with --threads, this allows having one worker per node using multiple threads.", default="thread:1")
+	parser.add_argument("--threads", type=int,help="Number of threads using shared memory.", default=1)
+	parser.add_argument("--setsf", type=str,help="Set structure factor from text file", default=None)
 	
-	parser.add_argument("--debug", action="store_true", default=False, help="")
-	parser.add_argument("--clsid", default=None, type=str, help="only reconstruct a class of particles")
-	parser.add_argument("--listsel", default=None, type=str, help="only reconstruct particles of indices from the given list")
+	parser.add_argument("--debug", action="store_true", default=False, help="Turn on debug mode. This will only process a small subset of the data.")
+	parser.add_argument("--clsid", default=None, type=str, help="Only reconstruct a class of particles. Also take even/odd to reconstruct subsets of particles.")
+	parser.add_argument("--listsel", default=None, type=str, help="only reconstruct particles of indices from the given list in a text file.")
 
-	parser.add_argument("--p3did", type=int, help="only reconstruct images for a 3d particles",default=-1)
+	parser.add_argument("--p3did", type=int, help="only reconstruct images for one 3d particle of the given ID.",default=-1)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
@@ -273,6 +273,8 @@ def initialize_data(inputfile, options):
 		
 	data=[d for i,d in enumerate(data) if tokeep[i]]
 	scrs=scrs[tokeep]
+	if np.all(scrs==0):
+		scrs+=1
 	if np.min(scrs)>=0:
 		print("positive score. assume this is weight...")
 	else:

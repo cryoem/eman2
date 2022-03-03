@@ -342,7 +342,8 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		width = width // self.devicePixelRatio()
 		height = height // self.devicePixelRatio()
 		
-		GL.glViewport(0,0,width,height)
+		dpr=self.devicePixelRatio()
+		GL.glViewport(0,0,self.width()*dpr,self.height()*dpr)
 
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()
@@ -1130,6 +1131,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			invscale=1.0/self.scale
 			self.set_label_ratio = 0.1
 			self.coords = {}
+			dpr=self.devicePixelRatio()
 
 			if self.matrix_panel.visiblerows:
 				for row in range(self.matrix_panel.ystart,self.matrix_panel.visiblerows):
@@ -1178,6 +1180,9 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 							#print col,row,
 							continue
 
+						
+						tw*=dpr
+						th*=dpr
 						self.coords[i]=(tx,ty,tw,th)
 
 						draw_tex = True
@@ -1189,10 +1194,10 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 						if not excluded:
 							#print rx,ry,tw,th,self.width(),self.height(),self.origin
 							if self.usetexture and (not self.glflags.npt_textures_unsupported()):
-								a=GLUtil.render_amp8(self.data[i],rx,ry,tw,th,(tw-1)//4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
+								a=GLUtil.render_amp8(self.data[i],rx,ry,tw,th,(tw-1)//4*4+4,self.scale*dpr,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
 								self.texture(a,tx,ty,tw,th)
 							else:
-								a=GLUtil.render_amp8(self.data[i],rx,ry,tw,th,(tw-1)//4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,6)
+								a=GLUtil.render_amp8(self.data[i],rx,ry,tw,th,(tw-1)//4*4+4,self.scale*dpr,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,6)
 								glRasterPos(tx,ty)
 								glDrawPixels(tw,th,GL_LUMINANCE,GL_UNSIGNED_BYTE,a)
 

@@ -17,13 +17,14 @@ from eman2_gui.emimagemx import EMImageMXWidget
 from eman2_gui.emshape import EMShape
 import scipy.spatial.distance as scipydist
 from scipy import ndimage
+from scipy.spatial import KDTree
 
 def main():
 
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--label", type=str,help="Load previous contour segmentation.", default="tomobox",guitype='strbox',row=0, col=0, rowspan=1, colspan=1)
-	parser.add_argument("--gpuid", type=str,help="Specify the gpu to use", default="",guitype='intbox',row=1, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--gpuid", type=str,help="Specify the gpu to use", default="0",guitype='strbox',row=1, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--mult", type=float,help="multiply data by factor. useful for vpp data...", default=1)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	(options, args) = parser.parse_args()
@@ -779,12 +780,6 @@ class EMTomobox(QtWidgets.QMainWindow):
 		img=o.numpy().copy()
 		img[img<self.val_ptclthr.getval()]=0
 		
-		#lb, nlb=ndimage.measurements.label(img)
-		#pnew=np.array(ndimage.maximum_position(img,lb,list(range(1,nlb))))
-		##pnew=np.array(ndimage.center_of_mass(img,lb,list(range(1,nlb))))
-		#pksize=np.array(ndimage.measurements.sum(img,lb,list(range(1,nlb))))
-		#pnew=pnew[np.argsort(-pksize)]
-		
 		pnew=np.array(np.where(img>self.val_ptclthr.getval())).T
 		val=img[pnew[:,0], pnew[:,1], pnew[:,2]]
 		pnew=pnew[np.argsort(-val)]
@@ -793,13 +788,29 @@ class EMTomobox(QtWidgets.QMainWindow):
 		pnew=pnew*self.boxsize/self.nnetsize
 
 		dthr=self.val_circlesize.getval()
-		dst=scipydist.cdist(pnew, pnew)+(np.eye(len(pnew))*dthr*100)
-		tokeep=np.ones(len(dst), dtype=bool)
-		for i in range(len(dst)):
-			if tokeep[i]:
-				tokeep[dst[i]<dthr]=False
+		
+		
+		tree=KDTree(pnew)
 
+		tokeep=np.ones(len(pnew), dtype=bool)
+		for i in range(len(pnew)):
+			if tokeep[i]:
+				k=tree.query_ball_point(pnew[i], dthr)
+				tokeep[k]=False
+				tokeep[i]=True
+			
+		#print(np.sum(tokeep))
 		pts=pnew[tokeep].tolist()
+		#scr=pkscore[tokeep]
+		
+		
+		#dst=scipydist.cdist(pnew, pnew)+(np.eye(len(pnew))*dthr*100)
+		#tokeep=np.ones(len(dst), dtype=bool)
+		#for i in range(len(dst)):
+			#if tokeep[i]:
+				#tokeep[dst[i]<dthr]=False
+
+		#pts=pnew[tokeep].tolist()
 
 		for p in pts:
 			self.add_ptcls(p[0], p[1], p[2])
