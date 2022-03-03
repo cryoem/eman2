@@ -59,7 +59,9 @@ def main():
 	parser.add_pos_argument(name="tilt_images",help="List of images to be stacked. Input order will determine the order of images in output tiltseries.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True)",  row=0, col=0,rowspan=1, colspan=3, nosharedb=True,mode="tomo")
 	parser.add_argument("--output",type=str,help="Name of the output stack to build (Extension will be .hdf unless specified). Note, all tiltseries will be stored in the 'tiltseries' directory.", default=None, guitype='strbox',row=2, col=0, rowspan=1, colspan=1, mode="default,tomo")
 	parser.add_argument("--tilts",action="store_true",default=False,help="Write results to 'tiltseries' directory in current project.", guitype='boolbox',row=4, col=0, rowspan=1, colspan=1,mode="tomo[True]")
-	parser.add_argument("--guess",action="store_true",default=False,help="Guess how to split micrographs into tilt series and the order of images in each tilt series from file names. Tilt angles must be incuded in file names. May and may not work depending on the file name format...", guitype='boolbox',row=4, col=1, rowspan=1, colspan=1,mode="tomo[False]")
+	parser.add_argument("--guess",action="store_true",default=False,help="Guess how to split micrographs into tilt series and the order of images in each tilt series from file names. Tilt angles must be incuded in file names. May and may not work depending on the file name format...", guitype='boolbox',row=4, col=1, rowspan=1, colspan=1,mode="tomo[False]")	
+	parser.add_argument("--guesscol", type=int, help="column to separate tilt series if the guess mode fails",default=-1)
+
 	#parser.add_argument("--rawtlt",type=str,help="Name of tilt angles text file.\nNote, angles must correspond to stack file names in alphabetical/numerical order.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=True)",row=3, col=0, rowspan=1, colspan=1, mode="tomo")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higher number means higher level of verboseness",default=1)
@@ -137,9 +139,12 @@ def main():
 			c=lst[:, ic]
 			if len(c)>len(np.unique(c)):
 				print("Multiple tilt series exist...")
-				
-				it=np.where(np.std(lst,axis=0)>0)[0][0]
-				print("Guess column {} separates different tilt series".format(it))
+				if options.guesscol<0:
+					it=np.where(np.std(lst,axis=0)>0)[0][0]
+					print("Guess column {} separates different tilt series".format(it))
+				else:
+					it=options.guesscol
+					print("Separates different tilt series using column {} ".format(it))
 			
 				fid=sorted(np.unique(lst[:,it]))
 				print("\t{} files, from {:.0f} to {:.0f}.".format(len(fid), np.min(lst[:,it]), np.max(lst[:,it])))
@@ -163,7 +168,10 @@ def main():
 				p=lstpos[tid[0]][it+1]
 				prefix=fnames[0][fnames[0].rfind('/')+1:p]
 				prefix=prefix.replace("__", "_")
+				prefix=prefix.replace(".", "_")
+				
 				lstname=os.path.join("tiltseries", prefix+'.lst')
+				
 				print("{} : {} images -> {}".format(prefix, len(fnames), lstname))
 				if options.tltang:
 					ang=np.loadtxt(options.tltang)
