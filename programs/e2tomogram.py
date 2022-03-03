@@ -200,7 +200,8 @@ def main():
 	for p in imgs_1k:
 		m=p.process("math.meanshrink", {"n":2})
 		m.process_inplace("filter.ramp")
-		m.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.3})
+		m.process_inplace("filter.lowpass.gauss",{"cutoff_freq":.025})
+		m.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.5})
 		m.process_inplace("filter.highpass.gauss",{"cutoff_pixels":options.highpass})
 		m.process_inplace("normalize.edgemean")
 		sz=512
