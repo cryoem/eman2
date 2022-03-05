@@ -3148,9 +3148,10 @@ and the file size will increase.
 		elif maxval>minval:
 			im["render_min"]=float(minval)
 			im["render_max"]=float(maxval)
-		else:
-			im["render_min"]=im["minimum"]
-			im["render_max"]=im["maximum"]
+		# we need the C++ code to determine min and max in this situation
+		#else:
+			#im["render_min"]=im["minimum"]
+			#im["render_max"]=im["maximum"]
 		
 		# would like to use the new write_images, but it isn't quite ready yet.
 		im.write_image(fsp,i+n,EMUtil.ImageType.IMAGE_UNKNOWN,0,None,EMUtil.EMDataType.EM_COMPRESSED)
