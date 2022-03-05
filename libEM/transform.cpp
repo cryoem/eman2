@@ -969,11 +969,28 @@ Dict Transform::get_rotation(const string& euler_type) const
 		
 		
 		if (sinOover2==1) {// This will also mean sinomega=0, omega =pi, 
-		      n1 = sqrt((matrix[0][0]+1)/2.0)   ;
+              n1 = sqrt((matrix[0][0]+1)/2.0)   ;
 		      n2 = sqrt((matrix[1][1]+1)/2.0)   ;
 		      n3 = sqrt((matrix[2][2]+1)/2.0)   ;
+             if (n1 <= n2){ // n1 is the smallest
+                 if (n2<=n3) {
+                        n3 = sqrt((matrix[2][2]+1)/2.0) ; n1=matrix[0][2]/n3/2.0; n2=matrix[1][2]/n3/2.0; } 
+                 else { n2 = sqrt((matrix[1][1]+1)/2.0) ; n1=matrix[0][1]/n2/2.0; n3=matrix[2][1]/n2/2.0; }}
+             else { // n2 is the smallest
+                 if (n1<=n3) {
+                        n3 = sqrt((matrix[2][2]+1)/2.0) ; n1=matrix[0][2]/n3/2.0; n2=matrix[1][2]/n3/2.0;}
+                 else { n1 = sqrt((matrix[0][0]+1)/2.0) ; n2=matrix[1][0]/n1/2.0; n3=matrix[2][0]/n1/2.0;}}
 		}
-        //printf("traceR=%lf,OneMinusCosomega=%lf,sinOover2=%lf,cosOover2=%lf,sinomega=%lf,cosomega=%lf,n3=%lf \n",traceR,1-cosomega,sinOover2,cosOover2,sinomega,cosomega,n3);
+
+		
+		if (sinOover2==0) {// This will also mean omega =0, 
+              n1 = 0;
+		      n2 = 0;
+		      n3 = 1;
+		}
+		
+		
+        printf("traceR=%lf,OneMinusCosomega=%lf,sinOover2=%lf,cosOover2=%lf,sinomega=%lf,cosomega=%lf,n3=%lf \n",traceR,1-cosomega,sinOover2,cosOover2,sinomega,cosomega,n3);
 
 		
 		if (type == "quaternion"){
@@ -984,7 +1001,7 @@ Dict Transform::get_rotation(const string& euler_type) const
 		}
 
 		if (type == "spin"){
-		    result["omega"] = EMConsts::rad2deg * asin(sinomega); //Changed by PRB
+		    result["omega"] = EMConsts::rad2deg * acos(cosomega); //Changed by PRB
 		    result["n1"] = n1;
 		    result["n2"] = n2;
 		    result["n3"] = n3;
