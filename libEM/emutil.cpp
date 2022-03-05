@@ -1805,9 +1805,7 @@ void EMUtil::getRenderMinMax(float * data, const int nx, const int ny,
 				else {
 					rendermin=min;
 				}
-				rendermax=rendermin+step*(bitval-1)
-				
-				
+				rendermax=rendermin+step*(bitval-1);	
 			}
 		}
 		// Now into the more general case, but we still wish to preserve zero if present in significant numbers
@@ -1831,6 +1829,7 @@ void EMUtil::getRenderMinMax(float * data, const int nx, const int ny,
 				if (min == floor( min/step ) * step) {
 					rendermin=min;
 					rendermax=max;
+				}
 				else {
 	// 				rendermin=(mnz-snz*4.0)<min?min:mnz-snz*4.0;	// 4 standard deviations from the mean seems good empirically, e2iminfo.py -asO
 	// 				rendermax=(mnz+snz*4.0)>max?max:mnz+snz*4.0;
