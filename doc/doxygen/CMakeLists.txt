@@ -1,17 +1,14 @@
-ADD_CUSTOM_TARGET( mkdoc ALL
-	DEPENDS	${EMAN_SOURCE_DIR}/doc/doxygen/Doxyfile
+ADD_CUSTOM_TARGET(mkdoc-doxy
+	DEPENDS	${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile
+	DEPENDS mkdoc-modular-class
 )
 
 ADD_CUSTOM_COMMAND(
-	SOURCE  mkdoc
-	COMMAND cp 
-	ARGS -f ${EMAN_SOURCE_DIR}/doc/doxygen/makedoc.sh .
-	TARGET mkdoc
+	TARGET mkdoc-doxy
+	COMMAND ./makedoc.sh
+	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-ADD_CUSTOM_COMMAND(
-	SOURCE  mkdoc
-	COMMAND ./makedoc.sh	
-	TARGET mkdoc
-)
-
+INSTALL(DIRECTORY doxygen_html
+		DESTINATION    doc
+		)
