@@ -1,13 +1,16 @@
 IF(ENABLE_AUTODOC)
-    ADD_SUBDIRECTORY(latex)
     ADD_SUBDIRECTORY(modular_class_html)
     ADD_SUBDIRECTORY(doxygen)
+
+    add_custom_target(mkdoc
+            DEPENDS mkdoc-doxy
+            )
 ENDIF()
 
 FILE(GLOB static_html "${CMAKE_CURRENT_SOURCE_DIR}/*.html")
 INSTALL(FILES ${static_html}
-  DESTINATION    doc
+  DESTINATION    doc/doxygen_html/
 )
 
-INSTALL(FILES INSTALL EMAN2.0.big.jpg 
+INSTALL(FILES EMAN2.0.big.jpg
     DESTINATION examples)
