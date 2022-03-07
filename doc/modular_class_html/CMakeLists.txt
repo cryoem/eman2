@@ -10,5 +10,5 @@ ADD_CUSTOM_COMMAND(
 
 FILE(GLOB modular_html "${CMAKE_CURRENT_SOURCE_DIR}/*.html")
 INSTALL(FILES ${modular_html}
-  DESTINATION    doc
+  DESTINATION    doc/doxygen_html/modular_class_html
 )
