@@ -15,15 +15,15 @@
  *
  * \section manual_sec Manuals
  *  <ul>
- *    <li> <a href="../processors.html"> Manual of Individual Processor</a>
- *    <li> <a href="../processor_groups.html"> Manual of Grouped Processors</a>
- * 	  <li> <a href="../aligners.html"> Manual of Individual Aligner</a>
- *    <li> <a href="../analyzers.html"> Manual of Individual Analyzer</a>
- *    <li> <a href="../averagers.html"> Manual of Individual Averager</a>
- *    <li> <a href="../cmps.html"> Manual of Individual Comparator</a>
- *    <li> <a href="../projectors.html"> Manual of Individual Projector</a>
- *    <li> <a href="../reconstructors.html"> Manual of Individual Reconstructor</a>
- *    <li> <a href="../adding_processor.html"> Adding New Processor How-to</a>
+ *    <li> <a href="../../modular_class_html/processors.html"> Manual of Individual Processor</a>
+ *    <li> <a href="../../modular_class_html/processor_groups.html"> Manual of Grouped Processors</a>
+ * 	  <li> <a href="../../modular_class_html/aligners.html"> Manual of Individual Aligner</a>
+ *    <li> <a href="../../modular_class_html/analyzers.html"> Manual of Individual Analyzer</a>
+ *    <li> <a href="../../modular_class_html/averagers.html"> Manual of Individual Averager</a>
+ *    <li> <a href="../../modular_class_html/cmps.html"> Manual of Individual Comparator</a>
+ *    <li> <a href="../../modular_class_html/projectors.html"> Manual of Individual Projector</a>
+ *    <li> <a href="../../modular_class_html/reconstructors.html"> Manual of Individual Reconstructor</a>
+ *    <li> <a href="../../adding_processor.html"> Adding New Processor How-to</a>
  *  </ul>
  */
 /** @defgroup CUDA_ENABLED a function or class that is CUDA enabled */
