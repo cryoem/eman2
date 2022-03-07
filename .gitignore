@@ -187,3 +187,5 @@ sparx/doc/Tutorial/build/*
 # Pytest
 .cache
 .pytest_cache
+doc/doxygen/doxygen_html
+doc/modular_class_html
