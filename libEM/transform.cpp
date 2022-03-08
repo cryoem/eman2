@@ -990,7 +990,7 @@ Dict Transform::get_rotation(const string& euler_type) const
 		}
 		
 		
-        printf("traceR=%lf,OneMinusCosomega=%lf,sinOover2=%lf,cosOover2=%lf,sinomega=%lf,cosomega=%lf,n3=%lf \n",traceR,1-cosomega,sinOover2,cosOover2,sinomega,cosomega,n3);
+        //printf("traceR=%lf,OneMinusCosomega=%lf,sinOover2=%lf,cosOover2=%lf,sinomega=%lf,cosomega=%lf,n3=%lf \n",traceR,1-cosomega,sinOover2,cosOover2,sinomega,cosomega,n3);
 
 		
 		if (type == "quaternion"){
@@ -1001,7 +1001,9 @@ Dict Transform::get_rotation(const string& euler_type) const
 		}
 
 		if (type == "spin"){
-		    result["omega"] = EMConsts::rad2deg * acos(cosomega); //Changed by PRB
+            double Omega = EMConsts::rad2deg * asin(sinomega);
+            if (cosomega< 0) { Omega = 180-Omega;}
+		    result["omega"] = Omega; //Changed by PRB
 		    result["n1"] = n1;
 		    result["n2"] = n2;
 		    result["n3"] = n3;
