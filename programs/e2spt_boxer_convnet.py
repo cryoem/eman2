@@ -24,7 +24,7 @@ def main():
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--label", type=str,help="Load previous contour segmentation.", default="tomobox",guitype='strbox',row=0, col=0, rowspan=1, colspan=1)
-	parser.add_argument("--gpuid", type=str,help="Specify the gpu to use", default="",guitype='intbox',row=1, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--gpuid", type=str,help="Specify the gpu to use", default="0",guitype='strbox',row=1, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--mult", type=float,help="multiply data by factor. useful for vpp data...", default=1)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	(options, args) = parser.parse_args()

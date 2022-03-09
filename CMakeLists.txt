@@ -80,7 +80,11 @@ cmake_print_variables(CMAKE_PREFIX_PATH)
 
 include(cmake/find_all.cmake)
 
-set(CMAKE_INSTALL_RPATH "${SP_DIR};${EMAN_PREFIX_LIB}")
+if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" )
+	set(CMAKE_INSTALL_RPATH "${SP_DIR}")
+else()
+	set(CMAKE_INSTALL_RPATH "${SP_DIR};${EMAN_PREFIX_LIB}")
+endif()
 
 OPTION(ENABLE_AUTODOC "enable latex/doxygen document generation and etc. " OFF)
 
@@ -171,7 +175,7 @@ ELSEIF(ENABLE_OPTIMIZE_OSX)
 ELSEIF(ENABLE_OPTIMIZE_MACHINE)
 	SET (OPT_FLAGS "-O5 -march=native -m64 -ffast-math -pipe")
 ELSEIF(ENABLE_OPTIMIZE_COMPATIBILITY)
-	SET (OPT_FLAGS "-O5 -march=sandybridge -m64 -ffast-math -pipe")
+	SET (OPT_FLAGS "-O5 -march=haswell -m64 -ffast-math -pipe")
 ELSEIF(ENABLE_OPTIMIZE_X86_64)
 	SET (OPT_FLAGS "-O5 -march=k8 -mfpmath=sse -m64 -ffast-math -pipe")
 #	SET (OPT_FLAGS "-O5 -mfpmath=both -march=core-avx-i -m64 -ffast-math -pipe")

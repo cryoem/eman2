@@ -194,7 +194,8 @@ def main():
 			
 	
 	if nimgs>1 : print("%d total images"%nimgs)
-	try : print("representing %d particles"%nptcl)
+	try : 
+		if nptcl>0 : print("representing %d particles"%nptcl)
 	except: pass
 	if options.outliers : print("Outlier centers are mean+n*sigma: -5 -4 -3 -2 -1 0 1 2 3 4 5") 
 	

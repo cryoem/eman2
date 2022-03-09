@@ -22,5 +22,11 @@ python "${MYDIR}/test_imports.py"
 # 4. Existence tests for data files like images, font files, JSON
 python "${MYDIR}/test_EMAN2DIR.py"
 
+# 5. Test openmpi
+if [ $(whoami) != "root" ];then
+    mpirun --oversubscribe -n 4 $(which python) ${MYDIR}/../examples/mpi_test.py
+fi
+
 # 6. Run e2*.py -h
 bash "${MYDIR}/run_prog_tests.sh"
+ 

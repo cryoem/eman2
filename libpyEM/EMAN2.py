@@ -55,6 +55,7 @@ import random
 from struct import pack,unpack
 import json
 from collections import OrderedDict
+import traceback
 
 import threading
 #from Sparx import *
@@ -136,8 +137,8 @@ def timer(fn,n=1):
 
 # This is to remove stdio buffering, only line buffering is done. This is what is done for the terminal, but this extends terminal behaviour to redirected stdio
 # try/except is to prevent errors with systems that already redirect stdio
-try: sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 1)
-except: pass
+#try: sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 1)
+#except: pass
 
 def stopautoflush():
 	""" Return to buffered stdout """
@@ -661,7 +662,7 @@ def commandoptions(options,exclude=[]):
 	"""This will reconstruct command-line options, excluding any options in exclude"""
 	opts=[]
 	for opt,val in vars(options).items():
-		if opt in exclude or opt=="positionalargs" or val==False or val==None: continue
+		if opt in exclude or opt=="positionalargs" or val is False or val==None: continue
 		if val==True and isinstance(val,bool) : opts.append("--"+opt)
 		else: opts.append("--{}={}".format(opt,val))
 
@@ -2660,7 +2661,7 @@ but this method prevents multiple open/close operations on the #LSX file."""
 		# organize the images to read by path to take advantage of read_images performance
 		# d2r contains tuples (image number in returned array,image number in file (key),extra data dictionary)
 		d2r={}
-		if nlst==None or len(nlst)==0:
+		if nlst is None or len(nlst)==0:
 			for i in range(self.n):
 				j,p,d=self.read(i)
 				try: d2r[p].append((i,j,d,i))
@@ -2684,10 +2685,13 @@ but this method prevents multiple open/close operations on the #LSX file."""
 			tpls=d2r[fsp]
 			imgs=EMData.read_images_c(fsp,[i[1] for i in tpls],IMAGE_UNKNOWN,hdronly)
 			for i,tpl in enumerate(tpls):
+				imgs[i]["source_path"]=self.path
+				try: imgs[i]["source_n"]=int(tpl[3])
+				except:
+					traceback.print_exc()
+					raise Exception(f"Error in read_images: {i},{tpl}")
 				for k in tpl[2]: 
 					imgs[i][k]=tpl[2][k]
-				imgs[i]["source_path"]=self.path
-				imgs[i]["source_n"]=tpl[3]
 				ret[tpl[0]]=imgs[i]
 #				out.write(f"{tpl[0]}\t{i}\t{fsp}\n")
 
@@ -3144,9 +3148,10 @@ and the file size will increase.
 		elif maxval>minval:
 			im["render_min"]=float(minval)
 			im["render_max"]=float(maxval)
-		else:
-			im["render_min"]=im["minimum"]
-			im["render_max"]=im["maximum"]
+		# we need the C++ code to determine min and max in this situation
+		#else:
+			#im["render_min"]=im["minimum"]
+			#im["render_max"]=im["maximum"]
 		
 		# would like to use the new write_images, but it isn't quite ready yet.
 		im.write_image(fsp,i+n,EMUtil.ImageType.IMAGE_UNKNOWN,0,None,EMUtil.EMDataType.EM_COMPRESSED)

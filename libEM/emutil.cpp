@@ -1783,10 +1783,10 @@ void EMUtil::getRenderMinMax(float * data, const int nx, const int ny,
 
 		if (s <= 0 || Util::is_nan(s)) s = 1.0; // this means all data values are the same
 
-		// probably a mask, binary or smoothed, treat it the same
-		if (min==0 && max==1) {
-			rendermin=0;
-			rendermax=1.0f;
+		// probably a mask, or another imaged normalized to a range of 1 , binary or smoothed, treat it the same
+		if ((max-min)==1) {
+			rendermin=min;
+			rendermax=max;
 		}
 		// all integer values, make sure we get integers back when we read, even if reduced bits
 		else if (nint==size) {
@@ -1797,14 +1797,21 @@ void EMUtil::getRenderMinMax(float * data, const int nx, const int ny,
 			}
 			// otherwise, we will need to keep the most significant bits, but still try to get integers out (except in very odd cases)
 			else {
-				rendermin=min;
-				rendermax=min+pow(2.0f,ceil(log(max-min+1)/log(2.0f)))-1.0;
+				int neededbits=ceil(log(max-min+1)/log(2.0f));
+				int step = 1<<(neededbits-renderbits);
+				if (min<0<max) {
+					rendermin = round( min / step ) * step;
+				}
+				else {
+					rendermin=min;
+				}
+				rendermax=rendermin+step*(bitval-1);	
 			}
 		}
 		// Now into the more general case, but we still wish to preserve zero if present in significant numbers
 		// TODO: This raises the tricky point of what would happen if you had a masked volume then added 0.0001 to it?
 		// statistics might produce poor results. May need to consider using kurtosis instead of zero detection
-		else if (n0>10) {			// 10 is arbitrary, just looking for a profusion of exactly zero values implying a mask
+		else if (min<0<max) {			// 10 is arbitrary, just looking for a profusion of exactly zero values implying a mask
 			// The first two seem stupid since they result in rendermin=min, rendermax=max, but we retain the option
 			// of a more involved calculation to avoid outliers compressing the histogram to an unreasonable level
 			if (min==0) {
@@ -1818,18 +1825,25 @@ void EMUtil::getRenderMinMax(float * data, const int nx, const int ny,
 //				rendermin=(mnz-snz*6.0)<min?min:mnz-snz*6.0;
 			}
 			else {
-// 				rendermin=(mnz-snz*4.0)<min?min:mnz-snz*4.0;	// 4 standard deviations from the mean seems good empirically, e2iminfo.py -asO
-// 				rendermax=(mnz+snz*4.0)>max?max:mnz+snz*4.0;
-				// logically impossible
-//				if (min>0) min=0;
-//				if (max<0) max=0;
-// 				if (rendermin==min && rendermax!=max) rendermax=(min+snz*8.0)>max?max:min+snz*8.0;
-// 				if (rendermin!=min && rendermax==max) rendermin=(max-snz*8.0)<min?min:max-snz*8.0;
-// 				float step=(rendermax-rendermin)/(bitval-1);
-// 				rendermin=ceil(rendermin/step)*step;	// adjust rendermin so integral number of steps to exactly zero, may be roundoff issues
-				float step=(max-min)/(bitval-2);		// -2 instead of -1 to give enough range to accommodate exactly 0
-				rendermin=(floor(min/step)*step);		// rendermin will be an integral number of steps from zero
-				rendermax=rendermin+step*(bitval-1);
+				float step = (max-min)/(bitval-1);
+				if (min == floor( min/step ) * step) {
+					rendermin=min;
+					rendermax=max;
+				}
+				else {
+	// 				rendermin=(mnz-snz*4.0)<min?min:mnz-snz*4.0;	// 4 standard deviations from the mean seems good empirically, e2iminfo.py -asO
+	// 				rendermax=(mnz+snz*4.0)>max?max:mnz+snz*4.0;
+					// logically impossible
+	//				if (min>0) min=0;
+	//				if (max<0) max=0;
+	// 				if (rendermin==min && rendermax!=max) rendermax=(min+snz*8.0)>max?max:min+snz*8.0;
+	// 				if (rendermin!=min && rendermax==max) rendermin=(max-snz*8.0)<min?min:max-snz*8.0;
+	// 				float step=(rendermax-rendermin)/(bitval-1);
+	// 				rendermin=ceil(rendermin/step)*step;	// adjust rendermin so integral number of steps to exactly zero, may be roundoff issues
+					step=(max-min)/(bitval-2);		// -2 instead of -1 to give enough range to accommodate exactly 0
+					rendermin=(floor(min/step)*step);		// rendermin will be an integral number of steps from zero
+					rendermax=rendermin+step*(bitval-1);
+				}
 			}
 		}
 		// Most general case, no "special values" to preserve

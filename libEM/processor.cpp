@@ -1691,12 +1691,15 @@ EMData *DistanceSegmentProcessor::process(const EMData * const image)
 
 EMData* ApplySymProcessor::process(const EMData * const image)
 {
+	string s=(string)params.set_default("sym","c1");
+	if (s.length()<2) return image->copy();
+	int n=atoi(s.c_str()+1);
+	if ((s[0]=='c' || s[0]=='C') && n==1) return image->copy();
+	
 	Averager* imgavg = Factory<Averager>::get((string)params.set_default("averager","mean"));
 
 	if (image->get_zsize()==1) {
-		string s=(string)params["sym"];
 		if (s[0]!='c' && s[0]!='C') throw ImageDimensionException("xform.applysym: Cn symmetry required for 2-D symmetrization");
-		int n=atoi(s.c_str()+1);
 		if (n<=0) throw InvalidValueException(n,"xform.applysym: Cn symmetry, n>0");
 
 		for (int i=0; i<n; i++) {
@@ -13328,6 +13331,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 	
 	// Decide how large the bispectrum will be
 	int nky=params.set_default("size",0)/2;
+    
 	int nkx=nky+1;
 	if (nky<4 || nky>=cimage->get_ysize()/2) nky=cimage->get_ysize()/8;
 	if (nkx<5 || nky>=cimage->get_xsize()/2) nkx=cimage->get_xsize()/8+1;
@@ -13624,7 +13628,8 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 		int kx=k;
 		int ky=0;
 		
-		for (float ang=0; ang<360.0; ang+=360.0/(nky*M_PI) ) {
+		for (float ang=0; ang<360.0; ang+=360.0/(nky*M_PI) ) { 
+//		for (float ang=0; ang<360.0; ang+=2 ) {// PRB changed this; change back
 			EMData *cimage2=cimage->process("xform",Dict("alpha",ang));
 			
 			for (int jy=-nky; jy<nky; jy++) {
@@ -13643,6 +13648,205 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 			}
 			delete cimage2;
 		}
+	}
+	else if (params.has_key("prbk")) {
+        
+        if (image->is_complex()) cimage = image->copy();
+        else cimage = image->do_fft();
+        cimage->process_inplace("xform.phaseorigin.tocorner");
+	
+        	// Decide how large the bispectrum will be 
+        //int nky=params.set_default("size",0)/2;
+        int nky=params.set_default("size",0);
+        
+        printf("nky = %d , size= %d \n",nky,image->get_xsize());
+        
+        //int nkx=nky+1;
+        int nkx=nky;
+
+        //cimage=new EMData((nkx*2+fp)*2-2,(nky*2+fp)*2,1);
+		//cimage->set_complex(1);
+		//cimage->set_ri(1);
+		//cimage->set_fftpad(1);
+       
+        //if (nky<4 || nky>=cimage->get_ysize()/2) nky=cimage->get_ysize()/8;
+        //if (nkx<5 || nky>=cimage->get_xsize()/2) nkx=cimage->get_xsize()/8+1;
+        //if (image->get_xsize()<nky*2)  throw ImageDimensionException("Image size smaller than requested footprint size, this is invalid."); 
+
+//        EMData* ret=new EMData(nkx*2,nky*2,1);
+        EMData* ret=new EMData(2*nkx,2*nky,1);
+        ret->set_complex(0);
+        //ret->set_fftpad(1);
+        ret->to_zero();
+
+		int k=(int)params.set_default("prbk",1);
+// 		int jkx=k;
+// 		int jky=0;
+		int kx=k; 
+		int ky=0;
+		
+//		for (float ang=0; ang<360.0; ang+=360.0/(nky*M_PI) ) { // Original
+		for (float ang=0; ang<360.0; ang+=2 ) {
+			EMData *cimage2=cimage->process("xform",Dict("alpha",ang));
+			
+			for (int qy=-nky; qy<nky; qy++) {
+				for (int qx=-nkx; qx<nkx; qx++) {
+// 					int kx=jkx-jx;
+// 					int ky=jky-jy;
+					int kqx=qx+kx;
+					int kqy=qy+ky;
+                    if (abs(kqx)>nkx || abs(kqy)>nky) continue;
+					
+//					if (abs(kx)>nkx || abs(ky)>nky) continue;
+					complex<double> v1 = (complex<double>)cimage2->get_complex_at(kx,ky);
+					complex<double> v2 = (complex<double>)cimage2->get_complex_at(qx,qy);
+					complex<double> v3 = (complex<double>)cimage2->get_complex_at(kqx,kqy);
+ 					complex<double> vTotal = (complex<double>)(v1*v2*std::conj(v3));
+                    double RealV = (real)(vTotal);
+                    int jxInd = (qx+2*nkx)%(2*nkx);
+                    int jyInd = (qy+2*nky)%(2*nky);
+                    //printf("RealV  %g vTotal %g\n",RealV,vTotal);
+                    double OldVal = ret->get_value_at(jxInd,jyInd,0);
+					ret->set_value_at(jxInd,jyInd,0,OldVal+RealV);
+					//ret->set_value_at(jxInd,jyInd,0,1);
+				}
+			}
+			delete cimage2;
+		}
+		return(ret);
+	}
+	else if (params.has_key("prbkv2")) {
+        
+        if (image->is_complex()) cimage = image->copy();
+        else cimage = image->do_fft();
+        cimage->process_inplace("xform.phaseorigin.tocorner");
+
+        int k=(int)params.set_default("prbkv2",1);
+	
+        	// Decide how large the bispectrum will be 
+        int nky= 2*k+1;
+        int nkx= 2*k+1;
+        
+        
+        printf("nkx = %d, nky = %d , size= %d \n",nkx,nky,image->get_xsize());
+        
+
+        EMData* ret=new EMData(nkx,nky,1);
+        ret->set_complex(0);
+        ret->to_zero();
+		int kx=k;
+		int ky=0;
+		int Nyquist = k;
+//		for (float ang=0; ang<360.0; ang+=360.0/(nky*M_PI) ) { // Original
+		for (float ang=0; ang<360.0; ang+=2 ) {
+			EMData *cimage2=cimage->process("xform",Dict("alpha",ang));
+			
+			for (int qy=-k; qy<k+1; qy++) { 
+                if (qy*qy> (0.75)*k*k) continue;
+				for (int qx=-k; qx<1; qx++) {
+                    if ((qx+k)*(qx+k) > (k*k - qy*qy)) continue; 
+					int kqx=qx+kx;
+					int kqy=qy+ky;
+					complex<double> v1 = (complex<double>)cimage2->get_complex_at(kx,ky);
+					complex<double> v2 = (complex<double>)cimage2->get_complex_at(qx,qy);
+					complex<double> v3 = (complex<double>)cimage2->get_complex_at(kqx,kqy);
+ 					complex<double> vTotal = (complex<double>)(v1*v2*std::conj(v3));
+                    double RealV = (real)(vTotal);
+                    int qxInd = (qx+nkx)%(nkx);
+                    int qyInd = (qy+nky)%(nky);
+                    int NegQx = k/2 +qx ;
+                    int QyInd = qy+Nyquist;
+                    //printf("qy %d qyInd %d QyInd %d qx %d qxInd %d NegQx %d k %d\n",qy, qyInd, QyInd,qx,qxInd,NegQx, k);
+                    //printf("qx %d qy %d NegQx %d QyInd %d RealV  %g vTotal %g\n",qx,qy, NegQx,QyInd, RealV,vTotal);
+                    //double OldVal = ret->get_value_at(qxInd,qyInd,0);
+                    double OldVal = ret->get_value_at(NegQx,QyInd,0);
+					//ret->set_value_at(qxInd,qyInd,0,OldVal+RealV);
+					ret->set_value_at(NegQx,QyInd,0,OldVal+RealV);
+					//ret->set_value_at(qxInd,qyInd,0,1);
+				}
+			}
+			delete cimage2;
+		}
+		return(ret);
+	}
+ 
+	else if (params.has_key("prb3D")) {
+       
+		int hp=(int)params.set_default("hp",0);
+		int Nyquist=(int)params.set_default("prb3D",30);
+         
+        if (image->is_complex()) cimage = image->copy();
+        else cimage = image->do_fft();
+ 
+        cimage->process_inplace("xform.phaseorigin.tocorner");
+
+        //int k=(int)params.set_default("PRBkv3",1);
+	
+        	// Decide how large the bispectrum will be 
+        
+       
+        int csizex = cimage->get_xsize();
+        int csizey = cimage->get_ysize();
+        
+        printf("csizex = %d, csizey = %d  \n", csizex , csizey );
+        
+        Nyquist = (csizey+1)/2;
+        
+        printf("csizex = %d, csizey = %d, Nyquist= %d  \n", csizex , csizey, Nyquist);
+        
+        int nkx= Nyquist/2+1;
+        int nky= 2*Nyquist+2;
+        int nkz= Nyquist+1;
+        
+        
+        printf("nkx = %d, nky = %d , size= %d \n",nkx,nky,image->get_xsize());
+        
+        
+
+        EMData* ret=new EMData(nkx,nky,nkz);
+        ret->set_complex(0);
+        ret->to_zero();
+
+        //int Nyquist = 1* k;
+//		for (float ang=0; ang<360.0; ang+=360.0/(nky*M_PI) ) { // Original
+		for (float ang=0; ang<360.0; ang+=2 ) {
+			EMData *cimage2=cimage->process("xform",Dict("alpha",ang));
+
+            for (int k=0; k < Nyquist+1;k++){
+                //printf(" k %d\n",k);
+                int k2=k*k;
+                int qyMax = sqrt(3*k2/4);
+
+                for (int qy=-qyMax; qy<qyMax+1; qy++) { 
+                    //if (qy*qy> (0.75)*k*k) continue;
+                    int qxMin =k/2; qxMin *= -1;
+                    int qxMax = k - sqrt(k2-qy*qy)+0.999999; qxMax *= -1;
+                    for (int qx=qxMin; qx<qxMax+1; qx++) {
+                        //if ((qx+k)*(qx+k) > (k*k - qy*qy)) continue;
+                        //if (qx<(-k/2)) continue;
+                        int kqx=qx+k;
+                        int kqy=qy;
+                        complex<double> v1 = (complex<double>)cimage2->get_complex_at(k,0);
+                        complex<double> v2 = (complex<double>)cimage2->get_complex_at(qx,qy);
+                        complex<double> v3 = (complex<double>)cimage2->get_complex_at(kqx,kqy);
+                        complex<double> vTotal = (complex<double>)(v1*v2*std::conj(v3));
+                        double RealV = (real)(vTotal);
+                        int qxInd = (qx+nkx)%(nkx);
+                        int qyInd = (qy+nky)%(nky);
+                        int NegQx = k/2 +qx ;
+                        int QyInd = qy+Nyquist;
+                        //printf("qy %d qyInd %d QyInd %d qx %d qxInd %d NegQx %d k %d\n",qy, qyInd, QyInd,qx,qxInd,NegQx, k);
+                         //double OldVal = ret->get_value_at(qxInd,qyInd,0);
+                        double OldVal = ret->get_value_at(NegQx,QyInd,k);
+                        //ret->set_value_at(qxInd,qyInd,0,OldVal+RealV);
+                        ret->set_value_at(NegQx,QyInd,k,OldVal+RealV);
+                        //ret->set_value_at(qxInd,qyInd,0,1);
+                    }
+                }
+            }    
+			delete cimage2;
+		}
+		return(ret);
 	}
 	else if (params.has_key("jkx") && params.has_key("jky")) {
 		int jkx=(int)params.set_default("jkx",0);

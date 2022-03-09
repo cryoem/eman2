@@ -148,6 +148,7 @@ class EMDataItem3D(EMItem3D):
 	def setData(self, data, n=0, name=None):
 		if data==None : 
 			self.data=None
+			self.path=""
 			return
 	
 		if isinstance(data, EMData):

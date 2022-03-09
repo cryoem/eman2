@@ -16,32 +16,33 @@ def main():
 	
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--ptcls", type=str,help="3d particle input", default=None)
-	parser.add_argument("--ref", type=str,help="reference map", default=None)
-	parser.add_argument("--startres", type=float,help="Starting resolution for the refinement in A. Default is 50. This will be the maximum resolution considered for the first iteration. In later iterations, the maximum resolution is calculated from the FSC of the previous iteration (unless --maxres is specified).", default=50)
+	parser.add_argument("--ptcls", type=str,help="3d particle input", default=None,guitype='filebox', browser="EMSetsTable(withmodal=True,multiselect=False)", row=0, col=0,rowspan=1, colspan=2, mode="model")
+	parser.add_argument("--ref", type=str,help="reference map", default=None,guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=2, col=0,rowspan=1, colspan=2, mode="model")
+	parser.add_argument("--startres", type=float,help="Starting resolution for the refinement in A. Default is 50. This will be the maximum resolution considered for the first iteration. In later iterations, the maximum resolution is calculated from the FSC of the previous iteration (unless --maxres is specified).", default=50,guitype='floatbox',row=4, col=0,rowspan=1, colspan=1, mode="model")
 
-	parser.add_argument("--goldstandard", action="store_true", default=False, help="Phase randomize the reference to the starting resolution (--startres) independently for the even/odd subsets of particles.")
-	parser.add_argument("--goldcontinue", action="store_true", default=False, help="Continue from previous gold standard refinement. Ues the _even/_odd version of the given reference.")
+	parser.add_argument("--goldstandard", action="store_true", default=False, help="Phase randomize the reference to the starting resolution (--startres) independently for the even/odd subsets of particles.",guitype='boolbox', row=6, col=0, rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--goldcontinue", action="store_true", default=False, help="Continue from previous gold standard refinement. Ues the _even/_odd version of the given reference.",guitype='boolbox', row=6, col=1, rowspan=1, colspan=1, mode="model")
 
 	#parser.add_argument("--restarget", default=0, type=float,help="The resolution you reasonably expect to achieve in the current refinement run (in A).")
-	parser.add_argument("--maxres",type=float,help="Maximum resolution to consider in alignment (in A, not 1/A). The program will determine maximum resolution each round from the FSC of the previous round by default.",default=0)
-	parser.add_argument("--minres",type=float,help="Minimum resolution to consider in alignment (in A, not 1/A)",default=0)
 	parser.add_argument("--path", type=str,help="Directory of the refinement.", default=None)
-	parser.add_argument("--sym", type=str,help="symmetry", default="c1")
-	parser.add_argument("--iters", type=str,help="Iteration information. Input types of refinement separated by comma. p - 3d particle translation-rotation. t - subtilt translation. r - subtilt translation-rotation. d - subtilt defocus. Default is p,p,p,t,p,p,t,r,d. Character followed by number is also acceptable. p3 = p,p,p", default="p,p,p,t,p,p,t,r,d")
-	parser.add_argument("--keep", type=str,help="Fraction of particles to keep. Note this is controlled at three separate steps. When default --keep=.95, it removes the worst 0.05 3D particles, 0.05 2D subtilt with the worst score, and 0.05 of subtilt with the largest drift. Also accept comma separated values (0.9,0.5,0.5) to set different keep thresholds for the three classes", default="0.95")
-	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>=<value>. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel",default="thread:4")
-	parser.add_argument("--threads", type=int,help="threads for post-processing", default=10)
+	parser.add_argument("--sym", type=str,help="symmetry", default="c1",guitype='strbox',row=4, col=1,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--iters", type=str,help="Iteration information. Input types of refinement separated by comma. p - 3d particle translation-rotation. t - subtilt translation. r - subtilt translation-rotation. d - subtilt defocus. Default is p,p,p,t,p,p,t,r,d. Character followed by number is also acceptable. p3 = p,p,p", default="p,p,p,t,p,p,t,r,d",guitype="strbox",row=8,col=0,rowspan=1,colspan=2,mode="model")
+	parser.add_argument("--keep", type=str,help="Fraction of particles to keep. Note this is controlled at three separate steps. When default --keep=.95, it removes the worst 0.05 3D particles, 0.05 2D subtilt with the worst score, and 0.05 of subtilt with the largest drift. Also accept comma separated values (0.9,0.5,0.5) to set different keep thresholds for the three classes", default="0.95",guitype="strbox",row=10,col=0,rowspan=1,colspan=2,mode="model")
 	parser.add_argument("--setsf", type=str,help="structure factor for sharpening", default=None)
-	parser.add_argument("--tophat", type=str,help="Options for filtering maps. Run 'e2help.py tophat' for more information. Default=wiener.", default=None)
+	parser.add_argument("--tophat", type=str,help="Options for filtering maps. Run 'e2help.py tophat' for more information. Default=wiener.", default=None,guitype='strbox', row=12, col=0, rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--ssnrwt", action="store_true", default=False ,help="weight particles during reconstruction by SSNR accroding to references.")
 	parser.add_argument("--curve", action="store_true", default=False ,help="Filament refinement mode. still under testing")
 	parser.add_argument("--use3d", action="store_true", default=False ,help="Use projection of 3d particles instead of 2d sub tilt series. This may be more useful for thicker sample but can be significantly slower.")
-	parser.add_argument("--localrefine", action="store_true", default=False ,help="only perform local search around the solution from the last iteration")
-	parser.add_argument("--loadali2d", type=str,help="load previous 2d alignment from an aliptcls2d_xx.lst file", default=None)
-	parser.add_argument("--loadali3d", type=str,help="load previous 3d alignment from an aliptcls3d_xx.lst file", default=None)
+	parser.add_argument("--localrefine", action="store_true", default=False ,help="only perform local search around the solution from the last iteration",guitype='boolbox', row=20, col=1, rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--loadali2d", type=str,help="load previous 2d alignment from an aliptcls2d_xx.lst file", default=None,guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=14, col=0,rowspan=1, colspan=2, mode="model")
+	parser.add_argument("--loadali3d", type=str,help="load previous 3d alignment from an aliptcls3d_xx.lst file", default=None,guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=16, col=0,rowspan=1, colspan=2, mode="model")
+	parser.add_argument("--maxres",type=float,help="Maximum resolution to consider in alignment (in A, not 1/A). The program will determine maximum resolution each round from the FSC of the previous round by default.",default=0,guitype='floatbox',row=18, col=0,rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--minres",type=float,help="Minimum resolution to consider in alignment (in A, not 1/A)",default=0,guitype='floatbox',row=18, col=1,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--mask", type=str,help="Mask applied to the results (instead of automasking)", default=None)
+	parser.add_argument("--automaskexpand", default=-1, type=int,help="Default=boxsize/20. Specify number of voxels to expand mask before soft edge." )
 	parser.add_argument("--preprocess", metavar="processor_name:param1=value1:param2=value2", type=str, default=None, help="Preprocess each 2-D subtilt while loading (alignment only)")
+	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>=<value>. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel",default="thread:4", guitype='strbox', row=20, col=0, rowspan=1, colspan=1, mode="refinement[thread:4]")
+	parser.add_argument("--threads", type=int,help="threads for post-processing", default=10, guitype='intbox', row=20, col=1, rowspan=1, colspan=1, mode="model[4]")
 	
 	parser.add_argument("--breaksym", type=str,help="Specify a symmetry to break", default=None) ## seems better to move this to e2spt_refinemulti_new.py
 	parser.add_argument("--maskalign", type=str,help="Mask file applied to 3D alignment reference in each iteration. Not applied to the average, which will follow normal masking routine.", default=None)
@@ -51,6 +52,8 @@ def main():
 	parser.add_argument("--smoothN",type=int,help="number of neighboring particles used for smoothing. default 15",default=15)
 	parser.add_argument("--m3dthread",action="store_true", default=False ,help="do make3d in threading mode with shared memory. safer for large boxes")
 	parser.add_argument("--maxtilt",type=float,help="Excluding tilt images beyond the angle",default=-1)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -147,7 +150,9 @@ def main():
 		setsf=f" --setsf {options.setsf}"
 	if options.tophat:
 		tophat=f" --tophat {options.tophat}"
-	if options.mask:
+	if options.automaskexpand>0: 
+		ppmask=f" --automaskexpand {options.automaskexpand}"
+	elif options.mask:
 		ppmask=f" --mask {options.mask}"
 	if options.maskalign!=None: maskalign=EMData(options.maskalign,0)
 	else: maskalign=None
