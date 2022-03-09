@@ -1,4 +1,4 @@
-# EMAN2 libs
+# EMAN2
 lib/
 libpy*.dylib
 .eman2settings
@@ -6,6 +6,9 @@ libpy*.dylib
 .eman2log.txt
 info
 e2boxercache
+.eman2settings.json
+doc/doxygen/doxygen_html
+doc/modular_class_html
 
 # Visual Studio files
 *.sdf
@@ -187,5 +190,3 @@ sparx/doc/Tutorial/build/*
 # Pytest
 .cache
 .pytest_cache
-doc/doxygen/doxygen_html
-doc/modular_class_html
