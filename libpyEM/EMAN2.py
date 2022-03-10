@@ -687,11 +687,22 @@ class EMArgumentParser(argparse.ArgumentParser):
 	def parse_args(self):
 		""" Masquerade as optparser parse options """
 		if "--help-to-html" in sys.argv[1:]:
+			import pandas as pd
+
 			actions = self._get_optional_actions()
+
+			df = pd.DataFrame(columns=['Option', 'Type', 'Description'])
 
 			for i in actions:
 				i.type = "None" if not i.type else str(i.type).split("'")[1]
 				i.option_strings = ', '.join(i.option_strings)
+
+				df = pd.concat([df, pd.DataFrame({'Option': [i.option_strings],
+				                                  'Type': [i.type],
+				                                  'Description': [i.help]})],
+				               ignore_index=True)
+
+			print(df.to_html(index=False, justify="center"))
 
 			self.exit()
 
