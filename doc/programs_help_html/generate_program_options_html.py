@@ -45,8 +45,8 @@ def get_program_files():
 		"e2version.py",
 		"e2fhstat.py",
 		"e2_real.py",
-		"e2proc3d.py",  # uses OptionParser
-		"e2seq2pdb.py",  # no help provided
+		"e2proc3d.py",              # uses OptionParser
+		"e2seq2pdb.py",             # no help provided
 		"e2spt_autoboxer.py",       # broken
 		"e2spt_classaverage.py",    # broken
 		"e2spt_resolutionplot.py",  # broken
