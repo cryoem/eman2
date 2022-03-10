@@ -688,6 +688,8 @@ class EMArgumentParser(argparse.ArgumentParser):
 		""" Masquerade as optparser parse options """
 		if "--help-to-html" in sys.argv[1:]:
 			import pandas as pd
+			from contextlib import redirect_stdout
+			from io import StringIO
 
 			actions = self._get_optional_actions()
 
@@ -704,6 +706,15 @@ class EMArgumentParser(argparse.ArgumentParser):
 				                                  'Type': [i.type],
 				                                  'Description': [i.help]})],
 				               ignore_index=True)
+
+			print('<pre>')
+
+			stdout = StringIO()
+			with redirect_stdout(stdout):
+				self.print_usage()
+			print(stdout.getvalue().replace('<', '&lt').replace('>', '&gt'))
+
+			print('</pre>\n')
 
 			print(df.to_html(index=False, justify="center"))
 
