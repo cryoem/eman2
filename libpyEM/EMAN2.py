@@ -681,10 +681,16 @@ class EMArgumentParser(argparse.ArgumentParser):
 		if version:
 			self.add_argument('--version', action='version', version=version)
 		self.add_argument("positionalargs", nargs="*")
+		self.add_argument('--help-to-html', action='store_true',
+		                  help='print this help message in html format')
 
 	def parse_args(self):
 		""" Masquerade as optparser parse options """
+		if "--help-to-html" in sys.argv[1:]:
+			self.exit()
+
 		parsedargs = argparse.ArgumentParser.parse_args(self)
+
 		return (parsedargs, parsedargs.positionalargs)
 
 	def add_pos_argument(self, **kwargs):
