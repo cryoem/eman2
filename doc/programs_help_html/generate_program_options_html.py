@@ -3,6 +3,7 @@
 import sys
 from pathlib import Path
 from subprocess import run
+from multiprocessing import Pool
 
 
 THIS_DIR = Path(__file__).resolve().parent
@@ -47,8 +48,8 @@ def write_parser_options_of_prog(prog):
 def main():
 	progs = get_program_files()
 
-	for prog in progs:
-		write_parser_options_of_prog(prog)
+	with Pool() as pool:
+		pool.map(write_parser_options_of_prog, progs)
 
 
 if __name__ == "__main__":
