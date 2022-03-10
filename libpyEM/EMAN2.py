@@ -697,6 +697,9 @@ class EMArgumentParser(argparse.ArgumentParser):
 				i.type = "None" if not i.type else str(i.type).split("'")[1]
 				i.option_strings = ', '.join(i.option_strings)
 
+				if "--help-to-html" in i.option_strings or "--help" in i.option_strings:
+					continue
+
 				df = pd.concat([df, pd.DataFrame({'Option': [i.option_strings],
 				                                  'Type': [i.type],
 				                                  'Description': [i.help]})],
