@@ -34,6 +34,7 @@ from builtins import range
 import os, re
 from EMAN2 import *
 import numpy as np
+from EMAN2_utils import natural_sort
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -163,6 +164,20 @@ def main():
 			
 			for tid in tlts:
 				l=lst[tid]
+				#print(l[:,ic])
+				if len(l)>len(np.unique(l[:,ic])):
+					print("    duplicated tilt images exist...")
+					aid=np.argsort(l[:,ic-1])
+					tid2=[]
+					aid2=[]
+					for ii in aid:
+						if l[ii, ic] not in aid2:
+							aid2.append(l[ii, ic])
+							tid2.append(tid[ii])
+					tid=np.array(tid2, dtype=int)
+					print("    keeping {} out of {} images".format(len(tid), len(l)))
+					l=lst[tid]
+					
 				aid=np.argsort(l[:,ic])
 				fnames=[args[i] for i in tid[aid]]
 				p=lstpos[tid[0]][it+1]
