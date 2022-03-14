@@ -252,9 +252,11 @@ class EMPlot2DWidget(EMGLWidget):
 			self.visibility = {}
 
 		if input_data is None :
-			self.data.pop(key)
-			self.visibility.pop(key)
-			self.axes.pop(key)
+			try: 
+				self.data.pop(key)
+				self.visibility.pop(key)
+				self.axes.pop(key)
+			except: pass
 			try: self.comments.pop(key)
 			except: pass
 			if self.inspector: self.inspector.datachange()
