@@ -49,6 +49,7 @@ try:
 	from eman2_gui.emplot2d import EMPlot2DWidget
 	from eman2_gui.emapplication import EMApp
 except:
+	traceback.print_exc()
 	print("Unable to import Python GUI libraries, PYTHONPATH ?")
 	sys.exit(1)
 

@@ -100,12 +100,15 @@ def make3d_thr(que,tskn,fsp,imgns,rparms,latent,currun,rad):
 		imgs=EMData.read_images(fsp,imgns[i*100:i*100+100])
 		for j,im in enumerate(imgs):
 			im2=im.get_clip(Region((im["nx"]-pad)//2,(im["ny"]-pad)//2,pad,pad))
+			xf=im["xform.projection"]
+			trans=xf.get_trans_2d()
+			xf.set_trans(-trans[0],-trans[1])
 			if j%2==0:
-				imf=recone.preprocess_slice(im2,im["xform.projection"])
-				recone.insert_slice(imf,im["xform.projection"],1.0)
+				imf=recone.preprocess_slice(im2,xf)
+				recone.insert_slice(imf,xf,1.0)
 			else:
-				imf=recono.preprocess_slice(im2,im["xform.projection"])
-				recono.insert_slice(imf,im["xform.projection"],1.0)
+				imf=recono.preprocess_slice(im2,xf)
+				recono.insert_slice(imf,xf,1.0)
 	
 	rete=recone.finish(True)
 	reto=recono.finish(True)
@@ -118,9 +121,9 @@ def make3d_thr(que,tskn,fsp,imgns,rparms,latent,currun,rad):
 	ret=rete.copy()
 	ret.add(reto)
 	ret.process_inplace("filter.lowpass.tophat",{"cutoff_pixels":r})
-	ret=ret.get_clip((pad-im["nx"])//2,(pad-im["nx"])//2,(pad-im["nx"])//2,im["nx"],im["nx"],im["nx"])
-	rete=rete.get_clip((pad-im["nx"])//2,(pad-im["nx"])//2,(pad-im["nx"])//2,im["nx"],im["nx"],im["nx"])
-	reto=reto.get_clip((pad-im["nx"])//2,(pad-im["nx"])//2,(pad-im["nx"])//2,im["nx"],im["nx"],im["nx"])
+	ret=ret.get_clip(Region((pad-im["nx"])//2,(pad-im["nx"])//2,(pad-im["nx"])//2,im["nx"],im["nx"],im["nx"]))
+	rete=rete.get_clip(Region((pad-im["nx"])//2,(pad-im["nx"])//2,(pad-im["nx"])//2,im["nx"],im["nx"],im["nx"]))
+	reto=reto.get_clip(Region((pad-im["nx"])//2,(pad-im["nx"])//2,(pad-im["nx"])//2,im["nx"],im["nx"],im["nx"]))
 #	ret=ret.do_ift()
 	ret["ptcl_repr"]=len(imgns)
 	print(f"Resolution {r} {1.0/fscf[r]}")
@@ -161,7 +164,7 @@ def make3d_thr_fast(que,tskn,fsp,imgns,rparms,latent,currun,rad):
 			#xfp=xf.get_params("eman")
 			#print(f'{xfp["az"]},{xfp["alt"]},{xfp["phi"]},{xfp["tx"]},{xfp["ty"]}')
 			trans=xf.get_trans_2d()
-			xf.set_trans(trans[0]//2,trans[1]//2)
+			xf.set_trans(-trans[0]//2,-trans[1]//2)
 			if j%2==0:
 				imf=recone.preprocess_slice(im2,xf)
 				recone.insert_slice(imf,xf,1.0)
@@ -899,6 +902,20 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.mapdataitem.setVisibleItem(butval(self.wbutmap))
 		print(self.gaussplot.isVisibleItem(),self.mapdataitem.isVisibleItem())
 
+	def set3dvis(self,neumap=1,dynmap=1,filtmap=1,neumdl=1,dynmdl=1,blankplot=0):
+		"""sets the visibility of various 3-D display components. 1 enables, 0 disables, -1 leaves unchanged"""
+		if neumap>=0 : self.mapdataitem.setVisibleItem(neumap)
+		try: 
+			if dynmap>=0: self.dmapdataitem.setVisibleItem(dynmap)
+		except: pass
+		try: 
+			if filtmap>=0: self.fmapdataitem.setVisibleItem(filtmap)
+		except: pass
+		if dynmdl>=0: self.gaussplot.setVisibleItem(dynmdl)
+		if neumdl>=0: self.neutralplot.setVisibleItem(neumdl)
+		if blankplot: 
+			self.wplot2d.set_data(None,replace=True)
+
 	def new_res(self):
 		"""Resolution changed. Update the initial points"""
 		try: res=float(self.wedres.text())
@@ -952,6 +969,8 @@ class EMGMM(QtWidgets.QMainWindow):
 			for i in range(len(self.amps)):
 				try: out.write(f"{self.centers[0,i]/nx:1.2f}\t{-self.centers[1,i]/nx:1.2f}\t{-self.centers[2,i]/nx:1.2f}\t{self.amps[i]:1.3f}\t{self.wids[i]:1.3f}\n")
 				except: print("write errror: ",self.centers[:,i],self.amps[i],self.amps.shape,i)
+
+		self.set3dvis(0,0,1,1,0,1)
 
 	def new_neutral(self):
 		"""Makes a new neutral model, which will be used by any subsequent runs"""
@@ -1034,6 +1053,8 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.currun=self.jsparm["run_"+self.currunkey]
 		self.currun["time_neutral_end"]=local_datetime()
 		self.jsparm["run_"+self.currunkey]=self.currun
+		
+		self.set3dvis(1,0,0,1,0,1)
 
 
 	def new_run(self,clk=False):
@@ -1108,6 +1129,8 @@ class EMGMM(QtWidgets.QMainWindow):
 		
 		self.sel_run(-1)
 
+		self.set3dvis(-1,0,0,0,1,0)
+
 
 	def update_gmms(self):
 		"""Updates the display of gmm_XX folders"""
@@ -1147,6 +1170,8 @@ class EMGMM(QtWidgets.QMainWindow):
 			self.map3d=EMData(f'{self.gmm}/input_map.hdf')
 			self.mapdataitem.setData(self.map3d)
 		except: print("Error: input_map.hdf missing")
+
+		self.set3dvis(1,0,0,0,0,0)
 			
 	def sel_run(self,line):
 		"""Called when the user selects a new run from the list. If called with -1, reloads the current run"""
@@ -1229,6 +1254,8 @@ class EMGMM(QtWidgets.QMainWindow):
 		
 		self.plot_mouse(None,(0,0))
 		self.wplot2d.updateGL()
+		
+		self.set3dvis(1,0,0,1,1,0)
 
 
 	def add_gmm(self,clk=False):
