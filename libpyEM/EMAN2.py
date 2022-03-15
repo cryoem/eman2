@@ -687,6 +687,12 @@ class EMArgumentParser(argparse.ArgumentParser):
 	def parse_args(self):
 		""" Masquerade as optparser parse options """
 		if "--help-to-html" in sys.argv[1:]:
+			actions = self._get_optional_actions()
+
+			for i in actions:
+				i.type = "None" if not i.type else str(i.type).split("'")[1]
+				i.option_strings = ', '.join(i.option_strings)
+
 			self.exit()
 
 		parsedargs = argparse.ArgumentParser.parse_args(self)
