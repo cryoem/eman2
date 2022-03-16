@@ -944,7 +944,7 @@ Dict Transform::get_rotation(const string& euler_type) const
 //	        double nphi = (az-phi)/2.0;
 //	        double cosOover2 = cos((az+phi)*EMConsts::deg2rad/2.0) * cos(alt*EMConsts::deg2rad/2.0);
 //		printf("%f %f %f",matrix[0][0],matrix[1][1],matrix[2][2]);
-		double traceR = matrix[0][0]+matrix[1][1]+matrix[2][2]; // This should be 1 + 2 cos omega
+//		double traceR = matrix[0][0]+matrix[1][1]+matrix[2][2]; // This should be 1 + 2 cos omega
 	        double cosomega =  (traceR-1.0)/2.0;
             
         double A0 =(matrix[1][2]-matrix[2][1])/2.0;
