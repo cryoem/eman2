@@ -1,5 +1,5 @@
 ADD_CUSTOM_TARGET(mkdoc-doxy
-	DEPENDS	${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile
+	DEPENDS	${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile ${CMAKE_CURRENT_SOURCE_DIR}/makedoc.sh
 	DEPENDS mkdoc-modular-class
 )
 
