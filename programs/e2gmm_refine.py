@@ -301,6 +301,7 @@ def set_indices_boxsz(boxsz, apix=0, return_freq=False):
 
 def build_encoder(mid=512, nout=4, conv=False, ninp=-1):
 	l2=tf.keras.regularizers.l2(1e-3)
+	l1=tf.keras.regularizers.l1(1e-3)
 	kinit=tf.keras.initializers.RandomNormal(0,0.1)	# was 0.01
 	
 	if conv:
@@ -339,6 +340,10 @@ def build_encoder(mid=512, nout=4, conv=False, ninp=-1):
 		tf.keras.layers.Dropout(.3),
 		tf.keras.layers.Dense(max(ninp//8,nout*2), activation="relu", kernel_regularizer=l2,use_bias=True),
 		tf.keras.layers.Dense(max(ninp//32,nout*2), activation="relu", kernel_regularizer=l2,use_bias=True),
+		#tf.keras.layers.Dense(max(ninp//2,nout*2), activation="tanh", kernel_regularizer=l1,use_bias=True,bias_initializer=kinit),
+		#tf.keras.layers.Dropout(.3),
+		#tf.keras.layers.Dense(max(ninp//8,nout*2), activation="tanh", kernel_regularizer=l1,use_bias=True),
+		#tf.keras.layers.Dense(max(ninp//32,nout*2), activation="tanh", kernel_regularizer=l1,use_bias=True),
 		tf.keras.layers.BatchNormalization(),
 		tf.keras.layers.Dense(nout, kernel_regularizer=l2, kernel_initializer=kinit,use_bias=True),
 		]
@@ -362,6 +367,7 @@ def build_decoder(pts, mid=512, ninp=4, conv=False):
 	
 	kinit=tf.keras.initializers.RandomNormal(0,1e-2)
 	l2=tf.keras.regularizers.l2(1e-3)
+	l1=tf.keras.regularizers.l1(1e-3)
 	layer_output=tf.keras.layers.Dense(npt*5, kernel_initializer=kinit, activation="sigmoid",use_bias=True)
 	if conv:
 			
@@ -395,10 +401,12 @@ def build_decoder(pts, mid=512, ninp=4, conv=False):
 	else:
 		print(f"Decoder {max(npt//32,ninp)} {max(npt//8,ninp)} {max(npt//2,ninp)}")
 		layers=[
-#			tf.keras.layers.Dense(max(npt//64,ninp),activation="relu"),
 			tf.keras.layers.Dense(max(npt//32,ninp*2),activation="relu",use_bias=True,bias_initializer=kinit),
 			tf.keras.layers.Dense(max(npt//8,ninp*2),activation="relu",use_bias=True),
 			tf.keras.layers.Dense(max(npt//2,ninp),activation="relu",use_bias=True),
+			#tf.keras.layers.Dense(max(npt//32,ninp*2),activation="tanh", kernel_regularizer=l1,use_bias=True),
+			#tf.keras.layers.Dense(max(npt//8,ninp*2),activation="tanh", kernel_regularizer=l1,use_bias=True),
+			#tf.keras.layers.Dense(max(npt//2,ninp),activation="tanh", kernel_regularizer=l1,use_bias=True,bias_initializer=kinit),
 			tf.keras.layers.Dropout(.3),
 			tf.keras.layers.BatchNormalization(),
 			layer_output,

@@ -67,6 +67,10 @@ import tensorflow.keras.models
 import numpy as np
 
 def butval(widg):
+	if widg.isChecked(): return 1
+	return 0
+
+def butstr(widg):
 	if widg.isChecked(): return "1"
 	return "0"
 
@@ -627,7 +631,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.currun["modelreg"]=float(self.wedtrainmodelreg.text())
 		self.currun["perturb"]=float(self.wedtrainperturb.text())
 		self.currun["conv"]=butval(self.wbutconv)
-		self.currun["pas"]=butval(self.wbutpos)+butval(self.wbutamp)+butval(self.wbutsig)
+		self.currun["pas"]=butstr(self.wbutpos)+butstr(self.wbutamp)+butstr(self.wbutsig)
 		if mode=="neutral": self.currun["time_neutral"]=local_datetime()
 		if mode=="dynamics": self.currun["time_dynamics"]=local_datetime()
 		self.jsparm["run_"+self.currunkey]=self.currun
@@ -792,6 +796,26 @@ class EMGMM(QtWidgets.QMainWindow):
 		xcol=self.wsbxcol.value()
 		ycol=self.wsbycol.value()
 		self.wplot2d.del_shapes(["region","genline"])
+
+		#if mmode=="HSphere":
+			## This will produce a list of indices where the distance in latent space is less than the specified rad
+			#ptdist=(np.sum((self.midresult.transpose()-latent)**2,1)<(rad**2)).nonzero()[0]
+			#self.wplot2d.add_shape("count",EMShape(["scrlabel",0.1,0.1,0.1,10.,10.,f"{len(ptdist)} ptcls",120.0,-1]))
+			#self.wplot2d.add_shape("region",EMShape(["circle",0.1,0.8,0.1,loc[0],loc[1],rad,1]))
+			#self.wplot2d.update()
+##			print(loc,self.wplot2d.plot2draw(loc[0],loc[1]),event.x(),event.y(),self.wplot2d.scrlim,rad)
+
+			##Limit ourselves to a random subset of ~500 of the points to average
+			#if len(ptdist)>500: ptdist=ptdist[::len(ptdist)//500]
+			#gauss=np.mean(self.decoder(self.midresult.transpose()[ptdist]),0).transpose()		# run all of the selected latent vectors through the decoder at once
+			#box=int(self.wedbox.text())
+			#gauss[:3]*=box
+			#gauss[2]*=-1.0
+			#gauss[1]*=-1.0
+			#if not butval(self.wbutpos): gauss[:3]=self.model[:3]
+			#if not butval(self.wbutamp): gauss[3]=self.model[3]
+			#if not butval(self.wbutsig): gauss[4]=self.model[4]
+			#np.savetxt("mouse.txt",gauss.transpose(),fmt="%.5g",delimiter="\t")
 
 		if mmode=="Map-HSphere":
 			# This will produce a list of indices where the distance in latent space is less than the specified rad
