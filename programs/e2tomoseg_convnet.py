@@ -330,7 +330,11 @@ class StackedConvNet_tf(object):
 			if pl==2:
 				layers.append(tf.keras.layers.MaxPooling2D())
 				shrink*=2
-			
+		if meanout:
+			layers.append(tf.keras.layers.MaxPooling2D(pool_size=(8,8)))
+			layers.append(tf.keras.layers.Flatten())
+			layers.append(tf.keras.layers.Dense(1))
+				
 		self.model=tf.keras.Sequential(layers)
 		self.imgsz=imgsz
 		self.outsz=self.model.get_layer(index=-1).output_shape[1]
@@ -353,7 +357,8 @@ class StackedConvNet_tf(object):
 
 		def calc_loss(yt, yp):
 			if self.meanout:
-				ayp=tf.reduce_min(yp, axis=(1,2))
+				#ayp=tf.reduce_min(yp, axis=(1,2))
+				ayp=yp
 				ayp=tf.math.minimum(1.0, tf.math.maximum(-1.0, ayp))
 			else:
 				ayp=tf.math.minimum(yp,1.0)
@@ -366,6 +371,8 @@ class StackedConvNet_tf(object):
 			self.model.reset_metrics()
 			cost=[]
 			for image, label in dataset:
+				
+				y=self.model.predict(image)
 				result = self.model.train_on_batch(image, label)
 				cost.append(result)
 			print("iteration {}, cost {:.3f}".format(it, np.mean(cost)))
@@ -476,11 +483,18 @@ class StackedConvNet_tf(object):
 		print("Writting network output of training set to {}...".format(outfile))
 	
 		k=0
+		if self.meanout:
+			print(self.model.layers[:-3])
+			modelpred=tf.keras.Sequential(self.model.layers[:-3])
+		else:
+			modelpred=self.model
+			
 		for image, label in self.dataset:
 			k+=1
 			if k>ncopy: break
 			
-			result = self.model.predict_on_batch(image)
+			result = modelpred.predict_on_batch(image)
+			#print(result.shape)
 
 			for i in range(len(image)):
 				im=np.array(image[i][:,:,0])

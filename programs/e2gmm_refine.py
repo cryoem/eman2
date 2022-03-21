@@ -839,6 +839,8 @@ def main():
 			pts=np.loadtxt(options.model).astype(floattype)
 		npt=len(pts)
 		print("{} gaussian in the model".format(len(pts)))
+	else:
+		pts=None
 	
 	#### This initializes the decoder directly from a set of coordinates
 	#    This method (may be) used rather than saving the decoder model itself
