@@ -131,6 +131,9 @@ def make3d_thr(que,tskn,fsp,imgns,rparms,latent,currun,rad,mmode):
 #	ret=ret.do_ift()
 	ret["ptcl_repr"]=len(imgns)
 	ret["resolution"]=1.0/fscf[r]
+	ret["apix_x"]=im["apix_x"]
+	ret["apix_y"]=im["apix_x"]
+	ret["apix_z"]=im["apix_x"]
 	print(f"Resolution {r} {1.0/fscf[r]}")
 			
 	que.put((tskn,100,ret,latent,imgns,currun,rad,rete,reto,mmode))
@@ -191,6 +194,9 @@ def make3d_thr_fast(que,tskn,fsp,imgns,rparms,latent,currun,rad,mmode):
 #	ret=ret.get_clip((pad-im["nx"])//2,(pad-im["nx"])//2,(pad-im["nx"])//2,im["nx"],im["nx"],im["nx"])
 #	ret.process_inplace("xform.scale",{"scale":2.0,"clip":im["nx"]})
 #	ret=ret.do_ift()
+	ret["apix_x"]=im2["apix_x"]
+	ret["apix_y"]=im2["apix_x"]
+	ret["apix_z"]=im2["apix_x"]
 	ret["ptcl_repr"]=len(imgns)
 	ret["resolution"]=1.0/fscf[r]
 	print(f"Resolution {r} {1.0/fscf[r]}")
@@ -611,7 +617,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		else:
 			self.dmapdataitem.setData(vol)
 		
-		self.dmapiso.getTransform().set_scale(self.jsparm["apix"]/vol["apix_x"])
+		self.dmapiso.getTransform().set_scale(vol["apix_x"]/self.jsparm["apix"])
 		
 		self.wview3d.updateGL()
 
@@ -698,6 +704,8 @@ class EMGMM(QtWidgets.QMainWindow):
 			if not butval(self.wbutpos): gauss[:3]=self.model[:3]
 			if not butval(self.wbutamp): gauss[3]=self.model[3]
 			if not butval(self.wbutsig): gauss[4]=self.model[4]
+#			print(gauss[:,:6])
+#			print("-----")
 			self.gaussplot.setData(gauss,self.wvssphsz.value)
 			self.wview3d.update()
 			
@@ -1166,6 +1174,9 @@ class EMGMM(QtWidgets.QMainWindow):
 			if er :
 				showerror("Error running e2gmm_refine, see console for details. Memory is a common issue. Consider reducing the target resolution.")
 				return
+		#if self.currun['pas'][0]=="1" and self.currun['pas'][1]=="1":
+			#er=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']//2} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas 100 --ndense -1")
+			#er=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']//2} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")		
 		er=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")
 		if er :
 			showerror("Error running e2gmm_refine, see console for details. Memory is a common issue. Consider reducing the target resolution.")
