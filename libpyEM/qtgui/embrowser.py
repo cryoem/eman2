@@ -118,18 +118,19 @@ def askFileExists() :
 	elif box.clickedButton() == b2 : return "overwrite"
 	else : return "cancel"
 
-def makeOrthoProj(ptcl,layers,highpass,lowpass,stkout):
+def makeOrthoProj(ptcl,layers,center,highpass,lowpass,stkout):
 	"""makes restricted orthogonal projections from a 3-D volume and returns as a single 2d image
 	ptcl - 3D input ovlume
 	layers - +- layer range about center for integration, -1 is full projection
+	center - center location, 0 being the middle of the box
 	highpass - optional high-pass filter in A (<0 disables)
 	lowpass - optional low-pass filter in A (<0 disables)
 	"""
 	
 	# these are the range limited orthogonal projections, with optional filtration
 	if layers>=0:
-		first=ptcl["nx"]/2-layers
-		last=ptcl["nx"]/2+layers+1
+		first=ptcl["nx"]/2+center-layers
+		last=ptcl["nx"]/2+center+layers+1
 	else:
 		first=0
 		last=-1
@@ -574,6 +575,7 @@ class EMFileType(object) :
 			img1=1
 			imgstep=1
 		layers=self.secparm.wspinlayers.value()
+		center=self.secparm.wspincenter.value()
 		applyxf=self.secparm.wcheckxf.checkState()
 		stkout=self.secparm.wcheckstk.checkState()
 		oldwin=self.secparm.wcheckoldwin.checkState()
@@ -611,7 +613,7 @@ class EMFileType(object) :
 		# reference goes last!
 		if ref!=None:
 			if mask!=None: ref.mult(mask)
-			hall=makeOrthoProj(ref,layers,highpass,lowpass,stkout)
+			hall=makeOrthoProj(ref,layers,center,highpass,lowpass,stkout)
 			if isinstance(hall,EMData): data.append(hall)
 			else: data.extend(hall)
 		
@@ -631,7 +633,7 @@ class EMFileType(object) :
 			time.sleep(0.001)
 			get_application().processEvents()
 			
-			hall=makeOrthoProj(ptcl,layers,highpass,lowpass,stkout)
+			hall=makeOrthoProj(ptcl,layers,center,highpass,lowpass,stkout)
 			
 			if isinstance(hall,EMData):
 				for k in ["ptcl_repr","class_ptcl_idxs","class_ptlc_src","orig_file","orig_n","source_path","source_n"]:
@@ -1372,6 +1374,7 @@ class EMJSONFileType(EMFileType) :
 		if img1<=img0 : img1+=1
 		imgstep=self.secparm.wspinstep.value()
 		layers=self.secparm.wspinlayers.value()
+		center=self.secparm.wspincenter.value()
 		lowpass=float(self.secparm.wlelp.text())
 		highpass=float(self.secparm.wlehp.text())
 		applyxf=self.secparm.wcheckxf.checkState()
@@ -1398,7 +1401,7 @@ class EMJSONFileType(EMFileType) :
 		data=[]
 		if ref!=None:
 			if mask!=None: ref.mult(mask)
-			hall=makeOrthoProj(ref,layers,highpass,lowpass,stkout)
+			hall=makeOrthoProj(ref,layers,center,highpass,lowpass,stkout)
 			if isinstance(hall,EMData): data.append(hall)
 			else: data.extend(hall)
 			
@@ -1429,7 +1432,7 @@ class EMJSONFileType(EMFileType) :
 			time.sleep(0.001)
 			get_application().processEvents()
 
-			hall=makeOrthoProj(ptcl,layers,highpass,lowpass,stkout)
+			hall=makeOrthoProj(ptcl,layers,center,highpass,lowpass,stkout)
 			
 			if isinstance(hall,EMData):
 				# copy some parameters from the original image header
@@ -3570,6 +3573,12 @@ class EMSliceParamDialog(QtWidgets.QDialog):
 		self.wspinlayers.setValue(self.dlay)
 		self.wspinlayers.setToolTip("Projection about center +- selected number of layers, eg- 0 -> central section only, -1 full projection")
 		self.fol.addRow("Sum Layers (0->1, 1->3, 2->5, ...):",self.wspinlayers)
+
+		self.wspincenter=QtWidgets.QSpinBox()
+		self.wspincenter.setRange(-256,256)
+		self.wspincenter.setValue(0)
+		self.wspincenter.setToolTip("Center about which sum is generated, 0=center of volume")
+		self.fol.addRow("Center for sum on Z:",self.wspincenter)
 
 		self.wlelp=QtWidgets.QLineEdit(self.dlp)
 		self.wlelp.setToolTip("If >0 applies a low-pass filter in 2D. Specify in A.")

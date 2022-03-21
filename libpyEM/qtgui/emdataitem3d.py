@@ -1640,11 +1640,12 @@ class EMIsosurface(EMItem3D,EM3DModel):
 		glColor(self.ambient)
 
 		glPushMatrix()
-		glTranslate(old_div(-self.parent.data.get_xsize(),2.0),old_div(-self.parent.data.get_ysize(),2.0),old_div(-self.parent.data.get_zsize(),2.0))
+		glTranslate(-self.parent.data.get_xsize()/2.0,-self.parent.data.get_ysize()/2.0,-self.parent.data.get_zsize()/2.0)
 		if ( self.texture ):
 			glScalef(self.parent.data.get_xsize(),self.parent.data.get_ysize(),self.parent.data.get_zsize())
 
 #		print "renderiso"
+#		print(self,self.isorender)
 		GLUtil.render_using_VBOs(self.isorender, 0, 0)
 
 		glPopMatrix()

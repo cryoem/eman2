@@ -103,9 +103,9 @@ print("---")
 os.unlink("ctest.hdf")
 
 
-# floats crossing zero with a zero
+# floats crossing zero with zeros
 for i in range(16): a[i]=i/3.0-4.1
-a[15]=0.0
+for i in range(2,14): a[i]=0.0
 
 a.write_compressed("ctest.hdf",0,5)
 a.write_compressed("ctest.hdf",1,4)
