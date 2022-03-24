@@ -3105,7 +3105,7 @@ and the file size will increase.
 				if sum(hist[sh:])>maxout: break
 
 			im["render_min"]=sl*hs+h0
-			im["render_max"]=(sh)*hs+h0
+			im["render_max"]=sh*hs+h0
 		elif maxval>minval:
 			im["render_min"]=float(minval)
 			im["render_max"]=float(maxval)
