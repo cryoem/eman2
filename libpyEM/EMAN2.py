@@ -57,6 +57,7 @@ from struct import pack,unpack
 import json
 from collections import OrderedDict
 import traceback
+from pathlib import Path
 
 import threading
 #from Sparx import *
@@ -2948,6 +2949,16 @@ EMData.__init__ = db_emd_init
 # Transform.__str__ = transform_to_str
 
 #lsxcache=None
+
+
+def compressable_formats():
+	return ('.hdf')
+
+
+def is_file_compressable(fsp):
+	return Path(fsp).suffix.lower() in compressable_formats()
+
+
 def db_read_image(self, fsp, *parms, **kparms):
 	"""read_image(filespec,image #,[header only],[region],[is_3d],[imgtype])
 
@@ -3084,7 +3095,7 @@ and the file size will increase.
 		except: n=0
 	
 	# Maybe should have this revert to normal write_image, if a different format?
-	if fsp[-4:].lower()!=".hdf" : raise(Exception,"Only HDF format is supported by im_write_compressed")
+	if not is_file_compressable(fsp.partition(':')[0]): raise(Exception("Only HDF format is supported by im_write_compressed"))
 	
 	for i,im in enumerate(self):
 		if not isinstance(im,EMData) : raise(Exception,"write_compressed() requires a list of EMData objects")
