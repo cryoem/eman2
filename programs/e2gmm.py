@@ -342,6 +342,9 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wbutrerun=QtWidgets.QPushButton("Run Dynamics")
 		self.gblrun.addWidget(self.wbutrerun,5,0)
 		
+		self.wbutrerun2=QtWidgets.QPushButton("New Dynamics")
+		self.gblrun.addWidget(self.wbutrerun2,5,1)
+		
 		# The form with details about the selected gmm_XX folder
 		self.gflparm = QtWidgets.QFormLayout()
 		self.gbll.addLayout(self.gflparm,2,0)
@@ -496,6 +499,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wlistrun.currentRowChanged[int].connect(self.sel_run)
 		self.wbutnewrun.clicked[bool].connect(self.new_run)
 		self.wbutrerun.clicked[bool].connect(self.do_run)
+		self.wbutrerun2.clicked[bool].connect(self.do_run_new)
 		self.wbutneutral.clicked[bool].connect(self.new_neutral)
 #		self.wedres.editingFinished.connect(self.new_res)
 		self.wbutres.clicked[bool].connect(self.new_res)
@@ -1180,6 +1184,58 @@ class EMGMM(QtWidgets.QMainWindow):
 		er=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")
 		if er :
 			showerror("Error running e2gmm_refine, see console for details. Memory is a common issue. Consider reducing the target resolution.")
+			return
+		self.currun=self.jsparm["run_"+self.currunkey]
+		self.currun["time_dynamics_end"]=local_datetime()
+		self.jsparm["run_"+self.currunkey]=self.currun
+
+		prog.setValue(2)
+		self.do_events()
+		self.currun=self.jsparm["run_"+self.currunkey]
+		self.currun["time_dynamics_end"]=local_datetime()
+		self.jsparm["run_"+self.currunkey]=self.currun
+		
+		self.sel_run(-1)
+
+		self.set3dvis(-1,0,0,0,1,0)
+
+	def do_run_new(self,clk=False):
+		"""Run the current job with current parameters"""
+		self.saveparm("dynamics")  # updates self.currun with current user input
+
+		prog=QtWidgets.QProgressDialog("Running neutral model network. Progress updates here are limited. See the Console for detailed output.","Abort",0,4)
+		prog.show()
+		
+		maxbox =(int(self.jsparm["boxsize"]*(2*self.jsparm["apix"])/self.currun["targres"])//2)*2
+		maxbox25=(int(self.jsparm["boxsize"]*(2*self.jsparm["apix"])/25.0)//2)*2
+		print(f"Target res {self.currun['targres']} -> max box size {maxbox}")
+		modelout=f"{self.gmm}/{self.currunkey}_model_gmm.txt"		# note that this is from the neutral training above, we do not regenerate modelout at the "run" stage
+		modelseg=f"{self.gmm}/{self.currunkey}_model_seg.txt"
+		
+		sym=self.currun["sym"]
+		prog=QtWidgets.QProgressDialog("Running networks. Progress updates here are limited. See the Console for detailed output.","Abort",0,2)
+		prog.show()
+		self.do_events(1)
+		
+		decoder=f"{self.gmm}/{self.currunkey}_decoder.h5"
+		if (len(self.currun["mask"])>4) : mask=f"--mask {self.currun['mask']}"
+		else: mask=""
+		# heterogeneity analysis
+		if int(self.currun["conv"]): conv="--conv"
+		else: conv=""
+		
+		# if targeting high resolution, we start with 10 iterations at 25 A first
+		if maxbox25<maxbox:
+			er=run(f"e2gmm_refine_new.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox25} --niter 10 {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")
+			if er :
+				showerror("Error running e2gmm_refine, see console for details. Memory is a common issue. Consider reducing the target resolution.")
+				return
+		#if self.currun['pas'][0]=="1" and self.currun['pas'][1]=="1":
+			#er=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']//2} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas 100 --ndense -1")
+			#er=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']//2} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")		
+		er=run(f"e2gmm_refine_new.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")
+		if er :
+			showerror("Error running e2gmm_refine_new, see console for details.")
 			return
 		self.currun=self.jsparm["run_"+self.currunkey]
 		self.currun["time_dynamics_end"]=local_datetime()
