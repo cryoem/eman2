@@ -18,7 +18,10 @@ os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]='true'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' #### reduce log output
 if ('-h' in sys.argv) or ('--help' in sys.argv):
 	tf=type('empty', (object,), {})()
-	tf.function=lambda f: f
+	def empty():
+		return lambda f: f
+	tf.function=empty
+	print(tf.function())
 	print("Printing help. Skip tensorflow import")
 else:
 	import tensorflow as tf
@@ -718,6 +721,14 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, options):
 	pas=[int(i) for i in options.pas]
 	pas=tf.constant(np.array([pas[0],pas[0],pas[0],pas[1],pas[2]], dtype=floattype))
 	
+	imsk=tf.zeros(npt, dtype=floattype)+1
+	if options.selgauss:
+		i=np.loadtxt(options.selgauss).astype(int)
+		print('selecting {} out of points'.format(len(i), npt))
+		m=np.zeros(npt, dtype=floattype)
+		m[i]=1
+		imsk=tf.constant(m)
+	
 	## initialize optimizer
 	opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate)
 	wts=encode_model.trainable_variables + decode_model.trainable_variables
@@ -736,7 +747,6 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, options):
 				## from gradient input to the latent space
 				conf=encode_model(grd, training=True)
 				
-							
 				## regularization of the latent layer range
 				## ideally the output is within a 1-radius circle
 				## but we want to make the contraint more soft so it won't affect convergence
@@ -749,12 +759,14 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, options):
 				## but we do not train the sigma of the random value here
 				## since we control the radius of latent space already, this seems enough
 				conf=options.perturb*tf.random.normal(conf.shape)+conf		# 0.1 is a pretty big perturbation for this range, maybe responsible for the random churn in the models? --steve
-#				conf=.1*tf.random.normal(conf.shape)+conf
 				
 				## mask out the target columns based on --pas
 				pout=decode_model(conf, training=True)
 				p0=tf.zeros((xf.shape[0],npt, 5))+pts
 				pout=pout*pas+p0*(1-pas)
+				
+				## mask selected rows
+				pout=pout*imsk[None,:,None]+p0*(1-imsk[None,:,None]) 
 				
 				## finally generate images and calculate frc
 				imgs_cpx=pts2img(pout, xf)
@@ -813,6 +825,7 @@ def main():
 	parser.add_argument("--modelout", type=str,help="output trained model file. only used when --projs is provided", default="")
 	parser.add_argument("--decoderin", type=str,help="Rather than initializing the decoder from a model, read an existing trained decoder", default="")
 	parser.add_argument("--decoderout", type=str,help="Save the trained decoder model. Filename should be .h5", default=None)
+	parser.add_argument("--encoderout", type=str,help="Save the trained encoder model. Filename should be .h5", default=None)
 	parser.add_argument("--projs", type=str,help="projections with orientations (in hdf header or comment column of lst file) to train model", default="")
 	parser.add_argument("--evalmodel", type=str,help="generate model projection images to the given file name", default="")
 	parser.add_argument("--evalsize", type=int,help="Box size for the projections for evaluation.", default=-1)
@@ -840,6 +853,7 @@ def main():
 	parser.add_argument("--nmid", type=int,help="size of the middle layer", default=4)
 	parser.add_argument("--ndense", type=int,help="size of the layers between the middle and in/out, variable if -1. Default 512", default=512)
 	parser.add_argument("--mask", type=str,help="remove points outside mask", default="")
+	parser.add_argument("--selgauss", type=str,help="provide a text file of the indices of gaussian that are allowed to move", default="")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
@@ -949,6 +963,8 @@ def main():
 
 			#### save decoder if requested
 			if options.decoderout!=None: 
+				if os.path.isfile(options.decoderout):
+					os.remove(options.decoderout)
 				gen_model.save(options.decoderout)
 				print("Decoder saved as ",options.decoderout)
 				
@@ -1061,8 +1077,15 @@ def main():
 		train_heterg(trainset, pts, encode_model, decode_model, params, options)
 		
 		if options.decoderout!=None: 
+			if os.path.isfile(options.decoderout):
+				os.remove(options.decoderout)
 			decode_model.save(options.decoderout)
 			print("Decoder saved as ",options.decoderout)
+		if options.encoderout!=None: 
+			if os.path.isfile(options.encoderout):
+				os.remove(options.encoderout)
+			encode_model.save(options.encoderout)
+			print("encoder saved as ",options.encoderout)
 		
 		## conformation output
 		mid=calc_conf(encode_model, allgrds[ptclidx], 1000)
