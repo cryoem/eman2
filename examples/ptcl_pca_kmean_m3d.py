@@ -18,6 +18,7 @@ def main():
 	parser.add_argument("--nbasis", type=int,help="PCA dimensionality", default=2)
 	parser.add_argument("--setsf", type=str,help="setsf", default="")
 	parser.add_argument("--mode", type=str,help="classify/regress", default="classify")
+	parser.add_argument("--sym", type=str,help="symmetry", default="c1")
 	parser.add_argument("--nptcl", type=int,help="number of particles per class in regress mode", default=2000)
 	parser.add_argument("--threads", default=12,type=int,help="Number of threads to run in parallel on a single computer. This is the only parallelism supported by e2make3dpar")
 	(options, args) = parser.parse_args()
@@ -74,7 +75,7 @@ def main():
 		for i in idx:
 			if lstinp:
 				l=lin.read(i)
-				lout.write(-1, l[0], l[1])
+				lout.write(-1, l[0], l[1],l[2])
 			else:
 				lout.write(-1, i, fname)
 			
@@ -89,7 +90,7 @@ def main():
 	for o in onames:
 		t=o[:-3]+"hdf"
 		print(o,t)
-		cmd="e2make3dpar.py --input {} --output {} --pad {} --mode trilinear --no_wt --keep 1 --threads {} {}".format(o,t, options.pad, options.threads, options.setsf)
+		cmd="e2spa_make3d.py --input {} --output {} --pad {} --keep 1 --threads {} {} --sym {}".format(o,t, options.pad, options.threads, options.setsf, options.sym)
 		launch_childprocess(cmd)
 	
 	E2end(logid)
