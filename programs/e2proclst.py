@@ -36,6 +36,7 @@ from EMAN2 import *
 from math import *
 import os
 import sys
+import numpy as np
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -73,10 +74,12 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	parser.add_argument("--numaslist", type=str, default=None, help="extract the particle indexes (numbers) only from an lst file into a text file (one number per line).")
 	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--selclass", type=int, help="select particles of a given class from the list for --create",default=-1)
 
 	parser.add_argument("--range", type=str, default=None, help="Range of particles to use. Works only with --create option. Input of 0,10,2 means range(0,10, step=2).")
 	parser.add_argument("--retype", type=str, default=None, help="If a lst file is referencing a set of particles from particles/imgname__oldtype.hdf, this will change oldtype to the specified string in-place (modifies input files)")
 	parser.add_argument("--refile", type=str, default=None, help="similar to retype, but replaces the full filename of the source image file with the provided string")
+	parser.add_argument("--shuffle", action="store_true", default=False, help="shuffle list inplace.")
 
 	parser.add_argument("--nocomments", action="store_true", default=False, help="Removes the comments from each line of the lst file.")
 
@@ -230,7 +233,6 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 				if options.verbose :
 					print("Processing {} images in {}".format(len(indxsinclude),f))
 					
-
 				kk=0
 				for i in indxsinclude:
 				
@@ -239,6 +241,11 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 					
 					if fromlst:
 						ln = lstin.read(i)
+						if options.selclass>=0:
+							if ('class' in ln[2]) and (ln[2]['class']==options.selclass):
+								pass
+							else:
+								continue
 						if options.inplace:
 							lst.write(kk,ln[0],ln[1],ln[2])
 						else:
@@ -382,6 +389,12 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 				im=lst.read(i)
 				lst.write(i,im[0],im[1])
 			lst.normalize()
+		
+	if options.shuffle:
+		for f in args:
+			lst=load_lst_params(f)
+			np.random.shuffle(lst)
+			save_lst_params(lst, f)
 	E2end(logid)
 
 

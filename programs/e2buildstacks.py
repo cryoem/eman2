@@ -174,6 +174,9 @@ def main():
 						if l[ii, ic] not in aid2:
 							aid2.append(l[ii, ic])
 							tid2.append(tid[ii])
+						else:
+							aid2[-1]=l[ii,ic]
+							tid2[-1]=tid[ii]
 					tid=np.array(tid2, dtype=int)
 					print("    keeping {} out of {} images".format(len(tid), len(l)))
 					l=lst[tid]
