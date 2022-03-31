@@ -101,7 +101,10 @@ def main():
 
 		fsc=np.loadtxt("{}/fsc_masked_{:02d}.txt".format(options.path, i+1))
 		fi=fsc[:,1]<0.2
-		res=1./fsc[fi, 0][0]
+		try: res=1./fsc[fi, 0][0]
+		except:
+			print("resolution approaching Nyquist !?")
+			res=1.0/(2.0*er["apix_x"])
 		res*=.8
 
 	E2end(logid)

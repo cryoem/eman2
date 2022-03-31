@@ -990,8 +990,7 @@ Dict Transform::get_rotation(const string& euler_type) const
 		}
 		
 		
-        //printf("traceR=%lf,OneMinusCosomega=%lf,sinOover2=%lf,cosOover2=%lf,sinomega=%lf,cosomega=%lf,n3=%lf \n",traceR,1-cosomega,sinOover2,cosOover2,sinomega,cosomega,n3);
-
+//        printf("traceR=%lf,OneMinusCosomega=%lf,sinOover2=%lf,cosOover2=%lf,sinomega=%lf,cosomega=%lf,n3=%lf \n",traceR,1-cosomega,sinOover2,cosOover2,sinomega,cosomega,n3);
 		
 		if (type == "quaternion"){
 		    result["e0"] = cosOover2 ;

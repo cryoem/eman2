@@ -8,6 +8,7 @@ from EMAN2_utils import pdb2numpy
 #### need to unify the float type across tenforflow and numpy
 ##   in theory float16 also works but it can be unsafe especially when the network is deeper...
 floattype=np.float32
+params=None
 
 #### here we import tensorflow at the global scale so @tf.function works
 ##   although how much performance gain we get from @tf.function is questionable...
@@ -63,9 +64,10 @@ def xf2pts(pts, ang):
 	#### input EMAN style euler angle (az, alt, phi) and make projection matrix
 	##   note we need to be able to deal with a batch of particles at once
 	##   so everything is in matrix form
-	azp=-ang[:,0]
-	altp=ang[:,1]
-	phip=-ang[:,2]
+	
+	azp=-ang[0]
+	altp=ang[1]
+	phip=-ang[2]
 
 	matrix=tf.stack([(tf.cos(phip)*tf.cos(azp) - tf.cos(altp)*tf.sin(azp)*tf.sin(phip)),
 	(tf.cos(phip)*tf.sin(azp) + tf.cos(altp)*tf.cos(azp)*tf.sin(phip)),
@@ -79,32 +81,56 @@ def xf2pts(pts, ang):
 	(-tf.sin(altp)*tf.cos(azp)),
 	tf.cos(altp)], 0)
 
+	matrix=tf.reshape(matrix, shape=[3,3]) #### Here we get a batch_size x 3 x 3 matrix
 	matrix=tf.transpose(matrix)
-	matrix=tf.reshape(matrix, shape=[-1, 3,3]) #### Here we get a batch_size x 3 x 3 matrix
 
 	#### rotate Gaussian positions
-	##   here we try to make it also work when pts contains only the neutral model
-	if len(pts.shape)>2:
-		pts_rot=tf.tensordot(pts, matrix, [[2],[2]])
-		pts_rot=tf.transpose(pts_rot, (0,2,1,3))
-		
-		#### the eye matrix here is mathematically unnecessary
-		##   but somehow tensorflow 2.0 does not track gradient properly without it...
-		##   shouldn't do much damage on the performance anyway
-		e=tf.eye(pts.shape[0], dtype=bool)#.flatten()
-		pts_rot=pts_rot[e]
-		
-	else:
-		pts_rot=tf.tensordot(pts, matrix, [[1],[2]])
-		pts_rot=tf.transpose(pts_rot, [1,0,2])
-		
+
+	pts_rot=tf.matmul(pts, matrix)
+#     pts_rot=tf.transpose(pts_rot)
+
 	#### finally do the translation
-	tx=ang[:,3][:,None]
-	ty=ang[:,4][:,None]
-	pts_rot_trans=tf.stack([(pts_rot[:,:,0]+tx), (-pts_rot[:,:,1])+ty], 2)
+	tx=ang[3]
+	ty=ang[4]
+	pts_rot_trans=tf.stack([(pts_rot[:,0]+tx), (-pts_rot[:,1])+ty], 1)
 	
 	#pts_rot_trans=pts_rot_trans*sz+sz/2
 	return pts_rot_trans
+
+def mult_gauss_coords(args):
+	return args[0]* args[1]
+
+#@tf.function()
+def pts2img_one(args):
+	pts, ang = args
+	sz, idxft, rrft = params["sz"], params["idxft"], params["rrft"]
+
+	lp=.1
+	bamp=tf.cast(tf.nn.relu(pts[:,3]), tf.complex64)[:,None]
+	#bsigma=pts[:, 4]
+	#amp=tf.exp(-rrft*lp*tf.nn.relu(bsigma))*tf.nn.relu(bamp)
+	amp=tf.exp(-rrft*lp)
+	
+	bpos=xf2pts(pts[:,:3],ang)
+	bpos=bpos*sz+sz/2
+	bposft=bpos*np.pi*2
+	
+	cpxang_x=tf.vectorized_map(mult_gauss_coords, (bposft[:,0], idxft[0,[0],:]))
+	cpxang_y=tf.vectorized_map(mult_gauss_coords, (bposft[:,1], idxft[1,:,[0]]))
+
+	pgauss_x = tf.exp(-1j*tf.cast(cpxang_x, tf.complex64))*bamp
+	pgauss_y = tf.exp(-1j*tf.cast(cpxang_y, tf.complex64))*bamp
+
+	pgauss = tf.matmul(tf.transpose(pgauss_x), pgauss_y)
+	pgauss = tf.transpose(pgauss)*tf.cast(amp, tf.complex64)
+	return pgauss
+
+@tf.function()
+def pts2img(pts, angs):
+	#pts, angs=args
+	#p=pts2img_one((pts[0], angs[0]))
+	img=tf.vectorized_map(pts2img_one, (pts, angs))
+	return tf.math.real(img), tf.math.imag(img)
 
 
 #### make 2D projections from Gaussian coordinates in Fourier space
@@ -119,8 +145,8 @@ def xf2pts(pts, ang):
 ##                 this should not be necessary since we use FRC for loss
 ##                 but the dynamic range of values in Fourier space can sometimes be too high...
 ##           sym - symmetry string
-#@tf.function
-def pts2img(pts, ang, params, lp=.1, sym="c1"):
+#@tf.function()
+def pts2img_00(pts, ang, params, lp=.1, sym="c1"):
 	bsz=ang.shape[0]
 	sz, idxft, rrft=params["sz"], params["idxft"], params["rrft"]
 	
@@ -288,7 +314,7 @@ def set_indices_boxsz(boxsz, apix=0, return_freq=False):
 	else:
 		#global sz, idxft, rrft, rings
 		sz=boxsz
-		idxft=(idx/sz).astype(floattype)[:, None, :,:]
+		idxft=(idx/sz).astype(floattype)
 		rrft=np.sqrt(np.sum(idx**2, axis=0)).astype(floattype)## batch, npts, x-y
 
 		rr=np.round(np.sqrt(np.sum(idx**2, axis=0))).astype(int)
@@ -296,12 +322,12 @@ def set_indices_boxsz(boxsz, apix=0, return_freq=False):
 		for i in range(sz//2):
 			rings[:,:,i]=(rr==i)
 		
+		global params
 		params={"sz":sz, "idxft":idxft, "rrft":rrft, "rings":rings}
 		return params
 
 def build_encoder(mid=512, nout=4, conv=False, ninp=-1):
 	l2=tf.keras.regularizers.l2(1e-3)
-	l1=tf.keras.regularizers.l1(1e-3)
 	kinit=tf.keras.initializers.RandomNormal(0,0.1)	# was 0.01
 	
 	if conv:
@@ -311,13 +337,13 @@ def build_encoder(mid=512, nout=4, conv=False, ninp=-1):
 			tf.keras.layers.Dense(ss*ss, kernel_regularizer=l2),
 			tf.keras.layers.Reshape((ss,ss,1)),
 			
-			tf.keras.layers.Conv2D(4, 5, activation="relu", strides=(2,2), padding="same"),
-			tf.keras.layers.Conv2D(8, 5, activation="relu", strides=(2,2), padding="same"),
-			tf.keras.layers.Conv2D(16, 3, activation="relu", strides=(2,2), padding="same"),
-			tf.keras.layers.Conv2D(16, 3, activation="relu", strides=(2,2), padding="same"),
+			tf.keras.layers.Conv2D(32, 5, activation="relu", strides=(2,2), padding="same"),
+			tf.keras.layers.Conv2D(32, 5, activation="relu", strides=(2,2), padding="same"),
+			tf.keras.layers.Conv2D(64, 3, activation="relu", strides=(2,2), padding="same"),
+			tf.keras.layers.Conv2D(64, 3, activation="relu", strides=(2,2), padding="same"),
 			tf.keras.layers.Flatten(),
-			tf.keras.layers.Dropout(.1),
-			tf.keras.layers.BatchNormalization(),
+			tf.keras.layers.Dropout(.3),
+			#tf.keras.layers.BatchNormalization(),
 			tf.keras.layers.Dense(nout, kernel_initializer=kinit),
 		]
 	elif ninp<0:
@@ -340,10 +366,6 @@ def build_encoder(mid=512, nout=4, conv=False, ninp=-1):
 		tf.keras.layers.Dropout(.3),
 		tf.keras.layers.Dense(max(ninp//8,nout*2), activation="relu", kernel_regularizer=l2,use_bias=True),
 		tf.keras.layers.Dense(max(ninp//32,nout*2), activation="relu", kernel_regularizer=l2,use_bias=True),
-		#tf.keras.layers.Dense(max(ninp//2,nout*2), activation="tanh", kernel_regularizer=l1,use_bias=True,bias_initializer=kinit),
-		#tf.keras.layers.Dropout(.3),
-		#tf.keras.layers.Dense(max(ninp//8,nout*2), activation="tanh", kernel_regularizer=l1,use_bias=True),
-		#tf.keras.layers.Dense(max(ninp//32,nout*2), activation="tanh", kernel_regularizer=l1,use_bias=True),
 		tf.keras.layers.BatchNormalization(),
 		tf.keras.layers.Dense(nout, kernel_regularizer=l2, kernel_initializer=kinit,use_bias=True),
 		]
@@ -367,7 +389,6 @@ def build_decoder(pts, mid=512, ninp=4, conv=False):
 	
 	kinit=tf.keras.initializers.RandomNormal(0,1e-2)
 	l2=tf.keras.regularizers.l2(1e-3)
-	l1=tf.keras.regularizers.l1(1e-3)
 	layer_output=tf.keras.layers.Dense(npt*5, kernel_initializer=kinit, activation="sigmoid",use_bias=True)
 	if conv:
 			
@@ -379,8 +400,8 @@ def build_decoder(pts, mid=512, ninp=4, conv=False):
 			tf.keras.layers.Conv2DTranspose(8, 5, activation="relu", strides=(2,2), padding="same"),
 			tf.keras.layers.Conv2DTranspose(4, 5, activation="relu", strides=(2,2), padding="same"),
 			tf.keras.layers.Flatten(),
-			tf.keras.layers.Dropout(.1),
-			tf.keras.layers.BatchNormalization(),
+			#tf.keras.layers.Dropout(.1),
+			#tf.keras.layers.BatchNormalization(),
 			layer_output,
 			tf.keras.layers.Reshape((npt,5)),
 		]
@@ -401,12 +422,10 @@ def build_decoder(pts, mid=512, ninp=4, conv=False):
 	else:
 		print(f"Decoder {max(npt//32,ninp)} {max(npt//8,ninp)} {max(npt//2,ninp)}")
 		layers=[
+#			tf.keras.layers.Dense(max(npt//64,ninp),activation="relu"),
 			tf.keras.layers.Dense(max(npt//32,ninp*2),activation="relu",use_bias=True,bias_initializer=kinit),
 			tf.keras.layers.Dense(max(npt//8,ninp*2),activation="relu",use_bias=True),
 			tf.keras.layers.Dense(max(npt//2,ninp),activation="relu",use_bias=True),
-			#tf.keras.layers.Dense(max(npt//32,ninp*2),activation="tanh", kernel_regularizer=l1,use_bias=True),
-			#tf.keras.layers.Dense(max(npt//8,ninp*2),activation="tanh", kernel_regularizer=l1,use_bias=True),
-			#tf.keras.layers.Dense(max(npt//2,ninp),activation="tanh", kernel_regularizer=l1,use_bias=True,bias_initializer=kinit),
 			tf.keras.layers.Dropout(.3),
 			tf.keras.layers.BatchNormalization(),
 			layer_output,
@@ -458,7 +477,7 @@ def train_decoder(gen_model, trainset, params, options, pts=None):
 				else: conf=tf.zeros((xf.shape[0],options.nmid), dtype=floattype)
 				pout=gen_model(conf)
 				std=tf.reduce_mean(tf.math.reduce_std(pout, axis=1), axis=0)
-				imgs_cpx=pts2img(pout, xf, params, sym=options.sym)
+				imgs_cpx=pts2img(pout, xf)
 				fval=calc_frc(pj_cpx, imgs_cpx, params["rings"])
 				loss=-tf.reduce_mean(fval)
 #				l=loss+std[4]*options.sigmareg+std[3]*5*(options.niter-itr)/options.niter
@@ -501,7 +520,7 @@ def eval_model(gen_model, options):
 	for xf in trainset:
 		conf=tf.zeros((xf.shape[0],options.nmid), dtype=floattype)
 		pout=gen_model(conf)
-		imgs_real, imgs_imag=pts2img(pout, xf, params, sym=options.sym)
+		imgs_real, imgs_imag=pts2img(pout, xf)
 		imgs_cpx=tf.complex(imgs_real, imgs_imag)
 		imgs_out=tf.signal.irfft2d(imgs_cpx)
 		imgs.append(imgs_out)
@@ -523,6 +542,7 @@ def eval_model(gen_model, options):
 		e["xform.projection"]=xf
 		e["apix_x"]=e["apix_y"]=options.raw_apix
 		e.write_image(options.evalmodel,-1)
+	print("Projection images written to ", options.evalmodel)
 		
 	
 def ccf_trans(ref,img):
@@ -567,7 +587,7 @@ def coarse_align(dcpx, pts, options):
 	niter=len(xfsnp)//bsz
 	for ii in range(niter):
 		xx=xfsnp[ii*bsz:(ii+1)*bsz]
-		projs_cpx=pts2img(pts, xx, sym=options.sym)
+		projs_cpx=pts2img(pts, xx)
 		
 		for idt in range(npt):
 			dc=list(tf.repeat(d[idt:idt+1], len(xx), axis=0) for d in dcpx)
@@ -613,7 +633,7 @@ def refine_align(dcpx, xfsnp, pts, options, lr=1e-3):
 			with tf.GradientTape() as gt:
 				#xv=tf.concat([xf[:,:3], xfvar[:,3:]], axis=1)
 				xv=xfvar
-				proj_cpx=pts2img(p, xv, sym=options.sym)
+				proj_cpx=pts2img(p, xv)
 				fval=calc_frc(proj_cpx, ptcl_cpx)
 				loss=-tf.reduce_mean(fval)
 
@@ -674,7 +694,7 @@ def calc_gradient(trainset, pts, params, options):
 		with tf.GradientTape() as gt:
 			pt=tf.Variable(tf.repeat(pts, xf.shape[0], axis=0))
 			
-			imgs_cpx=pts2img(pt, xf, params, sym=options.sym)
+			imgs_cpx=pts2img(pt, xf)
 			fval=calc_frc(pj_cpx, imgs_cpx, params["rings"])
 			
 			loss=-tf.reduce_mean(fval)
@@ -737,7 +757,7 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, options):
 				pout=pout*pas+p0*(1-pas)
 				
 				## finally generate images and calculate frc
-				imgs_cpx=pts2img(pout, xf, params, sym=options.sym)
+				imgs_cpx=pts2img(pout, xf)
 				fval=calc_frc(pj_cpx, imgs_cpx, params["rings"])
 				loss=-tf.reduce_mean(fval)+cl*1e-2
 				
@@ -1027,6 +1047,7 @@ def main():
 			decode_model=build_decoder(pts[0].numpy(), ninp=options.nmid, conv=options.conv,mid=options.ndense)
 		
 		mid=encode_model(allgrds[:bsz])
+		print("Gaussian model shape: ",pts.shape)
 		print("Latent space shape: ", mid.shape)
 		out=decode_model(mid)
 		print("Output shape: ",out.shape)

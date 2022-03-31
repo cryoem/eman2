@@ -67,6 +67,10 @@ import tensorflow.keras.models
 import numpy as np
 
 def butval(widg):
+	if widg.isChecked(): return 1
+	return 0
+
+def butstr(widg):
 	if widg.isChecked(): return "1"
 	return "0"
 
@@ -74,7 +78,7 @@ def butval(widg):
 def showerror(msg,parent=None):
 	QtWidgets.QMessageBox.warning(parent,"ERROR",msg)
 
-def make3d_thr(que,tskn,fsp,imgns,rparms,latent,currun,rad):
+def make3d_thr(que,tskn,fsp,imgns,rparms,latent,currun,rad,mmode):
 	"""Thread for 3-D reconstruction in background
 	que - Queue to return result in
 	tskn - task number to identify result
@@ -126,11 +130,15 @@ def make3d_thr(que,tskn,fsp,imgns,rparms,latent,currun,rad):
 	reto=reto.get_clip(Region((pad-im["nx"])//2,(pad-im["nx"])//2,(pad-im["nx"])//2,im["nx"],im["nx"],im["nx"]))
 #	ret=ret.do_ift()
 	ret["ptcl_repr"]=len(imgns)
+	ret["resolution"]=1.0/fscf[r]
+	ret["apix_x"]=im["apix_x"]
+	ret["apix_y"]=im["apix_x"]
+	ret["apix_z"]=im["apix_x"]
 	print(f"Resolution {r} {1.0/fscf[r]}")
 			
-	que.put((tskn,100,ret,latent,imgns,currun,rad,rete,reto))
+	que.put((tskn,100,ret,latent,imgns,currun,rad,rete,reto,mmode))
 
-def make3d_thr_fast(que,tskn,fsp,imgns,rparms,latent,currun,rad):
+def make3d_thr_fast(que,tskn,fsp,imgns,rparms,latent,currun,rad,mmode):
 	"""Thread for 3-D reconstruction in background
 	This version downsamples the data and does some other things to make the reconstruction fast, but of lower quality
 	que - Queue to return result in
@@ -184,12 +192,16 @@ def make3d_thr_fast(que,tskn,fsp,imgns,rparms,latent,currun,rad):
 	ret.add(reto)
 	ret.process_inplace("filter.lowpass.tophat",{"cutoff_pixels":r})
 #	ret=ret.get_clip((pad-im["nx"])//2,(pad-im["nx"])//2,(pad-im["nx"])//2,im["nx"],im["nx"],im["nx"])
-	ret.process_inplace("xform.scale",{"scale":2.0,"clip":im["nx"]})
+#	ret.process_inplace("xform.scale",{"scale":2.0,"clip":im["nx"]})
 #	ret=ret.do_ift()
+	ret["apix_x"]=im2["apix_x"]
+	ret["apix_y"]=im2["apix_x"]
+	ret["apix_z"]=im2["apix_x"]
 	ret["ptcl_repr"]=len(imgns)
+	ret["resolution"]=1.0/fscf[r]
 	print(f"Resolution {r} {1.0/fscf[r]}")
 			
-	que.put((tskn,100,ret,latent,imgns,currun,rad,rete,reto))
+	que.put((tskn,100,ret,latent,imgns,currun,rad,rete,reto,mmode))
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -450,6 +462,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wcbpntpln.addItem("Map-Line")
 		self.wcbpntpln.addItem("Map-HSlab (fast)")
 		self.wcbpntpln.addItem("Map-Line (fast)")
+		self.wcbpntpln.addItem("Map-Line-Sph (fast)")
 		self.gblpltctl.addWidget(self.wcbpntpln,1,3)
 
 		# Widgets below 3D
@@ -552,11 +565,16 @@ class EMGMM(QtWidgets.QMainWindow):
 				vol=ret[2]
 				vole=ret[7]
 				volo=ret[8]
+				latent=ret[3]
+				imgns=ret[4]
+				rad=ret[6]
+				mmode=ret[9]
 				#vol=ret[2].get_clip(Region(ps,ps,ps,bs,bs,bs))
 				#vole=ret[7].get_clip(Region(ps,ps,ps,bs,bs,bs))
 				#volo=ret[8].get_clip(Region(ps,ps,ps,bs,bs,bs))
 				#vol.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/currun["targres"]})	# e/o fsc filter now handled in reconstructor
 				vol.process_inplace("normalize")
+				vol["latent"]=f"{tuple(latent)} {rad} '{mmode}'"
 				
 				# store the reconstructed map
 				try: nmaps=EMUtil.get_image_count(f"{self.gmm}/dynamic_maps.hdf")
@@ -567,7 +585,7 @@ class EMGMM(QtWidgets.QMainWindow):
 				
 				# store metadata to identify maps in dynamic_maps.hdf
 				# map #, timestamp, latent coordinates, number of particles, selection radius
-				newmap=[nmaps,local_datetime(),ret[3],len(ret[4]),ret[6]]		
+				newmap=[nmaps,local_datetime(),latent,len(imgns),rad]		
 				maps=self.jsparm.getdefault("maps",{})
 				try: 
 					maps[self.currunkey].append(newmap)
@@ -598,6 +616,9 @@ class EMGMM(QtWidgets.QMainWindow):
 			self.wview3d.insertNewNode("Isosurface",self.dmapiso,parentnode=self.dmapdataitem)
 		else:
 			self.dmapdataitem.setData(vol)
+		
+		self.dmapiso.getTransform().set_scale(vol["apix_x"]/self.jsparm["apix"])
+		
 		self.wview3d.updateGL()
 
 	def saveparm(self,mode=None):
@@ -616,7 +637,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.currun["modelreg"]=float(self.wedtrainmodelreg.text())
 		self.currun["perturb"]=float(self.wedtrainperturb.text())
 		self.currun["conv"]=butval(self.wbutconv)
-		self.currun["pas"]=butval(self.wbutpos)+butval(self.wbutamp)+butval(self.wbutsig)
+		self.currun["pas"]=butstr(self.wbutpos)+butstr(self.wbutamp)+butstr(self.wbutsig)
 		if mode=="neutral": self.currun["time_neutral"]=local_datetime()
 		if mode=="dynamics": self.currun["time_dynamics"]=local_datetime()
 		self.jsparm["run_"+self.currunkey]=self.currun
@@ -683,6 +704,8 @@ class EMGMM(QtWidgets.QMainWindow):
 			if not butval(self.wbutpos): gauss[:3]=self.model[:3]
 			if not butval(self.wbutamp): gauss[3]=self.model[3]
 			if not butval(self.wbutsig): gauss[4]=self.model[4]
+#			print(gauss[:,:6])
+#			print("-----")
 			self.gaussplot.setData(gauss,self.wvssphsz.value)
 			self.wview3d.update()
 			
@@ -736,14 +759,14 @@ class EMGMM(QtWidgets.QMainWindow):
 			self.gaussplot.setData(gauss,self.wvssphsz.value)
 			self.wview3d.update()
 			return
-		elif mmode=="Map-Line" or mmode=="Map-Line (fast)":
+		elif mmode in ("Map-Line","Map-Line (fast)","Map-Line-Sph (fast)"):
 			self.line_origin=(loc,latent)
 			return
 		else: print("mode error")
 
 	def plot_mouse_drag(self,event,loc):
 		mmode=str(self.wcbpntpln.currentText())
-		if mmode!="Map-Line" and mmode!="Map-Line (fast)":
+		if mmode not in ("Map-Line","Map-Line (fast)","Map-Line-Sph (fast)"):
 			self.plot_mouse(event,loc)
 			return
 		
@@ -782,12 +805,32 @@ class EMGMM(QtWidgets.QMainWindow):
 		ycol=self.wsbycol.value()
 		self.wplot2d.del_shapes(["region","genline"])
 
+		#if mmode=="HSphere":
+			## This will produce a list of indices where the distance in latent space is less than the specified rad
+			#ptdist=(np.sum((self.midresult.transpose()-latent)**2,1)<(rad**2)).nonzero()[0]
+			#self.wplot2d.add_shape("count",EMShape(["scrlabel",0.1,0.1,0.1,10.,10.,f"{len(ptdist)} ptcls",120.0,-1]))
+			#self.wplot2d.add_shape("region",EMShape(["circle",0.1,0.8,0.1,loc[0],loc[1],rad,1]))
+			#self.wplot2d.update()
+##			print(loc,self.wplot2d.plot2draw(loc[0],loc[1]),event.x(),event.y(),self.wplot2d.scrlim,rad)
+
+			##Limit ourselves to a random subset of ~500 of the points to average
+			#if len(ptdist)>500: ptdist=ptdist[::len(ptdist)//500]
+			#gauss=np.mean(self.decoder(self.midresult.transpose()[ptdist]),0).transpose()		# run all of the selected latent vectors through the decoder at once
+			#box=int(self.wedbox.text())
+			#gauss[:3]*=box
+			#gauss[2]*=-1.0
+			#gauss[1]*=-1.0
+			#if not butval(self.wbutpos): gauss[:3]=self.model[:3]
+			#if not butval(self.wbutamp): gauss[3]=self.model[3]
+			#if not butval(self.wbutsig): gauss[4]=self.model[4]
+			#np.savetxt("mouse.txt",gauss.transpose(),fmt="%.5g",delimiter="\t")
+
 		if mmode=="Map-HSphere":
 			# This will produce a list of indices where the distance in latent space is less than the specified rad
 			ptdist=(np.sum((self.midresult.transpose()-latent)**2,1)<(rad**2)).nonzero()[0]
 			sz=good_size(self.jsparm["boxsize"]*5//4)
 			rparms={"size":(sz,sz,sz),"sym":self.jsparm["sym"],"mode":"gauss_2","usessnr":0,"verbose":0}
-			self.threads.append(threading.Thread(target=make3d_thr,args=(self.threadq,len(self.threads),f"{self.gmm}/particles.lst",ptdist,rparms,latent,self.currun,rad)))
+			self.threads.append(threading.Thread(target=make3d_thr,args=(self.threadq,len(self.threads),f"{self.gmm}/particles.lst",ptdist,rparms,latent,self.currun,rad,mmode)))
 			self.threads[-1].start()
 			print(f"Thread {len(self.threads)} started with {len(ptdist)} particles")
 			return
@@ -796,7 +839,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			ptdist=((self.midresult[xcol]-latent[xcol])**2+(self.midresult[ycol]-latent[ycol])**2<(rad**2)).nonzero()[0]
 			sz=good_size(self.jsparm["boxsize"]*5//4)
 			rparms={"size":(sz,sz,sz),"sym":self.jsparm["sym"],"mode":"gauss_2","usessnr":0,"verbose":0}
-			self.threads.append(threading.Thread(target=make3d_thr,args=(self.threadq,len(self.threads),f"{self.gmm}/particles.lst",ptdist,rparms,latent,self.currun,rad)))
+			self.threads.append(threading.Thread(target=make3d_thr,args=(self.threadq,len(self.threads),f"{self.gmm}/particles.lst",ptdist,rparms,latent,self.currun,rad,mmode)))
 			self.threads[-1].start()
 			print(f"Thread {len(self.threads)} started with {len(ptdist)} particles")
 			return
@@ -813,7 +856,7 @@ class EMGMM(QtWidgets.QMainWindow):
 				ptdist=((self.midresult[xcol]-plat[xcol])**2+(self.midresult[ycol]-plat[ycol])**2<(rad**2)).nonzero()[0]		# using the slab form
 				sz=good_size(self.jsparm["boxsize"]*5//4)
 				rparms={"size":(sz,sz,sz),"sym":self.jsparm["sym"],"mode":"gauss_2","usessnr":0,"verbose":0}
-				self.threads.append(threading.Thread(target=make3d_thr,args=(self.threadq,len(self.threads),f"{self.gmm}/particles.lst",ptdist,rparms,plat,self.currun,rad)))
+				self.threads.append(threading.Thread(target=make3d_thr,args=(self.threadq,len(self.threads),f"{self.gmm}/particles.lst",ptdist,rparms,plat,self.currun,rad,mmode)))
 				self.threads[-1].start()
 				print(f"Thread {len(self.threads)} started with {len(ptdist)} particles")
 		elif mmode=="Map-HSlab (fast)":
@@ -821,7 +864,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			ptdist=((self.midresult[xcol]-latent[xcol])**2+(self.midresult[ycol]-latent[ycol])**2<(rad**2)).nonzero()[0]
 			sz=good_size(self.jsparm["boxsize"]*5//4)
 			rparms={"size":(sz,sz,sz),"sym":self.jsparm["sym"],"mode":"gauss_2","usessnr":0,"verbose":0}
-			self.threads.append(threading.Thread(target=make3d_thr_fast,args=(self.threadq,len(self.threads),f"{self.gmm}/particles.lst",ptdist,rparms,latent,self.currun,rad)))
+			self.threads.append(threading.Thread(target=make3d_thr_fast,args=(self.threadq,len(self.threads),f"{self.gmm}/particles.lst",ptdist,rparms,latent,self.currun,rad,mmode)))
 			self.threads[-1].start()
 			print(f"Thread {len(self.threads)} started with {len(ptdist)} particles")
 			return
@@ -839,11 +882,29 @@ class EMGMM(QtWidgets.QMainWindow):
 				sz=good_size(self.jsparm["boxsize"]*5//4)
 				rparms={"size":(sz,sz,sz),"sym":self.jsparm["sym"],"mode":"gauss_2","usessnr":0,"verbose":0}
 				self.threads.append(threading.Thread(target=make3d_thr_fast
-										 ,args=(self.threadq,len(self.threads),f"{self.gmm}/particles.lst",ptdist,rparms,plat,self.currun,rad)))
+										 ,args=(self.threadq,len(self.threads),f"{self.gmm}/particles.lst",ptdist,rparms,plat,self.currun,rad,mmode)))
 				self.threads[-1].start()
 				print(f"Thread {len(self.threads)} started with {len(ptdist)} particles")
 				
+			return
+		elif mmode=="Map-Line-Sph (fast)":
+			ll=np.linalg.norm(latent-self.line_origin[1])	# vector length
+			if ll<rad :
+				print(f"line too short, aborted: {latent} - {self.line_origin[1]}")
+				return
+			nm=min(10,ceil(ll/rad))		# number of maps to generate
 			
+			for i in range(nm):
+				f=i/(nm-1)
+				plat=latent*f+self.line_origin[1]*(1.0-f)	# point latent vector along line
+				ptdist=(np.sum((self.midresult.transpose()-plat)**2,1)<(rad**2)).nonzero()[0]
+				sz=good_size(self.jsparm["boxsize"]*5//4)
+				rparms={"size":(sz,sz,sz),"sym":self.jsparm["sym"],"mode":"gauss_2","usessnr":0,"verbose":0}
+				self.threads.append(threading.Thread(target=make3d_thr_fast
+										 ,args=(self.threadq,len(self.threads),f"{self.gmm}/particles.lst",ptdist,rparms,plat,self.currun,rad,mmode)))
+				self.threads[-1].start()
+				print(f"Thread {len(self.threads)} started with {len(ptdist)} particles")
+				
 			return
 			
 			
@@ -1113,6 +1174,9 @@ class EMGMM(QtWidgets.QMainWindow):
 			if er :
 				showerror("Error running e2gmm_refine, see console for details. Memory is a common issue. Consider reducing the target resolution.")
 				return
+		#if self.currun['pas'][0]=="1" and self.currun['pas'][1]=="1":
+			#er=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']//2} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas 100 --ndense -1")
+			#er=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']//2} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")		
 		er=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")
 		if er :
 			showerror("Error running e2gmm_refine, see console for details. Memory is a common issue. Consider reducing the target resolution.")
@@ -1235,6 +1299,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		except: 
 			traceback.print_exc()
 			print(f"Run {self.gmm} -> {self.currunkey} results incomplete. No stored decoder found.",self)
+			self.set3dvis(1,0,0,0,0,1)
 			return
 
 		# list of all computed dynamic maps for this run
@@ -1251,6 +1316,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			self.plot_mode_sel(self.wbutdrmid)		# the previous line will also trigger this, but possibly not before the plot_mouse below	
 		except:
 			print(f"Middle layer missing ({self.gmm}/{self.currunkey}_mid.txt)")
+			self.set3dvis(1,0,0,0,0,1)
 		
 		self.plot_mouse(None,(0,0))
 		self.wplot2d.updateGL()

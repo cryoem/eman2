@@ -252,9 +252,11 @@ class EMPlot2DWidget(EMGLWidget):
 			self.visibility = {}
 
 		if input_data is None :
-			self.data.pop(key)
-			self.visibility.pop(key)
-			self.axes.pop(key)
+			try: 
+				self.data.pop(key)
+				self.visibility.pop(key)
+				self.axes.pop(key)
+			except: pass
 			try: self.comments.pop(key)
 			except: pass
 			if self.inspector: self.inspector.datachange()
@@ -860,6 +862,7 @@ lc is the cursor selection point in plot coords"""
 			if not self.visibility[ak]: continue
 			j=self.axes[ak]
 			break
+		if j==0: return
 
 		if j[0]==-1 : x=arange(len(self.data[ak][0]))
 		else : x=self.data[ak][self.axes[ak][0]]
