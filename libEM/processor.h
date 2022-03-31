@@ -5357,7 +5357,7 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 		static const string NAME;
 	};
 
-	/**This will replace the image with a full-circle 2D fft amplitude rendering.
+	/**This will replace the image with a full-circle 2D or 3D fft amplitude rendering.
 	 */
 	class RealToFFTProcessor:public Processor
 	{
@@ -5376,7 +5376,7 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 
 		string get_desc() const
 		{
-			return "This will replace the image with a full-circle 2D fft amplitude rendering. Note that this renders amplitude, when intensity is more common.";
+			return "This will replace the image with a full-circle/sphere 2D/3d fft amplitude rendering. Note that this produces amplitudes, when intensities are more common.";
 		}
 
 		static const string NAME;

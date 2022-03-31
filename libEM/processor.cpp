@@ -3998,48 +3998,20 @@ void RealToFFTProcessor::process_inplace(EMData *image)
 	}
 
 	// Note : 2D only!
-	int nz = image->get_zsize();
-	if (nz > 1) {
-		LOGERR("%s Processor doesn't support 3D models", get_name().c_str());
-		throw ImageDimensionException("3D model not supported");
-	}
+	//int nz = image->get_zsize();
+	//if (nz > 1) {
+	//	LOGERR("%s Processor doesn't support 3D models", get_name().c_str());
+	//	throw ImageDimensionException("3D model not supported");
+	//}
 
 	EMData *ff=image->do_fft();
-	ff->ri2ap();
-
-	int nx=image->get_xsize();
-	int ny=image->get_ysize();
-
-	int x,y;
-	float norm=static_cast<float>(nx*ny);
-
-	for (y=0; y<ny; y++) image->set_value_at(0,y,0);
-
-	for (x=1; x<nx/2; x++) {
-		for (y=0; y<ny; y++) {
-			int y2;
-			if (y<ny/2) y2=y+ny/2;
-			else if (y==ny/2) y2=ny;
-			else y2=y-ny/2;
-			image->set_value_at(x,y,ff->get_value_at(nx-x*2,ny-y2)/norm);
-		}
-	}
-
-	for (x=nx/2; x<nx; x++) {
-		for (y=0; y<ny; y++) {
-			int y2;
-			if (y<ny/2) y2=y+ny/2;
-			else y2=y-ny/2;
-			image->set_value_at(x,y,ff->get_value_at(x*2-nx,y2)/norm);
-		}
-	}
+	ff->process_inplace("xform.fourierorigin.tocenter");
+	EMData *ren=ff->get_fft_amplitude();
+	memcpy((void*)image->get_data(),(void*)ren->get_data(),image->get_size()*sizeof(float));
 
 	image->update();
-	if( ff )
-	{
-		delete ff;
-		ff = 0;
-	}
+	if( ff ) { delete ff; ff = 0; }
+	if( ren ) { delete ren; ren = 0; }
 }
 
 void SigmaZeroEdgeProcessor::process_inplace(EMData * image)
