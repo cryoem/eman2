@@ -14,25 +14,65 @@ from eman2_gui.emapplication import get_application, EMApp
 from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emimagemx import EMImageMXWidget
 from eman2_gui.emshape import EMShape
-import scipy.spatial.distance as scipydist
-from scipy import ndimage
 
 def main():
 
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--gpuid", type=str,help="Specify the gpu to use", default="")
+	parser.add_argument("--keep", type=float,help="fraction to keep", default=.9)
+	parser.add_argument("--nogui", action="store_true", default=False ,help="apply to a set of particles using trained network without the gui.")
+	parser.add_argument("--batchsz", type=int,help="batch size for nogui mode", default=50000)
+
 	#parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	options.setname=args[0]
-	app = EMApp()
+	
+	if options.nogui:
+		print("loading network...")
+		global tf
+		tf=import_tensorflow(options.gpuid)
+		ptcl=EMData(options.setname,0,True)
+		boxsz=ptcl["nx"]		
+		nnet=NNet(boxsz)
+		nnet.model=tf.keras.models.load_model("nnet_classifycnn.h5",compile=False)
+		bsz=options.batchsz
+		nptcl=EMUtil.get_image_count(options.setname)
+		nbatch=nptcl//bsz+1
+		allscore=[]
+		for ib in range(nbatch):
+			last=min((ib+1)*bsz, nptcl-1)
+			idx=list(range(ib*bsz,last))
+			ptcls=EMData.read_images(options.setname, idx)
+			ptclimg=get_image(ptcls, len(ptcls))
+			
+			score=nnet.apply_network(ptclimg).flatten()
+			print("particle {} - {} : min {:.3f}, max {:.3f}".format(ib*bsz, last, np.min(score), np.max(score)))
+			allscore.extend(score.tolist())
+			
+		print("sorting particles...")
+		sortid=np.argsort(allscore).tolist()
+		sortid=sortid[int(nptcl*(1-options.keep)):]
+		lst=load_lst_params(options.setname)
+		lstgood=[l for i,l in enumerate(lst) if i in sortid]
+		oname=options.setname[:options.setname.rfind('.')]+"_good.lst"
+		save_lst_params(lstgood, oname)
+		print("output written to {}".format(oname))
+		
+		lstbad=[l for i,l in enumerate(lst) if i not in sortid]
+		oname=options.setname[:options.setname.rfind('.')]+"_bad.lst"
+		save_lst_params(lstbad, oname)
+		
+		
+	
+	else:
+		app = EMApp()
+		drawer=EMPtclClassify(app,options)
 
-	drawer=EMPtclClassify(app,options)
-
-
-	drawer.show()
-	app.execute()
+		drawer.show()
+		app.execute()
+		
 	E2end(logid)
 	
 
@@ -43,13 +83,13 @@ class NNet:
 
 		ki=tf.keras.initializers.TruncatedNormal(stddev=0.01)
 		layers=[
-			tf.keras.layers.Conv2D(8, 5, activation="relu", padding=pad,input_shape=(boxsize, boxsize,1)),
+			tf.keras.layers.Conv2D(32, 5, activation="relu", padding=pad,input_shape=(boxsize, boxsize,1)),
 			tf.keras.layers.MaxPooling2D(),
 			tf.keras.layers.Dropout(0.2),
-			tf.keras.layers.Conv2D(16, 5, activation="relu", padding=pad),
+			tf.keras.layers.Conv2D(64, 5, activation="relu", padding=pad),
 			tf.keras.layers.MaxPooling2D(),
 			tf.keras.layers.Dropout(0.2),
-			tf.keras.layers.Conv2D(32, 5, activation="relu", padding=pad),
+			tf.keras.layers.Conv2D(128, 5, activation="relu", padding=pad),
 			tf.keras.layers.MaxPooling2D(),
 			tf.keras.layers.Dropout(0.2),
 			tf.keras.layers.Flatten(),
@@ -89,80 +129,12 @@ class NNet:
 				result = self.model.train_on_batch(image, label)
 				cost.append(result)
 			print("iteration {}, cost {:.3f}".format(it, np.mean(cost)))
+		self.model.save("nnet_classifycnn.h5")
 		
 	def apply_network(self, imgs):
 		out=self.model.predict(imgs)
 		return out
 		
-	def save_network(self, fname, options=None):
-		if os.path.isfile(fname):
-			os.remove(fname)
-		print("Saving the nnet to {}...".format(fname))
-		
-		weights=[]
-		bias=[]
-		for ly in self.model.layers:
-			if len(ly.weights)==2:
-				w,b=ly.weights
-				weights.append(w.numpy())
-				bias.append(b.numpy())
-		
-		hdr=EMData(7,7)
-
-		nlayer=len(self.model.layers)
-
-		hdr.write_image(fname,0)
-
-		k=1
-		for i in range(len(weights)):
-			w=weights[i]
-			b=bias[i]
-			w=w.transpose(3,2,0,1).copy()
-			s=w.shape
-
-			e=from_numpy(b)
-			e["w_shape"]=s
-			e.write_image(fname,k)
-			k+=1
-			w=w.reshape(s[0]*s[1], s[2], s[3])
-			for wi in w:
-				ws=wi.T.copy()
-				e=from_numpy(ws)
-				e.write_image(fname,k)
-				k+=1	
-
-	@staticmethod
-	def load_network(fname, **kwargs):
-		print("Loading nnet from {}...".format(fname))
-		hdr=EMData(fname,0)
-		
-		nnet=NNet(**kwargs)
-		k=1
-		for ly in nnet.model.layers:
-			
-			wts=ly.weights
-			if len(wts)==0:
-				continue
-			
-			e=EMData(fname,k)
-			s=e["w_shape"]
-			b=e.numpy().copy()
-			k+=1
-			wts[1].assign(b, read_value=False)
-			ks=wts[0].shape[1]
-			allw=np.zeros((s[0]*s[1], ks, ks))
-			for wi in range(s[0]*s[1]):
-				e=EMData(fname,k)
-				sw=e["nx"]
-				#e=e.get_clip(Region((sw-ks)//2,(sw-ks)//2,ks,ks))
-				k+=1
-				w=e.numpy().copy()
-				allw[wi]=w
-			allw=allw.reshape([s[0], s[1], ks, ks]).transpose(3,2,1,0)
-			wts[0].assign(allw, read_value=False)
-			
-		return nnet	
-
 def get_image(ptcl, nimgs):
 	ncopy=ceil(nimgs/len(ptcl))
 	imgs=[]
@@ -215,24 +187,25 @@ class EMPtclClassify(QtWidgets.QMainWindow):
 		#self.bt_new.setToolTip("Build new neural network")
 		#self.gbl.addWidget(self.bt_new, 0,0,1,2)
 		
-		#self.bt_load=QtWidgets.QPushButton("Load")
-		#self.bt_load.setToolTip("Load neural network")
-		#self.gbl.addWidget(self.bt_load, 1,0,1,2)
-		
 		self.bt_train=QtWidgets.QPushButton("Train")
 		self.bt_train.setToolTip("Train neural network")
 		self.gbl.addWidget(self.bt_train, 0,0,1,2)
 		
 		self.bt_save=QtWidgets.QPushButton("Save")
-		self.bt_save.setToolTip("Save neural network")
+		self.bt_save.setToolTip("Save particle set")
 		self.gbl.addWidget(self.bt_save, 1,0,1,2)
+		
+		self.bt_load=QtWidgets.QPushButton("Load")
+		self.bt_load.setToolTip("Load neural network")
+		self.gbl.addWidget(self.bt_load, 2,0,1,2)
+		
 		
 		#self.bt_apply=QtWidgets.QPushButton("Apply")
 		#self.bt_apply.setToolTip("Apply neural network")
 		#self.gbl.addWidget(self.bt_apply, 4,0,1,2)
 				
 		#self.bt_new.clicked[bool].connect(self.new_nnet)
-		#self.bt_load.clicked[bool].connect(self.load_nnet)
+		self.bt_load.clicked[bool].connect(self.load_nnet)
 		self.bt_train.clicked[bool].connect(self.train_nnet)
 		self.bt_save.clicked[bool].connect(self.save_set)
 		#self.bt_apply.clicked[bool].connect(self.apply_nnet)
@@ -242,7 +215,8 @@ class EMPtclClassify(QtWidgets.QMainWindow):
 		self.val_learnrate=TextBox("LearnRate", 1e-4)
 		self.gbl.addWidget(self.val_learnrate, 0,2,1,1)
 		
-		self.val_ptclthr=TextBox("PtclThresh", 200)
+		nptcl=EMUtil.get_image_count(options.setname)
+		self.val_ptclthr=TextBox("PtclThresh", int(nptcl*(1-options.keep)))
 		self.gbl.addWidget(self.val_ptclthr, 1,2,1,1)
 		
 		self.val_niter=TextBox("Niter", 10)
@@ -256,9 +230,6 @@ class EMPtclClassify(QtWidgets.QMainWindow):
 		
 		self.particles=EMData.read_images(options.setname)
 		self.boxsz=self.particles[0]["nx"]
-		#for p in self.particles:
-			#p.process_inplace("math.fft.resample",{"n":float(boxsz/self.nnetsize)})
-			#p.process_inplace("filter.lowpass.gauss", {"cutoff_abs":.4})
 		
 		self.ptclviewer=EMImageMXWidget()
 		self.ptclviewer.setWindowTitle("Particles")
@@ -272,6 +243,7 @@ class EMPtclClassify(QtWidgets.QMainWindow):
 		
 		
 		self.ptclviewer.set_data(self.particles)
+		self.ptclviewer.sets["bad_particles"]=set()
 		self.ptclviewer.update()
 		self.ptclimg=get_image(self.particles, len(self.particles))
 		global tf
@@ -282,7 +254,7 @@ class EMPtclClassify(QtWidgets.QMainWindow):
 		if self.nnet==None:
 			self.nnet=NNet(self.boxsz)
 			
-		if 1:#len(self.trainset)==0:
+		if int(self.val_niter.getval())>0:
 			print("Preparing training set...")
 			sets=self.ptclviewer.sets
 			#print(sets)
@@ -294,8 +266,10 @@ class EMPtclClassify(QtWidgets.QMainWindow):
 			ptcldata=self.ptclviewer.data
 			#print(bids)
 			badrefs=[ptcldata[i] for i in bids]
-			
-			gids=[i for i in range(len(ptcldata)) if i not in bids]
+			thr=int(self.val_ptclthr.getval())
+			gids=self.sortidx[thr:]
+			gids=[i for i in gids if i not in bids]
+			#gids=[i for i in range(len(ptcldata)) if i not in bids]
 			np.random.shuffle(gids)
 			nsample=512
 			gids=gids[:nsample]
@@ -313,13 +287,13 @@ class EMPtclClassify(QtWidgets.QMainWindow):
 			
 			self.trainset=(imgs, labs)
 			
-		dataset = tf.data.Dataset.from_tensor_slices(self.trainset)
-		dataset=dataset.shuffle(500).batch(64)
-		self.nnet.do_training(
-			dataset, 
-			learnrate=self.val_learnrate.getval(), 
-			niter=int(self.val_niter.getval()),
-			)
+			dataset = tf.data.Dataset.from_tensor_slices(self.trainset)
+			dataset=dataset.shuffle(500).batch(64)
+			self.nnet.do_training(
+				dataset, 
+				learnrate=self.val_learnrate.getval(), 
+				niter=int(self.val_niter.getval()),
+				)
 		
 		
 		bids=self.ptclviewer.sets["bad_particles"]
@@ -361,6 +335,12 @@ class EMPtclClassify(QtWidgets.QMainWindow):
 			
 		lst=lout=None
 		print("{} particles written to {}".format(nn-thr, oname))
+		
+	def load_nnet(self):
+		if self.nnet==None:
+			self.nnet=NNet(self.boxsz)
+			
+		self.nnet.model=tf.keras.models.load_model("nnet_classifycnn.h5",compile=False)
 		
 	def closeEvent(self, event):
 		for b in  [self.ptclviewer]:
