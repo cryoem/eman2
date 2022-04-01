@@ -1,6 +1,7 @@
 IF(ENABLE_AUTODOC)
     ADD_SUBDIRECTORY(modular_class_html)
     ADD_SUBDIRECTORY(doxygen)
+    ADD_SUBDIRECTORY(programs_help_html)
 
     add_custom_target(mkdoc
             DEPENDS mkdoc-doxy
