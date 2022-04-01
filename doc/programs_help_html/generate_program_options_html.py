@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+import glob
+import os
+import shutil
 import sys
 from pathlib import Path
 from subprocess import run
@@ -50,6 +53,15 @@ def main():
 
 	with Pool() as pool:
 		pool.map(write_parser_options_of_prog, progs)
+
+	outdir = 'programs_help_html'
+	os.makedirs(outdir, exist_ok=True)
+
+	shutil.copy2('styles.css', outdir)
+	for f in glob.glob('*.html'):
+		fnew = os.path.join(outdir, f)
+		print(f"Moving: {f} -> {fnew}")
+		shutil.move(f, fnew)
 
 
 if __name__ == "__main__":
