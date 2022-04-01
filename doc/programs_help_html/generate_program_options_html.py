@@ -35,6 +35,9 @@ def parser_options_html(prog, txt):
 def html_link(prog_html_path, prog):
 	return f'''    <li><a href="{prog_html_path}">{prog}</a></li>\n'''
 
+with open('programs_with_more_info.txt') as fin:
+	PROGS_WITH_DETAILED_INFO = fin.read().splitlines()
+
 
 def get_program_files():
 	source_path = THIS_DIR.parent.parent / 'programs'
