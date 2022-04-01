@@ -12,6 +12,25 @@ from multiprocessing import Pool
 THIS_DIR = Path(__file__).resolve().parent
 
 
+def parser_options_html(prog, txt):
+	return f'''<!DOCTYPE html>
+<html lang="en-us">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title> {prog} - help</title>
+</head>
+
+<body >
+<h1> {prog} </h1>
+
+{txt}
+
+</body>
+</html>
+'''
+
+
 def get_program_files():
 	source_path = THIS_DIR.parent.parent / 'programs'
 
@@ -45,7 +64,7 @@ def write_parser_options_of_prog(prog):
 
 	with open(ftxt, 'w') as f:
 		print("Writing {} ...".format(f.name))
-		f.write(txt)
+		f.write(parser_options_html(prog=prog, txt=txt))
 
 
 def main():
