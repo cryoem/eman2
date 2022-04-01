@@ -27,7 +27,7 @@ def get_program_files():
 	return sorted(progs)
 
 
-def get_parser_options(prog):
+def write_parser_options_of_prog(prog):
 	output = run([prog, '--help-to-html'], capture_output=True)
 
 	if output.stderr:
@@ -35,14 +35,20 @@ def get_parser_options(prog):
 		print(output.stderr)
 		sys.exit(1)
 
-	return output.stdout.decode()
+	prog = Path(prog).stem
+	txt = output.stdout.decode()
+	ftxt = THIS_DIR / str(prog + '.html')
+
+	with open(ftxt, 'w') as f:
+		print("Writing {} ...".format(f.name))
+		f.write(txt)
 
 
 def main():
 	progs = get_program_files()
 
 	for prog in progs:
-		txt = get_parser_options(prog)
+		write_parser_options_of_prog(prog)
 
 
 if __name__ == "__main__":
