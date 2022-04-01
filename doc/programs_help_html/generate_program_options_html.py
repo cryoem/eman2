@@ -70,6 +70,13 @@ def write_parser_options_of_prog(prog):
 def main():
 	progs = get_program_files()
 
+	with open(THIS_DIR / 'index.html.tmpl', 'r') as fin:
+		template_lines = fin.read().partition('================')
+
+	with open(THIS_DIR / 'index.html', 'w') as fout:
+		fout.write(template_lines[0])
+		fout.write(template_lines[2])
+
 	with Pool() as pool:
 		pool.map(write_parser_options_of_prog, progs)
 
