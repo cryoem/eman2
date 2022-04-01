@@ -31,6 +31,10 @@ def parser_options_html(prog, txt):
 '''
 
 
+def html_link(prog_html_path, prog):
+	return f'''    <li><a href="{prog_html_path}">{prog}</a></li>\n'''
+
+
 def get_program_files():
 	source_path = THIS_DIR.parent.parent / 'programs'
 
@@ -75,6 +79,10 @@ def main():
 
 	with open(THIS_DIR / 'index.html', 'w') as fout:
 		fout.write(template_lines[0])
+
+		for prog in progs:
+			fout.write(html_link(prog_html_path=Path(prog).stem + '.html', prog=prog))
+
 		fout.write(template_lines[2])
 
 	with Pool() as pool:
