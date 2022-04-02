@@ -49,6 +49,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	
 	parser.add_argument("--create", type=str, default=None, help="to use this option, the input files should be image files. Specify an .lst or .lsx file to create here (e.g., --create mylst.lst) with references to all of the images in the inputs.")
 	parser.add_argument("--eosplit", action="store_true", help="Will generate _even and _odd .lst files for each specified input .lst file")
+	parser.add_argument("--split", type=int,default=0, help="Will put every nth particle in a separate numbered .lst file based on --create name. Ignores other subset selection options! Single input only!")
 
 	parser.add_argument("--dereforig", type=str, default=None, help="Extract the data_source and data_n parameters from each image in the file and create a new .lst file referencing the original image(s)")
 
@@ -159,7 +160,28 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 		
 		lst=LSXFile(options.create,False,cmt)
 		
-		if options.mergeeo:
+		if options.split>1:
+			if len(args)>1 : 
+				print("Error: single input only. For multiple inputs create a single .lst first, then split it.")
+				exit()
+			if not args[0].endswith(".lst"):
+				print("Error: only lst files can be used as input with --split")
+				exit()
+			
+			lsin=LSXFile(args[0])
+			#remove existing outputs
+			for i in range(options.split):
+				try: os.unlink(f"{options.create[:-4]}_{i}.lst")
+				except: pass
+			#create new outputs
+			lsout=[LSXFile(f"{options.create[:-4]}_{i}.lst") for i in range(options.split)]
+			
+			#split
+			for i in range(len(lsin)):
+				lsout[i%options.split][i//options.split]=lsin[i]
+				
+			exit()
+		elif options.mergeeo:
 			print("Merging two image stacks...")
 			if len(args)!=2:
 				print("Error: Need two inputs...")

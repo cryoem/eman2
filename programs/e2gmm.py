@@ -548,7 +548,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		# This is used to update reconstruction thread results
 		self.timer=QTimer()
 		self.timer.timeout.connect(self.timeout)
-		self.timer.start(500)
+		self.timer.start(1000)
 
 	def do_events(self,delay=0.1):
 		"""process the event loop with a small delay to allow user abort, etc."""
@@ -648,9 +648,9 @@ class EMGMM(QtWidgets.QMainWindow):
 	
 	def new_sph_size(self,newval=10):
 		self.gaussplot.setPointSize(self.wvssphsz.value)
-		self.gaussplot.setPointThr(self.wvssphth.value)
+		#self.gaussplot.setPointThr(self.wvssphth.value)
 		self.neutralplot.setPointSize(self.wvssphsz.value)
-		self.neutralplot.setPointThr(self.wvssphth.value)
+		#self.neutralplot.setPointThr(self.wvssphth.value)
 		self.wview3d.update()
 	
 	def plot_keyboard(self,event):
@@ -1152,11 +1152,17 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.do_events(1)
 		
 		decoder=f"{self.gmm}/{self.currunkey}_decoder.h5"
+		encoder=f"{self.gmm}/{self.currunkey}_encoder.h5"
 		if (len(self.currun["mask"])>4) : mask=f"--mask {self.currun['mask']}"
 		else: mask=""
 		# heterogeneity analysis
 		if int(self.currun["conv"]): conv="--conv"
 		else: conv=""
+		
+		# We split the data into 10 groups, and if there are enough particles in one set, process the chunks sequentially
+		if not os.path.exists(f"{self.gmm}/particles_1.lst"):
+			run(f"e2proclst.py {self.gmm}/particles.lst --split 10 --create {self.gmm}/sptcl.lst")
+		nchunk=len(LSXFile(f"{self.gmm}/sptcl_0.lst"))
 		
 		## if positions and amplitudes being updated, we start with positions only, accomodate as much as we can, then shift to both
 		#if self.currun['pas'][0]=="1" and self.currun['pas'][1]=="1":
@@ -1172,16 +1178,45 @@ class EMGMM(QtWidgets.QMainWindow):
 		## otherwise we just do it in one step
 		#else:
 
-		# if targeting high resolution, we start with 10 iterations at 25 A first
+		# if targeting high resolution, we start with 5 iterations at 25 A first
+		try: os.unlink(encoder)
+		except: pass
 		if maxbox25<maxbox:
-			er=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox25} --niter 10 {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")
+			if nchunk>2500 : chunk=f"{self.gmm}/sptcl_0.lst"
+			else: chunk=f"{self.gmm}/particles.lst"
+			er=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --decoderout {decoder} --encoderout {encoder} --ptclsin {chunk} --heter {conv} --sym {sym} --maxboxsz {maxbox25} --niter 5 {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")
 			if er :
 				showerror("Error running e2gmm_refine, see console for details. Memory is a common issue. Consider reducing the target resolution.")
 				return
 		#if self.currun['pas'][0]=="1" and self.currun['pas'][1]=="1":
 			#er=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']//2} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas 100 --ndense -1")
 			#er=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']//2} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")		
-		er=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")
+		if os.path.exists(encoder): encin=f"--encoderin {encoder}"
+		else: encin=""
+		if nchunk<2500:
+			er=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --decoderout {decoder} {encin} --encoderout {encoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")
+		else:
+			chit=(self.currun["trainiter"]-1)//10+1
+			er=0
+			for i in range(10):
+				er+=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --decoderout {decoder} {encin} --encoderout {encoder} --ptclsin {self.gmm}/sptcl_{i}.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {chit} {mask} --nmid {self.currun['dim']} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")
+				encin=f"--encoderin {encoder}"
+
+			# we save the middle layer in this final set of 10 runs
+			for i in range(10):
+				er+=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --decoderout {decoder} {encin} --encoderout {encoder} --ptclsin {self.gmm}/sptcl_{i}.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter 1 {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid_{i}.txt --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")
+				encin=f"--encoderin {encoder}"
+			
+			# Remerge the middle layer
+			mids=[open(f"{self.gmm}/{self.currunkey}_mid_{i}.txt","r").readlines() for i in range(10)]
+			out=open(f"{self.gmm}/{self.currunkey}_mid.txt","w")
+			nl=sum([len(i) for i in mids])
+			for i in range(nl):
+				out.write(mids[i%10][i//10])
+			for i in range(10): 
+				try: os.unlink(f"{self.gmm}/{self.currunkey}_mid_{i}.txt")
+				except: pass
+
 		if er :
 			showerror("Error running e2gmm_refine, see console for details. Memory is a common issue. Consider reducing the target resolution.")
 			return
