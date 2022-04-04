@@ -12,7 +12,16 @@ from multiprocessing import Pool
 THIS_DIR = Path(__file__).resolve().parent
 
 
-def parser_options_html(prog, txt):
+def parser_options_html(prog, txt, has_detailed_info_page):
+	detailed_info_txt = f'''
+<p>
+For more information go to <a href="https://blake.bcm.edu/emanwiki/EMAN2/Programs/{prog}">emanwiki/EMAN2/Programs/{prog}</a>.
+</p>
+'''
+
+	if not has_detailed_info_page:
+		detailed_info_txt = ''
+
 	return f'''<!DOCTYPE html>
 <html lang="en-us">
 <head>
@@ -26,6 +35,8 @@ def parser_options_html(prog, txt):
 <h1> {prog} </h1>
 
 {txt}
+
+{detailed_info_txt}
 
 </body>
 </html>
@@ -75,7 +86,8 @@ def write_parser_options_of_prog(prog):
 
 	with open(ftxt, 'w') as f:
 		print("Writing {} ...".format(f.name))
-		f.write(parser_options_html(prog=prog, txt=txt))
+		f.write(parser_options_html(prog, txt,
+		                            prog + '.py' in PROGS_WITH_DETAILED_INFO))
 
 
 def main():
