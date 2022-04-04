@@ -2,6 +2,7 @@ ADD_CUSTOM_TARGET(mkdoc-programs-help
 	DEPENDS	${CMAKE_CURRENT_SOURCE_DIR}/generate_program_options_html.py
 			${CMAKE_CURRENT_SOURCE_DIR}/index.html.tmpl
 			${CMAKE_CURRENT_SOURCE_DIR}/styles.css
+			${CMAKE_CURRENT_SOURCE_DIR}/script.js
 )
 
 ADD_CUSTOM_COMMAND(

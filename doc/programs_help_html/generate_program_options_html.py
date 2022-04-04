@@ -111,6 +111,7 @@ def main():
 	os.makedirs(outdir, exist_ok=True)
 
 	shutil.copy2('styles.css', outdir)
+	shutil.copy2('script.js', outdir)
 	for f in glob.glob('*.html'):
 		fnew = os.path.join(outdir, f)
 		print(f"Moving: {f} -> {fnew}")
