@@ -40,6 +40,9 @@
 from EMAN2 import *
 import sys
 import time
+import os
+import shutil
+import glob
 
     
 def write_header(output, name):
@@ -408,6 +411,15 @@ def main():
     write_single_reconstructors()
     write_single_averagers()
     write_single_analyzers()
+
+
+    outdir = 'modular_class_html'
+    os.makedirs(outdir, exist_ok=True)
+
+    for f in glob.glob('*.html'):
+        fnew = os.path.join(outdir, f)
+        print(f"Moving: {f} -> {fnew}")
+        shutil.move(f, fnew)
 
 
 if __name__ == '__main__':

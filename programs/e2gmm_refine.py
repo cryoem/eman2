@@ -793,6 +793,8 @@ def main():
 	parser.add_argument("--modelout", type=str,help="output trained model file. only used when --projs is provided", default="")
 	parser.add_argument("--decoderin", type=str,help="Rather than initializing the decoder from a model, read an existing trained decoder", default="")
 	parser.add_argument("--decoderout", type=str,help="Save the trained decoder model. Filename should be .h5", default=None)
+	parser.add_argument("--encoderin", type=str,help="Rather than initializing the encoder from scratch, read an existing trained encoder", default="")
+	parser.add_argument("--encoderout", type=str,help="Save the trained encoder model. Filename should be .h5", default=None)
 	parser.add_argument("--projs", type=str,help="projections with orientations (in hdf header or comment column of lst file) to train model", default="")
 	parser.add_argument("--evalmodel", type=str,help="generate model projection images to the given file name", default="")
 	parser.add_argument("--evalsize", type=int,help="Box size for the projections for evaluation.", default=-1)
@@ -1020,7 +1022,11 @@ def main():
 				allgrds=allgrds.reshape((len(allgrds), npt, 5))
 				
 		#### build deep networks and make sure they work
-		encode_model=build_encoder(nout=options.nmid, conv=options.conv,ninp=len(pts[0]))
+		if options.encoderin:
+			encode_model=tf.keras.models.load_model(f"{options.encoderin}",compile=False)
+		else:
+			encode_model=build_encoder(nout=options.nmid, conv=options.conv,ninp=len(pts[0]))
+			
 		if options.decoderin:
 			decode_model=tf.keras.models.load_model(f"{options.decoderin}",compile=False)
 		else:
@@ -1042,6 +1048,10 @@ def main():
 		if options.decoderout!=None: 
 			decode_model.save(options.decoderout)
 			print("Decoder saved as ",options.decoderout)
+			
+		if options.encoderout!=None: 
+			encode_model.save(options.encoderout)
+			print("Encoder saved as ",options.encoderout)
 		
 		## conformation output
 		mid=calc_conf(encode_model, allgrds[ptclidx], 1000)

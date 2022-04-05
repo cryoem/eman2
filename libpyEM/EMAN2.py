@@ -681,10 +681,47 @@ class EMArgumentParser(argparse.ArgumentParser):
 		if version:
 			self.add_argument('--version', action='version', version=version)
 		self.add_argument("positionalargs", nargs="*")
+		self.add_argument('--help-to-html', action='store_true',
+		                  help='print this help message in html format')
 
 	def parse_args(self):
 		""" Masquerade as optparser parse options """
+		if "--help-to-html" in sys.argv[1:]:
+			import pandas as pd
+			from contextlib import redirect_stdout
+			from io import StringIO
+
+			actions = self._get_optional_actions()
+
+			df = pd.DataFrame(columns=['Option', 'Type', 'Description'])
+
+			for i in actions:
+				i.type = "None" if not i.type else str(i.type).split("'")[1]
+				i.option_strings = ', '.join(i.option_strings)
+
+				if "--help-to-html" in i.option_strings or "--help" in i.option_strings:
+					continue
+
+				df = pd.concat([df, pd.DataFrame({'Option': [i.option_strings],
+				                                  'Type': [i.type],
+				                                  'Description': [i.help]})],
+				               ignore_index=True)
+
+			print('<pre>')
+
+			stdout = StringIO()
+			with redirect_stdout(stdout):
+				self.print_usage()
+			print(stdout.getvalue().replace('<', '&lt').replace('>', '&gt'))
+
+			print('</pre>\n')
+
+			print(df.to_html(index=False, justify="center"))
+
+			self.exit()
+
 		parsedargs = argparse.ArgumentParser.parse_args(self)
+
 		return (parsedargs, parsedargs.positionalargs)
 
 	def add_pos_argument(self, **kwargs):
