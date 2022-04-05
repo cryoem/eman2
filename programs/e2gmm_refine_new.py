@@ -331,7 +331,7 @@ def set_indices_boxsz(boxsz, apix=0, return_freq=False):
 
 def build_encoder(mid=512, nout=4, conv=False, ninp=-1):
 	l2=tf.keras.regularizers.l2(1e-3)
-	kinit=tf.keras.initializers.RandomNormal(0,0.1)	# was 0.01
+	kinit=tf.keras.initializers.RandomNormal(0,0.01)	# was 0.01
 	
 	if conv:
 		ss=64
@@ -346,7 +346,7 @@ def build_encoder(mid=512, nout=4, conv=False, ninp=-1):
 			tf.keras.layers.Conv2D(64, 3, activation="relu", strides=(2,2), padding="same"),
 			tf.keras.layers.Flatten(),
 			tf.keras.layers.Dropout(.3),
-			#tf.keras.layers.BatchNormalization(),
+			tf.keras.layers.BatchNormalization(),
 			tf.keras.layers.Dense(nout, kernel_initializer=kinit),
 		]
 	elif ninp<0:
@@ -403,8 +403,8 @@ def build_decoder(pts, mid=512, ninp=4, conv=False):
 			tf.keras.layers.Conv2DTranspose(8, 5, activation="relu", strides=(2,2), padding="same"),
 			tf.keras.layers.Conv2DTranspose(4, 5, activation="relu", strides=(2,2), padding="same"),
 			tf.keras.layers.Flatten(),
-			#tf.keras.layers.Dropout(.1),
-			#tf.keras.layers.BatchNormalization(),
+			tf.keras.layers.Dropout(.3),
+			tf.keras.layers.BatchNormalization(),
 			layer_output,
 			tf.keras.layers.Reshape((npt,5)),
 		]
@@ -457,6 +457,42 @@ def build_decoder(pts, mid=512, ninp=4, conv=False):
 		layer_output.bias.assign(bs.flatten())
 	
 	return gen_model
+
+def build_decoder_anchor(pts, cnt, ninp ):
+	print(pts.shape, cnt.shape)
+	dwt=tf.reduce_sum((pts[:,:,:3]-cnt[:,None,:])**2, axis=2)
+	dwt=tf.exp(-dwt*50)#*tf.constant(msk, dtype=float)
+	dwt=tf.transpose(dwt)
+	
+	x0=tf.keras.Input(shape=(ninp))
+	kinit=tf.keras.initializers.RandomNormal(0,1e-3)
+	l2=tf.keras.regularizers.l2(1e-3)
+	layer_output=tf.keras.layers.Dense(pts.shape[1], activation="linear",
+									use_bias=False, kernel_regularizer=l2)
+	layers=[
+		tf.keras.layers.Dense(256, activation="relu"),
+		tf.keras.layers.Reshape((4,4,16)),
+		tf.keras.layers.Conv2DTranspose(16, 3, activation="relu", strides=(2,2), padding="same"),
+		tf.keras.layers.Conv2DTranspose(16, 3, activation="relu", strides=(2,2), padding="same"),
+		tf.keras.layers.Conv2DTranspose(16, 5, activation="relu", strides=(1,1), padding="same"),
+		tf.keras.layers.Conv2DTranspose(16, 5, activation="relu", strides=(1,1), padding="same"),
+		tf.keras.layers.Flatten(),
+		tf.keras.layers.Dropout(.3),
+		tf.keras.layers.BatchNormalization(),
+		tf.keras.layers.Dense(len(cnt)*5, kernel_initializer=kinit, activation="linear",use_bias=False),
+		tf.keras.layers.Reshape((5, len(cnt))),
+		layer_output,
+		tf.keras.layers.Permute((2,1))
+	]
+	y0=x0
+	for l in layers:
+		y0=l(y0)
+
+	y0=y0+pts
+	layer_output.weights[0].assign(tf.transpose(dwt))
+	decode_model=tf.keras.Model(x0, y0)
+	return decode_model
+	
 
 #### training decoder on projections
 def train_decoder(gen_model, trainset, params, options, pts=None):
@@ -724,7 +760,7 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, options):
 	imsk=tf.zeros(npt, dtype=floattype)+1
 	if options.selgauss:
 		i=np.loadtxt(options.selgauss).astype(int)
-		print('selecting {} out of points'.format(len(i), npt))
+		print('selecting {} out of {} points'.format(len(i), npt))
 		m=np.zeros(npt, dtype=floattype)
 		m[i]=1
 		imsk=tf.constant(m)
@@ -732,6 +768,8 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, options):
 	## initialize optimizer
 	opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate)
 	wts=encode_model.trainable_variables + decode_model.trainable_variables
+	if options.anchor:
+		wts=wts[:-1]
 	nbatch=0
 	for t in trainset: nbatch+=1
 	
@@ -825,6 +863,7 @@ def main():
 	parser.add_argument("--modelout", type=str,help="output trained model file. only used when --projs is provided", default="")
 	parser.add_argument("--decoderin", type=str,help="Rather than initializing the decoder from a model, read an existing trained decoder", default="")
 	parser.add_argument("--decoderout", type=str,help="Save the trained decoder model. Filename should be .h5", default=None)
+	parser.add_argument("--encoderin", type=str,help="Rather than initializing the decoder from a model, read an existing trained encoder", default="")
 	parser.add_argument("--encoderout", type=str,help="Save the trained encoder model. Filename should be .h5", default=None)
 	parser.add_argument("--projs", type=str,help="projections with orientations (in hdf header or comment column of lst file) to train model", default="")
 	parser.add_argument("--evalmodel", type=str,help="generate model projection images to the given file name", default="")
@@ -853,6 +892,7 @@ def main():
 	parser.add_argument("--nmid", type=int,help="size of the middle layer", default=4)
 	parser.add_argument("--ndense", type=int,help="size of the layers between the middle and in/out, variable if -1. Default 512", default=512)
 	parser.add_argument("--mask", type=str,help="remove points outside mask", default="")
+	parser.add_argument("--anchor", type=str,help="use a smaller model as anchor points for heterogeneity training.", default="")
 	parser.add_argument("--selgauss", type=str,help="provide a text file of the indices of gaussian that are allowed to move", default="")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
@@ -865,7 +905,7 @@ def main():
 	## load GMM from text file
 	if options.model:
 		if options.model.endswith(".pdb"):
-			
+			print("Generating Gaussian model from pdb...")
 			p=pdb2numpy(options.model)
 			pts=np.zeros((len(p),5))
 			e=EMData(options.projs, 0, True)
@@ -875,7 +915,7 @@ def main():
 			pts[:,3]=.5
 			pts[:,4]=1
 			
-			print(pts)
+			#print(pts)
 		else:
 			
 			pts=np.loadtxt(options.model).astype(floattype)
@@ -1056,9 +1096,20 @@ def main():
 				allgrds=allgrds.reshape((len(allgrds), npt, 5))
 				
 		#### build deep networks and make sure they work
-		encode_model=build_encoder(nout=options.nmid, conv=options.conv,ninp=len(pts[0]))
+		
+		if options.encoderin:
+			encode_model=tf.keras.models.load_model(f"{options.encoderin}",compile=False)
+		else:
+			encode_model=build_encoder(nout=options.nmid, conv=options.conv,ninp=len(pts[0]))
+			
 		if options.decoderin:
 			decode_model=tf.keras.models.load_model(f"{options.decoderin}",compile=False)
+			
+		elif options.anchor:
+			anchor=np.loadtxt(options.anchor)[:,:3]
+			anchor=tf.constant(anchor,dtype=floattype)
+			decode_model=build_decoder_anchor(pts, anchor, ninp=options.nmid)
+			
 		else:
 			decode_model=build_decoder(pts[0].numpy(), ninp=options.nmid, conv=options.conv,mid=options.ndense)
 		

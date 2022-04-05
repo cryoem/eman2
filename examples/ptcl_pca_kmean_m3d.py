@@ -18,6 +18,7 @@ def main():
 	parser.add_argument("--nbasis", type=int,help="PCA dimensionality", default=2)
 	parser.add_argument("--setsf", type=str,help="setsf", default="")
 	parser.add_argument("--mode", type=str,help="classify/regress", default="classify")
+	parser.add_argument("--axis", type=int,help="axis for regress", default=0)
 	parser.add_argument("--sym", type=str,help="symmetry", default="c1")
 	parser.add_argument("--nptcl", type=int,help="number of particles per class in regress mode", default=2000)
 	parser.add_argument("--threads", default=12,type=int,help="Number of threads to run in parallel on a single computer. This is the only parallelism supported by e2make3dpar")
@@ -37,7 +38,7 @@ def main():
 		lbunq=np.unique(lbs)
 		
 	else:
-		p=p2[:,0]
+		p=p2[:,options.axis]
 		print(np.max(abs(p)))
 		rg=np.arange(options.ncls)
 		rg=rg/np.max(rg)-.5
@@ -63,7 +64,7 @@ def main():
 			ii=(lbs==l)
 			print(onm, np.sum(ii))
 		else:
-			d=abs(p2[:,0]-rg[j])
+			d=abs(p2[:,options.axis]-rg[j])
 			ii=np.argsort(d)[:options.nptcl]
 			print(onm, rg[j], d[ii[-1]])
 		
