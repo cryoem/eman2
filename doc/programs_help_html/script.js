@@ -1,4 +1,6 @@
 function listSearch() {
+    let inp, filter, ul, li, a, txt;
+
     inp = document.getElementById("input");
     filter = inp.value.toLowerCase();
     ul = document.getElementById("progsUL");
