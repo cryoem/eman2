@@ -24,6 +24,7 @@
  *    <li> <a href="./modular_class_html/projectors.html"> Manual of Individual Projector</a>
  *    <li> <a href="./modular_class_html/reconstructors.html"> Manual of Individual Reconstructor</a>
  *    <li> <a href="./adding_processor.html"> Adding New Processor How-to</a>
+ *    <li> <a href="./programs_help_html/index.html"> Command-line options of Individual Programs</a>
  *  </ul>
  */
 /** @defgroup CUDA_ENABLED a function or class that is CUDA enabled */
