@@ -10,6 +10,7 @@ def main():
 	parser.add_argument("--path", type=str,help="path", default="sgd_00")
 	parser.add_argument("--res", type=int,help="res", default=30)
 	parser.add_argument("--batch", type=int,help="batch", default=32)
+	parser.add_argument("--niter", type=int,help="number of iterations", default=100)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	
@@ -28,6 +29,8 @@ def main():
 	path=options.path
 	options.parallel="thread:32"
 	
+	save_lst_params(ptcls, f"{path}/ptcls_input.lst")
+	
 	idx=np.arange(npt)
 	np.random.shuffle(idx)
 	idx=np.sort(idx[:batch])
@@ -42,13 +45,14 @@ def main():
 		d["xform.projection"]=xf
 		ali2d.append(d)
 		
+	save_lst_params(ali2d, f"{path}/ptcls.lst")
 	thrd0=make_3d(ali2d, options)
 	avg0=post_process(thrd0, options)
 	avg0.write_image(f"{path}/output.hdf")
 	avg0.write_compressed(f"{path}/output_all.hdf", -1, 12, nooutliers=True)
 	lr=.1
 	
-	for itr in range(200):
+	for itr in range(options.niter):
 		print(itr)
 		
 		idx=np.arange(npt)

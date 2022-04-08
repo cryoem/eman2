@@ -108,7 +108,7 @@ def pts2img_one(args):
 	pts, ang = args
 	sz, idxft, rrft = params["sz"], params["idxft"], params["rrft"]
 
-	lp=.1
+	lp=.2
 	bamp=tf.cast(tf.nn.relu(pts[:,3]), tf.complex64)[:,None]
 	#bsigma=pts[:, 4]
 	#amp=tf.exp(-rrft*lp*tf.nn.relu(bsigma))*tf.nn.relu(bamp)
@@ -135,73 +135,13 @@ def pts2img(pts, angs):
 	img=tf.vectorized_map(pts2img_one, (pts, angs))
 	return tf.math.real(img), tf.math.imag(img)
 
-
-#### make 2D projections from Gaussian coordinates in Fourier space
-##   input:  pts - ( batch size, number of Gaussian, 5 (x,y,z,amp,sigma) )
-##                 ( number of Gaussian, 3) should also work
-##           ang - ( batch size, 5 (az, alt, phi, tx, ty) )
-##        params - a dictionary of some Fourier indices for slicing
-##                 sz - Fourier box size
-##                 idxft - Fourier indices
-##                 rrft - radial Fourier indices
-##            lp - lowpass filter applied to the images
-##                 this should not be necessary since we use FRC for loss
-##                 but the dynamic range of values in Fourier space can sometimes be too high...
-##           sym - symmetry string
-#@tf.function()
-def pts2img_00(pts, ang, params, lp=.1, sym="c1"):
-	bsz=ang.shape[0]
-	sz, idxft, rrft=params["sz"], params["idxft"], params["rrft"]
-	
-	### initialize output and parse input
-	imgs_real=tf.zeros((bsz, sz,sz//2+1), dtype=floattype)
-	imgs_imag=tf.zeros((bsz, sz,sz//2+1), dtype=floattype)
-	if len(pts.shape)>2 and pts.shape[0]>1:
-		ni=pts.shape[1]
-		pts=tf.reshape(pts, (-1, pts.shape[-1]))
-		bamp=tf.reshape(pts[:, 3], (bsz,-1))
-		bsigma=tf.reshape(pts[:, 4], (bsz,-1))
-		multmodel=True
-		
-	else:
-		bamp=pts[:, 3][None, :]
-		bsigma=pts[:, 4][None, :]
-		multmodel=False
-		
-	### when a non c1 symmetry is provided, this will return a list of points
-	##  one for each asymmetrical unit so we loop through them and sum the images
-	p0=get_sym_pts(sym, pts)
-	for p in p0:
-		p=tf.transpose(p)
-		if multmodel:
-			p=tf.reshape(p, (bsz, ni, -1))
-
-		## need to change from (-0.5, 0.5) to actual image coordinates
-		bpos=xf2pts(p,ang)
-		bpos=bpos*sz+sz/2
-		bposft=bpos*np.pi*2
-		bposft=bposft[:, :, :, None, None]
-
-		cpxang=idxft[0]*bposft[:,:,0] + idxft[1]*bposft[:,:,1]
-		bamp0=tf.nn.relu(bamp[:, :,None, None])
-		bsigma0=tf.nn.relu(bsigma[:,:,None, None])
-		
-		amp=tf.exp(-rrft*lp*bsigma0)*bamp0
-		pgauss_real=tf.cos(cpxang)*amp
-		pgauss_imag=-tf.sin(cpxang)*amp
-
-		imgs_real+=tf.reduce_sum(pgauss_real, axis=1)
-		imgs_imag+=tf.reduce_sum(pgauss_imag, axis=1)
-
-	return (imgs_real, imgs_imag)
-
 #### compute particle-projection FRC 
 ##   data_cpx, imgs_cpx - complex images in (real, imag) form
 ##   rings - indices of Fourier rings
 ##   return_curve - return the curve instead of average FRC score
 ##   minpx - skip the X initial low freq pixels
 #@tf.function
-def calc_frc(data_cpx, imgs_cpx, rings, return_curve=False,minpx=4):
+def calc_frc(data_cpx, imgs_cpx, rings, return_curve=False,minpx=1):
 	mreal, mimag=imgs_cpx
 	dreal, dimag=data_cpx
 	#### normalization per ring
@@ -600,6 +540,7 @@ def ccf_trans(ref,img):
 
 def translate_image(img, trans):
 	imgs_real, imgs_imag=img
+	idxft=params["idxft"]
 	s=idxft[0]*trans[:,0,None,None]+idxft[1]*trans[:,1,None,None]
 	s*=-2*np.pi
 	imgs_real1=imgs_real*np.cos(s)-imgs_imag*np.sin(s)
@@ -608,7 +549,7 @@ def translate_image(img, trans):
 
 def coarse_align(dcpx, pts, options):
 	print("coarse aligning particles")
-	astep=7.5
+	astep=7.4
 	npt=len(dcpx[0])
 	symmetry=Symmetries.get(options.sym)
 	#xfs=symmetry.gen_orientations("rand", {"n":npt,"phitoo":1,"inc_mirror":1})
@@ -620,19 +561,21 @@ def coarse_align(dcpx, pts, options):
 	xfsnp[:,:3]=xfsnp[:,:3]*np.pi/180.
 	#return [xfsnp]
 	
-	bsz=800
+	bsz=len(xfsnp)
 	allfrcs=np.zeros((npt, len(xfsnp)))
 	alltrans=np.zeros((npt, len(xfsnp), 2))
 	niter=len(xfsnp)//bsz
 	for ii in range(niter):
 		xx=xfsnp[ii*bsz:(ii+1)*bsz]
-		projs_cpx=pts2img(pts, xx)
+		pt=tf.Variable(tf.repeat(pts[None,:,:], xx.shape[0], axis=0))
+		#print(pt.shape, xx.shape)
+		projs_cpx=pts2img(pt, xx)
 		
 		for idt in range(npt):
 			dc=list(tf.repeat(d[idt:idt+1], len(xx), axis=0) for d in dcpx)
 			ts=ccf_trans(dc, projs_cpx)
 			dtrans=translate_image(dc,ts)
-			frcs=calc_frc(dtrans, projs_cpx)
+			frcs=calc_frc(dtrans, projs_cpx, params["rings"])
 			#mxxfs.append(np.argmax(frcs))
 			allfrcs[idt,ii*bsz:(ii+1)*bsz]=frcs
 			alltrans[idt,ii*bsz:(ii+1)*bsz]=ts
@@ -640,15 +583,16 @@ def coarse_align(dcpx, pts, options):
 			sys.stdout.write("\r projs: {}/{}, data: {}/{}	".format(ii+1, niter, idt+1, npt))
 			sys.stdout.flush()
 	xfs=[]
-	for ii in range(1):
+	for ii in range(8):
 		fid=np.argmax(allfrcs, axis=1)
 		xf=xfsnp[fid]
 		ts=alltrans[np.arange(npt),fid]
-		xf[:,3:]-=ts/sz
+		xf[:,3:]-=ts/params["sz"]
 		xfs.append(xf)
 		allfrcs[np.arange(npt),fid]=-1
 	
 	print()
+	#print(dtrans[0].shape, projs_cpx[0].shape, params["rings"].shape)
 	return xfs
 
 def refine_align(dcpx, xfsnp, pts, options, lr=1e-3):
@@ -670,10 +614,9 @@ def refine_align(dcpx, xfsnp, pts, options, lr=1e-3):
 		cost=[]
 		for itr in range(niter):
 			with tf.GradientTape() as gt:
-				#xv=tf.concat([xf[:,:3], xfvar[:,3:]], axis=1)
-				xv=xfvar
-				proj_cpx=pts2img(p, xv)
-				fval=calc_frc(proj_cpx, ptcl_cpx)
+				proj_cpx=pts2img(p, xfvar)
+				#print(proj_cpx[0].shape, ptcl_cpx[0].shape, params["rings"].shape)
+				fval=calc_frc(proj_cpx, ptcl_cpx, params["rings"])
 				loss=-tf.reduce_mean(fval)
 
 			grad=gt.gradient(loss, xfvar)
@@ -709,18 +652,13 @@ def save_ptcls_xform(xfsnp, boxsz, options, scr):
 
 	oname=options.ptclsout
 	print("saving aligned particles to {}".format(oname))
-	if os.path.isfile(oname): os.remove(oname)
-	lst=LSXFile(oname, False)
-	lst0=LSXFile(options.ptclsin, True)
-	print(scr)
+	lstin=load_lst_params(options.ptclsin)
 	for i,xf in enumerate(xfs):
-		l0=lst0.read(i)
-		d=xf.get_params("eman")
-		d["score"]=-scr[i]
-		lst.write(-1, l0[0], l0[1], str(d))
-
-	lst=None
-	lst0=None
+		lstin[i]["xform.projection"]=xf
+		lstin[i]["score"]=-scr[i]
+		
+	if os.path.isfile(oname): os.remove(oname)
+	save_lst_params(lstin, options.ptclsout)
 	
 def calc_gradient(trainset, pts, params, options):
 	allgrds=[]
@@ -932,13 +870,13 @@ def main():
 		## duplicates points if we ask for more points than exist in text file
 		if options.npts>len(pts):
 			p=pts.copy()
-			np.random.shuffle(p)
-			p=np.repeat(p, 8, axis=0)
+			#np.random.shuffle(p)
+			p=np.repeat(p[None,:], 8, axis=0).reshape(-1,5)
 			p=p[:(options.npts-len(pts))]
 			pts=np.concatenate([pts, p], axis=0)
 		   
 		## randomize it a bit so we dont have all zero weights
-		rnd=np.random.randn(pts.shape[0], pts.shape[1])*1e-3
+		rnd=np.random.randn(pts.shape[0], pts.shape[1])*1e-2
 		gen_model=build_decoder(pts+rnd, ninp=options.nmid, conv=options.conv,mid=options.ndense)
 		print("{} gaussian in the model".format(len(pts)))
 		
@@ -1039,27 +977,25 @@ def main():
 		pts=tf.constant(pts)
 		print("Align particles...")
 		if options.fromscratch:
-			set_indices_boxsz(32)
-			dcpx=get_clip(data_cpx, sz)
+			params=set_indices_boxsz(maxboxsz)
+			dcpx=get_clip(data_cpx, params["sz"], clipid)
 			xfs=coarse_align(dcpx, pts, options)
+			
+			params=set_indices_boxsz(maxboxsz)
+			dcpx=get_clip(data_cpx, params["sz"], clipid)
 			
 			xfsnp=np.zeros((data_cpx[0].shape[0], 5), dtype=floattype)
 			frcs=np.zeros(data_cpx[0].shape[0], dtype=floattype)
 			for xf in xfs:
-				set_indices_boxsz(32)
-				dcpx=get_clip(data_cpx, sz)
 				xo, fc=refine_align(dcpx, xf, pts, options, lr=1e-2)
 				fid=fc>frcs
 				xfsnp[fid]=xo[fid]
 				frcs[fid]=fc[fid]
 			
-			set_indices_boxsz(64)
-			dcpx=get_clip(data_cpx, sz)
-			xfsnp, frcs=refine_align(dcpx, xfsnp, pts, options)
-					
-		set_indices_boxsz(maxboxsz)
-		dcpx=get_clip(data_cpx, sz)
-		xfsnp, frcs=refine_align(dcpx, xfsnp, pts, options, lr=1e-4)
+		else:
+			params=set_indices_boxsz(maxboxsz)
+			dcpx=get_clip(data_cpx, params["sz"], clipid)
+			xfsnp, frcs=refine_align(dcpx, xfsnp, pts, options, lr=1e-3)
 			
 		save_ptcls_xform(xfsnp, raw_boxsz, options, frcs)
 

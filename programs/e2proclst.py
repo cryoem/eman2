@@ -82,6 +82,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	parser.add_argument("--refile", type=str, default=None, help="similar to retype, but replaces the full filename of the source image file with the provided string")
 	parser.add_argument("--shuffle", action="store_true", default=False, help="shuffle list inplace.")
 	parser.add_argument("--sym", type=str, default=None, help="apply symmetry to a list of particles with xform.projection by duplicating each particle N time. only used along with a .lst input")
+	parser.add_argument("--extractattr", type=str, default=None, help="extract an attribute from particle header as an entry in the list")
 
 	parser.add_argument("--nocomments", action="store_true", default=False, help="Removes the comments from each line of the lst file.")
 
@@ -435,6 +436,17 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 			np.random.shuffle(lst)
 			save_lst_params(lst, f)
 			
+	if options.extractattr:
+		for f in args:
+			lst=load_lst_params(f)
+			for l in lst:
+				e=EMData(l["src"], l["idx"], True)
+				if e.has_attr(options.extractattr):
+					l[options.extractattr]=e[options.extractattr]
+				else:
+					print("error: not all particles have the specified attribute")
+					return
+			save_lst_params(lst, f)
 			
 	E2end(logid)
 
