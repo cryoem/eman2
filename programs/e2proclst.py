@@ -36,7 +36,6 @@ from EMAN2 import *
 from math import *
 import os
 import sys
-import numpy as np
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -47,7 +46,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	####################
 #	parser.add_argument("--average", action="store_true", help="Averages all input images (without alignment) and writes a single output image")
 	
-	parser.add_argument("--create", type=str, default=None, help="to use this option, the input files should be image files. Specify an .lst or .lsx file to create here (e.g., --create mylst.lst) with references to all of the images in the inputs.")
+	parser.add_argument("--create", type=str, default=None, help="The input file(s) should be image files. To combine .lst files use --merge. Specify an .lst or .lsx file to create here (e.g., --create mylst.lst) with references to all of the images in the inputs.")
 	parser.add_argument("--eosplit", action="store_true", help="Will generate _even and _odd .lst files for each specified input .lst file")
 	parser.add_argument("--split", type=int,default=0, help="Will put every nth particle in a separate numbered .lst file based on --create name. Ignores other subset selection options! Single input only!")
 
@@ -66,6 +65,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 
 	parser.add_argument("--merge", type=str, default=None, help="Specify the output name here. This will concatenate all of the input .lst files into a single output")
 	parser.add_argument("--mergesort", type=str, default=None, help="Specify the output name here. This will merge all of the input .lst files into a single (resorted) output")
+	parser.add_argument("--mergeinterleave", type=str, default=None, help="Specify the output name here. Interleaves images from input .lst files, eg - A0,B0,C0,A1,B1,C1,... truncates based on size of smallest input, eg- 1000,500,300 -> 900")
 	parser.add_argument("--mergeeo", action="store_true", default=False, help="Merge even odd lst.")
 	parser.add_argument("--minhisnr", type=float, help="Integrated SNR from 1/10-1/4 1/A must be larger than this",default=-1,guitype='floatbox', row=8, col=1)
 	parser.add_argument("--minlosnr", type=float, help="Integrated SNR from 1/200-1/20 1/A must be larger than this",default=-1,guitype='floatbox', row=8, col=0)
@@ -75,7 +75,6 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	parser.add_argument("--numaslist", type=str, default=None, help="extract the particle indexes (numbers) only from an lst file into a text file (one number per line).")
 	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--selclass", type=int, help="select particles of a given class from the list for --create",default=-1)
 
 	parser.add_argument("--range", type=str, default=None, help="Range of particles to use. Works only with --create option. Input of 0,10,2 means range(0,10, step=2).")
 	parser.add_argument("--retype", type=str, default=None, help="If a lst file is referencing a set of particles from particles/imgname__oldtype.hdf, this will change oldtype to the specified string in-place (modifies input files)")
@@ -257,6 +256,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 				if options.verbose :
 					print("Processing {} images in {}".format(len(indxsinclude),f))
 					
+
 				kk=0
 				for i in indxsinclude:
 				
@@ -265,11 +265,6 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 					
 					if fromlst:
 						ln = lstin.read(i)
-						if options.selclass>=0:
-							if ('class' in ln[2]) and (ln[2]['class']==options.selclass):
-								pass
-							else:
-								continue
 						if options.inplace:
 							lst.write(kk,ln[0],ln[1],ln[2])
 						else:
@@ -359,6 +354,31 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 				lsto.write(-1,im[0],im[1],im[2])
 
 		if options.verbose : print("{} particles added to {}".format(ntot,options.merge))
+
+	if options.mergeinterleave!=None:
+
+		if options.minlosnr>0 or options.minhisnr>0 or options.mindf>0 or options.maxdf>0 :
+			print("ERROR: --minlosnr and --minhisnr not compatible with --merge. Please use --mergesort instead.")
+			sys.exit(1)
+
+		# with this option we need to start from scratch
+		try: os.unlink(options.mergeinterleave)
+		except: pass
+
+		# create output file
+		lsto=LSXFile(options.mergeinterleave)
+		ntot=0
+		
+		lstsin=[LSXFile(f,True) for f in args]
+		n=min([len(x) for x in lstsin])
+		nl=len(lstsin)
+		
+		for i in range(n):
+			for j,lst in enumerate(lstsin):
+				lsto[i*nl+j]=lst[i]
+
+
+		if options.verbose : print("{} particles added to {}".format(n*nl,options.mergeinterleave))
 
 	if options.mergesort!=None:
 		# create/update output lst
