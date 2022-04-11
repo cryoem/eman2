@@ -47,6 +47,7 @@
 	#define __STDC_CONSTANT_MACROS 1
 #endif
 #include <vector>
+#include "renderer.h"
 
 using std::vector;
 
@@ -64,7 +65,7 @@ namespace EMAN
 	 * ftp:://ftp.hdfgroup.org/HDF5/special_tools/h5check/
 	 * to verify the HDF5 file is compliant with the HDF5 File Format Specification.
 	 */
-	class HdfIO2 : public ImageIO
+	class HdfIO2 : public ImageIO, public Renderer
 	{
 	  public:
 		explicit HdfIO2(const string & fname, IOMode rw_mode = READ_ONLY);
@@ -133,12 +134,6 @@ namespace EMAN
 		 * @param image_index 
 		 * @return 0 for success*/
 		int erase_header(int image_index);
-
-        // render_min and render_max
-	    float rendermin;
-	    float rendermax;
-		int renderbits;
-		int renderlevel; // compression level
 	};
 }
 

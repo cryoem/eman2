@@ -69,8 +69,7 @@ static const int ATTR_NAME_LEN = 128;
 
 HdfIO2::HdfIO2(const string & fname, IOMode rw)
 :	ImageIO(fname, rw), nx(1), ny(1), nz(1), is_exist(false),
-	file(-1), group(-1),
-	rendermin(0.0), rendermax(0.0), renderbits(16), renderlevel(1)
+	file(-1), group(-1)
 {
 	H5dont_atexit();
 	accprop=H5Pcreate(H5P_FILE_ACCESS);
