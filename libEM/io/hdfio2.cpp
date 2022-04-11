@@ -1550,12 +1550,6 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 	int rendertrunc = 0;	// keep track of truncated pixels
 //	printf("RMM  %f  %f\n",rendermin,rendermax);
 
-	// Limiting values for signed and unsigned with specified bits
-	float RUMIN = 0;
-	float RUMAX = (1<<renderbits)-1.0f;
-	float RSMIN = -(1<<(renderbits-1));
-	float RSMAX = (1<<(renderbits-1))-1;
-	
 	bool scaled=0;		// set if the data will need rescaling upon read
 	herr_t err_no;
 	if (area) {
@@ -1627,21 +1621,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 
 			break;
 		case EMUtil::EM_SHORT:
-			sdata = new short[size];
-
-			for (size_t i = 0; i < size; ++i) {
-				if (data[i] <= rendermin) {
-					sdata[i] = (short)RSMIN;
-					rendertrunc++;
-				}
-				else if (data[i] >= rendermax) {
-					sdata[i] = (short)RSMAX;
-					rendertrunc++;
-				}
-				else {
-					sdata[i]=(short)roundf((data[i]-rendermin)/(rendermax-rendermin)*(RSMAX-RSMIN)+RSMIN);
-				}
-			}
+			std::tie(sdata, rendertrunc) = getRenderedDataAndRendertrunc<short>(data, size);
 
 			err_no = H5Dwrite(ds, H5T_NATIVE_SHORT, memoryspace, filespace, H5P_DEFAULT, sdata);
 
@@ -1654,21 +1634,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			
 			break;
 		case EMUtil::EM_USHORT:
-			usdata = new unsigned short[size];
-
-			for (size_t i = 0; i < size; ++i) {
-				if (data[i] <= rendermin) {
-					usdata[i] = 0;
-					rendertrunc++;
-				}
-				else if (data[i] >= rendermax) {
-					usdata[i] = (unsigned short)RUMAX;
-					rendertrunc++;
-				}
-				else {
-					usdata[i]=(unsigned short)roundf((data[i]-rendermin)/(rendermax-rendermin)*RUMAX);
-				}
-			}
+			std::tie(usdata, rendertrunc) = getRenderedDataAndRendertrunc<unsigned short>(data, size);
 
 			err_no = H5Dwrite(ds, H5T_NATIVE_USHORT, memoryspace, filespace, H5P_DEFAULT, usdata);
 
@@ -1681,21 +1647,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 
 			break;
 		case EMUtil::EM_CHAR:
-			cdata = new char[size];
-
-			for (size_t i = 0; i < size; ++i) {
-				if (data[i] <= rendermin) {
-					cdata[i] = (char) RSMIN;
-					rendertrunc++;
-				}
-				else if (data[i] >= rendermax){
-					cdata[i] = (char) RSMAX;
-					rendertrunc++;
-				}
-				else {
-					cdata[i]=(char)roundf((data[i]-rendermin)/(rendermax-rendermin)*(RSMAX-RSMIN)+RSMIN);
-				}
-			}
+			std::tie(cdata, rendertrunc) = getRenderedDataAndRendertrunc<char>(data, size);
 
 			err_no = H5Dwrite(ds, H5T_NATIVE_CHAR, memoryspace, filespace, H5P_DEFAULT, cdata);
 
@@ -1708,21 +1660,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 
 			break;
 		case EMUtil::EM_UCHAR:
-			ucdata = new unsigned char[size];
-
-			for (size_t i = 0; i < size; ++i) {
-				if (data[i] <= rendermin) {
-					ucdata[i] = 0;
-					rendertrunc++;
-				}
-				else if (data[i] >= rendermax){
-					ucdata[i] = (unsigned char)RUMAX;
-					rendertrunc++;
-				}
-				else {
-					ucdata[i]=(unsigned char)roundf((data[i]-rendermin)/(rendermax-rendermin)*RUMAX);
-				}
-			}
+			std::tie(ucdata, rendertrunc) = getRenderedDataAndRendertrunc<unsigned char>(data, size);
 
 			err_no = H5Dwrite(ds, H5T_NATIVE_UCHAR, memoryspace, filespace, H5P_DEFAULT, ucdata);
 
@@ -1737,42 +1675,14 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 		case EMUtil::EM_COMPRESSED:
 			if (renderbits<=0) err_no = H5Dwrite(ds, H5T_NATIVE_FLOAT, memoryspace, filespace, H5P_DEFAULT, data);
 			else if (renderbits<=8) {
-				ucdata = new unsigned char[size];
-
-				for (size_t i = 0; i < size; ++i) {
-					if (data[i] <= rendermin) {
-						ucdata[i] = 0;
-						rendertrunc++;
-					}
-					else if (data[i] >= rendermax){
-						ucdata[i] = (unsigned char)RUMAX;
-						rendertrunc++;
-					}
-					else {
-						ucdata[i]=(unsigned char)roundf((data[i]-rendermin)/(rendermax-rendermin)*RUMAX);
-					}
-				}
+				std::tie(ucdata, rendertrunc) = getRenderedDataAndRendertrunc<unsigned char>(data, size);
 
 				err_no = H5Dwrite(ds, H5T_NATIVE_UCHAR, memoryspace, filespace, H5P_DEFAULT, ucdata);
 				scaled=1;
 				if (ucdata) {delete [] ucdata; ucdata = NULL;}
 			}
 			else {
-				usdata = new unsigned short[size];
-
-				for (size_t i = 0; i < size; ++i) {
-					if (data[i] <= rendermin) {
-						usdata[i] = 0;
-						rendertrunc++;
-					}
-					else if (data[i] >= rendermax) {
-						usdata[i] = (unsigned short)RUMAX;
-						rendertrunc++;
-					}
-					else {
-						usdata[i]=(unsigned short)roundf((data[i]-rendermin)/(rendermax-rendermin)*RUMAX);
-					}
-				}
+				std::tie(usdata, rendertrunc) = getRenderedDataAndRendertrunc<unsigned short>(data, size);
 
 				err_no = H5Dwrite(ds, H5T_NATIVE_USHORT, memoryspace, filespace, H5P_DEFAULT, usdata);
 				scaled=1;
@@ -1796,21 +1706,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			H5Dwrite(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
 			break;
 		case EMUtil::EM_SHORT:
-			sdata = new short[size];
-
-			for (size_t i = 0; i < size; ++i) {
-				if (data[i] <= rendermin) {
-					sdata[i] = (short)RSMIN;
-					rendertrunc++;
-				}
-				else if (data[i] >= rendermax) {
-					sdata[i] = (short)RSMAX;
-					rendertrunc++;
-				}
-				else {
-					sdata[i]=(short)roundf((data[i]-rendermin)/(rendermax-rendermin)*(RSMAX-RSMIN)+RSMIN);
-				}
-			}
+			std::tie(sdata, rendertrunc) = getRenderedDataAndRendertrunc<short>(data, size);
 
 			H5Dwrite(ds,H5T_NATIVE_SHORT,spc,spc,H5P_DEFAULT,sdata);
 
@@ -1819,21 +1715,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 
 			break;
 		case EMUtil::EM_USHORT:
-			usdata = new unsigned short[size];
-
-			for (size_t i = 0; i < size; ++i) {
-				if (data[i] <= rendermin) {
-					usdata[i] = 0;
-					rendertrunc++;
-				}
-				else if (data[i] >= rendermax) {
-					usdata[i] = (unsigned short)RUMAX;
-					rendertrunc++;
-				}
-				else {
-					usdata[i]=(unsigned short)roundf((data[i]-rendermin)/(rendermax-rendermin)*RUMAX);
-				}
-			}
+			std::tie(usdata, rendertrunc) = getRenderedDataAndRendertrunc<unsigned short>(data, size);
 
 			H5Dwrite(ds,H5T_NATIVE_USHORT,spc,spc,H5P_DEFAULT,usdata);
 
@@ -1842,21 +1724,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 
 			break;
 		case EMUtil::EM_CHAR:
-			cdata = new char[size];
-
-			for (size_t i = 0; i < size; ++i) {
-				if (data[i] <= rendermin) {
-					cdata[i] = (char) RSMIN;
-					rendertrunc++;
-				}
-				else if (data[i] >= rendermax){
-					cdata[i] = (char) RSMAX;
-					rendertrunc++;
-				}
-				else {
-					cdata[i]=(char)roundf((data[i]-rendermin)/(rendermax-rendermin)*(RSMAX-RSMIN)+RSMIN);
-				}
-			}
+			std::tie(cdata, rendertrunc) = getRenderedDataAndRendertrunc<char>(data, size);
 
 			H5Dwrite(ds,H5T_NATIVE_CHAR,spc,spc,H5P_DEFAULT,cdata);
 
@@ -1865,21 +1733,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 
 			break;
 		case EMUtil::EM_UCHAR:
-			ucdata = new unsigned char[size];
-
-			for (size_t i = 0; i < size; ++i) {
-				if (data[i] <= rendermin) {
-					ucdata[i] = 0;
-					rendertrunc++;
-				}
-				else if (data[i] >= rendermax){
-					ucdata[i] = (unsigned char)RUMAX;
-					rendertrunc++;
-				}
-				else {
-					ucdata[i]=(unsigned char)roundf((data[i]-rendermin)/(rendermax-rendermin)*RUMAX);
-				}
-			}
+			std::tie(ucdata, rendertrunc) = getRenderedDataAndRendertrunc<unsigned char>(data, size);
 
 			H5Dwrite(ds,H5T_NATIVE_UCHAR,spc,spc,H5P_DEFAULT,ucdata);
 
@@ -1891,42 +1745,14 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			//printf("writec %d %f %f\n",renderbits,rendermin,rendermax);
 			if (renderbits<=0) err_no = H5Dwrite(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
 			else if (renderbits<=8) {
-				ucdata = new unsigned char[size];
-
-				for (size_t i = 0; i < size; ++i) {
-					if (data[i] <= rendermin) {
-						ucdata[i] = 0;
-						rendertrunc++;
-					}
-					else if (data[i] >= rendermax) {
-						ucdata[i] = (unsigned char)RUMAX;
-						rendertrunc++;
-					}
-					else {
-						ucdata[i]=(unsigned char)roundf((data[i]-rendermin)/(rendermax-rendermin)*RUMAX);
-					}
-				}
+				std::tie(ucdata, rendertrunc) = getRenderedDataAndRendertrunc<unsigned char>(data, size);
 
 				err_no = H5Dwrite(ds,H5T_NATIVE_UCHAR,spc,spc,H5P_DEFAULT,ucdata);
 				scaled=1;
 				if (ucdata) {delete [] ucdata; ucdata = NULL;}
 			}
 			else {
-				usdata = new unsigned short[size];
-
-				for (size_t i = 0; i < size; ++i) {
-					if (data[i] <= rendermin) {
-						usdata[i] = 0;
-						rendertrunc++;
-					}
-					else if (data[i] >= rendermax) {
-						usdata[i] = (unsigned short)RUMAX;
-						rendertrunc++;
-					}
-					else {
-						usdata[i]=(unsigned short)roundf((data[i]-rendermin)/(rendermax-rendermin)*RUMAX);
-					}
-				}
+				std::tie(usdata, rendertrunc) = getRenderedDataAndRendertrunc<unsigned short>(data, size);
 
 				err_no = H5Dwrite(ds,H5T_NATIVE_USHORT,spc,spc,H5P_DEFAULT,usdata);
 				scaled=1;
