@@ -302,7 +302,7 @@ def set_indices_boxsz(boxsz, apix=0, return_freq=False):
 def build_encoder(mid=512, nout=4, conv=False, ninp=-1):
 	l2=tf.keras.regularizers.l2(1e-3)
 	l1=tf.keras.regularizers.l1(1e-3)
-	kinit=tf.keras.initializers.RandomNormal(0,0.01)	# was 0.01
+	kinit=tf.keras.initializers.RandomNormal(0,0.001)	# was 0.01
 	
 	if conv:
 		ss=64
