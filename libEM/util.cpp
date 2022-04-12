@@ -931,7 +931,7 @@ Dict Util::get_stats( const vector<float>& data )
 		vector<double> data_mm_sq(data.size());
 
 		// Subtract the mean from the data and store it in data_mm
-		transform(data.begin(), data.end(), data_mm.begin(), std::bind2nd(std::minus<double>(), mean));
+		transform(data.begin(), data.end(), data_mm.begin(), [&](double x){return x - mean;});
 
 		// Get the square of the data minus the mean and store it in data_mm_sq
 		transform(data_mm.begin(), data_mm.end(), data_mm.begin(), data_mm_sq.begin(), std::multiplies<double>());
