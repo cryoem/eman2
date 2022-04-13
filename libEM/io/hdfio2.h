@@ -128,6 +128,10 @@ namespace EMAN
 		hid_t get_fileid() const {return file;}
 
 	  private:
+		template<EMUtil::EMDataType I>
+		void write(float *data, size_t size, hid_t ds, hid_t memoryspace, hid_t filespace);
+
+	  private:
 		hsize_t nx, ny, nz;
 		bool is_exist;	//boolean to tell if the image (group) already exist(to be overwrite)
 
