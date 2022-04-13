@@ -1616,7 +1616,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			err_no = H5Dwrite(ds, H5T_NATIVE_FLOAT, memoryspace, filespace, H5P_DEFAULT, data);
 
 			if (err_no < 0) {
-				std::cerr << "H5Dwrite error float: " << err_no << std::endl;
+				std::cerr << "H5Dwrite error "<< EMUtil::get_datatype_string(EMUtil::EM_FLOAT)<<": " << err_no << std::endl;
 			}
 
 			break;
@@ -1626,7 +1626,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			err_no = H5Dwrite(ds, H5T_NATIVE_SHORT, memoryspace, filespace, H5P_DEFAULT, sdata);
 
 			if (err_no < 0) {
-				std::cerr << "H5Dwrite error short: " << err_no << std::endl;
+				std::cerr << "H5Dwrite error "<< EMUtil::get_datatype_string(EMUtil::EM_SHORT)<<": " << err_no << std::endl;
 			}
 
 			if (sdata) {delete [] sdata; sdata = NULL;}
@@ -1639,7 +1639,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			err_no = H5Dwrite(ds, H5T_NATIVE_USHORT, memoryspace, filespace, H5P_DEFAULT, usdata);
 
 			if (err_no < 0) {
-				std::cerr << "H5Dwrite error ushort: " << err_no << std::endl;
+				std::cerr << "H5Dwrite error "<< EMUtil::get_datatype_string(EMUtil::EM_USHORT)<<": " << err_no << std::endl;
 			}
 
 			if (usdata) {delete [] usdata; usdata = NULL;}
@@ -1652,7 +1652,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			err_no = H5Dwrite(ds, H5T_NATIVE_CHAR, memoryspace, filespace, H5P_DEFAULT, cdata);
 
 			if (err_no < 0) {
-				std::cerr << "H5Dwrite error char: " << err_no << std::endl;
+				std::cerr << "H5Dwrite error "<< EMUtil::get_datatype_string(EMUtil::EM_CHAR)<<": " << err_no << std::endl;
 			}
 
 			if (cdata) {delete [] cdata; cdata = NULL;}
@@ -1665,7 +1665,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			err_no = H5Dwrite(ds, H5T_NATIVE_UCHAR, memoryspace, filespace, H5P_DEFAULT, ucdata);
 
 			if (err_no < 0) {
-				std::cerr << "H5Dwrite error uchar: " << err_no << std::endl;
+				std::cerr << "H5Dwrite error "<< EMUtil::get_datatype_string(EMUtil::EM_UCHAR)<<": " << err_no << std::endl;
 			}
 
 			if (ucdata) {delete [] ucdata; ucdata = NULL;}
