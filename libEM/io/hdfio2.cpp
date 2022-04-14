@@ -1621,7 +1621,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 
 			break;
 		case EMUtil::EM_SHORT:
-			std::tie(sdata, rendertrunc) = getRenderedDataAndRendertrunc<short>(data, size);
+			std::tie(sdata, rendertrunc) = getRenderedDataAndRendertrunc<EM2Type<EMUtil::EM_SHORT>::type>(data, size);
 
 			err_no = H5Dwrite(ds, H5T_NATIVE_SHORT, memoryspace, filespace, H5P_DEFAULT, sdata);
 
@@ -1634,7 +1634,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			
 			break;
 		case EMUtil::EM_USHORT:
-			std::tie(usdata, rendertrunc) = getRenderedDataAndRendertrunc<unsigned short>(data, size);
+			std::tie(usdata, rendertrunc) = getRenderedDataAndRendertrunc<EM2Type<EMUtil::EM_USHORT>::type>(data, size);
 
 			err_no = H5Dwrite(ds, H5T_NATIVE_USHORT, memoryspace, filespace, H5P_DEFAULT, usdata);
 
@@ -1647,7 +1647,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 
 			break;
 		case EMUtil::EM_CHAR:
-			std::tie(cdata, rendertrunc) = getRenderedDataAndRendertrunc<char>(data, size);
+			std::tie(cdata, rendertrunc) = getRenderedDataAndRendertrunc<EM2Type<EMUtil::EM_CHAR>::type>(data, size);
 
 			err_no = H5Dwrite(ds, H5T_NATIVE_CHAR, memoryspace, filespace, H5P_DEFAULT, cdata);
 
@@ -1660,7 +1660,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 
 			break;
 		case EMUtil::EM_UCHAR:
-			std::tie(ucdata, rendertrunc) = getRenderedDataAndRendertrunc<unsigned char>(data, size);
+			std::tie(ucdata, rendertrunc) = getRenderedDataAndRendertrunc<EM2Type<EMUtil::EM_UCHAR>::type>(data, size);
 
 			err_no = H5Dwrite(ds, H5T_NATIVE_UCHAR, memoryspace, filespace, H5P_DEFAULT, ucdata);
 
@@ -1706,7 +1706,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			H5Dwrite(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
 			break;
 		case EMUtil::EM_SHORT:
-			std::tie(sdata, rendertrunc) = getRenderedDataAndRendertrunc<short>(data, size);
+			std::tie(sdata, rendertrunc) = getRenderedDataAndRendertrunc<EM2Type<EMUtil::EM_SHORT>::type>(data, size);
 
 			H5Dwrite(ds,H5T_NATIVE_SHORT,spc,spc,H5P_DEFAULT,sdata);
 
@@ -1715,7 +1715,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 
 			break;
 		case EMUtil::EM_USHORT:
-			std::tie(usdata, rendertrunc) = getRenderedDataAndRendertrunc<unsigned short>(data, size);
+			std::tie(usdata, rendertrunc) = getRenderedDataAndRendertrunc<EM2Type<EMUtil::EM_USHORT>::type>(data, size);
 
 			H5Dwrite(ds,H5T_NATIVE_USHORT,spc,spc,H5P_DEFAULT,usdata);
 
@@ -1724,7 +1724,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 
 			break;
 		case EMUtil::EM_CHAR:
-			std::tie(cdata, rendertrunc) = getRenderedDataAndRendertrunc<char>(data, size);
+			std::tie(cdata, rendertrunc) = getRenderedDataAndRendertrunc<EM2Type<EMUtil::EM_CHAR>::type>(data, size);
 
 			H5Dwrite(ds,H5T_NATIVE_CHAR,spc,spc,H5P_DEFAULT,cdata);
 
@@ -1733,7 +1733,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 
 			break;
 		case EMUtil::EM_UCHAR:
-			std::tie(ucdata, rendertrunc) = getRenderedDataAndRendertrunc<unsigned char>(data, size);
+			std::tie(ucdata, rendertrunc) = getRenderedDataAndRendertrunc<EM2Type<EMUtil::EM_UCHAR>::type>(data, size);
 
 			H5Dwrite(ds,H5T_NATIVE_UCHAR,spc,spc,H5P_DEFAULT,ucdata);
 
@@ -1745,14 +1745,14 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			//printf("writec %d %f %f\n",renderbits,rendermin,rendermax);
 			if (renderbits<=0) err_no = H5Dwrite(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
 			else if (renderbits<=8) {
-				std::tie(ucdata, rendertrunc) = getRenderedDataAndRendertrunc<unsigned char>(data, size);
+				std::tie(ucdata, rendertrunc) = getRenderedDataAndRendertrunc<EM2Type<EMUtil::EM_UCHAR>::type>(data, size);
 
 				err_no = H5Dwrite(ds,H5T_NATIVE_UCHAR,spc,spc,H5P_DEFAULT,ucdata);
 				scaled=1;
 				if (ucdata) {delete [] ucdata; ucdata = NULL;}
 			}
 			else {
-				std::tie(usdata, rendertrunc) = getRenderedDataAndRendertrunc<unsigned short>(data, size);
+				std::tie(usdata, rendertrunc) = getRenderedDataAndRendertrunc<EM2Type<EMUtil::EM_USHORT>::type>(data, size);
 
 				err_no = H5Dwrite(ds,H5T_NATIVE_USHORT,spc,spc,H5P_DEFAULT,usdata);
 				scaled=1;
