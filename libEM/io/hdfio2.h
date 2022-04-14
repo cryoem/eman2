@@ -53,6 +53,17 @@ using std::vector;
 
 namespace EMAN
 {
+	inline map<EMUtil::EMDataType, hid_t> EM2HDF {
+			{EMUtil::EM_CHAR,   H5T_NATIVE_CHAR},
+			{EMUtil::EM_UCHAR,  H5T_NATIVE_UCHAR},
+			{EMUtil::EM_SHORT,  H5T_NATIVE_USHORT},
+			{EMUtil::EM_USHORT, H5T_NATIVE_USHORT},
+			{EMUtil::EM_INT,    H5T_NATIVE_INT},
+			{EMUtil::EM_UINT,   H5T_NATIVE_UINT},
+			{EMUtil::EM_FLOAT,  H5T_NATIVE_FLOAT},
+			{EMUtil::EM_DOUBLE, H5T_NATIVE_DOUBLE},
+	};
+
 	/** HDF5 (hiearchical data format version 5) is supported in
 	 * HdfIO. This is a revised HDF5 format file.
 	 *

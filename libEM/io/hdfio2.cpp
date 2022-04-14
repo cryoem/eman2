@@ -1613,7 +1613,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 
 		switch(dt) {
 		case EMUtil::EM_FLOAT:
-			err_no = H5Dwrite(ds, H5T_NATIVE_FLOAT, memoryspace, filespace, H5P_DEFAULT, data);
+			err_no = H5Dwrite(ds, EM2HDF[EMUtil::EM_FLOAT], memoryspace, filespace, H5P_DEFAULT, data);
 
 			if (err_no < 0) {
 				std::cerr << "H5Dwrite error "<< EMUtil::get_datatype_string(EMUtil::EM_FLOAT)<<": " << err_no << std::endl;
@@ -1623,7 +1623,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 		case EMUtil::EM_SHORT:
 			std::tie(sdata, rendertrunc) = getRenderedDataAndRendertrunc<EM2Type<EMUtil::EM_SHORT>::type>(data, size);
 
-			err_no = H5Dwrite(ds, H5T_NATIVE_SHORT, memoryspace, filespace, H5P_DEFAULT, sdata);
+			err_no = H5Dwrite(ds, EM2HDF[EMUtil::EM_SHORT], memoryspace, filespace, H5P_DEFAULT, sdata);
 
 			if (err_no < 0) {
 				std::cerr << "H5Dwrite error "<< EMUtil::get_datatype_string(EMUtil::EM_SHORT)<<": " << err_no << std::endl;
@@ -1636,7 +1636,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 		case EMUtil::EM_USHORT:
 			std::tie(usdata, rendertrunc) = getRenderedDataAndRendertrunc<EM2Type<EMUtil::EM_USHORT>::type>(data, size);
 
-			err_no = H5Dwrite(ds, H5T_NATIVE_USHORT, memoryspace, filespace, H5P_DEFAULT, usdata);
+			err_no = H5Dwrite(ds, EM2HDF[EMUtil::EM_USHORT], memoryspace, filespace, H5P_DEFAULT, usdata);
 
 			if (err_no < 0) {
 				std::cerr << "H5Dwrite error "<< EMUtil::get_datatype_string(EMUtil::EM_USHORT)<<": " << err_no << std::endl;
@@ -1649,7 +1649,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 		case EMUtil::EM_CHAR:
 			std::tie(cdata, rendertrunc) = getRenderedDataAndRendertrunc<EM2Type<EMUtil::EM_CHAR>::type>(data, size);
 
-			err_no = H5Dwrite(ds, H5T_NATIVE_CHAR, memoryspace, filespace, H5P_DEFAULT, cdata);
+			err_no = H5Dwrite(ds, EM2HDF[EMUtil::EM_CHAR], memoryspace, filespace, H5P_DEFAULT, cdata);
 
 			if (err_no < 0) {
 				std::cerr << "H5Dwrite error "<< EMUtil::get_datatype_string(EMUtil::EM_CHAR)<<": " << err_no << std::endl;
@@ -1662,7 +1662,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 		case EMUtil::EM_UCHAR:
 			std::tie(ucdata, rendertrunc) = getRenderedDataAndRendertrunc<EM2Type<EMUtil::EM_UCHAR>::type>(data, size);
 
-			err_no = H5Dwrite(ds, H5T_NATIVE_UCHAR, memoryspace, filespace, H5P_DEFAULT, ucdata);
+			err_no = H5Dwrite(ds, EM2HDF[EMUtil::EM_UCHAR], memoryspace, filespace, H5P_DEFAULT, ucdata);
 
 			if (err_no < 0) {
 				std::cerr << "H5Dwrite error "<< EMUtil::get_datatype_string(EMUtil::EM_UCHAR)<<": " << err_no << std::endl;
@@ -1673,18 +1673,18 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 
 			break;
 		case EMUtil::EM_COMPRESSED:
-			if (renderbits<=0) err_no = H5Dwrite(ds, H5T_NATIVE_FLOAT, memoryspace, filespace, H5P_DEFAULT, data);
+			if (renderbits<=0) err_no = H5Dwrite(ds, EM2HDF[EMUtil::EM_FLOAT], memoryspace, filespace, H5P_DEFAULT, data);
 			else if (renderbits<=8) {
 				std::tie(ucdata, rendertrunc) = getRenderedDataAndRendertrunc<unsigned char>(data, size);
 
-				err_no = H5Dwrite(ds, H5T_NATIVE_UCHAR, memoryspace, filespace, H5P_DEFAULT, ucdata);
+				err_no = H5Dwrite(ds, EM2HDF[EMUtil::EM_UCHAR], memoryspace, filespace, H5P_DEFAULT, ucdata);
 				scaled=1;
 				if (ucdata) {delete [] ucdata; ucdata = NULL;}
 			}
 			else {
 				std::tie(usdata, rendertrunc) = getRenderedDataAndRendertrunc<unsigned short>(data, size);
 
-				err_no = H5Dwrite(ds, H5T_NATIVE_USHORT, memoryspace, filespace, H5P_DEFAULT, usdata);
+				err_no = H5Dwrite(ds, EM2HDF[EMUtil::EM_USHORT], memoryspace, filespace, H5P_DEFAULT, usdata);
 				scaled=1;
 				if (usdata) {delete [] usdata; usdata = NULL;}
 			}
@@ -1703,12 +1703,12 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 	else {
 		switch(dt) {
 		case EMUtil::EM_FLOAT:
-			H5Dwrite(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
+			H5Dwrite(ds, EM2HDF[EMUtil::EM_FLOAT],spc,spc,H5P_DEFAULT,data);
 			break;
 		case EMUtil::EM_SHORT:
 			std::tie(sdata, rendertrunc) = getRenderedDataAndRendertrunc<EM2Type<EMUtil::EM_SHORT>::type>(data, size);
 
-			H5Dwrite(ds,H5T_NATIVE_SHORT,spc,spc,H5P_DEFAULT,sdata);
+			H5Dwrite(ds, EM2HDF[EMUtil::EM_SHORT],spc,spc,H5P_DEFAULT,sdata);
 
 			if (sdata) {delete [] sdata; sdata = NULL;}
 			scaled=1;
@@ -1717,7 +1717,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 		case EMUtil::EM_USHORT:
 			std::tie(usdata, rendertrunc) = getRenderedDataAndRendertrunc<EM2Type<EMUtil::EM_USHORT>::type>(data, size);
 
-			H5Dwrite(ds,H5T_NATIVE_USHORT,spc,spc,H5P_DEFAULT,usdata);
+			H5Dwrite(ds, EM2HDF[EMUtil::EM_USHORT],spc,spc,H5P_DEFAULT,usdata);
 
 			if (usdata) {delete [] usdata; usdata = NULL;}
 			scaled=1;
@@ -1726,7 +1726,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 		case EMUtil::EM_CHAR:
 			std::tie(cdata, rendertrunc) = getRenderedDataAndRendertrunc<EM2Type<EMUtil::EM_CHAR>::type>(data, size);
 
-			H5Dwrite(ds,H5T_NATIVE_CHAR,spc,spc,H5P_DEFAULT,cdata);
+			H5Dwrite(ds, EM2HDF[EMUtil::EM_CHAR],spc,spc,H5P_DEFAULT,cdata);
 
 			if (cdata) {delete [] cdata; cdata = NULL;}
 			scaled=1;
@@ -1735,7 +1735,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 		case EMUtil::EM_UCHAR:
 			std::tie(ucdata, rendertrunc) = getRenderedDataAndRendertrunc<EM2Type<EMUtil::EM_UCHAR>::type>(data, size);
 
-			H5Dwrite(ds,H5T_NATIVE_UCHAR,spc,spc,H5P_DEFAULT,ucdata);
+			H5Dwrite(ds, EM2HDF[EMUtil::EM_UCHAR],spc,spc,H5P_DEFAULT,ucdata);
 
 			if (ucdata) {delete [] ucdata; ucdata = NULL;}
 			scaled=1;
@@ -1747,14 +1747,14 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 			else if (renderbits<=8) {
 				std::tie(ucdata, rendertrunc) = getRenderedDataAndRendertrunc<EM2Type<EMUtil::EM_UCHAR>::type>(data, size);
 
-				err_no = H5Dwrite(ds,H5T_NATIVE_UCHAR,spc,spc,H5P_DEFAULT,ucdata);
+				err_no = H5Dwrite(ds, EM2HDF[EMUtil::EM_UCHAR],spc,spc,H5P_DEFAULT,ucdata);
 				scaled=1;
 				if (ucdata) {delete [] ucdata; ucdata = NULL;}
 			}
 			else {
 				std::tie(usdata, rendertrunc) = getRenderedDataAndRendertrunc<EM2Type<EMUtil::EM_USHORT>::type>(data, size);
 
-				err_no = H5Dwrite(ds,H5T_NATIVE_USHORT,spc,spc,H5P_DEFAULT,usdata);
+				err_no = H5Dwrite(ds, EM2HDF[EMUtil::EM_USHORT],spc,spc,H5P_DEFAULT,usdata);
 				scaled=1;
 				if (usdata) {delete [] usdata; usdata = NULL;}
 			}
