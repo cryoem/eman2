@@ -4,6 +4,50 @@
 
 namespace EMAN {
 
+	template <EMUtil::EMDataType I>
+	struct EM2Type {};
+
+	template <>
+	struct EM2Type<EMUtil::EM_CHAR> {
+		using type = char;
+	};
+
+	template <>
+	struct EM2Type<EMUtil::EM_UCHAR> {
+		using type = unsigned char;
+	};
+
+	template <>
+	struct EM2Type<EMUtil::EM_SHORT> {
+		using type = short;
+	};
+
+	template <>
+	struct EM2Type<EMUtil::EM_USHORT> {
+		using type = unsigned short;
+	};
+
+	template <>
+	struct EM2Type<EMUtil::EM_INT> {
+		using type = int;
+	};
+
+	template <>
+	struct EM2Type<EMUtil::EM_UINT> {
+		using type = unsigned int;
+	};
+
+	template <>
+	struct EM2Type<EMUtil::EM_FLOAT> {
+		using type = float;
+	};
+
+	template <>
+	struct EM2Type<EMUtil::EM_DOUBLE> {
+		using type = double;
+	};
+
+
 	class Renderer {
 
 	protected:
