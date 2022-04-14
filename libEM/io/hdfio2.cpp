@@ -1551,17 +1551,11 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 	// convert data to unsigned short, unsigned char...
 	hsize_t size = (hsize_t)nx*ny*nz;
 
-	unsigned char  *ucdata = NULL;
-	unsigned short *usdata = NULL;
-	char  *cdata = NULL;
-	short *sdata = NULL;
-
 	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, renderbits, nz);
 	int rendertrunc = 0;	// keep track of truncated pixels
 //	printf("RMM  %f  %f\n",rendermin,rendermax);
 
 	bool scaled=0;		// set if the data will need rescaling upon read
-	herr_t err_no;
 	if (area) {
 		hid_t filespace = H5Dget_space(ds);
 		hid_t memoryspace = 0;
@@ -1621,6 +1615,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 		}
 
 
+		herr_t err_no;
 		switch(dt) {
 		case EMUtil::EM_FLOAT:
 			write<EMUtil::EM_FLOAT>(data, size, ds, memoryspace, filespace);
@@ -1669,6 +1664,8 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 		H5Sclose(memoryspace);
 	}
 	else {
+		herr_t err_no;
+
 		switch(dt) {
 		case EMUtil::EM_FLOAT:
 			write<EMUtil::EM_FLOAT>(data, size, ds, spc, spc);
