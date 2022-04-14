@@ -1555,11 +1555,10 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 	int rendertrunc = 0;	// keep track of truncated pixels
 //	printf("RMM  %f  %f\n",rendermin,rendermax);
 
-	bool scaled=0;		// set if the data will need rescaling upon read
-	if (area) {
-		hid_t filespace = H5Dget_space(ds);
-		hid_t memoryspace = 0;
+	hid_t filespace = H5Dget_space(ds);
+	hid_t memoryspace = 0;
 
+	if (area) {
 		if (rank == 3) {
 			hsize_t doffset[3];		/* hyperslab offset in the file */
 			doffset[0] = (hsize_t)(area->z_origin()<0 ? 0 : area->z_origin());
@@ -1613,8 +1612,11 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 		else {
 			std::cerr << "rank is wrong: " << rank << std::endl;
 		}
+	}
 
 
+	bool scaled=0;		// set if the data will need rescaling upon read
+	if (area) {
 		herr_t err_no;
 		switch(dt) {
 		case EMUtil::EM_FLOAT:  write<EMUtil::EM_FLOAT>(data, size, ds, memoryspace, filespace); break;
