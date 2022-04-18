@@ -13,7 +13,10 @@ params=None
 #### here we import tensorflow at the global scale so @tf.function works
 ##   although how much performance gain we get from @tf.function is questionable...
 ##   so here we need to make a fake tf module for --help so the CI works properly.
-os.environ["CUDA_VISIBLE_DEVICES"]='0' 
+if "CUDA_VISIBLE_DEVICES" not in os.environ:
+	# so we can decide which gpu to use with environmental variable
+	os.environ["CUDA_VISIBLE_DEVICES"]='0' 
+	
 os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]='true' 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' #### reduce log output
 if ('-h' in sys.argv) or ('--help' in sys.argv):
@@ -108,7 +111,7 @@ def pts2img_one(args):
 	pts, ang = args
 	sz, idxft, rrft = params["sz"], params["idxft"], params["rrft"]
 
-	lp=.2
+	lp=.1
 	bamp=tf.cast(tf.nn.relu(pts[:,3]), tf.complex64)[:,None]
 	#bsigma=pts[:, 4]
 	#amp=tf.exp(-rrft*lp*tf.nn.relu(bsigma))*tf.nn.relu(bamp)
@@ -561,7 +564,7 @@ def coarse_align(dcpx, pts, options):
 	xfsnp[:,:3]=xfsnp[:,:3]*np.pi/180.
 	#return [xfsnp]
 	
-	bsz=len(xfsnp)
+	bsz=len(xfsnp)#//4
 	allfrcs=np.zeros((npt, len(xfsnp)))
 	alltrans=np.zeros((npt, len(xfsnp), 2))
 	niter=len(xfsnp)//bsz
@@ -575,7 +578,7 @@ def coarse_align(dcpx, pts, options):
 			dc=list(tf.repeat(d[idt:idt+1], len(xx), axis=0) for d in dcpx)
 			ts=ccf_trans(dc, projs_cpx)
 			dtrans=translate_image(dc,ts)
-			frcs=calc_frc(dtrans, projs_cpx, params["rings"])
+			frcs=calc_frc(dtrans, projs_cpx, params["rings"],minpx=1)
 			#mxxfs.append(np.argmax(frcs))
 			allfrcs[idt,ii*bsz:(ii+1)*bsz]=frcs
 			alltrans[idt,ii*bsz:(ii+1)*bsz]=ts
@@ -846,13 +849,16 @@ def main():
 			print("Generating Gaussian model from pdb...")
 			p=pdb2numpy(options.model)
 			pts=np.zeros((len(p),5))
-			e=EMData(options.projs, 0, True)
+			if options.projs:
+				e=EMData(options.projs, 0, True)
+			elif options.ptclsin:
+				e=EMData(options.ptclsin, 0, True)
 			#sz=e["ny"]
 			p=p/e["ny"]/e["apix_x"]-0.5
 			pts[:,:3]=p
 			pts[:,3]=.5
 			pts[:,4]=1
-			
+			pts=pts.astype(floattype)
 			#print(pts)
 		else:
 			
@@ -874,9 +880,11 @@ def main():
 			p=np.repeat(p[None,:], 8, axis=0).reshape(-1,5)
 			p=p[:(options.npts-len(pts))]
 			pts=np.concatenate([pts, p], axis=0)
+		else:
+			options.npt=len(pts)
 		   
 		## randomize it a bit so we dont have all zero weights
-		rnd=np.random.randn(pts.shape[0], pts.shape[1])*1e-2
+		rnd=np.random.randn(pts.shape[0], pts.shape[1])*1e-3
 		gen_model=build_decoder(pts+rnd, ninp=options.nmid, conv=options.conv,mid=options.ndense)
 		print("{} gaussian in the model".format(len(pts)))
 		
@@ -1056,28 +1064,28 @@ def main():
 		print("Output shape: ",out.shape)
 		print("Deviation from neutral model: ", np.mean(abs(out-pts)))
 		
-		#### actual training
-		ptclidx=allscr>-1
-		trainset=tf.data.Dataset.from_tensor_slices((allgrds[ptclidx], dcpx[0][ptclidx], dcpx[1][ptclidx], xfsnp[ptclidx]))
-		trainset=trainset.batch(bsz)
-		
-		train_heterg(trainset, pts, encode_model, decode_model, params, options)
-		
-		if options.decoderout!=None: 
-			if os.path.isfile(options.decoderout):
-				os.remove(options.decoderout)
-			decode_model.save(options.decoderout)
-			print("Decoder saved as ",options.decoderout)
-		if options.encoderout!=None: 
-			if os.path.isfile(options.encoderout):
-				os.remove(options.encoderout)
-			encode_model.save(options.encoderout)
-			print("encoder saved as ",options.encoderout)
-		
+		if options.niter>0:
+			#### actual training
+			ptclidx=allscr>-1
+			trainset=tf.data.Dataset.from_tensor_slices((allgrds[ptclidx], dcpx[0][ptclidx], dcpx[1][ptclidx], xfsnp[ptclidx]))
+			trainset=trainset.batch(bsz)
+			
+			train_heterg(trainset, pts, encode_model, decode_model, params, options)
+			
+			if options.decoderout!=None: 
+				if os.path.isfile(options.decoderout):
+					os.remove(options.decoderout)
+				decode_model.save(options.decoderout)
+				print("Decoder saved as ",options.decoderout)
+			if options.encoderout!=None: 
+				if os.path.isfile(options.encoderout):
+					os.remove(options.encoderout)
+				encode_model.save(options.encoderout)
+				print("encoder saved as ",options.encoderout)
+			
 		## conformation output
-		mid=calc_conf(encode_model, allgrds[ptclidx], 1000)
-		
 		if options.midout:
+			mid=calc_conf(encode_model, allgrds[ptclidx], 1000)
 			sv=np.hstack([np.where(ptclidx)[0][:,None], mid])
 			print(mid.shape, sv.shape)
 			np.savetxt(options.midout, sv)

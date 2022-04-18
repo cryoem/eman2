@@ -214,14 +214,14 @@ class SptAlignTask(JSTask):
 		rets=[]
 		for di in self.data:
 			## prepare metadata
-			dc=info2d[di]
+			dc=info2d[di] ## dictionary for the current 2d particle
 			fname=dc["src"].replace("particles", "particles3d")
 			tid=dc["tilt_id"]
 			
-			## all 2d and 3d particles on the same tilt of the tomogram
+			## all 3d particles from the tomogram
 			d3d0=[d for d in info3d if d["src"]==fname]
-			d2d=[]
-			d3d=[]
+			d2d=[] ## all 2d particles from the selected tilt of that tomogram
+			d3d=[] ## same as d3d0, but excluding the particles that are missing on the selected tilt
 			for d3 in d3d0:
 				d2=[info2d[d] for d in d3["idx2d"]]
 				d2=[d for d in d2 if d["tilt_id"]==tid]
@@ -237,7 +237,9 @@ class SptAlignTask(JSTask):
 			xfpj=[d["xform.projection"] for d in d2d]
 			xfraw=[a*b for a,b in zip(xfpj, txfs)]
 			score=0
-			ip=[i for i,d in enumerate(d2d) if d["idx3d"]==info2d[di]["idx3d"]][0]
+			if options.debug: print(dc, d2d, d3d0, d3d)
+			## the index of the selected particle from all particles on the same tilt
+			ip=[i for i,d in enumerate(d2d) if d["idx3d"]==dc["idx3d"]][0]
 			
 			if frompast:
 				xfali=[d["pastxf"] for d in d2d]
