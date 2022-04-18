@@ -53,7 +53,7 @@ using namespace boost::python;
 
 // Declarations ================================================================
 namespace  {
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_read_image_overloads_1_6, read_image, 1, 6)
+//BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_read_image_overloads_1_6, read_image, 1, 6)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_read_binedimage_overloads_1_5, read_binedimage, 1, 5)
 
@@ -63,7 +63,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_append_image_overloads_1_3, a
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_write_lst_overloads_1_4, write_lst, 1, 4)
 
-BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMData_read_images_overloads_1_4, EMAN::EMData::read_images, 1, 4)
+//BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMData_read_images_overloads_1_4, EMAN::EMData::read_images, 1, 4)
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMData_write_images_overloads_2_7, EMAN::EMData::write_images, 2, 7)
 
@@ -221,6 +221,75 @@ public:
 private:
     PyThreadState * m_thread_state;
 };
+void EMData_read_image_wrapper1(EMData &ths, const string & filename) 
+{
+	GILRelease rel;
+	
+	ths.read_image(filename);
+}
+
+void EMData_read_image_wrapper2(EMData &ths, const string & filename, int img_index) 
+{
+	GILRelease rel;
+	
+	ths.read_image(filename,img_index);
+}
+
+void EMData_read_image_wrapper3(EMData &ths, const string & filename, int img_index,bool header_only ) 
+{
+	GILRelease rel;
+	
+	ths.read_image(filename,img_index,header_only);
+}
+
+void EMData_read_image_wrapper4(EMData &ths, const string & filename, int img_index,bool header_only ,const Region *region) 
+{
+	GILRelease rel;
+	
+	ths.read_image(filename,img_index,header_only,region);
+}
+
+void EMData_read_image_wrapper5(EMData &ths, const string & filename, int img_index,bool header_only ,const Region *region, bool is_3d) 
+{
+	GILRelease rel;
+	
+	ths.read_image(filename,img_index,header_only,region,is_3d);
+}
+
+void EMData_read_image_wrapper6(EMData &ths, const string & filename, int img_index,bool header_only ,const Region *region, bool is_3d,EMUtil::ImageType imgtype) 
+{
+	GILRelease rel;
+	
+	ths.read_image(filename,img_index,header_only,region,is_3d,imgtype);
+}
+
+static vector<std::shared_ptr<EMData>> EMData_read_images_wrapper1(const string &filename)
+{
+	GILRelease rel;
+	
+	return EMData::read_images(filename);
+}
+
+static vector<std::shared_ptr<EMData>> EMData_read_images_wrapper2(const string &filename,vector<int> img_indices)
+{
+	GILRelease rel;
+	
+	return EMData::read_images(filename,img_indices);
+}
+
+static vector<std::shared_ptr<EMData>> EMData_read_images_wrapper3(const string &filename,vector<int> img_indices,EMUtil::ImageType imgtype)
+{
+	GILRelease rel;
+	
+	return EMData::read_images(filename,img_indices,imgtype);
+}
+
+static vector<std::shared_ptr<EMData>> EMData_read_images_wrapper4(const string &filename,vector<int> img_indices,EMUtil::ImageType imgtype,bool header_only)
+{
+	GILRelease rel;
+	
+	return EMData::read_images(filename,img_indices,imgtype,header_only);
+}
 
 EMData *EMData_get_clip_1(EMData &ths, Region rgn) {
 	GILRelease rel;
@@ -546,16 +615,24 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 //    class_< EMAN::EMData, std::auto_ptr<EMAN::EMData> >("EMData", init<  >())
 	.def_pickle(EMData_pickle_suite())
 	.def(init< const EMAN::EMData& >(args("that"), "Construct from an EMData (copy constructor).\nPerforms a deep copy.\n \nthat - the EMData to copy"))
-	.def(init< const std::string&, optional< int > >(args("filename", "image_index"), "Construct from an image file.\n \nfilename - the image file name\nimage_index the image index for stack image file(default = 0)"))
-	.def(init< int, int, optional< int, bool > >(args("nx", "ny", "nz", "is_real"), "makes an image of the specified size, either real or complex.\nFor complex image, the user would specify the real-space dimensions.\n \nnx - size for x dimension\nny - size for y dimension\nnz size for z dimension(default=1)\nis_real - boolean to specify real(true) or complex(false) image(default=True)"))
+	.def(init< const std::string&, boost::python::optional< int > >(args("filename", "image_index"), "Construct from an image file.\n \nfilename - the image file name\nimage_index the image index for stack image file(default = 0)"))
+	.def(init< int, int, boost::python::optional< int, bool > >(args("nx", "ny", "nz", "is_real"), "makes an image of the specified size, either real or complex.\nFor complex image, the user would specify the real-space dimensions.\n \nnx - size for x dimension\nny - size for y dimension\nnz size for z dimension(default=1)\nis_real - boolean to specify real(true) or complex(false) image(default=True)"))
 	.add_static_property("totalalloc", make_getter(EMAN::EMData::totalalloc), make_setter(EMAN::EMData::totalalloc))
 // NOTE: important that read/write image functions are NOT made threadsafe (releasing GIL). HDF5 is not threadsafe!
-	.def("read_image", &EMAN::EMData::read_image, EMAN_EMData_read_image_overloads_1_6(args("filename", "img_index", "header_only", "region", "is_3d", "imgtype"), "read an image file and stores its information to this EMData object.\n\nIf a region is given, then only read a\nregion of the image file. The region will be this\nEMData object. The given region must be inside the given\nimage file. Otherwise, an error will be created.\n\nfilename The image file name.\nimg_index The nth image you want to read.\nheader_only To read only the header or both header and data.\nregion To read only a region of the image.\nis_3d  Whether to treat the image as a single 3D or a set of 2Ds. This is a hint for certain image formats which has no difference between 3D image and set of 2Ds.\nexception ImageFormatException\nexception ImageReadException"))
+	.def("read_image", &EMData_read_image_wrapper1,args("filename"), "read an image file and stores its information to this EMData object.\n\nIf a region is given, then only read a\nregion of the image file. The region will be this\nEMData object. The given region must be inside the given\nimage file. Otherwise, an error will be created.\n\nfilename The image file name.\nimg_index The nth image you want to read.\nheader_only To read only the header or both header and data.\nregion To read only a region of the image.\nis_3d  Whether to treat the image as a single 3D or a set of 2Ds. This is a hint for certain image formats which has no difference between 3D image and set of 2Ds.\nexception ImageFormatException\nexception ImageReadException")
+	.def("read_image", &EMData_read_image_wrapper2,args("filename", "img_index"), "read an image file and stores its information to this EMData object.\n\nIf a region is given, then only read a\nregion of the image file. The region will be this\nEMData object. The given region must be inside the given\nimage file. Otherwise, an error will be created.\n\nfilename The image file name.\nimg_index The nth image you want to read.\nheader_only To read only the header or both header and data.\nregion To read only a region of the image.\nis_3d  Whether to treat the image as a single 3D or a set of 2Ds. This is a hint for certain image formats which has no difference between 3D image and set of 2Ds.\nexception ImageFormatException\nexception ImageReadException")
+	.def("read_image", &EMData_read_image_wrapper3,args("filename", "img_index", "header_only"), "read an image file and stores its information to this EMData object.\n\nIf a region is given, then only read a\nregion of the image file. The region will be this\nEMData object. The given region must be inside the given\nimage file. Otherwise, an error will be created.\n\nfilename The image file name.\nimg_index The nth image you want to read.\nheader_only To read only the header or both header and data.\nregion To read only a region of the image.\nis_3d  Whether to treat the image as a single 3D or a set of 2Ds. This is a hint for certain image formats which has no difference between 3D image and set of 2Ds.\nexception ImageFormatException\nexception ImageReadException")
+	.def("read_image", &EMData_read_image_wrapper4,args("filename", "img_index", "header_only", "region"), "read an image file and stores its information to this EMData object.\n\nIf a region is given, then only read a\nregion of the image file. The region will be this\nEMData object. The given region must be inside the given\nimage file. Otherwise, an error will be created.\n\nfilename The image file name.\nimg_index The nth image you want to read.\nheader_only To read only the header or both header and data.\nregion To read only a region of the image.\nis_3d  Whether to treat the image as a single 3D or a set of 2Ds. This is a hint for certain image formats which has no difference between 3D image and set of 2Ds.\nexception ImageFormatException\nexception ImageReadException")
+	.def("read_image", &EMData_read_image_wrapper5,args("filename", "img_index", "header_only", "region", "is_3d"), "read an image file and stores its information to this EMData object.\n\nIf a region is given, then only read a\nregion of the image file. The region will be this\nEMData object. The given region must be inside the given\nimage file. Otherwise, an error will be created.\n\nfilename The image file name.\nimg_index The nth image you want to read.\nheader_only To read only the header or both header and data.\nregion To read only a region of the image.\nis_3d  Whether to treat the image as a single 3D or a set of 2Ds. This is a hint for certain image formats which has no difference between 3D image and set of 2Ds.\nexception ImageFormatException\nexception ImageReadException")
+	.def("read_image", &EMData_read_image_wrapper6,args("filename", "img_index", "header_only", "region", "is_3d", "imgtype"), "read an image file and stores its information to this EMData object.\n\nIf a region is given, then only read a\nregion of the image file. The region will be this\nEMData object. The given region must be inside the given\nimage file. Otherwise, an error will be created.\n\nfilename The image file name.\nimg_index The nth image you want to read.\nheader_only To read only the header or both header and data.\nregion To read only a region of the image.\nis_3d  Whether to treat the image as a single 3D or a set of 2Ds. This is a hint for certain image formats which has no difference between 3D image and set of 2Ds.\nexception ImageFormatException\nexception ImageReadException")
 	.def("read_binedimage", &EMAN::EMData::read_binedimage, EMAN_EMData_read_binedimage_overloads_1_5(args("filename", "img_index", "binfactor", "fast", "is_3d"), "read an image file and stores its information to this EMData object.\nfilename The image file name.\nimg_index The nth image you want to read.\nbinfactor The amount by which to bin by. Must be an integer\nfast bin very binfactor xy slice otherwise meanshrink z slice\nis_3d  Whether to treat the image as a single 3D or a set of 2Ds. This is a hint for certain image formats which has no difference between 3D image and set of 2Ds.\nexception ImageFormatException\nexception ImageReadException"))
 	.def("write_image", &EMAN::EMData::write_image, EMAN_EMData_write_image_overloads_1_7(args("filename", "img_index", "imgtype", "header_only", "region", "filestoragetype", "use_host_endian"), "write the header and data out to an image.\n\nIf the img_index = -1, append the image to the given image file.\n\nIf the given image file already exists, this image\nformat only stores 1 image, and no region is given, then\ntruncate the image file  to  zero length before writing\ndata out. For header writing only, no truncation happens.\n\nIf a region is given, then write a region only.\n\nfilename - The image file name.\nimg_index - The nth image to write as.\nimgtype - Write to the given image format type. if not specified, use the 'filename' extension to decide.\nheader_only - To write only the header or both header and data.\nregion - Define the region to write to.\nfilestoragetype - The image data type used in the output file.\nuse_host_endian - To write in the host computer byte order.\n\nexception - ImageFormatException\nexception ImageWriteException"))
 	.def("append_image", &EMAN::EMData::append_image, EMAN_EMData_append_image_overloads_1_3(args("filename", "imgtype", "header_only"), "append to an image file; If the file doesn't exist, create one.\nfilename - The image file name.\nimgtype - Write to the given image format type. if not specified, use the 'filename' extension to decide.\nheader_only - To write only the header or both header and data."))
 	.def("write_lst", &EMAN::EMData::write_lst, EMAN_EMData_write_lst_overloads_1_4(args("filename", "reffile", "refn", "comment"), "Append data to a LST image file.\nfilename - The LST image file name.\nreffile - Reference file name.\nrefn The reference file number.\ncomment - The comment to the added reference file."))
-	.def("read_images", &EMAN::EMData::read_images, EMAN_EMData_read_images_overloads_1_4(args("filename", "img_indices", "imgtype", "header_only"),"Read a set of images from file specified by 'filename'.\nWhich images are read is set by 'img_indices'.\nfilename The image file name.\nimg_indices Which images are read. If it is empty, all images are read. If it is not empty, only those in this array are read.\nheader_only If true, only read image header. If false, read both data and header.\nreturn The set of images read from filename."))
+	.def("read_images", &EMData_read_images_wrapper1,args("filename"),"Read a set of images from file specified by 'filename'.\nWhich images are read is set by 'img_indices'.\nfilename The image file name.\nimg_indices Which images are read. If it is empty, all images are read. If it is not empty, only those in this array are read.\nheader_only If true, only read image header. If false, read both data and header.\nreturn The set of images read from filename.")
+	.def("read_images", &EMData_read_images_wrapper2,args("filename", "img_indices"),"Read a set of images from file specified by 'filename'.\nWhich images are read is set by 'img_indices'.\nfilename The image file name.\nimg_indices Which images are read. If it is empty, all images are read. If it is not empty, only those in this array are read.\nheader_only If true, only read image header. If false, read both data and header.\nreturn The set of images read from filename.")
+	.def("read_images", &EMData_read_images_wrapper3,args("filename", "img_indices", "imgtype"),"Read a set of images from file specified by 'filename'.\nWhich images are read is set by 'img_indices'.\nfilename The image file name.\nimg_indices Which images are read. If it is empty, all images are read. If it is not empty, only those in this array are read.\nheader_only If true, only read image header. If false, read both data and header.\nreturn The set of images read from filename.")
+	.def("read_images", &EMData_read_images_wrapper4,args("filename", "img_indices", "imgtype", "header_only"),"Read a set of images from file specified by 'filename'.\nWhich images are read is set by 'img_indices'.\nfilename The image file name.\nimg_indices Which images are read. If it is empty, all images are read. If it is not empty, only those in this array are read.\nheader_only If true, only read image header. If false, read both data and header.\nreturn The set of images read from filename.")
 	.def("write_images", &EMAN::EMData::write_images, EMAN_EMData_write_images_overloads_2_7(args("filename", "imgs", "imgtype", "header_only", "region", "filestoragetype", "use_host_endian"),"Write a set of images to file specified by 'filename'.\nWhich images are written is set by 'imgs'.\nfilename The image file name.\\n\\nIf a region is given, then write a region only.\\n\\nfilename - The image file name.\\nimgs - Images to write.\\nimgtype - Write to the given image format type. if not specified, use the 'filename' extension to decide.\\nheader_only - To write only the header or both header and data.\\nregion - Define the region to write to.\\nfilestoragetype - The image data type used in the output file.\\nuse_host_endian - To write in the host computer byte order.\\n\\nreturn True if images written successfully to filename."))
 	.def("get_fft_amplitude", &EMAN::EMData::get_fft_amplitude, return_value_policy< manage_new_object >(), "return the amplitudes of the FFT including the left half\n \nreturn The current FFT image's amplitude image.\nexception - ImageFormatException If the image is not a complex image.")
 	.def("get_fft_amplitude2D", &EMAN::EMData::get_fft_amplitude2D, return_value_policy< manage_new_object >(), "return the amplitudes of the 2D FFT including the left half, PRB\n \nreturn The current FFT image's amplitude image.\nexception - ImageFormatException If the image is not a complex image.")
