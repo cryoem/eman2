@@ -266,7 +266,7 @@ def main():
 
 		# New version of automasking based on a more intelligent interrogation of the volume
 		vol=EMData("{path}tmp.hdf".format(path=path),0)
-		vol.process_inplace("filter.lowpass.gauss",{"cutoff_freq":min(0.08,old_div(1.0,(options.restarget*1.5)))})		# Mask at no higher than 10 A resolution
+		vol.process_inplace("filter.lowpass.gauss",{"cutoff_freq":min(0.08,1.0/(options.restarget*1.5))})		# Mask at no higher than 10 A resolution
 		md=vol.calc_radial_dist(old_div(nx,2),0,1,3)	# radial max value per shell in real space
 
 		rmax=int(old_div(nx,2.2))		# we demand at least 10% padding
@@ -302,7 +302,7 @@ def main():
 
 
 		# Soften mask this way instead of with nshellsgauss
-		mask.process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,(options.restarget*1.5))})
+		mask.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/(options.restarget*2)})
 
 		if automask3d2!=None : mask.process_inplace(automask3d2[0],automask3d2[1])
 
@@ -312,11 +312,11 @@ def main():
 
 		# automask (tight)
 #		th=min(md[rmaxval-nx//8:rmaxval+nx//8])
-		mask=vol.process("mask.auto3d",{"threshold":vmax*.2,"radius":0,"nshells":int(options.restarget*1.8/apix),"nmaxseed":24,"return_mask":1})
+		mask=vol.process("mask.auto3d",{"threshold":vmax*.2,"radius":0,"nshells":int(options.restarget*2/apix+options.automaskexpand),"nmaxseed":24,"return_mask":1})
 		#mask=vol.process("mask.auto3d",{"threshold":vmax*.25,"radius":0,"nshells":int(options.restarget*1.2/apix),"nshellsgauss":int(options.restarget*1.5/apix),"nmaxseed":24,"return_mask":1})
 
 		## Soften mask this way instead of with nshellsgauss
-		mask.process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,(options.restarget*1.5))})
+		mask.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/(options.restarget*2)})
 
 		if automask3d2!=None : mask.process_inplace(automask3d2[0],automask3d2[1])
 
