@@ -1560,7 +1560,6 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 	hsize_t size = (hsize_t)nx*ny*nz;
 
 	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, renderbits, nz);
-	int rendertrunc = 0;	// keep track of truncated pixels
 //	printf("RMM  %f  %f\n",rendermin,rendermax);
 
 	hid_t filespace = 0;
@@ -1627,7 +1626,6 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 
 	hid_t spc1 = 0;
 	hid_t spc2 = 0;
-	bool scaled=0;		// set if the data will need rescaling upon read
 	if (area) {
 		spc1 = memoryspace;
 		spc2 = filespace;
@@ -1637,7 +1635,8 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 		spc2 = spc;
 	}
 
-	herr_t err_no;
+	int rendertrunc = 0;	// keep track of truncated pixels
+	bool scaled = 0;		// set if the data will need rescaling upon read
 	switch(dt) {
 		case EMUtil::EM_FLOAT:      std::tie(scaled, rendertrunc) = write<EMUtil::EM_FLOAT>(data, size, ds, spc1, spc2); break;
 		case EMUtil::EM_SHORT:      std::tie(scaled, rendertrunc) = write<EMUtil::EM_SHORT>(data, size, ds, spc1, spc2); break;
