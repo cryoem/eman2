@@ -1235,11 +1235,7 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 		hsize_t i=0;
 		hsize_t j=0;
 
-		unsigned short *usdata = (unsigned short *) data;
-		unsigned char   *cdata = (unsigned char *) data;
-
 		H5Dread(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
-
 	}
 
 	H5Tclose(dt);
