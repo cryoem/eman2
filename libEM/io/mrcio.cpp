@@ -50,8 +50,7 @@ MrcIO::MrcIO(const string & fname, IOMode rw)
 :	ImageIO(fname, rw), mode_size(0),
 		isFEI(false), is_ri(0), is_new_file(false),
 		is_transpose(false), is_stack(false), stack_size(1),
-		is_8_bit_packed(false), use_given_dimensions(true),
-		rendermin(0.0), rendermax(0.0), renderbits(16)
+		is_8_bit_packed(false), use_given_dimensions(true)
 {
 	memset(&mrch, 0, sizeof(MrcHeader));
 	is_big_endian = ByteOrder::is_host_big_endian();
