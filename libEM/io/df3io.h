@@ -33,6 +33,7 @@
 #define __df3io_h__
 
 #include "imageio.h"
+#include "Renderer.h"
 #include <cstdio>
 
 /** df3 file format (http://www.povray.org/documentation/view/3.6.1/374)
@@ -51,7 +52,7 @@
 
 namespace EMAN
 {
-	class Df3IO : public ImageIO
+	class Df3IO : public ImageIO, public Renderer
 	{
 	public:
 		explicit Df3IO(const string & fname, IOMode rw_mode = READ_ONLY);
@@ -62,9 +63,6 @@ namespace EMAN
 	private:
 		unsigned short nx, ny, nz;
 		bool is_new_file;
-		float rendermin;
-		float rendermax;
-		int renderbits;
 	};
 }
 

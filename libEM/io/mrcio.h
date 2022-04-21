@@ -33,6 +33,7 @@
 #define eman__mrcio_h__ 1
 
 #include "imageio.h"
+#include "Renderer.h"
 
 namespace EMAN
 {
@@ -41,7 +42,7 @@ namespace EMAN
 	 * dimensions and pixel type are defined in the header.
 	 */
 	
-	class MrcIO : public ImageIO
+	class MrcIO : public ImageIO, public Renderer
 	{
 	public:
 		explicit MrcIO(const string & fname, IOMode rw_mode = READ_ONLY);
@@ -283,9 +284,6 @@ namespace EMAN
 		bool is_big_endian;
 		bool is_new_file;
 		bool is_transpose;
-		float rendermin;
-		float rendermax;
-		int renderbits;
 		
 		/** generate the machine stamp used in MRC image format. */
 		static int generate_machine_stamp();

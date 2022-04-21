@@ -35,6 +35,7 @@
 #ifdef USE_TIFF
 
 #include "imageio.h"
+#include "Renderer.h"
 
 typedef struct tiff TIFF;
 
@@ -45,7 +46,7 @@ namespace EMAN
 	 *
 	 * A TIFF file contains 1 2D image.
 	*/
-	class TiffIO : public ImageIO
+	class TiffIO : public ImageIO, public Renderer
 	{
 	  public:
 		explicit TiffIO(const string & fname, IOMode rw_mode = READ_ONLY);
@@ -71,10 +72,6 @@ namespace EMAN
 		unsigned int nx;
 		unsigned int ny;
 		unsigned int nz;
-		
-		float rendermin;
-		float rendermax;
-		int renderbits;
 	};
 }
 
