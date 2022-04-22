@@ -800,7 +800,14 @@ class EMLocalTaskHandler(object):
 		for i in id_list:
 			if i>=self.nextid : ret.append(-1)
 			elif i in self.completed : ret.append(100)
-			else: ret.append(0)
+			else: 
+				fname=os.path.join(self.scratchdir,"{:07d}.prog".format(i))
+				try:
+					f=open(fname,'r')
+					l=int(float(f.readline()))
+					ret.append(l)
+				except:
+					ret.append(0)
 		return ret
 
 	def get_results(self,taskid):
@@ -853,7 +860,7 @@ class EMLocalTaskHandler(object):
 				EMLocalTaskHandler.lock.acquire()
 
 				fname=os.path.join(self.scratchdir,"{:07d}".format(self.nextid))
-				cmd="e2parallel.py --mode=thread --taskin={} --taskout={}.out".format(fname, fname)
+				cmd="e2parallel.py --mode=thread --taskin={} --taskout={}.out --progres={}.prog".format(fname, fname, fname)
 				if self.module!="":
 					cmd+=" --loadmodule={}".format(self.module)
 					

@@ -63,6 +63,7 @@ def main():
 	parser.add_argument("--mode", type=str,help="choose from thread and mpi",default="thread")
 	parser.add_argument("--taskin", type=str,help="Internal use only. Used when executing local threaded tasks.")
 	parser.add_argument("--taskout", type=str,help="Internal use only. Used when executing local threaded tasks.")
+	parser.add_argument("--progress", type=str,help="Internal use only. For tracking job progress.")
 	parser.add_argument("--loadmodule", type=str,help="load module",default="")
 	parser.add_argument("--usethreads", type=int,help="max thread to use. only used for producing occupancy in mpi mode. default is the same as threads/mpi option given",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -81,7 +82,15 @@ def main():
 		if options.loadmodule!="":
 			load_module(options.loadmodule)
 			
-
+		def empty_func(val):
+			try:
+				f=open(options.progress,'w')
+				f.write(str(int(val)))
+				f.close()
+			except:
+				pass
+			return True
+		
 		task=load(open(options.taskin,"rb"))
 		try: 
 			ret=task.execute(empty_func)
@@ -99,8 +108,7 @@ def main():
 
 	return
 
-def empty_func(val):
-	return True
+
 
 
 
