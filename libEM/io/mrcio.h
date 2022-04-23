@@ -304,6 +304,9 @@ namespace EMAN
 
 		//utility funciton to tranpose x and y dimension in case the source mrc image is mapc=2,mapr=1
 		int transpose(float *data, int nx, int ny, int nz) const;
+
+		template<class T>
+		void write_compressed(float *data, size_t size, int image_index, const Region* area);
 	};
 }
 

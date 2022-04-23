@@ -1106,6 +1106,16 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool)
 	return 0;
 }
 
+template<class T>
+void MrcIO::write_compressed(float *data, size_t size, int image_index, const Region* area) {
+	auto [rendered_data, count] = getRenderedDataAndRendertrunc<T>(data, size);
+
+	update_stats(rendered_data.data(), size);
+
+	EMUtil::process_region_io((void *)rendered_data.data(), file, WRITE_ONLY, image_index,
+							  mode_size, mrch.nx, mrch.ny, mrch.nz, area);
+}
+
 int MrcIO::write_data(float *data, int image_index, const Region* area,
 					  EMUtil::EMDataType, bool use_host_endian)
 {
@@ -1178,7 +1188,6 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 //	int xlen = 0, ylen = 0, zlen = 0;
 //	EMUtil::get_region_dims(area, nx, &xlen, mrch.ny, &ylen, mrch.nz, &zlen);
 //	int size = xlen * ylen * zlen;
-	void * ptr_data = data;
 
 	int truebits=0;
 	switch(mrch.mode) {
@@ -1201,137 +1210,12 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 
 	EMUtil::getRenderMinMax(data, nx, ny, rmin, rmax, rbits, nz);
 
-	signed char    *  scdata = NULL;
-	unsigned char  *  cdata  = NULL;
-	short          *  sdata  = NULL;
-	unsigned short *  usdata = NULL;
-
-	if (is_stack  &&  ! got_one_image) {
-		mrch.nz = stack_size;
-	}
-
-	bool dont_rescale;
-
-	if (mrch.mode == MRC_UCHAR) {
-		cdata = new unsigned char[size];
-
-		dont_rescale = (rmin == 0.0  &&  rmax == UCHAR_MAX);
-
-		for (size_t i = 0; i < size; ++i) {
-			if (data[i] <= rmin) {
-				cdata[i] = 0;
-			}
-			else if (data[i] >= rmax){
-				cdata[i] = UCHAR_MAX;
-			}
-			else if (dont_rescale) {
-				cdata[i] = (unsigned char) data[i];
-			}
-			else {
-				cdata[i] = (unsigned char)((data[i] - rmin) /
-								(rmax - rmin) *
-								UCHAR_MAX);
-			}
-		}
-
-		ptr_data = cdata;
-
-		update_stats(ptr_data, size);
-	}
-	else if (mrch.mode == MRC_CHAR) {
-		scdata = new signed char[size];
-
-		dont_rescale = (rmin == SCHAR_MIN  &&  rmax == SCHAR_MAX);
-
-		for (size_t i = 0; i < size; ++i) {
-			if (data[i] <= rmin) {
-				scdata[i] = SCHAR_MIN;
-			}
-			else if (data[i] >= rmax){
-				scdata[i] = SCHAR_MAX;
-			}
-			else if (dont_rescale) {
-				scdata[i] = (signed char) data[i];
-			}
-			else {
-				scdata[i] = (signed char)((data[i] - rmin) /
-								(rmax - rmin) *
-								(SCHAR_MAX - SCHAR_MIN) + SCHAR_MIN);
-			}
-		}
-
-		ptr_data = scdata;
-
-		update_stats(ptr_data, size);
-	}
-	else if (mrch.mode == MRC_SHORT || mrch.mode == MRC_SHORT_COMPLEX) {
-		sdata = new short[size];
-
-		dont_rescale = (rmin == SHRT_MIN  &&  rmax == SHRT_MAX);
-
-		for (size_t i = 0; i < size; ++i) {
-			if (data[i] <= rmin) {
-				sdata[i] = SHRT_MIN;
-			}
-			else if (data[i] >= rmax) {
-				sdata[i] = SHRT_MAX;
-			}
-			else if (dont_rescale) {
-				sdata[i] = (short) data[i];
-			}
-			else {
-				sdata[i] = (short)(((data[i] - rmin) /
-								(rmax - rmin)) *
-								(SHRT_MAX - SHRT_MIN) + SHRT_MIN);
-			}
-		}
-
-		ptr_data = sdata;
-
-		update_stats(ptr_data, size);
-	}
-	else if (mrch.mode == MRC_USHORT) {
-		usdata = new unsigned short[size];
-
-		dont_rescale = (rmin == 0.0  &&  rmax == USHRT_MAX);
-
-		for (size_t i = 0; i < size; ++i) {
-			if (data[i] <= rmin) {
-				usdata[i] = 0;
-			}
-			else if (data[i] >= rmax) {
-				usdata[i] = USHRT_MAX;
-			}
-			else if (dont_rescale) {
-				usdata[i] = (unsigned short) data[i];
-			}
-			else {
-				usdata[i] = (unsigned short)((data[i] - rmin) /
-								(rmax - rmin) *
-								USHRT_MAX);
-			}
-		}
-
-		ptr_data = usdata;
-
-		update_stats(ptr_data, size);
-	}
-
-	if (is_stack  &&  ! got_one_image) {
+	if (is_stack  &&  ! got_one_image)
 		mrch.nz = 1;
-	}
 
 	// New way to write data which includes region writing.
 	// If it is tested to be OK, remove the old code in the
 	// #if 0  ... #endif block.
-	EMUtil::process_region_io(ptr_data, file, WRITE_ONLY, image_index,
-							  mode_size, mrch.nx, mrch.ny, mrch.nz, area);
-
-	if (cdata)  {delete [] cdata;  cdata  = NULL;}
-	if (scdata) {delete [] scdata; scdata = NULL;}
-	if (sdata)  {delete [] sdata;  sdata  = NULL;}
-	if (usdata) {delete [] usdata; usdata = NULL;}
-
 #if 0
 	int row_size = nx * get_mode_size(mrch.mode);
 	int sec_size = nx * ny;
@@ -1397,6 +1281,14 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 		cbuf = NULL;
 	}
 #endif
+	if (mrch.mode == MRC_UCHAR)
+		write_compressed<unsigned char>(data, size, image_index, area);
+	else if (mrch.mode == MRC_CHAR)
+		write_compressed<signed char>(data, size, image_index, area);
+	else if (mrch.mode == MRC_SHORT || mrch.mode == MRC_SHORT_COMPLEX)
+		write_compressed<short>(data, size, image_index, area);
+	else if (mrch.mode == MRC_USHORT)
+		write_compressed<unsigned short>(data, size, image_index, area);
 
 	EXITFUNC;
 	return 0;

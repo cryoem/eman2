@@ -494,77 +494,27 @@ int TiffIO::write_data(float * data, int image_index, const Region *,
 	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, renderbits);
 
 	if (bitspersample == CHAR_BIT) {
-		vector<unsigned char> cdata(nx*ny);
-		
-		int src_idx, dst_idx;
+		auto [rendered_data, count] = getRenderedDataAndRendertrunc<unsigned char>(data, nx*ny);
 
-		for (unsigned int i = 0; i < ny; ++i) {
-			for (unsigned int j = 0; j < nx; ++j) {
-				src_idx = i*nx+j;
-				dst_idx = nx*(ny-1) - (i*nx) +j;
-
-				if (data[src_idx] < rendermin){
-					cdata[dst_idx] = 0;
-				}
-				else if (data[src_idx] > rendermax) {
-					cdata[dst_idx] = UCHAR_MAX;
-				}
-				else {
-					cdata[dst_idx] = (unsigned char)((data[src_idx] - rendermin) /
-								(rendermax - rendermin) * UCHAR_MAX);
-				}
-			}
-		}
-
-		if (TIFFWriteEncodedStrip(tiff_file, 0, cdata.data(), nx*ny) == -1) {
+		if (TIFFWriteEncodedStrip(tiff_file, 0, rendered_data.data(), nx*ny) == -1) {
 			printf("Fail to write tiff file.\n");
 
 			return -1;
 		}
 	}
 	else if (bitspersample == CHAR_BIT*sizeof(short)) {
-		vector<unsigned short> sdata(nx*ny);
+		auto [rendered_data, count] = getRenderedDataAndRendertrunc<unsigned short>(data, nx*ny);
 
-		int src_idx, dst_idx;
-
-		for (unsigned int i = 0; i < ny; ++i) {
-			for (unsigned int j = 0; j < nx; ++j) {
-				src_idx = i*nx+j;
-				dst_idx = nx*(ny-1) - (i*nx) +j;
-
-				if (data[src_idx] < rendermin){
-					sdata[dst_idx] = 0;
-				}
-				else if (data[src_idx] > rendermax) {
-					sdata[dst_idx] = USHRT_MAX;
-				}
-				else {
-					sdata[dst_idx] = (unsigned short)((data[src_idx] - rendermin) /
-								(rendermax - rendermin) * USHRT_MAX);
-				}
-			}
-		}
-
-		if (TIFFWriteEncodedStrip(tiff_file, 0, sdata.data(), nx*ny*sizeof(short)) == -1) {
+		if (TIFFWriteEncodedStrip(tiff_file, 0, rendered_data.data(), nx*ny*sizeof(short)) == -1) {
 			printf("Fail to write tiff file.\n");
 
 			return -1;
 		}
 	}
 	else if (bitspersample == CHAR_BIT*sizeof(float)) {
-		vector<float> fdata(nx*ny);
+		auto [rendered_data, count] = getRenderedDataAndRendertrunc<float>(data, nx*ny);
 
-		int src_idx, dst_idx;
-
-		for (unsigned int i = 0; i < ny; ++i) {
-			for (unsigned int j = 0; j < nx; ++j) {
-				src_idx = i*nx+j;
-				dst_idx = nx*(ny-1) - (i*nx) +j;
-				fdata[dst_idx] = data[src_idx];
-			}
-		}
-
-		if (TIFFWriteEncodedStrip(tiff_file, 0, fdata.data(), nx*ny*sizeof(float)) == -1) {
+		if (TIFFWriteEncodedStrip(tiff_file, 0, rendered_data.data(), nx*ny*sizeof(float)) == -1) {
 			printf("Fail to write tiff file.\n");
 
 			return -1;
