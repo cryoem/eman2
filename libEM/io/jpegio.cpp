@@ -188,32 +188,27 @@ int JpegIO::write_data(float *data, int image_index, const Region* area,
 	if (renderbits==0 || renderbits>8) renderbits=8;
 	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, renderbits);
 
-	unsigned char *cdata = (unsigned char *)malloc(nx+1);
-
 	/* Flip the image vertically, since EMAN use top-left corner as image origin
 	   But PNG use bottom-left corner as image origin */
 	// convert and write the data 1 scanline at a time
 
+	auto [rendered_data, count] = getRenderedDataAndRendertrunc<unsigned char>(data, nx*ny);
+
 	JSAMPROW rp[1];
+
+	unsigned char *cdata = (unsigned char *)malloc(nx+1);
 	rp[0] = cdata;
 
 	jpeg_start_compress(&cinfo, TRUE);
 
 	for (int i=ny-1; i>=0; i--) {
-		for (int j=0; j<nx; j++) {
-			if (data[i*nx+j] <= rendermin) cdata[j] = 0;
-			else if (data[i*nx+j] >= rendermax) cdata[j] = 255;
-			else cdata[j]= (int)((data[i*nx+j]-rendermin)/
-								(rendermax-rendermin)*256.0);
-		}
-
+		for (int j=0; j<nx; j++)
+			cdata[j]= (int)rendered_data[i*nx+j];
 		jpeg_write_scanlines(&cinfo, rp, 1);
 	}
 
 	jpeg_finish_compress(&cinfo);
 	jpeg_destroy_compress(&cinfo);
-
-	free(cdata);
 
 	EXITFUNC;
 
