@@ -74,14 +74,7 @@ void MrcIO::init()
 
 	setbuf (stdout, NULL);
 
-	IOMode rwmode;
-
-	if (rw_mode == WRITE_ONLY) {
-		rwmode = READ_WRITE;
-	}
-	else {
-		rwmode = rw_mode;
-	}
+	IOMode rwmode = (rw_mode == WRITE_ONLY ? READ_WRITE : rw_mode);
 
 	int error_type;
 	struct stat status;
@@ -97,13 +90,8 @@ void MrcIO::init()
 	string ext = Util::get_filename_ext(filename);
 
 	if (ext != "") {
-		if (ext == "raw"   ||  ext == "RAW") {
-			isFEI = true;
-		}
-
-		if (ext == "mrcs"  ||  ext == "MRCS") {
-			is_stack = true;
-		}
+		isFEI    = (ext == "raw"  || ext == "RAW");
+		is_stack = (ext == "mrcs" || ext == "MRCS");
 	}
 
 	if (! is_new_file) {
@@ -169,9 +157,7 @@ void MrcIO::init()
 			}
 		}
 
-		if (mrch.mapc == 2 && mrch.mapr == 1) {
-			is_transpose = true;
-		}
+		is_transpose = (mrch.mapc == 2 && mrch.mapr == 1);
 
 		if (is_stack) {
 			stack_size = mrch.nz;
@@ -1323,11 +1309,7 @@ bool MrcIO::is_complex_mode()
 {
 	init();
 
-	if (mrch.mode == MRC_SHORT_COMPLEX || mrch.mode == MRC_FLOAT_COMPLEX) {
-		return true;
-	}
-
-	return false;
+	return mrch.mode == MRC_SHORT_COMPLEX || mrch.mode == MRC_FLOAT_COMPLEX;
 }
 
 int MrcIO::read_ctf(Ctf & ctf, int)
