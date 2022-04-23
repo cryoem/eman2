@@ -391,25 +391,20 @@ int PngIO::write_data(float *data, int image_index, const Region*,
 	* But PNG use bottom-left corner as image origin */
 	if (depth_type == PNG_CHAR_DEPTH) {
 		auto [rendered_data, count] = getRenderedDataAndRendertrunc<unsigned char>(data, nx*ny);
-		vector<unsigned char> cdata(nx);
 
 		for (int y = (int)ny-1; y >= 0; y--) {
-			for (int x = 0; x < (int)nx; x++) {
-				cdata[x] = (unsigned char)rendered_data[y * nx + x];
-			}
+			auto cdata = vector<unsigned char>(rendered_data.data() + y * nx,
+			                                   rendered_data.data() + (y+1) * nx);
 			png_write_row(png_ptr, (png_byte *) cdata.data());
 		}
 	}
 	else if (depth_type == PNG_SHORT_DEPTH) {
 		auto [rendered_data, count] = getRenderedDataAndRendertrunc<unsigned short>(data, nx*ny);
-		vector<unsigned short> sdata(nx);
 
-		for (int y = (int)ny-1; y >= 0 ; y--) {
-			for (int x = 0; x < (int)nx; x++) {
-				sdata[x] = (unsigned short)rendered_data[y * nx + x];
-			}
-
-			png_write_row(png_ptr, (png_byte *) sdata.data());
+		for (int y = (int)ny-1; y >= 0; y--) {
+			auto cdata = vector<unsigned short>(rendered_data.data() + y * nx,
+			                                    rendered_data.data() + (y+1) * nx);
+			png_write_row(png_ptr, (png_byte *) cdata.data());
 		}
 	}
 
