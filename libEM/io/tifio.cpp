@@ -505,6 +505,7 @@ int TiffIO::write_data(float * data, int image_index, const Region *,
 	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, renderbits);
 
 	if (bitspersample == CHAR_BIT) {
+		auto [rendered_data, count] = getRenderedDataAndRendertrunc<unsigned char>(data, nx*ny);
 		vector<unsigned char> cdata(nx*ny);
 		
 		int src_idx, dst_idx;
@@ -513,17 +514,7 @@ int TiffIO::write_data(float * data, int image_index, const Region *,
 			for (unsigned int j = 0; j < nx; ++j) {
 				src_idx = i*nx+j;
 				dst_idx = nx*(ny-1) - (i*nx) +j;
-
-				if (data[src_idx] < rendermin){
-					cdata[dst_idx] = 0;
-				}
-				else if (data[src_idx] > rendermax) {
-					cdata[dst_idx] = UCHAR_MAX;
-				}
-				else {
-					cdata[dst_idx] = (unsigned char)((data[src_idx] - rendermin) /
-								(rendermax - rendermin) * UCHAR_MAX);
-				}
+				cdata[dst_idx] = rendered_data[src_idx];
 			}
 		}
 
@@ -534,6 +525,7 @@ int TiffIO::write_data(float * data, int image_index, const Region *,
 		}
 	}
 	else if (bitspersample == CHAR_BIT*sizeof(short)) {
+		auto [rendered_data, count] = getRenderedDataAndRendertrunc<unsigned short>(data, nx*ny);
 		vector<unsigned short> sdata(nx*ny);
 
 		int src_idx, dst_idx;
@@ -542,17 +534,7 @@ int TiffIO::write_data(float * data, int image_index, const Region *,
 			for (unsigned int j = 0; j < nx; ++j) {
 				src_idx = i*nx+j;
 				dst_idx = nx*(ny-1) - (i*nx) +j;
-
-				if (data[src_idx] < rendermin){
-					sdata[dst_idx] = 0;
-				}
-				else if (data[src_idx] > rendermax) {
-					sdata[dst_idx] = USHRT_MAX;
-				}
-				else {
-					sdata[dst_idx] = (unsigned short)((data[src_idx] - rendermin) /
-								(rendermax - rendermin) * USHRT_MAX);
-				}
+				sdata[dst_idx] = rendered_data[src_idx];
 			}
 		}
 
@@ -563,6 +545,7 @@ int TiffIO::write_data(float * data, int image_index, const Region *,
 		}
 	}
 	else if (bitspersample == CHAR_BIT*sizeof(float)) {
+		auto [rendered_data, count] = getRenderedDataAndRendertrunc<float>(data, nx*ny);
 		vector<float> fdata(nx*ny);
 
 		int src_idx, dst_idx;
@@ -571,7 +554,7 @@ int TiffIO::write_data(float * data, int image_index, const Region *,
 			for (unsigned int j = 0; j < nx; ++j) {
 				src_idx = i*nx+j;
 				dst_idx = nx*(ny-1) - (i*nx) +j;
-				fdata[dst_idx] = data[src_idx];
+				fdata[dst_idx] = rendered_data[src_idx];
 			}
 		}
 
