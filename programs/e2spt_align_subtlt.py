@@ -225,14 +225,14 @@ class SptAlignTask(JSTask):
 		
 		#if options.preprocess!=None:
 			#print(f"Applying {options.preprocess} to subtilts")
-
+		data=self.data[0]
 		if options.debug: print("max res: {:.2f}, max box size {}".format(options.maxres, maxy))
 		for di,data in enumerate(self.data):
 			
 			#### prepare inputs
-			##   rawid is actually never used in any programs, and this is just for some testing...
-			if "rawid" in data:
-				dii=data["rawid"]
+			##   keep original even/odd split if exist...
+			if "orig_idx" in data:
+				dii=data["orig_idx"]
 			else:
 				dii=data["ii"]
 				
@@ -484,12 +484,18 @@ class SptAlignTask(JSTask):
 			c3d={	"src":data["src"], "idx":data["idx"], 
 				"xform.align3d":xfout.inverse(), "score":np.mean(score)}
 			
+			if "orig_idx" in data:
+				c3d["orig_idx"]=data["orig_idx"]
+				clsid=data["orig_idx"]%2
+			else:
+				clsid=data["ii"]%2
+			
 			#### alignment info for 2d particles.
 			c2d=[]
 			for i in range(len(imgidx)):
 				c={	"src":imgsrc, "idx":imgidx[i],
 					"xform.projection": imgxfs[i], "score":score[i],
-					"ptcl3d_id":data["ii"], "class": data["ii"]%2, "tilt_id":tiltids[i]}
+					"ptcl3d_id":data["ii"], "class": clsid, "tilt_id":tiltids[i]}
 				
 				c2d.append(c)
 				
