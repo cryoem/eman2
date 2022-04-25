@@ -20,13 +20,13 @@ def main():
 	parser.add_argument("--ref", type=str,help="reference map", default=None,guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=2, col=0,rowspan=1, colspan=2, mode="model")
 	parser.add_argument("--startres", type=float,help="Starting resolution for the refinement in A. Default is 50. This will be the maximum resolution considered for the first iteration. In later iterations, the maximum resolution is calculated from the FSC of the previous iteration (unless --maxres is specified).", default=50,guitype='floatbox',row=4, col=0,rowspan=1, colspan=1, mode="model")
 
-	parser.add_argument("--goldstandard", action="store_true", default=False, help="Phase randomize the reference to the starting resolution (--startres) independently for the even/odd subsets of particles.",guitype='boolbox', row=6, col=0, rowspan=1, colspan=1, mode="model")
+	parser.add_argument("--goldstandard", action="store_true", default=True, help="Phase randomize the reference to the starting resolution (--startres) independently for the even/odd subsets of particles.",guitype='boolbox', row=6, col=0, rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--goldcontinue", action="store_true", default=False, help="Continue from previous gold standard refinement. Ues the _even/_odd version of the given reference.",guitype='boolbox', row=6, col=1, rowspan=1, colspan=1, mode="model")
 
 	#parser.add_argument("--restarget", default=0, type=float,help="The resolution you reasonably expect to achieve in the current refinement run (in A).")
 	parser.add_argument("--path", type=str,help="Directory of the refinement.", default=None)
 	parser.add_argument("--sym", type=str,help="symmetry", default="c1",guitype='strbox',row=4, col=1,rowspan=1, colspan=1, mode="model")
-	parser.add_argument("--iters", type=str,help="Iteration information. Input types of refinement separated by comma. p - 3d particle translation-rotation. t - subtilt translation. r - subtilt translation-rotation. d - subtilt defocus. Default is p,p,p,t,p,p,t,r,d. Character followed by number is also acceptable. p3 = p,p,p", default="p,p,p,t,p,p,t,r,d",guitype="strbox",row=8,col=0,rowspan=1,colspan=2,mode="model")
+	parser.add_argument("--iters", type=str,help="Iteration information. Input types of refinement separated by comma. p - 3d particle translation-rotation. t - subtilt translation. r - subtilt translation-rotation. d - subtilt defocus. Default is p,p,p,t,p,p,t,r,d. Character followed by number is also acceptable. p3 = p,p,p", default="p3,t2,p,t,r,d",guitype="strbox",row=8,col=0,rowspan=1,colspan=2,mode="model")
 	parser.add_argument("--keep", type=str,help="Fraction of particles to keep. Note this is controlled at three separate steps. When default --keep=.95, it removes the worst 0.05 3D particles, 0.05 2D subtilt with the worst score, and 0.05 of subtilt with the largest drift. Also accept comma separated values (0.9,0.5,0.5) to set different keep thresholds for the three classes", default="0.95",guitype="strbox",row=10,col=0,rowspan=1,colspan=2,mode="model")
 	parser.add_argument("--setsf", type=str,help="structure factor for sharpening", default=None)
 	parser.add_argument("--tophat", type=str,help="Options for filtering maps. Run 'e2help.py tophat' for more information. Default=wiener.", default=None,guitype='strbox', row=12, col=0, rowspan=1, colspan=1, mode="model")
@@ -118,9 +118,9 @@ def main():
 			
 		rs=er["apix_x"]/ep["apix_x"]
 		if rs>1.:
-			opt+=" --clip {} --scale {} --process mask.soft:outer_radius=-1".format(ep["nx"], rs)
+			opt+=" --clip {} --scale {} --process normalize.edgemean --process mask.soft:outer_radius=-1".format(ep["nx"], rs)
 		else:
-			opt+=" --scale {} --clip {} --process mask.soft:outer_radius=-1".format(rs, ep["nx"])
+			opt+=" --scale {} --clip {} --process normalize.edgemean --process mask.soft:outer_radius=-1".format(rs, ep["nx"])
 		
 	if options.maskalign!=None: opt+=f" --multfile {options.maskalign}"
 	
