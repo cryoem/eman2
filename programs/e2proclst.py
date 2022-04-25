@@ -441,12 +441,21 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 			lout=[]
 			x=Transform()
 			nsym=x.get_nsym(options.sym)
+			for atr in ["xform.align3d","xform.projection"]:
+				if atr in lst[0]:
+					break
+			else:
+				print("No required attribute. Need xform.align3d or xform.projection")
+			
+			print(atr)
 			for l in lst:
-				x=l["xform.projection"]
+				x=l[atr]
+				if atr=="xform.align3d": x=x.inverse()
 				for i in range(nsym):
 					xt=x.get_sym(options.sym, i)
 					q=l.copy()
-					q["xform.projection"]=xt
+					if atr=="xform.align3d": xt=xt.inverse()
+					q[atr]=xt
 					lout.append(q)
 					
 			save_lst_params(lout, f)
