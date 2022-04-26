@@ -93,7 +93,11 @@ EMData* EMNumPy::numpy2em(const np::ndarray& array)
 			break;
 	}
 
-	EMData* image = new EMData((float*)array.astype(np::dtype::get_builtin<float>()).get_data(), nx, ny, nz);
+	auto float_array = (float *)array.astype(np::dtype::get_builtin<float>()).get_data();
+	float * temparray = new float[(size_t)nx*ny*nz];
+	std::copy(float_array, float_array + nx * ny * nz, temparray);
+
+	EMData* image = new EMData((float*)temparray, nx, ny, nz);
 
 	image->set_attr("apix_x", 1.0);
 	image->set_attr("apix_y", 1.0);
