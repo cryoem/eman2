@@ -83,8 +83,11 @@ def main():
 		l=ln.split()
 		ii,src=l[rid["name"]].split('@')
 		ii=int(ii)-1
-		fm="particles"+src[src.rfind('/'):src.rfind('.')]+".hdf"
-		
+		if '/' in src:
+			fm="particles"+src[src.rfind('/'):src.rfind('.')]+".hdf"
+		else:
+			fm="particles/"+src[:src.rfind('.')]+".hdf"
+			
 		if not os.path.isfile(src):
 			print("{} does exist".format(src))
 			continue
@@ -120,6 +123,8 @@ def main():
 	
 	print()
 
+	try:os.mkdir("sets")
+	except: pass
 	#lst=LSXFile(options.output)
 	towrite=[]
 	for fm in fnames:

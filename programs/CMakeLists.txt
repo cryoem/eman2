@@ -36,12 +36,15 @@ if(GIT_EXECUTABLE)
 	if(NOT "${EMAN_GITDIR}" STREQUAL "${CMAKE_SOURCE_DIR}")
 		set(EMAN_GITHASH "NOT-INSTALLED-FROM-GIT-REPO")
 	else()
-		execute_process(COMMAND ${GIT_EXECUTABLE} describe --always --dirty
-						WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-						OUTPUT_VARIABLE EMAN_GITHASH
-						OUTPUT_STRIP_TRAILING_WHITESPACE
-						)
-		
+		if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" )
+			set(EMAN_GITHASH $ENV{GIT_FULL_HASH})
+		else()
+			execute_process(COMMAND ${GIT_EXECUTABLE} describe --always --dirty
+							WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+							OUTPUT_VARIABLE EMAN_GITHASH
+							OUTPUT_STRIP_TRAILING_WHITESPACE
+							)
+		endif()
 		# git-describe output: <tag>-<num-of-commits-since-tag>-g<hash>
 		# We are insterested in extracting the hash part of the git-describe output
 		string(REGEX REPLACE

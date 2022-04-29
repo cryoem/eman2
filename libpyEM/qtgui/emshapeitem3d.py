@@ -481,6 +481,8 @@ class EMScatterPlot3D(EMShapeBase):
 		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
 		#glColor(1.0,1.0,1.0)
 		if len(self.data)>3:
+#			cmin=min(self.data[3])
+			cmin=0
 			cmax=max(self.data[3])
 		
 		quadratic = gluNewQuadric()
@@ -490,7 +492,7 @@ class EMScatterPlot3D(EMShapeBase):
 		for i in range(len(self.data[0])):
 			glPushMatrix()
 			if len(self.data)>3:
-				brtcol=max(self.data[3][i]/cmax,0.0)		# color is black for values of 0 ranging to white at max
+				brtcol=(self.data[3][i]-cmin)/(cmax-cmin)		# color is black for values of 0 ranging to white at max
 				if self.data[3][i]<self.pointthr : 
 					glPopMatrix()
 					continue

@@ -82,7 +82,7 @@ def main():
 		for eo in ["even","odd"]:
 			run("e2spa_make3d.py --input {pt}/ptcls_{i1:02d}.lst --output {pt}/threed_{i1:02d}_{eo}.hdf --keep {kp} --sym {s} {par} --clsid {eo}".format(pt=options.path, i1=i+1, eo=eo, s=sym, par=m3dpar, kp=options.keep))
 
-		if i==options.startiter:
+		if i==0:
 			res/=2
 		
 		if i>0:
@@ -97,11 +97,14 @@ def main():
 		if options.setsf:
 			sf="--setsf {}".format(options.setsf)
 
-		run("e2refine_postprocess.py --even {pt}/threed_{i1:02d}_even.hdf --sym {s} {sf} --restarget {rs:.1f} --threads {th} {top} {asize} {amask}".format(pt=options.path, i1=i+1, s=sym, sf=options.setsf, rs=res*.8, th=options.threads, top=tophat,  amask=amask, asize=localsize))
+		run("e2refine_postprocess.py --even {pt}/threed_{i1:02d}_even.hdf --sym {s} {sf} --restarget {rs:.1f} --threads {th} {top} {asize} {amask}".format(pt=options.path, i1=i+1, s=sym, sf=sf, rs=res*.8, th=options.threads, top=tophat,  amask=amask, asize=localsize))
 
 		fsc=np.loadtxt("{}/fsc_masked_{:02d}.txt".format(options.path, i+1))
 		fi=fsc[:,1]<0.2
-		res=1./fsc[fi, 0][0]
+		try: res=1./fsc[fi, 0][0]
+		except:
+			print("resolution approaching Nyquist !?")
+			res=1.0/(2.0*er["apix_x"])
 		res*=.8
 
 	E2end(logid)

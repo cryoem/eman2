@@ -8,16 +8,23 @@ from EMAN2_utils import pdb2numpy
 #### need to unify the float type across tenforflow and numpy
 ##   in theory float16 also works but it can be unsafe especially when the network is deeper...
 floattype=np.float32
+params=None
 
 #### here we import tensorflow at the global scale so @tf.function works
 ##   although how much performance gain we get from @tf.function is questionable...
 ##   so here we need to make a fake tf module for --help so the CI works properly.
-os.environ["CUDA_VISIBLE_DEVICES"]='0' 
+if "CUDA_VISIBLE_DEVICES" not in os.environ:
+	# so we can decide which gpu to use with environmental variable
+	os.environ["CUDA_VISIBLE_DEVICES"]='0' 
+	
 os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]='true' 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' #### reduce log output
 if ('-h' in sys.argv) or ('--help' in sys.argv):
 	tf=type('empty', (object,), {})()
-	tf.function=lambda f: f
+	def empty():
+		return lambda f: f
+	tf.function=empty
+	print(tf.function())
 	print("Printing help. Skip tensorflow import")
 else:
 	import tensorflow as tf
@@ -63,9 +70,10 @@ def xf2pts(pts, ang):
 	#### input EMAN style euler angle (az, alt, phi) and make projection matrix
 	##   note we need to be able to deal with a batch of particles at once
 	##   so everything is in matrix form
-	azp=-ang[:,0]
-	altp=ang[:,1]
-	phip=-ang[:,2]
+	
+	azp=-ang[0]
+	altp=ang[1]
+	phip=-ang[2]
 
 	matrix=tf.stack([(tf.cos(phip)*tf.cos(azp) - tf.cos(altp)*tf.sin(azp)*tf.sin(phip)),
 	(tf.cos(phip)*tf.sin(azp) + tf.cos(altp)*tf.cos(azp)*tf.sin(phip)),
@@ -79,92 +87,56 @@ def xf2pts(pts, ang):
 	(-tf.sin(altp)*tf.cos(azp)),
 	tf.cos(altp)], 0)
 
+	matrix=tf.reshape(matrix, shape=[3,3]) #### Here we get a batch_size x 3 x 3 matrix
 	matrix=tf.transpose(matrix)
-	matrix=tf.reshape(matrix, shape=[-1, 3,3]) #### Here we get a batch_size x 3 x 3 matrix
 
 	#### rotate Gaussian positions
-	##   here we try to make it also work when pts contains only the neutral model
-	if len(pts.shape)>2:
-		pts_rot=tf.tensordot(pts, matrix, [[2],[2]])
-		pts_rot=tf.transpose(pts_rot, (0,2,1,3))
-		
-		#### the eye matrix here is mathematically unnecessary
-		##   but somehow tensorflow 2.0 does not track gradient properly without it...
-		##   shouldn't do much damage on the performance anyway
-		e=tf.eye(pts.shape[0], dtype=bool)#.flatten()
-		pts_rot=pts_rot[e]
-		
-	else:
-		pts_rot=tf.tensordot(pts, matrix, [[1],[2]])
-		pts_rot=tf.transpose(pts_rot, [1,0,2])
-		
+
+	pts_rot=tf.matmul(pts, matrix)
+#     pts_rot=tf.transpose(pts_rot)
+
 	#### finally do the translation
-	tx=ang[:,3][:,None]
-	ty=ang[:,4][:,None]
-	pts_rot_trans=tf.stack([(pts_rot[:,:,0]+tx), (-pts_rot[:,:,1])+ty], 2)
+	tx=ang[3]
+	ty=ang[4]
+	pts_rot_trans=tf.stack([(pts_rot[:,0]+tx), (-pts_rot[:,1])+ty], 1)
 	
 	#pts_rot_trans=pts_rot_trans*sz+sz/2
 	return pts_rot_trans
 
+def mult_gauss_coords(args):
+	return args[0]* args[1]
 
-#### make 2D projections from Gaussian coordinates in Fourier space
-##   input:  pts - ( batch size, number of Gaussian, 5 (x,y,z,amp,sigma) )
-##                 ( number of Gaussian, 3) should also work
-##           ang - ( batch size, 5 (az, alt, phi, tx, ty) )
-##        params - a dictionary of some Fourier indices for slicing
-##                 sz - Fourier box size
-##                 idxft - Fourier indices
-##                 rrft - radial Fourier indices
-##            lp - lowpass filter applied to the images
-##                 this should not be necessary since we use FRC for loss
-##                 but the dynamic range of values in Fourier space can sometimes be too high...
-##           sym - symmetry string
-#@tf.function
-def pts2img(pts, ang, params, lp=.1, sym="c1"):
-	bsz=ang.shape[0]
-	sz, idxft, rrft=params["sz"], params["idxft"], params["rrft"]
+#@tf.function()
+def pts2img_one(args):
+	pts, ang = args
+	sz, idxft, rrft = params["sz"], params["idxft"], params["rrft"]
+
+	lp=.1
+	bamp=tf.cast(tf.nn.relu(pts[:,3]), tf.complex64)[:,None]
+	#bsigma=pts[:, 4]
+	#amp=tf.exp(-rrft*lp*tf.nn.relu(bsigma))*tf.nn.relu(bamp)
+	amp=tf.exp(-rrft*lp)
 	
-	### initialize output and parse input
-	imgs_real=tf.zeros((bsz, sz,sz//2+1), dtype=floattype)
-	imgs_imag=tf.zeros((bsz, sz,sz//2+1), dtype=floattype)
-	if len(pts.shape)>2 and pts.shape[0]>1:
-		ni=pts.shape[1]
-		pts=tf.reshape(pts, (-1, pts.shape[-1]))
-		bamp=tf.reshape(pts[:, 3], (bsz,-1))
-		bsigma=tf.reshape(pts[:, 4], (bsz,-1))
-		multmodel=True
-		
-	else:
-		bamp=pts[:, 3][None, :]
-		bsigma=pts[:, 4][None, :]
-		multmodel=False
-		
-	### when a non c1 symmetry is provided, this will return a list of points
-	##  one for each asymmetrical unit so we loop through them and sum the images
-	p0=get_sym_pts(sym, pts)
-	for p in p0:
-		p=tf.transpose(p)
-		if multmodel:
-			p=tf.reshape(p, (bsz, ni, -1))
+	bpos=xf2pts(pts[:,:3],ang)
+	bpos=bpos*sz+sz/2
+	bposft=bpos*np.pi*2
+	
+	cpxang_x=tf.vectorized_map(mult_gauss_coords, (bposft[:,0], idxft[0,[0],:]))
+	cpxang_y=tf.vectorized_map(mult_gauss_coords, (bposft[:,1], idxft[1,:,[0]]))
 
-		## need to change from (-0.5, 0.5) to actual image coordinates
-		bpos=xf2pts(p,ang)
-		bpos=bpos*sz+sz/2
-		bposft=bpos*np.pi*2
-		bposft=bposft[:, :, :, None, None]
+	pgauss_x = tf.exp(-1j*tf.cast(cpxang_x, tf.complex64))*bamp
+	pgauss_y = tf.exp(-1j*tf.cast(cpxang_y, tf.complex64))*bamp
 
-		cpxang=idxft[0]*bposft[:,:,0] + idxft[1]*bposft[:,:,1]
-		bamp0=tf.nn.relu(bamp[:, :,None, None])
-		bsigma0=tf.nn.relu(bsigma[:,:,None, None])
-		
-		amp=tf.exp(-rrft*lp*bsigma0)*bamp0
-		pgauss_real=tf.cos(cpxang)*amp
-		pgauss_imag=-tf.sin(cpxang)*amp
+	pgauss = tf.matmul(tf.transpose(pgauss_x), pgauss_y)
+	pgauss = tf.transpose(pgauss)*tf.cast(amp, tf.complex64)
+	return pgauss
 
-		imgs_real+=tf.reduce_sum(pgauss_real, axis=1)
-		imgs_imag+=tf.reduce_sum(pgauss_imag, axis=1)
-
-	return (imgs_real, imgs_imag)
+@tf.function()
+def pts2img(pts, angs):
+	#pts, angs=args
+	#p=pts2img_one((pts[0], angs[0]))
+	img=tf.vectorized_map(pts2img_one, (pts, angs))
+	return tf.math.real(img), tf.math.imag(img)
 
 #### compute particle-projection FRC 
 ##   data_cpx, imgs_cpx - complex images in (real, imag) form
@@ -172,7 +144,7 @@ def pts2img(pts, ang, params, lp=.1, sym="c1"):
 ##   return_curve - return the curve instead of average FRC score
 ##   minpx - skip the X initial low freq pixels
 #@tf.function
-def calc_frc(data_cpx, imgs_cpx, rings, return_curve=False,minpx=4):
+def calc_frc(data_cpx, imgs_cpx, rings, return_curve=False,minpx=1):
 	mreal, mimag=imgs_cpx
 	dreal, dimag=data_cpx
 	#### normalization per ring
@@ -288,7 +260,7 @@ def set_indices_boxsz(boxsz, apix=0, return_freq=False):
 	else:
 		#global sz, idxft, rrft, rings
 		sz=boxsz
-		idxft=(idx/sz).astype(floattype)[:, None, :,:]
+		idxft=(idx/sz).astype(floattype)
 		rrft=np.sqrt(np.sum(idx**2, axis=0)).astype(floattype)## batch, npts, x-y
 
 		rr=np.round(np.sqrt(np.sum(idx**2, axis=0))).astype(int)
@@ -296,13 +268,13 @@ def set_indices_boxsz(boxsz, apix=0, return_freq=False):
 		for i in range(sz//2):
 			rings[:,:,i]=(rr==i)
 		
+		global params
 		params={"sz":sz, "idxft":idxft, "rrft":rrft, "rings":rings}
 		return params
 
 def build_encoder(mid=512, nout=4, conv=False, ninp=-1):
 	l2=tf.keras.regularizers.l2(1e-3)
-	l1=tf.keras.regularizers.l1(1e-3)
-	kinit=tf.keras.initializers.RandomNormal(0,0.001)	# was 0.01
+	kinit=tf.keras.initializers.RandomNormal(0,0.01)	# was 0.01
 	
 	if conv:
 		ss=64
@@ -311,12 +283,12 @@ def build_encoder(mid=512, nout=4, conv=False, ninp=-1):
 			tf.keras.layers.Dense(ss*ss, kernel_regularizer=l2),
 			tf.keras.layers.Reshape((ss,ss,1)),
 			
-			tf.keras.layers.Conv2D(4, 5, activation="relu", strides=(2,2), padding="same"),
-			tf.keras.layers.Conv2D(8, 5, activation="relu", strides=(2,2), padding="same"),
-			tf.keras.layers.Conv2D(16, 3, activation="relu", strides=(2,2), padding="same"),
-			tf.keras.layers.Conv2D(16, 3, activation="relu", strides=(2,2), padding="same"),
+			tf.keras.layers.Conv2D(32, 5, activation="relu", strides=(2,2), padding="same"),
+			tf.keras.layers.Conv2D(32, 5, activation="relu", strides=(2,2), padding="same"),
+			tf.keras.layers.Conv2D(64, 3, activation="relu", strides=(2,2), padding="same"),
+			tf.keras.layers.Conv2D(64, 3, activation="relu", strides=(2,2), padding="same"),
 			tf.keras.layers.Flatten(),
-			tf.keras.layers.Dropout(.1),
+			tf.keras.layers.Dropout(.3),
 			tf.keras.layers.BatchNormalization(),
 			tf.keras.layers.Dense(nout, kernel_initializer=kinit),
 		]
@@ -340,10 +312,6 @@ def build_encoder(mid=512, nout=4, conv=False, ninp=-1):
 		tf.keras.layers.Dropout(.3),
 		tf.keras.layers.Dense(max(ninp//8,nout*2), activation="relu", kernel_regularizer=l2,use_bias=True),
 		tf.keras.layers.Dense(max(ninp//32,nout*2), activation="relu", kernel_regularizer=l2,use_bias=True),
-		#tf.keras.layers.Dense(max(ninp//2,nout*2), activation="tanh", kernel_regularizer=l1,use_bias=True,bias_initializer=kinit),
-		#tf.keras.layers.Dropout(.3),
-		#tf.keras.layers.Dense(max(ninp//8,nout*2), activation="tanh", kernel_regularizer=l1,use_bias=True),
-		#tf.keras.layers.Dense(max(ninp//32,nout*2), activation="tanh", kernel_regularizer=l1,use_bias=True),
 		tf.keras.layers.BatchNormalization(),
 		tf.keras.layers.Dense(nout, kernel_regularizer=l2, kernel_initializer=kinit,use_bias=True),
 		]
@@ -367,7 +335,6 @@ def build_decoder(pts, mid=512, ninp=4, conv=False):
 	
 	kinit=tf.keras.initializers.RandomNormal(0,1e-2)
 	l2=tf.keras.regularizers.l2(1e-3)
-	l1=tf.keras.regularizers.l1(1e-3)
 	layer_output=tf.keras.layers.Dense(npt*5, kernel_initializer=kinit, activation="sigmoid",use_bias=True)
 	if conv:
 			
@@ -379,7 +346,7 @@ def build_decoder(pts, mid=512, ninp=4, conv=False):
 			tf.keras.layers.Conv2DTranspose(8, 5, activation="relu", strides=(2,2), padding="same"),
 			tf.keras.layers.Conv2DTranspose(4, 5, activation="relu", strides=(2,2), padding="same"),
 			tf.keras.layers.Flatten(),
-			tf.keras.layers.Dropout(.1),
+			tf.keras.layers.Dropout(.3),
 			tf.keras.layers.BatchNormalization(),
 			layer_output,
 			tf.keras.layers.Reshape((npt,5)),
@@ -401,12 +368,10 @@ def build_decoder(pts, mid=512, ninp=4, conv=False):
 	else:
 		print(f"Decoder {max(npt//32,ninp)} {max(npt//8,ninp)} {max(npt//2,ninp)}")
 		layers=[
+#			tf.keras.layers.Dense(max(npt//64,ninp),activation="relu"),
 			tf.keras.layers.Dense(max(npt//32,ninp*2),activation="relu",use_bias=True,bias_initializer=kinit),
 			tf.keras.layers.Dense(max(npt//8,ninp*2),activation="relu",use_bias=True),
 			tf.keras.layers.Dense(max(npt//2,ninp),activation="relu",use_bias=True),
-			#tf.keras.layers.Dense(max(npt//32,ninp*2),activation="tanh", kernel_regularizer=l1,use_bias=True),
-			#tf.keras.layers.Dense(max(npt//8,ninp*2),activation="tanh", kernel_regularizer=l1,use_bias=True),
-			#tf.keras.layers.Dense(max(npt//2,ninp),activation="tanh", kernel_regularizer=l1,use_bias=True,bias_initializer=kinit),
 			tf.keras.layers.Dropout(.3),
 			tf.keras.layers.BatchNormalization(),
 			layer_output,
@@ -436,6 +401,42 @@ def build_decoder(pts, mid=512, ninp=4, conv=False):
 	
 	return gen_model
 
+def build_decoder_anchor(pts, cnt, ninp ):
+	print(pts.shape, cnt.shape)
+	dwt=tf.reduce_sum((pts[:,:,:3]-cnt[:,None,:])**2, axis=2)
+	dwt=tf.exp(-dwt*50)#*tf.constant(msk, dtype=float)
+	dwt=tf.transpose(dwt)
+	
+	x0=tf.keras.Input(shape=(ninp))
+	kinit=tf.keras.initializers.RandomNormal(0,1e-3)
+	l2=tf.keras.regularizers.l2(1e-3)
+	layer_output=tf.keras.layers.Dense(pts.shape[1], activation="linear",
+									use_bias=False, kernel_regularizer=l2)
+	layers=[
+		tf.keras.layers.Dense(256, activation="relu"),
+		tf.keras.layers.Reshape((4,4,16)),
+		tf.keras.layers.Conv2DTranspose(16, 3, activation="relu", strides=(2,2), padding="same"),
+		tf.keras.layers.Conv2DTranspose(16, 3, activation="relu", strides=(2,2), padding="same"),
+		tf.keras.layers.Conv2DTranspose(16, 5, activation="relu", strides=(1,1), padding="same"),
+		tf.keras.layers.Conv2DTranspose(16, 5, activation="relu", strides=(1,1), padding="same"),
+		tf.keras.layers.Flatten(),
+		tf.keras.layers.Dropout(.3),
+		tf.keras.layers.BatchNormalization(),
+		tf.keras.layers.Dense(len(cnt)*5, kernel_initializer=kinit, activation="linear",use_bias=False),
+		tf.keras.layers.Reshape((5, len(cnt))),
+		layer_output,
+		tf.keras.layers.Permute((2,1))
+	]
+	y0=x0
+	for l in layers:
+		y0=l(y0)
+
+	y0=y0+pts
+	layer_output.weights[0].assign(tf.transpose(dwt))
+	decode_model=tf.keras.Model(x0, y0)
+	return decode_model
+	
+
 #### training decoder on projections
 def train_decoder(gen_model, trainset, params, options, pts=None):
 	"""pts input can optionally be used as a regularizer if they are known to be good"""
@@ -458,7 +459,7 @@ def train_decoder(gen_model, trainset, params, options, pts=None):
 				else: conf=tf.zeros((xf.shape[0],options.nmid), dtype=floattype)
 				pout=gen_model(conf)
 				std=tf.reduce_mean(tf.math.reduce_std(pout, axis=1), axis=0)
-				imgs_cpx=pts2img(pout, xf, params, sym=options.sym)
+				imgs_cpx=pts2img(pout, xf)
 				fval=calc_frc(pj_cpx, imgs_cpx, params["rings"])
 				loss=-tf.reduce_mean(fval)
 #				l=loss+std[4]*options.sigmareg+std[3]*5*(options.niter-itr)/options.niter
@@ -501,7 +502,7 @@ def eval_model(gen_model, options):
 	for xf in trainset:
 		conf=tf.zeros((xf.shape[0],options.nmid), dtype=floattype)
 		pout=gen_model(conf)
-		imgs_real, imgs_imag=pts2img(pout, xf, params, sym=options.sym)
+		imgs_real, imgs_imag=pts2img(pout, xf)
 		imgs_cpx=tf.complex(imgs_real, imgs_imag)
 		imgs_out=tf.signal.irfft2d(imgs_cpx)
 		imgs.append(imgs_out)
@@ -523,6 +524,7 @@ def eval_model(gen_model, options):
 		e["xform.projection"]=xf
 		e["apix_x"]=e["apix_y"]=options.raw_apix
 		e.write_image(options.evalmodel,-1)
+	print("Projection images written to ", options.evalmodel)
 		
 	
 def ccf_trans(ref,img):
@@ -541,6 +543,7 @@ def ccf_trans(ref,img):
 
 def translate_image(img, trans):
 	imgs_real, imgs_imag=img
+	idxft=params["idxft"]
 	s=idxft[0]*trans[:,0,None,None]+idxft[1]*trans[:,1,None,None]
 	s*=-2*np.pi
 	imgs_real1=imgs_real*np.cos(s)-imgs_imag*np.sin(s)
@@ -549,7 +552,7 @@ def translate_image(img, trans):
 
 def coarse_align(dcpx, pts, options):
 	print("coarse aligning particles")
-	astep=7.5
+	astep=7.4
 	npt=len(dcpx[0])
 	symmetry=Symmetries.get(options.sym)
 	#xfs=symmetry.gen_orientations("rand", {"n":npt,"phitoo":1,"inc_mirror":1})
@@ -561,19 +564,21 @@ def coarse_align(dcpx, pts, options):
 	xfsnp[:,:3]=xfsnp[:,:3]*np.pi/180.
 	#return [xfsnp]
 	
-	bsz=800
+	bsz=len(xfsnp)#//4
 	allfrcs=np.zeros((npt, len(xfsnp)))
 	alltrans=np.zeros((npt, len(xfsnp), 2))
 	niter=len(xfsnp)//bsz
 	for ii in range(niter):
 		xx=xfsnp[ii*bsz:(ii+1)*bsz]
-		projs_cpx=pts2img(pts, xx, sym=options.sym)
+		pt=tf.Variable(tf.repeat(pts[None,:,:], xx.shape[0], axis=0))
+		#print(pt.shape, xx.shape)
+		projs_cpx=pts2img(pt, xx)
 		
 		for idt in range(npt):
 			dc=list(tf.repeat(d[idt:idt+1], len(xx), axis=0) for d in dcpx)
 			ts=ccf_trans(dc, projs_cpx)
 			dtrans=translate_image(dc,ts)
-			frcs=calc_frc(dtrans, projs_cpx)
+			frcs=calc_frc(dtrans, projs_cpx, params["rings"],minpx=1)
 			#mxxfs.append(np.argmax(frcs))
 			allfrcs[idt,ii*bsz:(ii+1)*bsz]=frcs
 			alltrans[idt,ii*bsz:(ii+1)*bsz]=ts
@@ -581,15 +586,16 @@ def coarse_align(dcpx, pts, options):
 			sys.stdout.write("\r projs: {}/{}, data: {}/{}	".format(ii+1, niter, idt+1, npt))
 			sys.stdout.flush()
 	xfs=[]
-	for ii in range(1):
+	for ii in range(8):
 		fid=np.argmax(allfrcs, axis=1)
 		xf=xfsnp[fid]
 		ts=alltrans[np.arange(npt),fid]
-		xf[:,3:]-=ts/sz
+		xf[:,3:]-=ts/params["sz"]
 		xfs.append(xf)
 		allfrcs[np.arange(npt),fid]=-1
 	
 	print()
+	#print(dtrans[0].shape, projs_cpx[0].shape, params["rings"].shape)
 	return xfs
 
 def refine_align(dcpx, xfsnp, pts, options, lr=1e-3):
@@ -611,10 +617,9 @@ def refine_align(dcpx, xfsnp, pts, options, lr=1e-3):
 		cost=[]
 		for itr in range(niter):
 			with tf.GradientTape() as gt:
-				#xv=tf.concat([xf[:,:3], xfvar[:,3:]], axis=1)
-				xv=xfvar
-				proj_cpx=pts2img(p, xv, sym=options.sym)
-				fval=calc_frc(proj_cpx, ptcl_cpx)
+				proj_cpx=pts2img(p, xfvar)
+				#print(proj_cpx[0].shape, ptcl_cpx[0].shape, params["rings"].shape)
+				fval=calc_frc(proj_cpx, ptcl_cpx, params["rings"])
 				loss=-tf.reduce_mean(fval)
 
 			grad=gt.gradient(loss, xfvar)
@@ -650,18 +655,13 @@ def save_ptcls_xform(xfsnp, boxsz, options, scr):
 
 	oname=options.ptclsout
 	print("saving aligned particles to {}".format(oname))
-	if os.path.isfile(oname): os.remove(oname)
-	lst=LSXFile(oname, False)
-	lst0=LSXFile(options.ptclsin, True)
-	print(scr)
+	lstin=load_lst_params(options.ptclsin)
 	for i,xf in enumerate(xfs):
-		l0=lst0.read(i)
-		d=xf.get_params("eman")
-		d["score"]=-scr[i]
-		lst.write(-1, l0[0], l0[1], str(d))
-
-	lst=None
-	lst0=None
+		lstin[i]["xform.projection"]=xf
+		lstin[i]["score"]=-scr[i]
+		
+	if os.path.isfile(oname): os.remove(oname)
+	save_lst_params(lstin, options.ptclsout)
 	
 def calc_gradient(trainset, pts, params, options):
 	allgrds=[]
@@ -674,7 +674,7 @@ def calc_gradient(trainset, pts, params, options):
 		with tf.GradientTape() as gt:
 			pt=tf.Variable(tf.repeat(pts, xf.shape[0], axis=0))
 			
-			imgs_cpx=pts2img(pt, xf, params, sym=options.sym)
+			imgs_cpx=pts2img(pt, xf)
 			fval=calc_frc(pj_cpx, imgs_cpx, params["rings"])
 			
 			loss=-tf.reduce_mean(fval)
@@ -698,9 +698,19 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, options):
 	pas=[int(i) for i in options.pas]
 	pas=tf.constant(np.array([pas[0],pas[0],pas[0],pas[1],pas[2]], dtype=floattype))
 	
+	imsk=tf.zeros(npt, dtype=floattype)+1
+	if options.selgauss:
+		i=np.loadtxt(options.selgauss).astype(int)
+		print('selecting {} out of {} points'.format(len(i), npt))
+		m=np.zeros(npt, dtype=floattype)
+		m[i]=1
+		imsk=tf.constant(m)
+	
 	## initialize optimizer
 	opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate)
 	wts=encode_model.trainable_variables + decode_model.trainable_variables
+	if options.anchor:
+		wts=wts[:-1]
 	nbatch=0
 	for t in trainset: nbatch+=1
 	
@@ -716,7 +726,6 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, options):
 				## from gradient input to the latent space
 				conf=encode_model(grd, training=True)
 				
-							
 				## regularization of the latent layer range
 				## ideally the output is within a 1-radius circle
 				## but we want to make the contraint more soft so it won't affect convergence
@@ -729,15 +738,17 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, options):
 				## but we do not train the sigma of the random value here
 				## since we control the radius of latent space already, this seems enough
 				conf=options.perturb*tf.random.normal(conf.shape)+conf		# 0.1 is a pretty big perturbation for this range, maybe responsible for the random churn in the models? --steve
-#				conf=.1*tf.random.normal(conf.shape)+conf
 				
 				## mask out the target columns based on --pas
 				pout=decode_model(conf, training=True)
 				p0=tf.zeros((xf.shape[0],npt, 5))+pts
 				pout=pout*pas+p0*(1-pas)
 				
+				## mask selected rows
+				pout=pout*imsk[None,:,None]+p0*(1-imsk[None,:,None]) 
+				
 				## finally generate images and calculate frc
-				imgs_cpx=pts2img(pout, xf, params, sym=options.sym)
+				imgs_cpx=pts2img(pout, xf)
 				fval=calc_frc(pj_cpx, imgs_cpx, params["rings"])
 				loss=-tf.reduce_mean(fval)+cl*1e-2
 				
@@ -793,7 +804,7 @@ def main():
 	parser.add_argument("--modelout", type=str,help="output trained model file. only used when --projs is provided", default="")
 	parser.add_argument("--decoderin", type=str,help="Rather than initializing the decoder from a model, read an existing trained decoder", default="")
 	parser.add_argument("--decoderout", type=str,help="Save the trained decoder model. Filename should be .h5", default=None)
-	parser.add_argument("--encoderin", type=str,help="Rather than initializing the encoder from scratch, read an existing trained encoder", default="")
+	parser.add_argument("--encoderin", type=str,help="Rather than initializing the decoder from a model, read an existing trained encoder", default="")
 	parser.add_argument("--encoderout", type=str,help="Save the trained encoder model. Filename should be .h5", default=None)
 	parser.add_argument("--projs", type=str,help="projections with orientations (in hdf header or comment column of lst file) to train model", default="")
 	parser.add_argument("--evalmodel", type=str,help="generate model projection images to the given file name", default="")
@@ -822,6 +833,8 @@ def main():
 	parser.add_argument("--nmid", type=int,help="size of the middle layer", default=4)
 	parser.add_argument("--ndense", type=int,help="size of the layers between the middle and in/out, variable if -1. Default 512", default=512)
 	parser.add_argument("--mask", type=str,help="remove points outside mask", default="")
+	parser.add_argument("--anchor", type=str,help="use a smaller model as anchor points for heterogeneity training.", default="")
+	parser.add_argument("--selgauss", type=str,help="provide a text file of the indices of gaussian that are allowed to move", default="")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
@@ -833,17 +846,20 @@ def main():
 	## load GMM from text file
 	if options.model:
 		if options.model.endswith(".pdb"):
-			
+			print("Generating Gaussian model from pdb...")
 			p=pdb2numpy(options.model)
 			pts=np.zeros((len(p),5))
-			e=EMData(options.projs, 0, True)
+			if options.projs:
+				e=EMData(options.projs, 0, True)
+			elif options.ptclsin:
+				e=EMData(options.ptclsin, 0, True)
 			#sz=e["ny"]
 			p=p/e["ny"]/e["apix_x"]-0.5
 			pts[:,:3]=p
 			pts[:,3]=.5
 			pts[:,4]=1
-			
-			print(pts)
+			pts=pts.astype(floattype)
+			#print(pts)
 		else:
 			
 			pts=np.loadtxt(options.model).astype(floattype)
@@ -860,10 +876,12 @@ def main():
 		## duplicates points if we ask for more points than exist in text file
 		if options.npts>len(pts):
 			p=pts.copy()
-			np.random.shuffle(p)
-			p=np.repeat(p, 8, axis=0)
+			#np.random.shuffle(p)
+			p=np.repeat(p[None,:], 8, axis=0).reshape(-1,5)
 			p=p[:(options.npts-len(pts))]
 			pts=np.concatenate([pts, p], axis=0)
+		else:
+			options.npt=len(pts)
 		   
 		## randomize it a bit so we dont have all zero weights
 		rnd=np.random.randn(pts.shape[0], pts.shape[1])*1e-3
@@ -931,6 +949,8 @@ def main():
 
 			#### save decoder if requested
 			if options.decoderout!=None: 
+				if os.path.isfile(options.decoderout):
+					os.remove(options.decoderout)
 				gen_model.save(options.decoderout)
 				print("Decoder saved as ",options.decoderout)
 				
@@ -965,27 +985,25 @@ def main():
 		pts=tf.constant(pts)
 		print("Align particles...")
 		if options.fromscratch:
-			set_indices_boxsz(32)
-			dcpx=get_clip(data_cpx, sz)
+			params=set_indices_boxsz(maxboxsz)
+			dcpx=get_clip(data_cpx, params["sz"], clipid)
 			xfs=coarse_align(dcpx, pts, options)
+			
+			params=set_indices_boxsz(maxboxsz)
+			dcpx=get_clip(data_cpx, params["sz"], clipid)
 			
 			xfsnp=np.zeros((data_cpx[0].shape[0], 5), dtype=floattype)
 			frcs=np.zeros(data_cpx[0].shape[0], dtype=floattype)
 			for xf in xfs:
-				set_indices_boxsz(32)
-				dcpx=get_clip(data_cpx, sz)
 				xo, fc=refine_align(dcpx, xf, pts, options, lr=1e-2)
 				fid=fc>frcs
 				xfsnp[fid]=xo[fid]
 				frcs[fid]=fc[fid]
 			
-			set_indices_boxsz(64)
-			dcpx=get_clip(data_cpx, sz)
-			xfsnp, frcs=refine_align(dcpx, xfsnp, pts, options)
-					
-		set_indices_boxsz(maxboxsz)
-		dcpx=get_clip(data_cpx, sz)
-		xfsnp, frcs=refine_align(dcpx, xfsnp, pts, options, lr=1e-4)
+		else:
+			params=set_indices_boxsz(maxboxsz)
+			dcpx=get_clip(data_cpx, params["sz"], clipid)
+			xfsnp, frcs=refine_align(dcpx, xfsnp, pts, options, lr=1e-3)
 			
 		save_ptcls_xform(xfsnp, raw_boxsz, options, frcs)
 
@@ -1022,6 +1040,7 @@ def main():
 				allgrds=allgrds.reshape((len(allgrds), npt, 5))
 				
 		#### build deep networks and make sure they work
+		
 		if options.encoderin:
 			encode_model=tf.keras.models.load_model(f"{options.encoderin}",compile=False)
 		else:
@@ -1029,34 +1048,44 @@ def main():
 			
 		if options.decoderin:
 			decode_model=tf.keras.models.load_model(f"{options.decoderin}",compile=False)
+			
+		elif options.anchor:
+			anchor=np.loadtxt(options.anchor)[:,:3]
+			anchor=tf.constant(anchor,dtype=floattype)
+			decode_model=build_decoder_anchor(pts, anchor, ninp=options.nmid)
+			
 		else:
 			decode_model=build_decoder(pts[0].numpy(), ninp=options.nmid, conv=options.conv,mid=options.ndense)
 		
 		mid=encode_model(allgrds[:bsz])
+		print("Gaussian model shape: ",pts.shape)
 		print("Latent space shape: ", mid.shape)
 		out=decode_model(mid)
 		print("Output shape: ",out.shape)
 		print("Deviation from neutral model: ", np.mean(abs(out-pts)))
 		
-		#### actual training
-		ptclidx=allscr>-1
-		trainset=tf.data.Dataset.from_tensor_slices((allgrds[ptclidx], dcpx[0][ptclidx], dcpx[1][ptclidx], xfsnp[ptclidx]))
-		trainset=trainset.batch(bsz)
-		
-		train_heterg(trainset, pts, encode_model, decode_model, params, options)
-		
-		if options.decoderout!=None: 
-			decode_model.save(options.decoderout)
-			print("Decoder saved as ",options.decoderout)
+		if options.niter>0:
+			#### actual training
+			ptclidx=allscr>-1
+			trainset=tf.data.Dataset.from_tensor_slices((allgrds[ptclidx], dcpx[0][ptclidx], dcpx[1][ptclidx], xfsnp[ptclidx]))
+			trainset=trainset.batch(bsz)
 			
-		if options.encoderout!=None: 
-			encode_model.save(options.encoderout)
-			print("Encoder saved as ",options.encoderout)
-		
+			train_heterg(trainset, pts, encode_model, decode_model, params, options)
+			
+			if options.decoderout!=None: 
+				if os.path.isfile(options.decoderout):
+					os.remove(options.decoderout)
+				decode_model.save(options.decoderout)
+				print("Decoder saved as ",options.decoderout)
+			if options.encoderout!=None: 
+				if os.path.isfile(options.encoderout):
+					os.remove(options.encoderout)
+				encode_model.save(options.encoderout)
+				print("encoder saved as ",options.encoderout)
+			
 		## conformation output
-		mid=calc_conf(encode_model, allgrds[ptclidx], 1000)
-		
 		if options.midout:
+			mid=calc_conf(encode_model, allgrds[ptclidx], 1000)
 			sv=np.hstack([np.where(ptclidx)[0][:,None], mid])
 			print(mid.shape, sv.shape)
 			np.savetxt(options.midout, sv)

@@ -153,7 +153,9 @@ class SptAlignTask(JSTask):
 			for i,a in zip(info3d, alipm):
 				i["xform.align3d"]=a["xform.align3d"]
 				i["score"]=a["score"]
-		
+				if "orig_idx" in a:
+					i["orig_idx"]=a["orig_idx"]
+			
 		if options.aliptcls2d!="":
 			if options.debug:
 				print("loading past alignment from {}...".format(options.aliptcls2d))
@@ -214,14 +216,14 @@ class SptAlignTask(JSTask):
 		rets=[]
 		for di in self.data:
 			## prepare metadata
-			dc=info2d[di]
-			fname=dc["src"].replace("particles", "particles3d")
+			dc=info2d[di] ## dictionary for the current 2d particle
+			fname=dc["src"].replace("particles", "particles3d", 1)
 			tid=dc["tilt_id"]
 			
-			## all 2d and 3d particles on the same tilt of the tomogram
+			## all 3d particles from the tomogram
 			d3d0=[d for d in info3d if d["src"]==fname]
-			d2d=[]
-			d3d=[]
+			d2d=[] ## all 2d particles from the selected tilt of that tomogram
+			d3d=[] ## same as d3d0, but excluding the particles that are missing on the selected tilt
 			for d3 in d3d0:
 				d2=[info2d[d] for d in d3["idx2d"]]
 				d2=[d for d in d2 if d["tilt_id"]==tid]
@@ -237,7 +239,9 @@ class SptAlignTask(JSTask):
 			xfpj=[d["xform.projection"] for d in d2d]
 			xfraw=[a*b for a,b in zip(xfpj, txfs)]
 			score=0
-			ip=[i for i,d in enumerate(d2d) if d["idx3d"]==info2d[di]["idx3d"]][0]
+			if options.debug: print(dc, d2d, d3d0, d3d)
+			## the index of the selected particle from all particles on the same tilt
+			ip=[i for i,d in enumerate(d2d) if d["idx3d"]==dc["idx3d"]][0]
 			
 			if frompast:
 				xfali=[d["pastxf"] for d in d2d]
@@ -258,7 +262,11 @@ class SptAlignTask(JSTask):
 			
 			d3dsel=[d3d[i] for i in srtid]
 			d2dsel=[d2d[i] for i in srtid]
-			refid=[d["idx3d"]%2 for d in d2dsel]
+			if "orig_idx" in d3dsel[0]:
+				refid=[d["orig_idx"]%2 for d in d3dsel]
+				
+			else:
+				refid=[d["idx3d"]%2 for d in d2dsel]
 			
 			if options.use3d:
 				## use projection of 3d particles. a bit too slow...
@@ -393,17 +401,24 @@ class SptAlignTask(JSTask):
 			dxf.set_trans(dxf.get_trans()*ny/ss)
 			xf=dxf*xf
 			
+			d3=info3d[dc["idx3d"]]
+			if "orig_idx" in d3:
+				clsid=d3["orig_idx"]%2
+			else: 
+				clsid=dc["idx3d"]%2
+			
 			c={
 				"src":dc["src"], 
 				"idx":dc["idx"],
 				"xform.projection":xf, 
 				"score":score,
-				"class":dc["idx3d"]%2, 
+				"class":clsid, 
 				"defocus":defocus, 
 				"dxf":dxf,
 				"tilt_id":tid,
 				"ptcl3d_id":dc["idx3d"]
 				}
+			
 			rets.append((di,c))
 
 			callback(len(rets)*100//len(self.data))

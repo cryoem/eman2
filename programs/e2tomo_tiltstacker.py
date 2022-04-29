@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #====================
-#Author: Jesus Galaz-Montoya sep/2019 , Last update: dec/2021
+#Author: Jesus Galaz-Montoya sep/2019 , Last update: apr/2022
 #====================
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
@@ -31,6 +31,7 @@ from __future__ import division
 from past.utils import old_div
 from builtins import range
 from EMAN2_utils import *
+import EMAN2_utils
 from EMAN2 import *
 import sys
 import math
@@ -65,7 +66,9 @@ def main():
 	parser.add_argument("--input", type=str, default=None, help="""String common all files to process. For example, to process all .mrc files in a directory, you would run e2tomo_tiltstacker.py --input=.mrc <parameters>.""")
 
 	parser.add_argument("--lowesttilt",type=float,default=0.0,help="""Lowest tilt angle. If not supplied, it will be assumed to be -1* --tiltrange.""")
-			
+	
+	parser.add_argument("--mdoc", type=str, default=None, help="""Unsorted .mdoc file to derive the angles and order of the tiltseries from if angles are not in the image filenames. This will also generate a defocuses file.""")
+
 	parser.add_argument("--path",type=str,default='tomostacker',help="""Directory to store results in. The default is a numbered series of directories containing the prefix 'sptstacker'; for example, sptstacker_02 will be the directory by default if 'sptstacker_01' already exists.""")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--precheckfiles",action="store_true",default=False,help=""""Make sure that only valid images found by --input=* are processed -if unreadable or bad images are fed to the program, it might crash.""")
@@ -84,6 +87,13 @@ def main():
 	#Make sure input file is EMAN2 readable
 	#'''
 	
+	if not options.anglesindxinfilename and not options.mdoc:
+		if options.tiltrange and options.tiltstep:
+			pass
+		elif not options.tiltstep and not options.tiltrange:
+			print("\nERROR: in the abscence of --tiltstep and --tiltrange, you must provide either --anglesindxinfilename or --mdoc")
+			sys.exit(1)
+
 	print("\n--input={}".format(options.input))
 
 	stem =  os.path.basename( options.input.replace('*','') )
@@ -93,23 +103,40 @@ def main():
 	if not dirname:
 		dirname='.'
 	#files2process = fsindir(directory=dirname,stem=stem)
-	files2process = fsindir(dirname)
-	print("\nfound raw files2process={}".format(files2process))
+	files2process_raw = fsindir(dirname)
+	print("\nfound files2process_raw={}".format(files2process_raw))
 
-	files2process = [dirname + '/' + f for f in files2process if stem in f]
-	print("\nwith full path, files2process={}".format(files2process))
+	files2process = [dirname + '/' + f for f in files2process_raw if stem in f and '.txt' not in f[-4:] and '.' not in f[0] and '.mdoc' not in f[-5:]]
+	#print("\nfiltered files2process={}".format(files2process))
+
+	files2process_clean = []
+
+	extensions = EMAN2_utils.extensions()
+	for f in files2process:
+		if f.lower().endswith( tuple(extensions) ):
+			try:
+				hdr = EMData(f,0,True)
+				files2process_clean.append(f)
+			except:
+				#files2process.remove(f)
+				print("\nskipping file={} because it doesn't seem to be an image".format(f)) 
+		else:
+			#files2process.remove(f)
+			print("\nrskipping file={} because it doesn't seem to have a valid image extension".format(f)) 
+		
+	#print("\nwith full path, files2process={}".format(files2process_clean))
 
 	if options.precheckfiles:
 		good=[]
 		bad=[]
-		for g in files2process:
+		for g in files2process_clean:
 			try:
 				hdr=EMData(g,0,True)
 				good.append(g)
 			except:
 				bad.apppend(g)
 		if good:
-			files2process = good
+			files2process_clean = good
 		else:
 			print("\nERROR: could not find any readable image files with --input={}".format(options.input))
 			sys.exit(1)
@@ -119,9 +146,9 @@ def main():
 				print(b)
 
 
-	files2process.sort(key = lambda s: float(re.search('(\+|-)?\d+(\.\d+)?', s).group()))
+	files2process_clean.sort(key = lambda s: float(re.search('(\+|-)?\d+(\.\d+)?', s).group()))
 
-	print("\n(e2spt_tomostacker.py)(main) and they've been sorted as follows={}".format(files2process))
+	print("\n(e2spt_tomostacker.py)(main) files2process_clean and sorted={}".format(files2process_clean))
 
 
 	if options.lowesttilt == 0.0 and options.tiltrange:
@@ -133,7 +160,7 @@ def main():
 	print("\nLogging")
 	logger = E2init(sys.argv, options.ppid)
 
-	print("\n(e2spt_tomostacker.py)(main) These many img files were found n={} in directory={}".format( len(files2process), dirname) )		
+	print("\n(e2spt_tomostacker.py)(main) These many img files were found n={} in directory={}".format( len(files2process_clean), dirname) )		
 
 	if dirname:
 		options.path = dirname + "/" + options.path
@@ -145,14 +172,19 @@ def main():
 	minima=[]
 	maxima=[]
 
-	for f in files2process:
+	for f in files2process_clean:
 		#intiltimgfile =	intiltsdict[index][0]
-		intiltimg = EMData( f, 0 )
-		means.append(intiltimg['mean'])
-		sigmas.append(intiltimg['sigma'])
-		minima.append(intiltimg['minimum'])
-		maxima.append(intiltimg['maximum'])
-		#stats_dict.update( { index:{'mean':mean,'sigma':sigma,'maximum':maximum,'minimum':minimum} } )
+		try:
+			intiltimg = EMData( f, 0 )
+			means.append(intiltimg['mean'])
+			sigmas.append(intiltimg['sigma'])
+			minima.append(intiltimg['minimum'])
+			maxima.append(intiltimg['maximum'])
+			#stats_dict.update( { index:{'mean':mean,'sigma':sigma,'maximum':maximum,'minimum':minimum} } )
+		except:
+			print("\nERROR: cannot get statistics for img={}. May not be a valid image".format(f))
+			sys.exit(1)
+			continue
 
 	mean_avg = numpy.mean(means)
 	sigma_avg = numpy.mean(sigmas)
@@ -165,7 +197,7 @@ def main():
 	maximum_std = numpy.std(maxima)
 
 	files2process_good = []
-	for f in files2process:
+	for f in files2process_clean:
 		img = EMData( f, 0 )
 		mean = img['mean']
 		sigma = img['sigma']
@@ -342,7 +374,8 @@ def writetlt( angles, options ):
 
 def organizetilts( options, intilts, raworder=False ):
 	
-	intilts = list(set(intilts)) #make extra sure there are no duplicate files
+	intilts_unsorted = list(set(intilts)) #make extra sure there are no duplicate files
+	intilts = intilts_unsorted.copy()
 	intilts.sort()
 
 	intiltsdict = {}
@@ -439,6 +472,67 @@ def organizetilts( options, intilts, raworder=False ):
 		
 		angles=list(finalangles)
 
+
+	elif options.mdoc:
+
+		stemf,extensionf = os.path.splitext(os.path.basename(options.mdoc))
+
+		if not extensionf:
+			mdocs = [ f for f in os.listdir(os.getcwd()) if '.mdoc' in f[-5:] and options.mdoc in f]
+			truemdocs=[]
+			if mdocs:
+				if len(mdocs)>1:
+					for mdoc in mdocs:
+						if 'unsorted' in mdoc:
+							truemdocs.append(mdoc)
+					if len(truemdocs) > 1:
+						print("\nERROR: there's more than one valid candidate file. Make sure to have only one valid mdoc file in this directory. mdocs={}".format(mdocs))
+						sys.exit(1)
+				elif len(mdocs) == 1:
+					truemdocs.append(mdocs[0])
+			else:
+				print("\nERROR: --mdoc was provided a string that is not a complete file name, {}; attempts to find an mdoc file with this string failed; copy a valid mdoc file to this directory".format(options.mdoc))
+				sys.exit(1)
+			
+			options.mdoc = truemdocs[0]
+			
+		stemf,extensionf = os.path.splitext(os.path.basename(options.mdoc))
+
+		stemintilts,extensionintilts = os.path.splitext(os.path.basename(intilts[0]))
+
+		with open(options.mdoc,'r') as f:
+			bigls = [l for l in f.read().split('\n\n') if 'ZValue' in l]
+
+			if options.verbose:
+				print("\nnumber of entries for distinct images in mdocfile={} are len(bigls)={}".format(m,len(bigls)))
+
+			collectionlines = [ str(int( l.split("[ZValue = " )[-1].split(']\n')[0] ))+ "\t" + str(round(float( l.split("TiltAngle = " )[-1].split('\n')[0] ),2)) +"\n" for l in bigls ]
+			writef(collectionlines, options.path +'/' + stemf + ".collection")
+
+			angles_and_defocuses_and_collection_unsorted = [ [round(float( l.split("TiltAngle = " )[-1].split('\n')[0] ),2), round(float( l.split("\nDefocus = " )[-1].split('\n')[0] ),2), int( l.split("[ZValue = " )[-1].split(']\n')[0] ), os.path.basename( l.split("SubFramePath = ")[-1].split("\n")[0] ) ] for l in bigls ]
+			angles_and_defocuses_and_collection_sorted = angles_and_defocuses_and_collection_unsorted.copy()
+			angles_and_defocuses_and_collection_sorted.sort()
+
+			anglelines = [ str(a[0]) + "\n" for a in angles_and_defocuses_and_collection_sorted ]
+			defocuslines = [ str(d[1]) + "\n" for d in angles_and_defocuses_and_collection_sorted ]
+
+			if '-unsorted' in f:
+				writef(anglelines, options.path +'/' + stemf.replace('.mrc-unsorted','') + ".rawtlt")
+				writef(defocuslines, options.path +'/' + stemf.replace('.mrc-unsorted','') + ".mdefocus")
+			else:
+				writef(anglelines, options.path +'/' + stemf.replace('.mrc','') + ".rawtlt")
+				writef(defocuslines, options.path +'/' + stemf.replace('.mrc','') + ".mdefocus")
+		
+			intiltsfrommdoc = [ d[-1].split('\\')[-1].replace('\n','') + "\n" for d in angles_and_defocuses_and_collection_sorted ]
+			tag,newext = comparetilts(intilts,intiltsfrommdoc)
+
+			#intiltsdictl = [ str(int( l.split("[ZValue = " )[-1].split(']\n')[0] ))+ "\t" + str(round(float( l.split("TiltAngle = " )[-1].split('\n')[0] ),2)) +"\n" for l in bigls ]
+			#intiltsdict.update( { newindexintiltseries:[ intilt, angle, collectionindex ]} )			
+
+			for i in range(len(angles_and_defocuses_and_collection_sorted)):
+				intiltsdict.update( { i:[ os.path.splitext(angles_and_defocuses_and_collection_sorted[i][3])[0].split('\\')[-1]+tag+newext, angles_and_defocuses_and_collection_sorted[i][0], angles_and_defocuses_and_collection_sorted[i][2] ]} )
+
+						
 	else:
 		angles = getangles( options, len(intilts) )			#This returns angles from -tiltrange to +tiltrange if --negativetiltseries is supplied; from +tiltrange to -tiltrange otherwise
 	
@@ -524,12 +618,51 @@ def organizetilts( options, intilts, raworder=False ):
 					indexintiltseries = indexesintiltseries[k-1] + indexesintiltseries[k-1] - indexesintiltseries[k-2]
 					collectionindex = collectionindexes[k-1] + collectionindexes[k-1] - collectionindexes[k-2]
 				
-					
-			
 			intiltsdict.update( { indexintiltseries:[ intilts[k],tiltangle,collectionindex ]} )
 				#print "\nadded collectionIndex=%d, tiltangle=%f, indexintiltseries=%d" % ( collectionindex, tiltangle, indexintiltseries )
  				
 	return intiltsdict
+
+
+def comparetilts(intilts,intiltsfrommdoc):
+	intilts.sort()
+	intiltsfrommdoc.sort()
+	tags = []
+	newext = ''
+	print("\n(comparetilts) len(intilts)={}, type(intilts)={}, len(intiltsfrommdoc)={}, type(intiltsfrommdoc={})".format(len(intilts),type(intilts),len(intiltsfrommdoc),type(intiltsfrommdoc)))
+	for i in range(len(intilts)):
+		stem,ext = os.path.splitext( os.path.basename(intilts[i]) )
+		mstem,mext = os.path.splitext( os.path.basename(intiltsfrommdoc[i]) )
+		print("\nstem={}, mstem={}".format(stem,mstem))
+		
+		tag=''
+		if len(mstem) < len(stem):
+			tag = stem.replace(mstem,'')
+		elif len(mstem) > len(stem):
+			tag = mstem.replace(stem,'')
+	
+		if tag:
+			tags.append(tag)
+		if ext != mext:
+			newext = ext
+
+	tags = list(set(tags))
+	if tags:
+		if len(tags) == 1:
+			return tags[0],newext
+		elif len(tags) > 1:
+			print("\nlen(tags)={}, and tags are={}".format(len(tags),tags))
+			print("\nERROR: the tilt images, for example {}, do not match the filenames derived from the .mdoc file; for example {} ".format(intilts[0],intiltsfrommdoc[0]))
+			print("\nif the difference between them is the same in all images, this can be fixed, but more than one set of differences was found = {}".format(tags))
+			sys.exit(1)
+	else:
+		return '',newext
+
+
+def writef(lines,filename):
+	with open(filename, 'w') as g:
+		g.writelines(lines)
+	return
 
 
 def getindxs( string ):

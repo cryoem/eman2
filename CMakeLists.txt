@@ -4,7 +4,7 @@ PROJECT(EMAN
 		LANGUAGES CXX
 		)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -80,7 +80,11 @@ cmake_print_variables(CMAKE_PREFIX_PATH)
 
 include(cmake/find_all.cmake)
 
-set(CMAKE_INSTALL_RPATH "${SP_DIR}")
+if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" )
+	set(CMAKE_INSTALL_RPATH "${SP_DIR}")
+else()
+	set(CMAKE_INSTALL_RPATH "${SP_DIR};${EMAN_PREFIX_LIB}")
+endif()
 
 OPTION(ENABLE_AUTODOC "enable latex/doxygen document generation and etc. " OFF)
 

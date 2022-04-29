@@ -96,6 +96,7 @@ def main():
 	parser.add_argument("--postxf", type=str,help="a file listing post transforms (see http://eman2.org/e2tomo_more), or for simple symmetry, <sym>,<cx>,<cy>,<cz> where the coordinates specify the center of a single subunit", default=None)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)	
 	parser.add_argument("--skip3d", action="store_true", default=False ,help="do not make 3d particles. only generate 2d particles and 3d header. ")
+	parser.add_argument("--loadali2d", type=str,help="extract polished particles using existing subtilt alignment. Only works with --jsonali within the same refinement", default="")
 
 	#parser.add_argument("--shrink3d", type=int, help="Only shrink 3d particles by x factor",default=-1)
 	parser.add_argument("--verbose", type=int,help="verbose", default=1)
@@ -598,11 +599,15 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 		pos=ppos[pid]
 		
 		## the header info will be added to the header of 3d particles
+		dxfs=[]
 		if len(info)>0:
 			hdr=info[pid]
+			if "dxfs2d" in hdr:
+				dxfs=hdr.pop("dxfs2d")
 		else:
 			hdr={}
 		
+		#print(len(dxfs), hdr)
 		#### 3 modes for particle coordinates input
 		if type(pos)==type(Transform()):
 			## xform object from spt allignment json/lst
@@ -722,6 +727,13 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 			
 			#### save the metadata in header of 2d particle
 			xform=Transform({"type":"xyz","ytilt":tpm[3],"xtilt":tpm[4], "ztilt":tpm[2], "tx":txdf, "ty":tydf})
+			if len(dxfs)==len(imgs):
+				dxf=dxfs[nid]
+				#print(nid, dxf)
+				xform=dxf*xform
+				txdf,tydf,_=xform.get_trans()
+				
+				
 			e["xform.projection"]=xform
 			e["ptcl_source_coord"]=[float(txint), float(tyint), float(dz)]
 			e["ptcl_source_src"]=options.tltfile
@@ -893,6 +905,18 @@ def parse_json(options):
 				"xf":nf["xform.align3d"],
 				"score":score})
 			
+		if options.loadali2d:
+			dr=os.path.dirname(options.loadali2d)
+			if dr!=os.path.dirname(options.jsonali):
+				print("--loadali2d and --jsonali must from the same spt_xx folder")
+				exit()
+			
+			info3d=load_lst_params("{}/particle_info_3d.lst".format(dr))
+			ali2d=load_lst_params(options.loadali2d)
+			for i,i3 in enumerate(info3d):
+				i2d=i3["idx2d"]
+				data[i]["dxfs2d"]=[ali2d[i2]["dxf"] for i2 in i2d]
+				
 	
 	fs=[d["src"] for d in data]
 	fnames, count=np.unique(fs, return_counts=True)
@@ -949,10 +973,10 @@ def parse_json(options):
 		ids=np.array([d["srci"] for d in data if d["src"]==fname])
 		ptclxfs=[Transform(d["xf"]) for d in data if d["src"]==fname]
 		score=np.array([d["score"] for d in data if d["src"]==fname])
-		#sid=np.argsort(score)
-		#pos=pos[sid]
-		#ptclxfs=[ptclxfs[s] for s in sid]
-		#score=score[sid]
+		if options.loadali2d:
+			dxfs=[d["dxfs2d"] for d in data if d["src"]==fname]
+		else:
+			dxfs=[[] for d in data if d["src"]==fname]
 		
 		info=[]
 		newxfs=[]
@@ -965,7 +989,7 @@ def parse_json(options):
 				a=ali.inverse()
 				a.translate(c[0], c[1], c[2])
 				newxfs.append(a)
-				info.append({"orig_ptcl":str(fname),"orig_idx":int(ids[i]),"orig_xf":pxf})
+				info.append({"orig_ptcl":str(fname),"orig_idx":int(ids[i]),"orig_xf":pxf, "dxfs2d":dxfs[i]})
 
 		newpos=np.array([p.get_trans() for p in newxfs])
 		if len(newpos)>1:

@@ -829,6 +829,7 @@ Transform Transform::get_vflip_transform() const {
 Dict Transform::get_rotation(const string& euler_type) const
 {
 	Dict result;
+    //printf(" Hello from Transform \n");
 
 	//float max = 1 - ERR_LIMIT;
 	float scale;
@@ -873,8 +874,8 @@ Dict Transform::get_rotation(const string& euler_type) const
 
 	} // ends separate cases: alt close to 0, 180, or neither
 
-	phi = phi-360.0*floor(phi/360.0);
-	az  = az -360.0*floor(az/360.0);
+    //phi = phi-360.0*floor(phi/360.0);
+	//az  = az -360.0*floor(az/360.0);
 
 //  get phiS, psiS (SPIDER)
 	if (cosalt >= 1) {  // that is, alt close to 0
@@ -948,17 +949,17 @@ Dict Transform::get_rotation(const string& euler_type) const
             
         double A0 =(matrix[1][2]-matrix[2][1])/2.0;
         double A1 =(matrix[2][0]-matrix[0][2])/2.0;
-        double A2 =(matrix[1][2]-matrix[2][0])/2.0;
+        double A2 =(matrix[0][1]-matrix[1][0])/2.0;
         double sinomega = sqrt(A0*A0+A1*A1+A2*A2);
 
-        if (cosomega>1.0) cosomega=1.0;
+        if (cosomega> 1.0) cosomega= 1.0;
 		if (cosomega<-1.0) cosomega=-1.0;
 		
 		  // matrix(x,y)-matrix(y,x) = 2 n_z   sin(omega) etc
 		 // trace matrix = 1 + 2 cos(omega)
-		double cosOover2= sqrt( (1.0 +cosomega)/2.0);
-		double sinOover2= sinomega/cosOover2/2.0;
-		//double sinOover2= sqrt((1.0 -cosomega)/2.0);
+		double cosOover2= sqrt((1.0 +cosomega)/2.0);
+		//double sinOover2= sinomega/cosOover2/2.0;
+		double sinOover2= sqrt((1.0 -cosomega)/2.0);
         //double sinomega = 2* sinOover2*cosOover2;    // Not a  great formula. See above
         
         double n1 = A0/sinomega; 
@@ -968,12 +969,28 @@ Dict Transform::get_rotation(const string& euler_type) const
 		
 		
 		if (sinOover2==1) {// This will also mean sinomega=0, omega =pi, 
-		      n1 = sqrt((matrix[0][0]+1)/2.0)   ;
+              n1 = sqrt((matrix[0][0]+1)/2.0)   ;
 		      n2 = sqrt((matrix[1][1]+1)/2.0)   ;
 		      n3 = sqrt((matrix[2][2]+1)/2.0)   ;
+             if (n1 <= n2){ // n1 is the smallest
+                 if (n2<=n3) {
+                        n3 = sqrt((matrix[2][2]+1)/2.0) ; n1=matrix[0][2]/n3/2.0; n2=matrix[1][2]/n3/2.0; } 
+                 else { n2 = sqrt((matrix[1][1]+1)/2.0) ; n1=matrix[0][1]/n2/2.0; n3=matrix[2][1]/n2/2.0; }}
+             else { // n2 is the smallest
+                 if (n1<=n3) {
+                        n3 = sqrt((matrix[2][2]+1)/2.0) ; n1=matrix[0][2]/n3/2.0; n2=matrix[1][2]/n3/2.0;}
+                 else { n1 = sqrt((matrix[0][0]+1)/2.0) ; n2=matrix[1][0]/n1/2.0; n3=matrix[2][0]/n1/2.0;}}
 		}
-//	        printf("traceR=%lf,OneMinusCosomega=%lf,sinOover2=%lf,cosOover2=%lf,sinomega=%lf,cosomega=%lf,n3=%lf \n",traceR,1-cosomega,sinOover2,cosOover2,sinomega,cosomega,n3);
 
+		
+		if (sinOover2==0) {// This will also mean omega =0, 
+              n1 = 0;
+		      n2 = 0;
+		      n3 = 1;
+		}
+		
+		
+//        printf("traceR=%lf,OneMinusCosomega=%lf,sinOover2=%lf,cosOover2=%lf,sinomega=%lf,cosomega=%lf,n3=%lf \n",traceR,1-cosomega,sinOover2,cosOover2,sinomega,cosomega,n3);
 		
 		if (type == "quaternion"){
 		    result["e0"] = cosOover2 ;
@@ -983,7 +1000,9 @@ Dict Transform::get_rotation(const string& euler_type) const
 		}
 
 		if (type == "spin"){
-		    result["omega"] = EMConsts::rad2deg * asin(sinomega); //Changed by PRB
+            double Omega = EMConsts::rad2deg * asin(sinomega);
+            if (cosomega< 0) { Omega = 180-Omega;}
+		    result["omega"] = Omega; //Changed by PRB
 		    result["n1"] = n1;
 		    result["n2"] = n2;
 		    result["n3"] = n3;

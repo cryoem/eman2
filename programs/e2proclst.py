@@ -34,6 +34,7 @@ from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from math import *
+import numpy as np
 import os
 import sys
 
@@ -46,8 +47,9 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	####################
 #	parser.add_argument("--average", action="store_true", help="Averages all input images (without alignment) and writes a single output image")
 	
-	parser.add_argument("--create", type=str, default=None, help="to use this option, the input files should be image files. Specify an .lst or .lsx file to create here (e.g., --create mylst.lst) with references to all of the images in the inputs.")
+	parser.add_argument("--create", type=str, default=None, help="The input file(s) should be image files. To combine .lst files use --merge. Specify an .lst or .lsx file to create here (e.g., --create mylst.lst) with references to all of the images in the inputs.")
 	parser.add_argument("--eosplit", action="store_true", help="Will generate _even and _odd .lst files for each specified input .lst file")
+	parser.add_argument("--split", type=int,default=0, help="Will put every nth particle in a separate numbered .lst file based on --create name. Ignores other subset selection options! Single input only!")
 
 	parser.add_argument("--dereforig", type=str, default=None, help="Extract the data_source and data_n parameters from each image in the file and create a new .lst file referencing the original image(s)")
 
@@ -64,6 +66,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 
 	parser.add_argument("--merge", type=str, default=None, help="Specify the output name here. This will concatenate all of the input .lst files into a single output")
 	parser.add_argument("--mergesort", type=str, default=None, help="Specify the output name here. This will merge all of the input .lst files into a single (resorted) output")
+	parser.add_argument("--mergeinterleave", type=str, default=None, help="Specify the output name here. Interleaves images from input .lst files, eg - A0,B0,C0,A1,B1,C1,... truncates based on size of smallest input, eg- 1000,500,300 -> 900")
 	parser.add_argument("--mergeeo", action="store_true", default=False, help="Merge even odd lst.")
 	parser.add_argument("--minhisnr", type=float, help="Integrated SNR from 1/10-1/4 1/A must be larger than this",default=-1,guitype='floatbox', row=8, col=1)
 	parser.add_argument("--minlosnr", type=float, help="Integrated SNR from 1/200-1/20 1/A must be larger than this",default=-1,guitype='floatbox', row=8, col=0)
@@ -77,6 +80,9 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	parser.add_argument("--range", type=str, default=None, help="Range of particles to use. Works only with --create option. Input of 0,10,2 means range(0,10, step=2).")
 	parser.add_argument("--retype", type=str, default=None, help="If a lst file is referencing a set of particles from particles/imgname__oldtype.hdf, this will change oldtype to the specified string in-place (modifies input files)")
 	parser.add_argument("--refile", type=str, default=None, help="similar to retype, but replaces the full filename of the source image file with the provided string")
+	parser.add_argument("--shuffle", action="store_true", default=False, help="shuffle list inplace.")
+	parser.add_argument("--sym", type=str, default=None, help="apply symmetry to a list of particles with xform.projection by duplicating each particle N time. only used along with a .lst input")
+	parser.add_argument("--extractattr", type=str, default=None, help="extract an attribute from particle header as an entry in the list")
 
 	parser.add_argument("--nocomments", action="store_true", default=False, help="Removes the comments from each line of the lst file.")
 
@@ -156,7 +162,28 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 		
 		lst=LSXFile(options.create,False,cmt)
 		
-		if options.mergeeo:
+		if options.split>1:
+			if len(args)>1 : 
+				print("Error: single input only. For multiple inputs create a single .lst first, then split it.")
+				exit()
+			if not args[0].endswith(".lst"):
+				print("Error: only lst files can be used as input with --split")
+				exit()
+			
+			lsin=LSXFile(args[0])
+			#remove existing outputs
+			for i in range(options.split):
+				try: os.unlink(f"{options.create[:-4]}_{i}.lst")
+				except: pass
+			#create new outputs
+			lsout=[LSXFile(f"{options.create[:-4]}_{i}.lst") for i in range(options.split)]
+			
+			#split
+			for i in range(len(lsin)):
+				lsout[i%options.split][i//options.split]=lsin[i]
+				
+			exit()
+		elif options.mergeeo:
 			print("Merging two image stacks...")
 			if len(args)!=2:
 				print("Error: Need two inputs...")
@@ -329,6 +356,31 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 
 		if options.verbose : print("{} particles added to {}".format(ntot,options.merge))
 
+	if options.mergeinterleave!=None:
+
+		if options.minlosnr>0 or options.minhisnr>0 or options.mindf>0 or options.maxdf>0 :
+			print("ERROR: --minlosnr and --minhisnr not compatible with --merge. Please use --mergesort instead.")
+			sys.exit(1)
+
+		# with this option we need to start from scratch
+		try: os.unlink(options.mergeinterleave)
+		except: pass
+
+		# create output file
+		lsto=LSXFile(options.mergeinterleave)
+		ntot=0
+		
+		lstsin=[LSXFile(f,True) for f in args]
+		n=min([len(x) for x in lstsin])
+		nl=len(lstsin)
+		
+		for i in range(n):
+			for j,lst in enumerate(lstsin):
+				lsto[i*nl+j]=lst[i]
+
+
+		if options.verbose : print("{} particles added to {}".format(n*nl,options.mergeinterleave))
+
 	if options.mergesort!=None:
 		# create/update output lst
 		lsto=LSXFile(options.mergesort)
@@ -382,6 +434,50 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 				im=lst.read(i)
 				lst.write(i,im[0],im[1])
 			lst.normalize()
+			
+	if options.sym:
+		for f in args:
+			lst=load_lst_params(f)
+			lout=[]
+			x=Transform()
+			nsym=x.get_nsym(options.sym)
+			for atr in ["xform.align3d","xform.projection"]:
+				if atr in lst[0]:
+					break
+			else:
+				print("No required attribute. Need xform.align3d or xform.projection")
+			
+			print(atr)
+			for l in lst:
+				x=l[atr]
+				if atr=="xform.align3d": x=x.inverse()
+				for i in range(nsym):
+					xt=x.get_sym(options.sym, i)
+					q=l.copy()
+					if atr=="xform.align3d": xt=xt.inverse()
+					q[atr]=xt
+					lout.append(q)
+					
+			save_lst_params(lout, f)
+					
+	if options.shuffle:
+		for f in args:
+			lst=load_lst_params(f)
+			np.random.shuffle(lst)
+			save_lst_params(lst, f)
+			
+	if options.extractattr:
+		for f in args:
+			lst=load_lst_params(f)
+			for l in lst:
+				e=EMData(l["src"], l["idx"], True)
+				if e.has_attr(options.extractattr):
+					l[options.extractattr]=e[options.extractattr]
+				else:
+					print("error: not all particles have the specified attribute")
+					return
+			save_lst_params(lst, f)
+			
 	E2end(logid)
 
 

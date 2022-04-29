@@ -49,6 +49,7 @@ try:
 	from eman2_gui.emplot2d import EMPlot2DWidget
 	from eman2_gui.emapplication import EMApp
 except:
+	traceback.print_exc()
 	print("Unable to import Python GUI libraries, PYTHONPATH ?")
 	sys.exit(1)
 
@@ -157,6 +158,9 @@ class GUIFourierSynth(QtWidgets.QWidget):
 		self.cbshifted=QtWidgets.QCheckBox("Shifted")
 		self.hbl1.addWidget(self.cbshifted)
 
+		self.vshftstep=ValBox(self,(1,64),"Shft:",1)
+		self.hbl1.addWidget(self.vshftstep)
+
 		self.bphaseleft=QtWidgets.QPushButton("\u2190")	# phase left
 		self.hbl1.addWidget(self.bphaseleft)
 
@@ -258,7 +262,8 @@ class GUIFourierSynth(QtWidgets.QWidget):
 		QtWidgets.qApp.exit(0)
 
 	def phaseleft(self,v):	# fixed translation in minus direction
-		sft=360.0/len(self.xvals)
+		ss=self.vshftstep.getValue()
+		sft=ss*360.0/len(self.xvals)
 		for i in range(1,len(self.wpha)):
 			self.wpha[i].setValue(fixang(self.wpha[i].getValue()-sft*i),1)
 		self.recompute()
@@ -270,7 +275,8 @@ class GUIFourierSynth(QtWidgets.QWidget):
 		self.recompute()
 
 	def phaseright(self,v):	# fixed translation in plus direction
-		sft=360.0/len(self.xvals)
+		ss=self.vshftstep.getValue()
+		sft=ss*360.0/len(self.xvals)
 		for i in range(1,len(self.wpha)):
 			self.wpha[i].setValue(fixang(self.wpha[i].getValue()+sft*i),1)
 		self.recompute()

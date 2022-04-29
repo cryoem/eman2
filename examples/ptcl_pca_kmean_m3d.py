@@ -18,6 +18,8 @@ def main():
 	parser.add_argument("--nbasis", type=int,help="PCA dimensionality", default=2)
 	parser.add_argument("--setsf", type=str,help="setsf", default="")
 	parser.add_argument("--mode", type=str,help="classify/regress", default="classify")
+	parser.add_argument("--axis", type=str,help="axis for regress. one number for a line, and two numbers separated by comma to draw circles.", default='0')
+	parser.add_argument("--sym", type=str,help="symmetry", default="c1")
 	parser.add_argument("--nptcl", type=int,help="number of particles per class in regress mode", default=2000)
 	parser.add_argument("--threads", default=12,type=int,help="Number of threads to run in parallel on a single computer. This is the only parallelism supported by e2make3dpar")
 	(options, args) = parser.parse_args()
@@ -36,14 +38,25 @@ def main():
 		lbunq=np.unique(lbs)
 		
 	else:
-		p=p2[:,0]
-		print(np.max(abs(p)))
-		rg=np.arange(options.ncls)
-		rg=rg/np.max(rg)-.5
-		mx=2*np.sort(abs(p))[int(len(p)*.9)]
-		print(np.sort(abs(p)))
-		print(mx)
-		rg=rg*mx+np.mean(p)
+		axis=[int(i) for i in options.axis.split(',')]
+		print('regress along axis', axis)
+		if len(axis)==1:
+			p=p2[:,axis[0]]
+			rg=np.arange(options.ncls)
+			rg=rg/np.max(rg)-.5
+			mx=2*np.sort(abs(p))[int(len(p)*.9)]
+			rg=rg*mx+np.mean(p)
+			print(rg)
+			
+		else:
+			p=np.linalg.norm(p2[:, axis], axis=1)
+			mx=np.sort(abs(p))[int(len(p)*.9)]
+			t=np.arange(options.ncls)/options.ncls
+			t=t*np.pi*2
+			rg=np.array([np.cos(t), np.sin(t)]).T
+			rg*=mx
+			print(rg)
+			
 		
 		
 	onames=[]
@@ -62,9 +75,14 @@ def main():
 			ii=(lbs==l)
 			print(onm, np.sum(ii))
 		else:
-			d=abs(p2[:,0]-rg[j])
-			ii=np.argsort(d)[:options.nptcl]
-			print(onm, rg[j], d[ii[-1]])
+			if len(axis)==1:
+				d=abs(p2[:,axis[0]]-rg[j])
+				ii=np.argsort(d)[:options.nptcl]
+				print(onm, rg[j], d[ii[-1]])
+			else:
+				d=np.linalg.norm(p2[:,axis]-rg[j], axis=1)
+				ii=np.argsort(d)[:options.nptcl]
+				print(onm, rg[j], d[ii[-1]])
 		
 		idx=pts[ii,0].astype(int)
 		
@@ -74,7 +92,7 @@ def main():
 		for i in idx:
 			if lstinp:
 				l=lin.read(i)
-				lout.write(-1, l[0], l[1])
+				lout.write(-1, l[0], l[1],l[2])
 			else:
 				lout.write(-1, i, fname)
 			
@@ -89,7 +107,7 @@ def main():
 	for o in onames:
 		t=o[:-3]+"hdf"
 		print(o,t)
-		cmd="e2make3dpar.py --input {} --output {} --pad {} --mode trilinear --no_wt --keep 1 --threads {} {}".format(o,t, options.pad, options.threads, options.setsf)
+		cmd="e2spa_make3d.py --input {} --output {} --pad {} --keep 1 --threads {} {} --sym {}".format(o,t, options.pad, options.threads, options.setsf, options.sym)
 		launch_childprocess(cmd)
 	
 	E2end(logid)

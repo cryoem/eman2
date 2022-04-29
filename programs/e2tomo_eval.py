@@ -21,7 +21,9 @@ def main():
 	usage="This is a GUI program that allows users inspect tomograms easily. Simply run without argument in a tomogram project directory."
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--ppid", type=int,help="", default=None)
+	parser.add_argument("--dir", type=str,help="look at a specified directory instead of tomograms/", default=None)
 	parser.add_argument("--zshift", type=float,help="shift thumbnail image along z. range -.5 to .5. default 0.", default=0)
+	parser.add_argument("--zthick", type=int,help="thickness of thumbnail image. default 0.", default=0)
 
 	parser.add_header(name="orblock1", help='', title="Click launch to evaluate reconstructed tomograms", row=1, col=0, rowspan=1, colspan=2, mode="")
 
@@ -45,7 +47,11 @@ class TomoEvalGUI(QtWidgets.QWidget):
 	
 	def __init__(self, options):
 		
-		self.path="tomograms/"
+		if options.dir==None:
+			self.path="tomograms/"
+		else:
+			self.path=options.dir
+
 		QtWidgets.QWidget.__init__(self,None)
 
 
@@ -71,7 +77,8 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		self.imglst.setColumnWidth(1,200)
 		self.imglst_srtby=0
 		hdr=self.imglst.horizontalHeader()
-		self.imglst.cellClicked[int, int].connect(self.selimg)
+		#self.imglst.cellClicked[int, int].connect(self.selimg)
+		self.imglst.itemSelectionChanged.connect(self.selimg)
 		hdr.sectionPressed[int].connect(self.sortlst)
 		
 		self.wg_thumbnail=EMImage2DWidget(parent=self)
@@ -82,54 +89,49 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		self.wg_thumbnail.setMinimumHeight(330)
 		self.gbl.addWidget(self.wg_thumbnail, 0,1,3,2)
 		
-		self.bt_refresh=QtWidgets.QPushButton("Refresh")
-		self.bt_refresh.setToolTip("Refresh")
-		self.gbl.addWidget(self.bt_refresh, 4,1)
-
-		self.bt_showtlts=QtWidgets.QPushButton("ShowTilts")
-		self.bt_showtlts.setToolTip("Show raw tilt series")
-		self.gbl.addWidget(self.bt_showtlts, 5,1)
-		
-		self.bt_showatlts=QtWidgets.QPushButton("ShowAliTilts")
-		self.bt_showatlts.setToolTip("Show raw tilt series")
-		self.gbl.addWidget(self.bt_showatlts, 5,2)
-		
-		self.bt_show2d=QtWidgets.QPushButton("Show Tomo 2D")
-		self.bt_show2d.setToolTip("Show tomogram by Z slices")
-		self.gbl.addWidget(self.bt_show2d, 6,1)
-		
-		self.bt_clearptcl=QtWidgets.QPushButton("ClearPtcls")
-		self.bt_clearptcl.setToolTip("Clear all ptcls")
-		self.gbl.addWidget(self.bt_clearptcl, 6,2)
+		self.bt_show2d=QtWidgets.QPushButton("Show2D")
+		self.bt_show2d.setToolTip("Show 2D images")
+		self.gbl.addWidget(self.bt_show2d, 4,1)
 		
 		self.bt_runboxer=QtWidgets.QPushButton("Boxer")
 		self.bt_runboxer.setToolTip("Run spt_boxer")
-		self.gbl.addWidget(self.bt_runboxer, 7,1)
+		self.gbl.addWidget(self.bt_runboxer, 5,1)
 		
-		self.bt_runboxercnn=QtWidgets.QPushButton("CNN Boxer")
-		self.bt_runboxercnn.setToolTip("Run spt_boxer_convnet (deep learning particle picker)")
-		self.gbl.addWidget(self.bt_runboxercnn, 7,2)
+		self.bt_refresh=QtWidgets.QPushButton("Refresh")
+		self.bt_refresh.setToolTip("Refresh")
+		self.gbl.addWidget(self.bt_refresh, 4,2)
+		
+		self.bt_showtlts=QtWidgets.QPushButton("ShowTilts")
+		self.bt_showtlts.setToolTip("Show raw tilt series")
+		self.gbl.addWidget(self.bt_showtlts, 6,1)
+		
+		self.bt_showatlts=QtWidgets.QPushButton("ShowAliTilts")
+		self.bt_showatlts.setToolTip("Show raw tilt series")
+		self.gbl.addWidget(self.bt_showatlts, 6,2)
 		
 		self.bt_plottpm=QtWidgets.QPushButton("TiltParams")
 		self.bt_plottpm.setToolTip("Plot tilt parameters")
-		self.gbl.addWidget(self.bt_plottpm, 8,1)
+		self.gbl.addWidget(self.bt_plottpm, 5,2)
 		
 		self.bt_plotloss=QtWidgets.QPushButton("PlotLoss")
 		self.bt_plotloss.setToolTip("Plot alignment loss")
-		self.gbl.addWidget(self.bt_plotloss, 8,2)
+		self.gbl.addWidget(self.bt_plotloss, 7,1)
 		
 		self.bt_plotctf=QtWidgets.QPushButton("PlotCtf")
 		self.bt_plotctf.setToolTip("Plot CTF estimation")
-		self.gbl.addWidget(self.bt_plotctf, 9,1)
+		self.gbl.addWidget(self.bt_plotctf, 7,2)
 		
 		self.bt_evalimage=QtWidgets.QPushButton("EvalImage")
 		self.bt_evalimage.setToolTip("Power spectrum analysis of individual tilt images")
-		self.gbl.addWidget(self.bt_evalimage, 9,2)
+		self.gbl.addWidget(self.bt_evalimage, 8,1)
+		
+		self.bt_clearptcl=QtWidgets.QPushButton("ClearPtcls")
+		self.bt_clearptcl.setToolTip("Clear all ptcls")
+		self.gbl.addWidget(self.bt_clearptcl, 8,2)
 		
 
 		self.bt_show2d.clicked[bool].connect(self.show2d)
 		self.bt_runboxer.clicked[bool].connect(self.runboxer)
-		self.bt_runboxercnn.clicked[bool].connect(self.runboxercnn)
 		self.bt_plotloss.clicked[bool].connect(self.plot_loss)
 		self.bt_plottpm.clicked[bool].connect(self.plot_tltparams)
 		self.bt_showtlts.clicked[bool].connect(self.show_tlts)
@@ -176,7 +178,14 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		infonames=[]
 		for i,name in enumerate(files):
 			info=info_name(base_name(name))
-			if os.path.isfile(info):
+			if self.options.dir:
+				check=False
+				for s in ['hdf', 'mrc', 'mrcs']:
+					if name.endswith(s): check=True
+			else:
+				check=os.path.isfile(info)
+
+			if check:
 				dic={}
 				nbox=0
 				bxcls={}
@@ -409,14 +418,6 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		js=js_open_dict(info_name(info["e2basename"]))
 		subprocess.Popen(f"e2evalimage.py {info['tltfile']} --voltage {js.getdefault('voltage',300.0)} --cs {js.getdefault('cs',2.7)} --box 256 --constbfactor 400",shell=True)
 	
-	def runboxercnn(self):
-		idx, info=self.get_id_info()
-		if idx==None: return
-		modifiers = QtWidgets.QApplication.keyboardModifiers()
-		### do not use launch_childprocess so the gui wont be frozen when boxer is opened
-		subprocess.Popen("e2spt_boxer_convnet.py --ppid {}".format(os.getpid()),shell=True)
-#		subprocess.Popen("e2spt_boxer_convnet.py {} --ppid {}".format(info["filename"], os.getpid()),shell=True)
-
 	def runboxer(self):
 		idx, info=self.get_id_info()
 		if idx==None: return
@@ -461,20 +462,33 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		except:
 			print("cannot write notes...")
 		
-	def selimg(self, row, col):
+	def selimg(self):#, row, col):
+		#print(self.imglst.selectedItems())
+		sel=self.imglst.selectedIndexes()
+		if len(sel)==0:
+			return
+		row=(self.imglst.selectedIndexes()[0].row())
 		idx=self.imglst.item(row, 0).text()
+		
 		info=self.imginfo[int(idx)]
 		hdr=EMData(info["filename"], 0,True)
 		iz=hdr["nz"]//2
 		if self.options.zshift!=0:
 			iz+=int(self.options.zshift*hdr["nz"])
-		e=EMData(info["filename"], 0, False, Region(0,0,iz, hdr["nx"], hdr["ny"],1))
+		if self.options.zthick==0:
+			e=EMData(info["filename"], 0, False, Region(0,0,iz, hdr["nx"], hdr["ny"],1))
+		else:
+			zt=self.options.zthick
+			e=EMData(info["filename"], 0, False, Region(0,0,iz-zt, hdr["nx"], hdr["ny"],zt*2+1))
+			e=e.process("misc.directional_sum",{"axis":'z'})
 		
 		fac=float(hdr["nx"])/self.bt_show2d.width()*.55
 		e.process_inplace('math.fft.resample',{"n":fac})
 		self.wg_thumbnail.set_data(e)
 		self.wg_notes.setText(str(info["notes"]))
 		
+		self.bt_showtlts.setEnabled(len(info["tltfile"])>0)
+		self.bt_showatlts.setEnabled(len(info["tlt_params"])>0)
 		self.bt_plotctf.setEnabled(len(info["defocus"])>0)
 		self.bt_plotloss.setEnabled(len(info["loss"])>0)
 		self.bt_plottpm.setEnabled(len(info["tlt_params"])>0)

@@ -734,6 +734,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 	sgmousepress = QtCore.pyqtSignal(float, float)
 	sgmousemove = QtCore.pyqtSignal(float, float)
 	sgmouserelease = QtCore.pyqtSignal(float, float)
+	sgtransform = QtCore.pyqtSignal(Transform, Transform)
 	name = "SG"
 	def __init__(self, parent=None, SGactivenodeset=set(), scalestep=0.5):
 		"""
@@ -1694,6 +1695,15 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""
 		Update the SG
 		"""
+		
+		# it is important that this be done here rather than inside the rendering code
+		# due to OpenGL rendering contexts
+		try:
+			if self.transform!=self.oldtransform:
+				self.sgtransform.emit(self.oldtransform,self.transform)	# emits the old and new transformations when changed
+		except: pass
+		self.oldtransform=Transform(self.transform)
+
 		self.update()
 		self.updateInspector()
 	

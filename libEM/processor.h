@@ -763,6 +763,9 @@ The basic design of EMAN Processors: <br>\
 				d.put("jkx", EMObject::INT, "Jx+Kx location of the slice in Fourier pixels");
 				d.put("jky", EMObject::INT, "Jy+Ky location of the slice in Fourier pixels");
 				d.put("k", EMObject::FLOAT, "Radius of slice in Fourier pixels, integrates over angle.");
+				d.put("prbk", EMObject::FLOAT, "Radius of slice in Fourier pixels, integrates over angle.");
+				d.put("prbkv2", EMObject::FLOAT, "Radius of slice in Fourier pixels, integrates over angle. k>|q+k|>q");
+				d.put("prb3D", EMObject::FLOAT, "Radius of maximum slic. Returns volume, integrates over angle. k>|q+k|>q");
 				d.put("rfp", EMObject::INT, "Returns a non square 2-D image containing translatinal invariants organized such that X=azimuth. Used for rotational alignment.");
 				d.put("fp", EMObject::INT, "Returns a non-square 2-D image containing n rotationally integrated planes. R&T invariant.");
 				d.put("ffp", EMObject::INT, "Returns a 3-D volume containing n rotationally integrated planes. R&T invariant. This is normally further processed with CTF info to produce fp equivalent.");
@@ -5354,7 +5357,7 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 		static const string NAME;
 	};
 
-	/**This will replace the image with a full-circle 2D fft amplitude rendering.
+	/**This will replace the image with a full-circle 2D or 3D fft amplitude rendering.
 	 */
 	class RealToFFTProcessor:public Processor
 	{
@@ -5373,7 +5376,7 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 
 		string get_desc() const
 		{
-			return "This will replace the image with a full-circle 2D fft amplitude rendering. Note that this renders amplitude, when intensity is more common.";
+			return "This will replace the image with a full-circle/sphere 2D/3d fft amplitude rendering. Note that this produces amplitudes, when intensities are more common.";
 		}
 
 		static const string NAME;

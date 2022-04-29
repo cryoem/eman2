@@ -1,7 +1,7 @@
 #!/bin/sh
 
-# to generate Doxygen documentation under eman2/doc
-# usage: makedoc.sh
+# Generate Doxygen documentation under eman2/doc
+# Usage: makedoc.sh
 
 which doxygen 2>/dev/null 1>/dev/null
 if test ! $? = 0; then
@@ -12,11 +12,10 @@ if test ! $? = 0; then
 fi
 
 echo -n "Start to generate Doxygen documentation. Be patient ... "
-cd ../..
-doxygen  doc/doxygen/Doxyfile
+doxygen
 echo "Done"
 
-rm -rf doc/doxygen_html
-mv -f doc/html doc/doxygen_html
+set -xe
 
-#echo "Documentation is at $PWD/doc/html/index.html"
+rm -rf doxygen_html
+mv -f html doxygen_html

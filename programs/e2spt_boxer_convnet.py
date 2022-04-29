@@ -24,7 +24,7 @@ def main():
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--label", type=str,help="Load previous contour segmentation.", default="tomobox",guitype='strbox',row=0, col=0, rowspan=1, colspan=1)
-	parser.add_argument("--gpuid", type=str,help="Specify the gpu to use", default="",guitype='intbox',row=1, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--gpuid", type=str,help="Specify the gpu to use", default="0",guitype='strbox',row=1, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--mult", type=float,help="multiply data by factor. useful for vpp data...", default=1)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	(options, args) = parser.parse_args()
@@ -92,16 +92,11 @@ class NNet:
 
 		ki=tf.keras.initializers.TruncatedNormal(stddev=0.01)
 		layers=[
-			tf.keras.layers.Conv2D(48, 5, activation="relu", padding=pad,
-						input_shape=(boxsize, boxsize, thick//3), kernel_initializer=ki),
+			tf.keras.layers.Conv2D(48, 9, activation="relu", padding=pad, kernel_initializer=ki,input_shape=(boxsize, boxsize, thick//3)),
 			tf.keras.layers.MaxPooling2D(),
-			tf.keras.layers.Dropout(0.2),
-			tf.keras.layers.Conv2D(32, 7, activation="relu", padding=pad, kernel_initializer=ki),
+			tf.keras.layers.Conv2D(48, 9, activation="relu", padding=pad, kernel_initializer=ki),
 			tf.keras.layers.MaxPooling2D(),
-			tf.keras.layers.Dropout(0.2),
-			tf.keras.layers.Conv2D(32, 7, activation="relu", padding=pad, kernel_initializer=ki),
-			tf.keras.layers.Dropout(0.2),
-			tf.keras.layers.Conv2D(1, 7, padding=pad, activation="relu", kernel_initializer=ki),
+			tf.keras.layers.Conv2D(1, 9, padding=pad, activation="relu", kernel_initializer=ki),
 		]
 		self.model=model=tf.keras.Sequential(layers)
 		self.outsz=self.model.layers[-1].output_shape[1]
@@ -118,8 +113,8 @@ class NNet:
 			out0=tf.math.reduce_max(inp*self.mask2, axis=(1,2))
 			out1=1-tf.math.reduce_max(inp*self.mask, axis=(1,2))
 		else:
-			out0=tf.math.reduce_sum(inp*self.mask2, axis=(1,2))
-			out1=tf.math.reduce_sum(abs(inp-self.mask)*self.mask2, axis=(1,2))
+			out0=tf.reduce_sum(inp*self.mask2, axis=(1,2))
+			out1=tf.reduce_sum(abs(inp-self.mask)*self.mask2, axis=(1,2))
 		return out0, out1
 	
 	def do_training(self, dataset, learnrate=1e-5, niter=10, tarsz=2, usemax=False, posmult=0.5):
@@ -131,10 +126,7 @@ class NNet:
 		m/=np.max(m)
 		self.mask=m[None,:,:,None]
 		m2=np.exp(-.25*ksize*np.sum((np.indices((sz,sz))-(sz-1)/2.)**2, axis=0))
-		if usemax:
-			m2/=np.max(m2)
-		else:
-			m2/=np.sum(m2)
+		m2/=np.max(m2)
 		self.mask2=m2[None,:,:,None]
 		posmult=posmult/(1+posmult)
 		#bce=tf.keras.losses.BinaryCrossentropy()
@@ -145,20 +137,32 @@ class NNet:
 			loss=tf.reduce_mean((1-yt)*out0*(1-posmult)+ yt*out1*posmult)
 			return loss
 		
-		self.model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=learnrate), loss=calc_loss)
-		
+		#self.model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=learnrate), loss=calc_loss)
+		opt=tf.keras.optimizers.Adam(learning_rate=1e-5) 
+		wts=self.model.trainable_variables
 		print("Training...")
 		for it in range(niter):
-			self.model.reset_metrics()
+			#self.model.reset_metrics()
 			cost=[]
 			for image, label in dataset:
-				result = self.model.train_on_batch(image, label)
-				cost.append(result)
+				with tf.GradientTape() as gt:
+					py=self.model(image, training=True)
+					out0=tf.reduce_sum((py-self.mask2)**2, axis=(1,2))[:,0]
+					out1=tf.reduce_sum(py**2, axis=(1,2))[:,0]
+					loss=tf.reduce_mean(out0*label*posmult+out1*(1-label)*(1-posmult))
+					
+				grad=gt.gradient(loss, wts)
+				#print(loss, label, out0[:,0], out1[:,0])
+				opt.apply_gradients(zip(grad, wts))
+					
+				#result = self.model.train_on_batch(image, label)
+				cost.append(loss)
 			print("iteration {}, cost {:.3f}".format(it, np.mean(cost)))
+			#print(out0, out1, label, )
 		
 	def apply_network(self, img):
 		bigbox=img.shape[1]
-		ly=tf.keras.layers.Conv2D(48, 5, activation="relu", input_shape=[bigbox,bigbox,self.thick//3])
+		ly=tf.keras.layers.Conv2D(48, 9, activation="relu", input_shape=[bigbox,bigbox,self.thick//3])
 		modelbig=tf.keras.Sequential([ly]+self.layers[1:])
 		ly.weights[0].assign(self.layers[0].weights[0], read_value=False)
 		ly.weights[1].assign(self.layers[0].weights[1], read_value=False)
@@ -419,7 +423,7 @@ class EMTomobox(QtWidgets.QMainWindow):
 		self.val_niter=TextBox("Niter", 20)
 		self.gbl.addWidget(self.val_niter, 5,2,1,1)
 		
-		self.val_posmult=TextBox("PosMult", 2)
+		self.val_posmult=TextBox("PosMult", 1)
 		self.gbl.addWidget(self.val_posmult, 6,2,1,1)
 		
 		self.val_lossfun = QtWidgets.QComboBox()

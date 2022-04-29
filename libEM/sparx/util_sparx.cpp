@@ -32272,11 +32272,11 @@ void Util::constrained_helix_exhaustive( vector<EMData*> data, vector<EMData*> f
 
 	for (int im = 0; im < ndata; ++im) {
 		for (int iphi = 0; iphi < nphi; ++iphi) {
-			std::auto_ptr<EMData> corr( correlation( refproj[iphi], fdata[im], CIRCULANT, true) );
+			std::unique_ptr<EMData> corr( correlation( refproj[iphi], fdata[im], CIRCULANT, true) );
 			ccfs[im][iphi] = Util::window( corr.get(), nwx, nwy);
 			objectsToDelete.push_back(std::shared_ptr<EMData>(ccfs[im][iphi]));
 			if (! Dsym) {
-				std::auto_ptr<EMData> corr2( correlation( rotproj[iphi], fdata[im], CIRCULANT, true) );
+				std::unique_ptr<EMData> corr2( correlation( rotproj[iphi], fdata[im], CIRCULANT, true) );
 				ccfr[im][iphi] = Util::window( corr2.get(), nwx, nwy);
 				objectsToDelete.push_back(std::shared_ptr<EMData>(ccfr[im][iphi]));
 			}
@@ -32511,9 +32511,9 @@ void Util::constrained_helix_exhaustive( vector<EMData*> data, vector<EMData*> f
 			//#cout << " 2D shift without angle ",nnsx, nnsy
 			
 			//this part below will be changed on a higher level later for Polar2Dm.     2-26-2015@ming
-			std::auto_ptr<EMData> cimage( Util::Polar2Dm(data[im], cnx+nnsx, cny+nnsy, numr, mode) );
+			std::unique_ptr<EMData> cimage( Util::Polar2Dm(data[im], cnx+nnsx, cny+nnsy, numr, mode) );
 			Util::Frngs(cimage.get(), numr);
-			std::auto_ptr<EMData> temp( Util::Crosrng_msg_s( cimage.get(), crefim[iphi], numr) );
+			std::unique_ptr<EMData> temp( Util::Crosrng_msg_s( cimage.get(), crefim[iphi], numr) );
 
 			int ipr = int(psi_max*maxrin/360.0f + 0.5f);
 			int incpsi = (dpsi == 270.0f) ? (maxrin/2) : (0);
@@ -34105,4 +34105,3 @@ int Util::set_freq(EMData* freqvol, EMData* tmp3, EMData* m, float freq, float n
 #undef ptr_m
 #undef ptr_freqvol
 #undef ptr_tmp3
-
