@@ -1506,10 +1506,13 @@ class EMGMM(QtWidgets.QMainWindow):
 			self.jsparm["source_map"]=f"{rpath}/threed_{itr:02d}.hdf"
 			self.jsparm["boxsize"]=a["nx"]
 			self.jsparm["apix"]=a["apix_x"]
-			self.jsparm["sym"]=rparm["sym"]
-			
+			try: self.jsparm["sym"]=rparm["sym"]
+			except:
+				self.jsparm["sym"]="c1"
+				print("symmetry missing, assuming C1")
+				
 			# make projection from threed
-			run(f"e2project3d.py {rpath}/threed_{itr:02d}.hdf --outfile {self.gmm}/proj_in.hdf --orientgen eman:n=500 --sym c1 --parallel thread:4")
+			run(f"e2project3d.py {rpath}/threed_{itr:02d}.hdf --outfile {self.gmm}/proj_in.hdf --orientgen eman:n=500 --sym c1 --parallel thread:5")
 			
 			# Copy mask from refine folder
 			a=EMData(f"{rpath}/mask_tight.hdf")
