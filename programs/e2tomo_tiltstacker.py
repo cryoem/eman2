@@ -295,8 +295,8 @@ def main():
 	currentapix = outtilthdr['apix_x']
 		
 	outstackst = outstackhdf.replace('.hdf','.st')
-	if options.tag:
-		outstackst = outstackhdf.replace('stack','')
+	#if options.tag:
+	#	outstackst = outstackhdf.replace('stack.','.')
 
 	print("\n\n\n\nLAST instance of outstackhdf={}".format(outstackhdf))
 	print("\nbecuase tag={}".format(options.tag))
