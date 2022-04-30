@@ -222,9 +222,11 @@ def main():
 													#-tiltrange to +tiltrange, or 0 to -tiltrange then +tiltstep to +tiltrange, or the opposite of these 
 	outstackhdf = options.path + '/stack.hdf'
 	if options.tag:
-		outstackhdf = options.path + '/' + options.tag + 'stack.hdf'
-		if "_" not in options.tag[-1:]:
-			outstackhdf = options.path + '/' + options.tag + '_stack.hdf'
+		outstackhdf = options.path + '/' + options.tag.rstrip('_') + '.hdf'
+
+		#outstackhdf = options.path + '/' + options.tag + 'stack.hdf'
+		#if "_" not in options.tag[-1:]:
+		#	outstackhdf = options.path + '/' + options.tag + '_stack.hdf'
 
 	if not intiltsdict:
 		print("\n(e2spt_tomostacker.py)(stacker) ERROR: intiltsdict is empty: {}".format(intiltsdict))
@@ -290,6 +292,8 @@ def main():
 	currentapix = outtilthdr['apix_x']
 		
 	outstackst = outstackhdf.replace('.hdf','.st')
+	if options.tag:
+		outstackst = outstackhdf.replace('stack','')
 	stcmd = 'e2proc2d.py	' + outstackhdf + ' ' + outstackst + ' --twod2threed'
 	
 		
