@@ -224,6 +224,9 @@ def main():
 	if options.tag:
 		outstackhdf = options.path + '/' + options.tag.rstrip('_') + '.hdf'
 
+	print("\n\n\n\nFIRST instance of outstackhdf={}".format(outstackhdf))
+	print("\nbecuase tag={}".format(options.tag))
+
 		#outstackhdf = options.path + '/' + options.tag + 'stack.hdf'
 		#if "_" not in options.tag[-1:]:
 		#	outstackhdf = options.path + '/' + options.tag + '_stack.hdf'
@@ -294,6 +297,9 @@ def main():
 	outstackst = outstackhdf.replace('.hdf','.st')
 	if options.tag:
 		outstackst = outstackhdf.replace('stack','')
+
+	print("\n\n\n\nLAST instance of outstackhdf={}".format(outstackhdf))
+	print("\nbecuase tag={}".format(options.tag))
 	stcmd = 'e2proc2d.py	' + outstackhdf + ' ' + outstackst + ' --twod2threed'
 	
 		
@@ -366,10 +372,10 @@ def writetlt( angles, options ):
 	
 	tltfilepath = options.path + '/stack.rawtlt'
 	if options.tag:
-		tltfilepath = options.path + '/' + options.tag + 'stack.rawtlt'
+		tltfilepath = options.path + '/' + options.tag.rstrip('_') + '.rawtlt'
 		#print("""\n(writetlt) tltfilepath={}""".format(tltfilepath))
-		if "_" not in options.tag[-1:]:
-			tltfilepath = options.path + '/' + options.tag + '_stack.rawtlt'
+		#if "_" not in options.tag[-1:]:
+		#	tltfilepath = options.path + '/' + options.tag + '_stack.rawtlt'
 
 	textwriter(lines,options,tltfilepath,invert=0,xvals=None,onlydata=True)
 
