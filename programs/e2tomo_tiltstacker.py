@@ -506,8 +506,10 @@ def organizetilts( options, intilts, raworder=False ):
 			if options.verbose:
 				print("\nnumber of entries for distinct images in mdocfile={} are len(bigls)={}".format(m,len(bigls)))
 
+			stemf_root = stemf.split('.')[0]
+
 			collectionlines = [ str(int( l.split("[ZValue = " )[-1].split(']\n')[0] ))+ "\t" + str(round(float( l.split("TiltAngle = " )[-1].split('\n')[0] ),2)) +"\n" for l in bigls ]
-			writef(collectionlines, options.path +'/' + stemf + ".collection")
+			writef(collectionlines, options.path +'/' + stemf_root + ".collection")
 
 			angles_and_defocuses_and_collection_unsorted = [ [round(float( l.split("TiltAngle = " )[-1].split('\n')[0] ),2), round(float( l.split("\nDefocus = " )[-1].split('\n')[0] ),2), int( l.split("[ZValue = " )[-1].split(']\n')[0] ), os.path.basename( l.split("SubFramePath = ")[-1].split("\n")[0] ) ] for l in bigls ]
 			angles_and_defocuses_and_collection_sorted = angles_and_defocuses_and_collection_unsorted.copy()
@@ -516,12 +518,15 @@ def organizetilts( options, intilts, raworder=False ):
 			anglelines = [ str(a[0]) + "\n" for a in angles_and_defocuses_and_collection_sorted ]
 			defocuslines = [ str(d[1]) + "\n" for d in angles_and_defocuses_and_collection_sorted ]
 
-			if '-unsorted' in f:
-				writef(anglelines, options.path +'/' + stemf.replace('.mrc-unsorted','') + ".rawtlt")
-				writef(defocuslines, options.path +'/' + stemf.replace('.mrc-unsorted','') + ".mdefocus")
-			else:
-				writef(anglelines, options.path +'/' + stemf.replace('.mrc','') + ".rawtlt")
-				writef(defocuslines, options.path +'/' + stemf.replace('.mrc','') + ".mdefocus")
+			writef(anglelines, options.path +'/' + stemf_root  + ".rawtlt")
+			writef(defocuslines, options.path +'/' + stemf_root + ".mdefocus")
+
+			#if '-unsorted' in or 'unsorted' in f:
+			#writef(anglelines, options.path +'/' + stemf.replace('.mrc-unsorted','').replace('-unsorted','').replace('unsorted','').replace('.mrc','')  + ".rawtlt")
+			#writef(defocuslines, options.path +'/' + stemf.replace('.mrc-unsorted','').replace('-unsorted','').replace('unsorted','').replace('.mrc','') + ".mdefocus")
+			#else:
+			#	writef(anglelines, options.path +'/' + stemf.replace('.mrc','') + ".rawtlt")
+			#	writef(defocuslines, options.path +'/' + stemf.replace('.mrc','') + ".mdefocus")
 		
 			intiltsfrommdoc = [ d[-1].split('\\')[-1].replace('\n','') + "\n" for d in angles_and_defocuses_and_collection_sorted ]
 			tag,newext = comparetilts(intilts,intiltsfrommdoc)
