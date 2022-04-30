@@ -222,9 +222,14 @@ def main():
 													#-tiltrange to +tiltrange, or 0 to -tiltrange then +tiltstep to +tiltrange, or the opposite of these 
 	outstackhdf = options.path + '/stack.hdf'
 	if options.tag:
-		outstackhdf = options.path + '/' + options.tag + 'stack.hdf'
-		if "_" not in options.tag[-1:]:
-			outstackhdf = options.path + '/' + options.tag + '_stack.hdf'
+		outstackhdf = options.path + '/' + options.tag.rstrip('_') + '.hdf'
+
+	print("\n\n\n\nFIRST instance of outstackhdf={}".format(outstackhdf))
+	print("\nbecuase tag={}".format(options.tag))
+
+		#outstackhdf = options.path + '/' + options.tag + 'stack.hdf'
+		#if "_" not in options.tag[-1:]:
+		#	outstackhdf = options.path + '/' + options.tag + '_stack.hdf'
 
 	if not intiltsdict:
 		print("\n(e2spt_tomostacker.py)(stacker) ERROR: intiltsdict is empty: {}".format(intiltsdict))
@@ -290,6 +295,11 @@ def main():
 	currentapix = outtilthdr['apix_x']
 		
 	outstackst = outstackhdf.replace('.hdf','.st')
+	#if options.tag:
+	#	outstackst = outstackhdf.replace('stack.','.')
+
+	print("\n\n\n\nLAST instance of outstackhdf={}".format(outstackhdf))
+	print("\nbecuase tag={}".format(options.tag))
 	stcmd = 'e2proc2d.py	' + outstackhdf + ' ' + outstackst + ' --twod2threed'
 	
 		
@@ -362,10 +372,10 @@ def writetlt( angles, options ):
 	
 	tltfilepath = options.path + '/stack.rawtlt'
 	if options.tag:
-		tltfilepath = options.path + '/' + options.tag + 'stack.rawtlt'
+		tltfilepath = options.path + '/' + options.tag.rstrip('_') + '.rawtlt'
 		#print("""\n(writetlt) tltfilepath={}""".format(tltfilepath))
-		if "_" not in options.tag[-1:]:
-			tltfilepath = options.path + '/' + options.tag + '_stack.rawtlt'
+		#if "_" not in options.tag[-1:]:
+		#	tltfilepath = options.path + '/' + options.tag + '_stack.rawtlt'
 
 	textwriter(lines,options,tltfilepath,invert=0,xvals=None,onlydata=True)
 
@@ -506,8 +516,10 @@ def organizetilts( options, intilts, raworder=False ):
 			if options.verbose:
 				print("\nnumber of entries for distinct images in mdocfile={} are len(bigls)={}".format(m,len(bigls)))
 
+			stemf_root = stemf.split('.')[0]
+
 			collectionlines = [ str(int( l.split("[ZValue = " )[-1].split(']\n')[0] ))+ "\t" + str(round(float( l.split("TiltAngle = " )[-1].split('\n')[0] ),2)) +"\n" for l in bigls ]
-			writef(collectionlines, options.path +'/' + stemf + ".collection")
+			writef(collectionlines, options.path +'/' + stemf_root + ".collection")
 
 			angles_and_defocuses_and_collection_unsorted = [ [round(float( l.split("TiltAngle = " )[-1].split('\n')[0] ),2), round(float( l.split("\nDefocus = " )[-1].split('\n')[0] ),2), int( l.split("[ZValue = " )[-1].split(']\n')[0] ), os.path.basename( l.split("SubFramePath = ")[-1].split("\n")[0] ) ] for l in bigls ]
 			angles_and_defocuses_and_collection_sorted = angles_and_defocuses_and_collection_unsorted.copy()
@@ -516,12 +528,15 @@ def organizetilts( options, intilts, raworder=False ):
 			anglelines = [ str(a[0]) + "\n" for a in angles_and_defocuses_and_collection_sorted ]
 			defocuslines = [ str(d[1]) + "\n" for d in angles_and_defocuses_and_collection_sorted ]
 
-			if '-unsorted' in f:
-				writef(anglelines, options.path +'/' + stemf.replace('.mrc-unsorted','') + ".rawtlt")
-				writef(defocuslines, options.path +'/' + stemf.replace('.mrc-unsorted','') + ".mdefocus")
-			else:
-				writef(anglelines, options.path +'/' + stemf.replace('.mrc','') + ".rawtlt")
-				writef(defocuslines, options.path +'/' + stemf.replace('.mrc','') + ".mdefocus")
+			writef(anglelines, options.path +'/' + stemf_root  + ".rawtlt")
+			writef(defocuslines, options.path +'/' + stemf_root + ".mdefocus")
+
+			#if '-unsorted' in or 'unsorted' in f:
+			#writef(anglelines, options.path +'/' + stemf.replace('.mrc-unsorted','').replace('-unsorted','').replace('unsorted','').replace('.mrc','')  + ".rawtlt")
+			#writef(defocuslines, options.path +'/' + stemf.replace('.mrc-unsorted','').replace('-unsorted','').replace('unsorted','').replace('.mrc','') + ".mdefocus")
+			#else:
+			#	writef(anglelines, options.path +'/' + stemf.replace('.mrc','') + ".rawtlt")
+			#	writef(defocuslines, options.path +'/' + stemf.replace('.mrc','') + ".mdefocus")
 		
 			intiltsfrommdoc = [ d[-1].split('\\')[-1].replace('\n','') + "\n" for d in angles_and_defocuses_and_collection_sorted ]
 			tag,newext = comparetilts(intilts,intiltsfrommdoc)
