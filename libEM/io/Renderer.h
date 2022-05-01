@@ -32,7 +32,7 @@ namespace EMAN {
 			std::vector<T> rendered_data(size);
 			size_t count = 0;
 
-		for (size_t i = 0; i < size; ++i) {
+			for (size_t i = 0; i < size; ++i) {
 				if (data[i] <= rendermin) {
 					rendered_data[i] = T(RMIN);
 					count++;
@@ -45,7 +45,7 @@ namespace EMAN {
 					rendered_data[i] = (T)roundf(  (data[i] - rendermin)
 					                             / (rendermax - rendermin)
 					                             * (RMAX - RMIN) + RMIN);
-		}
+			}
 			return std::tuple(rendered_data, count);
 		}
 		else
