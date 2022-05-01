@@ -21,32 +21,32 @@ namespace EMAN {
 	template<class T>
 	auto Renderer::getRenderedDataAndRendertrunc(float *data, size_t size) {
 		if constexpr (!std::is_same<T, float>::value) {
-		float RMIN;
-		float RMAX = (1 << renderbits) - 1;
+			float RMIN;
+			float RMAX = (1 << renderbits) - 1;
 
-		if constexpr(std::is_unsigned<T>::value)
-			RMIN = 0.0f;
-		else
-			RMIN = -(1 << (renderbits - 1));
+			if constexpr(std::is_unsigned<T>::value)
+				RMIN = 0.0f;
+			else
+				RMIN = -(1 << (renderbits - 1));
 
-		auto rendered_data = new T[size];
-		size_t count = 0;
+			auto rendered_data = new T[size];
+			size_t count = 0;
 
 		for (size_t i = 0; i < size; ++i) {
-			if (data[i] <= rendermin) {
-				rendered_data[i] = T(RMIN);
-				count++;
-			}
-			else if (data[i] >= rendermax) {
-				rendered_data[i] = T(RMAX);
-				count++;
-			}
-			else
-				rendered_data[i] = (T)roundf(  (data[i] - rendermin)
-				                             / (rendermax - rendermin)
-				                             * (RMAX - RMIN) + RMIN);
+				if (data[i] <= rendermin) {
+					rendered_data[i] = T(RMIN);
+					count++;
+				}
+				else if (data[i] >= rendermax) {
+					rendered_data[i] = T(RMAX);
+					count++;
+				}
+				else
+					rendered_data[i] = (T)roundf(  (data[i] - rendermin)
+					                             / (rendermax - rendermin)
+					                             * (RMAX - RMIN) + RMIN);
 		}
-		return std::tuple(rendered_data, count);
+			return std::tuple(rendered_data, count);
 		}
 		else
 			return std::tuple(data, (size_t)0);
