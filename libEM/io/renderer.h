@@ -20,6 +20,7 @@ namespace EMAN {
 
 	template<class T>
 	auto Renderer::getRenderedDataAndRendertrunc(float *data, size_t size) {
+		if constexpr (!std::is_same<T, float>::value) {
 		float RMIN;
 		float RMAX = (1 << renderbits) - 1;
 
@@ -46,6 +47,9 @@ namespace EMAN {
 				                             * (RMAX - RMIN) + RMIN);
 		}
 		return std::tuple(rendered_data, count);
+		}
+		else
+			return std::tuple(std::vector<float>(data, data + size), (size_t)0);
 	}
 
 }
