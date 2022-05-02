@@ -1182,7 +1182,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		try: os.unlink(encoder)
 		except: pass
 		if maxbox25<maxbox:
-			if nchunk>2500 : chunk=f"{self.gmm}/sptcl_0.lst"
+			if nchunk>=4000 : chunk=f"{self.gmm}/sptcl_0.lst"
 			else: chunk=f"{self.gmm}/particles.lst"
 			er=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --decoderout {decoder} --encoderout {encoder} --ptclsin {chunk} --heter {conv} --sym {sym} --maxboxsz {maxbox25} --niter 5 {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")
 			if er :
@@ -1193,7 +1193,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			#er=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']//2} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")		
 		if os.path.exists(encoder): encin=f"--encoderin {encoder}"
 		else: encin=""
-		if nchunk<2500:
+		if nchunk<4000:
 			er=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --decoderout {decoder} {encin} --encoderout {encoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")
 		else:
 			chit=(self.currun["trainiter"]-1)//10+1
@@ -1202,9 +1202,9 @@ class EMGMM(QtWidgets.QMainWindow):
 				er+=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --decoderout {decoder} {encin} --encoderout {encoder} --ptclsin {self.gmm}/sptcl_{i}.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {chit} {mask} --nmid {self.currun['dim']} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")
 				encin=f"--encoderin {encoder}"
 
-			# we save the middle layer in this final set of 10 runs
+			# we save the middle layer in this final set of 10 runs, which does not update the stored encoder/decoder
 			for i in range(10):
-				er+=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --decoderout {decoder} {encin} --encoderout {encoder} --ptclsin {self.gmm}/sptcl_{i}.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter 1 {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid_{i}.txt --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")
+				er+=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} {encin}  --ptclsin {self.gmm}/sptcl_{i}.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter 1 {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid_{i}.txt --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")
 				encin=f"--encoderin {encoder}"
 			
 			# Remerge the middle layer
