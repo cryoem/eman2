@@ -137,47 +137,52 @@ def main():
 			#except: pass
 			
 		#mx.write_image("simvec.hdf",0)
-		
-		
-		
-	simmx=(EMData(),EMData(),EMData(),EMData(),EMData(),EMData())
-	for iptcl in range(nptcl):
-		simmx[0].read_image(args[0],0,False,Region(0,iptcl,nref,1))
-		if num_sim>=5 :
-			simmx[1].read_image(args[0],1,False,Region(0,iptcl,nref,1))		#tx
-			simmx[2].read_image(args[0],2,False,Region(0,iptcl,nref,1))		#ty
-			simmx[3].read_image(args[0],3,False,Region(0,iptcl,nref,1))		#dalpha
-			simmx[4].read_image(args[0],4,False,Region(0,iptcl,nref,1))		#mirror
-			try:
-				simmx[5].read_image(args[0],5,False,Region(0,iptcl,nref,1))		#scale
+	
+	# reading regions from HDF files is very inefficient one line at a time
+	# so we read the similarity matrix in chunks of 10k
+	for chunk in range(0,nptcl,10000):		
+		sz=min(nptcl-chunk,10000)
+		chunks=[EMData(args[0],0,False,Region(0,chunk,nref,sz))]
+		if num_sim>=5:
+			chunks.extend((EMData(args[0],1,False,Region(0,chunk,nref,sz)),
+				EMData(args[0],2,False,Region(0,chunk,nref,sz)),
+				EMData(args[0],3,False,Region(0,chunk,nref,sz)),
+				EMData(args[0],4,False,Region(0,chunk,nref,sz))
+			))
+			try: chunks.append(EMData(args[0],5,False,Region(0,chunk,nref,sz)))
 			except: pass
-		
-		# We replace simmx[0] with a new version computed via average vectors
-		if options.simvec:
-			newmx=simmx[0].copy()
-			for i in range(newmx["nx"]):
-				try: 
-#					simmx[0][i]=newmx.cmp("ccc",bvecs[i])
-					simmx[0][i]=newmx.cmp("sqeuclidean",bvecs[i],{"normto":1})
-				except: simmx[0][i]=100000.0		# bad value if we have no reference
-		
-		#hmmm, this code is pretty silly, but harmless, I suppose...
-		maximum=simmx[0]["maximum"]
-		for ic in range(options.sep):
-			cls=simmx[0].calc_min_index()
-			clsmx[0][ic,iptcl]=cls
-			clsmx[1][ic,iptcl]=1.0		# weight
-			if num_sim>=5:
-				clsmx[2][ic,iptcl]=simmx[1][cls]
-				clsmx[3][ic,iptcl]=simmx[2][cls]
-				clsmx[4][ic,iptcl]=simmx[3][cls]
-				clsmx[5][ic,iptcl]=simmx[4][cls]
-				if num_sim>5 : clsmx[6][ic,iptcl]=simmx[5][cls]
-			simmx[0][cls]=maximum		# this is so the next minimum search gets the next highest value
 			
-		E2end(E2n)
+		for iptcl in range(chunk,chunk+sz):
+			simmx=[c.get_clip(Region(0,iptcl-chunk,nref,1)) for c in chunks]
+			simmx[0].read_image(args[0],0,False,Region(0,iptcl,nref,1))
+			
+			# We replace simmx[0] with a new version computed via average vectors
+			if options.simvec:
+				newmx=simmx[0].copy()
+				for i in range(newmx["nx"]):
+					try: 
+	#					simmx[0][i]=newmx.cmp("ccc",bvecs[i])
+						simmx[0][i]=newmx.cmp("sqeuclidean",bvecs[i],{"normto":1})
+					except: simmx[0][i]=100000.0		# bad value if we have no reference
+			
+			#hmmm, this code is pretty silly, but harmless, I suppose...
+			maximum=simmx[0]["maximum"]
+			for ic in range(options.sep):
+				cls=simmx[0].calc_min_index()
+				clsmx[0][ic,iptcl]=cls
+				clsmx[1][ic,iptcl]=1.0		# weight
+				if num_sim>=5:
+					clsmx[2][ic,iptcl]=simmx[1][cls]
+					clsmx[3][ic,iptcl]=simmx[2][cls]
+					clsmx[4][ic,iptcl]=simmx[3][cls]
+					clsmx[5][ic,iptcl]=simmx[4][cls]
+					if num_sim>5 : clsmx[6][ic,iptcl]=simmx[5][cls]
+				simmx[0][cls]=maximum		# this is so the next minimum search gets the next highest value
+				
+			E2end(E2n)
 
 	print("Classification complete, writing classmx")
+	# NO LOSSY COMPRESSION!
 	clsmx[0].write_image(args[1],0)
 	clsmx[1].write_image(args[1],1)
 	if num_sim>=5 :
@@ -188,14 +193,14 @@ def main():
 		if num_sim>5 : clsmx[6].write_image(args[1],6)
 		
 	# This file isn't really that big, and if nx==1 compression doesn't work
-	#clsmx[0].write_compressed(args[1],0,0)
-	#clsmx[1].write_compressed(args[1],1,0)
+	#clsmx[0].write_image(args[1],0,0)
+	#clsmx[1].write_image(args[1],1,0)
 	#if num_sim>=5 :
-		#clsmx[2].write_compressed(args[1],2,0)
-		#clsmx[3].write_compressed(args[1],3,0)
-		#clsmx[4].write_compressed(args[1],4,0)
-		#clsmx[5].write_compressed(args[1],5,0)
-		#if num_sim>5 : clsmx[6].write_compressed(args[1],6,0)
+		#clsmx[2].write_image(args[1],2,0)
+		#clsmx[3].write_image(args[1],3,0)
+		#clsmx[4].write_image(args[1],4,0)
+		#clsmx[5].write_image(args[1],5,0)
+		#if num_sim>5 : clsmx[6].write_image(args[1],6,0)
 		
 	
 

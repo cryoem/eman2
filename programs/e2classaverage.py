@@ -463,7 +463,13 @@ def class_average_withali(images,ptcl_info,xform,ref,focused,averager=("mean",{}
 	if isinstance(images[0],EMData) : nimg=len(images)
 	elif isinstance(images[0],str) and isinstance(images[1],int) : nimg=len(images)-1
 	else : raise Exception("Bad images list")
-
+	
+	if nimg==0: 
+		print("ERROR: nimgs==0 for:",images,ptcl_info,xform,ref,focused)
+		ret=ref.copy()
+		ret["ptcl_repr"]=0
+		return ret
+		
 	if focused==None: focused=ref
 	incl=[]
 	excl=[]
@@ -489,7 +495,12 @@ def class_average_withali(images,ptcl_info,xform,ref,focused,averager=("mean",{}
 		if setsfref:
 			avg.process_inplace("filter.matchto",{"to":ref,"interpolate":0,"keephires":1})
 			avg-=avg.get_edge_mean()
-		else : avg.process_inplace("normalize.toimage",{"to":ref})
+		else : 
+			try: avg.process_inplace("normalize.toimage",{"to":ref})
+			except:
+				print(images,ptcl_info,xform,ref,focused,averager,normproc,setsfref,verbose)
+				traceback.print_exc()
+				sys.exit(1)
 
 		#avg["class_qual"]=avg.cmp("ccc",ref)
 		avg["class_qual"]=old_div(avg.cmp("frc",ref,{"minres":30,"maxres":10}),avg.cmp("frc",ref,{"minres":100,"maxres":30}))
