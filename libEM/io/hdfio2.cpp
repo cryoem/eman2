@@ -1410,6 +1410,14 @@ void HdfIO2::write(float *data, size_t size, hid_t ds, hid_t memoryspace, hid_t 
 		std::cerr << "H5Dwrite error " << EMUtil::get_datatype_string(I) << ": " << err_no << std::endl;
 }
 
+auto HdfIO2::write_compressed(float *data, hsize_t size, hid_t ds, hid_t spc1, hid_t spc2) {
+	if (renderbits<=0) write<EMUtil::EM_FLOAT>(data, size, ds, spc1, spc2);
+	else if (renderbits<=8) write<EMUtil::EM_UCHAR>(data, size, ds, spc1, spc2);
+	else write<EMUtil::EM_USHORT>(data, size, ds, spc1, spc2);
+
+	return renderbits > 0;
+}
+
 // Writes the actual image data to the corresponding dataset (already created)
 int HdfIO2::write_data(float *data, int image_index, const Region* area,
 					  EMUtil::EMDataType dt, bool)
@@ -1636,10 +1644,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 		case EMUtil::EM_USHORT: write<EMUtil::EM_USHORT>(data, size, ds, spc1, spc2); scaled=1; break;
 		case EMUtil::EM_CHAR:   write<EMUtil::EM_CHAR>(data, size, ds, spc1, spc2); scaled=1; break;
 		case EMUtil::EM_UCHAR:  write<EMUtil::EM_UCHAR>(data, size, ds, spc1, spc2); scaled=1; break;
-		case EMUtil::EM_COMPRESSED:
-			if (renderbits<=0)        write<EMUtil::EM_FLOAT>(data, size, ds, spc1, spc2);
-			else if (renderbits<=8) { write<EMUtil::EM_UCHAR>(data, size, ds, spc1, spc2); scaled=1; }
-			else                    { write<EMUtil::EM_USHORT>(data, size, ds, spc1, spc2); scaled=1; }
+		case EMUtil::EM_COMPRESSED: scaled = write_compressed(data, size, ds, spc1, spc2);
 				
 			if (err_no < 0) {
 				printf("%d %f %f\n",renderbits,rendermin,rendermax);
