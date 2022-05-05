@@ -1555,10 +1555,12 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 	int rendertrunc = 0;	// keep track of truncated pixels
 //	printf("RMM  %f  %f\n",rendermin,rendermax);
 
-	hid_t filespace = H5Dget_space(ds);
+	hid_t filespace = 0;
 	hid_t memoryspace = 0;
 
 	if (area) {
+		filespace = H5Dget_space(ds);
+
 		if (rank == 3) {
 			hsize_t doffset[3];		/* hyperslab offset in the file */
 			doffset[0] = (hsize_t)(area->z_origin()<0 ? 0 : area->z_origin());
@@ -1615,55 +1617,42 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 	}
 
 
+	hid_t spc1 = 0;
+	hid_t spc2 = 0;
 	bool scaled=0;		// set if the data will need rescaling upon read
 	if (area) {
-		herr_t err_no;
-		switch(dt) {
-		case EMUtil::EM_FLOAT:  write<EMUtil::EM_FLOAT>(data, size, ds, memoryspace, filespace); break;
-		case EMUtil::EM_SHORT:  write<EMUtil::EM_SHORT>(data, size, ds, memoryspace, filespace); scaled=1; break;
-		case EMUtil::EM_USHORT: write<EMUtil::EM_USHORT>(data, size, ds, memoryspace, filespace); scaled=1; break;
-		case EMUtil::EM_CHAR:   write<EMUtil::EM_CHAR>(data, size, ds, memoryspace, filespace); scaled=1; break;
-		case EMUtil::EM_UCHAR:  write<EMUtil::EM_UCHAR>(data, size, ds, memoryspace, filespace); scaled=1; break;
-		case EMUtil::EM_COMPRESSED:
-			if (renderbits<=0)        write<EMUtil::EM_FLOAT>(data, size, ds, memoryspace, filespace);
-			else if (renderbits<=8) { write<EMUtil::EM_UCHAR>(data, size, ds, memoryspace, filespace); scaled=1; }
-			else                    { write<EMUtil::EM_USHORT>(data, size, ds, memoryspace, filespace); scaled=1; }
-
-			if (err_no < 0) {
-				std::cerr << "H5Dwrite error compressed: " << err_no << std::endl;
-			}
-			break;
-		default:
-			throw ImageWriteException(filename,"HDF5 does not support region writing for this data format");
-		}
-
-		H5Sclose(filespace);
-		H5Sclose(memoryspace);
+		spc1 = memoryspace;
+		spc2 = filespace;
 	}
 	else {
-		herr_t err_no;
+		spc1 = spc;
+		spc2 = spc;
+	}
 
-		switch(dt) {
-		case EMUtil::EM_FLOAT:  write<EMUtil::EM_FLOAT>(data, size, ds, spc, spc); break;
-		case EMUtil::EM_SHORT:  write<EMUtil::EM_SHORT>(data, size, ds, spc, spc); scaled=1; break;
-		case EMUtil::EM_USHORT: write<EMUtil::EM_USHORT>(data, size, ds, spc, spc); scaled=1; break;
-		case EMUtil::EM_CHAR:   write<EMUtil::EM_CHAR>(data, size, ds, spc, spc); scaled=1; break;
-		case EMUtil::EM_UCHAR:  write<EMUtil::EM_UCHAR>(data, size, ds, spc, spc); scaled=1; break;
+	herr_t err_no;
+	switch(dt) {
+		case EMUtil::EM_FLOAT:  write<EMUtil::EM_FLOAT>(data, size, ds, spc1, spc2); break;
+		case EMUtil::EM_SHORT:  write<EMUtil::EM_SHORT>(data, size, ds, spc1, spc2); scaled=1; break;
+		case EMUtil::EM_USHORT: write<EMUtil::EM_USHORT>(data, size, ds, spc1, spc2); scaled=1; break;
+		case EMUtil::EM_CHAR:   write<EMUtil::EM_CHAR>(data, size, ds, spc1, spc2); scaled=1; break;
+		case EMUtil::EM_UCHAR:  write<EMUtil::EM_UCHAR>(data, size, ds, spc1, spc2); scaled=1; break;
 		case EMUtil::EM_COMPRESSED:
-			//printf("writec %d %f %f\n",renderbits,rendermin,rendermax);
-			if (renderbits<=0)        write<EMUtil::EM_FLOAT>(data, size, ds, spc, spc);
-			else if (renderbits<=8) { write<EMUtil::EM_UCHAR>(data, size, ds, spc, spc); scaled=1; }
-			else                    { write<EMUtil::EM_USHORT>(data, size, ds, spc, spc); scaled=1; }
-
+			if (renderbits<=0)        write<EMUtil::EM_FLOAT>(data, size, ds, spc1, spc2);
+			else if (renderbits<=8) { write<EMUtil::EM_UCHAR>(data, size, ds, spc1, spc2); scaled=1; }
+			else                    { write<EMUtil::EM_USHORT>(data, size, ds, spc1, spc2); scaled=1; }
+				
 			if (err_no < 0) {
 				printf("%d %f %f\n",renderbits,rendermin,rendermax);
 				std::cerr << "H5Dwrite error compressed full: " << err_no << std::endl;
 			}
-
 			break;
 		default:
 			throw ImageWriteException(filename,"HDF5 does not support this data format");
-		}
+	}
+
+	if (area) {
+		H5Sclose(filespace);
+		H5Sclose(memoryspace);
 	}
 
 	H5Sclose(spc);
