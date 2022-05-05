@@ -1617,41 +1617,16 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 
 		herr_t err_no;
 		switch(dt) {
-		case EMUtil::EM_FLOAT:
-			write<EMUtil::EM_FLOAT>(data, size, ds, memoryspace, filespace);
-
-			break;
-		case EMUtil::EM_SHORT:
-			write<EMUtil::EM_SHORT>(data, size, ds, memoryspace, filespace);
-			scaled=1;
-			
-			break;
-		case EMUtil::EM_USHORT:
-			write<EMUtil::EM_USHORT>(data, size, ds, memoryspace, filespace);
-			scaled=1;
-
-			break;
-		case EMUtil::EM_CHAR:
-			write<EMUtil::EM_CHAR>(data, size, ds, memoryspace, filespace);
-			scaled=1;
-
-			break;
-		case EMUtil::EM_UCHAR:
-			write<EMUtil::EM_UCHAR>(data, size, ds, memoryspace, filespace);
-			scaled=1;
-
-			break;
+		case EMUtil::EM_FLOAT:  write<EMUtil::EM_FLOAT>(data, size, ds, memoryspace, filespace); break;
+		case EMUtil::EM_SHORT:  write<EMUtil::EM_SHORT>(data, size, ds, memoryspace, filespace); scaled=1; break;
+		case EMUtil::EM_USHORT: write<EMUtil::EM_USHORT>(data, size, ds, memoryspace, filespace); scaled=1; break;
+		case EMUtil::EM_CHAR:   write<EMUtil::EM_CHAR>(data, size, ds, memoryspace, filespace); scaled=1; break;
+		case EMUtil::EM_UCHAR:  write<EMUtil::EM_UCHAR>(data, size, ds, memoryspace, filespace); scaled=1; break;
 		case EMUtil::EM_COMPRESSED:
-			if (renderbits<=0) write<EMUtil::EM_FLOAT>(data, size, ds, memoryspace, filespace);
-			else if (renderbits<=8) {
-				write<EMUtil::EM_UCHAR>(data, size, ds, memoryspace, filespace);
-				scaled=1;
-			}
-			else {
-				write<EMUtil::EM_USHORT>(data, size, ds, memoryspace, filespace);
-				scaled=1;
-			}
-				
+			if (renderbits<=0)        write<EMUtil::EM_FLOAT>(data, size, ds, memoryspace, filespace);
+			else if (renderbits<=8) { write<EMUtil::EM_UCHAR>(data, size, ds, memoryspace, filespace); scaled=1; }
+			else                    { write<EMUtil::EM_USHORT>(data, size, ds, memoryspace, filespace); scaled=1; }
+
 			if (err_no < 0) {
 				std::cerr << "H5Dwrite error compressed: " << err_no << std::endl;
 			}
@@ -1667,41 +1642,17 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 		herr_t err_no;
 
 		switch(dt) {
-		case EMUtil::EM_FLOAT:
-			write<EMUtil::EM_FLOAT>(data, size, ds, spc, spc);
-			break;
-		case EMUtil::EM_SHORT:
-			write<EMUtil::EM_SHORT>(data, size, ds, spc, spc);
-			scaled=1;
-
-			break;
-		case EMUtil::EM_USHORT:
-			write<EMUtil::EM_USHORT>(data, size, ds, spc, spc);
-			scaled=1;
-
-			break;
-		case EMUtil::EM_CHAR:
-			write<EMUtil::EM_CHAR>(data, size, ds, spc, spc);
-			scaled=1;
-
-			break;
-		case EMUtil::EM_UCHAR:
-			write<EMUtil::EM_UCHAR>(data, size, ds, spc, spc);
-			scaled=1;
-
-			break;
+		case EMUtil::EM_FLOAT:  write<EMUtil::EM_FLOAT>(data, size, ds, spc, spc); break;
+		case EMUtil::EM_SHORT:  write<EMUtil::EM_SHORT>(data, size, ds, spc, spc); scaled=1; break;
+		case EMUtil::EM_USHORT: write<EMUtil::EM_USHORT>(data, size, ds, spc, spc); scaled=1; break;
+		case EMUtil::EM_CHAR:   write<EMUtil::EM_CHAR>(data, size, ds, spc, spc); scaled=1; break;
+		case EMUtil::EM_UCHAR:  write<EMUtil::EM_UCHAR>(data, size, ds, spc, spc); scaled=1; break;
 		case EMUtil::EM_COMPRESSED:
 			//printf("writec %d %f %f\n",renderbits,rendermin,rendermax);
-			if (renderbits<=0) err_no = H5Dwrite(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
-			else if (renderbits<=8) {
-				write<EMUtil::EM_UCHAR>(data, size, ds, spc, spc);
-				scaled=1;
-			}
-			else {
-				write<EMUtil::EM_USHORT>(data, size, ds, spc, spc);
-				scaled=1;
-			}
-				
+			if (renderbits<=0)        write<EMUtil::EM_FLOAT>(data, size, ds, spc, spc);
+			else if (renderbits<=8) { write<EMUtil::EM_UCHAR>(data, size, ds, spc, spc); scaled=1; }
+			else                    { write<EMUtil::EM_USHORT>(data, size, ds, spc, spc); scaled=1; }
+
 			if (err_no < 0) {
 				printf("%d %f %f\n",renderbits,rendermin,rendermax);
 				std::cerr << "H5Dwrite error compressed full: " << err_no << std::endl;
