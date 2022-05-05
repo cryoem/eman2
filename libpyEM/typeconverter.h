@@ -106,8 +106,8 @@ namespace EMAN {
 		static np::ndarray em2numpy(const EMData *const image);
 
 		/** Create an EMData image from a numeric numpy array.
-		 * returned EMData object will take the ownership of the numpy array data.
-		 * Note: the array size is (nz,ny,nx) corresponding to image (nx,ny,nz).
+		 * Returned EMData object will contain copy of the numpy array data.
+		 * Note: The array size is (nz,ny,nx) corresponding to image (nx,ny,nz).
 		 */
 		static EMData* numpy2em(const np::ndarray& array);
 
