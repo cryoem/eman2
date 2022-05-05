@@ -2977,6 +2977,15 @@ def db_read_image(self, fsp, *parms, **kparms):
 		#if lsxcache==None or lsxcache.path!=fsp: lsxcache=LSXFile(fsp,True)
 		#return lsxcache.read_image(parms[0])
 
+	fsp, idxs = parse_infile_arg(fsp)
+
+	if len(parms) > 0 and parms[0]:
+		idx = idxs[parms[0]] 
+	else:
+		idx = idxs[0]
+
+	parms = idx, *parms[1:]
+
 	if len(kparms) != 0:
 		if 'img_index' not in kparms:
 			kparms['img_index'] = 0
