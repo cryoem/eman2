@@ -1401,13 +1401,15 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 }
 
 template<EMUtil::EMDataType I>
-void HdfIO2::write(float *data, size_t size, hid_t ds, hid_t memoryspace, hid_t filespace) {
+auto HdfIO2::write(float *data, size_t size, hid_t ds, hid_t memoryspace, hid_t filespace) {
 	auto [rendered_data, rendertrunc] = getRenderedDataAndRendertrunc<typename EM2Type<I>::type>(data, size);
 
 	auto err_no = H5Dwrite(ds, EM2HDF[I], memoryspace, filespace, H5P_DEFAULT, rendered_data);
 
 	if (err_no < 0)
 		std::cerr << "H5Dwrite error " << EMUtil::get_datatype_string(I) << ": " << err_no << std::endl;
+
+	return I != EMUtil::EM_FLOAT;
 }
 
 auto HdfIO2::write_compressed(float *data, hsize_t size, hid_t ds, hid_t spc1, hid_t spc2) {
@@ -1639,18 +1641,12 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 
 	herr_t err_no;
 	switch(dt) {
-		case EMUtil::EM_FLOAT:  write<EMUtil::EM_FLOAT>(data, size, ds, spc1, spc2); break;
-		case EMUtil::EM_SHORT:  write<EMUtil::EM_SHORT>(data, size, ds, spc1, spc2); scaled=1; break;
-		case EMUtil::EM_USHORT: write<EMUtil::EM_USHORT>(data, size, ds, spc1, spc2); scaled=1; break;
-		case EMUtil::EM_CHAR:   write<EMUtil::EM_CHAR>(data, size, ds, spc1, spc2); scaled=1; break;
-		case EMUtil::EM_UCHAR:  write<EMUtil::EM_UCHAR>(data, size, ds, spc1, spc2); scaled=1; break;
-		case EMUtil::EM_COMPRESSED: scaled = write_compressed(data, size, ds, spc1, spc2);
-				
-			if (err_no < 0) {
-				printf("%d %f %f\n",renderbits,rendermin,rendermax);
-				std::cerr << "H5Dwrite error compressed full: " << err_no << std::endl;
-			}
-			break;
+		case EMUtil::EM_FLOAT:  scaled = write<EMUtil::EM_FLOAT>(data, size, ds, spc1, spc2); break;
+		case EMUtil::EM_SHORT:  scaled = write<EMUtil::EM_SHORT>(data, size, ds, spc1, spc2); break;
+		case EMUtil::EM_USHORT: scaled = write<EMUtil::EM_USHORT>(data, size, ds, spc1, spc2); break;
+		case EMUtil::EM_CHAR:   scaled = write<EMUtil::EM_CHAR>(data, size, ds, spc1, spc2); break;
+		case EMUtil::EM_UCHAR:  scaled = write<EMUtil::EM_UCHAR>(data, size, ds, spc1, spc2); break;
+		case EMUtil::EM_COMPRESSED: scaled = write_compressed(data, size, ds, spc1, spc2); break;
 		default:
 			throw ImageWriteException(filename,"HDF5 does not support this data format");
 	}
