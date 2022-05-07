@@ -41,7 +41,6 @@ from e2eulerxplor import get_eulers_from
 from eman2_gui.emimagemx import EMImageMXWidget
 from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emplot2d import EMPlot2DWidget
-from EMAN2db import db_convert_path, db_open_dict, db_check_dict, db_list_dicts
 from eman2_gui.emapplication import EMApp, get_application
 from eman2_gui.emglobjects import EM3DGLWidget
 from eman2_gui.emimage3dsym import EM3DSymModel,EMSymInspector, EMSymViewerWidget
@@ -107,7 +106,7 @@ class EMSimmxExplorer(EM3DSymModel):
 		'''
 		Can only set data using the name of a simmx file
 		'''
-		if "EMAN2DB" in simmx_file: simmx_file = db_convert_path(simmx_file)
+		#if "EMAN2DB" in simmx_file: simmx_file = db_convert_path(simmx_file)
 		self.simmx_file = simmx_file
 		e = EMData()
 		e.read_image(simmx_file,0,True)

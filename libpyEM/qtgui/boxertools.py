@@ -30,14 +30,23 @@
 #
 #
 
+###################
+#
+#  THIS FILE IS NO LONGER USED due to its ties to BDB, at some point it will be deleted
+#
+###################
+
+print("WARNING: this program makes use of (no longer supported) boxertools.py. Please contact developers!")
+
+
 from past.utils import old_div
 from builtins import range
 from builtins import object
 from time import time
 from math import ceil
 from copy import copy
-import EMAN2db
-from EMAN2db import db_open_dict, db_close_dict, db_remove_dict, db_check_dict
+#import EMAN2db
+#from EMAN2db import db_open_dict, db_close_dict, db_remove_dict, db_check_dict
 from EMAN2 import *
 import traceback
 

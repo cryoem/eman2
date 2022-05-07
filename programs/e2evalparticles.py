@@ -42,7 +42,6 @@ from PyQt5.QtCore import Qt
 #from OpenGL import GL,GLU,GLUT
 from eman2_gui.emapplication import EMApp
 import os
-from EMAN2db import *
 from eman2_gui.valslider import *
 import traceback
 

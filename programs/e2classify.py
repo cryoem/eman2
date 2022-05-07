@@ -34,7 +34,6 @@ from builtins import range
 from math import *
 import os
 import sys
-from EMAN2db import db_check_dict
 from EMAN2 import *
 
 def main():
@@ -221,7 +220,7 @@ def check(options,verbose):
 #					print("File %s exists, will not write over, exiting" %options.outfile)
 #				error = True
 		
-		if not os.path.exists(options.simmxfile) and not db_check_dict(options.simmxfile):
+		if not os.path.exists(options.simmxfile):
 			if verbose>0:
 				print("Error: the similarity matrix file (%s) was not found, cannot run e2classify.py" %(options.simmxfile))
 			error = True

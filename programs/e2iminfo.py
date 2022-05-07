@@ -33,7 +33,6 @@
 from builtins import range
 import pprint
 from EMAN2 import *
-from EMAN2db import db_open_dict
 import sys
 
 def get_data_type_string(datatype):
@@ -126,16 +125,19 @@ def main():
 			if d["nz"]==1 : print("%s\t %d images in %s format %s\t%d x %d"%(imagefile,nimg,imgtypename,swapped,d["nx"],d["ny"]))
 			else : print("%s\t %d images in %s format %s\t%d x %d x %d"%(imagefile,nimg,imgtypename,swapped,d["nx"],d["ny"],d["nz"]))
 			
+		else: 
+			print("ERROR: BDB no longer supported")
+			sys.exit(1)
 			
-		else :
-			dct=db_open_dict(imagefile,ro=True)
-			d=dct.get_header(0)
-			nimg=len(dct)
-			nimgs+=nimg
-			
-			d=EMData(imagefile, max(options.number,0), True)
-			if d["nz"]==1 : print("%s\t %d images in BDB format\t%d x %d"%(imagefile,len(dct),d["nx"],d["ny"]))
-			else : print("%s\t %d images in BDB format\t%d x %d x %d"%(imagefile,len(dct),d["nx"],d["ny"],d["nz"]))
+#		else :
+#			dct=db_open_dict(imagefile,ro=True)
+#			d=dct.get_header(0)
+#			nimg=len(dct)
+#			nimgs+=nimg
+#			
+#			d=EMData(imagefile, max(options.number,0), True)
+#			if d["nz"]==1 : print("%s\t %d images in BDB format\t%d x %d"%(imagefile,len(dct),d["nx"],d["ny"]))
+#			else : print("%s\t %d images in BDB format\t%d x %d x %d"%(imagefile,len(dct),d["nx"],d["ny"],d["nz"]))
 
 		if options.all or options.check:
 			imgn = list(range(nimg))

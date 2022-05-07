@@ -38,7 +38,6 @@ from .emsprworkflow import *
 from .emform import *
 from .emsave import EMFileTypeValidator
 from .emapplication import error, EMErrorMessageDisplay
-from EMAN2db import db_open_dict
 	
 class EMBaseTomoChooseFilteredPtclsTask(WorkFlowTask):
 	"""Choose the data""" 
@@ -53,7 +52,7 @@ class EMBaseTomoChooseFilteredPtclsTask(WorkFlowTask):
 		
 		#if as_string:
 		#params.append(ParamDef(name="particle_set_choice",vartype="string",desc_long="Choose the particle data set you wish to use to generate a starting data for e2refine2d",desc_short=title,property=None,defaultunits=db.get("particle_set_choice",dfl=""),choices=choices))
-		db = db_open_dict(self.form_db_name)
+
 		params = []
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
 		if len(choices) > 0:
@@ -62,7 +61,7 @@ class EMBaseTomoChooseFilteredPtclsTask(WorkFlowTask):
 			else:
 				vartype = "string"
 				
-			params.append(ParamDef(name="tomo_filt_choice",vartype=vartype,desc_long="Choose from the filtered tomogram particles",desc_short="Choose data",property=None,defaultunits=db.get("tomo_filt_choice",dfl=""),choices=choices))				
+			params.append(ParamDef(name="tomo_filt_choice",vartype=vartype,desc_long="Choose from the filtered tomogram particles",desc_short="Choose data",property=None,defaultunits="",choices=choices))
 		else:
 			params.append(ParamDef(name="blurb2",vartype="text",desc_short="",desc_long="",property=None,defaultunits="There are no particles in the project. Go back to earlier stages and box/import particles",choices=None))
 		return params
@@ -102,7 +101,7 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 		WorkFlowTask.__init__(self)
 		self.window_title = "Filter Tomogram Particles"
 		self.output_formats = ["bdb","hdf"] # disable img from the workflow because in EMAN2 we want to store more metadata in the header
-		self.form_db_name = "bdb:emform.tomo.filter_particles"
+		self.form_db_name = info_name("emform.tomo.filter_particles")
 		self.project_dict = tpr_ptcls_dict
 		self.ptcls_list = ptcls_list
 		self.name_map = name_map
@@ -118,7 +117,7 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
 		params.append(table)
 		self.add_filt_params(params)
-		db = db_open_dict(self.form_db_name)
+		db = js_open_dict(self.form_db_name)
 		pname =  ParamDef("name",vartype="string",desc_short="Filtered set name",desc_long="The processed sets will be referred to by this name",property=None,defaultunits=db.get("name",dfl="filt"),choices=[])
 		params.append(pname)
 		return params
@@ -126,7 +125,7 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 	def add_filt_params(self,params):
 		'''
 		'''
-		db = db_open_dict(self.form_db_name)
+		db = js_open_dict(self.form_db_name)
 		az = ParamDef(name="az",vartype="float",desc_short="Az rotation",desc_long="Rotate your model about the z axis",property=None,defaultunits=db.get("az",0.0),choices=None)
 		alt = ParamDef(name="alt",vartype="float",desc_short="Alt rotation",desc_long="Rotate your model about the x axis",property=None,defaultunits=db.get("alt",0.0),choices=None)
 		phi = ParamDef(name="phi",vartype="float",desc_short="Phi rotation",desc_long="Rotate your model about the z' axis",property=None,defaultunits=db.get("phi",0.0),choices=None)
@@ -402,7 +401,7 @@ class EMTomoBootstrapTask(WorkFlowTask):
 	def __init__(self):
 		WorkFlowTask.__init__(self)
 		self.tomo_boxer_module = None
-		self.form_db_name = "bdb:emform.tomo.classavg3d"
+		self.form_db_name = info_name("emform.tomo.classavg3d")
 		self.window_title = "Launch e2spt_classaverage"
 		self.report_task = None
 		
@@ -435,7 +434,7 @@ class EMTomoBootstrapTask(WorkFlowTask):
 	def get_params(self):
 		table_params = []
 		params = []
-		db = db_open_dict(self.form_db_name)
+		db = js_open_dict(self.form_db_name)
 		
 		p,n = self.get_tomo_hunter_basic_table() # note n is unused, it's a refactoring residual		
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="Interactive use of tomohunter",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
@@ -606,7 +605,7 @@ class E2TomoBoxerGuiTask(WorkFlowTask):
 	def __init__(self):
 		WorkFlowTask.__init__(self)
 		self.tomo_boxer_module = None
-		self.form_db_name = "bdb:emform.tomo.boxer"
+		self.form_db_name = info_name("emform.tomo.boxer")
 		self.window_title = "Launch e2spt_boxer"
 		self.report_task = None
 		
@@ -636,7 +635,7 @@ class E2TomoBoxerGuiTask(WorkFlowTask):
 	
 	def get_params(self):
 		params = []
-		db = db_open_dict(self.form_db_name)
+		db = js_open_dict(self.form_db_name)
 		
 		p,n = self.get_tomo_boxer_basic_table() # note n is unused, it's a refactoring residual		
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="Interactive use of e2spt_boxer",desc_long="",property=None,defaultunits=self.__doc__,choices=None))

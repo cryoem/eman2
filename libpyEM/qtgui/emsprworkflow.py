@@ -37,7 +37,6 @@ from .emform import EMFormWidget,EMParamTable,EMTableFormWidget
 from .emdatastorage import ParamDef
 from PyQt5 import QtGui, QtWidgets,QtCore
 from PyQt5.QtCore import Qt
-from EMAN2db import db_check_dict, db_open_dict,db_remove_dict,db_list_dicts,db_close_dict, e2getcwd
 from EMAN2 import *
 import os
 import copy
