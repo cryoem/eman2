@@ -837,15 +837,15 @@ def unparsemodopt(tupl):
 	except:
 		return ""
 
-def parsemodopt(optstr):
+def parsemodopt(optstr=None):
 	"""This is used so the user can provide the name of a comparator, processor, etc. with options
 	in a convenient form. It will parse "dot:normalize=1:negative=0" and return
 	("dot",{"normalize":1,"negative":0})"""
 
-	if not optstr or len(optstr)==0 : return (None,{})
+	if optstr is None or len(optstr)==0 : return (None,{})
 	if optstr.lower()=="none" : return None					# special case doesn't return a tuple
 
-	op2=opstr.split(":")
+	op2=optstr.split(":")
 	if len(op2)==1 or op2[1]=="" : return (op2[0],{})		# name with no options
 
 	r2={}
