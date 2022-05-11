@@ -85,6 +85,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	parser.add_argument("--extractattr", type=str, default=None, help="extract an attribute from particle header as an entry in the list")
 
 	parser.add_argument("--nocomments", action="store_true", default=False, help="Removes the comments from each line of the lst file.")
+	parser.add_argument("--scalexf", type=float, help="scale the translation in xform in header.",default=-1)
 
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higher number means higher level of verboseness",default=1)
 
@@ -447,7 +448,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 			else:
 				print("No required attribute. Need xform.align3d or xform.projection")
 			
-			print(atr)
+			print("Using {}".format(atr))
 			for l in lst:
 				x=l[atr]
 				if atr=="xform.align3d": x=x.inverse()
@@ -460,6 +461,26 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 					
 			save_lst_params(lout, f)
 					
+	if options.scalexf>0:
+		for f in args:
+			lst=load_lst_params(f)
+			for atr in ["xform.align3d","xform.projection"]:
+				if atr in lst[0]:
+					break
+			else:
+				print("No required attribute. Need xform.align3d or xform.projection")
+			
+			print("Using {}".format(atr))
+			lout=[]
+			for l in lst:
+				x=l[atr]
+				x.set_trans(x.get_trans()*options.scalexf)
+				l[atr]=x
+				lout.append(l)
+					
+			save_lst_params(lout, f)
+			
+	
 	if options.shuffle:
 		for f in args:
 			lst=load_lst_params(f)

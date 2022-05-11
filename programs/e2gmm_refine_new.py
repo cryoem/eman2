@@ -700,7 +700,7 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, options):
 	
 	imsk=tf.zeros(npt, dtype=floattype)+1
 	if options.selgauss:
-		i=np.loadtxt(options.selgauss).astype(int)
+		i=np.loadtxt(options.selgauss).astype(int).flatten()-1
 		print('selecting {} out of {} points'.format(len(i), npt))
 		m=np.zeros(npt, dtype=floattype)
 		m[i]=1
@@ -1022,7 +1022,7 @@ def main():
 			allgrds=ag.numpy().copy()
 			del ag
 			allscr=allgrds[:,0]
-			allgrds=allgrds[:,1:].reshape((len(allgrds), npt, 5))
+			allgrds=allgrds[:,1:].reshape((len(allgrds), -1, 5))
 			print("Gradient shape: ", allgrds.shape) 
 			
 		else:

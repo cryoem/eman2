@@ -23,9 +23,10 @@ def main():
 	parser.add_argument("--skipheader", type=int,help="skip the first N lines of the star file (before the parameter names starting with _). default is 1", default=1)
 	parser.add_argument("--voltage", type=int,help="voltage", default=300)
 	parser.add_argument("--cs", type=float,help="cs", default=2.7)
-	parser.add_argument("--amp", type=float,help="amplitude contrast. default 0", default=0)
+	parser.add_argument("--amp", type=float,help="amplitude contrast. default 0 (0-100)", default=0)
 	parser.add_argument("--apix", type=float,help="apix", default=1.0)
 	parser.add_argument("--output", type=str,help="output lst file", default="sets/all_relion.lst")
+	parser.add_argument("--head", type=int,help="use only first N particles. for testing", default=-1)
 	parser.add_argument("--skipwrite", action="store_true", default=False ,help="skip file writing")
 
 	(options, args) = parser.parse_args()
@@ -75,8 +76,13 @@ def main():
 	
 	try:os.mkdir("particles")
 	except: pass
-
-	for i in range(len(lines)):
+	
+	if options.head>0:
+		nptcl=options.head
+	else:
+		nptcl=len(lines)
+		
+	for i in range(nptcl):
 		ln=lines[i]
 		if len(ln)<5: 
 			continue
