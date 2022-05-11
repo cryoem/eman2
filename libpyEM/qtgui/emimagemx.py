@@ -43,7 +43,6 @@ from .valslider import ValSlider
 from math import *
 from EMAN2 import *
 #import EMAN2db
-from EMAN2db import db_open_dict, db_check_dict
 from EMAN2jsondb import js_open_dict, js_check_dict
 import EMAN2
 import copy
@@ -811,10 +810,10 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			if update_gl : self.updateGL()
 			return # the list is empty
 
-		global HOMEDB
-		HOMEDB = EMAN2db.EMAN2DB.open_db()
-		HOMEDB.open_dict("display_preferences")
-		db = HOMEDB.display_preferences
+		#global HOMEDB
+		#HOMEDB = EMAN2db.EMAN2DB.open_db()
+		#HOMEDB.open_dict("display_preferences")
+		#db = HOMEDB.display_preferences
 		#auto_contrast = db.get("display_stack_auto_contrast", dfl = True)
 		#start_guess = db.get("display_stack_np_for_auto", dfl = 20)
 
@@ -3130,7 +3129,7 @@ class EMDataListCache(EMMXDataCache):
 		elif isinstance(object,str):
 			#print "file mode"
 			self.mode = EMDataListCache.FILE_MODE
-			if not os.path.exists(object) and not db_check_dict(object):
+			if not os.path.exists(object) :
 				print("error, the file you specified does not exist:",object)
 				return
 			self.file_name = object
@@ -3204,13 +3203,8 @@ class EMDataListCache(EMMXDataCache):
 
 	def get_image_header(self,idx):
 		if self.mode == EMDataListCache.FILE_MODE:
-			if len(self.file_name) > 3 and self.file_name[:4] == "bdb:":
-				db = db_open_dict(self.file_name)
-				return db.get_header(idx)
-			else:
-				e = EMData()
-				e.read_image(self.file_name,idx,True)
-				return e.get_attr_dict()
+			e = EMData(self.file_name,idx,True)
+			return e.get_attr_dict()
 		elif self.mode == EMDataListCache.LIST_MODE:
 			return self.images[idx].get_attr_dict()
 

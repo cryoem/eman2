@@ -197,12 +197,10 @@ def main():
 	#now write out the aligned model
 	outfile=args[2]
 	    
-	#if output is mrc format or bdb 
+	#if output is mrc format
 	if outfile[-4:].lower() == ".mrc":
 		moving.set_attr('UCSF.chimera',1)
 		galignedref[bestmodel].set_attr('UCSF.chimera',1)
-	if outfile[:4] == "bdb:":
-		filtoutfile = outfile+"_filtered"
 	else:
 		filtoutfile = "filtered"+outfile
   

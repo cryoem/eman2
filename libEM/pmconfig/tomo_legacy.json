@@ -23,7 +23,7 @@
   {
     "ICON": "green_boxes",
     "WIZARD":"/lib/pmconfig/wedge.json",
-    "PROGRAM": "e2wedge.py", 
+    "PROGRAM": "e2spt_wedge.py", 
     "NAME": "Examine Missing Wedges", 
     "CHILDREN": [] 
   },

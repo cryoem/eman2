@@ -34,7 +34,6 @@ from builtins import range
 from builtins import object
 from PyQt5 import QtGui, QtWidgets,QtCore
 from EMAN2 import EMData, file_exists, gimme_image_dimensions3D,get_image_directory,EMUtil,base_name,gm_time_string
-from EMAN2db import db_check_dict, db_remove_dict
 import os
 # For example usage see http://blake.bcm.edu/emanwiki/EMAN2ImageFormats#SavingEMDatafromPython
 
@@ -285,10 +284,10 @@ class EMSaveImageValidator(object):
 		
 		# FIXME - Supported types should retrieved from EMUtil (in progress)
 		if len(item_list) == 1:
-			self.__file_filt = [".hdf", ".img", ".hed",".spi","bdb:",".tif",".mrc",".dm3",".pif"] # allowable file types, be good if this was automatic
+			self.__file_filt = [".hdf", ".img", ".hed",".spi",".tif",".mrc",".dm3",".pif"] # allowable file types, be good if this was automatic
 		else:
 			if item_list[0].get_attr_dict()["nz"] == 1:
-				self.__file_filt=[".hdf", ".img",".hed",".spi","bdb:"]
+				self.__file_filt=[".hdf", ".img",".hed",".spi"]
 			else:
 				self.__file_filt =[".hdf"] # 3D only works for hdf (and bdb)
 				
@@ -307,6 +306,7 @@ class EMSaveImageValidator(object):
 		@return an error string if an error was encountered. Otherwise return None
 		'''
 		if len(file_name) > 4 and file_name[:4] == "bdb:":
+			print("ERROR: BDB not supported")
 			return None # The user has specified a file in bdb format
 			
 		splt = file_name.split(".")

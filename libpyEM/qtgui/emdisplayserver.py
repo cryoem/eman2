@@ -29,7 +29,6 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 from EMAN2 import *
-from EMAN2db import e2gethome
 from EMAN2jsondb import js_open_dict
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt, QTimer, QBuffer

@@ -34,7 +34,6 @@
 
 from past.utils import old_div
 from builtins import range
-from EMAN2db import db_list_dicts
 from EMAN2 import *
 import sys
 import os.path
@@ -90,7 +89,8 @@ def main():
 	(options, args) = parser.parse_args()
 	
 	if options.allparticles:
-		args=["bdb:particles#"+i for i in db_list_dicts("bdb:particles")]
+		#args=["bdb:particles#"+i for i in db_list_dicts("bdb:particles")]
+		args=["particles/"+i for i in os.listdir("particles") if i[-4:]==".hdf"]
 		args.sort()
 		if options.verbose : print("%d particle files identified"%len(args))
 

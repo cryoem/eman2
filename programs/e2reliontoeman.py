@@ -61,7 +61,10 @@ CTF autoprocessing after importing is complete.
 	parser.add_header(name="text3", help='Important instructions', title="* run e2projectmanager, and use this tool", row=2, col=0, rowspan=1, colspan=3)
 	parser.add_header(name="text4", help='Important instructions', title="* exit PM, cd eman2, run PM from new eman2 folder", row=3, col=0, rowspan=1, colspan=3)
 	parser.add_pos_argument(name="star_file",help="Select STAR file", default="", guitype='filebox', browser="EMParticlesEditTable(withmodal=True,multiselect=False)",  row=6, col=0,rowspan=1, colspan=3)
-	parser.add_argument("--apix", default=0, type=float,help="The angstrom per pixel of the input particles.", guitype='floatbox', row=8, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--apix", default=0, type=float,help="The angstrom per pixel of the input particles, if not found in the file.", guitype='floatbox', row=8, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--voltage", default=0, type=float,help="Microscope voltage in kV, if not found in STAR file", guitype='floatbox', row=8, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--cs", default=0, type=float,help="Spherical aberration in mm, if not found in STAR file", guitype='floatbox', row=8, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--ac", default=0, type=float,help="Amplitude contrast as a %, eg - 10, not 0.1, if not found in STAR file", guitype='floatbox', row=8, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
@@ -90,9 +93,13 @@ CTF autoprocessing after importing is complete.
 	prj=js_open_dict("info/project.json")
 	try:
 		prj["global.apix"]=options.apix
-		prj["global.microscope_cs"]=star["rlnSphericalAberration"][0]
+		if options.voltage<=0 : 
+			prj["global.microscope_voltage"]=star["rlnVoltage"][0]
+		else: prj["global.microscope_voltage"]=options.voltage
+		if options.cs<=0 :
+			prj["global.microscope_cs"]=star["rlnSphericalAberration"][0]
+		else: prj["global.microscope_cs"]=options.cs
 		if prj["global.microscope_cs"]<=0.0 : prj["global.microscope_cs"]=0.001
-		prj["global.microscope_voltage"]=star["rlnVoltage"][0]
 		print("V={} Cs={}".format(prj["global.microscope_voltage"],prj["global.microscope_cs"]))
 	except:
 		print("Did not find Voltage and Cs in Relion file")
@@ -137,6 +144,13 @@ CTF autoprocessing after importing is complete.
 			oldname=name
 			#if options.verbose>0 : print("Particle dimensions: {}x{}".format(nx,ny))
 		
+		try: voltage=star["rlnVoltage"][i]
+		except: voltage=prj["global.microscope_voltage"]
+		try: cs=star["rlnSphericalAberration"][i]
+		except: cs=prj["global.microscope_cs"]
+		try: ampcont=star["rlnAmplitudeContrast"][i]*100.0
+		except: ampcont=options.ac
+
 		if i==0 or star[difkey][i-1]!=star[difkey][i]:
 			if micronum>0 and options.verbose>0 : print("Image {}: {} particles processed, df={}".format(micronum,fnum,ctf.defocus))
 			micronum+=1
@@ -146,16 +160,17 @@ CTF autoprocessing after importing is complete.
 			
 			# Make a "micrograph" CTF entry for each set of different defocuses to use when fitting
 			ctf=EMAN2Ctf()
-			ctf.from_dict({"defocus":old_div((dfu+dfv),20000.0),"dfang":dfang,"dfdiff":old_div((dfu-dfv),10000.0),"voltage":star["rlnVoltage"][i],"cs":max(star["rlnSphericalAberration"][i],0.0001),"ampcont":star["rlnAmplitudeContrast"][i]*100.0,"apix":options.apix})
+	
+			ctf.from_dict({"defocus":(dfu+dfv)/20000.0,"dfang":dfang,"dfdiff":(dfu-dfv)/10000.0,"voltage":voltage,"cs":cs,"ampcont":ampcont,"apix":options.apix})
 			jdb["ctf_frame"]=[512,ctf,(256,256),tuple(),5,1]
 		
 		# copy the image
 		if name[-5:]==".mrcs" : img=EMData("../"+name,imgnum)		# read one slice from the MRC stack
 		else: img=EMData("../"+name,0,False,Region(0,0,imgnum,nx,ny,1))		# read one slice from the MRC stack
 		ctf=EMAN2Ctf()
-		ctf.from_dict({"defocus":old_div((dfu+dfv),20000.0),"dfang":dfang,"dfdiff":old_div((dfu-dfv),10000.0),"voltage":star["rlnVoltage"][i],"cs":max(star["rlnSphericalAberration"][i],0.0001),"ampcont":star["rlnAmplitudeContrast"][i]*100.0,"apix":options.apix})
+		ctf.from_dict({"defocus":(dfu+dfv)/20000.0,"dfang":dfang,"dfdiff":(dfu-dfv)/10000.0,"voltage":voltage,"cs":cs,"ampcont":ampcont,"apix":options.apix})
 		img["ctf"]=ctf
-		img.write_image(microname,fnum)
+		img.write_compressed(microname,fnum,8)
 		fnum+=1
 
 	

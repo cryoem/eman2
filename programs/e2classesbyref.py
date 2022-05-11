@@ -38,7 +38,7 @@ from math import *
 import os
 import sys
 import threading
-from EMAN2db import db_check_dict
+#from EMAN2db import db_check_dict
 from EMAN2 import *
 import queue
 from numpy import array

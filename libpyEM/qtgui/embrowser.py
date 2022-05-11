@@ -1980,7 +1980,7 @@ EMFileType.extbyft = {
 # We don't need to test for things like Images because they are fully tested outside this mechanism
 EMFileType.alltocheck = (EMPlotFileType, EMPDBFileType, EMTextFileType)
 
-
+BDBWARN=False
 class EMDirEntry(object) :
 	"""Represents a directory entry in the filesystem"""
 
@@ -2154,19 +2154,22 @@ class EMDirEntry(object) :
 				self.__children = filelist
 
 			if "EMAN2DB" in self.__children :
+				global BDBWARN
 				self.__children.remove("EMAN2DB")
+				if not BDBWARN : print("WARNING: BDB (EMAN2DB/) no longer supported. EMAN2.91 or earlier required to view.")
+				BDBWARN=True
 
-				if self.dirregex != None :
-					if isinstance(self.dirregex, str) :
-						t = ["bdb:"+i for i in db_list_dicts("bdb:"+self.filepath) if matches_pats(i, self.dirregex)]
-					else :
-						t = ["bdb:"+i for i in db_list_dicts("bdb:"+self.filepath) if self.dirregex.match(i) != None]
+				#if self.dirregex != None :
+					#if isinstance(self.dirregex, str) :
+						#t = ["bdb:"+i for i in db_list_dicts("bdb:"+self.filepath) if matches_pats(i, self.dirregex)]
+					#else :
+						#t = ["bdb:"+i for i in db_list_dicts("bdb:"+self.filepath) if self.dirregex.match(i) != None]
 
-#					for i in db_list_dicts("bdb:"+self.filepath) : print i, self.dirregex.search (i)
-				else :
-					t = ["bdb:"+i for i in db_list_dicts("bdb:"+self.filepath)]
+##					for i in db_list_dicts("bdb:"+self.filepath) : print i, self.dirregex.search (i)
+				#else :
+					#t = ["bdb:"+i for i in db_list_dicts("bdb:"+self.filepath)]
 
-				self.__children.extend(t)
+				#self.__children.extend(t)
 
 			self.__children.sort( )
 
@@ -4275,7 +4278,7 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 
 # This is just for testing, of course
 def main():
-	em_app = EMApp()
+	#em_app = EMApp()
 	window = EMBrowserWidget(withmodal = True, multiselect = True)
 
 	window.show()
