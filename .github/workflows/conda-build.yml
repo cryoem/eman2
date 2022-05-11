@@ -1,0 +1,59 @@
+# -*- mode: yaml -*-
+
+name: Build conda package
+on: [push]
+
+jobs:
+  build:
+    name: ${{ matrix.CONFIG }}
+    runs-on: ${{ matrix.os }}-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - CONFIG: linux
+            DOCKER_IMAGE: quay.io/condaforge/linux-anvil-cos7-x86_64
+            os: ubuntu
+          - CONFIG: osx
+            os: macos
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Build on Linux
+      if: matrix.os == 'ubuntu'
+      env:
+        CONFIG: ${{ matrix.CONFIG }}
+        DOCKER_IMAGE: ${{ matrix.DOCKER_IMAGE }}
+      shell: bash
+      run: |
+        docker run --rm --privileged multiarch/qemu-user-static:register --reset --credential yes
+        ./ci_support/run_docker_build.sh
+
+    - name: Build on macOS
+      if: matrix.os == 'macos'
+      env:
+        CONFIG: ${{ matrix.CONFIG }}
+      shell: bash
+      run: |
+        ./ci_support/run_osx_build.sh
+
+    - name: Install Miniconda for windows
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        miniforge-version: latest
+        miniforge-variant: Mambaforge
+      if: matrix.os == 'windows'
+    - name: Build on windows
+      shell: cmd
+      run: |
+        call activate base
+        mamba.exe install -c conda-forge 'python=3.9' conda-build conda pip boa conda-forge-ci-setup=3
+        if errorlevel 1 exit 1
+        
+        conda.exe mambabuild ./recipe -c cryoem -c conda-forge
+        if errorlevel 1 exit 1
+      env:
+        PYTHONUNBUFFERED: 1
+        CONFIG: ${{ matrix.CONFIG }}
+      if: matrix.os == 'windows'
