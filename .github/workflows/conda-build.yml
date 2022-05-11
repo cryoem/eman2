@@ -51,7 +51,7 @@ jobs:
         mamba.exe install -c conda-forge 'python=3.9' conda-build conda pip boa conda-forge-ci-setup=3
         if errorlevel 1 exit 1
         
-        conda.exe mambabuild ./recipe -c cryoem -c conda-forge
+        conda.exe mambabuild ./recipe -c cryoem -c conda-forge -c defaults
         if errorlevel 1 exit 1
       env:
         PYTHONUNBUFFERED: 1

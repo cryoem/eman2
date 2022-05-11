@@ -9,7 +9,7 @@ if errorlevel 1 exit 1
 set CL=/MP
 
 cmake --version
-cmake "%SRC_DIR%" -G "Visual Studio 15 2017 Win64" ^
+cmake "%SRC_DIR%" -G "NMake Makefiles" ^
                     -DCMAKE_BUILD_TYPE=Release    ^
                     -DENABLE_WARNINGS=OFF ^
                     -DENABLE_OPTIMIZE_WINDOWS_VC=ON
