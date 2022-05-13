@@ -3103,6 +3103,17 @@ and the file size will increase.
 	
 	for i,im in enumerate(self):
 		if not isinstance(im,EMData) : raise(Exception,"write_compressed() requires a list of EMData objects")
+
+		if ":" in fsp:
+			fsp, outbits, rendermin_abs, rendermax_abs, rendermin_s, rendermax_s = parse_outfile_arg(fsp)
+
+			if outbits: bits = outbits
+			minval = rendermin_abs if rendermin_abs else rendermin_s * im["mean"]
+			maxval = rendermax_abs if rendermax_abs else rendermax_s * im["mean"]
+
+			if minval == 'FULL': minval = im["minimum"]
+			if maxval == 'FULL': maxval = im["maximum"]
+
 		im["render_bits"]=bits
 		im["render_compress_level"]=level
 		if nooutliers :
