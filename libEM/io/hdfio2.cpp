@@ -1400,7 +1400,7 @@ template<EMUtil::EMDataType I>
 auto HdfIO2::write(float *data, size_t size, hid_t ds, hid_t memoryspace, hid_t filespace) {
 	auto [rendered_data, rendertrunc] = getRenderedDataAndRendertrunc<typename EM2Type<I>::type>(data, size);
 
-	auto err_no = H5Dwrite(ds, EM2HDF[I], memoryspace, filespace, H5P_DEFAULT, rendered_data);
+	auto err_no = H5Dwrite(ds, EM2HDF[I], memoryspace, filespace, H5P_DEFAULT, rendered_data.data());
 
 	if (err_no < 0)
 		std::cerr << "H5Dwrite error " << EMUtil::get_datatype_string(I) << ": " << err_no << std::endl;

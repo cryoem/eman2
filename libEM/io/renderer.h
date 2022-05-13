@@ -73,7 +73,7 @@ namespace EMAN {
 			else
 				RMIN = -(1 << (renderbits - 1));
 
-			auto rendered_data = new T[size];
+			std::vector<T> rendered_data(size);
 			size_t count = 0;
 
 			for (size_t i = 0; i < size; ++i) {
@@ -93,7 +93,7 @@ namespace EMAN {
 			return std::tuple(rendered_data, count);
 		}
 		else
-			return std::tuple(data, (size_t)0);
+			return std::tuple(std::vector<float>(data, data + size), (size_t)0);
 	}
 
 }
