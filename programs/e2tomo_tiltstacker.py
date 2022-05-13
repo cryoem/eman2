@@ -519,7 +519,9 @@ def organizetilts( options, intilts, raworder=False ):
 			stemf_root = stemf.split('.')[0]
 
 			collectionlines = [ str(int( l.split("[ZValue = " )[-1].split(']\n')[0] ))+ "\t" + str(round(float( l.split("TiltAngle = " )[-1].split('\n')[0] ),2)) +"\n" for l in bigls ]
-			writef(collectionlines, options.path +'/' + stemf_root + ".collection")
+
+			#c: take a subset of the data matching len(intilts) because the mdoc may have been generated from another mdoc with a different number if images
+			writef(collectionlines[:len(intilts)], options.path +'/' + stemf_root + ".collection")
 
 			angles_and_defocuses_and_collection_unsorted = [ [round(float( l.split("TiltAngle = " )[-1].split('\n')[0] ),2), round(float( l.split("\nDefocus = " )[-1].split('\n')[0] ),2), int( l.split("[ZValue = " )[-1].split(']\n')[0] ), os.path.basename( l.split("SubFramePath = ")[-1].split("\n")[0] ) ] for l in bigls ]
 			angles_and_defocuses_and_collection_sorted = angles_and_defocuses_and_collection_unsorted.copy()
@@ -528,8 +530,9 @@ def organizetilts( options, intilts, raworder=False ):
 			anglelines = [ str(a[0]) + "\n" for a in angles_and_defocuses_and_collection_sorted ]
 			defocuslines = [ str(d[1]) + "\n" for d in angles_and_defocuses_and_collection_sorted ]
 
-			writef(anglelines, options.path +'/' + stemf_root  + ".rawtlt")
-			writef(defocuslines, options.path +'/' + stemf_root + ".mdefocus")
+			#c: take a subset of the data matching len(intilts) because the mdoc may have been generated from another mdoc with a different number if images
+			writef(anglelines[:len(intilts)], options.path +'/' + stemf_root  + ".rawtlt")
+			writef(defocuslines[:len(intilts)], options.path +'/' + stemf_root + ".mdefocus")
 
 			#if '-unsorted' in or 'unsorted' in f:
 			#writef(anglelines, options.path +'/' + stemf.replace('.mrc-unsorted','').replace('-unsorted','').replace('unsorted','').replace('.mrc','')  + ".rawtlt")
