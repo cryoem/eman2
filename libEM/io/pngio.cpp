@@ -353,13 +353,18 @@ int PngIO::read_data(float *data, int image_index, const Region * area, bool)
 }
 
 int PngIO::write_data(float *data, int image_index, const Region*,
-					  EMUtil::EMDataType, bool)
+					  EMUtil::EMDataType dt, bool)
 {
 	ENTERFUNC;
 
 	//single image format, index can only be zero
 	image_index = 0;
 	check_write_access(rw_mode, image_index, 1, data);
+
+	if(dt == EMUtil::EM_COMPRESSED) {
+		if (renderbits <= 8)       depth_type = PNG_CHAR_DEPTH;
+		else if (renderbits <= 16) depth_type = PNG_SHORT_DEPTH;
+	}
 
 	// If we didn't get any parameters in 'render_min' or 'render_max',
 	// we need to find some good ones
