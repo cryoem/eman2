@@ -567,8 +567,8 @@ class EMFileType(object) :
 		try:
 			img0=self.secparm.wspinmin.value()
 			img0=max(img0,0)
-			img1=self.secparm.wspinmax.value()+1
-			if img1<=0 or img1>self.nimg: img1=self.nimg+1
+			img1=self.secparm.wspinmax.value()
+			if img1<0 or img1>self.nimg: img1=self.nimg
 			imgstep=self.secparm.wspinstep.value()
 		except:
 			img0=0
@@ -3562,7 +3562,7 @@ class EMSliceParamDialog(QtWidgets.QDialog):
 			self.wspinmax=QtWidgets.QSpinBox()
 			self.wspinmax.setRange(-1,nimg-1)
 			self.wspinmax.setValue(-1)
-			self.wspinmax.setToolTip("End (inclusive) of range of volumes to display, -1 for all")
+			self.wspinmax.setToolTip("End (exclusive) of range of volumes to display, -1 for all")
 			self.fol.addRow("Last Image #:",self.wspinmax)
 
 			self.wspinstep=QtWidgets.QSpinBox()
