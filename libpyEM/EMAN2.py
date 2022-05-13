@@ -3043,7 +3043,9 @@ def db_write_image(self, fsp, *parms):
 		return
 
 	elif ":" in fsp and is_file_compressable(fsp.partition(':')[0]):
-		return self.write_compressed(fsp, parms[0])
+		idx = parms[0] if parms else 0
+
+		return self.write_compressed(fsp, idx)
 
 	return self.write_image_c(fsp, *parms)
 
