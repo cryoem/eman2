@@ -49,7 +49,7 @@ namespace EMAN {
 		return std::tuple(rendered_data, count);
 		}
 		else
-			return std::tuple(std::vector<float>(data, data + size), (size_t)0);
+			return std::tuple(data, (size_t)0);
 	}
 
 }
