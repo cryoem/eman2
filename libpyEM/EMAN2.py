@@ -845,7 +845,7 @@ def parsemodopt(optstr):
 	if not optstr or len(optstr)==0 : return (None,{})
 	if optstr.lower()=="none" : return None					# special case doesn't return a tuple
 
-	op2=opstr.split(":")
+	op2=optstr.split(":")
 	if len(op2)==1 or op2[1]=="" : return (op2[0],{})		# name with no options
 
 	r2={}
