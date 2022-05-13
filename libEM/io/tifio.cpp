@@ -478,13 +478,19 @@ int TiffIO::write_header(const Dict & dict, int image_index, const Region *,
 }
 
 int TiffIO::write_data(float * data, int image_index, const Region *,
-				EMUtil::EMDataType, bool)
+				EMUtil::EMDataType dt, bool)
 {
 	ENTERFUNC;
 
 	image_index = 0;
 
 //	TIFFSetDirectory(tiff_file, image_index);
+
+	if(dt == EMUtil::EM_COMPRESSED) {
+		if (renderbits <= 0)       bitspersample = CHAR_BIT*sizeof(float);
+		else if (renderbits <= 8)  bitspersample = CHAR_BIT;
+		else if (renderbits <= 16) bitspersample = CHAR_BIT*sizeof(short);
+	}
 
 	// If we didn't get any parameters in 'render_min' or 'render_max',
 	// we need to find some good ones
