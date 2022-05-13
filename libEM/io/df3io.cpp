@@ -174,6 +174,11 @@ int Df3IO::write_data(float *data, int, const Region*,
 
 	size_t img_size = (size_t)nx*ny*nz;
 
+	if(dt == EMUtil::EM_COMPRESSED) {
+		if (renderbits <= 8)       dt = EMUtil::EM_UCHAR;
+		else if (renderbits <= 16) dt = EMUtil::EM_USHORT;
+	}
+
 	int truebits=EMDataTypeBits[(int)dt];
 	if (renderbits==0 || renderbits>truebits) renderbits=truebits;
 	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, renderbits,  nz);
