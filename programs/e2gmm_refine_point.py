@@ -77,7 +77,7 @@ def main():
 	logid=E2init(sys.argv,options.ppid)
 
 	gen_model=None
-	maxboxsz=options.maxboxsz
+	maxboxsz=good_size(options.maxboxsz)
 
 	## load GMM from text file
 	if options.model:
@@ -144,7 +144,8 @@ def main():
 		raw_apix, raw_boxsz = e["apix_x"], e["ny"]
 		options.raw_apix=raw_apix
 		if options.maxres>0:
-			maxboxsz=options.maxboxsz=ceil(raw_boxsz*raw_apix*2/options.maxres)//2*2
+#			maxboxsz=options.maxboxsz=ceil(raw_boxsz*raw_apix*2/options.maxres)//2*2
+			maxboxsz=options.maxboxsz=good_size(ceil(raw_boxsz*raw_apix*2/options.maxres)//2*2)
 			print("using box size {}, max resolution {:.1f}".format(maxboxsz, options.maxres))
 
 		data_cpx, xfsnp = load_particles(options.projs, maxboxsz, shuffle=True)
@@ -201,7 +202,7 @@ def main():
 		raw_apix, raw_boxsz = e["apix_x"], e["ny"]
 		options.raw_apix=raw_apix
 		if options.maxres>0:
-			maxboxsz=options.maxboxsz=ceil(raw_boxsz*raw_apix*2/options.maxres)//2*2
+			maxboxsz=options.maxboxsz=good_size(ceil(raw_boxsz*raw_apix*2/options.maxres)//2*2)
 			print("using box size {}, max resolution {:.1f}".format(maxboxsz, options.maxres))
 
 		data_cpx, xfsnp = load_particles(options.ptclsin,maxboxsz,shuffle=False)
@@ -380,7 +381,7 @@ def xf2pts(pts, ang):
 	if len(pts.shape)>2:
 		pts_rot=tf.tensordot(pts, matrix, [[2],[2]])
 		pts_rot=tf.transpose(pts_rot, (0,2,1,3))
-		
+
 		#### the eye matrix here is mathematically unnecessary
 		##   but somehow tensorflow 2.0 does not track gradient properly without it...
 		##   shouldn't do much damage on the performance anyway
@@ -390,12 +391,13 @@ def xf2pts(pts, ang):
 	else:
 		pts_rot=tf.tensordot(pts, matrix, [[1],[2]])
 		pts_rot=tf.transpose(pts_rot, [1,0,2])
-		
+
 	#### finally do the translation
 	tx=ang[:,3][:,None]
 	ty=ang[:,4][:,None]
-	pts_rot_trans=tf.stack([(pts_rot[:,:,0]+tx), (-pts_rot[:,:,1])+ty], 2)
-	
+#	pts_rot_trans=tf.stack([(pts_rot[:,:,0]+tx), (-pts_rot[:,:,1])+ty], 2)
+	pts_rot_trans=tf.stack([(-pts_rot[:,:,1])+ty,(pts_rot[:,:,0]+tx)], 2)
+
 	#pts_rot_trans=pts_rot_trans*sz+sz/2
 	return pts_rot_trans
 
@@ -416,6 +418,7 @@ def xf2pts(pts, ang):
 def pts2img(pts, ang, params, lp=.1, sym="c1"):
 	bsz=ang.shape[0]
 	sz, idxft, rrft=params["sz"], params["idxft"], params["rrft"]
+	xfo=params["xforigin"]
 	
 	### initialize output and parse input
 	imgs=tf.zeros((bsz, sz,sz), dtype=floattype)
@@ -467,7 +470,7 @@ def pts2img(pts, ang, params, lp=.1, sym="c1"):
 
 	fimgs=tf.signal.rfft2d(imgs)
 
-	return (tf.math.real(fimgs),tf.math.imag(fimgs),imgs)
+	return (tf.math.real(fimgs)*xfo,tf.math.imag(fimgs)*xfo)
 
 #### compute particle-projection FRC 
 ##   data_cpx, imgs_cpx - complex images in (real, imag) form
@@ -478,6 +481,23 @@ def pts2img(pts, ang, params, lp=.1, sym="c1"):
 def calc_frc(data_cpx, imgs_cpx, rings, return_curve=False,minpx=4):
 	mreal, mimag=imgs_cpx
 	dreal, dimag=data_cpx
+
+	# debugging geometry
+	#if random.randint(0,19)==0 :
+		#cimg=tf.dtypes.complex(mreal,mimag)
+		#img=tf.signal.irfft2d(cimg)
+		#num=img.numpy()
+		#emd=from_numpy(num)
+		#emd.process_inplace("xform.phaseorigin.tocenter")
+		#emd.write_image("tests.hdf",-1)
+
+		#cimg=tf.dtypes.complex(dreal,dimag)
+		#img=tf.signal.irfft2d(cimg)
+		#num=img.numpy()
+		#emd=from_numpy(num)
+		#emd.process_inplace("xform.phaseorigin.tocenter")
+		#emd.write_image("tests.hdf",-1)
+
 	#### normalization per ring
 	nrm_img=mreal**2+mimag**2
 	nrm_data=dreal**2+dimag**2
@@ -523,6 +543,7 @@ def load_particles(fname, boxsz, shuffle=False):
 				#nx=e["nx"]
 				#e.clip_inplace(Region((nx-boxsz)//2,(nx-boxsz)//2, boxsz,boxsz))
 				#e.process_inplace("xform.scale", {"scale":boxsz/rawbox,"clip":boxsz})
+			e.process_inplace("xform.phaseorigin.tocorner")
 			hdrs.append(e.get_attr_dict())
 			projs.append(e.numpy().copy())
 	print(f"{nptcl}/{nptcl}")
@@ -599,7 +620,10 @@ def set_indices_boxsz(boxsz, apix=0, return_freq=False):
 		for i in range(sz//2):
 			rings[:,:,i]=(rr==i)
 		
-		params={"sz":sz, "idxft":idxft, "rrft":rrft, "rings":rings}
+		xvec=tf.constant(np.fromfunction(lambda i,j:1.0-2*((i+j)%2),(sz,sz//2+1),dtype=np.float32))
+		phaseorg=tf.zeros((boxsz,boxsz//2+1))
+
+		params={"sz":sz, "idxft":idxft, "rrft":rrft, "rings":rings, "xforigin":xvec}
 		return params
 
 def build_encoder(mid=512, nout=4, conv=False, ninp=-1):

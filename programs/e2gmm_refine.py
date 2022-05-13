@@ -175,6 +175,21 @@ def pts2img(pts, ang, params, lp=.1, sym="c1"):
 def calc_frc(data_cpx, imgs_cpx, rings, return_curve=False,minpx=4):
 	mreal, mimag=imgs_cpx
 	dreal, dimag=data_cpx
+
+	# debugging
+	#if random.randint(0,19)==0 :
+		#cimg=tf.dtypes.complex(mreal,mimag)
+		#img=tf.signal.irfft2d(cimg)
+		#num=img[0].numpy()
+		#emd=from_numpy(num)
+		#emd.write_image("tests.hdf",-1)
+
+		#cimg=tf.dtypes.complex(dreal,dimag)
+		#img=tf.signal.irfft2d(cimg)
+		#num=img.numpy()
+		#emd=from_numpy(num)
+		#emd.write_image("tests.hdf",-1)
+
 	#### normalization per ring
 	nrm_img=mreal**2+mimag**2
 	nrm_data=dreal**2+dimag**2
