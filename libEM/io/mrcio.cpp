@@ -1107,7 +1107,7 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool)
 }
 
 int MrcIO::write_data(float *data, int image_index, const Region* area,
-					  EMUtil::EMDataType, bool use_host_endian)
+					  EMUtil::EMDataType dt, bool use_host_endian)
 {
 	ENTERFUNC;
 
@@ -1179,6 +1179,12 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 //	EMUtil::get_region_dims(area, nx, &xlen, mrch.ny, &ylen, mrch.nz, &zlen);
 //	int size = xlen * ylen * zlen;
 	void * ptr_data = data;
+
+	if(dt == EMUtil::EM_COMPRESSED) {
+		if (renderbits <= 0)       mrch.mode = MRC_FLOAT;
+		else if (renderbits <= 8)  mrch.mode = MRC_UCHAR;
+		else if (renderbits <= 16) mrch.mode = MRC_USHORT;
+	}
 
 	int truebits=0;
 	switch(mrch.mode) {
