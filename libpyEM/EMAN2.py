@@ -57,6 +57,7 @@ from struct import pack,unpack
 import json
 from collections import OrderedDict
 import traceback
+from pathlib import Path
 
 import threading
 #from Sparx import *
@@ -837,12 +838,12 @@ def unparsemodopt(tupl):
 	except:
 		return ""
 
-def parsemodopt(optstr):
+def parsemodopt(optstr=None):
 	"""This is used so the user can provide the name of a comparator, processor, etc. with options
 	in a convenient form. It will parse "dot:normalize=1:negative=0" and return
 	("dot",{"normalize":1,"negative":0})"""
 
-	if not optstr or len(optstr)==0 : return (None,{})
+	if optstr is None or len(optstr)==0 : return (None,{})
 	if optstr.lower()=="none" : return None					# special case doesn't return a tuple
 
 	op2=optstr.split(":")
@@ -2948,6 +2949,16 @@ EMData.__init__ = db_emd_init
 # Transform.__str__ = transform_to_str
 
 #lsxcache=None
+
+
+def compressable_formats():
+	return ('.hdf')
+
+
+def is_file_compressable(fsp):
+	return Path(fsp).suffix.lower() in compressable_formats()
+
+
 def db_read_image(self, fsp, *parms, **kparms):
 	"""read_image(filespec,image #,[header only],[region],[is_3d],[imgtype])
 
@@ -3030,6 +3041,10 @@ def db_write_image(self, fsp, *parms):
 	if fsp[:4].lower() == "bdb:":
 		print("ERROR: BDB is not supported in this version of EMAN2. You must use EMAN2.91 or earlier to access legacy data.")
 		return
+
+	elif ":" in fsp and is_file_compressable(fsp.partition(':')[0]):
+		return self.write_compressed(fsp, parms[0])
+
 	return self.write_image_c(fsp, *parms)
 
 
@@ -3084,10 +3099,21 @@ and the file size will increase.
 		except: n=0
 	
 	# Maybe should have this revert to normal write_image, if a different format?
-	if fsp[-4:].lower()!=".hdf" : raise(Exception,"Only HDF format is supported by im_write_compressed")
+	if not is_file_compressable(fsp.partition(':')[0]): raise(Exception("Only HDF format is supported by im_write_compressed"))
 	
 	for i,im in enumerate(self):
 		if not isinstance(im,EMData) : raise(Exception,"write_compressed() requires a list of EMData objects")
+
+		if ":" in fsp:
+			fsp, outbits, rendermin_abs, rendermax_abs, rendermin_s, rendermax_s = parse_outfile_arg(fsp)
+
+			if outbits: bits = outbits
+			minval = rendermin_abs if rendermin_abs else rendermin_s * im["mean"]
+			maxval = rendermax_abs if rendermax_abs else rendermax_s * im["mean"]
+
+			if minval == 'FULL': minval = im["minimum"]
+			if maxval == 'FULL': maxval = im["maximum"]
+
 		im["render_bits"]=bits
 		im["render_compress_level"]=level
 		if nooutliers :
@@ -3105,7 +3131,7 @@ and the file size will increase.
 				if sum(hist[sh:])>maxout: break
 
 			im["render_min"]=sl*hs+h0
-			im["render_max"]=(sh)*hs+h0
+			im["render_max"]=sh*hs+h0
 		elif maxval>minval:
 			im["render_min"]=float(minval)
 			im["render_max"]=float(maxval)
@@ -3115,7 +3141,7 @@ and the file size will increase.
 			#im["render_max"]=im["maximum"]
 		
 		# would like to use the new write_images, but it isn't quite ready yet.
-		im.write_image(fsp,i+n,EMUtil.ImageType.IMAGE_UNKNOWN,0,None,EMUtil.EMDataType.EM_COMPRESSED)
+		im.write_image_c(fsp,i+n,EMUtil.ImageType.IMAGE_UNKNOWN,0,None,EMUtil.EMDataType.EM_COMPRESSED)
 	
 EMData.write_compressed=im_write_compressed
 

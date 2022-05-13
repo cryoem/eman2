@@ -335,9 +335,12 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wbutneutral=QtWidgets.QPushButton("Train Neutral Model")
 		self.gblrun.addWidget(self.wbutneutral,4,0)
 
+		self.wbutneutral2=QtWidgets.QPushButton("Train Neutral New")
+		self.gblrun.addWidget(self.wbutneutral2,4,1)
+
 		self.wedngauss = QtWidgets.QLabel(" ")		# originally an editor, now output only
 		self.wedngauss.setToolTip("Number of Gaussians in the model")
-		self.gblrun.addWidget(self.wedngauss,4,1)
+		self.gblrun.addWidget(self.wedngauss,3,0)
 
 		self.wbutrerun=QtWidgets.QPushButton("Run Dynamics")
 		self.gblrun.addWidget(self.wbutrerun,5,0)
@@ -501,6 +504,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wbutrerun.clicked[bool].connect(self.do_run)
 		self.wbutrerun2.clicked[bool].connect(self.do_run_new)
 		self.wbutneutral.clicked[bool].connect(self.new_neutral)
+		self.wbutneutral2.clicked[bool].connect(self.new_neutral2)
 #		self.wedres.editingFinished.connect(self.new_res)
 		self.wbutres.clicked[bool].connect(self.new_res)
 		#self.wbutdrgrp.idClicked[int].connect(self.plot_mode_sel)		# requires pyqt 5.15
@@ -1121,6 +1125,90 @@ class EMGMM(QtWidgets.QMainWindow):
 		
 		self.set3dvis(1,0,0,1,0,1)
 
+	def new_neutral2(self):
+		"""Makes a new neutral model, which will be used by any subsequent runs"""
+		# Compute and save initial centers
+		prog=QtWidgets.QProgressDialog("Running neutral model network. Progress updates here are limited. See the Console for detailed output.","Abort",0,4)
+		prog.show()
+
+		# Regenerate the initial model by segmentation (writes to modelseg file)
+		self.new_res()
+
+		self.saveparm("neutral")  # updates self.currun with current user input
+
+		sym=self.currun["sym"]
+		maxbox=(int(self.jsparm["boxsize"]*(2*self.jsparm["apix"])/self.currun["targres"])//2)*2
+		modelout=f"{self.gmm}/{self.currunkey}_model_gmm.txt"
+		modelseg=f"{self.gmm}/{self.currunkey}_model_seg.txt"
+		prog.setValue(1)
+
+		nx=int(self.jsparm["boxsize"])
+		ncen=len(self.amps)		# number of centers from original segmentation
+		if (ncen==0) :
+			showerror("No centers determined at current resolution!")
+			return
+
+		if int(self.currun["conv"]): conv="--conv"
+		else: conv=""
+		decoder=f"{self.gmm}/{self.currunkey}_decoder.h5"
+
+
+		# we extract a subset of the input particles targeting ~10k
+		try: os.unlink(f"{self.gmm}/particles_subset.lst")
+		except: pass
+		lsx=LSXFile(f"{self.gmm}/particles.lst",True)
+		lsxs=LSXFile(f"{self.gmm}/particles_subset.lst")
+		step=max(len(lsx)//5000,1)
+		for i in range(0,len(lsx),step):
+			lsxs.write(-1,*lsx.read(i))
+		print(f"Subset of {len(lsxs)} particles extracted to train neutral model")
+		lsxs.close()
+		lsx=None
+		lsxs=None
+
+		# refine the neutral model against some real data in entropy training mode
+		er=run(f"e2gmm_refine_point.py --projs {self.gmm}/particles_subset.lst  --npt {self.currun['ngauss']} --decoderentropy --npt {self.currun['ngauss']} --sym {sym} --maxboxsz {maxbox} --model {modelseg} --modelout {modelout} --niter 10  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --ampreg 0.1 --sigmareg 1.0 --ndense -1")
+		if er :
+			showerror("Error running e2gmm_refine, see console for details. GPU memory exhaustion is a common issue. Consider reducing the target resolution.")
+			return
+
+		# Now we train latent zero to the neutral conformation
+		er=run(f"e2gmm_refine_point.py --projs {self.gmm}/proj_in.hdf --decoderin {decoder} --sym {sym} --maxboxsz {maxbox} --model {modelseg} --modelout {modelout} --niter 20  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --modelreg {self.currun['modelreg']} --ampreg 1.0 --ndense -1")
+		if er :
+			showerror("Error running e2gmm_refine, see console for details. GPU memory exhaustion is a common issue. Consider reducing the target resolution.")
+			return
+		prog.setValue(2)
+
+		pts=np.loadtxt(modelout).transpose()
+		pts[1]*=-1.0
+		pts[2]*=-1.0
+		pts[:3,:]*=nx
+		n2c=min(ncen,pts.shape[1])
+		pts[:3,:n2c]=self.centers[:,:n2c]
+		pts[3:4,:n2c]=self.amps[:n2c]
+		pts[4,:n2c]=1.0
+		self.centers=pts[:3,:]
+		self.amps=pts[3]
+		self.wids=pts[4]
+
+		self.neutralplot.setData(self.centers,self.wvssphsz.value)
+		self.wview3d.updateGL()
+		self.do_events()
+		prog.setValue(3)
+
+		# make3d on gaussian output for comparison
+		er=run(f"e2make3dpar.py --input {self.gmm}/{self.currunkey}_model_projs.hdf --output {self.gmm}/{self.currunkey}_model_recon.hdf --pad {good_size(self.jsparm['boxsize']*1.25)} --mode trilinear --keep 1 --threads {self.options.threads}")
+
+		# Display the reconstructed Gaussian map
+		seg=EMData(f"{self.gmm}/{self.currunkey}_model_recon.hdf")
+		self.fmapdataitem.setData(seg)
+		prog.setValue(4)
+		self.currun=self.jsparm["run_"+self.currunkey]
+		self.currun["time_neutral_end"]=local_datetime()
+		self.jsparm["run_"+self.currunkey]=self.currun
+
+		self.set3dvis(1,0,0,1,0,1)
+
 
 	def new_run(self,clk=False):
 		"""Create a new run and run() it"""
@@ -1261,14 +1349,16 @@ class EMGMM(QtWidgets.QMainWindow):
 		
 		# if targeting high resolution, we start with 10 iterations at 25 A first
 		if maxbox25<maxbox:
-			er=run(f"e2gmm_refine_new.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox25} --niter 10 {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")
+#			er=run(f"e2gmm_refine_new.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox25} --niter 10 {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")
+			er=run(f"e2gmm_refine_point.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox25} --niter 10 {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")
 			if er :
 				showerror("Error running e2gmm_refine, see console for details. Memory is a common issue. Consider reducing the target resolution.")
 				return
 		#if self.currun['pas'][0]=="1" and self.currun['pas'][1]=="1":
 			#er=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']//2} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas 100 --ndense -1")
 			#er=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']//2} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")		
-		er=run(f"e2gmm_refine_new.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")
+		er=run(f"e2gmm_refine_point.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")
+#		er=run(f"e2gmm_refine_new.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")
 		if er :
 			showerror("Error running e2gmm_refine_new, see console for details.")
 			return
