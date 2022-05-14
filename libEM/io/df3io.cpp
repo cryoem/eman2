@@ -173,6 +173,9 @@ int Df3IO::write_data(float *data, int, const Region*,
 	ENTERFUNC;
 
 	size_t img_size = (size_t)nx*ny*nz;
+	unsigned int * uidata = 0;
+	unsigned short * usdata = 0;
+	unsigned char * ucdata = 0;
 
 	if(dt == EMUtil::EM_COMPRESSED) {
 		if (renderbits <= 8)       dt = EMUtil::EM_UCHAR;
@@ -183,25 +186,66 @@ int Df3IO::write_data(float *data, int, const Region*,
 	if (renderbits==0 || renderbits>truebits) renderbits=truebits;
 	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, renderbits,  nz);
 
-	if(dt == EMUtil::EM_UINT) {
-		auto [rendered_data, count] = getRenderedDataAndRendertrunc<unsigned int>(data, img_size);
-		ByteOrder::become_big_endian(rendered_data.data(), img_size);
-		if(fwrite(rendered_data.data(), sizeof(unsigned int), img_size, file) != img_size)
+	switch(dt) {
+	case EMUtil::EM_UINT:
+		uidata = new unsigned int[img_size];
+		for (size_t i = 0; i < img_size; ++i) {
+			if(data[i] <= rendermin) {
+				uidata[i] = 0;
+			}
+			else if(data[i] >= rendermax) {
+				uidata[i] = UINT_MAX;
+			}
+			else {
+				uidata[i]=(unsigned int)((data[i]-rendermin)/(rendermax-rendermin)*UINT_MAX);
+			}
+		}
+		ByteOrder::become_big_endian(uidata, img_size);
+		if(fwrite(uidata, sizeof(unsigned int), img_size, file) != img_size) {
 			throw ImageWriteException(filename, "DF3 unsigned int data");
-	}
-	else if(dt == EMUtil::EM_USHORT) {
-		auto [rendered_data, count] = getRenderedDataAndRendertrunc<unsigned short>(data, img_size);
-		ByteOrder::become_big_endian(rendered_data.data(), img_size);
-		if(fwrite(rendered_data.data(), sizeof(unsigned short), img_size, file) != img_size)
+		}
+		if(uidata) {delete [] uidata; uidata=0;}
+		break;
+	case EMUtil::EM_USHORT:
+		usdata = new unsigned short[img_size];
+		for (size_t i = 0; i < img_size; ++i) {
+			if(data[i] <= rendermin) {
+				usdata[i] = 0;
+			}
+			else if(data[i] >= rendermax) {
+				usdata[i] = USHRT_MAX;
+			}
+			else {
+				usdata[i]=(unsigned short)((data[i]-rendermin)/(rendermax-rendermin)*USHRT_MAX);
+			}
+		}
+		ByteOrder::become_big_endian(usdata, img_size);
+		if(fwrite(usdata, sizeof(unsigned short), img_size, file) != img_size) {
 			throw ImageWriteException(filename, "DF3 unsigned short data");
-	}
-	else if(dt == EMUtil::EM_UCHAR) {
-		auto [rendered_data, count] = getRenderedDataAndRendertrunc<unsigned char>(data, img_size);
-		if(fwrite(rendered_data.data(), sizeof(unsigned char), img_size, file) != img_size)
+		}
+		if(usdata) {delete [] usdata; usdata=0;}
+		break;
+	case EMUtil::EM_UCHAR:
+		ucdata = new unsigned char[img_size];
+		for (size_t i = 0; i < img_size; ++i) {
+			if(data[i] <= rendermin) {
+				ucdata[i] = 0;
+			}
+			else if(data[i] >= rendermax){
+				ucdata[i] = UCHAR_MAX;
+			}
+			else {
+				ucdata[i]=(unsigned char)((data[i]-rendermin)/(rendermax-rendermin)*UCHAR_MAX);
+			}
+		}
+		if(fwrite(ucdata, sizeof(unsigned char), img_size, file) != img_size) {
 			throw ImageWriteException(filename, "DF3 unsigned char data");
-	}
-	else
+		}
+		if(ucdata) {delete [] ucdata; ucdata=0;}
+		break;
+	default:
 		throw ImageWriteException(filename,"DF3 does not support this data format");
+	}
 
 	EXITFUNC;
 	return 0;
