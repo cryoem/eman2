@@ -36,6 +36,7 @@
 
 #include <png.h>
 #include "imageio.h"
+#include "renderer.h"
 
 
 namespace EMAN
@@ -43,7 +44,7 @@ namespace EMAN
 	/** PngIO reads/writes a 2D PNG image. Currently 8-bit and 16-bit
 	 * PNG read/write are supported.
 	 */
-	class PngIO : public ImageIO
+	class PngIO : public ImageIO, public Renderer
 	{
 	  public:
 		explicit PngIO(const string & fname, IOMode rw_mode = READ_ONLY);
@@ -74,10 +75,6 @@ namespace EMAN
 		png_uint_32 ny;
 		BitDepthType depth_type;
 		int number_passes;
-		
-		float rendermin;
-		float rendermax;
-		int renderbits;
 	};
 
 }

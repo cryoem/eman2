@@ -41,8 +41,7 @@ using namespace EMAN;
 PngIO::PngIO(const string & fname, IOMode rw)
 :	ImageIO(fname, rw),
 	png_ptr(0), info_ptr(0), end_info(0), nx(0), ny(0),
-	depth_type(PNG_INVALID_DEPTH), number_passes(0),
-	rendermin(0.0), rendermax(0.0), renderbits(16)
+	depth_type(PNG_INVALID_DEPTH), number_passes(0)
 {}
 
 PngIO::~PngIO()
@@ -354,13 +353,18 @@ int PngIO::read_data(float *data, int image_index, const Region * area, bool)
 }
 
 int PngIO::write_data(float *data, int image_index, const Region*,
-					  EMUtil::EMDataType, bool)
+					  EMUtil::EMDataType dt, bool)
 {
 	ENTERFUNC;
 
 	//single image format, index can only be zero
 	image_index = 0;
 	check_write_access(rw_mode, image_index, 1, data);
+
+	if(dt == EMUtil::EM_COMPRESSED) {
+		if (renderbits <= 8)       depth_type = PNG_CHAR_DEPTH;
+		else if (renderbits <= 16) depth_type = PNG_SHORT_DEPTH;
+	}
 
 	// If we didn't get any parameters in 'render_min' or 'render_max',
 	// we need to find some good ones
@@ -376,54 +380,21 @@ int PngIO::write_data(float *data, int image_index, const Region*,
 	/**Flip the image vertically, since EMAN use top-left corner as image origin
 	* But PNG use bottom-left corner as image origin */
 	if (depth_type == PNG_CHAR_DEPTH) {
-		unsigned char *cdata = new unsigned char[nx];
+		auto [rendered_data, count] = getRenderedDataAndRendertrunc<unsigned char>(data, nx*ny);
 
 		for (int y = (int)ny-1; y >= 0; y--) {
-			for (int x = 0; x < (int)nx; x++) {
-				if(data[y * nx + x] <= rendermin){
-					cdata[x] = 0;
-				}
-				else if(data[y * nx + x] >= rendermax) {
-					cdata[x] = UCHAR_MAX;
-				}
-				else {
-					cdata[x] = (unsigned char)((data[y * nx + x] - rendermin) /
-								(rendermax - rendermin) * 256);
-				}
-			}
-			png_write_row(png_ptr, (png_byte *) cdata);
-		}
-
-		if( cdata )
-		{
-			delete[]cdata;
-			cdata = 0;
+			auto cdata = vector<unsigned char>(rendered_data.data() + y * nx,
+											   rendered_data.data() + (y +1) * nx);
+			png_write_row(png_ptr, (png_byte *) cdata.data());
 		}
 	}
 	else if (depth_type == PNG_SHORT_DEPTH) {
-		unsigned short *sdata = new unsigned short[nx];
+		auto [rendered_data, count] = getRenderedDataAndRendertrunc<unsigned short>(data, nx*ny);
 
-		for (int y = (int)ny-1; y >= 0 ; y--) {
-			for (int x = 0; x < (int)nx; x++) {
-				if(data[y * nx + x] <= rendermin){
-					sdata[x] = 0;
-				}
-				else if(data[y * nx + x] >= rendermax) {
-					sdata[x] = USHRT_MAX;
-				}
-				else {
-					sdata[x] = (unsigned short)((data[y * nx + x] - rendermin) /
-								(rendermax - rendermin) * 65536);
-				}
-			}
-
-			png_write_row(png_ptr, (png_byte *) sdata);
-		}
-
-		if( sdata )
-		{
-			delete[]sdata;
-			sdata = 0;
+		for (int y = (int)ny-1; y >= 0; y--) {
+			auto cdata = vector<unsigned char>(rendered_data.data() + y * nx,
+											   rendered_data.data() + (y +1) * nx);
+			png_write_row(png_ptr, (png_byte *) cdata.data());
 		}
 	}
 

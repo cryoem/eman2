@@ -69,8 +69,7 @@ static const int ATTR_NAME_LEN = 128;
 
 HdfIO2::HdfIO2(const string & fname, IOMode rw)
 :	ImageIO(fname, rw), nx(1), ny(1), nz(1), is_exist(false),
-	file(-1), group(-1),
-	rendermin(0.0), rendermax(0.0), renderbits(16), renderlevel(1)
+	file(-1), group(-1)
 {
 	H5dont_atexit();
 	accprop=H5Pcreate(H5P_FILE_ACCESS);
@@ -1236,11 +1235,7 @@ int HdfIO2::read_data(float *data, int image_index, const Region *area, bool)
 		hsize_t i=0;
 		hsize_t j=0;
 
-		unsigned short *usdata = (unsigned short *) data;
-		unsigned char   *cdata = (unsigned char *) data;
-
 		H5Dread(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
-
 	}
 
 	H5Tclose(dt);
@@ -1401,6 +1396,24 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 	return 0;
 }
 
+template<EMUtil::EMDataType I>
+auto HdfIO2::write(float *data, size_t size, hid_t ds, hid_t memoryspace, hid_t filespace) {
+	auto [rendered_data, rendertrunc] = getRenderedDataAndRendertrunc<typename EM2Type<I>::type>(data, size);
+
+	auto err_no = H5Dwrite(ds, EM2HDF[I], memoryspace, filespace, H5P_DEFAULT, rendered_data.data());
+
+	if (err_no < 0)
+		std::cerr << "H5Dwrite error " << EMUtil::get_datatype_string(I) << ": " << err_no << std::endl;
+
+	return std::tuple(I != EMUtil::EM_FLOAT, rendertrunc);
+}
+
+auto HdfIO2::write_compressed(float *data, hsize_t size, hid_t ds, hid_t spc1, hid_t spc2) {
+	if (renderbits<=0)      return write<EMUtil::EM_FLOAT>(data, size, ds, spc1, spc2);
+	else if (renderbits<=8) return write<EMUtil::EM_UCHAR>(data, size, ds, spc1, spc2);
+	else                    return write<EMUtil::EM_USHORT>(data, size, ds, spc1, spc2);
+}
+
 // Writes the actual image data to the corresponding dataset (already created)
 int HdfIO2::write_data(float *data, int image_index, const Region* area,
 					  EMUtil::EMDataType dt, bool)
@@ -1542,26 +1555,14 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 	// convert data to unsigned short, unsigned char...
 	hsize_t size = (hsize_t)nx*ny*nz;
 
-	unsigned char  *ucdata = NULL;
-	unsigned short *usdata = NULL;
-	char  *cdata = NULL;
-	short *sdata = NULL;
-
 	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, renderbits, nz);
-	int rendertrunc = 0;	// keep track of truncated pixels
 //	printf("RMM  %f  %f\n",rendermin,rendermax);
 
-	// Limiting values for signed and unsigned with specified bits
-	float RUMIN = 0;
-	float RUMAX = (1<<renderbits)-1.0f;
-	float RSMIN = -(1<<(renderbits-1));
-	float RSMAX = (1<<(renderbits-1))-1;
-	
-	bool scaled=0;		// set if the data will need rescaling upon read
-	herr_t err_no;
+	hid_t filespace = 0;
+	hid_t memoryspace = 0;
+
 	if (area) {
-		hid_t filespace = H5Dget_space(ds);
-		hid_t memoryspace = 0;
+		filespace = H5Dget_space(ds);
 
 		if (rank == 3) {
 			hsize_t doffset[3];		/* hyperslab offset in the file */
@@ -1616,333 +1617,36 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 		else {
 			std::cerr << "rank is wrong: " << rank << std::endl;
 		}
+	}
 
 
-		switch(dt) {
-		case EMUtil::EM_FLOAT:
-			err_no = H5Dwrite(ds, H5T_NATIVE_FLOAT, memoryspace, filespace, H5P_DEFAULT, data);
-
-			if (err_no < 0) {
-				std::cerr << "H5Dwrite error float: " << err_no << std::endl;
-			}
-
-			break;
-		case EMUtil::EM_SHORT:
-			sdata = new short[size];
-
-			for (size_t i = 0; i < size; ++i) {
-				if (data[i] <= rendermin) {
-					sdata[i] = (short)RSMIN;
-					rendertrunc++;
-				}
-				else if (data[i] >= rendermax) {
-					sdata[i] = (short)RSMAX;
-					rendertrunc++;
-				}
-				else {
-					sdata[i]=(short)roundf((data[i]-rendermin)/(rendermax-rendermin)*(RSMAX-RSMIN)+RSMIN);
-				}
-			}
-
-			err_no = H5Dwrite(ds, H5T_NATIVE_SHORT, memoryspace, filespace, H5P_DEFAULT, sdata);
-
-			if (err_no < 0) {
-				std::cerr << "H5Dwrite error short: " << err_no << std::endl;
-			}
-
-			if (sdata) {delete [] sdata; sdata = NULL;}
-			scaled=1;
-			
-			break;
-		case EMUtil::EM_USHORT:
-			usdata = new unsigned short[size];
-
-			for (size_t i = 0; i < size; ++i) {
-				if (data[i] <= rendermin) {
-					usdata[i] = 0;
-					rendertrunc++;
-				}
-				else if (data[i] >= rendermax) {
-					usdata[i] = (unsigned short)RUMAX;
-					rendertrunc++;
-				}
-				else {
-					usdata[i]=(unsigned short)roundf((data[i]-rendermin)/(rendermax-rendermin)*RUMAX);
-				}
-			}
-
-			err_no = H5Dwrite(ds, H5T_NATIVE_USHORT, memoryspace, filespace, H5P_DEFAULT, usdata);
-
-			if (err_no < 0) {
-				std::cerr << "H5Dwrite error ushort: " << err_no << std::endl;
-			}
-
-			if (usdata) {delete [] usdata; usdata = NULL;}
-			scaled=1;
-
-			break;
-		case EMUtil::EM_CHAR:
-			cdata = new char[size];
-
-			for (size_t i = 0; i < size; ++i) {
-				if (data[i] <= rendermin) {
-					cdata[i] = (char) RSMIN;
-					rendertrunc++;
-				}
-				else if (data[i] >= rendermax){
-					cdata[i] = (char) RSMAX;
-					rendertrunc++;
-				}
-				else {
-					cdata[i]=(char)roundf((data[i]-rendermin)/(rendermax-rendermin)*(RSMAX-RSMIN)+RSMIN);
-				}
-			}
-
-			err_no = H5Dwrite(ds, H5T_NATIVE_CHAR, memoryspace, filespace, H5P_DEFAULT, cdata);
-
-			if (err_no < 0) {
-				std::cerr << "H5Dwrite error char: " << err_no << std::endl;
-			}
-
-			if (cdata) {delete [] cdata; cdata = NULL;}
-			scaled=1;
-
-			break;
-		case EMUtil::EM_UCHAR:
-			ucdata = new unsigned char[size];
-
-			for (size_t i = 0; i < size; ++i) {
-				if (data[i] <= rendermin) {
-					ucdata[i] = 0;
-					rendertrunc++;
-				}
-				else if (data[i] >= rendermax){
-					ucdata[i] = (unsigned char)RUMAX;
-					rendertrunc++;
-				}
-				else {
-					ucdata[i]=(unsigned char)roundf((data[i]-rendermin)/(rendermax-rendermin)*RUMAX);
-				}
-			}
-
-			err_no = H5Dwrite(ds, H5T_NATIVE_UCHAR, memoryspace, filespace, H5P_DEFAULT, ucdata);
-
-			if (err_no < 0) {
-				std::cerr << "H5Dwrite error uchar: " << err_no << std::endl;
-			}
-
-			if (ucdata) {delete [] ucdata; ucdata = NULL;}
-			scaled=1;
-
-			break;
-		case EMUtil::EM_COMPRESSED:
-			if (renderbits<=0) err_no = H5Dwrite(ds, H5T_NATIVE_FLOAT, memoryspace, filespace, H5P_DEFAULT, data);
-			else if (renderbits<=8) {
-				ucdata = new unsigned char[size];
-
-				for (size_t i = 0; i < size; ++i) {
-					if (data[i] <= rendermin) {
-						ucdata[i] = 0;
-						rendertrunc++;
-					}
-					else if (data[i] >= rendermax){
-						ucdata[i] = (unsigned char)RUMAX;
-						rendertrunc++;
-					}
-					else {
-						ucdata[i]=(unsigned char)roundf((data[i]-rendermin)/(rendermax-rendermin)*RUMAX);
-					}
-				}
-
-				err_no = H5Dwrite(ds, H5T_NATIVE_UCHAR, memoryspace, filespace, H5P_DEFAULT, ucdata);
-				scaled=1;
-				if (ucdata) {delete [] ucdata; ucdata = NULL;}
-			}
-			else {
-				usdata = new unsigned short[size];
-
-				for (size_t i = 0; i < size; ++i) {
-					if (data[i] <= rendermin) {
-						usdata[i] = 0;
-						rendertrunc++;
-					}
-					else if (data[i] >= rendermax) {
-						usdata[i] = (unsigned short)RUMAX;
-						rendertrunc++;
-					}
-					else {
-						usdata[i]=(unsigned short)roundf((data[i]-rendermin)/(rendermax-rendermin)*RUMAX);
-					}
-				}
-
-				err_no = H5Dwrite(ds, H5T_NATIVE_USHORT, memoryspace, filespace, H5P_DEFAULT, usdata);
-				scaled=1;
-				if (usdata) {delete [] usdata; usdata = NULL;}
-			}
-				
-			if (err_no < 0) {
-				std::cerr << "H5Dwrite error compressed: " << err_no << std::endl;
-			}
-			break;
-		default:
-			throw ImageWriteException(filename,"HDF5 does not support region writing for this data format");
-		}
-
-		H5Sclose(filespace);
-		H5Sclose(memoryspace);
+	hid_t spc1 = 0;
+	hid_t spc2 = 0;
+	if (area) {
+		spc1 = memoryspace;
+		spc2 = filespace;
 	}
 	else {
-		switch(dt) {
-		case EMUtil::EM_FLOAT:
-			H5Dwrite(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
-			break;
-		case EMUtil::EM_SHORT:
-			sdata = new short[size];
+		spc1 = spc;
+		spc2 = spc;
+	}
 
-			for (size_t i = 0; i < size; ++i) {
-				if (data[i] <= rendermin) {
-					sdata[i] = (short)RSMIN;
-					rendertrunc++;
-				}
-				else if (data[i] >= rendermax) {
-					sdata[i] = (short)RSMAX;
-					rendertrunc++;
-				}
-				else {
-					sdata[i]=(short)roundf((data[i]-rendermin)/(rendermax-rendermin)*(RSMAX-RSMIN)+RSMIN);
-				}
-			}
-
-			H5Dwrite(ds,H5T_NATIVE_SHORT,spc,spc,H5P_DEFAULT,sdata);
-
-			if (sdata) {delete [] sdata; sdata = NULL;}
-			scaled=1;
-
-			break;
-		case EMUtil::EM_USHORT:
-			usdata = new unsigned short[size];
-
-			for (size_t i = 0; i < size; ++i) {
-				if (data[i] <= rendermin) {
-					usdata[i] = 0;
-					rendertrunc++;
-				}
-				else if (data[i] >= rendermax) {
-					usdata[i] = (unsigned short)RUMAX;
-					rendertrunc++;
-				}
-				else {
-					usdata[i]=(unsigned short)roundf((data[i]-rendermin)/(rendermax-rendermin)*RUMAX);
-				}
-			}
-
-			H5Dwrite(ds,H5T_NATIVE_USHORT,spc,spc,H5P_DEFAULT,usdata);
-
-			if (usdata) {delete [] usdata; usdata = NULL;}
-			scaled=1;
-
-			break;
-		case EMUtil::EM_CHAR:
-			cdata = new char[size];
-
-			for (size_t i = 0; i < size; ++i) {
-				if (data[i] <= rendermin) {
-					cdata[i] = (char) RSMIN;
-					rendertrunc++;
-				}
-				else if (data[i] >= rendermax){
-					cdata[i] = (char) RSMAX;
-					rendertrunc++;
-				}
-				else {
-					cdata[i]=(char)roundf((data[i]-rendermin)/(rendermax-rendermin)*(RSMAX-RSMIN)+RSMIN);
-				}
-			}
-
-			H5Dwrite(ds,H5T_NATIVE_CHAR,spc,spc,H5P_DEFAULT,cdata);
-
-			if (cdata) {delete [] cdata; cdata = NULL;}
-			scaled=1;
-
-			break;
-		case EMUtil::EM_UCHAR:
-			ucdata = new unsigned char[size];
-
-			for (size_t i = 0; i < size; ++i) {
-				if (data[i] <= rendermin) {
-					ucdata[i] = 0;
-					rendertrunc++;
-				}
-				else if (data[i] >= rendermax){
-					ucdata[i] = (unsigned char)RUMAX;
-					rendertrunc++;
-				}
-				else {
-					ucdata[i]=(unsigned char)roundf((data[i]-rendermin)/(rendermax-rendermin)*RUMAX);
-				}
-			}
-
-			H5Dwrite(ds,H5T_NATIVE_UCHAR,spc,spc,H5P_DEFAULT,ucdata);
-
-			if (ucdata) {delete [] ucdata; ucdata = NULL;}
-			scaled=1;
-
-			break;
-		case EMUtil::EM_COMPRESSED:
-			//printf("writec %d %f %f\n",renderbits,rendermin,rendermax);
-			if (renderbits<=0) err_no = H5Dwrite(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
-			else if (renderbits<=8) {
-				ucdata = new unsigned char[size];
-
-				for (size_t i = 0; i < size; ++i) {
-					if (data[i] <= rendermin) {
-						ucdata[i] = 0;
-						rendertrunc++;
-					}
-					else if (data[i] >= rendermax) {
-						ucdata[i] = (unsigned char)RUMAX;
-						rendertrunc++;
-					}
-					else {
-						ucdata[i]=(unsigned char)roundf((data[i]-rendermin)/(rendermax-rendermin)*RUMAX);
-					}
-				}
-
-				err_no = H5Dwrite(ds,H5T_NATIVE_UCHAR,spc,spc,H5P_DEFAULT,ucdata);
-				scaled=1;
-				if (ucdata) {delete [] ucdata; ucdata = NULL;}
-			}
-			else {
-				usdata = new unsigned short[size];
-
-				for (size_t i = 0; i < size; ++i) {
-					if (data[i] <= rendermin) {
-						usdata[i] = 0;
-						rendertrunc++;
-					}
-					else if (data[i] >= rendermax) {
-						usdata[i] = (unsigned short)RUMAX;
-						rendertrunc++;
-					}
-					else {
-						usdata[i]=(unsigned short)roundf((data[i]-rendermin)/(rendermax-rendermin)*RUMAX);
-					}
-				}
-
-				err_no = H5Dwrite(ds,H5T_NATIVE_USHORT,spc,spc,H5P_DEFAULT,usdata);
-				scaled=1;
-				if (usdata) {delete [] usdata; usdata = NULL;}
-			}
-				
-			if (err_no < 0) {
-				printf("%d %f %f\n",renderbits,rendermin,rendermax);
-				std::cerr << "H5Dwrite error compressed full: " << err_no << std::endl;
-			}
-
-			break;
+	int rendertrunc = 0;	// keep track of truncated pixels
+	bool scaled = 0;		// set if the data will need rescaling upon read
+	switch(dt) {
+		case EMUtil::EM_FLOAT:      std::tie(scaled, rendertrunc) = write<EMUtil::EM_FLOAT>(data, size, ds, spc1, spc2); break;
+		case EMUtil::EM_SHORT:      std::tie(scaled, rendertrunc) = write<EMUtil::EM_SHORT>(data, size, ds, spc1, spc2); break;
+		case EMUtil::EM_USHORT:     std::tie(scaled, rendertrunc) = write<EMUtil::EM_USHORT>(data, size, ds, spc1, spc2); break;
+		case EMUtil::EM_CHAR:       std::tie(scaled, rendertrunc) = write<EMUtil::EM_CHAR>(data, size, ds, spc1, spc2); break;
+		case EMUtil::EM_UCHAR:      std::tie(scaled, rendertrunc) = write<EMUtil::EM_UCHAR>(data, size, ds, spc1, spc2); break;
+		case EMUtil::EM_COMPRESSED: std::tie(scaled, rendertrunc) = write_compressed(data, size, ds, spc1, spc2); break;
 		default:
 			throw ImageWriteException(filename,"HDF5 does not support this data format");
-		}
+	}
+
+	if (area) {
+		H5Sclose(filespace);
+		H5Sclose(memoryspace);
 	}
 
 	H5Sclose(spc);
