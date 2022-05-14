@@ -47,11 +47,23 @@
 	#define __STDC_CONSTANT_MACROS 1
 #endif
 #include <vector>
+#include "renderer.h"
 
 using std::vector;
 
 namespace EMAN
 {
+	inline map<EMUtil::EMDataType, hid_t> EM2HDF {
+			{EMUtil::EM_CHAR,   H5T_NATIVE_CHAR},
+			{EMUtil::EM_UCHAR,  H5T_NATIVE_UCHAR},
+			{EMUtil::EM_SHORT,  H5T_NATIVE_USHORT},
+			{EMUtil::EM_USHORT, H5T_NATIVE_USHORT},
+			{EMUtil::EM_INT,    H5T_NATIVE_INT},
+			{EMUtil::EM_UINT,   H5T_NATIVE_UINT},
+			{EMUtil::EM_FLOAT,  H5T_NATIVE_FLOAT},
+			{EMUtil::EM_DOUBLE, H5T_NATIVE_DOUBLE},
+	};
+
 	/** HDF5 (hiearchical data format version 5) is supported in
 	 * HdfIO. This is a revised HDF5 format file.
 	 *
@@ -64,7 +76,7 @@ namespace EMAN
 	 * ftp:://ftp.hdfgroup.org/HDF5/special_tools/h5check/
 	 * to verify the HDF5 file is compliant with the HDF5 File Format Specification.
 	 */
-	class HdfIO2 : public ImageIO
+	class HdfIO2 : public ImageIO, public Renderer
 	{
 	  public:
 		explicit HdfIO2(const string & fname, IOMode rw_mode = READ_ONLY);
@@ -116,6 +128,11 @@ namespace EMAN
 		hid_t get_fileid() const {return file;}
 
 	  private:
+		template<EMUtil::EMDataType I>
+		auto write(float *data, size_t size, hid_t ds, hid_t memoryspace, hid_t filespace);
+		auto write_compressed(float *data, hsize_t size, hid_t ds, hid_t spc1, hid_t spc2);
+
+	  private:
 		hsize_t nx, ny, nz;
 		bool is_exist;	//boolean to tell if the image (group) already exist(to be overwrite)
 
@@ -133,12 +150,6 @@ namespace EMAN
 		 * @param image_index 
 		 * @return 0 for success*/
 		int erase_header(int image_index);
-
-        // render_min and render_max
-	    float rendermin;
-	    float rendermax;
-		int renderbits;
-		int renderlevel; // compression level
 	};
 }
 

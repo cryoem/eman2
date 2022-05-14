@@ -35,6 +35,8 @@
 #ifdef USE_JPEG
 
 #include "imageio.h"
+#include "renderer.h"
+
 extern "C" {
 #include <jpeglib.h>
 }
@@ -43,7 +45,7 @@ extern "C" {
 namespace EMAN
 {
 	/** JpegIO reads/writes a 2D JPEG image. Currently write-only */
-	class JpegIO : public ImageIO
+	class JpegIO : public ImageIO, public Renderer
 	{
 	  public:
 		explicit JpegIO(const string & fname, IOMode rw_mode = WRITE_ONLY);
@@ -53,14 +55,10 @@ namespace EMAN
 		static bool is_valid(const void *first_block);
 		int get_nimg();
 	  private:
-		float rendermin;
-		float rendermax;
-		int renderbits;
 		int jpegqual;
 
 		struct jpeg_compress_struct cinfo;
 		struct jpeg_error_mgr jerr;
-
 	};
 
 }
