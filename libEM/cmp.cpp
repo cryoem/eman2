@@ -57,6 +57,7 @@ const string OptVarianceCmp::NAME = "optvariance";
 const string OptSubCmp::NAME = "optsub";
 const string PhaseCmp::NAME = "phase";
 const string FRCCmp::NAME = "frc";
+const string FRCFreqCmp::NAME = "frc.freq";
 const string VerticalCmp::NAME = "vertical";
 
 template <> Factory < Cmp >::Factory()
@@ -74,6 +75,7 @@ template <> Factory < Cmp >::Factory()
 	force_add<OptSubCmp>();
 	force_add<PhaseCmp>();
 	force_add<FRCCmp>();
+	force_add<FRCFreqCmp>();
 	force_add<VerticalCmp>();
 //	force_add<XYZCmp>();
 }
@@ -1571,6 +1573,87 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 	// this enables comparitors to be used in a generic fashion.
 	return (float)-sum;
 }
+
+float FRCFreqCmp::cmp(EMData * image, EMData * with) const
+{
+	ENTERFUNC;
+	validate_input_args(image, with);
+
+	int zeromask = params.set_default("zeromask",0);
+	float minres = params.set_default("minres",200.0f);
+	float maxres = params.set_default("maxres",8.0f);
+
+	vector < float >fsc;
+
+	if (zeromask) {
+		image=image->copy();
+		with=with->copy();
+	
+		int sz=image->get_xsize()*image->get_ysize()*image->get_zsize();
+		float *d1=image->get_data();
+		float *d2=with->get_data();
+	
+		for (int i=0; i<sz; i++) {
+			if (d1[i]==0.0 || d2[i]==0.0) { d1[i]=0.0; d2[i]=0.0; }
+		}
+	
+		image->update();
+		with->update();
+		image->do_fft_inplace();
+		with->do_fft_inplace();
+		image->set_attr("free_me",1); 
+		with->set_attr("free_me",1); 
+	}
+
+
+	if (!image->is_complex()) {
+		image=image->do_fft(); 
+		image->set_attr("free_me",1); 
+	}
+	if (!with->is_complex()) { 
+		with=with->do_fft(); 
+		with->set_attr("free_me",1); 
+	}
+
+	fsc = image->calc_fourier_shell_correlation(with,1);
+	
+	int ny = image->get_ysize();
+	int ny2=ny/2+1;
+
+	double sum=0.0, norm=0.0;
+
+		// Min/max modifications to weighting
+	float pmin = 0;
+	float pmax = 0;
+	
+	if (minres>0) pmin=((float)image->get_attr("apix_x")*image->get_ysize())/minres;		//cutoff in pixels, assume square
+	else pmin=0;
+	
+	if (maxres>0) pmax=((float)image->get_attr("apix_x")*image->get_ysize())/maxres;
+	else pmax=ny/2;
+
+	for (int i=pmin; i<pmax; i++) {
+		double weight=fsc[ny2+i];
+		
+		sum+=weight*fsc[i];		// The value we are averaging is the frequency from the FRC calculation, weighted by the FSC value (which may be negative, hopefully balancing spurious high resoluton FRC values
+		norm+=weight;
+	}
+	sum/=norm;
+	if (sum<0) sum=0;		// this would mean that the negative FSCs dominated. Not a good match
+
+	if (image->has_attr("free_me")) delete image;
+	if (with->has_attr("free_me")) delete with;
+
+	EXITFUNC;
+
+	if (!Util::goodf(&sum)) sum=-1.0;	// arbitrary worse than normally achievable value
+
+	//.Note the negative! This is because EMAN2 follows the convention that
+	// smaller return values from comparitors indicate higher similarity -
+	// this enables comparitors to be used in a generic fashion.
+	return (float)-sum;
+}
+
 
 float OptSubCmp::cmp(EMData * image, EMData * with) const
 {
