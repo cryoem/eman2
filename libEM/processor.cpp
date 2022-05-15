@@ -1710,6 +1710,7 @@ EMData* ApplySymProcessor::process(const EMData * const image)
 		}
 		EMData *ret=imgavg->finish();
 		delete imgavg;
+		if (image->has_attr("ptcl_repr")) ret->set_attr("ptcl_repr",(int)image->get_attr("ptcl_repr"));	// copy if present in source, otherwise leave set to symmetry
 		return ret;
 	}
 

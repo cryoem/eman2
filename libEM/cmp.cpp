@@ -1579,6 +1579,7 @@ float FRCFreqCmp::cmp(EMData * image, EMData * with) const
 	ENTERFUNC;
 	validate_input_args(image, with);
 
+	int transition = params.set_default("transition",0);
 	int zeromask = params.set_default("zeromask",0);
 	float minres = params.set_default("minres",200.0f);
 	float maxres = params.set_default("maxres",8.0f);
@@ -1632,14 +1633,29 @@ float FRCFreqCmp::cmp(EMData * image, EMData * with) const
 	if (maxres>0) pmax=((float)image->get_attr("apix_x")*image->get_ysize())/maxres;
 	else pmax=ny/2;
 
-	for (int i=pmin; i<pmax; i++) {
-		double weight=fsc[ny2+i];
-		
-		sum+=weight*fsc[i];		// The value we are averaging is the frequency from the FRC calculation, weighted by the FSC value (which may be negative, hopefully balancing spurious high resoluton FRC values
-		norm+=weight;
+	// We search the range for an optimal cutoff for 1->0 transition targeting FSC=0.2
+	if (transition) {
+		int mns=0;
+		float mn=1.0e6;
+		for (int i=pmin; i<pmax; i++) {
+			float val=0;
+			for (int j=pmin; j<pmax; j++) {
+				val+=j<i?1.0-fsc[ny2+j]:fsc[ny2+j];
+			}
+			if (val<mn) { mn=val; mns=i; }
+		}
+		sum=mns/(image->get_ysize()*(float)image->get_attr("apix_x"));
 	}
-	sum/=norm;
-	if (sum<0) sum=0;		// this would mean that the negative FSCs dominated. Not a good match
+	else {
+		for (int i=pmin; i<pmax; i++) {
+			double weight=fsc[ny2+i];
+
+			sum+=weight*fsc[i];		// The value we are averaging is the frequency from the FRC calculation, weighted by the FSC value (which may be negative, hopefully balancing spurious high resoluton FRC values
+			norm+=fabs(weight);
+		}
+		sum/=norm;
+		if (sum<-1.0) sum=-1.0;		// really less that zero is quite bad, but this gives some differentiation among bad results
+	}
 
 	if (image->has_attr("free_me")) delete image;
 	if (with->has_attr("free_me")) delete with;

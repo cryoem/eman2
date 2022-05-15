@@ -692,7 +692,10 @@ def main():
 					ref=data.copy()
 					ref.transform(xf.get_sym(sym,i))
 					symavgr.add_image(ref)
+				try: pr=data["ptcl_repr"]
+				except: pr=0
 				data=symavgr.finish()
+				data["ptcl_repr"]=pr
 
 			elif option1 == "scale":
 				scale_f = options.scale[index_d[option1]]

@@ -726,7 +726,7 @@ to be missing values. If not provided, these values will be computed automatical
 
 		string get_desc() const
 		{
-			return "Computes the FRC/FSC weighted frequency, optionally limited to a range.";
+			return "Computes the FRC/FSC weighted frequency, optionally limited to a range. Result *-1 so smaller is better.j";
 		}
 
 		static Cmp *NEW()
@@ -737,6 +737,7 @@ to be missing values. If not provided, these values will be computed automatical
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
+			d.put("transition", EMObject::INT, "Instead of weighted FRC models FRC/fSC as a 1->0 transition and returns the transition frequency targeting 0.2. Returned result *-1");
 			d.put("zeromask", EMObject::INT, "Treat regions in either image that are zero as a mask (default=0)");
 			d.put("minres", EMObject::FLOAT, "Lowest resolution to use in comparison. Requires accurate A/pix in image. <0 disables. Default=200");
 			d.put("maxres", EMObject::FLOAT, "Highest resolution to use in comparison. Requires accurate A/pix in image. <0 disables.  Default=8");

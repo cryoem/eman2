@@ -2991,7 +2991,7 @@ def db_read_image(self, fsp, *parms, **kparms):
 
 	return self.read_image_c(fsp, *parms, **kparms)
 
-
+EMUtil.get_image_count_c = staticmethod(EMUtil.get_image_count)
 EMData.read_image_c = EMData.read_image
 EMData.read_image = db_read_image
 
