@@ -1,6 +1,6 @@
 #ifndef EMAN_RENDERER_H
 #define EMAN_RENDERER_H
-
+#include <math.h>
 
 namespace EMAN {
 
