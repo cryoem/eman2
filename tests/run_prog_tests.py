@@ -4,6 +4,7 @@
 
 from pathlib import Path
 import subprocess
+import sys
 
 
 def main():
@@ -29,6 +30,13 @@ def main():
         print(f"Running: {' '.join(proc.args)}", flush=True)
         if proc.returncode:
             failed_progs.append(prog)
+
+    print(f"\nTotal failed programs: {len(failed_progs)} / {len(progs)}")
+    for prog in failed_progs:
+        print(prog)
+
+    if failed_progs:
+        sys.exit(1)
 
 
 if __name__ == '__main__':
