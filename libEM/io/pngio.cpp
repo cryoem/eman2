@@ -228,7 +228,17 @@ int PngIO::write_header(const Dict & dict, int image_index, const Region*,
 	int bit_depth = 0;
 	EMUtil::EMDataType datatype = (EMUtil::EMDataType) (int) dict["datatype"];
 
-	if (datatype == EMUtil::EM_UCHAR) {
+	if (datatype == EMUtil::EM_COMPRESSED) {
+		if (renderbits <= 8) {
+			depth_type = PNG_CHAR_DEPTH;
+			bit_depth = CHAR_BIT;
+		}
+		else if (renderbits <= 16) {
+			depth_type = PNG_SHORT_DEPTH;
+			bit_depth = sizeof(unsigned short) * CHAR_BIT;
+		}
+	}
+	else if (datatype == EMUtil::EM_UCHAR) {
 		depth_type = PNG_CHAR_DEPTH;
 		bit_depth = CHAR_BIT;
 	}

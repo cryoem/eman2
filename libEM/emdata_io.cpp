@@ -229,6 +229,11 @@ void EMData::_write_image(ImageIO *imageio, int img_index,
 		case EMUtil::EM_UCHAR:
 			attr_dict["datatype"] = (int)EMUtil::EM_UCHAR;
 			break;
+		case EMUtil::EM_COMPRESSED:
+			if ((int)attr_dict["render_bits"] <= 0)       attr_dict["datatype"] = (int)EMUtil::EM_FLOAT;
+			else if ((int)attr_dict["render_bits"] <= 8)  attr_dict["datatype"] = (int)EMUtil::EM_UCHAR;
+			else if ((int)attr_dict["render_bits"] <= 16) attr_dict["datatype"] = (int)EMUtil::EM_USHORT;
+			break;
 		default:
 			attr_dict["datatype"] = (int)EMUtil::EM_FLOAT;;	//default float
 		}

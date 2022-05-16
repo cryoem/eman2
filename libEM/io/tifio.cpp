@@ -443,6 +443,8 @@ int TiffIO::write_header(const Dict & dict, int image_index, const Region *,
 
 //	EMUtil::EMDataType datatype = (EMUtil::EMDataType) (int) dict["datatype"];
 
+	EMUtil::getRenderLimits(dict, rendermin, rendermax, renderbits);
+
 	if (datatype == EMUtil::EM_UCHAR) {
 		bitspersample = CHAR_BIT;
 	}
@@ -451,6 +453,11 @@ int TiffIO::write_header(const Dict & dict, int image_index, const Region *,
 	}
 	else if (datatype == EMUtil::EM_FLOAT) {
 		bitspersample = CHAR_BIT * sizeof(float);
+	}
+	else if(datatype == EMUtil::EM_COMPRESSED) {
+		if (renderbits <= 0)       bitspersample = CHAR_BIT*sizeof(float);
+		else if (renderbits <= 8)  bitspersample = CHAR_BIT;
+		else if (renderbits <= 16) bitspersample = CHAR_BIT*sizeof(short);
 	}
 	else {
 		LOGWARN("Don't support data type '%s' in TIFF. Convert to '%s'.",
@@ -470,8 +477,6 @@ int TiffIO::write_header(const Dict & dict, int image_index, const Region *,
 
 	// TIFFSetField(tiff_file, TIFFTAG_COMPRESSION, NO_COMPRESSION);
 	// TIFFSetField(tiff_file, TIFFTAG_FILLORDER, FILLORDER_MSB2LSB);
-
-	EMUtil::getRenderLimits(dict, rendermin, rendermax, renderbits);
 
 	EXITFUNC;
 	return 0;
