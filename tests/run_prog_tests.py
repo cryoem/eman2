@@ -7,6 +7,16 @@ import subprocess
 import sys
 
 
+failed_progs = []
+
+
+def run_prog(prog):
+    proc = subprocess.run([prog, "-h"], stdout=subprocess.DEVNULL)
+    print(f"Running: {' '.join(proc.args)}", flush=True)
+    if proc.returncode:
+        failed_progs.append(prog)
+
+
 def main():
     MYDIR = Path(__file__).parent
     PROGS_DIR = MYDIR.parent / "programs"
@@ -24,12 +34,8 @@ def main():
 
     progs -= progs_exclude
 
-    failed_progs = []
     for prog in progs:
-        proc = subprocess.run([prog, "-h"], stdout=subprocess.DEVNULL)
-        print(f"Running: {' '.join(proc.args)}", flush=True)
-        if proc.returncode:
-            failed_progs.append(prog)
+        run_prog(prog)
 
     print(f"\nTotal failed programs: {len(failed_progs)} / {len(progs)}")
     for prog in failed_progs:
