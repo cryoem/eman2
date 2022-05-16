@@ -3,6 +3,7 @@
 # Run e2 programs by running the commands with -h
 
 from pathlib import Path
+import subprocess
 
 
 def main():
@@ -21,6 +22,13 @@ def main():
         print(f"... {f}")
 
     progs -= progs_exclude
+
+    failed_progs = []
+    for prog in progs:
+        proc = subprocess.run([prog, "-h"], stdout=subprocess.DEVNULL)
+        print(f"Running: {' '.join(proc.args)}", flush=True)
+        if proc.returncode:
+            failed_progs.append(prog)
 
 
 if __name__ == '__main__':
