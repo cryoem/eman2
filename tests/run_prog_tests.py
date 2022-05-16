@@ -3,6 +3,7 @@
 # Run e2 programs by running the commands with -h
 
 from pathlib import Path
+from multiprocessing import Pool
 import subprocess
 import sys
 
@@ -34,8 +35,8 @@ def main():
 
     progs -= progs_exclude
 
-    for prog in progs:
-        run_prog(prog)
+    with Pool() as pool:
+        pool.map(run_prog, progs)
 
     print(f"\nTotal failed programs: {len(failed_progs)} / {len(progs)}")
     for prog in failed_progs:
