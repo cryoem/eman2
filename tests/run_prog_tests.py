@@ -38,6 +38,7 @@ def main():
     print(f"\nTotal failed programs: {len(failed_progs)} / {len(progs)}")
     for prog in failed_progs:
         print(prog)
+    print()
 
     if failed_progs:
         sys.exit(1)
