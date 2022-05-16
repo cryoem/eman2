@@ -8,14 +8,11 @@ import subprocess
 import sys
 
 
-failed_progs = []
-
-
 def run_prog(prog):
     proc = subprocess.run([prog, "-h"], stdout=subprocess.DEVNULL)
     print(f"Running: {' '.join(proc.args)}", flush=True)
-    if proc.returncode:
-        failed_progs.append(prog)
+
+    return prog if proc.returncode else None
 
 
 def main():
@@ -36,7 +33,7 @@ def main():
     progs -= progs_exclude
 
     with Pool() as pool:
-        pool.map(run_prog, progs)
+        failed_progs = [p for p in pool.map(run_prog, progs) if p]
 
     print(f"\nTotal failed programs: {len(failed_progs)} / {len(progs)}")
     for prog in failed_progs:
