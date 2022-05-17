@@ -27,5 +27,4 @@ if [ $(whoami) != "root" ];then
 fi
 
 # 6. Run e2*.py -h
-bash "${MYDIR}/run_prog_tests.sh"
- 
+python "${MYDIR}/run_prog_tests.py"
