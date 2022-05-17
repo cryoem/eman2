@@ -51,6 +51,8 @@ jobs:
         mamba.exe install -c conda-forge 'python=3.9' conda-build conda pip boa conda-forge-ci-setup=3
         if errorlevel 1 exit 1
         
+        set EMAN_VERSION=2.99
+        set EMAN_DEPS_VERSION=31.1
         conda.exe mambabuild ./recipe -c cryoem -c conda-forge -c defaults
         if errorlevel 1 exit 1
       env:

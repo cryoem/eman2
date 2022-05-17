@@ -24,4 +24,5 @@ mamba update --update-specs --yes --quiet --channel conda-forge \
 /usr/bin/sudo mangle_homebrew
 /usr/bin/sudo -k
 
+source ./ci_support/set_env_vars.sh
 conda mambabuild ./recipe -c cryoem -c conda-forge
