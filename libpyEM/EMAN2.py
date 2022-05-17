@@ -609,7 +609,7 @@ def compress_hdf(fsp,bits,nooutliers=False,level=1):
 	if fsp[-4:].lower()!=".hdf" : return
 	nm=get_temp_name()
 	os.rename(fsp,nm)
-	n=EMUtil.get_image_count_c(nm)
+	n=EMUtil.get_image_count(nm)
 	for i in range(n): EMData(nm,i).write_compressed(fsp,i,bits,nooutliers=nooutliers,level=level)
 	os.unlink(nm)
 
@@ -3095,7 +3095,7 @@ and the file size will increase.
 		except: pass
 	
 	if n==-1: 
-		try: n=EMUtil.get_image_count_c(fsp)
+		try: n=EMUtil.get_image_count(fsp)
 		except: n=0
 	
 	# Maybe should have this revert to normal write_image, if a different format?
