@@ -41,8 +41,7 @@ using namespace EMAN;
 PngIO::PngIO(const string & fname, IOMode rw)
 :	ImageIO(fname, rw),
 	png_ptr(0), info_ptr(0), end_info(0), nx(0), ny(0),
-	depth_type(PNG_INVALID_DEPTH), number_passes(0),
-	rendermin(0.0), rendermax(0.0), renderbits(16)
+	depth_type(PNG_INVALID_DEPTH), number_passes(0)
 {}
 
 PngIO::~PngIO()
@@ -229,7 +228,17 @@ int PngIO::write_header(const Dict & dict, int image_index, const Region*,
 	int bit_depth = 0;
 	EMUtil::EMDataType datatype = (EMUtil::EMDataType) (int) dict["datatype"];
 
-	if (datatype == EMUtil::EM_UCHAR) {
+	if (datatype == EMUtil::EM_COMPRESSED) {
+		if (renderbits <= 8) {
+			depth_type = PNG_CHAR_DEPTH;
+			bit_depth = CHAR_BIT;
+		}
+		else if (renderbits <= 16) {
+			depth_type = PNG_SHORT_DEPTH;
+			bit_depth = sizeof(unsigned short) * CHAR_BIT;
+		}
+	}
+	else if (datatype == EMUtil::EM_UCHAR) {
 		depth_type = PNG_CHAR_DEPTH;
 		bit_depth = CHAR_BIT;
 	}
@@ -354,13 +363,18 @@ int PngIO::read_data(float *data, int image_index, const Region * area, bool)
 }
 
 int PngIO::write_data(float *data, int image_index, const Region*,
-					  EMUtil::EMDataType, bool)
+					  EMUtil::EMDataType dt, bool)
 {
 	ENTERFUNC;
 
 	//single image format, index can only be zero
 	image_index = 0;
 	check_write_access(rw_mode, image_index, 1, data);
+
+	if(dt == EMUtil::EM_COMPRESSED) {
+		if (renderbits <= 8)       depth_type = PNG_CHAR_DEPTH;
+		else if (renderbits <= 16) depth_type = PNG_SHORT_DEPTH;
+	}
 
 	// If we didn't get any parameters in 'render_min' or 'render_max',
 	// we need to find some good ones

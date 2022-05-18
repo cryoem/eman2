@@ -287,7 +287,8 @@ def main():
 			
 		run(f"e2refine_postprocess.py --even {path}/threed_{itr:02d}_even.hdf {setsf} {tophat} --threads {options.threads} --restarget {res:.2f} --sym {options.sym} {ppmask}")
 
-		res=calc_resolution(f"{path}/fsc_masked_{itr:02d}.txt")
+		r=calc_resolution(f"{path}/fsc_masked_{itr:02d}.txt")
+		res=min(r,res*1.1)		# resolution can't take too large a step in the wrong direction
 
 		# put the unmasked file back again once we finish the iteration
 		if options.maskalign!=None:

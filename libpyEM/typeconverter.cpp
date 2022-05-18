@@ -50,13 +50,8 @@ np::ndarray EMNumPy::em2numpy(const EMData *const image)
 
 	vector<int> dims;
 
-	if (nz > 1) {
-		dims.push_back(nz);
-	}
-
-	if (ny > 1) {
-		dims.push_back(ny);
-	}
+	if (nz > 1) dims.push_back(nz);
+	if (ny > 1) dims.push_back(ny);
 
 	dims.push_back(nx);
 

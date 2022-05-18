@@ -59,6 +59,6 @@ if(NOT WIN32)
 					  )
 	
 	add_test(NAME progs
-			 COMMAND bash ${CMAKE_SOURCE_DIR}/tests/run_prog_tests.sh
+			 COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/run_prog_tests.py
 			 )
 endif()

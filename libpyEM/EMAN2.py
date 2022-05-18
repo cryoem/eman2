@@ -2951,12 +2951,12 @@ EMData.__init__ = db_emd_init
 #lsxcache=None
 
 
-def compressable_formats():
-	return ('.hdf')
+def compressible_formats():
+	return ('.hdf', '.jpeg', '.mrc', '.png', '.tiff', '.df3')
 
 
-def is_file_compressable(fsp):
-	return Path(fsp).suffix.lower() in compressable_formats()
+def is_file_compressible(fsp):
+	return Path(fsp).suffix.lower() in compressible_formats()
 
 
 def db_read_image(self, fsp, *parms, **kparms):
@@ -2991,7 +2991,7 @@ def db_read_image(self, fsp, *parms, **kparms):
 
 	return self.read_image_c(fsp, *parms, **kparms)
 
-
+EMUtil.get_image_count_c = staticmethod(EMUtil.get_image_count)
 EMData.read_image_c = EMData.read_image
 EMData.read_image = db_read_image
 
@@ -3042,8 +3042,10 @@ def db_write_image(self, fsp, *parms):
 		print("ERROR: BDB is not supported in this version of EMAN2. You must use EMAN2.91 or earlier to access legacy data.")
 		return
 
-	elif ":" in fsp and is_file_compressable(fsp.partition(':')[0]):
-		return self.write_compressed(fsp, parms[0])
+	elif ":" in fsp and is_file_compressible(fsp.partition(':')[0]):
+		idx = parms[0] if parms else 0
+
+		return self.write_compressed(fsp, idx)
 
 	return self.write_image_c(fsp, *parms)
 
@@ -3099,7 +3101,9 @@ and the file size will increase.
 		except: n=0
 	
 	# Maybe should have this revert to normal write_image, if a different format?
-	if not is_file_compressable(fsp.partition(':')[0]): raise(Exception("Only HDF format is supported by im_write_compressed"))
+	if not is_file_compressible(fsp.partition(':')[0]):
+		raise Exception(f"Only {[i.strip('.') for i in compressible_formats()]} "
+		                f"formats are supported by write_compressed()")
 	
 	for i,im in enumerate(self):
 		if not isinstance(im,EMData) : raise(Exception,"write_compressed() requires a list of EMData objects")

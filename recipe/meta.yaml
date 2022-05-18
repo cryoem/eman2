@@ -13,6 +13,7 @@ requirements:
     build:
         - {{ compiler('cxx') }}
         - {{ cdt('mesa-libgl-devel') }}   # [linux]
+        - make                            # [unix]
 
     host:
         - eman-deps         {{ environ.get('EMAN_DEPS_VERSION', '') }}
@@ -21,7 +22,9 @@ requirements:
 test:
   requires:
     - eman-deps     {{ environ.get('EMAN_DEPS_VERSION', '') }}
-  
+    - libglu                             # [linux]
+    - openssh                            # [not win]
+
   source_files:
     - examples/mpi_test.py
     - programs/

@@ -39,7 +39,7 @@ using namespace EMAN;
 
 Df3IO::Df3IO(const string & fname, IOMode rw)
 :	ImageIO(fname, rw),
- 	is_new_file(false), rendermin(0.0), rendermax(0.0), renderbits(16)
+ 	is_new_file(false)
 {
 }
 
@@ -176,6 +176,11 @@ int Df3IO::write_data(float *data, int, const Region*,
 	unsigned int * uidata = 0;
 	unsigned short * usdata = 0;
 	unsigned char * ucdata = 0;
+
+	if(dt == EMUtil::EM_COMPRESSED) {
+		if (renderbits <= 8)       dt = EMUtil::EM_UCHAR;
+		else if (renderbits <= 16) dt = EMUtil::EM_USHORT;
+	}
 
 	int truebits=EMDataTypeBits[(int)dt];
 	if (renderbits==0 || renderbits>truebits) renderbits=truebits;
