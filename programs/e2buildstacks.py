@@ -72,7 +72,9 @@ def main():
 	(options, args) = parser.parse_args()
 
 	if options.output==None:
-		if not options.guess:
+		if options.guess or options.mdoc:
+			pass
+		else:
 			print("--output is required (output file)")
 			sys.exit(1)
 
