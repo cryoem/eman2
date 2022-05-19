@@ -284,6 +284,7 @@ class EMFileType(object) :
 
 		try :
 			target = brws.viewplot2d[-1]
+			if target.closed : raise Exception
 			target.set_data(data, display_path(self.path))
 		except :
 			target = EMPlot2DWidget()
@@ -412,6 +413,7 @@ class EMFileType(object) :
 		if not new:
 			try :
 				target = brws.view2d[-1]
+				if target.closed : raise Exception
 				target.set_data(avg)
 			except :
 				new=True
@@ -444,6 +446,7 @@ class EMFileType(object) :
 
 		try :
 			target = brws.view2d[-1]
+			if target.closed : raise Exception
 			target.set_data(avgs)
 			#if self.getSetsDB() : target.set_single_active_set(self.getSetsDB())
 		except :
@@ -471,6 +474,7 @@ class EMFileType(object) :
 
 		try :
 			target = brws.view2ds[-1]
+			if target.closed : raise Exception
 			target.set_data(self.path, self.path)
 			#if self.getSetsDB() : target.set_single_active_set(self.getSetsDB())
 		except :
@@ -531,6 +535,7 @@ class EMFileType(object) :
 
 		try :
 			target = brws.view2ds[-1]
+			if target.closed : raise Exception
 			target.set_data(data,self.path)
 			#if self.getSetsDB() : target.set_single_active_set(self.getSetsDB())
 		except :
@@ -654,7 +659,9 @@ class EMFileType(object) :
 
 		if self.nimg==1 or stkout:
 			if oldwin : 
-				try: target=brws.view2d[-1]
+				try: 
+					target=brws.view2d[-1]
+					if target.closed : raise Exception
 				except:
 					target = EMImage2DWidget()
 					brws.view2d.append(target)
@@ -705,6 +712,7 @@ class EMFileType(object) :
 
 			try :
 				target = brws.view2d[-1]
+				if target.closed : raise Exception
 				target.set_data(data, xyz=xyz)
 			except :
 				new=True
@@ -728,6 +736,7 @@ class EMFileType(object) :
 
 		try :
 			target = brws.view2d[-1]
+			if target.closed : raise Exception
 			target.set_data(data)
 		except :
 			target = EMImage2DWidget(data)
@@ -748,6 +757,7 @@ class EMFileType(object) :
 
 		try :
 			target = brws.view2d[-1]
+			if target.closed : raise Exception
 			target.set_data(data)
 		except :
 			target = EMImage2DWidget(data)
@@ -1045,6 +1055,7 @@ class EMPlotFileType(EMFileType) :
 
 		try :
 			target = brws.viewplot2d[-1]
+			if target.closed : raise Exception
 			target.set_data_from_file(self.path)
 			#target.set_data(data, remove_directories_from_name(self.path, 1))
 		except :
@@ -1132,6 +1143,7 @@ class EMPlotFileType(EMFileType) :
 
 		try :
 			target = brws.viewhist[-1]
+			if target.closed : raise Exception
 			target.set_data(data, remove_directories_from_name(self.path, 1))
 		except :
 			target = EMHistogramWidget()
@@ -1150,6 +1162,7 @@ class EMPlotFileType(EMFileType) :
 
 		try :
 			target = brws.viewplot3d[-1]
+			if target.closed : raise Exception
 			target.set_data_from_file(self.path)
 			#target.set_data(data, remove_directories_from_name(self.path, 1))
 		except :
@@ -1301,6 +1314,7 @@ class EMJSONFileType(EMFileType) :
 		else:
 			try :
 				target = brws.viewplot2d[-1]
+				if target.closed : raise Exception
 				#target.set_data(data, remove_directories_from_name(self.path, 1))
 			except :
 				target = EMPlot2DWidget()
@@ -1803,6 +1817,7 @@ class EMStackFileType(EMFileType) :
 		else:
 			try :
 				target = brws.viewplot2d[-1]
+				if target.closed : raise Exception
 				#target.set_data(data, remove_directories_from_name(self.path, 1))
 			except :
 				target = EMPlot2DWidget()

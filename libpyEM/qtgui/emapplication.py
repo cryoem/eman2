@@ -134,6 +134,7 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 		
 		QtOpenGL.QGLWidget.__init__(self,self.qt_parent)
 		if self.myparent : self.qt_parent.setup(self)
+		self.closed=False		# this is set when the widget has been closed in case someone still has a pointer to it
 		
 		self.inspector = None # a Qt Widget for changing display parameters, setting the data, accessing metadata, etc.
 		self.winid=winid # a 'unique' identifier for the window used to restore locations on the screen
@@ -163,6 +164,7 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 		QtOpenGL.QGLWidget.closeEvent(self, event)
 		if self.myparent : self.qt_parent.close()
 		self.module_closed.emit() # this could be a useful signal, especially for something like the selector module, which can potentially show a lot of images but might want to close them all when it is closed
+		self.closed=True
 		event.accept()
 		
 	def display_web_help(self,url="http://blake.bcm.edu/emanwiki/e2display"):
