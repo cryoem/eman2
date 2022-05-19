@@ -18,6 +18,3 @@ nosetests -vv --exe -m "^test_*" ^
                     -e "test_boxing" ^
                     -a "!broken" ^
                     rt\pyem
-
-:: 5. Run e2*.py -h
-python "${MYDIR}\run_prog_tests.py"
