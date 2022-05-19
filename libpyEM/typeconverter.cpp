@@ -88,7 +88,8 @@ EMData* EMNumPy::numpy2em(const np::ndarray& array)
 			break;
 	}
 
-	auto float_array = (float *)array.astype(np::dtype::get_builtin<float>()).get_data();
+	auto arr = array.astype(np::dtype::get_builtin<float>());
+	float * float_array = (float *)arr.get_data();
 	float * temparray = new float[(size_t)nx*ny*nz];
 	std::copy(float_array, float_array + nx * ny * nz, temparray);
 
