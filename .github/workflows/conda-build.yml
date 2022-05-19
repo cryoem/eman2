@@ -16,6 +16,8 @@ jobs:
             os: ubuntu
           - CONFIG: osx
             os: macos
+          - CONFIG: win
+            os: windows
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
