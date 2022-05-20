@@ -3089,6 +3089,17 @@ If erase is set, the file will be deleted if it exists, before writing. Obviousl
 but a problem with overwriting existing compressed HDF images is that the original images are not truly deleted
 and the file size will increase.
 """
+	is_compression_syntax = (":" in fsp)
+
+	if is_compression_syntax:
+		fsp, outbits, rendermin_abs, rendermax_abs, rendermin_s, rendermax_s = parse_outfile_arg(fsp)
+
+		if not is_file_compressible(fsp):
+			raise Exception(f"Only {[i.strip('.') for i in compressible_formats()]} "
+			                f"formats are supported by write_compressed()")
+
+		if outbits: bits = outbits
+
 	if isinstance(self,EMData):
 		self=[self]
 	
@@ -3101,17 +3112,10 @@ and the file size will increase.
 		except: n=0
 	
 	# Maybe should have this revert to normal write_image, if a different format?
-	if not is_file_compressible(fsp.partition(':')[0]):
-		raise Exception(f"Only {[i.strip('.') for i in compressible_formats()]} "
-		                f"formats are supported by write_compressed()")
-	
 	for i,im in enumerate(self):
 		if not isinstance(im,EMData) : raise(Exception,"write_compressed() requires a list of EMData objects")
 
-		if ":" in fsp:
-			fsp, outbits, rendermin_abs, rendermax_abs, rendermin_s, rendermax_s = parse_outfile_arg(fsp)
-
-			if outbits: bits = outbits
+		if is_compression_syntax:
 			minval = rendermin_abs if rendermin_abs else rendermin_s * im["mean"]
 			maxval = rendermax_abs if rendermax_abs else rendermax_s * im["mean"]
 
