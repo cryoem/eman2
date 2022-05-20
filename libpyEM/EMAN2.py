@@ -3042,7 +3042,7 @@ def db_write_image(self, fsp, *parms):
 		print("ERROR: BDB is not supported in this version of EMAN2. You must use EMAN2.91 or earlier to access legacy data.")
 		return
 
-	elif ":" in fsp and is_file_compressible(fsp.partition(':')[0]):
+	elif ":" in fsp:
 		idx = parms[0] if parms else 0
 
 		return self.write_compressed(fsp, idx)
