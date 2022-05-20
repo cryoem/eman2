@@ -3089,7 +3089,7 @@ If erase is set, the file will be deleted if it exists, before writing. Obviousl
 but a problem with overwriting existing compressed HDF images is that the original images are not truly deleted
 and the file size will increase.
 """
-	if isinstance(self,EMData) : 
+	if isinstance(self,EMData):
 		self=[self]
 	
 	if erase:
@@ -3120,7 +3120,7 @@ and the file size will increase.
 
 		im["render_bits"]=bits
 		im["render_compress_level"]=level
-		if nooutliers :
+		if nooutliers:
 			nxyz=im.get_size()
 			maxout=max(nxyz//20000,8)		# at most 1 in 20000 pixels should be considered an outlier on each end
 			h0=im["minimum"]
