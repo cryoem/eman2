@@ -2952,7 +2952,7 @@ EMData.__init__ = db_emd_init
 
 
 def compressible_formats():
-	return ('.hdf', '.jpeg', '.mrc', '.png', '.tiff', '.df3')
+	return ('.hdf', '.jpeg', '.mrc', '.mrcs', '.png', '.tiff', '.df3')
 
 
 def is_file_compressible(fsp):
