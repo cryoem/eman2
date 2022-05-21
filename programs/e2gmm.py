@@ -711,7 +711,6 @@ class EMGMM(QtWidgets.QMainWindow):
 			gauss[1]*=-1.0
 			if not butval(self.wbutpos): gauss[:3]=self.model[:3]
 			if not butval(self.wbutamp): gauss[3]=self.model[3]
-			if not butval(self.wbutsig): gauss[4]=self.model[4]
 #			print(gauss[:,:6])
 #			print("-----")
 			self.gaussplot.setData(gauss,self.wvssphsz.value)
@@ -739,7 +738,6 @@ class EMGMM(QtWidgets.QMainWindow):
 			gauss[1]*=-1.0
 			if not butval(self.wbutpos): gauss[:3]=self.model[:3]
 			if not butval(self.wbutamp): gauss[3]=self.model[3]
-			if not butval(self.wbutsig): gauss[4]=self.model[4]
 			self.gaussplot.setData(gauss,self.wvssphsz.value)
 			self.wview3d.update()
 			return
@@ -763,7 +761,6 @@ class EMGMM(QtWidgets.QMainWindow):
 			gauss[1]*=-1.0
 			if not butval(self.wbutpos): gauss[:3]=self.model[:3]
 			if not butval(self.wbutamp): gauss[3]=self.model[3]
-			if not butval(self.wbutsig): gauss[4]=self.model[4]
 			self.gaussplot.setData(gauss,self.wvssphsz.value)
 			self.wview3d.update()
 			return
@@ -1028,7 +1025,6 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.neutralplot.setData(centers,self.wvssphsz.value)
 		self.centers=centers
 		self.amps=amps
-		self.wids=np.full(len(amps),1.0)
 		self.wview3d.update()
 
 		# write the new seg model to disk for use in subsequent runs
@@ -1036,8 +1032,8 @@ class EMGMM(QtWidgets.QMainWindow):
 		
 		with open(modelseg,"w") as out:
 			for i in range(len(self.amps)):
-				try: out.write(f"{self.centers[0,i]/nx:1.2f}\t{-self.centers[1,i]/nx:1.2f}\t{-self.centers[2,i]/nx:1.2f}\t{self.amps[i]:1.3f}\t{self.wids[i]:1.3f}\n")
-				except: print("write errror: ",self.centers[:,i],self.amps[i],self.amps.shape,i)
+				try: out.write(f"{self.centers[0,i]/nx:1.2f}\t{-self.centers[1,i]/nx:1.2f}\t{-self.centers[2,i]/nx:1.2f}\t{self.amps[i]:1.3f}\n")
+				except: print("write error: ",self.centers[:,i],self.amps[i],self.amps.shape,i)
 
 		self.set3dvis(0,0,1,1,0,1)
 
@@ -1105,7 +1101,6 @@ class EMGMM(QtWidgets.QMainWindow):
 		pts[4,:n2c]=1.0
 		self.centers=pts[:3,:]
 		self.amps=pts[3]
-		self.wids=pts[4]
 		
 		self.neutralplot.setData(self.centers,self.wvssphsz.value)
 		self.wview3d.updateGL()
@@ -1167,7 +1162,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		lsxs=None
 
 		# refine the neutral model against some real data in entropy training mode
-		er=run(f"e2gmm_refine_point.py --projs {self.gmm}/particles_subset.lst  --npt {self.currun['ngauss']} --decoderentropy --npt {self.currun['ngauss']} --sym {sym} --maxboxsz {maxbox} --model {modelseg} --modelout {modelout} --niter 10  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --ampreg 0.1 --sigmareg 1.0 --ndense -1")
+		er=run(f"e2gmm_refine_point.py --projs {self.gmm}/particles_subset.lst  --npt {self.currun['ngauss']} --decoderentropy --npt {self.currun['ngauss']} --sym {sym} --maxboxsz {maxbox} --model {modelseg} --modelout {modelout} --niter 10  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --ampreg 0.1 --ndense -1")
 		if er :
 			showerror("Error running e2gmm_refine, see console for details. GPU memory exhaustion is a common issue. Consider reducing the target resolution.")
 			return
@@ -1186,10 +1181,8 @@ class EMGMM(QtWidgets.QMainWindow):
 		n2c=min(ncen,pts.shape[1])
 		pts[:3,:n2c]=self.centers[:,:n2c]
 		pts[3:4,:n2c]=self.amps[:n2c]
-		pts[4,:n2c]=1.0
 		self.centers=pts[:3,:]
 		self.amps=pts[3]
-		self.wids=pts[4]
 
 		self.neutralplot.setData(self.centers,self.wvssphsz.value)
 		self.wview3d.updateGL()
@@ -1465,7 +1458,6 @@ class EMGMM(QtWidgets.QMainWindow):
 			#pts[4,:n2c]=1.0
 			self.centers=pts[:3,:]
 			self.amps=pts[3]
-			self.wids=pts[4]
 			
 			self.neutralplot.setData(self.centers,self.wvssphsz.value)
 			self.wview3d.update()
