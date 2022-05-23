@@ -2952,7 +2952,7 @@ EMData.__init__ = db_emd_init
 
 
 def compressible_formats():
-	return ('.hdf', '.jpeg', '.mrc', '.png', '.tiff', '.df3')
+	return ('.hdf', '.jpeg', '.mrc', '.mrcs', '.png', '.tiff', '.df3')
 
 
 def is_file_compressible(fsp):
@@ -3042,7 +3042,7 @@ def db_write_image(self, fsp, *parms):
 		print("ERROR: BDB is not supported in this version of EMAN2. You must use EMAN2.91 or earlier to access legacy data.")
 		return
 
-	elif ":" in fsp and is_file_compressible(fsp.partition(':')[0]):
+	elif ":" in fsp:
 		idx = parms[0] if parms else 0
 
 		return self.write_compressed(fsp, idx)
@@ -3089,7 +3089,18 @@ If erase is set, the file will be deleted if it exists, before writing. Obviousl
 but a problem with overwriting existing compressed HDF images is that the original images are not truly deleted
 and the file size will increase.
 """
-	if isinstance(self,EMData) : 
+	is_compression_syntax = (":" in fsp)
+
+	if is_compression_syntax:
+		fsp, outbits, rendermin_abs, rendermax_abs, rendermin_s, rendermax_s = parse_outfile_arg(fsp)
+
+		if not is_file_compressible(fsp):
+			raise Exception(f"Only {[i.strip('.') for i in compressible_formats()]} "
+			                f"formats are supported by write_compressed()")
+
+		if outbits: bits = outbits
+
+	if isinstance(self,EMData):
 		self=[self]
 	
 	if erase:
@@ -3101,17 +3112,10 @@ and the file size will increase.
 		except: n=0
 	
 	# Maybe should have this revert to normal write_image, if a different format?
-	if not is_file_compressible(fsp.partition(':')[0]):
-		raise Exception(f"Only {[i.strip('.') for i in compressible_formats()]} "
-		                f"formats are supported by write_compressed()")
-	
 	for i,im in enumerate(self):
 		if not isinstance(im,EMData) : raise(Exception,"write_compressed() requires a list of EMData objects")
 
-		if ":" in fsp:
-			fsp, outbits, rendermin_abs, rendermax_abs, rendermin_s, rendermax_s = parse_outfile_arg(fsp)
-
-			if outbits: bits = outbits
+		if is_compression_syntax:
 			minval = rendermin_abs if rendermin_abs else rendermin_s * im["mean"]
 			maxval = rendermax_abs if rendermax_abs else rendermax_s * im["mean"]
 
@@ -3120,7 +3124,7 @@ and the file size will increase.
 
 		im["render_bits"]=bits
 		im["render_compress_level"]=level
-		if nooutliers :
+		if nooutliers:
 			nxyz=im.get_size()
 			maxout=max(nxyz//20000,8)		# at most 1 in 20000 pixels should be considered an outlier on each end
 			h0=im["minimum"]
