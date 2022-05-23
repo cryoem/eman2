@@ -4,13 +4,29 @@ from EMAN2 import *
 from EMAN2_utils import *
 import numpy as np
 
+if "CUDA_VISIBLE_DEVICES" not in os.environ:
+	# so we can decide which gpu to use with environmental variable
+	os.environ["CUDA_VISIBLE_DEVICES"]='0' 
+	
+os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]='true' 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' #### reduce log output
+if ('-h' in sys.argv) or ('--help' in sys.argv):
+	tf=type('empty', (object,), {})()
+	def empty():
+		return lambda f: f
+	tf.function=empty
+	print(tf.function())
+	print("Printing help. Skip tensorflow import")
+else:
+	import tensorflow as tf
+
 def main():
 	
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--train", type=str,help="train on tomo", default=None)
 	parser.add_argument("--boxsz", type=int,help="box size", default=128)
-	parser.add_argument("--gpuid", type=int,help="gpu id", default=None)
+	#parser.add_argument("--gpuid", type=int,help="gpu id", default=None)
 	parser.add_argument("--nsample", type=int,help="number of samples", default=2000)
 	parser.add_argument("--learnrate", type=float,help="learning rate", default=2e-4)
 	parser.add_argument("--load", type=str,help="load model", default=None)
@@ -23,9 +39,9 @@ def main():
 	if not os.path.isdir("neuralnets"):
 		os.mkdir("neuralnets")
 	
-	global tf
-	os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]='true' 
-	tf=import_tensorflow(options.gpuid)
+	#global tf
+	#os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]='true' 
+	#tf=import_tensorflow(options.gpuid)
 	
 	if options.train!=None:
 		gen_y2x=do_training(options)
@@ -34,7 +50,7 @@ def main():
 		print("model saved to {}".format(msave))
 
 	if options.load!=None:
-		gen_y2x=tf.keras.models.load_model(options.load, compile=False)
+		gen_y2x=tf.keras.models.load_model(options.load, compile=False, custom_objects={"FFTLayer": FFTLayer})
 		
 	if options.applyto!=None:
 		fnames=options.applyto.split(',')
@@ -269,6 +285,28 @@ def func_iter(func, x, itr=3):
 		y=func(y)
 	return y
 
+class FFTLayer(tf.keras.layers.Layer):
+
+	def __init__(self, inv=0,**kwargs):
+		super(FFTLayer, self).__init__()
+		self.inv=inv
+
+	def build(self,pm): 
+		pass
+	
+	def get_config(self):
+		config = super().get_config()
+		config.update({
+			"inv": self.inv,
+		})
+		return config
+
+	def call(self, inputs):  
+		if self.inv:
+			return tf.signal.irfft2d(inputs)
+		else:
+			return tf.signal.rfft2d(inputs)
+
 ### return keras model that adds missing wedge to input
 def model_addmw(input_shape, wedge, noise=False):
 	
@@ -281,9 +319,11 @@ def model_addmw(input_shape, wedge, noise=False):
 	else:
 		x1=x0
 	
-	xft=tf.signal.rfft2d(x1[:,:,:,0])
+	xft=FFTLayer(0)(x1[:,:,:,0])
+	#xft=tf.signal.rfft2d(x1[:,:,:,0])
 	xft=xft*wedge
-	y0=tf.signal.irfft2d(xft)
+	y0=FFTLayer(1)(xft)
+	#y0=tf.signal.irfft2d(xft)
 	y0=tf.reshape(y0, (-1,sz,sz,1))
 	model=tf.keras.Model(x0, y0)
 	return model
@@ -295,7 +335,8 @@ def model_genr(input_shape):
 	sz=input_shape[0]
 	
 	xp0=tf.keras.layers.MaxPool2D((nbin,nbin))(x0)
-	xft=tf.signal.rfft2d(xp0[:,:,:,0])
+	xft=FFTLayer(0)(xp0[:,:,:,0])
+	#xft=tf.signal.rfft2d(xp0[:,:,:,0])
 	xft=tf.keras.layers.Reshape((sz//nbin,sz//(nbin*2)+1,1))(xft)
 	
 	xft1=tf.concat([tf.math.real(xft), tf.math.imag(xft)], axis=-1)
@@ -310,7 +351,8 @@ def model_genr(input_shape):
 	xft3=tf.keras.layers.Reshape((2,4,sz//nbin,sz//(nbin*2)+1))(xft3)
 	xft3=tf.complex(xft3[:,0], xft3[:,1])
 	
-	xft4=tf.signal.irfft2d(xft3)
+	#xft4=tf.signal.irfft2d(xft3)
+	xft4=FFTLayer(1)(xft3)
 	xft4=tf.transpose(xft4, (0,2,3,1))
 
 	
@@ -354,7 +396,7 @@ def model_dis(input_shape):
 		y0=l(y0)
 	
 	x1=tf.keras.layers.MaxPool2D()(x0)
-	xft=tf.abs(tf.signal.rfft2d(x1[:,:,:,0]))
+	xft=tf.abs(FFTLayer(0)(x1[:,:,:,0]))
 	y1=tf.keras.layers.Flatten()(xft)
 	y1=tf.keras.layers.Dense(128, activation="relu")(y1)
 	y1=tf.keras.layers.BatchNormalization()(y1)

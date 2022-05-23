@@ -108,6 +108,7 @@ def main():
 		e=EMData(t)
 		e.write_image(name3d,-1)
 	
+	os.remove(t)
 	E2end(logid)
 	
 def run(cmd):
