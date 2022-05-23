@@ -11,14 +11,13 @@ if "CUDA_VISIBLE_DEVICES" not in os.environ:
 os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]='true' 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' #### reduce log output
 if ('-h' in sys.argv) or ('--help' in sys.argv):
-	tf=type('empty', (object,), {})()
-	def empty():
-		return lambda f: f
-	tf.function=empty
-	print(tf.function())
+	class tflayer:
+		def __init__():
+			pass
 	print("Printing help. Skip tensorflow import")
 else:
 	import tensorflow as tf
+	tflayer=tf.keras.layers.Layer
 
 def main():
 	
@@ -285,7 +284,7 @@ def func_iter(func, x, itr=3):
 		y=func(y)
 	return y
 
-class FFTLayer(tf.keras.layers.Layer):
+class FFTLayer(tflayer):
 
 	def __init__(self, inv=0,**kwargs):
 		super(FFTLayer, self).__init__()
