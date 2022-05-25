@@ -39,6 +39,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--sym", type=str,help="symmetry. currently only support c and d", default="c1")
 	parser.add_argument("--model", type=str,help="load from an existing model file", default="")
+	parser.add_argument("--segments", type=str,help="Divide the model into sequential domains. Comma separated list of integers. Each integer is the first sequence number of a new region, starting with 0",default=None)
 	parser.add_argument("--modelout", type=str,help="output trained model file. only used when --projs is provided", default="")
 	parser.add_argument("--decoderin", type=str,help="Rather than initializing the decoder from a model, read an existing trained decoder", default="")
 	parser.add_argument("--decoderout", type=str,help="Save the trained decoder model. Filename should be .h5", default=None)
@@ -103,6 +104,16 @@ def main():
 			if pts.shape[1]==5: pts=pts[:,:4]
 		npt=len(pts)
 		print("{} gaussian in the model".format(len(pts)))
+
+		if options.segments!=None:
+			segments=[int(s) for s in options.segments.split(",")]
+			if segments[0]!=0 : segments.insert(0,0)
+			for i in range(len(segments-1)):
+				if segments[i-1]>=segments[i] or segments[i]>npt:
+					print("ERROR: segments must be a sequential list of integer model point numbers"
+					sys.exit(1)
+			options.nmid=len(segments)*2	# 2-D space for each feature
+		else: segments=[]
 	else:
 		pts=None
 
@@ -121,7 +132,7 @@ def main():
 
 		## randomize it a bit so we dont have all zero weights
 		rnd=np.random.randn(pts.shape[0], pts.shape[1])*1e-3
-		gen_model=build_decoder(options.nmid,pts+rnd)
+		gen_model=build_decoder(options.nmid,pts+rnd,segments)
 		print("{} gaussian in the model".format(len(pts)))
 
 		## train the model from coordinates first
@@ -143,7 +154,7 @@ def main():
 	if options.projs:
 		# The shape of the decoder is defined by the number of Gaussians (npts) and the number of latent variables (nmid)
 		if gen_model==None:
-			gen_model=build_decoder(options.npts, ninp=options.nmid, conv=options.conv,mid=options.ndense)
+			gen_model=build_decoder(ninp=options.nmid,options.npts)
 		print("Train model from ptcl-xfrom pairs...")
 		e=EMData(options.projs, 0, True)
 		raw_apix, raw_boxsz = e["apix_x"], e["ny"]
@@ -191,7 +202,7 @@ def main():
 
 			#### save model to text file
 			np.savetxt(options.modelout, pout)
-			gen_model=build_decoder(options.nmid, pout)
+			gen_model=build_decoder(options.nmid, pout,segments)
 
 
 		#### make projection images from GMM
@@ -285,7 +296,7 @@ def main():
 		if options.decoderin:
 			decode_model=tf.keras.models.load_model(f"{options.decoderin}",compile=False)
 		else:
-			decode_model=build_decoder(options.nmid, pts[0].numpy())
+			decode_model=build_decoder(options.nmid, len(pts[0]), segments)
 
 		mid=encode_model(allgrds[:bsz])
 		print("Latent space shape: ", mid.shape)
@@ -648,10 +659,23 @@ def build_encoder(ninp,nmid):
 	encode_model=tf.keras.Sequential(layers)
 	return encode_model
 
+def init_segs(segs):
+	nmid=len(segs)
+	m=np.fromfunction(lambda i,j: ((j//4)==(i//2))*0.1+0.9,(nmid,nmid*2),dtype=float32)
+	Localize1
+
+class Localize1(tf.keras.constraints.Constraint):
+    def __call__(self, w):
+
+        return w
+
+
+
 #### build decoder network. 
-## input integer to initialize as zeros with N points
-## input point list to initialize to match input
-def build_decoder(nmid, pts ):
+# nmid is the number of elements in the middle layer, should match the number of middle layer elements in encoder, must also match number of segments if provided
+# pt is either the integer number of gaussians or a numpy array of gaussian coordinates
+# segs is integer gaussian numbers beginning each defined region or an empty list (or None)
+def build_decoder(nmid, pt,segs ):
 	if isinstance(pts, int):
 		nout=pts
 		initpts=False
@@ -660,21 +684,21 @@ def build_decoder(nmid, pts ):
 		nout=len(pts)
 		initpts=True
 	
+	if segs is None or len(segs<2) : segs=None
+	else: init_segs(segs)
+
 	x0=tf.keras.Input(shape=(nmid))
 	
 	kinit=tf.keras.initializers.RandomNormal(0,1e-2)
 	l2=tf.keras.regularizers.l2(1e-3)
 	l1=tf.keras.regularizers.l1(1e-3)
-	layer_output=tf.keras.layers.Dense(nout*4, kernel_initializer=kinit, activation="sigmoid",use_bias=True)
+	layer_output=tf.keras.layers.Dense(nout*4, kernel_initializer=kinit, activation="sigmoid",use_bias=True,kernel_constraint=Localize4())
 
 	print(f"Decoder {max(nout//32,nmid)} {max(nout//8,nmid)} {max(nout//2,nmid)}")
 	layers=[
-		tf.keras.layers.Dense(max(nout//32,nmid*2),activation="relu",use_bias=True,bias_initializer=kinit),
-		tf.keras.layers.Dense(max(nout//8,nmid*2),activation="relu",use_bias=True),
-		tf.keras.layers.Dense(max(nout//2,nmid),activation="relu",use_bias=True),
-		#tf.keras.layers.Dense(max(nout//32,nmid*2),activation="tanh", kernel_regularizer=l1,use_bias=True),
-		#tf.keras.layers.Dense(max(nout//8,nmid*2),activation="tanh", kernel_regularizer=l1,use_bias=True),
-		#tf.keras.layers.Dense(max(nout//2,nmid),activation="tanh", kernel_regularizer=l1,use_bias=True,bias_initializer=kinit),
+		tf.keras.layers.Dense(nmid*2,activation="relu",use_bias=True,bias_initializer=kinit,kernel_constraint=Localize1()),
+		tf.keras.layers.Dense(nmid*4,activation="relu",use_bias=True,kernel_constraint=Localize2()),
+		tf.keras.layers.Dense(nmid*8,activation="relu",use_bias=True,kernel_constraint=Localize3()),
 		tf.keras.layers.Dropout(.3),
 		tf.keras.layers.BatchNormalization(),
 		layer_output,
@@ -703,6 +727,7 @@ def build_decoder(nmid, pts ):
 		layer_output.bias.assign(bs.flatten())
 	
 	return gen_model
+
 
 #### training decoder on projections
 def train_decoder(gen_model, trainset, params, options, pts=None):
