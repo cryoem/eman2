@@ -125,8 +125,8 @@ def ptclextract_new(jsd,lsx,ns,shrink,layers,sym,mask,hp,lp,verbose):
 		all.insert_clip(z,(x["nx"]*2,0))
 		all["score"]=ptcl["score"]
 		
-		all["orig_file"]=ptcl["orig_ptcl"]
-		all["orig_n"]=ptcl["orig_idx"]
+		all["orig_file"]=lsx[i][1]
+		all["orig_n"]=lsx[i][0]
 		all["xform.align3d"]=xf
 		jsd.put((i,None,all))
 
@@ -323,11 +323,13 @@ produce new sets/ for each class, which could be further-refined.
 			
 		cls=im["class_id"]
 		# read the original volume again, and fix its orientation (again)
+#		ptcl2=lsx[i]
 		ptcl=EMData(im["orig_file"],im["orig_n"])
 		xf=im["xform.align3d"]
 		ptcl.process_inplace("xform",{"transform":xf})
 		avgs[cls].add_image(ptcl)		# add to the correct class average
-		
+#		print(ptcl2[2]["xform.align3d"],xf,ptcl2[:2],(im["orig_file"],im["orig_n"]))
+
 		# If requested, we save the aligned (shrunken) volume to the stack for this class
 		if options.saveali: 
 			if options.shrink>1 : ptcl.process_inplace("math.meanshrink",{"n":options.shrink})
