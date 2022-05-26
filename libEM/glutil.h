@@ -97,6 +97,31 @@ namespace EMAN
 						 int bpl, float scale, int min_gray, int max_gray,
 						 float min_render, float max_render,float gamma,int flags);
 
+		/** Render the image into a 24-bit image. 2D images only. Amplitude
+		 * provided by "emdata", color (hue/saturation) provided by "intmap" categories.
+		 * "intmap" should contain integral values with 0 representing uncolored.
+		 * flags provide a way to do unusual things with this function, such
+		 * as calculating a histogram of the rendered area.
+		 *
+		 * @param emdata	EMData pointer to data representing intensity. REAL SPACE ONLY!
+		 * @param intmap	EMData pointer to integer categorical data for each pixel, with 0 representing uncolored
+		 * @param x	origin of the area to render
+		 * @param y
+		 * @param xsize	size of the area to render in output pixels
+		 * @param ysize
+		 * @param bpl	bytes per line, if asrgb remember *3
+		 * @param scale	scale factor for rendering
+		 * @param min_gray	minimum gray value to render (0-255)
+		 * @param max_gray	maximum gray value to render (0-255)
+		 * @param min_render	float image density corresponding to min_gray
+		 * @param max_render	float image density corresponding to max_gray
+		 * @param flags	2-add a 256 int greyscale histogram to the end of the image array,4-invert y axis, 1/8/16 ignored
+		 * @exception ImageDimensionException If the image is not 2D.
+		 */
+		static EMBytes render_annotated24(EMData * emdata, EMData *intmap, int x, int y, int xsize, int ysize,
+								   int bpl, float scale, int min_gray, int max_gray,
+							 float min_render, float max_render,int flags);
+
 		/** Get an isosurface display list
 		* Traverses the tree, marches the cubes, and renders a display list using the associated vertices and normals
 		* Uses OpenGL arrays for maximum performance
