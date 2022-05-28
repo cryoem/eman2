@@ -117,20 +117,12 @@ class EMAnnotate2DWidget(EMGLWidget):
 		self.curmin=0.0
 		self.curmax=0.0
 		self.maxden=1.0
-		self.fgamma = 1.0
-		self.fminden=0
-		self.fmaxden=1.0
-		self.fcurmin=0.0
-		self.fcurmax=0.0
 		self.disp_proc=[]			# a list/set of Processor objects to apply before rendering
-		self.display_fft = None		# a cached version of the FFT
-		self.fft=None				# The FFT of the current target if currently displayed
 		self.rmousedrag=None		# coordinates during a right-drag operation
 		self.mouse_mode_dict = {0:"emit", 1:"emit", 2:"emit", 3:"probe", 4:"measure", 5:"draw", 6:"emit", 7:"emit"}
 		self.mouse_mode = 0         # current mouse mode as selected by the inspector
-		self.curfft=0				# current FFT mode (when starting with real images only)
-		self.mag = 1.1				# magnification factor
-		self.invmag = old_div(1.0,self.mag)	# inverse magnification factor
+		self.mag = 1.0				# magnification factor
+		self.invmag = 1.0/self.mag	# inverse magnification factor
 
 		self.shapes={}				# dictionary of shapes to draw, see add_shapes
 		self.shapechange=1			# Set to 1 when shapes need to be redrawn
@@ -338,11 +330,8 @@ class EMAnnotate2DWidget(EMGLWidget):
 		self.force_display_update()
 		self.updateGL()
 
-	def set_file_name(self,file_name,load_cache_settings=True):
+	def set_file_name(self,file_name):
 		self.file_name = file_name
-
-		#if load_cache_settings:
-			#self.__load_display_settings_from_db()
 
 	def get_file_name(self):
 		return self.file_name
@@ -384,13 +373,12 @@ class EMAnnotate2DWidget(EMGLWidget):
 			else : return None
 		return self.data
 
-	def set_data(self,incoming_data,file_name="",retain_current_settings=True, keepcontrast=False, xyz=2):
-		"""You may pass a single 2D image, a list of images or a single 3-D volume"""
-		from .emimagemx import EMDataListCache,EMLightWeightParticleCache
-		#if self.data != None and self.file_name != "":
-			#self.__write_display_settings_to_db()
+	def set_data(self,incoming_data,incoming_annotation=None,file_name="",retain_current_settings=True, keepcontrast=False):
+		"""You may pass a single 2D image or a single 3-D volume
+		incoming_annotation must have the same dimensionality as incoming data or be None"""
 
-		self.set_file_name(file_name,load_cache_settings=False)
+
+		self.set_file_name(file_name)
 		if self.file_name != "": self.setWindowTitle(remove_directories_from_name(self.file_name))
 
 		data = incoming_data
@@ -399,90 +387,13 @@ class EMAnnotate2DWidget(EMGLWidget):
 			self.annotation=None
 			return
 
-		if self.data==None :
-			needresize=True
-		else:
-			needresize=False
-
-		fourier = False
+		needresize=True if self.data==None else False
 		
 		apix=1.0
-		# it's a 3D image
-		if not isinstance(data,list) and not isinstance(data,tuple) and not isinstance(data,EMDataListCache) and not isinstance(data,EMLightWeightParticleCache) and data.get_zsize() != 1:
+		if isinstance(data,list) or isinstance(data,tuple) or isinstance(data,EMDataListCache) or isinstance(data,EMLightWeightParticleCache):
+			raise Exception("EMAnnotate2D only supports a single 2-D or 3-D image")
 			
-			if xyz==0:
-				incoming_data.transform(Transform({"type":"xyz", "xtilt":90}))
-			elif xyz==1:
-				incoming_data.transform(Transform({"type":"xyz", "ytilt":90}))
-			
-			data = []
-			shp=[incoming_data.get_xsize(), incoming_data.get_ysize(), incoming_data.get_zsize()]
-			for z in range(shp[xyz]):
-				image = incoming_data.get_clip(Region(0,0,z,incoming_data.get_xsize(),incoming_data.get_ysize(),1))
-				data.append(image)
-
-
-		if isinstance(data,list) or isinstance(data,EMDataListCache) or isinstance(data,EMLightWeightParticleCache):
-			if self.list_data == None and self.list_idx > len(data): 
-				self.list_idx = len(data)//2 #otherwise we use the list idx from the previous list data, as in when being used from the emselector
-			d = data[0]
-			if d.has_attr("apix_x"):
-				apix=float(d["apix_x"])
-			else:
-				apix=1.0
-			if d.is_complex():
-				self.list_data = []
-				self.list_fft_data = data
-				for i in range(len(data)):self.list_data.append(None)
-				self.curfft = 2
-				self.__set_display_image(self.curfft)
-				fourier = True
-			elif self.curfft in [1,2,3]:
-				self.list_data = data
-				self.data = self.list_data[self.list_idx]
-				self.annotation = self.data.copy_head()
-				self.list_fft_data = [d.do_fft() for d in data]
-				if self.fftorigincenter :
-					for im in self.list_fft_data :
-						im.process_inplace("xform.phaseorigin.tocorner")
-				self.__set_display_image(self.curfft)
-			else:
-				self.list_data = data
-				self.data = self.list_data[self.list_idx]
-				self.annotation = self.data.copy_head()
-
-				self.list_fft_data = []
-				for i in range(len(data)):self.list_fft_data.append(None)
-
-			self.get_inspector().enable_image_range(0,len(data),self.list_idx)
-		else:
-			self.list_data = None
-			self.list_fft_data = None
-			apix=float(data["apix_x"])
-			if data.is_complex() or self.curfft in [1,2,3]:
-				self.display_fft = None
-				self.data = None
-				self.annotation = None
-				fourier = True
-				if data.is_complex():
-					self.fft = data.copy()# have to make copies here because we alter it!
-					if self.curfft == 0:
-						self.curfft = 2 # switch to displaying amplitude automatically
-						inspector = self.get_inspector()
-						inspector.set_fft_amp_pressed()
-				else:
-					self.fft = data.do_fft()
-					if self.fftorigincenter : self.fft.process_inplace("xform.phaseorigin.tocorner")
-				self.fft.set_value_at(0,0,0,0) # get rid of the DC component
-				self.fft.set_value_at(1,0,0,0) # this should already by 0... ?
-
-				self.__set_display_image(self.curfft)
-				fourier = True
-			else:
-				self.data = data
-				self.annotation = self.data.copy_head()
-				self.display_fft = None
-				self.fft = None
+		self.data=data
 
 		self.image_change_count = 0
 		self.get_inspector().mtapix.setValue(apix)
@@ -503,13 +414,11 @@ class EMAnnotate2DWidget(EMGLWidget):
 				self.resize(min(x,mx),min(y,my))
 		except: pass
 
-		self.inspector_update(use_fourier=fourier)
-		if self.curfft in [1,2,3] and self.data!=None and self.data.is_complex() : self.redo_fft()
+		self.inspector_update()
 		self.force_display_update()
 		self.updateGL()
 
-		if not isinstance(data,list) and not isinstance(data,EMDataListCache) and not isinstance(data,EMLightWeightParticleCache):
-			self.get_inspector().disable_image_range()
+		if data["nz"]==1 : self.get_inspector().disable_image_range()
 
 	def load_default_scale_origin(self,size_specified=None):
 		'''
