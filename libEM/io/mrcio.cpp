@@ -1181,9 +1181,6 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 
 	mode_size = get_mode_size(mrch.mode);
 
-//	int xlen = 0, ylen = 0, zlen = 0;
-//	EMUtil::get_region_dims(area, nx, &xlen, mrch.ny, &ylen, mrch.nz, &zlen);
-//	int size = xlen * ylen * zlen;
 	void * ptr_data = data;
 
 	int truebits=0;
@@ -1447,23 +1444,6 @@ void MrcIO::update_stats(void * data, size_t size)
 	mrch.amean = (float) mean;
 	mrch.rms   = (float) sigma;
 	
-//	MrcHeader mrch2 = mrch;
-//
-// endian issue, can't get use_host_endian argument
-//	bool opposite_endian = false;
-//
-//	if (!is_new_file) {
-//		if (is_big_endian != ByteOrder::is_host_big_endian()) {
-//			opposite_endian = true;
-//		}
-//
-//		portable_fseek(mrcfile, 0, SEEK_SET);
-//	}
-//	
-//	if (opposite_endian || !use_host_endian) {
-//		swap_header(mrch2);
-//	}
-
 	portable_fseek(file, 0, SEEK_SET);
 	
 	if (fwrite(& mrch, sizeof(MrcHeader), 1, file) != 1) {
