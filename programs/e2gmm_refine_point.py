@@ -110,7 +110,7 @@ def main():
 			if segments[0]!=0 : segments.insert(0,0)
 			for i in range(len(segments-1)):
 				if segments[i-1]>=segments[i] or segments[i]>npt:
-					print("ERROR: segments must be a sequential list of integer model point numbers"
+					print("ERROR: segments must be a sequential list of integer model point numbers")
 					sys.exit(1)
 			options.nmid=len(segments)*2	# 2-D space for each feature
 		else: segments=[]
