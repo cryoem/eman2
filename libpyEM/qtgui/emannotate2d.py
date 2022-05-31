@@ -92,31 +92,26 @@ class EMAnnotate2DWidget(EMGLWidget):
 		if self.fftorigincenter == None : self.fftorigincenter=False
 		emshape.pixelratio=self.devicePixelRatio()	# not optimal. Setting this factor globally, but should really be per-window
 
-		#sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy(7),QtWidgets.QSizePolicy.Policy(7))
-		#sizePolicy.setHorizontalStretch(7)
-		#sizePolicy.setVerticalStretch(7)
-		#sizePolicy.setHeightForWidth(False)
-		#self.setSizePolicy(sizePolicy)
-
-#		self.data = image 	   # EMData object to display
-		self.data = None		# set to image below
-		self.annotation = None
+		self.data = None				# The currently displayed image/volume slice
+		self.annotation = None			# The currently displayed annotation
+		self.full_data = None 			# The actual image/volume
+		self.full_annotation = None		# This is the actual annotation image/volume
 		self.file_name = ""# stores the filename of the image, if None then member functions should be smart enough to handle it
 		self.enable_clip = False
-		EMImage2DWidget.allim[self] = 0
+		EMAnnotate2DWidget.allim[self] = 0
 
 		self.init_gl_flag = True
 		self.oldsize=(-1,-1)
 		self.scale=1.0				# Scale factor for display
 		self.origin=(0,0)			# Current display origin
 		self.invert=0				# invert image on display
-		self.histogram=0            # histogram equalization
-		self.gamma=1.0				# gamma for display (impact on inverted contrast ?
+		self.az = 0.0;				# used to transform slice orientation
+		self.alt = 0.0;				# used to transform slice orientation
+		self.zpos = 0				# z position relative to center
 		self.minden=0
 		self.maxden=1.0
 		self.curmin=0.0
 		self.curmax=0.0
-		self.maxden=1.0
 		self.disp_proc=[]			# a list/set of Processor objects to apply before rendering
 		self.rmousedrag=None		# coordinates during a right-drag operation
 		self.mouse_mode_dict = {0:"emit", 1:"emit", 2:"emit", 3:"probe", 4:"measure", 5:"draw", 6:"emit", 7:"emit"}
@@ -148,12 +143,6 @@ class EMAnnotate2DWidget(EMGLWidget):
 		self.window_width = None # Used for intelligently managing resize events
 		self.window_height = None # Used for intelligently managing resize events
 
-		self.otherdata = None
-		self.otherdatascale = -1
-		self.otherdatablend = False
-		self.otherdataupdate = False # Used for forcing a
-		self.otherdatadl = 0
-		self.other_tex_name = None
 		self.init_size_flag = True
 		self.frozen = False
 		self.isexcluded = False
@@ -161,9 +150,6 @@ class EMAnnotate2DWidget(EMGLWidget):
 
 		self.eraser_shape = None # a single circle shape used 0for erasing in e2boxer
 
-		self.list_data = None 			# this can be used for viewing lists of data
-		self.list_fft_data = None		# this is used for doing the ffts of list data
-		self.list_idx = 0	# and idx to the list_data
 
 		self.use_display_list = True # whether or not a display list should be used to render the image pixelsw - if on, this will save on time if the view of the image is unchanged, which can quite often be the case
 		self.main_display_list = -1	# if using display lists, the stores the display list
@@ -178,11 +164,6 @@ class EMAnnotate2DWidget(EMGLWidget):
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"single_image.png")) #TODO: figure out why this icon doesn't work
 
 		if image : self.set_data(image)
-#		else:self.__load_display_settings_from_db()
-
-#	def __del__(self):
-#		#self.clear_gl_memory() # this is intentionally commented out, it makes sense to clear the memory but not here
-#		self.qt_parent.deleteLater()
 
 	def initializeGL(self):
 		GL.glClearColor(0,0,0,0)
@@ -281,7 +262,8 @@ class EMAnnotate2DWidget(EMGLWidget):
 
 	def get_minden(self): return self.minden
 	def get_maxden(self): return self.maxden
-	def get_gamma(self): return self.gamma
+	def get_alt(self): return self.alt
+	def get_az(self): return self.az
 	def get_shapes(self): return self.shapes
 
 	def coords_within_image_bounds(self,coords):
@@ -322,11 +304,18 @@ class EMAnnotate2DWidget(EMGLWidget):
 		self.force_display_update()
 		self.updateGL()
 
-	def set_gamma(self,val):
-		if self.curfft == 0:
-			self.gamma=val
-		else:
-			self.fgamma=val
+	def set_alt(self,val):
+		self.alt=val
+		self.force_display_update()
+		self.updateGL()
+
+	def set_az(self,val):
+		self.az=val
+		self.force_display_update()
+		self.updateGL()
+
+	def set_n(self,val):
+		self.zpos = int(val)
 		self.force_display_update()
 		self.updateGL()
 
@@ -335,12 +324,6 @@ class EMAnnotate2DWidget(EMGLWidget):
 
 	def get_file_name(self):
 		return self.file_name
-
-	def set_other_data(self,data,scale,blend=False):
-		self.otherdata = data
-		self.otherdatascale = scale
-		self.otherdatablend = blend
-		self.otherdataupdate=True
 
 	def get_data_dims(self):
 		data = None
@@ -366,14 +349,11 @@ class EMAnnotate2DWidget(EMGLWidget):
 		if wasexcluded or self.isexcluded: return True
 		else: return False
 
-	def get_data(self,getlist=False):
-		if getlist:
-			if self.list_data!=None : return self.list_data
-			elif self.data!=None : return[self.data]
-			else : return None
+	def get_data(self):
+
 		return self.data
 
-	def set_data(self,incoming_data,incoming_annotation=None,file_name="",retain_current_settings=True, keepcontrast=False):
+	def set_data(self,data,annotation=None,file_name="",retain_current_settings=True, keepcontrast=False):
 		"""You may pass a single 2D image or a single 3-D volume
 		incoming_annotation must have the same dimensionality as incoming data or be None"""
 
@@ -381,35 +361,39 @@ class EMAnnotate2DWidget(EMGLWidget):
 		self.set_file_name(file_name)
 		if self.file_name != "": self.setWindowTitle(remove_directories_from_name(self.file_name))
 
-		data = incoming_data
 		if data == None:
-			self.data = None
-			self.annotation=None
+			self.data=self.full_data = None
+			self.annotation=self.full_annotation=None
 			return
+
+		# make an empty annotation if none provided
+		if annotation is None :
+			annotation=data.copy_head()
+			annotation.to_zero()
 
 		needresize=True if self.data==None else False
 		
-		apix=1.0
+		apix=data["apix_x"]
 		if isinstance(data,list) or isinstance(data,tuple) or isinstance(data,EMDataListCache) or isinstance(data,EMLightWeightParticleCache):
 			raise Exception("EMAnnotate2D only supports a single 2-D or 3-D image")
-			
-		self.data=data
+
+		if data.get_sizes()!=annotation.get_sizes() :
+			raise Exception("EMAnnotate2D requires data and annotation to be the same size")
+
+		self.full_data=data
+		self.full_annotation=annotation
 
 		self.image_change_count = 0
-		self.get_inspector().mtapix.setValue(apix)
+
 		if not keepcontrast:
 			self.auto_contrast(inspector_update=False,display_update=False)
-
-		#if not retain_current_settings:
-			#self.__load_display_settings_from_db(inspector_update=False,display_update=False)
-
 		try:
 			if needresize:
 				x=self.data["nx"]
 				y=self.data["ny"]
 				xys=QtWidgets.QApplication.desktop().availableGeometry()
-				mx=old_div(xys.width()*2,3)
-				my=old_div(xys.height()*2,3)
+				mx=xys.width()*2//3
+				my=xys.height()*2//3
 
 				self.resize(min(x,mx),min(y,my))
 		except: pass
@@ -417,8 +401,6 @@ class EMAnnotate2DWidget(EMGLWidget):
 		self.inspector_update()
 		self.force_display_update()
 		self.updateGL()
-
-		if data["nz"]==1 : self.get_inspector().disable_image_range()
 
 	def load_default_scale_origin(self,size_specified=None):
 		'''
@@ -449,181 +431,56 @@ class EMAnnotate2DWidget(EMGLWidget):
 
 	def full_contrast(self,boolv=False,inspector_update=True,display_update=True):
 		
-		if self.curfft == 0:
-			if self.data == None: return
-			# histogram is impacted by downsampling, so we need to compensate
-			if self.scale<=0.5 :
-				down=self.data.process("math.meanshrink",{"n":int(floor(1.0/self.scale))})
-				mean=down["mean"]
-				sigma=down["sigma"]
-				m0=down["minimum"]
-				m1=down["maximum"]
-			else:
-				mean=self.data.get_attr("mean")
-				sigma=self.data.get_attr("sigma")
-				m0=self.data.get_attr("minimum")
-				m1=self.data.get_attr("maximum")
-			self.minden=m0
-			self.maxden=m1
-			self.curmin = m0
-			self.curmax = m1
-			if inspector_update: self.inspector_update()
-			if display_update:
-				self.force_display_update()
-				self.updateGL()
+		if self.data == None: return
+		# histogram is impacted by downsampling, so we need to compensate
+		if self.scale<=0.5 :
+			down=self.data.process("math.meanshrink",{"n":int(floor(1.0/self.scale))})
+			mean=down["mean"]
+			sigma=down["sigma"]
+			m0=down["minimum"]
+			m1=down["maximum"]
 		else:
-			if self.display_fft == None: return
-
-			mean=self.display_fft.get_attr("mean")
-			sigma=self.display_fft.get_attr("sigma")
-			m0=self.display_fft.get_attr("minimum")
-			m1=self.display_fft.get_attr("maximum")
-
-			self.fminden=0
-			self.fmaxden=min(m1,mean+20.0*sigma)
-			self.fcurmin = 0
-			self.fcurmax = m1
-
+			mean=self.data.get_attr("mean")
+			sigma=self.data.get_attr("sigma")
+			m0=self.data.get_attr("minimum")
+			m1=self.data.get_attr("maximum")
+		self.minden=m0
+		self.maxden=m1
+		self.curmin = m0
+		self.curmax = m1
+		if inspector_update: self.inspector_update()
+		if display_update:
 			self.force_display_update()
-
-			if inspector_update: self.inspector_update(use_fourier=True)
-			if display_update:
-				self.force_display_update()
-				self.updateGL()
+			self.updateGL()
 
 	def auto_contrast(self,boolv=False,inspector_update=True,display_update=True):
 		auto_contrast = E2getappval("display2d","autocontrast",True)
 		
-		if self.curfft == 0:
-			if self.data == None: return
-			# histogram is impacted by downsampling, so we need to compensate
-			if self.scale<=0.5 :
-				down=self.data.process("math.meanshrink",{"n":int(floor(1.0/self.scale))})
-				mean=down["mean"]
-				sigma=down["sigma"]
-				m0=down["minimum"]
-				m1=down["maximum"]
-			else:
-				mean=self.data.get_attr("mean")
-				sigma=self.data.get_attr("sigma")
-				m0=self.data.get_attr("minimum")
-				m1=self.data.get_attr("maximum")
-			self.minden=m0
-			self.maxden=m1
-			if auto_contrast:
-				self.curmin = max(m0,mean-3.0*sigma)
-				self.curmax = min(m1,mean+3.0*sigma)
-			else:
-				self.curmin = m0
-				self.curmax = m1
-			if inspector_update: self.inspector_update()
-			if display_update:
-				self.force_display_update()
-				self.updateGL()
+		if self.data == None: return
+		# histogram is impacted by downsampling, so we need to compensate
+		if self.scale<=0.5 :
+			down=self.data.process("math.meanshrink",{"n":int(floor(1.0/self.scale))})
+			mean=down["mean"]
+			sigma=down["sigma"]
+			m0=down["minimum"]
+			m1=down["maximum"]
 		else:
-			if self.display_fft == None: return
-
-			mean=self.display_fft.get_attr("mean")
-			sigma=self.display_fft.get_attr("sigma")
-			m0=self.display_fft.get_attr("minimum")
-			m1=self.display_fft.get_attr("maximum")
-
-			self.fminden=0
-			self.fmaxden=min(m1,mean+20.0*sigma)
-			self.fcurmin = 0
-			if auto_contrast:
-				self.fcurmax = min(m1,mean+4.0*sigma)
-			else:
-				self.fcurmax = m1
-
+			mean=self.data.get_attr("mean")
+			sigma=self.data.get_attr("sigma")
+			m0=self.data.get_attr("minimum")
+			m1=self.data.get_attr("maximum")
+		self.minden=m0
+		self.maxden=m1
+		if auto_contrast:
+			self.curmin = max(m0,mean-3.0*sigma)
+			self.curmax = min(m1,mean+3.0*sigma)
+		else:
+			self.curmin = m0
+			self.curmax = m1
+		if inspector_update: self.inspector_update()
+		if display_update:
 			self.force_display_update()
-
-			if inspector_update: self.inspector_update(use_fourier=True)
-			if display_update:
-				self.force_display_update()
-				self.updateGL()
-
-	# This function used BDB, and is deactivated. Maybe it could be fixed, but not sure where it is actually used/useful
-	def __load_display_settings_from_db(self,inspector_update=True,display_update=True):
-		return
-
-		#if self.file_name == "": return # there is no file name, we have no means to stores information
-		#try:
-			#global HOMEDB
-			#HOMEDB=EMAN2db.EMAN2DB.open_db()
-			#HOMEDB.open_dict("image_2d_display_settings")
-		#except:
-			## something wrong with the HOMEDB?
-			#return
-
-		#db = HOMEDB.image_2d_display_settings
-
-		#data = db[self.file_name]
-		#if data == None: return
-		#try:
-			#self.minden = data["min"]
-			#self.maxden = data["max"]
-			#self.minden = data["min"]
-			#self.fminden = data["fourier_min"]
-			#self.fmaxden = data["fourier_max"]
-			#self.curmin = data["curmin"]
-			#self.curmax = data["curmax"]
-			#self.fcurmin = data["fcurmin"]
-			#self.fcurmax = data["fcurmax"]
-			#self.fgamma = data["fourier_gamma"]
-			#self.gamma = data["gamma"]
-			#self.scale = data["scale"]
-			#self.origin = data["origin"]
-		#except:
-			## perhaps in inconsistency, something wasn't set. This should not happen in general
-			#pass
-
-		#try:
-			#self.parent_geometry = data["parent_geometry"]
-			#if self.qt_parent != None:
-				#try:
-					#self.qt_parent.restoreGeometry(self.parent_geometry)
-				#except: pass
-		#except:pass
-
-		#if inspector_update: self.inspector_update()
-		#if display_update: self.force_display_update()
-
-	def __write_display_settings_to_db(self):
-		'''
-		writes the min,max, brightness, contrast and gamma values associated with
-		the current image to the homedb. The full path of the image is used
-		'''
-
-		if self.file_name == None: return # there is no file name, we have no means to stores information
-
-		try:
-			DB = HOMEDB
-			DB.open_dict("image_2d_display_settings")
-		except:
-			# Databasing is not supported, in which case we do nothing
-			return
-
-		data = {}
-		data["min"] = self.minden
-		data["max"] = self.maxden
-		data["curmin"] = self.curmin
-		data["curmax"] = self.curmax
-		data["fourier_min"] = self.fminden
-		data["fourier_max"] = self.fmaxden
-		data["fcurmin"] = self.fcurmin
-		data["fcurmax"] = self.fcurmax
-		data["fourier_gamma"] = self.fgamma
-		data["gamma"] = self.gamma
-		data["origin"] = self.origin
-		data["scale"] = self.scale
-
-		try:
-			data["parent_geometry"] = self.qt_parent.saveGeometry()
-		except: pass
-
-		db = DB.image_2d_display_settings
-		db[self.file_name] = data
+			self.updateGL()
 
 	def set_origin(self,x,y,quiet=False):
 		"""Set the display origin within the image"""
@@ -678,110 +535,18 @@ class EMAnnotate2DWidget(EMGLWidget):
 		self.histogram=mode
 		self.updateGL()
 
-	def set_FFT(self,val):
-		if self.data != None and self.data.is_complex():
-			print(" I am returning")
-			return
+	def __set_display_image(self,val,alt,az):
+		if self.full_data["nz"]==1: return False
 
-		self.curfft=val
-		fourier = self.__set_display_image(self.curfft)
+		# faster, so do it this way when not tilted
+		if alt==0 and az==0 :
+			self.data=self.full_data.get_clip(Region(0,0,val,self.full_data["nx"],self.full_data["ny"],1))
+			self.annotation=self.full_annotation.get_clip(Region(0,0,val,self.full_data["nx"],self.full_data["ny"],1))
+			return True
 
-		self.inspector_update(use_fourier=fourier)
 
-		self.force_display_update()
-		self.updateGL()
 
-	def redo_fft(self):
-		if self.list_data == None:
-			self.fft = None
-		else:
-			self.list_fft_data[self.list_idx] = None
-
-		if self.curfft > 0: self.__set_display_image(self.curfft)
-
-	def force_fft_redo(self):
-		'''
-		Called from image_update in emimage.py, this is useful if you
-		have two display windows displaying the same image, but one shows
-		the fft and the other the real space image. If you draw on the real
-		space image you want the FFT to update in real time.
-		It only redoes the FFT if the FFT is currently being displayed. Otherwise
-		it sets a flag for the FFT to be recalculated next time it is displayed.
-		'''
-		if self.curfft > 0:
-			self.fft = None
-			self.display_fft = None
-			self.__set_display_image(self.curfft)
-		else:
-			self.fft = None
-			self.display_fft = None
-
-	def __set_display_image(self,val):
-		if self.list_data == None:
-			if val > 0 :
-				try:
-					if self.fft == None:
-						self.fft = self.data.do_fft()
-						self.fft.set_value_at(0,0,0,0)
-						self.fft.set_value_at(1,0,0,0)
-						if self.fftorigincenter : self.fft.process_inplace("xform.phaseorigin.tocorner")
-					if val==1 :
-#						self.display_fft = self.fft.process("xform.phaseorigin.tocorner")
-						self.display_fft = self.fft.copy()
-						return True
-					elif val==2 :
-						self.display_fft = self.fft.process("xform.fourierorigin.tocenter")
-						self.display_fft = self.display_fft.get_fft_amplitude()
-						return True
-					elif val==3 :
-						self.display_fft = self.fft.process("xform.fourierorigin.tocenter")
-						self.display_fft = self.display_fft.get_fft_phase()
-						return True
-				except:
-					self.display_fft=None
-			elif val == 0:
-				if self.data == None:
-					self.data = self.fft.do_ift()
-				return False
-			else:						# val is negative!?!?
-				self.display_fft=None
-
-			return False
-		else:
-			if self.list_idx>=len(self.list_data): self.list_idx=len(self.list_data)-1
-			if val > 0 :
-				try:
-					if len(self.list_fft_data)!=len(self.list_data) : self.list_fft_data=[None for i in range(len(self.list_data))]
-					if self.list_fft_data[self.list_idx] == None:
-						self.list_fft_data[self.list_idx] = self.list_data[self.list_idx].do_fft()
-						if self.fftorigincenter :
-							self.list_fft_data[self.list_idx].process_inplace("xform.phaseorigin.tocorner")
-					fft = self.list_fft_data[self.list_idx]
-					if val==1 :
-#						self.display_fft = fft.process("xform.phaseorigin.tocorner")
-						self.display_fft = fft.copy()
-						return True
-					elif val==2 :
-						self.display_fft = fft.process("xform.fourierorigin.tocenter")
-						self.display_fft = self.display_fft.get_fft_amplitude()
-						return True
-					elif val==3 :
-						self.display_fft = fft.process("xform.fourierorigin.tocenter")
-						self.display_fft = self.display_fft.get_fft_phase()
-						return True
-				except:
-					self.display_fft=None
-			elif val == 0:
-				if self.list_data[self.list_idx] == None:
-					self.list_data[self.list_idx] = self.list_fft_data[self.list_idx].do_ift()
-
-				self.data = self.list_data[self.list_idx]
-				return False
-
-			else:
-				self.display_fft=None
-
-			return False
+		return False
 
 	def force_display_update(self):
 		self.display_states = []
@@ -795,15 +560,12 @@ class EMAnnotate2DWidget(EMGLWidget):
 		display_states.append(self.origin[1])
 		display_states.append(self.scale)
 		display_states.append(self.invert)
-		display_states.append(self.histogram)
 		display_states.append(self.minden)
 		display_states.append(self.maxden)
-		display_states.append(self.gamma)
-		display_states.append(self.curfft)
 		display_states.append(self.curmin)
-		display_states.append(self.fcurmin)
-		display_states.append(self.fcurmax)
 		display_states.append(self.curmax)
+		display_states.append(self.az)
+		display_states.append(self.alt)
 		if len(self.display_states) == 0:
 			self.display_states = display_states
 			return True
@@ -847,6 +609,9 @@ class EMAnnotate2DWidget(EMGLWidget):
 
 		x0  = 1 + int(old_div(self.origin[0], self.scale))
 		y0  = 1 + int(old_div(self.origin[1], self.scale))
+
+		self.data=self.full_data.get_rotated_clip(Transform({"type":"eman","alt":self.alt,"az":self.az,"tx":self.full_data["nx"]//2,"ty":self.full_data["ny"]//2,"tz":self.full_data["nz"]//2+self.zpos}))
+		self.annotation=self.full_annotation.get_rotated_clip(Transform({"type":"eman","alt":self.alt,"az":self.az,"tx":self.full_data["nx"]//2,"ty":self.full_data["ny"]//2,"tz":self.full_data["nz"]//2+self.zpos}))
 
 
 		return_data = ( wid, hgt,
@@ -948,10 +713,6 @@ class EMAnnotate2DWidget(EMGLWidget):
 				if ( self.tex_name <= 0 ):
 					raise("failed to generate texture name")
 
-				#if self.otherdatablend and self.otherdata != None:
-
-					#glBlendFunc(GL_DST_ALPHA,GL_ONE_MINUS_DST_ALPHA)
-
 				GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
 				glPixelStorei(GL_UNPACK_ALIGNMENT,4)
 				GL.glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,old_div(w,bpp),h,0,gl_render_type, GL.GL_UNSIGNED_BYTE, a)
@@ -962,12 +723,6 @@ class EMAnnotate2DWidget(EMGLWidget):
 				glTranslatef(width,height,0)
 				self.__draw_texture(self.tex_name,-width,-height,width,height)
 				glPopMatrix()
-
-				#
-
-				#if self.otherdatablend and self.otherdata != None:
-				#	GL.glDisable( GL.GL_BLEND);
-				#	if (depth_testing_was_on):	GL.glEnable(GL.GL_DEPTH_TEST)
 
 			else:
 				self.hist=struct.unpack('256i',a[-1024:])
@@ -982,53 +737,6 @@ class EMAnnotate2DWidget(EMGLWidget):
 		if self.use_display_list and render :
 			glEndList()
 			glCallList(self.main_display_list)
-
-
-		if self.otherdata != None and isinstance(self.otherdata,EMData) and not self.glflags.npt_textures_unsupported():
-			if self.otherdataupdate or self.otherdatadl == 0:
-
-
-				if self.other_tex_name != 0: glDeleteTextures(self.other_tex_name)
-
-				scale = self.scale*self.otherdatascale
-				b=GLUtil.render_amp8(self.otherdata, int(old_div(self.origin[0],scale)),int(old_div(self.origin[1],scale)),self.width(),self.height(),old_div((self.width()-1),4)*4+4,scale,pixden[0],pixden[1],0,1,1,2)
-				gl_render_type = GL_LUMINANCE
-
-				if self.other_tex_name != 0: GL.glDeleteTextures(self.other_tex_name)
-				self.other_tex_name = GL.glGenTextures(1)
-				if ( self.other_tex_name <= 0 ):
-					raise("failed to generate texture name")
-
-				glBindTexture(GL.GL_TEXTURE_2D,self.other_tex_name)
-				glPixelStorei(GL_UNPACK_ALIGNMENT,4)
-				glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,self.width(),self.height(),0,gl_render_type, GL.GL_UNSIGNED_BYTE, b)
-
-
-				if self.otherdatadl != 0: glDeleteLists(self.otherdatadl,1)
-
-				self.otherdatadl = glGenLists(1)
-
-				glNewList(self.otherdatadl,GL_COMPILE)
-				glBindTexture(GL.GL_TEXTURE_2D,self.other_tex_name)
-				glDisable(GL_DEPTH_TEST)
-				GL.glEnable(GL.GL_BLEND);
-						#depth_testing_was_on = GL.glIsEnabled(GL.GL_DEPTH_TEST);
-				try:
-					GL.glBlendEquation(GL.GL_FUNC_REVERSE_SUBTRACT);
-				except: pass
-	#					GL.glBlendFunc(GL.GL_SRC_ALPHA,GL.GL_ONE_MINUS_SRC_ALPHA)
-				GL.glBlendFunc(GL.GL_ONE,GL.GL_ONE);
-				glPushMatrix()
-				glTranslatef(width,height,0)
-				self.__draw_texture(self.other_tex_name,-width,-height,width,height)
-				glPopMatrix()
-
-				GL.glDisable(GL_BLEND)
-				glEnable(GL_DEPTH_TEST)
-				glEndList()
-
-			glCallList(self.otherdatadl)
-
 
 
 		if self.frozen or self.isexcluded:
@@ -1219,7 +927,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 
 			if self.list_data!=None and len(s.shape)==mxlen:
 				z_idx=s[mxlen-1]
-				if z_idx!=self.list_idx:
+				if z_idx!=self.zpos:
 					continue
 
 			if k == self.active[0]:
@@ -1327,19 +1035,16 @@ class EMAnnotate2DWidget(EMGLWidget):
 
 		glEndList()
 
-	def inspector_update(self,use_fourier=False):
-		if self.inspector:
-			if not use_fourier:
-				self.inspector.set_limits(self.minden,self.maxden,self.curmin,self.curmax)
-				self.inspector.set_gamma(self.gamma)
-			else:
-				self.inspector.set_limits(self.fminden,self.fmaxden,self.fcurmin,self.fcurmax)
-
-				self.inspector.set_gamma(self.fgamma)
+	def inspector_update(self):
+		if not self.inspector is None and not self.data is None:
+			self.inspector.set_limits(self.minden,self.maxden,self.curmin,self.curmax)
+			self.inspector.set_gamma(self.gamma)
 
 			self.inspector.set_scale(self.scale)
 			self.inspector.update_brightness_contrast()
-			
+			self.inspector.mtapix.setValue(self.data["apix_x"])
+			self.inspector.update_zrange()
+
 	def get_inspector(self):
 		if not self.inspector:
 			self.inspector=EMAnnotateInspector2D(self)
@@ -1502,7 +1207,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 		except: return (v0[0]*self.scale-origin_x,self.height()-v0[1]*self.scale+origin_y)
 
 	def closeEvent(self,event) :
-		self.__write_display_settings_to_db()
+
 		EMGLWidget.closeEvent(self,event)
 		try:
 			for w in self.inspector.pspecwins: w.close()
@@ -1637,7 +1342,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 							
 							fft=inspector.target().fft
 							if fft==None :
-								fft=inspector.target().list_fft_data[inspector.target().list_idx]
+								fft=inspector.target().list_fft_data[inspector.target().zpos]
 							xs=fft.get_xsize()
 							ys=fft.get_ysize()
 							x,y=int(lc[0])+1,int(lc[1])
@@ -1656,7 +1361,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 							
 							try: inspector.mtshowval.setText("Value: %1.4g"%inspector.target().data[int(lc[0]),int(lc[1])])
 							except:
-								idx=inspector.target().list_idx
+								idx=inspector.target().zpos
 								inspector.mtshowval.setText("Value: %1.4g"%inspector.target().list_data[idx][int(lc[0]),int(lc[1])])
 							inspector.mtshowval2.setText("  ")
 						#except: pass
@@ -1774,32 +1479,20 @@ class EMAnnotate2DWidget(EMGLWidget):
 		'''
 		if self.list_data != None:
 			if delta > 0:
-				if (self.list_idx < (len(self.list_data)-1)):
-					self.list_idx += 1
-					self.get_inspector().set_image_idx(self.list_idx+1,1)
+				if (self.zpos < (len(self.list_data)-1)):
+					self.zpos += 1
+					self.get_inspector().set_image_idx(self.zpos+1,1)
 					self.__set_display_image(self.curfft)
 					self.setup_shapes()
 					self.force_display_update()
 
 			elif delta < 0:
-				if (self.list_idx > 0):
-					self.list_idx -= 1
-					self.get_inspector().set_image_idx(self.list_idx-1,1)
+				if (self.zpos > 0):
+					self.zpos -= 1
+					self.get_inspector().set_image_idx(self.zpos-1,1)
 					self.__set_display_image(self.curfft)
 					self.setup_shapes()
 					self.force_display_update()
-
-
-	def image_range_changed(self,val):
-		l_val = int(val)
-
-		if l_val == self.list_idx: return
-		else:
-			self.list_idx = l_val
-			self.__set_display_image(self.curfft)
-			self.force_display_update()
-			self.updateGL()
-			self.setup_shapes()
 
 	def leaveEvent(self,event):
 		get_application().setOverrideCursor(Qt.ArrowCursor)
@@ -1830,7 +1523,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 		glNormal(0,0,1)
 		glEnable(GL_TEXTURE_2D)
 		n = len(self.list_data)
-		string = f"{self.list_idx} ({n})"
+		string = f"{self.zpos} ({n})"
 		bbox = self.font_renderer.bounding_box(string)
 		x_offset = width-(bbox[3]-bbox[0]) - 10
 		y_offset = 10
@@ -2132,30 +1825,30 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 		self.full_contrast_button = QtWidgets.QPushButton("FullC")
 		self.vbl2.addWidget(self.full_contrast_button,1,1,1,1)
 
-		# FFT Buttons
-		self.fftg=QtWidgets.QButtonGroup()
-		self.fftg.setExclusive(1)
+		## FFT Buttons
+		#self.fftg=QtWidgets.QButtonGroup()
+		#self.fftg.setExclusive(1)
 
-		self.ffttog0 = QtWidgets.QPushButton("Real")
-		self.ffttog0.setCheckable(1)
-		self.ffttog0.setChecked(1)
-		self.vbl2.addWidget(self.ffttog0,2,0)
-		self.fftg.addButton(self.ffttog0,0)
+		#self.ffttog0 = QtWidgets.QPushButton("Real")
+		#self.ffttog0.setCheckable(1)
+		#self.ffttog0.setChecked(1)
+		#self.vbl2.addWidget(self.ffttog0,2,0)
+		#self.fftg.addButton(self.ffttog0,0)
 
-		self.ffttog1 = QtWidgets.QPushButton("FFT")
-		self.ffttog1.setCheckable(1)
-		self.vbl2.addWidget(self.ffttog1,2,1)
-		self.fftg.addButton(self.ffttog1,1)
+		#self.ffttog1 = QtWidgets.QPushButton("FFT")
+		#self.ffttog1.setCheckable(1)
+		#self.vbl2.addWidget(self.ffttog1,2,1)
+		#self.fftg.addButton(self.ffttog1,1)
 
-		self.ffttog2 = QtWidgets.QPushButton("Amp")
-		self.ffttog2.setCheckable(1)
-		self.vbl2.addWidget(self.ffttog2,3,0)
-		self.fftg.addButton(self.ffttog2,2)
+		#self.ffttog2 = QtWidgets.QPushButton("Amp")
+		#self.ffttog2.setCheckable(1)
+		#self.vbl2.addWidget(self.ffttog2,3,0)
+		#self.fftg.addButton(self.ffttog2,2)
 
-		self.ffttog3 = QtWidgets.QPushButton("Pha")
-		self.ffttog3.setCheckable(1)
-		self.vbl2.addWidget(self.ffttog3,3,1)
-		self.fftg.addButton(self.ffttog3,3)
+		#self.ffttog3 = QtWidgets.QPushButton("Pha")
+		#self.ffttog3.setCheckable(1)
+		#self.vbl2.addWidget(self.ffttog3,3,1)
+		#self.fftg.addButton(self.ffttog3,3)
 
 		self.scale = ValSlider(self,(0.1,5.0),"Mag:")
 		self.scale.setObjectName("scale")
@@ -2182,19 +1875,28 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 		self.conts.setValue(1.0)
 		self.vbl.addWidget(self.conts)
 
-		self.gammas = ValSlider(self,(.1,5.0),"Gam:")
-		self.gammas.setObjectName("gamma")
-		self.gammas.setValue(self.target().get_gamma())
-		#self.gammas.setValue(1.0)
-		self.vbl.addWidget(self.gammas)
+		self.alts = ValSlider(self,(.1,5.0),"Alt:")
+		self.alts.setObjectName("alt")
+		self.alts.setValue(self.target().get_alt())
+		self.vbl.addWidget(self.alts)
+
+		self.azs = ValSlider(self,(.1,5.0),"Az:")
+		self.azs.setObjectName("az")
+		self.azs.setValue(self.target().get_az())
+		self.vbl.addWidget(self.azs)
 
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"eman.png"))
 
+		self.ns = ValSlider(self,label="N#:")
+		self.ns.setIntonly(True)
+		self.vbl.addWidget(self.ns)
+
+		self.ns.setValue(0)
+		self.stmoviebut.setEnabled(True)
+		self.stanimgif.setEnabled(True)
+
 		self.lowlim=0
 		self.highlim=1.0
-		self.image_range = None
-		#self.update_min_max()
-		#self.update_brightness_contrast()
 		self.busy=0
 
 		self.psbsing.clicked[bool].connect(self.do_pspec_single)
@@ -2209,18 +1911,29 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 		self.pyinp.returnPressed.connect(self.do_python)
 		self.invtog.toggled[bool].connect(target.set_invert)
 		self.histoequal.currentIndexChanged[int].connect(target.set_histogram)
-		self.fftg.buttonClicked[int].connect(target.set_FFT)
 		self.mmtab.currentChanged[int].connect(target.set_mouse_mode)
 		self.auto_contrast_button.clicked[bool].connect(target.auto_contrast)
 		self.full_contrast_button.clicked[bool].connect(target.full_contrast)
+		self.alts.valueChanged.connect(self.target().set_alt)
+		self.azs.valueChanged.connect(self.target().set_az)
+		self.ns.valueChanged.connect(self.target().set_n)
 
 		self.resize(400,440) # d.woolford thinks this is a good starting size as of Nov 2008 (especially on MAC)
+
+	def update_zrange(self):
+		nz=self.target().get_data()["nz"]
+		zr=nz*3//4		# approximate max z range with high tilt
+		self.image_range.setRange(-zr,zr)
+		self.stminsb.setRange(-zr,zr)
+		self.stminsb.setValue(-nz)
+		self.stmaxsb.setRange(-zr,zr)
+		self.stmaxsb.setValue(nz)
 
 	def do_pspec_single(self,ign):
 		"""Compute 1D power spectrum of single image and plot"""
 		try: 
-			data=self.target().list_data[self.target().list_idx]
-			imgn=self.target().list_idx
+			data=self.target().list_data[self.target().zpos]
+			imgn=self.target().zpos
 			lbl=f"img_{imgn}"
 		except: 
 			data=self.target().get_data()
@@ -2245,8 +1958,8 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 	def do_pspec_az(self,ign):
 		"""Compute azimuthal power spectrum of single image and plot"""
 		try: 
-			data=self.target().list_data[self.target().list_idx]
-			imgn=self.target().list_idx
+			data=self.target().list_data[self.target().zpos]
+			imgn=self.target().zpos
 			lbl=f"img_{imgn}"
 		except: 
 			data=self.target().get_data()
@@ -2412,38 +2125,6 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 #		print r
 
 		self.pyout.setText(str(r))
-
-	def disable_image_range(self):
-		self.stminsb.setRange(0,0)
-		self.stmaxsb.setRange(0,0)
-		self.stmoviebut.setEnabled(False)
-		self.stanimgif.setEnabled(False)
-
-		if self.image_range != None:
-			self.vbl.removeWidget(self.image_range)
-			self.image_range.deleteLater()
-			self.image_range = None
-		else:
-			# this is fine
-			pass
-			#print "warning, attempted to disable image range when there was none!"
-
-	def enable_image_range(self,minimum,maximum,current_idx):
-		if self.image_range == None:
-			self.image_range = ValSlider(self,label="N#:")
-			self.image_range.setIntonly(True)
-			self.vbl.addWidget(self.image_range)
-
-		self.image_range.setRange(minimum,maximum)
-		self.image_range.setValue(current_idx)
-		self.stmoviebut.setEnabled(True)
-		self.stanimgif.setEnabled(True)
-
-		self.stminsb.setRange(minimum,maximum)
-		self.stmaxsb.setRange(minimum,maximum)
-		self.stmaxsb.setValue(maximum)
-
-		self.image_range.valueChanged.connect(self.target().image_range_changed)
 
 	def set_image_idx(self,val,quiet=0):
 		self.image_range.setValue(val,quiet=quiet)

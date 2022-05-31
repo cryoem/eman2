@@ -730,21 +730,88 @@ EMData *EMData::get_top_half() const
 }
 
 
-EMData *EMData::get_rotated_clip(const Transform &xform,
-								 const IntSize &size, float)
+EMData *EMData::get_rotated_clip(const Transform &xform,const IntSize &size, int interp)
 {
-	EMData *result = new EMData();
-	result->set_size(size[0],size[1],size[2]);
+	EMData *result = new EMData(size[0],size[1],size[2]);
 
+	if (interp) { //bi-trilinear interpolation
+		if (nz==1) {
+			for (int y=-size[1]/2; y<(size[1]+1)/2; y++) {
+				for (int x=-size[0]/2; x<(size[0]+1)/2; x++) {
+					Vec3f xv=xform.transform(Vec3f((float)x,(float)y,0.0f));
+					float v = 0;
+
+					if (xv[0]<0||xv[1]<0||xv[0]>nx-2||xv[1]>ny-2) v=0.;
+					else v=sget_value_at_interp(xv[0],xv[1]);
+					result->set_value_at(x+size[0]/2,y+size[1]/2,v);
+				}
+			}
+		}
+		else {
+			for (int z=-size[2]/2; z<(size[2]+1)/2; z++) {
+				for (int y=-size[1]/2; y<(size[1]+1)/2; y++) {
+					for (int x=-size[0]/2; x<(size[0]+1)/2; x++) {
+						Vec3f xv=xform.transform(Vec3f((float)x,(float)y,(float)z));
+						float v = 0;
+
+						if (xv[0]<0||xv[1]<0||xv[2]<0||xv[0]>nx-2||xv[1]>ny-2||xv[2]>nz-2) v=0.;
+						else v=sget_value_at_interp(xv[0],xv[1],xv[2]);
+						result->set_value_at(x+size[0]/2,y+size[1]/2,z+size[2]/2,v);
+					}
+				}
+			}
+		}
+	} else {	//nearest neighbor
+		if (nz==1) {
+			for (int y=-size[1]/2; y<(size[1]+1)/2; y++) {
+				for (int x=-size[0]/2; x<(size[0]+1)/2; x++) {
+					Vec3f xv=xform.transform(Vec3f((float)x,(float)y,0.0f));
+					float v = 0;
+
+					if (xv[0]<0||xv[1]<0||xv[0]>nx-1||xv[1]>ny-1) v=0.;
+					else v=get_value_at(Util::round(xv[0]),Util::round(xv[1]));
+					result->set_value_at(x+size[0]/2,y+size[1]/2,v);
+				}
+			}
+		}
+		else {
+			for (int z=-size[2]/2; z<(size[2]+1)/2; z++) {
+				for (int y=-size[1]/2; y<(size[1]+1)/2; y++) {
+					for (int x=-size[0]/2; x<(size[0]+1)/2; x++) {
+						Vec3f xv=xform.transform(Vec3f((float)x,(float)y,(float)z));
+						float v = 0;
+
+						if (xv[0]<0||xv[1]<0||xv[2]<0||xv[0]>nx-1||xv[1]>ny-1||xv[2]>nz-1) v=0.;
+						else v=get_value_at(Util::round(xv[0]),Util::round(xv[1]),Util::round(xv[2]));
+						result->set_value_at(x+size[0]/2,y+size[1]/2,z+size[2]/2,v);
+					}
+				}
+			}
+		}
+	}
+
+	result->attr_dict["apix_x"] = attr_dict["apix_x"];
+	result->attr_dict["apix_y"] = attr_dict["apix_y"];
+	result->attr_dict["apix_z"] = attr_dict["apix_z"];
+	
+	result->update();
+
+	return result;
+}
+
+void EMData::set_rotated_clip(const Transform &xform,EMData *clip)
+{
+
+	IntSize size(clip->get_xsize(),clip->get_ysize(),clip->get_zsize());
 	if (nz==1) {
 		for (int y=-size[1]/2; y<(size[1]+1)/2; y++) {
 			for (int x=-size[0]/2; x<(size[0]+1)/2; x++) {
 				Vec3f xv=xform.transform(Vec3f((float)x,(float)y,0.0f));
 				float v = 0;
 
-				if (xv[0]<0||xv[1]<0||xv[0]>nx-2||xv[1]>ny-2) v=0.;
-				else v=sget_value_at_interp(xv[0],xv[1]);
-				result->set_value_at(x+size[0]/2,y+size[1]/2,v);
+				if (xv[0]<0||xv[1]<0||xv[0]>nx-1||xv[1]>ny-1) continue;
+				v=clip->get_value_at(x+size[0]/2,y+size[1]/2);
+				set_value_at(Util::round(xv[0]),Util::round(xv[1]),v);
 			}
 		}
 	}
@@ -755,21 +822,17 @@ EMData *EMData::get_rotated_clip(const Transform &xform,
 					Vec3f xv=xform.transform(Vec3f((float)x,(float)y,(float)z));
 					float v = 0;
 
-					if (xv[0]<0||xv[1]<0||xv[2]<0||xv[0]>nx-2||xv[1]>ny-2||xv[2]>nz-2) v=0.;
-					else v=sget_value_at_interp(xv[0],xv[1],xv[2]);
-					result->set_value_at(x+size[0]/2,y+size[1]/2,z+size[2]/2,v);
+					if (xv[0]<0||xv[1]<0||xv[2]<0||xv[0]>nx-1||xv[1]>ny-1||xv[2]>nz-1) continue;
+					v=clip->get_value_at(x+size[0]/2,y+size[1]/2,z+size[2]/2);
+					set_value_at(Util::round(xv[0]),Util::round(xv[1]),Util::round(xv[2]),v);
 				}
 			}
 		}
 	}
-	
-	result->attr_dict["apix_x"] = attr_dict["apix_x"];
-	result->attr_dict["apix_y"] = attr_dict["apix_y"];
-	result->attr_dict["apix_z"] = attr_dict["apix_z"];
-	
-	result->update();
 
-	return result;
+	update();
+
+	return;
 }
 
 
