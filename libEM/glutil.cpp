@@ -1,4 +1,4 @@
-/*
+ /*
  * Author: David Woolford, 11/06/2007 (woolford@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
  *
@@ -1006,6 +1006,96 @@ EMBytes GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 
 	return ret;
 }
+
+void GLUtil::initRGB() {
+	// Mapping from value/category to rgb colors in a lookup table for speed and easy modification later
+	static int tblinit=0;
+
+	if (tblinit) return;
+	tblinit=1;
+
+	// Only supporting up to 256 different color "categories"
+	for (int v=0; v<256; v++) {
+		for (int c=0; c<256; c++) {
+			rtable[v<<8+c]=v;		//colorless as a stopgap for initial tests
+			gtable[v<<8+c]=v;
+			btable[v<<8+c]=v;
+		}
+	}
+}
+
+// typedef struct {
+// 	double r;       // a fraction between 0 and 1
+// 	double g;       // a fraction between 0 and 1
+// 	double b;       // a fraction between 0 and 1
+// } rgb;
+//
+// typedef struct {
+// 	double h;       // angle in degrees
+// 	double s;       // a fraction between 0 and 1
+// 	double v;       // a fraction between 0 and 1
+// } hsv;
+//
+// static rgb   hsv2rgb(hsv in);
+//
+//
+// rgb hsv2rgb(hsv in)
+// {
+// 	double      hh, p, q, t, ff;
+// 	long        i;
+// 	rgb         out;
+//
+// 	if(in.s <= 0.0) {       // < is bogus, just shuts up warnings
+// 		out.r = in.v;
+// 		out.g = in.v;
+// 		out.b = in.v;
+// 		return out;
+// 	}
+// 	hh = in.h;
+// 	if(hh >= 360.0) hh = 0.0;
+// 	hh /= 60.0;
+// 	i = (long)hh;
+// 	ff = hh - i;
+// 	p = in.v * (1.0 - in.s);
+// 	q = in.v * (1.0 - (in.s * ff));
+// 	t = in.v * (1.0 - (in.s * (1.0 - ff)));
+//
+// 	switch(i) {
+// 		case 0:
+// 			out.r = in.v;
+// 			out.g = t;
+// 			out.b = p;
+// 			break;
+// 		case 1:
+// 			out.r = q;
+// 			out.g = in.v;
+// 			out.b = p;
+// 			break;
+// 		case 2:
+// 			out.r = p;
+// 			out.g = in.v;
+// 			out.b = t;
+// 			break;
+//
+// 		case 3:
+// 			out.r = p;
+// 			out.g = q;
+// 			out.b = in.v;
+// 			break;
+// 		case 4:
+// 			out.r = t;
+// 			out.g = p;
+// 			out.b = in.v;
+// 			break;
+// 		case 5:
+// 		default:
+// 			out.r = in.v;
+// 			out.g = p;
+// 			out.b = q;
+// 			break;
+// 	}
+// 	return out;
+// }
 
 EMBytes GLUtil::render_annotated24(EMData *emdata, EMData *intmap, int x0, int y0, int ixsize,
 							int iysize, int bpl, float scale, int min_gray, int max_gray,

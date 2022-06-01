@@ -51,6 +51,9 @@ namespace EMAN
 
 	class GLUtil {
 	public:
+		static unsigned char rtable[65536],gtable[65536],btable[65536];
+		static void initRGB();
+
 		/** create an OpenGL mipmap set
 		 * @return the texture id used in the call to glBindTextures
 		 */
@@ -158,6 +161,7 @@ namespace EMAN
 		static GLuint buffer[2];
 		
 	};
+
 }
 
 #endif	//glutil_h__
