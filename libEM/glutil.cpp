@@ -1007,23 +1007,6 @@ EMBytes GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 	return ret;
 }
 
-void GLUtil::initRGB() {
-	// Mapping from value/category to rgb colors in a lookup table for speed and easy modification later
-	static int tblinit=0;
-
-	if (tblinit) return;
-	tblinit=1;
-
-	// Only supporting up to 256 different color "categories"
-	for (int v=0; v<256; v++) {
-		for (int c=0; c<256; c++) {
-			rtable[v<<8+c]=v;		//colorless as a stopgap for initial tests
-			gtable[v<<8+c]=v;
-			btable[v<<8+c]=v;
-		}
-	}
-}
-
 // typedef struct {
 // 	double r;       // a fraction between 0 and 1
 // 	double g;       // a fraction between 0 and 1
@@ -1103,6 +1086,25 @@ EMBytes GLUtil::render_annotated24(EMData *emdata, EMData *intmap, int x0, int y
 {
 	ENTERFUNC;
 
+	// Category brightness mappings to rgb colors. Should make these static members of GLUtil
+	static unsigned char rtable[65536] = {0};
+	static unsigned char gtable[65536] = {0};
+	static unsigned char btable[65536] = {0};
+
+	static int tblinit=0;
+
+	if (!tblinit) {
+		tblinit=1;
+
+		// Only supporting up to 256 different color "categories"
+		for (int v=0; v<256; v++) {
+			for (int c=0; c<256; c++) {
+				rtable[v<<8+c]=v;		//colorless as a stopgap for initial tests
+				gtable[v<<8+c]=v;
+				btable[v<<8+c]=v;
+			}
+		}
+	}
 
 	if (emdata==NULL) return EMBytes();
 	bool invert = (min_gray > max_gray);
@@ -1138,11 +1140,7 @@ EMBytes GLUtil::render_annotated24(EMData *emdata, EMData *intmap, int x0, int y
 		render_max = render_min + 0.01f;
 	}
 
-	// Category brightness mappings to rgb colors. Should make these static members of GLUtil
-	unsigned char rtable[65536] = {0};
-	unsigned char gtable[65536] = {0};
-	unsigned char btable[65536] = {0};
-	
+
 	EMBytes ret=EMBytes();
 	//	ret.resize(iysize*bpl);
 
