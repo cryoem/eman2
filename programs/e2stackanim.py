@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 01/03/07 (sludtke@bcm.edu)
 # Copyright (c) 2000-2007 Baylor College of Medicine
@@ -56,7 +53,7 @@ def stacktoanim(stack,outpath,ntk):
 		im.set_attr("render_max",im.get_attr("mean")+im.get_attr("sigma")*3.0/contrast)
 		im.write_image("tmp_img-%03d.pgm"%i)
 		print("%d. %1.3f - %1.3f"%(i,im.get_attr("render_min"),im.get_attr("render_max")))
-	os.system("convert -delay 10 tmp_img-*.pgm %s "%outpath)
+	os.system("gm convert -delay 10 tmp_img-*.pgm %s "%outpath)
 	
 	for i in range(ntk+1):
 		os.unlink("tmp_img-%03d.pgm"%i)
@@ -76,7 +73,7 @@ def main():
 #	parser.add_argument("--mode",type=str,help="centering mode 'modeshift', 'censym' or 'region,<x>,<y>,<clipsize>,<alisize>",default="censym")
 #	parser.add_argument("--twopass",action="store_true",default=False,help="Skip automatic tilt axis location, use fixed angle from x")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Input and output files required")

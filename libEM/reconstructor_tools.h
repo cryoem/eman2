@@ -1,7 +1,3 @@
-/**
- * $Id$
- */
-
 /*
  * Author: David Woolford, 07/25/2007 (woolford@bcm.edu)
  * Copyright (c) 2000-2007 Baylor College of Medicine
@@ -224,6 +220,40 @@ namespace EMAN
 			FourierInserter3DMode2& operator=( const FourierInserter3DMode2& );
 	};
 
+	/** FourierPixelInserter3DMode2l  - trilinear 2x2x2 inserter
+	 * See comments in FourierPixelInserter3D for explanations
+	 */
+	class FourierInserter3DMode2l : public FourierPixelInserter3D
+	{
+		public:
+			FourierInserter3DMode2l() {}
+			virtual ~FourierInserter3DMode2l() {}
+
+			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const std::complex<float> dt, const float& weight=1.0);
+
+			static FourierPixelInserter3D *NEW()
+			{
+				return new FourierInserter3DMode2l();
+			}
+
+			virtual string get_name() const
+			{
+				return NAME;
+			}
+
+			virtual string get_desc() const
+			{
+				return "Fourier pixel insertion 2x2x2 with trilinear interpolation";
+			}
+
+			static const string NAME;
+
+		// Disallow copy and assignment by default
+			FourierInserter3DMode2l( const FourierInserter3DMode2l& );
+			FourierInserter3DMode2l& operator=( const FourierInserter3DMode2l& );
+	};
+
+	
 	/** FourierPixelInserter3DMode3  - encapsulates "method 3" for inserting a 2D Fourier slice into a 3D volume
 	 * See comments in FourierPixelInserter3D for explanations
 	 */

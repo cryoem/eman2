@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 11/30/2008 (ludtke@bcm.edu)
 # Copyright (c) 2000-2007 Baylor College of Medicine
@@ -70,7 +67,7 @@ def main():
 	parser.add_argument("--randorient",action="store_true",help="Instead of seeding with a random volume, seeds by randomizing input orientations",default=False, guitype='boolbox', row=4, col=2, rowspan=1, colspan=1)
 	parser.add_argument("--maskproc", default=None, type=str,help="Default=none. If specified, this mask will be performed after the built-in automask, eg - mask.soft to remove the core of a virus", )
 #	parser.add_argument("--savemore",action="store_true",help="Will cause intermediate results to be written to flat files",default=False, guitype='boolbox', expert=True, row=5, col=0, rowspan=1, colspan=1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--orientgen",type=str, default="eman:delta=9.0:inc_mirror=0:perturb=1",help="The type of orientation generator. Default is eman:delta=9.0:inc_mirror=0:perturb=1. See e2help.py orientgens", guitype='strbox', expert=True, row=4, col=2, rowspan=1, colspan=1)
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>=<value>. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel",default="thread:1", guitype='strbox', row=6, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -87,6 +84,8 @@ def main():
 		exit(1)
 	apix=ptcls[0]["apix_x"]
 	if options.shrink>1 : apix*=options.shrink
+
+	if options.tries<10 : print("Warning: suggest using --tries >=10. The first 8 starting maps are generated deterministically, and it is good to have several random seeds as well to increase the liklihood of a good outcome.")
 
 	for i in range(len(ptcls)):
 		ptcls[i].process_inplace("normalize.edgemean",{})
@@ -139,7 +138,7 @@ def main():
 	# parallelism
 	from EMAN2PAR import EMTaskCustomer			# we need to put this here to avoid a circular reference
 
-	etc=EMTaskCustomer(options.parallel)
+	etc=EMTaskCustomer(options.parallel, module="e2initialmodel.InitMdlTask")
 	pclist=[particles_name]
 
 	etc.precache(pclist)		# make sure the input particles are precached on the compute nodes
@@ -204,9 +203,9 @@ class InitMdlTask(JSTask):
 		mask2=self.data["mask2"]
 
 		# We make one new reconstruction for each loop of t
-		if options["randorient"] : threed=[make_random_map_byort(ptcls)]		# initial model
-		else: threed=[make_random_map(boxsize,sfcurve)]		# initial model
-		apply_sym(threed[0],options["sym"])		# with the correct symmetry
+		if options["randorient"] : threed=[make_random_map_byort(ptcls,options["sym"])]		# initial model
+		else: threed=[make_random_map(boxsize,sfcurve,options["tryid"],options["sym"])]		# initial model, the first few are deterministic not purely random
+#		apply_sym(threed[0],options["sym"])		# with the correct symmetry
 
 		# This is the refinement loop
 		for it in range(options["iter"]):
@@ -222,7 +221,8 @@ class InitMdlTask(JSTask):
 			bslst=[]
 			quals=[]
 			for i in range(len(ptcls)):
-				sim=cmponetomany(projs,ptcls[i],align=("rotate_translate_flip",{"maxshift":old_div(boxsize,5)}),alicmp=("ccc",{}),ralign=("refine",{}),cmp=("frc",{"minres":80,"maxres":20}))
+				sim=cmponetomany(projs,ptcls[i],align=("rotate_translate_tree",{"flip":1,"maxshift":old_div(boxsize,5)}),alicmp=("ccc",{}),cmp=("ccc",{}))
+#				sim=cmponetomany(projs,ptcls[i],align=("rotate_translate_flip",{"maxshift":old_div(boxsize,5)}),alicmp=("ccc",{}),ralign=("refine",{}),cmp=("frc",{"minres":80,"maxres":20}))
 				bs=min(sim) #				print bs[0]
 				bss+=bs[0]
 				bslst.append((bs[0],i))
@@ -319,22 +319,71 @@ class InitMdlTask(JSTask):
 
 jsonclasses["InitMdlTask"]=InitMdlTask.from_jsondict
 
-def make_random_map(boxsize,sfcurve=None):
+def make_random_map(boxsize,sfcurve=None,ortid=-1,sym="c1"):
 	"""This will make a map consisting of random noise, low-pass filtered and center-weighted for use
 	as a random starting model in initial model generation. Note that the mask is eliptical and has random aspect."""
 
 	ret=EMData(boxsize,boxsize,boxsize)
-	ret.process_inplace("testimage.noise.gauss",{"mean":0.02,"sigma":1.0})
-	#if sfcurve!=None:
-		#ret.process_inplace("filter.setstrucfac",{"strucfac":sfcurve})
-	ret.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.05})
-	ret.process_inplace("xform.centerofmass",{})
-#	ret.process_inplace("mask.gaussian",{"inner_radius":boxsize/3.0,"outer_radius":boxsize/12.0})
-	ret.process_inplace("mask.gaussian.nonuniform",{"radius_x":old_div(boxsize,random.uniform(2.0,5.0)),"radius_y":old_div(boxsize,random.uniform(2.0,5.0)),"radius_z":old_div(boxsize,random.uniform(2.0,5.0))})
+	if ortid==0 :
+		ret.process_inplace("testimage.disc",{"height":boxsize/4.5,"major":boxsize/5,"minor":boxsize/6.5})
+		ret.translate(boxsize/12,0,boxsize/15)
+		apply_sym(ret,sym)
+		ret.process_inplace("threshold.binary",{"value":0.1})
+		ret.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.1})
+	elif ortid==1 :
+		ret.process_inplace("testimage.disc",{"height":boxsize/3.5,"major":boxsize/14,"minor":boxsize/18})
+		ret.rotate(0,15,20)
+		ret.translate(boxsize/15,boxsize/24,-boxsize/7);
+		apply_sym(ret,sym)
+		ret.process_inplace("threshold.binary",{"value":0.1})
+		ret.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.1})
+	elif ortid==2 :
+		ret.process_inplace("testimage.disc",{"height":boxsize/3.5,"major":boxsize/14,"minor":boxsize/18})
+		ret.rotate(0,15,20)
+		ret.translate(-boxsize/15,boxsize/24,-boxsize/7);
+		apply_sym(ret,sym)
+		ret.process_inplace("threshold.binary",{"value":0.1})
+		ret.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.1})
+	elif ortid==3 :
+		ret.process_inplace("testimage.disc",{"height":boxsize/15,"major":boxsize/4,"minor":boxsize/4.5})
+		ret.translate(boxsize/15,0,boxsize/12)
+		apply_sym(ret,sym)
+		ret.process_inplace("threshold.binary",{"value":0.1})
+		ret.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.1})
+	elif ortid==4 :
+		ret.process_inplace("testimage.disc",{"height":boxsize/5.5,"major":boxsize/15,"minor":boxsize/18})
+		ret.rotate(0,5,0)
+		ret.translate(boxsize/8,0,boxsize/10);
+		apply_sym(ret,sym)
+		ret.process_inplace("threshold.binary",{"value":0.1})
+		ret.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.1})
+	elif ortid==5 :
+		ret.process_inplace("testimage.ellipsoid",{"a":boxsize/14,"b":boxsize/16,"c":boxsize/18})
+		ret.rotate(0,5,3)
+		ret.translate(boxsize/8,0,0);
+		apply_sym(ret,sym)
+		ret.process_inplace("threshold.binary",{"value":0.1})
+		ret.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.1})
+	#elif ortid==6 :
+		#ret.process_inplace("testimage.ellipsoid",{"a":boxsize/14,"b":boxsize/16,"c":boxsize/18})
+		#ret.rotate(0,5,3)
+		#ret.translate(0,boxsize/12,boxsize/16);
+		#apply_sym(ret,sym)
+		#ret.process_inplace("threshold.binary",{"value":0.1})
+		#ret.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.1})
+	else :
+		ret.process_inplace("testimage.noise.gauss",{"mean":0.02,"sigma":1.0})
+		#if sfcurve!=None:
+			#ret.process_inplace("filter.setstrucfac",{"strucfac":sfcurve})
+		ret.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.05})
+		ret.process_inplace("xform.centerofmass",{})
+	#	ret.process_inplace("mask.gaussian",{"inner_radius":boxsize/3.0,"outer_radius":boxsize/12.0})
+		ret.process_inplace("mask.gaussian.nonuniform",{"radius_x":old_div(boxsize,random.uniform(3.0,6.0)),"radius_y":old_div(boxsize,random.uniform(3.0,6.0)),"radius_z":old_div(boxsize,random.uniform(3.0,6.0))})
+		apply_sym(ret,sym)
 
 	return ret
 
-def make_random_map_byort(ptcls):
+def make_random_map_byort(ptcls,sym="c1"):
 	"""This will make a map by randomly assigning Euler angles to each particle"""
 
 	boxsize=ptcls[0]["ny"]
@@ -354,6 +403,7 @@ def make_random_map_byort(ptcls):
 	ret=recon.finish(True)
 	ret.clip_inplace(Region(old_div((pad-boxsize),2),old_div((pad-boxsize),2),old_div((pad-boxsize),2),boxsize,boxsize,boxsize))
 	ret.process_inplace("normalize.edgemean")
+	apply_sym(ret,sym)
 	return ret
 
 
@@ -368,7 +418,9 @@ def apply_sym(data,sym):
 		dc=ref.copy()
 		dc.transform(xf.get_sym(sym,i))
 		data.add(dc)
-	data.mult(old_div(1.0,nsym))
+#	data.mult(1.0/nsym)
+	if sym[0].lower()=="c" or nsym==1:
+		data.process_inplace("xform.centerofmass",{})
 
 
 if __name__ == "__main__":

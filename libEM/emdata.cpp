@@ -1,7 +1,3 @@
-/**
- * $Id$
- */
-
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
@@ -34,7 +30,7 @@
  * */
 
 #include "emdata.h"
-#include "all_imageio.h"
+#include "io/all_imageio.h"
 #include "ctf.h"
 #include "processor.h"
 #include "aligner.h"
@@ -382,7 +378,7 @@ void EMData::clip_inplace(const Region & area,const float& fill_value)
 	// Get a object that calculates all the interesting variables associated with the clip inplace operation
 	ClipInplaceVariables civ(prev_nx, prev_ny, prev_nz, new_nx, new_ny, new_nz, x0, y0, z0);
 
-	get_data(); // Do this here to make sure rdata is up to date, applicable if GPU stuff is occuring
+	get_data(); // Do this here to make sure rdata is up to date, applicable if GPU stuff is occurring
 	// Double check to see if any memory shifting even has to occur
 	if ( x0 > prev_nx || y0 > prev_ny || z0 > prev_nz || civ.x_iter == 0 || civ.y_iter == 0 || civ.z_iter == 0)
 	{
@@ -684,6 +680,12 @@ EMData *EMData::get_clip(const Region & area, const float fill) const
 							   	   yorigin + apix_y * area.origin[1],
 							       zorigin + apix_z * area.origin[2]);
 		}
+		else {
+			result->set_xyz_origin(apix_x * area.origin[0],
+							   	   apix_y * area.origin[1],
+							       apix_z * area.origin[2]);
+		}
+
 	}
 
 //#ifdef EMAN2_USING_CUDA
@@ -728,21 +730,88 @@ EMData *EMData::get_top_half() const
 }
 
 
-EMData *EMData::get_rotated_clip(const Transform &xform,
-								 const IntSize &size, float)
+EMData *EMData::get_rotated_clip(const Transform &xform,const IntSize &size, int interp)
 {
-	EMData *result = new EMData();
-	result->set_size(size[0],size[1],size[2]);
+	EMData *result = new EMData(size[0],size[1],size[2]);
 
+	if (interp) { //bi-trilinear interpolation
+		if (nz==1) {
+			for (int y=-size[1]/2; y<(size[1]+1)/2; y++) {
+				for (int x=-size[0]/2; x<(size[0]+1)/2; x++) {
+					Vec3f xv=xform.transform(Vec3f((float)x,(float)y,0.0f));
+					float v = 0;
+
+					if (xv[0]<0||xv[1]<0||xv[0]>nx-2||xv[1]>ny-2) v=0.;
+					else v=sget_value_at_interp(xv[0],xv[1]);
+					result->set_value_at(x+size[0]/2,y+size[1]/2,v);
+				}
+			}
+		}
+		else {
+			for (int z=-size[2]/2; z<(size[2]+1)/2; z++) {
+				for (int y=-size[1]/2; y<(size[1]+1)/2; y++) {
+					for (int x=-size[0]/2; x<(size[0]+1)/2; x++) {
+						Vec3f xv=xform.transform(Vec3f((float)x,(float)y,(float)z));
+						float v = 0;
+
+						if (xv[0]<0||xv[1]<0||xv[2]<0||xv[0]>nx-2||xv[1]>ny-2||xv[2]>nz-2) v=0.;
+						else v=sget_value_at_interp(xv[0],xv[1],xv[2]);
+						result->set_value_at(x+size[0]/2,y+size[1]/2,z+size[2]/2,v);
+					}
+				}
+			}
+		}
+	} else {	//nearest neighbor
+		if (nz==1) {
+			for (int y=-size[1]/2; y<(size[1]+1)/2; y++) {
+				for (int x=-size[0]/2; x<(size[0]+1)/2; x++) {
+					Vec3f xv=xform.transform(Vec3f((float)x,(float)y,0.0f));
+					float v = 0;
+
+					if (xv[0]<0||xv[1]<0||xv[0]>nx-1||xv[1]>ny-1) v=0.;
+					else v=get_value_at(Util::round(xv[0]),Util::round(xv[1]));
+					result->set_value_at(x+size[0]/2,y+size[1]/2,v);
+				}
+			}
+		}
+		else {
+			for (int z=-size[2]/2; z<(size[2]+1)/2; z++) {
+				for (int y=-size[1]/2; y<(size[1]+1)/2; y++) {
+					for (int x=-size[0]/2; x<(size[0]+1)/2; x++) {
+						Vec3f xv=xform.transform(Vec3f((float)x,(float)y,(float)z));
+						float v = 0;
+
+						if (xv[0]<0||xv[1]<0||xv[2]<0||xv[0]>nx-1||xv[1]>ny-1||xv[2]>nz-1) v=0.;
+						else v=get_value_at(Util::round(xv[0]),Util::round(xv[1]),Util::round(xv[2]));
+						result->set_value_at(x+size[0]/2,y+size[1]/2,z+size[2]/2,v);
+					}
+				}
+			}
+		}
+	}
+
+	result->attr_dict["apix_x"] = attr_dict["apix_x"];
+	result->attr_dict["apix_y"] = attr_dict["apix_y"];
+	result->attr_dict["apix_z"] = attr_dict["apix_z"];
+	
+	result->update();
+
+	return result;
+}
+
+void EMData::set_rotated_clip(const Transform &xform,EMData *clip)
+{
+
+	IntSize size(clip->get_xsize(),clip->get_ysize(),clip->get_zsize());
 	if (nz==1) {
 		for (int y=-size[1]/2; y<(size[1]+1)/2; y++) {
 			for (int x=-size[0]/2; x<(size[0]+1)/2; x++) {
 				Vec3f xv=xform.transform(Vec3f((float)x,(float)y,0.0f));
 				float v = 0;
 
-				if (xv[0]<0||xv[1]<0||xv[0]>nx-2||xv[1]>ny-2) v=0.;
-				else v=sget_value_at_interp(xv[0],xv[1]);
-				result->set_value_at(x+size[0]/2,y+size[1]/2,v);
+				if (xv[0]<0||xv[1]<0||xv[0]>nx-1||xv[1]>ny-1) continue;
+				v=clip->get_value_at(x+size[0]/2,y+size[1]/2);
+				set_value_at(Util::round(xv[0]),Util::round(xv[1]),v);
 			}
 		}
 	}
@@ -753,16 +822,17 @@ EMData *EMData::get_rotated_clip(const Transform &xform,
 					Vec3f xv=xform.transform(Vec3f((float)x,(float)y,(float)z));
 					float v = 0;
 
-					if (xv[0]<0||xv[1]<0||xv[2]<0||xv[0]>nx-2||xv[1]>ny-2||xv[2]>nz-2) v=0.;
-					else v=sget_value_at_interp(xv[0],xv[1],xv[2]);
-					result->set_value_at(x+size[0]/2,y+size[1]/2,z+size[2]/2,v);
+					if (xv[0]<0||xv[1]<0||xv[2]<0||xv[0]>nx-1||xv[1]>ny-1||xv[2]>nz-1) continue;
+					v=clip->get_value_at(x+size[0]/2,y+size[1]/2,z+size[2]/2);
+					set_value_at(Util::round(xv[0]),Util::round(xv[1]),Util::round(xv[2]),v);
 				}
 			}
 		}
 	}
-	result->update();
 
-	return result;
+	update();
+
+	return;
 }
 
 
@@ -1590,6 +1660,34 @@ EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag,bool center)
 	}
 }
 
+EMData *EMData::calc_ccf_masked(EMData *with,EMData *withsq,EMData *mask) 
+{
+	if ((withsq==0 && mask!=0)||(withsq!=0 && mask==0)) 
+		throw NullPointerException("calc_ccf_masked error, both or neither of withsq and mask must be specified");
+
+	bool needfree=0;
+	if (withsq==0) {
+		withsq=with->process("math.squared");
+		mask=this->process("threshold.notzero");
+		needfree=1;
+	}
+		
+	EMData *c1=this->calc_ccf(with);
+	EMData *c2=mask->calc_ccf(withsq);
+	
+	
+	c2->process_inplace("math.reciprocal",Dict("zero_to",0.0f));
+	c2->process_inplace("math.sqrt");
+	c1->mult(*c2);
+	delete c2;
+
+	if (needfree) {
+		delete withsq;
+		delete mask;
+	}
+	return c1;
+}
+
 EMData *EMData::calc_ccfx( EMData * const with, int y0, int y1, bool no_sum, bool flip,bool usez)
 {
 	ENTERFUNC;
@@ -2023,11 +2121,7 @@ EMData *EMData::make_footprint(int type)
 		float *rmap=(float *)malloc(rmax*rmax*sizeof(float));
 		for (i=0; i<rmax; i++) {
 			for (j=0; j<rmax; j++) {
-#ifdef _WIN32
-				rmap[i+j*rmax]=_hypotf((float)i,(float)j);
-#else
 				rmap[i+j*rmax]=hypot((float)i,(float)j);
-#endif	//_WIN32
 //				printf("%d\t%d\t%f\n",i,j,rmap[i+j*rmax]);
 			}
 		}
@@ -2067,13 +2161,8 @@ EMData *EMData::make_footprint(int type)
 			for (i=0; i<rmax*2; i+=2) {
 				for (j=0; j<rmax; j++) {
 					float norm=fp->get_value_at(i+1,j);
-#ifdef _WIN32
-					fp->set_value_at(i,rmax*2-j-1,pow(fp->get_value_at(i,j)/(norm==0.0f?1.0f:norm), 1.0f/3.0f));
-					fp->set_value_at(i,j,pow(fp->get_value_at(i,j)/(norm==0.0f?1.0f:norm), 1.0f/3.0f));
-#else
 					fp->set_value_at(i,rmax*2-j-1,cbrt(fp->get_value_at(i,j)/(norm==0?1.0:norm)));
 					fp->set_value_at(i,j,cbrt(fp->get_value_at(i,j)/(norm==0?1.0:norm)));
-#endif	//_WIN32
 					fp->set_value_at(i+1,j,0.0);
 				}
 			}
@@ -2109,11 +2198,7 @@ EMData *EMData::make_footprint(int type)
 		float *rmap=(float *)malloc(rmax*rmax*sizeof(float));
 		for (i=0; i<rmax; i++) {
 			for (j=0; j<rmax; j++) {
-#ifdef _WIN32
-				rmap[i+j*rmax]=_hypotf((float)i,(float)j);
-#else
 				rmap[i+j*rmax]=hypot((float)i,(float)j);
-#endif	//_WIN32
 //				printf("%d\t%d\t%f\n",i,j,rmap[i+j*rmax]);
 			}
 		}
@@ -2344,73 +2429,100 @@ vector < float > EMData::calc_hist(int hist_size, float histmin, float histmax,c
 {
 	ENTERFUNC;
 
-	static size_t prime[] = { 1, 3, 7, 11, 17, 23, 37, 59, 127, 253, 511 };
+//	static size_t prime[] = { 1, 3, 7, 11, 17, 23, 37, 59, 127, 253, 511 };
 
+ 	size_t size = (size_t)nx * ny * nz;
 	if (histmin == histmax) {
 		histmin = get_attr("minimum");
 		histmax = get_attr("maximum");
 	}
+	int n=hist_size;
+ 	float w = (float)(n-1) / (histmax - histmin);
+ 	float * data = get_data();
 
 	vector <float> hist(hist_size, 0.0);
 
-	int p0 = 0;
-	int p1 = 0;
-	size_t size = (size_t)nx * ny * nz;
-	if (size < 300000) {
-		p0 = 0;
-		p1 = 0;
-	}
-	else if (size < 2000000) {
-		p0 = 2;
-		p1 = 3;
-	}
-	else if (size < 8000000) {
-		p0 = 4;
-		p1 = 6;
+	if (cont != 1.0f || brt != 0) {
+		for(size_t i=0; i<size; i++) {
+			float val = cont*(data[i]+brt);
+			int j = Util::round((val - histmin) * w);
+			
+			// Outliers now go in the edge bins
+			if (j>=n) j=n-1;
+			if (j<0) j=0;
+			hist[j]+=1;
+		}
 	}
 	else {
-		p0 = 7;
-		p1 = 9;
-	}
-
-	if (is_complex() && p0 > 0) {
-		p0++;
-		p1++;
-	}
-
-	size_t di = 0;
-//	float norm = 0;
-	size_t n = hist.size();
-
-	float * data = get_data();
-	for (int k = p0; k <= p1; ++k) {
-		if (is_complex()) {
-			di = prime[k] * 2;
-		}
-		else {
-			di = prime[k];
-		}
-
-//		norm += (float)size / (float) di;
-		float w = (float)n / (histmax - histmin);
-
-		for(size_t i=0; i<=size-di; i += di) {
-			float val;
-			if (cont != 1.0f || brt != 0)val = cont*(data[i]+brt);
-			else val = data[i];
+		for(size_t i=0; i<size; i++) {
+			float val = data[i];
 			int j = Util::round((val - histmin) * w);
-			if (j >= 0 && j < (int) n) {
-				hist[j] += 1;
-			}
+			if (j>=n) j=n-1;
+			if (j<0) j=0;
+			hist[j]+=1;
 		}
 	}
-/*
-	for (size_t i = 0; i < hist.size(); ++i) {
-		if (norm != 0) {
-			hist[i] = hist[i] / norm;
-		}
-	}
-*/
+		
+// 20 years ago, it was expensive to compute histograms of large images
+// so there was a complicated strategy to approximate them
+// 	int p0 = 0;
+// 	int p1 = 0;
+// 	size_t size = (size_t)nx * ny * nz;
+// 	if (size < 300000) {
+// 		p0 = 0;
+// 		p1 = 0;
+// 	}
+// 	else if (size < 2000000) {
+// 		p0 = 2;
+// 		p1 = 3;
+// 	}
+// 	else if (size < 8000000) {
+// 		p0 = 4;
+// 		p1 = 6;
+// 	}
+// 	else {
+// 		p0 = 7;
+// 		p1 = 9;
+// 	}
+// 
+// 	if (is_complex() && p0 > 0) {
+// 		p0++;
+// 		p1++;
+// 	}
+
+// 	size_t di = 0;
+// //	float norm = 0;
+// 	size_t n = hist.size();
+// 
+// 	float * data = get_data();
+// 	for (int k = p0; k <= p1; ++k) {
+// 		if (is_complex()) {
+// 			di = prime[k] * 2;
+// 		}
+// 		else {
+// 			di = prime[k];
+// 		}
+// 
+// //		norm += (float)size / (float) di;
+// 		float w = (float)n / (histmax - histmin);
+// 
+// 		for(size_t i=0; i<=size-di; i += di) {
+// 			float val;
+// 			if (cont != 1.0f || brt != 0)val = cont*(data[i]+brt);
+// 			else val = data[i];
+// 			int j = Util::round((val - histmin) * w);
+// 			if (j >= 0 && j < (int) n) {
+// 				hist[j] += 1;
+// 			}
+// 		}
+// 	}
+// /*
+// 	for (size_t i = 0; i < hist.size(); ++i) {
+// 		if (norm != 0) {
+// 			hist[i] = hist[i] / norm;
+// 		}
+// 	}
+// */
 	return hist;
 
 	EXITFUNC;
@@ -2435,6 +2547,7 @@ vector<float> EMData::calc_az_dist(int n, float a0, float da, float rmin, float 
 
 	vector<float>	vd(n);
 	for (int i = 0; i < n; i++) {
+		vd[i]=0;
 		yc[i] = 0.00001f;
 	}
 
@@ -2459,27 +2572,20 @@ vector<float> EMData::calc_az_dist(int n, float a0, float da, float rmin, float 
 					int i = (int)(floor(a));
 					a -= i;
 
+					float h=0;
+					if (isri) {
+						h = (float)hypot(data[c], data[c + 1]);
+					}
+					else h = data[c];
 					if (i == 0) {
-						vd[0] += data[c] * (1.0f - a);
+						vd[0] += h * (1.0f - a);
 						yc[0] += (1.0f - a);
 					}
 					else if (i == n - 1) {
-						vd[n - 1] += data[c] * a;
+						vd[n - 1] += h * a;
 						yc[n - 1] += a;
 					}
 					else if (i > 0 && i < (n - 1)) {
-						float h = 0;
-						if (isri) {
-#ifdef	_WIN32
-							h = (float)_hypot(data[c], data[c + 1]);
-#else
-							h = (float)hypot(data[c], data[c + 1]);
-#endif	//_WIN32
-						}
-						else {
-							h = data[c];
-						}
-
 						vd[i] += h * (1.0f - a);
 						yc[i] += (1.0f - a);
 						vd[i + 1] += h * a;
@@ -2498,11 +2604,7 @@ vector<float> EMData::calc_az_dist(int n, float a0, float da, float rmin, float 
 			for (int x = 0; x < nx; x++, c++) {
 				float y1 = y - half_ny;
 				float x1 = x - half_nx;
-#ifdef	_WIN32
-				float r = (float)_hypot(x1, y1);
-#else
 				float r = (float)hypot(x1, y1);
-#endif
 
 				if (r >= rmin && r <= rmax) {
 					float a = 0;
@@ -2538,6 +2640,7 @@ vector<float> EMData::calc_az_dist(int n, float a0, float da, float rmin, float 
 
 
 	for (int i = 0; i < n; i++) {
+		if (vd[i]<0||yc[i]<0) printf("%d vd %f yc %f\n",i,vd[i],yc[i]);
 		vd[i] /= yc[i];
 	}
 
@@ -2577,11 +2680,7 @@ EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360, bool 
 		r1 = 4;
 	}
 
-#ifdef	_WIN32
-	int rr = ny / 2 - 2 - (int) Util::fast_floor((float)(_hypot(dx, dy)));
-#else
 	int rr = ny / 2 - 2 - (int) Util::fast_floor((float)(hypot(dx, dy)));
-#endif	//_WIN32
 	rr-=rr%2;
 	if (r2 <= r1 || r2 > rr) {
 		r2 = rr;
@@ -2659,13 +2758,8 @@ void EMData::apply_radial_func(float x0, float step, vector < float >array, bool
 		for (int j = 0; j < ny; j++) {
 			for (int i = 0; i < nx; i += 2, k += 2) {
 				float r;
-#ifdef	_WIN32
-				if (j<ny/2) r = (float)_hypot(i/(float)(nx*2), j/(float)ny);
-				else r = (float)_hypot(i/(float)(nx*2), (ny-j)/(float)ny);
-#else
 				if (j<ny/2) r = (float)hypot(i/(float)(nx*2), j/(float)ny);
 				else r = (float)hypot(i/(float)(nx*2), (ny-j)/(float)ny);
-#endif	//_WIN32
 				r = (r - x0) / step;
 
 				int l = 0;
@@ -2793,11 +2887,7 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int inten)
 					if (f<0 || f>=n) continue;
 					switch (inten) {
 						case 0:
-#ifdef	_WIN32
-							if (isri) v=(float)(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
-#else
 							if (isri) v=(float)(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
-#endif
 							else v=data[i];							// amp/phase, just get amp
 							break;
 						case 1:
@@ -2806,20 +2896,12 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int inten)
 							else v=data[i]*data[i];
 							break;
 						case 2:
-#ifdef	_WIN32
-							if (isri) v=(float)(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
-#else
 							if (isri) v=(float)(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
-#endif
 							else v=data[i];
 							if (v<ret[f]) ret[f]=v;
 							break;
 						case 3:
-#ifdef	_WIN32
-							if (isri) v=(float)(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
-#else
 							if (isri) v=(float)(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
-#endif
 							else v=data[i];
 							if (v>ret[f]) ret[f]=v;
 							break;
@@ -2891,11 +2973,7 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int inten)
 						if (f<0 || f>=n) continue;
 						switch(inten) {
 							case 0:
-#ifdef	_WIN32
-								if (isri) v=(float)(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
-#else
 								if (isri) v=(float)(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
-#endif	//_WIN32
 								else v=data[i];							// amp/phase, just get amp
 								break;
 							case 1:
@@ -2904,20 +2982,12 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int inten)
 								else v=data[i]*data[i];
 								break;
 							case 2:
-#ifdef	_WIN32
-								if (isri) v=(float)(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
-#else
 								if (isri) v=(float)(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
-#endif
 								else v=data[i];							// amp/phase, just get amp
 								if (v<ret[f]) ret[f]=v;
 								break;
 							case 3:
-#ifdef	_WIN32
-								if (isri) v=(float)(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
-#else
 								if (isri) v=(float)(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
-#endif
 								else v=data[i];							// amp/phase, just get amp
 								if (v>ret[f]) ret[f]=v;
 								break;
@@ -3026,18 +3096,10 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int nwedge, fl
 			float r,v,a;
 			int bin;
 			if (is_complex()) {
-#ifdef	_WIN32
-				r=(float)(_hypot(x/2.0,y<ny/2?y:ny-y));		// origin at 0,0; periodic
-#else
 				r=(float)(hypot(x/2.0,y<ny/2?y:ny-y));		// origin at 0,0; periodic
-#endif
 				a=atan2(float(y<ny/2?y:y-ny),x/2.0f);
 				if (!inten) {
-#ifdef	_WIN32
-					if (isri) v=(float)(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
-#else
 					if (isri) v=(float)(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
-#endif	//_WIN32
 					else v=data[i];							// amp/phase, just get amp
 				} else {
 					if (isinten) v=data[i];
@@ -3047,11 +3109,7 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int nwedge, fl
 				bin=n*int(floor((a+M_PI/2.0f+offset)/astep));
 			}
 			else {
-#ifdef	_WIN32
-				r=(float)(_hypot(x-nx/2,y-ny/2));
-#else
 				r=(float)(hypot(x-nx/2,y-ny/2));
-#endif	//_WIN32
 				a=atan2(float(y-ny/2),float(x-nx/2));
 				if (inten) v=data[i]*data[i];
 				else v=data[i];
@@ -3390,11 +3448,7 @@ void EMData::add_incoherent(EMData * obj)
 	float *src = obj->get_data();
 	size_t size = (size_t)nx * ny * nz;
 	for (size_t j = 0; j < size; j += 2) {
-#ifdef	_WIN32
-		dest[j] = (float) _hypot(src[j], dest[j]);
-#else
 		dest[j] = (float) hypot(src[j], dest[j]);
-#endif	//_WIN32
 		dest[j + 1] = 0;
 	}
 
@@ -3813,11 +3867,7 @@ void EMData::common_lines(EMData * image1, EMData * image2,
 							i2 += k;
 							j2 += k;
 
-#ifdef	_WIN32
-							float a1 = (float) _hypot(im1[i2], im1[i2 + 1]);
-#else
 							float a1 = (float) hypot(im1[i2], im1[i2 + 1]);
-#endif	//_WIN32
 							float p1 = atan2(im1[i2 + 1], im1[i2]);
 							float p2 = atan2(im2[j2 + 1], im2[j2]);
 
@@ -3848,11 +3898,7 @@ void EMData::common_lines(EMData * image1, EMData * image2,
 						for (int k = 0; k < jmax; k += 2) {
 							i2 += k;
 							j2 += k;
-#ifdef	_WIN32
-							data[l] += (float) (_hypot(im1[i2], im1[i2 + 1]) * _hypot(im2[j2], im2[j2 + 1]));
-#else
 							data[l] += (float) (hypot(im1[i2], im1[i2 + 1]) * hypot(im2[j2], im2[j2 + 1]));
-#endif	//_WIN32
 						}
 					}
 				}

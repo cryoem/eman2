@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: this is a direct copy of emen2/Database/datastorage.py
 # Date Copied: Nov 7 2008

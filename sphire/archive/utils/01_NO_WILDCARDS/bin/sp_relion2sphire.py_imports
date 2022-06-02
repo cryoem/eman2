@@ -1,0 +1,12 @@
+EMAN2_cppwrap
+EMAN2db
+numpy
+operator
+optparse
+os
+sp_global_def
+sp_morphology
+sp_pixel_error
+sp_statistics
+sp_utilities
+sys

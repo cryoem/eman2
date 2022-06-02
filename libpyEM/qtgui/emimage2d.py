@@ -1,8 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -36,17 +32,18 @@ from __future__ import division
 
 from past.utils import old_div
 from builtins import range
-from PyQt4 import QtCore, QtGui, QtOpenGL
-from PyQt4.QtCore import Qt
+from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
+from PyQt5.QtCore import Qt
+import OpenGL
+OpenGL.ERROR_CHECKING = False
 from OpenGL import GL,GLU,GLUT
 from OpenGL.GL import *
-from .valslider import ValSlider,ValBox,StringBox
+from .valslider import ValSlider,ValBox,StringBox,EMSpinWidget
 from math import *
-import EMAN2db
 from EMAN2 import *
 import EMAN2
 import sys
-import numpy
+import numpy as np
 import struct
 from .emimageutil import ImgHistogram, EMParentWin
 from . import emshape
@@ -81,24 +78,21 @@ class EMImage2DWidget(EMGLWidget):
 
 	allim=WeakKeyDictionary()
 
-	def __init__(self, image=None, application=get_application(),winid=None, parent=None):
+	def __init__(self, image=None, application=get_application(),winid=None, parent=None,sizehint=(512,512)):
 
 		self.inspector = None # this should be a qt widget, otherwise referred to as an inspector in eman
 
-		fmt=QtOpenGL.QGLFormat()
-		fmt.setDoubleBuffer(True)
-		#fmt.setSampleBuffers(True)
-		fmt.setDepth(1)
 		EMGLWidget.__init__(self,parent)
-		self.setFormat(fmt)
 		self.setFocusPolicy(Qt.StrongFocus)
 		self.setMouseTracking(True)
 		self.initimageflag = True
+		self.initsizehint = (sizehint[0],sizehint[1])	# this is used when no data has been set yet
 
 		self.fftorigincenter = E2getappval("emimage2d","origincenter")
 		if self.fftorigincenter == None : self.fftorigincenter=False
+		emshape.pixelratio=self.devicePixelRatio()	# not optimal. Setting this factor globally, but should really be per-window
 
-		#sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Policy(7),QtGui.QSizePolicy.Policy(7))
+		#sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy(7),QtWidgets.QSizePolicy.Policy(7))
 		#sizePolicy.setHorizontalStretch(7)
 		#sizePolicy.setVerticalStretch(7)
 		#sizePolicy.setHeightForWidth(False)
@@ -131,7 +125,7 @@ class EMImage2DWidget(EMGLWidget):
 		self.display_fft = None		# a cached version of the FFT
 		self.fft=None				# The FFT of the current target if currently displayed
 		self.rmousedrag=None		# coordinates during a right-drag operation
-		self.mouse_mode_dict = {0:"emit", 1:"emit", 2:"emit", 3:"probe", 4:"measure", 5:"draw", 6:"emit"}
+		self.mouse_mode_dict = {0:"emit", 1:"emit", 2:"emit", 3:"probe", 4:"measure", 5:"draw", 6:"emit", 7:"emit"}
 		self.mouse_mode = 0         # current mouse mode as selected by the inspector
 		self.curfft=0				# current FFT mode (when starting with real images only)
 		self.mag = 1.1				# magnification factor
@@ -139,7 +133,7 @@ class EMImage2DWidget(EMGLWidget):
 
 		self.shapes={}				# dictionary of shapes to draw, see add_shapes
 		self.shapechange=1			# Set to 1 when shapes need to be redrawn
-		self.active=(None,0,0,0)	# The active shape and a hilight color (n,r,g,b)
+		self.active=(None,0,0,0)	# The active shape and a highlight color (n,r,g,b)
 
 		self.extras = []			# an empty set of extras - other images that can be rendered over this one
 
@@ -185,7 +179,6 @@ class EMImage2DWidget(EMGLWidget):
 
 		self.display_shapes = True # A flag that can be used to turn of the display of shapes - useful to e2boxer
 
-		self.wheel_navigate = False # useful on Mac laptops
 		self.circle_dl = None # used for a circle list, for displaying circled particles, for example
 
 		self.setAcceptDrops(True) #TODO: figure out the purpose of this (moved) line of code
@@ -227,8 +220,11 @@ class EMImage2DWidget(EMGLWidget):
 
 	def resizeGL(self, width, height):
 		if width == 0 or height == 0: return # this is okay, nothing needs to be drawn
+		width = width // self.devicePixelRatio()
+		height = height // self.devicePixelRatio()
 		side = min(width, height)
-		GL.glViewport(0,0,width,height)
+		dpr=self.devicePixelRatio()
+		GL.glViewport(0,0,self.width()*dpr,self.height()*dpr)
 
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()
@@ -250,18 +246,17 @@ class EMImage2DWidget(EMGLWidget):
 
 	def get_parent_suggested_size(self):
 
+		if self.data==None and self.fft==None : return (self.initsizehint[0]+12,self.initsizehint[1]+12)
+	
 		data = self.data
 		if data == None: data = self.fft
 
-		if data != None and  data.get_xsize()<640 and data.get_ysize()<640:
-			try : return (data.get_xsize()+12,data.get_ysize()+12)
-			except : return (640,640)
-		else:
-			return (640,640)
+		try: return (data["nx"]+12,data["ny"]+12)
+		except : return (self.initsizehint[0]+12,self.initsizehint[1]+12)
 
 	def sizeHint(self):
 #		print self.get_parent_suggested_size()
-		if self.data==None : return QtCore.QSize(512,512)
+		if self.data==None and self.fft==None : return QtCore.QSize(*self.initsizehint)
 		return QtCore.QSize(*self.get_parent_suggested_size())
 
 	def set_disp_proc(self,procs):
@@ -381,11 +376,15 @@ class EMImage2DWidget(EMGLWidget):
 		if wasexcluded or self.isexcluded: return True
 		else: return False
 
-	def get_data(self):
+	def get_data(self,getlist=False):
+		if getlist:
+			if self.list_data!=None : return self.list_data
+			elif self.data!=None : return[self.data]
+			else : return None
 		return self.data
 
-	def set_data(self,incoming_data,file_name="",retain_current_settings=True, keepcontrast=False):
-		"""You may pass a single 2D image or a list of images"""
+	def set_data(self,incoming_data,file_name="",retain_current_settings=True, keepcontrast=False, xyz=2):
+		"""You may pass a single 2D image, a list of images or a single 3-D volume"""
 		from .emimagemx import EMDataListCache,EMLightWeightParticleCache
 		#if self.data != None and self.file_name != "":
 			#self.__write_display_settings_to_db()
@@ -404,18 +403,31 @@ class EMImage2DWidget(EMGLWidget):
 			needresize=False
 
 		fourier = False
-
+		
+		apix=1.0
 		# it's a 3D image
-		if not isinstance(data,list) and not isinstance(data,EMDataListCache) and not isinstance(data,EMLightWeightParticleCache) and data.get_zsize() != 1:
+		if not isinstance(data,list) and not isinstance(data,tuple) and not isinstance(data,EMDataListCache) and not isinstance(data,EMLightWeightParticleCache) and data.get_zsize() != 1:
+			
+			if xyz==0:
+				incoming_data.transform(Transform({"type":"xyz", "xtilt":90}))
+			elif xyz==1:
+				incoming_data.transform(Transform({"type":"xyz", "ytilt":90}))
+			
 			data = []
-			for z in range(incoming_data.get_zsize()):
+			shp=[incoming_data.get_xsize(), incoming_data.get_ysize(), incoming_data.get_zsize()]
+			for z in range(shp[xyz]):
 				image = incoming_data.get_clip(Region(0,0,z,incoming_data.get_xsize(),incoming_data.get_ysize(),1))
 				data.append(image)
 
 
 		if isinstance(data,list) or isinstance(data,EMDataListCache) or isinstance(data,EMLightWeightParticleCache):
-			if self.list_data == None and self.list_idx > len(data): self.list_idx = old_div(len(data),2) #otherwise we use the list idx from the previous list data, as in when being used from the emselector
+			if self.list_data == None and self.list_idx > len(data): 
+				self.list_idx = len(data)//2 #otherwise we use the list idx from the previous list data, as in when being used from the emselector
 			d = data[0]
+			if d.has_attr("apix_x"):
+				apix=float(d["apix_x"])
+			else:
+				apix=1.0
 			if d.is_complex():
 				self.list_data = []
 				self.list_fft_data = data
@@ -428,7 +440,8 @@ class EMImage2DWidget(EMGLWidget):
 				self.data = self.list_data[self.list_idx]
 				self.list_fft_data = [d.do_fft() for d in data]
 				if self.fftorigincenter :
-					for im in self.list_fft_data : im.process_inplace("xform.phaseorigin.tocorner")
+					for im in self.list_fft_data :
+						im.process_inplace("xform.phaseorigin.tocorner")
 				self.__set_display_image(self.curfft)
 			else:
 				self.list_data = data
@@ -436,10 +449,11 @@ class EMImage2DWidget(EMGLWidget):
 				self.list_fft_data = []
 				for i in range(len(data)):self.list_fft_data.append(None)
 
-			self.get_inspector().enable_image_range(1,len(data),self.list_idx+1)
+			self.get_inspector().enable_image_range(0,len(data),self.list_idx)
 		else:
 			self.list_data = None
 			self.list_fft_data = None
+			apix=float(data["apix_x"])
 			if data.is_complex() or self.curfft in [1,2,3]:
 				self.display_fft = None
 				self.data = None
@@ -464,7 +478,7 @@ class EMImage2DWidget(EMGLWidget):
 				self.fft = None
 
 		self.image_change_count = 0
-		
+		self.get_inspector().mtapix.setValue(apix)
 		if not keepcontrast:
 			self.auto_contrast(inspector_update=False,display_update=False)
 
@@ -475,7 +489,7 @@ class EMImage2DWidget(EMGLWidget):
 			if needresize:
 				x=self.data["nx"]
 				y=self.data["ny"]
-				xys=QtGui.QApplication.desktop().availableGeometry()
+				xys=QtWidgets.QApplication.desktop().availableGeometry()
 				mx=old_div(xys.width()*2,3)
 				my=old_div(xys.height()*2,3)
 
@@ -517,14 +531,58 @@ class EMImage2DWidget(EMGLWidget):
 		#print "scale is ", self.scale
 		#except: pass
 
-	def auto_contrast(self,bool=False,inspector_update=True,display_update=True):
+	def full_contrast(self,boolv=False,inspector_update=True,display_update=True):
+		
+		if self.curfft == 0:
+			if self.data == None: return
+			# histogram is impacted by downsampling, so we need to compensate
+			if self.scale<=0.5 :
+				down=self.data.process("math.meanshrink",{"n":int(floor(1.0/self.scale))})
+				mean=down["mean"]
+				sigma=down["sigma"]
+				m0=down["minimum"]
+				m1=down["maximum"]
+			else:
+				mean=self.data.get_attr("mean")
+				sigma=self.data.get_attr("sigma")
+				m0=self.data.get_attr("minimum")
+				m1=self.data.get_attr("maximum")
+			self.minden=m0
+			self.maxden=m1
+			self.curmin = m0
+			self.curmax = m1
+			if inspector_update: self.inspector_update()
+			if display_update:
+				self.force_display_update()
+				self.updateGL()
+		else:
+			if self.display_fft == None: return
+
+			mean=self.display_fft.get_attr("mean")
+			sigma=self.display_fft.get_attr("sigma")
+			m0=self.display_fft.get_attr("minimum")
+			m1=self.display_fft.get_attr("maximum")
+
+			self.fminden=0
+			self.fmaxden=min(m1,mean+20.0*sigma)
+			self.fcurmin = 0
+			self.fcurmax = m1
+
+			self.force_display_update()
+
+			if inspector_update: self.inspector_update(use_fourier=True)
+			if display_update:
+				self.force_display_update()
+				self.updateGL()
+
+	def auto_contrast(self,boolv=False,inspector_update=True,display_update=True):
 		auto_contrast = E2getappval("display2d","autocontrast",True)
 		
 		if self.curfft == 0:
 			if self.data == None: return
 			# histogram is impacted by downsampling, so we need to compensate
 			if self.scale<=0.5 :
-				down=self.data.process("math.meanshrink",{"n":int(floor(old_div(1.0,self.scale)))})
+				down=self.data.process("math.meanshrink",{"n":int(floor(1.0/self.scale))})
 				mean=down["mean"]
 				sigma=down["sigma"]
 				m0=down["minimum"]
@@ -569,48 +627,51 @@ class EMImage2DWidget(EMGLWidget):
 				self.force_display_update()
 				self.updateGL()
 
+	# This function used BDB, and is deactivated. Maybe it could be fixed, but not sure where it is actually used/useful
 	def __load_display_settings_from_db(self,inspector_update=True,display_update=True):
-		if self.file_name == "": return # there is no file name, we have no means to stores information
-		try:
-			global HOMEDB
-			HOMEDB=EMAN2db.EMAN2DB.open_db()
-			HOMEDB.open_dict("image_2d_display_settings")
-		except:
-			# something wrong with the HOMEDB?
-			return
+		return
 
-		db = HOMEDB.image_2d_display_settings
+		#if self.file_name == "": return # there is no file name, we have no means to stores information
+		#try:
+			#global HOMEDB
+			#HOMEDB=EMAN2db.EMAN2DB.open_db()
+			#HOMEDB.open_dict("image_2d_display_settings")
+		#except:
+			## something wrong with the HOMEDB?
+			#return
 
-		data = db[self.file_name]
-		if data == None: return
-		try:
-			self.minden = data["min"]
-			self.maxden = data["max"]
-			self.minden = data["min"]
-			self.fminden = data["fourier_min"]
-			self.fmaxden = data["fourier_max"]
-			self.curmin = data["curmin"]
-			self.curmax = data["curmax"]
-			self.fcurmin = data["fcurmin"]
-			self.fcurmax = data["fcurmax"]
-			self.fgamma = data["fourier_gamma"]
-			self.gamma = data["gamma"]
-			self.scale = data["scale"]
-			self.origin = data["origin"]
-		except:
-			# perhaps in inconsistency, something wasn't set. This should not happen in general
-			pass
+		#db = HOMEDB.image_2d_display_settings
 
-		try:
-			self.parent_geometry = data["parent_geometry"]
-			if self.qt_parent != None:
-				try:
-					self.qt_parent.restoreGeometry(self.parent_geometry)
-				except: pass
-		except:pass
+		#data = db[self.file_name]
+		#if data == None: return
+		#try:
+			#self.minden = data["min"]
+			#self.maxden = data["max"]
+			#self.minden = data["min"]
+			#self.fminden = data["fourier_min"]
+			#self.fmaxden = data["fourier_max"]
+			#self.curmin = data["curmin"]
+			#self.curmax = data["curmax"]
+			#self.fcurmin = data["fcurmin"]
+			#self.fcurmax = data["fcurmax"]
+			#self.fgamma = data["fourier_gamma"]
+			#self.gamma = data["gamma"]
+			#self.scale = data["scale"]
+			#self.origin = data["origin"]
+		#except:
+			## perhaps in inconsistency, something wasn't set. This should not happen in general
+			#pass
 
-		if inspector_update: self.inspector_update()
-		if display_update: self.force_display_update()
+		#try:
+			#self.parent_geometry = data["parent_geometry"]
+			#if self.qt_parent != None:
+				#try:
+					#self.qt_parent.restoreGeometry(self.parent_geometry)
+				#except: pass
+		#except:pass
+
+		#if inspector_update: self.inspector_update()
+		#if display_update: self.force_display_update()
 
 	def __write_display_settings_to_db(self):
 		'''
@@ -657,14 +718,14 @@ class EMImage2DWidget(EMGLWidget):
 
 	def get_origin(self) : return self.origin
 
-	def scroll_to(self,x=None,y=None):
+	def scroll_to(self,x=None,y=None,quiet=False):
 		"""center the point on the screen"""
 		if x==None:
 			if y==None: return
-			self.set_origin(self.origin[0],y*self.scale-old_div(self.height(),2))
+			self.set_origin(self.origin[0],y*self.scale-old_div(self.height(),2),quiet)
 		elif y==None:
-			self.set_origin(x*self.scale-old_div(self.width(),2),self.origin[1])
-		else: self.set_origin(x*self.scale-old_div(self.width(),2),y*self.scale-old_div(self.height(),2))
+			self.set_origin(x*self.scale-old_div(self.width(),2),self.origin[1],quiet)
+		else: self.set_origin(x*self.scale-old_div(self.width(),2),y*self.scale-old_div(self.height(),2),quiet)
 
 	def set_shapes(self,shapes):
 		self.shapes = shapes
@@ -676,7 +737,7 @@ class EMImage2DWidget(EMGLWidget):
 
 	def register_scroll_motion(self,x,y,z=0):
 		if self.list_data!=None:
-			self.image_range_changed(z+1)
+			self.image_range_changed(z)
 			#self.setup_shapes()
 		animation = LineAnimation(self,self.origin,(x*self.scale-old_div(self.width(),2),y*self.scale-old_div(self.height(),2)))
 		self.qt_parent.register_animatable(animation)
@@ -1277,7 +1338,7 @@ class EMImage2DWidget(EMGLWidget):
 		#context = OpenGL.contextdata.getContext(None)
 		#print "Image2D context is", context,"display list is",self.shapelist
 
-		# make our own cirle rather than use gluDisk or somesuch
+		# make our own circle rather than use gluDisk or somesuch
 		emshape.EMShape.font_renderer=self.font_renderer		# Important !  Each window has to have its own font_renderer. Only one context active at a time, so this is ok.
 		glNewList(self.shapelist,GL_COMPILE)
 
@@ -1288,7 +1349,7 @@ class EMImage2DWidget(EMGLWidget):
 			for k in list(self.shapes.keys()):
 				shape = self.shapes[k]
 				if not isinstance(shape,EMShape) : continue
-				glLineWidth(2)
+				glLineWidth(2*self.devicePixelRatio())
 				if shape.isanimated:
 					isanimated = True
 					alpha = shape.blend
@@ -1303,7 +1364,7 @@ class EMImage2DWidget(EMGLWidget):
 			except:pass
 			GL.glBlendFunc(GL.GL_SRC_ALPHA,GL.GL_ONE_MINUS_SRC_ALPHA);
 
-		glPointSize(2)
+		glPointSize(2*self.devicePixelRatio())
 		for k,s in list(self.shapes.items()):
 			### handle boxes for 3D images
 			if s.shape[0] == "ellipse":
@@ -1360,7 +1421,7 @@ class EMImage2DWidget(EMGLWidget):
 					p = s.shape
 					GL.glColor(*p[1:4])
 					v= (p[4],p[5])
-					GL.glLineWidth(p[7])
+					GL.glLineWidth(p[7]*self.devicePixelRatio())
 					GL.glTranslate(v[0],v[1],0)
 					GL.glScalef(p[6],p[6],1.0)
 					glCallList(self.circle_dl)
@@ -1372,7 +1433,7 @@ class EMImage2DWidget(EMGLWidget):
 					v= (p[4],p[5])
 					v2=(p[4]+1,p[5]+1)
 					sc=v2[0]-v[0]
-					GL.glLineWidth(p[9])
+					GL.glLineWidth(p[9]*self.devicePixelRatio())
 					GL.glTranslate(v[0],v[1],0)
 					GL.glScalef((v2[0]-v[0]),(v2[1]-v[1]),1.0)
 					GL.glRotatef(p[8],0,0,1.0)
@@ -1382,6 +1443,7 @@ class EMImage2DWidget(EMGLWidget):
 				elif s.shape[0][:3]!="scr":
 #					print "shape",s.shape
 					GL.glPushMatrix()		# The push/pop here breaks the 'scr*' shapes !
+
 					s.draw()		# No need for coordinate transform any more
 					GL.glPopMatrix()
 #					GLUtil.colored_rectangle(s.shape[1:8],alpha)
@@ -1406,7 +1468,17 @@ class EMImage2DWidget(EMGLWidget):
 				GL.glEnable(GL.GL_DEPTH_TEST)
 
 		if self.eraser_shape != None:
-			self.eraser_shape.draw()
+			
+			GL.glPushMatrix()
+			p=self.eraser_shape.shape
+			GL.glColor(*p[1:4])
+			v= (p[4],p[5])
+			GL.glLineWidth(p[7]*self.devicePixelRatio())
+			GL.glTranslate(v[0],v[1],0)
+			GL.glScalef(p[6],p[6],1.0)
+			glCallList(self.circle_dl)
+			GL.glPopMatrix()
+			#self.eraser_shape.draw()
 
 		glEndList()
 
@@ -1422,7 +1494,7 @@ class EMImage2DWidget(EMGLWidget):
 
 			self.inspector.set_scale(self.scale)
 			self.inspector.update_brightness_contrast()
-
+			
 	def get_inspector(self):
 		if not self.inspector:
 			self.inspector=EMImageInspector2D(self)
@@ -1486,6 +1558,26 @@ class EMImage2DWidget(EMGLWidget):
 
 		return ret
 
+	def add_vector_overlay(self,x0,y0,x1,y1,v=None):
+		"""Add an array of vectors to the image as a shape overlay. This can be used to make pixel-centered vector plots
+		on top of images. This will be represented as additions to the shape list for the image. Only a single vector
+		overlay may be added to an image at a time. If provided, v will map to color (red low, blue high)"""
+		
+		if len(x0)!=len(y0) or len(x0)!=len(x1) or len(x0)!=len(y1):
+			raise Exception("Error, vector overlays must have 4 equal-length arrays")
+
+		if v is None: newshapes={f"vl({i})":EMShape(["line",0.2,0.8,0.2,x0[i],y0[i],x1[i],y1[i],1.0]) for i in range(len(x0))}
+		else:
+			vmin=min(v)
+			vmax=max(v)
+			v=(np.array(v)-vmin)/(vmax-vmin)
+			newshapes={f"vl({i})":EMShape(["line",1.0-v[i],0.2,v[i],x0[i],y0[i],x1[i],y1[i],1.5]) for i in range(len(x0))}
+			newshapes2={f"vp({i})":EMShape(["point",1.0-v[i],0.2,v[i],x0[i],y0[i],1.5]) for i in range(len(x0))}
+		self.del_shapes()
+		self.add_shapes(newshapes)
+		self.add_shapes(newshapes2)
+		self.updateGL()
+
 	def add_shape(self,k,s):
 		"""Add an EMShape object to be overlaid on the image. Each shape is
 		keyed into a dictionary, so different types of shapes for different
@@ -1544,11 +1636,11 @@ class EMImage2DWidget(EMGLWidget):
 
 	def scr_to_img(self,v0,v1=None):
 		#TODO: origin_x and origin_y are part of the hack in self.render() and self.render_bitmap()
-		origin_x = self.scale*(int(old_div(self.origin[0],self.scale))+0.5)
-		origin_y = self.scale*(int(old_div(self.origin[1],self.scale))+0.5)
+		origin_x = self.scale*(int(self.origin[0]/self.scale)+0.5)
+		origin_y = self.scale*(int(self.origin[1]/self.scale)+0.5)
 
-		try: img_coords = ( old_div((v0+origin_x),self.scale), old_div((self.height()-(v1-origin_y)),self.scale) )
-		except:	img_coords = (old_div((v0[0]+origin_x),self.scale),old_div((self.height()-(v0[1]-origin_y)),self.scale))
+		try: img_coords = (((v0+origin_x)/self.scale), ((self.height()-(v1-origin_y))/self.scale) )
+		except:	img_coords = (((v0[0]+origin_x)/self.scale),((self.height()-(v0[1]-origin_y))/self.scale))
 
 #		print "Screen:", v0, v1
 #		print "Img:", img_coords
@@ -1567,13 +1659,16 @@ class EMImage2DWidget(EMGLWidget):
 	def closeEvent(self,event) :
 		self.__write_display_settings_to_db()
 		EMGLWidget.closeEvent(self,event)
+		try:
+			for w in self.inspector.pspecwins: w.close()
+		except: pass
 
 	def dragEnterEvent(self,event):
 #		f=event.mimeData().formats()
 #		for i in f:
 #			print str(i)
 
-		if event.provides("application/x-eman"):
+		if event.mimeData().hasFormat("application/x-eman"):
 			event.setDropAction(Qt.CopyAction)
 			event.accept()
 
@@ -1581,7 +1676,7 @@ class EMImage2DWidget(EMGLWidget):
 		if EMAN2.GUIbeingdragged:
 			self.set_data(EMAN2.GUIbeingdragged)
 			EMAN2.GUIbeingdragged=None
-		elif event.provides("application/x-eman"):
+		if event.mimeData().hasFormat("application/x-eman"):
 			x=loads(event.mimeData().data("application/x-eman"))
 			self.set_data(x)
 			event.acceptProposedAction()
@@ -1677,13 +1772,24 @@ class EMImage2DWidget(EMGLWidget):
 					inspector = self.get_inspector()
 					if inspector:
 						apix=inspector.mtapix.value
-						inspector.mtshoworigin.setText("Start: %d , %d"%(current_shapes["MEAS"].shape[4],current_shapes["MEAS"].shape[5]))
-						inspector.mtshowend.setText("  End: %d , %d"%(lc[0],lc[1]))
-						inspector.mtshowlen.setText("dx,dy: %1.2f A, %1.2f A"%(dx*apix,dy*apix))
-						inspector.mtshowlen2.setText("Len: %1.3f A"%(hypot(dx,dy)*apix))
-
+						
 						# displays the pixel value at the current endpoint
 						if inspector.target().curfft :
+							nx,ny=inspector.target().data["nx"],inspector.target().data["ny"]
+							p=[current_shapes["MEAS"].shape[4]-nx//2,current_shapes["MEAS"].shape[5]-ny//2,lc[0]-nx//2,lc[1]-ny//2]
+							p=[round(x) for x in p]
+							q=[p[0]/nx,p[1]/ny,p[2]/nx,p[3]/ny] 
+							q=[f"{apix/x:.1f}" if x!=0 else "INF" for x in q]
+							
+							w=[hypot(p[0]/nx,p[1]/ny),hypot(p[2]/nx,p[3]/ny)]
+							w=[f"{apix/x:.1f}" if x!=0 else "INF" for x in w]
+							
+							inspector.mtshoworigin.setText("Start: %d , %d ( %s A, %s A) "%(p[0],p[1], q[0], q[1]))
+							inspector.mtshowend.setText("  End: %d , %d ( %s A, %s A) "%(p[2],p[3], q[2], q[3]))
+							
+							inspector.mtshowlen.setText("dx,dy: %1.0f px, %1.0f px"%(dx,dy))
+							inspector.mtshowlen2.setText("Len: %1.1f px ( %s A -> %s A)"%(hypot(dx,dy), w[0], w[1] ))
+							
 							fft=inspector.target().fft
 							if fft==None :
 								fft=inspector.target().list_fft_data[inspector.target().list_idx]
@@ -1698,6 +1804,11 @@ class EMImage2DWidget(EMGLWidget):
 							inspector.mtshowval.setText("Value: %1.4g + %1.4g i  @(%d,%d)"%(val.real,val.imag,x,y))
 							inspector.mtshowval2.setText("       (%1.4g, %1.4g)"%(abs(val),atan2(val.imag,val.real)*57.295779513))
 						else :
+							inspector.mtshoworigin.setText("Start: %d , %d"%(current_shapes["MEAS"].shape[4],current_shapes["MEAS"].shape[5]))
+							inspector.mtshowend.setText("  End: %d , %d"%(lc[0],lc[1]))
+							inspector.mtshowlen.setText("dx,dy: %1.2f A, %1.2f A"%(dx*apix,dy*apix))
+							inspector.mtshowlen2.setText("Len: %1.3f A"%(hypot(dx,dy)*apix))
+							
 							try: inspector.mtshowval.setText("Value: %1.4g"%inspector.target().data[int(lc[0]),int(lc[1])])
 							except:
 								idx=inspector.target().list_idx
@@ -1717,6 +1828,7 @@ class EMImage2DWidget(EMGLWidget):
 	def mouseReleaseEvent(self, event):
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 		lc=self.scr_to_img(event.x(),event.y())
+		current_shapes = self.get_shapes()
 		if self.rmousedrag:
 			self.rmousedrag=None
 		else:
@@ -1733,39 +1845,15 @@ class EMImage2DWidget(EMGLWidget):
 					self.updateGL()
 
 	def wheelEvent(self, event):
-		if not self.wheel_navigate:
-			if event.orientation() & Qt.Vertical:
-				if self.mouse_mode==0 and event.modifiers()&Qt.ShiftModifier:
-					self.mousewheel.emit(event)
-					return
-				if event.delta() > 0:
-					self.set_scale( self.scale * self.mag )
-				elif event.delta() < 0:
-					self.set_scale(self.scale * self.invmag )
-				# The self.scale variable is updated now, so just update with that
-				if self.inspector: self.inspector.set_scale(self.scale)
-		else:
-			move_fac = old_div(1.0,20.0)
-			delta = old_div(event.delta(),120.0)
-
-#			print self.origin, self.data.get_xsize(),self.data.get_ysize(),self.scale,self.width(),self.height()
-
-#			print self.origin
-			if event.orientation() & Qt.Vertical:
-				visible_vertical_pixels = old_div(self.height(),sqrt(self.scale))
-				shift_per_delta = move_fac*visible_vertical_pixels
-#				print "there are this many visible vertical pixels",visible_vertical_pixels, "deltas", delta, "shift per delta",shift_per_delta
-#				print "shifting vertical",event.delta(),shift_per_delta
-				self.origin=(self.origin[0],self.origin[1]-delta*shift_per_delta)
-			elif event.orientation() & Qt.Horizontal:
-				visible_horizontal_pixels = old_div(self.width(),sqrt(self.scale))
-				shift_per_delta = move_fac*visible_horizontal_pixels
-#				print "shifting horizontal",event.delta(),shift_per_delta
-#	   	   	   	print "there are this many visible horizontal pixels",visible_horizontal_pixels, "deltas", delta, "shift per delta",shift_per_delta
-				self.origin=(self.origin[0]+delta*shift_per_delta,self.origin[1])
-			try: self.updateGL()
-			except: pass
-#			print "exit",self.origin
+		if self.mouse_mode==0 and event.modifiers()&Qt.ShiftModifier:
+			self.mousewheel.emit(event)
+			return
+		if event.angleDelta().y() > 0:
+			self.set_scale( self.scale * self.mag )
+		elif event.angleDelta().y() < 0:
+			self.set_scale(self.scale * self.invmag )
+		# The self.scale variable is updated now, so just update with that
+		if self.inspector: self.inspector.set_scale(self.scale)
 
 
 	def mouseDoubleClickEvent(self,event):
@@ -1820,7 +1908,16 @@ class EMImage2DWidget(EMGLWidget):
 		elif event.key()==Qt.Key_Space:
 			self.display_shapes = not self.display_shapes
 			self.updateGL()
-
+		elif event.key()==Qt.Key_P :
+			try: self.get_inspector().do_pspec_single(0)
+			except: pass
+		elif event.key()==Qt.Key_F :
+			self.set_FFT(self.curfft^2)
+			self.auto_contrast()
+		elif event.key()==Qt.Key_C:
+			self.auto_contrast()
+		elif event.key()==Qt.Key_I:
+			self.show_inspector(1)
 		else:
 			self.keypress.emit(event)
 
@@ -1834,7 +1931,7 @@ class EMImage2DWidget(EMGLWidget):
 			if delta > 0:
 				if (self.list_idx < (len(self.list_data)-1)):
 					self.list_idx += 1
-					self.get_inspector().set_image_idx(self.list_idx+1)
+					self.get_inspector().set_image_idx(self.list_idx+1,1)
 					self.__set_display_image(self.curfft)
 					self.setup_shapes()
 					self.force_display_update()
@@ -1842,14 +1939,14 @@ class EMImage2DWidget(EMGLWidget):
 			elif delta < 0:
 				if (self.list_idx > 0):
 					self.list_idx -= 1
-					self.get_inspector().set_image_idx(self.list_idx+1)
+					self.get_inspector().set_image_idx(self.list_idx-1,1)
 					self.__set_display_image(self.curfft)
 					self.setup_shapes()
 					self.force_display_update()
 
 
 	def image_range_changed(self,val):
-		l_val = int(val-1)
+		l_val = int(val)
 
 		if l_val == self.list_idx: return
 		else:
@@ -1888,7 +1985,7 @@ class EMImage2DWidget(EMGLWidget):
 		glNormal(0,0,1)
 		glEnable(GL_TEXTURE_2D)
 		n = len(self.list_data)
-		string = str(self.list_idx+1) + ' / ' + str(n)
+		string = f"{self.list_idx} ({n})"
 		bbox = self.font_renderer.bounding_box(string)
 		x_offset = width-(bbox[3]-bbox[0]) - 10
 		y_offset = 10
@@ -1908,56 +2005,61 @@ class EMImage2DWidget(EMGLWidget):
 		glDisable(GL_TEXTURE_2D)
 
 
-class EMImageInspector2D(QtGui.QWidget):
+class EMImageInspector2D(QtWidgets.QWidget):
 	def __init__(self,target) :
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		self.target=weakref.ref(target)
 
-		self.vbl = QtGui.QVBoxLayout(self)
-		self.vbl.setMargin(2)
+		self.vbl = QtWidgets.QVBoxLayout(self)
+		self.vbl.setContentsMargins(2, 2, 2, 2)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 
 		# This is the tab-bar for mouse mode selection
-		self.mmtab = QtGui.QTabWidget()
+		self.mmtab = QtWidgets.QTabWidget()
 
 		# App tab
-		self.apptab = QtGui.QWidget()
-		self.apptablab = QtGui.QLabel("Application specific mouse functions",self.apptab)
-		self.mmtab.addTab(self.apptab,"App")
+		#self.apptab = QtWidgets.QWidget()
+		self.apptablab = QtWidgets.QTextEdit("Application specific mouse functions")
+		self.mmtab.addTab(self.apptablab,"App")
 
 		# Save tab
-		self.savetab = QtGui.QWidget()
-		self.stlay = QtGui.QGridLayout(self.savetab)
+		self.savetab = QtWidgets.QWidget()
+		self.stlay = QtWidgets.QGridLayout(self.savetab)
 
-		self.stsnapbut = QtGui.QPushButton("Snapshot")
+		self.stsnapbut = QtWidgets.QPushButton("Snapshot")
 		self.stsnapbut.setToolTip(".pgm, .ppm, .jpeg, .png, or .tiff format only")
-		self.stwholebut = QtGui.QPushButton("Save Img")
+		self.stwholebut = QtWidgets.QPushButton("Save Img")
 		self.stwholebut.setToolTip("save EMData in any EMAN2 format")
-		self.ststackbut = QtGui.QPushButton("Save Stack")
+		self.ststackbut = QtWidgets.QPushButton("Save Stack")
 		self.ststackbut.setToolTip("save EMData objects as stack in any EMAN2 format")
-		self.stmoviebut = QtGui.QPushButton("Movie")
-		self.stanimgif = QtGui.QPushButton("GIF Anim")
+		self.stfpssb = QtWidgets.QSpinBox()
+		self.stfpssb.setRange(1,60)
+		self.stfpssb.setValue(8)
+		self.stfpssb.setToolTip("Frames per second for movie generation")
+		self.stmoviebut = QtWidgets.QPushButton("Movie")
+		self.stanimgif = QtWidgets.QPushButton("GIF Anim")
 
 		self.stlay.addWidget(self.stsnapbut,0,0)
 		self.stlay.addWidget(self.stwholebut,1,0)
 		self.stlay.addWidget(self.ststackbut,1,1)
+		self.stlay.addWidget(self.stfpssb,0,1)
 		self.stlay.addWidget(self.stmoviebut,0,2)
 		self.stlay.addWidget(self.stanimgif,1,2)
 		self.stmoviebut.setEnabled(False)
 		self.stanimgif.setEnabled(False)
 
-		self.rngbl = QtGui.QHBoxLayout()
+		self.rngbl = QtWidgets.QHBoxLayout()
 		self.stlay.addLayout(self.rngbl,2,0,1,3)
-		self.stmmlbl = QtGui.QLabel("Img Range :")
-		self.stminsb = QtGui.QSpinBox()
+		self.stmmlbl = QtWidgets.QLabel("Img Range :")
+		self.stminsb = QtWidgets.QSpinBox()
 		self.stminsb.setRange(0,0)
 		self.stminsb.setValue(0)
-		self.stmaxsb = QtGui.QSpinBox()
+		self.stmaxsb = QtWidgets.QSpinBox()
 		self.stmaxsb.setRange(0,0)
 		self.stmaxsb.setValue(0)
 
-		self.rngbl.addWidget(self.stmmlbl)
+		self.rngbl.addWidget(self.stmmlbl,Qt.AlignRight)
 		self.rngbl.addWidget(self.stminsb)
 		self.rngbl.addWidget(self.stmaxsb)
 
@@ -1970,8 +2072,8 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.stanimgif.clicked[bool].connect(self.do_makegifanim)
 
 		# Filter tab
-		self.filttab = QtGui.QWidget()
-		self.ftlay=QtGui.QGridLayout(self.filttab)
+		self.filttab = QtWidgets.QWidget()
+		self.ftlay=QtWidgets.QGridLayout(self.filttab)
 
 		self.procbox1=StringBox(label="Process1:",value="filter.lowpass.gauss:cutoff_abs=0.125",showenable=0)
 		self.ftlay.addWidget(self.procbox1,2,0)
@@ -1982,7 +2084,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.procbox3=StringBox(label="Process3:",value="math.linear:scale=5:shift=0",showenable=0)
 		self.ftlay.addWidget(self.procbox3,10,0)
 
-		self.proclbl1=QtGui.QLabel("Image unchanged, display only!")
+		self.proclbl1=QtWidgets.QLabel("Image unchanged, display only!")
 		self.ftlay.addWidget(self.proclbl1,12,0)
 
 		self.mmtab.addTab(self.filttab,"Filt")
@@ -1995,51 +2097,51 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.procbox3.textChanged.connect(self.do_filters)
 
 		# Probe tab
-		self.probetab = QtGui.QWidget()
-		self.ptlay=QtGui.QGridLayout(self.probetab)
+		self.probetab = QtWidgets.QWidget()
+		self.ptlay=QtWidgets.QGridLayout(self.probetab)
 
 		self.ptareasize= ValBox(label="Probe Size:",value=32)
 		self.ptareasize.setIntonly(True)
 		self.ptlay.addWidget(self.ptareasize,0,0,1,2)
 
-		self.ptpointval= QtGui.QLabel("Point Value (ctr pix): ")
+		self.ptpointval= QtWidgets.QLabel("Point Value (ctr pix): ")
 		self.ptlay.addWidget(self.ptpointval,1,0,1,2,Qt.AlignLeft)
 
-		self.ptareaavg= QtGui.QLabel("Area Avg: ")
+		self.ptareaavg= QtWidgets.QLabel("Area Avg: ")
 		self.ptlay.addWidget(self.ptareaavg,2,0,Qt.AlignLeft)
 
-		self.ptareaavgnz= QtGui.QLabel("Area Avg (!=0): ")
+		self.ptareaavgnz= QtWidgets.QLabel("Area Avg (!=0): ")
 		self.ptlay.addWidget(self.ptareaavgnz,2,1,Qt.AlignLeft)
 
-		self.ptareasig= QtGui.QLabel("Area Sig: ")
+		self.ptareasig= QtWidgets.QLabel("Area Sig: ")
 		self.ptlay.addWidget(self.ptareasig,3,0,Qt.AlignLeft)
 
-		self.ptareasignz= QtGui.QLabel("Area Sig (!=0): ")
+		self.ptareasignz= QtWidgets.QLabel("Area Sig (!=0): ")
 		self.ptlay.addWidget(self.ptareasignz,3,1,Qt.AlignLeft)
 
-		self.ptareaskew= QtGui.QLabel("Skewness: ")
+		self.ptareaskew= QtWidgets.QLabel("Skewness: ")
 		self.ptlay.addWidget(self.ptareaskew,4,0,Qt.AlignLeft)
 
-		self.ptcoord= QtGui.QLabel("Center Coord: ")
+		self.ptcoord= QtWidgets.QLabel("Center Coord: ")
 		self.ptlay.addWidget(self.ptcoord,4,1,Qt.AlignLeft)
 
-		self.ptareakurt= QtGui.QLabel("Kurtosis: ")
+		self.ptareakurt= QtWidgets.QLabel("Kurtosis: ")
 		self.ptlay.addWidget(self.ptareakurt,5,0,Qt.AlignLeft)
 
-		self.ptcoord2= QtGui.QLabel("( ) ")
+		self.ptcoord2= QtWidgets.QLabel("( ) ")
 		self.ptlay.addWidget(self.ptcoord2,5,1,Qt.AlignLeft)
 
 		# not really necessary since the pointbox accurately labels the pixel when zoomed in
-		#self.ptpixels= QtGui.QWidget()
+		#self.ptpixels= QtWidgets.QWidget()
 		#self.ptlay.addWidget(self.ptpixels,0,2)
 
 		self.mmtab.addTab(self.probetab,"Probe")
 
 		# Measure tab
-		self.meastab = QtGui.QWidget()
-		self.mtlay = QtGui.QGridLayout(self.meastab)
+		self.meastab = QtWidgets.QWidget()
+		self.mtlay = QtWidgets.QGridLayout(self.meastab)
 
-		#self.mtl1= QtGui.QLabel("A/Pix")
+		#self.mtl1= QtWidgets.QLabel("A/Pix")
 		#self.mtl1.setAlignment(Qt.AlignRight)
 		#self.mtlay.addWidget(self.mtl1,0,0)
 
@@ -2047,87 +2149,90 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.mtapix.setRange(0.5,10.0)
 		self.mtapix.setValue(1.0)
 		self.mtlay.addWidget(self.mtapix,0,0,1,2)
-#		self.mtapix.setSizePolicy(QtGui.QSizePolicy.Fixed,QtGui.QSizePolicy.Fixed)
+#		self.mtapix.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
 #		self.mtapix.resize(60,21)
 #		print self.mtapix.sizeHint().width(),self.mtapix.sizeHint().height()
 
 
-		self.mtshoworigin= QtGui.QLabel("Origin: 0,0")
+		self.mtshoworigin= QtWidgets.QLabel("Origin: 0,0")
 		self.mtlay.addWidget(self.mtshoworigin,1,0,Qt.AlignLeft)
 
-		self.mtshowend= QtGui.QLabel("End: 0,0")
+		self.mtshowend= QtWidgets.QLabel("End: 0,0")
 		self.mtlay.addWidget(self.mtshowend,1,1,Qt.AlignLeft)
 
-		self.mtshowlen= QtGui.QLabel("dx,dy: 0")
+		self.mtshowlen= QtWidgets.QLabel("dx,dy: 0")
 		self.mtlay.addWidget(self.mtshowlen,2,0,Qt.AlignLeft)
 
-		self.mtshowlen2= QtGui.QLabel("Length: 0")
+		self.mtshowlen2= QtWidgets.QLabel("Length: 0")
 		self.mtlay.addWidget(self.mtshowlen2,2,1,Qt.AlignLeft)
 
-		self.mtshowval= QtGui.QLabel("Value: ?")
+		self.mtshowval= QtWidgets.QLabel("Value: ?")
 		self.mtlay.addWidget(self.mtshowval,3,0,1,2,Qt.AlignLeft)
 
-		self.mtshowval2= QtGui.QLabel(" ")
+		self.mtshowval2= QtWidgets.QLabel(" ")
 		self.mtlay.addWidget(self.mtshowval2,4,0,1,2,Qt.AlignLeft)
 
 
 		self.mmtab.addTab(self.meastab,"Meas")
 
 		# Draw tab
-		self.drawtab = QtGui.QWidget()
-		self.drawlay = QtGui.QGridLayout(self.drawtab)
+		self.drawtab = QtWidgets.QWidget()
+		self.drawlay = QtWidgets.QGridLayout(self.drawtab)
 
-		self.dtl1 = QtGui.QLabel("Pen Size:")
+		self.dtl1 = QtWidgets.QLabel("Pen Size:")
 		self.dtl1.setAlignment(Qt.AlignRight)
 		self.drawlay.addWidget(self.dtl1,0,0)
 
-		self.dtpen = QtGui.QLineEdit("5")
+		self.dtpen = QtWidgets.QLineEdit("5")
 		self.drawlay.addWidget(self.dtpen,0,1)
 
-		self.dtl2 = QtGui.QLabel("Pen Val:")
+		self.dtl2 = QtWidgets.QLabel("Pen Val:")
 		self.dtl2.setAlignment(Qt.AlignRight)
 		self.drawlay.addWidget(self.dtl2,1,0)
 
-		self.dtpenv = QtGui.QLineEdit("1.0")
+		self.dtpenv = QtWidgets.QLineEdit("1.0")
 		self.drawlay.addWidget(self.dtpenv,1,1)
 
-		self.dtl3 = QtGui.QLabel("Pen Size2:")
+		self.dtl3 = QtWidgets.QLabel("Pen Size2:")
 		self.dtl3.setAlignment(Qt.AlignRight)
 		self.drawlay.addWidget(self.dtl3,0,2)
 
-		self.dtpen2 = QtGui.QLineEdit("5")
+		self.dtpen2 = QtWidgets.QLineEdit("5")
 		self.drawlay.addWidget(self.dtpen2,0,3)
 
-		self.dtl4 = QtGui.QLabel("Pen Val2:")
+		self.dtl4 = QtWidgets.QLabel("Pen Val2:")
 		self.dtl4.setAlignment(Qt.AlignRight)
 		self.drawlay.addWidget(self.dtl4,1,2)
 
-		self.dtpenv2 = QtGui.QLineEdit("0")
+		self.dtpenv2 = QtWidgets.QLineEdit("0")
 		self.drawlay.addWidget(self.dtpenv2,1,3)
 
 		self.mmtab.addTab(self.drawtab,"Draw")
 
 		# PSpec tab
-		self.pstab = QtGui.QWidget()
-		self.pstlay = QtGui.QGridLayout(self.pstab)
+		self.pstab = QtWidgets.QWidget()
+		self.pstlay = QtWidgets.QGridLayout(self.pstab)
 
-		self.psbsing = QtGui.QPushButton("Single")
+		self.psbsing = QtWidgets.QPushButton("Single")
 		self.pstlay.addWidget(self.psbsing,0,0)
 
-		self.psbstack = QtGui.QPushButton("Stack")
+		self.psbaz = QtWidgets.QPushButton("Azimuthal")
+		self.pstlay.addWidget(self.psbaz,1,0)
+
+		self.psbstack = QtWidgets.QPushButton("Stack")
 		self.pstlay.addWidget(self.psbstack,0,1)
 
 		self.mmtab.addTab(self.pstab,"PSpec")
 		self.pspecwins=[]
 
 		# Python tab
-		self.pytab = QtGui.QWidget()
-		self.pytlay = QtGui.QGridLayout(self.pytab)
+		self.pytab = QtWidgets.QWidget()
+		self.pytlay = QtWidgets.QGridLayout(self.pytab)
 
-		self.pyinp = QtGui.QLineEdit()
+		self.pyinp = QtWidgets.QLineEdit()
 		self.pytlay.addWidget(self.pyinp,0,0)
 
-		self.pyout = QtGui.QTextEdit()
+		self.pyout = QtWidgets.QTextEdit()
 		self.pyout.setText("The displayed image is 'img'.\nEnter an expression above, like img['sigma']")
 		self.pyout.setReadOnly(True)
 		self.pytlay.addWidget(self.pyout,1,0,4,1)
@@ -2148,8 +2253,8 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.vbl.addWidget(self.mmtab)
 
 		# histogram level horiz layout
-		self.hbl = QtGui.QHBoxLayout()
-		self.hbl.setMargin(0)
+		self.hbl = QtWidgets.QHBoxLayout()
+		self.hbl.setContentsMargins(0, 0, 0, 0)
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")
 		self.vbl.addLayout(self.hbl)
@@ -2159,47 +2264,50 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.hbl.addWidget(self.hist)
 
 		# Buttons next to the histogram
-		self.vbl2 = QtGui.QGridLayout()
-		self.vbl2.setMargin(0)
+		self.vbl2 = QtWidgets.QGridLayout()
+		self.vbl2.setContentsMargins(0, 0, 0, 0)
 		self.vbl2.setSpacing(6)
 		self.vbl2.setObjectName("vbl2")
 		self.hbl.addLayout(self.vbl2)
 
-		self.invtog = QtGui.QPushButton("Invert")
+		self.invtog = QtWidgets.QPushButton("Invert")
 		self.invtog.setCheckable(1)
 		self.vbl2.addWidget(self.invtog,0,0,1,1)#0012
 
 
-		self.histoequal = QtGui.QComboBox(self)
+		self.histoequal = QtWidgets.QComboBox(self)
 		self.histoequal.addItem("Normal")
 		self.histoequal.addItem("Hist Flat")
 		self.histoequal.addItem("Hist Gauss")
 		self.vbl2.addWidget(self.histoequal,0,1,1,1)
 
-		self.auto_contrast_button = QtGui.QPushButton("Auto contrast")
-		self.vbl2.addWidget(self.auto_contrast_button,1,0,1,2)
+		self.auto_contrast_button = QtWidgets.QPushButton("AutoC")
+		self.vbl2.addWidget(self.auto_contrast_button,1,0,1,1)
+
+		self.full_contrast_button = QtWidgets.QPushButton("FullC")
+		self.vbl2.addWidget(self.full_contrast_button,1,1,1,1)
 
 		# FFT Buttons
-		self.fftg=QtGui.QButtonGroup()
+		self.fftg=QtWidgets.QButtonGroup()
 		self.fftg.setExclusive(1)
 
-		self.ffttog0 = QtGui.QPushButton("Real")
+		self.ffttog0 = QtWidgets.QPushButton("Real")
 		self.ffttog0.setCheckable(1)
 		self.ffttog0.setChecked(1)
 		self.vbl2.addWidget(self.ffttog0,2,0)
 		self.fftg.addButton(self.ffttog0,0)
 
-		self.ffttog1 = QtGui.QPushButton("FFT")
+		self.ffttog1 = QtWidgets.QPushButton("FFT")
 		self.ffttog1.setCheckable(1)
 		self.vbl2.addWidget(self.ffttog1,2,1)
 		self.fftg.addButton(self.ffttog1,1)
 
-		self.ffttog2 = QtGui.QPushButton("Amp")
+		self.ffttog2 = QtWidgets.QPushButton("Amp")
 		self.ffttog2.setCheckable(1)
 		self.vbl2.addWidget(self.ffttog2,3,0)
 		self.fftg.addButton(self.ffttog2,2)
 
-		self.ffttog3 = QtGui.QPushButton("Pha")
+		self.ffttog3 = QtWidgets.QPushButton("Pha")
 		self.ffttog3.setCheckable(1)
 		self.vbl2.addWidget(self.ffttog3,3,1)
 		self.fftg.addButton(self.ffttog3,3)
@@ -2246,6 +2354,7 @@ class EMImageInspector2D(QtGui.QWidget):
 
 		self.psbsing.clicked[bool].connect(self.do_pspec_single)
 		self.psbstack.clicked[bool].connect(self.do_pspec_stack)
+		self.psbaz.clicked[bool].connect(self.do_pspec_az)
 		self.scale.valueChanged.connect(target.set_scale)
 		self.mins.valueChanged.connect(self.new_min)
 		self.maxs.valueChanged.connect(self.new_max)
@@ -2258,25 +2367,60 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.fftg.buttonClicked[int].connect(target.set_FFT)
 		self.mmtab.currentChanged[int].connect(target.set_mouse_mode)
 		self.auto_contrast_button.clicked[bool].connect(target.auto_contrast)
+		self.full_contrast_button.clicked[bool].connect(target.full_contrast)
 
 		self.resize(400,440) # d.woolford thinks this is a good starting size as of Nov 2008 (especially on MAC)
 
 	def do_pspec_single(self,ign):
 		"""Compute 1D power spectrum of single image and plot"""
-		try: data=self.target().list_data[self.target().list_idx]
-		except: data=self.target().get_data()
+		try: 
+			data=self.target().list_data[self.target().list_idx]
+			imgn=self.target().list_idx
+			lbl=f"img_{imgn}"
+		except: 
+			data=self.target().get_data()
+			lbl=time.strftime("%H:%M:%S")
 		if data==None: return
 #		print data
 		fft=data.do_fft()
-		pspec=fft.calc_radial_dist(old_div(fft["ny"],2),0.0,1.0,1)
-		ds=old_div(1.0,(fft["ny"]*data["apix_x"]))
-		s=[ds*i for i in range(old_div(fft["ny"],2))]
+		pspec=fft.calc_radial_dist(fft["ny"]//2,0.0,1.0,1)
+		ds=1.0/(fft["ny"]*data["apix_x"])
+		s=[ds*i for i in range(fft["ny"]//2)]
 
 		from .emplot2d import EMDataFnPlotter
 
-		dfp=EMDataFnPlotter(data=(s,pspec))
+		try: 
+			dfp=self.pspecwins[-1]
+			dfp.set_data((s,pspec),lbl)
+		except: 
+			dfp=EMDataFnPlotter(data=(s,pspec),key=lbl)
+			self.pspecwins.append(dfp)
 		dfp.show()
-		self.pspecwins.append(dfp)
+
+	def do_pspec_az(self,ign):
+		"""Compute azimuthal power spectrum of single image and plot"""
+		try: 
+			data=self.target().list_data[self.target().list_idx]
+			imgn=self.target().list_idx
+			lbl=f"img_{imgn}"
+		except: 
+			data=self.target().get_data()
+			lbl=time.strftime("%H:%M:%S")
+		if data==None: return
+#		print data
+		fft=data.do_fft()
+		pspec=fft.calc_az_dist(180,-90,1.0,4,fft["ny"]//3)
+		s=np.arange(-90.0,90.0,1)
+
+		from .emplot2d import EMDataFnPlotter
+
+		try: 
+			dfp=self.pspecwins[-1]
+			dfp.set_data((s,pspec),lbl)
+		except: 
+			dfp=EMDataFnPlotter(data=(s,pspec),key=lbl)
+			self.pspecwins.append(dfp)
+		dfp.show()
 
 	def do_pspec_stack(self,ign):
 		"""compute average 1D power spectrum of all images and plot"""
@@ -2327,7 +2471,7 @@ class EMImageInspector2D(QtGui.QWidget):
 
 	def do_snapshot(self,du) :
 		if self.target().data==None or self.target() == None: return
-		fsp=QtGui.QFileDialog.getSaveFileName(self, "Select output file, .pgm, .ppm, .jpeg, .png or .tiff only")
+		fsp=QtWidgets.QFileDialog.getSaveFileName(self, "Select output file, .pgm, .ppm, .jpeg, .png or .tiff only")[0]
 		fsp=str(fsp)
 		# Just grab the framebuffer, as a QTImage, and save as tiff
 		self.target().update()
@@ -2355,13 +2499,13 @@ class EMImageInspector2D(QtGui.QWidget):
 
 	def do_saveimg(self,du) :
 		if self.target().data==None : return
-		fsp=QtGui.QFileDialog.getSaveFileName(self, "Select output file, format extrapolated from file extenstion")
+		fsp=QtWidgets.QFileDialog.getSaveFileName(self, "Select output file, format extrapolated from file extenstion")[0]
 		fsp=str(fsp)
 		self.target().data.write_image(fsp,-1)
 
 	def do_savestack(self,du) :
 		if self.target().list_data==None : return
-		fsp=str(QtGui.QFileDialog.getSaveFileName(self, "Select root output file, format extrapolated from file extenstion"))
+		fsp=str(QtWidgets.QFileDialog.getSaveFileName(self, "Select root output file, format extrapolated from file extenstion")[0])
 		#fsp=str(fsp).split(".")
 		#if len(fsp)==1 :
 			#fsp1=fsp[0]
@@ -2375,7 +2519,7 @@ class EMImageInspector2D(QtGui.QWidget):
 			im.write_image(fsp,-1)
 
 	def do_makemovie(self,du) :
-		fsp=QtGui.QFileDialog.getSaveFileName(self, "Select output file, format extrapolated from file extenstion. ffmpeg must be installed")
+		fsp=QtWidgets.QFileDialog.getSaveFileName(self, "Select output file, format extrapolated from file extenstion. ffmpeg must be installed")[0]
 		if self.target().list_data==None : return
 
 		for i in range(self.stminsb.value()-1,self.stmaxsb.value()):
@@ -2384,10 +2528,11 @@ class EMImageInspector2D(QtGui.QWidget):
 			im["render_max"]=im["mean"]+im["sigma"]*2.5
 			im.write_image("tmp.%03d.png"%(i-self.stminsb.value()+1))
 
-		# vcodec and pix_fmt are for quicktime compatibility. r 2 is 2 FPS
-		ret= os.system("ffmpeg -r 5 -i tmp.%%03d.png -vcodec libx264 -pix_fmt yuv420p  %s"%fsp)
+		# vcodec and pix_fmt are for quicktime compatibility. -r 2 is 2 FPS
+		rate=int(self.stfpssb.value())
+		ret= os.system("ffmpeg -r %d -i tmp.%%03d.png -vcodec libx264 -pix_fmt yuv420p -r %d %s"%(rate,rate,fsp))
 		if ret!=0 :
-			QtGui.QMessageBox.warning(None,"Error","Movie conversion (ffmpeg) failed. Please make sure ffmpeg is in your path. Frames not deleted.")
+			QtWidgets.QMessageBox.warning(None,"Error","Movie conversion (ffmpeg) failed. Please make sure ffmpeg is in your path. Frames not deleted.")
 			return
 
 		for i in range(self.stminsb.value()-1,self.stmaxsb.value()):
@@ -2395,16 +2540,16 @@ class EMImageInspector2D(QtGui.QWidget):
 
 
 	def do_makegifanim(self,du) :
-		fsp=QtGui.QFileDialog.getSaveFileName(self, "Select output gif file")
+		fsp=QtWidgets.QFileDialog.getSaveFileName(self, "Select output gif file")[0]
 		if self.target().list_data==None : return
 
 		for i in range(self.stminsb.value()-1,self.stmaxsb.value()):
 			im=self.target().list_data[i]
 			im.write_image("tmp.%03d.png"%(i-self.stminsb.value()+1))
 
-		ret= os.system("convert tmp.???.png %s"%fsp)
+		ret= os.system("gm convert tmp.???.png %s"%fsp)
 		if ret!=0 :
-			QtGui.QMessageBox.warning(None,"Error","GIF conversion failed. Please make sure ImageMagick (convert program) is installed and in your path. Frames not deleted.")
+			QtWidgets.QMessageBox.warning(None,"Error","GIF conversion failed. Please make sure GraphicsMagick ('gm convert' program) is installed and in your path. Frames not deleted.")
 			return
 
 		for i in range(self.stminsb.value()-1,self.stmaxsb.value()):
@@ -2418,7 +2563,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		except:
 			import traceback
 			traceback.print_exc()
-			r="Error executing. Access the image as 'img', for example \nimg['mean'] will yield the mean image value"
+			print("Error executing. Access the image as 'img', for example \nimg['mean'] will yield the mean image value")
 #		print r
 
 		self.pyout.setText(str(r))
@@ -2455,8 +2600,8 @@ class EMImageInspector2D(QtGui.QWidget):
 
 		self.image_range.valueChanged.connect(self.target().image_range_changed)
 
-	def set_image_idx(self,val):
-		self.image_range.setValue(val)
+	def set_image_idx(self,val,quiet=0):
+		self.image_range.setValue(val,quiet=quiet)
 
 	def set_fft_amp_pressed(self):
 		self.ffttog2.setChecked(1)
@@ -2537,6 +2682,30 @@ class EMImageInspector2D(QtGui.QWidget):
 
 	def set_hist(self,hist,minden,maxden):
 		if hist != None and len(hist) != 0:self.hist.set_data(hist,minden,maxden)
+
+		# We also update the image header info, since it is coordinated
+		d=self.target().get_data()
+		if d==None: return
+		try: 
+			ctfdef=d["ctf"].defocus
+			defocus=f"&Delta;Z={ctfdef:1.5g}"
+		except: defocus=""
+		
+		try: ptclrepr=f"ptcl_repr={d['ptcl_repr']}"
+		except: ptclrepr=""
+
+		header=f'''<html><body>
+<p>Mouse buttons -> Application</p>
+<p/>
+<table style="width: 300">
+<tr><td width="80">nx={d["nx"]:d}</td><td width="120">min={d["minimum"]:1.4g}</td><td width="120">apix_x={d["apix_x"]:1.3f}</td></tr>
+<tr><td width="80">ny={d["ny"]:d}</td><td width="120">max={d["maximum"]:1.4g}</td><td width="120">apix_y={d["apix_y"]:1.3f}</td></tr>
+<tr><td width="80">nz={d["nz"]:d}</td><td width="120">mean={d["mean"]:1.5g}</td><td width="120">apix_z={d["apix_z"]:1.3f}</td></tr>
+<tr><td width="80">{defocus}</td><td width="120">sigma={d["sigma"]:1.5g}</td><td>{ptclrepr}</td></tr>
+</table></html>
+'''
+		self.apptablab.setHtml(header)
+
 
 	def set_bc_range(self,lowlim,highlim):
 		#print "set range",lowlim,highlim

@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
 # and David Woolford 10/26/2007 (woolford@bcm.edu)
@@ -36,7 +33,9 @@ from __future__ import division
 
 from past.utils import old_div
 from builtins import range
-from PyQt4 import QtCore, QtGui, QtOpenGL
+from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
+import OpenGL
+OpenGL.ERROR_CHECKING = False
 from OpenGL import GL,GLU,GLUT
 from OpenGL.GL import *
 from OpenGL.GLU import *
@@ -205,37 +204,37 @@ class EM3DHelloWorld(EM3DModel):
 		return self.inspector
 		
 
-class EMHelloWorldInspector(QtGui.QWidget):
+class EMHelloWorldInspector(QtWidgets.QWidget):
 	def __init__(self,target) :
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		self.target=target
 		
-		self.vbl = QtGui.QVBoxLayout(self)
-		self.vbl.setMargin(0)
+		self.vbl = QtWidgets.QVBoxLayout(self)
+		self.vbl.setContentsMargins(0, 0, 0, 0)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 		
-		self.hbl = QtGui.QHBoxLayout()
-		self.hbl.setMargin(0)
+		self.hbl = QtWidgets.QHBoxLayout()
+		self.hbl.setContentsMargins(0, 0, 0, 0)
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")
 		self.vbl.addLayout(self.hbl)
 		
-		self.vbl2 = QtGui.QVBoxLayout()
-		self.vbl2.setMargin(0)
+		self.vbl2 = QtWidgets.QVBoxLayout()
+		self.vbl2.setContentsMargins(0, 0, 0, 0)
 		self.vbl2.setSpacing(6)
 		self.vbl2.setObjectName("vbl2")
 		self.hbl.addLayout(self.vbl2)
 		
-		self.wiretog = QtGui.QPushButton("Wire")
+		self.wiretog = QtWidgets.QPushButton("Wire")
 		self.wiretog.setCheckable(1)
 		self.vbl2.addWidget(self.wiretog)
 		
-		self.lighttog = QtGui.QPushButton("Light")
+		self.lighttog = QtWidgets.QPushButton("Light")
 		self.lighttog.setCheckable(1)
 		self.vbl2.addWidget(self.lighttog)
 		
-		self.tabwidget = QtGui.QTabWidget()
+		self.tabwidget = QtWidgets.QTabWidget()
 		self.maintab = None
 		self.tabwidget.addTab(self.get_main_tab(), "Main")
 		self.tabwidget.addTab(self.get_GL_tab(),"GL")
@@ -257,11 +256,11 @@ class EMHelloWorldInspector(QtGui.QWidget):
 		self.glbrightness.valueChanged.connect(target.set_GL_brightness)
 	
 	def get_GL_tab(self):
-		self.gltab = QtGui.QWidget()
+		self.gltab = QtWidgets.QWidget()
 		gltab = self.gltab
 		
-		gltab.vbl = QtGui.QVBoxLayout(self.gltab )
-		gltab.vbl.setMargin(0)
+		gltab.vbl = QtWidgets.QVBoxLayout(self.gltab )
+		gltab.vbl.setContentsMargins(0, 0, 0, 0)
 		gltab.vbl.setSpacing(6)
 		gltab.vbl.setObjectName("Main")
 		
@@ -280,10 +279,10 @@ class EMHelloWorldInspector(QtGui.QWidget):
 	
 	def get_main_tab(self):
 		if ( self.maintab == None ):
-			self.maintab = QtGui.QWidget()
+			self.maintab = QtWidgets.QWidget()
 			maintab = self.maintab
-			maintab.vbl = QtGui.QVBoxLayout(self.maintab)
-			maintab.vbl.setMargin(0)
+			maintab.vbl = QtWidgets.QVBoxLayout(self.maintab)
+			maintab.vbl.setContentsMargins(0, 0, 0, 0)
 			maintab.vbl.setSpacing(6)
 			maintab.vbl.setObjectName("Main")
 			
@@ -292,67 +291,67 @@ class EMHelloWorldInspector(QtGui.QWidget):
 			self.scale.setValue(1.0)
 			maintab.vbl.addWidget(self.scale)
 			
-			self.hbl_color = QtGui.QHBoxLayout()
-			self.hbl_color.setMargin(0)
+			self.hbl_color = QtWidgets.QHBoxLayout()
+			self.hbl_color.setContentsMargins(0, 0, 0, 0)
 			self.hbl_color.setSpacing(6)
 			self.hbl_color.setObjectName("Material")
 			maintab.vbl.addLayout(self.hbl_color)
 			
-			self.color_label = QtGui.QLabel()
+			self.color_label = QtWidgets.QLabel()
 			self.color_label.setText('Material')
 			self.hbl_color.addWidget(self.color_label)
 			
-			self.cbb = QtGui.QComboBox(maintab)
+			self.cbb = QtWidgets.QComboBox(maintab)
 			self.hbl_color.addWidget(self.cbb)
 	
-			self.hbl_trans = QtGui.QHBoxLayout()
-			self.hbl_trans.setMargin(0)
+			self.hbl_trans = QtWidgets.QHBoxLayout()
+			self.hbl_trans.setContentsMargins(0, 0, 0, 0)
 			self.hbl_trans.setSpacing(6)
 			self.hbl_trans.setObjectName("Trans")
 			maintab.vbl.addLayout(self.hbl_trans)
 			
-			self.x_label = QtGui.QLabel()
+			self.x_label = QtWidgets.QLabel()
 			self.x_label.setText('x')
 			self.hbl_trans.addWidget(self.x_label)
 			
-			self.x_trans = QtGui.QDoubleSpinBox(self)
+			self.x_trans = QtWidgets.QDoubleSpinBox(self)
 			self.x_trans.setMinimum(-10000)
 			self.x_trans.setMaximum(10000)
 			self.x_trans.setValue(0.0)
 			self.hbl_trans.addWidget(self.x_trans)
 			
-			self.y_label = QtGui.QLabel()
+			self.y_label = QtWidgets.QLabel()
 			self.y_label.setText('y')
 			self.hbl_trans.addWidget(self.y_label)
 			
-			self.y_trans = QtGui.QDoubleSpinBox(maintab)
+			self.y_trans = QtWidgets.QDoubleSpinBox(maintab)
 			self.y_trans.setMinimum(-10000)
 			self.y_trans.setMaximum(10000)
 			self.y_trans.setValue(0.0)
 			self.hbl_trans.addWidget(self.y_trans)
 			
 			
-			self.z_label = QtGui.QLabel()
+			self.z_label = QtWidgets.QLabel()
 			self.z_label.setText('z')
 			self.hbl_trans.addWidget(self.z_label)
 			
-			self.z_trans = QtGui.QDoubleSpinBox(maintab)
+			self.z_trans = QtWidgets.QDoubleSpinBox(maintab)
 			self.z_trans.setMinimum(-10000)
 			self.z_trans.setMaximum(10000)
 			self.z_trans.setValue(0.0)
 			self.hbl_trans.addWidget(self.z_trans)
 			
-			self.hbl_src = QtGui.QHBoxLayout()
-			self.hbl_src.setMargin(0)
+			self.hbl_src = QtWidgets.QHBoxLayout()
+			self.hbl_src.setContentsMargins(0, 0, 0, 0)
 			self.hbl_src.setSpacing(6)
 			self.hbl_src.setObjectName("hbl")
 			maintab.vbl.addLayout(self.hbl_src)
 			
-			self.label_src = QtGui.QLabel()
+			self.label_src = QtWidgets.QLabel()
 			self.label_src.setText('Rotation Convention')
 			self.hbl_src.addWidget(self.label_src)
 			
-			self.src = QtGui.QComboBox(maintab)
+			self.src = QtWidgets.QComboBox(maintab)
 			self.load_src_options(self.src)
 			self.hbl_src.addWidget(self.src)
 			

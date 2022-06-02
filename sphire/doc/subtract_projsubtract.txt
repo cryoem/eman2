@@ -1,0 +1,105 @@
+~~NOTOC~~
+
+===== sp_signalsubtract projsubtract =====
+
+Project and Subtract : Compute re-projections of map to be subtracted, and subtract them from the original images.
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  	sp_signalsubtract.py projsubtract --origparts=particle_stack --map2subtract=map_to_subtract --projparams=projection_parameters --outdir=output_subtraction_directory --nmontage=number_of_examples --inmem --saveprojs --stats --nonorm --verbosity=verbosity_level
+
+
+\\
+===== Typical usage =====
+
+sp_signalsubtract exists in both MPI and non-MPI versions (Running MPI version does not require --MPI flag). 
+
+sp_signalsubtract comprises the steps needed to subtract masked regions from a map in order to focus on the remaining features from that map.  There are six steps for this process (five within SPHIRE):
+
+\\ __1. Average and low-pass filter a map for segmentation __
+
+\\ __2. Locate regions to be subtracted __
+
+\\ __3. Mask a soft mask of the region to be excluded __
+
+\\ __4. Compute re-projections of map to be subtracted, and subtract them from the original images __:
+
+  mpirun -np 16 sp_signalsubtract.py projsubtract --origparts=particle_stack --map2subtract=map_to_subtract --projparams=projection_parameters --outdir=output_subtraction_directory --nmontage=number_of_examples --inmem --saveprojs 
+
+The flag "--nmontage=number_of_examples" will write examples of original/projection/subtracted images. 
+
+The flag "--inmem" will store the projection images in memory.  By default, the projections will be written to disk continuously.  Storing them in memory will be about 5 to 10% faster, but may require MUCH more memory. A memory estimate will be displayed in the output.
+
+By the default, the intermediate projections will be deleted after subtraction. To save them, use the "--saveprojs" flag.
+
+\\ __5. Compute reconstruction of density remaining after signal-subtraction __:
+
+  sp_meridien.py bdb:output_subtraction_directory#all_subtracted meridien_directory --do_final=iteration_number --voldir=output_subtraction_directory
+
+This step will compute a reoncstruction using Meridien, i.e., with "smear" information. The iteration number, for the refinement in "meridien_directory", is specified by the flag "--do_final".
+  
+Note: If the "--voldir" flag is not specified, the resulting reconstructions will be written to the Meridien directory, which may overwrite existing files.
+
+\\ __6. Center map of the remaining density __
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; %%--%%origparts : Particle stack : Original particle stack before signal subtraction. (default required string) : subtraction_mode==projsubtract
+  ; %%--%%map2subtract : Map to subtract : Map whose projections will be subtracted from the original images. (default required string) : subtraction_mode==projsubtract
+  ; %%--%%projparams : Projection parameters : Angles and shifts, from Meridien. (default required string) : subtraction_mode==projsubtract
+  ; %%--%%outdir : Output directory : Directory where outputs will be written. (default required string)
+  
+\\
+=== Advanced Parameters ===
+  ; %%--%%verbosity : Verbosity level : Controls how much information will be written to the screen. (default 2)
+  ; %%--%%nmontage : Number of examples : This number of original, projections, and subtracted images will be written to disk. (default 0) : subtraction_mode==projsubtract
+  ; %%--%%inmem : In memory? : Flag to store projections in memory. (default False) : subtraction_mode==projsubtract
+  ; %%--%%saveprojs : Save projections? : Flag to save intermediate projections. (default False) : subtraction_mode==projsubtract
+  ; %%--%%stats : Save stats? : Flag to save normalization statistics.  (default False) : subtraction_mode==projsubtract
+  ; %%--%%nonorm : Skip normalization? : Flag to skip normalization. (default False) : subtraction_mode==projsubtract
+  
+\\
+===== Output =====
+  ; docnormstats.txt : Normalization statistics
+  ; all_subtracted : Combined BDB stack of signal-subtracted images
+  ; stktestmontage.hdf : Montage of test images
+ 
+\\
+===== Description =====
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+
+\\
+==== Developer Notes ====
+
+\\
+==== Author / Maintainer ====
+Tapu Shaikh
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_signalsubtract.py
+
+\\
+==== See also ====
+
+\\
+==== Maturity ====
+Beta:: Under evaluation and testing. Please let us know if there are any bugs.
+
+\\
+==== Bugs ====
+
+\\

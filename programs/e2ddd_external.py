@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Authors: James Michael Bell & Adam Fluty 07/13/2018
 # Copyright (c) 2000-2013 Baylor College of Medicine
@@ -145,6 +142,8 @@ def main():
 			sys.exit(1)
 
 		program = which("MotionCor2") #distutils.spawn.find_executable("MotionCor2")
+		if program==None:
+			program = which("motioncor2")
 		
 	if program == None:
 		print("Could not locate '{}'. Please check that the program is installed and available within your PATH environment variable.".format(options.program.split("_")[1]))

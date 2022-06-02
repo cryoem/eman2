@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 10/11/15 
 # Copyright (c) 2015- Baylor College of Medicine
@@ -43,6 +40,9 @@ import sys
 import random
 from random import choice
 import traceback
+import numpy as np
+import sklearn.decomposition as skdc
+
 
 from EMAN2jsondb import JSTask,jsonclasses
 
@@ -66,7 +66,7 @@ def main():
 #	parser.add_argument("--novarimax", action="store_true",default=False, help="Disable varimax rotation among computed basis vectors.",guitype='boolbox', row=7, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--mask", default=None, help="Optional 3D mask to focus the classification", guitype='filebox', browser='EMSetsTable(withmodal=True,multiselect=False)', filecheck=False, row=6, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--parallel", default="thread:2", help="Standard parallelism option. Default=thread:2", guitype='strbox', row=8, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
@@ -78,11 +78,9 @@ def main():
 			print("--nbasis adjusted to ",options.nbasis)
 
 	if options.path==None:
-		paths=[i for i in os.listdir(".") if "refine_" in i and len(i)==9]
-		paths.sort()
-		options.path=paths[-1]
+		options.path=num_path_last("refine_")
 
-	pathnum=options.path[-2:]
+	pathnum=options.path.rsplit("_",1)[-1]
 
 	# check the specified path for the files we need
 	try:
@@ -129,7 +127,7 @@ def main():
 
 	# Initialize parallelism
 	from EMAN2PAR import EMTaskCustomer
-	etc=EMTaskCustomer(options.parallel)
+	etc=EMTaskCustomer(options.parallel, "e2refine_split.ClassSplitTask")
 
 	# Empty image to pad classes file
 	zero=EMData(str(ptcls[0]),0)
@@ -143,7 +141,7 @@ def main():
 	# Prepare mask if specified
 	if options.mask!=None:
 		mask=EMData(options.mask)
-		nx=EMData(projin,i,True)["nx"]
+		nx=EMData(projin,0,True)["nx"]
 		if mask["nx"]!=nx :
 			print("ERROR: mask dimensions do not match refinement volume")
 			sys.exit(1)
@@ -159,7 +157,7 @@ def main():
 #			zero.write_image(classout[1],c)
 			continue
 		if mask!=None :
-			maskp=mask.project("standard",eulers[c])
+			maskp=mask.project("standard",eulers[c]).process("threshold.binary",{"value":mask["sigma"]})
 		else: maskp=None
 		tasks.append(ClassSplitTask(ptcls,ns,cl,c,eulers[c],maskp,options.usebasis,options.nbasis,True,options.verbose-1))
 		gc+=1
@@ -198,7 +196,7 @@ def main():
 
 	if options.verbose : print("Completed all tasks\nGrouping consistent averages")
 
-	classes.sort(reverse=True)		# we want to start with the largest number of particles
+	classes.sort(reverse=True,key=lambda x:x[0])		# we want to start with the largest number of particles
 	apix=classes[0][2]["apix_x"]
 
 	boxsize=classes[0][2]["ny"]
@@ -440,23 +438,41 @@ class ClassSplitTask(JSTask):
 			mask=ptcls[0][-1].copy()
 			mask.to_one()
 #			mask.process("mask.soft",{"outer_radius":-8,"width":4})
-			mask.process("mask.sharp",{"outer_radius":-10})
+			mask.process("mask.sharp",{"outer_radius":max(-10,-mask["ny"]//25)})
 		else:
 			mask=options["mask"]
-
-#		print "basis start"
-		pca=Analyzers.get("pca_large",{"nvec":options["nbasis"],"mask":mask,"tmpfile":"tmp{}".format(options["classnum"])})
-		for p in ptcls: 
-			pca.insert_image(p[5])		# filter to focus on lower resolution differences
-		basis=pca.analyze()
-
-		# Varimax rotation... good idea?
-		if not options["novarimax"]:
-			pca2=Analyzers.get("varimax",{"mask":mask})
-			for im in basis:
-				pca2.insert_image(im)
+		nmask=int(mask["square_sum"])	# ok, square part is silly, but gives a count of "1" pixels
 		
-			basis=pca2.analyze()
+#		print "basis start"
+		#if options["verbose"]>1: print("PCA {}, {}".format(options["classnum"],len(ptcls)))
+		#pca=Analyzers.get("pca_large",{"nvec":options["nbasis"],"mask":mask,"tmpfile":"tmp{}".format(options["classnum"])})
+		#for p in ptcls: 
+			#pca.insert_image(p[5])		# filter to focus on lower resolution differences
+		#basis=pca.analyze()
+		
+		# use numpy/sklearn instead of the old EMAN2 PCA code (more flexible)
+		datamx=EMData(nmask,len(ptcls))
+		for i,p in enumerate(ptcls):
+			p5=p[5].process("misc.mask.pack",{"mask":mask})
+			datamx.insert_clip(p5,(0,i,0))
+		npdata=to_numpy(datamx)		# need to be careful about deleting datamx
+
+		# actual PCA calculation
+		msa=skdc.PCA(n_components=options["nbasis"])
+		msa.fit(npdata)
+
+		# we just need one basis vector
+		basis=msa.components_[self.options["usebasis"]]
+		basis=from_numpy(basis).process("misc.mask.pack",{"mask":mask,"unpack":1})
+
+		## Varimax rotation... good idea?
+		#if not options["novarimax"]:
+			#if options["verbose"]>1: print("Varimax {}".format(options["classnum"]))
+			#pca2=Analyzers.get("varimax",{"mask":mask})
+			#for im in basis:
+				#pca2.insert_image(im)
+		
+			#basis=pca2.analyze()
 
 		
 		# if you turn this on multithreaded it will crash sometimes
@@ -469,12 +485,14 @@ class ClassSplitTask(JSTask):
 #		print "basis"
 		
 		# at the moment we are just splitting into 2 classes, so we'll use the first eigenvector. A bit worried about defocus coming through, but hopefully ok...
-		dots=[p[5].cmp("ccc",basis[self.options["usebasis"]]) for p in ptcls]	# NOTE: basis number is passed in as an option, may not be #1 or #3 (default)
+		dots=[p[5].cmp("ccc",basis) for p in ptcls]	# NOTE: basis number is passed in as an option, may not be #1 or #3 (default)
 		if len(dots)==0:
 			return {"failed":True}
 		dota=old_div(sum(dots),len(dots))
 		
 #		print "average"
+		if options["verbose"]>1: print("Split by dot {}".format(options["classnum"]))
+
 		# we will just use the sign of the dot product to split
 		avgr=[Averagers.get("mean"),Averagers.get("mean")]
 		incl=[[],[]]
@@ -490,6 +508,10 @@ class ClassSplitTask(JSTask):
 		
 		#for p in ptcls: 
 			#avgr.add_image(p[3].process("xform",{"transform":p[2]}))
+		
+		if len(incl[0])==0 or len(incl[1])==0:
+			if options["verbose"]>0 : print("No separation on class {}".format(options["classnum"]))
+			return {"failed":True}
 		
 		if options["verbose"]>0: print("Finish averaging class {}".format(options["classnum"]))
 #		if callback!=None : callback(100)
@@ -507,7 +529,9 @@ class ClassSplitTask(JSTask):
 			return {"failed":True}
 
 #		print basis
-		return {"avg1":avg1,"avg2":avg2,"basis":basis[:3]}
+
+		return {"avg1":avg1,"avg2":avg2,"basis":basis}	# basis was originally the first 3 vectors, now we are only returning the selected one. Will see if it's a problem
+#		return {"avg1":avg1,"avg2":avg2,"basis":basis[:3]}
 
 jsonclasses["ClassSplitTask"]=ClassSplitTask.from_jsondict
 

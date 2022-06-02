@@ -57,6 +57,7 @@ const string OptVarianceCmp::NAME = "optvariance";
 const string OptSubCmp::NAME = "optsub";
 const string PhaseCmp::NAME = "phase";
 const string FRCCmp::NAME = "frc";
+const string FRCFreqCmp::NAME = "frc.freq";
 const string VerticalCmp::NAME = "vertical";
 
 template <> Factory < Cmp >::Factory()
@@ -74,6 +75,7 @@ template <> Factory < Cmp >::Factory()
 	force_add<OptSubCmp>();
 	force_add<PhaseCmp>();
 	force_add<FRCCmp>();
+	force_add<FRCFreqCmp>();
 	force_add<VerticalCmp>();
 //	force_add<XYZCmp>();
 }
@@ -761,6 +763,7 @@ float TomoWedgeFscCmp::cmp(EMData * image, EMData *with) const
 	float sigmaimgval = params.set_default("sigmaimgval",0.5f);
 	float sigmawithval = params.set_default("sigmawithval",0.5f);
 	
+	bool retcurve = params.set_default("retcurve",false);
 	// User can pass in a sigma vector if they like, otherwise we call it 1/10 of the standard deviation in each shell
 	// This has proven to be a good cutoff for identifying the missing wedge voxels, without throwing away too many
 	// voxels if the image is complete in Fourier space (no wedge)
@@ -774,7 +777,7 @@ float TomoWedgeFscCmp::cmp(EMData * image, EMData *with) const
 	vector<float> sigmawith;
 	if (params.has_key("sigmawith")) sigmawith = params["sigmawith"];
 	else {
-		sigmawith=image->calc_radial_dist(nx/2,0,1,4);
+		sigmawith=with->calc_radial_dist(nx/2,0,1,4);
 		for (int i=0; i<nx/2; i++) sigmawith[i]*=sigmawith[i]*sigmawithval; // The value here is amplitude, we square to make comparison less expensive
 	}
 
@@ -782,12 +785,14 @@ float TomoWedgeFscCmp::cmp(EMData * image, EMData *with) const
 	//get min and max res
 	float minres = params.set_default("minres",0.0f);
 	float maxres = params.set_default("maxres", 0.0f);
-
-	int pmin,pmax;
-	if (minres>0) pmin=(int)floor((apix*ny)/minres);		//cutoff in pixels, assume square
-	else pmin=3;
-	if (maxres>0) pmax=(int)ceil((apix*ny)/maxres);
-	else pmax=ny/2;
+	
+	int pmin = params.set_default("pmin",3);
+	int pmax = params.set_default("pmax", ny/2);
+	
+	if (minres>0) 
+		pmin=(int)floor((apix*ny)/minres);		//cutoff in pixels, assume square
+	if (maxres>0) 
+		pmax=(int)ceil((apix*ny)/maxres);
 
 	int negative = params.set_default("negative",1);
 	
@@ -795,6 +800,7 @@ float TomoWedgeFscCmp::cmp(EMData * image, EMData *with) const
 	double sumsq1=0;
 	double sumsq2=0;
 	double norm=0;
+	vector<float> curve(nx/2), sqcv1(nx/2), sqcv2(nx/2);
 	for (int z=0; z<nz; z++) {
 		int za=z<nz/2?z:nz-z;
 		if (za>pmax) continue;
@@ -823,11 +829,24 @@ float TomoWedgeFscCmp::cmp(EMData * image, EMData *with) const
 //				if (Util::is_nan(sumsq1)) { printf("TomoWedgeCccCmp: NaN encountered: %d %d %d %f %f %f\n",x,y,z,v1r,v1i,v1); }
 				sumsq2+=v2/r2;
 				norm+=1.0;
+				if (retcurve){
+					curve[r]+=v1r*v2r+v1i*v2i;
+					sqcv1[r]+=v1;
+					sqcv2[r]+=v2;
+				}
 			}
 		}
 	}
 	image->set_attr("fft_overlap",(float)(2.0*norm/(image->get_xsize()*image->get_ysize()*image->get_zsize())));
 //	printf("%f\t%f\t%f\t%f\t%f\n",s1,s2,sumsq1,sumsq2,norm);
+	if (retcurve){
+		for(int i=0; i<nx/2; i++){
+			if (sqcv1[i]==0) sqcv1[i]=1;
+			if (sqcv2[i]==0) sqcv2[i]=1;
+			curve[i]=curve[i]/(sqrt(sqcv1[i])*sqrt(sqcv2[i]));
+		}
+		image->set_attr("fsc_curve", curve);
+	}
 
 	if (imageo!=image) delete image;
 	if (witho!=with) delete with;
@@ -1150,13 +1169,8 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 			for (size_t i = 0,y=0; i < size; y++) {
 				for (size_t x=0; x<nx; i++,x++) {
 					if (y_data[i] && x_data[i]) {
-#ifdef	_WIN32
-						if (invert) result += Util::square(x_data[i] - (y_data[i]-b)/m)*(_hypot((float)x,(float)y)+nx/4.0);
-						else result += Util::square((x_data[i] * m) + b - y_data[i])*(_hypot((float)x,(float)y)+nx/4.0);
-#else
 						if (invert) result += Util::square(x_data[i] - (y_data[i]-b)/m)*(hypot((float)x,(float)y)+nx/4.0);
 						else result += Util::square((x_data[i] * m) + b - y_data[i])*(hypot((float)x,(float)y)+nx/4.0);
-#endif
 						count++;
 					}
 				}
@@ -1166,13 +1180,8 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 		else {
 			for (size_t i = 0,y=0; i < size; y++) {
 				for (size_t x=0; x<nx; i++,x++) {
-#ifdef	_WIN32
-					if (invert) result += Util::square(x_data[i] - (y_data[i]-b)/m)*(_hypot((float)x,(float)y)+nx/4.0);
-					else result += Util::square((x_data[i] * m) + b - y_data[i])*(_hypot((float)x,(float)y)+nx/4.0);
-#else
 					if (invert) result += Util::square(x_data[i] - (y_data[i]-b)/m)*(hypot((float)x,(float)y)+nx/4.0);
 					else result += Util::square((x_data[i] * m) + b - y_data[i])*(hypot((float)x,(float)y)+nx/4.0);
-#endif
 				}
 			}
 			result = result / size;
@@ -1269,11 +1278,14 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 	}
 
 	// Min/max modifications to weighting
-	float pmin,pmax;
-	if (minres>0) pmin=((float)image->get_attr("apix_x")*image->get_ysize())/minres;		//cutoff in pixels, assume square
-	else pmin=0;
-	if (maxres>0) pmax=((float)image->get_attr("apix_x")*image->get_ysize())/maxres;
-	else pmax=0;
+// 	float pmin,pmax;
+	
+	float pmin = params.set_default("pmin",0.0f);
+	float pmax = params.set_default("pmax",0.0f);
+	if (minres>0 && pmin==0) pmin=((float)image->get_attr("apix_x")*image->get_ysize())/minres;		//cutoff in pixels, assume square
+// 	else pmin=0;
+	if (maxres>0 && pmax==0) pmax=((float)image->get_attr("apix_x")*image->get_ysize())/maxres;
+// 	else pmax=0;
 
 //	printf("%f\t%f\n",pmin,pmax);
 
@@ -1511,11 +1523,15 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 	if (ampweight) amp=image->calc_radial_dist(ny/2,0,1,0);
 
 	// Min/max modifications to weighting
-	float pmin,pmax;
-	if (minres>0) pmin=((float)image->get_attr("apix_x")*image->get_ysize())/minres;		//cutoff in pixels, assume square
-	else pmin=0;
-	if (maxres>0) pmax=((float)image->get_attr("apix_x")*image->get_ysize())/maxres;
-	else pmax=0;
+	float pmin = params.set_default("pmin",0);
+	float pmax = params.set_default("pmax", 0);
+	
+	if (pmin==0 && minres>0)
+		pmin=((float)image->get_attr("apix_x")*image->get_ysize())/minres;		//cutoff in pixels, assume square
+	
+	if (pmax==0 && maxres>0) 
+		pmax=((float)image->get_attr("apix_x")*image->get_ysize())/maxres;
+	
 
 	double sum=0.0, norm=0.0;
 
@@ -1557,6 +1573,103 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 	// this enables comparitors to be used in a generic fashion.
 	return (float)-sum;
 }
+
+float FRCFreqCmp::cmp(EMData * image, EMData * with) const
+{
+	ENTERFUNC;
+	validate_input_args(image, with);
+
+	int transition = params.set_default("transition",0);
+	int zeromask = params.set_default("zeromask",0);
+	float minres = params.set_default("minres",200.0f);
+	float maxres = params.set_default("maxres",8.0f);
+
+	vector < float >fsc;
+
+	if (zeromask) {
+		image=image->copy();
+		with=with->copy();
+	
+		int sz=image->get_xsize()*image->get_ysize()*image->get_zsize();
+		float *d1=image->get_data();
+		float *d2=with->get_data();
+	
+		for (int i=0; i<sz; i++) {
+			if (d1[i]==0.0 || d2[i]==0.0) { d1[i]=0.0; d2[i]=0.0; }
+		}
+	
+		image->update();
+		with->update();
+		image->do_fft_inplace();
+		with->do_fft_inplace();
+		image->set_attr("free_me",1); 
+		with->set_attr("free_me",1); 
+	}
+
+
+	if (!image->is_complex()) {
+		image=image->do_fft(); 
+		image->set_attr("free_me",1); 
+	}
+	if (!with->is_complex()) { 
+		with=with->do_fft(); 
+		with->set_attr("free_me",1); 
+	}
+
+	fsc = image->calc_fourier_shell_correlation(with,1);
+	
+	int ny = image->get_ysize();
+	int ny2=ny/2+1;
+
+	double sum=0.0, norm=0.0;
+
+		// Min/max modifications to weighting
+	float pmin = 0;
+	float pmax = 0;
+	
+	if (minres>0) pmin=((float)image->get_attr("apix_x")*image->get_ysize())/minres;		//cutoff in pixels, assume square
+	else pmin=0;
+	
+	if (maxres>0) pmax=((float)image->get_attr("apix_x")*image->get_ysize())/maxres;
+	else pmax=ny/2;
+
+	// We search the range for an optimal cutoff for 1->0 transition targeting FSC=0.2
+	if (transition) {
+		int mns=0;
+		float mn=1.0e6;
+		for (int i=pmin; i<pmax; i++) {
+			float val=0;
+			for (int j=pmin; j<pmax; j++) {
+				val+=j<i?1.0-fsc[ny2+j]:fsc[ny2+j];
+			}
+			if (val<mn) { mn=val; mns=i; }
+		}
+		sum=mns/(image->get_ysize()*(float)image->get_attr("apix_x"));
+	}
+	else {
+		for (int i=pmin; i<pmax; i++) {
+			double weight=fsc[ny2+i];
+
+			sum+=weight*fsc[i];		// The value we are averaging is the frequency from the FRC calculation, weighted by the FSC value (which may be negative, hopefully balancing spurious high resoluton FRC values
+			norm+=fabs(weight);
+		}
+		sum/=norm;
+		if (sum<-1.0) sum=-1.0;		// really less that zero is quite bad, but this gives some differentiation among bad results
+	}
+
+	if (image->has_attr("free_me")) delete image;
+	if (with->has_attr("free_me")) delete with;
+
+	EXITFUNC;
+
+	if (!Util::goodf(&sum)) sum=-1.0;	// arbitrary worse than normally achievable value
+
+	//.Note the negative! This is because EMAN2 follows the convention that
+	// smaller return values from comparitors indicate higher similarity -
+	// this enables comparitors to be used in a generic fashion.
+	return (float)-sum;
+}
+
 
 float OptSubCmp::cmp(EMData * image, EMData * with) const
 {
@@ -1656,5 +1769,3 @@ map<string, vector<string> > EMAN::dump_cmps_list()
 {
 	return dump_factory_list < Cmp > ();
 }
-
-/* vim: set ts=4 noet: */

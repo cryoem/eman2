@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-
 #
 # Author: Ross Coleman (racolema@gmail.com)
 # Copyright (c) 2009- Baylor College of Medicine
@@ -32,6 +30,8 @@ from __future__ import print_function
 #
 #
 
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 from EMAN2 import get_image_directory, Transform, Region, EMANVERSION, EMData, E2init, E2end, EMArgumentParser
 from EMAN2db import db_open_dict, db_check_dict, db_close_dict
@@ -40,7 +40,7 @@ import sys
 import os
 
 try:
-	from PyQt4 import QtGui, QtCore
+	from PyQt5 import QtGui, QtWidgets, QtCore
 	from eman2_gui.emapplication import EMApp, get_application
 	from eman2_gui.emimage2d import EMImage2DWidget
 	from eman2_gui.emselector import EMSelectorDialog
@@ -237,7 +237,7 @@ def get_helix_rotation_angle(x1, y1, x2, y2, width):
 	l_vect = (x2-x1, y2-y1)
 	length = sqrt(l_vect[0]**2+l_vect[1]**2)
 	assert length != 0
-	l_uvect = (l_vect[0]/length, l_vect[1]/length)
+	l_uvect = (old_div(l_vect[0],length), old_div(l_vect[1],length))
 	
 	#Rotate so that the length is parallel to the y-axis
 	#Angle between l_uvect and y-axis: l_uvect (dot) j_hat = cos (rot_angle)
@@ -259,7 +259,7 @@ def get_particle_centroids(helix_coords, px_overlap, px_length, px_width, is_rot
 	(x1,y1,x2,y2,w) = helix_coords
 	l_vect = (x2-x1,y2-y1)
 	helix_length = sqrt(l_vect[0]**2+l_vect[1]**2)
-	l_uvect = (l_vect[0]/helix_length, l_vect[1]/helix_length)
+	l_uvect = (old_div(l_vect[0],helix_length), old_div(l_vect[1],helix_length))
 	w_uvect = (-l_uvect[1],l_uvect[0])
 	
 	assert px_length > px_overlap, "The overlap must be smaller than the segment length"
@@ -295,11 +295,11 @@ def get_rotated_particles( micrograph, helix_coords, px_dst = None, px_length = 
 	l_vect = (x2-x1, y2-y1)
 	length = sqrt(l_vect[0]**2+l_vect[1]**2)
 	assert length != 0
-	l_uvect = (l_vect[0]/length, l_vect[1]/length)
+	l_uvect = (old_div(l_vect[0],length), old_div(l_vect[1],length))
 		
 	#Rotate so that the length is parallel to the y-axis
 	#Angle between l_uvect and y-axis: l_uvect (dot) j_hat = cos (rot_angle)
-	rot_angle = 180/pi*acos( l_uvect[1] )
+	rot_angle = old_div(180,pi)*acos( l_uvect[1] )
 	#Whether we rotate clockwise or counterclockwise depends on the sign of l_uvect[0] (the x-component)
 	if l_uvect[0] < 0: rot_angle *= -1 #rotate the box clockwise
 	
@@ -1982,8 +1982,8 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, boxsize=256, minse
 	
 	if new_pixel_size < 0: new_pixel_size = pixel_size
 	
-	if rmax < 0:  rmaxp = int(boxsize/2 - 2)
-	else:         rmaxp = int( (rmax/new_pixel_size)  + 0.5)
+	if rmax < 0:  rmaxp = int(old_div(boxsize,2) - 2)
+	else:         rmaxp = int( (old_div(rmax,new_pixel_size))  + 0.5)
 	
 	# set rmax in pixels to default if user input rmax is greater than half the box size
 	if 2*rmaxp > boxsize:
@@ -2051,7 +2051,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, boxsize=256, minse
 	if len(cutoffhistogram) > 0:		#@ming
 		lhist = 3
 		if len(cutoffhistogram) >= lhist:
-			from statistics import hist_list
+			from pap_statistics import hist_list
 			region,hist = hist_list(cutoffhistogram,lhist)	
 			msg = "      Histogram of cut off frequencies\n      ERROR       number of frequencies\n"
 			print_msg(msg)
@@ -2129,8 +2129,8 @@ def windowmic(outstacknameall, micpath, outdir, micname, hcoordsname, pixel_size
 		if nx:
 			print("Micrograph %s"%filename,"  not listed in CTER results, skipping ....")
 			return
-		if(ctfs[8]/ctfs[0] > cterr[0]):
-			print_msg('Defocus error %f exceeds the threshold. Micrograph %s rejected.\n'%(ctfs[8]/ctfs[0], filename))
+		if(old_div(ctfs[8],ctfs[0]) > cterr[0]):
+			print_msg('Defocus error %f exceeds the threshold. Micrograph %s rejected.\n'%(old_div(ctfs[8],ctfs[0]), filename))
 			return
 		if(ctfs[10] > cterr[1] ):
 			ctfs[6] = 0.0      ##astigmatism amplitude     comment by@ming
@@ -2147,7 +2147,7 @@ def windowmic(outstacknameall, micpath, outdir, micname, hcoordsname, pixel_size
 # 			Cut off frequency components higher than CTF limit 
 		q1, q2 = ctflimit(boxsize,ctfs[0],ctfs[1],ctfs[2],new_pixel_size)
 		# This is absolute frequency of the CTF limit in the scale of original micrograph
-		q1 = (ctfs[3] / new_pixel_size) * q1/float(boxsize)
+		q1 = (old_div(ctfs[3], new_pixel_size)) * q1/float(boxsize)
 		if q1 < 0.5:          #@ming
 			img = filt_tanl(img, q1, 0.01)
 			cutoffhistogram.append(q1)
@@ -2157,7 +2157,7 @@ def windowmic(outstacknameall, micpath, outdir, micname, hcoordsname, pixel_size
 		# Set ctf along with new pixel size in resampled micrograph
 		# set hcoordsname to name of new coordinates file, and set micname to resampled micrograph name
 		print_msg('Resample micrograph to pixel size %f and window segments from resampled micrograph\n'%new_pixel_size)
-		resample_ratio = pixel_size/new_pixel_size
+		resample_ratio = old_div(pixel_size,new_pixel_size)
 		# after resampling by resample_ratio, new pixel size will be pixel_size/resample_ratio = new_pixel_size
 		nx = img.get_xsize()
 		ny = img.get_ysize()
@@ -2219,7 +2219,7 @@ def windowmic(outstacknameall, micpath, outdir, micname, hcoordsname, pixel_size
 	if len(a)%2 != 0:
 		print("Number of rows in helix coordinates file %s should be even!"%hcoordsname)
 		return
-	nhelices = len(a)/2
+	nhelices = old_div(len(a),2)
 	#try:      iseg = EMUtil.get_image_count(outstacknameall)
 	#except:   iseg = 0
 	if importctf:

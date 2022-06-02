@@ -1,7 +1,3 @@
-/**
- * $Id$
- */
-
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
@@ -85,7 +81,6 @@ namespace EMAN
 		float get_yatx_smooth(float x,int smoothing);	// This will use interpolation to smooth the returned values, and will continue interpolating outside the domain
 														// smoothing=1 (linear) is the only supported mode at the moment
 		
-
 		float get_x(size_t i) const
 		{
 			return data[i].x;
@@ -125,6 +120,9 @@ namespace EMAN
 		void set_state(vector<float>);
 
 		void set_xy_list(const vector<float>& xlist, const vector<float>& ylist);
+		
+		// This will create a Gaussian with n points, with x from 0 to xmax and a HWHM of width
+		void make_gauss(int n,float xmax, float width);
 
 		size_t get_size() const
 		{

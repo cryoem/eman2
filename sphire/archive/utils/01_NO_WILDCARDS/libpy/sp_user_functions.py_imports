@@ -1,0 +1,13 @@
+EMAN2_cppwrap
+math
+mpi
+os
+sp_alignment
+sp_applications
+sp_filter
+sp_fundamentals
+sp_global_def
+sp_morphology
+sp_reconstruction
+sp_utilities
+time

@@ -1,8 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -39,33 +35,33 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import range
 ploticon = [
-    '15 14 2 1',
-    'b c #000055',
-    'c c None',
-    'ccccccccccccccc',
-    'ccccccccccccccc',
-    'ccccccbbbbccccc',
-    'ccccbbccccbbccc',
-    'cccbccccccccbcc',
-    'ccbccccccccccbc',
-    'ccbccccccccccbc',
-    'ccbccccccccccbc',
-    'ccbccccccccccbc',
-    'cccbccccccccbcc',
-    'ccccbbccccbbccc',
-    'ccccccbbbbccccc',
-    'ccccccccccccccc',
-    'ccccccccccccccc'
+	'15 14 2 1',
+	'b c #000055',
+	'c c None',
+	'ccccccccccccccc',
+	'ccccccccccccccc',
+	'ccccccbbbbccccc',
+	'ccccbbccccbbccc',
+	'cccbccccccccbcc',
+	'ccbccccccccccbc',
+	'ccbccccccccccbc',
+	'ccbccccccccccbc',
+	'ccbccccccccccbc',
+	'cccbccccccccbcc',
+	'ccccbbccccbbccc',
+	'ccccccbbbbccccc',
+	'ccccccccccccccc',
+	'ccccccccccccccc'
 ]
 
 def safe_float(x):
 	try: return float(x)
 	except: return 0.0
 
-from PyQt4 import QtCore, QtGui, QtOpenGL
-from PyQt4.QtGui import QListWidgetItem
-from PyQt4.QtOpenGL import QGLWidget
-from PyQt4.QtCore import Qt
+from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
+from PyQt5.QtCore import Qt
+import OpenGL
+OpenGL.ERROR_CHECKING = False
 from OpenGL import GL,GLU
 from OpenGL.GL import *
 import OpenGL.GL as gl
@@ -73,6 +69,7 @@ import OpenGL.arrays.vbo as glvbo
 from math import *
 from EMAN2 import *
 import sys
+from . import emshape
 from .emshape import *
 import weakref
 from pickle import dumps,loads
@@ -86,6 +83,7 @@ from . import emimage2d
 import matplotlib.pyplot as plt
 import matplotlib
 from matplotlib.backends.backend_agg import FigureCanvasAgg
+from matplotlib.backends.backend_pdf import FigureCanvasPdf
 from matplotlib.figure import Figure
 #matplotlib.use('Agg')
 import numpy as np
@@ -101,29 +99,34 @@ linetypes=["-","--",":","-."]
 symtypes=["o","s","+","2","1"]
 colortypes=["k","b","r","g","y","c","m","gray"]
 qt_color_map = {}
-qt_color_map["k"] = QtGui.QColor(0,0,0)
-qt_color_map["b"] = QtGui.QColor(0,0,255)
-qt_color_map["r"] = QtGui.QColor(255,0,0)
-qt_color_map["g"] = QtGui.QColor(0,255,0)
-qt_color_map["y"] = QtGui.QColor(255,255,0)
-qt_color_map["c"] = QtGui.QColor(0,255,255)
-qt_color_map["m"] = QtGui.QColor(255,0,255)
-qt_color_map["gray"] = QtGui.QColor(127,127,127)
+qt_color_map["k"] = QtGui.QBrush(QtGui.QColor(0,0,0))
+qt_color_map["b"] = QtGui.QBrush(QtGui.QColor(0,0,255))
+qt_color_map["r"] = QtGui.QBrush(QtGui.QColor(255,0,0))
+qt_color_map["g"] = QtGui.QBrush(QtGui.QColor(0,255,0))
+qt_color_map["y"] = QtGui.QBrush(QtGui.QColor(255,255,0))
+qt_color_map["c"] = QtGui.QBrush(QtGui.QColor(0,255,255))
+qt_color_map["m"] = QtGui.QBrush(QtGui.QColor(255,0,255))
+qt_color_map["gray"] = QtGui.QBrush(QtGui.QColor(127,127,127))
 
 class EMPlot2DWidget(EMGLWidget):
 	"""A QT widget for drawing 2-D plots using matplotlib
 	"""
+	
+	# Widget signals
 	selected_sg = QtCore.pyqtSignal()
 	mousedown = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
+	mousedrag = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
+	mouseup = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
+	keypress = QtCore.pyqtSignal(QtGui.QKeyEvent)
 
 	def __init__(self,application=None,winid=None,parent=None):
 
-		fmt=QtOpenGL.QGLFormat()
-		fmt.setDoubleBuffer(True);
 		EMGLWidget.__init__(self, parent=parent, winid=winid)
-		self.setFormat(fmt)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"plot.png"))
+		self.setMinimumWidth(120)
+		self.setMinimumHeight(80)
 
+		emshape.pixelratio=self.devicePixelRatio()
 		self.axes={}
 		self.pparm={}			# color,line,linetype,linewidth,sym,symtype,symsize
 		self.inspector=None
@@ -135,16 +138,22 @@ class EMPlot2DWidget(EMGLWidget):
 		self.climits=None
 		self.slimits=None
 		self.rmousedrag=None
+		self.lmousedrag=None
 		self.axisparms=(None,None,"linear","linear")
+		self.plottitle=""
 		self.selected=[]
 		self.comments={}			# IF reading from a file which contains per-point comments, this dictionary contains a list of comments for each point
 
 		self.data={}				# List of Lists to plot
 		self.visibility = {}  	   	# Same entries as in self.data, but entries are true or False to indicate visibility
 		self.glflags = EMOpenGLFlagsAndTools() 	# supplies power of two texturing flags
+		self.mouseemit=False		# if set, mouse events will be emitted by the widget
 
 		self.tex_name = 0
 		self.main_display_list = 0
+		self.savepdf=None			# when set to a string, the next render will write a PDF file, this contains the filename
+		self.savepng=None			# when set to a string, the next render will write a PNG file, this contains the filename
+		self.annotate=None			# a function which can be used to add custom annotations to the figure in matplotlib
 
 		self.resize(640,480)
 
@@ -165,9 +174,13 @@ class EMPlot2DWidget(EMGLWidget):
 		self.render()
 
 	def resizeGL(self, width, height):
+		EMGLWidget.resizeGL(self,width,height)
 		#print "resize ",self.width(), self.height()
-		side = min(width, height)
-		GL.glViewport(0,0,self.width(),self.height())
+#		width = width 
+#		height = height
+#
+		dpr=self.devicePixelRatio()
+		GL.glViewport(0,0,self.width()*dpr,self.height()*dpr)
 
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()
@@ -192,13 +205,13 @@ class EMPlot2DWidget(EMGLWidget):
 		if event.key() == Qt.Key_C:
 			self.show_inspector(1)
 		elif event.key() == Qt.Key_F1:
-			try: from PyQt4 import QtWebKit
+			try: from PyQt5 import QtWebEngineWidgets
 			except: return
 			try:
 				try:
 					test = self.browser
 				except:
-					self.browser = QtWebKit.QWebView()
+					self.browser = QtWebEngineWidgets.QWebEngineView()
 					self.browser.load(QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2display"))
 					self.browser.resize(800,800)
 
@@ -239,9 +252,11 @@ class EMPlot2DWidget(EMGLWidget):
 			self.visibility = {}
 
 		if input_data is None :
-			self.data.pop(key)
-			self.visibility.pop(key)
-			self.axes.pop(key)
+			try: 
+				self.data.pop(key)
+				self.visibility.pop(key)
+				self.axes.pop(key)
+			except: pass
 			try: self.comments.pop(key)
 			except: pass
 			if self.inspector: self.inspector.datachange()
@@ -346,7 +361,7 @@ class EMPlot2DWidget(EMGLWidget):
 					for i in range(len(im)):
 						r.append(im[i][j,0])
 					all.append(r)
-				self.set_data(all,vecset,quiet=quiet)
+				self.set_data(all,"Vecset",quiet=quiet)
 			else:
 				for idx,image in enumerate(im):
 					l = [i for i in range(image.get_size())]
@@ -374,13 +389,14 @@ class EMPlot2DWidget(EMGLWidget):
 					except: comments=None
 				else: comments=None
 				rdata=[i.split("#")[0] for i in rdata if i[0]!='#']
-				if ',' in rdata[0]: rdata=[[safe_float(j) for j in i.split(',')] for i in rdata]
-				else : rdata=[[float(j) for j in i.split()] for i in rdata]
+				from . import embrowser
+				rdata=[list(map(safe_float, embrowser.renumfind.findall(i))) for i in rdata if embrowser.renumfind.search(i)]
+
 				nx=len(rdata[0])
 				ny=len(rdata)
 				data=[[rdata[j][i] for j in range(ny)] for i in range(nx)]
 
-				self.set_data(data,remove_directories_from_name(filename,1),quiet=quiet,comments=comments)
+				self.set_data(data,display_path(filename),quiet=quiet,comments=comments)
 			except:
 				traceback.print_exc()
 				print("couldn't read",filename)
@@ -483,13 +499,14 @@ class EMPlot2DWidget(EMGLWidget):
 	is_file_readable = staticmethod(is_file_readable)
 
 	def render(self):
-
+#		print(self.width(),self.height(),self.devicePixelRatio(),self.qt_parent.__dict__)
 		try:
 			if self.data==None or len(self.data)==0 : return
 			if self.xlimits==None or self.ylimits==None or self.climits==None or self.slimits==None : return
 		except:
 			return
 
+		dpr=self.devicePixelRatio()
 		render = False
 
 		if self.needupd or not self.plotimg:
@@ -506,25 +523,37 @@ class EMPlot2DWidget(EMGLWidget):
 		lighting = glIsEnabled(GL_LIGHTING)
 		glDisable(GL_LIGHTING)
 
-		EMShape.font_renderer=self.font_renderer		# Important !  Each window has to have its own font_renderer. Only one context active at a time, so this is ok.
-		GL.glPushMatrix()
-		# overcome depth issues
-		glTranslate(0,0,5)
-		for k,s in list(self.shapes.items()):
-#			print k,s
-			s.draw(self.scr2plot)
 
-		GL.glPopMatrix()
+		
+		#GL.glBegin(GL.GL_LINE_LOOP)
+		#try:
+			#GL.glVertex(self.scrlim[0],self.scrlim[1],1)
+			#GL.glVertex(self.scrlim[0]+self.scrlim[2],self.scrlim[1]+self.scrlim[3],1)
+		#except: pass
+		#GL.glEnd()
 
 		if render:
-			fig=Figure((old_div(self.width(),72.0),old_div(self.height(),72.0)),dpi=72.0)
-			ax=fig.add_axes((.1,.1,.88,.88),autoscale_on=False,xlim=self.xlimits,ylim=self.ylimits,xscale=self.axisparms[2],yscale=self.axisparms[3])
+			fig=Figure((self.width()/72.0,self.height()/72.0),dpi=72.0)
+			if self.axisparms[0] and len(self.axisparms[0])>0: ymin=.1
+			else: ymin= .05
+			if self.axisparms[1] and len(self.axisparms[1])>0 : xmin=.12
+			else: xmin= .08
+			if len(self.plottitle)>0 : ywid=0.94-ymin
+			else: ywid=0.98-ymin
+			xwid=0.98-xmin
+			if self.xlimits[0]==self.xlimits[1]: xlimits=[self.xlimits[0],self.xlimits[0]+1.0]
+			else: xlimits=self.xlimits
+			if self.ylimits[0]==self.ylimits[1]: ylimits=[self.ylimits[0],self.ylimits[0]+1.0]
+			else: ylimits=self.ylimits
+			ax=fig.add_axes((xmin,ymin,xwid,ywid),autoscale_on=False,xlim=xlimits,ylim=ylimits,xscale=self.axisparms[2],yscale=self.axisparms[3])
 			#else : ax=fig.add_axes((.18,.18,.9,.9),autoscale_on=True,xscale=self.axisparms[2],yscale=self.axisparms[3])
 			if self.axisparms[0] and len(self.axisparms[0])>0 : ax.set_xlabel(self.axisparms[0],size="xx-large")
 			if self.axisparms[1] and len(self.axisparms[1])>0 : ax.set_ylabel(self.axisparms[1],size="xx-large")
+			if len(self.plottitle)>0 : ax.set_title(self.plottitle,size="xx-large")
 			ax.tick_params(axis='x', labelsize="x-large")
 			ax.tick_params(axis='y', labelsize="x-large")
-			canvas=FigureCanvasAgg(fig)
+			if self.savepdf!=None : canvas=FigureCanvasPdf(fig)
+			else: canvas=FigureCanvasAgg(fig)
 
 			for i in list(self.axes.keys()):
 				if not self.visibility[i]: continue
@@ -559,8 +588,22 @@ class EMPlot2DWidget(EMGLWidget):
 					except:
 						print("Error: Plot failed\n%d %s\n%d %s"%(len(x),x,len(y),y))
 
+			# additional program-specific annotations
+			if not self.annotate is None: self.annotate(fig,ax)
 
 			canvas.draw()
+			if self.savepdf!=None:
+				canvas.print_pdf(self.savepdf)
+				self.savepdf=None
+				self.needupd=True
+				self.updateGL()
+				return
+			if self.savepng!=None:
+				canvas.print_png(self.savepng)
+				self.savepng=None
+				self.needupd=True
+				self.updateGL()
+				return
 			self.plotimg = canvas.tostring_rgb()  # save this and convert to bitmap as needed
 
 			# this try except block is because the developers of matplotlib have been changing their API
@@ -574,6 +617,18 @@ class EMPlot2DWidget(EMGLWidget):
 					return
 			self.plotlim=(ax.get_xlim()[0],ax.get_ylim()[0],ax.get_xlim()[1]-ax.get_xlim()[0],ax.get_ylim()[1]-ax.get_ylim()[0])
 
+			# can't draw plot coord shapes until limits updated
+			EMShape.font_renderer=self.font_renderer		# Important !  Each window has to have its own font_renderer. Only one context active at a time, so this is ok.
+			GL.glPushMatrix()
+			glTranslate(0,0,5)
+			for k,s in list(self.shapes.items()):
+	#			print k,s
+				# overcome depth issues
+				s.draw(self.plot2draw)
+				
+			GL.glPopMatrix()
+
+
 	#		print ax.get_window_extent().xmin(),ax.get_window_extent().ymin()
 	#		print ax.get_window_extent().xmax(),ax.get_window_extent().ymax()
 	#		print ax.get_position()
@@ -582,19 +637,34 @@ class EMPlot2DWidget(EMGLWidget):
 			else:
 				GL.glRasterPos(0,self.height()-1)
 				GL.glPixelZoom(1.0,-1.0)
-		#		print "paint ",self.width(),self.height(), self.width()*self.height(),len(a)
 				GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT,1)
 				GL.glDrawPixels(self.width(),self.height(),GL.GL_RGB,GL.GL_UNSIGNED_BYTE,self.plotimg)
-		else:
-			try:
-				glCallList(self.main_display_list)
-			except: pass
 
-		if render :
 			glEndList()
-			try: glCallList(self.main_display_list)
-			except: pass
 
+		else:
+			# can't draw plot coord shapes until limits updated
+			EMShape.font_renderer=self.font_renderer		# Important !  Each window has to have its own font_renderer. Only one context active at a time, so this is ok.
+			GL.glPushMatrix()
+			glTranslate(0,0,5)
+			for k,s in list(self.shapes.items()):
+	#			print k,s
+				# overcome depth issues
+				s.draw(self.plot2draw)
+				
+			GL.glPopMatrix()
+
+
+		try: 
+#			GL.glPushMatrix()
+#			glScale(dpr,dpr,dpr)
+			glCallList(self.main_display_list)
+#			GL.glPopMatrix()
+		except: pass
+
+#			projm = glGetFloatv(GL_PROJECTION_MATRIX);					# // Grab the projection matrix
+#			modelm = glGetFloatv(GL_MODELVIEW_MATRIX);				# // Grab the modelview matrix
+#			print(projm,modelm)
 
 
 		if lighting : glEnable(GL_LIGHTING)
@@ -638,9 +708,9 @@ class EMPlot2DWidget(EMGLWidget):
 	def scr2plot(self,x,y) :
 		""" converts screen coordinates to plot coordinates """
 		try:
-			if self.axisparms[2]=="linear" : x2=old_div((x-self.scrlim[0]),self.scrlim[2])*self.plotlim[2]+self.plotlim[0]
+			if self.axisparms[2]=="linear" : x2=((x-self.scrlim[0])/self.scrlim[2])*self.plotlim[2]+self.plotlim[0]
 			else : x2=10.0**(old_div((x-self.scrlim[0]),self.scrlim[2])*(log10(self.plotlim[2]+self.plotlim[0])-log10(self.plotlim[0]))+log10(self.plotlim[0]))
-			if self.axisparms[3]=="linear" : y2=old_div((self.height()-y-self.scrlim[1]),self.scrlim[3])*self.plotlim[3]+self.plotlim[1]
+			if self.axisparms[3]=="linear" : y2=((self.height()-y-self.scrlim[1])/self.scrlim[3])*self.plotlim[3]+self.plotlim[1]
 			else : y2=10.0**(old_div((self.height()-y-self.scrlim[1]),self.scrlim[3])*(log10(self.plotlim[3]+self.plotlim[1])-log10(self.plotlim[1]))+log10(self.plotlim[1]))
 			return (x2,y2)
 		except: return (0,0)
@@ -648,10 +718,21 @@ class EMPlot2DWidget(EMGLWidget):
 	def plot2scr(self,x,y) :
 		""" converts plot coordinates to screen coordinates """
 		try:
-			if self.axisparms[2]=="linear" : x2=old_div((x-self.plotlim[0]),self.plotlim[2])*self.scrlim[2]+self.scrlim[0]
+			if self.axisparms[2]=="linear" : x2=((x-self.plotlim[0])/self.plotlim[2])*self.scrlim[2]+self.scrlim[0]
 			else : x2=old_div((-(self.scrlim[2]*log(x)) + (self.scrlim[0] + self.scrlim[2])*log(10)*log10(self.plotlim[0])-self.scrlim[0]*log(10)*log10(self.plotlim[0] +self.plotlim[2])),(log(10)*(log10(self.plotlim[0]) - log10(self.plotlim[0] + self.plotlim[2]))))
-			if self.axisparms[3]=="linear" :y2=self.height()-(old_div((y-self.plotlim[1]),self.plotlim[3])*self.scrlim[3]+self.scrlim[1])
+			if self.axisparms[3]=="linear" :y2=self.height()-self.scrlim[1]+(self.plotlim[1]-y)*self.scrlim[3]/self.plotlim[3]
 			else : y2=old_div((self.scrlim[3]*log(y) + self.height()*log(10.0)*log10(self.plotlim[1])-self.scrlim[1]*log(10.0)*log10(self.plotlim[1])-self.scrlim[3]*log(10.0)*log10(self.plotlim[1]) - self.height()*log(10.0)*log10(self.plotlim[1]+self.plotlim[3]) + self.scrlim[1]*log(10)*log10(self.plotlim[1]+self.plotlim[3])), (log(10)*(log10(self.plotlim[1]) - log10(self.plotlim[1]+self.plotlim[3]))))
+			return (x2,y2)
+		except:
+			return (0,0)
+
+	def plot2draw(self,x,y) :
+		""" converts plot coordinates to screen coordinates, inverted on y for drawing """
+		try:
+			if self.axisparms[2]=="linear" : x2=(x-self.plotlim[0])/self.plotlim[2]*self.scrlim[2]+self.scrlim[0]
+			else : x2=old_div((-(self.scrlim[2]*log(x)) + (self.scrlim[0] + self.scrlim[2])*log(10)*log10(self.plotlim[0])-self.scrlim[0]*log(10)*log10(self.plotlim[0] +self.plotlim[2])),(log(10)*(log10(self.plotlim[0]) - log10(self.plotlim[0] + self.plotlim[2]))))
+			if self.axisparms[3]=="linear" :y2=(y-self.plotlim[1])/self.plotlim[3]*self.scrlim[3]+self.scrlim[1]
+			else : y2=self.height()-old_div((self.scrlim[3]*log(y) + self.height()*log(10.0)*log10(self.plotlim[1])-self.scrlim[1]*log(10.0)*log10(self.plotlim[1])-self.scrlim[3]*log(10.0)*log10(self.plotlim[1]) - self.height()*log(10.0)*log10(self.plotlim[1]+self.plotlim[3]) + self.scrlim[1]*log(10)*log10(self.plotlim[1]+self.plotlim[3])), (log(10)*(log10(self.plotlim[1]) - log10(self.plotlim[1]+self.plotlim[3]))))
 			return (x2,y2)
 		except:
 			return (0,0)
@@ -665,6 +746,12 @@ class EMPlot2DWidget(EMGLWidget):
 		'''
 		self.needupd=1
 		self.del_shapes(("xcross","ycross","lcross","Circle"))
+
+	def setTitle(self,plottitle):
+		if plottitle!=self.plottitle:
+			self.plottitle=plottitle
+			self.needupd=1
+			self.updateGL()
 
 	def setAxisParms(self,xlabel,ylabel,xlog="linear",ylog="linear"):
 # skip this since we want a guaranteed redraw somewhere
@@ -680,6 +767,24 @@ class EMPlot2DWidget(EMGLWidget):
 		self.needupd=1
 		if not quiet : self.updateGL()
 
+	def setXAxisAll(self,xa,quiet=False):
+		for k in self.axes.keys():
+			v=self.axes[k]
+			self.axes[k]=(xa,v[1],v[2],v[3])
+		self.autoscale(True)
+		self.needupd=1
+		self.del_shapes()
+		if not quiet: self.updateGL()
+		
+	def setYAxisAll(self,ya,quiet=False):
+		for k in self.axes.keys():
+			v=self.axes[k]
+			self.axes[k]=(v[0],ya,v[2],v[3])
+		self.autoscale(True)
+		self.needupd=1
+		self.del_shapes()
+		if not quiet: self.updateGL()
+
 	def setPlotParms(self,key,color,line,linetype,linewidth,sym,symtype,symsize,quiet=False):
 		if color==None : color=self.pparm[key][0]
 		if line==None : line=self.pparm[key][1]
@@ -692,6 +797,14 @@ class EMPlot2DWidget(EMGLWidget):
 		self.pparm[key]=(color,line,linetype,linewidth,sym,symtype,symsize)
 		self.needupd=1
 		if not quiet: self.updateGL()
+
+	def set_annotate(self,fn):
+		"""sets a callback function to render additional shapes on the provided axes using
+		matplotlib calls. This permits a variety of complex customizations which will be 
+		retained in printed figures. 
+		fn(figure,axes)
+		"""
+		self.annotate=fn
 
 	def add_shape(self,k,s):
 		"""Add a 'shape' object to be overlaid on the image. Each shape is
@@ -718,7 +831,8 @@ class EMPlot2DWidget(EMGLWidget):
 		self.shapechange=1
 		#self.updateGL()
 
-	def del_shapes(self,k=None):
+	def del_shapes(self,k=None,scronly=False):
+		"""if scronly is set, then only shapes using screen coordinates will be deleted when k is not set"""
 		if k:
 			try:
 				for i in k:
@@ -726,6 +840,11 @@ class EMPlot2DWidget(EMGLWidget):
 			except:
 				try: del self.shapes[k]
 				except: return
+		elif scronly:
+			try: self.shapes={k:s for (k,s) in self.shapes.items() if s[0][:3]!="scr"}
+			except:
+				traceback.print_exc()
+				print(self.shapes)
 		else:
 			self.shapes={}
 
@@ -743,6 +862,7 @@ lc is the cursor selection point in plot coords"""
 			if not self.visibility[ak]: continue
 			j=self.axes[ak]
 			break
+		if j==0: return
 
 		if j[0]==-1 : x=arange(len(self.data[ak][0]))
 		else : x=self.data[ak][self.axes[ak][0]]
@@ -789,7 +909,7 @@ lc is the cursor selection point in plot coords"""
 					try: self.particle_viewers[i].set_data(ptclim)
 					except: 
 						self.particle_viewers.append(emimage2d.EMImage2DWidget(ptclim))
-						if len(self.particle_viewers)!=i+1 : print_exc()
+						if len(self.particle_viewers)!=i+1 : traceback.print_exc()
 					self.particle_viewers[i].show()
 #				if len(cmts)==2
 #					p1=EMData(cmts[1],cmts[0])
@@ -805,6 +925,10 @@ lc is the cursor selection point in plot coords"""
 
 		self.selected_sg.emit()
 
+	def set_mouse_emit(self,value):
+		"""if set to True, the widget will emit mouse events for tracking the cursor"""
+		self.mouseemit=value
+
 	def mousePressEvent(self, event):
 		lc=self.scr2plot(event.x(),event.y())
 		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
@@ -814,6 +938,7 @@ lc is the cursor selection point in plot coords"""
 			self.updateGL()
 			self.rmousedrag=(event.x(),event.y())
 		elif event.button()==Qt.LeftButton:
+			self.lmousedrag=(event.x(),event.y())
 			self.add_shape("xcross",EMShape(("scrline",0,0,0,self.scrlim[0],self.height()-event.y(),self.scrlim[2]+self.scrlim[0],self.height()-event.y(),1)))
 			self.add_shape("ycross",EMShape(("scrline",0,0,0,event.x(),self.scrlim[1],event.x(),self.scrlim[3]+self.scrlim[1],1)))
 			try: recip="%1.2f"%(old_div(1.0,lc[0]))
@@ -821,6 +946,8 @@ lc is the cursor selection point in plot coords"""
 			self.add_shape("lcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-220,self.scrlim[3]-10,"%1.5g (%s), %1.5g"%(lc[0],recip,lc[1]),120.0,-1)))
 			self.update_selected((event.x(),event.y()),lc)
 			self.updateGL()
+			
+			if self.mouseemit : self.mousedown.emit(event,lc)
 			#if self.mmode==0:
 				#self.emit(QtCore.SIGNAL("mousedown"), event)
 				#return
@@ -845,6 +972,7 @@ lc is the cursor selection point in plot coords"""
 			self.add_shape("lcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-220,self.scrlim[3]-10,"%1.5g (%s), %1.5g"%(lc[0],recip,lc[1]),120.0,-1)))
 			self.update_selected((event.x(),event.y()),lc)
 			self.updateGL()
+			if self.mouseemit : self.mousedrag.emit(event,self.scr2plot(event.x(),event.y()))
 #			self.add_shape("mcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-80,self.scrlim[3]-20,"%1.3g, %1.3g"%(self.plot2scr(*lc)[0],self.plot2scr(*lc)[1]),1.5,1)))
 
 	def mouseReleaseEvent(self, event):
@@ -854,6 +982,10 @@ lc is the cursor selection point in plot coords"""
 			if fabs(event.x()-self.rmousedrag[0])+fabs(event.y()-self.rmousedrag[1])<3 : self.rescale(0,0,0,0)
 			else : self.rescale(min(lc[0],lc2[0]),max(lc[0],lc2[0]),min(lc[1],lc2[1]),max(lc[1],lc2[1]))
 			self.rmousedrag=None
+		elif self.lmousedrag:
+			if self.mouseemit : self.mouseup.emit(event,self.scr2plot(event.x(),event.y()))
+			self.lmousedrag=None
+
 		#elif event.button()==Qt.LeftButton:
 			#if self.mmode==0:
 				#self.emit(QtCore.SIGNAL("mouseup"), event)
@@ -861,13 +993,17 @@ lc is the cursor selection point in plot coords"""
 			#elif self.mmode==1 :
 				#self.add_shape("MEAS",("line",.5,.1,.5,self.shapes["MEAS"][4],self.shapes["MEAS"][5],lc[0],lc[1],2))
 
+	def keyPressEvent(self,event):
+		"In case applications need keyboard events"
+		self.keypress.emit(event)
+
 	def rescale(self,x0,x1,y0,y1,quiet=False):
 		"adjusts the value range for the x/y axes"
-		self.xlimits=(x0,x1)
-		self.ylimits=(y0,y1)
+		self.xlimits=[x0,x1]
+		self.ylimits=[y0,y1]
 		if x0>=x1 or y0>=y1 : self.autoscale()
 		self.needupd=1
-		self.del_shapes()  # also triggers an update
+		self.del_shapes(scronly=True)
 		self.updateGL()
 		if self.inspector: self.inspector.update()
 
@@ -895,11 +1031,16 @@ lc is the cursor selection point in plot coords"""
 			xmin=1.0e38
 			xmax=-1.0e38
 			for k in list(self.axes.keys()):
-				if not self.visibility[k]: continue
-				xmin=min(xmin,min(self.data[k][self.axes[k][0]]))
-				xmax=max(xmax,max(self.data[k][self.axes[k][0]]))
+				ax=self.axes[k][0]
+				if not self.visibility[k] or len(self.data[k])<=ax: continue
+				if ax==-1 : 
+					xmin=min(xmin,0)
+					xmax=max(xmax,len(self.data[k][0]))
+				else :
+					xmin=min(xmin,min(self.data[k][ax]))
+					xmax=max(xmax,max(self.data[k][ax]))
 
-			if self.axisparms[2]!="linear" : self.xlimits=(old_div(xmin,1.1),xmax*1.1)
+			if self.axisparms[2]!="linear" : self.xlimits=(xmin/1.1,xmax*1.1)
 			else:
 				margin=(xmax-xmin)*0.025
 				self.xlimits=(xmin-margin,xmax+margin)
@@ -908,40 +1049,58 @@ lc is the cursor selection point in plot coords"""
 			ymin=1.0e38
 			ymax=-1.0e38
 			for k in list(self.axes.keys()):
-				if not self.visibility[k]: continue
-				ymin=min(ymin,min(self.data[k][self.axes[k][1]]))
-				ymax=max(ymax,max(self.data[k][self.axes[k][1]]))
+				ax=self.axes[k][1]
+				if not self.visibility[k] or len(self.data[k])<=ax: continue
+				if ax==-1:
+					ymin=min(ymin,0)
+					ymax=max(ymax,len(self.data[k][0]))
+				else :
+					ymin=min(ymin,min(self.data[k][ax]))
+					ymax=max(ymax,max(self.data[k][ax]))
 
-			if self.axisparms[3]!="linear" : self.ylimits=(old_div(ymin,1.1),ymax*1.1)
+			if self.axisparms[3]!="linear" : self.ylimits=[ymin/1.1,ymax*1.1]
 			else:
 				margin=(ymax-ymin)*0.025
-				self.ylimits=(ymin-margin,ymax+margin)
+				self.ylimits=[ymin-margin,ymax+margin]
 
 		if force or self.climits==None or self.climits[1]<=self.climits[0] :
 			cmin=1.0e38
 			cmax=-1.0e38
 			for k in list(self.axes.keys()):
-				if not self.visibility[k]: continue
-				cmin=min(cmin,min(self.data[k][self.axes[k][2]]))
-				cmax=max(cmax,max(self.data[k][self.axes[k][2]]))
+				ax=self.axes[k][2]
+				if not self.visibility[k] or len(self.data[k])<=ax or ax<-1: continue
+				if ax==-1:
+					cmin=min(cmin,0)
+					cmax=max(cmax,len(self.data[k][0]))
+				else :
+					print(k,force,self.climits,self.data[k])
+					cmin=min(cmin,min(self.data[k][ax]))
+					cmax=max(cmax,max(self.data[k][ax]))
+					
 			self.climits=(cmin,cmax)
 
 		if force or self.slimits==None or self.slimits[1]<=self.slimits[0] :
 			smin=1.0e38
 			smax=-1.0e38
 			for k in list(self.axes.keys()):
-				if not self.visibility[k]: continue
-				smin=min(smin,min(self.data[k][self.axes[k][3]]))
-				smax=max(smax,max(self.data[k][self.axes[k][3]]))
+				ax=self.axes[k][3]
+				if not self.visibility[k] or len(self.data[k])<=ax or ax<-1: continue
+				if ax==-1:
+					smin=min(smin,0)
+					smax=max(smax,len(self.data[k][0]))
+				else :
+					smin=min(smin,min(self.data[k][ax]))
+					smax=max(smax,max(self.data[k][ax]))
+
 			self.slimits=(smin,smax)
 
 		if self.inspector: self.inspector.update()
 
 	def wheelEvent(self, event):
 		pass
-		#if event.delta() > 0:
+		#if event.angleDelta().y() > 0:
 			#self.set_scale(self.scale + MAG_INC)
-		#elif event.delta() < 0:
+		#elif event.angleDelta().y() < 0:
 			#if ( self.scale - MAG_INC > 0 ):
 				#self.set_scale(self.scale - MAG_INC)
 		## The self.scale variable is updated now, so just update with that
@@ -952,15 +1111,12 @@ lc is the cursor selection point in plot coords"""
 
 class EMPolarPlot2DWidget(EMGLWidget):
 	"""
-	A QT widget for plotting ploar plots:
+	A QT widget for plotting polar plots:
 	"""
 	clusterStats = QtCore.pyqtSignal(list)
 
 	def __init__(self,application=None,winid=None):
-		fmt=QtOpenGL.QGLFormat()
-		fmt.setDoubleBuffer(True);
 		EMGLWidget.__init__(self, winid=winid)
-		self.setFormat(fmt)
 		self.resize(640,480)
 		self.setWindowIcon(QtGui.QIcon(QtGui.QPixmap(ploticon)))
 
@@ -974,6 +1130,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		self.climits=None
 		self.slimits=None
 		self.rmousedrag=None
+		self.lmousedrag=None
 		self.axisparms=(None,None,"linear","linear")
 		self.selected=[]
 
@@ -990,7 +1147,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		self.datap = None
 		self.setDataLabelsColor('#00ff00')
 		self.scattercolor = None	# IF set to none default colors are used
-		self.pointsizes = None		# Defalt is to use consta sizes. Overrides constant size
+		self.pointsizes = None		# Default is to use const sizes. Overrides constant size
 		self.yticklabels = True		# Default is to draw Y tick labels
 		self.xticklabels = True		# Default is to draw X tick labels
 
@@ -1015,7 +1172,8 @@ class EMPolarPlot2DWidget(EMGLWidget):
 	def resizeGL(self, width, height):
 		#print "resize ",self.width(), self.height()
 		side = min(width, height)
-		GL.glViewport(0,0,self.width(),self.height())
+		dpr=self.devicePixelRatio()
+		GL.glViewport(0,0,self.width()*dpr,self.height()*dpr)
 
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()
@@ -1034,13 +1192,13 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		if event.key() == Qt.Key_C:
 			self.show_inspector(1)
 		elif event.key() == Qt.Key_F1:
-			try: from PyQt4 import QtWebKit
+			try: from PyQt5 import QtWebEngineWidgets
 			except: return
 			try:
 				try:
 					test = self.browser
 				except:
-					self.browser = QtWebKit.QWebView()
+					self.browser = QtWebEngineWidgets.QWebEngineView()
 					self.browser.load(QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2display"))
 					self.browser.resize(800,800)
 
@@ -1069,7 +1227,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		x = self.firstcx - old_div(self.width(),2.0)
 		y = self.firstcy - old_div(self.height(),2.0)
 		if event.buttons()&Qt.MidButton:
-			filename = QtGui.QFileDialog.getSaveFileName(self, 'Publish or Perish! Save Plot', os.getcwd(), "(*.tiff *.jpeg, *.png)")
+			filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Publish or Perish! Save Plot', os.getcwd(), "(*.tiff *.jpeg, *.png)")[0]
 			if filename: # if we cancel
 				self.saveSnapShot(filename)
 		elif event.buttons()&Qt.LeftButton:
@@ -1135,7 +1293,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 #		self.add_shape("Circle",EMShape(("scrcircle",0,1,0,data[0][best], self.height()-data[1][best], self.valradius,2.0)))
 #		self.updateGL()
 #		print data[0][best], data[1][best]
-		#print "This point correpsonds to image: %s"%bestpoint
+		#print "This point corresponds to image: %s"%bestpoint
 #		self.emit(QtCore.SIGNAL("pointIdentity(int)"), bestpoint)
 
 	def mouseMoveEvent(self, event):
@@ -1219,7 +1377,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 
 	def set_data(self,input_data,key="data",replace=False,quiet=False,color=-1,linewidth=1,linetype=-1,symtype=-1,symsize=4,radcut=-1,datapoints=None):
 		"""
-		Reimplemtation to set polar data
+		Reimplementation to set polar data
 		see set_data in EMPlot2DWidget for details
 		"""
 		if len(input_data) != 2:
@@ -1294,7 +1452,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 
 	def render(self):
 		"""
-		Reimplmentation to plot a plor plot
+		Reimplementation to plot a polar plot
 		"""
 
 		if not self.data : return
@@ -1321,7 +1479,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		glTranslate(0,0,5)
 		for k,s in list(self.shapes.items()):
 #			print k,s
-			s.draw(self.scr2plot)
+			s.draw(self.scr2draw)
 
 		GL.glPopMatrix()
 
@@ -1332,6 +1490,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 			else : ax=fig.add_axes((.1,.1,.8,.8),autoscale_on=True,polar=True,xscale=self.axisparms[2],yscale=self.axisparms[3])
 			if self.axisparms[0] and len(self.axisparms[0])>0 : ax.set_xlabel(self.axisparms[0],size="xx-large")
 			if self.axisparms[1] and len(self.axisparms[1])>0 : ax.set_ylabel(self.axisparms[1],size="xx-large")
+			if len(self.plotttile)>0 : ax.set_title(self.plotttitle,size="xx-large")
 			if not self.yticklabels: ax.set_yticklabels([])
 			if not self.xticklabels: ax.set_xticklabels([])
 			canvas=FigureCanvasAgg(fig)
@@ -1456,6 +1615,17 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		except:
 			return (0,0)
 
+	def plot2draw(self,x,y) :
+		""" converts plot coordinates to screen coordinates """
+		try:
+			if self.axisparms[2]=="linear" : x2=old_div((x-self.plotlim[0]),self.plotlim[2])*self.scrlim[2]+self.scrlim[0]
+			else : x2=old_div((-(self.scrlim[2]*log(x)) + (self.scrlim[0] + self.scrlim[2])*log(10)*log10(self.plotlim[0])-self.scrlim[0]*log(10)*log10(self.plotlim[0] +self.plotlim[2])),(log(10)*(log10(self.plotlim[0]) - log10(self.plotlim[0] + self.plotlim[2]))))
+			if self.axisparms[3]=="linear" :y2=(((y-self.plotlim[1])/self.plotlim[3])*self.scrlim[3]+self.scrlim[1])
+			else : y2=self.height()-old_div((self.scrlim[3]*log(y) + self.height()*log(10.0)*log10(self.plotlim[1])-self.scrlim[1]*log(10.0)*log10(self.plotlim[1])-self.scrlim[3]*log(10.0)*log10(self.plotlim[1]) - self.height()*log(10.0)*log10(self.plotlim[1]+self.plotlim[3]) + self.scrlim[1]*log(10)*log10(self.plotlim[1]+self.plotlim[3])), (log(10)*(log10(self.plotlim[1]) - log10(self.plotlim[1]+self.plotlim[3]))))
+			return (x2,y2)
+		except:
+			return (0,0)
+
 	def resize_event(self,width,height):
 		self.full_refresh()
 
@@ -1498,7 +1668,8 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		self.shapechange=1
 		#self.updateGL()
 
-	def del_shapes(self,k=None):
+	def del_shapes(self,k=None,scronly=False):
+		"""if scronly is set, then only shapes using screen coordinates will be deleted when k is not set"""
 		if k:
 			try:
 				for i in k:
@@ -1506,35 +1677,37 @@ class EMPolarPlot2DWidget(EMGLWidget):
 			except:
 				try: del self.shapes[k]
 				except: return
+		elif scronly:
+			self.shapes=[s for s in shapes if s[0][:3]!="scr"]
 		else:
 			self.shapes={}
 
 		self.shapechange=1
 		#self.updateGL()
 
-class EMPlot2DStatsInsp(QtGui.QWidget):
+class EMPlot2DStatsInsp(QtWidgets.QWidget):
 
 	"""This class implements the statistics pop-up from the EMPlot2DInspector"""
 
 	def __init__(self,target) :
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		self.target=weakref.ref(target)
-		gbl0=QtGui.QGridLayout(self)
+		gbl0=QtWidgets.QGridLayout(self)
 
-		self.summary=QtGui.QPushButton(self)
+		self.summary=QtWidgets.QPushButton(self)
 		self.summary.setText("Summary Table")
 		gbl0.addWidget(self.summary,2,0,1,2)
 
-		hl1 = QtGui.QFrame()
-		hl1.setFrameStyle(QtGui.QFrame.HLine)
-		hl1.setSizePolicy(QtGui.QSizePolicy.Minimum,QtGui.QSizePolicy.Expanding)
+		hl1 = QtWidgets.QFrame()
+		hl1.setFrameStyle(QtWidgets.QFrame.HLine)
+		hl1.setSizePolicy(QtWidgets.QSizePolicy.Minimum,QtWidgets.QSizePolicy.Expanding)
 		gbl0.addWidget(hl1,3,0,1,2)
 
-		self.wlnorm=QtGui.QLabel(self)
+		self.wlnorm=QtWidgets.QLabel(self)
 		self.wlnorm.setText("Test:")
 		gbl0.addWidget(self.wlnorm,4,0)
 
-		self.wcomb_test=QtGui.QComboBox(self)
+		self.wcomb_test=QtWidgets.QComboBox(self)
 		#self.wcomb_test.addItem("Welch's t-test")
 		#self.wcomb_test.addItem("Student's t-test")
 		#self.wcomb_test.addItem("Hotelling's T-squared test")
@@ -1556,16 +1729,16 @@ class EMPlot2DStatsInsp(QtGui.QWidget):
 		self.wnround.intonly=1
 		gbl0.addWidget(self.wnround,6,1)
 
-		self.run=QtGui.QPushButton(self)
+		self.run=QtWidgets.QPushButton(self)
 		self.run.setText("Compute")
 		gbl0.addWidget(self.run,8,0,1,2)
 
-		hl2 = QtGui.QFrame()
-		hl2.setFrameStyle(QtGui.QFrame.HLine)
-		hl2.setSizePolicy(QtGui.QSizePolicy.Minimum,QtGui.QSizePolicy.Expanding)
+		hl2 = QtWidgets.QFrame()
+		hl2.setFrameStyle(QtWidgets.QFrame.HLine)
+		hl2.setSizePolicy(QtWidgets.QSizePolicy.Minimum,QtWidgets.QSizePolicy.Expanding)
 		gbl0.addWidget(hl2,9,0,1,2)
 
-		self.table = QtGui.QTableWidget() #QtGui.QTextEdit()
+		self.table = QtWidgets.QTableWidget() #QtWidgets.QTextEdit()
 		self.table.setRowCount(1)
 		self.table.setColumnCount(1)
 		self.table.setSortingEnabled(True)
@@ -1579,7 +1752,7 @@ class EMPlot2DStatsInsp(QtGui.QWidget):
 	def printSummary(self):
 		"""Computes and plots a polynomial fit (of order N) for the current x and y axes"""
 		insp=self.target().get_inspector()				# inspector
-		name=str(insp.setlist.currentItem().text())		# currently hilighted item
+		name=str(insp.setlist.currentItem().text())		# currently highlighted item
 		data=self.target().data[name]					# data set we will operate on
 		rnd=self.wnround.getValue()
 
@@ -1624,7 +1797,7 @@ class EMPlot2DStatsInsp(QtGui.QWidget):
 			for s,stat in enumerate(stats):
 				if s == 0: item = str(int(stat))
 				else: item = str(round(stat,rnd))
-				self.table.setItem( c, s, QtGui.QTableWidgetItem(item) )
+				self.table.setItem( c, s, QtWidgets.QTableWidgetItem(item) )
 
 	def runTest(self):
 		stat = str(self.wcomb_test.currentText())
@@ -1658,7 +1831,7 @@ class EMPlot2DStatsInsp(QtGui.QWidget):
 		for i, r in enumerate(result):
 			for j, c in enumerate(r):
 				item = str(c)
-				self.table.setItem( j, i, QtGui.QTableWidgetItem(item) )
+				self.table.setItem( j, i, QtWidgets.QTableWidgetItem(item) )
 
 	def replaceRowLabels(self,rows):
 		self.table.setVerticalHeaderLabels(rows)
@@ -1670,13 +1843,13 @@ class EMPlot2DStatsInsp(QtGui.QWidget):
 		self.table.setHorizontalHeaderLabels(cols)
 		self.table.setVerticalHeaderLabels(cols)
 
-class EMPlot2DRegrInsp(QtGui.QWidget):
+class EMPlot2DRegrInsp(QtWidgets.QWidget):
 	"""This class implements the regression pop-up from the EMPlot2DInspector"""
 
 	def __init__(self,target) :
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		self.target=weakref.ref(target)
-		gbl0=QtGui.QGridLayout(self)
+		gbl0=QtWidgets.QGridLayout(self)
 
 		insp = self.target().get_inspector()
 
@@ -1696,17 +1869,17 @@ class EMPlot2DRegrInsp(QtGui.QWidget):
 		self.wnpts.intonly=1
 		gbl0.addWidget(self.wnpts,4,1)
 
-		self.wlnorm=QtGui.QLabel(self)
+		self.wlnorm=QtWidgets.QLabel(self)
 		self.wlnorm.setText("Normalization:")
 		gbl0.addWidget(self.wlnorm,6,0)
 
-		self.wcomb_norm=QtGui.QComboBox(self)
+		self.wcomb_norm=QtWidgets.QComboBox(self)
 		self.wcomb_norm.addItem("None")
 		self.wcomb_norm.addItem("Standardize")
 		self.wcomb_norm.addItem("Maxmin")
 		gbl0.addWidget(self.wcomb_norm,6,1)
 
-		self.regrb=QtGui.QPushButton(self)
+		self.regrb=QtWidgets.QPushButton(self)
 		self.regrb.setText("Regress")
 		gbl0.addWidget(self.regrb,8,0,1,2)
 
@@ -1723,7 +1896,7 @@ class EMPlot2DRegrInsp(QtGui.QWidget):
 		norm = str(self.wcomb_norm.currentText())
 		npts = self.wnpts.getValue()
 		insp = self.target().get_inspector() # inspector
-		name=str(insp.setlist.currentItem().text())	# currently hilighted items
+		name=str(insp.setlist.currentItem().text())	# currently highlighted items
 
 		try:
 			xaxes=[int(i) for i in xaxes.split(",")]
@@ -1731,7 +1904,7 @@ class EMPlot2DRegrInsp(QtGui.QWidget):
 			yaxes=[int(i) for i in yaxes.split(",")]
 			if max(yaxes)>=ncol : raise Exception
 		except:
-			pass #QtGui.QMessageBox.warning(self, "Axes must be a comma separated list of column numbers")
+			pass #QtWidgets.QMessageBox.warning(self, "Axes must be a comma separated list of column numbers")
 			#return
 
 		xs = ",".join([str(i) for i in xaxes])
@@ -1794,22 +1967,22 @@ class EMPlot2DRegrInsp(QtGui.QWidget):
 		elif norm == "None":
 			return x
 
-class EMPlot2DClassInsp(QtGui.QWidget):
+class EMPlot2DClassInsp(QtWidgets.QWidget):
 	"""This class implements the classification pop-up from the EMPlot2DInspector"""
 	def __init__(self,target) :
 
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		self.target=weakref.ref(target)
-		gbl0=QtGui.QGridLayout(self)
+		gbl0=QtWidgets.QGridLayout(self)
 
 		#self.wimgfile=StringBox(label="Images:")
 		#gbl0.addWidget(self.wimgfile,0,0)
 
-		#self.wimgfilebut=QtGui.QPushButton(self)
+		#self.wimgfilebut=QtWidgets.QPushButton(self)
 		#self.wimgfilebut.setText("Browse")
 		#gbl0.addWidget(self.wimgfilebut,0,1)
 
-		self.kmeansb=QtGui.QPushButton(self)
+		self.kmeansb=QtWidgets.QPushButton(self)
 		self.kmeansb.setText("K-means")
 		gbl0.addWidget(self.kmeansb,2,0,1,2)
 
@@ -1823,12 +1996,12 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 		self.wcbaxnorm=CheckBox(label="Eq Wt Axes:",value=0)
 		gbl0.addWidget(self.wcbaxnorm,6,0)
 
-		hl1 = QtGui.QFrame()
-		hl1.setFrameStyle(QtGui.QFrame.HLine)
-		hl1.setSizePolicy(QtGui.QSizePolicy.Minimum,QtGui.QSizePolicy.Expanding)
+		hl1 = QtWidgets.QFrame()
+		hl1.setFrameStyle(QtWidgets.QFrame.HLine)
+		hl1.setSizePolicy(QtWidgets.QSizePolicy.Minimum,QtWidgets.QSizePolicy.Expanding)
 		gbl0.addWidget(hl1,7,0,1,2)
 
-		self.threshb=QtGui.QPushButton(self)
+		self.threshb=QtWidgets.QPushButton(self)
 		self.threshb.setText("Threshold")
 		gbl0.addWidget(self.threshb,8,0,1,2)
 
@@ -1839,7 +2012,7 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 		self.wnax_thresh=StringBox(label="Axes:",value="0")
 		gbl0.addWidget(self.wnax_thresh,10,1)
 
-		self.wcomb_threshtype=QtGui.QComboBox(self)
+		self.wcomb_threshtype=QtWidgets.QComboBox(self)
 		self.wcomb_threshtype.addItem("value")
 		self.wcomb_threshtype.addItem("sigma")
 		self.wcomb_threshtype.addItem("median")
@@ -1847,15 +2020,15 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 		self.wcomb_threshtype.addItem("percentile")
 		gbl0.addWidget(self.wcomb_threshtype,12,0)
 
-		hl2 = QtGui.QFrame()
-		hl2.setFrameStyle(QtGui.QFrame.HLine)
-		hl2.setSizePolicy(QtGui.QSizePolicy.Minimum,QtGui.QSizePolicy.Expanding)
+		hl2 = QtWidgets.QFrame()
+		hl2.setFrameStyle(QtWidgets.QFrame.HLine)
+		hl2.setSizePolicy(QtWidgets.QSizePolicy.Minimum,QtWidgets.QSizePolicy.Expanding)
 		gbl0.addWidget(hl2,13,0,1,2)
 
 		self.wspfix=StringBox(label="Prefix:",value="split")
 		gbl0.addWidget(self.wspfix,14,0)
 
-		self.wbmakeset=QtGui.QPushButton()
+		self.wbmakeset=QtWidgets.QPushButton()
 		self.wbmakeset.setText("New Sets")
 		gbl0.addWidget(self.wbmakeset,14,1)
 
@@ -1877,7 +2050,7 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 	def doMakeSet(self):
 		"""Saves selected plots as new .lst files in sets/ if 'comment' field contains image specifiers"""
 		insp=self.target().get_inspector()				# inspector
-		names=[str(i.text()) for i in insp.setlist.selectedItems()]		# currently hilighted items
+		names=[str(i.text()) for i in insp.setlist.selectedItems()]		# currently highlighted items
 		lsx={}
 
 		nums=set()
@@ -1885,10 +2058,10 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 		for name in names:
 			try: num=int(name.rsplit("_",1)[1])
 			except:
-				QtGui.QMessageBox.warning(self,"Error","Please hilight sets with names ending in _# !")
+				QtWidgets.QMessageBox.warning(self,"Error","Please highlight sets with names ending in _# !")
 				return
 			if num in nums:
-				QtGui.QMessageBox.warning(self, "Error","Please select only one group of sets at a time !")
+				QtWidgets.QMessageBox.warning(self, "Error","Please select only one group of sets at a time !")
 				return
 			nums.add(num)
 
@@ -1897,13 +2070,13 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 
 			try: comments=self.target().comments[name]
 			except:
-				QtGui.QMessageBox.warning(self,"Error", "No filenames stored in {}".format(name))
+				QtWidgets.QMessageBox.warning(self,"Error", "No filenames stored in {}".format(name))
 				return
 
 			for r in range(len(comments)):
 				try: imn,imf=comments[r].split(";")[:2]
 				except:
-					QtGui.QMessageBox.warning(self,"Error", "Invalid filename {} in {}, line {}".format(comments[r],name,r))
+					QtWidgets.QMessageBox.warning(self,"Error", "Invalid filename {} in {}, line {}".format(comments[r],name,r))
 					return
 
 				imn=int(imn)
@@ -1911,7 +2084,7 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 				val=lsx[imf][imn]
 				out[r]=val
 
-		QtGui.QMessageBox.information(None,"Finished","New sets created: "+", ".join(outs))
+		QtWidgets.QMessageBox.information(None,"Finished","New sets created: "+", ".join(outs))
 
 	def doKMeans(self):
 		"""Performs K-means classification, and produces nseg new data sets"""
@@ -1919,7 +2092,7 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 		axes=self.wnax.getValue()		# selected axes
 		axnorm=self.wcbaxnorm.getValue()
 		insp=self.target().get_inspector()				# inspector
-		name=str(insp.setlist.currentItem().text())		# currently hilighted item
+		name=str(insp.setlist.currentItem().text())		# currently highlighted item
 		data=self.target().data[name]					# data set we will operate on
 		try: comments=self.target().comments[name]		# comments for copying to results
 		except: comments=None
@@ -1933,7 +2106,7 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 				axes=[int(i) for i in axes.split(",")]
 				if max(axes)>=ncol : raise Exception
 			except:
-				QtGui.QMessageBox.warning(self, "Axes must be 'all' or a comma separated list of column numbers")
+				QtWidgets.QMessageBox.warning(self, "Axes must be 'all' or a comma separated list of column numbers")
 				return
 
 		# Sometimes one axis dominates the classification improperly, this makes each axis equally weighted
@@ -1975,7 +2148,7 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 		vals=self.wnval.getValue()								# values
 		thresh_type=str(self.wcomb_threshtype.currentText())	# type of threshold to perform
 		insp=self.target().get_inspector()						# inspector
-		name=str(insp.setlist.currentItem().text())				# currently hilighted item
+		name=str(insp.setlist.currentItem().text())				# currently highlighted item
 		data=self.target().data[name]							# data set we will operate on
 		try: comments=self.target().comments[name]				# comments for copying to results
 		except: comments=None
@@ -1991,18 +2164,27 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 				axes=[int(i) for i in axes.split(",")]
 				if max(axes)>=ncol : raise Exception
 			except:
-				QtGui.QMessageBox.warning(self, "Axes must be 'all' or a comma separated list of column numbers")
+				QtWidgets.QMessageBox.warning(self, "Axes must be 'all' or a comma separated list of column numbers")
 				return
 
 		try:
-			vals=[float(i) for i in vals.split(",")]
+			v1=vals.split(",")
+			vals=[]
+			inv=[]
+			for v in v1:
+				if v[0]=="<" : 
+					inv.append(True)
+					vals.append(float(v[1:]))
+				else:
+					inv.append(False)
+					vals.append(float(v))
 			if len(vals) != len(axes): raise Exception
 		except:
-			QtGui.QMessageBox.warning(self, "You must specify one (comma separated) value for each axis.")
+			QtWidgets.QMessageBox.warning(self, "ERROR","You must specify one (comma separated) value for each axis.\nFor 'value' if prepended with '<' the direction of the \nthreshold will be inverted for that axis.")
 			return
 
 		if thresh_type == "value":
-			axvals = {a:v for a,v in zip(axes,vals)}
+			axvals = {a:(v,iv) for a,v,iv in zip(axes,vals,inv)}
 
 		elif thresh_type == "sigma":
 			tmp = np.asarray(data)[:,axes]
@@ -2040,6 +2222,11 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 					if data[ax][r]>axvals[ax][0] and data[ax][r]<axvals[ax][1]:
 						imdata[r]["class_id"] *= 1
 					else: imdata[r]["class_id"] *= 0
+				elif thresh_type == "value":
+					if (axvals[ax][1] and data[ax][r] < axvals[ax][0]) or (not axvals[ax][1] and data[ax][r] > axvals[ax][0]):
+						imdata[r]["class_id"] *= 0
+					else:
+						imdata[r]["class_id"] *= 1
 				else:
 					if data[ax][r] < axvals[ax]:
 						imdata[r]["class_id"] *= 0
@@ -2103,7 +2290,7 @@ class EMPlot2DClassInsp(QtGui.QWidget):
 		try: self.imgwin.close()
 		except: pass
 
-class DragListWidget(QtGui.QListWidget):
+class DragListWidget(QtWidgets.QListWidget):
 	"This is a minor modification of the QListWidget to support drag-drop of data sets"
 	def setDataSource(self,trg):
 		"""We keep a weak reference to our data source so we can pull the data only when dragging actually starts"""
@@ -2111,9 +2298,9 @@ class DragListWidget(QtGui.QListWidget):
 
 	def keyPressEvent(self,event):
 		if event.key() == Qt.Key_Backspace:
-			name=str(self.currentItem().text())		# currently hilighted item
+			name=str(self.currentItem().text())		# currently highlighted item
 			self.datasource().target().set_data(None,key=name)
-		else: QtGui.QListWidget.keyPressEvent(self,event)
+		else: QtWidgets.QListWidget.keyPressEvent(self,event)
 
 	def dragEnterEvent(self,e):
 		if e.mimeData().hasText() : e.acceptProposedAction()
@@ -2162,13 +2349,13 @@ class DragListWidget(QtGui.QListWidget):
 
 	def setMovement(self,x):
 		"""The ListView and ListWidget unfortunately make use of drag-drop for internal rearrangement, but we need to use it for widget->widget copy. This prevents the parent from disabling drag/drop."""
-		QtGui.QListWidget.setMovement(self,x)
+		QtWidgets.QListWidget.setMovement(self,x)
 		self.setlist.setDragEnabled(True)
 		self.setlist.setAcceptDrops(True)
 
 	def setViewMode(self,x):
 		"""The ListView and ListWidget unfortunately make use of drag-drop for internal rearrangement, but we need to use it for widget->widget copy. This prevents the parent from disabling drag/drop."""
-		QtGui.QListWidget.setViewMode(self,x)
+		QtWidgets.QListWidget.setViewMode(self,x)
 		self.setlist.setDragEnabled(True)
 		self.setlist.setAcceptDrops(True)
 
@@ -2185,10 +2372,10 @@ class DragListWidget(QtGui.QListWidget):
 		# create the string representation of the data set
 		sdata=StringIO()		# easier to write as if to a file
 		for y in range(len(data[0])):
-			sdata.write("%1.8g"%data[axes[0]][y])
+			sdata.write(u"%1.8g"%data[axes[0]][y])
 			for x in range(1,len(axes)):
-				sdata.write("\t%1.8g"%data[axes[x]][y])
-			sdata.write("\n")
+				sdata.write(u"\t%1.8g"%data[axes[x]][y])
+			sdata.write(u"\n")
 
 		# start the drag operation
 		drag = QtGui.QDrag(self)
@@ -2202,23 +2389,23 @@ class DragListWidget(QtGui.QListWidget):
 #		print "Dropped ",dropact
 
 
-class EMPlot2DInspector(QtGui.QWidget):
+class EMPlot2DInspector(QtWidgets.QWidget):
 
 	def __init__(self,target) :
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"plot.png"))
 		self.target=weakref.ref(target)
-		vbl0=QtGui.QVBoxLayout(self)
+		vbl0=QtWidgets.QVBoxLayout(self)
 
-		hbl = QtGui.QHBoxLayout()
-		hbl.setMargin(2)
+		hbl = QtWidgets.QHBoxLayout()
+		hbl.setContentsMargins(2, 2, 2, 2)
 		hbl.setSpacing(6)
 		hbl.setObjectName("hbl")
 
-		gbx = QtGui.QGroupBox("Data sets")
+		gbx = QtWidgets.QGroupBox("Data sets")
 
-		vbl3 = QtGui.QVBoxLayout()
-		vbl3.setMargin(4)
+		vbl3 = QtWidgets.QVBoxLayout()
+		vbl3.setContentsMargins(4, 4, 4, 4)
 		vbl3.setSpacing(6)
 		vbl3.setObjectName("vbl3")
 		gbx.setLayout(vbl3)
@@ -2228,21 +2415,21 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.setlist=DragListWidget(self)
 		self.setlist.setDataSource(self)
 		self.setlist.setSelectionMode(3)
-		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
+		self.setlist.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
 		self.setlist.setDragEnabled(True)
 		self.setlist.setAcceptDrops(True)
 		vbl3.addWidget(self.setlist)
 
 		# none and all buttons for turning plot display on and off
-		hbl6 = QtGui.QHBoxLayout()
+		hbl6 = QtWidgets.QHBoxLayout()
 		hbl.setObjectName("hbl6")
 		vbl3.addLayout(hbl6)
 
-		self.nonebut=QtGui.QPushButton(self)
+		self.nonebut=QtWidgets.QPushButton(self)
 		self.nonebut.setText("None")
 		hbl6.addWidget(self.nonebut)
 
-		self.allbut=QtGui.QPushButton(self)
+		self.allbut=QtWidgets.QPushButton(self)
 		self.allbut.setText("All")
 		hbl6.addWidget(self.allbut)
 
@@ -2252,7 +2439,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 		vbl3.addWidget(self.showslide)
 
 		# number and step for the slider
-		hbl7 = QtGui.QHBoxLayout()
+		hbl7 = QtWidgets.QHBoxLayout()
 		hbl.setObjectName("hbl7")
 		vbl3.addLayout(hbl7)
 
@@ -2262,52 +2449,52 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.stepbox=ValBox(label="stp:",value=1)
 		hbl7.addWidget(self.stepbox)
 
-		vbl = QtGui.QVBoxLayout()
-		vbl.setMargin(0)
+		vbl = QtWidgets.QVBoxLayout()
+		vbl.setContentsMargins(0, 0, 0, 0)
 		vbl.setSpacing(6)
 		vbl.setObjectName("vbl")
 		hbl.addLayout(vbl)
 
-		hbl0=QtGui.QHBoxLayout()
-		hbl0.setMargin(0)
+		hbl0=QtWidgets.QHBoxLayout()
+		hbl0.setContentsMargins(0, 0, 0, 0)
 		hbl0.setSpacing(6)
 		vbl.addLayout(hbl0)
 
-		self.saveb=QtGui.QPushButton(self)
+		self.saveb=QtWidgets.QPushButton(self)
 		self.saveb.setText("Save")
 		hbl0.addWidget(self.saveb)
 
-		self.concatb=QtGui.QPushButton(self)
+		self.concatb=QtWidgets.QPushButton(self)
 		self.concatb.setText("Concat")
 		hbl0.addWidget(self.concatb)
 
-		self.pdfb=QtGui.QPushButton(self)
-		self.pdfb.setText("PDF")
+		self.pdfb=QtWidgets.QPushButton(self)
+		self.pdfb.setText("PDF/PNG")
 #		self.pdfb.setEnabled(False)
 		hbl0.addWidget(self.pdfb)
 
-		hbl01=QtGui.QHBoxLayout()
-		hbl01.setMargin(0)
+		hbl01=QtWidgets.QHBoxLayout()
+		hbl01.setContentsMargins(0, 0, 0, 0)
 		hbl01.setSpacing(6)
 		vbl.addLayout(hbl01)
 
-		self.stats=QtGui.QPushButton(self)
+		self.stats=QtWidgets.QPushButton(self)
 		self.stats.setText("Statistics")
 		hbl01.addWidget(self.stats)
 
-		self.regress=QtGui.QPushButton(self)
+		self.regress=QtWidgets.QPushButton(self)
 		self.regress.setText("Regression")
 		hbl01.addWidget(self.regress)
 
-		self.classb=QtGui.QPushButton(self)
+		self.classb=QtWidgets.QPushButton(self)
 		self.classb.setText("Classification")
 		hbl01.addWidget(self.classb)
 
-		hbl1 = QtGui.QHBoxLayout()
-		hbl1.setMargin(0)
+		hbl1 = QtWidgets.QHBoxLayout()
+		hbl1.setContentsMargins(0, 0, 0, 0)
 		hbl1.setSpacing(6)
 
-		self.color=QtGui.QComboBox(self)
+		self.color=QtWidgets.QComboBox(self)
 		self.color.addItem("black")
 		self.color.addItem("blue")
 		self.color.addItem("red")
@@ -2320,45 +2507,45 @@ class EMPlot2DInspector(QtGui.QWidget):
 
 		vbl.addLayout(hbl1)
 
-		hbl2 = QtGui.QHBoxLayout()
-		hbl2.setMargin(0)
+		hbl2 = QtWidgets.QHBoxLayout()
+		hbl2.setContentsMargins(0, 0, 0, 0)
 		hbl2.setSpacing(6)
 		vbl.addLayout(hbl2)
 
 		# This is for line parms
-		vbl2a = QtGui.QVBoxLayout()
-		vbl2a.setMargin(0)
+		vbl2a = QtWidgets.QVBoxLayout()
+		vbl2a.setContentsMargins(0, 0, 0, 0)
 		vbl2a.setSpacing(6)
 		hbl2.addLayout(vbl2a)
 
-		self.lintog=QtGui.QPushButton(self)
+		self.lintog=QtWidgets.QPushButton(self)
 		self.lintog.setText("Line")
 		self.lintog.setCheckable(1)
 		vbl2a.addWidget(self.lintog)
 
-		self.linsel=QtGui.QComboBox(self)
+		self.linsel=QtWidgets.QComboBox(self)
 		self.linsel.addItem("------")
 		self.linsel.addItem("- - - -")
 		self.linsel.addItem(".......")
 		self.linsel.addItem("-.-.-.-")
 		vbl2a.addWidget(self.linsel)
 
-		self.linwid=QtGui.QSpinBox(self)
+		self.linwid=QtWidgets.QSpinBox(self)
 		self.linwid.setRange(1,10)
 		vbl2a.addWidget(self.linwid)
 
 		# This is for point parms
-		vbl2b = QtGui.QVBoxLayout()
-		vbl2b.setMargin(0)
+		vbl2b = QtWidgets.QVBoxLayout()
+		vbl2b.setContentsMargins(0, 0, 0, 0)
 		vbl2b.setSpacing(6)
 		hbl2.addLayout(vbl2b)
 
-		self.symtog=QtGui.QPushButton(self)
+		self.symtog=QtWidgets.QPushButton(self)
 		self.symtog.setText("Symbol")
 		self.symtog.setCheckable(1)
 		vbl2b.addWidget(self.symtog)
 
-		self.symsel=QtGui.QComboBox(self)
+		self.symsel=QtWidgets.QComboBox(self)
 		self.symsel.addItem("circle")
 		self.symsel.addItem("square")
 		self.symsel.addItem("plus")
@@ -2366,102 +2553,102 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.symsel.addItem("tridown")
 		vbl2b.addWidget(self.symsel)
 
-		self.symsize=QtGui.QSpinBox(self)
+		self.symsize=QtWidgets.QSpinBox(self)
 		self.symsize.setRange(0,25)
 		vbl2b.addWidget(self.symsize)
 
 		# This is for "heatmap"/2D hexbin parms
-		#vbl2c = QtGui.QVBoxLayout()
-		#vbl2c.setMargin(0)
+		#vbl2c = QtWidgets.QVBoxLayout()
+		#vbl2c.setContentsMargins(0, 0, 0, 0)
 		#vbl2c.setSpacing(6)
 		#hbl2.addLayout(vbl2c)
 
-		#self.hmtog=QtGui.QPushButton(self)
+		#self.hmtog=QtWidgets.QPushButton(self)
 		#self.hmtog.setText("Heatmap")
 		#self.hmtog.setCheckable(1)
 		#vbl2c.addWidget(self.hmtog)
 
-		#self.hmsel=QtGui.QComboBox(self)
+		#self.hmsel=QtWidgets.QComboBox(self)
 		#self.hmsel.addItem("hex")
 		#self.hmsel.addItem("square")
 		#vbl2c.addWidget(self.hmsel)
 
-		#self.hmbins=QtGui.QSpinBox(self)
+		#self.hmbins=QtWidgets.QSpinBox(self)
 		#self.hmbins.setRange(1,50)
 		#vbl2c.addWidget(self.hmbins)
 
 		# per plot column selectors
-		gl=QtGui.QGridLayout()
-		gl.addWidget(QtGui.QLabel("X Col:",self),0,0,Qt.AlignRight)
-		self.slidex=QtGui.QSpinBox(self)
+		gl=QtWidgets.QGridLayout()
+		gl.addWidget(QtWidgets.QLabel("X Col:",self),0,0,Qt.AlignRight)
+		self.slidex=QtWidgets.QSpinBox(self)
 		self.slidex.setRange(-1,1)
 		gl.addWidget(self.slidex,0,1,Qt.AlignLeft)
 
-		gl.addWidget(QtGui.QLabel("Y Col:",self),1,0,Qt.AlignRight)
-		self.slidey=QtGui.QSpinBox(self)
+		gl.addWidget(QtWidgets.QLabel("Y Col:",self),1,0,Qt.AlignRight)
+		self.slidey=QtWidgets.QSpinBox(self)
 		self.slidey.setRange(-1,1)
 		gl.addWidget(self.slidey,1,1,Qt.AlignLeft)
 
-		gl.addWidget(QtGui.QLabel("C Col:",self),0,2,Qt.AlignRight)
-		self.slidec=QtGui.QSpinBox(self)
+		gl.addWidget(QtWidgets.QLabel("C Col:",self),0,2,Qt.AlignRight)
+		self.slidec=QtWidgets.QSpinBox(self)
 		self.slidec.setRange(-2,1)
 		gl.addWidget(self.slidec,0,3,Qt.AlignLeft)
 
-		gl.addWidget(QtGui.QLabel("S Col:",self),1,2,Qt.AlignRight)
-		self.slides=QtGui.QSpinBox(self)
+		gl.addWidget(QtWidgets.QLabel("S Col:",self),1,2,Qt.AlignRight)
+		self.slides=QtWidgets.QSpinBox(self)
 		self.slides.setRange(-2,1)
 		gl.addWidget(self.slides,1,3,Qt.AlignLeft)
 		vbl.addLayout(gl)
 
-		hbl2 = QtGui.QHBoxLayout()
+		hbl2 = QtWidgets.QHBoxLayout()
 
-		self.xlogtog=QtGui.QPushButton(self)
+		self.xlogtog=QtWidgets.QPushButton(self)
 		self.xlogtog.setText("X Log")
 		self.xlogtog.setCheckable(1)
 		hbl2.addWidget(self.xlogtog)
 
-		self.ylogtog=QtGui.QPushButton(self)
+		self.ylogtog=QtWidgets.QPushButton(self)
 		self.ylogtog.setText("Y Log")
 		self.ylogtog.setCheckable(1)
 		hbl2.addWidget(self.ylogtog)
 
-		#self.zlogtog=QtGui.QPushButton(self)
+		#self.zlogtog=QtWidgets.QPushButton(self)
 		#self.zlogtog.setText("Z Log")
 		#self.zlogtog.setCheckable(1)
 		#hbl2.addWidget(self.zlogtog)
 
 		vbl.addLayout(hbl2)
 
-		self.wrescale=QtGui.QPushButton(self)
+		self.wrescale=QtWidgets.QPushButton(self)
 		self.wrescale.setText("Rescale")
 		vbl.addWidget(self.wrescale)
 
 		vbl0.addLayout(hbl)
 
-		hbl2a=QtGui.QHBoxLayout()
+		hbl2a=QtWidgets.QHBoxLayout()
 
-		self.wl1=QtGui.QLabel("Min")
+		self.wl1=QtWidgets.QLabel("Min")
 		self.wl1.setAlignment(Qt.AlignHCenter)
 		hbl2a.addWidget(self.wl1)
-		self.wl2=QtGui.QLabel("Max")
+		self.wl2=QtWidgets.QLabel("Max")
 		self.wl2.setAlignment(Qt.AlignHCenter)
 		hbl2a.addWidget(self.wl2)
-		self.wl3=QtGui.QLabel("Min")
+		self.wl3=QtWidgets.QLabel("Min")
 		self.wl3.setAlignment(Qt.AlignHCenter)
 		hbl2a.addWidget(self.wl3)
-		self.wl4=QtGui.QLabel("Max")
+		self.wl4=QtWidgets.QLabel("Max")
 		self.wl4.setAlignment(Qt.AlignHCenter)
 		hbl2a.addWidget(self.wl4)
 		vbl0.addLayout(hbl2a)
 
-		hbl2=QtGui.QHBoxLayout()
+		hbl2=QtWidgets.QHBoxLayout()
 
-		#hbl2.addWidget(QtGui.QLabel("X:",self))
-		#self.wxmin=QtGui.QLineEdit(self)
+		#hbl2.addWidget(QtWidgets.QLabel("X:",self))
+		#self.wxmin=QtWidgets.QLineEdit(self)
 		self.wxmin=ValBox(label="X:")
 		hbl2.addWidget(self.wxmin)
-		#hbl2.addWidget(QtGui.QLabel("-",self))
-		#self.wxmax=QtGui.QLineEdit(self)
+		#hbl2.addWidget(QtWidgets.QLabel("-",self))
+		#self.wxmax=QtWidgets.QLineEdit(self)
 		self.wxmax=ValBox(label="  ")
 		hbl2.addWidget(self.wxmax)
 
@@ -2472,7 +2659,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 
 		vbl0.addLayout(hbl2)
 
-		hbl3=QtGui.QHBoxLayout()
+		hbl3=QtWidgets.QHBoxLayout()
 
 		self.wcmin=ValBox(label="C:")
 		hbl3.addWidget(self.wcmin)
@@ -2486,20 +2673,26 @@ class EMPlot2DInspector(QtGui.QWidget):
 		vbl0.addLayout(hbl3)
 
 
-		hbl4 = QtGui.QHBoxLayout()
-		hbl4.addWidget(QtGui.QLabel("X Label:",self))
-		self.xlabel=QtGui.QLineEdit(self)
+		hbl4 = QtWidgets.QHBoxLayout()
+		hbl4.addWidget(QtWidgets.QLabel("X Label:",self))
+		self.xlabel=QtWidgets.QLineEdit(self)
 		hbl4.addWidget(self.xlabel)
 		vbl0.addLayout(hbl4)
 
-		hbl5 = QtGui.QHBoxLayout()
-		hbl5.addWidget(QtGui.QLabel("Y Label:",self))
-		self.ylabel=QtGui.QLineEdit(self)
+		hbl5 = QtWidgets.QHBoxLayout()
+		hbl5.addWidget(QtWidgets.QLabel("Y Label:",self))
+		self.ylabel=QtWidgets.QLineEdit(self)
 		hbl5.addWidget(self.ylabel)
 		vbl0.addLayout(hbl5)
 
-		hbl6 = QtGui.QHBoxLayout()
-		#hbl6.addWidget(QtGui.QLabel("Transparency:",self))
+		hbl7 = QtWidgets.QHBoxLayout()
+		hbl7.addWidget(QtWidgets.QLabel("Title:",self))
+		self.plottitle=QtWidgets.QLineEdit(self)
+		hbl7.addWidget(self.plottitle)
+		vbl0.addLayout(hbl7)
+
+		hbl6 = QtWidgets.QHBoxLayout()
+		#hbl6.addWidget(QtWidgets.QLabel("Transparency:",self))
 		self.alphaslider=ValSlider(self,(0,1),"Transparency:",0.5,50)
 		hbl6.addWidget(self.alphaslider)
 		vbl0.addLayout(hbl6)
@@ -2521,7 +2714,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.slidec.valueChanged[int].connect(self.newCols)
 		self.slides.valueChanged[int].connect(self.newCols)
 		self.setlist.currentRowChanged[int].connect(self.newSet)
-		self.setlist.itemChanged[QListWidgetItem].connect(self.list_item_changed)
+		self.setlist.itemChanged[QtWidgets.QListWidgetItem].connect(self.list_item_changed)
 		self.color.currentIndexChanged[str].connect(self.updPlotColor)
 		self.classb.clicked.connect(self.openClassWin)
 		#QtCore.QObject.connect(self.hmsel,QtCore.SIGNAL("clicked()"),self.updPlot)
@@ -2539,6 +2732,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.linwid.valueChanged[int].connect(self.updPlotLinwid)
 		self.xlabel.textChanged[str].connect(self.updPlot)
 		self.ylabel.textChanged[str].connect(self.updPlot)
+		self.plottitle.textChanged[str].connect(self.updPlot)
 		self.stats.clicked.connect(self.openStatsWin)
 		self.regress.clicked.connect(self.openRegrWin)
 		self.saveb.clicked.connect(self.savePlot)
@@ -2728,7 +2922,17 @@ class EMPlot2DInspector(QtGui.QWidget):
 
 	def savePdf(self):
 		"""Saves the contents of the current plot to a pdf"""
-		plt.savefig("plot.pdf")
+		fsp=QtWidgets.QFileDialog.getSaveFileName(self, "Output file, png or pdf only")[0]
+		if fsp[-4:].lower()==".pdf":
+			self.target().savepdf=fsp
+			self.target().needupd=True
+			self.target().updateGL()
+		elif fsp[-4:].lower()==".png":
+			self.target().savepng=fsp
+			self.target().needupd=True
+			self.target().updateGL()
+		else:
+			QtWidgets.QMessageBox.error(self, "Only PDF and PNG files are supported")
 
 	def updPlot(self,s=None):
 		if self.quiet : return
@@ -2738,6 +2942,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 		else : yl="linear"
 		names = [str(item.text()) for item in self.setlist.selectedItems()]
 		self.target().setAxisParms(self.xlabel.text(),self.ylabel.text(),xl,yl)
+		self.target().setTitle(str(self.plottitle.text()))
 		self.target().autoscale(True)
 		if len(names)==1:
 			self.target().setPlotParms(names[0],self.color.currentIndex(),self.lintog.isChecked(),
@@ -2945,9 +3150,9 @@ class EMPlot2DInspector(QtGui.QWidget):
 		parms = self.target().pparm # get the colors from this
 
 		for i,j in enumerate(keys) :
-			a = QtGui.QListWidgetItem(j)
+			a = QtWidgets.QListWidgetItem(j)
 			a.setFlags(flags)
-			try: a.setTextColor(qt_color_map[colortypes[parms[j][0]]])
+			try: a.setForeground(qt_color_map[colortypes[parms[j][0]]])
 			except:
 				print("Color error")
 				print(list(sorted(parms.keys())))
@@ -2980,30 +3185,30 @@ class EMPlot2DInspector(QtGui.QWidget):
 		try: self.regresswin.close()
 		except: pass
 
-class EMDataFnPlotter(QtGui.QWidget):
+class EMDataFnPlotter(QtWidgets.QWidget):
 
-	def __init__(self, parent = None, data=None):
-		QtGui.QWidget.__init__(self, parent)
+	def __init__(self, parent = None, data=None, key="init"):
+		QtWidgets.QWidget.__init__(self, parent)
 
 		self.setWindowTitle("Plotter")
 
 		self.resize(780, 580)
-		self.gbl = QtGui.QGridLayout(self)
+		self.gbl = QtWidgets.QGridLayout(self)
 
 		self.plot = EMPlot2DWidget(parent=self)
 		self.gbl.addWidget(self.plot,0,0,1,1)
 
-		self.lplot = QtGui.QLabel("Plot")
-		self.gbl.addWidget(self.plot,1,0)
+		#self.lplot = QtWidgets.QLabel("Plot")
+		#self.gbl.addWidget(self.plot,1,0)
 
 		if data!=None :
-			self.plot.set_data(data,"init")
+			self.plot.set_data(data,key)
 
 	def closeEvent(self,event):
 		self.plot.closeEvent(event)
 
 	def set_label(self,lbl):
-		self.lplot.setText(lbl)
+		self.setWindowTitle(lbl)
 
 	def set_data(self, data, key):
 		self.plot.set_data(data,key)
@@ -3047,7 +3252,7 @@ class EMDataFnPlotter(QtGui.QWidget):
 # 		# the window corner OpenGL coordinates are (-+1, -+1)
 # 		gl.glOrtho(-1, 1, 1, -1, -1, 1)
 #
-# class EMGLPlot2DWidget(QtGui.QMainWindow):
+# class EMGLPlot2DWidget(QtWidgets.QMainWindow):
 #
 # 	def __init__(self):
 # 		super(EMGLPlot2DWidget, self).__init__()

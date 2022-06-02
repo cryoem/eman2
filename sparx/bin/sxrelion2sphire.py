@@ -1,12 +1,15 @@
 #!/usr/bin/env python
-from __future__ import print_function
 # 
 #
 # Author: Toshio Moriya 03/12/2015 (toshio.moriya@mpi-dortmund.mpg.de)
 #
+# Author: Pawel A.Penczek 05/27/2009 (Pawel.A.Penczek@uth.tmc.edu)
+# Please do not copy or modify this file without written consent of the author.
+# Copyright (c) 2000-2019 The University of Texas - Houston Medical School
+#
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
-# complete SPHIRE and EMAN2 software packages have some GPL dependencies,
+# complete EMAN2 and SPARX software packages have some GPL dependencies,
 # so you are responsible for compliance with the licenses of these packages
 # if you opt to use BSD licensing. The warranty disclaimer below holds
 # in either instance.
@@ -28,6 +31,8 @@ from __future__ import print_function
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+#
+#
 # 
 # ========================================================================================
 # NOTE: 2015/10/19 Toshio Moriya
@@ -41,6 +46,8 @@ from __future__ import print_function
 # 
 # ========================================================================================
 
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 from past.builtins import cmp
 from EMAN2 import *
@@ -68,41 +75,6 @@ def get_cmd_line():
 		cmd_line += arg + '  '
 	cmd_line = 'Shell line command: ' + cmd_line
 	return cmd_line
-
-# ----------------------------------------------------------------------------------------
-# Modified version of table_stat in statistics
-# ----------------------------------------------------------------------------------------
-def mrk_table_stat(X):
-	"""
-	  Basic statistics of numbers stored in a list: average, variance, minimum, maximum
-	"""
-	N = len(X)
-	assert N > 0
-	
-	av = X[0]
-	va = X[0]*X[0]
-	mi = X[0]
-	ma = X[0]
-	
-	for i in range(1, N):
-		av += X[i]
-		va += X[i]*X[i]
-		mi = min(mi, X[i])
-		ma = max(ma, X[i])
-	
-	avg = av/N
-	var = 0.0
-	if ma - mi == 0:
-		var = 0.0
-	elif N - 1 > 0:
-		var = (va - av*av/N)/float(N - 1)
-	sd = 0.0
-	if var > 0.0:
-		sd = sqrt(var)
-	
-	return  avg, sd, mi, ma
-
-
 # ----------------------------------------------------------------------------------------
 # Create relative path of path p2 to p1
 # ----------------------------------------------------------------------------------------
@@ -444,15 +416,14 @@ def main():
 					relion_defocusV = float(tokens_line[relion_dict['_rlnDefocusV'][idx_col] - 1])
 					relion_defocus_angle = float(tokens_line[relion_dict['_rlnDefocusAngle'][idx_col] - 1])
 					
-					sphire_cter_entry[idx_cter_def]       = ( relion_defocusU + relion_defocusV) / 20000   # convert format from RELION to SPHIRE
-					sphire_cter_entry[idx_cter_astig_amp] = (-relion_defocusU + relion_defocusV) / 10000   # convert format from RELION to SPHIRE
+					sphire_cter_entry[idx_cter_def]       = old_div(( relion_defocusU + relion_defocusV), 20000)   # convert format from RELION to SPHIRE
+					sphire_cter_entry[idx_cter_astig_amp] = old_div((-relion_defocusU + relion_defocusV), 10000)   # convert format from RELION to SPHIRE
 					sphire_cter_entry[idx_cter_astig_ang] = 45.0 - relion_defocus_angle # convert format from RELION to SPHIRE
 					while sphire_cter_entry[idx_cter_astig_ang] >= 180:
 						sphire_cter_entry[idx_cter_astig_ang] -= 180
 					while sphire_cter_entry[idx_cter_astig_ang] < 0:
 						sphire_cter_entry[idx_cter_astig_ang] += 180
-					assert sphire_cter_entry[idx_cter_astig_ang] < 180 and sphire_cter_entry[idx_cter_astig_ang] >= 0, '# Logical Error: The range of astigmatism angle must be 0-180 at this point of code.'
-					
+	
 					relion_const_ac = float(tokens_line[relion_dict['_rlnAmplitudeContrast'][idx_col] - 1])
 					sphire_cter_entry[idx_cter_const_ac] = 100 * relion_const_ac  # convert to %
 					
@@ -462,7 +433,7 @@ def main():
 					else: 
 						sphire_cter_entry[idx_cter_phase_shift] = 0.0
 					
-					sphire_const_ac_phase_shift = ampcont2angle(sphire_cter_entry[idx_cter_const_ac])  # must pass amplitude constrast in [%]
+					sphire_const_ac_phase_shift = ampcont2angle(sphire_cter_entry[idx_cter_const_ac])  # must pass amplitude contrast in [%]
 					sphire_total_phase_shift = sphire_cter_entry[idx_cter_phase_shift] + sphire_const_ac_phase_shift
 					sphire_cter_entry[idx_cter_total_ac] = angle2ampcont(sphire_total_phase_shift)
 					
@@ -471,7 +442,7 @@ def main():
 					
 					relion_det_pix_size = float(tokens_line[relion_dict['_rlnDetectorPixelSize'][idx_col] - 1])
 					relion_mag = float(tokens_line[relion_dict['_rlnMagnification'][idx_col] - 1])
-					sphire_cter_entry[idx_cter_apix] = 10000 * relion_det_pix_size / relion_mag # convert um to A
+					sphire_cter_entry[idx_cter_apix] = old_div(10000 * relion_det_pix_size, relion_mag) # convert um to A
 
 					##### Store CTER specific parameters ##### 
 					sphire_cter_entry[idx_cter_bfactor]      = 0.0    # RELION does not output B-Factor, so set it zero always
@@ -502,7 +473,7 @@ def main():
 					if micrograph_dirname not in sphire_cter_dict:
 						sphire_cter_dict[micrograph_dirname] = {}
 					assert micrograph_dirname in sphire_cter_dict
-					
+
 					if micrograph_basename not in sphire_cter_dict[micrograph_dirname]:
 						sphire_cter_dict[micrograph_dirname][micrograph_basename] = [sphire_cter_entry]
 					else:
@@ -521,7 +492,7 @@ def main():
 					sphire_cter_entry[idx_cter_def]          = 0.0
 					sphire_cter_entry[idx_cter_cs]           = 0.0
 					sphire_cter_entry[idx_cter_vol]          = 300.0
-					sphire_cter_entry[idx_cter_apix] = 10000 * relion_det_pix_size / relion_mag # convert um to A
+					sphire_cter_entry[idx_cter_apix] = old_div(10000 * relion_det_pix_size, relion_mag) # convert um to A
 					sphire_cter_entry[idx_cter_bfactor]      = 0.0
 					sphire_cter_entry[idx_cter_total_ac]     = 100.0
 					sphire_cter_entry[idx_cter_astig_amp]    = 0.0
@@ -830,63 +801,41 @@ def main():
 				
 				sphire_cter_stats = sphire_cter_dict[micrograph_dirname][micrograph_basename][0]
 				
-				avg, sd, min, max = mrk_table_stat(sphire_cter_table[idx_cter_def])
-				sphire_cter_stats[idx_cter_def] = avg
-				sphire_cter_stats[idx_cter_sd_def] = sd
-				if avg != 0.0:
-					sphire_cter_stats[idx_cter_cv_def] = sd / avg * 100 # use percentage
+				sphire_cter_stats[idx_cter_def], sd, _,_ = table_stat(sphire_cter_table[idx_cter_def])
+				sphire_cter_stats[idx_cter_sd_def] = sqrt(max(0.0,sd))
+				if sphire_cter_stats[idx_cter_def] != 0.0:
+					sphire_cter_stats[idx_cter_cv_def] = old_div(sd, sphire_cter_stats[idx_cter_def]) * 100 # use percentage
+				# I removed a very awkward code which as far as I can tell was meant to assure that
+				#   all values on this list are identical.  I replaced it by proper python				
+				assert(len(set(sphire_cter_table[idx_cter_cs])) == 1)
+				assert(len(set(sphire_cter_table[idx_cter_vol])) == 1)
+				assert(len(set(sphire_cter_table[idx_cter_apix])) == 1)
+				assert(len(set(sphire_cter_table[idx_cter_bfactor])) == 1)
+
+				sphire_cter_stats[idx_cter_total_ac], sd, _,_ = table_stat(sphire_cter_table[idx_cter_total_ac])
+				sphire_cter_stats[idx_cter_sd_total_ac] = sqrt(max(0.0,sd))
 				
-				avg, sd, min, max = mrk_table_stat(sphire_cter_table[idx_cter_cs])
-				sphire_cter_stats[idx_cter_cs] = avg
-				assert (sd <= 1.0e-7)
+				sphire_cter_stats[idx_cter_astig_amp] , sd, _,_ = table_stat(sphire_cter_table[idx_cter_astig_amp])
+				sphire_cter_stats[idx_cter_sd_astig_amp] = sqrt(max(0.0,sd))
+				if sphire_cter_stats[idx_cter_astig_amp] != 0.0:
+					sphire_cter_stats[idx_cter_cv_astig_amp] = old_div(sd, sphire_cter_stats[idx_cter_astig_amp]) * 100 # use percentage
+
+				# What followed was wrong, one cannot compute average angles this way PAP   01/28/2019
+				sphire_cter_stats[idx_cter_astig_ang], sphire_cter_stats[idx_cter_sd_astig_ang] = angle_ave(sphire_cter_table[idx_cter_astig_ang])
 				
-				avg, sd, min, max = mrk_table_stat(sphire_cter_table[idx_cter_vol])
-				sphire_cter_stats[idx_cter_vol] = avg
-				if sd > 1.0e-7:
-					print ('sphire_cter_table[idx_cter_vol]', sphire_cter_table[idx_cter_vol])
-					print ('avg, sd, min, max', avg, sd, min, max)
-				assert (sd <= 1.0e-7)
+				sphire_cter_stats[idx_cter_max_freq], _, _, _ = table_stat(sphire_cter_table[idx_cter_max_freq])
 				
-				avg, sd, min, max = mrk_table_stat(sphire_cter_table[idx_cter_apix])
-				sphire_cter_stats[idx_cter_apix] = avg
-				assert (sd <= 1.0e-7)
+				sphire_cter_stats[idx_cter_reserved], _, _, _ = table_stat(sphire_cter_table[idx_cter_reserved])
 				
-				avg, sd, min, max = mrk_table_stat(sphire_cter_table[idx_cter_bfactor])
-				sphire_cter_stats[idx_cter_bfactor] = avg
-				assert (sd <= 1.0e-7)
+				sphire_cter_stats[idx_cter_const_ac], _, _, _ = table_stat(sphire_cter_table[idx_cter_const_ac])
 				
-				avg, sd, min, max = mrk_table_stat(sphire_cter_table[idx_cter_total_ac])
-				sphire_cter_stats[idx_cter_total_ac] = avg
-				sphire_cter_stats[idx_cter_sd_total_ac] = sd
-				
-				avg, sd, min, max = mrk_table_stat(sphire_cter_table[idx_cter_astig_amp])
-				sphire_cter_stats[idx_cter_astig_amp] = avg
-				sphire_cter_stats[idx_cter_sd_astig_amp] = sd
-				if avg != 0.0:
-					sphire_cter_stats[idx_cter_cv_astig_amp] = sd / avg * 100 # use percentage
-				
-				avg, sd, min, max = mrk_table_stat(sphire_cter_table[idx_cter_astig_ang])
-				if sd > 0.0: sd = sqrt(sd)
-				sphire_cter_stats[idx_cter_astig_ang] = avg
-				sphire_cter_stats[idx_cter_sd_astig_ang] = sd
-				
-				avg, sd, min, max = mrk_table_stat(sphire_cter_table[idx_cter_max_freq])
-				sphire_cter_stats[idx_cter_max_freq] = avg
-				
-				avg, sd, min, max = mrk_table_stat(sphire_cter_table[idx_cter_reserved])
-				sphire_cter_stats[idx_cter_reserved] = avg
-				
-				avg, sd, min, max = mrk_table_stat(sphire_cter_table[idx_cter_const_ac])
-				sphire_cter_stats[idx_cter_const_ac] = avg
-				
-				avg, sd, min, max = mrk_table_stat(sphire_cter_table[idx_cter_phase_shift])
-				sphire_cter_stats[idx_cter_phase_shift] = avg
+				sphire_cter_stats[idx_cter_phase_shift], _, _, _ = table_stat(sphire_cter_table[idx_cter_phase_shift])
 				
 				# Save statistics of CTF parameters for each micrograph
 				for idx_cter in range(n_idx_cter - 1):
-					file_sphire_cter_partres.write('  %12.5g' % sphire_cter_entry[idx_cter])
+					file_sphire_cter_partres.write('  %13.6f' % sphire_cter_entry[idx_cter])
 				file_sphire_cter_partres.write('  %s\n' % sphire_cter_entry[idx_cter_mic_name])  # At the end of line, write micrograph name which is string type!
-			
+
 			file_sphire_cter_partres.close()
 		
 		# Write box coordinate to files (doing here to avoid repeating open/close files in loop)
@@ -914,9 +863,11 @@ def main():
 							eman1_coordinate_x = sphire_coordinates[idx_ptcl_source_coord_x] - box_size//2
 							eman1_coordinate_y = sphire_coordinates[idx_ptcl_source_coord_y] - box_size//2
 							eman1_dummy = -1 # For 5th column of EMAN1 boxer format
-							file_coordinates.write('%6d %6d %6d %6d %6d\n' % (eman1_coordinate_x, eman1_coordinate_y, box_size, box_size, eman1_dummy))
+							# in star file they are floats, so they have to be properly rounded,  PAP
+							file_coordinates.write('%6d %6d %6d %6d %6d\n' % (int(round(eman1_coordinate_x)), int(round(eman1_coordinate_y)), box_size, box_size, eman1_dummy))
 						else:
-							file_coordinates.write('%6d %6d\n' % (sphire_coordinates[idx_ptcl_source_coord_x], sphire_coordinates[idx_ptcl_source_coord_y]))
+							# in star file they are floats, so they have to be properly rounded,  PAP
+							file_coordinates.write('%6d %6d\n' % (int(round(sphire_coordinates[idx_ptcl_source_coord_x])), int(round(sphire_coordinates[idx_ptcl_source_coord_y]))))
 				else:
 					assert relion_category_dict['helical'][idx_is_category_found] == True, '# Logical Error: helical category must be found always at this point of code.'
 					file_coordinates.write('#micrograph: %s\n'%(micrograph_basename))
@@ -1025,24 +976,25 @@ def main():
 						for i_sphire_rebox_entry in range(n_sphire_rebox_entry):
 							line = ""
 							line += " {:6d}".format(sphire_coordinates_list[i_sphire_rebox_entry][idx_ptcl_source_coord_id])          # idx_params_mic_coord_id
-							line += " {:6d}".format(sphire_coordinates_list[i_sphire_rebox_entry][idx_ptcl_source_coord_x])           # idx_params_mic_coord_x
-							line += " {:6d}".format(sphire_coordinates_list[i_sphire_rebox_entry][idx_ptcl_source_coord_y])           # idx_params_mic_coord_y
-							line += " {:15.5f}".format(sphire_coordinates_list[i_sphire_rebox_entry][idx_ptcl_source_resample_ratio]) # idx_params_mic_resample_ratio
-							line += " {:15.5f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_def])                           # idx_params_ctf_defocus
-							line += " {:15.5f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_cs])                            # idx_params_ctf_cs
-							line += " {:15.5f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_vol])                           # idx_params_ctf_voltage
-							line += " {:15.5f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_apix])                          # idx_params_ctf_apix
-							line += " {:15.5f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_bfactor])                       # idx_params_ctf_bfactor
-							line += " {:15.5f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_total_ac])                      # idx_params_ctf_ampcont
-							line += " {:15.5f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_astig_amp])                     # idx_params_ctf_dfdiff
-							line += " {:15.5f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_astig_ang])                     # idx_params_ctf_dfang
-							line += " {:15.5f}".format(sphire_proj3d_list[i_sphire_rebox_entry]['phi'])                               # idx_params_proj_phi
-							line += " {:15.5f}".format(sphire_proj3d_list[i_sphire_rebox_entry]['theta'])                             # idx_params_proj_theta
-							line += " {:15.5f}".format(sphire_proj3d_list[i_sphire_rebox_entry]['psi'])                               # idx_params_proj_psi
-							line += " {:15.5f}".format(sphire_proj3d_list[i_sphire_rebox_entry]['tx'])                                # idx_params_proj_sx
-							line += " {:15.5f}".format(sphire_proj3d_list[i_sphire_rebox_entry]['ty'])                                # idx_params_proj_sy
-							line += " {:15.5f}".format(dummy_particle_defocus_error)                                                  # idx_params_defocus_error
-							line += " {:15.5f}".format(dummy_particle_resample_ratio)                                                 # idx_params_resample_ratio
+							# in star file they are floats, so they have to be properly rounded,  PAP
+							line += " {:6d}".format(int(round(sphire_coordinates_list[i_sphire_rebox_entry][idx_ptcl_source_coord_x])))           # idx_params_mic_coord_x
+							line += " {:6d}".format(int(round(sphire_coordinates_list[i_sphire_rebox_entry][idx_ptcl_source_coord_y])))           # idx_params_mic_coord_y
+							line += " {:13.6f}".format(sphire_coordinates_list[i_sphire_rebox_entry][idx_ptcl_source_resample_ratio]) # idx_params_mic_resample_ratio
+							line += " {:13.6f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_def])                           # idx_params_ctf_defocus
+							line += " {:13.6f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_cs])                            # idx_params_ctf_cs
+							line += " {:13.6f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_vol])                           # idx_params_ctf_voltage
+							line += " {:13.6f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_apix])                          # idx_params_ctf_apix
+							line += " {:13.6f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_bfactor])                       # idx_params_ctf_bfactor
+							line += " {:13.6f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_total_ac])                      # idx_params_ctf_ampcont
+							line += " {:13.6f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_astig_amp])                     # idx_params_ctf_dfdiff
+							line += " {:13.6f}".format(sphire_ctf_list[i_sphire_rebox_entry][idx_cter_astig_ang])                     # idx_params_ctf_dfang
+							line += " {:13.6f}".format(sphire_proj3d_list[i_sphire_rebox_entry]['phi'])                               # idx_params_proj_phi
+							line += " {:13.6f}".format(sphire_proj3d_list[i_sphire_rebox_entry]['theta'])                             # idx_params_proj_theta
+							line += " {:13.6f}".format(sphire_proj3d_list[i_sphire_rebox_entry]['psi'])                               # idx_params_proj_psi
+							line += " {:13.6f}".format(sphire_proj3d_list[i_sphire_rebox_entry]['tx'])                                # idx_params_proj_sx
+							line += " {:13.6f}".format(sphire_proj3d_list[i_sphire_rebox_entry]['ty'])                                # idx_params_proj_sy
+							line += " {:13.6f}".format(dummy_particle_defocus_error)                                                  # idx_params_defocus_error
+							line += " {:15.6f}".format(dummy_particle_resample_ratio)                                                 # idx_params_resample_ratio
 							line += " {:6d}".format(sphire_chunk_id_list[i_sphire_rebox_entry])                                       # idx_params_chunk_id NOT SUPPORTED YET (Toshio Moriya 2018/07/10)
 							line += " \n"
 							
@@ -1053,12 +1005,12 @@ def main():
 				# assert relion_category_dict['window'][idx_is_category_found]
 				# Write rebox parameters to files (doing here to avoid repeating open/close files in loop)
 				print('# ')
-				print('# Particle coodinates are not found! Skipping tos save SPHIRE rebox files ...')
+				print('# Particle coodinates are not found! Skipping save SPHIRE rebox files ...')
 		else:
 			# assert relion_category_dict['helical'][idx_is_category_found]:
 			print('# ')
 			print('# For helical reconstruction, SPHIRE rebox files are not supported yet ...')
-			print('# Skipping tos save SPHIRE rebox files ...')
+			print('# Skipping save SPHIRE rebox files ...')
 		
 		if is_enable_create_stack:
 			assert relion_category_dict['window'][idx_is_category_found], 'MRK_DEBUG'

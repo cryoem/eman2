@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Benjamin Bammes, 06/03/2008 (bammes@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -270,7 +267,7 @@ def calcnoise( n0, n1, n2, n3, ds, e2bg ) :
 	  e1bg          1D EMAN1 background curve
 	"""
 	
-	# Calcalate noise curve
+	# Calculate noise curve
 	e1bg = [ ]
 	for i in range( len( e2bg ) ) :
 		s = ds * i
@@ -601,7 +598,7 @@ def write_snrmap( outputfile, intsnr, ds ) :
 	  ds   Frequency sampling
 	"""
 	
-	# Import plotting libaries
+	# Import plotting libraries
 	import matplotlib
 	import numpy as np
 	import matplotlib.cm as cm

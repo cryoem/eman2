@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 06/06/2011
 # Copyright (c) 2011- Baylor College of Medicine
@@ -37,7 +34,9 @@ from EMAN2 import *
 from eman2_gui.emimagemx import EMImageMXWidget
 
 import sys
-from PyQt4 import QtCore, QtGui, QtOpenGL
+from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
+#import OpenGL
+#OpenGL.ERROR_CHECKING = False
 #from OpenGL import GL,GLU,GLUT
 from eman2_gui.emapplication import EMApp
 import os
@@ -63,7 +62,7 @@ def main():
 	parser.add_argument("--minqual",type=int,help="Files with a quality value lower than specified will be skipped",default=0,guitype='intbox', row=2, col=1, mode='autofit,tuning,genoutp,gensf')
 	parser.add_argument("--gui",action="store_true",help="Start the GUI for interactive use (default=True)",default=True)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 
@@ -101,13 +100,13 @@ def main():
 
 #	E2end(logid)
 
-class EMMarkPtclTool(QtGui.QMainWindow):
+class EMMarkPtclTool(QtWidgets.QMainWindow):
 	"""This is a tool for marking bad particles"""
 
 	def __init__(self,extrafiles=None,verbose=0):
-		QtGui.QMainWindow.__init__(self)
+		QtWidgets.QMainWindow.__init__(self)
 
-		app=QtGui.qApp
+		app=QtWidgets.qApp
 		self.setWindowTitle("e2markbadparticles")
 
 		# Menu Bar
@@ -115,15 +114,15 @@ class EMMarkPtclTool(QtGui.QMainWindow):
 #		self.mfile_save_processed=self.mfile.addAction("Save processed data")
 		self.mfile_quit=self.mfile.addAction("Quit")
 
-		self.wtabs=QtGui.QTabWidget()
+		self.wtabs=QtWidgets.QTabWidget()
 		self.setCentralWidget(self.wtabs)
 
 		self.wclasstab=EMClassPtclTool(extrafiles)
 		self.wtabs.addTab(self.wclasstab,"Classes")
 
-		self.vbl2 = QtGui.QVBoxLayout()
+		self.vbl2 = QtWidgets.QVBoxLayout()
 		self.setlist=MyListWidget(self)
-		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
+		self.setlist.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
 		self.vbl2.addWidget(self.setlist)
 		
 
@@ -137,7 +136,7 @@ class EMMarkPtclTool(QtGui.QMainWindow):
 
 	def closeEvent(self,event):
 		self.wclasstab.close()
-		QtGui.QWidget.closeEvent(self, event)
+		QtWidgets.QWidget.closeEvent(self, event)
 
 if __name__ == "__main__":
 	main()

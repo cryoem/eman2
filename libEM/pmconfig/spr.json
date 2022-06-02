@@ -1,6 +1,6 @@
 /* JSON file to configure the project manager SPR mode */
 /* The ICON string needs to correspond to a dict key listed in the PM */
-/* The available keys can be found by browsing the JSON files of looking at e2 projectmanager.py */
+/* The available keys can be found by browsing the JSON files of looking at e2projectmanager.py */
 [
   {
     "ICON": "single_image",
@@ -346,6 +346,15 @@
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2refinemulti",
         "PROGRAM": "e2refinemulti.py",
         "NAME": "Multireference refinement (e2refinemulti)",
+        "NOTELEVEL": "1",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "refine",
+        "MODE": "refinement",
+        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2gmm",
+        "PROGRAM": "e2gmm.py",
+        "NAME": "GMM Variability (e2gmm - experimental)",
         "NOTELEVEL": "1",
         "CHILDREN": []
       },

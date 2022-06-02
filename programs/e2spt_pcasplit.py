@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 # align all particles to reference and store alignment results
 # Author: Steven Ludtke (sludtke@bcm.edu)
 # Copyright (c) 2000- Baylor College of Medicine
@@ -31,14 +29,12 @@ from __future__ import division
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 
-from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
 
 from EMAN2 import *
 
-from EMAN2_utils import make_path
 import numpy as np
 import matplotlib.pyplot as plt
 import sklearn.decomposition as skdc
@@ -58,7 +54,7 @@ from sys import argv,exit
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """Usage: e2spt_pcasplit.py [options] <spt_XX> <reference>"""
+	usage = """Usage: e2spt_pcasplit.py --path <spt_XX> [options]"""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--path",type=str,required=True,default=None,help="Path to a folder where results should be stored, following standard naming conventions (default = spt_XX)",guitype='filebox',row=0, col=0, rowspan=1, colspan=2)
@@ -73,7 +69,8 @@ def main():
 	parser.add_argument("--nowedgefill",action='store_true',help="Do not fill the missing wedge before classification.",default=False,guitype="boolbox",row=5, col=1, rowspan=1, colspan=1)
 	parser.add_argument("--clean",action='store_true',help="remove outliers before PCA.",default=False,guitype="boolbox",row=6, col=1, rowspan=1, colspan=1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-
+	parser.add_argument("--shrink",type=int,help="Shrink particles before classification",default=1)
+	parser.add_argument("--dotest",type=int,help="test using N random particles",default=-1)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	(options, args) = parser.parse_args()
 
@@ -104,19 +101,25 @@ def main():
 	else:
 		msk = EMData(options.mask)
 
-	refparms=js_open_dict("{}/0_spt_params.json".format(options.path))
-	try:
-		inptcls = refparms["input_ptcls"]
-	except:
-		print("Could not locate input particles. Path and iteration must reference a standard 3D refinement (e2spt_refine.py) and not a subtilt refinement (e2spt_subtilt.py).")
-		sys.exit(1)
+	#refparms=js_open_dict("{}/0_spt_params.json".format(options.path))
+	#try:
+		#inptcls = refparms["input_ptcls"]
+	#except:
+		#print("Could not locate input particles. Path and iteration must reference a standard 3D refinement (e2spt_refine.py) and not a subtilt refinement (e2spt_subtilt.py).")
+		#sys.exit(1)
 
 	parmsfile = "{}/particle_parms_{:02d}.json".format(options.path,options.iter)
 	js=js_open_dict(parmsfile)
 
 	nptcl=len(js.keys())
-	#nptcl=400
-	pname=eval(js.keys()[0])[0]
+	irange=np.arange(nptcl, dtype=int)
+	if options.dotest>0:
+		np.random.shuffle(irange)
+		nptcl=min(nptcl, options.dotest)
+		irange=irange[:nptcl]
+		print("Test with {} particles".format(nptcl))
+	inptcls=pname=eval(js.keys()[0])[0]
+	
 
 	
 	print("Preprocessing {} particles...".format(nptcl))
@@ -125,31 +128,34 @@ def main():
 	
 	data=[]
 	wgs=[]
+	keys=[]
 	
 	### to clip fourier space based on resolution
-	sz=threed["nx"]
-	freq=np.fft.fftfreq(sz, threed["apix_x"])[:sz//2]
+	sz=threed["nx"]//options.shrink
+	apix=threed["apix_x"]*options.shrink
+	freq=np.fft.fftfreq(sz, apix)[:sz//2]
 	clip=sz//2-np.argmax(freq>1./options.maxres)
-	
-	for i in range(nptcl):
-		
-		sys.stdout.write("\r   {}/{} particles".format(i+1,nptcl))
-		sys.stdout.flush()
-
+	if clip==sz//2: clip=0
+	#n=EMUtil.get_image_count(pname)
+	for i in irange.tolist():
 		
 		k="('{}', {})".format(pname, i)
-	#	 if js.has_key(k)==False: continue
+		if js.has_key(k)==False: continue
 		xf=js[k]['xform.align3d']
 		e=EMData(pname, i)
 		e.transform(xf)
 		e.mult(msk)
+		if options.shrink>1:
+			e.process_inplace("math.meanshrink",{"n":options.shrink})
 	
 		en=e.numpy().copy()
+		#print(en.shape, clip)
 		#### numpy fft is actually significantly slower than EMAN fft. so probably should change to EMAN if I can get the coordinates right..
 		
 		ef=np.fft.fftshift(np.fft.fftn(en))
-		ef=ef[clip:-clip,clip:-clip,clip:-clip]
-		if i==0:
+		if clip>0:
+			ef=ef[clip:-clip,clip:-clip,clip:-clip]
+		if len(data)==0:
 			sz=len(ef)
 			idx=np.indices((sz,sz,sz))-sz//2
 			r=np.sqrt(np.sum(idx**2, 0))
@@ -162,18 +168,23 @@ def main():
 		sf[sf==0]=1e-5
 		div=np.divide(efa,sf[r])
 		wdg=np.logical_and(div<1., r>1)
-		
 		ef[wdg]=0
 		data.append(ef.flatten())
 		wgs.append(wdg.flatten())
+		keys.append(k)
+		
+		sys.stdout.write("\r   {}/{} particles".format(len(data),nptcl))
+		sys.stdout.flush()
+	print()
 
 	js.close()
 	data=np.array(data)
 	wgs=np.array(wgs)
+	print(data.shape)
 
 	#avg=np.mean(data, axis=0)
 	avg=np.sum(data, axis=0)
-	w=np.sum(1-np.array(wgs), axis=0)
+	w=np.sum(1-np.array(wgs), axis=0)+1
 	avg=avg/w
 	dv=data-avg
 	std=np.std(abs(dv))
@@ -182,9 +193,9 @@ def main():
 		#data[i][w]=avg[w]
 	#dv=data
 	imgsnp=np.hstack([dv.real, dv.imag])
+	print(dv.real.shape, imgsnp.shape)
 	
-	
-	options.outpath = make_path("sptcls")
+	options.outpath = num_path_new("sptcls")
 	print("Output will be written to {}".format(options.outpath))
 
 	#### real space version:
@@ -229,7 +240,7 @@ def main():
 	#imgsnp=np.array([m.numpy().copy() for m in imgs00])
 	
 	print("Performing PCA...")
-	
+	#print(imgsnp)
 	ptclids=np.arange(nptcl,dtype=int)[:, None]
 	nptcl=len(imgsnp)
 	
@@ -293,7 +304,7 @@ def main():
 	outlsts=[]
 	for lbl in sorted(np.unique(lb)):
 		#outlst = LSXFile(inptcls.replace(".lst","_{}.lst".format(lbl)))
-		outlst = LSXFile("{}/ptcls_cls{:02d}.lst".format(options.outpath, lbl))
+		outlst = LSXFile("{}/ptcls_cls{:02d}.lst".format(options.outpath, lbl+1))
 		for i in range(nptcl):
 			if lb[i]==lbl:
 				l=inlst.read(i)
@@ -303,11 +314,11 @@ def main():
 	
 	js0=js_open_dict(parmsfile)
 
-	pname=eval(js.keys()[0])[0]
+	#pname=eval(js.keys()[0])[0]
 	dics=[{} for i in range(kmeans.n_clusters)]
 	for i in range(nptcl):
 		if lb[i]>=0:
-			k="('{}', {})".format(pname, i)
+			k=keys[i]
 			dics[lb[i]][k]=js0[k]
 			
 	js0.close()
@@ -316,7 +327,7 @@ def main():
 		js=js_open_dict("{}/particle_parms_{:02d}.json".format(options.outpath, i+1))
 		js.update(d)
 		js.close()
-		os.system("e2spt_average.py --path {} --iter {} --threads 10 --sym {} --skippostp".format(options.outpath, i+1, options.sym))
+		os.system("e2spt_average.py --path {} --iter {} --threads 10 --sym {} --skippostp --simthr 1".format(options.outpath, i+1, options.sym))
 
 	E2end(logid)
 

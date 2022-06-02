@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 05/28/16 (sludtke@bcm.edu)
 # Copyright (c) 2016- Baylor College of Medicine
@@ -35,7 +32,6 @@ from __future__ import division
 
 from past.utils import old_div
 from EMAN2 import *
-from EMAN2db import db_open_dict, db_close_dict, db_check_dict, db_list_dicts
 from math import *
 import os
 import sys
@@ -83,7 +79,9 @@ Important: This program must be run from the project directory, not from within 
 	parser.add_argument("--astigmatism",action="store_true",help="Includes astigmatism in automatic fitting (use e2rawdata first)",default=False, guitype='boolbox', row=25, col=0, rowspan=1, colspan=1, mode='auto[False]')
 	parser.add_argument("--phaseplate",action="store_true",help="Include phase/amplitude contrast in CTF estimation. For use with hole-less phase plates.",default=False, guitype='boolbox', row=25, col=1, rowspan=1, colspan=1, mode='auto[False]')
 	parser.add_argument("--extrapad",action="store_true",help="If particles were boxed more tightly than EMAN requires, this will add some extra padding",default=False, guitype='boolbox', row=22, col=1, rowspan=1, colspan=1, mode='auto[False]')
-	parser.add_argument("--missingonly",action="store_true",help="Operates only on images with missing __ctf_flip_bispec files, for cases where a previous run failed before completion",default=False, guitype='boolbox', row=22, col=2, rowspan=1, colspan=1, mode='auto[False]')
+	parser.add_argument("--invartype",choices=["auto","bispec","harmonic"],help="Which type of invariants to generate: (bispec,harmonic)",default="auto", guitype='combobox', row=21, col=1, rowspan=1, colspan=2, choicelist="['auto','bispec','harmonic']",mode='auto["auto"]')
+	parser.add_argument("--snrfilt",action="store_true",help="Apply a SNR filter to phase flipped output images",default=False, guitype='boolbox', row=21, col=0, rowspan=1, colspan=1, mode='auto[False]')
+	parser.add_argument("--missingonly",action="store_true",help="Operates only on images with missing __ctf_flip_invar files, for cases where a previous run failed before completion",default=False, guitype='boolbox', row=22, col=2, rowspan=1, colspan=1, mode='auto[False]')
 	parser.add_argument("--highdensity",action="store_true",help="If particles are very close together, this will interfere with SSNR estimation. If set uses an alternative strategy, but may over-estimate SSNR.",default=False, guitype='boolbox', row=24, col=0, rowspan=1, colspan=1, mode='auto[False]')
 	parser.add_argument("--invert",action="store_true",help="Invert the contrast of the particles in output files (default false)",default=False, guitype='boolbox', row=24, col=1, rowspan=1, colspan=1, mode='auto[False]')
 	parser.add_argument("--outputonly",action="store_true",help="Skips all of the initial steps, and just generates the final output, assuming previous steps completed successfully",default=False, guitype='boolbox', row=25, col=2, rowspan=1, colspan=1, mode='auto[False]')
@@ -95,7 +93,7 @@ Important: This program must be run from the project directory, not from within 
 	parser.add_argument("--minqual",type=int,help="Files with a quality value lower than specified will be skipped",default=0,guitype='intbox', row=30, col=1, mode='auto[0]')
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 
@@ -114,6 +112,8 @@ Important: This program must be run from the project directory, not from within 
 		constbfactor=""
 	else:
 		constbfactor="--constbfactor {:02f}".format(options.constbfactor)
+
+		
 
 	# Check to see what we're dealing with. If we have frame-based parameters, we take that into account.
 	# If the frame parameters have astigmatism, then we don't adjust the defocus or astigmatism. We only check the first 10 frames
@@ -167,6 +167,12 @@ Strongly suggest refitting CTF from frames with e2rawdata.py with revised parame
 		except:
 			print("Error, no A/pix found")
 			sys.exit(1)
+
+	if options.invartype=="auto" :
+		try: options.invartype=str(project(["global.invariant_type"]))
+		except: 
+			print("Warning: no project invariant type spectified, using bispectrum")
+			options.invartype="bispec"
 
 	try:
 		tmp=EMData(ptcls[0],0)
@@ -228,7 +234,7 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 			else:
 				fit_options="--curdefocushint"
 				
-	if options.missingonly : missingonly="--onlynobispec"
+	if options.missingonly : missingonly="--onlynoinvar"
 	else: missingonly=""
 
 	logid=E2init(sys.argv, options.ppid)
@@ -347,69 +353,75 @@ resolution, but for high resolution work, fitting defocus/astig from frames is r
 
 	if options.extrapad : extrapad="--extrapad"
 	else : extrapad=""
+	
+	if options.snrfilt: snrfilt="--snrfilt"
+	else: snrfilt=""
 
 	if options.lores :
-		com="e2ctf.py --allparticles {invert} {missingonly} --minqual={minqual} --proctag lp20 --phaseflipproc filter.highpass.gauss:cutoff_pixels={hpp} --phaseflipproc2 filter.lowpass.gauss:cutoff_freq=0.05 --phaseflipproc3 normalize.circlemean:width={maskwid}:radius={maskrad} --phaseflipproc4 mask.soft:outer_radius={maskrad}:width={maskwid} --phaseflipproc5 math.fft.resample:n={resamp} {extrapad} --threads {threads}".format(
-			maskrad=maskrad1,maskwid=maskwid1,resamp=resample1,invert=invert,minqual=options.minqual,extrapad=extrapad,threads=options.threads,hpp=hppixels,missingonly=missingonly)
+		com="e2ctf.py --allparticles {invert} {missingonly} --minqual={minqual} {snrfilt} --proctag lp20 --phaseflipproc filter.highpass.gauss:cutoff_pixels={hpp} --phaseflipproc2 filter.lowpass.gauss:cutoff_freq=0.05 --phaseflipproc3 normalize.circlemean:width={maskwid}:radius={maskrad} --phaseflipproc4 mask.soft:outer_radius={maskrad}:width={maskwid} --phaseflipproc5 math.fft.resample:n={resamp} {extrapad} --threads {threads}".format(
+			maskrad=maskrad1,maskwid=maskwid1,resamp=resample1,invert=invert,minqual=options.minqual,snrfilt=snrfilt,extrapad=extrapad,threads=options.threads,hpp=hppixels,missingonly=missingonly)
 		if options.verbose: print(com)
 		launch_childprocess(com)
 		E2progress(logid,0.85)
 
-		com="e2ctf.py --allparticles {invert} {missingonly} --minqual={minqual} --proctag lp12 --phaseflipproc filter.highpass.gauss:cutoff_pixels={hpp} --phaseflipproc2 filter.lowpass.gauss:cutoff_freq=0.08333 --phaseflipproc3 normalize.circlemean:width={maskwid}:radius={maskrad} --phaseflipproc4 mask.soft:outer_radius={maskrad}:width={maskwid} --phaseflipproc5 math.fft.resample:n={resamp} {extrapad} --threads {threads}".format(
-			maskrad=maskrad3,maskwid=maskwid3,resamp=resample3,invert=invert,minqual=options.minqual,extrapad=extrapad,threads=options.threads,hpp=hppixels,missingonly=missingonly)
+		com="e2ctf.py --allparticles {invert} {missingonly} --minqual={minqual} {snrfilt} --proctag lp12 --phaseflipproc filter.highpass.gauss:cutoff_pixels={hpp} --phaseflipproc2 filter.lowpass.gauss:cutoff_freq=0.08333 --phaseflipproc3 normalize.circlemean:width={maskwid}:radius={maskrad} --phaseflipproc4 mask.soft:outer_radius={maskrad}:width={maskwid} --phaseflipproc5 math.fft.resample:n={resamp} {extrapad} --threads {threads}".format(
+			maskrad=maskrad3,maskwid=maskwid3,resamp=resample3,invert=invert,minqual=options.minqual,snrfilt=snrfilt,extrapad=extrapad,threads=options.threads,hpp=hppixels,missingonly=missingonly)
 		if options.verbose: print(com)
 		launch_childprocess(com)
 
 		print("Phase-flipped output files:\n__ctf_flip_lp20 - masked, downsampled, filtered to 20 A resolution\n__ctf_flip_lp12 - masked, downsampled, filtered to 12 A resolution")
 
 	elif options.midres:
-		com="e2ctf.py --allparticles {invert} {missingonly} --minqual={minqual} --proctag lp20 --phaseflipproc filter.highpass.gauss:cutoff_pixels={hpp} --phaseflipproc2 filter.lowpass.gauss:cutoff_freq=0.05 --phaseflipproc3 normalize.circlemean:width={maskwid}:radius={maskrad} --phaseflipproc4 mask.soft:outer_radius={maskrad}:width={maskwid} --phaseflipproc5 math.fft.resample:n={resamp} {extrapad} --threads {threads}".format(
-			maskrad=maskrad1,maskwid=maskwid1,resamp=resample1,invert=invert,minqual=options.minqual,extrapad=extrapad,threads=options.threads,hpp=hppixels,missingonly=missingonly)
+		com="e2ctf.py --allparticles {invert} {missingonly} --minqual={minqual} {snrfilt} --proctag lp20 --phaseflipproc filter.highpass.gauss:cutoff_pixels={hpp} --phaseflipproc2 filter.lowpass.gauss:cutoff_freq=0.05 --phaseflipproc3 normalize.circlemean:width={maskwid}:radius={maskrad} --phaseflipproc4 mask.soft:outer_radius={maskrad}:width={maskwid} --phaseflipproc5 math.fft.resample:n={resamp} {extrapad} --threads {threads}".format(
+			maskrad=maskrad1,maskwid=maskwid1,resamp=resample1,invert=invert,minqual=options.minqual,snrfilt=snrfilt,extrapad=extrapad,threads=options.threads,hpp=hppixels,missingonly=missingonly)
 		if options.verbose: print(com)
 		launch_childprocess(com)
 		E2progress(logid,0.8)
 
-		com="e2ctf.py --allparticles {invert} {missingonly} --minqual={minqual} --proctag lp7 --phaseflipproc filter.highpass.gauss:cutoff_pixels={hpp} --phaseflipproc2 filter.lowpass.gauss:cutoff_freq=0.14 --phaseflipproc3 normalize.circlemean:width={maskwid}:radius={maskrad} --phaseflipproc4 mask.soft:outer_radius={maskrad}:width={maskwid} --phaseflipproc5 math.fft.resample:n={resamp} {extrapad} --threads {threads}".format(
-			maskrad=maskrad2,maskwid=maskwid2,resamp=resample2,invert=invert,minqual=options.minqual,extrapad=extrapad,threads=options.threads,hpp=hppixels,missingonly=missingonly)
+		com="e2ctf.py --allparticles {invert} {missingonly} --minqual={minqual} {snrfilt} --proctag lp7 --phaseflipproc filter.highpass.gauss:cutoff_pixels={hpp} --phaseflipproc2 filter.lowpass.gauss:cutoff_freq=0.14 --phaseflipproc3 normalize.circlemean:width={maskwid}:radius={maskrad} --phaseflipproc4 mask.soft:outer_radius={maskrad}:width={maskwid} --phaseflipproc5 math.fft.resample:n={resamp} {extrapad} --threads {threads}".format(
+			maskrad=maskrad2,maskwid=maskwid2,resamp=resample2,invert=invert,minqual=options.minqual,snrfilt=snrfilt,extrapad=extrapad,threads=options.threads,hpp=hppixels,missingonly=missingonly)
 		if options.verbose: print(com)
 		launch_childprocess(com)
 		E2progress(logid,0.9)
 
-		com="e2ctf.py --allparticles {invert} {missingonly} --minqual={minqual} --proctag fullres --phaseflipproc filter.highpass.gauss:cutoff_pixels={hpp} --phaseflipproc2 normalize.circlemean:width={maskwid}:radius={maskrad} --phaseflipproc3 mask.soft:outer_radius={maskrad}:width={maskwid} {extrapad} --threads {threads}".format(
-			maskrad=maskrad4,maskwid=maskwid4,invert=invert,minqual=options.minqual,extrapad=extrapad,threads=options.threads,hpp=hppixels,missingonly=missingonly)
+		com="e2ctf.py --allparticles {invert} {missingonly} --minqual={minqual} {snrfilt} --proctag fullres --phaseflipproc filter.highpass.gauss:cutoff_pixels={hpp} --phaseflipproc2 normalize.circlemean:width={maskwid}:radius={maskrad} --phaseflipproc3 mask.soft:outer_radius={maskrad}:width={maskwid} {extrapad} --threads {threads}".format(
+			maskrad=maskrad4,maskwid=maskwid4,invert=invert,minqual=options.minqual,snrfilt=snrfilt,extrapad=extrapad,threads=options.threads,hpp=hppixels,missingonly=missingonly)
 		if options.verbose: print(com)
 		launch_childprocess(com)
 		print("Phase-flipped output files:\n__ctf_flip_lp20 - masked, downsampled, filtered to 20 A resolution\n__ctf_flip_lp7 - masked, downsampled, filtered to 7 A resolution\n__ctf_flip_fullres - masked, full sampling")
 
 	else :
-		com="e2ctf.py --allparticles {invert} {missingonly} --minqual={minqual} --proctag lp12 --phaseflipproc filter.highpass.gauss:cutoff_pixels={hpp} --phaseflipproc2 filter.lowpass.gauss:cutoff_freq=0.08333 --phaseflipproc3 normalize.circlemean:width={maskwid}:radius={maskrad} --phaseflipproc4 mask.soft:outer_radius={maskrad}:width={maskwid} --phaseflipproc5 math.fft.resample:n={resamp} {extrapad} --threads {threads}".format(
-			maskrad=maskrad3,maskwid=maskwid3,resamp=resample3,invert=invert,minqual=options.minqual,extrapad=extrapad,threads=options.threads,hpp=hppixels,missingonly=missingonly)
+		com="e2ctf.py --allparticles {invert} {missingonly} --minqual={minqual} {snrfilt} --proctag lp12 --phaseflipproc filter.highpass.gauss:cutoff_pixels={hpp} --phaseflipproc2 filter.lowpass.gauss:cutoff_freq=0.08333 --phaseflipproc3 normalize.circlemean:width={maskwid}:radius={maskrad} --phaseflipproc4 mask.soft:outer_radius={maskrad}:width={maskwid} --phaseflipproc5 math.fft.resample:n={resamp} {extrapad} --threads {threads}".format(
+			maskrad=maskrad3,maskwid=maskwid3,resamp=resample3,invert=invert,minqual=options.minqual,snrfilt=snrfilt,extrapad=extrapad,threads=options.threads,hpp=hppixels,missingonly=missingonly)
 		if options.verbose: print(com)
 		launch_childprocess(com)
 		E2progress(logid,0.8)
 
-		com="e2ctf.py --allparticles {invert} {missingonly} --minqual={minqual} --proctag lp5 --phaseflipproc filter.highpass.gauss:cutoff_pixels={hpp} --phaseflipproc2 filter.lowpass.gauss:cutoff_freq=0.2 --phaseflipproc3 normalize.circlemean:width={maskwid}:radius={maskrad} --phaseflipproc4 mask.soft:outer_radius={maskrad}:width={maskwid} --phaseflipproc5 math.fft.resample:n={resamp} {extrapad} --threads {threads}".format(
-			maskrad=maskrad5,maskwid=maskwid5,resamp=resample5,invert=invert,minqual=options.minqual,extrapad=extrapad,threads=options.threads,hpp=hppixels,missingonly=missingonly)
+		com="e2ctf.py --allparticles {invert} {missingonly} --minqual={minqual} {snrfilt} --proctag lp5 --phaseflipproc filter.highpass.gauss:cutoff_pixels={hpp} --phaseflipproc2 filter.lowpass.gauss:cutoff_freq=0.2 --phaseflipproc3 normalize.circlemean:width={maskwid}:radius={maskrad} --phaseflipproc4 mask.soft:outer_radius={maskrad}:width={maskwid} --phaseflipproc5 math.fft.resample:n={resamp} {extrapad} --threads {threads}".format(
+			maskrad=maskrad5,maskwid=maskwid5,resamp=resample5,invert=invert,minqual=options.minqual,snrfilt=snrfilt,extrapad=extrapad,threads=options.threads,hpp=hppixels,missingonly=missingonly)
 		if options.verbose: print(com)
 		launch_childprocess(com)
 		E2progress(logid,0.9)
 
-		com="e2ctf.py --allparticles {invert} {missingonly} --minqual={minqual} --proctag fullres --phaseflipproc filter.highpass.gauss:cutoff_pixels={hpp} --phaseflipproc2 normalize.circlemean:width={maskwid}:radius={maskrad} --phaseflipproc3 mask.soft:outer_radius={maskrad}:width={maskwid} {extrapad} --threads {threads}".format(
-			maskrad=maskrad4,maskwid=maskwid4,invert=invert,minqual=options.minqual,extrapad=extrapad,threads=options.threads,hpp=hppixels,missingonly=missingonly)
+		com="e2ctf.py --allparticles {invert} {missingonly} --minqual={minqual} {snrfilt} --proctag fullres --phaseflipproc filter.highpass.gauss:cutoff_pixels={hpp} --phaseflipproc2 normalize.circlemean:width={maskwid}:radius={maskrad} --phaseflipproc3 mask.soft:outer_radius={maskrad}:width={maskwid} {extrapad} --threads {threads}".format(
+			maskrad=maskrad4,maskwid=maskwid4,invert=invert,minqual=options.minqual,snrfilt=snrfilt,extrapad=extrapad,threads=options.threads,hpp=hppixels,missingonly=missingonly)
 		if options.verbose: print(com)
 		
 		
 		launch_childprocess(com)
 		print("Phase-flipped output files:\n__ctf_flip_lp12 - masked, downsampled, filtered to 12 A resolution\n__ctf_flip_lp5 - masked, downsampled, filtered to 5 A resolution\n__ctf_flip_fullres - masked, full sampling")
 
-	com="e2ctf.py --allparticles {invert} {missingonly} --minqual={minqual} --proctag bispec --phaseflipproc filter.highpass.gauss:cutoff_freq=0.01 --phaseflipproc2 normalize.circlemean:width={maskwid}:radius={maskrad} --phaseflipproc3 mask.soft:outer_radius={maskrad}:width={maskwid} --phaseflipproc4 math.bispectrum.slice:size={bssz}:fp={bsfp} {extrapad} --threads {threads} ".format(
-		maskrad=maskrad4,maskwid=maskwid4,invert=invert,minqual=options.minqual,extrapad=extrapad,threads=options.threads,bssz=bispec_invar_parm[0],bsfp=bispec_invar_parm[1],missingonly=missingonly)
+	if options.invartype=="bispec" : pp4="math.bispectrum.slice:size={bssz}:fp={bsfp}".format(bssz=bispec_invar_parm[0],bsfp=bispec_invar_parm[1])
+	elif options.invartype=="harmonic" : pp4="math.harmonic:fp=4"
+	com="e2ctf.py --allparticles {invert} {missingonly} --minqual={minqual} --proctag invar --phaseflipproc filter.highpass.gauss:cutoff_freq=0.01 --phaseflipproc2 normalize.circlemean:width={maskwid}:radius={maskrad} --phaseflipproc3 mask.soft:outer_radius={maskrad}:width={maskwid} --phaseflipproc4 {pp4} {extrapad} --threads {threads} ".format(
+		maskrad=maskrad4,maskwid=maskwid4,invert=invert,minqual=options.minqual,extrapad=extrapad,pp4=pp4,threads=options.threads,missingonly=missingonly)
 	if options.verbose: print(com)
 	launch_childprocess(com)
-	print("Phase-flipped output files:\n__ctf_flip_bispec - bispectra footprints computed from high pass filtered normalized particles")
+	print("Phase-flipped output files:\n__ctf_flip_invar - invartra footprints computed from high pass filtered normalized particles")
 
 	print("Building default set with all particles for convenience")
-	com="e2buildsets.py --setname=all --excludebad --allparticles"
+	# withflipped insures that if there were failed CTF fits, that they get excluded rather than causing an issue
+	com="e2buildsets.py --setname=all --excludebad --allparticles --withflipped"
 	if options.verbose: print(com)
 	launch_childprocess(com)
 

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 #
 # Author: Toshio Moriya 02/15/2017 (toshio.moriya@mpi-dortmund.mpg.de)
 #
@@ -32,6 +31,8 @@ from __future__ import print_function
 # Imports
 # ========================================================================================
 # Python Standard Libraries
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 from builtins import object
 import sys
@@ -943,7 +944,7 @@ def resample_micrographs(args):
 		# --------------------------------------------------------------------------------
 		mic_basename = global_entry_dict[mic_id_substr][subkey_selected_mic_basename]
 		if SXmpi_run.is_main_proc():
-			print("%s ---> % 2.2f%%" % (mic_basename, mic_id_substr_idx / progress_percent_step))
+			print("%s ---> % 2.2f%%" % (mic_basename, old_div(mic_id_substr_idx, progress_percent_step)))
 		
 		# --------------------------------------------------------------------------------
 		# Read micrograph
@@ -2469,7 +2470,7 @@ def moon_eliminator(args):
 	if args.fl != -1.0:
 		print(" ")
 		print_progress("Low-pass filtration of the input volume using cutoff resolution {}[A] and fall-off {}[1/Pixels]...".format(args.fl, args.aa))
-		vol3d = filt_tanl(vol3d, args.pixel_size/args.fl, args.aa)
+		vol3d = filt_tanl(vol3d, old_div(args.pixel_size,args.fl), args.aa)
 	else:
 		print(" ")
 		print_progress("The program does not low-pass filter input volume...".format(args.fl))
@@ -2503,7 +2504,10 @@ def moon_eliminator(args):
 		volume_difference.get_value_at(volume_difference.calc_min_index()) != 0 ):
 		if args.edge_type == "cosine": mode = "C"
 		else:  mode = "G"
-		Util.mul_img(vol3d, adaptive_mask(my_volume_binarized_with_no_moons, 0.0, 0.5, args.gm_dilation, args.gm_edge_width, mode))
+		ref3d_moon_eliminated_mask_file_path = os.path.join(args.output_directory, "{}_ref_moon_eliminated_mask.hdf".format(args.outputs_root))
+		mask_no_moon = adaptive_mask(my_volume_binarized_with_no_moons, 0.0, 0.5, args.ndilation, args.edge_width, mode)
+		mask_no_moon.write_image(ref3d_moon_eliminated_mask_file_path)
+		Util.mul_img(vol3d, mask_no_moon)
 
 	del volume_difference, my_volume_binarized, my_volume_binarized_with_no_moons
 
@@ -3156,8 +3160,8 @@ def main():
 	parser_moon_eliminator.add_argument("--mol_mass",                       type=float,           default=None,    help="Molecular mass [kDa]: The estimated molecular mass of the target particle in kilodalton. (default required float)")
 	parser_moon_eliminator.add_argument("--use_density_threshold",          type=float,           default=None,    help="Use ad-hoc density threshold: Use user-provided ad-hoc density threshold, instead of computing the value from the molecular mass. Below this density value, the data is assumed not to belong to the main body of the particle density. (default none)")
 	parser_moon_eliminator.add_argument("--moon_distance",                  type=float,           default=3.0,     help="Distance to the nearest moon [Pixels]: The moons further than this distance from the density surface will be elminated. The value smaller than the default is not recommended because it is difficult to avoid the stair-like gray level change at the edge of the density surface. (default 3.0)")
-	parser_moon_eliminator.add_argument("--dilation",                       type=float,           default=-1.0,    help="Dilation width [Pixels]: The pixel width to dilate the 3D binary volume corresponding to the specified molecular mass or density threshold prior to softening the edge. By default, it is set to half of --moon_distance so that the voxels with 1.0 values in the mask are same as the hard-edged molecular-mass binary volume. (default -1.0)")
-	parser_moon_eliminator.add_argument("--resample_ratio",                 type=str,             default="1.0",   help="Resample ratio: Specify a value larger than 0.0. By default, the program does not resmaple the input volume (i.e. resample ratio is 1.0). Use this option maily to restore the original dimensions or pixel size of VIPER or R-VIPER model. Alternatively, specify the path to the output directory of an ISAC2 run. The program automatically extracts the resampling ratio used by the ISAC2 run. (default '1.0')")
+	parser_moon_eliminator.add_argument("--ndilation",                       type=int,           default=-1,    help="Dilation width [Pixels]: The pixel width to dilate the 3D binary volume corresponding to the specified molecular mass or density threshold prior to softening the edge. By default, it is set to half of --moon_distance so that the voxels with 1.0 values in the mask are same as the hard-edged molecular-mass binary volume. (default -1.0)")
+	parser_moon_eliminator.add_argument("--resample_ratio",                 type=str,             default='1.0',   help="Resample ratio: Specify a value larger than 0.0. By default, the program does not resmaple the input volume (i.e. resample ratio is 1.0). Use this option maily to restore the original dimensions or pixel size of VIPER or R-VIPER model. Alternatively, specify the path to the output directory of an ISAC2 run. The program automatically extracts the resampling ratio used by the ISAC2 run. (default '1.0')")
 	parser_moon_eliminator.add_argument("--box_size",                       type=int,             default=None,    help="Output box size [Pixels]: The x, y, and z dimensions of cubic area to be windowed from input 3D volume for output 3D volumes. This must be the box size after resampling when resample_ratio != 1.0. (default none)")
 	parser_moon_eliminator.add_argument("--resampled_shift3d",              action="store_true",  default=False,   help="Providing resampled 3D shifts: Use this option when you are providing the resampled 3D shifts (using pixel size of outputs) when --resample_ratio!=1.0. By default, the program assums the provided shifts are not resampled. (default False)")
 	parser_moon_eliminator.add_argument("--shift3d_x",                      type=int,             default=0,       help="3D x-shift [Pixels]: Provide 3D x-shift corresponding to shifting the 3D volume along x-axis. (default 0)")
@@ -3166,10 +3170,8 @@ def main():
 	parser_moon_eliminator.add_argument("--invert_handedness",              action="store_true",  default=False,   help="Invert handedness: Invert the handedness of the 3D volume. (default False)")
 	parser_moon_eliminator.add_argument("--fl",                             type=float,           default=-1.0,    help="Low-pass filter resolution [A]: >0.0: low-pass filter to the value in Angstrom; =-1.0: no low-pass filter. The program applies this low-pass filter before the moon elimination. (default -1.0)")
 	parser_moon_eliminator.add_argument("--aa",                             type=float,           default=0.02,    help="Low-pass filter fall-off [1/Pixels]: Low-pass filter fall-off in absolute frequency. The program applies this low-pass filter before the moon elimination. Effective only when --fl > 0.0. (default 0.02)")
-	parser_moon_eliminator.add_argument("--ndilation",                    type=float,           default=1,       help="Numberof time dilation will be applied to the binary mask used to eliminate moons (default 1)")
-	parser_moon_eliminator.add_argument("--edge_width",                  type=float,           default=5,       help="Soft-edge width [Pixels]: The pixel width of transition area for soft-edged masking.(default 5)")
+	parser_moon_eliminator.add_argument("--edge_width",                     type=float,           default=1,       help="Soft-edge width [Pixels]: The pixel width of transition area for soft-edged masking.(default 1)")
 	parser_moon_eliminator.add_argument("--outputs_root",                   type=str,             default="vol3d", help="Root name of outputs: Specify the root name of all outputs. It cannot be empty string or only white spaces. (default vol3d)")
-	parser_moon_eliminator.add_argument("--allow_disconnect",               action="store_true",  default=False,   help="Allow disconnection: Allow disconnection of density maps. Only for very special cases. (default False)")
 	parser_moon_eliminator.add_argument("--edge_type",                      type=str,             default="cosine",help="Soft-edge type: The type of soft-edge for moon-eliminator 3D mask and a moon-eliminated soft-edged 3D mask. Available methods are (1) \'cosine\' for cosine soft-edged (used in PostRefiner) and (2) \'gauss\' for gaussian soft-edge. (default cosine)")
 	parser_moon_eliminator.add_argument("--debug",                          action="store_true",  default=False,   help="Run with debug mode: Mainly for developer. (default False)")
 	parser_moon_eliminator.set_defaults(func=moon_eliminator)

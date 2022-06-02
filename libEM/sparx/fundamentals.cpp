@@ -1,6 +1,7 @@
 /*
  * Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
- * Copyright (c) 2000-2006 The University of Texas - Houston Medical School
+ * Please do not copy or modify this file without written consent of the author.
+ * Copyright (c) 2000-2019 The University of Texas - Houston Medical School
  *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
@@ -396,7 +397,7 @@ Output: 1-2-3D real image with the result
 			}
 		} else {
 			// If the center flag is false, then just do basic multiplication
-			// Here I aterd the method of complex calculation. This method is much faster than the previous one.
+			// Here I altered the method of complex calculation. This method is much faster than the previous one.
 			switch (ptype) {
 				case AUTOCORRELATION:
 					for (int iz = 1; iz <= nzp; iz++) {

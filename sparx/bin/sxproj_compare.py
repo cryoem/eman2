@@ -1,11 +1,13 @@
 #!/usr/bin/env python
+from __future__ import division
+from past.utils import old_div
 import os
 import EMAN2
 import EMAN2_cppwrap
 #from EMAN2 import EMUtil, EMArgumentParser, EMANVERSION
 from applications import header, project3d
 from utilities import get_im, write_header, model_circle, read_text_row
-from statistics import ccc
+from pap_statistics import ccc
 from fundamentals import rops_table, fft
 from projection import prep_vol, prgl
 from math import sqrt
@@ -72,7 +74,7 @@ def runcheck(classavgstack, reconfile, outdir, inangles=None, selectdoc=None, pr
 			print("mv %s %s" % (newclasses, renamefile))
 		
 		cmd7="e2proc2d.py %s %s --list=%s" % (classavgstack, newclasses, selectdoc)
-		print cmd7
+		print(cmd7)
 		os.system(cmd7)
 		
 		# Update class-averages
@@ -81,20 +83,20 @@ def runcheck(classavgstack, reconfile, outdir, inangles=None, selectdoc=None, pr
 	# Import Euler angles
 	if inangles:
 		cmd6 = "sxheader.py %s --params=xform.projection --import=%s" % (classavgstack, inangles)
-		print cmd6
+		print(cmd6)
 		header(classavgstack, 'xform.projection', fimport=inangles)
 	
 	try:
 		header(classavgstack, 'xform.projection', fexport=outangles)
 		cmd1 = "sxheader.py %s --params=xform.projection --export=%s" % (classavgstack, outangles) 
-		print cmd1
+		print(cmd1)
 	except RuntimeError:
 		print("\nERROR!! No projection angles found in class-average stack header!\n")
 		print('Usage:', USAGE)
 		exit()
 	
 	#cmd2="sxproject3d.py %s %s --angles=%s" % (recon, projstack, outangles)
-	#print cmd2
+	#print(cmd2)
 	#os.system(cmd2)
 	
 	#  Here if you want to be fancy, there should be an option to chose the projection method,
@@ -137,18 +139,18 @@ def runcheck(classavgstack, reconfile, outdir, inangles=None, selectdoc=None, pr
 		#  you can check sxprocess.py --adjpw to see how this is done properly  PAP
 		table = [0.0]*len(rops_dst)  # initialize table
 		for j in range( len(rops_dst) ):
-			table[j] = sqrt( rops_dst[j]/rops_src[j] )
+			table[j] = sqrt( old_div(rops_dst[j],rops_src[j]) )
 		prjimg = fft(filt_table(prjimg, table))  # match FFT amplitdes of re-projection and class average
 
 		cccoeff = ccc(prjimg, classimg, mask)
-		#print imgnum, cccoeff
+		#print(imgnum, cccoeff)
 		classimg.set_attr_dict({'cross-corr':cccoeff})
 		prjimg.set_attr_dict({'cross-corr':cccoeff})
 		prjimg.write_image(outstack,2*imgnum)
 		classimg.write_image(outstack, 2*imgnum+1)
 		result.append(cccoeff)
 	del outangles
-	meanccc = sum(result)/nimg1
+	meanccc = old_div(sum(result),nimg1)
 	print("Average CCC is %s" % meanccc)
 
 	nimg2 = EMAN2_cppwrap.EMUtil.get_image_count(outstack)
@@ -160,7 +162,7 @@ def runcheck(classavgstack, reconfile, outdir, inangles=None, selectdoc=None, pr
 			prjimg.set_attr_dict({'mean-cross-corr':meanccc})
 			write_header(outstack,prjimg,imgnum)
 		if (imgnum % 100) == 0:
-			print imgnum
+			print(imgnum)
 	
 	# e2proc2d appends to existing files, so delete existing output
 	if os.path.exists(normstack):
@@ -172,13 +174,13 @@ def runcheck(classavgstack, reconfile, outdir, inangles=None, selectdoc=None, pr
 	#  Why would you want to do it?  If you do, it should have been done during ccc calculations,
 	#  otherwise what is see is not corresponding to actual data, thus misleading.  PAP
 	#cmd5="e2proc2d.py %s %s --process=normalize" % (outstack, normstack)
-	#print cmd5
+	#print(cmd5)
 	#os.system(cmd5)
 	
 	# Optionally pop up e2display
 	if displayYN:
 		cmd8 = "e2display.py %s" % outstack
-		print cmd8
+		print(cmd8)
 		os.system(cmd8)
 	
 	print("Done!")
@@ -202,7 +204,8 @@ if __name__ == "__main__":
 	
 	(options, args) = parser.parse_args()
 	#print args, options  # (Everything is in options.)
-	#exit()
+	print("This program is unfinished")
+	exit()
 	
 	# If output directory not specified, write to same directory as class averages
 	if not options.outdir:

@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 # Muyuan Chen 2016-01
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -49,8 +46,8 @@ def main():
 	usage="""prog --model model1.hdf,model2.hdf --oldpath refine_01
 	Perform a 3d classification like e2refine_multi using the orientation of each particle in an e2refine_easy"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--newpath", type=str,help="Path to the classified results. Default = multinoali_XX", default=None)
-	parser.add_argument("--oldpath", type=str,help="Path to the original refinement", default=None,guitype='filebox', filecheck=False,browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=2, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--oldpath", type=str,help="Path to the original refinement (input, required)", default=None,guitype='filebox', filecheck=False,browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=2, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--path","--newpath", dest="newpath",type=str,help="Path to the classified results (output). Default = multinoali_XX", default=None)
 	parser.add_argument("--models","--model", dest="model", type=str,help="Comma separated list of reference maps used for classification. If a single map is provided, data will be split into two groups based on similarity to the single map.", default=None,guitype='filebox', browser='EMModelsTable(withmodal=True,multiselect=True)', filecheck=False, row=7, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--simcmp",type=str,help="The name of a 'cmp' to be used in comparing the aligned images. eg- frc:minres=80:maxres=20. Default=ccc", default="ccc", guitype='strbox', row=10, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--threads", type=int,help="Number of threads.", default=4, guitype='intbox', row=12, col=0, rowspan=1, colspan=1)
@@ -92,9 +89,7 @@ def main():
 
 	### make new folder
 	if options.newpath == None:
-		fls=[int(i[-2:]) for i in os.listdir(".") if i[:11]=="multinoali_" and len(i)==13 and str.isdigit(i[-2:])]
-		if len(fls)==0 : fls=[0]
-		options.newpath = "multinoali_{:02d}".format(max(fls)+1)
+		options.newpath=num_path_new("multinoali_")
 
 	print("Working directory: {}".format(options.newpath))
 	try: os.mkdir(options.newpath)
@@ -237,22 +232,22 @@ def main():
 				
 				for m in models:
 					projfile.append("{path}/projections_{it:02d}_{k}.hdf".format(path=options.newpath, k=m, it=it))
-					run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel {para}".format(		model=inputmodel[m],proj=projfile[-1],orient=origen,sym=db["sym"],para=options.parallel))
+					run("e2project3d.py {model}  --outfile {proj} --orientgen {orient} --sym {sym} --parallel {para}".format(		model=inputmodel[m],proj=projfile[-1],orient=origen,sym=db["sym"],para=options.parallel))
 				#### make another set of projections for masked model
 				if options.mask:
 					projmskfile=[]
 					for m in models:
 						projmskfile.append("{path}/projections_msk_{it:02d}_{k}.hdf".format(path=options.newpath, k=m, it=it))
-						run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel {para}".format(		model=mskmodel[m],proj=projmskfile[-1],orient=origen,sym=db["sym"],para=options.parallel))
+						run("e2project3d.py {model}  --outfile {proj} --orientgen {orient} --sym {sym} --parallel {para}".format(		model=mskmodel[m],proj=projmskfile[-1],orient=origen,sym=db["sym"],para=options.parallel))
 						
 			else:
 				projfile=["{path}/projections_{it:02d}.hdf".format(path=options.newpath, it=it)]
-				run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel {para}".format(		model=inputmodel[0],proj=projfile[0],orient=origen,sym=db["sym"],para=options.parallel))
+				run("e2project3d.py {model}  --outfile {proj} --orientgen {orient} --sym {sym} --parallel {para}".format(		model=inputmodel[0],proj=projfile[0],orient=origen,sym=db["sym"],para=options.parallel))
 				
 				#### make another set of projections for masked model
 				if options.mask:
 					projmskfile=["{path}/projections_msk_{it:02d}.hdf".format(path=options.newpath, it=it)]
-					run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel {para}".format(		model=mskmodel[0],proj=projmskfile[0],orient=origen,sym=db["sym"],para=options.parallel))
+					run("e2project3d.py {model}  --outfile {proj} --orientgen {orient} --sym {sym} --parallel {para}".format(		model=mskmodel[0],proj=projmskfile[0],orient=origen,sym=db["sym"],para=options.parallel))
 
 		output_3d.append({})
 		output_cls.append({})
@@ -266,7 +261,7 @@ def main():
 			#### make projections for even/odd
 				projfile=["{path}/projections_{it:02d}_{k}_{eo}.hdf".format(path=options.newpath, k=m, it=it,eo=eo) for m in models]
 				for m in models:
-					run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel {para}".format(		model=inputmodel[m],proj=projfile[m],orient=origen,sym=db["sym"],para=options.parallel))
+					run("e2project3d.py {model}  --outfile {proj} --orientgen {orient} --sym {sym} --parallel {para}".format(		model=inputmodel[m],proj=projfile[m],orient=origen,sym=db["sym"],para=options.parallel))
 				if options.mask:
 					mskmodel=[]
 					projmskfile=[]
@@ -274,7 +269,7 @@ def main():
 						mskmodel.append(inputmodel[m][:-4]+"_msk.hdf")
 						projmskfile.append("{path}/projections_msk_{it:02d}_{k}_{eo}.hdf".format(path=options.newpath, k=m, it=it,eo=eo))
 						run("e2proc3d.py {model} {mskmodel} --multfile {msk}".format(model=inputmodel[m], mskmodel=mskmodel[-1], msk=mask3d))
-						run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel {para}".format(		model=mskmodel[m],proj=projmskfile[-1],orient=origen,sym=db["sym"],para=options.parallel))
+						run("e2project3d.py {model}  --outfile {proj} --orientgen {orient} --sym {sym} --parallel {para}".format(		model=mskmodel[m],proj=projmskfile[-1],orient=origen,sym=db["sym"],para=options.parallel))
 
 			oldmapfile=str(db["last_{}".format(eo)])
 			ptclfile=str(db["input"][eoid])
@@ -335,7 +330,7 @@ def main():
 			thrds=[threading.Thread(target=do_compare,args=(jsd,xforms[i])) for i in range(npt)]
 			thrtolaunch=0
 			corr=[[] for i in range(npt)]
-			while thrtolaunch<len(thrds) or threading.active_count()>1:
+			while thrtolaunch<len(thrds) or threading.active_count()>1 or not jsd.empty():
 				# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
 				# note that it's ok that we wait here forever, since there can't be new results if an existing
 				# thread hasn't finished.
@@ -456,7 +451,7 @@ def main():
 				tmpprojfile=projfile
 			for s in models:
 				### class average
-				run("e2classaverage.py --input {inputfile} --classmx {clsmx} --decayedge --storebad --output {clsout} --ref {proj} --iter {classiter} -f --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} --align {classalign} --aligncmp {classaligncmp} {classralign} {prefilt} --parallel {para}".format(
+				run("e2classaverage.py --input {inputfile} --classmx {clsmx} --decayedge --storebad --output {clsout} --ref {proj} --iter {classiter} --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} --align {classalign} --aligncmp {classaligncmp} {classralign} {prefilt} --parallel {para}".format(
 					inputfile=ptclfile, clsmx=newclsmx[s], clsout=classout[s], proj=tmpprojfile[s], classiter=db["classiter"], normproc=db["classnormproc"], averager=db["classaverager"], classrefsf=db["classrefsf"],
 					classautomask=db["classautomask"],classkeep=db["classkeep"], classkeepsig=db["classkeepsig"], classcmp=db["classcmp"], classalign=db["classalign"], classaligncmp=db["classaligncmp"],
 					classralign=db["classralign"], prefilt=db["prefilt"], para=options.parallel))

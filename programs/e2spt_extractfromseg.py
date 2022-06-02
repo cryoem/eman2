@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 # Muyuan Chen 2016-09
 from past.utils import old_div
 from builtins import range
@@ -75,10 +73,13 @@ def main():
 		np.random.shuffle(ip)
 		pts=pts[ip]
 		pks=pts[:options.random].copy()
-		pkscore=np.array([0 for p in pks])
+		pkscore=np.array([1.0 for p in pks])
 		
 	
 	n=len(pks)
+	if n==0:
+		print("No particles found. Exit...")
+		return
 	allbox=[]
 	allbox3d=[]
 	if options.sort:
@@ -136,7 +137,8 @@ def main():
 		
 	if "apix_unbin" in js:
 		options.boxsz=options.boxsz*apix/apix_unbin
-	clst[int(mytag)]={"name":options.featurename, "boxsize":options.boxsz}
+	clst[str(mytag)]={"name":options.featurename, "boxsize":options.boxsz}
+	#print(clst)
 	js["class_list"]=clst
 	#js["boxes"]=allbox
 	js.close()

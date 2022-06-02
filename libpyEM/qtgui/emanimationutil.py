@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: David Woolford, 10/10/2008 (woolford@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -37,7 +34,7 @@ from builtins import range
 from builtins import object
 from time import time
 
-from PyQt4 import QtCore
+from PyQt5 import QtCore
 from math import sin,acos
 from EMAN2 import Vec3f, Transform
 
@@ -256,7 +253,7 @@ class SingleValueIncrementAnimation(Animatable):
 
 class TranslationAnimation(Animatable):
 	'''
-	Animates from 3D oint one point to another
+	Animates from one 3D point to another
 	'''
 	def __init__(self,target,start,end):
 		Animatable.__init__(self)

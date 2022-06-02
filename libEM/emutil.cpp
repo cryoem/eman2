@@ -1,7 +1,3 @@
-/**
- * $Id$
- */
-
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
@@ -40,17 +36,16 @@
 #include <sys/param.h>
 #endif	// WIN32
 
-#include "all_imageio.h"
+#include <utility>
+
+#include "io/all_imageio.h"
 #include "portable_fileio.h"
 #include "emcache.h"
 #include "emdata.h"
 #include "ctf.h"
 #include "emassert.h"
 #include "exception.h"
-#include "hdf_filecache.h"
 
-#include <boost/shared_ptr.hpp>
-using boost::shared_ptr;
 
 //#ifdef EMAN2_USING_CUDA_MALLOC
 //#include "cuda/cuda_util.h"
@@ -206,6 +201,10 @@ EMUtil::ImageType EMUtil::get_image_ext_type(const string & file_ext)
 		imagetypes["ser"] = IMAGE_SER;
 		imagetypes["SER"] = IMAGE_SER;
 
+		imagetypes["eer"] = IMAGE_EER;
+//		imagetypes["eer"] = IMAGE_EER2X;
+//		imagetypes["eer"] = IMAGE_EER4X;
+
 		initialized = true;
 	}
 
@@ -254,6 +253,15 @@ EMUtil::ImageType EMUtil::fast_get_image_type(const string & filename,
 		if (MrcIO::is_valid(first_block, file_size)) {
 			return IMAGE_MRC;
 		}
+		break;
+    case IMAGE_EER:
+		return IMAGE_EER;
+        break;
+	case IMAGE_EER2X:
+		return IMAGE_EER2X;
+		break;
+	case IMAGE_EER4X:
+		return IMAGE_EER4X;
 		break;
 	case IMAGE_DM3:
 		if (DM3IO::is_valid(first_block)) {
@@ -515,7 +523,6 @@ EMUtil::ImageType EMUtil::get_image_type(const string & in_filename)
 	}
 	else {
 		// LOGERR("I don't know this image's type: '%s'", filename.c_str());
-
 		throw ImageFormatException("invalid image type");
 	}
 
@@ -533,6 +540,7 @@ int EMUtil::get_image_count(const string & filename)
 	int nimg = 0;
 
 	ImageIO *imageio = get_imageio(filename, ImageIO::READ_ONLY);
+	//printf("%p\n",imageio);
 
 	if (imageio) {
 		nimg = imageio->get_nimg();
@@ -589,6 +597,15 @@ ImageIO *EMUtil::get_imageio(const string & filename, int rw,
 #endif
 	case IMAGE_MRC:
 		imageio = new MrcIO(filename, rw_mode);
+		break;
+	case IMAGE_EER:
+		imageio = new EerIO(filename, rw_mode, decoder0x);
+		break;
+	case IMAGE_EER2X:
+		imageio = new EerIO(filename, rw_mode, decoder1x);
+		break;
+	case IMAGE_EER4X:
+		imageio = new EerIO(filename, rw_mode, decoder2x);
 		break;
 	case IMAGE_IMAGIC:
 		imageio = new ImagicIO2(filename, rw_mode);
@@ -833,6 +850,8 @@ const char *EMUtil::get_datatype_string(EMDataType type)
 		return "USHORT_COMPLEX";
 	case EM_FLOAT_COMPLEX:
 		return "FLOAT_COMPLEX";
+	case EM_COMPRESSED:
+		return "COMPRESSED";
 	case EM_UNKNOWN:
 		return "UNKNOWN";
 	}
@@ -1015,7 +1034,6 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 		if ((fz0 + zlen)> nz && nz > 1) zlen = nz-fz0;
 
 		// This is fine - the region was entirely outside the image
-
 		if ( xlen <= 0 || ylen <= 0 || zlen <= 0 ) return;
 
 		if (mode_size == mode_size_half) {
@@ -1024,7 +1042,6 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 			// with an effective mode size of half a byte,
 			// where most x-pixel parameters need to be even
 			// for everything to work well.
-
 			bool error = false;
 
 			if (fx0 % 2 != 0  &&  false) { // Don't check right now.
@@ -1106,7 +1123,6 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 
 	for (int k = dz0; k < (dz0+zlen); k++) {
 		// k is image/slice number, starting from 0
-
 		if (y_pre_gap > 0) {
 			portable_fseek(file, y_pre_gap, SEEK_CUR);
 		}
@@ -1135,7 +1151,6 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 
 				// region considerations add complications
 				// in the flipping scenario (imagic format)
-
 				if (dy0 > 0) {
 					jj += dy0;
 				}
@@ -1210,25 +1225,16 @@ void EMUtil::dump_dict(const Dict & dict)
 
 bool EMUtil::is_same_size(const EMData * const em1, const EMData * const em2)
 {
-	if (em1->get_xsize() == em2->get_xsize() &&
+	return em1->get_xsize() == em2->get_xsize() &&
 		em1->get_ysize() == em2->get_ysize() &&
-		em1->get_zsize() == em2->get_zsize()) {
-		return true;
-	}
-
-	return false;
+		em1->get_zsize() == em2->get_zsize();
 }
 
 bool EMUtil::is_complex_type(EMDataType datatype)
 {
-	if (datatype == EM_SHORT_COMPLEX ||
+    return datatype == EM_SHORT_COMPLEX ||
 		datatype == EM_USHORT_COMPLEX ||
-		datatype == EM_FLOAT_COMPLEX) {
-
-		return true;
-	}
-
-	return false;
+		datatype == EM_FLOAT_COMPLEX;
 }
 
 EMData *EMUtil::vertical_acf(const EMData * image, int maxdy)
@@ -1266,72 +1272,6 @@ EMData *EMUtil::vertical_acf(const EMData * image, int maxdy)
 	ret->update();
 
 	return ret;
-}
-
-EMData *EMUtil::make_image_median(const vector < EMData * >&image_list)
-{
-	if (image_list.size() == 0) {
-		return 0;
-	}
-
-	EMData *image0 = image_list[0];
-
-	int image0_nx = image0->get_xsize();
-	int image0_ny = image0->get_ysize();
-	int image0_nz = image0->get_zsize();
-	size_t size = (size_t)image0_nx * image0_ny * image0_nz;
-
-	EMData *result = new EMData();
-
-	result->set_size(image0_nx, image0_ny, image0_nz);
-
-	float *dest = result->get_data();
-	int nitems = static_cast < int >(image_list.size());
-	float *srt = new float[nitems];
-	float **src = new float *[nitems];
-
-	for (int i = 0; i < nitems; i++) {
-		src[i] = image_list[i]->get_data();
-	}
-
-	for (size_t i = 0; i < size; ++i) {
-		for (int j = 0; j < nitems; j++) {
-			srt[j] = src[j][i];
-		}
-
-		for (int j = 0; j < nitems; j++) {
-			for (int k = j + 1; k < nitems; k++) {
-				if (srt[j] < srt[k]) {
-					float v = srt[j];
-					srt[j] = srt[k];
-					srt[k] = v;
-				}
-			}
-		}
-
-		int l = nitems / 2;
-
-		if (nitems < 3) {
-			dest[i] = srt[l];
-		}
-		else {
-			dest[i] = (srt[l] + srt[l + 1] + srt[l - 1]) / 3.0f;
-		}
-	}
-
-	if (srt) {
-		delete [] srt;
-		srt = NULL;
-	}
-
-	if (src) {
-		delete [] src;
-		src = NULL;
-	}
-
-	result->update();
-
-	return result;
 }
 
 bool EMUtil::is_same_ctf(const EMData * image1, const EMData * image2)
@@ -1404,25 +1344,20 @@ void ImageSort::sort()
 void ImageSort::set(int i, float score)
 {
 	Assert(i >= 0);
-
 	image_scores[i] = ImageScore(i, score);
 }
 
 int ImageSort::get_index(int i) const
 {
 	Assert(i >= 0);
-
 	return image_scores[i].index;
 }
-
 
 float ImageSort::get_score(int i) const
 {
 	Assert(i >= 0);
-
 	return image_scores[i].score;
 }
-
 
 int ImageSort::size() const
 {
@@ -1745,85 +1680,33 @@ vector<EMObject> EMUtil::get_all_attributes(const string & file_name, const stri
 	Assert(file_name != "");
 	Assert(attr_name != "");
 
-	vector< shared_ptr<EMData> > vpImg = EMData::read_images(file_name, vector<int>(), true);
-	vector< shared_ptr<EMData> >::const_iterator iter;
+	auto vpImg = EMData::read_images(file_name, vector<int>(), EMUtil::IMAGE_UNKNOWN, true);
 
-	for (iter = vpImg.begin(); iter!=vpImg.end(); ++iter) {
+	for (auto iter = vpImg.begin(); iter!=vpImg.end(); ++iter)
 		v.push_back((*iter)->get_attr_default(attr_name));
-	}
 
 	return v;
 }
 
-void EMUtil::getRenderLimits(const Dict & dict, float & rendermin, float & rendermax)
+void EMUtil::getRenderLimits(const Dict & dict, float & rendermin, float & rendermax, int & renderbits)
 {
-	const char    min_or_max_flag     = 'm';
-	const char    std_devs_flag       = 's';
-
-	const float   flag_base           =  1.0e30;
-	const float   use_data_min_or_max = -flag_base;
-
-	string        svalue;
-	const char *  str;
-	char          flag;
-	float         num_std_devs;
-
-	bool          debug = (getenv("DEBUG_RENDER_LIMITS") != NULL);
-
-	rendermin = 0.0;
+	// This routine used to have some complicated logic for specifying the limits in various ways
+	// that is now gone (as far as I can tell, nobody had ever used it), and replaced by the later
+	// logic in getRenderMinMax, which is triggered when render_max<=render_min
+	// at present this routine just reads header values. It is still here in case we need to implement 
+	// more complicated logic in future.
+	rendermin = 0.0;	// when rendermax<=rendermin, automatic mode is invoked
 	rendermax = 0.0;
 
-	if (debug) {
-		printf ("into RenderLimits, rmin = %g, rmax = %g\n", rendermin, rendermax);
-	}
+	if (dict.has_key("render_bits")) renderbits = (int)dict["render_bits"];
+	else renderbits=0;	// 0 bits means float mode, any compression will be truly lossless
 
-	if (dict.has_key("render_min")) {
-		svalue = static_cast<string>(dict["render_min"]);
-		str    = svalue.c_str();
-		flag   = str[0];
-
-		if (debug) printf ("render_min = %s\n", str);
-
-		if (flag == min_or_max_flag) {
-			rendermin = use_data_min_or_max;
-		}
-		else if (flag == std_devs_flag) {
-			num_std_devs = 4.0;
-			sscanf (str+1, "%g", & num_std_devs);
-			rendermin = flag_base * num_std_devs;
-		}
-		else {
-			rendermin = (float) dict["render_min"];
-		}
-	}
-
-	if (dict.has_key("render_max")) {
-		svalue = static_cast<string>(dict["render_max"]);
-		str    = svalue.c_str();
-		flag   = str[0];
-
-		if (debug) printf ("render_max = %s\n", str);
-
-		if (flag == min_or_max_flag) {
-			rendermax = use_data_min_or_max;
-		}
-		else if (flag == std_devs_flag) {
-			num_std_devs = 4.0;
-			sscanf (str+1, "%g", & num_std_devs);
-			rendermax = flag_base * num_std_devs;
-		}
-		else {
-			rendermax = (float) dict["render_max"];
-		}
-	}
-
-	if (debug) {
-		printf ("out of RenderLimits, rmin = %g, rmax = %g\n", rendermin, rendermax);
-	}
+	if (dict.has_key("render_min")) rendermin = (float) dict["render_min"];
+	if (dict.has_key("render_max")) rendermax = (float) dict["render_max"];
 }
 
 void EMUtil::getRenderMinMax(float * data, const int nx, const int ny,
-				float & rendermin, float & rendermax, const int nz)
+				float & rendermin, float & rendermax, int &renderbits, const int nz)
 {
 	const float   flag_base           =  1.0e30;
 	const float   use_data_min_or_max = -flag_base;
@@ -1831,69 +1714,153 @@ void EMUtil::getRenderMinMax(float * data, const int nx, const int ny,
 
 	float         num_std_devs;
 
-	bool          debug = (getenv("DEBUG_RENDER_LIMITS") != NULL);
+	bool          debug = 0;
 
-	if (debug) {
-		printf ("into RenderMinMax, rmin = %g, rmax = %g\n", rendermin, rendermax);
-	}
+	if (debug) printf ("into RenderMinMax, rmin = %g, rmax = %g, rbits = %d\n", rendermin, rendermax, renderbits);
+	
+	if (renderbits<=0) return;			// this is for float mode where rendermin/max isn't used
+	if (renderbits>16) renderbits=16;
 
 	if (rendermax <= rendermin ||
 		Util::is_nan(rendermin) || Util::is_nan(rendermax) ||
 		fabs(rendermin) > use_num_std_devs ||
 		fabs(rendermax) > use_num_std_devs) {
-
+		
 		double m = 0.0f, s = 0.0f;
-
+		size_t nint=0,n0=0,n1=0;	// count the number of integers, zeroes and ones
 		size_t size = (size_t)nx*ny*nz;
 		float min = data[0], max = data[0];
-
+		int bitval = 1<<renderbits;
+		
+		// we compute image statistics. If this were designed right, we'd have the actual image instead of just
+		// the data pointer and wouldn't need to do this (other than maybe the integer counting)
 		for (size_t i = 0; i < size; ++i) {
 			m += data[i];
 			s += data[i] * data[i];
-
+			if (data[i]==0.0f) n0++;
+			else if (data[i]==1.0f) n1++;
+			if (data[i]==floor(data[i])) nint++;
+			
 			min = data[i] < min ? data[i] : min;
 			max = data[i] > max ? data[i] : max;
 //			if (!Util::goodf(&data[i])) printf("NAN in image at pixel %ld\n",i);
 		}
+		
 
+		float mnz = m/(size-n0);	// mean, excluding zeroes
+		float snz = sqrt(s/(size-n0)-mnz*mnz);	// sigma, excluding zeroes
 		m /= (float)(size);
 		s = sqrt(s/(float)(size)-m*m);
 
-		if (debug) printf ("min, mean, max, s.d. = %g %g %g %g\n", min, m, max, s);
+// 		// experimental code for looking at various limit testing schemes
+// 		double s0=0,s1=1,sk0=0,sk1=0,ku0=0,ku1=0;
+// 		size_t nn0=0,nn1=0;
+// 		for (size_t i = 0; i < size; ++i) {
+// 			if (data[i]<m) {
+// 				s0+=pow(data[i]-m,2.0);
+// 				sk0+=pow(m-data[i],3.0);
+// 				ku0+=pow(data[i]-m,4.0);
+// 				nn0++;
+// 			}
+// 			else if (data[i]>m) {
+// 				s1+=pow(data[i]-m,2.0);
+// 				sk1+=pow(data[i]-m,3.0);
+// 				ku1+=pow(data[i]-m,4.0);
+// 				nn1++;
+// 			}
+// 		}
+// 		s0=pow(s0/nn0,0.5);
+// 		s1=pow(s1/nn1,0.5);
+// 		sk0=pow(sk0/nn0,1.0/3.0);
+// 		sk1=pow(sk1/nn1,1.0/3.0);
+// 		ku0=pow(ku0/nn0,0.25);
+// 		ku1=pow(ku1/nn1,0.25);
+// 		printf("\n%f %f %f %f %f %f",s0,s1,sk0,sk1,ku0,ku1);
+// 		printf("\n%f - %f   %f - %f   %f - %f",m-s0*4.0,m+s1*4.0,m-sk0*4.0,m+sk1*4.0,m-ku0*4.0,m+ku1*4.0);
+// 		printf ("\nmin, mean, max, s.d., nint, nzer, none = %g %g %g %g %d %d %d\n", min, m, max, s, nint, n0, n1);
+// 		// end of experimental code
+
+		
+		if (debug) printf ("min, mean, max, s.d., nint, nzer, none = %g %g %g %g %d %d %d\n", min, m, max, s, nint, n0, n1);
 
 		if (s <= 0 || Util::is_nan(s)) s = 1.0; // this means all data values are the same
 
-		if (rendermin == use_data_min_or_max) {
-			rendermin = min;
+		// probably a mask, or another imaged normalized to a range of 1 , binary or smoothed, treat it the same
+		if ((max-min)==1) {
+			rendermin=min;
+			rendermax=max;
 		}
-		else if (rendermin > use_num_std_devs) {
-			num_std_devs = rendermin / flag_base;
-			rendermin = m - s * num_std_devs;
+		// all integer values, make sure we get integers back when we read, even if reduced bits
+		else if (nint==size) {
+			// if true, then we can safely store all of the values in the requested bits without change
+			if (max-min<bitval) {
+				rendermin=min;
+				rendermax=min+bitval-1;
+			}
+			// otherwise, we will need to keep the most significant bits, but still try to get integers out (except in very odd cases)
+			else {
+				int neededbits=ceil(log(max-min+1)/log(2.0f));
+				int step = 1<<(neededbits-renderbits);
+				if (min<0<max) {
+					rendermin = round( min / step ) * step;
+				}
+				else {
+					rendermin=min;
+				}
+				rendermax=rendermin+step*(bitval-1);	
+			}
 		}
+		// Now into the more general case, but we still wish to preserve zero if present in significant numbers
+		// TODO: This raises the tricky point of what would happen if you had a masked volume then added 0.0001 to it?
+		// statistics might produce poor results. May need to consider using kurtosis instead of zero detection
+		else if (min<0<max) {			// 10 is arbitrary, just looking for a profusion of exactly zero values implying a mask
+			// The first two seem stupid since they result in rendermin=min, rendermax=max, but we retain the option
+			// of a more involved calculation to avoid outliers compressing the histogram to an unreasonable level
+			if (min==0) {
+				rendermin=0;
+				rendermax=max;		// keep everything, will only have issues with very large outliers
+//				rendermax=(mnz+snz*6.0)>max?max:mnz+snz*6.0;  //TODO <-  how large a sigma multiplier?
+			}
+			else if (max==0) {
+				rendermax=0;
+				rendermin=min;
+//				rendermin=(mnz-snz*6.0)<min?min:mnz-snz*6.0;
+			}
+			else {
+				float step = (max-min)/(bitval-1);
+				if (min == floor( min/step ) * step) {
+					rendermin=min;
+					rendermax=max;
+				}
+				else {
+	// 				rendermin=(mnz-snz*4.0)<min?min:mnz-snz*4.0;	// 4 standard deviations from the mean seems good empirically, e2iminfo.py -asO
+	// 				rendermax=(mnz+snz*4.0)>max?max:mnz+snz*4.0;
+					// logically impossible
+	//				if (min>0) min=0;
+	//				if (max<0) max=0;
+	// 				if (rendermin==min && rendermax!=max) rendermax=(min+snz*8.0)>max?max:min+snz*8.0;
+	// 				if (rendermin!=min && rendermax==max) rendermin=(max-snz*8.0)<min?min:max-snz*8.0;
+	// 				float step=(rendermax-rendermin)/(bitval-1);
+	// 				rendermin=ceil(rendermin/step)*step;	// adjust rendermin so integral number of steps to exactly zero, may be roundoff issues
+					step=(max-min)/(bitval-2);		// -2 instead of -1 to give enough range to accommodate exactly 0
+					rendermin=(floor(min/step)*step);		// rendermin will be an integral number of steps from zero
+					rendermax=rendermin+step*(bitval-1);
+				}
+			}
+		}
+		// Most general case, no "special values" to preserve
 		else {
-			rendermin = m - s * 5.0f;
+// 			rendermin=(m-s*4.0)<min?min:m-s*4.0;	// 4 standard deviations from the mean seems good empirically, e2iminfo.py -asO
+// 			rendermax=(m+s*4.0)>max?max:m+s*4.0;
+// 			if (rendermin==min && rendermax!=max) rendermax=(min+s*8.0)>max?max:min+s*8.0;
+// 			if (rendermin!=min && rendermax==max) rendermin=(max-s*8.0)<min?min:max-s*8.0;
+			// Intelligent outlier removal is just too risky. large outliers are still a risk, but we'll stay conservative for now
+			rendermin=min;
+			rendermax=max;
 		}
-
-		if (rendermax == use_data_min_or_max) {
-			rendermax = max;
-		}
-		else if (rendermax > use_num_std_devs) {
-			num_std_devs = rendermax / flag_base;
-			rendermax = m + s * num_std_devs;
-		}
-		else {
-			rendermax = m + s * 5.0f;
-		}
-
-		if (rendermin <= min) rendermin = min;
-		if (rendermax >= max) rendermax = max;
-
-//	printf("rendermm %f %f %f %f\n",rendermin,rendermax,m,s);
 	}
 
-	if (debug) {
-		printf ("out of RenderMinMax, rmin = %g, rmax = %g\n", rendermin, rendermax);
-	}
+	if (debug) printf ("out of RenderMinMax, rmin = %g, rmax = %g, rbits = %d\n", rendermin, rendermax, renderbits);
 }
 
 #ifdef USE_HDF5
@@ -1909,7 +1876,6 @@ EMObject EMUtil::read_hdf_attribute(const string & filename, const string & key,
 	imageio->init();
 
 	// Each image is in a group for later expansion. Open the group
-
 	hid_t file = imageio->get_fileid();
 
 	char ipath[50];

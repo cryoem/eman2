@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 # Author: Steven Ludtke, 06/28/2018 (sludtke@bcm.edu)
 # Copyright (c) 2000- Baylor College of Medicine
 #
@@ -42,7 +40,7 @@ import queue
 from sys import argv,exit
 import numpy as np
 
-def enrich(thr,jsd,imfile,lsx,proj,nenrich,redobispec,i0,i1,verbose):
+def enrich(thr,jsd,imfile,lsx,proj,nenrich,redoinvar,i0,i1,verbose):
 	
 	ret=[]
 	# we loop over the specified range of input images
@@ -69,9 +67,12 @@ def enrich(thr,jsd,imfile,lsx,proj,nenrich,redobispec,i0,i1,verbose):
 		avg["class_ptcl_idxs"]=[i]+best
 		if avg["sigma"]==0 : print("Error: {} : {}".format(i,best))
 
-		if redobispec:
-			bspec=avg.process("math.bispectrum.slice",{"fp":bispec_invar_parm[1],"size":bispec_invar_parm[0]})
-			ret.append((avg,af.split("__")[0]+"__ctf_flip_enrich{}.hdf".format(nenrich),an,bspec,af.split("__")[0]+"__ctf_flip_bispec.hdf"))
+		if redoinvar!=None:
+			if redoinvar=="bispec":
+				bspec=avg.process("math.bispectrum.slice",{"fp":bispec_invar_parm[1],"size":bispec_invar_parm[0]})
+			elif redoinvar=="harmonic":
+				bspec=avg.process("math.harmonic",{"fp":4})
+			ret.append((avg,af.split("__")[0]+"__ctf_flip_enrich{}.hdf".format(nenrich),an,bspec,af.split("__")[0]+"__ctf_flip_invar.hdf"))
 		else:
 			ret.append((avg,af.split("__")[0]+"__ctf_flip_enrich{}.hdf".format(nenrich),an))
 
@@ -94,7 +95,7 @@ autoprocessing prior to using this program, but no other processing is required.
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	parser.add_argument("--nenrich", default=54,type=int,help="Number of additional particles to average with each particle. Default=5")
-	parser.add_argument("--redobispec",action="store_true",help="Recomputes bispectra from masked particles",default=False)
+	parser.add_argument("--redoinvar",choices=["bispec","harmonic"],help="Recomputes invariants",default=None)
 	parser.add_argument("--threads", default=4,type=int,help="Number of alignment threads to run in parallel on a single computer.", guitype='intbox', row=24, col=2, rowspan=1, colspan=1, mode="refinement")
 #	parser.add_argument("--gui",action="store_true",help="Permits interactive adjustment of mask parameters",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode="tuning[True]")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -104,8 +105,8 @@ autoprocessing prior to using this program, but no other processing is required.
 
 	NTHREADS=max(options.threads+1,2)		# we have one controlling thread
 	
-	try: bispec=args[0].split("__ctf_flip")[0]+"__ctf_flip_bispec.lst"
-	except: bispec=args[0].rsplit(".",1)[0]+"_bispec.hdf"
+	try: bispec=args[0].split("__ctf_flip")[0]+"__ctf_flip_invar.lst"
+	except: bispec=args[0].rsplit(".",1)[0]+"_invar.hdf"
 	n=EMUtil.get_image_count(args[0])
 	if options.verbose: print(n," particles")
 	step=max(1,n//10000)
@@ -114,7 +115,7 @@ autoprocessing prior to using this program, but no other processing is required.
 	
 	logid=E2init(sys.argv, options.ppid)
 
-	if options.verbose: print("Computing MSA of particle bispectra ({})".format(bispec))
+	if options.verbose: print("Computing MSA of particle invariants ({})".format(bispec))
 	# we start by running MSA on the full set of bispectra
 	ret=launch_childprocess("e2msa.py {bispec} enrich_basis.hdf enrich_proj.hdf  --mode factan --nomean --nbasis=10 {step}".format(bispec=bispec,step=step))
 
@@ -124,12 +125,12 @@ autoprocessing prior to using this program, but no other processing is required.
 	
 	jsd=queue.Queue(0)
 	nstep=n//50+1		# 50 particles at a time. Arbitrary
-	thrds=[(i,jsd,args[0],lsx,ptcl_proj,options.nenrich,options.redobispec,i*50,min(len(ptcl_proj),(i+1)*50),max(0,options.verbose-1)) for i in range(nstep)]
+	thrds=[(i,jsd,args[0],lsx,ptcl_proj,options.nenrich,options.redoinvar,i*50,min(len(ptcl_proj),(i+1)*50),max(0,options.verbose-1)) for i in range(nstep)]
 	
 	if options.verbose: print("Beginning reprojections")
 	# standard thread execution loop
 	thrtolaunch=0
-	while thrtolaunch<len(thrds) or threading.active_count()>1:
+	while thrtolaunch<len(thrds) or threading.active_count()>1 or not jsd.empty():
 		if thrtolaunch<len(thrds):
 			while (threading.active_count()>=options.threads) : time.sleep(0.1)
 			if options.verbose>0 : 
@@ -145,7 +146,7 @@ autoprocessing prior to using this program, but no other processing is required.
 			rd=jsd.get()
 			
 			# file writing only in the controlling thread
-			if options.redobispec:
+			if options.redoinvar:
 				for im,fsp,i,bsp,bspfsp in rd[1]:
 					im.write_image(fsp,i)
 					bsp.write_image(bspfsp,i)

@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steve Ludtke, 07/26/17 (sludtke@bcm.edu)
 # Copyright (c) 2000-2007 Baylor College of Medicine
@@ -37,7 +34,6 @@ from __future__ import division
 from past.utils import old_div
 from builtins import range
 from EMAN2 import *
-from EMAN2db import db_open_dict, db_list_dicts
 from math import *
 from os import remove
 import time
@@ -67,18 +63,19 @@ def main():
 	parser.add_argument("--ncls", default=32, type=int, help="Number of classes to generate", guitype='intbox', row=1, col=0, rowspan=1, colspan=1, mode="spr")
 	parser.add_argument("--alignsort", default=False, action="store_true",help="This will align and sort the final class-averages based on mutual similarity.", guitype='boolbox', row=1, col=1, rowspan=1, colspan=1, mode="spr[True]")
 	parser.add_argument("--msamode",default="pca",type=str,help="e2msa can use a variety of different dimensionality reduction algorithms, the default is Principal Component Analysis (PCA), but others are available, see e2msa.py")
-#	parser.add_argument("--normproj", default=False, action="store_true",help="Normalizes each projected vector into the MSA subspace. Note that this is different from normalizing the input images since the subspace is not expected to fully span the image", guitype='boolbox', row=1, col=1, rowspan=1, colspan=1, mode="spr[True]")
+	parser.add_argument("--basisrefs",default=None,type=str,help="Will use a set of existing class-averages/projections to generate the Eigenbasis for classification. This must be an image stack with the same dimensions as the particle data.")
+	parser.add_argument("--normproj", default=False, action="store_true",help="Normalizes each projected vector into the MSA subspace. Note that this is different from normalizing the input images since the subspace is not expected to fully span the image", guitype='boolbox', row=1, col=2, rowspan=1, colspan=1, mode="spr[True]")
 #	parser.add_argument("--fastseed", action="store_true", default=False,help="Will seed the k-means loop quickly, but may produce less consistent results. Always use this when generating >~100 classes.",guitype='boolbox', row=1, col=2, rowspan=1, colspan=1, mode="spr[True]")
 	parser.add_argument("--iter", type=int, default=0, help = "The total number of refinement iterations to perform")  #, guitype='intbox', row=2, col=0, rowspan=1, colspan=1, mode="spr")
 	parser.add_argument("--nbasisfp",type=int,default=8,help="Number of MSA basis vectors to use when classifying particles", guitype='intbox', row=2, col=1, rowspan=1, colspan=1, mode="spr")
 #	parser.add_argument("--automask",default=False, action="store_true",help="Automasking during class-averaging to help with centering when particle density is high",guitype="boolbox", row=2,col=2,rowspan=1,colspan=1,mode="spr")
 #	parser.add_argument("--naliref", default=5, type=int, help="Number of alignment references to when determining particle orientations", guitype='intbox', row=3, col=0, rowspan=1, colspan=1, mode="spr")
-	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None, guitype='strbox', row=4, col=0, rowspan=1, colspan=3, mode="spr")
+	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default="thread:4", guitype='strbox', row=4, col=0, rowspan=1, colspan=3, mode="spr")
 	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful", guitype='intbox', row=30, col=2, rowspan=1, colspan=1, mode="refinement[4]")
 #	parser.add_argument("--centeracf", default=False, action="store_true",help="This option has been removed in favor of a new centering algorithm")
-	parser.add_argument("--center",type=str,default="xform.center",help="If the default centering algorithm (xform.center) doesn't work well, you can specify one of the others here (e2help.py processor center)",guitype='comboparambox', choicelist='dict(re_filter_list(dump_processors_list(),"xform.center").items()+[("nocenter",["Do not center class averages. (similar to what relion does)"])])', row=3, col=1, rowspan=1, colspan=2, mode="spr")
+	parser.add_argument("--center",type=str,default="xform.center",help="If the default centering algorithm (xform.center) doesn't work well, you can specify one of the others here (e2help.py processor center)",guitype='comboparambox', choicelist='dict(list(re_filter_list(dump_processors_list(),"xform.center").items())+[("nocenter",["Do not center class averages. (similar to what relion does)"])])', row=3, col=1, rowspan=1, colspan=2, mode="spr")
 #	parser.add_argument("--check", "-c",default=False, action="store_true",help="Checks the contents of the current directory to verify that e2refine2d.py command will work - checks for the existence of the necessary starting files and checks their dimensions. Performs no work ")
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 #	parser.add_argument("--maxshift", default=-1, type=int, help="Maximum particle translation in x and y")
 #	parser.add_argument("--exclude", type=str,default=None,help="The named file should contain a set of integers, each representing an image from the input file to exclude.")
 #	parser.add_argument("--resume", default=False, action="store_true",help="This will cause a check of the files in the current directory, and the refinement will resume after the last completed iteration. It's ok to alter other parameters.")
@@ -103,7 +100,7 @@ def main():
 	parser.add_argument("--classkeep",type=float,default=0.8,help="The fraction of particles to keep in each class, based on the similarity score generated by the --cmp argument (default=0.8).", guitype='floatbox', row=16, col=0, rowspan=1, colspan=1, mode="spr")
 	parser.add_argument("--classkeepsig", default=False, action="store_true", help="Change the keep (\'--keep\') criterion from fraction-based to sigma-based.", guitype='boolbox', row=16, col=2, rowspan=1, colspan=1, mode="spr")
 	parser.add_argument("--classiter", default=4, type=int, help="Number of iterations to use when making class-averages (default=4)", guitype='intbox', row=16, col=1, rowspan=1, colspan=1, mode="spr")
-	parser.add_argument("--classalign",type=str,help="If doing more than one iteration, this is the name and parameters of the 'aligner' used to align particles to the previous class average.", default="rotate_translate_flip:usebispec=1", guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine|3d\', 1)', row=20, col=0, rowspan=1, colspan=3, mode="spr")
+	parser.add_argument("--classalign",type=str,help="If doing more than one iteration, this is the name and parameters of the 'aligner' used to align particles to the previous class average.", default="rotate_translate_tree:flip=1", guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine|3d\', 1)', row=20, col=0, rowspan=1, colspan=3, mode="spr")
 	parser.add_argument("--classaligncmp",type=str,help="This is the name and parameters of the comparitor used by the fist stage aligner  Default is dot.",default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=21, col=0, rowspan=1, colspan=3, mode="spr")
 	parser.add_argument("--classralign",type=str,help="The second stage aligner which refines the results of the first alignment in class averaging. Default is None.", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine$\')', row=22, col=0, rowspan=1, colspan=3, mode="spr")
 	parser.add_argument("--classraligncmp",type=str,help="The comparitor used by the second stage aligner in class averageing. Default is dot:normalize=1.",default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=23, col=0, rowspan=1, colspan=3, mode="spr")
@@ -128,21 +125,12 @@ def main():
 	if options.parallel :
 		parstr="--parallel="+options.parallel
 		if options.parallel[:6]=="thread" :
-			options.threads=int(options.parallel.split(":")[-1])
+			options.threads=int(options.parallel.split(":")[1])
 			print("--threads set to match --parallel")
 	else : parstr=""
 
-	if options.path and ("/" in options.path or "#" in options.path) :
-		print("Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. ")
-		sys.exit(1)
-
 	if options.path == None:
-		fls=[int(i[-2:]) for i in os.listdir(".") if i[:5]=="r2db_" and len(i)==7]
-		if len(fls)==0 : fls=[0]
-		options.path = "r2db_{:02d}".format(max(fls)+1)
-		try: os.mkdir(options.path)
-		except: pass
-
+		options.path=num_path_new("r2db_")
 
 	fit=1
 	dcts=os.listdir(options.path)
@@ -162,33 +150,47 @@ def main():
 	n=EMUtil.get_image_count(options.input)
 
 	# make footprint images (rotational/translational invariants)
-	fpfile=options.input.split("__")[0]+"__ctf_flip_bispec.lst"
+	fpfile=options.input.split("__")[0]+"__ctf_flip_invar.lst"
 	if not os.path.exists(fpfile):
-		print("ERROR: no bispectrum file found. Please run e2ctf_auto.py in your standard EMAN2 project folder. This program will not work with standalone stack files.")
+		print("ERROR: no _invar file found. Please run e2ctf_auto.py in your standard EMAN2 project folder. This program will not work with standalone stack files.")
 		sys.exit(1)
-		#print("WARNING: ",fpfile," not found. Computing bispectra. This will slow processing. ")
+		#print("WARNING: ",fpfile," not found. Computing invariants. This will slow processing. ")
 		#fpfile=options.path+"/input_bispec.hdf"
 		#run("e2proc2dpar.py {} {} --process filter.highpass.gauss:cutoff_pixels=2 --process math.bispectrum.slice:fp={}:size={} --threads {}".format(options.input,fpfile,bispec_invar_parm[1],bispec_invar_parm[0],options.threads))
 	else:
 		tmp1=EMData(fpfile,0)
 		tmp2=EMData(options.input,0)
-		tmp2=tmp2.process("math.bispectrum.slice",{"fp":bispec_invar_parm[1],"size":bispec_invar_parm[0]})
-		if tmp1["nx"]!=tmp2["nx"] or tmp1["ny"]!=tmp2["ny"] :
-			print("ERROR: images in ",fpfile," have the wrong dimensions. It is likely that you ran e2ctf_auto.py on an older version of EMAN2. Please rerun CTF autoprocessing, with the 'outputonly' option set to generate the correct bispectra.")
-			sys.exit(1)
-			#print("WARNING: images in ",fpfile," have the wrong dimensions. Recomputing bispectra. This will slow processing.")
-			#fpfile=options.path+"/input_bispec.hdf"
-			#run("e2proc2dpar.py {} {} --process filter.highpass.gauss:cutoff_pixels=2 --process math.bispectrum.slice:fp={}:size={} --threads {}".format(options.input,fpfile,bispec_invar_parm[1],bispec_invar_parm[0],options.threads))
+		if tmp1.has_attr("is_harmonic_fp") : invmode="harmonic"
+		else:
+			tmp2=tmp2.process("math.bispectrum.slice",{"fp":bispec_invar_parm[1],"size":bispec_invar_parm[0]})
+			if tmp1["nx"]!=tmp2["nx"] or tmp1["ny"]!=tmp2["ny"] :
+				print("ERROR: images in ",fpfile," have the wrong dimensions. It is likely that you ran e2ctf_auto.py on an older version of EMAN2. Please rerun CTF autoprocessing, with the 'outputonly' option set to generate the correct bispectra.")
+				sys.exit(1)
+			invmode="bispec"
 
 	logid=E2init(sys.argv,options.ppid)
 
-	# MSA on the footprints
 	fpbasis=options.path+"/basis_00.hdf"
 	inputproj=options.path+"/basis_proj_00.hdf"
-	if n>10000 : step="--step 0,{}".format((n+10000)//20000)
-	else: step=""
-	#run("e2msa.py %s %s --normalize --nbasis=%0d --scratchfile=%s/msa_scratch.bin %s"%(fpfile,fpbasis,options.nbasisfp,options.path,step))
-	run("e2msa.py %s %s %s --nbasis %0d %s --mode %s --nomean"%(fpfile,fpbasis,inputproj,options.nbasisfp,step,msamode))
+	if options.normproj: normproj="--normproj"
+	else: normproj=""
+
+	# we are using a subspace defined by some class-averages or projections instead of the particles
+	if options.basisrefs!=None:
+		if invmode=="bispec":
+			run("e2proc2dpar.py {} {}/bref_invar.hdf --process math.bispectrum.slice:fp={}:size={} --threads {}".format(options.basisrefs,options.path,bispec_invar_parm[1],bispec_invar_parm[0],options.threads))
+		else:
+			run("e2proc2dpar.py {} {}/bref_invar.hdf --process math.harmonic:fp=4 --threads {}".format(options.basisrefs,options.path,bispec_invar_parm[1],bispec_invar_parm[0],options.threads))
+		
+		run("e2msa.py %s/bref_invar.hdf %s %s --projin %s --nbasis %0d --mode %s --nomeansub %s"%(options.path,fpbasis,inputproj,fpfile,options.nbasisfp,msamode,normproj))
+
+	else:
+		# MSA on the footprints
+		if n>10000 : step="--step 0,{}".format((n+10000)//20000)
+		else: step=""
+		#run("e2msa.py %s %s --normalize --nbasis=%0d --scratchfile=%s/msa_scratch.bin %s"%(fpfile,fpbasis,options.nbasisfp,options.path,step))
+		run("e2msa.py %s %s %s --nbasis %0d %s --mode %s --nomeansub %s"%(fpfile,fpbasis,inputproj,options.nbasisfp,step,msamode,normproj))
+
 	proc_tally += 1.0
 	if logid : E2progress(logid,old_div(proc_tally,total_procs))
 
@@ -198,17 +200,17 @@ def main():
 	if logid : E2progress(logid,old_div(proc_tally,total_procs))
 
 	# Classification
-	run("e2classifykmeans.py %s --original %s --mininclass 2 --ncls %d --clsmx %s/classmx_00.hdf --onein --fastseed --axes 0-%d"%(inputproj,options.input,options.ncls,options.path,options.nbasisfp-1))
+	run("e2classifykmeans.py %s --original %s --mininclass 3 --outlierclass --ncls %d --clsmx %s/classmx_00.hdf --onein --fastseed --axes 0-%d"%(inputproj,options.input,options.ncls,options.path,options.nbasisfp-1))
 
 	proc_tally += 1.0
 	if logid : E2progress(logid,old_div(proc_tally,total_procs))
 
 	# Make class averages
-	cls_cmd = "e2classaverage.py --input=%s --classmx=%s/classmx_00.hdf --output=%s/classes_00.hdf --iter=%d --force --storebad --center=%s" %(options.input,options.path,options.path,options.classiter,options.center)
+	cls_cmd = "e2classaverage.py --input=%s --classmx=%s/classmx_00.hdf --output=%s/classes_00.hdf --iter=%d  --center=%s " %(options.input,options.path,options.path,options.classiter,options.center)
 	cls_cmd += get_classaverage_extras(options)
 	run (cls_cmd)
 
-	class_postproc(options,0)
+	class_postproc(options,0,invmode)
 
 	proc_tally += 1.0
 	if logid : E2progress(logid,old_div(proc_tally,total_procs))
@@ -229,39 +231,42 @@ def main():
 		#if logid : E2progress(logid,proc_tally/total_procs)
 
 		# Classification
-		run("e2classifykmeans.py %s/basis_proj_%02d.hdf --original=%s --mininclass=2 --ncls=%d --clsmx=%s/classmx_%02d.hdf --onein --fastseed"%(options.path,it,options.input,options.ncls,options.path,it))
+		run("e2classifykmeans.py %s/basis_proj_%02d.hdf --original=%s --mininclass 3 --outlierclass --ncls=%d --clsmx=%s/classmx_%02d.hdf --onein --fastseed"%(options.path,it,options.input,options.ncls,options.path,it))
 		proc_tally += 1.0
 		if logid : E2progress(logid,old_div(proc_tally,total_procs))
 
 
 		# Make class averages
-		cls_cmd = "e2classaverage.py --input=%s --classmx=%s/classmx_%02d.hdf --output=%s/classes_%02d.hdf --iter=%d --force --storebad --center=%s" %(options.input,options.path,it,options.path,it,options.classiter,options.center)
+		cls_cmd = "e2classaverage.py --input=%s --classmx=%s/classmx_%02d.hdf --output=%s/classes_%02d.hdf --iter=%d --center=%s" %(options.input,options.path,it,options.path,it,options.classiter,options.center)
 		cls_cmd += get_classaverage_extras(options)
 		run (cls_cmd)
 		proc_tally += 1.0
 		if logid : E2progress(logid,old_div(proc_tally,total_procs))
 
-		class_postproc(options,it)
+		class_postproc(options,it,invmode)
 
 	print("e2refine2d.py complete")
 	E2end(logid)
 
-def class_postproc(options,it):
+def class_postproc(options,it,invmode):
 
 	# bispectra of class-averages
 
 	run("e2proc2d.py %s/classes_%02d.hdf %s/classes_%02d.hdf --inplace --calccont --process=filter.highpass.gauss:cutoff_pixels=2 --process=normalize.circlemean:radius=-5"%(options.path,it,options.path,it))
 
-	run("e2proc2dpar.py {}/classes_{:02d}.hdf {}/classes_fp_{:02d}.hdf --process math.bispectrum.slice:fp={}:size={} --threads {}".format(options.path,it,options.path,it,bispec_invar_parm[1],bispec_invar_parm[0],options.threads))
-
+	if invmode=="bispec" :
+		run("e2proc2dpar.py {}/classes_{:02d}.hdf {}/classes_fp_{:02d}.hdf --process math.bispectrum.slice:fp={}:size={} --threads {}".format(options.path,it,options.path,it,bispec_invar_parm[1],bispec_invar_parm[0],options.threads))
+	else:
+		run("e2proc2dpar.py {}/classes_{:02d}.hdf {}/classes_fp_{:02d}.hdf --process math.harmonic:fp=4 --threads {}".format(options.path,it,options.path,it,options.threads))
+		
 	run("e2stacksort.py %s/classes_fp_%02d.hdf %s/classes_fp_%02d.hdf %s/classes_%02d.hdf %s/classes_%02d.hdf --simcmp=ccc --seqalicen"%(options.path,it,options.path,it,options.path,it,options.path,it))
 	
 	if options.alignsort:
-		run("e2stacksort.py %s/classes_%02d.hdf %s/classes_sort_%02d.hdf --bispec"%(options.path,it,options.path,it))
+		run("e2stacksort.py %s/classes_%02d.hdf %s/classes_sort_%02d.hdf --invar"%(options.path,it,options.path,it))
 
 
 def get_classaverage_extras(options):
-	s = " --align=%s --averager=%s  --keep=%f --cmp=%s --aligncmp=%s --normproc=%s" %(options.classalign,options.classaverager,options.classkeep,options.classcmp,options.classaligncmp,options.classnormproc)
+	s = " --align=%s --averager=%s  --keep=%f --cmp=%s --aligncmp=%s --normproc=%s -v %d" %(options.classalign,options.classaverager,options.classkeep,options.classcmp,options.classaligncmp,options.classnormproc,max(options.verbose-1,0))
 
 	if options.classkeepsig:
 		s += " --keepsig"
@@ -296,7 +301,7 @@ def get_simmx_cmd(options,refs,simmx,check=False,nofilecheck=False):
 
 def get_classaverage_cmd(options,check=False,nofilecheck=False):
 
-	e2cacmd = "e2classaverage.py --input=%s --classmx=%s --force --output=%s --keep=.75 --center %s" %(options.startimg,options.classifyfile,options.cafile,options.center)
+	e2cacmd = "e2classaverage.py --input=%s --classmx=%s --output=%s --keep=.75 --center %s" %(options.startimg,options.classifyfile,options.cafile,options.center)
 
 	e2cacmd += " --ref=%s --iter=%d -f" %(options.projfile,options.classiter)
 

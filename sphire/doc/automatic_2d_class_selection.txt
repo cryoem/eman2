@@ -1,0 +1,44 @@
+~~NOTOC~~
+
+===== sp_cinderella_pred =====
+Automatic 2D class selection: Classify classes into good and bad.
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sp_cinderella_pred.py cinderella_path input_stack_cinderella output_dir model_path --confidence_threshold=CONFIDENCE_THRESHOLD --gpu=GPU --batch_size=BATCH_SIZE
+
+\\
+===== Typical usage =====
+
+-
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; cinderella_path : Cinderella predict executeable : Path to the sp_cinderella_predict.py in your Cinderella environment (default none)
+  ; input_stack_cinderella : Input stack : Path to your class stack (.mrcs/.hdf). (default none)
+  ; output_dir : Output directory : Folder to write results. (default required string)
+  ; model_path : Model path : Specifiy the path to your model file. (default required string)
+
+
+\\
+=== Advanced Parameters ===
+  ; %%--%%confidence_threshold : Confidence threshold: Classes with a confidence higher as that threshold are classified as good.  (default 0.5)
+  ; %%--%%gpu : GPU ID : ID of the GPU that should be used. (default -1)
+  ; %%--%%batch_size : Number of batches : Number of mini-batches during prediction. (default 32)
+
+
+\\
+===== Output =====
+It will write a .h5 file (default yolo_model.h5) into your project directory.
+
+
+\\
+===== Description =====
+The training is divided into two parts. 1. Warmup: It prepares the network with a few epochs of training without actually estimating the size of the particle.
+2. Actual training: The training will stop when the loss on the validation data stops to improve.
+
+

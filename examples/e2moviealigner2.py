@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 # Author: James Michael Bell, jmbell@bcm.edu, 10/18/2015
 
 from past.utils import old_div
@@ -48,7 +45,7 @@ def main():
 	parser.add_argument('--xybadlines', help="Specify the list of bad pixel coordinates for your detector. Will only be used if --fixbadlines is also specified.", nargs=2, default=['3106,3093','3621,3142','4719,3494'])
 	parser.add_argument("--show", action="store_true",help="Show average of movie frames before and after alignment.",default=True)
 	parser.add_argument("--plot",action="store_true",default=False,help="Plot the 1D power spectra and exit.")
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	
 	(options, args) = parser.parse_args()

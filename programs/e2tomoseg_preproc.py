@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Michael Bell, 6/19/2018 (jmbell@bcm.edu)
 # Copyright (c) 2018-2022 Baylor College of Medicine
@@ -45,8 +42,8 @@ def main():
 	parser.add_argument("--proctag",help="Tag added to the name of each tomogram when using the proc options. Default is 'preproc'.",default="preproc", guitype='strbox', row=1, col=2, rowspan=1, colspan=1, mode='proc["seg"]')
 	parser.add_argument("--proc1",help="If specified _proctag files will be generated. Typical = filter.lowpass.gauss:cutoff_abs=.25",default="filter.lowpass.gauss:cutoff_abs=.25", guitype='strbox', row=2, col=0, rowspan=1, colspan=3, mode='proc["filter.lowpass.gauss:cutoff_abs=.25"]')
 	parser.add_argument("--proc2",help="If specified _proctag tomograms will be generated. Typical = filter.highpass.gauss:cutoff_pixels=5",default="filter.highpass.gauss:cutoff_pixels=5", guitype='strbox', row=3, col=0, rowspan=1, colspan=3, mode='proc["filter.highpass.gauss:cutoff_pixels=5"]')
-	parser.add_argument("--proc3",help="If specified _proctag tomograms will be generated. Typical = threshold.clampminmax.nsigma:nsigma=3",default="threshold.clampminmax.nsigma:nsigma=3", guitype='strbox', row=4, col=0, rowspan=1, colspan=3, mode='proc["threshold.clampminmax.nsigma:nsigma=3"]')
-	parser.add_argument("--proc4",help="If specified _proctag tomograms will be generated.",default="", guitype='strbox', row=12, col=0, rowspan=1, colspan=3, mode='proc[""]')
+	parser.add_argument("--proc3",help="If specified _proctag tomograms will be generated.",default="normalize", guitype='strbox', row=4, col=0, rowspan=1, colspan=3, mode='proc[""]')
+	parser.add_argument("--proc4",help="If specified _proctag tomograms will be generated. Typical = threshold.clampminmax.nsigma:nsigma=3",default="threshold.clampminmax.nsigma:nsigma=3", guitype='strbox', row=5, col=0, rowspan=1, colspan=3, mode='proc["threshold.clampminmax.nsigma:nsigma=3"]')
 	parser.add_argument("--proc5",help="If specified _proctag tomograms will be generated.",default="", guitype='strbox', row=14, col=0, rowspan=1, colspan=3, mode='proc[""]')
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")

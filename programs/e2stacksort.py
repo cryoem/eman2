@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 01/03/07 (sludtke@bcm.edu)
 # Copyright (c) 2000-2007 Baylor College of Medicine
@@ -69,7 +66,7 @@ def main():
 	parser.add_argument("--bykurtosis",action="store_true",default=False,help="Sort by image Kurtosis. No alignment, shrinking, etc. is performed")
 	parser.add_argument("--byheader",type=str, help="Uses the named header parameter to sort the images",default=None)
 	parser.add_argument("--iterative",action="store_true",default=False,help="Iterative approach for achieving a good 'consensus alignment' among the set of particles")
-	parser.add_argument("--bispec",action="store_true",default=False,help="Sorting and alignment using bispectra.")
+	parser.add_argument("--invar",action="store_true",default=False,help="Sorting and alignment using invariants.")
 	parser.add_argument("--useali",action="store_true",default=False,help="Save aligned particles to the output file, note that if used with shrink= this will store the reduced aligned particles")
 	parser.add_argument("--seqali",action="store_true",default=False,help="Align each particle to the previous particle before saving with rotate_translate_tree. No flip in alignment. Aligns stack #2 instead if provided.")
 	parser.add_argument("--seqalicen",action="store_true",default=False,help="Align each particle to the previous particle before saving, with a postalignment recentering. No flip in alignment. Aligns stack #2 instead if provided.")
@@ -78,7 +75,7 @@ def main():
 	parser.add_argument("--ninput",type=int,help="Number of input particles to read (first n in the file)",default=0)
 	parser.add_argument("--shrink",type=int,help="Reduce the particles for comparisons",default=1)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 #	parser.add_argument("--tilt", "-T", type=float, help="Angular spacing between tilts (fixed)",default=0.0)
 #	parser.add_argument("--maxshift","-M", type=int, help="Maximum translational error between images (pixels), default=64",default=64.0)
 #	parser.add_argument("--mode",type=str,help="centering mode 'modeshift', 'censym' or 'region,<x>,<y>,<clipsize>,<alisize>",default="censym")
@@ -122,8 +119,8 @@ def main():
 	if options.byptcl :
 		b=sortstackptcl(a,options.nsort)
 		if options.reverse : b.reverse()
-	elif options.bispec:
-		b=sortstackbispec(a,options.verbose)
+	elif options.invar:
+		b=sortstackinvar(a,options.center,options.verbose)
 	elif options.bykurtosis:
 		b=sortstackkurt(a,options.nsort)
 		if options.reverse : b.reverse()
@@ -154,18 +151,18 @@ def main():
 
 	E2end(E2n)
 
-def sortstackbispec(stack,verbose):
-	"uses bispectra to both sort and rotationally align a stack"
+def sortstackinvar(stack,center,verbose):
+	"uses invariants to both sort and rotationally align a stack"
 	import numpy as np
 	
 	n=len(stack)
-	bispec=[i.process("mask.soft",{"outer_radius":i["nx"]/3,"width":i["nx"]/10}).process("math.bispectrum.slice",{"fp":4,"size":16}) for i in stack]
+	invar=[i.process("mask.soft",{"outer_radius":i["nx"]/3,"width":i["nx"]/10}).process("math.harmonic",{"fp":3}) for i in stack]
 	sim=np.zeros([n,n])
 
 	# complete similarity matrix
 	for i in range(n):
 		for j in range(i):
-			c=bispec[i].cmp("ccc",bispec[j],{"negative":0})
+			c=invar[i].cmp("ccc",invar[j],{"negative":0})
 			sim[i,j]=c
 			sim[j,i]=c
 			
@@ -186,6 +183,9 @@ def sortstackbispec(stack,verbose):
 	for i in range(1,n):
 		ret.append(stack[srt[i]].align("rotational_bispec",ret[-1]))
 			
+	if center:
+		for im in ret: im.process_inplace("xform.centerofmass")
+		
 	return ret
 
 def sortstackiter(stack,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,center,mask):

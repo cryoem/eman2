@@ -1,7 +1,3 @@
-/**
- * $Id$
- */
-
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
@@ -169,6 +165,18 @@ void Transform::copy_matrix_into_array(float* const array) const {
 		}
 	}
 }
+
+string Transform::get_matrix_string(int precision) {
+	if (precision<2||precision>9) precision=9;
+	char fmt[256];
+	char buf[256];	// sufficient for any potential result
+	sprintf(fmt,"[%%1.%0dg,%%1.%0dg,%%1.%0dg,%%1.%0dg,%%1.%0dg,%%1.%0dg,%%1.%0dg,%%1.%0dg,%%1.%0dg,%%1.%0dg,%%1.%0dg,%%1.%0dg]",
+			precision,precision,precision,precision,precision,precision,precision,precision,precision,precision,precision,precision);
+	sprintf(buf,fmt,matrix[0][0],matrix[0][1],matrix[0][2],matrix[0][3],matrix[1][0],matrix[1][1],matrix[1][2],matrix[1][3],
+			matrix[2][0],matrix[2][1],matrix[2][2],matrix[2][3]);
+	return string(buf);
+}
+
 
 vector<float> Transform::get_matrix() const
 {
@@ -821,6 +829,7 @@ Transform Transform::get_vflip_transform() const {
 Dict Transform::get_rotation(const string& euler_type) const
 {
 	Dict result;
+    //printf(" Hello from Transform \n");
 
 	//float max = 1 - ERR_LIMIT;
 	float scale;
@@ -829,6 +838,7 @@ Dict Transform::get_rotation(const string& euler_type) const
 	if (scale == 0) throw UnexpectedBehaviorException("The determinant of the Transform is 0. This is unexpected.");
 
 	double cosalt = matrix[2][2]/scale;
+    double sinalt =  sqrt(matrix[2][0]*matrix[2][0]+matrix[2][1]*matrix[2][1])/scale; // PRB May 2021
 	double x_mirror_scale = (x_mirror ? -1.0f : 1.0f);
 	double inv_scale = 1.0f/scale;
 
@@ -864,8 +874,8 @@ Dict Transform::get_rotation(const string& euler_type) const
 
 	} // ends separate cases: alt close to 0, 180, or neither
 
-	phi = phi-360.0*floor(phi/360.0);
-	az  = az -360.0*floor(az/360.0);
+    //phi = phi-360.0*floor(phi/360.0);
+	//az  = az -360.0*floor(az/360.0);
 
 //  get phiS, psiS (SPIDER)
 	if (cosalt >= 1) {  // that is, alt close to 0
@@ -936,22 +946,51 @@ Dict Transform::get_rotation(const string& euler_type) const
 //		printf("%f %f %f",matrix[0][0],matrix[1][1],matrix[2][2]);
 		double traceR = matrix[0][0]+matrix[1][1]+matrix[2][2]; // This should be 1 + 2 cos omega
 	        double cosomega =  (traceR-1.0)/2.0;
-		if (cosomega>1.0) cosomega=1.0;
+            
+        double A0 =(matrix[1][2]-matrix[2][1])/2.0;
+        double A1 =(matrix[2][0]-matrix[0][2])/2.0;
+        double A2 =(matrix[0][1]-matrix[1][0])/2.0;
+        double sinomega = sqrt(A0*A0+A1*A1+A2*A2);
+
+        if (cosomega> 1.0) cosomega= 1.0;
 		if (cosomega<-1.0) cosomega=-1.0;
 		
 		  // matrix(x,y)-matrix(y,x) = 2 n_z   sin(omega) etc
 		 // trace matrix = 1 + 2 cos(omega)
+		double cosOover2= sqrt((1.0 +cosomega)/2.0);
+		//double sinOover2= sinomega/cosOover2/2.0;
 		double sinOover2= sqrt((1.0 -cosomega)/2.0);
-		double cosOover2= sqrt(1.0 -sinOover2*sinOover2);
-		double sinomega = 2* sinOover2*cosOover2; 
-	        double n1 = 0; double n2 = 0;   double n3 = 0;
-		if (sinomega>0) {
-		      n1 = (matrix[1][2]-matrix[2][1])/2.0/sinomega ;
-		      n2 = (matrix[2][0]-matrix[0][2])/2.0/sinomega ;
-		      n3 = (matrix[0][1]-matrix[1][0])/2.0/sinomega ;
+        //double sinomega = 2* sinOover2*cosOover2;    // Not a  great formula. See above
+        
+        double n1 = A0/sinomega; 
+        double n2 = A1/sinomega;   
+        double n3 = A2/sinomega;
+            
+		
+		
+		if (sinOover2==1) {// This will also mean sinomega=0, omega =pi, 
+              n1 = sqrt((matrix[0][0]+1)/2.0)   ;
+		      n2 = sqrt((matrix[1][1]+1)/2.0)   ;
+		      n3 = sqrt((matrix[2][2]+1)/2.0)   ;
+             if (n1 <= n2){ // n1 is the smallest
+                 if (n2<=n3) {
+                        n3 = sqrt((matrix[2][2]+1)/2.0) ; n1=matrix[0][2]/n3/2.0; n2=matrix[1][2]/n3/2.0; } 
+                 else { n2 = sqrt((matrix[1][1]+1)/2.0) ; n1=matrix[0][1]/n2/2.0; n3=matrix[2][1]/n2/2.0; }}
+             else { // n2 is the smallest
+                 if (n1<=n3) {
+                        n3 = sqrt((matrix[2][2]+1)/2.0) ; n1=matrix[0][2]/n3/2.0; n2=matrix[1][2]/n3/2.0;}
+                 else { n1 = sqrt((matrix[0][0]+1)/2.0) ; n2=matrix[1][0]/n1/2.0; n3=matrix[2][0]/n1/2.0;}}
 		}
-//	        printf("traceR=%lf,OneMinusCosomega=%lf,sinOover2=%lf,cosOover2=%lf,sinomega=%lf,cosomega=%lf,n3=%lf \n",traceR,1-cosomega,sinOover2,cosOover2,sinomega,cosomega,n3);
 
+		
+		if (sinOover2==0) {// This will also mean omega =0, 
+              n1 = 0;
+		      n2 = 0;
+		      n3 = 1;
+		}
+		
+		
+//        printf("traceR=%lf,OneMinusCosomega=%lf,sinOover2=%lf,cosOover2=%lf,sinomega=%lf,cosomega=%lf,n3=%lf \n",traceR,1-cosomega,sinOover2,cosOover2,sinomega,cosomega,n3);
 		
 		if (type == "quaternion"){
 		    result["e0"] = cosOover2 ;
@@ -961,7 +1000,9 @@ Dict Transform::get_rotation(const string& euler_type) const
 		}
 
 		if (type == "spin"){
-		    result["omega"] = EMConsts::rad2deg * acos(cosomega);
+            double Omega = EMConsts::rad2deg * asin(sinomega);
+            if (cosomega< 0) { Omega = 180-Omega;}
+		    result["omega"] = Omega; //Changed by PRB
 		    result["n1"] = n1;
 		    result["n2"] = n2;
 		    result["n3"] = n3;
@@ -2705,9 +2746,6 @@ The update of rotations for quaternions is very easy.
 //}
 //
 
-
-
-/* vim: set ts=4 noet: */
 
 
 /*    Rotation stuff */

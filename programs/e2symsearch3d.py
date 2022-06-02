@@ -30,8 +30,6 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 
-from __future__ import print_function
-from __future__ import division
 from past.utils import old_div
 from builtins import range
 from builtins import object
@@ -80,7 +78,7 @@ def main():
 	parser.add_argument("--nopreprocprefft",action="store_true",default=False,help="""Turns off all preprocessing that happens only once before alignment (--normproc, --mask, --maskfile, --clip, --threshold; i.e., all preprocessing excepting filters --highpass, --lowpass, --preprocess, and --shrink.""")
 	parser.add_argument("--normproc",type=str,default='',help="""Normalization processor applied to particles before alignment. Default is to use normalize. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'""")	
 	
-	parser.add_argument("--parallel","-P",type=str,default='thread:1',help="""Default=thread:1. Run in parallel, specify type:<option>=<value>:<option>:<value>""", guitype='strbox', row=8, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--parallel","-P",type=str,default=None,help="""Default=thread:2. Run in parallel, see http://eman2.org/Parallel""", guitype='strbox', row=8, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--path",type=str, default='', help="""Name of path for output file""", guitype='strbox', row=2, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--plots", action='store_true', default=False,help="""Default=False. Turn this option on to generate a plot of the ccc scores if --average is supplied. Running on a cluster or via ssh remotely might not support plotting.""")
 	parser.add_argument("--ppid", type=int, help="""Set the PID of the parent process, used for cross platform PPID.""",default=-1)	
@@ -100,7 +98,7 @@ def main():
 	parser.add_argument("--threshold",default='',type=str,help="""A threshold applied to the subvolumes after normalization. For example, --threshold=threshold.belowtozero:minval=0 makes all negative pixels equal 0, so that they do not contribute to the correlation score.""", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=10, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--tweak",action='store_true',default=False,help="""WARNING: Not used for anything yet. This will perform a final alignment with no downsampling [without using --shrink or --shrinkfine] if --shrinkfine > 1.""")
 	
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="""verbose level [0-9], higner number means higher level ofoptions.verboseness.""")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="""verbose level [0-9], higher number means higher level ofoptions.verboseness.""")
 	
 	parser.add_argument("--weighbytiltaxis",type=str,default='',help="""Default=None. A,B, where A is an integer number and B a decimal. A represents the location of the tilt axis in the tomogram in pixels (eg.g, for a 4096x4096xZ tomogram, this value should be 2048), and B is the weight of the particles furthest from the tomogram. For example, --weighbytiltaxis=2048,0.5 means that praticles at the tilt axis (with an x coordinate of 2048) will have a weight of 1.0 during averaging, while the distance in the x coordinates of particles not-on the tilt axis will be used to weigh their contribution to the average, with particles at the edge(0+radius or 4096-radius) weighing 0.5, as specified by the value provided for B.""")
 	parser.add_argument("--weighbyscore",action='store_true',default=False,help="""Default=False. This option will weigh the contribution of each subtomogram to the average by score/bestscore.""")
@@ -120,7 +118,9 @@ def main():
 	
 	options = checkinput( options )
 	
-	options = detectThreads( options )
+	if options.parallel in (None,"","none","None") :
+		print("WARNING: no --parallel specified. Please see http://eman2.org/Parallel")
+		options.parallel="thread:2"
 	
 	#If no failures up until now, initialize logger
 	log = 0
@@ -188,7 +188,7 @@ def main():
 		
 		if options.parallel :
 			from EMAN2PAR import EMTaskCustomer
-			etc=EMTaskCustomer(options.parallel)
+			etc=EMTaskCustomer(options.parallel,"e2symsearch3d.SymAlignTask")
 		
 		symalgorithm = SymALignStrategy( preprocvol, options.sym, options.steps, options.cmp, etc)
 		ret = symalgorithm.execute()

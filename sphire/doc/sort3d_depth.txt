@@ -1,0 +1,143 @@
+~~NOTOC~~
+
+===== sp_sort3d_depth =====
+3D Clustering - SORT3D_DEPTH: Reproducible 3D Clustering on heterogeneous dataset and the 3D parameters of the data remain unchanged during the clustering.
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sp_sort3d_depth.py  --refinement_dir=DIR  --instack=STACK_FILE  --output_dir=DIR  --niter_for_sorting=NUM_OF_ITERATIONS  --nxinit=INITIAL_IMAGE_SIZE  --mask3D=MASK3D_FILE  --focus=FOCUS3D_FILE  --radius=PARTICLE_RADIUS  --sym=SYMMETRY  --img_per_grp=NUM_OF_IMAGES  --img_per_grp_split_rate=SPLIT_RATE  --minimum_grp_size=GROUP_SIZE  --do_swap_au  --swap_ratio=RATIO  --memory_per_node=MEMORY_SIZE  --depth_order=DEPTH_ORDER  --stop_mgskmeans_percentage=PERCENTAGE  --nsmear=NUM_OF_SMEARS  --orientation_groups=NUM_OF_GROUPS  --not_include_unaccounted  --notapplybckgnoise  --random_group_elimination_threshold
+
+\\
+===== Typical usage =====
+
+sp_sort3d_depth.py exists only in MPI version. It surports single node workstation.
+
+There are two ways of running this command.
+
+\\ __1. 3D sorting from meridien iteration__: Clustering is initiated from a completed iteration of meridien refinement and imports data from there. This mode uses all meridien information (i.e., smear, normalizations and such).
+  mpirun -np 48 sp_sort3d_depth.py --refinement_dir='outdir_sp_meridien' --output_dir='outdir_sp_sort3d_depth_iteration' --radius=52 --sym='c1' --memory_per_node=60.0 --img_per_grp=2000 --minimum_grp_size=1500 --stop_mgskmeans_percentage=10.0 --swap_ratio=5 --do_swap_au --shake=0.1
+
+\\ __2. 3D sorting from stack__: Clustering is initiated from user-provided orientation parameters stored in stack header.  This mode uses only orientation parameters, which is useful for sorting data refined, say with relion.
+  mpirun -np 48 sp_sort3d_depth.py --instack='bdb:data' --output_dir='outdir_sp_sort3d_depth_stack' --radius=52 --sym='c1' --img_per_grp=2000 --minimum_grp_size=1500 --stop_mgskmeans_percentage=10.0 --swap_ratio=5 --do_swap_au
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; %%--%%refinement_dir : Meridien refinement directory: A string denotes meridien 3D refinement directory. Sorting switches to meridien iteration mode when specified. (default none)
+  ; %%--%%instack : Input images stack: A string denotes file path of input particle stack for sorting. Sorting switches to stack mode when option is specified. (default none)
+  ; %%--%%output_dir : Output directory: A string denotes output directory for 3D sorting. It can be either existing or non-existing. By default, the program uses sort3d_DATA_AND_TIME for the name. Here, you can find a log.txt that describes the sequences of computations in the program. (default none)
+
+  ; %%--%%niter_for_sorting : Iteration ID of 3D refinement for importing data: By default, the program uses the iteration at which refinement achieved the best resolution. Option is valid only for meridien iteration mode. (default -1)
+  ; %%--%%nxinit : Initial image size: Image size used for MGSKmeans in case of starting sorting from a data stack. By default, the program determines window size. Option is valid only for stack mode. (default -1)
+  ; %%--%%mask3D : 3D mask: A string denotes file path of the global 3D mask for clustering. Imported from 3D refinement unless user wishes a different one in meridien iteration mode. (default none)
+  ; %%--%%focus : Focus 3D mask: A string denotes file path of a binary 3D mask for focused clustering. (default none)
+  ; %%--%%radius : Estimated particle radius [Pixels]: A integer value that is smaller than half of the box size. Imported from refinement unless user wishes a different one in meridien iteration mode. (default -1)
+  ; %%--%%sym : Point-group symmetry: A string denotes point group symmetry of the macromolecular structure. Imported from refinement unless the user wishes a different one in meridien iteration mode. Require specification in stack mode. (default c1)
+  ; %%--%%img_per_grp : Number of images per group: User expected group size in integer. (default 1000)
+  ; %%--%%img_per_grp_split_rate : Group splitting rate: An integer value denotes split rate of the group size(%%--%%img_per_grp). (default 1)
+  ; %%--%%minimum_grp_size : Minimum size of reproducible class: The minimum size of selected or accounted clusters as well as the minimum group size constraint in MGSKmeans. However this value must be smaller than the number of images per a group (img_per_grp). By default, the program uses half number of the images per group.  (default -1)
+  ; %%--%%do_swap_au : Swap flag: A boolean flag to control random swapping a certain number of accounted elements per cluster with the unaccounted elements. If the processing with the default values are extremely slow or stalled, please use this --do_swap_au option and set --swap_ratio to a large value (15.0[%] is a good start point). (default False)
+  ; %%--%%swap_ratio : Swap percentage [%]: the percentage of images for swapping ranges between 0.0[%] and 50.0[%]. Option valid only with --do_swap_au. Without --do_swap_au, the program automatically sets --swap_ratio to 0.0. If the processing with the default values are extremely slow or stalled, please use --do_swap_au and set this --swap_ratio option to a large value (15.0[%] is a good start point). (default 1.0)
+  ; %%--%%memory_per_node : Memory per node [GB]: User provided information about memory per node in GB (NOT per CPU). It will be used to evaluate the number of CPUs per node from user-provided MPI setting. By default, it uses 2GB * (number of CPUs per node). (default -1.0)
+
+\\
+=== Advanced Parameters ===
+  ; %%--%%depth_order : Depth order: An integer value defines the number of initial independent MGSKmeans runs (2^depth_order). (default 2)
+  ; %%--%%stop_mgskmeans_percentage : Image assignment percentage to stop MGSKmeans [%]: A floating number denotes particle assignment change percentage that serves as the converge criteria of minimum group size K-means. (default 10.0)
+  ; %%--%%nsmear : Number of smears for sorting: Fill it with 1 if user does not want to use all smears. (default -1)
+  ; %%--%%orientation_groups : Number of orientation groups: Number of orientation groups in an asymmetric unit. (default 100)
+  ; %%--%%not_include_unaccounted : Do unaccounted reconstruction: Do not reconstruct unaccounted elements in each generation. (default False question reversed in GUI)
+  ; %%--%%notapplybckgnoise : Use background noise flag: Flag to turn off background noise. (default False question reversed in GUI)
+  ; %%--%%random_group_elimination_threshold : Random group elimination threshold: A floating value denotes the random group reproducibility standard deviation for eliminating random groups. (default 2.0)
+
+\\
+===== Output =====
+Results outputted:
+  - In addition to selection text files and cluster maps in the main directory, anova analysis about defocus, smearing, average norm of particles in clusters are also given in log.txt file.
+  - Sorting results (selection text file, maps, and anova analysis) are also outputted in each generation. Moreover, the highest numbered cluster in each generation is created from unaccounted elements, so it has a function of a trash bin.
+  - The final assignment results are saved as Cluster*.txt in the main output directory.  The unaccounted images are saved in the last cluster file in the last generation.
+
+\\
+===== Description =====
+sxsort3d_depth performs 3D clustering on data and keeps 3D orientation parameters of data unchanged. It finds out stable group members by carrying out two-way comparison of two independent Kmeans clustering runs. The Kmeans clustering has minimum group size constraint on each cluster and thus the clustering will not fail in any circumstance.
+
+\\
+=== Important Options ===
+|| **Option Key** || **Discription** ||
+|| %%--%%depth_order || The parameter resembles the previous option number of independent runs but it controls sorting in an different way. The default value of 2 is a good choice. ||
+|| %%--%%minimum_grp_size || This parameter selects qualified clusters and controls Kmeans clustering stability. The suggested value would be between img_per_grp/2 and img_per_grp but should be less than img_per_grp. ||
+|| %%--%%stop_mgskmeans_percentage || The suggestion would be not to set it too small. 5.0 - 10.0  is a good choice. ||
+|| %%--%%orientation_groups || It divides the asymmetric unit into the specified number of orientation groups and cast the data orientation parameters into them. It is meant to prevent sorting by angle, i.e., assign certain angle to one group, for example top views to one group and side views to another. ||
+|| %%--%%swap_ratio || A ratio of randomly replaced particles in a group, it is meant to prevent premature convergence. When the program obtains both stable groups and unaccounted elements, it reassigns unaccounted elements back to stable groups, and continues sorting. Before re-assignment of unaccounted elements, the program swaps some elements of stable groups with unaccounted ones using this specified swap_ratio. ||
+
+\\
+=== Test Results ===
+1. Simulated ribosome.
+\\
+14400 particles with 64*64 image size belong to five even groups (all have 2880 members).  The command for this run is given in case 2 and it costs 10 minutes on our cluster with 48 cpus.
+\\
+== The sorting results ==
+|| **Group ID** || **Particles** || **% of True** ||
+|| group 1 || 2448 || 98% are true members ||
+|| group 2 || 2493 || 98% are true members ||
+|| group 3 || 2806 || 98% are true members ||
+|| group 4 || 2883 || 98% are true members ||
+|| group 5 || 2891 || 98% are true members ||
+
+2. Ribosome EMPIAR-10028:
+\\
+105,247 particles with image size 360*360 with K=5. It took about 13 hours using 96 CPUs of our cluster, which is about twice the time it took to refine this set. The command for this run is given in case 1. We were able to sort out missing helix and missing domain. (See the attached movie and figure).
+
+\\
+==== Method ====
+K-means, MGSK-means, reproducibility, two-way comparison.
+
+\\
+==== Reference ====
+Not published yet.
+
+\\
+==== Developer Notes ====
+=== 2017/12/19 Toshio Moriya ===
+The following is old descriptions, and will be deleted in near future.
+
+Important Outputs:
+The results are saved in the directory specified as output_dir  ('outdir_sp_sort3d_depth' in the example above). The final results are partitioned particles IDs saved in text files. Also, unfiltered maps of each cluster are reconstructed in the way of meridien does. One can use postprocess command to merge the two halves of maps of each group.
+
+  * Cluster*.txt: Sorting results. The number of cluster files is equal to the number of classes found. These selection files contain one column for particle indexes. Input projection EM data is assumed to be number 0 to n-1.
+  * vol_cluster*.hdf: Reconstructed map per cluster. User can user B_factor to adjust the visualization to decide whether a local refinement on the cluster is worth doing.
+  * anova on defocus, number of smears, norm and statistics of micrographs of the final clusters and clusters produced in each generation are documented in log.txt.
+  * sorting_summary.txt:  summary of results.
+  * vol_cluster*_iter000.hdf, Cluster*.txt in each generation_00? directories. The last cluster is the unaccounted elements in each generation.
+
+Some examples for timing:
+In general, reconstruction costs more than 80% of time for each sorting.
+
+\\
+==== Author / Maintainer ====
+Zhong Huang
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_sort3d_depth.py
+
+\\
+==== See also ====
+[[pipeline:sp_meridien:sp_meridien|sp_meridien]], [[pipeline:sp_utilities:sp_header|sp_header]], [[[pipeline:sp_sort3d:sp_3dvariability|sp_3dvariability]], [[pipeline:sp_sort3d:sp_sort3d|sp_sort3d]], and [[pipeline:sp_sort3d:sp_rsort3d|sp_rsort3d]].
+
+\\
+==== Maturity ====
+Beta:: Under development. It has been tested, The test cases/examples are available upon request. Please let us know if there are any bugs.
+
+\\
+==== Bugs ====
+There are no known bugs so far.
+
+\\

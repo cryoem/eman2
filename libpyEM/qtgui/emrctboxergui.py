@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
 #
 # Author: John Flanagan, 04/08/2011 (jfflanag@bcm.edu)
 # Edited by: Stephen Murray (scmurray@bcm.edu) May 2014
@@ -35,18 +32,18 @@ from __future__ import absolute_import
 #
 from builtins import range
 from EMAN2 import get_image_directory, dump_processors_list
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 from .emrctstrategy import Strategy2IMGMan, Strategy2IMGPair
 from EMAN2jsondb import js_open_dict
 from EMAN2 import *
 import os
 
-class ControlPannel(QtGui.QWidget):
-	'''This controls the RCT boxer. Normally this will not need to be midified. If a new pair pciking strategy is to be implmented, then
-	A new GUI class should be added as decribed below and the new tool needs to be added to __init__ and the functions: current_tool_combobox_changed 
+class ControlPannel(QtWidgets.QWidget):
+	'''This controls the RCT boxer. Normally this will not need to be modified. If a new pair picking strategy is to be implemented, then
+	A new GUI class should be added as described below and the new tool needs to be added to __init__ and the functions: current_tool_combobox_changed 
 	and add_picker_tools'''
 	def __init__(self, mediator):
-		QtGui.QWidget.__init__(self)
+		QtWidgets.QWidget.__init__(self)
 		self.mediator = mediator
 		self.db = js_open_dict("info/emboxerrctgui.json")
 		self.qualitydb = js_open_dict("e2boxercache/quality.json")
@@ -57,9 +54,9 @@ class ControlPannel(QtGui.QWidget):
 		self.manual_tool = ManualPicker(self.mediator, self.db)
 		self.pair_picker_tool = PairPickerTool(self.mediator, self.db)
 		
-		vbox = QtGui.QVBoxLayout(self)
+		vbox = QtWidgets.QVBoxLayout(self)
 		
-		self.tab_widget = QtGui.QTabWidget()
+		self.tab_widget = QtWidgets.QTabWidget()
 		self.tab_widget.addTab(self.get_main_tab(),"Main")
 		self.tab_widget.addTab(self.get_processor_tab(),"Processor")
 		self.tab_widget.addTab(self.get_filter_tab(),"Filter")
@@ -81,14 +78,14 @@ class ControlPannel(QtGui.QWidget):
 #		E2loadappwin("e2rctboxer","filtertab",self.wplot)
 		
 	def get_main_tab(self):
-		mainwidget = QtGui.QWidget()
-		vbox = QtGui.QVBoxLayout()
+		mainwidget = QtWidgets.QWidget()
+		vbox = QtWidgets.QVBoxLayout()
 		
 		# Make the main tools layout
-		mlayout = QtGui.QVBoxLayout()
+		mlayout = QtWidgets.QVBoxLayout()
 		self.get_main(mlayout)			# add the widgets const for all tools
-		msplitter = QtGui.QSplitter(QtCore.Qt.Vertical)
-		msplitter.setFrameShape(QtGui.QFrame.StyledPanel)
+		msplitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
+		msplitter.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		msplitter.setLayout(mlayout)
 		vbox.addWidget(msplitter)
 		
@@ -101,27 +98,27 @@ class ControlPannel(QtGui.QWidget):
 	
 	def get_filter_tab(self):
 		
-		filterwidget = QtGui.QWidget()
-		vbox = QtGui.QVBoxLayout()
+		filterwidget = QtWidgets.QWidget()
+		vbox = QtWidgets.QVBoxLayout()
 		
-		hbl=QtGui.QHBoxLayout()
-		flabel = QtGui.QLabel("Filter Type:",self)
+		hbl=QtWidgets.QHBoxLayout()
+		flabel = QtWidgets.QLabel("Filter Type:",self)
 		hbl.addWidget(flabel)
-		self.filter_combobox = QtGui.QComboBox()
+		self.filter_combobox = QtWidgets.QComboBox()
 		hbl.addWidget(self.filter_combobox)
 		vbox.addLayout(hbl)
 		
-		hbl=QtGui.QHBoxLayout()
-		klabel = QtGui.QLabel("Kernal Size:",self)
+		hbl=QtWidgets.QHBoxLayout()
+		klabel = QtWidgets.QLabel("Kernel Size:",self)
 		hbl.addWidget(klabel)
-		self.kernel_combobox = QtGui.QComboBox()
+		self.kernel_combobox = QtWidgets.QComboBox()
 		hbl.addWidget(self.kernel_combobox)
 		vbox.addLayout(hbl)
 		
-		self.kernel_stacked_widget = QtGui.QStackedWidget()
+		self.kernel_stacked_widget = QtWidgets.QStackedWidget()
 		vbox.addWidget(self.kernel_stacked_widget)
 		
-		self.filter_but=QtGui.QPushButton("Filter")
+		self.filter_but=QtWidgets.QPushButton("Filter")
 		vbox.addWidget(self.filter_but)
 		
 		filterwidget.setLayout(vbox)
@@ -140,14 +137,14 @@ class ControlPannel(QtGui.QWidget):
 	
 	def get_processor_tab(self):
 		
-		processorwidget = QtGui.QWidget()
-		vboxa = QtGui.QVBoxLayout()
+		processorwidget = QtWidgets.QWidget()
+		vboxa = QtWidgets.QVBoxLayout()
 		
-		vbox1 = QtGui.QVBoxLayout()
-		hbl=QtGui.QHBoxLayout()
-		flabel = QtGui.QLabel("Filter:",self)
+		vbox1 = QtWidgets.QVBoxLayout()
+		hbl=QtWidgets.QHBoxLayout()
+		flabel = QtWidgets.QLabel("Filter:",self)
 		hbl.addWidget(flabel)
-		self.processor_combobox = QtGui.QComboBox()
+		self.processor_combobox = QtWidgets.QComboBox()
 		proc_data = dump_processors_list()
 		for key in list(proc_data.keys()):
 			if len(key) >= 5 and key[:7] == "filter.":
@@ -157,17 +154,17 @@ class ControlPannel(QtGui.QWidget):
 		hbl.addWidget(self.processor_combobox)
 		vbox1.addLayout(hbl)
 		
-		hbl2=QtGui.QHBoxLayout()
-		plabel = QtGui.QLabel("Parameters:",self)
+		hbl2=QtWidgets.QHBoxLayout()
+		plabel = QtWidgets.QLabel("Parameters:",self)
 		hbl2.addWidget(plabel)
-		self.params_listbox = QtGui.QLineEdit(str(self.db.getdefault("processorparams",dfl="")), self)
+		self.params_listbox = QtWidgets.QLineEdit(str(self.db.getdefault("processorparams",dfl="")), self)
 		hbl2.addWidget(self.params_listbox)
 		vbox1.addLayout(hbl2)
 		vbox1.setAlignment(QtCore.Qt.AlignTop)
 		vboxa.addLayout(vbox1)
 		
-		vbox2 = QtGui.QVBoxLayout()
-		self.processor_but=QtGui.QPushButton("Filter")
+		vbox2 = QtWidgets.QVBoxLayout()
+		self.processor_but=QtWidgets.QPushButton("Filter")
 		vbox2.addWidget(self.processor_but)
 		vboxa.addLayout(vbox2)
 		
@@ -265,12 +262,12 @@ class ControlPannel(QtGui.QWidget):
 					self.gridkernel[2][i].setText("1")	
 			
 	def add_custom_kernels(self, size):
-		self.kernelwidget = QtGui.QWidget()
-		grid3 = QtGui.QGridLayout()
+		self.kernelwidget = QtWidgets.QWidget()
+		grid3 = QtWidgets.QGridLayout()
 		kernelwidgetidx = []
 		for i in range(size):
 			for j in range(size):
-				kw = QtGui.QLineEdit("",self)
+				kw = QtWidgets.QLineEdit("",self)
 				kw.setFixedSize(40,25)	# This could be an issue......
 				kernelwidgetidx.append(kw)
 				grid3.addWidget(kw, i, j)
@@ -282,12 +279,12 @@ class ControlPannel(QtGui.QWidget):
 		return kernelwidgetidx
 		
 	def get_main(self, layout):
-		hbl=QtGui.QHBoxLayout()
-		self.box_size_label = QtGui.QLabel("Box Size:",self)
+		hbl=QtWidgets.QHBoxLayout()
+		self.box_size_label = QtWidgets.QLabel("Box Size:",self)
 		hbl.addWidget(self.box_size_label)
 		
 		self.pos_int_validator = QtGui.QIntValidator(2,5000, self)	#Anything bigger than 5,000 is crazy!!!!
-		self.boxsize = QtGui.QLineEdit(str(self.mediator.boxsize),self)
+		self.boxsize = QtWidgets.QLineEdit(str(self.mediator.boxsize),self)
 		self.boxsize.setValidator(self.pos_int_validator)
 		
 		hbl.addWidget(self.boxsize)
@@ -296,24 +293,24 @@ class ControlPannel(QtGui.QWidget):
 		self.boxsize.editingFinished.connect(self.new_boxsize)
 		
 	def add_boxing_button_group(self,layout):
-		self.tool_button_group_box = QtGui.QGroupBox("Tools")
+		self.tool_button_group_box = QtWidgets.QGroupBox("Tools")
 		
-		grid = QtGui.QGridLayout()
-		self.current_tool_combobox = QtGui.QComboBox()
-		grid.addWidget(QtGui.QLabel("Current Boxing Tool:"),0,0)
+		grid = QtWidgets.QGridLayout()
+		self.current_tool_combobox = QtWidgets.QComboBox()
+		grid.addWidget(QtWidgets.QLabel("Current Boxing Tool:"),0,0)
 		grid.addWidget(self.current_tool_combobox,0,1)
 		# Add stacked widget
-		self.tools_stacked_widget = QtGui.QStackedWidget()
+		self.tools_stacked_widget = QtWidgets.QStackedWidget()
 		grid.addWidget(self.tools_stacked_widget,1,0,1,2)
 		# Add quality combobox
-		self.quality = QtGui.QComboBox()
+		self.quality = QtWidgets.QComboBox()
 		for i in range(5): self.quality.addItem(str(i))
 		# check full path then check basename
 		if self.mediator.windowlist[0].filename not in self.qualitydb:
 			self.quality.setCurrentIndex(self.qualitydb.getdefault(self.mediator.windowlist[0].filename,dfl=0))
 		else:
 			self.quality.setCurrentIndex(self.qualitydb.getdefault(os.path.basename(self.mediator.windowlist[0].filename),dfl=0))
-		grid.addWidget(QtGui.QLabel("Quality Score"),2,0)
+		grid.addWidget(QtWidgets.QLabel("Quality Score"),2,0)
 		grid.addWidget(self.quality, 2,1)
 		# add to layout
 		self.tool_button_group_box.setLayout(grid)
@@ -323,13 +320,13 @@ class ControlPannel(QtGui.QWidget):
 		self.quality.activated[int].connect(self.quality_score_changed)
 	
 	def add_controls(self, layout):
-		butbox = QtGui.QHBoxLayout()
-		self.write_box_but=QtGui.QPushButton("Write Boxes")
+		butbox = QtWidgets.QHBoxLayout()
+		self.write_box_but=QtWidgets.QPushButton("Write Boxes")
 		butbox.addWidget(self.write_box_but)
-		self.write_but=QtGui.QPushButton("Write Ptcls")
+		self.write_but=QtWidgets.QPushButton("Write Ptcls")
 		butbox.addWidget(self.write_but)
 		layout.addLayout(butbox)
-		self.done_but=QtGui.QPushButton("Done")
+		self.done_but=QtWidgets.QPushButton("Done")
 		layout.addWidget(self.done_but)
 		
 		self.write_box_but.clicked[bool].connect(self.on_write_box)
@@ -394,26 +391,26 @@ class ControlPannel(QtGui.QWidget):
 			if wid != None:
 				wid.close()
 
-# Current tools. Other tools can be added by simply adding a Pciker GUi and then building a 
+# Current tools. Other tools can be added by simply adding a Picker GUI and then building a 
 # corresponding Strategy based by subclassing Strategy in emrctstrategy
-class ManualPicker(QtGui.QWidget):
+class ManualPicker(QtWidgets.QWidget):
 	def __init__(self, mediator, db):
-		QtGui.QWidget.__init__(self)
+		QtWidgets.QWidget.__init__(self)
 		self.mediator = mediator
 		self.db=db
-		vbl = QtGui.QVBoxLayout()
-		label = QtGui.QLabel("Manual Picker", self)
+		vbl = QtWidgets.QVBoxLayout()
+		label = QtWidgets.QLabel("Manual Picker", self)
 		boldfont = QtGui.QFont()
 		boldfont.setBold(True)
 		label.setFont(boldfont)
 		label.setAlignment(QtCore.Qt.AlignTop)
-		self.clr_but = QtGui.QPushButton("Clear", self)
+		self.clr_but = QtWidgets.QPushButton("Clear", self)
 		vbl.addWidget(label)
 		vbl.addWidget(self.clr_but)
 		self.setLayout(vbl)
 		
-		self.mpsplitter = QtGui.QSplitter(QtCore.Qt.Vertical)
-		self.mpsplitter.setFrameShape(QtGui.QFrame.StyledPanel)
+		self.mpsplitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
+		self.mpsplitter.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		self.mpsplitter.addWidget(self)
 		self.clr_but.clicked[bool].connect(self.on_clear)
 	
@@ -428,9 +425,9 @@ class ManualPicker(QtGui.QWidget):
 	def get_widget(self):	
 		return self.mpsplitter
 		
-class PairPickerTool(QtGui.QWidget):
+class PairPickerTool(QtWidgets.QWidget):
 	def __init__(self, mediator, db):
-		QtGui.QWidget.__init__(self)
+		QtWidgets.QWidget.__init__(self)
 		self.mediator = mediator
 		self.db = db
 		self.updateboxes = False
@@ -438,80 +435,80 @@ class PairPickerTool(QtGui.QWidget):
 		self.centertilts = False
 		
 		# GUI code below here
-		ppwidget = QtGui.QWidget()
+		ppwidget = QtWidgets.QWidget()
 		
-		vbl = QtGui.QVBoxLayout()
-		label = QtGui.QLabel("Pair Picker", self)
+		vbl = QtWidgets.QVBoxLayout()
+		label = QtWidgets.QLabel("Pair Picker", self)
 		boldfont = QtGui.QFont()
 		boldfont.setBold(True)
 		label.setFont(boldfont)
 		vbl.addWidget(label)
 
-		self.updateboxes_cb = QtGui.QCheckBox("Update box positions")
+		self.updateboxes_cb = QtWidgets.QCheckBox("Update box positions")
 		self.updateboxes_cb.setChecked(False)
 		vbl.addWidget(self.updateboxes_cb)
 		
-		self.centertilts_cb = QtGui.QCheckBox("Center opposite box position")
+		self.centertilts_cb = QtWidgets.QCheckBox("Center opposite box position")
 		self.centertilts_cb.setChecked(False)
 		vbl.addWidget(self.centertilts_cb)
 		
-		hbl = QtGui.QHBoxLayout()
-		slabel = QtGui.QLabel("Min pairs for xform", self)
+		hbl = QtWidgets.QHBoxLayout()
+		slabel = QtWidgets.QLabel("Min pairs for xform", self)
 		hbl.addWidget(slabel)
-		self.spinbox = QtGui.QSpinBox(self)
+		self.spinbox = QtWidgets.QSpinBox(self)
 		self.spinbox.setMinimum(self.minpp_for_xform)
 		self.spinbox.setMaximum(1000)
 		hbl.addWidget(self.spinbox)
 		vbl.addLayout(hbl)
 		
-		hta = QtGui.QHBoxLayout()
-		tlabel = QtGui.QLabel("Computed tilt angle", self)
+		hta = QtWidgets.QHBoxLayout()
+		tlabel = QtWidgets.QLabel("Computed tilt angle", self)
 		hta.addWidget(tlabel)
-		self.tiltangle = QtGui.QLineEdit("", self)
+		self.tiltangle = QtWidgets.QLineEdit("", self)
 		self.tiltangle.setReadOnly(True)
 		hta.addWidget(self.tiltangle)
 		vbl.addLayout(hta)
 		
-		htax = QtGui.QHBoxLayout()
-		talabel = QtGui.QLabel("Computed tilt axis (Y)", self)
+		htax = QtWidgets.QHBoxLayout()
+		talabel = QtWidgets.QLabel("Computed tilt axis (Y)", self)
 		htax.addWidget(talabel)
-		self.tiltaxis = QtGui.QLineEdit("", self)
+		self.tiltaxis = QtWidgets.QLineEdit("", self)
 		self.tiltaxis.setReadOnly(True)
 		htax.addWidget(self.tiltaxis)
 		vbl.addLayout(htax)
 		
-		hgamma = QtGui.QHBoxLayout()
-		gammalabel = QtGui.QLabel("Gamma angle", self)
+		hgamma = QtWidgets.QHBoxLayout()
+		gammalabel = QtWidgets.QLabel("Gamma angle", self)
 		hgamma.addWidget(gammalabel)
-		self.gamma = QtGui.QLineEdit("", self)
+		self.gamma = QtWidgets.QLineEdit("", self)
 		self.gamma.setReadOnly(True)
 		hgamma.addWidget(self.gamma)
 		vbl.addLayout(hgamma)
 		
-		hmb = QtGui.QHBoxLayout()
-		mlabel = QtGui.QLabel("Mask Type", self)
+		hmb = QtWidgets.QHBoxLayout()
+		mlabel = QtWidgets.QLabel("Mask Type", self)
 		hmb.addWidget(mlabel)
-		self.mask_combobox = QtGui.QComboBox()
+		self.mask_combobox = QtWidgets.QComboBox()
 		self.mask_combobox.setEnabled(False)
 		hmb.addWidget(self.mask_combobox)
 		vbl.addLayout(hmb)
 		
-		hbb = QtGui.QHBoxLayout()
-		self.upboxes_but = QtGui.QPushButton("Update Boxes", self)
+		hbb = QtWidgets.QHBoxLayout()
+		self.upboxes_but = QtWidgets.QPushButton("Update Boxes", self)
 		self.upboxes_but.setEnabled(False)
 		hbb.addWidget(self.upboxes_but)
 		
-		self.centerboxes_but = QtGui.QPushButton("Center Boxes", self)
+		self.centerboxes_but = QtWidgets.QPushButton("Center Boxes", self)
 		self.centerboxes_but.setEnabled(False)
 		hbb.addWidget(self.centerboxes_but)
 		vbl.addLayout(hbb)
 		
-		self.clr_but = QtGui.QPushButton("Clear", self)
+		self.clr_but = QtWidgets.QPushButton("Clear", self)
 		vbl.addWidget(self.clr_but)
 		self.setLayout(vbl)
 		
-		self.ppsplitter = QtGui.QSplitter(QtCore.Qt.Vertical)
-		self.ppsplitter.setFrameShape(QtGui.QFrame.StyledPanel)
+		self.ppsplitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
+		self.ppsplitter.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		self.ppsplitter.addWidget(self)
 		
 		self.spinbox.valueChanged[int].connect(self.on_spinbox)

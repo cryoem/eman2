@@ -18,9 +18,14 @@ mkdir -p ${OUTPUT_DIR} && cd ${OUTPUT_DIR}
 CONSTRUCT_YAML="${CONSTRUCT_YAML_DIR}/construct.yaml"
 CONDA_ROOT_DIR="$(conda info --root)"
 CONDA_ROOT_DIR=${CONDA_ROOT_DIR//\\/\\\\}
+
 sed -i.bak "s~place_holder_conda_prefix~"${CONDA_ROOT_DIR}"~" ${CONSTRUCT_YAML}
 cat ${CONSTRUCT_YAML}
 constructor --version
-constructor --clean -v --cache-dir=${HOME_DIR}/.conda/constructor
-constructor ${CONSTRUCT_YAML_DIR} -v --cache-dir=${HOME_DIR}/.conda/constructor
+
+CONSTRUCTER_CACHE_DIR=${HOME_DIR}/.conda/constructor
+
+rm -rfv ${CONSTRUCTER_CACHE_DIR}/eman*
+constructor ${CONSTRUCT_YAML_DIR} -v --cache-dir=${CONSTRUCTER_CACHE_DIR}
+
 mv ${CONSTRUCT_YAML}.bak ${CONSTRUCT_YAML}

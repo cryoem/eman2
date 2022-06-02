@@ -1,0 +1,84 @@
+~~NOTOC~~
+
+===== sp_pipe resample_micrographs =====
+Resample Micrographs: Resample micrographs in input directory specified by input micrograph pattern with user-specified ratio. This operation changes the image dimensitions and the pixel size. Mainly, it is designed to reduce the demensions and pixel size of micrographs taken with the super resolution mode of the K2 direct electron detector.
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sp_pipe.py  resample_micrographs  input_micrograph_pattern  output_directory  --resample_ratio=RATIO  --selection_list=FILE_PATH  --check_consistency
+
+\\
+===== Typical usage =====
+
+sp_pipe resample_micrographs exists in both MPI and non-MPI versions. 
+
+There are several modes to run the program:
+
+\\ __1. All Micrographs Mode - Process all micrographs in a directory:__
+\\ Specify path pattern of input micrographs with a wild card (*).. The path pattern must be enclosed by single quotes (') or double quotes ("). (Note: sp_gui.py automatically adds single quotes (')). bdb files cannot be selected as input micrographs. Next, set %%--%%resample_ratio to the desired resampling ratio.  Then, specify output directory where all outputs should be saved. In this mode, all micrographs matching the path pattern will be processed.
+  mpirun  -np  48  sp_pipe.py  resample_micrographs  './mic*.hdf'  outdir_pipe_resample_micrographs  --resample_ratio=0.5
+
+\\ __2. Selected Micrographs Mode - Process all micrographs in a selection list file:__
+\\ In addition input micrographs path pattern, resampling ratio, and output directry, specify a name of micrograph selection list text file using --selection_list option. In this mode, only micrographs in the selection list which matches the file name part of the pattern (ignoring the directory paths) will be processed. If a micrograph name in the selection list does not exists in the directory specified by the micrograph path pattern, processing of the micrograph will be skipped.
+  mpirun  -np  48  sp_pipe.py  resample_micrographs  './mic*.hdf'  outdir_pipe_resample_micrographs  --resample_ratio=0.5  --selection_list=mic_list.txt  --check_consistency
+
+\\ __3. Single Micrograph Mode - Process a single micrograph:__
+\\ In addition input micrographs path pattern, resampling ratio, and output directry, specify a single micrograph name using %%--%%selection_list option. In this mode, only the specified single micrograph will be processed. If this micrograph name does not matches the file name part of the pattern (ignoring the directory paths), the process will exit without processing it. If this micrograph name matches the file name part of the pattern but does not exists in the directory which specified by the micrograph path pattern, again the process will exit without processing it.
+  sp_pipe.py  resample_micrographs  './mic*.hdf'  outdir_pipe_resample_micrographs  --resample_ratio=0.5  --selection_list=mic0.hdf  --check_consistency
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; input_micrograph_pattern : Input micrograph path pattern: Specify path pattern of input micrographs with a wild card (*).. The path pattern must be enclosed by single quotes (\') or double quotes (\"). (Note: sp_gui.py automatically adds single quotes (\')). The substring at the variable part must be same between the associated pair of input micrograph and coordinates file. bdb files cannot be selected as input micrographs. (default required string)
+  ; output_directory : Output directory: The results will be written here. It cannot be an existing one. (default required string)
+
+  ; %%--%%resample_ratio : Resampling ratio: Specify ratio between new and original pixel size. Use a value between 0.0 and 1.0 (exclusive both ends). (default required float)
+  ; %%--%%selection_list : Micrograph selecting list: Specify a name of micrograph selection list text file for Selected Micrographs Mode. The file extension must be //.txt//. Alternatively, the file name of a single micrograph can be specified for Single Micrograph Mode. (default none)
+  ; %%--%%check_consistency : Check consistency of dataset: Create a text file containing the list of Micrograph ID entries might have inconsistency among the provided dataset. (i.e. mic_consistency_check_info_TIMESTAMP.txt). (default False)
+
+\\
+=== Advanced Parameters ===
+
+\\
+===== Output =====
+
+\\
+===== Description =====
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+
+\\
+==== Developer Notes ====
+
+\\
+==== Author / Maintainer ====
+Toshio Moriya
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_pipe.py
+
+\\
+==== See also ====
+[[pipeline:cter:sp_cter|sp_cter]].
+
+\\
+==== Maturity ====
+Alpha:: Under development.
+
+\\
+==== Bugs ====
+There are no known bugs so far.
+
+\\

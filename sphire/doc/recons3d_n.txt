@@ -1,0 +1,98 @@
+~~NOTOC~~
+
+===== sp_recons3d_n =====
+3D Reconstruction : 3D Reconstruction using nearest-neighbor interpolation.
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sp_recons3d_n.py prj_stack output_volume begin end step --CTF --npad=ntimes_padding --list=file --group=ID --snr=SNR --sym=symmetry --verbose=(0|1) --xysize=xysize --zsize=zsize --smearstep=smear --interpolation_method=method --niter=niter --upweighted --compensate --chunk_id=id --target_window_size=size --MPI
+
+\\
+===== Typical usage =====
+
+  sp_recons3d_n.py exists in for both MPI and non-MPI versions.
+
+Create a binary mask dilated by 2 pixel using the binary threshold from chimera
+
+  mpirun -np 32 sp_recons3d_n.py input_volume output_directory  --MPI
+
+Create an adapted mask dilated by 2 pixel and a soft edge of 5 pixel using the binary threshold from chimera
+
+  mpirun -np 32 sp_recons3d_n.py input_volume output_directory --threshold=0.3 --edge_width=5 --ndilation=1 --MPI
+
+Create an adapted mask dilated by 2 pixel and a soft edge of 5 pixel using the binary threshold from chimera and masked by a soft edged cylinder to 80% (e.g. for helical reconstruction with a box size of 300)
+
+  mpirun -np 32 sp_recons3d_n.py input_volume output_directory --threshold=0.3 --edge_width=5 --ndilation=1 --second_mask_shape=cylinder --s_radius=40 --s_nx=240 --s_ny=240 --s_nz=240 --s_ndilation=1 --s_edge_width=5 --MPI
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; prj_stack : Input stack : Stack of projections (default required string)
+  ; output_volume : Output volume : Output reconstructed volume file (default required string)
+
+  ; %%--%%sym : Symmetry : Symmetry. (default c1)
+  ; %%--%%CTF : Apply CTF : Apply CTF correction. (default True question reversed in GUI)
+  ; %%--%%list : Selection list : File with list of images to be used in the first column. (default none)
+  ; %%--%%verbose : Verbosity : Enter 0 for no verbosity, 1 for verbose output. (default True question reversed in GUI)
+
+\\
+=== Advanced Parameters ===
+  ; begin : First image : First image for reconstruction. (default none)
+  ; end : Last image : Last image for reconstruction. (default none)
+  ; step : Image step : Increment used for image list. (default none)
+  ; %%--%%snr : SNR : Signal-to-Noise Ratio. (default 1.0)
+  ; %%--%%group : Group number : Perform reconstruction using images for a given group number (group is attribute in the header). (default -1)
+  ; %%--%%npad : Padding : Number of times padding (default 2)
+  ; %%--%%xysize : X,Y-dimension : Expected size in xy-plane. (default -1)
+  ; %%--%%zsize : Z-dimension : Expected size in z. (default -1)
+  ; %%--%%smearstep : Smear step : Rotational smear step. (default 0.0)
+  ; %%--%%interpolation_method : Interpolation method : Interpolation methods: nearest neighbor (4nn), or trilinear interpolation (tril). (default 4nn)
+  ; %%--%%niter : Iteration number : NNumber of iterations for iterative reconstruction. (default 10)
+  ; %%--%%upweighted : Upweight : Apply background noise. (default False)
+  ; %%--%%compensate : Compensate : Compensate in reconstruction. (default False)
+  ; %%--%%chunk_id : Chunk ID : Reconstruct both odd and even groups of particles. (default -1)
+  ; %%--%%target_window_size : Target window size : Size of the targeted reconstruction. (default -1)
+  ; %%--%%MPI : Use MPI: (default False)
+
+\\
+===== Output =====
+
+
+\\
+===== Description =====
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+
+\\
+==== Developer Notes ====
+
+\\
+==== Author / Maintainer ====
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sparx/bin/sp_recons3d_n.py
+
+\\
+==== See also ====
+
+\\
+==== Maturity ====
+Beta:: Under evaluation and testing. Please let us know if there are any bugs.
+
+\\
+==== Bugs ====
+There are no known bugs so far.
+
+\\

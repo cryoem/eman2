@@ -1,7 +1,3 @@
-/**
- * $Id$
- */
-
 /*
  * Author: Steven Ludtke (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
@@ -36,10 +32,6 @@
 
 #ifndef eman__transform_h__
 #define eman__transform_h__ 1
-
-#ifdef _WIN32
-	#pragma warning(disable:4819)
-#endif	//_WIN32
 
 #include "vec3.h"
 #include "emobject.h"
@@ -308,12 +300,12 @@ namespace EMAN
 			void scale(const float& scale);
 			
 			//=============== set and get post x mirror =============
-			/** Query whether x_mirroring is occuring
-			 * @return whether x_mirroring is occuring
+			/** Query whether x_mirroring is occurring
+			 * @return whether x_mirroring is occurring
 			 */
 			bool get_mirror() const;
 
-			/** Set whether or not x_mirroring is occuring
+			/** Set whether or not x_mirroring is occurring
 			 * @param x_mirror whether x_mirroring should be applied
 			 */
 			void set_mirror(const bool x_mirror);
@@ -367,6 +359,9 @@ namespace EMAN
 			 */
 			void set_matrix(const vector<float>& v);
 
+			// returns a Python/JSON string representation of the matrix form
+			string get_matrix_string(int precision);
+			
 			/** Get the transformation matrix using a vector.
 			 * @return a vector - 3 rows of 4 - that stores the values of the transformation matrix
 			 */
@@ -988,6 +983,3 @@ namespace EMAN
 
 
 #endif
-
-
-/* vim: set ts=4 noet: */

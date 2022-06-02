@@ -4,29 +4,30 @@ set -xe
 
 MYDIR="$(cd "$(dirname "$0")"; pwd -P)"
 
-bash "${MYDIR}/../tests/future_import_tests.sh"
+source ${MYDIR}/set_env_vars.sh
 
-if [ ! -z ${TRAVIS} ];then
+if [ -n "${TRAVIS}" ];then
     source ci_support/setup_conda.sh
 
-    # Following Wiki instructions at
-    # http://blake.bcm.edu/emanwiki/EMAN2/COMPILE_EMAN2_ANACONDA
-    conda install eman-deps=13.0 -c cryoem -c defaults -c conda-forge --yes --quiet
+    conda create -n eman eman-deps-dev=${EMAN_DEPS_VERSION} -c cryoem -c defaults -c conda-forge --yes --quiet
+    conda activate eman
 fi
 
-if [ ! -z ${CIRCLECI} ];then
-    source ${HOME}/miniconda2/bin/activate root
+if [ -n "${CIRCLECI}" ];then
+    . $HOME/miniconda/etc/profile.d/conda.sh
+    conda activate eman
 fi
 
-python -m compileall -q .
+python -m compileall -q -x .git -x sparx -x sphire .
 
 # Build and install eman2
 rm -vf ${CONDA_PREFIX}/bin/e2*.py
 
 conda info -a
 conda list
+conda list --explicit
 
-if [ -z "$JENKINS_HOME" ];then
+if [ -n "$JENKINS_HOME" ];then
     CPU_COUNT=4
 else
     CPU_COUNT=2
@@ -39,7 +40,8 @@ rm -rf $build_dir
 mkdir -p $build_dir
 cd $build_dir
 
-cmake ${src_dir}
+cmake --version
+cmake ${src_dir} -DENABLE_WARNINGS=OFF -DENABLE_OPTIMIZE_MACHINE=ON
 make -j${CPU_COUNT}
 make install
 

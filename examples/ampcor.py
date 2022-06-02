@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 
-from __future__ import print_function
-from __future__ import division
-
 from EMAN2 import *
 import numpy as np
 import os
@@ -19,7 +16,7 @@ def main():
 	parser.add_argument("--filterto",default=0.125,type=float,help="cutoff_abs for lowpass filter applied to tilts and reconstruction projections. Useful to exclude high-resolution information we can't currently correct.")
 	parser.add_argument("--niters", default=3,type=int,help="Number of iterations to run.")
 	parser.add_argument("--threads", default=8,type=int,help="Number of threads to run in parallel on a single computer.")
-	parser.add_argument("--outpath", default="ampcor", help="Name of output directory. Numbers will be appended to ensure each instance is written to a unique folder. Default is ampcor_XX.")
+	parser.add_argument("--path", default="ampcor", help="Name of output directory. Default is a new ampcor_xx folder.")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	(options, args) = parser.parse_args()
@@ -67,7 +64,7 @@ def main():
 		ntlt = EMUtil.get_image_count(options.raw_tiltseries)
 		tilts = Parallel(n_jobs=options.threads, verbose=0, backend="threading")(delayed(get_binned_tilt) (i,binfac,options) for i in range(ntlt))
 
-	outdir = make_path(options.outpath)
+	outdir = num_path_new(options.path)
 
 	# initial parameters for optimization. Likely not the best values.
 	incid = []

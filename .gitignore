@@ -1,4 +1,4 @@
-# EMAN2 libs
+# EMAN2
 lib/
 libpy*.dylib
 .eman2settings
@@ -6,6 +6,10 @@ libpy*.dylib
 .eman2log.txt
 info
 e2boxercache
+.eman2settings.json
+doc/doxygen/doxygen_html
+doc/modular_class_html/modular_class_html
+doc/programs_help_html/programs_help_html
 
 # Visual Studio files
 *.sdf

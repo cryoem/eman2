@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 03/03/2017 (sludtke@bcm.edu)
 # Copyright (c) 2000-2017 Baylor College of Medicine
@@ -34,7 +31,7 @@ from __future__ import division
 #
 
 from EMAN2 import *
-from PyQt4 import QtCore
+from PyQt5 import QtCore
 from eman2_gui.emapplication import EMApp
 from eman2_gui.emimage2d import EMImage2DWidget
 

@@ -1,8 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
-
 #
 # Author: David Woolford (woolford@bcm.edu) April 2009
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -36,9 +32,8 @@ from __future__ import absolute_import
 
 from builtins import range
 from builtins import object
-from PyQt4 import QtGui,QtCore
+from PyQt5 import QtGui, QtWidgets,QtCore
 from EMAN2 import EMData, file_exists, gimme_image_dimensions3D,get_image_directory,EMUtil,base_name,gm_time_string
-from EMAN2db import db_check_dict, db_remove_dict
 import os
 # For example usage see http://blake.bcm.edu/emanwiki/EMAN2ImageFormats#SavingEMDatafromPython
 
@@ -59,7 +54,7 @@ class EMFileTypeValidator(object):
 		@return 0 if something went wrong, for example, the file is not valid
 		'''
 		
-		msg = QtGui.QMessageBox()
+		msg = QtWidgets.QMessageBox()
 		vals = file_name.split(".")
 		if len(vals) < 2 or vals[-1] != self.type:
 			# error is therefore a string
@@ -110,7 +105,7 @@ class EMCoordFileValidator(object):
 				return 1
 				
 			except:
-				msg = QtGui.QMessageBox()
+				msg = QtWidgets.QMessageBox()
 				msg.setText("%s is not a valid coordinate file" %file_name)
 				msg.exec_()
 				return 0
@@ -256,8 +251,8 @@ class EMSingleImageSaveDialog(EMFileSaver):
 		try:
 			self.__item.write_image(out_file, -1)
 		except:
-			msg = QtGui.QMessageBox()
-			msg.setText("An exception occured while writing %s, please try again" %out_file)
+			msg = QtWidgets.QMessageBox()
+			msg.setText("An exception occurred while writing %s, please try again" %out_file)
 			msg.exec_()
 			tmp_file_object.remove_tmp_file()
 			return 1
@@ -289,10 +284,10 @@ class EMSaveImageValidator(object):
 		
 		# FIXME - Supported types should retrieved from EMUtil (in progress)
 		if len(item_list) == 1:
-			self.__file_filt = [".hdf", ".img", ".hed",".spi","bdb:",".tif",".mrc",".dm3",".pif"] # allowable file types, be good if this was automatic
+			self.__file_filt = [".hdf", ".img", ".hed",".spi",".tif",".mrc",".dm3",".pif"] # allowable file types, be good if this was automatic
 		else:
 			if item_list[0].get_attr_dict()["nz"] == 1:
-				self.__file_filt=[".hdf", ".img",".hed",".spi","bdb:"]
+				self.__file_filt=[".hdf", ".img",".hed",".spi"]
 			else:
 				self.__file_filt =[".hdf"] # 3D only works for hdf (and bdb)
 				
@@ -311,6 +306,7 @@ class EMSaveImageValidator(object):
 		@return an error string if an error was encountered. Otherwise return None
 		'''
 		if len(file_name) > 4 and file_name[:4] == "bdb:":
+			print("ERROR: BDB not supported")
 			return None # The user has specified a file in bdb format
 			
 		splt = file_name.split(".")
@@ -332,7 +328,7 @@ class EMSaveImageValidator(object):
 		@return 0 if something went wrong (e.g. the user cancelled), 1 if it's okay to call save now
 		'''
 		
-		msg = QtGui.QMessageBox()
+		msg = QtWidgets.QMessageBox()
 		error = self.__validate_file_name(file_name)
 		if error != None:
 			# error is therefore a string
@@ -415,7 +411,7 @@ class EMStackSaveDialog(EMFileSaver):
 		@return 0 if there was an error, 1 if there was not
 		@exception NotImplementedError raised when the EMFileExistsDialog returns an unknown code
 		'''
-		msg = QtGui.QMessageBox()
+		msg = QtWidgets.QMessageBox()
 			
 		tmp_file_object = EMDummyTmpFileHandle(file)
 		if self.validator.is_overwriting():
@@ -424,7 +420,7 @@ class EMStackSaveDialog(EMFileSaver):
 		total_images = len(self.__item_list)
 
 		out_file = tmp_file_object.get_tmp_file_name()
-		progress = QtGui.QProgressDialog("Writing files", "abort", 0, 2*total_images,None)
+		progress = QtWidgets.QProgressDialog("Writing files", "abort", 0, 2*total_images,None)
 		progress.show()
 		tally = 0
 		exc_list = None
@@ -460,7 +456,7 @@ class EMStackSaveDialog(EMFileSaver):
 			try:
 				d.write_image(out_file,-1)
 			except:
-				msg.setText("An exception occured while writing %s, please try again" %out_file)
+				msg.setText("An exception occurred while writing %s, please try again" %out_file)
 				msg.exec_()
 				tmp_file_object.remove_tmp_file()
 				progress.close()
@@ -490,7 +486,7 @@ class EMStackSaveDialog(EMFileSaver):
 		'''
 		return self.file_name_used
 
-class EMFileExistsDialog(QtGui.QDialog):
+class EMFileExistsDialog(QtWidgets.QDialog):
 	'''
 	Runs a dialog asking if the user wants to overwrite,append to, or cancel the operation.
 	Appending may not be possible in which case nly the Overwrite and Cancel buttons are available.
@@ -514,7 +510,7 @@ class EMFileExistsDialog(QtGui.QDialog):
 		@param item_list a list - the first object must have supply the get_attr_dict function, the keys "nx", "ny" and "nz therein
 		If you want to use this function for a single EMData object then just put it in a list
 		'''
-		QtGui.QDialog.__init__(self,None)
+		QtWidgets.QDialog.__init__(self,None)
 		self.resize(480,320)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "/eman.png"))
 		self.setWindowTitle("File already exists")
@@ -534,15 +530,15 @@ class EMFileExistsDialog(QtGui.QDialog):
 				append_enable=True
 		
 		# some widgets
-		vbl = QtGui.QVBoxLayout(self)
-		hbl = QtGui.QHBoxLayout()
-		overwrite = QtGui.QPushButton("Overwrite")
-		cancel = QtGui.QPushButton("Cancel")
+		vbl = QtWidgets.QVBoxLayout(self)
+		hbl = QtWidgets.QHBoxLayout()
+		overwrite = QtWidgets.QPushButton("Overwrite")
+		cancel = QtWidgets.QPushButton("Cancel")
 		
 		# add Widgets to Layouts
 		hbl.addWidget(cancel)
 		if append_enable:
-			append = QtGui.QPushButton("Append")
+			append = QtWidgets.QPushButton("Append")
 			hbl.addWidget(append)
 		hbl.addWidget(overwrite)
 		if (len(filename) > 3 and filename[:4] == "bdb:"):
@@ -550,8 +546,8 @@ class EMFileExistsDialog(QtGui.QDialog):
 			overwrite.setToolTip("Overwriting bdb files is currently disabled.")
 		
 		# Text to alert the user
-		hbl2 = QtGui.QHBoxLayout()
-		text_edit = QtGui.QTextEdit("",self)
+		hbl2 = QtWidgets.QHBoxLayout()
+		text_edit = QtWidgets.QTextEdit("",self)
 		text_edit.setReadOnly(True)
 		text_edit.setWordWrapMode(QtGui.QTextOption.WordWrap)
 		if (filename == ""):
@@ -570,7 +566,7 @@ class EMFileExistsDialog(QtGui.QDialog):
 		text_edit.setText(help)
 		hbl2.addWidget(text_edit,0)
 		
-		groupbox = QtGui.QGroupBox("Warning")
+		groupbox = QtWidgets.QGroupBox("Warning")
 		groupbox.setLayout(hbl2)
 		vbl.addWidget(groupbox)
 		
@@ -609,14 +605,14 @@ class EMFileExistsDialog(QtGui.QDialog):
 	
 	def exec_(self):
 		'''
-		Wraps QtGui.QDialog.exec_ but returns a custom return value
+		Wraps QtWidgets.QDialog.exec_ but returns a custom return value
 		@return important integer code
 		The return integer codes are as follows:
 		0 - The user hit cancel
 		1 - The user hit overwrite
 		2 - The user hit append 
 		'''
-		QtGui.QDialog.exec_(self)
+		QtWidgets.QDialog.exec_(self)
 		return self.__result
 	
 class EMTmpFileHandle(object):
@@ -753,7 +749,7 @@ class EMImagicTmpFileHandle(EMTmpFileHandleBase):
 	def __init__(self,file_name):
 		'''
 		@param file_name the name of the file that which is being overwritten
-		@exception if either the .hed or .img file corrsponding to the old_file_name does not exist on the file system
+		@exception if either the .hed or .img file corresponding to the old_file_name does not exist on the file system
 		@exception if the old_file_name is not an imagic file
 		'''
 		

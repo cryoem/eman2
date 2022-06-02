@@ -1,9 +1,8 @@
 #!/usr/bin/env python
-from __future__ import print_function
-
 #
-# Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
-# Copyright (c) 2000-2006 Baylor College of Medicine
+# Author: Pawel A. Penczek (pawel.a.penczek@uth.tmc.edu)
+# Please do not copy or modify this file without written consent of the author.
+# Copyright (c) 2000-2019 The University of Texas - Houston Medical School
 #
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
@@ -32,6 +31,8 @@ from __future__ import print_function
 #
 #
 
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 import	global_def
 from	global_def 	import *
@@ -39,7 +40,7 @@ from	EMAN2 		import EMUtil, parsemodopt, EMAN2Ctf
 from    EMAN2jsondb import js_open_dict
 
 from	utilities 	import *
-from    statistics import mono
+from    pap_statistics import mono
 import  os
 
 """
@@ -62,7 +63,7 @@ def TotalDistance(city, lccc):
     
 def reverse(city, n):
     nct = len(city)
-    nn = (1+ ((n[1]-n[0]) % nct))/2 # half the lenght of the segment to be reversed
+    nn = old_div((1+ ((n[1]-n[0]) % nct)),2) # half the lenght of the segment to be reversed
     # the segment is reversed in the following way n[0]<->n[1], n[0]+1<->n[1]-1, n[0]+2<->n[1]-2,...
     # Start at the ends of the segment and swap pairs of cities, moving towards the center.
     for j in range(nn):
@@ -100,9 +101,9 @@ def tsp(lccc):
 
 	#     ncity = 100        # Number of cities to visit
 	from math import sqrt
-	ncity = int( (1+sqrt(1+8*len(lccc)))/2 )        # Number of cities to visit
+	ncity = int( old_div((1+sqrt(1+8*len(lccc))),2) )        # Number of cities to visit
     #  sanity check
-	if( ncity*(ncity-1)/2 != len(lccc) ): return [-1]
+	if( old_div(ncity*(ncity-1),2) != len(lccc) ): return [-1]
 
 	maxTsteps = 100    # Temperature is lowered not more than maxTsteps
 	Tstart = 0.2       # Starting temperature - has to be high enough
@@ -152,7 +153,7 @@ def tsp(lccc):
 				de = Distance(city[n[2]], city[n[1]], lccc) + Distance(city[n[3]], city[n[0]], lccc)\
 					 - Distance(city[n[2]], city[n[0]], lccc) - Distance(city[n[3]] ,city[n[1]], lccc)
                 
-				if de<0 or exp(-de/T)>random.rand(): # Metropolis
+				if de<0 or exp(old_div(-de,T))>random.rand(): # Metropolis
 					accepted += 1
 					dist += de
 					reverse(city, n)
@@ -168,7 +169,7 @@ def tsp(lccc):
 				de += Distance( city[n[0]], city[n[4]], lccc) + Distance( city[n[1]], city[n[5]], lccc) \
 						+ Distance( city[n[2]], city[n[3]], lccc)
 
-				if de<0 or exp(-de/T)>random.rand(): # Metropolis
+				if de<0 or exp(old_div(-de,T))>random.rand(): # Metropolis
 					accepted += 1
 					dist += de
 					city = transpt(city, n)
@@ -202,7 +203,6 @@ def main():
 	import os
 	import math
 	import random
-	import pyemtbx.options
 	import time
 	from   random   import random, seed, randint
 	from   optparse import OptionParser
@@ -266,10 +266,10 @@ def main():
 
 
 		from utilities import model_circle
-		from statistics import ccc
-		from statistics import mono
+		from pap_statistics import ccc
+		from pap_statistics import mono
 		lend = EMUtil.get_image_count(stack)
-		lccc = [None]*(lend*(lend-1)/2)
+		lccc = [None]*(old_div(lend*(lend-1),2))
 
 		for i in range(lend-1):
 			v1 = get_im( stack, i )
@@ -304,7 +304,7 @@ def main():
 
 		from utilities import get_params2D, model_circle
 		from fundamentals import rot_shift2D
-		from statistics import ccc
+		from pap_statistics import ccc
 		from time import time
 		from alignment import align2d, align2d_scf
 		
@@ -339,9 +339,9 @@ def main():
 			
 		initial = max(options.initial, 0)
 
-		from statistics import mono
+		from pap_statistics import mono
 		lend = len(d)
-		lccc = [None]*(lend*(lend-1)/2)
+		lccc = [None]*(old_div(lend*(lend-1),2))
 		from utilities import read_text_row
 
 		if  options.pairwiseccc == " " or not os.path.exists(options.pairwiseccc) :
@@ -577,7 +577,7 @@ def main():
 		
 		from utilities import get_params2D, model_circle
 		from fundamentals import rot_shift2D
-		from statistics import ccc
+		from pap_statistics import ccc
 		from time import time
 		from alignment import align2d
 		

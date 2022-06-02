@@ -1,7 +1,3 @@
-/**
- * $Id$
- */
-
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
@@ -144,6 +140,16 @@ void div(float f);
  * @exception ImageFormatException If the 2 images are not same size.
  */
 void div(const EMData & image);
+
+/** Replaces the value of each pixel with the minimum of the current value
+ * and the value in the provided image. An Averager can be used to do this
+ * across many images. This permits a strategy where the intermediate values
+ * are needed, not just the final minimum.
+ * @param image The image 'this' image divided by.
+ * @exception ImageFormatException If the 2 images are not same size.
+ */
+void update_min(const EMData & image);
+
 
 /** Set all the pixel value = 0. */
 void to_zero();
@@ -299,6 +305,20 @@ inline size_t get_complex_index_fast(const int &x,const int &y,const int &z) con
 		return (size_t)x*-2+(y<=0?-y:ny-y)*(size_t)nx+(z<=0?-z:nz-z)*(size_t)nxy;
 	}
 	return x*2+(y<0?ny+y:y)*(size_t)nx+(z<0?nz+z:z)*(size_t)nxy;
+}
+
+/** Set complex<float> value at x,y,z without reinterpreting the coordinates. That is, x=y=z=0 will be inserted in the first data element.
+ * The x coordinate is still multiplied by 2 to compensate for the complex being 2 floats.
+ *
+ * @param x	x coordinate
+ * @param y	y coordinate
+ * @param z z coordinate
+ * @param val complex<float> value to set
+ */
+inline void set_complex_at_idx(const int &x,const int &y,const int &z,const std::complex<float> &val) {
+	size_t idx=x*2+y*(size_t)nx+z*(size_t)nxy;
+	rdata[idx]=(float)val.real();
+	rdata[idx+1]=(float)val.imag();
 }
 
 /** Set complex<float> value at x,y. This assumes the image is
@@ -485,6 +505,24 @@ float sget_value_at(size_t i) const;
  * @return The complex value at coordinates (x,y).
  */
 std::complex<float> get_complex_at_interp(float x, float y) const;
+
+/** Gets 2x2 Gaussian interpolated complex values
+ * note that with Gaussian interpolation, there is a discontinuity in the interpolated values
+ * as you shift from one set of 2x2 samples to the next. This is at the ~5% level
+ * @param x The x coordinate (float).
+ * @param y The y coordinate (float).
+ * @return The complex value at coordinates (x,y).
+ */
+std::complex<float> get_complex_at_ginterp(float x, float y) const;
+
+/** Gets 3x3 Gaussian interpolated complex values
+ * note that with Gaussian interpolation, there is a discontinuity in the interpolated values
+ * as you shift from one set of 3x3 samples to the next. 
+ * @param x The x coordinate (float).
+ * @param y The y coordinate (float).
+ * @return The complex value at coordinates (x,y).
+ */
+std::complex<float> get_complex_at_3ginterp(float x, float y) const;
 
 
 /** Get pixel density value at interpolation of (x,y).

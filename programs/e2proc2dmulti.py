@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 04/05/2011 (sludtke@bcm.edu)
 # Copyright (c) 2011 Baylor College of Medicine
@@ -37,13 +34,11 @@ from __future__ import division
 
 from past.utils import old_div
 from builtins import range
-from EMAN2db import db_list_dicts
 from EMAN2 import *
 import sys
 import os.path
 import math
 import random
-import pyemtbx.options
 import time
 
 def main():
@@ -83,18 +78,19 @@ def main():
 	parser.add_argument("--selfcl", metavar="steps mode", type=int, nargs=2,
 					help="Output file will be a 180x180 self-common lines map for each image.")
 	parser.add_argument("--translate", type=str, action="append", help="Translate by x,y pixels")
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higner number means higher level of verboseness",default=0)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higher number means higher level of verboseness",default=0)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--writejunk", action="store_true", help="Writes the image even if its sigma is 0.", default=False)
 	
 	append_options = ["clip", "process", "meanshrink", "medianshrink", "scale", "randomize", "rotate", "translate", "multfile"]
 
-	optionlist = pyemtbx.options.get_optionlist(sys.argv[1:])
+	optionlist = get_optionlist(sys.argv[1:])
 	
 	(options, args) = parser.parse_args()
 	
 	if options.allparticles:
-		args=["bdb:particles#"+i for i in db_list_dicts("bdb:particles")]
+		#args=["bdb:particles#"+i for i in db_list_dicts("bdb:particles")]
+		args=["particles/"+i for i in os.listdir("particles") if i[-4:]==".hdf"]
 		args.sort()
 		if options.verbose : print("%d particle files identified"%len(args))
 

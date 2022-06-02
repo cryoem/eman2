@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: James Michael Bell 5/20/2014 (jmbell@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -44,9 +41,9 @@ import os
 from eman2_gui.valslider import ValSlider, EMANToolButton, EMSpinWidget, EMQTColorWidget
 import weakref
 
-from PyQt4 import QtCore
-from PyQt4.QtCore import Qt
-from PyQt4 import QtGui
+from PyQt5 import QtCore
+from PyQt5.QtCore import Qt
+from PyQt5 import QtGui, QtWidgets
 
 
 def main():
@@ -59,7 +56,7 @@ def main():
 	#parser.add_argument("-t","--tomo",type=str,help="<rawptcl>,<classmx> Show particles associated class-averages")
 	#parser.add_argument("-s","--seg",type=str,help="A specialized flag that disables auto contrast for the display of particles stacks and 2D images only.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
 	
@@ -86,11 +83,11 @@ class TomoSegVolumeViewer(EMScene3D):
 		
 		self.setWindowTitle("TomoSeg Subvolume Viewer")
 
-class TomoSegSliceViewer(QtGui.QMainWindow):
+class TomoSegSliceViewer(QtWidgets.QMainWindow):
 	module_closed = QtCore.pyqtSignal()
 
 	def __init__(self,data=None,datafile=None,yshort=False,apix=0.0,boxsize=32,shrink=1,contrast=None,center=None,mod=False,normalize=False):
-		QtGui.QWidget.__init__(self)
+		QtWidgets.QWidget.__init__(self)
 		
 		self.yshort=yshort
 		self.apix=apix
@@ -118,8 +115,8 @@ class TomoSegSliceViewer(QtGui.QMainWindow):
 		self.mwin_single=self.mwin.addAction("Single Particle")
 		self.mwin_average=self.mwin.addAction("Averaging")
 
-		self.setCentralWidget(QtGui.QWidget())
-		self.gbl = QtGui.QGridLayout(self.centralWidget())
+		self.setCentralWidget(QtWidgets.QWidget())
+		self.gbl = QtWidgets.QGridLayout(self.centralWidget())
 
 		# relative stretch factors
 		self.gbl.setColumnStretch(0,1)
@@ -139,11 +136,11 @@ class TomoSegSliceViewer(QtGui.QMainWindow):
 		self.gbl.addWidget(self.zyview,0,0)
 
 		# Select Z for xy view
-		self.wdepth = QtGui.QSlider()
+		self.wdepth = QtWidgets.QSlider()
 		self.gbl.addWidget(self.wdepth,1,2)
 
 		### Control panel area in upper left corner
-		self.gbl2 = QtGui.QGridLayout()
+		self.gbl2 = QtWidgets.QGridLayout()
 		self.gbl.addLayout(self.gbl2,1,0)
 
 		# box size
@@ -152,19 +149,19 @@ class TomoSegSliceViewer(QtGui.QMainWindow):
 		self.oldboxsize=boxsize
 
 		# max or mean
-		self.wmaxmean=QtGui.QPushButton("MaxProj")
+		self.wmaxmean=QtWidgets.QPushButton("MaxProj")
 		self.wmaxmean.setCheckable(True)
 		self.gbl2.addWidget(self.wmaxmean,1,0)
 
 		# number slices
-		self.wnlayers=QtGui.QSpinBox()
+		self.wnlayers=QtWidgets.QSpinBox()
 		self.wnlayers.setMinimum(1)
 		self.wnlayers.setMaximum(256)
 		self.wnlayers.setValue(1)
 		self.gbl2.addWidget(self.wnlayers,1,1)
 
 		# Local boxes in side view
-		self.wlocalbox=QtGui.QCheckBox("Limit Side Boxes")
+		self.wlocalbox=QtWidgets.QCheckBox("Limit Side Boxes")
 		self.gbl2.addWidget(self.wlocalbox,2,0)
 
 		# scale factor
@@ -447,7 +444,7 @@ class TomoSegSliceViewer(QtGui.QMainWindow):
 		return self.wscale.getValue()
 
 	def menu_file_open(self,tog):
-		QtGui.QMessageBox.warning(None,"Error","Sorry, in the current version, you must provide a file to open on the command-line.")
+		QtWidgets.QMessageBox.warning(None,"Error","Sorry, in the current version, you must provide a file to open on the command-line.")
 
 	def load_box_yshort(self, boxcoords):
 		if options.yshort:
@@ -456,7 +453,7 @@ class TomoSegSliceViewer(QtGui.QMainWindow):
 			return boxcoords
 
 	def menu_file_read_boxloc(self):
-		fsp=str(QtGui.QFileDialog.getOpenFileName(self, "Select output text file"))
+		fsp=str(QtWidgets.QFileDialog.getOpenFileName(self, "Select output text file")[0])
 
 		f=open(fsp,"r")
 		if options.helixboxer:
@@ -478,7 +475,7 @@ class TomoSegSliceViewer(QtGui.QMainWindow):
 	def menu_file_save_boxloc(self):
 		shrinkf=self.shrink 								#jesus
 
-		fsp=str(QtGui.QFileDialog.getSaveFileName(self, "Select output text file"))
+		fsp=str(QtWidgets.QFileDialog.getSaveFileName(self, "Select output text file")[0])
 
 		out=open(fsp,"w")
 		if options.helixboxer:
@@ -490,12 +487,12 @@ class TomoSegSliceViewer(QtGui.QMainWindow):
 		out.close()
 
 	def menu_file_save_boxes(self):
-		fsp=os.path.basename(str(QtGui.QFileDialog.getSaveFileName(self, "Select output file (numbers added)")))
+		fsp=os.path.basename(str(QtWidgets.QFileDialog.getSaveFileName(self, "Select output file (numbers added)")[0]))
 
 		fspprjs=fsp.replace('.','_prjs.hdf')
 		prj=EMData() #Dummy
 
-		progress = QtGui.QProgressDialog("Saving", "Abort", 0, len(self.boxes),None)
+		progress = QtWidgets.QProgressDialog("Saving", "Abort", 0, len(self.boxes),None)
 		if options.helixboxer:
 			for i,b in enumerate(self.helixboxes):
 				img = self.extract_subtomo_box(self.get_extended_a_vector(b), cshrink=self.shrink)
@@ -514,7 +511,7 @@ class TomoSegSliceViewer(QtGui.QMainWindow):
 				if "." in fsp:
 					img.write_image(os.path.join(options.path,"%s_%03d.%s"%(fsp.rsplit(".",1)[0],i,fsp.rsplit(".",1)[1])))
 				else:
-					QtGui.QMessageBox.warning(None,"Error","Please provide a valid image file extension. The numerical sequence will be inserted before the extension.")
+					QtWidgets.QMessageBox.warning(None,"Error","Please provide a valid image file extension. The numerical sequence will be inserted before the extension.")
 					return
 
 				progress.setValue(i+1)
@@ -544,7 +541,7 @@ class TomoSegSliceViewer(QtGui.QMainWindow):
 					prj.write_image(fspprjs,-1)
 
 				else:
-					QtGui.QMessageBox.warning(None,"Error","Please provide a valid image file extension. The numerical sequence will be inserted before the extension.")
+					QtWidgets.QMessageBox.warning(None,"Error","Please provide a valid image file extension. The numerical sequence will be inserted before the extension.")
 					return
 
 				progress.setValue(i+1)
@@ -552,18 +549,18 @@ class TomoSegSliceViewer(QtGui.QMainWindow):
 
 	def menu_file_save_boxes_stack(self):
 
-		fsp=os.path.join(options.path,os.path.basename(str(QtGui.QFileDialog.getSaveFileName(self, "Select output file (.hdf supported only)"))))
+		fsp=os.path.join(options.path,os.path.basename(str(QtWidgets.QFileDialog.getSaveFileName(self, "Select output file (.hdf supported only)")[0])))
 		#if fsp[:4].lower()!="bdb:" and fsp[-4:].lower()!=".hdf" :
 
 
 		if fsp[-4:].lower()!=".hdf" :
-			QtGui.QMessageBox.warning(None,"Error","3-D stacks supported only for .hdf files")
+			QtWidgets.QMessageBox.warning(None,"Error","3-D stacks supported only for .hdf files")
 			return
 
 		fspprjs=fsp.replace('.hdf','_prjs.hdf')
 		prj=EMData() #Dummy
 
-		progress = QtGui.QProgressDialog("Saving", "Abort", 0, len(self.boxes),None)
+		progress = QtWidgets.QProgressDialog("Saving", "Abort", 0, len(self.boxes),None)
 		if options.helixboxer:
 			for i,b in enumerate(self.helixboxes):
 				img = self.extract_subtomo_box(self.get_extended_a_vector(b), cshrink=self.shrink)
@@ -1158,11 +1155,11 @@ class TomoSegSliceViewer(QtGui.QMainWindow):
 		self.xydown=None
 
 	def xy_wheel (self,event):
-		if event.delta() > 0:
+		if event.angleDelta().y() > 0:
 			#self.wdepth.setValue(self.wdepth.value()+4)
 			self.wdepth.setValue(self.wdepth.value()+1) #jesus
 
-		elif event.delta() < 0:
+		elif event.angleDelta().y() < 0:
 			#self.wdepth.setValue(self.wdepth.value()-4)
 			self.wdepth.setValue(self.wdepth.value()-1) #jesus
 
@@ -1353,7 +1350,7 @@ class TomoSegSliceViewer(QtGui.QMainWindow):
 	#def closeEvent(self,event):
 		#self.target().done()
 
-class TomoSegInspector(QtGui.QWidget):
+class TomoSegInspector(QtWidgets.QWidget):
 	
 	def __init__(self):
 		super(TomoSegInspector,self).__init__()
@@ -1363,8 +1360,8 @@ class TomoSegInspector(QtGui.QWidget):
 		self.mintreewidth = 250		# minimum width of the tree
 		self.mincontrolwidth = 0
 		
-		vbox = QtGui.QVBoxLayout(self)
-		self.inspectortab = QtGui.QTabWidget()
+		vbox = QtWidgets.QVBoxLayout(self)
+		self.inspectortab = QtWidgets.QTabWidget()
 		self.inspectortab.addTab(self.getToolsWidget(), "Tools")
 		self.inspectortab.addTab(self.getTreeWidget(), "Annotations")
 		self.inspectortab.addTab(self.getUtilsWidget(), "Utils")
@@ -1374,94 +1371,94 @@ class TomoSegInspector(QtGui.QWidget):
 		self.updateGeometry()
 
 	def getToolsWidget(self):
-		tooltabs = QtGui.QTabWidget()
+		tooltabs = QtWidgets.QTabWidget()
 		tooltabs.addTab(self.getAutomaticTools(), "Automatic")
 		tooltabs.addTab(self.getSemiAutomaticTools(), "Interactive")
 		tooltabs.addTab(self.getManualTools(), "Manual")
 		return tooltabs
 	
 	def getAutomaticTools(self):
-		widget = QtGui.QWidget()
+		widget = QtWidgets.QWidget()
 		
-		hbox = QtGui.QHBoxLayout()
+		hbox = QtWidgets.QHBoxLayout()
 		
-		frame = QtGui.QFrame()
-		grid = QtGui.QGridLayout(widget)
+		frame = QtWidgets.QFrame()
+		grid = QtWidgets.QGridLayout(widget)
 		
 		self.rotatetool = EMANToolButton()
 # 		self.rotatetool.setIcon(QtGui.QIcon(QtGui.QPixmap(rotateicon)))
 		self.rotatetool.setToolTip("Description")
-		self.rotatetool_label = QtGui.QLabel("Name")
+		self.rotatetool_label = QtWidgets.QLabel("Name")
 		
 		self.translatetool =EMANToolButton()
 # 		self.translatetool.setIcon(QtGui.QIcon(QtGui.QPixmap(crosshairsicon)))
 		self.translatetool.setToolTip("Description")
-		self.translatetool_label = QtGui.QLabel("Name")
+		self.translatetool_label = QtWidgets.QLabel("Name")
 		
 		self.ztranslate = EMANToolButton()
 # 		self.ztranslate.setIcon(QtGui.QIcon(QtGui.QPixmap(ztransicon)))
 		self.ztranslate.setToolTip("Description")
-		self.ztranslatetool_label = QtGui.QLabel("Name")
+		self.ztranslatetool_label = QtWidgets.QLabel("Name")
 		
 		self.scaletool = EMANToolButton()
 # 		self.scaletool.setIcon(QtGui.QIcon(QtGui.QPixmap(scaleicon)))
 		self.scaletool.setToolTip("Description")
-		self.scaletool_label = QtGui.QLabel("Name")
+		self.scaletool_label = QtWidgets.QLabel("Name")
 		
 		self.rulertool = EMANToolButton()
 # 		self.rulertool.setIcon(QtGui.QIcon(QtGui.QPixmap(rulericon)))
 		self.rulertool.setToolTip("Description")
-		self.rulertool_label = QtGui.QLabel("Name")
+		self.rulertool_label = QtWidgets.QLabel("Name")
 		
 		self.selectiontool = EMANToolButton()
 # 		self.selectiontool.setIcon(QtGui.QIcon(QtGui.QPixmap(selectionicon)))
 		self.selectiontool.setToolTip("Description")
-		self.selectiontool_label = QtGui.QLabel("Name")
+		self.selectiontool_label = QtWidgets.QLabel("Name")
 		
 		self.multiselectiontool = EMANToolButton()
 # 		self.multiselectiontool.setIcon(QtGui.QIcon(QtGui.QPixmap(multiselectoricon)))
 		self.multiselectiontool.setToolTip("Description")
-		self.multiselectiontool_label = QtGui.QLabel("Name")
+		self.multiselectiontool_label = QtWidgets.QLabel("Name")
 		
 		self.linetool = EMANToolButton()
 # 		self.linetool.setIcon(QtGui.QIcon(QtGui.QPixmap(lineicon)))
 		self.linetool.setToolTip("Description")
-		self.linetool_label = QtGui.QLabel("Name")
+		self.linetool_label = QtWidgets.QLabel("Name")
 		
 		self.cubetool = EMANToolButton()
 # 		self.cubetool.setIcon(QtGui.QIcon(QtGui.QPixmap(cubeicon)))
 		self.cubetool.setToolTip("Description")
-		self.cubetool_label = QtGui.QLabel("Name")
+		self.cubetool_label = QtWidgets.QLabel("Name")
 		
 		self.spheretool = EMANToolButton()
 # 		self.spheretool.setIcon(QtGui.QIcon(QtGui.QPixmap(sphereicon)))
 		self.spheretool.setToolTip("Description")
-		self.spheretool_label = QtGui.QLabel("Name")
+		self.spheretool_label = QtWidgets.QLabel("Name")
 		
 		self.cylindertool = EMANToolButton()
 # 		self.cylindertool.setIcon(QtGui.QIcon(QtGui.QPixmap(cylindericon)))
 		self.cylindertool.setToolTip("Description")
-		self.cylindertool_label = QtGui.QLabel("Name")
+		self.cylindertool_label = QtWidgets.QLabel("Name")
 		
 		self.conetool = EMANToolButton()
 # 		self.conetool.setIcon(QtGui.QIcon(QtGui.QPixmap(coneicon)))
 		self.conetool.setToolTip("Description")
-		self.conetool_label = QtGui.QLabel("Name")
+		self.conetool_label = QtWidgets.QLabel("Name")
 		
 		self.texttool = EMANToolButton()
 # 		self.texttool.setIcon(QtGui.QIcon(QtGui.QPixmap(texticon)))
 		self.texttool.setToolTip("Description")
-		self.texttool_label = QtGui.QLabel("Name")
+		self.texttool_label = QtWidgets.QLabel("Name")
  		
 		self.datatool = EMANToolButton()
 # 		self.datatool.setIcon(QtGui.QIcon(QtGui.QPixmap(dataicon)))
 		self.datatool.setToolTip("Description")
-		self.datatool_label = QtGui.QLabel("Name")
+		self.datatool_label = QtWidgets.QLabel("Name")
 		
 		self.apptool = EMANToolButton()
 #		self.apptool.setIcon(QtGui.QIcon(QtGui.QPixmap(appicon)))
 		self.apptool.setToolTip("Description")
-		self.apptool_label = QtGui.QLabel("Name")
+		self.apptool_label = QtWidgets.QLabel("Name")
 
 		# buttons
 		grid.addWidget(self.selectiontool,1,0)
@@ -1502,8 +1499,8 @@ class TomoSegInspector(QtGui.QWidget):
 		frame.setLayout(grid)
 		hbox.addWidget(frame)
 		
-		self.stacked_widget = QtGui.QStackedWidget()
-		self.stacked_widget.setFrameShape(QtGui.QFrame.StyledPanel)
+		self.stacked_widget = QtWidgets.QStackedWidget()
+		self.stacked_widget.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		hbox.addWidget(self.stacked_widget)
 		
 		widget.setLayout(hbox) #grid
@@ -1511,87 +1508,87 @@ class TomoSegInspector(QtGui.QWidget):
 		return widget
 
 	def getSemiAutomaticTools(self):
-		widget = QtGui.QWidget()
+		widget = QtWidgets.QWidget()
 		
-		hbox = QtGui.QHBoxLayout()
+		hbox = QtWidgets.QHBoxLayout()
 		
-		frame = QtGui.QFrame()
-		grid = QtGui.QGridLayout(widget)
+		frame = QtWidgets.QFrame()
+		grid = QtWidgets.QGridLayout(widget)
 		
 		self.rotatetool = EMANToolButton()
 # 		self.rotatetool.setIcon(QtGui.QIcon(QtGui.QPixmap(rotateicon)))
 		self.rotatetool.setToolTip("Description")
-		self.rotatetool_label = QtGui.QLabel("Name")
+		self.rotatetool_label = QtWidgets.QLabel("Name")
 		
 		self.translatetool =EMANToolButton()
 # 		self.translatetool.setIcon(QtGui.QIcon(QtGui.QPixmap(crosshairsicon)))
 		self.translatetool.setToolTip("Description")
-		self.translatetool_label = QtGui.QLabel("Name")
+		self.translatetool_label = QtWidgets.QLabel("Name")
 		
 		self.ztranslate = EMANToolButton()
 # 		self.ztranslate.setIcon(QtGui.QIcon(QtGui.QPixmap(ztransicon)))
 		self.ztranslate.setToolTip("Description")
-		self.ztranslatetool_label = QtGui.QLabel("Name")
+		self.ztranslatetool_label = QtWidgets.QLabel("Name")
 		
 		self.scaletool = EMANToolButton()
 # 		self.scaletool.setIcon(QtGui.QIcon(QtGui.QPixmap(scaleicon)))
 		self.scaletool.setToolTip("Description")
-		self.scaletool_label = QtGui.QLabel("Name")
+		self.scaletool_label = QtWidgets.QLabel("Name")
 		
 		self.rulertool = EMANToolButton()
 # 		self.rulertool.setIcon(QtGui.QIcon(QtGui.QPixmap(rulericon)))
 		self.rulertool.setToolTip("Description")
-		self.rulertool_label = QtGui.QLabel("Name")
+		self.rulertool_label = QtWidgets.QLabel("Name")
 		
 		self.selectiontool = EMANToolButton()
 # 		self.selectiontool.setIcon(QtGui.QIcon(QtGui.QPixmap(selectionicon)))
 		self.selectiontool.setToolTip("Description")
-		self.selectiontool_label = QtGui.QLabel("Name")
+		self.selectiontool_label = QtWidgets.QLabel("Name")
 		
 		self.multiselectiontool = EMANToolButton()
 # 		self.multiselectiontool.setIcon(QtGui.QIcon(QtGui.QPixmap(multiselectoricon)))
 		self.multiselectiontool.setToolTip("Description")
-		self.multiselectiontool_label = QtGui.QLabel("Name")
+		self.multiselectiontool_label = QtWidgets.QLabel("Name")
 		
 		self.linetool = EMANToolButton()
 # 		self.linetool.setIcon(QtGui.QIcon(QtGui.QPixmap(lineicon)))
 		self.linetool.setToolTip("Description")
-		self.linetool_label = QtGui.QLabel("Name")
+		self.linetool_label = QtWidgets.QLabel("Name")
 		
 		self.cubetool = EMANToolButton()
 # 		self.cubetool.setIcon(QtGui.QIcon(QtGui.QPixmap(cubeicon)))
 		self.cubetool.setToolTip("Description")
-		self.cubetool_label = QtGui.QLabel("Name")
+		self.cubetool_label = QtWidgets.QLabel("Name")
 		
 		self.spheretool = EMANToolButton()
 # 		self.spheretool.setIcon(QtGui.QIcon(QtGui.QPixmap(sphereicon)))
 		self.spheretool.setToolTip("Description")
-		self.spheretool_label = QtGui.QLabel("Name")
+		self.spheretool_label = QtWidgets.QLabel("Name")
 		
 		self.cylindertool = EMANToolButton()
 # 		self.cylindertool.setIcon(QtGui.QIcon(QtGui.QPixmap(cylindericon)))
 		self.cylindertool.setToolTip("Description")
-		self.cylindertool_label = QtGui.QLabel("Name")
+		self.cylindertool_label = QtWidgets.QLabel("Name")
 		
 		self.conetool = EMANToolButton()
 # 		self.conetool.setIcon(QtGui.QIcon(QtGui.QPixmap(coneicon)))
 		self.conetool.setToolTip("Description")
-		self.conetool_label = QtGui.QLabel("Name")
+		self.conetool_label = QtWidgets.QLabel("Name")
 		
 		self.texttool = EMANToolButton()
 # 		self.texttool.setIcon(QtGui.QIcon(QtGui.QPixmap(texticon)))
 		self.texttool.setToolTip("Description")
-		self.texttool_label = QtGui.QLabel("Name")
+		self.texttool_label = QtWidgets.QLabel("Name")
  		
 		self.datatool = EMANToolButton()
 # 		self.datatool.setIcon(QtGui.QIcon(QtGui.QPixmap(dataicon)))
 		self.datatool.setToolTip("Description")
-		self.datatool_label = QtGui.QLabel("Name")
+		self.datatool_label = QtWidgets.QLabel("Name")
 		
 		self.apptool = EMANToolButton()
 #		self.apptool.setIcon(QtGui.QIcon(QtGui.QPixmap(appicon)))
 		self.apptool.setToolTip("Description")
-		self.apptool_label = QtGui.QLabel("Name")
+		self.apptool_label = QtWidgets.QLabel("Name")
 
 		# buttons
 		grid.addWidget(self.selectiontool,1,0)
@@ -1632,8 +1629,8 @@ class TomoSegInspector(QtGui.QWidget):
 		frame.setLayout(grid)
 		hbox.addWidget(frame)
 		
-		self.stacked_widget = QtGui.QStackedWidget()
-		self.stacked_widget.setFrameShape(QtGui.QFrame.StyledPanel)
+		self.stacked_widget = QtWidgets.QStackedWidget()
+		self.stacked_widget.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		hbox.addWidget(self.stacked_widget)
 		
 		widget.setLayout(hbox) #grid
@@ -1642,87 +1639,87 @@ class TomoSegInspector(QtGui.QWidget):
 
 	def getManualTools(self):
 		
-		widget = QtGui.QWidget()
+		widget = QtWidgets.QWidget()
 		
-		hbox = QtGui.QHBoxLayout()
+		hbox = QtWidgets.QHBoxLayout()
 		
-		frame = QtGui.QFrame()
-		grid = QtGui.QGridLayout(widget)
+		frame = QtWidgets.QFrame()
+		grid = QtWidgets.QGridLayout(widget)
 		
 		self.rotatetool = EMANToolButton()
 # 		self.rotatetool.setIcon(QtGui.QIcon(QtGui.QPixmap(rotateicon)))
 		self.rotatetool.setToolTip("Description")
-		self.rotatetool_label = QtGui.QLabel("Name")
+		self.rotatetool_label = QtWidgets.QLabel("Name")
 		
 		self.translatetool =EMANToolButton()
 # 		self.translatetool.setIcon(QtGui.QIcon(QtGui.QPixmap(crosshairsicon)))
 		self.translatetool.setToolTip("Description")
-		self.translatetool_label = QtGui.QLabel("Name")
+		self.translatetool_label = QtWidgets.QLabel("Name")
 		
 		self.ztranslate = EMANToolButton()
 # 		self.ztranslate.setIcon(QtGui.QIcon(QtGui.QPixmap(ztransicon)))
 		self.ztranslate.setToolTip("Description")
-		self.ztranslatetool_label = QtGui.QLabel("Name")
+		self.ztranslatetool_label = QtWidgets.QLabel("Name")
 		
 		self.scaletool = EMANToolButton()
 # 		self.scaletool.setIcon(QtGui.QIcon(QtGui.QPixmap(scaleicon)))
 		self.scaletool.setToolTip("Description")
-		self.scaletool_label = QtGui.QLabel("Name")
+		self.scaletool_label = QtWidgets.QLabel("Name")
 		
 		self.rulertool = EMANToolButton()
 # 		self.rulertool.setIcon(QtGui.QIcon(QtGui.QPixmap(rulericon)))
 		self.rulertool.setToolTip("Description")
-		self.rulertool_label = QtGui.QLabel("Name")
+		self.rulertool_label = QtWidgets.QLabel("Name")
 		
 		self.selectiontool = EMANToolButton()
 # 		self.selectiontool.setIcon(QtGui.QIcon(QtGui.QPixmap(selectionicon)))
 		self.selectiontool.setToolTip("Description")
-		self.selectiontool_label = QtGui.QLabel("Name")
+		self.selectiontool_label = QtWidgets.QLabel("Name")
 		
 		self.multiselectiontool = EMANToolButton()
 # 		self.multiselectiontool.setIcon(QtGui.QIcon(QtGui.QPixmap(multiselectoricon)))
 		self.multiselectiontool.setToolTip("Description")
-		self.multiselectiontool_label = QtGui.QLabel("Name")
+		self.multiselectiontool_label = QtWidgets.QLabel("Name")
 		
 		self.linetool = EMANToolButton()
 # 		self.linetool.setIcon(QtGui.QIcon(QtGui.QPixmap(lineicon)))
 		self.linetool.setToolTip("Description")
-		self.linetool_label = QtGui.QLabel("Name")
+		self.linetool_label = QtWidgets.QLabel("Name")
 		
 		self.cubetool = EMANToolButton()
 # 		self.cubetool.setIcon(QtGui.QIcon(QtGui.QPixmap(cubeicon)))
 		self.cubetool.setToolTip("Description")
-		self.cubetool_label = QtGui.QLabel("Name")
+		self.cubetool_label = QtWidgets.QLabel("Name")
 		
 		self.spheretool = EMANToolButton()
 # 		self.spheretool.setIcon(QtGui.QIcon(QtGui.QPixmap(sphereicon)))
 		self.spheretool.setToolTip("Description")
-		self.spheretool_label = QtGui.QLabel("Name")
+		self.spheretool_label = QtWidgets.QLabel("Name")
 		
 		self.cylindertool = EMANToolButton()
 # 		self.cylindertool.setIcon(QtGui.QIcon(QtGui.QPixmap(cylindericon)))
 		self.cylindertool.setToolTip("Description")
-		self.cylindertool_label = QtGui.QLabel("Name")
+		self.cylindertool_label = QtWidgets.QLabel("Name")
 		
 		self.conetool = EMANToolButton()
 # 		self.conetool.setIcon(QtGui.QIcon(QtGui.QPixmap(coneicon)))
 		self.conetool.setToolTip("Description")
-		self.conetool_label = QtGui.QLabel("Name")
+		self.conetool_label = QtWidgets.QLabel("Name")
 		
 		self.texttool = EMANToolButton()
 # 		self.texttool.setIcon(QtGui.QIcon(QtGui.QPixmap(texticon)))
 		self.texttool.setToolTip("Description")
-		self.texttool_label = QtGui.QLabel("Name")
+		self.texttool_label = QtWidgets.QLabel("Name")
  		
 		self.datatool = EMANToolButton()
 # 		self.datatool.setIcon(QtGui.QIcon(QtGui.QPixmap(dataicon)))
 		self.datatool.setToolTip("Description")
-		self.datatool_label = QtGui.QLabel("Name")
+		self.datatool_label = QtWidgets.QLabel("Name")
 		
 		self.apptool = EMANToolButton()
 #		self.apptool.setIcon(QtGui.QIcon(QtGui.QPixmap(appicon)))
 		self.apptool.setToolTip("Description")
-		self.apptool_label = QtGui.QLabel("Name")
+		self.apptool_label = QtWidgets.QLabel("Name")
 
 		# buttons
 		grid.addWidget(self.selectiontool,1,0)
@@ -1763,8 +1760,8 @@ class TomoSegInspector(QtGui.QWidget):
 		frame.setLayout(grid)
 		hbox.addWidget(frame)
 		
-		self.stacked_widget = QtGui.QStackedWidget()
-		self.stacked_widget.setFrameShape(QtGui.QFrame.StyledPanel)
+		self.stacked_widget = QtWidgets.QStackedWidget()
+		self.stacked_widget.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		hbox.addWidget(self.stacked_widget)
 		
 		widget.setLayout(hbox) #grid
@@ -1775,15 +1772,15 @@ class TomoSegInspector(QtGui.QWidget):
 		"""
 		This returns the treeview-control panel widget
 		"""
-		widget = QtGui.QWidget()
-		hbox = QtGui.QHBoxLayout(widget)
-		treeframe = QtGui.QFrame()
-		treeframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		widget = QtWidgets.QWidget()
+		hbox = QtWidgets.QHBoxLayout(widget)
+		treeframe = QtWidgets.QFrame()
+		treeframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		treeframe.setLayout(self._get_tree_layout(widget))
 		treeframe.setMinimumWidth(self.mintreewidth)
 		hbox.addWidget(treeframe)
-		self.stacked_widget = QtGui.QStackedWidget()
-		self.stacked_widget.setFrameShape(QtGui.QFrame.StyledPanel)
+		self.stacked_widget = QtWidgets.QStackedWidget()
+		self.stacked_widget.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		hbox.addWidget(self.stacked_widget)
 		widget.setLayout(hbox)
 		
@@ -1793,12 +1790,12 @@ class TomoSegInspector(QtGui.QWidget):
 		"""
 		Returns the tree layout
 		"""
-		tvbox = QtGui.QVBoxLayout()
+		tvbox = QtWidgets.QVBoxLayout()
 		self.tree_widget = EMQTreeWidget(parent)
 		self.tree_widget.setHeaderLabel("Choose a item")
 		tvbox.addWidget(self.tree_widget)
-		self.tree_node_button_add = QtGui.QPushButton("Add Object")
-		self.tree_node_button_remove = QtGui.QPushButton("Remove Object")
+		self.tree_node_button_add = QtWidgets.QPushButton("Add Object")
+		self.tree_node_button_remove = QtWidgets.QPushButton("Remove Object")
 		self.tree_node_slider = ValSlider(label="Seq:")
 		self.tree_node_slider.setIntonly(True)
 		self.tree_node_slider.setRange(0,1)
@@ -1970,18 +1967,18 @@ class TomoSegInspector(QtGui.QWidget):
 		"""
 		Return the utilites widget
 		"""
-		uwidget = QtGui.QWidget()
-		uvbox = QtGui.QVBoxLayout()
+		uwidget = QtWidgets.QWidget()
+		uvbox = QtWidgets.QVBoxLayout()
 		font = QtGui.QFont()
 		font.setBold(True)
 		
-		self.opensession_button = QtGui.QPushButton("Open Session")
-		self.savesession_button = QtGui.QPushButton("Save Session")
-		self.savebutton = QtGui.QPushButton("Save Image Snapshot")
+		self.opensession_button = QtWidgets.QPushButton("Open Session")
+		self.savesession_button = QtWidgets.QPushButton("Save Session")
+		self.savebutton = QtWidgets.QPushButton("Save Image Snapshot")
 		
-		self.open_tomogram_button = QtGui.QPushButton("Open Tomogram")
-		self.open_segmentation_button = QtGui.QPushButton("Open Segmentation")
-		self.save_segmentation_button = QtGui.QPushButton("Save Segmentation")
+		self.open_tomogram_button = QtWidgets.QPushButton("Open Tomogram")
+		self.open_segmentation_button = QtWidgets.QPushButton("Open Segmentation")
+		self.save_segmentation_button = QtWidgets.QPushButton("Save Segmentation")
 		
 		uvbox.addWidget(self.opensession_button)
 		uvbox.addWidget(self.savesession_button)
@@ -2006,25 +2003,25 @@ class TomoSegInspector(QtGui.QWidget):
 		"""
 		Open a session... (might want to add a warning dialog that this will close the current session)
 		"""
-		filename = QtGui.QFileDialog.getOpenFileName(self, 'Open Session', os.getcwd(), "*.eman")
+		filename = QtWidgets.QFileDialog.getOpenFileName(self, 'Open Session', os.getcwd(), "*.eman")[0]
 		
 	def _on_save_session(self):
 		"""
 		Return a list of all the child items (actually a tree of sorts)
 		"""
-		filename = QtGui.QFileDialog.getSaveFileName(self, 'Save Session', os.getcwd(), "*.eman")
+		filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Session', os.getcwd(), "*.eman")[0]
 
 	def _on_save(self):
 		"""
 		Save a snapshot of the scene
 		"""
-		filename = QtGui.QFileDialog.getSaveFileName(self, 'Save Image', os.getcwd(), "(*.tiff *.jpeg *.png)")
+		filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Image', os.getcwd(), "(*.tiff *.jpeg *.png)")[0]
 
 	def _on_open_tomogram(self):
 		"""
 		Open a session
 		"""
-		filename = QtGui.QFileDialog.getOpenFileName(self, 'Open Tomogram', os.getcwd(), "*.hdf,*.mrc")
+		filename = QtWidgets.QFileDialog.getOpenFileName(self, 'Open Tomogram', os.getcwd(), "*.hdf,*.mrc")[0]
 		#if filename:
 		#	self.scenegraph().loadSession(filename)
 		
@@ -2033,7 +2030,7 @@ class TomoSegInspector(QtGui.QWidget):
 		Open a session
 		"""
 		# Open the file
-		filename = QtGui.QFileDialog.getOpenFileName(self, 'Open Segmentation', os.getcwd(), "*.hdf,*.xml")
+		filename = QtWidgets.QFileDialog.getOpenFileName(self, 'Open Segmentation', os.getcwd(), "*.hdf,*.xml")[0]
 		#if filename:
 		#	self.scenegraph().loadSession(filename)
 		
@@ -2041,7 +2038,7 @@ class TomoSegInspector(QtGui.QWidget):
 		"""
 		Save a snapshot of the scene
 		"""
-		filename = QtGui.QFileDialog.getSaveFileName(self, 'Save Segmentation', os.getcwd(), "(*.hdf,*.xml)")
+		filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Segmentation', os.getcwd(), "(*.hdf,*.xml)")[0]
 		#if filename: # if we cancel
 		#	self.scenegraph().saveSnapShot(filename)
 		
@@ -2075,16 +2072,16 @@ class TomoSegInspector(QtGui.QWidget):
 		"""
 		pass
 
-class EMBoxViewer(QtGui.QWidget):
+class EMBoxViewer(QtWidgets.QWidget):
 	"""This is a multi-paned view showing a single boxed out particle from a larger tomogram"""
 
 	def __init__(self):
-		QtGui.QWidget.__init__(self)
+		QtWidgets.QWidget.__init__(self)
 		self.setWindowTitle("Single Particle View")
 
 		self.resize(300,300)
 
-		self.gbl = QtGui.QGridLayout(self)
+		self.gbl = QtWidgets.QGridLayout(self)
 		self.xyview = EMImage2DWidget()
 		self.gbl.addWidget(self.xyview,0,1)
 
@@ -2127,7 +2124,7 @@ class EMBoxViewer(QtGui.QWidget):
 #		self.setSizeGripEnabled(True)
 
 #		if get_platform() == "Darwin": # because OpenGL widgets in Qt don't leave room in the bottom right hand corner for the resize tool
-#			self.status = QtGui.QStatusBar()
+#			self.status = QtWidgets.QStatusBar()
 #			self.gbl.addWidget(self.status,3,0,1,2)
 #			self.margin = 0
 

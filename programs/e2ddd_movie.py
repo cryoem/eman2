@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 02/12/2013 (sludtke@bcm.edu). Updated on 08/28/16.
 # Modified by James Michael Bell, 03/27/2017 (jmbell@bcm.edu)
@@ -128,7 +125,7 @@ def main():
 
 	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel. The default is 4, and our alignment routine requires 2+ threads. Using more threads will result in faster processing times.", guitype='intbox', row=28, col=0, rowspan=1, colspan=1, mode="align,tomo")
 
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=4, help="verbose level [0-9], higner number means higher level of verboseness",guitype="intbox",row=28,col=1,rowspan=1,colspan=1,mode="align,tomo")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=4, help="verbose level [0-9], higher number means higher level of verboseness",guitype="intbox",row=28,col=1,rowspan=1,colspan=1,mode="align,tomo")
 	parser.add_argument("--debug", default=False, action="store_true", help="run with debugging output")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 
@@ -599,7 +596,7 @@ def process_movie(options,fsp,dark,gain,first,flast,step,idx):
 		t0=time()
 
 		thrtolaunch=0
-		while thrtolaunch<len(thds) or threading.active_count()>1:
+		while thrtolaunch<len(thds) or threading.active_count()>1 or not ccfs.empty():
 			if thrtolaunch<len(thds) :
 				while (threading.active_count()==options.threads ) : sleep(.01)
 				#if options.verbose :
@@ -1088,7 +1085,7 @@ def bimodal_peak_model(options,ccf):
 	s1 = 10.0
 	a2 = ncc.max()
 	s2 = 0.6
-        offset=ncc.mean()
+	offset=ncc.mean()
 
 	if options.optccf == "centerofmass":
 		#initial_guess = [x1,y1,s1,a1,s2,a2]

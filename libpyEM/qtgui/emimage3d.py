@@ -1,8 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -37,11 +33,13 @@ from __future__ import division
 from past.utils import old_div
 from builtins import range
 from EMAN2 import *
+import OpenGL
+OpenGL.ERROR_CHECKING = False
 from OpenGL import GL, GLU, GLUT
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from PyQt4 import QtCore, QtGui, QtOpenGL
-from PyQt4.QtCore import Qt
+from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
+from PyQt5.QtCore import Qt
 from e2eulerxplor import EMEulerExplorer
 from .emglobjects import Camera, Camera2, EMGLWidget, EMViewportDepthTools, EMGLProjectionViewMatrices, EMOpenGLFlagsAndTools
 from .emimage3diso import EMIsosurfaceModel
@@ -84,13 +82,6 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 		EMGLWidget.__init__(self,parent)
 		EMLightsDrawer.__init__(self)
 		EMGLProjectionViewMatrices.__init__(self)
-		
-		fmt=QtOpenGL.QGLFormat()
-		fmt.setDoubleBuffer(True)
-		fmt.setDepth(True)
-		fmt.setStencil(True)
-		fmt.setSampleBuffers(True)
-		self.setFormat(fmt)
 		
 		self.aspect=1.0
 		self.fov = 50 # field of view angle used by gluPerspective
@@ -583,7 +574,7 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 				pass
 		self.updateGL()
 
-class EMImageInspector3D(QtGui.QWidget):
+class EMImageInspector3D(QtWidgets.QWidget):
 	def set_directional_light_dir(self,d):
 		self.advanced_tab.set_directional_light_dir(d)
 	
@@ -594,63 +585,63 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.advanced_tab.set_positional_light_dir(d)
 	
 	def __init__(self,target) :
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		self.target=weakref.ref(target)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"desktop.png"))
 		
-		self.vbl = QtGui.QVBoxLayout(self)
-		self.vbl.setMargin(0)
+		self.vbl = QtWidgets.QVBoxLayout(self)
+		self.vbl.setContentsMargins(0, 0, 0, 0)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 		
-		self.hbl = QtGui.QHBoxLayout()
-		self.hbl.setMargin(2)
+		self.hbl = QtWidgets.QHBoxLayout()
+		self.hbl.setContentsMargins(2, 2, 2, 2)
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")
 		
-		#self.listwidget = QtGui.QListWidget(self)
+		#self.listwidget = QtWidgets.QListWidget(self)
 		#self.vbl.addWidget(self.listwidget)
 		
-		self.tabwidget = QtGui.QTabWidget()
+		self.tabwidget = QtWidgets.QTabWidget()
 		
-		self.hbl_check = QtGui.QHBoxLayout()
-		self.hbl_check.setMargin(0)
+		self.hbl_check = QtWidgets.QHBoxLayout()
+		self.hbl_check.setContentsMargins(0, 0, 0, 0)
 		self.hbl_check.setSpacing(6)
 		self.hbl_check.setObjectName("hbl_check")
 		
-		#self.advancedcheck = QtGui.QCheckBox("Advanced",self)
+		#self.advancedcheck = QtWidgets.QCheckBox("Advanced",self)
 		#self.hbl_check.addWidget(self.advancedcheck)
 		
-		self.hbl_buttons = QtGui.QHBoxLayout()
-		self.hbl_buttons.setMargin(0)
+		self.hbl_buttons = QtWidgets.QHBoxLayout()
+		self.hbl_buttons.setContentsMargins(0, 0, 0, 0)
 		self.hbl_buttons.setSpacing(6)
 		self.hbl_buttons.setObjectName("hbl_buttons")
 		
-		self.hbl_buttons2 = QtGui.QHBoxLayout()
-		self.hbl_buttons2.setMargin(0)
+		self.hbl_buttons2 = QtWidgets.QHBoxLayout()
+		self.hbl_buttons2.setContentsMargins(0, 0, 0, 0)
 		self.hbl_buttons2.setSpacing(6)
 		self.hbl_buttons2.setObjectName("hbl_buttons2")
 		
-		self.addIso = QtGui.QPushButton("Isosurface")
+		self.addIso = QtWidgets.QPushButton("Isosurface")
 		self.hbl_buttons.addWidget(self.addIso)
 		
-		self.addVol = QtGui.QPushButton("Volume")
+		self.addVol = QtWidgets.QPushButton("Volume")
 		self.hbl_buttons.addWidget(self.addVol)
 		
 		glflags = EMOpenGLFlagsAndTools()
 		if glflags.npt_textures_unsupported(): self.addVol.setEnabled(False)
 		
-		self.addSli = QtGui.QPushButton("Slices")
+		self.addSli = QtWidgets.QPushButton("Slices")
 		self.hbl_buttons2.addWidget(self.addSli)
 		
-		self.add_sym = QtGui.QPushButton("Sym")
+		self.add_sym = QtWidgets.QPushButton("Sym")
 		self.hbl_buttons2.addWidget(self.add_sym)
 
 		self.vbl.addLayout(self.hbl_buttons)
 		self.vbl.addLayout(self.hbl_buttons2)
 		
-		self.hbl_buttons3 = QtGui.QHBoxLayout()
-		self.delete = QtGui.QPushButton("Delete")
+		self.hbl_buttons3 = QtWidgets.QHBoxLayout()
+		self.delete = QtWidgets.QPushButton("Delete")
 		self.hbl_buttons3.addWidget(self.delete)
 		self.vbl.addLayout(self.hbl_buttons3)
 		
@@ -744,21 +735,21 @@ class EMImageInspector3D(QtGui.QWidget):
 	
 
 
-class EM3DAdvancedInspector(QtGui.QWidget,EMLightsInspectorBase):
+class EM3DAdvancedInspector(QtWidgets.QWidget,EMLightsInspectorBase):
 	
 	
 	def __init__(self,target,parent=None):
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		EMLightsInspectorBase.__init__(self)
 		self.target=weakref.ref(target)
 		self.parent=weakref.ref(parent)
 
-		self.vbl = QtGui.QVBoxLayout(self)
-		self.vbl.setMargin(0)
+		self.vbl = QtWidgets.QVBoxLayout(self)
+		self.vbl.setContentsMargins(0, 0, 0, 0)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 
-		self.tabwidget = QtGui.QTabWidget()
+		self.tabwidget = QtWidgets.QTabWidget()
 		self.tabwidget.addTab(self.get_main_tab(), "Transform")
 		self.tabwidget.addTab(self.get_light_tab(), "Lights")
 		
@@ -772,26 +763,26 @@ class EM3DAdvancedInspector(QtGui.QWidget,EMLightsInspectorBase):
 	
 	
 	def get_main_tab(self):
-		self.maintab = QtGui.QWidget()
+		self.maintab = QtWidgets.QWidget()
 		maintab = self.maintab
-		maintab.vbl = QtGui.QVBoxLayout(self.maintab)
+		maintab.vbl = QtWidgets.QVBoxLayout(self.maintab)
 		
-		self.hbl = QtGui.QHBoxLayout()
-		self.hbl.setMargin(2)
+		self.hbl = QtWidgets.QHBoxLayout()
+		self.hbl.setContentsMargins(2, 2, 2, 2)
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")
 		
-		self.persbut = QtGui.QRadioButton("Perspective")
+		self.persbut = QtWidgets.QRadioButton("Perspective")
 		self.persbut.setChecked(self.target().perspective==True)
 		
-		self.orthbut = QtGui.QRadioButton("Orthographic")
+		self.orthbut = QtWidgets.QRadioButton("Orthographic")
 		self.orthbut.setChecked(self.target().perspective==False)
 		
-		self.groupbox = QtGui.QVBoxLayout()
+		self.groupbox = QtWidgets.QVBoxLayout()
 		self.groupbox.addWidget(self.persbut)
 		self.groupbox.addWidget(self.orthbut)
 		
-		self.viewingvol = QtGui.QGroupBox("Viewing Volume")
+		self.viewingvol = QtWidgets.QGroupBox("Viewing Volume")
 		self.viewingvol.setLayout(self.groupbox)
 		
 		self.hbl.addWidget(self.viewingvol)

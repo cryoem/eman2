@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke 10/05/2009 (sludtke@bcm.edu)
 # Copyright (c) 2000-2009 Baylor College of Medicine
@@ -44,8 +41,8 @@ from eman2_gui.emimage3d import EMImage3DWidget
 from eman2_gui.valslider import ValSlider
 import weakref
 from eman2_gui.emshape import EMShape
-from PyQt4 import QtCore, QtGui
-from PyQt4.QtCore import Qt
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import Qt
 #import EMAN2db
 
 reconmodes=["gauss_2","gauss_3","gauss_5"]
@@ -88,7 +85,7 @@ feature from all slices. Generally best for uniform objects like vesicles."""
 	
 	E2end(logid)
 	
-class TrackerControl(QtGui.QWidget):
+class TrackerControl(QtWidgets.QWidget):
 	def __init__(self,app,maxshift,invert=False,seqali=False,tiltstep=2.0):
 		self.app=app
 		self.maxshift=maxshift
@@ -97,26 +94,26 @@ class TrackerControl(QtGui.QWidget):
 		self.tiltstep=tiltstep
 		
 		# the control panel
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 
-		self.gbl = QtGui.QGridLayout(self)
-		self.gbl.setMargin(0)
+		self.gbl = QtWidgets.QGridLayout(self)
+		self.gbl.setContentsMargins(0, 0, 0, 0)
 		self.gbl.setSpacing(6)
 		self.gbl.setObjectName("hbl")
 		
 		# action buttons
-		self.bcenalign=QtGui.QPushButton("Center Align")
-		self.bprojalign=QtGui.QPushButton("Proj. Realign")
-		self.btiltaxis=QtGui.QPushButton("Tilt Axis")
-		self.btiltaxisval=QtGui.QLineEdit("90.0")
-		self.bsavedata=QtGui.QPushButton("Save Data")
-		self.breconst=QtGui.QPushButton("3D Normal")
-		self.sbmode=QtGui.QSpinBox(self)
+		self.bcenalign=QtWidgets.QPushButton("Center Align")
+		self.bprojalign=QtWidgets.QPushButton("Proj. Realign")
+		self.btiltaxis=QtWidgets.QPushButton("Tilt Axis")
+		self.btiltaxisval=QtWidgets.QLineEdit("90.0")
+		self.bsavedata=QtWidgets.QPushButton("Save Data")
+		self.breconst=QtWidgets.QPushButton("3D Normal")
+		self.sbmode=QtWidgets.QSpinBox(self)
 		self.sbmode.setRange(0,2)
 		self.sbmode.setValue(0)
-		self.bmagict=QtGui.QPushButton("3D Tomofill")
-		self.bmagics=QtGui.QPushButton("3D Sph")
-		self.bmagicc=QtGui.QPushButton("3D Cyl")
+		self.bmagict=QtWidgets.QPushButton("3D Tomofill")
+		self.bmagics=QtWidgets.QPushButton("3D Sph")
+		self.bmagicc=QtWidgets.QPushButton("3D Cyl")
 		self.vslpfilt=ValSlider(self,(0,.5),"Filter",0.5,50)
 		
 		self.gbl.addWidget(self.bcenalign,0,0)

@@ -1,9 +1,8 @@
 #!/usr/bin/env python
-from __future__ import print_function
-
 #
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
-# Copyright (c) 2000-2006 The University of Texas - Houston Medical School
+# Please do not copy or modify this file without written consent of the author.
+# Copyright (c) 2000-2019 The University of Texas - Houston Medical School
 #
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
@@ -34,6 +33,8 @@ from __future__ import print_function
 
 # clean up the code, make documentation
 
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 import os
 import global_def
@@ -92,7 +93,7 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 	from applications import MPI_start_end
 	from utilities    import model_circle, model_blank, get_image, peak_search, get_im
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type, bcast_number_to_all, bcast_list_to_all
-	from statistics   import varf2d_MPI
+	from pap_statistics   import varf2d_MPI
 	from fundamentals import fft, ccf, rot_shift3D, rot_shift2D
 	from utilities    import get_params2D, set_params2D
 	from utilities    import print_msg, print_begin_msg, print_end_msg
@@ -362,7 +363,7 @@ def helicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fou
 	from applications import MPI_start_end
 	from utilities    import model_circle, model_blank, get_image, peak_search, get_im, pad
 	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type, bcast_number_to_all, bcast_list_to_all
-	from statistics   import varf2d_MPI
+	from pap_statistics   import varf2d_MPI
 	from fundamentals import fft, ccf, rot_shift3D, rot_shift2D, fshift
 	from utilities    import get_params2D, set_params2D, chunks_distribution
 	from utilities    import print_msg, print_begin_msg, print_end_msg
@@ -712,7 +713,7 @@ def get_multiplicity(U, u, i):
 
 def gaussian(sigma, a, mu, x):
 	from math import sqrt, pi
-	return a*exp(-(x-mu)**2/(2.0*sigma**2))*1.0/(sigma*sqrt(2*pi))
+	return a*exp(old_div(-(x-mu)**2,(2.0*sigma**2)))*1.0/(sigma*sqrt(2*pi))
 			
 if __name__ == "__main__":
 	main()

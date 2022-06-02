@@ -1,7 +1,7 @@
 #! /usr/bin/env python
-from __future__ import print_function
 #
-# Copyright (C) 2016  Markus Stabrin (markus.stabrin@mpi-dortmund.mpg.de)
+# Author 2016  Markus Stabrin (markus.stabrin@mpi-dortmund.mpg.de)
+# Copyright (C) 2019 Max planck institute for molecular physiology, Dortmund
 #
 
 # source code in this file under either license. However, note that the

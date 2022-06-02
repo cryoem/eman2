@@ -1,10 +1,8 @@
 #!/usr/bin/env python
-from __future__ import print_function
-
 #
-# Author: Steven Ludtke, 10/29/2008 (sludtke@bcm.edu)
-# Copyright (c) 2000-2006 Baylor College of Medicine
-#
+# Author: Pawel A. Penczek (pawel.a.penczek@uth.tmc.edu)
+# Please do not copy or modify this file without written consent of the author.
+# Copyright (c) 2000-2019 The University of Texas - Houston Medical School#
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
 # complete EMAN2 and SPARX software packages have some GPL dependencies,
@@ -329,7 +327,7 @@ def process_stack(stackfile,phaseflip=None,wiener=None,edgenorm=True,oversamp=1,
 		
 		if edgenorm : im1.process_inplace("normalize.edgemean")
 		if oversamp>1 :
-			im1.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
+			im1.clip_inplace(Region(-(old_div(ys2*(oversamp-1),2)),-(old_div(ys2*(oversamp-1),2)),ys,ys))
 		
 		fft1=im1.do_fft()
 			
@@ -430,10 +428,10 @@ def powspec_with_bg(stackfile,radius=0,edgenorm=True,oversamp=1):
 		mask2=mask1.copy()*-1+1
 #		mask1.process_inplace("mask.decayedge2d",{"width":4})
 		#mask2.process_inplace("mask.decayedge2d",{"width":4})
-		mask1.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
-		mask2.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
-		ratio1=mask1.get_attr("square_sum")/(ys*ys)	#/1.035
-		ratio2=mask2.get_attr("square_sum")/(ys*ys)
+		mask1.clip_inplace(Region(-(old_div(ys2*(oversamp-1),2)),-(old_div(ys2*(oversamp-1),2)),ys,ys))
+		mask2.clip_inplace(Region(-(old_div(ys2*(oversamp-1),2)),-(old_div(ys2*(oversamp-1),2)),ys,ys))
+		ratio1=old_div(mask1.get_attr("square_sum"),(ys*ys))	#/1.035
+		ratio2=old_div(mask2.get_attr("square_sum"),(ys*ys))
 		masks[(ys,radius)]=(mask1,ratio1,mask2,ratio2)
 		print("  RATIOS  ", ratio1, ratio2,"    ",radius)
 		#mask1.write_image("mask1.hdf",0)
@@ -451,11 +449,11 @@ def powspec_with_bg(stackfile,radius=0,edgenorm=True,oversamp=1):
 		#info(im1)
 		#if edgenorm : im1.process_inplace("normalize.edgemean")
 		if oversamp>1 :
-			im1.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
+			im1.clip_inplace(Region(-(old_div(ys2*(oversamp-1),2)),-(old_div(ys2*(oversamp-1),2)),ys,ys))
 		im2=im1.copy()
 
 		im1*=mask1
-		pp = periodogram(im1)*pf/ratio1
+		pp = old_div(periodogram(im1)*pf,ratio1)
 		fofo.append(rot_avg_table(pp))
 		Util.add_img(pav1, pp)
 		Util.add_img2(pva1, pp)
@@ -473,7 +471,7 @@ def powspec_with_bg(stackfile,radius=0,edgenorm=True,oversamp=1):
 		else: av1+=imf
 	
 		im2*=mask2
-		pp = periodogram(im2)*pf/ratio2
+		pp = old_div(periodogram(im2)*pf,ratio2)
 		Util.add_img(pav2, pp)
 		Util.add_img2(pva2, pp)
 		imf=im2.do_fft()
@@ -491,12 +489,12 @@ def powspec_with_bg(stackfile,radius=0,edgenorm=True,oversamp=1):
 	av2.set_complex(1)
 	av2.set_attr("is_intensity", 1)
 
-	av1_1d=av1.calc_radial_dist(av1.get_ysize()/2,0.0,1.0,1)
-	av2_1d=av2.calc_radial_dist(av2.get_ysize()/2,0.0,1.0,1)
+	av1_1d=av1.calc_radial_dist(old_div(av1.get_ysize(),2),0.0,1.0,1)
+	av2_1d=av2.calc_radial_dist(old_div(av2.get_ysize(),2),0.0,1.0,1)
 	pav1 /= n
-	pva1 = square_root((pva1 - pav1*pav1*n)/(n-1)/n)
+	pva1 = square_root(old_div(old_div((pva1 - pav1*pav1*n),(n-1)),n))
 	pav2 /= n
-	pva2 = square_root((pva2 - pav2*pav2*n)/(n-1)/n)
+	pva2 = square_root(old_div(old_div((pva2 - pav2*pav2*n),(n-1)),n))
 	pav1.write_image("av1.hdf",0)
 	pav2.write_image("av2.hdf",0)
 	pva1.write_image("va1.hdf",0)
@@ -519,14 +517,14 @@ def bgedge2d(stackfile,width):
 		im=EMData(stackfile,i)
 		
 		xs=im.get_xsize()		# x size of image
-		xst=int(floor(xs/ceil(xs/width)))	# step to use so we cover xs with width sized blocks
+		xst=int(floor(old_div(xs,ceil(old_div(xs,width)))))	# step to use so we cover xs with width sized blocks
 		
 		# Build a list of all boxes around the edge
 		boxl=[]
-		for x in range(0,xs-xst/2,xst): 
+		for x in range(0,xs-old_div(xst,2),xst): 
 			boxl.append((x,0))
 			boxl.append((x,xs-xst))
-		for y in range(xst,xs-3*xst/2,xst):
+		for y in range(xst,xs-old_div(3*xst,2),xst):
 			boxl.append((0,y))
 			boxl.append((xs-xst,y))
 			
@@ -569,14 +567,14 @@ def least_square(data,dolog=0):
 	denom=sum*sum_xx-sum_x*sum_x
 	if denom==0 : denom=.00001
 	
-	m=(sum*sum_xy-sum_x*sum_y)/denom
-	b=(sum_xx*sum_y-sum_x*sum_xy)/denom
+	m=old_div((sum*sum_xy-sum_x*sum_y),denom)
+	b=old_div((sum_xx*sum_y-sum_x*sum_xy),denom)
 	
 	return(m,b)
 
 def snr_safe(s,n) :
 	if s<=0 or n<=0 : return 0.0
-	return s/n-1.0
+	return old_div(s,n)-1.0
 
 def sfact_(ss):
 	"""This will return a curve shaped something like the structure factor of a typical protein. It is not designed to be
@@ -658,7 +656,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 			if cc[fz]<0 : break
 	
 		tot,totr=0,0
-		for s in range(int(st),ys/2): 
+		for s in range(int(st),old_div(ys,2)): 
 			tot+=(cc[s]**2)*(im_1d[s]-bg_1d[s])
 			totr+=cc[s]**4
 		#for s in range(int(ys/2)): tot+=(cc[s*ctf.CTFOS]**2)*ps1d[-1][s]/norm
@@ -689,7 +687,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 			if cc[fz]<0 : break
 
 		tot,totr=0,0
-		for s in range(int(st),ys/2): 
+		for s in range(int(st),old_div(ys,2)): 
 			tot+=(cc[s]**2)*(im_1d[s]-bg_1d[s])
 			totr+=cc[s]**4
 
@@ -709,7 +707,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 		for x in range(1,len(bg2)-1) : 
 			if cc[x]*cc[x+1]<0 :
 				# we search +-1 point from the zero for the minimum
-				cur=(x,min(im_1d[x]/bg_1d[x],im_1d[x-1]/bg_1d[x-1],im_1d[x+1]/bg_1d[x+1]))
+				cur=(x,min(old_div(im_1d[x],bg_1d[x]),old_div(im_1d[x-1],bg_1d[x-1]),old_div(im_1d[x+1],bg_1d[x+1])))
 				# once we have a pair of zeros we adjust the background values between
 				for xx in range(last[0],cur[0]):
 					w=(xx-last[0])/float(cur[0]-last[0])
@@ -730,8 +728,8 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 			if snr[x]>snr[x+1] and snr[x+1]<snr[x+2] : break	# we find the first minimum
 
 		snr1max=max(snr[1:x])				# find the intensity of the first peak
-		snr2max=max(snr[x+2:len(snr)/2])		# find the next highest snr peak
-		qtmp = 0.5*snr2max/snr1max
+		snr2max=max(snr[x+2:old_div(len(snr),2)])		# find the next highest snr peak
+		qtmp = old_div(0.5*snr2max,snr1max)
 		for xx in range(1,x+1): snr[xx] *= qtmp		# scale the initial peak to 50% of the next highest peak
 
 	# store the final results
@@ -763,7 +761,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 			a1 += fabs(im_1d[s]-bg_1d[s])
 		if a1==0 : a1=1.0
 		a0/=a1
-		cc=[i/a0 for i in cc]
+		cc=[old_div(i,a0) for i in cc]
 
 		er=0
 		# compute the error
@@ -787,7 +785,7 @@ def ctf_fit(im_1d,bg_1d,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False):
 			a1+=fabs(im_1d[s]-bg_1d[s])
 		if a1==0 : a1=1.0
 		a0/=a1
-		cc=[i/a0 for i in cc]
+		cc=[old_div(i,a0) for i in cc]
 		
 		er=0
 		# compute the error
@@ -1064,7 +1062,7 @@ class GUIctf(QtGui.QWidget):
 					nrto+=fabs(bgsub[i])
 			if nrto==0 : rto=1.0
 			else : rto/=nrto
-			fit=[fit[i]/rto for i in range(len(s))]
+			fit=[old_div(fit[i],rto) for i in range(len(s))]
 
 			self.guiplot.set_data((s,fit),"fit")
 			self.guiplot.setAxisParms("s (1/A)","Intensity (a.u)")

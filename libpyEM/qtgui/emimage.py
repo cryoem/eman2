@@ -1,8 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
-
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -36,6 +32,8 @@ from __future__ import absolute_import
 
 from builtins import range
 from builtins import object
+import OpenGL
+OpenGL.ERROR_CHECKING = False
 from OpenGL import GL,GLU,GLUT
 from EMAN2 import Util,EMUtil,file_exists,IMAGE_UNKNOWN,gimme_image_dimensions3D,EMData
 import os

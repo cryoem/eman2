@@ -28,10 +28,6 @@
  *
  * */
 
-#ifdef _WIN32
-	#pragma warning(disable:4819)
-#endif	//_WIN32
-
 // Boost Includes ==============================================================
 #include <boost/python.hpp>
 
@@ -57,7 +53,7 @@ using namespace boost::python;
 
 // Declarations ================================================================
 namespace  {
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_read_image_overloads_1_5, read_image, 1, 5)
+//BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_read_image_overloads_1_6, read_image, 1, 6)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_read_binedimage_overloads_1_5, read_binedimage, 1, 5)
 
@@ -67,11 +63,9 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_append_image_overloads_1_3, a
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_write_lst_overloads_1_4, write_lst, 1, 4)
 
-//BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_print_image_overloads_0_2, EMAN::EMData::print_image, 0, 2)
+//BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMData_read_images_overloads_1_4, EMAN::EMData::read_images, 1, 4)
 
-BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMData_read_images_overloads_1_3, EMAN::EMData::read_images, 1, 3)
-
-BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMData_read_images_ext_overloads_3_5, EMAN::EMData::read_images_ext, 3, 5)
+BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMData_write_images_overloads_2_7, EMAN::EMData::write_images, 2, 7)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_set_size_overloads_1_4, EMAN::EMData::set_size, 1, 4)
 
@@ -105,9 +99,9 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_set_array_offsets_overloads_0
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_real2complex_overloads_0_1, EMAN::EMData::real2complex, 0, 1)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_FH2F_overloads_2_3, EMAN::EMData::FH2F, 2, 3)
+//BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_FH2F_overloads_2_3, EMAN::EMData::FH2F, 2, 3)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_FH2Real_overloads_2_3, EMAN::EMData::FH2Real, 2, 3)
+//BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_FH2Real_overloads_2_3, EMAN::EMData::FH2Real, 2, 3)
 
 //BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_fourier_shell_correlation_overloads_1_2, EMAN::EMData::calc_fourier_shell_correlation, 1, 2)
 
@@ -227,6 +221,75 @@ public:
 private:
     PyThreadState * m_thread_state;
 };
+void EMData_read_image_wrapper1(EMData &ths, const string & filename) 
+{
+	GILRelease rel;
+	
+	ths.read_image(filename);
+}
+
+void EMData_read_image_wrapper2(EMData &ths, const string & filename, int img_index) 
+{
+	GILRelease rel;
+	
+	ths.read_image(filename,img_index);
+}
+
+void EMData_read_image_wrapper3(EMData &ths, const string & filename, int img_index,bool header_only ) 
+{
+	GILRelease rel;
+	
+	ths.read_image(filename,img_index,header_only);
+}
+
+void EMData_read_image_wrapper4(EMData &ths, const string & filename, int img_index,bool header_only ,const Region *region) 
+{
+	GILRelease rel;
+	
+	ths.read_image(filename,img_index,header_only,region);
+}
+
+void EMData_read_image_wrapper5(EMData &ths, const string & filename, int img_index,bool header_only ,const Region *region, bool is_3d) 
+{
+	GILRelease rel;
+	
+	ths.read_image(filename,img_index,header_only,region,is_3d);
+}
+
+void EMData_read_image_wrapper6(EMData &ths, const string & filename, int img_index,bool header_only ,const Region *region, bool is_3d,EMUtil::ImageType imgtype) 
+{
+	GILRelease rel;
+	
+	ths.read_image(filename,img_index,header_only,region,is_3d,imgtype);
+}
+
+static vector<std::shared_ptr<EMData>> EMData_read_images_wrapper1(const string &filename)
+{
+	GILRelease rel;
+	
+	return EMData::read_images(filename);
+}
+
+static vector<std::shared_ptr<EMData>> EMData_read_images_wrapper2(const string &filename,vector<int> img_indices)
+{
+	GILRelease rel;
+	
+	return EMData::read_images(filename,img_indices);
+}
+
+static vector<std::shared_ptr<EMData>> EMData_read_images_wrapper3(const string &filename,vector<int> img_indices,EMUtil::ImageType imgtype)
+{
+	GILRelease rel;
+	
+	return EMData::read_images(filename,img_indices,imgtype);
+}
+
+static vector<std::shared_ptr<EMData>> EMData_read_images_wrapper4(const string &filename,vector<int> img_indices,EMUtil::ImageType imgtype,bool header_only)
+{
+	GILRelease rel;
+	
+	return EMData::read_images(filename,img_indices,imgtype,header_only);
+}
 
 EMData *EMData_get_clip_1(EMData &ths, Region rgn) {
 	GILRelease rel;
@@ -252,6 +315,18 @@ void EMData_add_wrapper(EMData &ths, EMData &to) {
 	ths.add(to);
 }
 
+EMData *EMData_calc_ccf_masked_wrapper1(EMData &ths, EMData *with) {
+	GILRelease rel;
+	
+	return ths.calc_ccf_masked(with);
+}
+
+EMData *EMData_calc_ccf_masked_wrapper3(EMData &ths, EMData *with, EMData *withsq, EMData *mask) {
+	GILRelease rel;
+	
+	return ths.calc_ccf_masked(with,withsq,mask);
+}
+
 EMData *EMData_calc_ccf_wrapper3(EMData &ths, EMData *with, fp_flag fpflag, bool center) {
 	GILRelease rel;
 	
@@ -274,6 +349,11 @@ EMData *EMData_calc_ccf_wrapper0(EMData &ths) {
 	GILRelease rel;
 	
 	return ths.calc_ccf();
+}
+
+IntPoint EMData_calc_max_location_wrap_wrapper(EMData &ths,const int maxdx, const int maxdy, const int maxdz) {
+	GILRelease rel;
+	return ths.calc_max_location_wrap(maxdx, maxdy, maxdz, NULL);
 }
 
 vector<float> EMData_calc_fourier_shell_correlation_wrapper1(EMData &ths, EMData *with) {
@@ -535,17 +615,25 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 //    class_< EMAN::EMData, std::auto_ptr<EMAN::EMData> >("EMData", init<  >())
 	.def_pickle(EMData_pickle_suite())
 	.def(init< const EMAN::EMData& >(args("that"), "Construct from an EMData (copy constructor).\nPerforms a deep copy.\n \nthat - the EMData to copy"))
-	.def(init< const std::string&, optional< int > >(args("filename", "image_index"), "Construct from an image file.\n \nfilename - the image file name\nimage_index the image index for stack image file(default = 0)"))
-	.def(init< int, int, optional< int, bool > >(args("nx", "ny", "nz", "is_real"), "makes an image of the specified size, either real or complex.\nFor complex image, the user would specify the real-space dimensions.\n \nnx - size for x dimension\nny - size for y dimension\nnz size for z dimension(default=1)\nis_real - boolean to specify real(true) or complex(false) image(default=True)"))
+	.def(init< const std::string&, boost::python::optional< int > >(args("filename", "image_index"), "Construct from an image file.\n \nfilename - the image file name\nimage_index the image index for stack image file(default = 0)"))
+	.def(init< int, int, boost::python::optional< int, bool > >(args("nx", "ny", "nz", "is_real"), "makes an image of the specified size, either real or complex.\nFor complex image, the user would specify the real-space dimensions.\n \nnx - size for x dimension\nny - size for y dimension\nnz size for z dimension(default=1)\nis_real - boolean to specify real(true) or complex(false) image(default=True)"))
 	.add_static_property("totalalloc", make_getter(EMAN::EMData::totalalloc), make_setter(EMAN::EMData::totalalloc))
-	.def("read_image", &EMAN::EMData::read_image, EMAN_EMData_read_image_overloads_1_5(args("filename", "img_index", "header_only", "region", "is_3d"), "read an image file and stores its information to this EMData object.\n\nIf a region is given, then only read a\nregion of the image file. The region will be this\nEMData object. The given region must be inside the given\nimage file. Otherwise, an error will be created.\n\nfilename The image file name.\nimg_index The nth image you want to read.\nheader_only To read only the header or both header and data.\nregion To read only a region of the image.\nis_3d  Whether to treat the image as a single 3D or a set of 2Ds. This is a hint for certain image formats which has no difference between 3D image and set of 2Ds.\nexception ImageFormatException\nexception ImageReadException"))
+// NOTE: important that read/write image functions are NOT made threadsafe (releasing GIL). HDF5 is not threadsafe!
+	.def("read_image", &EMData_read_image_wrapper1,args("filename"), "read an image file and stores its information to this EMData object.\n\nIf a region is given, then only read a\nregion of the image file. The region will be this\nEMData object. The given region must be inside the given\nimage file. Otherwise, an error will be created.\n\nfilename The image file name.\nimg_index The nth image you want to read.\nheader_only To read only the header or both header and data.\nregion To read only a region of the image.\nis_3d  Whether to treat the image as a single 3D or a set of 2Ds. This is a hint for certain image formats which has no difference between 3D image and set of 2Ds.\nexception ImageFormatException\nexception ImageReadException")
+	.def("read_image", &EMData_read_image_wrapper2,args("filename", "img_index"), "read an image file and stores its information to this EMData object.\n\nIf a region is given, then only read a\nregion of the image file. The region will be this\nEMData object. The given region must be inside the given\nimage file. Otherwise, an error will be created.\n\nfilename The image file name.\nimg_index The nth image you want to read.\nheader_only To read only the header or both header and data.\nregion To read only a region of the image.\nis_3d  Whether to treat the image as a single 3D or a set of 2Ds. This is a hint for certain image formats which has no difference between 3D image and set of 2Ds.\nexception ImageFormatException\nexception ImageReadException")
+	.def("read_image", &EMData_read_image_wrapper3,args("filename", "img_index", "header_only"), "read an image file and stores its information to this EMData object.\n\nIf a region is given, then only read a\nregion of the image file. The region will be this\nEMData object. The given region must be inside the given\nimage file. Otherwise, an error will be created.\n\nfilename The image file name.\nimg_index The nth image you want to read.\nheader_only To read only the header or both header and data.\nregion To read only a region of the image.\nis_3d  Whether to treat the image as a single 3D or a set of 2Ds. This is a hint for certain image formats which has no difference between 3D image and set of 2Ds.\nexception ImageFormatException\nexception ImageReadException")
+	.def("read_image", &EMData_read_image_wrapper4,args("filename", "img_index", "header_only", "region"), "read an image file and stores its information to this EMData object.\n\nIf a region is given, then only read a\nregion of the image file. The region will be this\nEMData object. The given region must be inside the given\nimage file. Otherwise, an error will be created.\n\nfilename The image file name.\nimg_index The nth image you want to read.\nheader_only To read only the header or both header and data.\nregion To read only a region of the image.\nis_3d  Whether to treat the image as a single 3D or a set of 2Ds. This is a hint for certain image formats which has no difference between 3D image and set of 2Ds.\nexception ImageFormatException\nexception ImageReadException")
+	.def("read_image", &EMData_read_image_wrapper5,args("filename", "img_index", "header_only", "region", "is_3d"), "read an image file and stores its information to this EMData object.\n\nIf a region is given, then only read a\nregion of the image file. The region will be this\nEMData object. The given region must be inside the given\nimage file. Otherwise, an error will be created.\n\nfilename The image file name.\nimg_index The nth image you want to read.\nheader_only To read only the header or both header and data.\nregion To read only a region of the image.\nis_3d  Whether to treat the image as a single 3D or a set of 2Ds. This is a hint for certain image formats which has no difference between 3D image and set of 2Ds.\nexception ImageFormatException\nexception ImageReadException")
+	.def("read_image", &EMData_read_image_wrapper6,args("filename", "img_index", "header_only", "region", "is_3d", "imgtype"), "read an image file and stores its information to this EMData object.\n\nIf a region is given, then only read a\nregion of the image file. The region will be this\nEMData object. The given region must be inside the given\nimage file. Otherwise, an error will be created.\n\nfilename The image file name.\nimg_index The nth image you want to read.\nheader_only To read only the header or both header and data.\nregion To read only a region of the image.\nis_3d  Whether to treat the image as a single 3D or a set of 2Ds. This is a hint for certain image formats which has no difference between 3D image and set of 2Ds.\nexception ImageFormatException\nexception ImageReadException")
 	.def("read_binedimage", &EMAN::EMData::read_binedimage, EMAN_EMData_read_binedimage_overloads_1_5(args("filename", "img_index", "binfactor", "fast", "is_3d"), "read an image file and stores its information to this EMData object.\nfilename The image file name.\nimg_index The nth image you want to read.\nbinfactor The amount by which to bin by. Must be an integer\nfast bin very binfactor xy slice otherwise meanshrink z slice\nis_3d  Whether to treat the image as a single 3D or a set of 2Ds. This is a hint for certain image formats which has no difference between 3D image and set of 2Ds.\nexception ImageFormatException\nexception ImageReadException"))
 	.def("write_image", &EMAN::EMData::write_image, EMAN_EMData_write_image_overloads_1_7(args("filename", "img_index", "imgtype", "header_only", "region", "filestoragetype", "use_host_endian"), "write the header and data out to an image.\n\nIf the img_index = -1, append the image to the given image file.\n\nIf the given image file already exists, this image\nformat only stores 1 image, and no region is given, then\ntruncate the image file  to  zero length before writing\ndata out. For header writing only, no truncation happens.\n\nIf a region is given, then write a region only.\n\nfilename - The image file name.\nimg_index - The nth image to write as.\nimgtype - Write to the given image format type. if not specified, use the 'filename' extension to decide.\nheader_only - To write only the header or both header and data.\nregion - Define the region to write to.\nfilestoragetype - The image data type used in the output file.\nuse_host_endian - To write in the host computer byte order.\n\nexception - ImageFormatException\nexception ImageWriteException"))
 	.def("append_image", &EMAN::EMData::append_image, EMAN_EMData_append_image_overloads_1_3(args("filename", "imgtype", "header_only"), "append to an image file; If the file doesn't exist, create one.\nfilename - The image file name.\nimgtype - Write to the given image format type. if not specified, use the 'filename' extension to decide.\nheader_only - To write only the header or both header and data."))
 	.def("write_lst", &EMAN::EMData::write_lst, EMAN_EMData_write_lst_overloads_1_4(args("filename", "reffile", "refn", "comment"), "Append data to a LST image file.\nfilename - The LST image file name.\nreffile - Reference file name.\nrefn The reference file number.\ncomment - The comment to the added reference file."))
-//	.def("print_image", &EMAN::EMData::print_image, EMAN_EMData_print_image_overloads_0_2(args("filename", "output_stream"), "Print the image data to a file stream (standard out by default).\nfilename - image file to be printed.\noutput_stream - Output stream; cout by default."))
-	.def("read_images", &EMAN::EMData::read_images, EMAN_EMData_read_images_overloads_1_3(args("filename", "img_indices", "header_only"),"Read a set of images from file specified by 'filename'.\nWhich images are read is set by 'img_indices'.\nfilename The image file name.\nimg_indices Which images are read. If it is empty, all images are read. If it is not empty, only those in this array are read.\nheader_only If true, only read image header. If false, read both data and header.\nreturn The set of images read from filename."))
-	.def("read_images_ext", &EMAN::EMData::read_images_ext, EMAN_EMData_read_images_ext_overloads_3_5(args("filename", "img_index_start", "img_index_end", "header_only", "ext"), "Read a set of images from file specified by 'filename'. If\nthe given 'ext' is not empty, replace 'filename's extension it.\nImages with index from img_index_start to img_index_end are read.\n \nfilename - The image file name.\nimg_index_start Starting image index.\nimg_index_end - Ending image index.\nheader_only - If true, only read image header. If false, read both data and header.\next - The new image filename extension.\n \nreturn The set of images read from filename."))
+	.def("read_images", &EMData_read_images_wrapper1,args("filename"),"Read a set of images from file specified by 'filename'.\nWhich images are read is set by 'img_indices'.\nfilename The image file name.\nimg_indices Which images are read. If it is empty, all images are read. If it is not empty, only those in this array are read.\nheader_only If true, only read image header. If false, read both data and header.\nreturn The set of images read from filename.")
+	.def("read_images", &EMData_read_images_wrapper2,args("filename", "img_indices"),"Read a set of images from file specified by 'filename'.\nWhich images are read is set by 'img_indices'.\nfilename The image file name.\nimg_indices Which images are read. If it is empty, all images are read. If it is not empty, only those in this array are read.\nheader_only If true, only read image header. If false, read both data and header.\nreturn The set of images read from filename.")
+	.def("read_images", &EMData_read_images_wrapper3,args("filename", "img_indices", "imgtype"),"Read a set of images from file specified by 'filename'.\nWhich images are read is set by 'img_indices'.\nfilename The image file name.\nimg_indices Which images are read. If it is empty, all images are read. If it is not empty, only those in this array are read.\nheader_only If true, only read image header. If false, read both data and header.\nreturn The set of images read from filename.")
+	.def("read_images", &EMData_read_images_wrapper4,args("filename", "img_indices", "imgtype", "header_only"),"Read a set of images from file specified by 'filename'.\nWhich images are read is set by 'img_indices'.\nfilename The image file name.\nimg_indices Which images are read. If it is empty, all images are read. If it is not empty, only those in this array are read.\nheader_only If true, only read image header. If false, read both data and header.\nreturn The set of images read from filename.")
+	.def("write_images", &EMAN::EMData::write_images, EMAN_EMData_write_images_overloads_2_7(args("filename", "imgs", "imgtype", "header_only", "region", "filestoragetype", "use_host_endian"),"Write a set of images to file specified by 'filename'.\nWhich images are written is set by 'imgs'.\nfilename The image file name.\\n\\nIf a region is given, then write a region only.\\n\\nfilename - The image file name.\\nimgs - Images to write.\\nimgtype - Write to the given image format type. if not specified, use the 'filename' extension to decide.\\nheader_only - To write only the header or both header and data.\\nregion - Define the region to write to.\\nfilestoragetype - The image data type used in the output file.\\nuse_host_endian - To write in the host computer byte order.\\n\\nreturn True if images written successfully to filename."))
 	.def("get_fft_amplitude", &EMAN::EMData::get_fft_amplitude, return_value_policy< manage_new_object >(), "return the amplitudes of the FFT including the left half\n \nreturn The current FFT image's amplitude image.\nexception - ImageFormatException If the image is not a complex image.")
 	.def("get_fft_amplitude2D", &EMAN::EMData::get_fft_amplitude2D, return_value_policy< manage_new_object >(), "return the amplitudes of the 2D FFT including the left half, PRB\n \nreturn The current FFT image's amplitude image.\nexception - ImageFormatException If the image is not a complex image.")
 	.def("get_fft_phase", &EMAN::EMData::get_fft_phase, return_value_policy< manage_new_object >(), "return the phases of the FFT including the left half\n \nreturn The current FFT image's phase image.\nexception - ImageFormatException If the image is not a complex image.")
@@ -555,7 +643,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("calc_sigma_diff", &EMAN::EMData::calc_sigma_diff, "Calculates sigma above and below the mean and returns the\ndifference between them.\n \nreturn The difference between sigma above and below the mean.")
 	.def("calc_min_location", &EMAN::EMData::calc_min_location, "Calculates the coordinates of the minimum-value pixel.\n \nreturn The coordinates of the minimum-value pixel.")
 	.def("calc_max_location", &EMAN::EMData::calc_max_location, "Calculates the coordinates of the maximum-value pixel.\n \nreturn The coordinates of the maximum-value pixel.")
-	.def("calc_max_location_wrap", &EMAN::EMData::calc_max_location_wrap, "Calculates the wrapped coordinates of the maximum value.\nThis function is useful in the context of Fourier correlation.\nyou can call this function to find the correct translational shift when using calc_ccf etc.\n \nreturn the wrapped coordinates of the maximum")
+	.def("calc_max_location_wrap", EMData_calc_max_location_wrap_wrapper, "Calculates the wrapped coordinates of the maximum value.\nThis function is useful in the context of Fourier correlation.\nyou can call this function to find the correct translational shift when using calc_ccf etc.\n \nreturn the wrapped coordinates of the maximum")
 	.def("calc_max_location_wrap_intp", &EMAN::EMData::calc_max_location_wrap_intp, "Calculates the wrapped coordinates of the maximum value with interpolation.\nThis function is useful in the context of Fourier correlation.\nyou can call this function to find the correct translational shift when using calc_ccf etc.\n \nreturn the wrapped coordinates of the maximum")
 	.def("calc_center_of_mass", &EMAN::EMData::calc_center_of_mass, "Calculate the center of mass with a threshold (eg - 0 means use only positive values)")
 	.def("calc_min_index", &EMAN::EMData::calc_min_index, "Calculates the index of minimum-value pixel when assuming\nall pixels are in a 1D array.\n \nreturn Index of the minimum-value pixel.")
@@ -582,7 +670,6 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("get_3dview", (EMAN::MArray3D (EMAN::EMData::*)() const)&EMAN::EMData::get_3dview, "Get image raw pixel data in a 3D multi-array format.\nThe array shares the memory space with the image data.\nNotice: the subscription order is d[z][y][x] in Python, it's d[x][y][z] in C++\nIt should be used on 3D image only.\n \nreturn 3D multi-array format of the raw data.")
 	.def("get_2dcview", (EMAN::MCArray2D (EMAN::EMData::*)() const)&EMAN::EMData::get_2dcview, "Get complex image raw pixel data in a 2D multi-array format.\nThe array shares the memory space with the image data.\nIt should be used on 2D image only.\n \nreturn 2D multi-array format of the raw data.")
 	.def("get_3dcview", (EMAN::MCArray3D (EMAN::EMData::*)() const)&EMAN::EMData::get_3dcview, "Get complex image raw pixel data in a 3D multi-array format.\nThe array shares the memory space with the image data.\nIt should be used on 3D image only.\n \nreturn 3D multi-array format of the raw data.")
-	.def("get_3dcviewptr", &EMAN::EMData::get_3dcviewptr, return_value_policy< reference_existing_object >(), "Get pointer to a complex image raw pixel data in a 3D multi-array format.\nThe array shares the memory space with the image data.\nIt should be used on 3D image only.\n \nreturn Pointer to a 3D multi-array format of the raw data.")
 	.def("get_2dview", (EMAN::MArray2D (EMAN::EMData::*)(int, int) const)&EMAN::EMData::get_2dview, args("x0, y0"), "Get image raw pixel data in a 2D multi-array format.\nThe data coordinates is translated by (x0,y0) such that\narray[y0][x0] points to the pixel at the origin location.\nthe data coordiates translated by (x0,y0). The\narray shares the memory space with the image data.\nIt should be used on 2D image only.\n \nx0 - X-axis translation amount.\ny0 - Y-axis translation amount.\n \nreturn 2D multi-array format of the raw data.")
 	.def("get_3dview", (EMAN::MArray3D (EMAN::EMData::*)(int, int, int) const)&EMAN::EMData::get_3dview, args("x0, y0", "z0"), "Get image raw pixel data in a 3D multi-array format. The\ndata coordinates is translated by (x0,y0,z0) such that\narray[z0][y0][x0] points to the pixel at the origin location.\nthe data coordiates translated by (x0,y0,z0). The\narray shares the memory space with the image data.\nIt should be used on 3D image only.\n \nx0 - X-axis translation amount.\ny0 - Y-axis translation amount.\nz0 - Z-axis translation amount.\n \nreturn 3D multi-array format of the raw data.")
 	.def("get_2dcview", (EMAN::MCArray2D (EMAN::EMData::*)(int, int) const)&EMAN::EMData::get_2dcview, args("x0, y0"), "Get complex image raw pixel data in a 2D multi-array format. The\ndata coordinates is translated by (x0,y0) such that\narray[y0][x0] points to the pixel at the origin location.\nthe data coordiates translated by (x0,y0). The\narray shares the memory space with the image data.\nIt should be used on 2D image only.\n \nx0 - X-axis translation amount.\ny0 - Y-axis translation amount.\n \nreturn 2D multi-array format of the raw data.")
@@ -602,6 +689,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("get_ysize", &EMAN::EMData::get_ysize, "Get the image y-dimensional size.\n \nreturn Image y-dimensional size.")
 	.def("get_zsize", &EMAN::EMData::get_zsize, "Get the image z-dimensional size.\n \nreturn Image z-dimensional size.")
 	.def("get_size", &EMAN::EMData::get_size, "Get the number of allocated floats in the image (nx*ny*nz)\n \nreturn nx*ny*nz")
+	.def("get_sizes", &EMAN::EMData::get_sizes, "Get the image x-, y-, z-dimensional sizes.\n \nreturn IntSize(x-dim size, y-dim size, z-dim size).")
 // 	.def("get_data_char", &EMAN::EMData::get_data_char, return_value_policy<reference_existing_object>(),"Get the binary pixel data as a raw uchar pointer")
 	.def("get_data_as_vector", &EMAN::EMData::get_data_as_vector, "Get the pixel data as a vector\n \nreturn a vector containing the pixel data.")
 	.def("get_data_string",&EMAN::EMData::get_data_pickle,"Returns a string representation of the floating point data in the image")
@@ -692,6 +780,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("mult", (void (EMAN::EMData::*)(float) )&EMAN::EMData::mult, args("f"), "multiply a float number to each pixel value of the image.\n \nf - The float multiplied to 'this' image.")
 	.def("div", (void (EMAN::EMData::*)(float) )&EMAN::EMData::div, args("f"), "make each pixel value divided by a float number.\n \nf - The float number 'this' image divided by.")
 	.def("div", (void (EMAN::EMData::*)(const EMAN::EMData&) )&EMAN::EMData::div, args("image"), "make each pixel value divided by pixel value of another same size image.\n \nimage - The image 'this' image divided by.\n \nexception - ImageFormatException If the 2 images are not same size.")
+	.def("update_min", (void (EMAN::EMData::*)(const EMAN::EMData&) )&EMAN::EMData::update_min, args("image"), "Each pixel will become the smaller of the values from the original image or the provided image. \nexception - ImageFormatException If either image is complex.")
 	.def("to_zero", &EMAN::EMData::to_zero, "Set all the pixel value = 0.")
 	.def("to_one", &EMAN::EMData::to_one, "Set all the pixel value = 1.")
 	.def("dot", &EMAN::EMData::dot, args("with"), "Dot product 2 images. The 2 images must be of same size.\nShortcut for cmp('dot').\n \nwith - The image to do dot product with.\n \nreturn The dot product result.\nexception - NullPointerException if with is a NULL image.")
@@ -736,11 +825,15 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("amplitude", &EMAN::EMData::amplitude, return_value_policy< manage_new_object >(), "return amplitude part of a complex image as a real image format\n \nreturn EMData * a real image which is the amplitude part of this image\nexception - InvalidCallException if this image is a real image or is in real/imaginary format")
 	.def("phase", &EMAN::EMData::phase, return_value_policy< manage_new_object >(), "return phase part of a complex image as a real image format\n \nreturn EMData * a real image which is the phase part of this image\nexception - InvalidCallException if this image is a real image or is in real/imaginary format")
 	.def("real2complex", &EMAN::EMData::real2complex, EMAN_EMData_real2complex_overloads_0_1(args("img"), "create a complex image from a real image, this complex image is in real/imaginary format\n \nimg - give an artificial imaginary part, default to 0.0.\nreturn a complex image which is generated from a real image\nexception  - InvalidCallException this function can not be called by complex image")[ return_value_policy< manage_new_object >() ])
-	.def("real2FH", &EMAN::EMData::real2FH, return_value_policy< manage_new_object >(), args("OverSamplekB"), "returns the fourier harmonic transform (FH) image of the current\nimage (in real space). The current image is not changed. The result is in\nreal/imaginary format. The FH switch is set on.\n \nOverSamplekB - is a parameter controlling the fineness of the Fourier sampling\n \nreturn the Fourier Harmonic image\n")
-	.def("FH2F", &EMAN::EMData::FH2F, EMAN_EMData_FH2F_overloads_2_3(args("Size", "OverSamplekB", "IntensityFlag"), "returns the fourier version of the image from the FH version.\nThe current image is not changed. The result is in real/imaginary format.\nThe FH switch is set off.\n \nSize - is the size of the image to be returned\nOverSamplekB - is a parameter controlling the fineness of the Fourier sampling\nIntensityFlag - =0 is the usual; =1 means that the input was an intensity, default to 0.\n \nreturn the shuffled version of the FFT")[ return_value_policy< manage_new_object >() ])
-	.def("FH2Real", &EMAN::EMData::FH2Real, EMAN_EMData_FH2Real_overloads_2_3(args("Size", "OverSamplekB", "IntensityFlag"), "returns the real version of the image from the FH version.\nThe current image is not changed.\nThe result is in real format.\n \nSize - is the size of the image to be returned\nOverSamplekB - is a parameter controlling the fineness of the Fourier sampling\nIntensityFlag - =0 is the usual; =1 means that the input was an intensity, default to 0.\n \nreturn the real version of the data")[ return_value_policy< manage_new_object >() ])
-	.def("rotavg", &EMAN::EMData::rotavg, return_value_policy< manage_new_object >(), "Create a (1-D) rotationally averaged image.\n \nreturn 1-D rotationally-averaged image\n \nexception - ImageDimensionException If 'this' image is 1D.")
-	.def("rotavg_i", &EMAN::EMData::rotavg_i, return_value_policy< manage_new_object >(), "Create a 2-D or 3-D rotationally averaged image.\n \nreturn 2-D or 3-D rotationally-averaged image\nexception - ImageDimensionException If 'this' image is 1D.")
+	//.def("real2FH", &EMAN::EMData::real2FH, return_value_policy< manage_new_object >(), args("OverSamplekB"), "returns the fourier harmonic transform (FH) image of the current\nimage (in real space). The current image is not changed. The result is in\nreal/imaginary format. The FH switch is set on.\n \nOverSamplekB - is a parameter controlling the fineness of the Fourier sampling\n \nreturn the Fourier Harmonic image\n")
+	//.def("FH2F", &EMAN::EMData::FH2F, EMAN_EMData_FH2F_overloads_2_3(args("Size", "OverSamplekB", "IntensityFlag"), "returns the fourier version of the image from the FH version.\nThe current image is not changed. The result is in real/imaginary format.\nThe FH switch is set off.\n \nSize - is the size of the image to be returned\nOverSamplekB - is a parameter controlling the fineness of the Fourier sampling\nIntensityFlag - =0 is the usual; =1 means that the input was an intensity, default to 0.\n \nreturn the shuffled version of the FFT")[ return_value_policy< manage_new_object >() ])
+	//.def("FH2Real", &EMAN::EMData::FH2Real, EMAN_EMData_FH2Real_overloads_2_3(args("Size", "OverSamplekB", "IntensityFlag"), "returns the real version of the image from the FH version.\nThe current image is not changed.\nThe result is in real format.\n \nSize - is the size of the image to be returned\nOverSamplekB - is a parameter controlling the fineness of the Fourier sampling\nIntensityFlag - =0 is the usual; =1 means that the input was an intensity, default to 0.\n \nreturn the real version of the data")[ return_value_policy< manage_new_object >() ])
+	.def("rotavg", &EMAN::EMData::rotavg, return_value_policy< manage_new_object >(), args("mask"),"Create a (1-D) rotationally averaged image.\n \nreturn 1-D rotationally-averaged image\n \nexception - ImageDimensionException If 'this' image is 1D.")
+	.def("rotavg_i", &EMAN::EMData::rotavg_i, return_value_policy< manage_new_object >(), args("mask"),"Create a 2-D or 3-D rotationally averaged image.\n \nreturn 2-D or 3-D rotationally-averaged image\nexception - ImageDimensionException If 'this' image is 1D.")
+	.def("rotavg_sphire", &EMAN::EMData::rotavg_sphire, return_value_policy< manage_new_object >(), "Create a (1-D) rotationally averaged image.\n \nreturn 1-D rotationally-averaged image\n \nexception - ImageDimensionException If 'this' image is 1D.")
+	.def("rotavg_i_sphire", &EMAN::EMData::rotavg_i_sphire, return_value_policy< manage_new_object >(), "Create a 2-D or 3-D rotationally averaged image.\n \nreturn 2-D or 3-D rotationally-averaged image\nexception - ImageDimensionException If 'this' image is 1D.")
+
+
 	.def("mult_radial", &EMAN::EMData::mult_radial, return_value_policy< manage_new_object >(), args("radial"), "Multiply radially a 2-D or 3-D image by a 1-D image.\n \nradial - the 1-D image multiply to\n \nreturn 2-D or 3-D radially multiplied image\nexception - ImageDimensionException If 'this' image is 1D.")
 	.def("cog", &EMAN::EMData::cog, "Calculates the Center of Gravity\nand the Radius of Gyration of the image.\n \nreturns the mass and the radius as vectors.")
 	.def("calc_fourier_shell_correlation", EMData_calc_fourier_shell_correlation_wrapper1,args("with"), "Calculate CCF in Fourier space as a function of spatial frequency\nbetween a pair of 2-3D images (corners not included).\nThe input image 'with' must have the same size to 'this' image.\nInput images can be either real or Fourier in arbitrary combination.\n \nwith -The image used to caculate the fourier shell.\n\nexception - ImageFormatException If the 2 images are not same size.\nexception - NullPointerException if the input image is null\nexception - Cannot calculate FSC for 1D images\nreturn  Vector of 3*k FSC results (frequencies, FSC values, error)\nk - length of FSC curve, depends on dimensions of the image and ring width\n1 column - normalized frequency [0,0.5]\n2 column - FSC,\n3 column - error of the FSC = 1/sqrt(n), where n is the number of Fourier coefficients within given shell.")
@@ -767,7 +860,9 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("rot_scale_trans2D_background", &EMAN::EMData::rot_scale_trans2D_background, EMAN_EMData_rot_scale_trans2D_background_overloads_1_4(args("ang", "delx", "dely", "scale"), "Rotate-Shift-Scale image\nIn contrast to rot_scale_trans2D, wrap aroud is not done circulantly so as to\nprevent artifacts from occurring.\nIf the image is a volume, then all slices are\nrotated/translated/scaled.\n \nang - Rotation angle in degrees.\ndelx - Amount to shift rotation origin along x(default=0.0)\ndely - Amount to shift rotation origin along y(default=0.0)\nscale - Scaling factor (default=1.0)\n \nreturn New rotated/shifted/scaled image\nexception - ImageDimensionException can not rotate 1 D image\nexception - ImageDimensionException can not rotate 3 D image")[ return_value_policy< manage_new_object >() ])
 	.def("rot_scale_trans", &EMAN::EMData::rot_scale_trans, return_value_policy< manage_new_object >(), args("RA"), "Rotate-Shift-Scale-Circulantly image\nIf the image is a volume, then all slices are\nrotated/translated/scaled.\n \nRA - Transform object\n \nreturn New rotated/shifted/scaled image\nexception - ImageDimensionException can not rotate 1 D image")
 	.def("rot_scale_trans_background", &EMAN::EMData::rot_scale_trans_background, return_value_policy< manage_new_object >(), args("RA"), "Rotate-Shift-Scale image\nIn contrast to rot_scale_trans, wrap around is not done circulantly\nso as to prevent artifacts occurring during rotation.\nIf the image is a volume, then all slices are\nrotated/translated/scaled.\n \nRA - Transform object\n \nreturn New rotated/shifted/scaled image\nexception - ImageDimensionException can not rotate 1 D image")
-	.def("cm_euc", &EMAN::EMData::cm_euc, args("sinoj", "n1", "n2"), "euclidean distance between two line\n \nsinoj - \nn1 - \nn2 - ")
+	.def("pull_section", &EMAN::EMData::pull_section, return_value_policy< manage_new_object >(), args("RA"), "Pull section from 3D\nRA - Transform object\n \nreturn 2D section\nexception - ImageDimensionSection can be extracted only from 3D image.")
+	.def("push_section", &EMAN::EMData::push_section, "push_section.")
+	//.def("cm_euc", &EMAN::EMData::cm_euc, args("sinoj", "n1", "n2"), "euclidean distance between two line\n \nsinoj - \nn1 - \nn2 - ")
 	.def("rot_scale_conv", &EMAN::EMData::rot_scale_conv, EMAN_EMData_rot_scale_conv_overloads_4_5(args("ang", "delx", "dely", "kb", "scale"), "Rotate-Shift-Scale-Circulantly image using convolution\nIf the image is a volume, then all slices are rotated/translated/scaled.\n \nang - Rotation angle in degrees.\ndelx - Amount to shift rotation origin along x\ndely - Amount to shift rotation origin along y\nkb - convolution kernel\nscale - Scaling factor (default=1.0)\n \nreturn New rotated/shifted/scaled image\nexception - ImageDimensionException can not rotate 1 D image\nexception - ImageDimensionException can not rotate 3 D image")[ return_value_policy< manage_new_object >() ])
 	.def("rot_scale_conv7", &EMAN::EMData::rot_scale_conv7, return_value_policy< manage_new_object >(), args("ang", "delx", "dely", "kb", "scale_input"), " ")
 	.def("rot_scale_conv_new", &EMAN::EMData::rot_scale_conv_new, EMAN_EMData_rot_scale_conv_new_overloads_4_5(args("ang", "delx", "dely", "kb", "scale"), " ")[ return_value_policy< manage_new_object >() ])
@@ -823,7 +918,8 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("get_clip", &EMData_get_clip_2, args("area", "fill"), return_value_policy< manage_new_object >(),"Get an inclusive clip. Pads to fill if larger than this image.\n \narea - The clip area, can be 2D/3D.\nfill - the value to assign new pixels outside the area of the original image.(default=0)\n \nreturn The clip image.\nexception ImageDimensionException if any of the dimensions of the argument region are negative") 
 	.def("clip_inplace", &EMAN::EMData::clip_inplace, EMAN_EMData_clip_inplace_overloads_1_2(args("region", "fill_value"), "Clip the image inplace - clipping region must be smaller than the current region.\ninternally memory is reallocated.\n \nregion - The clip area, can be 2D/3D.\nfill_value - the value fill that new region. default to 0.")[return_value_policy< reference_existing_object >()])
 	.def("get_top_half", &EMAN::EMData::get_top_half, return_value_policy< manage_new_object >(), "Get the top half of this 3D image.\n \nreturn The top half of this image.\nexception - ImageDimensionException If this image is not 3D.")
-	.def("get_rotated_clip", &EMAN::EMData::get_rotated_clip, EMAN_EMData_get_rotated_clip_overloads_2_3(args("xform", "size", "scale"), "This will extract an arbitrarily oriented and sized region from the image.\n \nxform - The transformation of the region.\nsize - Size of the clip.\nscale - Scaling put on the returned image(default=1.0).\n \nreturn The clip image.")[ return_value_policy< manage_new_object >() ])
+	.def("get_rotated_clip", &EMAN::EMData::get_rotated_clip, EMAN_EMData_get_rotated_clip_overloads_2_3(args("xform", "size", "interpolate"), "This will extract an arbitrarily oriented and sized region from the image.\n \nxform - The transformation of the region.\nsize - Size of the clip.\ninterpolate - if set result is linearly interpolated.\n \nreturn The clip image.")[ return_value_policy< manage_new_object >() ])
+	.def("set_rotated_clip", &EMAN::EMData::set_rotated_clip, "Inserts an image into another image after transformation. The opposite of get_rotated_clip.")
 	.def("window_center", &EMAN::EMData::window_center, return_value_policy< manage_new_object >(), args("l"), "Window the center of an image.\nOften an image is padded with zeros for fourier interpolation.  In\nthat case the desired lxlxl volume (or lxl area) lies in the center\nof a larger volume (or area).  This routine creates a new object\nthat contains only the desired window.  (This routine is a thin\nwrapper around get_clip.)\n \nl - Length of the window.\n \nreturn An image object that has been windowed.")
 	.def("scale", &EMAN::EMData::scale, args("scale_factor"), "scale the image by a factor.\n \nscale_factor - scale factor.")
 //	.def("zero_corner_circulant", &EMAN::EMData::zero_corner_circulant, EMAN_EMData_zero_corner_circulant_overloads_0_1(args("radius"), "Zero the pixels in the bottom left corner of the image\nIf radius is greater than 1, than circulant zeroing occurs\nassuming that the center of operation starts in the bottom left\ncorner and proceed outwards to the NE and backwards in a circulant\nfashion towards the SW.\nIntended to zero the area corresponding to the middle of the image,\nas generated by calc_ccf\n \nradius - the radius to the zeroing operation(default=0)\n \nexception - ImageDimensionException if nx > 1 and nx < 2*radius + 1\nexception - ImageDimensionException if ny > 1 and ny < 2*radius + 1\nexception - ImageDimensionException if nz > 1 and nz < 2*radius + 1"))
@@ -848,6 +944,8 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("calc_ccf", &EMData_calc_ccf_wrapper1, args("with"), return_value_policy< manage_new_object >())
 	.def("calc_ccf", &EMData_calc_ccf_wrapper2, args("with", "fpflag"),return_value_policy< manage_new_object >())
 	.def("calc_ccf", &EMData_calc_ccf_wrapper3, args("with", "fpflag", "center"), return_value_policy< manage_new_object >())
+	.def("calc_ccf_masked", &EMData_calc_ccf_masked_wrapper1, args("with"), return_value_policy< manage_new_object >())
+	.def("calc_ccf_masked", &EMData_calc_ccf_masked_wrapper3, args("with", "withsquared", "mask"), return_value_policy< manage_new_object >())
 	.def("calc_ccfx", &EMAN::EMData::calc_ccfx, EMAN_EMData_calc_ccfx_overloads_1_6(args("with", "y0", "y1", "nosum","flip","usez"), "Calculate Cross-Correlation Function (CCF) in the x-direction and adds them up,\nresult in 1D.\nWARNING: this routine will modify the 'this' and 'with' to contain\n1D fft's without setting some flags. This is an optimization\nfor rotational alignment.\nsee calc_ccf()\n \nwith - The image used to calculate CCF.\ny0 - Starting position in x-direction(default=0).\ny1 - Ending position in x-direction. '-1' means the end of the row.(default=-1)\nnosum - If true, returns an image y1-y0+1 pixels high.(default=False)\n \nreturn The result image containing the CCF.\nexception - NullPointerException If input image 'with' is NULL.\nexception - ImageFormatException If 'with' and 'this' are not same size.\nexception - ImageDimensionException If 'this' image is 3D.")[ return_value_policy< manage_new_object >() ])
 	.def("calc_fast_sigma_image",&EMAN::EMData::calc_fast_sigma_image, return_value_policy< manage_new_object >(), args("mask"), "Calculates the local standard deviation (sigma) image using the given\nmask image. The mask image is typically much smaller than this image,\nand consists of ones, or is a small circle consisting of ones. The extent\nof the non zero neighborhood explicitly defines the range over which\nthe local standard deviation is determined.\nFourier convolution is used to do the math, ala Roseman (2003, Ultramicroscopy)\nHowever, Roseman was just working on methods Van Heel had presented earlier.\nThe normalize flag causes the mask image to be processed so that it has a unit sum.\nWorks in 1,2 and 3D\n \nmask - the image that will be used to define the neighborhood for determine the local standard deviation\n \nreturn the sigma image, the phase origin is at the corner (not the center)\nexception - ImageDimensionException if the dimensions of with do not match those of this\nexception - ImageDimensionException if any of the dimensions sizes of with exceed of this image's.")
 	.def("make_rotational_footprint", &EMAN::EMData::make_rotational_footprint, EMAN_EMData_make_rotational_footprint_overloads_0_1(args("unwrap"), "Makes a 'rotational footprint', which is an 'unwound'\nautocorrelation function. generally the image should be\nedge-normalized and masked before using this.\n \nunwrap - RFP undergoes polar->cartesian x-form,(default=True)\n \nreturn The rotaional footprint image.\nexception - ImageFormatException If image size is not even.")[ return_value_policy< manage_new_object >() ])
@@ -878,8 +976,8 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("getwedge", &EMAN::EMData::compute_missingwedge, EMAN_EMData_compute_missingwedge_overloads_1_3(args("wedgeangle", "start", "stop"), "get the missingt wedge mean ansd std")[ return_value_policy< manage_new_object >() ])
 	.def("__getitem__", &emdata_getitem)
 	.def("__setitem__", &emdata_setitem)
-	.staticmethod("read_images_ext")
 	.staticmethod("read_images")
+	.staticmethod("write_images")
 	.def("__add__", (EMAN::EMData* (*)(const EMAN::EMData&, const EMAN::EMData&) )&EMAN::operator+, return_value_policy< manage_new_object >() )
 	.def("__sub__", (EMAN::EMData* (*)(const EMAN::EMData&, const EMAN::EMData&) )&EMAN::operator-, return_value_policy< manage_new_object >() )
 	.def("__mul__", (EMAN::EMData* (*)(const EMAN::EMData&, const EMAN::EMData&) )&EMAN::operator*, return_value_policy< manage_new_object >() )
@@ -911,18 +1009,6 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 #endif	//_WIN32
 	);
 
-	enum_< EMAN::EMData::FFTPLACE >("FFTPLACE")
-	    .value("FFT_IN_PLACE", EMAN::EMData::FFT_IN_PLACE)
-	    .value("FFT_OUT_OF_PLACE", EMAN::EMData::FFT_OUT_OF_PLACE)
-	;
-
-
-	enum_< EMAN::EMData::WINDOWPLACE >("WINDOWPLACE")
-	    .value("WINDOW_OUT_OF_PLACE", EMAN::EMData::WINDOW_OUT_OF_PLACE)
-	    .value("WINDOW_IN_PLACE", EMAN::EMData::WINDOW_IN_PLACE)
-	;
-
 	delete EMAN_EMData_scope;
 
 }
-

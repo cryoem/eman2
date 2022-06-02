@@ -29,10 +29,6 @@
  *
  * */
 
-#ifdef _WIN32
-	#pragma warning(disable:4819)
-#endif	//_WIN32
-
 #include <boost/python.hpp>
 #include "emdata.h"
 

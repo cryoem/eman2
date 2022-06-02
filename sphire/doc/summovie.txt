@@ -1,0 +1,106 @@
+~~NOTOC~~
+
+===== sp_summovie =====
+Micrograph Movie Summation: Sum micrograph movies with [[http://grigoriefflab.janelia.org/unblur|Summovie]].
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sp_summovie.py  summovie_path  input_micrograph_pattern  input_shift_pattern  output_directory  --selection_list=SELECTION_LIST  --nr_frames=NUM_OF_FRAMES  --first=FIRST_FRAME  --last=LAST_FRAME  --pixel_size=PIXEL_SIZE  --nr_threads=NUM_OF_THREADS  --apply_dose_filter  --voltage=VOLTAGE  --exposure_per_frame=EXPOSURE  --pre_exposure=EXPOSURE  --dont_restore_noise
+
+\\
+===== Typical usage =====
+
+sp_summovie exists only in non-MPI version.
+
+__Run Summovie without dose filtering__:
+
+  sp_summovie.py ~/my_app/summovie 'outdir_unblur/corrsum/micrograph_*_frames_sum.mrc' 'outdir_unblur/shift/micrograph_*_frames_shift.txt' outdir_summovie --nr_frames=24 --pixel_size=1.19 --nr_threads=1
+
+\\
+__Run Summovie without dose filtering and with less frames__:
+
+  sp_summovie.py ~/my_app/summovie 'outdir_unblur/corrsum/micrograph_*_frames_sum.mrc' 'outdir_unblur/shift/micrograph_*_frames_shift.txt' outdir_summovie --nr_frames=24 --first=3 --last=15 --pixel_size=1.19 --nr_threads=1
+
+\\
+__Run Summovie with dose filtering and with less frames__:
+
+  sp_summovie.py ~/my_app/summovie 'outdir_unblur/corrsum/micrograph_*_frames_sum.mrc' 'outdir_unblur/shift/micrograph_*_frames_shift.txt' outdir_summovie --nr_frames=24 --first=3 --last=15 --pixel_size=1.19 --nr_threads=1 --apply_dose_filter --voltage=300 --exposure_per_frame=2 --pre_exposure=0
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; summovie_path : Summovie executable path: Specify the file path of Summovie executable. (This argument is specific to SPHIRE, and not directly used by Summovie executable.) (default required string)
+  ; input_micrograph_pattern : Input movie path pattern: Specify path pattern of input micrograph movies with a wild card (*).. The path pattern must be enclosed by single quotes (') or double quotes ("). (Note: sp_gui.py automatically adds single quotes (')). bdb files cannot be selected as input micrograph movies. (This argument is specific to SPHIRE, and not directly used by Summovie executable.) (default required string)
+  ; input_shift_pattern : Input drift shift path pattern: Specify path pattern of input drift shift parameters files with a wild card (*).. The path pattern must be enclosed by single quotes (') or double quotes ("). (Note: sp_gui.py automatically adds single quotes (')). The substring at the variable part must be same between the associated pair of input micrograph and shift file. (This argument is specific to SPHIRE, and not directly used by Summovie executable.) (default required string)
+  ; output_directory : Output directory: The results will be written here. It cannot be an existing one. (This argument is specific to SPHIRE, and not directly used by Summovie executable.) (default required string)
+
+  ; %%--%%selection_list : Movie selection file: Specify a name of micrograph movie selection list text file. The file extension must be '.txt'. If this is not provided, all files matched with the micrograph movie name pattern will be processed. (This option is specific to SPHIRE, and not directly used by Summovie executable.) (default none)
+  ; %%--%%nr_frames : Number of movie frames: The number of movie frames in each input micrograph. (default 3)
+  ; %%--%%first : First movie frame: First movie frame for summing. (default 1)
+  ; %%--%%last : Last movie frame: Last movie frame for summing. (default -1)
+  ; %%--%%pixel_size : Pixel size [A]: The pixel size of input micrographs. (default required float)
+  ; %%--%%nr_threads : Number of threads: The number of threads Summovie can use. The higher the faster, but it requires larger memory. (default 1)
+
+\\
+=== Advanced Parameters ===
+  ; %%--%%apply_dose_filter : Apply dose filter: Requires %%--%%voltage, %%--%%exposure_per_frame, and %%--%%pre_exposure options. (default False)
+  ; %%--%%voltage : Microscope voltage [kV]: The acceleration voltage of microscope used for imaging. Effective only when %%--%%apply_dose_filter option is used. (default 300.0) : %%--%%apply_dose_filter==True
+  ; %%--%%exposure_per_frame : Per frame exposure [e/A^2]: The electron dose per frame in e/A^2. Effective only when %%--%%apply_dose_filter option is used. (default 2.0) : %%--%%apply_dose_filter==True
+  ; %%--%%pre_exposure : Pre-exposure [e/A^2]: The electron does in e/A^2 used for exposure prior to imaging. Effective only when %%--%%apply_dose_filter option is used. (default 0.0) : %%--%%apply_dose_filter==True
+  ; %%--%%dont_restore_noise : Restore noise power: Indicate if noise power should be restored or not. By default, restore noise power. (default False question reversed in GUI)
+
+\\
+===== Output =====
+The program automatically creates the following subdirectories in the specified output directory.
+
+\\ __Without dose-filtering__:
+  * Sum files will be written to the ''corrsum'' directory.
+  * Log files will be written to the ''logfiles'' directory.
+  * FRC files will be written to the ''frc'' directory.
+
+\\ __With dose-filtering__:
+  * Dose filtered sum files will be written to the ''corrsum_dose_filtered'' directory.
+  * Log files will be written to the ''logfiles'' directory
+  * FRC files will be written to the ''frc'' directory.
+
+\\
+===== Description =====
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+[[http://grigoriefflab.janelia.org/unblur|Unblur & Summovie]]
+
+\\
+==== Developer Notes ====
+
+\\
+==== Author / Maintainer ====
+Markus Stabrin
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_summovie.py
+
+\\
+==== See also ====
+[[pipeline:movie:sp_unblur|sp_unblur]] and [[http://grigoriefflab.janelia.org/unblur|Unblur & Summovie]].
+
+\\
+==== Maturity ====
+Alpha:: Under development. Please let us know if there are any bugs.
+
+\\
+==== Bugs ====
+There are no known bugs so far.
+
+\\

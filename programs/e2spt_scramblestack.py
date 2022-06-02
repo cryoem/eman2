@@ -27,8 +27,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
-from __future__ import print_function
-from __future__ import division
 from builtins import range
 from EMAN2_utils import *
 from sys import argv
@@ -49,7 +47,7 @@ def main():
 	parser.add_argument("--input", type=str, help="The name of the volumes stack that HAVE BEEN ALIGNED to a common reference", default=None)
 	parser.add_argument("--output", type=str, help="The name of the volumes stack that HAVE BEEN ALIGNED to a common reference", default=None)
 
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")				
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")				
 	
 	(options, args) = parser.parse_args()	
 	

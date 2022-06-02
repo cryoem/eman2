@@ -1,10 +1,7 @@
-/**
- * $Id$
- */
-
 /*
  * Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
- * Copyright (c) 2000-2006 The University of Texas - Houston Medical School
+ * Please do not copy or modify this file without written consent of the author.
+ * Copyright (c) 2000-2019 The University of Texas - Houston Medical School
  *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
@@ -630,6 +627,7 @@ class FakeKaiserBessel : public KaiserBessel {
 	static void  fftc_q(float  *br, float  *bi, int ln, int ks);
 	static void  fftc_d(double *br, double *bi, int ln, int ks);
 
+#ifdef False
 	/** Single Precision Fourier Transform for a set of complex rings */
 	static EMData* FCrngs(EMData* rings);
 	
@@ -639,7 +637,7 @@ class FakeKaiserBessel : public KaiserBessel {
 	static EMData* FCrossm(EMData* frobj, EMData* frings);
 
 	static vector<float> FCross_multiref(EMData* frobj, EMData* frings, int psi_start, int psi_step);
-
+#endif
 	static void multiply_rows( EMData* rings, const vector<float>& bckgnoise, int nb );
 
 	/** Single Precision Fourier Transform for a set of rings */
@@ -940,7 +938,6 @@ class FakeKaiserBessel : public KaiserBessel {
 	static vector<float> lsfit(long int *ks,long int *n, long int *klm2d, long int *iswi, float *q1,double *q, double *x, double *res, double *cu, double *s,long int *iu);
 	static void cl1(long int *k, long int *l, long int *m, long int *n, long int *klm2d,double *q, double *x, double *res, double *cu, long
 	int *iu, double *s);
-	static float eval(char * images,EMData * img, vector<int> S,int N, int K,int size);
 
 	/*  VORONOI DIAGRAM */
 	static vector<double> vrdg(const vector<float>& ph, const vector<float>& th);
@@ -958,6 +955,7 @@ class FakeKaiserBessel : public KaiserBessel {
  		};
 	static bool cmp1(tmpstruct tmp1,tmpstruct tmp2);
 	static bool cmp2(tmpstruct tmp1,tmpstruct tmp2);
+#ifdef False
 	/**********************************************************/
 	/* ######### STRIDPACK USED COMMANDS FOR VORONOI #########################*/
 	static int trmsh3_(int *n0, double *tol, double *x, double *y, double *z__, int *n, int *list, int *lptr,
@@ -965,6 +963,7 @@ class FakeKaiserBessel : public KaiserBessel {
 	static double areav_(int *k, int *n, double *x, double *y, double *z__, int *list, int *lptr, int *lend, int *ier);
 	/**********************************************************/
 	/* ######### STRIDPACK USED COMMANDS FOR VORONOI #########################*/
+#endif
 
 	static EMData* shrinkfvol(EMData* img, int npad);
 	static void divclreal(EMData* img1, EMData* img2, float cutoff);
@@ -1025,9 +1024,9 @@ class FakeKaiserBessel : public KaiserBessel {
 	/* img /= Re(img1) with zero check  */
 	static void div_filter(EMData* img, EMData* img1);
 
-	static EMData*  unroll1dpw( int ny, const vector<float>& bckgnoise );
+	static EMData*  unroll1dpw( int onx, int ny, const vector<float>& bckgnoise );
 
-	static EMData*  unrollmask( int ny );
+	static EMData*  unrollmask( int onx, int ny );
 
 	static vector<float> rotavg_fourier(EMData* img);
 
@@ -1040,9 +1039,6 @@ class FakeKaiserBessel : public KaiserBessel {
 									EMData* indx, EMData* tfrac, EMData* tcount);
 
 	static vector<float> sqednorm( EMData* img, EMData* proj, EMData* ctfs, EMData* bckgnoise);
-
-	//utility for sxlocres
-	static void set_freq(EMData* freqvol, EMData* temp, EMData* mask, float cutoff, float freq);
 
 	static vector<int> pickup_references(const vector<vector<float> >& refang, float delta, float an,
                 const vector<vector<float> >& datang, string symmetry);
@@ -1380,6 +1376,10 @@ public:
 	 * 1 for x-dimension, 2 for y-dimension and 3 for z-dimension
 	*/
 	static void put_slice(EMData *vol, EMData *slice, int dim, int index);
+	/**
+	 * extract/insert plane through volume using parameters in Transform.
+	*/
+	static void plane_through_volume(EMData *vol, EMData *weight, EMData *plane, float phi, float theta, float psi, int fact);
 
 	static void image_mutation(EMData *img, float mutation_rate);
 
@@ -1426,5 +1426,7 @@ static void euler_direction2angles(vector<float>v, float &alpha, float &beta);
 static void  iterefa(EMData* tvol, EMData* tweight, int maxr2, int nnxo);
 static void  iterefadp(EMData* tvol, EMData* tweight, int maxr2, int nnxo);
 
+//utility for sxresolution
+static int set_freq(EMData* freqvol, EMData* tmp3, EMData* m, float freq, float ndf, float zaz, float cutoff);
 
 #endif	//util__sparx_h__

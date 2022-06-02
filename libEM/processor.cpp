@@ -37,6 +37,7 @@
 #include "ctf.h"
 #include "xydata.h"
 #include "emdata.h"
+#include "emfft.h"
 #include "emassert.h"
 #include "randnum.h"
 #include "symmetry.h"
@@ -51,7 +52,6 @@
 #include <algorithm>
 #include <gsl/gsl_fit.h>
 #include <ctime>
-#include <cmath>
 
 #ifdef __APPLE__
 	typedef unsigned int uint;
@@ -59,17 +59,6 @@
 
 #ifdef _WIN32
 	typedef unsigned int uint;
-	#if (_MSC_VER < 1800) // _MSC_VER = 1800 (Visual Studio 2013)
-		double cbrt(double x) {
-			return pow(x, 1.0/3.0);
-		}
-		float cbrt(float x) {
-			return pow(x, 1.0f/3.0f);
-		}
-		long double cbrt(long double x) {
-			return pow(x, 1.0l/3.0l);
-		}
-	#endif	//_MSC_VER
 #endif	//_WIN32
 
 #ifdef EMAN2_USING_CUDA
@@ -85,6 +74,7 @@ const string AmpweightFourierProcessor::NAME = "filter.ampweight";
 const string Axis0FourierProcessor::NAME = "filter.xyaxes0";
 const string ConvolutionProcessor::NAME = "math.convolution";
 const string BispecSliceProcessor::NAME = "math.bispectrum.slice";
+const string HarmonicProcessor::NAME = "math.harmonic";
 const string XGradientProcessor::NAME = "math.edge.xgradient";
 const string YGradientProcessor::NAME = "math.edge.ygradient";
 const string ZGradientProcessor::NAME = "math.edge.zgradient";
@@ -105,9 +95,11 @@ const string AzSharpProcessor::NAME = "filter.azimuthal.contrast";
 const string HighpassAutoPeakProcessor::NAME = "filter.highpass.autopeak";
 const string LinearRampProcessor::NAME = "eman1.filter.ramp";
 const string AbsoluteValueProcessor::NAME = "math.absvalue";
+const string CCCSNRProcessor::NAME = "math.ccc_snr_wiener";
 const string FloorValueProcessor::NAME = "math.floor";
 const string BooleanProcessor::NAME = "threshold.notzero";
 const string KmeansSegmentProcessor::NAME = "segment.kmeans";
+const string GaussSegmentProcessor::NAME = "segment.gauss";
 const string DistanceSegmentProcessor::NAME = "segment.distance";
 const string WatershedProcessor::NAME = "segment.watershed";
 const string SegmentSubunitProcessor::NAME = "segment.subunit";
@@ -126,6 +118,7 @@ const string IntTranslateProcessor::NAME = "xform.translate.int";
 const string ScaleTransformProcessor::NAME = "xform.scale";
 const string ApplySymProcessor::NAME = "xform.applysym";
 const string ClampingProcessor::NAME = "threshold.clampminmax";
+const string RangeZeroProcessor::NAME = "threshold.rangetozero";
 const string NSigmaClampingProcessor::NAME = "threshold.clampminmax.nsigma";
 const string ToMinvalProcessor::NAME = "threshold.belowtominval";
 const string CutToZeroProcessor::NAME = "threshold.belowtozero_cut";
@@ -149,6 +142,7 @@ const string MaskGaussNonuniformProcessor::NAME = "mask.gaussian.nonuniform";
 const string MaskGaussInvProcessor::NAME = "math.gausskernelfix";
 const string GridKernelFixProcessor::NAME = "math.gridkernelfix";
 const string LinearPyramidProcessor::NAME = "math.linearpyramid";
+const string SetBitsProcessor::NAME = "math.setbits";
 const string MakeRadiusSquaredProcessor::NAME = "math.toradiussqr";
 const string MakeRadiusProcessor::NAME = "math.toradius";
 const string ComplexNormPixel::NAME = "complex.normpixels";
@@ -157,6 +151,7 @@ const string BoxMedianProcessor::NAME = "eman1.filter.median";
 const string BoxSigmaProcessor::NAME = "math.localsigma";
 const string NonConvexProcessor::NAME = "math.nonconvex";
 const string BoxMaxProcessor::NAME = "math.localmax";
+const string LocalMinAbsProcessor::NAME = "math.localminabs";
 const string MinusPeakProcessor::NAME = "math.submax";
 const string PeakOnlyProcessor::NAME = "mask.onlypeaks";
 const string DiffBlockProcessor::NAME = "eman1.filter.blockrange";
@@ -193,6 +188,7 @@ const string NormalizeByMassProcessor::NAME = "normalize.bymass";
 const string NormalizeEdgeMeanProcessor::NAME = "normalize.edgemean";
 const string NormalizeCircleMeanProcessor::NAME = "normalize.circlemean";
 const string NormalizeLREdgeMeanProcessor::NAME = "normalize.lredge";
+const string NormalizeHistPeakProcessor::NAME = "normalize.histpeak";
 const string NormalizeMaxMinProcessor::NAME = "normalize.maxmin";
 const string NormalizeRowProcessor::NAME = "normalize.rows";
 const string NormalizeToLeastSquareProcessor::NAME = "normalize.toimage";
@@ -238,8 +234,10 @@ const string MaxPixelOperator::NAME = "math.max";
 const string MinPixelOperator::NAME = "math.min";
 const string MatchSFProcessor::NAME = "filter.matchto";
 const string SetSFProcessor::NAME = "filter.setstrucfac";
+const string SetIsoPowProcessor::NAME = "filter.setisotropicpow";
 const string SmartMaskProcessor::NAME = "mask.smart";
 const string TestImagePureGaussian::NAME = "testimage.puregaussian";
+const string TestImageFourierGaussianBand::NAME = "testimage.fourier.gaussianband";
 const string TestImageFourierNoiseGaussian::NAME = "testimage.noise.fourier.gaussian";
 const string TestImageFourierNoiseProfile::NAME = "testimage.noise.fourier.profile";
 const string CTFSNRWeightProcessor::NAME = "ctf.snr.weight";
@@ -262,6 +260,7 @@ const string TestImageCylinder::NAME = "testimage.cylinder";
 const string TestImageDisc::NAME = "testimage.disc";
 const string CCDNormProcessor::NAME = "filter.ccdnorm";
 const string WaveletProcessor::NAME = "basis.wavelet";
+const string EnhanceProcessor::NAME = "filter.enhance";
 const string TomoTiltEdgeMaskProcessor::NAME = "tomo.tiltedgemask";
 const string TomoTiltAngleWeightProcessor::NAME = "tomo.tiltangleweight";
 const string FFTProcessor::NAME = "basis.fft";
@@ -319,6 +318,7 @@ const string FixSignProcessor::NAME = "math.fixmode";
 const string ZThicknessProcessor::NAME = "misc.zthick";
 const string ReplaceValuefromListProcessor::NAME = "misc.colorlabel";
 const string PolyMaskProcessor::NAME = "mask.poly";
+const string AmpMultProcessor::NAME = "math.multamplitude";
 
 //#ifdef EMAN2_USING_CUDA
 //const string CudaMultProcessor::NAME = "cuda.math.mult";
@@ -351,6 +351,7 @@ template <> Factory < Processor >::Factory()
 	force_add<FloorValueProcessor>();
 	force_add<BooleanProcessor>();
 	force_add<KmeansSegmentProcessor>();
+	force_add<GaussSegmentProcessor>();
 	force_add<SegmentSubunitProcessor>();
 	force_add<DistanceSegmentProcessor>();
 	force_add<ValuePowProcessor>();
@@ -369,6 +370,7 @@ template <> Factory < Processor >::Factory()
 	force_add<NSigmaClampingProcessor>();
 
 	force_add<ToZeroProcessor>();
+	force_add<RangeZeroProcessor>();
 	force_add<AboveToZeroProcessor>();
 	force_add<OutlierProcessor>();
 	force_add<ToMinvalProcessor>();
@@ -378,7 +380,9 @@ template <> Factory < Processor >::Factory()
 	force_add<BinarizeFourierProcessor>();
 	force_add<CollapseProcessor>();
 	force_add<LinearXformProcessor>();
-
+	force_add<SetBitsProcessor>();
+	
+	force_add<CCCSNRProcessor>();
 	force_add<ExpProcessor>();
 	force_add<RangeThresholdProcessor>();
 	force_add<SigmaProcessor>();
@@ -418,6 +422,7 @@ template <> Factory < Processor >::Factory()
 	force_add<BoxMedianProcessor>();
 	force_add<BoxSigmaProcessor>();
 	force_add<BoxMaxProcessor>();
+	force_add<LocalMinAbsProcessor>();
 
 	force_add<MinusPeakProcessor>();
 	force_add<PeakOnlyProcessor>();
@@ -447,8 +452,10 @@ template <> Factory < Processor >::Factory()
 
 	force_add<ConvolutionProcessor>();
 	force_add<BispecSliceProcessor>();
+	force_add<HarmonicProcessor>();
 
 	force_add<NormalizeStdProcessor>();
+	force_add<NormalizeHistPeakProcessor>();
 	force_add<NormalizeUnitProcessor>();
 	force_add<NormalizeUnitSumProcessor>();
 	force_add<NormalizeMaskProcessor>();
@@ -519,6 +526,7 @@ template <> Factory < Processor >::Factory()
 
 	force_add<IndexMaskFileProcessor>();
 // 	force_add<CoordinateMaskFileProcessor>();
+	force_add<SetIsoPowProcessor>();
 	force_add<SetSFProcessor>();
 	force_add<MatchSFProcessor>();
 
@@ -542,6 +550,7 @@ template <> Factory < Processor >::Factory()
 	force_add<TestImageLineWave>();
 	force_add<TestImageEllipse>();
 	force_add<TestImageHollowEllipse>();
+	force_add<TestImageFourierGaussianBand>();
 	force_add<TestImageFourierNoiseGaussian>();
 	force_add<TestImageFourierNoiseProfile>();
 
@@ -574,6 +583,7 @@ template <> Factory < Processor >::Factory()
 	force_add<SHIFTProcessor>();
 
 //	force_add<WaveletProcessor>();
+	force_add<EnhanceProcessor>();
 	force_add<FFTProcessor>();
 	force_add<RadialProcessor>();
 
@@ -606,6 +616,7 @@ template <> Factory < Processor >::Factory()
 	force_add<ZThicknessProcessor>();
 	force_add<ReplaceValuefromListProcessor>();
 	force_add<PolyMaskProcessor>();
+	force_add<AmpMultProcessor>();
 
 //#ifdef EMAN2_USING_CUDA
 //	force_add<CudaMultProcessor>();
@@ -744,7 +755,7 @@ void FourierAnlProcessor::process_inplace(EMData * image)
 	if (image->is_complex()) {
 		vector <float>yarray = image->calc_radial_dist(floor(image->get_ysize()*cornerscale/2),0,1.0,1);
 		create_radial_func(yarray,image);
-		image->apply_radial_func(0, 0.5f/image->get_ysize(), yarray,interpolate);
+		image->apply_radial_func(0, 1.0f/image->get_ysize(), yarray,interpolate);
 		if (return_radial) image->set_attr("filter_curve",yarray);
 	}
 	else {
@@ -900,55 +911,77 @@ void FFTPeakProcessor::process_inplace(EMData * image)
 	if (!image->is_complex()) fft = image->do_fft();
 	else fft = image;
 
-
 	int nx=fft->get_xsize();
 	int ny=fft->get_ysize();
 	int nz=fft->get_zsize();
 	float thresh_sigma = (float)params.set_default("thresh_sigma", 1.0);
 	bool removepeaks = (bool)params.set_default("removepeaks",0);
+	bool to_mean = (bool)params.set_default("to_mean",0);
 	
-	vector<float> sigmaimg;
-	sigmaimg=fft->calc_radial_dist(nx/2,0,1,4);
-	for (int i=0; i<nx/2; i++) sigmaimg[i]*=sigmaimg[i]*thresh_sigma;			// anything less than thresh_sigma * sigma is considered to be missing
+	vector<float> amp=fft->calc_radial_dist(nx/2,0,1,0);	// amplitude
+	vector<float> thr=fft->calc_radial_dist(nx/2,0,1,1);	// start with inten (avg of amp^2)
+	
+	for (int i=0; i<nx/2; i++) thr[i]=thresh_sigma*sqrt(thr[i]-amp[i]*amp[i])+amp[i];	// sqrt(inten-amp^2) is st
 
 	if (nz>1) {
-		for (int z=0; z<nz; z++) {
-			for (int y=0; y<ny; y++) {
-				for (int x=0; x<nx; x+=2) {
-					float r2=Util::hypot3(x/2,y<ny/2?y:ny-y,z<nz/2?z:nz-z);	// origin at 0,0; periodic
+		for (int z=-nz/2; z<nz/2; z++) {
+			for (int y=-ny/2; y<ny/2; y++) {
+				for (int x=0; x<nx/2; x++) {
+					float r2=Util::hypot3(x,y,z);
 					int r=int(r2);
-					
-					float v1r=fft->get_value_at(x,y,z);
-					float v1i=fft->get_value_at(x+1,y,z);
-					float v1=Util::square_sum(v1r,v1i);
-
-					if ((v1>sigmaimg[r]&&!removepeaks&&r>=4&&r<ny/2) || ((v1<=sigmaimg[r]||r<4)&&removepeaks)) continue;
-					
-					fft->set_value_at_fast(x,y,z,0);
-					fft->set_value_at_fast(x+1,y,z,0);
+					if (r>=nx/2) continue;
+					complex<float> v=fft->get_complex_at(x,y,z);
+					float va=std::abs(v);
+					if (va>=thr[r]) {
+						if (removepeaks) {
+							if (to_mean) {
+								v*=amp[r]/va;
+								fft->set_complex_at(x,y,z,v);
+							}
+							else fft->set_complex_at(x,y,z,0.0);
+						}
+					}
+					else {
+						if (!removepeaks) {
+							if (to_mean) {
+								v*=amp[r]/va;
+								fft->set_complex_at(x,y,z,v);
+							}
+							else fft->set_complex_at(x,y,z,0.0);
+						}
+					}
 				}
 			}
 		}
 	}
 	else {
-		for (int y=0; y<ny; y++) {
-			for (int x=0; x<nx; x+=2) {
-				float r2=Util::hypot2(x/2,y<ny/2?y:ny-y);	// origin at 0,0; periodic
-				int r=int(r2);
-				
-				float v1r=fft->get_value_at(x,y);
-				float v1i=fft->get_value_at(x+1,y);
-				float v1=Util::square_sum(v1r,v1i);
-
-//				if (r>60 && r<80) printf("%d %d %d\t%1.3g  %1.3g\n",x,y,r,v1,sigmaimg[r]);
-				if ((v1>sigmaimg[r]&&!removepeaks&&r>=4&&r<ny/2) || ((v1<=sigmaimg[r]||r<4)&&removepeaks)) continue;
-				
-				fft->set_value_at_fast(x,y,0);
-				fft->set_value_at_fast(x+1,y,0);
+		for (int y=-ny/2; y<ny/2; y++) {
+			for (int x=0; x<nx/2; x++) {
+				int r=Util::hypot_fast_int(x,y);
+				if (r>=nx/2) continue;
+				complex<float> v=fft->get_complex_at(x,y);
+				float va=std::abs(v);
+				if (va>=thr[r]) {
+					if (removepeaks) {
+						if (to_mean) {
+							v*=amp[r]/va;
+							fft->set_complex_at(x,y,v);
+						}
+						else fft->set_complex_at(x,y,0.0);
+					}
+				}
+				else {
+					if (!removepeaks) {
+						if (to_mean) {
+							v*=amp[r]/va;
+							fft->set_complex_at(x,y,v);
+						}
+						else fft->set_complex_at(x,y,0.0);
+					}
+				}
 			}
 		}
-	}
-	
+	}	
 	
 	if (fft!=image) {
 		EMData *ift=fft->do_ift();
@@ -1050,6 +1083,7 @@ void WedgeFillProcessor::process_inplace(EMData * image)
 //	if (!source) throw InvalidParameterException("WedgeFillProcessor: fillsource required");
 
 	if (source && !source->is_complex()) throw ImageFormatException("WedgeFillProcessor: fillsource must be complex");
+	if (image->get_xsize()!=source->get_xsize()||image->get_ysize()!=source->get_ysize()||image->get_zsize()!=source->get_zsize()) throw ImageFormatException("WedgeFillProcessor: image/fill size mismatch");
 
 	int nx=image->get_xsize();
 	int ny=image->get_ysize();
@@ -1067,6 +1101,9 @@ void WedgeFillProcessor::process_inplace(EMData * image)
 		for (int i=0; i<nx/2; i++) sigmaimg[i]*=sigmaimg[i]*thresh_sigma;			// anything less than 1/10 sigma is considered to be missing
 	}
 		
+	vector<int> realpixel(nx/2);
+	for (int i=0; i<nx/2; i++) realpixel[i]=0;
+	
 	for (int z=0; z<nz; z++) {
 		for (int y=0; y<ny; y++) {
 			for (int x=0; x<nx; x+=2) {
@@ -1081,7 +1118,10 @@ void WedgeFillProcessor::process_inplace(EMData * image)
 				float v1i=image->get_value_at(x+1,y,z);
 				float v1=Util::square_sum(v1r,v1i);
 //				if (r<10) printf("%d %d %d %d\t%1.3g %1.3g\n",x,y,z,r,v1,sigmaimg[r]);
-				if ((!dosigma || v1>sigmaimg[r]) && r<nx/2 && (!dotilt || fabs(tilt)<maxtilt)) continue;
+				if ((!dosigma || v1>sigmaimg[r]) && r<nx/2 && (!dotilt || fabs(tilt)<maxtilt)){
+					realpixel[r]++;
+					continue;
+				}
 
 				if (!source) {
 					image->set_value_at_fast(x,y,z,0);
@@ -1095,6 +1135,7 @@ void WedgeFillProcessor::process_inplace(EMData * image)
 		}
 	}
 
+	image->set_attr("real_pixels", realpixel);
 	image->update();
 }
 
@@ -1159,6 +1200,21 @@ void LowpassAutoBProcessor::create_radial_func(vector < float >&radial_mask,EMDa
 	free(dy);
  }
 
+void CCCSNRProcessor::process_inplace(EMData *image) {
+	size_t nxyz = image->get_size();
+	int mode=params.set_default("wiener",0);
+	float scale=params.set_default("scalesnr",2.0f);
+	
+	for (size_t i=0; i<nxyz; i++) {
+		float v=image->get_value_at_index(i);
+		float snr=(v>=.9999)?10000.0f:scale*v/(1.0f-v);
+		if (snr<0) snr=0.0f;
+		if (mode) image->set_value_at_index(i,snr/(1.0f+snr));
+		else image->set_value_at_index(i,snr);
+	}
+}
+
+ 
 void SNREvalProcessor::process_inplace(EMData * image)
 {
 	int ys=image->get_ysize();
@@ -1248,6 +1304,8 @@ void GaussZFourierProcessor::process_inplace(EMData * image)
 		image->set_attr("apix_y", (float)params["apix"]);
 		image->set_attr("apix_z", (float)params["apix"]);
 	}
+	
+	int xynoz = params.set_default("xynoz",0);
 
 	const Dict dict = image->get_attr_dict();
 	if( params.has_key("cutoff_freq") ) {
@@ -1260,6 +1318,9 @@ void GaussZFourierProcessor::process_inplace(EMData * image)
 	}
 
 	float omega = params["cutoff_abs"];
+	float zcenter=params.set_default("centerfreq",0.0f);
+	float hppix = params.set_default("hppix",-1.0f);
+	
 	omega = (omega<0?-1.0:1.0)*0.5f/omega/omega;
 
 	EMData *fft;
@@ -1282,12 +1343,26 @@ void GaussZFourierProcessor::process_inplace(EMData * image)
 	int ny=fft->get_ysize();
 	int nz=fft->get_ysize();
 	omega /=(nz*nz)/4;
+	zcenter=zcenter*(float)dict["apix_x"]*nz;
 
-	for (int z=-nz/2; z<nz/2; z++) {
-		for (int y=-ny/2; y<ny/2; y++) {
-			for (int x=0; x<nx/2; x++) {
-				std::complex <float> v=fft->get_complex_at(x,y,z);
-				fft->set_complex_at(x,y,z,v*exp(-omega*z*z));
+	if (xynoz) {
+		for (int x=0; x<nx/2; x++) {
+			for (int z=(x==0?0:-nz/2); z<nz/2; z++) {
+				for (int y=(x==0&&z==0?0:-ny/2); y<ny/2; y++) {
+					std::complex <float> v=fft->get_complex_at(x,y,z);
+					float r=Util::hypot_fast(x,y);
+					fft->set_complex_at(x,y,z,v*exp(-omega*(r-zcenter)*(r-zcenter))*(r>hppix?1.0f:Util::hypot3(x,y,z)/hppix));
+				}
+			}
+		}
+	}
+	else {
+		for (int z=-nz/2; z<nz/2; z++) {
+			for (int y=-ny/2; y<ny/2; y++) {
+				for (int x=0; x<nx/2; x++) {
+					std::complex <float> v=fft->get_complex_at(x,y,z);
+					fft->set_complex_at(x,y,z,v*exp(-omega*(abs(z)-zcenter)*(abs(z)-zcenter))*(fabs(z)>hppix?1.0f:Util::hypot3(x,y,z)/hppix));
+				}
 			}
 		}
 	}
@@ -1331,11 +1406,7 @@ void AmpweightFourierProcessor::process_inplace(EMData * image)
 	for (size_t i=0; i<n; i+=2) {
 		float c;
 		if (dosqrt) c=pow(fftd[i]*fftd[i]+fftd[i+1]*fftd[i+1],0.25f);
-#ifdef	_WIN32
-		else c = static_cast<float>(_hypot(fftd[i],fftd[i+1]));
-#else
 		else c = static_cast<float>(hypot(fftd[i],fftd[i+1]));
-#endif	//_WIN32
 		if (c==0) c=1.0e-30f;	// prevents divide by zero in normalization
 		fftd[i]*=c;
 		fftd[i+1]*=c;
@@ -1365,6 +1436,153 @@ void AmpweightFourierProcessor::process_inplace(EMData * image)
 	sum->update();
 	image->update();
 
+}
+
+void GaussSegmentProcessor::process_inplace(EMData *)
+{
+	printf("Process inplace not implemented. Please use process.\n");
+	return;
+}
+
+
+EMData *GaussSegmentProcessor::process(const EMData * const image)
+{
+
+	float minratio = params.set_default("minratio",0.5f);
+	int maxnseg = params.set_default("maxnseg",0);
+	int skipseg = params.set_default("skipseg",0);
+	float width = params.set_default("width",10.0f);
+	int verbose = params.set_default("verbose",0);
+	EMData *mask= (EMData *)params.set_default("mask",(EMData *)NULL);
+	float apix=image->get_attr("apix_x");
+	int nx=image->get_xsize();
+	int ny=image->get_ysize();
+	int nz=image->get_zsize();
+
+	EMData * result = image->process("threshold.belowtozero",Dict("minval",0.0f));
+	// The intent of these filters is to insure that the map effectively 
+//	result->process_inplace("filter.lowpass.gauss",Dict("cutoff_freq",0.45/width));	// 0.45 = sqrt(2)/pi, resolvability threshold
+//	result->process_inplace("filter.lowpass.gauss",Dict("cutoff_freq",0.637/width));	// 0.637 = 2/pi, (may be Rayleigh criterion?)
+	if (mask!=NULL) {
+		result->mult(*mask);
+		result->process_inplace("normalize.local",Dict("radius",nx*apix/(3.0f*width),"threshold",(float)result->get_attr("sigma_nonzero")*1.2));
+	}
+	
+	XYData gsf;
+	gsf.make_gauss(nx*4,1.0f/apix,0.45/width);
+//	gsf.make_gauss(nx*4,1.0f/apix,0.637/width);
+	result->process_inplace("filter.setstrucfac",Dict("apix",apix,"strucfac",&gsf));
+		
+	// Generate a Gaussian we can subtract out of the volume quickly
+	int gs=2*width/(float)image->get_attr("apix_x");
+	EMData gsub(gs,gs,gs);
+	gsub.to_one();
+	gsub.process_inplace("mask.gaussian",Dict("outer_radius",int(width/(2.0*apix))));
+
+	if (verbose>2) {
+		result->set_attr("render_bits",12);
+		result->set_attr("render_min",(float)result->get_attr("minimum"));
+		result->set_attr("render_max",(float)result->get_attr("maximum"));
+		result->write_image("segfilt.hdf",0,EMUtil::IMAGE_UNKNOWN,false,0,EMUtil::EM_COMPRESSED);
+	}
+	
+	EMData *cache = NULL;
+	if (skipseg==2) cache=result->copy();
+	
+	// original version of the code. A bit slow but works very well
+// 	vector<float> centers;
+// 	vector<float> amps;
+// 	if (maxnseg==0) maxnseg=2000000000;
+// 	float maxval=0.0f;
+// 	
+// 	while (amps.size()<maxnseg) {
+// 		IntPoint p = result->calc_max_location();
+// 		FloatPoint fp(p[0],p[1],p[2]);
+// 		
+// 		float amp=result->get_value_at(p[0],p[1],p[2]);
+// 		if (amp<maxval*minratio) break;
+// 		amps.push_back(amp);
+// 		centers.push_back(p[0]);
+// 		centers.push_back(p[1]);
+// 		centers.push_back(p[2]);
+// 		if (amp>maxval) maxval=amp;		// really this should only happen once...
+// 		
+// 		result->insert_scaled_sum(&gsub,fp,1.0,-amp);
+// 	}
+	
+	// This was an alternate version, to improve speed. While it is faster, the approximations its making
+	// produce slightly less optimal results.
+	vector<float> centers;
+	vector<float> amps;
+	if (maxnseg==0) maxnseg=2000000000;
+	
+	float thr=(float)result->get_attr("maximum")*minratio;
+	while (amps.size()<maxnseg) {
+		if ((float)result->get_attr("maximum")<=thr) break;
+		// We find all peak values greater than our threshold
+		vector<Pixel> pixels=result->calc_highest_locations(thr);
+		if (pixels.size()==0) break;
+		if (verbose>1) printf("%d %f %f %f %d\n",pixels.size(),pixels[0].get_value(),pixels[1].get_value(),pixels[2].get_value(),amps.size());
+		
+		for (int i=0; i<pixels.size(); i++) {
+			IntPoint p = pixels[i].get_point();
+			FloatPoint fp(p[0],p[1],p[2]);
+			
+			float amp=result->get_value_at(p[0],p[1],p[2]);
+			if (amp!=pixels[i].get_value()) continue;	// skip any values near a value we've just changed, should come back in the next round
+			//			printf("%d %d %d     %f  %f   %f\n",p[0],p[1],p[2],amp,pixels[i].get_value(),pixels[i+1].get_value());
+//			if (i<pixels.size()-1 && amp<pixels[i+1].get_value()) continue;	// if one of the identified peaks has been reduced by a nearby peak too much
+			if (amp<thr) continue;
+//			if (amp<thr) { maxnseg=amps.size(); break; }
+			amps.push_back(amp);
+			centers.push_back(p[0]);
+			centers.push_back(p[1]);
+			centers.push_back(p[2]);
+			
+			result->insert_scaled_sum(&gsub,fp,1.0,-amp);
+		}
+	}
+
+	if (verbose) printf("Found %d centers\n",amps.size());
+	
+	if (verbose>2) {
+		result->set_attr("render_bits",12);
+		result->set_attr("render_min",(float)result->get_attr("minimum"));
+		result->set_attr("render_max",(float)result->get_attr("maximum"));
+		result->write_image("segfilt.hdf",1,EMUtil::IMAGE_UNKNOWN,false,0,EMUtil::EM_COMPRESSED);
+	}
+	if (!skipseg) {
+	// after we have our list of centers classify pixels
+	for (int z=0; z<nz; z++) {
+		for (int y=0; y<ny; y++) {
+			for (int x=0; x<nz; x++) {
+// 				if (image->get_value_at(x,y,z)<thr) {
+// 					result->set_value_at(x,y,z,-1.0);		//below threshold -> -1 (unclassified)
+// 					continue;
+// 				}
+				int bcls=-1;			// best matching class
+				float bdist=(float)(nx+ny+nz);	// distance for best class
+				for (unsigned int c=0; c<centers.size()/3; c++) {
+					float d=Util::hypot3(x-centers[c*3],y-centers[c*3+1],z-centers[c*3+2]);
+					if (d<bdist) { bdist=d; bcls=c; }
+				}
+				result->set_value_at(x,y,z,(float)bcls);		// set the pixel to the class number
+			}
+		}
+	}
+	if (verbose) printf("segmented\n");
+	}
+
+	//if skipseg is set to 2, we return the filtered, unsegmented map (with valid centers)
+	if (skipseg==2) {
+		delete result;
+		result=cache;
+	}
+	
+	result->set_attr("segment_centers",centers);
+	result->set_attr("segment_amps",amps);
+	
+	return result;
 }
 
 void DistanceSegmentProcessor::process_inplace(EMData *)
@@ -1473,12 +1691,15 @@ EMData *DistanceSegmentProcessor::process(const EMData * const image)
 
 EMData* ApplySymProcessor::process(const EMData * const image)
 {
+	string s=(string)params.set_default("sym","c1");
+	if (s.length()<2) return image->copy();
+	int n=atoi(s.c_str()+1);
+	if ((s[0]=='c' || s[0]=='C') && n==1) return image->copy();
+	
 	Averager* imgavg = Factory<Averager>::get((string)params.set_default("averager","mean"));
 
 	if (image->get_zsize()==1) {
-		string s=(string)params["sym"];
 		if (s[0]!='c' && s[0]!='C') throw ImageDimensionException("xform.applysym: Cn symmetry required for 2-D symmetrization");
-		int n=atoi(s.c_str()+1);
 		if (n<=0) throw InvalidValueException(n,"xform.applysym: Cn symmetry, n>0");
 
 		for (int i=0; i<n; i++) {
@@ -1489,6 +1710,7 @@ EMData* ApplySymProcessor::process(const EMData * const image)
 		}
 		EMData *ret=imgavg->finish();
 		delete imgavg;
+		if (image->has_attr("ptcl_repr")) ret->set_attr("ptcl_repr",(int)image->get_attr("ptcl_repr"));	// copy if present in source, otherwise leave set to symmetry
 		return ret;
 	}
 
@@ -1978,6 +2200,47 @@ void DoGFourierProcessor::create_radial_func(vector < float >&radial_mask) const
 	}
 }
 
+void RangeZeroProcessor::process_inplace(EMData * image)
+{
+	if (!image) {
+		LOGWARN("NULL Image");
+		return;
+	}
+	
+	float gauss_width = params.set_default("gauss_width",0.0f);
+
+	if (gauss_width<=0) {
+		size_t size = (size_t)image->get_xsize() *
+					(size_t)image->get_ysize() *
+					(size_t)image->get_zsize();
+		float *data = image->get_data();
+
+		for (size_t i = 0; i < size; ++i) {
+			if (data[i]>=minval && data[i]<=maxval) data[i]=0.0f;
+		}
+		image->update();
+	}
+	else {
+		int nx = image->get_xsize();
+		int ny = image->get_ysize();
+		int nz = image->get_zsize();
+		float wid=gauss_width/(ny*ny);
+		
+		for (int z=0; z<nz; z++) {
+			for (int y=0; y<ny; y++) {
+				for (int x=0; x<nx; x++) {
+					float cor=exp(-Util::hypot3sq(x-nx/2,y-ny/2,z-nz/2)*wid);
+					if (image->get_value_at(x,y,z)>=minval*cor && image->get_value_at(x,y,z)<=maxval*cor) image->set_value_at(x,y,z,0.0f);
+				}
+			}
+		}
+		image->update();
+	}
+		
+}
+
+
+
 void RealPixelProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
@@ -2001,6 +2264,7 @@ void RealPixelProcessor::process_inplace(EMData * image)
 	}
 	image->update();
 }
+
 
 void CoordinateProcessor::process_inplace(EMData * image)
 {
@@ -2333,77 +2597,115 @@ void LaplacianProcessor::create_kernel() const
 	}
 }
 
-void BoxStatProcessor::process_inplace(EMData * image)
+void SetBitsProcessor::process_inplace(EMData *image)
+{
+	if (!image) return;
+
+	float nsigma = params.set_default("nsigma",3.0f);
+	int bits = params.set_default("bits",5);
+	int floatbits = params.set_default("floatbits",-1);
+	float sigma = image->get_attr("sigma");
+	float mean = image->get_attr("mean");
+	float bitmax=pow(2.,bits);
+	
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+	size_t total_size = (size_t)nx * (size_t)ny * (size_t)nz;
+	
+	if (floatbits<=0) {
+		float min=image->get_attr("minimum");
+		float max=image->get_attr("maximum");
+		
+		// our max/min are either the actual max/min, or mean+-nsigma*sigma
+		// whichever produces the smaller range. That way by specifying a large
+		// nsigma you can get the actual min/max of the image easily
+		if (mean-nsigma*sigma>min) min=mean-nsigma*sigma;
+		if (mean+nsigma*sigma<max) max=mean+nsigma*sigma;
+		
+
+		for (size_t i=0; i<total_size; i++) {
+			float newval=floor((image->get_value_at_index(i)-min)*bitmax/(max-min)
+				
+			);
+			if (newval<0) newval=0;
+			if (newval>=bitmax) newval=bitmax-1.0f;
+			image->set_value_at_index(i,newval);
+		}
+	}
+	else {
+		// In this version, we keep a specified number of significant bits in the floating point significand, leaving the exponent and sign alone
+		if (floatbits>22) throw InvalidValueException(floatbits,"floatbits must be <23");
+		unsigned int bitmask= 0xffffffff << (23-floatbits); // this will leave 1 in the sign and exponent bits, along with the specified number of significand bits
+		for (size_t i=0; i<total_size; i++) {
+			float newval=image->get_value_at_index(i);
+			unsigned int *newvali = (unsigned int*)&newval;
+			*newvali&=bitmask;
+			image->set_value_at_index(i,newval);
+		}
+	}
+}
+
+
+void BoxStatProcessor::process_inplace(EMData *image) {
+	EMData *cpy = process(image);
+	memcpy(image->get_data(),cpy->get_data(),image->get_size()*sizeof(float));
+	delete cpy;
+}
+
+// mirrors coordinates at box edges
+inline int MIRE(int x,int nx) { return x<0?-x:(x>=nx?nx-(x-nx+1):x); }
+
+EMData *BoxStatProcessor::process(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
-		return;
+		return NULL;
 	}
+
 
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 
-	int n = params.set_default("radius",1);
-	int areasize = 2 * n + 1;
+	int dx=1,dy=1,dz=1;
+	if (params.has_key("radius")) dx=dy=dz=params["radius"];
+	if (params.has_key("xsize")) dx=params["xsize"];
+	if (params.has_key("ysize")) dy=params["ysize"];
+	if (params.has_key("zsize")) dz=params["zsize"];
+	if (nz==1) dz=0;
 
-	int matrix_size = areasize * areasize;
-	if (nz > 1) {
-		matrix_size *= areasize;
-	}
+	int matrix_size = (2*dx+1)*(2*dy+1)*(2*dz+1);
 
-	float *array = new float[matrix_size];
+	vector<float> array(matrix_size);
 //	image->process_inplace("normalize");
 
-	float *data = image->get_data();
-	size_t total_size = (size_t)nx * (size_t)ny * (size_t)nz;
-	float *data2 = new float[total_size];
-	memcpy(data2, data, total_size * sizeof(float));
-
-	int z_begin = 0;
-	int z_end = 1;
-	int nzz=0;
-	if (nz > 1) {
-		z_begin = n;
-		z_end = nz - n;
-		nzz=n;
-	}
-
-	int nxy = nx * ny;
-
-	for (int k = z_begin; k < z_end; k++) {
-		size_t knxy = (size_t)k * nxy;
-
-		for (int j = n; j < ny - n; j++) {
-			int jnx = j * nx;
-
-			for (int i = n; i < nx - n; i++) {
-				size_t s = 0;
-
-				for (int i2 = i - n; i2 <= i + n; i2++) {
-					for (int j2 = j - n; j2 <= j + n; j2++) {
-						for (int k2 = k - nzz; k2 <= k + nzz; k2++) {
-							array[s] = data2[i2 + j2 * nx + (size_t)k2 * nxy];
-							++s;
+	EMData *ret = image->copy_head();
+	
+	// The old version of this code had a lot of hand optimizations, which likely weren't accomplishing much
+	// This is much simpler, but relies on the compiler to optimize. May be some cost associated with the new
+	// edge-mirroring policy which could be hand optomized if necessary
+	for (int k=0; k<nz; k++) {
+		for (int j=0; j<ny; j++) {
+			for (int i=0; i<nx; i++) {
+				
+				for (int kk=k-dz,s=0; kk<=k+dz; kk++) {
+					for (int jj=j-dy; jj<=j+dy; jj++) {
+						for (int ii=i-dx; ii<=i+dx; ii++,s++) {
+							array[s]=image->get_value_at(MIRE(ii,nx),MIRE(jj,ny),MIRE(kk,nz));
 						}
 					}
 				}
-
-				process_pixel(&data[i + jnx + knxy], array, matrix_size);
+				float newv=image->get_value_at(i,j,k);
+				process_pixel(&newv,array.data(),matrix_size);
+				ret->set_value_at(i,j,k,newv);
 			}
 		}
 	}
-
-	image->update();
-	// We don't process pixels near the edge, so they will be "funny". Better to zero them ... I hope
-	if (nz>1) image->process_inplace("mask.zeroedge3d",Dict("x0",n,"y0",n,"z0",n));
-	else image->process_inplace("mask.zeroedge2d",Dict("x0",n,"y0",n));
-		
-	if( data2 )
-	{
-		delete[]data2;
-		data2 = 0;
-	}
+	
+	ret->update();
+	
+	return ret;
 }
 
 void DiffBlockProcessor::process_inplace(EMData * image)
@@ -2505,11 +2807,7 @@ void CutoffBlockProcessor::process_inplace(EMData * image)
 						continue;
 					}
 
-#ifdef	_WIN32
-					if (_hypot(j, i) < value2) {
-#else
 					if (hypot(j, i) < value2) {
-#endif
 						int t = j * 2 + (i + v1 / 2) * (v1 + 2);
 						sum += (fft_data[t] * fft_data[t] + fft_data[t + 1] * fft_data[t + 1]);
 						nitems++;
@@ -3701,48 +3999,20 @@ void RealToFFTProcessor::process_inplace(EMData *image)
 	}
 
 	// Note : 2D only!
-	int nz = image->get_zsize();
-	if (nz > 1) {
-		LOGERR("%s Processor doesn't support 3D models", get_name().c_str());
-		throw ImageDimensionException("3D model not supported");
-	}
+	//int nz = image->get_zsize();
+	//if (nz > 1) {
+	//	LOGERR("%s Processor doesn't support 3D models", get_name().c_str());
+	//	throw ImageDimensionException("3D model not supported");
+	//}
 
 	EMData *ff=image->do_fft();
-	ff->ri2ap();
-
-	int nx=image->get_xsize();
-	int ny=image->get_ysize();
-
-	int x,y;
-	float norm=static_cast<float>(nx*ny);
-
-	for (y=0; y<ny; y++) image->set_value_at(0,y,0);
-
-	for (x=1; x<nx/2; x++) {
-		for (y=0; y<ny; y++) {
-			int y2;
-			if (y<ny/2) y2=y+ny/2;
-			else if (y==ny/2) y2=ny;
-			else y2=y-ny/2;
-			image->set_value_at(x,y,ff->get_value_at(nx-x*2,ny-y2)/norm);
-		}
-	}
-
-	for (x=nx/2; x<nx; x++) {
-		for (y=0; y<ny; y++) {
-			int y2;
-			if (y<ny/2) y2=y+ny/2;
-			else y2=y-ny/2;
-			image->set_value_at(x,y,ff->get_value_at(x*2-nx,y2)/norm);
-		}
-	}
+	ff->process_inplace("xform.fourierorigin.tocenter");
+	EMData *ren=ff->get_fft_amplitude();
+	memcpy((void*)image->get_data(),(void*)ren->get_data(),image->get_size()*sizeof(float));
 
 	image->update();
-	if( ff )
-	{
-		delete ff;
-		ff = 0;
-	}
+	if( ff ) { delete ff; ff = 0; }
+	if( ren ) { delete ren; ren = 0; }
 }
 
 void SigmaZeroEdgeProcessor::process_inplace(EMData * image)
@@ -3784,7 +4054,11 @@ void SigmaZeroEdgeProcessor::process_inplace(EMData * image)
 		for (y=1; y<ny; y++) { if (d[corn-y*nx]!=d[corn]) break; }
 		if (y==ny) zval=d[corn];
 
-		if (zval!=9.99e23f) { image->set_attr("hadzeroedge",1); printf("zeroedge %f\n",zval); }
+		if (zval!=9.99e23f) { 
+			image->set_attr("hadzeroedge",1); 
+// 			printf("zeroedge %f\n",zval); 
+			
+		}
 		else image->set_attr("hadzeroedge",0);
 
 		// This tries to detect images where the edges have been filled with the nearest non-zero value. The filter does nothing, but we set the tag.
@@ -4020,11 +4294,7 @@ void BeamstopProcessor::process_inplace(EMData * image)
 	for (int i = 0; i < nx; i++) {
 		for (int j = 0; j < ny; j++) {
 
-#ifdef	_WIN32
-			int r = Util::round(_hypot((float) i - cenx, (float) j - ceny));
-#else
 			int r = Util::round(hypot((float) i - cenx, (float) j - ceny));
-#endif	//_WIN32
 
 			if (value1 < 0) {
 				if (data[i + j * nx] < (mean_values[r] - sigma_values[r] * thr)) {
@@ -4299,7 +4569,7 @@ void ZeroEdgePlaneProcessor::process_inplace(EMData * image)
 	int y0=params["y0"];
 	int y1=params.set_default("y1",y0);
 	int z0=params["z0"];
-	int z1=params.set_default("z1",z1);
+	int z1=params.set_default("z1",z0);
 
 	size_t row_size = nx * sizeof(float);
 	size_t nxy = nx * ny;
@@ -4385,77 +4655,52 @@ float NormalizeUnitSumProcessor::calc_sigma(EMData * image) const
 	return ret==0.0f?1.0f:ret;
 }
 
-float NormalizeMaskProcessor::calc_sigma(EMData * image) const
+void NormalizeMaskProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
-		return 0;
+		return;
 	}
 	EMData *mask = params["mask"];
-	int no_sigma = params["no_sigma"];
+	int no_sigma = params.set_default("no_sigma",0);
+	int apply_mask = params.set_default("apply_mask",0);
 
-	if(no_sigma == 0) {
-		return 1;
-	}
-	else {
-		if (!EMUtil::is_same_size(mask, image)) {
-			LOGERR("normalize.maskProcessor: mask and image must be the same size");
-			throw ImageDimensionException("mask and image must be the same size");
-		}
-
-		float *data = image->get_data();
-		float *mask_data = mask->get_data();
-		size_t size = (size_t)image->get_xsize() * image->get_ysize() * image->get_zsize();
-		double sum = 0;
-		double sq2 = 0;
-		size_t n_norm = 0;
-
-		for (size_t i = 0; i < size; ++i) {
-			if (mask_data[i] > 0.5f) {
-				sum += data[i];
-				sq2 += data[i]*double (data[i]);
-				n_norm++;
+	int nx=image->get_xsize();
+	int ny=image->get_ysize();
+	int nz=image->get_zsize();
+	
+	double sum=0;
+	double sumsq=0;
+	double nnz=0;
+	
+	for (int z=0; z<nz; z++) {
+		for (int y=0; y<ny; y++) {
+			for (int x=0; x<nx; x++) {
+				double m=mask->get_value_at(x,y,z);
+				if (m==0) continue;
+				if (!apply_mask) m=1.0;		// If not applying the mask (which may have values between 0 and 1) we don't want to alter the values
+				double v=(double)image->get_value_at(x,y,z)*m;
+				sum+=v;
+				sumsq+=v*v;
+				nnz+=1.0;
 			}
 		}
-		return sqrt(static_cast<float>((sq2 - sum * sum /n_norm)/(n_norm -1))) ;
 	}
-}
-
-float NormalizeMaskProcessor::calc_mean(EMData * image) const
-{
-	if (!image) {
-		LOGWARN("NULL Image");
-		return 0;
-	}
-	EMData *mask = params["mask"];
-
-	if (!EMUtil::is_same_size(mask, image)) {
-		LOGERR("normalize.maskProcessor: mask and image must be the same size");
-		throw ImageDimensionException("mask and image must be the same size");
-	}
-
-	float *data = image->get_data();
-	float *mask_data = mask->get_data();
-	size_t size = (size_t)image->get_xsize() * image->get_ysize() * image->get_zsize();
-	double sum = 0;
-	size_t n_norm = 0;
-
-	for (size_t i = 0; i < size; ++i) {
-		if (mask_data[i] > 0.5f) {
-			sum += data[i];
-			n_norm++;
+	
+	float mean=(float)(sum/nnz);
+	float sigma=sqrt((float)(sumsq-sum*sum/nnz)/nnz);
+	if (no_sigma) sigma=1.0f;
+	
+	for (int z=0; z<nz; z++) {
+		for (int y=0; y<ny; y++) {
+			for (int x=0; x<nx; x++) {
+				float m=mask->get_value_at(x,y,z);
+				if (!apply_mask) m=1.0;		// If not applying the mask (which may have values between 0 and 1) we don't want to alter the values
+				if (m==0) image->set_value_at(x,y,z,0);
+				else image->set_value_at(x,y,z,(image->get_value_at(x,y,z)*m-mean)/sigma);
+			}
 		}
 	}
-
-	float mean = 0;
-	if (n_norm == 0) {
-		mean = image->get_edge_mean();
-	}
-	else {
-		mean = (float) sum / n_norm;
-	}
-
-	return mean;
 }
 
 void NormalizeRampNormVar::process_inplace(EMData * image)
@@ -4742,6 +4987,47 @@ float NormalizeStdProcessor::calc_mean(EMData * image) const
 	}
 	return image->get_attr("mean");
 }
+
+float NormalizeHistPeakProcessor::calc_mean(EMData * image) const
+{
+	if (!image) {
+		LOGWARN("NULL Image");
+		return 0;
+	}
+	float mean = image->get_attr("mean");
+	float sig = image->get_attr("sigma");
+	size_t n=image->get_size();
+	
+	// We want at least 100 values per bin on average
+	int hist_size = image->get_size()/100;
+	if (hist_size>1000) hist_size=1000;
+	if (hist_size<5) hist_size=5;
+	vector<float> hist(hist_size,0.0f);
+	
+	float histmin=mean-2.0f*sig;
+	float histmax=mean+2.0f*sig;
+	float step=(histmax-histmin)/(hist_size-1);
+	for (size_t i=0; i<n; i++) {
+		int bin = (image->get_value_at_index(i)-histmin)/step;
+		bin=bin<0?0:(bin>=hist_size?hist_size-1:bin);
+		hist[bin]++;
+	}
+	
+	// yes, probably could use fancy vector methods...
+	int maxv=hist[1],maxn=1;
+	for (int i=2; i<hist_size-1; i++) {
+		if (hist[i]>maxv) { maxv=hist[i]; maxn=i; }
+	}
+	
+	// weighted average position of the peak and nearest neighbors
+	float v1=hist[maxn-1],v2=hist[maxn],v3=hist[maxn+1];
+	float ret= (v1*(maxn-1)+v2*maxn+v3*(maxn+1))/(v1+v2+v3)*step+histmin;
+	printf("%f %f %f %f %f %f\n",v1,v2,v3,mean,sig,ret);
+	
+	return ret;
+}
+
+
 
 EMData *SubtractOptProcessor::process(const EMData * const image)
 {
@@ -5306,11 +5592,7 @@ void RotationalAverageProcessor::process_inplace(EMData * image)
 	if (image->is_complex() && image->get_ndim() == 2) {
 		for (int y = -ny/2; y < ny/2; y++) {
 			for (int x = -ny/2-1; x < nx/2+1; x++) {
-	#ifdef	_WIN32
-				float r = (float) _hypot(x,y);
-	#else
 				float r = (float) hypot(x,y);
-	#endif	//_WIN32
 				int i = (int) floor(r);
 				r -= i;
 				if (i >= 0 && i < nx / 2 - 1) {
@@ -5328,11 +5610,7 @@ void RotationalAverageProcessor::process_inplace(EMData * image)
 	else if (image->get_ndim() == 2) {
 		for (int y = 0; y < ny; y++) {
 			for (int x = 0; x < nx; x++, c++) {
-	#ifdef	_WIN32
-				float r = (float) _hypot(x - midx, y - midy);
-	#else
 				float r = (float) hypot(x - midx, y - midy);
-	#endif	//_WIN32
 
 				int i = (int) floor(r);
 				r -= i;
@@ -5398,11 +5676,7 @@ void RotationalSubstractProcessor::process_inplace(EMData * image)
 	int c = 0;
 	for (int y = 0; y < ny; y++) {
 		for (int x = 0; x < nx; x++, c++) {
-#ifdef	_WIN32
-			float r = (float) _hypot(x - nx / 2, y - ny / 2);
-#else
 			float r = (float) hypot(x - nx / 2, y - ny / 2);
-#endif
 			int i = (int) floor(r);
 			r -= i;
 			if (i >= 0 && i < nx / 2 - 1) {
@@ -7414,26 +7688,28 @@ void CTFCorrProcessor::process_inplace(EMData * image)
 
 	float defocus = params.set_default("defocus",3.0);
 	float ac = params.set_default("ac",10.0);
+	float cs = params.set_default("cs",2.7);
 	float voltage = params.set_default("voltage",300.0);
 	float apix = params.set_default("apix",image->get_attr("apix_x"));
-	int useheader = params.set_default("useheader",1);
-
+	float hppix = params.set_default("hppix",-1.0f);
+	int useheader = params.set_default("useheader",0);
+	int phaseflip = params.set_default("phaseflip",0);
 
 	int ny = image->get_ysize();
 	EMAN2Ctf ctf;
 	if (image->has_attr("ctf") && useheader){
 		
 		ctf.copy_from((Ctf *)(image->get_attr("ctf")));
+//		printf("CTF %f\t%f\t%f\t%f\n",ctf.defocus,ctf.ampcont,ctf.voltage,ctf.apix);
 	}
 	else {
 		ctf.defocus=defocus;
 		ctf.voltage=voltage;
-		ctf.cs=4.1;				// has negligible impact, so we just use a default
+		ctf.cs=cs;
 		
 		ctf.ampcont=ac;
 		ctf.dfdiff=0;
 		ctf.bfactor=200.0;
-		
 	}
 	ctf.apix=apix;
 	ctf.dsbg=1.0/(ctf.apix*ny);
@@ -7443,7 +7719,8 @@ void CTFCorrProcessor::process_inplace(EMData * image)
 
 	// reciprocal until the first CTF maximum, then no filter after that
 	int i;
-	for (i=0; i<np/2-1; i++) {
+	filter[0]=1.0;
+	for (i=1; i<np/2-1; i++) {
 		if (filter[i+1]<filter[i]) {
 			filter[i]=1.0/filter[i];
 			break;
@@ -7452,8 +7729,13 @@ void CTFCorrProcessor::process_inplace(EMData * image)
 	}
 	int gi=i;
 	while (i<np/2) {
-		filter[i]=filter[gi];
+		if (phaseflip) filter[i]=filter[gi]*(filter[i]<0?-1.0f:1.0f);
+		else filter[i]=filter[gi];
 		i++;
+	}
+	
+	if (hppix>0) {
+		for (int i=0; i<(int)hppix*3.0; i++) filter[i]*=tanh((float)i/hppix);
 	}
 
 //	for (i=0; i<np/2; i++) printf("%d\t%1.3g\n",i,filter[i]);
@@ -7999,11 +8281,16 @@ void MatchSFProcessor::create_radial_func(vector < float >&rad,EMData *image) co
 
 }
 
-void SetSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *image) const {
-	// The radial mask comes in with the existing radial image profile
-	// The radial mask runs from 0 to the corner in Fourier space
+void SetIsoPowProcessor::process_inplace(EMData * image) {
 
-	XYData *sf = params["strucfac"];
+	EMData *tmp = 0;
+	if (!image->is_complex()) { tmp=image; image=tmp->do_fft(); }
+	
+	XYData *tmpsf = params["strucfac"];
+	XYData *sf = new XYData();
+	sf->set_state(tmpsf->get_state());
+	for (int i=0; i<sf->get_size(); i++) sf->set_y(i,sqrt(sf->get_y(i)));
+	
 	if(params.has_key("apix")) {
 		image->set_attr("apix_x", (float)params["apix"]);
 		image->set_attr("apix_y", (float)params["apix"]);
@@ -8017,6 +8304,72 @@ void SetSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *ima
 	}
 
 	float apix=image->get_attr("apix_x");
+	int nx=image->get_xsize();
+	int ny=image->get_ysize();
+	int nz=image->get_zsize();
+	
+	if (nz==1) {
+		for (int j=-ny/2; j<ny/2; j++) {
+			for (int i=0; i<nx/2; i++) {
+				float r=Util::hypot2(i/(float)(nx-2),j/(float)ny)/apix;	// radius in terms of Nyquist=0.5
+				float a=sf->get_yatx(r);
+				std::complex<float> v=image->get_complex_at(i,j);
+				if (v!=0.0f) v*=a/abs(v);
+				else v=std::complex<float>(a,0);
+				image->set_complex_at(i,j,v);
+			}
+		}
+	}
+	else {
+		for (int k=-nz/2; k<nz/2; k++) {
+			for (int j=-ny/2; j<ny/2; j++) {
+				for (int i=0; i<nx/2; i++) {
+					float r=Util::hypot3(i/(float)(nx-2),j/(float)ny,k/(float)nz)/apix;	// radius in terms of Nyquist=0.5
+					float a=sf->get_yatx(r);
+					std::complex<float> v=image->get_complex_at(i,j,k);
+					if (v!=0.0f) v*=a/abs(v);
+					else v=std::complex<float>(a,0);
+					image->set_complex_at(i,j,k,v);
+				}
+			}
+		}
+	}
+	
+	if (tmp!=0) {
+		EMData *tmp2=image->do_ift();
+		memcpy(tmp->get_data(),tmp2->get_data(),tmp2->get_size()*sizeof(float));
+		delete tmp2;
+		delete image;
+	}
+	delete sf;
+	
+}
+
+
+void SetSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *image) const {
+	// The radial mask comes in with the existing radial image profile
+	// The radial mask runs from 0 to the corner in Fourier space
+
+	XYData *sf = 0;
+	if (params.has_key("filename")) {
+		sf=new XYData;
+		sf->read_file((const char *)params["filename"]);
+	}
+	else sf = params["strucfac"];
+	if(params.has_key("apix")) {
+		image->set_attr("apix_x", (float)params["apix"]);
+		image->set_attr("apix_y", (float)params["apix"]);
+		image->set_attr("apix_z", (float)params["apix"]);
+		if (image->has_attr("ctf")) {
+			Ctf *ctf=image->get_attr("ctf");
+			ctf->apix=(float)params["apix"];
+			image->set_attr("ctf",ctf);
+			delete(ctf);
+		}
+	}
+	float scale=params.set_default("scale",1.0f);
+
+	float apix=image->get_attr("apix_x");
 	int ny=image->get_ysize();
 	int n = radial_mask.size();
 	int nmax=(int)floor(sf->get_x(sf->get_size()-1)*apix*ny);		// This is the radius at which we have our last valid value from the curve
@@ -8025,15 +8378,17 @@ void SetSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *ima
 	if ((nmax)<3) throw InvalidParameterException("Insufficient structure factor data for SetSFProcessor to be meaningful");
 
 	int i;
-	for (i=0; i<nmax; i++) {
+	radial_mask[0]=1;
+	for (i=1; i<nmax; i++) {
 //		if (radial_mask[i]>0)
 //		{
 //			radial_mask[i]= sqrt(n*sf->get_yatx(i/(apix*2.0f*n),false)/radial_mask[i]);
 //		}
 		if (radial_mask[i]>0) {
-			radial_mask[i]= sqrt((ny*ny*ny)*sf->get_yatx(i/(apix*ny))/radial_mask[i]);
+			radial_mask[i]= sqrt((ny*ny*ny)*scale*sf->get_yatx(i/(apix*ny))/radial_mask[i]);
 		}
 		else if (i>0) radial_mask[i]=radial_mask[i-1];	// For points where the existing power spectrum was 0
+	
 	}
 
 	// Continue to use a fixed factor after we run out of 'sf' values
@@ -8043,6 +8398,7 @@ void SetSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *ima
 		i++;
 	}
 
+	if (params.has_key("filename")) delete sf;
 }
 
 void SmartMaskProcessor::process_inplace(EMData * image)
@@ -8434,10 +8790,17 @@ EMData* DirectionalSumProcessor::process(const EMData* const image ) {
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 	EMData* ret = new EMData;
+	if (image->has_attr("ptcl_repr")) ret->set_attr("ptcl_repr",image->get_attr("ptcl_repr"));
+	if (image->has_attr("xform_align2d")) ret->set_attr("xform_align2d",image->get_attr("xform_align2d"));
+	if (image->has_attr("xform_align3d")) ret->set_attr("xform_align3d",image->get_attr("xform_align3d"));
+	ret->set_attr("apix_y",image->get_attr("apix_y"));	// potentially meaningless, may get overwritten, but better to be self-consistent
+	ret->set_attr("apix_z",image->get_attr("apix_z"));	// meaningless, but better to be self-consistent
+	
 
 	if (nz==1) {
 		if (dir=="x") {
 			ret->set_size(ny,1,1);
+			ret->set_attr("apix_x",image->get_attr("apix_y"));
 			for (int y=0; y<ny; y++) {
 				double sm=0;
 				for (int x=0; x<nx; x++) sm+=image->get_value_at(x,y);
@@ -8447,6 +8810,7 @@ EMData* DirectionalSumProcessor::process(const EMData* const image ) {
 		}
 		else if (dir=="y") {
 			ret->set_size(nx,1,1);
+			ret->set_attr("apix_x",image->get_attr("apix_x"));
 			for (int x=0; x<nx; x++) {
 				double sm=0;
 				for (int y=0; y<ny; y++) sm+=image->get_value_at(x,y);
@@ -8463,6 +8827,8 @@ EMData* DirectionalSumProcessor::process(const EMData* const image ) {
 	// compress one of the dimensions
 	if ( dir == "x" ) {
 		ret->set_size(nz,ny);
+		ret->set_attr("apix_x",image->get_attr("apix_z"));
+		ret->set_attr("apix_y",image->get_attr("apix_y"));
 
 		// bounds checks
 		if (a0<0) a0+=nx;
@@ -8482,6 +8848,8 @@ EMData* DirectionalSumProcessor::process(const EMData* const image ) {
 	}
 	else if ( dir == "y" ) {
 		ret->set_size(nx,nz);
+		ret->set_attr("apix_x",image->get_attr("apix_x"));
+		ret->set_attr("apix_y",image->get_attr("apix_z"));
 
 		// bounds checks
 		if (a0<0) a0+=ny;
@@ -8501,6 +8869,8 @@ EMData* DirectionalSumProcessor::process(const EMData* const image ) {
 	}
 	else if ( dir == "z" ) {
 		ret->set_size(nx,ny);
+		ret->set_attr("apix_x",image->get_attr("apix_x"));
+		ret->set_attr("apix_y",image->get_attr("apix_y"));
 
 		// bounds checks
 		if (a0<0) a0+=nz;
@@ -8533,6 +8903,64 @@ void TestImageProcessor::preprocess(EMData * image)
 	nx = image->get_xsize();
 	ny = image->get_ysize();
 	nz = image->get_zsize();
+}
+
+void TestImageFourierGaussianBand::process_inplace(EMData* image)
+{
+	if (!image->is_complex()) {
+		int nx = image->get_xsize();
+		int offset = 2 - nx%2;
+
+		image->set_size(nx+offset,image->get_ysize(),image->get_zsize());
+		image->set_complex(true);
+		if (1 == offset) image->set_fftodd(true);
+		else image->set_fftodd(false);
+		image->set_fftpad(true);
+	}
+	image->set_ri(true);
+	image->to_zero();
+
+	float center = params.set_default("center",ny/4);
+	float width = params.set_default("width",sqrt(2.0f));
+
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+	int w3 = floor(width*3);
+	float l0 = pow(center-w3,2.0f);
+	float l1 = pow(center+w3,2.0f);
+	
+	if (nz==1) {
+		// 1D
+		if (ny==1) {
+			for (int x=0; x<nx/2; x++) {
+				if (abs(x-center)>w3) continue;
+				image->set_complex_at(x,0,exp(-pow((x-center)/width,2.0f)));
+			}
+		}
+		// 2D
+		else {
+			for (int y=-ny/2; y<ny/2; y++) {
+				for (int x=0; x<nx/2; x++) {
+					float r=Util::hypot_fast(x,y);
+					if (r<center-w3 || r>center+w3) continue;
+					image->set_complex_at(x,y,exp(-pow((r-center)/width,2.0f)));
+				}
+			}
+		}
+	}
+	else {
+		// 3D
+		for (int z=-nz/2; z<nz/2; z++) {
+			for (int y=-ny/2; y<ny/2; y++) {
+				for (int x=0; x<nx/2; x++) {
+					float r=Util::hypot3(x,y,z);
+					if (r<center-w3 || r>center+w3) continue;
+					image->set_complex_at(x,y,z,exp(-pow((r-center)/width,2.0f)));
+				}
+			}
+		}
+	}
 }
 
 
@@ -9043,11 +9471,7 @@ void TestImageScurve::process_inplace(EMData * image)
 		int y=ny/4+i*ny/200;
 		for (int xx=x-nx/10; xx<x+nx/10; xx++) {
 			for (int yy=y-ny/10; yy<y+ny/10; yy++) {
-#ifdef	_WIN32
-				(*image)(xx,yy)+=exp(-pow(static_cast<float>(_hypot(xx-x,yy-y))*30.0f/nx,2.0f))*(sin(static_cast<float>((xx-x)*(yy-y)))+.5f);
-#else
 				(*image)(xx,yy)+=exp(-pow(static_cast<float>(hypot(xx-x,yy-y))*30.0f/nx,2.0f))*(sin(static_cast<float>((xx-x)*(yy-y)))+.5f);
-#endif
 			}
 		}
 	}
@@ -9125,11 +9549,7 @@ void TestImageSphericalWave::process_inplace(EMData * image)
 	if(ndim==2) {	//2D
 		for(int j=0; j<ny; ++j) {
 			for(int i=0; i<nx; ++i) {
-#ifdef _WIN32
-				float r=_hypotf(x-(float)i,y-(float)j);
-#else
 				float r=hypot(x-(float)i,y-(float)j);
-#endif	//_WIN32
 				if (r<.5) continue;
 				image->set_value_at(i,j,cos(2*(float)pi*r/wavelength+phase)/r);
 			}
@@ -9434,6 +9854,7 @@ void TestImageCirclesphere::process_inplace(EMData * image)
 void TestImageHollowEllipse::process_inplace(EMData * image)
 {
 	preprocess(image);
+	image->to_zero();	// The testimage processors are supposed to replace the image contents
 
 	float width = params.set_default("width",2.0f);
 
@@ -9516,6 +9937,7 @@ void TestImageHollowEllipse::process_inplace(EMData * image)
 void TestImageEllipse::process_inplace(EMData * image)
 {
 	preprocess(image);
+	image->to_zero();	// The testimage processors are supposed to replace the image contents
 
 
 	float a = params.set_default("a",nx/2.0f-1.0f);
@@ -9910,6 +10332,31 @@ void CCDNormProcessor::process_inplace(EMData * image)
 
 }
 
+EMData* EnhanceProcessor::process(const EMData * const image)
+{
+	int nx=image->get_xsize();
+	int nz=image->get_xsize();
+	EMData * result = image->process("filter.highpass.gauss",Dict("cutoff_freq",0.01f));
+	if (nz==1) result->process_inplace("mask.decayedge2d",Dict("width",nx/50));
+	result->add(-float(result->get_attr("minimum")));
+	result->process_inplace("filter.lowpass.tophat",Dict("cutoff_freq",0.05));
+	result->process_inplace("math.squared");
+	result->process_inplace("filter.lowpass.gauss",Dict("cutoff_freq",10.0f/(nx/40*(float)image->get_attr("apix_x"))));
+	result->process_inplace("normalize.edgemean");
+	
+	return result;
+}
+
+void EnhanceProcessor::process_inplace(EMData * image)
+{
+	// slightly inefficient, but best we can easily do
+	EMData *tmp = process(image);
+	memcpy(image->get_data(),tmp->get_data(),image->get_size()*sizeof(float));
+	delete tmp;
+	return;
+}
+
+
 void WaveletProcessor::process_inplace(EMData *image)
 {
 	if (image->get_zsize() != 1) {
@@ -9971,7 +10418,7 @@ void FFTProcessor::process_inplace(EMData* image)
 		}
 	}
 }
-
+/*
 void RadialProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
@@ -10050,6 +10497,9 @@ void RadialProcessor::process_inplace(EMData * image)
 
 	image->update();
 }
+*/
+
+
 
 void ReverseProcessor::process_inplace(EMData *image)
 {
@@ -10215,7 +10665,6 @@ int EMAN::multi_processors(EMData * image, vector < string > processornames)
 	}
 	return 0;
 }
-
 
 float* TransformProcessor::transform(const EMData* const image, const Transform& t) const {
 
@@ -11390,9 +11839,14 @@ void ScaleTransformProcessor::process_inplace(EMData* image) {
 	}
 }
 
-struct WSsortlist { float pix; short x,y,z; };
-
-int WScmp(const void *a, const void *b) { float x=((WSsortlist*)b)->pix-((WSsortlist*)a)->pix; return (x>0)-(x<0); }		// comparison function for qsort
+struct WSsortlist {
+    float pix;
+    short x,y,z;
+    
+    friend bool operator<(const WSsortlist& l, const WSsortlist& r) {
+        return l.pix < r.pix;
+    }
+};
 
 // inefficient since a copy was probably already made, but best we can do
 void WatershedProcessor::process_inplace(EMData *image) {
@@ -11406,6 +11860,7 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 	int nseg = params.set_default("nseg",12);
 	float thr = params.set_default("thr",0.5f);
 	int segbymerge = params.set_default("segbymerge",0);
+	vector<float> centers;
 	int verbose = params.set_default("verbose",0);
 	if (nseg<=1) throw InvalidValueException(nseg,"nseg must be greater than 1");
 
@@ -11422,9 +11877,9 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 
 	// Count the number of above threshold pixels
 	size_t n2seg = 0;
-	for (int z=0; z<nz; z++) {
-		for (int y=0; y<ny; y++) {
-			for (int x=0; x<nx; x++) {
+	for (int z=1; z<nz-1; z++) {
+		for (int y=1; y<ny-1; y++) {
+			for (int x=1; x<nx-1; x++) {
 				if (image->get_value_at(x,y,z)>=thr) n2seg++;
 			}
 		}
@@ -11432,8 +11887,7 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 	if (verbose) printf("%ld voxels above threshold\n",n2seg);
 
 	// Extract the pixels for sorting
-//	WSsortlist srt[n2seg];
-	WSsortlist * srt = new WSsortlist[n2seg+1];
+	vector<WSsortlist> srt(n2seg);
 	size_t i=0;
 	for (int z=1; z<nz-1; z++) {
 		for (int y=1; y<ny-1; y++) {
@@ -11451,7 +11905,7 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 	if (verbose) printf("Voxels extracted, sorting\n");
 
 	// actual sort
-	qsort(&srt,n2seg,sizeof(WSsortlist),WScmp);
+	sort(srt.begin(), srt.end());
 	if (verbose) printf("Voxels sorted (%1.4g max), starting watershed\n",srt[0].pix);
 
 	// now we start with the highest value and fill in the segments
@@ -11473,6 +11927,9 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 		if (lvl==0) {
 			if (verbose) printf("%d %d %d\t%1.0f\t%1.3g\n",x,y,z,cseg,srt[i].pix);
 			lvl=cseg;
+			centers.push_back(x);
+			centers.push_back(y);
+			centers.push_back(z);
 			cseg+=1.0;
 		}
 		if (lvl>nseg) {
@@ -11508,6 +11965,7 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 		}
 		if (verbose) printf("%ld voxels changed\n",chg);
 	}
+	ret->set_attr("segment_centers",centers);
 
 	if (segbymerge) {
 		if (cseg<segbymerge) return ret;
@@ -11517,7 +11975,7 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 	if (verbose) printf("Merging segments\n");
 	// If requested, we now merge segments with the most surface contact until we have the correct final number
 	if (segbymerge) {
-		int nsegstart=(int)cseg;	// number of segments we actually generated
+		int nsegstart=(int)cseg;	// Number of segments we actually generated
 		nseg=(int)cseg;
 		EMData *mx=new EMData(nsegstart,nsegstart,1);		// This will be a "contact matrix" among segments
 		float *mxd=mx->get_data();
@@ -11580,8 +12038,6 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 		}
 
 	}
-
-	delete [] srt;
 
 	return ret;
 }
@@ -12649,8 +13105,6 @@ map<string, vector<string> > EMAN::group_processors()
 
 
 
-/* vim: set ts=4 noet: */
-
 float ModelHelixProcessor::radprofile(float r, int type)
 //Ross Coleman: modified from EMAN1 Cylinder.C by Wen Jiang
 {
@@ -12850,6 +13304,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 	
 	// Decide how large the bispectrum will be
 	int nky=params.set_default("size",0)/2;
+    
 	int nkx=nky+1;
 	if (nky<4 || nky>=cimage->get_ysize()/2) nky=cimage->get_ysize()/8;
 	if (nkx<5 || nky>=cimage->get_xsize()/2) nkx=cimage->get_xsize()/8+1;
@@ -13032,6 +13487,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 //		printf("%d\t%d\t%d\t%d\t%d\n",fp,nkx,nky,cimage->get_xsize(),cimage->get_ysize());
 		delete ret;
 		delete cimage;
+		ret2->set_attr("is_bispec_fp",(int)fp);
 		return ret2;
         }
 	// In this mode we are making a translational invariant with information we can use for rotational alignment
@@ -13134,6 +13590,7 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 		delete ret;
 		delete line;
 		delete cimage;
+		ret2->set_attr("is_bispec_rfp",(int)rfp);
 		return ret2;
 	}
 	// angular integrate mode, produces the simplest rotational invariant, ignoring rotational correlations
@@ -13144,7 +13601,8 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 		int kx=k;
 		int ky=0;
 		
-		for (float ang=0; ang<360.0; ang+=360.0/(nky*M_PI) ) {
+		for (float ang=0; ang<360.0; ang+=360.0/(nky*M_PI) ) { 
+//		for (float ang=0; ang<360.0; ang+=2 ) {// PRB changed this; change back
 			EMData *cimage2=cimage->process("xform",Dict("alpha",ang));
 			
 			for (int jy=-nky; jy<nky; jy++) {
@@ -13163,6 +13621,205 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 			}
 			delete cimage2;
 		}
+	}
+	else if (params.has_key("prbk")) {
+        
+        if (image->is_complex()) cimage = image->copy();
+        else cimage = image->do_fft();
+        cimage->process_inplace("xform.phaseorigin.tocorner");
+	
+        	// Decide how large the bispectrum will be 
+        //int nky=params.set_default("size",0)/2;
+        int nky=params.set_default("size",0);
+        
+        printf("nky = %d , size= %d \n",nky,image->get_xsize());
+        
+        //int nkx=nky+1;
+        int nkx=nky;
+
+        //cimage=new EMData((nkx*2+fp)*2-2,(nky*2+fp)*2,1);
+		//cimage->set_complex(1);
+		//cimage->set_ri(1);
+		//cimage->set_fftpad(1);
+       
+        //if (nky<4 || nky>=cimage->get_ysize()/2) nky=cimage->get_ysize()/8;
+        //if (nkx<5 || nky>=cimage->get_xsize()/2) nkx=cimage->get_xsize()/8+1;
+        //if (image->get_xsize()<nky*2)  throw ImageDimensionException("Image size smaller than requested footprint size, this is invalid."); 
+
+//        EMData* ret=new EMData(nkx*2,nky*2,1);
+        EMData* ret=new EMData(2*nkx,2*nky,1);
+        ret->set_complex(0);
+        //ret->set_fftpad(1);
+        ret->to_zero();
+
+		int k=(int)params.set_default("prbk",1);
+// 		int jkx=k;
+// 		int jky=0;
+		int kx=k; 
+		int ky=0;
+		
+//		for (float ang=0; ang<360.0; ang+=360.0/(nky*M_PI) ) { // Original
+		for (float ang=0; ang<360.0; ang+=2 ) {
+			EMData *cimage2=cimage->process("xform",Dict("alpha",ang));
+			
+			for (int qy=-nky; qy<nky; qy++) {
+				for (int qx=-nkx; qx<nkx; qx++) {
+// 					int kx=jkx-jx;
+// 					int ky=jky-jy;
+					int kqx=qx+kx;
+					int kqy=qy+ky;
+                    if (abs(kqx)>nkx || abs(kqy)>nky) continue;
+					
+//					if (abs(kx)>nkx || abs(ky)>nky) continue;
+					complex<double> v1 = (complex<double>)cimage2->get_complex_at(kx,ky);
+					complex<double> v2 = (complex<double>)cimage2->get_complex_at(qx,qy);
+					complex<double> v3 = (complex<double>)cimage2->get_complex_at(kqx,kqy);
+ 					complex<double> vTotal = (complex<double>)(v1*v2*std::conj(v3));
+                    double RealV = (real)(vTotal);
+                    int jxInd = (qx+2*nkx)%(2*nkx);
+                    int jyInd = (qy+2*nky)%(2*nky);
+                    //printf("RealV  %g vTotal %g\n",RealV,vTotal);
+                    double OldVal = ret->get_value_at(jxInd,jyInd,0);
+					ret->set_value_at(jxInd,jyInd,0,OldVal+RealV);
+					//ret->set_value_at(jxInd,jyInd,0,1);
+				}
+			}
+			delete cimage2;
+		}
+		return(ret);
+	}
+	else if (params.has_key("prbkv2")) {
+        
+        if (image->is_complex()) cimage = image->copy();
+        else cimage = image->do_fft();
+        cimage->process_inplace("xform.phaseorigin.tocorner");
+
+        int k=(int)params.set_default("prbkv2",1);
+	
+        	// Decide how large the bispectrum will be 
+        int nky= 2*k+1;
+        int nkx= 2*k+1;
+        
+        
+        printf("nkx = %d, nky = %d , size= %d \n",nkx,nky,image->get_xsize());
+        
+
+        EMData* ret=new EMData(nkx,nky,1);
+        ret->set_complex(0);
+        ret->to_zero();
+		int kx=k;
+		int ky=0;
+		int Nyquist = k;
+//		for (float ang=0; ang<360.0; ang+=360.0/(nky*M_PI) ) { // Original
+		for (float ang=0; ang<360.0; ang+=2 ) {
+			EMData *cimage2=cimage->process("xform",Dict("alpha",ang));
+			
+			for (int qy=-k; qy<k+1; qy++) { 
+                if (qy*qy> (0.75)*k*k) continue;
+				for (int qx=-k; qx<1; qx++) {
+                    if ((qx+k)*(qx+k) > (k*k - qy*qy)) continue; 
+					int kqx=qx+kx;
+					int kqy=qy+ky;
+					complex<double> v1 = (complex<double>)cimage2->get_complex_at(kx,ky);
+					complex<double> v2 = (complex<double>)cimage2->get_complex_at(qx,qy);
+					complex<double> v3 = (complex<double>)cimage2->get_complex_at(kqx,kqy);
+ 					complex<double> vTotal = (complex<double>)(v1*v2*std::conj(v3));
+                    double RealV = (real)(vTotal);
+                    int qxInd = (qx+nkx)%(nkx);
+                    int qyInd = (qy+nky)%(nky);
+                    int NegQx = k/2 +qx ;
+                    int QyInd = qy+Nyquist;
+                    //printf("qy %d qyInd %d QyInd %d qx %d qxInd %d NegQx %d k %d\n",qy, qyInd, QyInd,qx,qxInd,NegQx, k);
+                    //printf("qx %d qy %d NegQx %d QyInd %d RealV  %g vTotal %g\n",qx,qy, NegQx,QyInd, RealV,vTotal);
+                    //double OldVal = ret->get_value_at(qxInd,qyInd,0);
+                    double OldVal = ret->get_value_at(NegQx,QyInd,0);
+					//ret->set_value_at(qxInd,qyInd,0,OldVal+RealV);
+					ret->set_value_at(NegQx,QyInd,0,OldVal+RealV);
+					//ret->set_value_at(qxInd,qyInd,0,1);
+				}
+			}
+			delete cimage2;
+		}
+		return(ret);
+	}
+ 
+	else if (params.has_key("prb3D")) {
+       
+		int hp=(int)params.set_default("hp",0);
+		int Nyquist=(int)params.set_default("prb3D",30);
+         
+        if (image->is_complex()) cimage = image->copy();
+        else cimage = image->do_fft();
+ 
+        cimage->process_inplace("xform.phaseorigin.tocorner");
+
+        //int k=(int)params.set_default("PRBkv3",1);
+	
+        	// Decide how large the bispectrum will be 
+        
+       
+        int csizex = cimage->get_xsize();
+        int csizey = cimage->get_ysize();
+        
+        printf("csizex = %d, csizey = %d  \n", csizex , csizey );
+        
+        Nyquist = (csizey+1)/2;
+        
+        printf("csizex = %d, csizey = %d, Nyquist= %d  \n", csizex , csizey, Nyquist);
+        
+        int nkx= Nyquist/2+1;
+        int nky= 2*Nyquist+2;
+        int nkz= Nyquist+1;
+        
+        
+        printf("nkx = %d, nky = %d , size= %d \n",nkx,nky,image->get_xsize());
+        
+        
+
+        EMData* ret=new EMData(nkx,nky,nkz);
+        ret->set_complex(0);
+        ret->to_zero();
+
+        //int Nyquist = 1* k;
+//		for (float ang=0; ang<360.0; ang+=360.0/(nky*M_PI) ) { // Original
+		for (float ang=0; ang<360.0; ang+=2 ) {
+			EMData *cimage2=cimage->process("xform",Dict("alpha",ang));
+
+            for (int k=0; k < Nyquist+1;k++){
+                //printf(" k %d\n",k);
+                int k2=k*k;
+                int qyMax = sqrt(3*k2/4);
+
+                for (int qy=-qyMax; qy<qyMax+1; qy++) { 
+                    //if (qy*qy> (0.75)*k*k) continue;
+                    int qxMin =k/2; qxMin *= -1;
+                    int qxMax = k - sqrt(k2-qy*qy)+0.999999; qxMax *= -1;
+                    for (int qx=qxMin; qx<qxMax+1; qx++) {
+                        //if ((qx+k)*(qx+k) > (k*k - qy*qy)) continue;
+                        //if (qx<(-k/2)) continue;
+                        int kqx=qx+k;
+                        int kqy=qy;
+                        complex<double> v1 = (complex<double>)cimage2->get_complex_at(k,0);
+                        complex<double> v2 = (complex<double>)cimage2->get_complex_at(qx,qy);
+                        complex<double> v3 = (complex<double>)cimage2->get_complex_at(kqx,kqy);
+                        complex<double> vTotal = (complex<double>)(v1*v2*std::conj(v3));
+                        double RealV = (real)(vTotal);
+                        int qxInd = (qx+nkx)%(nkx);
+                        int qyInd = (qy+nky)%(nky);
+                        int NegQx = k/2 +qx ;
+                        int QyInd = qy+Nyquist;
+                        //printf("qy %d qyInd %d QyInd %d qx %d qxInd %d NegQx %d k %d\n",qy, qyInd, QyInd,qx,qxInd,NegQx, k);
+                         //double OldVal = ret->get_value_at(qxInd,qyInd,0);
+                        double OldVal = ret->get_value_at(NegQx,QyInd,k);
+                        //ret->set_value_at(qxInd,qyInd,0,OldVal+RealV);
+                        ret->set_value_at(NegQx,QyInd,k,OldVal+RealV);
+                        //ret->set_value_at(qxInd,qyInd,0,1);
+                    }
+                }
+            }    
+			delete cimage2;
+		}
+		return(ret);
 	}
 	else if (params.has_key("jkx") && params.has_key("jky")) {
 		int jkx=(int)params.set_default("jkx",0);
@@ -13210,7 +13867,258 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 	
 	return(ret);
 }
+
+EMData* HarmonicProcessor::process(const EMData * const image) {
+	if (image->get_zsize()!=1 || image->is_complex()) throw ImageDimensionException("Only 2-D real images supported");
+
+	EMData *cimage = NULL;
+//	if (image->is_complex()) cimage = image->copy();
+//	else cimage = image->do_fft();
+	int s1=image->get_ysize();
+	EMData *im2=image->get_clip(Region(-s1*3/2,-s1*3/2,s1*4,s1*4));
+	cimage=im2->do_fft();
+	delete im2;
+	cimage->process_inplace("xform.phaseorigin.tocorner");
 	
+	// Decide how large the harmonic invariant will be
+//	int nx=cimage->get_xsize();
+	int ny=cimage->get_ysize()/8;
+	int naz=Util::calc_best_fft_size((int)params.set_default("size",ny));
+	
+	// Compute a translational invariant for a single harmonic
+	EMData* trns=new EMData(naz*2,ny/2,1);
+	trns->to_zero();
+	trns->set_complex(1);
+	trns->set_ri(1);
+	trns->set_fftpad(1);  // this is kind of meaningless in this context
+	size_t xyz=trns->get_size();
+//	printf("apix %f\tnx %d\n",(float)image->get_attr("apix_x"),(int)image->get_xsize());
+	
+	// Compute a translational invariant for a single harmonic
+	if (params.has_key("hn")) {
+		int hn=(int)params.get("hn");
+		
+		// FFT Debugging code with hn<0
+		if (hn<0) {
+			complex<float> *tmp = (complex<float>*)EMfft::fftmalloc(naz*2);
+			for (int jy=0;  jy<ny/4; jy+=2) {
+				for (int x=0; x<naz; x++) trns->set_complex_at_idx(x,jy,0,(complex<float>)std::polar((float)sin(1.0f+jy/2.0f*x*M_PI*2.0f/naz),-hn/100.0f));
+				memcpy((void*)tmp,(void*)(trns->get_data()+jy*naz*2),naz*2*sizeof(float));
+				EMfft::complex_to_complex_1d_inplace(tmp,naz*2);
+				memcpy((void*)(trns->get_data()+(jy+1)*naz*2),(void*)tmp,naz*2*sizeof(float));
+			}
+			EMfft::fftfree((float *)tmp);
+			
+			delete cimage;
+			EMData *ret=trns->get_clip(Region(0,0,naz*2,ny/4));
+			delete trns;
+//			ret->set_complex(0);
+			return(ret);
+		}
+		
+		// Here is the actual hn code
+		if (hn<1) throw InvalidParameterException("Invalid parameter, hn<1");
+		int rn = 0;
+		// rotational/translational single. If rn==0, special case where polar coordinate version of translational invariant is generated
+		if (params.has_key("rn")) {
+			rn=params.get("rn");
+
+			// Start with the translational invariant in Fourier space in a radial coordinate system
+			for (int ja=0; ja<naz; ja++) {
+				float si=sin(float(2.0*M_PI*(ja+0.5)/naz));
+				float co=cos(float(2.0*M_PI*(ja+0.5)/naz));
+				for (int jr=3; jr<ny/2 && jr*hn<ny*2; jr++) {			// This is cryoEM specific, we have bad values near the origin
+					float jx=co*jr;
+					float jy=si*jr;
+					complex<double> v2 = (complex<double>)cimage->get_complex_at_interp(jx,jy);
+					complex<double> v1 = (complex<double>)cimage->get_complex_at_interp(jx*hn,jy*hn);
+//  					int jx=co*jr;
+//  					int jy=si*jr;
+// 					complex<double> v2 = (complex<double>)cimage->get_complex_at(jx,jy);
+// 					complex<double> v1 = (complex<double>)cimage->get_complex_at(jx*hn,jy*hn);
+					trns->set_complex_at_idx(ja,jr,0,(complex<float>)(v1*std::pow(std::conj(v2),(float)hn)));
+				}
+			}
+			// rescale components to have linear amplitude WRT the original FFT, without changing phase
+			trns->ri2ap();
+			
+			for (size_t i=0; i<xyz; i+=2) {
+				trns->set_value_at_index(i,pow(trns->get_value_at_index(i),float(1.0/(hn+1))));
+			}
+			trns->ap2ri();
+			
+			// Only if rn is defined
+			if (rn==0) {
+				complex<float> *tmp = (complex<float>*)EMfft::fftmalloc(naz*2);
+				for (int jy=3;  jy<ny/2; jy++) {
+					memcpy((void*)tmp,(void*)(trns->get_data()+jy*naz*2),naz*2*sizeof(float));
+					EMfft::complex_to_complex_1d_inplace(tmp,naz*2);
+					memcpy((void*)(trns->get_data()+jy*naz*2),(void*)tmp,naz*2*sizeof(float));
+				}
+				EMfft::fftfree((float *)tmp);
+			}
+			else if (rn>=0) {
+				// Now we do the 1-D FFTs on the lines of the translational invariant
+				complex<float> *tmp = (complex<float>*)EMfft::fftmalloc(naz*2);
+				for (int jy=3;  jy<ny/2; jy++) {
+					// While it might seem a good idea to do inplace 1D transforms for each row, the potential memory
+					// alignment change for each row could cause bad things to happen
+					memcpy((void*)tmp,(void*)(trns->get_data()+jy*naz*2),naz*2*sizeof(float));
+					EMfft::complex_to_complex_1d_inplace(tmp,naz*2);
+					for (int jx=0; jx<naz; jx++) {
+// 						float l=jx/float(rn);
+// 						float frc=l-floor(l);
+// 						int li=(int)l;
+//						complex<float> v2 = Util::linear_interpolate_cmplx(tmp[li],tmp[li+1],frc);
+						if (jx*rn>naz) {
+							trns->set_complex_at_idx(jx,jy,0,0.0f);
+							continue;
+						}
+						complex<float> v2 = tmp[jx];
+						complex<float> v1 = tmp[jx*rn];
+						trns->set_complex_at_idx(jx,jy,0,v1*std::pow(std::conj(v2),(float)rn));
+					}
+	//				memcpy((void*)(trns->get_data()+jy*naz*2),(void*)tmp,naz*2*sizeof(float));
+				}
+				EMfft::fftfree((float *)tmp);
+
+				// rescale components to have linear amplitude WRT the original FFT, without changing phase
+				trns->ri2ap();
+				for (size_t i=0; i<xyz; i+=2) {
+					trns->set_value_at_index(i,pow(trns->get_value_at_index(i),float(1.0/(rn+1))));
+				}
+				trns->ap2ri();
+			}
+			trns->set_attr("is_harmonic_rn",(int)rn);
+		}
+		// With no rotational component
+		else {
+			trns->set_size(ny,ny,1);
+			xyz=trns->get_size();
+			// translational only single
+			for (int jx=0; jx<ny/2 && jx*hn<ny*2; jx++) {
+				for (int jy=max(-ny/2,-ny*2/hn); jy<ny/2 && jy*hn<ny*2; jy++) {
+					if (Util::hypot_fast(jx,jy)<2.5f) { 
+						trns->set_complex_at(jx,jy,0,(complex<float>)0);
+						continue;
+					}
+					complex<double> v2 = (complex<double>)cimage->get_complex_at(jx,jy);
+					complex<double> v1 = (complex<double>)cimage->get_complex_at(jx*hn,jy*hn);
+					trns->set_complex_at(jx,jy,0,(complex<float>)(v1*std::pow(std::conj(v2),(float)hn)));
+				}
+			}
+			// rescale components to have linear amplitude WRT the original FFT, without changing phase
+			trns->ri2ap();
+			for (size_t i=0; i<xyz; i+=2) {
+				trns->set_value_at_index(i,pow(trns->get_value_at_index(i),float(1.0/(hn+1))));
+			}
+			trns->ap2ri();
+	//		EMData *ret = trns->do_ift();
+		}
+		delete cimage;
+		trns->set_attr("is_harmonic_hn",(int)hn);
+
+		return(trns);
+	}
+	if (params.has_key("rfp")) {
+		int rfp=(int)params.get("rfp");
+		for (int ja=0; ja<naz; ja++) {
+			float si=sin(float(2.0*M_PI*(ja+0.5)/naz));
+			float co=cos(float(2.0*M_PI*(ja+0.5)/naz));
+			int y=0;		// This is where the results go
+			// Start at r=5 due to bad CryoEM values near the origin. 
+			// Go to 1/2 Nyquist because high resolution values are less invariant due to interpolaton
+			for (int jr=5; jr<ny/4; jr++) {
+				// Innermost loop is hn (radial harmonic coefficient) to group similar values together
+				for (int hn=2; hn<=rfp; hn++) {
+					float jx=co*jr;
+					float jy=si*jr;
+					complex<double> v2 = (complex<double>)cimage->get_complex_at_interp(jx,jy);
+					complex<double> v1 = (complex<double>)cimage->get_complex_at_interp(jx*hn,jy*hn);
+					v1*=std::pow(std::conj(v2),(double)hn);
+					v1=std::polar(std::pow(std::abs(v1),1.0/(hn+1.0))/ny,std::arg(v1));
+					trns->set_complex_at_idx(ja,y,0,(complex<float>)v1);
+					y++;
+					if (y>=ny/2) break;
+				}
+				if (y>=ny/2) break;
+			}
+		// rescale components to have linear amplitude WRT the original FFT, without changing phase
+		}
+		delete cimage;
+		trns->set_attr("is_harmonic_rfp",(int)rfp);
+//		trns->set_complex(0);
+		return(trns);
+	}
+
+	// Rotational & Translational invariant, fp specifies the maximum harmonic (R&T) to include
+	if (params.has_key("fp")) {
+		int fp=(int)params.set_default("fp",4);
+		if (fp<2) fp=2;
+		// Start with the translational invariant in Fourier space in a radial coordinate system
+		for (int ja=0; ja<naz; ja++) {
+			float si=sin(float(2.0*M_PI*(ja+0.5)/naz));
+			float co=cos(float(2.0*M_PI*(ja+0.5)/naz));
+			int y=0;		// This is where the results go
+			// Start at r=3 due to bad CryoEM values near the origin. 
+			// Go to 1/2 Nyquist because high resolution values are less invariant due to interpolaton
+			for (int jr=3; jr<ny/4; jr++) {
+				// Innermost loop is hn (radial harmonic coefficient) to group similar values together, skip the phaseless hn=1
+				for (int hn=2; hn<=fp; hn++) {
+					float jx=co*jr;
+					float jy=si*jr;
+					complex<double> v2 = (complex<double>)cimage->get_complex_at_interp(jx,jy);
+					complex<double> v1 = (complex<double>)cimage->get_complex_at_interp(jx*hn,jy*hn);
+					v1*=std::pow(std::conj(v2),(double)hn);
+					v1=std::polar(std::pow(std::abs(v1),1.0/(hn+1.0))/ny,std::arg(v1));
+					trns->set_complex_at_idx(ja,y,0,(complex<float>)v1);
+					y++;
+					if (y>=ny/2) break;
+				}
+				if (y>=ny/2) break;
+			}
+		// rescale components to have linear amplitude WRT the original FFT, without changing phase
+		}
+		
+		// This holds a copy for doing the 1D FFTs efficiently
+		complex<float> *tmp = (complex<float>*)EMfft::fftmalloc(naz*2);
+		// One horizontal line at a time
+		for (int jy=0;  jy<ny/2; jy++) {
+			// Now we do the 1-D FFTs on the lines of the translational invariant
+			memcpy((void*)tmp,(void*)(trns->get_data()+jy*naz*2),naz*2*sizeof(float));
+			EMfft::complex_to_complex_1d_inplace(tmp,naz*2);
+			int x=0;		// output x coordinate
+			// outer loop over base rotational frequency, skip phaseless jx=0
+			for (int jx=1; jx<naz/2; jx++) {
+				// inner loop over rotational harmonic coefficients, skip the phaseless rn=1
+				complex<double> v2 = tmp[jx];
+				for (int rn=2; rn<=fp; rn++) {
+					if (jx*rn>=naz) break;
+					complex<double> v1 = tmp[jx*rn];
+					v1*=std::pow(std::conj(v2),(double)rn);
+					v1=std::polar(std::pow(std::abs(v1),1.0/(rn+1.0))/naz,std::arg(v1));
+					trns->set_complex_at_idx(x,jy,0,(complex<float>)v1);
+					x++;
+					if (x>=naz/2) break;
+				}
+				if (x>=naz/2) break;
+			}
+		}
+		EMfft::fftfree((float *)tmp);
+
+
+		delete cimage;
+		// the /4 in the next line is arbitrary to remove regions which empirically
+		// aren't useful
+		EMData *ret=trns->get_clip(Region(0,0,min(naz,fp*naz/4)/2,min(ny/2,fp*(ny/4-3))));
+		delete trns;
+		ret->set_attr("is_harmonic_fp",(int)fp);
+		ret->set_complex(0);
+		return(ret);
+	}
+	
+}
+
 
 EMData* ConvolutionKernelProcessor::process(const EMData* const image)
 {
@@ -13222,14 +14130,7 @@ EMData* ConvolutionKernelProcessor::process(const EMData* const image)
 
 	int ks;
 	vector<float> kernel;
-	if (params.has_key("selem")) {
-		EMData* selem = params["selem"];
-		float *sd = selem->get_data();
-		kernel = vector<float>(sd, sd + sizeof sd / sizeof sd[0]);
-	}
-	else {
-		kernel = params["kernel"];
-	}
+	kernel = params["kernel"];
 	ks = int(sqrt(float(kernel.size())));
 	if (ks*ks != kernel.size()) throw InvalidParameterException("Convolution kernel must be square!!");
 
@@ -13599,7 +14500,7 @@ void ObjDensityProcessor::process_inplace(EMData * image)
 	label->process_inplace("threshold.notzero");
 	label->process_inplace("morph.object.label");
 	int nobj=int(label->get_attr("maximum"))+1;
-	float *sden=new float[nobj];	// sum density of each object
+	vector<float> sden(nobj);	// sum density of each object
 	for (int i=0; i<nobj; i++) sden[i]=0;
 
 	for (int x=0; x<nx; x++){
@@ -13625,7 +14526,6 @@ void ObjDensityProcessor::process_inplace(EMData * image)
 		}
 	}
 	delete label;
-	delete []sden;
 }
 EMData* ObjLabelProcessor::process(const EMData* const image) //
 {
@@ -14330,10 +15230,8 @@ void BinaryOpeningProcessor::process_inplace(EMData *image)
 	float thresh = params.set_default("thresh",0.5);
 	image->process_inplace("threshold.binary",Dict("value",thresh));
 
-	for (int i = 0; i < iters; i++){
-		image->process_inplace("morph.dilate.binary",params);
-		image->process_inplace("morph.erode.binary",params);
-	}
+	for (int i = 0; i < iters; i++) image->process_inplace("morph.erode.binary",params);
+	for (int i = 0; i < iters; i++) image->process_inplace("morph.dilate.binary",params);
 }
 
 EMData* BinaryClosingProcessor::process(const EMData* const image)
@@ -14349,10 +15247,8 @@ void BinaryClosingProcessor::process_inplace(EMData *image)
 	float thresh = params.set_default("thresh",0.5);
 	image->process_inplace("threshold.binary",Dict("value",thresh));
 
-	for (int i = 0; i < iters; i++){
-		image->process_inplace("morph.erode.binary",params);
-		image->process_inplace("morph.dilate.binary",params);
-	}
+	for (int i = 0; i < iters; i++) image->process_inplace("morph.dilate.binary",params);
+	for (int i = 0; i < iters; i++) image->process_inplace("morph.erode.binary",params);
 }
 
 EMData* BinaryInternalGradientProcessor::process(const EMData* const image)
@@ -14505,6 +15401,51 @@ void ZThicknessProcessor::process_inplace(EMData *image)
 
 }
 
+
+EMData* AmpMultProcessor::process(const EMData* const image)
+{
+	EMData* proc = image->copy();
+	proc->process_inplace("math.multamplitude",params);
+	return proc;
+}
+
+void AmpMultProcessor::process_inplace(EMData *image)
+{
+	EMData *amp=params["amp"];
+	float* data = image->get_data();
+	float* mult = amp->get_data();
+	
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+
+	
+	
+	int anx = amp->get_xsize();
+	int any = amp->get_ysize();
+	int anz = amp->get_zsize();
+	
+	int div=2;
+	
+	if (nx==anx){ // in case the amplitude volume has the same size...
+		div=1;
+		anx=nx/2;
+	}
+		
+		
+	
+	if  (( (nx==anx*2) && (ny==any) && (nz==anz) )==false)
+		throw InvalidParameterException("AmpMultProcessor: amplitude image size mismatch...");
+
+	int sz=nx*ny*nz;
+	
+	for (int i=0; i<sz; i++){
+		data[i]*=mult[i/div];
+	}
+	
+	image->update();
+
+}
 #ifdef SPARX_USING_CUDA
 
 /* CLASS MPICUDA_kmeans processor

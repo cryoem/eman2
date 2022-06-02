@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -33,8 +30,6 @@ from __future__ import division
 #
 #
 
-# $Id$
-
 
 from past.utils import old_div
 from builtins import range
@@ -63,7 +58,7 @@ def main(args):
 	parser.add_argument("--mask", metavar="rad", type=int, help="Mask radius")
 	parser.add_argument("--imask", metavar="rad", type=int, help="Inside mask radius")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 

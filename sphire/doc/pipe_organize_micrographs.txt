@@ -1,0 +1,78 @@
+~~NOTOC~~
+
+===== sp_pipe organize_micrographs =====
+Organize Micrographs/Movies: Organize micrographs/movies by moving micrographs/movies listed in a selecting file from a source directory (specified by source micrographs/movies pattern) to a destination directory.
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sp_pipe.py  organize_micrographs  source_micrograph_pattern  selection_list  destination_directory  --reverse  --check_consistency
+
+\\
+===== Typical usage =====
+
+sp_pipe organize_micrographs does not support MPI. 
+
+1. Normal Operation Mode: The program moves micrographs/movies listed in selecting list from the source directory to the destination directory.
+
+  sp_pipe.py organize_micrographs 'CorrectedSums/corrsum/TcdA1-*_frames_sum.mrc' 'CTFest/Tutorial_micrographs_discard.txt' 'CorrectedSums/DISCARDED'
+
+2. Reverse Operation Mode: The program moves micrographs/movies listed in selecting list from the destination directory to the source directory.
+
+  sp_pipe.py organize_micrographs 'CorrectedSums/corrsum/TcdA1-*_frames_sum.mrc' 'CTFest/Tutorial_micrographs_discard.txt' 'CorrectedSums/MRK_DISCARDED'  --reverse
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; source_micrograph_pattern : Source micrograph/movies path pattern: Specify path pattern of source micrographs/movies with a wild card (*). The path pattern must be enclosed by single quotes (\') or double quotes (\"). (Note: sp_gui.py automatically adds single quotes (\')). The substring at the variable part must be same between each associated pair of micrograph/movie names. bdb files cannot be selected as source micrographs/movies. (default required string)
+  ; selection_list : Micrograph/Movie selection file: Specify a path of text file containing a list of selected micrograph/movie names or paths. The file extension must be '.txt'. The directory path of each entry will be ignored if there are any. (default required string)
+  ; destination_directory : Destination directory: The micrographs/movies in selecting list will be moved to this directory. It cannot be an existing one. (default required string)
+
+  ; %%--%%reverse : Reverse operation: Move back micrographs/movies from the destination directory to the source directory. (default False)
+
+\\
+=== Advanced Parameters ===
+  ; %%--%%check_consistency : Check consistency of dataset: Create a text file containing the list of micrograph/movie ID entries might have inconsistency among the provided dataset. (i.e. mic_consistency_check_info.txt). (default False)
+
+\\
+===== Output =====
+
+\\
+===== Description =====
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+
+\\
+==== Developer Notes ====
+
+\\
+==== Author / Maintainer ====
+Toshio Moriya
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_pipe.py
+
+\\
+==== See also ====
+[[pipeline:cter:sp_gui_cter|sp_gui_cter]] and [[pipeline:movie:sp_gui_unblur|sp_gui_unblur]]
+
+\\
+==== Maturity ====
+Beta:: Under evaluation and testing. Please let us know if there are any bugs.
+
+\\
+==== Bugs ====
+There are no known bugs so far.
+
+\\

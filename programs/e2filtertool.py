@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke  3/4/2011
 # Copyright (c) 2011- Baylor College of Medicine
@@ -34,8 +31,8 @@ from __future__ import division
 
 from past.utils import old_div
 from builtins import range
-from PyQt4 import QtCore, QtGui
-from PyQt4.QtCore import QTimer
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import QTimer
 
 import sys
 import os
@@ -64,10 +61,11 @@ def main():
 #	parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=64)
 #	parser.add_argument("--shrink",type=int,help="Shrink factor for full-frame view, default=0 (auto)",default=0)
 	parser.add_argument("--apix",type=float,help="Override the A/pix value stored in the file header",default=0.0)
-#	parser.add_argument("--force2d",action="store_true",help="Display 3-D data as 2-D slices",default=False)
+	parser.add_argument("--force2d",action="store_true",help="Display 3-D data as 2-D slices",default=False)
 	parser.add_argument("--safemode",action="store_true",help="Safe mode without the timer...",default=False)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--idx", type=int, help="index for an image in a stack",default=-1)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 
@@ -81,7 +79,7 @@ def main():
 
 	app = EMApp()
 	pix_init()
-	control=EMFilterTool(datafile=args[0],apix=options.apix,force2d=False,verbose=options.verbose, safemode=options.safemode)
+	control=EMFilterTool(datafile=args[0],apix=options.apix,force2d=options.force2d,verbose=options.verbose, safemode=options.safemode, idx=options.idx)
 #	control=EMFilterTool(datafile=args[0],apix=options.apix,force2d=options.force2d,verbose=options.verbose)
 	control.show()
 	try: control.raise_()
@@ -93,7 +91,7 @@ def main():
 def filtchange(name,value):
 	return {}
 
-class EMProcessorWidget(QtGui.QWidget):
+class EMProcessorWidget(QtWidgets.QWidget):
 	"""A single processor with parameters"""
 	upPress = QtCore.pyqtSignal(int)
 	downPress = QtCore.pyqtSignal(int)
@@ -121,34 +119,34 @@ class EMProcessorWidget(QtGui.QWidget):
 	}
 
 	def __init__(self,parent=None,tag=None):
-		app=QtGui.qApp
+		app=QtWidgets.qApp
 
-		QtGui.QWidget.__init__(self,parent)
-		self.gbl = QtGui.QGridLayout(self)
+		QtWidgets.QWidget.__init__(self,parent)
+		self.gbl = QtWidgets.QGridLayout(self)
 		self.gbl.setColumnStretch(0,0)
 		self.gbl.setColumnStretch(1,0)
 		self.gbl.setColumnStretch(2,1)
 		self.gbl.setColumnStretch(3,3)
 
 		# Enable checkbox
-		self.wenable=QtGui.QCheckBox(self)
+		self.wenable=QtWidgets.QCheckBox(self)
 		self.wenable.setChecked(False)			# disable new processors by default to permit their values to be set
 		self.gbl.addWidget(self.wenable,0,1)
 
 		# List of processor categories
-		self.wcat=QtGui.QComboBox(self)
+		self.wcat=QtWidgets.QComboBox(self)
 		self.wcat.addItem("")
 		for i in self.cats: self.wcat.addItem(i)
 #		self.wcat.setCurrentindex(self.wcat.findText("processor"))
 		self.gbl.addWidget(self.wcat,0,2)
 
 		# List of processor subcategories
-		self.wsubcat=QtGui.QComboBox(self)
+		self.wsubcat=QtWidgets.QComboBox(self)
 		self.gbl.addWidget(self.wsubcat,0,3)
 #		self.update_subcat()
 
 		#button grid
-		self.gbl2=QtGui.QGridLayout()
+		self.gbl2=QtWidgets.QGridLayout()
 		self.gbl.addLayout(self.gbl2,0,0,1,1)
 		if get_platform().lower()=="darwin": self.gbl2.setSpacing(10)
 		else: self.gbl2.setSpacing(1)
@@ -156,21 +154,21 @@ class EMProcessorWidget(QtGui.QWidget):
 #		self.gbl2.setColumnStretch(0,1)
 #		self.gbl2.setColumnStretch(1,1)
 
-#		self.wup = QtGui.QPushButton(app.style().standardIcon(QtGui.QStyle.SP_ArrowUp),"")
-		self.wup = QtGui.QPushButton(pix_up,"",self)
+#		self.wup = QtWidgets.QPushButton(app.style().standardIcon(QtWidgets.QStyle.SP_ArrowUp),"")
+		self.wup = QtWidgets.QPushButton(pix_up,"",self)
 		self.wup.setMaximumSize(QtCore.QSize(17, 17))
-#		self.wup.setSizePolicy(QtGui.QSizePolicy.Fixed,QtGui.QSizePolicy.Fixed)
+#		self.wup.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
 		self.gbl2.addWidget(self.wup,0,0)
 
-		self.wdown = QtGui.QPushButton(pix_down,"",self)
+		self.wdown = QtWidgets.QPushButton(pix_down,"",self)
 		self.wdown.setMaximumSize(QtCore.QSize(17, 17))
 		self.gbl2.addWidget(self.wdown,1,0)
 
-		self.wplus = QtGui.QPushButton(pix_plus,"",self)
+		self.wplus = QtWidgets.QPushButton(pix_plus,"",self)
 		self.wplus.setMaximumSize(QtCore.QSize(17, 17))
 		self.gbl2.addWidget(self.wplus,1,1)
 
-		self.wminus= QtGui.QPushButton(pix_minus,"",self)
+		self.wminus= QtWidgets.QPushButton(pix_minus,"",self)
 		self.wminus.setMaximumSize(QtCore.QSize(17, 17))
 		self.gbl2.addWidget(self.wminus,0,1)
 
@@ -190,7 +188,7 @@ class EMProcessorWidget(QtGui.QWidget):
 
 #	def __del__(self):
 #		print "Free processor ",self.tag
-#		QtGui.QWidget.__del__(self)
+#		QtWidgets.QWidget.__del__(self)
 
 	def __getstate__(self):
 		"used when pickling"
@@ -415,16 +413,18 @@ class EMProcessorWidget(QtGui.QWidget):
 
 		return (proc,parms)
 
-class EMFilterTool(QtGui.QMainWindow):
+class EMFilterTool(QtWidgets.QMainWindow):
 	"""This class represents the EMFilterTool application instance.  """
 	module_closed = QtCore.pyqtSignal()
 
-	def __init__(self,datafile=None,apix=0.0,force2d=False,verbose=0, safemode=False):
-		QtGui.QMainWindow.__init__(self)
+	def __init__(self,datafile=None,apix=0.0,force2d=False,verbose=0, safemode=False, idx=-1):
+		QtWidgets.QMainWindow.__init__(self)
 
-		app=QtGui.qApp
+		app=QtWidgets.qApp
 		self.apix=apix
 		self.force2d=force2d
+		self.dataidx=idx
+		self.safemode=safemode
 		self.setWindowTitle("e2filtertool.py")
 
 		# Menu Bar
@@ -436,13 +436,14 @@ class EMFilterTool(QtGui.QMainWindow):
 
 		self.mview=self.menuBar().addMenu("View")
 		self.mview_new_2dwin=self.mview.addAction("Add 2D View")
+		self.mview_new_3dwin=self.mview.addAction("Add 3D View")
 		self.mview_new_plotwin=self.mview.addAction("Add Plot View")
 
-		self.setCentralWidget(QtGui.QWidget())
-		self.vblm = QtGui.QVBoxLayout(self.centralWidget())		# The contents of the main window
+		self.setCentralWidget(QtWidgets.QWidget())
+		self.vblm = QtWidgets.QVBoxLayout(self.centralWidget())		# The contents of the main window
 
 		# List of processor sets
-		self.wsetname=QtGui.QComboBox()
+		self.wsetname=QtWidgets.QComboBox()
 		self.wsetname.setEditable(True)
 		psetnames=[i.split("_",1)[1][:-4].replace("_"," ") for i in os.listdir(".") if i[:11]=="filtertool_"]
 		try: psetnames.remove("default")  # remove default if it exists
@@ -452,20 +453,20 @@ class EMFilterTool(QtGui.QMainWindow):
 		self.vblm.addWidget(self.wsetname)
 		
 		if safemode:
-			self.button_doprocess = QtGui.QPushButton("Process")
+			self.button_doprocess = QtWidgets.QPushButton("Process")
 			self.vblm.addWidget(self.button_doprocess)
 			self.button_doprocess.clicked.connect(self.on_doprocess)
 			
 
 		# scrollarea for processor widget
-		self.processorsa=QtGui.QScrollArea()
+		self.processorsa=QtWidgets.QScrollArea()
 		self.vblm.addWidget(self.processorsa)
 
 		# Actual widget contianing processors being scrolled
-		self.processorpanel=QtGui.QWidget()
+		self.processorpanel=QtWidgets.QWidget()
 		self.processorsa.setWidget(self.processorpanel)
 		self.processorsa.setWidgetResizable(True)
-		self.vbl = QtGui.QVBoxLayout(self.processorpanel)
+		self.vbl = QtWidgets.QVBoxLayout(self.processorpanel)
 
 		self.processorlist=[]
 		self.addProcessor()
@@ -475,6 +476,7 @@ class EMFilterTool(QtGui.QMainWindow):
 		self.mfile_save_stack.triggered[bool].connect(self.menu_file_save_stack)
 		self.mfile_save_map.triggered[bool].connect(self.menu_file_save_map)
 		self.mfile_quit.triggered[bool].connect(self.menu_file_quit)
+		self.mview_new_3dwin.triggered[bool].connect(self.menu_add_3dwin)
 		self.mview_new_2dwin.triggered[bool].connect(self.menu_add_2dwin)
 		self.mview_new_plotwin.triggered[bool].connect(self.menu_add_plotwin)
 
@@ -514,6 +516,18 @@ class EMFilterTool(QtGui.QMainWindow):
 
 #		QtCore.QObject.connect(self.boxesviewer,QtCore.SIGNAL("mx_image_selected"),self.img_selected)
 
+	def menu_add_3dwin(self):
+		if self.viewer==None: return
+		self.viewer.append(EMScene3D())
+		self.sgdata = EMDataItem3D(test_image_3d(3), transform=Transform())
+		self.viewer[-1].insertNewNode('Data', self.sgdata, parentnode=self.viewer[-1])
+		isosurface = EMIsosurface(self.sgdata, transform=Transform())
+		self.viewer[-1].insertNewNode("Iso", isosurface, parentnode=self.sgdata)
+		volslice = EMSliceItem3D(self.sgdata, transform=Transform())
+		self.viewer[-1].insertNewNode("Slice", volslice, parentnode=self.sgdata)
+		self.viewer[-1].show()
+		self.needupdate=1
+	
 	def menu_add_2dwin(self):
 		if self.viewer==None: return
 		self.viewer.append(EMImage2DWidget())
@@ -588,19 +602,23 @@ class EMFilterTool(QtGui.QMainWindow):
 		self.delProcessor(tag)
 		
 	def on_doprocess(self):
-		self.reprocess()
+		try:
+			self.reprocess()
+		except:
+			traceback.print_exc()
+			print("processing abort")
 		self.redisplay()
 
 	def timeOut(self):
 		if self.busy : return
 
 		# Spawn a thread to reprocess the data
-		if self.needupdate and self.procthread==None:
+		if self.needupdate and (self.procthread==None or not self.procthread.is_alive()):
 			self.procthread=threading.Thread(target=self.reprocess)
 			self.procthread.start()
 
 		if self.errors:
-			QtGui.QMessageBox.warning(None,"Error","The following processors encountered errors during processing of 1 or more images:"+"\n".join(self.errors))
+			QtWidgets.QMessageBox.warning(None,"Error","The following processors encountered errors during processing of 1 or more images:"+"\n".join(self.errors))
 			self.errors=None
 
 		# When reprocessing is done, we want to redisplay from the main thread
@@ -706,12 +724,22 @@ class EMFilterTool(QtGui.QMainWindow):
 		elif isinstance(data,str) :
 			self.datafile=data
 			self.nimg=EMUtil.get_image_count(data)
+			
+			if self.dataidx>=0 and self.dataidx<self.nimg:
+				ii=self.dataidx
+				self.nimg=1
+			else:
+				ii=0
+			
+			hdr=EMData(data,0,1)
 
-			self.origdata=EMData(data,0)
+			self.origdata=EMData(data,ii)
 
 			if self.origdata["nz"]==1:
-				if self.nimg>20 :
-					self.origdata=EMData.read_images(data,list(range(0,self.nimg,old_div(self.nimg,20))))		# read regularly separated images from the file totalling ~20
+				if self.nimg>20 and hdr["ny"]>512:
+					self.origdata=EMData.read_images(data,list(range(0,self.nimg,self.nimg//20)))		# read regularly separated images from the file totalling ~20
+				elif self.nimg>100:
+					self.origdata=EMData.read_images(data,list(range(0,72))+list(range(72,self.nimg,self.nimg//100)))		# read the first 36 then regularly separated images from the file					
 				elif self.nimg>1 :
 					self.origdata=EMData.read_images(data,list(range(self.nimg)))
 				else: self.origdata=[self.origdata]
@@ -738,18 +766,15 @@ class EMFilterTool(QtGui.QMainWindow):
 		if self.viewer!=None : 
 			for v in self.viewer: v.close()
 			
-		if self.nz==1 or self.force2d:
+		if self.nz==1 or self.force2d or (self.nx>320 and self.safemode==False):
 			if len(self.origdata)>1 :
 				self.viewer=[EMImageMXWidget()]
 				self.mfile_save_stack.setEnabled(True)
-				self.mfile_save_map.setEnabled(False)
 			else :
 				self.viewer=[EMImage2DWidget()]
 				self.mfile_save_stack.setEnabled(False)
-				self.mfile_save_map.setEnabled(True)
 		else :
 			self.mfile_save_stack.setEnabled(False)
-			self.mfile_save_map.setEnabled(True)
 			self.viewer = [EMScene3D()]
 			self.sgdata = EMDataItem3D(test_image_3d(3), transform=Transform())
 			self.viewer[0].insertNewNode('Data', self.sgdata, parentnode=self.viewer[0])
@@ -758,7 +783,15 @@ class EMFilterTool(QtGui.QMainWindow):
 			volslice = EMSliceItem3D(self.sgdata, transform=Transform())
 			self.viewer[0].insertNewNode("Slice", volslice, parentnode=self.sgdata)
 
+		if self.nz>1 : self.mfile_save_map.setEnabled(True)
+		else : self.mfile_save_map.setEnabled(False)
+
 		E2loadappwin("e2filtertool","image",self.viewer[0].qt_parent)
+		if self.origdata[0].has_attr("source_path"):
+			winname=str(self.origdata[0]["source_path"])
+		else:
+			winname="FilterTool"
+		self.viewer[0].setWindowTitle(winname)
 
 		self.procChange(-1)
 
@@ -824,21 +857,20 @@ class EMFilterTool(QtGui.QMainWindow):
 		#out.write("\n")
 		#out.close()
 
-		#QtGui.QMessageBox.warning(None,"Saved","The processor parameters have been added to the end of 'processor.txt'")
+		#QtWidgets.QMessageBox.warning(None,"Saved","The processor parameters have been added to the end of 'processor.txt'")
 
 		self.save_current_processorset(str(self.wsetname.currentText()))
 
 	def menu_file_save_stack(self):
 		"Processes the entire current stack, and saves as a new name"
 
-		name=QtGui.QInputDialog.getText(None,"Enter Filename","Enter an output filename for the entire processed particle stack (not just the displayed images).")
+		name=QtWidgets.QInputDialog.getText(None,"Enter Filename","Enter an output filename for the entire processed particle stack (not just the displayed images).")
 		if not name[1] : return		# canceled
 
 		allfilt=" ".join([i.getAsProc() for i in self.processorlist])
 
 		n=EMUtil.get_image_count(self.datafile)
-		from PyQt4.QtGui import QProgressDialog
-		progressdialog=QProgressDialog("Processing Images","Abort",0,n,self)
+		progressdialog=QtWidgets.QProgressDialog("Processing Images","Abort",0,n,self)
 		progressdialog.setMinimumDuration(1000)
 
 		e=E2init(["e2proc2d.py",self.datafile,str(name[0]),allfilt])	# we don't actually run this program, since we couldn't have a progress dialog easo;y then
@@ -847,8 +879,11 @@ class EMFilterTool(QtGui.QMainWindow):
 
 		for i in range(n):
 			im=EMData(self.datafile,i)
-			QtGui.qApp.processEvents()
-			for p in pp: im.process_inplace(p[0],p[1])
+			QtWidgets.qApp.processEvents()
+			for p in pp: 
+				if p[0] in outplaceprocs:
+					im=im.process(p[0],p[1])
+				else: im.process_inplace(p[0],p[1])
 			im.write_image(str(name[0]),i)
 			progressdialog.setValue(i+1)
 			if progressdialog.wasCanceled() :
@@ -866,12 +901,12 @@ class EMFilterTool(QtGui.QMainWindow):
 			try: os.unlink("processed_map.hdf")
 			except : pass
 			self.procdata[0].write_image("processed_map.hdf",0)
-			QtGui.QMessageBox.warning(None,"Saved","The processed map has been saved as processed_map.hdf")
+			QtWidgets.QMessageBox.warning(None,"Saved","The processed map has been saved as processed_map.hdf")
 		else :
 			try: os.unlink("processed_images.hdf")
 			except: pass
 			for i in self.procdata: i.write_image("processed_images.hdf",-1)
-			QtGui.QMessageBox.warning(None,"Saved","The processed image(s) has been saved as processed_images.hdf. WARNING: this will include only be a subset of the images in a large image stack. To process the full stack, use e2proc2d.py with the options in filtertool_<filtername>.txt")
+			QtWidgets.QMessageBox.warning(None,"Saved","The processed image(s) has been saved as processed_images.hdf. WARNING: this will include only be a subset of the images in a large image stack. To process the full stack, use e2proc2d.py with the options in filtertool_<filtername>.txt")
 
 	def menu_file_quit(self):
 		self.close()

@@ -1,7 +1,3 @@
-/**
- * $Id$
- */
-
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
@@ -36,7 +32,7 @@
 #ifndef eman__emutil__h__
 #define eman__emutil__h__ 1
 
-#include <string.h>
+#include <cstring>
 #include "emobject.h"
 #include "emassert.h"
 
@@ -82,6 +78,9 @@ namespace EMAN
 	class Region;
 	class ImageIO;
 
+	// Was going to make this a static member of EMUtil since it is tied to EMDataType, but couldn't sort out the syntax
+	const int EMDataTypeBits[] = { 0,8,8,16,16,32,32,32,64,32,32,64,0 };
+
 	class EMUtil
 	{
 	public:
@@ -102,8 +101,10 @@ namespace EMAN
 			EM_DOUBLE,
 			EM_SHORT_COMPLEX,
 			EM_USHORT_COMPLEX,
-			EM_FLOAT_COMPLEX
+			EM_FLOAT_COMPLEX,
+			EM_COMPRESSED				// compressed
 		};
+		
 
 		/** Image format types.
 		 */
@@ -111,6 +112,9 @@ namespace EMAN
 		{
 			IMAGE_UNKNOWN,
 			IMAGE_MRC,
+			IMAGE_EER,
+			IMAGE_EER2X,
+			IMAGE_EER4X,
 			IMAGE_SPIDER,
 			IMAGE_SINGLE_SPIDER,
 			IMAGE_IMAGIC,
@@ -141,8 +145,6 @@ namespace EMAN
 		};
 
 		static EMData *vertical_acf(const EMData * image, int maxdy);
-
-		static EMData *make_image_median(const vector < EMData * >&image_list);
 
 		/** Get an image's format type from its filename extension.
 		 * @param file_ext File extension.
@@ -303,8 +305,9 @@ namespace EMAN
 		 * @param[in] dict image attribute dictionary
 		 * @param[out] rendermin the minimum value for normalization
 		 * @param[out] rendermax the maximum value for normalization
+		 * @param[out] renderbits the number of significant bits to retain when performing int conversion (helps with compression)
 		 * */
-		static void getRenderLimits(const Dict & dict, float & rendermin, float & rendermax);
+		static void getRenderLimits(const Dict & dict, float & rendermin, float & rendermax, int & renderbits);
 
 		/** Calculate the min and max pixel value accepted for image nomalization,
 		 * if we did not get them from image attribute dictionary, or they are not
@@ -317,9 +320,10 @@ namespace EMAN
 		 * @param[in] ny y dimension size
 		 * @param[out] rendermin the minimum value for normalization
 		 * @param[out] rendermax the maximum value for normalization
+		 * @param[out] renderbits the number of significant bits to retain when performing int conversion (helps with compression)
 		 * @param[in] nz z dimension size
 		 * */
-		static void getRenderMinMax(float * data, const int nx, const int ny, float & rendermin, float & rendermax, const int nz = 1);
+		static void getRenderMinMax(float * data, const int nx, const int ny, float & rendermin, float & rendermax, int &renderbits, const int nz = 1);
 		
 #ifdef USE_HDF5
 		/** Retrive a single attribute value from a HDF5 image file.
@@ -430,7 +434,6 @@ namespace EMAN
 	private:
 		ImageScore* image_scores;
 		int n;
-
 	};
 }
 

@@ -29,8 +29,6 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 
-from __future__ import print_function
-from __future__ import division
 from past.utils import old_div
 from builtins import range
 from EMAN2 import *
@@ -66,11 +64,11 @@ def main():
 	
 	parser.add_argument("--npeakstorefine", type=int, help="""Default=1. The number of best coarse alignments to refine in search of the best final alignment. Default=1.""", default=4, guitype='intbox', row=9, col=0, rowspan=1, colspan=1, nosharedb=True, mode='alignment,breaksym[1]')
 
-	parser.add_argument("--parallel",default="thread:1",help="""default=thread:1. Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel""", guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	parser.add_argument("--parallel",default=None,help="""default=thread:2. Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel""", guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	
 	parser.add_argument("--ppid", type=int, help="""Default=-1. Set the PID of the parent process, used for cross platform PPID""",default=-1)
 	
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="""Default=0. Verbose level [0-9], higner number means higher level of verboseness""")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="""Default=0. Verbose level [0-9], higher number means higher level of verboseness""")
 		
 	#parser.add_argument("--resume",type=str,default='',help="""(Not working currently). tomo_fxorms.json file that contains alignment information for the particles in the set. If the information is incomplete (i.e., there are less elements in the file than particles in the stack), on the first iteration the program will complete the file by working ONLY on particle indexes that are missing. For subsequent iterations, all the particles will be used.""")
 															
@@ -230,15 +228,12 @@ def main():
 	(optionsUnparsed, args) = parser.parse_args()
 
 	
-	
 	options.nopreprocprefft = False
 	
 	'''
 	Make the directory where to create the database where the results will be stored
 	'''
 	options = checkinput( options )
-
-	options = detectThreads( options )
 
 	options = makepath(options,'spt_hac')
 	originalpath = options.path
@@ -647,13 +642,14 @@ def allvsall(options,preproc):
 		
 		allptclsRound = {}							
 		
-		
-		print("\n(e2spt_hac.py) (allvsall) Initializing parallelism")
-		if options.parallel:							# Initialize parallelism if being used
-			from EMAN2PAR import EMTaskCustomer
-			etc=EMTaskCustomer(options.parallel)
-			pclist=[options.input]
-			etc.precache(pclist)
+		if options.parallel in (None,"","none","None") :
+			print("WARNING: no --parallel specified. Please see http://eman2.org/Parallel")
+			options.parallel="thread:2"
+			
+		from EMAN2PAR import EMTaskCustomer
+		etc=EMTaskCustomer(options.parallel,"e2spt_hac.Align3DTaskAVSA")
+		pclist=[options.input]
+		etc.precache(pclist)
 		tasks = []
 		
 		'''
@@ -1026,7 +1022,7 @@ def allvsall(options,preproc):
 						subp1_forFinalAliStack['xform.align3d']=pastt
 						
 						FinalAliStack.update({int(p):subp1_forFinalAliStack})		#But let's keep track of them, and write them out only when the LAST iteration has been reached
-						print("I have CHANGED a particle1 in final_ali_stack to have this transform", totalt)
+						print("I have CHANGED a particle1 in final_ali_stack to have this transform", pastt)
 
 					indx_trans_pairs.update({p:pastt})
 					

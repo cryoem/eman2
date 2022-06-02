@@ -29,8 +29,6 @@ Author: Jesus Galaz-Montoya - 2017, Last update: 12/Sep/2017
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 '''
-from __future__ import print_function
-from __future__ import division
 from past.utils import old_div
 from builtins import range
 import matplotlib
@@ -115,7 +113,7 @@ def main():
 	parser.add_argument("--unitsx", type=str,default='AU',help="""Default=AU (arbitrary units). Units for the x axis.'microns' or 'mu' and 'angstroms' or 'A' (and '1/angstroms' or '1/A') will be replaced by the appropriate symbol. You can provide any string without spaces; if you need spaces, add an underscore instead and the program will replace the underscore with a space; for exampe 'GPU_h' will appear as 'GPU h'.""")
 	parser.add_argument("--unitsy", type=str,default='AU',help="""Default=AU (arbitrary units). Units for the y axis.'microns' or 'mu' and 'angstroms' or 'A' (and '1/angstroms' or '1/A')  will be replaced by the appropriate symbol. You can provide any string without spaces; if you need spaces, add an underscore instead and the program will replace the underscore with a space; for exampe 'GPU_h' will appear as 'GPU h'.""")
 	
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness.")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness.")
 
 	(options, args) = parser.parse_args()	
 	

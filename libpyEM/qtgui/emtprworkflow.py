@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
 #
 # Author: David Woolford 11/10/08 (woolford@bcm.edu)
 # Copyright (c) 2000-2008 Baylor College of Medicine
@@ -36,11 +33,11 @@ from __future__ import absolute_import
 
 from builtins import range
 from builtins import object
+from PyQt5 import QtCore, QtWidgets
 from .emsprworkflow import *
 from .emform import *
 from .emsave import EMFileTypeValidator
 from .emapplication import error, EMErrorMessageDisplay
-from EMAN2db import db_open_dict
 	
 class EMBaseTomoChooseFilteredPtclsTask(WorkFlowTask):
 	"""Choose the data""" 
@@ -55,7 +52,7 @@ class EMBaseTomoChooseFilteredPtclsTask(WorkFlowTask):
 		
 		#if as_string:
 		#params.append(ParamDef(name="particle_set_choice",vartype="string",desc_long="Choose the particle data set you wish to use to generate a starting data for e2refine2d",desc_short=title,property=None,defaultunits=db.get("particle_set_choice",dfl=""),choices=choices))
-		db = db_open_dict(self.form_db_name)
+
 		params = []
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
 		if len(choices) > 0:
@@ -64,7 +61,7 @@ class EMBaseTomoChooseFilteredPtclsTask(WorkFlowTask):
 			else:
 				vartype = "string"
 				
-			params.append(ParamDef(name="tomo_filt_choice",vartype=vartype,desc_long="Choose from the filtered tomogram particles",desc_short="Choose data",property=None,defaultunits=db.get("tomo_filt_choice",dfl=""),choices=choices))				
+			params.append(ParamDef(name="tomo_filt_choice",vartype=vartype,desc_long="Choose from the filtered tomogram particles",desc_short="Choose data",property=None,defaultunits="",choices=choices))
 		else:
 			params.append(ParamDef(name="blurb2",vartype="text",desc_short="",desc_long="",property=None,defaultunits="There are no particles in the project. Go back to earlier stages and box/import particles",choices=None))
 		return params
@@ -73,7 +70,7 @@ class EMBaseTomoChooseFilteredPtclsTask(WorkFlowTask):
 		raise NotImplementedException("Inheriting classes must implement this function")
 
 class EMTomoChooseFilteredPtclsTask(EMBaseTomoChooseFilteredPtclsTask):
-	"""Choose the particle set you wish to filter. The available sets inlcude the raw particles, and any filtered sets you have previously generated.""" 
+	"""Choose the particle set you wish to filter. The available sets include the raw particles, and any filtered sets you have previously generated.""" 
 	replace_task = QtCore.pyqtSignal()
 
 	def __init__(self):
@@ -104,7 +101,7 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 		WorkFlowTask.__init__(self)
 		self.window_title = "Filter Tomogram Particles"
 		self.output_formats = ["bdb","hdf"] # disable img from the workflow because in EMAN2 we want to store more metadata in the header
-		self.form_db_name = "bdb:emform.tomo.filter_particles"
+		self.form_db_name = info_name("emform.tomo.filter_particles")
 		self.project_dict = tpr_ptcls_dict
 		self.ptcls_list = ptcls_list
 		self.name_map = name_map
@@ -120,7 +117,7 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
 		params.append(table)
 		self.add_filt_params(params)
-		db = db_open_dict(self.form_db_name)
+		db = js_open_dict(self.form_db_name)
 		pname =  ParamDef("name",vartype="string",desc_short="Filtered set name",desc_long="The processed sets will be referred to by this name",property=None,defaultunits=db.get("name",dfl="filt"),choices=[])
 		params.append(pname)
 		return params
@@ -128,7 +125,7 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 	def add_filt_params(self,params):
 		'''
 		'''
-		db = db_open_dict(self.form_db_name)
+		db = js_open_dict(self.form_db_name)
 		az = ParamDef(name="az",vartype="float",desc_short="Az rotation",desc_long="Rotate your model about the z axis",property=None,defaultunits=db.get("az",0.0),choices=None)
 		alt = ParamDef(name="alt",vartype="float",desc_short="Alt rotation",desc_long="Rotate your model about the x axis",property=None,defaultunits=db.get("alt",0.0),choices=None)
 		phi = ParamDef(name="phi",vartype="float",desc_short="Phi rotation",desc_long="Rotate your model about the z' axis",property=None,defaultunits=db.get("phi",0.0),choices=None)
@@ -257,7 +254,7 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 		
 		outnames = self.output_names(params)
 		
-		progress = QtGui.QProgressDialog("Processing files...", "Abort", 0, len(params["filenames"]),None)
+		progress = QtWidgets.QProgressDialog("Processing files...", "Abort", 0, len(params["filenames"]),None)
 		progress.show()
 	
 		i = 0
@@ -404,7 +401,7 @@ class EMTomoBootstrapTask(WorkFlowTask):
 	def __init__(self):
 		WorkFlowTask.__init__(self)
 		self.tomo_boxer_module = None
-		self.form_db_name = "bdb:emform.tomo.classavg3d"
+		self.form_db_name = info_name("emform.tomo.classavg3d")
 		self.window_title = "Launch e2spt_classaverage"
 		self.report_task = None
 		
@@ -437,7 +434,7 @@ class EMTomoBootstrapTask(WorkFlowTask):
 	def get_params(self):
 		table_params = []
 		params = []
-		db = db_open_dict(self.form_db_name)
+		db = js_open_dict(self.form_db_name)
 		
 		p,n = self.get_tomo_hunter_basic_table() # note n is unused, it's a refactoring residual		
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="Interactive use of tomohunter",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
@@ -449,7 +446,7 @@ class EMTomoBootstrapTask(WorkFlowTask):
 		pncoarse = ParamDef(name="coarse number",vartype="int",desc_short="Coarse Number", desc_long="Coarse number",property=None,defaultunits=db.get("coarse number",dfl=6),choices=None )
 		params.append([piter, pncoarse])
 		pshrink = ParamDef(name="Percentage to shrink",vartype="int",desc_short="Shrink", desc_long="Percentage to shrink",property=None,defaultunits=db.get("Percentage to shrink",dfl=2),choices=None )
-		pshrinkrefine = ParamDef(name="Percentage to shrink, refinement",vartype="int",desc_short="Shrink refine", desc_long="Percentage to shrink for refienment",property=None,defaultunits=db.get("Percentage to shrink, refinement",dfl=2),choices=None )
+		pshrinkrefine = ParamDef(name="Percentage to shrink, refinement",vartype="int",desc_short="Shrink refine", desc_long="Percentage to shrink for refinement",property=None,defaultunits=db.get("Percentage to shrink, refinement",dfl=2),choices=None )
 		params.append([pshrink, pshrinkrefine])
 		
 		proc_data = dump_processors_list()
@@ -457,7 +454,7 @@ class EMTomoBootstrapTask(WorkFlowTask):
 		for key in list(proc_data.keys()):
 			if len(key) >= 5 and key[:5] == "mask.":
 				masks[key] = proc_data[key]
-		masks["None"] = ["Choose this to stop masking from occuring"]
+		masks["None"] = ["Choose this to stop masking from occurring"]
 		pmask = ParamDef("mask",vartype="string",desc_short="Mask",desc_long="The mask to apply to the subtomos",property=None,defaultunits=db.get("mask",dfl="None"),choices=masks)
 		pmaskparams = ParamDef("maskparams",vartype="string",desc_short="Params",desc_long="Parameters for the mask",property=None,defaultunits=db.get("maskparams",dfl=""))
 		params.append([pmask, pmaskparams])
@@ -466,7 +463,7 @@ class EMTomoBootstrapTask(WorkFlowTask):
 		for key in list(proc_data.keys()):
 			if len(key) >= 7 and key[:7] == "filter.":
 				filters[key] = proc_data[key]
-		filters["None"] = ["Choose this to stop filtering from occuring"]
+		filters["None"] = ["Choose this to stop filtering from occurring"]
 		pfilter = ParamDef("filter",vartype="string",desc_short="Filter",desc_long="The Filter to apply to the subtomos",property=None,defaultunits=db.get("filter",dfl="None"),choices=filters)
 		pfilterparams = ParamDef("filterparams",vartype="string",desc_short="Params",desc_long="Parameters for the filter",property=None,defaultunits=db.get("filterparams",dfl=""))
 		params.append([pfilter, pfilterparams])
@@ -492,7 +489,7 @@ class EMTomoBootstrapTask(WorkFlowTask):
 		ppostfilterparams = ParamDef("postfilterparams",vartype="string",desc_short="Params",desc_long="Parameters for the postfilter",property=None,defaultunits=db.get("postfilterparams",dfl=""))
 		params.append([ppostfilter, ppostfilterparams])
 		
-		pparallel = ParamDef("parallel",vartype="string",desc_short="Parallel",desc_long="Parallalization parameters",property=None,defaultunits=db.get("parallel",dfl=""))
+		pparallel = ParamDef("parallel",vartype="string",desc_short="Parallel",desc_long="Parallelization parameters",property=None,defaultunits=db.get("parallel",dfl=""))
 		params.append(pparallel)
 			
 		#pylong = ParamDef(name="yshort",vartype="boolean",desc_short="yshort",desc_long="Use Z axis as normal",property=None,defaultunits=1,choices=None)
@@ -608,7 +605,7 @@ class E2TomoBoxerGuiTask(WorkFlowTask):
 	def __init__(self):
 		WorkFlowTask.__init__(self)
 		self.tomo_boxer_module = None
-		self.form_db_name = "bdb:emform.tomo.boxer"
+		self.form_db_name = info_name("emform.tomo.boxer")
 		self.window_title = "Launch e2spt_boxer"
 		self.report_task = None
 		
@@ -638,7 +635,7 @@ class E2TomoBoxerGuiTask(WorkFlowTask):
 	
 	def get_params(self):
 		params = []
-		db = db_open_dict(self.form_db_name)
+		db = js_open_dict(self.form_db_name)
 		
 		p,n = self.get_tomo_boxer_basic_table() # note n is unused, it's a refactoring residual		
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="Interactive use of e2spt_boxer",desc_long="",property=None,defaultunits=self.__doc__,choices=None))

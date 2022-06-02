@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 09/08/2009 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -46,7 +43,6 @@ from os import system
 from os import unlink
 from sys import argv
 from EMAN2 import *
-from EMAN2db import db_open_dict
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -56,7 +52,7 @@ Extracts particles associated with specific class-averages and combines them int
 """
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--vstack",action="store_true",help="Will output to a bdb virtual stack instead of copying the image data. Input images must have been BDB for this to work.",default=False)
+#	parser.add_argument("--vstack",action="store_true",help="Will output to a bdb virtual stack instead of copying the image data. Input images must have been BDB for this to work.",default=False)
 	parser.add_argument("--classes",type=str,help="Comma separated list of class-numbers to extract particles for",default=None)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
@@ -70,8 +66,10 @@ Extracts particles associated with specific class-averages and combines them int
 	
 	logid=E2init(sys.argv,options.ppid)
 
-	if options.vstack : extract_classav_vstack(args[0],options.classes,args[1],verbose=1)
-	else : extract_classav(args[0],options.classes,args[1],verbose=1)
+	# disabled with removal of BDB
+	#if options.vstack : extract_classav_vstack(args[0],options.classes,args[1],verbose=1)
+	#else : 
+	extract_classav(args[0],options.classes,args[1],verbose=1)
 
 	E2end(logid)
 

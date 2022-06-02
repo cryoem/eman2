@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 #
 # Author: Steve Ludtke 5/7/15 (sludtke@bcm.edu)
 # Copyright (c) 2000-2015 Baylor College of Medicine
@@ -60,13 +58,13 @@ helpstring+="\n\nYou are currently running %s"%(FULLVERSIONSTRING)
 
 try:
 	if os.getenv("DISPLAY")==None : raise Exception
-	from PyQt4 import QtCore, QtGui
-	from PyQt4.QtCore import Qt
+	from PyQt5 import QtCore, QtGui, QtWidgets
+	from PyQt5.QtCore import Qt
 except:
 	print(helpstring)
 	eval(input("Please press <enter> to exit"))
 	exit()	
 
 app = EMApp()
-QtGui.QMessageBox.warning(None,"Welcome to EMAN2!","<b><big>"+helpstring.replace("\n","<br>")+"</big></b>")
+QtWidgets.QMessageBox.warning(None,"Welcome to EMAN2!","<b><big>"+helpstring.replace("\n","<br>")+"</big></b>")
 

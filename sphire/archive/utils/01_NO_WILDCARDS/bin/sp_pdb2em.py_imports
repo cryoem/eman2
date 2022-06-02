@@ -1,0 +1,7 @@
+EMAN2_cppwrap
+EMAN2_meta
+math
+optparse
+sp_global_def
+sp_utilities
+sys

@@ -1,6 +1,6 @@
 /*
  * Author: Chao Yang
- * Copyright (c) 2000-2006
+ * Copyright (c) 2000-2019
  *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the

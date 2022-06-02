@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke 11/09/2006 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -35,7 +32,6 @@ from __future__ import division
 
 from builtins import range
 from EMAN2 import EMANVERSION, E2init, E2end, EMData, base_name, file_exists, EMArgumentParser
-import EMAN2db
 from eman2_gui.emapplication import EMApp
 from eman2_gui import embrowser
 from eman2_gui.emimage import EMImageWidget, EMWidgetFromFile
@@ -43,8 +39,10 @@ from eman2_gui.emscene3d import EMScene3D
 import os
 import sys
 
+import OpenGL
+OpenGL.ERROR_CHECKING = False
 from OpenGL import GL, GLU, GLUT
-from PyQt4.QtCore import Qt
+from PyQt5.QtCore import Qt
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -52,7 +50,6 @@ def main():
 
 	This program can be used to visualize most files used in EMAN2. Running it without arguments
 	will open a browser window with more flexible functionality than the command-line.
-	
 	"""
 	global app,win,options
 
@@ -62,13 +59,15 @@ def main():
 	parser.add_argument("--classes",type=str,help="<rawptcl>,<classmx> Show particles associated class-averages")
 	parser.add_argument("--pdb",type=str,help="<pdb file> Show PDB structure.")
 	parser.add_argument("--singleimage",action="store_true",default=False,help="Display a stack in a single image view")
+	parser.add_argument("--server",action="store_true",default=False,help="Launch a display server which can communicate with other EMAN3 programs")
+	parser.add_argument("--serverport",type=int,default=31980,help="Specify the port to listen to, needed for multiple users on one machine, default=31980")
 	parser.add_argument("--plot",action="store_true",default=False,help="Data file(s) should be plotted rather than displayed in 2-D")
 	parser.add_argument("--hist",action="store_true",default=False,help="Data file(s) should be plotted as a histogram rather than displayed in 2-D.")
 	parser.add_argument("--plot3d",action="store_true",default=False,help="Data file(s) should be plotted rather than displayed in 3-D")
 	parser.add_argument("--fullrange",action="store_true",default=False,help="A specialized flag that disables auto contrast for the display of particles stacks and 2D images only.")
 	parser.add_argument("--newwidget",action="store_true",default=False,help="Use the new 3D widgetD. Highly recommended!!!!")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 
@@ -76,7 +75,7 @@ def main():
 
 	app = EMApp()
 	#gapp = app
-	#QtGui.QApplication(sys.argv)
+	#QtWidgets.QApplication(sys.argv)
 	win=[]
 	if options.fullrange:
 		print("""The --fullrange option has been removed, and replaced with an option in user preferences.
@@ -85,7 +84,14 @@ e2procjson.py --setoption display2d.autocontrast:true
 """)
 		sys.exit(0)
 	
-	if len(args) < 1:
+	if options.server:
+		from eman2_gui.emdisplayserver import EMDisplayServerWidget
+		
+		panel=EMDisplayServerWidget(port=options.serverport)
+		panel.show()
+		panel.raise_()
+		
+	elif len(args) < 1:
 		global dialog
 		file_list = []
 		dialog = embrowser.EMBrowserWidget(withmodal=False,multiselect=False)

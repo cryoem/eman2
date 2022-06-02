@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 10/27/2010 - rewritten almost from scratch
 # Author: David Woolford, 9/7/2007 (woolford@bcm.edu)
@@ -70,6 +67,7 @@ def main():
 	parser.add_argument("--focused",type=str,help="Name of a reference projection file to read 1st iteration refine alignment references from.", default=None)
 	parser.add_argument("--ref", type=str, help="Reference image(s). Used as an initial alignment reference and for final orientation adjustment if present. Also used to assign euler angles to the generated classes. This is typically the projections that were used for classification.", default=None)
 	parser.add_argument("--storebad", action="store_true", help="Even if a class-average fails, write to the output. Forces 1->1 numbering in output",default=False)
+	parser.add_argument("--compressbits", type=int,help="Bits to keep when writing class-averages with compression. 0->lossless floating point. Default 10 (3 significant figures)", default=10)
 	parser.add_argument("--decayedge", action="store_true", help="Applies an edge decay to zero on the output class-averages. A very good idea if you plan on 3-D reconstruction.",default=False)
 	parser.add_argument("--resultmx",type=str,help="Specify an output image to store the result matrix. This contains 5 images where row is particle number. Rows in the first image contain the class numbers and in the second image consist of 1s or 0s indicating whether or not the particle was included in the class. The corresponding rows in the third, fourth and fifth images are the refined x, y and angle (respectively) used in the final alignment, these are updated and accurate, even if the particle was excluded from the class.", default=None)
 	parser.add_argument("--iter", type=int, help="The number of iterations to perform. Default is 1.", default=1)
@@ -95,10 +93,10 @@ def main():
 	parser.add_argument("--odd", default=False, help="Used by EMAN2 when running eotests. Includes only odd numbered particles in class averages.", action="store_true")
 	parser.add_argument("--even", default=False, help="Used by EMAN2 when running eotests. Includes only even numbered particles in class averages.", action="store_true")
 	parser.add_argument("--parallel", default=None, help="parallelism argument")
-	parser.add_argument("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists.")
-	parser.add_argument("--saveali",action="store_true",help="Writes aligned particle images to aligned.hdf. Normally resultmx produces more useful informtation. This can be used for debugging.",default=False)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	parser.add_argument("--debug","-d",action="store_true",help="Print debugging infromation while the program is running. Default is off.",default=False)
+#	parser.add_argument("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists.")
+	parser.add_argument("--saveali",action="store_true",help="Writes aligned particle images to aligned.hdf. Normally resultmx produces more useful information. This can be used for debugging.",default=False)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
+	parser.add_argument("--debug","-d",action="store_true",help="Print debugging information while the program is running. Default is off.",default=False)
 	parser.add_argument("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
 	parser.add_argument("--check","-c",action="store_true",help="Performs a command line argument check only.",default=False)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -152,7 +150,7 @@ def main():
 	# Initialize parallelism
 	if options.parallel :
 		from EMAN2PAR import EMTaskCustomer
-		etc=EMTaskCustomer(options.parallel)
+		etc=EMTaskCustomer(options.parallel, module="e2classaverage.ClassAvTask")
 		pclist=[options.input]
 		if options.ref: pclist.append(options.ref)
 		if options.usefilt: pclist.append(options.usefilt)
@@ -209,8 +207,8 @@ def main():
 
 						if options.ref!=None : rslt[1]["average"]["projection_image"]=options.ref
 #						print("write",rslt[1]["n"])
-						if options.storebad : rslt[1]["average"].write_image(options.output,rslt[1]["n"])
-						else: rslt[1]["average"].write_image(options.output,-1)
+						if options.storebad : rslt[1]["average"].write_compressed(options.output,rslt[1]["n"],options.compressbits)
+						else: rslt[1]["average"].write_compressed(options.output,-1,options.compressbits)
 
 
 						# Update the resultsmx if requested
@@ -245,7 +243,7 @@ def main():
 						blk.to_zero()
 						blk.set_attr("ptcl_repr", 0)
 						blk.set_attr("apix_x",apix)
-						blk.write_image(options.output,rslt[1]["n"])
+						blk.write_compressed(options.output,rslt[1]["n"],options.compressbits)
 
 			taskids=[j for i,j in enumerate(taskids) if curstat[i]!=100]
 
@@ -274,8 +272,8 @@ def main():
 					#rslt["average"].process_inplace("mask.decayedge2d",{"width":nx/15})
 				if options.ref!=None : rslt["average"]["projection_image"]=options.ref
 				try:
-					if options.storebad : rslt["average"].write_image(options.output,t.options["n"])
-					else: rslt["average"].write_image(options.output,-1)
+					if options.storebad : rslt["average"].write_compressed(options.output,t.options["n"],options.compressbits)
+					else: rslt["average"].write_compressed(options.output,-1,options.compressbits)
 				except:
 					traceback.print_exc()
 					print("Error writing class average {} to {}".format(t.options["n"],options.output))
@@ -315,7 +313,7 @@ def main():
 				blk.to_zero()
 				blk.set_attr("ptcl_repr", 0)
 				blk.set_attr("apix_x",apix)
-				blk.write_image(options.output,t.options["n"])
+				blk.write_compressed(options.output,t.options["n"],options.compressbits)
 
 	if options.resultmx!=None:
 		if options.verbose : print("Writing results matrix")
@@ -378,7 +376,7 @@ class ClassAvTask(JSTask):
 			#ali=align_one(avg,ref,True,self.options["align"],self.options["aligncmp"],self.options["ralign"],self.options["raligncmp"])
 #			ali=align_one(avg,ref,True,("rotate_translate_flip_iterative",{}),("ccc",{}),("refine",{}),("ccc",{}))
 			# changed to this in 3/6/14 because it was causing class-averages done without flipping to sometimes become flipped. Also not sure if I trust the _iterative aligner
-			ali=align_one(avg,ref,True,("rotate_translate_bispec",{}),("ccc",{}),("refine",{}),("ccc",{}))
+			ali=align_one(avg,ref,True,("rotate_translate_bispec",{}),("ccc",{}),("refine",{}),("ccc",{}))	# best choice? Switch back to tree?
 			fxf=ali["xform.align2d"]
 			avg1=avg
 			if options["verbose"]>0 : print("Final realign:",fxf)
@@ -465,7 +463,13 @@ def class_average_withali(images,ptcl_info,xform,ref,focused,averager=("mean",{}
 	if isinstance(images[0],EMData) : nimg=len(images)
 	elif isinstance(images[0],str) and isinstance(images[1],int) : nimg=len(images)-1
 	else : raise Exception("Bad images list")
-
+	
+	if nimg==0: 
+		print("ERROR: nimgs==0 for:",images,ptcl_info,xform,ref,focused)
+		ret=ref.copy()
+		ret["ptcl_repr"]=0
+		return ret
+		
 	if focused==None: focused=ref
 	incl=[]
 	excl=[]
@@ -491,7 +495,12 @@ def class_average_withali(images,ptcl_info,xform,ref,focused,averager=("mean",{}
 		if setsfref:
 			avg.process_inplace("filter.matchto",{"to":ref,"interpolate":0,"keephires":1})
 			avg-=avg.get_edge_mean()
-		else : avg.process_inplace("normalize.toimage",{"to":ref})
+		else : 
+			try: avg.process_inplace("normalize.toimage",{"to":ref})
+			except:
+				print(images,ptcl_info,xform,ref,focused,averager,normproc,setsfref,verbose)
+				traceback.print_exc()
+				sys.exit(1)
 
 		#avg["class_qual"]=avg.cmp("ccc",ref)
 		avg["class_qual"]=old_div(avg.cmp("frc",ref,{"minres":30,"maxres":10}),avg.cmp("frc",ref,{"minres":100,"maxres":30}))
@@ -660,7 +669,7 @@ def class_average(images,ref=None,focused=None,niter=1,normproc=("normalize.edge
 			ptcl=get_image(images,i,normproc)					# get the particle to align
 			ali=align_one(ptcl,ref,prefilt,align,aligncmp,ralign,raligncmp,focused)  # align to reference
 			sim=ali.cmp(scmp[0],ref,scmp[1])			# compare similarity to reference (may use a different cmp() than the aligner)
-			if saveali and it==niter : ali.write_image("aligned.hdf",-1)
+			if saveali and it==niter : ali.write_compressed("aligned.hdf",-1,6)
 
 			try: use=ptcl_info[i][2]
 			except: use=1
@@ -712,11 +721,11 @@ def check(options,verbose=0):
 		if options.output == None:
 			print("Error: you must specify the output file")
 			error = True
-		elif file_exists(options.output):
-			if not options.force:
-				error = True
-				if (verbose):
-					print("Error: output file %s exists, force not specified, will not overwrite, exiting" %options.output)
+#		elif file_exists(options.output):
+#			if not options.force:
+#				error = True
+#				if (verbose):
+#					print("Error: output file %s exists, force not specified, will not overwrite, exiting" %options.output)
 
 		if options.classmx == None:
 			options.bootstrap = True # turn on boot strapping
@@ -817,7 +826,6 @@ def check(options,verbose=0):
 		error = True
 
 	if ( options.iter > 0 ):
-
 		if ( check_eman2_type(options.cmp,Cmps,"Comparitor") == False ):
 			error = True
 

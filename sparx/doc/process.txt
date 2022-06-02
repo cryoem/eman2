@@ -8,7 +8,7 @@ Miscellaneous Commands: Carry out various SPARX commands on image series, and ge
 
 Usage in command line
 
-  sxprocess.py  inputfile  outputfile  micrograph_prefix  --order  --order_lookup  --order_metropolis  --order_pca  --initial=INITIAL  --circular  --radius=RADIUS  --changesize  --ratio=RATIO  --pw  --wn=WN  --phase_flip  --makedb=param1=value1:param2=value2  --generate_projections=param1=value1:param2=value2  --isacgroup=ISACGROUP  --isacselect  --params=PARAMS  --adjpw  --rotpw=ROTPW  --transformparams=TRANSFORMPARAMS  --importctf=IMPORTCTF  --input=INPUT  --defocuserror=DEFOCUSERROR  --astigmatismerror=ASTIGMATISMERROR  --scale=SCALE  --adaptive_mask  --nsigma=NSIGMA  --threshold=THRESHOLD  --ndilation=NDILATION  --kernel_size=KERNEL_SIZE  --gauss_standard_dev=GAUSS_STANDARD_DEV  --binary_mask  --bin_threshold=BIN_THRESHOLD  --ne=NE  --nd=ND  --combinemaps  --output_dir=DIRECTORY  --output=OUTPUT  --pixel_size=PIXEL_SIZE  --mask=MASK  --do_adaptive_mask  --mask_threshold=MASK_THRESHOLD  --cosine_edge=COSINE_EDGE  --dilation=DILATION  --mtf=MTF_FILE_NAME  --fsc_adj  --B_enhance=B_ENHANCE  --B_start=B_START  --B_stop=B_STOP  --fl=lpf_cutoff_freq  --aa=lpf_falloff  --window_stack  --box=BOX  --balance_angular_distribution  --max_occupy=MAX_ORIENTATIONS  --angstep=ANGULAR_STEP  --symmetry=SYMMETRY
+  sxprocess.py  inputfile  outputfile  micrograph_prefix  --order  --order_lookup  --order_metropolis  --order_pca  --initial=INITIAL  --circular  --radius=RADIUS  --changesize  --ratio=RATIO  --pw  --wn=WN  --phase_flip  --makedb=param1=value1:param2=value2  --generate_projections=param1=value1:param2=value2  --isacgroup=ISACGROUP  --isacselect  --params=PARAMS  --adjpw  --rotpw=ROTPW  --transformparams=TRANSFORMPARAMS  --importctf=IMPORTCTF  --input=INPUT  --defocuserror=DEFOCUSERROR  --astigmatismerror=ASTIGMATISMERROR  --scale=SCALE  --adaptive_mask  --nsigma=NSIGMA  --threshold=THRESHOLD  --mol_mass=MOL_MASS --ndilation=NDILATION --edge_type=EDGE_TYP --edge_width=EDGE_WIDTH --binary_mask  --combinemaps  --output_dir=DIRECTORY  --output=OUTPUT  --pixel_size=PIXEL_SIZE  --mask=MASK  --do_adaptive_mask   --mtf=MTF_FILE_NAME  --fsc_adj  --B_enhance=B_ENHANCE  --B_start=B_START  --B_stop=B_STOP  --fl=lpf_cutoff_freq  --aa=lpf_falloff  --window_stack  --box=BOX  --balance_angular_distribution  --max_occupy=MAX_ORIENTATIONS  --angstep=ANGULAR_STEP  --symmetry=SYMMETRY --nerosion=NEROSION --do_approx
 
 \\
 ===== Typical usage =====
@@ -88,15 +88,15 @@ To concatenate output files,
 
 \\ Automatically compute the threshold to intially obtain the largest density cluster.
 
-  sxprocess.py  vol3d.hdf  mask3d.hdf  --adaptive_mask  --nsigma=3.0  --ndilation=1  --kernel_size=9  --gauss_standard_dev=5
+  sxprocess.py  vol3d.hdf  mask3d.hdf  --adaptive_mask  --fl=12.0 --aa=0.02 --pixel_size=3.1 --nsigma=3.0  --ndilation=1  --edge_width=3 --edge_type="G" --mol_mass=1500.0
 
 \\ Use the user-provided threshold to intially obtain the largest density cluster.
 
-  sxprocess.py  vol3d.hdf  mask3d.hdf  --adaptive_mask --threshold=0.05  -ndilation=0  --kernel_size=9  --gauss_standard_dev=5
+  sxprocess.py  vol3d.hdf  mask3d.hdf  --adaptive_mask --threshold=0.05  --ndilation=0  --edge_width=5
 
 13. Generate binary 3D mask from input 3D map using the user-provided threshold.
 
-  sxprocess.py  vol3d.hdf  mask3d.hdf  --binary_mask  --threshold=0.05  --ne=3  --nd==3
+  sxprocess.py  vol3d.hdf  mask3d.hdf  --binary_mask  --threshold=0.05  --ndilation=0 --nerosion=0
 
 14. PostRefiner - Post-refine maps or images by enhancing the power spectrum after 2D averaging, 3D refinement, or 3D sorting run.
 \\ (1) Half-set Maps Mode
@@ -111,7 +111,7 @@ To concatenate output files,
   - Apply low-pass filter to the map (optional).
 \\ Options are independent of each others.
   * %%--%%do_adaptive_mask : =True when it is restored, the program adaptively creates adaptive mask file using summed two maps. This takes a couple of minutes. For map with dimension of 384*384*384, it takes 6 minutes.
-  * %%--%%mask_threshold   : Adaptive mask threshold: Density threshold for creating adaptive surface mask. This threshold is the same as the threshold in e.g. UCSF Chimera.
+  * %%--%%threshold   : Adaptive mask threshold: Density threshold for creating adaptive surface mask. This threshold is the same as the threshold in e.g. UCSF Chimera.
   * %%--%%mtf              : For those high resolution maps, mtf correction would significantly enhance structural features.
   * %%--%%fsc_adj          : FSC adjustment of power spectrum is inclined to increase the slope of power spectrum of the summed map.
   * %%--%%B_enhance        : =0.0, program estimates B-factor from B_start (usually 10 Angstrom) to the resolution determined by FSC@0.143; >0.0, program uses the given value to enhance map; =-1.0, B-factor is not applied.
@@ -203,16 +203,16 @@ To concatenate output files,
   ; %%--%%scale : Divide shifts in input 3D orientation parameters text file by the specified scale factor: (default -1.0)
 
   ; %%--%%adaptive_mask : Create soft-edged 3D mask: Create soft-edged 3D mask from the input structure. (default False)
-  ; %%--%%nsigma : Density standard deviation threshold: Defines the threshold used in the first step of the processing to generate a binary version of the structure. The threshold is set to <= mean + (nsigma x standard deviations). This option will not be used if the option threshold is larger than -9999.0. (default 1.0)
-  ; %%--%%threshold : Binarization threshold: Defines the threshold used in the first step of the processing to generate a binary version of the input structure. If the value is lower-equal than the default, the option will be ignored and the threshold will be set according to nsigma method above. (default -9999.0)
-  ; %%--%%ndilation : Mask extension cycles: The initial mask will be dilated (extended) the number of cycles. (default 3)
-  ; %%--%%kernel_size : Gaussian kernel size [Pixels]: Size of the Gaussian kernel used for intermediate processing. (default 11)
-  ; %%--%%gauss_standard_dev : Kernel standard deviation [Pixels]: Standard deviation of the Gaussian smoothing used to produce smooth edge. (default 9)
+  ; %%--%%use_mol_mass : Use molecular mass : GUI OPTION ONLY - Define if one want to use the molecular mass option as a masking threshold. (default False) : %%--%%threshold==-9999.0 %%--%%nsigma==1.0 %%--%%do_adaptive_mask==True
+  ; %%--%%threshold : Binarization threshold: Defines the threshold used in the first step of the processing to generate a binary version of the input structure. If the value is lower-equal than the default, the option will be ignored and the threshold will be set according to nsigma method above. (default -9999.0) : %%--%%nsigma==1.0  %%--%%use_mol_mass==False %%--%%do_adaptive_mask==True
+  ; %%--%%mol_mass : Molecular mass [kDa]: The estimated molecular mass of the target particle in kilodalton. (default none) : %%--%%use_mol_mass==True
+  ; %%--%%nsigma : Density standard deviation threshold: Defines the threshold used in the first step of the processing to generate a binary version of the structure. The threshold is set to <= mean + (nsigma x standard deviations). This option will not be used if the option threshold is larger than -9999.0. (default 1.0) : %%--%%threshold==-9999.0 %%--%%use_mol_mass==False %%--%%do_adaptive_mask==True
+  ; %%--%%ndilation : Dilation width [Pixels]: The pixel width to dilate the 3D binary volume corresponding to the specified molecular mass or density threshold prior to softening the edge (default 3) : %%--%%do_adaptive_mask==True
+  ; %%--%%edge_width : Soft-edge width [Pixels]: The pixel width of transition area for soft-edged masking.(default 5) : %%--%%do_adaptive_mask==True
+  ; %%--%%edge_type : Soft-edge type: The type of soft-edge for moon-eliminator 3D mask and a moon-eliminated soft-edged 3D mask. Available methods are (1) \'cosine\' for cosine soft-edged (used in PostRefiner) and (2) \'gauss\' for gaussian soft-edge. (default cosine) : %%--%%do_adaptive_mask==True
 
   ; %%--%%binary_mask : Create binary 3D mask: Create binary 3D mask from the input structure. (default False)
-  ; %%--%%bin_threshold : Binarization threshold: Defines the threshold used in the first step of the processing to generate a binary version of the input structure. (default 0.0)
-  ; %%--%%ne : Erosion cycles: After initial binarization the structure is eroded to remove fragmented pieces of the map. (default 0)
-  ; %%--%%nd : Dilation cycles: After erosing the binary structure is dilated back to smooth the surface and match the original size. (default 0)
+  ; %%--%%nerosion : Erosion value : Number of times to erode binarized volume (default 0)
 
   ; %%--%%combinemaps : Post-refine structures or images: Post-refine structures or averages by enhancing their high-frequencies after 2D alignment, 3D refinement, or 3D sorting. Available modes are (1) Halfset Volumes Mode, (2) Cluster Volumes Mode or Single Volumes Mode, and (3) Images Mode. (1) The Halfset Volumes Mode combines a pair of unfiltered odd & even 3D density maps, then enhance the power spectrum at high frequencies. B-factor can be automatically estimated from these unfiltered halfset maps. This mode requires two arguments; use unfiltered hal-maps produced by MERIDIEN. (2) The Cluster Volumes Mode or Single Volumes Mode enhances the power spectrum of cluster maps, produced by SORT3D_DEPTH, at high frequencies. Only ad-hoc low-pass filter cutoff and B-factor can be used. This mode requires one argument (path pattern with wild card '*' can be used to specify a list of single maps). It is mainly designed for SORT3D_DEPTH outputs but it is also applicable to ANY single map. (default False)
   ; %%--%%output_dir : Output directory: Specify path to the output directory for PostRefiner process. By default, the program uses the current directory. However, GUI requires the path other than the current directory. (default required string)
@@ -220,9 +220,8 @@ To concatenate output files,
   ; %%--%%pixel_size : Pixel size [A]: Pixel size of input data. (default 0.0)
   ; %%--%%mask : 3D mask file: Path to user-provided mask. (default none) : %%--%%do_adaptive_mask==False
   ; %%--%%do_adaptive_mask : Apply adaptive mask: Program creates mask adaptively with given density threshold. (default False) : %%--%%mask==none
-  ; %%--%%mask_threshold : Adaptive mask threshold: Density threshold for creating adaptive surface mask. Effective only with --do_adaptive_mask option. (default 0.02) : %%--%%do_adaptive_mask==True
-  ; %%--%%cosine_edge : Cosine edge width [Pixels]: Width of cosine transition area for soft-edge masking. Effective only with --do_adaptive_mask option. (default 6.0) : %%--%%do_adaptive_mask==True
-  ; %%--%%dilation : Surface dilation size [Pixels]: Size of surface dilation or erosion. Effective only with --do_adaptive_mask option. (default 6.0)  : %%--%%do_adaptive_mask==True
+  ; %%--%%do_adaptive_mask : Apply adaptive mask: Program creates mask adaptively with given density threshold. (default False) : %%--%%mask==none
+  ; %%--%%do_approx : Approximate values: Approximate the values of the soft edge area instead of using the exact values. This will lead to a less smoothened mask, but will mirror the previous behaviour. (default False) : %%--%%edge_width!=0
   ; %%--%%mtf : MTF file: Path to file contains the MTF (modulation transfer function) of the detector used. (default none)
   ; %%--%%fsc_adj : Apply FSC-based low-pass filter: Applies an FSC-based low-pass filter to the merged map before the B-factor estimation. Effective only in Halfset Volumes Mode. (default False)
   ; %%--%%B_enhance : B-factor enhancement: 0.0: program automatically estimates B-factor using power spectrum at frequencies from B_start (usually 10 Angstrom) to the resolution determined by FSC143 (valid only in Halfset Volumes Mode; Non-zero positive value: program use the given value [A^2] to enhance map); -1.0: B-factor is not applied. (default 0.0)

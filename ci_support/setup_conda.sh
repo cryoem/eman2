@@ -9,8 +9,8 @@ curl -L -O "${MINICONDA_URL}/${MINICONDA_FILE}"
 bash $MINICONDA_FILE -b
 
 # Configure conda
-source ${HOME}/miniconda2/bin/activate root
+source ${HOME}/miniconda3/bin/activate root
 conda config --set show_channel_urls true
+conda config --set auto_update_conda False
 
-conda update conda -c defaults --yes --quiet
-conda install "cmake=>3.9" -c defaults --yes --quiet
+conda install conda conda-build -c defaults --yes

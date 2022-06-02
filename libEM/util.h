@@ -1,8 +1,3 @@
-
-/**
- * $Id$
- */
-
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
@@ -36,11 +31,6 @@
 
 #ifndef eman__util_h__
 #define eman__util_h__ 1
-
-#ifdef _WIN32
-	#pragma warning(disable:4819)
-	#include <cfloat>
-#endif	//_WIN32
 
 #ifdef WIN32
 #include <windows.h>
@@ -100,6 +90,7 @@ namespace EMAN
 	{
 		/** For those util function developed by Pawel's group */
 		#include "sparx/util_sparx.h"
+		#include "sphire/util_sphire.h"
 		
 	  public:
 
@@ -113,11 +104,7 @@ namespace EMAN
 		 */
 		static inline bool is_nan(const float number)
 		{
-#ifdef _WIN32
-			return _isnan(number);
-#else
 			return std::isnan(number);
-#endif
 		}
 
 		/** convert complex data array from Amplitude/Phase format
@@ -532,6 +519,17 @@ namespace EMAN
 		{
 			return (1-t) * p1 + t  * p2;
 		}
+		
+		/** Calculate linear interpolation.
+		 * @param[in] p1 The first number. corresponding to (x0,y0).
+		 * @param[in] p2 The second number. corresponding to (x1,y0).
+		 * @param[in]  t (x-x1)/(x2-x1)
+		 * @return The bilinear interpolation value.
+		 */
+		static inline std::complex<float> linear_interpolate_cmplx(std::complex<float> p1, std::complex<float> p2, float t)
+		{
+			return (1.0f-t) * p1 + t * p2;
+		}
 
 		/** Calculate bilinear interpolation.
 		 * @param[in] p1 The first number. corresponding to (x0,y0).
@@ -561,6 +559,45 @@ namespace EMAN
 			 std::complex<float> p4, float t, float u)
 		{
 			return (1.0f-t) * (1.0f-u) * p1 + t * (1.0f-u) * p2 + (1.0f-t) * u * p3 + t * u * p4;
+		}
+
+		/** Calculate 2x2 Gaussian interpolation. Note that this sort of interpolation has discontinuities
+		 * @param[in] p1 The first number. corresponding to (x0,y0).
+		 * @param[in] p2 The second number. corresponding to (x1,y0).
+		 * @param[in] p3 The third number. corresponding to (x1,y1).
+		 * @param[in] p4 The fourth number. corresponding to (x0,y1).
+		 * @param[in]  t t
+		 * @param[in]  u u
+		 * @return The interpolated value.
+		 */
+		static inline std::complex<float> gauss_interpolate_cmplx(std::complex<float> p1, std::complex<float> p2, std::complex<float> p3,
+			 std::complex<float> p4, float t, float u)
+		{
+			float c4 = Util::fast_gauss_B2(1.0f-t)*Util::fast_gauss_B2(1.0f-u);
+			float c3 = Util::fast_gauss_B2(t)*Util::fast_gauss_B2(1.0f-u);
+			float c2 = Util::fast_gauss_B2(1.0f-t)*Util::fast_gauss_B2(u);
+			float c1 = Util::fast_gauss_B2(t)*Util::fast_gauss_B2(u);
+			return (c1 * p1 + c2 * p2 + c3 * p3 + c4 * p4)/(c1+c2+c3+c4);
+		}
+
+		/** Calculate 3x3 Gaussian interpolation. Note that this sort of interpolation has discontinuities
+		 * @param[in]  p[9] The 9 pixel values [0,0],[1,0],...
+		 * @param[in]  t x distance from p[0] sample
+		 * @param[in]  u y distance from p[0] sample
+		 * @return The interpolated value.
+		 */
+		static inline std::complex<float> gauss3_interpolate_cmplx(std::complex<float> *p, float t, float u)
+		{
+			std::complex<float> sm=0;
+			float wt=0;
+			for (int y=0,i=0; y<3; y++) {
+				for (int x=0; x<3; x++,i++) {
+					float c=Util::fast_gauss_B2(t-x)*Util::fast_gauss_B2(u-y);
+					sm+=c*p[i];
+					wt+=c;
+				}
+			}
+			return sm/wt;
 		}
 
 		
@@ -736,13 +773,27 @@ namespace EMAN
 		 */
 		static inline float hypot2(float x, float y)
 		{
-//			return sqrtf(x * x + y * y);
-#ifdef	_WIN32
-			return (float) _hypot(x, y);
-#else
 			return (float) hypot(x, y);
-#endif	//_WIN32
-			
+		}
+		
+		/** Euclidean distance function squared in 2D: f(x,y) = (x*x + y*y);
+		 * @param[in] x The first number.
+		 * @param[in] y The second number.
+		 * @return (int)(x*x + y*y);
+		 */
+		static inline int hypot2sq(int x, int y)
+		{
+			return (x * x + y * y);
+		}
+		
+		/** Euclidean distance function squared in 2D: f(x,y) = (x*x + y*y);
+		 * @param[in] x The first number.
+		 * @param[in] y The second number.
+		 * @return (int)(x*x + y*y);
+		 */
+		static inline float hypot2sq(float x, float y)
+		{
+			return (float)(x * x + y * y);
 		}
 
 		/** Euclidean distance function squared in 3D: f(x,y,z) = (x*x + y*y + z*z);
@@ -842,6 +893,14 @@ namespace EMAN
 		*/
 		static float fast_acos(const float &f) ;
 
+		/** Returns an approximate of exp(-2x^2) using a cached table
+		 * uses actual function outside the cached range
+		 * @param[in] f argument to exp(f)
+		 * @return (float)exp(-2 x^2)
+		*/
+		static float fast_gauss_B2(const float &f) ;
+
+		
 		/** Calculate Gaussian value.  a * exp(-(dx * dx + dy * dy + dz * dz) / d)
 		 * @param[in] a  amplitude
 		 * @param[in] dx x center
@@ -1257,5 +1316,3 @@ namespace EMAN
 }
 
 #endif
-
-/* vim: set ts=4 noet nospell: */

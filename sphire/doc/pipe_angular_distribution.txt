@@ -1,0 +1,111 @@
+~~NOTOC~~
+
+===== sp_pipe angular_distribution =====
+Angular Distribution: Generate a chimera .bild file for the visual representation of the resulting projection parameters.
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sp_pipe.py  angular_distribution  params_file  output_folder  --prefix=None --method=S --pixel_size=1.0 --delta=3.75 --symmetry=c1 --box_size=256 --particle_radius=120 --dpi=144 --nth_percentile=99 --old
+
+\\
+===== Typical usage =====
+
+sp_pipe angular distribution does not support MPI. 
+
+Bild files created with small delta values might crash chimera session depending on the computer available memory.
+
+Do angular distribution to generate a chimera .bild file based on the projection parameters stored in params_file.
+
+  sp_pipe.py angular_distribution  params_file output_folder
+
+By default, the resulting .bild file has the same name as the params_file. Use the --prefix option to change the name.
+
+  sp_pipe.py angular_distribution  params_file output_folder --prefix=my_name
+
+Adjust the pixel_size, box_size and particle_radius values if the .bild file will be opened together with the structure in chimera.
+
+  sp_pipe.py angular_distribution  params_file output_folder --pixel_size=1.14 --box_size=120 --particle_radius=50
+
+To adjust the number of bins used in the 3D histogram, use the --delta option.
+However, using small delta values might crash chimera session depending on the computers available memory.
+
+  sp_pipe.py angular_distribution  params_file output_folder --delta=1.875
+
+Next to the bild file, a .png legends file will be created, that translates the bin color into real particle numbers.
+With the --dpi option, one can adjust the quality of the plot.
+
+  sp_pipe.py angular_distribution  params_file output_folder --dpi=300
+
+\\
+===== Input =====
+=== Main Parameters ===
+	; params_file : Projection parameters : File containing the 3D projection parameters (default required string)
+	; output_folder : Output directory: Output folder name (default required string)
+	; %%--%%prefix : File prefix : Prefix for the output files - None uses the same name as the params file - Existing files will be overwritten (default none)
+	; %%--%%symmetry : Point-group symmetry: Symmetry - c0 creates full sphere distribution; XXX_full, e.g. c1_full, c4_full, icos_full, creates a histogram for both hemispheres. (default c1)
+	; %%--%%box_size : Particle box size [Pixels] : Box size (default 256)
+	; %%--%%pixel_size : Pixel size [A] : Pixel size of the project (default 1.0)
+	; %%--%%particle_radius : Particle radius [Pixels] : Particle radius (default 120)
+
+\\
+=== Advanced Parameters ===
+
+	; %%--%%delta : Angular sampling step [Degrees] : Angular step size in degree - Low deltas combined with low symmetry might crash chimera session (default 3.75|||15|||7.5|||1.875|||0.9375|||0.46875|||0.234375)
+	; %%--%%method : Distribution method : Method used to create the reference angles (S or P or M) (default S|||M|||P)::M|||P|||S;Advanced
+	; %%--%%dpi : Plot DPI : Dpi for the legend plot (default 144)
+	; %%--%%nth_percentile : Nth percentil : Use the value of the nth percentile of the radius distribution for normalization (default 99)
+	; %%--%%old : Use old : Use the old color scheme and normalization. The old style was normalizing the maximum length instead of the nth percentile and used a blue to green instead of a blue over green to yellow color scheme. (default False)
+
+\\
+===== Output =====
+=== List of output Files ===
+|| **File Name** || **Discription** ||
+|| output_directory/prefix.bild || 3D histogram that can be opened in UCSF chimera. ||
+|| output_directory/prefix.png || 2D histogram that correlates the bin color with the real particle number. ||
+|| output_directory/prefix.txt || Text file containing the 2D histogram data points. ||
+
+\\
+===== Description =====
+This program overwrites existing output_folder/prefix combinations.
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+
+\\
+==== Developer Notes ====
+=== 2018/08/09 Markus Stabrin ===
+    * High symmetries take about 1-2 minutes.
+    * Low delta values might crash the chimera session.
+
+\\
+==== Author / Maintainer ====
+Markus Stabrin
+
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_pipe.py
+
+\\
+==== See also ====
+[[pipeline:meridien:sp_meridien|sp_meridien]].
+
+\\
+==== Maturity ====
+Alpha:: Under development.
+
+\\
+==== Bugs ====
+There are no known bugs so far.
+
+\\

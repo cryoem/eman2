@@ -30,9 +30,6 @@ Author: Jesus Galaz - oct/2017, Last update: nov/2017
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 '''
-from __future__ import print_function
-from __future__ import division
-
 from builtins import range
 from EMAN2 import *
 from EMAN2jsondb import JSTask,jsonclasses
@@ -64,7 +61,7 @@ def main():
 	
 	#parser.add_argument("--subset",type=int,default=0,help="""Default=0 (not used). Plot only this substet of transforms from the hdf stack or json file provided.""")
 	
-	parser.add_argument("--verbose", "-v", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness", dest="verbose", action="store", metavar="n")
+	parser.add_argument("--verbose", "-v", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness", dest="verbose", action="store", metavar="n")
 	
 	#arser.add_argument("--inversetoo",action="store_true",default=False,help="""Also plots the angles for the inverse of a transform.""")
 	

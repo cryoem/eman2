@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 #
 # Author: Steven Ludtke, 04/17/14 (sludtke@bcm.edu)
 # Copyright (c) 2014- Baylor College of Medicine
@@ -49,7 +47,7 @@ import traceback
 # 
 # 
 # The STAR file is represented as a dictionary-like abstraction of the physical file on disk. 
-# Changes to the abstract object will be syncronized with the file when only explicitly requested.
+# Changes to the abstract object will be synchronized with the file when only explicitly requested.
 # The entire file is kept in RAM, and the file is only re-read from disk if 'readfile()' is
 # explicitly called (which will overwrite any changes in memory). 
 #
@@ -75,13 +73,19 @@ def goodval(vals):
 
 class StarFile(dict):
 	
-	def __init__(self,filename):
+	def __init__(self,filename,dataname=None):
+		"""dataname can be used to specify a specific data block to read from the file.
+If not set, it will read the first block encountered. Value should be of the form "data_general"."""
 		dict.__init__(self)
 		self.filename=filename
+		self.dataname=dataname
 		self.loops=[]
 		
 		if os.path.isfile(filename) :
 			self.readfile()
+		else :
+			raise Exception(f"Cannot open STAR file: {filename}")
+			
 	def _nextline(self):
 		"""Used internally when parsing a star file to emulate readline"""
 		self.lineptr+=1
@@ -98,6 +102,15 @@ class StarFile(dict):
 		# read the entire file into a buffer, this dramatically simplifies the logic, even if it eats a chunk of RAM
 		self.lines=[i for i in open(self.filename,"r") if len(i.strip())!=0 and i[0]!="#"]
 		self.lineptr=0
+
+		# seek to the correct block of data
+		if self.dataname!=None:
+			lt=len(self.dataname)
+			for i,l in enumerate(self.lines):
+				if l[:lt]==self.dataname : break
+			else:
+				raise Exception("Dataname '{}' not found".format(self.dataname))
+			self.lineptr=i+1
 		
 		while 1:
 			try: line=self._nextline().strip()
@@ -108,7 +121,7 @@ class StarFile(dict):
 				key=spl[0][1:]
 				
 				if len(spl)==2:				# value on the same line
-					if spl[1][0] in ("'",'"') : self[key]=spl[1:-1]		# we assume the last non-whitespace character is the ending delimeter
+					if spl[1][0] in ("'",'"') : self[key]=spl[1:-1]		# we assume the last non-whitespace character is the ending delimiter
 					else:
 						try: val=int(spl[1])
 						except: 
@@ -133,7 +146,7 @@ class StarFile(dict):
 					else: raise Exception("StarFile: Key-value pair error. Matching value for %s not found."%key)
 			elif line[:5].lower()=="data_":
 				if len(self)>0 :
-					print("WARNING: second data_ block encountered in ",self.filename,". Cannot deal with this at present. Second block ignored")
+#					print("WARNING: second data_ block encountered in ",self.filename,". Cannot deal with this at present. Second block ignored")
 					return
 				self.dataname=line[5:]
 			elif line[:5].lower()=="loop_":

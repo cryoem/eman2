@@ -28,8 +28,6 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 
-from __future__ import print_function
-from __future__ import division
 from past.utils import old_div
 from builtins import range
 from EMAN2 import *
@@ -56,7 +54,7 @@ def main():
 	
 	parser.add_argument("--iter", type=int, help="The number of iterations to perform. Default is 1.", default=1)
 	
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	
 	#parser.add_argument("--averager",type=str,help="The type of averager used to produce the class average. Default=mean",default="mean")
 

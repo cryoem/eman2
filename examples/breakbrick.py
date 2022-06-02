@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 # Muyuan Chen 2016-09
 from past.utils import old_div
 from EMAN2 import *
@@ -9,8 +7,8 @@ from eman2_gui.emapplication import EMApp
 from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emshape import EMShape
 
-from PyQt4.QtCore import Qt
-from PyQt4.QtCore import QTimer
+from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QTimer
 
 def main():
 	

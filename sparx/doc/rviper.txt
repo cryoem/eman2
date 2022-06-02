@@ -32,12 +32,12 @@ Since RVIPER uses group of processors working together, it is important for effi
 
   ; %%--%%radius : Particle radius [Pixels]: Use the same value as in ISAC2. It has to be less than half the box size. (default 29)
   ; %%--%%sym : Point-group symmetry: Point-group symmetry of the particle. (default c1)
-  ; %%--%%moon_elimination : Eliminate disconnected regions: Used to removed disconnected pieces from the model. As an argument it requires a comma-separated string with the mass in KDa and the pixel size in [A]. (default none)
-  ; %%--%%n_rv_runs : RVIPER iterations: Corresponds to main### output directory. (default 10)
-  ; %%--%%iteration_start : Restarting iteration: Iteration from which to restart the program. 0 means go to the most recent one. (default 0)
 
 \\
 === Advanced Parameters ===
+  ; %%--%%moon_elimination : Eliminate disconnected regions: Used to removed disconnected pieces from the model. As an argument it requires a comma-separated string with the mass in KDa and the pixel size in [A]. (default none)
+  ; %%--%%iteration_start : Restarting iteration: Iteration from which to restart the program. 0 means go to the most recent one. (default 0)
+  ; %%--%%n_rv_runs : RVIPER iterations: Corresponds to main### output directory. (default 10)
   ; %%--%%n_v_runs : Minimun number of VIPER runs per RVIPER iterations: Corresponds to run### output directory. (default 3)
   ; %%--%%criterion_name : Stable projection criterion: Used to decide if the solution is stable, i.e., whether projection images adopt similar orientations in independent runs of the program. Valid options are: '80th percentile',  or 'fastest increase in the last quartile'. (default 80th percentile)
   ; %%--%%outlier_index_threshold_method : Outlier selection method: Used to decide which images to keep. Valid options are: 'discontinuity_in_derivative', 'percentile', or 'angle_measure'. (default discontinuity_in_derivative)

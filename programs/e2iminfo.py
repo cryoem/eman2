@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu), Last update: 11/27/201 (Jesus Galaz)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -36,7 +33,6 @@ from __future__ import division
 from builtins import range
 import pprint
 from EMAN2 import *
-from EMAN2db import db_open_dict
 import sys
 
 def get_data_type_string(datatype):
@@ -73,12 +69,13 @@ def main():
 	parser.add_argument("--dfmax", type=float, help="Include only images with defocus <= the specified value",default=None)
 	parser.add_argument("--nameonly",action="store_true",help="Only display the matching filenames. No other info.",default=False)
 	parser.add_argument("-s", "--stat", action="store_true",help="Show statistical information about the image(s).",default=False)
+	parser.add_argument("-O", "--outliers", action="store_true",help="Statistics on number of outlier values, must be used with --stat",default=False)
 	parser.add_argument("-E", "--euler", action="store_true",help="Show Euler angles from header",default=False)
 	parser.add_argument("-a", "--all", action="store_true",help="Show info for all images in file",default=False)
 	parser.add_argument("-C", "--check", action="store_true",help="Checks to make sure all image numbers are populated with images, and that all images have valid CTF parameters",default=False)
 	parser.add_argument("-c", "--count", action="store_true",help="Just show a count of the number of particles in each file",default=False)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
 	
@@ -122,20 +119,25 @@ def main():
 			except :
 				print("Image read error (%s)"%imagefile)
 				continue
+			if d["HostEndian"]!=d["ImageEndian"]: swapped="(swap)"
+			else: swapped = ""
 			if options.count : print("%d\t"%(nimg), end=' ')
-			if d["nz"]==1 : print("%s\t %d images in %s format\t%d x %d"%(imagefile,nimg,imgtypename,d["nx"],d["ny"]))
-			else : print("%s\t %d images in %s format\t%d x %d x %d"%(imagefile,nimg,imgtypename,d["nx"],d["ny"],d["nz"]))
+			if d["nz"]==1 : print("%s\t %d images in %s format %s\t%d x %d"%(imagefile,nimg,imgtypename,swapped,d["nx"],d["ny"]))
+			else : print("%s\t %d images in %s format %s\t%d x %d x %d"%(imagefile,nimg,imgtypename,swapped,d["nx"],d["ny"],d["nz"]))
 			
+		else: 
+			print("ERROR: BDB no longer supported")
+			sys.exit(1)
 			
-		else :
-			dct=db_open_dict(imagefile,ro=True)
-			d=dct.get_header(0)
-			nimg=len(dct)
-			nimgs+=nimg
-			
-			d=EMData(imagefile, max(options.number,0), True)
-			if d["nz"]==1 : print("%s\t %d images in BDB format\t%d x %d"%(imagefile,len(dct),d["nx"],d["ny"]))
-			else : print("%s\t %d images in BDB format\t%d x %d x %d"%(imagefile,len(dct),d["nx"],d["ny"],d["nz"]))
+#		else :
+#			dct=db_open_dict(imagefile,ro=True)
+#			d=dct.get_header(0)
+#			nimg=len(dct)
+#			nimgs+=nimg
+#			
+#			d=EMData(imagefile, max(options.number,0), True)
+#			if d["nz"]==1 : print("%s\t %d images in BDB format\t%d x %d"%(imagefile,len(dct),d["nx"],d["ny"]))
+#			else : print("%s\t %d images in BDB format\t%d x %d x %d"%(imagefile,len(dct),d["nx"],d["ny"],d["nz"]))
 
 		if options.all or options.check:
 			imgn = list(range(nimg))
@@ -169,7 +171,9 @@ def main():
 					print("\t",end='')
 			
 			if options.stat :
-				print("apix=%-5.2f min=%-10.4g max=%-10.4g mean=%-10.4g sigma=%-9.4g skewness=%-9.4g kurtosis=%-9.4g"%(d["apix_x"],d["minimum"],d["maximum"],d["mean"],d["sigma"],d["skewness"],d["kurtosis"]), end=' ')
+				print("apix=%-5.2f min=%-10.4g max=%-10.4g mean=%-10.4g sigma=%-9.4g skewness=%-9.4g kurtosis=%-9.4g moment_inertia=%9.4g radius_gyration=%9.4g"%(d["apix_x"],d["minimum"],d["maximum"],d["mean"],d["sigma"],d["skewness"],d["kurtosis"],d["moment_inertia"],d["radius_gyration"]), end=' ')
+				if options.outliers:
+					print("\nOutliers: {:^5.0f} {:^5.0f} {:^5.0f} {:^5.0f} {:^5.0f} {:^5.0f} {:^5.0f} {:^5.0f} {:^5.0f} {:^5.0f} {:^5.0f}".format(*d.calc_hist(11,d["mean"]-5.5*d["sigma"],d["mean"]+5.5*d["sigma"])))
 				try:
 					c=d["ctf"]
 					print("   defocus=%-6.2f B=%-1.0f"%(c.defocus,c.bfactor))
@@ -192,8 +196,10 @@ def main():
 			
 	
 	if nimgs>1 : print("%d total images"%nimgs)
-	try : print("representing %d particles"%nptcl)
+	try : 
+		if nptcl>0 : print("representing %d particles"%nptcl)
 	except: pass
+	if options.outliers : print("Outlier centers are mean+n*sigma: -5 -4 -3 -2 -1 0 1 2 3 4 5") 
 	
 if __name__ == "__main__":
 	main()

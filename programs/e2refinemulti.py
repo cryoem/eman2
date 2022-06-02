@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steve Ludtke 06/10/2013 (sludtke@bcm.edu)
 # Copyright (c) 2013- Baylor College of Medicine
@@ -162,7 +159,7 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>=<value>. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel",default=None, guitype='strbox', row=24, col=0, rowspan=1, colspan=2, mode="refinement")
 	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful", guitype='intbox', row=24, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--path", default=None, type=str,help="The name of a directory where results are placed. Default = create new multi_xx")
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 #	parser.add_argument("--usefilt", dest="usefilt", type=str,default=None, help="Specify a particle data file that has been low pass or Wiener filtered. Has a one to one correspondence with your particle data. If specified will be used in projection matching routines, and elsewhere.")
 
 	# options associated with e2project3d.py
@@ -230,9 +227,7 @@ satisfied with the results with speed=5 you may consider reducing this number, t
 
 	
 	if options.path == None:
-		fls=[int(i[-2:]) for i in os.listdir(".") if i[:6]=="multi_" and len(i)==8]
-		if len(fls)==0 : fls=[0]
-		options.path = "multi_{:02d}".format(max(fls)+1)
+		options.path=num_path_new("multi_")
 
 	if options.threads<1 :
 		print("WARNING: threads set to an invalid value. Changing to 1, but you should really provide a reasonable number.")
@@ -680,12 +675,12 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 			if ca<cb :
 				try: ali=a["xform.align3d"]
 				except: ali=Transform()
-				if verbose>0 : print("correct hand detected ",ali)
+				if options.verbose>0 : print("correct hand detected ",ali)
 			else :
 				try: ali=b["xform.align3d"]
 				except: ali=Transform()
 				o.process_inplace("xform.flip",{"axis":"z"})
-				if verbose>0 : print("handedness flip required",ali)
+				if options.verbose>0 : print("handedness flip required",ali)
 			o.transform(ali)
 
 			os.unlink(map2)

@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 # Author: Stephen Murray (scmurray@bcm.edu), 12/05/11
 # Copyright (c) 2000-2011 Baylor Colelge of Medicine
 
@@ -13,8 +11,6 @@ from __future__ import division
 from past.utils import old_div
 from builtins import range
 from EMAN2 import *
-from EMAN2db import db_open_dict
-import pyemtbx.options
 import os
 import sys
 import shutil
@@ -71,7 +67,7 @@ parser.add_argument("--voltage",type=int, default=None, help="(Expert Option) Vo
 parser.add_argument("--cs", type=float, default=None, help="(Expert Option) Spherical Aberration", expert=True, guitype='floatbox', row=17, col=1, rowspan=1, colspan=1)
 parser.add_argument("--apix", type=float, default=None, help="(Expert Option) Angstrom per pixel", expert=True, guitype='floatbox', row=17, col=2, rowspan=1, colspan=1)
 parser.add_argument("--defocus", type=float, help="(Expert Option) Defocus in A", default=10000, guitype='floatbox', expert=True, row=18, col=0, rowspan=1, colspan=1 )
-parser.add_argument("--ampcont", type=float, help="(Expert Option) Amplitude Constrast. 10% = .1", default = .1, guitype='floatbox', expert=True, row=18, rowspan=1, col=1, colspan=1)
+parser.add_argument("--ampcont", type=float, help="(Expert Option) Amplitude Constrast. 10%% = .1", default = .1, guitype='floatbox', expert=True, row=18, rowspan=1, col=1, colspan=1)
 #Command line options only
 parser.add_argument("--echo",action="store_true", default=False, help="Echo Relion Command to terminal only")
 parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -79,9 +75,8 @@ parser.add_argument("--ppid", type=int, help="Set the PID of the parent process,
 
 
 
-optionList = pyemtbx.options.get_optionlist(sys.argv[1:])
+optionList = get_optionlist(sys.argv[1:])
 (options, args) = parser.parse_args()
-
 
 #Check for basic usage
 if len(args) != 1:

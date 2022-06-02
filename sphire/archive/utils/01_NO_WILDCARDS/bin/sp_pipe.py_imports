@@ -1,0 +1,16 @@
+EMAN2_cppwrap
+EMAN2db
+argparse
+glob
+inspect
+mpi
+os
+shutil
+sp_applications
+sp_filter
+sp_fundamentals
+sp_global_def
+sp_morphology
+sp_utilities
+sys
+time

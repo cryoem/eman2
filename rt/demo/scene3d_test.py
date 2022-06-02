@@ -1,16 +1,13 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
-from PyQt4 import QtCore, QtGui, QtOpenGL
+from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
 from eman2_gui.emscene3d import EMScene3D, EMInspector3D, EMInspectorControlShape
 from eman2_gui.emshapeitem3d import *
 
 from EMAN2 import *
 
-class GLdemo(QtGui.QWidget):
+class GLdemo(QtWidgets.QWidget):
 	def __init__(self):
-		QtGui.QWidget.__init__(self)
+		QtWidgets.QWidget.__init__(self)
 		self.widget = EMScene3D()
 
 		self.cube1 = EMCube(50.0)
@@ -39,7 +36,7 @@ class GLdemo(QtGui.QWidget):
 		#self.widget.showInspector()
 		
 		# QT stuff to display the widget
-		vbox = QtGui.QVBoxLayout()
+		vbox = QtWidgets.QVBoxLayout()
 		vbox.addWidget(self.widget)
 		self.setLayout(vbox)
 		self.setGeometry(300, 300, 600, 600)
@@ -50,7 +47,7 @@ class GLdemo(QtGui.QWidget):
 		
 if __name__ == "__main__":
 	import sys
-	app = QtGui.QApplication(sys.argv)
+	app = QtWidgets.QApplication(sys.argv)
 	window = GLdemo()
 	window.show()
 	app.exec_()

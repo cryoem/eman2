@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 02/03/2007 (sludtke@bcm.edu)
 # Copyright (c) 2000-2007 Baylor College of Medicine
@@ -44,6 +41,7 @@ from math import *
 import os
 import sys
 import traceback
+import random
 from EMAN2_utils import cmponetomany
 
 a = EMUtil.ImageType.IMAGE_UNKNOWN
@@ -101,7 +99,7 @@ class EMParallelSimMX(object):
 
 
 		from EMAN2PAR import EMTaskCustomer
-		self.etc=EMTaskCustomer(options.parallel)
+		self.etc=EMTaskCustomer(options.parallel, module="e2simmx.EMSimTaskDC")
 		if options.colmasks!=None : self.etc.precache([args[0],args[1],options.colmasks])
 		else : self.etc.precache([args[0],args[1]])
 		self.num_cpus = self.etc.cpu_est()
@@ -155,8 +153,7 @@ class EMParallelSimMX(object):
 		output = self.args[2]
 
 		if file_exists(output) and not options.fillzero:
-			if options.force: remove_file(output)
-			else: raise RuntimeError("The output file exists. Please remove it or specify the force option")
+			remove_file(output)
 
 		e = EMData(self.clen,self.rlen)
 		e.to_zero()
@@ -343,6 +340,13 @@ class EMParallelSimMX(object):
 			mxout.write_image(output,i,EMUtil.ImageType.IMAGE_UNKNOWN,False,r)
 
 
+def image_range(a,b=None):
+	"""This is an iterator which handles the (#), (min,max), (1,2,3,...) image number convention for passed data"""
+	if b!=None:
+		for i in range(a,b): yield i
+	elif isinstance(a,int) : yield a
+	else:
+		for i in a : yield i
 
 from EMAN2jsondb import JSTask,jsonclasses
 class EMSimTaskDC(JSTask):
@@ -371,7 +375,7 @@ class EMSimTaskDC(JSTask):
 		This function assigns critical attributes
 		'''
 #		print "init ",options
-		from EMAN2PAR import image_range
+		#from EMAN2PAR import image_range
 		shrink = None
 		if "shrink" in options and options["shrink"] != None and options["shrink"] > 1:
 			shrink = options["shrink"]
@@ -630,11 +634,11 @@ def main():
 	parser.add_argument("--colmasks",type=str,help="File containing one mask for each column (projection) image, to be used when refining row (particle) image alignments.",default=None)
 	parser.add_argument("--range",type=str,help="Range of images to process (c0,r0,c1,r1) c0,r0 inclusive c1,r1 exclusive", default=None)
 	parser.add_argument("--saveali",action="store_true",help="Save alignment values, output is 5, c x r images instead of 1. Images are (score,dx,dy,da,flip). ",default=False)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 #	parser.add_argument("--lowmem",action="store_true",help="prevent the bulk reading of the reference images - this will save memory but potentially increase CPU time",default=False)
 	parser.add_argument("--init",action="store_true",help="Initialize the output matrix file before performing 'range' calculations",default=False)
 	parser.add_argument("--fillzero",action="store_true",help="Checks the existing output file, and fills only matrix elements which are exactly zero.",default=False)
-	parser.add_argument("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
+#	parser.add_argument("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
 	parser.add_argument("--exclude", type=str,default=None,help="The named file should contain a set of integers, each representing an image from the input file to exclude. Matrix elements will still be created, but will be zeroed.")
 	parser.add_argument("--shrink", type=float,default=None,help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. This will speed the process up.")
 	parser.add_argument("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
@@ -676,14 +680,16 @@ def main():
 	if options.parallel:
 		parsimmx = EMParallelSimMX(options,args,E2n)
 		parsimmx.execute()
+		# Region writing is used extensively, so we do the compression as a post-processing operation
+#		compress_hdf(options.outfile,0)
 		E2end(E2n)
 		sys.exit(0)
 
 
 	# just remove the file - if the user didn't specify force then the error should have been found in the check function
 	if file_exists(options.outfile):
-		if (options.force):
-			remove_file(options.outfile)
+#		if (options.force):
+		remove_file(options.outfile)
 
 	options.align=parsemodopt(options.align)
 	options.aligncmp=parsemodopt(options.aligncmp)
@@ -825,6 +831,7 @@ def main():
 	# write the results into the full-sized matrix
 	if crange==[0,clen] and rrange==[0,rlen] :
 		for i,j in enumerate(mxout) : j.write_image(args[2],i)
+#		compress_hdf(args[2],0)
 	else :
 		for i,j in enumerate(mxout) : j.write_image(args[2],i,IMAGE_UNKNOWN,0,Region(crange[0],rrange[0],0,crange[1]-crange[0],rrange[1]-rrange[0],1))
 
@@ -845,8 +852,8 @@ def check(options,verbose):
 			error = True
 
 		if ( file_exists(options.datafile) and file_exists(options.reffile) ):
-			(xsize, ysize ) = gimme_image_dimensions2D(options.datafile);
-			(pxsize, pysize ) = gimme_image_dimensions2D(options.reffile);
+			(xsize, ysize ) = gimme_image_dimensions2D(options.reffile);
+			(pxsize, pysize ) = gimme_image_dimensions2D(options.datafile);
 			if ( xsize != pxsize ):
 				if verbose>0:
 					print("Error - the (x) dimension of the reference images %d does not match that of the particle data %d" %(xsize,pxsize))
@@ -856,11 +863,11 @@ def check(options,verbose):
 					print("Error - the (y) dimension of the reference images %d does not match that of the particle data %d" %(ysize,pysize))
 				error = True
 
-		if  file_exists(options.outfile):
-			if ( not options.force):
-				if verbose>0:
-					print("Error: File %s exists, will not write over - specify the force option" %options.outfile)
-				error = True
+#		if  file_exists(options.outfile):
+#			if ( not options.force):
+#				if verbose>0:
+#					print("Error: File %s exists, will not write over - specify the force option" %options.outfile)
+#				error = True
 
 	if (options.cmp == None or options.cmp == ""):
 		if verbose>0:
@@ -879,6 +886,7 @@ def check(options,verbose):
 			print("Error: shrink must be greater than 1 if set")
 			error = True
 
+		(xsize, ysize ) = gimme_image_dimensions2D(options.reffile)
 		newsize=int(old_div(ysize,options.shrink))
 		if newsize!=good_size(newsize) :
 			options.shrink=old_div(ysize,float(good_size(newsize)+.1))

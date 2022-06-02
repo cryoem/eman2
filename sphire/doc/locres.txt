@@ -1,0 +1,82 @@
+~~NOTOC~~
+
+===== sp_locres =====
+Local Resolution: Compute local resolution of a map.
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sp_locres.py  firstvolume  secondvolume  maskfile  directory --prefix=PREFIX  --wn=WINDOW_SIZE  --step=SHELL_STEP_SIZE  --cutoff=RES_CRITERION  --radius=RADIUS  --fsc=OUTPUT_FILE_PATH  --res_overall=RESOLUTION  --out_ang_res=OUTPUT_FILE_PATH  --apix=PIXEL_SIZE  --MPI
+
+\\
+===== Typical usage =====
+
+sp_locres exists in for both MPI and non-MPI versions.
+
+  mpirun -np 32  sp_locres.py 'refinementdir/main002/vol0.hdf'  'refinementdir/main002/vol2.hdf locres.hdf' --cutoff=0.5 --radius=28 --res_overall=0.3  --fsc='fscvol.txt' --MPI
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; firstvolume : First half-map: A sub-map computed from about half of input projection data. In case of quasi-independent half-refinements, it has to one of the two generated structures. (default required string)
+  ; secondvolume : Second half-map: A sub-map computed from about half of input projection data. In case of quasi-independent half-refinements, it has to one of the two generated structures. (default required string)
+  ; maskfile : 3D mask: Defines the region for which local resolution will be computed. It is advisable to eliminate irrelevant regions surrounding the structure. (default none)
+  ; directory : Output directory: Each voxel contains the associated resolution. It is expressed in [[definitions:absolute_frequency_units|absolute frequency]] units. (default required string)
+  ; %%--%%prefix : Output prefix: Prefix for output files. (default localres)
+  ; %%--%%radius : Mask radius [Pixels]: In case no mask is provided, a hard sphere of this radius will be used. By default, radius = box_size/2 - (%%--%%wn). (default -1) : maskfile==none
+
+  ; %%--%%wn : Window size [Pixels]: Size of window within which local real-space CCC (equivalent to FSC) is computed. (default 7)
+  ; %%--%%step : Fourier shell step size [Pixels]: Values larger than 1.0 increase the speed and stability of the local resolution map, but decrease its reciprocal space resolvability. (default 1.0)
+  ; %%--%%cutoff : Local resolution criterion: Specify the resolution cut-off of the local resolution map. The map will contain, for each voxel, the value of spatical frequency at which local resolution at this voxel dropped below the specified cut-off level.  Low values (say 0.14) result in a noisy and tus difficult to interpret local resolution map. (default 0.143)
+  ; %%--%%fsc : FSC output file: Contains the overall FSC curve computed by rotational averaging of local resolution values. It is truncated to %%--%%res_overall. By default, the program does not save the FSC curve. (default no curve) 
+  ; %%--%%out_ang_res : Save Angstrom local resolution: Additionally creates a local resolution file in Angstroms. (default False)
+  ; %%--%%apix : Pixel size of half-maps [A]: Effective only with %%--%%out_ang_res options. (default 1.0) : %%--%%out_ang_res==True
+
+\\
+=== Advanced Parameters ===
+  ; %%--%%res_overall : Overall resolution [1/Pixel]: Specify overall (or global) resolution in absolute frequency (%%>=%%0.0 and %%<=%%0.5) for calibration of the average local resolution. Use the absolute frequency corresponding to the standard FSC resolution estimation. See Description section in the wiki page for details. By default, the program will not calibrate the average local resolution. (default -1.0)
+  ; %%--%%MPI : Use MPI: (default False)
+
+\\
+===== Output =====
+
+\\
+===== Description =====
+Local resolution values are computed within small windowed areas (size wn<sup>3</sup>). Due to small window size the values are inaccurate and tend to underestimate resolution. Therefore, the option %%--%%res_overall allows to calibrate the average value of all local resolutions to the overall resolution, as estimated by the FSC between half-maps. This value has to be independently obtained by the user. Command sp_imgstat.py computes (masked) FSC from half-maps and one can read the absolute frequency corresponding to 0.5 (or other) cut-off threshold.
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+
+\\
+==== Developer Notes ====
+
+\\
+==== Author / Maintainer ====
+Pawel A. Penczek
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+SPARX/bin/sp_locres.py
+
+\\
+==== See also ====
+[[pipeline:meridien:sp_meridien|sp_meridien]], [[[pipeline:utilities:sp_process|sp_process]], and [[pipeline:localres:sp_filterlocal|sp_filterlocal]].
+
+\\
+==== Maturity ====
+Stable:: Has been evaluated and tested. Please let us know if there are any bugs.
+
+\\
+==== Bugs ====
+There are no known bugs so far.
+
+\\

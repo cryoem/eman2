@@ -1,0 +1,17 @@
+EMAN2_cppwrap
+EMAN2db
+mpi
+numpy
+optparse
+sets
+sp_applications
+sp_filter
+sp_fundamentals
+sp_global_def
+sp_logger
+sp_morphology
+sp_reconstruction
+sp_statistics
+sp_utilities
+sys
+time

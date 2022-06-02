@@ -28,10 +28,6 @@
  *
  * */
 
-#ifdef _WIN32
-	#pragma warning(disable:4819)
-#endif	//_WIN32
-
 // Boost Includes ==============================================================
 #include <boost/python.hpp>
 #include <boost/python/numpy.hpp>
@@ -42,15 +38,12 @@
 
 // Using =======================================================================
 using namespace boost::python;
+namespace np = boost::python::numpy;
 
-#if PY_MAJOR_VERSION >= 3
-int
-#else
-void
-#endif
-init_numpy()
+int init_numpy()
 {
     import_array();
+    return 0;
 }
 
 // Module ======================================================================
@@ -58,19 +51,20 @@ BOOST_PYTHON_MODULE(libpyTypeConverter2)
 {
     class_< EMAN::EMNumPy >("EMNumPy", init<  >())
         .def(init< const EMAN::EMNumPy& >())
-        .def("em2numpy", &EMAN::EMNumPy::em2numpy)
-        .def("numpy2em", &EMAN::EMNumPy::numpy2em, return_value_policy< manage_new_object >())
-        .def("assign_numpy_to_emdata", &EMAN::EMNumPy::assign_numpy_to_emdata, return_value_policy< reference_existing_object >())
+        .def("em2numpy", &EMAN::EMNumPy::em2numpy, "Get an EMData image's pixel data as a numeric numpy array.\n"
+												   "The array and EMData image share the same memory block.")
+        .def("numpy2em", &EMAN::EMNumPy::numpy2em, return_value_policy< manage_new_object >(), "Create an EMData image from a numeric numpy array.\n"
+																							   "Returned EMData object will contain copy of the numpy array data.\n"
+																							   "Note: The array size is (nz,ny,nx) corresponding to image (nx,ny,nz).")
         .def("register_numpy_to_emdata", &EMAN::EMNumPy::register_numpy_to_emdata, return_value_policy< reference_existing_object >())
         .def("unregister_numpy_from_emdata", &EMAN::EMNumPy::unregister_numpy_from_emdata)
         .staticmethod("em2numpy")
         .staticmethod("numpy2em")
-        .staticmethod("assign_numpy_to_emdata")
     ;
 
-
     init_numpy();
-	python::numeric::array::set_module_and_type("numpy", "ndarray");
+	Py_Initialize();
+	np::initialize();
 
 
 	EMAN::vector_to_python<int>();
@@ -84,7 +78,7 @@ BOOST_PYTHON_MODULE(libpyTypeConverter2)
 	EMAN::vector_to_python<EMAN::EMAN2Ctf>();
 	EMAN::vector_to_python<std::string>();
 	EMAN::vector_to_python<EMAN::EMData*>();
-	EMAN::vector_to_python< boost::shared_ptr<EMAN::EMData> >();
+	EMAN::vector_to_python< std::shared_ptr<EMAN::EMData> >();
 	EMAN::vector_to_python<EMAN::Pixel>();
 	EMAN::vector_to_python<EMAN::EMObject>();
 	EMAN::vector_to_python<EMAN::Vec3f>();
@@ -123,6 +117,7 @@ BOOST_PYTHON_MODULE(libpyTypeConverter2)
 
     EMAN::EMObject_to_python();
 	EMAN::Dict_to_python();
+	EMAN::String_to_python();
 	EMAN::Dict_from_python();
 
 	EMAN::tuple3_to_python<EMAN::IntPoint>();
@@ -154,7 +149,7 @@ BOOST_PYTHON_MODULE(libpyTypeConverter2)
 	EMAN::emobject_eman2ctf_from_python();
 	EMAN::emobject_null_from_python();
 
-	register_ptr_to_python< boost::shared_ptr<EMAN::EMData> >();
+	register_ptr_to_python< std::shared_ptr<EMAN::EMData> >();
 
 	implicitly_convertible<int, EMAN::EMObject>();
 	//implicitly_convertible<float, EMAN::EMObject>();
@@ -168,10 +163,9 @@ BOOST_PYTHON_MODULE(libpyTypeConverter2)
 	implicitly_convertible<EMAN::EMAN1Ctf*, EMAN::Ctf*>();
 	implicitly_convertible<EMAN::EMAN2Ctf*, EMAN::Ctf*>();
 
-	EMAN::MArrayND_to_python<2>();
-	EMAN::MArrayND_to_python<3>();
-	EMAN::MCArrayND_to_python<2>();
-	EMAN::MCArrayND_to_python<3>();
+	EMAN::MArrayND_to_python<float, 2>();
+	EMAN::MArrayND_to_python<float, 3>();
+	EMAN::MArrayND_to_python<std::complex<float>, 2>();
+	EMAN::MArrayND_to_python<std::complex<float>, 3>();
 
 }
-

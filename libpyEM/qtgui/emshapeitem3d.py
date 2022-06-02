@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import division
 #
 # Author: Grant Tang (gtang@bcm.edu)
 # Author: John Flanagan (jfflanag@bcm.edu)
@@ -44,10 +41,11 @@ from libpyGLUtils2 import FTGLFontMode
 import math
 from .valslider import EMQTColorWidget, ValSlider, EMSpinWidget
 
+import OpenGL
+OpenGL.ERROR_CHECKING = False
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from PyQt4 import QtCore, QtGui, QtOpenGL
-from PyQt4.QtGui import QColor
+from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
 
 import numpy as np
 
@@ -67,10 +65,10 @@ class EMShapeBase(EMItem3D):
 		self.shininess = 25.0		
 		
 	def getEvalString(self):
-		raise NotImplementedError("Not to reimplemnt this function")
+		raise NotImplementedError("Not to reimplement this function")
 	
 	def getItemInspector(self):
-		raise NotImplementedError("Not to reimplemnt this function")
+		raise NotImplementedError("Not to reimplement this function")
 	
 	def setAmbientColor(self, red, green, blue, alpha=1.0):
 		self.ambient = [red, green, blue, alpha]
@@ -133,7 +131,7 @@ class EMShapeBase(EMItem3D):
 			glPopAttrib()
 			
 	def renderShape(self):
-		raise NotImplementedError("Not to reimplemnt this function")	
+		raise NotImplementedError("Not to reimplement this function")	
 	
 class EMRuler(EMShapeBase):
 	"""
@@ -147,14 +145,14 @@ class EMRuler(EMShapeBase):
 		"""
 		Return a cube control widget for the stacked_widget
 		"""
-		raise NotImplementedError("Not yet implmented")
+		raise NotImplementedError("Not yet implemented")
 	
 	@staticmethod
 	def getNodeForDialog(attribdict):
 		"""
 		Create a new node using a attribdict
 		"""
-		raise NotImplementedError("Not yet implmented")
+		raise NotImplementedError("Not yet implemented")
 			
 	def __init__(self, x1, y1, z1, x2, y2, z2, apix, scaling, transform=None):
 		EMShapeBase.__init__(self, parent=None, children=set(), transform=transform)
@@ -259,12 +257,12 @@ class EMCube(EMShapeBase):
 		"""
 		Return a cube control widget for the stacked_widget
 		"""
-		cubewidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
-		cube_dim_label = QtGui.QLabel("Cube Dimension")
-		attribdict["cube_dim"] = QtGui.QLineEdit("50")
-		node_name_label = QtGui.QLabel("Cube Name")
-		attribdict["node_name"] = QtGui.QLineEdit(str(EMCube.name))
+		cubewidget = QtWidgets.QWidget()
+		grid = QtWidgets.QGridLayout()
+		cube_dim_label = QtWidgets.QLabel("Cube Dimension")
+		attribdict["cube_dim"] = QtWidgets.QLineEdit("50")
+		node_name_label = QtWidgets.QLabel("Cube Name")
+		attribdict["node_name"] = QtWidgets.QLineEdit(str(EMCube.name))
 		grid.addWidget(cube_dim_label, 0, 0, 1, 2)
 		grid.addWidget(attribdict["cube_dim"], 0, 2, 1, 2)
 		grid.addWidget(node_name_label , 1, 0, 1, 2)
@@ -365,12 +363,12 @@ class EMSphere(EMShapeBase):
 		"""
 		Return a sphere control widget for the stacked_widget
 		"""
-		spherewidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
-		sphere_dim_label = QtGui.QLabel("Sphere Dimension")
-		attribdict["sphere_dim"] = QtGui.QLineEdit("50")
-		node_name_label = QtGui.QLabel("Sphere Name")
-		attribdict["node_name"] = QtGui.QLineEdit(str(EMSphere.name))
+		spherewidget = QtWidgets.QWidget()
+		grid = QtWidgets.QGridLayout()
+		sphere_dim_label = QtWidgets.QLabel("Sphere Dimension")
+		attribdict["sphere_dim"] = QtWidgets.QLineEdit("50")
+		node_name_label = QtWidgets.QLabel("Sphere Name")
+		attribdict["node_name"] = QtWidgets.QLineEdit(str(EMSphere.name))
 		grid.addWidget(sphere_dim_label, 0, 0, 1, 2)
 		grid.addWidget(attribdict["sphere_dim"], 0, 2, 1, 2)
 		grid.addWidget(node_name_label , 1, 0, 1, 2)
@@ -423,15 +421,23 @@ class EMSphere(EMShapeBase):
 		gluSphere(quadratic,self.radius,self.slices,self.stacks)
 
 class EMScatterPlot3D(EMShapeBase):
+	"""Class representing a set of spheres in space. 3 data dimensions minimum (x,y,z). If a 4th is present, it will alter the surface brightness.
+	surface brightness axis uses a fixed minimum of zero (black) and the actual maximum value as white."""
 	name = "Plot3D"
 	nodetype = "ShapeNode"
 	
 	def __init__(self, transform=None):
 		EMShapeBase.__init__(self, parent=None, children=set(), transform=transform)
+		self.pointthr=0
+		self.data=[[],[],[]]
+		self.setPointSize(1)
 		
-	def setData(self, data, pointsize):
-		""" Set the dat to plot. Format is a [X, Y, Z] whereX Y and Z are lists of the smae length """
-		if len(data) != 3:
+	def setData(self, data, pointsize=1.0):
+		""" Set the dat to plot. Format is a [X, Y, Z] whereX Y and Z are lists of the same length """
+		if data is None:
+			self.data=[[],[],[]]
+			return
+		if len(data) < 3:
 			raise ValueError("Data must have 3 dimensions")
 		if len(data[0]) != len(data[1]) or len(data[1]) != len(data[2]):
 			raise ValueError("Dimensions must be of the same length")
@@ -442,9 +448,19 @@ class EMScatterPlot3D(EMShapeBase):
 		return self.pointsize
 		
 	def setPointSize(self, pointsize):
+		"""Sets the default size of each sphere, or the size scaling factor if a size parameter is provided"""
 		self.pointsize = pointsize
-		self.slices = int(pointsize)
-		self.stacks = int(pointsize)
+		self.slices = 8
+		self.stacks = 8
+		
+	def getPointThr(self):
+		return self.pointthr
+		
+	def setPointThr(self, pointthr):
+		"""Sets a point intensity threshold. Points will be hidden if they have a value below the threshold"""
+		self.pointthr = pointthr
+		self.slices = 8
+		self.stacks = 8
 		
 	def getEvalString(self):
 		"""Implement me"""
@@ -456,12 +472,18 @@ class EMScatterPlot3D(EMShapeBase):
 		return self.item_inspector
 	
 	def renderShape(self):
+		if len(self.data[0])<1 : return
 		# Material properties of the sphere
-		glDisable(GL_COLOR_MATERIAL)
+		#glDisable(GL_COLOR_MATERIAL)
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
 		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
 		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
+		#glColor(1.0,1.0,1.0)
+		if len(self.data)>3:
+#			cmin=min(self.data[3])
+			cmin=0
+			cmax=max(self.data[3])
 		
 		quadratic = gluNewQuadric()
 		gluQuadricNormals(quadratic, GLU_SMOOTH)    # Create Smooth Normals (NEW) 
@@ -469,9 +491,16 @@ class EMScatterPlot3D(EMShapeBase):
 		
 		for i in range(len(self.data[0])):
 			glPushMatrix()
-			
+			if len(self.data)>3:
+				brtcol=(self.data[3][i]-cmin)/(cmax-cmin)		# color is black for values of 0 ranging to white at max
+				if self.data[3][i]<self.pointthr : 
+					glPopMatrix()
+					continue
+				glMaterialfv(GL_FRONT, GL_DIFFUSE, [brtcol*0.75,brtcol*0.75,brtcol*0.75,1.0])
+				glMaterialfv(GL_FRONT, GL_AMBIENT, [brtcol,brtcol,brtcol,1.0])
 			glTranslatef(self.data[0][i],self.data[1][i],self.data[2][i])
-			gluSphere(quadratic,self.pointsize,self.slices,self.stacks)
+			if len(self.data)>4: gluSphere(quadratic,self.pointsize*self.data[4][i],self.slices,self.stacks)
+			else: gluSphere(quadratic,self.pointsize,self.slices,self.stacks)
 			
 			glPopMatrix()
 
@@ -485,16 +514,16 @@ class EMCylinder(EMShapeBase):
 		"""
 		Return a cylinder control widget for the stacked_widget
 		"""
-		cyliderwidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
-		cylider_radius_label = QtGui.QLabel("Cylider Radius")
-		attribdict["cylider_radius"] = QtGui.QLineEdit("50")
+		cyliderwidget = QtWidgets.QWidget()
+		grid = QtWidgets.QGridLayout()
+		cylider_radius_label = QtWidgets.QLabel("Cylinder Radius")
+		attribdict["cylider_radius"] = QtWidgets.QLineEdit("50")
 		grid.addWidget(cylider_radius_label, 0, 0, 1, 2)
 		grid.addWidget(attribdict["cylider_radius"], 0, 2, 1, 2)
-		cylider_height_label = QtGui.QLabel("Cylider Height")
-		attribdict["cylider_height"] = QtGui.QLineEdit("50")
-		node_name_label = QtGui.QLabel("Cylider Name")
-		attribdict["node_name"] = QtGui.QLineEdit(str(EMCylinder.name))
+		cylider_height_label = QtWidgets.QLabel("Cylinder Height")
+		attribdict["cylider_height"] = QtWidgets.QLineEdit("50")
+		node_name_label = QtWidgets.QLabel("Cylinder Name")
+		attribdict["node_name"] = QtWidgets.QLineEdit(str(EMCylinder.name))
 		grid.addWidget(cylider_height_label, 1, 0, 1, 2)
 		grid.addWidget(attribdict["cylider_height"], 1, 2, 1, 2)
 		grid.addWidget(node_name_label , 2, 0, 1, 2)
@@ -566,31 +595,31 @@ class EMLine(EMShapeBase):
 		"""
 		Return a line control widget for the stacked_widget
 		"""
-		linewidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
-		line_xyzi_label = QtGui.QLabel("Line start, X, Y, Z")
-		attribdict["linexi"] = QtGui.QLineEdit("0.0")
-		attribdict["lineyi"] = QtGui.QLineEdit("0.0")
-		attribdict["linezi"] = QtGui.QLineEdit("0.0")
+		linewidget = QtWidgets.QWidget()
+		grid = QtWidgets.QGridLayout()
+		line_xyzi_label = QtWidgets.QLabel("Line start, X, Y, Z")
+		attribdict["linexi"] = QtWidgets.QLineEdit("0.0")
+		attribdict["lineyi"] = QtWidgets.QLineEdit("0.0")
+		attribdict["linezi"] = QtWidgets.QLineEdit("0.0")
 		grid.addWidget(line_xyzi_label, 0, 0, 1, 3)
 		grid.addWidget(attribdict["linexi"], 1, 0, 1, 1)
 		grid.addWidget(attribdict["lineyi"], 1, 1, 1, 1)
 		grid.addWidget(attribdict["linezi"], 1, 2, 1, 1)
-		line_xyzf_label = QtGui.QLabel("Line end, X, Y, Z")
-		attribdict["linexf"] = QtGui.QLineEdit("0.0")
-		attribdict["lineyf"] = QtGui.QLineEdit("0.0")
-		attribdict["linezf"] = QtGui.QLineEdit("0.0")
+		line_xyzf_label = QtWidgets.QLabel("Line end, X, Y, Z")
+		attribdict["linexf"] = QtWidgets.QLineEdit("0.0")
+		attribdict["lineyf"] = QtWidgets.QLineEdit("0.0")
+		attribdict["linezf"] = QtWidgets.QLineEdit("0.0")
 		grid.addWidget(line_xyzf_label, 2, 0, 1, 3)
 		grid.addWidget(attribdict["linexf"], 3, 0, 1, 1)
 		grid.addWidget(attribdict["lineyf"], 3, 1, 1, 1)
 		grid.addWidget(attribdict["linezf"], 3, 2, 1, 1)
-		line_width = QtGui.QLabel("Line Width")
+		line_width = QtWidgets.QLabel("Line Width")
 		line_width.setAlignment(QtCore.Qt.AlignCenter)
-		attribdict["linewidth"] = QtGui.QLineEdit("10.0")
+		attribdict["linewidth"] = QtWidgets.QLineEdit("10.0")
 		grid.addWidget(line_width, 4, 0, 1, 2)
 		grid.addWidget(attribdict["linewidth"], 4, 2, 1, 1)
-		node_name_label = QtGui.QLabel("Line Name")
-		attribdict["node_name"] = QtGui.QLineEdit(str(EMLine.name))
+		node_name_label = QtWidgets.QLabel("Line Name")
+		attribdict["node_name"] = QtWidgets.QLineEdit(str(EMLine.name))
 		grid.addWidget(node_name_label , 5, 0, 1, 3)
 		grid.addWidget(attribdict["node_name"], 6, 0, 1, 3)
 		linewidget.setLayout(grid)
@@ -769,16 +798,16 @@ class EMCone(EMShapeBase):
 		"""
 		Return a cone control widget for the stacked_widget
 		"""
-		conewidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
-		cone_radius_label = QtGui.QLabel("Cone Radius")
-		attribdict["cone_radius"] = QtGui.QLineEdit("50")
+		conewidget = QtWidgets.QWidget()
+		grid = QtWidgets.QGridLayout()
+		cone_radius_label = QtWidgets.QLabel("Cone Radius")
+		attribdict["cone_radius"] = QtWidgets.QLineEdit("50")
 		grid.addWidget(cone_radius_label, 0, 0, 1, 2)
 		grid.addWidget(attribdict["cone_radius"], 0, 2, 1, 2)
-		cone_height_label = QtGui.QLabel("Cone Height")
-		attribdict["cone_height"] = QtGui.QLineEdit("50")
-		node_name_label = QtGui.QLabel("Cone Name")
-		attribdict["node_name"] = QtGui.QLineEdit(str(EMCone.name))
+		cone_height_label = QtWidgets.QLabel("Cone Height")
+		attribdict["cone_height"] = QtWidgets.QLineEdit("50")
+		node_name_label = QtWidgets.QLabel("Cone Name")
+		attribdict["node_name"] = QtWidgets.QLineEdit(str(EMCone.name))
 		grid.addWidget(cone_height_label, 1, 0, 1, 2)
 		grid.addWidget(attribdict["cone_height"], 1, 2, 1, 2)
 		grid.addWidget(node_name_label , 2, 0, 1, 2)
@@ -848,18 +877,18 @@ class EM3DText(EMShapeBase):
 		"""
 		Return a text control widget for the stacked_widget
 		"""
-		textwidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
-		text_label = QtGui.QLabel("Text")
-		attribdict["text_content"] = QtGui.QLineEdit()
+		textwidget = QtWidgets.QWidget()
+		grid = QtWidgets.QGridLayout()
+		text_label = QtWidgets.QLabel("Text")
+		attribdict["text_content"] = QtWidgets.QLineEdit()
 		grid.addWidget(text_label, 0, 0, 1, 2)
 		grid.addWidget(attribdict["text_content"], 0, 2, 1, 2)
-		fontsize_label = QtGui.QLabel("Font Size")
-		attribdict["fontsize"] = QtGui.QLineEdit("32.0")
+		fontsize_label = QtWidgets.QLabel("Font Size")
+		attribdict["fontsize"] = QtWidgets.QLineEdit("32.0")
 		grid.addWidget(fontsize_label , 1, 0, 1, 2)
 		grid.addWidget(attribdict["fontsize"], 1, 2, 1, 2)
-		node_name_label = QtGui.QLabel("Text Name")
-		attribdict["node_name"] = QtGui.QLineEdit(str(EM3DText.name))
+		node_name_label = QtWidgets.QLabel("Text Name")
+		attribdict["node_name"] = QtWidgets.QLineEdit(str(EM3DText.name))
 		grid.addWidget(node_name_label , 2, 0, 1, 2)
 		grid.addWidget(attribdict["node_name"], 2, 2, 1, 2)
 		EMItem3D.get_transformlayout(grid, 4, attribdict)
@@ -976,8 +1005,8 @@ class EMInspectorControlShape(EMItem3DInspector):
 	
 	def addTabs(self):
 		""" Add a tab for each 'column' """
-		tabwidget = QtGui.QWidget()
-		gridbox = QtGui.QGridLayout()
+		tabwidget = QtWidgets.QWidget()
+		gridbox = QtWidgets.QGridLayout()
 		
 		EMInspectorControlShape.addControls(self, gridbox)
 		
@@ -987,26 +1016,26 @@ class EMInspectorControlShape(EMItem3DInspector):
 	def addControls(self, gridbox):
 		""" Construct all the widgets in this Item Inspector """
 		super(EMInspectorControlShape, self).addControls(gridbox)
-		colorframe = QtGui.QFrame()
-		colorframe.setFrameShape(QtGui.QFrame.StyledPanel)
-		colorvbox = QtGui.QVBoxLayout()
+		colorframe = QtWidgets.QFrame()
+		colorframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
+		colorvbox = QtWidgets.QVBoxLayout()
 		lfont = QtGui.QFont()
 		lfont.setBold(True)
-		colorlabel = QtGui.QLabel("Color",colorframe)
+		colorlabel = QtWidgets.QLabel("Color",colorframe)
 		colorlabel.setFont(lfont)
 		colorlabel.setAlignment(QtCore.Qt.AlignCenter)
 
 		# These boxes are a pain maybe I should use a Grid?
-		cdialoghbox = QtGui.QHBoxLayout()
-		cabox = QtGui.QHBoxLayout()
+		cdialoghbox = QtWidgets.QHBoxLayout()
+		cabox = QtWidgets.QHBoxLayout()
 		self.ambcolorbox = EMQTColorWidget(parent=colorframe)
 		cabox.addWidget(self.ambcolorbox)
 		cabox.setAlignment(QtCore.Qt.AlignCenter)
-		cdbox = QtGui.QHBoxLayout()
+		cdbox = QtWidgets.QHBoxLayout()
 		self.diffusecolorbox = EMQTColorWidget(parent=colorframe)
 		cdbox.addWidget(self.diffusecolorbox)
 		cdbox.setAlignment(QtCore.Qt.AlignCenter)
-		csbox = QtGui.QHBoxLayout()
+		csbox = QtWidgets.QHBoxLayout()
 		self.specularcolorbox = EMQTColorWidget(parent=colorframe)
 		csbox.addWidget(self.specularcolorbox)
 		csbox.setAlignment(QtCore.Qt.AlignCenter)
@@ -1014,12 +1043,12 @@ class EMInspectorControlShape(EMItem3DInspector):
 		cdialoghbox.addLayout(cdbox)
 		cdialoghbox.addLayout(csbox)
 		
-		colorhbox = QtGui.QHBoxLayout()
-		self.ambient = QtGui.QLabel("Ambient", colorframe)
+		colorhbox = QtWidgets.QHBoxLayout()
+		self.ambient = QtWidgets.QLabel("Ambient", colorframe)
 		self.ambient.setAlignment(QtCore.Qt.AlignCenter)
-		self.diffuse = QtGui.QLabel("Diffuse", colorframe)
+		self.diffuse = QtWidgets.QLabel("Diffuse", colorframe)
 		self.diffuse.setAlignment(QtCore.Qt.AlignCenter)
-		self.specular = QtGui.QLabel("Specular", colorframe)
+		self.specular = QtWidgets.QLabel("Specular", colorframe)
 		self.specular.setAlignment(QtCore.Qt.AlignCenter)
 		colorhbox.addWidget(self.ambient)
 		colorhbox.addWidget(self.diffuse)
@@ -1039,9 +1068,9 @@ class EMInspectorControlShape(EMItem3DInspector):
 		# Set to default, but do not run if being inherited
 		if type(self) == EMInspectorControlShape: self.updateItemControls()
 		
-		self.ambcolorbox.newcolor[QColor].connect(self._on_ambient_color)
-		self.diffusecolorbox.newcolor[QColor].connect(self._on_diffuse_color)
-		self.specularcolorbox.newcolor[QColor].connect(self._on_specular_color)
+		self.ambcolorbox.newcolor[QtGui.QColor].connect(self._on_ambient_color)
+		self.diffusecolorbox.newcolor[QtGui.QColor].connect(self._on_diffuse_color)
+		self.specularcolorbox.newcolor[QtGui.QColor].connect(self._on_specular_color)
 		self.shininess.valueChanged.connect(self._on_shininess)
 		
 	def _on_ambient_color(self, color):
@@ -1082,8 +1111,8 @@ class EMInspectorControlScatterPlot(EMInspectorControlShape):
 	def addTabs(self):
 		""" Add a tab for each 'column' """
 		super(EMInspectorControlScatterPlot, self).addTabs()
-		tabwidget = QtGui.QWidget()
-		gridbox = QtGui.QGridLayout()
+		tabwidget = QtWidgets.QWidget()
+		gridbox = QtWidgets.QGridLayout()
 		
 		EMInspectorControlScatterPlot.addControls(self, gridbox)
 		
@@ -1093,15 +1122,15 @@ class EMInspectorControlScatterPlot(EMInspectorControlShape):
 	def addControls(self, gridbox):
 		""" Construct all the widgets in this Item Inspector """
 		
-		scatterframe = QtGui.QFrame()
-		scatterframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		scatterframe = QtWidgets.QFrame()
+		scatterframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		lfont = QtGui.QFont()
 		lfont.setBold(True)
-		scattergridbox = QtGui.QGridLayout()
+		scattergridbox = QtWidgets.QGridLayout()
 		scattergridbox.setAlignment(QtCore.Qt.AlignTop)
 		
 		# Add widgets to frame
-		pslabel = QtGui.QLabel("Point Size")
+		pslabel = QtWidgets.QLabel("Point Size")
 		pslabel.setFont(lfont)
 		pslabel.setAlignment(QtCore.Qt.AlignCenter)
 		scattergridbox.addWidget(pslabel, 0, 0, 1, 1)
@@ -1151,8 +1180,8 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 	def addTabs(self):
 		""" Add a tab for each 'column' """
 		super(EMInspectorControl3DText, self).addTabs()
-		tabwidget = QtGui.QWidget()
-		gridbox = QtGui.QGridLayout()
+		tabwidget = QtWidgets.QWidget()
+		gridbox = QtWidgets.QGridLayout()
 		
 		EMInspectorControl3DText.addControls(self, gridbox)
 		
@@ -1162,23 +1191,23 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 	def addControls(self, gridbox):
 		""" Construct all the widgets in this Item Inspector """
 	
-		textframe = QtGui.QFrame()
-		textframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		textframe = QtWidgets.QFrame()
+		textframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		lfont = QtGui.QFont()
 		lfont.setBold(True)
-		textgridbox = QtGui.QGridLayout()
+		textgridbox = QtWidgets.QGridLayout()
 		
 		# Add widgets to textframe
-		textlabel = QtGui.QLabel("3D Font Mode")
+		textlabel = QtWidgets.QLabel("3D Font Mode")
 		textlabel.setFont(lfont)
 		textlabel.setAlignment(QtCore.Qt.AlignCenter)
 		textgridbox.addWidget(textlabel, 0, 0, 1, 1)
 		
-		self.textModeBox = QtGui.QComboBox()
+		self.textModeBox = QtWidgets.QComboBox()
 		self.textModeBox.addItems(["EXTRUDE", "TEXTURE", "POLYGON", "OUTLINE"])
 		textgridbox.addWidget(self.textModeBox, 0, 1, 1, 1)
 			
-		textlabel2 = QtGui.QLabel("3D Font Depth")
+		textlabel2 = QtWidgets.QLabel("3D Font Depth")
 		textlabel2.setFont(lfont)
 		textlabel2.setAlignment(QtCore.Qt.AlignCenter)
 		textgridbox.addWidget(textlabel2, 1, 0, 1, 1)
@@ -1187,7 +1216,7 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 		self.fontDepth.setMinimumWidth(120)
 		textgridbox.addWidget(self.fontDepth, 1, 1, 1, 1)
 		
-		textlabel2 = QtGui.QLabel("3D Font Size")
+		textlabel2 = QtWidgets.QLabel("3D Font Size")
 		textlabel2.setFont(lfont)
 		textlabel2.setAlignment(QtCore.Qt.AlignCenter)
 		textgridbox.addWidget(textlabel2, 2, 0, 1, 1)
@@ -1200,15 +1229,15 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 		gridbox.addWidget(textframe, 2, 0)
 		
 		# Add text
-		text3dframe = QtGui.QFrame()
-		text3dframe.setFrameShape(QtGui.QFrame.StyledPanel)
-		text3dgridbox = QtGui.QGridLayout()
+		text3dframe = QtWidgets.QFrame()
+		text3dframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
+		text3dgridbox = QtWidgets.QGridLayout()
 		
-		textlabel3 = QtGui.QLabel("3D Text")
+		textlabel3 = QtWidgets.QLabel("3D Text")
 		textlabel3.setFont(lfont)
 		text3dgridbox.addWidget(textlabel3, 3, 0, 2, 1)
 		
-		self.text3d = QtGui.QLineEdit(self.item3d().getRenderString())
+		self.text3d = QtWidgets.QLineEdit(self.item3d().getRenderString())
 		text3dgridbox.addWidget(self.text3d, 3, 1, 2, 1)
 		
 		text3dframe.setLayout(text3dgridbox)
@@ -1273,8 +1302,8 @@ class EMInspectorControlLine(EMInspectorControlShape):
 	def addTabs(self):
 		""" Add a tab for each 'column' """
 		super(EMInspectorControlLine, self).addTabs()
-		tabwidget = QtGui.QWidget()
-		gridbox = QtGui.QGridLayout()
+		tabwidget = QtWidgets.QWidget()
+		gridbox = QtWidgets.QGridLayout()
 		
 		EMInspectorControlLine.addControls(self, gridbox)
 		
@@ -1284,28 +1313,28 @@ class EMInspectorControlLine(EMInspectorControlShape):
 	def addControls(self, gridbox):
 		""" Construct all the widgets in this Item Inspector """
 		#frame to control properties of left/right arrows
-		lineframe = QtGui.QFrame()
-		lineframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		lineframe = QtWidgets.QFrame()
+		lineframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		lfont = QtGui.QFont()
 		lfont.setBold(True)
-		linegridbox = QtGui.QGridLayout()
+		linegridbox = QtWidgets.QGridLayout()
 		
-		leftlabel = QtGui.QLabel("Left arrow")
+		leftlabel = QtWidgets.QLabel("Left arrow")
 		leftlabel.setFont(lfont)
 		leftlabel.setAlignment(QtCore.Qt.AlignCenter)
 		linegridbox.addWidget(leftlabel, 0, 1, 1, 1)
 		
-		sidelabel1 = QtGui.QLabel("Size")
+		sidelabel1 = QtWidgets.QLabel("Size")
 		sidelabel1.setFont(lfont)
 		sidelabel1.setAlignment(QtCore.Qt.AlignVCenter)
 		linegridbox.addWidget(sidelabel1, 2, 0, 1, 1)
 		
-		sidelabel2 = QtGui.QLabel("Length")
+		sidelabel2 = QtWidgets.QLabel("Length")
 		sidelabel2.setFont(lfont)
 		sidelabel2.setAlignment(QtCore.Qt.AlignVCenter)
 		linegridbox.addWidget(sidelabel2, 3, 0, 1, 1)
 		
-		self.leftShowArrow = QtGui.QCheckBox("Show")
+		self.leftShowArrow = QtWidgets.QCheckBox("Show")
 		self.leftShowArrow.setChecked(self.item3d().showLeftArrow)
 		linegridbox.addWidget(self.leftShowArrow, 1, 1, 1, 1)
 		
@@ -1317,12 +1346,12 @@ class EMInspectorControlLine(EMInspectorControlShape):
 		self.leftArrowLength.setMinimumWidth(120)
 		linegridbox.addWidget(self.leftArrowLength, 3, 1, 1, 1)
 		
-		rightlabel = QtGui.QLabel("Right arrow")
+		rightlabel = QtWidgets.QLabel("Right arrow")
 		rightlabel.setFont(lfont)
 		rightlabel.setAlignment(QtCore.Qt.AlignCenter)
 		linegridbox.addWidget(rightlabel, 0, 2, 1, 1)
 		
-		self.rightShowArrow = QtGui.QCheckBox("Show")
+		self.rightShowArrow = QtWidgets.QCheckBox("Show")
 		self.rightShowArrow.setChecked(self.item3d().showRightArrow)
 		linegridbox.addWidget(self.rightShowArrow, 1, 2, 1, 1)
 		
@@ -1334,7 +1363,7 @@ class EMInspectorControlLine(EMInspectorControlShape):
 		self.rightArrowLength.setMinimumWidth(120)
 		linegridbox.addWidget(self.rightArrowLength, 3, 2, 1, 1)
 		
-		linelengthlabel = QtGui.QLabel("Line Length")
+		linelengthlabel = QtWidgets.QLabel("Line Length")
 		linelengthlabel.setFont(lfont)
 		linelengthlabel.setAlignment(QtCore.Qt.AlignCenter)
 		linegridbox.addWidget(linelengthlabel, 4, 0, 2, 2)
@@ -1342,7 +1371,7 @@ class EMInspectorControlLine(EMInspectorControlShape):
 		self.linelength = EMSpinWidget(int(self.item3d().length), 1.0, rounding=0)
 		linegridbox.addWidget(self.linelength, 4, 2, 2, 2)
 		
-		linewidthlabel = QtGui.QLabel("Line Width")
+		linewidthlabel = QtWidgets.QLabel("Line Width")
 		linewidthlabel.setFont(lfont)
 		linewidthlabel.setAlignment(QtCore.Qt.AlignCenter)
 		linegridbox.addWidget(linewidthlabel, 5, 0, 1, 2)
@@ -1354,9 +1383,9 @@ class EMInspectorControlLine(EMInspectorControlShape):
 		gridbox.addWidget(lineframe, 2, 0)
 		
 		#frame to control slice/stack of the line
-		lineframe2 = QtGui.QFrame()
-		lineframe2.setFrameShape(QtGui.QFrame.StyledPanel)
-		linehbox = QtGui.QVBoxLayout()
+		lineframe2 = QtWidgets.QFrame()
+		lineframe2.setFrameShape(QtWidgets.QFrame.StyledPanel)
+		linehbox = QtWidgets.QVBoxLayout()
 				
 		self.slice = ValSlider(lineframe2, (1, 100), "Slice", rounding=0)
 		self.slice.setValue(self.item3d().slices)

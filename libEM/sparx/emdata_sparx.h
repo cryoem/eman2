@@ -1,10 +1,7 @@
-/**
- * $Id$
- */
-
 /*
  * Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
- * Copyright (c) 2000-2006 The University of Texas - Houston Medical School
+ * Please do not copy or modify this file without written consent of the author.
+ * Copyright (c) 2000-2019 The University of Texas - Houston Medical School
  *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
@@ -102,13 +99,13 @@ EMData *FH2Real(int Size, float OverSamplekB, int IntensityFlag =0);
  * @exception ImageDimensionException If 'this' image is 1D.
  * @return 1-D rotationally-averaged image
  */
-EMData* rotavg();
+EMData* rotavg(EMData* mask = NULL);
 
 /** Create a 2-D or 3-D rotationally averaged image.
  * @exception ImageDimensionException If 'this' image is 1D.
  * @return 2-D or 3-D rotationally-averaged image
  */
-EMData* rotavg_i();
+EMData* rotavg_i(EMData* mask = NULL);
 
 /** Multiply radially a 2-D or 3-D image by a 1-D image.
  * @param radial the 1-D image multiply to
@@ -425,6 +422,11 @@ EMData* rot_scale_trans(const Transform &RA, EMData* ret = NULL);
  *  @return New rotated/shifted/scaled image
  */
 EMData* rot_scale_trans_background(const Transform &RA, EMData* ret = NULL);
+
+
+
+EMData* pull_section(const Transform &RA);
+void push_section(const Transform &RA, EMData* bi, EMData* w);
 
 /*
 		To restrict the value to [0, nx)

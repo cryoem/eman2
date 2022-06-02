@@ -1,7 +1,3 @@
-/**
- * $Id$
- */
-
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
@@ -564,7 +560,10 @@ The basic design of EMAN Processors: <br>\
 			d.put("cutoff_abs", EMObject::FLOAT, "Processor radius in terms of Nyquist (0-.5)");
 			d.put("cutoff_pixels", EMObject::FLOAT, " Width in Fourier pixels (0 - size()/2)");
 			d.put("cutoff_freq", EMObject::FLOAT, "1/Resolution in 1/A (0 - 1 / 2*apix). eg - a 20 A filter is cutoff_freq=0.05");
+			d.put("hppix", EMObject::FLOAT, "If specified will also apply a high pass filter with the specified radius in pixels");
 			d.put("apix", EMObject::FLOAT, " Override A/pix in the image header (changes x,y and z)");
+			d.put("centerfreq", EMObject::FLOAT, "center of filter frequency at z");
+			d.put("xynoz", EMObject::INT, "If set, filters the X-Y plane instead of Z");
 			return d;
 		}
 
@@ -575,7 +574,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return "Applies a Gaussian lowpass filter (or its inverse), but only along the Z axis. May be useful in anisotropic filtering of tomograms.";
+			return "Applies a Gaussian lowpass filter (or its inverse), but only along the Z axis (or X-Y). May be useful in anisotropic filtering of tomograms.";
 		}
 
 		static const string NAME;
@@ -670,6 +669,56 @@ The basic design of EMAN Processors: <br>\
 	};
 
 	/**
+	 * This processor computes what I've dubbed the 'harmonic power spectrum'. It is a 2 point invariant method based on the product
+	 * of a Fourier location and the complex conjugate of another Fourier location at r=1/N raised to the N power to cancel phases
+	 * Since raising complex values to fracional powers causes root uncertainty issues, this insures that phase information is preserved
+	 * Effectively this is giving a relative phase shift between different harmonics of each specific frequency. It also avoids problems with
+	 * multiplying noisy components into the invariant as the bispectrum does. Anyway... that's the idea.
+	 * Let's see if it works ;^)
+	 *@author Steve Ludtke
+	 *@date 2019/03/17
+	 */
+	class HarmonicProcessor : public Processor
+	{
+		public:
+			HarmonicProcessor() {}
+
+			string get_name() const
+			{
+				return NAME;
+			}
+
+			void process_inplace(EMData *image) { throw InvalidCallException("inplace not supported"); }
+			
+			virtual EMData* process(const EMData* const image);
+			
+			static Processor *NEW()
+			{
+				return new HarmonicProcessor();
+			}
+
+			string get_desc() const
+			{
+				return "Computes invariants including relative phase in harmonic series";
+			}
+
+			TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("hn", EMObject::INT, "Computes a single translational invariant for the nth harmonic, 1 is a normal power spectrum");
+				d.put("rn", EMObject::INT, "Computes a single rot/trans invariant for the nth rotational harmonic, requires hn to be non zero");
+				d.put("rfp", EMObject::INT, "Returns a non square 2-D image with translational invariants, y=radial, x=aziumth. Used for rotational alignment.");
+				d.put("fp", EMObject::INT, "Returns a non-square 2-D image containing n harmonics for each R&T component. R&T invariant. Min 2, default 4");
+//				d.put("fb", EMObject::INT, "Fourier Bessel");
+				d.put("size", EMObject::INT, "If specified, will determine the number of rotational samples in the bispectrum. If not set, a size is selected automatically");
+				return d;
+			}
+
+			static const string NAME;
+	};
+
+	
+	/**
 	 * This processor computes 2-D slices of the 4-D bispectrum of a 2-D image. It can also integrate over image rotation
 	 * to produce a set of rotationally/translationally invariant slices
 	 *@author Steve Ludtke
@@ -714,10 +763,61 @@ The basic design of EMAN Processors: <br>\
 				d.put("jkx", EMObject::INT, "Jx+Kx location of the slice in Fourier pixels");
 				d.put("jky", EMObject::INT, "Jy+Ky location of the slice in Fourier pixels");
 				d.put("k", EMObject::FLOAT, "Radius of slice in Fourier pixels, integrates over angle.");
-				d.put("rfp", EMObject::INT, "Returns a non square 2-D image containing rotational invariants organized such that X=azimuth. Used for rotational alignment.");
+				d.put("prbk", EMObject::FLOAT, "Radius of slice in Fourier pixels, integrates over angle.");
+				d.put("prbkv2", EMObject::FLOAT, "Radius of slice in Fourier pixels, integrates over angle. k>|q+k|>q");
+				d.put("prb3D", EMObject::FLOAT, "Radius of maximum slic. Returns volume, integrates over angle. k>|q+k|>q");
+				d.put("rfp", EMObject::INT, "Returns a non square 2-D image containing translatinal invariants organized such that X=azimuth. Used for rotational alignment.");
 				d.put("fp", EMObject::INT, "Returns a non-square 2-D image containing n rotationally integrated planes. R&T invariant.");
 				d.put("ffp", EMObject::INT, "Returns a 3-D volume containing n rotationally integrated planes. R&T invariant. This is normally further processed with CTF info to produce fp equivalent.");
 				d.put("size", EMObject::INT, "If specified, will determine the size (x/y) of the real-space bispectrum image. If not set, a size is selected automatically");
+				return d;
+			}
+
+			static const string NAME;
+	};
+
+	/**
+	 * This processor filters an image to improve the visibility of particles. The resulting images are primarily useful for visualization rather than processing.
+	 * A/pix must be set correctly for it to work.
+	 *@author Steve Ludtke
+	 *@date 2019/02/09
+	 */
+	class EnhanceProcessor : public Processor
+	{
+		public:
+			EnhanceProcessor() {}
+
+			string get_name() const
+			{
+				return NAME;
+			}
+
+			virtual void process_inplace(EMData *image);
+			
+			virtual EMData* process(const EMData* const image);
+			
+			static Processor *NEW()
+			{
+				return new EnhanceProcessor();
+			}
+
+			string get_desc() const
+			{
+				return "Visual enhancement filter useful for localizing particles. Results not designed for reconstruction.";
+			}
+
+			TypeDict get_param_types() const
+			{
+				TypeDict d;
+// 				d.put("kx", EMObject::INT, "Kx location of the slice in Fourier pixels");
+// 				d.put("ky", EMObject::INT, "Ky location of the slice in Fourier pixels");
+// 				d.put("jkx", EMObject::INT, "Jx+Kx location of the slice in Fourier pixels");
+// 				d.put("jky", EMObject::INT, "Jy+Ky location of the slice in Fourier pixels");
+// 				d.put("k", EMObject::FLOAT, "Radius of slice in Fourier pixels, integrates over angle.");
+// 				d.put("rfp", EMObject::INT, "Returns a non square 2-D image containing rotational invariants organized such that X=azimuth. Used for rotational alignment.");
+// 				d.put("fp", EMObject::INT, "Returns a non-square 2-D image containing n rotationally integrated planes. R&T invariant.");
+// 				d.put("ffp", EMObject::INT, "Returns a 3-D volume containing n rotationally integrated planes. R&T invariant. This is normally further processed with CTF info to produce fp equivalent.");
+// 				d.put("size", EMObject::INT, "If specified, will determine the size (x/y) of the real-space bispectrum image. If not set, a size is selected automatically");
 				return d;
 			}
 
@@ -1160,7 +1260,6 @@ The basic design of EMAN Processors: <br>\
 			d.put("radius", EMObject::INT, "The number of pixels (radius) to dilate the input image.");
 			d.put("iters",EMObject::INT, "The number of times to apply this process to the input image.");
 			d.put("thresh", EMObject::FLOAT,"Only considers densities above the threshold");
-			//d.put("selem",EMObject::EMDATA, "The structuring element with which you want to dilate.");
 			return d;
 		}
 
@@ -1202,7 +1301,6 @@ The basic design of EMAN Processors: <br>\
 			d.put("radius", EMObject::INT, "The number of pixels (radius) to dilate the input image.");
 			d.put("iters",EMObject::INT, "The number of times to apply this process to the input image.");
 			d.put("thresh", EMObject::FLOAT,"Only considers densities above the threshold");
-			//d.put("selem",EMObject::EMDATA, "The structuring element with which you want to dilate.");
 			return d;
 		}
 
@@ -1236,7 +1334,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return "Performs a morphological k-pixel opening of a (binary) image.";
+			return "Performs a morphological k-pixel closing of a (binary) image/volume. Note the box must be large enough to accommodate the dilation to work properly. iter(dilate) -> iter(erode)";
 		}
 
 		TypeDict get_param_types() const
@@ -1278,7 +1376,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return "Performs a morphological k-pixel closing of a (binary) image.";
+			return "Performs a morphological k-pixel opening of a (binary) image/volume. iter(erode) -> iter(dilate)";
 		}
 
 		TypeDict get_param_types() const
@@ -1553,6 +1651,49 @@ The basic design of EMAN Processors: <br>\
 		int bgsize;
 	};
 
+	/** Segment a volume by sequentially finding the highest peak and subtracting a Gaussian at that point from the density
+	 * after strongly filtering the map to a specified resolvability. 
+	 *
+	 *@author Steve Ludtke
+	 *@date 2021/04/18
+	 */
+	class GaussSegmentProcessor:public Processor
+	{
+	  public:
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual EMData* process(const EMData * const image);
+		void process_inplace( EMData * image);
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d ;
+			d.put("minratio",EMObject::FLOAT,"The ratio of the smallest amplitude segment to locate relative to the strongest peak (default=0.5)");
+			d.put("maxnseg",EMObject::INT,"Maximum number of segments to return (default = unlimited)");
+			d.put("width",EMObject::FLOAT,"Required: full width of Gaussians in A at 1/e (FWHM). Also used to determine map prefiltration.");
+			d.put("mask",EMObject::EMDATA,"Optional: mask to apply to map after filtration to limit where centers are placed");
+			d.put("skipseg",EMObject::INT,"Normally the returned map is a segmentation map, but this is unnecessary if only the center coordinates are needed. If 1, the returned map will be a residual volume, not a segmentation map. If 2, it will be the filtered map before segmentation");
+			d.put("verbose",EMObject::INT,"Be verbose while running");
+			return d;
+		}
+
+		static Processor *NEW()
+		{
+			return new GaussSegmentProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Segments a volume by sequentially finding and subtracting Gaussians at a specified resolvability.";
+		}
+
+		static const string NAME;
+
+	};
+
 	/** Segment a volume about:homeinto subvolumes based on a center separation value. For linear densities
 	 * such as skeletons this should fill linear regions with uniformly separated points
 	 *
@@ -1680,7 +1821,7 @@ The basic design of EMAN Processors: <br>\
 			d.put("ampcont", EMObject::FLOAT, "% amplitude contrast (0-100)");
 			d.put("bfactor", EMObject::FLOAT, "B-factor in A^2, uses MRC convention rather than EMAN1 convention");
 			d.put("noiseamp", EMObject::FLOAT, "Amplitude of the added empirical pink noise");
-			d.put("noiseampwhite", EMObject::FLOAT, "Amplitude of added white noise");
+// 			d.put("noiseampwhite", EMObject::FLOAT, "Amplitude of added white noise");
 			d.put("voltage", EMObject::FLOAT, "Microscope voltage in KV");
 			d.put("cs", EMObject::FLOAT, "Cs of microscope in mm");
 			d.put("apix", EMObject::FLOAT, "A/pix of data");
@@ -2071,6 +2212,42 @@ The basic design of EMAN Processors: <br>\
 		float sigma;
 	};
 
+	/** Convert an image containing normalized correlation coefficients to SNR or a Wiener filter value
+	 *  used in conjunction with local resolution filtration
+	 */
+	class CCCSNRProcessor:public Processor
+	{
+	  public:
+		string get_name() const
+		{
+			return NAME;
+		}
+		static Processor *NEW()
+		{
+			return new CCCSNRProcessor();
+		}
+		
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("wiener", EMObject::INT, "If set, returns Wiener image, default returns SNR");
+			d.put("scalesnr", EMObject::FLOAT, "Scales SSNR by provided value prior to return or use in Wiener calculation. Default 2 (compensates for FSC on 1/2 volumes)");
+			return d;
+		}
+				
+		string get_desc() const
+		{
+			return "Converts an image containing normalized CCC values to SNR or Wiener filter values. scalesnr defaults to 2, which\
+ uses the SNR of the average of the two half-image volumes. ie - if scalesnr is 2: SNR = 2*FSC/(1-FSC)";
+		}
+
+		void process_inplace(EMData * image);
+
+		static const string NAME;
+
+	};
+
+	
 	/**f(x) = |x|
 	 */
 	class AbsoluteValueProcessor:public RealPixelProcessor
@@ -2360,6 +2537,7 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	
 	class DiscritizeProcessor:public RealPixelProcessor
 	{
 	  public:
@@ -2480,6 +2658,57 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/** Set any values in a range to zero. Opposite of threshold.clampminmax
+	 *@param minval	minimum value of the range
+	 *@param maxval maximum value of the range
+	 */
+	class RangeZeroProcessor:public Processor
+	{
+	public:
+		RangeZeroProcessor():minval(0),maxval(0)
+		{
+		}
+		
+		string get_name() const
+		{
+			return NAME;
+		}
+		
+		static Processor *NEW()
+		{
+			return new RangeZeroProcessor();
+		}
+		
+		virtual void process_inplace(EMData * image);
+		
+		
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("minval", EMObject::FLOAT, "Lower threshold (required)");
+			d.put("maxval", EMObject::FLOAT, "Upper threshold (required)");
+			d.put("gauss_width", EMObject::FLOAT, "Range will be narrowed around zero based on a radial Gaussian falloff modeled on math.gausskernelfix. Disabled if set to 0.");
+			return d;
+		}
+
+		void set_params(const Dict & new_params)
+		{
+			params = new_params;
+			minval = params["minval"];	// using existing variable as a convenience
+			maxval = params["maxval"];
+		}
+
+		string get_desc() const
+		{
+			return "Sets values in a range to zero. Opposite of threshold.clampminmax. \nf(x) = x if x > maxval or x < minval; f(x) = 0 for min <= x <= max. If gauss_width set nozero, applies a radial correction factor to both min and max.";
+		}
+
+		static const string NAME;
+
+	protected:
+		float minval,maxval;
+	};
+
 	/**Rotate by 180 using pixel swapping, works for 2D only
 	 * @author David Woolford
 	 * @date March 21, 2014
@@ -2523,7 +2752,40 @@ The basic design of EMAN Processors: <br>\
 			static const string NAME;
 	};
 
+	class SetBitsProcessor:public Processor
+	{
+	  public:
+		string get_name() const
+		{
+			return NAME;
+		}
+		static Processor *NEW()
+		{
+			return new SetBitsProcessor();
+		}
 
+		void process_inplace(EMData *image);
+
+		TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("bits", EMObject::INT, "Number of bits to retain (default 5)");
+				d.put("nsigma", EMObject::FLOAT, "Number of standard deviations to include in the n bit mapping. eg - max=min(mean+nsigma*sigma,max)");
+				d.put("floatbits", EMObject::INT, "If set to a >0 number, alters the algorithm, so the specified number of significant floating point bits is retained. The floating point exponent is not modified. This will produce less compressible data, but the values will be less perturbed.");
+				return d;
+			}
+
+		string get_desc() const
+		{
+			return "Converts each pixel value to an integer using the specified number of total bits. This will make the data more compressible, and allows you to handle conversion to integer data modes.\
+The data itself will remain stored in single precision floating point format, so using >23 bits would be a bad idea.";
+		}
+
+		static const string NAME;
+
+	};
+	
+	
 	/**Rotate by 180 using pixel swapping, works for 2D only
 	 * @author David Woolford
 	 * @date July 29th 2008
@@ -3130,15 +3392,15 @@ The basic design of EMAN Processors: <br>\
 		void set_params(const Dict & new_params)
 		{
 			params = new_params;
-			low = params.get("low");
-			high = params.get("high");
+			low = params.set_default("low",1.0f);
+			high = params.set_default("high",0.0f);
 		}
 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("low", EMObject::FLOAT, "Pixels are divided by (low - high) prior to the exponential operation");
-			d.put("high", EMObject::FLOAT, "Pixels are divided by (low - high) prior to the exponential operation");
+			d.put("low", EMObject::FLOAT, "Pixels are divided by low then high is subtracted prior to the exponential operation, default 1.0");
+			d.put("high", EMObject::FLOAT, "Pixels are divided by low then high is subtracted prior to the exponential operation, default 0.0");
 			return d;
 		}
 
@@ -3788,7 +4050,7 @@ outer radius specifies width of Gaussian starting at inner_radius rather than to
 	class MaskGaussNonuniformProcessor:public CoordinateProcessor
 	{
 	  public:
-		MaskGaussNonuniformProcessor():radius_x(0), radius_y(0), radius_z(0), gauss_width(0)
+		MaskGaussNonuniformProcessor():radius_x(0), radius_y(0), radius_z(0), gauss_width(0),dx(0),dy(0),dz(0)
 		{
 		}
 
@@ -3804,6 +4066,11 @@ outer radius specifies width of Gaussian starting at inner_radius rather than to
 
 			if (params.has_key("radius_z")) radius_z=params["radius_z"];
 			else radius_z=5.0;
+			
+			dx=dy=dz=0.0;
+			if (params.has_key("dx")) dx=params["dx"];
+			if (params.has_key("dy")) dy=params["dy"];
+			if (params.has_key("dz")) dz=params["dz"];
 
 			if (params.has_key("gauss_width")) gauss_width=params["gauss_width"];
 			else gauss_width=0.05f;
@@ -3817,6 +4084,14 @@ outer radius specifies width of Gaussian starting at inner_radius rather than to
 			d.put("radius_y", EMObject::INT, "y-axis radius");
 			d.put("radius_z", EMObject::INT, "z-axis radius");
 			d.put("gauss_width", EMObject::FLOAT, "Gaussian falloff width, relative to each radius, default 0.05");
+			
+			d.put("dx", EMObject::FLOAT,
+				  "Modify mask center by dx relative to the default center nx/2");
+			d.put("dy", EMObject::FLOAT,
+				  "Modify mask center by dy relative to the default center ny/2");
+			d.put("dz", EMObject::FLOAT,
+				  "Modify mask center by dz relative to the default center nz/2");
+
 
 			return d;
 		}
@@ -3841,11 +4116,11 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 	  protected:
 		void process_pixel(float *pixel, int xi, int yi, int zi) const
 		{
-			float dist = pow((xi - nx/2)/radius_x,2.0f) + pow((yi - ny/2)/radius_y,2.0f) + pow((zi - nz/2)/radius_z,2.0f);
+			float dist = pow((xi - (nx/2+dx))/radius_x,2.0f) + pow((yi - (ny/2+dy))/radius_y,2.0f) + pow((zi - (nz/2+dz))/radius_z,2.0f);
 			if (dist>1.0) (*pixel)*=exp(-pow((sqrt(dist)-1.0f)/gauss_width,2.0f));
 		}
 
-		float radius_x,radius_y,radius_z,gauss_width;
+		float radius_x,radius_y,radius_z,gauss_width,dx,dy,dz;
 	};
 
 	/**f(x) = f(x) / exp(-radius*radius * gauss_width / (ny*ny))
@@ -4204,17 +4479,21 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 	class BoxStatProcessor:public Processor
 	{
 	  public:
-		void process_inplace(EMData * image);
+		virtual void process_inplace(EMData * image);
+		virtual EMData *process(EMData * image);
 
 		static string get_group_desc()
 		{
-			return "BoxStatProcessor files are a kind of neighborhood processors. These processors compute every output pixel using information from a reduced region on the neighborhood of the input pixel. The classical form are the 3x3 processors. BoxStatProcessors could perform diverse tasks ranging from noise reduction, to differential , to mathematical morphology. BoxStatProcessor class is the base class. Specific BoxStatProcessor needs to define process_pixel(float *pixel, const float *array, int n).";
+			return "BoxStatProcessor files are real-space neighborhood processors. These processors compute every output pixel using information from a reduced region on the neighborhood of the input pixel. The classical form are the 3x3 processors. BoxStatProcessors could perform diverse tasks ranging from noise reduction, to differential , to mathematical morphology. BoxStatProcessor class is the base class. Specific BoxStatProcessor needs to define process_pixel(float *pixel, const float *array, int n).";
 		}
 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("radius", EMObject::INT, "The radius of the search box, default is 1 which results in a 3x3 box (3 = 2xradius + 1)");
+			d.put("radius", EMObject::INT, "The 'radius' of the (square/cube) search box, eg - 1 -> 3x3 box");
+			d.put("xsize", EMObject::INT, "+- range on X axis, 0 uses the value only, 1 -> -1,0,+1, ...");
+			d.put("ysize", EMObject::INT, "+- range on Y axis");
+			d.put("zsize", EMObject::INT, "+- range on Z axis)");
 			return d;
 		}
 
@@ -4330,7 +4609,7 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 
 		string get_desc() const
 		{
-			return "peak processor: pixel = max of values surrounding pixel.";
+			return "peak processor: pixel = max of values surrounding pixel in a square/cube with specified 1/2 size.";
 		}
 
 		static const string NAME;
@@ -4349,6 +4628,38 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 		}
 	};
 
+	class LocalMinAbsProcessor:public BoxStatProcessor
+	{
+	  public:
+		string get_name() const
+		{
+			return NAME;
+		}
+		static Processor *NEW()
+		{
+			return new LocalMinAbsProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Takes the actual value of the pixel in the local region with the smallest absolute value. This can be used for an effect somewhat like binary erosion with continuous data.";
+		}
+
+		static const string NAME;
+
+	  protected:
+		void process_pixel(float *pixel, const float *data, int n) const
+		{
+			float minval = FLT_MAX;
+			for (int i = 0; i < n; i++) 
+			{
+				if (fabs(data[i]) < fabs(minval)) minval=data[i];
+			}
+			*pixel = minval;
+		}
+	};
+
+	
 	/**peak processor: pixel = pixel - max of values surrounding pixel. This is a sort of positive peak-finding algorithm.
 	 */
 	class MinusPeakProcessor:public BoxStatProcessor
@@ -5046,7 +5357,7 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 		static const string NAME;
 	};
 
-	/**This will replace the image with a full-circle 2D fft amplitude rendering.
+	/**This will replace the image with a full-circle 2D or 3D fft amplitude rendering.
 	 */
 	class RealToFFTProcessor:public Processor
 	{
@@ -5065,7 +5376,7 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 
 		string get_desc() const
 		{
-			return "This will replace the image with a full-circle 2D fft amplitude rendering. Note that this renders amplitude, when intensity is more common.";
+			return "This will replace the image with a full-circle/sphere 2D/3d fft amplitude rendering. Note that this produces amplitudes, when intensities are more common.";
 		}
 
 		static const string NAME;
@@ -5089,14 +5400,15 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 
 		string get_desc() const
 		{
-			return "Identifies pixels corresponding to peaks in Fourier space based on the standard deviation of the corresponding Fourier ring. These pixels are masked out or in depending on options.";
+			return "Identifies pixels corresponding to peaks in Fourier space based on the mean & standard deviation of the corresponding Fourier amplitude in each ring/shell. These pixels are masked out or in depending on options.";
 		}
 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("thresh_sigma", EMObject::FLOAT, "Multiplied by the standard deviation in each Fourier shell as a threshold for identifying peaks. Default 1.0");
+			d.put("thresh_sigma", EMObject::FLOAT, "Values above mean + thresh_sigma * sigma are identified. Default 1.0");
 			d.put("removepeaks", EMObject::BOOL, "Instead of keeping peaks and removing everything else, this will remove peaks and keep everything else.");
+			d.put("to_mean", EMObject::BOOL, "Instead of setting identified pixels to zero, set the amplitude to the mean amplitude.");
 			return d;
 		}
 
@@ -5602,7 +5914,7 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 
 		string get_desc() const
 		{
-			return "do a standard normalization on an image.";
+			return "do a standard normalization on an image (mean=0, sigma=1).";
 		}
 
 		static const string NAME;
@@ -5611,13 +5923,43 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 		float calc_mean(EMData * image) const;
 	};
 
-	/**Uses a 1/0 mask defining a region to use for the zero-normalization.if no_sigma is 1, standard deviation not modified.
-	 *@param mask the 1/0 mask defining a region to use for the zero-normalization
-	 *@param no_sigma if this flag is zero, only average under the mask will be substracted. set this flag to 1, standard deviation not modified
+	/** Normalize such that the estimated histogram peak value is zero. Only works if the histogram peak is within +- 2*sigma of the mean.
 	 */
-	class NormalizeMaskProcessor:public NormalizeProcessor
+	class NormalizeHistPeakProcessor:public NormalizeProcessor
 	{
 	  public:
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		static Processor *NEW()
+		{
+			return new NormalizeHistPeakProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Normalize an image so the estimated histogram peak is zero and sigma=1. Only works if the histogram peak is within +-2*sigma of the mean";
+		}
+
+		static const string NAME;
+
+	  protected:
+		float calc_mean(EMData * image) const;
+	};
+
+	
+	/**Uses a 1/0 mask defining a region to use for the zero-normalization.if no_sigma is 1, standard deviation not modified.
+	 *@param mask The 0-1 mask defining the region for the normalization. Any non-zero values will be considered
+	 *@param no_sigma If set, the mean will be set to zero, but sigma will not be modified
+	 *@param apply_mask If set, the mask will also be applied (multiplied) to the volume
+	 */
+	class NormalizeMaskProcessor:public Processor
+	{
+	  public:
+		void process_inplace(EMData * image);
+
 		string get_name() const
 		{
 			return NAME;
@@ -5636,16 +5978,14 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("mask", EMObject::EMDATA, "the 1/0 mask defining a region to use for the zero-normalization");
-			d.put("no_sigma", EMObject::INT, "if this flag is zero, only average under the mask will be substracted. set this flag to 1, standard deviation not modified");
+			d.put("mask", EMObject::EMDATA, "The 0-1 mask defining the region for the normalization. Any non-zero values will be considered");
+			d.put("no_sigma", EMObject::INT, "If set, the mean will be set to zero, but sigma will not be modified");
+			d.put("apply_mask", EMObject::INT, "If set, the mask will also be applied (multiplied) to the volume");
 			return d;
 		}
 
 		static const string NAME;
 
-	  protected:
-		float calc_sigma(EMData * image) const;
-		float calc_mean(EMData * image) const;
 	};
 
 	/**Normalize the image whilst also removing any ramps. Ramps are removed first, then mean and sigma becomes 0 and 1 respectively
@@ -5949,7 +6289,7 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 
 		string get_desc() const
 		{
-			return "use least square method to normalize";
+			return "This will use a pixel vs pixel least squares fit to normalize one image to optimally match a second image, with various options for excluding some pixels. norm_mult and norm_add will be set in the header of the result.";
 		}
 
 		static const string NAME;
@@ -6916,7 +7256,8 @@ since the SSNR is being computed as FSC/(1-FSC). Ie - the SSNR of the combined h
 			return "One of the strongest visual impacts of CTF on a structure is the low resolution high-pass filter effect caused by \
 phase contrast. This Processor performs a simple linear filter to roughly correct for this. This is not a substitution or replacement \
 for the full CTF correction routine available for single particle work in EMAN, but if you are in a situation where accurate CTF \
-correction is not possible, this will allow you to approximate the correction to relieve some of the visual artifacts.";
+correction is not possible, this will allow you to approximate the correction to relieve some of the visual artifacts. Circularly \
+symmetric phase flipping can optionally be performed.";
 		}
 
 		virtual TypeDict get_param_types() const
@@ -6924,9 +7265,12 @@ correction is not possible, this will allow you to approximate the correction to
 			TypeDict d;
 			d.put("defocus", EMObject::FLOAT, "Mean defocus to correct for in microns");
 			d.put("ac", EMObject::FLOAT, "Amplitude contrast in % (default 10%)");
+			d.put("cs", EMObject::FLOAT, "Microscope Cs, default 2.7 mm");
 			d.put("voltage", EMObject::FLOAT, "Microscope Voltage in Kv (default 300)");
 			d.put("apix", EMObject::FLOAT, "A/pix (default value from image header)");
-			d.put("useheader", EMObject::INT,"Use CTF header values if present, default true");
+			d.put("hppix", EMObject::FLOAT, "Optional high pass filter radius in pixels to prevent gradient amplification, default disabled");
+			d.put("phaseflip", EMObject::INT, "Also flip phases if set, default false");
+			d.put("useheader", EMObject::INT,"Use CTF header values if present, instead of individual values, default false");
 			return d;
 		}
 
@@ -7586,7 +7930,9 @@ correction is not possible, this will allow you to approximate the correction to
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("strucfac", EMObject::XYDATA, "An XYData object contaning the curve to be imposed as a function of S");
+			d.put("strucfac", EMObject::XYDATA, "An XYData object contaning the intensity (not amplitude) to be imposed as a function of S");
+			d.put("filename", EMObject::STRING, "Filename of a text file containing s,y data as an alternative to passing an XYData object.");
+			d.put("scale", EMObject::XYDATA, "A constant to multiply strucfac by to rescale the output. Setting to 1/ny^3 provides an alternative normalization. default = 1.0");
 			d.put("apix", EMObject::FLOAT, " Override A/pix in the image header (changes x,y and z)");
 			return d;
 		}
@@ -7595,6 +7941,43 @@ correction is not possible, this will allow you to approximate the correction to
 
 	  protected:
 		void create_radial_func(vector < float >&radial_mask, EMData *image) const;
+	};
+
+	/**Makes the radial power distribution spherically symmetric with a profile defined by "strucfac"
+	 *@param strucfac XYData object with the curve to be imposed as intensity as a function of s
+	 *@param apix A/pix value. Overrides and replaces apix_x/y/z in image
+	 */
+	class SetIsoPowProcessor:public Processor
+	{
+	  public:
+
+		void process_inplace(EMData * image);
+		
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual string get_desc() const
+		{
+			return "Forces a map/image to have an isotropic radial power distribution. Unlike filter.setstrucfac, which produces a filtered, but anisotropic map, this forces the radial power to be the same in all directions. Phases are unchanged.";
+		}
+
+		static Processor *NEW()
+		{
+			return new SetIsoPowProcessor();
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("strucfac", EMObject::XYDATA, "An XYData object contaning the intensity (not amplitude) to be imposed as a function of S");
+			d.put("apix", EMObject::FLOAT, " Override A/pix in the image header (changes x,y and z)");
+			return d;
+		}
+
+		static const string NAME;
+
 	};
 
 	/**Smart mask processor
@@ -7756,6 +8139,42 @@ correction is not possible, this will allow you to approximate the correction to
 		static const string NAME;
 	};
 
+	/**Replace a source image with a Gaussian band in Fourier space with a given center and width
+	 * @param center center of the Fourier band in pixels
+	 * @param width 1/e half-width for the Gaussian band
+	 */
+	class TestImageFourierGaussianBand : public TestImageProcessor
+	{
+	public:
+		virtual void process_inplace(EMData * image);
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual string get_desc() const
+		{
+			return "Replace a source image with a single radial Fourier band with a (truncated) Gaussian profile. f(s)=exp(-(s-c/w)^2). width=sqrt(2) is the minimum width to produce a flat sum with a spacing of 1 pixel.";
+		}
+
+		static Processor * NEW()
+		{
+			return new TestImageFourierGaussianBand();
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("center", EMObject::FLOAT, "center of the band in Fourier pixels. required");
+			d.put("width", EMObject::FLOAT, "1/2e width of Gaussian in Fourier pixels. default = sqrt(2)");
+			return d;
+		}
+
+		static const string NAME;
+	};
+	
+	
 	/**
 	 * @author David Woolford
 	 * @date June 15th 2009
@@ -8717,10 +9136,12 @@ correction is not possible, this will allow you to approximate the correction to
 	 *@param table a radial table for multiplication
 	 *@exception ImageFormatException this filter only apply to real image
 	 * */
-	class RadialProcessor : public Processor
+
+	
+	class RadialProcessor : public CircularMaskProcessor
 	{
 	public:
-		void process_inplace(EMData * image);
+// 		RadialProcessor():{}
 
 		string get_name() const
 		{
@@ -8731,7 +9152,12 @@ correction is not possible, this will allow you to approximate the correction to
 		{
 			return new RadialProcessor();
 		}
-
+		
+		void set_params(const Dict & new_params)
+		{
+			CircularMaskProcessor::set_params(new_params);
+			table = params["table"];;
+		}
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
@@ -8743,8 +9169,27 @@ correction is not possible, this will allow you to approximate the correction to
 		{
 			return "Multiply a real-space image by a radial function. 1 value / pixel, extending to corner. Missing values -> 0.";
 		}
-
 		static const string NAME;
+	protected:
+		void process_dist_pixel(float *pixel, float dist) const
+		{
+			
+// 			vector<float> table = params["table"];
+			int tsize = table.size();
+			float d = sqrt(dist);
+			if (d>tsize-1) { *pixel=0.0f; return; }
+			
+			int ir = int(d);
+			float df = d - float(ir);
+			
+			float f = table[ir] + df*(table[ir+1]-table[ir]);
+// 			printf("%f\t%d\t%f\t%f\t%f\n",d, ir, f, *pixel, *pixel*f);
+			
+			*pixel=*pixel * f;
+		}
+		vector<float> table;
+
+		
 	};
 
 	/**Bins pixel values, similar to calculating a histogram. The histogram is comprised
@@ -8913,7 +9358,6 @@ correction is not possible, this will allow you to approximate the correction to
 		{
 			TypeDict d;
 			d.put("kernel", EMObject::FLOATARRAY, "the convolution kernel");
-			d.put("selem", EMObject::EMDATA, "the structuring element");
 			return d;
 		}
 		static const string NAME;
@@ -9313,6 +9757,34 @@ correction is not possible, this will allow you to approximate the correction to
 	};
 
 	
+	class AmpMultProcessor:public Processor
+	{
+	public:
+		virtual void process_inplace(EMData * image);
+		virtual EMData* process(const EMData* const image);
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+		static Processor *NEW()
+		{
+			return new AmpMultProcessor();
+		}
+		string get_desc() const
+		{
+			return "Multiply amplitude image. For reconstruction normalization.";
+		}
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("verbose", EMObject::INT, "Verbose");
+			d.put("amp", EMObject::EMDATA, "Amplitude to multiply.");
+			return d;
+		}
+		static const string NAME;
+	};
+	
 	
 	class PolyMaskProcessor:public CoordinateProcessor
 	{
@@ -9537,6 +10009,3 @@ correction is not possible, this will allow you to approximate the correction to
 }
 
 #endif	//eman_filter_h__
-
-/* vim: set ts=4 noet: */
-

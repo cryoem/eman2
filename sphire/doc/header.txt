@@ -1,0 +1,114 @@
+~~NOTOC~~
+
+===== sp_header =====
+Header Operations: Perform operations on headers of hdf or bdb file.
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sp_header.py  stack  --params=PARAMS_NAME_LIST  --import=INPUT_PARAMS_PATH  --export==OUTPUT_PARAMS_FILE  --delete  --zero  --one  --set  --consecutive  --randomize  --rand_alpha  --print  --backup  --restore  --suffix=PARAMS_FILE_SUFFIX
+
+\\
+===== Typical usage =====
+
+sp_header does not support MPI.
+
+\\ __Print parameterrs__:
+  sp_header.py bdb:file --print --params=xform.projection
+
+\\ __Export ctf values to a text file__:
+  sp_header.py bdb:file --export=ctf.txt --params=ctf
+
+\\ __Import ctf values from a text file and set them to headers__:
+  sp_header.py bdb:file --import=ctf.txt --params=ctf
+
+\\ __Backup current alignment parameters__:
+  sp_header.py bdb:file --backup --suffix=_original --params=xform.projection
+
+\\ __Restore original alignment parameters__:
+  sp_header.py bdb:file --restore --params=xform.projection_original
+
+Note: command will recognize the valid name of a parameters and truncate the suffix, thus in this case the restored parameter will be xform_projection.
+
+\\ __Delete parameters__:
+  sp_header.py bdb:file --delete --params=xform.projection_original
+
+Note: the parameters will be permanently deleted and cannot be recovered.
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; stack : Input image stack: Path to input image stack. The stack can be either bdb or hdf. However, the GUI supports only bdb. (default required string)
+
+  ; %%--%%params : Target parameters: List of parameters names (i.e. image header entry keys) to perform operations on (e.g. "parm1 parm2 ..."). (default required string)
+  ; %%--%%import : Import parameters: Import parameters from file. (default none)
+  ; %%--%%export : Export parameters: Export parameters to file. (default none)
+  ; %%--%%delete : Delete all: Delete all parameters. (default False)
+
+\\
+=== Advanced Parameters ===
+  ; %%--%%zero : Set to zero: Set all parameters to zero. (default False)
+  ; %%--%%one : Set to one: Set all parameters to one. This is not applicable to xform.align2d, xform.proj or xform.align3d, beccause they do not make sense. (default False)
+  ; %%--%%set : Set to constant: Set parameters to a specified constant value, other than 0.0. (default 0.0)
+  ; %%--%%consecutive : Set to consecutive: Set selected parameters to consecutive integers starting from 0. (default False)
+  ; %%--%%randomize : Set to random: Set all parameters to randomized value. This works only for xform.align2d, xform.proj and xform.align3d since there is little need to randomize the other parameters and it is also difficult to guess the random range beforehand. (default False)
+  ; %%--%%rand_alpha : Set angles to random: Set all angles to random values. (default False)
+  ; %%--%%print : Print to screen: Print parameters to screen. (default False)
+  ; %%--%%backup : Backup all: Backup all parameters. (default False)
+  ; %%--%%restore : Restore all: Restore all parameters. (default False)
+  ; %%--%%suffix : Suffix for backup: Suffix for xform name in backup. This will be added to the name of a parameter or removed during restore. (default _backup)
+
+\\
+===== Output =====
+
+\\
+===== Description =====
+This program now works for both hdf and bdb files.
+
+\\
+=== Important Parameters in Image Header ===
+|| **Header Key** || **Discription** ||
+|| xform.align2d  || Use this header entry key to operate on 2D alignment parameters. This automatically includes the parameters "alpha", "sx", "sy", "mirror" and "scale". ||
+|| xform.projection || Use this header entry key to operate on projection alignment parameters. This automatically includes the parameters "phi", "theta", "psi", "s2x" and "s2y". ||
+|| xform.align3d || Use this header entry key to operate on 3D alignment parameters. This automatically includes the parameters "phi", "theta", "psi", "s3x", "s3y", "s3z", "mirror" and "scale". ||
+|| ctf || Contrast Transfer Function is accessible as object "ctf" and involves six parameters: defocus [microns], cs [mm], voltage [kV], apix [A], bfactor [%%A^2%%], ampcont [%], astigmatism amplitude, astigmatism angle. ||
+
+See description of parameters [[http://sparx-em.org/sparxwiki/I_O|Reading and writing the image files in SPARX/EMAN2]].
+
+\\
+=== Usage in Python Programming ===
+  header(stack, params, zero, one, randomize, rand_alpha, fimport, fexport, fprint, backup, suffix, restore, delete)
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+
+\\
+==== Author / Maintainer ====
+Wei Zhang, Zhengfan Yang
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_header.py
+
+\\
+==== See also ====
+[[http://sparx-em.org/sparxwiki/I_O|Reading and writing the image files in SPARX/EMAN2]]
+
+\\
+==== Maturity ====
+Stable:: works for most people, has been tested; test cases/examples available.
+
+\\
+==== Bugs ====
+There are no known bugs so far.
+
+\\

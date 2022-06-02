@@ -1,8 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
-
 #
 # Author: David Woolford 10/01/2008 (woolford@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -35,16 +31,15 @@ from __future__ import absolute_import
 #
 
 from builtins import object
-from PyQt4 import QtGui, QtCore, QtOpenGL
+from PyQt5 import QtGui, QtWidgets, QtCore, QtOpenGL
 import sys
 from .emimageutil import EMParentWin
 from EMAN2 import remove_directories_from_name, get_image_directory,get_3d_font_renderer, E2end,get_platform
-import EMAN2db
 import weakref
 from libpyGLUtils2 import *
 
-try: from PyQt4 import QtWebKit
-except: pass
+#try: from PyQt5 import QtWebEngineWidgets
+#except: pass
 
 class ModuleEventsManager(object): 
 	'''
@@ -115,6 +110,9 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 			QtOpenGL.QGLWidget.resize(self, w, h)
 			if get_platform()=="Darwin" : self.qt_parent.resize(w, h+22)
 			else : self.qt_parent.resize(w+4, h+4)
+
+	def resizeGL(self, width, height):
+		QtOpenGL.QGLWidget.resizeGL(self,width,height)
 			
 	def show(self):
 		if self.qt_parent:
@@ -136,6 +134,7 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 		
 		QtOpenGL.QGLWidget.__init__(self,self.qt_parent)
 		if self.myparent : self.qt_parent.setup(self)
+		self.closed=False		# this is set when the widget has been closed in case someone still has a pointer to it
 		
 		self.inspector = None # a Qt Widget for changing display parameters, setting the data, accessing metadata, etc.
 		self.winid=winid # a 'unique' identifier for the window used to restore locations on the screen
@@ -165,6 +164,7 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 		QtOpenGL.QGLWidget.closeEvent(self, event)
 		if self.myparent : self.qt_parent.close()
 		self.module_closed.emit() # this could be a useful signal, especially for something like the selector module, which can potentially show a lot of images but might want to close them all when it is closed
+		self.closed=True
 		event.accept()
 		
 	def display_web_help(self,url="http://blake.bcm.edu/emanwiki/e2display"):
@@ -176,7 +176,7 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 				try:
 					test = self.browser
 				except: 
-					self.browser = QtWebKit.QWebView()
+					self.browser = QtWebEngineWidgets.QWebEngineView()
 					self.browser.load(QtCore.QUrl())
 					self.browser.resize(800,800)
 				
@@ -233,10 +233,10 @@ class EMInstance(object):
 em_app_instance = EMInstance()
 
 get_application = em_app_instance.get_instance
-#def get_application() : return QtGui.qApp
+#def get_application() : return QtWidgets.qApp
 
 
-class EMApp(QtGui.QApplication):
+class EMApp(QtWidgets.QApplication):
 	def __init__(self):
 		self.children = []
 		
@@ -244,16 +244,17 @@ class EMApp(QtGui.QApplication):
 		self.timer_function = None
 		self.tmr = None
 		
-		QtGui.QApplication.__init__(self, sys.argv)
+		QtWidgets.QApplication.__init__(self, sys.argv)
 		
-		style=QtGui.QStyleFactory.create("Plastique")
+		style=QtWidgets.QStyleFactory.create("Fusion")		# seems like Qt5 in Anaconda only has Windows and Fusion
+#		style=QtWidgets.QStyleFactory.create("Plastique")	# this was used in Qt4
 		
 		if style==None:
-			print("Note: standard Plastique style not available, controls may be distorted. Using ", end=' ')
+			print("Note: standard Fusion style not available, controls may be distorted. Using ", end=' ')
 			
 			# the first one should work, but we have the loop, just in case
-			for s in list(QtGui.QStyleFactory.keys()):
-				style=QtGui.QStyleFactory.create(s)
+			for s in list(QtWidgets.QStyleFactory.keys()):
+				style=QtWidgets.QStyleFactory.create(s)
 				if style!=None: 
 					print(s)
 					break
@@ -345,7 +346,7 @@ class EMApp(QtGui.QApplication):
 	
 		if self.tmr != None:
 			print("can't start a timer, already have one running. Call stop_timer first")
-			#FIXME, add support for mutliple timers
+			#FIXME, add support for multiple timers
 			return
 	
 		self.tmr=QtCore.QTimer()
@@ -367,9 +368,9 @@ class EMApp(QtGui.QApplication):
 
 		
 	
-class EMProgressDialog(QtGui.QProgressDialog):
+class EMProgressDialog(QtWidgets.QProgressDialog):
 	def __init__(self,label_text,cancel_button_text, minimum, maximum, parent = None):
-		QtGui.QProgressDialog.__init__(self,label_text,cancel_button_text, minimum, maximum, parent)
+		QtWidgets.QProgressDialog.__init__(self,label_text,cancel_button_text, minimum, maximum, parent)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "/eman.png"))
 
 
@@ -385,7 +386,7 @@ class EMErrorMessageDisplay(object):
 		'''
 		error_message is a list of error messages
 		'''
-		msg = QtGui.QMessageBox()
+		msg = QtWidgets.QMessageBox()
 		msg.setWindowTitle(title)
 		msg.setWindowIcon(QtGui.QIcon(get_image_directory() + "/eman.png"))
 		mes = ""

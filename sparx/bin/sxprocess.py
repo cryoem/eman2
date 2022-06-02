@@ -1,9 +1,8 @@
 #!/usr/bin/env python
-from __future__ import print_function
-
 #
-# Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
-# Copyright (c) 2000-2006 Baylor College of Medicine
+# Author: Pawel A. Penczek (pawel.a.penczek@uth.tmc.edu)
+# Please do not copy or modify this file without written consent of the author.
+# Copyright (c) 2000-2019 The University of Texas - Houston Medical School
 #
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
@@ -32,6 +31,8 @@ from __future__ import print_function
 #
 #
 
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 import	global_def
 from	global_def 	import *
@@ -39,7 +40,7 @@ from	EMAN2 		import EMUtil, parsemodopt, EMAN2Ctf
 from    EMAN2jsondb import js_open_dict
 
 from	utilities 	import *
-from    statistics import mono
+from    pap_statistics import mono
 import  os
 
 
@@ -69,7 +70,7 @@ def TotalDistance(city, lccc):
 
 def reverse(city, n):
     nct = len(city)
-    nn = (1+ ((n[1]-n[0]) % nct))/2 # half the lenght of the segment to be reversed
+    nn = old_div((1+ ((n[1]-n[0]) % nct)),2) # half the lenght of the segment to be reversed
     # the segment is reversed in the following way n[0]<->n[1], n[0]+1<->n[1]-1, n[0]+2<->n[1]-2,...
     # Start at the ends of the segment and swap pairs of cities, moving towards the center.
     for j in range(nn):
@@ -107,9 +108,9 @@ def tsp(lccc):
 
 	#     ncity = 100        # Number of cities to visit
 	from math import sqrt
-	ncity = int( (1+sqrt(1+8*len(lccc)))/2 )        # Number of cities to visit
+	ncity = int( old_div((1+sqrt(1+8*len(lccc))),2) )        # Number of cities to visit
     #  sanity check
-	if( ncity*(ncity-1)/2 != len(lccc) ): return [-1]
+	if( old_div(ncity*(ncity-1),2) != len(lccc) ): return [-1]
 
 	maxTsteps = 100    # Temperature is lowered not more than maxTsteps
 	Tstart = 0.2       # Starting temperature - has to be high enough
@@ -159,7 +160,7 @@ def tsp(lccc):
 				de = Distance(city[n[2]], city[n[1]], lccc) + Distance(city[n[3]], city[n[0]], lccc)\
 					 - Distance(city[n[2]], city[n[0]], lccc) - Distance(city[n[3]] ,city[n[1]], lccc)
 
-				if de<0 or exp(-de/T)>rand(): # Metropolis
+				if de<0 or exp(old_div(-de,T))>rand(): # Metropolis
 					accepted += 1
 					dist += de
 					reverse(city, n)
@@ -175,7 +176,7 @@ def tsp(lccc):
 				de += Distance( city[n[0]], city[n[4]], lccc) + Distance( city[n[1]], city[n[5]], lccc) \
 						+ Distance( city[n[2]], city[n[3]], lccc)
 
-				if de<0 or exp(-de/T)>rand(): # Metropolis
+				if de<0 or exp(old_div(-de,T))>rand(): # Metropolis
 					accepted += 1
 					dist += de
 					city = transpt(city, n)
@@ -209,7 +210,6 @@ def main():
 	import os
 	import math
 	import random
-	import pyemtbx.options
 	import time
 	from   random   import random, seed, randint
 	from   optparse import OptionParser
@@ -388,7 +388,7 @@ def main():
 	parser.add_option("--adaptive_mask",        action="store_true", default=False,                  help="generate soft-edged 3D mask from input 3D volume")
 	parser.add_option("--nsigma",               type="float",        default=1.0,                    help="number of times of sigma of the input volume to intially obtain the largest density cluster")
 	parser.add_option("--threshold",       type="float",        default=-9999,                help="threshold provided by user to intially obtain the largest density cluster (default: -9999, threshold will be determined automatically")
-	parser.add_option("--ndilation",            type="int",          default=1,                      help="number of times of dilation applied to the largest cluster of density")
+	parser.add_option("--ndilation",            type="int",          default=3,                      help="number of times of dilation applied to the largest cluster of density")
 	parser.add_option("--edge_width",           type="int",          default=5,                      help="width of the cosine edge of the mask")
 	parser.add_option("--edge_type",            type=str,            default="cosine",               help="Soft-edge type: The type of soft-edge for moon-eliminator 3D mask and a moon-eliminated soft-edged 3D mask. Available methods are (1) \'cosine\' for cosine soft-edged (used in PostRefiner) and (2) \'gauss\' for gaussian soft-edge. (default cosine)")
 	parser.add_option("--mol_mass",             type=float,          default=-1.0,                   help="Molecular mass [kDa]: The estimated molecular mass of the target particle in kilodalton. (default Not used)")
@@ -396,7 +396,6 @@ def main():
 	
 	# Generate soft-edged 3D mask from input 3D volume and Generate binarized version of input 3D volume
 	parser.add_option("--binary_mask",          action="store_true", default=False,                  help="generate binary 3D mask from input 3D volume")
-	parser.add_option("--bin_threshold",        type="float",        default=0.0,                    help="threshold provided by user to binarize input volume")
 	parser.add_option("--nerosion",             type="int",          default=0,                      help="number of times to erode binarized volume")
 
 	# Postprocess 3-D  
@@ -413,6 +412,7 @@ def main():
 	parser.add_option("--B_start",              type="float",         default=10.0,                  help="=10.0 Angstrom, starting frequency in Angstrom for B-factor estimation (effective only in Halfset Volumes Mode with --B_enhance=0.0)")
 	parser.add_option("--B_stop",               type="float",         default=0.0,                   help="=0.0, cutoff frequency in Angstrom for B-factor estimation. recommended to set cutoff to the frequency where fsc < 0.0. by default, the program uses Nyquist frequency. (effective only in Halfset Volumes Mode with --B_enhance=0.0)")
 	parser.add_option("--do_adaptive_mask",     action="store_true",  default=False,                 help="generate adaptive mask with the given threshold")
+	parser.add_option("--do_approx",          action="store_true", default=False,                  help="Approximate the soft edge values instead of using the exact ones.")
 	#parser.add_option("--randomphasesafter",   type="float",         default=0.8,                   help=" set Fourier pixels random phases after FSC value ")
 	# window
 	parser.add_option("--window_stack",         action="store_true",  default=False,                 help="window stack images using a smaller window size")
@@ -550,6 +550,7 @@ def main():
 			return
 		from utilities import get_im, write_text_file
 		from fundamentals import rops_table
+		Util.init_threads(4)
 		d = get_im(args[0])
 		ndim = d.get_ndim()
 		if ndim ==3:
@@ -602,7 +603,7 @@ def main():
 			aa = 0.0
 
 		nimage = EMUtil.get_image_count( img_stack )
-
+		Util.init_threads(4)
 		for i in range(nimage):
 			img = fft(get_im(img_stack, i) )
 			rops_src = rops_table(img)
@@ -611,7 +612,7 @@ def main():
 
 			table = [0.0]*len(rops_dst)
 			for j in range( len(rops_dst) ):
-				table[j] = sqrt( rops_dst[j]/rops_src[j] )
+				table[j] = sqrt( old_div(rops_dst[j],rops_src[j]) )
 
 			if( fl > 0.0):
 				img = filt_tanl(img, fl, aa)
@@ -626,24 +627,16 @@ def main():
 		from utilities import write_text_file, get_im
 		from fundamentals import rops_table
 		from math import log10
+		Util.init_threads(4)
 		im = get_im(args[0])
-		nx = im.get_xsize()
-		ny = im.get_ysize()
-		nz = im.get_zsize()
 		ndim = im.get_ndim()
-		if(ndim == 3):
-			nn = min(nx,ny,nz)
-			t = rops_table(Util.window(im,nn,nn,nn))
-		elif(ndim == 2):
-			from fundamentals import window2d
-			nn = min(nx,ny)
-			print(nn,nx,ny)
-			t = rops_table(window2d(im,nn,nn))
-		else:
+		if(ndim == 1):
 			t = periodogram(im)
 			t = [t[i] for i in range(t.get_xsize())]
+		else:
+			t = rops_table(im)
 		x = list(range(len(t)))
-		r = [log10(q) for q in t]
+		r = [log10(abs(q)) for q in t]
 		write_text_file([t,r,x], options.rotpw)
 
 	elif options.transformparams != None:
@@ -777,12 +770,12 @@ def main():
 		pixel   = parm_apix
 		voltage = 120.0
 		ampcont = 10.0
-		ibd     = 4096/2-boxsize
+		ibd     = old_div(4096,2)-boxsize
 		iprj    = 0
 
 		width = 240
-		xstart = 8 + boxsize/2
-		ystart = 8 + boxsize/2
+		xstart = 8 + old_div(boxsize,2)
+		ystart = 8 + old_div(boxsize,2)
 		rowlen = 17
 		from random import randint
 		params = []
@@ -892,7 +885,7 @@ def main():
 				for ll in range(len(ctfs)):
 					if(name2 == ctfs[ll][-1]):
 						#  found correct
-						if(ctfs[ll][8]/ctfs[ll][0] <= cterr[0]):
+						if(old_div(ctfs[ll][8],ctfs[ll][0]) <= cterr[0]):
 							#  acceptable defocus error
 							ctfp = ctfs[ll][:8]
 							if(ctfs[ll][10] > cterr[1] ):
@@ -931,8 +924,10 @@ def main():
 		write_text_row(p, args[1])
 
 	elif options.adaptive_mask:
+		print('DEPRECATION WARNING! This function is deprecated and no longer maintained. Please use sxmask.py instead')
 		from utilities import get_im
 		from morphology import adaptive_mask
+		from filter import filt_tanl
 		nargs = len(args)
 		if nargs ==0:
 			print(" Generate soft-edged 3D mask from input 3D volume automatically or using the user provided threshold.")
@@ -947,7 +942,7 @@ def main():
 		if nargs == 2:  mask_file_name = args[1] # args[1]: output 3D mask file path
 		else:           mask_file_name = "adaptive_mask_for_" + input_file_name_root + ".hdf" # Only hdf file is output.
 
-		if( options.fl > 0.0 ):  inputvol =filt_tanl(inputvol,options.fl/option.pixel_size, options.aa)
+		if( options.fl > 0.0 ):  inputvol =filt_tanl(inputvol, old_div(options.pixel_size,options.fl), options.aa)
 		if( options.mol_mass> 0.0 ): density_threshold = inputvol.find_3d_threshold(options.mol_mass, options.pixel_size)
 		else: density_threshold = options.threshold
 		if options.edge_type == "cosine": mode = "C"
@@ -956,6 +951,7 @@ def main():
 		adaptive_mask(inputvol, options.nsigma, density_threshold, options.ndilation, options.edge_width, mode).write_image(mask_file_name)
 	
 	elif options.binary_mask:
+		print('DEPRECATION WARNING! This function is deprecated and no longer maintained. Please use sxmask.py instead')
 		from utilities import get_im
 		from morphology import binarize, erosion, dilation
 		nargs = len(args)
@@ -971,7 +967,7 @@ def main():
 		input_file_name_root,ext=os.path.splitext(input_file_name)
 		if nargs == 2:  mask_file_name = args[1]
 		else:           mask_file_name = "binary_mask_for_" + input_file_name_root + ".hdf" # Only hdf file is output.
-		mask3d = binarize(inputvol, options.bin_threshold)
+		mask3d = binarize(inputvol, options.threshold)
 		for i in range(options.nerosion): mask3d = erosion(mask3d)
 		for i in range(options.ndilation): mask3d = dilation(mask3d)
 		mask3d.write_image(mask_file_name)
@@ -989,7 +985,7 @@ def main():
 		from utilities    	import get_im, write_text_file, read_text_file
 		from fundamentals 	import rot_avg_table, fft
 		from morphology   	import compute_bfactor,power
-		from statistics   	import fsc, pearson
+		from pap_statistics import fsc, fsc_mask, pearson
 		from filter       	import filt_table, filt_gaussinv, filt_tanl
 		from EMAN2 			import periodogram
 		
@@ -998,7 +994,7 @@ def main():
 			ERROR("too few inputs", " --combinemaps option", 1)
 		if options.pixel_size <= 0.0:
 			ERROR("set a valid value to pixel_size first! There is no default value for pixel_size", " --combinemaps option", 1)
-		
+		Util.init_threads(4)
 		input_path_list = []
 		suffix_patten = None
 		map1_basename_tokens = None
@@ -1027,7 +1023,7 @@ def main():
 			e1 = get_im(input_path_list[0],0)
 		except:
 			ERROR(input_path_list[0]+" does not exist", " --combinemaps option", 1)
-		
+
 		nx = e1.get_xsize()
 		ny = e1.get_ysize()
 		nz = e1.get_zsize()
@@ -1036,6 +1032,7 @@ def main():
 		for a in sys.argv:
 			line +=" "+a
 		log_main.add(line)
+		Util.init_threads(4)
 		if e1.get_zsize() == 1:  # 2D case
 			log_main.add("-------->>> Settings given by all options <<<-------")
 			log_main.add("pixel_size        :"+str(options.pixel_size))
@@ -1062,8 +1059,8 @@ def main():
 			log_main.add("Total number of average images is %d"%nimage)
 			for i in range(nimage):
 				e1 = get_im(input_path_list[0],i)
-				if m: e1 *=m
-				if options.B_enhance ==0.0 or options.B_enhance == -1.:
+				if m: e1 *= m
+				if options.B_enhance == 0.0 or options.B_enhance == -1.:
 					guinierline = rot_avg_table(power(periodogram(e1),.5))
 					if options.B_stop == 0.0:
 						freq_max   =  1./(2.*options.pixel_size)
@@ -1071,7 +1068,7 @@ def main():
 						freq_max =1./options.B_stop
 					freq_min   =  1./options.B_start
 					log_main.add("B-factor exp(-B*s^2) is estimated from %f[A] to %f[A]"%(options.B_start, 2*options.pixel_size))
-					b,junk,ifreqmin, ifreqmax =compute_bfactor(guinierline, freq_min, freq_max, options.pixel_size)
+					b,junk,ifreqmin, ifreqmax = compute_bfactor(guinierline, freq_min, freq_max, options.pixel_size)
 					global_b = b*4
 					log_main.add( "The estimated slope of rotationally averaged Fourier factors  of the summed volumes is %f"%round(-b,2))
 				else:
@@ -1083,7 +1080,7 @@ def main():
 					log_main.add("Low-pass filter ff %   aa  %f"%(options.fl, options.aa))
 					e1 =filt_tanl(e1,options.fl, options.aa)
 				elif options.fl > 0.5:
-					e1 =filt_tanl(e1,options.fl/option.pixel_size, options.aa)
+					e1 =filt_tanl(e1, old_div(options.pixel_size,options.fl), options.aa)
 				e1.write_image(options.output)
 
 		else: # 3D case High pass filter should always come along with low-pass filter. 
@@ -1102,6 +1099,7 @@ def main():
 			log_main.add("threshold    :"+str(options.threshold))
 			log_main.add("Edge width        :"+str(options.edge_width))
 			log_main.add("Ndilation         :"+str(options.ndilation))
+			log_main.add("Do approximation         :"+str(options.do_approx))
 			# log_main.add("randomphasesafter :"+str(options.randomphasesafter))
 			log_main.add("------------->>> processing <<<-----------------------")
 			log_main.add("3-D refinement combinemaps")
@@ -1185,7 +1183,7 @@ def main():
 				elif options.do_adaptive_mask:
 					log_main.add("Create an adaptive mask, let's wait...")
 					log_main.add("Options.threshold, options.ndilation, options.edge_width %f %5.2f %5.2f"%(options.threshold, options.ndilation, options.edge_width))
-					from morphology import adaptive_mask
+					from morphology import adaptive_mask_scipy
 					if single_map:
 						input_vol_mask = map1
 					else:
@@ -1201,13 +1199,14 @@ def main():
 						mode = "C"
 					else:
 						mode = "G"
-					m = adaptive_mask(
+					m = adaptive_mask_scipy(
 						input_vol_mask,
 						options.nsigma,
 						density_threshold,
 						options.ndilation,
 						options.edge_width,
-						mode
+						mode,
+						do_approx=options.do_approx,
 						)
 					m.write_image(os.path.join(options.output_dir, "vol_adaptive_mask%s.hdf"%suffix))
 				else:
@@ -1227,15 +1226,15 @@ def main():
 					def tanhfl(x, cutoff, aa):
 						from math import pi, tanh
 						omega = cutoff
-						cnst  = pi/(2.0*omega*aa)
+						cnst  = old_div(pi,(2.0*omega*aa))
 						v1    = (cnst*(x + omega))
 						v2    = (cnst*(x - omega))
 						return 0.5*(tanh(v1) - tanh(v2))
 					from math import pi
 					N = image_size//2
-					sigma_of_inverse = sqrt(2./(B_factor/pixel_size**2))
+					sigma_of_inverse = sqrt(2./(old_div(B_factor,pixel_size**2)))
 					values = []
-					if cutoff >0.5: cutoff = pixel_size/cutoff # always uses absolute frequencies
+					if cutoff >0.5: cutoff = old_div(pixel_size,cutoff) # always uses absolute frequencies
 					for i in range(N):
 						x = float(i)/float(N*2.)
 						values.append(tanhfl(x, cutoff, aa)*gauss_inverse(x, sigma_of_inverse))
@@ -1271,7 +1270,7 @@ def main():
 					"""
 					Scale function to adjust the FSC to the full dataset
 					"""
-					return 2. * x / (1 + x)
+					return 2. * x/(1 + x)
 
 				def create_fsc_txt(output_dir, fsc, resolution, name):
 					"""
@@ -1289,7 +1288,7 @@ def main():
 					if( type(values) != list):  values = [values]
 					angstrom = [999.0]*len(values)
 					for i,q in enumerate(values):
-						if(q>0.0):  angstrom[i] = pixel_size/q
+						if(q>0.0):  angstrom[i] = old_div(pixel_size,q)
 					return angstrom
 
 				### for two maps
@@ -1316,12 +1315,12 @@ def main():
 					plot_curves.append([fsc_true[0], list(map(scale_fsc, fsc_true[1]))])
 					plot_names.append(r'FSC full')
 					if m is not None:
-						fsc_mask = fsc(map1*m, map2*m, 1)
-						fsc_mask[1][0] = 1.0  # always reset fsc of zero frequency to 1.0
-						plot_curves.append(fsc_mask)
+						fscmask = fsc_mask(map1, map2, m)
+						fscmask[1][0] = 1.0  # always reset fsc of zero frequency to 1.0
+						plot_curves.append(fscmask)
 						plot_names.append(r'FSC masked halves')
 						# map fsc obtained from masked two halves to full maps
-						plot_curves.append([fsc_mask[0], list(map(scale_fsc, fsc_mask[1]))])
+						plot_curves.append([fscmask[0], list(map(scale_fsc, fscmask[1]))])
 						plot_names.append(r'FSC masked full')
 
 					resolution_in_angstrom = freq_to_angstrom(pixel_size=options.pixel_size, values=fsc_true[0])
@@ -1329,7 +1328,7 @@ def main():
 					# Create plot and write output file
 					minimum_fsc = 0
 					for fsc, name in zip(plot_curves, plot_names):
-						fsc[1][0] = 1
+						fsc[1][0] = 1.0
 						label = r'{0:18s}:  $0.5$: ${1}\AA$  |  $0.143$: ${2}\AA$'.format(
 							name,
 							round(
@@ -1367,7 +1366,7 @@ def main():
 					x_ticks_ang.insert(0, r'$0$')
 					x_ticks_freq.insert(0, 0)
 					x_ticks_ang.append(r'$\frac{{1}}{{{0}}}$'.format(round(nyquist_resolution, 2)))
-					x_ticks_freq.append(options.pixel_size/round(nyquist_resolution, 2))
+					x_ticks_freq.append(old_div(options.pixel_size,round(nyquist_resolution, 2)))
 					plt.xticks(x_ticks_freq, x_ticks_ang, size='xx-large')
 					y_ticks = [-0.2, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
 					plt.yticks(y_ticks, [r'${0}$'.format(tick) for tick in y_ticks], size='large')
@@ -1384,7 +1383,7 @@ def main():
 					plt.savefig(os.path.join(options.output_dir, "fsc.png"), bbox_inches='tight')
 					plt.clf()
 
-					if m is not None: fsc_true = fsc_mask
+					if m is not None: fsc_true = fscmask
 					""" 
 						# we abandon randomize phase strategy
 						frc_without_mask = fsc(map1, map2, 1)
@@ -1502,7 +1501,7 @@ def main():
 						for ifreq in range(len(fsc_true[1])):
 							if fsc_true[1][ifreq]<0.143: break
 						cutoff_by_fsc = float(ifreq-1)
-						freq_max      = cutoff_by_fsc/(2.*len(fsc_true[0]))/options.pixel_size
+						freq_max      = old_div(old_div(cutoff_by_fsc,(2.*len(fsc_true[0]))),options.pixel_size)
 						guinierline    = rot_avg_table(power(periodogram(map1),.5))
 						logguinierline = []
 						for ig in range(len(guinierline)):logguinierline.append(log(guinierline[ig]))
@@ -1517,11 +1516,11 @@ def main():
 						log_main.add("Similarity between the fitted line and 1-D rotationally average power spectrum within [%d, %d] is %5.3f"%(\
 							  ifreqmin, ifreqmax, pearson(junk[1][ifreqmin:ifreqmax],logguinierline[ifreqmin:ifreqmax])))
 						log_main.add("The slope is %6.2f[A^2]"%(round(-b,2)))
-						sigma_of_inverse = sqrt(2./(global_b/options.pixel_size**2))
+						sigma_of_inverse = sqrt(2./(old_div(global_b,options.pixel_size**2)))
 					else: # User provided value
 						#log_main.add( " apply user provided B-factor to enhance map!")
 						log_main.add("User-provided B-factor is %6.2f[A^2]"%options.B_enhance)
-						sigma_of_inverse = sqrt(2./((abs(options.B_enhance))/options.pixel_size**2))
+						sigma_of_inverse = sqrt(2./(old_div((abs(options.B_enhance)),options.pixel_size**2)))
 						global_b = options.B_enhance
 
 					map1 = (filt_gaussinv(map1, sigma_of_inverse))
@@ -1539,16 +1538,16 @@ def main():
 				if not single_map:
 					if options.fl !=-1.: # User provided low-pass filter #4.
 						if options.fl>0.5: # Input is in Angstrom 
-							map1   = filt_tanl(map1,options.pixel_size/options.fl, min(options.aa,.1))
+							map1   = filt_tanl(map1,old_div(options.pixel_size,options.fl), min(options.aa,.1))
 							cutoff = options.fl
 							log_main.add("low-pass filter to user-provided %f[A]"%cutoff)
 						elif options.fl>0.0 and options.fl< 0.5:  # input is in absolution frequency
 							map1   = filt_tanl(map1,options.fl, min(options.aa,.1))
-							cutoff = options.pixel_size/options.fl
+							cutoff = old_div(options.pixel_size,options.fl)
 							log_main.add("Low-pass filter to user-provided %f[A]"%cutoff)
 						else: # low-pass filter to resolution determined by FSC0.143
 							map1   = filt_tanl(map1,resolution_FSC143, options.aa)
-							cutoff = options.pixel_size/resolution_FSC143
+							cutoff = old_div(options.pixel_size,resolution_FSC143)
 							log_main.add("Low-pass filter to FSC0.143 resolution (%f[A])!"%cutoff)
 					else:
 						### # NOTE: Toshio Moriya 2018/01/11
@@ -1566,13 +1565,9 @@ def main():
 						log_main.add("There is no low-pass filteration in single map enhancement")
 					else:
 						if options.fl>0.5: # Input is in Angstrom 
-							map1   = filt_tanl(map1, options.pixel_size/options.fl, min(options.aa,.1))
+							map1   = filt_tanl(map1, old_div(options.pixel_size,options.fl), min(options.aa,.1))
 							cutoff = options.fl
 						else:
-							"""
-							map1   = filt_tanl(map1,options.fl, min(options.aa,.1))
-							cutoff = options.pixel_size/options.fl
-							"""
 							ERROR("Incorrect low-pass filter value, it should be in Angstroms", "combinemaps", 1)
 						log_main.add("Low-pass filter to user provided %f[A]"%cutoff)
 					
@@ -1588,7 +1583,7 @@ def main():
 				map1.write_image(file_path_final)
 				log_main.add("---------- >>> Summary <<<------------")
 				if not single_map:
-					log_main.add("Resolution 0.5/0.143 are %5.2f/%5.2f[A]"%(round((options.pixel_size/resolution_FSChalf),3), round((options.pixel_size/resolution_FSC143),3)))
+					log_main.add("Resolution 0.5/0.143 are %5.2f/%5.2f[A]"%(round((old_div(options.pixel_size,resolution_FSChalf)),3), round((old_div(options.pixel_size,resolution_FSC143)),3)))
 					if dip_at_fsc: log_main.add("There is a dip in the fsc curve in the region between 0.5 and 0.143, and you might cosider ploting your fsc curve")
 				if options.B_enhance !=-1:  log_main.add( "B-factor is %6.2f[A^2]"%(round((-global_b),2)))
 				else:log_main.add( "B-factor is not applied")
@@ -1609,7 +1604,7 @@ def main():
 					### log_main.add("B_factor:  %f   cutoff:   %f[A]  (%f[absolute]) aa: [absolute]:  %f  Maximum enhancement ocurs in %d pixels. Maximum enhancement ratio is %f. After %d pixel, power spectrum is set to zero. Falloff width is %d pixels"%\
 					###    (global_b, cutoff, options.pixel_size/cutoff, options.aa, mindex, mavlue, index_zero, pfall_off))
 					log_main.add("B_factor                     :  %f"%(global_b))
-					log_main.add("Low-pass filter cutoff       :  %f[A] (%f[absolute])"%(cutoff, options.pixel_size/cutoff))
+					log_main.add("Low-pass filter cutoff       :  %f[A] (%f[absolute])"%(cutoff, old_div(options.pixel_size,cutoff)))
 					log_main.add("Low-pass filter falloff      :  %f[absolute]"%(options.aa))
 					log_main.add("Max enhancement point        :  %d[pixels]"%(mindex))
 					log_main.add("Max enhancement ratio        :  %f"%(mavlue))
@@ -1695,7 +1690,7 @@ def main():
 	elif options.subtract_stack:
 		from utilities  import get_im, set_params_proj, get_params_proj, write_text_row, model_circle
 		from filter     import filt_tanl
-		from statistics import im_diff
+		from pap_statistics import im_diff
 		nargs = len(args)
 
 		if nargs<2 or nargs>4:
@@ -1760,3 +1755,4 @@ def main():
 
 if __name__ == "__main__":
 	main()
+	print('Done!')

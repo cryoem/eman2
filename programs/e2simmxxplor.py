@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: David Woolford 08/13/08 (woolford@bcm.edu
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -37,14 +34,13 @@ from __future__ import division
 from past.utils import old_div
 from builtins import range
 import os,sys
-from PyQt4 import QtGui,QtCore
+from PyQt5 import QtGui, QtWidgets,QtCore
 from eman2_gui.valslider import ValSlider
 
 from e2eulerxplor import get_eulers_from
 from eman2_gui.emimagemx import EMImageMXWidget
 from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emplot2d import EMPlot2DWidget
-from EMAN2db import db_convert_path, db_open_dict, db_check_dict, db_list_dicts
 from eman2_gui.emapplication import EMApp, get_application
 from eman2_gui.emglobjects import EM3DGLWidget
 from eman2_gui.emimage3dsym import EM3DSymModel,EMSymInspector, EMSymViewerWidget
@@ -64,7 +60,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 
@@ -110,7 +106,7 @@ class EMSimmxExplorer(EM3DSymModel):
 		'''
 		Can only set data using the name of a simmx file
 		'''
-		if "EMAN2DB" in simmx_file: simmx_file = db_convert_path(simmx_file)
+		#if "EMAN2DB" in simmx_file: simmx_file = db_convert_path(simmx_file)
 		self.simmx_file = simmx_file
 		e = EMData()
 		e.read_image(simmx_file,0,True)
@@ -220,8 +216,8 @@ class EMSimmxExplorer(EM3DSymModel):
 		if self.mx_display == None : return
 
 		data = []
-		projection = EMData()
-		projection.read_image(self.projection_file,self.current_projection)
+		projection = EMData(self.projection_file,self.current_projection)
+		projection.process_inplace("normalize.edgemean")
 
 		if self.particle_file != None:
 			r = Region(self.current_projection,self.current_particle,1,1)
@@ -240,22 +236,30 @@ class EMSimmxExplorer(EM3DSymModel):
 			d["type"] = "2d"
 			t = Transform(d)
 
-			particle = EMData()
+			particle = EMData(self.particle_file,self.current_particle)
 			#n = EMUtil.get_image_count(self.particle_file)
-			particle.read_image(self.particle_file,self.current_particle)
 			particle.transform(t)
 			particle["xform.align2d"]=t
-			particle.process_inplace("normalize.toimage",{"to":projection})
-			if particle["norm_mult"]<0 : particle*=-1.0
+#			particle.process_inplace("normalize.toimage",{"to":projection})
+			particle.process_inplace("normalize.edgemean")
+#			if particle["norm_mult"]<0 : particle*=-1.0
 
-			particle_masked=particle.copy()
-			tmp=projection.process("threshold.notzero")
-			particle_masked.mult(tmp)
+#			particle_masked=particle.copy()
+			#tmp=projection.process("threshold.notzero")
+			#particle_masked.mult(tmp)
+			particle_masked=particle.process("math.sub.optimal",{"low_cutoff_frequency":0.01,"high_cutoff_frequency":0.25,"ref":projection})
+			
+			particle_prod=particle.copy()
+			particle_prod.mult(projection)
+			
+			particle_lpprod=particle.process("filter.lowpass.gauss",{"cutoff_freq":0.04})
+			tmp=projection.process("filter.lowpass.gauss",{"cutoff_freq":0.04})
+			particle_lpprod.mult(tmp)
 
 			projection["cmp"]=0
 			particle["cmp"]=simval
 			particle_masked["cmp"]=0
-			self.mx_display.set_data([projection,particle,particle_masked])
+			self.mx_display.set_data([projection,particle,particle_masked,particle_prod,particle_lpprod])
 
 			if self.frc_display != None :
 				try : apix=particle["ctf"].apix
@@ -314,8 +318,8 @@ class EMSimmxXplorInspector(EMSymInspector):
 #		print "simmx xplor died"
 
 	def add_simmx_options(self):
-		self.simmx_tab= QtGui.QWidget()
-		vbl = QtGui.QVBoxLayout(self.simmx_tab)
+		self.simmx_tab= QtWidgets.QWidget()
+		vbl = QtWidgets.QVBoxLayout(self.simmx_tab)
 
 		self.__init_ptcl_slider(vbl)
 		self.tabwidget.insertTab(0,self.simmx_tab,"Simmx")
@@ -335,7 +339,7 @@ class EMSimmxXplorInspector(EMSymInspector):
 		#self.ptcl_slider.setIntonly(True)
 		#layout.addWidget(self.ptcl_slider)
 		#self.connect(self.ptcl_slider, QtCore.SIGNAL("valueChanged"), self.set_ptcl_idx)
-		self.ptcl_slider=QtGui.QSpinBox()
+		self.ptcl_slider=QtWidgets.QSpinBox()
 		self.ptcl_slider.setRange(0,1000)
 		self.ptcl_slider.setSingleStep(1)
 		self.ptcl_slider.setValue(0)
@@ -351,14 +355,14 @@ class EMSimmxXplorInspector(EMSymInspector):
 		self.data = simmx_xplore_dir_data()
 		if len(self.data) == 0: raise RuntimeError("There is no simmx refinement data in the current directory")
 
-		self.simmx_dir_tab= QtGui.QWidget()
-		vbl = QtGui.QVBoxLayout(self.simmx_dir_tab)
+		self.simmx_dir_tab= QtWidgets.QWidget()
+		vbl = QtWidgets.QVBoxLayout(self.simmx_dir_tab)
 
 		# This is the combo-box with the list of refine_* directories
 		combo_entries = [d[0] for d in self.data]
 		combo_entries.sort()
 		combo_entries.reverse()
-		self.combo = QtGui.QComboBox(self)
+		self.combo = QtWidgets.QComboBox(self)
 		for e in combo_entries: self.combo.addItem(e)
 
 		self.combo.currentIndexChanged[str].connect(self.on_combo_change)
@@ -366,11 +370,11 @@ class EMSimmxXplorInspector(EMSymInspector):
 
 		vbl.addWidget(self.combo)
 
-		self.list_widget = QtGui.QListWidget(None)
+		self.list_widget = QtWidgets.QListWidget(None)
 
-		self.list_widget.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
+		self.list_widget.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
 		self.list_widget.setMouseTracking(True)
-		self.list_widget.itemClicked[QtGui.QListWidgetItem].connect(self.list_widget_item_clicked)
+		self.list_widget.itemClicked[QtWidgets.QListWidgetItem].connect(self.list_widget_item_clicked)
 
 		self.update_simmx_list(True)
 		vbl.addWidget(self.list_widget)
@@ -434,11 +438,11 @@ class EMSimmxXplorInspector(EMSymInspector):
 		for i,vals in enumerate(data[3]):
 			choice = vals
 
-			a = QtGui.QListWidgetItem(str(choice),self.list_widget)
+			a = QtWidgets.QListWidgetItem(str(choice),self.list_widget)
 			if first_time and i == 0:
-				self.list_widget.setItemSelected(a,True)
+				a.setSelected(True)
 			elif choice == s_text:
-				self.list_widget.setItemSelected(a,True)
+				a.setSelected(True)
 
 
 	def on_combo_change(self,s):

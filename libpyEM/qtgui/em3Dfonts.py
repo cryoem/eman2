@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import division
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
 # and David Woolford 10/26/2007 (woolford@bcm.edu)
@@ -36,8 +33,10 @@ from __future__ import division
 
 from past.utils import old_div
 from builtins import object
-from PyQt4 import QtCore, QtGui, QtOpenGL
-from PyQt4.QtCore import Qt
+from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
+from PyQt5.QtCore import Qt
+import OpenGL
+OpenGL.ERROR_CHECKING = False
 from OpenGL import GL,GLU,GLUT
 from OpenGL.GL import *
 from OpenGL.GLU import *
@@ -280,41 +279,41 @@ class EM3DFontModel(EMLightsDrawer,EM3DModel,DynamicFonts):
 		return "EM3DFontModel"
 
 
-class EMFontInspector(QtGui.QWidget, EMLightsInspectorBase):
+class EMFontInspector(QtWidgets.QWidget, EMLightsInspectorBase):
 	def __init__(self,target) :
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		EMLightsInspectorBase.__init__(self)
 		self.target=weakref.ref(target)
 		self.transform_panel = EMTransformPanel(target,self)
 		self.transform_vbl = None # This will eventually be a vertical box layout for the transform panel
 		self.init_fonts()
 
-		self.vbl = QtGui.QVBoxLayout(self)
-		self.vbl.setMargin(0)
+		self.vbl = QtWidgets.QVBoxLayout(self)
+		self.vbl.setContentsMargins(0, 0, 0, 0)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 
-		self.hbl = QtGui.QHBoxLayout()
-		self.hbl.setMargin(0)
+		self.hbl = QtWidgets.QHBoxLayout()
+		self.hbl.setContentsMargins(0, 0, 0, 0)
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")
 		self.vbl.addLayout(self.hbl)
 
-		self.vbl2 = QtGui.QVBoxLayout()
-		self.vbl2.setMargin(0)
+		self.vbl2 = QtWidgets.QVBoxLayout()
+		self.vbl2.setContentsMargins(0, 0, 0, 0)
 		self.vbl2.setSpacing(6)
 		self.vbl2.setObjectName("vbl2")
 		self.hbl.addLayout(self.vbl2)
 
-		self.wiretog = QtGui.QPushButton("Wire")
+		self.wiretog = QtWidgets.QPushButton("Wire")
 		self.wiretog.setCheckable(1)
 		self.vbl2.addWidget(self.wiretog)
 
-		self.lighttog = QtGui.QPushButton("Light")
+		self.lighttog = QtWidgets.QPushButton("Light")
 		self.lighttog.setCheckable(1)
 		self.vbl2.addWidget(self.lighttog)
 
-		self.tabwidget2 = QtGui.QTabWidget()
+		self.tabwidget2 = QtWidgets.QTabWidget()
 		self.maintab = None
 		self.tabwidget2.addTab(self.get_main_tab(), "Main")
 		#self.tabwidget2.addTab(self.get_GL_tab(),"GL")
@@ -441,11 +440,11 @@ class EMFontInspector(QtGui.QWidget, EMLightsInspectorBase):
 		self.transform_panel.set_xyz_trans(x,y,z)	
 
 	def get_GL_tab(self):
-		self.gltab = QtGui.QWidget()
+		self.gltab = QtWidgets.QWidget()
 		gltab = self.gltab
 
-		gltab.vbl = QtGui.QVBoxLayout(self.gltab)
-		gltab.vbl.setMargin(0)
+		gltab.vbl = QtWidgets.QVBoxLayout(self.gltab)
+		gltab.vbl.setContentsMargins(0, 0, 0, 0)
 		gltab.vbl.setSpacing(6)
 		gltab.vbl.setObjectName("Main")
 
@@ -464,60 +463,60 @@ class EMFontInspector(QtGui.QWidget, EMLightsInspectorBase):
 
 	def get_main_tab(self):
 		if ( self.maintab == None ):
-			self.maintab = QtGui.QWidget()
+			self.maintab = QtWidgets.QWidget()
 			maintab = self.maintab
-			maintab.vbl = QtGui.QVBoxLayout(self.maintab)
-			maintab.vbl.setMargin(0)
+			maintab.vbl = QtWidgets.QVBoxLayout(self.maintab)
+			maintab.vbl.setContentsMargins(0, 0, 0, 0)
 			maintab.vbl.setSpacing(6)
 			maintab.vbl.setObjectName("Main")
 			
-			self.transform_vbl = QtGui.QVBoxLayout()
+			self.transform_vbl = QtWidgets.QVBoxLayout()
 			self.transform_panel.addWidgets(self.transform_vbl)
 			maintab.vbl.addLayout(self.transform_vbl)
-			self.glwidget = QtGui.QTabWidget()
+			self.glwidget = QtWidgets.QTabWidget()
 			self.glwidget.addTab(self.get_GL_tab(),"GL")
 			maintab.vbl.addWidget(self.glwidget)
 
 		return maintab
 
 	def get_format_tab(self):
-		self.formattab = QtGui.QWidget()
+		self.formattab = QtWidgets.QWidget()
 		formattab = self.formattab
-		formattab.vbl = QtGui.QVBoxLayout(self.formattab)
-		formattab.vbl.setMargin(0)
+		formattab.vbl = QtWidgets.QVBoxLayout(self.formattab)
+		formattab.vbl.setContentsMargins(0, 0, 0, 0)
 		formattab.vbl.setSpacing(6)
 		formattab.vbl.setObjectName("Format")
 
-		self.hbl1 = QtGui.QHBoxLayout()
-		self.text = QtGui.QLineEdit()
+		self.hbl1 = QtWidgets.QHBoxLayout()
+		self.text = QtWidgets.QLineEdit()
 		self.text.setText("hello world")
-		text_label = QtGui.QLabel("Enter Text:",self)
+		text_label = QtWidgets.QLabel("Enter Text:",self)
 		text_label.setToolTip("Enters quotes to evaluate new line e.g. \"hello\\nworld\". Evaluates numerical expressions e.g. 9*9 (with out quotes)")
 		self.hbl1.addWidget(text_label)
 		self.hbl1.addWidget(self.text)
 		formattab.vbl.addLayout(self.hbl1)
 
-		self.hbl1 = QtGui.QHBoxLayout()
-		self.Dfont = QtGui.QComboBox()
+		self.hbl1 = QtWidgets.QHBoxLayout()
+		self.Dfont = QtWidgets.QComboBox()
 		for k in self.l: self.Dfont.addItem(k)
-		self.hbl1.addWidget(QtGui.QLabel("Fonts:",self))
+		self.hbl1.addWidget(QtWidgets.QLabel("Fonts:",self))
 		self.hbl1.addWidget(self.Dfont)
 		formattab.vbl.addLayout(self.hbl1)
 
-		self.hbl1 = QtGui.QHBoxLayout()
-		self.tsize = QtGui.QSpinBox()
+		self.hbl1 = QtWidgets.QHBoxLayout()
+		self.tsize = QtWidgets.QSpinBox()
 		self.tsize.setRange(0,500)
 		self.tsize.setValue(32)
-		self.hbl1.addWidget(QtGui.QLabel("Size:",self),Qt.AlignLeft)
+		self.hbl1.addWidget(QtWidgets.QLabel("Size:",self),Qt.AlignLeft)
 		self.hbl1.addWidget(self.tsize,Qt.AlignRight)
-		self.combo = QtGui.QComboBox()
+		self.combo = QtWidgets.QComboBox()
 		self.items = ["Extrude","Pixmap","Bitmap","Polygon","Outline","Texture"]
 		for k in self.items: self.combo.addItem(k)
-		self.hbl1.addWidget(QtGui.QLabel("Style:",self),Qt.AlignLeft)
+		self.hbl1.addWidget(QtWidgets.QLabel("Style:",self),Qt.AlignLeft)
 		self.hbl1.addWidget(self.combo,Qt.AlignRight)
 		formattab.vbl.addLayout(self.hbl1)
 
-		self.hbl1 = QtGui.QHBoxLayout()
+		self.hbl1 = QtWidgets.QHBoxLayout()
 		self.lspacing = ValSlider(self,(-100.0,100.0),"Line Spacing:")
 		self.lspacing.setObjectName("Length")
 		self.lspacing.setValue(75.0)
@@ -525,21 +524,21 @@ class EMFontInspector(QtGui.QWidget, EMLightsInspectorBase):
 		self.hbl1.addWidget(self.lspacing)
 		formattab.vbl.addLayout(self.hbl1)
 
-		self.hbl1 = QtGui.QHBoxLayout()
+		self.hbl1 = QtWidgets.QHBoxLayout()
 		self.length = ValSlider(self,(0.0,500.0),"Length:")
 		self.length.setObjectName("Length")
 		self.length.setValue(75.0)
 		self.hbl1.addWidget(self.length)
 		formattab.vbl.addLayout(self.hbl1)
 
-		self.hbl1 = QtGui.QHBoxLayout()
-		self.cbb = QtGui.QComboBox()
-		self.hbl1.addWidget(QtGui.QLabel("Material:",self))
+		self.hbl1 = QtWidgets.QHBoxLayout()
+		self.cbb = QtWidgets.QComboBox()
+		self.hbl1.addWidget(QtWidgets.QLabel("Material:",self))
 		self.hbl1.addWidget(self.cbb)
 		formattab.vbl.addLayout(self.hbl1)
 
-		self.hbl1 = QtGui.QHBoxLayout()
-		self.bgtabwidget = QtGui.QTabWidget()
+		self.hbl1 = QtWidgets.QHBoxLayout()
+		self.bgtabwidget = QtWidgets.QTabWidget()
 		self.maintab = None
 		self.bgtabwidget.addTab(self.get_bgRGB_tab(), "BG RGB")
 		self.hbl1.addWidget(self.bgtabwidget)
@@ -549,35 +548,35 @@ class EMFontInspector(QtGui.QWidget, EMLightsInspectorBase):
 		return formattab
 
 	def get_bgRGB_tab(self):
-		self.bgRGBtab = QtGui.QWidget()
+		self.bgRGBtab = QtWidgets.QWidget()
 		bgRGBtab = self.bgRGBtab
-		bgRGBtab.vbl2 = QtGui.QVBoxLayout(self.bgRGBtab)
-		bgRGBtab.vbl2.setMargin(0)
+		bgRGBtab.vbl2 = QtWidgets.QVBoxLayout(self.bgRGBtab)
+		bgRGBtab.vbl2.setContentsMargins(0, 0, 0, 0)
 		bgRGBtab.vbl2.setSpacing(6)
 		bgRGBtab.vbl2.setObjectName("BG RGB")
 
-		self.hbl2 = QtGui.QHBoxLayout()
+		self.hbl2 = QtWidgets.QHBoxLayout()
 		self.bgR = ValSlider(self,(0,1),"R:")
 		self.bgR.setObjectName("R")
 		self.bgR.setValue(0.5)
 		self.hbl2.addWidget(self.bgR)
 		bgRGBtab.vbl2.addLayout(self.hbl2)
 
-		self.hbl2 = QtGui.QHBoxLayout()
+		self.hbl2 = QtWidgets.QHBoxLayout()
 		self.bgG = ValSlider(self,(0,1),"G:")
 		self.bgG.setObjectName("G")
 		self.bgG.setValue(0.5)
 		self.hbl2.addWidget(self.bgG)
 		bgRGBtab.vbl2.addLayout(self.hbl2)
 
-		self.hbl2 = QtGui.QHBoxLayout()
+		self.hbl2 = QtWidgets.QHBoxLayout()
 		self.bgB = ValSlider(self,(0,1),"B:")
 		self.bgB.setObjectName("B")
 		self.bgB.setValue(0.5)
 		self.hbl2.addWidget(self.bgB)
 		bgRGBtab.vbl2.addLayout(self.hbl2)		
 
-		self.hbl2 = QtGui.QHBoxLayout()
+		self.hbl2 = QtWidgets.QHBoxLayout()
 		self.bg_a = ValSlider(self,(0,1),"Alpha:")
 		self.bg_a.setObjectName("Alpha")
 		self.bg_a.setValue(1.0)

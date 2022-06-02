@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 04/20/2012 (sludtke@bcm.edu)
 # Copyright (c) 2000- Baylor College of Medicine
@@ -112,8 +109,14 @@ def procthread(jsd,vals,lnx,thresh1,thresh2,apix,v1,v2,cenmask,avgmask,options,t
 		v1m=v1.get_clip(Region(x,y,z,lnx,lnx,lnx))
 		v2m=v2.get_clip(Region(x,y,z,lnx,lnx,lnx))
 	#				if res143>.23 : v1m.write_image("zones.hdf",-1)
-		v1m.process_inplace("filter.lowpass.tophat",{"cutoff_pixels":si+1})	# sharp low-pass at 0.143 cutoff
-		v2m.process_inplace("filter.lowpass.tophat",{"cutoff_pixels":si+1})	# sharp low-pass at 0.143 cutoff
+	
+		
+		if options.gauss:
+			filtername="filter.lowpass.gauss"
+		else:
+			filtername="filter.lowpass.tophat"
+		v1m.process_inplace(filtername,{"cutoff_pixels":si+1})	# sharp low-pass at 0.143 cutoff
+		v2m.process_inplace(filtername,{"cutoff_pixels":si+1})	# sharp low-pass at 0.143 cutoff
 	#				if res143>.23 : v1m.write_image("zones.hdf",-1)
 		v1m.mult(avgmask)
 		v2m.mult(avgmask)
@@ -128,8 +131,11 @@ def main():
 	usage = """e2fsc.py [options] input1 input2
 
 Simple 2 volume FSCs can be computed with e2proc3d.py. In addition to the overall fsc (saved to fsc.txt), 
-it also computes a "local resolution" through the volume. This method is of HIGHLY questionable usefulness,
-and this program should be regarded as experimental.
+it also computes a "local resolution" through the volume. These local resolutions are based on poor statistics.
+The smaller the box size, the worse they are, and this is not taken into account when computing actual
+resolution values. Regardless, it will give a reasonable comparison of how much variation exists in different
+regions of the map, and will produce locally filtered maps with a reasonable level of detail, given the two
+input volumes.
 """
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
@@ -144,6 +150,7 @@ and this program should be regarded as experimental.
 	parser.add_argument("--overlap", type=int, help="Amount of oversampling to use in local resolution windows. Larger value -> larger output map",default=4)
 	parser.add_argument("--apix", type=float, help="A/pix to use for the comparison (default uses Vol1 apix)",default=0)
 	parser.add_argument("--cutoff", type=float, help="fsc cutoff. default is 0.143",default=0.143)
+	parser.add_argument("--gauss", action="store_true", help="use gaussian filter instead of tophat",default=False)
 	parser.add_argument("--mask",type=str,help="Mask to apply to both input images before calculation",default=None)
 	#parser.add_argument("--refs",type=str,help="Reference images from the similarity matrix (projections)",default=None)
 	#parser.add_argument("--inimgs",type=str,help="Input image file",default=None)
@@ -188,9 +195,9 @@ and this program should be regarded as experimental.
 		overlap=6
 		
 	if options.localsize==-1 : 
-		lnx=int(old_div(32,apix))
+		lnx=32//apix
 		if lnx<16: lnx=16
-		lnx=(((lnx-1)//overlap)+1)*overlap
+		lnx=int((((lnx-1)//overlap)+1)*overlap)
 	else: lnx=options.localsize
 	if apix*lnx/2.0<10.0 :
 		print("WARNING: Local sampling box is <10 A. Adjusting to 16 A.")
@@ -272,7 +279,7 @@ and this program should be regarded as experimental.
 	if options.verbose: print(len(thrds)," threads")
 	
 	thrtolaunch=0
-	while thrtolaunch<len(thrds) or threading.active_count()>1:
+	while thrtolaunch<len(thrds) or threading.active_count()>1 or not jsd.empty():
 		# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
 		# note that it's ok that we wait here forever, since there can't be new results if an existing
 		# thread hasn't finished.
@@ -331,14 +338,16 @@ and this program should be regarded as experimental.
 		volfilto.mult(volnorm)
 		volfilto.write_image(options.outfilto)
 	
-	out=open("fsc.curves.txt","w")
-	out.write("# This file contains individual FSC curves from e2fsc.py. Only a fraction of computed curves are included.\n")
-	if len(fys)>100 : 
-		step=old_div(len(fys),100)
-		print("Saving 1/%d of curves to fsc.curves.txt + %d"%(step,len(funny)))
-	else: 
-		step=1
-		print("Saving all curves to fsc.curves.txt")
+	#out=open("fsc.curves.txt","w")
+	#out.write("# This file contains individual FSC curves from e2fsc.py. Only a fraction of computed curves are included.\n")
+	#for y in fys:
+		#print(len(y),y)
+	#if len(fys)>100 : 
+		#step=old_div(len(fys),100)
+		#print("Saving 1/%d of curves to fsc.curves.txt + %d"%(step,len(funny)))
+	#else: 
+		#step=1
+		#print("Saving all curves to fsc.curves.txt")
 	
 	#for i,x in enumerate(fx):
 		#out.write( "%f\t"%x)
@@ -349,12 +358,12 @@ and this program should be regarded as experimental.
 		#for j in funny:
 			#out.write( "%f\t"%fys[j][i])
 			
-		out.write("\n")
+		#out.write("\n")
 		
 	#if len(funny)>1 :
-		#print "WARNING: %d/%d curves were evaluated as being >0.5 AT Nyquist. While these values have been set to \
+		#print("WARNING: %d/%d curves were evaluated as being >0.5 AT Nyquist. While these values have been set to \
 		#Nyquist (the maximum resolution for your sampling), these values are not meaningful, and could imply \
-		#insufficient sampling, or bias in the underlying reconstructions."%(len(funny),len(fys))
+		#insufficient sampling, or bias in the underlying reconstructions."%(len(funny),len(fys)))
 
 	E2end(logid)
 

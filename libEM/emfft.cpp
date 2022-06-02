@@ -1,7 +1,3 @@
-/**
- * $Id$
- */
- 
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
@@ -35,6 +31,7 @@
 
 #include <string>
 #include <cstring>
+#include <complex>
 #include "emfft.h"
 #include "log.h"
 
@@ -77,8 +74,10 @@ pthread_mutex_t fft_mutex=PTHREAD_MUTEX_INITIALIZER;
 
 #ifdef FFTW_PLAN_CACHING
 // The only thing important about these constants is that they don't equal each other
+// Why isn't this an enum?  --steve
 const int EMfft::EMAN2_REAL_2_COMPLEX = 1;
 const int EMfft::EMAN2_COMPLEX_2_REAL = 2;
+const int EMfft::EMAN2_COMPLEX_2_COMPLEX = 3;
 
 
 #ifdef USE_FFTW3
@@ -175,7 +174,7 @@ fftwf_plan EMfft::EMfftw3_cache::get_plan(const int rank_in, const int x, const 
 {
 
 	if ( rank_in > 3 || rank_in < 1 ) throw InvalidValueException(rank_in, "Error, can not get an FFTW plan using rank out of the range [1,3]");
-	if ( r2c_flag != EMAN2_REAL_2_COMPLEX && r2c_flag != EMAN2_COMPLEX_2_REAL ) throw InvalidValueException(r2c_flag, "The selected real to complex flag is not supported");
+	if ( r2c_flag != EMAN2_REAL_2_COMPLEX && r2c_flag != EMAN2_COMPLEX_2_REAL && r2c_flag != EMAN2_COMPLEX_2_COMPLEX ) throw InvalidValueException(r2c_flag, "The selected real to complex flag is not supported");
 	
 // 	static int num_added = 0;
 // 	cout << "Was asked for " << rank_in << " " << x << " " << y << " " << z << " " << r2c_flag << endl;
@@ -202,16 +201,35 @@ fftwf_plan EMfft::EMfftw3_cache::get_plan(const int rank_in, const int x, const 
 	{
 		if ( r2c_flag == EMAN2_REAL_2_COMPLEX )
 			plan = fftwf_plan_dft_r2c_1d(x, real_data, complex_data, FFTW_ESTIMATE);
-		else // r2c_flag == EMAN2_COMPLEX_2_REAL, this is guaranteed by the error checking at the beginning of the function
+		else if ( r2c_flag == EMAN2_COMPLEX_2_REAL )
 			plan = fftwf_plan_dft_c2r_1d(x, complex_data, real_data, FFTW_ESTIMATE);
+		else {
+			// This ONLY makes plans for inplace 1D C->C Forward
+			float *tmp=(float *)malloc(sizeof(float)*x*2);
+			memcpy(tmp,complex_data,sizeof(float)*x*2);
+			// technically FFTW_ESTIMATE isn't supposed to mess with the input data, but the manual advises playing it safe
+			plan = fftwf_plan_dft_1d(x,complex_data,complex_data,FFTW_FORWARD,FFTW_ESTIMATE);
+			memcpy(complex_data,tmp,sizeof(float)*x*2);
+			free(tmp);
+		}
 	}
 	else
 	{
 		if ( r2c_flag == EMAN2_REAL_2_COMPLEX )
 			plan = fftwf_plan_dft_r2c(rank_in, dims + (3 - rank_in), real_data, complex_data, FFTW_ESTIMATE);
-		else // r2c_flag == EMAN2_COMPLEX_2_REAL, this is guaranteed by the error checking at the beginning of the function
+		else if ( r2c_flag == EMAN2_COMPLEX_2_REAL) 
 			plan = fftwf_plan_dft_c2r(rank_in, dims + (3 - rank_in), complex_data, real_data, FFTW_ESTIMATE);
-	}
+		else {
+			// This ONLY makes plans for inplace 2D/3D C->C Forward
+			float *tmp=(float *)malloc(sizeof(float)*x*2*y*z);
+			memcpy(tmp,complex_data,sizeof(float)*x*2*y*z);
+			// technically FFTW_ESTIMATE isn't supposed to mess with the input data, but the manual advises playing it safe
+			plan = fftwf_plan_dft(rank_in, dims + (3 - rank_in), complex_data, complex_data, FFTW_FORWARD, FFTW_ESTIMATE);  // in place!
+			memcpy(complex_data,tmp,sizeof(float)*x*2*y*z);
+			free(tmp);
+
+		}
+		}
 
 	if (fftwplans[EMFFTW3_CACHE_SIZE-1] != NULL )
 	{
@@ -312,8 +330,7 @@ int EMfft::complex_to_real_1d(float *complex_data, float *real_data, int n)
 	fftwf_execute_dft_c2r(plan, (fftwf_complex *) complex_data, real_data);
 #else
 	int mrt = Util::MUTEX_LOCK(&fft_mutex);
-	fftwf_plan plan = fftwf_plan_dft_c2r_1d(n, (fftwf_complex *) complex_data, real_data,
-											FFTW_ESTIMATE);
+	fftwf_plan plan = fftwf_plan_dft_c2r_1d(n, (fftwf_complex *) complex_data, real_data,FFTW_ESTIMATE);
 	mrt = Util::MUTEX_UNLOCK(&fft_mutex);
 	fftwf_execute(plan);
 	mrt = Util::MUTEX_LOCK(&fft_mutex);
@@ -324,6 +341,27 @@ int EMfft::complex_to_real_1d(float *complex_data, float *real_data, int n)
 	return 0;
 }
 
+int EMfft::complex_to_complex_1d_inplace(std::complex<float> *complex_data, int n)
+{
+#ifdef FFTW_PLAN_CACHING
+	fftwf_plan plan = plan_cache.get_plan(1,n/2,1,1,EMAN2_COMPLEX_2_COMPLEX,1,(fftwf_complex *) complex_data,NULL);
+	fftwf_execute_dft(plan, (fftwf_complex *) complex_data,(fftwf_complex *) complex_data);
+#else
+	printf("ERROR: 1-D in place C2C FFT broken without caching");
+// 	fftwf_plan p;
+// 	fftwf_complex *in=(fftwf_complex *) complex_data_in;
+// 	fftwf_complex *out=(fftwf_complex *) complex_data_out;
+// 	int mrt = Util::MUTEX_LOCK(&fft_mutex);
+// 	// This shouldn't be unsafe with FFTW_ESTIMATE?
+// 	p=fftwf_plan_dft_1d(n/2,(fftwf_complex *) complex_data,(fftwf_complex *) complex_data, FFTW_FORWARD, FFTW_ESTIMATE);
+// 	mrt = Util::MUTEX_UNLOCK(&fft_mutex);
+// 	fftwf_execute(p);
+// 	mrt = Util::MUTEX_LOCK(&fft_mutex);
+// 	fftwf_destroy_plan(p);
+// 	mrt = Util::MUTEX_UNLOCK(&fft_mutex);
+#endif
+	return 0;
+}
 
 // ming add c->c fft with fftw3 library//
 int EMfft::complex_to_complex_1d_f(float *complex_data_in, float *complex_data_out, int n)
@@ -357,6 +395,27 @@ int EMfft::complex_to_complex_1d_b(float *complex_data_in, float *complex_data_o
 	return 0;
 }
 
+int EMfft::complex_to_complex_2d_inplace(std::complex<float> *complex_data, int nx,int ny)
+{
+#ifdef FFTW_PLAN_CACHING
+	fftwf_plan plan = plan_cache.get_plan(2,nx/2,ny,1,EMAN2_COMPLEX_2_COMPLEX,1,(fftwf_complex *) complex_data,NULL);
+	fftwf_execute_dft(plan, (fftwf_complex *) complex_data,(fftwf_complex *) complex_data);
+#else
+	printf("ERROR: 2-D in place C2C FFT broken without caching");
+// 	fftwf_plan p;
+// 	fftwf_complex *in=(fftwf_complex *) complex_data_in;
+// 	fftwf_complex *out=(fftwf_complex *) complex_data_out;
+// 	int mrt = Util::MUTEX_LOCK(&fft_mutex);
+// 	// This shouldn't be unsafe with FFTW_ESTIMATE?
+// 	p=fftwf_plan_dft(n/2,(fftwf_complex *) complex_data,(fftwf_complex *) complex_data, FFTW_FORWARD, FFTW_ESTIMATE);
+// 	mrt = Util::MUTEX_UNLOCK(&fft_mutex);
+// 	fftwf_execute(p);
+// 	mrt = Util::MUTEX_LOCK(&fft_mutex);
+// 	fftwf_destroy_plan(p);
+// 	mrt = Util::MUTEX_UNLOCK(&fft_mutex);
+#endif
+	return 0;
+}
 
 int EMfft::complex_to_complex_nd(float *in, float *out, int nx,int ny,int nz)
 {

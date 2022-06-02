@@ -1,11 +1,9 @@
 find_package(JPEG REQUIRED)
 
-message_var(JPEG_LIBRARIES)
+cmake_print_variables(JPEG_LIBRARIES)
 
-if(JPEG_FOUND AND NOT TARGET JPEG::JPEG)
-	add_library(JPEG::JPEG INTERFACE IMPORTED)
+if(JPEG_FOUND)
 	set_target_properties(JPEG::JPEG PROPERTIES
-						  INTERFACE_LINK_LIBRARIES      "${JPEG_LIBRARIES}"
 						  INTERFACE_COMPILE_DEFINITIONS USE_JPEG
 						  )
 endif()

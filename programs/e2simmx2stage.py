@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 12/01/2009 (sludtke@bcm.edu)
 # Copyright (c) 2000-2007 Baylor College of Medicine
@@ -69,7 +66,7 @@ def main():
 	parser.add_argument("--saveali",action="store_true",help="Save alignment values, output is c x r x 4 instead of c x r x 1",default=False)
 	parser.add_argument("--prefilt",action="store_true",help="Filter each reference (c) to match the power spectrum of each particle (r) before alignment and comparison",default=False)
 	parser.add_argument("--prectf",action="store_true",help="Apply CTF to each projection before comparison",default=False)
-	parser.add_argument("--verbose", "-v", dest="verbose", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 #	parser.add_argument("--lowmem",action="store_true",help="prevent the bulk reading of the reference images - this will save meclen,mory but potentially increase CPU time",default=False)
 	parser.add_argument("--exclude", type=str,default=None,help="The named file should contain a set of integers, each representing an image from the input file to exclude. Matrix elements will still be created, but will be zeroed.")
 	parser.add_argument("--shrink", type=float,default=None,help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. This will speed the process up but may change classifications.")
@@ -77,7 +74,7 @@ def main():
 	parser.add_argument("--finalstage",action="store_true",help="Assume that existing preliminary particle classifications are correct, and only recompute final local orientations",default=False)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--parallel",type=str,help="Parallelism string",default="thread:1")
-	parser.add_argument("--force", "-f",dest="force",default=True, action="store_true",help="Deprecated. Value ignored")
+#	parser.add_argument("--force", "-f",dest="force",default=True, action="store_true",help="Deprecated. Value ignored")
 
 	(options, args) = parser.parse_args()
 
@@ -105,8 +102,8 @@ def main():
 
 		E2progress(E2n,0.001)
 		# compute the reference self-similarity matrix
-#		cmd="e2simmx.py %s %s %s %s --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali --force --verbose=%d"%(args[0],args[0],args[3],options.shrinks1, options.verbose-1)
-		cmd="e2simmx.py %s %s %s %s --align=rotate_translate_tree --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali --force --verbose=%d"%(args[0],args[0],args[3],options.shrinks1, options.verbose-1)
+#		cmd="e2simmx.py %s %s %s %s --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali --verbose=%d"%(args[0],args[0],args[3],options.shrinks1, options.verbose-1)
+		cmd="e2simmx.py %s %s %s %s --align=rotate_translate_tree --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali --verbose=%d"%(args[0],args[0],args[3],options.shrinks1, options.verbose-1)
 		if options.parallel!=None : cmd+=" --parallel="+options.parallel
 		print("executing ",cmd)
 		launch_childprocess(cmd)
@@ -169,12 +166,12 @@ def main():
 			avg.mult(old_div(1.0,len(i)))
 			avg["class_ptcl_idxs"]=i
 			avg["class_ptcl_src"]=args[0]
-			avg.write_image(args[4],ii)
+			avg.write_compressed(args[4],ii,0)
 
 		E2progress(E2n,0.15)
 		############### Step 2 - classify the particles against the averaged references
 		print("First stage particle classification")
-		cmd="e2simmx.py %s %s %s %s --align=%s --aligncmp=%s  --cmp=%s  --saveali --force --verbose=%d"%(args[4],args[1],args[5],options.shrinks1,
+		cmd="e2simmx.py %s %s %s %s --align=%s --aligncmp=%s  --cmp=%s  --saveali --verbose=%d"%(args[4],args[1],args[5],options.shrinks1,
 			options.align,options.aligncmp,options.cmp, options.verbose-1)
 		if options.prefilt : cmd+=" --prefilt"
 		if options.prectf : cmd+=" --prectf"
@@ -206,18 +203,20 @@ def main():
 			for i in classes[vals[j][1]]: mx[i,ptcl]=0.0
 
 	mx.update()
-	mx.write_image(args[2],0)
+	mx.write_image(args[2],0)		# no compression here to prevent region writing problems
+#	mx.write_compressed(args[2],0,0)
 #	mx.write_image("bdb:refine_02#simmx_00_x",0)
 
 	mx.to_zero()
 	if options.saveali:
 		for i in range(1,6):
-			mx.write_image(args[2],i)		# seed alignment data with nothing
+			mx.write_image(args[2],i)		# no compression because we need to overwrite later
+#			mx.write_compressed(args[2],i,0)		# seed alignment data with nothing
 #			mx.write_image("bdb:refine_02#simmx_00_x",i)
 
 
 	# the actual final classification
-	cmd = "e2simmx.py %s %s %s -f --saveali --cmp=%s --align=%s --aligncmp=%s --fillzero --nofilecheck --force --verbose=%d"  %(args[0],args[1],args[2],options.cmp,options.align,options.aligncmp, options.verbose-1)
+	cmd = "e2simmx.py %s %s %s --saveali --cmp=%s --align=%s --aligncmp=%s --fillzero --nofilecheck --verbose=%d"  %(args[0],args[1],args[2],options.cmp,options.align,options.aligncmp, options.verbose-1)
 	if options.mask!=None : cmd += " --mask=%s"%options.mask
 	if options.colmasks!=None : cmd += " --colmasks=%s"%options.colmasks
 
@@ -240,6 +239,11 @@ def main():
 	launch_childprocess(cmd)
 
 	E2progress(E2n,1.0)
+	
+	# we compress these at the very end to avoid region writing problems
+	compress_hdf(args[2],0)
+	compress_hdf(args[3],0)
+	compress_hdf(args[5],0)
 
 #	E2progress(E2n,float(r-rrange[0])/(rrange[1]-rrange[0]))
 

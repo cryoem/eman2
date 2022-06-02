@@ -1,8 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
 # and David Woolford 10/26/2007 (woolford@bcm.edu)
@@ -38,7 +34,9 @@ from __future__ import division
 
 from past.utils import old_div
 from builtins import range
-from PyQt4 import QtCore, QtGui, QtOpenGL
+from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
+import OpenGL
+OpenGL.ERROR_CHECKING = False
 from OpenGL import GL,GLU,GLUT
 from OpenGL.GL import *
 from OpenGL.GLU import *
@@ -254,7 +252,7 @@ class EMVolumeModel(EM3DModel):
 		glPopMatrix()
 
 		# this is the accumulation buffer version of the volume model - it was for testing purposes
-		# and is left here commented out incase anyone wants to investigate it in the future
+		# and is left here commented out in case anyone wants to investigate it in the future
 		#glPushMatrix()
 		#glTranslate(-self.data.get_xsize()/2.0,-self.data.get_ysize()/2.0,-self.data.get_zsize()/2.0)
 		#glScalef(self.data.get_xsize(),self.data.get_ysize(),self.data.get_zsize())
@@ -568,20 +566,20 @@ class EMVolumeModel(EM3DModel):
 		self.vdtools.set_update_P_inv()
 
 
-class EMVolumeInspector(QtGui.QWidget):
+class EMVolumeInspector(QtWidgets.QWidget):
 	def __init__(self,target) :
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		self.target=weakref.ref(target)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"desktop.png"))
 		self.rotation_sliders = EMTransformPanel(target,self)
 		
-		self.vbl = QtGui.QVBoxLayout(self)
-		self.vbl.setMargin(0)
+		self.vbl = QtWidgets.QVBoxLayout(self)
+		self.vbl.setContentsMargins(0, 0, 0, 0)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 		
-		self.hbl = QtGui.QHBoxLayout()
-		self.hbl.setMargin(0)
+		self.hbl = QtWidgets.QHBoxLayout()
+		self.hbl.setContentsMargins(0, 0, 0, 0)
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")
 		self.vbl.addLayout(self.hbl)
@@ -590,20 +588,20 @@ class EMVolumeInspector(QtGui.QWidget):
 		self.hist.setObjectName("hist")
 		self.hbl.addWidget(self.hist)
 		
-		self.vbl2 = QtGui.QVBoxLayout()
-		self.vbl2.setMargin(0)
+		self.vbl2 = QtWidgets.QVBoxLayout()
+		self.vbl2.setContentsMargins(0, 0, 0, 0)
 		self.vbl2.setSpacing(6)
 		self.vbl2.setObjectName("vbl2")
 		self.hbl.addLayout(self.vbl2)
 	
-		self.cubetog = QtGui.QPushButton("Cube")
+		self.cubetog = QtWidgets.QPushButton("Cube")
 		self.cubetog.setCheckable(1)
 		self.vbl2.addWidget(self.cubetog)
 		
-		self.defaults = QtGui.QPushButton("Defaults")
+		self.defaults = QtWidgets.QPushButton("Defaults")
 		self.vbl2.addWidget(self.defaults)
 		
-		self.tabwidget = QtGui.QTabWidget()
+		self.tabwidget = QtWidgets.QTabWidget()
 		
 		self.tabwidget.addTab(self.get_main_tab(), "Main")
 		self.tabwidget.addTab(self.get_GL_tab(),"GL")
@@ -636,11 +634,11 @@ class EMVolumeInspector(QtGui.QWidget):
 		return self.maintab.vbl
 	
 	def get_GL_tab(self):
-		self.gltab = QtGui.QWidget()
+		self.gltab = QtWidgets.QWidget()
 		gltab = self.gltab
 		
-		gltab.vbl = QtGui.QVBoxLayout(self.gltab )
-		gltab.vbl.setMargin(0)
+		gltab.vbl = QtWidgets.QVBoxLayout(self.gltab )
+		gltab.vbl.setContentsMargins(0, 0, 0, 0)
 		gltab.vbl.setSpacing(6)
 		gltab.vbl.setObjectName("Main")
 		
@@ -659,10 +657,10 @@ class EMVolumeInspector(QtGui.QWidget):
 	
 	def get_main_tab(self):
 	
-		self.maintab = QtGui.QWidget()
+		self.maintab = QtWidgets.QWidget()
 		maintab = self.maintab
-		maintab.vbl = QtGui.QVBoxLayout(self.maintab)
-		maintab.vbl.setMargin(0)
+		maintab.vbl = QtWidgets.QVBoxLayout(self.maintab)
+		maintab.vbl.setContentsMargins(0, 0, 0, 0)
 		maintab.vbl.setSpacing(6)
 		maintab.vbl.setObjectName("Main")
 			
@@ -677,17 +675,17 @@ class EMVolumeInspector(QtGui.QWidget):
 		self.bright.setValue(0.0)
 		maintab.vbl.addWidget(self.bright)
 
-		self.hbl_smp = QtGui.QHBoxLayout()
-		self.hbl_smp.setMargin(0)
+		self.hbl_smp = QtWidgets.QHBoxLayout()
+		self.hbl_smp.setContentsMargins(0, 0, 0, 0)
 		self.hbl_smp.setSpacing(6)
 		self.hbl_smp.setObjectName("Texture Oversampling")
 		maintab.vbl.addLayout(self.hbl_smp)
 		
-		self.smp_label = QtGui.QLabel()
+		self.smp_label = QtWidgets.QLabel()
 		self.smp_label.setText('Texture Oversampling')
 		self.hbl_smp.addWidget(self.smp_label)
 		
-		self.smp = QtGui.QSpinBox(maintab)
+		self.smp = QtWidgets.QSpinBox(maintab)
 		self.smp.setMaximum(10)
 		self.smp.setMinimum(1)
 		self.smp.setValue(1)

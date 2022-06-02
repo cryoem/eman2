@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Authors: James Michael Bell, 06/03/2015
 # Copyright (c) 2015 Baylor College of Medicine
@@ -32,8 +29,6 @@ from __future__ import division
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA	2111-1307 USA
 #
 
-from __future__ import print_function
-from __future__ import division
 from builtins import range
 from EMAN2 import *
 import sys
@@ -56,7 +51,7 @@ def main():
 	parser.add_argument("--ymin",type=int,help="Start tiling on this y-pixel. If -1, will start one boxsize inward.",default=-1)
 	parser.add_argument("--ymax",type=int,help="Generate tiles in y-direction until this many pixels. If -1, will tile the entire image.",default=-1)
 	parser.add_argument("--ystep",type=int,help="Step length in y-direction. If less than --boxsize, tiles will overlap. Default is 256.",default=256)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
 	

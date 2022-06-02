@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Jesus G. Galaz 9/1/2010 - Last Update July/08/2015 
 # Copyright (c) 2011- Baylor College of Medicine
@@ -64,7 +61,7 @@ def main():
 		so the current value will be overwritten if --img2match is in .hdf format. 
 		This value will also be used to scale the images in --img2process.""")
 	
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	
 	parser.add_argument("--preprocess",type=str,help="Any processor (as in e2proc3d.py) to be applied to the edited img2process.", default='')
 	parser.add_argument("--lowpass",type=str,help="A lowpass filtering processor (as in e2proc3d.py) be applied to the edited img2process.", default='')

@@ -1,7 +1,3 @@
-/**
- * $Id$
- */
-
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
@@ -666,7 +662,6 @@ void EMData::div(float f)
 	EXITFUNC;
 }
 
-
 void EMData::div(const EMData & em)
 {
 	ENTERFUNC;
@@ -709,6 +704,25 @@ void EMData::div(const EMData & em)
 		}
 		update();
 	}
+
+	EXITFUNC;
+}
+
+void EMData::update_min(const EMData & em)
+{
+	ENTERFUNC;
+
+	if (nx != em.get_xsize() || ny != em.get_ysize() || nz != em.get_zsize()) {
+		throw ImageFormatException( "images not same sizes");
+	}
+	if( !is_real() || !em.is_real() )
+	{
+		throw ImageFormatException( "update_min does not support complex images");
+	}
+	
+	for (size_t i = 0; i < nxyz; i++) set_value_at_index(i,Util::get_min(get_value_at_index(i),em.get_value_at_index(i)));
+	
+	update();
 
 	EXITFUNC;
 }
@@ -922,6 +936,34 @@ std::complex<float> EMData::get_complex_at_interp(float xx, float yy) const
 	std::complex<float> p4 = get_complex_at(x + 1, y + 1);
 
 	return Util::bilinear_interpolate_cmplx(p1, p2, p3, p4, xx - x, yy - y);
+}
+
+std::complex<float> EMData::get_complex_at_ginterp(float xx, float yy) const
+{
+	int x = static_cast < int >(Util::fast_floor(xx));
+	int y = static_cast < int >(Util::fast_floor(yy));
+
+	std::complex<float> p1 = get_complex_at(x, y);
+	std::complex<float> p2 = get_complex_at(x + 1, y);
+	std::complex<float> p3 = get_complex_at(x, y + 1);
+	std::complex<float> p4 = get_complex_at(x + 1, y + 1);
+
+	return Util::gauss_interpolate_cmplx(p1, p2, p3, p4, xx - x, yy - y);
+}
+
+std::complex<float> EMData::get_complex_at_3ginterp(float xx, float yy) const
+{
+	int x0 = static_cast < int >(Util::fast_floor(xx-0.5));
+	int y0 = static_cast < int >(Util::fast_floor(yy-0.5));
+
+	std::complex<float> p[9];
+	for (int y=0,i=0; y<3; y++) {
+		for (int x=0; x<3; x++,i++) {
+			p[i]=get_complex_at(x+x0,y+y0);
+		}
+	}
+
+	return Util::gauss3_interpolate_cmplx(p, xx-x0, yy-y0);
 }
 
 

@@ -28,10 +28,6 @@
  *
  * */
 
-#ifdef _WIN32
-	#pragma warning(disable:4819)
-#endif	//_WIN32
-
 // Boost Includes ==============================================================
 #include <boost/python.hpp>
 
@@ -170,6 +166,7 @@ BOOST_PYTHON_MODULE(libpyCmp2)
         .def("set_size", &EMAN::XYData::set_size)
         .def("get_xlist", &EMAN::XYData::get_xlist)
         .def("get_ylist", &EMAN::XYData::get_ylist)
+        .def("make_gauss", &EMAN::XYData::make_gauss) //		make_gauss(int n,float xmax, float width)
         .def("__getstate__", &EMAN::XYData::get_state)
         .def("__setstate__", &EMAN::XYData::set_state)
     );

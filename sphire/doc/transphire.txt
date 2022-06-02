@@ -1,0 +1,68 @@
+~~NOTOC~~
+
+===== transphire =====
+TranSPHIRE GUI: Automated data pre-processing. TranSPHIRE needs to be installed seperately and the transphire executable needs to be present in the PATH: https://github.com/MPI-Dortmund/transphire
+
+\\
+===== Usage =====
+
+Usage in command line
+
+    transphire
+
+\\
+===== Typical usage =====
+
+TranSPHIRE exists in non-MPI version.
+
+TranSPHIRE needs to be installed seperately from: https://github.com/MPI-Dortmund/transphire
+
+Usage:
+    transphire
+
+\\
+===== Input =====
+=== Main Parameters ===
+
+\\
+=== Advanced Parameters ===
+
+\\
+===== Output =====
+
+\\
+===== Description =====
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+
+\\
+==== Developer Notes ====
+
+\\
+==== Author / Maintainer ====
+Markus Stabrin (markus.stabrin@mpi-dortmund.mpg.de
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+external program
+
+\\
+==== See also ====
+
+\\
+==== Maturity ====
+Stable:: Works for most people, has been tested; test cases/examples available.
+
+\\
+==== Bugs ====
+There are no known bugs so far.
+
+\\

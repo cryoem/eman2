@@ -32,8 +32,6 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 #
-from __future__ import print_function
-from __future__ import division
 from builtins import range
 from EMAN2 import *
 from EMAN2_utils import *
@@ -79,7 +77,7 @@ def main():
 	
 	parser.add_argument("--threshold",type=str,default='',help="""Default=None. A threshold applied to the subvolumes after normalization. For example, --threshold=threshold.belowtozero:minval=0 makes all negative pixels equal 0, so that they do not contribute to the correlation score.""")
 	
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="""Default=0. Verbose level [0-9], higner number means higher level of verboseness; 10-11 will trigger many messages that might make little sense since this level of verboseness corresponds to 'debugging mode'""")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="""Default=0. Verbose level [0-9], higher number means higher level of verboseness; 10-11 will trigger many messages that might make little sense since this level of verboseness corresponds to 'debugging mode'""")
 
 	(options, args) = parser.parse_args()
 	
@@ -165,7 +163,7 @@ def main():
 		
 		if options.parallel:
 			from EMAN2PAR import EMTaskCustomer
-			etc=EMTaskCustomer(options.parallel)
+			etc=EMTaskCustomer(options.parallel,"e2spt_preproc.Preproc3DTask")
 			pclist=[options.input]
 
 			etc.precache(pclist)
@@ -262,7 +260,7 @@ class Preproc3DTask(JSTask):
 		return
 
 
-def preprocfunc( simage, options, i, outname, simulation=False, resizeonly=False ):
+def preprocfunc( simage, options, i, outname, simulation=False, resizeonly=False, ref=False ):
 	#def preprocfunc( options, i, outname, simulation=False, resizeonly=False ):
 		
 	#simage = EMData(options.input,i)
@@ -272,9 +270,7 @@ def preprocfunc( simage, options, i, outname, simulation=False, resizeonly=False
 	if options.verbose:
 		print("\n(e2spt_preproc) preprocessing particle", i)
 
-	
-	
-	
+
 	if not resizeonly:
 	
 		apix = simage['apix_x']
@@ -302,24 +298,25 @@ def preprocfunc( simage, options, i, outname, simulation=False, resizeonly=False
 			#print ("\n(e2spt_preproc)(preprocfunc) --mask provided: %s" %( options.mask))
 			#mask.write_image(options.path + '/mask.hdf',-1)
 
-		try:
-			if options.maskfile:
-				maskfileimg = EMData(options.maskfile,0)
-		
-				if maskfileimg['nx'] !=  maskimg['nx'] or maskfileimg['ny'] !=  maskimg['ny'] or maskfileimg['nz'] !=  maskimg['nz']:
-					maskfileimg = clip3d( maskfileimg, maskimg['nx'] )
-	
-				maskimg.mult( maskfileimg )
+		if ref:
+			try:
+				if options.maskfile:
+					maskfileimg = EMData(options.maskfile,0)
 			
-				if options.verbose > 9:
-					print("including --maskfile in mask")
-				#print "\n(e2spt_preproc)(preprocfunc)a maskfile was multiplied by the mask %s" %( options.maskfile) 
-			else:
-				if options.verbose > 9:
-					print("\n(e2spt_preproc)(preprocfunc) apparently therewas no --maskfile")
-				#pass
-		except:
-			pass
+					if maskfileimg['nx'] !=  maskimg['nx'] or maskfileimg['ny'] !=  maskimg['ny'] or maskfileimg['nz'] !=  maskimg['nz']:
+						maskfileimg = clip3d( maskfileimg, maskimg['nx'] )
+		
+					maskimg.mult( maskfileimg )
+				
+					if options.verbose > 9:
+						print("\n(e2spt_preproc)(preprocfunc) including --maskfile in mask")
+					#print "\n(e2spt_preproc)(preprocfunc)a maskfile was multiplied by the mask %s" %( options.maskfile) 
+				else:
+					if options.verbose > 9:
+						print("\n(e2spt_preproc)(preprocfunc) apparently, there was no --maskfile")
+					#pass
+			except:
+				pass
 	
 	
 		'''

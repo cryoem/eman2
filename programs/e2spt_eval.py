@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 # Muyuan Chen 2018-04
-from __future__ import print_function
-from __future__ import division
+from past.utils import old_div
 from EMAN2 import *
 import numpy as np
-from PyQt4 import QtCore, QtGui
-from PyQt4.QtCore import Qt
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import Qt
 from eman2_gui import embrowser
 from eman2_gui.emapplication import EMApp
 from eman2_gui.emscene3d import EMScene3D
@@ -31,20 +30,20 @@ def main():
 	E2end(logid)
 	
 	
-class SptEvalGUI(QtGui.QWidget):
+class SptEvalGUI(QtWidgets.QWidget):
 
 	
 	def __init__(self, options):
 		
 		self.path="tomograms/"
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 
 		self.win_size=[1000,680]
 		self.setMinimumSize(self.win_size[0], self.win_size[1])
 		
 		# This object is itself a widget we need to set up
-		self.gbl = QtGui.QGridLayout(self)
-		self.gbl.setMargin(8)
+		self.gbl = QtWidgets.QGridLayout(self)
+		self.gbl.setContentsMargins(8, 8, 8, 8)
 		self.gbl.setSpacing(6)
 		self.gbl.setColumnStretch(0,4)
 		self.gbl.setColumnStretch(1,1)
@@ -52,7 +51,7 @@ class SptEvalGUI(QtGui.QWidget):
 		self.gbl.setRowStretch(0,1)
 
 		# Micrograph list
-		self.imglst=QtGui.QTableWidget(1, 3, self)
+		self.imglst=QtWidgets.QTableWidget(1, 3, self)
 		self.imglst.verticalHeader().hide()
 		
 		self.gbl.addWidget(self.imglst,0,0,10,1)
@@ -63,10 +62,11 @@ class SptEvalGUI(QtGui.QWidget):
 		self.imglst.cellClicked[int, int].connect(self.select_folder)
 		hdr.sectionPressed[int].connect(self.sortlst)
 		
-		self.dp_folder=QtGui.QComboBox()
+		self.dp_folder=QtWidgets.QComboBox()
 		self.dp_folder.setToolTip("Folder suffix")
 		self.gbl.addWidget(self.dp_folder, 0,1,1,1)
-		sfxlst=["spt", "sptsgd"]
+		sfxlst=["spt", "sptsgd", "subtlt"]
+		self.paramfile={"spt":"spt", "sptsgd":"spt", "subtlt":"subtlt"}
 		for i in sfxlst:
 			self.dp_folder.addItem(i)
 		self.dp_folder.currentIndexChanged[int].connect(self.set_sfx)
@@ -82,33 +82,38 @@ class SptEvalGUI(QtGui.QWidget):
 
 		self.wg_thumbnail.newnode=None
 
-		self.bt_showbs=QtGui.QPushButton("ShowBrowser")
+		self.bt_showbs=QtWidgets.QPushButton("ShowBrowser")
 		self.bt_showbs.setToolTip("Show Browser")
 		self.gbl.addWidget(self.bt_showbs, 2,1,1,2)
 		self.bt_showbs.clicked[bool].connect(self.show_browser)
 
-		self.bt_plotParms=QtGui.QPushButton("PlotParams")
+		self.bt_plotParms=QtWidgets.QPushButton("PlotParams")
 		self.bt_plotParms.setToolTip("Examine particle orientations")
 		self.gbl.addWidget(self.bt_plotParms, 3,1,1,2)
 		self.bt_plotParms.clicked[bool].connect(self.plot_params)
 
 		self.paramplot = EMPlot2DWidget()
+		self.paramplot.show()
+		self.paramplot.hide()
 		
-		self.bt_plotFSC=QtGui.QPushButton("PlotFSCs")
+		self.bt_plotFSC=QtWidgets.QPushButton("PlotFSCs")
 		self.bt_plotFSC.setToolTip("Examine tightly masked FSCs from this SPT refinement")
 		self.gbl.addWidget(self.bt_plotFSC, 4,1,1,2)
 		self.bt_plotFSC.clicked[bool].connect(self.plot_fscs)
 
 		self.fscplot = EMPlot2DWidget()
+		self.fscplot.show()
+		self.fscplot.hide()
 
 		self.setspanel=TomoListWidget(self)
 		self.gbl.addWidget(self.setspanel, 5,1,5,2)
 		self.itemflags=	Qt.ItemFlags(Qt.ItemIsSelectable)|Qt.ItemFlags(Qt.ItemIsEnabled)|Qt.ItemFlags(Qt.ItemIsUserCheckable)
 		
-		#self.wg_notes=QtGui.QTextEdit(self)
+		
+		#self.wg_notes=QtWidgets.QTextEdit(self)
 		#self.gbl.addWidget(self.wg_notes, 10,1,1,2)
 				
-		#self.setspanel.itemChanged[QtGui.QListWidgetItem].connect(self.click_set)
+		#self.setspanel.itemChanged[QtWidgets.QListWidgetItem].connect(self.click_set)
 		#QtCore.QObject.connect(self.wg_notes,QtCore.SIGNAL("textChanged()"),self.noteupdate)
 		
 		#self.wg_plot2d=EMPlot2DWidget()
@@ -161,14 +166,14 @@ class SptEvalGUI(QtGui.QWidget):
 		#foldersfx=["spt"]
 		
 		#for sfx in foldersfx:
-		sfx=self.dp_folder.currentText()
+		sfx=str(self.dp_folder.currentText())
 		#print(sfx)
 			
 		flds=[f for f in os.listdir('.') if (os.path.isdir(f) and f.startswith("{}_".format(sfx)))]
 		flds=sorted(flds)
 		for f in flds:
-			dic={"ID":int(f[len(sfx)+1:])}
-			jsfile="{}/0_spt_params.json".format(f)
+			dic={"ID": f[len(sfx)+1:]}
+			jsfile="{}/0_{}_params.json".format(f, self.paramfile[sfx])
 			if not os.path.isfile(jsfile):
 				continue
 			
@@ -182,7 +187,7 @@ class SptEvalGUI(QtGui.QWidget):
 		
 		self.setspanel.clear()
 		for k in sorted(self.paramlst.keys()):
-			item=QtGui.QListWidgetItem(k)
+			item=QtWidgets.QListWidgetItem(k)
 			item.setFlags(self.itemflags)
 			self.setspanel.addItem(item)
 			item.setCheckState(Qt.Checked)
@@ -206,13 +211,13 @@ class SptEvalGUI(QtGui.QWidget):
 		for i,info in enumerate(self.fldlst):
 			#### use Qt.EditRole so we can sort them as numbers instead of strings
 			for j,pm in enumerate(hdrs):
-				if not info.has_key(pm): continue
+				if not pm in info: continue
 				v=info[pm]
 				try:
 					v=float(v)
 				except:
 					v=str(v)
-				it=QtGui.QTableWidgetItem()
+				it=QtWidgets.QTableWidgetItem()
 				it.setData(Qt.EditRole, v)
 				self.imglst.setItem(i,j,it)
 				
@@ -249,6 +254,8 @@ class SptEvalGUI(QtGui.QWidget):
 			if "threed" in f:
 				if "even" not in f and "odd" not in f:
 					vols.append(f)#"{}".format(self.path,f))
+		if len(vols)==0:
+			return
 		lastvol = sorted(vols)[-1]
 		print("Displaying {} from {}".format(lastvol,self.path))
 		volpath = "{}/{}".format(self.path,lastvol)
@@ -266,6 +273,7 @@ class SptEvalGUI(QtGui.QWidget):
 		self.wg_thumbnail.updateSG()
 
 	def sortlst(self,col):
+		if col<0: return
 		print("Sort by",self.imglst.horizontalHeaderItem(col).text())
 		self.imglst_srtby=1-self.imglst_srtby
 		self.imglst.sortItems(col, self.imglst_srtby)
@@ -300,7 +308,7 @@ class SPTBrowserWidget(embrowser.EMBrowserWidget):
 		self.module_closed.emit()
 
 		
-class TomoListWidget(QtGui.QListWidget):
+class TomoListWidget(QtWidgets.QListWidget):
 	def __init__(self, parent=None):
 		super(TomoListWidget, self).__init__(parent)
 		self.parent=parent

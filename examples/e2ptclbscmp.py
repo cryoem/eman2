@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steve Ludtke, 1/15/18 
 # Copyright (c) 2000- Baylor College of Medicine
@@ -65,7 +62,7 @@ def main():
 	#parser.add_argument("--raligncmp",type=str,help="Similarity metric for the refine aligner",default="ccc")
 	#parser.add_argument("--cmp",type=str,help="Default=auto. The name of a 'cmp' to be used in assessing the aligned images", default="ccc")
 	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on the local computer")
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()

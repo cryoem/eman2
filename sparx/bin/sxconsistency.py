@@ -1,8 +1,8 @@
 #!/usr/bin/env python
-from __future__ import print_function
 #
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
-# Copyright (c) 2000-2006 The University of Texas - Houston Medical School
+# Please do not copy or modify this file without written consent of the author.
+# Copyright (c) 2000-2019 The University of Texas - Houston Medical School
 #
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
@@ -33,6 +33,8 @@ from __future__ import print_function
 
 #  VERSION 2  09/25/2014
 
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 from   EMAN2 import *
 from   sparx import *
@@ -92,13 +94,13 @@ def average2dtransform(data, return_avg_pixel_error=False):
 
 	# Get ave transform params
 	H = Transform({"type":"2D"})
-	H.set_matrix([sum_cosa/sqrtP, sum_sina/sqrtP, 0.0, sx, -sum_sina/sqrtP, sum_cosa/sqrtP, 0.0, sy, 0.0, 0.0, 1.0, 0.0])
+	H.set_matrix([old_div(sum_cosa,sqrtP), old_div(sum_sina,sqrtP), 0.0, sx, old_div(-sum_sina,sqrtP), old_div(sum_cosa,sqrtP), 0.0, sy, 0.0, 0.0, 1.0, 0.0])
 	dd = H.get_params("2D")
 
 	H = Transform({"type":"2D","alpha":dd[ "alpha" ],"tx":dd[ "tx" ],"ty": dd[ "ty" ],"mirror":0,"scale":1.0})
 	dd = H.get_params("2D")
 	if return_avg_pixel_error:
-		return sum(sqr_pixel_error)/N
+		return old_div(sum(sqr_pixel_error),N)
 	else:
 		return [dd[ "alpha" ], dd[ "tx" ], dd[ "ty" ]]
 
@@ -299,7 +301,7 @@ def average_trans(params):
 			nphi   = 0.0
 			ntheta = 0.0
 		else:
-			ntheta = degrees(acos(nas[2]/nom))%360.0
+			ntheta = degrees(acos(old_div(nas[2],nom)))%360.0
 			if(sym>1 and ntheta>90.0):  nphi   = (degrees(atan2( nas[1], nas[0] ))-180.0)%qsym + 180.0
 			else:                       nphi   =  degrees(atan2( nas[1], nas[0] ))%qsym
 
@@ -486,7 +488,7 @@ def main():
 					nphi   = 0.0
 					ntheta = 0.0
 				else:
-					ntheta = degrees(acos(nas[2]/nom))%360.0
+					ntheta = degrees(acos(old_div(nas[2],nom)))%360.0
 					if(sym>1 and ntheta>90.0):  nphi   = (degrees(atan2( nas[1], nas[0] ))-180.0)%qsym + 180.0
 					else:                       nphi   = degrees(atan2( nas[1], nas[0] ))%qsym
 
@@ -670,7 +672,7 @@ def main():
 					nphi   = 0.0
 					ntheta = 0.0
 				else:
-					ntheta = degrees(acos(nas[2]/nom))%360.0
+					ntheta = degrees(acos(old_div(nas[2],nom)))%360.0
 					if(sym>1 and ntheta>90.0):  nphi   = (degrees(atan2( nas[1], nas[0] ))-180.0)%qsym + 180.0
 					else:                       nphi   =  degrees(atan2( nas[1], nas[0] ))%qsym
 
@@ -761,7 +763,7 @@ def main():
 					nphi   = 0.0
 					ntheta = 0.0
 				else:
-					ntheta = degrees(acos(nas[2]/nom))%360.0
+					ntheta = degrees(acos(old_div(nas[2],nom)))%360.0
 					if(sym>1 and ntheta>90.0):  nphi   = (degrees(atan2( nas[1], nas[0] ))-180.0)%qsym + 180.0
 					else:                       nphi   =  degrees(atan2( nas[1], nas[0] ))%qsym
 

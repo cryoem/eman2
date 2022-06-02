@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # Muyuan Chen 2016-10
 
-from __future__ import print_function
-from __future__ import division
 from builtins import range
 from EMAN2 import *
 import numpy as np
@@ -13,8 +11,8 @@ def main():
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_pos_argument(name="particles",help="Specify particles to use to generate an initial model.", default="", guitype='filebox', browser="EMSPTParticleTable(withmodal=True,multiselect=False)", row=0, col=0, rowspan=1, colspan=3,mode="multi")
-	parser.add_argument("--refs", type=str,help="3D reference volumes", default=None, guitype="filebox", browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=1, col=0,rowspan=1, colspan=3,mode="multi")
+	parser.add_pos_argument(name="particles",help="Specify particles to use to generate an initial model.", default="", guitype='filebox', browser="EMSetsTable(withmodal=True,multiselect=False)", row=0, col=0, rowspan=1, colspan=3,mode="multi")
+	parser.add_argument("--refs", type=str,help="3D reference volumes", default=None, guitype="filebox", browser="EMBrowserWidget(withmodal=True,multiselect=True)", row=1, col=0,rowspan=1, colspan=3,mode="multi")
 
 	parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=2, col=1, rowspan=1, colspan=1,mode="multi")
 
@@ -26,6 +24,10 @@ def main():
 	parser.add_argument("--localfilter", action="store_true", default=False ,help="use tophat local", guitype="boolbox", row=5, col=1,rowspan=1, colspan=1,mode="multi")
 	parser.add_argument("--threads", type=int,help="threads", default=12, guitype="intbox", row=5, col=2,rowspan=1, colspan=1,mode="multi")
 	parser.add_argument("--path", type=str,help="path", default=None)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
+
+
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	
@@ -35,20 +37,7 @@ def main():
 	
 	
 	if options.path==None:
-		for i in range(100):
-			pname="spt_{:02d}".format(i)
-			if not os.path.isdir(pname):
-				os.mkdir(pname)
-				options.path=pname
-				break
-		else:
-			print("something is wrong...")
-			exit()
-	else:
-		try: 
-			os.mkdir(options.path)
-		except:
-			pass
+		options.path=num_path_last("spt_")
 	
 	path=options.path
 	print("Working in path {}...".format(path))
@@ -63,21 +52,15 @@ def main():
 		jsali="{}/particle_parms_{:02d}.json".format(path, itr)
 		jscls=["{}/particle_parms_{:02d}_cls{:02d}.json".format(path, itr, i) for i in range(len(refs))]
 		for ir, rf in enumerate(refs):
-			cmd="e2spt_align.py {} {} --threads {} --path {} --iter {} --sym {}".format(ptcls, rf,  options.threads, path, itr, options.sym)
+			cmd="e2spt_align.py {} {} --threads {} --path {} --iter {} --sym {} --verbose {}".format(ptcls, rf,  options.threads, path, itr, options.sym, options.verbose)
 			
-			
-			### in case e2spt_align get segfault....
-			ret=1
-			while ret>0:
-				try: os.remove(jsali)
-				except:pass
 
-				ret=run(cmd)
+			run(cmd)
 				
 			os.rename(jsali, jscls[ir])
 		
 		
-		jss=[js_open_dict(j) for j in jscls]
+		jss=[dict(js_open_dict(j)).copy() for j in jscls]
 		ks=[np.asarray(sorted(js.keys())) for js in jss]
 		
 
@@ -91,6 +74,7 @@ def main():
 		for i in range(len(refs)):
 			score.append([jss[i][k]["score"] for k in keys])
 		score=np.array(score)
+		#score=np.random.rand(score.shape[0], score.shape[1])
 		
 		#print "score shape:", score.shape
 		clsmx=np.argmin(score, axis=0)
@@ -122,7 +106,7 @@ def main():
 				"{}/fsc_unmasked_{:02d}.txt".format(path, itr),
 				"{}/fsc_maskedtight_{:02d}.txt".format(path, itr),
 				"{}/fscvol_{:02d}.hdf".format(path, itr)]
-			
+			fnms.append(jsali)
 			othercmd=""
 			if options.localfilter:
 				othercmd+=" --tophat local "
@@ -138,14 +122,36 @@ def main():
 			run(ppcmd)
 		
 			
-			
 			for fm in fnms:
 				if os.path.isfile(fm):
 					os.rename(fm, fm.replace(".", "_cls{:02d}.".format(ir)))
 			
 		refs=["{}/threed_{:02d}_cls{:02d}.hdf".format(path, itr, ir) for ir in range(len(refs))]
+	
+	print("Writing classified list files")
+	for fnm in jscls:
+		js=dict(js_open_dict(fnm)).copy()
+		keys=js.keys()
+		ids=np.argsort([eval(str(k))[1] for k in keys])
+		keys=[keys[i] for i in ids]
 		
+		fname=fnm.replace("particle_parms", "ptcl_cls").replace(".json", ".lst")
 		
+		lout=LSXFile(fname, False)
+		for ik,k in enumerate(keys):
+			s,i=eval(str(k))
+			
+			if s.endswith(".lst"):
+				l=LSXFile(s, True)
+				a=l.read(i)
+				lout.write(-1, a[0], a[1])
+				l.close()
+			else:
+				lout.write(-1, i,s)
+			
+		lout.close()
+		print("  Output written to {}".format(fname))
+	print("Done")
 
 	E2end(logid)
 	

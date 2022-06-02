@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: David Woolford 11/25/08 (woolford@bcm.edu
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -35,13 +32,13 @@ from __future__ import division
 
 from builtins import range
 from EMAN2 import *
-from EMAN2db import db_open_dict, db_check_dict
+import OpenGL
+OpenGL.ERROR_CHECKING = False
 from OpenGL import GL,GLU,GLUT
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from PyQt4 import QtGui,QtCore
-from PyQt4.QtCore import Qt, QEvent
-from PyQt4.QtGui import QListWidgetItem
+from PyQt5 import QtGui, QtWidgets,QtCore
+from PyQt5.QtCore import Qt, QEvent
 from eman2_gui.emanimationutil import OrientationListAnimation,Animator
 from eman2_gui.emapplication import EMApp, get_application, error
 from eman2_gui.emglobjects import EM3DModel
@@ -85,7 +82,7 @@ def main():
 	parser.add_header(name="e2eulerxplorheader", help="Click Launch to Run e2eulerxplor.py", title="### Click Launch to Run e2eulerxplor.py ###", row=0, col=0, rowspan=1, colspan=3)
 	parser.add_argument("--eulerdata", "-e", type=str,help="File for Eulerdata, Ryan style, if none is given, data is read from the DB.",default=None)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	global options
 	(options, args) = parser.parse_args()
@@ -174,7 +171,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 		glMatrixMode(GL_PROJECTION)
 		glPushMatrix()
 		glLoadIdentity()
-		gluPickMatrix(event.x(),v[-1]-event.y(),5,5,v)
+		gluPickMatrix(event.x()*self.get_gl_widget().devicePixelRatio(),v[-1]-event.y()*self.get_gl_widget().devicePixelRatio(),5,5,v)
 		self.get_gl_widget().load_perspective()
 		glMatrixMode(GL_MODELVIEW)
 		glInitNames()
@@ -214,7 +211,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 
 		self.init_lock = True # a lock indicated that we are still in the __init__ function
 		self.au_data = None # This will be a dictionary, keys will be refinement directories, values will be something like available iterations for visual study
-		if len(read_from)==0:
+		if read_from!=None and len(read_from)==0:
 			read_from=None
 		self.readfrom=read_from
 		if self.readfrom:
@@ -485,7 +482,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 #			self.proj_class_viewer = EMImage2DWidget(image=None,application=get_application())
 			self.proj_class_viewer.module_closed.connect(self.on_mx_view_closed)
 #			self.proj_class_viewer.set_mouse_mode("App" )
-			self.proj_class_viewer.mx_image_selected.connect(self.on_mx_image_selected)
+			#self.proj_class_viewer.mx_image_selected.connect(self.on_mx_image_selected)	# broken due to even/odd split
 			get_application().show_specific(self.proj_class_viewer)
 
 			self.proj_class_single = EMImage2DWidget(image=None,application=get_application())
@@ -722,14 +719,14 @@ class EMAsymmetricUnitInspector(EMSymInspector):
 
 	def add_au_table(self):
 
-		self.au_tab= QtGui.QWidget()
-		self.au_tab.vbl = QtGui.QVBoxLayout(self.au_tab)
+		self.au_tab= QtWidgets.QWidget()
+		self.au_tab.vbl = QtWidgets.QVBoxLayout(self.au_tab)
 
 		self.au_data = self.target().au_data
 		combo_entries = list(self.au_data.keys())
 		combo_entries.sort()
 		combo_entries.reverse()
-		self.combo = QtGui.QComboBox(self)
+		self.combo = QtWidgets.QComboBox(self)
 		for e in combo_entries:
 			self.combo.addItem(e)
 
@@ -739,11 +736,11 @@ class EMAsymmetricUnitInspector(EMSymInspector):
 		self.au_tab.vbl.addWidget(self.combo)
 		self.refine_dir = combo_entries[0]
 
-		self.list_widget = QtGui.QListWidget(None)
+		self.list_widget = QtWidgets.QListWidget(None)
 
-		self.list_widget.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
+		self.list_widget.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
 		self.list_widget.setMouseTracking(True)
-		self.list_widget.itemClicked[QListWidgetItem].connect(self.list_widget_item_clicked)
+		self.list_widget.itemClicked[QtWidgets.QListWidgetItem].connect(self.list_widget_item_clicked)
 
 		self.update_classes_list(first_time=True)
 		self.au_tab.vbl.addWidget(self.list_widget)
@@ -766,11 +763,11 @@ class EMAsymmetricUnitInspector(EMSymInspector):
 		for i,vals in enumerate(self.au_data[self.refine_dir]):
 			choice = vals[0]
 
-			a = QtGui.QListWidgetItem(str(choice),self.list_widget)
+			a = QtWidgets.QListWidgetItem(str(choice),self.list_widget)
 			if first_time and i == 0:
-				self.list_widget.setItemSelected(a,True)
+				a.setSelected(True)
 			elif len(choice) > 4 and (choice[-4:] == s_text):
-				self.list_widget.setItemSelected(a,True)
+				a.setSelected(True)
 
 		selected_items = self.list_widget.selectedItems() # need to preserve the selection
 		if len(selected_items) == 1:

@@ -1,7 +1,3 @@
-/**
- * $Id$
- */
-
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
@@ -430,7 +426,7 @@ void EMData::do_ift_inplace()
 #undef rdata
 
 
-std::string EMData::render_ap24(int x0, int y0, int ixsize, int iysize,
+EMBytes EMData::render_ap24(int x0, int y0, int ixsize, int iysize,
 						 int bpl, float scale, int mingray, int maxgray,
 						 float render_min, float render_max,float gamma,int flags)
 {
@@ -478,7 +474,7 @@ std::string EMData::render_ap24(int x0, int y0, int ixsize, int iysize,
 	else if (flags&1) asrgb=3;
 	else throw ImageDimensionException("must set flag 1 or 8");
 
-	std::string ret=std::string();
+	EMBytes ret=EMBytes();
 //	ret.resize(iysize*bpl);
 	ret.assign(iysize*bpl+hist*1024,char(mingray));
 	unsigned char *data=(unsigned char *)ret.data();
@@ -1012,11 +1008,7 @@ void EMData::ri2ap()
 
 	size_t size = (size_t)nx * ny * nz;
 	for (size_t i = 0; i < size; i += 2) {
-#ifdef	_WIN32
-		float f = (float)_hypot(data[i], data[i + 1]);
-#else
 		float f = (float)hypot(data[i], data[i + 1]);
-#endif
 		if (data[i] == 0 && data[i + 1] == 0) {
 			data[i + 1] = 0;
 		}
@@ -1745,11 +1737,7 @@ EMData*   EMData::bispecRotTransInvDirect(int type)
 			if (Weight <=0) continue;
 			WeightImage    -> set_value_at(jk,jq,Weight);
 			WeightImage    -> set_value_at(jq,jk,Weight);
-#ifdef _WIN32
-			float ValNow  = pow( (RotTransInv[TotalInd] + RotTransInv[TotalIndBar]) / Weight, 1.0f/3.0f )  ;
-#else
 			float ValNow  = cbrt( (RotTransInv[TotalInd] + RotTransInv[TotalIndBar]) / Weight )  ;
-#endif	//_WIN32
 			RotTransInvF -> set_value_at(jk,jq,ValNow);//  include /Weight
  			RotTransInvF -> set_value_at(jq,jk,ValNow );//  include /Weight
 		}}
@@ -1828,8 +1816,8 @@ void EMData::insert_clip(const EMData * const block, const IntPoint &origin) {
 	}
 #endif
 */
-	float *src = block->get_data() + zd0 * src_secsize + yd0 * nx1 + xd0;
-	float *dst = get_data() + z0 * dst_secsize + y0 * nx + x0;
+	float *src = block->get_data() + (size_t)zd0 * (size_t)src_secsize + (size_t)yd0 * (size_t)nx1 + (size_t)xd0;
+	float *dst = get_data() + (size_t)z0 * (size_t)dst_secsize + (size_t)y0 * (size_t)nx + (size_t)x0;
 	
 	size_t src_gap = src_secsize - (y1-y0) * nx1;
 	size_t dst_gap = dst_secsize - (y1-y0) * nx;
@@ -1891,8 +1879,13 @@ void EMData::insert_scaled_sum(EMData *block, const FloatPoint &center,
 			for (int y=y0; y<=y1; y++) {
 				for (int z=z0; z<=z1; z++) {
 					idx = x + y * nx + (size_t)z * nx * ny;
-					data[idx] +=
+					if (scale==1) // skip interpolation so it is much faster
+						data[idx] +=
+						mult_factor*block->sget_value_at((x-center[0])+bx,(y-center[1])+by,(z-center[2])+bz);
+					else
+						data[idx] +=
 						mult_factor*block->sget_value_at_interp((x-center[0])/scale+bx,(y-center[1])/scale+by,(z-center[2])/scale+bz);
+					
 				}
 			}
 		}

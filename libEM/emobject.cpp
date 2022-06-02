@@ -1,7 +1,3 @@
-/**
- * $Id$
- */
-
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Probable contributor: Liwei Peng (what dates?)
@@ -214,7 +210,7 @@ EMObject::EMObject(const char *s) :
 {
 #ifdef MEMDEBUG
 	allemobjlist.insert(this);
-	printf("  +(%6d) %p\n",(int)allemobjlist.size(),this);
+	printf("  +(%6d) %p c*\n",(int)allemobjlist.size(),this);
 #endif
 }
 
@@ -223,7 +219,7 @@ EMObject::EMObject(const string & s) :
 {
 #ifdef MEMDEBUG
 	allemobjlist.insert(this);
-	printf("  +(%6d) %p\n",(int)allemobjlist.size(),this);
+	printf("  +(%6d) %p s\n",(int)allemobjlist.size(),this);
 #endif
 }
 
@@ -232,7 +228,7 @@ EMObject::EMObject(float *f) :
 {
 #ifdef MEMDEBUG
 	allemobjlist.insert(this);
-	printf("  +(%6d) %p\n",(int)allemobjlist.size(),this);
+	printf("  +(%6d) %p f*\n",(int)allemobjlist.size(),this);
 #endif
 }
 
@@ -241,7 +237,7 @@ EMObject::EMObject(int *i) :
 {
 #ifdef MEMDEBUG
 	allemobjlist.insert(this);
-	printf("  +(%6d) %p\n",(int)allemobjlist.size(),this);
+	printf("  +(%6d) %p i*\n",(int)allemobjlist.size(),this);
 #endif
 }
 
@@ -250,7 +246,7 @@ EMObject::EMObject(void *v) :
 {
 #ifdef MEMDEBUG
 	allemobjlist.insert(this);
-	printf("  +(%6d) %p\n",(int)allemobjlist.size(),this);
+	printf("  +(%6d) %p v*\n",(int)allemobjlist.size(),this);
 #endif
 }
 
@@ -259,7 +255,7 @@ EMObject::EMObject(EMData * em)	:
 {
 #ifdef MEMDEBUG
 	allemobjlist.insert(this);
-	printf("  +(%6d) %p\n",(int)allemobjlist.size(),this);
+	printf("  +(%6d) %p emd\n",(int)allemobjlist.size(),this);
 #endif
 }
 
@@ -268,7 +264,7 @@ EMObject::EMObject(XYData * xy) :
 {
 #ifdef MEMDEBUG
 	allemobjlist.insert(this);
-	printf("  +(%6d) %p\n",(int)allemobjlist.size(),this);
+	printf("  +(%6d) %p xyd\n",(int)allemobjlist.size(),this);
 #endif
 }
 
@@ -277,7 +273,7 @@ EMObject::EMObject(Transform* t) :
 {
 #ifdef MEMDEBUG
 	allemobjlist.insert(this);
-	printf("  +(%6d) %p\n",(int)allemobjlist.size(),this);
+	printf("  +(%6d) %p xf\n",(int)allemobjlist.size(),this);
 #endif
 }
 
@@ -286,7 +282,7 @@ EMObject::EMObject(Ctf * ctf) :
 {
 #ifdef MEMDEBUG
 	allemobjlist.insert(this);
-	printf("  +(%6d) %p\n",(int)allemobjlist.size(),this);
+	printf("  +(%6d) %p ctf\n",(int)allemobjlist.size(),this);
 #endif
 }
 
@@ -295,7 +291,7 @@ EMObject::EMObject(const vector< int >& v ) :
 {
 #ifdef MEMDEBUG
 	allemobjlist.insert(this);
-	printf("  +(%6d) %p\n",(int)allemobjlist.size(),this);
+	printf("  +(%6d) %p ia\n",(int)allemobjlist.size(),this);
 #endif
 }
 
@@ -304,7 +300,7 @@ EMObject::EMObject(const vector < float >&v) :
 {
 #ifdef MEMDEBUG
 	allemobjlist.insert(this);
-	printf("  +(%6d) %p\n",(int)allemobjlist.size(),this);
+	printf("  +(%6d) %p fa\n",(int)allemobjlist.size(),this);
 #endif
 }
 
@@ -313,7 +309,7 @@ EMObject::EMObject(const vector <string>& sarray) :
 {
 #ifdef MEMDEBUG
 	allemobjlist.insert(this);
-	printf("  +(%6d) %p\n",(int)allemobjlist.size(),this);
+	printf("  +(%6d) %p sa\n",(int)allemobjlist.size(),this);
 #endif
 }
 
@@ -322,7 +318,7 @@ EMObject::EMObject(const vector <Transform>& tarray) :
 {
 #ifdef MEMDEBUG
 	allemobjlist.insert(this);
-	printf("  +(%6d) %p\n",(int)allemobjlist.size(),this);
+	printf("  +(%6d) %p xfa\n",(int)allemobjlist.size(),this);
 #endif
 }
 
@@ -764,78 +760,11 @@ string EMObject::to_str(ObjectType argtype) const
 
 string EMObject::get_object_type_name(ObjectType t)
 {
-#ifdef _WIN32
-	if (t == BOOL) {
-		return "BOOL";
-	}else
-	if ( t == SHORT) {
-		return "SHORT";
-	}else
-	if ( t == INT){
-		return "INT";
-	}else
-	if ( t == UNSIGNEDINT){
-		return "UNSIGNEDINT";
-	} else
-	if ( t == FLOAT){
-		return "FLOAT";
-	} else
-	if ( t == DOUBLE){
-		return "DOUBLE";
-	}else
-	if ( t == STRING){
-		return "STRING";
-	}else
-	if ( t == EMDATA){
-		return "EMDATA";
-	}
-	else
-	if ( t == XYDATA){
-		return "XYDATA";
-	}else
-	if ( t == INTARRAY){
-		return "INTARRAY";
-	}else
-	if ( t == FLOATARRAY){
-		return "FLOATARRAY";
-	} else
-	if ( t == STRINGARRAY){
-		return "STRINGARRAY";
-	}else
-	if ( t == TRANSFORM){
-		return "TRANSFORM";
-	}else
-	if ( t == TRANSFORMARRAY){
-		return "TRANSFORMARRAY";
-	}
-	if ( t == CTF){
-		return "CTF";
-	}else
-	if ( t == FLOAT_POINTER){
-		return "FLOAT_POINTER";
-	}else
-	if ( t == INT_POINTER){
-		return "INT_POINTER";
-	}else
-	if ( t == UNKNOWN){
-		return "UNKNOWN";
-	} else
-	if ( t == VOID_POINTER){
-		return "VOID_POINTER";
-	}
-	else {
-		LOGERR("No such EMObject defined");
-		throw NotExistingObjectException("EMObject", "unknown type");
-	}
-
-#else
-
 	if  ( type_registry.find(t) != type_registry.end() )
 		return type_registry[t];
 	else
 		LOGERR("No such EMObject defined");
 		throw NotExistingObjectException("EMObject", "unknown type");
-#endif	//_WIN32
 }
 
 bool EMAN::operator==(const EMObject &e1, const EMObject & e2)

@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 # extracthelp.py -  Steven Ludtke  09/14/2010
 # redone for EMAN2.1 5/15/14
 
@@ -9,7 +6,6 @@ from __future__ import division
 # them in a wiki-friendly format
 
 import sys
-#from optparse import OptionParser
 #from EMAN2 import *
 global intvararg_callback
 global floatvararg_callback

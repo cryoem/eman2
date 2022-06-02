@@ -1,7 +1,3 @@
-/**
- * $Id$
- */
-
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
@@ -350,7 +346,12 @@ namespace EMAN
 	{
 	  public:
 		TomoAverager();
-
+		virtual ~ TomoAverager()
+		{
+			if (norm_image!=0) delete norm_image;
+			if (result!=0) delete result;
+		}
+		
 		void add_image( EMData * image);
 		EMData * finish();
 
@@ -374,6 +375,9 @@ namespace EMAN
 			TypeDict d;
 			d.put("thresh_sigma", EMObject::FLOAT, "multiplied by the standard deviation of the image, below-which values are considered zero. Default = .01");
 			d.put("save_norm", EMObject::INT, "If set, will save the normalization volume as norm.hdf. Mainly for debugging purposes.");
+			d.put("normout", EMObject::EMDATA, "If set, will save the normalization volume in the given EMData object.");
+			d.put("doift", EMObject::INT, "IFT the resulting volume. Default is 1.");
+
 			return d;
 		}
 
@@ -420,6 +424,7 @@ namespace EMAN
 		{
 			TypeDict d;
 			d.put("max", EMObject::INT, "If set, will find the max value, otherwise finds min");
+			d.put("abs", EMObject::INT, "If set, will find the value with the min or max absolute value. The actual value is preserved.");
 			d.put("owner", EMObject::EMDATA, "Contains the number of the input image which 'owns' the max/min value. Value will be insertion sequence number unless 'ortid' is set in each image being averaged.");
 			return d;
 		}
@@ -429,18 +434,19 @@ namespace EMAN
 		static const string NAME;
 		
 	private:
-		int max;
+		int ismax;
+		int isabs;
 		int nimg;
 	};
 
-	/** AbsMaxMinAverager averages a list of images to the maximum(or minimum of the absolute pixel value)
+	/** MedianAverager averages a list of images to the maximum(or minimum of the absolute pixel value)
 	 *  It optionally makes a sigma image.
      *@param min If set, will find the min value, otherwise finds max
      */
-	class AbsMaxMinAverager:public Averager
+	class MedianAverager:public Averager
 	{
 	public:
-		AbsMaxMinAverager();
+		MedianAverager();
 
 		void add_image( EMData * image);
 		EMData * finish();
@@ -452,26 +458,26 @@ namespace EMAN
 
 		string get_desc() const
 		{
-			return "Average to maximum(or minimum if set parameter 'min' to non-zero) absolute value in each pixel";
+			return "Computes the median value instead of the mean. If even number of images, averages the middle two.";
 		}
 
 		static Averager *NEW()
 		{
-			return new AbsMaxMinAverager();
+			return new MedianAverager();
 		}
 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("min", EMObject::INT, "If set, will average to minimum absolute value, by default average to max");
+			//d.put("min", EMObject::INT, "If set, will average to minimum absolute value, by default average to max");
 			return d;
 		}
 
 		static const string NAME;
 
 	private:
-		int min;
-		int nimg;
+		std::vector<EMData*> imgs;
+		
 	};
 
 

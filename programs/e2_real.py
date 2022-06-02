@@ -1,6 +1,4 @@
 #! /usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 #
 # Do not run this script directly. You could run this as 
 # ipython --gui=qt -i e2_real.py
@@ -44,7 +42,7 @@ failed=False
 try:
 	if get_platform()=="Linux" and os.getenv("DISPLAY")==None: raise Exception
 
-	from PyQt4 import QtCore, QtGui, QtOpenGL
+	from PyQt5 import QtCore, QtGui, QtOpenGL, QtWidgets
 	from eman2_gui.emapplication import EMApp
 	#import IPython.lib.inputhook
 #	import IPython.lib.guisupport

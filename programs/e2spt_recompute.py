@@ -27,8 +27,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
-from __future__ import print_function
-from __future__ import division
 from past.utils import old_div
 from builtins import range
 from EMAN2 import *
@@ -86,7 +84,7 @@ def main():
 	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness.")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness.")
 
 	#parser.add_argument("--saveali",action="store_true", default=False,help="""If set, will save the 
 	#	aligned particle volumes in class_ptcl.hdf. Overwrites existing file.""")

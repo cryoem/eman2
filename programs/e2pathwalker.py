@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 # -*- coding: utf-8 -*-
 
 # Author: Ian Rees (ian.rees@bcm.edu), 03/20/2012
@@ -540,8 +538,8 @@ class PathWalker(object):
 
 	def _solve_lkh(self):
 		print("\n=== Solving TSP with LKH ===")
-		
-		tspfile = tempfile.mkstemp(suffix='.tsp')[1]
+		tspfile="tspfile.tsp"
+		#tspfile = tempfile.mkstemp(suffix='.tsp')[1]
 		lkhfile = tempfile.mkstemp(suffix='.lkh')[1]
 		outfile = tempfile.mkstemp(suffix='.out')[1]
 
@@ -568,7 +566,7 @@ class PathWalker(object):
 		ret = self._readtour_lkh(outfile)
 		
 		try:
-			os.unlink(tspfile)
+			#os.unlink(tspfile)
 			os.unlink(lkhfile)
 			os.unlink(outfile)
 		except:
@@ -732,7 +730,10 @@ class PathWalker(object):
 				
 				if self.mrcfile:
 					mmm=self.mrc.get_value_at(int(round(old_div(np[0],self.apix_x)+old_div(SX,2))),int(round(old_div(np[1],self.apix_y)+old_div(SY,2))),int(round(old_div(np[2],self.apix_z)+old_div(SZ,2))))
+				else:
+					mmm=0
 				mpt+=mmm
+				#print(mmm)
 				count+=1
 			#print mmm,
 			#p=np
@@ -806,46 +807,47 @@ class PathWalker(object):
 
 
 	def write_tsplib(self, filename=None):
-		fout = open(filename, "w")
 		
+		
+		fout = open(filename, "w")
+	
 		# TSPLib format header
 		header = [
-			"NAME: %s"%self.filename,
+			"NAME: {}".format(filename),
 			"TYPE: TSP",
-			"COMMENT: %s"%self.filename,
-			"DIMENSION: %s"%len(self.points),
+			"COMMENT: {}".format(filename),
+			"DIMENSION: {:d}".format(len(self.points)),
 			"EDGE_WEIGHT_TYPE: EXPLICIT",
-			"EDGE_WEIGHT_FORMAT: FULL_MATRIX",
+			"EDGE_WEIGHT_FORMAT: LOWER_ROW",
 			""
 		]
 		
 		fout.write("\n".join(header))
-
-		# TSPlib expects edges to start at #1
-		keyorder = sorted(self.points.keys())		
+		
+		ky = sorted(self.points.keys())
 		
 		if self.fixededges:
 			fout.write("FIXED_EDGES_SECTION\n")
 			for i in self.fixededges:
-				try:
-					fout.write("%s %s\n"%(keyorder.index(i[0])+1, keyorder.index(i[1])+1))
-				except ValueError:
-					print(i,"is not in the list")
+				fout.write("{:d} {:d}\n".format(ky.index(i[0])+1, ky.index(i[1])+1))
+				
 			fout.write("-1\n")
+			
+		ix, iy=numpy.tril_indices(len(self.points), k=-1)
+		
+		row=[]
+		for i in zip(ix,iy):
+			d = self.weighted.get((ky[i[0]], ky[i[1]]))
+			row.append(d)
 
 		fout.write("EDGE_WEIGHT_SECTION\n")
-
-		for point1 in keyorder:
-			row = []
-			for point2 in keyorder:
-				d = self.weighted.get((point1, point2))
-				row.append(d)
-
-			fout.write("%s\n"%" ".join(map(str, row)))
+		fout.write(" ".join(["{:d}".format(int(d*.0001)) for d in row])+"\n")
+			
 
 
 		fout.write("EOF")
 		fout.close()
+		
 		
 		return filename
 	

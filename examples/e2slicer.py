@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 from past.utils import old_div
 from builtins import range
 '''
@@ -68,6 +65,7 @@ def main():
 	parser.add_argument("--mask",type=str,default='',help="Default=None. Mask processor applied to particles before alignment." )
 	
 	parser.add_argument("--normproc",type=str,default='',help="""Default=None (not used). Normalization processor applied to particles before computing slices.""")
+	parser.add_argument("--nslices", type=int, default=None,help="""default=None (not used). Number of slices to average average around the central sections (not compatible with --allx, --ally, or --allz)""")
 
 	parser.add_argument("--onlymidx",action='store_true',default=False,help="Only extract the middle slice of the volume parallel to the YZ plane.")
 	parser.add_argument("--onlymidy",action='store_true',default=False,help="Only extract the middle slice of the volume parallel to the XZ plane.")
@@ -83,7 +81,7 @@ def main():
 	
 	#parser.add_argument("--saverotvol",action='store_true',default=False,help="Will save the volume in each rotated position used to generate a projection.")
 
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness.")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness.")
 
 	#parser.add_argument("--transformsfile",type=str,help="A text files containing lines with one triplet of az,alt,phi values each, representing the transforms to use to project a single volume supplied. ", default='')
 	#parser.add_argument("--angles",type=str,help="A single comma or space separated triplet of az,alt,phi values representing the particle rotation to apply before projecting it.", default='')
@@ -191,6 +189,9 @@ def main():
 				
 				if options.onlymidz:	
 					rmid = Region(0, 0, old_div(nz,2), nx, ny, 1)
+					if options.nslices:
+						rmid = Region(0, 0, old_div(nz,2)-int(ceil(options.nslices/2.0)), nx, ny, options.nslices)
+						
 					print("The region for the orthogonal z slice is", rmid)
 					
 					slicestag += 'z'
@@ -199,6 +200,9 @@ def main():
 										
 				elif options.onlymidx:
 					rmid = Region(old_div(nx,2), 0, 0, 1, ny, nz)
+					if options.nslices:
+						rmid = Region(old_div(nx,2)-int(ceil(options.nslices/2.0)), 0, 0, options.nslices, ny, nz)
+						
 					print("The region for the orthogonal x slice is", rmid)
 
 					#slicemidx=a.get_clip(rmidx)
@@ -213,6 +217,8 @@ def main():
 		
 				elif options.onlymidy:
 					rmid = Region(0, old_div(ny,2), 0, nx, 1, nz)
+					if options.nslices:
+						rmid = Region(0, old_div(ny,2)-int(ceil(options.nslices/2.0)), 0, nx, options.nslices, nz)
 					print("The region for the orthogonal y slice is", rmid)
 		
 					#slicemidy=a.get_clip(rmidy)
@@ -244,6 +250,11 @@ def main():
 					rmidz = Region(0, 0, old_div(nz,2), nx, ny, 1)
 					rmidx = Region(old_div(nx,2), 0, 0, 1, ny, nz)
 					rmidy = Region(0, old_div(ny,2), 0, nx, 1, nz)
+					if options.nslices:
+						rmidz = Region(0, 0, old_div(nz,2)-int(ceil(options.nslices/2.0)), nx, ny, options.nslices)
+						rmidx = Region(old_div(nx,2)-int(ceil(options.nslices/2.0)), 0, 0, options.nslices, ny, nz)
+						rmidy = Region(0, old_div(ny,2)-int(ceil(options.nslices/2.0)), 0, nx, options.nslices, nz)
+
 					#tz = Transform({'type':'eman','az':0,'alt':0,'phi':0})
 
 					regions={0:rmidz,1:rmidx,2:rmidy}

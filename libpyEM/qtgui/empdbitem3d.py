@@ -1,8 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import division
-
 #
 # Author: James Michael Bell, 2016 (jmbell@bcm.edu)
 # Bond Drawing Code By: Muthu Alagappan, m.alagappan901@gmail.com, 07/22/09
@@ -43,9 +39,11 @@ from libpyGLUtils2 import GLUtil
 import os
 import sys
 
+import OpenGL
+OpenGL.ERROR_CHECKING = False
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 import numpy as np
 
@@ -53,7 +51,7 @@ class EMPDBItem3D(EMItem3D):
 	"""
 	This class is the scene graph node that has a reference to a Protein Data Bank (PDB) structure. 
 	Though it has an orientation, it can not be displayed directly. Instead, its children are 
-	displayable, and are sized, postioned, and oriented relative to this node.
+	displayable, and are sized, positioned, and oriented relative to this node.
 	"""
 	
 	name = "PDB"
@@ -62,13 +60,13 @@ class EMPDBItem3D(EMItem3D):
 	@staticmethod
 	def getNodeDialogWidget(attribdict):
 		"""Get PDB Widget"""
-		pdbwidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
-		node_name_data_label = QtGui.QLabel("PDB Model Label")
-		attribdict["node_name"] = QtGui.QLineEdit()
-		data_path_label = QtGui.QLabel("PDB Model Path")
-		attribdict["data_path"] = QtGui.QLineEdit()
-		browse_button = QtGui.QPushButton("Browse")
+		pdbwidget = QtWidgets.QWidget()
+		grid = QtWidgets.QGridLayout()
+		node_name_data_label = QtWidgets.QLabel("PDB Model Label")
+		attribdict["node_name"] = QtWidgets.QLineEdit()
+		data_path_label = QtWidgets.QLabel("PDB Model Path")
+		attribdict["data_path"] = QtWidgets.QLineEdit()
+		browse_button = QtWidgets.QPushButton("Browse")
 		grid.addWidget(node_name_data_label, 0, 0, 1, 2)
 		grid.addWidget(attribdict["node_name"], 0, 2, 1, 2)
 		grid.addWidget(data_path_label, 1, 0, 1, 2)
@@ -82,7 +80,7 @@ class EMPDBItem3D(EMItem3D):
 	
 	@staticmethod
 	def _on_browse():
-		filename = QtGui.QFileDialog.getOpenFileName(None, 'Get file', os.getcwd())
+		filename = QtWidgets.QFileDialog.getOpenFileName(None, 'Get file', os.getcwd())[0]
 		if filename:
 			EMPDBItem3D.attribdict["data_path"].setText(filename)
 			#name = os.path.basename(str(filename))
@@ -106,7 +104,7 @@ class EMPDBItem3D(EMItem3D):
 		self.renderBoundingBox = False
 	
 	def setSelectedItem(self, is_selected):
-		""" Set SG apix to curent selection"""
+		""" Set SG apix to current selection"""
 		EMItem3D.setSelectedItem(self, is_selected)
 		sg = self.getRootNode()
 
@@ -179,8 +177,8 @@ class EMPDBItem3DInspector(EMItem3DInspector):
 
 	def addTabs(self):
 		""" Add a tab for each 'column' """
-		tabwidget = QtGui.QWidget()
-		gridbox = QtGui.QGridLayout()
+		tabwidget = QtWidgets.QWidget()
+		gridbox = QtWidgets.QGridLayout()
 		tabwidget.setLayout(gridbox)
 		self.addTab(tabwidget, "data")
 		# add data tab first, then basic
@@ -189,18 +187,18 @@ class EMPDBItem3DInspector(EMItem3DInspector):
 
 	def addControls(self, gridbox):
 		""" Construct all the widgets in this Item Inspector """
-		dataframe = QtGui.QFrame()
-		dataframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		dataframe = QtWidgets.QFrame()
+		dataframe.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		lfont = QtGui.QFont()
 		lfont.setBold(True)
-		datagridbox = QtGui.QGridLayout()
-		self.data_checkbox= QtGui.QCheckBox("Display Bounding Box")
+		datagridbox = QtWidgets.QGridLayout()
+		self.data_checkbox= QtWidgets.QCheckBox("Display Bounding Box")
 		datagridbox.addWidget(self.data_checkbox, 0, 0)
-		self.file_browse_button = QtGui.QPushButton("Set Data Source")
+		self.file_browse_button = QtWidgets.QPushButton("Set Data Source")
 		datagridbox.addWidget(self.file_browse_button, 1, 0)
 		dataframe.setLayout(datagridbox)
 		gridbox.addWidget(dataframe, 2, 0)
-		self.file_path_label = QtGui.QLabel()
+		self.file_path_label = QtWidgets.QLabel()
 		self.file_path_label.setAlignment(QtCore.Qt.AlignCenter)
 		self.file_path_label.setFont(lfont)
 		gridbox.addWidget(self.file_path_label, 3, 0)
@@ -211,7 +209,7 @@ class EMPDBItem3DInspector(EMItem3DInspector):
 
 	def onFileBrowse(self):
 		#TODO: replace this with an EMAN2 browser window once we re-write it
-		file_path = QtGui.QFileDialog.getOpenFileName(self, "Open PDB Model")
+		file_path = QtWidgets.QFileDialog.getOpenFileName(self, "Open PDB Model")[0]
 		if file_path:
 			self.file_path_label.setText(file_path)
 			self.item3d().setData(file_path)
@@ -249,10 +247,10 @@ class EMBallStickModel(EMPDBItem3D):
 	@staticmethod
 	def getNodeDialogWidget(attribdict):
 		"""Get Ball and Stick Model Widget"""
-		ballstickwidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
-		node_name_model_label = QtGui.QLabel("PDB Structure Name")
-		attribdict["node_name"] = QtGui.QLineEdit(str(EMBallStickModel.representation))
+		ballstickwidget = QtWidgets.QWidget()
+		grid = QtWidgets.QGridLayout()
+		node_name_model_label = QtWidgets.QLabel("PDB Structure Name")
+		attribdict["node_name"] = QtWidgets.QLineEdit(str(EMBallStickModel.representation))
 		grid.addWidget(node_name_model_label, 0, 0, 1, 2)
 		grid.addWidget(attribdict["node_name"], 0, 2, 1, 2)
 		EMItem3D.get_transformlayout(grid, 2, attribdict)
@@ -1047,10 +1045,10 @@ class EMSphereModel(EMPDBItem3D):
 	@staticmethod
 	def getNodeDialogWidget(attribdict):
 		"""Get Spheres Model Widget"""
-		sphereswidget = QtGui.QWidget()
-		grid = QtGui.QGridLayout()
-		node_name_model_label = QtGui.QLabel("PDB Structure Name")
-		attribdict["node_name"] = QtGui.QLineEdit(str(EMSphereModel.representation))
+		sphereswidget = QtWidgets.QWidget()
+		grid = QtWidgets.QGridLayout()
+		node_name_model_label = QtWidgets.QLabel("PDB Structure Name")
+		attribdict["node_name"] = QtWidgets.QLineEdit(str(EMSphereModel.representation))
 		grid.addWidget(node_name_model_label, 0, 0, 1, 2)
 		grid.addWidget(attribdict["node_name"], 0, 2, 1, 2)
 		EMItem3D.get_transformlayout(grid, 2, attribdict)

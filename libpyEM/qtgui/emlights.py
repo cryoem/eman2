@@ -1,8 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
 # and David Woolford 10/26/2007 (woolford@bcm.edu)
@@ -39,13 +35,14 @@ from past.utils import old_div
 from builtins import range
 from builtins import object
 from EMAN2 import *
+import OpenGL
+OpenGL.ERROR_CHECKING = False
 from OpenGL import GL, GLU, GLUT
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
-from PyQt4 import QtCore, QtGui, QtOpenGL
-from PyQt4.QtCore import Qt
-from PyQt4.QtGui import QListWidgetItem
+from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
+from PyQt5.QtCore import Qt
 from .emglobjects import Camera2, get_default_gl_colors, EMViewportDepthTools2, get_RGB_tab, get_gl_lights_vector, init_glut, EM3DModel
 from .emimageutil import EMTransformPanel # for EMLightsInspector
 from math import *
@@ -56,7 +53,7 @@ import weakref # for EMLightsInspector
 
 class EMLightsDrawer(object):
 	'''
-	Base clase, works with EMLightsInspectorBase
+	Base class, works with EMLightsInspectorBase
 	'''
 	def __init__(self):
 		
@@ -448,7 +445,7 @@ class EMLightsDrawer(object):
 		# this function implements mouse interactive rotation
 		# [x,y] is the vector generating by the mouse movement (in the plane of the screen)
 		# Rotation occurs about the vector 90 degrees to [x,y,0]
-		# The amount of rotation is linealy proportional to the length of [x,y]
+		# The amount of rotation is linearly proportional to the length of [x,y]
 		
 		if self.current_mouse_mode not in ["directional", "point source"]:
 			raise NotImplementedError
@@ -461,7 +458,7 @@ class EMLightsDrawer(object):
 		rotaxis_y = cos(theta)
 		rotaxis_z = 0
 		length = sqrt(x*x + y*y)
-		# motiondull is a magic number - things rotate more if they are closer and slower if they are far away in this appproach
+		# motiondull is a magic number - things rotate more if they are closer and slower if they are far away in this approach
 		# This magic number could be overcome using a strategy based on the results of get_render_dims_at_depth
 		angle = 4*fac*length/pi # the four is just because I liked the feel of it
 		
@@ -816,24 +813,24 @@ class EMLightsInspectorBase(object):
 		self.target().updateGL()
 		
 	def get_light_tab(self):
-		self.light_tab = QtGui.QWidget()
+		self.light_tab = QtWidgets.QWidget()
 		light_tab = self.light_tab
 		
-		vbl = QtGui.QVBoxLayout(self.light_tab )
-		vbl.setMargin(0)
+		vbl = QtWidgets.QVBoxLayout(self.light_tab )
+		vbl.setContentsMargins(0, 0, 0, 0)
 		vbl.setSpacing(6)
 		vbl.setObjectName("Lights")
 		
-		self.light_manip_check = QtGui.QCheckBox("Mouse moves lights")
-		self.local_viewer_check = QtGui.QCheckBox("Local light model")
+		self.light_manip_check = QtWidgets.QCheckBox("Mouse moves lights")
+		self.local_viewer_check = QtWidgets.QCheckBox("Local light model")
 		self.local_viewer_check.setChecked(glGetInteger(GL_LIGHT_MODEL_LOCAL_VIEWER))
-		show_lights = QtGui.QCheckBox("Show lights")
+		show_lights = QtWidgets.QCheckBox("Show lights")
 		show_lights.setChecked(self.target().display_lights)
-		max_lights_label = QtGui.QLabel()
+		max_lights_label = QtWidgets.QLabel()
 		max_lights_label.setText("Max lights : " + str(glGetInteger(GL_MAX_LIGHTS)))
 		
-		hdl_l = QtGui.QHBoxLayout()
-		hdl_t = QtGui.QHBoxLayout()
+		hdl_l = QtWidgets.QHBoxLayout()
+		hdl_t = QtWidgets.QHBoxLayout()
 		
 		hdl_l.addWidget(self.light_manip_check)
 		hdl_l.addWidget(self.local_viewer_check)
@@ -843,7 +840,7 @@ class EMLightsInspectorBase(object):
 		vbl.addLayout(hdl_l)
 		vbl.addLayout(hdl_t)
 		
-		self.light_tab_widget = QtGui.QTabWidget()
+		self.light_tab_widget = QtWidgets.QTabWidget()
 		
 		
 		self.light_tab_widget.addTab(self.get_directional_light_tab(), "Directional")
@@ -851,7 +848,7 @@ class EMLightsInspectorBase(object):
 		
 		vbl.addWidget(self.light_tab_widget)
 		
-		light_material_tab_widget = QtGui.QTabWidget()
+		light_material_tab_widget = QtWidgets.QTabWidget()
 		self.light_ambient = get_RGB_tab(self,"ambient")
 		light_material_tab_widget.addTab(self.light_ambient, "Ambient")
 		self.light_diffuse = get_RGB_tab(self,"diffuse")
@@ -983,7 +980,7 @@ class EMLightsInspectorBase(object):
 			if glIsEnabled(l):
 				pos = glGetLightfv(l,GL_POSITION)
 				if pos[3] == 0:
-					a = QtGui.QListWidgetItem("Light "+str(i),self.light_list)
+					a = QtWidgets.QListWidgetItem("Light "+str(i),self.light_list)
 					if len(self.light_list.selectedItems()) == 0:
 						a.setSelected(True)
 						
@@ -993,7 +990,7 @@ class EMLightsInspectorBase(object):
 			if glIsEnabled(l):
 				pos = glGetLightfv(l,GL_POSITION)
 				if pos[3] == 1:
-					a = QtGui.QListWidgetItem("Light "+str(i),self.light_list)
+					a = QtWidgets.QListWidgetItem("Light "+str(i),self.light_list)
 					if len(self.light_list.selectedItems()) == 0 and len(self.point_light_list.selectedItems()) == 0:
 						a.setSelected(True)
 		
@@ -1019,7 +1016,7 @@ class EMLightsInspectorBase(object):
 					spot_cutoff = glGetLightfv(l,GL_SPOT_CUTOFF)
 					if spot_cutoff > 90: glLightfv(l,GL_SPOT_CUTOFF,90)
 				else:
-					# make sure that it's directionaly
+					# make sure that it's directionally
 					if pos[3] != 0:
 						pos[3] = 0
 						glLightfv(l,GL_POSITION,pos)
@@ -1028,11 +1025,11 @@ class EMLightsInspectorBase(object):
 				new_label = "Light "+str(i)
 				
 				if not point_source: 
-					a = QtGui.QListWidgetItem(new_label,self.light_list)
+					a = QtWidgets.QListWidgetItem(new_label,self.light_list)
 					for item in self.point_light_list.selectedItems(): item.setSelected(False)
 						
 				else:
-					a = QtGui.QListWidgetItem(new_label,self.point_light_list)
+					a = QtWidgets.QListWidgetItem(new_label,self.point_light_list)
 					for item in self.light_list.selectedItems(): item.setSelected(False)
 					
 				a.setSelected(True)
@@ -1047,7 +1044,7 @@ class EMLightsInspectorBase(object):
 				glEnable(l)
 				new_label = "Light "+str(i)
 				
-				a = QtGui.QListWidgetItem(new_label,self.light_list)
+				a = QtWidgets.QListWidgetItem(new_label,self.light_list)
 				a.setSelected(True)
 				
 				self.refresh_light_states()
@@ -1071,66 +1068,66 @@ class EMLightsInspectorBase(object):
 	
 	def get_directional_light_tab(self):
 		
-		self.directional_light_widget = QtGui.QWidget()
+		self.directional_light_widget = QtWidgets.QWidget()
 		
-		vbl = QtGui.QVBoxLayout(self.directional_light_widget)
-		vbl.setMargin(0)
+		vbl = QtWidgets.QVBoxLayout(self.directional_light_widget)
+		vbl.setContentsMargins(0, 0, 0, 0)
 		vbl.setSpacing(6)
 		vbl.setObjectName("Lights")
 		
-		hbl = QtGui.QHBoxLayout()
-		hbl.setMargin(0)
+		hbl = QtWidgets.QHBoxLayout()
+		hbl.setContentsMargins(0, 0, 0, 0)
 		hbl.setSpacing(6)
 		hbl.setObjectName("hbl")
 		vbl.addLayout(hbl)
 
-		self.light_list = QtGui.QListWidget(None)
+		self.light_list = QtWidgets.QListWidget(None)
 		self.light_list.setMouseTracking(True)
 		self.redo_directional_light_list()
 
 		hbl.addWidget(self.light_list)
 
-		vbl2 = QtGui.QVBoxLayout()
-		vbl2.setMargin(0)
+		vbl2 = QtWidgets.QVBoxLayout()
+		vbl2.setContentsMargins(0, 0, 0, 0)
 		vbl2.setSpacing(6)
 		vbl2.setObjectName("vbl2")
 		hbl.addLayout(vbl2)
 		
-		new_light = QtGui.QPushButton("New")
+		new_light = QtWidgets.QPushButton("New")
 		vbl2.addWidget(new_light)
-		#copy_light = QtGui.QPushButton("Copy")
+		#copy_light = QtWidgets.QPushButton("Copy")
 		#vbl2.addWidget(copy_light)
-		del_light = QtGui.QPushButton("Delete")
+		del_light = QtWidgets.QPushButton("Delete")
 		vbl2.addWidget(del_light)
 		
 		
-		x_label = QtGui.QLabel()
+		x_label = QtWidgets.QLabel()
 		x_label.setText('x')
 		
-		self.light_x_dir = QtGui.QDoubleSpinBox(self)
+		self.light_x_dir = QtWidgets.QDoubleSpinBox(self)
 		self.light_x_dir.setMinimum(-100000)
 		self.light_x_dir.setMaximum(100000)
 		self.light_x_dir.setValue(0.0)
 	
-		y_label = QtGui.QLabel()
+		y_label = QtWidgets.QLabel()
 		y_label.setText('y')
 		
-		self.light_y_dir = QtGui.QDoubleSpinBox(self)
+		self.light_y_dir = QtWidgets.QDoubleSpinBox(self)
 		self.light_y_dir.setMinimum(-100000)
 		self.light_y_dir.setMaximum(100000)
 		self.light_y_dir.setValue(0.0)
 		
-		z_label = QtGui.QLabel()
+		z_label = QtWidgets.QLabel()
 		z_label.setText('z')
 		
-		self.light_z_dir = QtGui.QDoubleSpinBox(self)
+		self.light_z_dir = QtWidgets.QDoubleSpinBox(self)
 		self.light_z_dir.setMinimum(-100000)
 		self.light_z_dir.setMaximum(100000)
 		self.light_z_dir.setValue(0.0)
 		
 		
-		hbl_trans = QtGui.QHBoxLayout()
-		hbl_trans.setMargin(0)
+		hbl_trans = QtWidgets.QHBoxLayout()
+		hbl_trans.setContentsMargins(0, 0, 0, 0)
 		hbl_trans.setSpacing(6)
 		hbl_trans.setObjectName("Trans")
 		hbl_trans.addWidget(x_label)
@@ -1144,78 +1141,78 @@ class EMLightsInspectorBase(object):
 		
 		new_light.clicked.connect(self.new_directional_light)
 		del_light.clicked.connect(self.del_directional_light)
-		self.light_list.itemPressed[QListWidgetItem].connect(self.light_list_clicked)
+		self.light_list.itemPressed[QtWidgets.QListWidgetItem].connect(self.light_list_clicked)
 		
 		return self.directional_light_widget
 	
 	
 	def get_pointsource_light_tab(self):
 		
-		self.pointsource_light_widget = QtGui.QWidget()
+		self.pointsource_light_widget = QtWidgets.QWidget()
 		
-		vbl = QtGui.QVBoxLayout(self.pointsource_light_widget)
-		vbl.setMargin(0)
+		vbl = QtWidgets.QVBoxLayout(self.pointsource_light_widget)
+		vbl.setContentsMargins(0, 0, 0, 0)
 		vbl.setSpacing(6)
 		vbl.setObjectName("Lights")
 		
-		hbl = QtGui.QHBoxLayout()
-		hbl.setMargin(0)
+		hbl = QtWidgets.QHBoxLayout()
+		hbl.setContentsMargins(0, 0, 0, 0)
 		hbl.setSpacing(6)
 		hbl.setObjectName("hbl")
 		vbl.addLayout(hbl)
 
-		self.point_light_list = QtGui.QListWidget(None)
+		self.point_light_list = QtWidgets.QListWidget(None)
 		self.point_light_list.setMouseTracking(True)
 		
 		self.redo_pointsource_light_list()
-		#a = QtGui.QListWidgetItem(str("Light 0"),self.light_list)
+		#a = QtWidgets.QListWidgetItem(str("Light 0"),self.light_list)
 		#a.setSelected(True)
 		hbl.addWidget(self.point_light_list)
 
-		vbl2 = QtGui.QVBoxLayout()
-		vbl2.setMargin(0)
+		vbl2 = QtWidgets.QVBoxLayout()
+		vbl2.setContentsMargins(0, 0, 0, 0)
 		vbl2.setSpacing(6)
 		vbl2.setObjectName("vbl2")
 		hbl.addLayout(vbl2)
 		
-		new_light = QtGui.QPushButton("New")
+		new_light = QtWidgets.QPushButton("New")
 		vbl2.addWidget(new_light)
-		#copy_light = QtGui.QPushButton("Copy")
+		#copy_light = QtWidgets.QPushButton("Copy")
 		#vbl2.addWidget(copy_light)
-		del_light = QtGui.QPushButton("Delete")
+		del_light = QtWidgets.QPushButton("Delete")
 		vbl2.addWidget(del_light)
 		
 		
-		pos_label = QtGui.QLabel()
+		pos_label = QtWidgets.QLabel()
 		pos_label.setText('Pos: ')
 		
-		x_label = QtGui.QLabel()
+		x_label = QtWidgets.QLabel()
 		x_label.setText('x')
 		
-		self.light_x_pos = QtGui.QDoubleSpinBox(self)
+		self.light_x_pos = QtWidgets.QDoubleSpinBox(self)
 		self.light_x_pos.setMinimum(-100000)
 		self.light_x_pos.setMaximum(100000)
 		self.light_x_pos.setValue(0.0)
 	
-		y_label = QtGui.QLabel()
+		y_label = QtWidgets.QLabel()
 		y_label.setText('y')
 		
-		self.light_y_pos = QtGui.QDoubleSpinBox(self)
+		self.light_y_pos = QtWidgets.QDoubleSpinBox(self)
 		self.light_y_pos.setMinimum(-100000)
 		self.light_y_pos.setMaximum(100000)
 		self.light_y_pos.setValue(0.0)
 		
-		z_label = QtGui.QLabel()
+		z_label = QtWidgets.QLabel()
 		z_label.setText('z')
 		
-		self.light_z_pos = QtGui.QDoubleSpinBox(self)
+		self.light_z_pos = QtWidgets.QDoubleSpinBox(self)
 		self.light_z_pos.setMinimum(-100000)
 		self.light_z_pos.setMaximum(100000)
 		self.light_z_pos.setValue(0.0)
 		
 		
-		hbl_trans = QtGui.QHBoxLayout()
-		hbl_trans.setMargin(0)
+		hbl_trans = QtWidgets.QHBoxLayout()
+		hbl_trans.setContentsMargins(0, 0, 0, 0)
 		hbl_trans.setSpacing(6)
 		hbl_trans.setObjectName("Trans")
 		hbl_trans.addWidget(pos_label)
@@ -1244,32 +1241,32 @@ class EMLightsInspectorBase(object):
 		vbl.addWidget(self.quad_atten)
 		
 		
-		dir_label = QtGui.QLabel()
+		dir_label = QtWidgets.QLabel()
 		dir_label.setText('Dir: ')
 		
-		self.light_ps_xdir = QtGui.QDoubleSpinBox(self)
+		self.light_ps_xdir = QtWidgets.QDoubleSpinBox(self)
 		self.light_ps_xdir.setMinimum(-100000)
 		self.light_ps_xdir.setMaximum(100000)
 		self.light_ps_xdir.setValue(0.0)
 	
-		y_label = QtGui.QLabel()
+		y_label = QtWidgets.QLabel()
 		y_label.setText('y')
 		
-		self.light_ps_ydir = QtGui.QDoubleSpinBox(self)
+		self.light_ps_ydir = QtWidgets.QDoubleSpinBox(self)
 		self.light_ps_ydir.setMinimum(-100000)
 		self.light_ps_ydir.setMaximum(100000)
 		self.light_ps_ydir.setValue(0.0)
 		
-		z_label = QtGui.QLabel()
+		z_label = QtWidgets.QLabel()
 		z_label.setText('z')
 		
-		self.light_ps_zdir = QtGui.QDoubleSpinBox(self)
+		self.light_ps_zdir = QtWidgets.QDoubleSpinBox(self)
 		self.light_ps_zdir.setMinimum(-100000)
 		self.light_ps_zdir.setMaximum(100000)
 		self.light_ps_zdir.setValue(0.0)
 		
-		hbl_trans2 = QtGui.QHBoxLayout()
-		hbl_trans2.setMargin(0)
+		hbl_trans2 = QtWidgets.QHBoxLayout()
+		hbl_trans2.setContentsMargins(0, 0, 0, 0)
 		hbl_trans2.setSpacing(6)
 		hbl_trans2.setObjectName("Trans")
 		hbl_trans2.addWidget(dir_label)
@@ -1294,7 +1291,7 @@ class EMLightsInspectorBase(object):
 		
 		
 		new_light.clicked.connect(self.new_pointsource_light)
-		self.point_light_list.itemPressed[QListWidgetItem].connect(self.point_light_list_clicked)
+		self.point_light_list.itemPressed[QtWidgets.QListWidgetItem].connect(self.point_light_list_clicked)
 		self.light_x_pos.valueChanged[float].connect(self.update_light)
 		self.light_y_pos.valueChanged[float].connect(self.update_light)
 		self.light_z_pos.valueChanged[float].connect(self.update_light)
@@ -1312,39 +1309,39 @@ class EMLightsInspectorBase(object):
 		return self.pointsource_light_widget
 	
 
-class EMLightsInspector(QtGui.QWidget,EMLightsInspectorBase):
+class EMLightsInspector(QtWidgets.QWidget,EMLightsInspectorBase):
 	def __init__(self,target) :
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		EMLightsInspectorBase.__init__(self)
 		self.target=weakref.ref(target)
 		
-		self.vbl = QtGui.QVBoxLayout(self)
-		self.vbl.setMargin(0)
+		self.vbl = QtWidgets.QVBoxLayout(self)
+		self.vbl.setContentsMargins(0, 0, 0, 0)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 		
-		self.hbl = QtGui.QHBoxLayout()
-		self.hbl.setMargin(0)
+		self.hbl = QtWidgets.QHBoxLayout()
+		self.hbl.setContentsMargins(0, 0, 0, 0)
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")
 		self.vbl.addLayout(self.hbl)
 
-		self.vbl2 = QtGui.QVBoxLayout()
-		self.vbl2.setMargin(0)
+		self.vbl2 = QtWidgets.QVBoxLayout()
+		self.vbl2.setContentsMargins(0, 0, 0, 0)
 		self.vbl2.setSpacing(6)
 		self.vbl2.setObjectName("vbl2")
 		self.hbl.addLayout(self.vbl2)
 		
-		self.wiretog = QtGui.QPushButton("Wire")
+		self.wiretog = QtWidgets.QPushButton("Wire")
 		self.wiretog.setCheckable(1)
 		self.vbl2.addWidget(self.wiretog)
 		
-		self.lighttog = QtGui.QPushButton("Light")
+		self.lighttog = QtWidgets.QPushButton("Light")
 		self.lighttog.setCheckable(1)
 		self.lighttog.setChecked(True)
 		self.vbl2.addWidget(self.lighttog)
 		
-		self.tabwidget = QtGui.QTabWidget()
+		self.tabwidget = QtWidgets.QTabWidget()
 		self.maintab = None
 		self.tabwidget.addTab(self.get_light_tab(), "Lights")
 		self.tabwidget.addTab(self.get_main_tab(), "Transform")
@@ -1373,24 +1370,24 @@ class EMLightsInspector(QtGui.QWidget,EMLightsInspectorBase):
 		#return self.advanced_tab
 	
 	def get_GL_tab(self):
-		self.gltab = QtGui.QWidget()
+		self.gltab = QtWidgets.QWidget()
 		gltab = self.gltab
 		
-		gltab.vbl = QtGui.QVBoxLayout(self.gltab )
-		gltab.vbl.setMargin(0)
+		gltab.vbl = QtWidgets.QVBoxLayout(self.gltab )
+		gltab.vbl.setContentsMargins(0, 0, 0, 0)
 		gltab.vbl.setSpacing(6)
 		gltab.vbl.setObjectName("Main")
 		
-		self.hbl_color = QtGui.QHBoxLayout()
-		self.hbl_color.setMargin(0)
+		self.hbl_color = QtWidgets.QHBoxLayout()
+		self.hbl_color.setContentsMargins(0, 0, 0, 0)
 		self.hbl_color.setSpacing(6)
 		gltab.vbl.addLayout(self.hbl_color)
 
-		self.color_label = QtGui.QLabel()
+		self.color_label = QtWidgets.QLabel()
 		self.color_label.setText('Material')
 		self.hbl_color.addWidget(self.color_label)
 		
-		self.cbb = QtGui.QComboBox(gltab)
+		self.cbb = QtWidgets.QComboBox(gltab)
 		self.hbl_color.addWidget(self.cbb)
 		
 		self.glcontrast = ValSlider(gltab,(1.0,5.0),"GLShd:")
@@ -1408,10 +1405,10 @@ class EMLightsInspector(QtGui.QWidget,EMLightsInspectorBase):
 	
 	def get_main_tab(self):
 		if ( self.maintab == None ):
-			self.maintab = QtGui.QWidget()
+			self.maintab = QtWidgets.QWidget()
 			maintab = self.maintab
-			maintab.vbl = QtGui.QVBoxLayout(self.maintab)
-			maintab.vbl.setMargin(0)
+			maintab.vbl = QtWidgets.QVBoxLayout(self.maintab)
+			maintab.vbl.setContentsMargins(0, 0, 0, 0)
 			maintab.vbl.setSpacing(6)
 			maintab.vbl.setObjectName("Main")
 			

@@ -1,7 +1,3 @@
-/**
- * $Id$
- */
-
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
@@ -46,7 +42,7 @@ const string ImageAverager::NAME = "mean";
 const string SigmaAverager::NAME = "sigma";
 const string TomoAverager::NAME = "mean.tomo";
 const string MinMaxAverager::NAME = "minmax";
-const string AbsMaxMinAverager::NAME = "absmaxmin";
+const string MedianAverager::NAME = "median";
 const string IterAverager::NAME = "iterative";
 const string CtfCWautoAverager::NAME = "ctfw.auto";
 const string CtfCAutoAverager::NAME = "ctf.auto";
@@ -60,7 +56,7 @@ template <> Factory < Averager >::Factory()
 	force_add<ImageAverager>();
 	force_add<SigmaAverager>();
 	force_add<MinMaxAverager>();
-	force_add<AbsMaxMinAverager>();
+	force_add<MedianAverager>();
 	force_add<LocalWeightAverager>();
 	force_add<IterAverager>();
 	force_add<CtfCWautoAverager>();
@@ -196,11 +192,22 @@ EMData * TomoAverager::finish()
 	norm_image->update();
 	result->update();
 	
-	EMData *ret = result->do_ift();
+	EMData *ret;
+	if ((int)params.set_default("doift", 1))
+		ret = result->do_ift();
+	else
+		ret = result->copy();
+	
 	ret->set_attr("ptcl_repr",norm_image->get_attr("maximum"));
 	ret->set_attr("mean_coverage",(float)(overlap/nimg));
 	if ((int)params.set_default("save_norm", 0)) 
 		norm_image->write_image("norm.hdf");
+	
+	if (params.has_key("normout")) {
+		EMData *normout=(EMData*) params["normout"];
+		normout->set_data(norm_image->copy()->get_data());
+		normout->update();
+	}
 	
 	delete result;
 	delete norm_image;
@@ -322,12 +329,23 @@ EMData * ImageAverager::finish()
 
 		result->update();
 
-	}		
-	result->set_attr("ptcl_repr",nimg);
+		result->set_attr("ptcl_repr",nimg);
+		printf("Avg done: %d\n",nimg);
 
-	if (freenorm) { delete normimage; normimage=(EMData*)0; }
+		if (freenorm) { delete normimage; normimage=(EMData*)0; }
+		nimg=0;
 
-	return result;
+		return result;
+	}
+	if (result && nimg==1) {
+		result->set_attr("ptcl_repr",1);
+		if (sigma_image) sigma_image->to_zero();
+		if (freenorm) { delete normimage; normimage=(EMData*)0; }
+		nimg=0;
+		return result;
+	}
+
+	return nullptr;
 }
 
 
@@ -837,12 +855,8 @@ EMData *ImageAverager::average(const vector < EMData * >&image_list) const
 #endif
 
 MinMaxAverager::MinMaxAverager()
-	: nimg(0)
+	: nimg(0),ismax(0),isabs(0)
 {
-	/*move max out of initializer list, since this max(0) is considered as a macro
-	 * in Visual Studio, which we defined somewhere else*/
-	max = 0;
-
 	
 }
 
@@ -862,38 +876,29 @@ void MinMaxAverager::add_image(EMData * image)
 	float thisown = image->get_attr_default("ortid",(float)nimg);
 	nimg++;
 
-	int nx = image->get_xsize();
-	int ny = image->get_ysize();
-	int nz = image->get_zsize();
-
+	size_t nxyz = image->get_size();
+	
 	if (nimg == 1) {
 		result = image->copy();
-		max = params["max"];
+		if (owner) owner->to_value(thisown);
 		return;
 	}
 
-	if (max) {
-		for (int z=0; z<nz; z++) {
-			for (int y=0; y<ny; y++) {
-				for (int x=0; x<nx; x++) {
-					if (result->get_value_at(x,y,z)<=image->get_value_at(x,y,z)) {
-						result->set_value_at(x,y,z,image->get_value_at(x,y,z));
-						if (owner) owner->set_value_at(x,y,z,thisown);
-					}
-				}
-			}
-		}
-	}
-	else {
-		for (int z=0; z<nz; z++) {
-			for (int y=0; y<ny; y++) {
-				for (int x=0; x<nx; x++) {
-					if (result->get_value_at(x,y,z)>image->get_value_at(x,y,z)) {
-						result->set_value_at(x,y,z,image->get_value_at(x,y,z)); 
-						if (owner) owner->set_value_at(x,y,z,thisown);
-					}
-				}
-			}
+	float *rdata = result->get_data();
+	float *data = image->get_data();
+	float *owndata = 0;
+	if (owner) owndata=owner->get_data();
+
+	ismax=(int)params.set_default("max",0);
+	isabs=(int)params.set_default("abs",0);
+	
+	
+	for (size_t i=0; i<nxyz; i++) {
+		float v = isabs?fabs(data[i]):data[i];
+		float rv = isabs?fabs(rdata[i]):rdata[i];
+		if ((ismax && v>rv) || (!ismax && v<rv)) {
+			rdata[i]=data[i];
+			if (owndata) owndata[i]=thisown;
 		}
 	}
 
@@ -904,65 +909,112 @@ EMData *MinMaxAverager::finish()
 	result->update();
 	result->set_attr("ptcl_repr",nimg);
 	
-	if (result && nimg > 1) return result;
+	if (result && nimg >= 1) return result;
 
 	return NULL;
 }
 
-AbsMaxMinAverager::AbsMaxMinAverager() : nimg(0)
+MedianAverager::MedianAverager()
 {
-	/*move max out of initializer list, since this max(0) is considered as a macro
-	 * in Visual Studio, which we defined somewhere else*/
-	min = 0;
+	
 }
 
-void AbsMaxMinAverager::add_image(EMData * image)
+void MedianAverager::add_image(EMData * image)
 {
 	if (!image) {
 		return;
 	}
 
-	if (nimg >= 1 && !EMUtil::is_same_size(image, result)) {
-		LOGERR("%sAverager can only process same-size Image",
-			   get_name().c_str());
+	if (!imgs.empty() && !EMUtil::is_same_size(image, imgs[0])) {
+		LOGERR("MedianAverager can only process images of the same size");
 		return;
 	}
 
-	nimg++;
-
-	int nx = image->get_xsize();
-	int ny = image->get_ysize();
-	int nz = image->get_zsize();
-
-	size_t imgsize = (size_t)nx*ny*nz;
-
-	if (nimg == 1) {
-		result = image->copy();
-		min = params["min"];
-		return;
-	}
-
-	float * data 	 = result->get_data();
-	float * src_data = image->get_data();
-
-	for(size_t i=0; i<imgsize; ++i) {
-		if(!min) {	//average to maximum by default
-			if (fabs(data[i]) < fabs(src_data[i])) data[i]=src_data[i];
-		}
-		else {	//average to minimum if set 'min'
-			if (fabs(data[i]) > fabs(src_data[i])) data[i]=src_data[i];
-		}
-	}
+	imgs.push_back(image->copy());
 }
 
-EMData *AbsMaxMinAverager::finish()
+EMData *MedianAverager::finish()
 {
-	result->update();
-	result->set_attr("ptcl_repr",nimg);
+	if (imgs.size()==0) return 0;
+	EMData *ret=0;
+	
+	if (imgs.size()==1) {
+		ret=imgs[0];
+		imgs.clear();
+		return ret;
+	}
+	
+	// special case for n==2
+	if (imgs.size()==2) {
+		imgs[0]->add(*imgs[1]);
+		imgs[0]->mult(0.5f);
+		delete imgs[1];
+		ret=imgs[0];
+		imgs.clear();
+		return ret;
+	}
 
-	if (result && nimg > 1) return result;
+	int nx=imgs[0]->get_xsize();
+	int ny=imgs[0]->get_ysize();
+	int nz=imgs[0]->get_zsize();
+	
+	// special case for n==3
+	if (imgs.size()==3) {
+		for (int z=0; z<nz; z++) {
+			for (int y=0; y<ny; y++) {
+				for (int x=0; x<nx; x++) {
+					float v0=imgs[0]->get_value_at(x,y,z);
+					float v1=imgs[1]->get_value_at(x,y,z);
+					float v2=imgs[2]->get_value_at(x,y,z);
+					
+					if (v0<=v1) {
+						if (v0>=v2) continue;
+						if (v1<=v2) imgs[0]->set_value_at(x,y,z,v1);
+						else imgs[0]->set_value_at(x,y,z,v2);
+					}
+					else {
+						if (v0<=v2) continue;
+						if (v2<=v1) imgs[0]->set_value_at(x,y,z,v1);
+						else imgs[0]->set_value_at(x,y,z,v2);
+					}
+				}
+			}
+		}
+		
+		delete imgs[1];
+		delete imgs[2];
+		ret=imgs[0];
+		imgs.clear();
+		return ret;
+	}
 
-	return NULL;
+	ret=imgs[0]->copy();
+	std::vector<float> vals(imgs.size(),0.0f);
+	
+	
+	for (int z=0; z<nz; z++) {
+		for (int y=0; y<ny; y++) {
+			for (int x=0; x<nx; x++) {
+				int i=0;
+				for (std::vector<EMData *>::iterator it = imgs.begin() ; it != imgs.end(); ++it,++i) {
+					vals[i]=(*it)->get_value_at(x,y,z);
+				}
+					
+				std::sort(vals.begin(),vals.end());
+				//printf("%d %d %d    %d\n",x,y,z,vals.size());
+				if (vals.size()&1) ret->set_value_at(x,y,z,vals[vals.size()/2]);		// for even sizes, not quite right, and should include possibility of local average
+				else ret->set_value_at(x,y,z,(vals[vals.size()/2]+vals[vals.size()/2-1])/2.0f);
+			}
+		}
+	}
+
+	if (!imgs.empty()) {
+		for (std::vector<EMData *>::iterator it = imgs.begin() ; it != imgs.end(); ++it) if (*it) delete *it;
+		imgs.clear();
+	}
+
+
+	return ret;
 }
 
 CtfCWautoAverager::CtfCWautoAverager()

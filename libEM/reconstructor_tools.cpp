@@ -1,7 +1,3 @@
-/**
- * $Id$
- */
-
 /*
  * Author: David Woolford, 07/25/2007 (woolford@bcm.edu)
  * Copyright (c) 2000-2007 Baylor College of Medicine
@@ -33,15 +29,18 @@
  *
  * */
 
+//#define DEBUG_POINT	1
 
 #include <cstring>
 #include <math.h>
 #include <gsl/gsl_sf_bessel.h>
 #include "reconstructor_tools.h"
 
+
 using namespace EMAN;
 
 const string FourierInserter3DMode1::NAME = "nearest_neighbor";
+const string FourierInserter3DMode2l::NAME = "trilinear";
 const string FourierInserter3DMode2::NAME = "gauss_2";
 const string FourierInserter3DMode3::NAME = "gauss_3";
 //const string FourierInserter3DMode4::NAME = "gauss_4";
@@ -56,6 +55,7 @@ const string FourierInserter3DMode10::NAME = "kaiser_bessel_derived";
 template <> Factory < FourierPixelInserter3D >::Factory()
 {
 	force_add<FourierInserter3DMode1>();
+	force_add<FourierInserter3DMode2l>();
 	force_add<FourierInserter3DMode2>();
 	force_add<FourierInserter3DMode3>();
 //	force_add<FourierInserter3DMode4>();
@@ -154,15 +154,12 @@ bool FourierInserter3DMode2::insert_pixel(const float& xx, const float& yy, cons
 			for (int j = y0 ; j <= y1; j++) {
 				for (int i = x0; i <= x1; i ++) {
 					r = Util::hypot3sq((float) i - xx, j - yy, k - zz);
-//					gg=weight;
 					gg = Util::fast_exp(-r *h)*weight;
-//					gg = Util::fast_exp(-r / EMConsts::I2G)*weight;
-//					gg = sqrt(Util::fast_exp(-r / EMConsts::I2G))*weight;
 
 					size_t off;
 					off=data->add_complex_at_fast(i,j,k,dt*gg);
-//					off=data->add_complex_at(i,j,k,dt*gg);
 					if (off!=nxyz) norm[off/2]+=gg;
+//					if (off!=nxyz) norm[off/2]+=weight;	// experiment 6/1/20, use true Gaussian kernel, not just weight
 				}
 			}
 		}
@@ -177,6 +174,79 @@ bool FourierInserter3DMode2::insert_pixel(const float& xx, const float& yy, cons
 				for (int i = x0; i <= x0 + 1; i ++) {
 					r = Util::hypot3sq((float) i - xx, j - yy, k - zz);
 					gg = Util::fast_exp(-r / EMConsts::I2G)*weight;
+
+					size_t off;
+					if (subx0<0) off=data->add_complex_at(i,j,k,dt*gg);
+					else off=data->add_complex_at(i,j,k,subx0,suby0,subz0,fullnx,fullny,fullnz,dt*gg);
+					if (static_cast<int>(off)!=nxyz) { norm[off/2]+=gg; pc+=1; }
+				}
+			}
+		}
+
+		if (pc>0)  return true;
+		return false;
+	}
+}
+
+bool FourierInserter3DMode2l::insert_pixel(const float& xx, const float& yy, const float& zz, const std::complex<float> dt,const float& weight)
+{
+	int x0 = (int) floor(xx);
+	int y0 = (int) floor(yy);
+	int z0 = (int) floor(zz);
+
+	// note that subnx differs in the inserters. In the reconstructors it subx0 is 0 for the full volume. Here it is -1
+	if (subx0<0) {			// normal full reconstruction
+		if (x0<-nx2-1 || y0<-ny2-1 || z0<-nz2-1 || x0>nx2 || y0>ny2 || z0>nz2 ) return false;
+
+		int x1=x0+1;
+		int y1=y0+1;
+		int z1=z0+1;
+// 		if (x0<-nx2) x0=-nx2;
+// 		if (x1>nx2) x1=nx2;
+// 		if (y0<-ny2) y0=-ny2;
+// 		if (y1>ny2) y1=ny2;
+// 		if (z0<-nz2) z0=-nz2;
+// 		if (z1>nz2) z1=nz2;
+
+//		float h=2.0/((1.0+pow(Util::hypot3sq(xx,yy,zz),.5))*EMConsts::I2G);
+		float h=1.0f/EMConsts::I2G;
+		//size_t idx;
+		float r, gg;
+//		int pc=0;
+		for (int k = z0 ; k <= z1; k++) {
+			for (int j = y0 ; j <= y1; j++) {
+				for (int i = x0; i <= x1; i ++) {
+//					r = Util::hypot3sq((float) i - xx, j - yy, k - zz);
+//					gg = Util::fast_exp(-r *h)*weight;
+					gg=(1.0-fabs(i-xx))*(1.0-fabs(j-yy))*(1.0-fabs(k-zz))*weight;
+
+					size_t off;
+					off=data->add_complex_at_fast(i,j,k,dt*gg);
+					if (off!=nxyz) norm[off/2]+=gg;
+//					if (off!=nxyz) norm[off/2]+=weight;	// experiment 6/1/20, use true Gaussian kernel, not just weight
+#ifdef DEBUG_POINT
+					if (k==23 && j==0 && i==113) {
+						std::complex<float> pv = data->get_complex_at(113,0,23);
+						float pnv = norm[off/2];
+						printf("insert: %1.4g\t%1.4g\t%1.4g\t%1.4g\t%1.4g\t%1.4g\n",pv.real()/pnv,pv.imag()/pnv,pnv,dt.real(),dt.imag(),gg);
+					}
+#endif
+
+				}
+			}
+		}
+		return true;
+	}
+	else {					// for subvolumes, not optimized yet
+		//size_t idx;
+		float r, gg;
+		int pc=0;
+		for (int k = z0 ; k <= z0 + 1; k++) {
+			for (int j = y0 ; j <= y0 + 1; j++) {
+				for (int i = x0; i <= x0 + 1; i ++) {
+// 					r = Util::hypot3sq((float) i - xx, j - yy, k - zz);
+// 					gg = Util::fast_exp(-r / EMConsts::I2G)*weight;
+					gg=(1.0-fabs(i-xx))*(1.0-fabs(j-yy))*(1.0-fabs(k-zz))*weight;
 
 					size_t off;
 					if (subx0<0) off=data->add_complex_at(i,j,k,dt*gg);

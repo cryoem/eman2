@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 #
 # Author: John Flanagan (jfflanag@bcm.edu)
 # Copyright (c) 2000-2011 Baylor College of Medicine
@@ -54,6 +52,7 @@ def main():
 	parser.add_pos_argument(name="micrographs",help="List the micrographs to filter here.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=True)",  row=0, col=0,rowspan=1, colspan=2, mode='filter')
 	parser.add_header(name="filterheader", help='Options below this label are specific to filtering', title="### filtering options ###", row=1, col=0, rowspan=1, colspan=2, mode='import,filter')
 	parser.add_argument("--invert",action="store_true",help="Invert contrast",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode='filter[True]')
+	parser.add_argument("--compressbits", type=int,help="Bits to keep when writing images. 4 generally safe for raw data. 0-> true lossless (floating point). Default 6", default=6, guitype='intbox', row=10, col=1, rowspan=1, colspan=1, mode='filter[6]')
 	parser.add_argument("--edgenorm",action="store_true",help="Edge normalize",default=False, guitype='boolbox', row=2, col=1, rowspan=1, colspan=1, mode='filter[True]')
 	parser.add_argument("--usefoldername",action="store_true",help="If you have the same image filename in multiple folders, and need to import into the same project, this will prepend the folder name on each image name",default=False,guitype='boolbox',row=2, col=2, rowspan=1, colspan=1, mode="import[False]")
 	parser.add_argument("--xraypixel",action="store_true",help="Filter X-ray pixels",default=False, guitype='boolbox', row=2, col=2, rowspan=1, colspan=1, mode='filter[True]')
@@ -77,7 +76,6 @@ def main():
 	if not os.access(microdir, os.R_OK):
 		os.mkdir("micrographs")
 
-	logid=E2init(sys.argv,options.ppid)
 
 	# After filtration we move micrographs to a directory 'raw_micrographs', if desired
 	if options.moverawdata:
@@ -88,10 +86,10 @@ def main():
 	if options.threads==1:
 		for i,arg in enumerate(args):
 			importfn(i,arg,options)
-			E2progress(logid,(old_div(i,float(len(args)))))
 
-		E2end(logid)
 		sys.exit(0)
+
+	logid=E2init(sys.argv,options.ppid)
 	
 	# due to multithreading limitations, we use multiple processes when threads specified
 	
@@ -111,6 +109,7 @@ def main():
 	if options.ac!=None :     opts+="--ac {} ".format(options.ac)
 	if options.defocusmin!=None : opts+="--defocusmin {} ".format(options.defocusmin)
 	if options.defocusmax!=None : opts+="--defocusmax {} ".format(options.defocusmax)
+	if options.compressbits!=None:	opts+="--compressbits {} ".format(options.compressbits)
 	
 	blk=len(args)//options.threads+1
 	thrds=[threading.Thread(target=launch_childprocess,args=["e2rawdata.py "+opts+" ".join(args[i*blk:(i+1)*blk])]) for i in range(options.threads)]
@@ -129,15 +128,24 @@ def main():
 def importfn(i,arg,options):
 	base = base_name(arg,nodir=not options.usefoldername)
 	output = os.path.join(os.path.join(".","micrographs"),base+".hdf")
-	cmd = "e2proc2d.py %s %s --inplace"%(arg,output)
+	#cmd = "e2proc2d.py %s %s --inplace"%(arg,output)
 
-	cmdext=[]
-	if options.invert: cmdext.append(" --mult=-1")
-	if options.edgenorm: cmdext.append(" --process=normalize.edgemean")
-	if options.xraypixel: cmdext.append(" --process=threshold.clampminmax.nsigma:nsigma=4")
-	if len(cmdext)>0 or arg!=output:
-		cmd+="".join(cmdext)
-		launch_childprocess(cmd)
+	#cmdext=[]
+	#if options.invert: cmdext.append(" --mult=-1")
+	#if options.edgenorm: cmdext.append(" --process=mask.zeroedgefill:nonzero=1 --process=normalize.edgemean")
+	#if options.xraypixel: cmdext.append(" --process=threshold.clampminmax.nsigma:nsigma=4")
+	#if len(cmdext)>0 or arg!=output:
+		#cmd+="".join(cmdext)
+		#launch_childprocess(cmd)
+
+	im=EMData(arg,0)
+	if options.invert: im.mult(-1)
+	if options.edgenorm: 
+		im.process_inplace("mask.zeroedgefill",{"nonzero":1})
+		im.process_inplace("normalize.edgemean")
+	if options.xraypixel: im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":4})
+	if options.compressbits<0 or output[-4:].lower()!=".hdf": im.write_image(output,0)
+	else: im.write_compressed(output,0,options.compressbits)
 
 	if options.moverawdata:
 		os.rename(arg,os.path.join(originalsdir,os.path.basename(arg)))
@@ -148,18 +156,18 @@ def importfn(i,arg,options):
 		if d["nx"]<1000 or d["ny"]<1000 : 
 			print("CTF estimation will only work with images at least 1000x1000 in size")
 			sys.exit(1)
-		if d["nx"]<2000 : box=256
-		elif d["nx"]<4000 : box=512
-		elif d["nx"]<6000 : box=768
-		else : box=1024
+		if d["nx"]<2050 : box=512
+		elif d["nx"]<6000 : box=1024
+		else : box=2048
 
 		import e2ctf
 		
 		ds=old_div(1.0,(options.apix*box))
 		ffta=None
 		nbx=0
-		for x in range(100,d["nx"]-box,box):
-			for y in range(100,d["ny"]-box,box):
+		# avoid the very edge, and have a little overlap
+		for x in range(50,d["nx"]-box-50,box*2//3):
+			for y in range(50,d["ny"]-box-50,box*2//3):
 				clip=d.get_clip(Region(x,y,box,box))
 				clip.process_inplace("normalize.edgemean")
 				fft=clip.do_fft()

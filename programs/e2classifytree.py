@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Muyuan Chen, April 2015
 # Copyright (c) 2000-2007 Baylor College of Medicine
@@ -64,7 +61,7 @@ def main():
 	parser.add_argument("--incomplete", type=int,help="The degree of incomplete allowed in the tree on each level", default=0)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--parallel", default=None, help="parallelism argument")
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 	E2n=E2init(sys.argv,options.ppid)
@@ -117,7 +114,7 @@ def main():
 	nnod=EMUtil.get_image_count(options.nodes)
 	if options.parallel :
 		from EMAN2PAR import EMTaskCustomer
-		etc=EMTaskCustomer(options.parallel)
+		etc=EMTaskCustomer(options.parallel, module="e2classifytree.TreeClassifyTask")
 		tasks=[]
 		step=50
 		tt=[list(range(i,i+step)) for i in range(0,npt-step,step)]
@@ -193,8 +190,8 @@ def buildtree(projs,par,nodes,incomplete,verbose):
 	tmplist='/'.join([nodepath,"tmplist.lst"])
 	par="--parallel "+par
 	### Building the similarity matrix for all projections
-	#cmd="e2simmx.py {pj} {pj} {smx} --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali -v {vb:d} --force {parallel}".format(pj=projs,smx=tmpsim, parallel=par, vb=verbose-1)
-	cmd="e2simmx.py {pj} {pj} {smx} --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=frc:maxres=10.0 --ralign=refine --raligncmp=frc:maxres=10.0 --saveali -v {vb:d} --force {parallel}".format(pj=projs,smx=tmpsim, parallel=par, vb=verbose-1)
+	#cmd="e2simmx.py {pj} {pj} {smx} --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali -v {vb:d} {parallel}".format(pj=projs,smx=tmpsim, parallel=par, vb=verbose-1)
+	cmd="e2simmx.py {pj} {pj} {smx} --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=frc:maxres=10.0 --ralign=refine --raligncmp=frc:maxres=10.0 --saveali -v {vb:d} {parallel}".format(pj=projs,smx=tmpsim, parallel=par, vb=verbose-1)
 	print(cmd)
 	launch_childprocess(cmd)
 	
@@ -240,9 +237,9 @@ def buildtree(projs,par,nodes,incomplete,verbose):
 			#print len(ai)
 			if len(ai)<10:
 				par=""
-			cmd="e2simmx.py {lst} {lst} {sim} --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1  --ralign=refine --raligncmp=frc:maxres=10.0 --cmp=frc:maxres=10.0 --saveali -v {vb:d} --force {parallel}".format(lst=tmplist, sim=tmpsim, parallel=par, vb=verbose-1)
+			cmd="e2simmx.py {lst} {lst} {sim} --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1  --ralign=refine --raligncmp=frc:maxres=10.0 --cmp=frc:maxres=10.0 --saveali -v {vb:d} {parallel}".format(lst=tmplist, sim=tmpsim, parallel=par, vb=verbose-1)
 			launch_childprocess(cmd)
-			#launch_childprocess("e2simmx.py {lst} {lst} {sim} --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali -v {vb:d} --force {parallel}".format(lst=tmplist, sim=tmpsim, parallel=par, vb=verbose-1))
+			#launch_childprocess("e2simmx.py {lst} {lst} {sim} --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali -v {vb:d} {parallel}".format(lst=tmplist, sim=tmpsim, parallel=par, vb=verbose-1))
 			simmx=EMData(tmpsim,0)
 			dst=EMNumPy.em2numpy(simmx)
 			#print dst
@@ -453,7 +450,7 @@ class TreeClassifyTask(JSTask):
 	def __init__(self,ptcl,ptid,nodes,align=None,alicmp=("dot",{}),cmp=("dot",{}), ralign=None, alircmp=("dot",{}),cmptmp=None,masktmp=None):
 		rt=EMUtil.get_image_count(nodes)
 		if cmptmp==None or masktmp==None:
-			### Compare to the two children seperately 
+			### Compare to the two children separately 
 			data={"images":["cache",ptcl,ptid], "nodes":["cache",nodes,0,rt]}
 			cmpdiff=False
 		else:

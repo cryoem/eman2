@@ -42,10 +42,10 @@
 #include "xydata.h"
 #include "exception.h"
 #include "ctf.h"
+#include "glutil.h"
 
 #include <boost/python.hpp>
 #include <boost/python/numpy.hpp>
-
 #include <numpy/ndarrayobject.h>
 
 #include <vector>
@@ -68,22 +68,48 @@ using std::endl;
 
 namespace EMAN {
 
-	python::numeric::array make_numeric_array(const float *const data, vector<npy_intp> dims);
-	python::numeric::array make_numeric_complex_array(const std::complex<float> *const data,vector<npy_intp> dims);
+    template <class T>
+	np::ndarray make_numeric_array(T * data, vector<int> dims)
+    {
+        python::tuple shape;
+        python::tuple stride;
+        np::dtype dt = np::dtype::get_builtin<T>();
+
+        switch(dims.size()) {
+            case 1:
+                shape  = python::make_tuple(dims[0]);
+                stride = python::make_tuple(sizeof(T));
+                break;
+
+            case 2:
+                shape  = python::make_tuple(dims[0], dims[1]);
+                stride = python::make_tuple(sizeof(T) * dims[1],
+                                            sizeof(T));
+                break;
+
+            case 3:
+                shape  = python::make_tuple(dims[0], dims[1], dims[2]);
+                stride = python::make_tuple(sizeof(T) * dims[2] * dims[1],
+                                            sizeof(T) * dims[2],
+                                            sizeof(T));
+                break;
+        }
+        
+        return np::from_data(data, dt, shape, stride, python::object());
+    }
 
 	class EMNumPy {
 	public:
 		/** Get an EMData image's pixel data as a numeric numpy array.
 		 * The array and EMData image share the same memory block.
 		 */
-		static python::numeric::array em2numpy(const EMData *const image);
+		static np::ndarray em2numpy(const EMData *const image);
 
 		/** Create an EMData image from a numeric numpy array.
-		 * returned EMData object will take the ownership of the numpy array data.
-		 * Note: the array size is (nz,ny,nx) corresponding to image (nx,ny,nz).
+		 * Returned EMData object will contain copy of the numpy array data.
+		 * Note: The array size is (nz,ny,nx) corresponding to image (nx,ny,nz).
 		 */
-		static EMData* numpy2em(const python::numeric::array& array);
-		static EMData* assign_numpy_to_emdata(const python::numeric::array& array);
+		static EMData* numpy2em(const np::ndarray& array);
 
 		/** Create an EMData image from a numeric numpy array.
 		 * The destructor is necessary to set rdata data member of EMData to 0 (Null)
@@ -102,7 +128,7 @@ namespace EMAN {
 		 * (2) the emdata_buffer is owned by this EMNumPy object.
 		 * Therefore, the Python does not call delete on emdata_buffer upon the assignment.
 		 */
-		EMData* register_numpy_to_emdata(const python::numeric::array& array);
+		EMData* register_numpy_to_emdata(const np::ndarray& array);
 
 		/** Unregister memory allocated and owned by a numeric numpy array to the EMData buffer.
 		 * Make sure to pair this with register_numpy_to_emdata()
@@ -110,7 +136,7 @@ namespace EMAN {
 		 */
 		void unregister_numpy_from_emdata();
 
-		/** the EMData buffer owned and managed by this EMNumPy class.
+        /** the EMData buffer owned and managed by this EMNumPy class.
 		 * However, the memory buffer which emdata_buffer.rdata points should be managed by
 		 * the other object (NumPy)
 		 */
@@ -192,6 +218,15 @@ namespace EMAN {
 			return python::incref(python::dict(result).ptr());
 		}
 	};
+	
+	struct String_to_python : python::to_python_converter<EMBytes, String_to_python>
+	{
+		static PyObject* convert(EMBytes const& str)
+		{	
+			std::string s=std::string(str);
+			return PyBytes_FromStringAndSize(s.c_str(), s.size());
+		}
+	};
 
 
 	struct EMObject_to_python : python::to_python_converter<EMObject,
@@ -200,50 +235,26 @@ namespace EMAN {
 		static PyObject* convert(EMObject const& emobj);
 	};
 
-	template<std::size_t NumDims>
+	template<class T, std::size_t NumDims>
 	struct MArrayND_to_python : python::to_python_converter<
-			boost::multi_array_ref<float, NumDims>,
-			MArrayND_to_python<NumDims> >
+			boost::multi_array_ref<T, NumDims>,
+			MArrayND_to_python<T, NumDims> >
 	{
-		static PyObject* convert(boost::multi_array_ref<float, NumDims> const & marray)
+		static PyObject* convert(boost::multi_array_ref<T, NumDims> const & marray)
 		{
-			vector<npy_intp> dims;
+			vector<int> dims;
 			const size_t * shape = marray.shape();
 			int ndim = marray.num_dimensions();
 			for (int i = ndim-1; i >= 0; i--) {
 				dims.push_back(shape[i]);
 			}
 
-			const float * data = (const float*)marray.data();
-			python::numeric::array numarray = make_numeric_array(data, dims);
+			T * data = (T*)marray.data();
+			np::ndarray numarray = make_numeric_array(data, dims);
 
 			return python::incref(numarray.ptr());
 		}
 	};
-
-
-	template<std::size_t NumDims>
-	struct MCArrayND_to_python : python::to_python_converter<
-			boost::multi_array_ref<std::complex<float>, NumDims>,
-			MCArrayND_to_python<NumDims> >
-	{
-		static PyObject* convert(boost::multi_array_ref<std::complex<float>, NumDims> const & mcarray)
-		{
-			vector<npy_intp> dims;
-			const size_t * shape = mcarray.shape();
-			int ndim = mcarray.num_dimensions();
-			for (int i = ndim-1; i >= 0; i--) {
-				dims.push_back(shape[i]);
-			}
-
-			const std::complex<float> * data = (const std::complex<float>*)mcarray.data();
-			python::numeric::array numarray = make_numeric_complex_array(data, dims);
-
-			return python::incref(numarray.ptr());
-		}
-	};
-
-
 
 
 	template <class T>
@@ -939,5 +950,3 @@ namespace EMAN {
 
 
 #endif
-
-/* vim: set ts=4 noet nospell: */

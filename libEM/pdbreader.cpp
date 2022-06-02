@@ -1,7 +1,3 @@
-/**
- * $Id$
- */
-
 /*
  * Author: Muthu Alagappan, 08/11/2004 (m.alagappan901@gmail.com)
  * Copyright (c) 2000-2006 Baylor College of Medicine

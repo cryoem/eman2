@@ -1,0 +1,148 @@
+~~NOTOC~~
+
+===== sp_eval_isac =====
+Evaluate ISAC classes : Separates stacks of particle images into stacks for each class.
+
+\\
+===== Usage =====
+
+Usage in command line:
+
+  sp_eval_isac.py input_class_avgs output_directory --particles=input_image_stack --align_isac_dir=isac_dir --filtrad=filter_radius --apix=pixel_size --shrink=shrink_factor --ctf=ctf_mode --chains_radius=alignment_radius --nvec=number_of_eigenimages --pca_radius=pca_radius --mask_binary=binary_mask --mask_drawn=drawn_mask --write_centered --applyparams=centering_mode --debug --bandpass_radius=bandpass_radius --bandpass_width --verbosity
+  
+  
+\\
+===== Typical usage =====
+
+The purpose of sp_eval_isac.py is to: 
+
+  : extract particle-membership information from a stack of class averages
+  : write particle-membership lists for each class, and
+  : write separate stacks for each class, with options to low-pass filter, downsample the images, and/or apply alignment parameters
+  : apply a bandpass filter to class averages
+
+\\ __1. Standard usage: create separate stacks for each class__:
+
+  sp_eval_isac.py input_class_avgs output_directory 
+
+\\ __2. To apply alignments from ISAC to output image stacks__:
+
+  mpirun -np 16 sp_eval_isac.py input_class_avgs output_directory --particles=input_image_stack  --isac_dir=isac_directory
+
+Filter radius is in units of Angstroms. If apix parameter is not specified, program will assume units of pixels^-1.
+
+\\ __3. Apply a low-pass filter to the image stacks__:
+
+  sp_eval_isac.py input_class_avgs output_directory --particles=input_image_stack --filtrad=filter_radius --apix=pixel_size
+
+Filter radius is in units of Angstroms. If apix parameter is not specified, program will assume units of pixels^-1.
+
+\\ __4. Downsample output image stack__:
+
+  sp_eval_isac.py input_class_avgs output_directory --particles=input_image_stack --shrink=shrink_factor
+  
+\\ __5. Apply CTF correction to particles__:
+
+  sp_eval_isac.py input_class_avgs output_directory --particles=input_image_stack --ctf=ctf_mode
+  
+Known CTF modes are 'flip' (phase flip) and 'wiener' (amplitude and phase, like with the beautifier)
+  
+\\ __6. Internally generate ordered class averages__:
+
+  sp_eval_isac.py input_class_avgs output_directory --particles=input_image_stack  --isac_dir=isac_directory --chains_radius=chains_radius
+  
+Runs sp_chains.py internally. Units for radius are pixels, on the scale of the input class averages. Thus, if using ISAC averages, the typical radius would be 29.
+  
+\\ __7. Apply centering__:
+
+  sp_eval_isac.py input_class_avgs output_directory --particles=input_image_stack  --isac_dir=isac_directory  --write_centered --applyparams=centering_mode
+  
+Applies centering parameters from sp_center_2d3d.py.  Allowed centering options are  'combined' (shifts and rotation, both floating point) and 'intshifts' (integer shifts only, to avoid interpolation).  
+  
+\\ __8. Run principal component analysis (PCA)__:
+
+  sp_eval_isac.py input_class_avgs output_directory --particles=input_image_stack  --isac_dir=isac_directory --nvec=number_of_eigenimages
+  
+Run principal component analysis and generates a given number of eigenimages.  Four masking strategies can be used.  If no extra arguments are applied, the whole image will be examined by PCA. If a PCA radius is supplied, a circular mask of that radius will be examined. If a binary mask is supplied, pixels under that mask will be examined.  
+
+A "drawn mask" means that, using e2display.py or a similar program, a mask was drawn on top of a class average. The mask will be binarized according to the maximum of the class average, and that binary mask will be used for PCA. When running sp_eval_isac.py, the screen output will report the maximum pixel value among the class averages. Use a value exceeding that value for the pen intensity when drawing the mask using e2display.py.
+
+If one image is present in the mask file (binary or drawn), that mask will be applied to all class averages.  If there is more than one image in a stack of masks, then it will be assumed that each class average has a corresponding mask.
+  
+\\ __9. Apply band-pass filter__:
+
+  sp_eval_isac.py input_class_avgs output_directory --apix=pixel_size --bandpass_radius=filter_radius
+  
+Applies a bandpass filter to class averages.  Bandpass radius assumed to be in units of Angstroms if pixel size is provided.  If pixel size is not provided, filter radius assumed to be in units of absolute frequency (i.e., 0..0.5).
+  
+\\
+===== Input =====
+=== Main Parameters ===
+  ; input_class_avgs : Input class averages : Set of 2D class averages, with particle-membership information in header. (default required string)
+  ; output_directory : Output directory : Directory where outputs will be written. (default required string)
+  ; %%--%%particles : Input particle stack : Required if particles will be processed (i.e., everything except simple class seperation or bandpass filtration).  (default None)
+  ; %%--%%align_isac_dir : ISAC/Beautifier direrctory : ISAC or beautifier directory, from which alignment parameters will be applied. (default None)
+  ; %%--%%filtrad : Low-pass filter radius : Low-pass filter radius. If pixel size is provided, then units will be Angstroms.  If pixel size is not is not specified, program will assume units of absolute frequency (0..0.5). (default 0) : particles!=None
+  ; %%--%%apix : Pixel size : Pixel size, in Angstroms. (default None)
+  ; %%--%%shrink : Downsampling factor : Factor by which images will be downsampled. (default 1) : particles!=None
+  ; %%--%%ctf : CTF-correction mode : Allowed options are 'flip' (phase-flipping) and 'wiener' (phase and amplitude, like with beautifier). (default None|||flip|||wiener) : particles!=None
+  ; %%--%%chains_radius : Chains radius : Alignment radius for generating ordered class averages internally. Units are pixels, on the scale of the input class averages.  In other words, for ISAC averages, this value will typically be 29. (default 0) : particles!=None
+  ; %%--%%nvec : Number of eigenimages : Number of eigenimages to compute using principal component analysis. (default 0) : particles!=None
+  ; %%--%%pca_radius : PCA radius : Radius for principal component analysis (PCA). Only pixels within this radius will be examined using PCA. (default None) : nvec!=0
+  ; %%--%%mask_binary : Binary mask file : A binary mask file to use for principal component analysis. (default None) : nvec!=0
+  ; %%--%%mask_drawn : Drawn mask file : A drawn mask means that, using e2display.py or a similar program, a mask was drawn on top of a class average. The mask will be binarized according to the maximum of the class average, and that binary mask will be used for PCA. When running sp_eval_isac.py, the screen output will report the maximum pixel value among the class averages. Use a value exceeding that value for the pen intensity when drawing the mask using e2display.py. (default None) : nvec!=0
+  ; %%--%%bandpass_radius : Bandpass radius : Applies a bandpass filter to class averages.  Bandpass radius assumed to be in units of Angstroms if pixel size is provided. (default None) : particles==None
+  
+\\
+=== Advanced Parameters ===
+  ; %%--%%write_centered : Apply centering : Applies centering parameters from sp_center_2d3d.py. (default False) : particles!=None
+  ; %%--%%applyparams : Centering options : Allowed centering options are  'combined' (shifts and rotation, both floating point) and 'intshifts' (integer shifts only, to avoid interpolation). (default combined|||intshifts) : write_centered==True
+  ; %%--%%debug : Debug centering : For use with centering option 'intshifts', to make sure that correct shifts are applied, rotation is applied, and averages are computed. If this flag is not activated, no averages will be generated. (default False) : applyparams==intshifts
+  ; %%--%%bandpass_width : Bandpass width : Width of bandpass filter, in units of absolute frequency (i.e., 0..0.5). (default 0.03) : bandpass_radius!=None
+  ; %%--%%verbosity : Verbosity : Controls the amount of information written to the screen, ranging from 0..6. (default 2)
+
+\\
+===== Output =====
+  ; classmap.txt : Class-to-particle lookup table, one file for all classes
+  ; docclass???.txt : List of particles for each class, one file per class
+  ; EMAN2DB/stkclass_???.bdb : Virtual stacks of particles for each class
+  ; EMAN2DB/stkflt_???.bdb : (Optional) virtual stacks of filtered particles for each class
+ 
+\\
+===== Description =====
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+
+\\
+==== Developer Notes ====
+  : Should allow filter types other than Gaussian low-pass
+  : Should offer option to write aligned images
+
+\\
+==== Author / Maintainer ====
+Tapu Shaikh
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_eval_isac.py
+
+\\
+==== See also ====
+
+\\
+==== Maturity ====
+Beta:: Under evaluation and testing. Please let us know if there are any bugs.
+
+\\
+==== Bugs ====
+  : PCA options give somewhat different results since the change to Python 3
+
+\\

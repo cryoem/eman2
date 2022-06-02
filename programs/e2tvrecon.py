@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 # Author: James Michael Bell, 09/2014 (jmbell@bcm.edu), modified by Jesus Galaz-Montoya (jgmontoy@bcm.edu)
 # Last modified 03/Nov/2014
 # Copyright (c) 2014 Baylor College of Medicine
@@ -94,7 +91,7 @@ def main():
 	parser.add_argument("--saveslices", action="store_true", default=False,help="""If provided,
 		this option will save each reconstructed 2-D slice (along Y) to disk.""")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="""
-		verbose level [0-9], higner number means higher level of verboseness.""")
+		verbose level [0-9], higher number means higher level of verboseness.""")
 	parser.add_argument("--parallel",type=str,default='thread:1',help="""Default=thread:1. 
 		See http://blake.bcm.edu/emanwiki/EMAN2/Parallel""")
 	parser.add_argument("--ppid", type=int, help="""Set the PID of the parent process, 
@@ -151,7 +148,7 @@ def main():
 		print("\n\n(e2tvrecon.py) INITIALIZING PARALLELISM\n\n")
 		
 	from EMAN2PAR import EMTaskCustomer
-	etc=EMTaskCustomer(options.parallel)
+	etc=EMTaskCustomer(options.parallel, "e2tvrecon.TVReconTask")
 
 	tasks=[]
 	nimgs = len( tiltangles )

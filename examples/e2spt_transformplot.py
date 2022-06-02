@@ -30,9 +30,6 @@ Author: Jesus Galaz - May/2017, Last update: may/2016
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 '''
-from __future__ import print_function
-from __future__ import division
-
 from past.utils import old_div
 from builtins import range
 from EMAN2 import *
@@ -61,7 +58,7 @@ def main():
 	
 	parser.add_argument("--subset",type=int,default=0,help="""Default=0 (not used). Plot only this substet of transforms from the hdf stack or json file provided.""")
 	
-	parser.add_argument("--verbose", "-v", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness", dest="verbose", action="store", metavar="n")
+	parser.add_argument("--verbose", "-v", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness", dest="verbose", action="store", metavar="n")
 		
 	(options, args) = parser.parse_args()	
 	

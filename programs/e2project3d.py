@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
 # Additional Author: David Woolford 2007-2008 (woolford@bcm.edu)
@@ -69,7 +66,7 @@ class EMParallelProject3D(object):
 		self.modeln=modeln
 
 		from EMAN2PAR import EMTaskCustomer
-		self.etc=EMTaskCustomer(options.parallel)
+		self.etc=EMTaskCustomer(options.parallel, module="e2project3d.EMProject3DTaskDC")
 		print("Precache ",fsp)
 		self.etc.precache([fsp])
 
@@ -175,17 +172,19 @@ class EMParallelProject3D(object):
 		for idx,image in list(rslts.items()):
 			if not isinstance(image,EMData): continue # this is here because we get the dimensions of the database as a key (e.g. '40x40x1').
 			image["model_id"]=self.modeln
-			if self.options.append : image.write_image(self.options.outfile,-1)
-			else : image.write_image(self.options.outfile,idx+self.start)
+			#if self.options.append : image.write_image(self.options.outfile,-1)
+			#else : image.write_image(self.options.outfile,idx+self.start)
+			if self.options.append : image.write_compressed(self.options.outfile,-1,self.options.compressbits)
+			else : image.write_compressed(self.options.outfile,idx+self.start,self.options.compressbits)
 
 		return True
 
 def prethreshold(img):
 	"""Applies an automatic threshold to the image"""
 	snz=img["sigma_nonzero"]
-	img.process_inplace("threshold.belowtozero",{"minval":snz*1.5})
+	img.process_inplace("threshold.belowtozero",{"minval":snz/2.0})
 	img.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.5})
-	img.process_inplace("threshold.belowtozero",{"minval":old_div(snz,100.0)})
+#	img.process_inplace("threshold.belowtozero",{"minval":snz/100.0})
 
 class EMProject3DTaskDC(JSTask):
 	def __init__(self,command="e2project3d.py",data=None,options=None):
@@ -248,14 +247,15 @@ def main():
 	parser.add_argument("--smear", dest = "smear", type = int, default=0,help="Used in conjunction with --phitoo, this will rotationally smear between phi steps. The user must specify the amount of smearing (typically 2-10)")
 	parser.add_argument("--projector", dest = "projector", default = "standard",help = "Projector to use")
 	#parser.add_argument("--verifymirror",action="store_true",help="Used for testing the accuracy of mirror projects",default=False)
-	parser.add_argument("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
+#	parser.add_argument("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
 	parser.add_argument("--append", "-a",dest="append",default=False, action="store_true",help="Append to the output file")
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--check","-c", default=False, action="store_true",help="Checks to see if the command line arguments will work.")
 	parser.add_argument("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
 	parser.add_argument("--postprocess", metavar="processor_name(param1=value1:param2=value2)", type=str, action="append", help="postprocessor to be applied to each projection. There can be more than one postprocessor, and they are applied in the order in which they are specified. See e2help.py processors for a complete list of available processors.")
 	parser.add_argument("--cuda",action="store_true", help="Use CUDA for the projections.",default=False)
 	parser.add_argument("--prethreshold",action="store_true", help="Applies an automatic threshold to the volume before projecting",default=False)
+	parser.add_argument("--compressbits", type=int,help="Bits to keep when writing projections with compression. 0->lossless floating point. Default 10 (3 significant figures)", default=10)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--parallel",help="Parallelism string",default=None,type=str)
 
@@ -297,8 +297,8 @@ def main():
 
 	# just remove the file - if the user didn't specify force then the error should have been found in the check function
 	if ( os.path.exists(options.outfile )):
-		if ( options.force ):
-			remove_file(options.outfile)
+#		if ( options.force ):
+		remove_file(options.outfile)
 
 	logger=E2init(sys.argv,options.ppid)
 
@@ -377,8 +377,10 @@ def generate_and_save_projections(options, data, eulers, smear=0,modeln=0):
 
 		p["model_id"]=modeln
 		try:
-			if options.append: p.write_image(options.outfile,-1)
-			else : p.write_image(options.outfile,i)
+			#if options.append: p.write_image(options.outfile,-1)
+			#else : p.write_image(options.outfile,i)
+			if options.append: p.write_compressed(options.outfile,-1,options.compressbits)
+			else : p.write_compressed(options.outfile,i,options.compressbits)
 		except:
 			print("Error: Cannot write to file %s"%options.outfile)
 			exit(1)
@@ -415,16 +417,16 @@ def check(options, verbose=0):
 				print("Error: 3D image %s does not exist" %f)
 			error = True
 
-	if ( options.force and options.append):
-		if verbose>0:
-			print("Error: cannot specify both append and force")
-		error = True
+#	if ( options.force and options.append):
+#		if verbose>0:
+#			print("Error: cannot specify both append and force")
+#		error = True
 
-	if ( options.nofilecheck == False and os.path.exists(options.outfile )):
-		if ( not options.force and not options.append):
-			if verbose>0:
-				print("Error: output file exists, use -f to overwrite or -a to append. No action taken")
-			error = True
+#	if ( options.nofilecheck == False and os.path.exists(options.outfile )):
+#		if ( not options.force and not options.append):
+#			if verbose>0:
+#				print("Error: output file exists, use -f to overwrite or -a to append. No action taken")
+#			error = True
 
 	if hasattr(options,"parallel") and options.parallel != None:
   		if len(options.parallel) < 2:

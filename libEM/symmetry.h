@@ -465,7 +465,7 @@ namespace EMAN {
 			/** Get a description
 		 * @return a clear desciption of this class
 			 */
-		virtual string get_desc() const { return "Helical symmetry, with support for N-start, pitch and limited tilt range. Specify as H<nsym>:<nstart>:<daz>:<tz in pix>[:<maxtilt>]"; }
+		virtual string get_desc() const { return "Helical symmetry, with support for N-start, pitch and limited tilt range. Specify as H[nsym]:[nstart]:[daz]:[tz in pix](:[maxtilt])"; }
 
 			/** Get a dictionary containing the permissable parameters of this class
 		 * Of all the symmetries, helical has the most options. This is because

@@ -1,7 +1,3 @@
-/**
- * $Id$
- */
-
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
@@ -38,7 +34,7 @@
 #ifndef eman_reconstructor_h__
 #define eman_reconstructor_h__ 1
 #include <fstream>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include "emdata.h"
 #include "exception.h"
 #include "emobject.h"
@@ -47,7 +43,7 @@
 using std::vector;
 using std::map;
 using std::string;
-using boost::shared_ptr;
+using std::shared_ptr;
 
 using std::cout;
 using std::cerr;
@@ -166,6 +162,17 @@ namespace EMAN
 		 */
 		virtual int determine_slice_agreement(EMData* slice, const Transform &euler, const float weight=1.0, bool sub=true ) { throw; }
 
+		/** This will create a projection from the current reconstruction. Only valid before finish() is called.
+		 * may not be implemented for all Reconstructors. If the reconstructor implements padding, the projection will also
+		 * be padded. The euler parameter will ignore translation and mirroring
+	  	 * @param euler The orientation of the slice as a Transform object
+		 * @param ret_fourier If set returns the Fourier transform of the projection. For many reconstructors this may be less expensive.
+		 * @return 0 if OK. 1 if error.
+	  	 * @exception
+		 */
+		virtual EMData* projection(const Transform &euler, int ret_fourier = 1) { throw; }
+
+		
 		/** Finish reconstruction and return the complete model.
 		 * @param doift A flag indicating whether the returned object should be guaranteed to be in real-space (true) or should be left in whatever space the reconstructor generated
 		 * @return The result 3D model.
@@ -429,6 +436,12 @@ namespace EMAN
 		*/
 		virtual int insert_slice(const EMData* const slice, const Transform & euler,const float weight);
 
+		/** Generates a projection by extracting a slice in Fourier space
+		* @param euler The orientation of the slice as a Transform object
+		* @param ret_fourier If true, will return the Fourier transform of the projection
+		*/
+		virtual EMData* projection(const Transform &euler, int ret_fourier);
+
 
 		/** Compares a slice to the current reconstruction volume and computes a normalization factor and
 		 * quality. Normalization and quality are returned via attributes set in the passed slice. You may freely mix calls
@@ -489,14 +502,17 @@ namespace EMAN
 		{
 			TypeDict d;
 			d.put("size", EMObject::INTARRAY, "Required. The dimensions of the real-space output volume, including any padding (must be handled by the calling application). Assumed that apix x/y/z identical.");
-			d.put("sym", EMObject::STRING, "Optional. The symmetry of the reconstructed volume, c?, d?, oct, tet, icos, h?. Default is c1, ie - an asymmetric object");
+			d.put("sym", EMObject::STRING, "Required. The symmetry of the reconstructed volume, c?, d?, oct, tet, icos, h?. Default is c1, ie - an asymmetric object");
 			d.put("mode", EMObject::STRING, "Optional. Fourier pixel insertion mode name (nearest_neighbor, gauss_2, gauss_3, gauss_5, gauss_5_slow, gypergeom_5, experimental) gauss_2 is the default.");
+			d.put("corners", EMObject::BOOL, "Optional. If not set, then reconstruction will cover a spherical volume with a radius of nx/2. If set, the full Fourier volume will be reconstructed, but will be ~2x slower.");
 			d.put("sqrtnorm", EMObject::BOOL, "Optional. When normalizing, additionally divides by the sqrt of the normalization factor to damp exaggerated features. Is this justifyable ? No idea (yet). Default is false.");
 			d.put("usessnr", EMObject::BOOL, "Optional. Looks for and uses the class_ssnr header parameter from each slice to weight each voxel during insertion to the reconstruction.");
 			d.put("verbose", EMObject::BOOL, "Optional. Toggles writing useful information to standard out. Default is false.");
 			d.put("quiet", EMObject::BOOL, "Optional. If false, print verbose information.");
 			d.put("subvolume",EMObject::INTARRAY, "Optional. (xorigin,yorigin,zorigin,xsize,ysize,zsize) all in Fourier pixels. Useful for parallelism.");
 			d.put("savenorm",EMObject::STRING, "Debug. Will cause the normalization volume to be written directly to the specified file when finish() is called.");
+			
+			d.put("normout",EMObject::EMDATA, "Will write the normalization volume to the given EMData object file when finish() is called.");
 			return d;
 		}
 		
@@ -521,7 +537,7 @@ namespace EMAN
 		 * @param euler a transform storing the slice euler angle
 		 * @param weight weighting factor for this slice (usually number of particles in a class-average)
 		 */
-		virtual void do_insert_slice_work(const EMData* const input_slice, const Transform & euler,const float weight);
+		virtual void do_insert_slice_work(const EMData* const input_slice, const Transform & euler,const float weight, const bool corners=false);
 
 		/** A function to perform the nuts and bolts of comparing an image slice
 		 * @param input_slice the slice to insert into the 3D volume
@@ -898,6 +914,95 @@ namespace EMAN
 		EMData* preprocess_slice(const EMData* const slice, const Transform& t);
 	};
 
+	/** Real space 3D reconstruction using per-voxel median.
+     *
+     * Real-space reconstruction similar to unfiltered back-projection, but computing the median rather than the mean value.
+     */
+	class RealMedianReconstructor:public Reconstructor, public ReconstructorVolumeData
+	{
+	  public:
+		RealMedianReconstructor() {  }
+
+		virtual ~RealMedianReconstructor() {}
+
+		virtual void setup();
+
+	  	/** While you can just insert unprocessed slices, if you call preprocess_slice yourself, and insert the returned
+		 * slice instead, repeatedly, it can save a fair bit of computation. The default operation just returns a copy
+		 of the image, as the preprocessing is reconstructor-specific.
+	  	 * @return the processed slice
+	  	 * @param slice the slice to be prepocessed
+	  	 * @param t transform
+	  	 * @exception InvalidValueException when the specified padding value is less than the size of the images
+		 */
+		virtual EMData* preprocess_slice( const EMData* const slice, const Transform& t = Transform() );
+		
+		/** Insert an image slice to the reconstructor. To insert multiple
+		 * image slices, call this function multiple times.
+		 *
+		 * @param slice Image slice.
+		 * @param euler Euler angle of this image slice.
+	  	 * @param weight A weighting factor for this slice, generally the number of particles in a class-average. May be ignored by some reconstructors
+		 * @return 0 if OK. 1 if error.
+		 */
+		virtual int insert_slice(const EMData* const slice, const Transform & euler,const float weight);
+
+		/** Dummy function which always returns the same values.
+	  	 * @param input_slice The EMData slice to be compared
+	  	 * @param euler The orientation of the slice as a Transform object
+	  	 * @param weight A weighting factor for this slice, generally the number of particles in a class-average. May be ignored by some reconstructors
+		 * @param sub Flag indicating whether to subtract the slice from the volume before comparing. May be ignored by some reconstructors
+		 * @return 0 if OK. 1 if error.
+		* @exception NullPointerException if the input EMData pointer is null
+		* @exception ImageFormatException if the image is complex as opposed to real
+		*/
+		virtual int determine_slice_agreement(EMData* slice, const Transform &euler, const float weight=1.0, bool sub=true );
+
+		virtual EMData *finish(bool doift=true);
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual string get_desc() const
+		{
+			return "A back projection reconstructor with alternative statistics. mode:\n\
+0 - median rather than mean per voxel (default)\n\
+1 - similar to a mode. progressive subdivision of numeric axis to find dense value cluster\n\
+2 - median with a bias towands zero (postive and negative)\n\
+3 - median with a bias towards the 1/2 of the values spanning a narrower range\n\
+4 - specifically for tomography, requires slices to be in order by tilt\n\
+";
+		}
+
+		static Reconstructor *NEW()
+		{
+			return new RealMedianReconstructor();
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("mode", EMObject::INT, "Default is 0, median. 1 - compute estimated statistical mode.");
+			d.put("size", EMObject::INTARRAY, "Required. The dimensions of the real-space output volume, including any padding (must be handled by the calling application). Assumed that apix x/y/z identical.");
+			d.put("weight", EMObject::FLOAT, "Optional. A temporary value set prior to slice insertion, indicative of the inserted slice's weight. Default sis 1.");
+			d.put("sym", EMObject::STRING, "Optional. The symmetry to impose on the final reconstruction. Default is c1");
+			d.put("verbose", EMObject::INT, "Optional. Toggles writing diagnostic information to standard out. Default is 0.");
+			return d;
+		}
+		
+		static const string NAME;
+		
+	  private:
+		// Disallow copy construction
+		RealMedianReconstructor( const RealMedianReconstructor& that);
+		// Disallow assignment
+		RealMedianReconstructor& operator=( const RealMedianReconstructor& );
+		
+		vector<EMData *> slices;
+		vector<Transform> xforms;
+	};
 
 	/** Direct Fourier inversion Reconstructor
      *
@@ -1710,5 +1815,3 @@ namespace EMAN
 }
 
 #endif
-
-/* vim: set ts=4 noet: */

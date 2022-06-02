@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu),
 # David Woolford 2007-2008 (woolford@bcm.edu)
@@ -39,7 +36,6 @@ from __future__ import division
 from past.utils import old_div
 from builtins import range
 from EMAN2 import *
-from EMAN2db import db_open_dict
 from copy import deepcopy
 from math import ceil
 import os
@@ -48,6 +44,7 @@ import math
 import random
 import traceback
 import numpy as np
+from EMAN2jsondb import JSTask
 
 def get_usage():
 	progname = os.path.basename(sys.argv[0])
@@ -94,6 +91,8 @@ def main():
 	parser.add_argument("--pad", metavar="x or x,y", default=None,type=str, help="Will zero-pad images to the specifed size (x,y) or (x,x) prior to reconstruction. If not specified or 0 no padding occurs. If a negative value is specified automatic padding is performed. ")
 	parser.add_argument("--padvol", metavar="x or x,y,z", default=None,type=str, help="Defines the dimensions (x,y,z) or (x,x,x) of the reconstructed volume. If ommitted, implied value based on padded 2D images is used.")
 	parser.add_argument("--outsize", metavar="x or x,y,z", default=None, type=str, help="Defines the dimensions (x,y,z) or (x,x,x) of the final volume written to disk, if ommitted, size will be based on unpadded input size")
+	parser.add_argument("--compressbits", type=int,help="Bits to keep when writing volumes with compression. 0->lossless floating point. Default 10 (3 significant figures)", default=10)
+
 	#parser.add_argument("--clipz", default=None, type=int, help="Extract a specified number of central z-slices. Option disabled by default.")
 
 	parser.add_argument("--savenorm", default=None, type=str, help="If set, will save the normalization volume showing Fourier space filling to the specified file")
@@ -113,14 +112,17 @@ def main():
 	parser.add_argument("--seedweight", type=float, default=1.0, help="If seedmap specified, this is how strongly the seedmap will bias existing values. 1 is default, and is equivalent to a one particle weight.")
 	parser.add_argument("--seedweightmap", type=str, default=None, help="Specify a full map of weights for the seed. This must be in the same format as the --savenorm output map.")
 
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on a single computer. This is the only parallelism supported by e2make3dpar", guitype='intbox', row=24, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--preprocess", metavar="processor_name(param1=value1:param2=value2)", type=str, action="append", help="preprocessor to be applied to the projections prior to 3D insertion. There can be more than one preprocessor and they are applied in the order in which they are specifed. Applied before padding occurs. See e2help.py processors for a complete list of available processors.")
 	parser.add_argument("--setsf",type=str,help="Force the structure factor to match a 'known' curve prior to postprocessing (<filename>, auto or none). default=none",default="none")
 	parser.add_argument("--postprocess", metavar="processor_name(param1=value1:param2=value2)", type=str, action="append", help="postprocessor to be applied to the 3D volume once the reconstruction is completed. There can be more than one postprocessor, and they are applied in the order in which they are specified. See e2help.py processors for a complete list of available processors.")
 	parser.add_argument("--apix",metavar="A/pix",type=float,help="A/pix value for output, overrides automatic values",default=None)
+	parser.add_argument("--useseedasref", action="store_true", default=False, help="use seed map as reference to weight the particles.")
 
+	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default=None)
+	
 	# Database Metadata storage
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
@@ -249,33 +251,137 @@ def main():
 		niter=1
 	#########################################################
 	# The actual reconstruction
+	options.padvol3=padvol
+	if options.parallel!=None:
+		par=options.parallel.split(':')
+		if par[0].startswith("thread"):
+			#options.parallel=None
+			options.threads=int(par[1])
+		elif par[0]=="mpi":
+			nthr=int(par[1])
+			ppt=len(data)/nthr
+			if ppt>16:
+				print("Inserting {:.1f} images per thread...".format(ppt))
+				### prepare some options
+				
+				
+			else:
+				print("Too few images in input ({:.1f} images per thread). Switching back to threading".format(ppt))
+				options.parallel=None
+				options.threads=nthr
+		else:
+			
+			options.parallel=None
+			
+	refmap=None
+	if options.seedmap!=None :
+		seed=EMData(options.seedmap)	
+		#seed.clip_inplace(Region(old_div((nx-padvol[0]),2),old_div((ny-padvol[1]),2),old_div((nslice-padvol[2]),2),padvol[0],padvol[1],padvol[2]))
+		seed=seed.get_clip(Region((seed["nx"]-padvol[0])//2,(seed["ny"]-padvol[1])//2,(seed["nz"]-padvol[2])//2,padvol[0],padvol[1],padvol[2]))
+		
+		if options.useseedasref:
+			refmap=seed.copy()	
+			refmap=refmap.do_fft()
+			refmap.process_inplace("xform.phaseorigin.tocenter")
+			refmap.process_inplace("xform.fourierorigin.tocenter")
+			
+		#seed.process_inplace("threshold.belowtozero",{"minval":0})
+		seed.process_inplace("xform.phaseorigin.tocenter")
+		seed.do_fft_inplace()
+	else:
+		seed=None
+		
+		
+
 
 	for it in range(niter):
-		threads=[threading.Thread(target=reconstruct,args=(data[i::options.threads],recon,options.preprocess,options.pad,
-				options.fillangle,options.altedgemask,max(options.verbose-1,0),options.input.endswith(".lst"))) for i in range(options.threads)]
+		
+		if options.parallel:
+			print("running in mpi mode. This is experimental, so please switch back to threading if anything goes wrong...")
+			
+			if it>0:
+				seed=output
+		
+			from EMAN2PAR import EMTaskCustomer
+			etc=EMTaskCustomer(options.parallel, module="e2make3dpar.Make3dTask")
+			num_cpus = etc.cpu_est()
+			
+			print("{} total CPUs available".format(num_cpus))
+			
+			
+			tasks=[data[i::num_cpus] for i in range(num_cpus)]
+			
+			
+			print("{} jobs".format(len(tasks)))
 
-		if it==0:
-			if options.seedmap!=None :
-				seed=EMData(options.seedmap)
-		#		seed.process_inplace("normalize.edgemean")
-				seed.clip_inplace(Region(old_div((nx-padvol[0]),2),old_div((ny-padvol[1]),2),old_div((nslice-padvol[2]),2),padvol[0],padvol[1],padvol[2]))
-				seed.do_fft_inplace()
-				if options.seedweightmap==None:  recon.setup_seed(seed,options.seedweight)
-				else:
-					seedweightmap=EMData(seedweightmap,0)
-					recon.setup_seedandweights(seed,seedweightmap)
-			else : recon.setup()
+			tids=[]
+			for t in tasks:
+				task = Make3dTask(t, seed, refmap, options)
+				tid=etc.send_task(task)
+				tids.append(tid)
+
+			while 1:
+				st_vals = etc.check_task(tids)
+				E2progress(logger, np.mean(st_vals)/100.)
+				#print("{:.1f}/{} finished".format(np.mean(st_vals), 100))
+				#print(tids)
+				if np.min(st_vals) == 100: break
+				time.sleep(5)
+
+			#dics=[0]*nptcl
+			
+			output=EMData(padvol[0], padvol[1], padvol[2])
+			normvol=EMData(padvol[0]//2+1, padvol[1], padvol[2])
+			output.to_zero()
+			output.do_fft_inplace()
+			
+			normvol.to_zero()
+			for i in tids:
+				threed, norm=etc.get_results(i)[1]
+				threed.process_inplace("math.multamplitude", {"amp":norm})
+				output.add(threed)
+				normvol.add(norm)
+				
+			normvol.process_inplace("math.reciprocal")
+			output.process_inplace("math.multamplitude", {"amp":normvol})
+			
+			output.do_ift_inplace()
+			output.depad()
+			output.process_inplace("xform.phaseorigin.tocenter")
+			
+			del etc
+			
 		else:
-			recon.setup_seed(output,1.0)
+			threads=[threading.Thread(target=reconstruct,args=(
+				data[i::options.threads],
+				recon,options.preprocess,
+				options.pad,
+				options.fillangle,
+				options.altedgemask,
+				max(options.verbose-1,0),
+				options.input.endswith(".lst"),
+				refmap
+				)) for i in range(options.threads)]
 
-		for i,t in enumerate(threads):
-			if options.verbose>1: print("started thread ",i)
-			t.start()
+			if it==0:
+				if options.seedmap!=None :
+					if options.seedweightmap==None:  
+						recon.setup_seed(seed,options.seedweight)
+					else:
+						seedweightmap=EMData(seedweightmap,0)
+						recon.setup_seedandweights(seed,seedweightmap)
+				else : recon.setup()
+			else:
+				recon.setup_seed(output,1.0)
 
-		for t in threads: t.join()
+			for i,t in enumerate(threads):
+				if options.verbose>1: print("started thread ",i)
+				t.start()
 
-#		output = recon.finish(it==niter-1)		# only return real-space on the final pass
-		output = recon.finish(True)
+			for t in threads: t.join()
+
+	#		output = recon.finish(it==niter-1)		# only return real-space on the final pass
+			output = recon.finish(True)
 
 		if options.verbose:
 			print("Iteration ",it)
@@ -384,7 +490,8 @@ def main():
 		remove_file(options.output)
 
 	# write the reconstruction to disk
-	output.write_image(options.output,0)
+#	output.write_image(options.output,0)
+	output.write_compressed(options.output,0,options.compressbits)
 	if options.verbose>0:
 			print("Output File: "+options.output)
 
@@ -437,67 +544,85 @@ def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,preprocess):
 		
 		#### deal with lst input with transform in comment
 		getlst=False
-		if inputfile.endswith(".lst"):
-			lst=LSXFile(inputfile, True)
-			lstinfo=lst.read(0)
-			if lstinfo[2]:
-				getlst=True
+		#if inputfile.endswith(".lst"):
+			#lst=LSXFile(inputfile, True)
+			#lstinfo=lst.read(0)
+			#if lstinfo[2]:
+				#getlst=True
 
 		for i in range(n_input):
-			tmp.read_image(inputfile,i,True)
+			
 			#else : tmp=get_processed_image(inputfile,i,-1,preprocess,pad)
 			# these rely only on the header
 			
 			if getlst:
 				lstinfo=lst.read(i)
-				dc=eval(lstinfo[2])
-				if "score" in dc:
-					score=dc.pop("score")
-				else:
+				for d in lstinfo[2].split(';'):
+					dc=eval(d)
 					score=2
-				elem={"xform":Transform(dc)}
+					dfdf=0
+					if "score" in dc:
+						score=dc.pop("score")
+						
+					if "dfdf" in dc:
+						dfdf=dc.pop("dfdf")
+					
+					xfkey=["type","alt","az","phi","tx","ty","tz","alpha","scale"]
+					keys=list(dc.keys())
+					for k in keys:
+						if k not in xfkey:
+							dc.pop(k)
+						
+					elem={"xform":Transform(dc)}
+					
+					if score<2:
+						elem["quality"]=-abs(score)
+						elem["weight"]=abs(score)
+					else:
+						elem["quality"]=1.0
+						elem["weight"]=1.0
+						
+					
+					elem["filename"]=inputfile
+					elem["filenum"]=i
+					elem["fileslice"]=-1
+					elem["dfdf"]=dfdf
+
+					data.append(elem)
 			else:
-			
+				tmp.read_image(inputfile,i,True)			
 				try: elem={"xform":tmp["xform.projection"]}
 				except : continue
 					#raise Exception,"Image %d doesn't have orientation information in its header"%i
 
-			# skip any particles targeted at a different model
-			if inputmodel != None and tmp["model_id"]!=inputmodel : continue
+				# skip any particles targeted at a different model
+				if inputmodel != None and tmp["model_id"]!=inputmodel : continue
 
-			if no_weights==1: elem["weight"]=1.0
-			else :
-				try:
-					elem["weight"]=float(tmp["ptcl_repr"])
-					if no_weights==2 : elem["weight"]=sqrt(elem["weight"])
-				except: elem["weight"]=1.0
-				# This is bad if you have actual empty classes...
-				#if elem["weight"]<=0 :
-					#print "Warning, weight %1.2f on particle %d. Setting to 1.0"%(elem["weight"],i)
-					#elem["weight"]=1.0
+				if no_weights==1: elem["weight"]=1.0
+				else :
+					try:
+						elem["weight"]=float(tmp["ptcl_repr"])
+						if no_weights==2 : elem["weight"]=sqrt(elem["weight"])
+					except: elem["weight"]=1.0
+					# This is bad if you have actual empty classes...
+					#if elem["weight"]<=0 :
+						#print "Warning, weight %1.2f on particle %d. Setting to 1.0"%(elem["weight"],i)
+						#elem["weight"]=1.0
 
-			try: elem["quality"]=float(tmp["class_qual"])
-			except:
-				try: elem["quality"]=old_div(1.0,(elem["weight"]+.00001))
-				except: elem["quality"]=1.0
+				try: elem["quality"]=float(tmp["class_qual"])
+				except:
+					try: elem["quality"]=old_div(1.0,(elem["weight"]+.00001))
+					except: elem["quality"]=1.0
+							
 				
-			if getlst:
-				if score<2:
-					elem["quality"]=-abs(score)
-					elem["weight"]=abs(score)
-				else:
-					elem["quality"]=1.0
-					elem["weight"]=1.0
+				elem["filename"]=inputfile
+				elem["filenum"]=i
+				elem["fileslice"]=-1
+				#if not lowmem:
+					#elem["data"]=tmp
+					#tmp=EMData()
 
-				
-			elem["filename"]=inputfile
-			elem["filenum"]=i
-			elem["fileslice"]=-1
-			#if not lowmem:
-				#elem["data"]=tmp
-				#tmp=EMData()
-
-			data.append(elem)
+				data.append(elem)
 
 		print("Using %d images"%len(data))
 	return data
@@ -528,7 +653,7 @@ def get_processed_image(filename,nim,nsl,preprocess,pad,nx=0,ny=0):
 
 	return ret
 
-def reconstruct(data,recon,preprocess,pad,fillangle,altmask,verbose=0, lstinput=False):
+def reconstruct(data,recon,preprocess,pad,fillangle,altmask,verbose=0, lstinput=False, ref=None):
 	"""Do an actual reconstruction using an already allocated reconstructor, and a data list as produced
 	by initialize_data(). preprocess is a list of processor strings to be applied to the image data in the
 	event that it hasn't already been read into the data array. start and startweight are optional parameters
@@ -554,14 +679,13 @@ def reconstruct(data,recon,preprocess,pad,fillangle,altmask,verbose=0, lstinput=
 	ptcl=0
 	for i,elem in enumerate(data):
 		# get the image to insert
-		try:
+		if "data" in elem:
 			img=elem["data"]
 			if img["sigma"]==0 : contine
 			if not img.has_attr("reconstruct_preproc") :
 				img=recon.preprocess_slice(img,elem["xform"])
 				elem["data"]=img		# cache this for use in later iterations
-		except:
-#			print traceback.print_exc()
+		else:
 			if elem["fileslice"]>=0 : img=get_processed_image(elem["filename"],elem["filenum"],elem["fileslice"],preprocess,pad,elem["nx"],elem["ny"])
 			else : img=get_processed_image(elem["filename"],elem["filenum"],-1,preprocess,pad)
 			if img["sigma"]==0 : continue
@@ -576,11 +700,32 @@ def reconstruct(data,recon,preprocess,pad,fillangle,altmask,verbose=0, lstinput=
 				xf.set_rotation({"type":"eman"})
 				#### inverse the translation so make3d matches projection 
 				xf=xf.inverse()
+				
+			if ("dfdf" in elem) and (elem["dfdf"]!=0) and (img.has_attr("ctf")):
+				ctf=img["ctf"]
+				fft1=img.do_fft()
+				flipim=fft1.copy()
+				ctf.compute_2d_complex(flipim,Ctf.CtfType.CTF_SIGN)
+				fft1.mult(flipim)
+				ctf1=EMAN2Ctf(ctf)
+				ctf1.defocus=ctf1.defocus+elem["dfdf"]
+				ctf1.compute_2d_complex(flipim,Ctf.CtfType.CTF_SIGN)
+				fft1.mult(flipim)
+				img=fft1.do_ift()
 			
 			img=recon.preprocess_slice(img,xf)	# no caching here, with the lowmem option
 #		img["n"]=i
 #		if i==7 : display(img)
-
+		if ref:
+			xf=Transform(elem["xform"].get_rotation("eman"))
+			pj=ref.project('gauss_fft',{"transform":xf, "returnfft":1})
+			fsc=img.calc_fourier_shell_correlation(pj)
+			fsc=np.array(fsc).reshape((3,-1))[1]
+			fsc[:4]=1;fsc=np.clip(fsc+.1, 1e-2, 1);
+			img.process_inplace("filter.radialtable", {"table":fsc.tolist()})
+			elem["weight"]=1
+			#exit()
+			       
 		rd=elem["xform"].get_rotation("eman")
 		if verbose>0 : print(" %d/%d\r"%(i,len(data)), end=' ')
 		sys.stdout.flush()
@@ -603,6 +748,78 @@ def reconstruct(data,recon,preprocess,pad,fillangle,altmask,verbose=0, lstinput=
 
 
 	return
+
+
+
+class Make3dTask(JSTask):
+	
+	
+	def __init__(self, inp, seed, refmap, options):
+		
+		data={"data":inp,"seed":seed, "ref":refmap}
+		JSTask.__init__(self,"Make3d",data,{},"")
+		self.options=options
+	
+	
+	def execute(self, callback):
+		
+		callback(0)
+		data=self.data["data"]
+		seed=self.data["seed"]
+		ref=self.data["ref"]
+		options=self.options
+		
+		padvol=options.padvol3
+		normvol=EMData(padvol[0]//2+1, padvol[1], padvol[2])
+		
+		if options.iterative:
+			
+			a = {"size":padvol,"sym":options.sym,"verbose":options.verbose-1}
+			a["normout"]=normvol
+			recon=Reconstructors.get("fourier_iter", a)
+			if seed==None:
+				recon.setup()
+			else:
+				recon.setup_seed(seed,options.seedweight)
+
+		else :
+			a = {
+				"size":padvol,
+				"sym":options.sym,
+				"mode":options.mode,
+				"usessnr":options.usessnr,
+				"verbose":options.verbose-1
+				}
+				
+			
+			
+			a["normout"]=normvol
+			
+			recon=Reconstructors.get("fourier", a)
+			if seed==None:
+				recon.setup()
+			else:
+				recon.setup_seed(seed,options.seedweight)
+			
+			
+		reconstruct(
+			data,
+			recon,
+			options.preprocess,
+			options.pad,
+			options.fillangle,
+			options.altedgemask,
+			max(options.verbose-1,0),
+			options.input.endswith(".lst"),
+			ref
+			)
+		
+		output = recon.finish(False)
+		
+		#callback(100)
+		
+		return (output, normvol)
+
 
 if __name__=="__main__":
 	main()

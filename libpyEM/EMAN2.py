@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -49,16 +47,51 @@ import zlib
 import socket
 import subprocess
 from EMAN2_cppwrap import *
-from pyemtbx.imagetypes import *
-from pyemtbx.box import *
 from EMAN2_meta import *
-import EMAN2db, EMAN2jsondb
+#import EMAN2db
+import EMAN2jsondb
 import argparse, copy
 import glob
-
+import random
+from struct import pack,unpack
+import json
+from collections import OrderedDict
+import traceback
+from pathlib import Path
 
 import threading
 #from Sparx import *
+
+### If we ever need to add 'cleanup' exit code, this is how to do it. Drawn from the old BDB code.
+## if the program exits nicely, close all of the databases
+#atexit.register(DB_cleanup)
+
+## if we are killed 'nicely', also clean up (assuming someone else doesn't grab this signal)
+#signal.signal(2, DB_cleanup)
+#signal.signal(15, DB_cleanup)
+
+
+def e2gethome():
+	"""platform independent path with '/'"""
+	if (sys.platform != 'win32'):
+		url = os.getenv("HOME")
+	else:
+		if (os.getenv("HOMEPATH") == '\\'):
+			# Contributed by Alexander Heyne <AHEYNE@fmp-berlin.de>
+			url = os.getenv("USERPROFILE")
+			url = url.lstrip('CDEFG:')  # could also use substr
+			url = url.replace("\\", "/")
+		else:
+			url = os.getenv("HOMEPATH")
+			url = url.replace("\\", "/")
+	return url
+
+
+def e2getcwd():
+	"""platform independent path with '/'"""
+	url = os.getcwd()
+	url = url.replace("\\", "/")
+	return url
 
 HOMEDB=None
 
@@ -69,7 +102,7 @@ T=Transform({"type":"2d","alpha":0})
 bispec_invar_parm=(32,10)
 
 # These are processors which don't support in-place operation
-outplaceprocs=["math.bispectrum.slice"]
+outplaceprocs=["math.bispectrum.slice","math.harmonic","misc.directional_sum"]
 
 # Without this, in many countries Qt will set things so "," is used as a decimal
 # separator by sscanf and other functions, which breaks CTF reading and some other things
@@ -78,34 +111,25 @@ try:
 	os.putenv("LC_ALL","en_US.UTF-8")
 except: pass
 
-# Read relative path written by CMake and use that to get EMAN2DIR
-this_file_dirname = os.path.dirname(__file__)
-with open(os.path.join(this_file_dirname, 'eman2dir_relative_path_to_sp_dir'), 'r') as f:
-	eman2dir_relative_path_to_sp_dir = f.readline().strip()
-
-os.environ["EMAN2DIR"] = os.path.abspath(os.path.join(this_file_dirname, eman2dir_relative_path_to_sp_dir))
-
 # This block attempts to open the standard EMAN2 database interface
 # if it fails, it sets db to None. Applications can then alter their
 # behavior appropriately
 #try:
 #import EMAN2db
-from EMAN2db import EMAN2DB,db_open_dict,db_close_dict,db_remove_dict,db_list_dicts,db_check_dict,db_parse_path,db_convert_path,db_get_image_info,e2gethome, e2getcwd
+#from EMAN2db import EMAN2DB,db_open_dict,db_close_dict,db_remove_dict,db_list_dicts,db_check_dict,db_parse_path,db_convert_path,db_get_image_info,e2gethome, e2getcwd
 from EMAN2jsondb import JSDict,js_open_dict,js_close_dict,js_remove_dict,js_list_dicts,js_check_dict,js_one_key
 #except:
 #	HOMEDB=None
 
-Vec3f.__str__=lambda x:"Vec3f"+str(x.as_list())
-
 XYData.__len__=XYData.get_size
 
-# Who is using this? Transform3D is deprecated use the Transform insteand
+# Who is using this? Transform3D is deprecated use the Transform instead
 #Transform3D.__str__=lambda x:"Transform3D(\t%7.4g\t%7.4g\t%7.4g\n\t\t%7.4g\t%7.4g\t%7.4g\n\t\t%7.4g\t%7.4g\t%7.4g)\nPretrans:%s\nPosttrans:%s"%(x.at(0,0),x.at(0,1),x.at(0,2),x.at(1,0),x.at(1,1),x.at(1,2),x.at(2,0),x.at(2,1),x.at(2,2),str(x.get_pretrans()),str(x.get_posttrans()))
 
 try:
 	if __IPYTHON__ : GUIMode=True
-	from PyQt4 import QtGui
-	app=QtGui.qApp
+	from PyQt5 import QtGui, QtWidgets
+	app=QtWidgets.qApp
 except:
 	GUIMode=False
 	app = 0
@@ -146,12 +170,55 @@ def timer(fn,n=1):
 
 # This is to remove stdio buffering, only line buffering is done. This is what is done for the terminal, but this extends terminal behaviour to redirected stdio
 # try/except is to prevent errors with systems that already redirect stdio
-try: sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 1)
-except: pass
+#try: sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 1)
+#except: pass
 
 def stopautoflush():
 	""" Return to buffered stdout """
 	sys.stdout = originalstdout
+
+# These are very widely used and hard to find, so some shortcuts
+# Image file types
+IMAGE_MRC = EMUtil.ImageType.IMAGE_MRC
+IMAGE_EER = EMUtil.ImageType.IMAGE_EER
+IMAGE_EER2X = EMUtil.ImageType.IMAGE_EER2X
+IMAGE_EER4X = EMUtil.ImageType.IMAGE_EER4X
+IMAGE_SPIDER = EMUtil.ImageType.IMAGE_SPIDER
+IMAGE_SINGLE_SPIDER = EMUtil.ImageType.IMAGE_SINGLE_SPIDER
+IMAGE_IMAGIC = EMUtil.ImageType.IMAGE_IMAGIC
+IMAGE_HDF = EMUtil.ImageType.IMAGE_HDF
+IMAGE_DM3 = EMUtil.ImageType.IMAGE_DM3
+IMAGE_DM4 = EMUtil.ImageType.IMAGE_DM4
+IMAGE_TIFF = EMUtil.ImageType.IMAGE_TIFF
+IMAGE_PGM = EMUtil.ImageType.IMAGE_PGM
+IMAGE_LST = EMUtil.ImageType.IMAGE_LST
+IMAGE_PIF = EMUtil.ImageType.IMAGE_PIF
+IMAGE_VTK = EMUtil.ImageType.IMAGE_VTK
+IMAGE_PNG = EMUtil.ImageType.IMAGE_PNG
+IMAGE_SAL = EMUtil.ImageType.IMAGE_SAL
+IMAGE_ICOS = EMUtil.ImageType.IMAGE_ICOS
+IMAGE_EMIM = EMUtil.ImageType.IMAGE_EMIM
+IMAGE_GATAN2 = EMUtil.ImageType.IMAGE_GATAN2
+IMAGE_AMIRA = EMUtil.ImageType.IMAGE_AMIRA
+IMAGE_XPLOR = EMUtil.ImageType.IMAGE_XPLOR
+IMAGE_EM = EMUtil.ImageType.IMAGE_EM
+IMAGE_V4L = EMUtil.ImageType.IMAGE_V4L
+IMAGE_UNKNOWN = EMUtil.ImageType.IMAGE_UNKNOWN
+
+# image data storage modes
+EM_UNKNOWN = EMUtil.EMDataType.EM_UNKNOWN
+EM_CHAR = EMUtil.EMDataType.EM_CHAR
+EM_UCHAR = EMUtil.EMDataType.EM_UCHAR
+EM_SHORT = EMUtil.EMDataType.EM_SHORT
+EM_USHORT = EMUtil.EMDataType.EM_USHORT
+EM_INT = EMUtil.EMDataType.EM_INT
+EM_UINT = EMUtil.EMDataType.EM_UINT
+EM_FLOAT = EMUtil.EMDataType.EM_FLOAT
+EM_DOUBLE = EMUtil.EMDataType.EM_DOUBLE
+EM_SHORT_COMPLEX = EMUtil.EMDataType.EM_SHORT_COMPLEX
+EM_USHORT_COMPLEX = EMUtil.EMDataType.EM_USHORT_COMPLEX
+EM_FLOAT_COMPLEX = EMUtil.EMDataType.EM_FLOAT_COMPLEX
+EM_COMPRESSED = EMUtil.EMDataType.EM_COMPRESSED
 
 
 # These map standard names for data types to internal representation, and provide a minimum and maximum value for each type
@@ -162,7 +229,8 @@ file_mode_map={
 	"uint16":EMUtil.EMDataType.EM_USHORT,
 	"int32" :EMUtil.EMDataType.EM_INT,
 	"uint32":EMUtil.EMDataType.EM_UINT,
-	"float" :EMUtil.EMDataType.EM_FLOAT  }
+	"float" :EMUtil.EMDataType.EM_FLOAT,
+	"compressed": EMUtil.EMDataType.EM_COMPRESSED }
 
 # inverse dictionary for getting printable names
 file_mode_imap=dict([[int(v),k] for k,v in list(file_mode_map.items())])
@@ -174,25 +242,31 @@ file_mode_intmap={
 	4 :EMUtil.EMDataType.EM_USHORT,
 	5 :EMUtil.EMDataType.EM_INT,
 	6 :EMUtil.EMDataType.EM_UINT,
-	7 :EMUtil.EMDataType.EM_FLOAT  }
+	7 :EMUtil.EMDataType.EM_FLOAT,
+	8 :EMUtil.EMDataType.EM_COMPRESSED }
 
 
 #keyed both by type and by the integer version for flexibility
 file_mode_range={
-	EMUtil.EMDataType.EM_CHAR:(0,255),
-	EMUtil.EMDataType.EM_UCHAR:(-127,128),
-	EMUtil.EMDataType.EM_SHORT:(-32767,32768 ),
+	EMUtil.EMDataType.EM_CHAR:(-128,127),
+	EMUtil.EMDataType.EM_UCHAR:(0,255),
+	EMUtil.EMDataType.EM_SHORT:(-32768,32767 ),
 	EMUtil.EMDataType.EM_USHORT:(0,65535 ),
-	EMUtil.EMDataType.EM_INT:(-2147483647,2147483648 ),
+	EMUtil.EMDataType.EM_INT:(-2147483648,2147483647 ),
 	EMUtil.EMDataType.EM_UINT:(0,4294967295),
 	EMUtil.EMDataType.EM_FLOAT:(-3.40282347e+38,3.40282347e+38 ),
-	int(EMUtil.EMDataType.EM_CHAR):(0,255),
-	int(EMUtil.EMDataType.EM_UCHAR):(-127,128),
-	int(EMUtil.EMDataType.EM_SHORT):(-32767,32768 ),
+	int(EMUtil.EMDataType.EM_CHAR):(-128,127),
+	int(EMUtil.EMDataType.EM_UCHAR):(0,255),
+	int(EMUtil.EMDataType.EM_SHORT):(-32768,32767 ),
 	int(EMUtil.EMDataType.EM_USHORT):(0,65535 ),
-	int(EMUtil.EMDataType.EM_INT):(-2147483647,2147483648 ),
+	int(EMUtil.EMDataType.EM_INT):(-2147483648,2147483647 ),
 	int(EMUtil.EMDataType.EM_UINT):(0,4294967295),
-	int(EMUtil.EMDataType.EM_FLOAT):(-3.40282347e+38,3.40282347e+38 )  }
+	int(EMUtil.EMDataType.EM_FLOAT):(-3.40282347e+38,3.40282347e+38 ),
+	int(EMUtil.EMDataType.EM_COMPRESSED):(-3.40282347e+38,3.40282347e+38 )
+	}
+
+class NotImplementedException(Exception):
+	def __init__(self,val=None): pass
 
 def E2init(argv, ppid=-1) :
 	"""E2init(argv)
@@ -259,16 +333,20 @@ def E2saveappwin(app,key,win):
 		geom=(pos.x(),pos.y(),win.width(),win.height())
 
 		E2setappval(app,key,geom)
+#		print(app,key,geom)
 	except:
-		print("Error saving window location")
+		print("Error saving window location ",key)
 
 def E2loadappwin(app,key,win):
 	"""restores a geometry saved with E2saveappwin"""
 	try:
-		geom=E2getappval(app,key)
+		geom=list(E2getappval(app,key))
 		if geom==None : raise Exception
 		win.resize(geom[2],geom[3])
+		geom[0]=max(16,geom[0])
+		geom[1]=max(16,geom[1])
 		win.move(geom[0],geom[1])
+#		print(app,key,geom)
 	except: return
 
 def E2saveprojtype(app,key,win):
@@ -348,6 +426,8 @@ This function will get an application default by first checking the local direct
 		return ret
 	except: pass
 
+	if dfl!=None: E2setappval(app,key,dfl)		# so the user will know what may be available
+
 	return dfl
 
 def E2getappvals():
@@ -375,47 +455,92 @@ This function will return a list of lists containing all currently set applicati
 	return ret2+ret
 
 def e2getinstalldir() :
-	"""platform independent path with '/'"""
-	if(sys.platform != 'win32'):
-		url=os.getenv("EMAN2DIR")
+	"""Final path needs to be computed relative to a path within the installation.
+	 An alternative could be to get the installation directory from cmake,
+	 but cmake is not run during binary installations."""
+	
+	this_file_dirname = os.path.dirname(__file__)
+	if get_platform() != "Windows":
+		rel_path = '../../../'
 	else:
-		url=os.getenv("EMAN2DIR")
-		url=url.replace("\\","/")
-	return url
+		rel_path = '../../Library/'
+	
+	return os.path.abspath(os.path.join(this_file_dirname, rel_path))
 
+def get_temp_name():
+	"""Returns a suitable name for a temporary HDF file in the current directory. Does not create or delete the file."""
+	fsp=f"tmp_{random.randint(0,9999999):07d}.hdf"
+	if os.path.exists(fsp) : return get_temp_name()		# risky? shouldn't really ever recurse forever...
+	return fsp
 
-def numbered_path(prefix,makenew):
-	"""Finds the next numbered path to use for a given prefix. ie- prefix='refine' if refine_01/EMAN2DB
-exists will produce refine_02 if makenew is set (and create refine_02) and refine_01 if not"""
-	n=1
-	while os.access("%s_%02d/EMAN2DB"%(prefix,n),os.F_OK) : n+=1
-	if makenew or n==1:
-		path="%s_%02d"%(prefix,n)
-		try: os.mkdir(path)
-		except: pass
-		return path
-	return "%s_%02d"%(prefix,n-1)
+def num_path_new(prefix):
+	"""make a new prefix_xx (or prefix_xxx) folder and return the folder name, underscore added to prefix if not present"""
+	if prefix[-1]!="_" : prefix+="_"
+	
+	pthns=[int(i.rsplit("_",1)[-1]) for i in os.listdir(".") if i[:len(prefix)]==prefix and i.rsplit("_",1)[-1].isdigit()]
+	try: newn=max(pthns)+1
+	except: newn=0
+	path=f"{prefix}{newn:02d}"
+	try: os.mkdir(path)
+	except:
+		raise Exception("Error: could not create "+path)
+	
+	return path
 
-def get_numbered_directories(prefix,wd=e2getcwd()):
-	'''
-	Gets the numbered directories starting with prefix in the given working directory (wd)
-	A prefix example would be "refine_" or "r2d_" etc. Used originally form within the workflow context
-	'''
-	dirs, files = get_files_and_directories(wd)
-	dirs.sort()
-	l = len(prefix)
-	for i in range(len(dirs)-1,-1,-1):
-		if len(dirs[i]) != l+2:# plus two because we only check for two numbered directories
-			dirs.pop(i)
-		elif dirs[i][:l] != prefix:
-			dirs.pop(i)
-		else:
-			try: int(dirs[i][l:])
-			except: dirs.pop(i)
+def num_path_last(prefix,create=False):
+	"""find the highest numbered path starting with prefix and return it. If create is set, will create a new one if none exists. underscore added to prefix if not present"""
+	if prefix[-1]!="_" : prefix+="_"
+	
+	pthns=[int(i.rsplit("_",1)[-1]) for i in os.listdir(".") if i[:len(prefix)]==prefix and i.rsplit("_",1)[-1].isdigit()]
+	try: n=max(pthns)
+	except:
+		if create: 
+			path=f"{prefix}00"
+			try: os.mkdir(path)
+			except: raise Exception("Error: could not create "+path)
+			return path
+		else: raise Exeception("Error: could not find paths beginning with "+prefix)
+	
+	path=f"{prefix}{n:02d}"
+	
+	return path
 
-	# allright everything left in dirs is "refine_??" where the ?? is castable to an int, so we should be safe now
+#def numbered_path(prefix,makenew=False):
+	#"""Finds or creates folders of the form prefix_NN. If makenew is set, will create a new folder with NN one
+	#larger than the largest existing path. If makenew is not set, returns the highest existing numbered path of that form."""
+	#if prefix[-1]=="_" : prefix=prefix[:-1]
+	#cur=[int(p.split("_")[-1]) for p in os.listdir(".") if p.rsplit("_",1)[0]==prefix and p.split("_")[-1].isdigit()]
+	
+	#if makenew:
+		#cur.append(0)		# in case of no matches
+		#path=f"{prefix}_{max(cur)+1:02d}"
+		#try: os.mkdir(path)
+		#except: 
+			#raise Exception(f"ERROR: numbered_path() could not create {path}")
+		#return path
+	#if len(cur)==0 : raise Exception(f"ERROR: no paths of the form {prefix}_NN found")
+	#return f"{prefix}_{max(cur):02d}"
 
-	return dirs
+#def get_numbered_directories(prefix,wd=e2getcwd()):
+	#'''
+	#Gets the numbered directories starting with prefix in the given working directory (wd)
+	#A prefix example would be "refine_" or "r2d_" etc. Used originally form within the workflow context
+	#'''
+	#dirs, files = get_files_and_directories(wd)
+	#dirs.sort()
+	#l = len(prefix)
+	#for i in range(len(dirs)-1,-1,-1):
+		#if len(dirs[i]) != l+2:# plus two because we only check for two numbered directories
+			#dirs.pop(i)
+		#elif dirs[i][:l] != prefix:
+			#dirs.pop(i)
+		#else:
+			#try: int(dirs[i][l:])
+			#except: dirs.pop(i)
+
+	## allright everything left in dirs is "refine_??" where the ?? is castable to an int, so we should be safe now
+
+	#return dirs
 
 def get_prefixed_directories(prefix,wd=e2getcwd()):
 	'''
@@ -428,12 +553,9 @@ def get_prefixed_directories(prefix,wd=e2getcwd()):
 	return dirs
 
 def get_image_directory():
-	pf = get_platform()
 	dtag = get_dtag()
-	if pf != "Windows":
-		return os.getenv("EMAN2DIR")+ dtag + "images" + dtag
-	else:
-		return os.getenv("EMAN2DIR").replace('\\', '/') + dtag + "images" + dtag
+	
+	return e2getinstalldir()+ dtag + "images" + dtag
 
 def get_dtag():
 #	pfrm = get_platform()
@@ -477,38 +599,27 @@ def numbered_bdb(bdb_url):
 
 	will return the next available name bdb:refine_01#class_indices_?? (minus the bdb)
 	'''
+	print("ERROR: numbered_bdb no longer functions. Please report to developers.")
+	sys.exit(1)
 
-	useful_info = db_parse_path(bdb_url)
-
-	d = get_dtag()
-	file_name_begin = useful_info[0] + d + "EMAN2DB" + d + useful_info[1] + "_"
-
-	for i in range(0,10):
-		for j in range(0,10):
-			name = file_name_begin+str(i)+str(j)+".bdb"
-			if os.path.exists(name): continue
-			else:
-				return "bdb:"+useful_info[0]+"#"+useful_info[1] + "_"+str(i)+str(j)
-
+def compress_hdf(fsp,bits,nooutliers=False,level=1):
+	"""This will take an existing HDF file and rewrite it with the specified compression
+	nooutliers can be specified, but minval/maxval are determined automatically. Returns
+	immediately if non-HDF filename is provided."""
+	if fsp[-4:].lower()!=".hdf" : return
+	nm=get_temp_name()
+	os.rename(fsp,nm)
+	n=EMUtil.get_image_count(nm)
+	for i in range(n): EMData(nm,i).write_compressed(fsp,i,bits,nooutliers=nooutliers,level=level)
+	os.unlink(nm)
 
 def get_header(filename,i):
-	if filename[0:4] == "bdb:":
-		db = db_open_dict(filename)
-		return db.get_header(i)
-	else:
-		read_header_only = True
-		e = EMData()
-		e.read_image(filename,i,read_header_only)
-		return e.get_attr_dict()
+	return EMData(filename,i,True).get_attr_dict()
 
 def remove_image(fsp):
 	"""This will remove the image file pointed to by fsp. The reason for this function
 	to exist is formats like IMAGIC which store data in two files. This insures that
 	both files are removed."""
-	if fsp[:4].lower()=="bdb:" :
-		try: db_remove_dict(fsp)
-		except: pass
-		return
 
 	try:
 		os.unlink(fsp)
@@ -548,24 +659,89 @@ def re_filter_list(listtofilter, regex, invert=False):
 		if bool(r1.search(key)) ^ invert: returndict[key] = listtofilter[key]
 	return returndict
 
+def get_optionlist(argv):
+	optionlist = []
+	for arg1 in argv:
+		if arg1[0] == "-":
+			argname = arg1.split("=")
+			optionlist.append(argname[0].lstrip("-"))
+	return optionlist
+
+def intvararg_callback(option, opt_str, value, parser):
+	v = [int(i) for i in value.split(',')]
+	setattr(parser.values, option.dest, v)
+	return
+
+def floatvararg_callback(option, opt_str, value, parser):
+	v = [float(i) for i in value.split(',')]
+	setattr(parser.values, option.dest, v)
+	return
+
+def commandoptions(options,exclude=[]):
+	"""This will reconstruct command-line options, excluding any options in exclude"""
+	opts=[]
+	for opt,val in vars(options).items():
+		if opt in exclude or opt=="positionalargs" or val is False or val==None: continue
+		if val==True and isinstance(val,bool) : opts.append("--"+opt)
+		else: opts.append("--{}={}".format(opt,val))
+
+	return " ".join(opts)
+
+
 class EMArgumentParser(argparse.ArgumentParser):
 	""" subclass of argparser to masquerade as optparser and run the GUI """
-	def __init__(self, prog=None,usage=None,description=None,epilog=None,version=None,parents=[],formatter_class=argparse.HelpFormatter,prefix_chars='-',fromfile_prefix_chars=None,argument_default=None,conflict_handler='error',add_help=True):
-		argparse.ArgumentParser.__init__(self,prog=prog,usage=usage,description=description,epilog=epilog,parents=parents,formatter_class=formatter_class,prefix_chars=prefix_chars,fromfile_prefix_chars=fromfile_prefix_chars,argument_default=argument_default,conflict_handler=conflict_handler,add_help=add_help)
+	def __init__(self, prog=None,usage=None,description=None,epilog=None,version=None,parents=[],formatter_class=argparse.HelpFormatter,prefix_chars='-',fromfile_prefix_chars=None,argument_default=None,conflict_handler='error',add_help=True,allow_abbrev=True):
+		argparse.ArgumentParser.__init__(self,prog=prog,usage=usage,description=description,epilog=epilog,parents=parents,formatter_class=formatter_class,prefix_chars=prefix_chars,fromfile_prefix_chars=fromfile_prefix_chars,argument_default=argument_default,conflict_handler=conflict_handler,add_help=add_help,allow_abbrev=allow_abbrev)
 
 		# A list of options to add to the GUI
 		self.optionslist = []
 		self.tablist = []
 
-		# This stuff is to make argparser masquerade as optparser
 		if version:
 			self.add_argument('--version', action='version', version=version)
-		self.add_argument("postionalargs", nargs="*")
+		self.add_argument("positionalargs", nargs="*")
+		self.add_argument('--help-to-html', action='store_true',
+		                  help='print this help message in html format')
 
 	def parse_args(self):
-		""" Masquerade as optpaser parse options """
+		""" Masquerade as optparser parse options """
+		if "--help-to-html" in sys.argv[1:]:
+			import pandas as pd
+			from contextlib import redirect_stdout
+			from io import StringIO
+
+			actions = self._get_optional_actions()
+
+			df = pd.DataFrame(columns=['Option', 'Type', 'Description'])
+
+			for i in actions:
+				i.type = "None" if not i.type else str(i.type).split("'")[1]
+				i.option_strings = ', '.join(i.option_strings)
+
+				if "--help-to-html" in i.option_strings or "--help" in i.option_strings:
+					continue
+
+				df = pd.concat([df, pd.DataFrame({'Option': [i.option_strings],
+				                                  'Type': [i.type],
+				                                  'Description': [i.help]})],
+				               ignore_index=True)
+
+			print('<pre>')
+
+			stdout = StringIO()
+			with redirect_stdout(stdout):
+				self.print_usage()
+			print(stdout.getvalue().replace('<', '&lt').replace('>', '&gt'))
+
+			print('</pre>\n')
+
+			print(df.to_html(index=False, justify="center"))
+
+			self.exit()
+
 		parsedargs = argparse.ArgumentParser.parse_args(self)
-		return (parsedargs, parsedargs.postionalargs)
+
+		return (parsedargs, parsedargs.positionalargs)
 
 	def add_pos_argument(self, **kwargs):
 		""" Add a position argument, needed only for the GUI """
@@ -596,12 +772,12 @@ class EMArgumentParser(argparse.ArgumentParser):
 			if "urange" in kwargs: del kwargs["urange"]
 			if "choicelist" in kwargs: del kwargs["choicelist"]
 			if "filecheck" in kwargs: del kwargs["filecheck"]
+			if "infolabel" in kwargs: del kwargs["infolabel"]
 			if "mode" in kwargs: del kwargs["mode"]
 			if "browser" in kwargs: del kwargs["browser"]
 			if "dirbasename" in kwargs: del kwargs["dirbasename"]
 			if "nosharedb" in kwargs: del kwargs["nosharedb"]
 			if "returnNone" in kwargs: del kwargs["returnNone"]
-
 
 		argparse.ArgumentParser.add_argument(self, *args, **kwargs)
 
@@ -662,17 +838,15 @@ def unparsemodopt(tupl):
 	except:
 		return ""
 
-def parsemodopt(optstr):
+def parsemodopt(optstr=None):
 	"""This is used so the user can provide the name of a comparator, processor, etc. with options
 	in a convenient form. It will parse "dot:normalize=1:negative=0" and return
 	("dot",{"normalize":1,"negative":0})"""
 
-	if not optstr or len(optstr)==0 : return (None,{})
+	if optstr is None or len(optstr)==0 : return (None,{})
 	if optstr.lower()=="none" : return None					# special case doesn't return a tuple
 
-	opstr=optstr.replace("bdb:","bdb%").replace("BDB:","bdb%")		# so we can use : like we we want to
-
-	op2=opstr.split(":")
+	op2=optstr.split(":")
 	if len(op2)==1 or op2[1]=="" : return (op2[0],{})		# name with no options
 
 	r2={}
@@ -717,14 +891,14 @@ def parsemodopt_logical(optstr):
 	p_1 = re.findall( parseparmobj_logical_words, optstr )
 
 	if len(p_1)==0: return (optstr,{})
-	if ( len(p_1) != 2 ):
+	if len(p_1) != 2:
 		print("ERROR: parsemodopt_logical currently only supports single logical expressions")
 		print("Could not handle %s" %optstr)
 		return (None,None,None)
 
 	p_2 = re.findall( parseparmobj_logical, optstr )
 
-	if ( len(p_2) != 1 ):
+	if len(p_2) != 1:
 		print("ERROR: could not find logical expression in %s" %optstr)
 		return (None,None,None)
 
@@ -734,7 +908,8 @@ def parsemodopt_logical(optstr):
 		print("Must be one of \"==\", \"<=\", \">=\", \"<\", \">\" \"!=\" or \~=\" ")
 		return (None,None,None)
 
-	return (p_1[0], p_2[0], p_1[1])
+	return p_1[0], p_2[0], p_1[1]
+
 
 def parsemodopt_operation(optstr):
 
@@ -743,13 +918,13 @@ def parsemodopt_operation(optstr):
 	p_1 = re.findall( parseparmobj_op_words, optstr )
 	if len(p_1)==0: return (optstr,{})
 
-	if ( len(p_1) != 2 ):
+	if len(p_1) != 2:
 		print("ERROR: parsemodopt_logical currently only supports single logical expressions")
 		print("Could not handle %s" %optstr)
 		return (None,None,None)
 
 	p_2 = re.findall( parseparmobj_op, optstr )
-	if ( len(p_2) != 1 ):
+	if len(p_2) != 1:
 		print("ERROR: could not find logical expression in %s" %optstr)
 		return (None,None,None)
 
@@ -770,6 +945,282 @@ def read_number_file(path):
 		return [int(i) for i in regex.findall(open(path,"r").read())]
 	except:
 		return []
+
+
+def parse_list_arg(*possible_types):
+	"""Return a function that can be passed to argparse.add_argument() as an argument to 'type'.
+	The returned function's return type is a list of instances in possible_types, i.e., the parsed
+	arguments are converted to the types given in possible_types.
+
+	>>> parse_list_arg(int,float)("3, 4")
+	[3, 4.0]
+	>>> parse_list_arg(int,int)("3, 4")
+	[3, 4]
+	>>> parse_list_arg([int,int],[int,int,int])("3,4,5")
+	[3, 4, 5]
+	>>> parse_list_arg([int,int],[int,int,int])("3,4")
+	[3, 4]
+	>>> parse_list_arg([int,str],[int,int,int])("3,4")
+	[3, '4']
+	>>> parse_list_arg([int,str],[int,int,int])("3,4,5")
+	[3, 4, 5]
+	>>> parse_list_arg([int],[int,int],[int,int,int])("3,4")
+	[3, 4]
+	>>> parse_list_arg([int],[int,int],[int,int,int])("3")
+	[3]
+	"""
+
+	types_dict = {}
+
+	# If a single possible set of types is given, they don't have to be wrapped in a list/tuple
+	# To determine that, the first item in possible_types is checked if it is a list/tuple instance
+	if not isinstance(possible_types[0], (tuple, list)):
+		types_dict[len(possible_types)] = possible_types
+	else:
+		for i in possible_types:
+			types_dict[len(i)] = i
+
+	# This is the function that will be passed to argparse.add_argument()'s 'type' argument
+	def arg_to_list(s):
+		user_input_str = s.split(',')
+
+		if not any(len(user_input_str) == k for k in types_dict.keys()):
+			raise argparse.ArgumentTypeError(f"provide {' or '.join(str(i) for i in types_dict.keys())} arguments! See --help for details.")
+		else:
+			types = types_dict[len(user_input_str)]
+
+		return [type_to_convert(usr_input_val)
+				for type_to_convert, usr_input_val
+				in zip(types, user_input_str)]
+
+	return arg_to_list
+
+
+def parse_string_to_slices(seq):
+	"""
+	>>> parse_string_to_slices("")
+	[slice(None, None, None)]
+	>>> parse_string_to_slices("3,4")
+	[3, 4]
+	>>> parse_string_to_slices("3,4,2:5")
+	[3, 4, slice(2, 5, None)]
+	>>> parse_string_to_slices("3,4,2:5:")
+	[3, 4, slice(2, 5, None)]
+	>>> parse_string_to_slices("3,4,2:5:2")
+	[3, 4, slice(2, 5, 2)]
+	>>> parse_string_to_slices("3,4,2:5:2,8,14")
+	[3, 4, slice(2, 5, 2), 8, 14]
+	>>> parse_string_to_slices("3,4,2::2,8,14")
+	[3, 4, slice(2, None, 2), 8, 14]
+	>>> parse_string_to_slices("3,4,::2,8,14")
+	[3, 4, slice(None, None, 2), 8, 14]
+	>>> parse_string_to_slices("3,4,:11:2,8,14")
+	[3, 4, slice(None, 11, 2), 8, 14]
+	"""
+
+	if not seq:
+		return [slice(None, None, None)]
+
+	seq = filter(None, seq.split(','))
+	slices = []
+
+	for s in seq:
+		if s.isnumeric():
+			slices.append(int(s))
+		elif ":" in s:
+			sl = [None] * 3
+			for i, k in enumerate(s.split(":")):
+				sl[i] = int(k) if len(k) > 0 else None
+			slices.append(slice(*sl))
+		else:
+			with open(s) as fin:
+				file_content = fin.read().replace('\n', ',').replace(' ', ',')
+
+			slices.extend(parse_string_to_slices(file_content))
+
+	return slices
+
+
+def parse_infile_arg(arg):
+	"""
+	Parses a string of file name with inclusion and exclusion lists
+	Returns the file name and a list of image indices
+
+	Format of the input string:
+
+	filename:inclusion_list^exclusion_list
+
+	inclusion_list/exclusion_list may contain comma-separated
+	1. integers
+	2. slices (Python's built-in slice representation)
+	3. file names
+
+	No spaces are allowed in the passed string.
+	Negative integers are allowed as in Python slices.
+	However, listed files may contain multi-lines and may contain spaces.
+
+	Slice examples for an image file with N images where N>20:
+	2:    -> 2,3,...,N-1
+	:3:   -> 0,1,2
+	::5   -> 0,5,10,15,...,<N
+	:10:2 -> 0,2,4,6,8
+	::-1  -> N-1,N-2,N-3,...,2,1,0
+	2:9   -> 2,3,4,5,6,7,8
+
+	If a file named test_images.hdf contains 100 images,
+	"test_images.hdf:2,4:11:,9,6^25:28,30" will be interpreted as follows.
+	filename: test_images.hdf
+	inclusion_list: 2,4:11:,19,26:32:2 -> 2,3,4,5,6,7,8,9,10,19,26,28,30
+	exclusion_list: 25:28,30      -> 25,26,27,30
+
+	Returned index list: [2,3,4,5,6,7,8,9,10,19,26,28,30] - [25,26,27,30] ->
+					   : [2,3,4,5,6,7,8,9,10,19,28]
+	"""
+
+	fname, _, seq = arg.partition(':')
+
+	if not (fname and os.path.isfile(fname)):
+		raise argparse.ArgumentTypeError(f"{fname} is not an existing regular file!")
+
+	seq_inc, _, seq_exc = seq.partition('^')
+
+	slices_inc = parse_string_to_slices(seq_inc)
+	slices_exc = parse_string_to_slices(seq_exc) if seq_exc else []
+
+	nimg = EMUtil.get_image_count(fname)
+
+	idxs = OrderedDict()
+	for i in slices_inc:
+		if isinstance(i, int):
+			idxs.update({i: None})
+		else:
+			for k in range(*(i.indices(nimg))):
+				idxs.update({k: None})
+
+	ids_exc = set()
+	for i in slices_exc:
+		if isinstance(i, int):
+			ids_exc.add(i)
+		else:
+			ids_exc.update(range(*(i.indices(nimg))))
+
+	for i in ids_exc:
+		if i in idxs:
+			idxs.pop(i)
+
+	return fname, tuple(idxs.keys())
+
+
+def parse_outfile_arg(arg):
+	"""
+	Input:
+	filename:outbits:rendermin:rendermax
+
+	out.hdf:6:20:1000
+	out.hdf:6:-3s:5s
+	out.hdf:6:f
+
+	Returns (filename, outbits, rendermin(absolute), rendermax(absolute), rendermin(times std dev), rendermax(times std dev))
+
+	>>> parse_outfile_arg('')
+	Traceback (most recent call last):
+	argparse.ArgumentTypeError: Please, specify an output file!
+	>>> parse_outfile_arg('out.hdf')
+	('out.hdf', None, None, None, -5.0, 5.0)
+
+	>>> parse_outfile_arg('out.hdf:3')
+	('out.hdf', 3, None, None, -5.0, 5.0)
+	>>> parse_outfile_arg('out.hdf:3.')
+	Traceback (most recent call last):
+	argparse.ArgumentTypeError: outputbit field is required to be an int if specified! Got '3.'!
+	>>> parse_outfile_arg('out.hdf:33:')
+	Traceback (most recent call last):
+	argparse.ArgumentTypeError: outputbit field is required to be an int between 0 and 16! Got '33'!
+
+	>>> parse_outfile_arg('out.hdf:3:')
+	('out.hdf', 3, None, None, -5.0, 5.0)
+
+	>>> parse_outfile_arg('out.hdf:3:f')
+	('out.hdf', 3, 'FULL', 'FULL', None, None)
+	>>> parse_outfile_arg('out.hdf:3:F')
+	('out.hdf', 3, 'FULL', 'FULL', None, None)
+
+	>>> parse_outfile_arg('out.hdf:3::')
+	Traceback (most recent call last):
+	argparse.ArgumentTypeError: Min/max fields are expected to be non-empty if specified. Got ':'
+	>>> parse_outfile_arg('out.hdf:3:20:')
+	Traceback (most recent call last):
+	argparse.ArgumentTypeError: Min/max fields are expected to be non-empty if specified. Got '20:'
+	>>> parse_outfile_arg('out.hdf:3::400')
+	Traceback (most recent call last):
+	argparse.ArgumentTypeError: Min/max fields are expected to be non-empty if specified. Got ':400'
+
+	>>> parse_outfile_arg('out.hdf:3:4:5')
+	('out.hdf', 3, 4.0, 5.0, None, None)
+	>>> parse_outfile_arg('out.hdf:3:4.2:5.3')
+	('out.hdf', 3, 4.2, 5.3, None, None)
+
+	>>> parse_outfile_arg('out.hdf:3:4s:5s')
+	('out.hdf', 3, None, None, 4.0, 5.0)
+	>>> parse_outfile_arg('out.hdf:3:4.2s:5.3s')
+	('out.hdf', 3, None, None, 4.2, 5.3)
+
+	>>> parse_outfile_arg('out.hdf:3:4s:5')
+	Traceback (most recent call last):
+	argparse.ArgumentTypeError: Min/max fields are expected to be both absolute values or both sigma multipliers. Expected :(num):(num) or :(num)s:(num)s, got :4s:5
+	>>> parse_outfile_arg('out.hdf:3:4:5s')
+	Traceback (most recent call last):
+	argparse.ArgumentTypeError: Min/max fields are expected to be both absolute values or both sigma multipliers. Expected :(num):(num) or :(num)s:(num)s, got :4:5s
+	>>> parse_outfile_arg('out.hdf:3:4:5.')
+	('out.hdf', 3, 4.0, 5.0, None, None)
+	>>> parse_outfile_arg('out.hdf:3:4.:5')
+	('out.hdf', 3, 4.0, 5.0, None, None)
+	"""
+
+	fname, _, outbit_rng = arg.partition(':')
+
+	if not fname:
+		raise argparse.ArgumentTypeError("Please, specify an output file!")
+
+	outbit, _, rng = outbit_rng.partition(':')
+
+	if not outbit:
+		outbit = None
+	elif outbit.isdigit():
+		outbit = int(outbit)
+
+		if outbit not in range(17):
+			raise argparse.ArgumentTypeError(f"outputbit field is required to be an int between 0 and 16! Got '{outbit}'!")
+	else:
+		raise argparse.ArgumentTypeError(f"outputbit field is required to be an int if specified! Got '{outbit}'!")
+
+	if not rng:
+		rng = None, None, -5.0, 5.0
+	elif rng.lower() == "f":
+		rng = "FULL", "FULL", None, None
+	else:
+		min, _, max = rng.partition(':')
+		rng = (min, max)
+
+		def isfloat(s):
+			try:
+				float(s)
+				return True
+			except ValueError:
+				return False
+
+		sigma_multiplier_char = 's'
+		if not all(rng):
+			raise argparse.ArgumentTypeError(f"Min/max fields are expected to be non-empty if specified. Got '{':'.join(rng)}'")
+		elif all(isfloat(i) for i in rng):
+			rng = *(float(i) for i in rng), None, None
+		elif all(i[-1] == sigma_multiplier_char and isfloat(i[:-1]) for i in rng):
+			rng = None, None, *(float(i[:-1]) for i in rng)
+		else:
+			raise argparse.ArgumentTypeError(f"Min/max fields are expected to be both absolute values or both sigma multipliers. Expected :(num):(num) or :(num){sigma_multiplier_char}:(num){sigma_multiplier_char}, got :{':'.join(rng)}")
+
+	return (fname, outbit, *rng)
+
 
 def angle_ab_sym(sym,a,b,c=None,d=None):
 	"""Computes the angle of the rotation required to go from Transform A to Transform B under symmetry,
@@ -796,6 +1247,96 @@ def angle_ab_sym(sym,a,b,c=None,d=None):
 		#raise Exception,"angle_ab_sym requries two transforms or 4 angles"
 
 	return min([(A*s*Bi).get_rotation("spin")["omega"] for s in sym])
+
+def sock_sendobj(sock,obj):
+	"""Sends an object as a (binary) size then a binary pickled object to a socket file object"""
+	if obj==None :
+		sock.sendall(pack("<Q",0))
+		return
+	strobj=pickle.dumps(obj,-1)
+	sock.sendall(pack("<Q",len(strobj)))
+	sock.sendall(strobj)
+
+	# uses socket 'file'
+	#if obj==None :
+		#sock.write(pack("<I",0))
+		#return
+	#strobj=pickle.dumps(obj,-1)
+	#sock.write(pack("<I",len(strobj)))
+	#sock.write(strobj)
+
+	
+def sock_recvobj(sock):
+	"""receives a packed length followed by a binary (pickled) object from a socket file object and returns"""
+	l=sock.recv(8,socket.MSG_WAITALL)
+	
+	try :
+		datlen=unpack("<Q",l)[0]
+	except:
+		print("Format error in unpacking (%d) '%s'"%(len(l),l))
+		raise Exception("Network error receiving object")
+	if datlen<=0 :return None
+	return pickle.loads(sock.recv(datlen,socket.MSG_WAITALL))
+
+	# uses socket 'file'
+	#l=sock.read(4)
+	#try :
+		#datlen=unpack("<I",l)[0]
+	#except:
+		#print("Format error in unpacking (%d) '%s'"%(len(l),l))
+		#raise Exception("Network error receiving object")
+	#if datlen<=0 :return None
+	#return pickle.loads(sock.read(datlen))
+
+display_magic=None		# VERY basic security for e3display
+
+def e3display(data,vtype="auto",vname=None,dname="Unknown",settings={},port=31980):
+	"""Server-based display function, mainly designed for use with Jupyter Lab sessions, but availble for
+	background monitoring of running jobs as well. 
+	data - data object of any (appropriate) type, if None will simply update the widget and return a PNG, 
+	vtype - "image","imagemx","volume","plot2d","plot3d","histogram"
+	vname - name of a new or existing (type specific) display widget to use, if None 'default' will be used 
+	dname - name for the data set, may be used as window title, or to support multiple object display in the same widget
+	settings - a dictionary of widget-specific settings
+
+	image - 2-D image display, one at a time. data may be a single 2-D or 3-D image, list/tuple of images or
+		a list of 4 or 5 np.arrays which will be passed to add a vector overlay to the image display
+
+	imagemx - multiple tiled 2-D image display, pass a list of 2-D images or a 3-D image
+
+	volume - 3-D display, pass a 3-D EMData object
+
+	plot2d - X/Y scatter/line plot. Pass a list of N numpy arrays
+
+	plot3d - X/Y/Z 3-D scatter plot. Pass a list of N numpy arrays
+
+	histogram - 1-D histogram. Pass a single numpy array or a list of N numpy arrays
+	"""
+	import ipywidgets
+	global display_magic
+
+	if display_magic==None:
+		magicpath=f"{e2gethome()}/.eman2/server_magic"
+		with open(magicpath,"rb") as fin:
+			display_magic=fin.read(8)
+
+	try: sock=socket.create_connection(("localhost",port))
+	except:
+		print(sys.exc_info())
+		print("\nFailed to connect. Do you have e2display.py --server running?")
+		return False
+
+	sock.sendall(display_magic)
+
+	sock_sendobj(sock,(data,vtype,vname,dname,settings))
+	ret=sock_recvobj(sock)
+	if ret[0]=="error": raise Exception(f"e3display error: {ret[1]}")
+	elif ret[0]=="png": 
+		nx,ny,png=ret[1]
+		
+	return ipywidgets.Image(value=png,format="png",width=nx,height=ny)
+
+
 
 def display(img,force_2d=False,force_plot=False):
 	"""Generic display function for images or sets of images. You can force images to be displayed in 2-D or as a plot with
@@ -975,9 +1516,14 @@ def kill_process(pid):
 		except:
 			return 0
 
+def run(cmd,quiet=False):
+	"""shortcut redefined all over the place. Might as well put it in one location."""
+	if not quiet: print(cmd)
+	return launch_childprocess(cmd)
+
 def launch_childprocess(cmd,handle_err=0):
 	'''
-	Convenience function to lauch child processes
+	Convenience function to launch child processes
 	'''
 	p = subprocess.Popen(str(cmd)+" --ppid=%d"%os.getpid(), shell=True)
 
@@ -1081,9 +1627,12 @@ def num_cpus():
 	platform_string = get_platform()
 	if platform_string == "Linux":
 		try:
-			f = open("/proc/cpuinfo","r")
-			a = [int(i.split(":")[1]) for i in f if "processor" in i]
-			return max(a)+1
+			maxphys=0
+			cores=1
+			for l in open("/proc/cpuinfo","r"):
+				if "physical id" in l: maxphys=max(maxphys,int(l.split(":")[-1]))
+				if "cpu cores" in l: cores=int(l.split(":")[-1])
+			return cores*(maxphys+1)
 		except:
 			return 2
 	elif platform_string == "Windows":
@@ -1111,7 +1660,7 @@ def num_cpus():
 		return cores
 
 	else:
-		print("error, in num_cpus - uknown platform string:",platform_string," - returning 2")
+		print("error, in num_cpus - unknown platform string:",platform_string," - returning 2")
 		return 2
 
 def gimme_image_dimensions2D( imagefilename ):
@@ -1188,13 +1737,13 @@ def remove_file( file_name, img_couples_too=True ):
 	You can disable the img coupling feature with the the image_couples_too flag
 	'''
 
-	if ( os.path.exists(file_name) ):
+	if os.path.exists(file_name):
 
 		parts = file_name.split('.')
 
 		file_tag = parts[len(parts)-1]
 
-		if ( file_tag == 'hed' or file_tag == 'img' ):
+		if file_tag == 'hed' or file_tag == 'img':
 			# get everything that isn't the tag
 			name = ''
 			for i in range(0,len(parts)-1):
@@ -1321,10 +1870,10 @@ def check_files_are_em_images(filenames):
 	'''
 	for file in filenames:
 		if not os.path.exists(file):
-		  	try:
-		  		is_db = db_check_dict(file)
-		  		if not is_db: raise
-		  	except: return False, "File doesn't exist:"+file
+			try:
+				is_db = db_check_dict(file)
+				if not is_db: raise
+			except: return False, "File doesn't exist:"+file
 
 		read_header_only = True
 		a = EMData()
@@ -1335,15 +1884,12 @@ def check_files_are_em_images(filenames):
 
 	return True,"images are fine"
 
-def abs_path(name):
-	'''
-	wraps os.path.absname but detects bdb naming
-	'''
-	if len(name) > 3 and name[:4] == "bdb:":
-		[dir,db_name,something] = db_parse_path(name)
-		return "bdb:"+dir+"#"+db_name
-	else:
-		return os.path.abspath(name)
+abs_path=os.path.abspath
+#def abs_path(name):
+	#'''
+	#wraps os.path.absname but detects bdb naming
+	#'''
+	#return os.path.abspath(name)
 
 def base_name( file_name,extension=False,bdb_keep_dir=False,nodir=False ):
 	'''
@@ -1354,26 +1900,19 @@ def base_name( file_name,extension=False,bdb_keep_dir=False,nodir=False ):
 	if bdb_keep_dir : print("base_name() with bdb_keep_dir. please check")
 
 	file_name=str(file_name)
-	if file_name[:4].lower()=="bdb:" :
-		vals = file_name[4:].split("#")
-		if bdb_keep_dir:
-			if len(vals)==1 : return vals[0]
-			return vals[0].split("/")[-1]+"/"+vals[-1]
-		else:
-			return vals[-1]
-	else:
-		apath=os.path.relpath(file_name).replace("\\","/").split("/")
-		# for specific directories, we want any references to the same micrograph to share an id
-		if nodir or (len(apath)>1 and apath[-2] in ("sets","particles","micrographs","movies","movieparticles","ddd","raw","info", "tiltseries", "tomograms", "particles3d", "segmentations")) :
-			if extension :
-				return os.path.basename(file_name)
-			else :
-				return os.path.splitext(os.path.basename(file_name))[0].split("__")[0].replace("_ptcls","").replace("_info","")		# double underscore is used to mark tags added to micrograph names
 
-		# but for other files, like classes_xx which users might make selection lists on, we want to include the
-		# subdirectory name, to prevent mixing between different refinement directories
-		if extension : return "-".join(apath[-2:])
-		else : return "-".join(apath[-2:]).rsplit(".",1)[0]
+	apath=os.path.relpath(file_name).replace("\\","/").split("/")
+	# for specific directories, we want any references to the same micrograph to share an id
+	if nodir or (len(apath)>1 and apath[-2] in ("sets","particles","micrographs","movies","movieparticles","ddd","raw","info", "tiltseries", "tomograms", "particles3d", "segmentations")) :
+		if extension :
+			return os.path.basename(file_name)
+		else :
+			return os.path.splitext(os.path.basename(file_name))[0].split("__")[0].replace("_ptcls","").replace("_info","")		# double underscore is used to mark tags added to micrograph names
+
+	# but for other files, like classes_xx which users might make selection lists on, we want to include the
+	# subdirectory name, to prevent mixing between different refinement directories
+	if extension : return "-".join(apath[-2:])
+	else : return "-".join(apath[-2:]).rsplit(".",1)[0]
 
 def info_name(file_name,nodir=False):
 	"""This will return the name of the info file associated with a given image file, in the form info/basename_info.js"""
@@ -1440,6 +1979,16 @@ def get_platform():
 if get_platform() == "Darwin":
 	glut_inited = True # this is a hack for the time being
 
+def display_path(path):
+	"""Will generate a suitable reduced path for use in title-bars on windows, etc."""
+	
+	try: full=os.path.abspath(path)
+	except: full=path
+	
+	full=full.replace("\\","/").split("/")
+	if len(full)==1: return full
+	return "/".join(full[-3:])
+
 def remove_directories_from_name(file_name,ntk=0):
 	'''
 	Removes the directories from a file name.
@@ -1456,7 +2005,7 @@ def remove_directories_from_name(file_name,ntk=0):
 def name_has_no_tag(file_name):
 	'''
 	A convenient way of asking if the file name in has no tag. i.e.
-	/home/tmp.jpg would have a tag but /home/tmp would not. Ofcourse
+	/home/tmp.jpg would have a tag but /home/tmp would not. Of course
 	this function will return true if the argument is the name of a
 	folder, but that was not the original intended use
 	'''
@@ -1542,24 +2091,6 @@ def error_exit(s) :
 	print(s)
 	exit(1)
 
-def write_test_refine_data(num_im=1000):
-	'''
-	This is for testing purposes - for instance if you want to see if e2refine.py is working
-	Writes some crudely simulated particle data and a starting model to disk
-	'''
-	threed = test_image_3d()
-	sym = Symmetries.get("c1")
-	angles = sym.gen_orientations("rand",{"n":num_im})
-	for angle in angles:
-		image = threed.project("standard",angle)
-		dx = Util.get_frand(-5,5)
-		dy = Util.get_frand(-5,5)
-		image.translate(dx,dy,0)
-		image.process_inplace("math.addnoise",{"noise":1})
-		image.write_image("bdb:starting_data#ptcls",-1)
-
-	threed.write_image("bdb:refine_1#starting_model",-1)
-
 def write_test_boxing_images(name="test_box",num_im=10,type=0,n=100):
 	'''
 
@@ -1637,7 +2168,7 @@ def test_image(type=0,size=(128,128)):
 	type=4  circular sinewave
 	type=5  axes
 	type=6  linewave
-	type=7  scurve pluse x,y gradient
+	type=7  scurve plus x,y gradient
 	type=8  scurve translated
 	type=9  scurve with gaussian noise(mean 0, sigma 1)
 	size=(128,128) """
@@ -1691,7 +2222,6 @@ def test_image(type=0,size=(128,128)):
 		ret.transform(t)
 	else:
 		raise
-
 
 	return ret
 test_image.broken = True
@@ -1796,7 +2326,7 @@ def get_3d_font_renderer():
 		font_renderer.set_depth(2)
 		pfm = get_platform()
 		if pfm in ["Linux","Darwin"]:
-			font_renderer.set_font_file_name(os.getenv("EMAN2DIR")+"/fonts/DejaVuSerif.ttf")
+			font_renderer.set_font_file_name(e2getinstalldir()+"/fonts/DejaVuSerif.ttf")
 		elif pfm == "Windows":
 			font_renderer.set_font_file_name("C:\\WINDOWS\\Fonts\\arial.ttf")
 		else:
@@ -1931,6 +2461,14 @@ def clear_dead_cudajobs():
 	#new_img.set_attr_dict(dct)
 	#return new_img
 
+def write_FSC_file(fsc,filename) :
+	"""Convenience function takes a standard FSC/FRC resulting from EMData.calc_fourier_shell_correlation and write it to
+	disk as a s,FSC text file."""
+	sz=len(fsc)//3
+	out=open(filename,"w")
+	for i in range(sz):
+		out.write("{}\t{}\n".format(fsc[i],fsc[i+sz]))
+
 def initializeCUDAdevice():
 	# Initialize CUDA upon EMAN2 import. If cuda is not compiled an error will be thrown an nothing will happen
 	try:
@@ -1951,20 +2489,24 @@ The file begins with
 number<\t>filename<\t>comment
 ...
 """
-	def __init__(self,path,ifexists=False):
+	def __init__(self,path,ifexists=False, comments=""):
 		"""Initialize the object using the .lst file in 'path'. If 'ifexists' is set, an exception will be raised
 if the lst file does not exist."""
 
 		self.path=path
+		if len(comments)==0:
+			comments="# This file is in fast LST format. All lines after the next line have exactly the number of characters shown on the next line. This MUST be preserved if editing."
 
-		try: self.ptr=open(path,"rb+")		# file exists
-		except:
+		if os.path.isfile(path):
+			self.ptr=open(path,"r+")		# file exists
+		else:
 			if ifexists: raise Exception("Error: lst file {} does not exist".format(path))
 
 			try: os.makedirs(os.path.dirname(path))
 			except: pass
-			self.ptr=open(path,"wb+")	# file doesn't exist
-			self.ptr.write("#LSX\n# This file is in fast LST format. All lines after the next line have exactly the number of characters shown on the next line. This MUST be preserved if editing.\n# 20\n")
+			self.ptr=open(path,"w+")	# file doesn't exist
+			self.ptr.write("#LSX\n{}\n# 20\n".format(comments))
+			self.ptr.flush()
 
 		self.ptr.seek(0)
 		l=self.ptr.readline()
@@ -1972,8 +2514,8 @@ if the lst file does not exist."""
 			if l=="#LST\n" :
 				#### This is very similar to rewrite(), but is used to convert LST files to LSX files
 				self.seekbase=self.ptr.tell()
-				tmpfile=open(self.path+".tmp","wb")
-				tmpfile.write("#LSX\n# This file is in fast LST format. All lines after the next line have exactly the number of characters shown on the next line. This MUST be preserved if editing.\n")
+				tmpfile=open(self.path+".tmp","w")
+				tmpfile.write("#LSX\n{}\n".format(comments))
 
 				# we read the entire file, checking the length of each line
 				maxlen=0
@@ -2002,18 +2544,26 @@ if the lst file does not exist."""
 				# rename the temporary file over the original
 				os.unlink(self.path)
 				os.rename(self.path+".tmp",self.path)
-				self.ptr=open(self.path,"rb+")
+				self.ptr=open(self.path,"r+")
 				self.ptr.readline()
 
 			else: raise Exception("ERROR: The file {} is not in #LSX format".format(self.path))
-		self.filecomment=self.ptr.readline()
+		self.filecomment=self.ptr.readline().strip()
 		try: self.linelen=int(self.ptr.readline()[1:])
 		except:
 			print("ERROR: invalid line length in #LSX file {}".format(self.path))
 			raise Exception
 		self.seekbase=self.ptr.tell()
 
+		# legacy LST file support
+		if self.filecomment.startswith("#keys: "):
+			print("WARNING: legacy .lst file containing old-style parameters. Support may be removed in future. Consider rewriting file with e2proclst.py")
+			self.filekeys=self.filecomment[7:].split(';')
+		else: self.filekeys=None
+
+		# potentially time consuming, but this also gives us self.n
 		self.normalize()
+		self.lock=threading.Lock()
 
 	def __del__(self):
 		self.close()
@@ -2031,15 +2581,28 @@ if the lst file does not exist."""
 			self.normalize()
 			self.ptr=None
 
-	def write(self,n,nextfile,extfile,comment=None):
+	def write(self,n,nextfile,extfile,jsondict=None):
 		"""Writes a record to any location in a valid #LSX file.
 n : image number in #LSX file, -1 appends, as does n>= current file len
 nextfile : the image number in the referenced image file
 extfile : the path to the referenced image file (can be relative or absolute, depending on purpose)
-comment : optional comment string"""
+jsondict : optional string in JSON format or a JSON compatible dictionary. values will override header values when an image is read.
+"""
 
-		if comment==None : outln="{}\t{}".format(nextfile,extfile)
-		else: outln="{}\t{}\t{}".format(nextfile,extfile,comment)
+		self.lock.acquire()
+		if jsondict==None : 
+			outln="{}\t{}".format(nextfile,extfile)
+		elif isinstance(jsondict,str) and jsondict[0]=="{" and jsondict[-1]=='}' : 
+			outln="{}\t{}\t{}".format(nextfile,extfile,jsondict)
+		else:
+			if not isinstance(jsondict,dict) and jsondict!=None: 
+				jsondict={"__default__":jsondict}
+			if jsondict!=None:
+				jss=json.dumps(jsondict,indent=None,sort_keys=True,separators=(',',':'),default=EMAN2jsondb.obj_to_json)			
+				outln="{}\t{}\t{}".format(nextfile,extfile,jss)
+			else: outln="{}\t{}".format(nextfile,extfile)
+			
+		# We can't write in the middle of the file if the existing linelength is too short
 		if len(outln)+1>self.linelen : self.rewrite(len(outln))
 
 
@@ -2052,28 +2615,116 @@ comment : optional comment string"""
 		else : self.ptr.seek(self.seekbase+self.linelen*n)		# otherwise find the correct location
 
 		self.ptr.write(outln)
+		self.lock.release()
 
 	def read(self,n):
 		"""Reads the nth record in the file. Note that this does not read the referenced image, which can be
-performed with read_image either here or in the EMData class. Returns a tuple (n extfile,extfile,comment)"""
+performed with read_image either here or in the EMData class. Returns a tuple (n extfile,extfile,dict). dict
+contains decoded information from the stored JSON dictionary. Will also read certain other legacy comments
+and translate them into a dictionary."""
 		if n>=self.n : raise Exception("Attempt to read record {} from #LSX {} with {} records".format(n,self.path,self.n))
+		self.lock.acquire()
+		n=int(n)
 		self.ptr.seek(self.seekbase+self.linelen*n)
 		ln=self.ptr.readline().strip().split("\t")
-		if len(ln)==2 : ln.append(None)
-		ln[0]=int(ln[0])
-
+		if len(ln)==2 : ln.append("")
+		try: ln[0]=int(ln[0])
+		except:
+			print(f"Error LSXFile.read({n}). {self.seekbase},{self.linelen},{ln}")
+			self.lock.release()
+			raise(Exception)
+		if len(ln[2])<2: ln[2]={}
+		else:
+			try: ln[2]=json.loads(ln[2],object_hook=EMAN2jsondb.json_to_obj)
+			except:
+				if self.filekeys!=None:
+					vals=ln[2].split(";")
+					ln[2]={self.filekeys[i]:eval(vals[i]) for i in range(len(self.filekeys))}
+				elif ';Transform' in ln[2]:
+					score=float(ln[2].split(";")[0])
+					xf=eval(ln[2].split(";")[1])
+					ln[2]={"score_align":score,"xform.projection":xf}
+				elif ln[2][:9]=="Transform":
+					ln[2]={"xform.projection":eval(ln[2])}
+				else:
+					ln[2]={"lst_comment":ln[2]}
+		self.lock.release()
 		return ln
 
-	def read_image(self,n):
+	def read_image(self,N,hdronly=False,region=None):
 		"""This reads the image referenced by the nth record in the #LSX file. The same task can be accomplished with EMData.read_image,
 but this method prevents multiple open/close operations on the #LSX file."""
 
-		n,fsp,cmt=self.read(n)
+		n,fsp,jsondict=self.read(N)
+#		print(self.path,n,fsp,jsondict,hdronly,region)
 		ret=EMData()
-		ret=EMData(fsp,n)
-		if cmt!=None and len(cmt)>0 : ret["lst_comment"]=cmt
+		ret.read_image_c(fsp,n,hdronly,region)
+		ret["source_path"]=self.path
+		ret["source_n"]=N
+		if len(jsondict)>0 :
+			for k in jsondict: ret[k]=jsondict[k]
 
 		return ret
+
+	def read_into_image(self,ret=None,N=0,hdronly=False,region=None,is_3d=False,imgtype=IMAGE_UNKNOWN):
+		"""This reads the image referenced by the nth record in the #LSX file. The same task can be accomplished with EMData.read_image,
+but this method prevents multiple open/close operations on the #LSX file."""
+
+		n,fsp,jsondict=self.read(N)
+#		print(self.path,n,fsp,jsondict,hdronly,region)
+		ret.read_image_c(fsp,n,hdronly,region,is_3d,imgtype)
+		ret["data_n"]=ret["source_n"]
+		ret["data_source"]=ret["source_path"]
+		ret["source_path"]=self.path
+		ret["source_n"]=N
+		if len(jsondict)>0 :
+			for k in jsondict: ret[k]=jsondict[k]
+
+	def read_images(self,nlst=None,hdronly=False):
+		"""This reads a set of images referenced by the nth record in the #LSX file. This is used by read_images in Python when the file is a LST file
+		if nlst is None, the entire file is read."""
+
+		# organize the images to read by path to take advantage of read_images performance
+		# d2r contains tuples (image number in returned array,image number in file (key),extra data dictionary)
+		d2r={}
+		if nlst is None or len(nlst)==0:
+			for i in range(self.n):
+				j,p,d=self.read(i)
+				try: d2r[p].append((i,j,d,i))
+				except: d2r[p]=[(i,j,d,i)]
+			ii=self.n
+		else:
+			# ii is the index of the image in the array we will eventually return, i is the index of the image
+			# in the lst file. j is the index in the referenced image file, p. d is the dictionary of 
+			# override values from the lst comment field
+			for ii,i in enumerate(nlst):
+				j,p,d=self.read(int(i))
+				try: d2r[p].append((ii,j,d,i))
+				except: d2r[p]=[(ii,j,d,i)]
+			ii+=1
+
+#		out=open("dbug.txt","w")
+		# we read the actual images with calls to read_images for speed
+		# then overlay the metadata overrides from the LST file, and put them in the requested read order
+		ret=[None]*ii	# ii is left with the total number of images to be returned
+		for fsp in d2r:
+			tpls=d2r[fsp]
+			imgs=EMData.read_images_c(fsp,[i[1] for i in tpls],IMAGE_UNKNOWN,hdronly)
+			for i,tpl in enumerate(tpls):
+				imgs[i]["source_path"]=self.path
+				try: imgs[i]["source_n"]=int(tpl[3])
+				except:
+					traceback.print_exc()
+					raise Exception(f"Error in read_images: {i},{tpl}")
+				for k in tpl[2]: 
+					imgs[i][k]=tpl[2][k]
+				ret[tpl[0]]=imgs[i]
+#				out.write(f"{tpl[0]}\t{i}\t{fsp}\n")
+
+		if None in ret: raise(Exception(f"Error reading {nlst} from {self.path}, {ret.index(None)} is None"))
+
+		return ret
+
 
 	def __len__(self): return self.n
 
@@ -2098,7 +2749,7 @@ line length. Used when a line must be added in the middle of the file."""
 
 		self.ptr.seek(0)
 
-		tmpfile=open(self.path+".tmp","wb")
+		tmpfile=open(self.path+".tmp","w")
 		# copy the header lines
 		tmpfile.write(self.ptr.readline())
 		tmpfile.write(self.ptr.readline())
@@ -2131,7 +2782,7 @@ line length. Used when a line must be added in the middle of the file."""
 		# rename the temporary file over the original
 		os.unlink(self.path)
 		os.rename(self.path+".tmp",self.path)
-		self.ptr=open(self.path,"rb+")
+		self.ptr=open(self.path,"r+")
 
 #		print "rewrite ",self.linelen
 
@@ -2169,12 +2820,8 @@ corresponding to each 1/2 of the data."""
 		outo=None
 	else :								# This means we have a regular image file as an input
 		n=EMUtil.get_image_count(filename)
-		if filename[:4].lower()=="bdb:" :
-			eset=filename[4:].convert("#","/")+"_even.lst"
-			oset=filename[4:].convert("#","/")+"_odd.lst"
-		else:
-			eset=filename.rsplit(".",1)[0]+"_even.lst"
-			oset=filename.rsplit(".",1)[0]+"_odd.lst"
+		eset=filename.rsplit(".",1)[0]+"_even.lst"
+		oset=filename.rsplit(".",1)[0]+"_odd.lst"
 
 		try : os.unlink(eset)
 		except: pass
@@ -2191,6 +2838,322 @@ corresponding to each 1/2 of the data."""
 		oute=None
 
 	return (eset,oset)
+
+def save_lst_params(lst,fsp, overwrite=True):
+	"""Saves a LSX file (fsp) with metadata represented by a list of dictionaries (lst).
+	each dictionary must contain 'src', the image file containing the actual image and
+	'idx' the index in that file. Additional keys will be stored in the LSX metadata
+	region. Overwrite existing file by default."""
+	if len(lst)==0: raise(Exception,"ERROR: save_lst_params with empty list")
+	
+	if overwrite:
+		if os.path.isfile(fsp):
+			os.remove(fsp)
+	
+	lsx=LSXFile(fsp)
+	for d in lst:
+		dct=d.copy()
+		p=dct.pop("src")
+		n=dct.pop("idx")
+		lsx.write(-1,n,p,dct)
+
+def load_lst_params(fsp , imgns=None):
+	"""Reads the metadata for all of the images in an LSX file (fsp) with an optional list of
+	image numbers (imgns, iterable or None)"""
+	lsx=LSXFile(fsp,True)
+	if imgns==None or len(imgns)==0: imgns=range(lsx.n)
+	
+	ret=[]
+	for i in imgns:
+		n,p,d=lsx.read(i)
+		ret.append({"idx":n,"src":p,**d})
+		
+	return ret
+	
+##########
+#### replace a few EMData methods with python versions to intercept 'bdb:' filenames
+##########
+def db_emd_init(self, *parms):
+	"""
+	__init__( (object)arg1) -> object :
+
+		C++ signature :
+			void* __init__(_object*)
+
+	__init__( (object)arg1, (object)that) -> object :
+		Construct from an EMData (copy constructor).
+		Performs a deep copy.
+
+		that - the EMData to copy
+
+		C++ signature :
+			void* __init__(_object*,EMAN::EMData)
+
+	__init__( (object)arg1, (str) filespec,(int)image_idx,[(int) header_only],[(Region) region],[(int) is_3d]) -> object :
+		Construct from an image file.
+
+		filename - the image file name
+		image_index the image index for stack image file(default = 0)
+
+		C++ signature :
+			void* __init__(_object*,std::string [,int])
+
+	__init__( (object)arg1, (object)nx, (object)ny [, (object)nz [, (object)is_real]]) -> object :
+		makes an image of the specified size, either real or complex.
+		For complex image, the user would specify the real-space dimensions.
+
+		nx - size for x dimension
+		ny - size for y dimension
+		nz size for z dimension(default=1)
+		is_real - boolean to specify real(true) or complex(false) image(default=True)
+
+		C++ signature :
+			void* __init__(_object*,int,int [,int [,bool]])
+"""
+	if len(parms) > 0 and len(parms) < 5:
+		if isinstance(parms[0], str) and parms[0].endswith(".lst"):
+			self.__initc()
+			self.read_image(*parms)
+			return
+	#		print "toC:", parms
+	if len(parms) > 2 and isinstance(parms[0], str):
+		self.__initc()
+		self.read_image_c(*parms)
+	# try: self.read_image_c(*parms)			# this handles Region reading, which isn't supported in the C++ constructor
+	# except:
+	# traceback.print_exc()
+	# print "Error reading: ",parms," (if the program does not crash, this may be normal)"
+	# raise Exception
+	else:
+		self.__initc(*parms)
+	# try: self.__initc(*parms)
+	# except:
+	# traceback.print_exc()
+	# print "Error reading: ",parms," (if the program does not crash, this may be normal)"
+	# raise Exception
+	return
+
+
+EMData.__initc = EMData.__init__
+EMData.__init__ = db_emd_init
+
+
+# def transform_to_str(self):
+## I added the initial return so that it looks good in the eman2 file browser
+# s = "\n%.3f %.3f %.3f %.3f\n" %(self.at(0,0),self.at(0,1),self.at(0,2),self.at(0,3))
+# s += "%.3f %.3f %.3f %.3f\n" %(self.at(1,0),self.at(1,1),self.at(1,2),self.at(1,3))
+# s += "%.3f %.3f %.3f %.3f\n" %(self.at(2,0),self.at(2,1),self.at(2,2),self.at(2,3))
+# s += "0.000 0.000 0.000 1.000"
+# return s
+
+# Transform.__str__ = transform_to_str
+
+#lsxcache=None
+
+
+def compressible_formats():
+	return ('.hdf', '.jpeg', '.mrc', '.mrcs', '.png', '.tiff', '.df3')
+
+
+def is_file_compressible(fsp):
+	return Path(fsp).suffix.lower() in compressible_formats()
+
+
+def db_read_image(self, fsp, *parms, **kparms):
+	"""read_image(filespec,image #,[header only],[region],[is_3d],[imgtype])
+
+	This function can be used to read a set of images from a file or bdb: database. Pass in
+	the filename, or bdb: specification, optionally a list of image numbers to read (or None),
+	and a flag indicating that only the image headers should be read in. If only the headers
+	are read, accesses to the image data in the resulting EMData objects will be invalid."""
+	#	print "RI ",fsp,str(parms)
+
+	if fsp[:4].lower() == "bdb:":
+		print("ERROR: BDB is not supported in this version of EMAN2. You must use EMAN2.91 or earlier to access legacy data.")
+		return None
+	if fsp[-4:].lower()==".lst":
+		return LSXFile(fsp).read_into_image(self,*parms)
+		#global lsxcache
+		#if lsxcache==None or lsxcache.path!=fsp: lsxcache=LSXFile(fsp,True)
+		#return lsxcache.read_image(parms[0])
+
+	if len(kparms) != 0:
+		if 'img_index' not in kparms:
+			kparms['img_index'] = 0
+		if 'header_only' not in kparms:
+			kparms['header_only'] = False
+		if 'region' not in kparms:
+			kparms['region'] = None
+		if 'is_3d' not in kparms:
+			kparms['is_3d'] = False
+		if 'imgtype' not in kparms:
+			kparms['imgtype'] = IMAGE_UNKNOWN
+
+	return self.read_image_c(fsp, *parms, **kparms)
+
+EMUtil.get_image_count_c = staticmethod(EMUtil.get_image_count)
+EMData.read_image_c = EMData.read_image
+EMData.read_image = db_read_image
+
+
+def db_read_images(fsp, *parms):
+	"""EMData.read_images(filespec,[image # list],[header only])
+
+	This function can be used to read a set of images from a file or bdb: database. Pass in
+	the filename, or bdb: specification, optionally a list of image numbers to read (or None),
+	and a flag indicating that only the image headers should be read in. If only the headers
+	are read, accesses to the image data in the resulting EMData objects will be invalid"""
+	if fsp[:4].lower() == "bdb:":
+		print("ERROR: BDB is not supported in this version of EMAN2. You must use EMAN2.91 or earlier to access legacy data.")
+		return []
+
+	if fsp[-4:].lower()==".lst":
+		return LSXFile(fsp).read_images(*parms)
+		#global lsxcache
+		#if lsxcache==None or lsxcache.path!=fsp: lsxcache=LSXFile(fsp,True)
+		#return lsxcache.read_images(*parms)
+
+	fsp, idxs = parse_infile_arg(fsp)
+
+	if len(parms) > 0 and parms[0]:
+		idxs = [idxs[i] for i in parms[0]]
+
+	parms = idxs, *parms[1:]
+
+	return EMData.read_images_c(fsp, *parms)
+
+
+EMData.read_images_c = staticmethod(EMData.read_images)
+EMData.read_images = staticmethod(db_read_images)
+
+
+def db_write_image(self, fsp, *parms):
+	"""write_image(fsp,image #,[image type],[header only],[region],[storage type],[use host endian])
+
+	help(EMUtil.ImageType) for a list of valid image types, eg EMUtil.ImageType.IMAGE_MRC
+	help(EMUtil.EMDataType) for a list of valid storage types
+
+	Writes an image to a file or a bdb: entry. Note that for bdb: specifications, only image # is supported.
+	the remaining options are ignored
+	"""
+	#	print "In db_write_image, WI ",fsp,str(parms)
+
+	if fsp[:4].lower() == "bdb:":
+		print("ERROR: BDB is not supported in this version of EMAN2. You must use EMAN2.91 or earlier to access legacy data.")
+		return
+
+	elif ":" in fsp:
+		idx = parms[0] if parms else 0
+
+		return self.write_compressed(fsp, idx)
+
+	return self.write_image_c(fsp, *parms)
+
+
+EMData.write_image_c = EMData.write_image
+EMData.write_image = db_write_image
+
+def im_write_compressed(self,fsp,n,bits=8,minval=0,maxval=0,nooutliers=False,level=1,erase=False):
+	"""write_compressed(self or list,fsp,n,bits=8,minval=0,maxval=0,nooutliers=False,level=1)
+
+This flexible image writing routine will write compressed HDF images (or a single image). It may be called
+on an instance:
+
+img.write_compressed(fsp,n,bits,...)
+
+or a list of images:
+
+EMData.write_compressed(list,fsp,n_first_img,bits,...)
+
+Compression itself is lossless, but uses variable bit reduction which is (usually) lossy. 
+
+Ignores any render_min/render_max already in the image header. To use those values, pass them as arguments
+and do not specify nooutliers.
+
+If nooutliers is set, this will override any specified minval/maxval. If maxval<=minval then the full range of 
+image values will be included in the bit reduced image. If large outliers are present, this may effectively remove 
+almost all of the information in the image. Nooutliers will eliminate up to ~0.01% of the extreme pixel values from the
+histogram by clamping the values at the extrema. For integrating mode raw micrograph data, nooutliers is 
+highly recommended, though it is probably unnecessary with counting mode images, unless there is an extremely
+bad normalization value.
+
+Compression level (0-9) is passed to the gzip routine. While all levels are lossless, higher levels will
+achieve progressively less additional compression and progressively more time. The default level of 1
+provides good compression without having a significant performance impact.
+
+Somewhat counterintuitively, the noisier the data, the fewer bits that are required to fully represent the
+image. That is, raw micrographs can safely be stored as 3-4 bits, whereas a reconstructed, filtered volume
+may require 8 or more bits.
+
+If erase is set, the file will be deleted if it exists, before writing. Obviously this must be used with caution,
+but a problem with overwriting existing compressed HDF images is that the original images are not truly deleted
+and the file size will increase.
+"""
+	is_compression_syntax = (":" in fsp)
+
+	if is_compression_syntax:
+		fsp, outbits, rendermin_abs, rendermax_abs, rendermin_s, rendermax_s = parse_outfile_arg(fsp)
+
+		if not is_file_compressible(fsp):
+			raise Exception(f"Only {[i.strip('.') for i in compressible_formats()]} "
+			                f"formats are supported by write_compressed()")
+
+		if outbits: bits = outbits
+
+	if isinstance(self,EMData):
+		self=[self]
+	
+	if erase:
+		try: os.unlink(fsp)
+		except: pass
+	
+	if n==-1: 
+		try: n=EMUtil.get_image_count(fsp)
+		except: n=0
+	
+	for i,im in enumerate(self):
+		if not isinstance(im,EMData) : raise(Exception,"write_compressed() requires a list of EMData objects")
+
+		if is_compression_syntax:
+			minval = rendermin_abs if rendermin_abs else rendermin_s * im["mean"]
+			maxval = rendermax_abs if rendermax_abs else rendermax_s * im["mean"]
+
+			if minval == 'FULL': minval = im["minimum"]
+			if maxval == 'FULL': maxval = im["maximum"]
+
+		im["render_bits"]=bits
+		im["render_compress_level"]=level
+		### This is an important option, as it will be the default in many cases. It makes an effort to intelligently
+		### eliminate extreme outliers, while not modifying cases with highly nongaussian distributions
+		if nooutliers:
+			nxyz=im.get_size()
+			maxout=max(nxyz//20000,8)		# at most 1 in 20000 pixels should be considered an outlier on each end
+			h0=im["minimum"]
+			h1=im["maximum"]
+			hs=(h1-h0)/4095
+			hist=im.calc_hist(4096,h0,h1)
+			
+			#ok, we're doing this approximately
+			for sl in range(2048):
+				if sum(hist[:sl+1])>maxout: break
+			for sh in range(4095,2048,-1):
+				if sum(hist[sh:])>maxout: break
+
+			im["render_min"]=min(sl*hs+h0,im["mean"]-im["sigma"]*4.0)
+			im["render_max"]=max(sh*hs+h0,im["mean"]+im["sigma"]*4.0)
+		elif maxval>minval:
+			im["render_min"]=float(minval)
+			im["render_max"]=float(maxval)
+		# we need the C++ code to determine min and max in this situation
+		#else:
+			#im["render_min"]=im["minimum"]
+			#im["render_max"]=im["maximum"]
+		
+		# would like to use the new write_images, but it isn't quite ready yet.
+		im.write_image_c(fsp,i+n,EMUtil.ImageType.IMAGE_UNKNOWN,0,None,EMUtil.EMDataType.EM_COMPRESSED)
+	
+EMData.write_compressed=im_write_compressed
+
 
 __doc__ = \
 "EMAN classes and routines for image/volume processing in \n\

@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steve Ludtke, 1/18/2008 (sludtke@bcm.edu)
 # Copyright (c) 2000-2007 Baylor College of Medicine
@@ -37,7 +34,6 @@ from __future__ import division
 from past.utils import old_div
 from builtins import range
 from EMAN2 import *
-from EMAN2db import db_open_dict, db_list_dicts
 from math import *
 from os import remove
 import sys
@@ -77,9 +73,9 @@ def main():
 	parser.add_argument("--naliref", default=5, type=int, help="Number of alignment references to when determining particle orientations", guitype='intbox', row=3, col=0, rowspan=1, colspan=1, mode="spr")
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None, guitype='strbox', row=4, col=0, rowspan=1, colspan=3, mode="spr")
 	parser.add_argument("--centeracf", default=False, action="store_true",help="This option has been removed in favor of a new centering algorithm")
-	parser.add_argument("--center",type=str,default="xform.center",help="If the default centering algorithm (xform.center) doesn't work well, you can specify one of the others here (e2help.py processor center)",guitype='comboparambox', choicelist='dict(re_filter_list(dump_processors_list(),"xform.center").items()+[("nocenter",["Do not center class averages. (similar to what relion does)"])])', row=3, col=1, rowspan=1, colspan=2, mode="spr")
+	parser.add_argument("--center",type=str,default="xform.center",help="If the default centering algorithm (xform.center) doesn't work well, you can specify one of the others here (e2help.py processor center)",guitype='comboparambox', choicelist='dict(list(re_filter_list(dump_processors_list(),"xform.center").items())+[("nocenter",["Do not center class averages. (similar to what relion does)"])])', row=3, col=1, rowspan=1, colspan=2, mode="spr")
 	parser.add_argument("--check", "-c",default=False, action="store_true",help="Checks the contents of the current directory to verify that e2refine2d.py command will work - checks for the existence of the necessary starting files and checks their dimensions. Performs no work ")
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--maxshift", default=-1, type=int, help="Maximum particle translation in x and y")
 	parser.add_argument("--exclude", type=str,default=None,help="The named file should contain a set of integers, each representing an image from the input file to exclude.")
 	parser.add_argument("--resume", default=False, action="store_true",help="This will cause a check of the files in the current directory, and the refinement will resume after the last completed iteration. It's ok to alter other parameters.")
@@ -144,16 +140,9 @@ def main():
 	if options.classrefsf :
 		print("Warning: classrefsf option has no effect on e2refine2d.py")
 
-	if options.path and ("/" in options.path or "#" in options.path) :
-		print("Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. ")
-		sys.exit(1)
 	if options.path == None:
-		fls=[int(i[-2:]) for i in os.listdir(".") if i[:4]=="r2d_" and len(i)==6]
-		if len(fls)==0 : fls=[0]
-		options.path = "r2d_{:02d}".format(max(fls)+1)
-		try: os.mkdir(options.path)
-		except: pass
-
+		options.path=num_path_new("r2d_")
+		
 	if options.centeracf : 
 		print("Warning: the --centeracf option has been removed from e2refine2d in favor of a new centering scheme. Ignoring option.")
 		
@@ -226,7 +215,7 @@ def main():
 		# make class-averages
 		#run("e2classaverage.py %s %s#classmx_%02d %s#classes_%02d --iter=%d --align=%s:maxshift=%d --averager=%s -vf  --keep=%f --cmp=%s --aligncmp=%s"%(options.input,options.path,it,options.path,it,options.classiter,options.classalign,options.maxshift,options.classaverager,options.classkeep,options.classcmp,options.classaligncmp))
 
-		cls_cmd = "e2classaverage.py --input=%s --classmx=%s/classmx_00.hdf --output=%s/classes_init.hdf --iter=8 --force --storebad --center=%s" %(options.input,options.path,options.path,options.center)
+		cls_cmd = "e2classaverage.py --input=%s --classmx=%s/classmx_00.hdf --output=%s/classes_init.hdf --iter=8 --storebad --center=%s" %(options.input,options.path,options.path,options.center)
 		cls_cmd += get_classaverage_extras(options)
 
 		#run("e2classaverage.py %s %s#classmx_00 %s#classes_init --iter=6 --align=%s:maxshift=%d --averager=%s -vf --bootstrap --keep=%f --cmp=%s --aligncmp=%s --normproc=%s"%(options.input,options.path,options.path,options.classalign,options.maxshift,options.classaverager,options.classkeep,options.classcmp,options.classaligncmp,options.classnormproc))
@@ -283,7 +272,7 @@ def main():
 		# We use e2simmx to compute the optimal particle orientations
 		# ERROR e2simmxy doesn't support parallel
 		#e2simmxcmd = "e2simmx.py %s#aliref_%02d %s %s#simmx_%02d -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d %s %s"%(options.path,it, options.input,options.path,it,options.simcmp,options.simalign,options.simaligncmp,subverbose,excludestr,parstr) # e2simmx doesn't do parallel
-		e2simmxcmd = "e2simmx.py %s/aliref_%02d.hdf %s %s/simmx_%02d.hdf -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d %s"%(options.path,it, options.input,options.path,it,options.simcmp,options.simalign,options.simaligncmp,subverbose,excludestr)
+		e2simmxcmd = "e2simmx.py %s/aliref_%02d.hdf %s %s/simmx_%02d.hdf --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d %s"%(options.path,it, options.input,options.path,it,options.simcmp,options.simalign,options.simaligncmp,subverbose,excludestr)
 		if options.simralign : e2simmxcmd += " --ralign=%s --raligncmp=%s" %(options.simralign,options.simraligncmp)
 		if options.parallel: e2simmxcmd += " --parallel=%s" %options.parallel
 		if options.shrink: e2simmxcmd += " --shrink=%d" %options.shrink
@@ -301,7 +290,7 @@ def main():
 		if logid : E2progress(logid,old_div(proc_tally,total_procs))
 
 		# make class-averages
-		cls_cmd = "e2classaverage.py --input=%s --classmx=%s/classmx_%02d.hdf --output=%s/classes_%02d.hdf --force --center %s --iter=%d " %(options.input,options.path,it,options.path,it,options.center,options.classiter)
+		cls_cmd = "e2classaverage.py --input=%s --classmx=%s/classmx_%02d.hdf --output=%s/classes_%02d.hdf --center %s --iter=%d " %(options.input,options.path,it,options.path,it,options.center,options.classiter)
 		cls_cmd += get_classaverage_extras(options)
 		#run("e2classaverage.py %s %s#classmx_%02d %s#classes_%02d --iter=%d --align=%s:maxshift=%d --averager=%s -vf  --keep=%f --cmp=%s --aligncmp=%s"%(options.input,options.path,it,options.path,it,options.classiter,options.classalign,options.maxshift,options.classaverager,options.classkeep,options.classcmp,options.classaligncmp))
 		run(cls_cmd)
@@ -349,9 +338,9 @@ def get_simmx_cmd(options,refs,simmx,check=False,nofilecheck=False):
 
 def get_classaverage_cmd(options,check=False,nofilecheck=False):
 
-	e2cacmd = "e2classaverage.py --input=%s --classmx=%s --force --output=%s --keep=.75 --center %s" %(options.startimg,options.classifyfile,options.cafile,options.center)
+	e2cacmd = "e2classaverage.py --input=%s --classmx=%s --output=%s --keep=.75 --center %s" %(options.startimg,options.classifyfile,options.cafile,options.center)
 
-	e2cacmd += " --ref=%s --iter=%d -f" %(options.projfile,options.classiter)
+	e2cacmd += " --ref=%s --iter=%d " %(options.projfile,options.classiter)
 
 	#if (options.classkeepsig):
 		#e2cacmd += " --keepsig=%f" %options.classkeepsig

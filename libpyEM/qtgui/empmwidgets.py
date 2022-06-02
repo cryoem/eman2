@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import division
 #
 # Author: John Flanagan Oct 20th 2011 (jfflanag@bcm.edu)
 # Copyright (c) 2000-2011 Baylor College of Medicine
@@ -33,39 +30,38 @@ from __future__ import division
 #
 #
 
-# These are widgets that e2projectmanger instatiates to make a GUI interface for the e2 programs.There should be enough widgets to represent
-# just about any e2program, but if you feel the desire to make a new one, just subclass PMBaseWidget, and implemnt getValue and setValue.
-# You may also need to reimplemnt getArgument (which returns the argument used in calling the e2program), if the default will not work for you.
-# In addition, you'll need to add a line in the class PMGUIWidget (e2projectmanager) to instatiate the widget based on the value of 'guitype'
+# These are widgets that e2projectmanager instantiates to make a GUI interface for the e2 programs.There should be enough widgets to represent
+# just about any e2program, but if you feel the desire to make a new one, just subclass PMBaseWidget, and implement getValue and setValue.
+# You may also need to reimplement getArgument (which returns the argument used in calling the e2program), if the default will not work for you.
+# In addition, you'll need to add a line in the class PMGUIWidget (e2projectmanager) to instantiate the widget based on the value of 'guitype'
 
 from past.utils import old_div
 from builtins import range
-from EMAN2db import db_check_dict
 import sys, math, weakref
-from PyQt4 import QtCore, QtGui
-from PyQt4.QtCore import Qt
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import Qt
 from .emselector import EMSelectorDialog	# This will be replaced by something more sensible in the future
 import re, os, glob
 from .embrowser import EMBrowserWidget
 from .empmtabwidgets import *
 from functools import reduce
 
-class PMComboBox(QtGui.QComboBox):
-	""" Reimplment the QComboBox to remove wheel widget activation """
+class PMComboBox(QtWidgets.QComboBox):
+	""" Reimplement the QComboBox to remove wheel widget activation """
 	def __init__(self):
-		QtGui.QComboBox.__init__(self)
+		QtWidgets.QComboBox.__init__(self)
 
 	def wheelEvent(self, event):
 		""" Ignore wheelevents is not poped up """
 		event.ignore()
 
 
-class PMBaseWidget(QtGui.QWidget):
+class PMBaseWidget(QtWidgets.QWidget):
 	""" A base widget upon which all the other PM widgets are derived """
 	pmmessage = QtCore.pyqtSignal(str)
 
 	def __init__(self, name, mode="",returnNone=False):
-		QtGui.QWidget.__init__(self)
+		QtWidgets.QWidget.__init__(self)
 
 		self.postional = False
 		self.name = name
@@ -76,22 +72,22 @@ class PMBaseWidget(QtGui.QWidget):
 
 	def getValue(self):
 		""" Get the value for this widget """
-		raise NotImplementedError("Sub class must reimplemnt 'getValue' function")
+		raise NotImplementedError("Sub class must reimplement 'getValue' function")
 
 	def setValue(self, value, quiet=False):
 		""" Set the value for this widget """
-		raise NotImplementedError("Sub class must reimplemnt 'setValue' function")
+		raise NotImplementedError("Sub class must reimplement 'setValue' function")
 
 	def getName(self):
 		""" Return the name of this widget """
 		return self.name
 
 	def setPositional(self, position):
-		""" Set whether or not this is a postional argument """
+		""" Set whether or not this is a positional argument """
 		self.postional = position
 
 	def getPositional(self):
-		""" Return true is this is a positional argument rather than an option """
+		""" Return true if this is a positional argument rather than an option """
 		return self.postional
 
 	def setMode(self, mode):
@@ -103,13 +99,13 @@ class PMBaseWidget(QtGui.QWidget):
 		return self.mode
 
 	def getArgument(self):
-		# If the value is None or blank then do not yeild an option. Obviously this will nver happen for Int bool or float
+		# If the value is None or blank then do not yield an option. Obviously this will never happen for int, bool or float
 		if str(self.getValue()) == "" or self.noarg:
 			return ""
 		elif  str(self.getValue()).upper() == "NONE" and not self.returnNone:
 			return ""
 		else:
-			""" There are two sorts of arguments: Posional and optional """
+			""" There are two sorts of arguments: Positional and optional """
 			if self.getPositional():
 				return str(self.getValue())
 			else:
@@ -120,11 +116,11 @@ class PMBaseWidget(QtGui.QWidget):
 		self.errormessage = message
 
 	def getErrorMessage(self):
-		""" return the error message if none then this returns blank """
+		""" Return the error message if none then this returns blank """
 		return self.errormessage
 
 class PMIntEntryWidget(PMBaseWidget):
-	""" A Widget for geting Int values. Type and range is checked """
+	""" A widget for getting int values. Type and range are checked """
 
 	@staticmethod
 	def copyWidget(widget):
@@ -139,9 +135,9 @@ class PMIntEntryWidget(PMBaseWidget):
 		self.initdefault = initdefault
 		self.setPositional(postional)
 
-		gridbox = QtGui.QGridLayout()
-		label = QtGui.QLabel(name)
-		self.intbox = QtGui.QLineEdit()
+		gridbox = QtWidgets.QGridLayout()
+		label = QtWidgets.QLabel(name)
+		self.intbox = QtWidgets.QLineEdit()
 		gridbox.addWidget(label, 0, 0)
 		gridbox.addWidget(self.intbox, 0, 1)
 		self.setLayout(gridbox)
@@ -162,8 +158,8 @@ class PMIntEntryWidget(PMBaseWidget):
 			self._confirm_bounds()
 		except ValueError:
 			self.intbox.setText("")
-			self.setErrorMessage("Invalid type, Int neeeded in %s"%self.getName())
-			if self.isVisible() and not quiet: self.pmmessage.emit("Invalid type, Int neeeded in %s"%self.getName())
+			self.setErrorMessage("Invalid type, int needed in %s"%self.getName())
+			if self.isVisible() and not quiet: self.pmmessage.emit("Invalid type, int needed in %s"%self.getName())
 
 	def _confirm_bounds(self):
 		if self.lrange != None and (self.value < self.lrange):
@@ -184,7 +180,7 @@ class PMIntEntryWidget(PMBaseWidget):
 		self.intbox.setEnabled(state)
 
 class PMShrinkEntryWidget(PMIntEntryWidget):
-	""" A widget for shink options. If this entry is set to <= 1 then no argument is returned """
+	""" A widget for shrink options. If this entry is set to <= 1 then no argument is returned """
 
 	@staticmethod
 	def copyWidget(widget):
@@ -207,8 +203,8 @@ class PMShrinkEntryWidget(PMIntEntryWidget):
 		except ValueError:
 			self.value = self.lrange - 1
 			self.intbox.setText(str(self.lrange-1))
-			self.setErrorMessage("Invalid type, Int neeeded in %s"%self.getName())
-			if self.isVisible() and not quiet: self.pmmessage.emit("Invalid type, Int neeeded in %s"%self.getName())
+			self.setErrorMessage("Invalid type, int needed in %s"%self.getName())
+			if self.isVisible() and not quiet: self.pmmessage.emit("Invalid type, int needed in %s"%self.getName())
 
 	def _confirm_bounds(self):
 		if self.lrange != None and (self.value < self.lrange):
@@ -219,7 +215,7 @@ class PMShrinkEntryWidget(PMIntEntryWidget):
 		self.noarg = False
 
 class PMFloatEntryWidget(PMBaseWidget):
-	""" A Widget for geting Float values. Type and range is checked """
+	""" A widget for getting float values. Type and range are checked """
 
 	@staticmethod
 	def copyWidget(widget):
@@ -234,9 +230,9 @@ class PMFloatEntryWidget(PMBaseWidget):
 		self.initdefault = initdefault
 		self.setPositional(postional)
 
-		gridbox = QtGui.QGridLayout()
-		label = QtGui.QLabel(name)
-		self.floatbox = QtGui.QLineEdit()
+		gridbox = QtWidgets.QGridLayout()
+		label = QtWidgets.QLabel(name)
+		self.floatbox = QtWidgets.QLineEdit()
 		gridbox.addWidget(label, 0, 0)
 		gridbox.addWidget(self.floatbox, 0, 1)
 		self.setLayout(gridbox)
@@ -278,7 +274,7 @@ class PMFloatEntryWidget(PMBaseWidget):
 		self.floatbox.setEnabled(state)
 
 class PMStringEntryWidget(PMBaseWidget):
-	""" A Widget for geting String values. Type is checked """
+	""" A widget for getting string values. Type is checked """
 
 	@staticmethod
 	def copyWidget(widget):
@@ -290,9 +286,9 @@ class PMStringEntryWidget(PMBaseWidget):
 		self.initdefault = initdefault
 		self.setPositional(postional)
 
-		gridbox = QtGui.QGridLayout()
-		label = QtGui.QLabel(name)
-		self.stringbox = QtGui.QLineEdit()
+		gridbox = QtWidgets.QGridLayout()
+		label = QtWidgets.QLabel(name)
+		self.stringbox = QtWidgets.QLineEdit()
 		gridbox.addWidget(label, 0, 0)
 		gridbox.addWidget(self.stringbox, 0, 1)
 		self.setLayout(gridbox)
@@ -305,7 +301,7 @@ class PMStringEntryWidget(PMBaseWidget):
 		self.string = str(self.stringbox.text())
 
 	def getValue(self):
-		# What to do with None tpye values? For strings, just set None to "". This should be equivilent
+		# What to do with None type values? For strings, just set None to "". This should be equivalent
 		return self.string
 
 	def setValue(self, string, quiet=False):
@@ -322,8 +318,8 @@ class PMHeaderWidget(PMBaseWidget):
 	def __init__(self, name, header):
 		PMBaseWidget.__init__(self, name)
 
-		gridbox = QtGui.QGridLayout()
-		self.header = QtGui.QLabel()
+		gridbox = QtWidgets.QGridLayout()
+		self.header = QtWidgets.QLabel()
 		font = QtGui.QFont()
 		font.setBold(True)
 		self.header.setFont(font)
@@ -340,11 +336,11 @@ class PMHeaderWidget(PMBaseWidget):
 		self.setErrorMessage(None)
 
 	def getArgument(self):
-		""" Obvioulsy the hear does give an argument """
+		""" Obviously the header does give an argument """
 		return None
 
 class PMBoolWidget(PMBaseWidget):
-	""" A Widget for getting Bool values. Type is checked """
+	""" A widget for getting bool values. Type is checked """
 
 	@staticmethod
 	def copyWidget(widget):
@@ -356,8 +352,8 @@ class PMBoolWidget(PMBaseWidget):
 		self.boolvalue = boolvalue
 		self.initdefault = initdefault
 
-		gridbox = QtGui.QGridLayout()
-		self.boolbox = QtGui.QCheckBox(name)
+		gridbox = QtWidgets.QGridLayout()
+		self.boolbox = QtWidgets.QCheckBox(name)
 		gridbox.addWidget(self.boolbox, 0, 0)
 		self.setLayout(gridbox)
 
@@ -384,7 +380,7 @@ class PMBoolWidget(PMBaseWidget):
 			return ""
 
 class PMFileNameWidget(PMBaseWidget):
-	""" A Widget for geting filenames. Type is checked """
+	""" A widget for getting filenames. Type is checked """
 	pmfilename = QtCore.pyqtSignal(str)
 	@staticmethod
 	def copyWidget(widget):
@@ -397,12 +393,12 @@ class PMFileNameWidget(PMBaseWidget):
 		self.checkfileexist= checkfileexist
 		self.setPositional(postional)
 
-		gridbox = QtGui.QGridLayout()
-		label = QtGui.QLabel(name)
+		gridbox = QtWidgets.QGridLayout()
+		label = QtWidgets.QLabel(name)
 		self.browser = browser
-		self.filenamebox = QtGui.QLineEdit()
-		self.browsebutton = QtGui.QPushButton("Browse")
-		self.infolabel = QtGui.QLabel("Num Images: None")
+		self.filenamebox = QtWidgets.QLineEdit()
+		self.browsebutton = QtWidgets.QPushButton("Browse")
+		self.infolabel = QtWidgets.QLabel("Num Images: None")
 		gridbox.addWidget(label, 0, 0)
 		gridbox.addWidget(self.filenamebox, 0, 1)
 		gridbox.addWidget(self.browsebutton, 0, 2)
@@ -418,8 +414,9 @@ class PMFileNameWidget(PMBaseWidget):
 		self.setValue(str(self.filenamebox.text()))
 
 	def _on_cancel(self):
-		self.window.close()
-		self.window=None
+		if self.window:
+			self.window.close()
+			self.window=None
 
 	def _on_ok(self):
 		filename = ""
@@ -442,7 +439,7 @@ class PMFileNameWidget(PMBaseWidget):
 		# Check to see if the file exists
 		filename = str(filename)
 		if filename.upper() == "NONE": filename=""	# If none is passed set to blank
-		# Posional arguments must be space delimted for multiple files, whereas options must be comma delimted
+		# Positional arguments must be space delimited for multiple files, whereas options must be comma delimited
 		if not self.getPositional():
 			filename = filename.replace(" ",",")
 		# In some cases a file is optional
@@ -454,14 +451,14 @@ class PMFileNameWidget(PMBaseWidget):
 			## In not blank then check to ensure each file is 'ok'. Not that a list of files is accepted
 			#if not self._checkfiles(filename): return
 
-		# If all is well, then  we are happy
+		# If all is well, then we are happy
 		self.filename = filename
 		self.filenamebox.setText(filename)
 		self.setErrorMessage(None)
 		self.pmfilename.emit(self.getValue())
 
 	def _checkfiles(self, filename):
-		# Posional arguments must be space delimted for multiple files, whereas options must be comma delimted
+		# Positional arguments must be space delimited for multiple files, whereas options must be comma delimited
 		if self.getPositional():
 			files = filename.split()
 		else:
@@ -483,7 +480,7 @@ class PMFileNameWidget(PMBaseWidget):
 		numimages = 0
 		nx,ny,nz=0,0,0
 		for f in files:
-			if not os.access(f, os.F_OK) and not db_check_dict(f):
+			if not os.access(f, os.F_OK) :
 				self._onBadFile(f)
 				# Display the rubbish file to the user
 				self.filenamebox.setText(filename)
@@ -505,7 +502,7 @@ class PMFileNameWidget(PMBaseWidget):
 		if self.isVisible() and not quiet: self.pmmessage.emit("File '%s' from field '%s' does not exist"%(filename,self.getName()))
 
 class PMDirectoryWidget(PMBaseWidget):
-	""" A Widget for display dircories of a certian type """
+	""" A widget for display directories of a certain type """
 
 	@staticmethod
 	def copyWidget(widget):
@@ -518,8 +515,8 @@ class PMDirectoryWidget(PMBaseWidget):
 		self.initdefault = initdefault
 		self.setPositional(postional)
 
-		gridbox = QtGui.QGridLayout()
-		label = QtGui.QLabel(name)
+		gridbox = QtWidgets.QGridLayout()
+		label = QtWidgets.QLabel(name)
 		self.combobox = PMComboBox()
 		gridbox.addWidget(label, 0, 0)
 		gridbox.addWidget(self.combobox, 0, 1)
@@ -532,7 +529,7 @@ class PMDirectoryWidget(PMBaseWidget):
 	def updateDirs(self):
 		for idx in range(self.combobox.count()):
 			self.combobox.removeItem(self.combobox.count()-1)
-		# This extra code allows use to have more than one type of directory
+		# This extra code allows us to have more than one type of directory
 		patterns = self.dirbasename.split("|")
 		dirs = []
 		for pattern in patterns:
@@ -551,7 +548,7 @@ class PMDirectoryWidget(PMBaseWidget):
 		self.setErrorMessage(None)
 
 class PMComboWidget(PMBaseWidget):
-	""" A Widget for combo boxes. Type is checked """
+	""" A widget for combo boxes. Type is checked """
 
 	@staticmethod
 	def copyWidget(widget):
@@ -564,13 +561,13 @@ class PMComboWidget(PMBaseWidget):
 		self.datatype=datatype	# Must be int, float or str
 		self.setPositional(postional)
 
-		gridbox = QtGui.QGridLayout()
-		label = QtGui.QLabel(name)
+		gridbox = QtWidgets.QGridLayout()
+		label = QtWidgets.QLabel(name)
 		self.combobox = PMComboBox()
 		gridbox.addWidget(label, 0, 0)
 		gridbox.addWidget(self.combobox, 0, 1)
 		self.setLayout(gridbox)
-		# load combo box
+		# Load combo box
 		self.choices = sorted(choices)
 		for choice in self.choices:
 			self.combobox.addItem(str(choice))
@@ -581,7 +578,7 @@ class PMComboWidget(PMBaseWidget):
 
 	def getValue(self):
 		if str(self.combobox.currentText()) == "None":
-			# In the e2 programs we actually need to specify None otherwise default behaviour will be implmented
+			# In the e2 programs we actually need to specify None otherwise default behaviour will be implemented
 			return "None"
 		return self.datatype(self.combobox.currentText())
 
@@ -599,7 +596,7 @@ class PMComboWidget(PMBaseWidget):
 
 
 class PMComboParamsWidget(PMBaseWidget):
-	""" A Widget for combo boxes. Type is checked. For the combobox with params the datatype is always str """
+	""" A widget for combo boxes. Type is checked. For the combobox with params the datatype is always str """
 
 	@staticmethod
 	def copyWidget(widget):
@@ -611,17 +608,17 @@ class PMComboParamsWidget(PMBaseWidget):
 		self.initdefault = initdefault
 		self.setPositional(postional)
 
-		gridbox = QtGui.QGridLayout()
-		label = QtGui.QLabel(name)
+		gridbox = QtWidgets.QGridLayout()
+		label = QtWidgets.QLabel(name)
 		self.combobox = PMComboBox()
-		plabel = QtGui.QLabel("params:")
-		self.params = QtGui.QLineEdit()
+		plabel = QtWidgets.QLabel("params:")
+		self.params = QtWidgets.QLineEdit()
 		gridbox.addWidget(label, 0, 0)
 		gridbox.addWidget(self.combobox, 0, 1)
 		gridbox.addWidget(plabel, 0, 2)
 		gridbox.addWidget(self.params, 0, 3)
 		self.setLayout(gridbox)
-		# load choices
+		# Load choices
 		self.choices = sorted(choices)
 		for choice in self.choices:
 			self.combobox.addItem(str(choice))
@@ -634,7 +631,7 @@ class PMComboParamsWidget(PMBaseWidget):
 	def getValue(self):
 		""" Return the value. Concatenate if necessary """
 		if str(self.combobox.currentText()) == "None":
-			# In the e2 programs we actually need to specify None otherwise default behaviour will be implmented
+			# In the e2 programs we actually need to specify None otherwise default behaviour will be implemented
 			return "None"
 		if self.params.text() == "":
 			return str(self.combobox.currentText())
@@ -642,7 +639,7 @@ class PMComboParamsWidget(PMBaseWidget):
 			return str(self.combobox.currentText())+":"+self.params.text()
 
 	def setValue(self, value, quiet=False):
-		# First parse the value, as it may contain both a options and params
+		# First parse the value, as it may contain both options and params
 		if value == '': value = "None"
 		values = self._parsedefault(str(value))
 		# Next process the parsed value
@@ -675,8 +672,8 @@ class PMSymWidget(PMBaseWidget):
 		PMBaseWidget.__init__(self, name, mode)
 		self.initdefault = initdefault
 
-		gridbox = QtGui.QGridLayout()
-		label = QtGui.QLabel(name)
+		gridbox = QtWidgets.QGridLayout()
+		label = QtWidgets.QLabel(name)
 		label.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight)
 		self.combobox = PMComboBox()
 		self.symnumbox = PMIntEntryWidget("Sym Number", 0, mode, lrange=0)
@@ -728,7 +725,7 @@ class PMSymWidget(PMBaseWidget):
 		if self.symnumbox.getErrorMessage(): return self.symnumbox.getErrorMessage()
 
 class PMAutoMask3DWidget(PMBaseWidget):
-	""" A Widget for getting automask 3D input """
+	""" A widget for getting automask 3D input """
 
 	@staticmethod
 	def copyWidget(widget):
@@ -739,13 +736,13 @@ class PMAutoMask3DWidget(PMBaseWidget):
 		PMBaseWidget.__init__(self, name, mode)
 		self.initdefault = initdefault
 
-		gridbox = QtGui.QGridLayout()
-		self.automask3dbool = QtGui.QCheckBox("Auto Mask 3D")
+		gridbox = QtWidgets.QGridLayout()
+		self.automask3dbool = QtWidgets.QCheckBox("Auto Mask 3D")
 		self.params = []
 		self.params.append(PMFloatEntryWidget("Threshold", 0.8, mode))
 		self.params.append(PMIntEntryWidget("Radius", 30, mode))
 		self.params.append(PMIntEntryWidget("Mask Dilations", 5, mode))
-		self.params.append(PMIntEntryWidget("Gaussian Dialations", 5, mode))
+		self.params.append(PMIntEntryWidget("Gaussian Dilations", 5, mode))
 		self.params.append(PMIntEntryWidget("NMax", 30, mode))
 		gridbox.addWidget(self.automask3dbool, 0, 0)
 		gridbox.addWidget(self.params[0], 1, 0)
@@ -772,7 +769,7 @@ class PMAutoMask3DWidget(PMBaseWidget):
 		self.pmmessage.emit(message)
 
 	def setValue(self, value, quiet=False):
-		# if value is "" of None, set bool to false
+		# If value is "" of None, set bool to false
 		if not value:
 			self.automask3dbool.setChecked(False)
 			self._on_boolchanged()
@@ -786,7 +783,7 @@ class PMAutoMask3DWidget(PMBaseWidget):
 	def getValue(self):
 		if not self.automask3dbool.isChecked(): return ""
 		value = ""
-		# concatenate things
+		# Concatenate things
 		for i in range(len(self.params)):
 			value = value+","+str(self.params[i].getValue())
 		value = value[1:]
@@ -802,29 +799,29 @@ class PMAutoMask3DWidget(PMBaseWidget):
 
 class PMTableBase(PMBaseWidget):
 	""" A base widget for making tables. To make a table class subclass this base and add a line to PMGUIWidget in e2projectmanager.py
-	inorder to instatiate it using directions from an e2program. See Wiki for more info """
+	in order to instantiate it using directions from an e2program. See Wiki for more info """
 	def __init__(self, name, mode, postional=False, initdefault=None):
 		PMBaseWidget.__init__(self, name, mode)
 		self.setPositional(postional)
 		self.initdefault = initdefault
 
-		gridbox = QtGui.QGridLayout()
-		self.tablewidget = QtGui.QTableWidget()
+		gridbox = QtWidgets.QGridLayout()
+		self.tablewidget = QtWidgets.QTableWidget()
 		gridbox.addWidget(self.tablewidget, 0, 0)
-		self.tablewidget.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)	# Readonly table
+		self.tablewidget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)	# Readonly table
 		self.setLayout(gridbox)
 
 	def updateTable(self):
-		""" Update FSC table. You must implment this function to build the table"""
-		raise NotImplementedError("Sub class must reimplemnt 'getValue' function")
+		""" Update FSC table. You must implement this function to build the table"""
+		raise NotImplementedError("Sub class must reimplement 'getValue' function")
 
 	def getValue(self):
-		""" must implment this to, to return a value from the table """
-		raise NotImplementedError("Sub class must reimplemnt 'getValue' function")
+		""" Must implement this to return a value from the table """
+		raise NotImplementedError("Sub class must reimplement 'getValue' function")
 
 	def setValue(self):
-		""" must implemnt this function to set a value in the table """
-		raise NotImplementedError("Sub class must reimplemnt 'getValue' function")
+		""" Must implement this function to set a value in the table """
+		raise NotImplementedError("Sub class must reimplement 'getValue' function")
 
 class PMFSCTableWidget(PMTableBase):
 	""" A widget for generating FSC tables"""
@@ -838,19 +835,19 @@ class PMFSCTableWidget(PMTableBase):
 	def __init__(self, name, default, mode, postional=False, initdefault=None, resize=False):
 		PMTableBase.__init__(self, name, mode, postional, initdefault)
 
-		# table stuff
+		# Table stuff
 		self.tablewidget.setColumnCount(4)
 		self.tablewidget.setHorizontalHeaderLabels(["Refine", "# Iter", "Masked .143", "Unmasked .143"])
-		self.tablewidget.horizontalHeader().setResizeMode(QtGui.QHeaderView.ResizeToContents)
+		self.tablewidget.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
 		self.tablewidget.horizontalHeader().setHighlightSections(False)
-		self.tablewidget.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)	# select rows
-		self.tablewidget.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)	# single selection
+		self.tablewidget.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)	# select rows
+		self.tablewidget.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)	# single selection
 
 		self.tablewidget.setRowCount(0)
 		self.patterns = ["refine","frealign","multi"]
 		self.tablewidget.cellDoubleClicked[int, int].connect(self.loadFSC)
 
-		#now update table
+		# Now update table
 		self.setValue(default)
 		if resize: self.resize(550,300)
 
@@ -871,7 +868,7 @@ class PMFSCTableWidget(PMTableBase):
 			self.tablewidget.setCurrentItem(wlist[0])
 
 	def loadFSC(self, row, col):
-		""" display the FSC curve. This is a callback for double clicking"""
+		""" Display the FSC curve. This is a callback for double clicking"""
 		if not self.tablewidget.item(row, 1):
 			msg = "Rubbish!!! No FSC curves to plot."
 			print(msg)
@@ -900,15 +897,15 @@ class PMFSCTableWidget(PMTableBase):
 		self.tablewidget.setRowCount(len(dirs))
 
 		for i, directory in enumerate(sorted(dirs)):
-			# load each directory
-			qwi_dirname = QtGui.QTableWidgetItem(str(directory))
+			# Load each directory
+			qwi_dirname = QtWidgets.QTableWidgetItem(str(directory))
 			self.tablewidget.setItem(i, 0, qwi_dirname)
 
 			fscs=sorted([ii for ii in os.listdir(directory) if ii[:11]=="fsc_masked_"])
 			niter=len(fscs)
 			if "fsc_masked_00.txt" in fscs : niter-=1
 			
-			self.tablewidget.setItem(i, 1, QtGui.QTableWidgetItem(str(niter)))
+			self.tablewidget.setItem(i, 1, QtWidgets.QTableWidgetItem(str(niter)))
 			
 			try:
 				# We use a running average of 5 points to compute the threshold
@@ -918,9 +915,9 @@ class PMFSCTableWidget(PMTableBase):
 					v=old_div((xyd.get_y(ii-2)+xyd.get_y(ii-1)+xyd.get_y(ii)+xyd.get_y(ii+1)+xyd.get_y(ii+2)),5.0)
 					if v<0.143 : break
 				
-				self.tablewidget.setItem(i,2,QtGui.QTableWidgetItem("{:1.1f}".format(old_div(1.0,xyd.get_x(ii-1)))))
+				self.tablewidget.setItem(i,2,QtWidgets.QTableWidgetItem("{:1.1f}".format(old_div(1.0,xyd.get_x(ii-1)))))
 			except:
-				self.tablewidget.setItem(i,2,QtGui.QTableWidgetItem("?"))
+				self.tablewidget.setItem(i,2,QtWidgets.QTableWidgetItem("?"))
 
 			try:
 				# We use a running average of 5 points to compute the threshold
@@ -930,13 +927,13 @@ class PMFSCTableWidget(PMTableBase):
 					v=old_div((xyd.get_y(ii-2)+xyd.get_y(ii-1)+xyd.get_y(ii)+xyd.get_y(ii+1)+xyd.get_y(ii+2)),5.0)
 					if v<0.143 : break
 				
-				self.tablewidget.setItem(i,3,QtGui.QTableWidgetItem("{:1.1f}".format(old_div(1.0,xyd.get_x(ii-1)))))
+				self.tablewidget.setItem(i,3,QtWidgets.QTableWidgetItem("{:1.1f}".format(old_div(1.0,xyd.get_x(ii-1)))))
 			except:
-				self.tablewidget.setItem(i,3,QtGui.QTableWidgetItem("?"))
+				self.tablewidget.setItem(i,3,QtWidgets.QTableWidgetItem("?"))
 
 			
 
-	# I lifted this code from Daivids SPR workflow module
+	# I lifted this code from Daivid's SPR workflow module
 	def find_first_point_5_crossing(self,xaxis,yaxis,thr=0.5):
 		'''
 		Find the first 0.5 crossing in the FSC - interpolate and try to return an accurate estimate
@@ -968,7 +965,7 @@ class PMFSCTableWidget(PMTableBase):
 			elif int(soln) == soln:
 				return "%.1f" %(old_div(1.0,xaxis(soln)))
 			else:
-				# interpolated frequency
+				# Interpolated frequency
 				return "%.1f" %(old_div(1.0,(old_div(soln,len(yaxis))*xaxis[-1])))
 		except:
 			return "invalid"

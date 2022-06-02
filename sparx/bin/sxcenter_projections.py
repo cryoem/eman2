@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 #
 # Author: 
 # Copyright (c) 2012 The University of Texas - Houston Medical School
@@ -32,7 +31,8 @@ from __future__ import print_function
 #
 
 
-from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 from builtins import object
 from EMAN2 import *
@@ -186,8 +186,8 @@ def run3Dalignment(paramsdict, partids, partstack, outputdir, procid, myid, main
 	ali3d_options.ts     = paramsdict["ts"]
 	ali3d_options.xr     = paramsdict["xr"]
 	#  low pass filter is applied to shrank data, so it has to be adjusted
-	ali3d_options.fl     = paramsdict["lowpass"]/paramsdict["shrink"]
-	ali3d_options.initfl = paramsdict["initialfl"]/paramsdict["shrink"]
+	ali3d_options.fl     = old_div(paramsdict["lowpass"],paramsdict["shrink"])
+	ali3d_options.initfl = old_div(paramsdict["initialfl"],paramsdict["shrink"])
 	ali3d_options.aa     = paramsdict["falloff"]
 	ali3d_options.maxit  = paramsdict["maxit"]
 	ali3d_options.mask3D = paramsdict["mask3D"]
@@ -198,7 +198,7 @@ def run3Dalignment(paramsdict, partids, partstack, outputdir, procid, myid, main
 	projdata = getindexdata(paramsdict["stack"], partids, partstack, myid, nproc)
 	onx = projdata[0].get_xsize()
 	last_ring = ali3d_options.ou
-	if last_ring < 0:	last_ring = int(onx/2) - 2
+	if last_ring < 0:	last_ring = int(old_div(onx,2)) - 2
 	mask2D  = model_circle(last_ring,onx,onx) - model_circle(ali3d_options.ir,onx,onx)
 	if(shrinkage < 1.0):
 		# get the new size
@@ -273,8 +273,8 @@ def run3Dalignment(paramsdict, partids, partstack, outputdir, procid, myid, main
 	#  store params
 	if(myid == main_node):
 		for im in range(nima):
-			params[im][0] = params[im][0]/shrinkage +oldshifts[im][0]
-			params[im][1] = params[im][1]/shrinkage +oldshifts[im][1]
+			params[im][0] = old_div(params[im][0],shrinkage) +oldshifts[im][0]
+			params[im][1] = old_div(params[im][1],shrinkage) +oldshifts[im][1]
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		print(line,"Executed successfully: ","3D alignment","  number of images:%7d"%len(params))
 		write_text_row(params, os.path.join(outputdir,"params.txt") )
@@ -380,7 +380,7 @@ def main():
 		if ali3d_options.CTF:
 			i = a.get_attr('ctf')
 			pixel_size = i.apix
-			fq = pixel_size/fq
+			fq = old_div(pixel_size,fq)
 		else:
 			pixel_size = 1.0
 			#  No pixel size, fusing computed as 5 Fourier pixels

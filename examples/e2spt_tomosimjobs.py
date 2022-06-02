@@ -29,8 +29,6 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 #
-from __future__ import print_function
-from __future__ import division
 from past.utils import old_div
 from builtins import range
 from EMAN2 import *
@@ -64,8 +62,6 @@ def main():
 	"""
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	
-	#parser = OptionParser(usage=usage,version=EMANVERSION)
 	
 	parser.add_argument("--path",type=str,default='spt_simjobs',help="Directory to store results in. The default is a numbered series of directories containing the prefix 'sptsimjob'; for example, sptsimjob_02 will be the directory by default if 'sptsimjob_01' already exists.")
 	
@@ -142,7 +138,7 @@ def main():
 		particle simulation (tilt range, tilt step, snr) and alignment parameters (shrink, mask, etc). 
 		""")
 				
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	
 	parser.add_argument("--nptcls", type=int,default=10,help="Number of simulated subtomograms tu generate per referece.")
 	parser.add_argument("--tx", type=int,default=0,help="""Maximum number of pixels to randomly translate each subtomogram in X. The random translation will be picked between -txrange and +txrange. 

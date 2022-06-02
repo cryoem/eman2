@@ -1,7 +1,3 @@
-/**
- * $Id$
- */
-
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
@@ -108,7 +104,7 @@ EMData *GaussFFTProjector::project3d(EMData * image) const
 
 	int mode = params["mode"];
 	float gauss_width = 1;
-	if ( mode == 0 ) mode = 2;
+// 	if ( mode == 0 ) mode = 2;
 	if (mode == 2 ) {
 		gauss_width = EMConsts::I2G;
 	}
@@ -125,11 +121,7 @@ EMData *GaussFFTProjector::project3d(EMData * image) const
 	for (int y = 0; y < f_ny; y++) {
 		for (int x = 0; x < f_nx / 2; x++) {
 			int ii = x * 2 + y * f_nx;
-#ifdef	_WIN32
-			if (_hypot(x, y - f_ny / 2) >= f_ny / 2 - 1) {
-#else
 			if (hypot(x, y - f_ny / 2) >= f_ny / 2 - 1) {
-#endif	//_WIN32
 				data[ii] = 0;
 				data[ii + 1] = 0;
 			}
@@ -173,7 +165,7 @@ EMData *GaussFFTProjector::project3d(EMData * image) const
 		}
 	}
 
-	f->update();
+// 	f->update();
 	tmp->update();
 	
 	int returnfft=params["returnfft"];
@@ -229,8 +221,26 @@ bool GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 
-	if ( mode == 0 ) mode = 2;
-
+	if ( mode == 0 ) {
+		int x0 = (int) floor(x);
+		int y0 = (int) floor(y);
+		int z0 = (int) floor(z);
+		float d0,d1,nrm;
+		d0=d1=nrm=0;
+		
+		for (int ix=x0; ix<=x0+1; ix++){
+		for (int iy=y0; iy<=y0+1; iy++){
+		for (int iz=z0; iz<=z0+1; iz++){
+			float w=(1.0-fabs(ix-x))*(1.0-fabs(iy-y))*(1.0-fabs(iz-z));
+			d0 += w * rdata[2*ix + iy * nx + iz * nx * ny];
+			d1 += w * rdata[2*ix + iy * nx + iz * nx * ny + 1];
+			nrm+=w;
+		}}}
+// 		printf("%f\t%f\t%f\n", d0, d1, nrm);
+		data[0]=d0/nrm;
+		data[1]=d1/nrm;
+		return true;
+	}
 	if (mode == 1) {
 		int x0 = 2 * (int) floor(x + 0.5f);
 		int y0 = (int) floor(y + 0.5f);
@@ -2149,5 +2159,3 @@ map<string, vector<string> > EMAN::dump_projectors_list()
 {
 	return dump_factory_list < Projector > ();
 }
-
-/* vim: set ts=4 noet nospell: */

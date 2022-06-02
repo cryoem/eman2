@@ -1,7 +1,3 @@
-/**
- * $Id$
- */
-
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
@@ -20,8 +16,7 @@
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
- * (at your op
- * tion) any later version.
+ * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -37,7 +32,7 @@
 #include "emdata.h"
 #include "ctf.h"
 #include "portable_fileio.h"
-#include "imageio.h"
+#include "io/imageio.h"
 
 #include <cstring>
 #include <sstream>
@@ -404,7 +399,7 @@ IntPoint EMData::calc_max_location() const
 }
 
 
-IntPoint EMData::calc_max_location_wrap(const int maxdx, const int maxdy, const int maxdz)
+IntPoint EMData::calc_max_location_wrap(const int maxdx, const int maxdy, const int maxdz, float *value)
 {
 	int maxshiftx = maxdx, maxshifty = maxdy, maxshiftz = maxdz;
 	if (maxdx == -1) maxshiftx = get_xsize()/4;
@@ -444,6 +439,7 @@ IntPoint EMData::calc_max_location_wrap(const int maxdx, const int maxdy, const 
 			}
 		}
 	}
+	if (value) *value=max_value;
 
 	return peak;
 }
@@ -504,11 +500,13 @@ vector<float> EMData::calc_max_location_wrap_intp(const int maxdx, const int max
 				//Compute center of mass
 				float val = get_value_at_wrap(x,y,z);
 				
-// 				printf("%f,%f,%f\t%f\n",x, y, z, val);
-				cmx += x*val;
-				cmy += y*val;
-				cmz += z*val;
-				sval += val;
+// 				printf("%.2f,%.2f, %.2f\t%.2f,%.2f,%.2f\n",x, y, val, cmx, cmy, sval);
+				if (val>0){
+					cmx += x*val;
+					cmy += y*val;
+					cmz += z*val;
+					sval += val;
+				}
 			}
 		}
 	}
@@ -995,68 +993,6 @@ MCArray3D EMData::get_3dcview() const
 }
 
 
-MCArray3D* EMData::get_3dcviewptr() const
-{
-	const int ndims = 3;
-	boost::array<std::size_t,ndims> dims = {{(size_t)nx/2, (size_t)ny, (size_t)nz}};
-	std::complex<float>* cdata = reinterpret_cast<std::complex<float>*>(get_data());
-	MCArray3D* marray = new MCArray3D(cdata, dims,
-									  boost::fortran_storage_order());
-	return marray;
-}
-
-
-MArray2D EMData::get_2dview(int x0, int y0) const
-{
-	const int ndims = 2;
-	if (get_ndim() != ndims) {
-		throw ImageDimensionException("2D only");
-	}
-	boost::array<std::size_t,ndims> dims = {{(size_t)nx, (size_t)ny}};
-	MArray2D marray(get_data(), dims, boost::fortran_storage_order());
-	boost::array<std::size_t,ndims> bases={{(size_t)x0, (size_t)y0}};
-	marray.reindex(bases);
-	return marray;
-}
-
-
-MArray3D EMData::get_3dview(int x0, int y0, int z0) const
-{
-	const int ndims = 3;
-	boost::array<std::size_t,ndims> dims = {{(size_t)nx, (size_t)ny, (size_t)nz}};
-	MArray3D marray(get_data(), dims, boost::fortran_storage_order());
-	boost::array<std::size_t,ndims> bases={{(size_t)x0, (size_t)y0, (size_t)z0}};
-	marray.reindex(bases);
-	return marray;
-}
-
-
-MCArray2D EMData::get_2dcview(int x0, int y0) const
-{
-	const int ndims = 2;
-	if (get_ndim() != ndims) {
-		throw ImageDimensionException("2D only");
-	}
-	boost::array<std::size_t,ndims> dims = {{(size_t)nx/2, (size_t)ny}};
-	std::complex<float>* cdata = reinterpret_cast<std::complex<float>*>(get_data());
-	MCArray2D marray(cdata, dims, boost::fortran_storage_order());
-	boost::array<std::size_t,ndims> bases={{(size_t)x0, (size_t)y0}};
-	marray.reindex(bases);
-	return marray;
-}
-
-
-MCArray3D EMData::get_3dcview(int x0, int y0, int z0) const
-{
-	const int ndims = 3;
-	boost::array<std::size_t,ndims> dims = {{(size_t)nx/2, (size_t)ny, (size_t)nz}};
-	std::complex<float>* cdata = reinterpret_cast<std::complex<float>*>(get_data());
-	MCArray3D marray(cdata, dims, boost::fortran_storage_order());
-	boost::array<std::size_t,ndims> bases={{(size_t)x0, (size_t)y0, (size_t)z0}};
-	marray.reindex(bases);
-	return marray;
-}
-
 int greaterthan( const void* p1, const void* p2 )
 {
 	float*  v1 = (float*) p1;
@@ -1102,6 +1038,59 @@ EMObject EMData::get_attr(const string & key) const
 		}
 		float skewness = (float)(skewness_sum / size);
 		return skewness;
+	}
+	else if (key == "moment_inertia") {
+		double moment=0;
+		if (ny==1 && nz==1) throw ImageFormatException("Error - cannot calculate moment of inertia of 1-D image");
+		if (nz==1) {
+			for (int y=0; y<ny; y++) {
+				for (int x=0; x<nx; x++) {
+					double v=get_value_at(x,y);
+					if (v<=0) continue;
+					moment+=v*(double)Util::hypot2sq(x-nx/2,y-ny/2);
+				}
+			}
+		}
+		else {
+			for (int z=0; z<nz; z++) {
+				for (int y=0; y<ny; y++) {
+					for (int x=0; x<nx; x++) {
+						double v=get_value_at(x,y,z);
+						if (v<=0) continue;
+						moment+=v*(double)Util::hypot3sq(x-nx/2,y-ny/2,z-nz/2);
+					}
+				}
+			}
+		}
+		return (float)moment;
+	}
+	else if (key == "radius_gyration") {
+		double moment=0;
+		double mass=0;
+		if (ny==1 && nz==1) throw ImageFormatException("Error - cannot calculate moment of inertia of 1-D image");
+		if (nz==1) {
+			for (int y=0; y<ny; y++) {
+				for (int x=0; x<nx; x++) {
+					double v=get_value_at(x,y);
+					if (v<=0) continue;
+					mass+=v;
+					moment+=v*(double)Util::hypot2sq(x-nx/2,y-ny/2);
+				}
+			}
+		}
+		else {
+			for (int z=0; z<nz; z++) {
+				for (int y=0; y<ny; y++) {
+					for (int x=0; x<nx; x++) {
+						double v=get_value_at(x,y,z);
+						if (v<=0) continue;
+						mass+=v;
+						moment+=v*(double)Util::hypot3sq(x-nx/2,y-ny/2,z-nz/2);
+					}
+				}
+			}
+		}
+		return (float)(std::sqrt(moment/mass));
 	}
 	else if (key == "median")
 	{
@@ -1302,13 +1291,14 @@ void EMData::scale_pixel(float scale) const
 }
 
 //vector<float> EMData::get_data_pickle() const
-std::string EMData::get_data_pickle() const
+EMBytes EMData::get_data_pickle() const
 {
 //	vector<float> vf;
 //	vf.resize(nx*ny*nz);
 //	std::copy(rdata, rdata+nx*ny*nz, vf.begin());
 
-	std::string vf((const char *)get_data(),nx*ny*nz*sizeof(float));
+	EMBytes vf;
+	vf.assign((const char *)get_data(),nx*ny*nz*sizeof(float));
 
 	return vf;
 }

@@ -1,8 +1,8 @@
 #!/usr/bin/env python
-from __future__ import print_function
 #
-# Author: 
-# Copyright (c) 2012 The University of Texas - Houston Medical School
+# Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
+# Please do not copy or modify this file without written consent of the author.
+# Copyright (c) 2000-2019 The University of Texas - Houston Medical School
 #
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
@@ -30,6 +30,10 @@ from __future__ import print_function
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 #
+#
+#
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from sparx import *
@@ -345,9 +349,9 @@ def main():
 					ERROR("Input stack is not prepared for symmetry, please follow instructions", "sx3dvariability", 1, myid)
 				from utilities import get_symt
 				i = len(get_symt(options.sym))
-				if((nima/i)*i != nima):
+				if((old_div(nima,i))*i != nima):
 					ERROR("The length of the input stack is incorrect for symmetry processing", "sx3dvariability", 1, myid)
-				symbaselen = nima/i
+				symbaselen = old_div(nima,i)
 			else:  symbaselen = nima
 		else:
 			nima = 0
@@ -401,21 +405,21 @@ def main():
 				else:
 					nx = smallprime(int(current_window*current_decimate+0.5))
 					ny = nx
-					current_window = int(nx/current_decimate+0.5)
+					current_window = int(old_div(nx,current_decimate)+0.5)
 					if (myid == main_node):
 						log_main.add("The window size is updated to %d."%current_window)
 						
 		if myid == main_node:
 			log_main.add("The target image size is %d"%nx)
 						
-		if radiuspca == -1: radiuspca = nx/2-2
+		if radiuspca == -1: radiuspca = old_div(nx,2)-2
 		if myid == main_node: log_main.add("%-70s:  %d\n"%("Number of projection", nima))
 		img_begin, img_end = MPI_start_end(nima, number_of_proc, myid)
 		
 		"""
 		if options.SND:
 			from projection		import prep_vol, prgs
-			from statistics		import im_diff
+			from pap_statistics		import im_diff
 			from utilities		import get_im, model_circle, get_params_proj, set_params_proj
 			from utilities		import get_ctf, generate_ctf
 			from filter			import filt_ctf
@@ -447,7 +451,6 @@ def main():
 		
 		if options.VAR: # 2D variance images have no shifts
 			#varList   = EMData.read_images(stack, range(img_begin, img_end))
-			from EMAN2 import Region
 			for index_of_particle in range(img_begin,img_end):
 				image = get_im(stack, index_of_proj)
 				if current_window > 0: varList.append(fdecimate(window2d(image,current_window,current_window), nx,ny))
@@ -456,9 +459,9 @@ def main():
 		else:
 			from utilities		import bcast_number_to_all, bcast_list_to_all, send_EMData, recv_EMData
 			from utilities		import set_params_proj, get_params_proj, params_3D_2D, get_params2D, set_params2D, compose_transform2
-			from utilities		import model_blank, nearest_proj, model_circle, write_text_row
+			from utilities		import model_blank, nearest_proj, model_circle, write_text_row, wrap_mpi_gatherv
 			from applications	import pca
-			from statistics		import avgvar, avgvar_ctf, ccc
+			from pap_statistics		import avgvar, avgvar_ctf, ccc
 			from filter		    import filt_tanl
 			from morphology		import threshold, square_root
 			from projection 	import project, prep_vol, prgs
@@ -525,11 +528,11 @@ def main():
 			dnumber   = len(all_proj)# all neighborhood set for assigned to myid
 			pnumber   = len(proj_list)*2. + img_per_grp # aveList and varList 
 			tnumber   = dnumber+pnumber
-			vol_size2 = nx**3*4.*8/1.e9
-			vol_size1 = 2.*nnxo**3*4.*8/1.e9
+			vol_size2 = old_div(nx**3*4.*8,1.e9)
+			vol_size1 = old_div(2.*nnxo**3*4.*8,1.e9)
 			proj_size         = nnxo*nnyo*len(proj_list)*4.*2./1.e9 # both aveList and varList
-			orig_data_size    = nnxo*nnyo*4.*tnumber/1.e9
-			reduced_data_size = nx*nx*4.*tnumber/1.e9
+			orig_data_size    = old_div(nnxo*nnyo*4.*tnumber,1.e9)
+			reduced_data_size = old_div(nx*nx*4.*tnumber,1.e9)
 			full_data         = np.full((number_of_proc, 2), -1., dtype=np.float16)
 			full_data[myid]   = orig_data_size, reduced_data_size
 			if myid != main_node: wrap_mpi_send(full_data, main_node, MPI_COMM_WORLD)
@@ -571,7 +574,7 @@ def main():
 				
 				if (current_decimate> 0.0 and options.CTF):
 					ctf = imgdata[index_of_proj].get_attr("ctf")
-					ctf.apix = ctf.apix/current_decimate
+					ctf.apix = old_div(ctf.apix,current_decimate)
 					imgdata[index_of_proj].set_attr("ctf", ctf)
 					
 				if myid == heavy_load_myid and index_of_proj%100 == 0:
@@ -595,11 +598,10 @@ def main():
 			del vol, imgdata2
 			mpi_barrier(MPI_COMM_WORLD)
 			'''
-			from applications import prepare_2d_forPCA
 			from utilities    import model_blank
 			from EMAN2        import Transform
 			if not options.no_norm: 
-				mask = model_circle(nx/2-2, nx, nx)
+				mask = model_circle(old_div(nx,2)-2, nx, nx)
 			if options.CTF: 
 				from utilities import pad
 				from filter import filt_ctf
@@ -675,22 +677,9 @@ def main():
 			if (myid == heavy_load_myid):
 				log_main.add("Computing aveList and varList took %12.1f [m]"%((time()-ttt)/60.))
 			
-			nproj = len(xform_proj_for_2D)
-			nproj = mpi_reduce(nproj, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
-			if myid == main_node:
-				txform_proj = [ None for i in range(nproj)]
-				txform_proj[0:len(xform_proj_for_2D)] = xform_proj_for_2D[:]
-				nc = len(xform_proj_for_2D)
-			else:
-				wrap_mpi_send(xform_proj_for_2D, main_node, MPI_COMM_WORLD)
+			xform_proj_for_2D = wrap_mpi_gatherv(xform_proj_for_2D, main_node, MPI_COMM_WORLD)
 			if (myid == main_node):
-				for iproc in range(1, number_of_proc):
-					dummy = wrap_mpi_recv(iproc, MPI_COMM_WORLD)
-					for im in range(len(dummy)):
-						txform_proj[nc] = dummy[im]
-						nc +=1
-				write_text_row(txform_proj, os.path.join(current_output_dir, "params.txt"))
-				del txform_proj
+				write_text_row(xform_proj_for_2D, os.path.join(current_output_dir, "params.txt"))
 			del xform_proj_for_2D
 			mpi_barrier(MPI_COMM_WORLD)
 			if options.ave2D:

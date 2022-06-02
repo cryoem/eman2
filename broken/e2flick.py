@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author:David Woolford 09/23/2008 (woolford@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -38,9 +35,10 @@ from __future__ import division
 from builtins import range
 import sys
 import os
-#from optparse import OptionParser
-#from PyQt4 import QtCore, QtGui, QtOpenGL
-#from PyQt4.QtCore import Qt
+#from PyQt5 import QtCore, QtGui, QtOpenGL
+#from PyQt5.QtCore import Qt
+#import OpenGL
+#OpenGL.ERROR_CHECKING = False
 #from OpenGL import GL,GLU,GLUT
 
 
@@ -62,7 +60,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 

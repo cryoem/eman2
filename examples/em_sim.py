@@ -1,14 +1,14 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 # Muyuan Chen 2017-08
 from past.utils import old_div
 from builtins import range
 import numpy as np
 
+import OpenGL
+OpenGL.ERROR_CHECKING = False
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from PyQt4 import QtGui, QtCore, QtOpenGL
+from PyQt5 import QtGui, QtWidgets, QtCore, QtOpenGL
 from eman2_gui.emimage2d import EMImage2DWidget
 from EMAN2 import *
 from eman2_gui.emapplication import EMApp
@@ -67,7 +67,8 @@ class Microscope(QtOpenGL.QGLWidget):
 		#### imaging mode with a single lens
 		else:# mode==2:
 			self.lens.extend([
-				[-0.1, old_div(1.,15)], ### objective lens
+				[-0.1, 1./15], ### objective lens
+				[-0.1- 1./15, -3.75],  #### objective aperture
 				[-.3, -2], ### f==-2 : detector 
 			])
 			
@@ -98,25 +99,12 @@ class Microscope(QtOpenGL.QGLWidget):
 		self.defocus=0
 		self.beam_lastxy=[0,0]
 		
-		#md=[]
-		#for t in range(100):
-			#self.lens[2][0]=.102009+t*.000001
-			
-			#df=self.draw_path()
-			#print self.lens[2][0], df
-			#md.append([self.lens[2][0], df])
-		#a=np.argmin(np.array(md)[:,1])
-		#print md[a]
-			
-		
-		#print df
-		#exit()
-		
 		if pltwindow:
 			pltwindow.show()
 		if imgwindow:
 			self.draw_path()
-			imgwindow.show()
+			if not options.nowave:
+				imgwindow.show()
 			img=self.draw_wave()
 		if twodwindow:
 			twodwindow.show()
@@ -193,26 +181,17 @@ class Microscope(QtOpenGL.QGLWidget):
 			x=dx*i-15*(ni>1)
 			raw0+=np.exp(-(np.arange(sz, dtype="float32")-(sz/2)+x)**2/5)
 		
-		#raw0+=np.exp(-(np.arange(sz, dtype=float)-sz/2-7.5)**2/5)
-		#raw0+=np.exp(-(np.arange(sz, dtype=float)-sz/2+7.5)**2/5)
-		#raw=np.exp(-1j*raw0*1)#*(np.exp(-raw0*.1))
-		#raw=raw0.copy()
 		raw=self.gauss_edge(sz, cl=.2, gw=.1)
 		raw*=np.exp(-1j*raw0*1)
-		#self.pltwindow.set_data([np.arange(sz)-sz/2, raw], "raw", linetype=0)
-		#return
-		#print wavelen
-		#print raw-raw[::-1]
-		#raw=raw*0+1
+		
 		#### load lens info 
 		mult=400 ### size multiplier from GL lens diagram to wave image
 		l=np.array(self.lens)[3:]
 		### use relative distance between lens instead of absolute positions
 		lens_gl=np.array([[l[i,0]-l[i+1,0], l[i,1]] for i in range(len(l)-1)])
 		lens=mult*lens_gl
-		#lens[:,0]=np.round(lens[:,0]) ### round z position
-		#lens[-1][0]+=10
 		
+		zmin=1
 		ix=(np.arange(sz, dtype=float)-old_div(sz,2))*xdivz ## indices along x direction
 		ix_mat=(ix-ix[:,None])**2
 		cs=self.cs * mult ## spherical abberation
@@ -223,8 +202,12 @@ class Microscope(QtOpenGL.QGLWidget):
 			
 			#### from scattering point to the first lens
 			zmax=np.round((self.lens[2][0]-l[0,0])*mult) ### z position of the first lens
-			#iz=np.arange(1,zmax)[:,None,None] ## indices along z direction
-			iz=(np.arange(1, int(zmax)+1, dtype=float)/int(zmax)*zmax)[:,None,None]
+			
+			if self.options.nowave:
+				### only compute the last row 
+				zmin=int(zmax)
+				
+			iz=(np.arange(zmin, int(zmax)+1, dtype=float)/int(zmax)*zmax)[:,None,None]
 			## zmax x sz x sz matrix
 			dst=np.sqrt(ix_mat +iz**2) 
 			#print dst
@@ -271,7 +254,11 @@ class Microscope(QtOpenGL.QGLWidget):
 
 				zmax=ln[0]
 				#iz=np.arange(1,zmax, dtype=float)[:,None,None] ## indices along z direction
-				iz=(np.arange(1, int(zmax)+1, dtype=float)/int(zmax)*zmax)[:,None,None]
+				
+				if self.options.nowave:
+					### only compute the last row 
+					zmin=int(zmax)
+				iz=(np.arange(zmin, int(zmax)+1, dtype=float)/int(zmax)*zmax)[:,None,None]
 				dst=np.sqrt(ix_mat +iz**2)
 				cpx1=proj_ps[:,None]*np.exp(-1j*2*np.pi*dst/wavelen)*(old_div(1,dst**2))
 
@@ -305,56 +292,13 @@ class Microscope(QtOpenGL.QGLWidget):
 			clip=np.where(abs(r0)<old_div(sz,2))[0]
 			if len(clip)>0:
 				c=clip[0]
-				rawplot=[r0[c:-c], raw0[c:-c]]
+				rawplot=[r0[c:-c], .5*raw0[c:-c]]
 			else:
-				rawplot=[r0, raw0]
+				rawplot=[r0, .5*raw0]
 			
 			#rawplot=[np.arange(sz)-sz/2, raw0]
-			self.pltwindow.set_data([np.arange(sz)-old_div(sz,2), old_div(abs(a0),np.max(abs(a0)))], "scatter", linetype=0)
+			self.pltwindow.set_data([np.arange(sz)-old_div(sz,2), abs(a0)/np.max(abs(a0))], "scatter", linetype=0)
 			self.pltwindow.set_data(rawplot, "raw", linetype=0)
-			#self.pltwindow.set_data([np.arange(sz)-sz/2, abs(alldata[1][0,:])], "parallel", linetype=0)
-			#self.pltwindow.set_data([np.arange(sz)-sz/2, 
-			    #abs(a0/abs(a0)+a1/abs(a1))], "contrast", linetype=0)
-			#self.pltwindow.set_data([np.arange(sz)-sz/2, np.sin(np.angle(a0))], "phase_scatter", linetype=0)
-			#self.pltwindow.set_data([np.arange(sz)-sz/2, np.sin(np.angle(a1))], "phase_parallel", linetype=0)
-			aa=abs(a0)
-			if self.wavesign>0:
-				bd=np.where(raw0>.01)[0]
-			else:
-				bd=np.where(raw0[::-1]>.01)[0]
-			bd=[bd[0], bd[-1]]
-			pad=int((bd[1]-bd[0])*1.)
-			bd=[bd[0]-pad, bd[1]+pad]
-			bd=[int((b-old_div(sz,2))*abs(self.mag)+old_div(sz,2)) for b in bd]
-			
-			bd[0]=max(0,bd[0])
-			bd[1]=min(sz-1, bd[1])
-			#print bd
-			aa-=old_div((aa[bd[0]]+aa[bd[1]]),2.)
-			#print bd
-			aa[:bd[0]]=0
-			aa[bd[1]-1:]=0
-			aa/=np.max(abs(aa))
-			a0ft=np.real(np.fft.fftshift(np.fft.fft(np.fft.fftshift((aa)))))
-			#rawft=np.real(np.fft.fftshift(np.fft.fft(np.fft.fftshift(a0))))
-			rawft=np.abs(np.fft.fftshift(np.fft.fft(np.fft.fftshift(-raw0))))
-			a0ft/=np.max(a0ft)
-			#a0ft[sz/2]=1
-			rawft/=np.max(rawft)
-			rf=rawft.copy()
-			rf[abs(rf)<1e-3]=1
-			ctf=old_div(a0ft,rf)
-			ctf[abs(rawft)<1e-3]=0
-			
-			ftidx=np.fft.fftfreq(len(a0))
-			#print self.mag
-			#self.pltwindow.set_data([np.arange(sz)-sz/2, aa], "scatter_msk", linetype=0)
-			#self.pltwindow.set_data([r0[c:-c], a0ft[c:-c]], "scatter_fft", linetype=0)
-			#self.pltwindow.set_data([np.arange(sz)-sz/2, rawft], "raw_fft", linetype=0)
-			#self.pltwindow.set_data([np.arange(sz)-sz/2, ctf], "ctf", linetype=0)
-			#contrast=np.sin(np.angle(a0+a1))
-			#contrast=(np.angle(a0)-np.angle(a1))*180/np.pi
-			#self.pltwindow.set_data([np.arange(sz)-sz/2, contrast], "phase_contrast", linetype=0)
 		return img
 
 	def specimen_propagation(self):
@@ -815,7 +759,7 @@ class Microscope(QtOpenGL.QGLWidget):
 	def mousePressEvent(self, QMouseEvent):
 		p=self.scr_to_img(QMouseEvent.pos())
 		self.startpy=p[1]
-		modifiers = QtGui.QApplication.keyboardModifiers()
+		modifiers = QtWidgets.QApplication.keyboardModifiers()
 		if modifiers == QtCore.Qt.ShiftModifier:
 			self.hold_shift=True
 		else:
@@ -916,10 +860,10 @@ class Microscope(QtOpenGL.QGLWidget):
 		print("Exit..")
 		exit()
 
-class MainWindow(QtGui.QMainWindow):
+class MainWindow(QtWidgets.QMainWindow):
 	
 	def __init__(self, options):
-		QtGui.QMainWindow.__init__(self)
+		QtWidgets.QMainWindow.__init__(self)
 		
 		if options.twod:
 			self.twodview = EMImage2DWidget()
@@ -946,12 +890,13 @@ def main():
 	parser.add_argument("--cs", type=float,help="Cs of microscope.", default=0.0)
 	parser.add_argument("--ninput", type=int,help="number of peaks in sampel.", default=4)
 	parser.add_argument("--twod", action="store_true", help="Show twod image instead of 1D plot and beam propagation in the microscope.", default=False)
+	parser.add_argument("--nowave", action="store_true", help="skip wave rendering. much faster...", default=False)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 
 	
 	app = EMApp()
-#	app=QtGui.QApplication([""])
+#	app=QtWidgets.QApplication([""])
 	
 	window = MainWindow(options)
 	window.show()

@@ -1,0 +1,67 @@
+~~NOTOC~~
+
+===== sp_gui_meridien =====
+3D Refinement Assessment: GUI tool to assess 3D Refinement based on outputs of sp_meridien.
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sp_gui_meridien.py
+
+\\
+===== Typical usage =====
+
+sp_gui_meridien GUI tool can be run as a stand-alone program or run from sp_gui.py.
+
+  sp_gui_meridien.py
+
+\\
+===== Input =====
+=== Main Parameters ===
+
+\\
+=== Advanced Parameters ===
+
+\\
+===== Output =====
+
+\\
+===== Description =====
+**This is in progress 2017/09/04.**
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+
+\\
+==== Author / Maintainer ====
+Thorsten Wagner
+
+\\
+==== Attachments ====
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_gui_meridien.py
+
+\\
+==== See also ====
+[[http://sphire.mpg.de/wiki/doku.php?id=pipeline:meridien:sp_meridien|sp_meridien]]
+
+\\
+==== Maturity ====
+Alpha:: Under development
+
+\\
+==== Bugs ====
+There are no known bugs so far.
+
+\\

@@ -1,7 +1,3 @@
-/**
- * $Id$
- */
-
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
@@ -36,10 +32,6 @@
 #ifndef eman__emdata_h__
 #define eman__emdata_h__ 1
 
-#ifdef _WIN32
-	#pragma warning(disable:4819)
-#endif	//_WIN32
-
 #include <cfloat>
 #include <complex>
 #include <fstream>
@@ -71,6 +63,7 @@ namespace EMAN
 	class XYData;
 	class Transform;
 	class GLUtil;
+	class EMBytes: public std::string {};
 
 	typedef boost::multi_array_ref<float, 2> MArray2D;
 	typedef boost::multi_array_ref<float, 3> MArray3D;
@@ -106,15 +99,16 @@ namespace EMAN
 
 		/** This is the header of EMData stay in sparx directory */
 		#include "sparx/emdata_sparx.h"
+
+		/** This is the header of EMData stay in sphire directory */
+		#include "sphire/emdata_sphire.h"
+
 #ifdef EMAN2_USING_CUDA
 		/** This is for CUDA related functionality */
 		#include "emdata_cuda.h"
 #endif // EMAN2_USING_CUDA
 
 	public:
-		enum FFTPLACE { FFT_OUT_OF_PLACE, FFT_IN_PLACE };
-		enum WINDOWPLACE { WINDOW_OUT_OF_PLACE, WINDOW_IN_PLACE };
-
 		/** Construct an empty EMData instance. It has no image data. */
 		EMData();
 		~ EMData();
@@ -204,7 +198,17 @@ namespace EMAN
 		 *  @param scale Scaling put on the returned image.
 		 *  @return The clip image.
 		 */
-		EMData *get_rotated_clip(const Transform & xform, const IntSize &size, float scale=1.0);
+		EMData *get_rotated_clip(const Transform & xform, const IntSize &size, int interp=1);
+
+		/** This will set the values from a provided 2d or 3d clip in the corresponding pixels
+		 * in another image. Values are not added or interpolated, but set as the value of the
+		 * nearest neighbor pixel. The opposite of get_rotated_clip without interpolation.
+		 *
+		 *  @param xform The transformation of the region.
+		 *  @param clip EMData object contining the values to be inserted
+		 *  @return void
+		 */
+		void set_rotated_clip( const Transform & xform, EMData *clip);
 
 		/** Window the center of an image.
 		 *  Often an image is padded with zeros for fourier interpolation.  In
@@ -421,6 +425,17 @@ namespace EMAN
 		 */
 		EMData *calc_ccf(EMData * with = 0, fp_flag fpflag = CIRCULANT, bool center=false);
 
+		/** Calculate cross correlation between this and with where this is assumed to have had a mask
+		 *  applied to it (zero value in masked-out regions). The mask will be used to compute a local
+		 *  normalization to prevent regions of high brightness from being preferentially aligned to the
+		 *  reference. Note that this local normalization is applied only to one of the two images,
+		 *  so the correlation values remain on arbitrary scale. If FFT of the square of with and the
+		 *  fft of the mask have been precalculated, passing them in will save time. Arguments should
+		 *  be either all-real or all comples. If mask is not provided, it will be computed from this
+		 *  based on zero values 
+		 */
+		EMData *calc_ccf_masked(EMData *with,EMData *withsq=0,EMData *mask=0);
+		
 		/** Zero the pixels in the bottom left corner of the image
 		 *  If radius is greater than 1, than circulant zeroing occurs
 		 *  assuming that the center of operation starts in the bottom left
@@ -1022,5 +1037,3 @@ namespace EMAN
 
 
 #endif
-
-/* vim: set ts=4 noet nospell: */

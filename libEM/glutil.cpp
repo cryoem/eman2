@@ -1,8 +1,4 @@
-/**
- * $Id$
- */
-
-/*
+ /*
  * Author: David Woolford, 11/06/2007 (woolford@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
  *
@@ -43,8 +39,9 @@
 	#define GL_GLEXT_PROTOTYPES
 #endif	//GL_GLEXT_PROTOTYPES
 
+#include <utility>
+
 #include "glutil.h"
-#include "emdata.h"
 #include "marchingcubes.h"
 
 #ifdef __APPLE__
@@ -60,7 +57,6 @@
 using namespace EMAN;
 
 // By depfault we need to first bind data to the GPU
-
 GLuint GLUtil::buffer[2] = {0, 0};
 
 unsigned int GLUtil::gen_glu_mipmaps(const EMData* const emdata)
@@ -262,7 +258,7 @@ void GLUtil::mx_bbox(const vector<float>& data,
 	}
 }
 
-std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
+EMBytes GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 		 int iysize, int bpl, float scale, int min_gray, int max_gray,
 		 float render_min, float render_max, float gamma, int flags)
 {
@@ -272,7 +268,7 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 //	printf("%d %d %d %d %d %f %d %d %f %f %f %d\n",x0,y0,ixsize,iysize,bpl,
 // scale,min_gray,max_gray,render_min,render_max,gamma,flags);
 
-	if (emdata==NULL) return std::string();
+	if (emdata==NULL) return EMBytes();
 	bool invert = (min_gray > max_gray);
 	int mingray, maxgray;
 
@@ -315,7 +311,6 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 	// as a 12 bit colorspace and apply the gamma mapping to that
 	// This should produce good accuracy for gamma values
 	// larger than 0.5 (and a high upper limit)
-
 	static int smg0 = 0, smg1 = 0; // while this destroys threadsafety in the rendering process
 	static float sgam=0; // it is necessary for speed when rendering large numbers of small images
 	static unsigned char gammamap[4096];
@@ -338,7 +333,7 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 	else if (flags & 1) asrgb = 3;
 	else asrgb = 1;
 
-	std::string ret=std::string();
+	EMBytes ret=EMBytes();
 //	ret.resize(iysize*bpl);
 
 	ret.assign(iysize*bpl + hist*1024, char(invert ? maxgray : mingray));
@@ -487,7 +482,6 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 						graypdf[(int)(ceil((rangemax-2)*(t - render_min)/(render_max-render_min)))]++;
 						graypdftwo[(unsigned char) (gs * (t - render_min))]++;
 					}
-
 					l += dsx;
 				}
 
@@ -504,7 +498,6 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 				// There seems to be some overflow issue happening
 				// where the statement if (l > lmax) break (below) doesn't work
 				// because the loop that iterates jjj can inadvertantly go out of bounds
-
 				if ((l + addi*nx) >= nxy) {
 					addj = (nxy-l)/nx;
 
@@ -532,7 +525,6 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 					}
 
 					////////////
-
 					if (t <= rm) graypdf[0]++;
 					else if (t >= render_max) graypdf[rangemax-1]++;
 					else {
@@ -540,9 +532,7 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 					}
 
 //					data[i * asrgb + j * bpl] = p;
-
 //					if (hist) histd[p]++;
-
 					l += addi;
 					remx += addr;
 
@@ -569,7 +559,6 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 		}
 
 		// graypdftwo binflag
-
 		binflag = 0;
 
 		for (int i=1; i<(maxgray-mingray); i++) { // 0~253
@@ -599,7 +588,6 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 		}
 
 		// start gaussian matching
-
 		float mean = abs(rangemax-2)/2;
 		float standdv = abs(mean)/3;
 
@@ -626,7 +614,6 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 			for (int j=0; j<(rangemax-2); j++) {
 				if (graycdf[i] <= gaussiancdf[j]) {
 					gaussianlookup[i] = j;
-
 					break;
 				}
 			}
@@ -635,9 +622,7 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 		for (int i=0; i<(rangemax-2); i++) {
 			grayhe[i] = floor(0.5+(((double)(rangemax-3)*graycdf[i])/graycdf[rangemax-3]));
 		}
-
 	}
-
 	////// End of Histogram Equalization ///////
 
 	if (emdata->is_complex()) {
@@ -666,7 +651,6 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 					int ph;
 
 					// in color mode
-
 					if (flags & 16 && asrgb>2) {
 //						if (l >= (ny - inv_scale) * nx) ph = (int)(image_data[k+1]*768/(2.0*M_PI))+384;	 // complex phase as integer 0-767;
 						if (ll >= nx / 2) ph = (int)(image_data[k+1]*768/(2.0*M_PI))+384;	 // complex phase as integer 0-767;
@@ -689,7 +673,6 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 					}
 
 					// color rendering
-
 					if (flags & 16 && asrgb>2) {
 						if (ph<256) {
 							data[i * asrgb + j * bpl] = p*(255-ph)/256;
@@ -896,7 +879,6 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 				// There seems to be some overflow issue happening
 				// where the statement if (l > lmax) break (below) doesn't work
 				// because the loop that iterates jjj can inadvertantly go out of bounds
-
 				if ((l + addi*nx) >= nxy) {
 					addj = (nxy-l)/nx;
 
@@ -983,7 +965,6 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 	}
 
 	// this replicates r -> g,b
-
 	if (asrgb == 3 && !(flags & 16)) {
 		for (int j=ymin*bpl; j <= ymax*bpl; j+=bpl) {
 			for (int i=xmin; i<xsize*3; i+=3) {
@@ -1004,18 +985,10 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 	EXITFUNC;
 
 	// ok, ok, not the most efficient place to do this, but it works
-
 	if (invy) {
-		int x,y;
-		char swp;
-
-		for (y=0; y<iysize/2; y++) {
-			for (x=0; x<ixsize; x++) {
-				swp = ret[y*bpl+x];
-				ret[y*bpl+x] = ret[(iysize-y-1)*bpl+x];
-				ret[(iysize-y-1)*bpl+x] = swp;
-			}
-		}
+		for (int y=0; y<iysize/2; y++)
+			for (int x=0; x<ixsize; x++)
+				std::swap(ret[y*bpl+x], ret[(iysize-y-1)*bpl+x]);
 	}
 
 	// return PyString_FromStringAndSize((const char*) data,iysize*bpl);
@@ -1033,6 +1006,372 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 
 	return ret;
 }
+
+// typedef struct {
+// 	double r;       // a fraction between 0 and 1
+// 	double g;       // a fraction between 0 and 1
+// 	double b;       // a fraction between 0 and 1
+// } rgb;
+//
+// typedef struct {
+// 	double h;       // angle in degrees
+// 	double s;       // a fraction between 0 and 1
+// 	double v;       // a fraction between 0 and 1
+// } hsv;
+//
+// static rgb   hsv2rgb(hsv in);
+//
+//
+// rgb hsv2rgb(hsv in)
+// {
+// 	double      hh, p, q, t, ff;
+// 	long        i;
+// 	rgb         out;
+//
+// 	if(in.s <= 0.0) {       // < is bogus, just shuts up warnings
+// 		out.r = in.v;
+// 		out.g = in.v;
+// 		out.b = in.v;
+// 		return out;
+// 	}
+// 	hh = in.h;
+// 	if(hh >= 360.0) hh = 0.0;
+// 	hh /= 60.0;
+// 	i = (long)hh;
+// 	ff = hh - i;
+// 	p = in.v * (1.0 - in.s);
+// 	q = in.v * (1.0 - (in.s * ff));
+// 	t = in.v * (1.0 - (in.s * (1.0 - ff)));
+//
+// 	switch(i) {
+// 		case 0:
+// 			out.r = in.v;
+// 			out.g = t;
+// 			out.b = p;
+// 			break;
+// 		case 1:
+// 			out.r = q;
+// 			out.g = in.v;
+// 			out.b = p;
+// 			break;
+// 		case 2:
+// 			out.r = p;
+// 			out.g = in.v;
+// 			out.b = t;
+// 			break;
+//
+// 		case 3:
+// 			out.r = p;
+// 			out.g = q;
+// 			out.b = in.v;
+// 			break;
+// 		case 4:
+// 			out.r = t;
+// 			out.g = p;
+// 			out.b = in.v;
+// 			break;
+// 		case 5:
+// 		default:
+// 			out.r = in.v;
+// 			out.g = p;
+// 			out.b = q;
+// 			break;
+// 	}
+// 	return out;
+// }
+
+EMBytes GLUtil::render_annotated24(EMData *emdata, EMData *intmap, int x0, int y0, int ixsize,
+							int iysize, int bpl, float scale, int min_gray, int max_gray,
+							float render_min, float render_max, int flags)
+{
+	ENTERFUNC;
+
+	// Category brightness mappings to rgb colors. Should make these static members of GLUtil
+	static unsigned char rtable[65536] = {0};
+	static unsigned char gtable[65536] = {0};
+	static unsigned char btable[65536] = {0};
+
+	static int tblinit=0;
+
+	if (!tblinit) {
+		tblinit=1;
+
+		// Only supporting up to 256 different color "categories"
+		for (int v=0; v<256; v++) {
+			for (int c=0; c<256; c++) {
+				rtable[v<<8+c]=v;		//colorless as a stopgap for initial tests
+				gtable[v<<8+c]=v;
+				btable[v<<8+c]=v;
+			}
+		}
+	}
+
+	if (emdata==NULL) return EMBytes();
+	bool invert = (min_gray > max_gray);
+	int mingray, maxgray;
+
+	if (invert) {
+		mingray = max_gray;
+		maxgray = min_gray;
+	}
+	else {
+		mingray = min_gray;
+		maxgray = max_gray;
+	}
+
+	int hist = (flags & 2)/2;
+	int invy = (flags & 4)?1:0;
+
+	int nx = emdata->nx;
+	int ny = emdata->ny;
+	int nxy = emdata->nx * emdata->ny;
+
+	if (emdata->get_ndim() > 2) {
+		throw ImageDimensionException("1D/2D only");
+	}
+
+	if (emdata->get_xsize()!=intmap->get_xsize() || emdata->get_ysize()!=intmap->get_ysize()) throw ImageDimensionException("Size mismatch in color image rendering");
+
+	if (emdata->is_complex()) {
+		throw ImageFormatException("Cannot annotate complex images");
+	}
+
+	if (render_max <= render_min) {
+		render_max = render_min + 0.01f;
+	}
+
+
+	EMBytes ret=EMBytes();
+	//	ret.resize(iysize*bpl);
+
+	ret.assign(iysize*3 + hist*1024, char(invert ? maxgray : mingray));
+
+	unsigned char *data = (unsigned char *)ret.data();
+	unsigned int *histd = (unsigned int *)(data + iysize*bpl);
+
+	if (hist) {
+		for (int i=0; i<256; i++) histd[i]=0;
+	}
+
+	float rm = render_min;
+	float inv_scale = 1.0f / scale;
+	int ysize = iysize;
+	int xsize = ixsize;
+
+	int ymin = 0;
+
+	if (iysize * inv_scale > ny) {
+		ymin = (int) (iysize - ny / inv_scale);
+	}
+
+	float gs = (maxgray - mingray) / (render_max - render_min);
+
+	if (render_max < render_min) {
+		gs = 0;
+		rm = FLT_MAX;
+	}
+
+	int dsx = -1;
+	int dsy = 0;
+	int remx = 0;
+	int remy = 0;
+	const int scale_n = 100000;
+
+	int addi = 0;
+	int addr = 0;
+
+	if (inv_scale == floor(inv_scale)) {	// exact integer downscaling
+		dsx = (int) inv_scale;
+		dsy = (int) (inv_scale * nx);
+	}
+	else {
+		addi = (int) floor(inv_scale);
+		addr = (int) (scale_n * (inv_scale - floor(inv_scale)));
+	}
+
+	int xmin = 0;
+
+	if (x0 < 0) {
+		xmin = (int) (-x0 / inv_scale);
+		xsize -= (int) floor(x0 / inv_scale);
+		x0 = 0;
+	}
+
+	if ((xsize - xmin) * inv_scale > (nx - x0)) {
+		xsize = (int) ((nx - x0) / inv_scale + xmin);
+	}
+
+	int ymax = ysize - 1;
+
+	if (y0 < 0) {
+		ymax = (int) (ysize + y0 / inv_scale - 1);
+		ymin += (int) floor(y0 / inv_scale);
+		y0 = 0;
+	}
+
+	if (xmin < 0) xmin = 0;
+	if (ymin < 0) ymin = 0;
+	if (xsize > ixsize) xsize = ixsize;
+	if (ymax > iysize) ymax = iysize;
+
+	int lmax = nx * ny - 1;
+
+	int mid=nx*ny/2;
+	float * image_data = emdata->get_data();
+	float * class_data = intmap->get_data();
+
+	if (dsx != -1) {
+		int l = x0 + y0 * nx;
+
+		for (int j = ymax; j >= ymin; j--) {
+			int br = l;
+
+			for (int i = xmin; i < xsize; i++) {
+				if (l > lmax) {
+					break;
+				}
+
+				int k = 0;
+				unsigned char p;
+				float t;	// holds pixel greyscale
+				unsigned char cls;	// holds class identifier
+
+				if (dsx == 1) t=image_data[l];
+				else { // This block does local pixel averaging for nicer reduced views
+					t=0;
+
+					if ((l+dsx+dsy) > lmax) {
+						break;
+					}
+
+					for (int iii=0; iii<dsx; iii++) {
+						for (int jjj=0; jjj<dsy; jjj+=nx) {
+							t += image_data[l+iii+jjj];
+						}
+					}
+
+					t /= dsx*(dsy/nx);
+				}
+				cls=(unsigned char)class_data[l];		// we draw the class from the lower left pixel. Averaging doesn't make sense
+
+				if (t <= rm) p = mingray;
+				else if (t >= render_max) p = maxgray;
+				else {
+					p=(unsigned char) (gs * (t - render_min)) + mingray;
+				}
+
+				if (invert) {
+					p = mingray + maxgray - p;
+				}
+
+				data[i * 3 + j * bpl] = p;			// greyscale in R channel
+				data[i * 3 + j * bpl +1] = cls;		// color index in G channel
+
+				if (hist) histd[p]++;
+
+				l += dsx;
+			}
+
+			l = br + dsy;
+		}
+	}
+	else {
+		remy = 10;
+		int l = x0 + y0 * nx;
+
+		for (int j = ymax; j >= ymin; j--) {
+			int addj = addi;
+
+			// There seems to be some overflow issue happening
+			// where the statement if (l > lmax) break (below) doesn't work
+			// because the loop that iterates jjj can inadvertantly go out of bounds
+			if ((l + addi*nx) >= nxy) {
+				addj = (nxy-l)/nx;
+
+				if (addj <= 0) continue;
+			}
+
+			int br = l;
+			remx = 10;
+
+			for (int i = xmin; i < xsize; i++) {
+				if (l > lmax) break;
+				int k = 0;
+				unsigned char p;
+				float t;
+				unsigned char cls;
+
+				if (addi <= 1) t = image_data[l];
+				else { // This block does local pixel averaging for nicer reduced views
+					t=0;
+					for (int jjj=0; jjj<addj; jjj++) {
+						for (int iii=0; iii<addi; iii++) {
+							t += image_data[l+iii+jjj*nx];
+						}
+					}
+
+					t /= addi*addi;
+				}
+				cls=(unsigned char)class_data[l];		// we draw the class from the lower left pixel. Averaging doesn't make sense
+
+				if (t <= rm) p = mingray;
+				else if (t >= render_max) p = maxgray;
+				else p = (unsigned char) (gs * (t - render_min));
+
+				p += mingray;
+
+				if (invert) {
+					p = mingray + maxgray - p;
+				}
+
+				data[i * 3 + j * bpl] = p;
+				data[i * 3 + j * bpl +1] = cls;
+
+				if (hist) histd[p]++;
+
+				l += addi;
+				remx += addr;
+
+				if (remx > scale_n) {
+					remx -= scale_n;
+					l++;
+				}
+			}
+
+			l = br + addi * nx;
+			remy += addr;
+
+			if (remy > scale_n) {
+				remy -= scale_n;
+				l += nx;
+			}
+		}
+	}
+	
+	// Convert grey/class values to RGB
+	for (int j=ymin*bpl; j <= ymax*bpl; j+=bpl) {
+		for (int i=xmin; i<xsize*3; i+=3) {
+			int grey=(int)data[i+j];
+			int cls=(int)data[i+j+1];
+			int lup=grey<<8+cls;
+			data[i+j]=rtable[lup];
+			data[i+j+1]=gtable[lup];
+			data[i+j+2]=btable[lup];
+		}
+	}
+	
+	EXITFUNC;
+
+	// ok, ok, not the most efficient place to do this, but it works
+	if (invy) {
+		for (int y=0; y<iysize/2; y++)
+			for (int x=0; x<ixsize; x++)
+				std::swap(ret[y*bpl+x], ret[(iysize-y-1)*bpl+x]);
+	}
+	
+	return ret;
+}
+
 
 // DEPRECATED
 
@@ -1074,7 +1413,6 @@ unsigned long GLUtil::get_isosurface_dl(MarchingCubes* mc,
 
 	if (tex_id != 0) {
 		// Normalize the coordinates to be on the interval 0,1
-
 		mc->pp.mult3(1.0f/(float) mc->_emdata->get_xsize(),
 			 1.0f/(float)mc->_emdata->get_ysize(),
 			 1.0f/(float)mc->_emdata->get_zsize());
@@ -1118,7 +1456,6 @@ unsigned long GLUtil::get_isosurface_dl(MarchingCubes* mc,
 	// Drawing range elements based on the output of
 	// glGetIntegerv(GL_MAX_ELEMENTS_INDICES, & maxf);
 	// Saved about 60% of the time... drawRange should probably always be true
-
 	bool drawRange = true;
 
 	if (drawRange == false) {
@@ -1159,11 +1496,9 @@ void GLUtil::contour_isosurface(MarchingCubes* mc)
 	mc->calculate_surface();
 
 	// What does this do???
-
 	for (unsigned int i = 0; i < mc->ff.elem(); ++i ) mc->ff[i] /= 3;
 
 	// Need to rebind data (to the GPU)
-
 	mc->needtobind = true;
 }
 
@@ -1193,7 +1528,6 @@ void GLUtil::render_using_VBOs(MarchingCubes* mc, unsigned int tex_id,
 
 	// whenever something changes, like color mode or color scale (or threshold),
 	// we need to recolor
-
 	if (mc->getRGBmode() && (mc->rgbgenerator.getNeedToRecolor() ||
 		 mc->needtobind)) {
 		mc->color_vertices();
@@ -1219,7 +1553,6 @@ void GLUtil::render_using_VBOs(MarchingCubes* mc, unsigned int tex_id,
 #endif	//_WIN32
 
 	// Normal vectors
-
 	glEnableClientState(GL_NORMAL_ARRAY);
 	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 	glBindBuffer(GL_ARRAY_BUFFER, mc->buffer[2]);
@@ -1232,7 +1565,6 @@ void GLUtil::render_using_VBOs(MarchingCubes* mc, unsigned int tex_id,
 	glNormalPointer(GL_FLOAT,0,0);
 
 	// Vertex vectors
-
 	glBindBuffer(GL_ARRAY_BUFFER, mc->buffer[0]);
 
 	if (mc->needtobind) {
@@ -1244,7 +1576,6 @@ void GLUtil::render_using_VBOs(MarchingCubes* mc, unsigned int tex_id,
 	glVertexPointer(3,GL_FLOAT,0,0);
 
 	// Color vectors
-
 	if (mc->getRGBmode()) {
 		glEnableClientState(GL_COLOR_ARRAY);
 		glBindBuffer(GL_ARRAY_BUFFER, mc->buffer[3]);
@@ -1258,7 +1589,6 @@ void GLUtil::render_using_VBOs(MarchingCubes* mc, unsigned int tex_id,
 	}
 
 	// Indices
-
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mc->buffer[1]);
 
 	if (mc->needtobind) {
@@ -1267,7 +1597,6 @@ void GLUtil::render_using_VBOs(MarchingCubes* mc, unsigned int tex_id,
 	}
 
 	// This lets us know if buffers an not implmemted
-
 	if (!glIsBuffer(mc->buffer[0])) {
 		cout << "Can't Generate GL Vertex Buffers. glGenBuffer error" << endl;
 
@@ -1275,7 +1604,6 @@ void GLUtil::render_using_VBOs(MarchingCubes* mc, unsigned int tex_id,
 	}
 
 	// finally draw the elemenets
-
 	glDrawElements(GL_TRIANGLES, mc->ff.elem(), GL_UNSIGNED_INT, 0);
 
 	// No longer need to bind data to the GPU
@@ -1312,7 +1640,6 @@ void GLUtil::glMultMatrix (const Transform & xform)
 }
 
 // This draws a bounding box, or any box
-
 void GLUtil::glDrawBoundingBox(float width, float height, float depth)
 {
 	float x = width/2.0f;
@@ -1397,7 +1724,6 @@ void GLUtil::glDrawDisk(float radius, int spokes)
 	vector<float> vertices(3*arraysize + 3);
 
 	// last vertex is center
-
 	vertices[3*arraysize] = 0.0;
 	vertices[3*arraysize+1] = 0.0;
 	vertices[3*arraysize+2] = 0.0;
@@ -1418,15 +1744,13 @@ void GLUtil::glDrawDisk(float radius, int spokes)
 	vertices[sideofarray*9 + 1] = 0.0;
 	vertices[sideofarray*9 + 2] = 0.0;
 
-	// This could aslo be implemented recursively
-
+	// This could also be implemented recursively
 	for (int step = 0; step < spokes; step++) {
 		// starting location
 		int x = sideofarray/pow(2.0,(double)(step+1));
 
 		for (int i = 1; i <= 4*pow(2.0,(double)step); i++) {
 			// take the necessary steps
-
 			int index =  x + 2*x*(i-1);
 			int index_f = (index + x) % arraysize;
 			int index_i = index - x;
@@ -1434,7 +1758,6 @@ void GLUtil::glDrawDisk(float radius, int spokes)
 			cout << index << " " << index_f << " " << index_i << endl;
 
 			// need to resclae length to that of radius
-
 			vertices[index_f*3] = (vertices[index_f*3] - vertices[index_i*3])/2.0f;
 			vertices[index_f*3 + 1] = (vertices[index_f*3 + 1] - vertices[index_i*3 + 1])/2.0f;
 			vertices[index_f*3 + 2] = (vertices[index_f*3 + 2] - vertices[index_i*3 + 2])/2.0f;
@@ -1442,17 +1765,14 @@ void GLUtil::glDrawDisk(float radius, int spokes)
 	}
 
 	// GL stuff
-
 	if (glIsBuffer(GLUtil::buffer[0]) == GL_FALSE) {
 		glGenBuffers(2, GLUtil::buffer);
 	}
 
 	// Could use dirty bit here but not worth my time to implement
-
 	glBindBuffer(GL_ARRAY_BUFFER, GLUtil::buffer[0]);
 
 	// glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
 	glBufferData(GL_ARRAY_BUFFER, vertices.size(), &(vertices[0]),
 		 GL_STATIC_DRAW);
 	glEnableClientState(GL_VERTEX_ARRAY);

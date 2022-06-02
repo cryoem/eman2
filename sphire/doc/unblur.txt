@@ -1,0 +1,128 @@
+~~NOTOC~~
+
+===== sp_unblur =====
+Unblur cisTEM: Align frames of micrograph movies with [[https://cistem.org/|Unblur]].
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sp_unblur.py  unblur_path  input_micrograph_pattern  output_directory   --selection_file=SELECTION_FILE  --pixel_size=PIXEL_SIZE   --bin_factor=BIN_FACTOR  --skip_dose_adjustment --additional_dose_unadjusted  --voltage=VOLTAGE  --exposure_per_frame=EXPOSURE  --pre_exposure=EXPOSURE   --min_shift_initial=MIN_SHIFT_INITIAL  --outer_radius=OUTER_RADIUS  --b_factor=B_FACTOR  --half_width_vert=HALF_WIDTH_VERT  --half_width_hor=HALF_WIDTH_HOR  --termination=TERMINATION  --max_iterations=MAX_ITERATIONS  --dont_restore_noise_power  --gain_file=GAIN_FILE  --first_frame=FIRST_FRAME  --last_frame=LAST_FRAME  --distortion_angle=DISTORTION_ANGLE  --major_scale=MAJOR_SCALE  --minor_scale=MINOR_SCALE
+
+\\
+===== Typical usage =====
+
+sp_unblur exists in both MPI and non-MPI versions (Running MPI version does not require --MPI flag). 
+
+Run unblur with dose adjustment
+
+mpirun -np 12 sp_unblur.py  path/to/unblur  'Movies/*' unblur_out_dir  --pixel_size=1.14  --voltage=300  --exposure_per_frame=1.3
+
+
+Run unblur with dose adjustment and gain reference file
+
+mpirun -np 12 sp_unblur.py  path/to/unblur  'Movies/*' unblur_out_dir  --pixel_size=1.14  --voltage=300  --exposure_per_frame=1.3  --gain_file=/path/to/gain.mrc
+
+
+Run unblur without dose adjustment
+
+mpirun -np 12 sp_unblur.py  path/to/unblur  'Movies/*' unblur_out_dir  --pixel_size=1.14  --skip_dose_adjustment
+
+Run unblur without dose adjustment and in addition with dose adjustment
+
+mpirun -np 12 sp_unblur.py  path/to/unblur  'Movies/*' unblur_out_dir  --pixel_size=1.14  --voltage=300  --exposure_per_frame=1.3  --additional_dose_unadjusted
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; unblur_path : Unblur executable path: Specify the file path of Unblur executable. (This argument is specific to SPHIRE, and not directly used by Unblur and Summovie executables.) (default required string)
+  ; input_micrograph_pattern : Input movie path pattern: Specify path pattern of input micrograph movies with a wild card (*).. The path pattern must be enclosed by single quotes (') or double quotes ("). (Note: sp_gui.py automatically adds single quotes (')). bdb files cannot be selected as input micrograph movies. (This argument is specific to SPHIRE, and not directly used by Unblur and Summovie executables.) (default required string)
+  ; output_directory : Output directory: The results will be written here. It cannot be an existing one. (This argument is specific to SPHIRE, and not directly used by Unblur and Summovie executables.) (default required string)
+
+  ; %%--%%selection_file : Movie selection file: Specify a name of micrograph movie selection list text file. The file extension must be '.txt'. If this is not provided, all files matched with the micrograph movie name pattern will be processed. (This option is specific to SPHIRE, and not directly used by Unblur and Summovie executables.) (default none)
+
+  ; %%--%%pixel_size : Pixel size [A]: The pixel size of input micrographs. (default 1.0)
+  ; %%--%%bin_factor : Bin factor : Output bin factor. (default 1.0)
+
+  ; %%--%%voltage : Microscope voltage [kV]: The acceleration voltage of microscope used for imaging. (default 300.0) : %%--%%skip_dose_adjustment==True
+  ; %%--%%exposure_per_frame : Per frame exposure [e/A^2]: The electron dose per frame in e/A^2. (default 1.0) : %%--%%skip_dose_adjustment==True
+  ; %%--%%pre_exposure : Pre-exposure [e/A^2]: The electron does in e/A^2 used for exposure prior to imaging. (default 0.0) : %%--%%skip_dose_adjustment==True
+  ; %%--%%additional_dose_unadjusted : Create unadjusted sums in addition: Run unblur twice to also create dose unadjusted sums. (default False) : %%--%%skip_dose_adjustment==True
+  ; %%--%%gain_file : Gain file : Gain file in case of gain uncorrected movies. (default none)
+
+
+\\
+=== Advanced Parameters ===
+  ; %%--%%skip_dose_adjustment : Apply dose filter: Indicate if dose filter should be applied or not. By default, apply dose filter. (default False question reversed in GUI)
+
+  ; %%--%%min_shift_initial : Minimum shift for initial search [A]: Minimum shift for initial search [A] (default 2.0)
+  ; %%--%%outer_radius : Outer radius shift limit [A]: Outer radius shift limit (default 20.0)
+  ; %%--%%b_factor : Apply B-factor to images [A^2]: Effective only when %%--%%expert_mode option is used. (default 1500.0)
+  ; %%--%%half_width_vert : Vertical Fourier central mask size: The half-width of central vertical line of Fourier mask. (default 1)
+  ; %%--%%half_width_hor : Horizontal Fourier central mask size: The half-width of central horizontal line of Fourier mask. (default 1)
+  ; %%--%%termination : Termination shift threshold: Termination shift threshold. (default 1)
+  ; %%--%%max_iterations : Maximum iterations: Maximum iterations. (default 20)
+  ; %%--%%dont_restore_noise_power : Restore noise power: Indicate if noise power should be restored after dose adjustment or not. By default, restore noise power. (default False question reversed in GUI)
+  ; %%--%%first_frame : First frame: First frame to use for sum. (default 1)
+  ; %%--%%last_frame : Last frame: Last frame to use for sum. (default 0)
+  ; %%--%%distortion_angle : Distortion Angle [deg]: Distortion Angle in degrees. (default 0.0)
+  ; %%--%%major_scale : Major scale : Major scale. (default 1.0)
+  ; %%--%%minor_scale : Minor scale: Minor scale. (default 1.0)
+
+\\
+===== Output =====
+The program automatically creates the following subdirectories in the specified output directory.
+
+\\ __Run without dose-filtering__:
+  * Sum files will be written to the ''corrsum'' directory.
+  * Log files will be written to the ''logfiles'' directory.
+  * Aligned frames will be written to the ''corrsum'' directory.
+  * Shift files  will be written to the ''shift'' directory.
+  * FRC files will be written to the ''frc'' directory.
+
+\\ __Run with dose-filtering (as without dose-filtering plus)__:
+  * Dose filtered sum files will be written to the ''corrsum_dose_filtered'' directory.
+  * Log files will be written to the ''logfiles'' directory.
+  * Dose filtered aligned frames will be written to the ''corrsum_dose_filtered'' directory.
+  * Shift files  will be written to the ''shift'' directory.
+  * FRC files will be written to the ''frc'' directory.
+
+\\
+===== Description =====
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+[[http://grigoriefflab.janelia.org/unblur|Unblur & Summovie]]
+
+\\
+==== Developer Notes ====
+
+\\
+==== Author / Maintainer ====
+Markus Stabrin
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_unblur.py
+
+\\
+==== See also ====
+[[pipeline:movie:sp_gui_unblur|sp_gui_unblur]]
+
+\\
+==== Maturity ====
+Beta:: Under evaluation and testing. Please let us know if there are any bugs.
+
+\\
+==== Bugs ====
+There are no known bugs so far.
+
+\\

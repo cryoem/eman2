@@ -1,6 +1,6 @@
 /* JSON file to configure the project manager TOMO mode */
 /* The ICON string needs to correspond to a dict key listed in the PM */
-/* The available keys can be found by browsing the JSON files of looking at e2 projectmanager.py */
+/* The available keys can be found by browsing the JSON files of looking at e2projectmanager.py */ 
 
 [
   {
@@ -46,6 +46,11 @@
         "CHILDREN": []
       },
       {
+        "PROGRAM": "e2spt_tomoctf.py",
+        "NAME": "CTF estimation",
+        "CHILDREN": []
+      },
+      {
         "PROGRAM": "e2tomo_showali.py",
         "MODE": "fiderr",
         "NAME": "Examine fiducial error",
@@ -64,7 +69,7 @@
         "CHILDREN": []
       },
       {
-        "PROGRAM": "e2spt_boxer22.py",
+        "PROGRAM": "e2spt_boxer.py",
         "MODE": "box2d",
         "NAME": "Box training references",
         "CHILDREN": []
@@ -124,8 +129,8 @@
     "CHILDREN":[
       {
         "MODE": "box3d",
-        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2spt_boxer22",
-        "PROGRAM": "e2spt_boxer22.py",
+        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2spt_boxer",
+        "PROGRAM": "e2spt_boxer.py",
         "NAME": "Manual boxing",
         "CHILDREN": []
       },
@@ -136,13 +141,12 @@
         "CHILDREN": []
       },
       {
-        "PROGRAM": "e2spt_tomoctf.py",
-        "NAME": "CTF correction",
+        "PROGRAM": "e2spt_boxer_convnet.py",
+        "NAME": "Convnet based auto-boxing",
         "CHILDREN": []
       },
       {
         "MODE": "extract",
-        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2spt_boxer",
         "PROGRAM": "e2spt_extract.py",
         "NAME": "Extract particles",
         "CHILDREN": []
@@ -154,9 +158,20 @@
         "CHILDREN": []
       },
       {
+        "PROGRAM": "e2spt_sgd_new.py",
+        "NAME": "New initial model generator",
+        "MODE": "model",
+        "CHILDREN": []
+      },
+      {
         "PROGRAM": "e2spt_sgd.py",
         "NAME": "Generate initial model",
         "MODE": "model",
+        "CHILDREN": []
+      },
+      {
+        "PROGRAM": "e2spt_refine_new.py",
+        "NAME": "new 3D refinement",
         "CHILDREN": []
       },
       {
@@ -170,32 +185,22 @@
         "CHILDREN": []
       },
       {
-        "PROGRAM": "e2spt_pcasplit.py",
-        "NAME": "PCA-based classification",
-        "CHILDREN": []
-      },
-      {
-        "PROGRAM": "e2spt_classify.py",
-        "NAME": "Multi-reference refinement",
-        "MODE": "multi",
-        "CHILDREN": []
-      },
-      {
-        "PROGRAM": "e2spt_mapptclstotomo.py",
-        "NAME": "Map particles to tomograms",
-        "CHILDREN": []
-      },
-      {
-        "NAME": "Extract from IMOD",
+        "NAME": "Classification",
         "CHILDREN": [
           {
-            "PROGRAM": "e2spt_subtilt_from_imod.py",
-            "NAME": "Extract 2D particles",
+            "PROGRAM": "e2spt_classify_byproj.py",
+            "NAME": "Ortho-proj classification",
             "CHILDREN": []
           },
           {
-            "PROGRAM": "e2spt_make3d.py",
-            "NAME": "Reconstruction from 2D particles",
+            "PROGRAM": "e2spt_pcasplit.py",
+            "NAME": "PCA-based classification",
+            "CHILDREN": []
+          },
+          {
+            "PROGRAM": "e2spt_classify.py",
+            "NAME": "Multi-reference refinement",
+            "MODE": "multi",
             "CHILDREN": []
           }
         ]
@@ -216,6 +221,11 @@
           "NAME": "Evaluate SPT refinements",
           "CHILDREN": []
         },
+        {
+          "PROGRAM": "e2spt_mapptclstotomo.py",
+          "NAME": "Map particles to tomograms",
+          "CHILDREN": []
+	},
         {
           "PROGRAM": "e2spt_stat.py",
           "NAME": "Calc quality vs. reference",

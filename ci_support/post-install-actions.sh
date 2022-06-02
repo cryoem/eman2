@@ -1,11 +1,25 @@
 #!/usr/bin/env bash
 
+set -xe
+
 source ${PREFIX}/bin/activate
 
-conda info -a
-conda list
+conda config --env --set auto_update_conda False
 
-conda install eman-deps=13.2 -c cryoem -c defaults -c conda-forge -y
+mkdir ${PREFIX}/install_logs
+
+conda info -a            | tee ${PREFIX}/install_logs/info_log.txt 2>&1
+conda list               | tee ${PREFIX}/install_logs/list_log.txt 2>&1
+conda list --explicit | tee -a ${PREFIX}/install_logs/list_log.txt 2>&1
+
+case ${EMAN_INSTALL_DONT_UPDATE_DEPS:-} in
+    0|"")
+        mamba install eman-deps=31.1 -c cryoem -c conda-forge -y | tee -a ${PREFIX}/install_logs/install_log.txt 2>&1
+        ;;
+    *)
+        echo "WARNING: Skipping installation of dependencies per user request..."
+        ;;
+esac
 
 cat <<EOF
 

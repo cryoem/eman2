@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -33,12 +30,12 @@ from __future__ import division
 #
 #
 
-# e2pdb2mrc.py  07/23/3004  Steven Ludtke
+# e2pdb2mrc.py  07/23/2004  Steven Ludtke
 # This program will generate an electron density map from a PDB file. Unlike the earlier versions
 # of this program, operations like applying symmetry or centering are now offloaded onto
 # e2procpdb.py. Note that atomic form factors are not included in this program. It is designed
 # for intermediate resolutions (~4 A and higher). Each atom is represented by a Gaussian with
-# the approrpiate number of electrons.
+# the appropriate number of electrons.
 
 # PDB sample line
 #           1         2         3         4         5         6         7
@@ -59,6 +56,7 @@ import numpy as np
 # HO is a hydrogen attached to an oxygen. 'W' is water (infrequently found)
 atomdefs={'H':(1.0,1.00794),'HO':(1.0,1.00794),'C':(6.0,12.0107),'A':(7.0,14.00674),'N':(7.0,14.00674),'O':(8.0,15.9994),'P':(15.0,30.973761),'K':(19.0,39.0983),
 	'S':(16.0,32.066),'W':(18.0,1.00794*2.0+15.9994),'AU':(79.0,196.96655) }
+transmap=str.maketrans("", "", "0123456789")
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -82,7 +80,7 @@ def main():
 	parser.add_argument("--quiet",action="store_true",default=False,help="Verbose is the default")
 	parser.add_argument("--model", type=int,default=None, help="Extract only a single numbered model from a multi-model PDB")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--quick", action="store_true", help="Use a slight approximation to the Gaussian during insertion. Does not support B-factors.",default=False)
 	parser.add_argument("--addpdbbfactor", action="store_true", help="Use the bfactor/temperature factor as the atom blurring radius, equivalent to Gaussian lowpass with 1/e width at 1/bfactor",default=False)
 	parser.add_argument("--omit", type=float, help="Randomly omit this percentage of atoms in the output map.",default=0.0)
@@ -140,7 +138,8 @@ def main():
 		if options.full:
 			tfs = {}
 
-		for line in infile:
+		lines = []
+		for line_num, line in enumerate(infile):
 			if options.model!=None:
 				if line[:5]=="MODEL":
 					if int(line.split()[1])==options.model: stm=True
@@ -190,7 +189,7 @@ def main():
 				# 		tfs[tfid][rowid] = row
 
 			if line[:5] =="HELIX":
-				# not confident about this... 
+				# not confident about this...
 				# need to learn more about pdb file format
 				if int(line[20:25]) > lhelix or line[19] != lch:
 					ihelix+=abs(int(line[20:25])-int(line[32:37]))-1
@@ -200,10 +199,10 @@ def main():
 				lch=line[19]
 				lhelix=int(line[32:37])
 
-			elif line[:5]=="SHEET":
+			elif line[:5] == "SHEET":
 				isheet += abs(int(line[22:26])-int(line[33:37]))+1
 
-			elif (line[:4]=='ATOM' or (line[:6]=='HETATM' and options.het)) :
+			elif line[:4]=='ATOM' or (line[:6]=='HETATM' and options.het) :
 
 				if lastres != line[17:21]:
 					ires += 1
@@ -218,7 +217,7 @@ def main():
 				except: resol=10
 
 				try:
-					a=line[12:14].strip().translate(None,"0123456789")
+					a=line[12:14].strip().translate(transmap)
 					x=float(line[30:38])
 					y=float(line[38:46])
 					z=float(line[46:54])
@@ -228,6 +227,7 @@ def main():
 					print(a,aseq,resol,x,y,z)
 
 				atoms.append((a,x,y,z))
+				lines.append(line_num)
 
 				aavg[0]+=x
 				aavg[1]+=y
@@ -242,8 +242,8 @@ def main():
 				amax[2]=max(z,amax[2])
 
 				try:
-					nelec+=atomdefs[a[0].translate(None,"0123456789").upper()][0]
-					mass+=atomdefs[a[0].translate(None,"0123456789").upper()][1]
+					nelec+=atomdefs[a[0].translate(transmap).upper()][0]
+					mass+=atomdefs[a[0].translate(transmap).upper()][1]
 					#nelec+=atomdefs[a.upper()][0]
 					#mass+=atomdefs[a.upper()][1]
 				except:
@@ -269,7 +269,7 @@ def main():
 			boxsize=int(1.9*boxsize+(2.0*options.res/options.apix))
 
 		pa=PointArray()
-		pa.read_from_pdb(args[0])
+		pa.read_from_pdb(args[0], lines)
 
 		if options.omit > 0.0 and options.omit < 100.0:
 			natm = pa.get_number_points()
@@ -296,14 +296,14 @@ def main():
 			pa = PointArray()
 			pts = np.concatenate(points).flatten()
 			pa.set_from(pts.tolist()[0])
-		
+
 		if options.center: pa.center_to_zero()
 
 		#bound = max(pa.get_bounding_box().get_size())
 		#if boxsize < bound:
 			#boxsize = int(bound+1)
 			#print("Box size too small. Will use {} instead.".format(boxsize))
-		
+
 		out = pa.pdb2mrc_by_summation(boxsize,options.apix,options.res,addpdbbfactor)
 		out.write_image(args[1])
 
@@ -319,13 +319,12 @@ def main():
 
 	E2end(logger)
 
-# this function originally added so that it could be accessed independently (for Junjie Zhang by David Woolford)
 def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,model=None,center=False,quiet=False):
 	'''
 	file_name is the name of a pdb file
 	apix is the angstrom per pixel
-	res is requested resolution, quivalent to Gaussian lowpass with 1/e width at 1/res
-	het is a flag inidicating whether HET atoms should be included in the map
+	res is requested resolution, equivalent to Gaussian lowpass with 1/e width at 1/res
+	het is a flag indicating whether HET atoms should be included in the map
 	box is the boxsize, can be a single int (e.g. 128), a tuple (e.g. [128,64,54]), or a string (e.g. "128" or "128,64,57")
 	chains is a string list of chain identifiers, eg 'ABEFG'
 	quiet can be used to turn of helpful print outs
@@ -333,7 +332,6 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,model=No
 
 	try : infile=open(file_name,"r")
 	except : raise IOError("%s is an invalid file name" %file_name)
-
 
 	if res<=apix : print("Warning: res<=apix. Generally res should be 2x apix or more")
 
@@ -354,7 +352,7 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,model=No
 			if stm and line[:6]=="ENDMDL" : break
 			if not stm: continue
 
-		if (line[:4]=='ATOM' or (line[:6]=='HETATM' and het)) :
+		if line[:4]=='ATOM' or (line[:6]=='HETATM' and het) :
 			if chains and not (line[21] in chains) : continue
 
 			try:
@@ -368,7 +366,7 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,model=No
 				resol=10
 
 			try:
-				a=line[12:14].strip().translate(None,"0123456789'")
+				a=line[12:14].strip().translate(transmap)
 
 				x=float(line[30:38])
 				y=float(line[38:46])
@@ -458,7 +456,7 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,model=No
 			sys.stdout.flush()
 		try:
 			# This insertion strategy ensures the output is centered.
-			elec=atomdefs[a[0].translate(None,"0123456789").upper()][0]
+			elec=atomdefs[a[0].translate(transmap).upper()][0]
 # This was producing different results than the "quick" mode, and did not match the statement printed above!!!
 #			outmap.insert_scaled_sum(gaus,(a[1]/apix+xt-amin[0]/apix,a[2]/apix+yt-amin[1]/apix,a[3]/apix+zt-amin[2]/apix),res/(pi*12.0*apix),elec)
 			if center: outmap.insert_scaled_sum(gaus,(old_div((a[1]-aavg[0]),apix)+old_div(outbox[0],2),old_div((a[2]-aavg[1]),apix)+old_div(outbox[1],2),old_div((a[3]-aavg[2]),apix)+old_div(outbox[2],2)),old_div(res,(pi*12.0*apix)),elec)
@@ -473,5 +471,6 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,model=No
 	outmap.set_attr("origin_z",-zt*apix+amin[2])
 	return outmap
 
+
 if __name__ == "__main__":
-    main()
+	main()

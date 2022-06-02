@@ -28,10 +28,6 @@
  *
  * */
 
-#ifdef _WIN32
-	#pragma warning(disable:4819)
-#endif	//_WIN32
-
 // Boost Includes ==============================================================
 #include <boost/python.hpp>
 
@@ -207,6 +203,7 @@ BOOST_PYTHON_MODULE(libpyReconstructor2)
 		.def("determine_slice_agreement", &reconstructor_determine_slice_agreement)
 //		.def("determine_slice_agreement", (int (EMAN::Reconstructor::*)(EMAN::EMData* , const EMAN::Transform&, const float, bool))&EMAN::Reconstructor::determine_slice_agreement)
         .def("preprocess_slice", (EMAN::EMData* (EMAN::Reconstructor::*)(const EMAN::EMData* const, const EMAN::Transform&))&EMAN::Reconstructor::preprocess_slice, return_value_policy< manage_new_object >())
+        .def("projection", (EMAN::EMData* (EMAN::Reconstructor::*)(const EMAN::Transform&, int ret_fourier))&EMAN::Reconstructor::projection, return_value_policy< manage_new_object >())
 //         .def("finish", (EMAN::EMData* (EMAN::Reconstructor::*)(bool))&EMAN::Reconstructor::finish, return_value_policy< manage_new_object >())
         .def("finish", &reconstructor_finish, return_value_policy< manage_new_object >())
         .def("get_name", pure_virtual(&EMAN::Reconstructor::get_name))

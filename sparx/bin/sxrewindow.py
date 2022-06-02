@@ -1,11 +1,14 @@
 #!/usr/bin/env python
-from __future__ import print_function
 #
 # Author: Toshio Moriya 08/07/2018 (toshio.moriya@mpi-dortmund.mpg.de)
 #
+# Author: Pawel A.Penczek 05/27/2009 (Pawel.A.Penczek@uth.tmc.edu)
+# Please do not copy or modify this file without written consent of the author.
+# Copyright (c) 2000-2019 The University of Texas - Houston Medical School
+#
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
-# complete EMAN2 and SPHIRE software packages have some GPL dependencies,
+# complete EMAN2 and SPARX software packages have some GPL dependencies,
 # so you are responsible for compliance with the licenses of these packages
 # if you opt to use BSD licensing. The warranty disclaimer below holds
 # in either instance.
@@ -27,8 +30,11 @@ from __future__ import print_function
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+#
+#
 
-from __future__ import print_function
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 import os, sys
 from optparse import OptionParser, SUPPRESS_HELP
@@ -902,7 +908,7 @@ For negative staining data, use --skip_invert.
 		mic_basename = global_entry_dict[mic_id_substr][subkey_selected_mic_basename]
 		assert (mic_basename == mic_basename_pattern.replace("*", mic_id_substr))
 		if my_mpi_proc_id == main_mpi_proc:
-			print("%s ---> % 2.2f%%" % (mic_basename, mic_id_substr_idx / progress_percent_step))
+			print("%s ---> % 2.2f%%" % (mic_basename, old_div(mic_id_substr_idx, progress_percent_step)))
 		
 		# --------------------------------------------------------------------------------
 		# Read the associated rebox according to the specified format and 
@@ -971,7 +977,7 @@ For negative staining data, use --skip_invert.
 		# Cut off frequency components lower than one that the (resampled) box size can express.
 		# Then, move back to the real space processing
 		# --------------------------------------------------------------------------------
-		mic_img = fft(filt_gaussh(mic_img, mic_resample_ratio / box_size))
+		mic_img = fft(filt_gaussh(mic_img, old_div(mic_resample_ratio, box_size)))
 		
 		# --------------------------------------------------------------------------------
 		# Resample micrograph, map rebox, and window segments from resampled micrograph using new rebox
@@ -1078,7 +1084,7 @@ For negative staining data, use --skip_invert.
 					print("MRK_DEBUG: BEFORE applying mic_resample_ratio := {}".format(mic_resample_ratio))
 					print("MRK_DEBUG: ctf_obj.apix := {}, proj_entry[idx_proj_sx] := {}, proj_entry[idx_proj_sy] := {}".format(ctf_obj.apix, proj_entry[idx_proj_sx], proj_entry[idx_proj_sy]))
 				# store the resampled pixel size to the cter_entry to generate CTF object of this micrograph
-				ctf_obj.apix = src_pixel_size / mic_resample_ratio
+				ctf_obj.apix = old_div(src_pixel_size, mic_resample_ratio)
 				proj_entry[idx_proj_sx] *= mic_resample_ratio
 				proj_entry[idx_proj_sy] *= mic_resample_ratio
 				if my_mpi_proc_id == main_mpi_proc:
@@ -1122,7 +1128,7 @@ For negative staining data, use --skip_invert.
 			resampled_box_half = box_half
 			if pp_mag_error_accum != 1.0:
 				### assert (pp_def_error_accum == 0.0) # For now, do not allow both parameters to be adjusted (Toshio 2018/03/25)
-				resampled_box_size = int(ceil(box_size / pp_mag_error_accum))
+				resampled_box_size = int(ceil(old_div(box_size, pp_mag_error_accum)))
 				resampled_box_half = int(resampled_box_size // 2)
 				# print("MRK_DEBUG: pp_mag_error_accum := {}, resampled_box_size := {}, resampled_box_half := {}".format(pp_mag_error_accum, resampled_box_size, resampled_box_half))
 			

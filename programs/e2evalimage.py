@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 07/28/2011 (sludtke@bcm.edu)
 # Copyright (c) 2011- Baylor College of Medicine
@@ -36,7 +33,8 @@ from __future__ import division
 from past.utils import old_div
 from builtins import range
 from EMAN2 import *
-from EMAN2db import db_open_dict, db_close_dict, db_check_dict, db_list_dicts
+import OpenGL
+OpenGL.ERROR_CHECKING = False
 from OpenGL import GL,GLUT
 from math import *
 import os
@@ -48,13 +46,13 @@ from numpy import array,arange
 import traceback
 
 try:
-	from PyQt4 import QtCore, QtGui, QtOpenGL
-	from PyQt4.QtCore import Qt
-	from PyQt4.QtCore import QTimer
+	from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
+	from PyQt5.QtCore import Qt
+	from PyQt5.QtCore import QTimer
 	from eman2_gui.emshape import *
 	from eman2_gui.valslider import *
 except:
-	print("Warning: PyQt4 must be installed")
+	print("Warning: PyQt5 must be installed")
 	sys.exit(1)
 
 
@@ -91,7 +89,7 @@ power spectrum in various ways."""
 	parser.add_argument("--box",type=int,help="Forced box size in grid mode. Overrides any previous setting. ",default=-1, guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="eval")
 	parser.add_argument("--usefoldername",action="store_true",help="If you have the same image filename in multiple folders, and need to import into the same project, this will prepend the folder name on each image name",default=False,guitype='boolbox',row=5, col=1, rowspan=1, colspan=1, mode="eval")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 
@@ -117,7 +115,7 @@ power spectrum in various ways."""
 
 
 
-class GUIEvalImage(QtGui.QWidget):
+class GUIEvalImage(QtWidgets.QWidget):
 	def __init__(self,images,voltage=None,apix=None,cs=None,ac=10.0,box=512,usefoldername=False,constbfactor=-1,fitastig=False,phaseplate=False):
 		"""Implements the CTF fitting dialog using various EMImage and EMPlot2D widgets
 		'data' is a list of (filename,ctf,im_1d,bg_1d,quality)
@@ -134,7 +132,7 @@ class GUIEvalImage(QtGui.QWidget):
 			print("Cannot import EMAN plot GUI objects (is matplotlib installed?)")
 			sys.exit(1)
 
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "ctf.png"))
 
 		self.nodir=not usefoldername
@@ -189,10 +187,10 @@ class GUIEvalImage(QtGui.QWidget):
 #				if parms==None : raise Exception
 			except:
 				ctf = EMAN2Ctf()
-				ctf.from_dict({'defocus':0.0,'dfdiff':0.0,'dfang':0.0,'bfactor':200.0,'ampcont':self.defaultac,'voltage':200.0,'cs':4.1,'apix':1.0,'dsbg':-1})
-				if self.defaultvoltage!=None : ctf.voltage=self.defaultvoltage
-				if self.defaultcs!=None : ctf.cs=self.defaultcs
-				if self.defaultapix!=None : ctf.apix=self.defaultapix
+				ctf.from_dict({'defocus':0.0,'dfdiff':0.0,'dfang':0.0,'bfactor':200.0,'ampcont':self.defaultac,'voltage':0,'cs':4.1,'apix':1.0,'dsbg':-1})	# voltage zero here to trigger initialization
+#				if self.defaultvoltage!=None : ctf.voltage=self.defaultvoltage		# default initialization is later! this screws it up
+#				if self.defaultcs!=None : ctf.cs=self.defaultcs
+#				if self.defaultapix!=None : ctf.apix=self.defaultapix
 				parms=[int(box),ctf,(256,256),set(),5,1]
 				print("Initialize new parms for: ",base_name(i))
 
@@ -225,40 +223,42 @@ class GUIEvalImage(QtGui.QWidget):
 		self.wfft.mmode="app"
 
 		# This object is itself a widget we need to set up
-		self.gbl = QtGui.QGridLayout(self)
-		self.gbl.setMargin(8)
+		self.gbl = QtWidgets.QGridLayout(self)
+		self.gbl.setContentsMargins(8, 8, 8, 8)
 		self.gbl.setSpacing(6)
 
 		# plot list and plot mode combobox
 		self.setlist=e2ctf.MyListWidget(self)
-		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
+		self.setlist.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
 		for i in images:
 			self.setlist.addItem(i)
 		self.gbl.addWidget(self.setlist,0,0,8,2)
 
-		self.lcalcmode=QtGui.QLabel("Region:",self)
+		self.lcalcmode=QtWidgets.QLabel("Region:",self)
 		self.gbl.addWidget(self.lcalcmode,10,0)
 
-		self.scalcmode=QtGui.QComboBox(self)
+		self.scalcmode=QtWidgets.QComboBox(self)
 		self.scalcmode.addItem("Single Region")
 		self.scalcmode.addItem("Tiled Boxes")
+		self.scalcmode.addItem("Y Strip")
+		self.scalcmode.addItem("X Strip")
 		self.scalcmode.setCurrentIndex(1)
 		self.gbl.addWidget(self.scalcmode,10,1)
 
 
-		self.lcalcmode=QtGui.QLabel("2D FFT:",self)
+		self.lcalcmode=QtWidgets.QLabel("2D FFT:",self)
 		self.gbl.addWidget(self.lcalcmode,11,0)
 
-		self.s2dmode=QtGui.QComboBox(self)
+		self.s2dmode=QtWidgets.QComboBox(self)
 		self.s2dmode.addItem("Power Spectrum")
 		self.s2dmode.addItem("Bg Subtracted")
 		self.s2dmode.addItem("Background")
 		self.gbl.addWidget(self.s2dmode,11,1)
 
-		self.lcalcmode=QtGui.QLabel("Annotate:",self)
+		self.lcalcmode=QtWidgets.QLabel("Annotate:",self)
 		self.gbl.addWidget(self.lcalcmode,12,0)
 
-		self.s2danmode=QtGui.QComboBox(self)
+		self.s2danmode=QtWidgets.QComboBox(self)
 		self.s2danmode.addItem("Ctf Zeroes")
 		self.s2danmode.addItem("Resolution Ring")
 		self.s2danmode.addItem("2-D Xtal")
@@ -266,10 +266,10 @@ class GUIEvalImage(QtGui.QWidget):
 		self.gbl.addWidget(self.s2danmode,12,1)
 
 
-		self.lcalcmode=QtGui.QLabel("Plot:",self)
+		self.lcalcmode=QtWidgets.QLabel("Plot:",self)
 		self.gbl.addWidget(self.lcalcmode,13,0)
 
-		self.splotmode=QtGui.QComboBox(self)
+		self.splotmode=QtWidgets.QComboBox(self)
 		self.splotmode.addItem("Bgsub and Fit")
 		self.splotmode.addItem("Fg and Bg")
 		self.splotmode.addItem("Bgsub, 45 deg slices")
@@ -305,7 +305,7 @@ class GUIEvalImage(QtGui.QWidget):
 		self.squality.setIntonly(True)
 		self.gbl.addWidget(self.squality,6,2,1,3)
 
-		self.brefit=QtGui.QPushButton("Refit")
+		self.brefit=QtWidgets.QPushButton("Refit")
 		self.gbl.addWidget(self.brefit,7,2)
 
 		self.cbgadj=CheckBox(None,"CTF BG Adj",1)
@@ -344,13 +344,13 @@ class GUIEvalImage(QtGui.QWidget):
 		# this is just a spacer
 		self.gbl.setColumnStretch(3,2)
 
-		self.bbox=QtGui.QGroupBox("Project")
+		self.bbox=QtWidgets.QGroupBox("Project")
 		self.gbl.addWidget(self.bbox,10,4,4,1)
 
-		self.bvbl=QtGui.QVBoxLayout()
+		self.bvbl=QtWidgets.QVBoxLayout()
 		self.bbox.setLayout(self.bvbl)
 
-		self.bimport=QtGui.QPushButton("Import")
+		self.bimport=QtWidgets.QPushButton("Import")
 		self.bvbl.addWidget(self.bimport)
 
 		self.cinvert=CheckBox(None,"Invert")
@@ -429,7 +429,7 @@ class GUIEvalImage(QtGui.QWidget):
 
 
 	def closeEvent(self,event):
-#		QtGui.QWidget.closeEvent(self,event)
+#		QtWidgets.QWidget.closeEvent(self,event)
 		E2saveappwin("e2evalimage","main",self)
 		E2saveappwin("e2evalimage","image",self.wimage.qt_parent)
 		E2saveappwin("e2evalimage","fft",self.wfft.qt_parent)
@@ -437,8 +437,8 @@ class GUIEvalImage(QtGui.QWidget):
 
 		self.writeCurParm()
 		event.accept()
-		QtGui.qApp.exit(0)
-		#app=QtGui.qApp
+		QtWidgets.qApp.exit(0)
+		#app=QtWidgets.qApp
 		#if self.wimage != None:
 			#app.close_specific(self.wimage)
 			#self.wimage = None
@@ -640,7 +640,7 @@ class GUIEvalImage(QtGui.QWidget):
 			self.procthread.start()
 
 		if self.errors:
-			QtGui.QMessageBox.warning(None,"Error","The following processors encountered errors during processing of 1 or more images:"+"\n".join(self.errors))
+			QtWidgets.QMessageBox.warning(None,"Error","The following processors encountered errors during processing of 1 or more images:"+"\n".join(self.errors))
 			self.errors=None
 
 	def doRefit(self):
@@ -649,12 +649,13 @@ class GUIEvalImage(QtGui.QWidget):
 		ds=old_div(1.0,(apix*parms[0]*parms[5]))
 		astig=int(self.castig.getValue())
 		phasep=int(self.cphasep.getValue())
+		hint=(0.5,7.0)	# defocus fitting range
 
 		try:
-			parms[1]=e2ctf.ctf_fit(self.fft1d,parms[1].background,parms[1].background,self.fft,self.fftbg,parms[1].voltage,parms[1].cs,parms[1].ampcont,phasep,apix,bgadj=False,autohp=True,verbose=1)
+			parms[1]=e2ctf.ctf_fit(self.fft1d,parms[1].background,parms[1].background,self.fft,self.fftbg,parms[1].voltage,parms[1].cs,parms[1].ampcont,phasep,apix,bgadj=False,autohp=True,dfhint=hint,verbose=1)
 			if self.cbgadj.getValue() :
 				self.bgAdj()
-				parms[1]=e2ctf.ctf_fit(self.fft1d,parms[1].background,parms[1].background,self.fft,self.fftbg,parms[1].voltage,parms[1].cs,parms[1].ampcont,phasep,apix,bgadj=False,autohp=True,verbose=1)
+				parms[1]=e2ctf.ctf_fit(self.fft1d,parms[1].background,parms[1].background,self.fft,self.fftbg,parms[1].voltage,parms[1].cs,parms[1].ampcont,phasep,apix,bgadj=False,autohp=True,dfhint=hint,verbose=1)
 				if astig : e2ctf.ctf_fit_stig(self.fft,self.fftbg,parms[1],verbose=1)
 				self.bgAdj()
 			else:
@@ -692,7 +693,7 @@ class GUIEvalImage(QtGui.QWidget):
 		if not os.access("micrographs",os.R_OK) :
 			try : os.mkdir("micrographs")
 			except:
-				QtGui.QMessageBox.warning(self,"Error !","Cannot create micrographs directory")
+				QtWidgets.QMessageBox.warning(self,"Error !","Cannot create micrographs directory")
 				return
 
 		#db=db_open_dict("bdb:micrographs#%s"%item)
@@ -733,6 +734,22 @@ class GUIEvalImage(QtGui.QWidget):
 		if "," in fsp :
 			fsp,n=fsp.split(",")
 			self.data=EMData(fsp,int(n))	# read the image from disk
+			if not self.data.has_attr("microscope_voltage"):
+				if self.data.has_attr("ctf"):
+					ctf=self.data["ctf"]
+					self.data["microscope_voltage"]=ctf.voltage
+					self.data["microscope_cs"]=ctf.cs
+				else:
+					js=js_open_dict(info_name(fsp))
+					try:
+						self.data["microscope_cs"]=js["cs"]
+						self.data["microscope_voltage"]=js["voltage"]
+					except:
+						js=js_open_dict("info/project.json")
+						try:
+							self.data["microscope_cs"]=js["global.microscope_cs"]
+							self.data["microscope_voltage"]=js["global.microscope_voltage"]
+						except:pass
 		elif ";" in fsp :
 			fsp,n=fsp.split(";")
 			hdr=EMData(fsp,0,True)
@@ -802,6 +819,7 @@ class GUIEvalImage(QtGui.QWidget):
 
 		# To simplify expressions
 		parms=self.parms[self.curset]
+#		print(parms)
 		apix=self.sapix.getValue()
 		if len(parms)==5 : parms.append(1)		# for old projects where there was no oversampling specification
 		else: parms[5]=max(1,int(parms[5]))
@@ -809,7 +827,6 @@ class GUIEvalImage(QtGui.QWidget):
 
 		# Mode where user drags the box around the parent image
 		if self.calcmode==0:
-
 			# extract the data and do an fft
 			clip=self.data.get_clip(Region(parms[2][0],parms[2][1],parms[0],parms[0]))
 			clip.process_inplace("normalize.edgemean")
@@ -819,7 +836,38 @@ class GUIEvalImage(QtGui.QWidget):
 			self.fft=clip.do_fft()
 #			self.fft.mult(1.0/parms[0]**2)
 			self.fft.mult(old_div(1.0,parms[0]))
+		elif self.calcmode==2:
+			nx=self.data["nx"]
+			nbx=0
+			for x in range(0,nx-parms[0]//2,parms[0]//2):
+				clip=self.data.get_clip(Region(x,parms[2][1],parms[0],parms[0]))
+				clip.process_inplace("normalize.edgemean")
+				fft=clip.do_fft()
+				fft.mult(parms[0])
+				fft.ri2inten()
+				if self.fft==None: self.fft=fft
+				else: self.fft+=fft
+				nbx+=1
 
+			self.fft.mult(1.0/(nbx*parms[0]**2))
+			self.fft.process_inplace("math.sqrt")
+			self.fft["is_intensity"]=0                              # These 2 steps are done so the 2-D display of the FFT looks better. Things would still work properly in 1-D without it
+		elif self.calcmode==3:
+			ny=self.data["ny"]
+			nbx=0
+			for y in range(0,ny-parms[0]//2,parms[0]//2):
+				clip=self.data.get_clip(Region(parms[2][0],y,parms[0],parms[0]))
+				clip.process_inplace("normalize.edgemean")
+				fft=clip.do_fft()
+				fft.mult(parms[0])
+				fft.ri2inten()
+				if self.fft==None: self.fft=fft
+				else: self.fft+=fft
+				nbx+=1
+
+			self.fft.mult(1.0/(nbx*parms[0]**2))
+			self.fft.process_inplace("math.sqrt")
+			self.fft["is_intensity"]=0                              # These 2 steps are done so the 2-D display of the FFT looks better. Things would still work properly in 1-D without it
 		# mode where user selects/deselcts tiled image set
 		elif self.calcmode==1:
 			# update the box display on the image
@@ -829,7 +877,11 @@ class GUIEvalImage(QtGui.QWidget):
 			for x in range(nx):
 				for y in range(old_div(self.data["ny"],parms[0])-1):
 					# User deselected this one
-					if int(x+y*nx) in parms[3] : continue
+					try:
+						if int(x+y*nx) in parms[3] : continue
+					except:
+						print("Warning: strange parameter in box list, resetting")
+						parms[3]=set()
 
 					# read the data and make the FFT
 					clip=self.data.get_clip(Region(x*parms[0]+old_div(parms[0],2),y*parms[0]+old_div(parms[0],2),parms[0],parms[0]))
@@ -911,6 +963,16 @@ class GUIEvalImage(QtGui.QWidget):
 			self.wimage.del_shapes()
 			self.wimage.add_shape("box",EMShape(("rect",.3,.9,.3,parms[2][0],parms[2][1],parms[2][0]+parms[0],parms[2][1]+parms[0],1)))
 			self.wimage.updateGL()
+		elif self.calcmode==2:
+			# update the box display on the image
+			self.wimage.del_shapes()
+			self.wimage.add_shape("box",EMShape(("rect",.3,.9,.3,0,parms[2][1],self.data["nx"]-1,parms[2][1]+parms[0],1)))
+			self.wimage.updateGL()
+		elif self.calcmode==3:
+			# update the box display on the image
+			self.wimage.del_shapes()
+			self.wimage.add_shape("box",EMShape(("rect",.3,.9,.3,parms[2][0],0,parms[2][0]+parms[0],self.data["ny"]-1,1)))
+			self.wimage.updateGL()
 		elif self.calcmode==1:
 			# update the box display on the image
 			nx=old_div(self.data["nx"],parms[0])-1
@@ -936,6 +998,7 @@ class GUIEvalImage(QtGui.QWidget):
 		self.busy=False
 
 	def newCalcMode(self,mode):
+		print("cm=",mode)
 		self.calcmode=mode
 		self.recalc()
 
@@ -1001,6 +1064,8 @@ class GUIEvalImage(QtGui.QWidget):
 
 			# if our first point (between the origin and the first 0) is too high, we readjust it once
 			bs=[self.fft1d[i]-parms[1].background[i] for i in range(fz)]
+			if len(bs)==0:
+				return
 			if min(bs)<0 :
 				mv=(bs[0],self.fft1d[0],0)
 				for i in range(1,fz): mv=min(mv,(bs[i],self.fft1d[i],i))
@@ -1028,19 +1093,19 @@ class GUIEvalImage(QtGui.QWidget):
 
 
 	def imgmousedown(self,event) :
-		if self.calcmode==0:
+		if self.calcmode in (0,2,3):
 			m=self.wimage.scr_to_img((event.x(),event.y()))
 			parms=self.parms[self.curset]
-			parms[2]=(m[0]-old_div(parms[0],2),m[1]-old_div(parms[0],2))
+			parms[2]=(m[0]-parms[0]//2,m[1]-parms[0]//2)
 			self.recalc()
 			self.needredisp=True
 		#self.guiim.add_shape("cen",["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0])
 
 	def imgmousedrag(self,event) :
-		if self.calcmode==0:
+		if self.calcmode in (0,2,3):
 			m=self.wimage.scr_to_img((event.x(),event.y()))
 			parms=self.parms[self.curset]
-			parms[2]=(m[0]-old_div(parms[0],2),m[1]-old_div(parms[0],2))
+			parms[2]=(m[0]-parms[0]//2,m[1]-parms[0]//2)
 			self.needredisp=True
 			self.recalc()
 

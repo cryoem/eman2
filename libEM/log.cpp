@@ -1,7 +1,3 @@
-/**
- * $Id$
- */
-
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
@@ -182,11 +178,7 @@ int Log::begin(int argc, char *argv[], int ppid)
 {
 	time_t tm = time(0);
 	const char *pwd = getenv("PWD");
-#ifdef	_WIN32
-	int ref = _getpid();
-#else
 	int ref = getpid();
-#endif
 
 	string filename = Util::sbasename(argv[0]);
 

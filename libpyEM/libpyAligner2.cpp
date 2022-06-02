@@ -28,10 +28,6 @@
  *
  * */
 
-#ifdef _WIN32
-	#pragma warning(disable:4819)
-#endif	//_WIN32
-
 // Boost Includes ==============================================================
 #include <boost/python.hpp>
 
@@ -609,7 +605,7 @@ BOOST_PYTHON_MODULE(libpyAligner2)
 		.add_property("background", &EMAN::EMAN2Ctf::get_background, &EMAN::EMAN2Ctf::set_background)
         .def("compute_1d", (std::vector<float,std::allocator<float> > (EMAN::EMAN2Ctf::*)(int, float, EMAN::Ctf::CtfType, EMAN::XYData*) )&EMAN::EMAN2Ctf::compute_1d, (std::vector<float,std::allocator<float> > (EMAN_EMAN2Ctf_Wrapper::*)(int, float, EMAN::Ctf::CtfType, EMAN::XYData*))&EMAN_EMAN2Ctf_Wrapper::default_compute_1d_3)
         .def("compute_1d", (std::vector<float,std::allocator<float> > (EMAN_EMAN2Ctf_Wrapper::*)(int, float, EMAN::Ctf::CtfType))&EMAN_EMAN2Ctf_Wrapper::default_compute_1d_2)
-        .def("compute_1d_fromimage", (std::vector<float,std::allocator<float> > (EMAN::EMAN2Ctf::*)(int, float, EMAN::EMData*) )&EMAN::EMAN2Ctf::compute_1d, (std::vector<float,std::allocator<float> > (EMAN_EMAN2Ctf_Wrapper::*)(int, float, EMAN::EMData*))&EMAN_EMAN2Ctf_Wrapper::default_compute_1d_fromimage)
+//        .def("compute_1d_fromimage", (std::vector<float,std::allocator<float> > (EMAN::EMAN2Ctf::*)(int, float, EMAN::EMData*) )&EMAN::EMAN2Ctf::compute_1d_fromimage, (std::vector<float,std::allocator<float> > (EMAN_EMAN2Ctf_Wrapper::*)(int, float, EMAN::EMData*))&EMAN_EMAN2Ctf_Wrapper::default_compute_1d_fromimage)
         .def("compute_2d_real", (void (EMAN::EMAN2Ctf::*)(EMAN::EMData*, EMAN::Ctf::CtfType, EMAN::XYData*) )&EMAN::EMAN2Ctf::compute_2d_real, (void (EMAN_EMAN2Ctf_Wrapper::*)(EMAN::EMData*, EMAN::Ctf::CtfType, EMAN::XYData*))&EMAN_EMAN2Ctf_Wrapper::default_compute_2d_real_3)
         .def("compute_2d_real", (void (EMAN_EMAN2Ctf_Wrapper::*)(EMAN::EMData*, EMAN::Ctf::CtfType))&EMAN_EMAN2Ctf_Wrapper::default_compute_2d_real_2)
         .def("compute_2d_complex", (void (EMAN::EMAN2Ctf::*)(EMAN::EMData*, EMAN::Ctf::CtfType, EMAN::XYData*) )&EMAN::EMAN2Ctf::compute_2d_complex, (void (EMAN_EMAN2Ctf_Wrapper::*)(EMAN::EMData*, EMAN::Ctf::CtfType, EMAN::XYData*))&EMAN_EMAN2Ctf_Wrapper::default_compute_2d_complex_3)

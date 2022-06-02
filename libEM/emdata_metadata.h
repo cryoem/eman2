@@ -1,7 +1,3 @@
-/**
- * $Id$
- */
-
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
@@ -198,11 +194,12 @@ IntPoint calc_max_location() const;
 /** Calculates the wrapped coordinates of the maximum value
  * This function is useful in the context of Fourier correlation
  * you can call this function to find the correct translational shift when using calc_ccf etc
+ * If *value is provided, it will be set to the value at the max location
  * @return the wrapped coordinates of the maximum
  * @author David Woolford
  * @date Fri Jun 6th 2008
  */
-IntPoint calc_max_location_wrap(const int maxshiftx=-1, const int maxshifty=-1, const int maxshiftz=-1);
+IntPoint calc_max_location_wrap(const int maxshiftx=-1, const int maxshifty=-1, const int maxshiftz=-1, float *value = 0);
 
 /** Calculates the wrapped coordinates of the maximum value, and uses quadration intp to subpixel prec
  * This function is useful in the context of Fourier correlation
@@ -458,78 +455,6 @@ MCArray2D get_2dcview() const;
 MCArray3D get_3dcview() const;
 
 
-/** Get pointer to a complex image raw pixel data in a 3D multi-array format.
- * The array shares the memory space with the image data.
- *
- * It should be used on 3D image only.
- *
- * @return Pointer to a 3D multi-array format of the raw data.
- */
-MCArray3D* get_3dcviewptr() const;
-
-
-/** Get image raw pixel data in a 2D multi-array format. The
- * data coordinates is translated by (x0,y0) such that
- * array[y0][x0] points to the pixel at the origin location.
- * the data coordiates translated by (x0,y0). The
- * array shares the memory space with the image data.
- *
- * It should be used on 2D image only.
- *
- * @param x0 X-axis translation amount.
- * @param y0 Y-axis translation amount.
- * @return 2D multi-array format of the raw data.
- */
-MArray2D get_2dview(int x0, int y0) const;
-
-
-/** Get image raw pixel data in a 3D multi-array format. The
- * data coordinates is translated by (x0,y0,z0) such that
- * array[z0][y0][x0] points to the pixel at the origin location.
- * the data coordiates translated by (x0,y0,z0). The
- * array shares the memory space with the image data.
- *
- * It should be used on 3D image only.
- *
- * @param x0 X-axis translation amount.
- * @param y0 Y-axis translation amount.
- * @param z0 Z-axis translation amount.
- * @return 3D multi-array format of the raw data.
- */
-MArray3D get_3dview(int x0, int y0, int z0) const;
-
-
-/** Get complex image raw pixel data in a 2D multi-array format. The
- * data coordinates is translated by (x0,y0) such that
- * array[y0][x0] points to the pixel at the origin location.
- * the data coordiates translated by (x0,y0). The
- * array shares the memory space with the image data.
- *
- * It should be used on 2D image only.
- *
- * @param x0 X-axis translation amount.
- * @param y0 Y-axis translation amount.
- * @return 2D multi-array format of the raw data.
- */
-MCArray2D get_2dcview(int x0, int y0) const;
-
-
-/** Get complex image raw pixel data in a 3D multi-array format. The
- * data coordinates is translated by (x0,y0,z0) such that
- * array[z0][y0][x0] points to the pixel at the origin location.
- * the data coordiates translated by (x0,y0,z0). The
- * array shares the memory space with the image data.
- *
- * It should be used on 3D image only.
- *
- * @param x0 X-axis translation amount.
- * @param y0 Y-axis translation amount.
- * @param z0 Z-axis translation amount.
- * @return 3D multi-array format of the raw data.
- */
-MCArray3D get_3dcview(int x0, int y0, int z0) const;
-
-
 /** The generic way to get any image header information
  * given a header attribute name. If the attribute does not exist,
  * it will raise an exception.
@@ -640,6 +565,12 @@ inline int get_zsize() const
 }
 
 
+inline IntSize get_sizes() const
+{
+	return IntSize(get_xsize(), get_ysize(), get_zsize());
+}
+
+
 /** Get the number of allocated floats in the image (nx*ny*nz)
  * @return nx*ny*nz
  */
@@ -652,7 +583,7 @@ inline size_t get_size() const
  * @return a vector containing the pixel data.
  */
 inline vector<float> get_data_as_vector() const {
-	int size = get_size();
+	size_t size = get_size();
 	vector<float> v(size);
 	float* data = get_data();
 	std::copy(data,data+size,v.begin());
@@ -1031,7 +962,7 @@ inline int get_pathnum() const
 }
 
 //vector<float> get_data_pickle() const;
-std::string get_data_pickle() const;
+EMBytes get_data_pickle() const;
 
 //void set_data_pickle(const vector<float>& vf);
 void set_data_pickle(std::string vf);

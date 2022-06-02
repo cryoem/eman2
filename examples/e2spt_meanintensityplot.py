@@ -28,8 +28,6 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
-from __future__ import print_function
-from __future__ import division
 from past.utils import old_div
 from builtins import range
 import os
@@ -65,7 +63,7 @@ def main():
 	parser.add_argument("--shrink", type=int,default=1,help="Default=1 (no shrinking). Optionally shrink the input volumes by an integer amount n > 1.")
 	parser.add_argument("--subset",type=int,default=0,help="""Default=0 (not used). N > 2 number of particles to from each stack provided through --input to consider.""")
 	parser.add_argument("--threshold",type=str,default='',help="""A thresholding processor to be applied before computing mean and standard deviation values for each image. (See 'e2help.py processors' at the command line for a list of processors that can be applied through e2proc3d.py).""")
-	parser.add_argument("--verbose", "-v", type=int, default=0, help="Default 0. Verbose level [0-9], higner number means higher level of verboseness",dest="verbose", action="store", metavar="n")
+	parser.add_argument("--verbose", "-v", type=int, default=0, help="Default 0. Verbose level [0-9], higher number means higher level of verboseness",dest="verbose", action="store", metavar="n")
 
 	(options, args) = parser.parse_args()
 	

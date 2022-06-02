@@ -1,9 +1,41 @@
 #!/usr/bin/env python
-from __future__ import print_function
+#
+# Author: Pawel A.Penczek 05/27/2009 (Pawel.A.Penczek@uth.tmc.edu)
+# Please do not copy or modify this file without written consent of the author.
+# Copyright (c) 2000-2019 The University of Texas - Houston Medical School
+#
+# This software is issued under a joint BSD/GNU license. You may use the
+# source code in this file under either license. However, note that the
+# complete EMAN2 and SPARX software packages have some GPL dependencies,
+# so you are responsible for compliance with the licenses of these packages
+# if you opt to use BSD licensing. The warranty disclaimer below holds
+# in either instance.
+#
+# This complete copyright notice must be included in any revised version of the
+# source code. Additional authorship citations may be added, but existing
+# author citations must be preserved.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+#
+#
 #
 #  10/25/2015
 #  New version.
 #  
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 import  os
 import  sys
@@ -93,7 +125,7 @@ def main():
 		# import some utilities
 		from utilities import get_im,bcast_number_to_all,cmdexecute,write_text_file,read_text_file,wrap_mpi_bcast
 		from applications import recons3d_n_MPI, mref_ali3d_MPI, Kmref_ali3d_MPI
-		from statistics import k_means_match_clusters_asg_new,k_means_stab_bbenum
+		from pap_statistics import k_means_match_clusters_asg_new,k_means_stab_bbenum
 		from reconstruction import rec3D_MPI_noCTF,rec3D_two_chunks_MPI
 		from applications import mref_ali3d_EQ_Kmeans, ali3d_mref_Kmeans_MPI  
 		# Create the main log file
@@ -222,7 +254,7 @@ def main():
 				if Tracker["constants"]["CTF"]:
 					i = a.get_attr('ctf')
 					pixel_size = i.apix
-					fq = pixel_size/Tracker["fuse_freq"]
+					fq = old_div(pixel_size,Tracker["fuse_freq"])
 				else:
 					pixel_size = 1.0
 					#  No pixel size, fusing computed as 5 Fourier pixels
@@ -426,7 +458,7 @@ def main():
 		if Tracker["constants"]["low_pass_filter"] == -1.0:
 			Tracker["low_pass_filter"] = low_pass*Tracker["shrinkage"]
 		else:
-			Tracker["low_pass_filter"] = Tracker["constants"]["low_pass_filter"]/Tracker["shrinkage"]
+			Tracker["low_pass_filter"] = old_div(Tracker["constants"]["low_pass_filter"],Tracker["shrinkage"])
 		Tracker["lowpass"]             = Tracker["low_pass_filter"]
 		Tracker["falloff"]             = 0.1
 		Tracker["global_fsc"]          = os.path.join(masterdir,"fsc.txt")
@@ -442,7 +474,7 @@ def main():
 		if myid ==main_node:
 			log_main.add("----------3-D sorting  program------- ")
 			log_main.add("current resolution %6.3f for images of original size in terms of absolute frequency"%Tracker["currentres"])
-			log_main.add("equivalent to %f Angstrom resolution"%(round((Tracker["constants"]["pixel_size"]/Tracker["currentres"]/Tracker["shrinkage"]),4)))
+			log_main.add("equivalent to %f Angstrom resolution"%(round((old_div(old_div(Tracker["constants"]["pixel_size"],Tracker["currentres"]),Tracker["shrinkage"])),4)))
 			filt_tanl(get_im(os.path.join(masterdir, "vol0.hdf")), Tracker["low_pass_filter"], 0.1).write_image(os.path.join(masterdir, "volf0.hdf"))			
 			filt_tanl(get_im(os.path.join(masterdir, "vol1.hdf")), Tracker["low_pass_filter"], 0.1).write_image(os.path.join(masterdir, "volf1.hdf"))
 			print(" random odd and even assignment done  !")
@@ -495,7 +527,7 @@ def main():
 					refdata[2]         = Tracker["constants"]["myid"]
 					refdata[3]         = Tracker["constants"]["nproc"]
 					volref             = user_func(refdata)
-					cutoff = Tracker["constants"]["pixel_size"]/lowpass
+					cutoff = old_div(Tracker["constants"]["pixel_size"],lowpass)
 					log_main.add("%d vol low pass filer %f   %f  cut to  %f Angstrom"%(igrp,Tracker["lowpass"],Tracker["falloff"],cutoff))
 					volref.write_image(os.path.join(masterdir,"volf_final%d.hdf"%igrp))
 			mpi_barrier(MPI_COMM_WORLD)			
@@ -783,7 +815,7 @@ def main():
 					refdata[2] = Tracker["constants"]["myid"]
 					refdata[3] = Tracker["constants"]["nproc"]
 					volref     = user_func(refdata)
-					cutoff     = Tracker["constants"]["pixel_size"]/lowpass
+					cutoff     = old_div(Tracker["constants"]["pixel_size"],lowpass)
 					log_main.add("%d vol low pass filer %f   %f  cut to  %f Angstrom"%(igrp,Tracker["lowpass"],Tracker["falloff"],cutoff))
 					volref.write_image(os.path.join(masterdir,"volf_final%d.hdf"%igrp))
 		if myid==main_node:   log_main.add(" sxsort3d_P2 finishes. ")

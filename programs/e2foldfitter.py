@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -131,7 +128,7 @@ both box sizes should be multiples of 8."""
 	parser.add_argument("--num", "-N", type=int, help="Number of initial alternative positions, default=5", default=5)
 	parser.add_argument("--epsilon","-E", type=float,help="final target accuracy, default=.01",default=.01)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	print("WARNING: This program is currently considered experimental. Contact sludtke@bcm.edu before using it for any serious project")
 	

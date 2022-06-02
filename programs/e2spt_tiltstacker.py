@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #====================
-#Author: Jesus Galaz-Montoya 2/20/2013 , Last update: October/04/2018
+#Author: Jesus Galaz-Montoya 2/20/2013 , Last update: August/01/2019
 #====================
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
@@ -26,10 +26,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
-from __future__ import print_function
-from __future__ import division
-from optparse import OptionParser
-from past.utils import old_div
 from builtins import range
 from EMAN2_utils import *
 from EMAN2 import *
@@ -97,7 +93,7 @@ def main():
 	
 	parser.add_argument("--unstack",type=str,default='',help=""".hdf, or 3D .st, .mrc, .ali, or .mrcs stack file to unstack. This option can be used with --include or --exclude to unstack only specific images. Recall that the FIRST image INDEX is 0 (but unstacked image will be numbered from 1). --exclude=1,5-7,10,12,15-19 will exclude images 1,5,6,7,10,12,15,16,17,18,19""""")
 
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness.")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness.")
 
 	(options, args) = parser.parse_args()	
 	
@@ -111,7 +107,16 @@ def main():
 	
 	print("\nLogging")
 	
-	tiltstoexclude = options.exclude.split(',')	
+	tiltstoexclude = []
+	if options.exclude:
+		rrange=[]
+		if '-' in options.exclude:
+			parts = options.exclude.split('-')
+			rrange = list(range( int(parts[0][-1])+1, int(parts[1][0])))
+			print('\nrrange={}, type={}'.format(rrange,type(rrange)))
+			tiltstoexclude = parts[0].split(',') + rrange + parts[1].split(',')
+		else:
+			tiltstoexclude = options.exclude.split(',')	
 	
 	if options.stem2stack:
 		if not options.anglesindxinfilename and not options.tltfile: 
@@ -154,12 +159,12 @@ def main():
 
 			print("\n\nthere are these many angles", len(angles))
 					
-			writetlt(angles,options,True)
+			writetlt(angles,options,tiltstoexclude,True)
 		else:
 			print("ERROR: --tltfile required when using --restack")
 			sys.exit()
 	else:
-		stacker(options)
+		stacker( options, tiltstoexclude )
 
 	E2end( logger )
 	return
@@ -168,7 +173,7 @@ def main():
 """c:
 c:Function to stack images belonging to a tiltseries
 c:"""
-def stacker(options):
+def stacker(options,tiltstoexclude):
 	kk=0
 	intilts = findtiltimgs( options )
 
@@ -176,7 +181,7 @@ def stacker(options):
 		print("\n(e2spt_tiltstacker.py)(stacker) found n={} images, and will now organize them".format(len(intilts)))
 	
 	print("\n(e2spt_tiltstacker.py)(stacker) organizing tilt imgs")
-	intiltsdict = organizetilts( options, intilts )		#Get a dictionary in the form { indexintiltseries:[ tiltfile, tiltangle, damageRank ]},
+	intiltsdict = organizetilts( options, intilts, tiltstoexclude )		#Get a dictionary in the form { indexintiltseries:[ tiltfile, tiltangle, damageRank ]},
 	print("\n(e2spt_tiltstacker.py)(stacker) done organizing tilt imgs")					#where damageRank tells you the order in which the images 
 																							#were acquired regardless of wether the tilt series goes from 
 													#-tiltrange to +tiltrange, or 0 to -tiltrange then +tiltstep to +tiltrange, or the opposite of these 
@@ -209,7 +214,6 @@ def stacker(options):
 	damagelist=[]
 	#for index in intiltsdict:
 	for index in finalindexesordered:	
-		#if str(index) not in tiltstoexclude:
 		intiltimgfile =	intiltsdict[index][0]
 			
 		if options.verbose > 9:
@@ -443,7 +447,12 @@ def findtiltimgs( options ):
 						#print "\nvalid file", f
 						intilt = f
 						if intilt:
-							intilts.append( intilt )
+							try:
+								hdr=EMData(intilt,0,True)
+								intilts.append( intilt )
+							except:
+								print("\nERROR: file={} is not a valid image; it might be empty; check that the size of the image (in megabytes) is healthy/normal, compared to other images".format(intilt))
+								sys.exit(1)
 					else:
 						print("\n(e2spt_tiltstacker.py)(findtiltimgs) extension not valid. Needs to be .mrc, .mrcs, .hdf, .dm3, .tif")
 					
@@ -528,7 +537,7 @@ def getangles( options, ntilts, raworder=False ):
 	return angles
 
 
-def writetlt( angles, options, raworder=False ):
+def writetlt( angles, options, tiltstoexclude, raworder=False ):
 	
 	print("(writetlt) these many angles", len(angles))
 	angless = list( angles )
@@ -543,7 +552,7 @@ def writetlt( angles, options, raworder=False ):
 	
 	k=0
 	anglestoexclude = []
-	tiltstoexclude = options.exclude.split(',')				
+	#tiltstoexclude = options.exclude.split(',')				
 	for a in angless:
 		if str(k) not in tiltstoexclude:
 			line = str(a) + '\n'
@@ -566,18 +575,18 @@ def writetlt( angles, options, raworder=False ):
 	return
 
 
-def organizetilts( options, intilts, raworder=False ):
+def organizetilts( options, intilts, tiltstoexclude, raworder=False ):
 	
 	intilts.sort()
 
 	intiltsdict = {}
 	angles = []
 
-	tiltstoexclude=[]
-	if options.exclude:
-		tiltstoexclude = [int(x) for x in options.exclude.split(',')]
-		if options.verbose > 5:
-			print("\n(e2spt_tiltstacker)(organizetilts) tiltstoexclude are {}".format(tiltstoexclude))
+	#tiltstoexclude=[]
+	#if options.exclude:
+	#	tiltstoexclude = [int(x) for x in options.exclude.split(',')]
+	#	if options.verbose > 5:
+	#		print("\n(e2spt_tiltstacker)(organizetilts) tiltstoexclude are {}".format(tiltstoexclude))
 
 	if options.anglesindxinfilename:
 		collectionindex=0
@@ -589,6 +598,11 @@ def organizetilts( options, intilts, raworder=False ):
 			parsedname = intilt.replace(extension,'').replace(',',' ').replace('-',' ').replace('_',' ').replace('[',' ').replace(']',' ').replace('+',' ').split()
 			#dividerstoadd = options.anglesindxinfilename - 1
 			print('\n(e2spt_tiltstacker)(organizetilts) parsedname is',parsedname)
+			try:
+				angle = float(parsedname[options.anglesindxinfilename])
+			except:
+				print("\ninvalid angle={}. make sure --anglesindxinfilename is correct! Remember, indexes start from 0".format(parsedname[options.anglesindxinfilename]))
+				sys.exit(1)
 			
 			charsum = 0
 			for i in range(options.anglesindxinfilename):
@@ -613,10 +627,11 @@ def organizetilts( options, intilts, raworder=False ):
 			#sign2 = intilt.split(str(angle))[0][-1]
 			#print "by other means, sign2 is",sign2
 			
-			angles.append( angle )
 			anglesdict.update({angle:[intilt,collectionindex]})
 			
-			collectionindex+=1
+			if angle not in angles:
+				angles.append( angle )
+				collectionindex+=1
 		
 		angles.sort()
 		if not options.negativetiltseries:
@@ -627,7 +642,7 @@ def organizetilts( options, intilts, raworder=False ):
 		#	angles.sort()
 		#	angles.reverse()
 
-		writetlt( angles, options )
+		writetlt( angles, options, tiltstoexclude )
 
 		#kkkk=0
 		finalangles = []
@@ -724,7 +739,7 @@ def organizetilts( options, intilts, raworder=False ):
 			#print "However, after reversal, they are", orderedangles
 			#print "and angles are", angles
 				
-		writetlt( angles, options )
+		writetlt( angles, options, tiltstoexclude )
 			
 		if len( intilts ) != len( orderedangles ):
 			
@@ -893,23 +908,6 @@ def floatrange(start, stop, step):
 	
 	return
 
-'''
-def runcmd(options,cmd,cmdsfilepath=''):
-	if options.verbose > 9:
-		print("(e2tomo_icongpu)(runcmd) running command", cmd)
-	
-	p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-	text=p.communicate()	
-	p.stdout.close()
-	
-	if options.verbose > 8:
-		print("(e2segmask)(runcmd) done")
-	
-	if cmdsfilepath:
-		with open(cmdsfilepath,'a') as cmdfile: cmdfile.write( cmd + '\n')
-
-	return 1
-'''
 
 if __name__ == "__main__":
 

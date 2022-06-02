@@ -1,0 +1,114 @@
+~~NOTOC~~
+
+===== sxmask =====
+Masking : Mask creation tool for 2D or 3D masks.
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sxmask.py  input_volume  output_directory  --prefix=PREFIX  --override  --low_pass_filter_resolution=LOW_PASS_FILTER_RESOLUTION  --low_pass_filter_falloff=LOW_PASS_FILTER_FALLOFF  --pixel_size=PIXEL_SIZE  --threshold=THRESHOLD --nsigma=NSIGMA  --mol_mass=MOL_MASS  --ndilation=NDILATION  --nerosion=NEROSION  --edge_width=EDGE_WIDTH  --edge_type=EDGE_TYPE  --do_old --allow_disconnected  --second_mask=SECOND_MASK  --second_mask_shape=SECOND_MASK_SHAPE  --s_radius=S_RADIUS  --s_nx=S_NX  --s_ny=S_NY  --s_nz=S_NZ  --s_threshold=THRESHOLD --s_nsigma=NSIGMA  --s_mol_mass=MOL_MASS  --s_ndilation=NDILATION  --s_nerosion=NEROSION  --s_edge_width=EDGE_WIDTH  --s_edge_type=EDGE_TYPE  --s_do_old  --s_allow_disconnected  --s_invert=S_INVERT
+
+\\
+===== Typical usage =====
+
+sxmask.py exists only in non-MPI version.
+
+Create a binary mask dilated by 2 pixel using the binary threshold from chimera
+
+  sxmaks.py input_volume output_direcory --threshold=0.3 --edge_width=0 --ndilation=1
+
+Create an adapted mask dilated by 2 pixel and a soft edge of 5 pixel using the binary threshold from chimera
+
+  sxmaks.py input_volume output_direcory --threshold=0.3 --edge_width=5 --ndilation=1
+
+Create an adapted mask dilated by 2 pixel and a soft edge of 5 pixel using the binary threshold from chimera and masked by a soft edged cylinder to 80% (e.g. for helical reconstruction with a box size of 300)
+
+  sxmaks.py input_volume output_direcory --threshold=0.3 --edge_width=5 --ndilation=1 --second_mask_shape=cylinder --s_radius=40 --s_nx=240 --s_ny=240 --s_nz=240 --s_ndilation=1 --s_edge_width=5
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; input_volume : Input image : Path to the 2D image or 3D Volume (default required string)
+  ; output_directory : Output directory : Output direcory path (default required string)
+
+  ; %%--%%prefix : Output prefix : Prefix of the produced files (default sxmask)
+  ; %%--%%override : Override outputs : Override the output mask in case it exists already. (default False)
+  ; %%--%%use_mol_mass : Use molecular mass : GUI OPTION ONLY - Define if one want to use the molecular mass option as a masking threshold. (default False) : %%--%%threshold==none %%--%%nsigma==none
+  ; %%--%%mol_mass : Molecular mass [kDa]: The estimated molecular mass of the target particle in kilodalton. This is used to calculate the binarization threshold automatically. (default none) : %%--%%use_mol_mass==True
+  ; %%--%%threshold : Binarization threshold: Defines the threshold used in the first step of the processing to generate a binary version of the input structure. If the value is lower-equal than the default, the option will be ignored and the threshold will be set according to nsigma method above. (default none) : %%--%%nsigma==none  %%--%%use_mol_mass==False
+  ; %%--%%nsigma : Density standard deviation threshold: Defines the threshold used in the first step of the processing to generate a binary version of the structure. The threshold is set to <= mean + (nsigma x standard deviations). This option will not be used if the option threshold is none. (default none) : %%--%%threshold==none %%--%%use_mol_mass==False
+  ; %%--%%ndilation : Number of dilations : The pixel width to dilate the 3D binary volume corresponding to the specified molecular mass or density threshold prior to softening the edge. One circle of dilation will add about 2 pixels to the mask. (default 3)
+  ; %%--%%nerosion : Number of erosions : Number of times to erode binarized volume. One circle of erosion will remove about 2 pixels from the mask. (default 0)
+  ; %%--%%edge_width : Soft-edge width [Pixels]: The pixel width of transition area for soft-edged masking. If the width is 0, a binary mask is returned. (default 5)
+  ; %%--%%edge_type : Soft-edge type: The type of soft-edge. Available methods are (1) \'cosine\' for cosine soft-edged (used in PostRefiner) and (2) \'gaussian\' for gaussian soft-edge. (default cosine) : %%--%%edge_width!=0
+  ; %%--%%allow_disconnected : Allow disconnected regions : Allow disconnected region in the mask. (default False)
+
+
+\\
+=== Advanced Parameters ===
+  ; %%--%%do_old : Old behaviour : Restore the old masking behaviour, which is a bit less smooth. (default False) : %%--%%edge_width!=0
+  ; %%--%%low_pass_filter_resolution : Low pass filter resolution [A] : Low pass filter resolution in angstrom. If set, the volume will be filtered prior to create a mask. (default none)
+  ; %%--%%low_pass_filter_falloff : Low pass filter falloff [1/Pixel] : Low pass filter falloff in absolute frequencies. If set, the volume will be filtered prior to create a mask. (default 0.01) : %%--%%low_pass_filter_resolution!=none
+  ; %%--%%pixel_size : Pixel size [A/px] : Pixel size of the volume. Used for filtering. (default 1.0) : %%--%%low_pass_filter_resolution!=none
+  ; %%--%%use_second_mask : Use a second mask : ONLY A GUI OPTION. The second mask can be used to mask the first one after creation. This is useful to create soft edged regions of the mask. (default False)
+  ; %%--%%second_mask : Second mask path : Path to the second mask used for masking the mask. (default none) : %%--%%use_second_mask==True  %%--%%second_mask_shape==none
+  ; %%--%%second_mask_shape : Second mask shape : Shape of the second mask. Possible values: sphere, cylinder, cube. (default none) : %%--%%use_second_mask==True  %%--%%second_mask==none
+  ; %%--%%s_radius : Second - Radius of the mask : The estimated molecular mass of the target particle in kilodalton. This is used to calculate the binarization threshold automatically. (default none) : %%--%%second_mask_shape!=none %%--%%second_mask_shape!=cube %%--%%use_second_mask==True
+  ; %%--%%s_nx : Second - X dimension of the mask : The estimated molecular mass of the target particle in kilodalton. This is used to calculate the binarization threshold automatically. (default none) : %%--%%second_mask_shape!=none %%--%%use_second_mask==True
+  ; %%--%%s_ny : Second - Y dimension of the mask : The estimated molecular mass of the target particle in kilodalton. This is used to calculate the binarization threshold automatically. (default none) : %%--%%second_mask_shape!=none %%--%%use_second_mask==True
+  ; %%--%%s_nz : Second - Z dimension of the mask : The estimated molecular mass of the target particle in kilodalton. This is used to calculate the binarization threshold automatically. (default none) : %%--%%second_mask_shape!=none %%--%%use_second_mask==True
+  ; %%--%%s_use_mol_mass : Second - Use molecular mass : GUI OPTION ONLY - Define if one want to use the molecular mass option as a masking threshold. (default False) : %%--%%s_threshold==none %%--%%s_nsigma==none %%--%%use_second_mask==True %%--second_mask!=none
+  ; %%--%%s_mol_mass : Second - Molecular mass [kDa] : The estimated molecular mass of the target particle in kilodalton. This is used to calculate the binarization threshold automatically. (default none) : %%--%%s_use_mol_mass==True %%--%%use_second_mask==True %%--second_mask!=none
+  ; %%--%%s_threshold : Second - Binarization threshold: Defines the threshold used in the first step of the processing to generate a binary version of the input structure. If the value is lower-equal than the default, the option will be ignored and the threshold will be set according to nsigma method above. (default none) : %%--%%s_nsigma==none  %%--%%s_use_mol_mass==False %%--%%use_second_mask==True %%--second_mask!=none
+  ; %%--%%s_nsigma : Second - Density standard deviation threshold: Defines the threshold used in the first step of the processing to generate a binary version of the structure. The threshold is set to <= mean + (nsigma x standard deviations). This option will not be used if the option threshold is none. (default none) : %%--%%s_threshold==none %%--%%s_use_mol_mass==False %%--%%use_second_mask==True %%--second_mask!=none
+  ; %%--%%s_ndilation : Second - Number of dilations : The pixel width to dilate the 3D binary volume corresponding to the specified molecular mass or density threshold prior to softening the edge. One round of erosion will add about 2 pixels to the mask (default 3) : %%--%%use_second_mask==True
+  ; %%--%%s_nerosion : Second - Number of erosions : Number of times to erode binarized volume. One round of erosion will remove about 2 pixels from the mask (default 0) : %%--%%use_second_mask==True
+  ; %%--%%s_edge_width : Second - Soft-edge width [Pixels]: The pixel width of transition area for soft-edged masking.(default 5) : %%--%%use_second_mask==True
+  ; %%--%%s_edge_type : Second - Soft-edge type: The type of soft-edge for the 3D mask. Available methods are (1) \'cosine\' for cosine soft-edged (used in PostRefiner) and (2) \'gaussian\' for gaussian soft-edge. (default cosine) : %%--%%use_second_mask==True %%--%%s_edge_width!=0
+  ; %%--%%s_do_old : Second - Old behaviour : Restore the old masking behaviour, which is a bit less smooth. (default False) : %%--%%use_second_mask==True %%--%%s_edge_width!=0
+  ; %%--%%s_allow_disconnected : Second - Allow disconnected regions : Allow disconnected region in the mask. (default False) : %%--%%use_second_mask==True
+  ; %%--%%s_invert : Second - Invert masking : If True, the mask will remove everything that is inside instead of leaving it. (default False) : %%--%%use_second_mask==True
+
+
+\\
+===== Output =====
+
+
+\\
+===== Description =====
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+
+\\
+==== Developer Notes ====
+
+\\
+==== Author / Maintainer ====
+Markus Stabrin
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sparx/bin/sxmask.py
+
+\\
+==== See also ====
+
+\\
+==== Maturity ====
+Beta:: Under evaluation and testing. Please let us know if there are any bugs.
+
+\\
+==== Bugs ====
+There are no known bugs so far.
+
+\\

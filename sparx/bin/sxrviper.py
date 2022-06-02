@@ -1,6 +1,37 @@
 #!/usr/bin/env python
-from __future__ import print_function
-
+#
+# Author: Pawel A.Penczek 05/27/2009 (Pawel.A.Penczek@uth.tmc.edu)
+# Please do not copy or modify this file without written consent of the author.
+# Copyright (c) 2000-2019 The University of Texas - Houston Medical School
+#
+# This software is issued under a joint BSD/GNU license. You may use the
+# source code in this file under either license. However, note that the
+# complete EMAN2 and SPARX software packages have some GPL dependencies,
+# so you are responsible for compliance with the licenses of these packages
+# if you opt to use BSD licensing. The warranty disclaimer below holds
+# in either instance.
+#
+# This complete copyright notice must be included in any revised version of the
+# source code. Additional authorship citations may be added, but existing
+# author citations must be preserved.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+#
+#
+from __future__ import division
+from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
@@ -303,13 +334,13 @@ def measure_for_outlier_criterion(criterion_name, masterdir, rviper_iter, list_o
 		return TRIPLET_WITH_ANGLE_ERROR_LESS_THAN_THRESHOLD_HAS_BEEN_FOUND
 
 	if criterion_name == "80th percentile":
-		return avg_diff_per_image[int(x1*PERCENT_THRESHOLD_X)]/y1
+		return old_div(avg_diff_per_image[int(x1*PERCENT_THRESHOLD_X)],y1)
 	elif criterion_name == "fastest increase in the last quartile":
 		for k in range(5,6):
 			avg_diff_per_image_diff = [x - avg_diff_per_image[i - k] for i, x in enumerate(avg_diff_per_image)][k:]
 			
 			avg_diff_per_image_diff_max = max(avg_diff_per_image_diff)
-			avg_diff_per_image_diff_max_normalized = max(avg_diff_per_image_diff)/y1
+			avg_diff_per_image_diff_max_normalized = old_div(max(avg_diff_per_image_diff),y1)
 			
 			if avg_diff_per_image_diff.index(avg_diff_per_image_diff_max) >= int(x1*0.75):
 				return avg_diff_per_image_diff_max_normalized
@@ -485,7 +516,7 @@ def calculate_volumes_after_rotation_and_save_them(ali3d_options, rviper_iter, m
 	if( mpi_rank == 0):
 		# Align all rotated volumes, calculate their average and save as an overall result
 		from utilities import get_params3D, set_params3D, get_im, model_circle
-		from statistics import ave_var
+		from pap_statistics import ave_var
 		from applications import ali_vol
 		# vls = [None]*no_of_viper_runs_analyzed_together
 		vls = [None]*len(list_of_independent_viper_run_indices_used_for_outlier_elimination)
@@ -496,7 +527,7 @@ def calculate_volumes_after_rotation_and_save_them(ali3d_options, rviper_iter, m
 		asa,sas = ave_var(vls)
 		# do the alignment
 		nx = asa.get_xsize()
-		radius = nx/2 - .5
+		radius = old_div(nx,2) - .5
 		st = Util.infomask(asa*asa, model_circle(radius,nx,nx,nx), True)
 		goal = st[0]
 		going = True

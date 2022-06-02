@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -53,12 +50,12 @@ def main():
 	# Updated to EMAN2.1 by Muyuan Chen, on Dec 8th, 2014
 	
 	#options associated with e2refinevariance.py
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--shrink3d",type=int,help="Shrink the class-averages and make a downsampled variance map",default=0)
 	parser.add_argument("--reslimit",type=float,help="Low-pass filter the individual maps to target the variance to the specified resolution in A. Variance maps cannot be filtered as a post-processing operation. Default = 10",default=10.0)
 	parser.add_argument("--input", dest="input", default=None,type=str, help="The name of the image containing the particle data")
 	parser.add_argument("--usefilt", dest="usefilt", type=str,default=None, help="Specify a particle data file that has been low pass or Wiener filtered. Has a one to one correspondence with your particle data. If specified will be used in projection matching routines, and elsewhere.")
-	parser.add_argument("--path", default=None, type=str,help="The name of a directory where results of e2refine_easy.py are placed. If unspecified will generate one automatically of type refine_??.")
+	parser.add_argument("--path", default=None, type=str,help="The name of an existing refine_XX folder to use for input and output")
 	parser.add_argument("--output", default=None, type=str,help="The name of a directory where the variance calculated should be placed. If unspecified will generate one automatically of type refinevar_??.")
 	parser.add_argument("--mass", default=None, type=float,help="The mass of the particle in kilodaltons, used to run normalize.bymass. If unspecified nothing happens. Requires the --apix argument.")
 	parser.add_argument("--apix", default=None, type=float,help="The angstrom per pixel of the input particles. This argument is required if you specify the --mass argument. If unspecified, the convergence plot is generated using either the project apix, or if not an apix of 1.")

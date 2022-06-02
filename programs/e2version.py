@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Grant Tang
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -44,7 +41,7 @@ FULLVERSIONSTRING = EMAN2_meta.FULLVERSIONSTRING
 def main():
 	print(FULLVERSIONSTRING)
 
-	if sys.platform=='linux2':
+	if sys.platform=='linux':
 		print(('Your EMAN2 is running on: {} {}'.format(platform.platform(), os.uname()[2], os.uname()[-1])))
 
 	elif sys.platform=='darwin':

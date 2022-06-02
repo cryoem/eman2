@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steve Ludtke (6/23/2013)  rewrote John Flanagan's program from scratch
 # Copyright (c) 2000-2011 Baylor College of Medicine
@@ -59,7 +56,7 @@ def main():
 	parser.add_argument("--shrink",type=int,default=0,help="Amount to shrink the CAs, default=0, no shrinking", guitype='shrinkbox', row=4, col=2, rowspan=1, colspan=1)
 	parser.add_argument("--sym", dest="sym", default="c1", help="Set the symmetry; if no value is given then the model is assumed to have no symmetry. For now it is not recommened to use this because in genmeral ab initio models are not aligned to symmtry axis. To apply symmetry use e2symsearch3d\nChoices are: i, c, d, tet, icos, or oct.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	global options
 	(options, args) = parser.parse_args()

@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 #
 # Author: Steven Ludtke 2014/04/27
 # Copyright (c) 2014- Baylor College of Medicine
@@ -44,6 +42,9 @@ import numpy as np
 import threading
 import queue
 import os,sys
+from pathlib import Path
+import subprocess
+
 
 apix=0
 
@@ -52,8 +53,8 @@ class nothing(object):
 		return
 
 try: 
-	from PyQt4 import QtCore, QtGui
-	from PyQt4.QtCore import Qt
+	from PyQt5 import QtCore, QtGui, QtWidgets
+	from PyQt5.QtCore import Qt
 	from eman2_gui.emimage2d import EMImage2DWidget
 	from eman2_gui.emplot2d import EMPlot2DWidget
 	from eman2_gui.emimagemx import EMImageMXWidget
@@ -63,7 +64,7 @@ except:
 	QtGui=nothing()
 	QtCore=nothing()
 	QtCore.QObject=nothing()
-	QtGui.QWidget=nothing()
+	QtWidgets.QWidget=nothing()
 
 
 # ok, this is kind of bad style, but really don't want to have to drag this flag around through many objects
@@ -76,7 +77,7 @@ def load_micrograph(filename):
 	
 	n=EMUtil.get_image_count(filename)
 	if n==0 :
-		QtGui.QMessageBox.warning(None,"Error","The file {} contains no images".format(newfilename))
+		QtWidgets.QMessageBox.warning(None,"Error","The file {} contains no images".format(newfilename))
 		return
 	elif n==1 :
 		img=EMData(filename,0)		# single image
@@ -109,6 +110,7 @@ def main():
 	parser.add_argument("--unboxedonly",action="store_true",default=False,help="Only include image files without existing box locations", guitype='boolbox', row=10, col=1, rowspan=1, colspan=1, mode="boxing,extraction")
 	parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=-1, guitype='intbox', row=2, col=0, rowspan=1, colspan=1, mode="boxing,extraction")
 	parser.add_argument("--ptclsize","-P",type=int,help="Longest axis of particle in pixels (diameter, not radius)",default=-1, guitype='intbox', row=2, col=1, rowspan=1, colspan=1, mode="boxing,extraction")
+	parser.add_argument("--compressbits", type=int,help="Bits to keep when writing images with compression. 0->lossless floating point. Default 6", default=6,guitype='intbox', row=16, col=1, rowspan=1, colspan=1, mode="extraction[6]")
 	parser.add_argument("--write_dbbox",action="store_true",default=False,help="Export EMAN1 .box files",guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode="extraction")
 	parser.add_argument("--write_ptcls",action="store_true",default=False,help="Extract selected particles from micrographs and write to disk", guitype='boolbox', row=3, col=1, rowspan=1, colspan=1, mode="extraction[True]")
 	parser.add_argument("--invert",action="store_true",help="If specified, inverts input contrast. Particles MUST be white on a darker background.",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode="extraction")
@@ -125,13 +127,15 @@ def main():
 	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful",guitype='intbox', row=14, col=1, rowspan=1, colspan=1,mode="boxing")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--device", type=str, help="For Convnet training only. Pick a device to use. chose from cpu, gpu, or gpuX (X=0,1,...) when multiple gpus are available. default is cpu",default="cpu",guitype='strbox', row=14, col=2, rowspan=1, colspan=1,mode="boxing")
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 	
 	if "CUDA_VISIBLE_DEVICES" in os.environ:
 		print("CUDA_VISIBLE_DEVICES is already set as environment variable. This will overwrite the device option...")
 	else:
+		try: options.device=options.device.lower()
+		except: pass
 		if options.device=="gpu":
 			print("Using GPU...")
 		elif options.device.startswith("gpu"):
@@ -183,7 +187,7 @@ def main():
 	if not (options.gui or options.write_ptcls or options.write_dbbox or options.autopick):
 		print("Error: No actions specified. Try --gui for interactive/semi-automated particle picking.") 
 
-	# Some of this seems redundant, it is to insure self-consistency
+	# Some of this seems redundant, it is to ensure self-consistency
 	if options.boxsize<2:
 		try: 
 			options.boxsize = project_db["global.boxsize"]
@@ -193,7 +197,7 @@ def main():
 			#sys.exit(1)
 			
 	if good_size(options.boxsize)!=options.boxsize :
-		print("Bad box size detected. Adjusting size to {}. See http://eman2.org/emanwiki/EMAN2/BoxSize".format(good_size(options.boxsize)))
+		print("Bad box size detected. Adjusting size to {}. Can override by typing a new number in the GUI, but not recommended. See http://eman2.org/BoxSize".format(good_size(options.boxsize)))
 		options.boxsize=good_size(options.boxsize)
 	project_db["global.boxsize"]=options.boxsize
 	boxsize=options.boxsize
@@ -240,7 +244,7 @@ def main():
 	if options.apix<=0 :
 		try:
 			options.apix=float(project_db["global.apix"])
-			print("Warning: No A/pix specified. Using ",options.apix," from project. Please insure this is correct for the images being boxed!")
+			print("Warning: No A/pix specified. Using ",options.apix," from project. Please ensure this is correct for the images being boxed!")
 		except:
 			print("Error: Value required for A/pixel. If this is a non TEM image, suggest --apix=1 and --no_ctf.")
 			sys.exit(1)
@@ -307,7 +311,7 @@ def main():
 	if options.gui :
 		if isinstance(QtGui,nothing) :
 			print("=====================================")
-			print("ERROR: GUI mode unavailable without PyQt4")
+			print("ERROR: GUI mode unavailable without PyQt5")
 			sys.exit(1)
 		from eman2_gui.emapplication import EMApp
 		app=EMApp()
@@ -321,7 +325,7 @@ def main():
 		print(".box files written to boxfiles/")
 
 	if options.write_ptcls:
-		write_particles(args,boxsize,options.verbose)
+		write_particles(args,boxsize,options.compressbits,options.verbose)
 		print("Particles written to particles/*_ptcls.hdf")
 
 	E2end(logid)
@@ -345,7 +349,7 @@ def write_boxfiles(files,boxsize):
 		for b in boxes:
 			out.write("{:0.0f}\t{:0.0f}\t{:0.0f}\t{:0.0f}\n".format(int(b[0]-boxsize2),int(b[1]-boxsize2),int(boxsize),int(boxsize)))
 
-def write_particles(files,boxsize,verbose):
+def write_particles(files,boxsize,compressbits,verbose):
 	"""This function will write a particles/*_ptcls.hdf file for each provided micrograph, based on
 	box locations in the corresponding info/*json file. To use this with .box files, they must be imported
 	to a JSON file first."""
@@ -377,18 +381,20 @@ def write_particles(files,boxsize,verbose):
 			boxim=micrograph.get_clip(Region(b[0]-boxsize2,b[1]-boxsize2,boxsize,boxsize))
 			boxim["ptcl_source_coord"]=(b[0],b[1])
 			boxim["ptcl_source_image"]=m
-			boxim.write_image(ptcl,i)
+			boxim.write_compressed(ptcl,i,compressbits)
 	
 ##########
 # to add a new autoboxer module, create a class here, then add it to the GUIBoxer.aboxmodes list below
 ##########
 
 class boxerByRef(QtCore.QObject):
-	"""Simple reference-based cross-corrlation picker with exhaustive rotational search"""
+	"""Simple reference-based cross-correlation picker with exhaustive rotational search"""
 	@staticmethod
 	def setup_gui(gridlay,boxerwindow=None):
-		boxerByRef.threshold=ValSlider(None,(0.1,8),"Threshold",6.0,90)
-		gridlay.addWidget(boxerByRef.threshold,0,0)
+		boxerByRef.lbl=QtWidgets.QLabel("Requires Good Refs. Suggest From 3D or projections (From 2D). Do not use particles.")
+		gridlay.addWidget(boxerByRef.lbl,0,0)
+		boxerByRef.threshold=ValSlider(None,(0.1,15),"Threshold",1.5,90)
+		gridlay.addWidget(boxerByRef.threshold,1,0)
 	
 	@staticmethod
 	def do_autobox(micrograph,goodrefs,badrefs,bgrefs,apix,nthreads,params,prog=None):
@@ -448,7 +454,7 @@ class boxerByRef(QtCore.QObject):
 		# here we run the threads and save the results, no actual alignment done here
 		print(len(thrds)," threads")
 		thrtolaunch=0
-		while thrtolaunch<len(thrds) or threading.active_count()>1:
+		while thrtolaunch<len(thrds) or threading.active_count()>1 or not jsd.empty():
 			# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
 			# note that it's ok that we wait here forever, since there can't be new results if an existing
 			# thread hasn't finished.
@@ -577,8 +583,10 @@ class boxerLocal(QtCore.QObject):
 	"""Reference based search by downsampling and 2-D alignment to references"""
 	@staticmethod
 	def setup_gui(gridlay,boxerwindow=None):
-		boxerLocal.threshold=ValSlider(None,(0,8.0),"Threshold",5.0,90)
-		gridlay.addWidget(boxerLocal.threshold,0,0)
+		boxerLocal.lbl=QtWidgets.QLabel("Requires Good Refs. Suggest From 3D or projections (From 2D). Do not use particles.")
+		gridlay.addWidget(boxerLocal.lbl,0,0)
+		boxerLocal.threshold=ValSlider(None,(0,10.0),"Threshold",5.0,90)
+		gridlay.addWidget(boxerLocal.threshold,1,0)
 	
 	@staticmethod
 	def do_autobox(micrograph,goodrefs,badrefs,bgrefs,apix,nthreads,params,prog=None):
@@ -591,13 +599,13 @@ class boxerLocal(QtCore.QObject):
 		except:
 			try: threshold=boxerLocal.threshold.getValue()
 			except:
-				print("Error, no threshold (0.1-2) specified")
+				print("Error, no threshold specified")
 				return
 		
 		nx=goodrefs[0]["nx"]
-		downsample=old_div(8.0,apix)			# we downsample to 10 A/pix
-		nxdown=good_size(int(old_div(nx,downsample)))
-		downsample=old_div(float(nx),float(nxdown))
+		downsample=8/apix			# we downsample to 10 A/pix
+		nxdown=good_size(int(nx/downsample))
+		downsample=float(nx)/float(nxdown)
 		microdown=micrograph.process("normalize.edgemean").process("math.fft.resample",{"n":downsample})
 		print("downsample by ",downsample)
 		
@@ -699,14 +707,13 @@ class boxerLocal(QtCore.QObject):
 		#display(cmpim)
 			
 		print("done")
-		
 		return boxes2
 
 
 	@staticmethod
 	def ccftask(jsd,ref,downsample,microdown,ri):
 
-		mref=ref.process("mask.soft",{"outer_radius":old_div(ref["nx"],2)-4,"width":3})
+		mref=ref.process("mask.soft",{"outer_radius":ref["nx"]//2-4,"width":3})
 		mref.process_inplace("math.fft.resample",{"n":downsample})
 		nxdown=mref["nx"]
 		
@@ -747,18 +754,20 @@ class boxerConvNet(QtCore.QObject):
 	@staticmethod
 	def setup_gui(gridlay, boxerwindow=None):
 		boxerConvNet.boxerwindow=boxerwindow
-		boxerConvNet.bt_train=QtGui.QPushButton("Train")
+		boxerConvNet.lbl=QtWidgets.QLabel("Requires Good, Bad and Bkgnd refs from several micrographs. ~20-50 of each.\nTrain once, autobox many times. Retrain if refs change.")
+		gridlay.addWidget(boxerConvNet.lbl,0,0)
+		boxerConvNet.bt_train=QtWidgets.QPushButton("Train")
 		boxerConvNet.bt_train.setToolTip("Train the network using references")
-		gridlay.addWidget(boxerConvNet.bt_train)
+		gridlay.addWidget(boxerConvNet.bt_train,1,0)
 		boxerConvNet.bt_train.clicked[bool].connect(boxerConvNet.do_training)
-		#boxerConvNet.ck_train=QtGui.QCheckBox("Train from scratch")
+		#boxerConvNet.ck_train=QtWidgets.QCheckBox("Train from scratch")
 		#gridlay.addWidget(boxerConvNet.ck_train)
 		
 		boxerConvNet.threshold=ValSlider(None,(0,5.0),"Threshold1",0.2,90)
-		gridlay.addWidget(boxerConvNet.threshold)
+		gridlay.addWidget(boxerConvNet.threshold,2,0)
 		
-		boxerConvNet.threshold2=ValSlider(None,(-20,10),"Threshold2",-5,90)
-		gridlay.addWidget(boxerConvNet.threshold2)
+		boxerConvNet.threshold2=ValSlider(None,(-20,10),"Threshold2",-1,90)
+		gridlay.addWidget(boxerConvNet.threshold2,3,0)
 		return
 	
 	
@@ -767,17 +776,16 @@ class boxerConvNet(QtCore.QObject):
 	def do_import():
 		global tf, StackedConvNet_tf
 		import os
-		
-			
-		import tensorflow as tf
 		os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' #### reduce log output
 		from e2tomoseg_convnet import StackedConvNet_tf, import_tensorflow
 		
 		try: 
 			gpuid=os.environ["CUDA_VISIBLE_DEVICES"]
 			import_tensorflow(gpuid)
+			print("Init tensorflow with ",gpuid)
 		except: 
 			import_tensorflow()
+			print("Init tensorflow with default device")
 		
 		
 		boxerConvNet.import_done=True
@@ -803,31 +811,31 @@ class boxerConvNet(QtCore.QObject):
 		sz=64
 		### number of kernel, kernel size, pooling size(2/1)
 		kernels=[(20,15,2), (20,15,1), (1,15,1)]
-		batchsize=10
-		session=tf.Session()
+		#kernels=[(1,5,1)]
+		batchsize=32
 		if len(goodrefs)<5 or len(bgrefs)<5:
 			print("Not enough references. Please box at least 5 good and 5 background reference...")
 			return []
 		else:
-			data, label=boxerConvNet.load_ptcls(bgrefs, goodrefs, sz, True)
 			nnet0=StackedConvNet_tf(kernels, sz, batchsize, meanout=False)
-			session.run(tf.global_variables_initializer())
-			nnet0.do_training(data, label, session, shuffle=True, learnrate=1e-4, niter=30)
-			nnet0.write_output_train('trainout_pickptcl.hdf', session)
-			nnet0.save_network("nnet_pickptcls.hdf", session)
+			lbsz=sz//nnet0.labelshrink
+			data, label=boxerConvNet.load_ptcls(bgrefs, goodrefs, sz, True, lbsz)
+			nnet0.do_training(data, label, niter=20)
+			nnet0.write_output_train('trainout_pickptcl.hdf')
+			nnet0.save_network("nnet_pickptcls.hdf")
 			
 		if len(badrefs)<5:
 			print("Not enough bad references. Skipping bad particle exclusion step...")
 		else:
 			data, label=boxerConvNet.load_ptcls(badrefs, goodrefs, sz, False)
 			nnet1=StackedConvNet_tf(kernels, sz, batchsize, meanout=True)
-			session.run(tf.global_variables_initializer())
-			nnet1.do_training(data, label, session, shuffle=True, learnrate=1e-4, niter=30)
-			nnet1.write_output_train('trainout_classify.hdf', session)
-			nnet1.save_network("nnet_classify.hdf", session)
+			nnet1.do_training(data, label, learnrate=2e-5,  niter=20)
+			nnet1.write_output_train('trainout_classify.hdf')
+			nnet1.save_network("nnet_classify.hdf")
+		print("Training finished.")
 		
 	@staticmethod
-	def load_ptcls(ref0, ref1, sz=64, makegaussian=True):
+	def load_ptcls(ref0, ref1, sz=64, makegaussian=True, lbsz=-1):
 		print("Pre-processing particles...")
 		#### load negative, positive particles
 		#### here we shrink the particles so they are 64x64
@@ -874,7 +882,7 @@ class boxerConvNet(QtCore.QObject):
 		
 		if makegaussian:
 			#### make target output
-			img=EMData(old_div(sz,2),old_div(sz,2))
+			img=EMData(lbsz, lbsz)
 			img.process_inplace("testimage.gaussian",{'sigma':5.})
 			img.div(img["maximum"])
 			gaus=img.numpy().copy().flatten()
@@ -883,7 +891,7 @@ class boxerConvNet(QtCore.QObject):
 			label_np=lbarrs[lbs]
 			return data, label_np
 		else:
-			lbs=np.asarray(lbs,dtype=np.float32)*2.-1
+			lbs=np.asarray(lbs,dtype=np.float32)-1
 			return data, lbs
 	
 	@staticmethod
@@ -1036,10 +1044,91 @@ class boxerConvNet(QtCore.QObject):
 		return (boxes, nbad)
 	
 	@staticmethod
+	def apply_network_tf(micrograph, tsz, nnet, nnet1=None, shrinkfac=1.,  params={}):
+		sz=64
+		#### file name or EMData input
+		if type(micrograph)==str:
+			fm=load_micrograph(micrograph)
+		else:
+			fm=micrograph.copy()
+			
+		#### preprocess..
+		fm.process_inplace("math.fft.resample",{"n":shrinkfac})
+		fm.clip_inplace(Region(0, 0, tsz, tsz))
+		fm.process_inplace("filter.highpass.gauss",{"cutoff_freq":0.005})
+		fm.process_inplace("filter.lowpass.gauss",{"cutoff_freq":0.05})
+		fm.process_inplace("normalize")
+		fm.process_inplace("threshold.clampminmax.nsigma", {"nsigma":4})
+			
+		
+		m=fm.numpy()
+		p=nnet.model.predict(m[None, :, :, None])
+		p[p<0]=0
+		cout=from_numpy(p[0,:,:,0])
+		#cout=cout.get_clip(Region(((cout["nx"]-nx)//2),((cout["ny"]-ny)//2) ,nx, ny))
+		#cout.scale(int(nnet.labelshrink))
+		#cout.write_image("tmpimg.hdf")
+		
+		
+		#### find boxes
+		#downsample=shrinkfac*nnet.labelshrink
+		final=cout.process("filter.lowpass.gauss",{"cutoff_abs":.4})
+		
+		boxes=[]
+		
+		thr1=0.2
+		thr2=-1.
+		if "threshold1" in params:
+			thr1=params["threshold1"]
+		else:
+			try: thr1=boxerConvNet.threshold.getValue()
+			except: pass
+		
+		if "threshold2" in params:
+			thr2=params["threshold2"]
+		else:
+			try: thr2=boxerConvNet.threshold2.getValue()
+			except: pass
+				
+		
+		threshold=final["mean"]+final["sigma"]*thr1
+		pks=np.array(final.peak_ccf(sz/nnet.labelshrink/2)).reshape((-1,3))
+		pks[:,1:]=pks[:,1:]*nnet.labelshrink
+		
+		if nnet1==None:
+			tstout=np.ones(len(pks))
+		else:
+			coord=np.array(pks).reshape((-1,3))
+			imgs=[]
+			for i, p in enumerate(pks):
+				if p[0]<threshold:
+					break
+				e=fm.get_clip(Region(int(p[1]-sz//2),int(p[2]-sz//2),sz, sz))
+				imgs.append(e.numpy().copy())
+				
+			imgs=np.array(imgs)
+			mout=nnet1.model.predict(imgs[:,:,:,None])
+
+			tstout=np.min(mout, axis=(1,2)).flatten()
+		
+		pks[:,1:]=np.round(pks[:,1:]*shrinkfac)
+		pks=pks.tolist()
+		nbad=0
+		for i,pk in enumerate(pks):
+			if pk[0]<threshold:
+				break
+			if tstout[i]>thr2:
+				boxes.append([int(pk[1]),int(pk[2]),"auto_convnet", pk[0]])
+			else:
+				nbad+=1
+		return (boxes, nbad)
+	
+	@staticmethod
 	def do_autobox(micrograph,goodrefs,badrefs,bgrefs,apix,nthreads,params,prog=None):
 
 		
 		nnet_savename="nnet_pickptcls.hdf"
+		nnet_savename_classify="nnet_classify.hdf"
 		bxsz=goodrefs[0]["nx"]
 		sz=64
 		shrinkfac=old_div(float(bxsz),float(sz))
@@ -1049,18 +1138,21 @@ class boxerConvNet(QtCore.QObject):
 			boxerConvNet.do_training((goodrefs, badrefs, bgrefs))
 			
 		#else:
-		nx=int(old_div(micrograph["nx"],shrinkfac))
-		ny=int(old_div(micrograph["ny"],shrinkfac))
+		nx=int(micrograph["nx"]//shrinkfac)
+		ny=int(micrograph["ny"]//shrinkfac)
+		tsz=max(nx, ny)
+		if not hasattr(boxerConvNet,'import_done'):
+			boxerConvNet.do_import()
+		net0=StackedConvNet_tf.load_network(nnet_savename, imgsz=tsz, bsz=1)
 		
-			
-		layers=boxerConvNet.load_network(nnet_savename, nx, ny)
-		nnet_savename_classify="nnet_classify.hdf"
+		##layers=boxerConvNet.load_network(nnet_savename, nx, ny)
 		if os.path.isfile(nnet_savename_classify):
-			nnet_classify=boxerConvNet.load_network(nnet_savename_classify, sz, sz)
+			net1=StackedConvNet_tf.load_network(nnet_savename_classify, imgsz=sz, bsz=1)
+			#nnet_classify=boxerConvNet.load_network(nnet_savename_classify, sz, sz)
 		else:
-			nnet_classify=None
+			net1=None
 			
-		boxes, nbad=boxerConvNet.apply_network(micrograph, layers, shrinkfac, nx, ny, nnet_classify, params)
+		boxes, nbad=boxerConvNet.apply_network_tf(micrograph, tsz, net0, net1, shrinkfac, params)
 		print("{} particles found, excluding {} bad particles..".format(len(boxes), nbad))
 		return boxes
 		
@@ -1087,7 +1179,41 @@ class boxerConvNet(QtCore.QObject):
 		hdr=EMData(fsp, 0, True)
 		nx=int(old_div(hdr["nx"],shrinkfac))
 		ny=int(old_div(hdr["ny"],shrinkfac))
-		
+		tsz=max(nx, ny)
+		if not hasattr(boxerConvNet,'import_done'):
+			boxerConvNet.do_import()
+			
+		net0=StackedConvNet_tf.load_network(nnet_savename, imgsz=tsz, bsz=1)
+		if os.path.isfile(nnet_savename_classify):
+			net1=StackedConvNet_tf.load_network(nnet_savename_classify, imgsz=sz, bsz=1)
+			#nnet_classify=boxerConvNet.load_network(nnet_savename_classify, sz, sz)
+		else:
+			net1=None
+			
+		for ii, fspl in enumerate(filenames):
+			fsp=fspl.split()[1]
+			newboxes, nbad=boxerConvNet.apply_network_tf(fsp, tsz, net0, net1, shrinkfac, params)
+			print("{}: {} particles found, excluding {} bad particles..".format(fsp, len(newboxes), nbad))
+			if len(newboxes)==0 : continue
+			db=js_open_dict(info_name(fsp))
+			if "boxes" in db:
+				boxes=db["boxes"]
+				# Filter out all existing boxes for this picking mode
+				bname=newboxes[0][2]
+				boxes=[b for b in boxes if b[2]!=bname]
+			else:
+				boxes=[]
+				
+			boxes.extend(newboxes)
+			
+			db["boxes"]=boxes
+			db.close()
+			if prog:
+				prog.setValue(ii+1)
+			
+		return
+	
+	
 		#### load network...
 		layers=boxerConvNet.load_network(nnet_savename, nx, ny)
 		
@@ -1150,24 +1276,415 @@ class boxerConvNet(QtCore.QObject):
 				
 		return
 
+#####################
+## External Topaz boxer, requires independent Topaz install in its own environment 
+## such that 'conda activate topaz' will work
+##########
+
+class boxerTopaz(QtCore.QObject):
+	
+	conda_base_path = Path(subprocess.run(['conda info --base'], shell=True, capture_output=True).stdout.decode().strip())
+	conda_init_path = conda_base_path / "etc" / "profile.d" / "conda.sh"
+	conda_activate_cmd = "conda activate topaz"
+
+	topaz_path               = Path("topaz")
+	mrc_micro_path           = topaz_path / "mrc_micro"
+	particles_path           = topaz_path / "processed" / "particles"
+	micrographs_path         = topaz_path / "processed" / "micrographs"
+	predicted_particles_path = topaz_path / "processed" / "predicted_particles"
+
+	@staticmethod
+	def _launch_childprocess(cmd_topaz):
+		print(f"Starting 'topaz'...\n{cmd_topaz}")
+		proc = subprocess.run(f".  {boxerTopaz.conda_init_path} " \
+							  f"&& {boxerTopaz.conda_activate_cmd} " \
+							  f"&& {cmd_topaz}", shell=True,
+							  text=True,
+							  capture_output=True
+							  )
+		if proc.returncode:
+			print("FAILED SUB-PROCESS")
+			print("==================")
+			print(f"CMD   : {proc.args}")
+			print(f"STDOUT: {proc.stdout}")
+			print(f"STDERR: {proc.stderr}")
+			sys.exit(1)
+
+	@staticmethod
+	def setup_gui(gridlay, boxerwindow=None):
+		boxerTopaz.boxerwindow = boxerwindow
+		
+		boxerTopaz.lbl=QtWidgets.QLabel("Experimental! Requires topaz installed in 'topaz' environment.\nFull manual selection on one frame, then Train!")
+		gridlay.addWidget(boxerTopaz.lbl,0,0,1,2)
+
+		
+		boxerTopaz.bt_train = QtWidgets.QPushButton("Train")
+		boxerTopaz.bt_train.setToolTip("Train Model")
+		gridlay.addWidget(boxerTopaz.bt_train,2,0)
+		boxerTopaz.bt_train.clicked[bool].connect(boxerTopaz.do_train)
+
+		boxerTopaz.downsample = ValBox(label="Downsample", value=4)
+		gridlay.addWidget(boxerTopaz.downsample,4,0)
+
+		boxerTopaz.nexpected = ValBox(label="Ptcl per Frame", value = 150)
+		gridlay.addWidget(boxerTopaz.nexpected,4,1)
+
+		boxerTopaz.threshold = ValBox(label="Extr. Threshold", value=6)
+		gridlay.addWidget(boxerTopaz.threshold,5,0)
+
+		boxerTopaz.modelresnet8 = QtWidgets.QCheckBox("Model Resnet8")
+		gridlay.addWidget(boxerTopaz.modelresnet8,6,0)
+		boxerTopaz.modelresnet8.setToolTip("Model must have apix < 70 after downsampling to use resnet8")
+
+		boxerTopaz.modelconv31 = QtWidgets.QCheckBox("Model conv31")
+		gridlay.addWidget(boxerTopaz.modelconv31,6,1)
+		boxerTopaz.modelconv31.setToolTip("Model must have apix < 30 after downsampling to use conv31")
+
+		boxerTopaz.modelconv63 = QtWidgets.QCheckBox("Model conv63")
+		gridlay.addWidget(boxerTopaz.modelconv63,7,0)
+		boxerTopaz.modelconv63.setToolTip("Model must have apix < 62 after downsampling to use conv63")
+
+		boxerTopaz.modelconv127 = QtWidgets.QCheckBox("Model conv127")
+		gridlay.addWidget(boxerTopaz.modelconv127,7,1)
+		boxerTopaz.modelconv127.setToolTip("Model must have apix < 126 after downsampling to use conv127")
+
+		boxerTopaz.gpu = QtWidgets.QCheckBox("Use GPU (16GB GPU reqd!)")
+		gridlay.addWidget(boxerTopaz.gpu,8,0)
+		boxerTopaz.gpu.setToolTip("Use GPU only if it has over 16GB RAM")
+
+		for d in [boxerTopaz.mrc_micro_path,
+				  boxerTopaz.particles_path,
+				  boxerTopaz.micrographs_path,
+				  boxerTopaz.predicted_particles_path]:
+			Path(d).mkdir(parents=True, exist_ok=True)
+
+		return
+
+	@staticmethod
+	def do_train(args = None) :
+		downsample = int(boxerTopaz.downsample.getValue())
+		nexpected  = boxerTopaz.nexpected.getValue()
+		diameter   = boxerTopaz.boxerwindow.vbbpsize.getValue()
+		threads    = boxerTopaz.boxerwindow.vbthreads.getValue()
+		pixradius  = (diameter / (2 * downsample))
+
+		if boxerTopaz.gpu.isChecked() : gpu = "0"
+		else : gpu = "-1"
+
+		boxerTopaz.model = "resnet8"
+		mdlcnt = 1          
+		if boxerTopaz.modelresnet8.isChecked() : 
+			boxerTopaz.model = "resnet8"
+			mdlcnt = mdlcnt + 1
+		if boxerTopaz.modelconv31.isChecked() : 
+			boxerTopaz.model = "conv31"
+			mdlcnt = mdlcnt + 1
+		if boxerTopaz.modelconv63.isChecked() : 
+			boxerTopaz.model = "conv63"
+			mdlcnt = mdlcnt + 1
+		if boxerTopaz.modelconv127.isChecked() : 
+			boxerTopaz.model = "conv127" 
+			mdlcnt = mdlcnt + 1
+		if mdlcnt > 2 :
+			print("=====================================")
+			print("ERROR: Select Only One Model")
+			sys.exit(1)
+		model = boxerTopaz.model
+
+		launch_childprocess(f'e2proc2d.py micrographs/*.hdf {boxerTopaz.mrc_micro_path}/@.mrc')
+
+		boxerTopaz._launch_childprocess(f"topaz convert " \
+										f"-s {downsample} " \
+										f"-o {boxerTopaz.particles_path}/particles.txt " \
+										f"boxfiles/*.box")
+		boxerTopaz._launch_childprocess(f"topaz preprocess " \
+										f"-s {downsample} " \
+										f"-o {boxerTopaz.micrographs_path}/ " \
+										f"{boxerTopaz.mrc_micro_path}/*.mrc")
+		boxerTopaz._launch_childprocess(f"topaz train " \
+										f"--train-images {boxerTopaz.micrographs_path}/ " \
+										f"--train-targets {boxerTopaz.particles_path}/particles.txt " \
+										f"--radius 3 " \
+										f"--model {model} " \
+										f"--image-ext .mrc " \
+										f"--method GE-binomial " \
+										f"--autoencoder 0 " \
+										f"--num-particles {nexpected} " \
+										f"--epoch-size 1000 " \
+										f"--num-epochs 10 " \
+										f"--num-workers {threads} " \
+										f"--device {gpu} " \
+										f"--save-prefix {boxerTopaz.topaz_path}/model " \
+										f"--output {boxerTopaz.topaz_path}/results.txt")
+
+	@staticmethod
+	def do_autobox(micrograph,goodrefs,badrefs,bgrefs,apix,nthreads,params,prog=None):
+		threshold  = boxerTopaz.threshold.getValue()
+		downsample = int(boxerTopaz.downsample.getValue())
+		diameter   = boxerTopaz.boxerwindow.vbbpsize.getValue()
+		threads    = boxerTopaz.boxerwindow.vbthreads.getValue()
+		pixradius  = int(diameter / (2 * downsample))
+		boxsize    = boxerTopaz.boxerwindow.vbbsize.getValue()
+		selected_micrograph = micrograph["source_path"].replace("micrographs/", '').replace(".hdf", '')
+
+		boxerTopaz._launch_childprocess(f"topaz extract " \
+										f"{boxerTopaz.micrographs_path}/{selected_micrograph}.mrc " \
+										f"--model {boxerTopaz.topaz_path}/model_epoch10.sav " \
+										f"--radius {pixradius} " \
+										f"--threshold {threshold} " \
+										f"--num-workers {threads} " \
+										f"--output {boxerTopaz.predicted_particles_path}/{selected_micrograph}predicted.txt")
+		boxerTopaz._launch_childprocess(f"topaz convert " \
+										f"-x {downsample} " \
+										f"-o {boxerTopaz.predicted_particles_path}/{selected_micrograph}predicted_full.txt " \
+										f"{boxerTopaz.predicted_particles_path}/{selected_micrograph}predicted.txt")
+
+		with open(f"{boxerTopaz.predicted_particles_path}/{selected_micrograph}predicted_full.txt", "r") as f:
+			next(f)
+			boxes = [(int((line.split())[1]),int((line.split())[2]),"auto_topaz") for line in f]
+		return boxes
+
+	@staticmethod
+	def do_autobox_all(filenames,goodrefs,badrefs,bgrefs,apix,nthreads,params,prog=None):
+		threshold  = boxerTopaz.threshold.getValue()
+		downsample = int(boxerTopaz.downsample.getValue())
+		diameter   = boxerTopaz.boxerwindow.vbbpsize.getValue()
+		threads    = boxerTopaz.boxerwindow.vbthreads.getValue()
+		pixradius  = int(diameter / (2 * downsample))
+		boxsize    = boxerTopaz.boxerwindow.vbbsize.getValue()
+
+		boxerTopaz._launch_childprocess(f"topaz extract " \
+										f"{boxerTopaz.micrographs_path}/*.mrc " \
+										f"--model {boxerTopaz.topaz_path}/model_epoch10.sav " \
+										f"--radius {pixradius} " \
+										f"--threshold {threshold} " \
+										f"--num-workers {threads} " \
+										f"--output {boxerTopaz.predicted_particles_path}/predicted.txt")
+		boxerTopaz._launch_childprocess(f"topaz convert " \
+										f"-x {downsample} " \
+										f"-o {boxerTopaz.predicted_particles_path}/all_predicted_full.txt " \
+										f"{boxerTopaz.predicted_particles_path}/predicted.txt")
+
+		with open(f"{boxerTopaz.predicted_particles_path}/all_predicted_full.txt", "r") as f:
+			next(f)
+			newboxes = [('micrographs/'+(line.split()[0])+'.hdf',int((line.split())[1]),int((line.split())[2]),"auto_topaz") for line in f]
+
+		for ii, fspl in enumerate(filenames):
+			fsp = fspl.split()[1]
+			db = js_open_dict(info_name(fsp)) 
+			if "boxes" in db:
+				boxes = db["boxes"]
+				bname = newboxes[0][3]
+				boxes = [b for b in boxes if b[2]!=bname]
+			else:
+				boxes = []
+			for n in newboxes:
+				if n[0] == fsp:
+					boxes.extend([n[1:4]])
+			db["boxes"] = boxes
+			db.close()
+			if prog:
+				prog.setValue(ii+1)           
+		return
+
+
+#####################
+## Gauss boxer ported from e2boxer.old by Vadim Kotov
+##########
 
 class boxerGauss(QtCore.QObject):
+	# default parameters values
+	defaults = {'use_variance':True,
+				'gauss_width':1.0,
+				'thr_low':1.0, #0.0, changed for testing
+				'thr_hgh':2.0, #1.0, changed for testing
+	}
 	@staticmethod
 	def setup_gui(gridlay,boxerwindow=None):
-		return
+		#boxerGauss.invert = CheckBox(label="Invert contrast", value=0) # set globally
+		# the utility input/output pixel size settings is not clear, do not expose
+		# how about the CTF estimation in Gauss window? It should also work globally?
+		# NOTE also set here default values for params - must be floats!
+		boxerGauss.lbl=QtWidgets.QLabel("Simple, fast reference-free picker which may work for some particles")
+		gridlay.addWidget(boxerGauss.lbl,0,0,1,2)
+
+		boxerGauss.use_variance = CheckBox(label="Use variance", value=boxerGauss.defaults['use_variance'])
+		#boxerGauss.use_variance.
+		boxerGauss.gauss_width = ValBox(label="Gaussian width:",value=boxerGauss.defaults['gauss_width'])
+		boxerGauss.gauss_width.setToolTip("Increase if too small particles are picked")
+		boxerGauss.thr_low = ValBox(label="Threshold low:",value=boxerGauss.defaults['thr_low'])
+		boxerGauss.thr_low.setToolTip("Increase if too much background is picked")
+		boxerGauss.thr_hgh = ValBox(label="Threshold high:",value=boxerGauss.defaults['thr_hgh'])
+		boxerGauss.thr_hgh.setToolTip("Decrease if too much aggregates are picked")
+		gridlay.addWidget(boxerGauss.use_variance,2,0)
+		gridlay.addWidget(boxerGauss.gauss_width,2,1)
+		gridlay.addWidget(boxerGauss.thr_low,4,0)
+		gridlay.addWidget(boxerGauss.thr_hgh,4,1)
+		# keep a reference the main window of e2boxer to access box size and maybe other values
+		boxerGauss.boxerwindow = boxerwindow
 	
 	@staticmethod
 	def do_autobox(micrograph,goodrefs,badrefs,bgrefs,apix,nthreads,params,prog=None):
-		print("ERROR: Gauss autoboxer is not yet complete. Please use another method.")
-		return
+		#from sparx import filt_gaussl, get_im, filt_gaussh
+		from sparx import filt_gaussl, filt_gaussh
+		# determine if running from GUI or command line
+		# NOTE --autopick option overrides the --gui option
+		# NOTE boxsize is needed for the picker, however, is not passed to do_autobox method
+		# in GUI mode boxsize is read directly from boxerwindow widget
+		# in CLI mode boxsize must be included in the autopick parameter string
+		# --autopick auto_gauss:width=1:low=0:high=1:boxsize=128
+		if hasattr(boxerGauss, 'boxerwindow'):
+			#print("GUI detected")
+			use_variance = boxerGauss.use_variance.getValue()
+			gauss_width = boxerGauss.gauss_width.getValue()
+			thr_low = boxerGauss.thr_low.getValue()
+			thr_hgh = boxerGauss.thr_hgh.getValue()
+			boxsize = boxerGauss.boxerwindow.vbbsize.getValue()
+		else:
+			#print("CLI detected")
+			#for param, value in boxerGauss.defaults.items():
+			# check if parameter was supplied by user, otherwise use default value
+			# TODO isolate picker to a separate method and use kwargs instead
+			if 'use_variance' in params: # cannot use "get" for a bool value
+				use_variance = bool(params['use_variance'])
+			else:
+				use_variance = boxerGauss.defaults['use_variance']
+			
+			if params.get('gauss_width'):
+				gauss_width = params['gauss_width']
+			else:
+				gauss_width = boxerGauss.defaults['gauss_width']
+
+			if params.get('thr_low'):
+				thr_low = params['thr_low']
+			else:
+				thr_low = boxerGauss.defaults['thr_low']
+
+			if params.get('thr_hgh'):
+				thr_hgh = params['thr_hgh']
+			else:
+				thr_hgh = boxerGauss.defaults['thr_hgh']
+			
+			# the boxsize _has_ to be passed as a parameter for gauss picker in CLI
+			if params.get('boxsize'):
+				boxsize = params['boxsize']
+			else:
+				raise ValueError("Missing parameter \'boxsize\' for Gauss autopicker, e.g.:\n --autopick \'auto_gauss:boxsize=128\'")
+			
+		### print the determined parameters
+		print("thr low: ", thr_low)
+		print("thr hi: ", thr_hgh)
+		#print("pixel_output: ", self.pixel_output)
+		#print("pixel input: ", self.pixel_input)
+		#print("invert: ", self.invert)
+		print("gauss width: ", gauss_width)
+		print("variance: ", use_variance)
+		# get the micrograph:
+		# NOTE next processing steps were taken from e2boxer_old.py GaussBoxer.get_small_image
+		# Currently it is not clear how to make downsampling work and calculate the coordinates back to the original image
+		# In SPHIRE tutorial the cryo-EM data were not downsampled
+		# Perhaps, the input/output pixels are only needed when creating a downsampled particle stack?
+		subsample_rate = old_div(apix, 10.) # aka downsample; 8-10 A in other pickers, but in e2boxer_old.py gauss worked OK with 1
+		subsample_rate = 1.0 # needs to be a float!
+		# NOTE with subsample_rate=1 the parameters below are computed as in _old.py
+		# the generated image is also similar (identical?)
+		frequency_cutoff = 0.5 * subsample_rate
+		template_min = 15 # hard-coded in e2boxer_old
+		gaussh_param = old_div(subsample_rate, boxsize) # simplified from the e2boxer_old code
+		# invert = # inversion is handled globally, no need to to specify it here
+		
+		# TODO remove reduntant img_ variables
+		img = micrograph
+		img_filt = filt_gaussh(img, gaussh_param)
+		if subsample_rate != 1.0:
+			print("Generating downsampled image\n")
+			sb = Util.sincBlackman(template_min, frequency_cutoff,1999) # 1999 taken directly from util_sparx.h
+			small_img = img_filt.downsample(sb,subsample_rate)
+			del sb
+		else:
+			small_img = img_filt.copy()
+		del img_filt
+		'''
+		# setting some metadata
+		small_img.set_attr("invert", invert)
+		small_img.set_attr("gaussh_param", gaussh_param)
+		small_img.set_attr("subsample_rate",subsample_rate)
+		small_img.set_attr("frequency_cutoff",frequency_cutoff)
+		small_img.set_attr("template_min",template_min)
+		try:
+			ctf_dict = img.get_attr("ctf")
+			ctf_dict.apix = self.pixel_output
+			small_img.set_attr("ctf",ctf_dict)
+		except:
+			pass
+
+		'''
+		del img
+		# small_img is thus the equivalent of microdown in other pickers
+		
+		### start the picking
+		[avg,sigma,fmin,fmax] = Util.infomask(small_img, None, True )
+		small_img -= avg
+		small_img /= sigma
+		#small_img.write_image('small_img_new.hdf') # write to disk for debugging - looks OK
+		if use_variance:
+			from morphology import power
+			small_img = power(small_img, 2.0)
+			print("Using variance")
+		ccf = filt_gaussl( small_img, old_div(gauss_width, boxsize) )
+		del small_img
+		peaks = ccf.peak_ccf( old_div(boxsize,2)-1)
+		del ccf
+		npeak = old_div(len(peaks),3)
+		print("npeak: ", npeak)
+		boxes = []
+		ccfs = []
+		for i in range(npeak):
+			cx = peaks[3*i+1]
+			cy = peaks[3*i+2]
+
+			corr_score= peaks[3*i]
+			skip = False
+			if not(thr_low is None) and corr_score < thr_low:
+				skip = True
+
+			if not(thr_hgh is None) and corr_score > thr_hgh:
+				skip = True
+
+			if not skip:
+				ccfs.append( peaks[3*i] )
+				#type = GaussBoxer.AUTO_NAME
+				#box = [cx,cy,type,corr_score]
+				box = [cx,cy,'auto_gauss',corr_score]
+				boxes.append(box)
+		del peaks		
+			
+		#print("ERROR: Gauss autoboxer is not yet complete. Please use another method.")
+		return boxes
+	
+	
 	
 aboxmodes = [ ("Local Search","auto_local",boxerLocal),
 	     ("by Ref","auto_ref",boxerByRef), 
-#	     ("Gauss","auto_gauss",boxerGauss),
-	     ("NeuralNet", "auto_convnet", boxerConvNet)]
-boxcolors = { "selected":(0.9,0.9,0.9), "manual":(0,0,0.7), "refgood":(0,0.8,0), "refbad":(0.8,0,0), "refbg":(0.7,0.7,0), "unknown":[.4,.1,.1], "auto_local":(.3,.1,.4), "auto_ref":(.1,.3,.4), "auto_gauss":(.4,.1,.4),  "auto_convnet":(.1,.5,.1)}
+	     ("Gauss","auto_gauss",boxerGauss),
+	     ("NeuralNet", "auto_convnet", boxerConvNet)
+#	     ("Topaz", "auto_topaz", boxerTopaz),			# disabled until we can really test it
+			]
+#boxcolors = { "selected":(0.9,0.9,0.9), "manual":(0,0,0.7), "refgood":(0,0.8,0), "refbad":(0.8,0,0), "refbg":(0.7,0.7,0), "unknown":[.4,.1,.1], "auto_local":(.3,.1,.4), "auto_ref":(.1,.3,.4), "auto_gauss":(.4,.1,.4),  "auto_convnet":(.1,.5,.1)}
+boxcolors = { "selected":     (0.9,0.9,0.9), 
+			  "manual":       (0,0,0.7), 
+			  "refgood":      (0,0.8,0), 
+			  "refbad":       (0.8,0,0), 
+			  "refbg":        (0.7,0.7,0), 
+			  "unknown":      [.4,.1,.1], 
+			  "auto_local":   (.3,.1,.4), 
+			  "auto_ref":     (.1,.3,.4), 
+			  "auto_gauss":   (.4,.4,.1), 
+			  "auto_convnet": (.3,.1,.4),
+			  "auto_topaz":   (.5,.1,.5),
+			}
 
-class GUIBoxer(QtGui.QWidget):
+class GUIBoxer(QtWidgets.QWidget):
 	# Dictionary of autopickers
 	# to add a new one, provide name:(Qt_setup_function,picker_execution_function)
 	# Qt_setup_function(self,empty_grid_layout)
@@ -1178,7 +1695,7 @@ class GUIBoxer(QtGui.QWidget):
 		"""The 'new' e2boxer interface.
 		"""
 
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 #		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "ctf.png"))
 
 		self.boxcolors=boxcolors
@@ -1245,8 +1762,8 @@ class GUIBoxer(QtGui.QWidget):
 		self.wbgrefs.mx_mouseup.connect(self.bgrefmouseup)
 
 		# This object is itself a widget we need to set up
-		self.gbl = QtGui.QGridLayout(self)
-		self.gbl.setMargin(8)
+		self.gbl = QtWidgets.QGridLayout(self)
+		self.gbl.setContentsMargins(8, 8, 8, 8)
 		self.gbl.setSpacing(6)
 		self.gbl.setColumnStretch(0,2)
 		self.gbl.setColumnStretch(1,2)
@@ -1255,8 +1772,8 @@ class GUIBoxer(QtGui.QWidget):
 		self.gbl.setColumnStretch(4,1)
 
 		# Micrograph list
-		self.setlist=QtGui.QListWidget(self)
-		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
+		self.setlist=QtWidgets.QListWidget(self)
+		self.setlist.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
 		for i in imagenames:
 			self.setlist.addItem(i)
 		self.gbl.addWidget(self.setlist,0,0,12,2)
@@ -1265,38 +1782,38 @@ class GUIBoxer(QtGui.QWidget):
 		
 		# Mouse Modes
 		self.mmode="manual"
-		self.boxmm=QtGui.QGroupBox("Mouse Mode",self)
+		self.boxmm=QtWidgets.QGroupBox("Mouse Mode",self)
 		self.boxmm.setFlat(False)
 		self.gbl.addWidget(self.boxmm,0,2,2,3)
 		
-		self.hbl0=QtGui.QHBoxLayout(self.boxmm)
+		self.hbl0=QtWidgets.QHBoxLayout(self.boxmm)
 		
-		self.bmmanual=QtGui.QPushButton("Manual")
+		self.bmmanual=QtWidgets.QPushButton("Manual")
 		self.bmmanual.setToolTip("Manual selection of particles. No impact on autoselection.")
 		self.bmmanual.setAutoExclusive(True)
 		self.bmmanual.setCheckable(True)
 		self.bmmanual.setChecked(True)
 		self.hbl0.addWidget(self.bmmanual)
 		
-		self.bmdel=QtGui.QPushButton("Delete")
+		self.bmdel=QtWidgets.QPushButton("Delete")
 		self.bmdel.setToolTip("Delete particles from any mode. Can also shift-click in other mouse modes.")
 		self.bmdel.setAutoExclusive(True)
 		self.bmdel.setCheckable(True)
 		self.hbl0.addWidget(self.bmdel)
 		
-		self.bmgref=QtGui.QPushButton("Good Refs")
+		self.bmgref=QtWidgets.QPushButton("Good Refs")
 		self.bmgref.setToolTip("Identify some good particles. Available to all autoboxers.")
 		self.bmgref.setAutoExclusive(True)
 		self.bmgref.setCheckable(True)
 		self.hbl0.addWidget(self.bmgref)
 
-		self.bmbref=QtGui.QPushButton("Bad Refs")
+		self.bmbref=QtWidgets.QPushButton("Bad Refs")
 		self.bmbref.setToolTip("Identify contamination which should not be selected as particles.")
 		self.bmbref.setAutoExclusive(True)
 		self.bmbref.setCheckable(True)
 		self.hbl0.addWidget(self.bmbref)
 
-		self.bmbgref=QtGui.QPushButton("Bkgnd Refs")
+		self.bmbgref=QtWidgets.QPushButton("Bkgnd Refs")
 		self.bmbgref.setToolTip("Identify background density which should not be selected as particles.")
 		self.bmbgref.setAutoExclusive(True)
 		self.bmbgref.setCheckable(True)
@@ -1308,13 +1825,13 @@ class GUIBoxer(QtGui.QWidget):
 		self.bmbref.clicked[bool].connect(self.setMouseBadRef)
 		self.bmbgref.clicked[bool].connect(self.setMouseBgRef)
 
-		self.bfilter=QtGui.QPushButton("Filter Disp.")
+		self.bfilter=QtWidgets.QPushButton("Filter Disp.")
 		self.bfilter.setToolTip("Filter micrograph (display only)")
 		self.bfilter.setCheckable(True)
 		self.gbl.addWidget(self.bfilter,0,5,1,1)
 		self.bfilter.clicked[bool].connect(self.filterToggle)
 
-		self.binvert=QtGui.QPushButton("Invert")
+		self.binvert=QtWidgets.QPushButton("Invert")
 		self.binvert.setToolTip("Invert Micrograph (also output)")
 		self.binvert.setCheckable(True)
 		self.binvert.setChecked(invert_on_read)		# in truly bad form, this is a global
@@ -1322,12 +1839,12 @@ class GUIBoxer(QtGui.QWidget):
 		self.binvert.clicked[bool].connect(self.invertToggle)
 
 		# Global parameters
-		self.boxparm=QtGui.QGroupBox("Parameters",self)
+		self.boxparm=QtWidgets.QGroupBox("Parameters",self)
 		self.boxparm.setFlat(False)
 		self.gbl.addWidget(self.boxparm,2,2,3,4)
 		
-		self.gbl1=QtGui.QGridLayout(self.boxparm)
-		self.gbl1.setMargin(8)
+		self.gbl1=QtWidgets.QGridLayout(self.boxparm)
+		self.gbl1.setContentsMargins(8, 8, 8, 8)
 		self.gbl1.setSpacing(6)
 		
 		self.vbbsize = ValBox(label="Box Size:",value=box)
@@ -1353,21 +1870,21 @@ class GUIBoxer(QtGui.QWidget):
 		self.gbl1.addWidget(self.vbthreads,1,3)
 
 		# Reference tools
-		self.reftools=QtGui.QGroupBox("Box Refs",self)
+		self.reftools=QtWidgets.QGroupBox("Box Refs",self)
 		self.boxparm.setFlat(False)
 		self.gbl.addWidget(self.reftools,5,2,2,2)
 		
-		self.hbl1=QtGui.QHBoxLayout(self.reftools)
+		self.hbl1=QtWidgets.QHBoxLayout(self.reftools)
 		
-		self.rtload3d=QtGui.QPushButton("From 3D")
+		self.rtload3d=QtWidgets.QPushButton("From 3D")
 		self.rtload3d.setToolTip("Load box refs from 3-D volume")
 		self.hbl1.addWidget(self.rtload3d)
 		
-		self.rtload2d=QtGui.QPushButton("From 2D")
+		self.rtload2d=QtWidgets.QPushButton("From 2D")
 		self.rtload2d.setToolTip("Load box refs from 2-D stack")
 		self.hbl1.addWidget(self.rtload2d)
 
-		self.rtclear=QtGui.QPushButton("Clear")
+		self.rtclear=QtWidgets.QPushButton("Clear")
 		self.rtclear.setToolTip("Clear all current good and bad refs")
 		self.hbl1.addWidget(self.rtclear)
 
@@ -1377,34 +1894,34 @@ class GUIBoxer(QtGui.QWidget):
 		
 		
 		# Autoboxing Tabs
-		self.autolbl = QtGui.QLabel("Autoboxing Methods:")
+		self.autolbl = QtWidgets.QLabel("Autoboxing Methods:")
 		self.gbl.addWidget(self.autolbl,7,2)
-		self.autotab = QtGui.QTabWidget()
+		self.autotab = QtWidgets.QTabWidget()
 		self.gbl.addWidget(self.autotab,8,2,5,4)
 		
 		# Individual tabs from Dictionary
 		self.abwid=[]
 		for name,bname,cls in aboxmodes:
-			w=QtGui.QWidget()
-			gl=QtGui.QGridLayout(w)
+			w=QtWidgets.QWidget()
+			gl=QtWidgets.QGridLayout(w)
 			self.abwid.append((w,gl))
 			cls.setup_gui(gl, self)
 			self.autotab.addTab(w,name)
 			
-		self.bbclear=QtGui.QPushButton("Clear Boxes")
+		self.bbclear=QtWidgets.QPushButton("Clear Boxes")
 		self.bbclear.setToolTip("Clear all boxes in current micrograph")
 		self.gbl.addWidget(self.bbclear,13,2)
 		self.bbclear.clicked[bool].connect(self.boxClear)
 
-		self.bcentera = QtGui.QPushButton("ACF Center All")
+		self.bcentera = QtWidgets.QPushButton("ACF Center All")
 		self.gbl.addWidget(self.bcentera,13,3)
 		self.bcentera.clicked[bool].connect(self.doCenterAll)
 		
-		self.bautoboxa = QtGui.QPushButton("Autobox All")
+		self.bautoboxa = QtWidgets.QPushButton("Autobox All")
 		self.gbl.addWidget(self.bautoboxa,13,4)
 		self.bautoboxa.clicked[bool].connect(self.doAutoBoxAll)
 		
-		self.bautobox = QtGui.QPushButton("Autobox")
+		self.bautobox = QtWidgets.QPushButton("Autobox")
 		self.gbl.addWidget(self.bautobox,13,5)
 		self.bautobox.clicked[bool].connect(self.doAutoBox)
 
@@ -1456,18 +1973,18 @@ class GUIBoxer(QtGui.QWidget):
 		self.mmode="refbg"
 
 	def reftoolLoad3D(self,x):
-		fsp=str(QtGui.QFileDialog.getOpenFileName(self, "Select 3-D Volume"))
+		fsp=str(QtWidgets.QFileDialog.getOpenFileName(self, "Select 3-D Volume")[0])
 		if fsp==None or len(fsp)<4 : return
 
-		symname=str(QtGui.QInputDialog.getText(None,"Symmetry","Please specify the symmetry of the map, or c1 for none")[0])
+		symname=str(QtWidgets.QInputDialog.getText(None,"Symmetry","Please specify the symmetry of the map, or c1 for none")[0])
 #		print symname
 		try:
 			sym = Symmetries.get(symname)
 		except:
 			print("Error: Unknown symmetry")
 			return
-		orts=sym.gen_orientations("eman",{"delta":15,"inc_mirror":1})
-		prog=QtGui.QProgressDialog("Making Projections","Abort",0,len(orts))
+		orts=sym.gen_orientations("eman",{"delta":11.25,"inc_mirror":1})
+		prog=QtWidgets.QProgressDialog("Making Projections","Abort",0,len(orts))
 		prog.setWindowModality(Qt.WindowModal)
 		prog.setValue(0)
 		
@@ -1508,7 +2025,7 @@ class GUIBoxer(QtGui.QWidget):
 		self.goodrefchg=True
 		
 	def reftoolLoad2D(self,x):
-		fsp=str(QtGui.QFileDialog.getOpenFileName(self, "Select 2-D Stack"))
+		fsp=str(QtWidgets.QFileDialog.getOpenFileName(self, "Select 2-D Stack")[0])
 		if fsp==None or len(fsp)<4 : return
 		
 		refs=EMData.read_images(fsp)
@@ -1543,8 +2060,8 @@ class GUIBoxer(QtGui.QWidget):
 	
 		
 	def reftoolClear(self,x):
-		r=QtGui.QMessageBox.question(None,"Are you sure ?","WARNING: this will remove all good and bad box references. Are you sure?",QtGui.QMessageBox.Yes|QtGui.QMessageBox.Cancel)
-		if r==QtGui.QMessageBox.Cancel : return
+		r=QtWidgets.QMessageBox.question(None,"Are you sure ?","WARNING: this will remove all good and bad box references. Are you sure?",QtWidgets.QMessageBox.Yes|QtWidgets.QMessageBox.Cancel)
+		if r==QtWidgets.QMessageBox.Cancel : return
 
 		self.goodrefs=[]
 		self.goodrefchg=True
@@ -1559,8 +2076,8 @@ class GUIBoxer(QtGui.QWidget):
 		self.wbgrefs.set_data(self.bgrefs)
 
 	def boxClear(self,x):
-		r=QtGui.QMessageBox.question(None,"Are you sure ?","WARNING: this will erase all box locations in the current micrograph. Are you sure?",QtGui.QMessageBox.Yes|QtGui.QMessageBox.Cancel)
-		if r==QtGui.QMessageBox.Cancel : return
+		r=QtWidgets.QMessageBox.question(None,"Are you sure ?","WARNING: this will erase all box locations in the current micrograph. Are you sure?",QtWidgets.QMessageBox.Yes|QtWidgets.QMessageBox.Cancel)
+		if r==QtWidgets.QMessageBox.Cancel : return
 
 		self.boxes=[]
 		self.__updateBoxes()
@@ -1589,6 +2106,7 @@ class GUIBoxer(QtGui.QWidget):
 			try: color=self.boxcolors[self.mmode]
 			except: color=self.boxcolors["unknown"]
 			self.wimage.add_shape("tmpbox",EMShape(("rect",color[0],color[1],color[2],self.tmpbox[0]-boxsize2,self.tmpbox[1]-boxsize2,self.tmpbox[0]+boxsize2,self.tmpbox[1]+boxsize2,2)))
+			self.wimage.add_shape("tmpcir",EMShape(("circle",color[0],color[1],color[2],self.tmpbox[0],self.tmpbox[1],ptclsize//2,2)))
 			self.wimage.update()
 		elif self.mmode == "manual" :
 			self.curbox=0
@@ -1625,6 +2143,7 @@ class GUIBoxer(QtGui.QWidget):
 			try: color=self.boxcolors[self.mmode]
 			except: color=self.boxcolors["unknown"]
 			self.wimage.add_shape("tmpbox",EMShape(("rect",color[0],color[1],color[2],self.tmpbox[0]-boxsize2,self.tmpbox[1]-boxsize2,self.tmpbox[0]+boxsize2,self.tmpbox[1]+boxsize2,2)))
+			self.wimage.add_shape("tmpcir",EMShape(("circle",color[0],color[1],color[2],self.tmpbox[0],self.tmpbox[1],ptclsize//2,2)))
 			self.wimage.update()
 		elif self.mmode=="manual":
 			if m==self.lastloc : return
@@ -1637,7 +2156,8 @@ class GUIBoxer(QtGui.QWidget):
 	def imgmouseup(self,event,m) :
 #		m=self.wimage.scr_to_img((event.x(),event.y()))
 		if not self.downbut&Qt.LeftButton : return
-		boxsize2=self.vbbsize.getValue()//2
+		boxsize=self.vbbsize.getValue()
+		boxsize2=boxsize//2
 		ptclsize=self.vbbpsize.getValue()
 		if boxsize2<4 : return
 		
@@ -1651,7 +2171,8 @@ class GUIBoxer(QtGui.QWidget):
 			self.tmpbox=(b[0]+m[0]-self.lastloc[0],b[1]+m[1]-self.lastloc[1],self.mmode)
 			self.lastloc=m
 			self.wimage.del_shape("tmpbox")
-			boxim=self.micrograph.get_clip(Region(self.tmpbox[0]-boxsize2,self.tmpbox[1]-boxsize2,boxsize2*2,boxsize2*2))
+			self.wimage.del_shape("tmpcir")
+			boxim=self.micrograph.get_clip(Region(self.tmpbox[0]-boxsize2,self.tmpbox[1]-boxsize2,boxsize,boxsize))
 			boxim["ptcl_source_coord"]=(self.tmpbox[0],self.tmpbox[1])
 			if self.mmode == "refgood" : 
 				self.goodrefs.append(boxim)
@@ -1868,8 +2389,11 @@ class GUIBoxer(QtGui.QWidget):
 		ptclsize=self.vbbpsize.getValue()
 		try: color=self.boxcolors[box[2]]
 		except: color=self.boxcolors["unknown"]
-		self.wimage.add_shape("box{}".format(i),EMShape(("rect",color[0],color[1],color[2],box[0]-boxsize//2,box[1]-boxsize//2,box[0]+boxsize//2,box[1]+boxsize//2,2)))
-		self.wimage.add_shape("cir{}".format(i),EMShape(("circle",color[0],color[1],color[2],box[0],box[1],old_div(ptclsize,2),1.5)))
+		#self.wimage.add_shape("box{}".format(i),EMShape(("rect",color[0],color[1],color[2],box[0]-boxsize//2,box[1]-boxsize//2,box[0]+boxsize//2,box[1]+boxsize//2,2)))
+		#self.wimage.add_shape("cir{}".format(i),EMShape(("circle",color[0],color[1],color[2],box[0],box[1],old_div(ptclsize,2),1.5)))
+		self.wimage.add_shape("box{}".format(i),EMShape(("rect",color[0],color[1],color[2],box[0]-boxsize//2,box[1]-boxsize//2,box[0]+boxsize//2,box[1]+boxsize//2,2.5)))
+		self.wimage.add_shape("cir{}".format(i),EMShape(("circle",color[0],color[1],color[2],box[0],box[1],old_div(ptclsize,2),2)))
+
 
 		boxim=self.micrograph.get_clip(Region(box[0]-boxsize//2,box[1]-boxsize//2,boxsize,boxsize))
 		boxim["ptcl_source_coord"]=(box[0],box[1])
@@ -1897,10 +2421,13 @@ class GUIBoxer(QtGui.QWidget):
 		boxes=[b for b in boxes if b[0]-boxsize2>=0 and b[1]-boxsize2>=0 and b[0]+boxsize2<self.micrograph["nx"] and b[1]+boxsize2<self.micrograph["ny"]]
 		
 		# if we got nothing, we just leave the current results alone
-		if len(boxes)==0 : return
+		#if len(boxes)==0 : return
+		
+		if len(boxes)==0 : 
+			QtWidgets.QMessageBox.warning(self,"Error", "No particles found. Existing locations unchanged.")
+			return
 	
 		bname=boxes[0][2]
-
 		# Filter out all existing boxes for this picking mode
 		self.boxes=[i for i in self.boxes if i[2]!=bname]
 
@@ -1913,7 +2440,7 @@ class GUIBoxer(QtGui.QWidget):
 		name,bname,cls=aboxmodes[self.autotab.currentIndex()]
 		boxsize2=self.vbbsize.getValue()//2
 		
-		prog=QtGui.QProgressDialog("Autoboxing","Abort",0,len(self.filenames))
+		prog=QtWidgets.QProgressDialog("Autoboxing","Abort",0,len(self.filenames))
 		prog.setWindowModality(Qt.WindowModal)
 		prog.setValue(0)
 		prog.show()
@@ -1969,7 +2496,7 @@ class GUIBoxer(QtGui.QWidget):
 		name,bname,cls=aboxmodes[self.autotab.currentIndex()]
 		boxsize2=self.vbbsize.getValue()//2
 		
-		prog=QtGui.QProgressDialog("Recentering","Abort",0,len(self.filenames))
+		prog=QtWidgets.QProgressDialog("Recentering","Abort",0,len(self.filenames))
 		prog.setWindowModality(Qt.WindowModal)
 		prog.setValue(0)
 		prog.show()
@@ -2054,7 +2581,7 @@ class GUIBoxer(QtGui.QWidget):
 		print("Centering complete")
 		
 	def closeEvent(self,event):
-#		QtGui.QWidget.closeEvent(self,event)
+#		QtWidgets.QWidget.closeEvent(self,event)
 		self.save_boxes()
 		E2saveappwin("e2boxer21","main",self)
 		E2saveappwin("e2boxer21","image",self.wimage.qt_parent)
@@ -2065,8 +2592,8 @@ class GUIBoxer(QtGui.QWidget):
 
 		#self.writeCurParm()
 		event.accept()
-		QtGui.qApp.exit(0)
-		#app=QtGui.qApp			if b[2] not in ("refgood","refbad"):
+		QtWidgets.qApp.exit(0)
+		#app=QtWidgets.qApp			if b[2] not in ("refgood","refbad"):
 		#if self.wimage != None:
 			#app.close_specific(self.wimage)
 			#self.wimage = None
@@ -2253,7 +2780,7 @@ class GUIBoxer(QtGui.QWidget):
 			#self.procthread.start()
 
 		#if self.errors:
-			#QtGui.QMessageBox.warning(None,"Error","The following processors encountered errors during processing of 1 or more images:"+"\n".join(self.errors))
+			#QtWidgets.QMessageBox.warning(None,"Error","The following processors encountered errors during processing of 1 or more images:"+"\n".join(self.errors))
 			#self.errors=None
 
 	#def doRefit(self):
@@ -2292,7 +2819,7 @@ class GUIBoxer(QtGui.QWidget):
 		#if not os.access("micrographs",os.R_OK) :
 			#try : os.mkdir("micrographs")
 			#except:
-				#QtGui.QMessageBox.warning(self,"Error !","Cannot create micrographs directory")
+				#QtWidgets.QMessageBox.warning(self,"Error !","Cannot create micrographs directory")
 				#return
 
 		##db=db_open_dict("bdb:micrographs#%s"%item)
@@ -2662,19 +3189,19 @@ class GUIBoxer(QtGui.QWidget):
     #pageComboBox->addItem(tr("Page 3"));
     #connect(pageComboBox, SIGNAL(activated(int)),stackedWidget, SLOT(setCurrentIndex(int)));
 
-		#self.lboxmode=QtGui.QLabel("Mode:",self)
+		#self.lboxmode=QtWidgets.QLabel("Mode:",self)
 		#self.gbl.addWidget(self.lboxmode,10,0)
 
-		#self.sboxmode=QtGui.QComboBox(self)
+		#self.sboxmode=QtWidgets.QComboBox(self)
 		#self.sboxmode.addItem("Manual")
 		#self.sboxmode.addItem("Reference")
 		#self.sboxmode.setCurrentIndex(1)
 		#self.gbl.addWidget(self.sboxmode,10,1)
 
-		#self.lanmode=QtGui.QLabel("Annotate:",self)
+		#self.lanmode=QtWidgets.QLabel("Annotate:",self)
 		#self.gbl.addWidget(self.lanmode,12,0)
 
-		#self.sanmode=QtGui.QComboBox(self)
+		#self.sanmode=QtWidgets.QComboBox(self)
 		#self.sanmode.addItem("Box")
 		#self.sanmode.addItem("Box+dot")
 		#self.sanmode.addItem("Circle")
@@ -2689,13 +3216,13 @@ class GUIBoxer(QtGui.QWidget):
 
 		#self.gbl.addWidget(self.squality,6,2,1,3)
 
-		#self.brefit=QtGui.QPushButton("Autobox")
+		#self.brefit=QtWidgets.QPushButton("Autobox")
 		#self.gbl.addWidget(self.brefit,7,2)
 
-		#self.bclrauto=QtGui.QPushButton("Clear Auto")
+		#self.bclrauto=QtWidgets.QPushButton("Clear Auto")
 		#self.gbl.addWidget(self.bclrauto,7,3)
 
-		#self.bclrall=QtGui.QPushButton("Clear All")
+		#self.bclrall=QtWidgets.QPushButton("Clear All")
 		#self.gbl.addWidget(self.bclrall,7,4)
 
 		#self.sapix=ValBox(self,(0,500),"A/pix:",1.0,90)

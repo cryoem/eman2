@@ -1,0 +1,78 @@
+~~NOTOC~~
+
+===== sp_ctf_refine manual =====
+CTF refine (Stack): Refine the defocus per particle
+
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sp_ctf_refine.py manual path_to_input_stack output_directory volume_path params_file --mask=path_to_mask --range=defocus_range --delta=defocus_delta --resolution=nominal_resolution --apix=pixelsize --number_part=NUMBER_PARTICLES --chunk=PATH_TO_CHUNK_FILE --volume2=PATH_TO_VOLUME
+
+\\
+===== Typical usage =====
+
+Before doing defocus refinement, you should have reached ~4 angstrom.
+sp_ctf_refine.py exists only in non-MPI version.
+
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; path_to_input_stack : Input stack path  : Path to input stack. (default required)
+  ; output_directory : Output directory : Folder to output files etc. (default required)
+  ; volume_path : Path to volume : Path to volume.  (default required)
+  ; params_file : Params file: Path to params file (default required)
+  ; %%--%%mask : Path to mask : Path to mask used. (default none)
+
+
+\\
+=== Advanced Parameters ===
+  ; %%--%%range : Defocus search range [um] : Search range +- around the current defocus value. (default 0.15)
+  ; %%--%%delta : Defocus search delta [um] : Finest search delta. (default 0.0025)
+  ; %%--%%resolution : Nominal resolution [A] : Nominal resolution of the reconstruction. Low-pass Gaussian filter will be applied at this resolution. (default None)
+  ; %%--%%apix : Pixel size [A] : Pixel size in Angstroms. (default None) : %%--%%resolution!=None
+  ; %%--%%number_part : Number of particles : Number of particles to process. Mainly for debugging. (default none)
+  ; %%--%%chunk : Path to chunk file : Path to chunk file (default none)
+  ; %%--%%volume2 : Path to second volume : Path to second half volume. (default none): %%--%%chunk!=None
+
+
+\\
+===== Output =====
+It will write a virtual stack with updated defocus information in the header. Furthermore it
+creates plot for error in the your output directory
+
+\\
+=== List of Output Files ===
+- A virtual stack with updated header information
+- particle_results.txt: list with PARTICLE_ID,ERROR,NEW_DEFOCUS,SIGNIFICANCE
+- error_cdf.png: Plot of the error distribution
+- img folder: One image per micrograph containing defocus and error maps
+
+
+\\
+==== Method ====
+-
+
+\\
+==== Developer Notes ====
+=== 2019/02/21 Thorsten Wagner ===
+  * Initial creation of the document
+
+\\
+==== Reference ====
+-
+
+\\
+==== Author / Maintainer ====
+Thorsten Wagner
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_ctf_refine.py

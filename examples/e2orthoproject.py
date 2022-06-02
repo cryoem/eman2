@@ -29,9 +29,6 @@ Author: Jesus Galaz - whoknows-2012, Last update: 07/Nov/2017
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 '''
-from __future__ import print_function
-from __future__ import division
-#from optparse import OptionParser
 from builtins import range
 from EMAN2 import *
 from EMAN2_utils import *
@@ -61,7 +58,7 @@ def main():
 
 	parser.add_argument("--mask", type=str, default=None, help="Mask processor applied to particles before alignment. Default is None")
 
-	parser.add_argument("--normproc", type=str, default="normalize.edgemean", help="""Normalization processor applied to particles before alignment. Default is to use normalize.mask. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'""")
+	parser.add_argument("--normproc", type=str, default=None, help="""Default=None. Normalization processor applied to particles before alignment. Default is to use normalize.mask. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'""")
 
 	parser.add_argument("--path", type=str, default=None, help="""Directory to store results in. The default is a numbered series of directories containing the prefix 'orthoproject'; for example, orthoproject_02 will be the directory by default if 'orthoproject_01' already exists.""")
 	parser.add_argument("--ppid", type=int, default=-1, help="Set the PID of the parent process, used for cross platform PPID")
@@ -76,7 +73,7 @@ def main():
 	parser.add_argument("--tag", type=str, default='', help="When supplying --angles, tag the output projection with a string provided through --tag")
 	parser.add_argument("--transformsfile", type=str, default='', help="A text files containing lines with one triplet of az,alt,phi values each, representing the transforms to use to project a single volume supplied.")
 	
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness.")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness.")
 
 	(options, args) = parser.parse_args()	
 	
@@ -126,7 +123,7 @@ def main():
 		pz = Transform({'type':'eman','az':0,'alt':0,'phi':0})
 		projectiondirections={'pz':pz}
 	elif options.onlyx:
-		px = Transform({'type':'eman','az':90,'alt':-90,'phi':0})
+		px = Transform({'type':'eman','az':90,'alt':90,'phi':0})
 		projectiondirections={'px':px}
 	elif options.onlyy:
 		py = Transform({'type':'eman','az':0,'alt':90,'phi':0})
@@ -134,7 +131,7 @@ def main():
 		projectiondirections={'py':py}
 	else:	
 		pz = Transform({'type':'eman','az':0,'alt':0,'phi':0})
-		px = Transform({'type':'eman','az':90,'alt':-90,'phi':0})
+		px = Transform({'type':'eman','az':90,'alt':90,'phi':0})
 		py = Transform({'type':'eman','az':0,'alt':90,'phi':0})
 		projectiondirections = {'pz':pz,'px':px,'py':py}
 
@@ -247,10 +244,13 @@ def main():
 			if options.normproc:
 				#if options["normproc"][0]=="normalize.mask": 
 				#	options["normproc"][1]["mask"]=mask
-				
+				print("\n!!!! applying normalization = {}".format(options.normproc))
 				submodel.process_inplace(options.normproc[0],options.normproc[1])
 			
 				submodel.mult(mask)
+			else:
+				print("\nNO normalization = {}".format(options.normproc))
+
 			
 			if options.lowpass:
 				submodel.process_inplace(options.lowpass[0],options.lowpass[1])

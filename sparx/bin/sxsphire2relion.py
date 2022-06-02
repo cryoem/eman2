@@ -2,9 +2,13 @@
 
 # Author: Markus Stabrin 2018/09/28 (markus.stabrin@mpi-dortmund.mpg.de)
 #
+# Author: Pawel A.Penczek 05/27/2009 (Pawel.A.Penczek@uth.tmc.edu)
+# Please do not copy or modify this file without written consent of the author.
+# Copyright (c) 2000-2019 The University of Texas - Houston Medical School
+#
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
-# complete SPHIRE and EMAN2 software packages have some GPL dependencies,
+# complete EMAN2 and SPARX software packages have some GPL dependencies,
 # so you are responsible for compliance with the licenses of these packages
 # if you opt to use BSD licensing. The warranty disclaimer below holds
 # in either instance.
@@ -26,10 +30,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
-# 
-# ========================================================================================
-from __future__ import print_function, division
-
+#
+#
+from __future__ import division
+from past.utils import old_div
 import os
 import argparse
 
@@ -353,17 +357,17 @@ def import_partres_file(partres_file):
 	partres_import_array = np.genfromtxt(partres_file, dtype=dtype_import_list, usecols=columns)
 	partres_array = np.empty(partres_import_array.shape[0], sorted(dtype_output_list))
 
-	partres_array['_rlnDefocusU'] = (20000 * partres_import_array['defocus'] - 10000 * partres_import_array['astig_amp']) / 2
+	partres_array['_rlnDefocusU'] = old_div((20000 * partres_import_array['defocus'] - 10000 * partres_import_array['astig_amp']), 2)
 	partres_array['_rlnDefocusV'] = 20000 * partres_import_array['defocus'] - partres_array['_rlnDefocusU']
 	partres_array['_rlnDefocusAngle'] = 45 - partres_import_array['astig_angle']
 	partres_array['_rlnMicrographName'] = partres_import_array['micrograph_name']
-	partres_array['_rlnAmplitudeContrast'] = partres_import_array['amplitude_contrast'] / 100
+	partres_array['_rlnAmplitudeContrast'] = old_div(partres_import_array['amplitude_contrast'], 100)
 	partres_array['_rlnVoltage'] = partres_import_array['voltage']
 	partres_array['_rlnSphericalAberration'] = partres_import_array['cs']
 	partres_array['_rlnPhaseShift'] = partres_import_array['phase_shift']
 	partres_array['_rlnDetectorPixelSize'] = partres_import_array['pixel_size']
 	partres_array['_rlnMagnification'] = 10000
-	partres_array['_rlnCtfMaxResolution'] = 1 / partres_import_array['max_resolution']
+	partres_array['_rlnCtfMaxResolution'] = old_div(1, partres_import_array['max_resolution'])
 
 	return partres_array
 
@@ -591,10 +595,10 @@ def create_stack_array(dtype_list, header_dict, output_dir):
 			defocus = np.array([entry['defocus'] for entry in dict_list])
 			astigmatism_amp = np.array([entry['dfdiff'] for entry in dict_list])
 			particle_array['_rlnDefocusAngle'] = 45 - np.array([entry['dfang'] for entry in dict_list])
-			particle_array['_rlnAmplitudeContrast'] = np.array([entry['ampcont'] for entry in dict_list]) / 100
+			particle_array['_rlnAmplitudeContrast'] = old_div(np.array([entry['ampcont'] for entry in dict_list]), 100)
 			particle_array['_rlnVoltage'] = np.array([entry['voltage'] for entry in dict_list])
 			particle_array['_rlnSphericalAberration'] = np.array([entry['cs'] for entry in dict_list])
-			particle_array['_rlnDefocusU'] = (20000 * defocus - 10000 * astigmatism_amp) / 2
+			particle_array['_rlnDefocusU'] = old_div((20000 * defocus - 10000 * astigmatism_amp), 2)
 			particle_array['_rlnDefocusV'] = 20000 * defocus - particle_array['_rlnDefocusU']
 			particle_array['_rlnPhaseShift'] = 0
 

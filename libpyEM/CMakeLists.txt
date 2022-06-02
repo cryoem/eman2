@@ -1,25 +1,3 @@
-# Find Boost
-set(Boost_USE_MULTITHREADED ON)
-set(Boost_NO_BOOST_CMAKE ON)
-find_package(Boost COMPONENTS python REQUIRED)
-
-message("Boost_LIBRARIES:   ${Boost_LIBRARIES}")
-message("Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
-
-#this definition is for boost.python > 1.35.0 
-set_target_properties(Boost::python
-					  PROPERTIES
-					  INTERFACE_COMPILE_DEFINITIONS BOOST_PYTHON_NO_PY_SIGNATURES
-					  INTERFACE_LINK_LIBRARIES Python::Python
-					  )
-if(WIN32)
-	ADD_DEFINITIONS(-DBOOST_DISABLE_ASSERTS)
-endif()
-
-IF(CMAKE_SYSTEM MATCHES "IRIX.*")
-    INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR}/boost/compatibility/cpp_c_headers)
-ENDIF()
-
 function(ADD_PYSTE_LIB libname)
 	add_library(${libname} SHARED lib${libname}.cpp)
 	
@@ -33,9 +11,9 @@ function(ADD_PYSTE_LIB libname)
 			PROPERTIES
 			PREFIX lib
 			SUFFIX ${suffix}
+			LINK_LIBRARIES "EM2;Boost::python${boost_py_ver}"
 			)
 	
-	target_link_libraries(${libname} EM2 Boost::python)
 	install(TARGETS ${libname} DESTINATION ${SP_DIR})
 endfunction()
 
@@ -76,8 +54,8 @@ if(ENABLE_OPENGL)
 				   ${CMAKE_SOURCE_DIR}/libEM/glutil.cpp
 				   ${CMAKE_SOURCE_DIR}/libEM/marchingcubes.cpp
 				   )
-	target_link_libraries(pyGLUtils2       OpenGL::OpenGL FTGL::FTGL)
-	target_link_libraries(pyMarchingCubes2 OpenGL::OpenGL)
+	target_link_libraries(pyGLUtils2       EMAN::OpenGL FTGL::FTGL)
+	target_link_libraries(pyMarchingCubes2 EMAN::OpenGL)
 endif()
 
 file(GLOB empythonlibs "${CMAKE_CURRENT_SOURCE_DIR}/*.py")
@@ -88,8 +66,5 @@ install(FILES ${empythonlibs}
 
 add_subdirectory(qtgui)
 
-target_link_libraries(pyUtils2         NumPy)
-target_link_libraries(pyTypeConverter2 NumPy)
-target_link_libraries(pyTransform2     NumPy)
-target_link_libraries(pyAligner2       NumPy)
-target_link_libraries(pyEMData2        NumPy)
+target_link_libraries(pyUtils2         NumPy Boost::numpy${boost_py_ver})
+target_link_libraries(pyTypeConverter2 NumPy Boost::numpy${boost_py_ver})

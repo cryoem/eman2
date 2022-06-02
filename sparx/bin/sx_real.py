@@ -1,5 +1,4 @@
 #! /usr/bin/env python
-from __future__ import print_function
 #
 # Do not run this script directly. You could run this as 
 # ipython --gui=qt -i e2_real.py
@@ -36,6 +35,7 @@ from __future__ import print_function
 #
 
 import EMAN2
+import os
 from EMAN2 import *
 
 
@@ -44,13 +44,13 @@ GUIUSE=True
 try:
 	if get_platform()=="Linux" and os.getenv("DISPLAY")==None: raise Exception
 
-	from PyQt4 import QtCore, QtGui, QtOpenGL
+	from PyQt5 import QtCore, QtGui, QtOpenGL, QtWidgets
 	from eman2_gui.emapplication import EMApp
-	import IPython.lib.inputhook
+	#import IPython.lib.inputhook
 
 
 	app=EMApp()
-	IPython.lib.inputhook.enable_qt4(app)
+	#IPython.lib.inputhook.enable_qt4(app)
 
 	from eman2_gui.emimage import image_update
 
@@ -69,7 +69,7 @@ except:
 from sparx import *
 import global_def
 if GUIUSE:
-	print("Welcome to the interactive SPARX-GUI Python interface, provided by ipython")
+	print("Welcome to the interactive SPARX-GUI Python interface provided by ipython")
 else:
-	print("Welcome to the interactive SPARX-NoGUI Python interface, provided by ipython")
+	print("Welcome to the interactive SPARX-NoGUI Python interface provided by ipython")
 print("  ",global_def.SPARXVERSION)

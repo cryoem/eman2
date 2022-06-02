@@ -1,5 +1,3 @@
-from __future__ import print_function
-from __future__ import division
 import os
 import EMAN2
 
@@ -15,7 +13,7 @@ files = [
     'lib/pmconfig/tomosegpanel.json', 
 ]
 
-eman2dir = os.getenv("EMAN2DIR")
+eman2dir = EMAN2.e2getinstalldir()
 print("EMAN2DIR: %s" % eman2dir)
 
 for f in files:

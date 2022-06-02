@@ -1,7 +1,3 @@
-/**
- * $Id$
- */
-
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
@@ -256,10 +252,7 @@ bool Util::check_file_by_magic(const void *first_block, const char *magic)
 
 bool Util::is_file_exist(const string & filename)
 {
-	if (access(filename.c_str(), F_OK) == 0) {
-		return true;
-	}
-	return false;
+	return access(filename.c_str(), F_OK) == 0;
 }
 
 
@@ -289,7 +282,7 @@ void Util::flip_image(float *data, size_t nx, size_t ny)
 
 string Util::str_to_lower(const string& s) {
 	string ret(s);
-	std::transform(s.begin(),s.end(),ret.begin(), (int (*)(int) ) std::tolower);
+	std::transform(s.begin(), s.end(), ret.begin(), ::tolower);
 	return ret;
 }
 
@@ -316,11 +309,7 @@ bool Util::sstrncmp(const char *s1, const char *s2)
 		throw NullPointerException("Null string");
 	}
 
-	if (strncmp(s1, s2, strlen(s2)) == 0) {
-		return true;
-	}
-
-	return false;
+	return strncmp(s1, s2, strlen(s2)) == 0;
 }
 
 string Util::int2str(int n)
@@ -497,41 +486,20 @@ string Util::change_filename_ext(const string & old_filename,
 								 const string & ext)
 {
 	Assert(old_filename != "");
-	if (ext == "") {
+	if (ext.empty())
 		return old_filename;
-	}
 
-	string filename = old_filename;
-	size_t dot_pos = filename.rfind(".");
-	if (dot_pos != string::npos) {
-		filename = filename.substr(0, dot_pos+1);
-	}
-	else {
-		filename = filename + ".";
-	}
-	filename = filename + ext;
-	return filename;
+	return remove_filename_ext(old_filename) + "." + ext;
 }
 
 string Util::remove_filename_ext(const string& filename)
 {
-    if (filename == "") {
+    if (filename.empty())
         return "";
-    }
 
-	char *buf = new char[filename.size()+1];
-	strcpy(buf, filename.c_str());
-	char *old_ext = strrchr(buf, '.');
-	if (old_ext) {
-		buf[strlen(buf) - strlen(old_ext)] = '\0';
-	}
-	string result = string(buf);
-	if( buf )
-	{
-		delete [] buf;
-		buf = 0;
-	}
-	return result;
+	auto pos = filename.rfind('.');
+	
+	return pos!=string::npos ? filename.substr(0, pos) : filename;
 }
 
 string Util::sbasename(const string & filename)
@@ -557,20 +525,15 @@ string Util::sbasename(const string & filename)
 
 string Util::get_filename_ext(const string& filename)
 {
-    if (filename == "") {
+    if (filename.empty())
         return "";
-    }
 
-	string result = "";
-	const char *ext = strrchr(filename.c_str(), '.');
-	if (ext) {
-		ext++;
-		result = string(ext);
-	}
-	return result;
+    auto pos = filename.rfind('.');
+    if (pos != string::npos)
+        return filename.substr(pos+1);
+    else
+        return "";
 }
-
-
 
 void Util::calc_least_square_fit(size_t nitems, const float *data_x, const float *data_y,
 								 float *slope, float *intercept, bool ignore_zero,float absmax)
@@ -790,11 +753,7 @@ if (x>=dim || y>=dim) {
 	mem=(float*)realloc(mem,4*dim*dim);
 	for (int y=0; y<dim; y++) {
 		for (int x=0; x<dim; x++) {
-#ifdef	_WIN32
-			mem[x+y*dim]=(float)_hypot((float)x,(float)y);
-#else
 			mem[x+y*dim]=hypot((float)x,(float)y);
-#endif
 		}
 	}
 }
@@ -816,11 +775,7 @@ if (x>=dim || y>=dim) {
 	mem=(short*)realloc(mem,2*dim*dim);
 	for (int y=0; y<dim; y++) {
 		for (int x=0; x<dim; x++) {
-#ifdef	_WIN32
-			mem[x+y*dim]=(short)Util::round(_hypot((float)x,(float)y));
-#else
 			mem[x+y*dim]=(short)Util::round(hypot((float)x,(float)y));
-#endif
 		}
 	}
 }
@@ -868,6 +823,22 @@ return mem[g];
 /*int g=(int)f2;
 f2-=g;
 return mem[g+1]*f2+mem[g]*(1.0-f2);*/
+}
+
+// Uses a precached table to return a good approximate to exp(-2 x^2)
+// if outside the cached range, uses regular function
+float Util::fast_gauss_B2(const float &f) {
+static float *mem = (float *)malloc(sizeof(float)*1000);
+static bool needinit=true;
+
+if (needinit) {
+	needinit=false;
+	for (int i=0; i<1000; i++) mem[i]=(float)exp(-i*i/125000.0f);
+}
+if (f>1.998) return exp(-2.0f*f*f);
+int g=(int)(fabs(f)*500.0f+0.5f);
+
+return mem[g];
 }
 
 
@@ -960,7 +931,7 @@ Dict Util::get_stats( const vector<float>& data )
 		vector<double> data_mm_sq(data.size());
 
 		// Subtract the mean from the data and store it in data_mm
-		transform(data.begin(), data.end(), data_mm.begin(), std::bind2nd(std::minus<double>(), mean));
+		transform(data.begin(), data.end(), data_mm.begin(), [&](double x){return x - mean;});
 
 		// Get the square of the data minus the mean and store it in data_mm_sq
 		transform(data_mm.begin(), data_mm.end(), data_mm.begin(), data_mm_sq.begin(), std::multiplies<double>());

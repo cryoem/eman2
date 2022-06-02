@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 06/06/2011
 # Copyright (c) 2011- Baylor College of Medicine
@@ -38,12 +35,13 @@ from EMAN2 import *
 from eman2_gui.emimagemx import EMImageMXWidget
 
 import sys
-from PyQt4 import QtCore, QtGui, QtOpenGL
-from PyQt4.QtCore import Qt
+from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
+from PyQt5.QtCore import Qt
+#import OpenGL
+#OpenGL.ERROR_CHECKING = False
 #from OpenGL import GL,GLU,GLUT
 from eman2_gui.emapplication import EMApp
 import os
-from EMAN2db import *
 from eman2_gui.valslider import *
 import traceback
 
@@ -62,7 +60,7 @@ def main():
 	parser.add_header(name="runeval", help='Click Launch to launch the particle evaluation interface', title="### Click Launch to run e2evalparticles ###", row=0, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--gui",action="store_true",help="Start the GUI for interactive use (default=True)",default=True)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 
@@ -76,60 +74,60 @@ def main():
 
 #	E2end(logid)
 
-class EMClassPtclTool(QtGui.QWidget):
+class EMClassPtclTool(QtWidgets.QWidget):
 	"""This class is a tab widget for inspecting particles within class-averages"""
 
 	def __init__(self,extrafiles=None):
-		QtGui.QWidget.__init__(self)
-		self.vbl = QtGui.QVBoxLayout(self)
+		QtWidgets.QWidget.__init__(self)
+		self.vbl = QtWidgets.QVBoxLayout(self)
 
 		self.extrafiles=extrafiles
 
 		# A listwidget for selecting which class-average file we're looking at
-		self.wclassfilel=QtGui.QLabel("Class-average File:")
+		self.wclassfilel=QtWidgets.QLabel("Class-average File:")
 		self.vbl.addWidget(self.wclassfilel)
 
-		self.wfilesel=QtGui.QListWidget()
+		self.wfilesel=QtWidgets.QListWidget()
 		self.vbl.addWidget(self.wfilesel)
 		self.vbl.addSpacing(5)
 
 		# A widget containing the current particle filename, editable by the user
 		# If edited it will also impact set generation !
-		self.wptclfilel=QtGui.QLabel("Particle Data File:")
+		self.wptclfilel=QtWidgets.QLabel("Particle Data File:")
 		self.vbl.addWidget(self.wptclfilel)
 
-		self.wptclfile=QtGui.QComboBox(self)
+		self.wptclfile=QtWidgets.QComboBox(self)
 		self.vbl.addWidget(self.wptclfile)
 		self.vbl.addSpacing(5)
 
 		# Selection tools
-		self.wselectg=QtGui.QGroupBox("Class Selection",self)
+		self.wselectg=QtWidgets.QGroupBox("Class Selection",self)
 		self.wselectg.setFlat(False)
 		self.vbl.addWidget(self.wselectg)
 		self.vbl.addSpacing(5)
 
-		self.gbl0=QtGui.QGridLayout(self.wselectg)
+		self.gbl0=QtWidgets.QGridLayout(self.wselectg)
 
-		self.wselallb=QtGui.QPushButton("All")
+		self.wselallb=QtWidgets.QPushButton("All")
 		self.gbl0.addWidget(self.wselallb,0,0)
 
-		self.wselnoneb=QtGui.QPushButton("Clear")
+		self.wselnoneb=QtWidgets.QPushButton("Clear")
 		self.gbl0.addWidget(self.wselnoneb,0,1)
 
-		self.wselrangeb=QtGui.QPushButton("Range")
+		self.wselrangeb=QtWidgets.QPushButton("Range")
 		self.gbl0.addWidget(self.wselrangeb,1,0)
 
-		self.wselinvertb=QtGui.QPushButton("Invert")
+		self.wselinvertb=QtWidgets.QPushButton("Invert")
 		self.gbl0.addWidget(self.wselinvertb,0,2)
 
-		self.wsel3db=QtGui.QPushButton("From 3D")
+		self.wsel3db=QtWidgets.QPushButton("From 3D")
 		self.gbl0.addWidget(self.wsel3db,1,2)
 
-		self.wprocessg=QtGui.QGroupBox("Process results",self)
+		self.wprocessg=QtWidgets.QGroupBox("Process results",self)
 		self.wprocessg.setFlat(False)
 		self.vbl.addWidget(self.wprocessg)
 
-		self.vbl2=QtGui.QVBoxLayout(self.wprocessg)
+		self.vbl2=QtWidgets.QVBoxLayout(self.wprocessg)
 
 		self.wselused=CheckBox(None,"Included Ptcls",1,100)
 		self.vbl2.addWidget(self.wselused)
@@ -138,24 +136,24 @@ class EMClassPtclTool(QtGui.QWidget):
 		self.vbl2.addWidget(self.wselunused)
 
 		# Mark particles in selected classes as bad
-		self.wmarkbut=QtGui.QPushButton("Mark as Bad")
+		self.wmarkbut=QtWidgets.QPushButton("Mark as Bad")
 		self.vbl2.addWidget(self.wmarkbut)
 
 		# Mark particles in selected classes as good
-		self.wmarkgoodbut=QtGui.QPushButton("Mark as Good")
+		self.wmarkgoodbut=QtWidgets.QPushButton("Mark as Good")
 		self.vbl2.addWidget(self.wmarkgoodbut)
 
 		# Make a new set from selected classes
-		self.wmakebut=QtGui.QPushButton("Make New Set")
+		self.wmakebut=QtWidgets.QPushButton("Make New Set")
 		self.vbl2.addWidget(self.wmakebut)
 #		self.wmakebut.setEnabled(False)
 
 		# Save list
-		self.wsavebut=QtGui.QPushButton("Save Particle List")
+		self.wsavebut=QtWidgets.QPushButton("Save Particle List")
 		self.vbl2.addWidget(self.wsavebut)
 
 		# Save micrograph dereferenced lists
-		self.wsaveorigbut=QtGui.QPushButton("Save CCD-based List")
+		self.wsaveorigbut=QtWidgets.QPushButton("Save CCD-based List")
 		self.vbl2.addWidget(self.wsaveorigbut)
 
 
@@ -178,10 +176,11 @@ class EMClassPtclTool(QtGui.QWidget):
 		self.vbadptcl=None
 
 		self.updateFiles()
+		QtCore.QTimer.singleShot(1000,self.fixlocation)
 
 	def makeNewSet(self,x):
 		"Makes a new particle set based on the selected class-averages"
-		setname=QtGui.QInputDialog.getText(None,"Set Name","Please specify the name for the set. If you specify an existing set, new particles will be added to the end")
+		setname=QtWidgets.QInputDialog.getText(None,"Set Name","Please specify the name for the set. If you specify an existing set, new particles will be added to the end")
 		if setname[1]==False : return
 		else: setname=setname[0]
 		if setname[-4:]!=".lst" : setname=setname+".lst"
@@ -195,7 +194,7 @@ class EMClassPtclTool(QtGui.QWidget):
 			try :
 				orign,origfile,comment=lst.read(n)			# the original file/number dereferenced from the LST file
 			except:
-				QtGui.QMessageBox.warning(self,"Error !","The data_source '%s' does not follow EMAN2.1 project conventions. Cannot find raw particles for set."%srcfile)
+				QtWidgets.QMessageBox.warning(self,"Error !","The data_source '%s' does not follow EMAN2.1 project conventions. Cannot find raw particles for set."%srcfile)
 				return
 
 			include.append((origfile,orign,comment))		# build a list so we can sort by frame
@@ -206,8 +205,8 @@ class EMClassPtclTool(QtGui.QWidget):
 	def markBadPtcl(self,x):
 		"Mark particles from the selected class-averages as bad in the set interface"
 
-		r=QtGui.QMessageBox.question(None,"Are you sure ?","WARNING: There is no undo for this operation. It will  mark all particles associated with the selected class-averages as bad. Are you sure you want to proceed ?",QtGui.QMessageBox.Yes|QtGui.QMessageBox.Cancel)
-		if r==QtGui.QMessageBox.Cancel : return
+		r=QtWidgets.QMessageBox.question(None,"Are you sure ?","WARNING: There is no undo for this operation. It will  mark all particles associated with the selected class-averages as bad. Are you sure you want to proceed ?",QtWidgets.QMessageBox.Yes|QtWidgets.QMessageBox.Cancel)
+		if r==QtWidgets.QMessageBox.Cancel : return
 
 		lst=LSXFile(self.curPtclFile())		# lst file for dereferenceing
 		ptcls={}						# dictionary keyed by original frame filename with list of selected particle #s
@@ -216,7 +215,7 @@ class EMClassPtclTool(QtGui.QWidget):
 			try :
 				orign,origfile,comment=lst.read(n)
 			except:
-				QtGui.QMessageBox.warning(self,"Error !","The data_source '%s' does not follow EMAN2.1 project conventions. Cannot find raw particles for set."%srcfile)
+				QtWidgets.QMessageBox.warning(self,"Error !","The data_source '%s' does not follow EMAN2.1 project conventions. Cannot find raw particles for set."%srcfile)
 				return
 
 			try: ptcls[origfile].append(orign)		# try to add to a list for an existing filename
@@ -248,8 +247,8 @@ class EMClassPtclTool(QtGui.QWidget):
 	def markGoodPtcl(self,x):
 		"Mark particles from the selected class-averages as good in the set interface"
 
-		r=QtGui.QMessageBox.question(None,"Are you sure ?","WARNING: There is no undo for this operation. It will un-mark all particles associated with the selected class-averages as bad. Are you sure you want to proceed ?",QtGui.QMessageBox.Yes|QtGui.QMessageBox.Cancel)
-		if r==QtGui.QMessageBox.Cancel : return
+		r=QtWidgets.QMessageBox.question(None,"Are you sure ?","WARNING: There is no undo for this operation. It will un-mark all particles associated with the selected class-averages as bad. Are you sure you want to proceed ?",QtWidgets.QMessageBox.Yes|QtWidgets.QMessageBox.Cancel)
+		if r==QtWidgets.QMessageBox.Cancel : return
 
 		lst=LSXFile(self.curPtclFile())		# lst file for dereferenceing
 		ptcls={}						# dictionary keyed by original frame filename with list of selected particle #s
@@ -258,7 +257,7 @@ class EMClassPtclTool(QtGui.QWidget):
 			try :
 				orign,origfile,comment=lst.read(n)
 			except:
-				QtGui.QMessageBox.warning(self,"Error !","The data_source '%s' does not follow EMAN2.1 project conventions. Cannot find raw particles for set."%srcfile)
+				QtWidgets.QMessageBox.warning(self,"Error !","The data_source '%s' does not follow EMAN2.1 project conventions. Cannot find raw particles for set."%srcfile)
 				return
 
 			try: ptcls[origfile].append(orign)		# try to add to a list for an existing filename
@@ -294,7 +293,7 @@ class EMClassPtclTool(QtGui.QWidget):
 	def savePtclNum(self,x):
 		"Saves a list of particles from marked classes into a text file"
 
-		filename=QtGui.QInputDialog.getText(None,"Filename","Please enter a filename for the particle list. The file will contain the particle number (within the particle file) for each particle associated with a selected class-average.")
+		filename=QtWidgets.QInputDialog.getText(None,"Filename","Please enter a filename for the particle list. The file will contain the particle number (within the particle file) for each particle associated with a selected class-average.")
 		if filename[1]==False or filename[0]=="" : return
 
 		out=open(filename[0],"w")
@@ -303,7 +302,7 @@ class EMClassPtclTool(QtGui.QWidget):
 
 	def saveOrigPtclNum(self,x):
 		"Saves a file containing micrograph-dereferenced particles"
-		filename=QtGui.QInputDialog.getText(None,"Filename","Please enter a filename for the particle list. The file will contain particle number and image file, one per line. Image files will be referenced back to the original per-CCD frame stacks.")
+		filename=QtWidgets.QInputDialog.getText(None,"Filename","Please enter a filename for the particle list. The file will contain particle number and image file, one per line. Image files will be referenced back to the original per-CCD frame stacks.")
 		if filename[1]==False or filename[0]=="" : return
 
 		lst=LSXFile(self.curPtclFile())		# lst file for dereferenceing
@@ -313,7 +312,7 @@ class EMClassPtclTool(QtGui.QWidget):
 			try :
 				orign,origfile,comment=lst.read(n)			# the original file/number dereferenced from the LST file
 			except:
-				QtGui.QMessageBox.warning(self,"Error !","The data_source '%s' does not follow EMAN2.1 project conventions. Cannot find raw particles for set."%srcfile)
+				QtWidgets.QMessageBox.warning(self,"Error !","The data_source '%s' does not follow EMAN2.1 project conventions. Cannot find raw particles for set."%srcfile)
 				return
 
 			include.append((origfile,orign,comment))		# build a list so we can sort by frame
@@ -333,7 +332,7 @@ class EMClassPtclTool(QtGui.QWidget):
 
 	def selRangeClasses(self,x):
 		"Select a range of images (ask the user for the range)"
-		rng=QtGui.QInputDialog.getText(None,"Select Range","Enter the range of particle values as first-last (inclusive). Merges with existing selection.")
+		rng=QtWidgets.QInputDialog.getText(None,"Select Range","Enter the range of particle values as first-last (inclusive). Merges with existing selection.")
 		if rng[1]==False : return
 
 		try:
@@ -341,7 +340,7 @@ class EMClassPtclTool(QtGui.QWidget):
 			x0=int(x0)
 			x1=int(x1)+1
 		except:
-			QtGui.QMessageBox.warning(self,"Error !","Invalid range specified. Use: min-max")
+			QtWidgets.QMessageBox.warning(self,"Error !","Invalid range specified. Use: min-max")
 			return
 
 		self.vclasses.subset_set(list(range(x0,x1)))
@@ -355,7 +354,7 @@ class EMClassPtclTool(QtGui.QWidget):
 
 		f=self.curFile()
 		if not '#classes_' in f :
-			QtGui.QMessageBox.warning(self,"Error !","A classes_xx file from a refine_xx directory is not currently selected")
+			QtWidgets.QMessageBox.warning(self,"Error !","A classes_xx file from a refine_xx directory is not currently selected")
 			return
 
 		# construct the path to the threed_xx file
@@ -366,7 +365,7 @@ class EMClassPtclTool(QtGui.QWidget):
 			a=EMData(d3path,0,True)
 			goodptcl=a["threed_ptcl_idxs"]
 		except:
-			QtGui.QMessageBox.warning(self,"Error !","Cannot read classes from "+d3path)
+			QtWidgets.QMessageBox.warning(self,"Error !","Cannot read classes from "+d3path)
 			return
 
 		self.vclasses.clear_set()
@@ -436,7 +435,7 @@ class EMClassPtclTool(QtGui.QWidget):
 	def fileUpdate(self):
 		"Called when the user selects a file from the list or need to completely refresh display"
 
-		QtGui.qApp.setOverrideCursor(Qt.BusyCursor)
+		QtWidgets.qApp.setOverrideCursor(Qt.BusyCursor)
 
 		if self.vclasses==None :
 			self.vclasses=EMImageMXWidget()
@@ -463,7 +462,7 @@ class EMClassPtclTool(QtGui.QWidget):
 			else:
 				self.wptclfile.setCurrentIndex(i)
 		except:
-			QtGui.QMessageBox.warning(self,"Error !","This image does not appear to be a class average. (No class_ptcl_src, etc.)")
+			QtWidgets.QMessageBox.warning(self,"Error !","This image does not appear to be a class average. (No class_ptcl_src, etc.)")
 			ptclfile="None"
 
 
@@ -479,20 +478,29 @@ class EMClassPtclTool(QtGui.QWidget):
 		self.vclasses.show()
 		self.vgoodptcl.show()
 		self.vbadptcl.show()
+		QtCore.QTimer.singleShot(1000,self.fixlocation)
+		
+		QtWidgets.qApp.setOverrideCursor(Qt.ArrowCursor)
 
-		QtGui.qApp.setOverrideCursor(Qt.ArrowCursor)
+	def fixlocation(self):
+		E2loadappwin("e2evalparticles","main",self)
+		if self.vclasses: E2loadappwin("e2evalparticles","classes",self.vclasses.qt_parent)
+		if self.vgoodptcl: 
+			E2loadappwin("e2evalparticles","good",self.vgoodptcl.qt_parent)
+			E2loadappwin("e2evalparticles","bad",self.vbadptcl.qt_parent)
+
 
 	def classSelect(self,event,lc):
 		"Single clicked class particle. lc=(img#,x,y,image_dict)"
 
-		QtGui.qApp.setOverrideCursor(Qt.BusyCursor)
+		QtWidgets.qApp.setOverrideCursor(Qt.BusyCursor)
 		ptclfile=self.curPtclFile()
 		try:
 			ptclgood=lc[3]["class_ptcl_idxs"]
 			self.vgoodptcl.set_data(EMData.read_images(ptclfile,ptclgood))
 		except:
-			QtGui.QMessageBox.warning(self,"Error !","This image does not appear to be a class average. (No class_ptcl_src, etc.)")
-			QtGui.qApp.setOverrideCursor(Qt.ArrowCursor)
+			QtWidgets.QMessageBox.warning(self,"Error !","This image does not appear to be a class average. (No class_ptcl_src, etc.)")
+			QtWidgets.qApp.setOverrideCursor(Qt.ArrowCursor)
 			return
 		try:
 			ptclbad=lc[3]["exc_class_ptcl_idxs"]
@@ -503,12 +511,18 @@ class EMClassPtclTool(QtGui.QWidget):
 
 		self.vgoodptcl.show()
 		self.vbadptcl.show()
-		QtGui.qApp.setOverrideCursor(Qt.ArrowCursor)
+#		QtCore.QTimer.singleShot(500,self.fixlocation)
+		
+		QtWidgets.qApp.setOverrideCursor(Qt.ArrowCursor)
 
 	def classDouble(self,event,lc):
 		self.vclasses.image_set_associate(lc[0],update_gl=True)
 
 	def closeEvent(self,event):
+		E2saveappwin("e2evalparticles","main",self)
+		E2saveappwin("e2evalparticles","classes",self.vclasses.qt_parent)
+		E2saveappwin("e2evalparticles","good",self.vgoodptcl.qt_parent)
+		E2saveappwin("e2evalparticles","bad",self.vbadptcl.qt_parent)
 		try :
 			self.vclasses.commit_sets()
 			self.vclasses.close()
@@ -518,15 +532,15 @@ class EMClassPtclTool(QtGui.QWidget):
 		try : self.vbadptcl.close()
 		except: pass
 
-		QtGui.QWidget.closeEvent(self, event)
+		QtWidgets.QWidget.closeEvent(self, event)
 
-class EMEvalPtclTool(QtGui.QMainWindow):
+class EMEvalPtclTool(QtWidgets.QMainWindow):
 	"""This class represents the EMTomoBoxer application instance.  """
 
 	def __init__(self,extrafiles=None,verbose=0):
-		QtGui.QMainWindow.__init__(self)
+		QtWidgets.QMainWindow.__init__(self)
 
-		app=QtGui.qApp
+		app=QtWidgets.qApp
 		self.setWindowTitle("e2evalparticles")
 
 		# Menu Bar
@@ -534,7 +548,7 @@ class EMEvalPtclTool(QtGui.QMainWindow):
 #		self.mfile_save_processed=self.mfile.addAction("Save processed data")
 		self.mfile_quit=self.mfile.addAction("Quit")
 
-		self.wtabs=QtGui.QTabWidget()
+		self.wtabs=QtWidgets.QTabWidget()
 		self.setCentralWidget(self.wtabs)
 
 		self.wclasstab=EMClassPtclTool(extrafiles)
@@ -549,7 +563,7 @@ class EMEvalPtclTool(QtGui.QMainWindow):
 
 	def closeEvent(self,event):
 		self.wclasstab.close()
-		QtGui.QWidget.closeEvent(self, event)
+		QtWidgets.QWidget.closeEvent(self, event)
 
 if __name__ == "__main__":
 	main()

@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Stephen Murray, 11/5/2014 (scmurray@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -57,10 +54,11 @@ For more information on ctffind3 please see: Mindell, JA, Grigorieff N.  2003.  
 	parser.add_argument("--cs", default=0.0, type=float,help="The spherical aberration of the microscope", guitype='floatbox', row=3, col=1, rowspan=1, colspan=1, mode="import,run")
 	parser.add_argument("--voltage", default=0.0, type=float,help="The voltage (in kV) of the microscope", guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="import,run")
 	parser.add_argument("--ac", default=0.0, type=float,help="The amplitude contrast of the micrographs", guitype='floatbox', row=4, col=1, rowspan=1, colspan=1, mode="import,run")
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness", guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="import,run")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness", guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="import,run")
 	parser.add_argument("--importrelionstar", default=False, action="store_true",help="Import CTFFIND3 data in Relion STAR format. Put STAR files in 'ctffind3' folder", guitype='boolbox', row=6, col=0, rowspan=1, colspan=1, mode='import[True]')
-	parser.add_argument("--importctffind3", default=False, action="store_true",help="Import ctffind3 data?", guitype='boolbox', row=6, col=0, rowspan=1, colspan=1, mode='import[True]')
-	parser.add_argument("--importctffind4", default=False, action="store_true",help="Import ctffind4 data?", guitype='boolbox', row=6, col=1, rowspan=1, colspan=1, mode='import[False]')
+	#parser.add_argument("--importctffind3", default=False, action="store_true",help="Import ctffind3 data?", guitype='boolbox', row=6, col=0, rowspan=1, colspan=1, mode='import[True]')
+	parser.add_argument("--ctfversion", default="ctffind4", type=str,help="version of ctffind. default is ctffind4", guitype='strbox', row=6, col=0, rowspan=1, colspan=1, mode="import,run")
+	parser.add_argument("--importctffind", default=False, action="store_true",help="Import ctffind4 data?", guitype='boolbox', row=6, col=1, rowspan=1, colspan=1, mode='import[False]')
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	parser.add_pos_argument(name="micrographs",help="List the micrographs to run ctffind3 on here.", default="", guitype='filebox', browser="EMRawDataTable(withmodal=True,multiselect=True)", filecheck=False, row=1, col=0,rowspan=1, colspan=2, mode='run')
@@ -70,10 +68,11 @@ For more information on ctffind3 please see: Mindell, JA, Grigorieff N.  2003.  
 	parser.add_argument("--defocusmin", default=0.0, type=float,help="The starting defocus value for grid search (microns)", guitype='floatbox', row=7, col=0, rowspan=1, colspan=1, mode="run")
 	parser.add_argument("--defocusmax", default=0.0, type=float,help="The end defocus value for grid search (microns)", guitype='floatbox', row=7, col=1, rowspan=1, colspan=1, mode="run")
 	parser.add_argument("--defocusstep", default=0.0, type=float,help="The step width for grid search (microns)", guitype='floatbox', row=8, col=0, rowspan=1, colspan=1, mode="run")
-	parser.add_argument("--runctffind3", default=False, action="store_true",help="Run ctffind3 on the selected micrographs?", guitype='boolbox', row=9, col=0, rowspan=1, colspan=1, mode='run[True]')
-	parser.add_argument("--runctffind4", default=False, action="store_true",help="Run ctffind4 on the selected micrographs?", guitype='boolbox', row=9, col=1, rowspan=1, colspan=1, mode='run[False]')
-	parser.add_argument("--windowsize", default=0, type=int,help="The amplitude contrast of the micrographs", guitype='intbox', row=8, col=1, rowspan=1, colspan=1, mode="run")
-	
+	#parser.add_argument("--runctffind3", default=False, action="store_true",help="Run ctffind3 on the selected micrographs?", guitype='boolbox', row=9, col=0, rowspan=1, colspan=1, mode='run[True]')
+	parser.add_argument("--runctffind", default=False, action="store_true",help="Run ctffind on the selected micrographs?", guitype='boolbox', row=9, col=1, rowspan=1, colspan=1, mode='run[False]')
+	parser.add_argument("--windowsize", default=0, type=int,help="window size", guitype='intbox', row=8, col=1, rowspan=1, colspan=1, mode="run")
+	parser.add_argument("--flipmicrograph", default=False, action="store_true",help="phase flip micrographs using the imported ctf information")
+
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv,options.ppid)
 
@@ -125,25 +124,21 @@ For more information on ctffind3 please see: Mindell, JA, Grigorieff N.  2003.  
 		args = []
 		for item in os.listdir("micrographs"):
 			try: 
-				if item.split(".")[1] == "mrc" or item.split(".")[1] == "hdf":
+				if item.split(".")[-1] == "mrc" or item.split(".")[-1] == "hdf":
 					args.append("micrographs/" + item)
 			except:
 				pass
 	
-		
+	version=options.ctfversion
 	
-	if options.runctffind4:
-		version = "ctffind4"
+	if options.runctffind:
 		run_ctffind(options.apix, args, options.cs, options.voltage, options.ac, options.windowsize, options.minres, options.maxres, options.defocusmin*10000, options.defocusmax*10000, options.defocusstep*10000, options.verbose,version)
-	elif options.runctffind3:
-		version = "ctffind3"
-		run_ctffind(options.apix, args, options.cs, options.voltage, options.ac, options.windowsize, options.minres, options.maxres, options.defocusmin*10000, options.defocusmax*10000, options.defocusstep*10000, options.verbose, version)
-
-	if options.importctffind4 or options.runctffind4:
-		version = "ctffind4"
-	else:
-		version = "ctffind3"
-	import_ctf(options.voltage, options.cs, options.ac, options.apix, options.verbose, version)
+		
+	if options.importctffind:
+		import_ctf(options.voltage, options.cs, options.ac, options.apix, options.verbose, version)
+		
+	if options.flipmicrograph:
+		flip_micrograph(args)
 
 	print("e2ctffind3util.py complete!")
 	E2end(logid)
@@ -153,30 +148,57 @@ def import_ctf(voltage, cs, ac, apix, verbose, version):
 		print("no " + version + " directory found. Please see usage instructions!")
 		exit(-5)
 		
+	errors=[]
 	for filename in os.listdir("micrographs"):
-		if os.path.exists(version + "/" + base_name(filename)+"_" + version + ".log"):
-			f_log = open(version + "/" + base_name(filename) + "_" + version + ".log")
-			for line in f_log.readlines():
-				if len(line) > 1:
-					if len(line.split()) == 6:
-						if line.split()[5] == "Values":
-							defocusu = float(line.split()[0])
-							defocusv = float(line.split()[1])
-							dfang =  float(line.split()[2])
-							cc = float(line.split()[3])
-							e2defocus =  old_div((defocusu + defocusv), 20000.0)
-							e2dfdiff = old_div(abs(defocusu - defocusv), 10000.0)
-							e2dfang = dfang
-							if not os.path.exists(os.getcwd() + "/info"):
-								os.mkdir(os.getcwd() + "/info")
-							jdb = js_open_dict(os.getcwd() + "/info/" + base_name(filename) + "_info.json")
-							if "ctf" in list(jdb.keys()):
-								jdb.delete('ctf')
-							ctf = EMAN2Ctf()
-							ctf.from_dict({"defocus":e2defocus,"dfang":e2dfang,"dfdiff":e2dfdiff,"voltage":voltage,"cs":cs,"ampcont":ac,"apix":apix})
-							jdb['ctf_frame'] = [512,ctf,(256,256),tuple(),5,1]
-							#launch_childprocess("e2ctf.py --voltage {} --cs {} --ac {} --apix {} --autofit --curdefocusfix --verbose {} {}".format(voltage,cs,ac,apix,verbose-1,))
-	launch_childprocess("e2ctf.py --voltage {} --cs {} --ac {} --apix {} --allparticles --autofit --curdefocusfix --astigmatism --verbose {}".format(voltage,cs,ac,apix,verbose-1))
+		fname="{}/{}.txt".format(version, base_name(filename))
+		print(fname)
+		
+		if os.path.exists(fname):
+			f_log = open(fname)
+			vals=f_log.readlines()[-1]
+			if vals.startswith("#"):
+				print("!!! error - empty file")
+				errors.append(fname)
+				continue
+			
+			vals=vals.split()
+			vals=[float(v) for v in vals]
+			ctf = EMAN2Ctf()
+			du=vals[1]
+			dv=vals[2]
+			ctf.from_dict({"defocus":(du+dv)/20000.,"dfang":vals[3],"dfdiff":abs(du-dv)/10000,"voltage":voltage,"cs":cs,"ampcont":0,"apix":apix})
+			ctf.set_phase(vals[5])
+			jdb = js_open_dict(info_name(filename))
+			#jdb["ctf"]=ctf
+			if "ctf" in list(jdb.keys()):
+				jdb.delete('ctf')
+			jdb['ctf_frame'] = [512,ctf,(256,256),tuple(),5,1]
+			jdb.close()
+			print(ctf)
+				#if len(line) > 1:
+					#if len(line.split()) == 6:
+						#if line.split()[5] == "Values":
+							#defocusu = float(line.split()[0])
+							#defocusv = float(line.split()[1])
+							#dfang =  float(line.split()[2])
+							#cc = float(line.split()[3])
+							#e2defocus =  old_div((defocusu + defocusv), 20000.0)
+							#e2dfdiff = old_div(abs(defocusu - defocusv), 10000.0)
+							#e2dfang = dfang
+							#if not os.path.exists(os.getcwd() + "/info"):
+								#os.mkdir(os.getcwd() + "/info")
+							#jdb = js_open_dict(os.getcwd() + "/info/" + base_name(filename) + "_info.json")
+							#if "ctf" in list(jdb.keys()):
+								#jdb.delete('ctf')
+							#ctf = EMAN2Ctf()
+							#ctf.from_dict({"defocus":e2defocus,"dfang":e2dfang,"dfdiff":e2dfdiff,"voltage":voltage,"cs":cs,"ampcont":ac,"apix":apix})
+							#jdb['ctf_frame'] = [512,ctf,(256,256),tuple(),5,1]
+							#print(ctf)
+							##launch_childprocess("e2ctf.py --voltage {} --cs {} --ac {} --apix {} --autofit --curdefocusfix --verbose {} {}".format(voltage,cs,ac,apix,verbose-1,))
+	#print("e2ctf.py --voltage {} --cs {} --ac {} --apix {} --allparticles --autofit --curdefocusfix --astigmatism --verbose {}".format(voltage,cs,ac,apix,verbose-1))
+	print("errors in :")
+	for e in errors:
+		print(e)
 
 def run_ctffind(apix, args, cs, voltage, ac, windowsize, minres, maxres, defocusmin, defocusmax, defocusstep,verbose, version):
 	print("Running " + version)
@@ -190,22 +212,61 @@ def run_ctffind(apix, args, cs, voltage, ac, windowsize, minres, maxres, defocus
 		if not os.path.exists(image):
 			print("Image Does not exist: " + image)
 			exit(-6)
-		card = open("card.txt",'w')
-		if image.split(".")[1] != "mrc":
-			launch_childprocess("e2proc2d.py {} {}.mrc --verbose={}".format(image,image.split(".")[0],verbose-1))
+		
+		if image.split(".")[-1] != "mrc":
+			launch_childprocess("e2proc2d.py {} {}.mrc --verbose={}".format(image,image[:-4],verbose-1))
 			created = True
-		card.write(image.split(".")[0] + ".mrc\n" + version + "/" + base_name(image) + "_" + version + ".ctf\n" + str(cs) + "," + str(voltage) + "," + str(ac) + "," + str(mag) + "," + str(dstep) + "\n" + str(windowsize) + "," + str(minres) + "," + str(maxres) + "," + str(defocusmin) + "," + str(defocusmax) + "," + str(defocusstep))
-		card.close()
+			
 		print("running " + version + " on: " + image)
 		if version == "ctffind3":
+			card = open("card.txt",'w')
+			card.write(image[:-4] + ".mrc\n" + version + "/" + base_name(image) + "_" + version + ".mrc\n" + str(cs) + "," + str(voltage) + "," + str(ac) + "," + str(mag) + "," + str(dstep) + "\n" + str(windowsize) + "," + str(minres) + "," + str(maxres) + "," + str(defocusmin) + "," + str(defocusmax) + "," + str(defocusstep))
+			card.close()
+			
 			s = "`which ctffind3.exe` < card.txt >ctffind3/" + base_name(image) + "_ctffind3.log"
 		else:
-			s = "`which ctffind` --old-school-input < card.txt >ctffind4/" + base_name(image) + "_ctffind4.log"
-		call(s,shell=True)
+			card = open("card.txt",'w')
+			card.write("{}.mrc\n{}/{}.mrc\n".format(image[:-4],version,  base_name(image)))
+			card.write("{:.5f}\n{:.0f}\n{:.2f}\n{:.3f}\n".format(apix, voltage, cs, ac))
+			card.write("{:d}\n{:.0f}\n{:.0f}\n{:.0f}\n{:.0f}\n{:.0f}\n".format(windowsize,minres, maxres, defocusmin, defocusmax, defocusstep,))
+			card.write("no\nno\nno\nno\nno\n")
+			
+			card.close()
+			
+			s = "`which ctffind` < card.txt"
+		#print(s)
+		os.system(s)
+		#exit()
 		if created:
-			os.remove(image.split(".")[0] + ".mrc")
+			os.remove(image[:-4] + ".mrc")
 			created = False
 	#os.remove("card.txt")
+	
+def flip_micrograph(args):
+	print("phase flipping micrographs...")
+	for ii,fm in enumerate(args):
+		info=js_open_dict(info_name(fm))
+		ctf=info["ctf_frame"][1]
+		
+		e=EMData(fm)
+		e.process_inplace("normalize.edgemean")
+		nx,ny=e["nx"], e["ny"]
+		mx=good_size(max(nx, ny))
+		e.clip_inplace(Region((nx-mx)//2,(ny-mx)//2,mx,mx))
+		
+		fft1=e.do_fft()
+		flipim=fft1.copy()
+		ctf.compute_2d_complex(flipim,Ctf.CtfType.CTF_SIGN)
+		fft1.mult(flipim)
+		e=fft1.do_ift()
+		e["ctf"]=ctf
+		e.clip_inplace(Region((mx-nx)//2,(mx-ny)//2,nx,ny))
+		e.process_inplace("normalize.edgemean")
+		e.write_compressed(fm[:-4]+"__flip.hdf", 0, 12, nooutliers=True)
+		#e.write_image(f[:-4]+"__flip.hdf")
+		sys.stdout.write("\r  {}/{}".format(ii, len(args)))
+		sys.stdout.flush()
+	
 	
 if __name__=="__main__":
 	main()

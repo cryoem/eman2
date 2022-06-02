@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -48,7 +45,7 @@ from sys import exit
 def main():
 	progname = os.path.basename(sys.argv[0])
 	helpstring =  """Help is available on the following topics:
-boxsizes,processors, cmps, aligners, averagers, projectors, reconstructors, analyzers, symmetries, orientgens, rotationtypes"""
+boxsizes, processors, cmps, aligners, averagers, projectors, reconstructors, analyzers, symmetries, orientgens, rotationtypes, imagetypes"""
 	usage = """prog <topic> [contains]
 	
 Interactive help on a variety of the eman2 library's modular functions. The optional 'contains' argument will
@@ -61,7 +58,7 @@ act as a filter on the names of the algorithms."""
 	#parser.add_argument("--box", "-B", type=str, help="Box size in pixels, <xyz> or <x>,<y>,<z>")
 	parser.add_argument("--gui", action="store_true", help="Use the GUI for display help", default=False)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
 		
@@ -142,9 +139,70 @@ act as a filter on the names of the algorithms."""
 		"spin":["Spin-Axis (n1,n2,n3) vector with angle omega","n1","FLOAT","X vector component","n2","FLOAT","Y vector component","n3","FLOAT","Z vector component","omega","FLOAT","Angle of rotation in degrees"],
 		"sgirot":["SGI Spin-Axis (n1,n2,n3) vector with angle q","n1","FLOAT","X vector component","n2","FLOAT","Y vector component","n3","FLOAT","Z vector component","q","FLOAT","Angle of rotation in degrees"],
 		"quaternion":["Standard 4 component quaternion (e0,e1,e2,e3)","e0","FLOAT","e0","e1","FLOAT","e1","e2","FLOAT","e2","e3","FLOAT","e3"]}
+	
+	elif args[0] in ("imagetypes", "imagetype", "image", "images", "imageformats", "imageformat"):
+		print("Available image types:")
+		
+		header_line = ["Type", "Extension", "Read", "Write", "3D", "ImgStack", "VolStack", "RgnI/O"]
+		img_types = [
+			 ["HDF5",          "hdf",      "Y", "Y", "Y", "Y", "Y",     "Y"],
+			 ["DM2 (Gatan)",   "dm2",      "Y", "N", "N", "N", "N",     "N"],
+			 ["DM3 (Gatan)",   "dm3",      "Y", "N", "N", "N", "",      "N"],
+			 ["DM4 (Gatan)",   "dm4",      "Y", "N", "Y", "Y", "",      "N"],
+			 ["SER (FEI)",     "ser",      "Y", "N", "N", "Y", "",      "N"],
+			 ["EER (TF)",      "eer",      "Y", "N", "N", "Y", "N",     "N "],
+			 ["EM",            "em",       "Y", "Y", "Y", "N", "",      "Y"],
+			 ["ICOS",          "icos",     "Y", "Y", "Y", "N", "",      "Y"],
+			 ["Imagic",        "img/hed",  "Y", "Y", "Y", "Y", "Y",     "Y"],
+			 ["MRC",           "mrc",      "Y", "Y", "N", "Y", "",      "Y"],
+			 ["MRCS",          "mrcs",     "Y", "Y", "N", "Y", "soon?", "Y"],
+			 ["Spider Stack",  "spi",      "Y", "Y", "Y", "Y", "",      "Y"],
+			 ["Spider Single", "spi",      "Y", "Y", "Y", "N", "",      "Y"],
+			 ["SER",           "ser",      "Y", "N", "N", "Y", "",      "N"],
+			 ["BDB",           "N/A",      "Y", "Y", "Y", "Y", "",      "Y"],
+			 ["Amira",         "am",       "Y", "Y", "Y", "N", "",      "N"],
+			 ["DF3",           "df3",      "Y", "Y", "Y", "N", "",      "N"],
+			 ["FITS",          "fts",      "Y", "N", "Y", "N", "",      "N"],
+			 ["JPEG",          "jpg/jpeg", "N", "Y", "N", "N", "",      "N"],
+			 ["LST",           "lst",      "Y", "Y", "Y", "Y", "",      "N"],
+			 ["LSTFAST",       "lsx/lst",  "Y", "Y", "Y", "Y", "",      "N"],
+			 ["OMAP",          "omap",     "Y", "N", "Y", "N", "",      "N"],
+			 ["PGM",           "pgm",      "Y", "Y", "N", "N", "",      "N"],
+			 ["PIF",           "pif",      "Y", "Y", "Y", "Y", "",      "N"],
+			 ["PNG",           "png",      "Y", "Y", "N", "N", "",      "N"],
+			 ["SAL",           "hdr/img",  "Y", "N", "N", "N", "",      "N"],
+			 ["SITUS",         "situs",    "Y", "Y", "Y", "N", "",      "N"],
+			 ["TIFF",          "tiff/tif", "Y", "Y", "N", "N", "",      "N"],
+			 ["V4L",           "v4l",      "Y", "N", "N", "N", "",      "N"],
+			 ["VTK",           "vtk",      "Y", "Y", "Y", "N", "",      "N"],
+			 ["XPLOR",         "xplor",    "Y", "Y", "Y", "N", "",      "N"]]
+		
+		type_len_max = max([len(img[0]) for img in img_types])
+		
+		print(f"{header_line[0]:>{type_len_max}}: " + " ".join(header_line[1:]))
+		
+		for img in img_types:
+			print(  f"{img[0]:<{type_len_max}}: " 
+				  + f"{img[1]:{len(header_line[1])}}"
+				  + f" {img[2]:^{len(header_line[2])}}"
+				  + f" {img[3]:^{len(header_line[3])}}"
+				  + f" {img[4]:^{len(header_line[4])}}"
+				  + f" {img[5]:^{len(header_line[5])}}"
+				  + f" {img[6]:^{len(header_line[6])}}"
+				  + f" {img[7]:^{len(header_line[7])}}"
+				  )
+
 
 	elif args[0] in ("version"):
 		print(FULLVERSIONSTRING) 
+
+	elif args[0] in ("tophat"):
+		print("There are multiple ways to filter the 3D maps in SPA or SPT refinements:")
+		print("    wiener: wiener filter based on FSC curve. default mode in most programs.")
+		print("    global: tophat filter across the map at the resolution cutoff 0.143 from fsc_masked_xx.txt.") 
+		print("    localwiener: wiener filter based on the fsc curve of local regions from the even/odd maps. see e2fsc_real_local.py")
+		print("    local: tophat filter based on local resolution calculated from the even/odd maps at 0.143 cutoff. see e2fsc_real_local.py") 
+		print("    localold: an old version of local resolution based filter. see e2fsc_local.py") 
 	else:
 		print(helpstring)
 		print("unknown option:",args[0])
@@ -174,4 +232,4 @@ act as a filter on the names of the algorithms."""
 				if len(k)>1: print("")
 
 if __name__ == "__main__":
-    main()
+	main()

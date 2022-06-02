@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 # Author: Steven Ludtke, 09/04/2017 (sludtke@bcm.edu)
 # Copyright (c) 2000- Baylor College of Medicine
 #
@@ -44,7 +42,7 @@ from sys import argv,exit
 def maskfile(jsd,n,fsp,classes,masks,clsmap,options):
 
 	fspout=fsp.rsplit(".",1)[0].split("__")[0]+"__ctf_flip_masked.hdf"
-	fspbout=fsp.rsplit(".",1)[0].split("__")[0]+"__ctf_flip_bispec.hdf"
+	fspbout=fsp.rsplit(".",1)[0].split("__")[0]+"__ctf_flip_invar.hdf"
 
 	for i in range(len(clsmap)):
 		ptcl=EMData(fsp,i)
@@ -58,6 +56,10 @@ def maskfile(jsd,n,fsp,classes,masks,clsmap,options):
 			ptcl.mult(alim)
 
 		ptcl.write_image(fspout,i)
+
+		if options.redoharmonic:
+			bspec=ptcl.process("math.harmonic:fp=4")
+			bspec.write_image(fspbout,i)
 
 		if options.redobispec:
 			bspec=ptcl.process("math.bispectrum.slice",{"fp":bispec_invar_parm[1],"size":bispec_invar_parm[0]})
@@ -85,12 +87,13 @@ once complete, bispectra can be recomputed based on the masked particles, or the
 	parser.add_argument("--threads", default=4,type=int,help="Number of alignment threads to run in parallel on a single computer.", guitype='intbox', row=24, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--nofullresok",action="store_true",help="Overrides the requirement that the class-averages be made from _fullres particle images.",default=False)
 	parser.add_argument("--redobispec",action="store_true",help="Recomputes bispectra from masked particles",default=False)
+	parser.add_argument("--redoharmonic",action="store_true",help="Recomputes harmonic power from masked particles",default=False)
 	parser.add_argument("--gui",action="store_true",help="Permits interactive adjustment of mask parameters",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode="tuning[True]")
 # 	parser.add_argument("--iter",type=int,help="Iteration number within path. Default = start a new iteration",default=0)
 # 	parser.add_argument("--goldstandard",type=float,help="If specified, will phase randomize the even and odd references past the specified resolution (in A, not 1/A)",default=0)
 # 	parser.add_argument("--goldcontinue",action="store_true",help="Will use even/odd refs corresponding to specified reference to continue refining without phase randomizing again",default=False)
 # 	parser.add_argument("--saveali",action="store_true",help="Save a stack file (aliptcls.hdf) containing the aligned subtomograms.",default=False)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
@@ -145,7 +148,7 @@ once complete, bispectra can be recomputed based on the masked particles, or the
 	# here we run the threads and save the results, no actual alignment done here
 	print(len(thrds)," threads")
 	thrtolaunch=0
-	while thrtolaunch<len(thrds) or threading.active_count()>1:
+	while thrtolaunch<len(thrds) or threading.active_count()>1 or not jsd.empty():
 		# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
 		# note that it's ok that we wait here forever, since there can't be new results if an existing
 		# thread hasn't finished.
@@ -169,31 +172,33 @@ once complete, bispectra can be recomputed based on the masked particles, or the
 def maskparmgui(classes):
 	try:
 		from eman2_gui.emapplication import EMApp
-		from PyQt4 import QtCore, QtGui, QtOpenGL
+		from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
+		import OpenGL
+		OpenGL.ERROR_CHECKING = False
 		from OpenGL import GL,GLUT
 		from eman2_gui.valslider import ValSlider,CheckBox
 		from eman2_gui.emimagemx import EMImageMXWidget
 		
 	except:
-		print("Error: PyQt4 must be usable to use the --gui option")
+		print("Error: PyQt5 must be usable to use the --gui option")
 		sys.exit(1)
 
 
-	class GUImask(QtGui.QWidget):
+	class GUImask(QtWidgets.QWidget):
 		def __init__(self,app,classes):
 			"""Effectively a modal dialog for selecting masking parameters interactively
 			"""
 			self.app=app
-			QtGui.QWidget.__init__(self,None)
+			QtWidgets.QWidget.__init__(self,None)
 			nx=classes[0]["nx"]
 			
 			self.classes=classes
 			self.classview=EMImageMXWidget(self,classes)
 			
-			self.vbl = QtGui.QVBoxLayout(self)
+			self.vbl = QtWidgets.QVBoxLayout(self)
 			self.vbl.addWidget(self.classview)
 			
-			self.hbl = QtGui.QHBoxLayout()
+			self.hbl = QtWidgets.QHBoxLayout()
 			
 			self.cmode=CheckBox(self,"orig",value=1)
 			self.hbl.addWidget(self.cmode)
@@ -212,7 +217,7 @@ def maskparmgui(classes):
 			self.ssigma=ValSlider(self,(0,2),"Sigma:",0.333,90)
 			self.hbl.addWidget(self.ssigma)
 			
-			self.bok=QtGui.QPushButton("OK")
+			self.bok=QtWidgets.QPushButton("OK")
 			self.hbl.addWidget(self.bok)
 
 			self.vbl.addLayout(self.hbl)

@@ -1,9 +1,8 @@
 #!/usr/bin/env python
-from __future__ import print_function
 #
-# Author: Pawel A.Penczek and Edward H. Egelman 05/27/2009 (Pawel.A.Penczek@uth.tmc.edu)
-# Copyright (c) 2000-2006 The University of Texas - Houston Medical School
-# Copyright (c) 2008-Forever The University of Virginia
+# Author: Pawel A.Penczek 05/27/2009 (Pawel.A.Penczek@uth.tmc.edu)
+# Please do not copy or modify this file without written consent of the author.
+# Copyright (c) 2000-2019 The University of Texas - Houston Medical School
 #
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
@@ -33,6 +32,8 @@ from __future__ import print_function
 #
 
 
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 def main():
 	import os
@@ -226,7 +227,7 @@ def main():
 
 		irp = 1
 		if options.ou < 0:  oup = -1
-		else:               oup = int( (options.ou/options.apix) + 0.5)
+		else:               oup = int( (old_div(options.ou,options.apix)) + 0.5)
 		xrp = ''
 		txsp = ''
 		
@@ -235,9 +236,9 @@ def main():
 		for i in range(len(txs)):
 			txsp += " "+str(float(txs[i])/options.apix)
 
-		searchxshiftp = int( (options.searchxshift/options.apix) + 0.5)
-		nearbyp = int( (options.nearby/options.apix) + 0.5)
-		zstepp = int( (options.zstep/options.apix) + 0.5)
+		searchxshiftp = int( (old_div(options.searchxshift,options.apix)) + 0.5)
+		nearbyp = int( (old_div(options.nearby,options.apix)) + 0.5)
+		zstepp = int( (old_div(options.zstep,options.apix)) + 0.5)
 
 		if options.MPI:
 			from mpi import mpi_init, mpi_finalize

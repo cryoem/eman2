@@ -1,7 +1,7 @@
 #
-from __future__ import print_function
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
-# Copyright (c) 2000-2006 The University of Texas - Houston Medical School
+# Please do not copy or modify this file without written consent of the author.
+# Copyright (c) 2000-2019 The University of Texas - Houston Medical School
 #
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
@@ -259,7 +259,7 @@ def prgs1d( prjft, kb, params ):
 	line = prjft.extractline(kb, nuxnew, nuynew)
 	line = fft(line)
 
-	M = line.get_xsize()/2
+	M = old_div(line.get_xsize(),2)
 	Util.cyclicshift( line, {"dx":M, "dy":0, "dz":0} )
 	line = Util.window( line, M, 1, 1, 0, 0, 0 )
 
@@ -314,7 +314,7 @@ def prep_vol(vol, npad = 2, interpolation_method = -1):
 			# padd two times
 			N     = M*npad
 			# support of the window
-			kb    = Util.KaiserBessel(alpha, K, M/2, K/(2.*N), N)
+			kb    = Util.KaiserBessel(alpha, K, old_div(M,2), old_div(K,(2.*N)), N)
 			volft = vol.copy()
 			volft.divkbsinh(kb)
 			volft = volft.norm_pad(False, npad)
@@ -327,9 +327,9 @@ def prep_vol(vol, npad = 2, interpolation_method = -1):
 			Ny     = My*npad
 			Nz     = Mz*npad
 			# support of the window
-			kbx    = Util.KaiserBessel(alpha, K, Mx/2, K/(2.*Nx), Nx)
-			kby    = Util.KaiserBessel(alpha, K, My/2, K/(2.*Ny), Ny)
-			kbz    = Util.KaiserBessel(alpha, K, Mz/2, K/(2.*Nz), Nz)
+			kbx    = Util.KaiserBessel(alpha, K, old_div(Mx,2), old_div(K,(2.*Nx)), Nx)
+			kby    = Util.KaiserBessel(alpha, K, old_div(My,2), old_div(K,(2.*Ny)), Ny)
+			kbz    = Util.KaiserBessel(alpha, K, old_div(Mz,2), old_div(K,(2.*Nz)), Nz)
 			volft = vol.copy()
 			volft.divkbsinh_rect(kbx,kby,kbz)
 			volft = volft.norm_pad(False, npad)
@@ -587,9 +587,9 @@ def cml_init_global_var(dpsi, delta, nprj, debug):
 	g_anglst   = even_angles(delta, 0.0, 179.9, 0.0, 359.9, 'P')
 	g_n_anglst = len(g_anglst)
 	g_d_psi    = dpsi
-	g_n_psi    = int(360 / dpsi)
+	g_n_psi    = int(old_div(360, dpsi))
 	g_i_prj    = -1
-	g_n_lines  = (nprj - 1) * nprj / 2
+	g_n_lines  = old_div((nprj - 1) * nprj, 2)
 	g_n_prj    = nprj
 	g_debug    = debug
 	g_seq      = [0] * 2 * g_n_lines
@@ -677,7 +677,7 @@ def cml_open_proj(stack, ir, ou, lf, hf, dpsi = 1):
 			#line = filt_tanh(line, ou / float(nx), ou / float(nx))
 			# normalize this line
 			[mean_l, sigma_l, imin, imax] = Util.infomask(line, None, True)
-			line = (line - mean_l) / sigma_l
+			line = old_div((line - mean_l), sigma_l)
 			# fft
 			fftip(line)
 			# filter (cut part of coef) and create mirror line
@@ -703,9 +703,9 @@ def cml_sinogram(image2D, diameter, d_psi = 1):
 	# support of the window
 	K     = 6
 	alpha = 1.75
-	r     = M / 2
+	r     = old_div(M, 2)
 	v     = K / 2.0 / N
-	kb     = Util.KaiserBessel(alpha, K, r, K / (2. * N), N)
+	kb     = Util.KaiserBessel(alpha, K, r, old_div(K, (2. * N)), N)
 	volft  = image2D.average_circ_sub()  	# ASTA - in spider
 	volft.divkbsinh(kb)		  	# DIVKB2 - in spider
 	volft  = volft.norm_pad(False, npad)
@@ -743,9 +743,9 @@ def cml_sinogram_shift(image2D, diameter, shifts = [0.0, 0.0], d_psi = 1):
 	# support of the window
 	K     = 6
 	alpha = 1.75
-	r     = M / 2
+	r     = old_div(M, 2)
 	v     = K / 2.0 / N
-	kb     = Util.KaiserBessel(alpha, K, r, K / (2. * N), N)
+	kb     = Util.KaiserBessel(alpha, K, r, old_div(K, (2. * N)), N)
 	volft  = image2D.average_circ_sub()  	# ASTA - in spider
 	volft.divkbsinh(kb)		  	# DIVKB2 - in spider
 	volft  = volft.norm_pad(False, npad)

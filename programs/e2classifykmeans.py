@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -73,13 +70,14 @@ together."""
 	parser.add_argument("--clsfiles","-C",action="store_true",help="Write EMAN 1 style cls files with members of each class",default=False)
 #	parser.add_argument("--listout","-L",action="store_true",help="Output the results to 'class.list",default=False)
 	parser.add_argument("--mininclass",type=int,help="Try to eliminate classes with fewer than specified members. Default=2",default=2)
+	parser.add_argument("--outlierclass",action="store_true",help="If selected, classes with fewer than mininclass particles will move permanently to an outlier class (the last class)",default=False)
 	parser.add_argument("--original","-O",type=str,help="If the input stack was derived from another stack, you can provide the name of the original stack here",default=None)
 	parser.add_argument("--axes",type=str,help="Works only for 1-D input images. Specify a range, eg 0-5 to indicate which components to use from each vector. Inclusive. default=all",default=None)
 	parser.add_argument("--exclude", type=str,default=None,help="The named file should contain a set of integers, each representing an image from the input file to exclude.")
 	parser.add_argument("--minchange", type=int,default=-1,help="Minimum number of particles that change group before deicding to terminate. Default = len(data)/(#cls*25)")
 	parser.add_argument("--fastseed", action="store_true", default=False,help="Will seed the k-means loop quickly, but may produce lest consistent results.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
@@ -131,8 +129,9 @@ together."""
 	if options.minchange<=0 : options.minchange=old_div(len(data),(options.ncls*25))+1
 	if options.fastseed : slowseed=0
 	else : slowseed=1
+	maxiter=max(options.ncls/2,100)	# this could make a large number of classes take a long time
 	an=Analyzers.get("kmeans")
-	an.set_params({"ncls":options.ncls,"minchange":options.minchange,"verbose":1,"slowseed":slowseed,"calcsigmamean":options.sigma,"mininclass":options.mininclass})
+	an.set_params({"ncls":options.ncls,"minchange":options.minchange,"verbose":1,"slowseed":slowseed,"maxiter":maxiter,"calcsigmamean":options.sigma,"mininclass":options.mininclass,"outlierclass":options.outlierclass})
 	
 	an.insert_images_list(data)
 	centers=an.analyze()
@@ -145,6 +144,8 @@ together."""
 	classes=[[] for i in range(options.ncls)]
 	for n,i in enumerate(data):
 		classes[i.get_attr("class_id")].append(n)
+		
+#	for i,j in enumerate(classes): print(i,len(j),j)
 		
 	# This is the old python version of the algorithm, functional but slow
 	# left here in case someone needs something they can tweak

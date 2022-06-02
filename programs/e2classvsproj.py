@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 10/04/2013 (sludtke@bcm.edu)
 # Copyright (c) 2000-2013 Baylor College of Medicine
@@ -50,6 +47,8 @@ def simfn(jsd,projs,fsp,i,options,verbose):
 	best=None
 	ptcl=EMData(fsp,i)
 	ptcl.process_inplace("normalize.edgemean")
+	if ptcl["nx"] != projs[0]["nx"]:
+		ptcl.process_inplace("xform.scale",{"scale":ptcl["apix_x"]/projs[0]["apix_x"],"clip":projs[0]["nx"]})
 	vals={}
 	for j,proj in enumerate(projs):
 		projf=proj.process("filter.matchto",{"to":ptcl})
@@ -93,7 +92,7 @@ def main():
 	parser.add_argument("--savesim",type=str,default=None,help="Save all of the similarity results to a text file. (ptcl#,proj#,alt,az,sim)")
 	parser.add_argument("--threads", default=4,type=int,help="Number of alignment threads to run in parallel on a single computer. This is the only parallelism supported by this program at present.", guitype='intbox', row=24, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 
@@ -139,7 +138,7 @@ def main():
 	# here we run the threads and save the results, no actual alignment done here
 	print(len(thrds)," threads")
 	thrtolaunch=0
-	while thrtolaunch<len(thrds) or threading.active_count()>1:
+	while thrtolaunch<len(thrds) or threading.active_count()>1 or not jsd.empty():
 		# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
 		# note that it's ok that we wait here forever, since there can't be new results if an existing
 		# thread hasn't finished.
@@ -153,6 +152,10 @@ def main():
 		while not jsd.empty():
 			# returns ptcl#, best sim val, aligned ptcl, projection, {per proj sim}
 			i,sim,ali,proj,pps=jsd.get()
+			try: 
+				ali["class_qual"]=sim
+				ali["xform.projection"]=proj["xform.projection"]
+			except: pass
 			ali.write_image(args[2],i*2)
 			proj.write_image(args[2],i*2+1)
 			if options.savesim:

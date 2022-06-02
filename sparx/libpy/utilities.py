@@ -1,7 +1,7 @@
 #
-from __future__ import print_function
 # Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
-# Copyright (c) 2000-2006 The University of Texas - Houston Medical School
+# Please do not copy or modify this file without written consent of the author.
+# Copyright (c) 2000-2019 The University of Texas - Houston Medical School
 #
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
@@ -164,16 +164,16 @@ def amoeba(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itmax=500, data
 		for i in range(nsimplex):
 			if i != ssworst:
 				for j in range(nvar): pavg[j] += simplex[i][j]
-		for j in range(nvar): pavg[j] = pavg[j]/nvar # nvar is nsimplex-1
+		for j in range(nvar): pavg[j] = old_div(pavg[j],nvar) # nvar is nsimplex-1
 		simscale = 0.0
 		for i in range(nvar):
-			simscale += abs(pavg[i]-simplex[ssworst][i])/scale[i]
-		simscale = simscale/nvar
+			simscale += old_div(abs(pavg[i]-simplex[ssworst][i]),scale[i])
+		simscale = old_div(simscale,nvar)
 
 		# find the range of the function values
 		fscale = (abs(fvalue[ssbest])+abs(fvalue[ssworst]))/2.0
 		if fscale != 0.0:
-			frange = abs(fvalue[ssbest]-fvalue[ssworst])/fscale
+			frange = old_div(abs(fvalue[ssbest]-fvalue[ssworst]),fscale)
 		else:
 			frange = 0.0  # all the fvalues are zero in this case
 
@@ -265,16 +265,16 @@ def amoeba_multi_level(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itm
 		for i in range(nsimplex):
 			if i != ssworst:
 				for j in range(nvar): pavg[j] += simplex[i][j]
-		for j in range(nvar): pavg[j] = pavg[j]/nvar # nvar is nsimplex-1
+		for j in range(nvar): pavg[j] = old_div(pavg[j],nvar) # nvar is nsimplex-1
 		simscale = 0.0
 		for i in range(nvar):
-			simscale += abs(pavg[i]-simplex[ssworst][i])/scale[i]
-		simscale = simscale/nvar
+			simscale += old_div(abs(pavg[i]-simplex[ssworst][i]),scale[i])
+		simscale = old_div(simscale,nvar)
 
 		# find the range of the function values
 		fscale = (abs(fvalue[ssbest][0])+abs(fvalue[ssworst][0]))/2.0
 		if fscale != 0.0:
-			frange = abs(fvalue[ssbest][0]-fvalue[ssworst][0])/fscale
+			frange = old_div(abs(fvalue[ssbest][0]-fvalue[ssworst][0]),fscale)
 		else:
 			frange = 0.0  # all the fvalues are zero in this case
 
@@ -509,8 +509,8 @@ def center_2D(image_to_be_centered, center_method = 1, searching_range = -1, Gau
 					x+=(i-cx)
 					y+=(j-cy)
 					n+=1
-		shiftx = x/n
-		shifty = y/n
+		shiftx = old_div(x,n)
+		shifty = old_div(y,n)
 		if searching_range > 0 :
 			if(abs(shiftx) > searching_range):  shiftx=0
 			if(abs(shifty) > searching_range):  shifty=0
@@ -602,7 +602,7 @@ def common_line_in3D(phiA,thetaA,phiB,thetaB):
 	if nz<0: nx=-nx; ny=-ny; nz=-nz;
 
 	#thetaCom = asin(nz/sqrt(norm))
-	phiCom    = asin(nz/sqrt(norm))
+	phiCom    = asin(old_div(nz,sqrt(norm)))
 	#phiCom   = atan2(ny,nx)
 	thetaCom  = atan2(ny, nx)
 
@@ -806,13 +806,12 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 
 	from math      import pi, sqrt, cos, acos, tan, sin
 	from utilities import even_angles_cd
-	from string    import lower,split
 	angles = []
 	symmetryLower = symmetry.lower()
-	symmetry_string = split(symmetry)[0]
+	symmetry_string = symmetry.split()[0]
 	if(symmetry_string[0]  == "c"):
 		if(phi2 == 359.99):
-			angles = even_angles_cd(delta, theta1, theta2, phi1-ant, phi2/int(symmetry_string[1:])+ant, method, phiEqpsi)
+			angles = even_angles_cd(delta, theta1, theta2, phi1-ant, old_div(phi2,int(symmetry_string[1:]))+ant, method, phiEqpsi)
 		else:
 			angles = even_angles_cd(delta, theta1, theta2, phi1-ant, phi2+ant, method, phiEqpsi)
 		if(int(symmetry_string[1:]) > 1):
@@ -831,19 +830,19 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 		else:
 			angles = even_angles_cd(delta, theta1, theta2, phi1, phi2, method, phiEqpsi)
 		n = len(angles)
-		badb = 360.0/int(symmetry_string[1:])/4 + ant
+		badb = old_div(360.0/int(symmetry_string[1:]),4) + ant
 		bade = 2*badb -ant
-		bbdb = badb + 360.0/int(symmetry_string[1:])/2 + ant
-		bbde = bbdb + 360.0/int(symmetry_string[1:])/4 - ant
+		bbdb = badb + old_div(360.0/int(symmetry_string[1:]),2) + ant
+		bbde = bbdb + old_div(360.0/int(symmetry_string[1:]),4) - ant
 		for i in range(n):
 			t = n-i-1
 			qt = angles[t][0]
 			if((qt>=badb and qt<bade) or (qt>=bbdb and qt<bbde)):  del angles[t]
 
 		if (int(symmetry_string[1:])%2 == 0):
-			qt = 360.0/2/int(symmetry_string[1:])
+			qt = old_div(360.0/2,int(symmetry_string[1:]))
 		else:
-			qt = 180.0/2/int(symmetry_string[1:])
+			qt = old_div(180.0/2,int(symmetry_string[1:]))
 		n = len(angles)
 		for i in range(n):
 			t = n-i-1
@@ -856,7 +855,7 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 		if theta1 > 90.0:
 			ERROR('theta1 must be less than 90.0 for helical symmetry', 'even_angles', 1)
 		if theta1 == 0.0: theta1 =90.0
-		theta_number = int((90.0 - theta1)/theta2)
+		theta_number = int(old_div((90.0 - theta1),theta2))
 		#for helical, symmetry = s or scn
 		cn = int(symmetry_string[2:])
 		for j in range(theta_number,-1, -1):
@@ -864,22 +863,22 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 			if( j == 0):
 				if (symmetry_string[1] =="c"):
 					if cn%2 == 0:
-						k=int(359.99/cn/delta)
+						k=int(old_div(359.99/cn,delta))
 					else:
-						k=int(359.99/2/cn/delta)
+						k=int(old_div(old_div(359.99/2,cn),delta))
 				elif (symmetry_string[1] =="d"):
 					if cn%2 == 0:
-						k=int(359.99/2/cn/delta)
+						k=int(old_div(old_div(359.99/2,cn),delta))
 					else:
-						k=int(359.99/4/cn/delta)
+						k=int(old_div(old_div(359.99/4,cn),delta))
 				else:
 					ERROR("For helical strucutre, we only support scn and sdn symmetry","even_angles",1)
 
 			else:
 				if (symmetry_string[1] =="c"):
-					k=int(359.99/cn/delta)
+					k=int(old_div(359.99/cn,delta))
 				elif (symmetry_string[1] =="d"):
-					k=int(359.99/2/cn/delta)
+					k=int(old_div(old_div(359.99/2,cn),delta))
 
 			for i in range(k+1):
 					angles.append([i*delta,90.0-j*theta2,90.0])
@@ -1015,7 +1014,7 @@ def even_angles_cd(delta, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, method
 	if (method == 'P'):
 		temp = Util.even_angles(delta, theta1, theta2, phi1, phi2)
 		#		                                              phi, theta, psi
-		for i in range(len(temp)/3): angles.append([temp[3*i],temp[3*i+1],temp[3*i+2]]);
+		for i in range(old_div(len(temp),3)): angles.append([temp[3*i],temp[3*i+1],temp[3*i+2]]);
 	else:              #elif (method == 'S'):
 		Deltaz  = cos(theta2*pi/180.0)-cos(theta1*pi/180.0)
 		s       = delta*pi/180.0
@@ -1025,11 +1024,11 @@ def even_angles_cd(delta, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, method
 		angles.append([phi1, theta1, 0.0])
 		z1 = cos(theta1*pi/180.0); 	phi=phi1            # initialize loop
 		for k in range(1,(NumPoints-1)):
-			z=z1 + Deltaz*k/(NumPoints-1)
+			z=z1 + old_div(Deltaz*k,(NumPoints-1))
 			r= sqrt(1-z*z)
-			phi = phi1+(phi + delta/r -phi1)%(abs(phi2-phi1))
+			phi = phi1+(phi + old_div(delta,r) -phi1)%(abs(phi2-phi1))
 			#[k, phi,180*acos(z)/pi, 0]
-			angles.append([phi, 180*acos(z)/pi, 0.0])
+			angles.append([phi, old_div(180*acos(z),pi), 0.0])
 		#angles.append([p2,t2,0])  # This is incorrect, as the last angle is really the border, not the element we need. PAP 01/15/07
 	if (phiEQpsi == 'Minus'):
 		for k in range(len(angles)): angles[k][2] = (720.0 - angles[k][0])%360.0
@@ -1056,7 +1055,7 @@ def eigen_images_get(stack, eigenstack, mask, num, avg):
 		if( avg==1):
 			if(im==0): s  = a
 			else:      s += a
-	if(avg == 1): a -= s/nima
+	if(avg == 1): a -= old_div(s,nima)
 	eigenimg = a.analyze()
 	if(num>= EMUtil.get_image_count(eigenimg)):
 		num=EMUtil.get_image_count(eigenimg)
@@ -1426,7 +1425,7 @@ def parse_spider_fname(mystr, *fieldvals):
 def peak_search(e, npeak = 1, invert = 1, print_screen = 0):
 	peaks    = e.peak_search(npeak, invert)
 	ndim     = peaks[0]
-	nlist    = int((len(peaks)-1)/((ndim+1)*2))
+	nlist    = int(old_div((len(peaks)-1),((ndim+1)*2)))
 	if(nlist > 0):
 		outpeaks = []
 		if(print_screen):
@@ -1451,16 +1450,16 @@ def peak_search(e, npeak = 1, invert = 1, print_screen = 0):
 		#ERROR("peak search fails to find any peaks, returns image center as a default peak position","peak_search",0)
 		if  ndim == 1 :
 			nx = e.get_xsize()
-			outpeaks = [[1.0, float(nx/2), 1.0, 0.0]]
+			outpeaks = [[1.0, float(old_div(nx,2)), 1.0, 0.0]]
 		elif ndim == 2 :
 			nx = e.get_xsize()
 			ny = e.get_ysize()
-			outpeaks = [[1.0, float(nx/2), float(ny/2), 1.0, 0.0, 0.0]]
+			outpeaks = [[1.0, float(old_div(nx,2)), float(old_div(ny,2)), 1.0, 0.0, 0.0]]
 		elif ndim == 3 :
 			nx = e.get_xsize()
 			ny = e.get_ysize()
 			nz = e.get_ysize()
-			outpeaks = [[1.0, float(nx/2), float(ny/2), float(nz/2), 1.0, 0.0, 0.0, 0.0]]
+			outpeaks = [[1.0, float(old_div(nx,2)), float(old_div(ny,2)), float(old_div(nz,2)), 1.0, 0.0, 0.0, 0.0]]
 	return outpeaks
 
 ####--------------------------------------------------------------------------------------------------#########
@@ -1684,12 +1683,12 @@ def print_list_format(m, narray = 0):
 		ERROR("improper input narray number, use default value", "print_list_foramt",0)
 	if(narray == 0 ):
 		num = int(sqrt(len(m)))
-		if( len(m) % num != 0): lnum = int(len(m)/num) + 1
-		else: 			lnum = int(len(m)/num)
+		if( len(m) % num != 0): lnum = int(old_div(len(m),num)) + 1
+		else: 			lnum = int(old_div(len(m),num))
 	else:
 		num = narray
-		if( len(m) % num == 0): lnum = int(len(m)/num)
-		else: 			lnum = int(len(m)/num) + 1
+		if( len(m) % num == 0): lnum = int(old_div(len(m),num))
+		else: 			lnum = int(old_div(len(m),num)) + 1
 	ncount = -1
 	plist  = []
 	for i in range(lnum):
@@ -1732,7 +1731,7 @@ def read_spider_doc(fnam):
 			start= end+3
 			end  = start+6
 			line_data.append(atof(line[start:end]))
-			colNo = (len(line)-end)/12 - 1
+			colNo = old_div((len(line)-end),12) - 1
 			for i in range(colNo):
 				start= end+6
 				end  = start+7
@@ -1750,14 +1749,20 @@ def read_spider_doc(fnam):
 			line = inf.readline()
 	return data
 
-def chooseformat(t):
-    ee = "%12.5f"%t
-    if(len(ee)>12):  return "e"
-    df1 = float(ee)
-    df2 = float("%12.4e"%t)
-    if(abs(t-df1) <= abs(t-df2)):  ouo = "f"
-    else: ouo = "e"
-    return ouo
+def chooseformat(t, form_float = "  %12.5f"):
+	e_form = form_float.replace("f","e")
+	if(t == 0.0 ):  return e_form
+	ee = form_float.strip()%t
+	if(len(ee)>int( (( form_float.strip() ).split("."))[0][1:] )):  return e_form
+	df1 = float(ee)
+	if(df1==0.0):  return e_form
+	#df2 = float(e_form.strip()%t)
+	#if(abs(t-df1) <= abs(t-df2)):  return form_float
+	rat = min(t/df1,df1/t)
+	if(int(round(rat,int(e_form.split(".")[1][0])-1)) == 1): return form_float
+	#pw = int(e_form.split(".")[1][0])
+	#if( round(df1)*10**pw == round(df2)*10**pw ):  return form_float
+	else: return e_form
 
 def read_text_row(fnam, format="", skip=";"):
 	"""
@@ -1768,7 +1773,6 @@ def read_text_row(fnam, format="", skip=";"):
 	    	len(data)/nc : number of lines (rows)
 	    	data: List of numbers from the doc file
  	"""
-	from string import split
 
 	inf  = open(fnam, "r")
 	strg = inf.readline()
@@ -1779,7 +1783,7 @@ def read_text_row(fnam, format="", skip=";"):
 		for j in range(len(strg)):
 			if(strg[j] == skip):	com_line = True
 		if com_line == False:
-			word=split(strg)
+			word=strg.split()
 			if format == "s" :
 				key = int(word[1])
 				if key != len(word) - 2:
@@ -1803,7 +1807,7 @@ def read_text_row(fnam, format="", skip=";"):
 	return data
 
 
-def write_text_row(data, file_name):
+def write_text_row(data, file_name, form_float = "  %14.6f", form_int = "  %12d"):
 	"""
 	   Write to an ASCII file a list of lists containing floats.
 
@@ -1812,32 +1816,35 @@ def write_text_row(data, file_name):
 	         First list will be written as a first line, second as a second, and so on...
 		 If only one list is given, the file will contain one line
 	"""
+	from utilities import convert_from_numpy
 	import types
 	outf = open(file_name, "w")
+	if data == []:
+		outf.close()
+		return
+
 	if (type(data[0]) == list):
 		# It is a list of lists
 		for i in range(len(data)):
 			for j in range(len(data[i])):
-				tpt = data[i][j]
+				tpt = convert_from_numpy(data[i][j])
 				qtp = type(tpt)
-				if qtp == int:		outf.write("  %12d"%tpt)
+				if qtp == int:	outf.write(form_int%tpt)
 				elif qtp == float:
-					frmt = chooseformat(tpt)
-					if( frmt == "f" ):			outf.write("  %12.5f"%tpt)
-					else:						outf.write("  %12.5e"%tpt)
-				else:                   		outf.write("  %s"%tpt)
+					frmt = chooseformat(tpt, form_float)
+					outf.write(frmt%tpt)
+				else:	outf.write("  %s"%tpt)
 			outf.write("\n")
 	else:
 		# Single list
 		for j in range(len(data)):
-			tpt = data[j]
+			tpt = convert_from_numpy(data[j])
 			qtp = type(tpt)
-			if qtp == int :			outf.write("  %12d\n"%tpt)
+			if qtp == int :	outf.write(form_int%tpt+"\n")
 			elif qtp == float:
-				frmt = chooseformat(tpt)
-				if( frmt == "f" ):				outf.write("  %12.5f\n"%tpt)
-				else:							outf.write("  %12.5e\n"%tpt)
-			else:								outf.write("  %s\n"%tpt)
+				frmt = chooseformat(tpt, form_float)
+				outf.write(frmt%tpt+"\n")
+			else:	outf.write("  %s\n"%tpt)
 	outf.flush()
 	outf.close()
 
@@ -1848,13 +1855,12 @@ def read_text_file(file_name, ncol = 0):
 		if ncol >= 0, just read the (ncol)-th column.
 	"""
 
-	from string import split
 	inf = open(file_name, "r")
 	line = inf.readline()
 	data = []
 	while len(line) > 0:
 		if ncol == -1:
-			vdata = split(line)
+			vdata = line.split()
 			if data == []:
 				for i in range(len(vdata)):
 					try:     data.append([int(vdata[i])])
@@ -1868,7 +1874,7 @@ def read_text_file(file_name, ncol = 0):
 						try:  data[i].append(float(vdata[i]))
 						except:  data[i].append(vdata[i])
 		else:
-			vdata = split(line)[ncol]
+			vdata = line.split()[ncol]
 			try:     data.append(int(vdata))
 			except:
 				try:  	data.append(float(vdata))
@@ -1876,7 +1882,7 @@ def read_text_file(file_name, ncol = 0):
 		line = inf.readline()
 	return data
 
-def write_text_file(data, file_name):
+def write_text_file(data, file_name, form_float = "  %14.6f", form_int = "  %12d"):
 	"""
 	   Write to an ASCII file a list of lists containing floats.
 
@@ -1885,39 +1891,47 @@ def write_text_file(data, file_name):
 	         First list will be written as a first column, second as a second, and so on...
 		 If only one list is given, the file will contain one column
 	"""
-
+	from utilities import convert_from_numpy
+	import types
+	outf = open(file_name, "w")
 	if data == []:
-		outf = open(file_name, "w")
 		outf.close()
 		return
 
-	import types
-	outf = open(file_name, "w")
 	if (type(data[0]) == list):
 		# It is a list of lists
 		for i in range(len(data[0])):
 			for j in range(len(data)):
-				tpt = data[j][i]
+				tpt = convert_from_numpy(data[j][i])
 				qtp = type(tpt)
-				if qtp == int:			outf.write("  %12d"%tpt)
+				if qtp == int:	outf.write(form_int%tpt)
 				elif qtp == float:
-					frmt = chooseformat(tpt)
-					if( frmt == "f" ):				outf.write("  %12.5f"%tpt)
-					else:							outf.write("  %12.5e"%tpt)
-				else:                   			outf.write("  %s"%tpt)
+					frmt = chooseformat(tpt, form_float)
+					outf.write(frmt%tpt)
+				else:	outf.write("  %s"%tpt)
 			outf.write("\n")
 	else:
 		# Single list
 		for j in range(len(data)):
-			tpt = data[j]
+			tpt = convert_from_numpy(data[j])
 			qtp = type(tpt)
-			if qtp == int :			outf.write("  %12d\n"%tpt)
+			if qtp == int :	outf.write(form_int%tpt+"\n")
 			elif qtp == float:
-				frmt = chooseformat(tpt)
-				if( frmt == "f" ):				outf.write("  %12.5f\n"%tpt)
-				else:							outf.write("  %12.5e\n"%tpt)
-			else:                   			outf.write("  %s\n"%tpt)
+				frmt = chooseformat(tpt, form_float)
+				outf.write(frmt%tpt+"\n")
+			else:	outf.write("  %s\n"%tpt)
 	outf.close()
+
+def convert_from_numpy(x):
+	"""
+		Convert numpy number to python number
+	"""
+	import numpy as np
+	try:
+		ziz = str(type(x)).index("numpy")
+		return x.tolist()
+	except:
+		return x
 
 def reconstitute_mask(image_mask_applied_file, new_mask_file, save_file_on_disk = True, saved_file_name = "image_in_reconstituted_mask.hdf"):
 	import types
@@ -2017,7 +2031,7 @@ def reshape_1d(input_object, length_current=0, length_interpolated=0, Pixel_size
 	lt = len(input_object) - 2
 	if length_interpolated == 0:
 		if( Pixel_size_interpolated != Pixel_size_current):
-			length_interpolated = int(length_current*Pixel_size_current/Pixel_size_interpolated + 0.5)
+			length_interpolated = int(old_div(length_current*Pixel_size_current,Pixel_size_interpolated) + 0.5)
 		else:
 			ERROR("Incorrect input parameters","reshape_1d",1)
 			return []
@@ -2025,7 +2039,7 @@ def reshape_1d(input_object, length_current=0, length_interpolated=0, Pixel_size
 	if  Pixel_size_current == 0.:
 		Pixel_size_current = 1.
 		Pixel_size_interpolated = Pixel_size_current*float(length_current)/float(length_interpolated)
-	qt =Pixel_size_interpolated/Pixel_size_current
+	qt =old_div(Pixel_size_interpolated,Pixel_size_current)
 
 	for i in range(length_interpolated):
 		xi = float(i)*qt
@@ -2101,7 +2115,7 @@ def estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node, mpi_comm
 					ali_params_series.append(float(temp[nn]))
 
 		ali_params = []
-		N = len(ali_params_series)/5
+		N = old_div(len(ali_params_series),5)
 		for im in range(N):
 			ali_params.append([ali_params_series[im*5], ali_params_series[im*5+1], ali_params_series[im*5+2], ali_params_series[im*5+3], ali_params_series[im*5+4]])
 
@@ -2187,16 +2201,16 @@ def running_time(start_time):
 	from utilities import print_msg
 	from time import time
 	time_run = int(time() - start_time)
-	time_h   = time_run / 3600
-	time_m   = (time_run % 3600) / 60
+	time_h   = old_div(time_run, 3600)
+	time_m   = old_div((time_run % 3600), 60)
 	time_s   = (time_run % 3600) % 60
 	print_msg('\nRunning time is: %s h %s min %s s\n\n' % (str(time_h).rjust(2, '0'), str(time_m).rjust(2, '0'), str(time_s).rjust(2, '0')))
 
 def running_time_txt(start_time):
 	from time import time
 	time_run = int(time() - start_time)
-	time_h   = time_run / 3600
-	time_m   = (time_run % 3600) / 60
+	time_h   = old_div(time_run, 3600)
+	time_m   = old_div((time_run % 3600), 60)
 	time_s   = (time_run % 3600) % 60
 	return 'Running time is: %s h %s min %s s' % (str(time_h).rjust(2, '0'), str(time_m).rjust(2, '0'), str(time_s).rjust(2, '0'))
 
@@ -2235,7 +2249,7 @@ def reduce_EMData_to_root(data, myid, main_node = 0, comm = -1):
 	for i in n: ntot *= i
 	count = (75*4+2)*(75*4)**2
 	array1d = reshape( array, (ntot,))
-	ntime = (ntot-1) /count + 1
+	ntime = old_div((ntot-1),count) + 1
 	for i in range(ntime):
 		block_begin = i*count
 		block_end   = min(block_begin + count, ntot)
@@ -3179,7 +3193,7 @@ def print_begin_msg(program_name, onscreen=False):
 	t = 100
 	stars = '*'*t
 	string = "Beginning of the program " + program_name + ": " + strftime("%a, %d %b %Y %H:%M:%S", localtime())
-	s = (t-len(string))/2
+	s = old_div((t-len(string)),2)
 	spacing = ' '*s
 	if onscreen:
 		print(stars)
@@ -3195,7 +3209,7 @@ def print_end_msg(program_name, onscreen=False):
 	t = 100
 	stars = '*'*t
 	string = "End of the program " + program_name + ": " + strftime("%a, %d %b %Y %H:%M:%S", localtime())
-	s = (t-len(string))/2
+	s = old_div((t-len(string)),2)
 	spacing = ' '*s
 	if onscreen:
 		print(stars)
@@ -3377,8 +3391,8 @@ def set_params_proj(ima, p, xform = "xform.projection"):
 	  p = [phi, theta, psi, s2x, s2y]
 	"""
 	from EMAN2 import Vec2f
-	t = Transform({"type":"spider","phi":p[0],"theta":p[1],"psi":p[2]})
-	t.set_trans(Vec2f(-p[3], -p[4]))
+	t = Transform({"type":"spider","phi":p[0],"theta":p[1],"psi":p[2],"tx":-p[3],"ty":-p[4]})
+	#t.set_trans(Vec2f(-p[3], -p[4]))
 	ima.set_attr(xform, t)
 
 
@@ -3595,7 +3609,11 @@ def nearest_many_full_k_projangles(reference_normals, angles, howmany = 1, sym_c
 	from utilities import getfvec, angles_to_normals
 	#refnormal = normals[:]
 	assignments = [-1]*len(angles)
-	if( sym_class.sym[:2] == "c1"):
+	if(sym_class == None): dos = True
+	elif(sym_class.sym[:2] == "c1"): dos = True
+	else:  dos = False
+
+	if dos:
 		for i,q in enumerate(angles):
 			ref = getfvec(q[0],q[1])
 			assignments[i] = Util.nearest_fang_select(reference_normals, ref[0],ref[1],ref[2], howmany)
@@ -3832,7 +3850,7 @@ def assign_projdirs_f(projdirs, refdirs, neighbors):
 	"""
 	#  Create a list that for each projdirs contains an index of the closest refdirs/neighbors
 	qsti = Util.assign_projdirs_f(projdirs, refdirs, neighbors)
-	assignments = [[] for i in range(len(refdirs)/neighbors)]
+	assignments = [[] for i in range(old_div(len(refdirs),neighbors))]
 	for i in range(len(projdirs)):
 		assignments[qsti[i]].append(i)
 
@@ -4080,7 +4098,7 @@ def angular_occupancy(params, angstep = 15., sym= "c1", method='S'):
 	seaf = []
 	for q in eah+u:  seaf += smc.symmetry_related(q)
 
-	lseaf = len(seaf)/(2*leah)
+	lseaf = old_div(len(seaf),(2*leah))
 	#print(lseaf)
 	#for i,q in enumerate(seaf):  print(" seaf  ",i,q)
 	#print(seaf)
@@ -4090,7 +4108,7 @@ def angular_occupancy(params, angstep = 15., sym= "c1", method='S'):
 
 	for i,q in enumerate(params):
 		l = nearest_fang(seaf,q[0],q[1])
-		l = l/lseaf
+		l = old_div(l,lseaf)
 		if(l>=leah):  l = l-leah
 		occupancy[l].append(i)
 	#for i,q in enumerate(occupancy):
@@ -4129,7 +4147,7 @@ def symmetry_neighbors(angles, symmetry):
 	#  input is a list of lists  [[phi0,theta0,psi0],[phi1,theta1,psi1],...]
 	#  output is [[phi0,theta0,psi0],[phi0,theta0,psi0]_SYM1,...,[phi1,theta1,psi1],[phi1,theta1,psi1]_SYM1,...]
 	temp = Util.symmetry_neighbors(angles, symmetry)
-	nt = len(temp)/3
+	nt = old_div(len(temp),3)
 	return [[temp[l*3+i] for i in range(3)] for l in range(nt) ]
 	#  We could make it a list of lists
 	#mt = len(angles)
@@ -4383,7 +4401,7 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 	# If we are, we are only going to read the table and avoid calculating the distance again.
 	previous_group = -1
 	previous_zone = 5
-	for grp in range(N/img_per_grp):
+	for grp in range(old_div(N,img_per_grp)):
 		print(grp, end=' ')
 		N_remain = N-grp*img_per_grp
 		# The idea here is that if each group has more than 100 images in average,
@@ -4568,7 +4586,7 @@ def group_proj_by_phitheta(proj_ang, symmetry = "c1", img_per_grp = 100, verbose
 	assert N == len(proj_list2)
 	for i in range(N): assert i == proj_list2[i]
 
-	Ng = N/img_per_grp
+	Ng = old_div(N,img_per_grp)
 	proj_list_new = [[] for i in range(Ng)]
 	mirror_list = [[] for i in range(Ng)]
 	angles_list = []
@@ -4640,7 +4658,7 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 		begin = 0
 		end = N-1
 		while begin <= end:
-			mid = (begin+end)/2
+			mid = old_div((begin+end),2)
 			if a[mid] == x: return mid
 			if a[mid] < x: begin = mid+1
 			else: end = mid-1
@@ -4660,7 +4678,7 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 			begin = 0
 			end = N-2
 			while end >= begin:
-				mid = (begin+end)/2
+				mid = old_div((begin+end),2)
 				if x > a[mid] and x < a[mid+1]: break;
 				if x < a[mid]: end = mid-1
 				else: begin = mid+1
@@ -4680,7 +4698,7 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 			begin = 0
 			end = N-2
 			while end >= begin:
-				mid = (begin+end)/2
+				mid = old_div((begin+end),2)
 				if x > a[mid] and x < a[mid+1]: break;
 				if x < a[mid]: end = mid-1
 				else: begin = mid+1
@@ -4743,7 +4761,7 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 				min_phi = 0.0
 				max_phi = 360.0
 			else:
-				dphi = min(delta/(2*min_theta)*180.0, 180.0)
+				dphi = min(old_div(delta,(2*min_theta))*180.0, 180.0)
 				min_phi = phi - dphi
 				max_phi = phi + dphi
 				if min_phi < 0.0: min_phi += 360.0
@@ -4838,7 +4856,7 @@ def findall(value, L, start=0):
 			i = L.index(value, i)
 			positions.append(i)
 		except:
-			pass
+			break
 	return positions
 
 """
@@ -5132,7 +5150,7 @@ def rearrange_ranks_of_processors(mode):
 	local_size = host_names.count(hostname)
 	
 	no_of_processes_per_group = local_size
-	no_of_groups = mpi_size/local_size
+	no_of_groups = old_div(mpi_size,local_size)
 	
 	if my_rank == 0:
 		host_names = sorted(set(host_names))
@@ -5191,7 +5209,7 @@ def get_colors_and_subsets(main_node, mpi_comm, my_rank, shared_comm, sh_my_rank
 
 	group_infos = wrap_mpi_bcast(group_infos, main_node, mpi_comm)
 
-	number_of_groups = len(group_infos)/2
+	number_of_groups = old_div(len(group_infos),2)
 
 	for i in range(number_of_groups):
 		if my_rank in group_infos[2*i+1]:
@@ -5237,7 +5255,7 @@ def wrap_mpi_split_shared_memory(mpi_comm):
 	# local_rank = my_rank % local_size 
 
 	no_of_processes_per_group = local_size
-	no_of_groups = mpi_size/local_size
+	no_of_groups = old_div(mpi_size,local_size)
 
 	if my_rank == 0:
 			host_names = sorted(set(host_names))
@@ -5245,7 +5263,7 @@ def wrap_mpi_split_shared_memory(mpi_comm):
 	host_dict = {host_names[i]: i for i in range(len(host_names))}
 
 	# color = host_dict[hostname]
-	color = my_rank / no_of_processes_per_group
+	color = old_div(my_rank, no_of_processes_per_group)
 	key = local_rank
 
 	# shared_comm = mpi_comm_split_shared(mpi_comm, 0, key)
@@ -5266,8 +5284,8 @@ def wrap_mpi_split(comm, no_of_groups):
 	nproc = mpi_comm_size(comm)
 	myid = mpi_comm_rank(comm)
 
-	no_of_proc_per_group = nproc / no_of_groups
-	color = myid / no_of_proc_per_group
+	no_of_proc_per_group = old_div(nproc, no_of_groups)
+	color = old_div(myid, no_of_proc_per_group)
 	key = myid % no_of_proc_per_group
 
 	return mpi_comm_split(comm, color, key)
@@ -5314,7 +5332,7 @@ def combinations_of_n_taken_by_k(n, k):
 
 def cmdexecute(cmd, printing_on_success = True):
 	from   time import localtime, strftime
-	import subprocess
+	#import subprocess  I do not know why this is not used. PAP
 	import os
 	#outcome = subprocess.call(cmd, shell=True)
 	outcome = os.system(cmd)
@@ -6099,8 +6117,8 @@ def sample_down_1D_curve(nxinit, nnxo, pspcurv_nnxo_file):
 	curv_orgn = read_text_file(pspcurv_nnxo_file)
 	new_curv=int(1.5*len(curv_orgn))*[0.0]
 	for index in range(len(curv_orgn)):
-		new_index = int(index/shrinkage)
-		fraction  = index/shrinkage-new_index
+		new_index = int(old_div(index,shrinkage))
+		fraction  = old_div(index,shrinkage)-new_index
 		if fraction <=0:
 			new_curv[new_index] +=curv_orgn[index]
 		else:
@@ -6183,7 +6201,7 @@ def get_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
 	# this function is single processor
 	#  Get updated FSC curves, user can also provide a mask using radi variable
 	import types
-	from statistics import fsc
+	from pap_statistics import fsc
 	from utilities import model_circle, get_im
 	from filter import fit_tanh1
 	import os
@@ -6259,7 +6277,7 @@ def save_alist(Tracker,name_of_the_text_file,alist):
 def margin_of_error(P, size_of_this_sampling):
 	# margin of an error, or radius of an error for a percentage
 	from math import sqrt
-	return sqrt(P*(1.-P)/size_of_this_sampling)
+	return sqrt(old_div(P*(1.-P),size_of_this_sampling))
 
 def get_margin_of_error(this_group_of_data,Tracker):
 	ratio = margin_of_error(Tracker["P_chunk0"],len(this_group_of_data))
@@ -6269,7 +6287,7 @@ def get_margin_of_error(this_group_of_data,Tracker):
 def do_two_way_comparison(Tracker):
 	from mpi import mpi_barrier, MPI_COMM_WORLD
 	from utilities import read_text_file,write_text_file
-	from statistics import k_means_match_clusters_asg_new
+	from pap_statistics import k_means_match_clusters_asg_new
 	import os
 	######
 	myid              = Tracker["constants"]["myid"]
@@ -6324,9 +6342,9 @@ def do_two_way_comparison(Tracker):
 					tt +=len(list_stable[m])
 				if( (myid == main_node) and (iptp<jptp) ):
 					unaccounted = total_stack-tt
-					ratio_unaccounted  = 100.-tt/total_stack*100.
-					ratio_accounted    = tt/total_stack*100
-				rate = tt/total_stack*100.0
+					ratio_unaccounted  = 100.-old_div(tt,total_stack)*100.
+					ratio_accounted    = old_div(tt,total_stack)*100
+				rate = old_div(tt,total_stack)*100.0
 				scores[(iptp,jptp)]    = rate
 				if iptp<jptp :
 					avg_two_ways 	    += rate
@@ -6348,7 +6366,7 @@ def do_two_way_comparison(Tracker):
 			for jpp in range(len(ptp)):
 				if ipp!=jpp:
 					avg_scores += scores[(ipp,jpp)]
-			avg_rate =avg_scores/(len(ptp)-1)
+			avg_rate =old_div(avg_scores,(len(ptp)-1))
 			summed_scores.append(avg_rate)
 			two_way_dict[avg_rate] =ipp
 		#### Select two independent runs that have the first two highest scores
@@ -6391,8 +6409,8 @@ def do_two_way_comparison(Tracker):
 			log_main.add(" Selected indepedent runs      %5d and  %5d"%(run1,run2))
 			log_main.add(" Their pair-wise averaged rates are %5.2f  and %5.2f "%(rate1,rate2))
 		from math import sqrt
-		avg_two_ways        = avg_two_ways/total_pop
-		two_ways_std        = sqrt(avg_two_ways_square/total_pop-avg_two_ways**2)
+		avg_two_ways        = old_div(avg_two_ways,total_pop)
+		two_ways_std        = sqrt(old_div(avg_two_ways_square,total_pop)-avg_two_ways**2)
 		net_rate            = avg_two_ways-1./number_of_groups*100.
 		Tracker["net_rate"] = net_rate
 		if myid == main_node:
@@ -6723,7 +6741,7 @@ def get_stable_members_from_two_runs(SORT3D_rootdirs, ad_hoc_number, log_main):
 	# ad_hoc_number would be a number larger than the id simply for handling two_way comparison of non-equal number of groups from two partitions.
 	########
 	from string import split
-	from statistics import k_means_match_clusters_asg_new
+	from pap_statistics import k_means_match_clusters_asg_new
 	from numpy import array
 
 	sort3d_rootdir_list = split(SORT3D_rootdirs)
@@ -6793,7 +6811,7 @@ def get_stable_members_from_two_runs(SORT3D_rootdirs, ad_hoc_number, log_main):
 
 def two_way_comparison_single(partition_A, partition_B,Tracker):
 	###############
-	from statistics import k_means_match_clusters_asg_new
+	from pap_statistics import k_means_match_clusters_asg_new
 	from utilities import count_chunk_members, margin_of_error
 	from numpy import array
 	#two_way_comparison_single
@@ -7197,7 +7215,7 @@ def tabessel(nx, nnxo, nbel = 5000):
 	normk = Util.bessel0(0., radius, alpha)
 	for i in range(nbel):
 		rr = i/float(nbel-1)/2.0
-		beltab[i] = Util.bessel0(rr, radius, alpha)/normk
+		beltab[i] = old_div(Util.bessel0(rr, radius, alpha),normk)
 	return beltab
 
 ####

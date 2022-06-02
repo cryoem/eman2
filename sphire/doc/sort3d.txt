@@ -1,0 +1,105 @@
+~~NOTOC~~
+
+===== sp_sort3d =====
+3D Clustering - SORT3D: Sort 3D heterogeneity based on the reproducible members of K-means and Equal K-means classification. It runs after 3D refinement where the alignment parameters are determined.
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sp_sort3d.py  stack  outdir  mask  --focus=3Dmask  --radius=outer_radius  --delta=angular_step  --CTF  --sym=c1  --number_of_images_per_group=number_of_images_per_group  --nxinit=nxinit  --smallest_group=smallest_group  --chunk0=CHUNK0_FILE_NAME  --chunk1=CHUNK1_FILE_NAME  --ir=inner_radius  --maxit=max_iter  --rs=ring_step  --xr=xr  --yr=yr  --ts=ts  --an=angular_neighborhood  --center=centring_method  --nassign=nassign  --nrefine=nrefine  --stoprnct=stop_percent  --function=user_function  --independent=indenpendent_runs  --low_pass_filter=low_pass_filter  --unaccounted  --seed=random_seed  --sausage  --PWadjustment=PWadjustment  --protein_shape=protein_shape  --upscale=upscale  --wn=wn  --interpolation=method
+
+\\
+===== Typical usage =====
+
+sp_sort3d exists only in MPI version.
+
+  mpirun -np 192 sp_sort3d.py bdb:data sort3d_outdir1 mask.hdf --focus=ribosome_focus.hdf --chunkdir=/data/n10/pawel/ribosome_frank/ri3/main013 --radius=52 --CTF --number_of_images_per_group=2000 --low_pass_filter=.125 --stoprnct=5
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; stack : Input images stack: (default required string)
+  ; outdir : Output directory: There is a log.txt that describes the sequences of computations in the program. (default required string)
+  ; mask : 3D mask: File path of the global 3D mask for clustering. (default none)
+
+  ; %%--%%focus : Binary Focus 3D mask: Binary 3D mask used for focused clustering. (default none)
+  ; %%--%%radius : Particle radius [Pixels]: Used as outer radius for rotational correlation.  Must be smaller than half the box size. (default -1)
+  ; %%--%%delta : Angular step for projections [Degrees]: Angular step of reference projections. (default '2')
+  ; %%--%%CTF : Use CTF: Do a full CTF correction during the alignment. (default False)
+  ; %%--%%sym : Point-group symmetry: Point-group symmetry of the target structure. (default c1)
+  ; %%--%%number_of_images_per_group : Images per group: Critical value defined by user. It suggests program the number of groups. (default 1000)
+  ; %%--%%nxinit : Initial image size for sorting: Initial image size for sorting. (default 64)
+  ; %%--%%smallest_group : Smallest group size: Minimum members for identified group. (default 500) 
+  ; %%--%%chunk0 : Chunk file name for 1st halfset: Name of chunk file containing particle IDs of 1st halfset (chunk0) for computing margin of error. (default none)
+  ; %%--%%chunk1 : Chunk file name for 2nd halfset: Name of chunk file containing particle IDs of 2nd halfset (chunk1) for computing margin of error. (default none)
+
+\\
+=== Advanced Parameters ===
+  ; %%--%%ir : Inner radius for rotational correlation [Pixels]: Must be bigger than 1. (default 1)
+  ; %%--%%maxit : Maximum iterations: Maximum number of iteration. (default 25)
+  ; %%--%%rs : Step between rings in rotational correlation: Must be bigger than 0. (default 1)
+  ; %%--%%xr : X search range [Pixels]: The translational search range in the x direction will take place in -xr to +xr range. (default '1')
+  ; %%--%%yr : Y search range [Pixels]: The translational search range in the y direction will take place in -yr to +yr range.. If omitted, it will be set as xr. (default '-1')
+  ; %%--%%ts : Translational search step [Pixels]: The search will be performed in -xr, -xr+ts, 0, xr-ts, xr, can be fractional. (default '0.25')
+  ; %%--%%an : Local angular search width [Degrees]: This defines the neighbourhood where the local angular search will be performed. (default '-1')
+  ; %%--%%center : Centering method: 0 - if you do not want the volume to be centered, 1 - center the volume using the center of gravity. (default 0)
+  ; %%--%%nassign : Number of reassignment iterations: Performed for each angular step. (default 1)
+  ; %%--%%nrefine : Number of alignment iterations: Performed for each angular step. (default 0)
+  ; %%--%%stoprnct : Assignment convergence threshold [%]: Used to asses convergence of the run. It is the minimum percentage of assignment change required to stop the run.  (default 3.0)
+  ; %%--%%function : Reference preparation function: Specify name of function used to prepare the reference volume. (default do_volume_mrk05)
+  ; %%--%%independent : Number of independent runs: Number of independent equal-Kmeans. (default 3)
+  ; %%--%%low_pass_filter : Low-pass filter frequency [1/Pixels]: Low-pass filter used for the 3D sorting on the original image size. Specify with absolute frequency. (default -1.0)
+  ; %%--%%unaccounted : Reconstruct unaccounted images: Reconstruct unaccounted images. (default False)
+  ; %%--%%seed : Random seed: Seed used for the initial random assignment for EQ Kmeans. The program generates a random integer by default. (default -1)
+  ; %%--%%sausage : Use sausage filter: A way of filtering volume. (default False)
+  ; %%--%%PWadjustment : Power spectrum reference: Text file containing a 1D reference power spectrum used for EM density map power spectrum correction. Typically, compute 1D power spectrum from PDB file. (default none)
+  ; %%--%%protein_shape : Protein Shape: It defines protein preferred orientation angles. "g" is for globular proteins and "f" is for filament proteins. (default 'g')
+  ; %%--%%upscale : Power spectrum adjustment strength: This parameters adjusts how strongly the power spectrum of the volume should be modified to match the reference. A value of 1 brings the volume's power spectrum completely to the reference, while a value of 0 means no modification. (default 0.5)
+  ; %%--%%wn : Target image size [Pixels]: Specify optimal window size for data processing. If different than 0, then the images will be rescaled to fit this size. (default 0)
+  ; %%--%%interpolation : 3D interpolation method: Method interpolation in 3D. Options are tr1 or 4nn. (default '4nn')
+
+\\
+===== Output =====
+
+\\
+===== Description =====
+The clustering algorithm in the program combines a couple of computational techniques, equal-Kmeans clustering, K-means clustering, and reproducibility of clustering such that it not only has a strong ability but also a high efficiency to sort out heterogeneity of cryo-EM images. The command sp_sort3d.py is the protocol I (P1). In this protocol, the user defines the group size and thus defines the number of group K. Then the total data is randomly assigned into K group and an equal-size K-means (size restricted K-means) is carried out. N independent equal-Kmeans runs would give N partition of the K groups assignment. Then, two-way comparison of these partitions gives the reproducible number of particles.
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+Described by A.Einstein in his first paper on spectrum of radiation from a house heater kept at room temperature. Journal of Irreproducible Results, 12, 1905, 12-1127.
+
+\\
+==== Developer Notes ====
+
+\\
+==== Author / Maintainer ====
+Zhong Huang
+
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_sort3d.py
+
+\\
+==== See also ====
+[[pipeline:meridien:sp_meridien|sp_meridien]], [[pipeline:utilities:sp_header|sp_header]], [[[pipeline:sort3d:sp_3dvariability|sp_3dvariability]], [[pipeline:sort3d:sp_rsort3d|sp_rsort3d]], and [[pipeline:sort3d:sp_sort3d_depth|sp_sort3d_depth]].
+
+\\
+==== Maturity ====
+Alpha:: Under development. Two programs (P1,P2) have been tested on both simulated and experimental ribosome data. For experimental ribosome data, P2 has a reproducible ratio-70-90%. P2 can 100%separate two conformations from the simulated ribosome data that contains 5 conformations. 
+
+\\
+==== Bugs ====
+There are no known bugs so far.
+
+\\

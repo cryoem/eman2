@@ -3,26 +3,33 @@
 set -xe
 
 MYDIR="$(cd "$(dirname "$0")"; pwd -P)"
+recipe_dir="recipe"
 
-bash "${MYDIR}/../tests/future_import_tests.sh"
+source ${MYDIR}/set_env_vars.sh
 
-if [ ! -z ${TRAVIS} ];then
+if [ -n "${TRAVIS}" ];then
     source ci_support/setup_conda.sh
-
-    conda install conda-build=3 -c defaults --yes --quiet
 fi
 
-if [ ! -z ${CIRCLECI} ];then
-    source ${HOME}/miniconda2/bin/activate root
+if [ -n "${CIRCLECI}" ];then
+    . $HOME/miniconda/etc/profile.d/conda.sh
+    conda activate eman
 fi
 
-python -m compileall -q .
+python -m compileall -q -x .git -x sparx -x sphire .
 
-export CPU_COUNT=2
+if [ -n "$JENKINS_HOME" ];then
+    export CPU_COUNT=4
+else
+    export CPU_COUNT=2
+fi
+
+source $(conda info --root)/etc/profile.d/conda.sh
+conda activate base
 
 conda info -a
 conda list
-conda render recipes/eman
+conda list --explicit
 conda build purge-all
 
-conda build recipes/eman -c cryoem -c defaults -c conda-forge --quiet
+conda mambabuild ${recipe_dir}

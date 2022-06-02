@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 from past.utils import old_div
 from builtins import range
 from EMAN2 import *
@@ -44,7 +41,7 @@ def main():
 	
 	parser.add_argument("--units",type=str,default='pixels',help="""default=pixels. Other valid options are 'angstroms','nanometers','micrometers' or 'microns'. Make sure the apix values in the HDF files provided through --stacks is correct. If providing --files, the separately provide --apix""")
 	
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	
 	#parser.add_argument("--parallel",type=str,default='',help="""the program will detect the number of cores available and use threaded parallelism by default. To use only one core, supply --parallel=thread:1. For MPI on clusters, see parallelism at http://blake.bcm.edu/emanwiki/EMAN2/Parallel""")
 		

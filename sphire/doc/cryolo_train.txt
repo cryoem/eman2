@@ -1,0 +1,118 @@
+~~NOTOC~~
+
+===== sp_cryolo_train =====
+crYOLO - training: Training of crYOLO, a deep learning high accuracy particle picking procedure.
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sp_cryolo_train.py particle_diameter training_dir annot_dir output_directory --cryolo_train_path=CRYOLO_PATH --architecture=architecture --input_size=input_size --num_patches=num_patches --overlap_patches=overlap_patches --train_times=train_times --pretrained_weights_name=PRETRAINED_NAME --saved_weights_name=SAVE_WEIGHTS_NAME --batch_size=batch_size --learning_rate=learning_rate --np_epoch=np_epoch --object_scale=object_scale --no_object_scale=no_object_scale --coord_scale=coord_scale --valid_image_dir=valid_image_dir --valid_annot_dir=valid_annot_dir --warmup=warmup --gpu=gpu --fine_tune --gpu_fraction=GPU_FRACTION --num_cpu=NUM_CPU --skiplowpass=SKIP_LOW_PASS  --usejanni=USE_JANNI --janni_model=PATH_MODEL_JANNI --cutoff=CUT_OFF --filtered_dir=FILTERED_DIR --janni_overlap=OVERLAP --janni_batches=NUM_BATCHES
+
+\\
+===== Typical usage =====
+
+To train crYOLO for a specific dataset, one have to specify the path to training data in the config file.
+Then the training typcial happens in two steps:
+
+\\ __1. Warmup__:
+
+  sp_cryolo_train.py particle_diameter training_dir annot_dir --architecture="YOLO" --warmup=5
+
+\\ __2. Actual training__:
+
+  sp_cryolo_train.py --conf=config_path --warmup=0 --gpu=0
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; %%--%%cryolo_train_path : crYOLO train executeable : Path to the cryolo_train.py in your crYOLO environment (default none)
+  ; particle_diameter : Particle diameter [Pixel] : Particle diameter in pixels. This size will be used for as box size for picking. Should be as small as possible. (default required int)
+  ; training_dir : Training image directory : Folder which contains all images. (default required string)
+  ; annot_dir : Annotation directory : Box or star files used for training. Files should have the same name as the images, with the appropriate extension. (default required string)
+  ; output_directory : Output directory: The results will be written here. It cannot be an existing one. (default required string)
+
+\\
+=== Advanced Parameters ===
+  ; %%--%%architecture : Network architecture: Type of network that is trained.  (default PhosaurusNet)
+  ; %%--%%input_size : Input image dimension [Pixel] : Dimension of the image used as input by the network. (default 1024)
+  ; %%--%%num_patches : Number of patches : The number of patches (e.g 2x2) the image is divided into and classified separately. (default 1)
+  ; %%--%%overlap_patches: Patch overlap [Pixel]: The amount of overlap the patches will overlap (default 0)
+  ; %%--%%train_times : Repeat images :  How often a images is augmented and repeated in one epoch. (default 10)
+  ; %%--%%pretrained_weights_name: Pretrained weights name : Name of the pretrained model (default cryolo_model.h5)
+  ; %%--%%saved_weights_name: Saved weights name : Name of the model to save (default cryolo_model.h5)
+  ; %%--%%batch_size : Batch size : How many patches are processed in parallel. (default 5)
+  ; %%--%%fine_tune : Fine tune mode : Set it to true if you only want to use the fine tune mode. Don't forget to choose an appropriate pretrained model (like the general model) that is refined. (default False)
+  ; %%--%%warmup : Warm up epochs : Number of warmup epochs. If you fine tune a model, set it to zero. (default 5)
+  ; %%--%%learning_rate : Learning rate : Learning rate used during training. (default 0.0001)
+  ; %%--%%np_epoch : Number of epochs : Maximum number of epochs. (default 100)
+  ; %%--%%object_scale : Object loss scale : Loss scale for object. (default 5.0)
+  ; %%--%%no_object_scale: Background loss scale: Loss scale for background. (default 1.0)
+  ; %%--%%coord_scale: Coordinates loss scale: Loss scale for coordinates. (default 1.0)
+  ; %%--%%valid_image_dir : Path to validation images : Images used (default none)
+  ; %%--%%valid_annot_dir : Path to validation annotations : Path to the validation box files (default none)
+  ; %%--%%skiplowpass: Skip low pass filtering : Set it to true if you want to skip the low pass filter (default False)
+  ; %%--%%cutoff: Low pass cutoff : Cut off for low pass filter. Should be between 0 and 0.5. (default 0.1) : %%--%%skiplowpass==False:
+  ; %%--%%filtered_dir: Filtering directory : Path to write filtered images. (default cryolo_filtered_micrographs)
+  ; %%--%%usejanni: Use JANNI for denoising : Set it to true if you want to use JANNI for denoising. Low pass filtering has to be skipped. (default False) : %%--%%skiplowpass==True:
+  ; %%--%%janni_model: JANNI model : Path to JANNI model (default none) : %%--%%skiplowpass==True:
+  ; %%--%%janni_overlap: JANNI patch overlap : Overlap of patches in pixel (default 24) : %%--%%skiplowpass==True:
+  ; %%--%%janni_batches: JANNI number batches : Number of batches when using JANNI (default 3) : %%--%%skiplowpass==True:
+  ; %%--%%gpu: GPUs : List of GPUs to use, separated by commas. (default 0)
+  ; %%--%%gpu_fraction: GPU memory fraction : Specify the fraction of memory per GPU used by crYOLO during training. Only values between 0.0 and 1.0 are allowed. (default 1.0)
+  ; %%--%%num_cpu: Number of CPUs : Number of CPUs used during training. By default it will use half of the available CPUs. (default -1)
+
+\\
+===== Output =====
+It will write a .h5 file (default yolo_model.h5) into your project directory.
+
+
+\\
+===== Description =====
+The training is divided into two parts. 1. Warmup: It prepares the network with a few epochs of training without actually estimating the size of the particle.
+2. Actual training: The training will stop when the loss on the validation data stops to improve.
+
+\\
+==== Method ====
+See the reference below.
+
+\\
+==== Time and Memory ===
+Training needs a GPU with ~8GB memory. Training on 20 micrographs typicall needs ~20 minutes.
+
+
+\\
+==== Developer Notes ====
+=== 2019/09/19 Thorsten Wagner ===
+  * Initial creation of the document
+
+\\
+==== Reference ====
+ https://doi.org/10.1101/356584
+
+\\
+==== Author / Maintainer ====
+Thorsten Wagner
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_cryolo_train.py
+
+\\
+==== See also ====
+[[pipeline:window:cryolo|crYOLO]]
+
+\\
+==== Maturity ====
+Stable
+
+\\
+==== Bugs ====
+None right now.
+
+\\

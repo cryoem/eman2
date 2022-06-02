@@ -33,8 +33,6 @@
 #
 #
 
-from __future__ import print_function
-from __future__ import division
 from past.utils import old_div
 from builtins import range
 from EMAN2 import *
@@ -114,7 +112,7 @@ def main():
 	
 	parser.add_argument("--preavgproc2",type=str,default='',help="""Default=None. A processor (see 'e2help.py processors -v 10' at the command line) to be applied to the raw particle after alignment but before averaging (for example, a threshold to exclude extreme values, or a highphass filter if you have phaseplate data.)""")
 
-	parser.add_argument("--parallel",default="thread:1",help="""default=thread:1. Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel""", guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	parser.add_argument("--parallel",default=None,help="""default=thread:1. Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel""", guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	
 	parser.add_argument("--ppid", type=int, help="""Default=-1. Set the PID of the parent process, used for cross platform PPID""",default=-1)
 			
@@ -136,7 +134,7 @@ def main():
 	
 	parser.add_argument("--sym", type=str,dest = "sym", default='', help = """Default=None (equivalent to c1). Symmetry to impose -choices are: c<n>, d<n>, h<n>, tet, oct, icos""", guitype='symbox', row=9, col=1, rowspan=1, colspan=2, mode='alignment,breaksym')
 	
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="""Default=0. Verbose level [0-9], higner number means higher level of verboseness; 10-11 will trigger many messages that might make little sense since this level of verboseness corresponds to 'debugging mode'""")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="""Default=0. Verbose level [0-9], higher number means higher level of verboseness; 10-11 will trigger many messages that might make little sense since this level of verboseness corresponds to 'debugging mode'""")
 
 	parser.add_argument("--weighbytiltaxis",type=str,default='',help="""Default=None. A,B, where A is an integer number and B a decimal. A represents the location of the tilt axis in the tomogram in pixels (eg.g, for a 4096x4096xZ tomogram, this value should be 2048), and B is the weight of the particles furthest from the tiltaxis. For example, --weighbytiltaxis=2048,0.5 means that praticles at the tilt axis (with an x coordinate of 2048) will have a weight of 1.0 during averaging, while the distance in the x coordinates of particles not-on the tilt axis will be used to weigh their contribution to the average, with particles at the edge(0+radius or 4096-radius) weighing 0.5, as specified by the value provided for B.""")
 
@@ -196,7 +194,7 @@ def main():
 	
 	parser.add_argument("--mask",type=str,default='', help="""Default=None. Masking processor applied to particles before alignment. IF using --clip, make sure to express outer mask radii as negative pixels from the edge.""", returnNone=True, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'mask\')', row=11, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	
-	parser.add_argument("--maskfile",type=str,default='',help="""Default=None. Mask file (3D IMAGE) applied to particles before alignment. Must be in HDF format. Default is None.""")
+	parser.add_argument("--maskfile",type=str,default='',help="""Default=None. Mask file (3D IMAGE) applied to the reference image before alignment. It will also be applied to the average in each iteration since the average serves as the reference for the next iteration. Must be in HDF format. Default is None.""")
 	
 	parser.add_argument("--normproc",type=str, default='',help="""Default=None (see 'e2help.py processors -v 10' at the command line). Normalization processor applied to particles before alignment. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'""")
 	
@@ -282,7 +280,9 @@ def main():
 	
 	options = checkinput( options )
 	
-	options = detectThreads( options )
+	if options.parallel in (None,"","none","None") :
+		print("WARNING: no --parallel specified. Please see http://eman2.org/Parallel")
+		options.parallel="thread:2"
 	
 	if not options.ref:
 		print("\nERROR: --ref required. Use e2spt_refprep.py, or e2spt_binarytree.py, e2spt_hac.py, e2symsearch3d.py, to generate initial references.")
@@ -405,7 +405,7 @@ def main():
 	'''
 	preprocdone = 0
 	
-	if options.mask or options.maskfile or options.normproc or options.threshold or options.clip or (options.shrink > 1) or options.lowpass or options.highpass or options.preprocess:		
+	if options.mask or options.normproc or options.threshold or options.clip or (options.shrink > 1) or options.lowpass or options.highpass or options.preprocess:		
 		
 		print("\noptions.mask", options.mask)
 		print("\noptions.maskfile", options.maskfile)
@@ -446,7 +446,7 @@ def main():
 	PREPROCESS IMAGE/S IN ADVANCE for *"FINE"* alignment IF tree aligner is not used
 	'''
 	if 'rotate_translate_3d_tree' not in options.align and options.falign:
-		if options.mask or options.maskfile or options.normproc or options.threshold or options.clip or (options.shrinkfine > 1) or options.lowpassfine or options.highpassfine or options.preprocessfine:	
+		if options.mask or options.normproc or options.threshold or options.clip or (options.shrinkfine > 1) or options.lowpassfine or options.highpassfine or options.preprocessfine:	
 			
 			ret = cmdpreproc( options.input, options, True ) #True tells the function that particles need to be preprocessed for fine alignment
 			if ret: 
@@ -529,7 +529,7 @@ def main():
 			print("\n\n(e2spt_classaverage)(main) - INITIALIZING PARALLELISM!")
 			print("\n\n")
 			from EMAN2PAR import EMTaskCustomer
-			etc=EMTaskCustomer(options.parallel)
+			etc=EMTaskCustomer(options.parallel, "e2spt_classaverage.Align3DTask")
 			pclist=[options.input]
 	
 			#if options.ref: 
@@ -975,7 +975,7 @@ def main():
 				if options.mask or options.maskfile or options.normproc or options.threshold or options.clip or (options.shrink > 1) or options.lowpass or options.highpass or options.preprocess:	
 					
 					ref2use = tmpref.replace('.hdf','_preproc.hdf')
-					ref = preprocfunc( ref, options, 0, ref2use )
+					ref = preprocfunc( ref, options, 0, ref2use, False, False, True )
 					#ref = preprocfunc( tmpref, options, 0, ref2use )
 
 				if options.falign and 'tree' not in options.align[0]:
@@ -993,7 +993,7 @@ def main():
 						options.shrink = options.shrinkfine
 						
 						ref2usefine = tmpref.replace('.hdf','_preprocfine.hdf')
-						reffine = preprocfunc( ref, options, 0, ref2usefine)
+						reffine = preprocfunc( ref, options, 0, ref2usefine, False, False, True)
 						#reffine = preprocfunc( tmpref, options, 0, ref2usefine )
 						
 						options.lowpass = origlowpass
@@ -1002,21 +1002,29 @@ def main():
 						options.shrink = origshrink
 			else:
 				#ref2use = options.path + '/' + options.ref.replace('.hdf','_preproc.hdf')
-				if options.clip or (options.shrink > 1):
+				if options.clip or (options.shrink > 1) or options.maskfile:
 					ref2use = tmpref.replace('.hdf','_preproc.hdf')
-					ref = preprocfunc( ref, options, 0, ref2use, False, True ) #False indicates this isn't simulated data, True turns on 'resizeonly' inside the function
-					#ref = preprocfunc( tmpref, options, 0, ref2use, False, True )
+					if options.clip or (options.shrink > 1) and not options.maskfile:
+						ref = preprocfunc( ref, options, 0, ref2use, False, True) #False indicates this isn't simulated data, True turns on 'resizeonly' inside the function
+					if options.maskfile:
+						ref = preprocfunc( ref, options, 0, ref2use, False, False, True) #The last true helps indicated that only the reference should be masked, not the particles
+
+						print("\n!!!!MASKING ref with MASKFILE={}".format(options.maskfile))
+						#ref = preprocfunc( tmpref, options, 0, ref2use, False, True )
 				
 				if options.falign and 'tree' not in options.align[0]:
 					#ref2usefine = options.path + '/' + options.ref.replace('.hdf','_preprocfine.hdf')
-					if options.clip or (options.shrinkfine > 1):
+					if options.clip or (options.shrinkfine > 1) or options.maskfile:
 						
 						origshrink = options.shrink
 						options.shrink = options.shrinkfine
 
-						ref2usefine = tmpref.replace('.hdf','_preprocfine.hdf')						
-						reffine = preprocfunc( ref, options, 0, ref2usefine, False, True) #False indicates this isn't simulated data, True turns on 'resizeonly' inside the function
-						#reffine = preprocfunc( tmpref, options, 0, ref2usefine, False, True )
+						ref2usefine = tmpref.replace('.hdf','_preprocfine.hdf')
+						if options.clip or (options.shrink > 1) and not options.maskfile:												
+							reffine = preprocfunc( ref, options, 0, ref2usefine, False, True) #False indicates this isn't simulated data, True turns on 'resizeonly' inside the function
+							#reffine = preprocfunc( tmpref, options, 0, ref2usefine, False, True )
+						if options.maskfile:
+							reffine = preprocfunc( ref, options, 0, ref2usefine, False, False, True)
 						
 						options.shrink = origshrink
 				
@@ -1654,7 +1662,7 @@ def checksaneimagesize( options, stack1, stack2=''):
 '''
 Function to generate preprocessing command which calls e2spt_preproc.py
 '''
-def cmdpreproc( fyle, options, finetag=False ):	
+def cmdpreproc( fyle, options, finetag=False, refflag=False ):	
 
 	#from e2spt_preproc import preprocfunc	
 	
@@ -1678,29 +1686,34 @@ def cmdpreproc( fyle, options, finetag=False ):
 	#	cmdpreprocref = 'e2spt_preproc.py --input ' + options.ref
 	#	preprocref = os.path.basename(options.ref).replace('.hdf','_preproc.hdf')
 	
-	
+	preproc=False
 	if options.mask:
 		cmdpreproc += ' --mask ' + options.mask
+		preproc=True
 		#if options.ref and options.refpreprocess:
 		#	cmdpreprocref += ' --mask ' + options.mask
 	
-	if options.maskfile:
-		cmdpreproc += ' --maskfile ' + options.maskfile 
+	if options.maskfile and refflag:
+		cmdpreproc += ' --maskfile ' + options.maskfile
+		preproc=True 
 		#if options.ref and options.refpreprocess:
 		#	cmdpreprocref += ' --maskfile ' + options.maskfile 
 		
 	if options.normproc:
 		cmdpreproc += ' --normproc ' + options.normproc
+		preproc=True
 		#if options.ref and options.refpreprocess:
 		#	cmdpreprocref += ' --normproc ' + options.normproc
 		 
 	if options.threshold:
 		cmdpreproc += ' --threshold ' + options.threshold
+		preproc=True
 		#if options.ref and options.refpreprocess:
 		#	cmdpreprocref += ' --threshold ' + options.threshold
 	
 	if options.clip:
 		cmdpreproc += ' --clip ' + str(options.clip)
+		preproc=True
 		#if options.ref and options.refpreprocess:
 		#	cmdpreprocref += ' --clip ' + str(options.clip)
 	
@@ -1708,42 +1721,50 @@ def cmdpreproc( fyle, options, finetag=False ):
 	if not finetag:
 		if options.shrink > 1:
 			cmdpreproc += ' --shrink ' + str(options.shrink)
+			preproc=True
 			#if options.ref and options.refpreprocess:
 			#	cmdpreprocref += ' --shrink ' + str(options.shrink)
 	
 		if options.lowpass:
 			cmdpreproc += ' --lowpass ' + options.lowpass
+			preproc=True
 			#if options.ref and options.refpreprocess:
 			#	cmdpreprocref += ' --lowpass ' + options.lowpass
 		
 		if options.highpass:
+			preproc=True
 			cmdpreproc += ' --highpass ' + options.highpass
 			#if options.ref and options.refpreprocess:
 			#	cmdpreprocref += ' --highpass ' + options.highpass
 
 		if options.preprocess:
 			cmdpreproc += ' --preprocess ' + options.preprocess
+			preproc=True
 			#if options.ref and options.refpreprocess:
 			#	cmdpreprocref += ' --preprocess ' + options.preprocess
 	
 	elif finetag:
 		if options.shrinkfine > 1:
 			cmdpreproc += ' --shrink ' + str(options.shrinkfine )
+			preproc=True
 			#if options.ref and options.refpreprocess:
 			#	cmdpreprocref += ' --shrink ' + str(options.shrink)
 	
 		if options.lowpassfine :
 			cmdpreproc += ' --lowpass ' + options.lowpassfine 
+			preproc=True
 			#if options.ref and options.refpreprocess:
 			#	cmdpreprocref += ' --lowpass ' + options.lowpass
 		
 		if options.highpassfine :
 			cmdpreproc += ' --highpass ' + options.highpassfine 
+			preproc=True
 			#if options.ref and options.refpreprocess:
 			#	cmdpreprocref += ' --highpass ' + options.highpass
 
 		if options.preprocessfine :
 			cmdpreproc += ' --preprocess ' + options.preprocessfine 
+			preproc=True
 			#if options.ref and options.refpreprocess:
 			#	cmdpreprocref += ' --preprocess ' + options.preprocess
 	
@@ -1754,17 +1775,20 @@ def cmdpreproc( fyle, options, finetag=False ):
 	print("\n(e2spt_classaverage)(cmdpreproc) e2spt_preproc returned this={}".format(ret))
 	
 	if ret:
-		input_preproc = options.path + '/' + preprocstack
-		
-		print("\n*(e2spt_classaverage)(cmdpreproc) preprocstack {} will be renamed to {}".format(preprocstack, input_preproc))
+		if preproc:
+			input_preproc = options.path + '/' + preprocstack
+			
+			print("\n*(e2spt_classaverage)(cmdpreproc) preprocstack {} will be renamed to {}".format(preprocstack, input_preproc))
 
-		import time
-		time.sleep(5)
+			import time
+			time.sleep(5)
 
-		print("\n(e2spt_classaverage)(cmdpreproc) renaming preprocstack %s to input_preproc %s" %(preprocstack, input_preproc ))
+			print("\n(e2spt_classaverage)(cmdpreproc) renaming preprocstack %s to input_preproc %s" %(preprocstack, input_preproc ))
 
-		os.rename( preprocstack, input_preproc )
-		options.input = input_preproc
+			os.rename( preprocstack, input_preproc )
+			options.input = input_preproc
+		else:
+			pass
 	else:
 		print("\n(e2spt_classaverage)(cmdpreproc) preprocessing %s crashed" %( fyle )) 
 		sys.exit(1)

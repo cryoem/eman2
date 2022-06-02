@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 # Muyuan Chen 2017-04
-from __future__ import print_function
-from __future__ import division
 from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
@@ -15,14 +13,43 @@ import queue
 
 def alifn(jsd,fsp,i,a,options):
 	t=time.time()
-	b=EMData(fsp,i)#.do_fft()
+	b=EMData(fsp,int(i))#.do_fft()
+	b.process_inplace("filter.lowpass.gauss", {"cutoff_freq":options.filterto})
 	if options.shrink>1:
 		b.process_inplace("math.fft.resample",{"n":options.shrink})
 	b=b.do_fft()
 	b.process_inplace("xform.phaseorigin.tocorner")
+	
+	aligndic={"maxshift":10,"verbose":options.verbose,"sym":"c1","sigmathis":0.1,"sigmato":1.0}
+	if options.refine and b.has_attr("xform.align3d"):
+		ntry=8
+		initxf=b["xform.align3d"]
+		xfs=[]
+		
+		for ii in range(len(xfs), ntry):
+			ixf=initxf.get_params("eman")
+			ixf["phi"]=np.random.rand()*360.
+			ixf["alt"]=ixf["alt"]+180*(np.random.rand()>.5)
+			ixf=Transform(ixf)
+			
+			v=np.random.rand(3)-0.5
+			nrm=np.linalg.norm(v)
+			if nrm>0:
+				v=v/nrm
+			else:
+				v=(0,0,1)
+			xf=Transform({"type":"spin", "n1":v[0], "n2":v[1], "n3":v[2],
+					"omega":30.0*np.random.randn()/3.0})
+			xfs.append(xf*ixf)
+		
+			
+		aligndic["initxform"]=xfs
+		aligndic["maxang"]=30.0
+		aligndic["randphi"]=True
+		aligndic["rand180"]=True
 
 	# we align backwards due to symmetry
-	c=a.xform_align_nbest("rotate_translate_3d_tree",b,{"verbose":0,"sym":"c1","sigmathis":1,"sigmato":1, "maxres":(1./options.filterto)*.8},1)
+	c=a.xform_align_nbest("rotate_translate_3d_tree",b,aligndic,1)
 	for cc in c : cc["xform.align3d"]=cc["xform.align3d"].inverse()
 
 	jsd.put((fsp,i,c[0]))
@@ -31,19 +58,21 @@ def alifn(jsd,fsp,i,a,options):
 
 def main():
 
-	usage=" "
+	usage="""prog <particle stack>
+	Generate initial model from subtomogram particles using stochastic gradient descent.
+	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	parser.add_pos_argument(name="particles",help="Specify particles to use to generate an initial model.", default="", guitype='filebox', browser="EMSetsTable(withmodal=True,multiselect=False)", row=0, col=0,rowspan=1, colspan=2, mode="model")
 
 	parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=1, col=1, rowspan=1, colspan=1, mode="model")
 
-	parser.add_argument('--reference','--ref', type=str, default=None, help="""3D reference for initial model generation. No reference is used by default.""", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=2, col=0,rowspan=1, colspan=2, mode="model")
+	parser.add_argument('--reference','--ref', type=str, default="", help="""3D reference for initial model generation. No reference is used by default.""", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=2, col=0,rowspan=1, colspan=2, mode="model")
 
 	parser.add_argument("--mask", type=str,help="Mask file to be applied to initial model", default=None, guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=3, col=0,rowspan=1, colspan=2, mode="model")
 
 	parser.add_argument("--sym", type=str,help="symmetry", default="c1", guitype='strbox',row=4, col=0,rowspan=1, colspan=1, mode="model")
-	parser.add_argument("--gaussz", type=float,help="Extra gauss filter at z direction", default=-1, guitype='floatbox',row=4, col=1,rowspan=1, colspan=1, mode="model")
+	#parser.add_argument("--gaussz", type=float,help="Extra gauss filter at z direction. seems useless...", default=-1)
 
 	parser.add_argument("--filterto", type=float,help="Fiter map to frequency after each iteration. Default is 0.02", default=.02, guitype='floatbox',row=6, col=0,rowspan=1, colspan=1, mode="model")
 
@@ -65,6 +94,9 @@ def main():
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	parser.add_argument("--ppid", type=int,help="ppid", default=-2)
+	
+	parser.add_argument("--refine", action="store_true", default=False ,help="start from xform.align3d in header", guitype='boolbox',row=12, col=0,rowspan=1, colspan=1, mode="model")
+
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -134,7 +166,7 @@ def main():
 			for t in thrds:
 				t.start()
 			angs={}
-			while threading.active_count()>1:
+			while threading.active_count()>1 or not jsd.empty():
 				time.sleep(1)
 				while not jsd.empty():
 					fsp,n,d=jsd.get()
@@ -151,11 +183,11 @@ def main():
 				avgr.add_image(p)
 			avg=avgr.finish()
 			avg.process_inplace('filter.lowpass.gauss', {"cutoff_freq":filterto})
-			if options.gaussz>0:
-				avg.process_inplace('filter.lowpass.gauss', {"cutoff_freq":options.gaussz})
+			#if options.gaussz>0:
+				#avg.process_inplace('filter.lowpass.gauss', {"cutoff_freq":options.gaussz})
 			avg.process_inplace('normalize.edgemean')
-			if options.applysym:
-				avg.process_inplace("xform.applysym",{"sym":options.sym,"averager":"mean.tomo"})
+			#if options.applysym:
+				#avg.process_inplace("xform.applysym",{"sym":options.sym,"averager":"mean.tomo"})
 			
 			if options.fourier:
 				avgft=avg.do_fft()
@@ -177,18 +209,27 @@ def main():
 
 			ddm=dmap*dmap
 			cc.append(ddm["mean_nonzero"])
-			if options.reference==None:
-				ref.process_inplace("xform.centerofmass")
 			
 			ref0=ref.copy()
 			if options.mask:
+				if os.path.isfile(options.mask):
 				
-				ref0.process_inplace("mask.fromfile", {"filename": options.mask})
+					ref0.process_inplace("mask.fromfile", {"filename": options.mask})
+				else:
+					pdict=parsemodopt(options.mask)
+					ref0.process_inplace(pdict[0], pdict[1])
+					
+				ref.write_image(os.path.join(path,"output_nomask.hdf"))
 
 			#ref.write_image(tmpout,-1)
 			ref0.write_image(os.path.join(path,"output.hdf"))
+			
+			
 			if options.writemovie:
-				ref0.write_image(os.path.join(path,"output_all.hdf"), -1)
+				#ref0.write_image(os.path.join(path,"output_all.hdf"), -1)
+				ref.write_image(os.path.join(path,"allref.hdf"), -1)
+				avg.write_image(os.path.join(path,"allavg.hdf"), -1)
+				
 			sys.stdout.write('#')
 			sys.stdout.flush()
 
@@ -197,9 +238,13 @@ def main():
 		jspast=jspm.data.copy()
 		jspm=None
 		#### if symmetry exist, first align to symmetry axis
-		if options.sym!="c1" and options.reference==None:
-			ref=sym_search(ref, options.sym)
-		
+		if options.sym!="c1" and len(options.reference)==0:
+			ref=sym_search(ref, options)
+		if options.applysym:
+			ref.process_inplace("xform.applysym", {"averager":"mean.tomo", "sym":options.sym})
+			
+		if len(options.reference)==0:
+			ref.process_inplace("xform.centerofmass")
 		ref.write_image("{}/threed_{:02d}.hdf".format(path, itr), 0)
 
 	#ref.write_image(os.path.join(path,"output.hdf"))
@@ -207,12 +252,16 @@ def main():
 	E2end(logid)
 
 
-def sym_search(e, sym):
+def sym_search(e, options):
 	print("Align to symmetry axis...")
 	ntry=20
-
+	sym=options.sym
 	s=parsesym(sym)
-	oris=s.gen_orientations("rand",{"n":ntry, "phitoo":True})
+	if options.refine:
+		oris=[Transform()]
+	else:
+		oris=s.gen_orientations("rand",{"n":ntry, "phitoo":True})
+		
 	jsd=queue.Queue(0)
 	thrds=[threading.Thread(target=sym_ali,args=([e, o, sym, jsd])) for o in oris]
 	for t in thrds: t.start()
@@ -225,9 +274,9 @@ def sym_search(e, sym):
 	scr=[a["score"] for a in alis]
 	im=np.argmin(scr)
 	a=alis[im]
-	a.process_inplace("xform.centerofmass")
-	#if options.applysym:
-	#a.process_inplace("xform.applysym", {"averager":"mean.tomo", "sym":sym})
+	a.process_inplace("normalize.edgemean")
+	#a.process_inplace("xform.centerofmass")
+	
 	#outname=fname[:-4]+"_sym.hdf"
 	#a.write_image(outname)
 	return a
@@ -242,7 +291,7 @@ def make_ref(fname, options):
 
 	num=EMUtil.get_image_count(fname)
 	rfile="{}/ref.hdf".format(options.path)
-	if not options.reference:
+	if len(options.reference)==0:
 		print("Making random references...")
 		
 		tt=parsesym("c1")
@@ -251,7 +300,9 @@ def make_ref(fname, options):
 		np.random.shuffle(idx)
 		avgr=Averagers.get("mean.tomo")
 		for i in range(options.batchsize):
-			p=EMData(fname, idx[i])
+			p=EMData(fname, int(idx[i]))
+			p.process_inplace('normalize.edgemean')
+			p.process_inplace('xform.centerofmass')
 			p.transform(xfs[i])
 			avgr.add_image(p)
 		ref=avgr.finish()
@@ -261,6 +312,8 @@ def make_ref(fname, options):
 			ref.process_inplace("math.fft.resample",{"n":options.shrink})
 		#ref.process_inplace("xform.applysym",{"sym":options.sym})
 		ref.process_inplace('normalize.edgemean')
+		ref.process_inplace('xform.centerofmass')
+		ref.process_inplace("mask.soft",{"outer_radius":-4})
 		ref.write_image(rfile)
 	else:
 		er=EMData(options.reference)

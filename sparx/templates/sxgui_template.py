@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 #
 # Authors:
 # Toshio Moriya, 11/11/2015 (toshio.moriya@mpi-dortmund.mpg.de)
@@ -35,6 +34,7 @@ from __future__ import print_function
 import os
 import subprocess
 import sys
+import collections
 from builtins import range
 from builtins import object
 from PyQt4.Qt import *
@@ -122,7 +122,7 @@ class SXcmd_token(object):
 		self.label = ""               # User friendly name of argument or option
 		self.help = ""                # Help info
 		self.group = ""               # Tab group: main or advanced
-		self.dependency_group = ["", "", ""]    # Depencency group: Disables or enables widgets
+		self.dependency_group = [["", "", ""]]    # Depencency group: Disables or enables widgets
 		self.is_required = False      # Required argument or options. No default values are available
 		self.is_locked = False        # The restore value will be used as the locked value.
 		self.is_reversed = False      # Reversed default value of bool. The flag will be added if the value is same as default 
@@ -171,7 +171,7 @@ class SXcmd(object):
 		self.is_submittable = is_submittable  # External GUI Application (e.g. sxgui_cter.py) should not be submitted to job queue
 		self.token_list = []                  # List of command tokens. Need this to keep the order of command tokens
 		self.token_dict = {}                  # Dictionary of command tokens, organised by key base name of command token. Easy to access a command token but looses their order
-		self.dependency_dict = {}             # Dictionary of command tokens, containing the dependencies
+		self.dependency_dict = collections.OrderedDict()             # Dictionary of command tokens, containing the dependencies
 		self.btn = None                       # <Used only in sxgui.py> QPushButton button instance associating with this command
 		self.widget = None                    # <Used only in sxgui.py> SXCmdWidget instance associating with this command
 		# ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
@@ -596,6 +596,8 @@ class SXCmdWidget(QWidget):
 		self.sxcmd_tab_main = SXCmdTab("Main", self)
 		self.sxcmd_tab_advance = SXCmdTab("Advanced", self)
 		for key in self.sxcmd.dependency_dict:
+			if key not in self.sxcmd.token_dict:
+				continue
 			self.sxcmd.token_dict[key].widget.my_changed_state.connect(self.change_state)
 			if isinstance(self.sxcmd.token_dict[key].widget, SXCheckBox):
 				idx = self.sxcmd.token_dict[key].widget.checkState()
@@ -655,7 +657,7 @@ class SXCmdWidget(QWidget):
 
 	@QtCore.pyqtSlot(str, str)
 	@QtCore.pyqtSlot(str, int)
-	def change_state(self, dependency, state, old_dependency=None):
+	def change_state(self, dependency, state, old_dependency=None, sender=None, prev_sender=None):
 		"""
 		Change the state of widgets based on the choice of the corresponding combo box
 
@@ -665,44 +667,110 @@ class SXCmdWidget(QWidget):
 		None
 		"""
 
+		#print(dependency, state, old_dependency)
+		if sender is None:
+			sender = self.sender()
+		else:
+			sender = sender
+
+		dependency = str(dependency)
 		if old_dependency is None:
 			old_dependency = [dependency]
 		else:
 			old_dependency.append(dependency)
-		parent = self.sender().parent()
+		parent = sender.parent()
 		while True:
 			if hasattr(parent, 'sxcmd'):
 				break
 			else:
 				parent = parent.parent()
 
-		if isinstance(self.sender(), SXCheckBox):
-			type_check = bool
-		elif isinstance(self.sender(), SXLineEdit):
-			type_check = str
-		else:
-			assert False
+		final_state = True
+		for name, exp_state, inverse in parent.sxcmd.token_dict[dependency].dependency_group:
+			if not name:
+				continue
+
+			try:
+				widget = parent.sxcmd.token_dict[name].widget
+			except KeyError:
+				continue
+
+			try:
+				curr_state = widget.checkState()
+			except AttributeError:
+				curr_state = widget.text()
+
+			if isinstance(widget, SXCheckBox):
+				type_check = bool
+			elif isinstance(widget, SXLineEdit):
+				type_check = str
+			else:
+				assert False
+
+			if str(type_check(curr_state)) != exp_state and inverse == 'True':
+				is_enabled = True
+			elif str(type_check(curr_state)) == exp_state and inverse == 'True':
+				is_enabled = False
+			elif str(type_check(curr_state)) == exp_state:
+				is_enabled = True
+			else:
+				is_enabled = False
+
+			if len(parent.sxcmd.token_dict[dependency].dependency_group) == 2 and is_enabled:
+				if prev_sender is not None:
+					is_enabled = prev_sender.isEnabled()
+
+			if not is_enabled:
+				final_state = False
+		sender.setEnabled(final_state)
+
 		try:
-			for name, exp_state, inverse in parent.sxcmd.dependency_dict[str(dependency)]:
-				if not parent.sxcmd.token_dict[str(dependency)].widget.isEnabled():
-					is_enabled = False
-				elif str(type_check(state)) != exp_state and inverse == 'True':
-					is_enabled = True
-				elif str(type_check(state)) == exp_state and inverse == 'True':
-					is_enabled = False
-				elif str(type_check(state)) == exp_state:
-					is_enabled = True
-				else:
-					is_enabled = False
-				SXCmdTab.set_text_entry_widget_enable_state(parent.sxcmd.token_dict[name].widget, is_enabled)
-				if name not in old_dependency and str(dependency) != parent.sxcmd.token_dict[name].dependency_group[0]:
-					try:
-						new_state = parent.sxcmd.token_dict[name].widget.checkState()
-					except AttributeError:
-						new_state = parent.sxcmd.token_dict[name].widget.isEnabled()
-					self.change_state(name, new_state, old_dependency)
+			chain_deps = parent.sxcmd.dependency_dict[dependency]
 		except KeyError:
-			return None
+			pass
+		else:
+			for name, exp_state, inverse in chain_deps:
+				if not name:
+					continue
+
+				try:
+					widget = parent.sxcmd.token_dict[name].widget
+				except KeyError:
+					continue
+
+				if not name in old_dependency:
+					self.change_state(name, exp_state, old_dependency=old_dependency, sender=widget, prev_sender=sender)
+
+		#try:
+		#	for name, exp_state, inverse in parent.sxcmd.dependency_dict[str(dependency)]:
+		#		if not parent.sxcmd.token_dict[str(dependency)].widget.isEnabled():
+		#			is_enabled = False
+		#		elif str(type_check(state)) != exp_state and inverse == 'True':
+		#			is_enabled = True
+		#		elif str(type_check(state)) == exp_state and inverse == 'True':
+		#			is_enabled = False
+		#		elif str(type_check(state)) == exp_state:
+		#			is_enabled = True
+		#		else:
+		#			is_enabled = False
+		#		print('STATE', name, exp_state, state, is_enabled, type_check, sender)
+		#		SXCmdTab.set_text_entry_widget_enable_state(parent.sxcmd.token_dict[name].widget, is_enabled)
+		#	child_dict = {}
+		#	for name, exp_state, inverse in parent.sxcmd.dependency_dict[str(dependency)]:
+		#		for entry in parent.sxcmd.token_dict[name].dependency_group:
+		#			if not entry[0]:
+		#				continue
+		#			if name not in old_dependency and str(dependency) != entry[0]:
+		#				try:
+		#					new_state = parent.sxcmd.token_dict[name].widget.checkState()
+		#				except AttributeError:
+		#					new_state = parent.sxcmd.token_dict[name].widget.text()
+		#				child_dict[name] = new_state
+		#	for key, value in child_dict.items():
+		#		print(key, value)
+		#		self.change_state(key, value, old_dependency, parent.sxcmd.token_dict[key].widget)
+		#except KeyError:
+		#	return None
 		#print(state)
 		#try:
 		#	for entry in self.cmd[name]:
@@ -763,7 +831,22 @@ class SXCmdWidget(QWidget):
 				# else: User left default value. Do nothing
 			# Then, handle the other cases//
 			else:
-				if sxcmd_token.type == "bool":
+				if sxcmd_token.type == "bool_ignore":
+					### Possbile cases:
+					### if not sxcmd_token.is_reversed  and  (sxcmd_token.widget.checkState() == Qt.Checked) != sxcmd_token.default  and  sxcmd_token.is_required == True:  # Add this token to command line
+					### if not sxcmd_token.is_reversed  and  (sxcmd_token.widget.checkState() == Qt.Checked) == sxcmd_token.default  and  sxcmd_token.is_required == True:  # Add this token to command line
+					### if not sxcmd_token.is_reversed  and  (sxcmd_token.widget.checkState() == Qt.Checked) != sxcmd_token.default  and  sxcmd_token.is_required == False: # Add this token to command line
+					### if not sxcmd_token.is_reversed  and  (sxcmd_token.widget.checkState() == Qt.Checked) == sxcmd_token.default  and  sxcmd_token.is_required == False: # Do not add this token to command line
+					### 
+					### if     sxcmd_token.is_reversed  and  (sxcmd_token.widget.checkState() == Qt.Checked) != sxcmd_token.default  and  sxcmd_token.is_required == True:  # Add this token to command line
+					### if     sxcmd_token.is_reversed  and  (sxcmd_token.widget.checkState() == Qt.Checked) == sxcmd_token.default  and  sxcmd_token.is_required == True:  # Add this token to command line
+					### if     sxcmd_token.is_reversed  and  (sxcmd_token.widget.checkState() == Qt.Checked) != sxcmd_token.default  and  sxcmd_token.is_required == False: # Do not add this token to command line
+					### if     sxcmd_token.is_reversed  and  (sxcmd_token.widget.checkState() == Qt.Checked) == sxcmd_token.default  and  sxcmd_token.is_required == False: # Add this token to command line
+					### 
+					#else: # Do not add this token to command line
+					continue
+					
+				elif sxcmd_token.type == "bool":
 					### Possbile cases:
 					### if not sxcmd_token.is_reversed  and  (sxcmd_token.widget.checkState() == Qt.Checked) != sxcmd_token.default  and  sxcmd_token.is_required == True:  # Add this token to command line
 					### if not sxcmd_token.is_reversed  and  (sxcmd_token.widget.checkState() == Qt.Checked) == sxcmd_token.default  and  sxcmd_token.is_required == True:  # Add this token to command line
@@ -1082,7 +1165,7 @@ class SXCmdWidget(QWidget):
 					# Then, handle the other cases
 					else:
 						val_str = ""
-						if cmd_token.type == "bool":
+						if cmd_token.type in ("bool", "bool_ignore"):
 							if cmd_token.widget.checkState() == Qt.Checked:
 								val_str = "YES"
 							else:
@@ -1168,7 +1251,7 @@ class SXCmdWidget(QWidget):
 							function_type_line_counter += 1
 							function_type_line_counter %= n_function_type_lines # function have two line edit boxes
 						else:
-							if cmd_token.type == "bool":
+							if cmd_token.type in ("bool", "bool_ignore"):
 								# construct new widget(s) for this command token
 								if val_str_in == "YES":
 									cmd_token.widget.setChecked(Qt.Checked)
@@ -1785,7 +1868,7 @@ class SXCmdTab(QWidget):
 					cmd_token_subwidget_right = None
 					cmd_token_calculator_dialog = None
 
-					if cmd_token.type == "bool":
+					if cmd_token.type in ("bool", "bool_ignore"):
 						btn_name = "NO"
 						is_btn_enable = True
 						custom_style = "QPushButton {color:gray; }"
@@ -2672,7 +2755,7 @@ class SXCmdTab(QWidget):
 			assert(len(sxcmd_token.widget) == 2 and len(sxcmd_token.restore) == 2 and widget_index < 2)
 			sxcmd_token.widget[widget_index].setText("%s" % sxcmd_token.restore[widget_index])
 		else:
-			if sxcmd_token.type == "bool":
+			if sxcmd_token.type in ("bool", "bool_ignore"):
 				if sxcmd_token.restore:
 					sxcmd_token.widget.setChecked(Qt.Checked)
 				else: # sxcmd_token.restore == False
@@ -4296,7 +4379,7 @@ def main():
 	sxapp.setStyleSheet("QToolTip {font-size:%dpt;}" % (new_point_size));
 
 	# Initialise a singleton class for look & feel constants
-	version_string = '1.2_rc4'
+	version_string = '1.2_rc6'
 	SXLookFeelConst.initialise(sxapp, version_string)
 
 	# Define the main window (class SXMainWindow)

@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import division
 #
 # Author: David Woolford 11/10/08 (woolford@bcm.edu)
 # Copyright (c) 2000-2008 Baylor College of Medicine
@@ -38,9 +35,8 @@ from builtins import range
 from builtins import object
 from .emform import EMFormWidget,EMParamTable,EMTableFormWidget
 from .emdatastorage import ParamDef
-from PyQt4 import QtGui,QtCore
-from PyQt4.QtCore import Qt
-from EMAN2db import db_check_dict, db_open_dict,db_remove_dict,db_list_dicts,db_close_dict, e2getcwd
+from PyQt5 import QtGui, QtWidgets,QtCore
+from PyQt5.QtCore import Qt
 from EMAN2 import *
 import os
 import copy
@@ -224,7 +220,7 @@ class WorkFlowTask(object):
 	def get_wd(self):
 		'''
 		Get the working directory, originally introduced to provide a centralized mechanism for accessing the working directory,
-		specificially for the purpose of spawning processes. Could be used more generally, however.
+		specifically for the purpose of spawning processes. Could be used more generally, however.
 		'''
 		return e2getcwd()
 
@@ -345,7 +341,7 @@ class WorkFlowTask(object):
 		'''
 		Runs a QMessageBox asking for the user to select files for processing
 		'''
-		msg = QtGui.QMessageBox()
+		msg = QtWidgets.QMessageBox()
 		msg.setWindowTitle("Almost")
 		msg.setText("Please select files for processing")
 		msg.exec_()
@@ -358,7 +354,7 @@ class WorkFlowTask(object):
 		
 	def get_latest_r2d_classes(self):
 		dirs = get_numbered_directories("r2d_")
-		# allright everything left in dirs is "r2d_??" where the ?? is castable to an int, so we should be safe now
+		# all right everything left in dirs is "r2d_??" where the ?? is castable to an int, so we should be safe now
 		class_files = []
 		class_dims = []
 		class_ptcls = []
@@ -380,7 +376,7 @@ class WorkFlowTask(object):
 						if i != 0 or j != 0:
 							cont = False
 							break
-						#else just check for 01 incase the user has specified the --initial arugment
+						#else just check for 01 in case the user has specified the --initial argument
 				if not cont:
 					break
 				
@@ -736,7 +732,7 @@ class EMRawDataReportTask(WorkFlowTask):
 	documentation_string = "This page shows raw micrographs/ccd frames currently associated with the project. It is possible to add additional images directly on this panel, which will \
 leave them in-place and not copy them into the project database. This will limit some later operations and leave the project with less metadata at the end, but will save disk space. \
 Note that the data cannot be filtered unless it is imported."
-	warning_string = "\n\n\nNOTE: There are no images currenty associated with the project. Please associate or import images"
+	warning_string = "\n\n\nNOTE: There are no images currently associated with the project. Please associate or import images"
 	def __init__(self):
 		WorkFlowTask.__init__(self)
 		self.window_title = "Micrographs In Project"

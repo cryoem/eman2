@@ -1,6 +1,6 @@
 /*
  * Author: Chao Yang
- * Copyright (c) 2000-2006
+ * Copyright (c) 2000-2019
  *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
@@ -1071,7 +1071,7 @@ integer s_cmp(a0, b0, la, lb) char *a0, *b0; ftnlen la, lb;
 integer s_cmp(char *a0, const char *b0, ftnlen la, ftnlen lb)
 #endif
 {
-register unsigned char *a, *aend, *b, *bend;
+unsigned char *a, *aend, *b, *bend;
 a = (unsigned char *)a0;
 b = (unsigned char *)b0;
 aend = a + la;
@@ -1116,13 +1116,13 @@ return(0);
 /* assign strings:  a = b */
 
 #ifdef KR_headers
-VOID s_copy(a, b, la, lb) register char *a, *b; ftnlen la, lb;
+VOID s_copy(a, b, la, lb) char *a, *b; ftnlen la, lb;
 #else
 void s_copy(char *a, const char *b, ftnlen la, ftnlen lb)
 #endif
 {
-	register char *aend;
-	const register char *bend;
+	char *aend;
+	const char *bend;
 
 	aend = a + la;
 
@@ -27450,4 +27450,3 @@ L80:
 /*     End of SLAS2 */
 
 } /* slas2_ */
-

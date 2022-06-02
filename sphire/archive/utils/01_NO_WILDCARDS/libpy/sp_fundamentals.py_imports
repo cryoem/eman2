@@ -1,0 +1,7 @@
+EMAN2_cppwrap
+math
+numpy
+past.utils
+sp_filter
+sp_global_def
+sp_utilities

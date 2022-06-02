@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -36,8 +33,8 @@ from __future__ import division
 import EMAN2
 from EMAN2 import *
 from eman2_gui.emimage import image_update
-from PyQt4 import QtCore, QtGui, QtOpenGL
-from PyQt4.QtCore import Qt
+from PyQt5 import QtCore, QtWidgets, QtOpenGL
+from PyQt5.QtCore import Qt
 import threading
 from eman2_gui.emapplication import EMApp
 
@@ -58,7 +55,7 @@ def on_timer():
 	global ttx
 	
 	if ttx :
-		QtGui.qApp.quit()
+		QtWidgets.qApp.quit()
 
 ipythr=threading.Thread(target=IPY)
 ipythr.run()

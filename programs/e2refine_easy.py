@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steve Ludtke 06/10/2013 (sludtke@bcm.edu)
 # Copyright (c) 2013- Baylor College of Medicine
@@ -172,14 +169,15 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_argument("--sym", dest = "sym", default="c1",help = "Specify symmetry - choices are: c<n>, d<n>, tet, oct, icos.", guitype='strbox', row=10, col=1, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--breaksym", action="store_true", default=False,help = "If selected, reconstruction will be asymmetric with sym= specifying a known pseudosymmetry, not an imposed symmetry.", guitype='boolbox', row=11, col=1, rowspan=1, colspan=1, mode="refinement[False]")
 	parser.add_argument("--focused", dest = "focused", default=None,help = "Highly experimental, and under development! Specify a 3-D mask. Not used for coarse alignment, but only for final 'fine tuning' and symmetrizing. With symmetry also use breaksym.", guitype='filebox', row=29, col=0, rowspan=1, colspan=3, mode="refinement")
-	parser.add_argument("--tophat", type=str, default=None,help = "'local' or 'global'. Instead of imposing a final Wiener filter, use a tophat filter (global similar to Relion). local determines local resolution and filters. danger of feature exaggeration", guitype='strbox', row=11, col=0, rowspan=1, colspan=1, mode="refinement['None']")
+	parser.add_argument("--tophat", type=str, default=None,help = "'local', 'localwiener' or 'global'. Instead of imposing a final overall Wiener filter, use a tophat filter (global similar to Relion). local is a local tophat filter, localwiener is a localized Wiener filter", guitype='strbox', row=11, col=0, rowspan=1, colspan=1, mode="refinement['None']")
 	parser.add_argument("--nogoldfinal", action="store_true", default=False,help = "If selected, the final iteration will turn off gold-standard behavior and both halves will be refined from the same model. Normally used with --tophat=local.")
 	parser.add_argument("--treeclassify",default=False, action="store_true", help="Classify using a binary tree.")
-	parser.add_argument("--m3dold", action="store_true", default=False,help = "Use the traditional e2make3d program instead of the new e2make3dpar program",guitype='boolbox', row=11, col=2, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--norandomphase", action="store_true", default=False,help = "Suppress independent phase randomization of input map. Only appropriate if input map has been preprocessed in some suitable fashion.",guitype='boolbox', row=11, col=2, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--m3dold", action="store_true", default=False,help = "Use the traditional e2make3d program instead of the new e2make3dpar program",guitype='boolbox', row=12, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--iter", dest = "iter", type = int, default=6, help = "The total number of refinement iterations to perform. Default=auto", guitype='intbox', row=10, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--mass", default=0, type=float,help="The ~mass of the particle in kilodaltons, used to run normalize.bymass. Due to resolution effects, not always the true mass.", guitype='floatbox', row=12, col=0, rowspan=1, colspan=1, mode="refinement['self.pm().getMass()']")
 	parser.add_header(name="optional", help='Just a visual separation', title="Optional:", row=14, col=0, rowspan=1, colspan=3, mode="refinement")
-	parser.add_argument("--bispec",default=False, action="store_true", help="Will use bispectra for orientation determination (EXPERIMENTAL).",guitype='boolbox', row=18, col=2, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--invar",default=False, action="store_true", help="Will use invariants for orientation determination, set invariant type in project (EXPERIMENTAL).",guitype='boolbox', row=18, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--mirror",default=False, action="store_true", help="Default for non bispectrum refinement is to handle mirrored projections by permitting flips in 2-D alignment. This will force the normal refinement to make explict mirrored projections")
 	parser.add_argument("--apix", default=0, type=float,help="The angstrom per pixel of the input particles. Normally set to 0, which will read the value from the header of the input file", guitype='floatbox', row=16, col=0, rowspan=1, colspan=1, mode="refinement[0]")
 	parser.add_argument("--sep", type=int, help="The number of classes each particle can contribute towards (normally 1). Increasing will improve SNR, but produce rotational blurring.", default=-1)
@@ -189,10 +187,11 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_argument("--eulerrefine",default=False, action="store_true", help="Refines Euler angles of class-averages before reconstruction")
 	parser.add_argument("--m3dkeep", type=float, help="The fraction of slices to keep in e2make3d.py. Default=0.8 -> 80%%", default=0.8, guitype='floatbox', row=18, col=1, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--m3dpostprocess", type=str, default=None, help="Default=none. An arbitrary post-processor to run after all other automatic processing. Maps are autofiltered, so a low-pass filter should not normally be used here.", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),"filter.lowpass|filter.highpass|mask")', row=26, col=0, rowspan=1, colspan=3, mode="refinement")
-	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>=<value>. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel",default=None, guitype='strbox', row=30, col=0, rowspan=1, colspan=2, mode="refinement[thread:4]")
-	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful", guitype='intbox', row=30, col=2, rowspan=1, colspan=1, mode="refinement[4]")
+	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>=<value>. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel",default="thread:4", guitype='strbox', row=30, col=0, rowspan=1, colspan=2, mode="refinement[thread:4]")
+	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful", guitype='intbox', row=30, col=2, rowspan=1, colspan=1, mode="refinement[4]")
 	parser.add_argument("--path", default=None, type=str,help="The name of a directory where results are placed. Default = create new refine_xx")
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--compressbits",type=int,help="Bits of precision to keep in class-averages and 3-D volumes, 0->losless, default=10 (3 decimal digits of precision)", default=10)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 #	parser.add_argument("--usefilt", dest="usefilt", type=str,default=None, help="Specify a particle data file that has been low pass or Wiener filtered. Has a one to one correspondence with your particle data. If specified will be used in projection matching routines, and elsewhere.")
 
 	# options associated with e2project3d.py
@@ -284,9 +283,8 @@ not need to specify any of the following other than the ones already listed abov
 		m3dpreprocess="--preprocess "+options.m3dpreprocess
 
 	if options.path == None:
-		fls=[int(i[-2:]) for i in os.listdir(".") if i[:7]=="refine_" and len(i)==9 and str.isdigit(i[-2:])]
-		if len(fls)==0 : fls=[0]
-		options.path = "refine_{:02d}".format(max(fls)+1)
+		options.path = num_path_new("refine_")
+
 	global output_path
 	output_path="{}/report".format(options.path)
 	try: os.makedirs(output_path)
@@ -363,8 +361,9 @@ used, browse to the 0_refine_parms.json file in the refinement directory. You ca
 	if options.startfrom!=None:
 		try:
 			olddb = js_open_dict(options.startfrom+"/0_refine_parms.json")
-			run("e2proc3d.py {oldeven} {path}/threed_00_even.hdf".format(oldeven=olddb["last_even"],path=options.path))
-			run("e2proc3d.py {oldodd} {path}/threed_00_odd.hdf".format(  oldodd =olddb["last_odd"] ,path=options.path))
+			run("e2proc3d.py {oldeven} {path}/threed_00_even.hdf --compressbits {bits}".format(oldeven=olddb["last_even"],path=options.path,bits=options.compressbits))
+			run("e2proc3d.py {oldodd} {path}/threed_00_odd.hdf --compressbits {bits}".format(  oldodd =olddb["last_odd"] ,path=options.path,bits=options.compressbits))
+			run("e2proc3d.py {path}/threed_00_even.hdf {path}/fsc_unmasked_00.txt --calcfsc {path}/threed_00_odd.hdf".format(path=options.path))
 			if options.input==None: options.input=(str(olddb["input"][0]),str(olddb["input"][1]))
 			else:
 				options.input=image_eosplit(options.input)
@@ -380,25 +379,33 @@ used, browse to the 0_refine_parms.json file in the refinement directory. You ca
 			elif options.targetres>12 : randomres=options.targetres*1.5
 			else : randomres=options.targetres*2.0
 
-			run("e2proc3d.py {model} {path}/threed_00_even.hdf --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix}".format(model=options.model,path=options.path,freq=old_div(1.0,(randomres)),apix=apix))
-			run("e2proc3d.py {model} {path}/threed_00_odd.hdf --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix}" .format(model=options.model,path=options.path,freq=old_div(1.0,(randomres)),apix=apix))
-			append_html("""<p>Randomizing the Fourier phases of <i>{model}</i> at resolutions higher than {res:1.1f} &Aring;. If the final achieved resolution is not at least ~{resb:1.1f} &Aring;, then the
+			if options.norandomphase :
+				run("e2proc3d.py {model} {path}/threed_00_even.hdf  --apix={apix} --compressbits {bits}".format(model=options.model,path=options.path,freq=old_div(1.0,(randomres)),apix=apix,bits=options.compressbits))
+				run("e2proc3d.py {model} {path}/threed_00_odd.hdf  --apix={apix} --compressbits {bits}" .format(model=options.model,path=options.path,freq=old_div(1.0,(randomres)),apix=apix,bits=options.compressbits))
+				append_html("""<p>No phase randomization or other prefilter applied to <i>{model}</i> at user request. If input model was not already preprocessed in some appropriate way,
+then this map have initial model bias, and resolution evaluation may be unrealiable.</p>
+<p>Input particles are from <i>{infile}</i></p>""".format(model=options.model,infile=options.input,res=randomres,resb=randomres*0.9))
+			else:
+				run("e2proc3d.py {model} {path}/threed_00_even.hdf --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix} --compressbits {bits}".format(model=options.model,path=options.path,freq=old_div(1.0,(randomres)),apix=apix,bits=options.compressbits))
+				run("e2proc3d.py {model} {path}/threed_00_odd.hdf --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix} --compressbits {bits}" .format(model=options.model,path=options.path,freq=old_div(1.0,(randomres)),apix=apix,bits=options.compressbits))
+				run("e2proc3d.py {path}/threed_00_even.hdf {path}/fsc_unmasked_00.txt --calcfsc {path}/threed_00_odd.hdf".format(path=options.path))
+				append_html("""<p>Randomizing the Fourier phases of <i>{model}</i> at resolutions higher than {res:1.1f} &Aring;. If the final achieved resolution is not at least ~{resb:1.1f} &Aring;, then the
 gold standard resolution assessment is not valid, and you need to re-refine, starting with a lower resolution target.</p>
 <p>Input particles are from <i>{infile}</i></p>""".format(model=options.model,infile=options.input,res=randomres,resb=randomres*0.9))
 			# input gets modified below, we need to do this first
-			if options.bispec: 
+			if options.invar: 
 				try: 
 #					print "eosplit ",options.input.split("__ctf_flip")[0]+"__ctf_flip_bispec.lst","\n\n"
-					bsinput=image_eosplit(options.input.split("__ctf_flip")[0]+"__ctf_flip_bispec.lst")
-					bsh=EMData(options.input.split("__ctf_flip")[0]+"__ctf_flip_bispec.lst",0)
+					bsinput=image_eosplit(options.input.split("__ctf_flip")[0]+"__ctf_flip_invar.lst")
+					bsh=EMData(options.input.split("__ctf_flip")[0]+"__ctf_flip_invar.lst",0)
 					bsx=bsh["nx"]
 					bsy=bsh["ny"]
-					if bsx!=bispec_invar_parm[0]/2 or bsy!=bispec_invar_parm[0]*bispec_invar_parm[1] : 
+					if not bsh.has_attr("is_harmonic_fp") and (bsx!=bispec_invar_parm[0]/2 or bsy!=bispec_invar_parm[0]*bispec_invar_parm[1]) : 
 						print("ERROR: bispectra file found, but with incorrect dimensions. This likely means it was created with an earlier version of EMAN2. Please rerun e2ctf_auto.py with the --outputonly option to regenerate bispectra.")
 						sys.exit(1)
 				except: 
-#					traceback.print_exc()
-					print("ERROR: ",options.input.split("__ctf_flip")[0]+"__ctf_flip_bispec.lst"," is not present or not usable. Please run e2ctf_auto.py on this project, and regenerate any sets you plan to use.")
+					traceback.print_exc()
+					print("ERROR: ",options.input.split("__ctf_flip")[0]+"__ctf_flip_invar.lst"," is not present or not usable. Please run e2ctf_auto.py on this project, and regenerate any sets you plan to use.")
 					sys.exit(1)
 					#traceback.print_exc()
 					#bsinput=options.input.rsplit(".",1)[0]+"_bispec.hdf"
@@ -477,10 +484,16 @@ maps which look prettier, with more apparent side-chains at high resolution, but
 		append_html("<p>You are using the --tophat=local option, which modifies the final filter applied to 3-D maps. The default behavior is to apply a final Wiener filter \
 based on the FSC curve evenly across the map. This Wiener filter gives a map which in theory reduces noise and filters the map to get as close as possible to \
 what you should be able to see at the specified resolution. However, this means that some features, such as sidechains and the pitch of alpha-helices may be somewhat \
-smoothed out. This option will compute a local resolution map, by computing local FSCs in different regions of the map. This local resolution map is then applied as a set \
-of local tophat filters across the map. If some regions of the map have better resolution than others, these regions will preserve more detail, and vice-versa. This may \
-produce some local artifacts, but generally seems to work quite well.")
+smoothed out. This option will compute a smooth local resolution map, by computing local FSCs in real space one frequency at a time. This local resolution map is then \
+applied as a local tophat filter across the map. If some regions of the map have better resolution than others, these regions will preserve more detail, and vice-versa.")
 		tophat="--tophat=local"
+	elif options.tophat=="localwiener":
+		append_html("<p>You are using the --tophat=localwiener option, which modifies the final filter applied to 3-D maps. The default behavior is to apply a final Wiener filter \
+based on the FSC curve evenly across the map. This Wiener filter gives a map which in theory reduces noise and filters the map to get as close as possible to \
+what you should be able to see at the specified resolution. However, this means that some features, such as sidechains and the pitch of alpha-helices may be somewhat \
+smoothed out. This option will compute a smooth local resolution map, by computing local FSCs in real space one frequency at a time. This local resolution map is then \
+applied as a local wiener filter across the map. If some regions of the map have better resolution than others, these regions will preserve more detail, and vice-versa.")
+		tophat="--tophat=localwiener"
 	else:
 		append_html("<p>You are not using the --tophat option, meaning a final Wiener filter \
 based on the FSC curve used to compute the resolution is applied to the reconstruction. This Wiener filter gives a map which in theory reduces noise and filters the map to get as close as possible to \
@@ -505,7 +518,7 @@ the actual map quality. This can achieve maximum liklihood-like effects without 
 are really required to achieve the targeted resolution, you may consider manually specifiying --sep 1, which will override this automatic behavior.</p>".format(sep=options.sep))
 
 	# in bispectrum mode, we make classes for the full sphere
-	if options.bispec or options.mirror: incmir=1
+	if options.invar or options.mirror: incmir=1
 	else: incmir=0
 	
 	if options.orientgen==None :
@@ -804,15 +817,15 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 			omap=EMData(fspe)
 			omap.mult(fmask)
 			omap.write_image("{path}/tmp.hdf".format(path=options.path),0)
-			cmd = "e2project3d.py {path}/tmp.hdf  --outfile {path}/projections_masked_even.hdf -f --projector {projector} --orientgen {orient} --sym {sym} {prethr} --parallel thread:{threads} {verbose}".format(
-				path=options.path,itrm1=it-1,itr=it,projector=options.projector,orient=options.orientgen,sym=projsym,prethr=prethreshold,threads=options.threads,verbose=verbose)
+			cmd = "e2project3d.py {path}/tmp.hdf  --outfile {path}/projections_masked_even.hdf --projector {projector} --orientgen {orient} --sym {sym} {prethr} --parallel thread:{threads} --compressbits {compressbits} {verbose}".format(
+				path=options.path,itrm1=it-1,itr=it,projector=options.projector,orient=options.orientgen,sym=projsym,prethr=prethreshold,threads=options.threads,compressbits=options.compressbits,verbose=verbose)
 			run(cmd)
 			
 			omap=EMData(fspo)
 			omap.mult(fmask)
 			omap.write_image("{path}/tmp.hdf".format(path=options.path),0)
-			cmd = "e2project3d.py {path}/tmp.hdf  --outfile {path}/projections_masked_odd.hdf -f --projector {projector} --orientgen {orient} --sym {sym} {prethr} --parallel thread:{threads} {verbose}".format(
-				path=options.path,itrm1=it-1,itr=it,projector=options.projector,orient=options.orientgen,sym=projsym,prethr=prethreshold,threads=options.threads,verbose=verbose)
+			cmd = "e2project3d.py {path}/tmp.hdf  --outfile {path}/projections_masked_odd.hdf --projector {projector} --orientgen {orient} --sym {sym} {prethr} --parallel thread:{threads} --compressbits {compressbits} {verbose}".format(
+				path=options.path,itrm1=it-1,itr=it,projector=options.projector,orient=options.orientgen,sym=projsym,prethr=prethreshold,threads=options.threads,compressbits=options.compressbits,verbose=verbose)
 			run(cmd)
 			
 			omap=None
@@ -820,12 +833,12 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 			try: os.unlink("{path}/tmp.hdf".format(path=options.path))
 			except: pass
 			
-		cmd = "e2project3d.py {path}/threed_{itrm1:02d}_even.hdf  --outfile {path}/projections_{itr:02d}_even.hdf -f --projector {projector} --orientgen {orient} --sym {sym} {prethr} --parallel thread:{threads} {verbose}".format(
-			path=options.path,itrm1=it-1,itr=it,projector=options.projector,orient=options.orientgen,sym=projsym,prethr=prethreshold,threads=options.threads,verbose=verbose)
+		cmd = "e2project3d.py {path}/threed_{itrm1:02d}_even.hdf  --outfile {path}/projections_{itr:02d}_even.hdf --projector {projector} --orientgen {orient} --sym {sym} {prethr} --parallel thread:{threads} --compressbits {compressbits} {verbose}".format(
+			path=options.path,itrm1=it-1,itr=it,projector=options.projector,orient=options.orientgen,sym=projsym,prethr=prethreshold,threads=options.threads,compressbits=options.compressbits,verbose=verbose)
 		run(cmd)
 		
-		cmd = "e2project3d.py  {path}/threed_{itrm1:02d}_odd.hdf --outfile {path}/projections_{itr:02d}_odd.hdf -f --projector {projector} --orientgen {orient} --sym {sym} {prethr} --parallel thread:{threads} {verbose}".format(
-			path=options.path,itrm1=it-1,itr=it,projector=options.projector,orient=options.orientgen,sym=projsym,prethr=prethreshold,threads=options.threads,verbose=verbose)
+		cmd = "e2project3d.py  {path}/threed_{itrm1:02d}_odd.hdf --outfile {path}/projections_{itr:02d}_odd.hdf --projector {projector} --orientgen {orient} --sym {sym} {prethr} --parallel thread:{threads} --compressbits {compressbits} {verbose}".format(
+			path=options.path,itrm1=it-1,itr=it,projector=options.projector,orient=options.orientgen,sym=projsym,prethr=prethreshold,threads=options.threads,compressbits=options.compressbits,verbose=verbose)
 		run(cmd)
 		
 		progress += 1.0
@@ -857,17 +870,18 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 			run(cmd)
 			progress += 1.0
 			E2progress(logid,old_div(progress,total_procs))
-		elif options.bispec:
+		elif options.invar:
 			### FIXME - hard-coded rotate_translate aligner here due to odd irreproducible memory related crashes with rotate_translate_tree:flip=0   8/22/17
 			### At some point this was changed back to rotate_translate_tree with flipping. May be ok since it would recover some mis-classified handedness related particles?  5/29/18
-			append_html("<p>* Computing similarity of each particle to the set of projections using bispectra. This avoids alignment, and permits classification in a single step.</p>",True)
-			cmd = "e2classesbyref.py {path}/projections_{itr:02d}_even.hdf {inputfile} --classmx {path}/classmx_{itr:02d}_even.hdf --classinfo {path}/classinfo_{itr:02d}_even.json --classes {path}/classes_{itr:02}_even.hdf --averager {averager} --cmp {simcmp} --align rotate_translate_flip:usebispec=1 --aligncmp {simaligncmp} {simralign} {verbose} --sep {sep} --threads {threads}".format(
-				path=options.path,itr=it,inputfile=options.input[0],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,sep=options.sep,averager=options.classaverager,
+			msaopt=" --msamode=pca "
+			append_html("<p>* Computing similarity of each particle to the set of projections using invariants. This avoids alignment, and permits classification in a single step.</p>",True)
+			cmd = "e2classesbyref.py {path}/projections_{itr:02d}_even.hdf {inputfile} --classmx {path}/classmx_{itr:02d}_even.hdf --classinfo {path}/classinfo_{itr:02d}_even.json --classes {path}/classes_{itr:02}_even.hdf --averager {averager} --cmp {simcmp} --align rotate_translate_tree:flip=1 --aligncmp {simaligncmp} {simralign} {msa} {verbose} --sep {sep} --compressbits {compressbits} --threads {threads}".format(
+				path=options.path,itr=it,inputfile=options.input[0],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,sep=options.sep,averager=options.classaverager,msa=msaopt,compressbits=options.compressbits,
 				verbose=verbose,threads=options.threads)
 			run(cmd)
 			progress += 1.0
-			cmd = "e2classesbyref.py {path}/projections_{itr:02d}_odd.hdf {inputfile} --classmx {path}/classmx_{itr:02d}_odd.hdf --classinfo {path}/classinfo_{itr:02d}_odd.json --classes {path}/classes_{itr:02}_odd.hdf --averager {averager} --cmp {simcmp} --align rotate_translate_flip:usebispec=1 --aligncmp {simaligncmp} {simralign} {verbose} --sep {sep} --threads {threads}".format(
-				path=options.path,itr=it,inputfile=options.input[1],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,sep=options.sep,averager=options.classaverager,
+			cmd = "e2classesbyref.py {path}/projections_{itr:02d}_odd.hdf {inputfile} --classmx {path}/classmx_{itr:02d}_odd.hdf --classinfo {path}/classinfo_{itr:02d}_odd.json --classes {path}/classes_{itr:02}_odd.hdf --averager {averager} --cmp {simcmp} --align rotate_translate_tree:flip=1 --aligncmp {simaligncmp} {simralign} {msa} {verbose} --sep {sep} --compressbits {compressbits} --threads {threads}".format(
+				path=options.path,itr=it,inputfile=options.input[1],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,sep=options.sep,averager=options.classaverager,msa=msaopt,compressbits=options.compressbits,
 				verbose=verbose,threads=options.threads)
 			run(cmd)
 			progress += 1.0
@@ -893,10 +907,10 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 
 			### Classify
 			append_html("<p>* Based on the similarity values, put each particle in to 1 or more classes (depending on --sep)</p>",True)
-			cmd = "e2classify.py {path}/simmx_{itr:02d}_even.hdf {path}/classmx_{itr:02d}_even.hdf -f --sep {sep} {verbose}".format(
+			cmd = "e2classify.py {path}/simmx_{itr:02d}_even.hdf {path}/classmx_{itr:02d}_even.hdf --sep {sep} {verbose}".format(
 				path=options.path,itr=it,sep=options.sep,verbose=verbose)
 			run(cmd)
-			cmd = "e2classify.py {path}/simmx_{itr:02d}_odd.hdf {path}/classmx_{itr:02d}_odd.hdf -f --sep {sep} {verbose}".format(
+			cmd = "e2classify.py {path}/simmx_{itr:02d}_odd.hdf {path}/classmx_{itr:02d}_odd.hdf --sep {sep} {verbose}".format(
 				path=options.path,itr=it,sep=options.sep,verbose=verbose)
 			run(cmd)
 			progress += 1.0
@@ -926,20 +940,20 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 			if options.focused : focused="--focused {path}/projections_even_masked.hdf".format(path=options.path)
 			else: focused =""
 			cmd="e2classaverage.py {inputfile} --classmx {path}/classmx_{itr:02d}_even.hdf --decayedge --storebad --output {path}/classes_{itr:02d}_even.hdf --ref {path}/projections_{itr:02d}_even.hdf --iter {classiter} \
-	-f --resultmx {path}/cls_result_{itr:02d}_even.hdf --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} \
-	--align {classalign} --aligncmp {classaligncmp} {classralign} {prefilt} {focused} {verbose} {parallel}".format(
+	--resultmx {path}/cls_result_{itr:02d}_even.hdf --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} \
+	--align {classalign} --aligncmp {classaligncmp} {classralign} {prefilt} {focused} {verbose} --compressbits {compressbits} {parallel}".format(
 				inputfile=cainput[0], path=options.path, itr=it, classiter=classiter, normproc=options.classnormproc, averager=options.classaverager, classrefsf=classrefsf,
 				classautomask=classautomask,classkeep=options.classkeep, classkeepsig=classkeepsig, classcmp=options.classcmp, classalign=options.classalign, classaligncmp=options.classaligncmp,
-				classralign=classralign, prefilt=prefilt,focused=focused, verbose=verbose, parallel=parallel)
+				classralign=classralign, prefilt=prefilt,focused=focused, verbose=verbose, compressbits=options.compressbits, parallel=parallel)
 			run(cmd)
 			
 			if options.focused : focused="--focused {path}/projections_odd_masked.hdf".format(path=options.path)
 			cmd="e2classaverage.py {inputfile} --classmx {path}/classmx_{itr:02d}_odd.hdf --decayedge --storebad --output {path}/classes_{itr:02d}_odd.hdf --ref {path}/projections_{itr:02d}_odd.hdf --iter {classiter} \
-	-f --resultmx {path}/cls_result_{itr:02d}_odd.hdf --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} \
-	--align {classalign} --aligncmp {classaligncmp} {classralign} {prefilt} {focused} {verbose} {parallel}".format(
+	--resultmx {path}/cls_result_{itr:02d}_odd.hdf --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} \
+	--align {classalign} --aligncmp {classaligncmp} {classralign} {prefilt} {focused} {verbose} --compressbits {compressbits} {parallel}".format(
 				inputfile=cainput[1], path=options.path, itr=it, classiter=classiter, normproc=options.classnormproc, averager=options.classaverager, classrefsf=classrefsf,
 				classautomask=classautomask,classkeep=options.classkeep, classkeepsig=classkeepsig, classcmp=options.classcmp, classalign=options.classalign, classaligncmp=options.classaligncmp,
-				classralign=classralign, prefilt=prefilt,focused=focused, verbose=verbose, parallel=parallel)
+				classralign=classralign, prefilt=prefilt,focused=focused, verbose=verbose, compressbits=options.compressbits, parallel=parallel)
 			run(cmd)
 		except:
 			print("classaverage error")
@@ -964,12 +978,12 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 
 		if not options.m3dold :
 			cmd="e2make3dpar.py --input {path}/classes_{itr:02d}_even.hdf --sym {sym} --output {path}/threed_{itr:02d}_even.hdf {preprocess} \
- --keep {m3dkeep} {keepsig} --apix {apix} --pad {m3dpad} --iterative --threads {threads} {verbose}".format(
+ --keep {m3dkeep} {keepsig} --apix {apix} --pad {m3dpad} --iterative --threads {threads} --compressbits {compressbits}  {verbose}".format(
 			path=options.path, itr=it, sym=m3dsym, recon=options.recon, preprocess=m3dpreprocess,  m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
-			m3dpad=options.pad,fillangle=astep ,threads=options.threads, apix=apix, verbose=verbose)
+			m3dpad=options.pad,fillangle=astep ,threads=options.threads, apix=apix, compressbits=options.compressbits, verbose=verbose)
 			if it>1 : cmd=cmd+" --itermask {path}/mask.hdf".format(path=options.path)
 		else:
-			cmd="e2make3d.py --input {path}/classes_{itr:02d}_even.hdf --iter 2 -f --sym {sym} --output {path}/threed_{itr:02d}_even.hdf --recon {recon} {preprocess} \
+			cmd="e2make3d.py --input {path}/classes_{itr:02d}_even.hdf --iter 2 --sym {sym} --output {path}/threed_{itr:02d}_even.hdf --recon {recon} {preprocess} \
  --keep={m3dkeep} {keepsig} --apix={apix} --pad={m3dpad} {verbose}".format(
 			path=options.path, itr=it, sym=m3dsym, recon=options.recon, preprocess=m3dpreprocess,  m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
 			m3dpad=options.pad, apix=apix, verbose=verbose)
@@ -985,12 +999,12 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 
 		if not options.m3dold :
 			cmd="e2make3dpar.py --input {path}/classes_{itr:02d}_odd.hdf --sym {sym} --output {path}/threed_{itr:02d}_odd.hdf {preprocess} \
- --keep {m3dkeep} {keepsig} --apix {apix} --pad {m3dpad} --iterative --threads {threads} {verbose}".format(
+ --keep {m3dkeep} {keepsig} --apix {apix} --pad {m3dpad} --iterative --threads {threads} --compressbits {compressbits} {verbose}".format(
 			path=options.path, itr=it, sym=m3dsym, recon=options.recon, preprocess=m3dpreprocess, m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
-			m3dpad=options.pad, apix=apix, fillangle=astep ,threads=options.threads, verbose=verbose)
+			m3dpad=options.pad, apix=apix, fillangle=astep ,threads=options.threads, compressbits=options.compressbits, verbose=verbose)
 			if it>1 : cmd=cmd+" --itermask {path}/mask.hdf".format(path=options.path)
 		else:
-			cmd="e2make3d.py --input {path}/classes_{itr:02d}_odd.hdf --iter 2 -f --sym {sym} --output {path}/threed_{itr:02d}_odd.hdf --recon {recon} {preprocess} \
+			cmd="e2make3d.py --input {path}/classes_{itr:02d}_odd.hdf --iter 2 --sym {sym} --output {path}/threed_{itr:02d}_odd.hdf --recon {recon} {preprocess} \
  --keep={m3dkeep} {keepsig} --apix={apix} --pad={m3dpad} {verbose}".format(
 			path=options.path, itr=it, sym=m3dsym, recon=options.recon, preprocess=m3dpreprocess, m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
 			m3dpad=options.pad, apix=apix, verbose=verbose)
@@ -1025,9 +1039,9 @@ Note that the next iteration is seeded with the individual even/odd maps, not th
 		oddfile="{path}/threed_{itr:02d}_odd.hdf".format(path=options.path,itr=it)
 		combfile="{path}/threed_{itr:02d}.hdf".format(path=options.path,itr=it)
 		run("e2refine_postprocess.py --even {path}/threed_{it:02d}_even.hdf --odd {path}/threed_{it:02d}_odd.hdf --output {path}/threed_{it:02d}.hdf --automaskexpand {amaskxp} \
---align --mass {mass} --iter {it} {amask3d} {amask3d2} {m3dpostproc} {setsf} {tophat} --sym {sym} --restarget {restarget} --underfilter --ampcorrect {ampcorrect} --threads {threads}".format(\
+--align --mass {mass} --iter {it} {amask3d} {amask3d2} {m3dpostproc} {setsf} {tophat} --sym {sym} --restarget {restarget} --underfilter --ampcorrect {ampcorrect} --compressbits {compressbits} --threads {threads}".format(\
 path=options.path, it=it, mass=options.mass, amask3d=amask3d, sym=m3dsym, amask3d2=amask3d2, m3dpostproc=m3dpostproc, setsf=m3dsetsf, restarget=options.targetres, amaskxp=options.automaskexpand,\
-ampcorrect=ampcorrect,tophat=tophat,threads=options.threads))
+ampcorrect=ampcorrect,tophat=tophat,compressbits=options.compressbits,threads=options.threads))
 
 		db.update({"last_map":combfile,"last_even":evenfile,"last_odd":oddfile})
 
@@ -1107,7 +1121,7 @@ ampcorrect=ampcorrect,tophat=tophat,threads=options.threads))
 						lastres=d[0][si]*(1.0-frac)+d[0][si-1]*frac
 						try:
 							plt.annotate(r"{:1.1f} $\AA$".format(old_div(1.0,lastres)),xy=(lastres,0.143),
-								xytext=(old_div((lastres*4+d[0][-1]),5.0),0.2+0.05*fi),arrowprops={"width":1,"frac":.1,"headwidth":7,"shrink":.05})
+								xytext=(old_div((lastres*4+d[0][-1]),5.0),0.2+0.05*fi),arrowprops={"width":1,"headlength":7,"headwidth":7,"shrink":.05})
 						except: pass
 						break
 				else : lastres=0
@@ -1169,7 +1183,7 @@ ampcorrect=ampcorrect,tophat=tophat,threads=options.threads))
 					lastres.append(d[0][si]*(1.0-frac)+d[0][si-1]*frac)
 					try:
 						plt.annotate(r"{:1.1f} $\AA$".format(old_div(1.0,lastres[-1])),xy=(lastres[-1],0.143),
-							xytext=(old_div((lastres[-1]*4+d[0][-1]),5.0),0.2+0.05*i),arrowprops={"width":1,"frac":.1,"headwidth":7,"shrink":.05})
+							xytext=(old_div((lastres[-1]*4+d[0][-1]),5.0),0.2+0.05*i),arrowprops={"width":1,"headlength":7,"headwidth":7,"shrink":.05})
 					except: pass
 					break
 
@@ -1251,6 +1265,8 @@ the differences responsible for the assessed resolution.</li>
 For the final completed iteration, the unmasked even and odd volumes are also retained: threed_even|odd_unmasked.hdf</li>
 </ul>""".format(path=options.path,iter=it))
 
+	compress_hdf(f"{options.path}/threed_even_unmasked.hdf",options.compressbits)
+	compress_hdf(f"{options.path}/threed_odd_unmasked.hdf",options.compressbits)
 
 	E2end(logid)
 

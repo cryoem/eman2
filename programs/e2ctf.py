@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Steven Ludtke, 10/29/2008 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -40,7 +37,6 @@ from past.utils import old_div
 from builtins import range
 from builtins import object
 from EMAN2 import *
-from EMAN2db import db_open_dict, db_close_dict, db_check_dict, db_list_dicts
 from math import *
 import os
 import sys
@@ -76,7 +72,7 @@ minimum of ~20 percent padding around the particles is required for background e
 of another particle into the box in some cases. Particles should be reasonably well centered. Can also optionally phase
 flip and Wiener filter particles. Wiener filtration comes after phase-flipping, so if phase flipping is performed Wiener
 filtered particles will also be phase-flipped. Note that both operations are performed on oversampled images if specified,
-but this will produce phase-flipped images which are irreversable, so, while oversampling can be useful for fitting, it
+but this will produce phase-flipped images which are irreversible, so, while oversampling can be useful for fitting, it
 is not recommended for phase-flipping.
 
 Increasing padding during the particle picking process will improve the accuracy of phase-flipping, particularly for
@@ -92,7 +88,7 @@ NOTE: This program should be run from the project directory, not from within the
 
 	parser.add_argument("--allparticles",action="store_true",help="Will process all particle stacks stored in the particles subdirectory (no list of files required)",default=False, guitype='boolbox',row=1, col=0, mode='autofit[True],tuning[True],genoutp[True],gensf[False]')
 	parser.add_argument("--onlynew",action="store_true",help="Will skip any files for which __ctf_flip files already exist.",default=False)
-	parser.add_argument("--onlynobispec",action="store_true",help="Will skip any files for which __ctf_flip_bispec files already exist.",default=False)
+	parser.add_argument("--onlynoinvar",action="store_true",help="Will skip any files for which __ctf_flip_invar files already exist.",default=False)
 	parser.add_argument("--sortdefocus",action="store_true",help="Sorts the micrographs in order by defocus",default=False,guitype='boolbox',row=3,col=1, mode='tuning[True]')
 	parser.add_argument("--minptcl",type=int,help="Files with fewer than the specified number of particles will be skipped",default=0,guitype='intbox', row=2, col=0, mode='autofit,tuning,genoutp,gensf')
 	parser.add_argument("--minqual",type=int,help="Files with a quality value lower than specified will be skipped",default=0,guitype='intbox', row=2, col=1, mode='autofit,tuning,genoutp,gensf')
@@ -123,16 +119,18 @@ NOTE: This program should be run from the project directory, not from within the
 	parser.add_argument("--nosmooth",action="store_true",help="Disable smoothing of the background (running-average of the log with adjustment at the zeroes of the CTF)",default=False, guitype='boolbox', row=7, col=1, rowspan=1, colspan=1, mode='autofit')
 	parser.add_argument("--refinebysnr",action="store_true",help="Refines the defocus value by looking at the high resolution smoothed SNR. Requires good starting defocus. Important: also replaces the SNR with a smoothed version.",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode='genoutp')
 	parser.add_argument("--phaseflip",action="store_true",help="Perform phase flipping after CTF determination and writes to specified file.",default=False, guitype='boolbox', row=5, col=0, rowspan=1, colspan=1, mode='genoutp[True]')
-	parser.add_argument("--phasefliphp",action="store_true",help="Perform phase flipping with auto-high pass filter",default=False, guitype='boolbox', row=5, col=1, rowspan=1, colspan=1, mode='genoutp')
+	parser.add_argument("--phasefliphp",action="store_true",help="Perform phase flipping with auto-high pass filter (deprecated)",default=False, guitype='boolbox', row=5, col=1, rowspan=1, colspan=1, mode='genoutp')
 	parser.add_argument("--extrapad",action="store_true",help="If particles were boxed more tightly than EMAN requires, this will add some extra padding, but only to processed output particles",default=False, guitype='boolbox', row=5, col=2, rowspan=1, colspan=1, mode='genoutp[False]')
-	parser.add_argument("--phaseflipsmall",action="store_true",help="Produce an output set with 1/2 size particles for faster initial model work",default=False, guitype='boolbox', row=6, col=0, rowspan=1, colspan=1, mode='genoutp[True]')
+	parser.add_argument("--phaseflipsmall",action="store_true",help="Produce an output set with 1/2 size particles for faster initial model work (deprecated)",default=False, guitype='boolbox', row=6, col=0, rowspan=1, colspan=1, mode='genoutp[True]')
 	parser.add_argument("--wiener",action="store_true",help="Wiener filter (optionally phaseflipped) particles.",default=False, guitype='boolbox', row=6, col=1, rowspan=1, colspan=1, mode='genoutp[True]')
+	parser.add_argument("--snrfilt",action="store_true",help="Apply SNR filter as part of phase flipping.",default=False, guitype='boolbox', row=6, col=2, rowspan=1, colspan=1, mode='genoutp[True]')
 	parser.add_argument("--proctag",help="Tag added to the name of each particle when using the phaseflipproc options",default="proc", guitype='strbox', row=8, col=0, rowspan=1, colspan=1, mode='genoutp["proc"]')
 	parser.add_argument("--phaseflipproc",help="If specified _proc particles will be generated. Typical = filter.lowpass.gauss:cutoff_freq=.07",default=None, guitype='strbox', row=9, col=0, rowspan=1, colspan=3, mode='genoutp["filter.lowpass.gauss:cutoff_freq=.07"]')
 	parser.add_argument("--phaseflipproc2",help="If specified _proc particles will be generated. Typical = filter.highpass.gauss:cutoff_freq=.005",default=None, guitype='strbox', row=10, col=0, rowspan=1, colspan=3, mode='genoutp["filter.highpass.gauss:cutoff_freq=.005"]')
 	parser.add_argument("--phaseflipproc3",help="If specified _proc particles will be generated. Typical = math.meanshrink:n=2",default=None, guitype='strbox', row=11, col=0, rowspan=1, colspan=3, mode='genoutp["math.meanshrink:n=2"]')
 	parser.add_argument("--phaseflipproc4",help="If specified _proc particles will be generated.",default=None, guitype='strbox', row=12, col=0, rowspan=1, colspan=3, mode='genoutp')
 	parser.add_argument("--phaseflipproc5",help="If specified _proc particles will be generated.",default=None, guitype='strbox', row=14, col=0, rowspan=1, colspan=3, mode='genoutp')
+	parser.add_argument("--compressbits", type=int,help="Bits to keep when writing images with compression. 0->lossless floating point. Default 6", default=6, guitype='intbox', row=2, col=2, mode="genoutp[6]")
 
 #	parser.add_argument("--virtualout",type=str,help="Make a virtual stack copy of the input images with CTF parameters stored in the header. BDB only.",default=None)
 	parser.add_argument("--storeparm",action="store_true",help="Output files will include CTF info. CTF parameters are used from the database, rather than values that may be present in the input image header. Critical to use this when generating output !",default=False,guitype='boolbox', row=3, col=2, rowspan=1, colspan=1, mode='genoutp[True]')
@@ -145,7 +143,7 @@ NOTE: This program should be run from the project directory, not from within the
 	parser.add_argument("--dbds",type=str,default=None,help="Obsolete option for old e2workflow. Present only to provide warning messages.")
 	parser.add_argument("--source_image",type=str,default=None,help="Filters particles only with matching ptcl_source_image parameters in the header")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
 
@@ -176,11 +174,11 @@ NOTE: This program should be run from the project directory, not from within the
 		if options.verbose: print("{} stacks in specified chunk".format(len(args)))
 		nthreads=1		# no threading with chunks
 
-	if options.onlynobispec:
+	if options.onlynoinvar:
 		print("%d files to process"%len(args))
 		dl=os.listdir("particles")
-		args=[i for i in args if not base_name(i)+"__ctf_flip_bispec.hdf" in dl]
-		if options.verbose: print("{} stacks after onlynobispec filter".format(len(args)))
+		args=[i for i in args if not base_name(i)+"__ctf_flip_invar.hdf" in dl]
+		if options.verbose: print("{} stacks after onlynoinvar filter".format(len(args)))
 
 	if options.onlynew:
 		print("%d files to process"%len(args))
@@ -348,7 +346,7 @@ def init_sfcurve(opt):
 
 def get_gui_arg_img_sets(filenames):
 	'''
-	returns the img_sets list required to intialize the GUI correctly. Each set has
+	returns the img_sets list required to initialize the GUI correctly. Each set has
 	filename,EMAN2CTF,im_1d,bg_1d,im_2d,bg_2d,qual,bg_1d_low,"ctf_microbox"
 	'''
 
@@ -456,7 +454,7 @@ def write_e2ctf_output(options):
 			if wienerout : print("Wiener image out: ",wienerout, end=' ')
 			print("  defocus=",ctf.defocus)
 
-			process_stack(filename,phaseout,phasehpout,phasesmout,wienerout,phaseprocout,options.extrapad,not options.nonorm,options.oversamp,ctf,invert=options.invert,storeparm=options.storeparm,source_image=options.source_image,zero_ok=options.zerook)
+			process_stack(filename,phaseout,phasehpout,phasesmout,wienerout,phaseprocout,options.extrapad,not options.nonorm,options.oversamp,ctf,snrfilt=options.snrfilt,invert=options.invert,storeparm=options.storeparm,source_image=options.source_image,zero_ok=options.zerook,compressbits=options.compressbits,verbose=options.verbose)
 
 			if logid : E2progress(logid,old_div(float(i+1),len(options.filenames)))
 
@@ -660,7 +658,7 @@ def pspec_and_ctf_fit(options,debug=False):
 	project_db = js_open_dict("info/project.json")
 	try: project_db.update({ "global.microscope_voltage":options.voltage, "global.microscope_cs":options.cs, "global.apix":apix })
 	except:
-		print("ERROR: apix not found. This probably means that no CTF curves were sucessfully fit !")
+		print("ERROR: apix not found. This probably means that no CTF curves were successfully fit !")
 
 	return img_sets
 
@@ -759,7 +757,7 @@ def env_cmp(sca,envelopes):
 
 	return ret
 
-def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=None,phaseproc=None,extrapad=False,edgenorm=True,oversamp=1,default_ctf=None,invert=False,storeparm=False,source_image=None,zero_ok=False):
+def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=None,phaseproc=None,extrapad=False,edgenorm=True,oversamp=1,default_ctf=None,snrfilt=False,invert=False,storeparm=False,source_image=None,zero_ok=False,compressbits=6,verbose=0):
 	"""Will phase-flip and/or Wiener filter particles in a file based on their stored CTF parameters.
 	phaseflip should be the path for writing the phase-flipped particles
 	wiener should be the path for writing the Wiener filtered (and possibly phase-flipped) particles
@@ -808,6 +806,7 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 
 	js_parms.close()
 
+	nbad=0
 	for i in range(n):
 		if source_image!=None :
 			im1=EMData()
@@ -824,7 +823,8 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 
 		# If we detected a zero edge, we mark the particle as bad
 		if not zero_ok and im1.has_attr("hadzeroedge") and im1["hadzeroedge"]!=0:
-			print("Particle outside of micrograph detected, marking as bad ({},{})".format(stackfile,i))
+			if verbose>1 : print("Particle outside of micrograph detected, marking as bad ({},{})".format(stackfile,i))
+			nbad+=1
 			js=js_open_dict(info_name(stackfile))
 			try:
 				s=js["sets"]
@@ -840,7 +840,7 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 		ctf=default_ctf			# otherwise a CTF without SNR parameters inherited from the whole frame could wind up in the particles !!!  1/24/18
 		if storeparm :
 			if stackfile[-4:].lower()!=".hdf" and stackfile[:4].lower()!="bdb:" :
-				if i==0: print("Warning, --storeparm option ignored. Input paticle stack must be HDF or BDB for this option to work.")
+				if i==0: print("Warning, --storeparm option ignored. Input particle stack must be HDF or BDB for this option to work.")
 			else :
 				ctf=default_ctf		# otherwise we're stuck with the values in the file forever
 				im1["ctf"]=ctf
@@ -859,6 +859,12 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 			if not lctf or not lctf.equal(ctf):
 				flipim=fft1.copy()
 				ctf.compute_2d_complex(flipim,Ctf.CtfType.CTF_SIGN)
+				if snrfilt:
+					snrim=fft1.copy()
+					ctf.compute_2d_complex(snrim,Ctf.CtfType.CTF_SNR)
+					snrim.process_inplace("math.sqrt")
+#					ctf.compute_2d_complex(snrim,Ctf.CtfType.CTF_WIENER_FILTER)
+					flipim.mult(snrim)
 #				if i==0: flipim.write_image("flip.mrc")
 			fft1.mult(flipim)
 			out=fft1.do_ift()
@@ -871,7 +877,8 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 			if edgenorm: out.process("normalize.edgemean")
 			if phaseflip:
 				try:
-					out.write_image(phaseflip,i)
+					#out.write_image(phaseflip,i)
+					out.write_compressed(phaseflip,i,compressbits)
 				except:
 					print(phaseflip,i)
 					x = EMData(phaseflip,i,False)
@@ -885,9 +892,9 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 				out2["apix_z"] = ctf.apix
 				# we take a sequence of processor option 2-tuples
 				for op in phaseproc[1:]:
-					if op[0]=="math.bispectrum.slice" and extrapad:
+					if op[0] in ("math.bispectrum.slice","math.harmonic")  and extrapad:
 						pad=good_size(out2["ny"]*1.25)
-						out2.clip_inplace(Region(old_div(-(pad-out2["nx"]),2),old_div(-(pad-out2["ny"]),2),pad,pad))
+						out2.clip_inplace(Region((-(pad-out2["nx"])//2),(-(pad-out2["ny"])//2),pad,pad))
 					if op[0] in outplaceprocs: out2=out2.process(op[0],op[1])
 					else: out2.process_inplace(op[0],op[1])
 #				out2.clip_inplace(Region(int(ys2*(oversamp-1)/2.0),int(ys2*(oversamp-1)/2.0),ys2,ys2))
@@ -895,10 +902,10 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 #				print fft2.get_ysize(),len(hpfilt)
 
 				if edgenorm: out2.process_inplace("normalize.edgemean")
-				if extrapad and out2["nx"]==out2["ny"]:
+				if extrapad and out2["nx"]==out2["ny"] and out2["ny"]==out["ny"]:
 					pad=good_size(out2["ny"]*1.25)
-					out2.clip_inplace(Region(old_div(-(pad-out2["nx"]),2),old_div(-(pad-out2["ny"]),2),pad,pad))
-				out2.write_image(phaseproc[0],i)
+					out2.clip_inplace(Region((-(pad-out2["nx"])//2),(-(pad-out2["ny"])//2),pad,pad))
+				out2.write_compressed(phaseproc[0],i,compressbits)
 
 			if phasehp:
 				fft2=fft1.copy()
@@ -915,7 +922,7 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 				if edgenorm: out.process_inplace("normalize.edgemean")
 				if invert: out.mult(-1.0)
 				#process_inplace("filter.highpass.autopeak")
-				out.write_image(phasehp,i)
+				out.write_compressed(phasehp,i,compressbits)
 
 			if phasesmall:
 				out2=out.copy()				# processor may or may not be in Fourier space
@@ -933,7 +940,7 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 #				print fft2.get_ysize(),len(hpfilt)
 
 				if edgenorm: out2.process_inplace("normalize.edgemean")
-				out2.write_image(phasesmall,i)
+				out2.write_compressed(phasesmall,i,compressbits)
 
 
 		if wiener :
@@ -955,13 +962,13 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 			out.clip_inplace(Region(int(ys2*(oversamp-1)/2.0),int(ys2*(oversamp-1)/2.0),ys2,ys2))
 			if invert : out.mult(-1.0)
 			out.process("normalize.edgemean")
-			try: out.write_image(wiener,i)
+			try: out.write_compressed(wiener,i,compressbits)
 			except:
 				print(wiener,i)
-				try: out.write_image(wiener,i)
+				try: out.write_compressed(wiener,i,compressbits)
 				except:
 					print("!!! ",wiener,i)
-					out.write_image("error.hed",-1)
+					out.write_compressed("error.hed",-1,compressbits)
 
 		#if virtualout:
 			#im1["data_path"]=vin.get_data_path(i)
@@ -972,7 +979,8 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 	#if wiener and wiener[:4]=="bdb:" : db_close_dict(wiener)
 	#if phaseflip and phaseflip[:4]=="bdb:" : db_close_dict(phaseflip)
 
-	db_close_dict(stackfile)	# this is safe even for non bdb: files
+	#db_close_dict(stackfile)	# this is safe even for non bdb: files
+	if nbad>0 : print(nbad," bad particles (extending outside image) identified in ",stackfile)
 
 	return
 
@@ -1019,7 +1027,7 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 	"""This routine will read the images from the specified file, optionally edgenormalize,
 	then apply a gaussian mask with the specified radius then compute the average 2-D power
 	spectrum for the stack. It will also compute the average 2-D power spectrum using 1-mask + edge
-	apotization to get an appoximate 'background' power spectrum. 2-D results returned as a 2-D FFT
+	apotization to get an approximate 'background' power spectrum. 2-D results returned as a 2-D FFT
 	intensity/0 image. 1-D results returned as a list of floats. If source_image is provided, then it
 	will only read particles with ptcl_source_image set to the specified value.
 
@@ -1613,6 +1621,7 @@ returns (fg1d,bg1d)"""
 #		z=int(zero(n,ctf.voltage,ctf.cs,ctf.defocus,ctf.ampcont)/ds+.5)
 		z=int(old_div(ctf.zero(n-1),ds)+.5)
 		if z>len(ctf.background)-2 or z-lz<2: break
+		if lz==0: break
 		d1=min(fg[lz-1:lz+2]-bg[lz-1:lz+2])
 		d2=min(fg[ z-1: z+2]-bg[ z-1: z+2])
 		#d1=min(fg[lz]-bg[lz],fg[lz-1]-bg[lz-1],fg[lz+1]-bg[lz+1])
@@ -1884,7 +1893,7 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,phaseplate,apix,bgad
 		#if s0==s1 : s0=int(.03/ds)
 	#if verbose: print "Minimum at 1/%1.1f 1/A (%1.4f), highest s considered 1/%1.1f 1/A (%1.4f)"%(1.0/(s0*ds),s0*ds,1.0/(s1*ds),s1*ds)
 
-	## we now have a range from the first minimia to ~6 A. Adjust it to include a bit of data closer to the origin
+	## we now have a range from the first minima to ~6 A. Adjust it to include a bit of data closer to the origin
 	#for i in range(s0,s0*2/3,-1):
 		#if bglowsub[i]>bglowsub[i-1] : break
 	#s0m=s0									# save for a defocus estimate
@@ -1928,7 +1937,7 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,phaseplate,apix,bgad
 		#tot,tota,totb=0,0,0
 		#zroa,zrob=0,0
 		#for s in range(s0,s1):
-			## This is basicaly a dot product of the reference curve vs the simulation
+			## This is basically a dot product of the reference curve vs the simulation
 			#a=(cc[s]**2)				# ctf curve ^2
 			#b=bglowsub[s]					# bg subtracted intensity
 			#tot+=a*b
@@ -1941,7 +1950,7 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,phaseplate,apix,bgad
 				##zrob+=1.0
 
 		#tot/=sqrt(tota*totb)	# correct if we want a normalized dot product
-##		tot/=tota				# funnny 'normalization' which seems to help bring out the more likely peaks
+##		tot/=tota				# funny 'normalization' which seems to help bring out the more likely peaks
 ##		if zrob==0 : continue
 ##		tot*=-(zroa/zrob)
 
@@ -2138,7 +2147,7 @@ def ctf_cmp_a(parms,data):
 	ctf.defocus=parms[0]
 	ctf.bfactor=parms[1]
 	cc=ctf.compute_1d(len(bgsub)*2,ds,Ctf.CtfType.CTF_AMP)	# this is for the error calculation
-	s0=old_div(s0*3,2)			# This should be roughlythe position of the first zero
+	s0=old_div(s0*3,2)			# This should be roughly the position of the first zero
 	s0a=max(3,old_div(s0,4))		# This is a lower s0 which will include some of the low resolution structure factor region
 
 	# make a complete CTF curve over 0,s1 range
@@ -2256,13 +2265,15 @@ def ctf_env_points(im_1d,bg_1d,ctf) :
 #	return ret
 
 try:
-	from PyQt4 import QtCore, QtGui, QtOpenGL
-	from PyQt4.QtCore import Qt
+	from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
+	from PyQt5.QtCore import Qt
+	import OpenGL
+	OpenGL.ERROR_CHECKING = False
 	from OpenGL import GL,GLUT
 	from eman2_gui.emshape import *
 	from eman2_gui.valslider import ValSlider,CheckBox
 except:
-	print("Warning: PyQt4 must be installed to use the --gui option")
+	print("Warning: PyQt5 must be installed to use the --gui option")
 	class dummy(object):
 		pass
 	class QWidget(object):
@@ -2274,28 +2285,28 @@ except:
 		def __init__(self,parent):
 			print("Qt4 has not been loaded")
 	QtGui=dummy()
-	QtGui.QWidget=QWidget
-	QtGui.QListWidget=QListWidget
+	QtWidgets.QWidget=QWidget
+	QtWidgets.QListWidget=QListWidget
 
 def notzero(x):
 	if x==0 : return 1.0
 	return x
 
-class MyListWidget(QtGui.QListWidget):
+class MyListWidget(QtWidgets.QListWidget):
 	"""Exactly like a normal list widget but intercepts a few keyboard events"""
 	keypress = QtCore.pyqtSignal(QtGui.QKeyEvent)
 
 	def keyPressEvent(self,event):
 
 		if event.key() in (Qt.Key_Up,Qt.Key_Down) :
-			QtGui.QListWidget.keyPressEvent(self,event)
+			QtWidgets.QListWidget.keyPressEvent(self,event)
 			return
 
 		self.keypress.emit(event)
 #		event.key()==Qt.Key_I
 
 
-class GUIctf(QtGui.QWidget):
+class GUIctf(QtWidgets.QWidget):
 	module_closed = QtCore.pyqtSignal()
 
 	def __init__(self,application,data,autohp=True,nosmooth=False,highdensity=False):
@@ -2318,7 +2329,7 @@ class GUIctf(QtGui.QWidget):
 		self.nosmooth=nosmooth
 		self.highdensity=highdensity
 
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "ctf.png"))
 
 		self.data=data
@@ -2342,18 +2353,18 @@ class GUIctf(QtGui.QWidget):
 		self.guiim.mmode="app"
 
 		# This object is itself a widget we need to set up
-		self.hbl = QtGui.QHBoxLayout(self)
-		self.hbl.setMargin(0)
+		self.hbl = QtWidgets.QHBoxLayout(self)
+		self.hbl.setContentsMargins(0, 0, 0, 0)
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")
 
 		# plot list and plot mode combobox
-		self.vbl2 = QtGui.QVBoxLayout()
+		self.vbl2 = QtWidgets.QVBoxLayout()
 		self.setlist=MyListWidget(self)
-		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
+		self.setlist.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
 		self.vbl2.addWidget(self.setlist)
 
-		self.splotmode=QtGui.QComboBox(self)
+		self.splotmode=QtWidgets.QComboBox(self)
 		self.splotmode.addItem("Bgsub & fit")
 		self.splotmode.addItem("Ptcl & BG power")
 		self.splotmode.addItem("SNR")
@@ -2369,8 +2380,8 @@ class GUIctf(QtGui.QWidget):
 		self.hbl.addLayout(self.vbl2)
 
 		# ValSliders for CTF parameters
-		self.vbl = QtGui.QVBoxLayout()
-		self.vbl.setMargin(0)
+		self.vbl = QtWidgets.QVBoxLayout()
+		self.vbl.setContentsMargins(0, 0, 0, 0)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 		self.hbl.addLayout(self.vbl)
@@ -2378,7 +2389,7 @@ class GUIctf(QtGui.QWidget):
 		#self.samp = ValSlider(self,(0,5.0),"Amp:",0)
 		#self.vbl.addWidget(self.samp)
 
-		self.imginfo=QtGui.QLabel("Info",self)
+		self.imginfo=QtWidgets.QLabel("Info",self)
 		self.vbl.addWidget(self.imginfo)
 
 		self.sdefocus=ValSlider(self,(0,5),"Defocus:",0,90)
@@ -2413,18 +2424,18 @@ class GUIctf(QtGui.QWidget):
 		self.vbl.addWidget(self.squality)
 
 
-		self.hbl_buttons = QtGui.QHBoxLayout()
-		self.saveparms = QtGui.QPushButton("Save parms")
-		self.recallparms = QtGui.QPushButton("Recall")
-		self.refit = QtGui.QPushButton("Refit")
+		self.hbl_buttons = QtWidgets.QHBoxLayout()
+		self.saveparms = QtWidgets.QPushButton("Save parms")
+		self.recallparms = QtWidgets.QPushButton("Recall")
+		self.refit = QtWidgets.QPushButton("Refit")
 		self.show2dfit = CheckBox(label="Show 2D Sim:",value=False)
 		self.showzerorings = CheckBox(label="Show Zeroes:",value=False)
 		self.usephaseplate = CheckBox(label="Phaseplate:",value=False)
-		self.output = QtGui.QPushButton("Output")
+		self.output = QtWidgets.QPushButton("Output")
 		self.hbl_buttons.addWidget(self.refit)
 		self.hbl_buttons.addWidget(self.saveparms)
 		self.hbl_buttons.addWidget(self.recallparms)
-		self.hbl_buttons2 = QtGui.QHBoxLayout()
+		self.hbl_buttons2 = QtWidgets.QHBoxLayout()
 		self.hbl_buttons2.addWidget(self.show2dfit)
 		self.hbl_buttons2.addWidget(self.showzerorings)
 		self.hbl_buttons2.addWidget(self.usephaseplate)
@@ -2584,7 +2595,7 @@ class GUIctf(QtGui.QWidget):
 		self.show()
 
 	def closeEvent(self,event):
-#		QtGui.QWidget.closeEvent(self,event)
+#		QtWidgets.QWidget.closeEvent(self,event)
 #		self.app.app.closeAllWindows()
 		E2saveappwin("e2ctf","main",self)
 
@@ -2923,7 +2934,7 @@ class GUIctf(QtGui.QWidget):
 		if n>1:
 			self.ptcldata=EMData.read_images(self.data[val][0],list(range(0,min(20,n))))
 			im=sum(self.ptcldata)
-			im.mult(4.0/len(self.ptcldata))	# 4 compensatess for noise averaging
+			im.mult(4.0/len(self.ptcldata))	# 4 compensates for noise averaging
 			self.ptcldata.insert(0,im)
 			self.guirealim.set_data(self.ptcldata)
 		else : self.guirealim.set_data([EMData()])
@@ -2980,7 +2991,7 @@ class GUIctf(QtGui.QWidget):
 			for i in range(n):
 				img=EMData(fsp,i)
 				img.mult(-1.0)
-				img.write_image(fsp,i)
+				img.write_compressed(fsp,i,6)
 
 			self.ptcldata=EMData.read_images(fsp,list(range(0,20)))
 			self.guirealim.set_data(self.ptcldata)

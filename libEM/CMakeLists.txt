@@ -12,7 +12,7 @@ target_sources(EM2 PRIVATE
 			   emobject.cpp
 			   emfft.cpp
 			   log.cpp
-			   imageio.cpp
+			   io/imageio.cpp
 			   util.cpp
 			   emutil.cpp
 			   interp.cpp
@@ -22,13 +22,14 @@ target_sources(EM2 PRIVATE
 			   geometry.cpp
 			   pointarray.cpp
 			   pdbreader.cpp
-			   mrcio.cpp
-			   dm3io.cpp
-			   dm4io.cpp
-			   tifio.cpp
-			   hdfio.cpp
-			   hdfio2.cpp
-			   jpegio.cpp
+			   io/mrcio.cpp
+			   io/eerio.cpp
+			   io/dm3io.cpp
+			   io/dm4io.cpp
+			   io/tifio.cpp
+			   io/hdfio.cpp
+			   io/hdfio2.cpp
+			   io/jpegio.cpp
 			   emdata.cpp
 			   emdata_io.cpp
 			   emdata_core.cpp
@@ -36,28 +37,28 @@ target_sources(EM2 PRIVATE
 			   emdata_modular.cpp
 			   emdata_metadata.cpp
 			   emdata_transform.cpp
-			   pifio.cpp
-			   v4l2io.cpp
-			   vtkio.cpp
-			   spiderio.cpp
-			   sspiderio.cpp
-			   pgmio.cpp
-			   fitsio.cpp
-			   icosio.cpp
-			   lstio.cpp
-			   lstfastio.cpp
-			   pngio.cpp
-			   salio.cpp
-			   amiraio.cpp
-			   xplorio.cpp
-			   gatan2io.cpp
-			   emio.cpp
-			   imagicio.cpp
-			   imagicio2.cpp
-			   df3io.cpp
-			   omapio.cpp
-			   situsio.cpp
-			   serio.cpp
+			   io/pifio.cpp
+			   io/v4l2io.cpp
+			   io/vtkio.cpp
+			   io/spiderio.cpp
+			   io/sspiderio.cpp
+			   io/pgmio.cpp
+			   io/fitsio.cpp
+			   io/icosio.cpp
+			   io/lstio.cpp
+			   io/lstfastio.cpp
+			   io/pngio.cpp
+			   io/salio.cpp
+			   io/amiraio.cpp
+			   io/xplorio.cpp
+			   io/gatan2io.cpp
+			   io/emio.cpp
+			   io/imagicio.cpp
+			   io/imagicio2.cpp
+			   io/df3io.cpp
+			   io/omapio.cpp
+			   io/situsio.cpp
+			   io/serio.cpp
 			   emcache.cpp
 			   ctf.cpp
 			   xydata.cpp
@@ -72,17 +73,20 @@ target_sources(EM2 PRIVATE
 			   testutil.cpp
 			   analyzer.cpp
 			   randnum.cpp
-			   hdf_filecache.cpp
+			   io/hdf_filecache.cpp
 			   polardata.cpp
 			   tomoseg.cpp
 			   )
 
 add_subdirectory(gorgon)
 add_subdirectory(sparx)
+add_subdirectory(sphire)
 
 if(WIN32)
 	target_compile_definitions(EM2 PUBLIC _CRT_SECURE_NO_WARNINGS _SCL_SECURE_NO_WARNINGS)
 endif()
+
+target_link_libraries(EM2 HDF5::HDF5 GSL::gsl GSL::gslcblas)
 
 install(TARGETS EM2
 		DESTINATION ${SP_DIR}
@@ -97,29 +101,14 @@ if(ENABLE_FFTW3)
 	endif()
 endif()
 
-if(WIN32)
+if(WIN32 OR ENABLE_FFTW3)
     target_link_libraries(EM2 FFTW3::FFTW3)
-else()
-    if(ENABLE_FFTW3)
-    	target_link_libraries(EM2 FFTW3::FFTW3)
-    endif()
-	target_link_libraries(EM2 m)
 endif()
-
-find_package(GSL REQUIRED)
-if(WIN32)
-	set_target_properties(GSL::gsl
-						  PROPERTIES
-						  INTERFACE_COMPILE_DEFINITIONS GSL_DLL
-						  )
-endif()
-
-target_link_libraries(EM2 GSL::gsl GSL::gslcblas)
 
 option(ENABLE_TIFF "enable TIFF support" ON)
 if(ENABLE_TIFF)
 	include(${CMAKE_SOURCE_DIR}/cmake/TIFF.cmake)
-    target_link_libraries(EM2 TIFF::TIFF JPEG::JPEG)
+    target_link_libraries(EM2 TIFF::TIFF)
 endif()
 
 option(ENABLE_JPEG "enable JPEG support" ON)
@@ -127,9 +116,6 @@ if(ENABLE_JPEG)
 	include(${CMAKE_SOURCE_DIR}/cmake/JPEG.cmake)
     target_link_libraries(EM2 JPEG::JPEG)
 endif()
-
-include(${CMAKE_SOURCE_DIR}/cmake/HDF5.cmake)
-target_link_libraries(EM2 HDF5::HDF5)
 
 option(ENABLE_PNG "enable PNG support" ON)
 if(ENABLE_PNG)

@@ -35,10 +35,8 @@ For structures that have symmetries (e.g. c2):
   ; %%--%%img_per_grp : Number of projections: Specify the number of images from the angular neighbourhood that will be used to estimate 2D variance for each projection data. The larger the number the less noisy the estimate, but the lower the resolution. Usage of large number also results in rotational artifacts in variances that will be visible in 3D variability map. (default 100)
   ; %%--%%sym : Point-group symmetry: If the structure has symmetry higher than c1, the command requires symmetrization of the dataset, using %%--%%symmetrize option, before computing 3D variability. (default c1)
   ; %%--%%CTF : Use CTF correction: If set to true, CTF correction will be applied using the parameters found in the image headers. (default False value reversed in GUI) 
-  ; %%--%%fl : Low-pass filter frequency : Stop-band frequency of the low-pass filter to be applied to the images prior to variability calculation but after decimation. Specify it in absolute frequency (%%>%% 0.0 and %%<=%% 0.5). By default, no filtering. (default 0.0)
-  ; %%--%%aa : Low-pass filter fall-off  : Fall-off width of the low-pass filter to be applied to the images prior to variability calculation but after decimation. Specify it in absolute frequency (%%>%% 0.0 and %%<=%% 0.5). 0.01 works in most of cases. Effective only with %%--%%fl %%>%% 0.0 and %%--%%aa %%>%% 0.0 has to be specified. (default 0.0) : %%--%%fl!=0.0
   ; %%--%%symmetrize : Symmetrise input stack: Prepare input stack for handling symmetry. Please skip this preparation step if the structure is asymmetrical (i.e. c1), since it is required only when the structure has internal symmetry. Notice this step can be run with only one CPU and there is no MPI version for it. (default False)
-  ; %%--%%overhead : python overhead memory: User estimates python overhead memory per CPU. The default value is 0.5 GB per CPU. (default 0.5)
+  ; %%--%%overhead : Python overhead memory: User estimates python overhead memory per CPU. The default value is 0.5 GB per CPU. (default 0.5)
 
 \\
 === Advanced Parameters ===
@@ -48,6 +46,8 @@ For structures that have symmetries (e.g. c2):
   ; %%--%%no_norm : Apply normalization: Indicate if normalization should be applied or not. By default, apply normalization. (default False question reversed in GUI)
   ; %%--%%npad : Image padding factor: The number of time to pad the original images. The images will be padded to achieve the original size times this option. (default 2)
   ; %%--%%decimate : Image decimate factor: Reduce images by this factor and change the pixel size. Specify a non-zero positive float value smaller than 1.0. By default, it does not change size of images. (default 0.25)
+  ; %%--%%fl : Low-pass filter frequency : Stop-band frequency of the low-pass filter to be applied to the images prior to variability calculation but after decimation. Specify it in absolute frequency (%%>%% 0.0 and %%<=%% 0.5). By default, no filtering. (default 0.0)
+  ; %%--%%aa : Low-pass filter fall-off  : Fall-off width of the low-pass filter to be applied to the images prior to variability calculation but after decimation. Specify it in absolute frequency (%%>%% 0.0 and %%<=%% 0.5). 0.01 works in most of cases. Effective only with %%--%%fl %%>%% 0.0 and %%--%%aa %%>%% 0.0 has to be specified. (default 0.0) : %%--%%fl!=0.0
   ; %%--%%window : Target image size [Pixels]: Window (or clip) images using the specified size without changing pixel size. It is relative to the orignal window size. The target window size cannot be larger than the orignal image size. By default, use the original particle image size. (default 0)
   ; %%--%%nvec : Number of eigenvectors: By default, no PCA will be calculated. (default 0)
 

@@ -1,8 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
-
 # Author: Muthu Alagappan, m.alagappan901@gmail.com,  07/22/09
 # Copyright (c) 2000-2006 Baylor College of Medicine
 #
@@ -35,21 +31,21 @@ from __future__ import absolute_import
 
 from EMAN2 import PDBReader, EMData
 from .emapplication import EMApp, get_application
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 from .emimage3d import EMImage3DWidget
 from .emimage3diso import EMIsosurfaceModel
 from .empdbviewer import *
 from .emselector import EMSelectorDialog
 
 
-class EMPDBValWidget(QtGui.QWidget):
+class EMPDBValWidget(QtWidgets.QWidget):
 	'''
 	EMPDB versus isosurface visual evaluation
 	'''
 	run_validate = QtCore.pyqtSignal(str, str, int, float)
 
 	def __init__(self):
-		QtGui.QWidget.__init__(self)
+		QtWidgets.QWidget.__init__(self)
 
 		self.pdb_model = None # will eventually be a EMPDBModel
 		self.iso_model = None # will eventually be a EMIsosurfaceModel
@@ -65,59 +61,59 @@ class EMPDBValWidget(QtGui.QWidget):
 		get_application().attach_child(self)
 		
 	def __init_gui(self):
-		self.data_groupbox = QtGui.QGroupBox(self.tr("Data"))
+		self.data_groupbox = QtWidgets.QGroupBox(self.tr("Data"))
 		
-		pdb_label = QtGui.QLabel("PDB:")
-		self.pdb_line_edit = QtGui.QLineEdit()
-		self.pdb_browse_button = QtGui.QPushButton(self.tr("Browse"))
-		pdb_layout = QtGui.QHBoxLayout()
+		pdb_label = QtWidgets.QLabel("PDB:")
+		self.pdb_line_edit = QtWidgets.QLineEdit()
+		self.pdb_browse_button = QtWidgets.QPushButton(self.tr("Browse"))
+		pdb_layout = QtWidgets.QHBoxLayout()
 		pdb_layout.addWidget(pdb_label)
 		pdb_layout.addWidget(self.pdb_line_edit)
 		pdb_layout.addWidget(self.pdb_browse_button)		
 		
-		volume_label = QtGui.QLabel("Volume:")
-		self.volume_line_edit = QtGui.QLineEdit()
-		self.volume_browse_button = QtGui.QPushButton(self.tr("Browse"))
-		volume_layout = QtGui.QHBoxLayout()
+		volume_label = QtWidgets.QLabel("Volume:")
+		self.volume_line_edit = QtWidgets.QLineEdit()
+		self.volume_browse_button = QtWidgets.QPushButton(self.tr("Browse"))
+		volume_layout = QtWidgets.QHBoxLayout()
 		volume_layout.addWidget(volume_label)
 		volume_layout.addWidget(self.volume_line_edit)
 		volume_layout.addWidget(self.volume_browse_button)
 		
-		data_layout = QtGui.QVBoxLayout()
+		data_layout = QtWidgets.QVBoxLayout()
 		data_layout.addLayout(pdb_layout)
 		data_layout.addLayout(volume_layout)
 		
 		self.data_groupbox.setLayout(data_layout)
 
 		
-		self.validation_groupbox = QtGui.QGroupBox(self.tr("Validation"))
+		self.validation_groupbox = QtWidgets.QGroupBox(self.tr("Validation"))
 		
-		transformations_label = QtGui.QLabel(self.tr("&Number of Transformations"))
-		self.transformations_spinbox = QtGui.QSpinBox()
+		transformations_label = QtWidgets.QLabel(self.tr("&Number of Transformations"))
+		self.transformations_spinbox = QtWidgets.QSpinBox()
 		self.transformations_spinbox.setMaximum(9999)
 		self.transformations_spinbox.setValue(20)
 		transformations_label.setBuddy(self.transformations_spinbox)
-		transformations_layout = QtGui.QHBoxLayout()
+		transformations_layout = QtWidgets.QHBoxLayout()
 		transformations_layout.addWidget(transformations_label)
 		transformations_layout.addWidget(self.transformations_spinbox)
 		
-		threshold_label = QtGui.QLabel(self.tr("Isosurface &Threshold"))
-		self.threshold_doublespinbox = QtGui.QDoubleSpinBox()
+		threshold_label = QtWidgets.QLabel(self.tr("Isosurface &Threshold"))
+		self.threshold_doublespinbox = QtWidgets.QDoubleSpinBox()
 		self.threshold_doublespinbox.setValue(0.1)
 		threshold_label.setBuddy(self.threshold_doublespinbox)
-		threshold_layout = QtGui.QHBoxLayout()
+		threshold_layout = QtWidgets.QHBoxLayout()
 		threshold_layout.addWidget(threshold_label)
 		threshold_layout.addWidget(self.threshold_doublespinbox)
 		
-		self.validate_button = QtGui.QPushButton(self.tr("&Validate"))
+		self.validate_button = QtWidgets.QPushButton(self.tr("&Validate"))
 		
-		validation_layout = QtGui.QVBoxLayout()
+		validation_layout = QtWidgets.QVBoxLayout()
 		validation_layout.addLayout(transformations_layout)
 		validation_layout.addLayout(threshold_layout)
 		validation_layout.addWidget(self.validate_button)
 		self.validation_groupbox.setLayout(validation_layout)
 		
-		layout = QtGui.QVBoxLayout()
+		layout = QtWidgets.QVBoxLayout()
 		layout.addWidget(self.data_groupbox)
 		layout.addWidget(self.validation_groupbox)
 		
@@ -149,12 +145,12 @@ class EMPDBValWidget(QtGui.QWidget):
 		self.volume_line_edit.setText(file_path)
 		
 	def browse_pdb(self):
-		file_path = QtGui.QFileDialog.getOpenFileName(filter="Protein Data Bank (*.pdb)")
+		file_path = QtWidgets.QFileDialog.getOpenFileName(filter="Protein Data Bank (*.pdb)")[0]
 		self.pdb_line_edit.setText(file_path)
 		
 	def closeEvent(self, event):
 		self.viewer_window.close()
-		QtGui.QWidget.closeEvent(self, event)
+		QtWidgets.QWidget.closeEvent(self, event)
 		
 	def draw_objects(self):
 		if self.iso_model == None: 

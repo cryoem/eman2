@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 # average particles together based on existing alignments
 
 from past.utils import old_div
@@ -29,17 +27,13 @@ def main():
 	parser.add_argument("--scorebands", default=0,type=int,help="If specified will generate averages over N bands of 'score' values, including only particles in each band.")
 	parser.add_argument("--scorebandsali", default=0,type=int,help="If specified will generate averages over N bands of 'score' values, including only particles in each band, and iteratively realigning in each band.")
 	parser.add_argument("--scoreprogressive", default=0,type=int,help="If specified will generate progressive averages over N bands of 'score' values, including all particles starting with the best through the progressive bands.")
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=1, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=1, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
 
 	if options.path == None:
-		fls=[int(i[-2:]) for i in os.listdir(".") if i[:4]=="m2d_" and len(i)==6 and str.isdigit(i[-2:])]
-		if len(fls)==0 : 
-			print("Error: No m2d_* folders found")
-			sys.exit(1)
-		options.path = "m2d_{:02d}".format(max(fls))
+		options.path = num_path_last("m2d_")
 		if options.verbose : print("Working in folder: ",options.path)
 
 	if options.iter<=0 :
@@ -72,7 +66,7 @@ def main():
 	N=len(sortangs)
 
 	# make a quick alignment reference
-	for i,t in enumerate(sorted(sortangs)[:50]):
+	for i,t in enumerate(sorted(sortangs,key=lambda x:x[0])[:50]):
 		im=EMData(t[2][0],t[2][1])			# this is from the key of angs{}
 		im.process_inplace("xform",{"transform":t[1]})
 		try: aref.add(im)
@@ -81,7 +75,7 @@ def main():
 		
 	if options.scorebestset>0:
 		out=LSXFile("sets/{}_{}_{}.lst".format(options.path.split("/")[-1],options.iter,options.scorebestset))
-		for i,t in enumerate(sorted(sortangs)[:options.scorebestset]):
+		for i,t in enumerate(sorted(sortangs,key=lambda x:x[0])[:options.scorebestset]):
 			imh=EMData(t[2][0],t[2][1],True)
 			try:
 				fsp=imh["data_source"]	# if the data is from a LST file this dereferences it
@@ -94,7 +88,7 @@ def main():
 	# the main averaging/saving loop
 	t0=time.time()
 	t1=t0
-	for i,t in enumerate(sorted(sortangs)):
+	for i,t in enumerate(sorted(sortangs,key=lambda x:x[0])):
 		if options.verbose==1 and time.time()-t1>1:
 			t1=time.time()
 			frac=old_div(i,float(N))

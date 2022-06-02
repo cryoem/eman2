@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 # Author: Jesus Galaz-Montoya 2014 (jgalaz@gmail.com); last update Nov/17
 # Copyright (c) 2000-2011 Baylor College of Medicine
 #
@@ -86,7 +83,7 @@ def main():
 	
 	parser.add_argument("--ppid", type=int, default=-1, help="Set the PID of the parent process, used for cross platform PPID")
 
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness.")	
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness.")	
 
 	(options, args) = parser.parse_args()
 	
@@ -216,7 +213,7 @@ def main():
 					scoopinsitu.write_image(outscoopsallfileinsitu,totalcount)
 
 			#scoopclip = scoop.copy()
-			scoop = clip3d(scoop,options.boxsize,[sx,sy,sz])
+			scoop = clip3d(scoop,options.boxsize,None,None,[sx,sy,sz])
 			#print("\nclipped scoop to boxsize={}".format(options.boxsize))
 			scoop.write_image(outscoopsallfile,totalcount)
 			print ("\nwrote out scoop {}/{}".format(totalcount,ntargetscoops))

@@ -1,7 +1,3 @@
-/**
- * $Id$
- */
-
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
@@ -35,10 +31,6 @@
 
 #ifndef eman__byteorder_h__
 #define eman__byteorder_h__ 1
-
-#ifdef _WIN32
-	#pragma warning(disable:4819)
-#endif	//_WIN32
 
 #include <cstddef>
 

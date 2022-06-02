@@ -1,0 +1,8 @@
+EMAN2_cppwrap
+mpi
+optparse
+sp_applications
+sp_global_def
+sp_utilities
+string
+sys

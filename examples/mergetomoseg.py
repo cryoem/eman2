@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 # Muyuan Chen 2017-06
 from EMAN2 import *
 import numpy as np
@@ -53,7 +51,7 @@ def main():
 	
 	mm=np.argmax(np.array(imgs), 0)
 	
-	e=from_numpy(mm.copy())
+	e=from_numpy(mm)
 	e["apix_x"]=e["apix_y"]=e["apix_z"]=apix
 	
 	e["labels"]=lbs

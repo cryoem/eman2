@@ -1,5 +1,3 @@
-from __future__ import print_function
-from __future__ import division
 from libpyAligner2 import Aligners
 from libpyAligner2 import Ctf
 from libpyAligner2 import EMAN1Ctf
@@ -79,8 +77,7 @@ libpyCmp2.Log.LogLevel
 libpyCmp2.XYData.Pair
 
 import libpyEMData2
-libpyEMData2.EMData.FFTPLACE
-libpyEMData2.EMData.WINDOWPLACE
+libpyEMData2.EMData
 
 import libpyPointArray2
 libpyPointArray2.PointArray.Density2PointsArrayAlgorithm

@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 # Muyuan Chen 2015-03
 from past.utils import old_div
 from builtins import range
@@ -32,12 +30,12 @@ def main():
 	
 	#### build set ####
 	parser.add_argument("--buildset",action="store_true",help="Segment particles.",default=False, guitype='boolbox', row=7, col=0, rowspan=1, colspan=1, mode='set[True]')
-	parser.add_argument("--particles_raw", type=str,help="Input raw particle file", default=None,guitype='filebox',browser="EMParticlesTable(withmodal=True)", row=1, col=0, rowspan=1, colspan=3, mode="set")
-	parser.add_argument("--particles_label", type=str,help="Input labels for particle file", default=None,guitype='filebox',browser="EMParticlesTable(withmodal=True)", row=2, col=0, rowspan=1, colspan=3, mode="set")
-	parser.add_argument("--boxes_negative", type=str,help="Input boxes of negative samples", default=None,guitype='filebox',browser="EMParticlesTable(withmodal=True)", row=3, col=0, rowspan=1, colspan=3, mode="set")
+	parser.add_argument("--particles_raw", type=str,help="Input raw particle file", default=None,guitype='filebox',browser="EMParticlesTable(withmodal=True,multiselect=True)", row=1, col=0, rowspan=1, colspan=3, mode="set")
+	parser.add_argument("--particles_label", type=str,help="Input labels for particle file", default=None,guitype='filebox',browser="EMParticlesTable(withmodal=True,multiselect=True)", row=2, col=0, rowspan=1, colspan=3, mode="set")
+	parser.add_argument("--boxes_negative", type=str,help="Input boxes of negative samples", default=None,guitype='filebox',browser="EMParticlesTable(withmodal=True,multiselect=True)", row=3, col=0, rowspan=1, colspan=3, mode="set")
 	parser.add_argument("--ncopy",type=int,help="Number of copies for NEGATIVE samples. (number of copies of particles is calculated accordingly) ",default=10, guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="set")
 	parser.add_argument("--trainset_output", type=str,help="output file name of the training set.Default is the input particle file name plus _trainset.hdf", default=None,guitype='strbox', row=4, col=0, rowspan=1, colspan=3, mode="set")
-	parser.add_argument("--zthick",type=int,help="Thickness in z ",default=0, guitype='intbox', row=5, col=1, rowspan=1, colspan=1, mode="set")
+	#parser.add_argument("--zthick",type=int,help="Thickness in z ",default=0, guitype='intbox', row=5, col=1, rowspan=1, colspan=1, mode="set")
 	parser.add_argument("--validset",type=float,help="Propotion of particles in validation set. Default is 0.2 ",default=0.0, guitype='floatbox', row=7, col=1, rowspan=1, colspan=1, mode="set")
 
 	##################
@@ -89,33 +87,68 @@ def main():
 		print("Segmented particles saved to {}.".format(options.output))
 			
 	#### build set ###
-	
 	if options.buildset:
 		tomo_in=options.particles_raw
 		seg_in=options.particles_label
+		
+		if tomo_in==None:
+			print("particle_raw input required. exit.")
+			return
+		
+		tomo_in=tomo_in.split(',')
 		if seg_in==None:
-			seg_in=tomo_in[:-4]+"_seg.hdf"
-			print("Using {} as particle label..".format(seg_in))
-		neg_in=options.boxes_negative
-		if tomo_in and neg_in and seg_in:
-			n_ptcl=EMUtil.get_image_count(tomo_in)
-			n_neg=EMUtil.get_image_count(neg_in)
-			if options.trainset_output==None:
-				options.trainset_output=tomo_in[:-4]+"_trainset.hdf"
-			p_copy=old_div(options.ncopy*n_neg,n_ptcl)
+			seg_in=[]
+			print("Searching for particle label...")
+			for t in tomo_in:
+				s=t[:-4]+"_seg.hdf"
+				if os.path.isfile(s):
+					seg_in.append(s)
+					print("\t{} -> {}".format(t, s))
+				else:
+					print("cannot find {}. exit".format(s))
+					return
+		
 		else:
+			seg_in=seg_in.split(',')
+			if len(seg_in)!=len(tomo_in):
+				print("number of particles does not match number of labels. exit")
+				return
+		
+		
+		neg_in=options.boxes_negative
+		if neg_in==None:
+			neg_in=[]
 			p_copy=options.ncopy
-		try: os.remove(options.trainset_output)
-		except: pass
-		print("making {} copies for particles, and {} copies for negative samples".format(p_copy,options.ncopy))
+			print("no negative particle input, making {} copies for particles".format(p_copy))
+			
+		else:
+			neg_in=neg_in.split(',')
+			
+			n_ptcl=np.sum([EMUtil.get_image_count(t) for t in tomo_in])
+			n_neg=np.sum([EMUtil.get_image_count(t) for t in neg_in])
+			
+			p_copy=options.ncopy*n_neg//n_ptcl
+			print("total {} positive samples, {} negative samples".format(n_ptcl, n_neg)) 
+			print("making {} copies for particles, and {} copies for negative samples".format(p_copy,options.ncopy))
+			
+		if options.trainset_output==None:
+			options.trainset_output=tomo_in[0][:-4]+"_trainset.hdf"
+		
+		print("training set writting to {}".format(options.trainset_output))
+		if os.path.isfile(options.trainset_output):
+			os.remove(options.trainset_output)
+		
 		imgs=[]
-		if tomo_in and seg_in:
-			n_ptcl=EMUtil.get_image_count(tomo_in)
+		for ti, tomo in enumerate(tomo_in):
+			
+			n_ptcl=EMUtil.get_image_count(tomo)
+			seg=seg_in[ti]
+			
 			for i in range(n_ptcl):
-				#t=EMData(tomo_in,i)
-				t=get_box(tomo_in,i,options.zthick)
+				t=EMData(tomo,i)
+				#t=get_box(tomo_in,i,options.zthick)
 				if t==None: continue
-				s=EMData(seg_in,i)
+				s=EMData(seg, i)
 				for c in range(p_copy):
 					tr=Transform()
 					rd=random.random()*360
@@ -128,12 +161,14 @@ def main():
 					#e.write_image(options.trainset_output,-1)
 					imgs.append(e)
 		ngood=len(imgs)
-		if neg_in:
-			s=EMData(neg_in,0)
+		
+		for neg in neg_in:
+			s=EMData(neg,0)
 			s.to_zero()
-			n_neg=EMUtil.get_image_count(neg_in)
+			n_neg=EMUtil.get_image_count(neg)
 			for i in range(n_neg):
-				t=get_box(neg_in,i,options.zthick)
+				t=EMData(neg, i)
+				#t=get_box(neg_in,i,options.zthick)
 				if t==None: continue
 				for c in range(options.ncopy):
 					tr=Transform()

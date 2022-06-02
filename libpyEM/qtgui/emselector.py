@@ -1,8 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
-
 #
 # Author: David Woolford (woolford@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -37,12 +33,11 @@ from __future__ import absolute_import
 from builtins import range
 from builtins import object
 from EMAN2 import get_image_directory, get_dtag, EMData, \
-	get_files_and_directories, db_open_dict, remove_file, \
+	get_files_and_directories, remove_file, \
 	remove_directories_from_name, Util, EMUtil, IMAGE_UNKNOWN, base_name, \
 	file_exists, base_name
-from EMAN2db import EMAN2DB, db_convert_path, db_open_dict, db_check_dict, e2getcwd
-from PyQt4 import QtCore, QtGui, QtOpenGL
-from PyQt4.QtCore import Qt
+from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
+from PyQt5.QtCore import Qt
 from .emapplication import ModuleEventsManager, EMApp, get_application
 from .emimage2d import EMImage2DWidget
 from .emimagemx import EMImageMXWidget
@@ -108,15 +103,15 @@ class EMDeleteItemAction(EMItemAction,EMMultiItemAction,EMActionDelegate):
 		self.__delete_items( [item] )
 
 	def __delete_items(self,items):
-		msg = QtGui.QMessageBox()
+		msg = QtWidgets.QMessageBox()
 		msg.setText("Deletion will be permanent. Are you sure you want to delete the selected file(s)?")
 		s = ""
 		for i in items: s+=i.text()+"\n"
 		msg.setInformativeText(s)
-		msg.setStandardButtons(QtGui.QMessageBox.Cancel | QtGui.QMessageBox.Ok )
-		msg.setDefaultButton(QtGui.QMessageBox.Cancel)
+		msg.setStandardButtons(QtWidgets.QMessageBox.Cancel | QtWidgets.QMessageBox.Ok )
+		msg.setDefaultButton(QtWidgets.QMessageBox.Cancel)
 		ret = msg.exec_()
-		if ret == QtGui.QMessageBox.Cancel: return False
+		if ret == QtWidgets.QMessageBox.Cancel: return False
 		
 		for item in items:
 			delegate= item.get_delegate()
@@ -280,7 +275,7 @@ def EMSelectorBaseTemplate(Type):
 	'''
 	This is templated inheritance. I need the selector to be a dialog, and I need it to be a normal widget.
 	See the EMSelectorDialogType and EMBrowserType
-	Types currently in use are the QtGui.QWidget and the QtGui.QDialog
+	Types currently in use are the QtWidgets.QWidget and the QtWidgets.QDialog
 	'''
 	class EMSelectorBase(Type):
 		ok = QtCore.pyqtSignal(list)
@@ -295,10 +290,10 @@ def EMSelectorBaseTemplate(Type):
 			self.setFocusPolicy(Qt.StrongFocus)
 #			self.module=weakref.ref(module) # Avoid strong cycle
 			self.single_selection = single_selection # Flag indicating single selection in interface
-			self.browse_delegates = [EMBDBDelegate(self), EMFileSystemDelegate(self)] # Object capable of returning listed items based on url- Add your own
+			self.browse_delegates = [ EMFileSystemDelegate(self)] # Object capable of returning listed items based on url- Add your own. Used to include BDB
 			
-			self.hbl = QtGui.QVBoxLayout(self)
-			self.hbl.setMargin(0)
+			self.hbl = QtWidgets.QVBoxLayout(self)
+			self.hbl.setContentsMargins(0, 0, 0, 0)
 			self.hbl.setSpacing(6)
 			self.hbl.setObjectName("hbl")
 			
@@ -314,7 +309,7 @@ def EMSelectorBaseTemplate(Type):
 			self.previews = [] # keeps track of all of the preview windows
 #			self.module_events = [] # used to coordinate signals from the modules, especially close events, to free memory
 			self.list_widget_data= [] # entries should be tuples containing (current folder item)
-			self.splitter = QtGui.QSplitter(self)
+			self.splitter = QtWidgets.QSplitter(self)
 			self.splitter.setChildrenCollapsible(False)
 
 			self.add_list_widget()
@@ -324,7 +319,7 @@ def EMSelectorBaseTemplate(Type):
 			
 			self.__load_url(e2getcwd(),self.list_widgets[0])
 	
-			self.bottom_hbl = QtGui.QHBoxLayout()
+			self.bottom_hbl = QtWidgets.QHBoxLayout()
 			self.bottom_hbl.addWidget(self.filter_text,0)
 			self.bottom_hbl.addWidget(self.filter_combo,1)
 			self.__init_buttons()
@@ -347,10 +342,10 @@ def EMSelectorBaseTemplate(Type):
 			get_application().attach_child(self)
 			
 		def __init_buttons(self):
-			self.ok_button = QtGui.QPushButton("Ok")
+			self.ok_button = QtWidgets.QPushButton("Ok")
 			self.ok_button.adjustSize()
 			
-			self.cancel_button = QtGui.QPushButton("Cancel")
+			self.cancel_button = QtWidgets.QPushButton("Cancel")
 			self.cancel_button.adjustSize()
 		
 			self.ok_button.clicked[bool].connect(self.ok_button_clicked)
@@ -425,8 +420,8 @@ def EMSelectorBaseTemplate(Type):
 			self.lock = False
 					
 		def __init_filter_combo(self):
-			self.filter_text = QtGui.QLabel("Filter:",self)
-			self.filter_combo = QtGui.QComboBox(None)
+			self.filter_text = QtWidgets.QLabel("Filter:",self)
+			self.filter_combo = QtWidgets.QComboBox(None)
 			self.filter_combo.addItem("EM types")
 			self.filter_combo.addItem("Databases") # this doesn't really do anything
 			self.filter_combo.addItem("*.spi,*.hdf,*.img, bdb:")
@@ -458,19 +453,19 @@ def EMSelectorBaseTemplate(Type):
 			
 			#list_widget.contextMenuEvent = self.list_widget_context_menu_event
 			
-			if self.single_selection:list_widget.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
-			else: list_widget.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
+			if self.single_selection:list_widget.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+			else: list_widget.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
 			list_widget.setMouseTracking(True)	
 			self.list_widgets.append(list_widget)
 			self.splitter.addWidget(list_widget)
 			
 			self.list_widget_data.append(None)
 			
-			list_widget.itemDoubleClicked[QtGui.QListWidgetItem].connect(self.list_widget_dclicked)
+			list_widget.itemDoubleClicked[QtWidgets.QListWidgetItem].connect(self.list_widget_dclicked)
 			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemPressed(QListWidgetItem*)"),self.list_widget_clicked)
 			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("currentRowChanged (int)"),self.list_widget_row_changed)
 			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("paintEvent (int)"),self.list_widget_row_changed)
-			list_widget.itemEntered[QtGui.QListWidgetItem].connect(self.list_widget_item_entered)
+			list_widget.itemEntered[QtWidgets.QListWidgetItem].connect(self.list_widget_item_entered)
 			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("currentItemChanged(QListWidgetItem*,QListWidgetItem*)"),self.list_widget_current_changed)
 			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemChanged(QListWidgetItem*)"),self.list_widget_item_changed)
 			#\QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemActivated(QListWidgetItem*)"),self.list_widget_item_activated)
@@ -708,7 +703,7 @@ def fspsort(x):
 	y=x.rsplit(".",1)
 	return y[1]+"."+y[0]
 
-EMBrowserType = EMSelectorBaseTemplate(QtGui.QWidget)
+EMBrowserType = EMSelectorBaseTemplate(QtWidgets.QWidget)
 class EMBrowser(EMBrowserType):
 	def __init__(self, single_selection=False, usescenegraph=False):
 		EMBrowserType.__init__(self,single_selection)
@@ -718,17 +713,17 @@ class EMBrowser(EMBrowserType):
 		
 		self.__init_action_delegates()
 		
-		bottom_hbl2 = QtGui.QHBoxLayout()
+		bottom_hbl2 = QtWidgets.QHBoxLayout()
 		self.__init_preview_options()
 		bottom_hbl2.addWidget(self.preview_options,0)
 		self.hbl.addLayout(bottom_hbl2)
 				
-		bottom_hbl3 = QtGui.QHBoxLayout()
+		bottom_hbl3 = QtWidgets.QHBoxLayout()
 		self.__init_plot_options()
 		bottom_hbl3.addWidget(self.replace,0)
 		bottom_hbl3.addWidget(self.include,0)
 		
-		self.groupbox = QtGui.QGroupBox("Plot/3D options")
+		self.groupbox = QtWidgets.QGroupBox("Plot/3D options")
 		self.groupbox.setLayout(bottom_hbl3)
 		self.groupbox.setEnabled(False)
 		
@@ -781,12 +776,12 @@ class EMBrowser(EMBrowserType):
 		self.action_delegates[SAVE_SUBSET] = EMSaveStackSaveAction()
 		
 	def __init_plot_options(self):
-		self.replace = QtGui.QRadioButton("Replace")
-		self.include = QtGui.QRadioButton("Include")
+		self.replace = QtWidgets.QRadioButton("Replace")
+		self.include = QtWidgets.QRadioButton("Include")
 		self.include.setChecked(True)
 
 	def __init_preview_options(self):
-		self.preview_options = QtGui.QComboBox(self)
+		self.preview_options = QtWidgets.QComboBox(self)
 		#self.preview_options.addItem("No preview")
 		self.preview_options.addItem("Single preview")
 		self.preview_options.addItem("Multi preview")
@@ -837,7 +832,7 @@ class EMBrowser(EMBrowserType):
 		selected_items = l.selectedItems()
 		if len(selected_items) == 0: return
 		
-		menu = QtGui.QMenu()
+		menu = QtWidgets.QMenu()
 		self.menu_selected_items = selected_items
 		if len(selected_items) == 1:
 			first_item = selected_items[0]
@@ -889,8 +884,8 @@ class EMBrowser(EMBrowserType):
 					menu.addAction(SAVE_SUBSET)
 				
 
-		menu.triggered[QtGui.QAction].connect(self.menu_action_triggered)
-		self.action_list_widget = l # only set if the menu acutally triggers
+		menu.triggered[QtWidgets.QAction].connect(self.menu_action_triggered)
+		self.action_list_widget = l # only set if the menu actually triggers
 		menu.exec_(event.globalPos())
 		
 	def menu_action_triggered(self,action):
@@ -912,17 +907,17 @@ class EMBrowser(EMBrowserType):
 			get_application().setOverrideCursor(Qt.ArrowCursor)
 			return
 
-EMSelectorDialogType = EMSelectorBaseTemplate(QtGui.QDialog)
+EMSelectorDialogType = EMSelectorBaseTemplate(QtWidgets.QDialog)
 class EMSelectorDialog(EMSelectorDialogType):
 	def __init__(self,single_selection=False,save_as_mode=True): #TODO: figure out whether save_as_mode is needed (unused)
 		EMSelectorDialogType.__init__(self,single_selection)	
 
-		hbl2=QtGui.QHBoxLayout()
-		hbl2.setMargin(0)
+		hbl2=QtWidgets.QHBoxLayout()
+		hbl2.setContentsMargins(0, 0, 0, 0)
 		hbl2.setSpacing(2)
-		self.selection_label = QtGui.QLabel(SAVE_AS,self)
+		self.selection_label = QtWidgets.QLabel(SAVE_AS,self)
 		hbl2.addWidget(self.selection_label)
-		self.save_as_line_edit = QtGui.QLineEdit("",self)
+		self.save_as_line_edit = QtWidgets.QLineEdit("",self)
 		hbl2.addWidget(self.save_as_line_edit,0)
 		self.hbl.insertLayout(1,hbl2)
 		self.dialog_mode = True
@@ -936,10 +931,10 @@ class EMSelectorDialog(EMSelectorDialogType):
 		
 	def exec_(self):
 		'''
-		Wraps QtGui.QDialog.exec_
+		Wraps QtWidgets.QDialog.exec_
 		@return a list of selected filenames
 		'''
-		QtGui.QDialog.exec_(self)
+		QtWidgets.QDialog.exec_(self)
 		return self.dialog_result
 	
 	def set_validator(self,validator):
@@ -1004,7 +999,7 @@ class EMSelectorDialog(EMSelectorDialogType):
 		
 		directory = self.get_current_directory()
 		if directory == None:
-			msg = QtGui.QMessageBox()
+			msg = QtWidgets.QMessageBox()
 			msg.setText("Can not deduce the current directory. Please update your selection")
 			msg.exec_()
 			return
@@ -1027,42 +1022,20 @@ class EMSelectorDialog(EMSelectorDialogType):
 				self.accept()
 					
 	def __convert_name_to_write_image_format(self,name,directory):
-		if len(name) > 3 and name[0:4] == "bdb:":
-			if len(directory) > 0:
-				last_bit = name[4:]	
-				v = directory
-				# strip out the EMAN2DB
-				# assumption that only one "EMAN2DB" exists in the string
-				for cand in ["EMAN2DB/","EMAN2DB"]:
-					l = len(cand)
-					n = v.find(cand)
-					if  n != -1:
-						v = v[:n]+v[n+l:]
-						break # if we find one the first then there is no need t
-				
-				if len(v) > 0 and v[-1] == "/":
-					v = v[:-1]
-				
-				ret = "bdb:"+v+"#"+last_bit
-		elif directory.find("EMAN2DB/") != -1 or directory.find("EMAN2DB") != -1: # this test should be sufficient for establishing that bdb is the desired format
-			ret = db_convert_path(directory+name)
-		else: ret = directory + name
-			
-		return ret
+		return directory + name
 	
-	
-class EMListWidget(QtGui.QListWidget):
+class EMListWidget(QtWidgets.QListWidget):
 	'''
 	Customized ListWidget as displayed in the browser
 	'''
 	def __init__(self,target,*args):
 		self.target = weakref.ref(target)
-		QtGui.QListWidget.__init__(self,*args)
+		QtWidgets.QListWidget.__init__(self,*args)
 		self.reset_vars()
 	
 	def clear(self):
 		self.reset_vars()
-		QtGui.QListWidget.clear(self)
+		QtWidgets.QListWidget.clear(self)
 		
 	def contextMenuEvent(self,event):
 		self.target().list_widget_context_menu_event(event)
@@ -1395,7 +1368,7 @@ class EMFileSystemDelegate(EMBrowseDelegate):
 		e = EMData()
 		item = None
 		# note, if this if statement is allowed to proceed on Windows in the case of a png then the program
-		# crashes. In December of 2008 I thus changed this if statement to automatically exclude unecessary files
+		# crashes. In December of 2008 I thus changed this if statement to automatically exclude unnecessary files
 		# such as pngs and jpges...etc.
 		if EMUtil.get_image_ext_type(extension) != IMAGE_UNKNOWN and extension not in ["png","jpeg","jpg","JPG"]:
 			try:
@@ -1417,7 +1390,7 @@ class EMFileSystemDelegate(EMBrowseDelegate):
 
 		return item
 
-class EMListItem(QtGui.QListWidgetItem):
+class EMListItem(QtWidgets.QListWidgetItem):
 	'''
 	Base class definition providing the pubic interface of list widget items as 
 	required by the EMSelector
@@ -1426,14 +1399,14 @@ class EMListItem(QtGui.QListWidgetItem):
 	def __init__(self,delegate=None,text=""):
 		'''
 		@param delegate an instance of an EMBrowseDelegate - a strong reference is made to this
-		@param text the string that will be displayed in the QtGui.QListWidgetItem
+		@param text the string that will be displayed in the QtWidgets.QListWidgetItem
 		'''
-		QtGui.QListWidgetItem.__init__(self,self.get_icon(),text)
+		QtWidgets.QListWidgetItem.__init__(self,self.get_icon(),text)
 		self.delegate = delegate
 		self.context_menu_options = {} # this is used for running context menu actions
 		self.icon = None
 		self.metadata = None # subclass objects can use this to cache metadata
-		self.data = None # subclassing objects can use this to cache data - actually this isn't used at the momemt for fear of memory hogging
+		self.data = None # subclassing objects can use this to cache data - actually this isn't used at the moment for fear of memory hogging
 		
 	def get_delegate(self): return self.delegate
 	
@@ -1800,379 +1773,6 @@ class EMFSFolderItem(EMListItem):
 	def actions(self):
 		ret = [DELETE]
 		return  ret
-
-class EMBDBDelegate(EMBrowseDelegate):
-	def __init__(self,target):
-		self.target = weakref.ref(target)
-		self.directory_replacements = {"EMAN2DB":"bdb"}
-	
-	def get_data(self,full_path,idx=0):
-		'''
-		All items delegate by this should call this function to get a fully loaded EMData
-		That way the read routine is in the one location
-		'''
-		e = EMData()
-		e.read_image(db_convert_path(full_path),idx)
-		return e
-		
-	def get_metadata(self,full_path,idx=0):
-		'''
-		All items that load metadata using EMData io call this function
-		'''
-		db_name =  db_convert_path(full_path)
-		db = db_open_dict(db_name,ro=True)
-		data = db.get_header(idx)
-		return data
-	
-	def get_stack_data(self,full_path):
-		'''
-		This function is called by EM2DStackItem and EM3DImageItem
-		Return is a cache that can be treated like a list of EMData objects
-		'''
-		from .emimagemx import EMLightWeightParticleCache,EM3DDataListCache
-		md = self.get_metadata(full_path,0)
-		if md["nz"] > 1: return EM3DDataListCache(db_convert_path(full_path))
-		else: return EMLightWeightParticleCache.from_file(db_convert_path(full_path))
-	
-	def url_mod_time(self,url):
-		'''
-		Get the last time the url was modified
-		May return None to indicate the call is not valid/supported - this will mean the corresponding list widget will not be automatically updated
-		'''
-		if os.path.exists(url): return os.stat(url)[-2]
-		else: return None
-	
-	def emdata_save_as_url(self,url):
-		return db_convert_path(url)
-	
-	def delete_url(self,url):
-		remove_file(db_convert_path(url))
-	
-	def handles_url(self,url):
-		
-		return "EMAN2DB" in url		
-	
-	def parent_url(self,url):
-		
-		vals = url.split(MDS)
-		if len(vals) == 1:
-			#if not os.path.isdir(url): raise RuntimeError("Unknown url %s" %url)
-
-			vals = url.split("/")
-			if len(url) == 1: return url # probably at the root
-			idx = -1
-			l = 0
-			if len(vals[-1]) == 0: # '/' at the end
-				idx = -2
-				l = 1
-			
-			l += len(vals[idx]) + 1 # plus one for the '/'
-			return url[:-l]
-		else:
-			# metadata
-			l = 0
-			idx = -1
-			if len(vals[-1]) == 0: 
-				l = 1
-				idx = -2
-				
-			if len(vals) > math.fabs(idx):
-				l += len(vals[idx]) + 1 # plus one for the split
-				
-			return url[:-l]
-	
-	def get_items(self,url):
-#		if self.__is_database_file(url): 
-#			list_widget.clear()
-#			return self.__get_database_data_items(url)
-		if self.handles_url(url): #os.path.exists(url) and (url.endswith("EMAN2DB") or url.endswith("EMAN2DB/")):
-			if os.path.isdir(url): return self.__get_bdb_directory_items(url)
-			elif self.__is_image_url(url):return self.__get_bdb_image_items(url)
-			else:return self.__get_bdb_type_items(url)
-		else: raise RuntimeError("Unknown url %s" %url)
-	
-	def __is_image_url(self,url):
-		vals = url.split(MDS)
-		is_image = False
-		try:
-			db_url = db_convert_path(vals[0])
-			e = EMData()
-			e.read_image(db_url,0,False)
-			is_image = True
-		except: pass
-		return is_image
-	
-	def __get_bdb_image_items(self,url):
-		if not self.__is_image_url(url): raise RuntimeError("Unknown image url %s" %url)
-		vals = url.split(MDS)
-		db_url = db_convert_path(vals[0])
-		
-		return_items = []
-		
-		db = db_open_dict(db_url,ro=True)
-		n = len(db) 
-		if len(vals) == 1:
-			for i in range(n):
-				d = db.get_header(i)
-				if d!=None and "nz" in d : break
-			if  n > 1:
-				if d["nz"] > 1: return_items = [EM3DMetaImageItem(self,str(i),url,i) for i in range(0,n)]
-				else: return_items = [EM2DMetaImageItem(self,str(i),url,i) for i in range(0,n)]
-			else: 
-				keys = list(d.keys())
-				keys.sort() #alphabetical order
-				return_items = [EMDataHeaderItem(self,str(k)+" : "+str(d[k]),url,k,d[k]) for k in keys]
-		else:
-			val_idx = 1
-			if len(vals) > 1 and n > 1:
-				val_idx += 1
-				d = db.get_header(int(vals[1]))
-			else:
-				d = db.get_header(0)
-				
-			if len(vals) == val_idx:
-				keys = list(d.keys())
-				keys.sort() #alphabetical order
-				return_items = [EMDataHeaderItem(self,str(k)+" : "+str(d[k]),url,k,d[k]) for k in keys]
-			elif len(vals) == val_idx+1:
-				val = d[vals[val_idx]]
-				return_items = [EMGenericItem(self,str(val))]
-			else:
-				raise RuntimeError("Unknown url %s" %url) # an EMData header only goes so deep
-			
-		return return_items
-	
-	def __get_bdb_type_items(self,url):
-		
-		vals = url.split(MDS)
-		
-		return_items = []
-		if len(vals) == 1:
-			return []
-		else:
-			#if vals[0][-1] != "/": vals[0] += "/" # this is so the db_convert_path function works
-			vals[0] = folderize(vals[0])
-			db_url = db_convert_path(vals[0])
-			db = db_open_dict(db_url+vals[1])
-			
-			for db_key in vals[2:]:db = db[db_key]
-			
-			try:
-				for k,val in list(db.items()):
-					if isinstance(val,dict):
-						return_items.append(EMBDBDictItem(self,str(k),url,str(k)))
-					else:
-						return_items.append(EMBDBKeyValueItem(self,str(k),url,str(k)))
-			except:
-				return_items = [EMGenericItem(self,str(db))]
-			#print db.keys()
-		
-		return return_items
-		
-	def __get_bdb_directory_items(self,url):
-		
-		'''
-		Displays the file/folder information in the directory /home/someonone/data/EMAN2DB
-		this will typically consist of .bdb (database) files, but may contain folders and other
-		EMAN2DB directories.
-		
-		At the moment I have only written the code so that it supports the interrogation of the .bdb
-		files, and am displaying the other folders only as a I reminder that they need to be dealt with
-		'''
-		#if not (os.path.exists(url) and (url.endswith("EMAN2DB") or url.endswith("EMAN2DB/"))):\
-		if not self.handles_url(url): raise RuntimeError("Unknown url %s" %url)
-
-		#real_directory = self.__convert_to_absolute_path(url)
-		real_directory = url
-		dirs,files = get_files_and_directories(real_directory)
-		files.sort()
-		dirs.sort()
-		
-		return_items = []
-		for i in dirs:
-			if i[0] == '.': continue
-			
-			if i == "EMAN2DB":
-				b = EMGenericItem(self,"bdb","unwanted")  # really haven't accommodated for this...
-				continue
-
-			a = EMBDBDirectoryItem(self,i,folderize(url)+i)
-			return_items.append(a)
-			
-		for file in files:
-			a = self.__get_bdb_file_item(file,real_directory)
-			if a != None: return_items.append(a)
-		return return_items
-
-	def __get_bdb_file_item(self,file,real_directory):
-		if not file[-3:] == "bdb": return None
-		f = file.rpartition(".bdb")
-		db_directory = self.__get_database_directory(real_directory)
-		
-		db_name = "bdb:"+db_directory+"#"+f[0]
-		db = db_open_dict(db_name,ro=True)
-		
-		try:
-			"maxrec" in db
-		except:
-			# sometimes when the browser is updating in real time a database file is 
-			# created, however only one of the two files exists (one is ptcl.bdb,
-			# the other something like ptcl_200x200x1.bdb (etc), even though the other
-			# is just about to be written... so I wait for 2 seconds and try a second time
-			import time
-			time.sleep(1)
-			db = db_open_dict(db_name,ro=True)
-			try:
-				"maxrec" in db
-			except:
-#					from emapplication import EMErrorMessageDisplay
-#					EMErrorMessageDisplay.run(["Warning: the %s database might be corrupted." %db_name], "Data loss" )
-					
-				return None
-		
-		if db and len(db) > 0:
-			#n = DB[f[0]]["maxrec"]
-			n = len(db)
-			if n > 1:
-				for i in range(n):
-					d = db.get_header(i)
-					try:
-						if d!=None and "nz" in d : break
-					except: 
-						return EMBDBItem(self,f[0],real_directory+MDS+f[0])
-				if d["nz"] == 1:
-					#a = EM2DStackItem(self,f[0],"bdb:"+db_directory+"#"+f[0])
-					a = EM2DStackItem(self,f[0],folderize(real_directory)+f[0])
-				elif d["nz"] > 1:
-					#a = EM3DStackItem(self,f[0],"bdb:"+db_directory+"#"+f[0])
-					a = EM3DStackItem(self,f[0],folderize(real_directory)+f[0])
-			elif n == 1:
-				d = db.get_header(0)
-				if d["nz"] <= 1:
-					#a = EM2DImageItem(self,f[0], "bdb:"+db_directory+"#"+f[0],0)
-					a = EM2DImageItem(self,f[0],folderize(real_directory)+f[0],0)
-				else:
-					#a = EM3DImageItem(self,f[0], "bdb:"+db_directory+"#"+f[0],0)
-					a = EM3DImageItem(self,f[0],folderize(real_directory)+f[0],0)
-					
-			else:
-				a = EMBDBItem(self,f[0],real_directory+MDS+f[0])
-		else:
-			a = EMBDBItem(self,f[0],real_directory+MDS+f[0])
-			
-		a.file_name = file
-		return a
-		
-	def __get_database_directory(self,file):
-		'''
-		Get the database where EMAN2DB should be opening in order to open the given file
-		e.g. if db path is /home/someone/work/EMAN2DB/data.bdb will return /home/someone/work
-		'''
-		idx1 = file.find("EMAN2DB")
-		if idx1 > 0:
-			return file[0:idx1-1]
-		else: return None
-	
-class EMBDBFolderItem(EMListItem):
-	ICON = None
-	NAME = "db folder"
-	def __init__(self,delegate=None,text="",real_directory=""):
-		EMListItem.__init__(self,delegate,text)
-		self.full_path = real_directory
-	
-	def get_name(self): return EMBDBFolderItem.NAME
-	
-	def get_icon(self):
-		'''
-		Supply your own Icon
-		'''
-		if EMBDBFolderItem.ICON == None:
-			EMBDBFolderItem.ICON = QtGui.QIcon(get_image_directory() + "/database.png")
-
-		return EMBDBFolderItem.ICON
-	
-	def get_url(self):
-		return self.full_path
-
-class EMBDBDirectoryItem(EMListItem):
-	NAME = "bdb directory"
-	ICON = None
-	def __init__(self,delegate,text,real_directory):
-		EMListItem.__init__(self,delegate,text)
-		self.full_path = real_directory
-	
-	def get_name(self): return EMBDBDirectoryItem.NAME
-	
-	def get_icon(self):
-		'''
-		Supply your own Icon
-		'''
-		if EMBDBDirectoryItem.ICON == None:
-			EMBDBDirectoryItem.ICON = QtGui.QIcon(get_image_directory() + "/Folder.png")
-
-		return EMBDBDirectoryItem.ICON
-	
-	def get_url(self): return self.full_path
-
-class EMBDBItem(EMListItem):
-	ICON = None
-	NAME = "bdb dict"
-	def __init__(self,delegate,text,db_url):
-		EMListItem.__init__(self,delegate,text)
-		self.full_path = db_url
-		
-	def get_name(self): return EMBDBItem.NAME
-	
-	def get_icon(self):
-		'''
-		Supply your own Icon
-		'''
-		if EMBDBItem.ICON == None:
-			EMBDBItem.ICON = QtGui.QIcon(get_image_directory() + "/database.png")
-
-		return EMBDBItem.ICON
-
-	def get_url(self): return self.full_path
-
-class EMBDBKeyValueItem(EMListItem):
-	'''
-	Most basic BDB item, basic string display
-	'''
-	NAME = "BDB key value"
-	def __init__(self,delegate=None,text="",url="",key=""):
-		EMListItem.__init__(self,delegate,text)
-		self.url = url
-		self.key = key
-		
-	def get_name(self): return EMBDBKeyValueItem.NAME
-
-	def get_url(self):
-		return self.url +MDS+str(self.key)
-
-class EMBDBDictItem(EMListItem):
-	'''
-	Most basic BDB item, basic string display
-	'''
-	NAME = "BDB dict"
-	ICON = None
-	def __init__(self,delegate=None,text="",url="",key=""):
-		EMListItem.__init__(self,delegate,text)
-		self.url = url
-		self.key = key
-		
-	def get_name(self): return EMBDBDictItem.NAME
-
-	def get_url(self):
-		return self.url +MDS+str(self.key)
-	
-	def get_icon(self):
-		'''
-		Supply your own Icon
-		'''
-		if EMBDBDictItem.ICON == None:
-			EMBDBDictItem.ICON = QtGui.QIcon(get_image_directory() + "/Bag.png")
-
-		return EMBDBDictItem.ICON
 
 class EMGenericItem(EMListItem):
 	'''

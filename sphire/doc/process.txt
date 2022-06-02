@@ -1,0 +1,294 @@
+~~NOTOC~~
+
+===== sp_process =====
+Miscellaneous Commands: Carry out various SPARX commands on image series, and generate data and initialize database for demo script.
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sp_process.py  inputfile  outputfile  micrograph_prefix  --order  --order_lookup  --order_metropolis  --order_pca  --initial=INITIAL  --circular  --radius=RADIUS  --changesize  --ratio=RATIO  --pw  --wn=WN  --phase_flip  --makedb=param1=value1:param2=value2  --generate_projections=param1=value1:param2=value2  --isacgroup=ISACGROUP  --isacselect  --params=PARAMS  --adjpw  --rotpw=ROTPW  --transformparams=TRANSFORMPARAMS  --importctf=IMPORTCTF  --input=INPUT  --defocuserror=DEFOCUSERROR  --astigmatismerror=ASTIGMATISMERROR  --scale=SCALE  --adaptive_mask  --nsigma=NSIGMA  --threshold=THRESHOLD  --mol_mass=MOL_MASS --ndilation=NDILATION --edge_type=EDGE_TYP --edge_width=EDGE_WIDTH --binary_mask  --combinemaps  --output_dir=DIRECTORY  --output=OUTPUT  --pixel_size=PIXEL_SIZE  --mask=MASK  --do_adaptive_mask   --mtf=MTF_FILE_NAME  --fsc_adj  --B_enhance=B_ENHANCE  --B_start=B_START  --B_stop=B_STOP  --fl=lpf_cutoff_freq  --aa=lpf_falloff  --window_stack  --box=BOX  --balance_angular_distribution  --max_occupy=MAX_ORIENTATIONS  --angstep=ANGULAR_STEP  --symmetry=SYMMETRY --nerosion=NEROSION --do_approx
+
+\\
+===== Typical usage =====
+
+sp_process does not support MPI.
+
+ 1. Phase flip a stack of images and write output to new file:
+
+  sp_process.py  input_stack.hdf  output_stack.hdf  --phase_flip
+
+ 2. Change size of image or map (resample, decimation or interpolation up). The process also changes the pixel size and window size accordingly.
+
+  sp_process  input.hdf  output.hdf  --changesize  --ratio=0.5
+
+ 3. Compute average power spectrum of a stack of 2D images with optional padding (option wn) with zeroes.
+
+  sp_process.py  input_stack.hdf  powerspectrum.hdf  --pw  [--wn=1024]
+
+ 4. Generate a stack of projections bdb:data and micrographs with prefix mic (i.e., mic0.hdf, mic1.hdf etc) from structure input_structure.hdf, with CTF applied to both projections and micrographs.
+
+  sp_process.py  input_structure.hdf  data mic  --generate_projections  format="bdb":apix=5.2:CTF=True:boxsize=64
+
+ 5. Retrieve original image numbers in the selected ISAC group (here group 12 from generation 3).
+
+  sp_process.py  bdb:test3  class_averages_generation_3.hdf  list3_12.txt  --isacgroup=12  --params=originalid
+
+ 6.  Retrieve original image numbers of images listed in ISAC output stack of averages/
+
+  sp_process.py  select1.hdf  ohk.txt
+
+ 7. Adjust rotationally averaged power spectrum of an image to that of a reference image or a reference 1D power spectrum stored in an ASCII file. Optionally use a tangent low-pass filter.  Also works for a stack of images, in which case the output is also a stack.
+
+  sp_process.py  vol.hdf ref.hdf  avol.hdf  < 0.25 0.2>  --adjpw
+  sp_process.py  vol.hdf pw.txt   avol.hdf  < 0.25 0.2>  --adjpw
+
+ 8. Generate a 1D rotationally averaged power spectrum of an image.
+
+  sp_process.py  vol.hdf  --rotpw=rotpw.txt
+
+\\ Output will contain three columns:
+  - rotationally averaged power spectrum
+  - logarithm of the rotationally averaged power spectrum
+  - integer line number (from zero to approximately to half the image size)
+
+ 9. Apply 3D transformation (rotation and/or shift) to a set of orientation parameters associated with projection data.
+
+  sp_process.py  --transfromparams=phi,theta,psi,tx,ty,tz  input.txt  output.txt
+
+The output file is then imported and 3D transformed map computed.
+
+  sp_header.py  bdb:p  --params=xform.projection  --import=output.txt
+  mpirun  -np  2  sp_recons3d_n.py  bdb:p tvol.hdf  --MPI
+
+The reconstructed map is in the position of the map computed using the input.txt parameters and then transformed with rot_shift3D(vol, phi,theta,psi,tx,ty,tz).
+
+10. Import ctf parameters from the output of sp_cter into windowed particle headers. 
+\\ There are three possible input files formats: (1) all particles are in one stack, (2) and/or (3) particles are in stacks, each stack corresponds to a single micrograph. In each case the particles should contain a name of the micrograph of origin stores using attribute name 'ptcl_source_image'. Normally this is done by e2boxer.py during windowing. Particles whose defocus or astigmatism error exceed set thresholds will be skipped, otherwise, virtual stacks with the original way preceded by G will be created.
+
+  sp_process.py  --input=bdb:data  --importctf=outdir/partres  --defocuserror=10.0  --astigmatismerror=5.0
+
+\\ Output will be a vritual stack bdb:Gdata.
+
+  sp_process.py  --input="bdb:directory/stacks*"  --importctf=outdir/partres  --defocuserror=10.0  --astigmatismerror=5.0
+
+To concatenate output files,
+
+  cd directory
+  e2bdb.py  .  --makevstack=bdb:allparticles  --filt=G
+
+**IMPORTANT:** Please do not move (or remove!) any input/intermediate EMAN2DB files as the information is linked between them.
+
+11. Scale 3D shifts. The shifts in the input five columns text file with 3D orientation parameters will be DIVIDED by the scale factor.
+
+  sp_process.py  orientationparams.txt  scaledparams.txt  scale=0.5
+
+12. Generate soft-edged 3D mask from input 3D map automatically or using the user-provided threshold.
+
+\\ Automatically compute the threshold to intially obtain the largest density cluster.
+
+  sp_process.py  vol3d.hdf  mask3d.hdf  --adaptive_mask  --fl=12.0 --aa=0.02 --pixel_size=3.1 --nsigma=3.0  --ndilation=1  --edge_width=3 --edge_type="G" --mol_mass=1500.0
+
+\\ Use the user-provided threshold to intially obtain the largest density cluster.
+
+  sp_process.py  vol3d.hdf  mask3d.hdf  --adaptive_mask --threshold=0.05  --ndilation=0  --edge_width=5
+
+13. Generate binary 3D mask from input 3D map using the user-provided threshold.
+
+  sp_process.py  vol3d.hdf  mask3d.hdf  --binary_mask  --threshold=0.05  --ndilation=0 --nerosion=0
+
+14. PostRefiner - Post-refine maps or images by enhancing the power spectrum after 2D averaging, 3D refinement, or 3D sorting run.
+\\ (1) Half-set Maps Mode
+\\ For a pair of unfiltered odd & even halfset maps, as produced by MERIDIEN, this command executes the following steps:
+  - Calculate FSC with provided mask and adjust the FSC.
+  - Sum two maps.
+  - Apply mask.
+  - Apply MTF correction (optional).
+  - Adjust power spectrum by 2*FSC/(1+FSC) (optional).
+  - Estimate B-factor from 10 Angstrom (default) to the resolution (optional).
+  - Apply negative B-factor to enhance the map (optional).
+  - Apply low-pass filter to the map (optional).
+\\ Options are independent of each others.
+  * %%--%%do_adaptive_mask : =True when it is restored, the program adaptively creates adaptive mask file using summed two maps. This takes a couple of minutes. For map with dimension of 384*384*384, it takes 6 minutes.
+  * %%--%%threshold   : Adaptive mask threshold: Density threshold for creating adaptive surface mask. This threshold is the same as the threshold in e.g. UCSF Chimera.
+  * %%--%%mtf              : For those high resolution maps, mtf correction would significantly enhance structural features.
+  * %%--%%fsc_adj          : FSC adjustment of power spectrum is inclined to increase the slope of power spectrum of the summed map.
+  * %%--%%B_enhance        : =0.0, program estimates B-factor from B_start (usually 10 Angstrom) to the resolution determined by FSC@0.143; >0.0, program uses the given value to enhance map; =-1.0, B-factor is not applied.
+  * %%--%%fl               : =0.0, low-pass filter to resolution; >=0.5, low-pass filter to the given Angstrom; >0.0 AND <=0.5, low-pass filter to the given absolute frequency; =-1.0, no low-pass filter.
+
+  sp_process.py  --combinemaps  vol_0_unfil.hdf vol_1_unfil.hdf  --output_dir=outdir_postrefine  --output=postrefine_fullset_vol3d.hdf  --pixel_size=1.12  --mask=mask3d.hdf   --mtf=mtf.txt  --fl=-1   --fsc_adj
+  sp_process.py  --combinemaps  vol_0_unfil.hdf vol_1_unfil.hdf  --output_dir=outdir_postrefine  --pixel_size=1.12  --mask=mask3d.hdf   --mtf=aa.txt  --fl=4.7  --aa=0.02 --fsc_adj
+  sp_process.py  --combinemaps  vol_0_unfil.hdf vol_1_unfil.hdf  --output_dir=outdir_postrefine  --output=postrefine_fullset_vol3d.hdf  --pixel_size=1.12  --do_adaptive_mask  --mtf=mtf.txt  --fl=3.9  --aa=0.01  --B_enhance=280
+
+\\ (2) Cluster Maps Mode or Single Map Mode:
+\\ For cluster maps produced by SORT3D_DEPTH, this command executes the following processes:
+  - Apply mask
+  - Apply MTF correction (optional);
+  - Apply negative B-factor to enhance the structure using user-provided ad-hoc value (optional);
+  - Apply low-pass filter to the structure using user-provided ad-hoc value (optional)
+\\ Options are independent of each others.
+  * %%--%%do_adaptive_mask : =True when it is restored, the program adaptively creates adaptive mask file using each cluster map. This takes a couple of minutes. For map with dimension of 384*384*384, it takes 6 minutes.
+  * %%--%%mtf              : For those high resolution maps, mtf correction would significantly enhance structural features.
+  * %%--%%B_enhance        : >0.0, program uses the given value to enhance map; =-1.0, B-factor is not applied.
+  * %%--%%fl               : >=0.5, low-pass filter to the given Angstrom; >0.0 AND <=0.5, low-pass filter to the given absolute frequency; =-1.0, no low-pass filter.
+\\ Note that this mode is mainly designed for SORT3D_DEPTH outputs but also applicable to ANY maps.
+
+  sp_process.py  --combinemaps  vol_cluster*.hdf    --output_dir=outdir_postrefine_cluster_vols  --output=postrefine_cluster_vol3d.hdf  --pixel_size=1.12  --do_adaptive_mask  --mtf=mtf.txt  --fl=3.9  --aa=0.01  --B_enhance=280
+
+\\ To process one single map, simply specify the input volume path (without wild card '*'). This executes the same processes as above but on one single map:
+
+  sp_process.py  --combinemaps  vol.hdf  --output_dir=outdir_postrefine_single_vol  --output=spostrefine_vol3d.hdf  --pixel_size=1.12  --do_adaptive_mask  --mtf=mtf.txt  --fl=3.9  --aa=0.01  --B_enhance=280
+
+\\ (3) Images Mode - for 2D images
+\\ Calculate B-factor and apply negative B-factor to 2D images.
+
+15. Window stack file -reduce size of images without changing the pixel size.
+	sp_process.py input.hdf output.hdf --box=new_box_size
+
+16. Pad stack file --pad images to a larger size and set surround background to request value (default 0.0).
+	sp_process.py input.hdf output.hdf --box=new_box_size --background=3.0
+
+17. Create angular distribution .build file
+	sp_process.py --angular_distribution  inputfile=example/path/params.txt --pixel_size=1.0  --round_digit=5  --box_size=500  --particle_radius=175  --cylinder_width=1  --cylinder_length=10000
+	
+18. Subtract from images in the first stack images in the second stack and write results to the third stack.
+   If the name of the output stack is the same as the second stack, the results will be written to the second
+   stack (it will be overwritten).
+
+	sp_process.py bdb:orgstack bdb:proj/data  bdb:proj/sdata bdb:proj/odata --subtract_stack
+	
+19. Balance angular distribution. 
+   Input ASCII file with 3D orientation parameters, compute a histogram
+   of distribution of angles using user-provided angular step, retain a subset of randomly selected
+   projection direction per angular bin using user-provided threshold, and write the list of the all
+   retained projection directions.  (In order to create a substack with retained images, use e2bdb.py
+   with options makevstack and list).
+
+	sp_process.py --balance_angular_distribution  params.txt select.txt --max_occupy=100 --angstep=15 --symmetry=d3
+
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; inputfile : Input file: Required for some options. (default none)
+  ; outputfile :  Output file: Required for some options. (default none)
+  ; micrograph_prefix : Prefix for output micrographs: Required for some options. (default none)
+
+  ; %%--%%changesize : Change size of image or map: Change size of image or map (decimate or interpolate up). The process results in changed pixel and window sizes. (default False)
+  ; %%--%%ratio : Ratio of new to old image size: If < 1, the pixel size will increase and image size decrease. if > 1, the other way round. (default 1.0)
+
+  ; %%--%%pw : Compute average power spectrum of a 2D image stack: With optional padding (option wn) by zeroes. (default False)
+  ; %%--%%wn : Size of window to use: It should be larger/equal than particle box size, default padding to max(nx,ny). (default -1)
+
+  ; %%--%%phase_flip : Phase-flip the input stack: Apply phase flipping to all images in the stack.  They should have CTF information stored in headers.(default False)
+
+  ; %%--%%generate_projections : Generate projections and simulated micrographs from 3D map: Three arguments are required. name of input structure from which to generate projections, name of the output projection stack, and prefix of generated micrographs (if prefix is 'mic', then micrographs names will be mic0.hdf, mic1.hdf ...). optional arguments specifying format, apix, box size and whether to add CTF effects can be entered as follows after --generate_projections: format='bdb':apix=5.2:CTF=True:boxsize=100, or format='hdf', etc., where format is bdb or hdf, apix (pixel size) is a float, CTF is True or False, and boxsize denotes the dimension of the box (assumed to be a square). if an optional parameter is not specified, it will default as follows: format='bdb', apix=2.5, CTF=False, boxsize=64. (default none)
+
+  ; %%--%%isacgroup : Retrieve original image numbers in selected ISAC group: See ISAC documentation for details. (default -1)
+
+  ; %%--%%isacselect : Create ISAC particle ID list: Retrieve original image numbers listed in ISAC output average stack. See ISAC documentation for details. (default False)
+
+  ; %%--%%params : Name of parameter in image file header: Which one depends on specific option. (default none)
+
+  ; %%--%%adjpw : Adjust rotationally averaged power spectrum of an image: (default False)
+
+  ; %%--%%rotpw : Compute rotationally averaged power spectrum of the input image: Store in output text file with name as specified. (default none)
+
+  ; %%--%%importctf : Import sp_cter CTF parameters into stack file: Specify name of a file that contains CTF parameters produced by sp_cter. (default none)
+  ; %%--%%input : Input particle image stack file: CTF parameters will be imported into headers of images in the stack. (default none)
+  ; %%--%%defocuserror : Defocus error threshold: Exclude micrographs whose relative defocus error as estimated by sp_cter is larger than defocuserror percent. the error is computed as (std dev defocus)/defocus*100%. (default 1000000.0)
+  ; %%--%%astigmatismerror : Astigmatism error threshold: Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sp_cter is larger than astigmatismerror degrees. (default 360.0)
+
+  ; %%--%%scale : Divide shifts in input 3D orientation parameters text file by the specified scale factor: (default -1.0)
+
+  ; %%--%%adaptive_mask : Create soft-edged 3D mask: Create soft-edged 3D mask from the input structure. (default False)
+  ; %%--%%use_mol_mass : Use molecular mass : GUI OPTION ONLY - Define if one want to use the molecular mass option as a masking threshold. (default False) : %%--%%threshold==-9999.0 %%--%%nsigma==1.0 %%--%%do_adaptive_mask==True
+  ; %%--%%threshold : Binarization threshold: Defines the threshold used in the first step of the processing to generate a binary version of the input structure. If the value changed from the default, the option will be ignored and the threshold will be set according to nsigma method under the Advanced tab. (default -9999.0) : %%--%%nsigma==1.0  %%--%%use_mol_mass==False %%--%%do_adaptive_mask==True
+  ; %%--%%mol_mass : Molecular mass [kDa]: The estimated molecular mass of the target particle in kilodaltons. (default none) : %%--%%use_mol_mass==True
+  ; %%--%%nsigma : Density standard deviation threshold: Defines the threshold used in the first step of the processing to generate a binary version of the structure. The threshold is set to <= mean + (nsigma x standard deviations). This option will not be used if the option threshold is larger than -9999.0. (default 1.0) : %%--%%threshold==-9999.0 %%--%%use_mol_mass==False %%--%%do_adaptive_mask==True
+  ; %%--%%ndilation : Dilation width [Pixels]: The pixel width to dilate the 3D binary volume corresponding to the specified molecular mass or density threshold prior to softening the edge (default 3) : %%--%%do_adaptive_mask==True
+  ; %%--%%edge_width : Soft-edge width [Pixels]: The pixel width of transition area for soft-edged masking.(default 5) : %%--%%do_adaptive_mask==True
+  ; %%--%%edge_type : Soft-edge type: The type of soft-edge for moon-eliminator 3D mask and a moon-eliminated soft-edged 3D mask. Available methods are (1) \'cosine\' for cosine soft-edged (used in PostRefiner) and (2) \'gauss\' for gaussian soft-edge. (default cosine) : %%--%%do_adaptive_mask==True
+
+  ; %%--%%binary_mask : Create binary 3D mask: Create binary 3D mask from the input structure. (default False)
+  ; %%--%%nerosion : Erosion value : Number of times to erode binarized volume (default 0)
+
+  ; %%--%%combinemaps : Post-refine structures or images: Post-refine structures or averages by enhancing their high-frequencies after 2D alignment, 3D refinement, or 3D sorting. Available modes are (1) Halfset Volumes Mode, (2) Cluster Volumes Mode or Single Volumes Mode, and (3) Images Mode. (1) The Halfset Volumes Mode combines a pair of unfiltered odd & even 3D density maps, then enhance the power spectrum at high frequencies. B-factor can be automatically estimated from these unfiltered halfset maps. This mode requires two arguments; use unfiltered hal-maps produced by MERIDIEN. (2) The Cluster Volumes Mode or Single Volumes Mode enhances the power spectrum of cluster maps, produced by SORT3D_DEPTH, at high frequencies. Only ad-hoc low-pass filter cutoff and B-factor can be used. This mode requires one argument (path pattern with wild card '*' can be used to specify a list of single maps). It is mainly designed for SORT3D_DEPTH outputs but it is also applicable to ANY single map. (default False)
+  ; %%--%%output_dir : Output directory: Specify path to the output directory for PostRefiner process. By default, the program uses the current directory. However, GUI requires the path other than the current directory. (default required string)
+  ; %%--%%output : Output file name: File name of output final post-refined structure. (default vol_combined.hdf)
+  ; %%--%%pixel_size : Pixel size [A]: Pixel size of input data. (default 0.0)
+  ; %%--%%mask : 3D mask file: Path to user-provided mask. (default none) : %%--%%do_adaptive_mask==False
+  ; %%--%%do_adaptive_mask : Apply adaptive mask: Program creates mask adaptively with given density threshold. (default False) : %%--%%mask==none
+  ; %%--%%do_adaptive_mask : Apply adaptive mask: Program creates mask adaptively with given density threshold. (default False) : %%--%%mask==none
+  ; %%--%%do_approx : Approximate values: Approximate the values of the soft edge area instead of using the exact values. This will lead to a less smoothened mask, but will mirror the previous behaviour. (default False) : %%--%%edge_width!=0
+  ; %%--%%mtf : MTF file: Path to file contains the MTF (modulation transfer function) of the detector used. (default none)
+  ; %%--%%fsc_adj : Apply FSC-based low-pass filter: Applies an FSC-based low-pass filter to the merged map before the B-factor estimation. Effective only in Halfset Volumes Mode. (default False)
+  ; %%--%%B_enhance : B-factor enhancement: 0.0: program automatically estimates B-factor using power spectrum at frequencies from B_start (usually 10 Angstrom) to the resolution determined by FSC143 (valid only in Halfset Volumes Mode; Non-zero positive value: program use the given value [A^2] to enhance map); -1.0: B-factor is not applied. (default 0.0)
+  ; %%--%%B_start : B-factor estimation lower limit [A]: Frequency in Angstrom defining lower boundary of B-factor estimation. Effective only in Halfset Volumes Mode with --B_enhance=0.0. (default 10.0) : %%--%%B_enhance==0.0
+  ; %%--%%B_stop : B-factor estimation upper limit [A]: Frequency in Angstrom defining upper boundary of B-factor estimation. Recommended to set the upper boundary to the frequency where FSC is smaller than 0.0. Effective only in Halfset Volumes Mode with --B_enhance=0.0. (default  0.0) : %%--%%B_enhance==0.0
+  ; %%--%%fl : Low-pass filter frequency [A]: 0.0: low-pass filter to resolution (valid only in Halfset Volumes Mode); A value larger than 0.5: low-pass filter to the value in Angstrom; -1.0: no low-pass filter. (default 0.0)
+  ; %%--%%aa : Low-pass filter fall-off [1/Pixels]: Low-pass filter fall-off. Effective only when --fl option is not -1.0. (default 0.01) : %%--fl%%!=-1.0
+
+  ; %%--%%window_stack : Window stack images using a smaller window size: (default False)
+  ; %%--%%box : New window size: (default 0)
+
+  ; %%--%%balance_angular_distribution : Balance Angular Distribution: Balance angular distribution of projection directions by removing excess particles, as determined by their angular histogram on a coarser grid, as specified by the angular_step option. (default False)
+  ; %%--%%max_occupy : Maximum orientations per reference angle: Maximum number of particles per reference angle. (default -1)
+  ; %%--%%angstep : Angular increment: Angular step of reference angles. (default 3.75|||15|||7.5|||1.875|||0.9375|||0.46875|||0.234375)::
+  ; %%--%%symmetry : Point-group symmetry : angular step of reference angles, i.e., number of bins of angular histogram. (default c1)
+
+\\
+=== Advanced Parameters ===
+  ; %%--%%order : order (unimplemented): Two arguments are required, (1) name of input stack and (2) desired name of output stack. The output stack is the input stack sorted by similarity in terms of cross-correlation coefficient. (default False)
+  ; %%--%%order_lookup : order_lookup (unimplemented): test/debug. (default False)
+  ; %%--%%order_metropolis : order_metropolis (unimplemented): test/debug. (default False)
+  ; %%--%%order_pca : order_pca (unimplemented): test/debug. (default False)
+  ; %%--%%initial : initial (unimplemented): specifies which image will be used as an initial seed to form the chain. By default, use the first image (default 0)
+  ; %%--%%circular : circular (unimplemented): select circular ordering (first image has to be similar to the last) (default False)
+  ; %%--%%radius : radius (unimplemented): radius of a circular mask for similarity based ordering (default False)
+
+  ; %%--%%makedb : Generate a database file containing a set of parameters: One argument is required, name of key with which the database will be created. Fill in database with parameters specified as %%--%%makedb param1=value1:param2=value2 (e.g. 'gauss_width'=1.0:'pixel_input'=5.2:'pixel_output'=5.2:'thr_low'=1.0). (default none)
+
+  ; %%--%%transformparams : Transform 3D projection orientation parameters: Using six 3D parameters (phi,theta,psi,sp_,sy,sz). input is %%--%%transformparams=45.,66.,12.,-2,3,-5.5 desired six transformation of the reconstructed structure. output is file with modified orientation parameters. (default none)
+
+\\
+===== Output =====
+
+\\
+===== Description =====
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+
+\\
+==== Developer Notes ====
+
+\\
+==== Author / Maintainer ====
+Pawel Penczek
+
+\\
+==== Keywords ====
+Category 1:: UTILITIES
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_process.py
+
+\\
+==== See also ====
+
+\\
+==== Maturity ====
+Beta:: Under evaluation and testing. Please let us know if there are any bugs.
+
+\\
+==== Bugs ====
+There are no known bugs so far.
+
+\\

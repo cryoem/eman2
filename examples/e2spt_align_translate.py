@@ -29,8 +29,6 @@ Author: Jesus Galaz - nov/2017, Last update: jan/2018
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 '''
-from __future__ import print_function
-from __future__ import division
 from past.utils import old_div
 from builtins import range
 from EMAN2 import *
@@ -72,7 +70,7 @@ def main():
 
 	parser.add_argument("--useflcf", action='store_true', default=False, help="default=False. Use Fast Local Correlation Function rather than CCF.")
 
-	parser.add_argument("--verbose", "-v", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness.", dest="verbose", action="store", metavar="n")
+	parser.add_argument("--verbose", "-v", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness.", dest="verbose", action="store", metavar="n")
 		
 	(options, args) = parser.parse_args()	
 

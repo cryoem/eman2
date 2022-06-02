@@ -1,0 +1,122 @@
+~~NOTOC~~
+
+===== sp_pipe restacking =====
+Restacking: Generate all necessary information to restack the input stack (i.e., particle image ID list, CTF parameters list, projection parameters list) while applying micrograph selection list. Optionally, the command can directly output the virtual stack.  In addition, this command can be used to generate all parameters files for reboxing (i.e. original/centered particle coordinates list files, CTF parameters list, original/centered projection parameters list as well as micrograph selection file). Optionally, user can provided a 3D shift to recenter the projection parameters and so the particle coordinates.
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sp_pipe.py  restacking  input_bdb_stack_path  output_directory  --selection_list=FILE_PATH  --shift3d_x=SHIFT3D_X  --shift3d_y=SHIFT3D_Y  --shift3d_z=SHIFT3D_Z  --save_vstack  --sv_vstack_basename=BASENAME  --reboxing  --rb_box_size=BOX_SIZE
+
+\\
+===== Typical usage =====
+
+sp_pipe restacking does not support MPI. 
+
+Do restacking to generate the virtual stack of only particle images associated to the micrographs in the selection list.
+
+  sp_pipe.py restacking 'bdb:outdir_window#data' 'outdir_pipe_restacking' --selection_list='micrograph_selection_list.txt' --save_vstack --sv_vstack_basename='vstack_selected'
+
+Generate the reboxing information of all particle images in the input stack.
+
+  sp_pipe.py restacking 'bdb:outdir_window#data' 'outdir_pipe_restacking' --shift3d_z=20 --reboxing --rb_box_size=352
+
+Generate the reboxing information of only particle images associated to the micrographs in the selection list.
+
+  sp_pipe.py restacking 'bdb:outdir_window#data' 'outdir_pipe_restacking' --selection_list='micrograph_selection_list.txt' --shift3d_z=20 --reboxing --rb_box_size=352
+
+Do both restacking and reboxing to generate both the virtual stack and reboxing information of only particle images associated to the micrographs in the selection list.
+
+  sp_pipe.py restacking 'bdb:outdir_window#data' 'outdir_pipe_restacking' --selection_list='micrograph_selection_list.txt' --save_vstack --sv_vstack_basename='vstack_selected' --shift3d_z=20 --reboxing --rb_box_size=352
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; input_bdb_stack_path : Input bdb image stack: Specify the input bdb image stack. (default required string)
+  ; output_directory : Output directory: The results will be written here. It cannot be an existing one. (default required string)
+
+  ; %%--%%selection_list : Micrograph/Movie selection file: Specify path to text file containing a list of selected micrograph/movie names or paths. The particles associated with the micrographs/movies in this list will be processed. The file extension must be //.txt//. The directory path of each entry will be ignored if there is any. (default none)
+  ; %%--%%shift3d_x : 3D x-shift [Pixels]: 3D x-shift value. (default 0)
+  ; %%--%%shift3d_y : 3D y-shift [Pixels]: 3D y-shift value. (default 0)
+  ; %%--%%shift3d_z : 3D z-shift [Pixels]: 3D z-shift value. (default 0)
+  ; %%--%%save_vstack : Save virtual stack: Use this option to save the virtual stack. By default, the virtual stack will not be generated. (default False)
+  ; %%--%%sv_vstack_basename : Virtual stack basename: Specify the basename of output virtual stack file. It cannot be empty string or only white spaces. (default vstack) : %%--%%save_vstack==True
+  ; %%--%%reboxing : Generate reboxing information: Prepare reboxing by extracting coordinates from the input stack headers, then center them according to projection parameters in the header and user-provided 3D shift. If the headers do not contain projection parameters, the program assumes the projection parameters are all zeros (null alignment). (default False)
+  ; %%--%%rb_box_size : Particle box size [Pixels]: For %%--%%reboxing option, specify the x and y dimensions of square area to be windowed. (default 0) : %%--%%reboxing==True
+
+\\
+=== Advanced Parameters ===
+
+\\
+===== Output =====
+=== List of output Files ===
+|| **File Name** || **Discription** ||
+|| micrographs_in_input_stack.txt || Micrograph selection text file containing the list of micrograph basenames extracted from the input stack. This file can be used as micrograph selection text file of [[pipeline:cter:sp_cter|sp_cter]], [[pipeline:cter:sp_gui_cter|sp_gui_cter]], [[pipeline:window:sp_window|sp_window]], and [[pipeline:utilities:sp_pipe_organize_micrographs|sp_pipe organize_micrographs]]. ||
+|| micrographs_in_output_dataset.txt || Micrograph selection text file containing the list of micrograph in the output dataset. This file can be used as micrograph selection text file of [[pipeline:cter:sp_cter|sp_cter]], [[pipeline:cter:sp_gui_cter|sp_gui_cter]], [[pipeline:window:sp_window|sp_window]], and [[pipeline:utilities:sp_pipe_organize_micrographs|sp_pipe organize_micrographs]]. ||
+|| input_stack_particle_id_for_output_dataset.txt || Particle selection text file containing the list of particle image IDs used for generating the output dataset from the input stack. This file can be used as particle selection list text file of [[pipeline:utilities:e2bdb|e2bdb]]. ||
+|| ctf_params_for_output_dataset.txt || CTF parameters text file containing CTF parameters of all particle images in the output dateset. This projection parameters can be used as inputs of [[pipeline:window:sp_window|sp_window]] or imported to the reboxed stack using [[pipeline:utilities:sp_header|sp_header]]. ||
+|| original_proj_params_for_output_dataset.txt || Projection parameters text file containing **original** projection parameters of all particle images in the output dateset. This projection parameters can be imported to the reboxed stack using [[pipeline:utilities:sp_header|sp_header]]. ||
+|| centered_proj_params_for_output_dataset.txt || Projection parameters text file containing **centered** projection parameters of all particle images in the output dateset. This projection parameters can be imported to the reboxed stack using [[pipeline:utilities:sp_header|sp_header]]. ||
+|| original/${MICROGRAPH_ROOTNAME}_original.box || The list of original coordinates stored in the headers of particle images in the stack. These files can be used as inputs of [[pipeline:window:sp_window|sp_window]]. ||
+|| centered/${MICROGRAPH_ROOTNAME}_centered.box || The list of centered (or transformed) coordinates. These files can be used as inputs of [[pipeline:window:sp_window|sp_window]]. ||
+|| EMAN2DB/${VSTACK_BASENAME}.dbd || The output virtual stack. This stack can be directly used as input stack of [[pipeline:meridien:sp_meridien|sp_meridien]] local refinement. ||
+
+\\
+===== Description =====
+This command executes the following processes:
+  - Extract the following information stored in the header of each particle image.
+    * source micrograph path (ptcl_source_image).
+    * CTF parameters if exist (ctf).
+    * projection parameters if exist (xform.projection).
+    * box center coordinates within the micrograph (ptcl_source_coord).
+  - Save the list of extracted micrograph names to an output file.
+  - If provided, apply the selection list to extracted micrographs.
+  - Save the list of selected micrograph names to an output file.
+  - Extract only particle image associating to selected micrographs.
+  - Save the list of selected particle image IDs to an output file.
+  - Save the CTF parameters of selected particle images to output file.
+  - Save the original projection parameters of selected particle images to output file.
+  - Transform the projection parameters of selected particle images  based on user-provided 3D shift, and then save the results to output files.
+  - Convert the center coordinates to EMAN1 box coordinates format, and then save the results to output files.
+  - Transform the coordinates based on the projection parameters and user-provided 3D shift, and then save the results to output files.
+  - Create the output virtual stack if necessary
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+
+\\
+==== Developer Notes ====
+=== 2018/03/05 Toshio Moriya ===
+Wish list:
+  * Setting %%--%%box_size to zero (default value) should save the coordinates file in SPHIRE format
+
+\\
+==== Author / Maintainer ====
+Christos Gatsogiannis and Toshio Moriya
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_pipe.py
+
+\\
+==== See also ====
+[[pipeline:window:sp_window|sp_window]], [[pipeline:cter:sp_cter|sp_cter]], [[pipeline:cter:sp_gui_cter|sp_gui_cter]], [[pipeline:utilities:sp_pipe_organize_micrographs|sp_pipe organize_micrographs]], [[pipeline:utilities:e2bdb|e2bdb]], and [[pipeline:meridien:sp_meridien|sp_meridien]].
+
+\\
+==== Maturity ====
+Alpha:: Under development.
+
+\\
+==== Bugs ====
+There are no known bugs so far.
+
+\\

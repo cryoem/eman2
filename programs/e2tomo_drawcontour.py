@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 # Muyuan Chen 2017-03
-from __future__ import print_function
-from __future__ import division
 from builtins import range
 from EMAN2 import *
 import numpy as np
 import weakref
+import OpenGL
+OpenGL.ERROR_CHECKING = False
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from PyQt4 import QtGui, QtCore, QtOpenGL
-from PyQt4.QtCore import Qt
+from PyQt5 import QtGui, QtWidgets, QtCore, QtOpenGL
+from PyQt5.QtCore import Qt
 from eman2_gui.emapplication import get_application, EMApp
 from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emshape import EMShape
@@ -151,7 +151,7 @@ class Contour(EMShape):
 		if pts[ii,2]==mi: return
 		last=pts[ii,2]
 		pts=pts[pts[:,2]==last]
-		print(mi, last, pts.shape)
+		#print(mi, last, pts.shape)
 		img=self.image.data.numpy()
 
 		vec=[]
@@ -195,16 +195,23 @@ class Contour(EMShape):
 
 	def draw(self,d2s=None,col=None):
 
-		#print "aaaaaaaa"
 		zpos=self.image.list_idx
 		allpts=[[p[0], p[1], p[3]] for p in self.points if p[2]==zpos]
-		print(np.array(self.points))
-		print("#########")
+		#print(np.array(self.points))
+		#print("#########")
 		cid=np.unique([p[2] for p in allpts])
 		for ci in cid:
 			pts=[[p[0], p[1]] for p in allpts if p[2]==ci]
 			if len(pts)>2:
 				pts.append(pts[0])
+				
+			area=0.
+			for i in range(len(pts)):
+				p0=pts[i]
+				p1=pts[(i+1)%len(pts)]
+				area+=p0[0]*p1[1]-p0[1]*p1[0]
+			area=abs(area/2.)
+			print("Contour {:d}, area {:.1f} px^2".format(int(ci), area))
 
 
 			glColor3f( 1, .3, .3 );
@@ -219,15 +226,14 @@ class Contour(EMShape):
 			glEnableClientState(GL_VERTEX_ARRAY)
 			glVertexPointerf(pts)
 			glDrawArrays(GL_POINTS, 0, len(pts))
-		#print "bbbbbbbbb"
 
-class EMDrawWindow(QtGui.QMainWindow):
+class EMDrawWindow(QtWidgets.QMainWindow):
 
 	def __init__(self,application,options,datafile=None):
-		QtGui.QWidget.__init__(self)
+		QtWidgets.QWidget.__init__(self)
 		self.imgview = EMImage2DWidget()
-		self.setCentralWidget(QtGui.QWidget())
-		self.gbl = QtGui.QGridLayout(self.centralWidget())
+		self.setCentralWidget(QtWidgets.QWidget())
+		self.gbl = QtWidgets.QGridLayout(self.centralWidget())
 
 		self.gbl.addWidget(self.imgview,0,0)
 		self.options=options

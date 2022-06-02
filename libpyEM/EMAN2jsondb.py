@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 #
 # Author: Steven Ludtke, 05/01/2013 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -50,10 +48,10 @@ import random
 import threading
 import traceback
 import re
+import numpy as np
 
 from libpyEMData2 import EMData
 from libpyUtils2 import EMUtil
-
 
 # If set, fairly verbose debugging information will be written to the console
 # larger numbers will increase the amount of output
@@ -64,16 +62,19 @@ def js_one_key(url,key):
 
 	return JSDict.one_key(url,key)
 
-def js_open_dict(url):
+def js_open_dict(url,create=True):
 	"""Opens a JSON file as a dict-like database object. The interface is almost identical to the BDB db_* functions.
 If opened. Writes to JDB dictionaries may be somewhat inefficient due to the lack of a good model (as BDB has) for
 multithreaded access. Default behavior is to write the entire dictionary to disk when any element is changed. File
 locking is attempted to avoid conflicts, but may not work in all situations. read-only access is a meaningless concept
-because file pointers are not held open beyond discrete transations. While it is possible to store images in JSON files
-it is not recommended due to inefficiency, and making files which are difficult to read."""
+because file pointers are not held open beyond discrete transitions. While it is possible to store images in JSON files
+it is not recommended due to inefficiency, and making files which are difficult to read. If create is false, an exception
+will be raised if the file doesn't exist."""
 
 	if url[-5:]!=".json" :
 		raise Exception("JSON databases must have .json extension")
+
+	if not create and not os.path.isfile(url): raise Exception(f"Attempt to open missing JSON file for reading ({url})")
 
 	return JSDict.open_db(url)
 
@@ -102,7 +103,7 @@ def js_remove_dict(url):
 
 def js_check_dict(url,readonly=True):
 	"""Checks for the existence of the named JSON file and insures that it can be opened for reading [and writing].
-It does not check the contents of the file, just for its exsistence and permissions."""
+It does not check the contents of the file, just for its existence and permissions."""
 
 	if url==None : return False
 	if url[-5:]!=".json" :
@@ -190,19 +191,27 @@ def eman2ctf_from_jsondict(dct):
 
 def transform_to_jsondict(obj):
 	ret={"__class__":"Transform"}
-	ret["matrix"]=obj.get_matrix()
+	ret["matrix"]=obj.get_matrix_string(3)  #   Changed by PRB to 3 from 7
+	ret["matrix"]=obj.get_matrix_string(6)  #   Changed by PRB to 3 from 7
 	return ret
 
 Transform.to_jsondict=transform_to_jsondict
 
 def transform_from_jsondict(dct):
 	ret=Transform()
-	ret.set_matrix(dct["matrix"])
+	lst=dct["matrix"]
+	if isinstance(lst,str):
+		lst=[float(v) for v in lst[1:-1].split(',')]
+		
+	ret.set_matrix(lst)
 	return ret
 
 ############
 ### File locking routines, hopefully platform independent
 ############
+
+class MyLockException(Exception):
+	pass
 
 ### First we try Linux/Mac
 try:
@@ -211,11 +220,17 @@ try:
 	def file_lock(fileobj, readonly=True):
 		"""Unix file locking. Not truly enforced, but useful in thread synchronization. Multiple threads can have read-locks, but only one can have writelock"""
 
-		if readonly : fcntl.lockf(fileobj.fileno(),fcntl.LOCK_SH)
-		else : fcntl.lockf(fileobj.fileno(),fcntl.LOCK_EX)
+		try:
+			if readonly : fcntl.lockf(fileobj.fileno(),fcntl.LOCK_SH)
+			else : fcntl.lockf(fileobj.fileno(),fcntl.LOCK_EX)
+		except OSError:
+			raise MyLockException('Could not lock %s due to permissions or filesystem support' % fileobj.name)
 
 	def file_unlock(fileobj):
-		fcntl.lockf(fileobj.fileno(),fcntl.LOCK_UN)
+		try:
+			fcntl.lockf(fileobj.fileno(),fcntl.LOCK_UN)
+		except OSError:
+			raise MyLockException('Could not unlock %s due to permissions or filesystem support' % fileobj.name)
 
 ### If that fails, we try windows
 except ImportError:
@@ -465,7 +480,7 @@ class JSTaskQueue(object):
 			JSTaskQueue.lock.release()
 			return
 
-		print("Error running task:\n{tid}\t{cls}\t{runtime}\t{endtime}\t{starttime}\t{queuetime}\t{host}".format(tid=tid,cls=task.__class__.__name__,runtime=time.time()-task.starttime,endtime=time.time(),starttime=task.starttime,queuetime=task.queuetime,host=task.exechost))
+		print("Error running task:\n{tid}\t{cls}\t{runtime}\t{endtime}\t{starttime}\t{queuetime}\t{host}".format(tid=taskid,cls=task.__class__.__name__,runtime=time.time()-task.starttime,endtime=time.time(),starttime=task.starttime,queuetime=task.queuetime,host=task.exechost))
 		#if self.active["min"]==taskid : self.active["min"]=min(self.active.keys())
 		del self.active[taskid]
 		JSTaskQueue.lock.release()
@@ -504,7 +519,7 @@ class JSTask(object):
 		self.options=options	# dictionary of options
 		self.wait_for=None		# in the active queue, this identifies an exited class which needs to be rerun when all wait_for jobs are complete
 		self.failcount=0		# Number of times this task failed to reach completion after starting
-		self.errors=[]			# a list of errors (strings) that occured during task execution. Normally empty !
+		self.errors=[]			# a list of errors (strings) that occurred during task execution. Normally empty !
 		self.ppid = os.getpid()		# Rrcords the PID to send to to children as PPID (sent to e2parallel.py)
 
 	def to_jsondict(self):
@@ -521,7 +536,7 @@ class JSTask(object):
 		self.__dict__.update(data)
 		return ret
 
-	def execute(self): return
+	def execute(self, null=None): return
 
 
 ##########
@@ -570,7 +585,11 @@ JSDicts are open at one time."""
 			return cls.opendicts[normpath]
 
 		try : ret=JSDict(path)
-		except:
+		except MyLockException as e:
+			cls.lock.release()
+			print(e)
+			raise Exception("Unable to open "+path)
+		except Exception:
 			cls.lock.release()
 			traceback.print_exc()
 			print("===========================")
@@ -590,7 +609,7 @@ JSDicts are open at one time."""
 
 		if not isinstance(path,str) : raise Exception("Must specify path to open JSONDB")
 		if path[-5:]!=".json" :
-			raise Exception("JSON databases must have .json extension ('{}')".format(url))
+			raise Exception("JSON databases must have .json extension ('{}')".format(path))
 
 		try: normpath=os.path.abspath(path)
 		except: raise Exception("Cannot find path for {}".format(path))
@@ -659,7 +678,6 @@ of the path is stored as self.normpath"""
 
 	def sync(self):
 		"""This is where all of the JSON file access occurs. This one routine handles both reading and writing, with file locking"""
-
 		while self.busy: time.sleep(.1)		# this is for some degree of threadsafety beyond file locking
 		self.busy=True
 
@@ -679,7 +697,7 @@ of the path is stored as self.normpath"""
 				mt=os.stat(self.normpath).st_mtime		# if it still doesn't exist, then the _tmp file may be an orphan
 			except:
 				if mt2!=None :
-					# recover an orphaned js file (caused by interupt during write)
+					# recover an orphaned js file (caused by interrupt during write)
 					os.rename(self.normpath[:-5]+"_tmp.json",self.normpath)
 					mt=mt2
 					mt2=None
@@ -734,7 +752,7 @@ of the path is stored as self.normpath"""
 				try: del self.data[k]
 				except: pass
 			self.delkeys=set()
-			jss=json.dumps(self.data,indent=0,sort_keys=True,default=obj_to_json,encoding="ascii")			# write the whole dictionary back to disk
+			jss=json.dumps(self.data,indent=0,sort_keys=True,default=obj_to_json)			# write the whole dictionary back to disk
 			jss=re.sub(listrex,denl,jss)
 
 			### We do the actual write as a rapid sequence to avoid conflicts
@@ -765,11 +783,11 @@ of the path is stored as self.normpath"""
 
 	def values(self):
 		self.sync()
-		return [self.get(key) for key in list(self.data.keys())]		# to make sure images are read
+		return [self.get(key,noupdate=True) for key in list(self.data.keys())]		# to make sure images are read
 
 	def items(self):
 		self.sync()
-		return [(key,self.get(key)) for key in list(self.data.keys())]
+		return [(key,self.get(key,noupdate=True)) for key in list(self.data.keys())]
 
 	def has_key(self,key):
 		self.sync()
@@ -780,7 +798,8 @@ of the path is stored as self.normpath"""
 		"""Equivalent to dictionary update(). Performs JSON file update all at once, so substantially better
 performance than many individual changes."""
 
-		for k in list(newdict.keys()): self.setval(k,newdict[k],deferupdate=True)
+		for k in list(newdict.keys()): 
+			self.setval(k,newdict[k],deferupdate=True)
 		self.sync()
 
 	def setdefault(self,key,dfl,noupdate=False):
@@ -862,6 +881,13 @@ performance than many individual changes."""
 #		if not isinstance(key,str) : raise Exception,"JSONDB keys must be strings"
 		key=str(key)
 		if key in self.delkeys : self.delkeys.remove(key)
+		
+		if isinstance(val, np.generic):
+			val=val.item()
+		elif isinstance(val, np.ndarray):
+			val=val.tolist()
+			
+		
 		# for EMData objects we need to figure out what file they will get stored in
 		if isinstance(val,EMData) :
 			# Changing an image triggers an actual read of the old image
@@ -911,8 +937,11 @@ def json_to_obj(jsdata):
 	"""converts a javascript object representation back to the original python object"""
 
 	if "__pickle__" in jsdata :
-		try: return pickle.loads(str(jsdata["__pickle__"]))
-		except: return str(jsdata["__pickle__"])				# This shouldn't happen. Means a module hasn't been loaded. This is an emergency stopgap to avoid crashing
+		try: return pickle.loads(jsdata["__pickle__"].encode("utf-8"))
+		except:
+			traceback.print_exc()
+			print("error decoding ",jsdata["__pickle__"])
+			return str(jsdata["__pickle__"])				# This shouldn't happen. Means a module hasn't been loaded. This is an emergency stopgap to avoid crashing
 	elif "__image__" in jsdata :							# images now stored in a separate HDF file
 		try: 
 			# We defer actual reading of the image until it's needed
@@ -937,10 +966,16 @@ def obj_to_json(obj):
 			fnm=["BAD_JSON.hdf",0]
 		obj.write_image(fnm[0],fnm[1])
 		return {"__image__":fnm}
-	try:
+	if isinstance(obj,np.ndarray): obj=obj.tolist()
+	if np.isscalar(obj) : return obj.item()
+#	if isinstance(obj,dict) or isinstance(obj,list) or isinstance(obj,tuple): return obj.item()   # shouldn't be necessary
+	if hasattr(obj, "to_jsondict"):
 		return obj.to_jsondict()
-	except:
-		return {"__pickle__":pickle.dumps(obj,0)}
+	else:
+		try: return {"__pickle__":pickle.dumps(obj,0).decode("utf-8") }
+		except:
+			print(f"error pickling {type(obj)} {obj}")
+			return {"__pickle__":pickle.dumps(None,0).decode("utf-8") }
 
 __doc__ = \
 """This module provides a dict-like wrapper for JSON files on disk, with full support for file locking and other

@@ -1,7 +1,3 @@
-/**
- * $Id$
- */
-
 /*
  * Author: Liwei Peng, 07/12/2004 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
@@ -35,10 +31,6 @@
 
 #ifndef eman__exception_h__
 #define eman__exception_h__ 1
-
-#ifdef _WIN32
-	#pragma warning(disable:4996)
-#endif	//_WIN32
 
 #include <log.h>
 

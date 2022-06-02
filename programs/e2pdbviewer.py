@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 # Author: James Michael Bell 3/16/14 (jmbell@bcm.edu)
 # Copyright (c) 2014-2020 Baylor College of Medicine
 #
@@ -52,7 +49,7 @@ def main():
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent \
 		process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", \
-		metavar="n", type=int, default=0, help="verbose level [0-9], higner \
+		metavar="n", type=int, default=0, help="verbose level [0-9], higher \
 		number means higher level of verboseness")
 	(options, args) = parser.parse_args()
 	

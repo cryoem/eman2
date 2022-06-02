@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import division
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -36,8 +33,8 @@ from __future__ import division
 from past.utils import old_div
 from builtins import range
 from builtins import object
-from PyQt4 import QtGui,QtCore
-from PyQt4.QtCore import Qt
+from PyQt5 import QtGui, QtWidgets,QtCore
+from PyQt5.QtCore import Qt
 from math import *
 import numpy
 from EMAN2 import *
@@ -53,32 +50,32 @@ class EMTransformPanel(object):
 		self.target = weakref.ref(target)
 		self.parent = weakref.ref(parent)
 		
-		self.label_src = QtGui.QLabel(parent)
+		self.label_src = QtWidgets.QLabel(parent)
 		self.label_src.setText('Rotation Convention')
 		
-		self.src = QtGui.QComboBox(parent)
+		self.src = QtWidgets.QComboBox(parent)
 		self.load_src_options(self.src)
 		
-		self.x_label = QtGui.QLabel()
+		self.x_label = QtWidgets.QLabel()
 		self.x_label.setText('x')
 		
-		self.x_trans = QtGui.QDoubleSpinBox(parent)
+		self.x_trans = QtWidgets.QDoubleSpinBox(parent)
 		self.x_trans.setMinimum(-10000)
 		self.x_trans.setMaximum(10000)
 		self.x_trans.setValue(0.0)
 	
-		self.y_label = QtGui.QLabel()
+		self.y_label = QtWidgets.QLabel()
 		self.y_label.setText('y')
 		
-		self.y_trans = QtGui.QDoubleSpinBox(parent)
+		self.y_trans = QtWidgets.QDoubleSpinBox(parent)
 		self.y_trans.setMinimum(-10000)
 		self.y_trans.setMaximum(10000)
 		self.y_trans.setValue(0.0)
 		
-		self.z_label = QtGui.QLabel()
+		self.z_label = QtWidgets.QLabel()
 		self.z_label.setText('z')
 		
-		self.z_trans = QtGui.QDoubleSpinBox(parent)
+		self.z_trans = QtWidgets.QDoubleSpinBox(parent)
 		self.z_trans.setMinimum(-10000)
 		self.z_trans.setMaximum(10000)
 		self.z_trans.setValue(0.0)
@@ -157,8 +154,8 @@ class EMTransformPanel(object):
 	def addWidgets(self,target):
 		
 		target.addWidget(self.scale)
-		self.hbl_trans = QtGui.QHBoxLayout()
-		self.hbl_trans.setMargin(0)
+		self.hbl_trans = QtWidgets.QHBoxLayout()
+		self.hbl_trans.setContentsMargins(0, 0, 0, 0)
 		self.hbl_trans.setSpacing(6)
 		self.hbl_trans.setObjectName("Trans")
 		self.hbl_trans.addWidget(self.x_label)
@@ -170,8 +167,8 @@ class EMTransformPanel(object):
 		
 		target.addLayout(self.hbl_trans)
 		
-		self.hbl_src = QtGui.QHBoxLayout()
-		self.hbl_src.setMargin(0)
+		self.hbl_src = QtWidgets.QHBoxLayout()
+		self.hbl_src.setContentsMargins(0, 0, 0, 0)
 		self.hbl_src.setSpacing(6)
 		self.hbl_src.setObjectName("hbl")
 		self.hbl_src.addWidget(self.label_src)
@@ -278,7 +275,7 @@ class EMTransformPanel(object):
 	
 import weakref
 
-class EMParentWin(QtGui.QWidget,Animator):
+class EMParentWin(QtWidgets.QWidget,Animator):
 	"""
 	This class adds a status bar with a size grip to QGLWidgets on Mac OS X, 
 	to provide a visual cue that the window can be resized. This is accomplished
@@ -293,22 +290,22 @@ class EMParentWin(QtGui.QWidget,Animator):
 		@param enable_timer: not used... historical purposes???
 		"""
 		#TODO: figure out why the enable_timer parameter isn't being used
-		QtGui.QWidget.__init__(self,None)
+		QtWidgets.QWidget.__init__(self,None)
 		Animator.__init__(self)
 
 
 		self.setMaximumSize(8000,8000)
-		self.hbl = QtGui.QVBoxLayout(self)
+		self.hbl = QtWidgets.QVBoxLayout(self)
 		
 		self.hbl.setSpacing(0)
 		if get_platform() == "Darwin": # because OpenGL widgets in Qt don't leave room in the bottom right hand corner for the resize tool
-			self.status = QtGui.QStatusBar()
+			self.status = QtWidgets.QStatusBar()
 			self.status.setSizeGripEnabled(True)
 			self.hbl.addWidget(self.status,0)
 			self.margin = 0
 		else:
 			self.margin = 5
-		self.hbl.setMargin(self.margin)
+		self.hbl.setContentsMargins(self.margin, self.margin, self.margin, self.margin)
 		
 		
 	def __del__(self):
@@ -331,7 +328,7 @@ class EMParentWin(QtGui.QWidget,Animator):
 			self.child().closeEvent(e)
 			#self.child.inspector.close()
 		except: pass
-		QtGui.QWidget.closeEvent(self,e)
+		QtWidgets.QWidget.closeEvent(self,e)
 		
 #	def resizeEvent(self,event):
 #		self.child().resizeEvent(event)
@@ -364,12 +361,12 @@ class EMParentWin(QtGui.QWidget,Animator):
 	def initGL(self):
 		self.child().glInit()
 	
-class ImgHistogram(QtGui.QWidget):
+class ImgHistogram(QtWidgets.QWidget):
 	""" A small fixed-size histogram widget"""
 	thresholdChanged = QtCore.pyqtSignal(float)
 
 	def __init__(self,parent):
-		QtGui.QWidget.__init__(self,parent)
+		QtWidgets.QWidget.__init__(self,parent)
 		
 		self.brush=QtGui.QBrush(Qt.black)
 		self.font=QtGui.QFont("Helvetica", 12);

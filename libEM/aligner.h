@@ -1,7 +1,3 @@
-/**
- * $Id$
- */
-
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
@@ -323,7 +319,7 @@ namespace EMAN
 		static const string NAME;
 	};
 
-	/** rotational alignment using bispectral invariants
+	/** rotational alignment using invariants
         */
 	class RotationalAlignerBispec:public Aligner
 	{
@@ -357,6 +353,7 @@ namespace EMAN
 			d.put("maxshift", EMObject::INT,"This is provided for compatibility with other aligners. It does absolutely nothing here, as there is an implicit maxshift=0.");
 			d.put("size", EMObject::INT,"Passed as the size parameter to the bispectrum calculation");
 			d.put("rfpn", EMObject::INT,"Passed as the rfp parameter to the bispectrum calculation");
+			d.put("harmonic", EMObject::INT,"If set, uses harmonic power instead of bispectra");
 			return d;
 		}
 
@@ -533,6 +530,7 @@ namespace EMAN
 			d.put("useflcf", EMObject::INT,"Use Fast Local Correlation Function rather than CCF for translational alignment");
 			d.put("size", EMObject::INT,"Passed as the size parameter to the bispectrum calculation");
 			d.put("rfpn", EMObject::INT,"Passed as the rfp parameter to the bispectrum calculation");
+			d.put("harmonic", EMObject::INT,"If set, uses harmonic power instead of bispectra");
 			
 //			d.put("zscore", EMObject::INT,"Either 0 or 1. This option is passed directly to the rotational aligner (default=false)");
 			return d;
@@ -937,6 +935,7 @@ namespace EMAN
 			d.put("maxshift", EMObject::INT, "Maximum translation in pixels");
 			d.put("rfp_mode", EMObject::INT,"Either 0,1 or 2. A temporary flag for testing the rotational foot print");
 			d.put("usebispec", EMObject::INT,"Uses rotate_translate_bispec for subalignments and ignore rfp_mode.");
+			d.put("useharmonic", EMObject::INT,"Uses rotate_translate_bispec in harmonic mode for alignments and ignores rfp_mode.");
 			d.put("useflcf", EMObject::INT,"Use Fast Local Correlation Function rather than CCF for translational alignment");
 			d.put("zscore", EMObject::INT,"Either 0 or 1. This option is passed directly to the rotational aligner (default=false)");
 			return d;
@@ -1865,14 +1864,17 @@ namespace EMAN
 //				d.put("sigmathis", EMObject::FLOAT,"Only Fourier voxels larger than sigma times this value will be considered");
 //				d.put("sigmato", EMObject::FLOAT,"Only Fourier voxels larger than sigma times this value will be considered");
 				d.put("initxform", EMObject::TRANSFORMARRAY,"An array of Transforms storing the starting positions.");
+				d.put("maxang", EMObject::FLOAT,"maximum angle from initial rotation.");
 				d.put("verbose", EMObject::BOOL,"Turn this on to have useful information printed to standard out.");
+				d.put("maxres", EMObject::FLOAT,"Maximum resolution to consider when full sampling is used");
+				d.put("minres", EMObject::FLOAT,"Minimum resolution to consider when full sampling is used");
 				return d;
 			}
 
 			static const string NAME;
 
 		private:
-			bool testort(EMData *small_this, EMData *small_to,vector<float> &s_score,vector<Transform> &s_xform,int i,Dict &upd,int maxshift) const;
+			bool testort(EMData *small_this, EMData *small_to,vector<float> &s_score,vector<Transform> &s_xform,int i,Dict &upd, Transform initxf, int maxshift, int maxang) const;
 
 	};
 
@@ -1910,7 +1912,7 @@ namespace EMAN
 
 			virtual string get_desc() const
 			{
-				return "3D rotational and translational alignment using a hierarchical approach in Fourier space. Should be very fast and not require 'refine' alignment.";
+				return "3D rotational and translational alignment using a hierarchical approach in Fourier space. Should be very fast and not require 'refine' alignment. 'this' should be the fixed reference, aligned to symmetry axes and mask if provided. If masking, provide the mask rather than premasking the volume.";
 			}
 
 			static Aligner *NEW()
@@ -1921,12 +1923,19 @@ namespace EMAN
 			virtual TypeDict get_param_types() const
 			{
 				TypeDict d;
+				d.put("mask", EMObject::EMDATA,"A mask under which to do the alignment. Mask relative to 'this'");
+				d.put("maxshift", EMObject::INT,"maximum shift allowed");
 				d.put("sym", EMObject::STRING,"The symmtery to use as the basis of the spherical sampling. Default is c1 (no symmetry)");
 				d.put("sigmathis", EMObject::FLOAT,"Only Fourier voxels larger than sigma times this value will be considered");
 				d.put("sigmato", EMObject::FLOAT,"Only Fourier voxels larger than sigma times this value will be considered");
 				d.put("maxres", EMObject::FLOAT,"maximum resolution to compare");
+				d.put("minres", EMObject::FLOAT,"minimum resolution to compare");
+				d.put("maxang", EMObject::FLOAT,"maximum angle from initial rotation.");
+				d.put("initxform", EMObject::TRANSFORMARRAY,"An array of Transforms storing the starting positions.");
 
 // 				d.put("initxform", EMObject::TRANSFORM,"The Transform storing the starting position. If unspecified the identity matrix is used");
+				d.put("randphi", EMObject::BOOL,"Ignore phi constraint for refine search");
+				d.put("rand180", EMObject::BOOL,"Ignore 180 rotation for refine search");
 				d.put("verbose", EMObject::BOOL,"Turn this on to have useful information printed to standard out.");
 				return d;
 			}
@@ -1934,7 +1943,76 @@ namespace EMAN
 			static const string NAME;
 
 		private:
-			bool testort(EMData *small_this, EMData *small_to,vector<float> &sigmathisv,vector<float> &sigmatov, vector<float> &s_score, vector<float> &s_coverage,vector<Transform> &s_xform,int i,Dict &upd) const;
+			bool testort(EMData *small_this, EMData *small_to,vector<float> &sigmathisv,vector<float> &sigmatov, vector<float> &s_score, vector<float> &s_coverage,vector<Transform> &s_xform,int i,Dict &upd, Transform initxf, int maxshift,EMData *mask) const;
+
+	};
+
+		/** 3D rotational and translational alignment using a hierarchical method with gradually decreasing downsampling in Fourier space.
+	 * In theory, very fast, and without need for a "refine" aligner. Comparator is ignored. Uses an inbuilt comparison. This variant
+	 * uses something like FLCF (local cross correlation) for translational alignment, and should work better when the reference is masked
+	 * but doing this slows things down.
+	 * @param sym The symmtery to use as the basis of the spherical sampling
+	 * @param verbose Turn this on to have useful information printed to standard out
+	 * @author Steve Ludtke
+	 * @date April 2015
+	 */
+	class RT3DLocalTreeAligner:public Aligner
+	{
+		public:
+			/** See Aligner comments for more details
+			 */
+			virtual EMData * align(EMData * this_img, EMData * to_img,
+								   const string & cmp_name= "sqeuclidean", const Dict& cmp_params = Dict()) const;
+			/** See Aligner comments for more details
+			 */
+			virtual EMData * align(EMData * this_img, EMData * to_img) const
+			{
+				return align(this_img, to_img, "sqeuclidean", Dict());
+			}
+
+
+			/** See Aligner comments for more details
+			 */
+			virtual vector<Dict> xform_align_nbest(EMData * this_img, EMData * to_img, const unsigned int nsoln, const string & cmp_name, const Dict& cmp_params) const;
+
+			virtual string get_name() const
+			{
+				return NAME;
+			}
+
+			virtual string get_desc() const
+			{
+				return "EXPERIMENATAL - 3D rotational and translational alignment using a hierarchical approach in Fourier space. Should be very fast and not require 'refine' alignment. This variant performs a locally normalized CCF for translational alignment and should thus work better when the reference is masked, but will be slower.";
+			}
+
+			static Aligner *NEW()
+			{
+				return new RT3DLocalTreeAligner();
+			}
+
+			virtual TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("maxshift", EMObject::INT,"maximum shift allowed");
+				d.put("sym", EMObject::STRING,"The symmtery to use as the basis of the spherical sampling. Default is c1 (no symmetry)");
+				d.put("sigmathis", EMObject::FLOAT,"Only Fourier voxels larger than sigma times this value will be considered");
+				d.put("sigmato", EMObject::FLOAT,"Only Fourier voxels larger than sigma times this value will be considered");
+				d.put("maxres", EMObject::FLOAT,"maximum resolution to compare");
+				d.put("minres", EMObject::FLOAT,"minimum resolution to compare");
+				d.put("maxang", EMObject::FLOAT,"maximum angle from initial rotation.");
+				d.put("initxform", EMObject::TRANSFORMARRAY,"An array of Transforms storing the starting positions.");
+
+// 				d.put("initxform", EMObject::TRANSFORM,"The Transform storing the starting position. If unspecified the identity matrix is used");
+				d.put("randphi", EMObject::BOOL,"Ignore phi constraint for refine search");
+				d.put("rand180", EMObject::BOOL,"Ignore 180 rotation for refine search");
+				d.put("verbose", EMObject::BOOL,"Turn this on to have useful information printed to standard out.");
+				return d;
+			}
+
+			static const string NAME;
+
+		private:
+			bool testort(EMData *small_this, EMData *small_to,EMData *small_mask,EMData *small_thissq,vector<float> &sigmathisv,vector<float> &sigmatov, vector<float> &s_score, vector<float> &s_coverage,vector<Transform> &s_xform,int i,Dict &upd, Transform initxf, int maxshift) const;
 
 	};
 

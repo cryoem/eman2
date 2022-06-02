@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 #
 # Author: Liwei Peng, 01/30/2005 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -298,7 +295,7 @@ class TestEMData(unittest.TestCase):
                 e.insert_clip( e2,(30,30,30) )
             except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageFormatException")
-        
+
         e.insert_clip(e2, (16,16,16))
         d1 = e.get_3dview()
         d2 = e2.get_3dview()
@@ -306,6 +303,34 @@ class TestEMData(unittest.TestCase):
             for j in range(10):
                 for i in range(10):
                     self.assertEqual(d1[i+16][j+16][k+16], d2[i][j][k])
+
+    #def test_insert_clip_large(self):
+    #    """test insert_clip_large() function ......................"""
+    #    e = EMData()
+    #    e.set_size(30000, 80000, 1)
+    #    e.to_zero()
+    #    e.process_inplace("testimage.noise.uniform.rand")
+    #    
+    #    e2 = EMData()
+    #    e2.set_size(30000, 1, 1)
+    #    e2.to_zero()
+    #    e2.process_inplace("testimage.noise.uniform.rand")
+
+    #    if(IS_TEST_EXCEPTION):
+    #        #test exception if the clip is out side of the image
+    #        self.assertRaises( RuntimeError, e.insert_clip, e2, (79998, 79998, 79998) )
+    #        try:
+    #            e.insert_clip( e2,(79998, 79998, 79998) )
+    #        except RuntimeError as runtime_err:
+    #            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+
+    #    e.insert_clip(e2, (0,71583))
+    #    d1 = e.get_3dview()
+    #    d2 = e2.get_3dview()
+    #    for k in range(10):
+    #        for j in range(1):
+    #            for i in range(1):
+    #                self.assertEqual(d1[i][j+71583][k], d2[i][j][k])
 
     def test_get_top_half(self):
         """test get_top_half() function ....................."""
@@ -482,62 +507,62 @@ class TestEMData(unittest.TestCase):
         #        for x in range(31):
         #            self.assertEqual( math.ceil((d[z][y][x]-d3[z][y][x])*1000), 0 )
 
-    def test_real2FH(self):
-        """test real2FH() function .........................."""
-        e = EMData()
-        e.set_size(31,31,1)
-        e.process_inplace("testimage.noise.uniform.rand")
-        #import sys
-        #outfile = "out.txt" 
-        #sys.stdout = open(outfile,"w")
-        e3 = e.real2FH(1.0)
-
-        if(IS_TEST_EXCEPTION):
-            #real2FH apply to 2D/Square/Real/odd image
-            e2 = EMData()
-            e2.set_size(31,31,31)
-            self.assertRaises( RuntimeError, e2.real2FH, 1.0)
-            try:
-                e3 = e2.real2FH(1.0)
-            except RuntimeError as runtime_err:
-                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+    # def test_real2FH(self):
+    #     """test real2FH() function .........................."""
+    #     e = EMData()
+    #     e.set_size(31,31,1)
+    #     e.process_inplace("testimage.noise.uniform.rand")
+    #     #import sys
+    #     #outfile = "out.txt" 
+    #     #sys.stdout = open(outfile,"w")
+    #     e3 = e.real2FH(1.0)
+    # 
+    #     if(IS_TEST_EXCEPTION):
+    #         #real2FH apply to 2D/Square/Real/odd image
+    #         e2 = EMData()
+    #         e2.set_size(31,31,31)
+    #         self.assertRaises( RuntimeError, e2.real2FH, 1.0)
+    #         try:
+    #             e3 = e2.real2FH(1.0)
+    #         except RuntimeError as runtime_err:
+    #             self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+    # 
+    #         e2.set_size(31,21,1)
+    #         self.assertRaises( RuntimeError, e2.real2FH, 1.0)
+    #         try:
+    #             e3 = e2.real2FH(1.0)
+    #         except RuntimeError as runtime_err:
+    #             self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+    #             
+    #         e2.set_size(32,32,1)
+    #         self.assertRaises( RuntimeError, e2.real2FH, 1.0)
+    #         try:
+    #             e3 = e2.real2FH(1.0)
+    #         except RuntimeError as runtime_err:
+    #             self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+    #         e2.set_size(31,31,1)
+    #         e2.set_complex(True)
+    #         self.assertRaises( RuntimeError, e2.real2FH, 1.0)
+    #         try:
+    #             e2.real2FH(1.0)
+    #         except RuntimeError as runtime_err:
+    #             self.assertEqual(exception_type(runtime_err), "ImageFormatException")
     
-            e2.set_size(31,21,1)
-            self.assertRaises( RuntimeError, e2.real2FH, 1.0)
-            try:
-                e3 = e2.real2FH(1.0)
-            except RuntimeError as runtime_err:
-                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
-                
-            e2.set_size(32,32,1)
-            self.assertRaises( RuntimeError, e2.real2FH, 1.0)
-            try:
-                e3 = e2.real2FH(1.0)
-            except RuntimeError as runtime_err:
-                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
-            e2.set_size(31,31,1)
-            e2.set_complex(True)
-            self.assertRaises( RuntimeError, e2.real2FH, 1.0)
-            try:
-                e2.real2FH(1.0)
-            except RuntimeError as runtime_err:
-                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
-        
-    def test_FH2F(self):
-        """test FH2F() function ............................."""
-        e = EMData()
-        e.set_size(31,31,1)
-        e.process_inplace("testimage.noise.uniform.rand")
-        e2 = e.real2FH(1.0)
-        e3 = e2.FH2F(31, 1.0)
-        
-        if(IS_TEST_EXCEPTION):
-            #for image not FH, should raise exception
-            self.assertRaises( RuntimeError, e.FH2F, 31, 1.0)
-            try:
-                e.FH2F(31, 1.0)
-            except RuntimeError as runtime_err:
-                self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+    # def test_FH2F(self):
+    #     """test FH2F() function ............................."""
+    #     e = EMData()
+    #     e.set_size(31,31,1)
+    #     e.process_inplace("testimage.noise.uniform.rand")
+    #     e2 = e.real2FH(1.0)
+    #     e3 = e2.FH2F(31, 1.0)
+    #     
+    #     if(IS_TEST_EXCEPTION):
+    #         #for image not FH, should raise exception
+    #         self.assertRaises( RuntimeError, e.FH2F, 31, 1.0)
+    #         try:
+    #             e.FH2F(31, 1.0)
+    #         except RuntimeError as runtime_err:
+    #             self.assertEqual(exception_type(runtime_err), "ImageFormatException")
 
     def test_do_fft(self):
         """test do_fft()/do_ift() function .................."""
@@ -2489,7 +2514,7 @@ class TestEMData(unittest.TestCase):
         e.set_size(32,32,1)
         e.process_inplace("testimage.noise.uniform.rand")
         
-        re = e.rotavg()
+        re = e.rotavg(None)
         self.assertEqual(re.get_ysize(), 1)
         self.assertEqual(re.get_zsize(), 1)
         
@@ -2499,7 +2524,7 @@ class TestEMData(unittest.TestCase):
             e2.set_size(32,1,1)
             self.assertRaises( RuntimeError, e2.rotavg, )
             try:
-                e2.rotavg()
+                e2.rotavg(None)
             except RuntimeError as runtime_err:
                 self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
             
@@ -3407,11 +3432,11 @@ class TestEMData(unittest.TestCase):
         
         
         e.set_attr('author', 'Grant Tang')
-        mydb = open('mydb', 'w')
+        mydb = open('mydb', 'wb')
         pickle.dump(e, mydb)
         mydb.close()
         
-        mydb2 = open('mydb', 'r')
+        mydb2 = open('mydb', 'rb')
         e2 = pickle.load(mydb2)
         data2 = e2.get_3dview()
         attr_dict = e2.get_attr_dict()
@@ -3432,10 +3457,10 @@ class TestEMData(unittest.TestCase):
         c = EMAN1Ctf((1,2,3,4,5,6,7,8,9,10,11))
         img = test_image()
         img.set_attr('ctf', c)
-        mydb = open('mydb1', 'w')
+        mydb = open('mydb1', 'wb')
         pickle.dump(img, mydb)
         mydb.close()
-        mydb2 = open('mydb1', 'r')
+        mydb2 = open('mydb1', 'rb')
         img2 = pickle.load(mydb2)
         c2 = img2.get_attr('ctf')
         self.assertEqual(c.to_vector(), c2.to_vector())
@@ -3450,10 +3475,10 @@ class TestEMData(unittest.TestCase):
         q = EMAN2Ctf((1,2,3,4,5,6,7,8,9,0,0))
         img = test_image()
         img.set_attr('ctf', q)
-        mydb = open('mydb2', 'w')
+        mydb = open('mydb2', 'wb')
         pickle.dump(img, mydb)
         mydb.close()
-        mydb2 = open('mydb2', 'r')
+        mydb2 = open('mydb2', 'rb')
         img2 = pickle.load(mydb2)
         q2 = img2.get_attr('ctf')
         self.assertEqual(q.to_vector(), q2.to_vector())
@@ -3468,10 +3493,10 @@ class TestEMData(unittest.TestCase):
         t = Transform()
         img = test_image()
         img.set_attr('xform', t)
-        mydb = open('mydb3', 'w')
+        mydb = open('mydb3', 'wb')
         pickle.dump(img, mydb)
         mydb.close()
-        mydb2 = open('mydb3', 'r')
+        mydb2 = open('mydb3', 'rb')
         img2 = pickle.load(mydb2)
         t2 = img2.get_attr('xform')
         self.assertEqual(t.get_matrix(), t2.get_matrix())

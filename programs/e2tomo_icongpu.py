@@ -30,9 +30,6 @@ Author: Jesus Galaz-Montoya - 2017, Last update: Jul/2018
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 '''
 
-from __future__ import print_function
-from __future__ import division
-
 from past.utils import old_div
 import sys, os
 
@@ -95,7 +92,7 @@ def main():
 	parser.add_argument("--tiltseries", type=str, default=None, help="""default=None. .st file from IMOD if --iconpreproc is turned on. Otherwise, supply the .ali file from IMOD *after* X-ray correction, iconpreprocessing, and alignment with IMOD.""")
 	parser.add_argument("--tltfile", type=str, default=None, help="""default=None. .tlt file from IMOD.""")
 
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness.")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness.")
 
 	(options, args) = parser.parse_args()	
 	
@@ -359,32 +356,36 @@ def icontest(options,alifile,outsize,cmdsfilepath,aliextension):
 		#print "tmpdir={}, type={}".format(tmpdir,type(tmpdir))
 		#print "alifile={}, type={}".format(alifile,type(alifile))
 		#print "options.tltfile={}, type={}".format(options.tltfile,type(options.tltfile))
-
-		cmdicontest = "mkdir " + tmpdir + " ; ICON-GPU -input " + alifile + " -tiltfile " + options.tltfile + " -outputPath " + tmpdir + " -slice 0,1 -ICONIteration " + iterationsstring + " -dataType 1 -threshold 0 -gpu " + options.gpus
-
-		runcmd(options,cmdicontest,cmdsfilepath)
-
-		findirtest = os.listdir(tmpdir+'/reconstruction/')
 		
-		for f in findirtest:
-			if '.mrc' in f[-4:]:
-				imgpath = tmpdir+'/reconstruction/'+f
-				img = EMData(imgpath,0)
-				sigma = img['sigma']
-				sigmanonzero = img['sigma_nonzero']
+		icongpucmd = "ICON-GPU -input " + alifile + " -tiltfile " + options.tltfile + " -outputPath " + tmpdir + " -slice 0,1 -ICONIteration " + iterationsstring + " -dataType 1 -threshold 0 -gpu " + options.gpus
+		cmdicontest = "mkdir " + tmpdir + " ; " + icongpucmd
+		
+		try:
+			runcmd(options,cmdicontest,cmdsfilepath)
 
-				shutil.rmtree(tmpdir)
-				if sigma and sigmanonzero:
-					passtest = True
-					print("\nthe test passed; the tiltseries has a good size now nx={}, ny={}".format(img['nx'],img['ny']))
-					return alifile,outsize,iterationsstring
-				else:
-					passtest = False
-					outsize -= 2
-					print("\nICON-GPU failed becase the image size was bad; cropping the images in the tiltseries to this new size, nx={}, nx={}".format(outsize,outsize))
-					alifile = cropper(options,alifile,aliextension,outsize,cmdsfilepath)	
-					break
-	
+			findirtest = os.listdir(tmpdir+'/reconstruction/')
+		
+			for f in findirtest:
+				if '.mrc' in f[-4:]:
+					imgpath = tmpdir+'/reconstruction/'+f
+					img = EMData(imgpath,0)
+					sigma = img['sigma']
+					sigmanonzero = img['sigma_nonzero']
+
+					shutil.rmtree(tmpdir)
+					if sigma and sigmanonzero:
+						passtest = True
+						print("\nthe test passed; the tiltseries has a good size now nx={}, ny={}".format(img['nx'],img['ny']))
+						return alifile,outsize,iterationsstring
+					else:
+						passtest = False
+						outsize -= 2
+						print("\nICON-GPU failed becase the image size was bad; cropping the images in the tiltseries to this new size, nx={}, nx={}".format(outsize,outsize))
+						alifile = cropper(options,alifile,aliextension,outsize,cmdsfilepath)	
+						break
+		except:
+			print("\nWARNING: ICON-GPU command failed; the command run was cmd={}".format(icongpucmd))
+		
 	return
 
 

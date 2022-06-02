@@ -1,14 +1,12 @@
-from __future__ import print_function
-from __future__ import division
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 
-class MouseAndKeyModifiers(QtGui.QWidget):
+class MouseAndKeyModifiers(QtWidgets.QWidget):
 	def __init__(self, parent = None):
-		QtGui.QWidget.__init__(self, parent)
+		QtWidgets.QWidget.__init__(self, parent)
 		
-		layout = QtGui.QVBoxLayout()
-		label = QtGui.QLabel("Click here to test mouse buttons: Left, Right, Middle\nand keyboard modifiers: Ctrl, Alt, Shift, and Command (a Mac key)")
-		self.text_browser = QtGui.QTextBrowser()
+		layout = QtWidgets.QVBoxLayout()
+		label = QtWidgets.QLabel("Click here to test mouse buttons: Left, Right, Middle\nand keyboard modifiers: Ctrl, Alt, Shift, and Command (a Mac key)")
+		self.text_browser = QtWidgets.QTextBrowser()
 		layout.addWidget(label)
 		layout.addWidget(self.text_browser)
 		
@@ -38,7 +36,7 @@ class MouseAndKeyModifiers(QtGui.QWidget):
 
 if __name__ == "__main__":
 	import sys
-	app = QtGui.QApplication(sys.argv)
+	app = QtWidgets.QApplication(sys.argv)
 	window = MouseAndKeyModifiers()
 	window.show()
 	window.raise_()

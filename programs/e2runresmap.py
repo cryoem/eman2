@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
 #********************************************************************************
 # Author: Stephen Murray (scmurray@bcm.edu), 7/1/14
 # Copyright (c) 2000-2013 Baylor College of Medicine
@@ -12,8 +10,6 @@ from __future__ import division
 #********************************************************************************
 
 from EMAN2 import *
-from EMAN2db import db_open_dict
-import pyemtbx.options
 import os
 import sys
 import shutil
@@ -45,7 +41,7 @@ parser.add_argument("--p_value", help="Confidence level (Usually between .01 and
 parser.add_argument("--resmapexe", default=None,help = "Full path to the ResMap executable", guitype='filebox', browser='EMSetsTable(withmodal=True,multiselect=False)', filecheck=True, row=4, col=0, rowspan=1, colspan=3)
 parser.add_argument("--verbose", type=int, help="Set the level of verbosity for the code", default=1, guitype='combobox', choicelist='0,1,2,3,4,5,6,7,8,9', row=26, col=1, rowspan=1, colspan=1, expert=True)
 parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-optionList = pyemtbx.options.get_optionlist(sys.argv[1:])
+optionList = get_optionlist(sys.argv[1:])
 (options, args) = parser.parse_args()
 
 # Create the E2ResMap directory structure if it does not exist

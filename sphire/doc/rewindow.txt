@@ -1,0 +1,103 @@
+~~NOTOC~~
+
+===== sp_rewindow =====
+Particle Reextraction: Rewindow particles from micrographs using the information stored in rebox files.
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  sp_rewindow.py  input_micrograph_pattern  input_rebox_pattern  output_directory  --selection_list=SELECTION_TEXT_FILE  --box_size=BOX_SIZE  --skip_invert  --mic_resample_ratio=RATIO  --swap_ctf_params=CTER_PARTRES_FILE_PATH  --check_consistency
+
+\\
+===== Typical usage =====
+
+sp_rewindow exists in both MPI and non-MPI versions (Running MPI version does not require --MPI flag). 
+
+There are several modes to run the program:
+
+\\ __1. All Micrographs Mode - Process all micrographs in a directory:__
+\\ Specify path pattern of input micrographs and rebox files with a wild card (*).. The path pattern must be enclosed by single quotes (') or double quotes ("). (Note: sp_gui.py automatically adds single quotes (')). The substring at the variable part must be same between a associated pair of input micrograph and rebox file. bdb files cannot be selected as input micrographs. Finally, specify output directory where all outputs should be saved. In this mode, all micrographs matching the path pattern will be processed.
+  mpirun  -np  32  sp_rewindow.py  './mic*.hdf'  'outdir_rebox/centered_rebox/mic*_centered_rebox.rbx'  outdir_rewindow  --box_size=64
+
+\\ You can also ignore per-particle CTF information stored in rebox files and use CTF information stored in the CTER partres.txt instead.
+  mpirun  -np  32  sp_rewindow.py  './mic*.hdf'  'outdir_rebox/centered_rebox/mic*_centered_rebox.rbx'  outdir_rewindow  --box_size=64  --swap_ctf_params='outdir_cter/partres.txt'
+	
+
+\\ __2. Selected Micrographs Mode - Process all micrographs in a selection list file:__ 
+\\ In addition to input micrographs path pattern, rebox files path pattern, and output directry arguments, specify a name of micrograph selection list text file using --selection_list option. In this mode, only micrographs in the selection list which matches the file name part of the pattern (ignoring the directory paths) will be processed. If a micrograph name in the selection list does not exists in the directory specified by the micrograph path pattern, processing of the micrograph will be skipped.
+  mpirun  -np  32  sp_rewindow.py  './mic*.hdf'  'outdir_rebox/centered_rebox/mic*_centered_rebox.rbx'  outdir_rewindow  --selection_list=mic_list.txt  --box_size=64
+
+\\ __3. Single Micrograph Mode - Process a single micrograph:__
+\\ In addition to input micrographs path pattern, rebox files path pattern, CTF paramters source, and output directry arguments, specify a single micrograph name using --selection_list option. In this mode, only the specified single micrograph will be processed. If this micrograph name does not matches the file name part of the pattern (ignoring the directory paths), the process will exit without processing it. If this micrograph name matches the file name part of the pattern but does not exists in the directory which specified by the micrograph path pattern, again the process will exit without processing it. Use single processor for this mode. 
+
+  sp_rewindow.py  './mic*.hdf'  'outdir_rebox/centered_rebox/mic*_centered_rebox.rbx'  outdir_rewindow  --selection_list=mic0.hdf  --box_size=64
+
+\\ For negative staining data, use --skip_invert.
+  mpirun  -np  32  sp_rewindow.py  './mic*.hdf'  'outdir_rebox/centered_rebox/mic*_centered_rebox.rbx'  outdir_rewindow  --box_size=64  --skip_invert
+
+\\ **NOTE:** Please remember to adjust box_size also when setting mic_resample_ratio < 0.1.
+
+\\
+===== Input =====
+=== Main Parameters ===
+  ; input_micrograph_pattern : Input micrograph path pattern: Specify path pattern of input micrographs with a wild card (*).. The path pattern must be enclosed by single quotes (') or double quotes ("). (Note: sp_gui.py automatically adds single quotes (')). The substring at the variable part must be same between the associated pair of input micrograph and rebox file. bdb files cannot be selected as input micrographs. (default required string)
+  ; input_rebox_pattern : Input rebox path pattern: Specify path pattern of input rebox files with a wild card (*).. The path pattern must be enclosed by single quotes (') or double quotes ("). (Note: sp_gui.py automatically adds single quotes (')). The substring at the variable part must be same between the associated input micrograph. (default required string)
+  ; output_directory : Output directory: The results will be written here. It cannot be an existing one. (default required string)
+
+  ; %%--%%selection_list : Micrograph selection file: Specify a name of micrograph selection list text file for Selected Micrographs Mode. The file extension must be '.txt'. Alternatively, the file name of a single micrograph can be specified for Single Micrograph Mode. (default none)
+  ; %%--%%box_size : Particle box size [Pixels]: The x and y dimensions of square area to be windowed. The box size after resampling is assumed when mic_resample_ratio < 1.0. (default 256)
+  ; %%--%%skip_invert : Invert image contrast: Indicate if image contrast should be inverted or not. Do not invert for negative staining data. By default, the image contrast will be inverted for cryo data. (default False question reversed in GUI)
+
+\\
+=== Advanced Parameters ===
+  ; %%--%%mic_resample_ratio : Image size reduction factor (<1): Use a value between 0.0 and 1.0 (excluding 0.0). The new pixel size will be automatically recalculated and stored in CTF paramers when mic_resample_ratio < 1.0 is used. (default 1.0)
+  ; %%--%%swap_ctf_params : Swap CTF parameters: Swaps CTF parameters by setting the CTF parameters in the specified CTER partres file while ignoring the CTF parameters in the input rebox parameters file. Typically, specify the file produced by sp_cter and normally called partres.txt. Alternatively, enter pixel size [A/Pixels] to simulate ideal CTF. By default, the program uses the CTF parameters in the input rebox parameters file. (default None)
+  ; %%--%%check_consistency : Check consistency of dataset: Create a text file containing the list of Micrograph ID entries might have inconsistency among the provided dataset. (i.e. mic_consistency_check_info_TIMESTAMP.txt). (default False)
+
+\\
+===== Output =====
+Inside the output directory, the program will write a local bdb stack image for each micrograph. The files are named micrograph name with "_ptcls" suffix. For example, ''outdir_rewindow/EMAN2DB/mic0_ptcls.bdb'' or ''bdb:outdir_rewindow#mic0_ptcls'' 
+
+\\
+===== Description =====
+This command executes the following processes:
+  - Takes micrographs and rebox files as input and writes the particle images to a local stack.
+  - Normalization is done by subtracting the average of the region outside of a circle with radius half the box size.
+  - Micrographs are applied a Gaussian high-pass filter equivalent to the box size.
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+
+\\
+==== Developer Notes ====
+
+\\
+==== Author / Maintainer ====
+Toshio Moriya
+
+\\
+==== Keywords ====
+Category 1:: FUNDAMENTALS, UTILITIES, APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_rewindow.py
+
+\\
+==== See also ====
+[[pipeline:utilities:sp_pipe_restacking]], [[pipeline:cter:sp_cter|sp_cter]], and [[pipeline:cter:sp_gui_cter]]
+
+\\
+==== Maturity ====
+Alpha:: Under development.
+
+\\
+==== Bugs ====
+There are no known bugs so far.
+
+\\

@@ -1,8 +1,8 @@
 #!/usr/bin/env python
-from __future__ import print_function
 #
-# Author: 
-# Copyright (c) 2012 The University of Texas - Houston Medical School
+# Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
+# Please do not copy or modify this file without written consent of the author.
+# Copyright (c) 2000-2019 The University of Texas - Houston Medical School
 #
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
@@ -32,6 +32,8 @@ from __future__ import print_function
 #
 
 
+from __future__ import division
+from past.utils import old_div
 from builtins import range
 '''
 In this program, there are two ways of testing the stability of the projection.
@@ -142,7 +144,7 @@ def main():
 	nima = bcast_number_to_all(nima)
 	nx   = bcast_number_to_all(nx)
 	ny   = bcast_number_to_all(ny)
-	if radius == -1: radius = nx/2-2
+	if radius == -1: radius = old_div(nx,2)-2
 	mask = model_circle(radius, nx, nx)
 
 	st = time()
@@ -174,7 +176,7 @@ def main():
 
 		# Number of groups, actually there could be one or two more groups, since the size of the remaining group varies
 		# we will simply assign them to main node.
-		n_grp = nima/img_per_grp-1
+		n_grp = old_div(nima,img_per_grp)-1
 
 		# Divide proj_list_all equally to all nodes, and becomes proj_list
 		proj_list = []
@@ -367,8 +369,8 @@ def main():
 				if options.grouping == "GRP":
 					aphi /= l
 					atht /= l
-					vphi = (vphi - l*aphi*aphi)/l
-					vtht = (vtht - l*atht*atht)/l
+					vphi = old_div((vphi - l*aphi*aphi),l)
+					vtht = old_div((vtht - l*atht*atht),l)
 					from math import sqrt
 					refprojdir[i] = [aphi, atht, (sqrt(max(vphi,0.0))+sqrt(max(vtht,0.0)))/2.0]
 

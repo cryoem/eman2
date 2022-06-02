@@ -1,7 +1,7 @@
 CHECK_REQUIRED_LIB(NFFT2 nfft nfft.h "" "")
 
-message_var(NFFT2_INCLUDE_PATH)
-message_var(NFFT2_LIBRARY)
+cmake_print_variables(NFFT2_INCLUDE_PATH)
+cmake_print_variables(NFFT2_LIBRARY)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(NFFT2
