@@ -690,7 +690,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 
 				GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
 				glPixelStorei(GL_UNPACK_ALIGNMENT,4)
-				GL.glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,old_div(w,bpp),h,0,gl_render_type, GL.GL_UNSIGNED_BYTE, a)
+				GL.glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,old_div(w,3),h,0,gl_render_type, GL.GL_UNSIGNED_BYTE, a)
 
 				glNewList(self.main_display_list,GL_COMPILE)
 				GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
@@ -1438,7 +1438,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 			self.rmousedrag=None
 
 	def __draw_hud(self):
-		if self.list_data == None : return
+		if self.full_data is None : return
 
 		width = self.width()
 		height = self.height()
@@ -1460,7 +1460,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 #		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE)
 		glNormal(0,0,1)
 		glEnable(GL_TEXTURE_2D)
-		n = len(self.list_data)
+		n = self.full_data["nz"]
 		string = f"{self.zpos} ({n})"
 		bbox = self.font_renderer.bounding_box(string)
 		x_offset = width-(bbox[3]-bbox[0]) - 10
