@@ -38,30 +38,30 @@ import OpenGL
 OpenGL.ERROR_CHECKING = False
 from OpenGL import GL,GLU,GLUT
 from OpenGL.GL import *
-from .valslider import ValSlider,ValBox,StringBox,EMSpinWidget
+from eman2_gui.valslider import ValSlider,ValBox,StringBox,EMSpinWidget
 from math import *
 from EMAN2 import *
 import EMAN2
 import sys
 import numpy as np
 import struct
-from .emimageutil import ImgHistogram, EMParentWin
-from . import emshape
-from .emshape import EMShape
+from eman2_gui.emimageutil import ImgHistogram, EMParentWin
+from eman2_gui import emshape
+from eman2_gui.emshape import EMShape
 from weakref import WeakKeyDictionary
 import weakref
 from pickle import dumps,loads
 from libpyGLUtils2 import *
 
-from .emglobjects import EMOpenGLFlagsAndTools
-from .emapplication import get_application, EMGLWidget
-from .emimageutil import EMMetaDataTable
+from eman2_gui.emglobjects import EMOpenGLFlagsAndTools
+from eman2_gui.emapplication import get_application, EMGLWidget
+from eman2_gui.emimageutil import EMMetaDataTable
 
-from .emanimationutil import SingleValueIncrementAnimation, LineAnimation
+from eman2_gui.emanimationutil import SingleValueIncrementAnimation, LineAnimation
 
 import platform
 
-from .emglobjects import EMOpenGLFlagsAndTools
+from eman2_gui.emglobjects import EMOpenGLFlagsAndTools
 
 class EMAnnotate2DWidget(EMGLWidget):
 	"""
@@ -220,17 +220,16 @@ class EMAnnotate2DWidget(EMGLWidget):
 
 	def get_parent_suggested_size(self):
 
-		if self.data==None and self.fft==None : return (self.initsizehint[0]+12,self.initsizehint[1]+12)
-	
+
+		if self.data==None : return (self.initsizehint[0]+12,self.initsizehint[1]+12)
 		data = self.data
-		if data == None: data = self.fft
 
 		try: return (data["nx"]+12,data["ny"]+12)
 		except : return (self.initsizehint[0]+12,self.initsizehint[1]+12)
 
 	def sizeHint(self):
 #		print self.get_parent_suggested_size()
-		if self.data==None and self.fft==None : return QtCore.QSize(*self.initsizehint)
+		if self.data==None: return QtCore.QSize(*self.initsizehint)
 		return QtCore.QSize(*self.get_parent_suggested_size())
 
 	def set_disp_proc(self,procs):
@@ -279,28 +278,18 @@ class EMAnnotate2DWidget(EMGLWidget):
 
 	def set_density_range(self,x0,x1):
 		"""Set the range of densities to be mapped to the 0-255 pixel value range"""
-		if self.curfft == 0:
-			self.curmin=x0
-			self.curmax=x1
-		else:
-			self.fcurmin=x0
-			self.fcurnax=x1
+		self.curmin=x0
+		self.curmax=x1
 		self.force_display_update()
 		self.updateGL()
 
 	def set_density_min(self,val):
-		if self.curfft == 0:
-			self.curmin=val
-		else:
-			self.curmax=val
+		self.curmin=val
 		self.force_display_update()
 		self.updateGL()
 
 	def set_density_max(self,val):
-		if self.curfft == 0:
-			self.curmax=val
-		else:
-			self.fcurmax=val
+		self.curmax=val
 		self.force_display_update()
 		self.updateGL()
 
@@ -329,7 +318,6 @@ class EMAnnotate2DWidget(EMGLWidget):
 		data = None
 
 		if self.data != None: data = self.data
-		elif self.fft != None: data = self.fft
 		else: return [0,0,0]
 
 		return [data.get_xsize(),data.get_ysize(),data.get_zsize()]
@@ -357,7 +345,6 @@ class EMAnnotate2DWidget(EMGLWidget):
 		"""You may pass a single 2D image or a single 3-D volume
 		incoming_annotation must have the same dimensionality as incoming data or be None"""
 
-
 		self.set_file_name(file_name)
 		if self.file_name != "": self.setWindowTitle(remove_directories_from_name(self.file_name))
 
@@ -372,9 +359,9 @@ class EMAnnotate2DWidget(EMGLWidget):
 			annotation.to_zero()
 
 		needresize=True if self.data==None else False
-		
+
 		apix=data["apix_x"]
-		if isinstance(data,list) or isinstance(data,tuple) or isinstance(data,EMDataListCache) or isinstance(data,EMLightWeightParticleCache):
+		if not isinstance(data,EMData):
 			raise Exception("EMAnnotate2D only supports a single 2-D or 3-D image")
 
 		if data.get_sizes()!=annotation.get_sizes() :
@@ -430,7 +417,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 		#except: pass
 
 	def full_contrast(self,boolv=False,inspector_update=True,display_update=True):
-		
+
 		if self.data == None: return
 		# histogram is impacted by downsampling, so we need to compensate
 		if self.scale<=0.5 :
@@ -455,7 +442,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 
 	def auto_contrast(self,boolv=False,inspector_update=True,display_update=True):
 		auto_contrast = E2getappval("display2d","autocontrast",True)
-		
+
 		if self.data == None: return
 		# histogram is impacted by downsampling, so we need to compensate
 		if self.scale<=0.5 :
@@ -610,13 +597,14 @@ class EMAnnotate2DWidget(EMGLWidget):
 		x0  = 1 + int(old_div(self.origin[0], self.scale))
 		y0  = 1 + int(old_div(self.origin[1], self.scale))
 
-		self.data=self.full_data.get_rotated_clip(Transform({"type":"eman","alt":self.alt,"az":self.az,"tx":self.full_data["nx"]//2,"ty":self.full_data["ny"]//2,"tz":self.full_data["nz"]//2+self.zpos}))
-		self.annotation=self.full_annotation.get_rotated_clip(Transform({"type":"eman","alt":self.alt,"az":self.az,"tx":self.full_data["nx"]//2,"ty":self.full_data["ny"]//2,"tz":self.full_data["nz"]//2+self.zpos}))
+		self.data=self.full_data.get_rotated_clip(Transform({"type":"eman","alt":self.alt,"az":self.az,"tx":self.full_data["nx"]//2,"ty":self.full_data["ny"]//2,"tz":self.full_data["nz"]//2+self.zpos}),(self.full_data["nx"],self.full_data["ny"],1))
+		self.annotation=self.full_annotation.get_rotated_clip(Transform({"type":"eman","alt":self.alt,"az":self.az,"tx":self.full_data["nx"]//2,"ty":self.full_data["ny"]//2,"tz":self.full_data["nz"]//2+self.zpos}),(self.full_data["nx"],self.full_data["ny"],1))
 
+		print(self.full_data,self.full_annotation,self.alt,self.az,self.zpos,x0,y0,wdt,hgt,wid)
 
-		return_data = ( wid, hgt,
+		return_data = ( wid*3, hgt,
 							GLUtil.render_annotated24 (self.data, self.annotation,
-							x0, y0, wdt, hgt, wid,
+							x0, y0, wdt, hgt, wid*3,
 							self.scale, pixden[0], pixden[1],
 							min_val, max_val, flags))
 
@@ -628,32 +616,19 @@ class EMAnnotate2DWidget(EMGLWidget):
 		else: pixden=(255,0)
 
 
-		if self.curfft==1 :
-			if self.display_fft.is_complex() == False:
-				print("error, the fft is not complex, internal error")
-				return
-			a=(3,old_div((self.width()*3-1),4)*4+4,self.height(),self.display_fft.render_ap24(1+int(old_div(self.origin[0],self.scale)),1+int(old_div(self.origin[1],self.scale)),self.width(),self.height(),old_div((self.width()*3-1),4)*4+4,self.scale,pixden[0],pixden[1],self.fcurmin,self.fcurmax,self.fgamma,3))
-		elif self.curfft in (2,3) :
-#			if not self.glflags.npt_textures_unsupported():
-				a=(1,old_div((self.width()-1),4)*4+4,self.height(),GLUtil.render_amp8(self.display_fft, 1+int(old_div(self.origin[0],self.scale)),1+int(old_div(self.origin[1],self.scale)),self.width(),self.height(),old_div((self.width()-1),4)*4+4,self.scale,pixden[0],pixden[1],self.fcurmin,self.fcurmax,self.fgamma,2))
-#			else :
-#				a=(1,(self.width()-1)/4*4+4,self.height(),GLUtil.render_amp8(self.display_fft, 1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.fcurmin,self.fcurmax,self.fgamma,6))
+		if self.histogram==1:
+			a=(1,old_div((self.width()-1),4)*4+4,self.height(),GLUtil.render_amp8(self.data, 1+int(old_div(self.origin[0],self.scale)),1+int(old_div(self.origin[1],self.scale)),self.width(),self.height(),old_div((self.width()-1),4)*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,34))
+		elif self.histogram==2:
+			a=(1,old_div((self.width()-1),4)*4+4,self.height(),GLUtil.render_amp8(self.data, 1+int(old_div(self.origin[0],self.scale)),1+int(old_div(self.origin[1],self.scale)),self.width(),self.height(),old_div((self.width()-1),4)*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,98))
 		else :
-#			if not self.glflags.npt_textures_unsupported():
-				if self.histogram==1:
-					a=(1,old_div((self.width()-1),4)*4+4,self.height(),GLUtil.render_amp8(self.data, 1+int(old_div(self.origin[0],self.scale)),1+int(old_div(self.origin[1],self.scale)),self.width(),self.height(),old_div((self.width()-1),4)*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,34))
-				elif self.histogram==2:
-					a=(1,old_div((self.width()-1),4)*4+4,self.height(),GLUtil.render_amp8(self.data, 1+int(old_div(self.origin[0],self.scale)),1+int(old_div(self.origin[1],self.scale)),self.width(),self.height(),old_div((self.width()-1),4)*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,98))
-				else :
-					a=(1,old_div((self.width()-1),4)*4+4,self.height(),GLUtil.render_amp8(self.data, 1+int(old_div(self.origin[0],self.scale)),1+int(old_div(self.origin[1],self.scale)),self.width(),self.height(),old_div((self.width()-1),4)*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,2))
+			a=(1,old_div((self.width()-1),4)*4+4,self.height(),GLUtil.render_amp8(self.data, 1+int(old_div(self.origin[0],self.scale)),1+int(old_div(self.origin[1],self.scale)),self.width(),self.height(),old_div((self.width()-1),4)*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,2))
 #			else :
 #				a=(1,(self.width()-1)/4*4+4,self.height(),GLUtil.render_amp8(self.data, 1+int(self.origin[0]/self.scale),1+int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.curmin,self.curmax,self.gamma,6))
 
 		return a
 
 	def render(self):
-		if self.curfft and not self.display_fft : return
-		if not self.curfft and not self.data : return
+		if self.full_data is None : return
 
 		if not self.isVisible():
 			return
@@ -715,7 +690,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 
 				GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
 				glPixelStorei(GL_UNPACK_ALIGNMENT,4)
-				GL.glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,old_div(w,bpp),h,0,gl_render_type, GL.GL_UNSIGNED_BYTE, a)
+				GL.glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,old_div(w,3),h,0,gl_render_type, GL.GL_UNSIGNED_BYTE, a)
 
 				glNewList(self.main_display_list,GL_COMPILE)
 				GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
@@ -843,7 +818,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 		display_height = self.height()
 
 		data = self.data
-		if data == None: data = self.fft
+		
 		#print data
 		if data != None:
 			try:
@@ -1021,7 +996,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 				GL.glEnable(GL.GL_DEPTH_TEST)
 
 		if self.eraser_shape != None:
-			
+
 			GL.glPushMatrix()
 			p=self.eraser_shape.shape
 			GL.glColor(*p[1:4])
@@ -1112,7 +1087,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 		"""Add an array of vectors to the image as a shape overlay. This can be used to make pixel-centered vector plots
 		on top of images. This will be represented as additions to the shape list for the image. Only a single vector
 		overlay may be added to an image at a time. If provided, v will map to color (red low, blue high)"""
-		
+
 		if len(x0)!=len(y0) or len(x0)!=len(x1) or len(x0)!=len(y1):
 			raise Exception("Error, vector overlays must have 4 equal-length arrays")
 
@@ -1322,48 +1297,18 @@ class EMAnnotate2DWidget(EMGLWidget):
 					inspector = self.get_inspector()
 					if inspector:
 						apix=inspector.mtapix.value
+
+						inspector.mtshoworigin.setText("Start: %d , %d"%(current_shapes["MEAS"].shape[4],current_shapes["MEAS"].shape[5]))
+						inspector.mtshowend.setText("  End: %d , %d"%(lc[0],lc[1]))
+						inspector.mtshowlen.setText("dx,dy: %1.2f A, %1.2f A"%(dx*apix,dy*apix))
+						inspector.mtshowlen2.setText("Len: %1.3f A"%(hypot(dx,dy)*apix))
 						
-						# displays the pixel value at the current endpoint
-						if inspector.target().curfft :
-							nx,ny=inspector.target().data["nx"],inspector.target().data["ny"]
-							p=[current_shapes["MEAS"].shape[4]-nx//2,current_shapes["MEAS"].shape[5]-ny//2,lc[0]-nx//2,lc[1]-ny//2]
-							p=[round(x) for x in p]
-							q=[p[0]/nx,p[1]/ny,p[2]/nx,p[3]/ny] 
-							q=[f"{apix/x:.1f}" if x!=0 else "INF" for x in q]
-							
-							w=[hypot(p[0]/nx,p[1]/ny),hypot(p[2]/nx,p[3]/ny)]
-							w=[f"{apix/x:.1f}" if x!=0 else "INF" for x in w]
-							
-							inspector.mtshoworigin.setText("Start: %d , %d ( %s A, %s A) "%(p[0],p[1], q[0], q[1]))
-							inspector.mtshowend.setText("  End: %d , %d ( %s A, %s A) "%(p[2],p[3], q[2], q[3]))
-							
-							inspector.mtshowlen.setText("dx,dy: %1.0f px, %1.0f px"%(dx,dy))
-							inspector.mtshowlen2.setText("Len: %1.1f px ( %s A -> %s A)"%(hypot(dx,dy), w[0], w[1] ))
-							
-							fft=inspector.target().fft
-							if fft==None :
-								fft=inspector.target().list_fft_data[inspector.target().zpos]
-							xs=fft.get_xsize()
-							ys=fft.get_ysize()
-							x,y=int(lc[0])+1,int(lc[1])
-							if x<old_div(xs,2) : x=old_div(xs,2)-x
-							else : x-=old_div(xs,2)
-							if y<old_div(ys,2) : y+=old_div(ys,2)
-							else: y-=old_div(ys,2)
-							val=fft[x,y]
-							inspector.mtshowval.setText("Value: %1.4g + %1.4g i  @(%d,%d)"%(val.real,val.imag,x,y))
-							inspector.mtshowval2.setText("       (%1.4g, %1.4g)"%(abs(val),atan2(val.imag,val.real)*57.295779513))
-						else :
-							inspector.mtshoworigin.setText("Start: %d , %d"%(current_shapes["MEAS"].shape[4],current_shapes["MEAS"].shape[5]))
-							inspector.mtshowend.setText("  End: %d , %d"%(lc[0],lc[1]))
-							inspector.mtshowlen.setText("dx,dy: %1.2f A, %1.2f A"%(dx*apix,dy*apix))
-							inspector.mtshowlen2.setText("Len: %1.3f A"%(hypot(dx,dy)*apix))
-							
-							try: inspector.mtshowval.setText("Value: %1.4g"%inspector.target().data[int(lc[0]),int(lc[1])])
-							except:
-								idx=inspector.target().zpos
-								inspector.mtshowval.setText("Value: %1.4g"%inspector.target().list_data[idx][int(lc[0]),int(lc[1])])
-							inspector.mtshowval2.setText("  ")
+						try: inspector.mtshowval.setText("Value: %1.4g"%inspector.target().data[int(lc[0]),int(lc[1])])
+						except:
+							idx=inspector.target().zpos
+							inspector.mtshowval.setText("Value: %1.4g"%inspector.target().list_data[idx][int(lc[0]),int(lc[1])])
+						inspector.mtshowval2.setText("  ")
+
 						#except: pass
 
 					self.update_inspector_texture()
@@ -1390,7 +1335,6 @@ class EMAnnotate2DWidget(EMGLWidget):
 					self.add_shape("MEAS",EMShape(("line",.5,.1,.5,current_shapes["MEAS"].shape[4],current_shapes["MEAS"].shape[5],lc[0],lc[1],2)))
 			elif self.mouse_mode_dict[self.mouse_mode] == "draw":
 				if event.button()==Qt.LeftButton:
-					self.redo_fft()
 					self.force_display_update()
 					self.updateGL()
 
@@ -1461,9 +1405,6 @@ class EMAnnotate2DWidget(EMGLWidget):
 		elif event.key()==Qt.Key_P :
 			try: self.get_inspector().do_pspec_single(0)
 			except: pass
-		elif event.key()==Qt.Key_F :
-			self.set_FFT(self.curfft^2)
-			self.auto_contrast()
 		elif event.key()==Qt.Key_C:
 			self.auto_contrast()
 		elif event.key()==Qt.Key_I:
@@ -1482,7 +1423,6 @@ class EMAnnotate2DWidget(EMGLWidget):
 				if (self.zpos < (len(self.list_data)-1)):
 					self.zpos += 1
 					self.get_inspector().set_image_idx(self.zpos+1,1)
-					self.__set_display_image(self.curfft)
 					self.setup_shapes()
 					self.force_display_update()
 
@@ -1490,7 +1430,6 @@ class EMAnnotate2DWidget(EMGLWidget):
 				if (self.zpos > 0):
 					self.zpos -= 1
 					self.get_inspector().set_image_idx(self.zpos-1,1)
-					self.__set_display_image(self.curfft)
 					self.setup_shapes()
 					self.force_display_update()
 
@@ -1500,7 +1439,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 			self.rmousedrag=None
 
 	def __draw_hud(self):
-		if self.list_data == None : return
+		if self.full_data is None : return
 
 		width = self.width()
 		height = self.height()
@@ -1522,7 +1461,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 #		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE)
 		glNormal(0,0,1)
 		glEnable(GL_TEXTURE_2D)
-		n = len(self.list_data)
+		n = self.full_data["nz"]
 		string = f"{self.zpos} ({n})"
 		bbox = self.font_renderer.bounding_box(string)
 		x_offset = width-(bbox[3]-bbox[0]) - 10
@@ -1560,6 +1499,9 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 		#self.apptab = QtWidgets.QWidget()
 		self.apptablab = QtWidgets.QTextEdit("Application specific mouse functions")
 		self.mmtab.addTab(self.apptablab,"App")
+
+		self.seg_tab = EMSegTab()
+		self.mmtab.addTab(self.seg_tab,"Seg" )
 
 		# Save tab
 		self.savetab = QtWidgets.QWidget()
@@ -1907,7 +1849,6 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 		self.maxs.valueChanged.connect(self.new_max)
 		self.brts.valueChanged.connect(self.new_brt)
 		self.conts.valueChanged.connect(self.new_cont)
-		self.gammas.valueChanged.connect(self.new_gamma)
 		self.pyinp.returnPressed.connect(self.do_python)
 		self.invtog.toggled[bool].connect(target.set_invert)
 		self.histoequal.currentIndexChanged[int].connect(target.set_histogram)
@@ -1931,11 +1872,11 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 
 	def do_pspec_single(self,ign):
 		"""Compute 1D power spectrum of single image and plot"""
-		try: 
+		try:
 			data=self.target().list_data[self.target().zpos]
 			imgn=self.target().zpos
 			lbl=f"img_{imgn}"
-		except: 
+		except:
 			data=self.target().get_data()
 			lbl=time.strftime("%H:%M:%S")
 		if data==None: return
@@ -1947,21 +1888,21 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 
 		from .emplot2d import EMDataFnPlotter
 
-		try: 
+		try:
 			dfp=self.pspecwins[-1]
 			dfp.set_data((s,pspec),lbl)
-		except: 
+		except:
 			dfp=EMDataFnPlotter(data=(s,pspec),key=lbl)
 			self.pspecwins.append(dfp)
 		dfp.show()
 
 	def do_pspec_az(self,ign):
 		"""Compute azimuthal power spectrum of single image and plot"""
-		try: 
+		try:
 			data=self.target().list_data[self.target().zpos]
 			imgn=self.target().zpos
 			lbl=f"img_{imgn}"
-		except: 
+		except:
 			data=self.target().get_data()
 			lbl=time.strftime("%H:%M:%S")
 		if data==None: return
@@ -1972,10 +1913,10 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 
 		from .emplot2d import EMDataFnPlotter
 
-		try: 
+		try:
 			dfp=self.pspecwins[-1]
 			dfp.set_data((s,pspec),lbl)
-		except: 
+		except:
 			dfp=EMDataFnPlotter(data=(s,pspec),key=lbl)
 			self.pspecwins.append(dfp)
 		dfp.show()
@@ -2129,9 +2070,6 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 	def set_image_idx(self,val,quiet=0):
 		self.image_range.setValue(val,quiet=quiet)
 
-	def set_fft_amp_pressed(self):
-		self.ffttog2.setChecked(1)
-
 	def get_contrast(self):
 		return float(self.conts.getValue())
 
@@ -2212,11 +2150,11 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 		# We also update the image header info, since it is coordinated
 		d=self.target().get_data()
 		if d==None: return
-		try: 
+		try:
 			ctfdef=d["ctf"].defocus
 			defocus=f"&Delta;Z={ctfdef:1.5g}"
 		except: defocus=""
-		
+
 		try: ptclrepr=f"ptcl_repr={d['ptcl_repr']}"
 		except: ptclrepr=""
 
@@ -2251,19 +2189,198 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 		self.maxs.setValue(curmax,1)
 		#print "leave set limits", self.conts.getValue(), self.conts.getValue()
 
+class EMSegTab(QtWidgets.QWidget):
+	'''
+	This is the set display panel
+	'''
+	def __init__(self):
+		super().__init__()
 
+		self.eraser=QtWidgets.QCheckBox("Eraser")
+		self.classes_cb = QtWidgets.QCheckBox("Classes")
+		self.classes_cb.setChecked(True)
+		self.cb_group = QtWidgets.QButtonGroup()
+		self.cb_group.addButton(self.classes_cb,1)
+		self.cb_group.addButton(self.eraser,2)
+		self.pen_width=ValBox(label="Pen Width",value=32)
+		self.pen_width.setEnabled(1)
+
+
+		#self.target = weakref.ref(target) # this should be the EMImageMXWidget
+		self.classes = []
+
+		self.itemflags = Qt.ItemFlags(Qt.ItemIsEditable)|Qt.ItemFlags(Qt.ItemIsSelectable)|Qt.ItemFlags(Qt.ItemIsEnabled)|Qt.ItemFlags(Qt.ItemIsUserCheckable)
+		self.colors = ['#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe', '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080', '#ffffff', '#000000']
+
+		self.setlist=QtWidgets.QListWidget()
+		button_vbl = QtWidgets.QVBoxLayout()
+
+		self.new_set_button = QtWidgets.QPushButton("New Class")
+		button_vbl.addWidget(self.new_set_button)
+		self.rename_set_button = QtWidgets.QPushButton("Rename Class")
+		button_vbl.addWidget(self.rename_set_button)
+		self.delete_set_button = QtWidgets.QPushButton("Delete Class")
+		button_vbl.addWidget(self.delete_set_button)
+		self.load_set_button = QtWidgets.QPushButton("Load Class")
+		button_vbl.addWidget(self.load_set_button)
+		self.save_set_button = QtWidgets.QPushButton("Save Class")
+		button_vbl.addWidget(self.save_set_button)
+
+		hbl = QtWidgets.QHBoxLayout()
+		hbl.addWidget(self.setlist)
+		hbl.addLayout(button_vbl)
+
+
+		segtab_vbl = QtWidgets.QVBoxLayout(self)
+		eraser_lay = QtWidgets.QHBoxLayout()
+		eraser_lay.addWidget(self.classes_cb)
+		eraser_lay.addWidget(self.eraser)
+		eraser_lay.addWidget(self.pen_width)
+
+		segtab_vbl.addLayout(eraser_lay)
+		segtab_vbl.addLayout(hbl)
+
+
+		self.new_set_button.clicked[bool].connect(self.new_set)
+		self.rename_set_button.clicked[bool].connect(self.rename_set)
+		self.delete_set_button.clicked[bool].connect(self.delete_set)
+		self.setlist.itemChanged[QtWidgets.QListWidgetItem].connect(self.set_list_item_changed)
+		self.setlist.currentRowChanged[int].connect(self.set_list_row_changed)
+		self.cb_group.buttonClicked[QtWidgets.QAbstractButton].connect(self.on_check_cb_group)
+
+
+	def on_check_cb_group(self,cb):
+		print(cb.text()+" is selected")
+		if cb.text() == "Eraser":
+			self.setlist.setEnabled(False)
+		else:
+			self.setlist.setEnabled(True)
+
+
+	def sets_changed(self):
+		self.update_sets()
+		#keys=sorted(self.target().sets.keys())
+		#for i,k in enumerate(keys):
+			#try:
+				#if k!=str(self.setlist.item(i).text()) : raise Exception
+			#except:
+				#self.update_sets()
+				#break
+
+	def set_list_row_changed(self,i):
+		#print(i)
+		#if not self.initialized: return
+		a = self.setlist.item(i)
+		if a==None : return
+		name = str(a.text())
+		#self.target().set_current_set(name)
+		#self.update_sets()
+
+	def set_list_item_changed(self,item):
+		name=str(item.text())
+		print(name)
+		#if item.checkState() == Qt.Checked :
+			#self.target().show_set(name)
+		#else:
+			#self.target().hide_set(name)
+
+
+	def delete_set(self,unused):
+
+		sels=[str(i.text()) for i in self.setlist.selectedItems()]
+		if len(sels)==0 : return
+		cancel=QtWidgets.QMessageBox.question(self, "Delete set", "Are you sure to delete {}? This will remove all particles in that class".format(sels[0]),QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+		#print(cancel, QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+		if cancel==QtWidgets.QMessageBox.Yes :
+			self.classes.remove(sels[0])
+			#self.target().delete_set(names[0])
+			self.update_sets()
+
+
+	def new_set(self,unused=None):
+		name,ok=QtWidgets.QInputDialog.getText( self, "Class Name", "Enter name for the new class:")
+		if not ok : return
+		name=str(name)
+		print('HAHAHA')
+		if name in self.classes :
+			print("Class name exists")
+			return
+		else:
+			self.classes.append(name)
+
+
+			#print(self.classes)
+			#item=QtWidgets.QListWidgetItem(name)
+			#item.setFlags(self.itemflags)
+			#self.setlist.addItem(item)
+
+		#self.target().new_set(name)
+		self.update_sets()
+
+	def rename_set(self,unused=None):
+		sels=[str(i.text()) for i in self.setlist.selectedItems()]
+		if len(sels)==0:
+			print("Must select class to rename")
+			return
+		name,ok=QtWidgets.QInputDialog.getText( self, "Set Name", "Enter a name for the new set:")
+		if not ok : return
+		name=str(name)
+		if name in self.classes :
+			print("Class name exists")
+			return
+
+
+		#if name in self.target().sets :
+			#print("Set name exists")
+			#return
+		#for index, item in enumerate(self.classes):
+			#self.item_dict = {item:index}
+		#print(self.item_dict)
+		self.classes[self.item_dict[sels[0]]] = name
+
+		#self.target().rename_set(sels[0], name)
+		self.update_sets()
+
+
+	def update_sets(self):
+		#keys=sorted(self.target().sets.keys())
+		#viskeys=set(self.target().sets_visible.keys())
+		print(self.classes)
+		self.item_dict = {}
+		for index, item in enumerate(self.classes):
+			self.item_dict[item]=index
+		print(self.item_dict)
+		self.setlist.clear()
+
+		#for i,k in enumerate(keys):
+		for i in range(len(self.classes)):
+
+			#kname="{:02d} :: {}".format(int(k), self.target().sets[k])
+			item=QtWidgets.QListWidgetItem(self.classes[i])
+
+			item.setFlags(self.itemflags)
+			item.setForeground(QtGui.QColor(self.colors[i%len(self.colors)]))
+			self.setlist.addItem(item)
+
+			#if k in viskeys : item.setCheckState(Qt.Checked)
+			#else : item.setCheckState(Qt.Unchecked)
+
+			# if not self.initialized:
+			# 	if k==self.target().currentset:
+			# 		self.setlist.setCurrentItem(item)
+			# 		self.initialized=True
+		return
 # This is just for testing, of course
 def main():
-	from .emapplication import EMApp
+	from eman2_gui.emapplication import EMApp
 	em_app = EMApp()
-	window = EMImage2DWidget(application=em_app)
+	window = EMAnnotate2DWidget(application=em_app)
 
 	if len(sys.argv)==1 :
-		window.set_data(test_image(size=(128,128)))
+		window.set_data(test_image(size=(512,512)))
 	else :
-		a=EMData.read_images(sys.argv[1])
-		if len(a) == 1:	a = a[0]
-		window.set_data(a,sys.argv[1])
+		a=EMData(sys.argv[1])
+		window.set_data(a,None)
 
 	em_app.show()
 	window.optimally_resize()

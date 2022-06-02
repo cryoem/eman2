@@ -158,6 +158,7 @@ namespace EMAN
 		static GLuint buffer[2];
 		
 	};
+
 }
 
 #endif	//glutil_h__

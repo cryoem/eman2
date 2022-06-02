@@ -1,4 +1,4 @@
-/*
+ /*
  * Author: David Woolford, 11/06/2007 (woolford@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
  *
@@ -1007,12 +1007,104 @@ EMBytes GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 	return ret;
 }
 
+// typedef struct {
+// 	double r;       // a fraction between 0 and 1
+// 	double g;       // a fraction between 0 and 1
+// 	double b;       // a fraction between 0 and 1
+// } rgb;
+//
+// typedef struct {
+// 	double h;       // angle in degrees
+// 	double s;       // a fraction between 0 and 1
+// 	double v;       // a fraction between 0 and 1
+// } hsv;
+//
+// static rgb   hsv2rgb(hsv in);
+//
+//
+// rgb hsv2rgb(hsv in)
+// {
+// 	double      hh, p, q, t, ff;
+// 	long        i;
+// 	rgb         out;
+//
+// 	if(in.s <= 0.0) {       // < is bogus, just shuts up warnings
+// 		out.r = in.v;
+// 		out.g = in.v;
+// 		out.b = in.v;
+// 		return out;
+// 	}
+// 	hh = in.h;
+// 	if(hh >= 360.0) hh = 0.0;
+// 	hh /= 60.0;
+// 	i = (long)hh;
+// 	ff = hh - i;
+// 	p = in.v * (1.0 - in.s);
+// 	q = in.v * (1.0 - (in.s * ff));
+// 	t = in.v * (1.0 - (in.s * (1.0 - ff)));
+//
+// 	switch(i) {
+// 		case 0:
+// 			out.r = in.v;
+// 			out.g = t;
+// 			out.b = p;
+// 			break;
+// 		case 1:
+// 			out.r = q;
+// 			out.g = in.v;
+// 			out.b = p;
+// 			break;
+// 		case 2:
+// 			out.r = p;
+// 			out.g = in.v;
+// 			out.b = t;
+// 			break;
+//
+// 		case 3:
+// 			out.r = p;
+// 			out.g = q;
+// 			out.b = in.v;
+// 			break;
+// 		case 4:
+// 			out.r = t;
+// 			out.g = p;
+// 			out.b = in.v;
+// 			break;
+// 		case 5:
+// 		default:
+// 			out.r = in.v;
+// 			out.g = p;
+// 			out.b = q;
+// 			break;
+// 	}
+// 	return out;
+// }
+
 EMBytes GLUtil::render_annotated24(EMData *emdata, EMData *intmap, int x0, int y0, int ixsize,
 							int iysize, int bpl, float scale, int min_gray, int max_gray,
 							float render_min, float render_max, int flags)
 {
 	ENTERFUNC;
 
+	// Category brightness mappings to rgb colors. Should make these static members of GLUtil
+	static unsigned char rtable[65536] = {0};
+	static unsigned char gtable[65536] = {0};
+	static unsigned char btable[65536] = {0};
+
+	static int tblinit=0;
+
+	if (!tblinit) {
+		tblinit=1;
+
+		// Only supporting up to 256 different color "categories"
+		for (int v=0; v<256; v++) {
+			for (int c=0; c<256; c++) {
+				rtable[v*256+c]=(c==0||c==3)?v:0;		//4 colors (0-3) for initial testing
+				gtable[v*256+c]=(c==0||c==1)?v:0;
+				btable[v*256+c]=(c==0||c==2)?v:0;
+			}
+		}
+	}
 
 	if (emdata==NULL) return EMBytes();
 	bool invert = (min_gray > max_gray);
@@ -1048,15 +1140,11 @@ EMBytes GLUtil::render_annotated24(EMData *emdata, EMData *intmap, int x0, int y
 		render_max = render_min + 0.01f;
 	}
 
-	// Category brightness mappings to rgb colors. Should make these static members of GLUtil
-	unsigned char rtable[65536] = {0};
-	unsigned char gtable[65536] = {0};
-	unsigned char btable[65536] = {0};
-	
+
 	EMBytes ret=EMBytes();
 	//	ret.resize(iysize*bpl);
 
-	ret.assign(iysize*3 + hist*1024, char(invert ? maxgray : mingray));
+	ret.assign(iysize*bpl + hist*1024, char(invert ? maxgray : mingray));
 
 	unsigned char *data = (unsigned char *)ret.data();
 	unsigned int *histd = (unsigned int *)(data + iysize*bpl);
