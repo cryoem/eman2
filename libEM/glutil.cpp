@@ -1099,9 +1099,9 @@ EMBytes GLUtil::render_annotated24(EMData *emdata, EMData *intmap, int x0, int y
 		// Only supporting up to 256 different color "categories"
 		for (int v=0; v<256; v++) {
 			for (int c=0; c<256; c++) {
-				rtable[v<<8+c]=(c==0||c==3)?v:0;		//4 colors (0-3) for initial testing
-				gtable[v<<8+c]=(c==0||c==1)?v:0;
-				btable[v<<8+c]=(c==0||c==2)?v:0;
+				rtable[v*256+c]=(c==0||c==3)?v:0;		//4 colors (0-3) for initial testing
+				gtable[v*256+c]=(c==0||c==1)?v:0;
+				btable[v*256+c]=(c==0||c==2)?v:0;
 			}
 		}
 	}
@@ -1144,7 +1144,7 @@ EMBytes GLUtil::render_annotated24(EMData *emdata, EMData *intmap, int x0, int y
 	EMBytes ret=EMBytes();
 	//	ret.resize(iysize*bpl);
 
-	ret.assign(iysize*3 + hist*1024, char(invert ? maxgray : mingray));
+	ret.assign(iysize*bpl + hist*1024, char(invert ? maxgray : mingray));
 
 	unsigned char *data = (unsigned char *)ret.data();
 	unsigned int *histd = (unsigned int *)(data + iysize*bpl);
