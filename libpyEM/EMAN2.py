@@ -3111,7 +3111,6 @@ and the file size will increase.
 		try: n=EMUtil.get_image_count(fsp)
 		except: n=0
 	
-	# Maybe should have this revert to normal write_image, if a different format?
 	for i,im in enumerate(self):
 		if not isinstance(im,EMData) : raise(Exception,"write_compressed() requires a list of EMData objects")
 
@@ -3122,24 +3121,28 @@ and the file size will increase.
 			if minval == 'FULL': minval = im["minimum"]
 			if maxval == 'FULL': maxval = im["maximum"]
 
+			nooutliers = True
+
 		im["render_bits"]=bits
 		im["render_compress_level"]=level
+		### This is an important option, as it will be the default in many cases. It makes an effort to intelligently
+		### eliminate extreme outliers, while not modifying cases with highly nongaussian distributions
 		if nooutliers:
 			nxyz=im.get_size()
 			maxout=max(nxyz//20000,8)		# at most 1 in 20000 pixels should be considered an outlier on each end
 			h0=im["minimum"]
 			h1=im["maximum"]
-			hs=(h1-h0)/1023
-			hist=im.calc_hist(1024,h0,h1)
+			hs=(h1-h0)/4095
+			hist=im.calc_hist(4096,h0,h1)
 			
 			#ok, we're doing this approximately
-			for sl in range(512):
+			for sl in range(2048):
 				if sum(hist[:sl+1])>maxout: break
-			for sh in range(1023,512,-1):
+			for sh in range(4095,2048,-1):
 				if sum(hist[sh:])>maxout: break
 
-			im["render_min"]=sl*hs+h0
-			im["render_max"]=sh*hs+h0
+			im["render_min"]=min(sl*hs+h0,im["mean"]-im["sigma"]*4.0)
+			im["render_max"]=max(sh*hs+h0,im["mean"]+im["sigma"]*4.0)
 		elif maxval>minval:
 			im["render_min"]=float(minval)
 			im["render_max"]=float(maxval)

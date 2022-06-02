@@ -91,10 +91,10 @@ namespace EMAN {
 					                             / (rendermax - rendermin)
 					                             * (RMAX - RMIN) + RMIN);
 			}
-			return std::tuple(rendered_data, count);
+			return std::make_tuple(rendered_data, count);
 		}
 		else
-			return std::tuple(std::vector<float>(data, data + size), (size_t)0);
+			return std::make_tuple(std::vector<float>(data, data + size), (size_t)0);
 	}
 
 }

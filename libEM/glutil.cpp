@@ -1,4 +1,4 @@
-/*
+ /*
  * Author: David Woolford, 11/06/2007 (woolford@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
  *
@@ -1006,6 +1006,372 @@ EMBytes GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 
 	return ret;
 }
+
+// typedef struct {
+// 	double r;       // a fraction between 0 and 1
+// 	double g;       // a fraction between 0 and 1
+// 	double b;       // a fraction between 0 and 1
+// } rgb;
+//
+// typedef struct {
+// 	double h;       // angle in degrees
+// 	double s;       // a fraction between 0 and 1
+// 	double v;       // a fraction between 0 and 1
+// } hsv;
+//
+// static rgb   hsv2rgb(hsv in);
+//
+//
+// rgb hsv2rgb(hsv in)
+// {
+// 	double      hh, p, q, t, ff;
+// 	long        i;
+// 	rgb         out;
+//
+// 	if(in.s <= 0.0) {       // < is bogus, just shuts up warnings
+// 		out.r = in.v;
+// 		out.g = in.v;
+// 		out.b = in.v;
+// 		return out;
+// 	}
+// 	hh = in.h;
+// 	if(hh >= 360.0) hh = 0.0;
+// 	hh /= 60.0;
+// 	i = (long)hh;
+// 	ff = hh - i;
+// 	p = in.v * (1.0 - in.s);
+// 	q = in.v * (1.0 - (in.s * ff));
+// 	t = in.v * (1.0 - (in.s * (1.0 - ff)));
+//
+// 	switch(i) {
+// 		case 0:
+// 			out.r = in.v;
+// 			out.g = t;
+// 			out.b = p;
+// 			break;
+// 		case 1:
+// 			out.r = q;
+// 			out.g = in.v;
+// 			out.b = p;
+// 			break;
+// 		case 2:
+// 			out.r = p;
+// 			out.g = in.v;
+// 			out.b = t;
+// 			break;
+//
+// 		case 3:
+// 			out.r = p;
+// 			out.g = q;
+// 			out.b = in.v;
+// 			break;
+// 		case 4:
+// 			out.r = t;
+// 			out.g = p;
+// 			out.b = in.v;
+// 			break;
+// 		case 5:
+// 		default:
+// 			out.r = in.v;
+// 			out.g = p;
+// 			out.b = q;
+// 			break;
+// 	}
+// 	return out;
+// }
+
+EMBytes GLUtil::render_annotated24(EMData *emdata, EMData *intmap, int x0, int y0, int ixsize,
+							int iysize, int bpl, float scale, int min_gray, int max_gray,
+							float render_min, float render_max, int flags)
+{
+	ENTERFUNC;
+
+	// Category brightness mappings to rgb colors. Should make these static members of GLUtil
+	static unsigned char rtable[65536] = {0};
+	static unsigned char gtable[65536] = {0};
+	static unsigned char btable[65536] = {0};
+
+	static int tblinit=0;
+
+	if (!tblinit) {
+		tblinit=1;
+
+		// Only supporting up to 256 different color "categories"
+		for (int v=0; v<256; v++) {
+			for (int c=0; c<256; c++) {
+				rtable[v*256+c]=(c==0||c==3)?v:0;		//4 colors (0-3) for initial testing
+				gtable[v*256+c]=(c==0||c==1)?v:0;
+				btable[v*256+c]=(c==0||c==2)?v:0;
+			}
+		}
+	}
+
+	if (emdata==NULL) return EMBytes();
+	bool invert = (min_gray > max_gray);
+	int mingray, maxgray;
+
+	if (invert) {
+		mingray = max_gray;
+		maxgray = min_gray;
+	}
+	else {
+		mingray = min_gray;
+		maxgray = max_gray;
+	}
+
+	int hist = (flags & 2)/2;
+	int invy = (flags & 4)?1:0;
+
+	int nx = emdata->nx;
+	int ny = emdata->ny;
+	int nxy = emdata->nx * emdata->ny;
+
+	if (emdata->get_ndim() > 2) {
+		throw ImageDimensionException("1D/2D only");
+	}
+
+	if (emdata->get_xsize()!=intmap->get_xsize() || emdata->get_ysize()!=intmap->get_ysize()) throw ImageDimensionException("Size mismatch in color image rendering");
+
+	if (emdata->is_complex()) {
+		throw ImageFormatException("Cannot annotate complex images");
+	}
+
+	if (render_max <= render_min) {
+		render_max = render_min + 0.01f;
+	}
+
+
+	EMBytes ret=EMBytes();
+	//	ret.resize(iysize*bpl);
+
+	ret.assign(iysize*bpl + hist*1024, char(invert ? maxgray : mingray));
+
+	unsigned char *data = (unsigned char *)ret.data();
+	unsigned int *histd = (unsigned int *)(data + iysize*bpl);
+
+	if (hist) {
+		for (int i=0; i<256; i++) histd[i]=0;
+	}
+
+	float rm = render_min;
+	float inv_scale = 1.0f / scale;
+	int ysize = iysize;
+	int xsize = ixsize;
+
+	int ymin = 0;
+
+	if (iysize * inv_scale > ny) {
+		ymin = (int) (iysize - ny / inv_scale);
+	}
+
+	float gs = (maxgray - mingray) / (render_max - render_min);
+
+	if (render_max < render_min) {
+		gs = 0;
+		rm = FLT_MAX;
+	}
+
+	int dsx = -1;
+	int dsy = 0;
+	int remx = 0;
+	int remy = 0;
+	const int scale_n = 100000;
+
+	int addi = 0;
+	int addr = 0;
+
+	if (inv_scale == floor(inv_scale)) {	// exact integer downscaling
+		dsx = (int) inv_scale;
+		dsy = (int) (inv_scale * nx);
+	}
+	else {
+		addi = (int) floor(inv_scale);
+		addr = (int) (scale_n * (inv_scale - floor(inv_scale)));
+	}
+
+	int xmin = 0;
+
+	if (x0 < 0) {
+		xmin = (int) (-x0 / inv_scale);
+		xsize -= (int) floor(x0 / inv_scale);
+		x0 = 0;
+	}
+
+	if ((xsize - xmin) * inv_scale > (nx - x0)) {
+		xsize = (int) ((nx - x0) / inv_scale + xmin);
+	}
+
+	int ymax = ysize - 1;
+
+	if (y0 < 0) {
+		ymax = (int) (ysize + y0 / inv_scale - 1);
+		ymin += (int) floor(y0 / inv_scale);
+		y0 = 0;
+	}
+
+	if (xmin < 0) xmin = 0;
+	if (ymin < 0) ymin = 0;
+	if (xsize > ixsize) xsize = ixsize;
+	if (ymax > iysize) ymax = iysize;
+
+	int lmax = nx * ny - 1;
+
+	int mid=nx*ny/2;
+	float * image_data = emdata->get_data();
+	float * class_data = intmap->get_data();
+
+	if (dsx != -1) {
+		int l = x0 + y0 * nx;
+
+		for (int j = ymax; j >= ymin; j--) {
+			int br = l;
+
+			for (int i = xmin; i < xsize; i++) {
+				if (l > lmax) {
+					break;
+				}
+
+				int k = 0;
+				unsigned char p;
+				float t;	// holds pixel greyscale
+				unsigned char cls;	// holds class identifier
+
+				if (dsx == 1) t=image_data[l];
+				else { // This block does local pixel averaging for nicer reduced views
+					t=0;
+
+					if ((l+dsx+dsy) > lmax) {
+						break;
+					}
+
+					for (int iii=0; iii<dsx; iii++) {
+						for (int jjj=0; jjj<dsy; jjj+=nx) {
+							t += image_data[l+iii+jjj];
+						}
+					}
+
+					t /= dsx*(dsy/nx);
+				}
+				cls=(unsigned char)class_data[l];		// we draw the class from the lower left pixel. Averaging doesn't make sense
+
+				if (t <= rm) p = mingray;
+				else if (t >= render_max) p = maxgray;
+				else {
+					p=(unsigned char) (gs * (t - render_min)) + mingray;
+				}
+
+				if (invert) {
+					p = mingray + maxgray - p;
+				}
+
+				data[i * 3 + j * bpl] = p;			// greyscale in R channel
+				data[i * 3 + j * bpl +1] = cls;		// color index in G channel
+
+				if (hist) histd[p]++;
+
+				l += dsx;
+			}
+
+			l = br + dsy;
+		}
+	}
+	else {
+		remy = 10;
+		int l = x0 + y0 * nx;
+
+		for (int j = ymax; j >= ymin; j--) {
+			int addj = addi;
+
+			// There seems to be some overflow issue happening
+			// where the statement if (l > lmax) break (below) doesn't work
+			// because the loop that iterates jjj can inadvertantly go out of bounds
+			if ((l + addi*nx) >= nxy) {
+				addj = (nxy-l)/nx;
+
+				if (addj <= 0) continue;
+			}
+
+			int br = l;
+			remx = 10;
+
+			for (int i = xmin; i < xsize; i++) {
+				if (l > lmax) break;
+				int k = 0;
+				unsigned char p;
+				float t;
+				unsigned char cls;
+
+				if (addi <= 1) t = image_data[l];
+				else { // This block does local pixel averaging for nicer reduced views
+					t=0;
+					for (int jjj=0; jjj<addj; jjj++) {
+						for (int iii=0; iii<addi; iii++) {
+							t += image_data[l+iii+jjj*nx];
+						}
+					}
+
+					t /= addi*addi;
+				}
+				cls=(unsigned char)class_data[l];		// we draw the class from the lower left pixel. Averaging doesn't make sense
+
+				if (t <= rm) p = mingray;
+				else if (t >= render_max) p = maxgray;
+				else p = (unsigned char) (gs * (t - render_min));
+
+				p += mingray;
+
+				if (invert) {
+					p = mingray + maxgray - p;
+				}
+
+				data[i * 3 + j * bpl] = p;
+				data[i * 3 + j * bpl +1] = cls;
+
+				if (hist) histd[p]++;
+
+				l += addi;
+				remx += addr;
+
+				if (remx > scale_n) {
+					remx -= scale_n;
+					l++;
+				}
+			}
+
+			l = br + addi * nx;
+			remy += addr;
+
+			if (remy > scale_n) {
+				remy -= scale_n;
+				l += nx;
+			}
+		}
+	}
+	
+	// Convert grey/class values to RGB
+	for (int j=ymin*bpl; j <= ymax*bpl; j+=bpl) {
+		for (int i=xmin; i<xsize*3; i+=3) {
+			int grey=(int)data[i+j];
+			int cls=(int)data[i+j+1];
+			int lup=grey<<8+cls;
+			data[i+j]=rtable[lup];
+			data[i+j+1]=gtable[lup];
+			data[i+j+2]=btable[lup];
+		}
+	}
+	
+	EXITFUNC;
+
+	// ok, ok, not the most efficient place to do this, but it works
+	if (invy) {
+		for (int y=0; y<iysize/2; y++)
+			for (int x=0; x<ixsize; x++)
+				std::swap(ret[y*bpl+x], ret[(iysize-y-1)*bpl+x]);
+	}
+	
+	return ret;
+}
+
 
 // DEPRECATED
 

@@ -85,8 +85,50 @@ def ptclextract(jsd,db,ks,shrink,layers,sym,mask,hp,lp,verbose):
 		all["orig_file"]=ptcl["data_source"]
 		all["orig_n"]=ptcl["data_n"]
 		all["orig_key"]=k[2]
+		all["xform.align3d"]=xf
 		jsd.put((i,k,all))
 
+def ptclextract_new(jsd,lsx,ns,shrink,layers,sym,mask,hp,lp,verbose):
+	"""This version works with e2spt_refine_new.py"""
+	#  we have to get the 3d particles in the right orientation
+	lasttime=time.time()
+	for i in ns:
+		# this only happens in the first thread
+		if verbose and time.time()-lasttime>3:
+			print("\r  {}/{}       ".format(i,ns[-1],end=""))
+			sys.stdout.flush()
+			lasttime=time.time()
+			
+		ptcl=lsx.read_image(i)
+		xf=ptcl["xform.align3d"]
+		ptcl.process_inplace("xform",{"transform":xf})
+		if mask!=None : ptcl.mult(mask)
+		if shrink>1 : ptcl.process_inplace("math.meanshrink",{"n":shrink})
+		if sym!="" and sym!="c1" : ptcl.process_inplace("xform.applysym",{"sym":sym})
+		if hp>0 : ptcl.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/hp})
+		if lp>0 : ptcl.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/lp})
+		
+		# these are the range limited orthogonal projections
+		x=ptcl.process("misc.directional_sum",{"axis":"x","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
+		y=ptcl.process("misc.directional_sum",{"axis":"y","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
+		z=ptcl.process("misc.directional_sum",{"axis":"z","first":ptcl["nx"]/2-layers,"last":ptcl["nx"]/2+layers+1})
+
+		# different directions sometimes have vastly different standard deviations, independent normalization may help balance
+		x.process_inplace("normalize")
+		y.process_inplace("normalize")
+		z.process_inplace("normalize")
+		
+		# we pack the 3 projections into a single 2D image
+		all=EMData(x["nx"]*3,x["ny"],1)
+		all.insert_clip(x,(0,0))
+		all.insert_clip(y,(x["nx"],0))
+		all.insert_clip(z,(x["nx"]*2,0))
+		all["score"]=ptcl["score"]
+		
+		all["orig_file"]=lsx[i][1]
+		all["orig_n"]=lsx[i][0]
+		all["xform.align3d"]=xf
+		jsd.put((i,None,all))
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -120,17 +162,40 @@ produce new sets/ for each class, which could be further-refined.
 	if options.path == None:
 		fls=[int(i[-2:]) for i in os.listdir(".") if i[:4]=="spt_" and len(i)==6 and str.isdigit(i[-2:])]
 		if len(fls)==0 : fls=[0]
-		options.path = "spt_{:02d}".format(max(fls)+1)
-		try: os.mkdir(options.path)
-		except: pass
+		options.path = "spt_{:02d}/".format(max(fls)+1)
+	elif not options.path.endswith("/") :
+		options.path=options.path+"/"
+	
+	fls=os.listdir(options.path)
+	jsf=[i for i in fls if i.startswith("particle_parms") and i.endswith(".json")]
+	lsf=[i for i in fls if i.startswith("aliptcls3d") and i.endswith(".lst")]
+	
+	if len(jsf)==0 and len(lsf)==0 :
+		error_exit(f"ERROR: Cannot find either particle_parms*json or aliptcls3d*lst files in {options.path}")
+	
+	if len(jsf)>0 and len(lsf)>0:
+		error_exit(f"ERROR: Confusing contents of {options.path} with both .json and .lst paramters")
+		
+	if len(jsf)>0:
+		print("Old-style refinement folder identified")
+		spt_type=0
+		if options.iter<=0:
+			db=js_open_dict(options.path+max(jsf))
+			options.iter=int(max(jsf)[15:17])
+			print("Using ",max(jsf))
+		else:
+			db=js_open_dict(f"{options.path}particle_parms_{options.iter:02d}.json")
+	else:
+		print("New-style refinement folder identified")
+		spt_type=1
+		if options.iter<=0:
+			lsx=LSXFile(options.path+max(lsf))
+			options.iter=int(max(lsf)[11:13])
+			print("Using ",max(lsf))
+		else:
+			lsx=LSXFile(f"{options.path}aliptcls3d_{options.iter:02d}.lst")
 
-	if options.iter<=0 :
-		fls=[int(i[7:9]) for i in os.listdir(options.path) if i[:7]=="threed_" and str.isdigit(i[7:9])]
-		if len(fls)==0 : options.iter=1
-		else: options.iter=max(fls)
-		print("Using iteration ",options.iter)
-
-	cruns=[int(i[15:17]) for i in os.listdir(options.path) if i[:12]=="classes_sec_" and len(i)>=21 and str.isdigit(i[15:17])]
+	cruns=[int(i[15:17]) for i in fls if i.startswith("classes_sec_") and len(i)>=21 and str.isdigit(i[15:17])]
 	if len(cruns)==0: crun=0
 	else: crun=max(cruns)+1
 	print("crun: ",crun)
@@ -145,22 +210,31 @@ produce new sets/ for each class, which could be further-refined.
 			initmask.process_inplace(nm,opt)
 	else: initmask=None
 
-	db=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,options.iter))
-
 	logid=E2init(sys.argv, options.ppid)
 
-	# the keys are name,number pairs for the individual particles
-	ks=[eval(k)+(k,) for k in db.keys()]
-	ks.sort()
-	ks=list(enumerate(ks))
-	
-	prjs=[0]*len(ks)
+	if spt_type==0:
+		# the keys are name,number pairs for the individual particles
+		ks=[eval(k)+(k,) for k in db.keys()]
+		ks.sort()
+		ks=list(enumerate(ks))
+		
+		prjs=[0]*len(ks)
+	else:
+		prjs=[0]*len(lsx)
+		
 	if options.verbose: print("Generating sections")
 	lasttime=time.time()
 	jsd=queue.Queue(0)
 
 	NTHREADS=max(options.threads,2)		# we have one thread just writing results
-	thrds=[threading.Thread(target=ptclextract,args=(jsd,db,ks[i::NTHREADS-1],options.shrink,options.layers,options.sym,initmask,options.hp,options.lp,options.verbose>1 and i==0)) for i in range(NTHREADS-1)]
+	if spt_type==0:
+		nptcl=len(ks)
+		thrds=[threading.Thread(target=ptclextract,args=(jsd,db,ks[i::NTHREADS-1],options.shrink,options.layers,options.sym,initmask,options.hp,options.lp,options.verbose>1 and i==0)) for i in range(NTHREADS-1)]
+		hdr=EMData(ks[0][1][0],ks[0][1][1],True)
+	else:
+		nptcl=len(lsx)
+		thrds=[threading.Thread(target=ptclextract_new,args=(jsd,lsx,range(i,nptcl,NTHREADS-1),options.shrink,options.layers,options.sym,initmask,options.hp,options.lp,options.verbose>1 and i==0)) for i in range(NTHREADS-1)]
+		hdr=lsx.read_image(0,True)
 
 	try: os.unlink("{}/alisecs_{:02d}.hdf".format(options.path,options.iter))
 	except: pass
@@ -215,7 +289,7 @@ produce new sets/ for each class, which could be further-refined.
 	if options.verbose: print("Classifying")
 	# classification
 	an=Analyzers.get("kmeans")
-	an.set_params({"ncls":options.ncls,"maxiter":100,"minchange":len(ks)//(options.ncls*25),"verbose":options.verbose-1,"slowseed":1,"outlierclass":0,"mininclass":2})
+	an.set_params({"ncls":options.ncls,"maxiter":100,"minchange":nptcl//(options.ncls*25),"verbose":options.verbose-1,"slowseed":1,"outlierclass":0,"mininclass":2})
 	
 	an.insert_images_list(prjs)
 	centers=an.analyze()
@@ -227,7 +301,6 @@ produce new sets/ for each class, which could be further-refined.
 		try: os.unlink("sets/{}_{:02d}_{:02d}_{:02d}.lst".format(options.path,options.iter,crun,i))
 		except: pass
 
-	hdr=EMData(ks[0][1][0],ks[0][1][1],True)
 	nx=hdr["nx"]
 	ny=hdr["ny"]
 	nz=hdr["nz"]
@@ -250,17 +323,19 @@ produce new sets/ for each class, which could be further-refined.
 			
 		cls=im["class_id"]
 		# read the original volume again, and fix its orientation (again)
+#		ptcl2=lsx[i]
 		ptcl=EMData(im["orig_file"],im["orig_n"])
-		xf=db[im["orig_key"]]["xform.align3d"]
-		ptcl.transform(xf)
+		xf=im["xform.align3d"]
+		ptcl.process_inplace("xform",{"transform":xf})
 		avgs[cls].add_image(ptcl)		# add to the correct class average
-		
+#		print(ptcl2[2]["xform.align3d"],xf,ptcl2[:2],(im["orig_file"],im["orig_n"]))
+
 		# If requested, we save the aligned (shrunken) volume to the stack for this class
 		if options.saveali: 
 			if options.shrink>1 : ptcl.process_inplace("math.meanshrink",{"n":options.shrink})
-			ptcl.write_image("{}/aliptcl_{:02d}_{:02d}_{:02d}.hdf".format(options.path,options.iter,crun,cls),-1)
+			ptcl.write_compressed("{}/aliptcl_{:02d}_{:02d}_{:02d}.hdf".format(options.path,options.iter,crun,cls),-1,6)
 		
-		sets[cls].write(-1,im["orig_n"],im["orig_file"],str(db[im["orig_key"]]["xform.align3d"].get_params("eman")))
+		sets[cls].write(-1,im["orig_n"],im["orig_file"],{"xform.align3d":xf})
 	
 	if options.verbose: print("\nSaving classes")
 	try: os.unlink("{}/classes_sec_{:02d}_{:02d}.hdf".format(options.path,options.iter,crun))
@@ -275,8 +350,12 @@ produce new sets/ for each class, which could be further-refined.
 		centers[i].write_compressed("{}/classes_sec_{:02d}_{:02d}.hdf".format(options.path,options.iter,crun),i,8)
 		if n>0 : avgs[i].mult(1.0/n)
 		avg=avgs[i].finish()
-		if options.hp>0 : avg.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/options.hp})
-		if options.lp>0 : avg.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.lp})
+		avg["ptcl_repr"]=n
+		avg["apix_x"]=hdr["apix_x"]
+		avg["apix_y"]=hdr["apix_y"]
+		avg["apix_z"]=hdr["apix_z"]
+#		if options.hp>0 : avg.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/options.hp})
+#		if options.lp>0 : avg.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.lp})
 #		avg.write_image("{}/classes_{:02d}.hdf".format(options.path,options.iter),i)
 		avg.write_compressed("{}/classes_{:02d}_{:02d}.hdf".format(options.path,options.iter,crun),i,12)
 		

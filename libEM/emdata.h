@@ -198,7 +198,17 @@ namespace EMAN
 		 *  @param scale Scaling put on the returned image.
 		 *  @return The clip image.
 		 */
-		EMData *get_rotated_clip(const Transform & xform, const IntSize &size, float scale=1.0);
+		EMData *get_rotated_clip(const Transform & xform, const IntSize &size, int interp=1);
+
+		/** This will set the values from a provided 2d or 3d clip in the corresponding pixels
+		 * in another image. Values are not added or interpolated, but set as the value of the
+		 * nearest neighbor pixel. The opposite of get_rotated_clip without interpolation.
+		 *
+		 *  @param xform The transformation of the region.
+		 *  @param clip EMData object contining the values to be inserted
+		 *  @return void
+		 */
+		void set_rotated_clip( const Transform & xform, EMData *clip);
 
 		/** Window the center of an image.
 		 *  Often an image is padded with zeros for fourier interpolation.  In
