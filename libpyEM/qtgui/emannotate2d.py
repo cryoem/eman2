@@ -220,8 +220,8 @@ class EMAnnotate2DWidget(EMGLWidget):
 
 	def get_parent_suggested_size(self):
 
+
 		if self.data==None : return (self.initsizehint[0]+12,self.initsizehint[1]+12)
-	
 		data = self.data
 
 		try: return (data["nx"]+12,data["ny"]+12)
@@ -359,7 +359,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 			annotation.to_zero()
 
 		needresize=True if self.data==None else False
-		
+
 		apix=data["apix_x"]
 		if not isinstance(data,EMData):
 			raise Exception("EMAnnotate2D only supports a single 2-D or 3-D image")
@@ -417,7 +417,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 		#except: pass
 
 	def full_contrast(self,boolv=False,inspector_update=True,display_update=True):
-		
+
 		if self.data == None: return
 		# histogram is impacted by downsampling, so we need to compensate
 		if self.scale<=0.5 :
@@ -442,7 +442,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 
 	def auto_contrast(self,boolv=False,inspector_update=True,display_update=True):
 		auto_contrast = E2getappval("display2d","autocontrast",True)
-		
+
 		if self.data == None: return
 		# histogram is impacted by downsampling, so we need to compensate
 		if self.scale<=0.5 :
@@ -996,7 +996,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 				GL.glEnable(GL.GL_DEPTH_TEST)
 
 		if self.eraser_shape != None:
-			
+
 			GL.glPushMatrix()
 			p=self.eraser_shape.shape
 			GL.glColor(*p[1:4])
@@ -1086,7 +1086,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 		"""Add an array of vectors to the image as a shape overlay. This can be used to make pixel-centered vector plots
 		on top of images. This will be represented as additions to the shape list for the image. Only a single vector
 		overlay may be added to an image at a time. If provided, v will map to color (red low, blue high)"""
-		
+
 		if len(x0)!=len(y0) or len(x0)!=len(x1) or len(x0)!=len(y1):
 			raise Exception("Error, vector overlays must have 4 equal-length arrays")
 
@@ -1296,7 +1296,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 					inspector = self.get_inspector()
 					if inspector:
 						apix=inspector.mtapix.value
-						
+
 						inspector.mtshoworigin.setText("Start: %d , %d"%(current_shapes["MEAS"].shape[4],current_shapes["MEAS"].shape[5]))
 						inspector.mtshowend.setText("  End: %d , %d"%(lc[0],lc[1]))
 						inspector.mtshowlen.setText("dx,dy: %1.2f A, %1.2f A"%(dx*apix,dy*apix))
@@ -1307,6 +1307,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 							idx=inspector.target().zpos
 							inspector.mtshowval.setText("Value: %1.4g"%inspector.target().list_data[idx][int(lc[0]),int(lc[1])])
 						inspector.mtshowval2.setText("  ")
+
 						#except: pass
 
 					self.update_inspector_texture()
@@ -1497,6 +1498,9 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 		#self.apptab = QtWidgets.QWidget()
 		self.apptablab = QtWidgets.QTextEdit("Application specific mouse functions")
 		self.mmtab.addTab(self.apptablab,"App")
+
+		self.seg_tab = EMSegTab()
+		self.mmtab.addTab(self.seg_tab,"Seg" )
 
 		# Save tab
 		self.savetab = QtWidgets.QWidget()
@@ -1867,11 +1871,11 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 
 	def do_pspec_single(self,ign):
 		"""Compute 1D power spectrum of single image and plot"""
-		try: 
+		try:
 			data=self.target().list_data[self.target().zpos]
 			imgn=self.target().zpos
 			lbl=f"img_{imgn}"
-		except: 
+		except:
 			data=self.target().get_data()
 			lbl=time.strftime("%H:%M:%S")
 		if data==None: return
@@ -1883,21 +1887,21 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 
 		from .emplot2d import EMDataFnPlotter
 
-		try: 
+		try:
 			dfp=self.pspecwins[-1]
 			dfp.set_data((s,pspec),lbl)
-		except: 
+		except:
 			dfp=EMDataFnPlotter(data=(s,pspec),key=lbl)
 			self.pspecwins.append(dfp)
 		dfp.show()
 
 	def do_pspec_az(self,ign):
 		"""Compute azimuthal power spectrum of single image and plot"""
-		try: 
+		try:
 			data=self.target().list_data[self.target().zpos]
 			imgn=self.target().zpos
 			lbl=f"img_{imgn}"
-		except: 
+		except:
 			data=self.target().get_data()
 			lbl=time.strftime("%H:%M:%S")
 		if data==None: return
@@ -1908,10 +1912,10 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 
 		from .emplot2d import EMDataFnPlotter
 
-		try: 
+		try:
 			dfp=self.pspecwins[-1]
 			dfp.set_data((s,pspec),lbl)
-		except: 
+		except:
 			dfp=EMDataFnPlotter(data=(s,pspec),key=lbl)
 			self.pspecwins.append(dfp)
 		dfp.show()
@@ -2137,11 +2141,11 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 		# We also update the image header info, since it is coordinated
 		d=self.target().get_data()
 		if d==None: return
-		try: 
+		try:
 			ctfdef=d["ctf"].defocus
 			defocus=f"&Delta;Z={ctfdef:1.5g}"
 		except: defocus=""
-		
+
 		try: ptclrepr=f"ptcl_repr={d['ptcl_repr']}"
 		except: ptclrepr=""
 
@@ -2176,7 +2180,187 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 		self.maxs.setValue(curmax,1)
 		#print "leave set limits", self.conts.getValue(), self.conts.getValue()
 
+class EMSegTab(QtWidgets.QWidget):
+	'''
+	This is the set display panel
+	'''
+	def __init__(self):
+		super().__init__()
 
+		self.eraser=QtWidgets.QCheckBox("Eraser")
+		self.classes_cb = QtWidgets.QCheckBox("Classes")
+		self.classes_cb.setChecked(True)
+		self.cb_group = QtWidgets.QButtonGroup()
+		self.cb_group.addButton(self.classes_cb,1)
+		self.cb_group.addButton(self.eraser,2)
+		self.pen_width=ValBox(label="Pen Width",value=32)
+		self.pen_width.setEnabled(1)
+
+
+		#self.target = weakref.ref(target) # this should be the EMImageMXWidget
+		self.classes = []
+
+		self.itemflags = Qt.ItemFlags(Qt.ItemIsEditable)|Qt.ItemFlags(Qt.ItemIsSelectable)|Qt.ItemFlags(Qt.ItemIsEnabled)|Qt.ItemFlags(Qt.ItemIsUserCheckable)
+		self.colors = ['#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe', '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080', '#ffffff', '#000000']
+
+		self.setlist=QtWidgets.QListWidget()
+		button_vbl = QtWidgets.QVBoxLayout()
+
+		self.new_set_button = QtWidgets.QPushButton("New Class")
+		button_vbl.addWidget(self.new_set_button)
+		self.rename_set_button = QtWidgets.QPushButton("Rename Class")
+		button_vbl.addWidget(self.rename_set_button)
+		self.delete_set_button = QtWidgets.QPushButton("Delete Class")
+		button_vbl.addWidget(self.delete_set_button)
+		self.load_set_button = QtWidgets.QPushButton("Load Class")
+		button_vbl.addWidget(self.load_set_button)
+		self.save_set_button = QtWidgets.QPushButton("Save Class")
+		button_vbl.addWidget(self.save_set_button)
+
+		hbl = QtWidgets.QHBoxLayout()
+		hbl.addWidget(self.setlist)
+		hbl.addLayout(button_vbl)
+
+
+		segtab_vbl = QtWidgets.QVBoxLayout(self)
+		eraser_lay = QtWidgets.QHBoxLayout()
+		eraser_lay.addWidget(self.classes_cb)
+		eraser_lay.addWidget(self.eraser)
+		eraser_lay.addWidget(self.pen_width)
+
+		segtab_vbl.addLayout(eraser_lay)
+		segtab_vbl.addLayout(hbl)
+
+
+		self.new_set_button.clicked[bool].connect(self.new_set)
+		self.rename_set_button.clicked[bool].connect(self.rename_set)
+		self.delete_set_button.clicked[bool].connect(self.delete_set)
+		self.setlist.itemChanged[QtWidgets.QListWidgetItem].connect(self.set_list_item_changed)
+		self.setlist.currentRowChanged[int].connect(self.set_list_row_changed)
+		self.cb_group.buttonClicked[QtWidgets.QAbstractButton].connect(self.on_check_cb_group)
+
+
+	def on_check_cb_group(self,cb):
+		print(cb.text()+" is selected")
+		if cb.text() == "Eraser":
+			self.setlist.setEnabled(False)
+		else:
+			self.setlist.setEnabled(True)
+
+
+	def sets_changed(self):
+		self.update_sets()
+		#keys=sorted(self.target().sets.keys())
+		#for i,k in enumerate(keys):
+			#try:
+				#if k!=str(self.setlist.item(i).text()) : raise Exception
+			#except:
+				#self.update_sets()
+				#break
+
+	def set_list_row_changed(self,i):
+		#print(i)
+		#if not self.initialized: return
+		a = self.setlist.item(i)
+		if a==None : return
+		name = str(a.text())
+		#self.target().set_current_set(name)
+		#self.update_sets()
+
+	def set_list_item_changed(self,item):
+		name=str(item.text())
+		print(name)
+		#if item.checkState() == Qt.Checked :
+			#self.target().show_set(name)
+		#else:
+			#self.target().hide_set(name)
+
+
+	def delete_set(self,unused):
+
+		sels=[str(i.text()) for i in self.setlist.selectedItems()]
+		if len(sels)==0 : return
+		cancel=QtWidgets.QMessageBox.question(self, "Delete set", "Are you sure to delete {}? This will remove all particles in that class".format(sels[0]),QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+		#print(cancel, QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+		if cancel==QtWidgets.QMessageBox.Yes :
+			self.classes.remove(sels[0])
+			#self.target().delete_set(names[0])
+			self.update_sets()
+
+
+	def new_set(self,unused=None):
+		name,ok=QtWidgets.QInputDialog.getText( self, "Class Name", "Enter name for the new class:")
+		if not ok : return
+		name=str(name)
+		print('HAHAHA')
+		if name in self.classes :
+			print("Class name exists")
+			return
+		else:
+			self.classes.append(name)
+
+
+			#print(self.classes)
+			#item=QtWidgets.QListWidgetItem(name)
+			#item.setFlags(self.itemflags)
+			#self.setlist.addItem(item)
+
+		#self.target().new_set(name)
+		self.update_sets()
+
+	def rename_set(self,unused=None):
+		sels=[str(i.text()) for i in self.setlist.selectedItems()]
+		if len(sels)==0:
+			print("Must select class to rename")
+			return
+		name,ok=QtWidgets.QInputDialog.getText( self, "Set Name", "Enter a name for the new set:")
+		if not ok : return
+		name=str(name)
+		if name in self.classes :
+			print("Class name exists")
+			return
+
+
+		#if name in self.target().sets :
+			#print("Set name exists")
+			#return
+		#for index, item in enumerate(self.classes):
+			#self.item_dict = {item:index}
+		#print(self.item_dict)
+		self.classes[self.item_dict[sels[0]]] = name
+
+		#self.target().rename_set(sels[0], name)
+		self.update_sets()
+
+
+	def update_sets(self):
+		#keys=sorted(self.target().sets.keys())
+		#viskeys=set(self.target().sets_visible.keys())
+		print(self.classes)
+		self.item_dict = {}
+		for index, item in enumerate(self.classes):
+			self.item_dict[item]=index
+		print(self.item_dict)
+		self.setlist.clear()
+
+		#for i,k in enumerate(keys):
+		for i in range(len(self.classes)):
+
+			#kname="{:02d} :: {}".format(int(k), self.target().sets[k])
+			item=QtWidgets.QListWidgetItem(self.classes[i])
+
+			item.setFlags(self.itemflags)
+			item.setForeground(QtGui.QColor(self.colors[i%len(self.colors)]))
+			self.setlist.addItem(item)
+
+			#if k in viskeys : item.setCheckState(Qt.Checked)
+			#else : item.setCheckState(Qt.Unchecked)
+
+			# if not self.initialized:
+			# 	if k==self.target().currentset:
+			# 		self.setlist.setCurrentItem(item)
+			# 		self.initialized=True
+		return
 # This is just for testing, of course
 def main():
 	from eman2_gui.emapplication import EMApp
