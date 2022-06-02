@@ -51,8 +51,11 @@ BOOST_PYTHON_MODULE(libpyTypeConverter2)
 {
     class_< EMAN::EMNumPy >("EMNumPy", init<  >())
         .def(init< const EMAN::EMNumPy& >())
-        .def("em2numpy", &EMAN::EMNumPy::em2numpy)
-        .def("numpy2em", &EMAN::EMNumPy::numpy2em, return_value_policy< manage_new_object >())
+        .def("em2numpy", &EMAN::EMNumPy::em2numpy, "Get an EMData image's pixel data as a numeric numpy array.\n"
+												   "The array and EMData image share the same memory block.")
+        .def("numpy2em", &EMAN::EMNumPy::numpy2em, return_value_policy< manage_new_object >(), "Create an EMData image from a numeric numpy array.\n"
+																							   "Returned EMData object will contain copy of the numpy array data.\n"
+																							   "Note: The array size is (nz,ny,nx) corresponding to image (nx,ny,nz).")
         .def("register_numpy_to_emdata", &EMAN::EMNumPy::register_numpy_to_emdata, return_value_policy< reference_existing_object >())
         .def("unregister_numpy_from_emdata", &EMAN::EMNumPy::unregister_numpy_from_emdata)
         .staticmethod("em2numpy")
@@ -166,4 +169,3 @@ BOOST_PYTHON_MODULE(libpyTypeConverter2)
 	EMAN::MArrayND_to_python<std::complex<float>, 3>();
 
 }
-

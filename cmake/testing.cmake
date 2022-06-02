@@ -6,7 +6,7 @@ add_custom_target(test-verbose
 		)
 
 add_test(NAME py-compile
-		COMMAND ${PYTHON_EXECUTABLE} -m compileall -q -x .git ${CMAKE_SOURCE_DIR}
+		COMMAND ${PYTHON_EXECUTABLE} -m compileall -q -x .git -x sparx -x sphire ${CMAKE_SOURCE_DIR}
 		)
 
 add_custom_target(test-py-compile
@@ -59,6 +59,6 @@ if(NOT WIN32)
 					  )
 	
 	add_test(NAME progs
-			 COMMAND bash ${CMAKE_SOURCE_DIR}/tests/run_prog_tests.sh
+			 COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/run_prog_tests.py
 			 )
 endif()

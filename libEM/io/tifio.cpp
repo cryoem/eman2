@@ -51,8 +51,7 @@ namespace {
 TiffIO::TiffIO(const string & fname, IOMode rw)
 :	ImageIO(fname, rw), tiff_file(0),
 	bitspersample(0), photometric(0),
-	rendermin(0.0), rendermax(0.0), renderbits(16), nimg(1),
-	is_big_endian(ByteOrder::is_host_big_endian())
+	nimg(1), is_big_endian(ByteOrder::is_host_big_endian())
 {}
 
 TiffIO::~TiffIO()
@@ -444,6 +443,8 @@ int TiffIO::write_header(const Dict & dict, int image_index, const Region *,
 
 //	EMUtil::EMDataType datatype = (EMUtil::EMDataType) (int) dict["datatype"];
 
+	EMUtil::getRenderLimits(dict, rendermin, rendermax, renderbits);
+
 	if (datatype == EMUtil::EM_UCHAR) {
 		bitspersample = CHAR_BIT;
 	}
@@ -452,6 +453,11 @@ int TiffIO::write_header(const Dict & dict, int image_index, const Region *,
 	}
 	else if (datatype == EMUtil::EM_FLOAT) {
 		bitspersample = CHAR_BIT * sizeof(float);
+	}
+	else if(datatype == EMUtil::EM_COMPRESSED) {
+		if (renderbits <= 0)       bitspersample = CHAR_BIT*sizeof(float);
+		else if (renderbits <= 8)  bitspersample = CHAR_BIT;
+		else if (renderbits <= 16) bitspersample = CHAR_BIT*sizeof(short);
 	}
 	else {
 		LOGWARN("Don't support data type '%s' in TIFF. Convert to '%s'.",
@@ -472,20 +478,24 @@ int TiffIO::write_header(const Dict & dict, int image_index, const Region *,
 	// TIFFSetField(tiff_file, TIFFTAG_COMPRESSION, NO_COMPRESSION);
 	// TIFFSetField(tiff_file, TIFFTAG_FILLORDER, FILLORDER_MSB2LSB);
 
-	EMUtil::getRenderLimits(dict, rendermin, rendermax, renderbits);
-
 	EXITFUNC;
 	return 0;
 }
 
 int TiffIO::write_data(float * data, int image_index, const Region *,
-				EMUtil::EMDataType, bool)
+				EMUtil::EMDataType dt, bool)
 {
 	ENTERFUNC;
 
 	image_index = 0;
 
 //	TIFFSetDirectory(tiff_file, image_index);
+
+	if(dt == EMUtil::EM_COMPRESSED) {
+		if (renderbits <= 0)       bitspersample = CHAR_BIT*sizeof(float);
+		else if (renderbits <= 8)  bitspersample = CHAR_BIT;
+		else if (renderbits <= 16) bitspersample = CHAR_BIT*sizeof(short);
+	}
 
 	// If we didn't get any parameters in 'render_min' or 'render_max',
 	// we need to find some good ones

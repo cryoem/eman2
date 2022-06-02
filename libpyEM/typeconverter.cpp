@@ -50,13 +50,8 @@ np::ndarray EMNumPy::em2numpy(const EMData *const image)
 
 	vector<int> dims;
 
-	if (nz > 1) {
-		dims.push_back(nz);
-	}
-
-	if (ny > 1) {
-		dims.push_back(ny);
-	}
+	if (nz > 1) dims.push_back(nz);
+	if (ny > 1) dims.push_back(ny);
 
 	dims.push_back(nx);
 
@@ -93,7 +88,8 @@ EMData* EMNumPy::numpy2em(const np::ndarray& array)
 			break;
 	}
 
-	auto float_array = (float *)array.astype(np::dtype::get_builtin<float>()).get_data();
+	auto arr = array.astype(np::dtype::get_builtin<float>());
+	float * float_array = (float *)arr.get_data();
 	float * temparray = new float[(size_t)nx*ny*nz];
 	std::copy(float_array, float_array + nx * ny * nz, temparray);
 

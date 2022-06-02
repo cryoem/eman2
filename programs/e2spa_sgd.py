@@ -11,6 +11,8 @@ def main():
 	parser.add_argument("--res", type=int,help="res", default=30)
 	parser.add_argument("--batch", type=int,help="batch", default=32)
 	parser.add_argument("--niter", type=int,help="number of iterations", default=100)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	

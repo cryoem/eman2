@@ -31,6 +31,7 @@
 
 #include "eerio.h"
 
+#include <algorithm>
 #include <tiffio.h>
 #include <boost/property_tree/xml_parser.hpp>
 
@@ -226,8 +227,10 @@ int EerIO::read_data(float *rdata, int image_index, const Region * area, bool)
 	
 	auto data = read_raw_data(tiff_file);
 
+	std::fill(rdata, rdata + decoder.camera_size * decoder.camera_size, 0);
+
 	auto coords = decode_eer_data((EerWord *) data.data(), decoder);
-	for(auto &c : coords)
+	for(const auto &c : coords)
 		rdata[c.first + c.second * decoder.num_pix()] += 1;
 
 	EXITFUNC;

@@ -88,6 +88,7 @@ def main():
 	parser.add_argument("--reconmode", type=str, help="Intepolation mode for reconstruction. default is trilinear. check e2help.py for details. Not recommended to change.",default="trilinear")
 	parser.add_argument("--maxshift", type=float,help="Maximum shift between tilt(/image size). default is 0.35", default=.35)
 	parser.add_argument("--highpass", type=int,help="initial highpass filter for alignment in pixels. default if 3", default=3)
+	parser.add_argument("--pathtracktile", type=int,help="number of tile along one axis for patch tracking. default is 5", default=5)
 	parser.add_argument("--badone", action="store_true",help="Remove one bad tilt during coarse alignment. seem to work better with smaller maxshift...", default=False)#, guitype='boolbox',row=9, col=0, rowspan=1, colspan=1,mode="easy")
 	
 	parser.add_argument("--flip", action="store_true",help="Flip the tomogram by rotating the tilt axis. need --load existing alignment", default=False)
@@ -568,7 +569,7 @@ def main():
 		
 		if options.filterto<=0:
 			options.filterto=imgout[0]["apix_x"]/options.filterres
-			print("filter to {:.2f} of Nyquist.".format(options.filterto))
+			print("filter to {} A, {:.2f} of Nyquist.".format(options.filterres, options.filterto))
 			
 			
 		if options.rmbeadthr>0:
@@ -804,16 +805,11 @@ def do_patch_tracking(imgs, ttparams, options, niter=4):
 	options.bxsz=rawboxsz
 	return tpm, loss
 
-def do_patch_tracking_3d(imgs, ttparams, options, niter=4):
+def do_patch_tracking_3d_oneiter(imgs, ttparams, options, writetmp=False):
 	
-	print("\n******************************")
-	print("Doing patch tracking in 3d")
 	scale=int(np.round(imgs[0]["apix_x"]/options.apix_init))
-	rawnpk=options.npk
-	rawboxsz=options.bxsz
-	print("  shrink by {}".format(scale))
 	
-	ntile=int(np.round(8/scale*2+1))
+	ntile=options.pathtracktile
 	tpm=ttparams.copy()
 	nx=ny=imgs[0]["nx"]
 	nz=len(imgs)
@@ -828,9 +824,8 @@ def do_patch_tracking_3d(imgs, ttparams, options, niter=4):
 	
 	options.npk=len(pks)
 	maskc=make_mask(sz)
-	imgshp=[m.process("filter.highpass.gauss",{"cutoff_pixels":options.highpass}) for m in imgs]
 	allparams=np.hstack([tpm.flatten(), pks.flatten()])
-	ptclpos,ptclimgs=ali_ptcls(imgshp, allparams, options, doali=False,return_imgs=True, do_rotation=False)
+	ptclpos,ptclimgs=ali_ptcls(imgs, allparams, options, doali=False,return_imgs=True, do_rotation=False)
 	nt=len(ptclimgs)//len(imgs)
 	
 	trg=tpm[:,3]
@@ -841,7 +836,7 @@ def do_patch_tracking_3d(imgs, ttparams, options, niter=4):
 	pad=good_size(sz*1.4)
 	dxys=np.zeros((nt, len(trg), 2))
 	
-	if options.writetmp:
+	if writetmp:
 		pjname=os.path.join(options.tmppath,"patchtrack_projs.hdf")
 		if os.path.isfile(pjname): os.remove(pjname)
 		tdname=os.path.join(options.tmppath,"patchtrack_tiles.hdf")
@@ -866,19 +861,13 @@ def do_patch_tracking_3d(imgs, ttparams, options, niter=4):
 			m.process_inplace("normalize.edgemean")
 			m.process_inplace("xform",{"tx":int(dxy[i,0]),"ty":int(dxy[i,1])})
 			dy=(sz//2)-np.cos(trg[i]*np.pi/180.)*sz/2
-			#msk=m.copy()
-			#msk.to_one()
-			#edge=sz//10
-			#msk.process_inplace("mask.zeroedge2d",{"x0":dy+edge, "x1":dy+edge, "y0":edge, "y1":edge})
-			#msk.process_inplace("mask.addshells.gauss",{"val1":0, "val2":edge})
-			#m.mult(msk)
 			xf=Transform({"type":"xyz","ztilt":tpm[i,2],"ytilt":tpm[i,3],"xtilt":tpm[i,4]})
 
 			if abs(i-nrange[0])>1:
 				pj=recon.projection(xf, 0)
 				pj=pj.get_clip(Region(pad//2-sz//2, pad//2-sz//2, sz,sz))
 
-				if options.writetmp: pj.write_image(pjname,int(n*it+i))
+				if writetmp: pj.write_image(pjname,int(n*it+i))
 
 				cf=pj.calc_ccf(m)
 				c=cf.calc_max_location_wrap(mxsft, mxsft, 0)
@@ -886,40 +875,76 @@ def do_patch_tracking_3d(imgs, ttparams, options, niter=4):
 				dxy[iix]+=[c[0], c[1]]
 			
 			else:
-				if options.writetmp: m.write_image(pjname,int(n*it+i))
+				if writetmp: m.write_image(pjname,int(n*it+i))
 
 			m=m.get_clip(Region(sz//2-pad//2,sz//2-pad//2, pad, pad), fill=0)
 			mp=recon.preprocess_slice(m, xf)
 			recon.insert_slice(mp,xf,1)
 
-		print(it, np.mean(abs(dxys[it]), axis=0))
-		if options.writetmp:
+		if writetmp:
 			avg=recon.finish(True)
 			avg=avg.get_clip(Region(pad//2-sz//2,pad//2-sz//2,pad//2-sz//2, sz,sz,sz), fill=0)
 			avg.write_image(tdname, it)
 			
 	dxy=np.mean(dxys, axis=0)
-	d=dxy[-1,0]-dxy[0,0]
-	xd=np.sin(np.array(trg)*np.pi/180)
-	nd=d/(xd[-1]-xd[0])
-	dxy[:,0]-=nd*xd
-	dxy-=dxy[len(dxy)//2]
+	
+	return pks,dxys
 
-	tpm[:,:2]-=dxy*scale
-	x=np.mean(abs(dxy*scale), axis=0)
-	print("	mean dx = {:.1f}, dy = {:.1f}".format(x[0], x[1]))
-	if options.writetmp:
+def do_patch_tracking_3d(imgs, ttparams, options):
+	
+	print("\n******************************")
+	print("Doing patch tracking in 3D")
+	rawnpk=options.npk
+	rawboxsz=options.bxsz
+	scale=int(np.round(imgs[0]["apix_x"]/options.apix_init))
+	pmlabel=["trans_x", "trans_y", "tilt_z", "tilt_y", "tilt_x"]
+
+	tpm=ttparams.copy()
+	refineseq=[[0,1], [], [0,1], [4], [2], [0,1]]
+	for refineid in refineseq:
+		
+		pks,dxys= do_patch_tracking_3d_oneiter(imgs, tpm, options)
+
+		ps=np.array([ [get_xf_pos(t,p) for t in tpm] for p in pks])
+		ddxy=ps-dxys*scale
+
 		allparams=np.hstack([tpm.flatten(), pks.flatten()])
-		ptclpos,ptclimgs=ali_ptcls(imgshp, allparams, options, doali=False,return_imgs=True)
-		fname=os.path.join(options.tmppath,"patchtrack_ptclali.hdf")
-		if os.path.isfile(fname): os.remove(fname)
-		for p in ptclimgs:
-			p.write_image(fname, -1)
+		options.fidkeep=.9
+		if len(refineid)==0:
+			loss0=global_rot([0],ddxy, allparams, options)
+			res=minimize(global_rot, [0], (ddxy, allparams, options) ,
+				method='Powell',options={'ftol': 1e-3, 'disp': False, "maxiter":10})
+				
+			rt=res.x[0]
+			print("  tilt axis rotation {:.02f}, loss {:.2f} -> {:.2f}".format(rt, loss0, res.fun))
+			tpm[:,2]+=rt
+		
+		else:
+			trans=[]
+			loss=[]
+			loss0=[]
+			for nid in range(len(tpm)):
+				xinit=[0]*len(refineid)
+				loss0.append(get_loss_pm(xinit,nid, allparams, options, refineid, ddxy))
+				
+				res=minimize(get_loss_pm, xinit,(nid, allparams, options, refineid, ddxy),
+							method='Powell',options={'ftol': 1e-3, 'disp': False, "maxiter":10})
+				trans.append(res.x)
+				loss.append(res.fun)
+				
 
+			trans=np.array(trans)
+			dt=np.mean(np.linalg.norm(trans, axis=1))
+			tpm[:,refineid]+=trans
+			print("refine "+','.join([pmlabel[i] for i in refineid]))
+			print("   change {:.2f}, loss {:.2f} -> {:.2f}".format(dt, np.mean(loss0), np.mean(loss)))
+	
+	if options.writetmp:
+		do_patch_tracking_3d_oneiter(imgs, tpm, options,writetmp=True)
+		
 	options.npk=rawnpk
 	options.bxsz=rawboxsz
-	loss=np.linalg.norm(dxy*scale, axis=1)
-	return tpm, loss
+	return tpm, np.array(loss)
 	
 def correct_zpos(tomo, ttparams, options):
 	print("Positioning along z axis")

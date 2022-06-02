@@ -224,9 +224,12 @@ class SpaAlignTask(JSTask):
 				ds=1./(ny*ref["apix_x"])
 				ctf.bfactor=10
 				ctfcv=abs(np.array(ctf.compute_1d(ny,ds,Ctf.CtfType.CTF_AMP)))
-				ci=np.where(np.diff(ctfcv)<0)[0][0]
-				ctfcv[:ci]=ctfcv[ci]
-				ctfwt=True
+				try:		# this may fail for some neg stain images close to focus, failsafe to disable weighting
+					ci=np.where(np.diff(ctfcv)<0)[0][0]
+					ctfcv[:ci]=ctfcv[ci]
+					ctfwt=True
+				except:
+					ctfwt=False
 			else:
 				ctfwt=False
 				

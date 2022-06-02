@@ -32,7 +32,6 @@
 
 from builtins import range
 from EMAN2 import EMANVERSION, E2init, E2end, EMData, base_name, file_exists, EMArgumentParser
-import EMAN2db
 from eman2_gui.emapplication import EMApp
 from eman2_gui import embrowser
 from eman2_gui.emimage import EMImageWidget, EMWidgetFromFile

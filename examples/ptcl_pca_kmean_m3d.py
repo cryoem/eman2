@@ -22,6 +22,7 @@ def main():
 	parser.add_argument("--sym", type=str,help="symmetry", default="c1")
 	parser.add_argument("--nptcl", type=int,help="number of particles per class in regress mode", default=2000)
 	parser.add_argument("--threads", default=12,type=int,help="Number of threads to run in parallel on a single computer. This is the only parallelism supported by e2make3dpar")
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	
@@ -63,53 +64,51 @@ def main():
 	fname=options.ptclsin
 	lstinp=fname.endswith(".lst")
 	
-	if lstinp:
-		lin=LSXFile(fname)
+	lin=load_lst_params(fname)
 		
+	lout=[]
 	for j in range(options.ncls):
 		
-		onm="{}_{:02d}.lst".format(options.ptclsout, j)
 		
 		if options.mode=="classify":
 			l=lbunq[j]
 			ii=(lbs==l)
-			print(onm, np.sum(ii))
+			print(j, np.sum(ii))
 		else:
 			if len(axis)==1:
 				d=abs(p2[:,axis[0]]-rg[j])
-				ii=np.argsort(d)[:options.nptcl]
-				print(onm, rg[j], d[ii[-1]])
 			else:
 				d=np.linalg.norm(p2[:,axis]-rg[j], axis=1)
-				ii=np.argsort(d)[:options.nptcl]
-				print(onm, rg[j], d[ii[-1]])
+				
+			ii=np.argsort(d)[:options.nptcl]
+			print(j, rg[j], d[ii[-1]])
 		
 		idx=pts[ii,0].astype(int)
+		lo=[lin[i].copy() for i in idx]
+		for l in lo:
+			l["class"]=j
 		
-		if os.path.isfile(onm):
-			os.remove(onm)
-		lout=LSXFile(onm, False)
-		for i in idx:
-			if lstinp:
-				l=lin.read(i)
-				lout.write(-1, l[0], l[1],l[2])
-			else:
-				lout.write(-1, i, fname)
-			
-		lout=None
-		onames.append(onm)
+		lout.extend(lo)
+	
+	save_lst_params(lout, options.ptclsout)
 	
 	e=EMData(fname, 0, True)
 	if options.pad<1: options.pad=good_size(e["nx"]*1.25)
 	if options.setsf:
 		options.setsf=" --setsf "+options.setsf
 	
-	for o in onames:
-		t=o[:-3]+"hdf"
-		print(o,t)
-		cmd="e2spa_make3d.py --input {} --output {} --pad {} --keep 1 --threads {} {} --sym {}".format(o,t, options.pad, options.threads, options.setsf, options.sym)
+	name3d=options.ptclsout[:-4]+".hdf"
+	if os.path.isfile(name3d):
+		os.remove(name3d)
+		
+	for j in range(options.ncls):
+		t="tmp_classify.hdf"
+		cmd="e2spa_make3d.py --input {} --output {} --pad {} --keep 1 --threads {} {} --sym {} --clsid {}".format(options.ptclsout, t, options.pad, options.threads, options.setsf, options.sym, j)
 		launch_childprocess(cmd)
+		e=EMData(t)
+		e.write_image(name3d,-1)
 	
+	os.remove(t)
 	E2end(logid)
 	
 def run(cmd):

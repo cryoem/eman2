@@ -505,8 +505,8 @@ def main():
 		oddfile=oddfile,path=path,itr=options.iter,normproc=massnorm,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=old_div(1.0,options.restarget),postproc=m3dpostproc)
 		run(cmd)
 		
-		run("e2proc3d.py {path}mask.hdf {evenfile} --process filter.lowpass.randomphase:cutoff_freq={noisecutoff} --multfile {evenfile} {normproc} {postproc}".format(evenfile=evenfile,path=path, normproc=massnorm,postproc=m3dpostproc,noisecutoff=noisecutoff))
-		run("e2proc3d.py {path}mask.hdf {oddfile} --process filter.lowpass.randomphase:cutoff_abs={noisecutoff} --multfile {oddfile} {normproc} {postproc}".format(oddfile=oddfile,path=path, normproc=massnorm,postproc=m3dpostproc,noisecutoff=noisecutoff))
+		run("e2proc3d.py {evenfile} {evenfile} --multfile {path}mask.hdf {normproc} {postproc}".format(evenfile=evenfile,path=path, normproc=massnorm,postproc=m3dpostproc,noisecutoff=noisecutoff))
+		run("e2proc3d.py {oddfile} {oddfile} --multfile {path}mask.hdf {normproc} {postproc}".format(oddfile=oddfile,path=path, normproc=massnorm,postproc=m3dpostproc,noisecutoff=noisecutoff))
 
 		### Refilter/mask
 		combined.write_compressed(combfile,0,options.compressbits,erase=True)	# write the original average back to disk

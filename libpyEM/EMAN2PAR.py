@@ -805,7 +805,7 @@ class EMLocalTaskHandler(object):
 				try:
 					f=open(fname,'r')
 					l=int(float(f.readline()))
-					ret.append(l)
+					ret.append(min(99,l))
 				except:
 					ret.append(0)
 		return ret

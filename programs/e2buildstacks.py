@@ -62,6 +62,7 @@ def main():
 	parser.add_argument("--tilts",action="store_true",default=False,help="Write results to 'tiltseries' directory in current project.", guitype='boolbox',row=4, col=0, rowspan=1, colspan=1,mode="tomo[True]")
 	parser.add_argument("--guess",action="store_true",default=False,help="Guess how to split micrographs into tilt series and the order of images in each tilt series from file names. Tilt angles must be incuded in file names. May and may not work depending on the file name format...", guitype='boolbox',row=4, col=1, rowspan=1, colspan=1,mode="tomo[False]")	
 	parser.add_argument("--guesscol", type=int, help="column to separate tilt series if the guess mode fails",default=-1)
+	parser.add_argument("--mdoc", type=str, help="Read info from mdoc files",default=None)
 
 	#parser.add_argument("--rawtlt",type=str,help="Name of tilt angles text file.\nNote, angles must correspond to stack file names in alphabetical/numerical order.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=True)",row=3, col=0, rowspan=1, colspan=1, mode="tomo")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -71,28 +72,32 @@ def main():
 	(options, args) = parser.parse_args()
 
 	if options.output==None:
-		if not options.guess:
+		if options.guess or options.mdoc:
+			pass
+		else:
 			print("--output is required (output file)")
 			sys.exit(1)
 
-	if options.tilts:
-
+	if len(args)==1 and os.path.isdir(args[0]):
+		print("input is a directory. reading all mrc/mrcs/hdf files in it...")
+		path=args[0]
+		args=[]
+		ext=["mrc", "mrcs", "hdf"]
+		for f in os.listdir(path):
+			for e in ext:
+				if f.endswith(e):
+					args.append(os.path.join(path, f))
+		print("found {} files".format(len(args)))
 		
+	if options.tilts:
 			
-		if options.guess:
-			
+		try:
+			os.mkdir("tiltseries")
+		except:
+			pass
+		
+		if options.guess:	
 
-			if len(args)==1 and os.path.isdir(args[0]):
-				print("input is a directory. reading all mrc/mrcs/hdf files in it...")
-				path=args[0]
-				args=[]
-				ext=["mrc", "mrcs", "hdf"]
-				for f in os.listdir(path):
-					for e in ext:
-						if f.endswith(e):
-							args.append(os.path.join(path, f))
-				print("found {} files".format(len(args)))
-			
 			lst=[]
 			lstpos=[]
 			for ag in args:
@@ -155,13 +160,6 @@ def main():
 				tlts=[np.arange(len(lst), dtype=int)]
 				it=0
 			
-			
-			try:
-				os.mkdir("tiltseries")
-			except:
-				pass
-			
-			
 			for tid in tlts:
 				l=lst[tid]
 				#print(l[:,ic])
@@ -210,13 +208,48 @@ def main():
 					
 				lout.close()
 
-			
-
+		elif options.mdoc:
+			print("Parsing mdoc files")
+			if os.path.isdir(options.mdoc):
+				print("input is a directory. reading all mdoc files in it...")
+				mdoc=[os.path.join(options.mdoc, f) for f in os.listdir(options.mdoc) if f.endswith(".mdoc")]
+			else:
+				mdoc=[options.mdoc]
+				
+			for md in mdoc:
+				print(md)
+				f=open(md, 'r')
+				lines=f.readlines()
+				fnames=[l for l in lines if l.startswith("SubFramePath")]
+				lst=[]
+				for l in fnames:
+					p0=max(l.rfind('/'), l.rfind('\\'))+1
+					p1=l.rfind('.')
+					l=l[p0:p1]
+					match=[a for a in args if l in a]
+					if len(match)==0:
+						print("error: image file for {} does not exist".format(l))
+						break
+					if len(match)>1:
+						print("error: multiple images for {} exist".format(l))
+						for a in match:
+							print('\t',a)
+						break
+					
+					
+					lst.append({"src":match[0],"idx":0})
+				
+				else:
+					tname=md[md.rfind('/')+1:]
+					tname=tname[:tname.find('.')]+".lst"
+					tname=os.path.join("tiltseries", tname)
+					print(f"{len(lst)} images -> {tname}")
+					save_lst_params(lst, tname)
+				
+				f.close()
 			
 		else:
 			stdir = os.path.join(".","tiltseries")
-			if not os.access(stdir, os.R_OK):
-				os.mkdir(stdir)
 			options.output = "{}/{}".format(stdir,options.output)
 
 			if options.output.split(".")[-1] not in ["hdf","mrc","mrcs"]:

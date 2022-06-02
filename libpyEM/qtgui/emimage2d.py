@@ -40,7 +40,6 @@ from OpenGL import GL,GLU,GLUT
 from OpenGL.GL import *
 from .valslider import ValSlider,ValBox,StringBox,EMSpinWidget
 from math import *
-import EMAN2db
 from EMAN2 import *
 import EMAN2
 import sys
@@ -628,48 +627,51 @@ class EMImage2DWidget(EMGLWidget):
 				self.force_display_update()
 				self.updateGL()
 
+	# This function used BDB, and is deactivated. Maybe it could be fixed, but not sure where it is actually used/useful
 	def __load_display_settings_from_db(self,inspector_update=True,display_update=True):
-		if self.file_name == "": return # there is no file name, we have no means to stores information
-		try:
-			global HOMEDB
-			HOMEDB=EMAN2db.EMAN2DB.open_db()
-			HOMEDB.open_dict("image_2d_display_settings")
-		except:
-			# something wrong with the HOMEDB?
-			return
+		return
 
-		db = HOMEDB.image_2d_display_settings
+		#if self.file_name == "": return # there is no file name, we have no means to stores information
+		#try:
+			#global HOMEDB
+			#HOMEDB=EMAN2db.EMAN2DB.open_db()
+			#HOMEDB.open_dict("image_2d_display_settings")
+		#except:
+			## something wrong with the HOMEDB?
+			#return
 
-		data = db[self.file_name]
-		if data == None: return
-		try:
-			self.minden = data["min"]
-			self.maxden = data["max"]
-			self.minden = data["min"]
-			self.fminden = data["fourier_min"]
-			self.fmaxden = data["fourier_max"]
-			self.curmin = data["curmin"]
-			self.curmax = data["curmax"]
-			self.fcurmin = data["fcurmin"]
-			self.fcurmax = data["fcurmax"]
-			self.fgamma = data["fourier_gamma"]
-			self.gamma = data["gamma"]
-			self.scale = data["scale"]
-			self.origin = data["origin"]
-		except:
-			# perhaps in inconsistency, something wasn't set. This should not happen in general
-			pass
+		#db = HOMEDB.image_2d_display_settings
 
-		try:
-			self.parent_geometry = data["parent_geometry"]
-			if self.qt_parent != None:
-				try:
-					self.qt_parent.restoreGeometry(self.parent_geometry)
-				except: pass
-		except:pass
+		#data = db[self.file_name]
+		#if data == None: return
+		#try:
+			#self.minden = data["min"]
+			#self.maxden = data["max"]
+			#self.minden = data["min"]
+			#self.fminden = data["fourier_min"]
+			#self.fmaxden = data["fourier_max"]
+			#self.curmin = data["curmin"]
+			#self.curmax = data["curmax"]
+			#self.fcurmin = data["fcurmin"]
+			#self.fcurmax = data["fcurmax"]
+			#self.fgamma = data["fourier_gamma"]
+			#self.gamma = data["gamma"]
+			#self.scale = data["scale"]
+			#self.origin = data["origin"]
+		#except:
+			## perhaps in inconsistency, something wasn't set. This should not happen in general
+			#pass
 
-		if inspector_update: self.inspector_update()
-		if display_update: self.force_display_update()
+		#try:
+			#self.parent_geometry = data["parent_geometry"]
+			#if self.qt_parent != None:
+				#try:
+					#self.qt_parent.restoreGeometry(self.parent_geometry)
+				#except: pass
+		#except:pass
+
+		#if inspector_update: self.inspector_update()
+		#if display_update: self.force_display_update()
 
 	def __write_display_settings_to_db(self):
 		'''

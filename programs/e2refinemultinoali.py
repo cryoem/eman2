@@ -232,22 +232,22 @@ def main():
 				
 				for m in models:
 					projfile.append("{path}/projections_{it:02d}_{k}.hdf".format(path=options.newpath, k=m, it=it))
-					run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel {para}".format(		model=inputmodel[m],proj=projfile[-1],orient=origen,sym=db["sym"],para=options.parallel))
+					run("e2project3d.py {model}  --outfile {proj} --orientgen {orient} --sym {sym} --parallel {para}".format(		model=inputmodel[m],proj=projfile[-1],orient=origen,sym=db["sym"],para=options.parallel))
 				#### make another set of projections for masked model
 				if options.mask:
 					projmskfile=[]
 					for m in models:
 						projmskfile.append("{path}/projections_msk_{it:02d}_{k}.hdf".format(path=options.newpath, k=m, it=it))
-						run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel {para}".format(		model=mskmodel[m],proj=projmskfile[-1],orient=origen,sym=db["sym"],para=options.parallel))
+						run("e2project3d.py {model}  --outfile {proj} --orientgen {orient} --sym {sym} --parallel {para}".format(		model=mskmodel[m],proj=projmskfile[-1],orient=origen,sym=db["sym"],para=options.parallel))
 						
 			else:
 				projfile=["{path}/projections_{it:02d}.hdf".format(path=options.newpath, it=it)]
-				run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel {para}".format(		model=inputmodel[0],proj=projfile[0],orient=origen,sym=db["sym"],para=options.parallel))
+				run("e2project3d.py {model}  --outfile {proj} --orientgen {orient} --sym {sym} --parallel {para}".format(		model=inputmodel[0],proj=projfile[0],orient=origen,sym=db["sym"],para=options.parallel))
 				
 				#### make another set of projections for masked model
 				if options.mask:
 					projmskfile=["{path}/projections_msk_{it:02d}.hdf".format(path=options.newpath, it=it)]
-					run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel {para}".format(		model=mskmodel[0],proj=projmskfile[0],orient=origen,sym=db["sym"],para=options.parallel))
+					run("e2project3d.py {model}  --outfile {proj} --orientgen {orient} --sym {sym} --parallel {para}".format(		model=mskmodel[0],proj=projmskfile[0],orient=origen,sym=db["sym"],para=options.parallel))
 
 		output_3d.append({})
 		output_cls.append({})
@@ -261,7 +261,7 @@ def main():
 			#### make projections for even/odd
 				projfile=["{path}/projections_{it:02d}_{k}_{eo}.hdf".format(path=options.newpath, k=m, it=it,eo=eo) for m in models]
 				for m in models:
-					run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel {para}".format(		model=inputmodel[m],proj=projfile[m],orient=origen,sym=db["sym"],para=options.parallel))
+					run("e2project3d.py {model}  --outfile {proj} --orientgen {orient} --sym {sym} --parallel {para}".format(		model=inputmodel[m],proj=projfile[m],orient=origen,sym=db["sym"],para=options.parallel))
 				if options.mask:
 					mskmodel=[]
 					projmskfile=[]
@@ -269,7 +269,7 @@ def main():
 						mskmodel.append(inputmodel[m][:-4]+"_msk.hdf")
 						projmskfile.append("{path}/projections_msk_{it:02d}_{k}_{eo}.hdf".format(path=options.newpath, k=m, it=it,eo=eo))
 						run("e2proc3d.py {model} {mskmodel} --multfile {msk}".format(model=inputmodel[m], mskmodel=mskmodel[-1], msk=mask3d))
-						run("e2project3d.py {model}  --outfile {proj} -f --orientgen {orient} --sym {sym} --parallel {para}".format(		model=mskmodel[m],proj=projmskfile[-1],orient=origen,sym=db["sym"],para=options.parallel))
+						run("e2project3d.py {model}  --outfile {proj} --orientgen {orient} --sym {sym} --parallel {para}".format(		model=mskmodel[m],proj=projmskfile[-1],orient=origen,sym=db["sym"],para=options.parallel))
 
 			oldmapfile=str(db["last_{}".format(eo)])
 			ptclfile=str(db["input"][eoid])
@@ -451,7 +451,7 @@ def main():
 				tmpprojfile=projfile
 			for s in models:
 				### class average
-				run("e2classaverage.py --input {inputfile} --classmx {clsmx} --decayedge --storebad --output {clsout} --ref {proj} --iter {classiter} -f --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} --align {classalign} --aligncmp {classaligncmp} {classralign} {prefilt} --parallel {para}".format(
+				run("e2classaverage.py --input {inputfile} --classmx {clsmx} --decayedge --storebad --output {clsout} --ref {proj} --iter {classiter} --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} --align {classalign} --aligncmp {classaligncmp} {classralign} {prefilt} --parallel {para}".format(
 					inputfile=ptclfile, clsmx=newclsmx[s], clsout=classout[s], proj=tmpprojfile[s], classiter=db["classiter"], normproc=db["classnormproc"], averager=db["classaverager"], classrefsf=db["classrefsf"],
 					classautomask=db["classautomask"],classkeep=db["classkeep"], classkeepsig=db["classkeepsig"], classcmp=db["classcmp"], classalign=db["classalign"], classaligncmp=db["classaligncmp"],
 					classralign=db["classralign"], prefilt=db["prefilt"], para=options.parallel))

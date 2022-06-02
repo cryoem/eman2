@@ -850,6 +850,8 @@ const char *EMUtil::get_datatype_string(EMDataType type)
 		return "USHORT_COMPLEX";
 	case EM_FLOAT_COMPLEX:
 		return "FLOAT_COMPLEX";
+	case EM_COMPRESSED:
+		return "COMPRESSED";
 	case EM_UNKNOWN:
 		return "UNKNOWN";
 	}

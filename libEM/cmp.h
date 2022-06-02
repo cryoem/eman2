@@ -701,21 +701,51 @@ to be missing values. If not provided, these values will be computed automatical
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("snrweight", EMObject::INT, "If set, the SNR of 'this' will be used to weight the result. If 'this' lacks CTF info, it will check 'with'. (default=0)");
-			d.put("ampweight", EMObject::INT, "If set, the amplitude of 'this' will be used to weight the result (default=0)");
-			d.put("sweight", EMObject::INT, "If set, weight the (1-D) average by the number of pixels in each ring (default=1)");
-			d.put("nweight", EMObject::INT, "Downweight similarity based on number of particles in reference (default=0)");
 			d.put("zeromask", EMObject::INT, "Treat regions in either image that are zero as a mask (default=0)");
-			d.put("minres", EMObject::FLOAT, "Lowest resolution to use in comparison (soft cutoff). Requires accurate A/pix in image. <0 disables. Default=500");
-			d.put("maxres", EMObject::FLOAT, "Highest resolution to use in comparison (soft cutoff). Requires accurate A/pix in image. <0 disables.  Default=10");
-			d.put("pmin", EMObject::FLOAT, "The minimum resolution in pixels.");
-			d.put("pmax", EMObject::FLOAT, "The maximum resolution in pixels.");
+			d.put("minres", EMObject::FLOAT, "Lowest resolution to use in comparison (soft cutoff). Requires accurate A/pix in image. <0 disables. Default=200");
+			d.put("maxres", EMObject::FLOAT, "Highest resolution to use in comparison (soft cutoff). Requires accurate A/pix in image. <0 disables.  Default=8");
 			return d;
 		}
 		
 		static const string NAME;
 	};
 	
+	/** FRCFreqCmp returns a quality factor based on FRC between images.
+     * the returned value is the FRC weighted frequency average over the FSC * -1 (so smaller is better as required by convention)
+	 * 
+     */
+	class FRCFreqCmp:public Cmp
+	{
+	  public:
+		float cmp(EMData * image, EMData * with) const;
+
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		string get_desc() const
+		{
+			return "Computes the FRC/FSC weighted frequency, optionally limited to a range. Result *-1 so smaller is better.j";
+		}
+
+		static Cmp *NEW()
+		{
+			return new FRCFreqCmp();
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("transition", EMObject::INT, "Instead of weighted FRC models FRC/fSC as a 1->0 transition and returns the transition frequency targeting 0.2. Returned result *-1");
+			d.put("zeromask", EMObject::INT, "Treat regions in either image that are zero as a mask (default=0)");
+			d.put("minres", EMObject::FLOAT, "Lowest resolution to use in comparison. Requires accurate A/pix in image. <0 disables. Default=200");
+			d.put("maxres", EMObject::FLOAT, "Highest resolution to use in comparison. Requires accurate A/pix in image. <0 disables.  Default=8");
+			return d;
+		}
+		
+		static const string NAME;
+	};
 	
 	
 	/** 

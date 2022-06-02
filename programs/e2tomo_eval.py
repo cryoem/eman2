@@ -327,6 +327,7 @@ class TomoEvalGUI(QtWidgets.QWidget):
 	def plot_loss(self):
 		idx, info=self.get_id_info()
 		if idx==None: return
+		if self.wg_plot2d.closed: self.wg_plot2d=EMPlot2DWidget()
 		self.wg_plot2d.set_data(info["loss"], info["e2basename"], replace=True)
 		self.wg_plot2d.show()
 	
@@ -334,6 +335,7 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		idx, info=self.get_id_info()
 		if idx==None: return
 		if len(info["tlt_params"])==0: return 
+		if self.wg_plot2d.closed: self.wg_plot2d=EMPlot2DWidget()
 		tpm=info["tlt_params"].T
 		tpm=np.vstack([np.arange(len(tpm[0])), tpm])
 		self.wg_plot2d.set_data(tpm, info["e2basename"], replace=True, linetype=0,symtype=0)
@@ -344,6 +346,10 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		idx, info=self.get_id_info()
 		if idx==None: return
 		print("Showing 2D for image {} : {}".format(int(idx), info["filename"]))
+		
+		if self.wg_2dimage.closed:
+			self.wg_2dimage=EMImage2DWidget()
+			self.wg_2dimage.setWindowTitle("Tomo2D")
 		
 		self.cur_data=EMData(info["filename"])
 		iz=self.cur_data["nz"]//2
@@ -359,7 +365,11 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		idx, info=self.get_id_info()
 		if idx==None: return
 		print("Showing tilt series for image {} : {}".format(int(idx), info["filename"]))
-		
+		if self.wg_tltimage.closed:
+			self.wg_tltimage=EMImage2DWidget()
+			self.wg_tltimage.setWindowTitle("Tiltseries")
+			self.wg_tltimage.set_scale(.2)
+			
 		if EMUtil.get_image_count(info["tltfile"])==1:
 			self.cur_tlt=EMData(info["tltfile"])
 			self.wg_tltimage.list_idx=int(old_div(self.cur_tlt["nz"],2))
@@ -377,6 +387,11 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		if idx==None: return
 		print("Showing aligned tilt series for image {} : {}".format(int(idx), info["filename"]))
 		
+		if self.wg_tltimage.closed:
+			self.wg_tltimage=EMImage2DWidget()
+			self.wg_tltimage.setWindowTitle("Tiltseries")
+			self.wg_tltimage.set_scale(.2)
+			
 		if EMUtil.get_image_count(info["tltfile"])==1:
 			tmp=EMData(info["tltfile"],0)
 			nx=tmp["nx"]
@@ -407,7 +422,8 @@ class TomoEvalGUI(QtWidgets.QWidget):
 			data=np.vstack([np.arange(ln), data]) 
 			if len(info["phase"])>0:
 				data=np.vstack([data, info["phase"]])
-			
+				
+			if self.wg_plot2d.closed: self.wg_plot2d=EMPlot2DWidget()
 			self.wg_plot2d.set_data(data, info["e2basename"], replace=True, linetype=0,symtype=0)
 			self.wg_plot2d.setAxes(info["e2basename"], 1, 2)
 			self.wg_plot2d.show()

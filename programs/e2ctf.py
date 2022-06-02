@@ -37,7 +37,6 @@ from past.utils import old_div
 from builtins import range
 from builtins import object
 from EMAN2 import *
-from EMAN2db import db_open_dict, db_close_dict, db_check_dict, db_list_dicts
 from math import *
 import os
 import sys
@@ -980,7 +979,7 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,phasesmall=None,wiener=N
 	#if wiener and wiener[:4]=="bdb:" : db_close_dict(wiener)
 	#if phaseflip and phaseflip[:4]=="bdb:" : db_close_dict(phaseflip)
 
-	db_close_dict(stackfile)	# this is safe even for non bdb: files
+	#db_close_dict(stackfile)	# this is safe even for non bdb: files
 	if nbad>0 : print(nbad," bad particles (extending outside image) identified in ",stackfile)
 
 	return

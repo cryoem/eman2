@@ -50,8 +50,7 @@ MrcIO::MrcIO(const string & fname, IOMode rw)
 :	ImageIO(fname, rw), mode_size(0),
 		isFEI(false), is_ri(0), is_new_file(false),
 		is_transpose(false), is_stack(false), stack_size(1),
-		is_8_bit_packed(false), use_given_dimensions(true),
-		rendermin(0.0), rendermax(0.0), renderbits(16)
+		is_8_bit_packed(false), use_given_dimensions(true)
 {
 	memset(&mrch, 0, sizeof(MrcHeader));
 	is_big_endian = ByteOrder::is_host_big_endian();
@@ -1108,7 +1107,7 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool)
 }
 
 int MrcIO::write_data(float *data, int image_index, const Region* area,
-					  EMUtil::EMDataType, bool use_host_endian)
+					  EMUtil::EMDataType dt, bool use_host_endian)
 {
 	ENTERFUNC;
 
@@ -1180,6 +1179,12 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 //	EMUtil::get_region_dims(area, nx, &xlen, mrch.ny, &ylen, mrch.nz, &zlen);
 //	int size = xlen * ylen * zlen;
 	void * ptr_data = data;
+
+	if(dt == EMUtil::EM_COMPRESSED) {
+		if (renderbits <= 0)       mrch.mode = MRC_FLOAT;
+		else if (renderbits <= 8)  mrch.mode = MRC_UCHAR;
+		else if (renderbits <= 16) mrch.mode = MRC_USHORT;
+	}
 
 	int truebits=0;
 	switch(mrch.mode) {

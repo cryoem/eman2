@@ -284,6 +284,9 @@ class EMFileType(object) :
 
 		try :
 			target = brws.viewplot2d[-1]
+			if target.closed : 
+				brws.viewplot2d.pop()
+				raise Exception
 			target.set_data(data, display_path(self.path))
 		except :
 			target = EMPlot2DWidget()
@@ -412,6 +415,10 @@ class EMFileType(object) :
 		if not new:
 			try :
 				target = brws.view2d[-1]
+				if target.closed : 
+					brws.view2d.pop()
+					raise Exception
+
 				target.set_data(avg)
 			except :
 				new=True
@@ -444,6 +451,10 @@ class EMFileType(object) :
 
 		try :
 			target = brws.view2d[-1]
+			if target.closed : 
+				brws.view2d.pop()
+				raise Exception
+
 			target.set_data(avgs)
 			#if self.getSetsDB() : target.set_single_active_set(self.getSetsDB())
 		except :
@@ -471,6 +482,9 @@ class EMFileType(object) :
 
 		try :
 			target = brws.view2ds[-1]
+			if target.closed : 
+				brws.view2ds.pop()
+				raise Exception
 			target.set_data(self.path, self.path)
 			#if self.getSetsDB() : target.set_single_active_set(self.getSetsDB())
 		except :
@@ -531,6 +545,9 @@ class EMFileType(object) :
 
 		try :
 			target = brws.view2ds[-1]
+			if target.closed : 
+				brws.view2ds.pop()
+				raise Exception
 			target.set_data(data,self.path)
 			#if self.getSetsDB() : target.set_single_active_set(self.getSetsDB())
 		except :
@@ -654,7 +671,11 @@ class EMFileType(object) :
 
 		if self.nimg==1 or stkout:
 			if oldwin : 
-				try: target=brws.view2d[-1]
+				try: 
+					target=brws.view2d[-1]
+					if target.closed : 
+						brws.view2d.pop()
+						raise Exception
 				except:
 					target = EMImage2DWidget()
 					brws.view2d.append(target)
@@ -705,6 +726,9 @@ class EMFileType(object) :
 
 			try :
 				target = brws.view2d[-1]
+				if target.closed : 
+					brws.view2d.pop()
+					raise Exception
 				target.set_data(data, xyz=xyz)
 			except :
 				new=True
@@ -728,6 +752,9 @@ class EMFileType(object) :
 
 		try :
 			target = brws.view2d[-1]
+			if target.closed : 
+				brws.view2d.pop()
+				raise Exception
 			target.set_data(data)
 		except :
 			target = EMImage2DWidget(data)
@@ -748,6 +775,9 @@ class EMFileType(object) :
 
 		try :
 			target = brws.view2d[-1]
+			if target.closed : 
+				brws.view2d.pop()
+				raise Exception
 			target.set_data(data)
 		except :
 			target = EMImage2DWidget(data)
@@ -1045,6 +1075,9 @@ class EMPlotFileType(EMFileType) :
 
 		try :
 			target = brws.viewplot2d[-1]
+			if target.closed : 
+				brws.viewplot2d.pop()
+				raise Exception
 			target.set_data_from_file(self.path)
 			#target.set_data(data, remove_directories_from_name(self.path, 1))
 		except :
@@ -1132,6 +1165,9 @@ class EMPlotFileType(EMFileType) :
 
 		try :
 			target = brws.viewhist[-1]
+			if target.closed : 
+				brws.viewhist.pop()
+				raise Exception
 			target.set_data(data, remove_directories_from_name(self.path, 1))
 		except :
 			target = EMHistogramWidget()
@@ -1150,6 +1186,9 @@ class EMPlotFileType(EMFileType) :
 
 		try :
 			target = brws.viewplot3d[-1]
+			if target.closed : 
+				brws.viewplot3d.pop()
+				raise Exception
 			target.set_data_from_file(self.path)
 			#target.set_data(data, remove_directories_from_name(self.path, 1))
 		except :
@@ -1301,6 +1340,9 @@ class EMJSONFileType(EMFileType) :
 		else:
 			try :
 				target = brws.viewplot2d[-1]
+				if target.closed : 
+					brws.viewplot2d.pop()
+					raise Exception
 				#target.set_data(data, remove_directories_from_name(self.path, 1))
 			except :
 				target = EMPlot2DWidget()
@@ -1803,6 +1845,9 @@ class EMStackFileType(EMFileType) :
 		else:
 			try :
 				target = brws.viewplot2d[-1]
+				if target.closed : 
+					brws.viewplot2d.pop()
+					raise Exception
 				#target.set_data(data, remove_directories_from_name(self.path, 1))
 			except :
 				target = EMPlot2DWidget()
@@ -1980,7 +2025,7 @@ EMFileType.extbyft = {
 # We don't need to test for things like Images because they are fully tested outside this mechanism
 EMFileType.alltocheck = (EMPlotFileType, EMPDBFileType, EMTextFileType)
 
-
+BDBWARN=False
 class EMDirEntry(object) :
 	"""Represents a directory entry in the filesystem"""
 
@@ -2154,19 +2199,22 @@ class EMDirEntry(object) :
 				self.__children = filelist
 
 			if "EMAN2DB" in self.__children :
+				global BDBWARN
 				self.__children.remove("EMAN2DB")
+				if not BDBWARN : print("WARNING: BDB (EMAN2DB/) no longer supported. EMAN2.91 or earlier required to view.")
+				BDBWARN=True
 
-				if self.dirregex != None :
-					if isinstance(self.dirregex, str) :
-						t = ["bdb:"+i for i in db_list_dicts("bdb:"+self.filepath) if matches_pats(i, self.dirregex)]
-					else :
-						t = ["bdb:"+i for i in db_list_dicts("bdb:"+self.filepath) if self.dirregex.match(i) != None]
+				#if self.dirregex != None :
+					#if isinstance(self.dirregex, str) :
+						#t = ["bdb:"+i for i in db_list_dicts("bdb:"+self.filepath) if matches_pats(i, self.dirregex)]
+					#else :
+						#t = ["bdb:"+i for i in db_list_dicts("bdb:"+self.filepath) if self.dirregex.match(i) != None]
 
-#					for i in db_list_dicts("bdb:"+self.filepath) : print i, self.dirregex.search (i)
-				else :
-					t = ["bdb:"+i for i in db_list_dicts("bdb:"+self.filepath)]
+##					for i in db_list_dicts("bdb:"+self.filepath) : print i, self.dirregex.search (i)
+				#else :
+					#t = ["bdb:"+i for i in db_list_dicts("bdb:"+self.filepath)]
 
-				self.__children.extend(t)
+				#self.__children.extend(t)
 
 			self.__children.sort( )
 
@@ -4275,7 +4323,7 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 
 # This is just for testing, of course
 def main():
-	em_app = EMApp()
+	#em_app = EMApp()
 	window = EMBrowserWidget(withmodal = True, multiselect = True)
 
 	window.show()

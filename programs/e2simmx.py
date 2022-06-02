@@ -886,6 +886,7 @@ def check(options,verbose):
 			print("Error: shrink must be greater than 1 if set")
 			error = True
 
+		(xsize, ysize ) = gimme_image_dimensions2D(options.reffile)
 		newsize=int(old_div(ysize,options.shrink))
 		if newsize!=good_size(newsize) :
 			options.shrink=old_div(ysize,float(good_size(newsize)+.1))

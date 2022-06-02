@@ -37,7 +37,6 @@
 
 from past.utils import old_div
 from builtins import range
-from EMAN2db import db_check_dict
 import sys, math, weakref
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
@@ -481,7 +480,7 @@ class PMFileNameWidget(PMBaseWidget):
 		numimages = 0
 		nx,ny,nz=0,0,0
 		for f in files:
-			if not os.access(f, os.F_OK) and not db_check_dict(f):
+			if not os.access(f, os.F_OK) :
 				self._onBadFile(f)
 				# Display the rubbish file to the user
 				self.filenamebox.setText(filename)

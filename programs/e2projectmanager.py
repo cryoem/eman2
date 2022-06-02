@@ -1750,6 +1750,7 @@ class PMGUIWidget(QtWidgets.QScrollArea):
 		self.db = js_open_dict("{}/info/pm/{}.json".format(str(self.cwd),self.program))
 		self.pm = weakref.ref(pm)
 		self.mode = mode
+		if options is None: options={}
 
 		# Loop through options (a list of dicts) and generate the GUI widget
 		gridbox = QtWidgets.QGridLayout()

@@ -48,7 +48,8 @@ import socket
 import subprocess
 from EMAN2_cppwrap import *
 from EMAN2_meta import *
-import EMAN2db, EMAN2jsondb
+#import EMAN2db
+import EMAN2jsondb
 import argparse, copy
 import glob
 import random
@@ -56,9 +57,41 @@ from struct import pack,unpack
 import json
 from collections import OrderedDict
 import traceback
+from pathlib import Path
 
 import threading
 #from Sparx import *
+
+### If we ever need to add 'cleanup' exit code, this is how to do it. Drawn from the old BDB code.
+## if the program exits nicely, close all of the databases
+#atexit.register(DB_cleanup)
+
+## if we are killed 'nicely', also clean up (assuming someone else doesn't grab this signal)
+#signal.signal(2, DB_cleanup)
+#signal.signal(15, DB_cleanup)
+
+
+def e2gethome():
+	"""platform independent path with '/'"""
+	if (sys.platform != 'win32'):
+		url = os.getenv("HOME")
+	else:
+		if (os.getenv("HOMEPATH") == '\\'):
+			# Contributed by Alexander Heyne <AHEYNE@fmp-berlin.de>
+			url = os.getenv("USERPROFILE")
+			url = url.lstrip('CDEFG:')  # could also use substr
+			url = url.replace("\\", "/")
+		else:
+			url = os.getenv("HOMEPATH")
+			url = url.replace("\\", "/")
+	return url
+
+
+def e2getcwd():
+	"""platform independent path with '/'"""
+	url = os.getcwd()
+	url = url.replace("\\", "/")
+	return url
 
 HOMEDB=None
 
@@ -83,7 +116,7 @@ except: pass
 # behavior appropriately
 #try:
 #import EMAN2db
-from EMAN2db import EMAN2DB,db_open_dict,db_close_dict,db_remove_dict,db_list_dicts,db_check_dict,db_parse_path,db_convert_path,db_get_image_info,e2gethome, e2getcwd
+#from EMAN2db import EMAN2DB,db_open_dict,db_close_dict,db_remove_dict,db_list_dicts,db_check_dict,db_parse_path,db_convert_path,db_get_image_info,e2gethome, e2getcwd
 from EMAN2jsondb import JSDict,js_open_dict,js_close_dict,js_remove_dict,js_list_dicts,js_check_dict,js_one_key
 #except:
 #	HOMEDB=None
@@ -566,18 +599,8 @@ def numbered_bdb(bdb_url):
 
 	will return the next available name bdb:refine_01#class_indices_?? (minus the bdb)
 	'''
-
-	useful_info = db_parse_path(bdb_url)
-
-	d = get_dtag()
-	file_name_begin = useful_info[0] + d + "EMAN2DB" + d + useful_info[1] + "_"
-
-	for i in range(0,10):
-		for j in range(0,10):
-			name = file_name_begin+str(i)+str(j)+".bdb"
-			if os.path.exists(name): continue
-			else:
-				return "bdb:"+useful_info[0]+"#"+useful_info[1] + "_"+str(i)+str(j)
+	print("ERROR: numbered_bdb no longer functions. Please report to developers.")
+	sys.exit(1)
 
 def compress_hdf(fsp,bits,nooutliers=False,level=1):
 	"""This will take an existing HDF file and rewrite it with the specified compression
@@ -586,7 +609,7 @@ def compress_hdf(fsp,bits,nooutliers=False,level=1):
 	if fsp[-4:].lower()!=".hdf" : return
 	nm=get_temp_name()
 	os.rename(fsp,nm)
-	n=EMUtil.get_image_count_c(nm)
+	n=EMUtil.get_image_count(nm)
 	for i in range(n): EMData(nm,i).write_compressed(fsp,i,bits,nooutliers=nooutliers,level=level)
 	os.unlink(nm)
 
@@ -597,10 +620,6 @@ def remove_image(fsp):
 	"""This will remove the image file pointed to by fsp. The reason for this function
 	to exist is formats like IMAGIC which store data in two files. This insures that
 	both files are removed."""
-	if fsp[:4].lower()=="bdb:" :
-		try: db_remove_dict(fsp)
-		except: pass
-		return
 
 	try:
 		os.unlink(fsp)
@@ -819,17 +838,15 @@ def unparsemodopt(tupl):
 	except:
 		return ""
 
-def parsemodopt(optstr):
+def parsemodopt(optstr=None):
 	"""This is used so the user can provide the name of a comparator, processor, etc. with options
 	in a convenient form. It will parse "dot:normalize=1:negative=0" and return
 	("dot",{"normalize":1,"negative":0})"""
 
-	if not optstr or len(optstr)==0 : return (None,{})
+	if optstr is None or len(optstr)==0 : return (None,{})
 	if optstr.lower()=="none" : return None					# special case doesn't return a tuple
 
-	opstr=optstr.replace("bdb:","bdb%").replace("BDB:","bdb%")		# so we can use : like we we want to
-
-	op2=opstr.split(":")
+	op2=optstr.split(":")
 	if len(op2)==1 or op2[1]=="" : return (op2[0],{})		# name with no options
 
 	r2={}
@@ -1867,15 +1884,12 @@ def check_files_are_em_images(filenames):
 
 	return True,"images are fine"
 
-def abs_path(name):
-	'''
-	wraps os.path.absname but detects bdb naming
-	'''
-	if len(name) > 3 and name[:4] == "bdb:":
-		[dir,db_name,something] = db_parse_path(name)
-		return "bdb:"+dir+"#"+db_name
-	else:
-		return os.path.abspath(name)
+abs_path=os.path.abspath
+#def abs_path(name):
+	#'''
+	#wraps os.path.absname but detects bdb naming
+	#'''
+	#return os.path.abspath(name)
 
 def base_name( file_name,extension=False,bdb_keep_dir=False,nodir=False ):
 	'''
@@ -1886,26 +1900,19 @@ def base_name( file_name,extension=False,bdb_keep_dir=False,nodir=False ):
 	if bdb_keep_dir : print("base_name() with bdb_keep_dir. please check")
 
 	file_name=str(file_name)
-	if file_name[:4].lower()=="bdb:" :
-		vals = file_name[4:].split("#")
-		if bdb_keep_dir:
-			if len(vals)==1 : return vals[0]
-			return vals[0].split("/")[-1]+"/"+vals[-1]
-		else:
-			return vals[-1]
-	else:
-		apath=os.path.relpath(file_name).replace("\\","/").split("/")
-		# for specific directories, we want any references to the same micrograph to share an id
-		if nodir or (len(apath)>1 and apath[-2] in ("sets","particles","micrographs","movies","movieparticles","ddd","raw","info", "tiltseries", "tomograms", "particles3d", "segmentations")) :
-			if extension :
-				return os.path.basename(file_name)
-			else :
-				return os.path.splitext(os.path.basename(file_name))[0].split("__")[0].replace("_ptcls","").replace("_info","")		# double underscore is used to mark tags added to micrograph names
 
-		# but for other files, like classes_xx which users might make selection lists on, we want to include the
-		# subdirectory name, to prevent mixing between different refinement directories
-		if extension : return "-".join(apath[-2:])
-		else : return "-".join(apath[-2:]).rsplit(".",1)[0]
+	apath=os.path.relpath(file_name).replace("\\","/").split("/")
+	# for specific directories, we want any references to the same micrograph to share an id
+	if nodir or (len(apath)>1 and apath[-2] in ("sets","particles","micrographs","movies","movieparticles","ddd","raw","info", "tiltseries", "tomograms", "particles3d", "segmentations")) :
+		if extension :
+			return os.path.basename(file_name)
+		else :
+			return os.path.splitext(os.path.basename(file_name))[0].split("__")[0].replace("_ptcls","").replace("_info","")		# double underscore is used to mark tags added to micrograph names
+
+	# but for other files, like classes_xx which users might make selection lists on, we want to include the
+	# subdirectory name, to prevent mixing between different refinement directories
+	if extension : return "-".join(apath[-2:])
+	else : return "-".join(apath[-2:]).rsplit(".",1)[0]
 
 def info_name(file_name,nodir=False):
 	"""This will return the name of the info file associated with a given image file, in the form info/basename_info.js"""
@@ -2083,24 +2090,6 @@ def error_exit(s) :
 	should still remain as a shortcut"""
 	print(s)
 	exit(1)
-
-def write_test_refine_data(num_im=1000):
-	'''
-	This is for testing purposes - for instance if you want to see if e2refine.py is working
-	Writes some crudely simulated particle data and a starting model to disk
-	'''
-	threed = test_image_3d()
-	sym = Symmetries.get("c1")
-	angles = sym.gen_orientations("rand",{"n":num_im})
-	for angle in angles:
-		image = threed.project("standard",angle)
-		dx = Util.get_frand(-5,5)
-		dy = Util.get_frand(-5,5)
-		image.translate(dx,dy,0)
-		image.process_inplace("math.addnoise",{"noise":1})
-		image.write_image("bdb:starting_data#ptcls",-1)
-
-	threed.write_image("bdb:refine_1#starting_model",-1)
 
 def write_test_boxing_images(name="test_box",num_im=10,type=0,n=100):
 	'''
@@ -2831,12 +2820,8 @@ corresponding to each 1/2 of the data."""
 		outo=None
 	else :								# This means we have a regular image file as an input
 		n=EMUtil.get_image_count(filename)
-		if filename[:4].lower()=="bdb:" :
-			eset=filename[4:].convert("#","/")+"_even.lst"
-			oset=filename[4:].convert("#","/")+"_odd.lst"
-		else:
-			eset=filename.rsplit(".",1)[0]+"_even.lst"
-			oset=filename.rsplit(".",1)[0]+"_odd.lst"
+		eset=filename.rsplit(".",1)[0]+"_even.lst"
+		oset=filename.rsplit(".",1)[0]+"_odd.lst"
 
 		try : os.unlink(eset)
 		except: pass
@@ -2926,11 +2911,7 @@ def db_emd_init(self, *parms):
 			void* __init__(_object*,int,int [,int [,bool]])
 """
 	if len(parms) > 0 and len(parms) < 5:
-		if  isinstance(parms[0], str) and parms[0][:4].lower() == "bdb:":
-			self.__initc()
-			self.read_image(*parms)
-			return
-		elif isinstance(parms[0], str) and parms[0].endswith(".lst"):
+		if isinstance(parms[0], str) and parms[0].endswith(".lst"):
 			self.__initc()
 			self.read_image(*parms)
 			return
@@ -2968,6 +2949,16 @@ EMData.__init__ = db_emd_init
 # Transform.__str__ = transform_to_str
 
 #lsxcache=None
+
+
+def compressible_formats():
+	return ('.hdf', '.jpeg', '.mrc', '.mrcs', '.png', '.tiff', '.df3')
+
+
+def is_file_compressible(fsp):
+	return Path(fsp).suffix.lower() in compressible_formats()
+
+
 def db_read_image(self, fsp, *parms, **kparms):
 	"""read_image(filespec,image #,[header only],[region],[is_3d],[imgtype])
 
@@ -2978,30 +2969,7 @@ def db_read_image(self, fsp, *parms, **kparms):
 	#	print "RI ",fsp,str(parms)
 
 	if fsp[:4].lower() == "bdb:":
-		db, keys = db_open_dict(fsp, True, True)
-
-		if len(parms) > 1 and parms[1]:
-			nodata = 1
-		else:
-			nodata = 0
-
-		if len(parms) > 2 and parms[2]:
-			region = parms[2]
-		else:
-			region = None
-
-		if keys:
-			key = keys[parms[0]]
-		else:
-			try:
-				key = parms[0]
-			except:
-				key = 0
-
-		x = db.get(key, target=self, nodata=nodata, region=region)
-		if x == None: raise Exception("Could not access " + str(fsp) + " " + str(key))
-		#		except:
-		#			raise Exception("Could not access "+str(fsp)+" "+str(key))
+		print("ERROR: BDB is not supported in this version of EMAN2. You must use EMAN2.91 or earlier to access legacy data.")
 		return None
 	if fsp[-4:].lower()==".lst":
 		return LSXFile(fsp).read_into_image(self,*parms)
@@ -3023,7 +2991,7 @@ def db_read_image(self, fsp, *parms, **kparms):
 
 	return self.read_image_c(fsp, *parms, **kparms)
 
-
+EMUtil.get_image_count_c = staticmethod(EMUtil.get_image_count)
 EMData.read_image_c = EMData.read_image
 EMData.read_image = db_read_image
 
@@ -3036,23 +3004,8 @@ def db_read_images(fsp, *parms):
 	and a flag indicating that only the image headers should be read in. If only the headers
 	are read, accesses to the image data in the resulting EMData objects will be invalid"""
 	if fsp[:4].lower() == "bdb:":
-		db, keys = db_open_dict(fsp, True, True)
-		if len(parms) > 1:
-			nodata = parms[1]
-		else:
-			nodata = 0
-		if keys:
-			if len(parms) > 0:
-				if not parms[0] or len(parms[0]) == 0: parms[0] = keys
-				return [db.get(keys[i]) for i in parms[0]]
-			return [db.get(i, nodata=nodata) for i in keys]
-		else:
-			if len(parms) == 0:
-				keys = list(range(0, len(db)))
-			else:
-				keys = parms[0]
-			if not keys or len(keys) == 0: keys = list(range(len(db)))
-		return [db.get(i, nodata=nodata) for i in keys]
+		print("ERROR: BDB is not supported in this version of EMAN2. You must use EMAN2.91 or earlier to access legacy data.")
+		return []
 
 	if fsp[-4:].lower()==".lst":
 		return LSXFile(fsp).read_images(*parms)
@@ -3086,26 +3039,14 @@ def db_write_image(self, fsp, *parms):
 	#	print "In db_write_image, WI ",fsp,str(parms)
 
 	if fsp[:4].lower() == "bdb:":
-		db, keys = db_open_dict(fsp, False, True)
-		if keys:  # if the user specifies the key in fsp, we ignore parms
-			if len(keys) > 1: raise Exception("Too many keys provided in write_image %s" % str(keys))
-			if isinstance(keys[0], int) and keys[0] < 0: raise Exception(
-				"Negative integer keys not allowed %d" % keys[0])
-			db[keys[0]] = self
-			return
-		if len(parms) == 0: parms = [0]
-		if parms[0] < 0: parms = (len(db),) + parms[1:]
-
-		key = 0
-		region = None
-		if len(parms) > 0: key = parms[0]
-		# if len(parms) > 1: read_header = parms[1]
-		# parsm[2] is unused : image_type=EMUtil.ImageType.IMAGE_UNKNOWN
-		if len(parms) > 3: region = parms[3]
-
-		db.set(self, key=key, region=region, txn=None)  # this makes region writing work
-		#		db[parms[0]] = self # this means region writing does not work
+		print("ERROR: BDB is not supported in this version of EMAN2. You must use EMAN2.91 or earlier to access legacy data.")
 		return
+
+	elif ":" in fsp:
+		idx = parms[0] if parms else 0
+
+		return self.write_compressed(fsp, idx)
+
 	return self.write_image_c(fsp, *parms)
 
 
@@ -3148,7 +3089,18 @@ If erase is set, the file will be deleted if it exists, before writing. Obviousl
 but a problem with overwriting existing compressed HDF images is that the original images are not truly deleted
 and the file size will increase.
 """
-	if isinstance(self,EMData) : 
+	is_compression_syntax = (":" in fsp)
+
+	if is_compression_syntax:
+		fsp, outbits, rendermin_abs, rendermax_abs, rendermin_s, rendermax_s = parse_outfile_arg(fsp)
+
+		if not is_file_compressible(fsp):
+			raise Exception(f"Only {[i.strip('.') for i in compressible_formats()]} "
+			                f"formats are supported by write_compressed()")
+
+		if outbits: bits = outbits
+
+	if isinstance(self,EMData):
 		self=[self]
 	
 	if erase:
@@ -3156,32 +3108,39 @@ and the file size will increase.
 		except: pass
 	
 	if n==-1: 
-		try: n=EMUtil.get_image_count_c(fsp)
+		try: n=EMUtil.get_image_count(fsp)
 		except: n=0
-	
-	# Maybe should have this revert to normal write_image, if a different format?
-	if fsp[-4:].lower()!=".hdf" : raise(Exception,"Only HDF format is supported by im_write_compressed")
 	
 	for i,im in enumerate(self):
 		if not isinstance(im,EMData) : raise(Exception,"write_compressed() requires a list of EMData objects")
+
+		if is_compression_syntax:
+			minval = rendermin_abs if rendermin_abs else rendermin_s * im["mean"]
+			maxval = rendermax_abs if rendermax_abs else rendermax_s * im["mean"]
+
+			if minval == 'FULL': minval = im["minimum"]
+			if maxval == 'FULL': maxval = im["maximum"]
+
 		im["render_bits"]=bits
 		im["render_compress_level"]=level
-		if nooutliers :
+		### This is an important option, as it will be the default in many cases. It makes an effort to intelligently
+		### eliminate extreme outliers, while not modifying cases with highly nongaussian distributions
+		if nooutliers:
 			nxyz=im.get_size()
 			maxout=max(nxyz//20000,8)		# at most 1 in 20000 pixels should be considered an outlier on each end
 			h0=im["minimum"]
 			h1=im["maximum"]
-			hs=(h1-h0)/1023
-			hist=im.calc_hist(1024,h0,h1)
+			hs=(h1-h0)/4095
+			hist=im.calc_hist(4096,h0,h1)
 			
 			#ok, we're doing this approximately
-			for sl in range(512):
+			for sl in range(2048):
 				if sum(hist[:sl+1])>maxout: break
-			for sh in range(1023,512,-1):
+			for sh in range(4095,2048,-1):
 				if sum(hist[sh:])>maxout: break
 
-			im["render_min"]=sl*hs+h0
-			im["render_max"]=(sh)*hs+h0
+			im["render_min"]=min(sl*hs+h0,im["mean"]-im["sigma"]*4.0)
+			im["render_max"]=max(sh*hs+h0,im["mean"]+im["sigma"]*4.0)
 		elif maxval>minval:
 			im["render_min"]=float(minval)
 			im["render_max"]=float(maxval)
@@ -3191,7 +3150,7 @@ and the file size will increase.
 			#im["render_max"]=im["maximum"]
 		
 		# would like to use the new write_images, but it isn't quite ready yet.
-		im.write_image(fsp,i+n,EMUtil.ImageType.IMAGE_UNKNOWN,0,None,EMUtil.EMDataType.EM_COMPRESSED)
+		im.write_image_c(fsp,i+n,EMUtil.ImageType.IMAGE_UNKNOWN,0,None,EMUtil.EMDataType.EM_COMPRESSED)
 	
 EMData.write_compressed=im_write_compressed
 
