@@ -2256,14 +2256,14 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 def main():
 	from .emapplication import EMApp
 	em_app = EMApp()
-	window = EMImage2DWidget(application=em_app)
+	window = EMAnnotate2DWidget(application=em_app)
 
 	if len(sys.argv)==1 :
-		window.set_data(test_image(size=(128,128)))
+		window.set_data(test_image(size=(512,512)))
 	else :
 		a=EMData.read_images(sys.argv[1])
 		if len(a) == 1:	a = a[0]
-		window.set_data(a,sys.argv[1])
+		window.set_data(a,None)
 
 	em_app.show()
 	window.optimally_resize()

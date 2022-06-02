@@ -1099,9 +1099,9 @@ EMBytes GLUtil::render_annotated24(EMData *emdata, EMData *intmap, int x0, int y
 		// Only supporting up to 256 different color "categories"
 		for (int v=0; v<256; v++) {
 			for (int c=0; c<256; c++) {
-				rtable[v<<8+c]=v;		//colorless as a stopgap for initial tests
-				gtable[v<<8+c]=v;
-				btable[v<<8+c]=v;
+				rtable[v<<8+c]=(c==0||c==3)?v:0;		//4 colors (0-3) for initial testing
+				gtable[v<<8+c]=(c==0||c==1)?v:0;
+				btable[v<<8+c]=(c==0||c==2)?v:0;
 			}
 		}
 	}
