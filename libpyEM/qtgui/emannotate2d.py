@@ -497,7 +497,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 
 	def register_scroll_motion(self,x,y,z=0):
 		if self.list_data!=None:
-			self.image_range_changed(z)
+			self.ns_changed(z)
 			#self.setup_shapes()
 		animation = LineAnimation(self,self.origin,(x*self.scale-old_div(self.width(),2),y*self.scale-old_div(self.height(),2)))
 		self.qt_parent.register_animatable(animation)
@@ -1013,7 +1013,6 @@ class EMAnnotate2DWidget(EMGLWidget):
 	def inspector_update(self):
 		if not self.inspector is None and not self.data is None:
 			self.inspector.set_limits(self.minden,self.maxden,self.curmin,self.curmax)
-			self.inspector.set_gamma(self.gamma)
 
 			self.inspector.set_scale(self.scale)
 			self.inspector.update_brightness_contrast()
@@ -1860,7 +1859,7 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 	def update_zrange(self):
 		nz=self.target().get_data()["nz"]
 		zr=nz*3//4		# approximate max z range with high tilt
-		self.image_range.setRange(-zr,zr)
+		self.ns.setRange(-zr,zr)
 		self.stminsb.setRange(-zr,zr)
 		self.stminsb.setValue(-nz)
 		self.stmaxsb.setRange(-zr,zr)
@@ -2064,7 +2063,7 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 		self.pyout.setText(str(r))
 
 	def set_image_idx(self,val,quiet=0):
-		self.image_range.setValue(val,quiet=quiet)
+		self.ns.setValue(val,quiet=quiet)
 
 	def get_contrast(self):
 		return float(self.conts.getValue())
@@ -2083,9 +2082,6 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 
 	def set_minden(self,value,quiet=1):
 		self.mins.setValue(value,quiet)
-
-	def set_gamma(self,value,quiet=1):
-		self.gammas.setValue(value,quiet)
 
 	def set_scale(self,val):
 		if self.busy : return
@@ -2119,11 +2115,6 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 		self.update_min_max()
 		self.busy=0
 
-	def new_gamma(self,val):
-		if self.busy : return
-		self.busy=1
-		self.target().set_gamma(val)
-		self.busy=0
 
 	def update_brightness_contrast(self):
 		b=0.5*(self.mins.value+self.maxs.value-(self.lowlim+self.highlim))/((self.highlim-self.lowlim))
