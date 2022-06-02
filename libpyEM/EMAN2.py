@@ -3121,6 +3121,8 @@ and the file size will increase.
 			if minval == 'FULL': minval = im["minimum"]
 			if maxval == 'FULL': maxval = im["maximum"]
 
+			nooutliers = True
+
 		im["render_bits"]=bits
 		im["render_compress_level"]=level
 		### This is an important option, as it will be the default in many cases. It makes an effort to intelligently
