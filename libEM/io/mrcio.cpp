@@ -1112,7 +1112,9 @@ void MrcIO::update_stats(const vector<T> &data)
 	float  v;	// variable to hold pixel value
 	double sigma;
 	double vv;
-	float  min, max;
+	const auto [min, max] = std::minmax_element(std::begin(data), std::end(data));
+	mrch.amin  = *min;
+	mrch.amax  = *max;
 
 	signed char    *  scdata = NULL;
 	unsigned char  *  cdata  = NULL;
@@ -1125,23 +1127,15 @@ void MrcIO::update_stats(const vector<T> &data)
 	bool use_ushort = (mrch.mode == MRC_USHORT);
 
 	if (use_uchar) {
-		max    = 0.0;
-		min    = UCHAR_MAX;
 		cdata  = (unsigned char *) data.data();
 	}
 	else if (use_schar) {
-		max    = SCHAR_MIN;
-		min    = SCHAR_MAX;
 		scdata = (signed char *) data.data();
 	}
 	else if (use_short) {
-		max    = (float) SHRT_MIN;
-		min    = (float) SHRT_MAX;
 		sdata  = (short *) data.data();
 	}
 	else if (use_ushort) {
-		max    = 0.0f;
-		min    = (float) USHRT_MAX;
 		usdata = (unsigned short *) data.data();
 	}
 	else {
@@ -1164,9 +1158,6 @@ void MrcIO::update_stats(const vector<T> &data)
 		else {
 			v = (float) (usdata[i]);
 		}
-
-		if (v < min) min = v;
-		if (v > max) max = v;
 
 		sum = sum + v;
 	}
@@ -1205,8 +1196,6 @@ void MrcIO::update_stats(const vector<T> &data)
 
 	/* change mrch.amin / amax / amean / rms here */
 
-	mrch.amin  = min;
-	mrch.amax  = max;
 	mrch.amean = (float) mean;
 	mrch.rms   = (float) sigma;
 
