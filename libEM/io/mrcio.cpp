@@ -1116,48 +1116,11 @@ void MrcIO::update_stats(const vector<T> &data)
 	mrch.amin  = *min;
 	mrch.amax  = *max;
 
-	signed char    *  scdata = NULL;
-	unsigned char  *  cdata  = NULL;
-	short          *  sdata  = NULL;
-	unsigned short *  usdata = NULL;
-
-	bool use_schar  = (mrch.mode == MRC_CHAR);
-	bool use_uchar  = (mrch.mode == MRC_UCHAR);
-	bool use_short  = (mrch.mode == MRC_SHORT || mrch.mode == MRC_SHORT_COMPLEX);
-	bool use_ushort = (mrch.mode == MRC_USHORT);
-
-	if (use_uchar) {
-		cdata  = (unsigned char *) data.data();
-	}
-	else if (use_schar) {
-		scdata = (signed char *) data.data();
-	}
-	else if (use_short) {
-		sdata  = (short *) data.data();
-	}
-	else if (use_ushort) {
-		usdata = (unsigned short *) data.data();
-	}
-	else {
-		throw InvalidCallException("This function is used to write 8bit/16bit mrc file only.");
-	}
-
 	double sum = 0.0;
 	auto size = data.size();
 
 	for (size_t i = 0; i < size; i++) {
-		if (use_uchar) {
-			v = (float) (cdata[i]);
-		}
-		else if (use_schar) {
-			v = (float) (scdata[i]);
-		}
-		else if (use_short) {
-			v = (float) (sdata[i]);
-		}
-		else {
-			v = (float) (usdata[i]);
-		}
+		v = (float) (data[i]);
 
 		sum = sum + v;
 	}
@@ -1171,18 +1134,7 @@ void MrcIO::update_stats(const vector<T> &data)
 	double square_sum = 0.0;
 
 	for (size_t i = 0; i < size; i++) {
-		if (use_uchar) {
-			v = (float) (cdata[i]);
-		}
-		else if (use_schar) {
-			v = (float) (scdata[i]);
-		}
-		else if (use_short) {
-			v = (float) (sdata[i]);
-		}
-		else {
-			v = (float) (usdata[i]);
-		}
+		v = (float) (data[i]);
 
 		vv = v - mean;
 
