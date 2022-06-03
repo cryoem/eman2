@@ -6,6 +6,8 @@ conda list
 
 MYDIR="$(cd "$(dirname "$0")"; pwd -P)"
 
+python -m compileall -q -x .git -x sparx -x sphire .
+
 # 1. Run e2version.py and e2speedtest.py
 e2version.py
 e2speedtest.py
