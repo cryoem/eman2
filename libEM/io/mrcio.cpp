@@ -887,27 +887,9 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 	mrch.amean = dict["mean"];
 	mrch.rms = dict["sigma"];
 
-	/** the folowing lines are commented out.
-	 * To make EMAN2 consistent with IMOD. Especially "header" command in IMOD. */
-
-//	if(dict.has_key("MRC.mx")) {
-//		mrch.mx = dict["MRC.mx"];
-//	}
-//	else {
-		mrch.mx = nx;
-//	}
-//	if(dict.has_key("MRC.my")) {
-//		mrch.my = dict["MRC.my"];
-//	}
-//	else {
-		mrch.my = ny;
-//	}
-//	if(dict.has_key("MRC.mz")) {
-//		mrch.mz = dict["MRC.mz"];
-//	}
-//	else {
-		mrch.mz = nz;
-//	}
+	mrch.mx = nx;
+	mrch.my = ny;
+	mrch.mz = nz;
 
 	mrch.xlen = mrch.mx * (float) dict["apix_x"];
 	mrch.ylen = mrch.my * (float) dict["apix_y"];

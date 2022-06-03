@@ -1383,29 +1383,12 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 	 * Keep the header and dataset intact for region writing*/
 	else {
 		is_exist = true;
-// 		int nattr=H5Aget_num_attrs(igrp);
-// 		char name[ATTR_NAME_LEN];
 		Dict dict2;
 		hsize_t n=0;
 		if (H5Aiterate2(igrp,H5_INDEX_NAME, H5_ITER_NATIVE, &n, &h5_iter_attr_read, &dict2)) {
 			printf("Error on HDF5 iter attr\n");
 		}
 
-// 		for (int i=0; i<nattr; i++) {
-// 			hid_t attr=H5Aopen_idx(igrp, i);
-// 			H5Aget_name(attr,127,name);
-// 
-// 			if (strncmp(name,"EMAN.", 5)!=0) {
-// 				H5Aclose(attr);
-// 				continue;
-// 			}
-// 
-// 			EMObject val=read_attr(attr);
-// 			dict2[name+5]=val;
-// 			H5Aclose(attr);
-// 
-// 		}
-		
 		if (!dict2.has_key("datatype")) { // by default, HDF5 is written as float
 			dict2["datatype"] = (int)EMUtil::EM_FLOAT;
 		}
