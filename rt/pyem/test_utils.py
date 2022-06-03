@@ -534,7 +534,7 @@ class TestEMUtils(unittest.TestCase):
         #testlib.safe_unlink('piffile')
         
         platform = get_platform()
-        if platform!='Windows' and platform!='win32':
+        if platform!='Windows' and platform!='win32' and platform!='Darwin':
             e4 = test_image()
             e4.write_image('pngfile', 0, EMUtil.ImageType.IMAGE_PNG)
             self.assertEqual(EMUtil.get_image_type('pngfile'), EMUtil.ImageType.IMAGE_PNG)

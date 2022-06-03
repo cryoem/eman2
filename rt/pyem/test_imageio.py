@@ -186,6 +186,8 @@ class TestPNGIO(ImageIOTester):
 		"""test write-read png .............................."""
 		self.do_test_read_write("png")  
 		
+	test_write_png.broken = True
+
 class TestJPEGIO(ImageIOTester):
 	"""JPEG file IO test"""
 	
