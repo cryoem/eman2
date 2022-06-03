@@ -1110,7 +1110,6 @@ template<class T>
 void MrcIO::update_stats(const vector<T> &data)
 {
 	float  v;	// variable to hold pixel value
-	double sigma;
 	double vv;
 	const auto [min, max] = std::minmax_element(std::begin(data), std::end(data));
 	mrch.amin  = *min;
@@ -1125,11 +1124,7 @@ void MrcIO::update_stats(const vector<T> &data)
 		sum = sum + v;
 	}
 
-	double mean;
-	if (size > 0)
-		mean = sum / (double) size;
-	else
-		mean = 0.0;
+	double mean = (size > 0 ? sum / (double) size : 0.0);
 
 	double square_sum = 0.0;
 
@@ -1141,10 +1136,7 @@ void MrcIO::update_stats(const vector<T> &data)
 		square_sum = square_sum  +  vv * vv;
 	}
 
-	if (size > 1)
-		sigma = std::sqrt(square_sum / (double) (size-1));
-	else
-		sigma = 0.0;
+	double sigma = (size > 1 ? std::sqrt(square_sum / (double) (size-1)) : 0.0);
 
 	/* change mrch.amin / amax / amean / rms here */
 
