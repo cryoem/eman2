@@ -1111,9 +1111,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 {
 	ENTERFUNC;
 
-	bool append = (image_index == -1);
-
-	if (is_stack  &&  append) {
+	if (is_stack  &&  (image_index == -1)) {
 		image_index = stack_size - 1;
 	}
 
@@ -1140,10 +1138,9 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 		nz = (int)(area->get_depth());
 	}
 
-	bool got_one_image = (nz > 1);
-
-	if (is_stack  &&  ! got_one_image) {
+	if (is_stack  &&  ! (nz > 1)) {
 		nz = 1;
+		mrch.nz = 1;
 	}
 
 	size_t size = (size_t)nx * ny * nz;
@@ -1208,10 +1205,6 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 	unsigned char  *  cdata  = NULL;
 	short          *  sdata  = NULL;
 	unsigned short *  usdata = NULL;
-
-	if (is_stack  &&  ! got_one_image) {
-		mrch.nz = stack_size;
-	}
 
 	bool dont_rescale;
 
@@ -1318,10 +1311,6 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 		ptr_data = usdata;
 
 		update_stats(ptr_data, size);
-	}
-
-	if (is_stack  &&  ! got_one_image) {
-		mrch.nz = 1;
 	}
 
 	EMUtil::process_region_io(ptr_data, file, WRITE_ONLY, image_index,
