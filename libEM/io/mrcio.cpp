@@ -1109,39 +1109,21 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool)
 template<class T>
 void MrcIO::update_stats(const vector<T> &data)
 {
-	float  v;	// variable to hold pixel value
-	double vv;
 	const auto [min, max] = std::minmax_element(std::begin(data), std::end(data));
 	mrch.amin  = *min;
 	mrch.amax  = *max;
 
-	double sum = 0.0;
 	auto size = data.size();
+	mrch.amean = (size > 0 ? std::accumulate(std::begin(data), std::end(data), 0.0, std::plus<T>()) / (double) size : 0.0);
 
-	for (size_t i = 0; i < size; i++) {
-		v = (float) (data[i]);
+	double square_sum = std::accumulate(std::begin(data), std::end(data), 0.0, [this](auto x1, auto x2){
+		auto d1 = x1 - mrch.amean;
+		auto d2 = x2 - mrch.amean;
 
-		sum = sum + v;
-	}
+		return d1 * d1 + d2 * d2;
+	});
 
-	double mean = (size > 0 ? sum / (double) size : 0.0);
-
-	double square_sum = 0.0;
-
-	for (size_t i = 0; i < size; i++) {
-		v = (float) (data[i]);
-
-		vv = v - mean;
-
-		square_sum = square_sum  +  vv * vv;
-	}
-
-	double sigma = (size > 1 ? std::sqrt(square_sum / (double) (size-1)) : 0.0);
-
-	/* change mrch.amin / amax / amean / rms here */
-
-	mrch.amean = (float) mean;
-	mrch.rms   = (float) sigma;
+	mrch.rms = (float) (size > 1 ? std::sqrt(square_sum / (double) (size-1)) : 0.0);
 
 	portable_fseek(file, 0, SEEK_SET);
 
