@@ -154,7 +154,7 @@ def main():
 	if options.projs:
 		# The shape of the decoder is defined by the number of Gaussians (npts) and the number of latent variables (nmid)
 		if gen_model==None:
-			gen_model=build_decoder(ninp=options.nmid,options.npts)
+			gen_model=build_decoder(options.nmid,options.npts)
 		print("Train model from ptcl-xfrom pairs...")
 		e=EMData(options.projs, 0, True)
 		raw_apix, raw_boxsz = e["apix_x"], e["ny"]
