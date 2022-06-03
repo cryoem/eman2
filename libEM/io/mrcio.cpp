@@ -1110,9 +1110,6 @@ template<class T>
 void MrcIO::update_stats(const vector<T> &data)
 {
 	float  v;	// variable to hold pixel value
-	double sum;
-	double square_sum;
-	double mean;
 	double sigma;
 	double vv;
 	float  min, max;
@@ -1151,7 +1148,7 @@ void MrcIO::update_stats(const vector<T> &data)
 		throw InvalidCallException("This function is used to write 8bit/16bit mrc file only.");
 	}
 
-	sum = 0.0;
+	double sum = 0.0;
 	auto size = data.size();
 
 	for (size_t i = 0; i < size; i++) {
@@ -1174,12 +1171,13 @@ void MrcIO::update_stats(const vector<T> &data)
 		sum = sum + v;
 	}
 
+	double mean;
 	if (size > 0)
 		mean = sum / (double) size;
 	else
 		mean = 0.0;
 
-	square_sum = 0.0;
+	double square_sum = 0.0;
 
 	for (size_t i = 0; i < size; i++) {
 		if (use_uchar) {
