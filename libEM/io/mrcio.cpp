@@ -1111,9 +1111,8 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 {
 	ENTERFUNC;
 
-	if (is_stack  &&  (image_index == -1)) {
+	if (is_stack  &&  (image_index == -1))
 		image_index = stack_size - 1;
-	}
 
 	int max_images = 0;
 
@@ -1167,12 +1166,10 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 
 	if ((is_big_endian != ByteOrder::is_host_big_endian()) || ! use_host_endian) {
 		if (mrch.mode != MRC_UCHAR  &&  mrch.mode != MRC_CHAR) {
-			if (mode_size == sizeof(short)) {
+			if (mode_size == sizeof(short))
 				ByteOrder::swap_bytes((short*) data, size);
-			}
-			else if (mode_size == sizeof(float)) {
+			else if (mode_size == sizeof(float))
 				ByteOrder::swap_bytes((float*) data, size);
-			}
 		}
 	}
 
@@ -1391,12 +1388,10 @@ void MrcIO::update_stats(void * data, size_t size)
 		sum = sum + v;
 	}
 
-	if (size > 0) {
+	if (size > 0)
 		mean = sum / (double) size;
-	}
-	else {
+	else
 		mean = 0.0;
-	}
 
 	square_sum = 0.0;
 
@@ -1419,12 +1414,10 @@ void MrcIO::update_stats(void * data, size_t size)
 		square_sum = square_sum  +  vv * vv;
 	}
 
-	if (size > 1) {
+	if (size > 1)
 		sigma = std::sqrt(square_sum / (double) (size-1));
-	}
-	else {
+	else
 		sigma = 0.0;
-	}
 
 	/* change mrch.amin / amax / amean / rms here */
 
