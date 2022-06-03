@@ -181,14 +181,16 @@ class TestPNGIO(ImageIOTester):
 			self.assertEqual(err_type, "ImageWriteException")
 		finally:
 			os.unlink(filename)
-		
+
 	def no_test_read_write_png(self):
 		"""test write-read png .............................."""
 		self.do_test_read_write("png")  
-		
+
+	test_write_png.broken = True
+
 class TestJPEGIO(ImageIOTester):
 	"""JPEG file IO test"""
-	
+
 	def test_write_jpeg(self):
 		"""test ignore negative index for jpeg .............."""
 		filename = 'testimage.jpeg'
