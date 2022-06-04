@@ -1106,6 +1106,119 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool)
 	return 0;
 }
 
+void MrcIO::update_stats(void * data, size_t size)
+{
+	float  v;	// variable to hold pixel value
+	double sum;
+	double square_sum;
+	double mean;
+	double sigma;
+	double vv;
+	float  min, max;
+
+	signed char    *  scdata = NULL;
+	unsigned char  *  cdata  = NULL;
+	short          *  sdata  = NULL;
+	unsigned short *  usdata = NULL;
+
+	bool use_schar  = (mrch.mode == MRC_CHAR);
+	bool use_uchar  = (mrch.mode == MRC_UCHAR);
+	bool use_short  = (mrch.mode == MRC_SHORT || mrch.mode == MRC_SHORT_COMPLEX);
+	bool use_ushort = (mrch.mode == MRC_USHORT);
+
+	if (use_uchar) {
+		max    = 0.0;
+		min    = UCHAR_MAX;
+		cdata  = (unsigned char *) data;
+	}
+	else if (use_schar) {
+		max    = SCHAR_MIN;
+		min    = SCHAR_MAX;
+		scdata = (signed char *) data;
+	}
+	else if (use_short) {
+		max    = (float) SHRT_MIN;
+		min    = (float) SHRT_MAX;
+		sdata  = (short *) data;
+	}
+	else if (use_ushort) {
+		max    = 0.0f;
+		min    = (float) USHRT_MAX;
+		usdata = (unsigned short *) data;
+	}
+	else {
+		throw InvalidCallException("This function is used to write 8bit/16bit mrc file only.");
+	}
+
+	sum = 0.0;
+
+	for (size_t i = 0; i < size; i++) {
+		if (use_uchar) {
+			v = (float) (cdata[i]);
+		}
+		else if (use_schar) {
+			v = (float) (scdata[i]);
+		}
+		else if (use_short) {
+			v = (float) (sdata[i]);
+		}
+		else {
+			v = (float) (usdata[i]);
+		}
+
+		if (v < min) min = v;
+		if (v > max) max = v;
+
+		sum = sum + v;
+	}
+
+	if (size > 0)
+		mean = sum / (double) size;
+	else
+		mean = 0.0;
+
+	square_sum = 0.0;
+
+	for (size_t i = 0; i < size; i++) {
+		if (use_uchar) {
+			v = (float) (cdata[i]);
+		}
+		else if (use_schar) {
+			v = (float) (scdata[i]);
+		}
+		else if (use_short) {
+			v = (float) (sdata[i]);
+		}
+		else {
+			v = (float) (usdata[i]);
+		}
+
+		vv = v - mean;
+
+		square_sum = square_sum  +  vv * vv;
+	}
+
+	if (size > 1)
+		sigma = std::sqrt(square_sum / (double) (size-1));
+	else
+		sigma = 0.0;
+
+	/* change mrch.amin / amax / amean / rms here */
+
+	mrch.amin  = min;
+	mrch.amax  = max;
+	mrch.amean = (float) mean;
+	mrch.rms   = (float) sigma;
+
+	portable_fseek(file, 0, SEEK_SET);
+
+	if (fwrite(& mrch, sizeof(MrcHeader), 1, file) != 1) {
+		throw ImageWriteException(filename, "Error writing MRC header to update statistics.");
+	}
+
+	portable_fseek(file, sizeof(MrcHeader), SEEK_SET);
+}
+
 template<class T>
 auto MrcIO::write_compressed(float *data, size_t size, int image_index, const Region* area) {
 	void * ptr_data = data;
@@ -1224,119 +1337,6 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 
 	EXITFUNC;
 	return 0;
-}
-
-void MrcIO::update_stats(void * data, size_t size)
-{
-	float  v;	// variable to hold pixel value
-	double sum;
-	double square_sum;
-	double mean;
-	double sigma;
-	double vv;
-	float  min, max;
-	
-	signed char    *  scdata = NULL;
-	unsigned char  *  cdata  = NULL;
-	short          *  sdata  = NULL;
-	unsigned short *  usdata = NULL;
-
-	bool use_schar  = (mrch.mode == MRC_CHAR);
-	bool use_uchar  = (mrch.mode == MRC_UCHAR);
-	bool use_short  = (mrch.mode == MRC_SHORT || mrch.mode == MRC_SHORT_COMPLEX);
-	bool use_ushort = (mrch.mode == MRC_USHORT);
-	
-	if (use_uchar) {
-		max    = 0.0;
-		min    = UCHAR_MAX;
-		cdata  = (unsigned char *) data;
-	}
-	else if (use_schar) {
-		max    = SCHAR_MIN;
-		min    = SCHAR_MAX;
-		scdata = (signed char *) data;
-	}
-	else if (use_short) {
-		max    = (float) SHRT_MIN;
-		min    = (float) SHRT_MAX;
-		sdata  = (short *) data;
-	}
-	else if (use_ushort) {
-		max    = 0.0f;
-		min    = (float) USHRT_MAX;
-		usdata = (unsigned short *) data;
-	}
-	else {
-		throw InvalidCallException("This function is used to write 8bit/16bit mrc file only.");
-	}
-
-	sum = 0.0;
-
-	for (size_t i = 0; i < size; i++) {
-		if (use_uchar) {
-			v = (float) (cdata[i]);
-		}
-		else if (use_schar) {
-			v = (float) (scdata[i]);
-		}
-		else if (use_short) {
-			v = (float) (sdata[i]);
-		}
-		else {
-			v = (float) (usdata[i]);
-		}
-
-		if (v < min) min = v;
-		if (v > max) max = v;
-
-		sum = sum + v;
-	}
-
-	if (size > 0)
-		mean = sum / (double) size;
-	else
-		mean = 0.0;
-
-	square_sum = 0.0;
-
-	for (size_t i = 0; i < size; i++) {
-		if (use_uchar) {
-			v = (float) (cdata[i]);
-		}
-		else if (use_schar) {
-			v = (float) (scdata[i]);
-		}
-		else if (use_short) {
-			v = (float) (sdata[i]);
-		}
-		else {
-			v = (float) (usdata[i]);
-		}
-
-		vv = v - mean;
-
-		square_sum = square_sum  +  vv * vv;
-	}
-
-	if (size > 1)
-		sigma = std::sqrt(square_sum / (double) (size-1));
-	else
-		sigma = 0.0;
-
-	/* change mrch.amin / amax / amean / rms here */
-
-	mrch.amin  = min;
-	mrch.amax  = max;
-	mrch.amean = (float) mean;
-	mrch.rms   = (float) sigma;
-	
-	portable_fseek(file, 0, SEEK_SET);
-	
-	if (fwrite(& mrch, sizeof(MrcHeader), 1, file) != 1) {
-		throw ImageWriteException(filename, "Error writing MRC header to update statistics.");
-	}
-	
-	portable_fseek(file, sizeof(MrcHeader), SEEK_SET);
 }
 
 bool MrcIO::is_complex_mode()
