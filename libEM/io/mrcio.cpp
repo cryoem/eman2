@@ -1106,7 +1106,8 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool)
 	return 0;
 }
 
-void MrcIO::update_stats(void * data, size_t size)
+template<class T>
+void MrcIO::update_stats(const vector<T> &data)
 {
 	float  v;	// variable to hold pixel value
 	double sum;
@@ -1129,28 +1130,29 @@ void MrcIO::update_stats(void * data, size_t size)
 	if (use_uchar) {
 		max    = 0.0;
 		min    = UCHAR_MAX;
-		cdata  = (unsigned char *) data;
+		cdata  = (unsigned char *) data.data();
 	}
 	else if (use_schar) {
 		max    = SCHAR_MIN;
 		min    = SCHAR_MAX;
-		scdata = (signed char *) data;
+		scdata = (signed char *) data.data();
 	}
 	else if (use_short) {
 		max    = (float) SHRT_MIN;
 		min    = (float) SHRT_MAX;
-		sdata  = (short *) data;
+		sdata  = (short *) data.data();
 	}
 	else if (use_ushort) {
 		max    = 0.0f;
 		min    = (float) USHRT_MAX;
-		usdata = (unsigned short *) data;
+		usdata = (unsigned short *) data.data();
 	}
 	else {
 		throw InvalidCallException("This function is used to write 8bit/16bit mrc file only.");
 	}
 
 	sum = 0.0;
+	auto size = data.size();
 
 	for (size_t i = 0; i < size; i++) {
 		if (use_uchar) {
@@ -1226,7 +1228,7 @@ auto MrcIO::write_compressed(float *data, size_t size, int image_index, const Re
 	if constexpr (!std::is_same<T, float>::value) {
 		auto [rendered_data, count] = getRenderedDataAndRendertrunc<T>(data, size);
 
-		update_stats(rendered_data.data(), size);
+		update_stats<T>(rendered_data);
 		ptr_data = rendered_data.data();
 	}
 
