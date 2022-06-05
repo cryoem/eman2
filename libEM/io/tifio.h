@@ -56,6 +56,9 @@ namespace EMAN
 		static bool is_valid(const void *first_block);
 		int get_nimg();
 
+		template<class T>
+		int write_compressed(float *data);
+
 	  private:
 		enum
 		{

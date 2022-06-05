@@ -482,6 +482,31 @@ int TiffIO::write_header(const Dict & dict, int image_index, const Region *,
 	return 0;
 }
 
+template<class T>
+int TiffIO::write_compressed(float *data)
+{
+	auto [rendered_data, count] = getRenderedDataAndRendertrunc<T>(data, nx*ny);
+	vector<T> data_to_write(nx*ny);
+
+	int src_idx, dst_idx;
+
+	for (unsigned int i = 0; i < ny; ++i) {
+		for (unsigned int j = 0; j < nx; ++j) {
+			src_idx = i*nx+j;
+			dst_idx = nx*(ny-1) - (i*nx) +j;
+			data_to_write[dst_idx] = rendered_data[src_idx];
+		}
+	}
+
+	if (TIFFWriteEncodedStrip(tiff_file, 0, data_to_write.data(), nx * ny * sizeof(T)) == -1) {
+		printf("Fail to write tiff file.\n");
+
+		return -1;
+	}
+
+	return 1;
+}
+
 int TiffIO::write_data(float * data, int image_index, const Region *,
 				EMUtil::EMDataType dt, bool)
 {
