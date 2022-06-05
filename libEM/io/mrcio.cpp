@@ -1181,9 +1181,6 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 
 	mode_size = get_mode_size(mrch.mode);
 
-//	int xlen = 0, ylen = 0, zlen = 0;
-//	EMUtil::get_region_dims(area, nx, &xlen, mrch.ny, &ylen, mrch.nz, &zlen);
-//	int size = xlen * ylen * zlen;
 	void * ptr_data = data;
 
 	int truebits=0;
@@ -1327,9 +1324,6 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 		mrch.nz = 1;
 	}
 
-	// New way to write data which includes region writing.
-	// If it is tested to be OK, remove the old code in the
-	// #if 0  ... #endif block.
 	EMUtil::process_region_io(ptr_data, file, WRITE_ONLY, image_index,
 							  mode_size, mrch.nx, mrch.ny, mrch.nz, area);
 
@@ -1337,72 +1331,6 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 	if (scdata) {delete [] scdata; scdata = NULL;}
 	if (sdata)  {delete [] sdata;  sdata  = NULL;}
 	if (usdata) {delete [] usdata; usdata = NULL;}
-
-#if 0
-	int row_size = nx * get_mode_size(mrch.mode);
-	int sec_size = nx * ny;
-
-	unsigned char *  cbuf = new unsigned char[row_size];
-	unsigned short * sbuf = (unsigned short *) cbuf;
-
-	for (int i = 0; i < nz; i++) {
-		int i2 = i * sec_size;
-
-		for (int j = 0; j < ny; j++) {
-			int k = i2 + j * nx;
-			void * pbuf = 0;
-
-			switch (mrch.mode) {
-			case MRC_UCHAR:
-				for (int l = 0; l < nx; l++) {
-					cbuf[l] = static_cast < unsigned char >(data[k + l]);
-				}
-
-				pbuf = cbuf;
-				fwrite(cbuf, row_size, 1, file);
-
-				break;
-
-			case MRC_SHORT:
-			case MRC_SHORT_COMPLEX:
-				for (int l = 0; l < nx; l++) {
-					sbuf[l] = static_cast < short >(data[k + l]);
-				}
-
-				pbuf = sbuf;
-				fwrite(sbuf, row_size, 1, file);
-
-				break;
-
-			case MRC_USHORT:
-				for (int l = 0; l < nx; l++) {
-					sbuf[l] = static_cast < unsigned short >(data[k + l]);
-				}
-
-				pbuf = sbuf;
-				fwrite(sbuf, row_size, 1, file);
-
-				break;
-
-			case MRC_FLOAT:
-			case MRC_FLOAT_COMPLEX:
-				pbuf = &data[k];
-
-				break;
-			}
-
-			if (pbuf) {
-				fwrite(pbuf, row_size, 1, file);
-			}
-		}
-	}
-
-	if (cbuf)
-	{
-		delete [] cbuf;
-		cbuf = NULL;
-	}
-#endif
 
 	EXITFUNC;
 	return 0;
@@ -1516,23 +1444,6 @@ void MrcIO::update_stats(void * data, size_t size)
 	mrch.amean = (float) mean;
 	mrch.rms   = (float) sigma;
 	
-//	MrcHeader mrch2 = mrch;
-//
-// endian issue, can't get use_host_endian argument
-//	bool opposite_endian = false;
-//
-//	if (!is_new_file) {
-//		if (is_big_endian != ByteOrder::is_host_big_endian()) {
-//			opposite_endian = true;
-//		}
-//
-//		portable_fseek(mrcfile, 0, SEEK_SET);
-//	}
-//	
-//	if (opposite_endian || !use_host_endian) {
-//		swap_header(mrch2);
-//	}
-
 	portable_fseek(file, 0, SEEK_SET);
 	
 	if (fwrite(& mrch, sizeof(MrcHeader), 1, file) != 1) {
