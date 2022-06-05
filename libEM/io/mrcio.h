@@ -293,7 +293,8 @@ namespace EMAN
 		 * when write MRC file as 16 bit or 8 bit. It will write new set of 
 		 * min/max/mean/sigma to mrch.
 		 * this function needs get the output data storage type from mrch.mode.*/
-		void update_stats(void* data, size_t size);
+		template<class T>
+		void update_stats(const vector<T> &data);
 
 		/** This is a utility routine to tell whether to byte swap MRC header. */
 		static void check_swap(const int * data, const char * filnam, bool show_errors,
@@ -304,6 +305,9 @@ namespace EMAN
 
 		//utility funciton to tranpose x and y dimension in case the source mrc image is mapc=2,mapr=1
 		int transpose(float *data, int nx, int ny, int nz) const;
+
+		template<class T>
+		auto write_compressed(float *data, size_t size, int image_index, const Region* area);
 	};
 }
 

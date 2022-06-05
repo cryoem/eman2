@@ -3098,7 +3098,10 @@ and the file size will increase.
 			raise Exception(f"Only {[i.strip('.') for i in compressible_formats()]} "
 			                f"formats are supported by write_compressed()")
 
-		if outbits: bits = outbits
+		if outbits:
+			bits = outbits
+		else:
+			nooutliers = True
 
 	if isinstance(self,EMData):
 		self=[self]
@@ -3120,8 +3123,6 @@ and the file size will increase.
 
 			if minval == 'FULL': minval = im["minimum"]
 			if maxval == 'FULL': maxval = im["maximum"]
-
-			nooutliers = True
 
 		im["render_bits"]=bits
 		im["render_compress_level"]=level
