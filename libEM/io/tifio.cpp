@@ -518,7 +518,7 @@ int TiffIO::write_data(float * data, int image_index, const Region *,
 			}
 		}
 
-		if (TIFFWriteEncodedStrip(tiff_file, 0, cdata.data(), nx*ny) == -1) {
+		if (TIFFWriteEncodedStrip(tiff_file, 0, cdata.data(), nx*ny*sizeof(char)) == -1) {
 			printf("Fail to write tiff file.\n");
 
 			return -1;
