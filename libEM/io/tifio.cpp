@@ -529,18 +529,11 @@ int TiffIO::write_data(float * data, int image_index, const Region *,
 
 	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, renderbits);
 
-	if (bitspersample == CHAR_BIT) {
-		write_compressed<unsigned char>(data);
-	}
-	else if (bitspersample == CHAR_BIT*sizeof(short)) {
-		write_compressed<unsigned short>(data);
-	}
-	else if (bitspersample == CHAR_BIT*sizeof(float)) {
-		write_compressed<float>(data);
-	}
-	else {
+	if (bitspersample == CHAR_BIT)                    write_compressed<unsigned char>(data);
+	else if (bitspersample == CHAR_BIT*sizeof(short)) write_compressed<unsigned short>(data);
+	else if (bitspersample == CHAR_BIT*sizeof(float)) write_compressed<float>(data);
+	else
 		LOGWARN("TIFF in EMAN2 only support data type 8 bit, 16 bit or 32 bit.");
-	}
 
 	EXITFUNC;
 	return 0;
