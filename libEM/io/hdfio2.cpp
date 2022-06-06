@@ -1492,7 +1492,6 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 	sprintf(ipath, "/MDF/images/%d/image", image_index);
 
 	// Now create the image dataspace (not used for region writing)
-	hsize_t rank = 0;
 	if (nz == 1 && ny == 1)  {
 		hsize_t dims[1]= { nx };
 		spc=H5Screate_simple(1,dims,NULL);
@@ -1569,6 +1568,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 		
 	}
 	
+	hsize_t rank = 0;
 	if (ds < 0) {	//new dataset
 		hid_t plist = H5Pcreate(H5P_DATASET_CREATE);	// we could just use H5P_DEFAULT for non-compressed
 		if (dt==EMUtil::EM_COMPRESSED) {
