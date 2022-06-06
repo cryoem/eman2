@@ -1469,12 +1469,6 @@ auto HdfIO2::write(float *data, size_t size, hid_t ds, hid_t memoryspace, hid_t 
 	return std::make_tuple(I != EMUtil::EM_FLOAT, rendertrunc);
 }
 
-auto HdfIO2::write_compressed(float *data, hsize_t size, hid_t ds, hid_t spc1, hid_t spc2) {
-	if (renderbits<=0)      return write<EMUtil::EM_FLOAT>(data, size, ds, spc1, spc2);
-	else if (renderbits<=8) return write<EMUtil::EM_UCHAR>(data, size, ds, spc1, spc2);
-	else                    return write<EMUtil::EM_USHORT>(data, size, ds, spc1, spc2);
-}
-
 // Writes the actual image data to the corresponding dataset (already created)
 int HdfIO2::write_data(float *data, int image_index, const Region* area,
 					  EMUtil::EMDataType dt, bool)
@@ -1692,6 +1686,12 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 		spc2 = spc;
 	}
 
+	if(dt == EMUtil::EM_COMPRESSED) {
+		if (renderbits <= 0)      dt = EMUtil::EM_FLOAT;
+		else if (renderbits <= 8) dt = EMUtil::EM_UCHAR;
+		else                      dt = EMUtil::EM_USHORT;
+	}
+
 	int rendertrunc = 0;	// keep track of truncated pixels
 	bool scaled = 0;		// set if the data will need rescaling upon read
 	switch(dt) {
@@ -1700,7 +1700,6 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 		case EMUtil::EM_USHORT:     std::tie(scaled, rendertrunc) = write<EMUtil::EM_USHORT>(data, size, ds, spc1, spc2); break;
 		case EMUtil::EM_CHAR:       std::tie(scaled, rendertrunc) = write<EMUtil::EM_CHAR>(data, size, ds, spc1, spc2); break;
 		case EMUtil::EM_UCHAR:      std::tie(scaled, rendertrunc) = write<EMUtil::EM_UCHAR>(data, size, ds, spc1, spc2); break;
-		case EMUtil::EM_COMPRESSED: std::tie(scaled, rendertrunc) = write_compressed(data, size, ds, spc1, spc2); break;
 		default:
 			throw ImageWriteException(filename,"HDF5 does not support this data format");
 	}
