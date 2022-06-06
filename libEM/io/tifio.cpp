@@ -530,64 +530,13 @@ int TiffIO::write_data(float * data, int image_index, const Region *,
 	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, renderbits);
 
 	if (bitspersample == CHAR_BIT) {
-		auto [rendered_data, count] = getRenderedDataAndRendertrunc<unsigned char>(data, nx*ny);
-		vector<unsigned char> cdata(nx*ny);
-		
-		int src_idx, dst_idx;
-
-		for (unsigned int i = 0; i < ny; ++i) {
-			for (unsigned int j = 0; j < nx; ++j) {
-				src_idx = i*nx+j;
-				dst_idx = nx*(ny-1) - (i*nx) +j;
-				cdata[dst_idx] = rendered_data[src_idx];
-			}
-		}
-
-		if (TIFFWriteEncodedStrip(tiff_file, 0, cdata.data(), nx*ny*sizeof(char)) == -1) {
-			printf("Fail to write tiff file.\n");
-
-			return -1;
-		}
+		write_compressed<unsigned char>(data);
 	}
 	else if (bitspersample == CHAR_BIT*sizeof(short)) {
-		auto [rendered_data, count] = getRenderedDataAndRendertrunc<unsigned short>(data, nx*ny);
-		vector<unsigned short> sdata(nx*ny);
-
-		int src_idx, dst_idx;
-
-		for (unsigned int i = 0; i < ny; ++i) {
-			for (unsigned int j = 0; j < nx; ++j) {
-				src_idx = i*nx+j;
-				dst_idx = nx*(ny-1) - (i*nx) +j;
-				sdata[dst_idx] = rendered_data[src_idx];
-			}
-		}
-
-		if (TIFFWriteEncodedStrip(tiff_file, 0, sdata.data(), nx*ny*sizeof(short)) == -1) {
-			printf("Fail to write tiff file.\n");
-
-			return -1;
-		}
+		write_compressed<unsigned short>(data);
 	}
 	else if (bitspersample == CHAR_BIT*sizeof(float)) {
-		auto [rendered_data, count] = getRenderedDataAndRendertrunc<float>(data, nx*ny);
-		vector<float> fdata(nx*ny);
-
-		int src_idx, dst_idx;
-
-		for (unsigned int i = 0; i < ny; ++i) {
-			for (unsigned int j = 0; j < nx; ++j) {
-				src_idx = i*nx+j;
-				dst_idx = nx*(ny-1) - (i*nx) +j;
-				fdata[dst_idx] = rendered_data[src_idx];
-			}
-		}
-
-		if (TIFFWriteEncodedStrip(tiff_file, 0, fdata.data(), nx*ny*sizeof(float)) == -1) {
-			printf("Fail to write tiff file.\n");
-
-			return -1;
-		}
+		write_compressed<float>(data);
 	}
 	else {
 		LOGWARN("TIFF in EMAN2 only support data type 8 bit, 16 bit or 32 bit.");
