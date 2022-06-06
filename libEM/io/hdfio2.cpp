@@ -1458,7 +1458,7 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 }
 
 template<EMUtil::EMDataType I>
-auto HdfIO2::write(float *data, size_t size, hid_t ds, hid_t memoryspace, hid_t filespace) {
+auto HdfIO2::write_compressed(float *data, size_t size, hid_t ds, hid_t memoryspace, hid_t filespace) {
 	auto [rendered_data, rendertrunc] = getRenderedDataAndRendertrunc<typename EM2Type<I>::type>(data, size);
 
 	auto err_no = H5Dwrite(ds, EM2HDF[I], memoryspace, filespace, H5P_DEFAULT, rendered_data.data());
@@ -1695,11 +1695,11 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 	int rendertrunc = 0;	// keep track of truncated pixels
 	bool scaled = 0;		// set if the data will need rescaling upon read
 	switch(dt) {
-		case EMUtil::EM_FLOAT:      std::tie(scaled, rendertrunc) = write<EMUtil::EM_FLOAT>(data, size, ds, spc1, spc2); break;
-		case EMUtil::EM_SHORT:      std::tie(scaled, rendertrunc) = write<EMUtil::EM_SHORT>(data, size, ds, spc1, spc2); break;
-		case EMUtil::EM_USHORT:     std::tie(scaled, rendertrunc) = write<EMUtil::EM_USHORT>(data, size, ds, spc1, spc2); break;
-		case EMUtil::EM_CHAR:       std::tie(scaled, rendertrunc) = write<EMUtil::EM_CHAR>(data, size, ds, spc1, spc2); break;
-		case EMUtil::EM_UCHAR:      std::tie(scaled, rendertrunc) = write<EMUtil::EM_UCHAR>(data, size, ds, spc1, spc2); break;
+		case EMUtil::EM_FLOAT:  std::tie(scaled, rendertrunc) = write_compressed<EMUtil::EM_FLOAT>(data, size, ds, spc1, spc2); break;
+		case EMUtil::EM_SHORT:  std::tie(scaled, rendertrunc) = write_compressed<EMUtil::EM_SHORT>(data, size, ds, spc1, spc2); break;
+		case EMUtil::EM_USHORT: std::tie(scaled, rendertrunc) = write_compressed<EMUtil::EM_USHORT>(data, size, ds, spc1, spc2); break;
+		case EMUtil::EM_CHAR:   std::tie(scaled, rendertrunc) = write_compressed<EMUtil::EM_CHAR>(data, size, ds, spc1, spc2); break;
+		case EMUtil::EM_UCHAR:  std::tie(scaled, rendertrunc) = write_compressed<EMUtil::EM_UCHAR>(data, size, ds, spc1, spc2); break;
 		default:
 			throw ImageWriteException(filename,"HDF5 does not support this data format");
 	}

@@ -129,7 +129,7 @@ namespace EMAN
 
 	  private:
 		template<EMUtil::EMDataType I>
-		auto write(float *data, size_t size, hid_t ds, hid_t memoryspace, hid_t filespace);
+		auto write_compressed(float *data, size_t size, hid_t ds, hid_t memoryspace, hid_t filespace);
 
 	  private:
 		hsize_t nx, ny, nz;
