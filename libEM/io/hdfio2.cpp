@@ -50,19 +50,6 @@
 	#define  MAXPATHLEN (MAX_PATH * 4)
 #endif	//WIN32
 
-// Some bugs with using stdint.h, so defining our own limits. Handling as float to avoid some math mishandling 
-const float INT8_min = -128.0f;
-const float INT16_min = -32768.0f;
-//const int INT32_min = -2147483648;	// some potential issues using this, but we aren't supporting them at the moment anyway
-
-const float INT8_max = 127.0f;
-const float INT16_max = 32767.0f;
-//const int INT32_max = 2147483647;
-
-const float UINT8_max = 255.0f;
-const float UINT16_max = 65535.0f;
-//const unsigned int UINT32_max = 4294967295U;
-
 using namespace EMAN;
 
 static const int ATTR_NAME_LEN = 128;
