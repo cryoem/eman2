@@ -169,7 +169,7 @@ int JpegIO::read_data(float *, int, const Region *, bool)
 }
 
 int JpegIO::write_data(float *data, int image_index, const Region* area,
-					  EMUtil::EMDataType, bool)
+					  EMUtil::EMDataType dt, bool)
 {
 	ENTERFUNC;
 
@@ -188,6 +188,7 @@ int JpegIO::write_data(float *data, int image_index, const Region* area,
 	if (renderbits==0 || renderbits>8) renderbits=8;
 	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, renderbits);
 
+	auto [rendered_data, count] = getRenderedDataAndRendertrunc<unsigned char>(data, nx*ny);
 	unsigned char *cdata = (unsigned char *)malloc(nx+1);
 
 	/* Flip the image vertically, since EMAN use top-left corner as image origin
@@ -201,10 +202,7 @@ int JpegIO::write_data(float *data, int image_index, const Region* area,
 
 	for (int i=ny-1; i>=0; i--) {
 		for (int j=0; j<nx; j++) {
-			if (data[i*nx+j] <= rendermin) cdata[j] = 0;
-			else if (data[i*nx+j] >= rendermax) cdata[j] = 255;
-			else cdata[j]= (int)((data[i*nx+j]-rendermin)/
-								(rendermax-rendermin)*256.0);
+			cdata[j]= (int)rendered_data[i*nx+j];
 		}
 
 		jpeg_write_scanlines(&cinfo, rp, 1);

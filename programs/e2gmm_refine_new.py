@@ -144,7 +144,7 @@ def pts2img(pts, angs):
 ##   return_curve - return the curve instead of average FRC score
 ##   minpx - skip the X initial low freq pixels
 #@tf.function
-def calc_frc(data_cpx, imgs_cpx, rings, return_curve=False,minpx=1):
+def calc_frc(data_cpx, imgs_cpx, rings, return_curve=False, minpx=1, maxpx=-1):
 	mreal, mimag=imgs_cpx
 	dreal, dimag=data_cpx
 	#### normalization per ring
@@ -164,7 +164,7 @@ def calc_frc(data_cpx, imgs_cpx, rings, return_curve=False,minpx=1):
 	if return_curve:
 		return frc
 	else:
-		frcval=tf.reduce_mean(frc[:, minpx:], axis=1)
+		frcval=tf.reduce_mean(frc[:, minpx:maxpx], axis=1)
 		return frcval
 	
 #### load particles from file and fourier transform them

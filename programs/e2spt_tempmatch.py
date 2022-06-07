@@ -156,10 +156,10 @@ def main():
 		ccc.write_image("tmp_ccc.hdf")
 		img=ccc.numpy().copy()
 		img[img<options.vthr]=0
-		lb, nlb=ndimage.measurements.label(img)
+		lb, nlb=ndimage.label(img)
 		pks=np.array(ndimage.maximum_position(img,lb,list(range(1,nlb))))
 		#pks=np.array(ndimage.center_of_mass(img,lb,list(range(1,nlb))))
-		pksize=np.array(ndimage.measurements.sum(img,lb,list(range(1,nlb))))
+		pksize=np.array(ndimage.sum(img,lb,list(range(1,nlb))))
 		n=len(pks)
 		print(len(pks))
 		
