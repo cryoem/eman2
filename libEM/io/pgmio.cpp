@@ -253,20 +253,13 @@ int PgmIO::write_data(float *data, int image_index, const Region* area,
 	unsigned char *cdata=(unsigned char *)malloc(nx*ny);	//cdata is the normalized data
 	auto [rendered_data, count] = getRenderedDataAndRendertrunc<unsigned char>(data, nx*ny);
 
-	int old_add = 0;
-	int new_add = 0;
-	for( int j=0; j<ny; ++j ) {
-		for( int i=0; i<nx; ++i) {
-			old_add = j*nx+i;
-			new_add = (ny-1-j)*nx + i;
-			cdata[new_add] = (unsigned char)rendered_data[old_add];
-		}
-	}
+	for( int j=0; j<ny; ++j )
+		for( int i=0; i<nx; ++i)
+			cdata[(ny-1-j)*nx + i] = (unsigned char)rendered_data[j*nx+i];
 
-	size_t mode_size = sizeof(unsigned char);
 	//fwrite(cdata, nx, ny, pgm_file);
 	EMUtil::process_region_io(cdata, file, WRITE_ONLY, image_index,
-							  mode_size, nx, ny, 1, area);
+							  sizeof(unsigned char), nx, ny, 1, area);
 
 	free(cdata);
 	EXITFUNC;
