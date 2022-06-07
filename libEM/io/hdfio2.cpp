@@ -1671,17 +1671,8 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 		}
 	}
 
-
-	hid_t spc1 = 0;
-	hid_t spc2 = 0;
-	if (area) {
-		spc1 = memoryspace;
-		spc2 = filespace;
-	}
-	else {
-		spc1 = spc;
-		spc2 = spc;
-	}
+	hid_t spc1 = (area ? memoryspace : spc);
+	hid_t spc2 = (area ? filespace : spc);
 
 	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, renderbits, nz);
 //	printf("RMM  %f  %f\n",rendermin,rendermax);
