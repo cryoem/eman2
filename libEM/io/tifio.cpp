@@ -524,8 +524,7 @@ int TiffIO::write_data(float * data, int image_index, const Region *,
 
 	// If we didn't get any parameters in 'render_min' or 'render_max',
 	// we need to find some good ones
-	int truebits=bitspersample;
-	if (renderbits==0 || renderbits>truebits) renderbits=truebits;
+	if (renderbits==0 || renderbits>bitspersample) renderbits=bitspersample;
 
 	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, renderbits);
 
