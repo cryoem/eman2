@@ -288,7 +288,7 @@ class TestPGMIO(unittest.TestCase):
 			f = EMData()
 			f.read_image('test_image.pgm')
 			
-			#self.assertEqual(f==e,True)
+			self.assertEqual(f==e,True)
 			
 		finally:
 			testlib.safe_unlink('test_image.pgm')
