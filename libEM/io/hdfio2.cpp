@@ -1610,9 +1610,6 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 	// convert data to unsigned short, unsigned char...
 	hsize_t size = (hsize_t)nx*ny*nz;
 
-	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, renderbits, nz);
-//	printf("RMM  %f  %f\n",rendermin,rendermax);
-
 	hid_t filespace = 0;
 	hid_t memoryspace = 0;
 
@@ -1685,6 +1682,9 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 		spc1 = spc;
 		spc2 = spc;
 	}
+
+	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, renderbits, nz);
+//	printf("RMM  %f  %f\n",rendermin,rendermax);
 
 	if(dt == EMUtil::EM_COMPRESSED) {
 		if (renderbits <= 0)      dt = EMUtil::EM_FLOAT;
