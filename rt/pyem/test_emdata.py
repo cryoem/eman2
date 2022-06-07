@@ -2409,7 +2409,7 @@ class TestEMData(unittest.TestCase):
         a=EMData()
         a.set_size(100,100,100)
         a.to_one()
-        b=a.get_rotated_clip(Transform(),[32,32,32],1.0)
+        b=a.get_rotated_clip(Transform(),[32,32,32],1)
         
     def test_complex_image(self):
         """test complex image ..............................."""

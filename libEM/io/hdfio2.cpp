@@ -1466,7 +1466,7 @@ auto HdfIO2::write(float *data, size_t size, hid_t ds, hid_t memoryspace, hid_t 
 	if (err_no < 0)
 		std::cerr << "H5Dwrite error " << EMUtil::get_datatype_string(I) << ": " << err_no << std::endl;
 
-	return std::tuple(I != EMUtil::EM_FLOAT, rendertrunc);
+	return std::make_tuple(I != EMUtil::EM_FLOAT, rendertrunc);
 }
 
 auto HdfIO2::write_compressed(float *data, hsize_t size, hid_t ds, hid_t spc1, hid_t spc2) {

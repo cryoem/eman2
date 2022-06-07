@@ -105,7 +105,8 @@ def main():
 	else:
 		idx=np.arange(npt)
 		np.random.shuffle(idx)
-		idx=np.sort(idx[:batch])
+		nptcl=int(batch*ncls/options.keep)
+		idx=np.sort(idx[:nptcl])
 		ali3d=[info3d[i] for i in idx]
 		save_lst_params(ali3d, info3dname)
 		

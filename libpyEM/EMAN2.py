@@ -3098,7 +3098,10 @@ and the file size will increase.
 			raise Exception(f"Only {[i.strip('.') for i in compressible_formats()]} "
 			                f"formats are supported by write_compressed()")
 
-		if outbits: bits = outbits
+		if outbits:
+			bits = outbits
+		else:
+			nooutliers = True
 
 	if isinstance(self,EMData):
 		self=[self]

@@ -1106,16 +1106,143 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool)
 	return 0;
 }
 
+template<class T>
+void MrcIO::update_stats(const vector<T> &data)
+{
+	float  v;	// variable to hold pixel value
+	double sum;
+	double square_sum;
+	double mean;
+	double sigma;
+	double vv;
+	float  min, max;
+
+	signed char    *  scdata = NULL;
+	unsigned char  *  cdata  = NULL;
+	short          *  sdata  = NULL;
+	unsigned short *  usdata = NULL;
+
+	bool use_schar  = (mrch.mode == MRC_CHAR);
+	bool use_uchar  = (mrch.mode == MRC_UCHAR);
+	bool use_short  = (mrch.mode == MRC_SHORT || mrch.mode == MRC_SHORT_COMPLEX);
+	bool use_ushort = (mrch.mode == MRC_USHORT);
+
+	if (use_uchar) {
+		max    = 0.0;
+		min    = UCHAR_MAX;
+		cdata  = (unsigned char *) data.data();
+	}
+	else if (use_schar) {
+		max    = SCHAR_MIN;
+		min    = SCHAR_MAX;
+		scdata = (signed char *) data.data();
+	}
+	else if (use_short) {
+		max    = (float) SHRT_MIN;
+		min    = (float) SHRT_MAX;
+		sdata  = (short *) data.data();
+	}
+	else if (use_ushort) {
+		max    = 0.0f;
+		min    = (float) USHRT_MAX;
+		usdata = (unsigned short *) data.data();
+	}
+	else {
+		throw InvalidCallException("This function is used to write 8bit/16bit mrc file only.");
+	}
+
+	sum = 0.0;
+	auto size = data.size();
+
+	for (size_t i = 0; i < size; i++) {
+		if (use_uchar) {
+			v = (float) (cdata[i]);
+		}
+		else if (use_schar) {
+			v = (float) (scdata[i]);
+		}
+		else if (use_short) {
+			v = (float) (sdata[i]);
+		}
+		else {
+			v = (float) (usdata[i]);
+		}
+
+		if (v < min) min = v;
+		if (v > max) max = v;
+
+		sum = sum + v;
+	}
+
+	if (size > 0)
+		mean = sum / (double) size;
+	else
+		mean = 0.0;
+
+	square_sum = 0.0;
+
+	for (size_t i = 0; i < size; i++) {
+		if (use_uchar) {
+			v = (float) (cdata[i]);
+		}
+		else if (use_schar) {
+			v = (float) (scdata[i]);
+		}
+		else if (use_short) {
+			v = (float) (sdata[i]);
+		}
+		else {
+			v = (float) (usdata[i]);
+		}
+
+		vv = v - mean;
+
+		square_sum = square_sum  +  vv * vv;
+	}
+
+	if (size > 1)
+		sigma = std::sqrt(square_sum / (double) (size-1));
+	else
+		sigma = 0.0;
+
+	/* change mrch.amin / amax / amean / rms here */
+
+	mrch.amin  = min;
+	mrch.amax  = max;
+	mrch.amean = (float) mean;
+	mrch.rms   = (float) sigma;
+
+	portable_fseek(file, 0, SEEK_SET);
+
+	if (fwrite(& mrch, sizeof(MrcHeader), 1, file) != 1) {
+		throw ImageWriteException(filename, "Error writing MRC header to update statistics.");
+	}
+
+	portable_fseek(file, sizeof(MrcHeader), SEEK_SET);
+}
+
+template<class T>
+auto MrcIO::write_compressed(float *data, size_t size, int image_index, const Region* area) {
+	void * ptr_data = data;
+
+	if constexpr (!std::is_same<T, float>::value) {
+		auto [rendered_data, count] = getRenderedDataAndRendertrunc<T>(data, size);
+
+		update_stats<T>(rendered_data);
+		ptr_data = rendered_data.data();
+	}
+
+	EMUtil::process_region_io(ptr_data, file, WRITE_ONLY, image_index,
+							  mode_size, mrch.nx, mrch.ny, mrch.nz, area);
+}
+
 int MrcIO::write_data(float *data, int image_index, const Region* area,
 					  EMUtil::EMDataType dt, bool use_host_endian)
 {
 	ENTERFUNC;
 
-	bool append = (image_index == -1);
-
-	if (is_stack  &&  append) {
+	if (is_stack  &&  (image_index == -1))
 		image_index = stack_size - 1;
-	}
 
 	int max_images = 0;
 
@@ -1140,10 +1267,9 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 		nz = (int)(area->get_depth());
 	}
 
-	bool got_one_image = (nz > 1);
-
-	if (is_stack  &&  ! got_one_image) {
+	if (is_stack  &&  ! (nz > 1)) {
 		nz = 1;
+		mrch.nz = 1;
 	}
 
 	size_t size = (size_t)nx * ny * nz;
@@ -1162,29 +1288,22 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 
 	portable_fseek(file, sizeof(MrcHeader), SEEK_SET);
 
-	if ((is_big_endian != ByteOrder::is_host_big_endian()) || ! use_host_endian) {
-		if (mrch.mode != MRC_UCHAR  &&  mrch.mode != MRC_CHAR) {
-			if (mode_size == sizeof(short)) {
-				ByteOrder::swap_bytes((short*) data, size);
-			}
-			else if (mode_size == sizeof(float)) {
-				ByteOrder::swap_bytes((float*) data, size);
-			}
-		}
-	}
-
-	mode_size = get_mode_size(mrch.mode);
-
-//	int xlen = 0, ylen = 0, zlen = 0;
-//	EMUtil::get_region_dims(area, nx, &xlen, mrch.ny, &ylen, mrch.nz, &zlen);
-//	int size = xlen * ylen * zlen;
-	void * ptr_data = data;
-
 	if(dt == EMUtil::EM_COMPRESSED) {
 		if (renderbits <= 0)       mrch.mode = MRC_FLOAT;
 		else if (renderbits <= 8)  mrch.mode = MRC_UCHAR;
 		else if (renderbits <= 16) mrch.mode = MRC_USHORT;
 	}
+
+	if ((is_big_endian != ByteOrder::is_host_big_endian()) || ! use_host_endian) {
+		if (mrch.mode != MRC_UCHAR  &&  mrch.mode != MRC_CHAR) {
+			if (mode_size == sizeof(short))
+				ByteOrder::swap_bytes((short*) data, size);
+			else if (mode_size == sizeof(float))
+				ByteOrder::swap_bytes((float*) data, size);
+		}
+	}
+
+	mode_size = get_mode_size(mrch.mode);
 
 	int truebits=0;
 	switch(mrch.mode) {
@@ -1207,339 +1326,19 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 
 	EMUtil::getRenderMinMax(data, nx, ny, rmin, rmax, rbits, nz);
 
-	signed char    *  scdata = NULL;
-	unsigned char  *  cdata  = NULL;
-	short          *  sdata  = NULL;
-	unsigned short *  usdata = NULL;
-
-	if (is_stack  &&  ! got_one_image) {
-		mrch.nz = stack_size;
-	}
-
-	bool dont_rescale;
-
-	if (mrch.mode == MRC_UCHAR) {
-		cdata = new unsigned char[size];
-
-		dont_rescale = (rmin == 0.0  &&  rmax == UCHAR_MAX);
-
-		for (size_t i = 0; i < size; ++i) {
-			if (data[i] <= rmin) {
-				cdata[i] = 0;
-			}
-			else if (data[i] >= rmax){
-				cdata[i] = UCHAR_MAX;
-			}
-			else if (dont_rescale) {
-				cdata[i] = (unsigned char) data[i];
-			}
-			else {
-				cdata[i] = (unsigned char)((data[i] - rmin) /
-								(rmax - rmin) *
-								UCHAR_MAX);
-			}
-		}
-
-		ptr_data = cdata;
-
-		update_stats(ptr_data, size);
-	}
-	else if (mrch.mode == MRC_CHAR) {
-		scdata = new signed char[size];
-
-		dont_rescale = (rmin == SCHAR_MIN  &&  rmax == SCHAR_MAX);
-
-		for (size_t i = 0; i < size; ++i) {
-			if (data[i] <= rmin) {
-				scdata[i] = SCHAR_MIN;
-			}
-			else if (data[i] >= rmax){
-				scdata[i] = SCHAR_MAX;
-			}
-			else if (dont_rescale) {
-				scdata[i] = (signed char) data[i];
-			}
-			else {
-				scdata[i] = (signed char)((data[i] - rmin) /
-								(rmax - rmin) *
-								(SCHAR_MAX - SCHAR_MIN) + SCHAR_MIN);
-			}
-		}
-
-		ptr_data = scdata;
-
-		update_stats(ptr_data, size);
-	}
-	else if (mrch.mode == MRC_SHORT || mrch.mode == MRC_SHORT_COMPLEX) {
-		sdata = new short[size];
-
-		dont_rescale = (rmin == SHRT_MIN  &&  rmax == SHRT_MAX);
-
-		for (size_t i = 0; i < size; ++i) {
-			if (data[i] <= rmin) {
-				sdata[i] = SHRT_MIN;
-			}
-			else if (data[i] >= rmax) {
-				sdata[i] = SHRT_MAX;
-			}
-			else if (dont_rescale) {
-				sdata[i] = (short) data[i];
-			}
-			else {
-				sdata[i] = (short)(((data[i] - rmin) /
-								(rmax - rmin)) *
-								(SHRT_MAX - SHRT_MIN) + SHRT_MIN);
-			}
-		}
-
-		ptr_data = sdata;
-
-		update_stats(ptr_data, size);
-	}
-	else if (mrch.mode == MRC_USHORT) {
-		usdata = new unsigned short[size];
-
-		dont_rescale = (rmin == 0.0  &&  rmax == USHRT_MAX);
-
-		for (size_t i = 0; i < size; ++i) {
-			if (data[i] <= rmin) {
-				usdata[i] = 0;
-			}
-			else if (data[i] >= rmax) {
-				usdata[i] = USHRT_MAX;
-			}
-			else if (dont_rescale) {
-				usdata[i] = (unsigned short) data[i];
-			}
-			else {
-				usdata[i] = (unsigned short)((data[i] - rmin) /
-								(rmax - rmin) *
-								USHRT_MAX);
-			}
-		}
-
-		ptr_data = usdata;
-
-		update_stats(ptr_data, size);
-	}
-
-	if (is_stack  &&  ! got_one_image) {
-		mrch.nz = 1;
-	}
-
-	// New way to write data which includes region writing.
-	// If it is tested to be OK, remove the old code in the
-	// #if 0  ... #endif block.
-	EMUtil::process_region_io(ptr_data, file, WRITE_ONLY, image_index,
-							  mode_size, mrch.nx, mrch.ny, mrch.nz, area);
-
-	if (cdata)  {delete [] cdata;  cdata  = NULL;}
-	if (scdata) {delete [] scdata; scdata = NULL;}
-	if (sdata)  {delete [] sdata;  sdata  = NULL;}
-	if (usdata) {delete [] usdata; usdata = NULL;}
-
-#if 0
-	int row_size = nx * get_mode_size(mrch.mode);
-	int sec_size = nx * ny;
-
-	unsigned char *  cbuf = new unsigned char[row_size];
-	unsigned short * sbuf = (unsigned short *) cbuf;
-
-	for (int i = 0; i < nz; i++) {
-		int i2 = i * sec_size;
-
-		for (int j = 0; j < ny; j++) {
-			int k = i2 + j * nx;
-			void * pbuf = 0;
-
-			switch (mrch.mode) {
-			case MRC_UCHAR:
-				for (int l = 0; l < nx; l++) {
-					cbuf[l] = static_cast < unsigned char >(data[k + l]);
-				}
-
-				pbuf = cbuf;
-				fwrite(cbuf, row_size, 1, file);
-
-				break;
-
-			case MRC_SHORT:
-			case MRC_SHORT_COMPLEX:
-				for (int l = 0; l < nx; l++) {
-					sbuf[l] = static_cast < short >(data[k + l]);
-				}
-
-				pbuf = sbuf;
-				fwrite(sbuf, row_size, 1, file);
-
-				break;
-
-			case MRC_USHORT:
-				for (int l = 0; l < nx; l++) {
-					sbuf[l] = static_cast < unsigned short >(data[k + l]);
-				}
-
-				pbuf = sbuf;
-				fwrite(sbuf, row_size, 1, file);
-
-				break;
-
-			case MRC_FLOAT:
-			case MRC_FLOAT_COMPLEX:
-				pbuf = &data[k];
-
-				break;
-			}
-
-			if (pbuf) {
-				fwrite(pbuf, row_size, 1, file);
-			}
-		}
-	}
-
-	if (cbuf)
-	{
-		delete [] cbuf;
-		cbuf = NULL;
-	}
-#endif
+	if (mrch.mode == MRC_UCHAR)
+		write_compressed<unsigned char>(data, size, image_index, area);
+	else if (mrch.mode == MRC_CHAR)
+		write_compressed<char>(data, size, image_index, area);
+	else if (mrch.mode == MRC_SHORT || mrch.mode == MRC_SHORT_COMPLEX)
+		write_compressed<short>(data, size, image_index, area);
+	else if (mrch.mode == MRC_USHORT)
+		write_compressed<unsigned short>(data, size, image_index, area);
+	else
+		write_compressed<float>(data, size, image_index, area);
 
 	EXITFUNC;
 	return 0;
-}
-
-void MrcIO::update_stats(void * data, size_t size)
-{
-	float  v;	// variable to hold pixel value
-	double sum;
-	double square_sum;
-	double mean;
-	double sigma;
-	double vv;
-	float  min, max;
-	
-	signed char    *  scdata = NULL;
-	unsigned char  *  cdata  = NULL;
-	short          *  sdata  = NULL;
-	unsigned short *  usdata = NULL;
-
-	bool use_schar  = (mrch.mode == MRC_CHAR);
-	bool use_uchar  = (mrch.mode == MRC_UCHAR);
-	bool use_short  = (mrch.mode == MRC_SHORT || mrch.mode == MRC_SHORT_COMPLEX);
-	bool use_ushort = (mrch.mode == MRC_USHORT);
-	
-	if (use_uchar) {
-		max    = 0.0;
-		min    = UCHAR_MAX;
-		cdata  = (unsigned char *) data;
-	}
-	else if (use_schar) {
-		max    = SCHAR_MIN;
-		min    = SCHAR_MAX;
-		scdata = (signed char *) data;
-	}
-	else if (use_short) {
-		max    = (float) SHRT_MIN;
-		min    = (float) SHRT_MAX;
-		sdata  = (short *) data;
-	}
-	else if (use_ushort) {
-		max    = 0.0f;
-		min    = (float) USHRT_MAX;
-		usdata = (unsigned short *) data;
-	}
-	else {
-		throw InvalidCallException("This function is used to write 8bit/16bit mrc file only.");
-	}
-
-	sum = 0.0;
-
-	for (size_t i = 0; i < size; i++) {
-		if (use_uchar) {
-			v = (float) (cdata[i]);
-		}
-		else if (use_schar) {
-			v = (float) (scdata[i]);
-		}
-		else if (use_short) {
-			v = (float) (sdata[i]);
-		}
-		else {
-			v = (float) (usdata[i]);
-		}
-
-		if (v < min) min = v;
-		if (v > max) max = v;
-
-		sum = sum + v;
-	}
-
-	if (size > 0) {
-		mean = sum / (double) size;
-	}
-	else {
-		mean = 0.0;
-	}
-
-	square_sum = 0.0;
-
-	for (size_t i = 0; i < size; i++) {
-		if (use_uchar) {
-			v = (float) (cdata[i]);
-		}
-		else if (use_schar) {
-			v = (float) (scdata[i]);
-		}
-		else if (use_short) {
-			v = (float) (sdata[i]);
-		}
-		else {
-			v = (float) (usdata[i]);
-		}
-
-		vv = v - mean;
-
-		square_sum = square_sum  +  vv * vv;
-	}
-
-	if (size > 1) {
-		sigma = std::sqrt(square_sum / (double) (size-1));
-	}
-	else {
-		sigma = 0.0;
-	}
-
-	/* change mrch.amin / amax / amean / rms here */
-
-	mrch.amin  = min;
-	mrch.amax  = max;
-	mrch.amean = (float) mean;
-	mrch.rms   = (float) sigma;
-	
-//	MrcHeader mrch2 = mrch;
-//
-// endian issue, can't get use_host_endian argument
-//	bool opposite_endian = false;
-//
-//	if (!is_new_file) {
-//		if (is_big_endian != ByteOrder::is_host_big_endian()) {
-//			opposite_endian = true;
-//		}
-//
-//		portable_fseek(mrcfile, 0, SEEK_SET);
-//	}
-//	
-//	if (opposite_endian || !use_host_endian) {
-//		swap_header(mrch2);
-//	}
-
-	portable_fseek(file, 0, SEEK_SET);
-	
-	if (fwrite(& mrch, sizeof(MrcHeader), 1, file) != 1) {
-		throw ImageWriteException(filename, "Error writing MRC header to update statistics.");
-	}
-	
-	portable_fseek(file, sizeof(MrcHeader), SEEK_SET);
 }
 
 bool MrcIO::is_complex_mode()

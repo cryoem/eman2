@@ -390,54 +390,26 @@ int PngIO::write_data(float *data, int image_index, const Region*,
 	/**Flip the image vertically, since EMAN use top-left corner as image origin
 	* But PNG use bottom-left corner as image origin */
 	if (depth_type == PNG_CHAR_DEPTH) {
-		unsigned char *cdata = new unsigned char[nx];
+		auto [rendered_data, count] = getRenderedDataAndRendertrunc<unsigned char>(data, nx*ny);
+		vector<unsigned char> cdata(nx);
 
 		for (int y = (int)ny-1; y >= 0; y--) {
 			for (int x = 0; x < (int)nx; x++) {
-				if(data[y * nx + x] <= rendermin){
-					cdata[x] = 0;
-				}
-				else if(data[y * nx + x] >= rendermax) {
-					cdata[x] = UCHAR_MAX;
-				}
-				else {
-					cdata[x] = (unsigned char)((data[y * nx + x] - rendermin) /
-								(rendermax - rendermin) * 256);
-				}
+				cdata[x] = (unsigned char)rendered_data[y * nx + x];
 			}
-			png_write_row(png_ptr, (png_byte *) cdata);
-		}
-
-		if( cdata )
-		{
-			delete[]cdata;
-			cdata = 0;
+			png_write_row(png_ptr, (png_byte *) cdata.data());
 		}
 	}
 	else if (depth_type == PNG_SHORT_DEPTH) {
-		unsigned short *sdata = new unsigned short[nx];
+		auto [rendered_data, count] = getRenderedDataAndRendertrunc<unsigned short>(data, nx*ny);
+		vector<unsigned short> sdata(nx);
 
 		for (int y = (int)ny-1; y >= 0 ; y--) {
 			for (int x = 0; x < (int)nx; x++) {
-				if(data[y * nx + x] <= rendermin){
-					sdata[x] = 0;
-				}
-				else if(data[y * nx + x] >= rendermax) {
-					sdata[x] = USHRT_MAX;
-				}
-				else {
-					sdata[x] = (unsigned short)((data[y * nx + x] - rendermin) /
-								(rendermax - rendermin) * 65536);
-				}
+				sdata[x] = (unsigned short)rendered_data[y * nx + x];
 			}
 
-			png_write_row(png_ptr, (png_byte *) sdata);
-		}
-
-		if( sdata )
-		{
-			delete[]sdata;
-			sdata = 0;
+			png_write_row(png_ptr, (png_byte *) sdata.data());
 		}
 	}
 

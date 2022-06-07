@@ -190,23 +190,41 @@ def main():
 				
 				print("{} : {} images -> {}".format(prefix, len(fnames), lstname))
 				if options.tltang:
-					ang=np.loadtxt(options.tltang)
+					if os.path.isdir(options.tltang):
+						tnames=os.listdir(options.tltang)
+						ts=[t[:t.rfind('.')] for t in tnames]
+						ts=[k for k,t in enumerate(ts) if t in prefix]
+						if len(ts)==0:
+							print("cannot fine tilt file")
+							break
+						elif len(ts)>1:
+							print("multiple matching files exist")
+							print([tnames[k] for k in ts])
+							break
+						
+						tname=tnames[ts[0]]
+						tname="{}/{}".format(options.tltang, tname)
+						print("using tlt file",tname)
+					else:
+						tname=options.tltang
+						
+					ang=np.loadtxt(tname)
 					if len(ang)==len(fnames):
 						print("Sorting by tilt angle file")
 						srt=np.argsort(ang)
 						fnames=[fnames[i] for i in srt]
+						ang=np.sort(ang)
+					else:
+						print("tilt file length mismatch",len(ang), len(fnames))
+						break
 				
-				if os.path.isfile(lstname):
-					os.remove(lstname)
+				lout=[{"src":fm,"idx":0} for fm in fnames]
+				if options.tltang:
+					for li in range(len(lout)):
+						lout[li]["tilt_angle"]=ang[li]
 				
-				lout=LSXFile(lstname, False)
+				save_lst_params(lout, lstname)
 				
-				
-				for fm in fnames:
-					lout.write(-1, 0, fm)
-					
-					
-				lout.close()
 
 		elif options.mdoc:
 			print("Parsing mdoc files")
