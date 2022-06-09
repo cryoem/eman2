@@ -120,7 +120,7 @@ namespace EMAN
 		template<EMUtil::EMDataType I>
 		auto write_compressed(float *data, size_t size, hid_t ds, hid_t memoryspace, hid_t filespace);
 
-		map<EMUtil::EMDataType, hid_t> EM2HDF {
+		map<EMUtil::EMDataType, hid_t> _EM2HDF {
 				{EMUtil::EM_CHAR,   H5T_NATIVE_CHAR},
 				{EMUtil::EM_UCHAR,  H5T_NATIVE_UCHAR},
 				{EMUtil::EM_SHORT,  H5T_NATIVE_SHORT},
