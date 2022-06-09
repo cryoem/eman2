@@ -131,6 +131,8 @@ namespace EMAN
 				{EMUtil::EM_DOUBLE, H5T_NATIVE_DOUBLE},
 		};
 
+		hid_t em_to_hdf(EMUtil::EMDataType dt);
+
 	  private:
 		hsize_t nx, ny, nz;
 		bool is_exist;	//boolean to tell if the image (group) already exist(to be overwrite)

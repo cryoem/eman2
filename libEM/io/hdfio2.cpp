@@ -1367,11 +1367,17 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 	return 0;
 }
 
+hid_t HdfIO2::em_to_hdf(EMUtil::EMDataType dt) {
+	hid_t hdt = _EM2HDF[dt];
+
+	return hdt;
+}
+
 template<EMUtil::EMDataType I>
 auto HdfIO2::write_compressed(float *data, size_t size, hid_t ds, hid_t memoryspace, hid_t filespace) {
 	auto [rendered_data, rendertrunc] = getRenderedDataAndRendertrunc<typename EM2Type<I>::type>(data, size);
 
-	auto err_no = H5Dwrite(ds, _EM2HDF[I], memoryspace, filespace, H5P_DEFAULT, rendered_data.data());
+	auto err_no = H5Dwrite(ds, em_to_hdf(I), memoryspace, filespace, H5P_DEFAULT, rendered_data.data());
 
 	if (err_no < 0)
 		std::cerr << "H5Dwrite error " << EMUtil::get_datatype_string(I) << ": " << err_no << std::endl;
@@ -1454,11 +1460,11 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 		case EMUtil::EM_UCHAR:
 		case EMUtil::EM_SHORT:
 		case EMUtil::EM_CHAR:
-			hdt = _EM2HDF[dt]; break;
+			hdt = em_to_hdf(dt); break;
 		case EMUtil::EM_COMPRESSED:
-			if (renderbits<=0)       hdt = _EM2HDF[EMUtil::EM_FLOAT];
-			else if (renderbits<=8)  hdt = _EM2HDF[EMUtil::EM_UCHAR];
-			else if (renderbits<=16) hdt = _EM2HDF[EMUtil::EM_USHORT];
+			if (renderbits<=0)       hdt = em_to_hdf(EMUtil::EM_FLOAT);
+			else if (renderbits<=8)  hdt = em_to_hdf(EMUtil::EM_UCHAR);
+			else if (renderbits<=16) hdt = em_to_hdf(EMUtil::EM_USHORT);
 			else throw ImageWriteException(filename,"Bit reduced compressed HDF5 files may not use more than 16 bits. For native float, set 0 bits.");
 			break;
 		default:
