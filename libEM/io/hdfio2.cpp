@@ -1449,15 +1449,16 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 	// Setup a standard HDF datatype
 	hid_t hdt=0;
 	switch(dt) {
-		case EMUtil::EM_FLOAT: hdt=H5T_NATIVE_FLOAT; break;
-		case EMUtil::EM_USHORT: hdt=H5T_NATIVE_USHORT; break;
-		case EMUtil::EM_UCHAR: hdt=H5T_NATIVE_UCHAR; break;
-		case EMUtil::EM_SHORT: hdt=H5T_NATIVE_SHORT; break;
-		case EMUtil::EM_CHAR: hdt=H5T_NATIVE_CHAR; break;
+		case EMUtil::EM_FLOAT:
+		case EMUtil::EM_USHORT:
+		case EMUtil::EM_UCHAR:
+		case EMUtil::EM_SHORT:
+		case EMUtil::EM_CHAR:
+			hdt = EM2HDF[dt]; break;
 		case EMUtil::EM_COMPRESSED:
-			if (renderbits<=0) hdt=H5T_NATIVE_FLOAT;
-			else if (renderbits<=8) hdt=H5T_NATIVE_UCHAR;
-			else if (renderbits<=16) hdt=H5T_NATIVE_USHORT;
+			if (renderbits<=0)       hdt = EM2HDF[EMUtil::EM_FLOAT];
+			else if (renderbits<=8)  hdt = EM2HDF[EMUtil::EM_UCHAR];
+			else if (renderbits<=16) hdt = EM2HDF[EMUtil::EM_USHORT];
 			else throw ImageWriteException(filename,"Bit reduced compressed HDF5 files may not use more than 16 bits. For native float, set 0 bits.");
 			break;
 		default:
