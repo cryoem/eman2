@@ -53,17 +53,6 @@ using std::vector;
 
 namespace EMAN
 {
-	inline map<EMUtil::EMDataType, hid_t> EM2HDF {
-			{EMUtil::EM_CHAR,   H5T_NATIVE_CHAR},
-			{EMUtil::EM_UCHAR,  H5T_NATIVE_UCHAR},
-			{EMUtil::EM_SHORT,  H5T_NATIVE_SHORT},
-			{EMUtil::EM_USHORT, H5T_NATIVE_USHORT},
-			{EMUtil::EM_INT,    H5T_NATIVE_INT},
-			{EMUtil::EM_UINT,   H5T_NATIVE_UINT},
-			{EMUtil::EM_FLOAT,  H5T_NATIVE_FLOAT},
-			{EMUtil::EM_DOUBLE, H5T_NATIVE_DOUBLE},
-	};
-
 	/** HDF5 (hiearchical data format version 5) is supported in
 	 * HdfIO. This is a revised HDF5 format file.
 	 *
@@ -130,6 +119,17 @@ namespace EMAN
 	  private:
 		template<EMUtil::EMDataType I>
 		auto write_compressed(float *data, size_t size, hid_t ds, hid_t memoryspace, hid_t filespace);
+
+		map<EMUtil::EMDataType, hid_t> EM2HDF {
+				{EMUtil::EM_CHAR,   H5T_NATIVE_CHAR},
+				{EMUtil::EM_UCHAR,  H5T_NATIVE_UCHAR},
+				{EMUtil::EM_SHORT,  H5T_NATIVE_SHORT},
+				{EMUtil::EM_USHORT, H5T_NATIVE_USHORT},
+				{EMUtil::EM_INT,    H5T_NATIVE_INT},
+				{EMUtil::EM_UINT,   H5T_NATIVE_UINT},
+				{EMUtil::EM_FLOAT,  H5T_NATIVE_FLOAT},
+				{EMUtil::EM_DOUBLE, H5T_NATIVE_DOUBLE},
+		};
 
 	  private:
 		hsize_t nx, ny, nz;
