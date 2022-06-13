@@ -2,6 +2,8 @@
 #define EMAN_RENDERER_H
 
 #include <cmath>
+#include <vector>
+#include "emutil.h"
 
 namespace EMAN {
 
