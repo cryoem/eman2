@@ -1415,24 +1415,6 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 		spc=H5Screate_simple(3,dims,NULL);
 	}
 	
-	// Setup a standard HDF datatype
-	hid_t hdt=0;
-	switch(dt) {
-		case EMUtil::EM_FLOAT: hdt=H5T_NATIVE_FLOAT; break;
-		case EMUtil::EM_USHORT: hdt=H5T_NATIVE_USHORT; break;
-		case EMUtil::EM_UCHAR: hdt=H5T_NATIVE_UCHAR; break;
-		case EMUtil::EM_SHORT: hdt=H5T_NATIVE_SHORT; break;
-		case EMUtil::EM_CHAR: hdt=H5T_NATIVE_CHAR; break;
-		case EMUtil::EM_COMPRESSED:
-			if (renderbits<=0) hdt=H5T_NATIVE_FLOAT;
-			else if (renderbits<=8) hdt=H5T_NATIVE_UCHAR;
-			else if (renderbits<=16) hdt=H5T_NATIVE_USHORT;
-			else throw ImageWriteException(filename,"Bit reduced compressed HDF5 files may not use more than 16 bits. For native float, set 0 bits.");
-			break;
-		default:
-			throw ImageWriteException(filename,"HDF5 does not support this data format");
-	}
-			
 	if (nx==1 && dt==EMUtil::EM_COMPRESSED) {
 		printf("Warning: HDF compressed mode not supported when nx=1\n");
 		dt=EMUtil::EM_FLOAT;
@@ -1464,6 +1446,24 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 		}
 	}
 	
+	// Setup a standard HDF datatype
+	hid_t hdt=0;
+	switch(dt) {
+		case EMUtil::EM_FLOAT: hdt=H5T_NATIVE_FLOAT; break;
+		case EMUtil::EM_USHORT: hdt=H5T_NATIVE_USHORT; break;
+		case EMUtil::EM_UCHAR: hdt=H5T_NATIVE_UCHAR; break;
+		case EMUtil::EM_SHORT: hdt=H5T_NATIVE_SHORT; break;
+		case EMUtil::EM_CHAR: hdt=H5T_NATIVE_CHAR; break;
+		case EMUtil::EM_COMPRESSED:
+			if (renderbits<=0) hdt=H5T_NATIVE_FLOAT;
+			else if (renderbits<=8) hdt=H5T_NATIVE_UCHAR;
+			else if (renderbits<=16) hdt=H5T_NATIVE_USHORT;
+			else throw ImageWriteException(filename,"Bit reduced compressed HDF5 files may not use more than 16 bits. For native float, set 0 bits.");
+			break;
+		default:
+			throw ImageWriteException(filename,"HDF5 does not support this data format");
+	}
+
 	hsize_t rank = 0;
 	if (ds < 0) {	//new dataset
 		hid_t plist = H5Pcreate(H5P_DATASET_CREATE);	// we could just use H5P_DEFAULT for non-compressed
