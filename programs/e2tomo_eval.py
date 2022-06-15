@@ -237,7 +237,7 @@ class TomoEvalGUI(QtWidgets.QWidget):
 							if vname in ptclcls:
 								ptclcls[vname][1]+=n
 							else:
-								ptclcls[vname]=[1,n]
+								ptclcls[vname]=[True,n]
 				if ("curves" in js) and len(js["curves"])>0:
 					cv=dic["curves"]=np.array(js["curves"])
 					cids=np.unique(cv[:,-1])
@@ -442,7 +442,11 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		if modifiers == QtCore.Qt.ShiftModifier:
 			subprocess.Popen("e2tomo_drawcurve.py {} --ppid {}".format(info["filename"], os.getpid()),shell=True)
 		else:
-			subprocess.Popen("e2spt_boxer.py {} --ppid {}".format(info["filename"], os.getpid()),shell=True)
+			cmd="e2spt_boxer.py {} --ppid {}".format(info["filename"], os.getpid())
+			psel=[p for p in self.ptclcls.keys() if self.ptclcls[p][0]]
+			if len(psel)==1:
+				cmd+=f" --label {psel[0]}"
+			subprocess.Popen(cmd,shell=True)
 		#launch_childprocess()
 
 	#def clickset(self, item):
