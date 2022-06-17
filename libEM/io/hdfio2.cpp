@@ -1368,26 +1368,22 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 }
 
 hid_t HdfIO2::em_to_hdf(EMUtil::EMDataType dt) {
-	hid_t hdt;
-
 	switch(dt) {
 		case EMUtil::EM_FLOAT:
 		case EMUtil::EM_USHORT:
 		case EMUtil::EM_UCHAR:
 		case EMUtil::EM_SHORT:
 		case EMUtil::EM_CHAR:
-			hdt = _EM2HDF[dt]; break;
+			return _EM2HDF[dt];
 		case EMUtil::EM_COMPRESSED:
-			if (renderbits<=0)       hdt = em_to_hdf(EMUtil::EM_FLOAT);
-			else if (renderbits<=8)  hdt = em_to_hdf(EMUtil::EM_UCHAR);
-			else if (renderbits<=16) hdt = em_to_hdf(EMUtil::EM_USHORT);
+			if (renderbits<=0)       return em_to_hdf(EMUtil::EM_FLOAT);
+			else if (renderbits<=8)  return em_to_hdf(EMUtil::EM_UCHAR);
+			else if (renderbits<=16) return em_to_hdf(EMUtil::EM_USHORT);
 			else throw ImageWriteException(filename,"Bit reduced compressed HDF5 files may not use more than 16 bits. For native float, set 0 bits.");
 			break;
 		default:
 			throw ImageWriteException(filename,"HDF5 does not support this data format");
 	}
-
-	return hdt;
 }
 
 template<EMUtil::EMDataType I>
