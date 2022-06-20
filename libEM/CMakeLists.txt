@@ -30,6 +30,7 @@ target_sources(EM2 PRIVATE
 			   io/hdfio.cpp
 			   io/hdfio2.cpp
 			   io/jpegio.cpp
+			   io/renderer.cpp
 			   emdata.cpp
 			   emdata_io.cpp
 			   emdata_core.cpp
