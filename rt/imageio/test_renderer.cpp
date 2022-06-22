@@ -2,12 +2,7 @@
 
 using namespace EMAN;
 
+#include <catch2/catch_test_macros.hpp>
 
-#undef NDEBUG
-#include <cassert>
-
-
-int main()
-{
-	return 0;
+TEST_CASE("test class Renderer") {
 }
