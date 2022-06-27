@@ -1109,7 +1109,6 @@ class TestImagicIO(ImageIOTester):
 		"""test write-read img .............................."""
 		self.do_test_read_write("img")
 
-#	def 
 
 class TestImageIO(unittest.TestCase):
 	"""image data IO test"""
@@ -1166,7 +1165,7 @@ class TestImageIO(unittest.TestCase):
 			region_2d = Region(x0, y0, z0, xsize, ysize, 1)
 			region_3d = Region(x0, y0, z0, xsize, ysize, zsize)
 
-		return (region_2d, region_3d)
+		return region_2d, region_3d
 
 	def region_read_test(self, imgtype, imgfile, outtype = None):	
 		"""test region read ................................."""
@@ -1175,7 +1174,7 @@ class TestImageIO(unittest.TestCase):
 			
 		is_3d = False
 		if imgtype == IMAGE_IMAGIC:
-		   is_3d = True
+			is_3d = True
 
 		imgbase = Util.remove_filename_ext(imgfile)
 		ext = Util.get_filename_ext(imgfile)
@@ -1185,11 +1184,11 @@ class TestImageIO(unittest.TestCase):
 
 		e = EMData()
 		e.read_image(imgfile, 0, False, None, is_3d)
-	 
+
 		TestUtil.check_image(imgfile, e)
-		 
+
 		#testlib.unlink_data_header_files(imgfile)	
-		 
+
 		(region_2d, region_3d) = self.create_dummy_region(e)
 
 		e2 = EMData()
