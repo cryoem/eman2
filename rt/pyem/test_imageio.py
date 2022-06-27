@@ -354,20 +354,6 @@ class TestSpiderIO(ImageIOTester):
 			e.process_inplace('testimage.sinewave', {'wavelength':20})
 			e.set_attr('SPIDER.title', 'The fourth image in the stack')
 			e.write_image('test.spi', 3)
-			
-			f = EMData()
-			#read the overall herder
-			f.read_image('test.spi', -1, True)
-			d = f.get_attr_dict()
-			img_num = d['SPIDER.maxim']
-			
-			#read the individual image from a stack
-			for i in range(img_num):
-				f.read_image('test.spi', i)
-				self.assertEqual(f.is_complex(), False)
-				self.assertEqual(f.get_xsize(), 100)
-				self.assertEqual(f.get_ysize(), 100)
-				self.assertEqual(f.get_zsize(), 1)
 		finally:
 			testlib.safe_unlink('test.spi')
 		
