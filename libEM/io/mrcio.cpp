@@ -1320,11 +1320,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 	}
 	if (renderbits==0 || renderbits>truebits) renderbits=truebits;
 	
-	float rmin = rendermin;
-	float rmax = rendermax;
-	int rbits = renderbits;
-
-	EMUtil::getRenderMinMax(data, nx, ny, rmin, rmax, rbits, nz);
+	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, renderbits, nz);
 
 	if (mrch.mode == MRC_UCHAR)
 		write_compressed<unsigned char>(data, size, image_index, area);
