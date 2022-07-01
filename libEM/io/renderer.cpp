@@ -14,13 +14,17 @@ EMUtil::EMDataType Renderer::rendered_dt(EMUtil::EMDataType dt,
 				case EMUtil::EM_FLOAT:
 					key = 0;
 					break;
+				case EMUtil::EM_CHAR:
+					key = 2*EMDataTypeBits[l] + 1;
+					break;
 				default:
-					key = EMDataTypeBits[l];
+					key = 2*EMDataTypeBits[l];
 			}
 			bits[key] = l;
 		}
 
-		dt = bits.lower_bound(renderbits)->second;
+		auto it = bits.lower_bound(renderbits*2);
+		dt = it->second;
 	}
 
 	return dt;
