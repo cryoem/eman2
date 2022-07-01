@@ -115,6 +115,22 @@ TEST_CASE("return datatype when compression requested") {
 	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_UCHAR, EMUtil::EM_USHORT, EMUtil::EM_FLOAT}) == EMUtil::EM_USHORT);
 }
 
+TEST_CASE("various initializer lists when compression requested") {
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_UCHAR, EMUtil::EM_SHORT}) == EMUtil::EM_SHORT);
+	a.renderbits = 8;
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_UCHAR, EMUtil::EM_USHORT}) == EMUtil::EM_UCHAR);
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_CHAR, EMUtil::EM_USHORT}) == EMUtil::EM_CHAR);
+	REQUIRE(a.renderbits == 8);
+
+	a.renderbits = 9;
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_CHAR, EMUtil::EM_FLOAT, EMUtil::EM_SHORT}) == EMUtil::EM_SHORT);
+	a.renderbits = 4;
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_CHAR, EMUtil::EM_FLOAT, EMUtil::EM_SHORT}) == EMUtil::EM_CHAR);
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_FLOAT, EMUtil::EM_SHORT}) == EMUtil::EM_SHORT);
+	a.renderbits = 0;
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_FLOAT, EMUtil::EM_SHORT}) == EMUtil::EM_FLOAT);
+}
+
 TEST_CASE("return datatype when no compression requested") {
 	REQUIRE(a.rendered_dt(EMUtil::EM_USHORT, {EMUtil::EM_UCHAR, EMUtil::EM_USHORT, EMUtil::EM_FLOAT}) == EMUtil::EM_USHORT);
 	REQUIRE(a.rendered_dt(EMUtil::EM_UCHAR, {EMUtil::EM_UCHAR, EMUtil::EM_USHORT, EMUtil::EM_FLOAT}) == EMUtil::EM_UCHAR);
