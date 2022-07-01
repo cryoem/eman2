@@ -165,3 +165,21 @@ TEST_CASE("prefer unsigned type over signed") {
 	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_UCHAR, EMUtil::EM_CHAR}) == EMUtil::EM_UCHAR);
 	REQUIRE(a.renderbits == 4);
 }
+
+TEST_CASE("renderbits can't be more than supported datatype bits") {
+	a.renderbits = 12;
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_UCHAR, EMUtil::EM_CHAR}) == EMUtil::EM_UCHAR);
+	REQUIRE(a.renderbits == 8);
+
+	a.renderbits = 16;
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_CHAR, EMUtil::EM_UCHAR}) == EMUtil::EM_UCHAR);
+	REQUIRE(a.renderbits == 8);
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_SHORT, EMUtil::EM_USHORT}) == EMUtil::EM_USHORT);
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_UCHAR, EMUtil::EM_CHAR}) == EMUtil::EM_UCHAR);
+
+	a.renderbits = 12;
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_SHORT, EMUtil::EM_USHORT}) == EMUtil::EM_USHORT);
+	REQUIRE(a.renderbits == 12);
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_USHORT, EMUtil::EM_SHORT}) == EMUtil::EM_USHORT);
+	REQUIRE(a.renderbits == 12);
+}

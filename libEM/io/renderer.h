@@ -65,7 +65,7 @@ namespace EMAN {
 		auto getRenderedDataAndRendertrunc(float *data, size_t size);
 
 		EMUtil::EMDataType rendered_dt(EMUtil::EMDataType dt,
-                                       std::initializer_list<decltype(dt)> dts) const;
+                                       std::initializer_list<decltype(dt)> dts);
 	};
 
 	template<class T>
