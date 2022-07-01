@@ -15,6 +15,7 @@ EMUtil::EMDataType Renderer::rendered_dt(EMUtil::EMDataType dt,
 					key = 0;
 					break;
 				case EMUtil::EM_CHAR:
+				case EMUtil::EM_SHORT:
 					key = 2*EMDataTypeBits[l] + 1;
 					break;
 				default:
