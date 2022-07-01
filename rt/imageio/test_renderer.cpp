@@ -138,3 +138,15 @@ TEST_CASE("return datatype when no compression requested") {
 	REQUIRE(a.rendered_dt(EMUtil::EM_INT, {EMUtil::EM_UCHAR, EMUtil::EM_USHORT, EMUtil::EM_FLOAT}) == EMUtil::EM_INT);
 	REQUIRE(a.rendered_dt(EMUtil::EM_UINT, {EMUtil::EM_UCHAR, EMUtil::EM_USHORT, EMUtil::EM_FLOAT}) == EMUtil::EM_UINT);
 }
+
+TEST_CASE("prefer unsigned type over signed") {
+	a.renderbits = 8;
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_CHAR, EMUtil::EM_UCHAR}) == EMUtil::EM_UCHAR);
+	REQUIRE(a.renderbits == 8);
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_SHORT, EMUtil::EM_USHORT}) == EMUtil::EM_USHORT);
+	REQUIRE(a.renderbits == 8);
+
+	a.renderbits = 12;
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_SHORT, EMUtil::EM_USHORT}) == EMUtil::EM_USHORT);
+	REQUIRE(a.renderbits == 12);
+}
