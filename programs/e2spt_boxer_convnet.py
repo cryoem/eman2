@@ -866,7 +866,8 @@ class EMTomobox(QtWidgets.QMainWindow):
 					self.ptclimages=[p for i,p in enumerate(self.ptclimages) if i!=idx]
 					self.save_points()
 				else:
-					self.boxshapes.points.pop(idx)
+					#print(self.boxshapes.points)
+					#self.boxshapes.points.pop(idx)
 					self.references=[b for ib,b in enumerate(self.references) if ib!=idx]
 					self.boximages=[b for ib,b in enumerate(self.boximages) if ib!=idx]
 					
