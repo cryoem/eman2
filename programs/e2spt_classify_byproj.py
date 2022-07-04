@@ -128,7 +128,7 @@ def ptclextract_new(jsd,lsx,ns,shrink,layers,sym,mask,hp,lp,verbose):
 		all["orig_file"]=lsx[i][1]
 		all["orig_n"]=lsx[i][0]
 		all["xform.align3d"]=xf
-		jsd.put((i,None,all))
+		jsd.put((i,None,all, ptcl))
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -155,6 +155,7 @@ produce new sets/ for each class, which could be further-refined.
 	parser.add_argument("--saveali",action="store_true",help="In addition to the unaligned sets/ for each class, generate aligned particle stacks per class",default=False)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--write3d",action="store_true",help="Write 3d particles.",default=False)
 
 
 	(options, args) = parser.parse_args()
@@ -256,9 +257,11 @@ produce new sets/ for each class, which could be further-refined.
 			#print("{}% complete".format(100.0*frac))
 	
 		while not jsd.empty():
-			i,k,pall=jsd.get()
+			i,k,pall,ptcl=jsd.get()
 			prjs[i]=pall
 			pall.write_compressed(f"{options.path}/alisecs_{options.iter:02d}_{crun:02d}.hdf",i,8)
+			if options.write3d:
+				ptcl.write_compressed(f"{options.path}/aliptcl3d_{options.iter:02d}_{crun:02d}.hdf",i,8)
 			#all.write_image("{}/alisecs_{:02d}.hdf".format(options.path,options.iter),i)
 
 	for t in thrds:
