@@ -52,6 +52,8 @@ def main():
 	parser.add_argument("--extractkey", type=str, default=None, help="This will extract a single named value from each specified file. Output will be multicolumn if the referenced label is an object, such as CTF.")
 	parser.add_argument("--extractspt", action="store_true", default=False, help="This will extract the parameters from a particle_parms JSON file in SPT projects as a multicolumn text file.")
 	parser.add_argument("--removekey", type=str, default=None, help="DANGER! This will remove all data associated with the named key from all listed .json files.")
+	parser.add_argument("--removeptcl", type=str, default=None, help="remove tomo particles of the given label.")
+
 	parser.add_argument("--output", type=str, default="jsoninfo.txt", help="Output for text operations (not JSON) filename. default = jsoninfo.txt")
 	parser.add_argument("--setoption",type=str, default=None, help="Set a single option in application preferences, eg - display2d.autocontrast:true")
 	parser.add_argument("--listoptions",action="store_true", default=False, help="List all currently set user application preferences")
@@ -208,7 +210,32 @@ def main():
 		js.close()
 		print("Removed {} from {} files. Backup stored in backup_removed.json".format(options.removekey,nf))
 			
-
+	if options.removeptcl:
+		
+		for ii, fsp in enumerate(args):
+				
+			js=dict(js_open_dict(fsp)).copy()
+			if "class_list" in js:
+				ky=list(js["class_list"].keys())
+				torm=[k for k in ky if js["class_list"][k]["name"]==options.removeptcl]
+				if len(torm)==0:
+					continue
+				boxnew=js["boxes_3d"]
+				nb=len(boxnew)
+				for ir in torm:
+					js["class_list"].pop(ir)
+					boxnew=[b for b in boxnew if b[-1]!=int(ir)]
+					
+				print("{} -> remove {} classes, {} particles".format(base_name(fsp), len(torm), nb-len(boxnew)))
+				js["boxes_3d"]=boxnew
+				
+				f=js_open_dict(fsp)
+				f.update(js)
+				f.close()
+				
+			else:
+				continue
+			
 
 	E2end(logid)
 
