@@ -3703,8 +3703,9 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 		from . import emdataitem3d
 
 		QtWidgets.QWidget.__init__(self, parent)
-
-		self.setWindowTitle("e2display.py Browser") # Jesus
+		
+		cwd=os.path.basename(os.getcwd())
+		self.setWindowTitle(f"{cwd} - e2display") # Jesus
 
 		# label = QtWidgets.QLabel(self);
       # label.setText("Window Title");
