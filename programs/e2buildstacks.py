@@ -239,12 +239,18 @@ def main():
 				f=open(md, 'r')
 				lines=f.readlines()
 				fnames=[l for l in lines if l.startswith("SubFramePath")]
+				ang=[l for l in lines if l.startswith("TiltAngle")]
+				ang=[float(l.split('=')[-1]) for l in ang]
+				srt=np.argsort(ang)
+				ang=np.sort(ang)
 				lst=[]
 				for l in fnames:
 					p0=max(l.rfind('/'), l.rfind('\\'))+1
 					p1=l.rfind('.')
 					l=l[p0:p1]
+					l1=l.replace('.', '_')
 					match=[a for a in args if l in a]
+					match+=[a for a in args if l1 in a]
 					if len(match)==0:
 						print("error: image file for {} does not exist".format(l))
 						break
@@ -258,6 +264,9 @@ def main():
 					lst.append({"src":match[0],"idx":0})
 				
 				else:
+					lst=[lst[i] for i in srt]
+					for i,l in enumerate(lst):
+						l["tilt_angle"]=ang[i]
 					tname=md[md.rfind('/')+1:]
 					tname=tname[:tname.find('.')]+".lst"
 					tname=os.path.join("tiltseries", tname)
