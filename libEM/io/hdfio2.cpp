@@ -50,19 +50,6 @@
 	#define  MAXPATHLEN (MAX_PATH * 4)
 #endif	//WIN32
 
-// Some bugs with using stdint.h, so defining our own limits. Handling as float to avoid some math mishandling 
-const float INT8_min = -128.0f;
-const float INT16_min = -32768.0f;
-//const int INT32_min = -2147483648;	// some potential issues using this, but we aren't supporting them at the moment anyway
-
-const float INT8_max = 127.0f;
-const float INT16_max = 32767.0f;
-//const int INT32_max = 2147483647;
-
-const float UINT8_max = 255.0f;
-const float UINT16_max = 65535.0f;
-//const unsigned int UINT32_max = 4294967295U;
-
 using namespace EMAN;
 
 static const int ATTR_NAME_LEN = 128;
@@ -635,31 +622,6 @@ int HdfIO2::read_header(Dict & dict, int image_index, const Region * area, bool)
 		printf("Error on HDF5 iter attr\n");
 	}
 
-// 	int nattr=H5Aget_num_attrs(igrp);
-// 	char name[ATTR_NAME_LEN];
-// 
-// 	for (i=0; i<nattr; i++) {
-// 		//hid_t attr=H5Aopen_idx(igrp, i);
-// 		hid_t attr=H5Aopen_by_idx(igrp,".",H5_INDEX_NAME,H5_ITER_NATIVE,i,H5P_DEFAULT,H5P_DEFAULT);
-// 		H5Aget_name(attr,127,name);
-// 
-// 		if (strncmp(name,"EMAN.", 5)!=0) {
-// 			H5Aclose(attr);
-// 			continue;
-// 		}
-// 
-// 		try {
-// 			EMObject val=read_attr(attr);
-// 			dict[name+5]=val;
-// 		}
-// 		catch(...) {
-// 			printf("HDF: Error reading HDF attribute %s\n",name+5);
-// 		}
-// 
-// 		H5Aclose(attr);
-// 	}
-
-
 	// if apix is unset, see if we can find it elsewhere
 	if (dict.has_key("Group.IMOD.PixelSpacing")) {
 		float apix=dict["Group.IMOD.PixelSpacing"];
@@ -679,22 +641,6 @@ int HdfIO2::read_header(Dict & dict, int image_index, const Region * area, bool)
 
 	if (dict.has_key("ctf")) {
 		dict["ctf"].force_CTF();
-// 		string ctfString = (string)dict["ctf"];
-// 
-// 		if (ctfString.substr(0, 1) == "O") {
-// 			Ctf * ctf_ = new EMAN1Ctf();
-// 			ctf_->from_string(ctfString);
-// 			dict.erase("ctf");
-// 			dict["ctf"] = ctf_;
-// 			delete ctf_;
-// 		}
-// 		else if (ctfString.substr(0, 1) == "E") {
-// 			Ctf * ctf_ = new EMAN2Ctf();
-// 			ctf_->from_string(ctfString);
-// 			dict.erase("ctf");
-// 			dict["ctf"] = ctf_;
-// 			delete ctf_;
-// 		}
 	}
 
 	if (area) {
@@ -819,23 +765,6 @@ int HdfIO2::erase_header(int image_index)
 	if (H5Aiterate2(igrp,H5_INDEX_NAME, H5_ITER_NATIVE, &n, &h5_iter_attr_del, NULL)) {
 		printf("Error on HDF5 erase_header\n");
 	}
-
-	
-// 	int nattr=H5Aget_num_attrs(igrp);
-// 
-// 	char name[ATTR_NAME_LEN];
-// 
-// 	for (i=0; i<nattr; i++) {
-// // 		hid_t attr = H5Aopen_idx(igrp, 0); // use 0 as index here, since the H5Adelete() will change the index
-// // 		H5Aget_name(attr,127,name);
-// // 		H5Aclose(attr);
-// // 
-// // 		if (H5Adelete(igrp,name) < 0) {
-// // 			LOGERR("attribute %s deletion error in erase_header().\n", name);
-// // 		}
-// 		hid_t attr=H5Adelete_by_idx(igrp,".",H5_INDEX_UNKNOWN,H5_ITER_NATIVE,i,H5P_DEFAULT);
-// 
-// 	}
 
 	H5Gclose(igrp);
 	EXITFUNC;
@@ -1383,29 +1312,12 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 	 * Keep the header and dataset intact for region writing*/
 	else {
 		is_exist = true;
-// 		int nattr=H5Aget_num_attrs(igrp);
-// 		char name[ATTR_NAME_LEN];
 		Dict dict2;
 		hsize_t n=0;
 		if (H5Aiterate2(igrp,H5_INDEX_NAME, H5_ITER_NATIVE, &n, &h5_iter_attr_read, &dict2)) {
 			printf("Error on HDF5 iter attr\n");
 		}
 
-// 		for (int i=0; i<nattr; i++) {
-// 			hid_t attr=H5Aopen_idx(igrp, i);
-// 			H5Aget_name(attr,127,name);
-// 
-// 			if (strncmp(name,"EMAN.", 5)!=0) {
-// 				H5Aclose(attr);
-// 				continue;
-// 			}
-// 
-// 			EMObject val=read_attr(attr);
-// 			dict2[name+5]=val;
-// 			H5Aclose(attr);
-// 
-// 		}
-		
 		if (!dict2.has_key("datatype")) { // by default, HDF5 is written as float
 			dict2["datatype"] = (int)EMUtil::EM_FLOAT;
 		}
@@ -1416,7 +1328,6 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 		else {
 			erase_header(image_index);
 
-//			printf("eraseh %d %d %d %d %d %d %d %d %d\n",(int)dict["nx"],(int)dict["ny"],(int)dict["nz"],(int)dict2["nx"],(int)dict2["ny"],(int)dict2["nz"],(int)dict["datatype"],(int)dict2["datatype"],(int)dt);
 			// change the size or data type of a image,
 			// the existing data set is invalid, unlink it
 			if ((int)dict["nx"]*(int)dict["ny"]*(int)dict["nz"] !=
@@ -1424,7 +1335,6 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 				(int)dict["datatype"] != (int)dict2["datatype"] ||
 				dict2.has_key("render_compress_level") || (int)dt==(int)EMUtil::EM_COMPRESSED) {
 
-//				printf("erase\n");
 				sprintf(ipath,"/MDF/images/%d/image",image_index);
 
 				H5Gunlink(igrp, ipath);
@@ -1539,33 +1449,19 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 		H5D_layout_t layout = H5Pget_layout(cpl);
 		H5Pclose(cpl);
 
-//		printf("%d %d %d %d   ",(int)layout,(int)(dt==EMUtil::EM_COMPRESSED),(int)H5D_CHUNKED,(int)H5D_COMPACT);
 		if ((layout==H5D_CHUNKED && dt!=EMUtil::EM_COMPRESSED) || (layout!=H5D_CHUNKED && dt==EMUtil::EM_COMPRESSED)) {
 			H5Sclose(spc);
 			H5Dclose(ds);
 			throw ImageWriteException(filename,"HDF ERROR: Trying to overwrite an image with compression mismatch");
 		}
 		
-		// causes issues with region writing, and not sure it's really necessary
-// 		hid_t spc_file = H5Dget_space(ds);
-// 		if (H5Sget_simple_extent_ndims(spc_file)!=rank) {
-// 			H5Sclose(spc_file);
-// 			H5Sclose(spc);
-// 			H5Dclose(ds);
-// 			throw ImageWriteException(filename,"HDF ERROR: Trying to overwrite an image with different dimensionality");
-// 		}
-// 		H5Sclose(spc_file);
-		
 		hid_t fdt = H5Dget_type(ds);
-//		printf("%d %d\n",(int)fdt,(int)dt);
 		if (!H5Tequal(fdt,dt)) {
 			H5Tclose(fdt);
 			H5Sclose(spc);
 			H5Dclose(ds);
 			throw ImageWriteException(filename,"HDF ERROR: Trying to overwrite an image with different data type");
 		}
-		
-		
 	}
 	
 	hsize_t rank = 0;
@@ -1580,18 +1476,10 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 				hsize_t cdims[3] = { 1, ny>256?256:ny, nx>256?256:nx};		// slice-wise reading common in 3D so 2-D chunks
 				H5Pset_chunk(plist,3,cdims);
 			}
-	// 		H5Pset_scaleoffset(plist,H5Z_SO_FLOAT_DSCALE,2);  // doesn't seem to work right?, anyway some conceptual problems
-	// 		H5Pset_shuffle(plist);	// rearrange bytes, seems to have zero impact, maybe deflate is internally doing something?
 			H5Pset_deflate(plist, renderlevel);		// zlib level default is 1
-			//conclusion is that SZIP compresses roughly as well as GZIP3, but is twice as fast (for 4 bit cryoem data)
-			// While this is good, it isn't worth the IP hassles right now. We can revisit the issue later if a good
-			// open license library starts being widely used
-			//int r=H5Pset_szip (plist, H5_SZIP_NN_OPTION_MASK, 32);	// szip with 32 pixels per block (NN (2 stage) vs EC), NN definitely seems to perform better
-	//		if (r) printf("R: %d\n",r);
 		}
 
 		ds=H5Dcreate(file,ipath, hdt, spc, plist );
-//		printf("CRT %d %s\n",ds,ipath);
 		H5Pclose(plist);	// safe to do this here?
 	}
 	else {	//existing file
@@ -1603,7 +1491,6 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 	if (! data) {
 		H5Dclose(ds);
 		H5Sclose(spc);
-//		std::cerr << "Warning:blank image written!!! " << std::endl;
 		return 0;
 	}
 

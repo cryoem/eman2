@@ -524,13 +524,6 @@ int ImagicIO::write_data(float *data, int image_index, const Region* area,
 	else if (is_big_endian != ByteOrder::is_host_big_endian()) {
 		ByteOrder::swap_bytes(data, imagich.nx * imagich.ny * nz);
 	}
-#if 0
-	int n_pad_imgs = 0;
-	int old_num_imgs = imagich.count + 1;
-	if (image_index > old_num_imgs) {
-		n_pad_imgs = image_index - old_num_imgs;
-	}
-#endif
 
 	// New way to write data which includes region writing.
 	// If it is tested to be OK, remove the old code in the
@@ -539,21 +532,6 @@ int ImagicIO::write_data(float *data, int image_index, const Region* area,
 							  sizeof(float), imagich.nx, imagich.ny,
 							  nz, area, true);
 
-
-#if 0
-	size_t row_size = imagich.nx * sizeof(float);
-	int nxy = imagich.nx * imagich.ny;
-
-	for (int i = 0; i < nz; i++) {
-		for (int j = imagich.ny - 1; j >= 0; j--) {
-			fwrite(&data[i * nxy + j * imagich.nx], row_size, 1, img_file);
-		}
-
-		if (!is_new_img && (is_big_endian != ByteOrder::is_host_big_endian())) {
-			ByteOrder::swap_bytes(data, imagich.nx * imagich.ny);
-		}
-	}
-#endif
 	EXITFUNC;
 	return 0;
 }
