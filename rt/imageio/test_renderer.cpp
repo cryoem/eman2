@@ -8,6 +8,7 @@ using namespace EMAN;
 struct Tester : public Renderer
 {
 	using Renderer::getRenderedDataAndRendertrunc;
+	using Renderer::rendered_dt;
 
 	using Renderer::renderbits;
 	using Renderer::rendermax;
@@ -95,4 +96,90 @@ TEMPLATE_TEST_CASE("scale to bits=6, min=0, max=15", "", char, short, int) {
 	auto [vi, count] = a.getRenderedDataAndRendertrunc<TestType>(data.data(), data.size());
 	REQUIRE(count == 5);
 	REQUIRE(vi == vector<TestType>{-32, -32, -32, -32, 0, 31});
+}
+
+TEST_CASE("return datatype when compression requested") {
+	a.renderbits = 16;
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_UCHAR, EMUtil::EM_USHORT, EMUtil::EM_FLOAT}) == EMUtil::EM_USHORT);
+	a.renderbits = 8;
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_UCHAR, EMUtil::EM_USHORT, EMUtil::EM_FLOAT}) == EMUtil::EM_UCHAR);
+	a.renderbits = 0;
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_UCHAR, EMUtil::EM_USHORT, EMUtil::EM_FLOAT}) == EMUtil::EM_FLOAT);
+
+	a.renderbits = 12;
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_UCHAR, EMUtil::EM_USHORT, EMUtil::EM_FLOAT}) == EMUtil::EM_USHORT);
+	a.renderbits = 4;
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_UCHAR, EMUtil::EM_USHORT, EMUtil::EM_FLOAT}) == EMUtil::EM_UCHAR);
+
+	a.renderbits = 16;
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_UCHAR, EMUtil::EM_USHORT, EMUtil::EM_FLOAT}) == EMUtil::EM_USHORT);
+}
+
+TEST_CASE("various initializer lists when compression requested") {
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_UCHAR, EMUtil::EM_SHORT}) == EMUtil::EM_SHORT);
+	a.renderbits = 8;
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_UCHAR, EMUtil::EM_USHORT}) == EMUtil::EM_UCHAR);
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_CHAR, EMUtil::EM_USHORT}) == EMUtil::EM_CHAR);
+	REQUIRE(a.renderbits == 8);
+
+	a.renderbits = 9;
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_CHAR, EMUtil::EM_FLOAT, EMUtil::EM_SHORT}) == EMUtil::EM_SHORT);
+	a.renderbits = 4;
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_CHAR, EMUtil::EM_FLOAT, EMUtil::EM_SHORT}) == EMUtil::EM_CHAR);
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_FLOAT, EMUtil::EM_SHORT}) == EMUtil::EM_SHORT);
+	a.renderbits = 0;
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_FLOAT, EMUtil::EM_SHORT}) == EMUtil::EM_FLOAT);
+}
+
+TEST_CASE("return datatype when no compression requested") {
+	REQUIRE(a.rendered_dt(EMUtil::EM_USHORT, {EMUtil::EM_UCHAR, EMUtil::EM_USHORT, EMUtil::EM_FLOAT}) == EMUtil::EM_USHORT);
+	REQUIRE(a.rendered_dt(EMUtil::EM_UCHAR, {EMUtil::EM_UCHAR, EMUtil::EM_USHORT, EMUtil::EM_FLOAT}) == EMUtil::EM_UCHAR);
+	REQUIRE(a.rendered_dt(EMUtil::EM_FLOAT, {EMUtil::EM_UCHAR, EMUtil::EM_USHORT, EMUtil::EM_FLOAT}) == EMUtil::EM_FLOAT);
+	REQUIRE(a.rendered_dt(EMUtil::EM_INT, {EMUtil::EM_UCHAR, EMUtil::EM_USHORT, EMUtil::EM_FLOAT}) == EMUtil::EM_INT);
+	REQUIRE(a.rendered_dt(EMUtil::EM_UINT, {EMUtil::EM_UCHAR, EMUtil::EM_USHORT, EMUtil::EM_FLOAT}) == EMUtil::EM_UINT);
+}
+
+TEST_CASE("prefer unsigned type over signed") {
+	a.renderbits = 8;
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_CHAR, EMUtil::EM_UCHAR}) == EMUtil::EM_UCHAR);
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_UCHAR, EMUtil::EM_CHAR}) == EMUtil::EM_UCHAR);
+	REQUIRE(a.renderbits == 8);
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_SHORT, EMUtil::EM_USHORT}) == EMUtil::EM_USHORT);
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_USHORT, EMUtil::EM_SHORT}) == EMUtil::EM_USHORT);
+	REQUIRE(a.renderbits == 8);
+
+	a.renderbits = 12;
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_SHORT, EMUtil::EM_USHORT}) == EMUtil::EM_USHORT);
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_USHORT, EMUtil::EM_SHORT}) == EMUtil::EM_USHORT);
+	REQUIRE(a.renderbits == 12);
+
+	a.renderbits = 16;
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_SHORT, EMUtil::EM_USHORT}) == EMUtil::EM_USHORT);
+	REQUIRE(a.renderbits == 16);
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_USHORT, EMUtil::EM_SHORT}) == EMUtil::EM_USHORT);
+	REQUIRE(a.renderbits == 16);
+
+	a.renderbits = 4;
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_CHAR, EMUtil::EM_UCHAR}) == EMUtil::EM_UCHAR);
+	REQUIRE(a.renderbits == 4);
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_UCHAR, EMUtil::EM_CHAR}) == EMUtil::EM_UCHAR);
+	REQUIRE(a.renderbits == 4);
+}
+
+TEST_CASE("renderbits can't be more than supported datatype bits") {
+	a.renderbits = 12;
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_UCHAR, EMUtil::EM_CHAR}) == EMUtil::EM_UCHAR);
+	REQUIRE(a.renderbits == 8);
+
+	a.renderbits = 16;
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_CHAR, EMUtil::EM_UCHAR}) == EMUtil::EM_UCHAR);
+	REQUIRE(a.renderbits == 8);
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_SHORT, EMUtil::EM_USHORT}) == EMUtil::EM_USHORT);
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_UCHAR, EMUtil::EM_CHAR}) == EMUtil::EM_UCHAR);
+
+	a.renderbits = 12;
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_SHORT, EMUtil::EM_USHORT}) == EMUtil::EM_USHORT);
+	REQUIRE(a.renderbits == 12);
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_USHORT, EMUtil::EM_SHORT}) == EMUtil::EM_USHORT);
+	REQUIRE(a.renderbits == 12);
 }
