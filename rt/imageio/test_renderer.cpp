@@ -100,25 +100,25 @@ TEMPLATE_TEST_CASE("scale to bits=6, min=0, max=15", "", char, short, int) {
 
 TEST_CASE("return datatype when compression requested") {
 	a.renderbits = 16;
-	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED) == EMUtil::EM_USHORT);
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_UCHAR, EMUtil::EM_USHORT, EMUtil::EM_FLOAT}) == EMUtil::EM_USHORT);
 	a.renderbits = 8;
-	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED) == EMUtil::EM_UCHAR);
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_UCHAR, EMUtil::EM_USHORT, EMUtil::EM_FLOAT}) == EMUtil::EM_UCHAR);
 	a.renderbits = 0;
-	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED) == EMUtil::EM_FLOAT);
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_UCHAR, EMUtil::EM_USHORT, EMUtil::EM_FLOAT}) == EMUtil::EM_FLOAT);
 
 	a.renderbits = 12;
-	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED) == EMUtil::EM_USHORT);
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_UCHAR, EMUtil::EM_USHORT, EMUtil::EM_FLOAT}) == EMUtil::EM_USHORT);
 	a.renderbits = 4;
-	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED) == EMUtil::EM_UCHAR);
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_UCHAR, EMUtil::EM_USHORT, EMUtil::EM_FLOAT}) == EMUtil::EM_UCHAR);
 
 	a.renderbits = 16;
-	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED) == EMUtil::EM_USHORT);
+	REQUIRE(a.rendered_dt(EMUtil::EM_COMPRESSED, {EMUtil::EM_UCHAR, EMUtil::EM_USHORT, EMUtil::EM_FLOAT}) == EMUtil::EM_USHORT);
 }
 
 TEST_CASE("return datatype when no compression requested") {
-	REQUIRE(a.rendered_dt(EMUtil::EM_USHORT) == EMUtil::EM_USHORT);
-	REQUIRE(a.rendered_dt(EMUtil::EM_UCHAR) == EMUtil::EM_UCHAR);
-	REQUIRE(a.rendered_dt(EMUtil::EM_FLOAT) == EMUtil::EM_FLOAT);
-	REQUIRE(a.rendered_dt(EMUtil::EM_INT) == EMUtil::EM_INT);
-	REQUIRE(a.rendered_dt(EMUtil::EM_UINT) == EMUtil::EM_UINT);
+	REQUIRE(a.rendered_dt(EMUtil::EM_USHORT, {EMUtil::EM_UCHAR, EMUtil::EM_USHORT, EMUtil::EM_FLOAT}) == EMUtil::EM_USHORT);
+	REQUIRE(a.rendered_dt(EMUtil::EM_UCHAR, {EMUtil::EM_UCHAR, EMUtil::EM_USHORT, EMUtil::EM_FLOAT}) == EMUtil::EM_UCHAR);
+	REQUIRE(a.rendered_dt(EMUtil::EM_FLOAT, {EMUtil::EM_UCHAR, EMUtil::EM_USHORT, EMUtil::EM_FLOAT}) == EMUtil::EM_FLOAT);
+	REQUIRE(a.rendered_dt(EMUtil::EM_INT, {EMUtil::EM_UCHAR, EMUtil::EM_USHORT, EMUtil::EM_FLOAT}) == EMUtil::EM_INT);
+	REQUIRE(a.rendered_dt(EMUtil::EM_UINT, {EMUtil::EM_UCHAR, EMUtil::EM_USHORT, EMUtil::EM_FLOAT}) == EMUtil::EM_UINT);
 }
