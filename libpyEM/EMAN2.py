@@ -70,6 +70,8 @@ import threading
 #signal.signal(2, DB_cleanup)
 #signal.signal(15, DB_cleanup)
 
+os.environ['QT_MAC_WANTS_LAYER'] = '1'
+
 
 def e2gethome():
 	"""platform independent path with '/'"""
