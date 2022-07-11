@@ -222,6 +222,7 @@ as well as alignment parameters, so use of tomograms from other software is not 
 	
 	#### scale factor from raw tilt image to tomogram/particle that we get coordinates info from
 	scale=apix_ptcl/apix_tlt
+	options._scale=scale
 	if options.shrink==1.5:
 		shrinklab="_bin1_5"
 	elif options.shrink>=2:
@@ -729,6 +730,7 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 			xform=Transform({"type":"xyz","ytilt":tpm[3],"xtilt":tpm[4], "ztilt":tpm[2], "tx":txdf, "ty":tydf})
 			if len(dxfs)==len(imgs):
 				dxf=dxfs[nid]
+				dxf.set_trans(dxf.get_trans()*options._scale)
 				#print(nid, dxf)
 				xform=dxf*xform
 				txdf,tydf,_=xform.get_trans()
@@ -768,6 +770,8 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 		else:
 			#### finish reconstruction and do some postprocesing
 			threed=recon.finish(True)
+			#if mask: threedraw=threed.copy()
+			
 			try: threed=threed.get_clip(Region((p3d-bx)//2,(p3d-bx)//2,(p3d-bx)//2,bx,bx,bx))
 			except:
 				traceback.print_exc()
@@ -775,6 +779,7 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 				sys.exit(1)
 		
 			threed.process_inplace("normalize.edgemean")
+			#projs=[pj.get_clip(Region((p3d-bx)//2,(p3d-bx)//2,bx,bx)) for pj in projs]
 		
 			if options.postproc!="":
 				(filtername, param_dict) = parsemodopt(options.postproc)
@@ -785,11 +790,32 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 				##   so the missing wedge always points to z axis
 				try:
 					if tf_dir:
-						m=mask.copy()
-						m.transform(tf_dir.inverse())
-						threed.mult(m)
+						mskrot=mask.process("xform", {"transform":tf_dir.inverse()})
 					else:
-						threed.mult(mask)
+						mskrot=mask.copy()
+						
+					threed.mult(mskrot)
+					
+					#mskbig=mskrot.get_clip(Region((bx-p3d)//2,(bx-p3d)//2,(bx-p3d)//2,p3d,p3d,p3d))
+					#threedres=threedraw*mskbig
+					#threedres=threedraw*(1-mskbig)
+					
+					pjnew=[]
+					for pj in projs:
+						#tp=threedraw.project("standard", pj["xform.projection"])
+						#tp.set_attr_dict(pj.get_attr_dict())
+						#pj=pj.get_clip(Region((p3d-bx)//2,(p3d-bx)//2,bx,bx))
+						#pj.process_inplace("filter.matchto",{"to":tp})
+						#pj.process_inplace("normalize.toimage",{"to":tp})
+						
+						tpmsk=threed.project("standard", pj["xform.projection"])
+						tpmsk.set_attr_dict(pj.get_attr_dict())
+						#pj=pj-tpmsk
+						#pjnew.append(pj)
+						pjnew.append(tpmsk)
+					
+					projs=pjnew
+					
 				except: 
 					print(f'Mask error, size mismatch volume->{threed["nx"]} mask->{mask["nx"]}\n{pinfo}')
 					raise Exception()
@@ -989,7 +1015,7 @@ def parse_json(options):
 				a=ali.inverse()
 				a.translate(c[0], c[1], c[2])
 				newxfs.append(a)
-				info.append({"orig_ptcl":str(fname),"orig_idx":int(ids[i]),"orig_xf":pxf, "dxfs2d":dxfs[i]})
+				info.append({"orig_ptcl":str(fname),"orig_idx":int(ids[i]),"orig_xf":pxf, "dxfs2d":dxfs[i], "postxf":nxf})
 
 		newpos=np.array([p.get_trans() for p in newxfs])
 		if len(newpos)>1:

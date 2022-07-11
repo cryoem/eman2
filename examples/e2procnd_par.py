@@ -10,7 +10,9 @@ def main():
 	procnd_par.py \"e2proc3d.py a.hdf b.hdf --process blabla...\" --threads=1024"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--threads", type=int,help="number of threads", default=10)
-	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)	
+	parser.add_argument("--nomerge", action="store_true", default=False ,help="do not merge results")
+
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -64,7 +66,7 @@ def main():
 		a=avgr.finish()
 		a.write_image(outfile)
 		
-	else:
+	elif options.nomerge==False:
 		### put outputs together
 		print("Merging outputs...")
 		for i in range(nthd):

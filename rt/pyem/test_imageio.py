@@ -354,20 +354,6 @@ class TestSpiderIO(ImageIOTester):
 			e.process_inplace('testimage.sinewave', {'wavelength':20})
 			e.set_attr('SPIDER.title', 'The fourth image in the stack')
 			e.write_image('test.spi', 3)
-			
-			f = EMData()
-			#read the overall herder
-			f.read_image('test.spi', -1, True)
-			d = f.get_attr_dict()
-			img_num = d['SPIDER.maxim']
-			
-			#read the individual image from a stack
-			for i in range(img_num):
-				f.read_image('test.spi', i)
-				self.assertEqual(f.is_complex(), False)
-				self.assertEqual(f.get_xsize(), 100)
-				self.assertEqual(f.get_ysize(), 100)
-				self.assertEqual(f.get_zsize(), 1)
 		finally:
 			testlib.safe_unlink('test.spi')
 		
@@ -1109,7 +1095,6 @@ class TestImagicIO(ImageIOTester):
 		"""test write-read img .............................."""
 		self.do_test_read_write("img")
 
-#	def 
 
 class TestImageIO(unittest.TestCase):
 	"""image data IO test"""
@@ -1166,7 +1151,7 @@ class TestImageIO(unittest.TestCase):
 			region_2d = Region(x0, y0, z0, xsize, ysize, 1)
 			region_3d = Region(x0, y0, z0, xsize, ysize, zsize)
 
-		return (region_2d, region_3d)
+		return region_2d, region_3d
 
 	def region_read_test(self, imgtype, imgfile, outtype = None):	
 		"""test region read ................................."""
@@ -1175,7 +1160,7 @@ class TestImageIO(unittest.TestCase):
 			
 		is_3d = False
 		if imgtype == IMAGE_IMAGIC:
-		   is_3d = True
+			is_3d = True
 
 		imgbase = Util.remove_filename_ext(imgfile)
 		ext = Util.get_filename_ext(imgfile)
@@ -1185,11 +1170,11 @@ class TestImageIO(unittest.TestCase):
 
 		e = EMData()
 		e.read_image(imgfile, 0, False, None, is_3d)
-	 
+
 		TestUtil.check_image(imgfile, e)
-		 
+
 		#testlib.unlink_data_header_files(imgfile)	
-		 
+
 		(region_2d, region_3d) = self.create_dummy_region(e)
 
 		e2 = EMData()

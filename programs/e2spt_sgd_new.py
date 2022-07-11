@@ -59,7 +59,8 @@ def main():
 		e.process_inplace("math.meanshrink",{"n":shrink})
 	options.hdr=hdr=e.get_attr_dict()
 	options.sz=sz=e["nx"]#//shrink
-	options.pad=pad=EMData(info2dname,0,True)["nx"]//shrink
+	#options.pad=pad=EMData(info2dname,0,True)["nx"]//shrink
+	options.pad=pad=good_size(sz*1.4)
 
 	npt=len(info3d)
 	
@@ -103,20 +104,21 @@ def main():
 			thrd0s.append(thrd0)
 		
 	else:
-		idx=np.arange(npt)
-		np.random.shuffle(idx)
-		nptcl=int(batch*ncls/options.keep)
-		idx=np.sort(idx[:nptcl])
-		ali3d=[info3d[i] for i in idx]
-		save_lst_params(ali3d, info3dname)
-		
-		launch_childprocess(f"e2spt_align_subtlt.py {path}/particle_info_3d.lst {options.ref} --path {path} --maxres {res} --parallel {options.parallel} --fromscratch --iter 0  --sym {options.sym}")
-		ali2d=load_lst_params(f"{path}/aliptcls2d_00.lst")
-		thrd0=make_3d(ali2d, options)
-		thrd0s.append(thrd0)
-		avg0=post_process(thrd0, options)
-		avg0.write_image(f"{path}/output_cls0.hdf")
-		avg0.write_compressed(fnames[0], -1, 12, nooutliers=True)
+		for ic in range(ncls):
+			idx=np.arange(npt)
+			np.random.shuffle(idx)
+			nptcl=int(batch*ncls/options.keep)
+			idx=np.sort(idx[:nptcl])
+			ali3d=[info3d[i] for i in idx]
+			save_lst_params(ali3d, info3dname)
+			
+			launch_childprocess(f"e2spt_align_subtlt.py {path}/particle_info_3d.lst {options.ref} --path {path} --maxres {res} --parallel {options.parallel} --fromscratch --iter 0  --sym {options.sym}")
+			ali2d=load_lst_params(f"{path}/aliptcls2d_00.lst")
+			thrd0=make_3d(ali2d, options)
+			thrd0s.append(thrd0)
+			avg0=post_process(thrd0, options)
+			avg0.write_image(f"{path}/output_cls{ic}.hdf")
+			avg0.write_compressed(fnames[ic], -1, 12, nooutliers=True)
 	
 	for itr in range(options.niter):
 		#print(itr)

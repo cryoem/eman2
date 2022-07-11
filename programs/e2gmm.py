@@ -1529,7 +1529,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			return False
 		self.jsparm["refinepath"]=rpath
 		
-		if rpath[:6]=="refine":
+		if rpath.startswith("refine_"):
 			### setup the folder
 			try:
 				itr=max([int(i.split("_")[1]) for i in os.listdir(rpath) if i[:7]=="threed_" and i.split("_")[1].isdigit()])
@@ -1569,7 +1569,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			# Extract particles from refine folder
 			run(f"e2evalrefine.py {rpath} --extractorientptcl {self.gmm}/particles.lst")
 			self.app().setOverrideCursor(Qt.ArrowCursor)
-		elif rpath[:3]=="r3d":
+		elif rpath.startswith("r3d_"):
 			### setup the folder
 			try:
 				itr=max([int(i.split("_")[1]) for i in os.listdir(rpath) if i[:7]=="threed_" and i.split("_")[1].isdigit()])
@@ -1606,7 +1606,42 @@ class EMGMM(QtWidgets.QMainWindow):
 				run(f"e2proclst.py {rpath}/ptcls_{itr:02d}_even.lst {rpath}/ptcls_{itr:02d}_odd.lst --merge {self.gmm}/particles.lst")
 			else: run(f"cp {rpath}/ptcls_{itr:02d}.lst {self.gmm}/particles.lst; echo ")
 			self.app().setOverrideCursor(Qt.ArrowCursor)
-			
+		elif rpath.startswith("spt_"):
+			### setup the folder
+			try:
+				itr=max([int(i.split("_")[1]) for i in os.listdir(rpath) if i[:7]=="threed_" and i.split("_")[1].isdigit()])
+			except:
+				showerror("No threed_xx files in refine folder")
+				return
+
+			self.app().setOverrideCursor(Qt.BusyCursor)
+			rparm=js_open_dict(f"{rpath}/0_spa_params.json")
+			#if rparm["breaksym"] : self.jsparm["sym"]="c1"
+			#else: self.jsparm["sym"]=rparm["sym"]
+
+			# Copy map from refine folder
+			a=EMData(f"{rpath}/threed_{itr:02d}.hdf")
+			a.write_compressed(f"{self.gmm}/input_map.hdf",0,12)
+			self.jsparm["source_map"]=f"{rpath}/threed_{itr:02d}.hdf"
+			self.jsparm["boxsize"]=a["nx"]
+			self.jsparm["apix"]=a["apix_x"]
+			try: self.jsparm["sym"]=rparm["sym"]
+			except:
+				self.jsparm["sym"]="c1"
+				print("symmetry missing, assuming C1")
+
+			# make projection from threed
+			run(f"e2project3d.py {rpath}/threed_{itr:02d}.hdf --outfile {self.gmm}/proj_in.hdf --orientgen eman:n=500 --sym c1 --parallel thread:5")
+
+			# Copy mask from refine folder
+			a=EMData(f"{rpath}/mask_tight.hdf")
+			a.write_compressed(f"{self.gmm}/mask.hdf",0,8)
+			self.jsparm["mask"]=f"{self.gmm}/mask.hdf"
+
+			# Copy aligned particles (lst file)
+			run(f"cp {rpath}/aliptcls2d_{itr:02d}.lst {self.gmm}/particles.lst; echo ")
+			self.app().setOverrideCursor(Qt.ArrowCursor)
+
 		return True
 	
 	def closeEvent(self,event):

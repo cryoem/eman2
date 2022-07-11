@@ -74,6 +74,7 @@ def main():
 	parser.add_argument("--box3d",action="store_true",help="Boxing 3D particls from tomograms (default).",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode='box3d[True]')
 	parser.add_header(name="instruction0", help='instruction', title="### Use '~' and '1' to go through slices along Z axis. ###", row=10, col=0, rowspan=1, colspan=2, mode="box3d,box2d")
 	parser.add_header(name="instruction1", help='instruction', title="### Hold Shift to delete particles ###", row=11, col=0, rowspan=1, colspan=2, mode="box3d,box2d")
+	parser.add_argument("--label", type=str,help="start from viewing particles of the specified label.", default=None)
 
 
 	#parser.add_argument("--mode", type=str,help="Boxing mode. choose from '2D' and '3D'. Default is '3D'", default="3D",guitype='combobox',choicelist="('2D', '3D')",row=1, col=0, rowspan=1, colspan=1,mode="boxing")
@@ -374,8 +375,16 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		#### particle classes
 		if len(self.sets)==0:
 			self.new_set("particles_00")
-		self.sets_visible[list(self.sets.keys())[0]]=0
+			
 		self.currentset=sorted(self.sets.keys())[0]
+		if options.label:
+			sid=[i for i in self.sets.keys() if self.sets[i]==options.label]
+			if len(sid)>0:
+				self.currentset=sid[0]
+			else:
+				print("cannot find specified label")
+				
+		self.sets_visible[self.currentset]=0
 		self.setspanel.update_sets()
 		self.wboxsize.setValue(self.get_boxsize())
 
@@ -1190,9 +1199,12 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		self.boxesviewer.close()
 		self.optionviewer.close()
 		#self.optionviewer.close()
-		#self.xyview.close()
-		#self.xzview.close()
-		#self.zyview.close()
+		try:
+			self.xyview.close()
+			self.xzview.close()
+			self.zyview.close()
+		except:
+			pass
 		
 		self.module_closed.emit() # this signal is important when e2ctf is being used by a program running its own event loop
 

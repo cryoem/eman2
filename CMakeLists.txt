@@ -86,6 +86,8 @@ else()
 	set(CMAKE_INSTALL_RPATH "${SP_DIR};${EMAN_PREFIX_LIB}")
 endif()
 
+option(ENABLE_CATCH2 "Enable Catch 2 framework for unit testing (internal development only)" OFF)
+
 OPTION(ENABLE_AUTODOC "enable latex/doxygen document generation and etc. " OFF)
 
 OPTION(ENABLE_FFTW3 "enable fftw 3 support (USE THIS)" ON)

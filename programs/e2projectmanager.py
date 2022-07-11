@@ -48,7 +48,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		QtWidgets.QMainWindow.__init__(self)
 		# Default PM attributes
 		self.pm_cwd = os.getcwd()
-		self.pn_project_name_default='Unknown'
+		self.pn_project_name_default=os.path.basename(os.getcwd())
 		self.pm_icon = self.pm_icon_default = get_image_directory() + "EMAN2Icon.png"
 		self.setWindowIcon(QtGui.QIcon(QtGui.QPixmap(pmicon)))
 

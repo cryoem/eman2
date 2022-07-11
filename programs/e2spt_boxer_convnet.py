@@ -105,21 +105,20 @@ class NNet:
 		self.boxsize=boxsize
 		self.layers=layers
 		
-	def predict_class(self, inp, fromdata=True, usemax=False):
-		if fromdata:
-			inp=self.model(inp)
-		inp=tf.math.minimum(inp,1.0)
-		if usemax:
-			out0=tf.math.reduce_max(inp*self.mask2, axis=(1,2))
-			out1=1-tf.math.reduce_max(inp*self.mask, axis=(1,2))
-		else:
-			out0=tf.reduce_sum(inp*self.mask2, axis=(1,2))
-			out1=tf.reduce_sum(abs(inp-self.mask)*self.mask2, axis=(1,2))
-		return out0, out1
+	#def predict_class(self, inp, usemax=False):
+		#inp=tf.math.minimum(inp,1.0)
+		#if usemax:
+			#out0=tf.math.reduce_max(inp*self.mask2, axis=(1,2))
+			#out1=1-tf.math.reduce_sum(inp*self.mask, axis=(1,2))
+		#else:
+			#out0=tf.reduce_sum(inp*self.mask2, axis=(1,2))
+			#out1=tf.reduce_sum(abs(inp-self.mask)*self.mask2, axis=(1,2))
+		#return out0, out1
 	
 	def do_training(self, dataset, learnrate=1e-5, niter=10, tarsz=2, usemax=False, posmult=0.5):
 		#niter=1; learnrate=0
 		#### prepare the output mask
+		print(usemax)
 		ksize=(1./tarsz)**2
 		sz=self.outsz
 		m=np.exp(-ksize*np.sum((np.indices((sz,sz))-(sz-1)/2.)**2, axis=0))
@@ -129,15 +128,7 @@ class NNet:
 		m2/=np.max(m2)
 		self.mask2=m2[None,:,:,None]
 		posmult=posmult/(1+posmult)
-		#bce=tf.keras.losses.BinaryCrossentropy()
-		def calc_loss(yt, inp):
-			out0,out1=self.predict_class(inp, fromdata=False, usemax=usemax)
-			#loss=(1-yt)*tf.math.log(1-out0)+yt*tf.math.log(out1)
-			#loss=1+tf.reduce_mean(loss)
-			loss=tf.reduce_mean((1-yt)*out0*(1-posmult)+ yt*out1*posmult)
-			return loss
 		
-		#self.model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=learnrate), loss=calc_loss)
 		opt=tf.keras.optimizers.Adam(learning_rate=1e-5) 
 		wts=self.model.trainable_variables
 		print("Training...")
@@ -147,8 +138,16 @@ class NNet:
 			for image, label in dataset:
 				with tf.GradientTape() as gt:
 					py=self.model(image, training=True)
-					out0=tf.reduce_sum((py-self.mask2)**2, axis=(1,2))[:,0]
-					out1=tf.reduce_sum(py**2, axis=(1,2))[:,0]
+					if usemax:
+						py1=tf.math.minimum(py,1.0)
+						out0=1-tf.math.reduce_max(py1*self.mask2, axis=(1,2))[:,0]
+						out1=tf.math.reduce_sum((py*self.mask)**2, axis=(1,2))[:,0]
+						#out0=tf.math.maximum(out0,.0)
+					else:
+						out0=tf.reduce_sum((py-self.mask2)**2, axis=(1,2))[:,0]
+						out1=tf.reduce_sum(py**2, axis=(1,2))[:,0]
+					
+					
 					loss=tf.reduce_mean(out0*label*posmult+out1*(1-label)*(1-posmult))
 					
 				grad=gt.gradient(loss, wts)
@@ -692,8 +691,8 @@ class EMTomobox(QtWidgets.QMainWindow):
 		idx=idx[:100]
 		out=self.nnet.apply_network(imgs[idx])[:,:,:,0]
 		
-		outval=self.nnet.predict_class(np.array(imgs[idx], dtype=np.float32), usemax=usemax)
-		outval=np.array(outval)[:,:,0]
+		#outval=self.nnet.predict_class(np.array(imgs[idx], dtype=np.float32), usemax=usemax)
+		#outval=np.array(outval)[:,:,0]
 		
 		fname="neuralnets/trainouts.hdf"
 		if os.path.isfile(fname):
@@ -709,7 +708,7 @@ class EMTomobox(QtWidgets.QMainWindow):
 			m=from_numpy(o)
 			m=m.get_clip(Region(sz//2-bx//2, sz//2-bx//2, bx, bx))
 			m.scale(4)
-			m["score"]=[float(outval[0,i]),float(outval[1,i])]
+			#m["score"]=[float(outval[0,i]),float(outval[1,i])]
 			m.write_image(fname, -1)
 		print("Output written to {}...".format(fname))
 		
@@ -867,7 +866,8 @@ class EMTomobox(QtWidgets.QMainWindow):
 					self.ptclimages=[p for i,p in enumerate(self.ptclimages) if i!=idx]
 					self.save_points()
 				else:
-					self.boxshapes.points.pop(idx)
+					#print(self.boxshapes.points)
+					#self.boxshapes.points.pop(idx)
 					self.references=[b for ib,b in enumerate(self.references) if ib!=idx]
 					self.boximages=[b for ib,b in enumerate(self.boximages) if ib!=idx]
 					

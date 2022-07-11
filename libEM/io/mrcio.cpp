@@ -74,14 +74,7 @@ void MrcIO::init()
 
 	setbuf (stdout, NULL);
 
-	IOMode rwmode;
-
-	if (rw_mode == WRITE_ONLY) {
-		rwmode = READ_WRITE;
-	}
-	else {
-		rwmode = rw_mode;
-	}
+	IOMode rwmode = (rw_mode == WRITE_ONLY ? READ_WRITE : rw_mode);
 
 	int error_type;
 	struct stat status;
@@ -97,13 +90,8 @@ void MrcIO::init()
 	string ext = Util::get_filename_ext(filename);
 
 	if (ext != "") {
-		if (ext == "raw"   ||  ext == "RAW") {
-			isFEI = true;
-		}
-
-		if (ext == "mrcs"  ||  ext == "MRCS") {
-			is_stack = true;
-		}
+		isFEI    = (ext == "raw"  || ext == "RAW");
+		is_stack = (ext == "mrcs" || ext == "MRCS");
 	}
 
 	if (! is_new_file) {
@@ -169,9 +157,7 @@ void MrcIO::init()
 			}
 		}
 
-		if (mrch.mapc == 2 && mrch.mapr == 1) {
-			is_transpose = true;
-		}
+		is_transpose = (mrch.mapc == 2 && mrch.mapr == 1);
 
 		if (is_stack) {
 			stack_size = mrch.nz;
@@ -887,27 +873,9 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 	mrch.amean = dict["mean"];
 	mrch.rms = dict["sigma"];
 
-	/** the folowing lines are commented out.
-	 * To make EMAN2 consistent with IMOD. Especially "header" command in IMOD. */
-
-//	if(dict.has_key("MRC.mx")) {
-//		mrch.mx = dict["MRC.mx"];
-//	}
-//	else {
-		mrch.mx = nx;
-//	}
-//	if(dict.has_key("MRC.my")) {
-//		mrch.my = dict["MRC.my"];
-//	}
-//	else {
-		mrch.my = ny;
-//	}
-//	if(dict.has_key("MRC.mz")) {
-//		mrch.mz = dict["MRC.mz"];
-//	}
-//	else {
-		mrch.mz = nz;
-//	}
+	mrch.mx = nx;
+	mrch.my = ny;
+	mrch.mz = nz;
 
 	mrch.xlen = mrch.mx * (float) dict["apix_x"];
 	mrch.ylen = mrch.my * (float) dict["apix_y"];
@@ -1109,108 +1077,21 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool)
 template<class T>
 void MrcIO::update_stats(const vector<T> &data)
 {
-	float  v;	// variable to hold pixel value
-	double sum;
-	double square_sum;
-	double mean;
-	double sigma;
-	double vv;
-	float  min, max;
+	const auto [min, max] = std::minmax_element(std::begin(data), std::end(data));
+	mrch.amin  = *min;
+	mrch.amax  = *max;
 
-	signed char    *  scdata = NULL;
-	unsigned char  *  cdata  = NULL;
-	short          *  sdata  = NULL;
-	unsigned short *  usdata = NULL;
-
-	bool use_schar  = (mrch.mode == MRC_CHAR);
-	bool use_uchar  = (mrch.mode == MRC_UCHAR);
-	bool use_short  = (mrch.mode == MRC_SHORT || mrch.mode == MRC_SHORT_COMPLEX);
-	bool use_ushort = (mrch.mode == MRC_USHORT);
-
-	if (use_uchar) {
-		max    = 0.0;
-		min    = UCHAR_MAX;
-		cdata  = (unsigned char *) data.data();
-	}
-	else if (use_schar) {
-		max    = SCHAR_MIN;
-		min    = SCHAR_MAX;
-		scdata = (signed char *) data.data();
-	}
-	else if (use_short) {
-		max    = (float) SHRT_MIN;
-		min    = (float) SHRT_MAX;
-		sdata  = (short *) data.data();
-	}
-	else if (use_ushort) {
-		max    = 0.0f;
-		min    = (float) USHRT_MAX;
-		usdata = (unsigned short *) data.data();
-	}
-	else {
-		throw InvalidCallException("This function is used to write 8bit/16bit mrc file only.");
-	}
-
-	sum = 0.0;
 	auto size = data.size();
+	mrch.amean = (size > 0 ? std::accumulate(std::begin(data), std::end(data), 0.0, std::plus<T>()) / (double) size : 0.0);
 
-	for (size_t i = 0; i < size; i++) {
-		if (use_uchar) {
-			v = (float) (cdata[i]);
-		}
-		else if (use_schar) {
-			v = (float) (scdata[i]);
-		}
-		else if (use_short) {
-			v = (float) (sdata[i]);
-		}
-		else {
-			v = (float) (usdata[i]);
-		}
+	double square_sum = std::accumulate(std::begin(data), std::end(data), 0.0, [this](auto x1, auto x2){
+		auto d1 = x1 - mrch.amean;
+		auto d2 = x2 - mrch.amean;
 
-		if (v < min) min = v;
-		if (v > max) max = v;
+		return d1 * d1 + d2 * d2;
+	});
 
-		sum = sum + v;
-	}
-
-	if (size > 0)
-		mean = sum / (double) size;
-	else
-		mean = 0.0;
-
-	square_sum = 0.0;
-
-	for (size_t i = 0; i < size; i++) {
-		if (use_uchar) {
-			v = (float) (cdata[i]);
-		}
-		else if (use_schar) {
-			v = (float) (scdata[i]);
-		}
-		else if (use_short) {
-			v = (float) (sdata[i]);
-		}
-		else {
-			v = (float) (usdata[i]);
-		}
-
-		vv = v - mean;
-
-		square_sum = square_sum  +  vv * vv;
-	}
-
-	if (size > 1)
-		sigma = std::sqrt(square_sum / (double) (size-1));
-	else
-		sigma = 0.0;
-
-	/* change mrch.amin / amax / amean / rms here */
-
-	mrch.amin  = min;
-	mrch.amax  = max;
-	mrch.amean = (float) mean;
-	mrch.rms   = (float) sigma;
+	mrch.rms = (float) (size > 1 ? std::sqrt(square_sum / (double) (size-1)) : 0.0);
 
 	portable_fseek(file, 0, SEEK_SET);
 
@@ -1320,11 +1201,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 	}
 	if (renderbits==0 || renderbits>truebits) renderbits=truebits;
 	
-	float rmin = rendermin;
-	float rmax = rendermax;
-	int rbits = renderbits;
-
-	EMUtil::getRenderMinMax(data, nx, ny, rmin, rmax, rbits, nz);
+	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, renderbits, nz);
 
 	if (mrch.mode == MRC_UCHAR)
 		write_compressed<unsigned char>(data, size, image_index, area);
@@ -1345,11 +1222,7 @@ bool MrcIO::is_complex_mode()
 {
 	init();
 
-	if (mrch.mode == MRC_SHORT_COMPLEX || mrch.mode == MRC_FLOAT_COMPLEX) {
-		return true;
-	}
-
-	return false;
+	return mrch.mode == MRC_SHORT_COMPLEX || mrch.mode == MRC_FLOAT_COMPLEX;
 }
 
 int MrcIO::read_ctf(Ctf & ctf, int)

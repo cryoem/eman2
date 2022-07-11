@@ -2,6 +2,8 @@
 #define EMAN_RENDERER_H
 
 #include <cmath>
+#include <vector>
+#include "emutil.h"
 
 namespace EMAN {
 
@@ -61,18 +63,27 @@ namespace EMAN {
 
 		template<class T>
 		auto getRenderedDataAndRendertrunc(float *data, size_t size);
+
+		EMUtil::EMDataType rendered_dt(EMUtil::EMDataType dt,
+                                       std::initializer_list<decltype(dt)> dts);
 	};
 
 	template<class T>
 	auto Renderer::getRenderedDataAndRendertrunc(float *data, size_t size) {
 		if constexpr (!std::is_same<T, float>::value) {
+			// Limiting values for signed and unsigned types with specified bits
 			float RMIN;
-			float RMAX = (1 << renderbits) - 1;
+			float RMAX;
 
-			if constexpr(std::is_unsigned<T>::value)
+
+			if constexpr(std::is_unsigned<T>::value) {
 				RMIN = 0.0f;
-			else
+				RMAX = (1 << renderbits) - 1.0f;
+			}
+			else {
 				RMIN = -(1 << (renderbits - 1));
+				RMAX = (1 << (renderbits - 1)) - 1;
+			}
 
 			std::vector<T> rendered_data(size);
 			size_t count = 0;

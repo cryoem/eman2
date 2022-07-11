@@ -196,13 +196,13 @@ def main():
 	cdb.close()
 		
 	# Make simmx
-	e2simmxcmd = "e2simmx.py %s/projections_00.hdf %s %s/simmx.hdf -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d" % (options.path,options.untiltdata,options.path,options.simcmp,options.simalign,options.simaligncmp,options.verbose)
+	e2simmxcmd = "e2simmx.py %s/projections_00.hdf %s %s/simmx.hdf --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d" % (options.path,options.untiltdata,options.path,options.simcmp,options.simalign,options.simaligncmp,options.verbose)
 	if options.simralign: e2simmxcmd += " --ralign=%s --raligncmp=%s" %(options.simralign,options.simraligncmp)
 	if options.parallel: e2simmxcmd += " --parallel=%s" %options.parallel
 	if options.shrink: e2simmxcmd += " --shrink=%d" %options.shrink
 	run(e2simmxcmd)
 	
-	e2simmxcmd = "e2simmx.py %s/projections_00.hdf %s %s/simmx_tilt.hdf -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d" % (options.path,options.tiltdata,options.path,options.simcmp,options.simalign,options.simaligncmp,options.verbose)
+	e2simmxcmd = "e2simmx.py %s/projections_00.hdf %s %s/simmx_tilt.hdf --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d" % (options.path,options.tiltdata,options.path,options.simcmp,options.simalign,options.simaligncmp,options.verbose)
 	if options.simralign: e2simmxcmd += " --ralign=%s --raligncmp=%s" %(options.simralign,options.simraligncmp)
 	if options.parallel: e2simmxcmd += " --parallel=%s" %options.parallel
 	if options.shrink: e2simmxcmd += " --shrink=%d" %options.shrink

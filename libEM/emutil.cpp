@@ -1801,7 +1801,7 @@ void EMUtil::getRenderMinMax(float * data, const int nx, const int ny,
 			else {
 				int neededbits=ceil(log(max-min+1)/log(2.0f));
 				int step = 1<<(neededbits-renderbits);
-				if (min<0<max) {
+				if (min<0 && 0<max) {
 					rendermin = round( min / step ) * step;
 				}
 				else {
@@ -1813,7 +1813,7 @@ void EMUtil::getRenderMinMax(float * data, const int nx, const int ny,
 		// Now into the more general case, but we still wish to preserve zero if present in significant numbers
 		// TODO: This raises the tricky point of what would happen if you had a masked volume then added 0.0001 to it?
 		// statistics might produce poor results. May need to consider using kurtosis instead of zero detection
-		else if (min<0<max) {			// 10 is arbitrary, just looking for a profusion of exactly zero values implying a mask
+		else if (min<0 && 0<max) {			// 10 is arbitrary, just looking for a profusion of exactly zero values implying a mask
 			// The first two seem stupid since they result in rendermin=min, rendermax=max, but we retain the option
 			// of a more involved calculation to avoid outliers compressing the histogram to an unreasonable level
 			if (min==0) {
