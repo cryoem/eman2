@@ -3109,7 +3109,7 @@ and the file size will increase.
 			raise Exception(f"Only {[i.strip('.') for i in compressible_formats()]} "
 			                f"formats are supported by write_compressed()")
 
-		if outbits:
+		if outbits is not None:
 			bits = outbits
 		else:
 			nooutliers = True
