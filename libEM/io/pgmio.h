@@ -33,6 +33,7 @@
 #define eman__pgmio_h__ 1
 
 #include "imageio.h"
+#include "renderer.h"
 
 namespace EMAN
 {
@@ -43,7 +44,7 @@ namespace EMAN
 	 * A PGM file contains one 2D image.
 	 *
 	 */
-	class PgmIO : public ImageIO
+	class PgmIO : public ImageIO, public Renderer
 	{
 	  public:
 		explicit PgmIO(const string & fname, IOMode rw_mode = READ_ONLY);
@@ -72,10 +73,6 @@ namespace EMAN
 		int minval;
 
 		off_t file_offset;
-		
-		float rendermin;
-		float rendermax;
-		int renderbits;
 	};
 }
 
