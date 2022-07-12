@@ -7231,6 +7231,42 @@ since the SSNR is being computed as FSC/(1-FSC). Ie - the SSNR of the combined h
 		static const string NAME;
 	};
 
+	/** This processor will perform a layer line filter to help bring out helical objects
+	 */
+	class HelixFilterProcessor:public Processor
+	{
+	  public:
+		//virtual EMData* process(EMData const *image);
+		virtual void process_inplace(EMData *image);
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+
+		static Processor *NEW()
+		{
+			return new HelixFilterProcessor();
+		}
+
+		virtual string get_desc() const
+		{
+			return "This will filter out helical features";
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("cutoff_freq", EMObject::FLOAT, "1/helical periodicity in 1/A (0 - 1 / 2*apix). eg - a 20 A periodicity would be cutoff_freq=0.05");
+			d.put("alpha", EMObject::FLOAT, "Orientation of helix with respect to y axis, counter-clockwise in degrees");
+			d.put("width", EMObject::FLOAT, "Gaussian width of layer lines in Fourier pixels, default 2");
+			d.put("apix", EMObject::FLOAT, "Optional A/pix. Overrides value in image header.");
+			return d;
+		}
+
+		static const string NAME;
+	};
+
 	/** Processor the images by the estimated SNR in each image.if parameter 'wiener' is 1, then wiener processor the images using the estimated SNR with CTF amplitude correction.
 	 * @param defocus mean defocus in microns
 	 * @param voltage microscope voltage in Kv
