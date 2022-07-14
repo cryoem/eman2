@@ -7257,9 +7257,13 @@ since the SSNR is being computed as FSC/(1-FSC). Ie - the SSNR of the combined h
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("cutoff_freq", EMObject::FLOAT, "1/helical periodicity in 1/A (0 - 1 / 2*apix). eg - a 20 A periodicity would be cutoff_freq=0.05");
-			d.put("alpha", EMObject::FLOAT, "Orientation of helix with respect to y axis, counter-clockwise in degrees");
+			d.put("period", EMObject::FLOAT, "Helical periodicity in A");
+			d.put("alpha", EMObject::FLOAT, "Orientation of helix in 2-D (for images) with respect to y axis, counter-clockwise in degrees");
+			d.put("az",EMObject::FLOAT, "Orientation of helix in 3-D (for volumes), EMAN2 standard Euler");
+			d.put("alt",EMObject::FLOAT, "Orientation of helix in 3-D (for volumes), EMAN2 standard Euler");
 			d.put("width", EMObject::FLOAT, "Gaussian width of layer lines in Fourier pixels, default 2");
+			d.put("skip0", EMObject::BOOL, "Skip the zero order layer line (eliminates linear aperiodic features)");
+			d.put("return_filter", EMObject::BOOL, "If set, instead of applying a filter, will return the filter itself, ignoring image values");
 			d.put("apix", EMObject::FLOAT, "Optional A/pix. Overrides value in image header.");
 			return d;
 		}
