@@ -1,0 +1,106 @@
+~~NOTOC~~
+
+===== sp_beamtilt =====
+
+Correct Beam Tilt : Applies beam-tilt correction to particles.
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  	sp_beamtilt.py output_directory --input_stack=INPUT_STACK --star_file=STAR_FILE --kv=KV --cs=CS --apix=APIX --tiltx=TILTX --tilty=TILTY --micdir=MICDIR --box_size=BOX_SIZE --coordsdir=COORDSDIR --partdir=PARTDIR --verbosity=verbosity_level --debug
+
+
+\\
+===== Typical usage =====
+
+sp_beamtilt exists in both MPI and non-MPI versions (Running MPI version does not require --MPI flag).
+
+The purpose of sp_beamtilt.py is to:
+
+  : read beam-tilt information, from a STAR file or from the command line
+  : corrects images for beam tilt
+  : applies those corrections to either an input stack or extracts them from particles
+  : write the correct particle stack to disk
+ 
+\\ __1. Standard usage: Read beam-tilt data from STAR file and particles from stack__:
+
+  mpirun -np 16 sp_beamtilt.py output_directory --input_stack bdb:Particles#data --star_file particles.star 
+
+STAR files from RELION v3.0 and v3.1 have been tested and should work.
+
+\\ __2. Provide the beam-tilt parameters directly from the command line__:
+
+  mpirun -np 16 sp_beamtilt.py output_directory --input_stack bdb:Particles#data --kv=200 --cs=1.4 --apix=0.885 --tiltx=-0.096436 --tilty=0.26850
+
+Beam tilt is to be provided in units of milliradians. Other required parameters are accelerating voltage, spherical aberration constant, and pixel size.
+  
+\\ __3. Particles are to be extract directly from micrographs__
+
+  mpirun -np 16 sp_beamtilt.py output_directory --star_file particles.star --micdir=input_micrograph_directory  --box_size=256 --coordsdir=output_coordinates_directory --partdir=output_particles_directry
+
+This option has not been tested thoroughly.
+  
+\\
+===== Input =====
+=== Main Parameters ===
+  ; output_directory : Output directory : Toplevel directory where outputs will be written. (default required string)
+  ; %%--%%input_stack : Stack : Input particle stack. (default None)
+  ; %%--%%star_file : STAR file : Input STAR file. (default None)
+  
+\\
+=== Advanced Parameters ===
+  ; %%--%%kv : Voltage : Accelerating voltage, kilovolts. (default None) : star_file==None
+  ; %%--%%cs : Cs : Spherical aberration constant. (default None) : star_file==None
+  ; %%--%%apix : Pixel size : Pixel size, Angstroms. (default None) : star_file==None
+  ; %%--%%tiltx : Beam tilt, x : Beam tilt along x, in milliradians. (default None) : star_file==None
+  ; %%--%%tilty : Beam tilt, y : Beam tilt along y, in milliradians. (default None) : star_file==None
+  ; %%--%%micdir : Micrograph directory : Input micrograph directory, if extracting particles. (default None) : input_stack==None
+  ; %%--%%box_size : Box size : Box size, in pixels, if extracting particles. (default None) : input_stack==None
+  ; %%--%%coordsdir : Coordinates directory : Output coordinates directory, if extracting particles. (default None) : input_stack==None
+  ; %%--%%partdir : Particles directory : Output particles directory, if extracting particles. (default None) : input_stack==None
+  ; %%--%%verbosity : Verbosity level : Controls how much information will be written to the screen. (default 3)
+  ; %%--%%debug : Debug : Performs a dry run. (default False)
+  
+\\
+===== Output =====
+  ; bdb:all_corrected : Tilt-corrected particles
+ 
+\\
+===== Description =====
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+Zivanov J., Nakane T., Forsberg B.O., Kimanius D., Hagen W.J.H., Lindahl E, Scheres S.H.W. (2018) "New tools for automated high-resolution cryo-EM structure determination in RELION." eLife 7: e42166.
+ 
+\\
+==== Developer Notes ====
+Eventually, we want to correct for beam tilt on the fly, and not write the corrected images to disk.
+
+\\
+==== Author / Maintainer ====
+Tapu Shaikh
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_beamtilt.py
+
+\\
+==== See also ====
+
+\\
+==== Maturity ====
+Beta:: Under evaluation and testing. Please let us know if there are any bugs.
+
+\\
+==== Bugs ====
+
+\\
