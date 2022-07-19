@@ -31,7 +31,7 @@ Note: ISAC2 will change the size of input data such that they fit into box size 
   ; stack_file : Input image stack: Images must to be square (//nx//=//ny//). The stack can be either in .bdb or in .hdf format. (default required string)
   ; output_directory : Output directory: General ISAC output directory to store all results. If the directory already exists ISAC will only run in continuation mode (see advanced parameter restart). (default required string)
 
-  ; %%--%%radius : Particle radius [Pixels] : Radius of the particle in pixels. ISAC cannot offer a default here since the value will depend on the particle im question. (default required int)
+  ; %%--%%radius : Particle radius [Pixels] : Radius of the particle in pixels. ISAC cannot offer a default here since the value will depend on the particle in question. (default required int)
   ; %%--%%img_per_grp : Images per class: Ideally the number of images per class. In practice this value determines the number of classes //K// = //N// / //img_per_grp//, where //N// is the total number of images in the input stack. (default 200)
   ; %%--%%CTF : CTF phase flipping : Use for cryo datasets. If set to True the data will be phase-flipped using CTF information included in the image headers. (default False)
   ; %%--%%VPP : Phase Plate data : Use this option if the dataset is taken with a phase plate. Will generally be used together with the CTF option, except for example in the case of CTF-corrected images. (default False)
