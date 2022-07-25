@@ -234,7 +234,7 @@ def main():
 		else:
 			bxs.extend([[p[2], p[1],p[0], 'tm', scr[i] ,kid] for i,p in enumerate(pts[:n]*nbin)])
 			if options.boxsz<0:
-				boxsz=sz*nbin
+				boxsz=int(ref["ny"]*mbin)
 			else:
 				boxsz=options.boxsz
 				
