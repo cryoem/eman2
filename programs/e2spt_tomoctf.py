@@ -418,8 +418,16 @@ def main():
 		if options.verbose>0: print("Estimating defocus...")
 
 	ctfparams=np.zeros((len(tltparams), 2))
+	fitcv=False
 	for it in tltsrt:
 		allrd, pzus=powerspecs[it]
+		
+		if fitcv:
+			ypred=reg_a*tltparams[it,3]+reg_b
+			dfsel=abs(defrg-ypred)<res_y*5
+			if np.any(dfsel)==False:
+				dfsel=abs(defrg)>-1
+			exclude=np.where(dfsel==False)[0]
 		
 		allscr=[]
 		for ic, ctf in enumerate(allctf):
@@ -469,19 +477,30 @@ def main():
 
 		#### get enough references
 		if len(dfs)==nref: 
-			if options.verbose>0: print("In the first {} image, defocus mean {:.2f}, std {:.2f}".format(nref, np.mean(dfs), np.std(dfs)))
+			ii=tltsrt[:nref]
+			x=tltparams[ii,3]
+			y=ctfparams[ii,1]
+			reg_a,reg_b=np.polyfit(x,y, 1)
+			res_y=np.std(y-(reg_a*x+reg_b))
+			fitcv=True
+			
+			if options.verbose>0: 
+				print("In the first {} image, defocus mean {:.2f}, std {:.2f}".format(nref, np.mean(dfs), np.std(dfs)))
+				print(f"Linear fit: defocus = {reg_a:.2f} * angle + {reg_b:.2f}")
+				print(f"  Std around fit: {res_y:.3f}. Will search 5 x std around the fitted line ( {res_y*5:.3f} ).")
+				
 			#if (np.mean(dfs)+np.std(dfs)*3>defrg[int(len(defrg)*.9)]):
-			if (np.std(dfs)>1):
-				if options.verbose>0: print ("Warning: variance of defocus estimation is larger than normal. Something may be wrong...")
+			#if (np.std(dfs)>1):
+				#if options.verbose>0: print ("Warning: variance of defocus estimation is larger than normal. Something may be wrong...")
 				#return
 			
-			searchrg=min(max(np.std(dfs)*3, 3), 1.0)
-			dfsel=abs(defrg-np.mean(dfs))<searchrg
+			#searchrg=min(max(np.std(dfs)*3, 3), 1.0)
+			#dfsel=abs(defrg-np.mean(dfs))<searchrg
 			
 			
-			if options.verbose>0: print("We will search defocus range {:.2f} to {:.2f} for the rest images.".format(np.min(defrg[dfsel]), np.max(defrg[dfsel])))
+			#if options.verbose>0: print("We will search defocus range {:.2f} to {:.2f} for the rest images.".format(np.min(defrg[dfsel]), np.max(defrg[dfsel])))
 			
-			exclude=np.where(dfsel==False)[0]
+			#exclude=np.where(dfsel==False)[0]
 			
 			
 	js=js_open_dict(info_name(tfile))
