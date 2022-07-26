@@ -360,7 +360,7 @@ EMUtil::ImageType EMUtil::fast_get_image_type(const string & filename,
 		}
 		break;
 	case IMAGE_DF3:
-		if (EmIO::is_valid(first_block, file_size)) {
+		if (Df3IO::is_valid(first_block, file_size)) {
 			return IMAGE_DF3;
 		}
 		break;

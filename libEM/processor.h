@@ -7231,6 +7231,46 @@ since the SSNR is being computed as FSC/(1-FSC). Ie - the SSNR of the combined h
 		static const string NAME;
 	};
 
+	/** This processor will perform a layer line filter to help bring out helical objects
+	 */
+	class HelixFilterProcessor:public Processor
+	{
+	  public:
+		//virtual EMData* process(EMData const *image);
+		virtual void process_inplace(EMData *image);
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+
+		static Processor *NEW()
+		{
+			return new HelixFilterProcessor();
+		}
+
+		virtual string get_desc() const
+		{
+			return "This will filter out helical features";
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("period", EMObject::FLOAT, "Helical periodicity in A");
+			d.put("alpha", EMObject::FLOAT, "Orientation of helix in 2-D (for images) with respect to y axis, counter-clockwise in degrees");
+			d.put("az",EMObject::FLOAT, "Orientation of helix in 3-D (for volumes), EMAN2 standard Euler");
+			d.put("alt",EMObject::FLOAT, "Orientation of helix in 3-D (for volumes), EMAN2 standard Euler");
+			d.put("width", EMObject::FLOAT, "Gaussian width of layer lines in Fourier pixels, default 2");
+			d.put("skip0", EMObject::BOOL, "Skip the zero order layer line (eliminates linear aperiodic features)");
+			d.put("return_filter", EMObject::BOOL, "If set, instead of applying a filter, will return the filter itself, ignoring image values");
+			d.put("apix", EMObject::FLOAT, "Optional A/pix. Overrides value in image header.");
+			return d;
+		}
+
+		static const string NAME;
+	};
+
 	/** Processor the images by the estimated SNR in each image.if parameter 'wiener' is 1, then wiener processor the images using the estimated SNR with CTF amplitude correction.
 	 * @param defocus mean defocus in microns
 	 * @param voltage microscope voltage in Kv

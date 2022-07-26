@@ -1654,6 +1654,7 @@ Transform HSym::get_sym(const int n) const
 	float tz=params["tz"];
 	float dz=tz/apix;
 	Dict d("type","eman");
+	if (nstart!=1) throw InvalidValueException(nstart, "ERROR: nstart>1 is currently broken for helical symmetry. Until this is fixed you will need to replicate the helix with N * 360/N rotational copies.");
 
 	// courtesy of Phil Baldwin
 	//d["az"] = (n%nsym) * 360.0f / nsym;

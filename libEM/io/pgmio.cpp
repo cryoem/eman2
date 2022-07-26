@@ -42,7 +42,7 @@ const char *PgmIO::MAGIC_ASCII = "P2";
 PgmIO::PgmIO(const string & fname, IOMode rw)
 :	ImageIO(fname, rw), is_big_endian(true),
 	nx(0), ny(0), maxval(0), minval(0),
-	file_offset(0), rendermin(0), rendermax(0), renderbits(16)
+	file_offset(0)
 {}
 
 PgmIO::~PgmIO()
@@ -251,30 +251,15 @@ int PgmIO::write_data(float *data, int image_index, const Region* area,
 	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, renderbits);
 
 	unsigned char *cdata=(unsigned char *)malloc(nx*ny);	//cdata is the normalized data
+	auto [rendered_data, count] = getRenderedDataAndRendertrunc<unsigned char>(data, nx*ny);
 
-	int old_add = 0;
-	int new_add = 0;
-	for( int j=0; j<ny; ++j ) {
-		for( int i=0; i<nx; ++i) {
-			old_add = j*nx+i;
-			new_add = (ny-1-j)*nx + i;
-			if( data[old_add]<rendermin ) {
-				cdata[new_add] = 0;
-			}
-			else if( data[old_add]>rendermax )
-			{
-				cdata[new_add] = 255;
-			}
-			else {
-				cdata[new_add] = (unsigned char)((data[old_add]-rendermin)/(rendermax-rendermin)*256.0);
-			}
-		}
-	}
+	for( int j=0; j<ny; ++j )
+		for( int i=0; i<nx; ++i)
+			cdata[(ny-1-j)*nx + i] = (unsigned char)rendered_data[j*nx+i];
 
-	size_t mode_size = sizeof(unsigned char);
 	//fwrite(cdata, nx, ny, pgm_file);
 	EMUtil::process_region_io(cdata, file, WRITE_ONLY, image_index,
-							  mode_size, nx, ny, 1, area);
+							  sizeof(unsigned char), nx, ny, 1, area);
 
 	free(cdata);
 	EXITFUNC;
@@ -297,4 +282,3 @@ bool PgmIO::is_image_big_endian()
 	init();
 	return is_big_endian;
 }
-

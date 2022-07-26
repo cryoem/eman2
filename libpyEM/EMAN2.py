@@ -70,6 +70,8 @@ import threading
 #signal.signal(2, DB_cleanup)
 #signal.signal(15, DB_cleanup)
 
+os.environ['QT_MAC_WANTS_LAYER'] = '1'
+
 
 def e2gethome():
 	"""platform independent path with '/'"""
@@ -785,13 +787,15 @@ class EMArgumentParser(argparse.ArgumentParser):
 		return self.optionslist
 
 def parsesym(optstr):
-	# FIXME - this function is no longer necessary since I overwrite the Symmetry3D::get function (on the c side). d.woolford
-	[sym, dict] = parsemodopt(optstr)
-	if sym[0] in ['c','d','h']:
-		dict["nsym"] = int(sym[1:])
-		sym = sym[0]
+	return Symmetries.get(optstr)
 
-	return Symmetries.get(sym, dict)
+#	# FIXME - this function is no longer necessary since I overwrite the Symmetry3D::get function (on the c side). d.woolford
+#	[sym, dict] = parsemodopt(optstr)
+#	if sym[0] in ['c','d','h']:
+#		dict["nsym"] = int(sym[1:])
+#		sym = sym[0]
+#
+#	return Symmetries.get(sym, dict)
 
 parseparmobj1=re.compile("([^\(]*)\(([^\)]*)\)")	# This parses test(n=v,n2=v2) into ("test","n=v,n2=v2")
 parseparmobj2=re.compile("([^=,]*)=([^,]*)")		# This parses "n=v,n2=v2" into [("n","v"),("n2","v2")]
@@ -2952,7 +2956,7 @@ EMData.__init__ = db_emd_init
 
 
 def compressible_formats():
-	return ('.hdf', '.jpeg', '.mrc', '.mrcs', '.png', '.tiff', '.df3')
+	return ('.hdf', '.jpeg', '.mrc', '.mrcs', '.png', '.tiff', '.df3', '.pgm')
 
 
 def is_file_compressible(fsp):
@@ -3107,7 +3111,7 @@ and the file size will increase.
 			raise Exception(f"Only {[i.strip('.') for i in compressible_formats()]} "
 			                f"formats are supported by write_compressed()")
 
-		if outbits:
+		if outbits is not None:
 			bits = outbits
 		else:
 			nooutliers = True

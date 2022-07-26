@@ -42,7 +42,7 @@ Note: the parameters will be permanently deleted and cannot be recovered.
 === Main Parameters ===
   ; stack : Input image stack: Path to input image stack. The stack can be either bdb or hdf. However, the GUI supports only bdb. (default required string)
 
-  ; %%--%%params : Target parameters: List of parameters names (i.e. image header entry keys) to perform operations on (e.g. "parm1 parm2 ..."). (default required string)
+  ; %%--%%params : Target parameters: List of parameters names (i.e. image header entry keys) on which to perform operations. Allowed parameter names are: "xform.align2d". "xform.projection", "xform.align3d", "members", "ISAC_SPLIT_*", and "ctf". (default required string)
   ; %%--%%import : Import parameters: Import parameters from file. (default none)
   ; %%--%%export : Export parameters: Export parameters to file. (default none)
   ; %%--%%delete : Delete all: Delete all parameters. (default False)

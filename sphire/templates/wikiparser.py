@@ -1547,7 +1547,7 @@ def insert_sxcmd_to_file(sxcmd, output_file, sxcmd_variable_name):
 def create_sxcmd_subconfig_window_makevstack():
 	token_edit_list = []
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("makevstack"); token_edit.is_required = True; token_edit.is_locked = False; token_edit.default = "none"; token_edit.restore = "none"; token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("input_bdb_stack_pattern"); token_edit.key_prefix = ""; token_edit.label = "Input BDB image stack pattern"; token_edit.help = "Specify file path pattern of stack subsets created in particle extraction using a wild card /'*/' (e.g. /'//sp_window_output_dir//*/'). The stack subsets are located in the sp_window output directory."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "dir_list"; token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("input_bdb_stack_pattern"); token_edit.key_prefix = ""; token_edit.label = "Input BDB image stack pattern"; token_edit.help = "Specify file path pattern of stack subsets created in particle extraction using a wild card '*' (e.g. '<sp_window_output_dir>/*/'). The stack subsets are located in the sp_window output directory."; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "dir_list"; token_edit_list.append(token_edit)
 
 	sxsubcmd_mpi_support = False
 	sxcmd_subconfig = SXsubcmd_config("Particle Stack", None, token_edit_list, sxsubcmd_mpi_support, subset_config="fullset")
@@ -2203,7 +2203,7 @@ def create_sxcmd_subconfig_subtract_projsubtract():
 def create_sxcmd_subconfig_utility_makevstack():
 	token_edit_list = []
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("makevstack"); token_edit.is_required = True; token_edit.is_locked = False; token_edit.default = "none"; token_edit.restore = "none"; token_edit_list.append(token_edit)
-	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("input_bdb_stack_file"); token_edit.key_prefix = ""; token_edit.label = "Input BDB image stack"; token_edit.help = "Specify path to input BDB stack file. "; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "bdb2d_stack"; token_edit_list.append(token_edit)
+	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("input_bdb_stack_file"); token_edit.key_prefix = ""; token_edit.label = "Input BDB image stack"; token_edit.help = "Specify path to input BDB stack file. If using a wild card ('*') to merge multiple BDBs, leave out the 'bdb:' prefix, or alternatively use the 'Particle Stack' button in the ISAC section"; token_edit.group = "main"; token_edit.is_required = True; token_edit.default = ""; token_edit.type = "bdb2d_stack"; token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("list"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("exlist"); token_edit_list.append(token_edit)
 	token_edit = sxgui_template.SXcmd_token(); token_edit.initialize_edit("step"); token_edit_list.append(token_edit)
