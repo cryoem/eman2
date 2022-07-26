@@ -282,6 +282,8 @@ def initialize_data(inputfile, options):
 		scrs[scrs<0]=0
 		scrs=scrs/np.max(scrs)
 	
+	if options.no_wt:
+		scrs=scrs*0+1
 	print("{} particle, score max {:.2f}, min {:.2f}".format(len(data),np.max(scrs), np.min(scrs)))
 	
 	for i in range(len(data)):
