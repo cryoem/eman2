@@ -384,6 +384,7 @@ class EMProcessorWidget(QtWidgets.QWidget):
 			self.gbl.addWidget(self.parmw[-1],self.ninput,1,1,4)
 			self.parmw[-1].valueChanged.connect(self.updateFilt)
 			self.parmw[-1].enableChanged.connect(self.updateFilt)
+			self.parmw[-1].dtype=parms[i+1]
 
 		self.updateFilt()
 
@@ -409,7 +410,14 @@ class EMProcessorWidget(QtWidgets.QWidget):
 
 		parms={}
 		for w in self.parmw:
-			if w.getEnabled() : parms[w.getLabel()]=w.getValue()
+			if w.getEnabled() : 
+				parms[w.getLabel()]=w.getValue()
+				if w.dtype=="EMDATA":
+					try: 
+						e=EMData(w.getValue())
+						parms[w.getLabel()]=e
+					except:
+						print("Error: cannot open file",w.getValue())
 
 		return (proc,parms)
 
@@ -710,6 +718,7 @@ class EMFilterTool(QtWidgets.QMainWindow):
 
 		if len(errors)>0 :
 			self.errors=errors
+			print("error running ",errors)
 		else: self.procdata=tmp
 
 		self.needredisp=max(needred,self.lastredisp)
