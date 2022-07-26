@@ -110,7 +110,8 @@ def mult_gauss_coords(args):
 def pts2img_one(args):
 	pts, ang = args
 	sz, idxft, rrft = params["sz"], params["idxft"], params["rrft"]
-
+	xfo=params["xforigin"]
+	
 	lp=.1
 	bamp=tf.cast(tf.nn.relu(pts[:,3]), tf.complex64)[:,None]
 	#bsigma=pts[:, 4]
@@ -129,7 +130,7 @@ def pts2img_one(args):
 
 	pgauss = tf.matmul(tf.transpose(pgauss_x), pgauss_y)
 	pgauss = tf.transpose(pgauss)*tf.cast(amp, tf.complex64)
-	return pgauss
+	return pgauss*tf.cast(xfo, tf.complex64)
 
 @tf.function()
 def pts2img(pts, angs):
@@ -192,6 +193,8 @@ def load_particles(fname, boxsz, shuffle=False):
 				#nx=e["nx"]
 				#e.clip_inplace(Region((nx-boxsz)//2,(nx-boxsz)//2, boxsz,boxsz))
 				#e.process_inplace("xform.scale", {"scale":boxsz/rawbox,"clip":boxsz})
+			
+			e.process_inplace("xform.phaseorigin.tocorner")
 			hdrs.append(e.get_attr_dict())
 			projs.append(e.numpy().copy())
 	print(f"{nptcl}/{nptcl}")
@@ -267,9 +270,11 @@ def set_indices_boxsz(boxsz, apix=0, return_freq=False):
 		rings=np.zeros((sz,sz//2+1,sz//2), dtype=floattype) #### Fourier rings
 		for i in range(sz//2):
 			rings[:,:,i]=(rr==i)
+			
+		xvec=tf.constant(np.fromfunction(lambda i,j:1.0-2*((i+j)%2),(sz,sz//2+1),dtype=np.float32))
 		
 		global params
-		params={"sz":sz, "idxft":idxft, "rrft":rrft, "rings":rings}
+		params={"sz":sz, "idxft":idxft, "rrft":rrft, "rings":rings, "xforigin":xvec}
 		return params
 
 def build_encoder(mid=512, nout=4, conv=False, ninp=-1):
@@ -523,6 +528,7 @@ def eval_model(gen_model, options):
 		xf=Transform({"type":"eman", "az":x[0], "alt":x[1], "phi":x[2], "tx":x[3], "ty":x[4]})
 		e["xform.projection"]=xf
 		e["apix_x"]=e["apix_y"]=options.raw_apix
+		e.process_inplace("xform.phaseorigin.tocenter")
 		e.write_image(options.evalmodel,-1)
 	print("Projection images written to ", options.evalmodel)
 		
@@ -855,6 +861,7 @@ def main():
 				e=EMData(options.ptclsin, 0, True)
 			#sz=e["ny"]
 			p=p/e["ny"]/e["apix_x"]-0.5
+			p[:,1:]*=-1
 			pts[:,:3]=p
 			pts[:,3]=.5
 			pts[:,4]=1
@@ -1046,16 +1053,18 @@ def main():
 		else:
 			encode_model=build_encoder(nout=options.nmid, conv=options.conv,ninp=len(pts[0]))
 			
+		if options.anchor:
+			anchor=np.loadtxt(options.anchor)[:,:3]
+			anchor=tf.constant(anchor,dtype=floattype)
+			
 		if options.decoderin:
 			decode_model=tf.keras.models.load_model(f"{options.decoderin}",compile=False)
 			
-		elif options.anchor:
-			anchor=np.loadtxt(options.anchor)[:,:3]
-			anchor=tf.constant(anchor,dtype=floattype)
-			decode_model=build_decoder_anchor(pts, anchor, ninp=options.nmid)
-			
 		else:
-			decode_model=build_decoder(pts[0].numpy(), ninp=options.nmid, conv=options.conv,mid=options.ndense)
+			if options.anchor:
+				decode_model=build_decoder_anchor(pts, anchor, ninp=options.nmid)
+			else:
+				decode_model=build_decoder(pts[0].numpy(), ninp=options.nmid, conv=options.conv,mid=options.ndense)
 		
 		mid=encode_model(allgrds[:bsz])
 		print("Gaussian model shape: ",pts.shape)
@@ -1066,8 +1075,8 @@ def main():
 		
 		if options.niter>0:
 			#### actual training
-			ptclidx=allscr>-1
-			trainset=tf.data.Dataset.from_tensor_slices((allgrds[ptclidx], dcpx[0][ptclidx], dcpx[1][ptclidx], xfsnp[ptclidx]))
+			#ptclidx=allscr>-1
+			trainset=tf.data.Dataset.from_tensor_slices((allgrds, dcpx[0], dcpx[1], xfsnp))
 			trainset=trainset.batch(bsz)
 			
 			train_heterg(trainset, pts, encode_model, decode_model, params, options)
@@ -1085,8 +1094,8 @@ def main():
 			
 		## conformation output
 		if options.midout:
-			mid=calc_conf(encode_model, allgrds[ptclidx], 1000)
-			sv=np.hstack([np.where(ptclidx)[0][:,None], mid])
+			mid=calc_conf(encode_model, allgrds, 1000)
+			sv=np.hstack([np.arange(len(mid))[:,None], mid])
 			print(mid.shape, sv.shape)
 			np.savetxt(options.midout, sv)
 		
