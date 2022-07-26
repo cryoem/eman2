@@ -11,6 +11,7 @@ def main():
 	parser.add_argument("--ali3d", type=str,help="", default="")
 	parser.add_argument("--outpath", type=str,help="", default="ptcl3d")
 	parser.add_argument("--outsize", type=int,help="", default=-1)
+	parser.add_argument("--res", type=float,help="", default=25)
 	parser.add_argument("--threads", type=int,help="", default=12)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -53,7 +54,7 @@ def main():
 		
 		x.set_trans(0,0,0)
 		e.process_inplace("xform",{"transform":x})
-		e.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1./25})
+		e.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1./options.res})
 		e.process_inplace("filter.highpass.gauss",{"cutoff_pixels":2})
 		e.mult(-1)
 		e.process_inplace("normalize.edgemean")
