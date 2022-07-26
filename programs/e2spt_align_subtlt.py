@@ -197,7 +197,7 @@ class SptAlignTask(JSTask):
 			sym=Symmetries.get(options.sym)
 			
 			#### saff seems slightly better in some tests (in the coverage of the edge of asymmetrical units) but it is not entirely clear. it does not matter much in most cases
-			xfcrs=sym.gen_orientations("saff",{"delta":astep,"phitoo":astep,"inc_mirror":1})
+			xfcrs=sym.gen_orientations("eman",{"delta":astep,"phitoo":astep,"inc_mirror":1})
 		
 		#### resolution range
 		if options.minres>0:
