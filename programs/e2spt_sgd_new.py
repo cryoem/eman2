@@ -24,6 +24,7 @@ def main():
 	parser.add_argument("--sym", type=str,help="symmetry. Only c1 unless --ref used", default="c1",guitype='strbox',row=12, col=1,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--classify",action="store_true",help="classify particles to the best class. there is the risk that some classes may end up with no particle. by default each class will include the best batch particles, and different classes can overlap.",default=False)
 	parser.add_argument("--curve",action="store_true",help="Mode for filament structure refinement.",default=False)
+	parser.add_argument("--curvedir",action="store_true",help="use curve direction.",default=False)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int,help="ppid", default=-2)
 
@@ -40,6 +41,15 @@ def main():
 	
 	if options.path==None: options.path=num_path_new("sptsgd_")
 	path=options.path
+	
+	nptcl=int(batch*ncls/options.keep)
+	nthread=int(options.parallel.split(':')[1])
+	if nthread>nptcl:
+		print("Cannot use more threads than batch. Using {} threads now".format(nptcl))
+		pl=options.parallel.split(':')
+		pl[1]=str(nptcl)
+		options.parallel=':'.join(pl)
+		print(options.parallel)
 	
 	options.cmd=' '.join(sys.argv)
 	fm=f"{path}/0_spt_params.json"
@@ -79,7 +89,10 @@ def main():
 				xfs=[]
 				for ii in idx:
 					s=info3d[ii]
-					e=EMData(s["src"], s["idx"], True)
+					#e=EMData(s["src"], s["idx"], True)
+					#print(ptcls, ii)
+					e=EMData(ptcls, int(ii), True)
+					#print(s)
 					xf=Transform(e["xform.align3d"])
 					r=Transform({"type":"eman", "phi":np.random.rand()*360})
 					xfs.append((r*xf).inverse())
@@ -107,7 +120,6 @@ def main():
 		for ic in range(ncls):
 			idx=np.arange(npt)
 			np.random.shuffle(idx)
-			nptcl=int(batch*ncls/options.keep)
 			idx=np.sort(idx[:nptcl])
 			ali3d=[info3d[i] for i in idx]
 			save_lst_params(ali3d, info3dname)
@@ -124,7 +136,6 @@ def main():
 		#print(itr)
 		idx=np.arange(npt)
 		np.random.shuffle(idx)
-		nptcl=int(batch*ncls/options.keep)
 		idx=np.sort(idx[:nptcl])
 		ali3d=[info3d[i] for i in idx]
 		save_lst_params(ali3d, info3dname)
@@ -136,6 +147,8 @@ def main():
 			cmd=f"e2spt_align_subtlt.py {path}/particle_info_3d.lst {path}/output_cls{ic}.hdf --path {path} --maxres {res} --parallel {options.parallel} --iter 0 --sym {options.sym}"
 			if options.curve:
 				cmd+=" --curve"
+				if options.curvedir:
+					cmd+=" --curvedir"
 			else:
 				cmd+=" --fromscratch"
 				
