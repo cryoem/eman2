@@ -29,19 +29,20 @@ def main():
 	
 	parser.add_argument("--vthr", type=float,help="template matching value threshold (n sigma). Particles with score lower than this will be removed.", default=10, guitype='floatbox', row=4, col=1,rowspan=1, colspan=1, mode="boxing")
 
-	parser.add_argument("--delta", type=float,help="Anglular sampling to rotate the reference.", default=30.0, guitype='floatbox', row=5, col=0,rowspan=1, colspan=1, mode="boxing")
-	
-	parser.add_argument("--sym", type=str,help="Symmetry of reference.", default="c1", guitype='strbox', row=5, col=1,rowspan=1, colspan=1, mode="boxing")
-	
-	parser.add_argument("--rmedge", action="store_true",help="Remove particles on the edge.", default=False, guitype='boolbox', row=6, col=0,rowspan=1, colspan=1, mode="boxing[True]")
-	parser.add_argument("--rmgold", action="store_true",help="Remove particles near gold fiducial.", default=False, guitype='boolbox', row=6, col=1,rowspan=1, colspan=1, mode="boxing[True]")
+	parser.add_argument("--minvol", type=int,help="Minimum peak volume. By default (-1) this is not appplied.", default=-1, guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="boxing")
+	parser.add_argument("--maxvol", type=int, help="Maximum peak volume. By default (-1) this is not appplied.", default=-1, guitype='intbox', row=5, col=1, rowspan=1, colspan=1, mode="boxing")
 
-	parser.add_argument("--boxsz", type=int,help="Overwrite box size of the reference. This should be the box size of unbinned micrographs if specified.", default=-1, guitype='intbox', row=7, col=0,rowspan=1, colspan=1, mode="boxing")
-	parser.add_argument("--threads", type=int,help="number of threads to use", default=12, guitype='intbox', row=8, col=0,rowspan=1, colspan=1, mode="boxing")
+	parser.add_argument("--delta", type=float,help="Anglular sampling to rotate the reference.", default=30.0, guitype='floatbox', row=6, col=0,rowspan=1, colspan=1, mode="boxing")
+	
+	parser.add_argument("--sym", type=str,help="Symmetry of reference.", default="c1", guitype='strbox', row=6, col=1,rowspan=1, colspan=1, mode="boxing")
+	
+	parser.add_argument("--rmedge", action="store_true",help="Remove particles on the edge.", default=False, guitype='boolbox', row=7, col=0,rowspan=1, colspan=1, mode="boxing[True]")
+	parser.add_argument("--rmgold", action="store_true",help="Remove particles near gold fiducial.", default=False, guitype='boolbox', row=7, col=1,rowspan=1, colspan=1, mode="boxing[True]")
 
-	parser.add_argument("--minvol", type=int,help="Minimum peak volume.", default=-1, guitype='intbox', row=9, col=0,rowspan=1, colspan=1, mode="boxing")
-	parser.add_argument("--maxvol", type=int, help="Maximum peak volume.", default=-1, guitype='intbox', row=10, col=0,
-						rowspan=1, colspan=1, mode="boxing")
+	parser.add_argument("--boxsz", type=int,help="Overwrite box size of the reference. This should be the box size of unbinned micrographs if specified.", default=-1, guitype='intbox', row=8, col=0,rowspan=1, colspan=1, mode="boxing")
+	parser.add_argument("--threads", type=int,help="number of threads to use", default=12, guitype='intbox', row=9, col=0,rowspan=1, colspan=1, mode="boxing")
+
+
 
 	parser.add_argument("--shrink", type=int,help="binning factor. Default (-1) will downsample the tomograms to ~500px for template matching", default=-1)
 	parser.add_argument("--ppid", type=int,help="ppid", default=-2)
