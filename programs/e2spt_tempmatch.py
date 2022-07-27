@@ -29,8 +29,8 @@ def main():
 	
 	parser.add_argument("--vthr", type=float,help="template matching value threshold (n sigma). Particles with score lower than this will be removed.", default=10, guitype='floatbox', row=4, col=1,rowspan=1, colspan=1, mode="boxing")
 
-	parser.add_argument("--minvol", type=int,help="Minimum peak volume. By default (-1) this is not appplied.", default=-1, guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="boxing")
-	parser.add_argument("--maxvol", type=int, help="Maximum peak volume. By default (-1) this is not appplied.", default=-1, guitype='intbox', row=5, col=1, rowspan=1, colspan=1, mode="boxing")
+	parser.add_argument("--minvol", type=int,help="Minimum peak volume. By default (-1) this filter is not applied.", default=-1, guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="boxing")
+	parser.add_argument("--maxvol", type=int, help="Maximum peak volume. By default (-1) this filter is not applied.", default=-1, guitype='intbox', row=5, col=1, rowspan=1, colspan=1, mode="boxing")
 
 	parser.add_argument("--delta", type=float,help="Anglular sampling to rotate the reference.", default=30.0, guitype='floatbox', row=6, col=0,rowspan=1, colspan=1, mode="boxing")
 	
