@@ -15,7 +15,7 @@ def main():
 	parser.add_argument("--res", type=float,help="target resolution", default=50,guitype='floatbox',row=2, col=1,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--niter", type=int,help="iterations", default=100, guitype='intbox',row=2, col=2,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--shrink", type=int,help="shrink", default=1, guitype='intbox',row=4, col=1,rowspan=1, colspan=1, mode="model")
-	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>=<value>. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel",default="thread:8", guitype='strbox', row=6, col=1, rowspan=1, colspan=2, mode="model[thread:8]")
+	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>=<value>. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel",default="thread:17", guitype='strbox', row=6, col=1, rowspan=1, colspan=2, mode="model[thread:8]")
 	parser.add_argument("--ncls", type=int,help="number of classes", default=1,guitype='intbox',row=8, col=1,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--batch", type=int,help="batch size", default=12,guitype='intbox',row=8, col=2,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--keep", type=float,help="Fraction of particles to keep. will actually align more particles and use the number of particles specified by batch", default=.7)
@@ -24,7 +24,7 @@ def main():
 	parser.add_argument("--sym", type=str,help="symmetry. Only c1 unless --ref used", default="c1",guitype='strbox',row=12, col=1,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--classify",action="store_true",help="classify particles to the best class. there is the risk that some classes may end up with no particle. by default each class will include the best batch particles, and different classes can overlap.",default=False)
 	parser.add_argument("--curve",action="store_true",help="Mode for filament structure refinement.",default=False)
-	parser.add_argument("--curvedir",action="store_true",help="use curve direction.",default=False)
+	parser.add_argument("--vector",action="store_true",help="similar to --curve but keep vector direction as well.",default=False)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int,help="ppid", default=-2)
 
@@ -147,8 +147,8 @@ def main():
 			cmd=f"e2spt_align_subtlt.py {path}/particle_info_3d.lst {path}/output_cls{ic}.hdf --path {path} --maxres {res} --parallel {options.parallel} --iter 0 --sym {options.sym}"
 			if options.curve:
 				cmd+=" --curve"
-				if options.curvedir:
-					cmd+=" --curvedir"
+			elif options.vector:
+				cmd+=" --vector"
 			else:
 				cmd+=" --fromscratch"
 				

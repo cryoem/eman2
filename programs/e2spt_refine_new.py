@@ -32,7 +32,7 @@ def main():
 	parser.add_argument("--tophat", type=str,help="Options for filtering maps. Run 'e2help.py tophat' for more information. Default=wiener.", default=None,guitype='strbox', row=12, col=0, rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--ssnrwt", action="store_true", default=False ,help="weight particles during reconstruction by SSNR accroding to references.")
 	parser.add_argument("--curve", action="store_true", default=False ,help="Filament refinement mode. still under testing")
-	parser.add_argument("--curvedir", action="store_true", default=False ,help="use direction of curve")
+	parser.add_argument("--vector", action="store_true", default=False ,help="similar to --curve but keep vector direction as well.")
 	parser.add_argument("--use3d", action="store_true", default=False ,help="Use projection of 3d particles instead of 2d sub tilt series. This may be more useful for thicker sample but can be significantly slower.")
 	parser.add_argument("--localrefine", action="store_true", default=False ,help="only perform local search around the solution from the last iteration",guitype='boolbox', row=19, col=0, rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--loadali2d", type=str,help="load previous 2d alignment from an aliptcls2d_xx.lst file", default=None,guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=14, col=0,rowspan=1, colspan=2, mode="model")
@@ -202,8 +202,8 @@ def main():
 				opt+=f" --maxshift {options.maxshift} --maxang {options.maxang}"
 			if options.curve:
 				opt+=" --curve"
-				if options.curvedir:
-					opt+=" --curvedir"
+			elif options.vector:
+				opt+=" --vector"
 			if options.localrefine==False and options.curve==False:
 				opt+=" --fromscratch"
 			

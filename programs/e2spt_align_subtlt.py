@@ -37,7 +37,7 @@ def main():
 	parser.add_argument("--maxshift", type=int, help="Maximum shift from the center of the box or the previous alignment. default box size//6",default=-1)
 	parser.add_argument("--maxang", type=int, help="Maximum angle difference from starting point. Ignored when --fromscratch is on.",default=30)
 	parser.add_argument("--curve",action="store_true",help="Mode for filament structure refinement. Still under testing. Ignored when --fromscratch is on.",default=False)
-	parser.add_argument("--curvedir",action="store_true",help="Use the direction from the curve tracing, assuming it is correct.",default=False)
+	parser.add_argument("--vector",action="store_true",help="similar to --curve but keep vector direction as well.",default=False)
 	parser.add_argument("--skipali",action="store_true",help="Skip alignment and only calculate the score. Incompatible with --fromscratch, but --breaksym will still be considered.",default=False)
 	parser.add_argument("--breaksym",type=str,default=None,help="Specify symmetry to break. Ignored when --fromscratch is on.")
 	
@@ -302,7 +302,7 @@ class SptAlignTask(JSTask):
 			
 			#### read curve direction from header
 			##   this is really not too different than --breaksym d18. maybe get rid of this entirely after some testing...
-			elif options.curve:
+			elif options.curve or options.vector:
 				if img.has_attr("xform.align3d"):
 					xf=img["xform.align3d"]#.inverse()
 				else:
@@ -311,7 +311,7 @@ class SptAlignTask(JSTask):
 				xfs=[Transform().get_params("eman") for i in range(npos)]
 				for i,x in enumerate(xfs):
 					x["phi"]+=(i*360*2/npos)%360
-					if not options.curvedir:
+					if not options.vector:
 						x["alt"]+=(i>npos/2)*180
 					
 				curxfs=[Transform(x)*xf for x in xfs]
