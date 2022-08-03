@@ -1149,6 +1149,11 @@ def parse_outfile_arg(arg):
 	>>> parse_outfile_arg('out.hdf:3:F')
 	('out.hdf', 3, 'FULL', 'FULL', None, None)
 
+	>>> parse_outfile_arg('out.hdf:3:o')
+	('out.hdf', 3, 'NOOUTLIERS', 'NOOUTLIERS', None, None)
+	>>> parse_outfile_arg('out.hdf:3:O')
+	('out.hdf', 3, 'NOOUTLIERS', 'NOOUTLIERS', None, None)
+
 	>>> parse_outfile_arg('out.hdf:3::')
 	Traceback (most recent call last):
 	argparse.ArgumentTypeError: Min/max fields are expected to be non-empty if specified. Got ':'
@@ -1202,6 +1207,8 @@ def parse_outfile_arg(arg):
 		rng = None, None, -5.0, 5.0
 	elif rng.lower() == "f":
 		rng = "FULL", "FULL", None, None
+	elif rng.lower() == "o":
+		rng = "NOOUTLIERS", "NOOUTLIERS", None, None
 	else:
 		min, _, max = rng.partition(':')
 		rng = (min, max)
@@ -3113,8 +3120,6 @@ and the file size will increase.
 
 		if outbits is not None:
 			bits = outbits
-		else:
-			nooutliers = True
 
 	if isinstance(self,EMData):
 		self=[self]
@@ -3136,6 +3141,9 @@ and the file size will increase.
 
 			if minval == 'FULL': minval = im["minimum"]
 			if maxval == 'FULL': maxval = im["maximum"]
+
+			if minval == 'NOOUTLIERS' and maxval == 'NOOUTLIERS':
+				nooutliers = True
 
 		im["render_bits"]=bits
 		im["render_compress_level"]=level
