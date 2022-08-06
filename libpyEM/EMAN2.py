@@ -1130,10 +1130,10 @@ def parse_outfile_arg(arg):
 	Traceback (most recent call last):
 	argparse.ArgumentTypeError: Please, specify an output file!
 	>>> parse_outfile_arg('out.hdf')
-	('out.hdf', None, None, None, -5.0, 5.0)
+	('out.hdf', None, None, None, -4.0, 4.0)
 
 	>>> parse_outfile_arg('out.hdf:3')
-	('out.hdf', 3, None, None, -5.0, 5.0)
+	('out.hdf', 3, None, None, -4.0, 4.0)
 	>>> parse_outfile_arg('out.hdf:3.')
 	Traceback (most recent call last):
 	argparse.ArgumentTypeError: outputbit field is required to be an int if specified! Got '3.'!
@@ -1142,7 +1142,7 @@ def parse_outfile_arg(arg):
 	argparse.ArgumentTypeError: outputbit field is required to be an int between 0 and 16! Got '33'!
 
 	>>> parse_outfile_arg('out.hdf:3:')
-	('out.hdf', 3, None, None, -5.0, 5.0)
+	('out.hdf', 3, None, None, -4.0, 4.0)
 
 	>>> parse_outfile_arg('out.hdf:3:f')
 	('out.hdf', 3, 'FULL', 'FULL', None, None)
@@ -1204,7 +1204,7 @@ def parse_outfile_arg(arg):
 		raise argparse.ArgumentTypeError(f"outputbit field is required to be an int if specified! Got '{outbit}'!")
 
 	if not rng:
-		rng = None, None, -5.0, 5.0
+		rng = None, None, -4.0, 4.0
 	elif rng.lower() == "f":
 		rng = "FULL", "FULL", None, None
 	elif rng.lower() == "o":
@@ -3136,13 +3136,15 @@ and the file size will increase.
 		if not isinstance(im,EMData) : raise(Exception,"write_compressed() requires a list of EMData objects")
 
 		if is_compression_syntax:
-			minval = rendermin_abs if rendermin_abs else rendermin_s * im["mean"]
-			maxval = rendermax_abs if rendermax_abs else rendermax_s * im["mean"]
+			if (rendermin_abs is not None) and (rendermax_abs is not None):
+				minval = rendermin_abs
+				maxval = rendermax_abs
 
-			if minval == 'FULL': minval = im["minimum"]
-			if maxval == 'FULL': maxval = im["maximum"]
+			if rendermin_s == 'FULL' and rendermax_s == 'FULL':
+				minval = im["minimum"]
+				maxval = im["maximum"]
 
-			if minval == 'NOOUTLIERS' and maxval == 'NOOUTLIERS':
+			if rendermin_s == 'NOOUTLIERS' and rendermax_s == 'NOOUTLIERS':
 				nooutliers = True
 
 		im["render_bits"]=bits
@@ -3163,8 +3165,8 @@ and the file size will increase.
 			for sh in range(4095,2048,-1):
 				if sum(hist[sh:])>maxout: break
 
-			im["render_min"]=min(sl*hs+h0,im["mean"]-im["sigma"]*4.0)
-			im["render_max"]=max(sh*hs+h0,im["mean"]+im["sigma"]*4.0)
+			im["render_min"]=min(sl*hs+h0,im["mean"]+im["sigma"]*rendermin_s)
+			im["render_max"]=max(sh*hs+h0,im["mean"]+im["sigma"]*rendermax_s)
 		elif maxval>minval:
 			im["render_min"]=float(minval)
 			im["render_max"]=float(maxval)
