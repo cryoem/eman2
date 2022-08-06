@@ -3139,6 +3139,8 @@ and the file size will increase.
 			if (rendermin_abs is not None) and (rendermax_abs is not None):
 				minval = rendermin_abs
 				maxval = rendermax_abs
+			else:
+				nooutliers = True
 
 			if rendermin_s == 'FULL' and rendermax_s == 'FULL':
 				minval = im["minimum"]
