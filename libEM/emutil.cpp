@@ -1745,7 +1745,7 @@ void EMUtil::getRenderMinMax(float * data, const int nx, const int ny,
 		s += val*val;
 		if (val==0.0f) n0++;
 		else if (val==1.0f) n1++;
-		if (val==floor(val)) nint++;
+		if (val==float(int(val))) nint++;
 
 		min = val < min ? val : min;
 		max = val > max ? val : max;
