@@ -89,11 +89,11 @@ namespace EMAN {
 			size_t count = 0;
 
 			for (size_t i = 0; i < size; ++i) {
-				if (data[i] <= rendermin) {
+				if (data[i] < rendermin) {
 					rendered_data[i] = T(RMIN);
 					count++;
 				}
-				else if (data[i] >= rendermax) {
+				else if (data[i] > rendermax) {
 					rendered_data[i] = T(RMAX);
 					count++;
 				}

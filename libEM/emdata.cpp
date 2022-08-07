@@ -3169,6 +3169,7 @@ void EMData::update_stat() const
 	double sum = 0;
 	double square_sum = 0;
 
+	int isint = 1;	// all values integers flag
 	int step = 1;
 	if (is_complex() && !is_ri()) {
 		step = 2;
@@ -3185,6 +3186,7 @@ void EMData::update_stat() const
 		sum += v;
 		square_sum += v * (double)(v);
 		if (v != 0) n_nonzero++;
+		if (isint && v!=Util::fast_floor(v)) isint=0;
 	}
 
 	size_t n     = size / step;
@@ -3205,6 +3207,7 @@ void EMData::update_stat() const
 	attr_dict["sigma_nonzero"] = (float)(sigma_nonzero);
 	attr_dict["is_complex"] = (int) is_complex();
 	attr_dict["is_complex_ri"] = (int) is_ri();
+	attr_dict["all_int"] = (int)isint;
 
 	flags &= ~EMDATA_NEEDUPD;
 

@@ -1719,12 +1719,10 @@ void EMUtil::getRenderMinMax(float * data, const int nx, const int ny,
 	if (debug) printf ("into RenderMinMax, rmin = %g, rmax = %g, rbits = %d\n", rendermin, rendermax, renderbits);
 	
 	if (renderbits<=0) return;			// this is for float mode where rendermin/max isn't used
-	if (renderbits>16) renderbits=16;
+	if (renderbits>16) renderbits=16;		// we don't support integer representations with more than 16 bits
 
-	if (rendermax <= rendermin ||
-		Util::is_nan(rendermin) || Util::is_nan(rendermax) ||
-		fabs(rendermin) > use_num_std_devs ||
-		fabs(rendermax) > use_num_std_devs) {
+	if (rendermax <= rendermin || Util::is_nan(rendermin) || Util::is_nan(rendermax) ||
+		fabs(rendermin) > use_num_std_devs || fabs(rendermax) > use_num_std_devs) {
 		
 		double m = 0.0f, s = 0.0f;
 		size_t nint=0,n0=0,n1=0;	// count the number of integers, zeroes and ones
@@ -1752,35 +1750,6 @@ void EMUtil::getRenderMinMax(float * data, const int nx, const int ny,
 		m /= (float)(size);
 		s = sqrt(s/(float)(size)-m*m);
 
-// 		// experimental code for looking at various limit testing schemes
-// 		double s0=0,s1=1,sk0=0,sk1=0,ku0=0,ku1=0;
-// 		size_t nn0=0,nn1=0;
-// 		for (size_t i = 0; i < size; ++i) {
-// 			if (data[i]<m) {
-// 				s0+=pow(data[i]-m,2.0);
-// 				sk0+=pow(m-data[i],3.0);
-// 				ku0+=pow(data[i]-m,4.0);
-// 				nn0++;
-// 			}
-// 			else if (data[i]>m) {
-// 				s1+=pow(data[i]-m,2.0);
-// 				sk1+=pow(data[i]-m,3.0);
-// 				ku1+=pow(data[i]-m,4.0);
-// 				nn1++;
-// 			}
-// 		}
-// 		s0=pow(s0/nn0,0.5);
-// 		s1=pow(s1/nn1,0.5);
-// 		sk0=pow(sk0/nn0,1.0/3.0);
-// 		sk1=pow(sk1/nn1,1.0/3.0);
-// 		ku0=pow(ku0/nn0,0.25);
-// 		ku1=pow(ku1/nn1,0.25);
-// 		printf("\n%f %f %f %f %f %f",s0,s1,sk0,sk1,ku0,ku1);
-// 		printf("\n%f - %f   %f - %f   %f - %f",m-s0*4.0,m+s1*4.0,m-sk0*4.0,m+sk1*4.0,m-ku0*4.0,m+ku1*4.0);
-// 		printf ("\nmin, mean, max, s.d., nint, nzer, none = %g %g %g %g %d %d %d\n", min, m, max, s, nint, n0, n1);
-// 		// end of experimental code
-
-		
 		if (debug) printf ("min, mean, max, s.d., nint, nzer, none = %g %g %g %g %d %d %d\n", min, m, max, s, nint, n0, n1);
 
 		if (s <= 0 || Util::is_nan(s)) s = 1.0; // this means all data values are the same
