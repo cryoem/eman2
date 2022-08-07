@@ -1721,112 +1721,110 @@ void EMUtil::getRenderMinMax(float * data, const int nx, const int ny,
 	if (renderbits<=0) return;			// this is for float mode where rendermin/max isn't used
 	if (renderbits>16) renderbits=16;		// we don't support integer representations with more than 16 bits
 
+	// haslim is unset if we didn't get good incoming limit values
+	int haslim=1;
 	if (rendermax <= rendermin || Util::is_nan(rendermin) || Util::is_nan(rendermax) ||
-		fabs(rendermin) > use_num_std_devs || fabs(rendermax) > use_num_std_devs) {
+		fabs(rendermin) > use_num_std_devs || fabs(rendermax) > use_num_std_devs) haslim=0;
 		
-		double m = 0.0f, s = 0.0f;
-		size_t nint=0,n0=0,n1=0;	// count the number of integers, zeroes and ones
-		size_t size = (size_t)nx*ny*nz;
-		float min = data[0], max = data[0];
-		int bitval = 1<<renderbits;
-		
-		// we compute image statistics. If this were designed right, we'd have the actual image instead of just
-		// the data pointer and wouldn't need to do this (other than maybe the integer counting)
-		for (size_t i = 0; i < size; ++i) {
-			m += data[i];
-			s += data[i] * data[i];
-			if (data[i]==0.0f) n0++;
-			else if (data[i]==1.0f) n1++;
-			if (data[i]==floor(data[i])) nint++;
-			
-			min = data[i] < min ? data[i] : min;
-			max = data[i] > max ? data[i] : max;
+	double m = 0.0f, s = 0.0f;
+	size_t nint=0,n0=0,n1=0;	// count the number of integers, zeroes and ones
+	size_t size = (size_t)nx*ny*nz;
+	float min = data[0], max = data[0];
+	int bitval = 1<<renderbits;
+
+	// we compute image statistics. If this were designed right, we'd have the actual image instead of just
+	// the data pointer and wouldn't need to do this (other than maybe the integer counting)
+	// However, this also saves us from the problem of modified min/max values based on passed in rendermin/max
+	for (size_t i = 0; i < size; ++i) {
+		float val=data[i];
+		if (haslim) {
+			if (val<rendermin) val=rendermin;
+			if (val>rendermax) val=rendermax;
+		}
+		m += val;
+		s += val*val;
+		if (val==0.0f) n0++;
+		else if (val==1.0f) n1++;
+		if (val==floor(val)) nint++;
+
+		min = val < min ? val : min;
+		max = val > max ? val : max;
 //			if (!Util::goodf(&data[i])) printf("NAN in image at pixel %ld\n",i);
-		}
-		
+	}
 
-		float mnz = m/(size-n0);	// mean, excluding zeroes
-		float snz = sqrt(s/(size-n0)-mnz*mnz);	// sigma, excluding zeroes
-		m /= (float)(size);
-		s = sqrt(s/(float)(size)-m*m);
 
-		if (debug) printf ("min, mean, max, s.d., nint, nzer, none = %g %g %g %g %d %d %d\n", min, m, max, s, nint, n0, n1);
+	float mnz = m/(size-n0);	// mean, excluding zeroes
+	float snz = sqrt(s/(size-n0)-mnz*mnz);	// sigma, excluding zeroes
+	m /= (float)(size);
+	s = sqrt(s/(float)(size)-m*m);
 
-		if (s <= 0 || Util::is_nan(s)) s = 1.0; // this means all data values are the same
+	if (debug) printf ("min, mean, max, s.d., nint, nzer, none = %g %g %g %g %d %d %d\n", min, m, max, s, nint, n0, n1);
 
-		// probably a mask, or another imaged normalized to a range of 1 , binary or smoothed, treat it the same
-		if ((max-min)==1) {
+	if (s <= 0 || Util::is_nan(s)) s = 1.0; // this means all data values are the same
+
+	// probably a mask, or another imaged normalized to a range of 1 , binary or smoothed, treat it the same
+	if ((max-min)==1) {
+		rendermin=min;
+		rendermax=max;
+	}
+	// all integer values, make sure we get integers back when we read, even if reduced bits
+	else if (nint==size) {
+		// if true, then we can safely store all of the values in the requested bits without change
+		if (max-min<bitval) {
 			rendermin=min;
-			rendermax=max;
+			rendermax=min+bitval-1;
 		}
-		// all integer values, make sure we get integers back when we read, even if reduced bits
-		else if (nint==size) {
-			// if true, then we can safely store all of the values in the requested bits without change
-			if (max-min<bitval) {
-				rendermin=min;
-				rendermax=min+bitval-1;
-			}
-			// otherwise, we will need to keep the most significant bits, but still try to get integers out (except in very odd cases)
-			else {
-				int neededbits=ceil(log(max-min+1)/log(2.0f));
-				int step = 1<<(neededbits-renderbits);
-				if (min<0 && 0<max) {
-					rendermin = round( min / step ) * step;
-				}
-				else {
-					rendermin=min;
-				}
-				rendermax=rendermin+step*(bitval-1);	
-			}
-		}
-		// Now into the more general case, but we still wish to preserve zero if present in significant numbers
-		// TODO: This raises the tricky point of what would happen if you had a masked volume then added 0.0001 to it?
-		// statistics might produce poor results. May need to consider using kurtosis instead of zero detection
-		else if (min<0 && 0<max) {			// 10 is arbitrary, just looking for a profusion of exactly zero values implying a mask
-			// The first two seem stupid since they result in rendermin=min, rendermax=max, but we retain the option
-			// of a more involved calculation to avoid outliers compressing the histogram to an unreasonable level
-			if (min==0) {
-				rendermin=0;
-				rendermax=max;		// keep everything, will only have issues with very large outliers
-//				rendermax=(mnz+snz*6.0)>max?max:mnz+snz*6.0;  //TODO <-  how large a sigma multiplier?
-			}
-			else if (max==0) {
-				rendermax=0;
-				rendermin=min;
-//				rendermin=(mnz-snz*6.0)<min?min:mnz-snz*6.0;
-			}
-			else {
-				float step = (max-min)/(bitval-1);
-				if (min == floor( min/step ) * step) {
-					rendermin=min;
-					rendermax=max;
-				}
-				else {
-	// 				rendermin=(mnz-snz*4.0)<min?min:mnz-snz*4.0;	// 4 standard deviations from the mean seems good empirically, e2iminfo.py -asO
-	// 				rendermax=(mnz+snz*4.0)>max?max:mnz+snz*4.0;
-					// logically impossible
-	//				if (min>0) min=0;
-	//				if (max<0) max=0;
-	// 				if (rendermin==min && rendermax!=max) rendermax=(min+snz*8.0)>max?max:min+snz*8.0;
-	// 				if (rendermin!=min && rendermax==max) rendermin=(max-snz*8.0)<min?min:max-snz*8.0;
-	// 				float step=(rendermax-rendermin)/(bitval-1);
-	// 				rendermin=ceil(rendermin/step)*step;	// adjust rendermin so integral number of steps to exactly zero, may be roundoff issues
-					step=(max-min)/(bitval-2);		// -2 instead of -1 to give enough range to accommodate exactly 0
-					rendermin=(floor(min/step)*step);		// rendermin will be an integral number of steps from zero
-					rendermax=rendermin+step*(bitval-1);
-				}
-			}
-		}
-		// Most general case, no "special values" to preserve
+		// otherwise, we will need to keep the most significant bits, but still try to get integers out (except in very odd cases)
 		else {
-// 			rendermin=(m-s*4.0)<min?min:m-s*4.0;	// 4 standard deviations from the mean seems good empirically, e2iminfo.py -asO
-// 			rendermax=(m+s*4.0)>max?max:m+s*4.0;
-// 			if (rendermin==min && rendermax!=max) rendermax=(min+s*8.0)>max?max:min+s*8.0;
-// 			if (rendermin!=min && rendermax==max) rendermin=(max-s*8.0)<min?min:max-s*8.0;
-			// Intelligent outlier removal is just too risky. large outliers are still a risk, but we'll stay conservative for now
-			rendermin=min;
-			rendermax=max;
+			int neededbits=ceil(log(max-min+1)/log(2.0f));
+			int step = 1<<(neededbits-renderbits);
+			if (min<0 && 0<max) {
+				rendermin = round( min / step ) * step;
+			}
+			else {
+				rendermin=min;
+			}
+			rendermax=rendermin+step*(bitval-1);
 		}
+	}
+	// Now into the more general case, but we still wish to preserve zero if present in significant numbers
+	// TODO: This raises the tricky point of what would happen if you had a masked volume then added 0.0001 to it?
+	// statistics might produce poor results. May need to consider using kurtosis instead of zero detection
+	else if (min<0 && 0<max) {			// 10 is arbitrary, just looking for a profusion of exactly zero values implying a mask
+		// The first two seem stupid since they result in rendermin=min, rendermax=max, but we retain the option
+		// of a more involved calculation to avoid outliers compressing the histogram to an unreasonable level
+		if (min==0) {
+			rendermin=0;
+			rendermax=max;		// keep everything, will only have issues with very large outliers
+//				rendermax=(mnz+snz*6.0)>max?max:mnz+snz*6.0;  //TODO <-  how large a sigma multiplier?
+		}
+		else if (max==0) {
+			rendermax=0;
+			rendermin=min;
+//				rendermin=(mnz-snz*6.0)<min?min:mnz-snz*6.0;
+		}
+		else {
+			float step = (max-min)/(bitval-1);
+			if (min == floor( min/step ) * step) {
+				rendermin=min;
+				rendermax=max;
+			}
+			else {
+// 				rendermin=(mnz-snz*4.0)<min?min:mnz-snz*4.0;	// 4 standard deviations from the mean seems good empirically, e2iminfo.py -asO
+// 				rendermax=(mnz+snz*4.0)>max?max:mnz+snz*4.0;
+				// logically impossible
+//				if (min>0) min=0;
+//				if (max<0) max=0;
+// 				if (rendermin==min && rendermax!=max) rendermax=(min+snz*8.0)>max?max:min+snz*8.0;
+// 				if (rendermin!=min && rendermax==max) rendermin=(max-snz*8.0)<min?min:max-snz*8.0;
+// 				float step=(rendermax-rendermin)/(bitval-1);
+// 				rendermin=ceil(rendermin/step)*step;	// adjust rendermin so integral number of steps to exactly zero, may be roundoff issues
+				step=(max-min)/(bitval-2);		// -2 instead of -1 to give enough range to accommodate exactly 0
+				rendermin=(floor(min/step)*step);		// rendermin will be an integral number of steps from zero
+				rendermax=rendermin+step*(bitval-1);
+			}
+		}
+
 	}
 
 	if (debug) printf ("out of RenderMinMax, rmin = %g, rmax = %g, rbits = %d\n", rendermin, rendermax, renderbits);
