@@ -33,11 +33,6 @@ execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import sysconfig; print(sysconf
 cmake_print_variables(PYTHON_LIB_SHARED)
 cmake_print_variables(CMAKE_CXX_COMPILER_ID)
 
-include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(Python
-		REQUIRED_VARS PYTHON_EXECUTABLE PYTHON_LIBRARIES PYTHON_INCLUDE_DIR SP_DIR
-		)
-
 # The python interpreter can be linked against shared libpython.so or static libpython.a.
 # When the interpreter (python executable) is linked statically against libpython,
 # python extenison modules shouldn't link against libpython.so to avoid segfaults.
@@ -49,9 +44,8 @@ find_package_handle_standard_args(Python
 # https://github.com/conda-forge/boost-feedstock/issues/70#issuecomment-486398688
 # https://github.com/conda-forge/conda-forge.github.io/issues/778
 
-if(Python_FOUND AND NOT TARGET Python::Python)
-	add_library(Python::Python INTERFACE IMPORTED)
-	set_target_properties(Python::Python
+if(Python3_FOUND AND TARGET Python3::Python)
+	set_target_properties(Python3::Python
 			PROPERTIES
 			INTERFACE_INCLUDE_DIRECTORIES ${PYTHON_INCLUDE_DIRS}
 #			Py_ENABLE_SHARED is None on Windows, so the compiler is checked if it is Microsoft Visual Studio.
@@ -59,7 +53,7 @@ if(Python_FOUND AND NOT TARGET Python::Python)
 #			or if Py_ENABLE_SHARED is 1 (Python interpreter is not linked statically against libpython).
 			INTERFACE_LINK_LIBRARIES      $<$<OR:$<CXX_COMPILER_ID:MSVC>,$<BOOL:${PYTHON_LIB_SHARED}>>:${PYTHON_LIBRARIES}>
 			)
-	target_link_options(Python::Python INTERFACE
+	target_link_options(Python3::Python INTERFACE
 						#			If the compiler is Clang and if Py_ENABLE_SHARED is 0 (Python interpreter is linked statically against libpython),
 						#			use link options "-undefined dynamic_lookup -flat_namespace" to tell the linker not to look for undefined symbols.
 						#			They will be found at runtime.
