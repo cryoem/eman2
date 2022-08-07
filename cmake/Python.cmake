@@ -1,5 +1,4 @@
-find_package(PythonInterp REQUIRED)
-find_package(PythonLibs   REQUIRED)
+find_package(Python3 REQUIRED  COMPONENTS Interpreter Development NumPy)
 
 set(PYTHON_INCLUDE_PATH ${PYTHON_INCLUDE_DIRS} CACHE PATH "")
 set(PYTHON_LIBRARY      ${PYTHON_LIBRARIES}    CACHE PATH "")
@@ -56,7 +55,7 @@ if(Python_FOUND AND NOT TARGET Python::Python)
 			PROPERTIES
 			INTERFACE_INCLUDE_DIRECTORIES ${PYTHON_INCLUDE_DIRS}
 #			Py_ENABLE_SHARED is None on Windows, so the compiler is checked if it is Microsoft Visual Studio.
-#			Link against shared python library, if the compiler is MSVC 
+#			Link against shared python library, if the compiler is MSVC
 #			or if Py_ENABLE_SHARED is 1 (Python interpreter is not linked statically against libpython).
 			INTERFACE_LINK_LIBRARIES      $<$<OR:$<CXX_COMPILER_ID:MSVC>,$<BOOL:${PYTHON_LIB_SHARED}>>:${PYTHON_LIBRARIES}>
 			)
