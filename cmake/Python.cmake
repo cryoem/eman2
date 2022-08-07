@@ -5,14 +5,14 @@ find_package(Python3 REQUIRED  COMPONENTS Interpreter Development NumPy)
 set(PYTHON_INCLUDE_PATH ${PYTHON_INCLUDE_DIRS} CACHE PATH "")
 set(PYTHON_LIBRARY      ${PYTHON_LIBRARIES}    CACHE PATH "")
 
-message("PYTHON_EXECUTABLE:   ${PYTHON_EXECUTABLE}")
+cmake_print_variables(Python3_EXECUTABLE)
 message("PYTHON_LIBRARIES:    ${PYTHON_LIBRARIES}")
 message("PYTHON_INCLUDE_DIRS: ${PYTHON_INCLUDE_DIRS}")
 message("PYTHON_INCLUDE_PATH: ${PYTHON_INCLUDE_PATH}")
 message("PYTHON_INCLUDE_DIR:  ${PYTHON_INCLUDE_DIR}")
 cmake_print_variables(Python3_SITELIB)
 
-execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import sysconfig; print(sysconfig.get_config_var('Py_ENABLE_SHARED'))"
+execute_process(COMMAND ${Python3_EXECUTABLE} -c "import sysconfig; print(sysconfig.get_config_var('Py_ENABLE_SHARED'))"
 				OUTPUT_VARIABLE PYTHON_LIB_SHARED
 				OUTPUT_STRIP_TRAILING_WHITESPACE
 				)

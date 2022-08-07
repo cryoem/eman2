@@ -6,7 +6,7 @@ add_custom_target(test-verbose
 		)
 
 add_test(NAME py-compile
-		COMMAND ${PYTHON_EXECUTABLE} -m compileall -q -x .git -x sparx -x sphire ${CMAKE_SOURCE_DIR}
+		COMMAND ${Python3_EXECUTABLE} -m compileall -q -x .git -x sparx -x sphire ${CMAKE_SOURCE_DIR}
 		)
 
 add_custom_target(test-py-compile
@@ -15,11 +15,11 @@ add_custom_target(test-py-compile
 		)
 
 add_test(NAME imports
-		 COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/test_imports.py
+		 COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/test_imports.py
 		 )
 
 add_test(NAME test-EMAN2DIR
-		 COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/test_EMAN2DIR.py
+		 COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/test_EMAN2DIR.py
 		 )
 
 if(NOT WIN32)
@@ -59,6 +59,6 @@ if(NOT WIN32)
 					  )
 	
 	add_test(NAME progs
-			 COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/run_prog_tests.py
+			 COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/run_prog_tests.py
 			 )
 endif()
