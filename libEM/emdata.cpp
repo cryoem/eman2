@@ -3186,7 +3186,7 @@ void EMData::update_stat() const
 		sum += v;
 		square_sum += v * (double)(v);
 		if (v != 0) n_nonzero++;
-		if (isint && v!=Util::fast_floor(v)) isint=0;
+		if (isint && v!=floor(v)) isint=0;
 	}
 
 	size_t n     = size / step;
