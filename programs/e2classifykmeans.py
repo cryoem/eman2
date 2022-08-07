@@ -129,7 +129,7 @@ together."""
 	if options.minchange<=0 : options.minchange=old_div(len(data),(options.ncls*25))+1
 	if options.fastseed : slowseed=0
 	else : slowseed=1
-	maxiter=max(options.ncls/2,100)	# this could make a large number of classes take a long time
+	maxiter=16*int(log(options.ncls)/log(2.0))	# maxiter does need to be larger for more classes, but shouldn't get too large
 	an=Analyzers.get("kmeans")
 	an.set_params({"ncls":options.ncls,"minchange":options.minchange,"verbose":1,"slowseed":slowseed,"maxiter":maxiter,"calcsigmamean":options.sigma,"mininclass":options.mininclass,"outlierclass":options.outlierclass})
 	
