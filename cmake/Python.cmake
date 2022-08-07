@@ -2,10 +2,8 @@ set(Python3_FIND_VIRTUALENV ONLY)
 
 find_package(Python3 REQUIRED  COMPONENTS Interpreter Development NumPy)
 
-set(PYTHON_LIBRARY      ${PYTHON_LIBRARIES}    CACHE PATH "")
-
 cmake_print_variables(Python3_EXECUTABLE)
-message("PYTHON_LIBRARIES:    ${PYTHON_LIBRARIES}")
+cmake_print_variables(Python3_LIBRARIES)
 cmake_print_variables(Python3_INCLUDE_DIRS)
 cmake_print_variables(Python3_SITELIB)
 
@@ -35,7 +33,7 @@ if(Python3_FOUND AND TARGET Python3::Python)
 #			Py_ENABLE_SHARED is None on Windows, so the compiler is checked if it is Microsoft Visual Studio.
 #			Link against shared python library, if the compiler is MSVC
 #			or if Py_ENABLE_SHARED is 1 (Python interpreter is not linked statically against libpython).
-			INTERFACE_LINK_LIBRARIES      $<$<OR:$<CXX_COMPILER_ID:MSVC>,$<BOOL:${PYTHON_LIB_SHARED}>>:${PYTHON_LIBRARIES}>
+			INTERFACE_LINK_LIBRARIES      $<$<OR:$<CXX_COMPILER_ID:MSVC>,$<BOOL:${PYTHON_LIB_SHARED}>>:${Python3_LIBRARIES}>
 			)
 	target_link_options(Python3::Python INTERFACE
 						#			If the compiler is Clang and if Py_ENABLE_SHARED is 0 (Python interpreter is linked statically against libpython),
