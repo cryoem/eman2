@@ -1,6 +1,6 @@
 set(Boost_USE_MULTITHREADED ON)
 set(Boost_NO_BOOST_CMAKE ON)
-set(boost_py_ver ${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR})
+set(boost_py_ver ${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR})
 
 find_package(Boost COMPONENTS python${boost_py_ver} numpy${boost_py_ver} REQUIRED)
 
