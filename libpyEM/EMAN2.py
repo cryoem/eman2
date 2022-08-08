@@ -3053,10 +3053,11 @@ and the file size will increase.
 		if not is_file_compressible(fsp):
 			raise Exception(f"Only {[i.strip('.') for i in compressible_formats()]} "
 			                f"formats are supported by write_compressed()")
-		if mode=="f" : 
+		if mode=="f" or mode is None: 
 			nooutliers=False
 			minval,maxval=0,0
 		elif mode=="o" : nooutliers=True
+		#print(fsp, bits, mode, rendermin_abs, rendermax_abs, rendermin_s, rendermax_s)
 
 	if isinstance(self,EMData):
 		self=[self]
@@ -3126,6 +3127,7 @@ and the file size will increase.
 			im["render_min"]=round(im["render_min"])
 			im["render_max"]=round(im["render_max"])
 		
+		#print(f"PY {im['render_min']} - {im['render_max']} {im['minimum']} - {im['maximum']}   {im['render_bits']}")
 		# would like to use the new write_images, but it isn't quite ready yet.
 		im.write_image_c(fsp,i+n,EMUtil.ImageType.IMAGE_UNKNOWN,0,None,EMUtil.EMDataType.EM_COMPRESSED)
 	
