@@ -66,5 +66,5 @@ install(FILES ${empythonlibs}
 
 add_subdirectory(qtgui)
 
-target_link_libraries(pyUtils2         NumPy Boost::numpy${boost_py_ver})
-target_link_libraries(pyTypeConverter2 NumPy Boost::numpy${boost_py_ver})
+target_link_libraries(pyUtils2         Python3::NumPy Boost::numpy${boost_py_ver})
+target_link_libraries(pyTypeConverter2 Python3::NumPy Boost::numpy${boost_py_ver})
