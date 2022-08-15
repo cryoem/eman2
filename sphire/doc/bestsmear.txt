@@ -1,0 +1,89 @@
+~~NOTOC~~
+
+===== sp_bestsmear =====
+
+Best Smear : Shows distribution of particle smear and obtain subset.
+
+\\
+===== Usage =====
+
+Usage in command line
+
+  	sp_bestsmear.py meridien_parameters output_directory --max_smear=maximum_smear --stack=input_stack --verbosity=verbosity --iter=iteration_num --threads=num_threads 
+
+\\
+===== Typical usage =====
+
+The "smear" is the number of reference images to which Meridien has found a correlation. The assumption behind this utility is that a lower smear corresponds to higher certainty.
+
+The purpose of sp_bestsmear.py is to:
+
+  : show the distribution of smear number for an iteration of Meridien
+  : select a subset of the particles with the lowest smear number
+ 
+\\ __1. Show the distribution of smear number__:
+
+  sp_bestsmear.py meridien_parameters output_directory  
+
+The main output is a distribution of the smear over the particle set.
+
+\\ __2. Select a subset of the particles with the lowest smear__:
+
+  sp_bestsmear.py meridien_parameters output_directory --max_smear=999 --stack=bdb:input_stack
+
+If no input stack is provided, then only the plots, selection files, etc., will be written.
+  
+\\
+===== Input =====
+=== Main Parameters ===
+  ; meridien_parameters : Meridien parameters : Parameter file from Meridien. (default required string)
+  ; output_directory : Output directory : Toplevel directory where outputs will be written. (default required string)
+  ; %%--%%max_smear : maximum_smear : Maximum smear number to allow. (default None)
+  ; %%--%%stack : Particle stack : Particle stack from which subset will be selected. (default None) : max_smear!=None
+  ; %%--%%verbosity : Verbosity level : Controls how much information will be written to the screen. (default 3)
+  
+\\
+=== Advanced Parameters ===
+  ; %%--%%iter : iteration_num : Iteration number from Meridien : Only necessary if the Meridien parameter filename can't be parsed.  (default None)
+  ; %%--%%threads : Number of threads : Number of parallel threads used during Meridien : Will be determined automatically if not specified. (default None)
+  
+\\
+===== Output =====
+  ; plot_smear.png : Plot of smear distribution(s)
+  ; bdb:bestsmear : Stack of selected particles
+ 
+\\
+===== Description =====
+
+\\
+==== Method ====
+
+\\
+==== Reference ====
+ 
+\\
+==== Developer Notes ====
+
+\\
+==== Author / Maintainer ====
+Tapu Shaikh
+
+\\
+==== Keywords ====
+Category 1:: APPLICATIONS
+
+\\
+==== Files ====
+sphire/bin/sp_bestsmear.py
+
+\\
+==== See also ====
+
+\\
+==== Maturity ====
+Beta:: Under evaluation and testing. Please let us know if there are any bugs.
+
+\\
+==== Bugs ====
+
+\\

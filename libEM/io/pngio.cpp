@@ -362,6 +362,18 @@ int PngIO::read_data(float *data, int image_index, const Region * area, bool)
 	return 0;
 }
 
+template<class T>
+void PngIO::write_compressed(float *data)
+{
+	auto [rendered_data, count] = getRenderedDataAndRendertrunc<T>(data, nx*ny);
+
+	for (int y = (int)ny-1; y >= 0; y--) {
+		auto data_to_write = vector<T>(rendered_data.data() + y * nx,
+		                               rendered_data.data() + (y + 1) * nx);
+		png_write_row(png_ptr, (png_byte *) data_to_write.data());
+	}
+}
+
 int PngIO::write_data(float *data, int image_index, const Region*,
 					  EMUtil::EMDataType dt, bool)
 {
@@ -389,29 +401,8 @@ int PngIO::write_data(float *data, int image_index, const Region*,
 
 	/**Flip the image vertically, since EMAN use top-left corner as image origin
 	* But PNG use bottom-left corner as image origin */
-	if (depth_type == PNG_CHAR_DEPTH) {
-		auto [rendered_data, count] = getRenderedDataAndRendertrunc<unsigned char>(data, nx*ny);
-		vector<unsigned char> cdata(nx);
-
-		for (int y = (int)ny-1; y >= 0; y--) {
-			for (int x = 0; x < (int)nx; x++) {
-				cdata[x] = (unsigned char)rendered_data[y * nx + x];
-			}
-			png_write_row(png_ptr, (png_byte *) cdata.data());
-		}
-	}
-	else if (depth_type == PNG_SHORT_DEPTH) {
-		auto [rendered_data, count] = getRenderedDataAndRendertrunc<unsigned short>(data, nx*ny);
-		vector<unsigned short> sdata(nx);
-
-		for (int y = (int)ny-1; y >= 0 ; y--) {
-			for (int x = 0; x < (int)nx; x++) {
-				sdata[x] = (unsigned short)rendered_data[y * nx + x];
-			}
-
-			png_write_row(png_ptr, (png_byte *) sdata.data());
-		}
-	}
+	if (depth_type == PNG_CHAR_DEPTH)       write_compressed<unsigned char>(data);
+	else if (depth_type == PNG_SHORT_DEPTH) write_compressed<unsigned short>(data);
 
 	png_write_end(png_ptr, info_ptr);
 	png_destroy_write_struct(&png_ptr, &info_ptr);

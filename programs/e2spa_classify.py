@@ -22,6 +22,7 @@ def main():
 	parser.add_argument("--maxres", type=float,default=15, help="max resolution for cmp")
 	parser.add_argument("--minres", type=float,default=300, help="min resolution for cmp")
 	#parser.add_argument("--sym", type=str,help="symmetry. ", default="c1")
+	parser.add_argument("--breaksym", type=str,help="symmetry to break", default="c1")
 	parser.add_argument("--mask", type=str,help="mask. ", default=None)
 	#parser.add_argument("--maxshift", type=int,help="max shift.", default=0)
 	
@@ -72,8 +73,13 @@ def main():
 		
 		if np.min(st_vals) == 100: break
 		time.sleep(5)
-	
-	dics=np.zeros((nptcl, len(threedname)))
+		
+	if options.breaksym!='c1':
+		ncls=Transform().get_nsym(options.breaksym)
+	else:
+		ncls=len(threedname)
+		
+	dics=np.zeros((nptcl, ncls))
 	for i in tids:
 		ret=etc.get_results(i)[1]
 		for r in ret:
@@ -126,10 +132,15 @@ class SpaClassifyTask(JSTask):
 		
 		if options.mask:
 			mask=EMData(options.mask)
-			avgr=Averagers.get("mean")
-			for r in refs:
-				avgr.add_image(r)
-			avg=avgr.finish()
+			
+			if options.breaksym!='c1':
+				avg=refs[0].process("xform.applysym", {"sym":options.breaksym})
+				
+			else:
+				avgr=Averagers.get("mean")
+				for r in refs:
+					avgr.add_image(r)
+				avg=avgr.finish()
 		else:
 			mask=None
 		
@@ -162,10 +173,18 @@ class SpaClassifyTask(JSTask):
 				
 			#trans=np.indices((m*2+1, m*2+1)).reshape((2,-1)).T-m
 			scr=[]
-			for ref in refs:
-				pj=ref.project('gauss_fft',{"transform":xf, "returnfft":1})
-				s=img.cmp("frc",pj, {"pmin":pmin, "maxres":pmax})
-				scr.append(s)
+			if options.breaksym!='c1':
+				x0=Transform()
+				for i in range(x0.get_nsym(options.breaksym)):
+					x1=xf.get_sym(options.breaksym, i)
+					pj=ref.project('gauss_fft',{"transform":x1, "returnfft":1})
+					s=img.cmp("frc",pj, {"pmin":pmin, "maxres":pmax})
+					scr.append(s)
+			else:
+				for ref in refs:
+					pj=ref.project('gauss_fft',{"transform":xf, "returnfft":1})
+					s=img.cmp("frc",pj, {"pmin":pmin, "maxres":pmax})
+					scr.append(s)
 			
 			#print(infoi, scr)
 			

@@ -787,13 +787,15 @@ class EMArgumentParser(argparse.ArgumentParser):
 		return self.optionslist
 
 def parsesym(optstr):
-	# FIXME - this function is no longer necessary since I overwrite the Symmetry3D::get function (on the c side). d.woolford
-	[sym, dict] = parsemodopt(optstr)
-	if sym[0] in ['c','d','h']:
-		dict["nsym"] = int(sym[1:])
-		sym = sym[0]
+	return Symmetries.get(optstr)
 
-	return Symmetries.get(sym, dict)
+#	# FIXME - this function is no longer necessary since I overwrite the Symmetry3D::get function (on the c side). d.woolford
+#	[sym, dict] = parsemodopt(optstr)
+#	if sym[0] in ['c','d','h']:
+#		dict["nsym"] = int(sym[1:])
+#		sym = sym[0]
+#
+#	return Symmetries.get(sym, dict)
 
 parseparmobj1=re.compile("([^\(]*)\(([^\)]*)\)")	# This parses test(n=v,n2=v2) into ("test","n=v,n2=v2")
 parseparmobj2=re.compile("([^=,]*)=([^,]*)")		# This parses "n=v,n2=v2" into [("n","v"),("n2","v2")]
@@ -1116,113 +1118,56 @@ def parse_infile_arg(arg):
 def parse_outfile_arg(arg):
 	"""
 	Input:
+	<filename>:<outbits>[:f|o|<min>|<min>s:<max>|<max>s]
+	f - full range
+	o - full range with extreme outlier removal
+	<min> is absolute min value
+	<min>s mean-min*sigma
+	if only outbits specified, "o" is implied
+	if bits==0 -> floating point with lossless compression
+	if bits<0 -> floating point with no compression
+	returns:
+	(filename,outbits,f|o|None,<min>,<max>,<mins>,<maxs>)
 	filename:outbits:rendermin:rendermax
 
 	out.hdf:6:20:1000
 	out.hdf:6:-3s:5s
 	out.hdf:6:f
+	out.hdf:6
 
-	Returns (filename, outbits, rendermin(absolute), rendermax(absolute), rendermin(times std dev), rendermax(times std dev))
-
-	>>> parse_outfile_arg('')
-	Traceback (most recent call last):
-	argparse.ArgumentTypeError: Please, specify an output file!
-	>>> parse_outfile_arg('out.hdf')
-	('out.hdf', None, None, None, -5.0, 5.0)
-
-	>>> parse_outfile_arg('out.hdf:3')
-	('out.hdf', 3, None, None, -5.0, 5.0)
-	>>> parse_outfile_arg('out.hdf:3.')
-	Traceback (most recent call last):
-	argparse.ArgumentTypeError: outputbit field is required to be an int if specified! Got '3.'!
-	>>> parse_outfile_arg('out.hdf:33:')
-	Traceback (most recent call last):
-	argparse.ArgumentTypeError: outputbit field is required to be an int between 0 and 16! Got '33'!
-
-	>>> parse_outfile_arg('out.hdf:3:')
-	('out.hdf', 3, None, None, -5.0, 5.0)
-
-	>>> parse_outfile_arg('out.hdf:3:f')
-	('out.hdf', 3, 'FULL', 'FULL', None, None)
-	>>> parse_outfile_arg('out.hdf:3:F')
-	('out.hdf', 3, 'FULL', 'FULL', None, None)
-
-	>>> parse_outfile_arg('out.hdf:3::')
-	Traceback (most recent call last):
-	argparse.ArgumentTypeError: Min/max fields are expected to be non-empty if specified. Got ':'
-	>>> parse_outfile_arg('out.hdf:3:20:')
-	Traceback (most recent call last):
-	argparse.ArgumentTypeError: Min/max fields are expected to be non-empty if specified. Got '20:'
-	>>> parse_outfile_arg('out.hdf:3::400')
-	Traceback (most recent call last):
-	argparse.ArgumentTypeError: Min/max fields are expected to be non-empty if specified. Got ':400'
-
-	>>> parse_outfile_arg('out.hdf:3:4:5')
-	('out.hdf', 3, 4.0, 5.0, None, None)
-	>>> parse_outfile_arg('out.hdf:3:4.2:5.3')
-	('out.hdf', 3, 4.2, 5.3, None, None)
-
-	>>> parse_outfile_arg('out.hdf:3:4s:5s')
-	('out.hdf', 3, None, None, 4.0, 5.0)
-	>>> parse_outfile_arg('out.hdf:3:4.2s:5.3s')
-	('out.hdf', 3, None, None, 4.2, 5.3)
-
-	>>> parse_outfile_arg('out.hdf:3:4s:5')
-	Traceback (most recent call last):
-	argparse.ArgumentTypeError: Min/max fields are expected to be both absolute values or both sigma multipliers. Expected :(num):(num) or :(num)s:(num)s, got :4s:5
-	>>> parse_outfile_arg('out.hdf:3:4:5s')
-	Traceback (most recent call last):
-	argparse.ArgumentTypeError: Min/max fields are expected to be both absolute values or both sigma multipliers. Expected :(num):(num) or :(num)s:(num)s, got :4:5s
-	>>> parse_outfile_arg('out.hdf:3:4:5.')
-	('out.hdf', 3, 4.0, 5.0, None, None)
-	>>> parse_outfile_arg('out.hdf:3:4.:5')
-	('out.hdf', 3, 4.0, 5.0, None, None)
 	"""
 
-	fname, _, outbit_rng = arg.partition(':')
+	parm=arg.split(":")
+	if len(parm)==0 or len(parm[0])==0:
+		raise Exception("Output filename required")
 
-	if not fname:
-		raise argparse.ArgumentTypeError("Please, specify an output file!")
+	try: parm[1]=int(parm[1])
+	except:	raise Exception("Output filename <filename>:<bits>")
 
-	outbit, _, rng = outbit_rng.partition(':')
+	# only bits specified, default behavior is "o"
+	if len(parm)==2: return(parm[0],parm[1],"o",None,None,None,None)
 
-	if not outbit:
-		outbit = None
-	elif outbit.isdigit():
-		outbit = int(outbit)
-
-		if outbit not in range(17):
-			raise argparse.ArgumentTypeError(f"outputbit field is required to be an int between 0 and 16! Got '{outbit}'!")
+	# special modes
+	if   parm[2].lower()=="f" : return(parm[0],parm[1],"f",0,0,0,0)
+	elif parm[2].lower()=="o" : return(parm[0],parm[1],"o",0,0,0,0)
+	
+	# no special mode, either values or sigma coefficients
+	vals=[None,None,None,None]
+	if "s" in parm[2]:
+		try: vals[2]=float(parm[2][:-1])
+		except: raise Exception("Output filename: <filename>:<outbits>[:f|o|<min>|<min>s[:<max>|<max>s]]")
 	else:
-		raise argparse.ArgumentTypeError(f"outputbit field is required to be an int if specified! Got '{outbit}'!")
+		try: vals[0]=float(parm[2])
+		except: raise Exception("Output filename: <filename>:<outbits>[:f|o|<min>|<min>s[:<max>|<max>s]]")
 
-	if not rng:
-		rng = None, None, -5.0, 5.0
-	elif rng.lower() == "f":
-		rng = "FULL", "FULL", None, None
+	if "s" in parm[3]:
+		try: vals[3]=int(parm[3][:-1])
+		except: raise Exception("Output filename: <filename>:<outbits>[:f|o|<min>|<min>s[:<max>|<max>s]]")
 	else:
-		min, _, max = rng.partition(':')
-		rng = (min, max)
+		try: vals[0]=int(parm[2])
+		except: raise Exception("Output filename: <filename>:<outbits>[:f|o|<min>|<min>s[:<max>|<max>s]]")
 
-		def isfloat(s):
-			try:
-				float(s)
-				return True
-			except ValueError:
-				return False
-
-		sigma_multiplier_char = 's'
-		if not all(rng):
-			raise argparse.ArgumentTypeError(f"Min/max fields are expected to be non-empty if specified. Got '{':'.join(rng)}'")
-		elif all(isfloat(i) for i in rng):
-			rng = *(float(i) for i in rng), None, None
-		elif all(i[-1] == sigma_multiplier_char and isfloat(i[:-1]) for i in rng):
-			rng = None, None, *(float(i[:-1]) for i in rng)
-		else:
-			raise argparse.ArgumentTypeError(f"Min/max fields are expected to be both absolute values or both sigma multipliers. Expected :(num):(num) or :(num){sigma_multiplier_char}:(num){sigma_multiplier_char}, got :{':'.join(rng)}")
-
-	return (fname, outbit, *rng)
-
+	return(parm[0],parm[1],None,*vals)
 
 def angle_ab_sym(sym,a,b,c=None,d=None):
 	"""Computes the angle of the rotation required to go from Transform A to Transform B under symmetry,
@@ -2954,7 +2899,7 @@ EMData.__init__ = db_emd_init
 
 
 def compressible_formats():
-	return ('.hdf', '.jpeg', '.mrc', '.mrcs', '.png', '.tiff', '.df3')
+	return ('.hdf', '.jpeg', '.mrc', '.mrcs', '.png', '.tiff', '.df3', '.pgm')
 
 
 def is_file_compressible(fsp):
@@ -3064,7 +3009,7 @@ def db_write_image(self, fsp, *parms):
 EMData.write_image_c = EMData.write_image
 EMData.write_image = db_write_image
 
-def im_write_compressed(self,fsp,n,bits=8,minval=0,maxval=0,nooutliers=False,level=1,erase=False):
+def im_write_compressed(self,fsp,n,bits=8,minval=0,maxval=0,nooutliers=True,level=1,erase=False):
 	"""write_compressed(self or list,fsp,n,bits=8,minval=0,maxval=0,nooutliers=False,level=1)
 
 This flexible image writing routine will write compressed HDF images (or a single image). It may be called
@@ -3103,16 +3048,16 @@ and the file size will increase.
 	is_compression_syntax = (":" in fsp)
 
 	if is_compression_syntax:
-		fsp, outbits, rendermin_abs, rendermax_abs, rendermin_s, rendermax_s = parse_outfile_arg(fsp)
+		fsp, bits, mode, rendermin_abs, rendermax_abs, rendermin_s, rendermax_s = parse_outfile_arg(fsp)
 
 		if not is_file_compressible(fsp):
 			raise Exception(f"Only {[i.strip('.') for i in compressible_formats()]} "
 			                f"formats are supported by write_compressed()")
-
-		if outbits:
-			bits = outbits
-		else:
-			nooutliers = True
+		if mode=="f" or mode is None: 
+			nooutliers=False
+			minval,maxval=0,0
+		elif mode=="o" : nooutliers=True
+		#print(fsp, bits, mode, rendermin_abs, rendermax_abs, rendermin_s, rendermax_s)
 
 	if isinstance(self,EMData):
 		self=[self]
@@ -3128,18 +3073,27 @@ and the file size will increase.
 	for i,im in enumerate(self):
 		if not isinstance(im,EMData) : raise(Exception,"write_compressed() requires a list of EMData objects")
 
-		if is_compression_syntax:
-			minval = rendermin_abs if rendermin_abs else rendermin_s * im["mean"]
-			maxval = rendermax_abs if rendermax_abs else rendermax_s * im["mean"]
-
-			if minval == 'FULL': minval = im["minimum"]
-			if maxval == 'FULL': maxval = im["maximum"]
+		# no compression
+		if bits<0 :
+			im.del_attr("render_min")
+			im.del_attr("render_max")
+			im.del_attr("render_bits")
+			im.del_attr("render_compress_level")
+			im.write_image_c(fsp,i+n)	# bits<0 implies no compression
+			continue
 
 		im["render_bits"]=bits
 		im["render_compress_level"]=level
+		# float compression, no range change
+		if bits==0 :
+			im.del_attr("render_min")
+			im.del_attr("render_max")
+			im.write_image_c(fsp,i+n,EMUtil.ImageType.IMAGE_UNKNOWN,0,None,EMUtil.EMDataType.EM_COMPRESSED)
+			continue
+
 		### This is an important option, as it will be the default in many cases. It makes an effort to intelligently
 		### eliminate extreme outliers, while not modifying cases with highly nongaussian distributions
-		if nooutliers:
+		if nooutliers:		# nooutliers may be specified either via function call or in filename, same code
 			nxyz=im.get_size()
 			maxout=max(nxyz//20000,8)		# at most 1 in 20000 pixels should be considered an outlier on each end
 			h0=im["minimum"]
@@ -3153,16 +3107,27 @@ and the file size will increase.
 			for sh in range(4095,2048,-1):
 				if sum(hist[sh:])>maxout: break
 
-			im["render_min"]=min(sl*hs+h0,im["mean"]-im["sigma"]*4.0)
-			im["render_max"]=max(sh*hs+h0,im["mean"]+im["sigma"]*4.0)
-		elif maxval>minval:
-			im["render_min"]=float(minval)
-			im["render_max"]=float(maxval)
-		# we need the C++ code to determine min and max in this situation
-		#else:
-			#im["render_min"]=im["minimum"]
-			#im["render_max"]=im["maximum"]
+			im["render_min"]=sl*hs+h0
+			im["render_max"]=sh*hs+h0
+		elif is_compression_syntax and not mode=="f":	# specified range in filename
+			if rendermin_abs is not None : im["render_min"]=max(rendermin_abs,im["minimum"])
+			else: im["render_min"]=max(im["mean"]-rendermin_s*im["sigma"],im["minimum"])
+			if rendermax_abs is not None : im["render_max"]=min(rendermax_abs,im["maximum"])
+			else: im["render_max"]=min(im["mean"]+rendermax_s*im["sigma"],im["maximum"])
+		elif maxval<=minval:		# Full range
+			im["render_min"]=im["minimum"]
+			im["render_max"]=im["maximum"]
+		else:				# specified range in function call
+			im["render_min"]=max(float(minval),im["minimum"])
+			im["render_max"]=min(float(maxval),im["maximum"])
+
+		# integer-only images are handled differently during compression, so if value truncation occurs in
+		# an integer only image, truncation must be to an integer
+		if im["all_int"]:
+			im["render_min"]=round(im["render_min"])
+			im["render_max"]=round(im["render_max"])
 		
+		#print(f"PY {im['render_min']} - {im['render_max']} {im['minimum']} - {im['maximum']}   {im['render_bits']}")
 		# would like to use the new write_images, but it isn't quite ready yet.
 		im.write_image_c(fsp,i+n,EMUtil.ImageType.IMAGE_UNKNOWN,0,None,EMUtil.EMDataType.EM_COMPRESSED)
 	

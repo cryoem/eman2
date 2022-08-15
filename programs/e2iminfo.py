@@ -172,6 +172,8 @@ def main():
 			
 			if options.stat :
 				print("apix=%-5.2f min=%-10.4g max=%-10.4g mean=%-10.4g sigma=%-9.4g skewness=%-9.4g kurtosis=%-9.4g moment_inertia=%9.4g radius_gyration=%9.4g"%(d["apix_x"],d["minimum"],d["maximum"],d["mean"],d["sigma"],d["skewness"],d["kurtosis"],d["moment_inertia"],d["radius_gyration"]), end=' ')
+				if d.has_attr("stored_rendermin"):
+					print(f"\n\tstored_rendermin={d['stored_rendermin']:-10.4g} stored_rendermax={d['stored_rendermax']:-10.4g} stored_renderbits={d['stored_renderbits']:-10.4g} stored_truncated={int(d['stored_truncated']):d} ({100.0*d['stored_truncated']/(d['nx']*d['ny']*d['nz']):1.6f}%) ",end=' ')
 				if options.outliers:
 					print("\nOutliers: {:^5.0f} {:^5.0f} {:^5.0f} {:^5.0f} {:^5.0f} {:^5.0f} {:^5.0f} {:^5.0f} {:^5.0f} {:^5.0f} {:^5.0f}".format(*d.calc_hist(11,d["mean"]-5.5*d["sigma"],d["mean"]+5.5*d["sigma"])))
 				try:

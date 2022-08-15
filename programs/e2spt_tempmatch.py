@@ -29,15 +29,20 @@ def main():
 	
 	parser.add_argument("--vthr", type=float,help="template matching value threshold (n sigma). Particles with score lower than this will be removed.", default=10, guitype='floatbox', row=4, col=1,rowspan=1, colspan=1, mode="boxing")
 
-	parser.add_argument("--delta", type=float,help="Anglular sampling to rotate the reference.", default=30.0, guitype='floatbox', row=5, col=0,rowspan=1, colspan=1, mode="boxing")
-	
-	parser.add_argument("--sym", type=str,help="Symmetry of reference.", default="c1", guitype='strbox', row=5, col=1,rowspan=1, colspan=1, mode="boxing")
-	
-	parser.add_argument("--rmedge", action="store_true",help="Remove particles on the edge.", default=False, guitype='boolbox', row=6, col=0,rowspan=1, colspan=1, mode="boxing[True]")
-	parser.add_argument("--rmgold", action="store_true",help="Remove particles near gold fiducial.", default=False, guitype='boolbox', row=6, col=1,rowspan=1, colspan=1, mode="boxing[True]")
+	parser.add_argument("--minvol", type=int,help="Minimum peak volume. By default (-1) this filter is not applied.", default=-1, guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="boxing")
+	parser.add_argument("--maxvol", type=int, help="Maximum peak volume. By default (-1) this filter is not applied.", default=-1, guitype='intbox', row=5, col=1, rowspan=1, colspan=1, mode="boxing")
 
-	parser.add_argument("--boxsz", type=int,help="Overwrite box size of the reference. This should be the box size of unbinned micrographs if specified.", default=-1, guitype='intbox', row=7, col=0,rowspan=1, colspan=1, mode="boxing")
-	parser.add_argument("--threads", type=int,help="number of threads to use", default=12, guitype='intbox', row=8, col=0,rowspan=1, colspan=1, mode="boxing")
+	parser.add_argument("--delta", type=float,help="Anglular sampling to rotate the reference.", default=30.0, guitype='floatbox', row=6, col=0,rowspan=1, colspan=1, mode="boxing")
+	
+	parser.add_argument("--sym", type=str,help="Symmetry of reference.", default="c1", guitype='strbox', row=6, col=1,rowspan=1, colspan=1, mode="boxing")
+	
+	parser.add_argument("--rmedge", action="store_true",help="Remove particles on the edge.", default=False, guitype='boolbox', row=7, col=0,rowspan=1, colspan=1, mode="boxing[True]")
+	parser.add_argument("--rmgold", action="store_true",help="Remove particles near gold fiducial.", default=False, guitype='boolbox', row=7, col=1,rowspan=1, colspan=1, mode="boxing[True]")
+
+	parser.add_argument("--boxsz", type=int,help="Overwrite box size of the reference. This should be the box size of unbinned micrographs if specified.", default=-1, guitype='intbox', row=8, col=0,rowspan=1, colspan=1, mode="boxing")
+	parser.add_argument("--threads", type=int,help="number of threads to use", default=12, guitype='intbox', row=9, col=0,rowspan=1, colspan=1, mode="boxing")
+
+
 
 	parser.add_argument("--shrink", type=int,help="binning factor. Default (-1) will downsample the tomograms to ~500px for template matching", default=-1)
 	parser.add_argument("--ppid", type=int,help="ppid", default=-2)
@@ -160,19 +165,32 @@ def main():
 		pks=np.array(ndimage.maximum_position(img,lb,list(range(1,nlb))))
 		#pks=np.array(ndimage.center_of_mass(img,lb,list(range(1,nlb))))
 		pksize=np.array(ndimage.sum(img,lb,list(range(1,nlb))))
+		pks_mask = lb.copy()
+		pks_mask[pks_mask > 0] = 1
+		pks_vol = np.array(ndimage.measurements.sum(pks_mask, lb, list(range(1, nlb))))
 		n=len(pks)
 		print(len(pks))
 		
 		#### filter out small peaks
 		if options.boxsz>0:
 			boxsz=options.boxsz
-			
-		kpid=pksize>5
+		### filter out peaks with too big volume
+		refvol = ref["ny"] * ref["nx"] * ref["nz"]
+		kpid=np.logical_and(pksize>5, pks_vol<refvol)
+
+		if options.minvol > -1:
+			kpid = np.logical_and(kpid, pks_vol > options.minvol)
+
+		if options.maxvol > -1:
+			kpid = np.logical_and(kpid, pks_vol < options.maxvol)
+
 		pks=pks[kpid]
 		pkscore=pksize[kpid]
-		
+		pks_vol = pks_vol[kpid]
+
 		srt=np.argsort(-pkscore)
 		pks=pks[srt]
+		pks_vol = pks_vol[srt]
 		pkscore=pkscore[srt]
 		pkscore/=np.max(pkscore)
 		
@@ -194,6 +212,7 @@ def main():
 			
 		pts=pks[tokeep]
 		scr=pkscore[tokeep]
+		pvolume=pks_vol[tokeep]
 		
 		if len(pts)>options.nptcl:
 			print("Found {} particles. Keep the best {}.".format(len(pts), options.nptcl))
@@ -229,12 +248,12 @@ def main():
 				boxsz=options.boxsz
 			
 			box=(pts-shp/2)*apix/apix_unbin
-			bxs.extend([[p[2], p[1],p[0], 'tm', scr[i] ,kid] for i,p in enumerate(box[:n])])
+			bxs.extend([[p[2], p[1],p[0], 'tm', scr[i] ,kid, pvolume[i]] for i,p in enumerate(box[:n])])
 			
 		else:
-			bxs.extend([[p[2], p[1],p[0], 'tm', scr[i] ,kid] for i,p in enumerate(pts[:n]*nbin)])
+			bxs.extend([[p[2], p[1],p[0], 'tm', scr[i] ,kid, pvolume[i]] for i,p in enumerate(pts[:n]*nbin)])
 			if options.boxsz<0:
-				boxsz=sz*nbin
+				boxsz=int(ref["ny"]*mbin)
 			else:
 				boxsz=options.boxsz
 				

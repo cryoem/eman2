@@ -1458,12 +1458,12 @@ def run():
             )
         )
         sp_global_def.sxprint(
-            "# Processed SPHIRE coorinates directory counts      := {} ".format(
+            "# Processed SPHIRE coordinates directory counts      := {} ".format(
                 sphire_coordinates_dict_dirname_counts
             )
         )
         sp_global_def.sxprint(
-            "# Processed SPHIRE coorinates entry total counts    := {} ".format(
+            "# Processed SPHIRE coordinates entry total counts    := {} ".format(
                 sphire_coordinates_entry_total_counts
             )
         )
@@ -1506,7 +1506,7 @@ def run():
             )
         )
         sp_global_def.sxprint(
-            "# Processed SPHIRE stack coorinates entry counts    := {} ".format(
+            "# Processed SPHIRE stack coordinates entry counts    := {} ".format(
                 i_sphire_stack_coordinates
             )
         )

@@ -1916,6 +1916,8 @@ class EMImage2DWidget(EMGLWidget):
 			self.auto_contrast()
 		elif event.key()==Qt.Key_C:
 			self.auto_contrast()
+		elif event.key()==Qt.Key_T:
+			self.full_contrast()
 		elif event.key()==Qt.Key_I:
 			self.show_inspector(1)
 		else:

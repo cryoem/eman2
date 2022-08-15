@@ -1555,7 +1555,7 @@ For negative staining data, set the pixel size [A/Pixels] as the source of CTF p
             mic_img = sp_utilities.get_im(mic_path)
         except:
             sp_global_def.sxprint(
-                "Failed to read the associate micrograph %s for %s. The file might be corrupted. Skipping..."
+                "Failed to read the associated micrograph %s for %s. The file might be corrupted. Skipping..."
                 % (mic_path, mic_basename)
             )
             continue

@@ -32,6 +32,7 @@ def main():
 	parser.add_argument("--tophat", type=str,help="Options for filtering maps. Run 'e2help.py tophat' for more information. Default=wiener.", default=None,guitype='strbox', row=12, col=0, rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--ssnrwt", action="store_true", default=False ,help="weight particles during reconstruction by SSNR accroding to references.")
 	parser.add_argument("--curve", action="store_true", default=False ,help="Filament refinement mode. still under testing")
+	parser.add_argument("--vector", action="store_true", default=False ,help="similar to --curve but keep vector direction as well.")
 	parser.add_argument("--use3d", action="store_true", default=False ,help="Use projection of 3d particles instead of 2d sub tilt series. This may be more useful for thicker sample but can be significantly slower.")
 	parser.add_argument("--localrefine", action="store_true", default=False ,help="only perform local search around the solution from the last iteration",guitype='boolbox', row=19, col=0, rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--loadali2d", type=str,help="load previous 2d alignment from an aliptcls2d_xx.lst file", default=None,guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=14, col=0,rowspan=1, colspan=2, mode="model")
@@ -201,6 +202,8 @@ def main():
 				opt+=f" --maxshift {options.maxshift} --maxang {options.maxang}"
 			if options.curve:
 				opt+=" --curve"
+			elif options.vector:
+				opt+=" --vector"
 			if options.localrefine==False and options.curve==False:
 				opt+=" --fromscratch"
 			
@@ -308,14 +311,12 @@ def gather_metadata(pfile, maxtilt=-1):
 	print("Gathering metadata...")
 	params=[]
 	if pfile.endswith(".lst"):
-		lst=LSXFile(pfile, True)
-		nptcl=lst.n
-		for i in range(nptcl):
-			l=lst.read(i)
-			params.append([l[1], l[0]])
-			
-		lst.close()
-	
+		lst=load_lst_params(pfile)
+		if "xform.align3d" in lst[0]:
+			params=[[l["src"], l["idx"], l["xform.align3d"]] for l in lst]
+		else:
+			params=[[l["src"], l["idx"]] for l in lst]
+		
 	else:
 		nptcl=EMUtil.get_image_count(pfile)
 		params=[[pfile, i] for i in range(nptcl)]
@@ -328,10 +329,14 @@ def gather_metadata(pfile, maxtilt=-1):
 		imgidx=img["class_ptcl_idxs"]
 		coord=img["ptcl_source_coord"]
 		
-		try: rhdrs=EMData.read_images(imgsrc,imgidx,IMAGE_UNKNOWN,True)
-		except:
-			print(f"couldn't read {imgidx} from {imgsrc}")
-			sys.exit(1)
+		if imgsrc.endswith(".lst"):
+			rhdrs=[EMData(imgsrc, i, True) for i in imgidx]
+			
+		else:
+			try: rhdrs=EMData.read_images(imgsrc,imgidx,IMAGE_UNKNOWN,True)
+			except:
+				print(f"couldn't read {imgidx} from {imgsrc}")
+				sys.exit(1)
 			
 		idx2d=[]
 		for k,i in enumerate(imgidx): 
@@ -345,6 +350,8 @@ def gather_metadata(pfile, maxtilt=-1):
 			info2d.append(dc)
 		
 		dc={"src":pm[0], "idx":pm[1], "coord":coord, "idx2d":idx2d}
+		if len(pm)>2:
+			dc["xform.align3d"]=pm[2]
 		
 		info3d.append(dc)
 

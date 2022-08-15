@@ -482,6 +482,31 @@ int TiffIO::write_header(const Dict & dict, int image_index, const Region *,
 	return 0;
 }
 
+template<class T>
+int TiffIO::write_compressed(float *data)
+{
+	auto [rendered_data, count] = getRenderedDataAndRendertrunc<T>(data, nx*ny);
+	vector<T> data_to_write(nx*ny);
+
+	int src_idx, dst_idx;
+
+	for (unsigned int i = 0; i < ny; ++i) {
+		for (unsigned int j = 0; j < nx; ++j) {
+			src_idx = i*nx+j;
+			dst_idx = nx*(ny-1) - (i*nx) +j;
+			data_to_write[dst_idx] = rendered_data[src_idx];
+		}
+	}
+
+	if (TIFFWriteEncodedStrip(tiff_file, 0, data_to_write.data(), nx * ny * sizeof(T)) == -1) {
+		printf("Fail to write tiff file.\n");
+
+		return -1;
+	}
+
+	return 1;
+}
+
 int TiffIO::write_data(float * data, int image_index, const Region *,
 				EMUtil::EMDataType dt, bool)
 {
@@ -499,74 +524,15 @@ int TiffIO::write_data(float * data, int image_index, const Region *,
 
 	// If we didn't get any parameters in 'render_min' or 'render_max',
 	// we need to find some good ones
-	int truebits=bitspersample;
-	if (renderbits==0 || renderbits>truebits) renderbits=truebits;
+	if (renderbits==0 || renderbits>bitspersample) renderbits=bitspersample;
 
 	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, renderbits);
 
-	if (bitspersample == CHAR_BIT) {
-		auto [rendered_data, count] = getRenderedDataAndRendertrunc<unsigned char>(data, nx*ny);
-		vector<unsigned char> cdata(nx*ny);
-		
-		int src_idx, dst_idx;
-
-		for (unsigned int i = 0; i < ny; ++i) {
-			for (unsigned int j = 0; j < nx; ++j) {
-				src_idx = i*nx+j;
-				dst_idx = nx*(ny-1) - (i*nx) +j;
-				cdata[dst_idx] = rendered_data[src_idx];
-			}
-		}
-
-		if (TIFFWriteEncodedStrip(tiff_file, 0, cdata.data(), nx*ny) == -1) {
-			printf("Fail to write tiff file.\n");
-
-			return -1;
-		}
-	}
-	else if (bitspersample == CHAR_BIT*sizeof(short)) {
-		auto [rendered_data, count] = getRenderedDataAndRendertrunc<unsigned short>(data, nx*ny);
-		vector<unsigned short> sdata(nx*ny);
-
-		int src_idx, dst_idx;
-
-		for (unsigned int i = 0; i < ny; ++i) {
-			for (unsigned int j = 0; j < nx; ++j) {
-				src_idx = i*nx+j;
-				dst_idx = nx*(ny-1) - (i*nx) +j;
-				sdata[dst_idx] = rendered_data[src_idx];
-			}
-		}
-
-		if (TIFFWriteEncodedStrip(tiff_file, 0, sdata.data(), nx*ny*sizeof(short)) == -1) {
-			printf("Fail to write tiff file.\n");
-
-			return -1;
-		}
-	}
-	else if (bitspersample == CHAR_BIT*sizeof(float)) {
-		auto [rendered_data, count] = getRenderedDataAndRendertrunc<float>(data, nx*ny);
-		vector<float> fdata(nx*ny);
-
-		int src_idx, dst_idx;
-
-		for (unsigned int i = 0; i < ny; ++i) {
-			for (unsigned int j = 0; j < nx; ++j) {
-				src_idx = i*nx+j;
-				dst_idx = nx*(ny-1) - (i*nx) +j;
-				fdata[dst_idx] = rendered_data[src_idx];
-			}
-		}
-
-		if (TIFFWriteEncodedStrip(tiff_file, 0, fdata.data(), nx*ny*sizeof(float)) == -1) {
-			printf("Fail to write tiff file.\n");
-
-			return -1;
-		}
-	}
-	else {
+	if (bitspersample == CHAR_BIT)                    write_compressed<unsigned char>(data);
+	else if (bitspersample == CHAR_BIT*sizeof(short)) write_compressed<unsigned short>(data);
+	else if (bitspersample == CHAR_BIT*sizeof(float)) write_compressed<float>(data);
+	else
 		LOGWARN("TIFF in EMAN2 only support data type 8 bit, 16 bit or 32 bit.");
-	}
 
 	EXITFUNC;
 	return 0;

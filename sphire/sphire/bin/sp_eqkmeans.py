@@ -335,12 +335,9 @@ def iter_isac_pap(
     FF,
     init_iter,
     main_iter,
-    iter_reali,
     match_first,
     max_round,
     match_second,
-    stab_ali,
-    thld_err,
     indep_run,
     thld_grp,
     img_per_grp,
@@ -405,10 +402,6 @@ def iter_isac_pap(
 
 		main_iter (int): Number of the current main iteration.
 
-		iter_reali (int): SAC stability check interval. Every iter_reali-th
-			iteration of SAC stability checking is performed.
-			[Default: 1]
-
 		match_first (int): Number of iterations to run 2-way matching during
 			the first phase. (Unclear what "first hpase" refers to.)
 			[Default: 1][UNUSED]
@@ -420,16 +413,6 @@ def iter_isac_pap(
 		match_second (int): Number of times to run 2-way (or 3-way) matching in
 			the second phase. (Unclear what "second phase" refers to.)
 			[Default: 5][UNUSED]
-
-		stab_ali (int): Number of alignment iterations when checking stability.
-			[Default: 5]
-
-		thld_err (float): Threshold of pixel error when checking stability.
-			Equals root mean square of distances between corresponding pixels
-			from set of found transformations and theirs average transformation;
-			depends linearly on square of radius (parameter target_radius).
-			Units are in pixels.
-			[Default: 0.7]
 
 		indep_run (int): [Default: 0][UNUSED]
 
@@ -580,9 +563,6 @@ def iter_isac_pap(
         color=color,
         comm=group_comm,
         stability=True,
-        stab_ali=stab_ali,
-        iter_reali=iter_reali,
-        thld_err=thld_err,
         FL=FL,
         FH=FH,
         FF=FF,
@@ -638,9 +618,6 @@ def isac_MPI_pap(
     color=0,
     comm=-1,
     stability=False,
-    stab_ali=5,
-    iter_reali=1,
-    thld_err=1.732,
     FL=0.1,
     FH=0.3,
     FF=0.2,
@@ -707,20 +684,6 @@ def isac_MPI_pap(
 
 		stability (bool): If True, ISAC performs stability testing.
 			[Default: True]
-
-		stab_ali (bool): Used only when stability testing is performed.
-			[Default: 5]
-
-		inter_reali (UNKNOWN TYPE): Used only when stability=True. For each
-			iteration i: if (i % iter_reali == 0) stability check is performed.
-			[Default: 1]
-
-		thld_err (float): Threshold of pixel error when checking stability.
-			Equals root mean square of distances between corresponding pixels
-			from set of found transformations and theirs average transformation;
-			depends linearly on square of radius (parameter target_radius).
-			Units are in pixels.
-			[Default: 1.732]
 
 		FL (float): Frequency of the lowest stop band used in the tangent filter.
 			[Default: 0.1]
@@ -1150,11 +1113,6 @@ def isac_MPI_pap(
         else:
             do_within_group = 0
 
-        # Here stability does not need to be checked for each main iteration, it only needs to
-        # be done for every 'iter_reali' iterations. If one really wants it to be checked each time
-        # simple set iter_reali to 1, which is the default value right now.
-        check_stability = stability and (main_iter % iter_reali == 0)
-
         # --------------------------------------------------[ within group alignment ]
 
         if do_within_group == 1:
@@ -1189,23 +1147,6 @@ def isac_MPI_pap(
 	
             mpi.mpi_barrier( mpi.MPI_COMM_WORLD )
 
-            # There are two approaches to scatter calculations among MPI processes during stability checking.
-            # The first one is the original one. I added the second method.
-            # Here we try to estimate the calculation time for both approaches.
-            stab_calc_time_method_1 = stab_ali * (
-                old_div((numref - 1), number_of_proc) + 1
-            )
-            stab_calc_time_method_2 = (
-                old_div((numref * stab_ali - 1), number_of_proc) + 1
-            )
-            ##if my_abs_id == main_node: print "Times estimation: ", stab_calc_time_method_1, stab_calc_time_method_2
-
-            # When there is no stability checking or estimated calculation time of new method is greater than 80% of estimated calculation time of original method
-            # then the original method is used. In other case. the second (new) method is used.
-            # if (not check_stability) or (stab_calc_time_method_2 > 0.80 * stab_calc_time_method_1):
-            #  For the time being only use this method as the other one is not worked out as far as parameter ranges go.
-            # if True :
-            ##if my_abs_id == main_node: print "Within group refinement and checking within group stability, original approach .......", check_stability, "  ",time.localtime()[0:5]
             # ====================================== standard approach is used, calculations are parallelized by scatter groups (averages) among MPI processes
             gpixer = []
             mpi.mpi_barrier(comm)
@@ -1234,195 +1175,70 @@ def isac_MPI_pap(
                     method=method,
                 )
 
-                if check_stability:
-                    ###if my_abs_id == main_node: print "Checking within group stability, original approach .......", check_stability, "  ",time.localtime()[0:5]
-                    ali_params = [[] for qq in range(stab_ali)]
-                    for ii in range(stab_ali):
-                        if ii > 0:  # The first one does not have to be repeated
-                            dummy = sp_applications.within_group_refinement(
-                                class_data,
-                                mask,
-                                randomize,
-                                first_ring,
-                                last_ring,
-                                rstep,
-                                [xrng],
-                                [yrng],
-                                [step],
-                                dst,
-                                maxit,
-                                FH,
-                                FF,
-                                method=method,
-                            )
-                        for im in range(len(class_data)):
-                            alpha, sx, sy, mirror, scale = sp_utilities.get_params2D(
-                                class_data[im]
-                            )
-                            ali_params[ii].extend([alpha, sx, sy, mirror])
-
-                    stable_set, mirror_consistent_rate, err = sp_pixel_error.multi_align_stability(
-                        ali_params, 0.0, 10000.0, thld_err, False, last_ring * 2
-                    )
-                    gpixer.append(err)
-
-                    # print  "Class %4d ...... Size of the group = %4d and of the stable subset = %4d  Mirror consistent rate = %5.3f  Average pixel error prior to class pruning = %10.2f"\
-                    # 				%(j, len(class_data), len(stable_set), mirror_consistent_rate, err)
-
-                    # If the size of stable subset is too small (say 1, 2), it will cause many problems, so we manually increase it to 5
-                    while len(stable_set) < 5:
-                        duplicate = True
-                        while duplicate:
-                            duplicate = False
-                            p = random.randint(0, len(class_data) - 1)
-                            for ss in stable_set:
-                                if p == ss[1]:
-                                    duplicate = True
-                        stable_set.append([100.0, p, [0.0, 0.0, 0.0, 0]])
-                    stable_data = []
-                    stable_members = []
-                    for err in stable_set:
-                        im = err[1]
-                        stable_members.append(assign[im])
-                        stable_data.append(class_data[im])
-                        sp_utilities.set_params2D(
-                            class_data[im],
-                            [err[2][0], err[2][1], err[2][2], int(err[2][3]), 1.0],
-                        )
-                    stable_members.sort()
-
-                    refi[j] = sp_filter.filt_tanl(
-                        sp_statistics.ave_series(stable_data), FH, FF
-                    )
-                    refi[j].set_attr("members", stable_members)
-                    refi[j].set_attr("n_objects", len(stable_members))
-                    # print  "Class %4d ...... Size of the stable subset = %4d  "%(j, len(stable_members))
-                    del stable_members
-                # end of stability
-                del assign
+                refi[j] = sp_filter.filt_tanl(
+                    sp_statistics.ave_series(class_data), FH, FF
+                )
+                refi[j].set_attr("members", assign)
+                refi[j].set_attr("n_objects", len(assign))
+                
             mpi.mpi_barrier(comm)
-
-            for im in range(nima):
-                done_on_node = belongsto[im] % number_of_proc
-                if myid == done_on_node:
-                    alpha, sx, sy, mirror, scale = sp_utilities.get_params2D(alldata[im])
-                    ali_params = [alpha, sx, sy, mirror]
-                else:
-                    ali_params = [0.0] * 4
-                ali_params = mpi.mpi_bcast(
-                    ali_params, 4, mpi.MPI_FLOAT, done_on_node, comm
-                )
-                ali_params = list(map(float, ali_params))
-                sp_utilities.set_params2D(
-                    alldata[im],
-                    [
-                        ali_params[0],
-                        ali_params[1],
-                        ali_params[2],
-                        int(ali_params[3]),
-                        1.0,
-                    ],
-                )
-
+            
             for j in range(numref):
                 sp_utilities.bcast_EMData_to_all(refi[j], myid, j % number_of_proc, comm)
-
-            terminate = 0
-            if check_stability:
-                # In this case, we need to set the 'members' attr using stable members from the stability test
-                for j in range(numref):
-                    # print " SSS ",Blockdata["myid"],j
-                    done_on_node = j % number_of_proc
-                    if done_on_node != main_node:
-                        if myid == main_node:
-                            mem_len = mpi.mpi_recv(
-                                1,
-                                mpi.MPI_INT,
-                                done_on_node,
-                                sp_global_def.SPARX_MPI_TAG_UNIVERSAL,
-                                comm,
-                            )
-                            mem_len = int(mem_len[0])
-                            members = mpi.mpi_recv(
-                                mem_len,
-                                mpi.MPI_INT,
-                                done_on_node,
-                                sp_global_def.SPARX_MPI_TAG_UNIVERSAL,
-                                comm,
-                            )
-                            members = list(map(int, members))
-                            refi[j].set_attr_dict(
-                                {"members": members, "n_objects": mem_len}
-                            )
-                        elif myid == done_on_node:
-                            members = refi[j].get_attr("members")
-                            mpi.mpi_send(
-                                len(members),
-                                1,
-                                mpi.MPI_INT,
-                                main_node,
-                                sp_global_def.SPARX_MPI_TAG_UNIVERSAL,
-                                comm,
-                            )
-                            mpi.mpi_send(
-                                members,
-                                len(members),
-                                mpi.MPI_INT,
-                                main_node,
-                                sp_global_def.SPARX_MPI_TAG_UNIVERSAL,
-                                comm,
-                            )
-
-                if myid == main_node:
-                    #  compare with previous
-                    totprevious = 0.0
-                    totcurrent = 0.0
-                    common = 0.0
-                    for j in range(numref):
-                        totprevious += len(previous_members[j])
-                        members = set(refi[j].get_attr("members"))
-                        totcurrent += len(members)
-                        common += len(previous_members[j].intersection(members))
-                        previous_members[j] = members
-                        # print "  memebers  ",j,len(members)
-                    agreement = old_div(
-                        common, float(totprevious + totcurrent - common)
-                    )
-                    j = agreement - previous_agreement
-                    if (agreement > 0.5) and (j > 0.0) and (j < 0.05):
-                        terminate = 1
-                    previous_agreement = agreement
-                    sp_global_def.sxprint(
-                        ">>>  Assignment agreement with previous iteration  %5.1f"
-                        % (agreement * 100),
-                        "   ",
-                        time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime()),
-                    )
-                terminate = sp_utilities.bcast_number_to_all(
-                    terminate, source_node=main_node
-                )
-
-            if check_stability and ((main_iter == max_iter) or (terminate == 1)):
-                #  gather all pixers and print a histogram
-                gpixer = sp_utilities.wrap_mpi_gatherv(gpixer, main_node, comm)
-                if my_abs_id == main_node and color == 0:
-                    lhist = 12
-                    region, histo = sp_statistics.hist_list(gpixer, lhist)
-                    sp_global_def.sxprint(
-                        "\n=== Histogram of average within-class pixel errors prior to class pruning ==="
-                    )
-                    for lhx in range(lhist):
-                        sp_global_def.sxprint(
-                            "     %10.3f     %7d" % (region[lhx], histo[lhx])
+                
+                # Copy membership info, because of course not all of the header is copied during bcast
+                done_on_node = j % number_of_proc
+                
+                # If average was not processed on main node
+                if done_on_node != main_node:
+                    
+                    # If not the main node, send memership info
+                    if myid == done_on_node:
+                        members = refi[j].get_attr("members")
+                        mpi.mpi_send(
+                            len(members), 
+                            1, 
+                            mpi.MPI_INT, 
+                            main_node, 
+                            sp_global_def.SPARX_MPI_TAG_UNIVERSAL, 
+                            comm
                         )
-                    sp_global_def.sxprint(
-                        "=============================================================================\n"
-                    )
-                del gpixer
-
-        # end of within group alignment
+                        mpi.mpi_send(
+                            members, 
+                            len(members), 
+                            mpi.MPI_INT, 
+                            main_node, 
+                            sp_global_def.SPARX_MPI_TAG_UNIVERSAL, 
+                            comm
+                        )
+                    
+                    # If main node, receive membership info
+                    elif myid == main_node:
+                        mem_len = mpi.mpi_recv(
+                            1, 
+                            mpi.MPI_INT, 
+                            done_on_node, 
+                            sp_global_def.SPARX_MPI_TAG_UNIVERSAL, 
+                            comm
+                        )
+                        mem_len = int(mem_len[0])
+                        members = mpi.mpi_recv(
+                            mem_len, 
+                            mpi.MPI_INT, 
+                            done_on_node, 
+                            sp_global_def.SPARX_MPI_TAG_UNIVERSAL, 
+                            comm
+                        )
+                        members = list( map(int, members) )
+                        refi[j].set_attr_dict(
+                            {"members": members, "n_objects": mem_len}
+                        )
+                    else:
+                        pass
+        # end of within-group alignment
+        
         mpi.mpi_barrier(comm)
-
+                
     if myid == main_node:
         i = [refi[j].get_attr("n_objects") for j in range(numref)]
         lhist = max(12, old_div(numref, 2))
@@ -1618,12 +1434,9 @@ def do_generation(
         options.FF,
         options.init_iter,
         dummy_main_iter,
-        options.iter_reali,
         match_first,
         max_round,
         match_second,
-        options.stab_ali,
-        options.thld_err,
         indep_run,
         thld_grp,
         options.img_per_grp,
@@ -1668,7 +1481,6 @@ def do_generation(
         j = 0
         good = []
         bad = []
-        new_good_classes = 0
         for i, q in enumerate(ave):
             #  Convert local numbering to absolute numbering of images
             local_members = q.get_attr("members")
@@ -1694,7 +1506,6 @@ def do_generation(
                 i,
             )
             if len(members) > options.minimum_grp_size:
-                new_good_classes += 1
                 good += members
                 q.write_image(
                     os.path.join(
@@ -1758,7 +1569,7 @@ def do_generation(
             )
 
             if (int(len(bad) * 1.2) < 2 * options.img_per_grp) or (
-                (generation_iter == 1) and (new_good_classes <= options.delta_good)
+                (len(good) == 0) and (generation_iter == 1)
             ):
                 #  Insufficient number of images to keep processing bad set
                 #    or
@@ -1779,7 +1590,7 @@ def do_generation(
                 )
                 # Check whether what remains can be still processed in a new main interation
                 if (len(leftout) < 2 * options.img_per_grp) or (
-                    (generation_iter == 1) and (new_good_classes <= options.delta_good)
+                    (len(good) == 0) and (generation_iter == 1)
                 ):
                     #    if the the number of remaining all bad too low full stop
                     keepdoing_main = False
@@ -1979,24 +1790,6 @@ def parse_parameters(prog_name, usage, args):
         help="Maximum number of Generation iterations performed for a given subset (default 7)",
     )
     parser.add_option(
-        "--iter_reali",
-        type="int",
-        default=1,
-        help="SAC stability check interval: every iter_reali iterations of SAC stability checking is performed (default 1)",
-    )
-    parser.add_option(
-        "--stab_ali",
-        type="int",
-        default=5,
-        help="number of alignments when checking stability (default 5)",
-    )
-    parser.add_option(
-        "--thld_err",
-        type="float",
-        default=0.7,
-        help="threshold of pixel error when checking stability: equals root mean square of distances between corresponding pixels from set of found transformations and theirs average transformation, depends linearly on square of radius (parameter target_radius). units - pixels. (default 0.7)",
-    )
-    parser.add_option(
         "--restart",
         type="int",
         default="-1",
@@ -2033,11 +1826,6 @@ def parse_parameters(prog_name, usage, args):
         default=False,
         help="Skip the ordered class_averages creation. (Default: False)",
     )
-    parser.add_option(
-        "--delta_good",
-        type="int",
-        default=0,
-        help="Convergence criteria for ISAC. As soon as the number of new good classes is lower that this value ISAC stops.")
 
     return parser.parse_args(args)
 
@@ -2051,7 +1839,6 @@ def run(args):
         + " --img_per_grp=img_per_grp --CTF <The remaining parameters are"
         + " optional --ir=ir --rs=rs --xr=xr --yr=yr --ts=ts --maxit=maxit"
         + " --dst=dst --FL=FL --FH=FH --FF=FF --init_iter=init_iter"
-        + " --iter_reali=iter_reali --stab_ali=stab_ali --thld_err=thld_err"
         + " --rand_seed=rand_seed>"
     )
 
@@ -2205,6 +1992,9 @@ def run(args):
     create_zero_group()
 
     # ------------------------------------------------------[ gather image parameters ]
+
+    if options.CTF and options.VPP:
+        sp_global_def.ERROR("Options CTF and VPP cannot be used together", myid=myid)
 
     # former options
     indep_run = 0
@@ -2578,28 +2368,16 @@ def run(args):
                 )
             # for phase plate data we force images to match the rotational power spectrum (provided to us from the outside)
             elif options.VPP:
-                img_obj = aligned_images[im]
-                
-                # One may want to use the phase-plate option even without CTF-correction (e.g., tomograms).
-                if img_obj.has_attr("ctf") and options.CTF:
-                    aligned_images[im] = sp_fundamentals.fft(
-                        sp_filter.filt_table(
-                            sp_filter.filt_ctf(
-                                sp_fundamentals.fft(img_obj), 
-                                img_obj.get_attr("ctf"), 
-                                binary = True
-                            ), 
-                            rpw
-                        ) 
+                aligned_images[im] = sp_fundamentals.fft(
+                    sp_filter.filt_table(
+                        sp_filter.filt_ctf(
+                            sp_fundamentals.fft(aligned_images[im]),
+                            aligned_images[im].get_attr("ctf"),
+                            binary=True,
+                        ),
+                        rpw,
                     )
-                else:
-                    aligned_images[im] = sp_fundamentals.fft(
-                        sp_filter.filt_table(
-                            sp_fundamentals.fft(img_obj), 
-                            rpw
-                        ) 
-                    )
-                #(filt_table can supposedly work on real-space images, but I'm keeping the original convention for now.)
+                )
 
         if options.VPP:
             del rpw
@@ -2636,7 +2414,6 @@ def run(args):
             for i in range(Blockdata["total_nima"]):
                 aligned_images[i].write_image(Blockdata["stack_ali2d"], i)
             del aligned_images
-            
             #  It has to be explicitly closed
             DB = EMAN2db.db_open_dict(Blockdata["stack_ali2d"])
             DB.close()
@@ -2663,7 +2440,7 @@ def run(args):
             fp.flush()
             fp.close()
             sp_global_def.sxprint(output_text)
-
+            
             # Running sp_header as a function rather than subprocess
             sp_global_def.sxprint(
                 "sp_header.py  --consecutive  --params=originalid   %s"
@@ -2898,4 +2675,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

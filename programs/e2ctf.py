@@ -2937,7 +2937,7 @@ class GUIctf(QtWidgets.QWidget):
 			im.mult(4.0/len(self.ptcldata))	# 4 compensates for noise averaging
 			self.ptcldata.insert(0,im)
 			self.guirealim.set_data(self.ptcldata)
-		else : self.guirealim.set_data([EMData()])
+		else : print("ERROR: No particles in ",val)
 
 	def newPlotMode(self,mode):
 		self.plotmode=mode

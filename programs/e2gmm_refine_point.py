@@ -50,13 +50,14 @@ def main():
 	parser.add_argument("--evalsize", type=int,help="Box size for the projections for evaluation.", default=-1)
 	parser.add_argument("--ptclsin", type=str,help="particles input for alignment", default="")
 	parser.add_argument("--ptclsout", type=str,help="aligned particle output", default="")
+	parser.add_argument("--ptclsclip",type=int,help="clip particles to specified box size before use",default=-1)
 	parser.add_argument("--learnrate", type=float,help="learning rate for model training only. Default is 1e-4. ", default=1e-4)
 #	parser.add_argument("--sigmareg", type=float,help="regularizer for the sigma of gaussian width. Larger value means all Gaussian functions will have essentially the same width. Smaller value may help compensating local resolution difference.", default=.5)
 	parser.add_argument("--modelreg", type=float,help="regularizer for for Gaussian positions based on the starting model, ie the result will be biased towards the starting model when training the decoder (0-1 typ). Default 0", default=0)
 	parser.add_argument("--ampreg", type=float,help="regularizer for the Gaussian amplitudes in the first 1/2 of the iterations. Large values will encourage all Gaussians to have similar amplitudes. default = 0", default=0)
 	parser.add_argument("--niter", type=int,help="number of iterations", default=10)
 	parser.add_argument("--npts", type=int,help="number of points to initialize. ", default=-1)
-	parser.add_argument("--batchsz", type=int,help="batch size", default=32)
+	parser.add_argument("--batchsz", type=int,help="batch size", default=256)
 	parser.add_argument("--maxboxsz", type=int,help="maximum fourier box size to use. 2 x target Fourier radius. ", default=64)
 	parser.add_argument("--maxres", type=float,help="maximum resolution. will overwrite maxboxsz. ", default=-1)
 	parser.add_argument("--align", action="store_true", default=False ,help="align particles.")
@@ -113,7 +114,7 @@ def main():
 					print("ERROR: segments must be a sequential list of integer model point numbers")
 					sys.exit(1)
 			options.nmid=len(segments)*2	# 2-D space for each feature
-		else: segments=[]
+		else: segments=None
 	else:
 		pts=None
 
@@ -164,7 +165,7 @@ def main():
 			maxboxsz=options.maxboxsz=good_size(ceil(raw_boxsz*raw_apix*2/options.maxres)//2*2)
 			print("using box size {}, max resolution {:.1f}".format(maxboxsz, options.maxres))
 
-		data_cpx, xfsnp = load_particles(options.projs, maxboxsz, shuffle=True)
+		data_cpx, xfsnp = load_particles(options.projs, maxboxsz, shuffle=True,preclip=options.ptclsclip)
 		apix=raw_apix*raw_boxsz/maxboxsz
 		clipid=set_indices_boxsz(data_cpx[0].shape[1], apix, True)
 
@@ -214,14 +215,15 @@ def main():
 
 	#### Load particles with xforms in header
 	if options.ptclsin:
-		e=EMData(options.ptclsin, 0, True)
+		e=EMData(options.ptclsin, 0)	# used to be header only, but inconvenient with clip possibility
+		if options.ptclsclip>0 : e=e.get_clip(Region((e["nx"]-options.ptclsclip)//2,(e["ny"]-options.ptclsclip)//2,options.ptclsclip,options.ptclsclip))
 		raw_apix, raw_boxsz = e["apix_x"], e["ny"]
 		options.raw_apix=raw_apix
 		if options.maxres>0:
 			maxboxsz=options.maxboxsz=good_size(ceil(raw_boxsz*raw_apix*2/options.maxres)//2*2)
 			print("using box size {}, max resolution {:.1f}".format(maxboxsz, options.maxres))
 
-		data_cpx, xfsnp = load_particles(options.ptclsin,maxboxsz,shuffle=False)
+		data_cpx, xfsnp = load_particles(options.ptclsin,maxboxsz,shuffle=False,preclip=options.ptclsclip)
 		apix=raw_apix*raw_boxsz/maxboxsz
 		clipid=set_indices_boxsz(data_cpx[0].shape[1], apix, True)
 
@@ -532,18 +534,24 @@ def calc_frc(data_cpx, imgs_cpx, rings, return_curve=False,minpx=4):
 #### particles need to have their transform in file header or comment of list file
 ##   will also shrink particles and do FT
 ##   return Fourier images and transform matrix
-def load_particles(fname, boxsz, shuffle=False):
+##   Two possible types of size reduction, shrinking to achieve boxsz and pre-clipping
+##   produce a normal scaled particle in a specified box. This is used for subtomogram
+##   data where there is generally padding on the particles.
+def load_particles(fname, boxsz, shuffle=False, preclip=-1):
 	
 	nptcl=EMUtil.get_image_count(fname)
 	projs=[]
 	hdrs=[]
 	e=EMData(fname, 0, True)
-	rawbox=e["nx"]
+	rawbox=e["nx"] if preclip<=0 else preclip
 	print("Loading {} particles of box size {}. shrink to {}".format(nptcl, rawbox, boxsz))
 	for j in range(0,nptcl,1000):
 		print(f"\r {j}/{nptcl} ",end="")
 		sys.stdout.flush()
 		el=EMData.read_images(fname,range(j,min(j+1000,nptcl)))
+		if el[0]["nx"]!=rawbox:
+			for i in range(len(el)): el[i]=el[i].get_clip(Region((el[i]["nx"]-rawbox)//2,(el[i]["ny"]-rawbox)//2,rawbox,rawbox))
+
 		print(f"R     ",end="")
 		sys.stdout.flush()
 		for e in el:
@@ -676,15 +684,15 @@ class Localize1(tf.keras.constraints.Constraint):
 # pt is either the integer number of gaussians or a numpy array of gaussian coordinates
 # segs is integer gaussian numbers beginning each defined region or an empty list (or None)
 def build_decoder(nmid, pt,segs ):
-	if isinstance(pts, int):
-		nout=pts
+	if isinstance(pt, int):
+		nout=pt
 		initpts=False
 		
 	else:
-		nout=len(pts)
+		nout=len(pt)
 		initpts=True
 	
-	if segs is None or len(segs<2) : segs=None
+	if segs is None or len(segs)<2 : segs=None
 	else: init_segs(segs)
 
 	x0=tf.keras.Input(shape=(nmid))
@@ -692,13 +700,17 @@ def build_decoder(nmid, pt,segs ):
 	kinit=tf.keras.initializers.RandomNormal(0,1e-2)
 	l2=tf.keras.regularizers.l2(1e-3)
 	l1=tf.keras.regularizers.l1(1e-3)
-	layer_output=tf.keras.layers.Dense(nout*4, kernel_initializer=kinit, activation="sigmoid",use_bias=True,kernel_constraint=Localize4())
+#	layer_output=tf.keras.layers.Dense(nout*4, kernel_initializer=kinit, activation="sigmoid",use_bias=True,kernel_constraint=Localize4())
+	layer_output=tf.keras.layers.Dense(nout*4, kernel_initializer=kinit, activation="sigmoid",use_bias=True)
 
 	print(f"Decoder {max(nout//32,nmid)} {max(nout//8,nmid)} {max(nout//2,nmid)}")
 	layers=[
-		tf.keras.layers.Dense(nmid*2,activation="relu",use_bias=True,bias_initializer=kinit,kernel_constraint=Localize1()),
-		tf.keras.layers.Dense(nmid*4,activation="relu",use_bias=True,kernel_constraint=Localize2()),
-		tf.keras.layers.Dense(nmid*8,activation="relu",use_bias=True,kernel_constraint=Localize3()),
+		#tf.keras.layers.Dense(nmid*2,activation="relu",use_bias=True,bias_initializer=kinit,kernel_constraint=Localize1()),
+		#tf.keras.layers.Dense(nmid*4,activation="relu",use_bias=True,kernel_constraint=Localize2()),
+		#tf.keras.layers.Dense(nmid*8,activation="relu",use_bias=True,kernel_constraint=Localize3()),
+		tf.keras.layers.Dense(nmid*2,activation="relu",use_bias=True,bias_initializer=kinit),
+		tf.keras.layers.Dense(nmid*4,activation="relu",use_bias=True),
+		tf.keras.layers.Dense(nmid*8,activation="relu",use_bias=True),
 		tf.keras.layers.Dropout(.3),
 		tf.keras.layers.BatchNormalization(),
 		layer_output,
@@ -721,7 +733,7 @@ def build_decoder(nmid, pt,segs ):
 	## match the bias of the final layer to input
 	## need to undo the sigmoid activation
 	if initpts:
-		bs=pts.copy()-bshift
+		bs=pt.copy()-bshift
 		bs=np.clip(bs, 1e-6, 1-1e-6)
 		bs=-np.log(1./bs-1)
 		layer_output.bias.assign(bs.flatten())

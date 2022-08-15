@@ -866,7 +866,7 @@ namespace EMAN
 		static short hypot_fast_int(int x, int y);
 
 		/** A fast way to calculate a floor, which is largest integral
-		 * value not greater than argument.
+		 * value not greater than argument. INCORRECT FOR NEGATIVE INTEGERS!
 		 *
 		 * @param[in] x A float point number.
 		 * @return floor of x.

@@ -179,7 +179,10 @@ def main():
 		for ir in range(nref):
 			threed=f"{path}/threed_{itr:02d}_{ir:02d}.hdf"
 			a2=ali2d[ir]
-			run(f"e2spa_make3d.py --input {a2} --output {threed} --keep 1 --parallel {options.parallel} --outsize {boxsize} --pad {padsize} --sym {options.sym} --clsid {ir}")
+			cmd=f"e2spa_make3d.py --input {a2} --output {threed} --keep 1 --parallel {options.parallel} --outsize {boxsize} --pad {padsize} --sym {options.sym} --clsid {ir}"
+			if options.skipali:
+				cmd+=" --no_wt"
+			run(cmd)
 			
 			refmask=f"--multfile {options.maskref}" if options.maskref!=None and itr<options.niter else "" 
 			run(f"e2proc3d.py {threed} {threed} {setsf} --process filter.lowpass.gauss:cutoff_freq={1./options.maxres} --process normalize.edgemean {refmask}")

@@ -282,6 +282,7 @@ const string NewBandpassGaussProcessor::NAME = "filter.bandpass.gauss";
 const string NewHomomorphicGaussProcessor::NAME = "filter.homomorphic.gauss";
 const string NewInverseGaussProcessor::NAME = "filter.gaussinverse";
 const string GaussZFourierProcessor::NAME = "filter.lowpass.gaussz";
+const string HelixFilterProcessor::NAME = "filter.helix";
 const string SHIFTProcessor::NAME = "filter.shift";
 const string InverseKaiserI0Processor::NAME = "filter.kaiser_io_inverse";
 const string InverseKaiserSinhProcessor::NAME = "filter.kaisersinhinverse";
@@ -567,6 +568,7 @@ template <> Factory < Processor >::Factory()
 	force_add<NewHomomorphicGaussProcessor>();
 	force_add<NewInverseGaussProcessor>();
 	force_add<GaussZFourierProcessor>();
+	force_add<HelixFilterProcessor>();
 	force_add<LowpassRandomPhaseProcessor>();
 	force_add<NewLowpassButterworthProcessor>();
 	force_add<NewHighpassButterworthProcessor>();
@@ -902,6 +904,89 @@ void AzSharpProcessor::process_inplace(EMData * image)
 
 	image->update();
 }
+
+void HelixFilterProcessor::process_inplace(EMData *image)
+{
+	EMData *fft;
+
+	if (!image) throw InvalidParameterException("HelixFilterProcessor: no image provided");
+	if (!image->is_complex()) fft = image->do_fft();
+	else fft = image;
+
+	int nx=fft->get_xsize();
+	int ny=fft->get_ysize();
+	int nz=fft->get_zsize();
+	float period = (float)params.set_default("period", 100.0);
+	float alpha = (float)params.set_default("alpha", 0.0);
+	float az = (float)params.set_default("az", 0.0);
+	float alt = (float)params.set_default("alt", 0.0);
+	float width = (float)params.set_default("width", 2.0);
+	int skip0 = (int)params.set_default("skip0",0);
+	int return_filter=(int)params.set_default("return_filter",0);
+	width*=width;
+	float apix = (float)params.set_default("apix", (float)image->get_attr("apix_x")); 
+
+	float peak = apix*ny/period;		// location of first peak in Fourier pixels
+
+	// 1d filter
+	vector <float>d1(ny);		// no oversampling, 2x size is to make sure corners are covered (sqrt(3) would be sufficient really)
+	for (int x=0; x<ny; x++) {
+		int line=floor((x+peak/2.0)/peak);	// closest layer line to x
+		float rel=fabs(peak*line-x);		// relative position in pixels WRT line
+		d1[x]=exp(-rel*rel/width);
+	}
+
+	if (skip0) {
+		for (int i=0; i<peak/2; i++) d1[i]=0.0;
+	}
+
+	// 3d volume
+	if (nz>1) {
+		Transform t(Dict("type","eman","alt",alt,"az",az));
+		Vec3f u = t*Vec3f(0.0f,0.0f,1.0f);
+		for (int z=-nz/2; z<nz/2; z++) {
+			for (int y=-ny/2; y<ny/2; y++) {
+				for (int x=0; x<=nx/2; x++) {
+					float p = fabs(u.dot(Vec3f(x,y,z)));
+					int p0 = floor(p);
+					float v=d1[p0]*(1.0-p+p0)+d1[p0+1]*(p-p0);		// linear interpolation
+					if (return_filter) fft->set_complex_at(x,y,z,(std::complex<float>)v);
+					else {
+						std::complex<float> f=fft->get_complex_at(x,y,z);
+						fft->set_complex_at(x,y,z,(std::complex<float>)v*f);
+					}
+				}
+			}
+		}
+	}
+	// 2d image
+	else {
+		Transform t(Dict("type","2d","alpha",alpha));
+		Vec2f u = t*Vec2f(0.0f,1.0f);
+		for (int y=-ny/2; y<ny/2; y++) {
+			for (int x=0; x<=nx/2; x++) {
+				float p = fabs(u.dot(Vec2f(x,y)));
+				int p0 = floor(p);
+				float v=d1[p0]*(1.0-p+p0)+d1[p0+1]*(p-p0); // linear interpolation
+				if (return_filter) fft->set_complex_at(x,y,(std::complex<float>)v);
+				else {
+					std::complex<float> f=fft->get_complex_at(x,y);
+					fft->set_complex_at(x,y,(std::complex<float>)v*f);
+				}
+			}
+		}
+	}	
+	
+	if (fft!=image) {
+		EMData *ift=fft->do_ift();
+		memcpy(image->get_data(),ift->get_data(),(nx-2)*ny*nz*sizeof(float));
+		delete fft;
+		delete ift;
+	}
+//	image->set_attr("helix_fn",d1);
+	image->update();
+}
+
 
 void FFTPeakProcessor::process_inplace(EMData * image)
 {

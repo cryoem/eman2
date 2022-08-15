@@ -110,7 +110,8 @@ def mult_gauss_coords(args):
 def pts2img_one(args):
 	pts, ang = args
 	sz, idxft, rrft = params["sz"], params["idxft"], params["rrft"]
-
+	xfo=params["xforigin"]
+	
 	lp=.1
 	bamp=tf.cast(tf.nn.relu(pts[:,3]), tf.complex64)[:,None]
 	#bsigma=pts[:, 4]
@@ -129,7 +130,7 @@ def pts2img_one(args):
 
 	pgauss = tf.matmul(tf.transpose(pgauss_x), pgauss_y)
 	pgauss = tf.transpose(pgauss)*tf.cast(amp, tf.complex64)
-	return pgauss
+	return pgauss*tf.cast(xfo, tf.complex64)
 
 @tf.function()
 def pts2img(pts, angs):
@@ -144,7 +145,7 @@ def pts2img(pts, angs):
 ##   return_curve - return the curve instead of average FRC score
 ##   minpx - skip the X initial low freq pixels
 #@tf.function
-def calc_frc(data_cpx, imgs_cpx, rings, return_curve=False, minpx=1, maxpx=-1):
+def calc_frc(data_cpx, imgs_cpx, rings, return_curve=False, minpx=6, maxpx=-1):
 	mreal, mimag=imgs_cpx
 	dreal, dimag=data_cpx
 	#### normalization per ring
@@ -167,6 +168,46 @@ def calc_frc(data_cpx, imgs_cpx, rings, return_curve=False, minpx=1, maxpx=-1):
 		frcval=tf.reduce_mean(frc[:, minpx:maxpx], axis=1)
 		return frcval
 	
+	
+def rotpts(pts, ang, msk):
+
+	azp=-ang[:,0]*np.pi
+	altp=ang[:,1]*np.pi
+	phip=-ang[:,2]*np.pi
+	trans=ang[:,3:][:,None,:]*.2
+	m=msk[None,:,None]
+
+	matrix=tf.stack([(tf.cos(phip)*tf.cos(azp) - tf.cos(altp)*tf.sin(azp)*tf.sin(phip)),
+	(tf.cos(phip)*tf.sin(azp) + tf.cos(altp)*tf.cos(azp)*tf.sin(phip)),
+	(tf.sin(altp)*tf.sin(phip)),
+
+	(-tf.sin(phip)*tf.cos(azp) - tf.cos(altp)*tf.sin(azp)*tf.cos(phip)),
+	(-tf.sin(phip)*tf.sin(azp) + tf.cos(altp)*tf.cos(azp)*tf.cos(phip)),
+	(tf.sin(altp)*tf.cos(phip)),
+
+	(tf.sin(altp)*tf.sin(azp)),
+	(-tf.sin(altp)*tf.cos(azp)),
+	tf.cos(altp)], 0)
+
+	matrix=tf.transpose(matrix)
+	matrix=tf.reshape(matrix, shape=[-1, 3,3]) #### Here we get a batch_size x 3 x 3 matrix
+
+	cnt=tf.reduce_sum(pts*m, axis=1)[:,None, :]
+	cnt=cnt/tf.reduce_sum(m)
+	pts_cnt=pts-cnt
+	pts_rot=tf.tensordot(pts_cnt, matrix, [[2],[2]])
+	pts_rot=tf.transpose(pts_rot, (0,2,1,3))#, (-1, pts.shape[1],3))
+	e=tf.eye(pts.shape[0], dtype=bool)#.flatten()
+	pts_rot=pts_rot[e]
+
+	pts_rot+=cnt
+	pts_rot_trans=pts_rot+trans
+
+	pts_rot_trans=pts*(1-m)+pts_rot_trans*m
+
+	return pts_rot_trans
+
+
 #### load particles from file and fourier transform them
 #### particles need to have their transform in file header or comment of list file
 ##   will also shrink particles and do FT
@@ -192,6 +233,8 @@ def load_particles(fname, boxsz, shuffle=False):
 				#nx=e["nx"]
 				#e.clip_inplace(Region((nx-boxsz)//2,(nx-boxsz)//2, boxsz,boxsz))
 				#e.process_inplace("xform.scale", {"scale":boxsz/rawbox,"clip":boxsz})
+			
+			e.process_inplace("xform.phaseorigin.tocorner")
 			hdrs.append(e.get_attr_dict())
 			projs.append(e.numpy().copy())
 	print(f"{nptcl}/{nptcl}")
@@ -267,9 +310,11 @@ def set_indices_boxsz(boxsz, apix=0, return_freq=False):
 		rings=np.zeros((sz,sz//2+1,sz//2), dtype=floattype) #### Fourier rings
 		for i in range(sz//2):
 			rings[:,:,i]=(rr==i)
+			
+		xvec=tf.constant(np.fromfunction(lambda i,j:1.0-2*((i+j)%2),(sz,sz//2+1),dtype=np.float32))
 		
 		global params
-		params={"sz":sz, "idxft":idxft, "rrft":rrft, "rings":rings}
+		params={"sz":sz, "idxft":idxft, "rrft":rrft, "rings":rings, "xforigin":xvec}
 		return params
 
 def build_encoder(mid=512, nout=4, conv=False, ninp=-1):
@@ -436,6 +481,54 @@ def build_decoder_anchor(pts, cnt, ninp ):
 	decode_model=tf.keras.Model(x0, y0)
 	return decode_model
 	
+	
+def build_decoder_rigidbody(pts, ninp, foci):
+	print("building decoder with rigid body movement constraints...")
+	
+	x0=tf.keras.Input(shape=(ninp))
+	kinit=tf.keras.initializers.RandomNormal(0,1e-3)
+	l2=tf.keras.regularizers.l2(1e-3)
+	
+	layers=[
+		tf.keras.layers.Dense(256, activation="relu"),
+		tf.keras.layers.Reshape((4,4,16)),
+		tf.keras.layers.Conv2DTranspose(16, 3, activation="relu", strides=(2,2), padding="same"),
+		tf.keras.layers.Conv2DTranspose(16, 3, activation="relu", strides=(2,2), padding="same"),
+		tf.keras.layers.Conv2DTranspose(16, 5, activation="relu", strides=(1,1), padding="same"),
+		tf.keras.layers.Conv2DTranspose(16, 5, activation="relu", strides=(1,1), padding="same"),
+		tf.keras.layers.Flatten(),
+		tf.keras.layers.Dropout(.3),
+		tf.keras.layers.BatchNormalization(),    
+		tf.keras.layers.Dense(6, activation="tanh",  kernel_regularizer=l2, kernel_initializer=kinit),
+	]
+	
+	y0=x0
+	for l in layers:
+		y0=l(y0)
+
+	decode_model=tf.keras.Model(x0, y0)
+	return decode_model
+	
+def calc_bond_angle(pout, bond, useangle=False, cn2=[]):
+	
+	px=tf.gather(pout, bond[:,0], axis=1)[:,:,:3]
+	py=tf.gather(pout, bond[:,1], axis=1)[:,:,:3]
+	dst=d=tf.math.sqrt(tf.reduce_sum((px-py)**2, axis=2))
+	
+	if useangle:		
+		## dot product between bonds
+		bd=px-py
+		cx=-tf.gather(bd, cn2[:,0], axis=1)
+		cy=tf.gather(bd, cn2[:,1], axis=1)
+		ang=tf.reduce_sum(cx*cy, axis=2)
+
+		ang=ang/tf.linalg.norm(cx, axis=2)/tf.linalg.norm(cy, axis=2)
+		ang=tf.math.acos(ang)*180/np.pi
+		
+	else:
+		ang=None
+		
+	return dst, ang
 
 #### training decoder on projections
 def train_decoder(gen_model, trainset, params, options, pts=None):
@@ -443,6 +536,30 @@ def train_decoder(gen_model, trainset, params, options, pts=None):
 	opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate) 
 	wts=gen_model.trainable_variables
 	
+	if options.bond:
+		bond=np.loadtxt(options.bond).astype(int)-1
+		print("Using bond constraints. {} bonds loaded.".format(len(bond)))
+		conf=np.zeros((1,options.nmid), dtype=floattype)
+		pout=gen_model(conf)
+		
+		if options.useangle:
+			#### indices of bonds that form an angle
+			cn2=np.zeros((len(bond)-1, 2), dtype=int)
+			cn2[:,0]=np.arange(len(cn2))
+			cn2[:,1]=cn2[:,0]+1
+			c0=bond[cn2[:,0]]
+			c1=bond[cn2[:,1]]
+			cn2=cn2[c0[:,1]==c1[:,0]]
+		else:
+			cn2=[]
+			
+		dst00, ang00=calc_bond_angle(pout, bond, options.useangle, cn2)
+		print("Average bond distance {:.3f}".format(np.mean(dst00)*options.apix*options.maxboxsz))
+		if options.useangle:
+			print("Using angle between bonds as constraints")
+			print("  {} angles connect the bonds".format(ang00.shape[1]))
+			print("  average angle: {:.1f}, std {:.1f}".format(np.mean(ang00), np.std(ang00)))
+		
 	nbatch=0
 	for t in trainset: nbatch+=1
 	
@@ -462,8 +579,19 @@ def train_decoder(gen_model, trainset, params, options, pts=None):
 				imgs_cpx=pts2img(pout, xf)
 				fval=calc_frc(pj_cpx, imgs_cpx, params["rings"])
 				loss=-tf.reduce_mean(fval)
+				
 #				l=loss+std[4]*options.sigmareg+std[3]*5*(options.niter-itr)/options.niter
 				l=loss+std[4]*options.sigmareg
+				
+				if options.bond:
+					dst, ang=calc_bond_angle(pout, bond, options.useangle, cn2)
+					dr=tf.reduce_mean(abs(dst-dst00))
+					l+=dr*options.apix*options.maxboxsz*0.1
+					
+					if options.useangle:
+						da=tf.reduce_mean(abs(ang-ang00))
+						l+=da*.002
+					
 				if options.modelreg>0: 
 					#print(tf.reduce_sum(pout[0,:,:3]*pts[:,:3]),tf.reduce_sum((pout[0,:,:3]-pts[:,:3])**2),len(pts))
 					l+=tf.reduce_sum((pout[0,:,:3]-pts[:,:3])**2)/len(pts)*options.modelreg*20.0		# factor of 20 is a rough calibration relative to the dynamic training
@@ -480,6 +608,16 @@ def train_decoder(gen_model, trainset, params, options, pts=None):
 		sys.stdout.write("\r")
 		
 		print("iter {}, loss : {:.4f} ({:.4f})         ".format(itr, np.mean(cost), np.mean(truecost)))
+		
+	if options.bond:
+		conf=np.zeros((1,options.nmid), dtype=floattype)
+		pout=gen_model(conf)
+		dst, ang=calc_bond_angle(pout, bond, options.useangle, cn2)
+		print("Average bond distance after refinement {:.3f}".format(np.mean(dst)*options.apix*options.maxboxsz))
+		
+		if options.useangle:
+			da=tf.reduce_mean(abs(ang-ang00))
+			print("Average angle difference from input model {:.1f}".format(da.numpy()))
 
 def eval_model(gen_model, options):
 	
@@ -523,6 +661,7 @@ def eval_model(gen_model, options):
 		xf=Transform({"type":"eman", "az":x[0], "alt":x[1], "phi":x[2], "tx":x[3], "ty":x[4]})
 		e["xform.projection"]=xf
 		e["apix_x"]=e["apix_y"]=options.raw_apix
+		e.process_inplace("xform.phaseorigin.tocenter")
 		e.write_image(options.evalmodel,-1)
 	print("Projection images written to ", options.evalmodel)
 		
@@ -693,18 +832,10 @@ def calc_gradient(trainset, pts, params, options):
 	return allscr, allgrds
 	
 #### train the conformation manifold from particles
-def train_heterg(trainset, pts, encode_model, decode_model, params, options):
+def train_heterg(trainset, pts, encode_model, decode_model, params, imsk, options):
 	npt=pts.shape[1]
 	pas=[int(i) for i in options.pas]
 	pas=tf.constant(np.array([pas[0],pas[0],pas[0],pas[1],pas[2]], dtype=floattype))
-	
-	imsk=tf.zeros(npt, dtype=floattype)+1
-	if options.selgauss:
-		i=np.loadtxt(options.selgauss).astype(int).flatten()-1
-		print('selecting {} out of {} points'.format(len(i), npt))
-		m=np.zeros(npt, dtype=floattype)
-		m[i]=1
-		imsk=tf.constant(m)
 	
 	## initialize optimizer
 	opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate)
@@ -742,6 +873,11 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, options):
 				## mask out the target columns based on --pas
 				pout=decode_model(conf, training=True)
 				p0=tf.zeros((xf.shape[0],npt, 5))+pts
+				
+				if options.rigidbody:
+					pout=rotpts(p0[:,:,:3], pout, imsk) 
+					pout=tf.concat([pout, p0[:,:,3:]], axis=2)
+				
 				pout=pout*pas+p0*(1-pas)
 				
 				## mask selected rows
@@ -825,6 +961,7 @@ def main():
 	parser.add_argument("--decoderentropy", action="store_true", default=False ,help="This will train some entropy into the decoder using particles to reduce vanishing gradient problems")
 	parser.add_argument("--perturb", type=float, default=0.1 ,help="Relative perturbation level to apply in each iteration during --heter training. Default = 0.1, decrease if models are too disordered")
 	parser.add_argument("--conv", action="store_true", default=False ,help="Use a convolutional network for heterogeneity analysis.")
+	parser.add_argument("--rigidbody", action="store_true", default=False ,help="Consider rigid body movement for heterogeneity analysis. Require --selgauss")
 	parser.add_argument("--fromscratch", action="store_true", default=False ,help="start from coarse alignment. otherwise will only do refinement from last round")
 	parser.add_argument("--gradout", type=str,help="gradient output", default="")
 	parser.add_argument("--gradin", type=str,help="reading from gradient output instead of recomputing", default="")
@@ -836,6 +973,11 @@ def main():
 	parser.add_argument("--anchor", type=str,help="use a smaller model as anchor points for heterogeneity training.", default="")
 	parser.add_argument("--selgauss", type=str,help="provide a text file of the indices of gaussian that are allowed to move", default="")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--bond", type=str,help="provide a text file of the indices of bonds between points", default=None)
+	parser.add_argument("--useangle", action="store_true",help="use angle constraints as well when --bond is provided. ", default=False)
+	parser.add_argument("--pmout", type=str,help="write options to file", default=None)
+	parser.add_argument("--phantompts", type=str,help="load extra phatom points for gradient calculation.", default=None)
+
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv,options.ppid)
@@ -855,6 +997,7 @@ def main():
 				e=EMData(options.ptclsin, 0, True)
 			#sz=e["ny"]
 			p=p/e["ny"]/e["apix_x"]-0.5
+			p[:,1:]*=-1
 			pts[:,:3]=p
 			pts[:,3]=.5
 			pts[:,4]=1
@@ -884,7 +1027,7 @@ def main():
 			options.npt=len(pts)
 		   
 		## randomize it a bit so we dont have all zero weights
-		rnd=np.random.randn(pts.shape[0], pts.shape[1])*1e-3
+		rnd=np.random.randn(pts.shape[0], pts.shape[1])*1e-5
 		gen_model=build_decoder(pts+rnd, ninp=options.nmid, conv=options.conv,mid=options.ndense)
 		print("{} gaussian in the model".format(len(pts)))
 		
@@ -917,7 +1060,7 @@ def main():
 			print("using box size {}, max resolution {:.1f}".format(maxboxsz, options.maxres))
 			
 		data_cpx, xfsnp = load_particles(options.projs, maxboxsz, shuffle=True)
-		apix=raw_apix*raw_boxsz/maxboxsz
+		options.apix=apix=raw_apix*raw_boxsz/maxboxsz
 		clipid=set_indices_boxsz(data_cpx[0].shape[1], apix, True)
 		
 		## training
@@ -1028,12 +1171,18 @@ def main():
 		else:
 			trainset=tf.data.Dataset.from_tensor_slices((dcpx[0], dcpx[1], xfsnp))
 			trainset=trainset.batch(bsz)
-			allscr, allgrds=calc_gradient(trainset, pts, params, options )
+			if options.phantompts:
+				ppt=np.loadtxt(options.phantompts)
+				ppt=np.vstack([pts[0].numpy(), ppt])
+				ppt=tf.constant(ppt[None,:,:].astype(floattype))
+				allscr, allgrds=calc_gradient(trainset, ppt, params, options )
+			else:
+				allscr, allgrds=calc_gradient(trainset, pts, params, options )
 			
+			print("Gradient shape: ", allgrds.shape) 
 			## save to hdf file
 			if options.gradout:
 				allgrds=allgrds.reshape((len(allgrds),-1))
-				print("Gradient shape: ", allgrds.shape) 
 				ag=from_numpy(np.hstack([allscr[:,None], allgrds]))
 				ag.write_image(options.gradout)
 				del ag
@@ -1041,36 +1190,49 @@ def main():
 				
 		#### build deep networks and make sure they work
 		
+		imsk=tf.zeros(npt, dtype=floattype)+1
+		if options.selgauss:
+			i=np.loadtxt(options.selgauss).astype(int).flatten()-1
+			print('selecting {} out of {} points'.format(len(i), npt))
+			m=np.zeros(npt, dtype=floattype)
+			m[i]=1
+			imsk=tf.constant(m)
+		
 		if options.encoderin:
 			encode_model=tf.keras.models.load_model(f"{options.encoderin}",compile=False)
 		else:
 			encode_model=build_encoder(nout=options.nmid, conv=options.conv,ninp=len(pts[0]))
 			
+		if options.anchor:
+			anchor=np.loadtxt(options.anchor)[:,:3]
+			anchor=tf.constant(anchor,dtype=floattype)
+			
 		if options.decoderin:
 			decode_model=tf.keras.models.load_model(f"{options.decoderin}",compile=False)
 			
-		elif options.anchor:
-			anchor=np.loadtxt(options.anchor)[:,:3]
-			anchor=tf.constant(anchor,dtype=floattype)
-			decode_model=build_decoder_anchor(pts, anchor, ninp=options.nmid)
-			
 		else:
-			decode_model=build_decoder(pts[0].numpy(), ninp=options.nmid, conv=options.conv,mid=options.ndense)
+			if options.anchor:
+				decode_model=build_decoder_anchor(pts, anchor, ninp=options.nmid)
+			elif options.rigidbody:
+				decode_model=build_decoder_rigidbody(pts, ninp=options.nmid, foci=imsk)
+			else:
+				decode_model=build_decoder(pts[0].numpy(), ninp=options.nmid, conv=options.conv,mid=options.ndense)
 		
+		print("Input shape: ",allgrds[:bsz].shape)
 		mid=encode_model(allgrds[:bsz])
 		print("Gaussian model shape: ",pts.shape)
 		print("Latent space shape: ", mid.shape)
 		out=decode_model(mid)
 		print("Output shape: ",out.shape)
-		print("Deviation from neutral model: ", np.mean(abs(out-pts)))
+		#print("Deviation from neutral model: ", np.mean(abs(out-pts)))
 		
 		if options.niter>0:
 			#### actual training
-			ptclidx=allscr>-1
-			trainset=tf.data.Dataset.from_tensor_slices((allgrds[ptclidx], dcpx[0][ptclidx], dcpx[1][ptclidx], xfsnp[ptclidx]))
+			#ptclidx=allscr>-1
+			trainset=tf.data.Dataset.from_tensor_slices((allgrds, dcpx[0], dcpx[1], xfsnp))
 			trainset=trainset.batch(bsz)
 			
-			train_heterg(trainset, pts, encode_model, decode_model, params, options)
+			train_heterg(trainset, pts, encode_model, decode_model, params, imsk, options)
 			
 			if options.decoderout!=None: 
 				if os.path.isfile(options.decoderout):
@@ -1085,12 +1247,20 @@ def main():
 			
 		## conformation output
 		if options.midout:
-			mid=calc_conf(encode_model, allgrds[ptclidx], 1000)
-			sv=np.hstack([np.where(ptclidx)[0][:,None], mid])
+			mid=calc_conf(encode_model, allgrds, 1000)
+			sv=np.hstack([np.arange(len(mid))[:,None], mid])
 			print(mid.shape, sv.shape)
 			np.savetxt(options.midout, sv)
 		
 			print("Conformation output saved to {}".format(options.midout))
+		
+	if options.pmout:
+		
+		options.cmd=' '.join(sys.argv)
+		fm=options.pmout
+		js=js_open_dict(fm)
+		js.update(vars(options))
+		js.close()
 		
 	E2end(logid)
 	
