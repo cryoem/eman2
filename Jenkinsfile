@@ -26,39 +26,6 @@ def getJobType() {
     return job_type
 }
 
-def notifyGitHub(status) {
-    if(JOB_TYPE == "push" || NOTIFY_GITHUB == "true") {
-        context = "JenkinsCI/${NODE_NAME}"
-        run_type = 'Build'
-
-        if(STAGE_NAME == 'test-continuous') {
-            context = context + "/test-continuous"
-            run_type = 'Continuous test'
-        }
-
-        switch(status) {
-            case 'PENDING':
-                message = 'Stage: ' + (env.PARENT_STAGE_NAME ?: STAGE_NAME)
-                break
-            case 'SUCCESS':
-                message = run_type + ' succeeded!'
-                break
-            case 'FAILURE':
-                message = run_type + ' failed!'
-                break
-            case 'ABORTED':
-                message = run_type + ' aborted!'
-                status == 'ERROR'
-                break
-        }
-
-        step([$class: 'GitHubCommitStatusSetter',
-              contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: context],
-              statusResultSource: [$class: 'ConditionalStatusResultSource',
-                                   results: [[$class: 'AnyBuildResult', message: message, state: status]]]])
-    }
-}
-
 def notifyEmail() {
     from    = "JenkinsCI ($NODE_NAME) <jenkins@jenkins>"
     body    = '''${SCRIPT, template="groovy-text.template"}'''
@@ -263,7 +230,6 @@ pipeline {
             currentBuild.description = "${GIT_COMMIT_SHORT}: ${GIT_MESSAGE_SHORT}"
         }
         selectNotifications()
-        notifyGitHub('PENDING')
         sh 'env | sort'
       }
     }
@@ -276,7 +242,6 @@ pipeline {
       }
       
       steps {
-        notifyGitHub('PENDING')
         sh 'source ci_support/set_env_vars.sh && source $(conda info --root)/bin/activate eman-deps-${EMAN_DEPS_VERSION} && env | sort && bash ci_support/build_no_recipe.sh'
       }
     }
@@ -284,7 +249,6 @@ pipeline {
     stage('build-recipe') {
       when { not { expression { isSkipStage() } } }
       steps {
-        notifyGitHub('PENDING')
         sh 'source ci_support/set_env_vars.sh && bash ci_support/build_recipe.sh'
       }
     }
@@ -297,7 +261,6 @@ pipeline {
       environment { PARENT_STAGE_NAME = "${STAGE_NAME}" }
       
       parallel {
-        stage('notify') { steps { notifyGitHub('PENDING') } }
         stage('mini')   { steps { sh "bash ci_support/package.sh " + '${WORKSPACE} ${WORKSPACE}/ci_support/constructor-${STAGE_NAME}/' } }
         stage('huge')   { steps { sh "bash ci_support/package.sh " + '${WORKSPACE} ${WORKSPACE}/ci_support/constructor-${STAGE_NAME}/' } }
       }
@@ -314,7 +277,6 @@ pipeline {
       }
       
       parallel {
-        stage('notify') { steps { notifyGitHub('PENDING') } }
         stage('mini')   { steps { testPackage("${WORKSPACE}/eman2" + binary_size_suffix[STAGE_NAME] + ".${AGENT_OS_NAME}.${INSTALLER_EXT}", "${INSTALLERS_DIR}/" + STAGE_NAME) } }
         stage('huge')   { steps { testPackage("${WORKSPACE}/eman2" + binary_size_suffix[STAGE_NAME] + ".${AGENT_OS_NAME}.${INSTALLER_EXT}", "${INSTALLERS_DIR}/" + STAGE_NAME) } }
       }
@@ -328,7 +290,6 @@ pipeline {
       environment { PARENT_STAGE_NAME = "${STAGE_NAME}" }
 
       parallel {
-        stage('notify') { steps { notifyGitHub('PENDING') } }
         stage('mini')   { steps { deployPackage(STAGE_NAME) } }
         stage('huge')   { steps { deployPackage(STAGE_NAME) } }
       }
@@ -342,8 +303,6 @@ pipeline {
       environment { PARENT_STAGE_NAME = "${STAGE_NAME}" }
 
       parallel {
-        stage('notify') { steps { notifyGitHub('PENDING') } }
-
         stage('mini') {
           steps {
             catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
@@ -364,7 +323,6 @@ pipeline {
 
       post {
         always {
-          notifyGitHub("${currentBuild.result}")
           notifyEmail()
         }
       }
@@ -373,7 +331,6 @@ pipeline {
   
   post {
     always {
-      notifyGitHub("${currentBuild.result}")
       notifyEmail()
     }
   }
