@@ -8,6 +8,10 @@ def isVersionBump() {
   return CI_BUILD == "1" || EMAN_BUMP_PATCH == "1" || EMAN_BUMP_MINOR == "1" || EMAN_BUMP_MAJOR == "1"
 }
 
+def isVersionCommit() {
+  return VERSION_COMMIT == "1"
+}
+
 pipeline {
   agent {
     node { label "linux" }
@@ -18,6 +22,7 @@ pipeline {
     EMAN_BUMP_PATCH  = sh(script: "! git log -1 | grep '.*\\[bump patch\\].*'", returnStatus: true)
     EMAN_BUMP_MINOR  = sh(script: "! git log -1 | grep '.*\\[bump minor\\].*'", returnStatus: true)
     EMAN_BUMP_MAJOR  = sh(script: "! git log -1 | grep '.*\\[bump major\\].*'", returnStatus: true)
+    VERSION_COMMIT   = sh(script: "! git log -1 --pretty=%B | grep -x 'v[0-9][0-9]*\\.[0-9][0-9]*\\.[0-9][0-9]*'", returnStatus: true)
   }
   
   stages {
@@ -30,6 +35,16 @@ pipeline {
         sh 'python ./utils/tag_new_version.py --bump ' + versionBumpOption()
         sleep 60
         build propagate: false, job: 'eman-feedstock-update-version'
+      }
+    }
+
+    stage('build tag') {
+      when {
+        expression { isVersionCommit() }
+      }
+
+      steps {
+        build propagate: false, job: 'build-binary-trigger'
       }
     }
   }
