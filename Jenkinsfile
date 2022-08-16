@@ -26,27 +26,6 @@ def getJobType() {
     return job_type
 }
 
-def selectNotifications() {
-    if(env.JOB_TYPE == 'manual') {
-        def result = input(message: 'Select notifications:',
-                           parameters :
-                                   [booleanParam(defaultValue: false, description: 'Notify GitHub?', name: 'notify_github'),
-                                    booleanParam(defaultValue: false, description: 'Email author?',  name: 'notify_email')]
-                           )
-                 
-        env.NOTIFY_GITHUB = result.notify_github
-        env.NOTIFY_EMAIL  = result.notify_email
-    }
-    else if(env.JOB_TYPE == 'cron') {
-        env.NOTIFY_GITHUB = false
-        env.NOTIFY_EMAIL  = false
-    }
-    else {
-        env.NOTIFY_GITHUB = true
-        env.NOTIFY_EMAIL  = true
-    }
-}
-
 def isMasterBranch() {
     return GIT_BRANCH_SHORT == "master" || GIT_BRANCH_SHORT == "master-dev"
 }
@@ -199,7 +178,6 @@ pipeline {
             currentBuild.displayName = currentBuild.displayName + " - ${NODE_NAME}"
             currentBuild.description = "${GIT_COMMIT_SHORT}: ${GIT_MESSAGE_SHORT}"
         }
-        selectNotifications()
         sh 'env | sort'
       }
     }
