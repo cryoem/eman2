@@ -26,36 +26,6 @@ def getJobType() {
     return job_type
 }
 
-def notifyEmail() {
-    from    = "JenkinsCI ($NODE_NAME) <jenkins@jenkins>"
-    body    = '''${SCRIPT, template="groovy-text.template"}'''
-    subject = '$BUILD_STATUS! ' + "($GIT_BRANCH_SHORT - ${GIT_COMMIT_SHORT})" + ' #$BUILD_NUMBER'
-
-    if(JOB_TYPE == "push" || NOTIFY_EMAIL == "true") {
-        to      = "$GIT_AUTHOR_EMAIL"
-    }
-    
-    if(JOB_TYPE == "cron") {
-        to      = '$DEFAULT_RECIPIENTS'
-        subject = '[cron] - ' + subject
-    }
-    
-    if(STAGE_NAME == 'test-continuous' && isMasterBranch()) {
-        to      = '$DEFAULT_RECIPIENTS'
-        subject = '[test-continuous] - ' + subject
-        body    = 'Continuous binary test: $BUILD_STATUS'
-    }
-
-    if(NOTIFY_EMAIL != "false" || JOB_TYPE == "cron") {
-        emailext(to:        to,
-                 from:      from,
-                 subject:   subject,
-                 body:      body,
-                 attachLog: true
-                 )
-    }
-}
-
 def selectNotifications() {
     if(env.JOB_TYPE == 'manual') {
         def result = input(message: 'Select notifications:',
@@ -320,18 +290,6 @@ pipeline {
           }
         }
       }
-
-      post {
-        always {
-          notifyEmail()
-        }
-      }
-    }
-  }
-  
-  post {
-    always {
-      notifyEmail()
     }
   }
 }
