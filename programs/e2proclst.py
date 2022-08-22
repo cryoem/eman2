@@ -83,6 +83,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	parser.add_argument("--shuffle", action="store_true", default=False, help="shuffle list inplace.")
 	parser.add_argument("--sym", type=str, default=None, help="apply symmetry to a list of particles with xform.projection by duplicating each particle N time. only used along with a .lst input")
 	parser.add_argument("--extractattr", type=str, default=None, help="extract an attribute from particle header as an entry in the list")
+	parser.add_argument("--getclass", type=int, help="select a class when --create",default=-1)
 
 	parser.add_argument("--nocomments", action="store_true", default=False, help="Removes the comments from each line of the lst file.")
 	parser.add_argument("--scalexf", type=float, help="scale the translation in xform in header.",default=-1)
@@ -254,6 +255,10 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 						else:
 							print("\nWARNING, line {} in {} seems to be empty!".format(k,options.list)) 
 						k+=1
+						
+				elif options.getclass>=0:
+					ll=load_lst_params(f)
+					indxsinclude=[i for i,l in enumerate(ll) if l["class"]==options.getclass]
 				
 				if options.verbose :
 					print("Processing {} images in {}".format(len(indxsinclude),f))
@@ -449,7 +454,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 				print("No required attribute. Need xform.align3d or xform.projection")
 			
 			print("Using {}".format(atr))
-			for l in lst:
+			for il, l in enumerate(lst):
 				x=l[atr]
 				if atr=="xform.align3d": x=x.inverse()
 				for i in range(nsym):
@@ -457,6 +462,8 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 					q=l.copy()
 					if atr=="xform.align3d": xt=xt.inverse()
 					q[atr]=xt
+					if "raw_id" not in l:
+						q["raw_id"]=il
 					lout.append(q)
 					
 			save_lst_params(lout, f)
@@ -484,6 +491,9 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	if options.shuffle:
 		for f in args:
 			lst=load_lst_params(f)
+			for il,l in enumerate(lst):
+				if "raw_id" not in l:
+					l["raw_id"]=il				
 			np.random.shuffle(lst)
 			save_lst_params(lst, f)
 			

@@ -36,7 +36,9 @@ def main():
 	parser.add_argument("--use3d", action="store_true", default=False ,help="Use projection of 3d particles instead of 2d sub tilt series. This may be more useful for thicker sample but can be significantly slower.")
 	parser.add_argument("--localrefine", action="store_true", default=False ,help="only perform local search around the solution from the last iteration",guitype='boolbox', row=19, col=0, rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--loadali2d", type=str,help="load previous 2d alignment from an aliptcls2d_xx.lst file", default=None,guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=14, col=0,rowspan=1, colspan=2, mode="model")
-	parser.add_argument("--loadali3d", type=str,help="load previous 3d alignment from an aliptcls3d_xx.lst file", default=None,guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=16, col=0,rowspan=1, colspan=2, mode="model")
+	#parser.add_argument("--loadali3d", type=str,help="load previous 3d alignment from an aliptcls3d_xx.lst file", default=None,guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=16, col=0,rowspan=1, colspan=2, mode="model")	
+	parser.add_argument("--loadali3d",help="load previous 3d alignment from --ptcls input.",action="store_true",default=False)
+
 	parser.add_argument("--maxres",type=float,help="Maximum resolution to consider in alignment (in A, not 1/A). The program will determine maximum resolution each round from the FSC of the previous round by default.",default=0,guitype='floatbox',row=18, col=0,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--minres",type=float,help="Minimum resolution to consider in alignment (in A, not 1/A)",default=0,guitype='floatbox',row=18, col=1,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--mask", type=str,help="Mask applied to the results (instead of automasking)", default=None)
@@ -138,7 +140,7 @@ def main():
 	
 	if options.loadali3d:
 		fout=f"{path}/aliptcls3d_00.lst"
-		run(f"e2proclst.py {options.loadali3d} --create {fout} ")
+		run(f"e2proclst.py {options.ptcls} --create {fout} ")
 		last3d=fout
 		
 	if options.loadali2d:

@@ -1,6 +1,6 @@
 set(Boost_USE_MULTITHREADED ON)
 set(Boost_NO_BOOST_CMAKE ON)
-set(boost_py_ver ${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR})
+set(boost_py_ver ${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR})
 
 find_package(Boost COMPONENTS python${boost_py_ver} numpy${boost_py_ver} REQUIRED)
 
@@ -12,7 +12,7 @@ message("Boost_INCLUDE_DIR: ${Boost_INCLUDE_DIR}")
 set_target_properties(Boost::python${boost_py_ver}
 					  PROPERTIES
 					  INTERFACE_COMPILE_DEFINITIONS BOOST_PYTHON_NO_PY_SIGNATURES
-					  INTERFACE_LINK_LIBRARIES Python::Python
+					  INTERFACE_LINK_LIBRARIES Python3::Python
 					  )
 if(WIN32)
 	ADD_DEFINITIONS(-DBOOST_DISABLE_ASSERTS)
