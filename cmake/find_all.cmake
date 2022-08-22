@@ -1,5 +1,4 @@
-find_package(Python REQUIRED)
-find_package(NumPy  REQUIRED)
+include(${CMAKE_SOURCE_DIR}/cmake/Python.cmake)
 
 find_package(Nosetests)
 
