@@ -128,6 +128,8 @@ def main():
 	for itr in range(1,1+options.niter):
 		ali2d=[]
 		ali3d=[]
+		print("######################")
+		print("#### iteration {}".format(itr))
 		
 		#### run alignment for each reference map
 		for ir in range(nref):
@@ -154,12 +156,18 @@ def main():
 		ali2dpms=[load_lst_params(a) for a in ali2d]
 		score=[]
 		for ali in ali3dpms:
+			for i,a in enumerate(ali):
+				a["rawid"]=i
 			scr=[a["score"] for a in ali]
 			score.append(scr)
 		score=np.array(score)
 		clsid=np.argmin(score, axis=0)
 		for i in np.unique(clsid):
 			print("  class {} - {} particles".format(i, np.sum(clsid==i)))
+			
+		if itr>1:
+			print("{:.1f}% particles changed classes".format(np.mean(clsid!=lastclsid)*100))
+		lastclsid=clsid.copy()
 		
 		for ia,ali in enumerate(ali3dpms):
 			for i,a in enumerate(ali):
@@ -174,6 +182,26 @@ def main():
 		for i in range(nref):
 			save_lst_params(ali2dpms[i], ali2d[i])
 			save_lst_params(ali3dpms[i], ali3d[i])
+			if itr>1:
+				ali=ali3dpms[i]
+				ltmp=load_lst_params(lastali3d[i])
+				idx0=[l["rawid"] for l in ltmp]
+				idx1=[l["rawid"] for l in ali]
+				idoverlap=[j for j in idx0 if j in idx1]
+				print("  class {} - {:.2f}% particle overlap; ".format(i, len(idoverlap)/len(idx1)*100),end='')
+				ali=[l for l in ali if l["rawid"] in idoverlap]
+				ltmp=[l for l in ltmp if l["rawid"] in idoverlap]
+				dxf=[l0["xform.align3d"]*(l1["xform.align3d"].inverse()) for l0,l1 in zip(ali, ltmp)]
+				dxf=np.array([t.get_params("spin")["omega"] for t in dxf])
+				#print(dxf)
+				if options.skipali:
+					print("{:.2f}% particle changed orientation".format(100*np.mean(dxf>1e-5)))
+				else:
+					print("Average orientation change {:.2f} degrees".format(np.mean(dxf)))
+				
+				
+		
+		lastali3d=ali3d
 		
 		#### reconstruct averaged maps and filter to target resolution.
 		for ir in range(nref):
