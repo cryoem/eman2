@@ -24,12 +24,14 @@ if ('-h' in sys.argv) or ('--help' in sys.argv):
 	def empty():
 		return lambda f: f
 	tf.function=empty
+	tflayer=int
 	print(tf.function())
 	print("Printing help. Skip tensorflow import")
 else:
 	import tensorflow as tf
+	tflayer=tf.keras.layers.Layer
 
-class ResidueConv2D(tf.keras.layers.Layer):
+class ResidueConv2D(tflayer):
 	def __init__(self, nk, sz, activation='linear', **args):
 		super(ResidueConv2D, self).__init__()
 

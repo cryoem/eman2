@@ -1092,7 +1092,10 @@ class boxerConvNet(QtCore.QObject):
 				
 		
 		threshold=final["mean"]+final["sigma"]*thr1
-		pks=np.array(final.peak_ccf(sz/nnet.labelshrink/2)).reshape((-1,3))
+		pks=final.peak_ccf(sz/nnet.labelshrink/2)
+		if len(pks)<3: 
+			return (boxes, 0)
+		pks=np.array(pks).reshape((-1,3))
 		pks[:,1:]=pks[:,1:]*nnet.labelshrink
 		
 		if nnet1==None:
