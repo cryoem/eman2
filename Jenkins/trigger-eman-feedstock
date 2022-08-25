@@ -1,0 +1,20 @@
+pipeline {
+  agent {
+    node { label "linux" }
+  }
+  
+  stages {
+    stage('trigger downstream') {
+      when {
+//        expression { isTag() }
+        tag "v\\d+.\\d+.\\d+"
+      }
+
+      steps {
+        sh 'env | sort'
+//        build job:
+//        sh 'python ./utils/update_version.py --bump ' + versionBumpOption()
+      }
+    }
+  }
+}
