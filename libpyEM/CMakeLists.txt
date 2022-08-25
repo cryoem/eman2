@@ -14,7 +14,7 @@ function(ADD_PYSTE_LIB libname)
 			LINK_LIBRARIES "EM2;Boost::python${boost_py_ver}"
 			)
 	
-	install(TARGETS ${libname} DESTINATION ${Python3_SITELIB})
+	install(TARGETS ${libname} DESTINATION ${SP_DIR})
 endfunction()
 
 ADD_PYSTE_LIB(pyAligner2)
@@ -60,11 +60,11 @@ endif()
 
 file(GLOB empythonlibs "${CMAKE_CURRENT_SOURCE_DIR}/*.py")
 install(FILES ${empythonlibs}
-		DESTINATION ${Python3_SITELIB}
+		DESTINATION ${SP_DIR}
 		COMPONENT PythonFiles
 		)
 
 add_subdirectory(qtgui)
 
-target_link_libraries(pyUtils2         Python3::NumPy Boost::numpy${boost_py_ver})
-target_link_libraries(pyTypeConverter2 Python3::NumPy Boost::numpy${boost_py_ver})
+target_link_libraries(pyUtils2         NumPy Boost::numpy${boost_py_ver})
+target_link_libraries(pyTypeConverter2 NumPy Boost::numpy${boost_py_ver})

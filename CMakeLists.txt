@@ -81,9 +81,9 @@ cmake_print_variables(CMAKE_PREFIX_PATH)
 include(cmake/find_all.cmake)
 
 if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" )
-	set(CMAKE_INSTALL_RPATH "${Python3_SITELIB}")
+	set(CMAKE_INSTALL_RPATH "${SP_DIR}")
 else()
-	set(CMAKE_INSTALL_RPATH "${Python3_SITELIB};${EMAN_PREFIX_LIB}")
+	set(CMAKE_INSTALL_RPATH "${SP_DIR};${EMAN_PREFIX_LIB}")
 endif()
 
 option(ENABLE_CATCH2 "Enable Catch 2 framework for unit testing (internal development only)" OFF)

@@ -90,7 +90,7 @@ endif()
 target_link_libraries(EM2 HDF5::HDF5 GSL::gsl GSL::gslcblas)
 
 install(TARGETS EM2
-		DESTINATION ${Python3_SITELIB}
+		DESTINATION ${SP_DIR}
 		)
 
 if(ENABLE_FFTW3)

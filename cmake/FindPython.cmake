@@ -1,17 +1,43 @@
-find_package(Python3 REQUIRED  COMPONENTS Interpreter Development NumPy)
+find_package(PythonInterp REQUIRED)
+find_package(PythonLibs   REQUIRED)
 
-cmake_print_variables(Python3_EXECUTABLE)
-cmake_print_variables(Python3_LIBRARIES)
-cmake_print_variables(Python3_INCLUDE_DIRS)
-cmake_print_variables(Python3_SITELIB)
+set(PYTHON_INCLUDE_PATH ${PYTHON_INCLUDE_DIRS} CACHE PATH "")
+set(PYTHON_LIBRARY      ${PYTHON_LIBRARIES}    CACHE PATH "")
 
-execute_process(COMMAND ${Python3_EXECUTABLE} -c "import sysconfig; print(sysconfig.get_config_var('Py_ENABLE_SHARED'))"
+message("PYTHON_EXECUTABLE:   ${PYTHON_EXECUTABLE}")
+message("PYTHON_LIBRARIES:    ${PYTHON_LIBRARIES}")
+message("PYTHON_INCLUDE_DIRS: ${PYTHON_INCLUDE_DIRS}")
+message("PYTHON_INCLUDE_PATH: ${PYTHON_INCLUDE_PATH}")
+message("PYTHON_INCLUDE_DIR:  ${PYTHON_INCLUDE_DIR}")
+
+# Set SP_DIR
+if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" )
+	set(SP_DIR $ENV{SP_DIR})
+else()
+	if(NOT WIN32)
+		set(py_sp_dir_command "import site; print(site.getsitepackages()[0])")
+	else()
+		set(py_sp_dir_command "import site; print(site.getsitepackages()[1])")
+	endif()
+	execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "${py_sp_dir_command}"
+			OUTPUT_VARIABLE SP_DIR
+			OUTPUT_STRIP_TRAILING_WHITESPACE
+			)
+	message("Python site-packages: ${SP_DIR}")
+endif()
+
+execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import sysconfig; print(sysconfig.get_config_var('Py_ENABLE_SHARED'))"
 				OUTPUT_VARIABLE PYTHON_LIB_SHARED
 				OUTPUT_STRIP_TRAILING_WHITESPACE
 				)
 
 cmake_print_variables(PYTHON_LIB_SHARED)
 cmake_print_variables(CMAKE_CXX_COMPILER_ID)
+
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(Python
+		REQUIRED_VARS PYTHON_EXECUTABLE PYTHON_LIBRARIES PYTHON_INCLUDE_DIR SP_DIR
+		)
 
 # The python interpreter can be linked against shared libpython.so or static libpython.a.
 # When the interpreter (python executable) is linked statically against libpython,
@@ -24,16 +50,17 @@ cmake_print_variables(CMAKE_CXX_COMPILER_ID)
 # https://github.com/conda-forge/boost-feedstock/issues/70#issuecomment-486398688
 # https://github.com/conda-forge/conda-forge.github.io/issues/778
 
-if(Python3_FOUND AND TARGET Python3::Python)
-	set_target_properties(Python3::Python
+if(Python_FOUND AND NOT TARGET Python::Python)
+	add_library(Python::Python INTERFACE IMPORTED)
+	set_target_properties(Python::Python
 			PROPERTIES
-			INTERFACE_INCLUDE_DIRECTORIES ${Python3_INCLUDE_DIRS}
+			INTERFACE_INCLUDE_DIRECTORIES ${PYTHON_INCLUDE_DIRS}
 #			Py_ENABLE_SHARED is None on Windows, so the compiler is checked if it is Microsoft Visual Studio.
-#			Link against shared python library, if the compiler is MSVC
+#			Link against shared python library, if the compiler is MSVC 
 #			or if Py_ENABLE_SHARED is 1 (Python interpreter is not linked statically against libpython).
-			INTERFACE_LINK_LIBRARIES      $<$<OR:$<CXX_COMPILER_ID:MSVC>,$<BOOL:${PYTHON_LIB_SHARED}>>:${Python3_LIBRARIES}>
+			INTERFACE_LINK_LIBRARIES      $<$<OR:$<CXX_COMPILER_ID:MSVC>,$<BOOL:${PYTHON_LIB_SHARED}>>:${PYTHON_LIBRARIES}>
 			)
-	target_link_options(Python3::Python INTERFACE
+	target_link_options(Python::Python INTERFACE
 						#			If the compiler is Clang and if Py_ENABLE_SHARED is 0 (Python interpreter is linked statically against libpython),
 						#			use link options "-undefined dynamic_lookup -flat_namespace" to tell the linker not to look for undefined symbols.
 						#			They will be found at runtime.
