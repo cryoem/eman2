@@ -1208,7 +1208,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		"""Create a new run and run() it"""
 		nm=QtWidgets.QInputDialog.getText(self,"Run Name","Enter a name for the new run. You will still need to run the subsequent steps.")
 		if not nm[1]: return
-		name=str(nm[0])
+		name=str(nm[0]).replace(" ","_")
 		if not self.jsparm.has_key("run_"+name) : self.wlistrun.addItem(name)
 		self.currunkey=name
 		self.saveparm()		# initialize to avoid messed up defaults later
