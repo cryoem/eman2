@@ -30,6 +30,7 @@ pipeline {
         sh 'python ./utils/tag_new_version.py --bump ' + versionBumpOption()
         sleep 60
         build propagate: false, job: 'eman-feedstock-update-version'
+        build propagate: false, job: 'build-binary-trigger'
       }
     }
   }
