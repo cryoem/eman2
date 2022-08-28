@@ -10,7 +10,7 @@ cd $build_dir
 
 cmake --version
 
-CMAKE_ARGS=""
+CMAKE_ARGS="-DPython3_EXECUTABLE=$PYTHON"
 if [[ ${HOST} =~ .*linux.* ]]; then
     CMAKE_ARGS="${CMAKE_ARGS} -DCMAKE_TOOLCHAIN_FILE=${RECIPE_DIR}/cross-linux.cmake -DENABLE_OPTIMIZE_COMPATIBILITY=ON"
 fi
