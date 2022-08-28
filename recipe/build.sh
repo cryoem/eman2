@@ -9,11 +9,13 @@ mkdir -p $build_dir
 cd $build_dir
 
 cmake --version
+
+CMAKE_ARGS=""
 if [[ ${HOST} =~ .*linux.* ]]; then
-    cmake $SRC_DIR -DCMAKE_TOOLCHAIN_FILE="${RECIPE_DIR}/cross-linux.cmake" -DENABLE_OPTIMIZE_COMPATIBILITY=ON
-else
-    cmake $SRC_DIR
+    CMAKE_ARGS="${CMAKE_ARGS} -DCMAKE_TOOLCHAIN_FILE=${RECIPE_DIR}/cross-linux.cmake -DENABLE_OPTIMIZE_COMPATIBILITY=ON"
 fi
+
+cmake $SRC_DIR ${CMAKE_ARGS}
 
 make -j${CPU_COUNT}
 make install
