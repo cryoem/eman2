@@ -1,3 +1,18 @@
+// Can't be called to set pipeline envvars, because depends on CI_BUILD
+def isContinuousBuild() {
+    return (CI_BUILD == "1" && isMasterBranch()) || isReleaseBranch() || JOB_TYPE == "cron"
+}
+
+// Can't be called to set pipeline envvars, because depends on CI_BUILD
+def isExperimentalBuild() {
+    return CI_BUILD == "1" && !(isMasterBranch() || isReleaseBranch())
+}
+
+// Can't be called to set pipeline envvars, because depends on CI_BUILD indirectly
+def isBinaryBuild() {
+    return isContinuousBuild() || isExperimentalBuild()
+}
+
 def versionBumpOption() {
     if (CI_BUILD == "1" || EMAN_BUMP_PATCH == "1") return "patch"
     else if (EMAN_BUMP_MINOR == "1")               return "minor"
