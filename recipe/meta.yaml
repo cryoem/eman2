@@ -18,7 +18,8 @@ requirements:
     host:
         - eman-deps         {{ environ.get('EMAN_DEPS_VERSION', '') }}
         - libglu                          # [linux]
-    
+        - python            3.9
+
 test:
   requires:
     - eman-deps     {{ environ.get('EMAN_DEPS_VERSION', '') }}

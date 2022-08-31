@@ -1,3 +1,5 @@
+set(Python3_FIND_VIRTUALENV ONLY)
+
 find_package(Python3 REQUIRED  COMPONENTS Interpreter Development NumPy)
 
 cmake_print_variables(Python3_EXECUTABLE)

@@ -10,6 +10,7 @@ set CL=/MP
 
 cmake --version
 cmake "%SRC_DIR%" -G "NMake Makefiles" ^
+                    -DPython3_EXECUTABLE="%PYTHON%" ^
                     -DCMAKE_BUILD_TYPE=Release    ^
                     -DENABLE_WARNINGS=OFF ^
                     -DENABLE_OPTIMIZE_WINDOWS_VC=ON
