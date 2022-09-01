@@ -419,7 +419,7 @@ class SptAlignTask(JSTask):
 							simplex=np.vstack([[0,0,0,0,0,0], np.eye(6)])
 							simplex[4:]*=astep
 							
-							res=minimize(testxf, x0,  method='Nelder-Mead', options={'ftol': 1e-3, 'disp': False, "maxiter":50,"initial_simplex":simplex+x0})
+							res=minimize(testxf, x0,  method='Nelder-Mead', options={'disp': False, "maxiter":50,"initial_simplex":simplex+x0})
 							
 							x=res.x
 							s=float(res.fun)
