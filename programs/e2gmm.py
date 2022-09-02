@@ -616,6 +616,23 @@ class EMGMM(QtWidgets.QMainWindow):
 			else:
 				print(f"Thread {ret[0]} at {ret[1]}%")
 
+	def update_maptable(self):
+		"""Updates the table containing all of the current computed dynamic maps"""
+		if self.maplist==None:
+			self.maplist=QTableWidget()
+			self.maplist.setHorizontalHeaderLabels(["#","Ptcl","Coord","Datestamp"])
+
+		for i,m in enumerate(self.curmaps):
+			self.maplist.
+			try:
+				if self.plotmode==1:
+					xm=self.decomp.transform(m[2].reshape(1,len(m[2])))[0]	# expects an array of vectors
+					c=Circle((xm[xa],xm[ya]),m[4],edgecolor="gold",facecolor="none")
+				else:
+					c=Circle((m[2][xa],m[2][ya]),m[4],edgecolor="gold",facecolor="none")
+				ax.add_artist(c)
+
+
 	def display_dynamic(self,vol):
 		"""Displays a new dynamic map, used multiple places so condensed here"""
 		if self.dmapdataitem is None:
