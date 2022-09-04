@@ -204,6 +204,12 @@ def make3d_thr_fast(que,tskn,fsp,imgns,rparms,latent,currun,rad,mmode,ptclsclip=
 			
 	que.put((tskn,100,ret,latent,imgns,currun,rad,rete,reto,mmode))
 
+def numrng(f):
+	if f==0: return "-"
+	f=max(min(1.0,f),-1.0)
+	return chr(48+int((f+1.0)/2.01))
+
+
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options]
@@ -264,6 +270,9 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		self.setWindowTitle("Main Window (e2gmm.py)")
 		self.plotmode=0
+
+		# created later when needed
+		self.maplist=None
 
 		# Menu Bar
 		#self.mfile=self.menuBar().addMenu("File")
@@ -555,6 +564,23 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.timer.timeout.connect(self.timeout)
 		self.timer.start(1000)
 
+	def closeEvent(self,event):
+		E2saveappwin("e2gmm","main",self)
+
+		if not self.maplist is None:
+			E2saveappwin("e2gmm","maps",self.maplist)
+			self.maplist.close()
+			self.maplist = None
+
+		#if self.guiim != None:
+			#E2saveappwin("e2ctf","image",self.guiim.qt_parent)
+			#self.app().close_specific(self.guiim)
+			#self.guiim = None
+
+		event.accept()
+		self.app().close_specific(self)
+		self.module_closed.emit() # this signal is important when e2ctf is being used by a program running its own event loop\
+
 	def do_events(self,delay=0.1):
 		"""process the event loop with a small delay to allow user abort, etc."""
 		t=time.time()
@@ -602,6 +628,9 @@ class EMGMM(QtWidgets.QMainWindow):
 					maps[self.currunkey]=[newmap]
 				self.jsparm["maps"]=maps
 				self.curmaps=maps[self.currunkey]
+				self.curmaps_sel=self.curmaps
+				self.update_maptable()
+
 				
 				# display the map
 				self.display_dynamic(vol)
@@ -618,19 +647,54 @@ class EMGMM(QtWidgets.QMainWindow):
 
 	def update_maptable(self):
 		"""Updates the table containing all of the current computed dynamic maps"""
-		if self.maplist==None:
-			self.maplist=QTableWidget()
-			self.maplist.setHorizontalHeaderLabels(["#","Ptcl","Coord","Datestamp"])
+		if self.maplist is None:
+			self.maplist=QtWidgets.QTableWidget()
+			self.maplist.setColumnCount(5)
+			self.maplist.itemSelectionChanged.connect(self.sel_maptable)
+			self.maplist.verticalHeader().hide()
 
+		if self.curmaps is None or len(self.curmaps)==0 :
+			self.maplist.hide()
+
+
+		self.maplist.clear()
+		self.maplist.setHorizontalHeaderLabels(["#","Ptcl","Coord","Rad","Datestamp"])
+		self.maplist.setRowCount(len(self.curmaps))
 		for i,m in enumerate(self.curmaps):
-			self.maplist.
-			try:
-				if self.plotmode==1:
-					xm=self.decomp.transform(m[2].reshape(1,len(m[2])))[0]	# expects an array of vectors
-					c=Circle((xm[xa],xm[ya]),m[4],edgecolor="gold",facecolor="none")
-				else:
-					c=Circle((m[2][xa],m[2][ya]),m[4],edgecolor="gold",facecolor="none")
-				ax.add_artist(c)
+			cstr="".join([numrng(v) for v in m[2]])
+
+			twi=QtWidgets.QTableWidgetItem(f"{i}")
+			twi.setFlags(Qt.ItemIsSelectable|Qt.ItemIsEnabled)
+			self.maplist.setItem(i,0,twi)
+
+			twi=QtWidgets.QTableWidgetItem(f"{m[3]}")
+			twi.setFlags(Qt.ItemIsEnabled)
+			self.maplist.setItem(i,1,twi)
+
+			twi=QtWidgets.QTableWidgetItem(cstr)
+			twi.setFlags(Qt.ItemIsEnabled)
+			self.maplist.setItem(i,2,twi)
+
+			twi=QtWidgets.QTableWidgetItem(f"{m[4]}")
+			twi.setFlags(Qt.ItemIsEnabled)
+			self.maplist.setItem(i,3,twi)
+
+			twi=QtWidgets.QTableWidgetItem(f"{m[1]}")
+			twi.setFlags(Qt.ItemIsEnabled)
+#			twi.setFlags(Qt.NoItemFlags)
+			self.maplist.setItem(i,4,twi)
+
+		self.maplist.resizeColumnsToContents()
+		self.maplist.show()
+		self.curmaps_sel=[]
+
+	def sel_maptable(self):
+		"""When items are selected in the list of generated maps"""
+		self.curmaps_sel=[]
+		for i in self.maplist.selectedItems(): self.curmaps_sel.append(self.curmaps[i.row()])
+
+		self.wplot2d.full_refresh()
+		self.wplot2d.updateGL()
 
 
 	def display_dynamic(self,vol):
@@ -703,7 +767,7 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		# Check whether we are close enough to a computed dynamic map to display it
 		best=(1.0e6,None)
-		for m in self.curmaps:
+		for m in self.curmaps_sel:
 			if self.plotmode==1:
 				xm=self.decomp.transform(m[2].reshape(1,len(m[2])))[0]	# expects an array of vectors
 				c=(xm[xcol],xm[ycol])
@@ -968,7 +1032,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		"""This is called as a callback during rendering of the 2-D plot"""
 		xa=self.wsbxcol.value()
 		ya=self.wsbycol.value()
-		for i,m in enumerate(self.curmaps):
+		for i,m in enumerate(self.curmaps_sel):
 			try:
 				if self.plotmode==1:
 					xm=self.decomp.transform(m[2].reshape(1,len(m[2])))[0]	# expects an array of vectors
@@ -1495,9 +1559,12 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		# list of all computed dynamic maps for this run
 		allmaps=self.jsparm.getdefault("maps",{})
-		try: self.curmaps=allmaps[self.currunkey]
+		try:
+				self.curmaps=allmaps[self.currunkey]
+				self.curmaps_sel=self.curmaps
 		except: self.curmaps=[]
 		for m in self.curmaps: m[2]=np.array(m[2])
+		self.update_maptable()
 		
 		# Middle layer for every particle
 		self.wplot2d.del_shapes()
