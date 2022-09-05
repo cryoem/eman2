@@ -391,17 +391,17 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wedtrainiter.setToolTip("Training iterations (10-20 typical)")
 		self.gflparm.addRow("Train iter:",self.wedtrainiter)
 
-		self.wedtrainmodelreg = QtWidgets.QLineEdit("0.5")
+		self.wedtrainmodelreg = QtWidgets.QLineEdit("0.0")
 		self.wedtrainmodelreg.setToolTip("Model regularlizer, biases Gaussians towards initial model. Larger -> stronger bias ")
 		self.gflparm.addRow("Model Reg:",self.wedtrainmodelreg)
 
-		self.wedtrainperturb = QtWidgets.QLineEdit("0.1")
+		self.wedtrainperturb = QtWidgets.QLineEdit("0.05")
 		self.wedtrainperturb.setToolTip("Per-iteration model perturbation during training. Larger -> possibly faster training, but more 'churn'")
 		self.gflparm.addRow("Model Perturb:",self.wedtrainperturb)
 
 		self.wbutconv = QtWidgets.QPushButton("Convolutional")
 		self.wbutconv.setCheckable(True)
-		self.wbutconv.setChecked(True)
+		self.wbutconv.setChecked(False)
 		self.wbutconv.setToolTip("Use a convolutional neural network structure instead of a conventional network structure")
 		self.gflparm.addRow(" ",self.wbutconv)
 		

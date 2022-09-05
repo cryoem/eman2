@@ -165,7 +165,7 @@ def main():
 			maxboxsz=options.maxboxsz=good_size(ceil(raw_boxsz*raw_apix*2/options.maxres)//2*2)
 			print("using box size {}, max resolution {:.1f}".format(maxboxsz, options.maxres))
 
-		data_cpx, xfsnp = load_particles(options.projs, maxboxsz, shuffle=True,preclip=options.ptclsclip)
+		data_cpx, xfsnp, grpdct = load_particles(options.projs, maxboxsz, shuffle=True,preclip=options.ptclsclip)
 		apix=raw_apix*raw_boxsz/maxboxsz
 		clipid=set_indices_boxsz(data_cpx[0].shape[1], apix, True)
 
@@ -223,7 +223,7 @@ def main():
 			maxboxsz=options.maxboxsz=good_size(ceil(raw_boxsz*raw_apix*2/options.maxres)//2*2)
 			print("using box size {}, max resolution {:.1f}".format(maxboxsz, options.maxres))
 
-		data_cpx, xfsnp = load_particles(options.ptclsin,maxboxsz,shuffle=False,preclip=options.ptclsclip)
+		data_cpx, xfsnp, grpdct = load_particles(options.ptclsin,maxboxsz,shuffle=False,preclip=options.ptclsclip)
 		apix=raw_apix*raw_boxsz/maxboxsz
 		clipid=set_indices_boxsz(data_cpx[0].shape[1], apix, True)
 
@@ -288,6 +288,12 @@ def main():
 				ag.write_image(options.gradout)
 				del ag
 				allgrds=allgrds.reshape((len(allgrds), npt, 4))
+
+		#### For tomographic data we sum the gradients over a 3-D particle, so all 2-D tilts have the same gradient
+		if not grpdct is None:
+			for k in grpdct.keys():
+				# replaces the gradient for each 2D particle with the average gradient over all tilts in a 3D particle
+				allgrds[grpdct[k]]=np.add.reduce(allgrds[grpdct[k]])/len(grpdct[k])
 
 		#### build deep networks and make sure they work
 		if options.encoderin:
@@ -572,19 +578,29 @@ def load_particles(fname, boxsz, shuffle=False, preclip=-1):
 		random.shuffle(rndidx)
 		projs=projs[rndidx]
 		hdrs=[hdrs[i] for i in rndidx]
+
+	# for tomographic data we need to collect info on "grouping" of 2D particles into 3D particles
+	# grpdct is keyed by 3D particle number and has a list of 2D partcile numbers (even after shuffling)
+	if "ptcl3d_id" in hdrs[0]:
+		grpdct={}
+		for i,h in enumerate(hdrs):
+			try: grpdct[h["ptcl3d_id"]].append(i)
+			except: grpdct[h["ptcl3d_id"]]=[i]
+		print(f"identified {len(grpdct)} 3-D particles, merging gradients over each 3-D particle")
+	else: grpdct=None
 		
 	data_cpx=np.fft.rfft2(projs)
 	data_cpx=(data_cpx.real.astype(floattype), data_cpx.imag.astype(floattype))
 
 	xflst=False
-	if fname.endswith(".lst"):
+	if fname.endswith(".lst"):		# "old style" LST files?
 		info=load_lst_params(fname)
 		if "xform.projection" in info[0]:
 			xflst=True
 			xfs=[p["xform.projection"].get_params("eman") for p in info]
 			if shuffle:
 				xfs=[xfs[i] for i in rndidx]
-			
+
 	if xflst==False and ("xform.projection" in hdrs[0]):
 		xflst=True
 		xfs=[p["xform.projection"].get_params("eman") for p in hdrs]
@@ -598,7 +614,7 @@ def load_particles(fname, boxsz, shuffle=False, preclip=-1):
 	xfsnp[:,3:]/=float(rawbox)
 	
 	print("Data read complete")
-	return data_cpx,xfsnp
+	return data_cpx,xfsnp,grpdct
 	
 #### do fourier clipping in numpy then export to tf to save memory...
 def get_clip(datacpx, newsz, clipid):
