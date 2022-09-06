@@ -1235,7 +1235,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		except: pass
 		lsx=LSXFile(f"{self.gmm}/particles.lst",True)
 		lsxs=LSXFile(f"{self.gmm}/particles_subset.lst")
-		step=max(len(lsx)//5000,1)
+		step=max(len(lsx)//10000,1)		# no more than ~10k particles in initial training
 		for i in range(0,len(lsx),step):
 			lsxs.write(-1,*lsx.read(i))
 		print(f"Subset of {len(lsxs)} particles extracted to train neutral model")
@@ -1327,20 +1327,6 @@ class EMGMM(QtWidgets.QMainWindow):
 			run(f"e2proclst.py {self.gmm}/particles.lst --split 10 --create {self.gmm}/sptcl.lst")
 		nchunk=len(LSXFile(f"{self.gmm}/sptcl_0.lst"))
 		
-		## if positions and amplitudes being updated, we start with positions only, accomodate as much as we can, then shift to both
-		#if self.currun['pas'][0]=="1" and self.currun['pas'][1]=="1":
-			#er=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']//2} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas 100 --ndense -1")
-			#if er :
-				#showerror("Error running e2gmm_refine, see console for details. Memory is a common issue. Consider reducing the target resolution.")
-				#return
-			#prog.setValue(1)
-			#er=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']//2}  {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")
-			#if er :
-				#showerror("Error running e2gmm_refine, see console for details. Memory is a common issue. Consider reducing the target resolution.")
-				#return
-		## otherwise we just do it in one step
-		#else:
-
 		# if targeting high resolution, we start with 5 iterations at 25 A first
 		try: os.unlink(encoder)
 		except: pass
@@ -1351,9 +1337,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			if er :
 				showerror("Error running e2gmm_refine, see console for details. Memory is a common issue. Consider reducing the target resolution.")
 				return
-		#if self.currun['pas'][0]=="1" and self.currun['pas'][1]=="1":
-			#er=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']//2} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas 100 --ndense -1")
-			#er=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']//2} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")		
+
 		if os.path.exists(encoder): encin=f"--encoderin {encoder}"
 		else: encin=""
 		if nchunk<4000:
@@ -1423,15 +1407,14 @@ class EMGMM(QtWidgets.QMainWindow):
 		else: conv=""
 		
 		# if targeting high resolution, we start with 10 iterations at 25 A first
-		if maxbox25<maxbox:
-#			er=run(f"e2gmm_refine_new.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox25} --niter 10 {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")
+		if 0:
+#		if maxbox25<maxbox:
 			er=run(f"e2gmm_refine_point.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox25} --niter 10 {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1 --ptclsclip {self.jsparm['boxsize']}")
 			if er :
 				showerror("Error running e2gmm_refine, see console for details. Memory is a common issue. Consider reducing the target resolution.")
 				return
-		#if self.currun['pas'][0]=="1" and self.currun['pas'][1]=="1":
-			#er=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']//2} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas 100 --ndense -1")
-			#er=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']//2} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")		
+
+
 		er=run(f"e2gmm_refine_point.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1 --ptclsclip {self.jsparm['boxsize']}")
 #		er=run(f"e2gmm_refine_new.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")
 		if er :

@@ -223,7 +223,7 @@ def main():
 			maxboxsz=options.maxboxsz=good_size(ceil(raw_boxsz*raw_apix*2/options.maxres)//2*2)
 			print("using box size {}, max resolution {:.1f}".format(maxboxsz, options.maxres))
 
-		data_cpx, xfsnp, grpdct = load_particles(options.ptclsin,maxboxsz,shuffle=False,preclip=options.ptclsclip)
+		data_cpx, xfsnp, grpdct = load_particles(options.ptclsin,maxboxsz,shuffle=True,preclip=options.ptclsclip)
 		apix=raw_apix*raw_boxsz/maxboxsz
 		clipid=set_indices_boxsz(data_cpx[0].shape[1], apix, True)
 
@@ -774,7 +774,7 @@ def train_decoder(gen_model, trainset, params, options, pts=None):
 			pj_cpx=(pjr,pji)
 			with tf.GradientTape() as gt:
 				# training entropy into the decoder by training individual particles towards random points in latent space
-				if options.decoderentropy: conf=tf.random.normal((xf.shape[0],options.nmid),stddev=0.1)
+				if options.decoderentropy: conf=tf.random.normal((xf.shape[0],options.nmid),stddev=0.2)
 				# normal behavior, training the neutral map to a latent vector of 0
 				else: conf=tf.zeros((xf.shape[0],options.nmid), dtype=floattype)
 				pout=gen_model(conf)
@@ -1049,7 +1049,7 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, options):
 				## similar to the variational autoencoder,
 				## but we do not train the sigma of the random value here
 				## since we control the radius of latent space already, this seems enough
-				conf=options.perturb*tf.random.normal(conf.shape)+conf		# 0.1 is a pretty big perturbation for this range, maybe responsible for the random churn in the models? --steve
+				conf=(options.perturb*2.0/(itr+2.0))*tf.random.normal(conf.shape)+conf		# perturbation is reduced each iteration
 #				conf=.1*tf.random.normal(conf.shape)+conf
 				
 				## mask out the target columns based on --pas
