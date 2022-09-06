@@ -293,7 +293,7 @@ def main():
 		if not grpdct is None:
 			for k in grpdct.keys():
 				# replaces the gradient for each 2D particle with the average gradient over all tilts in a 3D particle
-				allgrds[grpdct[k]]=np.add.reduce(allgrds[grpdct[k]])/len(grpdct[k])
+				allgrds[grpdct[k]]=np.add.reduce(allgrds[grpdct[k]])*(10.0/len(grpdct[k]))	# 10 aribtrary value for test
 
 		#### build deep networks and make sure they work
 		if options.encoderin:
@@ -663,15 +663,16 @@ def set_indices_boxsz(boxsz, apix=0, return_freq=False):
 def build_encoder(ninp,nmid):
 	l2=tf.keras.regularizers.l2(1e-3)
 	l1=tf.keras.regularizers.l1(1e-3)
-	kinit=tf.keras.initializers.RandomNormal(0,0.001)	# was 0.01
-	
+	binit=tf.keras.initializers.RandomNormal(0,1e-2)
+	kinit=tf.keras.initializers.HeNormal()
+
 	print(f"Encoder {max(ninp//2,nmid)} {max(ninp//8,nmid)} {max(ninp//32,nmid)}")
 	layers=[
 	tf.keras.layers.Flatten(),
-	tf.keras.layers.Dense(max(ninp//2,nmid*2), activation="relu", kernel_regularizer=l2,use_bias=True,bias_initializer=kinit),
+	tf.keras.layers.Dense(max(ninp//2,nmid*8), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True,bias_initializer=binit),
 	tf.keras.layers.Dropout(.3),
-	tf.keras.layers.Dense(max(ninp//8,nmid*2), activation="relu", kernel_regularizer=l2,use_bias=True),
-	tf.keras.layers.Dense(max(ninp//32,nmid*2), activation="relu", kernel_regularizer=l2,use_bias=True),
+	tf.keras.layers.Dense(max(ninp//8,nmid*4), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True),
+	tf.keras.layers.Dense(max(ninp//32,nmid*2), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True),
 	#tf.keras.layers.Dense(max(ninp//2,nmid*2), activation="tanh", kernel_regularizer=l1,use_bias=True,bias_initializer=kinit),
 	#tf.keras.layers.Dropout(.3),
 	#tf.keras.layers.Dense(max(ninp//8,nmid*2), activation="tanh", kernel_regularizer=l1,use_bias=True),
@@ -713,20 +714,21 @@ def build_decoder(nmid, pt,segs ):
 
 	x0=tf.keras.Input(shape=(nmid))
 	
-	kinit=tf.keras.initializers.RandomNormal(0,1e-2)
+	binit=tf.keras.initializers.RandomNormal(0,1e-2)
+	kinit=tf.keras.initializers.HeNormal()
 	l2=tf.keras.regularizers.l2(1e-3)
 	l1=tf.keras.regularizers.l1(1e-3)
 #	layer_output=tf.keras.layers.Dense(nout*4, kernel_initializer=kinit, activation="sigmoid",use_bias=True,kernel_constraint=Localize4())
-	layer_output=tf.keras.layers.Dense(nout*4, kernel_initializer=kinit, activation="sigmoid",use_bias=True)
+	layer_output=tf.keras.layers.Dense(nout*4, kernel_initializer=binit, activation="sigmoid",use_bias=True)
 
 	print(f"Decoder {max(nout//32,nmid)} {max(nout//8,nmid)} {max(nout//2,nmid)}")
 	layers=[
 		#tf.keras.layers.Dense(nmid*2,activation="relu",use_bias=True,bias_initializer=kinit,kernel_constraint=Localize1()),
 		#tf.keras.layers.Dense(nmid*4,activation="relu",use_bias=True,kernel_constraint=Localize2()),
 		#tf.keras.layers.Dense(nmid*8,activation="relu",use_bias=True,kernel_constraint=Localize3()),
-		tf.keras.layers.Dense(nmid*2,activation="relu",use_bias=True,bias_initializer=kinit),
-		tf.keras.layers.Dense(nmid*4,activation="relu",use_bias=True),
-		tf.keras.layers.Dense(nmid*8,activation="relu",use_bias=True),
+		tf.keras.layers.Dense(nmid*2,activation="relu",kernel_initializer=kinit,use_bias=True,bias_initializer=binit),
+		tf.keras.layers.Dense(nmid*4,activation="relu",kernel_initializer=kinit,use_bias=True),
+		tf.keras.layers.Dense(nmid*8,activation="relu",kernel_initializer=kinit,use_bias=True),
 		tf.keras.layers.Dropout(.3),
 		tf.keras.layers.BatchNormalization(),
 		layer_output,
