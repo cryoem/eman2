@@ -776,7 +776,8 @@ def train_decoder(gen_model, trainset, params, options, pts=None):
 			pj_cpx=(pjr,pji)
 			with tf.GradientTape() as gt:
 				# training entropy into the decoder by training individual particles towards random points in latent space
-				if options.decoderentropy: conf=tf.random.normal((xf.shape[0],options.nmid),stddev=0.2)
+#				if options.decoderentropy: conf=tf.random.normal((xf.shape[0],options.nmid),stddev=0.2)
+				if options.decoderentropy: conf=tf.random.uniform((xf.shape[0],options.nmid),minval=-0.5, maxval=0.5)
 				# normal behavior, training the neutral map to a latent vector of 0
 				else: conf=tf.zeros((xf.shape[0],options.nmid), dtype=floattype)
 				pout=gen_model(conf)
