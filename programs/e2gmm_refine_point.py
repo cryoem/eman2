@@ -777,10 +777,12 @@ def train_decoder(gen_model, trainset, params, options, pts=None):
 			with tf.GradientTape() as gt:
 				# training entropy into the decoder by training individual particles towards random points in latent space
 #				if options.decoderentropy: conf=tf.random.normal((xf.shape[0],options.nmid),stddev=0.2)
-				if options.decoderentropy: conf=tf.random.uniform((xf.shape[0],options.nmid),minval=-0.5, maxval=0.5)
+				if options.decoderentropy: conf=tf.random.uniform((xf.shape[0],options.nmid),minval=-0.3, maxval=0.3)
 				# normal behavior, training the neutral map to a latent vector of 0
 				else: conf=tf.zeros((xf.shape[0],options.nmid), dtype=floattype)
-				pout=gen_model(conf)
+
+				if options.decoderentropy: pout=gen_model(conf+tf.random.uniform((conf.shape[0],conf.shape[1]),minval=-0.1, maxval=0.1))
+				else: pout=gen_model(conf)
 				std=tf.reduce_mean(tf.math.reduce_std(pout, axis=1), axis=0)
 				imgs_cpx=pts2img(pout, xf, params, sym=options.sym)
 				fval=calc_frc(pj_cpx, imgs_cpx, params["rings"])
