@@ -1012,7 +1012,20 @@ def main():
 						out_mode = file_mode_map[options.outmode]
 						not_swap = not(options.swap)
 
-						if options.threed2threed or options.twod2threed:    # output a single 3D image
+						if options.unstacking:	# output a series numbered single image files
+							out_name = os.path.splitext(outfile)[0]+'-'+str(i+1).zfill(len(str(nimg)))+os.path.splitext(outfile)[-1]
+							if d["sigma"] == 0:
+								if options.verbose > 0:
+									print("Warning: sigma = 0 for image ",i)
+
+								if options.writejunk == False:
+									if options.verbose > 0:
+										print("Use the writejunk option to force writing this image to disk")
+									continue
+
+							d.write_image(out_name, 0, out_type, False, None, out_mode, not_swap)
+
+						elif options.threed2threed or options.twod2threed:    # output a single 3D image
 							#shift = 0
 
 							if dummy == 0:	# The "dummy" volume, as termed by Grant, only needs to be created once
@@ -1073,19 +1086,6 @@ def main():
 								region = Region(0, 0, i, d.get_xsize(), d.get_ysize(), 1)
 
 							d.write_image(outfile, 0, out_type, False, region, out_mode, not_swap)
-
-						elif options.unstacking:	# output a series numbered single image files
-							out_name = os.path.splitext(outfile)[0]+'-'+str(i+1).zfill(len(str(nimg)))+os.path.splitext(outfile)[-1]
-							if d["sigma"] == 0:
-								if options.verbose > 0:
-									print("Warning: sigma = 0 for image ",i)
-
-								if options.writejunk == False:
-									if options.verbose > 0:
-										print("Use the writejunk option to force writing this image to disk")
-									continue
-
-							d.write_image(out_name, 0, out_type, False, None, out_mode, not_swap)
 
 						else:   # output a single 2D image or a 2D stack
 							# optionally replace the output image with its rotational average
