@@ -260,7 +260,7 @@ def main():
 	#### Heterogeneity analysis from particles
 	bsz=options.batchsz
 	if options.ptclsin and options.heter:
-		pts=tf.constant(pts[None,:,:])
+		#pts=tf.constant(pts[None,:,:])
 		params=set_indices_boxsz(maxboxsz)
 		dcpx=get_clip(data_cpx, params["sz"], clipid)
 
@@ -992,6 +992,7 @@ def save_ptcls_xform(xfsnp, boxsz, options, scr):
 	
 def calc_gqual(trainset, pts, params, options):
 	"""Instead of per gaussian variable gradient, try computing the per gaussian quality in neutral conformation"""
+	print(trainset,pts.shape,params,options)
 	allptqual=[]
 	allscr=[]
 	
