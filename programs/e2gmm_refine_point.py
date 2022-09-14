@@ -278,17 +278,17 @@ def main():
 		else:
 			trainset=tf.data.Dataset.from_tensor_slices((dcpx[0], dcpx[1], xfsnp))
 			trainset=trainset.batch(bsz)
-			allscr, allgrds=calc_gradient(trainset, pts, params, options )
-#			allscr, allgrds=calc_gqual(trainset, pts, params, options )
+#			allscr, allgrds=calc_gradient(trainset, pts, params, options )
+			allscr, allgrds=calc_gqual(trainset, pts, params, options )
 
 			## save to hdf file
 			if options.gradout:
-				allgrds=allgrds.reshape((len(allgrds),-1))
+				#allgrds=allgrds.reshape((len(allgrds),-1))
 				print("Gradient shape: ", allgrds.shape)
 				ag=from_numpy(np.hstack([allscr[:,None], allgrds]))
 				ag.write_image(options.gradout)
 				del ag
-				allgrds=allgrds.reshape((len(allgrds), npt, 4))
+				#allgrds=allgrds.reshape((len(allgrds), npt, 4))
 
 		#### For tomographic data we sum the gradients over a 3-D particle, so all 2-D tilts have the same gradient
 		if not grpdct is None:
