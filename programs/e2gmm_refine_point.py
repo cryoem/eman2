@@ -223,7 +223,7 @@ def main():
 			maxboxsz=options.maxboxsz=good_size(ceil(raw_boxsz*raw_apix*2/options.maxres)//2*2)
 			print("using box size {}, max resolution {:.1f}".format(maxboxsz, options.maxres))
 
-		data_cpx, xfsnp, grpdct = load_particles(options.ptclsin,maxboxsz,shuffle=True,preclip=options.ptclsclip)
+		data_cpx, xfsnp, grpdct = load_particles(options.ptclsin,maxboxsz,shuffle=False,preclip=options.ptclsclip)
 		apix=raw_apix*raw_boxsz/maxboxsz
 		clipid=set_indices_boxsz(data_cpx[0].shape[1], apix, True)
 
@@ -279,6 +279,7 @@ def main():
 			trainset=tf.data.Dataset.from_tensor_slices((dcpx[0], dcpx[1], xfsnp))
 			trainset=trainset.batch(bsz)
 			allscr, allgrds=calc_gradient(trainset, pts, params, options )
+#			allscr, allgrds=calc_gqual(trainset, pts, params, options )
 
 			## save to hdf file
 			if options.gradout:
@@ -777,11 +778,11 @@ def train_decoder(gen_model, trainset, params, options, pts=None):
 			with tf.GradientTape() as gt:
 				# training entropy into the decoder by training individual particles towards random points in latent space
 #				if options.decoderentropy: conf=tf.random.normal((xf.shape[0],options.nmid),stddev=0.2)
-				if options.decoderentropy: conf=tf.random.uniform((xf.shape[0],options.nmid),minval=-0.01, maxval=0.01)
+				if options.decoderentropy: conf=tf.random.uniform((xf.shape[0],options.nmid),minval=-0.02, maxval=0.02)
 				# normal behavior, training the neutral map to a latent vector of 0
 				else: conf=tf.zeros((xf.shape[0],options.nmid), dtype=floattype)
 
-				if options.decoderentropy: pout=gen_model(conf+tf.random.uniform((conf.shape[0],conf.shape[1]),minval=-0.01, maxval=0.01))
+				if options.decoderentropy: pout=gen_model(conf+tf.random.uniform((conf.shape[0],conf.shape[1]),minval=-0.02, maxval=0.02))
 				else: pout=gen_model(conf)
 				std=tf.reduce_mean(tf.math.reduce_std(pout, axis=1), axis=0)
 				imgs_cpx=pts2img(pout, xf, params, sym=options.sym)
@@ -989,20 +990,48 @@ def save_ptcls_xform(xfsnp, boxsz, options, scr):
 	lst=None
 	lst0=None
 	
+def calc_gqual(trainset, pts, params, options):
+	"""Instead of per gaussian variable gradient, try computing the per gaussian quality in neutral conformation"""
+	allptqual=[]
+	allscr=[]
+	
+	for pjr,pji,xf in trainset:
+		pt=tf.Variable(pts)
+		fval=np.zeros((xf.shape[0],pt.shape[0])) # batch size, # points
+		pj_cpx=(pjr, pji)
+		imgs_cpx=pts2img(pt, xf, params, sym=options.sym)
+		# FSC for full point projections
+		base=calc_frc(pj_cpx, imgs_cpx, params["rings"])
+		allscr.append(base)
+
+		# FSC for omit-1 point projections
+		for k in range(pt.shape[0]):
+			ptt=tf.Variable(np.delete(pts,k,0))
+			imgs_cpx=pts2img(ptt, xf, params, sym=options.sym)
+			fval[:,k]=base-calc_frc(pj_cpx, imgs_cpx, params["rings"])
+
+		allptqual.append(fval)
+		
+	allptqual=np.concatenate(allptqual, axis=0)
+	allscr=np.concatenate(allscr, axis=0)
+	#allptqual=allptqual/np.std(allptqual)
+	print(" mean score: {:.3f}".format(np.mean(allscr)))
+	return allscr, allptqual
+
 def calc_gradient(trainset, pts, params, options):
 	allgrds=[]
 	allscr=[]
 	nbatch=0
 	for t in trainset: nbatch+=1
-	
+
 	for pjr,pji,xf in trainset:
 		pj_cpx=(pjr, pji)
 		with tf.GradientTape() as gt:
 			pt=tf.Variable(tf.repeat(pts, xf.shape[0], axis=0))
-			
+
 			imgs_cpx=pts2img(pt, xf, params, sym=options.sym)
 			fval=calc_frc(pj_cpx, imgs_cpx, params["rings"])
-			
+
 			loss=-tf.reduce_mean(fval)
 
 		grad=gt.gradient(loss, pt)
@@ -1010,14 +1039,14 @@ def calc_gradient(trainset, pts, params, options):
 		allscr.append(fval.numpy().copy())
 		sys.stdout.write("\r {}/{} : {:.4f}        ".format(len(allscr), nbatch, np.mean(fval)))
 		sys.stdout.flush()
-		
-		
+
+
 	allgrds=np.concatenate(allgrds, axis=0)
 	allscr=np.concatenate(allscr, axis=0)
 	allgrds=allgrds/np.std(allgrds)
 	print(" mean score: {:.3f}".format(np.mean(allscr)))
 	return allscr, allgrds
-	
+
 #### train the conformation manifold from particles
 def train_heterg(trainset, pts, encode_model, decode_model, params, options):
 	npt=pts.shape[1]
