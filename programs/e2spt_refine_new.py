@@ -349,7 +349,10 @@ def gather_metadata(pfile, maxtilt=-1):
 		img=EMData(pm[0], pm[1], True)
 		imgsrc=img["class_ptcl_src"]
 		imgidx=img["class_ptcl_idxs"]
-		coord=img["ptcl_source_coord"]
+		if img.has_attr("ptcl_source_coord"):
+			coord=img["ptcl_source_coord"]
+		else:
+			coord=[0,0,0]
 		
 		if imgsrc.endswith(".lst"):
 			rhdrs=[EMData(imgsrc, i, True) for i in imgidx]
