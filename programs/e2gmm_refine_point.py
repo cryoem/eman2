@@ -165,7 +165,7 @@ def main():
 			maxboxsz=options.maxboxsz=good_size(ceil(raw_boxsz*raw_apix*2/options.maxres)//2*2)
 			print("using box size {}, max resolution {:.1f}".format(maxboxsz, options.maxres))
 
-		data_cpx, xfsnp = load_particles(options.projs, maxboxsz, shuffle=True,preclip=options.ptclsclip)
+		data_cpx, xfsnp, grpdct = load_particles(options.projs, maxboxsz, shuffle=True,preclip=options.ptclsclip)
 		apix=raw_apix*raw_boxsz/maxboxsz
 		clipid=set_indices_boxsz(data_cpx[0].shape[1], apix, True)
 
@@ -223,7 +223,7 @@ def main():
 			maxboxsz=options.maxboxsz=good_size(ceil(raw_boxsz*raw_apix*2/options.maxres)//2*2)
 			print("using box size {}, max resolution {:.1f}".format(maxboxsz, options.maxres))
 
-		data_cpx, xfsnp = load_particles(options.ptclsin,maxboxsz,shuffle=False,preclip=options.ptclsclip)
+		data_cpx, xfsnp, grpdct = load_particles(options.ptclsin,maxboxsz,shuffle=False,preclip=options.ptclsclip)
 		apix=raw_apix*raw_boxsz/maxboxsz
 		clipid=set_indices_boxsz(data_cpx[0].shape[1], apix, True)
 
@@ -279,6 +279,7 @@ def main():
 			trainset=tf.data.Dataset.from_tensor_slices((dcpx[0], dcpx[1], xfsnp))
 			trainset=trainset.batch(bsz)
 			allscr, allgrds=calc_gradient(trainset, pts, params, options )
+#			allscr, allgrds=calc_gqual(trainset, pts, params, options )
 
 			## save to hdf file
 			if options.gradout:
@@ -288,6 +289,12 @@ def main():
 				ag.write_image(options.gradout)
 				del ag
 				allgrds=allgrds.reshape((len(allgrds), npt, 4))
+
+		#### For tomographic data we sum the gradients over a 3-D particle, so all 2-D tilts have the same gradient
+		if not grpdct is None:
+			for k in grpdct.keys():
+				# replaces the gradient for each 2D particle with the average gradient over all tilts in a 3D particle
+				allgrds[grpdct[k]]=np.add.reduce(allgrds[grpdct[k]])*(10.0/len(grpdct[k]))	# 10 aribtrary value for test
 
 		#### build deep networks and make sure they work
 		if options.encoderin:
@@ -572,19 +579,29 @@ def load_particles(fname, boxsz, shuffle=False, preclip=-1):
 		random.shuffle(rndidx)
 		projs=projs[rndidx]
 		hdrs=[hdrs[i] for i in rndidx]
+
+	# for tomographic data we need to collect info on "grouping" of 2D particles into 3D particles
+	# grpdct is keyed by 3D particle number and has a list of 2D partcile numbers (even after shuffling)
+	if "ptcl3d_id" in hdrs[0]:
+		grpdct={}
+		for i,h in enumerate(hdrs):
+			try: grpdct[h["ptcl3d_id"]].append(i)
+			except: grpdct[h["ptcl3d_id"]]=[i]
+		print(f"identified {len(grpdct)} 3-D particles, merging gradients over each 3-D particle")
+	else: grpdct=None
 		
 	data_cpx=np.fft.rfft2(projs)
 	data_cpx=(data_cpx.real.astype(floattype), data_cpx.imag.astype(floattype))
 
 	xflst=False
-	if fname.endswith(".lst"):
+	if fname.endswith(".lst"):		# "old style" LST files?
 		info=load_lst_params(fname)
 		if "xform.projection" in info[0]:
 			xflst=True
 			xfs=[p["xform.projection"].get_params("eman") for p in info]
 			if shuffle:
 				xfs=[xfs[i] for i in rndidx]
-			
+
 	if xflst==False and ("xform.projection" in hdrs[0]):
 		xflst=True
 		xfs=[p["xform.projection"].get_params("eman") for p in hdrs]
@@ -598,7 +615,7 @@ def load_particles(fname, boxsz, shuffle=False, preclip=-1):
 	xfsnp[:,3:]/=float(rawbox)
 	
 	print("Data read complete")
-	return data_cpx,xfsnp
+	return data_cpx,xfsnp,grpdct
 	
 #### do fourier clipping in numpy then export to tf to save memory...
 def get_clip(datacpx, newsz, clipid):
@@ -647,15 +664,16 @@ def set_indices_boxsz(boxsz, apix=0, return_freq=False):
 def build_encoder(ninp,nmid):
 	l2=tf.keras.regularizers.l2(1e-3)
 	l1=tf.keras.regularizers.l1(1e-3)
-	kinit=tf.keras.initializers.RandomNormal(0,0.001)	# was 0.01
-	
+	binit=tf.keras.initializers.RandomNormal(0,1e-2)
+	kinit=tf.keras.initializers.HeNormal()
+
 	print(f"Encoder {max(ninp//2,nmid)} {max(ninp//8,nmid)} {max(ninp//32,nmid)}")
 	layers=[
 	tf.keras.layers.Flatten(),
-	tf.keras.layers.Dense(max(ninp//2,nmid*2), activation="relu", kernel_regularizer=l2,use_bias=True,bias_initializer=kinit),
+	tf.keras.layers.Dense(max(ninp//2,nmid*8), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True,bias_initializer=binit),
 	tf.keras.layers.Dropout(.3),
-	tf.keras.layers.Dense(max(ninp//8,nmid*2), activation="relu", kernel_regularizer=l2,use_bias=True),
-	tf.keras.layers.Dense(max(ninp//32,nmid*2), activation="relu", kernel_regularizer=l2,use_bias=True),
+	tf.keras.layers.Dense(max(ninp//8,nmid*4), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True),
+	tf.keras.layers.Dense(max(ninp//32,nmid*2), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True),
 	#tf.keras.layers.Dense(max(ninp//2,nmid*2), activation="tanh", kernel_regularizer=l1,use_bias=True,bias_initializer=kinit),
 	#tf.keras.layers.Dropout(.3),
 	#tf.keras.layers.Dense(max(ninp//8,nmid*2), activation="tanh", kernel_regularizer=l1,use_bias=True),
@@ -697,20 +715,21 @@ def build_decoder(nmid, pt,segs ):
 
 	x0=tf.keras.Input(shape=(nmid))
 	
-	kinit=tf.keras.initializers.RandomNormal(0,1e-2)
+	binit=tf.keras.initializers.RandomNormal(0,1e-2)
+	kinit=tf.keras.initializers.HeNormal()
 	l2=tf.keras.regularizers.l2(1e-3)
 	l1=tf.keras.regularizers.l1(1e-3)
 #	layer_output=tf.keras.layers.Dense(nout*4, kernel_initializer=kinit, activation="sigmoid",use_bias=True,kernel_constraint=Localize4())
-	layer_output=tf.keras.layers.Dense(nout*4, kernel_initializer=kinit, activation="sigmoid",use_bias=True)
+	layer_output=tf.keras.layers.Dense(nout*4, kernel_initializer=binit, activation="sigmoid",use_bias=True)
 
 	print(f"Decoder {max(nout//32,nmid)} {max(nout//8,nmid)} {max(nout//2,nmid)}")
 	layers=[
 		#tf.keras.layers.Dense(nmid*2,activation="relu",use_bias=True,bias_initializer=kinit,kernel_constraint=Localize1()),
 		#tf.keras.layers.Dense(nmid*4,activation="relu",use_bias=True,kernel_constraint=Localize2()),
 		#tf.keras.layers.Dense(nmid*8,activation="relu",use_bias=True,kernel_constraint=Localize3()),
-		tf.keras.layers.Dense(nmid*2,activation="relu",use_bias=True,bias_initializer=kinit),
-		tf.keras.layers.Dense(nmid*4,activation="relu",use_bias=True),
-		tf.keras.layers.Dense(nmid*8,activation="relu",use_bias=True),
+		tf.keras.layers.Dense(nmid*2,activation="relu",kernel_initializer=kinit,use_bias=True,bias_initializer=binit),
+		tf.keras.layers.Dense(nmid*4,activation="relu",kernel_initializer=kinit,use_bias=True),
+		tf.keras.layers.Dense(nmid*8,activation="relu",kernel_initializer=kinit,use_bias=True),
 		tf.keras.layers.Dropout(.3),
 		tf.keras.layers.BatchNormalization(),
 		layer_output,
@@ -758,10 +777,13 @@ def train_decoder(gen_model, trainset, params, options, pts=None):
 			pj_cpx=(pjr,pji)
 			with tf.GradientTape() as gt:
 				# training entropy into the decoder by training individual particles towards random points in latent space
-				if options.decoderentropy: conf=tf.random.normal((xf.shape[0],options.nmid),stddev=0.1)
+#				if options.decoderentropy: conf=tf.random.normal((xf.shape[0],options.nmid),stddev=0.2)
+				if options.decoderentropy: conf=tf.random.uniform((xf.shape[0],options.nmid),minval=-0.02, maxval=0.02)
 				# normal behavior, training the neutral map to a latent vector of 0
 				else: conf=tf.zeros((xf.shape[0],options.nmid), dtype=floattype)
-				pout=gen_model(conf)
+
+				if options.decoderentropy: pout=gen_model(conf+tf.random.uniform((conf.shape[0],conf.shape[1]),minval=-0.02, maxval=0.02))
+				else: pout=gen_model(conf)
 				std=tf.reduce_mean(tf.math.reduce_std(pout, axis=1), axis=0)
 				imgs_cpx=pts2img(pout, xf, params, sym=options.sym)
 				fval=calc_frc(pj_cpx, imgs_cpx, params["rings"])
@@ -968,20 +990,48 @@ def save_ptcls_xform(xfsnp, boxsz, options, scr):
 	lst=None
 	lst0=None
 	
+def calc_gqual(trainset, pts, params, options):
+	"""Instead of per gaussian variable gradient, try computing the per gaussian quality in neutral conformation"""
+	allptqual=[]
+	allscr=[]
+	
+	for pjr,pji,xf in trainset:
+		pt=tf.Variable(pts)
+		fval=np.zeros((xf.shape[0],pt.shape[0])) # batch size, # points
+		pj_cpx=(pjr, pji)
+		imgs_cpx=pts2img(pt, xf, params, sym=options.sym)
+		# FSC for full point projections
+		base=calc_frc(pj_cpx, imgs_cpx, params["rings"])
+		allscr.append(base)
+
+		# FSC for omit-1 point projections
+		for k in range(pt.shape[0]):
+			ptt=tf.Variable(np.delete(pts,k,0))
+			imgs_cpx=pts2img(ptt, xf, params, sym=options.sym)
+			fval[:,k]=base-calc_frc(pj_cpx, imgs_cpx, params["rings"])
+
+		allptqual.append(fval)
+		
+	allptqual=np.concatenate(allptqual, axis=0)
+	allscr=np.concatenate(allscr, axis=0)
+	#allptqual=allptqual/np.std(allptqual)
+	print(" mean score: {:.3f}".format(np.mean(allscr)))
+	return allscr, allptqual
+
 def calc_gradient(trainset, pts, params, options):
 	allgrds=[]
 	allscr=[]
 	nbatch=0
 	for t in trainset: nbatch+=1
-	
+
 	for pjr,pji,xf in trainset:
 		pj_cpx=(pjr, pji)
 		with tf.GradientTape() as gt:
 			pt=tf.Variable(tf.repeat(pts, xf.shape[0], axis=0))
-			
+
 			imgs_cpx=pts2img(pt, xf, params, sym=options.sym)
 			fval=calc_frc(pj_cpx, imgs_cpx, params["rings"])
-			
+
 			loss=-tf.reduce_mean(fval)
 
 		grad=gt.gradient(loss, pt)
@@ -989,14 +1039,14 @@ def calc_gradient(trainset, pts, params, options):
 		allscr.append(fval.numpy().copy())
 		sys.stdout.write("\r {}/{} : {:.4f}        ".format(len(allscr), nbatch, np.mean(fval)))
 		sys.stdout.flush()
-		
-		
+
+
 	allgrds=np.concatenate(allgrds, axis=0)
 	allscr=np.concatenate(allscr, axis=0)
 	allgrds=allgrds/np.std(allgrds)
 	print(" mean score: {:.3f}".format(np.mean(allscr)))
 	return allscr, allgrds
-	
+
 #### train the conformation manifold from particles
 def train_heterg(trainset, pts, encode_model, decode_model, params, options):
 	npt=pts.shape[1]
@@ -1033,7 +1083,7 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, options):
 				## similar to the variational autoencoder,
 				## but we do not train the sigma of the random value here
 				## since we control the radius of latent space already, this seems enough
-				conf=options.perturb*tf.random.normal(conf.shape)+conf		# 0.1 is a pretty big perturbation for this range, maybe responsible for the random churn in the models? --steve
+				conf=(options.perturb*2.0/(itr+2.0))*tf.random.normal(conf.shape)+conf		# perturbation is reduced each iteration
 #				conf=.1*tf.random.normal(conf.shape)+conf
 				
 				## mask out the target columns based on --pas
