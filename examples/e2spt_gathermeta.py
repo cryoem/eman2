@@ -54,6 +54,8 @@ def main():
 			if h.has_attr("orig_dxf"):
 				dc2["dxf"]=h["orig_dxf"]
 				ndxf+=1
+			else:
+				dc2["dxf"]=Transform()
 				
 			dc={"src":imgsrc,"idx":i,
 				"idx3d":li,

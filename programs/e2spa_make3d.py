@@ -53,7 +53,7 @@ def main():
 	else:
 		options.clsid=-1
 		
-	if options.sym.startswith("h"):
+	if options.sym.lower().startswith("h"):
 		options.sym="c1"
 		
 	options.keep=[float(k) for k in options.keep.split(',')]
@@ -65,11 +65,12 @@ def main():
 	if options.apix!=None : apix=options.apix
 	else : apix=tmp["apix_x"]
 
-	if options.pad<0:
-		options.pad=good_size(boxsz*1.5)
-		
 	if options.outsize<0:
 		options.outsize=boxsz
+		
+	if options.pad<0:
+		options.pad=good_size(options.outsize*1.5)
+		
 		
 	options.tidrange=[int(i) for i in options.tidrange.split(',')]
 	if options.tidrange[0]>=0:

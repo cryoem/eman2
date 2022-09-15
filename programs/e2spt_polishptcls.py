@@ -58,6 +58,7 @@ def main():
 		e.process_inplace("filter.highpass.gauss",{"cutoff_pixels":2})
 		e.mult(-1)
 		e.process_inplace("normalize.edgemean")
+		e["xform.align3d"]=x
 		e.write_compressed(fname,0, 12, nooutliers=True)
 		os.remove(om)
 

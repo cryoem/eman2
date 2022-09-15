@@ -16,7 +16,7 @@ def main():
 	parser.add_argument("--pad", type=int,help="pad for make3d", default=-1)
 	parser.add_argument("--ncls", type=int,help="number of classes", default=3)
 	parser.add_argument("--nbasis", type=int,help="PCA dimensionality", default=2)
-	parser.add_argument("--width", type=float,help="width of the vector. 1 covers all points. default 0.95", default=.95)
+	parser.add_argument("--width", type=float,help="width of the vector. 1 covers all points. default 0.98", default=.98)
 	parser.add_argument("--setsf", type=str,help="setsf", default="")
 	parser.add_argument("--mode", type=str,help="classify/regress", default="classify")
 	parser.add_argument("--axis", type=str,help="axis for regress. one number for a line, and two numbers separated by comma to draw circles.", default='0')

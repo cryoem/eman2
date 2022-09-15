@@ -27,6 +27,7 @@ def main():
 	parser.add_argument("--vector",action="store_true",help="similar to --curve but keep vector direction as well.",default=False)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int,help="ppid", default=-2)
+	parser.add_argument("--threads", type=int,help="threads", default=24)
 
 	
 	(options, args) = parser.parse_args()
@@ -196,7 +197,8 @@ def make_3d(ali2d, options):
 	recon=Reconstructors.get("fourier", {"sym":options.sym,"size":[pad,pad,pad], "mode":"trilinear"})
 	recon.setup()
 	
-	thrds=[threading.Thread(target=do_insert,args=(recon, a, options.shrink)) for a in ali2d]
+	thrds=[threading.Thread(target=do_insert,args=(recon, ali2d[i::options.threads], options.shrink)) for i in range(options.threads)]
+
 	for t in thrds:  t.start()
 	for t in thrds:  t.join()
 		
@@ -216,18 +218,19 @@ def make_3d(ali2d, options):
 
 	return threed
 
-def do_insert(recon, a, shrink):
+def do_insert(recon, a2d, shrink):
 	
-	e=EMData(a["src"],a["idx"])
-	xf=Transform(a["xform.projection"])
-	xf.set_trans(-xf.get_trans())
-	
-	if shrink>1:
-		e.process_inplace("math.meanshrink",{"n":shrink})
-		xf.set_trans(xf.get_trans()/shrink)
-	
-	ep=recon.preprocess_slice(e, xf)
-	recon.insert_slice(ep,xf,1)
+	for a in a2d:
+		e=EMData(a["src"],a["idx"])
+		xf=Transform(a["xform.projection"])
+		xf.set_trans(-xf.get_trans())
+		
+		if shrink>1:
+			e.process_inplace("math.meanshrink",{"n":shrink})
+			xf.set_trans(xf.get_trans()/shrink)
+		
+		ep=recon.preprocess_slice(e, xf)
+		recon.insert_slice(ep,xf,1)
 	
 	return
 
