@@ -4,6 +4,7 @@ from EMAN2 import *
 import numpy as np
 from sklearn.decomposition import PCA
 from EMAN2_utils import pdb2numpy
+import scipy.spatial.distance as scipydist
 
 #### need to unify the float type across tenforflow and numpy
 ##   in theory float16 also works but it can be unsafe especially when the network is deeper...
@@ -407,6 +408,126 @@ def build_encoder(mid=512, nout=4, conv=False, ninp=-1):
 	encode_model=tf.keras.Sequential(layers)
 	return encode_model
 
+def find_neighbors(pt0, nlayer=5, axis=0):
+	
+	ptpool=[pt0]
+	pns=[64*2**i for i in range(nlayer)][::-1]
+	pns=[p for p in pns if p<len(pt0)]
+	for i,pn in enumerate(pns):
+		pn=pns[i]
+		
+		pt1=pt0.copy()
+		np.random.shuffle(pt1)
+		pt1=pt1[:pn,:]
+		pt1+=np.random.randn(len(pt1),3)*1e-3
+
+		#print(pt1.shape)
+		ptpool.append(pt1.copy())
+		
+	nlayer=len(ptpool)-1
+	
+	#############
+	####
+	nnb=8
+	dstid=[]
+	for li in range(nlayer):
+		dst01=scipydist.cdist(ptpool[li], ptpool[li+1])
+		if axis==0:
+			di=np.argsort(dst01, axis=0)[:nnb].T
+			dstid.append(di)
+			
+		else:		
+			dj=np.argsort(dst01, axis=1)[:,:nnb]
+			dstid.append(dj)
+			
+		#print(li, dstid[-1].shape)
+		
+	return dstid
+
+def build_encoder_graph(pts, options, nlayer=5):
+	print("#### Building graph encoder...")
+	pt0=pts[0,:,:3].numpy().copy()
+	dstid=find_neighbors(pt0, nlayer, axis=0)
+	
+	###########
+	####
+	kinit=tf.keras.initializers.RandomNormal(0,1e-7)
+	l2=tf.keras.regularizers.l2(1e-3)
+
+	x0=tf.keras.Input(shape=(len(pt0),4))
+	y1=x0
+	print(y1.shape)
+	k0=y1.shape[2]
+	k1s=[256]*nlayer
+	k1s[0]/=4
+	k1s[-1]/=4
+	for li in range(nlayer):
+		k1=k1s[li]
+		ly=tf.keras.layers.Dense(k1,kernel_regularizer=l2)
+		y0=ly(y1)
+		
+		y1=tf.gather(y0, dstid[li], axis=1)
+		y1=tf.reduce_sum(y1, axis=2)
+		y1=tf.nn.relu(y1)
+		
+		y1=tf.keras.layers.Dropout(.1)(y1)		
+		y1=tf.keras.layers.BatchNormalization()(y1)
+		print(li, y0.shape, y1.shape)
+		
+	midshape=y1.shape[1:]
+	y2=tf.keras.layers.Flatten()(y1)
+	print(y2.shape)
+	y2=tf.keras.layers.Dropout(.3)(y2)
+	y2=tf.keras.layers.BatchNormalization()(y2)
+	y2=tf.keras.layers.Dense(options.nmid,kernel_regularizer=l2, kernel_initializer=kinit)(y2)
+	print(y2.shape)
+
+	encode_model=tf.keras.Model(x0, y2)
+	return encode_model, midshape
+
+def buid_decoder_graph(pts, midshape, options, nlayer=5):
+	print("#### Building graph decoder...")
+	pt0=pts[0,:,:3].numpy().copy()
+	dstid=find_neighbors(pt0, nlayer=5, axis=1)
+	
+	kinit=tf.keras.initializers.RandomNormal(0,1e-7)
+	l2=tf.keras.regularizers.l2(1e-3)
+	
+	x0=tf.keras.Input(shape=(options.nmid))
+	y1=x0
+	print(y1.shape)
+
+	y1=tf.keras.layers.Dense(np.prod(midshape))(y1)
+	y1=tf.keras.layers.Reshape(midshape)(y1)
+	print(y1.shape)
+	
+	k1s=[256]*nlayer
+	k1s[-1]=5
+	for li in range(nlayer):
+		k1=k1s[li]
+		if li==nlayer-1:
+			ly=tf.keras.layers.Dense(k1,kernel_regularizer=l2, kernel_initializer=kinit)
+		else:
+			ly=tf.keras.layers.Dense(k1,kernel_regularizer=l2)
+		y0=ly(y1)
+		
+		y1=tf.gather(y0, dstid[nlayer-li-1], axis=1)
+		y1=tf.reduce_sum(y1, axis=2)
+		
+		if li==nlayer-1: 
+			y1=tf.math.tanh(y1)
+		else:
+			y1=tf.nn.relu(y1)
+			y1=tf.keras.layers.Dropout(.1)(y1)
+			y1=tf.keras.layers.BatchNormalization()(y1)
+			
+		print(li, y0.shape, y1.shape)
+		
+	# bshift=np.array([-.5,-.5,-.5,0,.5]).astype(floattype)
+	y2=y1+pts  #+tf.constant(bshift)
+	decode_model=tf.keras.Model(x0, y2)
+	return decode_model
+
 #### build decoder network. 
 ## input integer to initialize as zeros with N points
 ## input point list to initialize to match input
@@ -481,7 +602,7 @@ def build_decoder(pts, mid=512, ninp=4, conv=False):
 	return gen_model
 
 def build_decoder_anchor(pts, cnt, ninp ):
-	print(pts.shape, cnt.shape)
+	print("building decoder with {} Gaussian, using {} anchor points".format(len(pts[0]), len(cnt)))
 	dwt=tf.reduce_sum((pts[:,:,:3]-cnt[:,None,:])**2, axis=2)
 	dwt=tf.exp(-dwt*50)#*tf.constant(msk, dtype=float)
 	dwt=tf.transpose(dwt)
@@ -496,10 +617,11 @@ def build_decoder_anchor(pts, cnt, ninp ):
 		tf.keras.layers.Reshape((4,4,16)),
 		tf.keras.layers.Conv2DTranspose(16, 3, activation="relu", strides=(2,2), padding="same"),
 		tf.keras.layers.Conv2DTranspose(16, 3, activation="relu", strides=(2,2), padding="same"),
-		#tf.keras.layers.Conv2DTranspose(16, 5, activation="relu", strides=(1,1), padding="same"),
-		#tf.keras.layers.Conv2DTranspose(16, 5, activation="relu", strides=(1,1), padding="same"),
-		ResidueConv2D(64, 5, activation="relu", padding="same"),
-		ResidueConv2D(64, 5, activation="relu", padding="same"),
+		tf.keras.layers.Conv2DTranspose(16, 5, activation="relu", strides=(1,1), padding="same"),
+		tf.keras.layers.Conv2DTranspose(16, 5, activation="relu", strides=(1,1), padding="same"),
+		
+		#ResidueConv2D(64, 5, activation="relu", padding="same"),
+		#ResidueConv2D(64, 5, activation="relu", padding="same"),
 		tf.keras.layers.Flatten(),
 		tf.keras.layers.Dropout(.3),
 		tf.keras.layers.BatchNormalization(),
@@ -799,13 +921,11 @@ def refine_align(dcpx, xfsnp, pts, options, lr=1e-3):
 		pas=[int(i) for i in options.pas]
 		pas=tf.constant(np.array([pas[0],pas[0],pas[0],pas[1],pas[2]], dtype=floattype))
 		npt=len(pts)
-		imsk=tf.zeros(npt, dtype=floattype)+1
-		if options.selgauss:
-			i=np.loadtxt(options.selgauss).astype(int).flatten()-1
-			print('selecting {} out of {} points'.format(len(i), npt))
-			m=np.zeros(npt, dtype=floattype)
-			m[i]=1
-			imsk=tf.constant(m)
+		
+		if options.selgauss!=None:
+			imsk=options.selgauss
+		else:
+			imsk=tf.zeros(npt, dtype=floattype)+1
 			
 	else:
 		mid=tf.zeros((len(xfsnp),1), dtype=floattype)
@@ -907,6 +1027,8 @@ def calc_gradient(trainset, pts, params, options):
 	allgrds=np.concatenate(allgrds, axis=0)
 	allscr=np.concatenate(allscr, axis=0)
 	allgrds=allgrds/np.std(allgrds)
+	if options.normgrad:
+		allgrds=allgrds[:,:,:4]/np.std(allgrds, axis=(0,1))[:4]
 	print(" mean score: {:.3f}".format(np.mean(allscr)))
 	return allscr, allgrds
 	
@@ -966,7 +1088,7 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, imsk, option
 				## finally generate images and calculate frc
 				imgs_cpx=pts2img(pout, xf)
 				fval=calc_frc(pj_cpx, imgs_cpx, params["rings"], minpx=options.minpx, maxpx=options.maxpx)
-				loss=-tf.reduce_mean(fval)+cl*0.05
+				loss=-tf.reduce_mean(fval)+cl*10
 				
 				#if options.modelreg>0: 
 					#loss+=tf.reduce_sum((pout[:,:,:3]-pts[:,:,:3])**2)/len(pts)/xf.shape[0]*options.modelreg
@@ -1066,6 +1188,8 @@ def main():
 	parser.add_argument("--usetest", action="store_true",help="use a separated test set and report loss. ", default=False)
 	parser.add_argument("--pmout", type=str,help="write options to file", default=None)
 	parser.add_argument("--phantompts", type=str,help="load extra phatom points for gradient calculation.", default=None)
+	parser.add_argument("--normgrad", action="store_true",help="normalize gradient columns also skip sigma column. ", default=False)
+	parser.add_argument("--graphnet", action="store_true",help="use graph network. ", default=False)
 
 
 	(options, args) = parser.parse_args()
@@ -1090,9 +1214,9 @@ def main():
 			pts=pts.astype(floattype)
 			#print(pts)
 		else:
-			
 			pts=np.loadtxt(options.model).astype(floattype)
-		npt=len(pts)
+			
+		options.npt=npt=len(pts)
 		print("{} Gaussian loaded from {}".format(len(pts), options.model))
 	else:
 		pts=None
@@ -1149,8 +1273,7 @@ def main():
 	data_cpx, xfsnp = load_particles(options.ptclsin, maxboxsz, shuffle=options.trainmodel)
 	options.apix=apix=raw_apix*raw_boxsz/maxboxsz
 	clipid=set_indices_boxsz(data_cpx[0].shape[1], apix, True)		
-		
-		
+	
 	#### Decoder training from generated projections of a 3-D map or particles
 	#### Note that train_decoder takes options.decoderentropy into account internally
 	if options.trainmodel:
@@ -1186,7 +1309,40 @@ def main():
 		if options.evalmodel:
 			options.evalsize=raw_boxsz
 			eval_model(gen_model, options)
+			
+	
+	#### For Gaussian selection
+	##   used both for align and heterg
+	imsk=tf.zeros(npt, dtype=floattype)+1
+	if options.selgauss:
+		try: 
+			msk=EMData(options.selgauss)
+			selmsk=True
+		except:
+			selmsk=False
+			
+		if selmsk:
+			## read selected Gaussian from mask file
+			m=msk.numpy().copy()
+			p=pts[:,:3].copy()
+			p=p[:,::-1]
+			p[:,:2]*=-1
+			p=(p+.5)*msk["nx"]
 
+			o=np.round(p).astype(int)
+			v=m[o[:,0], o[:,1], o[:,2]]
+			imsk=tf.constant(v.astype(floattype))
+		
+		else:
+			## read from a list of points starting from 1
+			i=np.loadtxt(options.selgauss).astype(int).flatten()-1
+			
+			m=np.zeros(npt, dtype=floattype)
+			m[i]=1
+			imsk=tf.constant(m)
+		
+		options.selgauss=imsk
+		print('selecting {:.0f} out of {} points'.format(np.sum(imsk), npt))
 		
 	#### Align particles using GMM
 	##   have not upgraded this part yet. probably still bugs left
@@ -1239,19 +1395,13 @@ def main():
 		print("Gradient shape: ", allgrds.shape) 
 		
 		#### build deep networks and make sure they work
-		
-		imsk=tf.zeros(npt, dtype=floattype)+1
-		if options.selgauss:
-			i=np.loadtxt(options.selgauss).astype(int).flatten()-1
-			print('selecting {} out of {} points'.format(len(i), npt))
-			m=np.zeros(npt, dtype=floattype)
-			m[i]=1
-			imsk=tf.constant(m)
-		
 		if options.encoderin:
 			encode_model=tf.keras.models.load_model(f"{options.encoderin}",compile=False,custom_objects={"ResidueConv2D":ResidueConv2D})
 		else:
-			encode_model=build_encoder(nout=options.nmid, conv=options.conv,ninp=len(pts[0]))
+			if options.graphnet:
+				encode_model,midshape=build_encoder_graph(pts, options)
+			else:
+				encode_model=build_encoder(nout=options.nmid, conv=options.conv,ninp=len(pts[0]))
 			
 		if options.anchor:
 			anchor=np.loadtxt(options.anchor)[:,:3]
@@ -1265,6 +1415,8 @@ def main():
 				decode_model=build_decoder_anchor(pts, anchor, ninp=options.nmid)
 			elif options.rigidbody:
 				decode_model=build_decoder_rigidbody(pts, ninp=options.nmid, foci=imsk)
+			elif options.graphnet:
+				decode_model=buid_decoder_graph(pts, midshape, options)
 			else:
 				decode_model=build_decoder(pts[0].numpy(), ninp=options.nmid, conv=options.conv,mid=options.ndense)
 		
@@ -1309,13 +1461,13 @@ def main():
 	else:
 		m=options.midout
 		
-	pm=os.path.basename(m)
-	pm=os.path.join(os.path.dirname(m), "0_params_"+pm[:pm.rfind('.')])+".json"
-	options.cmd=' '.join(sys.argv)
-	js=js_open_dict(pm)
-	js.update(vars(options))
-	js.close()
-	print("training parameters saved to {}".format(pm))
+	#pm=os.path.basename(m)
+	#pm=os.path.join(os.path.dirname(m), "0_params_"+pm[:pm.rfind('.')])+".json"
+	#options.cmd=' '.join(sys.argv)
+	#js=js_open_dict(pm)
+	#js.update(vars(options))
+	#js.close()
+	#print("training parameters saved to {}".format(pm))
 		
 	E2end(logid)
 	
