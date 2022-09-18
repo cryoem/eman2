@@ -3,6 +3,7 @@
 import argparse
 import requests
 from enum import Enum
+import subprocess as sp
 
 class Version(Enum):
 	MAJOR = 0
@@ -50,6 +51,15 @@ def main():
 
 	version = '.'.join([str(i) for i in version])
 	print(f"Bumped version:\n{version}")
+
+	# Run subcommands
+	print("Running subcommands...")
+	for cmd in (
+			f'python utils/bump_version.py {version_cur} {version}',
+			):
+		print(f"> {cmd}")
+		cmd = cmd.split()
+		sp.run(cmd)
 
 
 if __name__ == "__main__":
