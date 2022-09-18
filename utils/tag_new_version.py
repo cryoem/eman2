@@ -18,7 +18,17 @@ def main():
 	print(f"Version tags (sorted: latest to oldest):\n{tags}")
 
 	tag = tags[0]
+	version_cur = tag[1:]
+
 	print(f"Latest tag:\n{tag}")
+	print(f"Current version:\n{version_cur}")
+
+	version = [int(v) for v in version_cur.split('.')]
+
+	while len(version) < 3:
+		version.append(0)
+
+	print(f"Version bits:\n{version}")
 
 
 if __name__ == "__main__":
