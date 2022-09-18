@@ -2,6 +2,12 @@
 
 import argparse
 import requests
+from enum import Enum
+
+class Version(Enum):
+	MAJOR = 0
+	MINOR = 1
+	PATCH = 2
 
 
 def main():
@@ -9,7 +15,8 @@ def main():
 	parser.add_argument('--bump', choices=['major', 'minor', 'patch'], default='patch')
 
 	options = parser.parse_args()
-	print(f"Bumping '{options.bump.upper()}' version...")
+	bump_bit = options.bump.upper()
+	print(f"Bumping '{bump_bit}' version...")
 
 	tags = [t['name'] for t in requests.get('https://api.github.com/repos/cryoem/eman2/tags').json()]
 	print(f"Received GitHub tags:\n{tags}")
@@ -29,6 +36,20 @@ def main():
 		version.append(0)
 
 	print(f"Version bits:\n{version}")
+
+	i_bump = Version[bump_bit].value
+
+	# Bump requested version bit
+	version[i_bump] += 1
+
+	# Reset lower version bits
+	for i in range(i_bump + 1, len(version)):
+		version[i] = 0
+
+	print(f"Bumped version bits:\n{version}")
+
+	version = '.'.join([str(i) for i in version])
+	print(f"Bumped version:\n{version}")
 
 
 if __name__ == "__main__":
