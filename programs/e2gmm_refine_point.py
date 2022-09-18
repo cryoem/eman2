@@ -272,7 +272,7 @@ def main():
 			allgrds=ag.numpy().copy()
 			del ag
 			allscr=allgrds[:,0]
-			allgrds=allgrds[:,1:].reshape((len(allgrds), npt, 4))
+			allgrds=allgrds[:,1:].reshape((len(allgrds), npt))
 			print("Gradient shape: ", allgrds.shape)
 
 		else:
@@ -281,20 +281,24 @@ def main():
 			allscr, allgrds=calc_gradient(trainset, pts, params, options )
 #			allscr, allgrds=calc_gqual(trainset, pts, params, options )
 
+
+			#### For tomographic data we sum the gradients over a 3-D particle, so all 2-D tilts have the same gradient
+			if not grpdct is None:
+				for k in grpdct.keys():
+					# replaces the gradient for each 2D particle with the average gradient over all tilts in a 3D particle
+					allgrds[grpdct[k]]=np.add.reduce(allgrds[grpdct[k]])*(10.0/len(grpdct[k]))	# 10 aribtrary value for test
+
+			#### New idea. Keep only the amplitude gradient, gradient shape becomes (nptcl,ngauss) rather than (nptcl,ngauss,4)
+			allgrds=allgrds[:,:,3]
+
 			## save to hdf file
 			if options.gradout:
-				allgrds=allgrds.reshape((len(allgrds),-1))
+				#allgrds=allgrds.reshape((len(allgrds),-1))
 				print("Gradient shape: ", allgrds.shape)
 				ag=from_numpy(np.hstack([allscr[:,None], allgrds]))
 				ag.write_image(options.gradout)
 				del ag
-				allgrds=allgrds.reshape((len(allgrds), npt, 4))
-
-		#### For tomographic data we sum the gradients over a 3-D particle, so all 2-D tilts have the same gradient
-		if not grpdct is None:
-			for k in grpdct.keys():
-				# replaces the gradient for each 2D particle with the average gradient over all tilts in a 3D particle
-				allgrds[grpdct[k]]=np.add.reduce(allgrds[grpdct[k]])*(10.0/len(grpdct[k]))	# 10 aribtrary value for test
+				#allgrds=allgrds.reshape((len(allgrds), npt))
 
 		#### build deep networks and make sure they work
 		if options.encoderin:
