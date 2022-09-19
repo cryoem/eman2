@@ -2,6 +2,7 @@
 
 import argparse
 from collections import namedtuple
+from pprint import pprint
 
 FileKeyVerPair = namedtuple('FileKeyVerPair', ['fname', 'keyword', 'version_pair'])
 OldNew  = namedtuple('OldNew', ['old', 'new'])
@@ -32,6 +33,7 @@ def main():
 	print(f"Updating version: {options.current_version} -> {options.new_version} ...")
 
 	versions_pair = OldNew(options.current_version, options.new_version)
+	# version_cmake = Version('CMakeLists.txt', 'VERSION', eman_version)
 
 	eman_versions = (
 		FileKeyVerPair('CMakeLists.txt',                             'VERSION',      versions_pair),
@@ -40,10 +42,14 @@ def main():
 		FileKeyVerPair('ci_support/constructor-huge/construct.yaml', 'eman2',        versions_pair),
 	)
 
+	pprint(f'{eman_versions=}')
+
 	for f in eman_versions:
 		fname = f.fname
 		keyword = f.keyword
 		version_pair = f.version_pair
+
+		print(f"{fname=} {keyword=} {version_pair=}")
 
 		update_versions_in_files(fname, keyword, version_pair)
 
