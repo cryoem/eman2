@@ -63,6 +63,8 @@ def main():
 	GIT_BRANCH_SHORT = os.getenv('GIT_BRANCH_SHORT')
 
 	for cmd in (
+			'git status',
+			'git branch -a',
 			'git branch -D version-automation',
 			'git checkout -b version-automation',
 			f'python utils/bump_version.py {version_cur} {version}',
@@ -70,6 +72,9 @@ def main():
 			f'git push origin version-automation',
 			f'git tag -f v{version}',
 			f'git push origin v{version}',
+			'git status',
+			'git branch -a',
+			'git tag -l',
 			):
 		print(f"> {cmd}")
 		cmd = cmd.split()
