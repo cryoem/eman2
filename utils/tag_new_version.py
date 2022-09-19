@@ -55,7 +55,13 @@ def main():
 	# Run subcommands
 	print("Running subcommands...")
 	for cmd in (
+			'git branch -D master',
+			'git checkout -b master',
 			f'python utils/bump_version.py {version_cur} {version}',
+			f'git commit -a -m v{version}',
+			f'git push origin master',
+			f'git tag -f v{version}',
+			f'git push origin v{version}',
 			):
 		print(f"> {cmd}")
 		cmd = cmd.split()
