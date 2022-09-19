@@ -10,6 +10,18 @@ OldNew  = namedtuple('OldNew', ['old', 'new'])
 def update_versions_in_files(fname, keyword, version_pair):
 	print(f"  ...Updating: {fname}, keyword: {keyword}, version pair: {version_pair.old} -> {version_pair.new}")
 
+	with open(fname, 'r') as fin:
+		lines = fin.readlines()
+
+	for i, k in enumerate(lines):
+		if keyword in k and version_pair.old in k:
+			print(f"  ......Found    line: {k}", end='')
+			lines[i] = k.replace(version_pair.old, version_pair.new)
+			print(f"  ......Replaced line: {lines[i]}")
+
+	with open(fname, 'w') as fout:
+		fout.writelines(lines)
+
 
 def main():
 	parser = argparse.ArgumentParser()
