@@ -7,6 +7,10 @@ FileKeyVerPair = namedtuple('FileKeyVerPair', ['fname', 'keyword', 'version_pair
 OldNew  = namedtuple('OldNew', ['old', 'new'])
 
 
+def update_versions_in_files(fname, keyword, version_pair):
+	print(f"  ...Updating: {fname}, keyword: {keyword}, version pair: {version_pair.old} -> {version_pair.new}")
+
+
 def main():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('current_version')
@@ -28,6 +32,8 @@ def main():
 		fname = f.fname
 		keyword = f.keyword
 		version_pair = f.version_pair
+
+		update_versions_in_files(fname, keyword, version_pair)
 
 
 if __name__ == "__main__":
