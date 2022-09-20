@@ -1,15 +1,20 @@
 eman2
-eman-bump-version: triggered by push to eman2, if bump triggered, runs version update and tagging,
+eman-bump-version: triggered by push to eman2
+        if bump triggered
+          runs version update and tagging
+          triggers job: multi-temp
+            (maybe trigger multi after removing GH trigger)
+          triggers multi
+              triggers cryoem-eman2 ?
+                  config file: Jenkins/build-binary
   config file: Jenkins/bump-version
-
-eman-feedstock-trigger-from-eman-master: triggered by eman2 tags, triggers jenkins job
-* can trigger from Jenkinsfile: 'build job'
-  regex for branches ?
-
 
 eman-feedstock
 
-eman-feedstock-build-tags: triggered by eman-feedstock-trigger-from-eman-master, gets tag from gh or triggering job ?
-  updates version to build, pushes updates to gh
+multi-temp: triggered by job eman-bump-version
+        gets tag from gh
+        triggers eman-feedstock-build-tag
 
-eman-feedstock-build-tags1:
+eman-feedstock-build-tag:
+            updates version to build, pushes updates to gh
+    config file: recipe/Jenkinsfile
