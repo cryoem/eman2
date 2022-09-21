@@ -138,7 +138,8 @@ def main():
 
 		## train the model from coordinates first
 		conf=tf.zeros((1,options.nmid), dtype=floattype)
-		opt=tf.keras.optimizers.Adam(learning_rate=1e-4)
+		#opt=tf.keras.optimizers.Adam(learning_rate=1e-4)
+		opt=tf.keras.optimizers.Adamax()
 		gen_model.compile(optimizer=opt, loss=tf.losses.MeanAbsoluteError())
 		loss=[]
 		for i in range(500):
@@ -767,7 +768,8 @@ def build_decoder(nmid, pt,segs ):
 #### training decoder on projections
 def train_decoder(gen_model, trainset, params, options, pts=None):
 	"""pts input can optionally be used as a regularizer if they are known to be good"""
-	opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate) 
+#	opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate)
+	opt=tf.keras.optimizers.Adamax()
 	wts=gen_model.trainable_variables
 	
 	nbatch=0
@@ -1058,7 +1060,8 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, options):
 	pas=tf.constant(np.array([pas[0],pas[0],pas[0],pas[1]], dtype=floattype))
 	
 	## initialize optimizer
-	opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate)
+#	opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate)
+	opt=tf.keras.optimizers.Adamax()
 	wts=encode_model.trainable_variables + decode_model.trainable_variables
 	nbatch=0
 	for t in trainset: nbatch+=1
