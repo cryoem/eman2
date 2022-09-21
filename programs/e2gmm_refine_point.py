@@ -682,7 +682,7 @@ def build_encoder(ninp,nmid):
 	#tf.keras.layers.Dropout(.3),
 	#tf.keras.layers.Dense(max(ninp//8,nmid*2), activation="tanh", kernel_regularizer=l1,use_bias=True),
 	#tf.keras.layers.Dense(max(ninp//32,nmid*2), activation="tanh", kernel_regularizer=l1,use_bias=True),
-	tf.keras.layers.BatchNormalization(),
+#	tf.keras.layers.BatchNormalization(),
 	tf.keras.layers.Dense(nmid, kernel_regularizer=l2, kernel_initializer=kinit,use_bias=True),
 	]
 		
@@ -735,7 +735,7 @@ def build_decoder(nmid, pt,segs ):
 		tf.keras.layers.Dense(nmid*4,activation="relu",kernel_initializer=kinit,use_bias=True),
 		tf.keras.layers.Dense(nmid*8,activation="relu",kernel_initializer=kinit,use_bias=True),
 		tf.keras.layers.Dropout(.3),
-		tf.keras.layers.BatchNormalization(),
+#		tf.keras.layers.BatchNormalization(),
 		layer_output,
 		tf.keras.layers.Reshape((nout,4))
 	]
@@ -1038,7 +1038,7 @@ def calc_gradient(trainset, pts, params, options):
 
 			loss=-tf.reduce_mean(fval)
 
-		grad=gt.gradient(loss, pt)
+		grad=gt.gradient(loss, pt)*xf.shape[0]
 		allgrds.append(grad.numpy().copy())
 		allscr.append(fval.numpy().copy())
 		sys.stdout.write("\r {}/{} : {:.4f}        ".format(len(allscr), nbatch, np.mean(fval)))
