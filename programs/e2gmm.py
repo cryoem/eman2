@@ -270,6 +270,8 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		self.setWindowTitle("Main Window (e2gmm.py)")
 		self.plotmode=0
+		self.ort_slice=Transform()
+		self.cur_dyn_vol=None
 
 		# created later when needed
 		self.maplist=None
@@ -297,7 +299,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		
 		# 3-D View
 		self.wview3d = EMScene3D()
-		self.gbl.addWidget(self.wview3d,0,4,3,1)
+		self.gbl.addWidget(self.wview3d,0,4,2,1)
 		
 		# Left pane for GMM folder and parameters
 		self.gbll = QtWidgets.QGridLayout()
@@ -483,7 +485,10 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		# Widgets below 3D
 		self.gbl3dctl = QtWidgets.QGridLayout()
-		self.gbl.addLayout(self.gbl3dctl,3,4)
+		self.gbl.addLayout(self.gbl3dctl,2,4,2,1)
+
+		# 2-D slice view
+		self.wview2d = None
 		
 		#self.wbutmap=QtWidgets.QPushButton("Map")
 		#self.wbutmap.setCheckable(True)
@@ -495,18 +500,38 @@ class EMGMM(QtWidgets.QMainWindow):
 		#self.wbutspheres.setChecked(True)
 		#self.gbl3dctl.addWidget(self.wbutspheres,0,1)
 
+		# Sphere size
 		self.wvssphsz=ValSlider(self,(1,50),"Size:",3.0,90)
-		self.gbl3dctl.addWidget(self.wvssphsz,0,2)
-		
-		self.wvssphth=ValSlider(self,(1,50),"Min Sz:",3.0,90)
-		self.gbl3dctl.addWidget(self.wvssphth,0,3)
+		self.gbl3dctl.addWidget(self.wvssphsz,0,0,1,4)
+
+		# Thickness
+		self.wlthk = QtWidgets.QLabel("Thk:")
+		self.wlthk.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
+		self.gbl3dctl.addWidget(self.wlthk,1,0)
+		self.wsbthk = QtWidgets.QSpinBox()
+		self.wsbthk.setMinimum(-1)
+		self.wsbthk.setMaximum(256)
+		self.wsbthk.setValue(0)
+		self.gbl3dctl.addWidget(self.wsbthk,1,1)
+
+		# Center with respect to actual center
+		self.wlcen = QtWidgets.QLabel("Cen:")
+		self.wlcen.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
+		self.gbl3dctl.addWidget(self.wlcen,1,2)
+		self.wsbcen = QtWidgets.QSpinBox()
+		self.wsbcen.setMinimum(-256)
+		self.wsbcen.setMaximum(256)
+		self.wsbcen.setValue(0)
+		self.gbl3dctl.addWidget(self.wsbcen,1,3)
 		
 		# Connections
+		self.wsbthk.valueChanged.connect(self.slice_update)
+		self.wsbcen.valueChanged.connect(self.slice_update)
+		self.wview3d.sgtransform.connect(self.slice_update)
 		self.wlistgmm.currentRowChanged[int].connect(self.sel_gmm)
 		#self.wbutspheres.clicked[bool].connect(self.new_3d_opt)
 		#self.wbutmap.clicked[bool].connect(self.new_3d_opt)
 		self.wvssphsz.valueChanged.connect(self.new_sph_size)
-		self.wvssphth.valueChanged.connect(self.new_sph_size)
 		self.wbutnewgmm.clicked[bool].connect(self.add_gmm)
 #		self.wbutrefine.clicked[bool].connect(self.setgmm_refine)
 		self.wlistrun.currentRowChanged[int].connect(self.sel_run)
@@ -586,6 +611,22 @@ class EMGMM(QtWidgets.QMainWindow):
 		t=time.time()
 		while (time.time()-t<delay): 
 			self.app().processEvents()
+
+	def slice_update(self,a=None,b=None):
+		"""Called when any of the slice parameters change, if b is a transform then we use it"""
+		if not b is None: self.ort_slice=b
+		if self.cur_dyn_vol is None : return
+		thk=self.wsbthk.value()		# thickness of layer
+		cen=self.wsbcen.value()		# center of layer
+		nz=self.cur_dyn_vol["nz"]
+
+		proj = self.cur_dyn_vol.process("xform",{"transform":self.ort_slice}).process("misc.directional_sum",{"first":nz//2+cen-thk,"last":nz//2+cen+thk,"axis":"z"})
+
+		if self.wview2d is None:
+			self.wview2d = EMImage2DWidget()
+			self.gbl3dctl.addWidget(self.wview2d,0,4,5,1)
+
+		self.wview2d.set_data(proj)
 
 	def timeout(self):
 		"""Handles the results of completed threads"""
@@ -699,6 +740,7 @@ class EMGMM(QtWidgets.QMainWindow):
 
 	def display_dynamic(self,vol):
 		"""Displays a new dynamic map, used multiple places so condensed here"""
+		self.cur_dyn_vol=vol
 		if self.dmapdataitem is None:
 			self.dmapdataitem=EMDataItem3D(vol)
 			self.dmapiso=EMIsosurface(self.dmapdataitem)
@@ -710,6 +752,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.dmapiso.getTransform().set_scale(vol["apix_x"]/self.jsparm["apix"])
 		
 		self.wview3d.updateGL()
+		self.slice_update()
 
 	def saveparm(self,mode=None):
 		"""mode is used to decide which parameters to update. neutral, dynamics or None"""
@@ -734,9 +777,7 @@ class EMGMM(QtWidgets.QMainWindow):
 	
 	def new_sph_size(self,newval=10):
 		self.gaussplot.setPointSize(self.wvssphsz.value)
-		#self.gaussplot.setPointThr(self.wvssphth.value)
 		self.neutralplot.setPointSize(self.wvssphsz.value)
-		#self.neutralplot.setPointThr(self.wvssphth.value)
 		self.wview3d.update()
 	
 	def plot_keyboard(self,event):
