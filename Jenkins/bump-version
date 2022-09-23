@@ -29,7 +29,7 @@ pipeline {
       steps {
         sh 'python ./utils/tag_new_version.py --bump ' + versionBumpOption()
         sleep 60
-        build propagate: false, job: 'eman-feedstock-build-tag'
+        build propagate: false, job: 'eman-feedstock-update-version'
       }
     }
   }
