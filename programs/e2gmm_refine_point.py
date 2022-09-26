@@ -138,7 +138,8 @@ def main():
 
 		## train the model from coordinates first
 		conf=tf.zeros((1,options.nmid), dtype=floattype)
-		opt=tf.keras.optimizers.Adam(learning_rate=1e-4)
+		#opt=tf.keras.optimizers.Adam(learning_rate=1e-4)
+		opt=tf.keras.optimizers.Adamax()
 		gen_model.compile(optimizer=opt, loss=tf.losses.MeanAbsoluteError())
 		loss=[]
 		for i in range(500):
@@ -272,7 +273,7 @@ def main():
 			allgrds=ag.numpy().copy()
 			del ag
 			allscr=allgrds[:,0]
-			allgrds=allgrds[:,1:].reshape((len(allgrds), npt, 4))
+			allgrds=allgrds[:,1:].reshape((len(allgrds), npt))
 			print("Gradient shape: ", allgrds.shape)
 
 		else:
@@ -281,20 +282,24 @@ def main():
 			allscr, allgrds=calc_gradient(trainset, pts, params, options )
 #			allscr, allgrds=calc_gqual(trainset, pts, params, options )
 
+
+			#### For tomographic data we sum the gradients over a 3-D particle, so all 2-D tilts have the same gradient
+			if not grpdct is None:
+				for k in grpdct.keys():
+					# replaces the gradient for each 2D particle with the average gradient over all tilts in a 3D particle
+					allgrds[grpdct[k]]=np.add.reduce(allgrds[grpdct[k]])*(10.0/len(grpdct[k]))	# 10 aribtrary value for test
+
+			#### New idea. Keep only the amplitude gradient, gradient shape becomes (nptcl,ngauss) rather than (nptcl,ngauss,4)
+			allgrds=allgrds[:,:,3]
+
 			## save to hdf file
 			if options.gradout:
-				allgrds=allgrds.reshape((len(allgrds),-1))
+				#allgrds=allgrds.reshape((len(allgrds),-1))
 				print("Gradient shape: ", allgrds.shape)
 				ag=from_numpy(np.hstack([allscr[:,None], allgrds]))
 				ag.write_image(options.gradout)
 				del ag
-				allgrds=allgrds.reshape((len(allgrds), npt, 4))
-
-		#### For tomographic data we sum the gradients over a 3-D particle, so all 2-D tilts have the same gradient
-		if not grpdct is None:
-			for k in grpdct.keys():
-				# replaces the gradient for each 2D particle with the average gradient over all tilts in a 3D particle
-				allgrds[grpdct[k]]=np.add.reduce(allgrds[grpdct[k]])*(10.0/len(grpdct[k]))	# 10 aribtrary value for test
+				#allgrds=allgrds.reshape((len(allgrds), npt))
 
 		#### build deep networks and make sure they work
 		if options.encoderin:
@@ -678,7 +683,7 @@ def build_encoder(ninp,nmid):
 	#tf.keras.layers.Dropout(.3),
 	#tf.keras.layers.Dense(max(ninp//8,nmid*2), activation="tanh", kernel_regularizer=l1,use_bias=True),
 	#tf.keras.layers.Dense(max(ninp//32,nmid*2), activation="tanh", kernel_regularizer=l1,use_bias=True),
-	tf.keras.layers.BatchNormalization(),
+#	tf.keras.layers.BatchNormalization(),
 	tf.keras.layers.Dense(nmid, kernel_regularizer=l2, kernel_initializer=kinit,use_bias=True),
 	]
 		
@@ -731,7 +736,7 @@ def build_decoder(nmid, pt,segs ):
 		tf.keras.layers.Dense(nmid*4,activation="relu",kernel_initializer=kinit,use_bias=True),
 		tf.keras.layers.Dense(nmid*8,activation="relu",kernel_initializer=kinit,use_bias=True),
 		tf.keras.layers.Dropout(.3),
-		tf.keras.layers.BatchNormalization(),
+#		tf.keras.layers.BatchNormalization(),
 		layer_output,
 		tf.keras.layers.Reshape((nout,4))
 	]
@@ -763,7 +768,8 @@ def build_decoder(nmid, pt,segs ):
 #### training decoder on projections
 def train_decoder(gen_model, trainset, params, options, pts=None):
 	"""pts input can optionally be used as a regularizer if they are known to be good"""
-	opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate) 
+#	opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate)
+	opt=tf.keras.optimizers.Adamax()
 	wts=gen_model.trainable_variables
 	
 	nbatch=0
@@ -1034,7 +1040,7 @@ def calc_gradient(trainset, pts, params, options):
 
 			loss=-tf.reduce_mean(fval)
 
-		grad=gt.gradient(loss, pt)
+		grad=gt.gradient(loss, pt)*xf.shape[0]
 		allgrds.append(grad.numpy().copy())
 		allscr.append(fval.numpy().copy())
 		sys.stdout.write("\r {}/{} : {:.4f}        ".format(len(allscr), nbatch, np.mean(fval)))
@@ -1054,7 +1060,8 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, options):
 	pas=tf.constant(np.array([pas[0],pas[0],pas[0],pas[1]], dtype=floattype))
 	
 	## initialize optimizer
-	opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate)
+#	opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate)
+	opt=tf.keras.optimizers.Adamax()
 	wts=encode_model.trainable_variables + decode_model.trainable_variables
 	nbatch=0
 	for t in trainset: nbatch+=1
