@@ -33,6 +33,9 @@ ImageDimensionExcept
 - tiff STACKS
 	- big tiff ?
 
+read image in constroctor either python or C++
+exceptions by boost to pass to python
+
 
 LATEST ??
 - upload/publish gui/nogui eman-dev
