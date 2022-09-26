@@ -301,7 +301,7 @@ def main():
 			
 		for eo in ["even", "odd"]:
 			run(f"e2spa_make3d.py --input {path}/aliptcls2d_{itr:02d}.lst --output {path}/threed_{itr:02d}_{eo}.hdf --keep {options.keep} --clsid {eo} --outsize {boxsize} --sym {options.sym} {m3dpar}")
-			run(f"e2proc3d.py {path}/threed_{itr:02d}_{eo}.hdf {path}/threed_raw_{eo}.hdf")
+			run(f"e2proc3d.py {path}/threed_{itr:02d}_{eo}.hdf {path}/threed_raw_{eo}.hdf --compressbits 12")
 		
 		#### only do SSNR weighting for the last iteration to avoid potential model bias
 		##   simply run make3d a second time using the previous map as reference.

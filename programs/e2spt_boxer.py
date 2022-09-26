@@ -339,7 +339,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 			box=info["boxes_3d"]
 			for i,b in enumerate(box):
 				#### X-center,Y-center,Z-center,method,[score,[class #]]
-				bdf=[0,0,0,"manual",0.0, 0]
+				bdf=[0,0,0,"manual",0.0, 0, 0]
 				for j,bi in enumerate(b):  bdf[j]=bi
 				
 				
