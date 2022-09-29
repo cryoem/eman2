@@ -74,19 +74,34 @@ def butstr(widg):
 	if widg.isChecked(): return "1"
 	return "0"
 
+def good_num(dct):
+	"""when passed a dictionary containing numerical (or string numerical) keys, will return the lowest
+	"missing" value>=0"""
+	if dct is None or len(dct)==0: return 0
+	try: ks=set([int(k) for k in dct.keys()])
+	except:
+		error_exit("dictionary with non-integer keys")
+
+	full=set(range(max(ks)+2))
+	return min(full-ks)
+
 # shortcut, if we had a central GUI file like EMAN2.py, it could go there...
 def showerror(msg,parent=None):
 	QtWidgets.QMessageBox.warning(parent,"ERROR",msg)
 
-def make3d_thr(que,tskn,fsp,imgns,rparms,latent,currun,rad,mmode,ptclsclip=-1):
+def make3d_thr(que,tskn,fsp,imgns,rparms,latent,currun,rad,mmode,nset,ptclsclip=-1):
 	"""Thread for 3-D reconstruction in background
 	que - Queue to return result in
 	tskn - task number to identify result
 	fsp - filename of image file with per particle orientations
 	imgns - list of image numbers from fsp to include
 	rparms - recosntructor parameters, include size,sym,mode,usessnr,verbose
+	latent - coordinates of center of set in latent space (numpy array)
 	currun - the current run parameters. pass them in case the user selects a different run during reconstruction
-	
+	rad - radius of set, passthrough
+	mmode - type of classifcation on this set, passthrough
+	nset - set number (not map number) passthrough
+
 	returns in que (tskn,% complete, volume (when 100%)
 	"""
 	
@@ -137,9 +152,9 @@ def make3d_thr(que,tskn,fsp,imgns,rparms,latent,currun,rad,mmode,ptclsclip=-1):
 	ret["apix_z"]=im["apix_x"]
 	print(f"Resolution {r} {1.0/fscf[r]}")
 			
-	que.put((tskn,100,ret,latent,imgns,currun,rad,rete,reto,mmode))
+	que.put((tskn,100,ret,latent,imgns,currun,rad,rete,reto,mmode,nset))
 
-def make3d_thr_fast(que,tskn,fsp,imgns,rparms,latent,currun,rad,mmode,ptclsclip=-1):
+def make3d_thr_fast(que,tskn,fsp,imgns,rparms,latent,currun,rad,mmode,nset,ptclsclip=-1):
 	"""Thread for 3-D reconstruction in background
 	This version downsamples the data and does some other things to make the reconstruction fast, but of lower quality
 	que - Queue to return result in
@@ -202,7 +217,7 @@ def make3d_thr_fast(que,tskn,fsp,imgns,rparms,latent,currun,rad,mmode,ptclsclip=
 	ret["resolution"]=1.0/fscf[r]
 	print(f"Resolution {r} {1.0/fscf[r]}")
 			
-	que.put((tskn,100,ret,latent,imgns,currun,rad,rete,reto,mmode))
+	que.put((tskn,100,ret,latent,imgns,currun,rad,rete,reto,mmode,nset))
 
 def numrng(f):
 	if f==0: return "-"
@@ -272,9 +287,8 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.plotmode=0
 		self.ort_slice=Transform()
 		self.cur_dyn_vol=None
-
-		# created later when needed
-		self.maplist=None
+		self.curmaps={}
+		self.curmaps_sel={}
 
 		# Menu Bar
 		#self.mfile=self.menuBar().addMenu("File")
@@ -360,7 +374,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wbutrerun2=QtWidgets.QPushButton("New Dynamics")
 		self.gblrun.addWidget(self.wbutrerun2,5,1)
 		
-		# The form with details about the selected gmm_XX folder
+		#### The form with details about the selected gmm_XX folder
 		self.gflparm = QtWidgets.QFormLayout()
 		self.gbll.addLayout(self.gflparm,2,0)
 		
@@ -428,7 +442,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wlabruntime = QtWidgets.QLabel("-")
 		self.gflparm.addRow("Run:",self.wlabruntime)
 		
-		# Widgets below plot
+		#### Widgets below plot
 		self.gblpltctl = QtWidgets.QGridLayout()
 		self.gbl.addLayout(self.gblpltctl,3,2)
 		
@@ -466,26 +480,56 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.gblpltctl.addWidget(self.wbutdrpca,0,5)
 		self.wbutdrgrp.addButton(self.wbutdrpca,2)
 		
-		self.gblpltctl.addWidget(QtWidgets.QLabel("New Dim:",self),1,3,Qt.AlignRight)
+		self.gblpltctl.addWidget(QtWidgets.QLabel("New Dim:",self),1,4,Qt.AlignRight)
 		self.wsbnewdim=QtWidgets.QSpinBox(self)
 		self.wsbnewdim.setRange(2,10)
-		self.gblpltctl.addWidget(self.wsbnewdim,1,4,Qt.AlignLeft)
+		self.gblpltctl.addWidget(self.wsbnewdim,1,5,Qt.AlignLeft)
 		
+		self.wbutkmeans=QtWidgets.QPushButton("Kmeans")
+		self.gblpltctl.addWidget(self.wbutkmeans,2,5)
+
+		self.gblpltctl.addWidget(QtWidgets.QLabel("Sets:",self),3,4,Qt.AlignRight)
+		self.wsbnsets=QtWidgets.QSpinBox(self)
+		self.wsbnsets.setRange(2,10)
+		self.gblpltctl.addWidget(self.wsbnsets,3,5,Qt.AlignLeft)
+
 		self.wcbpntpln=QtWidgets.QComboBox()
 		self.wcbpntpln.addItem("Plane")
 		self.wcbpntpln.addItem("HSphere")
 		self.wcbpntpln.addItem("HSlab")
-		self.wcbpntpln.addItem("Map-HSphere")
-		self.wcbpntpln.addItem("Map-HSlab")
-		self.wcbpntpln.addItem("Map-Line")
-		self.wcbpntpln.addItem("Map-HSlab (fast)")
-		self.wcbpntpln.addItem("Map-Line (fast)")
-		self.wcbpntpln.addItem("Map-Line-Sph (fast)")
+		self.wcbpntpln.addItem("Line")
+		#self.wcbpntpln.addItem("Map-HSphere")
+		#self.wcbpntpln.addItem("Map-HSlab")
+		#self.wcbpntpln.addItem("Map-Line")
+		#self.wcbpntpln.addItem("Map-HSlab (fast)")
+		#self.wcbpntpln.addItem("Map-Line (fast)")
+		#self.wcbpntpln.addItem("Map-Line-Sph (fast)")
 		self.gblpltctl.addWidget(self.wcbpntpln,1,3)
 
-		# Widgets below 3D
+		# These buttons are associated with the map list defined below
+		self.wbutmapnorm=QtWidgets.QPushButton("Build Map")
+		self.gblpltctl.addWidget(self.wbutmapnorm,0,6)
+
+		self.wbutmapfast=QtWidgets.QPushButton("Quick Map")
+		self.gblpltctl.addWidget(self.wbutmapfast,1,6)
+
+		self.wbutsetdel=QtWidgets.QPushButton("Delete")
+		self.gblpltctl.addWidget(self.wbutsetdel,2,6)
+
+		self.wbutsetsave=QtWidgets.QPushButton("Save Set")
+		self.gblpltctl.addWidget(self.wbutsetsave,3,6)
+
+
+		#### Widgets below 3D
 		self.gbl3dctl = QtWidgets.QGridLayout()
 		self.gbl.addLayout(self.gbl3dctl,2,4,2,1)
+
+		# map list widget
+		self.maplist=QtWidgets.QTableWidget()
+		self.maplist.setColumnCount(6)
+		self.maplist.verticalHeader().hide()
+		self.maplist.itemSelectionChanged.connect(self.sel_maptable)
+		self.gbl3dctl.addWidget(self.maplist,0,0,5,1)
 
 		# 2-D slice view
 		self.wview2d = None
@@ -502,27 +546,27 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		# Sphere size
 		self.wvssphsz=ValSlider(self,(1,50),"Size:",3.0,90)
-		self.gbl3dctl.addWidget(self.wvssphsz,0,0,1,4)
+		self.gbl3dctl.addWidget(self.wvssphsz,0,1,1,4)
 
 		# Thickness
 		self.wlthk = QtWidgets.QLabel("Thk:")
 		self.wlthk.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
-		self.gbl3dctl.addWidget(self.wlthk,1,0)
+		self.gbl3dctl.addWidget(self.wlthk,1,1)
 		self.wsbthk = QtWidgets.QSpinBox()
 		self.wsbthk.setMinimum(-1)
 		self.wsbthk.setMaximum(256)
 		self.wsbthk.setValue(0)
-		self.gbl3dctl.addWidget(self.wsbthk,1,1)
+		self.gbl3dctl.addWidget(self.wsbthk,1,2)
 
 		# Center with respect to actual center
 		self.wlcen = QtWidgets.QLabel("Cen:")
 		self.wlcen.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
-		self.gbl3dctl.addWidget(self.wlcen,1,2)
+		self.gbl3dctl.addWidget(self.wlcen,1,3)
 		self.wsbcen = QtWidgets.QSpinBox()
 		self.wsbcen.setMinimum(-256)
 		self.wsbcen.setMaximum(256)
 		self.wsbcen.setValue(0)
-		self.gbl3dctl.addWidget(self.wsbcen,1,3)
+		self.gbl3dctl.addWidget(self.wsbcen,1,4)
 		
 		# Connections
 		self.wsbthk.valueChanged.connect(self.slice_update)
@@ -540,6 +584,11 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wbutrerun2.clicked[bool].connect(self.do_run_new)
 		self.wbutneutral.clicked[bool].connect(self.new_neutral)
 		self.wbutneutral2.clicked[bool].connect(self.new_neutral2)
+		self.wbutmapnorm.clicked[bool].connect(self.new_map)
+		self.wbutmapfast.clicked[bool].connect(self.new_map_fast)
+		self.wbutsetdel.clicked[bool].connect(self.set_del)
+		self.wbutsetsave.clicked[bool].connect(self.set_save)
+		self.wbutkmeans.clicked[bool].connect(self.do_kmeans)
 #		self.wedres.editingFinished.connect(self.new_res)
 		self.wbutres.clicked[bool].connect(self.new_res)
 		#self.wbutdrgrp.idClicked[int].connect(self.plot_mode_sel)		# requires pyqt 5.15
@@ -592,10 +641,11 @@ class EMGMM(QtWidgets.QMainWindow):
 	def closeEvent(self,event):
 		E2saveappwin("e2gmm","main",self)
 
-		if not self.maplist is None:
-			E2saveappwin("e2gmm","maps",self.maplist)
-			self.maplist.close()
-			self.maplist = None
+		# no longer a separate window
+		#if not self.maplist is None:
+			#E2saveappwin("e2gmm","maps",self.maplist)
+			#self.maplist.close()
+			#self.maplist = None
 
 		#if self.guiim != None:
 			#E2saveappwin("e2ctf","image",self.guiim.qt_parent)
@@ -623,8 +673,8 @@ class EMGMM(QtWidgets.QMainWindow):
 		proj = self.cur_dyn_vol.process("xform",{"transform":self.ort_slice}).process("misc.directional_sum",{"first":nz//2+cen-thk,"last":nz//2+cen+thk,"axis":"z"})
 
 		if self.wview2d is None:
-			self.wview2d = EMImage2DWidget()
-			self.gbl3dctl.addWidget(self.wview2d,0,4,5,1)
+			self.wview2d = EMImage2DWidget(sizehint=(384,384))
+			self.gbl3dctl.addWidget(self.wview2d,0,5,5,1)
 
 		self.wview2d.set_data(proj)
 
@@ -645,6 +695,7 @@ class EMGMM(QtWidgets.QMainWindow):
 				imgns=ret[4]
 				rad=ret[6]
 				mmode=ret[9]
+				nset=ret[10]
 				#vol=ret[2].get_clip(Region(ps,ps,ps,bs,bs,bs))
 				#vole=ret[7].get_clip(Region(ps,ps,ps,bs,bs,bs))
 				#volo=ret[8].get_clip(Region(ps,ps,ps,bs,bs,bs))
@@ -653,31 +704,23 @@ class EMGMM(QtWidgets.QMainWindow):
 				vol["latent"]=f"{tuple(latent)} {rad} '{mmode}'"
 				
 				# store the reconstructed map
-				try: nmaps=EMUtil.get_image_count(f"{self.gmm}/dynamic_maps.hdf")
+				try: nmaps=EMUtil.get_image_count(f"{self.gmm}/set_maps.hdf")
 				except: nmaps=0
-				vol.write_compressed(f"{self.gmm}/dynamic_maps.hdf",nmaps,8)
-				vole.write_compressed(f"{self.gmm}/dynamic_even.hdf",nmaps,8)
-				volo.write_compressed(f"{self.gmm}/dynamic_odd.hdf",nmaps,8)
+				vol.write_compressed(f"{self.gmm}/set_maps.hdf",nmaps,8)
+				vole.write_compressed(f"{self.gmm}/set_even.hdf",nmaps,8)
+				volo.write_compressed(f"{self.gmm}/set_odd.hdf",nmaps,8)
 				
 				# store metadata to identify maps in dynamic_maps.hdf
-				# map #, timestamp, latent coordinates, number of particles, selection radius
-				newmap=[nmaps,local_datetime(),latent,len(imgns),rad]		
-				maps=self.jsparm.getdefault("maps",{})
-				try: 
-					maps[self.currunkey].append(newmap)
-				except:
-					maps[self.currunkey]=[newmap]
-				self.jsparm["maps"]=maps
-				self.curmaps=maps[self.currunkey]
-				self.curmaps_sel=self.curmaps
-				self.update_maptable()
+				# set # (key), 0) map #, 1) timestamp, 2) latent coordinates of center, 3) map size, 4) est resolution, 5) list of points
+				newmap=[nmaps,local_datetime(),latent,vol["nz"],vol["resolution"],imgns]
+				self.curmaps[str(nset)]=newmap
+				self.sets_changed()
 
-				
 				# display the map
 				self.display_dynamic(vol)
 
-				self.wplot2d.full_refresh()
-				self.wplot2d.updateGL()
+				#self.wplot2d.full_refresh()
+				#self.wplot2d.updateGL()
 
 				# clean up the thread
 				t=self.threads[ret[0]]
@@ -686,57 +729,84 @@ class EMGMM(QtWidgets.QMainWindow):
 			else:
 				print(f"Thread {ret[0]} at {ret[1]}%")
 
-	def update_maptable(self):
+	def update_maptable(self,sel=None):
 		"""Updates the table containing all of the current computed dynamic maps"""
-		if self.maplist is None:
-			self.maplist=QtWidgets.QTableWidget()
-			self.maplist.setColumnCount(5)
-			self.maplist.itemSelectionChanged.connect(self.sel_maptable)
-			self.maplist.verticalHeader().hide()
-
-		if self.curmaps is None or len(self.curmaps)==0 :
-			self.maplist.hide()
-
 
 		self.maplist.clear()
-		self.maplist.setHorizontalHeaderLabels(["#","Ptcl","Coord","Rad","Datestamp"])
+		self.maplist.setHorizontalHeaderLabels(["Set","Ptcl","Map","Size","Res","Datestamp"])
 		self.maplist.setRowCount(len(self.curmaps))
-		for i,m in enumerate(self.curmaps):
-			cstr="".join([numrng(v) for v in m[2]])
+		for i,k in enumerate(sorted([int(i) for i in self.curmaps])):
+			m=self.curmaps[str(k)]
+			#print(m[:-1])
+			#cstr="".join([numrng(v) for v in m[2]])
 
-			twi=QtWidgets.QTableWidgetItem(f"{i}")
+			twi=QtWidgets.QTableWidgetItem(f"{k}")
 			twi.setFlags(Qt.ItemIsSelectable|Qt.ItemIsEnabled)
 			self.maplist.setItem(i,0,twi)
 
-			twi=QtWidgets.QTableWidgetItem(f"{m[3]}")
+			twi=QtWidgets.QTableWidgetItem(f"{len(m[5])}")
 			twi.setFlags(Qt.ItemIsEnabled)
 			self.maplist.setItem(i,1,twi)
 
-			twi=QtWidgets.QTableWidgetItem(cstr)
+			twi=QtWidgets.QTableWidgetItem(f"{m[0]}")
 			twi.setFlags(Qt.ItemIsEnabled)
 			self.maplist.setItem(i,2,twi)
 
-			twi=QtWidgets.QTableWidgetItem(f"{m[4]}")
+			twi=QtWidgets.QTableWidgetItem(f"{m[3]}")
 			twi.setFlags(Qt.ItemIsEnabled)
 			self.maplist.setItem(i,3,twi)
+
+			twi=QtWidgets.QTableWidgetItem(f"{m[4]:1.1f}")
+			twi.setFlags(Qt.ItemIsEnabled)
+			self.maplist.setItem(i,4,twi)
 
 			twi=QtWidgets.QTableWidgetItem(f"{m[1]}")
 			twi.setFlags(Qt.ItemIsEnabled)
 #			twi.setFlags(Qt.NoItemFlags)
-			self.maplist.setItem(i,4,twi)
+			self.maplist.setItem(i,5,twi)
 
 		self.maplist.resizeColumnsToContents()
-		self.maplist.show()
 		self.curmaps_sel=[]
+		if not sel is None:
+			self.maplist.selectRow(sel)
 
 	def sel_maptable(self):
 		"""When items are selected in the list of generated maps"""
-		self.curmaps_sel=[]
-		for i in self.maplist.selectedItems(): self.curmaps_sel.append(self.curmaps[i.row()])
+#		print("*** ", self.data.shape)
+#		self.wplot2d.set_data(self.data,"map")
+#		self.wplot2d.set_data(None,replace=True,quiet=True)
 
-		self.wplot2d.full_refresh()
+		self.wplot2d.set_data(self.data,"map",symsize=10,replace=True,quiet=True)
+
+		if len(self.maplist.selectedItems())>0:
+			self.curmaps_sel={}
+			self.data_sel=[]
+			ss=10
+			for i in self.maplist.selectedItems():
+				key=i.text()
+				ss-=2
+				if ss<2 : ss=2
+				smap=self.curmaps[key]
+				self.curmaps_sel[key]=smap
+				if not isinstance(smap[5],np.ndarray) : smap[5]=np.array(smap[5])
+				self.data_sel.append(self.data[:,np.array(smap[5])])	# smap[5] is a list of points in the class
+				#print("S:",self.data.shape,self.data_sel[-1].shape)
+				self.wplot2d.set_data(self.data_sel[-1],f"set_{key}",symsize=ss,quiet=True)
+
+#		self.wplot2d.setXAxisAll(0,True)
+#		self.wplot2d.setYAxisAll(1,True)
+		#self.wplot2d.full_refresh()
 		self.wplot2d.updateGL()
 
+		if len(self.maplist.selectedItems())==1:
+			key=self.maplist.selectedItems()[0].text()
+			smap=self.curmaps[key]
+			if smap[0] is not None:
+				try:
+					vol=EMData(f"{self.gmm}/set_maps.hdf",smap[0])
+					self.display_dynamic(vol)
+				except:
+					print("Error: map missing for ",smap)
 
 	def display_dynamic(self,vol):
 		"""Displays a new dynamic map, used multiple places so condensed here"""
@@ -808,19 +878,20 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		# Check whether we are close enough to a computed dynamic map to display it
 		best=(1.0e6,None)
-		for m in self.curmaps_sel:
+		for k in self.curmaps_sel:
+			m=self.curmaps_sel[k]
 			if self.plotmode==1:
 				xm=self.decomp.transform(m[2].reshape(1,len(m[2])))[0]	# expects an array of vectors
 				c=(xm[xcol],xm[ycol])
 			else:
 				c=(m[2][xcol],m[2][ycol])
 			d=hypot(c[0]-loc[0],c[1]-loc[1])
-			if d<m[4] and d<best[0] : best=(d,m)
+			if d<0.05 and d<best[0] : best=(d,m)	# fixed max radius of 0.05
 
 		if best[1] is not None:
 			if self.lastbest!=best[1][0]:
 				print(f"{loc} Best {best}")
-				map=EMData(f"{self.gmm}/dynamic_maps.hdf",best[1][0])
+				map=EMData(f"{self.gmm}/set_maps.hdf",best[1][0])
 				self.display_dynamic(map)
 				self.lastbest=best[1][0]
 		
@@ -844,7 +915,7 @@ class EMGMM(QtWidgets.QMainWindow):
 				#r=
 			
 			return
-		elif mmode=="HSphere" or mmode=="Map-HSphere":
+		elif mmode=="HSphere":
 			# This will produce a list of indices where the distance in latent space is less than the specified rad
 			ptdist=(np.sum((self.midresult.transpose()-latent)**2,1)<(rad**2)).nonzero()[0]
 			self.wplot2d.add_shape("count",EMShape(["scrlabel",0.1,0.1,0.1,10.,10.,f"{len(ptdist)} ptcls",120.0,-1]))
@@ -864,10 +935,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			self.gaussplot.setData(gauss,self.wvssphsz.value)
 			self.wview3d.update()
 			return
-		elif mmode=="HSlab" or mmode=="Map-HSlab" or mmode=="Map-HSlab (fast)":
-			if self.plotmode==1:
-				print("PCA incompatible with Hyperslab")
-				return
+		elif mmode=="HSlab":
 			# This will produce a list of indices where the distance in the plane is less than the specified rad
 			ptdist=((self.midresult[xcol]-latent[xcol])**2+(self.midresult[ycol]-latent[ycol])**2<(rad**2)).nonzero()[0]
 			self.wplot2d.add_shape("count",EMShape(["scrlabel",0.1,0.1,0.1,15.,15.,f"{len(ptdist)} ptcls",120.0,-1]))
@@ -887,21 +955,21 @@ class EMGMM(QtWidgets.QMainWindow):
 			self.gaussplot.setData(gauss,self.wvssphsz.value)
 			self.wview3d.update()
 			return
-		elif mmode in ("Map-Line","Map-Line (fast)","Map-Line-Sph (fast)"):
+		elif mmode in ("Line"):
 			self.line_origin=(loc,latent)
 			return
 		else: print("mode error")
 
 	def plot_mouse_drag(self,event,loc):
 		mmode=str(self.wcbpntpln.currentText())
-		if mmode not in ("Map-Line","Map-Line (fast)","Map-Line-Sph (fast)"):
+		if mmode != "Line":
 			self.plot_mouse(event,loc)
 			return
 		
 		self.wplot2d.add_shape("genline",EMShape(["line",0.1,0.8,0.1,self.line_origin[0][0],self.line_origin[0][1],loc[0],loc[1],1]))
 		self.wplot2d.update()
-		
-		
+
+
 	def plot_mouse_up(self,event,loc):
 		mmode=str(self.wcbpntpln.currentText())
 		dim=self.currun.get("dim",4)
@@ -933,109 +1001,172 @@ class EMGMM(QtWidgets.QMainWindow):
 		ycol=self.wsbycol.value()
 		self.wplot2d.del_shapes(["region","genline"])
 
-		#if mmode=="HSphere":
-			## This will produce a list of indices where the distance in latent space is less than the specified rad
-			#ptdist=(np.sum((self.midresult.transpose()-latent)**2,1)<(rad**2)).nonzero()[0]
-			#self.wplot2d.add_shape("count",EMShape(["scrlabel",0.1,0.1,0.1,10.,10.,f"{len(ptdist)} ptcls",120.0,-1]))
-			#self.wplot2d.add_shape("region",EMShape(["circle",0.1,0.8,0.1,loc[0],loc[1],rad,1]))
-			#self.wplot2d.update()
-##			print(loc,self.wplot2d.plot2draw(loc[0],loc[1]),event.x(),event.y(),self.wplot2d.scrlim,rad)
-
-			##Limit ourselves to a random subset of ~500 of the points to average
-			#if len(ptdist)>500: ptdist=ptdist[::len(ptdist)//500]
-			#gauss=np.mean(self.decoder(self.midresult.transpose()[ptdist]),0).transpose()		# run all of the selected latent vectors through the decoder at once
-			#box=int(self.wedbox.text())
-			#gauss[:3]*=box
-			#gauss[2]*=-1.0
-			#gauss[1]*=-1.0
-			#if not butval(self.wbutpos): gauss[:3]=self.model[:3]
-			#if not butval(self.wbutamp): gauss[3]=self.model[3]
-			#if not butval(self.wbutsig): gauss[4]=self.model[4]
-			#np.savetxt("mouse.txt",gauss.transpose(),fmt="%.5g",delimiter="\t")
-
-		if mmode=="Map-HSphere":
+		if mmode=="HSphere":
 			# This will produce a list of indices where the distance in latent space is less than the specified rad
 			ptdist=(np.sum((self.midresult.transpose()-latent)**2,1)<(rad**2)).nonzero()[0]
 			sz=good_size(self.jsparm["boxsize"]*5//4)
-			rparms={"size":(sz,sz,sz),"sym":self.jsparm["sym"],"mode":"gauss_2","usessnr":0,"verbose":0}
-			self.threads.append(threading.Thread(target=make3d_thr,args=(self.threadq,len(self.threads),f"{self.gmm}/particles.lst",ptdist,rparms,latent,self.currun,rad,mmode,self.jsparm["boxsize"])))
-			self.threads[-1].start()
-			print(f"Thread {len(self.threads)} started with {len(ptdist)} particles")
+
+			nset=good_num(self.curmaps)
+			newmap=[None,local_datetime(),latent,0,0,ptdist]
+			self.curmaps[str(nset)]=newmap
+			self.sets_changed(nset)
+
+			#rparms={"size":(sz,sz,sz),"sym":self.jsparm["sym"],"mode":"gauss_2","usessnr":0,"verbose":0}
+			#self.threads.append(threading.Thread(target=make3d_thr,args=(self.threadq,len(self.threads),f"{self.gmm}/particles.lst",ptdist,rparms,latent,self.currun,rad,mmode,self.jsparm["boxsize"])))
+			#self.threads[-1].start()
+			#print(f"Thread {len(self.threads)} started with {len(ptdist)} particles")
 			return
-		elif mmode=="Map-HSlab":
+		elif mmode=="HSlab":
 			# This will produce a list of indices where the distance in the plane is less than the specified rad
 			ptdist=((self.midresult[xcol]-latent[xcol])**2+(self.midresult[ycol]-latent[ycol])**2<(rad**2)).nonzero()[0]
 			sz=good_size(self.jsparm["boxsize"]*5//4)
-			rparms={"size":(sz,sz,sz),"sym":self.jsparm["sym"],"mode":"gauss_2","usessnr":0,"verbose":0}
-			self.threads.append(threading.Thread(target=make3d_thr,args=(self.threadq,len(self.threads),f"{self.gmm}/particles.lst",ptdist,rparms,latent,self.currun,rad,mmode,self.jsparm["boxsize"])))
-			self.threads[-1].start()
-			print(f"Thread {len(self.threads)} started with {len(ptdist)} particles")
+
+			nset=good_num(self.curmaps)
+			newmap=[None,local_datetime(),latent,0,0,ptdist]
+			self.curmaps[str(nset)]=newmap
+			self.sets_changed(nset)
+
+			#rparms={"size":(sz,sz,sz),"sym":self.jsparm["sym"],"mode":"gauss_2","usessnr":0,"verbose":0}
+			#self.threads.append(threading.Thread(target=make3d_thr,args=(self.threadq,len(self.threads),f"{self.gmm}/particles.lst",ptdist,rparms,latent,self.currun,rad,mmode,self.jsparm["boxsize"])))
+			#self.threads[-1].start()
+			#print(f"Thread {len(self.threads)} started with {len(ptdist)} particles")
 			return
-		elif mmode=="Map-Line":
+		elif mmode=="Line":
 			ll=np.linalg.norm(latent-self.line_origin[1])	# vector length
 			if ll<rad :
 				print("line too short, aborted")
 				return
 			nm=min(10,ceil(ll/rad))		# number of maps to generate
-			
+
+			try: nset=max([int(k) for k in self.curmaps])+1
+			except: nset=0
 			for i in range(nm):
 				f=i/(nm-1)
 				plat=latent*f+self.line_origin[1]*(1.0-f)	# point latent vector along line
 				ptdist=((self.midresult[xcol]-plat[xcol])**2+(self.midresult[ycol]-plat[ycol])**2<(rad**2)).nonzero()[0]		# using the slab form
-				sz=good_size(self.jsparm["boxsize"]*5//4)
-				rparms={"size":(sz,sz,sz),"sym":self.jsparm["sym"],"mode":"gauss_2","usessnr":0,"verbose":0}
-				self.threads.append(threading.Thread(target=make3d_thr,args=(self.threadq,len(self.threads),f"{self.gmm}/particles.lst",ptdist,rparms,plat,self.currun,rad,mmode,self.jsparm["boxsize"])))
-				self.threads[-1].start()
-				print(f"Thread {len(self.threads)} started with {len(ptdist)} particles")
-		elif mmode=="Map-HSlab (fast)":
-			# This will produce a list of indices where the distance in the plane is less than the specified rad
-			ptdist=((self.midresult[xcol]-latent[xcol])**2+(self.midresult[ycol]-latent[ycol])**2<(rad**2)).nonzero()[0]
-			sz=good_size(self.jsparm["boxsize"]*5//4)
+
+				newmap=[None,local_datetime(),latent,0,0,ptdist]
+				self.curmaps[str(nset+i)]=newmap
+
+			self.sets_changed()
+
+				#sz=good_size(self.jsparm["boxsize"]*5//4)
+				#rparms={"size":(sz,sz,sz),"sym":self.jsparm["sym"],"mode":"gauss_2","usessnr":0,"verbose":0}
+				#self.threads.append(threading.Thread(target=make3d_thr,args=(self.threadq,len(self.threads),f"{self.gmm}/particles.lst",ptdist,rparms,plat,self.currun,rad,mmode,self.jsparm["boxsize"])))
+				#self.threads[-1].start()
+				#print(f"Thread {len(self.threads)} started with {len(ptdist)} particles")
+		#elif mmode=="Map-HSlab (fast)":
+			## This will produce a list of indices where the distance in the plane is less than the specified rad
+			#ptdist=((self.midresult[xcol]-latent[xcol])**2+(self.midresult[ycol]-latent[ycol])**2<(rad**2)).nonzero()[0]
+			#sz=good_size(self.jsparm["boxsize"]*5//4)
+			#rparms={"size":(sz,sz,sz),"sym":self.jsparm["sym"],"mode":"gauss_2","usessnr":0,"verbose":0}
+			#self.threads.append(threading.Thread(target=make3d_thr_fast,args=(self.threadq,len(self.threads),f"{self.gmm}/particles.lst",ptdist,rparms,latent,self.currun,rad,mmode,self.jsparm["boxsize"])))
+			#self.threads[-1].start()
+			#print(f"Thread {len(self.threads)} started with {len(ptdist)} particles")
+			#return
+		#elif mmode=="Map-Line (fast)":
+			#ll=np.linalg.norm(latent-self.line_origin[1])	# vector length
+			#if ll<rad :
+				#print("line too short, aborted")
+				#return
+			#nm=min(10,ceil(ll/rad))		# number of maps to generate
+			
+			#for i in range(nm):
+				#f=i/(nm-1)
+				#plat=latent*f+self.line_origin[1]*(1.0-f)	# point latent vector along line
+				#ptdist=((self.midresult[xcol]-plat[xcol])**2+(self.midresult[ycol]-plat[ycol])**2<(rad**2)).nonzero()[0]		# using the slab form
+				#sz=good_size(self.jsparm["boxsize"]*5//4)
+				#rparms={"size":(sz,sz,sz),"sym":self.jsparm["sym"],"mode":"gauss_2","usessnr":0,"verbose":0}
+				#self.threads.append(threading.Thread(target=make3d_thr_fast
+					#,args=(self.threadq,len(self.threads),f"{self.gmm}/particles.lst",ptdist,rparms,plat,self.currun,rad,mmode,self.jsparm["boxsize"])))
+				#self.threads[-1].start()
+				#print(f"Thread {len(self.threads)} started with {len(ptdist)} particles")
+				
+			#return
+		#elif mmode=="Map-Line-Sph (fast)":
+			#ll=np.linalg.norm(latent-self.line_origin[1])	# vector length
+			#if ll<rad :
+				#print(f"line too short, aborted: {latent} - {self.line_origin[1]}")
+				#return
+			#nm=min(10,ceil(ll/rad))		# number of maps to generate
+			
+			#for i in range(nm):
+				#f=i/(nm-1)
+				#plat=latent*f+self.line_origin[1]*(1.0-f)	# point latent vector along line
+				#ptdist=(np.sum((self.midresult.transpose()-plat)**2,1)<(rad**2)).nonzero()[0]
+				#sz=good_size(self.jsparm["boxsize"]*5//4)
+				#rparms={"size":(sz,sz,sz),"sym":self.jsparm["sym"],"mode":"gauss_2","usessnr":0,"verbose":0}
+				#self.threads.append(threading.Thread(target=make3d_thr_fast
+										 #,args=(self.threadq,len(self.threads),f"{self.gmm}/particles.lst",ptdist,rparms,plat,self.currun,rad,mmode,self.jsparm["boxsize"])))
+				#self.threads[-1].start()
+				#print(f"Thread {len(self.threads)} started with {len(ptdist)} particles")
+				
+			#return
+
+	def sets_changed(self,nnew=None):
+		allmaps=self.jsparm.getdefault("sets",{})
+		allmaps[self.currunkey]=self.curmaps
+		self.jsparm["sets"]=allmaps
+		self.update_maptable(nnew)
+
+	def new_map(self,ign=None):
+		"""Start threads to generate a new full scale map for all selected sets"""
+
+		sz=good_size(self.jsparm["boxsize"]*5//4)
+		for k in self.curmaps_sel:
+			st=self.curmaps_sel[k]
 			rparms={"size":(sz,sz,sz),"sym":self.jsparm["sym"],"mode":"gauss_2","usessnr":0,"verbose":0}
-			self.threads.append(threading.Thread(target=make3d_thr_fast,args=(self.threadq,len(self.threads),f"{self.gmm}/particles.lst",ptdist,rparms,latent,self.currun,rad,mmode,self.jsparm["boxsize"])))
+			self.threads.append(threading.Thread(target=make3d_thr,args=(self.threadq,len(self.threads),f"{self.gmm}/particles.lst",st[5],rparms,st[2],self.currun,0,"Full",k,self.jsparm["boxsize"])))
 			self.threads[-1].start()
-			print(f"Thread {len(self.threads)} started with {len(ptdist)} particles")
-			return
-		elif mmode=="Map-Line (fast)":
-			ll=np.linalg.norm(latent-self.line_origin[1])	# vector length
-			if ll<rad :
-				print("line too short, aborted")
-				return
-			nm=min(10,ceil(ll/rad))		# number of maps to generate
-			
-			for i in range(nm):
-				f=i/(nm-1)
-				plat=latent*f+self.line_origin[1]*(1.0-f)	# point latent vector along line
-				ptdist=((self.midresult[xcol]-plat[xcol])**2+(self.midresult[ycol]-plat[ycol])**2<(rad**2)).nonzero()[0]		# using the slab form
-				sz=good_size(self.jsparm["boxsize"]*5//4)
-				rparms={"size":(sz,sz,sz),"sym":self.jsparm["sym"],"mode":"gauss_2","usessnr":0,"verbose":0}
-				self.threads.append(threading.Thread(target=make3d_thr_fast
-										 ,args=(self.threadq,len(self.threads),f"{self.gmm}/particles.lst",ptdist,rparms,plat,self.currun,rad,mmode,self.jsparm["boxsize"])))
-				self.threads[-1].start()
-				print(f"Thread {len(self.threads)} started with {len(ptdist)} particles")
-				
-			return
-		elif mmode=="Map-Line-Sph (fast)":
-			ll=np.linalg.norm(latent-self.line_origin[1])	# vector length
-			if ll<rad :
-				print(f"line too short, aborted: {latent} - {self.line_origin[1]}")
-				return
-			nm=min(10,ceil(ll/rad))		# number of maps to generate
-			
-			for i in range(nm):
-				f=i/(nm-1)
-				plat=latent*f+self.line_origin[1]*(1.0-f)	# point latent vector along line
-				ptdist=(np.sum((self.midresult.transpose()-plat)**2,1)<(rad**2)).nonzero()[0]
-				sz=good_size(self.jsparm["boxsize"]*5//4)
-				rparms={"size":(sz,sz,sz),"sym":self.jsparm["sym"],"mode":"gauss_2","usessnr":0,"verbose":0}
-				self.threads.append(threading.Thread(target=make3d_thr_fast
-										 ,args=(self.threadq,len(self.threads),f"{self.gmm}/particles.lst",ptdist,rparms,plat,self.currun,rad,mmode,self.jsparm["boxsize"])))
-				self.threads[-1].start()
-				print(f"Thread {len(self.threads)} started with {len(ptdist)} particles")
-				
-			return
-			
-			
+			print(f"Thread {len(self.threads)} started with {len(st[5])} particles")
+
+
+	def new_map_fast(self,ign=None):
+		"""Start threads to generate a new downsampled map for all selected sets"""
+
+		sz=good_size(self.jsparm["boxsize"]*5//4)
+		for k in self.curmaps_sel:
+			st=self.curmaps_sel[k]
+			rparms={"size":(sz,sz,sz),"sym":self.jsparm["sym"],"mode":"gauss_2","usessnr":0,"verbose":0}
+			self.threads.append(threading.Thread(target=make3d_thr_fast,args=(self.threadq,len(self.threads),f"{self.gmm}/particles.lst",st[5],rparms,st[2],self.currun,0,"Full",k,self.jsparm["boxsize"])))
+			self.threads[-1].start()
+			print(f"Thread {len(self.threads)} started with {len(st[5])} particles")
+
+	def set_del(self,ign=None):
+		"""Delete an existing set (only if a map hasn't been computed for it)"""
+
+		delerr=False
+		for k in self.curmaps_sel:
+			st=self.curmaps_sel[k]
+			if st[0] is not None:
+				delerr=True
+				continue
+			del self.curmaps[k]
+
+		self.sets_changed()
+
+		if delerr: QtWidgets.QMessageBox.warning(None, "Warning", "Warning: sets with computed maps not deleted!")
+
+	def set_save(self,ign=None):
+		"""Save a set to a new LST file for further processing"""
+
+	def do_kmeans(self):
+		from sklearn.cluster import KMeans
+		nseg=self.wsbnsets.value()
+
+		try: nset=max([int(k) for k in self.curmaps])+1
+		except: nset=0
+
+		kmseg=KMeans(n_clusters=nseg)
+		classes=kmseg.fit_predict(self.data.transpose())
+		for i in range(nseg):
+			ptdist=np.where(classes==i)[0]
+			newmap=[None,local_datetime(),kmseg.cluster_centers_[i],0,0,ptdist]
+			self.curmaps[str(nset+i)]=newmap
+
+		self.sets_changed()
+
+
 	def plot_mode_sel(self,but):
 		"""Plot mode selected"""
 		
@@ -1057,6 +1188,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wsbycol.setRange(0,len(self.data)-1)
 		self.wsbycol.setValue(1)
 		
+#		print(self.data.shape)
 		self.wplot2d.set_data(self.data,"map")
 
 	def update_axes_x(self,x):
@@ -1073,7 +1205,8 @@ class EMGMM(QtWidgets.QMainWindow):
 		"""This is called as a callback during rendering of the 2-D plot"""
 		xa=self.wsbxcol.value()
 		ya=self.wsbycol.value()
-		for i,m in enumerate(self.curmaps_sel):
+		for i,k in enumerate(self.curmaps_sel):
+			m=self.curmaps_sel[k]
 			try:
 				if self.plotmode==1:
 					xm=self.decomp.transform(m[2].reshape(1,len(m[2])))[0]	# expects an array of vectors
@@ -1510,6 +1643,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			if k[:4]!="run_": continue
 			self.wlistrun.addItem(k[4:])
 		self.currunkey=None
+
 		self.sel_run(self.wlistrun.count()-1)
 		try: 
 			self.map3d=EMData(f'{self.gmm}/input_map.hdf')
@@ -1542,7 +1676,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wbutamp.setChecked(int(pas[1]))
 		self.wbutsig.setChecked(int(pas[2]))
 		self.wlabruntime.setText(self.currun.get("time","-"))
-		nx=int(self.jsparm.getdefault("boxsize",128))		
+		nx=int(self.jsparm.getdefault("boxsize",128))
 
 		# not critical, but display it if we have it
 		if self.fmapdataitem!=None:
@@ -1582,14 +1716,16 @@ class EMGMM(QtWidgets.QMainWindow):
 			self.set3dvis(1,0,0,0,0,1)
 			return
 
-		# list of all computed dynamic maps for this run
-		allmaps=self.jsparm.getdefault("maps",{})
+		# list of all data subsets for this run, in the old system these were called "maps" but had incomplete info
+		allmaps=self.jsparm.getdefault("sets",{})
 		try:
 				self.curmaps=allmaps[self.currunkey]
-				self.curmaps_sel=self.curmaps
-		except: self.curmaps=[]
-		for m in self.curmaps: m[2]=np.array(m[2])
-		self.update_maptable()
+				self.curmaps_sel={}
+		except: self.curmaps={}
+		for k in self.curmaps:
+			m=self.curmaps[k]
+			m[2]=np.array(m[2])		# latent space center
+			m[5]=np.array(m[5])		# list of point numbers in set
 		
 		# Middle layer for every particle
 		self.wplot2d.del_shapes()
@@ -1603,7 +1739,8 @@ class EMGMM(QtWidgets.QMainWindow):
 		
 		self.plot_mouse(None,(0,0))
 		self.wplot2d.updateGL()
-		
+		self.update_maptable()
+
 		self.set3dvis(1,0,0,1,1,0)
 
 

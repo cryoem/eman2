@@ -229,7 +229,7 @@ class EMPlot2DWidget(EMGLWidget):
 			glDeleteLists(self.main_display_list,1)
 			self.main_display_list = 0
 
-	def set_data(self,input_data,key="data",replace=False,quiet=False,color=-1,linewidth=1,linetype=-2,symtype=-2,symsize=10,comments=None):
+	def set_data(self,input_data,key="data",replace=False,quiet=False,color=-1,linewidth=1,linetype=-2,symtype=-2,symsize=6,comments=None):
 		"""Set a keyed data set. The key should generally be a string describing the data.
 		'data' is a tuple/list of tuples/list representing all values for a particular
 		axis. eg - the points: 1,5; 2,7; 3,9 would be represented as ((1,2,3),(5,7,9)).
@@ -262,6 +262,9 @@ class EMPlot2DWidget(EMGLWidget):
 			if self.inspector: self.inspector.datachange()
 			if not quiet: self.updateGL()
 			return
+
+		#if isinstance(input_data,np.ndarray): print("SET: ",key,input_data.shape)
+		#else: print("SET: ",key,type(input_data))
 
 		if key in self.data : oldkey=True
 		else: oldkey=False
@@ -534,9 +537,9 @@ class EMPlot2DWidget(EMGLWidget):
 
 		if render:
 			fig=Figure((self.width()/72.0,self.height()/72.0),dpi=72.0)
-			if self.axisparms[0] and len(self.axisparms[0])>0: ymin=.1
+			if self.axisparms[0] is not None and len(self.axisparms[0])>0: ymin=.1
 			else: ymin= .05
-			if self.axisparms[1] and len(self.axisparms[1])>0 : xmin=.12
+			if self.axisparms[1] is not None and len(self.axisparms[1])>0 : xmin=.12
 			else: xmin= .08
 			if len(self.plottitle)>0 : ywid=0.94-ymin
 			else: ywid=0.98-ymin
@@ -545,10 +548,11 @@ class EMPlot2DWidget(EMGLWidget):
 			else: xlimits=self.xlimits
 			if self.ylimits[0]==self.ylimits[1]: ylimits=[self.ylimits[0],self.ylimits[0]+1.0]
 			else: ylimits=self.ylimits
+#			print((xmin,ymin,xwid,ywid),xlimits,ylimits,self.axisparms[2],self.axisparms[3])
 			ax=fig.add_axes((xmin,ymin,xwid,ywid),autoscale_on=False,xlim=xlimits,ylim=ylimits,xscale=self.axisparms[2],yscale=self.axisparms[3])
 			#else : ax=fig.add_axes((.18,.18,.9,.9),autoscale_on=True,xscale=self.axisparms[2],yscale=self.axisparms[3])
-			if self.axisparms[0] and len(self.axisparms[0])>0 : ax.set_xlabel(self.axisparms[0],size="xx-large")
-			if self.axisparms[1] and len(self.axisparms[1])>0 : ax.set_ylabel(self.axisparms[1],size="xx-large")
+			if self.axisparms[0] is not None and len(self.axisparms[0])>0 : ax.set_xlabel(self.axisparms[0],size="xx-large")
+			if self.axisparms[1] is not None and len(self.axisparms[1])>0 : ax.set_ylabel(self.axisparms[1],size="xx-large")
 			if len(self.plottitle)>0 : ax.set_title(self.plottitle,size="xx-large")
 			ax.tick_params(axis='x', labelsize="x-large")
 			ax.tick_params(axis='y', labelsize="x-large")
@@ -571,7 +575,7 @@ class EMPlot2DWidget(EMGLWidget):
 					elif j[2]==-1: col=arange(len(self.data[i][0]))*255.0/len(self.data[i][0])
 					else:
 						climits=self.climits
-						col=old_div((self.data[i][self.axes[i][2]]-climits[0]),(climits[1]-climits[0]))*255.0
+						col=(self.data[i][self.axes[i][2]]-climits[0])//(climits[1]-climits[0])*255.0
 
 					if j[3]==-2: sz=self.pparm[i][6]
 					elif j[3]==-1: sz=arange(len(self.data[i][0]))*30.0/len(self.data[i][0])
@@ -591,7 +595,15 @@ class EMPlot2DWidget(EMGLWidget):
 			# additional program-specific annotations
 			if not self.annotate is None: self.annotate(fig,ax)
 
-			canvas.draw()
+			try: canvas.draw()
+			except:
+				traceback.print_exc()
+				print("keys: ",self.axes.keys())
+				print("pparm: ",self.pparm)
+				print("axisparm: ",self.axisparms)
+				print("xlimits: ",self.xlimits)
+				print("ylimits: ",self.ylimits)
+
 			if self.savepdf!=None:
 				canvas.print_pdf(self.savepdf)
 				self.savepdf=None
