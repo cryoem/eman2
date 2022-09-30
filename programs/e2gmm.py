@@ -529,52 +529,86 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.maplist.setColumnCount(6)
 		self.maplist.verticalHeader().hide()
 		self.maplist.itemSelectionChanged.connect(self.sel_maptable)
-		self.gbl3dctl.addWidget(self.maplist,0,0,5,1)
+		self.gbl3dctl.addWidget(self.maplist,0,0,6,1)
 
 		# 2-D slice view
 		self.wview2d = None
 		
-		#self.wbutmap=QtWidgets.QPushButton("Map")
-		#self.wbutmap.setCheckable(True)
-		#self.wbutmap.setChecked(True)
-		#self.gbl3dctl.addWidget(self.wbutmap,0,0)
+		self.wbutvtop=QtWidgets.QPushButton("Top")
+		self.gbl3dctl.addWidget(self.wbutvtop,0,1)
 
-		#self.wbutspheres=QtWidgets.QPushButton("Sphere Mdl")
-		#self.wbutspheres.setCheckable(True)
-		#self.wbutspheres.setChecked(True)
-		#self.gbl3dctl.addWidget(self.wbutspheres,0,1)
+		self.wbutvbot=QtWidgets.QPushButton("Bot")
+		self.gbl3dctl.addWidget(self.wbutvbot,0,2)
+
+		self.wbutvside1=QtWidgets.QPushButton("Side1")
+		self.gbl3dctl.addWidget(self.wbutvside1,0,3)
+
+		self.wbutvside2=QtWidgets.QPushButton("Side2")
+		self.gbl3dctl.addWidget(self.wbutvside2,0,4)
 
 		# Sphere size
-		self.wvssphsz=ValSlider(self,(1,50),"Size:",3.0,90)
-		self.gbl3dctl.addWidget(self.wvssphsz,0,1,1,4)
+		self.wvssphsz=ValSlider(self,(1,50),"Sphere Size:",3.0,90)
+		self.gbl3dctl.addWidget(self.wvssphsz,1,1,1,4)
 
 		# Thickness
 		self.wlthk = QtWidgets.QLabel("Thk:")
 		self.wlthk.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
-		self.gbl3dctl.addWidget(self.wlthk,1,1)
+		self.gbl3dctl.addWidget(self.wlthk,2,1)
 		self.wsbthk = QtWidgets.QSpinBox()
 		self.wsbthk.setMinimum(-1)
 		self.wsbthk.setMaximum(256)
 		self.wsbthk.setValue(0)
-		self.gbl3dctl.addWidget(self.wsbthk,1,2)
+		self.gbl3dctl.addWidget(self.wsbthk,2,2)
 
 		# Center with respect to actual center
 		self.wlcen = QtWidgets.QLabel("Cen:")
 		self.wlcen.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
-		self.gbl3dctl.addWidget(self.wlcen,1,3)
+		self.gbl3dctl.addWidget(self.wlcen,2,3)
 		self.wsbcen = QtWidgets.QSpinBox()
 		self.wsbcen.setMinimum(-256)
 		self.wsbcen.setMaximum(256)
 		self.wsbcen.setValue(0)
-		self.gbl3dctl.addWidget(self.wsbcen,1,4)
-		
+		self.gbl3dctl.addWidget(self.wsbcen,2,4)
+
+		self.wbutnmap=QtWidgets.QPushButton("Neutral Map")
+		self.wbutnmap.setCheckable(True)
+		self.wbutnmap.setChecked(True)
+		self.gbl3dctl.addWidget(self.wbutnmap,3,1,1,2)
+
+		self.wbutnmdl=QtWidgets.QPushButton("Neutral Model")
+		self.wbutnmdl.setCheckable(True)
+		self.wbutnmdl.setChecked(True)
+		self.gbl3dctl.addWidget(self.wbutnmdl,3,3,1,2)
+
+		self.wbutdmap=QtWidgets.QPushButton("Dynamic Map")
+		self.wbutdmap.setCheckable(True)
+		self.wbutdmap.setChecked(True)
+		self.gbl3dctl.addWidget(self.wbutdmap,4,1,1,2)
+
+		self.wbutdmdl=QtWidgets.QPushButton("Dynamic Model")
+		self.wbutdmdl.setCheckable(True)
+		self.wbutdmdl.setChecked(True)
+		self.gbl3dctl.addWidget(self.wbutdmdl,4,3,1,2)
+
+		self.wbutdmask=QtWidgets.QPushButton("Mask")
+		self.wbutdmask.setCheckable(True)
+		self.wbutdmask.setChecked(False)
+		self.gbl3dctl.addWidget(self.wbutdmask,5,1,1,2)
+
 		# Connections
 		self.wsbthk.valueChanged.connect(self.slice_update)
 		self.wsbcen.valueChanged.connect(self.slice_update)
 		self.wview3d.sgtransform.connect(self.slice_update)
 		self.wlistgmm.currentRowChanged[int].connect(self.sel_gmm)
-		#self.wbutspheres.clicked[bool].connect(self.new_3d_opt)
-		#self.wbutmap.clicked[bool].connect(self.new_3d_opt)
+		self.wbutnmap.clicked[bool].connect(self.new_3d_opt)
+		self.wbutnmdl.clicked[bool].connect(self.new_3d_opt)
+		self.wbutdmap.clicked[bool].connect(self.new_3d_opt)
+		self.wbutdmdl.clicked[bool].connect(self.new_3d_opt)
+		self.wbutdmask.clicked[bool].connect(self.new_3d_opt)
+		self.wbutvtop.clicked[bool].connect(self.view_top)
+		self.wbutvbot.clicked[bool].connect(self.view_bot)
+		self.wbutvside1.clicked[bool].connect(self.view_side1)
+		self.wbutvside2.clicked[bool].connect(self.view_side2)
 		self.wvssphsz.valueChanged.connect(self.new_sph_size)
 		self.wbutnewgmm.clicked[bool].connect(self.add_gmm)
 #		self.wbutrefine.clicked[bool].connect(self.setgmm_refine)
@@ -610,7 +644,13 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.mapiso=EMIsosurface(self.mapdataitem)
 		self.wview3d.insertNewNode("Neutral Map",self.mapdataitem)
 		self.wview3d.insertNewNode("Isosurface",self.mapiso,parentnode=self.mapdataitem)
-		
+
+		# map used to generate the neutral map, ie - the seed for the GMM
+		self.maskdataitem=EMDataItem3D(None)
+		self.maskiso=EMIsosurface(self.maskdataitem)
+		self.wview3d.insertNewNode("Mask",self.maskdataitem)
+		self.wview3d.insertNewNode("Isosurface",self.maskiso,parentnode=self.maskdataitem)
+
 		# the current selected dynamic map generated from a subset of particles
 		self.dmapdataitem=None
 		self.lastbest=None
@@ -662,6 +702,27 @@ class EMGMM(QtWidgets.QMainWindow):
 		while (time.time()-t<delay): 
 			self.app().processEvents()
 
+	def view_top(self,tmp=None):
+		self.wview3d.getTransform().set_rotation({"type":"eman","az":0.0,"alt":0.0,"phi":0.0})
+		self.wview3d.updateGL()
+		self.slice_update()
+
+
+	def view_bot(self,tmp=None):
+		self.wview3d.getTransform().set_rotation({"type":"eman","az":0.0,"alt":180.0,"phi":0.0})
+		self.wview3d.updateGL()
+		self.slice_update()
+
+	def view_side1(self,tmp=None):
+		self.wview3d.getTransform().set_rotation({"type":"eman","az":0.0,"alt":90.0,"phi":0.0})
+		self.wview3d.updateGL()
+		self.slice_update()
+
+	def view_side2(self,tmp=None):
+		self.wview3d.getTransform().set_rotation({"type":"eman","az":90.0,"alt":90.0,"phi":0.0})
+		self.wview3d.updateGL()
+		self.slice_update()
+
 	def slice_update(self,a=None,b=None):
 		"""Called when any of the slice parameters change, if b is a transform then we use it"""
 		if not b is None: self.ort_slice=b
@@ -670,11 +731,12 @@ class EMGMM(QtWidgets.QMainWindow):
 		cen=self.wsbcen.value()		# center of layer
 		nz=self.cur_dyn_vol["nz"]
 
-		proj = self.cur_dyn_vol.process("xform",{"transform":self.ort_slice}).process("misc.directional_sum",{"first":nz//2+cen-thk,"last":nz//2+cen+thk,"axis":"z"})
+		if thk<0 : proj = self.cur_dyn_vol.process("xform",{"transform":self.ort_slice}).process("misc.directional_sum",{"axis":"z"})
+		else: proj = self.cur_dyn_vol.process("xform",{"transform":self.ort_slice}).process("misc.directional_sum",{"first":nz//2+cen-thk,"last":nz//2+cen+thk,"axis":"z"})
 
 		if self.wview2d is None:
 			self.wview2d = EMImage2DWidget(sizehint=(384,384))
-			self.gbl3dctl.addWidget(self.wview2d,0,5,5,1)
+			self.gbl3dctl.addWidget(self.wview2d,0,5,2,1)
 
 		self.wview2d.set_data(proj)
 
@@ -798,15 +860,29 @@ class EMGMM(QtWidgets.QMainWindow):
 		#self.wplot2d.full_refresh()
 		self.wplot2d.updateGL()
 
+		# when a single set is selected, we display the corresponding map/model
 		if len(self.maplist.selectedItems())==1:
 			key=self.maplist.selectedItems()[0].text()
 			smap=self.curmaps[key]
+			latent=smap[2]
+			if latent is not None:
+				gauss=np.array(self.decoder(latent[None,...]))[0].transpose()
+				box=int(self.wedbox.text())
+				gauss[:3]*=box
+				gauss[2]*=-1.0
+				gauss[1]*=-1.0
+				if not butval(self.wbutpos): gauss[:3]=self.model[:3]
+				if not butval(self.wbutamp): gauss[3]=self.model[3]
+				self.gaussplot.setData(gauss,self.wvssphsz.value)
+
 			if smap[0] is not None:
 				try:
 					vol=EMData(f"{self.gmm}/set_maps.hdf",smap[0])
 					self.display_dynamic(vol)
 				except:
 					print("Error: map missing for ",smap)
+
+
 
 	def display_dynamic(self,vol):
 		"""Displays a new dynamic map, used multiple places so condensed here"""
@@ -1220,21 +1296,32 @@ class EMGMM(QtWidgets.QMainWindow):
 
 	def new_3d_opt(self,clk=False):
 		"""When the user changes selections for the 3-D display"""
-		self.gaussplot.setVisibleItem(butval(self.wbutspheres))
-		self.mapdataitem.setVisibleItem(butval(self.wbutmap))
-		print(self.gaussplot.isVisibleItem(),self.mapdataitem.isVisibleItem())
+		self.gaussplot.setVisibleItem(butval(self.wbutdmdl))
+		self.mapdataitem.setVisibleItem(butval(self.wbutnmap))
+		self.neutralplot.setVisibleItem(butval(self.wbutnmdl))
+		self.maskdataitem.setVisibleItem(butval(self.wbutdmask))
+		if self.dmapdataitem is not None :
+			self.dmapdataitem.setVisibleItem(butval(self.wbutdmap))
+		#print(self.gaussplot.isVisibleItem(),self.mapdataitem.isVisibleItem())
+
+		try: self.dmapiso.getTransform().set_scale(self.cur_dyn_vol["apix_x"]/self.jsparm["apix"])
+		except: pass
+		try: self.maskiso.getTransform().set_scale(self.mask["apix_x"]/self.jsparm["apix"])
+		except: pass
+
+		self.wview3d.updateGL()
 
 	def set3dvis(self,neumap=1,dynmap=1,filtmap=1,neumdl=1,dynmdl=1,blankplot=0):
 		"""sets the visibility of various 3-D display components. 1 enables, 0 disables, -1 leaves unchanged"""
-		if neumap>=0 : self.mapdataitem.setVisibleItem(neumap)
+		if neumap>=0 : self.wbutnmap.setChecked(True)
 		try: 
-			if dynmap>=0: self.dmapdataitem.setVisibleItem(dynmap)
+			if dynmap>=0: self.wbutdmap.setChecked(True)
 		except: pass
 		try: 
 			if filtmap>=0: self.fmapdataitem.setVisibleItem(filtmap)
 		except: pass
-		if dynmdl>=0: self.gaussplot.setVisibleItem(dynmdl)
-		if neumdl>=0: self.neutralplot.setVisibleItem(neumdl)
+		if dynmdl>=0: self.wbutdmdl.setChecked(True)
+		if neumdl>=0: self.wbutnmdl.setChecked(True)
 		if blankplot: 
 			self.wplot2d.set_data(None,replace=True)
 
@@ -1259,8 +1346,11 @@ class EMGMM(QtWidgets.QMainWindow):
 		seg=map3d.process("segment.gauss",opt)
 		amps=np.array(seg["segment_amps"])
 		centers=np.array(seg["segment_centers"]).reshape((len(amps),3)).transpose()
-		amps/=max(amps)
-		
+		try: amps/=max(amps)
+		except:
+			print("ERROR: no gaussians at specified threshold")
+			return
+
 		if self.fmapdataitem==None:
 			self.fmapdataitem=EMDataItem3D(seg)
 			self.fmapiso=EMIsosurface(self.fmapdataitem)
@@ -1740,6 +1830,11 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.plot_mouse(None,(0,0))
 		self.wplot2d.updateGL()
 		self.update_maptable()
+
+		try:
+			self.mask=EMData(str(self.wedmask.text()))
+			self.maskdataitem.setData(self.mask)
+		except: pass
 
 		self.set3dvis(1,0,0,1,1,0)
 
