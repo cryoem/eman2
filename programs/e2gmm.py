@@ -490,7 +490,7 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		self.gblpltctl.addWidget(QtWidgets.QLabel("Sets:",self),3,4,Qt.AlignRight)
 		self.wsbnsets=QtWidgets.QSpinBox(self)
-		self.wsbnsets.setRange(2,10)
+		self.wsbnsets.setRange(2,25)
 		self.gblpltctl.addWidget(self.wsbnsets,3,5,Qt.AlignLeft)
 
 		self.wcbpntpln=QtWidgets.QComboBox()
@@ -881,7 +881,7 @@ class EMGMM(QtWidgets.QMainWindow):
 					self.display_dynamic(vol)
 				except:
 					print("Error: map missing for ",smap)
-
+			else: self.wview3d.updateGL()
 
 
 	def display_dynamic(self,vol):

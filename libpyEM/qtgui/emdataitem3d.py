@@ -1208,7 +1208,7 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		self.sampling_spinbox.setMinimum(1)
 		self.sampling_spinbox.setMaximum(1+range-1)
 
-class EMIsosurface(EMItem3D,EM3DModel):
+class EMIsosurface(EMItem3D):
 	"""
 	This displays an isosurface, which is a surface containing all the voxels that have the value of the given threshold.
 	It must have an EMDataItem3D as its parent in the tree data structure for the scene graph.
@@ -1246,6 +1246,7 @@ class EMIsosurface(EMItem3D,EM3DModel):
 		"""
 		if not transform: transform = Transform()	# Object initialization should not be put in the constructor. Causes issues
 		EMItem3D.__init__(self, parent, children, transform=transform)
+#		EM3DModel.__init__(self, parent)
 		self.data = None
 		self.data_copy = None
 

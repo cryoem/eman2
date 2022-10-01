@@ -2857,27 +2857,12 @@ def db_emd_init(self, *parms):
 		C++ signature :
 			void* __init__(_object*,int,int [,int [,bool]])
 """
-	if len(parms) > 0 and len(parms) < 5:
-		if isinstance(parms[0], str) and parms[0].endswith(".lst"):
-			self.__initc()
-			self.read_image(*parms)
-			return
-	#		print "toC:", parms
-	if len(parms) > 2 and isinstance(parms[0], str):
+	if len(parms) > 0 and len(parms) < 5 and isinstance(parms[0], str):
 		self.__initc()
-		self.read_image_c(*parms)
-	# try: self.read_image_c(*parms)			# this handles Region reading, which isn't supported in the C++ constructor
-	# except:
-	# traceback.print_exc()
-	# print "Error reading: ",parms," (if the program does not crash, this may be normal)"
-	# raise Exception
-	else:
-		self.__initc(*parms)
-	# try: self.__initc(*parms)
-	# except:
-	# traceback.print_exc()
-	# print "Error reading: ",parms," (if the program does not crash, this may be normal)"
-	# raise Exception
+		self.read_image(*parms)
+		return
+
+	self.__initc(*parms)
 	return
 
 
@@ -2914,6 +2899,8 @@ def db_read_image(self, fsp, *parms, **kparms):
 	and a flag indicating that only the image headers should be read in. If only the headers
 	are read, accesses to the image data in the resulting EMData objects will be invalid."""
 	#	print "RI ",fsp,str(parms)
+
+	if fsp is None or fsp=="" : raise Exception("read_image without filename")
 
 	if fsp[:4].lower() == "bdb:":
 		print("ERROR: BDB is not supported in this version of EMAN2. You must use EMAN2.91 or earlier to access legacy data.")
