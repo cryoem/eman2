@@ -1344,8 +1344,15 @@ class EMGMM(QtWidgets.QMainWindow):
 			map3d.mult(mask)
 			mask=None
 		seg=map3d.process("segment.gauss",opt)
-		amps=np.array(seg["segment_amps"])
-		centers=np.array(seg["segment_centers"]).reshape((len(amps),3)).transpose()
+		map3d2=map3d.process("normalize.edgemean")
+		map3d2.mult(-1.0)
+		opt["minratio"]=float(self.wedgthr.text())*1.5
+		segneg=map3d2.process("segment.gauss",opt)
+		print("neg:",len(np.array(segneg["segment_amps"])))
+#		amps=np.array(seg["segment_amps"]+segneg["segment_amps"])
+		amps=np.append(seg["segment_amps"],np.zeros(len(segneg["segment_amps"])))
+		print("pos:",len(amps))
+		centers=np.array(seg["segment_centers"]+segneg["segment_centers"]).reshape((len(amps),3)).transpose()
 		try: amps/=max(amps)
 		except:
 			print("ERROR: no gaussians at specified threshold")
