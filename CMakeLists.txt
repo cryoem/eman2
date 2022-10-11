@@ -166,7 +166,7 @@ IF(ENABLE_BOUNDS_CHECKING)
 ENDIF()
 
 IF(ENABLE_DEBUG)
-	SET (OPT_FLAGS "-DDEBUG -O2 -g -fno-inline")
+	SET (OPT_FLAGS "-DDEBUG -g -fno-inline")
 ELSEIF(ENABLE_PROFILE)
 	SET (OPT_FLAGS "-O2 -march=native -m64 -ffast-math -pipe")
 	OPTION(ENABLE_DEBUG "enable debug support" OFF)

@@ -66,8 +66,8 @@ def main():
 	parser.add_argument("--perturb", type=float, default=0.1 ,help="Relative perturbation level to apply in each iteration during --heter training. Default = 0.1, decrease if models are too disordered")
 	parser.add_argument("--conv", action="store_true", default=False ,help="Use a convolutional network for heterogeneity analysis.")
 	parser.add_argument("--fromscratch", action="store_true", default=False ,help="start from coarse alignment. otherwise will only do refinement from last round")
-	parser.add_argument("--gradout", type=str,help="gradient output", default="")
-	parser.add_argument("--gradin", type=str,help="reading from gradient output instead of recomputing", default="")
+	parser.add_argument("--ptclrepout", type=str,help="Save the per-particle representation input to the network to a file for later use", default="")
+	parser.add_argument("--ptclrepin", type=str,help="Load the per-particle representation from a file rather than recomputing", default="")
 	parser.add_argument("--midout", type=str,help="middle layer output", default="")
 	parser.add_argument("--pas", type=str,help="choose whether to adjust position, amplitude, sigma. sigma is not supported in this version of the program. use 3 digit 0/1 input. default is 110, i.e. only adjusting position and amplitude", default="110")
 	parser.add_argument("--nmid", type=int,help="size of the middle layer", default=4)
@@ -260,21 +260,21 @@ def main():
 
 	#### Heterogeneity analysis from particles
 	bsz=options.batchsz
-	if options.ptclsin and options.heter:
+	if options.ptclsin:
 		pts=tf.constant(pts[None,:,:])
 		params=set_indices_boxsz(maxboxsz)
 		dcpx=get_clip(data_cpx, params["sz"], clipid)
 
 		#### calculate d(FRC)/d(GMM) for each particle
 		##   this will be the input for the deep network in place of the particle images
-		if options.gradin:
+		if options.ptclrepin:
 			## optionally load from saved files
-			ag=EMData(options.gradin)
+			ag=EMData(options.ptclrepin)
 			allgrds=ag.numpy().copy()
 			del ag
 			allscr=allgrds[:,0]
 			allgrds=allgrds[:,1:].reshape((len(allgrds), npt))
-			print("Gradient shape: ", allgrds.shape)
+			print("Ptcl rep shape: ", allgrds.shape)
 
 		else:
 			trainset=tf.data.Dataset.from_tensor_slices((dcpx[0], dcpx[1], xfsnp))
@@ -290,17 +290,18 @@ def main():
 					allgrds[grpdct[k]]=np.add.reduce(allgrds[grpdct[k]])*(10.0/len(grpdct[k]))	# 10 aribtrary value for test
 
 			#### New idea. Keep only the amplitude gradient, gradient shape becomes (nptcl,ngauss) rather than (nptcl,ngauss,4)
-			allgrds=allgrds[:,:,3]
+			allgrds=allgrds[:,:,3]		# not necessary if using calc_gqual
 
 			## save to hdf file
-			if options.gradout:
+			if options.ptclrepout:
 				#allgrds=allgrds.reshape((len(allgrds),-1))
-				print("Gradient shape: ", allgrds.shape)
+				print("Ptcl rep shape: ", allgrds.shape)
 				ag=from_numpy(np.hstack([allscr[:,None], allgrds]))
-				ag.write_image(options.gradout)
+				ag.write_image(options.ptclrepout)
 				del ag
 				#allgrds=allgrds.reshape((len(allgrds), npt))
 
+	if options.ptclsin and options.heter:
 		#### build deep networks and make sure they work
 		if options.encoderin:
 			encode_model=tf.keras.models.load_model(f"{options.encoderin}",compile=False)
@@ -695,10 +696,10 @@ def init_segs(segs):
 	m=np.fromfunction(lambda i,j: ((j//4)==(i//2))*0.1+0.9,(nmid,nmid*2),dtype=float32)
 	Localize1
 
-class Localize1(tf.keras.constraints.Constraint):
-    def __call__(self, w):
+#class Localize1(tf.keras.constraints.Constraint):
+    #def __call__(self, w):
 
-        return w
+        #return w
 
 
 
@@ -996,34 +997,46 @@ def save_ptcls_xform(xfsnp, boxsz, options, scr):
 	lst=None
 	lst0=None
 	
+
+### Wrote this as an alterative to using the amplitude-only gradient, in the thought that a finite difference would provide
+### better results for this purpose. In the end, it is actually almost indistinguishable, and takes longer to compute
 def calc_gqual(trainset, pts, params, options):
 	"""Instead of per gaussian variable gradient, try computing the per gaussian quality in neutral conformation"""
 	allptqual=[]
 	allscr=[]
 	
 	for pjr,pji,xf in trainset:
-		pt=tf.Variable(pts)
-		fval=np.zeros((xf.shape[0],pt.shape[0])) # batch size, # points
+#		pt=tf.Variable(pts)
+		pt=tf.Variable(tf.repeat(pts, xf.shape[0], axis=0))
+
+		fval=np.zeros((xf.shape[0],pt.shape[1])) # batch size, # points
 		pj_cpx=(pjr, pji)
+#		print(pt.shape,xf.shape,pts.shape)
 		imgs_cpx=pts2img(pt, xf, params, sym=options.sym)
 		# FSC for full point projections
 		base=calc_frc(pj_cpx, imgs_cpx, params["rings"])
 		allscr.append(base)
 
 		# FSC for omit-1 point projections
-		for k in range(pt.shape[0]):
-			ptt=tf.Variable(np.delete(pts,k,0))
+		for k in range(pt.shape[1]):
+			#ptt=tf.Variable(np.delete(pts,k,0))
+			ptt=tf.Variable(tf.repeat(np.delete(pts,k,1), xf.shape[0], axis=0))
+
+#			print(ptt.shape,xf.shape,pts.shape,np.delete(pts,k,1).shape)
 			imgs_cpx=pts2img(ptt, xf, params, sym=options.sym)
-			fval[:,k]=base-calc_frc(pj_cpx, imgs_cpx, params["rings"])
+			fval[:,k]=calc_frc(pj_cpx, imgs_cpx, params["rings"])-base
 
 		allptqual.append(fval)
 		
 	allptqual=np.concatenate(allptqual, axis=0)
 	allscr=np.concatenate(allscr, axis=0)
-	#allptqual=allptqual/np.std(allptqual)
+	allptqual=allptqual/np.std(allptqual)
 	print(" mean score: {:.3f}".format(np.mean(allscr)))
 	return allscr, allptqual
 
+### Particles are individually identified by the gradient of the energy with respect to the individual gaussians in the
+### neutral configuration. For this reason, the automatic gaussian configuration generation will normally produce
+### some excess gaussians in the very low density regions just outside the particle.
 def calc_gradient(trainset, pts, params, options):
 	allgrds=[]
 	allscr=[]
@@ -1037,7 +1050,6 @@ def calc_gradient(trainset, pts, params, options):
 
 			imgs_cpx=pts2img(pt, xf, params, sym=options.sym)
 			fval=calc_frc(pj_cpx, imgs_cpx, params["rings"])
-
 			loss=-tf.reduce_mean(fval)
 
 		grad=gt.gradient(loss, pt)*xf.shape[0]

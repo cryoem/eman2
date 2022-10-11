@@ -330,6 +330,10 @@ class EMGMM(QtWidgets.QMainWindow):
 		
 		self.wbutnewgmm=QtWidgets.QPushButton("New GMM")
 		self.gblfld.addWidget(self.wbutnewgmm,1,0)
+
+		self.wlpath = QtWidgets.QLabel("-")
+		self.wlpath.setToolTip("Path this GMM is based on")
+		self.gblfld.addWidget(self.wlpath,1,1)
 		
 		#self.wbutrefine = QtWidgets.QPushButton("refine_XX")
 		#self.gblfld.addWidget(self.wbutrefine,1,1)
@@ -346,20 +350,20 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wbutnewrun=QtWidgets.QPushButton("Create Run")
 		self.gblrun.addWidget(self.wbutnewrun,1,0)
 
-		self.wbutres = QtWidgets.QPushButton("Resolution")
-		self.wbutres.setToolTip("Generate segmentation based starting model")
+		self.wbutres = QtWidgets.QPushButton("Resolution (A)")
+		self.wbutres.setToolTip("Generate new Gaussian neutral model")
 		self.gblrun.addWidget(self.wbutres,2,0)
 		
 		self.wedres = QtWidgets.QLineEdit("25")
-		self.wedres.setToolTip("Resolution to use for gaussian fitting")
+		self.wedres.setToolTip("Resolution for Gaussian generation and refinement FSC")
 		self.gblrun.addWidget(self.wedres,2,1)
 
 		self.wedgthr = QtWidgets.QLineEdit("0.3")
-		self.wedgthr.setToolTip("Threshold for gaussian generation, smaller => more gaussians (~0.1 - 0.5)")
+		self.wedgthr.setToolTip("Threshold for gaussian generation, smaller => more gaussians (~0.1 - 0.8), start large and reduce")
 		self.gblrun.addWidget(self.wedgthr,3,1)
 
-		self.wbutneutral=QtWidgets.QPushButton("Train Neutral Model")
-		self.gblrun.addWidget(self.wbutneutral,4,0)
+		#self.wbutneutral=QtWidgets.QPushButton("Train Neutral Model")
+		#self.gblrun.addWidget(self.wbutneutral,4,0)
 
 		self.wbutneutral2=QtWidgets.QPushButton("Train Neutral New")
 		self.gblrun.addWidget(self.wbutneutral2,4,1)
@@ -368,8 +372,8 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wedngauss.setToolTip("Number of Gaussians in the model")
 		self.gblrun.addWidget(self.wedngauss,3,0)
 
-		self.wbutrerun=QtWidgets.QPushButton("Run Dynamics")
-		self.gblrun.addWidget(self.wbutrerun,5,0)
+		#self.wbutrerun=QtWidgets.QPushButton("Run Dynamics")
+		#self.gblrun.addWidget(self.wbutrerun,5,0)
 		
 		self.wbutrerun2=QtWidgets.QPushButton("New Dynamics")
 		self.gblrun.addWidget(self.wbutrerun2,5,1)
@@ -378,10 +382,10 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.gflparm = QtWidgets.QFormLayout()
 		self.gbll.addLayout(self.gflparm,2,0)
 		
-		self.wlpath = QtWidgets.QLabel("-")
-		self.wlpath.setToolTip("Path this GMM is based on")
-		self.gflparm.addRow("Path:",self.wlpath)
-		
+		self.wedrres = QtWidgets.QLineEdit("256")
+		self.wedrres.setToolTip("Resolution for individual particle input representation (often lower)")
+		self.gflparm.addRow("Input Res (A):",self.wedrres)
+
 		self.wedbox = QtWidgets.QLineEdit("256")
 		self.wedbox.setReadOnly(1)
 		self.wedbox.setToolTip("Box size of input particles in pixels")
@@ -614,9 +618,9 @@ class EMGMM(QtWidgets.QMainWindow):
 #		self.wbutrefine.clicked[bool].connect(self.setgmm_refine)
 		self.wlistrun.currentRowChanged[int].connect(self.sel_run)
 		self.wbutnewrun.clicked[bool].connect(self.new_run)
-		self.wbutrerun.clicked[bool].connect(self.do_run)
+		#self.wbutrerun.clicked[bool].connect(self.do_run)
 		self.wbutrerun2.clicked[bool].connect(self.do_run_new)
-		self.wbutneutral.clicked[bool].connect(self.new_neutral)
+		#self.wbutneutral.clicked[bool].connect(self.new_neutral)
 		self.wbutneutral2.clicked[bool].connect(self.new_neutral2)
 		self.wbutmapnorm.clicked[bool].connect(self.new_map)
 		self.wbutmapfast.clicked[bool].connect(self.new_map_fast)
@@ -909,6 +913,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		except: self.currun["ngauss"]=0
 		#self.currun["boxsize"]=int(self.wedbox.text())
 		#self.currun["apix"]=float(self.wedapix.text())
+		self.currun["ptclres"]=float(self.wedrres.text())
 		self.currun["sym"]=str(self.wedsym.text())
 		self.currun["mask"]=str(self.wedmask.text())
 		self.currun["dim"]=int(self.weddim.text())
@@ -1367,7 +1372,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			self.fmapdataitem.setData(seg)
 			
 #		self.wedngauss.setText(str(len(amps)*4//3))
-		self.wedngauss.setText(f"{str(len(amps))} gaussians")
+		self.wedngauss.setText(f"{str(len(amps))} Gau")
 
 		print(f"Resolution={res} -> Ngauss={len(amps)}  ({self.currunkey})")
 		
@@ -1662,6 +1667,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		
 		maxbox =(int(self.jsparm["boxsize"]*(2*self.jsparm["apix"])/self.currun["targres"])//2)*2
 		maxbox25=(int(self.jsparm["boxsize"]*(2*self.jsparm["apix"])/25.0)//2)*2
+		maxboxp =(int(self.jsparm["boxsize"]*(2*self.jsparm["apix"])/self.currun["ptclres"])//2)*2
 		print(f"Target res {self.currun['targres']} -> max box size {maxbox}")
 		modelout=f"{self.gmm}/{self.currunkey}_model_gmm.txt"		# note that this is from the neutral training above, we do not regenerate modelout at the "run" stage
 		modelseg=f"{self.gmm}/{self.currunkey}_model_seg.txt"
@@ -1678,16 +1684,19 @@ class EMGMM(QtWidgets.QMainWindow):
 		if int(self.currun["conv"]): conv="--conv"
 		else: conv=""
 		
-		# if targeting high resolution, we start with 10 iterations at 25 A first
-		if 0:
-#		if maxbox25<maxbox:
-			er=run(f"e2gmm_refine_point.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox25} --niter 10 {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1 --ptclsclip {self.jsparm['boxsize']}")
-			if er :
-				showerror("Error running e2gmm_refine, see console for details. Memory is a common issue. Consider reducing the target resolution.")
-				return
+		# if targeting high resolution, we start with 10 iterations at 25 A first  # note 10/22, disabled, may do more harm than good?
+		#if maxbox25<maxbox:
+			#er=run(f"e2gmm_refine_point.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox25} --niter 10 {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1 --ptclsclip {self.jsparm['boxsize']}")
+			#if er :
+				#showerror("Error running e2gmm_refine, see console for details. Memory is a common issue. Consider reducing the target resolution.")
+				#return
+		ptrep=f"{self.gmm}/{self.currunkey}_ptrep_{maxboxp}.hdf"
+		if not os.path.exists(ptrep):
+			print("Pregenerating per-particle Gaussian representation")
+			er=run(f"e2gmm_refine_point.py --model {modelout} --ptclsin {self.gmm}/particles.lst --ptclrepout {ptrep} --maxboxsz {maxboxp}")
 
-
-		er=run(f"e2gmm_refine_point.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1 --ptclsclip {self.jsparm['boxsize']}")
+		print("Training network")
+		er=run(f"e2gmm_refine_point.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --ptclrepin {ptrep} --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1 --ptclsclip {self.jsparm['boxsize']}")
 #		er=run(f"e2gmm_refine_new.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")
 		if er :
 			showerror("Error running e2gmm_refine_new, see console for details.")
@@ -1728,7 +1737,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.gmm=str(self.wlistgmm.item(line).text())
 		self.jsparm=js_open_dict(f"{self.gmm}/0_gmm_parms.json")
 		# These are associated with the whole GMM
-		self.wlpath.setText(f'{self.jsparm.getdefault("refinepath","-")}')
+		self.wlpath.setText(f'Path: {self.jsparm.getdefault("refinepath","-")}')
 		self.wedbox.setText(f'{self.jsparm.getdefault("boxsize",128)}')
 		self.wedapix.setText(f'{self.jsparm.getdefault("apix",0.0):0.5f}')
 		self.wedsym.setText(f'{self.jsparm.getdefault("sym","c1")}')
@@ -1759,6 +1768,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		elif self.currunkey is None or len(self.currunkey)==0 or self.currun is None: return
 	
 		self.wedres.setText(f'{self.currun.get("targres",20)}')
+		self.wedrres.setText(f'{self.currun.get("ptclres",self.currun.get("targres",20))}')
 		self.wedapix.setText(f'{self.jsparm.getdefault("apix",0.0):0.5f}')
 		self.wedngauss.setText(f'{self.currun.get("ngauss",64)}')
 		self.weddim.setText(f'{self.currun.get("dim",4)}')
