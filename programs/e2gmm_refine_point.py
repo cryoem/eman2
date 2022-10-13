@@ -58,6 +58,7 @@ def main():
 	parser.add_argument("--niter", type=int,help="number of iterations", default=10)
 	parser.add_argument("--npts", type=int,help="number of points to initialize. ", default=-1)
 	parser.add_argument("--batchsz", type=int,help="batch size", default=256)
+	parser.add_argument("--minressz", type=int,help="Fourier diameter associated with minimum resolution to consider. ", default=4)
 	parser.add_argument("--maxboxsz", type=int,help="maximum fourier box size to use. 2 x target Fourier radius. ", default=64)
 	parser.add_argument("--maxres", type=float,help="maximum resolution. will overwrite maxboxsz. ", default=-1)
 	parser.add_argument("--align", action="store_true", default=False ,help="align particles.")
@@ -793,7 +794,7 @@ def train_decoder(gen_model, trainset, params, options, pts=None):
 				else: pout=gen_model(conf)
 				std=tf.reduce_mean(tf.math.reduce_std(pout, axis=1), axis=0)
 				imgs_cpx=pts2img(pout, xf, params, sym=options.sym)
-				fval=calc_frc(pj_cpx, imgs_cpx, params["rings"])
+				fval=calc_frc(pj_cpx, imgs_cpx, params["rings"],minpx=options.minressz)
 				loss=-tf.reduce_mean(fval)
 #				l=loss+std[4]*options.sigmareg+std[3]*5*(options.niter-itr)/options.niter
 				l=loss
@@ -907,7 +908,7 @@ def coarse_align(dcpx, pts, options):
 			dc=list(tf.repeat(d[idt:idt+1], len(xx), axis=0) for d in dcpx)
 			ts=ccf_trans(dc, projs_cpx)
 			dtrans=translate_image(dc,ts)
-			frcs=calc_frc(dtrans, projs_cpx)
+			frcs=calc_frc(dtrans, projs_cpx,minpx=options.minressz)
 			#mxxfs.append(np.argmax(frcs))
 			allfrcs[idt,ii*bsz:(ii+1)*bsz]=frcs
 			alltrans[idt,ii*bsz:(ii+1)*bsz]=ts
@@ -948,7 +949,7 @@ def refine_align(dcpx, xfsnp, pts, options, lr=1e-3):
 				#xv=tf.concat([xf[:,:3], xfvar[:,3:]], axis=1)
 				xv=xfvar
 				proj_cpx=pts2img(p, xv, sym=options.sym)
-				fval=calc_frc(proj_cpx, ptcl_cpx)
+				fval=calc_frc(proj_cpx, ptcl_cpx,minpx=options.minressz)
 				loss=-tf.reduce_mean(fval)
 
 			grad=gt.gradient(loss, xfvar)
@@ -1014,7 +1015,7 @@ def calc_gqual(trainset, pts, params, options):
 #		print(pt.shape,xf.shape,pts.shape)
 		imgs_cpx=pts2img(pt, xf, params, sym=options.sym)
 		# FSC for full point projections
-		base=calc_frc(pj_cpx, imgs_cpx, params["rings"])
+		base=calc_frc(pj_cpx, imgs_cpx, params["rings"],minpx=options.minressz)
 		allscr.append(base)
 
 		# FSC for omit-1 point projections
@@ -1024,7 +1025,7 @@ def calc_gqual(trainset, pts, params, options):
 
 #			print(ptt.shape,xf.shape,pts.shape,np.delete(pts,k,1).shape)
 			imgs_cpx=pts2img(ptt, xf, params, sym=options.sym)
-			fval[:,k]=calc_frc(pj_cpx, imgs_cpx, params["rings"])-base
+			fval[:,k]=calc_frc(pj_cpx, imgs_cpx, params["rings"],minpx=options.minressz)-base
 
 		allptqual.append(fval)
 		
@@ -1049,7 +1050,7 @@ def calc_gradient(trainset, pts, params, options):
 			pt=tf.Variable(tf.repeat(pts, xf.shape[0], axis=0))
 
 			imgs_cpx=pts2img(pt, xf, params, sym=options.sym)
-			fval=calc_frc(pj_cpx, imgs_cpx, params["rings"])
+			fval=calc_frc(pj_cpx, imgs_cpx, params["rings"],minpx=options.minressz)
 			loss=-tf.reduce_mean(fval)
 
 		grad=gt.gradient(loss, pt)*xf.shape[0]
@@ -1112,7 +1113,7 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, options):
 				
 				## finally generate images and calculate frc
 				imgs_cpx=pts2img(pout, xf, params, sym=options.sym)
-				fval=calc_frc(pj_cpx, imgs_cpx, params["rings"])
+				fval=calc_frc(pj_cpx, imgs_cpx, params["rings"],minpx=options.minressz)
 				loss=-tf.reduce_mean(fval)+cl*1e-2
 				
 				if options.modelreg>0: 

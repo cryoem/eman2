@@ -859,6 +859,9 @@ class EMGMM(QtWidgets.QMainWindow):
 				#print("S:",self.data.shape,self.data_sel[-1].shape)
 				self.wplot2d.set_data(self.data_sel[-1],f"set_{key}",symsize=ss,quiet=True)
 
+			self.wplot2d.setXAxisAll(self.wsbxcol.value(),False)
+			self.wplot2d.setYAxisAll(self.wsbycol.value(),True)
+
 #		self.wplot2d.setXAxisAll(0,True)
 #		self.wplot2d.setYAxisAll(1,True)
 		#self.wplot2d.full_refresh()
@@ -870,14 +873,17 @@ class EMGMM(QtWidgets.QMainWindow):
 			smap=self.curmaps[key]
 			latent=smap[2]
 			if latent is not None:
-				gauss=np.array(self.decoder(latent[None,...]))[0].transpose()
-				box=int(self.wedbox.text())
-				gauss[:3]*=box
-				gauss[2]*=-1.0
-				gauss[1]*=-1.0
-				if not butval(self.wbutpos): gauss[:3]=self.model[:3]
-				if not butval(self.wbutamp): gauss[3]=self.model[3]
-				self.gaussplot.setData(gauss,self.wvssphsz.value)
+				try:
+					gauss=np.array(self.decoder(latent[None,...]))[0].transpose()
+					box=int(self.wedbox.text())
+					gauss[:3]*=box
+					gauss[2]*=-1.0
+					gauss[1]*=-1.0
+					if not butval(self.wbutpos): gauss[:3]=self.model[:3]
+					if not butval(self.wbutamp): gauss[3]=self.model[3]
+					self.gaussplot.setData(gauss,self.wvssphsz.value)
+				except:
+					print("ERROR, latent:",latent[None,...])
 
 			if smap[0] is not None:
 				try:
@@ -913,7 +919,13 @@ class EMGMM(QtWidgets.QMainWindow):
 		except: self.currun["ngauss"]=0
 		#self.currun["boxsize"]=int(self.wedbox.text())
 		#self.currun["apix"]=float(self.wedapix.text())
-		self.currun["ptclres"]=float(self.wedrres.text())
+		rres=str(self.wedrres.text())
+		if "," in rres :
+			self.currun["ptclres"]=float(rres.split(",")[0])
+			self.currun["ptclminres"]=float(rres.split(",")[1])
+		else:
+			self.currun["ptclres"]=float(rres)
+			self.currun["ptclminres"]=1000.0
 		self.currun["sym"]=str(self.wedsym.text())
 		self.currun["mask"]=str(self.wedmask.text())
 		self.currun["dim"]=int(self.weddim.text())
@@ -1349,14 +1361,14 @@ class EMGMM(QtWidgets.QMainWindow):
 			map3d.mult(mask)
 			mask=None
 		seg=map3d.process("segment.gauss",opt)
+		print("pos:",len(seg["segment_amps"]))
 		map3d2=map3d.process("normalize.edgemean")
 		map3d2.mult(-1.0)
 		opt["minratio"]=float(self.wedgthr.text())*1.25
 		segneg=map3d2.process("segment.gauss",opt)
-		print("neg:",len(np.array(segneg["segment_amps"])))
+		print("neg:",len(segneg["segment_amps"]))
 #		amps=np.array(seg["segment_amps"]+segneg["segment_amps"])
 		amps=np.append(seg["segment_amps"],np.zeros(len(segneg["segment_amps"]))-0.05)
-		print("pos:",len(amps))
 		centers=np.array(seg["segment_centers"]+segneg["segment_centers"]).reshape((len(amps),3)).transpose()
 		try: amps/=max(amps)
 		except:
@@ -1408,6 +1420,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		
 		sym=self.currun["sym"]
 		maxbox=(int(self.jsparm["boxsize"]*(2*self.jsparm["apix"])/self.currun["targres"])//2)*2
+		minboxp =(int(self.jsparm["boxsize"]*(2*self.jsparm["apix"])/self.currun["ptclminres"]))
 		modelout=f"{self.gmm}/{self.currunkey}_model_gmm.txt"
 		modelseg=f"{self.gmm}/{self.currunkey}_model_seg.txt"
 		prog.setValue(1)
@@ -1437,13 +1450,13 @@ class EMGMM(QtWidgets.QMainWindow):
 		lsxs=None
 
 		# refine the neutral model against some real data in entropy training mode
-		er=run(f"e2gmm_refine.py --projs {self.gmm}/particles_subset.lst  --npt {self.currun['ngauss']} --decoderentropy --npt {self.currun['ngauss']} --sym {sym} --maxboxsz {maxbox} --model {modelseg} --modelout {modelout} --niter 10  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --ampreg 0.1 --sigmareg 1.0 --ndense -1")
+		er=run(f"e2gmm_refine.py --projs {self.gmm}/particles_subset.lst  --npt {self.currun['ngauss']} --decoderentropy --npt {self.currun['ngauss']} --sym {sym} --maxboxsz {maxbox} --minressz {minboxp} --model {modelseg} --modelout {modelout} --niter 10  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --ampreg 0.1 --sigmareg 1.0 --ndense -1")
 		if er :
 			showerror("Error running e2gmm_refine, see console for details. GPU memory exhaustion is a common issue. Consider reducing the target resolution.")
 			return
 
 		# Now we train latent zero to the neutral conformation
-		er=run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --decoderin {decoder} --sym {sym} --maxboxsz {maxbox} --model {modelseg} --modelout {modelout} --niter 20  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --modelreg {self.currun['modelreg']} --ampreg 1.0 --ndense -1")
+		er=run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --decoderin {decoder} --sym {sym} --maxboxsz {maxbox} --minressz {minboxp} --model {modelseg} --modelout {modelout} --niter 20  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --modelreg {self.currun['modelreg']} --ampreg 1.0 --ndense -1")
 		if er :
 			showerror("Error running e2gmm_refine, see console for details. GPU memory exhaustion is a common issue. Consider reducing the target resolution.")
 			return
@@ -1668,6 +1681,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		maxbox =(int(self.jsparm["boxsize"]*(2*self.jsparm["apix"])/self.currun["targres"])//2)*2
 		maxbox25=(int(self.jsparm["boxsize"]*(2*self.jsparm["apix"])/25.0)//2)*2
 		maxboxp =(int(self.jsparm["boxsize"]*(2*self.jsparm["apix"])/self.currun["ptclres"])//2)*2
+		minboxp =(int(self.jsparm["boxsize"]*(2*self.jsparm["apix"])/self.currun["ptclminres"]))
 		print(f"Target res {self.currun['targres']} -> max box size {maxbox}")
 		modelout=f"{self.gmm}/{self.currunkey}_model_gmm.txt"		# note that this is from the neutral training above, we do not regenerate modelout at the "run" stage
 		modelseg=f"{self.gmm}/{self.currunkey}_model_seg.txt"
@@ -1693,10 +1707,10 @@ class EMGMM(QtWidgets.QMainWindow):
 		ptrep=f"{self.gmm}/{self.currunkey}_ptrep_{maxboxp}.hdf"
 		if not os.path.exists(ptrep):
 			print("Pregenerating per-particle Gaussian representation")
-			er=run(f"e2gmm_refine_point.py --model {modelout} --ptclsin {self.gmm}/particles.lst --ptclrepout {ptrep} --maxboxsz {maxboxp}")
+			er=run(f"e2gmm_refine_point.py --model {modelout} --ptclsin {self.gmm}/particles.lst --ptclrepout {ptrep} --maxboxsz {maxboxp} --minressz {minboxp}")
 
 		print("Training network")
-		er=run(f"e2gmm_refine_point.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --ptclrepin {ptrep} --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1 --ptclsclip {self.jsparm['boxsize']}")
+		er=run(f"e2gmm_refine_point.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --ptclrepin {ptrep} --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1 --ptclsclip {self.jsparm['boxsize']} --minressz {minboxp}")
 #		er=run(f"e2gmm_refine_new.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")
 		if er :
 			showerror("Error running e2gmm_refine_new, see console for details.")
@@ -1768,7 +1782,10 @@ class EMGMM(QtWidgets.QMainWindow):
 		elif self.currunkey is None or len(self.currunkey)==0 or self.currun is None: return
 	
 		self.wedres.setText(f'{self.currun.get("targres",20)}')
-		self.wedrres.setText(f'{self.currun.get("ptclres",self.currun.get("targres",20))}')
+		rres=self.currun.get("ptclres",self.currun.get("targres",20))
+		rminres=self.currun.get("ptclminres",1000.0)
+		if rminres<1000.0 : self.wedrres.setText(f'{rres:1.1f},{rminres:1.0f}')
+		else : self.wedrres.setText(f'{rres:1.1f}')
 		self.wedapix.setText(f'{self.jsparm.getdefault("apix",0.0):0.5f}')
 		self.wedngauss.setText(f'{self.currun.get("ngauss",64)}')
 		self.weddim.setText(f'{self.currun.get("dim",4)}')
