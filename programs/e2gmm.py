@@ -842,9 +842,8 @@ class EMGMM(QtWidgets.QMainWindow):
 #		self.wplot2d.set_data(self.data,"map")
 #		self.wplot2d.set_data(None,replace=True,quiet=True)
 
-		self.wplot2d.set_data(self.data,"map",symsize=10,replace=True,quiet=True)
-
 		if len(self.maplist.selectedItems())>0:
+			self.wplot2d.set_data(self.data,"map",symsize=10,replace=True,quiet=True)
 			self.curmaps_sel={}
 			self.data_sel=[]
 			ss=10
@@ -859,12 +858,15 @@ class EMGMM(QtWidgets.QMainWindow):
 				#print("S:",self.data.shape,self.data_sel[-1].shape)
 				self.wplot2d.set_data(self.data_sel[-1],f"set_{key}",symsize=ss,quiet=True)
 
-			self.wplot2d.setXAxisAll(self.wsbxcol.value(),False)
+			self.wplot2d.setXAxisAll(self.wsbxcol.value(),True)
 			self.wplot2d.setYAxisAll(self.wsbycol.value(),True)
+
+		else: self.wplot2d.set_data(self.data,"map",symsize=1,replace=True,quiet=True)
+
 
 #		self.wplot2d.setXAxisAll(0,True)
 #		self.wplot2d.setYAxisAll(1,True)
-		#self.wplot2d.full_refresh()
+#		self.wplot2d.full_refresh()
 		self.wplot2d.updateGL()
 
 		# when a single set is selected, we display the corresponding map/model
