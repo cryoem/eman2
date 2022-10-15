@@ -1284,7 +1284,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wsbycol.setValue(1)
 		
 #		print(self.data.shape)
-		self.wplot2d.set_data(self.data,"map")
+		self.wplot2d.set_data(self.data,"map",symsize=1)
 
 	def update_axes_x(self,x):
 		self.wplot2d.setXAxisAll(x,True)
@@ -1342,7 +1342,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		if dynmdl>=0: self.wbutdmdl.setChecked(True)
 		if neumdl>=0: self.wbutnmdl.setChecked(True)
 		if blankplot: 
-			self.wplot2d.set_data(None,replace=True)
+			self.wplot2d.set_data(None,replace=True,symsize=1)
 
 	def new_res(self):
 		"""Resolution changed. Update the initial points"""

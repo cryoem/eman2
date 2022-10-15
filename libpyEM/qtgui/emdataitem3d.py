@@ -1008,14 +1008,17 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		super(EMIsosurfaceInspector, self).updateItemControls()
 		# Anything that needs to be updated when the scene is rendered goes here.....
 
-		minden = self.item3d().minden
-		maxden = self.item3d().maxden
+		try:
+			minden = self.item3d().minden
+			maxden = self.item3d().maxden
 
-		self.thr.setRange(minden, maxden)
-		self.thr.setValue(self.item3d().isothr, True)
+			self.thr.setRange(minden, maxden)
+			self.thr.setValue(self.item3d().isothr, True)
 
-		self.histogram_widget.set_data(self.item3d().histogram_data,minden,maxden)
-		self.setSamplingRange(self.item3d().isorender.get_sampling_range())
+			self.histogram_widget.set_data(self.item3d().histogram_data,minden,maxden)
+			self.setSamplingRange(self.item3d().isorender.get_sampling_range())
+		except:
+			pass
 
 		#Set color radius
 		if self.item3d().rgbmode == 1:
@@ -1025,25 +1028,27 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		self.outercolorscaling.setValue(self.item3d().outerrad)
 
 		# Colormap data
-		if self.item3d().rgbmode == 2:
-			self.colorbyradius.setChecked(False)
-			self.colorbymap.setChecked(True)
-		colormapdata = self.item3d().cmapdata
-		if colormapdata:
-			self.cmapmin.setValue(self.item3d().cmapmin, quiet=1)
-			self.cmapmax.setValue(self.item3d().cmapmax, quiet=1)
-			cmrange = colormapdata.get_attr('maximum') - colormapdata.get_attr('minimum')
-			self.cmapmin.setIncrement(old_div(cmrange,50.0))
-			self.cmapmax.setIncrement(old_div(cmrange,50.0))
-			rounding = int(math.ceil(math.fabs(math.log(old_div(cmrange,2.0))))+1)
-			#print rounding
-			self.cmapmin.setRounding(rounding)
-			self.cmapmax.setRounding(rounding)
-			self.colormap.setText(self.item3d().cmapfilename)
-			if str(self.colormap.text()) != "":
-				self.colorbymap.setEnabled(True)
-			else:
-				self.colorbymap.setEnabled(False)
+		try:
+			if self.item3d().rgbmode == 2:
+				self.colorbyradius.setChecked(False)
+				self.colorbymap.setChecked(True)
+			colormapdata = self.item3d().cmapdata
+			if colormapdata:
+				self.cmapmin.setValue(self.item3d().cmapmin, quiet=1)
+				self.cmapmax.setValue(self.item3d().cmapmax, quiet=1)
+				cmrange = colormapdata.get_attr('maximum') - colormapdata.get_attr('minimum')
+				self.cmapmin.setIncrement(old_div(cmrange,50.0))
+				self.cmapmax.setIncrement(old_div(cmrange,50.0))
+				rounding = int(math.ceil(math.fabs(math.log(old_div(cmrange,2.0))))+1)
+				#print rounding
+				self.cmapmin.setRounding(rounding)
+				self.cmapmax.setRounding(rounding)
+				self.colormap.setText(self.item3d().cmapfilename)
+				if str(self.colormap.text()) != "":
+					self.colorbymap.setEnabled(True)
+				else:
+					self.colorbymap.setEnabled(False)
+		except: pass
 
 	def addTabs(self):
 		""" Add a tab for each 'column' """
