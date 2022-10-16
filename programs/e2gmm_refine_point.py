@@ -37,6 +37,7 @@ def main():
 
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
+	parser.add_argument("--chunk", type=str,help="In case of memory exhaustion, particles can be trained in chunks (similar to a batch). eg - 0,10 will process the first of 10 chunks. Be sure to store and restore the encoder and decoder if using this mode. Must be run sequentially 0-(n-1) without parallelism.", default=None)
 	parser.add_argument("--sym", type=str,help="symmetry. currently only support c and d", default="c1")
 	parser.add_argument("--model", type=str,help="load from an existing model file", default="")
 	parser.add_argument("--segments", type=str,help="Divide the model into sequential domains. Comma separated list of integers. Each integer is the first sequence number of a new region, starting with 0",default=None)
@@ -72,11 +73,19 @@ def main():
 	parser.add_argument("--midout", type=str,help="middle layer output", default="")
 	parser.add_argument("--pas", type=str,help="choose whether to adjust position, amplitude, sigma. sigma is not supported in this version of the program. use 3 digit 0/1 input. default is 110, i.e. only adjusting position and amplitude", default="110")
 	parser.add_argument("--nmid", type=int,help="size of the middle layer", default=4)
-	parser.add_argument("--ndense", type=int,help="size of the layers between the middle and in/out, variable if -1. Default 512", default=512)
 	parser.add_argument("--mask", type=str,help="remove points outside mask", default="")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
+	if options.chunk is not None:
+		try: options.chunk=(int(options.chunk.split(",")[0]),int(options.chunk.split(",")[1]))
+		except:
+			print("Error: invalid chunk specification")
+			sys.exit(1)
+		if options.chunk[0]<0 or options.chunk[0]>options.chunk[1]-1 :
+			print("Error: chunk specification out of range")
+			sys.exit(1)
+
 	logid=E2init(sys.argv,options.ppid)
 
 	gen_model=None
@@ -167,7 +176,7 @@ def main():
 			maxboxsz=options.maxboxsz=good_size(ceil(raw_boxsz*raw_apix*2/options.maxres)//2*2)
 			print("using box size {}, max resolution {:.1f}".format(maxboxsz, options.maxres))
 
-		data_cpx, xfsnp, grpdct = load_particles(options.projs, maxboxsz, shuffle=True,preclip=options.ptclsclip)
+		data_cpx, xfsnp, grpdct = load_particles(options.projs, maxboxsz, preclip=options.ptclsclip,chunk=options.chunk)
 		apix=raw_apix*raw_boxsz/maxboxsz
 		clipid=set_indices_boxsz(data_cpx[0].shape[1], apix, True)
 
@@ -225,7 +234,7 @@ def main():
 			maxboxsz=options.maxboxsz=good_size(ceil(raw_boxsz*raw_apix*2/options.maxres)//2*2)
 			print("using box size {}, max resolution {:.1f}".format(maxboxsz, options.maxres))
 
-		data_cpx, xfsnp, grpdct = load_particles(options.ptclsin,maxboxsz,shuffle=False,preclip=options.ptclsclip)
+		data_cpx, xfsnp, grpdct = load_particles(options.ptclsin,maxboxsz,preclip=options.ptclsclip,chunk=options.chunk)
 		apix=raw_apix*raw_boxsz/maxboxsz
 		clipid=set_indices_boxsz(data_cpx[0].shape[1], apix, True)
 
@@ -270,7 +279,16 @@ def main():
 		##   this will be the input for the deep network in place of the particle images
 		if options.ptclrepin:
 			## optionally load from saved files
-			ag=EMData(options.ptclrepin)
+			hdr=EMData(options.ptclrepin,0,1)
+			nptcl=hdr["ny"]
+			nvec=hdf["nx"]
+			if chunk is not None:
+				chunkn=nptcl//chunk[1]
+				chunk0=chunkn*chunk[0]
+				chunkn=min(nptcl-chunk0,chunkn)
+				ag=EMData(options.ptclrepin,0,0,Region(0,chunk0,nvec,chunkn))
+			else: ag=EMData(options.ptclrepin)
+
 			allgrds=ag.numpy().copy()
 			del ag
 			allscr=allgrds[:,0]
@@ -339,11 +357,45 @@ def main():
 		mid=calc_conf(encode_model, allgrds[ptclidx], 1000)
 
 		if options.midout:
-			sv=np.hstack([np.where(ptclidx)[0][:,None], mid])
-			print(mid.shape, sv.shape)
-			np.savetxt(options.midout, sv)
+			if options.chunk is not None:
+				if options.chunk[0]==0: out=open(options.midout,"w")	# first batch erases the file
+				else: out=open(options.midout,"a")	# later batches append
+
+				for i in range(mid.shape[0]):
+					out.write(f"{mid[i][0]:1.6f}\t{mid[i][1]:1.6f}\t{mid[i][2]:1.6f}\t{mid[i][3]:1.6f}\n")
+				out.close()
+			#sv=np.hstack([np.where(ptclidx)[0][:,None], mid])
+			#print(mid.shape, sv.shape)
+			#else: np.savetxt(options.midout, sv)
 
 			print("Conformation output saved to {}".format(options.midout))
+
+	if options.ptclrepin and options.encoderin and options.midout:
+		hdr=EMData(options.ptclrepin,0,1)
+		nptcl=hdr["ny"]
+		nvec=hdf["nx"]
+		if chunk is not None:
+			chunkn=nptcl//chunk[1]
+			chunk0=chunkn*chunk[0]
+			chunkn=min(nptcl-chunk0,chunkn)
+			ag=EMData(options.ptclrepin,0,0,Region(0,chunk0,nvec,chunkn))
+		else: ag=EMData(options.ptclrepin)
+
+		allgrds=ag.numpy().copy()
+		del ag
+		allscr=allgrds[:,0]
+		allgrds=allgrds[:,1:].reshape((len(allgrds), npt))
+		print("Ptcl rep shape: ", allgrds.shape)
+
+		encode_model=tf.keras.models.load_model(f"{options.encoderin}",compile=False)
+
+		mid=calc_conf(encode_model, allgrds, 1000)
+
+		out=open(options.midout,"a")	# later batches append
+
+		for i in range(mid.shape[0]):
+			out.write(f"{mid[i][0]:1.6f}\t{mid[i][1]:1.6f}\t{mid[i][2]:1.6f}\t{mid[i][3]:1.6f}\n")
+		out.close()
 
 	E2end(logid)
 
@@ -551,24 +603,31 @@ def calc_frc(data_cpx, imgs_cpx, rings, return_curve=False,minpx=4):
 ##   Two possible types of size reduction, shrinking to achieve boxsz and pre-clipping
 ##   produce a normal scaled particle in a specified box. This is used for subtomogram
 ##   data where there is generally padding on the particles.
-def load_particles(fname, boxsz, shuffle=False, preclip=-1):
+def load_particles(fname, boxsz, preclip=-1,chunk=None):
 	
 	nptcl=EMUtil.get_image_count(fname)
+	if chunk is not None:
+		chunkn=nptcl//chunk[1]
+		chunk0=chunkn*chunk[0]
+		chunkn=min(nptcl-chunk0,chunkn)
+	else: chunk0,chunkn=0,nptcl
 	projs=[]
 	hdrs=[]
+	xfs=[]
 	e=EMData(fname, 0, True)
 	rawbox=e["nx"] if preclip<=0 else preclip
 	print("Loading {} particles of box size {}. shrink to {}".format(nptcl, rawbox, boxsz))
-	for j in range(0,nptcl,1000):
-		print(f"\r {j}/{nptcl} ",end="")
+	for j in range(chunk0,chunk0+chunkn,1000):
+		print(f"\r {j-chunk0}/{chunkn} ",end="")
 		sys.stdout.flush()
-		el=EMData.read_images(fname,range(j,min(j+1000,nptcl)))
+		el=EMData.read_images(fname,range(j,min(j+1000,chunk0+chunkn)))
 		if el[0]["nx"]!=rawbox:
 			for i in range(len(el)): el[i]=el[i].get_clip(Region((el[i]["nx"]-rawbox)//2,(el[i]["ny"]-rawbox)//2,rawbox,rawbox))
 
 		print(f"R     ",end="")
 		sys.stdout.flush()
 		for e in el:
+			xfs.append(e["xform.projection"].get_params("eman"))
 			if rawbox!=boxsz:
 				#### there is some fourier artifact with xform.scale. maybe worth switching to fft.resample?
 				e.process_inplace("math.fft.resample",{"n":rawbox/boxsz})
@@ -578,15 +637,9 @@ def load_particles(fname, boxsz, shuffle=False, preclip=-1):
 			e.process_inplace("xform.phaseorigin.tocorner")
 			hdrs.append(e.get_attr_dict())
 			projs.append(e.numpy().copy())
-	print(f"{nptcl}/{nptcl}")
+	print(f"  done       ")
 	projs=np.array(projs)/1e3
 	
-	if shuffle:
-		rndidx=np.arange(len(projs))
-		random.shuffle(rndidx)
-		projs=projs[rndidx]
-		hdrs=[hdrs[i] for i in rndidx]
-
 	# for tomographic data we need to collect info on "grouping" of 2D particles into 3D particles
 	# grpdct is keyed by 3D particle number and has a list of 2D partcile numbers (even after shuffling)
 	if "ptcl3d_id" in hdrs[0]:
@@ -600,22 +653,22 @@ def load_particles(fname, boxsz, shuffle=False, preclip=-1):
 	data_cpx=np.fft.rfft2(projs)
 	data_cpx=(data_cpx.real.astype(floattype), data_cpx.imag.astype(floattype))
 
-	xflst=False
-	if fname.endswith(".lst"):		# "old style" LST files?
-		info=load_lst_params(fname)
-		if "xform.projection" in info[0]:
-			xflst=True
-			xfs=[p["xform.projection"].get_params("eman") for p in info]
-			if shuffle:
-				xfs=[xfs[i] for i in rndidx]
+	#xflst=False
+	#if fname.endswith(".lst"):		# "old style" LST files?
+		#info=load_lst_params(fname)
+		#if "xform.projection" in info[0]:
+			#xflst=True
+			#xfs=[p["xform.projection"].get_params("eman") for p in info]
+			#if shuffle:
+				#xfs=[xfs[i] for i in rndidx]
 
-	if xflst==False and ("xform.projection" in hdrs[0]):
-		xflst=True
-		xfs=[p["xform.projection"].get_params("eman") for p in hdrs]
+	#if xflst==False and ("xform.projection" in hdrs[0]):
+		#xflst=True
+		#xfs=[p["xform.projection"].get_params("eman") for p in hdrs]
 		
-	if xflst==False:
-		xfs=[Transform().get_params("eman") for p in hdrs]
-		print("No existing transform from particles...")
+	#if xflst==False:
+		#xfs=[Transform().get_params("eman") for p in hdrs]
+		#print("No existing transform from particles...")
 		
 	xfsnp=np.array([[x["az"],x["alt"],x["phi"], x["tx"], x["ty"]] for x in xfs], dtype=floattype)
 	xfsnp[:,:3]=xfsnp[:,:3]*np.pi/180.

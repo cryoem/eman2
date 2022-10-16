@@ -382,7 +382,11 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.gflparm = QtWidgets.QFormLayout()
 		self.gbll.addLayout(self.gflparm,2,0)
 		
-		self.wedrres = QtWidgets.QLineEdit("256")
+		self.wedbatch = QtWidgets.QLineEdit("1")
+		self.wedbatch.setToolTip("Number of batches for network training (reduces memory requirements)")
+		self.gflparm.addRow("# Ptcl Batches:",self.wedbatch)
+
+		self.wedrres = QtWidgets.QLineEdit("25")
 		self.wedrres.setToolTip("Resolution for individual particle input representation (often lower)")
 		self.gflparm.addRow("Input Res (A):",self.wedrres)
 
@@ -928,6 +932,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		else:
 			self.currun["ptclres"]=float(rres)
 			self.currun["ptclminres"]=1000.0
+		self.currun["batches"]=str(self.wedbatch.text())
 		self.currun["sym"]=str(self.wedsym.text())
 		self.currun["mask"]=str(self.wedmask.text())
 		self.currun["dim"]=int(self.weddim.text())
@@ -1394,7 +1399,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		centers[0]-=nx/2
 		centers[1]-=nx/2
 		centers[2]-=nx/2
-		self.neutralplot.setData(centers,self.wvssphsz.value)
+		self.neutralplot.setData(np.concatenate((centers,[amps])),self.wvssphsz.value)
 		self.centers=centers
 		self.amps=amps
 		self.wview3d.update()
@@ -1452,13 +1457,13 @@ class EMGMM(QtWidgets.QMainWindow):
 		lsxs=None
 
 		# refine the neutral model against some real data in entropy training mode
-		er=run(f"e2gmm_refine.py --projs {self.gmm}/particles_subset.lst  --npt {self.currun['ngauss']} --decoderentropy --npt {self.currun['ngauss']} --sym {sym} --maxboxsz {maxbox} --minressz {minboxp} --model {modelseg} --modelout {modelout} --niter 10  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --ampreg 0.1 --sigmareg 1.0 --ndense -1")
+		er=run(f"e2gmm_refine.py --projs {self.gmm}/particles_subset.lst  --npt {self.currun['ngauss']} --decoderentropy --npt {self.currun['ngauss']} --sym {sym} --maxboxsz {maxbox} --minressz {minboxp} --model {modelseg} --modelout {modelout} --niter 10  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --ampreg 0.1 --sigmareg 1.0")
 		if er :
 			showerror("Error running e2gmm_refine, see console for details. GPU memory exhaustion is a common issue. Consider reducing the target resolution.")
 			return
 
 		# Now we train latent zero to the neutral conformation
-		er=run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --decoderin {decoder} --sym {sym} --maxboxsz {maxbox} --minressz {minboxp} --model {modelseg} --modelout {modelout} --niter 20  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --modelreg {self.currun['modelreg']} --ampreg 1.0 --ndense -1")
+		er=run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --decoderin {decoder} --sym {sym} --maxboxsz {maxbox} --minressz {minboxp} --model {modelseg} --modelout {modelout} --niter 20  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --modelreg {self.currun['modelreg']} --ampreg 1.0")
 		if er :
 			showerror("Error running e2gmm_refine, see console for details. GPU memory exhaustion is a common issue. Consider reducing the target resolution.")
 			return
@@ -1475,7 +1480,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.centers=pts[:3,:]
 		self.amps=pts[3]
 		
-		self.neutralplot.setData(self.centers,self.wvssphsz.value)
+		self.neutralplot.setData(self.pts,self.wvssphsz.value)
 		self.wview3d.updateGL()
 		self.do_events()
 		prog.setValue(3)
@@ -1535,13 +1540,13 @@ class EMGMM(QtWidgets.QMainWindow):
 		lsxs=None
 
 		# refine the neutral model against some real data in entropy training mode
-		er=run(f"e2gmm_refine_point.py --projs {self.gmm}/particles_subset.lst --decoderentropy --npt {self.currun['ngauss']} --sym {sym} --maxboxsz {maxbox} --model {modelseg} --modelout {modelout} --niter 10  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --ampreg 0.1 --ndense -1 --ptclsclip {self.jsparm['boxsize']}")
+		er=run(f"e2gmm_refine_point.py --projs {self.gmm}/particles_subset.lst --decoderentropy --npt {self.currun['ngauss']} --sym {sym} --maxboxsz {maxbox} --model {modelseg} --modelout {modelout} --niter 10  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --ampreg 0.1  --ptclsclip {self.jsparm['boxsize']}")
 		if er :
 			showerror("Error running e2gmm_refine, see console for details. GPU memory exhaustion is a common issue. Consider reducing the target resolution.")
 			return
 
 		# Now we train latent zero to the neutral conformation
-		er=run(f"e2gmm_refine_point.py --projs {self.gmm}/proj_in.hdf --decoderin {decoder} --sym {sym} --maxboxsz {maxbox} --model {modelseg} --modelout {modelout} --niter 20  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --modelreg {self.currun['modelreg']} --ampreg 1.0 --ndense -1 --ptclsclip {self.jsparm['boxsize']}")
+		er=run(f"e2gmm_refine_point.py --projs {self.gmm}/proj_in.hdf --decoderin {decoder} --sym {sym} --maxboxsz {maxbox} --model {modelseg} --modelout {modelout} --niter 20  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --modelreg {self.currun['modelreg']} --ampreg 1.0  --ptclsclip {self.jsparm['boxsize']}")
 		#er=run(f"e2gmm_refine_point.py --projs {self.gmm}/proj_in.hdf  --sym {sym} --maxboxsz {maxbox} --model {modelseg} --modelout {modelout} --niter 20  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --modelreg {self.currun['modelreg']} --ampreg 1.0 --ndense -1 --ptclsclip {self.jsparm['boxsize']}")
 		if er :
 			showerror("Error running e2gmm_refine, see console for details. GPU memory exhaustion is a common issue. Consider reducing the target resolution.")
@@ -1558,7 +1563,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.centers=pts[:3,:]
 		self.amps=pts[3]
 
-		self.neutralplot.setData(self.centers,self.wvssphsz.value)
+		self.neutralplot.setData(pts,self.wvssphsz.value)
 		self.wview3d.updateGL()
 		self.do_events()
 		prog.setValue(3)
@@ -1694,6 +1699,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.do_events(1)
 		
 		decoder=f"{self.gmm}/{self.currunkey}_decoder.h5"
+		encoder=f"{self.gmm}/{self.currunkey}_encoder.h5"
 		if (len(self.currun["mask"])>4) : mask=f"--mask {self.currun['mask']}"
 		else: mask=""
 		# heterogeneity analysis
@@ -1712,10 +1718,29 @@ class EMGMM(QtWidgets.QMainWindow):
 			er=run(f"e2gmm_refine_point.py --model {modelout} --ptclsin {self.gmm}/particles.lst --ptclrepout {ptrep} --maxboxsz {maxboxp} --minressz {minboxp}")
 
 		print("Training network")
-		er=run(f"e2gmm_refine_point.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --ptclrepin {ptrep} --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1 --ptclsclip {self.jsparm['boxsize']} --minressz {minboxp}")
-#		er=run(f"e2gmm_refine_new.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")
+		if int(self.currun['batches'])<=1 :
+			er=run(f"e2gmm_refine_point.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --ptclrepin {ptrep} --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ptclsclip {self.jsparm['boxsize']} --minressz {minboxp}")
+		else:
+			# batched run. Run 10 iterations using each batch of data, and repeat until all requested iterations are complete for all data
+			nb=int(self.currun['batches'])
+			first=True
+			for it in range(0,self.currun['trainiter'],10):
+				nit=min(10,self.currun['trainiter']-it)
+				for b in range(nb):
+					if first :
+						encin=""
+						first=False
+					else: encin=f" --encoderin {encoder}"
+
+					er=run(f"e2gmm_refine_point.py --model {modelout} --decoderin {decoder} --decoderout {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {nit} {mask} --nmid {self.currun['dim']} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ptclsclip {self.jsparm['boxsize']} --minressz {minboxp} {encin} --encoderout {encoder} --chunk {b},{nb}")
+
+					if er: break
+			if not er:
+				# generate latent representation for all particles using final trained encoder
+				run(f"e2gmm_refine_point.py --encoderin {encoder} --ptclrepin {ptrep} --midout {self.gmm}/{self.currunkey}_mid.txt")
+
 		if er :
-			showerror("Error running e2gmm_refine_new, see console for details.")
+			showerror("Error running e2gmm_refine_point, see console for details. If memory exhausted, increase batches.")
 			return
 		self.currun=self.jsparm["run_"+self.currunkey]
 		self.currun["time_dynamics_end"]=local_datetime()
@@ -1788,6 +1813,12 @@ class EMGMM(QtWidgets.QMainWindow):
 		rminres=self.currun.get("ptclminres",1000.0)
 		if rminres<1000.0 : self.wedrres.setText(f'{rres:1.1f},{rminres:1.0f}')
 		else : self.wedrres.setText(f'{rres:1.1f}')
+		try:
+			lsx=LSXFile(f"{self.gmm}/particles.lst",True)
+			if len(lsx)<100000: dbatch=1
+			else: dbatch=len(lsx)//50000
+		except: dbatch=1
+		self.wedbatch.setText(f'{self.jsparm.getdefault("batches",dbatch):d}')
 		self.wedapix.setText(f'{self.jsparm.getdefault("apix",0.0):0.5f}')
 		self.wedngauss.setText(f'{self.currun.get("ngauss",64)}')
 		self.weddim.setText(f'{self.currun.get("dim",4)}')
@@ -1826,7 +1857,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			self.centers=pts[:3,:]
 			self.amps=pts[3]
 			
-			self.neutralplot.setData(self.centers,self.wvssphsz.value)
+			self.neutralplot.setData(pts,self.wvssphsz.value)
 			self.wview3d.update()
 
 		except:
@@ -1972,7 +2003,7 @@ class EMGMM(QtWidgets.QMainWindow):
 				print("symmetry missing, assuming C1")
 				
 			# make projection from threed
-			run(f"e2project3d.py {rpath}/threed_{itr:02d}.hdf --outfile {self.gmm}/proj_in.hdf --orientgen eman:n=500 --sym c1 --parallel thread:5")
+			run(f"e2project3d.py {rpath}/threed_{itr:02d}.hdf --outfile {self.gmm}/proj_in.hdf --orientgen rand:n=500:phitoo=1 --sym c1 --parallel thread:5")
 			
 			# Copy mask from refine folder
 			a=EMData(f"{rpath}/mask_tight.hdf")

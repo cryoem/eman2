@@ -438,7 +438,7 @@ class EMScatterPlot3D(EMShapeBase):
 			self.data=[[],[],[]]
 			return
 		if len(data) < 3:
-			raise ValueError("Data must have 3 dimensions")
+			raise ValueError("Data must have 3 or 4 dimensions")
 		if len(data[0]) != len(data[1]) or len(data[1]) != len(data[2]):
 			raise ValueError("Dimensions must be of the same length")
 		self.data = data
