@@ -990,7 +990,7 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		if best[1] is not None:
 			if self.lastbest!=best[1][0]:
-				print(f"{loc} Best {best}")
+#				print(f"{loc} Best {best}")
 				map=EMData(f"{self.gmm}/set_maps.hdf",best[1][0])
 				self.display_dynamic(map)
 				self.lastbest=best[1][0]

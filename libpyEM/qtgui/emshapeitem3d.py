@@ -488,7 +488,7 @@ class EMScatterPlot3D(EMShapeBase):
 		gluQuadricNormals(quadratic, GLU_SMOOTH)    # Create Smooth Normals (NEW) 
 		gluQuadricTexture(quadratic, GL_TRUE)      # Create Texture Coords (NEW)
 		
-		print(self.pointthr)
+#		print(self.pointthr)
 		for i in range(len(self.data[0])):
 			glPushMatrix()
 			if len(self.data)>3:
@@ -1135,8 +1135,8 @@ class EMInspectorControlScatterPlot(EMInspectorControlShape):
 		pslabel.setAlignment(QtCore.Qt.AlignCenter)
 		scattergridbox.addWidget(pslabel, 0, 0, 1, 1)
 
-		self.pointsize = EMSpinWidget(int(self.item3d().getPointSize()), 1.0, rounding=0)
-		self.pointsize.setMinimumWidth(120)
+		self.pointsize = ValSlider(self,(0.1,20.0),"Point Size:",3.0,90)
+#		self.pointsize.setMinimumWidth(120)
 		scattergridbox.addWidget(self.pointsize, 1, 0, 1, 1)
 		
 		# Add widgets to frame
@@ -1145,8 +1145,8 @@ class EMInspectorControlScatterPlot(EMInspectorControlShape):
 		ptlabel.setAlignment(QtCore.Qt.AlignCenter)
 		scattergridbox.addWidget(ptlabel, 2, 0, 1, 1)
 
-		self.pointthr = EMSpinWidget(int(self.item3d().getPointSize()), -2.0, rounding=0)
-		self.pointthr.setMinimumWidth(120)
+		self.pointthr = ValSlider(self,(-2.0,2.0),"Point Thr:",0.0,90)
+#		self.pointthr.setMinimumWidth(120)
 		scattergridbox.addWidget(self.pointthr, 3, 0, 1, 1)
 
 		scatterframe.setLayout(scattergridbox)
@@ -1156,8 +1156,8 @@ class EMInspectorControlScatterPlot(EMInspectorControlShape):
 		if type(self) == EMInspectorControlScatterPlot: 
 			self.updateItemControls()
 		
-		self.pointsize.valueChanged[int].connect(self.onPointSizeChanged)
-		self.pointthr.valueChanged[int].connect(self.onPointThrChanged)
+		self.pointsize.valueChanged[object].connect(self.onPointSizeChanged)
+		self.pointthr.valueChanged[object].connect(self.onPointThrChanged)
 
 	def onPointSizeChanged(self):
 		self.item3d().setPointSize(self.pointsize.getValue())
