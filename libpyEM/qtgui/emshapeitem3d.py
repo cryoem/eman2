@@ -1130,20 +1130,20 @@ class EMInspectorControlScatterPlot(EMInspectorControlShape):
 		scattergridbox.setAlignment(QtCore.Qt.AlignTop)
 		
 		# Add widgets to frame
-		pslabel = QtWidgets.QLabel("Point Size")
-		pslabel.setFont(lfont)
-		pslabel.setAlignment(QtCore.Qt.AlignCenter)
-		scattergridbox.addWidget(pslabel, 0, 0, 1, 1)
+		#pslabel = QtWidgets.QLabel("Point Size")
+		#pslabel.setFont(lfont)
+		#pslabel.setAlignment(QtCore.Qt.AlignCenter)
+		#scattergridbox.addWidget(pslabel, 0, 0, 1, 1)
 
 		self.pointsize = ValSlider(self,(0.1,20.0),"Point Size:",3.0,90)
 #		self.pointsize.setMinimumWidth(120)
 		scattergridbox.addWidget(self.pointsize, 1, 0, 1, 1)
 		
 		# Add widgets to frame
-		ptlabel = QtWidgets.QLabel("Point Amp Thr")
-		ptlabel.setFont(lfont)
-		ptlabel.setAlignment(QtCore.Qt.AlignCenter)
-		scattergridbox.addWidget(ptlabel, 2, 0, 1, 1)
+		#ptlabel = QtWidgets.QLabel("Point Amp Thr")
+		#ptlabel.setFont(lfont)
+		#ptlabel.setAlignment(QtCore.Qt.AlignCenter)
+		#scattergridbox.addWidget(ptlabel, 2, 0, 1, 1)
 
 		self.pointthr = ValSlider(self,(-2.0,2.0),"Point Thr:",0.0,90)
 #		self.pointthr.setMinimumWidth(120)
