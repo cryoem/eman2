@@ -281,10 +281,10 @@ def main():
 			## optionally load from saved files
 			hdr=EMData(options.ptclrepin,0,1)
 			nptcl=hdr["ny"]
-			nvec=hdf["nx"]
-			if chunk is not None:
-				chunkn=nptcl//chunk[1]
-				chunk0=chunkn*chunk[0]
+			nvec=hdr["nx"]
+			if options.chunk is not None:
+				chunkn=nptcl//options.chunk[1]
+				chunk0=chunkn*options.chunk[0]
 				chunkn=min(nptcl-chunk0,chunkn)
 				ag=EMData(options.ptclrepin,0,0,Region(0,chunk0,nvec,chunkn))
 			else: ag=EMData(options.ptclrepin)
@@ -373,10 +373,10 @@ def main():
 	if options.ptclrepin and options.encoderin and options.midout:
 		hdr=EMData(options.ptclrepin,0,1)
 		nptcl=hdr["ny"]
-		nvec=hdf["nx"]
-		if chunk is not None:
-			chunkn=nptcl//chunk[1]
-			chunk0=chunkn*chunk[0]
+		nvec=hdr["nx"]
+		if options.chunk is not None:
+			chunkn=nptcl//options.chunk[1]
+			chunk0=chunkn*options.chunk[0]
 			chunkn=min(nptcl-chunk0,chunkn)
 			ag=EMData(options.ptclrepin,0,0,Region(0,chunk0,nvec,chunkn))
 		else: ag=EMData(options.ptclrepin)
@@ -384,6 +384,7 @@ def main():
 		allgrds=ag.numpy().copy()
 		del ag
 		allscr=allgrds[:,0]
+		print(allgrds.shape,allgrds[:,1:].shape,npt)
 		allgrds=allgrds[:,1:].reshape((len(allgrds), npt))
 		print("Ptcl rep shape: ", allgrds.shape)
 
@@ -391,10 +392,11 @@ def main():
 
 		mid=calc_conf(encode_model, allgrds, 1000)
 
-		out=open(options.midout,"a")	# later batches append
+		out=open(options.midout,"w")	# later batches append
 
 		for i in range(mid.shape[0]):
-			out.write(f"{mid[i][0]:1.6f}\t{mid[i][1]:1.6f}\t{mid[i][2]:1.6f}\t{mid[i][3]:1.6f}\n")
+			rep="\t".join([f"{v:1.6f}" for v in mid[i]])
+			out.write(f"{i:d}\t{rep}\n")
 		out.close()
 
 	E2end(logid)

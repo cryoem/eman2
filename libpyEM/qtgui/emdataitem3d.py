@@ -1139,8 +1139,8 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 
 		# Set to default, but run only once and not in each base class
 		if type(self) == EMIsosurfaceInspector: self.updateItemControls()
-		self.histogram_widget.setProbe(self.item3d().isothr) # The needs to be node AFTER the data is set
-
+		try: self.histogram_widget.setProbe(self.item3d().isothr) # The needs to be node AFTER the data is set
+		except: pass	# in case data doesn't exist
 
 	def onFileBrowse(self):
 		""" Find a color map file """
