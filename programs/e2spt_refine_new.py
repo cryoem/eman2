@@ -36,7 +36,9 @@ def main():
 	parser.add_argument("--use3d", action="store_true", default=False ,help="Use projection of 3d particles instead of 2d sub tilt series. This may be more useful for thicker sample but can be significantly slower.")
 	parser.add_argument("--localrefine", action="store_true", default=False ,help="only perform local search around the solution from the last iteration",guitype='boolbox', row=19, col=0, rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--loadali2d", type=str,help="load previous 2d alignment from an aliptcls2d_xx.lst file", default=None,guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=14, col=0,rowspan=1, colspan=2, mode="model")
-	parser.add_argument("--loadali3d", type=str,help="load previous 3d alignment from an aliptcls3d_xx.lst file", default=None,guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=16, col=0,rowspan=1, colspan=2, mode="model")
+	#parser.add_argument("--loadali3d", type=str,help="load previous 3d alignment from an aliptcls3d_xx.lst file", default=None,guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=16, col=0,rowspan=1, colspan=2, mode="model")	
+	parser.add_argument("--loadali3d",help="load previous 3d alignment from --ptcls input.",action="store_true",default=False)
+
 	parser.add_argument("--maxres",type=float,help="Maximum resolution to consider in alignment (in A, not 1/A). The program will determine maximum resolution each round from the FSC of the previous round by default.",default=0,guitype='floatbox',row=18, col=0,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--minres",type=float,help="Minimum resolution to consider in alignment (in A, not 1/A)",default=0,guitype='floatbox',row=18, col=1,rowspan=1, colspan=1, mode="model")
 	parser.add_argument("--mask", type=str,help="Mask applied to the results (instead of automasking)", default=None)
@@ -55,6 +57,7 @@ def main():
 	parser.add_argument("--maxtilt",type=float,help="Excluding tilt images beyond the angle",default=-1)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
+	parser.add_argument("--continuefrom",type=float,help="continue from an iteration number. continue from 1 will use threed_01 as reference. continue from 0.5 will make 3d from aliptcls2d_01.",default=-1)
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -85,60 +88,88 @@ def main():
 	js.update(vars(options))
 	js.close()
 	
-	#### There were too many options controlling the resolution previously...
-	##   --restarget is removed. It was only used in refine_postprocess when it align even/odd maps. 
-	##   now the initial resolution is only controlled by --startres, and --goldstandard is now a bool
-	##   so we randomphase the reference to --startres when --goldstandard is specified
-	print("Preparing references...")
-	opt=""
 	res=options.startres
 	if res<=0:
 		print("ERROR: Starting resolution (resolution of the given reference) needed.")
 		exit()
-	if options.goldstandard==True and options.goldcontinue==False:
-		refs={"even":options.ref, "odd":options.ref}
-		opt+="--process filter.lowpass.gauss:cutoff_freq={r:.4f} --process filter.lowpass.randomphase:cutoff_freq={r:.4f}".format(r=1./res)
 		
-	else:	
-		if options.goldcontinue:
-			refs={eo:options.ref[:-4]+f"_{eo}.hdf" for eo in ["even","odd"]}
-		else:
-			print("WARNING: running without even/odd spliting. this could introduce model bias...")
-			refs={"even":options.ref, "odd":options.ref}
-	#if options.maxres!=0: res=options.maxres
-	
-	#### Scale reference based on particles.
-	er=EMData(refs["even"],0,True)
+	#### some metadata from 2d/3d particles
 	ep=EMData(info3dname,0,True)
 	boxsize=ep["ny"]
-
-	if abs(1-ep["apix_x"]/er["apix_x"])>0.01 or ep["ny"]!=er["ny"]:
-		print("Reference-particle apix or box size mismatch. will scale/clip reference to match particles")
-		if options.mask:
-			print(" Please note the given mask will NOT be rescaled. Please scale/clip manually if needed")
-			
-		rs=er["apix_x"]/ep["apix_x"]
-		if rs>1.:
-			opt+=" --clip {} --scale {} --process normalize.edgemean --process mask.soft:outer_radius=-1".format(ep["nx"], rs)
-		else:
-			opt+=" --scale {} --clip {} --process normalize.edgemean --process mask.soft:outer_radius=-1".format(rs, ep["nx"])
-		
-	if options.maskalign!=None: opt+=f" --multfile {options.maskalign}"
-	
-	for eo in ["even", "odd"]:
-		rf=refs[eo]
-		run(f"e2proc3d.py {rf} {path}/threed_00_{eo}.hdf {opt}")
-		
-	run(f"e2proc3d.py {path}/threed_00_even.hdf {path}/threed_00.hdf --addfile {path}/threed_00_odd.hdf --mult 0.5")
-		
 	p2=EMData(info2dname,0,True)
 	padsize=p2["ny"]
 	
-	last3d=last2d=None
+	#### parse iteration string
+	it0=options.iters.split(',')
+	iters=[]
+	for i in it0:
+		if len(i)>1:
+			r=int(i[1:])
+			iters.extend([i[0]]*r)
+		else:
+			iters.append(i)
+			
+	keydic={'p':"Subtomogram alignment", 't': "Subtilt translational refinement", 'T': "Subtilt translational CCF alignment", 'r': "Subtilt rotational refinement", 'd':"Defocus refinement", 'x':"Skipping alignment"}
 	
+	if options.continuefrom>0:
+		if options.continuefrom%1>0:
+			iters=['x']+iters
+			startiter=ceil(options.continuefrom-1)
+			itr=startiter+1
+			
+		else:
+			itr=startiter=int(options.continuefrom)
+		
+		last2d=f"{path}/aliptcls2d_{itr:02d}.lst"
+		last3d=f"{path}/aliptcls3d_{itr:02d}.lst"
+		
+	else:
+		#### There were too many options controlling the resolution previously...
+		##   --restarget is removed. It was only used in refine_postprocess when it align even/odd maps. 
+		##   now the initial resolution is only controlled by --startres, and --goldstandard is now a bool
+		##   so we randomphase the reference to --startres when --goldstandard is specified
+		print("Preparing references...")
+		startiter=0
+		last3d=last2d=None
+		opt=""
+		if options.goldstandard==True and options.goldcontinue==False:
+			refs={"even":options.ref, "odd":options.ref}
+			opt+="--process filter.lowpass.gauss:cutoff_freq={r:.4f} --process filter.lowpass.randomphase:cutoff_freq={r:.4f}".format(r=1./res)
+			
+		else:	
+			if options.goldcontinue:
+				refs={eo:options.ref[:-4]+f"_{eo}.hdf" for eo in ["even","odd"]}
+			else:
+				print("WARNING: running without even/odd spliting. this could introduce model bias...")
+				refs={"even":options.ref, "odd":options.ref}
+		#if options.maxres!=0: res=options.maxres
+		
+		#### Scale reference based on particles.
+		er=EMData(refs["even"],0,True)
+		
+
+		if abs(1-ep["apix_x"]/er["apix_x"])>0.01 or ep["ny"]!=er["ny"]:
+			print("Reference-particle apix or box size mismatch. will scale/clip reference to match particles")
+			if options.mask:
+				print(" Please note the given mask will NOT be rescaled. Please scale/clip manually if needed")
+				
+			rs=er["apix_x"]/ep["apix_x"]
+			if rs>1.:
+				opt+=" --clip {} --scale {} --process normalize.edgemean --process mask.soft:outer_radius=-1".format(ep["nx"], rs)
+			else:
+				opt+=" --scale {} --clip {} --process normalize.edgemean --process mask.soft:outer_radius=-1".format(rs, ep["nx"])
+			
+		if options.maskalign!=None: opt+=f" --multfile {options.maskalign}"
+		
+		for eo in ["even", "odd"]:
+			rf=refs[eo]
+			run(f"e2proc3d.py {rf} {path}/threed_00_{eo}.hdf {opt}")
+			
+		run(f"e2proc3d.py {path}/threed_00_even.hdf {path}/threed_00.hdf --addfile {path}/threed_00_odd.hdf --mult 0.5")
+				
 	if options.loadali3d:
 		fout=f"{path}/aliptcls3d_00.lst"
-		run(f"e2proclst.py {options.loadali3d} --create {fout} ")
+		run(f"e2proclst.py {options.ptcls} --create {fout} ")
 		last3d=fout
 		
 	if options.loadali2d:
@@ -158,27 +189,18 @@ def main():
 	if options.maskalign!=None: maskalign=EMData(options.maskalign,0)
 	else: maskalign=None
 	
-	#### parse iteration string
-	it0=options.iters.split(',')
-	iters=[]
-	for i in it0:
-		if len(i)>1:
-			r=int(i[1:])
-			iters.extend([i[0]]*r)
-		else:
-			iters.append(i)
-	keydic={'p':"Subtomogram alignment", 't': "Subtilt translational refinement", 'T': "Subtilt translational CCF alignment", 'r': "Subtilt rotational refinement", 'd':"Defocus refinement"}
 	
 	#### now start the actual refinement loop
-	for ii,itype in enumerate(iters):
-		
+	#for ii,itype in enumerate(iters):
+	for ii in range(startiter, len(iters)):
+		itype=iters[ii]
 		itr=ii+1
 		ref=f"{path}/threed_{ii:02d}.hdf"
 		print(f"######## iter {itr} ##########")
 		print("### {}....".format(keydic[itype]))
 		
 		# Ok, this is a hack to avoid adding a new option to each subprogram. May be a little confusing if the program gets interrupted
-		if options.maskalign!=None:
+		if itype!='x' and options.maskalign!=None:
 			for eo in ("even","odd"):
 				tmp=f"{path}/tmpmsk_{eo}.hdf"
 				refeo=f"{path}/threed_{ii:02d}_{eo}.hdf"
@@ -279,7 +301,7 @@ def main():
 			
 		for eo in ["even", "odd"]:
 			run(f"e2spa_make3d.py --input {path}/aliptcls2d_{itr:02d}.lst --output {path}/threed_{itr:02d}_{eo}.hdf --keep {options.keep} --clsid {eo} --outsize {boxsize} --sym {options.sym} {m3dpar}")
-			run(f"e2proc3d.py {path}/threed_{itr:02d}_{eo}.hdf {path}/threed_raw_{eo}.hdf")
+			run(f"e2proc3d.py {path}/threed_{itr:02d}_{eo}.hdf {path}/threed_raw_{eo}.hdf --compressbits 12")
 		
 		#### only do SSNR weighting for the last iteration to avoid potential model bias
 		##   simply run make3d a second time using the previous map as reference.
@@ -327,7 +349,10 @@ def gather_metadata(pfile, maxtilt=-1):
 		img=EMData(pm[0], pm[1], True)
 		imgsrc=img["class_ptcl_src"]
 		imgidx=img["class_ptcl_idxs"]
-		coord=img["ptcl_source_coord"]
+		if img.has_attr("ptcl_source_coord"):
+			coord=img["ptcl_source_coord"]
+		else:
+			coord=[0,0,0]
 		
 		if imgsrc.endswith(".lst"):
 			rhdrs=[EMData(imgsrc, i, True) for i in imgidx]

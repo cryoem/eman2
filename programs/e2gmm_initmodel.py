@@ -28,7 +28,7 @@ def main():
 
 	run(f"e2segment3d.py {path}/output.hdf --pdb {path}/model_init.pdb --process=segment.kmeans:ampweight=1:nseg={npt}:verbose=1:thr=3")
 	
-	run(f"e2gmm_refine_new.py --projs {path}/ptcls.lst --npt 8 --model {path}/model_init.pdb --modelout {path}/model_gmm.txt --niter 40 --evalmodel {path}/model_projs.hdf --maxres 40")
+	run(f"e2gmm_refine_new.py --ptclsin {path}/ptcls.lst --npt 8 --model {path}/model_init.pdb --modelout {path}/model_gmm.txt --niter 40 --evalmodel {path}/model_projs.hdf --maxres 40 --trainmodel")
 	
 	run(f"e2spa_make3d.py --input {path}/model_projs.hdf --output {path}/threed_model.hdf --threads 32 {sf}")
 
@@ -50,7 +50,7 @@ def main():
 		#p[:,:3]+=np.random.randn(len(p), 3)*1e-2
 		np.savetxt(f"{path}/model_gmm.txt", p)
 		
-		run(f"e2gmm_refine_new.py --projs {path}/ptcls.lst --npt {npt} --model {path}/model_gmm.txt --modelout {path}/model_gmm.txt --niter 20 --evalmodel {path}/model_projs.hdf --maxres {res}")
+		run(f"e2gmm_refine_new.py --ptclsin {path}/ptcls.lst --npt {npt} --model {path}/model_gmm.txt --modelout {path}/model_gmm.txt --niter 20 --evalmodel {path}/model_projs.hdf --maxres {res} --trainmodel")
 		run(f"e2spa_make3d.py --input {path}/model_projs.hdf --output {path}/threed_model.hdf --threads 32 {sf}")
 		
 		run(f"e2proc3d.py {path}/threed_ptcl.hdf {path}/output_all.hdf --append")

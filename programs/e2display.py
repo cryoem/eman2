@@ -229,8 +229,8 @@ def hist(files,app):
 	return histw
 
 def plot_3d(files,app):
-	from eman2_gui.emplot3d import EMPlot3DWidgetNew
-	plotw=EMPlot3DWidgetNew(application=app)
+	from eman2_gui.emplot3d import EMPlot3DWidget
+	plotw=EMPlot3DWidget(application=app)
 	for f in files:
 		plotw.set_data_from_file(f)
 	plotw.setWindowTitle("3D Plot")

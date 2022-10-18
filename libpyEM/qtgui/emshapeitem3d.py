@@ -428,7 +428,8 @@ class EMScatterPlot3D(EMShapeBase):
 	
 	def __init__(self, transform=None):
 		EMShapeBase.__init__(self, parent=None, children=set(), transform=transform)
-		self.pointthr=0
+		self.pointthr=0.0
+
 		self.data=[[],[],[]]
 		self.setPointSize(1)
 		
@@ -438,7 +439,7 @@ class EMScatterPlot3D(EMShapeBase):
 			self.data=[[],[],[]]
 			return
 		if len(data) < 3:
-			raise ValueError("Data must have 3 dimensions")
+			raise ValueError("Data must have 3 or 4 dimensions")
 		if len(data[0]) != len(data[1]) or len(data[1]) != len(data[2]):
 			raise ValueError("Dimensions must be of the same length")
 		self.data = data
@@ -459,8 +460,6 @@ class EMScatterPlot3D(EMShapeBase):
 	def setPointThr(self, pointthr):
 		"""Sets a point intensity threshold. Points will be hidden if they have a value below the threshold"""
 		self.pointthr = pointthr
-		self.slices = 8
-		self.stacks = 8
 		
 	def getEvalString(self):
 		"""Implement me"""
@@ -489,11 +488,12 @@ class EMScatterPlot3D(EMShapeBase):
 		gluQuadricNormals(quadratic, GLU_SMOOTH)    # Create Smooth Normals (NEW) 
 		gluQuadricTexture(quadratic, GL_TRUE)      # Create Texture Coords (NEW)
 		
+#		print(self.pointthr)
 		for i in range(len(self.data[0])):
 			glPushMatrix()
 			if len(self.data)>3:
 				brtcol=(self.data[3][i]-cmin)/(cmax-cmin)		# color is black for values of 0 ranging to white at max
-				if self.data[3][i]<self.pointthr : 
+				if self.data[3][i]<=self.pointthr :
 					glPopMatrix()
 					continue
 				glMaterialfv(GL_FRONT, GL_DIFFUSE, [brtcol*0.75,brtcol*0.75,brtcol*0.75,1.0])
@@ -1130,15 +1130,25 @@ class EMInspectorControlScatterPlot(EMInspectorControlShape):
 		scattergridbox.setAlignment(QtCore.Qt.AlignTop)
 		
 		# Add widgets to frame
-		pslabel = QtWidgets.QLabel("Point Size")
-		pslabel.setFont(lfont)
-		pslabel.setAlignment(QtCore.Qt.AlignCenter)
-		scattergridbox.addWidget(pslabel, 0, 0, 1, 1)
-		
-		self.pointsize = EMSpinWidget(int(self.item3d().getPointSize()), 1.0, rounding=0)
-		self.pointsize.setMinimumWidth(120)
+		#pslabel = QtWidgets.QLabel("Point Size")
+		#pslabel.setFont(lfont)
+		#pslabel.setAlignment(QtCore.Qt.AlignCenter)
+		#scattergridbox.addWidget(pslabel, 0, 0, 1, 1)
+
+		self.pointsize = ValSlider(self,(0.1,20.0),"Point Size:",3.0,90)
+#		self.pointsize.setMinimumWidth(120)
 		scattergridbox.addWidget(self.pointsize, 1, 0, 1, 1)
 		
+		# Add widgets to frame
+		#ptlabel = QtWidgets.QLabel("Point Amp Thr")
+		#ptlabel.setFont(lfont)
+		#ptlabel.setAlignment(QtCore.Qt.AlignCenter)
+		#scattergridbox.addWidget(ptlabel, 2, 0, 1, 1)
+
+		self.pointthr = ValSlider(self,(-2.0,2.0),"Point Thr:",0.0,90)
+#		self.pointthr.setMinimumWidth(120)
+		scattergridbox.addWidget(self.pointthr, 3, 0, 1, 1)
+
 		scatterframe.setLayout(scattergridbox)
 		gridbox.addWidget(scatterframe, 3, 0)
 		
@@ -1146,11 +1156,17 @@ class EMInspectorControlScatterPlot(EMInspectorControlShape):
 		if type(self) == EMInspectorControlScatterPlot: 
 			self.updateItemControls()
 		
-		self.pointsize.valueChanged[int].connect(self.onPointSizeChanged)
-	
+		self.pointsize.valueChanged[object].connect(self.onPointSizeChanged)
+		self.pointthr.valueChanged[object].connect(self.onPointThrChanged)
+
 	def onPointSizeChanged(self):
 		self.item3d().setPointSize(self.pointsize.getValue())
 		if self.inspector: self.inspector().updateSceneGraph()
+
+	def onPointThrChanged(self):
+		self.item3d().setPointThr(self.pointthr.getValue())
+		if self.inspector: self.inspector().updateSceneGraph()
+
 		
 class EMInspectorControl3DText(EMInspectorControlShape):
 	"""

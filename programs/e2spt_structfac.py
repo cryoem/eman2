@@ -16,6 +16,8 @@ def main():
 	parser.add_argument("--sfout", type=str,help="output", default="sf.txt")
 	parser.add_argument("--cutoff", type=float,help="cutoff", default=20)
 	parser.add_argument("--res", type=float,help="lowpass resolution. default 15", default=15)
+	parser.add_argument("--sqrt", action="store_true", default=False ,help="sqrt on structure factor curve. maybe better for high res maps.")
+
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	
@@ -39,7 +41,7 @@ def main():
 	dataf = data.do_fft()
 	curve = dataf.calc_radial_dist((data["ny"]//2), 0, 1.0, False)
 	curve=np.array([i/dataf["nx"]*dataf["ny"]*dataf["nz"] for i in curve])
-
+	if options.sqrt: curve=np.sqrt(curve)
 	
 	if options.label:
 		print("weighting by fsc...")

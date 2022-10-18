@@ -223,6 +223,7 @@ as well as alignment parameters, so use of tomograms from other software is not 
 	#### scale factor from raw tilt image to tomogram/particle that we get coordinates info from
 	scale=apix_ptcl/apix_tlt
 	options._scale=scale
+	print("### scale by {}".format(options._scale))
 	if options.shrink==1.5:
 		shrinklab="_bin1_5"
 	elif options.shrink>=2:
@@ -605,6 +606,8 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 			hdr=info[pid]
 			if "dxfs2d" in hdr:
 				dxfs=hdr.pop("dxfs2d")
+				#x=np.array([x.get_trans() for x in dxfs])
+				#print(pid, x.shape, np.max(abs(x), axis=0))
 		else:
 			hdr={}
 		
@@ -729,8 +732,10 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 			#### save the metadata in header of 2d particle
 			xform=Transform({"type":"xyz","ytilt":tpm[3],"xtilt":tpm[4], "ztilt":tpm[2], "tx":txdf, "ty":tydf})
 			if len(dxfs)==len(imgs):
-				dxf=dxfs[nid]
+				dxf=Transform(dxfs[nid])
+				#xform.set_trans(xform.get_trans()*options._scale)
 				dxf.set_trans(dxf.get_trans()*options._scale)
+				e["orig_dxf"]=dxf
 				#print(nid, dxf)
 				xform=dxf*xform
 				txdf,tydf,_=xform.get_trans()
@@ -1016,6 +1021,8 @@ def parse_json(options):
 				a.translate(c[0], c[1], c[2])
 				newxfs.append(a)
 				info.append({"orig_ptcl":str(fname),"orig_idx":int(ids[i]),"orig_xf":pxf, "dxfs2d":dxfs[i], "postxf":nxf})
+				#x=np.array([x.get_trans() for x in dxfs[i]])
+				#print(i, np.max(abs(x), axis=0))
 
 		newpos=np.array([p.get_trans() for p in newxfs])
 		if len(newpos)>1:

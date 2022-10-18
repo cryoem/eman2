@@ -218,6 +218,7 @@ class SptAlignTask(JSTask):
 			## prepare metadata
 			dc=info2d[di] ## dictionary for the current 2d particle
 			fname=dc["src"].replace("particles", "particles3d", 1)
+			#fname=fname.replace("ptcls2d", "ptcls3d", 1)[:-4]+".hdf"
 			tid=dc["tilt_id"]
 			
 			## all 3d particles from the tomogram
@@ -233,7 +234,7 @@ class SptAlignTask(JSTask):
 				d2d.append(d2[0])
 				d3d.append(d3)
 			
-			coord=np.array([d["coord"] for d in d3d])
+			coord=np.array([d["coord"] for d in d3d]).astype(float)
 			txfs=[d["xform.align3d"].inverse() for d in d3d]
 			coord-=np.array([t.get_trans() for t in txfs])
 			xfpj=[d["xform.projection"] for d in d2d]

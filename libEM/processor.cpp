@@ -904,6 +904,11 @@ void AzSharpProcessor::process_inplace(EMData * image)
 
 	image->update();
 }
+//void CreateRealSpaceTriangleVolume::process(EMData *image)
+//{   // PRB September 5th 2022
+    // grabs peaks from images and 
+//}
+
 
 void HelixFilterProcessor::process_inplace(EMData *image)
 {
@@ -13905,6 +13910,107 @@ EMData* BispecSliceProcessor::process(const EMData * const image) {
 			delete cimage2;
 		}
 		return(ret);
+	}
+	
+	else if (params.has_key("prb3DOut2D")) {
+       
+		int hp=(int)params.set_default("hp",0);
+		int Nyquist=(int)params.set_default("prb3DOut2D",30);
+         
+        if (image->is_complex()) cimage = image->copy();
+        else cimage = image->do_fft();
+ 
+        cimage->process_inplace("xform.phaseorigin.tocorner");
+
+        //int k=(int)params.set_default("PRBkv3",1);
+	
+        	// Decide how large the bispectrum will be 
+        
+       
+        int csizex = cimage->get_xsize();
+        int csizey = cimage->get_ysize();
+        
+        //printf("csizex = %d, csizey = %d  \n", csizex , csizey );
+        
+        Nyquist = (csizey+1)/2;
+        
+        //printf("csizex = %d, csizey = %d, Nyquist= %d  \n", csizex , csizey, Nyquist);
+        
+        int nkx= Nyquist/2+1;
+        int nky= 2*Nyquist+2;
+        int nkz= Nyquist+1;
+        
+        
+        //printf("nkx = %d, nky = %d , size= %d \n",nkx,nky,image->get_xsize());
+        
+        
+
+        EMData* ret=new EMData(nkx,nky,nkz);
+        //ret->set_complex(0);
+        ret->to_zero();
+
+        //int Nyquist = 1* k;
+//		for (float ang=0; ang<360.0; ang+=360.0/(nky*M_PI) ) { // Original
+		for (float ang=0; ang<360.0; ang+=2 ) {
+			EMData *cimage2=cimage->process("xform",Dict("alpha",ang));
+
+            for (int k=0; k < Nyquist+1;k++){
+                //printf(" k %d\n",k);
+                int k2=k*k;
+                int qyMax = sqrt(3*k2/4);
+
+                for (int qy=-qyMax; qy<qyMax+1; qy++) { 
+                    //if (qy*qy> (0.75)*k*k) continue;
+                    int qxMin =k/2; qxMin *= -1;
+                    int qxMax = k - sqrt(k2-qy*qy)+0.999999; qxMax *= -1;
+                    for (int qx=qxMin; qx<qxMax+1; qx++) {
+                        //if ((qx+k)*(qx+k) > (k*k - qy*qy)) continue;
+                        //if (qx<(-k/2)) continue;
+                        int kqx=qx+k;
+                        int kqy=qy;
+                        complex<double> v1 = (complex<double>)cimage2->get_complex_at(k,0);
+                        complex<double> v2 = (complex<double>)cimage2->get_complex_at(qx,qy);
+                        complex<double> v3 = (complex<double>)cimage2->get_complex_at(kqx,kqy);
+                        complex<double> vTotal = (complex<double>)(v1*v2*std::conj(v3));
+                        double RealV = (real)(vTotal);
+                        int qxInd = (qx+nkx)%(nkx);
+                        int qyInd = (qy+nky)%(nky);
+                        int NegQx = k/2 +qx ;
+                        int QyInd = qy+Nyquist;
+                        //printf("qy %d qyInd %d QyInd %d qx %d qxInd %d NegQx %d k %d\n",qy, qyInd, QyInd,qx,qxInd,NegQx, k);
+                         //double OldVal = ret->get_value_at(qxInd,qyInd,0);
+                        double OldVal = ret->get_value_at(NegQx,QyInd,k);
+                        //ret->set_value_at(qxInd,qyInd,0,OldVal+RealV);
+                        ret->set_value_at(NegQx,QyInd,k,OldVal+RealV);
+                        //ret->set_value_at(qxInd,qyInd,0,1);
+                    }
+                }
+            }    
+			delete cimage2;
+		}
+		
+       //return(ret);
+        
+        // int nkx= Nyquist/2+1; int nky= 2*Nyquist+2; int nkz= Nyquist+1;
+        
+        //printf("Hello");
+        
+        int NKX = nky;
+        int NKY = nkx * nkz;
+        float retNow;
+        EMData* ret2D=new EMData(NKX,NKY);
+        //ret->set_complex(0);
+        ret2D->to_zero();
+        for (int kx=0; kx < nkx; kx++){
+                for (int ky=0; ky< nky; ky++) { 
+                    for (int kz=0; kz<nkz; kz++) {
+                        retNow = ret ->get_value_at(kx,ky,kz);
+                        ret2D ->set_value_at(ky,kx*nkz + kz,retNow);
+        }}}
+
+		
+		return(ret2D);
+		
 	}
 	else if (params.has_key("jkx") && params.has_key("jky")) {
 		int jkx=(int)params.set_default("jkx",0);

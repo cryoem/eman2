@@ -43,6 +43,7 @@ import numpy as np
 
 import weakref
 from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtWidgets import QSplitter, QHBoxLayout # Erik add for Qsplitter
 from PyQt5.QtCore import Qt
 from eman2_gui.emapplication import get_application, EMApp
 from eman2_gui.emimage2d import EMImage2DWidget
@@ -140,46 +141,80 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		#self.mfile_quit=self.mfile.addAction("Quit")
 
 
-		self.setCentralWidget(QtWidgets.QWidget())
-		self.gbl = QtWidgets.QGridLayout(self.centralWidget())
+#old code, Erik commented out
+#		self.setCentralWidget(QtWidgets.QWidget())
+#		self.gbl = QtWidgets.QGridLayout(self.centralWidget())
 
+#New QSplitter code, Erik addition
+		self.setCentralWidget(QtWidgets.QWidget())
+		self.gbl = QtWidgets.QHBoxLayout(self.centralWidget())
+		
+		self.splitter_top = QSplitter(Qt.Horizontal) #top panel of images
+		self.splitter_bottom = QSplitter(Qt.Horizontal) #bottom panel of images
+		self.splitter_wrapper = QSplitter(Qt.Vertical) #will stack the top and bottom image panels
+
+		self.xyview = EMImage2DWidget(sizehint=(1024,1024))
+		self.xzview = EMImage2DWidget(sizehint=(1024,256))
+		self.zyview	= EMImage2DWidget(sizehint=(256,1024))
+		
+		self.wdepth = QtWidgets.QSlider()
+		
+		self.splitter_top.addWidget(self.zyview)
+		self.splitter_top.addWidget(self.xyview)
+		self.splitter_top.addWidget(self.wdepth)
+		self.splitter_bottom.addWidget(self.xzview)
+		
+		self.splitter_wrapper.addWidget(self.splitter_top)
+		self.splitter_wrapper.addWidget(self.splitter_bottom)
+		
+		self.gbl.addWidget(self.splitter_wrapper)
+		
+		#control panel
+		self.gbl2 = QtWidgets.QGridLayout()
+		self.grid_widget = QtWidgets.QWidget()
+		self.grid_widget.setLayout(self.gbl2)
+		self.splitter_bottom.addWidget(self.grid_widget)
+		
+#########################################################################
+		
 		# relative stretch factors
 		#self.gbl.setColumnMinimumWidth(0,200)
 		#self.gbl.setRowMinimumHeight(0,200)
 		#self.gbl.setColumnStretch(0,0)
-		self.gbl.setColumnStretch(1,100)
-		self.gbl.setColumnStretch(0,1)
-		self.gbl.setRowStretch(0,100)
-		self.gbl.setRowStretch(1,1)
 		
-
-		# 3 orthogonal restricted projection views
-		self.xyview = EMImage2DWidget(sizehint=(1024,1024))
-		self.gbl.addWidget(self.xyview,0,1)
-
-		self.xzview = EMImage2DWidget(sizehint=(1024,256))
-		self.gbl.addWidget(self.xzview,1,1)
-
-		self.zyview = EMImage2DWidget(sizehint=(256,1024))
-		self.gbl.addWidget(self.zyview,0,0)
-
-		# Select Z for xy view
-		self.wdepth = QtWidgets.QSlider()
-		self.gbl.addWidget(self.wdepth,1,2)
-
-		### Control panel area in upper left corner
-		self.gbl2 = QtWidgets.QGridLayout()
-		self.gbl.addLayout(self.gbl2,1,0)
-
-		#self.wxpos = QtWidgets.QSlider(Qt.Horizontal)
-		#self.gbl2.addWidget(self.wxpos,0,0)
+#old code, Erik commented out
+#		self.gbl.setColumnStretch(1,100)
+#		self.gbl.setColumnStretch(0,1)
+#		self.gbl.setRowStretch(0,100)
+#		self.gbl.setRowStretch(1,1)
 		
-		#self.wypos = QtWidgets.QSlider(Qt.Vertical)
-		#self.gbl2.addWidget(self.wypos,0,3,6,1)
-		
+#		# 3 orthogonal restricted projection views
+#		self.xyview = EMImage2DWidget(sizehint=(1024,1024))
+#		self.gbl.addWidget(self.xyview,0,1)
+#
+#		self.xzview = EMImage2DWidget(sizehint=(1024,256))
+#		self.gbl.addWidget(self.xzview,1,1)
+#
+#		self.zyview = EMImage2DWidget(sizehint=(256,1024))
+#		self.gbl.addWidget(self.zyview,0,0)
+#
+#		# Select Z for xy view
+#		self.wdepth = QtWidgets.QSlider()
+#		self.gbl.addWidget(self.wdepth,1,2)
+#
+#		### Control panel area in upper left corner
+#		self.gbl2 = QtWidgets.QGridLayout()
+#		self.gbl.addLayout(self.gbl2,1,0)
+#
+#		#self.wxpos = QtWidgets.QSlider(Qt.Horizontal)
+#		#self.gbl2.addWidget(self.wxpos,0,0)
+#
+#		#self.wypos = QtWidgets.QSlider(Qt.Vertical)
+#		#self.gbl2.addWidget(self.wypos,0,3,6,1)
+#
 		self.wzheight=ValBox(label="Z height:",value=256)
 		self.gbl2.addWidget(self.wzheight,1,0)
-		
+
 		# box size
 		self.wboxsize=ValBox(label="Box Size:",value=0)
 		self.gbl2.addWidget(self.wboxsize,2,0)
@@ -243,7 +278,10 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		self.wdepth.valueChanged[int].connect(self.event_depth)
 		self.wnlayers.valueChanged[int].connect(self.event_nlayers)
 		self.wboxsize.valueChanged.connect(self.event_boxsize)
-		self.wzheight.valueChanged.connect(self.event_zheight)
+		
+#Erik commented out because QHBoxlayerout has no attribute 'setRowMinimumheight'
+#		self.wzheight.valueChanged.connect(self.event_zheight)
+
 		#self.wmaxmean.clicked[bool].connect(self.event_projmode)
 		#self.wscale.valueChanged.connect(self.event_scale)
 		self.wfilt.valueChanged.connect(self.event_filter)
@@ -339,7 +377,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 			box=info["boxes_3d"]
 			for i,b in enumerate(box):
 				#### X-center,Y-center,Z-center,method,[score,[class #]]
-				bdf=[0,0,0,"manual",0.0, 0]
+				bdf=[0,0,0,"manual",0.0, 0, 0]
 				for j,bi in enumerate(b):  bdf[j]=bi
 				
 				
@@ -460,12 +498,13 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 			r["apix_x"]=r["apix_y"]=r["apix_z"]=self.apix
 		return r
 
-	def event_zheight(self):
-		z=self.wzheight.getValue()
-		self.gbl.setRowMinimumHeight(1,z)
-		self.gbl.setColumnMinimumWidth(0,z)
-		#print(data["nx"],data["ny"],data["nz"])
-		return
+#Erik commented out because QHBoxLayout has no attribute 'setRowMinimumheight'
+#	def event_zheight(self):
+#		z=self.wzheight.getValue()
+#		self.gbl.setRowMinimumHeight(1,z)
+#		self.gbl.setColumnMinimumWidth(0,z)
+#		#print(data["nx"],data["ny"],data["nz"])
+#		return
 		
 		
 	def event_boxsize(self):

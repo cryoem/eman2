@@ -238,7 +238,7 @@ class SptAlignTask(JSTask):
 				dii=data["ii"]
 				
 			ref=refs[dii%2]
-			info=info3d[dii]
+			info=info3d[data["ii"]]
 			
 			#### read and FT the 3D particle
 			##   this is actually only used when fromscratch is on. maybe should skip it otherwise, but need some testing first
@@ -419,7 +419,7 @@ class SptAlignTask(JSTask):
 							simplex=np.vstack([[0,0,0,0,0,0], np.eye(6)])
 							simplex[4:]*=astep
 							
-							res=minimize(testxf, x0,  method='Nelder-Mead', options={'ftol': 1e-3, 'disp': False, "maxiter":50,"initial_simplex":simplex+x0})
+							res=minimize(testxf, x0,  method='Nelder-Mead', options={'disp': False, "maxiter":50,"initial_simplex":simplex+x0})
 							
 							x=res.x
 							s=float(res.fun)
@@ -509,7 +509,8 @@ class SptAlignTask(JSTask):
 				#s0 = testxf(x0)
 				x0=["{:.4f}".format(a) for a in x0]
 				print('{} : {:.4f} - ( {} )'.format(data["ii"], np.mean(score), ', '.join(x0[1:])))
-				
+				for c in c2d[:2]:
+					print(c)
 				print('#############')
 				
 			else:

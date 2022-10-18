@@ -775,6 +775,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.datacursor = QtGui.QCursor(QtGui.QPixmap(datacursor),-1,-1)
 		self.textcursor = QtGui.QCursor(QtGui.QPixmap(textcursor),-1,-1)
 		self.appcursor = QtGui.QCursor(QtGui.QPixmap(appcursor),-1,-1)
+		self.rendercount=0
 		
 	def getEvalString(self):
 		"""
@@ -806,7 +807,8 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.updateInspector()
 	
 	def renderNode(self):
-		pass
+#		print("Render ",self.rendercount)
+		self.rendercount+=1
 	
 	def getItemInspector(self):
 		"""

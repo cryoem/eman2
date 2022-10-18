@@ -52,12 +52,14 @@ def main():
 	parser.add_argument("--extractkey", type=str, default=None, help="This will extract a single named value from each specified file. Output will be multicolumn if the referenced label is an object, such as CTF.")
 	parser.add_argument("--extractspt", action="store_true", default=False, help="This will extract the parameters from a particle_parms JSON file in SPT projects as a multicolumn text file.")
 	parser.add_argument("--removekey", type=str, default=None, help="DANGER! This will remove all data associated with the named key from all listed .json files.")
+	parser.add_argument("--addkey", type=str, default=None, help="add a simple key in the format of key:value. Will try to conver value to float if possible.")
 	parser.add_argument("--removeptcl", type=str, default=None, help="remove tomo particles of the given label.")
 
 	parser.add_argument("--output", type=str, default="jsoninfo.txt", help="Output for text operations (not JSON) filename. default = jsoninfo.txt")
 	parser.add_argument("--setoption",type=str, default=None, help="Set a single option in application preferences, eg - display2d.autocontrast:true")
 	parser.add_argument("--listoptions",action="store_true", default=False, help="List all currently set user application preferences")
-	
+	parser.add_argument("--infofile", action="store_true", default=False, help="Find and process the info file corresponding to the input file.")
+
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higher number means higher level of verboseness",default=1)
 
@@ -77,6 +79,13 @@ def main():
 			print("ERROR: could not write preferences. Must be of form 'program.option:value'")
 			sys.exit(1)
 		sys.exit(0)
+	
+	if options.infofile:
+		newargs=[info_name(a) for a in args]
+		for a,n in zip(args, newargs):
+			print("{} -> {}".format(a, n))
+		args=newargs
+		
 		
 	if options.remaplstkeys:
 		try: os.remove("tmp_tmp.json")
@@ -209,6 +218,19 @@ def main():
 		js.update(jsb)
 		js.close()
 		print("Removed {} from {} files. Backup stored in backup_removed.json".format(options.removekey,nf))
+			
+	if options.addkey:
+		key=options.addkey.split(':')[0]
+		val=options.addkey.split(':')[1]
+		try: val=float(val)
+		except: pass
+	
+		print(key, val)
+		for ii, fsp in enumerate(args):
+			js=js_open_dict(fsp)
+			js[key]=val
+			js.close()
+			
 			
 	if options.removeptcl:
 		
