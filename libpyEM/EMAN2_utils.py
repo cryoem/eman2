@@ -83,6 +83,28 @@ def numpy2pdb(data,fname,occ=[],bfac=[],chainid=[], model=0, residue=[]):
 	f.write("ENDMDL\n")
 	f.close()
 
+
+def replace_pdb_points(fname,fnew, pts):
+	f=open(fname,'r')
+	lines=f.readlines()
+	f.close()
+	
+	f=open(fnew, 'w')
+	k=0
+	for l in lines:
+		if l.startswith("ATOM") or l.startswith("HETATM"):
+			atom=[l[30:38],l[38:46],l[46:54]]
+			# print(atom, pts[k])
+			l0=l[30:54]
+			l1="{:8.3f}{:8.3f}{:8.3f}".format(pts[k,0],pts[k,1],pts[k,2])
+			l=l.replace(l0,l1,1)
+			
+			k+=1
+		f.write(l)
+	f.close()
+
+	return 
+
 def norm_vec(vec):
 	if len(vec.shape)==1:
 		return old_div(vec,np.sqrt(np.sum(vec**2)))

@@ -223,7 +223,7 @@ as well as alignment parameters, so use of tomograms from other software is not 
 	#### scale factor from raw tilt image to tomogram/particle that we get coordinates info from
 	scale=apix_ptcl/apix_tlt
 	options._scale=scale
-	print("### scale by {}".format(options._scale))
+	if options.verbose>0:print("### scale by {:.1f}".format(options._scale))
 	if options.shrink==1.5:
 		shrinklab="_bin1_5"
 	elif options.shrink>=2:

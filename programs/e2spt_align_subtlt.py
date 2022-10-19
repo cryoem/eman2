@@ -317,7 +317,7 @@ class SptAlignTask(JSTask):
 				curxfs=[Transform(x)*xf for x in xfs]
 				curxfs=[x.inverse() for x in curxfs]
 				xfcrs=[Transform(x) for x in curxfs]
-				ifirst=1
+				ifirst=max(1,len(ssrg)-1)
 				npos=32
 				
 			### do local search around the previous solution

@@ -15,6 +15,9 @@ def main():
 	(options, args) = parser.parse_args()
 	
 	logid=E2init(sys.argv)
+	
+	if options.path==None: options.path=num_path_new("spt_")
+	
 	lst0=load_lst_params(options.lstin)
 	key0=["{}_{:04d}".format(l["src"], l["idx"]) for l in lst0]
 	dic0={k:i for i,k in enumerate(key0)}

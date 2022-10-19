@@ -1133,10 +1133,10 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 	
 	
 	def key_press(self,event):
-		if event.key() == 96: ## "`" to move up a slice since arrow keys are occupied...
+		if event.key() == Qt.Key_QuoteLeft or event.key() == Qt.Key_Z: ## "`" to move up a slice since arrow keys are occupied...
 			self.wdepth.setValue(self.z_loc+1)
 
-		elif event.key() == 49: ## "1" to move down a slice
+		elif event.key() == Qt.Key_1 or event.key() == Qt.Key_X: ## "1" to move down a slice
 			self.wdepth.setValue(self.z_loc-1)
 		else:
 			self.keypress.emit(event)
