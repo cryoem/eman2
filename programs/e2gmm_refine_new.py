@@ -366,7 +366,7 @@ def set_indices_boxsz(boxsz, apix=0, return_freq=False):
 
 def build_encoder(mid=512, nout=4, conv=False, ninp=-1):
 	l2=tf.keras.regularizers.l2(1e-3)
-	kinit=tf.keras.initializers.RandomNormal(0,0.01)	# was 0.01
+	kinit=tf.keras.initializers.RandomNormal(0,0.001)	# was 0.01
 	
 	if conv:
 		ss=64
@@ -1126,6 +1126,38 @@ def calc_conf(encode_model, allgrds, bsz=1000):
 	mid=np.concatenate(mid, axis=0)
 	return mid
 	
+def make_mask_gmm(selgauss, pts):
+	if selgauss==None:
+		imsk=tf.zeros(len(pts), dtype=floattype)+1
+		return imsk
+		
+	try: 
+		msk=EMData(selgauss)
+		selmsk=True
+	except:
+		selmsk=False
+		
+	if selmsk:
+		## read selected Gaussian from mask file
+		m=msk.numpy().copy()
+		p=pts[:,:3].copy()
+		p=p[:,::-1]
+		p[:,:2]*=-1
+		p=(p+.5)*msk["nx"]
+
+		o=np.round(p).astype(int)
+		v=m[o[:,0], o[:,1], o[:,2]]
+		imsk=tf.constant(v.astype(floattype))
+	
+	else:
+		## read from a list of points starting from 1
+		i=np.loadtxt(selgauss).astype(int).flatten()-1
+		
+		m=np.zeros(len(pts), dtype=floattype)
+		m[i]=1
+		imsk=tf.constant(m)
+	
+	return imsk
 
 def main():
 	
@@ -1202,7 +1234,13 @@ def main():
 	if options.model:
 		if options.model.endswith(".pdb"):
 			print("Generating Gaussian model from pdb...")
-			p=pdb2numpy(options.model)
+			p=pdb2numpy(options.model, allatom=True)
+			if options.npts>0:
+				from sklearn.cluster import KMeans
+				km=KMeans(options.npts,max_iter=30)
+				km.fit(p)
+				p=km.cluster_centers_
+			
 			pts=np.zeros((len(p),5))
 			e=EMData(options.ptclsin, 0, True)
 			#sz=e["ny"]
@@ -1315,33 +1353,8 @@ def main():
 	##   used both for align and heterg
 	imsk=tf.zeros(npt, dtype=floattype)+1
 	if options.selgauss:
-		try: 
-			msk=EMData(options.selgauss)
-			selmsk=True
-		except:
-			selmsk=False
-			
-		if selmsk:
-			## read selected Gaussian from mask file
-			m=msk.numpy().copy()
-			p=pts[:,:3].copy()
-			p=p[:,::-1]
-			p[:,:2]*=-1
-			p=(p+.5)*msk["nx"]
-
-			o=np.round(p).astype(int)
-			v=m[o[:,0], o[:,1], o[:,2]]
-			imsk=tf.constant(v.astype(floattype))
+		options.selgauss=imsk=make_mask_gmm(options.selgauss, pts)
 		
-		else:
-			## read from a list of points starting from 1
-			i=np.loadtxt(options.selgauss).astype(int).flatten()-1
-			
-			m=np.zeros(npt, dtype=floattype)
-			m[i]=1
-			imsk=tf.constant(m)
-		
-		options.selgauss=imsk
 		print('selecting {:.0f} out of {} points'.format(np.sum(imsk), npt))
 		
 	#### Align particles using GMM
