@@ -28,6 +28,7 @@ def main():
 	parser.add_argument("--output", type=str,help="output lst file", default="sets/all_relion.lst")
 	parser.add_argument("--head", type=int,help="use only first N particles. for testing", default=-1)
 	parser.add_argument("--skipwrite", action="store_true", default=False ,help="skip file writing")
+	parser.add_argument("--onestack", type=str, default=None ,help="save all particles in one stack")
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -82,6 +83,10 @@ def main():
 	else:
 		nptcl=len(lines)
 		
+	if options.skipwrite==False and options.onestack:
+		try: os.remove(options.onestack)
+		except: pass
+					  
 	for i in range(nptcl):
 		ln=lines[i]
 		if len(ln)<5: 
@@ -89,10 +94,15 @@ def main():
 		l=ln.split()
 		ii,src=l[rid["name"]].split('@')
 		ii=int(ii)-1
-		if '/' in src:
-			fm="particles"+src[src.rfind('/'):src.rfind('.')]+".hdf"
+		if options.onestack:
+			fm=options.onestack
+			io=i
 		else:
-			fm="particles/"+src[:src.rfind('.')]+".hdf"
+			io=ii
+			if '/' in src:
+				fm="particles"+src[src.rfind('/'):src.rfind('.')]+".hdf"
+			else:
+				fm="particles/"+src[:src.rfind('.')]+".hdf"
 			
 		if not os.path.isfile(src):
 			print("{} does exist".format(src))
@@ -121,9 +131,9 @@ def main():
 			e["apix_x"]=options.apix
 			e["apix_y"]=options.apix
 			
-			e.write_compressed(fm, ii,12,nooutliers=True)
+			e.write_compressed(fm, io,12,nooutliers=True)
 			
-		fnames.append([i, fm ,ii])
+		fnames.append([i, fm ,io])
 		if i%100==0 or i==len(lines)-1 : sys.stdout.write("\r{}/{}	  ".format(i, len(lines)))
 		sys.stdout.flush()
 	
