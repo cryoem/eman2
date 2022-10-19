@@ -56,8 +56,10 @@ from libpyGLUtils2 import *
 from eman2_gui.emglobjects import EMOpenGLFlagsAndTools
 from eman2_gui.emapplication import get_application, EMGLWidget
 from eman2_gui.emimageutil import EMMetaDataTable
-
+from eman2_gui.embrowser import EMBrowserWidget
+from eman2_gui.empmwidgets import *
 from eman2_gui.emanimationutil import SingleValueIncrementAnimation, LineAnimation
+import json
 
 import platform
 
@@ -78,7 +80,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 
 	allim=WeakKeyDictionary()
 
-	def __init__(self, image=None, application=get_application(),winid=None, parent=None,sizehint=(512,512)):
+	def __init__(self, image=None, annotation=None, application=get_application(),winid=None, parent=None,sizehint=(512,512)):
 
 		self.inspector = None # this should be a qt widget, otherwise referred to as an inspector in eman
 
@@ -94,11 +96,15 @@ class EMAnnotate2DWidget(EMGLWidget):
 
 		self.data = None				# The currently displayed image/volume slice
 		self.annotation = None			# The currently displayed annotation
+		self.list_data = None
 		self.full_data = None 			# The actual image/volume
 		self.full_annotation = None		# This is the actual annotation image/volume
 		self.file_name = ""# stores the filename of the image, if None then member functions should be smart enough to handle it
 		self.enable_clip = False
 		EMAnnotate2DWidget.allim[self] = 0
+
+		self.jsonfile=info_name(self.full_data)
+		#info=js_open_dict(self.jsonfile)
 
 		self.init_gl_flag = True
 		self.oldsize=(-1,-1)
@@ -114,9 +120,9 @@ class EMAnnotate2DWidget(EMGLWidget):
 		self.curmax=0.0
 		self.disp_proc=[]			# a list/set of Processor objects to apply before rendering
 		self.rmousedrag=None		# coordinates during a right-drag operation
-		self.mouse_mode_dict = {0:"emit", 1:"emit", 2:"emit", 3:"probe", 4:"measure", 5:"draw", 6:"emit", 7:"emit"}
-		self.mouse_mode = 0         # current mouse mode as selected by the inspector
-		self.mag = 1.0				# magnification factor
+		self.mouse_mode_dict = {0:"emit", 1:"emit", 2:"emit", 3:"probe", 4:"measure", 5:"draw", 6:"emit", 7:"emit",8:"seg"}
+		self.mouse_mode = 8         # current mouse mode as selected by the inspector
+		self.mag = 1.1				# magnification factor
 		self.invmag = 1.0/self.mag	# inverse magnification factor
 
 		self.shapes={}				# dictionary of shapes to draw, see add_shapes
@@ -131,6 +137,8 @@ class EMAnnotate2DWidget(EMGLWidget):
 		self.time = 1
 		self.timeinc = 0.125
 		self.key_mvt_animation = None
+
+		self.current_class = 1
 
 		self.init_size = True		# A flag used to set the initial origin offset
 
@@ -159,11 +167,32 @@ class EMAnnotate2DWidget(EMGLWidget):
 		self.display_shapes = True # A flag that can be used to turn of the display of shapes - useful to e2boxer
 
 		self.circle_dl = None # used for a circle list, for displaying circled particles, for example
+		#self.xform = Transform({"type":"eman","alt":self.alt,"az":self.az,"tx":self.full_data["nx"]//2,"ty":self.full_data["ny"]//2,"tz":self.full_data["nz"]//2+self.zpos})
+		self.xform = Transform()
 
 		self.setAcceptDrops(True) #TODO: figure out the purpose of this (moved) line of code
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"single_image.png")) #TODO: figure out why this icon doesn't work
 
-		if image : self.set_data(image)
+		if image :
+			if annotation:
+				self.set_data(image, annotation)
+			else:
+				self.set_data(image, None)
+		#print("Full data nz",self.full_data["nz"])
+
+
+			#print("data", (self.data))
+			#print("ann", (self.annotation))
+			#print("full data", (self.full_data))
+			#print("full ann", (self.full_annotation))
+
+	def get_annotation(self) :
+		if self.annotation is None:
+			print("Annotation is", self.annotation)
+		return self.annotation
+		#return self.full_annotation
+	def get_full_annotation(self):
+		return self.full_annotation
 
 	def initializeGL(self):
 		GL.glClearColor(0,0,0,0)
@@ -257,13 +286,25 @@ class EMAnnotate2DWidget(EMGLWidget):
 			print("unknown mouse mode:",mode_num)
 			return
 		self.mouse_mode = mode_num
+		print("Mouse mode is: ",mode_num,"which is", self.mouse_mode_dict[self.mouse_mode])
 		self.del_shapes()
+
+	def set_xform(self,tx,ty,tz,alt,az):
+		self.xform = Transform({"type":"eman","alt":alt,"az":az,"tx":tx,"ty":ty,"tz":tz})
+		print("New xform", self.xform)
+		#self.signal_set_scale.emit(1)
+		self.inspector_update()
+		self.force_display_update()
+		self.updateGL()
+
+
 
 	def get_minden(self): return self.minden
 	def get_maxden(self): return self.maxden
 	def get_alt(self): return self.alt
 	def get_az(self): return self.az
 	def get_shapes(self): return self.shapes
+	def get_xform(self): return self.xform
 
 	def coords_within_image_bounds(self,coords):
 		x = coords[0]
@@ -294,18 +335,24 @@ class EMAnnotate2DWidget(EMGLWidget):
 		self.updateGL()
 
 	def set_alt(self,val):
+		#self.set_clip()
 		self.alt=val
-		self.force_display_update()
+		#self.set_xform(self.nx//2,self.ny//2,self.nz//2+self.zpos,self.alt,self.az)
+		self.force_display_update(set_clip=True)
 		self.updateGL()
 
 	def set_az(self,val):
+		#self.set_clip()
 		self.az=val
-		self.force_display_update()
+		#self.set_xform(self.nx//2,self.ny//2,self.nz//2+self.zpos,self.alt,self.az)
+		self.force_display_update(set_clip=True)
 		self.updateGL()
 
 	def set_n(self,val):
-		self.zpos = int(val)
-		self.force_display_update()
+		#self.set_clip()
+		self.zpos = (val)
+		#self.set_xform(self.nx//2,self.ny//2,self.nz//2+self.zpos,self.alt,self.az)
+		self.force_display_update(set_clip=True)
 		self.updateGL()
 
 	def set_file_name(self,file_name):
@@ -339,7 +386,13 @@ class EMAnnotate2DWidget(EMGLWidget):
 
 	def get_data(self):
 
+		#return self.full_data
+		if self.data is None:
+			print("Data is None")
 		return self.data
+
+	def get_full_data(self):
+		return self.full_data
 
 	def set_data(self,data,annotation=None,file_name="",retain_current_settings=True, keepcontrast=False):
 		"""You may pass a single 2D image or a single 3-D volume
@@ -365,10 +418,24 @@ class EMAnnotate2DWidget(EMGLWidget):
 			raise Exception("EMAnnotate2D only supports a single 2-D or 3-D image")
 
 		if data.get_sizes()!=annotation.get_sizes() :
+			print("EMAnnotate2D requires data and annotation to be the same size")
 			raise Exception("EMAnnotate2D requires data and annotation to be the same size")
 
 		self.full_data=data
 		self.full_annotation=annotation
+		self.nx = self.full_annotation["nx"]
+		self.ny = self.full_annotation["ny"]
+		self.nz = self.full_annotation["nz"]
+		#TOREAD
+		#self.xform = Transform({"type":"eman","alt":self.alt,"az":self.az,"tx":self.full_data["nx"]//2,"ty":self.full_data["ny"]//2,"tz":self.full_data["nz"]//2+self.zpos})
+		self.set_xform(self.nx//2,self.ny//2,self.nz//2+self.zpos,self.alt,self.az)
+		#self.data = self.full_data.copy_head()
+		#self.annotation = self.full_annotation.copy_head()
+		#self.data=self.full_data.get_clip(Region(0,0,0,self.full_data["nx"],self.full_data["ny"],1))
+		#self.annotation=self.full_annotation.get_clip(Region(0,0,0,self.full_data["nx"],self.full_data["ny"],1))
+		print("Set initial data")
+
+
 
 		self.image_change_count = 0
 
@@ -384,6 +451,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 
 				self.resize(min(x,mx),min(y,my))
 		except: pass
+
 
 		self.inspector_update()
 		self.force_display_update()
@@ -413,7 +481,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 			self.scale = scaleh
 		else: self.scale = scalew
 
-		#print "scale is ", self.scale
+
 		#except: pass
 
 	def full_contrast(self,boolv=False,inspector_update=True,display_update=True):
@@ -478,6 +546,8 @@ class EMAnnotate2DWidget(EMGLWidget):
 
 	def get_origin(self) : return self.origin
 
+
+
 	def scroll_to(self,x=None,y=None,quiet=False):
 		"""center the point on the screen"""
 		if x==None:
@@ -510,6 +580,8 @@ class EMAnnotate2DWidget(EMGLWidget):
 			self.origin=(old_div(newscale,self.scale)*(old_div(self.width(),2.0)+self.origin[0])-old_div(self.width(),2.0),old_div(newscale,self.scale)*(old_div(self.height(),2.0)+self.origin[1])-old_div(self.height(),2.0))
 			self.scale=newscale
 			if not quiet : self.signal_set_scale.emit(newscale)
+			self.inspector_update()
+			self.force_display_update()
 			self.updateGL()
 		except: pass
 
@@ -522,20 +594,31 @@ class EMAnnotate2DWidget(EMGLWidget):
 		self.histogram=mode
 		self.updateGL()
 
-	def __set_display_image(self,val,alt,az):
-		if self.full_data["nz"]==1: return False
+	# def __set_display_image(self,val,alt,az):
+	#
+	# 	if self.full_data["nz"]==1:
+	# 		print("Full data nz = 1")
+	#
+	# 		return False
+	#
+	#
+	# 	# faster, so do it this way when not tilted
+	# 	if alt==0 and az==0 :
+	# 		self.set_clip()
+	# 		print("Setting clip in the alt az 0")
+	# 		self.data=self.full_data.get_clip(Region(0,0,val,self.full_data["nx"],self.full_data["ny"],1))
+	# 		#print("Set data from set display")
+	# 		#self.data=self.full_data
+	# 		self.annotation=self.full_annotation.get_clip(Region(0,0,val,self.full_data["nx"],self.full_data["ny"],1))
+	# 		#self.annotation=self.full_annotation
+	# 		return True
+	#
+	# 	return False
 
-		# faster, so do it this way when not tilted
-		if alt==0 and az==0 :
-			self.data=self.full_data.get_clip(Region(0,0,val,self.full_data["nx"],self.full_data["ny"],1))
-			self.annotation=self.full_annotation.get_clip(Region(0,0,val,self.full_data["nx"],self.full_data["ny"],1))
-			return True
-
-
-
-		return False
-
-	def force_display_update(self):
+	def force_display_update(self,set_clip=False):
+		if set_clip:
+			self.set_clip()
+		#self.__set_display_image(zcent+self.zpos,self.az, self.alt)
 		self.display_states = []
 
 	def display_state_changed(self):
@@ -597,18 +680,45 @@ class EMAnnotate2DWidget(EMGLWidget):
 		x0  = 1 + int(old_div(self.origin[0], self.scale))
 		y0  = 1 + int(old_div(self.origin[1], self.scale))
 
-		self.data=self.full_data.get_rotated_clip(Transform({"type":"eman","alt":self.alt,"az":self.az,"tx":self.full_data["nx"]//2,"ty":self.full_data["ny"]//2,"tz":self.full_data["nz"]//2+self.zpos}),(self.full_data["nx"],self.full_data["ny"],1))
-		self.annotation=self.full_annotation.get_rotated_clip(Transform({"type":"eman","alt":self.alt,"az":self.az,"tx":self.full_data["nx"]//2,"ty":self.full_data["ny"]//2,"tz":self.full_data["nz"]//2+self.zpos}),(self.full_data["nx"],self.full_data["ny"],1))
+		#print("Zpos:",self.zpos)
 
-		print(self.full_data,self.full_annotation,self.alt,self.az,self.zpos,x0,y0,wdt,hgt,wid)
+
+		self.xform=Transform({"type":"eman","alt":self.alt,"az":self.az,"tx":self.full_data["nx"]//2,"ty":self.full_data["ny"]//2,"tz":self.full_data["nz"]//2+self.zpos})
+		#print(self.xform)
+
+		#print("Called setting clip")
+		#self.set_xform(self.nx//2,self.ny//2,self.nz//2+self.zpos,self.alt,self.az)
+		#self.xform=Transform({"type":"eman","alt":self.alt,"az":self.az,"tx":self.full_data["nx"]//2,"ty":self.full_data["ny"]//2,"tz":self.full_data["nz"]//2+self.zpos})
+
+		#self.data=self.full_data.get_rotated_clip(Transform({"type":"eman","alt":self.alt,"az":self.az,"tx":self.full_data["nx"]//2,"ty":self.full_data["ny"]//2,"tz":self.full_data["nz"]//2+self.zpos}),(self.full_data["nx"],self.full_data["ny"],1))
+		self.data=self.full_data.get_rotated_clip(self.xform,(self.full_data["nx"],self.full_data["ny"],1))
+
+		#self.xform = Transform({"type":"eman","alt":self.alt,"az":self.az})
+		#self.data=self.full_data.process("xform",{"transform":self.xform}).get_clip(Region(0,0,self.zpos,self.full_data["nx"],self.full_data["ny"],1))
+		#self.annotation=self.full_annotation.get_rotated_clip(Transform({"type":"eman","alt":self.alt,"az":self.az,"tx":self.full_data["nx"]//2,"ty":self.full_data["ny"]//2,"tz":self.full_data["nz"]//2+self.zpos}),(self.full_data["nx"],self.full_data["ny"],1))
+		self.annotation=self.full_annotation.get_rotated_clip(self.xform,(self.full_data["nx"],self.full_data["ny"],1),0)
+		#self.annotation=self.full_annotation.process("xform",{"transform":self.xform}).get_clip(Region(0,0,self.zpos,self.full_data["nx"],self.full_data["ny"],1))
+		#print("Done getting clip")
+		#print(self.full_data,self.full_annotation,self.alt,self.az,self.zpos,x0,y0,wdt,hgt,wid)
+
+		####TOREAD
+		#print((to_numpy(self.data)[50,50]),(to_numpy(self.annotation)[50,50]))
 
 		return_data = ( wid*3, hgt,
 							GLUtil.render_annotated24 (self.data, self.annotation,
 							x0, y0, wdt, hgt, wid*3,
 							self.scale, pixden[0], pixden[1],
 							min_val, max_val, flags))
-
 		return return_data
+
+	def set_clip(self):
+		#self.xform=Transform({"type":"eman","alt":self.alt,"az":self.az,"tx":self.full_data["nx"]//2,"ty":self.full_data["ny"]//2,"tz":self.full_data["nz"]//2+self.zpos})
+
+		#print("Setting clip")
+		if self.annotation:
+			self.full_annotation.set_rotated_clip(self.xform,self.annotation)
+		if self.data:
+			self.full_data.set_rotated_clip(self.xform,self.data)
 
 	def render_bitmap_old(self):   # no longer used - use new render_bitmap
 		"""This will render the current bitmap into a string and return a tuple with 1 or 3 (grey vs RGB), width, height, and the raw data string"""
@@ -818,7 +928,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 		display_height = self.height()
 
 		data = self.data
-		
+
 		#print data
 		if data != None:
 			try:
@@ -1021,7 +1131,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 
 	def get_inspector(self):
 		if not self.inspector:
-			self.inspector=EMAnnotateInspector2D(self)
+			self.inspector=EMAnnotateInspector2D(target=self)
 			self.inspector_update()
 		return self.inspector
 
@@ -1251,6 +1361,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 					self.del_shape("MEAS")
 					self.add_shape("MEAS",EMShape(("line",.5,.1,.5,lc[0],lc[1],lc[0]+1,lc[1],2)))
 					self.updateGL()
+###TO READ
 			elif self.mouse_mode_dict[self.mouse_mode] == "draw":
 				if event.buttons()&Qt.LeftButton:
 					inspector = self.get_inspector()
@@ -1263,6 +1374,34 @@ class EMAnnotate2DWidget(EMGLWidget):
 						self.get_data().process_inplace("mask.paint",{"x":lc[0],"y":lc[1],"z":0,"r1":self.drawr1,"v1":self.drawv1,"r2":self.drawr2,"v2":self.drawv2})
 						self.force_display_update()
 						self.updateGL()
+			elif self.mouse_mode_dict[self.mouse_mode] =="seg":
+				if event.buttons()&Qt.LeftButton:
+					inspector = self.get_inspector()
+					#inspector.show()
+					lc=self.scr_to_img(event.x(),event.y())
+					#current_class = self.current_class
+					if inspector:
+						current_class = inspector.seg_tab.get_current_class()
+						pen_width = inspector.seg_tab.get_pen_width()
+						#print("Data xsize:",self.get_data().get_xsize())
+						#print("Seg:", lc)
+						# try:
+						# 	print("D&A", self.data.get_sizes(), self.annotation.get_sizes())
+						# except:
+						# 	print("D&A are None")
+						print(self.get_annotation()[int(lc[0]),int(lc[1])])
+						#print(self.get_annotation())
+						#a = to_numpy(self.get_annotation())
+						#for i in range(int(lc[0])-20,int(lc[0])+20):
+							#for j in range(int(lc[1])-20,int(lc[1])+20):
+
+						#self.get_annotation().process_inplace("mask.sharp",{"dx":lc[0],"dy":lc[1],"dz":0,"inner_radius":0,"outer_radius":10,"value":2})
+						#print("Zpos:", self.zpos)
+						self.get_annotation().process_inplace("mask.paint",{"x":lc[0],"y":lc[1],"z":0,"r1":pen_width,"v1":current_class,"r2":pen_width,"v2":0})
+						#print("Turn point", int(lc[0]),int(lc[1]),"to 2")
+						self.force_display_update(set_clip=True)
+						self.updateGL()
+
 
 	def mouseMoveEvent(self, event):
 		lc=self.scr_to_img(event.x(),event.y())
@@ -1301,7 +1440,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 						inspector.mtshowend.setText("  End: %d , %d"%(lc[0],lc[1]))
 						inspector.mtshowlen.setText("dx,dy: %1.2f A, %1.2f A"%(dx*apix,dy*apix))
 						inspector.mtshowlen2.setText("Len: %1.3f A"%(hypot(dx,dy)*apix))
-						
+
 						try: inspector.mtshowval.setText("Value: %1.4g"%inspector.target().data[int(lc[0]),int(lc[1])])
 						except:
 							idx=inspector.target().zpos
@@ -1318,6 +1457,30 @@ class EMAnnotate2DWidget(EMGLWidget):
 					self.get_data().process_inplace("mask.paint",{"x":lc[0],"y":lc[1],"z":0,"r1":self.drawr1,"v1":self.drawv1,"r2":self.drawr2,"v2":self.drawv2})
 					self.force_display_update()
 					self.updateGL()
+
+			elif self.mouse_mode_dict[self.mouse_mode] =="seg":
+
+				if event.buttons()&Qt.LeftButton:
+					inspector = self.get_inspector()
+					#inspector.show()
+					#lc=self.scr_to_img(event.x(),event.y())
+					#current_class = self.current_class
+					#if inspector:
+					current_class = inspector.seg_tab.get_current_class()
+					pen_width = inspector.seg_tab.get_pen_width()
+						#print("Seg:", lc)
+						#NEED TO DO SOMETHING HERE???
+						#print(self.get_annotation()[int(lc[0]),int(lc[1])])
+						#print(self.get_annotation())
+						#a = to_numpy(self.get_annotation())
+						#for i in range(int(lc[0])-20,int(lc[0])+20):
+							#for j in range(int(lc[1])-20,int(lc[1])+20):
+						#self.get_annotation().process_inplace("mask.sharp",{"dx":lc[0],"dy":lc[1],"dz":0,"inner_radius":0,"outer_radius":10,"value":2})
+					self.get_annotation().process_inplace("mask.paint",{"x":lc[0],"y":lc[1],"z":0,"r1":pen_width,"v1":current_class,"r2":pen_width,"v2":0})
+						#print("Turn point", int(lc[0]),int(lc[1]),"to 2")
+					self.force_display_update(set_clip=1)
+					self.updateGL()
+
 
 	def mouseReleaseEvent(self, event):
 		get_application().setOverrideCursor(Qt.ArrowCursor)
@@ -1336,18 +1499,27 @@ class EMAnnotate2DWidget(EMGLWidget):
 				if event.button()==Qt.LeftButton:
 					self.force_display_update()
 					self.updateGL()
+			elif self.mouse_mode_dict[self.mouse_mode] == "seg":
+				if event.button()==Qt.LeftButton:
+					self.force_display_update(set_clip=1)
+					self.updateGL()
 
 	def wheelEvent(self, event):
 		if self.mouse_mode==0 and event.modifiers()&Qt.ShiftModifier:
 			self.mousewheel.emit(event)
 			return
+		print(event.angleDelta().y())
 		if event.angleDelta().y() > 0:
-			self.set_scale( self.scale * self.mag )
+			self.set_scale(self.scale * self.mag )
+			print("Scale", self.scale,"Mag", self.mag)
 		elif event.angleDelta().y() < 0:
 			self.set_scale(self.scale * self.invmag )
 		# The self.scale variable is updated now, so just update with that
 		if self.inspector: self.inspector.set_scale(self.scale)
 
+
+	def get_z_cent(self):
+		return (self.get_full_data()["nz"])//2
 
 	def mouseDoubleClickEvent(self,event):
 		return
@@ -1371,20 +1543,32 @@ class EMAnnotate2DWidget(EMGLWidget):
 			self.display_web_help("http://blake.bcm.edu/emanwiki/EMAN2/Programs/emimage2d")
 
 		elif event.key() == Qt.Key_Up:
-			if self.list_data != None:
-				self.increment_list_data(1)
+			if self.data != None:
+				if (self.zpos + self.get_z_cent()) < self.get_full_data()["nz"]-1:
+					self.zpos += 1
+					if self.inspector:
+						self.inspector.ns.setValue(self.zpos)
+				self.force_display_update()
 				self.updateGL()
+
 #			else:
 #				self.__key_mvt_animation(0,self.height()*.1)
-			self.signal_increment_list_data.emit(1)
+			#self.signal_increment_list_data.emit(1)
 
 		elif event.key() == Qt.Key_Down:
-			if self.list_data != None:
-				self.increment_list_data(-1)
+			#if self.list_data != None:
+				#self.increment_list_data(-1)
+			if self.data != None:
+				if (self.zpos + self.get_z_cent()) > 0:
+					self.zpos -= 1
+					if self.inspector:
+						self.inspector.ns.setValue(self.zpos)
+				self.force_display_update()
 				self.updateGL()
+
 #			else:
 #				self.__key_mvt_animation(0,-self.height()*.1)
-			self.signal_increment_list_data.emit(-1)
+			#self.signal_increment_list_data.emit(-1)
 
 		elif event.key() == Qt.Key_Right:
 			self.__key_mvt_animation(self.width()*.1,0)
@@ -1461,7 +1645,9 @@ class EMAnnotate2DWidget(EMGLWidget):
 		glNormal(0,0,1)
 		glEnable(GL_TEXTURE_2D)
 		n = self.full_data["nz"]
-		string = f"{self.zpos} ({n})"
+		pos = (n)//2 +self.zpos
+		#string = f"{self.zpos} ({n})"
+		string = f"Z: {round(pos,2)}"
 		bbox = self.font_renderer.bounding_box(string)
 		x_offset = width-(bbox[3]-bbox[0]) - 10
 		y_offset = 10
@@ -1499,8 +1685,7 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 		self.apptablab = QtWidgets.QTextEdit("Application specific mouse functions")
 		self.mmtab.addTab(self.apptablab,"App")
 
-		self.seg_tab = EMSegTab()
-		self.mmtab.addTab(self.seg_tab,"Seg" )
+
 
 		# Save tab
 		self.savetab = QtWidgets.QWidget()
@@ -1718,6 +1903,10 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 
 		self.mmtab.addTab(self.pytab,"Python")
 
+		self.seg_tab = EMSegTab(target=target)
+		self.mmtab.addTab(self.seg_tab,"Seg" )
+		self.mmtab.setCurrentWidget(self.seg_tab)
+
 
 		try:
 			md = self.target().data.get_attr_dict()
@@ -1816,23 +2005,30 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 		self.conts.setValue(1.0)
 		self.vbl.addWidget(self.conts)
 
-		self.alts = ValSlider(self,(.1,5.0),"Alt:")
+		self.alts = ValSlider(self,(.1,5.0),"Alt:",rounding=2)
 		self.alts.setObjectName("alt")
 		self.alts.setValue(self.target().get_alt())
 		self.vbl.addWidget(self.alts)
 
-		self.azs = ValSlider(self,(.1,5.0),"Az:")
+		self.azs = ValSlider(self,(.1,5.0),"Az:",rounding=2)
 		self.azs.setObjectName("az")
 		self.azs.setValue(self.target().get_az())
 		self.vbl.addWidget(self.azs)
 
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"eman.png"))
 
-		self.ns = ValSlider(self,label="N#:")
-		self.ns.setIntonly(True)
+		self.ns = ValSlider(self,label="zpos:",rounding=2)
+		zr = self.target().get_full_data()["nz"]*3//4
+		self.ns.setRange(-zr,zr)
+		#self.ns.setIntonly(True)
+		self.ns.setValue(0)
+
+
 		self.vbl.addWidget(self.ns)
 
-		self.ns.setValue(0)
+
+
+
 		self.stmoviebut.setEnabled(True)
 		self.stanimgif.setEnabled(True)
 
@@ -1861,13 +2057,21 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 		self.resize(400,440) # d.woolford thinks this is a good starting size as of Nov 2008 (especially on MAC)
 
 	def update_zrange(self):
-		nz=self.target().get_data()["nz"]
-		zr=nz*3//4		# approximate max z range with high tilt
-		self.ns.setRange(-zr,zr)
-		self.stminsb.setRange(-zr,zr)
-		self.stminsb.setValue(-nz)
-		self.stmaxsb.setRange(-zr,zr)
-		self.stmaxsb.setValue(nz)
+		if self.target().nz > 1:
+			zr=self.target().nz*3//4
+			#print(zr)		# approximate max z range with high tilt
+			self.ns.setRange(-zr,zr)
+			self.ns.setValue(0)
+			#self.ns.setRange(0,nz-1)
+			self.stminsb.setRange(-zr,zr)
+			self.stminsb.setValue(-zr)
+			self.stmaxsb.setRange(-zr,zr)
+			self.stmaxsb.setValue(zr)
+
+		# self.stminsb.setRange(-zr,zr)
+		# self.stminsb.setValue(-nz)
+		# self.stmaxsb.setRange(-zr,zr)
+		# self.stmaxsb.setValue(nz)
 
 	def do_pspec_single(self,ign):
 		"""Compute 1D power spectrum of single image and plot"""
@@ -2062,7 +2266,6 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 			import traceback
 			traceback.print_exc()
 			print("Error executing. Access the image as 'img', for example \nimg['mean'] will yield the mean image value")
-#		print r
 
 		self.pyout.setText(str(r))
 
@@ -2075,22 +2278,20 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 	def get_brightness(self):
 		return float(self.brts.getValue())
 
-	#def set_contrast(self,value,quiet=1):
-		#self.conts.setValue(value,quiet)
-
-	#def set_brightness(self,value,quiet=1):
-		#self.brts.setValue(value,quiet)
-
 	def set_maxden(self,value,quiet=1):
 		self.maxs.setValue(value,quiet)
 
 	def set_minden(self,value,quiet=1):
 		self.mins.setValue(value,quiet)
 
+	##TODO: Update set_scale to actually work
 	def set_scale(self,val):
 		if self.busy : return
+
 		self.busy=1
 		self.scale.setValue(val)
+		#print("Scale in set_scale", self.scale.value)
+
 		self.busy=0
 
 	def new_min(self,val):
@@ -2184,42 +2385,65 @@ class EMSegTab(QtWidgets.QWidget):
 	'''
 	This is the set display panel
 	'''
-	def __init__(self):
+	def __init__(self, target = None):
 		super().__init__()
 
-		self.eraser=QtWidgets.QCheckBox("Eraser")
-		self.classes_cb = QtWidgets.QCheckBox("Classes")
+		self.eraser=QtWidgets.QRadioButton("Eraser")
+		self.classes_cb = QtWidgets.QRadioButton("Classes")
 		self.classes_cb.setChecked(True)
 		self.cb_group = QtWidgets.QButtonGroup()
 		self.cb_group.addButton(self.classes_cb,1)
 		self.cb_group.addButton(self.eraser,2)
-		self.pen_width=ValBox(label="Pen Width",value=32)
+		self.pen_width=ValBox(label="Pen Width",value=15)
 		self.pen_width.setEnabled(1)
+		self.target = target
 
 
-		#self.target = weakref.ref(target) # this should be the EMImageMXWidget
-		self.classes = []
+		self.set_list=QtWidgets.QListWidget()
+		self.set_list.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
+		self.set_list.addItem("Void")
+		self.set_list.item(0).setHidden(True)
+
+		self.table_set=QtWidgets.QTableWidget(0, 2, self)
+		self.table_set.setColumnWidth(0,70)
+		self.table_set.setColumnWidth(1,180)
+		self.table_set.setHorizontalHeaderLabels(['Index','Class Name'])
+		for i in range(2):
+			self.table_set.horizontalHeaderItem(i).setTextAlignment(Qt.AlignLeft)
+
 
 		self.itemflags = Qt.ItemFlags(Qt.ItemIsEditable)|Qt.ItemFlags(Qt.ItemIsSelectable)|Qt.ItemFlags(Qt.ItemIsEnabled)|Qt.ItemFlags(Qt.ItemIsUserCheckable)
-		self.colors = ['#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe', '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080', '#ffffff', '#000000']
+		self.indexflags = Qt.ItemFlags(Qt.ItemIsEnabled)|Qt.ItemFlags(Qt.ItemIsUserCheckable)
 
-		self.setlist=QtWidgets.QListWidget()
+		#self.colors = ['#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe', '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080', '#ffffff', '#000000']
+		self.colors = self.create_palette(256)
+		self.read_header(self.target.get_full_annotation())
+
+
+
+		self.browser_ret = None
 		button_vbl = QtWidgets.QVBoxLayout()
 
-		self.new_set_button = QtWidgets.QPushButton("New Class")
-		button_vbl.addWidget(self.new_set_button)
-		self.rename_set_button = QtWidgets.QPushButton("Rename Class")
-		button_vbl.addWidget(self.rename_set_button)
-		self.delete_set_button = QtWidgets.QPushButton("Delete Class")
-		button_vbl.addWidget(self.delete_set_button)
-		self.load_set_button = QtWidgets.QPushButton("Load Class")
-		button_vbl.addWidget(self.load_set_button)
-		self.save_set_button = QtWidgets.QPushButton("Save Class")
-		button_vbl.addWidget(self.save_set_button)
-
+		self.new_class_button = QtWidgets.QPushButton("New Class")
+		button_vbl.addWidget(self.new_class_button)
+		self.delete_sel_button = QtWidgets.QPushButton("Delete Selected")
+		button_vbl.addWidget(self.delete_sel_button)
+		self.load_mask_button = QtWidgets.QPushButton("Load Mask")
+		button_vbl.addWidget(self.load_mask_button)
+		self.save_mask_button = QtWidgets.QPushButton("Save Mask")
+		button_vbl.addWidget(self.save_mask_button)
+		self.append_ann_button = QtWidgets.QPushButton("Append Ann")
+		button_vbl.addWidget(self.append_ann_button)
+		self.load_all_button = QtWidgets.QPushButton("Load All")
+		button_vbl.addWidget(self.load_all_button)
+		self.save_all_button = QtWidgets.QPushButton("Save All")
+		button_vbl.addWidget(self.save_all_button)
 		hbl = QtWidgets.QHBoxLayout()
-		hbl.addWidget(self.setlist)
+		hbl.addWidget(self.table_set)
+		#hbl.addWidget(self.set_list)
 		hbl.addLayout(button_vbl)
+
+		self.button_list = [self.load_all_button,self.save_mask_button,self.load_mask_button,self.new_class_button,self.delete_sel_button]
 
 
 		segtab_vbl = QtWidgets.QVBoxLayout(self)
@@ -2232,135 +2456,292 @@ class EMSegTab(QtWidgets.QWidget):
 		segtab_vbl.addLayout(hbl)
 
 
-		self.new_set_button.clicked[bool].connect(self.new_set)
-		self.rename_set_button.clicked[bool].connect(self.rename_set)
-		self.delete_set_button.clicked[bool].connect(self.delete_set)
-		self.setlist.itemChanged[QtWidgets.QListWidgetItem].connect(self.set_list_item_changed)
-		self.setlist.currentRowChanged[int].connect(self.set_list_row_changed)
+		self.new_class_button.clicked[bool].connect(self.new_class)
+		self.delete_sel_button.clicked[bool].connect(self.delete_sel)
+		self.load_mask_button.clicked[bool].connect(self.load_mask)
+		self.save_mask_button.clicked[bool].connect(self.save_mask)
+		self.append_ann_button.clicked[bool].connect(self.append_ann)
+		self.load_all_button.clicked[bool].connect(self.load_all)
+		self.save_all_button.clicked[bool].connect(self.save_all)
 		self.cb_group.buttonClicked[QtWidgets.QAbstractButton].connect(self.on_check_cb_group)
+		self.table_set.cellClicked[int,int].connect(self.on_table_set)
 
+
+
+	def create_palette(self, n):
+		#Create color palette for table items and indices
+		l = []
+		for i in range(n):
+			h = ((120 + 139*i)%360)
+			#s = (255+(1 - i/(n*4))*256)%256
+			#v = (255+(1-i/(n*8))*256)%256
+			s = ((1-4*i/(n))*255)%256
+			v = 255
+			l.append(QtGui.QColor.fromHsv(h,s,v))
+		return l
+
+	def get_current_class(self):
+		#Return the index of current class
+		if self.cb_group.checkedId() == 1:
+			sels = self.table_set.selectedItems()
+			if len(sels) == 0:
+				print("No class selected. Open control panel to select class")
+				return 0
+			else:
+				row = self.table_set.row(sels[0])
+				return int(self.table_set.item(row,0).text())
+		else:
+			return 0
+
+	def get_pen_width(self):
+		#Return the pen width
+		return int(self.pen_width.value)
 
 	def on_check_cb_group(self,cb):
+		#Return if class or eraser is selected
 		print(cb.text()+" is selected")
 		if cb.text() == "Eraser":
-			self.setlist.setEnabled(False)
+			if self.table_set.rowCount() == 0:
+				print("There are no annotation to erase")
+			else:
+				self.table_set.currentItem().setSelected(False)
+			for button in self.button_list:
+				button.setEnabled(False)
+
 		else:
-			self.setlist.setEnabled(True)
+			self.table_set.setEnabled(True)
+			try:
+				self.table_set.item(0,1).setSelected(True)
+			except:
+				pass
+			for button in self.button_list:
+				button.setEnabled(True)
+
+	def on_table_set(self,row,col):
+		#print("Row", row, "Col", col)
+		self.classes_cb.setChecked(True)
 
 
-	def sets_changed(self):
-		self.update_sets()
-		#keys=sorted(self.target().sets.keys())
-		#for i,k in enumerate(keys):
-			#try:
-				#if k!=str(self.setlist.item(i).text()) : raise Exception
-			#except:
-				#self.update_sets()
-				#break
-
-	def set_list_row_changed(self,i):
-		#print(i)
-		#if not self.initialized: return
-		a = self.setlist.item(i)
-		if a==None : return
-		name = str(a.text())
-		#self.target().set_current_set(name)
-		#self.update_sets()
-
-	def set_list_item_changed(self,item):
-		name=str(item.text())
-		print(name)
-		#if item.checkState() == Qt.Checked :
-			#self.target().show_set(name)
-		#else:
-			#self.target().hide_set(name)
 
 
-	def delete_set(self,unused):
-
-		sels=[str(i.text()) for i in self.setlist.selectedItems()]
-		if len(sels)==0 : return
-		cancel=QtWidgets.QMessageBox.question(self, "Delete set", "Are you sure to delete {}? This will remove all particles in that class".format(sels[0]),QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
-		#print(cancel, QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
-		if cancel==QtWidgets.QMessageBox.Yes :
-			self.classes.remove(sels[0])
-			#self.target().delete_set(names[0])
-			self.update_sets()
-
-
-	def new_set(self,unused=None):
+	def new_class(self):
+		#Add a new class to the table set and annotation file
 		name,ok=QtWidgets.QInputDialog.getText( self, "Class Name", "Enter name for the new class:")
 		if not ok : return
-		name=str(name)
-		print('HAHAHA')
-		if name in self.classes :
-			print("Class name exists")
+		n = self.table_set.rowCount()
+		used_index = []
+		for i in range(n):
+			used_index.append(int(self.table_set.item(i,0).text()))
+
+		try:
+			unused = (set(range(min(used_index)+1, max(used_index)+2)) - set(used_index))
+			new_index = sorted(list(unused))[0]
+		except:
+			new_index = 1
+
+		self.add_new_row(new_index,str(name))
+		self.table_set.setCurrentCell(self.table_set.rowCount()-1,1)
+		self.update_sets()
+
+	def delete_sel(self):
+		#Remove classes to the table set and annotation file. The deleted classes can be saved into separated annotation file.
+		sels = self.table_set.selectedItems()
+		if len(sels) == 0:
+			print("Must select class to delete")
+			return
+		sels_name = [sel.text() for sel in sels]
+		msg_box=QtWidgets.QMessageBox()
+		msg_box.setText("The class "+",".join(sels_name)+" will be deleted")
+		msg_box.setInformativeText("Do you want to save these classes to disk as an annotation file?")
+		msg_box.setStandardButtons(QtWidgets.QMessageBox.Save |  QtWidgets.QMessageBox.Cancel | QtWidgets.QMessageBox.Discard )
+		msg_box.setDefaultButton(QtWidgets.QMessageBox.Save)
+		msg_box.exec_()
+		if msg_box.clickedButton().text() == "Save":
+			self.save_mask(multiple_class = True)
+		elif msg_box.clickedButton().text() == "Cancel":
 			return
 		else:
-			self.classes.append(name)
-
-
-			#print(self.classes)
-			#item=QtWidgets.QListWidgetItem(name)
-			#item.setFlags(self.itemflags)
-			#self.setlist.addItem(item)
-
-		#self.target().new_set(name)
+			pass
+		for sel in sels:
+			row = self.table_set.row(sel)
+			print("Remove class",sel.text(),"at row",row)
+			val = int(self.table_set.item(row,0).text())
+			self.table_set.removeRow(row)
+			self.target.get_full_annotation().process_inplace("threshold.rangetozero",{"maxval":(val+0.1),"minval":(val-0.1)})
+		self.target.force_display_update(set_clip=False)
+		self.target.updateGL()
 		self.update_sets()
 
-	def rename_set(self,unused=None):
-		sels=[str(i.text()) for i in self.setlist.selectedItems()]
-		if len(sels)==0:
-			print("Must select class to rename")
+	def load_mask(self):
+		#Initiate loading a binary mask on the current annotation by popping up a EMBrowserWidget
+		self.openbrowser = EMBrowserWidget(withmodal=True,multiselect=False)
+		self.openbrowser.ok.connect(self.load_mask_browser_ok)
+		self.openbrowser.show()
+		return
+
+	def load_mask_browser_ok(self):
+		#Method to actual load a binary mask selected from the browser on the current annotation
+		self.browser_ret = (self.openbrowser.getResult())
+		print(self.browser_ret)
+		in_f = EMData(self.browser_ret[0]).process("threshold.binary",{"value":0.5})
+		self.update_sets()
+		self.target.full_annotation *= in_f
+		self.target.force_display_update()
+		self.target.updateGL()
+		return
+
+	def save_mask(self, multiple_class = False):
+		#Save the selected annotations as a binary mask (default)
+		#or a multilabel annotation file (to be called when calling delete sel method)
+		sels = self.table_set.selectedItems()
+		if len(sels) == 0:
+			print("Must select class to save")
 			return
-		name,ok=QtWidgets.QInputDialog.getText( self, "Set Name", "Enter a name for the new set:")
+		out_name,ok=QtWidgets.QInputDialog.getText( self, "Save Selected", "Save selected annotation classes")
 		if not ok : return
-		name=str(name)
-		if name in self.classes :
-			print("Class name exists")
+		nums = []
+		names = []
+		annotation_out=self.target.get_full_annotation().copy_head()
+		annotation_out.to_zero()
+		for sel in sels:
+			#print(sel.text())
+			row = self.table_set.row(sel)
+			num = int(self.table_set.item(row,0).text())
+			if multiple_class:
+				annotation_out += num*(self.target.get_full_annotation().process("threshold.binaryrange",{"high":num+0.1,"low":num-0.1}))
+			else:
+				annotation_out += (self.target.get_full_annotation().process("threshold.binaryrange",{"high":num+0.1,"low":num-0.1}))
+			nums.append(num)
+			names.append(str(self.table_set.item(row,1).text()))
+		name_str=names[0]+""
+		#for i in range(1,len(names)):
+			#name_str = name_str + "," + names[i]
+		serialize_name = json.dumps(names, default=lambda a: "[%s,%s]" % (str(type(a)), a.pk))
+		annotation_out["ann_name"] = serialize_name
+		annotation_out["ann_num"] = nums
+		annotation_out.write_image(out_name)
+		print("Annotation is saved to", out_name)
+		return
+
+	def append_ann(self):
+		#Initiate loading an annotation file to append on the current annotation
+		self.openbrowser = EMBrowserWidget(withmodal=True,multiselect=False)
+		self.openbrowser.ok.connect(self.append_ann_browser_ok)
+		self.openbrowser.show()
+		return
+
+	def append_ann_browser_ok(self):
+		#Method to actually load an annotation file to append on the current annotation.
+		#Helpful when user want to display multiple annotation on tomograms. May looks weird if the annotations files have overlays.
+		self.browser_ret = (self.openbrowser.getResult())
+		#print(self.browser_ret)
+		in_f = EMData(self.browser_ret[0])
+		if in_f.get_sizes() != self.target.full_data.get_sizes():
+			print("Annotation file must have the same dimension with the data")
+			return
+		else:
+			append_dict = self.read_header(in_f,ret=True)
+			for key, value in append_dict.items():
+				self.add_new_row(key,value)
+			self.update_sets()
+			self.target.full_annotation += in_f
+			self.target.force_display_update()
+			self.target.updateGL()
 			return
 
 
-		#if name in self.target().sets :
-			#print("Set name exists")
-			#return
-		#for index, item in enumerate(self.classes):
-			#self.item_dict = {item:index}
-		#print(self.item_dict)
-		self.classes[self.item_dict[sels[0]]] = name
 
-		#self.target().rename_set(sels[0], name)
-		self.update_sets()
 
+	def load_all(self):
+		#Initiate loading a new annotation file to display.
+		self.openbrowser = EMBrowserWidget(withmodal=True,multiselect=False)
+		self.openbrowser.ok.connect(self.load_all_browser_ok)
+		self.openbrowser.show()
+		return
+
+	def load_all_browser_ok(self):
+		#Method to actually load a new annotation file to display.
+		self.browser_ret = (self.openbrowser.getResult())
+		inf = EMData(self.browser_ret[0])
+		if inf.get_sizes() != self.target.full_data.get_sizes():
+			print("Annotation file must have the same dimension with the data")
+			return
+		else:
+			row_count = self.table_set.rowCount()
+			for i in range(row_count):
+				self.table_set.removeRow(row_count - i - 1)
+			self.target.full_annotation=inf
+			self.target.force_display_update(set_clip=0)
+			self.read_header(self.target.get_full_annotation())
+			self.update_sets()
+			self.target.updateGL()
+			return
+
+
+	def save_all(self):
+		#Save the current annotation to disk as a multiclass annotation file.
+		out_name,ok=QtWidgets.QInputDialog.getText( self, "Save Full Annotation", "Save full annotation to:")
+		if not ok : return
+		nums = [int(self.table_set.item(row,0).text()) for row in range(self.table_set.rowCount())]
+		names = [str(self.table_set.item(row,1).text()) for row in range(self.table_set.rowCount())]
+		#name_str=names[0]+""
+		#for i in range(1,len(names)):
+			#name_str = name_str + "," + names[i]
+
+		#TOREAD
+		# self.xform = Transform({"type":"eman","tx":self.full_data["nx"]//2,"ty":self.full_data["ny"]//2,"tz":self.full_data["nz"]//2+self.zpos})
+		# self.full_data.set_rotated_clip(self.xform, self.data)
+		# self.full_annotation.set_rotated_clip(self.xform, self.annotation)
+
+		#self.target.get_full_annotation()["ann_name"] = name_str
+		serialize_name = json.dumps(names, default=lambda a: "[%s,%s]" % (str(type(a)), a.pk))
+		self.target.get_full_annotation()["ann_name"] = serialize_name
+		self.target.get_full_annotation()["ann_num"] = nums
+		self.target.get_full_annotation().write_image(out_name)
+		print("Annotation is saved to", out_name)
+		return
 
 	def update_sets(self):
-		#keys=sorted(self.target().sets.keys())
-		#viskeys=set(self.target().sets_visible.keys())
-		print(self.classes)
-		self.item_dict = {}
-		for index, item in enumerate(self.classes):
-			self.item_dict[item]=index
-		print(self.item_dict)
-		self.setlist.clear()
+		#Set the colors and flags of table set items
+		for i in range(self.table_set.rowCount()):
+			key = int(self.table_set.item(i,0).text())
+			self.table_set.item(i,0).setFlags(self.indexflags)
+			self.table_set.item(i,1).setFlags(self.itemflags)
+			self.table_set.item(i,0).setForeground(self.colors[key])
+			self.table_set.item(i,1).setForeground(self.colors[key])
 
-		#for i,k in enumerate(keys):
-		for i in range(len(self.classes)):
+	def read_header(self,file_in,ret = False):
+		#Read the header information from annotation file
+		try:
+			keys = file_in["ann_num"]
+			#values = file_in["ann_name"].split(",")
+			values = json.loads(file_in["ann_name"])
+			#print(values)
+			if type(keys) != list: keys = [keys]
+			item_dict=(dict(zip(keys, values)))
+			print(item_dict)
+			if ret:
+				return item_dict
+			else:
+				for key, value in item_dict.items():
+					self.add_new_row(key,value)
+				self.update_sets()
+		except:
+		# 	#print("Trouble reading headers information. Continue...")
+		 	pass
 
-			#kname="{:02d} :: {}".format(int(k), self.target().sets[k])
-			item=QtWidgets.QListWidgetItem(self.classes[i])
 
-			item.setFlags(self.itemflags)
-			item.setForeground(QtGui.QColor(self.colors[i%len(self.colors)]))
-			self.setlist.addItem(item)
 
-			#if k in viskeys : item.setCheckState(Qt.Checked)
-			#else : item.setCheckState(Qt.Unchecked)
 
-			# if not self.initialized:
-			# 	if k==self.target().currentset:
-			# 		self.setlist.setCurrentItem(item)
-			# 		self.initialized=True
-		return
+
+	def add_new_row(self,num,name):
+		#Add a new row to the table set
+		row = self.table_set.rowCount()
+		self.table_set.insertRow(row)
+		self.table_set.setItem(row,0, QtWidgets.QTableWidgetItem(str(num)))
+		self.table_set.setItem(row,1, QtWidgets.QTableWidgetItem(name))
+
+
 # This is just for testing, of course
 def main():
 	from eman2_gui.emapplication import EMApp
@@ -2376,6 +2757,9 @@ def main():
 	em_app.show()
 	window.optimally_resize()
 	sys.exit(em_app.exec_())
+
+
+
 
 
 if __name__ == '__main__':

@@ -37,6 +37,7 @@ def main():
 
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
+	parser.add_argument("--chunk", type=str,help="In case of memory exhaustion, particles can be trained in chunks (similar to a batch). eg - 0,10 will process the first of 10 chunks. Be sure to store and restore the encoder and decoder if using this mode. Must be run sequentially 0-(n-1) without parallelism.", default=None)
 	parser.add_argument("--sym", type=str,help="symmetry. currently only support c and d", default="c1")
 	parser.add_argument("--model", type=str,help="load from an existing model file", default="")
 	parser.add_argument("--segments", type=str,help="Divide the model into sequential domains. Comma separated list of integers. Each integer is the first sequence number of a new region, starting with 0",default=None)
@@ -58,6 +59,7 @@ def main():
 	parser.add_argument("--niter", type=int,help="number of iterations", default=10)
 	parser.add_argument("--npts", type=int,help="number of points to initialize. ", default=-1)
 	parser.add_argument("--batchsz", type=int,help="batch size", default=256)
+	parser.add_argument("--minressz", type=int,help="Fourier diameter associated with minimum resolution to consider. ", default=4)
 	parser.add_argument("--maxboxsz", type=int,help="maximum fourier box size to use. 2 x target Fourier radius. ", default=64)
 	parser.add_argument("--maxres", type=float,help="maximum resolution. will overwrite maxboxsz. ", default=-1)
 	parser.add_argument("--align", action="store_true", default=False ,help="align particles.")
@@ -66,16 +68,24 @@ def main():
 	parser.add_argument("--perturb", type=float, default=0.1 ,help="Relative perturbation level to apply in each iteration during --heter training. Default = 0.1, decrease if models are too disordered")
 	parser.add_argument("--conv", action="store_true", default=False ,help="Use a convolutional network for heterogeneity analysis.")
 	parser.add_argument("--fromscratch", action="store_true", default=False ,help="start from coarse alignment. otherwise will only do refinement from last round")
-	parser.add_argument("--gradout", type=str,help="gradient output", default="")
-	parser.add_argument("--gradin", type=str,help="reading from gradient output instead of recomputing", default="")
+	parser.add_argument("--ptclrepout", type=str,help="Save the per-particle representation input to the network to a file for later use", default="")
+	parser.add_argument("--ptclrepin", type=str,help="Load the per-particle representation from a file rather than recomputing", default="")
 	parser.add_argument("--midout", type=str,help="middle layer output", default="")
 	parser.add_argument("--pas", type=str,help="choose whether to adjust position, amplitude, sigma. sigma is not supported in this version of the program. use 3 digit 0/1 input. default is 110, i.e. only adjusting position and amplitude", default="110")
 	parser.add_argument("--nmid", type=int,help="size of the middle layer", default=4)
-	parser.add_argument("--ndense", type=int,help="size of the layers between the middle and in/out, variable if -1. Default 512", default=512)
 	parser.add_argument("--mask", type=str,help="remove points outside mask", default="")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
+	if options.chunk is not None:
+		try: options.chunk=(int(options.chunk.split(",")[0]),int(options.chunk.split(",")[1]))
+		except:
+			print("Error: invalid chunk specification")
+			sys.exit(1)
+		if options.chunk[0]<0 or options.chunk[0]>options.chunk[1]-1 :
+			print("Error: chunk specification out of range")
+			sys.exit(1)
+
 	logid=E2init(sys.argv,options.ppid)
 
 	gen_model=None
@@ -166,7 +176,7 @@ def main():
 			maxboxsz=options.maxboxsz=good_size(ceil(raw_boxsz*raw_apix*2/options.maxres)//2*2)
 			print("using box size {}, max resolution {:.1f}".format(maxboxsz, options.maxres))
 
-		data_cpx, xfsnp, grpdct = load_particles(options.projs, maxboxsz, shuffle=True,preclip=options.ptclsclip)
+		data_cpx, xfsnp, grpdct = load_particles(options.projs, maxboxsz, preclip=options.ptclsclip,chunk=options.chunk)
 		apix=raw_apix*raw_boxsz/maxboxsz
 		clipid=set_indices_boxsz(data_cpx[0].shape[1], apix, True)
 
@@ -224,7 +234,7 @@ def main():
 			maxboxsz=options.maxboxsz=good_size(ceil(raw_boxsz*raw_apix*2/options.maxres)//2*2)
 			print("using box size {}, max resolution {:.1f}".format(maxboxsz, options.maxres))
 
-		data_cpx, xfsnp, grpdct = load_particles(options.ptclsin,maxboxsz,shuffle=False,preclip=options.ptclsclip)
+		data_cpx, xfsnp, grpdct = load_particles(options.ptclsin,maxboxsz,preclip=options.ptclsclip,chunk=options.chunk)
 		apix=raw_apix*raw_boxsz/maxboxsz
 		clipid=set_indices_boxsz(data_cpx[0].shape[1], apix, True)
 
@@ -260,21 +270,30 @@ def main():
 
 	#### Heterogeneity analysis from particles
 	bsz=options.batchsz
-	if options.ptclsin and options.heter:
+	if options.ptclsin:
 		pts=tf.constant(pts[None,:,:])
 		params=set_indices_boxsz(maxboxsz)
 		dcpx=get_clip(data_cpx, params["sz"], clipid)
 
 		#### calculate d(FRC)/d(GMM) for each particle
 		##   this will be the input for the deep network in place of the particle images
-		if options.gradin:
+		if options.ptclrepin:
 			## optionally load from saved files
-			ag=EMData(options.gradin)
+			hdr=EMData(options.ptclrepin,0,1)
+			nptcl=hdr["ny"]
+			nvec=hdr["nx"]
+			if options.chunk is not None:
+				chunkn=nptcl//options.chunk[1]
+				chunk0=chunkn*options.chunk[0]
+				chunkn=min(nptcl-chunk0,chunkn)
+				ag=EMData(options.ptclrepin,0,0,Region(0,chunk0,nvec,chunkn))
+			else: ag=EMData(options.ptclrepin)
+
 			allgrds=ag.numpy().copy()
 			del ag
 			allscr=allgrds[:,0]
 			allgrds=allgrds[:,1:].reshape((len(allgrds), npt))
-			print("Gradient shape: ", allgrds.shape)
+			print("Ptcl rep shape: ", allgrds.shape)
 
 		else:
 			trainset=tf.data.Dataset.from_tensor_slices((dcpx[0], dcpx[1], xfsnp))
@@ -290,17 +309,18 @@ def main():
 					allgrds[grpdct[k]]=np.add.reduce(allgrds[grpdct[k]])*(10.0/len(grpdct[k]))	# 10 aribtrary value for test
 
 			#### New idea. Keep only the amplitude gradient, gradient shape becomes (nptcl,ngauss) rather than (nptcl,ngauss,4)
-			allgrds=allgrds[:,:,3]
+			allgrds=allgrds[:,:,3]		# not necessary if using calc_gqual
 
 			## save to hdf file
-			if options.gradout:
+			if options.ptclrepout:
 				#allgrds=allgrds.reshape((len(allgrds),-1))
-				print("Gradient shape: ", allgrds.shape)
+				print("Ptcl rep shape: ", allgrds.shape)
 				ag=from_numpy(np.hstack([allscr[:,None], allgrds]))
-				ag.write_image(options.gradout)
+				ag.write_image(options.ptclrepout)
 				del ag
 				#allgrds=allgrds.reshape((len(allgrds), npt))
 
+	if options.ptclsin and options.heter:
 		#### build deep networks and make sure they work
 		if options.encoderin:
 			encode_model=tf.keras.models.load_model(f"{options.encoderin}",compile=False)
@@ -337,11 +357,47 @@ def main():
 		mid=calc_conf(encode_model, allgrds[ptclidx], 1000)
 
 		if options.midout:
-			sv=np.hstack([np.where(ptclidx)[0][:,None], mid])
-			print(mid.shape, sv.shape)
-			np.savetxt(options.midout, sv)
+			if options.chunk is not None:
+				if options.chunk[0]==0: out=open(options.midout,"w")	# first batch erases the file
+				else: out=open(options.midout,"a")	# later batches append
+
+				for i in range(mid.shape[0]):
+					out.write(f"{mid[i][0]:1.6f}\t{mid[i][1]:1.6f}\t{mid[i][2]:1.6f}\t{mid[i][3]:1.6f}\n")
+				out.close()
+			#sv=np.hstack([np.where(ptclidx)[0][:,None], mid])
+			#print(mid.shape, sv.shape)
+			#else: np.savetxt(options.midout, sv)
 
 			print("Conformation output saved to {}".format(options.midout))
+
+	if options.ptclrepin and options.encoderin and options.midout:
+		hdr=EMData(options.ptclrepin,0,1)
+		nptcl=hdr["ny"]
+		nvec=hdr["nx"]
+		if options.chunk is not None:
+			chunkn=nptcl//options.chunk[1]
+			chunk0=chunkn*options.chunk[0]
+			chunkn=min(nptcl-chunk0,chunkn)
+			ag=EMData(options.ptclrepin,0,0,Region(0,chunk0,nvec,chunkn))
+		else: ag=EMData(options.ptclrepin)
+
+		allgrds=ag.numpy().copy()
+		del ag
+		allscr=allgrds[:,0]
+		print(allgrds.shape,allgrds[:,1:].shape,npt)
+		allgrds=allgrds[:,1:].reshape((len(allgrds), npt))
+		print("Ptcl rep shape: ", allgrds.shape)
+
+		encode_model=tf.keras.models.load_model(f"{options.encoderin}",compile=False)
+
+		mid=calc_conf(encode_model, allgrds, 1000)
+
+		out=open(options.midout,"w")	# later batches append
+
+		for i in range(mid.shape[0]):
+			rep="\t".join([f"{v:1.6f}" for v in mid[i]])
+			out.write(f"{i:d}\t{rep}\n")
+		out.close()
 
 	E2end(logid)
 
@@ -549,24 +605,31 @@ def calc_frc(data_cpx, imgs_cpx, rings, return_curve=False,minpx=4):
 ##   Two possible types of size reduction, shrinking to achieve boxsz and pre-clipping
 ##   produce a normal scaled particle in a specified box. This is used for subtomogram
 ##   data where there is generally padding on the particles.
-def load_particles(fname, boxsz, shuffle=False, preclip=-1):
+def load_particles(fname, boxsz, preclip=-1,chunk=None):
 	
 	nptcl=EMUtil.get_image_count(fname)
+	if chunk is not None:
+		chunkn=nptcl//chunk[1]
+		chunk0=chunkn*chunk[0]
+		chunkn=min(nptcl-chunk0,chunkn)
+	else: chunk0,chunkn=0,nptcl
 	projs=[]
 	hdrs=[]
+	xfs=[]
 	e=EMData(fname, 0, True)
 	rawbox=e["nx"] if preclip<=0 else preclip
 	print("Loading {} particles of box size {}. shrink to {}".format(nptcl, rawbox, boxsz))
-	for j in range(0,nptcl,1000):
-		print(f"\r {j}/{nptcl} ",end="")
+	for j in range(chunk0,chunk0+chunkn,1000):
+		print(f"\r {j-chunk0}/{chunkn} ",end="")
 		sys.stdout.flush()
-		el=EMData.read_images(fname,range(j,min(j+1000,nptcl)))
+		el=EMData.read_images(fname,range(j,min(j+1000,chunk0+chunkn)))
 		if el[0]["nx"]!=rawbox:
 			for i in range(len(el)): el[i]=el[i].get_clip(Region((el[i]["nx"]-rawbox)//2,(el[i]["ny"]-rawbox)//2,rawbox,rawbox))
 
 		print(f"R     ",end="")
 		sys.stdout.flush()
 		for e in el:
+			xfs.append(e["xform.projection"].get_params("eman"))
 			if rawbox!=boxsz:
 				#### there is some fourier artifact with xform.scale. maybe worth switching to fft.resample?
 				e.process_inplace("math.fft.resample",{"n":rawbox/boxsz})
@@ -576,15 +639,9 @@ def load_particles(fname, boxsz, shuffle=False, preclip=-1):
 			e.process_inplace("xform.phaseorigin.tocorner")
 			hdrs.append(e.get_attr_dict())
 			projs.append(e.numpy().copy())
-	print(f"{nptcl}/{nptcl}")
+	print(f"  done       ")
 	projs=np.array(projs)/1e3
 	
-	if shuffle:
-		rndidx=np.arange(len(projs))
-		random.shuffle(rndidx)
-		projs=projs[rndidx]
-		hdrs=[hdrs[i] for i in rndidx]
-
 	# for tomographic data we need to collect info on "grouping" of 2D particles into 3D particles
 	# grpdct is keyed by 3D particle number and has a list of 2D partcile numbers (even after shuffling)
 	if "ptcl3d_id" in hdrs[0]:
@@ -598,22 +655,22 @@ def load_particles(fname, boxsz, shuffle=False, preclip=-1):
 	data_cpx=np.fft.rfft2(projs)
 	data_cpx=(data_cpx.real.astype(floattype), data_cpx.imag.astype(floattype))
 
-	xflst=False
-	if fname.endswith(".lst"):		# "old style" LST files?
-		info=load_lst_params(fname)
-		if "xform.projection" in info[0]:
-			xflst=True
-			xfs=[p["xform.projection"].get_params("eman") for p in info]
-			if shuffle:
-				xfs=[xfs[i] for i in rndidx]
+	#xflst=False
+	#if fname.endswith(".lst"):		# "old style" LST files?
+		#info=load_lst_params(fname)
+		#if "xform.projection" in info[0]:
+			#xflst=True
+			#xfs=[p["xform.projection"].get_params("eman") for p in info]
+			#if shuffle:
+				#xfs=[xfs[i] for i in rndidx]
 
-	if xflst==False and ("xform.projection" in hdrs[0]):
-		xflst=True
-		xfs=[p["xform.projection"].get_params("eman") for p in hdrs]
+	#if xflst==False and ("xform.projection" in hdrs[0]):
+		#xflst=True
+		#xfs=[p["xform.projection"].get_params("eman") for p in hdrs]
 		
-	if xflst==False:
-		xfs=[Transform().get_params("eman") for p in hdrs]
-		print("No existing transform from particles...")
+	#if xflst==False:
+		#xfs=[Transform().get_params("eman") for p in hdrs]
+		#print("No existing transform from particles...")
 		
 	xfsnp=np.array([[x["az"],x["alt"],x["phi"], x["tx"], x["ty"]] for x in xfs], dtype=floattype)
 	xfsnp[:,:3]=xfsnp[:,:3]*np.pi/180.
@@ -695,10 +752,10 @@ def init_segs(segs):
 	m=np.fromfunction(lambda i,j: ((j//4)==(i//2))*0.1+0.9,(nmid,nmid*2),dtype=float32)
 	Localize1
 
-class Localize1(tf.keras.constraints.Constraint):
-    def __call__(self, w):
+#class Localize1(tf.keras.constraints.Constraint):
+    #def __call__(self, w):
 
-        return w
+        #return w
 
 
 
@@ -792,7 +849,7 @@ def train_decoder(gen_model, trainset, params, options, pts=None):
 				else: pout=gen_model(conf)
 				std=tf.reduce_mean(tf.math.reduce_std(pout, axis=1), axis=0)
 				imgs_cpx=pts2img(pout, xf, params, sym=options.sym)
-				fval=calc_frc(pj_cpx, imgs_cpx, params["rings"])
+				fval=calc_frc(pj_cpx, imgs_cpx, params["rings"],minpx=options.minressz)
 				loss=-tf.reduce_mean(fval)
 #				l=loss+std[4]*options.sigmareg+std[3]*5*(options.niter-itr)/options.niter
 				l=loss
@@ -906,7 +963,7 @@ def coarse_align(dcpx, pts, options):
 			dc=list(tf.repeat(d[idt:idt+1], len(xx), axis=0) for d in dcpx)
 			ts=ccf_trans(dc, projs_cpx)
 			dtrans=translate_image(dc,ts)
-			frcs=calc_frc(dtrans, projs_cpx)
+			frcs=calc_frc(dtrans, projs_cpx,minpx=options.minressz)
 			#mxxfs.append(np.argmax(frcs))
 			allfrcs[idt,ii*bsz:(ii+1)*bsz]=frcs
 			alltrans[idt,ii*bsz:(ii+1)*bsz]=ts
@@ -947,7 +1004,7 @@ def refine_align(dcpx, xfsnp, pts, options, lr=1e-3):
 				#xv=tf.concat([xf[:,:3], xfvar[:,3:]], axis=1)
 				xv=xfvar
 				proj_cpx=pts2img(p, xv, sym=options.sym)
-				fval=calc_frc(proj_cpx, ptcl_cpx)
+				fval=calc_frc(proj_cpx, ptcl_cpx,minpx=options.minressz)
 				loss=-tf.reduce_mean(fval)
 
 			grad=gt.gradient(loss, xfvar)
@@ -996,34 +1053,46 @@ def save_ptcls_xform(xfsnp, boxsz, options, scr):
 	lst=None
 	lst0=None
 	
+
+### Wrote this as an alterative to using the amplitude-only gradient, in the thought that a finite difference would provide
+### better results for this purpose. In the end, it is actually almost indistinguishable, and takes longer to compute
 def calc_gqual(trainset, pts, params, options):
 	"""Instead of per gaussian variable gradient, try computing the per gaussian quality in neutral conformation"""
 	allptqual=[]
 	allscr=[]
 	
 	for pjr,pji,xf in trainset:
-		pt=tf.Variable(pts)
-		fval=np.zeros((xf.shape[0],pt.shape[0])) # batch size, # points
+#		pt=tf.Variable(pts)
+		pt=tf.Variable(tf.repeat(pts, xf.shape[0], axis=0))
+
+		fval=np.zeros((xf.shape[0],pt.shape[1])) # batch size, # points
 		pj_cpx=(pjr, pji)
+#		print(pt.shape,xf.shape,pts.shape)
 		imgs_cpx=pts2img(pt, xf, params, sym=options.sym)
 		# FSC for full point projections
-		base=calc_frc(pj_cpx, imgs_cpx, params["rings"])
+		base=calc_frc(pj_cpx, imgs_cpx, params["rings"],minpx=options.minressz)
 		allscr.append(base)
 
 		# FSC for omit-1 point projections
-		for k in range(pt.shape[0]):
-			ptt=tf.Variable(np.delete(pts,k,0))
+		for k in range(pt.shape[1]):
+			#ptt=tf.Variable(np.delete(pts,k,0))
+			ptt=tf.Variable(tf.repeat(np.delete(pts,k,1), xf.shape[0], axis=0))
+
+#			print(ptt.shape,xf.shape,pts.shape,np.delete(pts,k,1).shape)
 			imgs_cpx=pts2img(ptt, xf, params, sym=options.sym)
-			fval[:,k]=base-calc_frc(pj_cpx, imgs_cpx, params["rings"])
+			fval[:,k]=calc_frc(pj_cpx, imgs_cpx, params["rings"],minpx=options.minressz)-base
 
 		allptqual.append(fval)
 		
 	allptqual=np.concatenate(allptqual, axis=0)
 	allscr=np.concatenate(allscr, axis=0)
-	#allptqual=allptqual/np.std(allptqual)
+	allptqual=allptqual/np.std(allptqual)
 	print(" mean score: {:.3f}".format(np.mean(allscr)))
 	return allscr, allptqual
 
+### Particles are individually identified by the gradient of the energy with respect to the individual gaussians in the
+### neutral configuration. For this reason, the automatic gaussian configuration generation will normally produce
+### some excess gaussians in the very low density regions just outside the particle.
 def calc_gradient(trainset, pts, params, options):
 	allgrds=[]
 	allscr=[]
@@ -1036,8 +1105,7 @@ def calc_gradient(trainset, pts, params, options):
 			pt=tf.Variable(tf.repeat(pts, xf.shape[0], axis=0))
 
 			imgs_cpx=pts2img(pt, xf, params, sym=options.sym)
-			fval=calc_frc(pj_cpx, imgs_cpx, params["rings"])
-
+			fval=calc_frc(pj_cpx, imgs_cpx, params["rings"],minpx=options.minressz)
 			loss=-tf.reduce_mean(fval)
 
 		grad=gt.gradient(loss, pt)*xf.shape[0]
@@ -1100,7 +1168,7 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, options):
 				
 				## finally generate images and calculate frc
 				imgs_cpx=pts2img(pout, xf, params, sym=options.sym)
-				fval=calc_frc(pj_cpx, imgs_cpx, params["rings"])
+				fval=calc_frc(pj_cpx, imgs_cpx, params["rings"],minpx=options.minressz)
 				loss=-tf.reduce_mean(fval)+cl*1e-2
 				
 				if options.modelreg>0: 

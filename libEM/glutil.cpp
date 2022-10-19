@@ -56,7 +56,7 @@
 
 using namespace EMAN;
 
-// By depfault we need to first bind data to the GPU
+// By default we need to first bind data to the GPU
 GLuint GLUtil::buffer[2] = {0, 0};
 
 unsigned int GLUtil::gen_glu_mipmaps(const EMData* const emdata)
@@ -1087,24 +1087,69 @@ EMBytes GLUtil::render_annotated24(EMData *emdata, EMData *intmap, int x0, int y
 	ENTERFUNC;
 
 	// Category brightness mappings to rgb colors. Should make these static members of GLUtil
+
 	static unsigned char rtable[65536] = {0};
 	static unsigned char gtable[65536] = {0};
 	static unsigned char btable[65536] = {0};
 
-	static int tblinit=0;
+	// if (!tblinit) {
+	// 	tblinit=1;
+	//
+	// 	// Only supporting up to 256 different color "categories"
+	// 	for (int v=0; v<256; v++) {
+	// 		for (int c=0; c<256; c++) {
+	// 			rtable[v*256+c]=(c==0||c==3)?v:0;		//4 colors (0-3) for initial testing
+	// 			gtable[v*256+c]=(c==0||c==1)?v:0;
+	// 			btable[v*256+c]=(c==0||c==2)?v:0;
+	// 		}
+	// 	}
+	// }
 
+	static int tblinit=0;
 	if (!tblinit) {
 		tblinit=1;
-
 		// Only supporting up to 256 different color "categories"
 		for (int v=0; v<256; v++) {
 			for (int c=0; c<256; c++) {
-				rtable[v*256+c]=(c==0||c==3)?v:0;		//4 colors (0-3) for initial testing
-				gtable[v*256+c]=(c==0||c==1)?v:0;
-				btable[v*256+c]=(c==0||c==2)?v:0;
+				float H;
+				float S;
+				if (c == 0){
+					H = 0;
+					S = 0;
+				}else{
+					H = abs(fmod(120+139*c, 360));
+					S = abs(fmod((1-4*c/255)*255, 256))/255;
+				}
+				float V = (0.4+0.6*(v/255));
+				float C = S*V;
+				float X = C*(1-abs(fmod(H/60.0, 2)-1));
+				float m = V-C;
+				float r;
+				float g;
+				float b;
+				if(H >= 0 && H < 60){
+					r = C;g = X;b = 0;
+				}else if(H >= 60 && H < 120){
+					r = X;g = C;b = 0;
+				}else if(H >= 120 && H < 180){
+					r = 0;g = C;b = X;
+				}else if(H >= 180 && H < 240){
+					r = 0;g = X;b = C;
+				}else if(H >= 240 && H < 300){
+					r = X;g = 0;b = C;
+				}else{
+					r = C;g = 0;b = X;
+				}
+				int R = (r+m)*255;
+				int G = (g+m)*255;
+				int B = (b+m)*255;
+				rtable[v*256+c] =R;		//4 colors (0-3) for initial testing
+				gtable[v*256+c] =G;
+				btable[v*256+c] =B;
 			}
 		}
 	}
+	// Done with old coloring methods
 
 	if (emdata==NULL) return EMBytes();
 	bool invert = (min_gray > max_gray);
@@ -1347,19 +1392,20 @@ EMBytes GLUtil::render_annotated24(EMData *emdata, EMData *intmap, int x0, int y
 			}
 		}
 	}
-	
+
 	// Convert grey/class values to RGB
 	for (int j=ymin*bpl; j <= ymax*bpl; j+=bpl) {
 		for (int i=xmin; i<xsize*3; i+=3) {
 			int grey=(int)data[i+j];
 			int cls=(int)data[i+j+1];
-			int lup=grey<<8+cls;
+			//int lup=grey<<8+cls;
+			int lup = grey*256 + cls;
 			data[i+j]=rtable[lup];
 			data[i+j+1]=gtable[lup];
 			data[i+j+2]=btable[lup];
 		}
 	}
-	
+
 	EXITFUNC;
 
 	// ok, ok, not the most efficient place to do this, but it works
@@ -1368,7 +1414,7 @@ EMBytes GLUtil::render_annotated24(EMData *emdata, EMData *intmap, int x0, int y
 			for (int x=0; x<ixsize; x++)
 				std::swap(ret[y*bpl+x], ret[(iysize-y-1)*bpl+x]);
 	}
-	
+
 	return ret;
 }
 
