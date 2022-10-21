@@ -597,9 +597,9 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 	allim=WeakKeyDictionary()
 
-	def __del__(self):
-		#self.clear_gl_memory() # this is intentionally commented out, it makes sense to clear the memory but not here
-		self.deleteLater()
+	#def __del__(self):
+		##self.clear_gl_memory() # this is intentionally commented out, it makes sense to clear the memory but not here
+		#self.deleteLater()
 
 	def get_data(self):
 		'''

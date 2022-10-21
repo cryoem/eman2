@@ -392,7 +392,7 @@ def main():
 				#scores[si].append((np.mean(scr)-np.min(scr))*100)
 				#dfs[si].append(defrg[np.argmin(scr)])
 				
-			print("ID {}, angle {:.1f}, defocus {:.1f} vs {:.1f}, score {:.3f} vs {:.3f}".format(it, tltparams[it,3], dfs[0][-1], dfs[1][-1], scores[0][-1], scores[1][-1]))
+			if options.verbose>0 : print("ID {}, angle {:.1f}, defocus {:.1f} vs {:.1f}, score {:.3f} vs {:.3f}".format(it, tltparams[it,3], dfs[0][-1], dfs[1][-1], scores[0][-1], scores[1][-1]))
 		
 		print("Average score: Current hand - {:.3f}, flipped hand - {:.3f}".format(np.mean(scores[0]), np.mean(scores[1])))
 		print("Defocus std: Current hand - {:.3f}, flipped hand - {:.3f}".format(np.std(dfs[0]), np.std(dfs[1])))
@@ -401,10 +401,12 @@ def main():
 		print("Current hand is better than the flipped hand in {:.1f}% tilt images".format(scr*100))
 		
 		if scr>.5:
-			print("The handedness (--tltax={:.1f}) seems to be correct. Rerun CTF estimation without the checkhand option to finish the process.".format(-rot))
+			print("{}: The handedness (--tltax={:.1f}) seems to be correct. Rerun CTF estimation without the checkhand option to finish the process.".format(args[0],-rot))
+			open("goodtilt.txt","a").write(f"{-rot}\t{scr}\t# {args[0].split('/')[-1]}\n")
 		else:
-			print("The handedness seems to be flipped. Consider rerun the tomogram reconstruction with --tltax={:.1f} then rerun the CTF estimation.".format(-((180+rot)%360)))
-		      
+			print("{}: The handedness seems to be flipped. Consider rerun the tomogram reconstruction with --tltax={:.1f} then rerun the CTF estimation.".format(args[0],-((180+rot)%360)))
+			open("goodtilt.txt","a").write(f"{-((180+rot)%360)}\t{1.0-scr}\t# {args[0].split('/')[-1]}\n")
+
 		if not options.nolog: E2end(logid)
 		return
 		
