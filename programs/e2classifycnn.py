@@ -14,6 +14,7 @@ from eman2_gui.emapplication import get_application, EMApp
 from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emimagemx import EMImageMXWidget
 from eman2_gui.emshape import EMShape
+from eman2_gui.embrowser import EMSliceParamDialog,makeOrthoProj
 
 def main():
 
@@ -227,8 +228,33 @@ class EMPtclClassify(QtWidgets.QMainWindow):
 		self.nnet=None
 		self.trainset=[]
 		#self.nnetsize=96
+		e=EMData(options.setname, 0, True)
+		is3d=e["nz"]>1
 		
-		self.particles=EMData.read_images(options.setname)
+		if is3d:
+			nimg=EMUtil.get_image_count(options.setname)
+			self.secparm=EMSliceParamDialog(self,nimg)
+			ret=self.secparm.exec_()
+			print(ret)
+			
+			layers=self.secparm.wspinlayers.value()
+			center=self.secparm.wspincenter.value()
+			lowpass=float(self.secparm.wlelp.text())
+			highpass=float(self.secparm.wlehp.text())
+			self.particles=[]
+			for i in range(nimg):
+				first=e["nx"]/2+center-layers
+				ptcl=EMData(options.setname, i,False,Region(0,0,first, e["nx"], e["ny"], layers*2))
+				x=ptcl.process("misc.directional_sum",{"axis":"z"})
+				if lowpass>0 : x.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/lowpass})
+				if highpass>0 : x.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/highpass})
+				x.process_inplace("normalize.edgemean")
+				self.particles.append(x)
+				sys.stdout.write("\r{}/{} finished.".format(i, nimg))
+				sys.stdout.flush()
+			print()
+		else:
+			self.particles=EMData.read_images(options.setname)
 		self.boxsz=self.particles[0]["nx"]
 		
 		self.ptclviewer=EMImageMXWidget()
