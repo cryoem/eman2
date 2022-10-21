@@ -463,7 +463,9 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 					if atr=="xform.align3d": xt=xt.inverse()
 					q[atr]=xt
 					if "raw_id" not in l:
-						q["raw_id"]=il
+						q["sym_raw"]=il
+					if "sym_id" not in l:
+						q["sym_id"]=i
 					lout.append(q)
 					
 			save_lst_params(lout, f)
