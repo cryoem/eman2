@@ -149,11 +149,13 @@ class GUIEvalImage(QtWidgets.QWidget):
 		self.xpos2=(0,10)
 #		self.db = db_open_dict('bdb:mgquality')
 
+		js=js_open_dict("info/project.json")
+
 		if voltage is None: voltage=300.0
 		if cs is None: cs=2.7
 		if ac is None: ac=10.0
 		if apix is None:
-			apix=1.0
+			apix=float(js.getdefault("global.apix",1.0))
 			print("Check A/pix!")
 
 		self.defaultvoltage=voltage

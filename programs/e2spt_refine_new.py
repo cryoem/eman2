@@ -134,8 +134,9 @@ def main():
 		opt=""
 		if options.goldstandard==True and options.goldcontinue==False:
 			refs={"even":options.ref, "odd":options.ref}
-			opt+="--process filter.lowpass.gauss:cutoff_freq={r:.4f} --process filter.lowpass.randomphase:cutoff_freq={r:.4f}".format(r=1./res)
-			
+#			opt+="--process filter.lowpass.gauss:cutoff_freq={r:.4f} --process filter.lowpass.randomphase:cutoff_freq={r:.4f}".format(r=1./res)
+			opt+="--process filter.lowpass.tophat:cutoff_freq={r:.4f}".format(r=1./res)
+
 		else:	
 			if options.goldcontinue:
 				refs={eo:options.ref[:-4]+f"_{eo}.hdf" for eo in ["even","odd"]}

@@ -432,7 +432,7 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		idx, info=self.get_id_info()
 		if idx==None: return
 		js=js_open_dict(info_name(info["e2basename"]))
-		subprocess.Popen(f"e2evalimage.py {info['tltfile']} --voltage {js.getdefault('voltage',300.0)} --cs {js.getdefault('cs',2.7)} --box 256 --constbfactor 400",shell=True)
+		subprocess.Popen(f"e2evalimage.py {info['tltfile']} --voltage {js.getdefault('voltage',300.0)} --cs {js.getdefault('cs',2.7)} --box 384 --constbfactor 400",shell=True)
 	
 	def runboxer(self):
 		idx, info=self.get_id_info()

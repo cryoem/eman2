@@ -2997,8 +2997,7 @@ EMData.write_image_c = EMData.write_image
 EMData.write_image = db_write_image
 
 def im_write_compressed(self,fsp,n,bits=8,minval=0,maxval=0,nooutliers=True,level=1,erase=False):
-	"""write_compressed(self or list,fsp,n,bits=8,minval=0,maxval=0,nooutliers=False,level=1)
-
+	"""
 This flexible image writing routine will write compressed HDF images (or a single image). It may be called
 on an instance:
 
