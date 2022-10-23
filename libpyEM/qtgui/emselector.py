@@ -317,7 +317,7 @@ def EMSelectorBaseTemplate(Type):
 			
 			self.hbl.addWidget(self.splitter,1)
 			
-			self.__load_url(e2getcwd(),self.list_widgets[0])
+			self.__load_url(e2getcwd(),self.list_widgets[0]) 
 	
 			self.bottom_hbl = QtWidgets.QHBoxLayout()
 			self.bottom_hbl.addWidget(self.filter_text,0)
