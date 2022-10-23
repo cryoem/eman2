@@ -2,6 +2,7 @@
 # Muyuan Chen 2021-03
 from EMAN2 import *
 import numpy as np
+import time
 
 def main():
 	
@@ -194,6 +195,7 @@ def main():
 	#### now start the actual refinement loop
 	#for ii,itype in enumerate(iters):
 	for ii in range(startiter, len(iters)):
+		starttime=time.time()
 		itype=iters[ii]
 		itr=ii+1
 		ref=f"{path}/threed_{ii:02d}.hdf"
@@ -324,6 +326,9 @@ def main():
 				refeo=f"{path}/threed_{ii:02d}_{eo}.hdf"
 				os.unlink(refeo)
 				os.rename(tmp,refeo)
+
+		elapsed=time.time()-starttime
+		print(f"Iteration {ii} complete, {elapsed//3600:d}:{(elapsed%3600)//60:02d}:{elapsed%60:02d}")
 	
 	E2end(logid)
 	
