@@ -3120,6 +3120,17 @@ and the file size will increase.
 EMData.write_compressed=im_write_compressed
 
 
+def db_get_image_count(fsp):
+	if ":" in fsp:
+		fsp, idxs = parse_infile_arg(fsp)
+		return len(idxs)
+	else:
+		return EMUtil.get_image_count_c(fsp)
+
+EMUtil.get_image_count_c = EMUtil.get_image_count
+EMUtil.get_image_count = db_get_image_count
+
+
 __doc__ = \
 "EMAN classes and routines for image/volume processing in \n\
 single particle reconstructions.\n\
