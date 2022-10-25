@@ -2569,7 +2569,7 @@ jsondict : optional string in JSON format or a JSON compatible dictionary. value
 performed with read_image either here or in the EMData class. Returns a tuple (n extfile,extfile,dict). dict
 contains decoded information from the stored JSON dictionary. Will also read certain other legacy comments
 and translate them into a dictionary."""
-		if n>=self.n : raise Exception("Attempt to read record {} from #LSX {} with {} records".format(n,self.path,self.n))
+		if n>=self.n : raise IndexError("Attempt to read record {} from #LSX {} with {} records".format(n,self.path,self.n))
 		self.lock.acquire()
 		n=int(n)
 		self.ptr.seek(self.seekbase+self.linelen*n)
@@ -2997,8 +2997,7 @@ EMData.write_image_c = EMData.write_image
 EMData.write_image = db_write_image
 
 def im_write_compressed(self,fsp,n,bits=8,minval=0,maxval=0,nooutliers=True,level=1,erase=False):
-	"""write_compressed(self or list,fsp,n,bits=8,minval=0,maxval=0,nooutliers=False,level=1)
-
+	"""
 This flexible image writing routine will write compressed HDF images (or a single image). It may be called
 on an instance:
 

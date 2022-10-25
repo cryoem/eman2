@@ -35,7 +35,7 @@ from builtins import object
 from EMAN2 import get_image_directory, get_dtag, EMData, \
 	get_files_and_directories, remove_file, \
 	remove_directories_from_name, Util, EMUtil, IMAGE_UNKNOWN, base_name, \
-	file_exists, base_name
+	file_exists, base_name, e2getcwd
 from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
 from PyQt5.QtCore import Qt
 from .emapplication import ModuleEventsManager, EMApp, get_application
@@ -317,7 +317,7 @@ def EMSelectorBaseTemplate(Type):
 			
 			self.hbl.addWidget(self.splitter,1)
 			
-			self.__load_url(e2getcwd(),self.list_widgets[0])
+			self.__load_url(e2getcwd(),self.list_widgets[0]) 
 	
 			self.bottom_hbl = QtWidgets.QHBoxLayout()
 			self.bottom_hbl.addWidget(self.filter_text,0)

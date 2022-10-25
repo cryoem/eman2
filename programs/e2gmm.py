@@ -1735,9 +1735,10 @@ class EMGMM(QtWidgets.QMainWindow):
 					er=run(f"e2gmm_refine_point.py --model {modelout} --decoderin {decoder} --decoderout {decoder} --ptclsin {self.gmm}/particles.lst --ptclrepin {ptrep} --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {nit} {mask} --nmid {self.currun['dim']} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ptclsclip {self.jsparm['boxsize']} --minressz {minboxp} {encin} --encoderout {encoder} --chunk {b},{nb}")
 
 					if er: break
-			if not er:
-				# generate latent representation for all particles using final trained encoder
-				run(f"e2gmm_refine_point.py --encoderin {encoder} --ptclrepin {ptrep} --midout {self.gmm}/{self.currunkey}_mid.txt --model {modelout}")
+
+		# generate latent representation for all particles using final trained encoder
+		if not er:
+			run(f"e2gmm_refine_point.py --encoderin {encoder} --ptclrepin {ptrep} --midout {self.gmm}/{self.currunkey}_mid.txt --model {modelout}")
 
 		if er :
 			showerror("Error running e2gmm_refine_point, see console for details. If memory exhausted, increase batches.")

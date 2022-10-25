@@ -149,6 +149,15 @@ class GUIEvalImage(QtWidgets.QWidget):
 		self.xpos2=(0,10)
 #		self.db = db_open_dict('bdb:mgquality')
 
+		js=js_open_dict("info/project.json")
+
+		if voltage is None: voltage=300.0
+		if cs is None: cs=2.7
+		if ac is None: ac=10.0
+		if apix is None:
+			apix=float(js.getdefault("global.apix",1.0))
+			print("Check A/pix!")
+
 		self.defaultvoltage=voltage
 		self.defaultapix=apix
 		self.defaultcs=cs
@@ -187,7 +196,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 #				if parms==None : raise Exception
 			except:
 				ctf = EMAN2Ctf()
-				ctf.from_dict({'defocus':0.0,'dfdiff':0.0,'dfang':0.0,'bfactor':200.0,'ampcont':self.defaultac,'voltage':0,'cs':4.1,'apix':1.0,'dsbg':-1})	# voltage zero here to trigger initialization
+				ctf.from_dict({'defocus':0.0,'dfdiff':0.0,'dfang':0.0,'bfactor':self.constbfactor,'ampcont':self.defaultac,'voltage':self.defaultvoltage,'cs':self.defaultcs,'apix':self.defaultapix,'dsbg':-1})	# voltage zero here to trigger initialization
 #				if self.defaultvoltage!=None : ctf.voltage=self.defaultvoltage		# default initialization is later! this screws it up
 #				if self.defaultcs!=None : ctf.cs=self.defaultcs
 #				if self.defaultapix!=None : ctf.apix=self.defaultapix
@@ -417,9 +426,9 @@ class GUIEvalImage(QtWidgets.QWidget):
 			q=int(event.key())-Qt.Key_0
 			self.squality.setValue(q)
 		elif event.key() == Qt.Key_Left:
-			self.sdefocus.setValue(self.sdefocus.getValue()-0.03)
+			self.sdefocus.setValue(self.sdefocus.getValue()-0.01)
 		elif event.key() == Qt.Key_Right:
-			self.sdefocus.setValue(self.sdefocus.getValue()+0.03)
+			self.sdefocus.setValue(self.sdefocus.getValue()+0.01)
 		elif event.key()==Qt.Key_I :
 			self.doImport()
 		elif event.key()==Qt.Key_U :

@@ -356,20 +356,7 @@ def main():
 		## conformation output
 		mid=calc_conf(encode_model, allgrds[ptclidx], 1000)
 
-		if options.midout:
-			if options.chunk is not None:
-				if options.chunk[0]==0: out=open(options.midout,"w")	# first batch erases the file
-				else: out=open(options.midout,"a")	# later batches append
-
-				for i in range(mid.shape[0]):
-					out.write(f"{mid[i][0]:1.6f}\t{mid[i][1]:1.6f}\t{mid[i][2]:1.6f}\t{mid[i][3]:1.6f}\n")
-				out.close()
-			#sv=np.hstack([np.where(ptclidx)[0][:,None], mid])
-			#print(mid.shape, sv.shape)
-			#else: np.savetxt(options.midout, sv)
-
-			print("Conformation output saved to {}".format(options.midout))
-
+	# this now normally run as a separate process since the network may be trained in batches
 	if options.ptclrepin and options.encoderin and options.midout:
 		hdr=EMData(options.ptclrepin,0,1)
 		nptcl=hdr["ny"]
