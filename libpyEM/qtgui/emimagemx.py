@@ -611,10 +611,12 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 #		return self.view_width()
 
 	def get_font_size(self):
-		return self.font_renderer.get_face_size()
+		return self.font_size
+#		return self.font_renderer.get_face_size()
 
 	def set_font_size(self,value):
-		self.font_renderer.set_face_size(value)
+		self.font_size=value
+		#self.font_renderer.set_face_size(value)
 		self.force_display_update() # only for redoing the fonts, this could be made more efficient :(
 		self.updateGL()
 
@@ -1398,6 +1400,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 				if idx != 0: idx = idx%self.max_idx
 				sidx = str(idx)
 				GL.glPushAttrib(GL.GL_ALL_ATTRIB_BITS)
+				self.font_renderer.set_face_size(self.font_size)
 				bbox = self.font_renderer.bounding_box(sidx)
 				GLUtil.mx_bbox(bbox,txtcol,bgcol)
 				GL.glEnable(GL_TEXTURE_2D)
@@ -1426,6 +1429,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 				except: avs = ""
 
 				GL.glPushAttrib(GL.GL_ALL_ATTRIB_BITS)
+				self.font_renderer.set_face_size(self.font_size)
 				bbox = self.font_renderer.bounding_box(avs)
 				GLUtil.mx_bbox(bbox,txtcol,bgcol)
 				GL.glEnable(GL_TEXTURE_2D)

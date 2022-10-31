@@ -5,6 +5,7 @@ import numpy as np
 from sklearn.decomposition import PCA
 from EMAN2_utils import pdb2numpy
 import scipy.spatial.distance as scipydist
+from sklearn.cluster import KMeans
 
 #### need to unify the float type across tenforflow and numpy
 ##   in theory float16 also works but it can be unsafe especially when the network is deeper...
@@ -366,7 +367,7 @@ def set_indices_boxsz(boxsz, apix=0, return_freq=False):
 
 def build_encoder(mid=512, nout=4, conv=False, ninp=-1):
 	l2=tf.keras.regularizers.l2(1e-3)
-	kinit=tf.keras.initializers.RandomNormal(0,0.001)	# was 0.01
+	kinit=tf.keras.initializers.RandomNormal(0,1e-3)	# was 0.01
 	
 	if conv:
 		ss=64
@@ -408,29 +409,40 @@ def build_encoder(mid=512, nout=4, conv=False, ninp=-1):
 	encode_model=tf.keras.Sequential(layers)
 	return encode_model
 
-def find_neighbors(pt0, nlayer=5, axis=0):
+def find_neighbors(pt0, nlayer=4, axis=0, existpts=[]):
 	
-	ptpool=[pt0]
-	pns=[64*2**i for i in range(nlayer)][::-1]
-	pns=[p for p in pns if p<len(pt0)]
-	for i,pn in enumerate(pns):
-		pn=pns[i]
+	if len(existpts)>0:
+		ptpool=existpts
+		nlayer=len(ptpool)-2
 		
-		pt1=pt0.copy()
-		np.random.shuffle(pt1)
-		pt1=pt1[:pn,:]
-		pt1+=np.random.randn(len(pt1),3)*1e-3
+	else:
+		ptpool=[pt0]
+		#pns=[64*2**i for i in range(nlayer)][::-1]
+		#pns=[p for p in pns if p<len(pt0)]
+		pns=[1024,512,128,64]
+		for i,pn in enumerate(pns):
+			pn=pns[i]
+			
+			km=KMeans(pn,max_iter=30)
+			km.fit(pt0)
+			pt1=km.cluster_centers_
+			
+			#pt1=pt0.copy()
+			#np.random.shuffle(pt1)
+			#pt1=pt1[:pn,:]
+			#pt1+=np.random.randn(len(pt1),3)*1e-3
 
-		#print(pt1.shape)
-		ptpool.append(pt1.copy())
-		
-	nlayer=len(ptpool)-1
+			#print(pt1.shape)
+			ptpool.append(pt1.copy())
+			
+		nlayer=len(ptpool)-1
+		ptpool.append(pt1.copy()) 
 	
 	#############
 	####
-	nnb=8
+	nnb=16
 	dstid=[]
-	for li in range(nlayer):
+	for li in range(nlayer+1):
 		dst01=scipydist.cdist(ptpool[li], ptpool[li+1])
 		if axis==0:
 			di=np.argsort(dst01, axis=0)[:nnb].T
@@ -440,9 +452,9 @@ def find_neighbors(pt0, nlayer=5, axis=0):
 			dj=np.argsort(dst01, axis=1)[:,:nnb]
 			dstid.append(dj)
 			
-		#print(li, dstid[-1].shape)
+		print(li, dstid[-1].shape)
 		
-	return dstid
+	return dstid, ptpool
 
 def build_encoder_graph(pts, options, nlayer=5):
 	print("#### Building graph encoder...")
@@ -451,7 +463,7 @@ def build_encoder_graph(pts, options, nlayer=5):
 	
 	###########
 	####
-	kinit=tf.keras.initializers.RandomNormal(0,1e-7)
+	kinit=tf.keras.initializers.RandomNormal(0,1e-3)
 	l2=tf.keras.regularizers.l2(1e-3)
 
 	x0=tf.keras.Input(shape=(len(pt0),4))
@@ -485,48 +497,99 @@ def build_encoder_graph(pts, options, nlayer=5):
 	encode_model=tf.keras.Model(x0, y2)
 	return encode_model, midshape
 
-def buid_decoder_graph(pts, midshape, options, nlayer=5):
+def buid_decoder_graph(pts, options, nlayer=4, existlayer=[], kk=1, ptpool=[]):
 	print("#### Building graph decoder...")
 	pt0=pts[0,:,:3].numpy().copy()
-	dstid=find_neighbors(pt0, nlayer=5, axis=1)
+	dstid, ptpool=find_neighbors(pt0, axis=1, existpts=ptpool)
 	
-	kinit=tf.keras.initializers.RandomNormal(0,1e-7)
+	kinit=tf.keras.initializers.RandomNormal(0,1e-3)
 	l2=tf.keras.regularizers.l2(1e-3)
 	
-	x0=tf.keras.Input(shape=(options.nmid))
+	if len(existlayer)==0:
+		declayers=[tf.keras.layers.Dense(256,kernel_regularizer=l2, kernel_initializer=kinit) for i in range(nlayer)]
+		declayers.append(tf.keras.layers.Dense(5,kernel_regularizer=l2))
+	else:
+		declayers=existlayer
+	
+	x0=tf.keras.Input(shape=(4))
 	y1=x0
 	print(y1.shape)
 
-	y1=tf.keras.layers.Dense(np.prod(midshape))(y1)
-	y1=tf.keras.layers.Reshape(midshape)(y1)
+	# y1=tf.keras.layers.Dense(np.prod(midshape))(y1)
+	y1=tf.keras.layers.Dense(32*256)(y1)
+	y1=tf.keras.layers.Reshape((32,256))(y1)
 	print(y1.shape)
-	
-	k1s=[256]*nlayer
-	k1s[-1]=5
-	for li in range(nlayer):
-		k1=k1s[li]
-		if li==nlayer-1:
-			ly=tf.keras.layers.Dense(k1,kernel_regularizer=l2, kernel_initializer=kinit)
-		else:
-			ly=tf.keras.layers.Dense(k1,kernel_regularizer=l2)
-		y0=ly(y1)
-		
-		y1=tf.gather(y0, dstid[nlayer-li-1], axis=1)
+	#kk=1
+	for li in range(kk):
+		y0=declayers[li](y1)
+
+		y1=tf.gather(y0, dstid[-li-1], axis=1)
 		y1=tf.reduce_sum(y1, axis=2)
-		
-		if li==nlayer-1: 
-			y1=tf.math.tanh(y1)
-		else:
-			y1=tf.nn.relu(y1)
-			y1=tf.keras.layers.Dropout(.1)(y1)
-			y1=tf.keras.layers.BatchNormalization()(y1)
-			
-		print(li, y0.shape, y1.shape)
-		
-	# bshift=np.array([-.5,-.5,-.5,0,.5]).astype(floattype)
-	y2=y1+pts  #+tf.constant(bshift)
+
+		y1=tf.nn.relu(y1)
+		y1=tf.keras.layers.Dropout(.1)(y1)
+		y1=tf.keras.layers.BatchNormalization()(y1)
+
+		print(y0.shape, y1.shape)
+
+
+	y1=declayers[-1](y1)
+	# y1=tf.math.tanh(y1)
+	print(y1.shape)
+
+
+	dwt=tf.reduce_sum((ptpool[-kk-1][None,:,:]-ptpool[0][:,None,:])**2, axis=2)
+	dwt=tf.exp(-dwt*50)#*tf.constant(msk, dtype=float)
+	dwt=tf.transpose(dwt)
+	dwt/=np.sum(dwt, axis=0)[None,:]
+	# dwt/=np.sum(dwt, axis=1)[:,None]
+	print(dwt.shape, y1.shape)
+
+	# y2=tf.tensordot(y1, dwt, axes=(1,0))
+	y2=tf.matmul(tf.transpose(y1,(0,2,1)), dwt)
+	y2=tf.transpose(y2, (0,2,1))
+	print(y2.shape)
+
+	y2=y2+pts
+	# y2=y1
 	decode_model=tf.keras.Model(x0, y2)
-	return decode_model
+	
+	return decode_model, declayers, ptpool
+	
+	#x0=tf.keras.Input(shape=(options.nmid))
+	#y1=x0
+	#print(y1.shape)
+
+	#y1=tf.keras.layers.Dense(np.prod(midshape))(y1)
+	#y1=tf.keras.layers.Reshape(midshape)(y1)
+	#print(y1.shape)
+	
+	#k1s=[256]*nlayer
+	#k1s[-1]=5
+	#for li in range(nlayer):
+		#k1=k1s[li]
+		#if li==nlayer-1:
+			#ly=tf.keras.layers.Dense(k1,kernel_regularizer=l2, kernel_initializer=kinit)
+		#else:
+			#ly=tf.keras.layers.Dense(k1,kernel_regularizer=l2)
+		#y0=ly(y1)
+		
+		#y1=tf.gather(y0, dstid[nlayer-li-1], axis=1)
+		#y1=tf.reduce_sum(y1, axis=2)
+		
+		#if li==nlayer-1: 
+			#y1=tf.math.tanh(y1)
+		#else:
+			#y1=tf.nn.relu(y1)
+			#y1=tf.keras.layers.Dropout(.1)(y1)
+			#y1=tf.keras.layers.BatchNormalization()(y1)
+			
+		#print(li, y0.shape, y1.shape)
+		
+	## bshift=np.array([-.5,-.5,-.5,0,.5]).astype(floattype)
+	#y2=y1+pts  #+tf.constant(bshift)
+	#decode_model=tf.keras.Model(x0, y2)
+	#return decode_model
 
 #### build decoder network. 
 ## input integer to initialize as zeros with N points
@@ -1403,7 +1466,18 @@ def main():
 			ppt=tf.constant(ppt[None,:,:].astype(floattype))
 			allscr, allgrds=calc_gradient(trainset, ppt, params, options )
 		else:
-			allscr, allgrds=calc_gradient(trainset, pts, params, options )
+			
+			agd=[]
+			
+			for mpx in [options.maxpx//2, options.maxpx]:
+				options.maxpx=mpx
+				allscr, ag=calc_gradient(trainset, pts, params, options )
+				agd.append(ag)
+				
+			allgrds=np.concatenate(agd, axis=2)
+			print("Gradient shape: ", allgrds.shape) 
+			agd=ag=None
+			#allscr, allgrds=calc_gradient(trainset, pts, params, options )
 		
 		print("Gradient shape: ", allgrds.shape) 
 		
@@ -1412,7 +1486,9 @@ def main():
 			encode_model=tf.keras.models.load_model(f"{options.encoderin}",compile=False,custom_objects={"ResidueConv2D":ResidueConv2D})
 		else:
 			if options.graphnet:
-				encode_model,midshape=build_encoder_graph(pts, options)
+				#encode_model,midshape=build_encoder_graph(pts, options)
+				encode_model=build_encoder(nout=options.nmid, conv=True,ninp=len(pts[0]))
+
 			else:
 				encode_model=build_encoder(nout=options.nmid, conv=options.conv,ninp=len(pts[0]))
 			
@@ -1429,7 +1505,7 @@ def main():
 			elif options.rigidbody:
 				decode_model=build_decoder_rigidbody(pts, ninp=options.nmid, foci=imsk)
 			elif options.graphnet:
-				decode_model=buid_decoder_graph(pts, midshape, options)
+				decode_model, declayers, ptpool=buid_decoder_graph(pts, options)
 			else:
 				decode_model=build_decoder(pts[0].numpy(), ninp=options.nmid, conv=options.conv,mid=options.ndense)
 		
@@ -1448,7 +1524,13 @@ def main():
 			trainset=trainset.batch(bsz)
 			
 			train_heterg(trainset, pts, encode_model, decode_model, params, imsk, options)
-			
+			if options.graphnet:
+				for k in range(2,5):
+					print(f"#####\n graph network include {k} layers")
+					decode_model, l, p=buid_decoder_graph(pts, options, existlayer=declayers, kk=k, ptpool=ptpool)
+					if k==4: options.niter*=2
+					train_heterg(trainset, pts, encode_model, decode_model, params, imsk, options)
+					
 			if options.decoderout!=None: 
 				if os.path.isfile(options.decoderout):
 					os.remove(options.decoderout)

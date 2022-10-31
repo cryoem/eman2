@@ -28,7 +28,8 @@ def main():
 	parser.add_argument("--pdb", type=str,help="model input in pdb", default=None)
 	parser.add_argument("--selgauss", type=str,help="provide a text file of the indices of gaussian (or volumic mask) that are allowed to move", default=None)
 
-	
+	parser.add_argument("--skip3d", action="store_true", default=False ,help="skip the make3d step.")
+
 	parser.add_argument("--threads", default=12,type=int,help="Number of threads to run in parallel on a single computer. This is the only parallelism supported by e2make3dpar")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	(options, args) = parser.parse_args()
@@ -153,24 +154,25 @@ def main():
 	save_lst_params(lout, options.ptclsout)
 	print(f"Particle list saved in {options.ptclsout}")
 	
-	e=EMData(fname, 0, True)
-	if options.pad<1: options.pad=good_size(e["nx"]*1.25)
-	if options.setsf:
-		options.setsf=" --setsf "+options.setsf
-	
-	name3d=options.ptclsout[:-4]+".hdf"
-	if os.path.isfile(name3d):
-		os.remove(name3d)
+	if options.skip3d==False:
+		e=EMData(fname, 0, True)
+		if options.pad<1: options.pad=good_size(e["nx"]*1.25)
+		if options.setsf:
+			options.setsf=" --setsf "+options.setsf
 		
-	for j in range(options.ncls):
-		t="tmp_classify.hdf"
-		cmd="e2spa_make3d.py --input {} --output {} --pad {} --keep 1 --threads {} {} --sym {} --clsid {}".format(options.ptclsout, t, options.pad, options.threads, options.setsf, options.sym, j)
-		launch_childprocess(cmd)
-		e=EMData(t)
-		e.write_compressed(name3d,-1,12)
-		
-	os.remove(t)
-	print(f"Density maps saved in {name3d}")
+		name3d=options.ptclsout[:-4]+".hdf"
+		if os.path.isfile(name3d):
+			os.remove(name3d)
+			
+		for j in range(options.ncls):
+			t="tmp_classify.hdf"
+			cmd="e2spa_make3d.py --input {} --output {} --pad {} --keep 1 --threads {} {} --sym {} --clsid {}".format(options.ptclsout, t, options.pad, options.threads, options.setsf, options.sym, j)
+			launch_childprocess(cmd)
+			e=EMData(t)
+			e.write_compressed(name3d,-1,12)
+			
+		os.remove(t)
+		print(f"Density maps saved in {name3d}")
 	E2end(logid)
 	
 def run(cmd):
