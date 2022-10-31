@@ -54,6 +54,7 @@ from eman2_gui.valslider import *
 import queue
 from eman2_gui import embrowser
 import sklearn.decomposition as skdc
+import sklearn.manifold as skmf
 from queue import Queue
 from matplotlib.patches import Circle
 
@@ -470,28 +471,28 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wedrad.setToolTip("Radius for including points adjacent to selected point (sphere/cylinder mode)")
 		self.gblpltctl.addWidget(self.wedrad,1,2,Qt.AlignRight)
 		
-		self.wbutdrgrp=QtWidgets.QButtonGroup()
+		#self.wbutdrgrp=QtWidgets.QButtonGroup()
 		
-		self.wbutdrmid=QtWidgets.QPushButton("Net Mid")
-		self.wbutdrmid.setCheckable(True)
-		self.wbutdrmid.setChecked(True)
-		self.gblpltctl.addWidget(self.wbutdrmid,0,3)
-		self.wbutdrgrp.addButton(self.wbutdrmid,0)
+		#self.wbutdrmid=QtWidgets.QPushButton("Net Mid")
+		#self.wbutdrmid.setCheckable(True)
+		#self.wbutdrmid.setChecked(True)
+		#self.gblpltctl.addWidget(self.wbutdrmid,0,3)
+		#self.wbutdrgrp.addButton(self.wbutdrmid,0)
 		
-		self.wbutdrpca=QtWidgets.QPushButton("PCA")
-		self.wbutdrpca.setCheckable(True)
-		self.gblpltctl.addWidget(self.wbutdrpca,0,4)
-		self.wbutdrgrp.addButton(self.wbutdrpca,1)
+		#self.wbutdrpca=QtWidgets.QPushButton("PCA")
+		#self.wbutdrpca.setCheckable(True)
+		#self.gblpltctl.addWidget(self.wbutdrpca,0,4)
+		#self.wbutdrgrp.addButton(self.wbutdrpca,1)
 		
-		self.wbutdrpca=QtWidgets.QPushButton("ICA")
-		self.wbutdrpca.setCheckable(True)
-		self.gblpltctl.addWidget(self.wbutdrpca,0,5)
-		self.wbutdrgrp.addButton(self.wbutdrpca,2)
+		#self.wbutdrpca=QtWidgets.QPushButton("ICA")
+		#self.wbutdrpca.setCheckable(True)
+		#self.gblpltctl.addWidget(self.wbutdrpca,0,5)
+		#self.wbutdrgrp.addButton(self.wbutdrpca,2)
 		
-		self.gblpltctl.addWidget(QtWidgets.QLabel("New Dim:",self),1,4,Qt.AlignRight)
-		self.wsbnewdim=QtWidgets.QSpinBox(self)
-		self.wsbnewdim.setRange(2,10)
-		self.gblpltctl.addWidget(self.wsbnewdim,1,5,Qt.AlignLeft)
+		#self.gblpltctl.addWidget(QtWidgets.QLabel("New Dim:",self),1,4,Qt.AlignRight)
+		#self.wsbnewdim=QtWidgets.QSpinBox(self)
+		#self.wsbnewdim.setRange(2,10)
+		#self.gblpltctl.addWidget(self.wsbnewdim,1,5,Qt.AlignLeft)
 		
 		self.wbutkmeans=QtWidgets.QPushButton("Kmeans")
 		self.gblpltctl.addWidget(self.wbutkmeans,2,5)
@@ -634,7 +635,7 @@ class EMGMM(QtWidgets.QMainWindow):
 #		self.wedres.editingFinished.connect(self.new_res)
 		self.wbutres.clicked[bool].connect(self.new_res)
 		#self.wbutdrgrp.idClicked[int].connect(self.plot_mode_sel)		# requires pyqt 5.15
-		self.wbutdrgrp.buttonClicked[QtWidgets.QAbstractButton].connect(self.plot_mode_sel)
+		#self.wbutdrgrp.buttonClicked[QtWidgets.QAbstractButton].connect(self.plot_mode_sel)
 		self.wsbxcol.valueChanged[int].connect(self.update_axes_x)		
 		self.wsbycol.valueChanged[int].connect(self.update_axes_y)		
 		#self.wsbxcol.valueChanged[int].connect(self.wplot2d.setXAxisAll) #sequencing issue with this approach
@@ -1267,29 +1268,29 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.sets_changed()
 
 
-	def plot_mode_sel(self,but):
-		"""Plot mode selected"""
+	#def plot_mode_sel(self,but):
+		#"""Plot mode selected"""
 		
-		self.plotmode=self.wbutdrgrp.id(but)
-		newdim=self.wsbnewdim.value()
+		#self.plotmode=self.wbutdrgrp.id(but)
+		#newdim=self.wsbnewdim.value()
 		
-		if self.plotmode==0:
-#			print("norm")
-			self.data=self.midresult
-		elif self.plotmode==1:
-#			print("pca")
-			self.decomp=skdc.PCA(n_components=newdim)
-			self.data=self.decomp.fit_transform(self.midresult.transpose()).transpose()
-		elif self.plotmode==2:
-			pass
+		#if self.plotmode==0:
+##			print("norm")
+			#self.data=self.midresult
+		#elif self.plotmode==1:
+##			print("pca")
+			#self.decomp=skdc.PCA(n_components=newdim)
+			#self.data=self.decomp.fit_transform(self.midresult.transpose()).transpose()
+		#elif self.plotmode==2:
+			#pass
 			
-		self.wsbxcol.setRange(0,len(self.data)-1)
-		self.wsbxcol.setValue(0)
-		self.wsbycol.setRange(0,len(self.data)-1)
-		self.wsbycol.setValue(1)
+		#self.wsbxcol.setRange(0,len(self.data)-1)
+		#self.wsbxcol.setValue(0)
+		#self.wsbycol.setRange(0,len(self.data)-1)
+		#self.wsbycol.setValue(1)
 		
-#		print(self.data.shape)
-		self.wplot2d.set_data(self.data,"map",symsize=1)
+##		print(self.data.shape)
+		#self.wplot2d.set_data(self.data,"map",symsize=1)
 
 	def update_axes_x(self,x):
 		self.wplot2d.setXAxisAll(x,True)
@@ -1303,20 +1304,20 @@ class EMGMM(QtWidgets.QMainWindow):
 	
 	def plot_annotate(self,fig,ax):
 		"""This is called as a callback during rendering of the 2-D plot"""
-		xa=self.wsbxcol.value()
-		ya=self.wsbycol.value()
-		for i,k in enumerate(self.curmaps_sel):
-			m=self.curmaps_sel[k]
-			try:
-				if self.plotmode==1:
-					xm=self.decomp.transform(m[2].reshape(1,len(m[2])))[0]	# expects an array of vectors
-					c=Circle((xm[xa],xm[ya]),m[4],edgecolor="gold",facecolor="none")
-				else:
-					c=Circle((m[2][xa],m[2][ya]),m[4],edgecolor="gold",facecolor="none")
-				ax.add_artist(c)
-	#			print((m[2][xa],m[2][ya]),m[4])
-			except:
-				print(f"Plot error '{m}' {xa} {ya}")
+		#xa=self.wsbxcol.value()
+		#ya=self.wsbycol.value()
+		#for i,k in enumerate(self.curmaps_sel):
+			#m=self.curmaps_sel[k]
+			#try:
+				#if self.plotmode==1:
+					#xm=self.decomp.transform(m[2].reshape(1,len(m[2])))[0]	# expects an array of vectors
+					#c=Circle((xm[xa],xm[ya]),m[4],edgecolor="gold",facecolor="none")
+				#else:
+					#c=Circle((m[2][xa],m[2][ya]),m[4],edgecolor="gold",facecolor="none")
+				#ax.add_artist(c)
+	##			print((m[2][xa],m[2][ya]),m[4])
+			#except:
+				#print(f"Plot error '{m}' {xa} {ya}")
 
 	def new_3d_opt(self,clk=False):
 		"""When the user changes selections for the 3-D display"""
@@ -1664,6 +1665,9 @@ class EMGMM(QtWidgets.QMainWindow):
 		if er :
 			showerror("Error running e2gmm_refine, see console for details. Memory is a common issue. Consider reducing the target resolution.")
 			return
+		else:
+			self.augment_mid()
+
 		self.currun=self.jsparm["run_"+self.currunkey]
 		self.currun["time_dynamics_end"]=local_datetime()
 		self.jsparm["run_"+self.currunkey]=self.currun
@@ -1885,14 +1889,18 @@ class EMGMM(QtWidgets.QMainWindow):
 			m[2]=np.array(m[2])		# latent space center
 			m[5]=np.array(m[5])		# list of point numbers in set
 		
+		self.augment_mid()
+
 		# Middle layer for every particle
 		self.wplot2d.del_shapes()
 		try: 
-			self.midresult=np.loadtxt(f"{self.gmm}/{self.currunkey}_mid.txt")[:,1:].transpose()
+			self.midresult=np.loadtxt(f"{self.gmm}/{self.currunkey}_aug.txt").transpose()
 			self.wbutdrmid.click()
-			self.plot_mode_sel(self.wbutdrmid)		# the previous line will also trigger this, but possibly not before the plot_mouse below	
+			self.plot_mode_sel(self.wbutdrmid)		# the previous line will also trigger this, but possibly not before the plot_mouse below
+
 		except:
-			print(f"Middle layer missing ({self.gmm}/{self.currunkey}_mid.txt)")
+			traceback.print_exc()
+			print(f"Augmented middle layer missing ({self.gmm}/{self.currunkey}_aug.txt)")
 			self.set3dvis(1,0,0,0,0,1)
 		
 		self.plot_mouse(None,(0,0))
@@ -1905,6 +1913,65 @@ class EMGMM(QtWidgets.QMainWindow):
 		except: pass
 
 		self.set3dvis(1,0,0,1,1,0)
+
+	def augment_mid(self):
+		"""This will take the middle layer from the network result and compute some derived dimension-reduced
+		mappings for improved visualization, and possibly classification"""
+
+		try:
+			if not os.path.exists(f"{self.gmm}/{self.currunkey}_mid.txt"): raise Exception
+			midresult=np.loadtxt(f"{self.gmm}/{self.currunkey}_mid.txt")[:,1:].transpose()
+
+			prog=QtWidgets.QProgressDialog("Augmenting middle layer with PCA, TSNE and Isomap. May take a while.","Abort",0,4)
+			prog.show()
+			self.do_events()
+
+			print("Compute PCA")
+			self.pca=skdc.PCA(n_components=2)
+			pcadc=self.pca.fit_transform(midresult.transpose()).transpose()
+			prog.setValue(1)
+			self.do_events()
+
+			print("Compute TSNE")
+			tsne=skmf.TSNE(n_components=2,init="pca",learning_rate="auto",verbose=1)	# using defaults, might be worth investigating perplexity and a few others
+			tsnedc=tsne.fit_transform(midresult.transpose()).transpose()
+			prog.setValue(2)
+			self.do_events()
+
+			#print("Compute MDS")
+			#mds=skmf.MDS(n_components=2,verbose=1)	# using defaults, might be worth investigating perplexity and a few others
+			#tsnedc=mds.fit_transform(midresult.transpose()).transpose()
+			#prog.setValue(2)
+			#self.do_events()
+
+			print("Compute Locally Linear Embedding")
+			lle=skmf.LocallyLinearEmbedding(n_components=2,n_jobs=-1)
+			lledc=lle.fit_transform(midresult.transpose()).transpose()
+			lledc[0]/=lledc[0].std()
+			lledc[1]/=lledc[1].std()
+			prog.setValue(3)
+			self.do_events()
+
+			#print("Compute Isomap")
+			#isomap=skmf.Isomap(n_components=2)
+			#isomapdc=isomap.fit_transform(midresult.transpose()).transpose()
+			#prog.setValue(3)
+			#self.do_events()
+
+			print(midresult.shape,pcadc.shape,tsnedc.shape,lledc.shape)
+			out=open(f"{self.gmm}/{self.currunkey}_aug.txt","w")
+			for i in range(midresult.shape[1]):
+				out.write(f"{pcadc[0][i]:1.4f}\t{pcadc[1][i]:1.4f}\t")
+				for j in range(midresult.shape[0]):
+					   out.write(f"{midresult[j][i]:1.4f}\t")
+				out.write(f"{tsnedc[0][i]:1.4f}\t{tsnedc[1][i]:1.4f}\t{lledc[0][i]:1.4f}\t{lledc[1][i]:1.4f}\n")
+
+			out.close()
+			prog.setValue(4)
+			self.do_events()
+		except:
+			traceback.print_exc()
+			print(f"Middle layer missing ({self.gmm}/{self.currunkey}_mid.txt)")
 
 
 	def add_gmm(self,clk=False):
