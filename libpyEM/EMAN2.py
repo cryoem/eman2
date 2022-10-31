@@ -2274,6 +2274,7 @@ def get_3d_font_renderer():
 		pfm = get_platform()
 		if pfm in ["Linux","Darwin"]:
 			font_renderer.set_font_file_name(e2getinstalldir()+"/fonts/DejaVuSerif.ttf")
+			#font_renderer.set_font_file_name(e2getinstalldir()+"/fonts/SourceCodePro-Light.ttf")
 		elif pfm == "Windows":
 			font_renderer.set_font_file_name("C:\\WINDOWS\\Fonts\\arial.ttf")
 		else:
