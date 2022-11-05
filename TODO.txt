@@ -1,8 +1,7 @@
-instructions for conda-install eman
+build system docs
 
 e2proc2d:
  - get_image_count
- - confirm extensions are handled properly
 
 - binary no compile, get from eman-dev
 
