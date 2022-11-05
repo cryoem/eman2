@@ -33,6 +33,7 @@
 from builtins import range
 from EMAN2 import *
 from math import *
+import numpy as np
 import sklearn.decomposition as skdc
 import sklearn.manifold as skmf
 import os
@@ -81,24 +82,24 @@ Manipulations of text files conatining multi-column data (as would be used with 
 				else:
 					# look for a comment line with ; separator which may contain column labels
 					if lin[0]=="#":
-						lbls2=lin[1:].split(";")
+						lbls2=lin[1:].strip().split(";")
 						if len(lbls2)>len(lbls):
 							lbls=lbls2
 							lbln=i
 
-			nc=len(re.split(ll,"[\s,;]+"))		# last non-comment
+			nc=len(re.split("[\s,;]+",ll))		# last non-comment
 			if options.verbose>0 :
 				print(f"{filename} : ({nc},{nr})")
 				if len(lbls)>1 : print("  ".join(lbls))
 			data=np.zeros((nr,nc))
 
-			fin.rewind()
+			fin.seek(0)
 			# second pass, read the data, seems dumb, but actually faster
 			r=0
 			for lin in fin:
 				l=lin.strip()
 				if lin[0]!="#" and len(l)!=0:
-					v=[float(x) for x in re.split(ll,"[\s,;]+")]
+					v=[float(x) for x in re.split("[\s,;]+",l)]
 					data[r]=v
 					r+=1
 
@@ -140,13 +141,17 @@ Manipulations of text files conatining multi-column data (as would be used with 
 			else:
 				error_exit("Unknown dimensionality reduction algorithm")
 
+			if options.verbose>0: print(f"Complete in {time()-stime:1.1f}s")
+
 			out=open("result.txt","w")
-			if len(lbs)>0:
+			if len(lbls)>0:
 				out.write("# "+";".join(lbls))
 				out.write((";"+options.dimreduce)*options.dimout)
+				out.write("\n")
 			for r,d in enumerate(data):
 				for v in d: out.write(f"{v:1.4f}\t")
 				for v in vdc[r]: out.write(f"{v:1.4f}\t")
+				out.write("\n")
 			out.close()
 
 	if options.merge!=None:
