@@ -141,6 +141,7 @@ class EMPlot2DWidget(EMGLWidget):
 		self.lmousedrag=None
 		self.axisparms=(None,None,"linear","linear")
 		self.plottitle=""
+		self.selectpoints=True		# if set, points nearest the cursor will be "selected" and displayed
 		self.selected=[]
 		self.comments={}			# IF reading from a file which contains per-point comments, this dictionary contains a list of comments for each point
 
@@ -228,6 +229,9 @@ class EMPlot2DWidget(EMGLWidget):
 		if self.main_display_list != 0:
 			glDeleteLists(self.main_display_list,1)
 			self.main_display_list = 0
+
+	def set_selectpoints(self,tf):
+		self.selectpoints=bool(tf)
 
 	def set_data(self,input_data,key="data",replace=False,quiet=False,color=-1,linewidth=1,linetype=-2,symtype=-2,symsize=6,comments=None):
 		"""Set a keyed data set. The key should generally be a string describing the data.
@@ -562,11 +566,15 @@ class EMPlot2DWidget(EMGLWidget):
 			for i in list(self.axes.keys()):
 				if not self.visibility[i]: continue
 				j=self.axes[i]
-#				print j
+				#print(self.axes[i],len(self.data[i]))
+				if j[0]>=len(self.data[i]) or j[1]>=len(self.data[i]) or j[2]>=len(self.data[i]) or j[3]>=len(self.data[i]) :
+					print(f"Axis out of range {j}, {len(self.data[i])}")
+					continue
+
 				if j[0]==-1 : x=arange(len(self.data[i][0]))
-				else : x=self.data[i][self.axes[i][0]]
+				else : x=self.data[i][j[0]]
 				if j[1]==-1 : y=arange(len(self.data[i][0]))
-				else : y=self.data[i][self.axes[i][1]]
+				else : y=self.data[i][j[1]]
 
 				# We draw markers (if any) first
 				if self.pparm[i][4]:
@@ -868,6 +876,12 @@ class EMPlot2DWidget(EMGLWidget):
 evc is the cursor selection point in screen coords
 lc is the cursor selection point in plot coords"""
 
+		if not self.selectpoints:
+			self.selected=[]
+			self.del_shapes(("selp0","selp1","selp2","selp3","selp4","selpc"))
+			return
+
+
 		j=0
 		# we find the first displayed axis in the list
 		for ak in list(self.axes.keys()):
@@ -956,7 +970,7 @@ lc is the cursor selection point in plot coords"""
 			try: recip="%1.2f"%(old_div(1.0,lc[0]))
 			except: recip="-"
 			self.add_shape("lcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-220,self.scrlim[3]-10,"%1.5g (%s), %1.5g"%(lc[0],recip,lc[1]),120.0,-1)))
-			self.update_selected((event.x(),event.y()),lc)
+			if self.selectpoints: self.update_selected((event.x(),event.y()),lc)
 			self.updateGL()
 			
 			if self.mouseemit : self.mousedown.emit(event,lc)

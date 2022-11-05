@@ -33,17 +33,27 @@
 from builtins import range
 from EMAN2 import *
 from math import *
+import sklearn.decomposition as skdc
+import sklearn.manifold as skmf
 import os
 import sys
+import re
+from time import time
 
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """Usage:\nproctxt.py [options] <txt 1> <txt 2> ... 
-Simple manipulations of text files conatining multi-column data, as would be used with plotting programs."""
+Manipulations of text files conatining multi-column data (as would be used with plotting programs, like e2display --plot).
+
+--merge  combines several files, all with N rows, into a single file with N rows but additional columns
+--dimreduce  a variety of dimensional reduction algorithms are available. This will add additional dimensionally reduced columns to an existing file"""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	####################
-	parser.add_argument("--merge",type=str,help="Merge several files into a single output. All inputs must have the same number of rows. Row comments stripped.",default=None)
+	parser.add_argument("--merge",type=str,help="Merge several files into a single output by appending columns. All inputs must have the same number of rows. Row comments stripped.",default=None)
+	parser.add_argument("--dimreduce",type=str,help="tsne, mds, isomap, lle, spectral. output=input with added columns. Multiple files are independent.",default=None)
+	parser.add_argument("--dimout",type=int,help="number of output dimensions for dimreduce. default=2",default=2)
+	parser.add_argument("--columns",type=str,help="which columns to use for the analysis (eg, 2-4). First column is 0. End is inclusive. default = all columns",default=None)
 	parser.add_argument("--sortcomment",action="store_true",default=False,help="Sorts rows based on per-row comment (after #) before merging")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higher number means higher level of verboseness",default=1)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -57,9 +67,90 @@ Simple manipulations of text files conatining multi-column data, as would be use
 
 	logid=E2init(sys.argv,options.ppid)
 
+	if options.dimreduce is not None:
+		for filename in args:
+			# loadtxt is really slow
+			fin=open(filename,"r")
+			nr=0
+			lbls=[]
+			for i,lin in enumerate(fin):
+				l=lin.strip()
+				if lin[0]!="#" and len(l)!=0:
+					ll=l
+					nr+=1
+				else:
+					# look for a comment line with ; separator which may contain column labels
+					if lin[0]=="#":
+						lbls2=lin[1:].split(";")
+						if len(lbls2)>len(lbls):
+							lbls=lbls2
+							lbln=i
+
+			nc=len(re.split(ll,"[\s,;]+"))		# last non-comment
+			if options.verbose>0 :
+				print(f"{filename} : ({nc},{nr})")
+				if len(lbls)>1 : print("  ".join(lbls))
+			data=np.zeros((nr,nc))
+
+			fin.rewind()
+			# second pass, read the data, seems dumb, but actually faster
+			r=0
+			for lin in fin:
+				l=lin.strip()
+				if lin[0]!="#" and len(l)!=0:
+					v=[float(x) for x in re.split(ll,"[\s,;]+")]
+					data[r]=v
+					r+=1
+
+			if r!=nr : print(f"ERROR: inconsistent read {r} lines read with {nr} rows expected")
+
+			if options.columns is not None :
+				try: cols=np.array(range(int(options.columns.split("-")[0]),int(options.columns.split("-")[1])+1))
+				except: error_exit("--columns must be in the form a-b")
+				if options.verbose>0: print("using columns: ",cols)
+				v2a=data[:,cols]
+			else: v2a=data
+
+			# requested dimensional reduction, done using scikit.learn
+			if options.dimreduce.lower()=="tsne":
+				if options.verbose>0: print("Begin TSNE for",filename)
+				stime=time()
+				tsne=skmf.TSNE(n_components=options.dimout,init="pca",learning_rate="auto",verbose=options.verbose)
+				vdc=tsne.fit_transform(v2a)
+			elif options.dimreduce.lower()=="mds":
+				if options.verbose>0:print("Begin MDS for",filename)
+				stime=time()
+				mds=skmf.MDS(n_components=options.dimout,verbose=options.verbose)
+				vdc=mds.fit_transform(v2a)
+			elif options.dimreduce.lower()=="isomap":
+				if options.verbose>0:print("Begin Isomap for",filename)
+				stime=time()
+				isomap=skmf.Isomap(n_components=options.dimout)
+				vdc=isomap.fit_transform(v2a)
+			elif options.dimreduce.lower()=="lle":
+				if options.verbose>0:print("Begin LLE for",filename)
+				stime=time()
+				lle=skmf.LocallyLinearEmbedding(n_components=options.dimout,n_jobs=-1)
+				vdc=lle.fit_transform(v2a)
+			elif options.dimreduce.lower()=="spectral":
+				if options.verbose>0:print("Begin Spectral Embedding for",filename)
+				stime=time()
+				sem=skmf.SpectralEmbedding(n_components=options.dimout,n_jobs=-1)
+				vdc=sem.fit_transform(v2a)
+			else:
+				error_exit("Unknown dimensionality reduction algorithm")
+
+			out=open("result.txt","w")
+			if len(lbs)>0:
+				out.write("# "+";".join(lbls))
+				out.write((";"+options.dimreduce)*options.dimout)
+			for r,d in enumerate(data):
+				for v in d: out.write(f"{v:1.4f}\t")
+				for v in vdc[r]: out.write(f"{v:1.4f}\t")
+			out.close()
 
 	if options.merge!=None:
-		# read all files. data_sets is a list of files. each file is a list of rows. each row is a list of str values
+		# read all files. data_sets is a list of files. each file is a list of rows. each row is a list of comma, semicolon or space/tab separated values
 		data_sets=[]
 		for filename in args:
 			fin=open(filename,"r")
@@ -68,7 +159,7 @@ Simple manipulations of text files conatining multi-column data, as would be use
 				if "#" in line : 
 					comment=line.split("#")[1].strip()
 					line=line.split("#")[0].strip()
-				if len(line)==0 : continue
+				if len(line)==0 : continue	# pure comment line
 				if "," in line : line=line.split(",")
 				elif ";" in line : line=line.split(";")
 				else : line=line.split()

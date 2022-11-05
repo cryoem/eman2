@@ -345,8 +345,8 @@ def E2loadappwin(app,key,win):
 		geom=list(E2getappval(app,key))
 		if geom==None : raise Exception
 		win.resize(geom[2],geom[3])
-		geom[0]=max(16,geom[0])
-		geom[1]=max(16,geom[1])
+		geom[0]=max(32,geom[0])
+		geom[1]=max(32,geom[1])
 		win.move(geom[0],geom[1])
 #		print(app,key,geom)
 	except: return
@@ -1084,7 +1084,7 @@ def parse_infile_arg(arg):
 	fname, _, seq = arg.partition(':')
 
 	if not (fname and os.path.isfile(fname)):
-		raise Exception(f"{fname} is not an existing regular file!")
+		raise argparse.ArgumentTypeError(f"{fname} is not an existing regular file!")
 
 	seq_inc, _, seq_exc = seq.partition('^')
 
@@ -3118,17 +3118,6 @@ and the file size will increase.
 		im.write_image_c(fsp,i+n,EMUtil.ImageType.IMAGE_UNKNOWN,0,None,EMUtil.EMDataType.EM_COMPRESSED)
 	
 EMData.write_compressed=im_write_compressed
-
-
-def db_get_image_count(fsp):
-	if ":" in fsp:
-		fsp, idxs = parse_infile_arg(fsp)
-		return len(idxs)
-	else:
-		return EMUtil.get_image_count_c(fsp)
-
-EMUtil.get_image_count_c = EMUtil.get_image_count
-EMUtil.get_image_count = db_get_image_count
 
 
 __doc__ = \

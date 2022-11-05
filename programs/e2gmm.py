@@ -285,7 +285,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.app=weakref.ref(application)
 
 		self.setWindowTitle("Main Window (e2gmm.py)")
-		self.plotmode=0
+#		self.plotmode=0
 		self.ort_slice=Transform()
 		self.cur_dyn_vol=None
 		self.curmaps={}
@@ -311,6 +311,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.gbl.addWidget(self.wplot2d,0,2,3,1)
 		self.wplot2d.set_mouse_emit(True)
 		self.wplot2d.set_annotate(self.plot_annotate)
+		self.wplot2d.set_selectpoints(False)
 		
 		# 3-D View
 		self.wview3d = EMScene3D()
@@ -503,10 +504,13 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.gblpltctl.addWidget(self.wsbnsets,3,5,Qt.AlignLeft)
 
 		self.wcbpntpln=QtWidgets.QComboBox()
-		self.wcbpntpln.addItem("Plane")
-		self.wcbpntpln.addItem("HSphere")
-		self.wcbpntpln.addItem("HSlab")
-		self.wcbpntpln.addItem("Line")
+		self.wcbpntpln.addItem("Explore")
+		self.wcbpntpln.addItem("Make Set")
+
+		#self.wcbpntpln.addItem("Plane")
+		#self.wcbpntpln.addItem("HSphere")
+		#self.wcbpntpln.addItem("HSlab")
+		#self.wcbpntpln.addItem("Line")
 		#self.wcbpntpln.addItem("Map-HSphere")
 		#self.wcbpntpln.addItem("Map-HSlab")
 		#self.wcbpntpln.addItem("Map-Line")
@@ -956,97 +960,147 @@ class EMGMM(QtWidgets.QMainWindow):
 		
 		if event.key()==Qt.Key_Esc: self.mouseabort=True
 	
+	#def plot_mouse(self,event,loc):
+		#self.mouseabort=False
+		#mmode=str(self.wcbpntpln.currentText())
+		#dim=self.currun.get("dim",4)
+		#latent=np.zeros(dim)		# latent coordinates of the selected point
+		#try: rad=float(self.wedrad.text())
+		#except:
+			#print("invalid radius, using 0.05")
+			#rad=0.05
+		#xcol=self.wsbxcol.value()
+		#ycol=self.wsbycol.value()
+		#if self.plotmode==0:
+			#latent[xcol]=loc[0]
+			#latent[ycol]=loc[1]
+		#if self.plotmode==1:
+			#newdim=self.wsbnewdim.value()
+			#sel=np.zeros(newdim)
+			#sel[xcol]=loc[0]
+			#sel[ycol]=loc[1]
+			#latent=self.decomp.inverse_transform(sel)
+
+		## Check whether we are close enough to a computed dynamic map to display it
+		#best=(1.0e6,None)
+		#for k in self.curmaps_sel:
+			#m=self.curmaps_sel[k]
+			#if self.plotmode==1:
+				#xm=self.decomp.transform(m[2].reshape(1,len(m[2])))[0]	# expects an array of vectors
+				#c=(xm[xcol],xm[ycol])
+			#else:
+				#c=(m[2][xcol],m[2][ycol])
+			#d=hypot(c[0]-loc[0],c[1]-loc[1])
+			#if d<0.05 and d<best[0] : best=(d,m)	# fixed max radius of 0.05
+
+		#if best[1] is not None:
+			#if self.lastbest!=best[1][0]:
+##				print(f"{loc} Best {best}")
+				#map=EMData(f"{self.gmm}/set_maps.hdf",best[1][0])
+				#self.display_dynamic(map)
+				#self.lastbest=best[1][0]
+
+		## Mode dependent update of dynamic model
+		#if mmode=="Plane":
+			## run the current latent vector through the decoder then pull the result out in a useful 'shape'
+			#gauss=np.array(self.decoder(latent[None,...]))[0].transpose()
+			#box=int(self.wedbox.text())
+			#gauss[:3]*=box
+			#gauss[2]*=-1.0
+			#gauss[1]*=-1.0
+			#if not butval(self.wbutpos): gauss[:3]=self.model[:3]
+			#if not butval(self.wbutamp): gauss[3]=self.model[3]
+##			print(gauss[:,:6])
+##			print("-----")
+			#self.gaussplot.setData(gauss,self.wvssphsz.value)
+			#self.wview3d.update()
+
+			## if the point is inside a dynamic map cicle, load the map
+			##for m in self.curmaps:
+				##r=
+
+			#return
+		#elif mmode=="HSphere":
+			## This will produce a list of indices where the distance in latent space is less than the specified rad
+			#ptdist=(np.sum((self.midresult.transpose()-latent)**2,1)<(rad**2)).nonzero()[0]
+			#self.wplot2d.add_shape("count",EMShape(["scrlabel",0.1,0.1,0.1,10.,10.,f"{len(ptdist)} ptcls",120.0,-1]))
+			#self.wplot2d.add_shape("region",EMShape(["circle",0.1,0.8,0.1,loc[0],loc[1],rad,1]))
+			#self.wplot2d.update()
+##			print(loc,self.wplot2d.plot2draw(loc[0],loc[1]),event.x(),event.y(),self.wplot2d.scrlim,rad)
+
+			##Limit ourselves to a random subset of ~500 of the points to average
+			#if len(ptdist)>500: ptdist=ptdist[::len(ptdist)//500]
+			#gauss=np.mean(self.decoder(self.midresult.transpose()[ptdist]),0).transpose()		# run all of the selected latent vectors through the decoder at once
+			#box=int(self.wedbox.text())
+			#gauss[:3]*=box
+			#gauss[2]*=-1.0
+			#gauss[1]*=-1.0
+			#if not butval(self.wbutpos): gauss[:3]=self.model[:3]
+			#if not butval(self.wbutamp): gauss[3]=self.model[3]
+			#self.gaussplot.setData(gauss,self.wvssphsz.value)
+			#self.wview3d.update()
+			#return
+		#elif mmode=="HSlab":
+			## This will produce a list of indices where the distance in the plane is less than the specified rad
+			#ptdist=((self.midresult[xcol]-latent[xcol])**2+(self.midresult[ycol]-latent[ycol])**2<(rad**2)).nonzero()[0]
+			#self.wplot2d.add_shape("count",EMShape(["scrlabel",0.1,0.1,0.1,15.,15.,f"{len(ptdist)} ptcls",120.0,-1]))
+			#self.wplot2d.add_shape("region",EMShape(["circle",0.1,0.8,0.1,loc[0],loc[1],rad,1]))
+			#self.wplot2d.update()
+
+			##gauss=np.mean(self.decoder(self.midresult.transpose()[ptdist]),0).transpose()		# run all of the selected latent vectors through the decoder at once
+			##Limit ourselves to a random subset of ~500 of the points to average
+			#if len(ptdist)>500: ptdist=ptdist[::len(ptdist)//500]
+			#gauss=np.mean(self.decoder(self.midresult.transpose()[ptdist]),0).transpose()		# run all of the selected latent vectors through the decoder at once
+			#box=int(self.wedbox.text())
+			#gauss[:3]*=box
+			#gauss[2]*=-1.0
+			#gauss[1]*=-1.0
+			#if not butval(self.wbutpos): gauss[:3]=self.model[:3]
+			#if not butval(self.wbutamp): gauss[3]=self.model[3]
+			#self.gaussplot.setData(gauss,self.wvssphsz.value)
+			#self.wview3d.update()
+			#return
+		#elif mmode in ("Line"):
+			#self.line_origin=(loc,latent)
+			#return
+		#else: print("mode error")
+
+
 	def plot_mouse(self,event,loc):
 		self.mouseabort=False
 		mmode=str(self.wcbpntpln.currentText())
 		dim=self.currun.get("dim",4)
-		latent=np.zeros(dim)		# latent coordinates of the selected point
+		augdim=self.midresult.shape[0]
+
 		try: rad=float(self.wedrad.text())
-		except: 
+		except:
 			print("invalid radius, using 0.05")
 			rad=0.05
-		xcol=self.wsbxcol.value()
-		ycol=self.wsbycol.value()
-		if self.plotmode==0:
-			latent[xcol]=loc[0]
-			latent[ycol]=loc[1]
-		if self.plotmode==1:
-			newdim=self.wsbnewdim.value()
-			sel=np.zeros(newdim)
-			sel[xcol]=loc[0]
-			sel[ycol]=loc[1]
-			latent=self.decomp.inverse_transform(sel)
 
-		# Check whether we are close enough to a computed dynamic map to display it
-		best=(1.0e6,None)
-		for k in self.curmaps_sel:
-			m=self.curmaps_sel[k]
-			if self.plotmode==1:
-				xm=self.decomp.transform(m[2].reshape(1,len(m[2])))[0]	# expects an array of vectors
-				c=(xm[xcol],xm[ycol])
-			else:
-				c=(m[2][xcol],m[2][ycol])
-			d=hypot(c[0]-loc[0],c[1]-loc[1])
-			if d<0.05 and d<best[0] : best=(d,m)	# fixed max radius of 0.05
+		xcol=min(self.wsbxcol.value(),self.data.shape[1]-1)
+		ycol=min(self.wsbycol.value(),self.data.shape[1]-1)
 
-		if best[1] is not None:
-			if self.lastbest!=best[1][0]:
-#				print(f"{loc} Best {best}")
-				map=EMData(f"{self.gmm}/set_maps.hdf",best[1][0])
-				self.display_dynamic(map)
-				self.lastbest=best[1][0]
-		
-		# Mode dependent update of dynamic model
-		if mmode=="Plane":
-			# run the current latent vector through the decoder then pull the result out in a useful 'shape'
-			gauss=np.array(self.decoder(latent[None,...]))[0].transpose()
-			box=int(self.wedbox.text())
-			gauss[:3]*=box
-			gauss[2]*=-1.0
-			gauss[1]*=-1.0
-			if not butval(self.wbutpos): gauss[:3]=self.model[:3]
-			if not butval(self.wbutamp): gauss[3]=self.model[3]
-#			print(gauss[:,:6])
-#			print("-----")
-			self.gaussplot.setData(gauss,self.wvssphsz.value)
-			self.wview3d.update()
-			
-			# if the point is inside a dynamic map cicle, load the map
-			#for m in self.curmaps:
-				#r=
-			
-			return
-		elif mmode=="HSphere":
-			# This will produce a list of indices where the distance in latent space is less than the specified rad
-			ptdist=(np.sum((self.midresult.transpose()-latent)**2,1)<(rad**2)).nonzero()[0]
-			self.wplot2d.add_shape("count",EMShape(["scrlabel",0.1,0.1,0.1,10.,10.,f"{len(ptdist)} ptcls",120.0,-1]))
-			self.wplot2d.add_shape("region",EMShape(["circle",0.1,0.8,0.1,loc[0],loc[1],rad,1]))
-			self.wplot2d.update()
-#			print(loc,self.wplot2d.plot2draw(loc[0],loc[1]),event.x(),event.y(),self.wplot2d.scrlim,rad)
-
-			#Limit ourselves to a random subset of ~500 of the points to average
-			if len(ptdist)>500: ptdist=ptdist[::len(ptdist)//500]
-			gauss=np.mean(self.decoder(self.midresult.transpose()[ptdist]),0).transpose()		# run all of the selected latent vectors through the decoder at once
-			box=int(self.wedbox.text())
-			gauss[:3]*=box
-			gauss[2]*=-1.0
-			gauss[1]*=-1.0
-			if not butval(self.wbutpos): gauss[:3]=self.model[:3]
-			if not butval(self.wbutamp): gauss[3]=self.model[3]
-			self.gaussplot.setData(gauss,self.wvssphsz.value)
-			self.wview3d.update()
-			return
-		elif mmode=="HSlab":
+		if mmode=="Explore":
 			# This will produce a list of indices where the distance in the plane is less than the specified rad
-			ptdist=((self.midresult[xcol]-latent[xcol])**2+(self.midresult[ycol]-latent[ycol])**2<(rad**2)).nonzero()[0]
-			self.wplot2d.add_shape("count",EMShape(["scrlabel",0.1,0.1,0.1,15.,15.,f"{len(ptdist)} ptcls",120.0,-1]))
+			ptdist=((self.midresult[xcol]-loc[0])**2+(self.midresult[ycol]-loc[1])**2<(rad**2)).nonzero()[0]
+			nptcl=len(ptdist)
 			self.wplot2d.add_shape("region",EMShape(["circle",0.1,0.8,0.1,loc[0],loc[1],rad,1]))
-			self.wplot2d.update()
 
-			#gauss=np.mean(self.decoder(self.midresult.transpose()[ptdist]),0).transpose()		# run all of the selected latent vectors through the decoder at once
-			#Limit ourselves to a random subset of ~500 of the points to average
+			# no particles in the circle!
+			if nptcl==0 : return
+
 			if len(ptdist)>500: ptdist=ptdist[::len(ptdist)//500]
-			gauss=np.mean(self.decoder(self.midresult.transpose()[ptdist]),0).transpose()		# run all of the selected latent vectors through the decoder at once
+			#print(ptdist.shape)
+			#print(self.midresult.transpose()[ptdist,2:2+dim].shape)
+			# This computes the mean latent vector over the points, then runs that single latent vector through the decoder
+			latent=np.mean(self.midresult.transpose()[ptdist,2:2+dim],0,keepdims=True)		# the mean latent vector over selected points
+			gauss=self.decoder(latent,0).numpy()[0].transpose()
+			#print(latent,latent.shape,self.midresult.transpose()[ptdist,2:2+dim].shape)
+
+			#this computes the gaussian coords for all selected points then computes the mean of the gaussian parameters
+			# this approach doesn't generate a Gaussian configuration which corresponds exactly to a point in latent space
+			#gauss=np.mean(self.decoder(self.midresult.transpose()[ptdist,2:2+dim]),0).transpose()		# run all of the selected latent vectors through the decoder at once
+
 			box=int(self.wedbox.text())
 			gauss[:3]*=box
 			gauss[2]*=-1.0
@@ -1055,20 +1109,23 @@ class EMGMM(QtWidgets.QMainWindow):
 			if not butval(self.wbutamp): gauss[3]=self.model[3]
 			self.gaussplot.setData(gauss,self.wvssphsz.value)
 			self.wview3d.update()
+
+			self.wplot2d.add_shape("latent",EMShape(["scrlabel",0.1,0.1,0.1,10.,10.,f"{np.array_str(latent[0], precision=3)} {nptcl} ptcl",120.0,-1]))
+			self.wplot2d.update()
 			return
-		elif mmode in ("Line"):
-			self.line_origin=(loc,latent)
+		elif mmode==("Make Set"):
 			return
 		else: print("mode error")
 
+
 	def plot_mouse_drag(self,event,loc):
-		mmode=str(self.wcbpntpln.currentText())
-		if mmode != "Line":
-			self.plot_mouse(event,loc)
-			return
+		self.plot_mouse(event,loc)
+		#mmode=str(self.wcbpntpln.currentText())
+		#if mmode != "Line":
+			#return
 		
-		self.wplot2d.add_shape("genline",EMShape(["line",0.1,0.8,0.1,self.line_origin[0][0],self.line_origin[0][1],loc[0],loc[1],1]))
-		self.wplot2d.update()
+		#self.wplot2d.add_shape("genline",EMShape(["line",0.1,0.8,0.1,self.line_origin[0][0],self.line_origin[0][1],loc[0],loc[1],1]))
+		#self.wplot2d.update()
 
 
 	def plot_mouse_up(self,event,loc):
@@ -1081,19 +1138,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			print("Abort")
 			self.mouseabort=False
 			return
-			
-		# we only need this so we can record it in the reconstruction
-		latent=np.zeros(dim)		# latent coordinates of the selected point
-		if self.plotmode==0:
-			latent[xcol]=loc[0]
-			latent[ycol]=loc[1]
-		if self.plotmode==1:
-			newdim=self.wsbnewdim.value()
-			sel=np.zeros(newdim)
-			sel[xcol]=loc[0]
-			sel[ycol]=loc[1]
-			latent=self.decomp.inverse_transform(sel)
-			
+
 		try: rad=float(self.wedrad.text())
 		except: 
 			print("invalid radius, using 0.05")
@@ -1102,7 +1147,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		ycol=self.wsbycol.value()
 		self.wplot2d.del_shapes(["region","genline"])
 
-		if mmode=="HSphere":
+		if mmode=="Make Set":
 			# This will produce a list of indices where the distance in latent space is less than the specified rad
 			ptdist=(np.sum((self.midresult.transpose()-latent)**2,1)<(rad**2)).nonzero()[0]
 			sz=good_size(self.jsparm["boxsize"]*5//4)
@@ -1117,92 +1162,6 @@ class EMGMM(QtWidgets.QMainWindow):
 			#self.threads[-1].start()
 			#print(f"Thread {len(self.threads)} started with {len(ptdist)} particles")
 			return
-		elif mmode=="HSlab":
-			# This will produce a list of indices where the distance in the plane is less than the specified rad
-			ptdist=((self.midresult[xcol]-latent[xcol])**2+(self.midresult[ycol]-latent[ycol])**2<(rad**2)).nonzero()[0]
-			sz=good_size(self.jsparm["boxsize"]*5//4)
-
-			nset=good_num(self.curmaps)
-			newmap=[None,local_datetime(),latent,0,0,ptdist]
-			self.curmaps[str(nset)]=newmap
-			self.sets_changed(nset)
-
-			#rparms={"size":(sz,sz,sz),"sym":self.jsparm["sym"],"mode":"gauss_2","usessnr":0,"verbose":0}
-			#self.threads.append(threading.Thread(target=make3d_thr,args=(self.threadq,len(self.threads),f"{self.gmm}/particles.lst",ptdist,rparms,latent,self.currun,rad,mmode,self.jsparm["boxsize"])))
-			#self.threads[-1].start()
-			#print(f"Thread {len(self.threads)} started with {len(ptdist)} particles")
-			return
-		elif mmode=="Line":
-			ll=np.linalg.norm(latent-self.line_origin[1])	# vector length
-			if ll<rad :
-				print("line too short, aborted")
-				return
-			nm=min(10,ceil(ll/rad))		# number of maps to generate
-
-			try: nset=max([int(k) for k in self.curmaps])+1
-			except: nset=0
-			for i in range(nm):
-				f=i/(nm-1)
-				plat=latent*f+self.line_origin[1]*(1.0-f)	# point latent vector along line
-				ptdist=((self.midresult[xcol]-plat[xcol])**2+(self.midresult[ycol]-plat[ycol])**2<(rad**2)).nonzero()[0]		# using the slab form
-
-				newmap=[None,local_datetime(),latent,0,0,ptdist]
-				self.curmaps[str(nset+i)]=newmap
-
-			self.sets_changed()
-
-				#sz=good_size(self.jsparm["boxsize"]*5//4)
-				#rparms={"size":(sz,sz,sz),"sym":self.jsparm["sym"],"mode":"gauss_2","usessnr":0,"verbose":0}
-				#self.threads.append(threading.Thread(target=make3d_thr,args=(self.threadq,len(self.threads),f"{self.gmm}/particles.lst",ptdist,rparms,plat,self.currun,rad,mmode,self.jsparm["boxsize"])))
-				#self.threads[-1].start()
-				#print(f"Thread {len(self.threads)} started with {len(ptdist)} particles")
-		#elif mmode=="Map-HSlab (fast)":
-			## This will produce a list of indices where the distance in the plane is less than the specified rad
-			#ptdist=((self.midresult[xcol]-latent[xcol])**2+(self.midresult[ycol]-latent[ycol])**2<(rad**2)).nonzero()[0]
-			#sz=good_size(self.jsparm["boxsize"]*5//4)
-			#rparms={"size":(sz,sz,sz),"sym":self.jsparm["sym"],"mode":"gauss_2","usessnr":0,"verbose":0}
-			#self.threads.append(threading.Thread(target=make3d_thr_fast,args=(self.threadq,len(self.threads),f"{self.gmm}/particles.lst",ptdist,rparms,latent,self.currun,rad,mmode,self.jsparm["boxsize"])))
-			#self.threads[-1].start()
-			#print(f"Thread {len(self.threads)} started with {len(ptdist)} particles")
-			#return
-		#elif mmode=="Map-Line (fast)":
-			#ll=np.linalg.norm(latent-self.line_origin[1])	# vector length
-			#if ll<rad :
-				#print("line too short, aborted")
-				#return
-			#nm=min(10,ceil(ll/rad))		# number of maps to generate
-			
-			#for i in range(nm):
-				#f=i/(nm-1)
-				#plat=latent*f+self.line_origin[1]*(1.0-f)	# point latent vector along line
-				#ptdist=((self.midresult[xcol]-plat[xcol])**2+(self.midresult[ycol]-plat[ycol])**2<(rad**2)).nonzero()[0]		# using the slab form
-				#sz=good_size(self.jsparm["boxsize"]*5//4)
-				#rparms={"size":(sz,sz,sz),"sym":self.jsparm["sym"],"mode":"gauss_2","usessnr":0,"verbose":0}
-				#self.threads.append(threading.Thread(target=make3d_thr_fast
-					#,args=(self.threadq,len(self.threads),f"{self.gmm}/particles.lst",ptdist,rparms,plat,self.currun,rad,mmode,self.jsparm["boxsize"])))
-				#self.threads[-1].start()
-				#print(f"Thread {len(self.threads)} started with {len(ptdist)} particles")
-				
-			#return
-		#elif mmode=="Map-Line-Sph (fast)":
-			#ll=np.linalg.norm(latent-self.line_origin[1])	# vector length
-			#if ll<rad :
-				#print(f"line too short, aborted: {latent} - {self.line_origin[1]}")
-				#return
-			#nm=min(10,ceil(ll/rad))		# number of maps to generate
-			
-			#for i in range(nm):
-				#f=i/(nm-1)
-				#plat=latent*f+self.line_origin[1]*(1.0-f)	# point latent vector along line
-				#ptdist=(np.sum((self.midresult.transpose()-plat)**2,1)<(rad**2)).nonzero()[0]
-				#sz=good_size(self.jsparm["boxsize"]*5//4)
-				#rparms={"size":(sz,sz,sz),"sym":self.jsparm["sym"],"mode":"gauss_2","usessnr":0,"verbose":0}
-				#self.threads.append(threading.Thread(target=make3d_thr_fast
-										 #,args=(self.threadq,len(self.threads),f"{self.gmm}/particles.lst",ptdist,rparms,plat,self.currun,rad,mmode,self.jsparm["boxsize"])))
-				#self.threads[-1].start()
-				#print(f"Thread {len(self.threads)} started with {len(ptdist)} particles")
-				
-			#return
 
 	def sets_changed(self,nnew=None):
 		allmaps=self.jsparm.getdefault("sets",{})
@@ -1889,21 +1848,25 @@ class EMGMM(QtWidgets.QMainWindow):
 			m[2]=np.array(m[2])		# latent space center
 			m[5]=np.array(m[5])		# list of point numbers in set
 		
-		self.augment_mid()
+		if not os.path.exists(f"{self.gmm}/{self.currunkey}_aug.txt"): self.augment_mid()
 
-		# Middle layer for every particle
+		# Augmented middle layer for every particle, this is 2 columns of PCA, N columns of latent vector, arbitrary columns with dim-reduced representations
 		self.wplot2d.del_shapes()
 		try: 
 			self.midresult=np.loadtxt(f"{self.gmm}/{self.currunkey}_aug.txt").transpose()
-			self.wbutdrmid.click()
-			self.plot_mode_sel(self.wbutdrmid)		# the previous line will also trigger this, but possibly not before the plot_mouse below
+			self.data=self.midresult
+			self.wplot2d.set_data(self.data,"map",symsize=1,replace=True,quiet=True)
+			self.wsbxcol.setRange(0,self.data.shape[1]-1)
+			self.wsbycol.setRange(0,self.data.shape[1]-1)
+			#self.wbutdrmid.click()
+			#self.plot_mode_sel(self.wbutdrmid)		# the previous line will also trigger this, but possibly not before the plot_mouse below
 
 		except:
 			traceback.print_exc()
 			print(f"Augmented middle layer missing ({self.gmm}/{self.currunkey}_aug.txt)")
 			self.set3dvis(1,0,0,0,0,1)
 		
-		self.plot_mouse(None,(0,0))
+#		self.plot_mouse(None,(0,0))
 		self.wplot2d.updateGL()
 		self.update_maptable()
 
@@ -1915,60 +1878,63 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.set3dvis(1,0,0,1,1,0)
 
 	def augment_mid(self):
-		"""This will take the middle layer from the network result and compute some derived dimension-reduced
-		mappings for improved visualization, and possibly classification"""
+		"""This will take the middle layer from the network result and create the "augmented" file with 2-D PCA in the first 2 columns
+		The idea is that these columns can be later expanded with other dimensionality reduction methods"""
 
 		try:
 			if not os.path.exists(f"{self.gmm}/{self.currunkey}_mid.txt"): raise Exception
 			midresult=np.loadtxt(f"{self.gmm}/{self.currunkey}_mid.txt")[:,1:].transpose()
 
-			prog=QtWidgets.QProgressDialog("Augmenting middle layer with PCA, TSNE and Isomap. May take a while.","Abort",0,4)
-			prog.show()
-			self.do_events()
+			#prog=QtWidgets.QProgressDialog("Augmenting middle layer with PCA, TSNE and Isomap. May take a while.","Abort",0,4)
+			#prog.show()
+			#self.do_events()
 
 			print("Compute PCA")
 			self.pca=skdc.PCA(n_components=2)
 			pcadc=self.pca.fit_transform(midresult.transpose()).transpose()
-			prog.setValue(1)
-			self.do_events()
+			#prog.setValue(1)
+			#self.do_events()
 
-			print("Compute TSNE")
-			tsne=skmf.TSNE(n_components=2,init="pca",learning_rate="auto",verbose=1)	# using defaults, might be worth investigating perplexity and a few others
-			tsnedc=tsne.fit_transform(midresult.transpose()).transpose()
-			prog.setValue(2)
-			self.do_events()
-
-			#print("Compute MDS")
-			#mds=skmf.MDS(n_components=2,verbose=1)	# using defaults, might be worth investigating perplexity and a few others
-			#tsnedc=mds.fit_transform(midresult.transpose()).transpose()
+			#print("Compute TSNE")
+			#tsne=skmf.TSNE(n_components=2,init="pca",learning_rate="auto",verbose=1)	# using defaults, might be worth investigating perplexity and a few others
+			#tsnedc=tsne.fit_transform(midresult.transpose()).transpose()
 			#prog.setValue(2)
 			#self.do_events()
 
-			print("Compute Locally Linear Embedding")
-			lle=skmf.LocallyLinearEmbedding(n_components=2,n_jobs=-1)
-			lledc=lle.fit_transform(midresult.transpose()).transpose()
-			lledc[0]/=lledc[0].std()
-			lledc[1]/=lledc[1].std()
-			prog.setValue(3)
-			self.do_events()
+			##print("Compute MDS")
+			##mds=skmf.MDS(n_components=2,verbose=1)	# using defaults, might be worth investigating perplexity and a few others
+			##tsnedc=mds.fit_transform(midresult.transpose()).transpose()
+			##prog.setValue(2)
+			##self.do_events()
 
-			#print("Compute Isomap")
-			#isomap=skmf.Isomap(n_components=2)
-			#isomapdc=isomap.fit_transform(midresult.transpose()).transpose()
+			#print("Compute Locally Linear Embedding")
+			#lle=skmf.LocallyLinearEmbedding(n_components=2,n_jobs=-1)
+			#lledc=lle.fit_transform(midresult.transpose()).transpose()
+			#lledc[0]/=lledc[0].std()
+			#lledc[1]/=lledc[1].std()
 			#prog.setValue(3)
 			#self.do_events()
 
-			print(midresult.shape,pcadc.shape,tsnedc.shape,lledc.shape)
+			##print("Compute Isomap")
+			##isomap=skmf.Isomap(n_components=2)
+			##isomapdc=isomap.fit_transform(midresult.transpose()).transpose()
+			##prog.setValue(3)
+			##self.do_events()
+
+			#print(midresult.shape,pcadc.shape,tsnedc.shape,lledc.shape)
+			print(midresult.shape)
 			out=open(f"{self.gmm}/{self.currunkey}_aug.txt","w")
+			out.write("# PCA0; PCA1; ")
+			out.write("Latent; "*midresult.shape[0])
+			out.write("\n")
 			for i in range(midresult.shape[1]):
 				out.write(f"{pcadc[0][i]:1.4f}\t{pcadc[1][i]:1.4f}\t")
-				for j in range(midresult.shape[0]):
-					   out.write(f"{midresult[j][i]:1.4f}\t")
-				out.write(f"{tsnedc[0][i]:1.4f}\t{tsnedc[1][i]:1.4f}\t{lledc[0][i]:1.4f}\t{lledc[1][i]:1.4f}\n")
+				out.write("\t".join([f"{r:1.4f}" for r in midresult[:,i]]))
+				out.write("\n")
 
 			out.close()
-			prog.setValue(4)
-			self.do_events()
+			#prog.setValue(4)
+			#self.do_events()
 		except:
 			traceback.print_exc()
 			print(f"Middle layer missing ({self.gmm}/{self.currunkey}_mid.txt)")
