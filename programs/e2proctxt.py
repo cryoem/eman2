@@ -47,7 +47,9 @@ def main():
 Manipulations of text files conatining multi-column data (as would be used with plotting programs, like e2display --plot).
 
 --merge  combines several files, all with N rows, into a single file with N rows but additional columns
---dimreduce  a variety of dimensional reduction algorithms are available. This will add additional dimensionally reduced columns to an existing file"""
+
+--dimreduce  a variety of dimensional reduction algorithms are available. This will add additional dimensionally reduced columns to an existing file
+	Note that tsne is the only dimensional reduction algorithm suitable for large numbers (>~50k) of rows.""" 
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	####################
@@ -83,6 +85,7 @@ Manipulations of text files conatining multi-column data (as would be used with 
 					# look for a comment line with ; separator which may contain column labels
 					if lin[0]=="#":
 						lbls2=lin[1:].strip().split(";")
+						lbls2=[lbl for lbl in lbls2 if len(lbl)>0]
 						if len(lbls2)>len(lbls):
 							lbls=lbls2
 							lbln=i
@@ -116,7 +119,7 @@ Manipulations of text files conatining multi-column data (as would be used with 
 			if options.dimreduce.lower()=="tsne":
 				if options.verbose>0: print("Begin TSNE for",filename)
 				stime=time()
-				tsne=skmf.TSNE(n_components=options.dimout,init="pca",learning_rate="auto",verbose=options.verbose)
+				tsne=skmf.TSNE(n_components=options.dimout,init="pca",learning_rate="auto",n_jobs=-1,verbose=options.verbose)
 				vdc=tsne.fit_transform(v2a)
 			elif options.dimreduce.lower()=="mds":
 				if options.verbose>0:print("Begin MDS for",filename)
@@ -143,7 +146,8 @@ Manipulations of text files conatining multi-column data (as would be used with 
 
 			if options.verbose>0: print(f"Complete in {time()-stime:1.1f}s")
 
-			out=open("result.txt","w")
+			# Overwrite input!
+			out=open(filename,"w")
 			if len(lbls)>0:
 				out.write("# "+";".join(lbls))
 				out.write((";"+options.dimreduce)*options.dimout)
