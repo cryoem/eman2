@@ -110,7 +110,9 @@ Manipulations of text files conatining multi-column data (as would be used with 
 
 			if options.columns is not None :
 				try: cols=np.array(range(int(options.columns.split("-")[0]),int(options.columns.split("-")[1])+1))
-				except: error_exit("--columns must be in the form a-b")
+				except:
+					try: cols=np.array(range(int(options.columns.split("-")[0]),nc))	# a- without a b
+					except: error_exit("--columns must be in the form a-b, or a-")
 				if options.verbose>0: print("using columns: ",cols)
 				v2a=data[:,cols]
 			else: v2a=data
