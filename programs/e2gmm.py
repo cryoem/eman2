@@ -496,12 +496,27 @@ class EMGMM(QtWidgets.QMainWindow):
 		#self.gblpltctl.addWidget(self.wsbnewdim,1,5,Qt.AlignLeft)
 		
 		self.wbutkmeans=QtWidgets.QPushButton("Kmeans")
-		self.gblpltctl.addWidget(self.wbutkmeans,2,5)
+		self.gblpltctl.addWidget(self.wbutkmeans,0,5)
+		self.wbutkmeans.clicked[bool].connect(self.do_kmeans)
 
-		self.gblpltctl.addWidget(QtWidgets.QLabel("Sets:",self),3,4,Qt.AlignRight)
-		self.wsbnsets=QtWidgets.QSpinBox(self)
-		self.wsbnsets.setRange(2,25)
-		self.gblpltctl.addWidget(self.wsbnsets,3,5,Qt.AlignLeft)
+		self.wbutdbscan=QtWidgets.QPushButton("DBScan")
+		self.gblpltctl.addWidget(self.wbutdbscan,1,5)
+		self.wbutdbscan.clicked[bool].connect(self.do_dbscan)
+
+		self.wbutoptics=QtWidgets.QPushButton("Optics")
+		self.gblpltctl.addWidget(self.wbutoptics,2,5)
+		self.wbutoptics.clicked[bool].connect(self.do_optics)
+
+		self.wbutspectr=QtWidgets.QPushButton("Spectr")
+		self.gblpltctl.addWidget(self.wbutspectr,3,5)
+		self.wbutspectr.clicked[bool].connect(self.do_spectral)
+
+		self.wvbnsets=ValBox(label="Sets:",value=2)
+		self.wvbnsets.setIntonly(True)
+		self.gblpltctl.addWidget(self.wvbnsets,0,4)
+
+		self.wstbaxes=StringBox(label="Axes:",value="2-5")
+		self.gblpltctl.addWidget(self.wstbaxes,1,4)
 
 		self.wcbpntpln=QtWidgets.QComboBox()
 		self.wcbpntpln.addItem("Explore")
@@ -635,7 +650,6 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wbutmapfast.clicked[bool].connect(self.new_map_fast)
 		self.wbutsetdel.clicked[bool].connect(self.set_del)
 		self.wbutsetsave.clicked[bool].connect(self.set_save)
-		self.wbutkmeans.clicked[bool].connect(self.do_kmeans)
 #		self.wedres.editingFinished.connect(self.new_res)
 		self.wbutres.clicked[bool].connect(self.new_res)
 		#self.wbutdrgrp.idClicked[int].connect(self.plot_mode_sel)		# requires pyqt 5.15
@@ -786,7 +800,8 @@ class EMGMM(QtWidgets.QMainWindow):
 				volo.write_compressed(f"{self.gmm}/set_odd.hdf",nmaps,8)
 				
 				# store metadata to identify maps in dynamic_maps.hdf
-				# set # (key), 0) map #, 1) timestamp, 2) latent coordinates of center, 3) map size, 4) est resolution, 5) list of points
+				# note that 2
+				# set # (key), 0) map #, 1) timestamp, 2) (cols,coordinates of center), 3) map size, 4) est resolution, 5) list of points
 				newmap=[nmaps,local_datetime(),latent,vol["nz"],vol["resolution"],imgns]
 				self.curmaps[str(nset)]=newmap
 				self.sets_changed()
@@ -1164,6 +1179,11 @@ class EMGMM(QtWidgets.QMainWindow):
 			return
 
 	def sets_changed(self,nnew=None):
+		curmaps={}
+		for k in self.curmaps:
+			if isinstance(self.curmaps[k][2][0],int):
+				curmaps[k]=[[],self.curmaps[k]]
+			curmaps[k]=[self.curmaps[k][0],self.curmaps[k][1],
 		allmaps=self.jsparm.getdefault("sets",{})
 		allmaps[self.currunkey]=self.curmaps
 		self.jsparm["sets"]=allmaps
@@ -1211,21 +1231,82 @@ class EMGMM(QtWidgets.QMainWindow):
 		"""Save a set to a new LST file for further processing"""
 
 	def do_kmeans(self):
+		print("kmeans ...")
 		from sklearn.cluster import KMeans
-		nseg=self.wsbnsets.value()
+		nseg=int(self.wvbnsets.getValue())
+		cols=np.array(parse_range(self.wstbaxes.getValue()))
 
 		try: nset=max([int(k) for k in self.curmaps])+1
 		except: nset=0
 
-		kmseg=KMeans(n_clusters=nseg)
-		classes=kmseg.fit_predict(self.data.transpose())
+		kmseg=KMeans(n_clusters=nseg,init='k-means++')
+		classes=kmseg.fit_predict(self.data[cols].transpose())
+		for i in range(nseg):
+			ptdist=np.where(classes==i)[0]
+			newmap=[None,local_datetime(),(cols,kmseg.cluster_centers_[i]),0,0,ptdist]
+			self.curmaps[str(nset+i)]=newmap
+
+		self.sets_changed()
+		print("done")
+
+	def do_dbscan(self):
+		print("dbscan ...")
+		from sklearn.cluster import DBSCAN
+		nseg=int(self.wvbnsets.getValue())
+		cols=np.array(parse_range(self.wstbaxes.getValue()))
+
+		try: nset=max([int(k) for k in self.curmaps])+1
+		except: nset=0
+		dbseg=DBSCAN(n_jobs=-1)
+		classes=dbseg.fit_predict(self.data[cols].transpose())
+		nseg=max(classes)+1
 		for i in range(nseg):
 			ptdist=np.where(classes==i)[0]
 			newmap=[None,local_datetime(),kmseg.cluster_centers_[i],0,0,ptdist]
 			self.curmaps[str(nset+i)]=newmap
 
 		self.sets_changed()
+		print("done")
 
+	def do_optics(self):
+		print("optics ...")
+		from sklearn.cluster import OPTICS
+		nseg=int(self.wvbnsets.getValue())
+		cols=np.array(parse_range(self.wstbaxes.getValue()))
+
+		try: nset=max([int(k) for k in self.curmaps])+1
+		except: nset=0
+
+		opseg=OPTICS(n_jobs=-1)
+		classes=opseg.fit_predict(self.data[cols].transpose())
+		nseg=max(classes)+1
+		for i in range(nseg):
+			ptdist=np.where(classes==i)[0]
+			newmap=[None,local_datetime(),kmseg.cluster_centers_[i],0,0,ptdist]
+			self.curmaps[str(nset+i)]=newmap
+
+		self.sets_changed()
+		print("done")
+
+	def do_spectral(self):
+		print("spectral ...")
+		from sklearn.cluster import SpectralClustering
+		nseg=int(self.wvbnsets.getValue())
+		cols=np.array(parse_range(self.wstbaxes.getValue()))
+
+		try: nset=max([int(k) for k in self.curmaps])+1
+		except: nset=0
+
+		spseg=SpectralClustering(n_jobs=-1)
+		classes=kmseg.fit_predict(self.data[cols].transpose())
+		nseg=max(classes)+1
+		for i in range(nseg):
+			ptdist=np.where(classes==i)[0]
+			newmap=[None,local_datetime(),kmseg.cluster_centers_[i],0,0,ptdist]
+			self.curmaps[str(nset+i)]=newmap
+
+		self.sets_changed()
+		print("done")
 
 	#def plot_mode_sel(self,but):
 		#"""Plot mode selected"""
@@ -1845,7 +1926,8 @@ class EMGMM(QtWidgets.QMainWindow):
 		except: self.curmaps={}
 		for k in self.curmaps:
 			m=self.curmaps[k]
-			m[2]=np.array(m[2])		# latent space center
+			# m[2] is now (cols,center), normally a list, doesn't really need to be forced to numpy
+			#m[2]=np.array(m[2])		# latent space center
 			m[5]=np.array(m[5])		# list of point numbers in set
 		
 		if not os.path.exists(f"{self.gmm}/{self.currunkey}_aug.txt"): self.augment_mid()

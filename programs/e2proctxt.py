@@ -41,6 +41,72 @@ import sys
 import re
 from time import time
 
+def readfile(filename,verbose=0):
+	"""reads a multicolumn numerical file, including optional header comment line
+	returns data[row][col],label[col]"""
+
+	# loadtxt is really slow
+	fin=open(filename,"r")
+	nr=0
+	lbls=[]
+	for i,lin in enumerate(fin):
+		l=lin.strip()
+		if lin[0]!="#" and len(l)!=0:
+			ll=l
+			nr+=1
+		else:
+			# look for a comment line with ; separator which may contain column labels
+			if lin[0]=="#":
+				lbls2=lin[1:].strip().split(";")
+				lbls2=[lbl for lbl in lbls2 if len(lbl)>0]
+				if len(lbls2)>len(lbls):
+					lbls=lbls2
+					lbln=i
+
+	nc=len(re.split("[\s,;]+",ll))		# last non-comment
+	if verbose>0 :
+		print(f"{filename} : ({nc},{nr})")
+		if len(lbls)>1 : print("  ".join(lbls))
+	data=np.zeros((nr,nc))
+
+	fin.seek(0)
+	# second pass, read the data, seems dumb, but actually faster
+	r=0
+	for lin in fin:
+		l=lin.strip()
+		if lin[0]!="#" and len(l)!=0:
+			v=[float(x) for x in re.split("[\s,;]+",l)]
+			data[r]=v
+			r+=1
+
+	if r!=nr : print(f"ERROR: inconsistent read {r} lines read with {nr} rows expected")
+	return data,lbls
+
+def writefile(filename,data,lbls,fmt="1.4f"):
+	"""writes a multicolumn numerical file
+	filename
+	data[row][col]
+	label[col] or [] or None
+	fmt format string, def "1.4f" """
+
+	# Overwrite input!
+	if os.path.exists(filename):
+		try: os.unlink(filename+".bak")
+		except: pass
+		os.rename(filename,filename+".bak")
+
+	fmt="%"+fmt
+	out=open(filename,"w")
+	if lbls is not None and len(lbls)>0:
+		out.write("# "+";".join(lbls))
+		out.write("\n")
+	for r,d in enumerate(data):
+		line=[fmt%v for v in d]
+		out.write("\t".join(line))
+		out.write("\n")
+	out.close()
+
+
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """Usage:\nproctxt.py [options] <txt 1> <txt 2> ... 
@@ -57,6 +123,8 @@ Manipulations of text files conatining multi-column data (as would be used with 
 	parser.add_argument("--dimreduce",type=str,help="tsne, mds, isomap, lle, spectral. output=input with added columns. Multiple files are independent.",default=None)
 	parser.add_argument("--dimout",type=int,help="number of output dimensions for dimreduce. default=2",default=2)
 	parser.add_argument("--columns",type=str,help="which columns to use for the analysis (eg, 2-4). First column is 0. End is inclusive. default = all columns",default=None)
+	parser.add_argument("--normalize",action="store_true",default=False,help="Applies normal EMAN normalization to specified columns (mean->0, std->1)")
+	parser.add_argument("--precout",type=str,help="specify precision and format for writing output, '1.4f' - 4 digits of precision, '1.4g' 4 digits sci notation. default=1.4f",default="1.4f")
 	parser.add_argument("--sortcomment",action="store_true",default=False,help="Sorts rows based on per-row comment (after #) before merging")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higher number means higher level of verboseness",default=1)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -70,49 +138,13 @@ Manipulations of text files conatining multi-column data (as would be used with 
 
 	logid=E2init(sys.argv,options.ppid)
 
+
 	if options.dimreduce is not None:
 		for filename in args:
-			# loadtxt is really slow
-			fin=open(filename,"r")
-			nr=0
-			lbls=[]
-			for i,lin in enumerate(fin):
-				l=lin.strip()
-				if lin[0]!="#" and len(l)!=0:
-					ll=l
-					nr+=1
-				else:
-					# look for a comment line with ; separator which may contain column labels
-					if lin[0]=="#":
-						lbls2=lin[1:].strip().split(";")
-						lbls2=[lbl for lbl in lbls2 if len(lbl)>0]
-						if len(lbls2)>len(lbls):
-							lbls=lbls2
-							lbln=i
-
-			nc=len(re.split("[\s,;]+",ll))		# last non-comment
-			if options.verbose>0 :
-				print(f"{filename} : ({nc},{nr})")
-				if len(lbls)>1 : print("  ".join(lbls))
-			data=np.zeros((nr,nc))
-
-			fin.seek(0)
-			# second pass, read the data, seems dumb, but actually faster
-			r=0
-			for lin in fin:
-				l=lin.strip()
-				if lin[0]!="#" and len(l)!=0:
-					v=[float(x) for x in re.split("[\s,;]+",l)]
-					data[r]=v
-					r+=1
-
-			if r!=nr : print(f"ERROR: inconsistent read {r} lines read with {nr} rows expected")
+			data,lbls=readfile(filename,options.verbose)
 
 			if options.columns is not None :
-				try: cols=np.array(range(int(options.columns.split("-")[0]),int(options.columns.split("-")[1])+1))
-				except:
-					try: cols=np.array(range(int(options.columns.split("-")[0]),nc))	# a- without a b
-					except: error_exit("--columns must be in the form a-b, or a-")
+				cols=parse_range(options.columns,data.shape[1]-1)
 				if options.verbose>0: print("using columns: ",cols)
 				v2a=data[:,cols]
 			else: v2a=data
@@ -123,6 +155,7 @@ Manipulations of text files conatining multi-column data (as would be used with 
 				stime=time()
 				tsne=skmf.TSNE(n_components=options.dimout,init="pca",learning_rate="auto",n_jobs=-1,verbose=options.verbose)
 				vdc=tsne.fit_transform(v2a)
+				vdc/=100.0
 			elif options.dimreduce.lower()=="mds":
 				if options.verbose>0:print("Begin MDS for",filename)
 				stime=time()
@@ -159,6 +192,25 @@ Manipulations of text files conatining multi-column data (as would be used with 
 				for v in vdc[r]: out.write(f"{v:1.4f}\t")
 				out.write("\n")
 			out.close()
+
+	if options.normalize :
+
+		for filename in args:
+			data,lbls=readfile(filename,options.verbose)
+
+			data2=data.transpose()
+			if options.columns is not None :
+				cols=parse_range(options.columns,data.shape[1]-1)
+				if options.verbose>0: print("using columns: ",cols)
+				for c in cols:
+					data2[c]-=np.mean(data2[c])
+					data2[c]/=np.std(data2[c])
+			else:
+				for c in range(data2.shape[0]):
+					data2[c]-=np.mean(data2[c])
+					data2[c]/=np.std(data2[c])
+			data=data2.transpose()
+			writefile(filename,data,lbls,options.precout)
 
 	if options.merge!=None:
 		# read all files. data_sets is a list of files. each file is a list of rows. each row is a list of comma, semicolon or space/tab separated values

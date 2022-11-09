@@ -1114,6 +1114,23 @@ def parse_infile_arg(arg):
 
 	return fname, tuple(idxs.keys())
 
+def parse_range(rangestr,maxval=None):
+	"""parses strings like "1,3,4,6-9,11" and returns (1,3,4,6,7,8,9,11), maxval will support n- without upper values
+	if not provided will still work as long as n- isn't used"""
+
+	ret=[]
+	for s in rangestr.split(","):
+		try: ret.append(int(s))
+		except:
+			try:
+				v1,v2=s.split("-")
+				ret.extend(range(int(v1),int(v2)+1))
+			except:
+				v1=int(s.split("-")[0])
+				ret.extend(range(v1,maxval+1))
+
+	return ret
+
 
 def parse_outfile_arg(arg):
 	"""
