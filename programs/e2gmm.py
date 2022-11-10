@@ -496,18 +496,22 @@ class EMGMM(QtWidgets.QMainWindow):
 		#self.gblpltctl.addWidget(self.wsbnewdim,1,5,Qt.AlignLeft)
 		
 		self.wbutkmeans=QtWidgets.QPushButton("Kmeans")
+		self.wbutkmeans.setToolTip("Fast and functional, but produces linear boundaries not clusters")
 		self.gblpltctl.addWidget(self.wbutkmeans,0,5)
 		self.wbutkmeans.clicked[bool].connect(self.do_kmeans)
 
 		self.wbutdbscan=QtWidgets.QPushButton("DBScan")
+		self.wbutdbscan.setToolTip("Danger! This may exhaust RAM on large data sets")
 		self.gblpltctl.addWidget(self.wbutdbscan,1,5)
 		self.wbutdbscan.clicked[bool].connect(self.do_dbscan)
 
 		self.wbutoptics=QtWidgets.QPushButton("Optics")
+		self.wbutoptics.setToolTip("This could take many hours to run, and currently has no feedback")
 		self.gblpltctl.addWidget(self.wbutoptics,2,5)
 		self.wbutoptics.clicked[bool].connect(self.do_optics)
 
 		self.wbutspectr=QtWidgets.QPushButton("Spectr")
+		self.wbutspectr.setToolTip("Danger! May fail on large data sets, and possibly exhaust RAM")
 		self.gblpltctl.addWidget(self.wbutspectr,3,5)
 		self.wbutspectr.clicked[bool].connect(self.do_spectral)
 
