@@ -895,21 +895,21 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		# when a single set is selected, we display the corresponding map/model
 		if len(self.maplist.selectedItems())==1:
+			dim=self.currun.get("dim",4)
 			key=self.maplist.selectedItems()[0].text()
 			smap=self.curmaps[key]
-			latent=smap[2]
+			ptdist=smap[5]
+			if len(ptdist)>1000: ptdist=ptdist[::len(ptdist)//1000]		# We don't really need every point to get a pretty good average position for the set
+			latent=np.mean(self.midresult.transpose()[ptdist,2:2+dim],0,keepdims=True)		# the mean latent vector over selected points
+			gauss=self.decoder(latent,0).numpy()[0].transpose()
 			if latent is not None:
-				try:
-					gauss=np.array(self.decoder(latent[None,...]))[0].transpose()
-					box=int(self.wedbox.text())
-					gauss[:3]*=box
-					gauss[2]*=-1.0
-					gauss[1]*=-1.0
-					if not butval(self.wbutpos): gauss[:3]=self.model[:3]
-					if not butval(self.wbutamp): gauss[3]=self.model[3]
-					self.gaussplot.setData(gauss,self.wvssphsz.value)
-				except:
-					print("ERROR, latent:",latent[None,...])
+				box=int(self.wedbox.text())
+				gauss[:3]*=box
+				gauss[2]*=-1.0
+				gauss[1]*=-1.0
+				if not butval(self.wbutpos): gauss[:3]=self.model[:3]
+				if not butval(self.wbutamp): gauss[3]=self.model[3]
+				self.gaussplot.setData(gauss,self.wvssphsz.value)
 
 			if smap[0] is not None:
 				try:
@@ -1180,12 +1180,13 @@ class EMGMM(QtWidgets.QMainWindow):
 
 	def sets_changed(self,nnew=None):
 		curmaps={}
+		dim=self.currun.get("dim",4)
 		for k in self.curmaps:
+			curmaps[k]=self.curmaps[k][:5]+[list(self.curmaps[k][5])]
 			if isinstance(self.curmaps[k][2][0],int):
-				curmaps[k]=[[],self.curmaps[k]]
-			curmaps[k]=[self.curmaps[k][0],self.curmaps[k][1],
+				curmaps[k][2]=[list(range(2,2+dim)),self.curmaps[k][2]]
 		allmaps=self.jsparm.getdefault("sets",{})
-		allmaps[self.currunkey]=self.curmaps
+		allmaps[self.currunkey]=curmaps
 		self.jsparm["sets"]=allmaps
 		self.update_maptable(nnew)
 
@@ -1257,12 +1258,13 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		try: nset=max([int(k) for k in self.curmaps])+1
 		except: nset=0
+
 		dbseg=DBSCAN(n_jobs=-1)
 		classes=dbseg.fit_predict(self.data[cols].transpose())
 		nseg=max(classes)+1
 		for i in range(nseg):
 			ptdist=np.where(classes==i)[0]
-			newmap=[None,local_datetime(),kmseg.cluster_centers_[i],0,0,ptdist]
+			newmap=[None,local_datetime(),[cols,dbseg.cluster_centers_[i]],0,0,ptdist]
 			self.curmaps[str(nset+i)]=newmap
 
 		self.sets_changed()
@@ -1282,7 +1284,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		nseg=max(classes)+1
 		for i in range(nseg):
 			ptdist=np.where(classes==i)[0]
-			newmap=[None,local_datetime(),kmseg.cluster_centers_[i],0,0,ptdist]
+			newmap=[None,local_datetime(),[cols,opseg.cluster_centers_[i]],0,0,ptdist]
 			self.curmaps[str(nset+i)]=newmap
 
 		self.sets_changed()
@@ -1298,11 +1300,11 @@ class EMGMM(QtWidgets.QMainWindow):
 		except: nset=0
 
 		spseg=SpectralClustering(n_jobs=-1)
-		classes=kmseg.fit_predict(self.data[cols].transpose())
+		classes=spseg.fit_predict(self.data[cols].transpose())
 		nseg=max(classes)+1
 		for i in range(nseg):
 			ptdist=np.where(classes==i)[0]
-			newmap=[None,local_datetime(),kmseg.cluster_centers_[i],0,0,ptdist]
+			newmap=[None,local_datetime(),spseg.cluster_centers_[i],0,0,ptdist]
 			self.curmaps[str(nset+i)]=newmap
 
 		self.sets_changed()
