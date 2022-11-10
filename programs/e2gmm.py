@@ -1268,7 +1268,13 @@ class EMGMM(QtWidgets.QMainWindow):
 		nseg=max(classes)+1
 		for i in range(nseg):
 			ptdist=np.where(classes==i)[0]
-			newmap=[None,local_datetime(),[cols,dbseg.cluster_centers_[i]],0,0,ptdist]
+			try:
+				cen=np.mean(self.data[cols][ptdist],1)
+				newmap=[None,local_datetime(),[cols,cen],0,0,ptdist]
+			except:
+				traceback.print_exc()
+				print(self.data[cols][ptdist].shape)
+				newmap=[None,local_datetime(),[cols,[0,0,0,0]],0,0,ptdist]
 			self.curmaps[str(nset+i)]=newmap
 
 		self.sets_changed()
@@ -1288,7 +1294,13 @@ class EMGMM(QtWidgets.QMainWindow):
 		nseg=max(classes)+1
 		for i in range(nseg):
 			ptdist=np.where(classes==i)[0]
-			newmap=[None,local_datetime(),[cols,opseg.cluster_centers_[i]],0,0,ptdist]
+			try:
+				cen=np.mean(self.data[cols][ptdist],1)
+				newmap=[None,local_datetime(),[cols,cen],0,0,ptdist]
+			except:
+				traceback.print_exc()
+				print(self.data[cols][ptdist].shape)
+				newmap=[None,local_datetime(),[cols,[0,0,0,0]],0,0,ptdist]
 			self.curmaps[str(nset+i)]=newmap
 
 		self.sets_changed()
@@ -1308,7 +1320,13 @@ class EMGMM(QtWidgets.QMainWindow):
 		nseg=max(classes)+1
 		for i in range(nseg):
 			ptdist=np.where(classes==i)[0]
-			newmap=[None,local_datetime(),spseg.cluster_centers_[i],0,0,ptdist]
+			try:
+				cen=np.mean(self.data[cols][ptdist],1)
+				newmap=[None,local_datetime(),[cols,cen],0,0,ptdist]
+			except:
+				traceback.print_exc()
+				print(self.data[cols][ptdist].shape)
+				newmap=[None,local_datetime(),[cols,[0,0,0,0]],0,0,ptdist]
 			self.curmaps[str(nset+i)]=newmap
 
 		self.sets_changed()
