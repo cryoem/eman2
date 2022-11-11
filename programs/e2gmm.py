@@ -885,11 +885,11 @@ class EMGMM(QtWidgets.QMainWindow):
 				self.data_sel.append(self.data[:,np.array(smap[5])])	# smap[5] is a list of points in the class
 				#print("S:",self.data.shape,self.data_sel[-1].shape)
 				self.wplot2d.set_data(self.data_sel[-1],f"set_{key}",symsize=ss,quiet=True)
+		else:
+			self.wplot2d.set_data(self.data,"map",symsize=1,replace=True,quiet=True)
 
-			self.wplot2d.setXAxisAll(self.wsbxcol.value(),True)
-			self.wplot2d.setYAxisAll(self.wsbycol.value(),True)
-
-		else: self.wplot2d.set_data(self.data,"map",symsize=1,replace=True,quiet=True)
+		self.wplot2d.setXAxisAll(self.wsbxcol.value(),True)
+		self.wplot2d.setYAxisAll(self.wsbycol.value(),True)
 
 
 #		self.wplot2d.setXAxisAll(0,True)
@@ -944,7 +944,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		"""mode is used to decide which parameters to update. neutral, dynamics or None"""
 		self.currun={}
 		self.currun["targres"]=float(self.wedres.text())
-		self.currun["gausthr"]=float(self.wedgthr.text())
+		self.currun["gausthr"]=self.wedgthr.text()
 		try: self.currun["ngauss"]=len(self.amps)
 		except: self.currun["ngauss"]=0
 		#self.currun["boxsize"]=int(self.wedbox.text())
@@ -1436,7 +1436,16 @@ class EMGMM(QtWidgets.QMainWindow):
 		map3d=EMData(f"{self.gmm}/input_map.hdf")
 #		try: mask=EMData(str(self.wedmask.text()))		# masking of initial segmentation disabled 1/27/22
 #		except: mask=None
-		opt={"minratio":float(self.wedgthr.text()),"width":res,"skipseg":2}
+		thrt=self.wedgthr.text()
+		try: minpos,minneg=float(thrt.split(",")[0]),float(thrt.split(",")[1])
+		except:
+			try:
+				minpos=float(thrt)
+				minneg=minpos*1.25
+			except:
+				showerror("Invalid threshold, either POS or POS,NEG, typ: 0.3,0.4")
+				return
+		opt={"minratio":minpos,"width":res,"skipseg":2}
 #		if mask!=None: opt["mask"]=mask
 
 		sym=self.currun.setdefault("sym","c1")
@@ -1449,7 +1458,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		print("pos:",len(seg["segment_amps"]))
 		map3d2=map3d.process("normalize.edgemean")
 		map3d2.mult(-1.0)
-		opt["minratio"]=float(self.wedgthr.text())*1.25
+		opt["minratio"]=minneg
 		segneg=map3d2.process("segment.gauss",opt)
 		print("neg:",len(segneg["segment_amps"]))
 #		amps=np.array(seg["segment_amps"]+segneg["segment_amps"])
@@ -1795,9 +1804,10 @@ class EMGMM(QtWidgets.QMainWindow):
 				#showerror("Error running e2gmm_refine, see console for details. Memory is a common issue. Consider reducing the target resolution.")
 				#return
 		ptrep=f"{self.gmm}/{self.currunkey}_ptrep_{maxboxp}.hdf"
-		if not os.path.exists(ptrep):
-			print("Pregenerating per-particle Gaussian representation")
-			er=run(f"e2gmm_refine_point.py --model {modelout} --ptclsin {self.gmm}/particles.lst --ptclrepout {ptrep} --maxboxsz {maxboxp} --minressz {minboxp}")
+		#if not os.path.exists(ptrep):
+		# We really do need to rerun this each time in case parameters have changed
+		print("Pregenerating per-particle Gaussian representation")
+		er=run(f"e2gmm_refine_point.py --model {modelout} --ptclsin {self.gmm}/particles.lst --ptclrepout {ptrep} --maxboxsz {maxboxp} --minressz {minboxp}")
 
 		print("Training network")
 		if int(self.currun['batches'])<=1 :
