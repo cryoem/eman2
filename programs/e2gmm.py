@@ -1269,11 +1269,11 @@ class EMGMM(QtWidgets.QMainWindow):
 		for i in range(nseg):
 			ptdist=np.where(classes==i)[0]
 			try:
-				cen=np.mean(self.data[cols][ptdist],1)
+				cen=np.mean(self.data[cols,ptdist],1)
 				newmap=[None,local_datetime(),[cols,cen],0,0,ptdist]
 			except:
 				traceback.print_exc()
-				print(self.data[cols][ptdist].shape)
+				print(self.data[cols,ptdist].shape)
 				newmap=[None,local_datetime(),[cols,[0,0,0,0]],0,0,ptdist]
 			self.curmaps[str(nset+i)]=newmap
 
@@ -1295,11 +1295,11 @@ class EMGMM(QtWidgets.QMainWindow):
 		for i in range(nseg):
 			ptdist=np.where(classes==i)[0]
 			try:
-				cen=np.mean(self.data[cols][ptdist],1)
+				cen=np.mean(self.data[cols,ptdist],1)
 				newmap=[None,local_datetime(),[cols,cen],0,0,ptdist]
 			except:
 				traceback.print_exc()
-				print(self.data[cols][ptdist].shape)
+				print(self.data.shape,cols)
 				newmap=[None,local_datetime(),[cols,[0,0,0,0]],0,0,ptdist]
 			self.curmaps[str(nset+i)]=newmap
 
@@ -1321,11 +1321,11 @@ class EMGMM(QtWidgets.QMainWindow):
 		for i in range(nseg):
 			ptdist=np.where(classes==i)[0]
 			try:
-				cen=np.mean(self.data[cols][ptdist],1)
+				cen=np.mean(self.data[cols,ptdist],1)
 				newmap=[None,local_datetime(),[cols,cen],0,0,ptdist]
 			except:
 				traceback.print_exc()
-				print(self.data[cols][ptdist].shape)
+				print(self.data[cols,ptdist].shape)
 				newmap=[None,local_datetime(),[cols,[0,0,0,0]],0,0,ptdist]
 			self.curmaps[str(nset+i)]=newmap
 
@@ -1658,6 +1658,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wlistrun.setCurrentRow(self.wlistrun.count()-1)
 
 
+	#### NO LONGER USED
 	def do_run(self,clk=False):
 		"""Run the current job with current parameters"""
 		self.saveparm("dynamics")  # updates self.currun with current user input
@@ -1792,8 +1793,9 @@ class EMGMM(QtWidgets.QMainWindow):
 			# batched run. Run 10 iterations using each batch of data, and repeat until all requested iterations are complete for all data
 			nb=int(self.currun['batches'])
 			first=True
-			for it in range(0,self.currun['trainiter'],10):
-				nit=min(10,self.currun['trainiter']-it)
+			itsize=self.currun['trainiter']//3	# We run 1/3 of the iterations at at a time for all batches
+			for it in range(0,self.currun['trainiter'],itsize):
+				nit=min(itsize,self.currun['trainiter']-itsize)
 				for b in range(nb):
 					if first :
 						encin=""
@@ -1807,10 +1809,11 @@ class EMGMM(QtWidgets.QMainWindow):
 		# generate latent representation for all particles using final trained encoder
 		if not er:
 			run(f"e2gmm_refine_point.py --encoderin {encoder} --ptclrepin {ptrep} --midout {self.gmm}/{self.currunkey}_mid.txt --model {modelout}")
-
-		if er :
+			augment_mid()
+		else:
 			showerror("Error running e2gmm_refine_point, see console for details. If memory exhausted, increase batches.")
 			return
+
 		self.currun=self.jsparm["run_"+self.currunkey]
 		self.currun["time_dynamics_end"]=local_datetime()
 		self.jsparm["run_"+self.currunkey]=self.currun
@@ -1998,36 +2001,6 @@ class EMGMM(QtWidgets.QMainWindow):
 			print("Compute PCA")
 			self.pca=skdc.PCA(n_components=2)
 			pcadc=self.pca.fit_transform(midresult.transpose()).transpose()
-			#prog.setValue(1)
-			#self.do_events()
-
-			#print("Compute TSNE")
-			#tsne=skmf.TSNE(n_components=2,init="pca",learning_rate="auto",verbose=1)	# using defaults, might be worth investigating perplexity and a few others
-			#tsnedc=tsne.fit_transform(midresult.transpose()).transpose()
-			#prog.setValue(2)
-			#self.do_events()
-
-			##print("Compute MDS")
-			##mds=skmf.MDS(n_components=2,verbose=1)	# using defaults, might be worth investigating perplexity and a few others
-			##tsnedc=mds.fit_transform(midresult.transpose()).transpose()
-			##prog.setValue(2)
-			##self.do_events()
-
-			#print("Compute Locally Linear Embedding")
-			#lle=skmf.LocallyLinearEmbedding(n_components=2,n_jobs=-1)
-			#lledc=lle.fit_transform(midresult.transpose()).transpose()
-			#lledc[0]/=lledc[0].std()
-			#lledc[1]/=lledc[1].std()
-			#prog.setValue(3)
-			#self.do_events()
-
-			##print("Compute Isomap")
-			##isomap=skmf.Isomap(n_components=2)
-			##isomapdc=isomap.fit_transform(midresult.transpose()).transpose()
-			##prog.setValue(3)
-			##self.do_events()
-
-			#print(midresult.shape,pcadc.shape,tsnedc.shape,lledc.shape)
 			print(midresult.shape)
 			out=open(f"{self.gmm}/{self.currunkey}_aug.txt","w")
 			out.write("# PCA0; PCA1; ")
