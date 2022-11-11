@@ -500,12 +500,12 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.gblpltctl.addWidget(self.wbutkmeans,0,5)
 		self.wbutkmeans.clicked[bool].connect(self.do_kmeans)
 
-		self.wbutdbscan=QtWidgets.QPushButton("DBScan")
+		self.wbutdbscan=QtWidgets.QPushButton("OpticsDB")
 		self.wbutdbscan.setToolTip("Danger! This may exhaust RAM on large data sets")
 		self.gblpltctl.addWidget(self.wbutdbscan,1,5)
 		self.wbutdbscan.clicked[bool].connect(self.do_dbscan)
 
-		self.wbutoptics=QtWidgets.QPushButton("Optics")
+		self.wbutoptics=QtWidgets.QPushButton("OpticsXi")
 		self.wbutoptics.setToolTip("This could take many hours to run, and currently has no feedback")
 		self.gblpltctl.addWidget(self.wbutoptics,2,5)
 		self.wbutoptics.clicked[bool].connect(self.do_optics)
@@ -1255,33 +1255,8 @@ class EMGMM(QtWidgets.QMainWindow):
 		print("done")
 
 	def do_dbscan(self):
-		print("dbscan ...")
-		from sklearn.cluster import DBSCAN
-		nseg=int(self.wvbnsets.getValue())
-		cols=np.array(parse_range(self.wstbaxes.getValue()))
-
-		try: nset=max([int(k) for k in self.curmaps])+1
-		except: nset=0
-
-		dbseg=DBSCAN(n_jobs=-1)
-		classes=dbseg.fit_predict(self.data[cols].transpose())
-		nseg=max(classes)+1
-		for i in range(nseg):
-			ptdist=np.where(classes==i)[0]
-			try:
-				cen=np.mean(self.data[cols,ptdist],1)
-				newmap=[None,local_datetime(),[cols,cen],0,0,ptdist]
-			except:
-				traceback.print_exc()
-				print(self.data[cols,ptdist].shape)
-				newmap=[None,local_datetime(),[cols,[0,0,0,0]],0,0,ptdist]
-			self.curmaps[str(nset+i)]=newmap
-
-		self.sets_changed()
-		print("done")
-
-	def do_optics(self):
-		print("optics ...")
+		print("OpticsDB ...")
+		t0=time.time()
 		from sklearn.cluster import OPTICS
 		nseg=int(self.wvbnsets.getValue())
 		cols=np.array(parse_range(self.wstbaxes.getValue()))
@@ -1289,13 +1264,18 @@ class EMGMM(QtWidgets.QMainWindow):
 		try: nset=max([int(k) for k in self.curmaps])+1
 		except: nset=0
 
-		opseg=OPTICS(n_jobs=-1)
+		opseg=OPTICS(n_jobs=-1,cluster_method="dbscan",max_eps=0.25)
 		classes=opseg.fit_predict(self.data[cols].transpose())
 		nseg=max(classes)+1
+		if (nseg>100):
+			print(f"{nseg} classes found, aborting")
+			return
+
 		for i in range(nseg):
 			ptdist=np.where(classes==i)[0]
 			try:
-				cen=np.mean(self.data[cols,ptdist],1)
+				sel=self.data[:,ptdist]
+				cen=np.mean(sel[cols],1)
 				newmap=[None,local_datetime(),[cols,cen],0,0,ptdist]
 			except:
 				traceback.print_exc()
@@ -1304,10 +1284,43 @@ class EMGMM(QtWidgets.QMainWindow):
 			self.curmaps[str(nset+i)]=newmap
 
 		self.sets_changed()
-		print("done")
+		print(f"done ({time.time()-t0}s)")
+
+	def do_optics(self):
+		print("OpticsXi ...")
+		t0=time.time()
+		from sklearn.cluster import OPTICS
+		nseg=int(self.wvbnsets.getValue())
+		cols=np.array(parse_range(self.wstbaxes.getValue()))
+
+		try: nset=max([int(k) for k in self.curmaps])+1
+		except: nset=0
+
+		opseg=OPTICS(n_jobs=-1,cluster_method="xi",max_eps=0.25)
+		classes=opseg.fit_predict(self.data[cols].transpose())
+		nseg=max(classes)+1
+		if (nseg>100):
+			print(f"{nseg} classes found, aborting")
+			return
+
+		for i in range(nseg):
+			ptdist=np.where(classes==i)[0]
+			try:
+				sel=self.data[:,ptdist]
+				cen=np.mean(sel[cols],1)
+				newmap=[None,local_datetime(),[cols,cen],0,0,ptdist]
+			except:
+				traceback.print_exc()
+				print(self.data.shape,cols)
+				newmap=[None,local_datetime(),[cols,[0,0,0,0]],0,0,ptdist]
+			self.curmaps[str(nset+i)]=newmap
+
+		self.sets_changed()
+		print(f"done ({time.time()-t0}s)")
 
 	def do_spectral(self):
 		print("spectral ...")
+		t0=time.time()
 		from sklearn.cluster import SpectralClustering
 		nseg=int(self.wvbnsets.getValue())
 		cols=np.array(parse_range(self.wstbaxes.getValue()))
@@ -1330,7 +1343,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			self.curmaps[str(nset+i)]=newmap
 
 		self.sets_changed()
-		print("done")
+		print(f"done ({time.time()-t0}s)")
 
 	#def plot_mode_sel(self,but):
 		#"""Plot mode selected"""
@@ -1809,7 +1822,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		# generate latent representation for all particles using final trained encoder
 		if not er:
 			run(f"e2gmm_refine_point.py --encoderin {encoder} --ptclrepin {ptrep} --midout {self.gmm}/{self.currunkey}_mid.txt --model {modelout}")
-			augment_mid()
+			self.augment_mid()
 		else:
 			showerror("Error running e2gmm_refine_point, see console for details. If memory exhausted, increase batches.")
 			return
