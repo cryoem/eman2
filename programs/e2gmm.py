@@ -116,8 +116,11 @@ def make3d_thr(que,tskn,fsp,imgns,rparms,latent,currun,rad,mmode,nset,ptclsclip=
 	
 	# read images in chunks of 100 for (maybe) increased efficiency
 	for i in range(len(imgns)//100+1):
-		que.put((tskn,9900*i//len(imgns),None,None))  # don't want to accidentally return 100, this is for progress display
-		imgs=EMData.read_images(fsp,imgns[i*100:i*100+100])
+		que.put((tskn,9500*i//len(imgns),None,None))  # don't want to accidentally return 100, this is for progress display
+#		print(fsp,i*100,i*100+100,len(imgns),len(imgns[i*100:i*100+100]))
+		imgnsub=imgns[i*100:i*100+100]
+		if len(imgnsub)==0 : continue
+		imgs=EMData.read_images(fsp,imgnsub)
 		for j,im in enumerate(imgs):
 			im2=im.get_clip(Region((im["nx"]-pad)//2,(im["ny"]-pad)//2,pad,pad))
 			xf=im["xform.projection"]
@@ -130,14 +133,23 @@ def make3d_thr(que,tskn,fsp,imgns,rparms,latent,currun,rad,mmode,nset,ptclsclip=
 				imf=recono.preprocess_slice(im2,xf)
 				recono.insert_slice(imf,xf,1.0)
 	
+	que.put((tskn,96,None,None))  # don't want to accidentally return 100, this is for progress display
 	rete=recone.finish(True)
 	reto=recono.finish(True)
+	rete["apix_x"]=im["apix_x"]
+	rete["apix_y"]=im["apix_x"]
+	rete["apix_z"]=im["apix_x"]
+	reto["apix_x"]=im["apix_x"]
+	reto["apix_y"]=im["apix_x"]
+	reto["apix_z"]=im["apix_x"]
+	que.put((tskn,97,None,None))  # don't want to accidentally return 100, this is for progress display
 	fscf=rete.calc_fourier_shell_correlation(reto)
 	fsc=fscf[len(fscf)//3:len(fscf)*2//3]
 #	print(fsc)
 	for r,v in enumerate(fsc[5:]): 
 		if v<0.143: break
 	r+=5
+	que.put((tskn,98,None,None))  # don't want to accidentally return 100, this is for progress display
 	ret=rete.copy()
 	ret.add(reto)
 	ret.process_inplace("filter.lowpass.tophat",{"cutoff_pixels":r})
@@ -145,6 +157,7 @@ def make3d_thr(que,tskn,fsp,imgns,rparms,latent,currun,rad,mmode,nset,ptclsclip=
 	ret=ret.get_clip(Region((pad-ptclsclip)//2,(pad-ptclsclip)//2,(pad-ptclsclip)//2,ptclsclip,ptclsclip,ptclsclip))
 	rete=rete.get_clip(Region((pad-ptclsclip)//2,(pad-ptclsclip)//2,(pad-ptclsclip)//2,ptclsclip,ptclsclip,ptclsclip))
 	reto=reto.get_clip(Region((pad-ptclsclip)//2,(pad-ptclsclip)//2,(pad-ptclsclip)//2,ptclsclip,ptclsclip,ptclsclip))
+	que.put((tskn,99,None,None))  # don't want to accidentally return 100, this is for progress display
 #	ret=ret.do_ift()
 	ret["ptcl_repr"]=len(imgns)
 	ret["resolution"]=1.0/fscf[r]
@@ -199,6 +212,12 @@ def make3d_thr_fast(que,tskn,fsp,imgns,rparms,latent,currun,rad,mmode,nset,ptcls
 	
 	rete=recone.finish(True)
 	reto=recono.finish(True)
+	rete["apix_x"]=im["apix_x"]
+	rete["apix_y"]=im["apix_x"]
+	rete["apix_z"]=im["apix_x"]
+	reto["apix_x"]=im["apix_x"]
+	reto["apix_y"]=im["apix_x"]
+	reto["apix_z"]=im["apix_x"]
 	fscf=rete.calc_fourier_shell_correlation(reto)
 	fsc=fscf[len(fscf)//3:len(fscf)*2//3]
 #	print(fsc)
