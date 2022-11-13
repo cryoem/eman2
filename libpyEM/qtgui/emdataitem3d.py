@@ -1615,7 +1615,7 @@ class EMIsosurface(EMItem3D):
 			glCallList(self.isodl)
 			glPopMatrix()
 
-			self.draw_bc_screen()
+#			self.draw_bc_screen()
 
 			glStencilFunc(GL_ALWAYS,1,1)
 			if self.cube:
