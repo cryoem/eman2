@@ -232,11 +232,14 @@ class SptAlignTask(JSTask):
 			
 			#### prepare inputs
 			##   keep original even/odd split if exist...
-			if "orig_idx" in data:
+			if "class" in data:
+				dii=data["class"]
+			elif "orig_idx" in data:
 				dii=data["orig_idx"]
 			else:
 				dii=data["ii"]
 				
+			
 			ref=refs[dii%2]
 			info=info3d[data["ii"]]
 			
@@ -486,7 +489,11 @@ class SptAlignTask(JSTask):
 			c3d={	"src":data["src"], "idx":data["idx"], 
 				"xform.align3d":xfout.inverse(), "score":np.mean(score)}
 			
-			if "orig_idx" in data:
+			if "class" in data:
+				c3d["class"]=data["class"]
+				clsid=data["class"]
+				
+			elif "orig_idx" in data:
 				c3d["orig_idx"]=data["orig_idx"]
 				clsid=data["orig_idx"]%2
 			else:

@@ -327,7 +327,7 @@ def main():
 				os.unlink(refeo)
 				os.rename(tmp,refeo)
 
-		elapsed=time.time()-starttime
+		elapsed=int(time.time()-starttime)
 		print(f"Iteration {ii} complete, {elapsed//3600:d}:{(elapsed%3600)//60:02d}:{elapsed%60:02d}")
 	
 	E2end(logid)
