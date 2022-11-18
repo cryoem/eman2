@@ -12,6 +12,7 @@ def main():
 	parser.add_argument("--batch", type=int,help="batch", default=32)
 	parser.add_argument("--niter", type=int,help="number of iterations", default=100)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--curve", action="store_true", default=False ,help="curve mode")
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -38,13 +39,20 @@ def main():
 	idx=np.sort(idx[:batch])
 	
 	tt=parsesym("c1")
-	xfs=tt.gen_orientations("rand",{"n":batch,"phitoo":True})
+	xfcrs=tt.gen_orientations("saff",{"delta":7.4,"phitoo":7.4,"inc_mirror":1})
+	if options.curve:
+		xfcrs=[x for x in xfcrs if abs(x.get_params("eman")['alt']-90)<10]
+	#xfs=tt.gen_orientations("rand",{"n":batch,"phitoo":True})
+	xfs=np.random.choice(xfcrs, batch)
 		
 	ali2d=[]
 	for ii,xf in zip(idx,xfs):
 		i2d=ptcls[ii]
 		d={"src":i2d["src"],"idx":i2d["idx"]}
-		d["xform.projection"]=xf
+		if "xform.projection" in i2d:
+			d["xform.projection"]=i2d["xform.projection"]
+		else:
+			d["xform.projection"]=xf
 		ali2d.append(d)
 		
 	save_lst_params(ali2d, f"{path}/ptcls.lst")
@@ -63,7 +71,10 @@ def main():
 		pt=[ptcls[i] for i in idx]
 		save_lst_params(pt, f"{path}/ptcls.lst")
 		
-		launch_childprocess(f"e2spa_align.py --ptclin {path}/ptcls.lst --ptclout {path}/ptcls_ali.lst --ref {path}/output.hdf --maxres {options.res} --parallel {options.parallel}")
+		etc=""
+		if options.curve:
+			etc+=" --curve"
+		launch_childprocess(f"e2spa_align.py --ptclin {path}/ptcls.lst --ptclout {path}/ptcls_ali.lst --ref {path}/output.hdf --maxres {options.res} --parallel {options.parallel} {etc}")
 	
 		ali2d=load_lst_params(f"{path}/ptcls_ali.lst")
 		
