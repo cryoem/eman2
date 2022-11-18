@@ -615,7 +615,7 @@ def build_decoder(pts, mid=512, ninp=4, conv=False):
 			tf.keras.layers.Reshape((4,4,16)),
 			tf.keras.layers.Conv2DTranspose(16, 3, activation="relu", strides=(2,2), padding="same"),
 			tf.keras.layers.Conv2DTranspose(16, 3, activation="relu", strides=(2,2), padding="same"),
-			tf.keras.layers.Conv2DTranspose(16, 5, activation="relu", strides=(2,2), padding="same"),
+			#tf.keras.layers.Conv2DTranspose(16, 5, activation="relu", strides=(2,2), padding="same"),
 			tf.keras.layers.Dropout(.1),
 			ResidueConv2D(64, 5, activation="relu", padding="same"),
 			tf.keras.layers.Dropout(.1),
@@ -707,32 +707,33 @@ def build_decoder_rigidbody(pts, ninp, foci):
 	print("building decoder with rigid body movement constraints...")
 	
 	x0=tf.keras.Input(shape=(ninp))
-	kinit=tf.keras.initializers.RandomNormal(0,1e-3)
+	kinit=tf.keras.initializers.RandomNormal(0,1e-2)
 	l2=tf.keras.regularizers.l2(1e-3)
-	print("deep resnet")
 	
 	layers=[
 		tf.keras.layers.Dense(256, activation="relu"),
-		tf.keras.layers.Reshape((4,4,16)),
-		tf.keras.layers.Conv2DTranspose(16, 3, activation="relu", strides=(2,2), padding="same"),#8
-		tf.keras.layers.Conv2DTranspose(16, 3, activation="relu", strides=(2,2), padding="same"),#16
-		tf.keras.layers.Dropout(.1),
-		ResidueConv2D(64, 5, activation="relu", padding="same"),
-		tf.keras.layers.Dropout(.1),
-		ResidueConv2D(64, 5, activation="relu", padding="same"),
-		tf.keras.layers.Dropout(.1),
-		ResidueConv2D(64, 5, activation="relu", padding="same"),
-		tf.keras.layers.Dropout(.1),
-		ResidueConv2D(64, 5, activation="relu", padding="same"),
-		tf.keras.layers.Dropout(.1),
-		ResidueConv2D(64, 5, activation="relu", padding="same"),
-		tf.keras.layers.Dropout(.1),
+		tf.keras.layers.Dense(256, activation="relu"),
+		tf.keras.layers.Dense(256, activation="relu"),
+		#tf.keras.layers.Reshape((16,16,1)),
+		#tf.keras.layers.Conv2DTranspose(16, 3, activation="relu", strides=(2,2), padding="same"),#8
+		#tf.keras.layers.Conv2DTranspose(16, 3, activation="relu", strides=(2,2), padding="same"),#16
+		#tf.keras.layers.Dropout(.1),
+		##ResidueConv2D(64, 5, activation="relu", padding="same"),
+		##tf.keras.layers.Dropout(.1),
+		#ResidueConv2D(64, 5, activation="relu", padding="same"),
+		#tf.keras.layers.Dropout(.1),
+		#ResidueConv2D(64, 5, activation="relu", padding="same"),
+		#tf.keras.layers.Dropout(.1),
+		#ResidueConv2D(64, 5, activation="relu", padding="same"),
+		#tf.keras.layers.Dropout(.1),
+		#ResidueConv2D(64, 5, activation="relu", padding="same"),
+		#tf.keras.layers.Dropout(.1),
+		##tf.keras.layers.Conv2DTranspose(16, 5, activation="relu", strides=(1,1), padding="same"),
 		#tf.keras.layers.Conv2DTranspose(16, 5, activation="relu", strides=(1,1), padding="same"),
-		tf.keras.layers.Conv2DTranspose(16, 5, activation="relu", strides=(1,1), padding="same"),
-		tf.keras.layers.Flatten(),
-		tf.keras.layers.Dropout(.3),
+		#tf.keras.layers.Flatten(),
+		#tf.keras.layers.Dropout(.3),
 		tf.keras.layers.BatchNormalization(),    
-		tf.keras.layers.Dense(6, activation="tanh",  kernel_regularizer=l2, kernel_initializer=kinit),
+		tf.keras.layers.Dense(6, activation="linear",  kernel_regularizer=l2, kernel_initializer=kinit),
 	]
 	
 	y0=x0
@@ -1106,6 +1107,9 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, imsk, option
 	wts=encode_model.trainable_variables + decode_model.trainable_variables
 	if options.anchor:
 		wts=wts[:-1]
+		
+	for w in wts:
+		print(w.shape)
 	nbatch=0
 	for t in trainset: nbatch+=1
 	
@@ -1142,11 +1146,13 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, imsk, option
 				if options.rigidbody:
 					pout=rotpts(p0[:,:,:3], pout, imsk) 
 					pout=tf.concat([pout, p0[:,:,3:]], axis=2)
+					
+				else:
+					## mask selected rows
+					pout=pout*imsk[None,:,None]+p0*(1-imsk[None,:,None]) 
+				
 				
 				pout=pout*pas+p0*(1-pas)
-				
-				## mask selected rows
-				pout=pout*imsk[None,:,None]+p0*(1-imsk[None,:,None]) 
 				
 				## finally generate images and calculate frc
 				imgs_cpx=pts2img(pout, xf)
