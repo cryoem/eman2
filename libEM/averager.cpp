@@ -330,7 +330,7 @@ EMData * ImageAverager::finish()
 		result->update();
 
 		result->set_attr("ptcl_repr",nimg);
-		printf("Avg done: %d\n",nimg);
+// 		printf("Avg done: %d\n",nimg);
 
 		if (freenorm) { delete normimage; normimage=(EMData*)0; }
 		nimg=0;
