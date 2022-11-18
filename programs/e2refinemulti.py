@@ -554,10 +554,10 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 		models=["{path}/threed_{itrm1:02d}_{mdl:02d}.hdf".format(path=options.path,itrm1=it-1,mdl=mdl+1) for mdl in range(options.nmodels)]
 		
 		if (options.randclassify and it==1):
-			run("e2project3d.py {mdls} --outfile {path}/projections_{itr:02d}.hdf -f --projector {projector} --orientgen {orient} --sym {sym} --postprocess normalize.circlemean {prethr} --parallel thread:{threads} {verbose}".format(
+			run("e2project3d.py {mdls} --outfile {path}/projections_{itr:02d}.hdf --projector {projector} --orientgen {orient} --sym {sym} --postprocess normalize.circlemean {prethr} --parallel thread:{threads} {verbose}".format(
 			path=options.path,mdls=models[0],itrm1=it-1,mdl=i,itr=it,projector=options.projector,orient=options.orientgen,sym=sym[0],prethr=prethreshold,threads=options.threads,verbose=verbose))
 		else:	
-			run("e2project3d.py {mdls} --outfile {path}/projections_{itr:02d}.hdf -f --projector {projector} --orientgen {orient} --sym {sym} --postprocess normalize.circlemean {prethr} --parallel thread:{threads} {verbose}".format(
+			run("e2project3d.py {mdls} --outfile {path}/projections_{itr:02d}.hdf --projector {projector} --orientgen {orient} --sym {sym} --postprocess normalize.circlemean {prethr} --parallel thread:{threads} {verbose}".format(
 			path=options.path,mdls=" ".join(models),itrm1=it-1,mdl=i,itr=it,projector=options.projector,orient=options.orientgen,sym=",".join(sym),prethr=prethreshold,threads=options.threads,verbose=verbose))
 
 		progress += 1.0
@@ -596,7 +596,7 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 			E2progress(logid,old_div(progress,total_procs))
 
 			### Classify
-			cmd = "e2classify.py {path}/simmx_{itr:02d}.hdf {path}/classmx_{itr:02d}.hdf -f --sep {sep} {verbose}".format(
+			cmd = "e2classify.py {path}/simmx_{itr:02d}.hdf {path}/classmx_{itr:02d}.hdf --sep {sep} {verbose}".format(
 				path=options.path,itr=it,sep=options.sep,verbose=verbose)
 			run(cmd)
 			progress += 1.0
@@ -626,7 +626,7 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 
 		### Class-averaging
 		cmd="e2classaverage.py --input {inputfile} --classmx {path}/classmx_{itr:02d}.hdf --decayedge --storebad --output {path}/classes_{itr:02d}.hdf --ref {path}/projections_{itr:02d}.hdf --iter {classiter} \
--f --resultmx {path}/cls_result_{itr:02d}.hdf --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} \
+--resultmx {path}/cls_result_{itr:02d}.hdf --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} \
 --align {classalign} --aligncmp {classaligncmp} {classralign} {prefilt} {verbose} {parallel}".format(
 			inputfile=options.input, path=options.path, itr=it, classiter=options.classiter, normproc=options.classnormproc, averager=options.classaverager, classrefsf=classrefsf,
 			classautomask=classautomask,classkeep=options.classkeep, classkeepsig=classkeepsig, classcmp=options.classcmp, classalign=options.classalign, classaligncmp=options.classaligncmp,
@@ -643,7 +643,7 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 			if options.breaksym : m3dsym="c1"
 			else : m3dsym=sym[mdl]
 
-			cmd="e2make3d.py --input {path}/classes_{itr:02d}.hdf --iter 2 -f --sym {sym} --output {path}/threed_{itr:02d}_{mdl:02d}.hdf --recon {recon} --preprocess {preprocess} \
+			cmd="e2make3d.py --input {path}/classes_{itr:02d}.hdf --iter 2 --sym {sym} --output {path}/threed_{itr:02d}_{mdl:02d}.hdf --recon {recon} --preprocess {preprocess} \
 {postprocess} --keep={m3dkeep} {keepsig} --apix={apix} --pad={m3dpad} {setsf} {verbose} --input_model {mdl}".format(
 				path=options.path, itr=it, sym=m3dsym, recon=options.recon, preprocess=options.m3dpreprocess, postprocess=postprocess, m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
 				m3dpad=options.pad, setsf=m3dsetsf, apix=apix, verbose=verbose, mdl=mdl+1)
