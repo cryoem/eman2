@@ -97,13 +97,13 @@ import traceback
 
 linetypes=["-","--",":","-."]
 symtypes=["o","s","+","2","1"]
-colortypes=["k","b","r","g","y","c","m","gray"]
+colortypes=["k","b","r","g","c","m","y","gray"]
 qt_color_map = {}
 qt_color_map["k"] = QtGui.QBrush(QtGui.QColor(0,0,0))
 qt_color_map["b"] = QtGui.QBrush(QtGui.QColor(0,0,255))
 qt_color_map["r"] = QtGui.QBrush(QtGui.QColor(255,0,0))
 qt_color_map["g"] = QtGui.QBrush(QtGui.QColor(0,255,0))
-qt_color_map["y"] = QtGui.QBrush(QtGui.QColor(255,255,0))
+qt_color_map["y"] = QtGui.QBrush(QtGui.QColor(128,128,0))
 qt_color_map["c"] = QtGui.QBrush(QtGui.QColor(0,255,255))
 qt_color_map["m"] = QtGui.QBrush(QtGui.QColor(255,0,255))
 qt_color_map["gray"] = QtGui.QBrush(QtGui.QColor(127,127,127))
@@ -233,7 +233,7 @@ class EMPlot2DWidget(EMGLWidget):
 	def set_selectpoints(self,tf):
 		self.selectpoints=bool(tf)
 
-	def set_data(self,input_data,key="data",replace=False,quiet=False,color=-1,linewidth=1,linetype=-2,symtype=-2,symsize=6,comments=None):
+	def set_data(self,input_data,key="data",replace=False,quiet=False,color=-1,linewidth=1,linetype=-2,symtype=-2,symsize=6,comments=None,contoursteps=-1,contourlevels=-1):
 		"""Set a keyed data set. The key should generally be a string describing the data.
 		'data' is a tuple/list of tuples/list representing all values for a particular
 		axis. eg - the points: 1,5; 2,7; 3,9 would be represented as ((1,2,3),(5,7,9)).
@@ -311,6 +311,10 @@ class EMPlot2DWidget(EMGLWidget):
 			if symtype<0: symtype=pp[5]
 			if linewidth<0: linewidth=pp[3]
 			if symsize<0 : symsize=pp[6]
+			if contoursteps<=5 : 
+				docontour=pp[7]
+				contoursteps=pp[8]
+			if contourlevels<=0: contourlevels=pp[9]
 		else:
 			if symtype==-2 and linetype==-2:
 				if len(data)<4 and (diff(self.data[key][0])>=0).all() : doline,linetype=1,0
@@ -321,7 +325,12 @@ class EMPlot2DWidget(EMGLWidget):
 			else : doline,linetype=0,0
 			if symtype>=0 : dosym=1
 			else : dosym,symtype=0,0
-		self.pparm[key]=(color,doline,linetype,linewidth,dosym,symtype,symsize)
+			if contoursteps<=5 :
+				docontour=False
+				contoursteps=50
+			else: docontour=True
+			if contourlevels<=0: contourlevels=10
+		self.pparm[key]=(color,doline,linetype,linewidth,dosym,symtype,symsize,docontour,contoursteps,contourlevels)
 
 		if comments!=None:
 			self.comments[key]=comments
@@ -600,6 +609,19 @@ class EMPlot2DWidget(EMGLWidget):
 					except:
 						print("Error: Plot failed\n%d %s\n%d %s"%(len(x),x,len(y),y))
 
+				# Finally, the contour plot, maybe this should be first?
+				if self.pparm[i][7]:
+					ctrmap,xe,ye=np.histogram2d(x,y,bins=self.pparm[i][8]) #,range=[[-1,1],[-1,1]
+					xe-=xe[1]-xe[0]
+					xe=xe[1:]
+					ye-=ye[1]-ye[0]
+					ye=ye[1:]
+					try: 
+						ax.contour(xe,ye,ctrmap.transpose(),self.pparm[i][9],colors=colortypes[self.pparm[i][0]])
+					except:
+						traceback.print_exc()
+						print("Error: Contour failed:",xe,ye,ctrmap.shape)
+
 			# additional program-specific annotations
 			if not self.annotate is None: self.annotate(fig,ax)
 
@@ -805,7 +827,7 @@ class EMPlot2DWidget(EMGLWidget):
 		self.del_shapes()
 		if not quiet: self.updateGL()
 
-	def setPlotParms(self,key,color,line,linetype,linewidth,sym,symtype,symsize,quiet=False):
+	def setPlotParms(self,key,color,line,linetype,linewidth,sym,symtype,symsize,quiet=False,contour=False,contoursteps=50,contourlevels=10):
 		if color==None : color=self.pparm[key][0]
 		if line==None : line=self.pparm[key][1]
 		if linetype==None : linetype=self.pparm[key][2]
@@ -813,8 +835,11 @@ class EMPlot2DWidget(EMGLWidget):
 		if sym==None : sym=self.pparm[key][4]
 		if symtype==None : symtype=self.pparm[key][5]
 		if symsize==None : symsize=self.pparm[key][6]
-		if self.pparm[key]==(color,line,linetype,linewidth,sym,symtype,symsize) : return
-		self.pparm[key]=(color,line,linetype,linewidth,sym,symtype,symsize)
+		if contour==None : contour=self.pparm[key][7]
+		if contoursteps==None : contoursteps=self.pparm[key][8]
+		if contourlevels==None : contourlevels=self.pparm[key][9]
+		if self.pparm[key]==(color,line,linetype,linewidth,sym,symtype,symsize,contour,contoursteps,contourlevels) : return
+		self.pparm[key]=(color,line,linetype,linewidth,sym,symtype,symsize,contour,contoursteps,contourlevels)
 		self.needupd=1
 		if not quiet: self.updateGL()
 
@@ -1545,8 +1570,9 @@ class EMPolarPlot2DWidget(EMGLWidget):
 
 				ax.scatter(theta, r,s=pointsizes, color=scattercolor, lw=3, alpha=self.alpha)
 
-			if len(self.pparm[i]) == 8 and self.pparm[i][7] >= 0:
-				ax.set_rmax(self.pparm[i][7])
+			# commented out if, shouldn't be needed and length is now larger
+#			if len(self.pparm[i]) == 8 and self.pparm[i][7] >= 0:
+			ax.set_rmax(self.pparm[i][7])
 
 			if self.datap:
 				for i in range(len(theta)):
@@ -2583,6 +2609,27 @@ class EMPlot2DInspector(QtWidgets.QWidget):
 		self.symsize.setRange(0,25)
 		vbl2b.addWidget(self.symsize)
 
+		# This is for contour plotting
+		vbl2c = QtWidgets.QVBoxLayout()
+		vbl2c.setContentsMargins(0, 0, 0, 0)
+		vbl2c.setSpacing(6)
+		hbl2.addLayout(vbl2c)
+
+		self.ctrtog=QtWidgets.QPushButton(self)
+		self.ctrtog.setText("Contour")
+		self.ctrtog.setCheckable(1)
+		vbl2c.addWidget(self.ctrtog)
+
+		self.ctrsteps=QtWidgets.QSpinBox(self)
+		self.ctrsteps.setRange(10,200)
+		self.ctrsteps.setValue(50)
+		vbl2c.addWidget(self.ctrsteps)
+
+		self.ctrlvls=QtWidgets.QSpinBox(self)
+		self.ctrlvls.setRange(1,100)
+		self.ctrlvls.setValue(10)
+		vbl2c.addWidget(self.ctrlvls)
+		
 		# This is for "heatmap"/2D hexbin parms
 		#vbl2c = QtWidgets.QVBoxLayout()
 		#vbl2c.setContentsMargins(0, 0, 0, 0)
@@ -2745,6 +2792,9 @@ class EMPlot2DInspector(QtWidgets.QWidget):
 		self.classb.clicked.connect(self.openClassWin)
 		#QtCore.QObject.connect(self.hmsel,QtCore.SIGNAL("clicked()"),self.updPlot)
 		self.symtog.clicked.connect(self.updPlot)
+		self.ctrtog.clicked.connect(self.updPlot)
+		self.ctrsteps.valueChanged[int].connect(self.updPlot)
+		self.ctrlvls.valueChanged[int].connect(self.updPlot)		
 		#QtCore.QObject.connect(self.hmsel,QtCore.SIGNAL("clicked()"),self.updPlotHmsel)
 		#QtCore.QObject.connect(self.hmbins,QtCore.SIGNAL("clicked()"),self.updPlotHmbins)
 		self.symsel.currentIndexChanged[str].connect(self.updPlotSymsel)
@@ -2972,10 +3022,12 @@ class EMPlot2DInspector(QtWidgets.QWidget):
 		self.target().autoscale(True)
 		if len(names)==1:
 			self.target().setPlotParms(names[0],self.color.currentIndex(),self.lintog.isChecked(),
-				self.linsel.currentIndex(),self.linwid.value(),self.symtog.isChecked(),self.symsel.currentIndex(),self.symsize.value())
+				self.linsel.currentIndex(),self.linwid.value(),self.symtog.isChecked(),self.symsel.currentIndex(),self.symsize.value(),False,
+				self.ctrtog.isChecked(), self.ctrsteps.value(),self.ctrlvls.value())
 		else:
 			for name in names:
-				self.target().setPlotParms(name,None,self.lintog.isChecked(),None,None,self.symtog.isChecked(),None,None,True)
+				self.target().setPlotParms(name,None,self.lintog.isChecked(),None,None,self.symtog.isChecked(),None,None,True,
+				self.ctrtog.isChecked(),None,None)
 			self.target().updateGL()
 
 	#
@@ -2985,10 +3037,11 @@ class EMPlot2DInspector(QtWidgets.QWidget):
 		names = [str(item.text()) for item in self.setlist.selectedItems()]
 		if len(names)==1:
 			self.target().setPlotParms(names[0],self.color.currentIndex(),self.lintog.isChecked(),
-				self.linsel.currentIndex(),self.linwid.value(),self.symtog.isChecked(),self.symsel.currentIndex(),self.symsize.value())
+				self.linsel.currentIndex(),self.linwid.value(),self.symtog.isChecked(),self.symsel.currentIndex(),self.symsize.value(),False,
+				self.ctrtog.isChecked(), self.ctrsteps.value(),self.ctrlvls.value())
 		else:
 			for name in names:
-				self.target().setPlotParms(name,self.color.currentIndex(),None,None,None,None,None,None,True)
+				self.target().setPlotParms(name,self.color.currentIndex(),None,None,None,None,None,None,True,None,None,None)
 			self.target().updateGL()
 
 	#def updPlotHmsel(self,s=None):
@@ -3007,10 +3060,11 @@ class EMPlot2DInspector(QtWidgets.QWidget):
 		names = [str(item.text()) for item in self.setlist.selectedItems()]
 		if len(names)==1:
 			self.target().setPlotParms(names[0],self.color.currentIndex(),self.lintog.isChecked(),
-				self.linsel.currentIndex(),self.linwid.value(),self.symtog.isChecked(),self.symsel.currentIndex(),self.symsize.value())
+				self.linsel.currentIndex(),self.linwid.value(),self.symtog.isChecked(),self.symsel.currentIndex(),self.symsize.value(),False,
+				self.ctrtog.isChecked(), self.ctrsteps.value(),self.ctrlvls.value())
 		else:
 			for name in names:
-				self.target().setPlotParms(name,None,None,None,None,None,self.symsel.currentIndex(),None,True)
+				self.target().setPlotParms(name,None,None,None,None,None,self.symsel.currentIndex(),None,True,None,None,None)
 			self.target().updateGL()
 
 	def updPlotSymsize(self,s=None):
@@ -3018,10 +3072,11 @@ class EMPlot2DInspector(QtWidgets.QWidget):
 		names = [str(item.text()) for item in self.setlist.selectedItems()]
 		if len(names)==1:
 			self.target().setPlotParms(names[0],self.color.currentIndex(),self.lintog.isChecked(),
-				self.linsel.currentIndex(),self.linwid.value(),self.symtog.isChecked(),self.symsel.currentIndex(),self.symsize.value())
+				self.linsel.currentIndex(),self.linwid.value(),self.symtog.isChecked(),self.symsel.currentIndex(),self.symsize.value(),False,
+				self.ctrtog.isChecked(), self.ctrsteps.value(),self.ctrlvls.value())
 		else:
 			for name in names:
-				self.target().setPlotParms(name,None,None,None,None,None,None,self.symsize.value(),True)
+				self.target().setPlotParms(name,None,None,None,None,None,None,self.symsize.value(),True,None,None,None)
 			self.target().updateGL()
 
 	#def updPlotHmbins(self,s=None):
@@ -3040,10 +3095,11 @@ class EMPlot2DInspector(QtWidgets.QWidget):
 		names = [str(item.text()) for item in self.setlist.selectedItems()]
 		if len(names)==1:
 			self.target().setPlotParms(names[0],self.color.currentIndex(),self.lintog.isChecked(),
-				self.linsel.currentIndex(),self.linwid.value(),self.symtog.isChecked(),self.symsel.currentIndex(),self.symsize.value())
+				self.linsel.currentIndex(),self.linwid.value(),self.symtog.isChecked(),self.symsel.currentIndex(),self.symsize.value(),False,
+				self.ctrtog.isChecked(), self.ctrsteps.value(),self.ctrlvls.value())
 		else:
 			for name in names:
-				self.target().setPlotParms(name,None,None,self.linsel.currentIndex(),None,None,None,None,True)
+				self.target().setPlotParms(name,None,None,self.linsel.currentIndex(),None,None,None,None,True,None,None,None)
 			self.target().updateGL()
 
 	def updPlotLinwid(self,s=None):
@@ -3051,10 +3107,11 @@ class EMPlot2DInspector(QtWidgets.QWidget):
 		names = [str(item.text()) for item in self.setlist.selectedItems()]
 		if len(names)==1:
 			self.target().setPlotParms(names[0],self.color.currentIndex(),self.lintog.isChecked(),
-				self.linsel.currentIndex(),self.linwid.value(),self.symtog.isChecked(),self.symsel.currentIndex(),self.symsize.value())
+				self.linsel.currentIndex(),self.linwid.value(),self.symtog.isChecked(),self.symsel.currentIndex(),self.symsize.value(),False,
+				self.ctrtog.isChecked(), self.ctrsteps.value(),self.ctrlvls.value())
 		else:
 			for name in names:
-				self.target().setPlotParms(name,None,None,None,self.linwid.value(),None,None,None,True)
+				self.target().setPlotParms(name,None,None,None,self.linwid.value(),None,None,None,True,None,None,None)
 			self.target().updateGL()
 
 	def updAlpha(self,val):
@@ -3090,6 +3147,10 @@ class EMPlot2DInspector(QtWidgets.QWidget):
 		self.symtog.setChecked(pp[4])
 		self.symsel.setCurrentIndex(pp[5])
 		self.symsize.setValue(pp[6])
+		
+		self.ctrtog.setChecked(pp[7])
+		self.ctrsteps.setValue(pp[8])
+		self.ctrlvls.setValue(pp[9])
 		self.quiet=0
 
 	def newCols(self,val):

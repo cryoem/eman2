@@ -775,8 +775,11 @@ class EMGMM(QtWidgets.QMainWindow):
 
 	def slice_update(self,a=None,b=None):
 		"""Called when any of the slice parameters change, if b is a transform then we use it"""
-		if not b is None: self.ort_slice=b
-		if self.cur_dyn_vol is None : return
+		if b is not None: self.ort_slice=b
+		if self.cur_dyn_vol is None :
+			if self.wview2d is not None: 
+				self.wview2d.set_data(EMData(256,256,1))
+			return
 		thk=self.wsbthk.value()		# thickness of layer
 		cen=self.wsbcen.value()		# center of layer
 		nz=self.cur_dyn_vol["nz"]
@@ -940,11 +943,15 @@ class EMGMM(QtWidgets.QMainWindow):
 					self.display_dynamic(vol)
 				except:
 					print("Error: map missing for ",smap)
-			else: self.wview3d.updateGL()
-
+			else:
+				self.display_dynamic(None) 
+#				self.wview3d.updateGL()
+		else:
+			self.display_dynamic(None)
 
 	def display_dynamic(self,vol):
 		"""Displays a new dynamic map, used multiple places so condensed here"""
+		#print("Set null vol")
 		self.cur_dyn_vol=vol
 		if self.dmapdataitem is None:
 			self.dmapdataitem=EMDataItem3D(vol)
@@ -954,7 +961,8 @@ class EMGMM(QtWidgets.QMainWindow):
 		else:
 			self.dmapdataitem.setData(vol)
 		
-		self.dmapiso.getTransform().set_scale(vol["apix_x"]/self.jsparm["apix"])
+		if vol is not None:
+			self.dmapiso.getTransform().set_scale(vol["apix_x"]/self.jsparm["apix"])
 		
 		self.wview3d.updateGL()
 		self.slice_update()
@@ -996,7 +1004,7 @@ class EMGMM(QtWidgets.QMainWindow):
 	def plot_keyboard(self,event):
 		"""keyboard events from the 2-D plot"""
 		
-		if event.key()==Qt.Key_Esc: self.mouseabort=True
+		if event.key()==Qt.Key_Escape: self.mouseabort=True
 	
 	#def plot_mouse(self,event,loc):
 		#self.mouseabort=False
