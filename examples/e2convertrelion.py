@@ -23,7 +23,7 @@ def main():
 	parser.add_argument("--skipheader", type=int,help="skip the first N lines of the star file (before the parameter names starting with _). default is 1", default=1)
 	parser.add_argument("--voltage", type=int,help="voltage", default=300)
 	parser.add_argument("--cs", type=float,help="cs", default=2.7)
-	parser.add_argument("--amp", type=float,help="amplitude contrast. default 0 (0-100)", default=0)
+	parser.add_argument("--amp", type=float,help="amplitude contrast. default 0 (0-100)", default=10)
 	parser.add_argument("--apix", type=float,help="apix", default=1.0)
 	parser.add_argument("--output", type=str,help="output lst file", default="sets/all_relion.lst")
 	parser.add_argument("--head", type=int,help="use only first N particles. for testing", default=-1)
@@ -109,7 +109,12 @@ def main():
 			continue
 
 		if not options.skipwrite:
-			e=EMData(src, ii)
+			#print(src,ii)
+			try:
+				e=EMData(src, ii)
+			except:
+				print("something wrong with {} image {}".format(src, ii))
+				exit()
 			
 			du, dv, ang=float(l[rid["dfu"]]), float(l[rid["dfv"]]), float(l[rid["dfang"]])
 

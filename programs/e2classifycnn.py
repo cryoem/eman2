@@ -130,6 +130,8 @@ class NNet:
 				result = self.model.train_on_batch(image, label)
 				cost.append(result)
 			print("iteration {}, cost {:.3f}".format(it, np.mean(cost)))
+		try: os.remove("nnet_classifycnn.h5")
+		except:pass
 		self.model.save("nnet_classifycnn.h5")
 		
 	def apply_network(self, imgs):
@@ -344,6 +346,7 @@ class EMPtclClassify(QtWidgets.QMainWindow):
 	def save_set(self):
 		fname=self.options.setname
 		oname=fname[:fname.rfind('.')]+"_good.lst"
+		oname2=fname[:fname.rfind('.')]+"_bad.lst"
 		thr=int(self.val_ptclthr.getval())
 		#print(oname, thr)
 		badi=self.sortidx[:thr]
@@ -352,14 +355,16 @@ class EMPtclClassify(QtWidgets.QMainWindow):
 			os.remove(oname)
 		lst=LSXFile(fname, True)
 		lout=LSXFile(oname, False)
+		lout2=LSXFile(oname2, False)
 		nn=lst.n
 		for i in range(nn):
-			if i in badi:
-				continue
 			l=lst.read(i)
-			lout.write(-1, l[0], l[1], l[2])
+			if i in badi:
+				lout2.write(-1, l[0], l[1], l[2])
+			else:
+				lout.write(-1, l[0], l[1], l[2])
 			
-		lst=lout=None
+		lst=lout=lout2=None
 		print("{} particles written to {}".format(nn-thr, oname))
 		
 	def load_nnet(self):
