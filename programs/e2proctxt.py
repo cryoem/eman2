@@ -115,12 +115,19 @@ Manipulations of text files conatining multi-column data (as would be used with 
 --merge  combines several files, all with N rows, into a single file with N rows but additional columns
 
 --dimreduce  a variety of dimensional reduction algorithms are available. This will add additional dimensionally reduced columns to an existing file
-	Note that tsne is the only dimensional reduction algorithm suitable for large numbers (>~50k) of rows.""" 
+	Note that tsne is the only dimensional reduction algorithm suitable for large numbers (>~50k) of rows.
+	
+--hist2d <output>
+
+--hist3d <output>
+	""" 
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	####################
 	parser.add_argument("--merge",type=str,help="Merge several files into a single output by appending columns. All inputs must have the same number of rows. Row comments stripped.",default=None)
 	parser.add_argument("--dimreduce",type=str,help="tsne, mds, isomap, lle, spectral. output=input with added columns. Multiple files are independent.",default=None)
+	parser.add_argument("--hist2d",type=str,help="Generate a 2d histogram as an image of any 2 specified columns",default=None)
+	parser.add_argument("--hist3d",type=str,help="Generate a 3d histogram as a 3D volume of any 3 specified columns",default=None)
 	parser.add_argument("--dimout",type=int,help="number of output dimensions for dimreduce. default=2",default=2)
 	parser.add_argument("--columns",type=str,help="which columns to use for the analysis (eg, 2-4). First column is 0. End is inclusive. default = all columns",default=None)
 	parser.add_argument("--normalize",action="store_true",default=False,help="Applies normal EMAN normalization to specified columns (mean->0, std->1)")
