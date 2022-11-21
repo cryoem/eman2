@@ -11,15 +11,47 @@ def main():
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--sym", type=str,help="symetry", default="c2")
-	#parser.add_argument("--threads", type=int,help="threads", default=12)
+	parser.add_argument("--boxsz", type=int,help="", default=64)
 	#parser.add_argument("--ntry", type=int,help="number of tries", default=20)
 	parser.add_argument("--applysym", action="store_true", default=False ,help="apply symmetry after alignment")
+	parser.add_argument("--refineonly", action="store_true", default=False ,help="start near correct solution")
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	
 	fname=args[0]
-	sz=64
+	sz=options.boxsz
 	e=EMData(fname)
+	sym=options.sym
+	
+	def test_rot_refine(x):
+		
+		xf=Transform({"type":"xyz", "xtilt":x[0], "ytilt":x[1], "ztilt":x[2],"tx":x[3],"ty":x[4],"tz":x[5]})
+		ref0=ref.process("xform", {"transform":xf})
+		ref_sym=ref0.process("xform.applysym",{"sym":sym})
+		fsc=ref0.calc_fourier_shell_correlation(ref_sym)
+		fsc=np.array(fsc).reshape((3,-1))[1]
+			
+		return -np.mean(fsc)
+	
+	if options.refineonly:
+		x0=[0,0,0,0,0,0]
+		ref=e.copy()
+		res=minimize(test_rot_refine, x0, method='Powell', 
+					options={'ftol': 1e-3, 'disp': False, "maxiter":20})
+		
+		x=res.x
+		xf=Transform({"type":"xyz", "xtilt":x[0], "ytilt":x[1], "ztilt":x[2],"tx":x[3],"ty":x[4],"tz":x[5]})
+		a=ref.process("xform", {"transform":xf})
+		
+		if options.applysym:
+			a.process_inplace("xform.applysym", {"averager":"mean.tomo", "sym":sym})
+		outname=fname[:-4]+"_sym.hdf"
+		a.write_image(outname)
+		print("Done. Output written to {}".format(outname))
+		
+		E2end(logid)
+		return
+	
 	scale=e["nx"]/sz
 	e.process_inplace("math.fft.resample",{"n":scale})
 	e.process_inplace("filter.lowpass.gauss", {"cutoff_abs":.45})

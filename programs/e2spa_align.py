@@ -19,9 +19,12 @@ def main():
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use. Default is thread:12", default="thread:12")
 
 	parser.add_argument("--debug", action="store_true", default=False ,help="Turn on debug mode. This will only process a small subset of the data")
+	parser.add_argument("--curve", action="store_true", default=False ,help="curve mode")
 	#parser.add_argument("--maxshift", type=int,help="maximum shift allowed", default=-1)
 	parser.add_argument("--localrefine", type=int, default=-1 ,help="local refinement. larger value correspond to smaller local region")
 	parser.add_argument("--goldcontinue", action="store_true", default=False ,help="split even/odd subset and references.")
+	parser.add_argument("--extrarot", action="store_true", default=False ,help="do an extra rotation to combat the interpolation issues.")
+	#parser.add_argument("--skiprefine", action="store_true", default=False ,help="coarse search only.")
 	#parser.add_argument("--ctfweight", action="store_true", default=False ,help="weight by ctf. not used yet...")
 	#parser.add_argument("--slow", action="store_true", default=False ,help="slow but finer search")
 	parser.add_argument("--maxres", type=float,default=-1, help="max resolution for cmp")
@@ -111,6 +114,7 @@ class SpaAlignTask(JSTask):
 	
 	def execute(self, callback):
 		time0=time.time()
+		
 		def test_rot(x, returnxf=False):
 			if isinstance(x, Transform):
 				xf=x
@@ -118,9 +122,10 @@ class SpaAlignTask(JSTask):
 				x=list(x)
 				x.extend(curxf[len(x):])
 				xf=Transform({"type":"xyz", "xtilt":x[0], "ytilt":x[1], "ztilt":x[2],"tx":x[3], "ty":x[4]})
-			
+							
 			pj=refsmall.project('gauss_fft',{"transform":xf, "returnfft":1})
 			x0=options.minrespx; x1=int(ss*.4)
+			xf2=Transform(xf)
 
 			ccf=imgsmall.calc_ccf(pj)
 			pos=ccf.calc_max_location_wrap(mxsft, mxsft, 0)
@@ -129,14 +134,32 @@ class SpaAlignTask(JSTask):
 		
 			fsc=imgsmall.calc_fourier_shell_correlation(pj)
 			fsc=np.array(fsc).reshape((3,-1))[:, x0:x1]
-			
-			#wt=fsc[2]
+				
 			wt=np.ones_like(fsc[1])
 			if ctfwt:
 				wt*=ctfcv[x0:x1]
 			
 			scr=-np.sum(fsc[1]*wt)/np.sum(wt)
 			
+			
+			if options.extrarot:
+				
+				pj2=refrotsmall.project('gauss_fft',{"transform":xf2*r45, "returnfft":1})
+				ccf=imgsmall.calc_ccf(pj2)
+				pos=ccf.calc_max_location_wrap(mxsft, mxsft, 0)
+				pj2.process_inplace("xform", {"tx":pos[0], "ty":pos[1]})
+			
+				fsc2=imgsmall.calc_fourier_shell_correlation(pj2)
+				fsc2=np.array(fsc2).reshape((3,-1))[:, x0:x1]
+				
+				scr2=-np.sum(fsc2[1]*wt)/np.sum(wt)
+				scr=(scr*.5+scr2*.5)
+			
+			if options.curve:
+				alt=xf.get_params("eman")["alt"]
+				a=abs(alt-90.)/10
+				scr+=a**2
+				
 			if returnxf:
 				return scr, xf
 			else:
@@ -162,6 +185,18 @@ class SpaAlignTask(JSTask):
 			ref.process_inplace("xform.phaseorigin.tocenter")
 			ref.process_inplace("xform.fourierorigin.tocenter")
 			refs.append(ref)
+			
+		if options.extrarot:
+			refsrot=[]
+			r45=Transform({"type":"eman","az":45})
+			for r in refnames:
+				ref=EMData(r)
+				ref.process("xform",{"transform":r45})
+				ref=ref.do_fft()
+				ref.process_inplace("xform.phaseorigin.tocenter")
+				ref.process_inplace("xform.fourierorigin.tocenter")
+				refsrot.append(ref)
+			
 		
 		ref=EMData(refnames[0], 0, True)
 		ny0=ny=ref["ny"]
@@ -179,7 +214,12 @@ class SpaAlignTask(JSTask):
 		
 		astep=7.4
 		sym=Symmetries.get(options.sym)
-		xfcrs=sym.gen_orientations("saff",{"delta":astep,"phitoo":astep,"inc_mirror":1})
+		
+		if options.curve:
+			xfcrs=sym.gen_orientations("eman",{"delta":astep,"phitoo":astep,"inc_mirror":1,"alt_min":80, "alt_max":100})
+		else:
+			xfcrs=sym.gen_orientations("eman",{"delta":astep,"phitoo":astep,"inc_mirror":1})
+		#print(np.unique([x.get_params("eman")['alt'] for x in xfcrs]))
 		
 		for infoi, infos in enumerate(data["info"]):
 			ii=infos[0]
@@ -239,6 +279,8 @@ class SpaAlignTask(JSTask):
 					ss=maxy
 					
 				refsmall=refs[clsid].get_clip(Region(0,(ny-ss)//2, (ny-ss)//2, ss+2, ss, ss))
+				if options.extrarot:
+					refrotsmall=refsrot[clsid].get_clip(Region(0,(ny-ss)//2, (ny-ss)//2, ss+2, ss, ss))
 				imgsmall=img.get_clip(Region(0,(ny-ss)//2, ss+2, ss))
 				imgsmall.process_inplace("xform.fourierorigin.tocenter")
 					

@@ -25,6 +25,7 @@ def main():
 	parser.add_argument("--compressbits", type=int,help="Bits to keep when writing images. 4 generally safe for raw data. 0-> true lossless (floating point). Default 6", default=6)
 	parser.add_argument("--localsize",type=float,default=-1,help="Override the automatic local region size (in A) used for local resolution calculation and filtration.")
 	parser.add_argument("--m3dthread",action="store_true", default=False ,help="do make3d in threading mode with shared memory. safer for large boxes")
+	parser.add_argument("--curve",action="store_true", default=False ,help="curve mode for filaments")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--localrefine", type=int, default=-1 ,help="local refinement. larger value correspond to smaller local region")
 
@@ -74,11 +75,15 @@ def main():
 		
 		for eo in ["even","odd"]:
 			run("e2proc3d.py {} {}/threed_00_{}.hdf {}".format(options.ref, options.path, eo, opt))
-	
+			
+		run("e2proc3d.py {}/threed_00_even.hdf {}/threed_00.hdf --addfile {}/threed_00_odd.hdf --mult .5".format(options.path,options.path,options.path,))
 	
 	for i in range(options.startiter, options.startiter+options.niter):
 		
-		run("e2spa_align.py --ptclin {pt}/ptcls_{i0:02d}.lst --ptclout {pt}/ptcls_{i1:02d}.lst --ref {pt}/threed_{i0:02d}.hdf --parallel {par} --sym {s} --maxres {rs:.2f} --goldcontinue --verbose {verbose} --localrefine {lc}".format(pt=options.path, i0=i, i1=i+1, rs=res, s=sym, par=options.parallel, verbose=options.verbose, lc=options.localrefine))
+		etc=""
+		if options.curve: etc+=" --curve"
+		
+		run("e2spa_align.py --ptclin {pt}/ptcls_{i0:02d}.lst --ptclout {pt}/ptcls_{i1:02d}.lst --ref {pt}/threed_{i0:02d}.hdf --parallel {par} --sym {s} --maxres {rs:.2f} --goldcontinue --verbose {verbose} --localrefine {lc} {etc}".format(pt=options.path, i0=i, i1=i+1, rs=res, s=sym, par=options.parallel, verbose=options.verbose, lc=options.localrefine, etc=etc))
 			
 		for eo in ["even","odd"]:
 			run("e2spa_make3d.py --input {pt}/ptcls_{i1:02d}.lst --output {pt}/threed_{i1:02d}_{eo}.hdf --keep {kp} --sym {s} {par} --clsid {eo}".format(pt=options.path, i1=i+1, eo=eo, s=sym, par=m3dpar, kp=options.keep))

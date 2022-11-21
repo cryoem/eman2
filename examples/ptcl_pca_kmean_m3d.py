@@ -165,13 +165,13 @@ def main():
 			os.remove(name3d)
 			
 		for j in range(options.ncls):
-			t="tmp_classify.hdf"
-			cmd="e2spa_make3d.py --input {} --output {} --pad {} --keep 1 --threads {} {} --sym {} --clsid {}".format(options.ptclsout, t, options.pad, options.threads, options.setsf, options.sym, j)
+			t="tmp_classify_{:04d}.hdf".format(np.random.randint(10000))
+			cmd="e2spa_make3d.py --input {} --output {} --pad {} --keep 1 --parallel thread:{} {} --sym {} --clsid {}".format(options.ptclsout, t, options.pad, options.threads, options.setsf, options.sym, j)
 			launch_childprocess(cmd)
 			e=EMData(t)
 			e.write_compressed(name3d,-1,12)
+			os.remove(t)
 			
-		os.remove(t)
 		print(f"Density maps saved in {name3d}")
 	E2end(logid)
 	

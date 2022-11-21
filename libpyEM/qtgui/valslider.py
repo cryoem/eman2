@@ -104,7 +104,7 @@ class ValSlider(QtWidgets.QWidget):
 		self.hboxlayout = QtWidgets.QHBoxLayout(self)
 		self.hboxlayout.setContentsMargins(0, 0, 0, 0)
 		self.hboxlayout.setSpacing(6)
-		self.hboxlayout.setObjectName("hboxlayout")
+#		self.hboxlayout.setObjectName("hboxlayout")
 		
 		if showenable>=0 :
 			self.enablebox=QtWidgets.QCheckBox(self)
@@ -124,7 +124,7 @@ class ValSlider(QtWidgets.QWidget):
 #			self.label.setAlignment(QtCore.Qt.AlignRight+QtCore.Qt.AlignVCenter)
 			self.label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
 			self.label.setMinimumSize(QtCore.QSize(labelwidth,20))
-			self.label.setObjectName("label")
+#			self.label.setObjectName("label")
 			self.hboxlayout.addWidget(self.label)
 		
 		
@@ -136,7 +136,7 @@ class ValSlider(QtWidgets.QWidget):
 		sizePolicy.setHeightForWidth(self.text.sizePolicy().hasHeightForWidth())
 		self.text.setSizePolicy(sizePolicy)
 		self.text.setMinimumSize(QtCore.QSize(80,0))
-		self.text.setObjectName("text")
+#		self.text.setObjectName("text")
 		self.hboxlayout.addWidget(self.text)
 		
 		self.slider = QtWidgets.QSlider(self)
@@ -151,7 +151,7 @@ class ValSlider(QtWidgets.QWidget):
 		self.slider.setSingleStep(16)
 		self.slider.setPageStep(256)
 		self.slider.setOrientation(QtCore.Qt.Horizontal)
-		self.slider.setObjectName("slider")
+#		self.slider.setObjectName("slider")
 		self.hboxlayout.addWidget(self.slider)
 		
 		self.text.editingFinished.connect(self.textChange)
@@ -318,7 +318,7 @@ class ValBox(QtWidgets.QWidget):
 		self.hboxlayout = QtWidgets.QHBoxLayout(self)
 		self.hboxlayout.setContentsMargins(0, 0, 0, 0)
 		self.hboxlayout.setSpacing(6)
-		self.hboxlayout.setObjectName("hboxlayout")
+#		self.hboxlayout.setObjectName("hboxlayout")
 		
 		if showenable>=0 :
 			self.enablebox=QtWidgets.QCheckBox(self)
@@ -338,7 +338,7 @@ class ValBox(QtWidgets.QWidget):
 #			self.label.setAlignment(QtCore.Qt.AlignRight+QtCore.Qt.AlignVCenter)
 			self.label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
 			self.label.setMinimumSize(QtCore.QSize(labelwidth,20))
-			self.label.setObjectName("label")
+#			self.label.setObjectName("label")
 			self.hboxlayout.addWidget(self.label)
 		
 		
@@ -350,7 +350,7 @@ class ValBox(QtWidgets.QWidget):
 		sizePolicy.setHeightForWidth(self.text.sizePolicy().hasHeightForWidth())
 		self.text.setSizePolicy(sizePolicy)
 		self.text.setMinimumSize(QtCore.QSize(60,0))
-		self.text.setObjectName("text")
+#		self.text.setObjectName("text")
 		self.hboxlayout.addWidget(self.text)
 		
 		self.text.editingFinished.connect(self.textChange)
@@ -464,7 +464,7 @@ class StringBox(QtWidgets.QWidget):
 		self.hboxlayout = QtWidgets.QHBoxLayout(self)
 		self.hboxlayout.setContentsMargins(0, 0, 0, 0)
 		self.hboxlayout.setSpacing(6)
-		self.hboxlayout.setObjectName("hboxlayout")
+		#self.hboxlayout.setObjectName("hboxlayout")
 		
 		if showenable>=0 :
 			self.enablebox=QtWidgets.QCheckBox(self)
@@ -484,7 +484,7 @@ class StringBox(QtWidgets.QWidget):
 #			self.label.setAlignment(QtCore.Qt.AlignRight+QtCore.Qt.AlignVCenter)
 			self.label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
 			self.label.setMinimumSize(QtCore.QSize(labelwidth,20))
-			self.label.setObjectName("label")
+			#self.label.setObjectName("label")
 			self.hboxlayout.addWidget(self.label)
 		
 		
@@ -497,7 +497,7 @@ class StringBox(QtWidgets.QWidget):
 		sizePolicy.setHeightForWidth(self.text.sizePolicy().hasHeightForWidth())
 		self.text.setSizePolicy(sizePolicy)
 		self.text.setMinimumSize(QtCore.QSize(80,0))
-		self.text.setObjectName("text")
+		#self.text.setObjectName("text")
 		self.hboxlayout.addWidget(self.text)
 		
 		self.text.editingFinished.connect(self.textChange)
@@ -550,7 +550,7 @@ class CheckBox(QtWidgets.QWidget):
 		self.hboxlayout = QtWidgets.QHBoxLayout(self)
 		self.hboxlayout.setContentsMargins(0, 0, 0, 0)
 		self.hboxlayout.setSpacing(6)
-		self.hboxlayout.setObjectName("hboxlayout")
+#		self.hboxlayout.setObjectName("hboxlayout")
 		
 		if showenable>=0 :
 			self.enablebox=QtWidgets.QCheckBox(self)
@@ -570,7 +570,7 @@ class CheckBox(QtWidgets.QWidget):
 #			self.label.setAlignment(QtCore.Qt.AlignRight+QtCore.Qt.AlignVCenter)
 			self.label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
 			self.label.setMinimumSize(QtCore.QSize(labelwidth,20))
-			self.label.setObjectName("label")
+#			self.label.setObjectName("label")
 			self.hboxlayout.addWidget(self.label)
 		
 		
@@ -661,7 +661,7 @@ class RangeSlider(QtWidgets.QWidget):
 		v0y=self.vtoy(self.value[0])
 		v1y=self.vtoy(self.value[1])
 		
-		print(y,v0y,v1y)
+		#print(y,v0y,v1y)
 		
 		# outside the current range, no effect
 		if y>v0y+3 : return
