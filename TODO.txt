@@ -1,7 +1,9 @@
+e2proc2d, e2proc3d:
+ - get_image_count
+
 build system docs
 
-e2proc2d:
- - get_image_count
+e3proc2d, e3proc3d
 
 - binary no compile, get from eman-dev
 
