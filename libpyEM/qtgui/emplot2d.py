@@ -947,7 +947,7 @@ lc is the cursor selection point in plot coords"""
 			try:
 				cmts = comments[p].split(";")
 
-				for i in range(old_div(len(cmts),2)):
+				for i in range(len(cmts)//2):
 					imn = int(cmts[2*i])
 					imf = cmts[2*i+1]
 					# The first image window will display the first 2 images when available
@@ -955,6 +955,11 @@ lc is the cursor selection point in plot coords"""
 						ptclim=[EMData(imf,imn),EMData(cmts[3],int(cmts[2]))] 
 						ptclim[0].process_inplace("normalize.edgemean")
 						ptclim[1].process_inplace("normalize.edgemean")
+						if "ptclfsc" in cmts[3]:
+							fsc=ptclim[0].calc_ccf(ptclim[1])
+							fsc.process_inplace("xform.phaseorigin.tocenter")
+							fsc.process_inplace("normalize.edgemean")
+							ptclim.append(fsc)
 					else: ptclim=EMData(imf,imn)
 					
 					try: self.particle_viewers[i].set_data(ptclim)
@@ -968,6 +973,7 @@ lc is the cursor selection point in plot coords"""
 #					p1.process_inplace("filter.highpass.tophat",{"cutoff_freq":0.01})
 #					p1.process_inplace("filter.lowpass.tophat",{"cutoff_freq":1.0/30.0})
 			except:
+#				traceback.print_exc()
 				self.add_shape("selpc",EMShape(("scrlabel",0,0,0,80,self.scrlim[3]-(35),comments[p],120.0,-1)))
 				y0+=18
 
