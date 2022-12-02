@@ -1062,7 +1062,7 @@ class boxerConvNet(QtCore.QObject):
 			
 		
 		m=fm.numpy()
-		p=nnet.model.predict(m[None, :, :, None])
+		p=nnet.model.predict(m[None, :, :, None].astype(np.float32))
 		p[p<0]=0
 		cout=from_numpy(p[0,:,:,0])
 		#cout=cout.get_clip(Region(((cout["nx"]-nx)//2),((cout["ny"]-ny)//2) ,nx, ny))
