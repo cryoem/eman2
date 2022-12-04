@@ -540,7 +540,7 @@ def main():
 		ptclfsc = "ptclfsc_{}.txt".format(rfnnum)
 		# generate a projection for each particle so we can compare
 
-		pf = "ptclfsc_{}_projections.hdf".format(rfnnum)
+		pf = "ptclfsc_{}_projections.hdf:8".format(rfnnum)
 
 		if options.sym==None or len(options.sym)==0 : options.sym="c1"
 		try:

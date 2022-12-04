@@ -190,7 +190,7 @@ def main():
 					out.write("{}\t{}\t{}\t{}\t{}\t# {}\n".format(v["nx"],v["ny"],v["nz"],v["mean"],v["sigma"],fsp[:-5]))
 				elif isinstance(v,Transform) :
 					dct=v.get_params("eman")
-					out.write("{}\t{}\t{}\t{}\t{}\t{}\t# {}\n".format(v["az"],v["alt"],v["phi"],v["tx"],v["ty"],v["tz"],fsp[:-5]))
+					out.write("{}\t{}\t{}\t{}\t{}\t{}\t# {}\n".format(dct["az"],dct["alt"],dct["phi"],dct["tx"],dct["ty"],dct["tz"],fsp[:-5]))
 				else:
 					out.write("{}\t# {}\n".format(v,fsp[:-5]))
 			
