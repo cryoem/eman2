@@ -386,7 +386,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		#self.wbutneutral=QtWidgets.QPushButton("Train Neutral Model")
 		#self.gblrun.addWidget(self.wbutneutral,4,0)
 
-		self.wbutneutral2=QtWidgets.QPushButton("Train Neutral New")
+		self.wbutneutral2=QtWidgets.QPushButton("Train Neutral")
 		self.gblrun.addWidget(self.wbutneutral2,4,1)
 
 		self.wedngauss = QtWidgets.QLabel(" ")		# originally an editor, now output only
@@ -396,7 +396,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		#self.wbutrerun=QtWidgets.QPushButton("Run Dynamics")
 		#self.gblrun.addWidget(self.wbutrerun,5,0)
 		
-		self.wbutrerun2=QtWidgets.QPushButton("New Dynamics")
+		self.wbutrerun2=QtWidgets.QPushButton("Train GMM")
 		self.gblrun.addWidget(self.wbutrerun2,5,1)
 		
 		#### The form with details about the selected gmm_XX folder
@@ -444,11 +444,11 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wedtrainperturb.setToolTip("Per-iteration model perturbation during training. Larger -> possibly faster training, but more 'churn'")
 		self.gflparm.addRow("Model Perturb:",self.wedtrainperturb)
 
-		self.wbutconv = QtWidgets.QPushButton("Convolutional")
-		self.wbutconv.setCheckable(True)
-		self.wbutconv.setChecked(False)
-		self.wbutconv.setToolTip("Use a convolutional neural network structure instead of a conventional network structure")
-		self.gflparm.addRow(" ",self.wbutconv)
+		# self.wbutconv = QtWidgets.QPushButton("Convolutional")
+		# self.wbutconv.setCheckable(True)
+		# self.wbutconv.setChecked(False)
+		# self.wbutconv.setToolTip("Use a convolutional neural network structure instead of a conventional network structure")
+		# self.gflparm.addRow(" ",self.wbutconv)
 		
 		self.wbutpos = QtWidgets.QPushButton("Position")
 		self.wbutpos.setCheckable(True)
@@ -458,15 +458,15 @@ class EMGMM(QtWidgets.QMainWindow):
 		
 		self.wbutamp = QtWidgets.QPushButton("Amplitude")
 		self.wbutamp.setCheckable(True)
-		self.wbutamp.setChecked(False)
+		self.wbutamp.setChecked(True)
 		self.wbutamp.setToolTip("Include changes of amplitude in the GMM (ligand binding)")
 		self.gflparm.addRow(" ",self.wbutamp)
 		
-		self.wbutsig = QtWidgets.QPushButton("Sigma")
-		self.wbutsig.setCheckable(True)
-		self.wbutsig.setChecked(False)
-		self.wbutsig.setToolTip("Include changes of Gaussian Width in the GMM (rarely useful)")
-		self.gflparm.addRow(" ",self.wbutsig)
+		# self.wbutsig = QtWidgets.QPushButton("Sigma")
+		# self.wbutsig.setCheckable(True)
+		# self.wbutsig.setChecked(False)
+		# self.wbutsig.setToolTip("Include changes of Gaussian Width in the GMM (rarely useful)")
+		# self.gflparm.addRow(" ",self.wbutsig)
 		
 		self.wlabruntime = QtWidgets.QLabel("-")
 		self.gflparm.addRow("Run:",self.wlabruntime)
@@ -990,8 +990,8 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.currun["trainiter"]=int(self.wedtrainiter.text())
 		self.currun["modelreg"]=float(self.wedtrainmodelreg.text())
 		self.currun["perturb"]=float(self.wedtrainperturb.text())
-		self.currun["conv"]=butval(self.wbutconv)
-		self.currun["pas"]=butstr(self.wbutpos)+butstr(self.wbutamp)+butstr(self.wbutsig)
+		self.currun["conv"]=0	#butval(self.wbutconv)
+		self.currun["pas"]=butstr(self.wbutpos)+butstr(self.wbutamp)+"0"  # butstr(self.wbutsig)
 		if mode=="neutral": self.currun["time_neutral"]=local_datetime()
 		if mode=="dynamics": self.currun["time_dynamics"]=local_datetime()
 		self.jsparm["run_"+self.currunkey]=self.currun
@@ -1271,8 +1271,14 @@ class EMGMM(QtWidgets.QMainWindow):
 		try: nset=max([int(k) for k in self.curmaps])+1
 		except: nset=0
 
-		kmseg=KMeans(n_clusters=nseg,init='k-means++')
-		classes=kmseg.fit_predict(self.data[cols].transpose())
+		try:
+			kmseg=KMeans(n_clusters=nseg,init='k-means++')
+			classes=kmseg.fit_predict(self.data[cols].transpose())
+		except:
+			showerror("Problem with K-means parameters")
+			traceback.print_exc()
+			return
+
 		for i in range(nseg):
 			ptdist=np.where(classes==i)[0]
 			newmap=[None,local_datetime(),(cols,kmseg.cluster_centers_[i]),0,0,ptdist]
@@ -1949,11 +1955,11 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wedtrainiter.setText(f'{self.currun.get("trainiter",10)}')
 		self.wedtrainperturb.setText(f'{self.currun.get("perturb",0.1)}')
 		self.wedtrainmodelreg.setText(f'{self.currun.get("modelreg",0.5)}')
-		self.wbutconv.setChecked(int(self.currun.get("conv",1)))
+		#self.wbutconv.setChecked(int(self.currun.get("conv",1)))
 		pas=self.currun.get("pas","100")
 		self.wbutpos.setChecked(int(pas[0]))
 		self.wbutamp.setChecked(int(pas[1]))
-		self.wbutsig.setChecked(int(pas[2]))
+		#self.wbutsig.setChecked(int(pas[2]))
 		self.wlabruntime.setText(self.currun.get("time","-"))
 		nx=int(self.jsparm.getdefault("boxsize",128))
 
