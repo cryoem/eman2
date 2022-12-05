@@ -487,9 +487,11 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.gblpltctl.addWidget(self.wsbycol,1,1,Qt.AlignLeft)
 		self.wsbycol.setValue(1)
 		
+
+		self.gblpltctl.addWidget(QtWidgets.QLabel("Rad:",self),3,0,Qt.AlignRight)
 		self.wedrad=QtWidgets.QLineEdit("0.2")
 		self.wedrad.setToolTip("Radius for including points adjacent to selected point (sphere/cylinder mode)")
-		self.gblpltctl.addWidget(self.wedrad,1,2,Qt.AlignRight)
+		self.gblpltctl.addWidget(self.wedrad,3,1,Qt.AlignRight)
 		
 		#self.wbutdrgrp=QtWidgets.QButtonGroup()
 		
@@ -555,7 +557,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		#self.wcbpntpln.addItem("Map-HSlab (fast)")
 		#self.wcbpntpln.addItem("Map-Line (fast)")
 		#self.wcbpntpln.addItem("Map-Line-Sph (fast)")
-		self.gblpltctl.addWidget(self.wcbpntpln,1,3)
+		self.gblpltctl.addWidget(self.wcbpntpln,2,0,1,2)
 
 		# These buttons are associated with the map list defined below
 		self.wbutmapnorm=QtWidgets.QPushButton("Build Map")
