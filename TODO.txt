@@ -15,3 +15,5 @@ e3proc2d, e3proc3d
 conda is broken, nothing we can do
 
 ImageDimensionExcept
+
+ftgl 2.3.1
