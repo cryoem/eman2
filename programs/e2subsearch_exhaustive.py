@@ -43,7 +43,7 @@ def makeproj(jsd,mdl,eul,newsize):
 		prj.process_inplace("xform.phaseorigin.tocorner")
 		jsd.put(prj.do_fft())
 
-def compute_ccfs(jsd,
+#def compute_ccfs(jsd,
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -109,7 +109,7 @@ def main():
 	eulers = sym_object.gen_orientations("eman", {"delta":angstep,"inc_mirror":1,"perturb":0})
 
 	jsd=queue.Queue(0)
-	thrds=[threading.Thread(target=makeproj,args=(jsd,template,eulers[i::nthr]),nx) for i in range(nthr)]
+	thrds=[threading.Thread(target=makeproj,args=(jsd,template,eulers[i::nthr],nx)) for i in range(nthr)]
 
 	t0=time()
 	for t in thrds: t.start()
