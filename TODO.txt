@@ -1,7 +1,9 @@
-e2proc2d, e2proc3d:
- - get_image_count
+ftgl 2.3.1
 
 build system docs
+
+e2proc2d, e2proc3d:
+ - get_image_count
 
 e3proc2d, e3proc3d
 
@@ -15,5 +17,3 @@ e3proc2d, e3proc3d
 conda is broken, nothing we can do
 
 ImageDimensionExcept
-
-ftgl 2.3.1
