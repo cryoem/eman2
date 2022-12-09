@@ -346,7 +346,7 @@ def E2loadappwin(app,key,win):
 		if geom==None : raise Exception
 		win.resize(geom[2],geom[3])
 		geom[0]=max(32,geom[0])
-		geom[1]=max(32,geom[1])
+		geom[1]=max(60,geom[1])
 		win.move(geom[0],geom[1])
 #		print(app,key,geom)
 	except: return

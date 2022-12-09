@@ -1840,18 +1840,23 @@ class EMGMM(QtWidgets.QMainWindow):
 				#return
 		ptrep=f"{self.gmm}/{self.currunkey}_ptrep_{maxboxp}.hdf"
 		#if not os.path.exists(ptrep):
-		# We really do need to rerun this each time in case parameters have changed
-		print("Pregenerating per-particle Gaussian representation")
-		er=run(f"e2gmm_refine_point.py --model {modelout} --ptclsin {self.gmm}/particles.lst --ptclrepout {ptrep} --maxboxsz {maxboxp} --minressz {minboxp}")
 
 		print("Training network")
 		if int(self.currun['batches'])<=1 :
+			# We really do need to rerun this each time in case parameters have changed
+			print("Pregenerating per-particle Gaussian representation")
+			er=run(f"e2gmm_refine_point.py --model {modelout} --ptclsin {self.gmm}/particles.lst --ptclrepout {ptrep} --maxboxsz {maxboxp} --minressz {minboxp}")
 			er=run(f"e2gmm_refine_point.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --ptclrepin {ptrep} --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ptclsclip {self.jsparm['boxsize']} --minressz {minboxp}")
 		else:
 			# batched run. Run 10 iterations using each batch of data, and repeat until all requested iterations are complete for all data
 			nb=int(self.currun['batches'])
 			first=True
 			itsize=self.currun['trainiter']//3	# We run 1/3 of the iterations at at a time for all batches
+			# We really do need to rerun this each time in case parameters have changed
+			print("Pregenerating per-particle Gaussian representation")
+			for b in range(nb):
+				er=run(f"e2gmm_refine_point.py --model {modelout} --ptclsin {self.gmm}/particles.lst --ptclrepout {ptrep} --maxboxsz {maxboxp} --minressz {minboxp} --chunk {b},{nb}")
+
 			for it in range(0,self.currun['trainiter'],itsize):
 				nit=min(itsize,self.currun['trainiter']-itsize)
 				for b in range(nb):
