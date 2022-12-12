@@ -895,7 +895,7 @@ class EMGMM(QtWidgets.QMainWindow):
 #		self.wplot2d.set_data(None,replace=True,quiet=True)
 
 		if len(self.maplist.selectedItems())>0:
-			self.wplot2d.set_data(self.data,"map",symsize=10,replace=True,quiet=True)
+			self.wplot2d.set_data(self.data,"map",symsize=1,replace=True,quiet=True)
 			self.curmaps_sel={}
 			self.data_sel=[]
 			ss=10
@@ -908,7 +908,8 @@ class EMGMM(QtWidgets.QMainWindow):
 				if not isinstance(smap[5],np.ndarray) : smap[5]=np.array(smap[5])
 				self.data_sel.append(self.data[:,np.array(smap[5])])	# smap[5] is a list of points in the class
 				#print("S:",self.data.shape,self.data_sel[-1].shape)
-				self.wplot2d.set_data(self.data_sel[-1],f"set_{key}",symsize=ss,quiet=True)
+#				self.wplot2d.set_data(self.data_sel[-1],f"set_{key}",symsize=ss,quiet=True)
+				self.wplot2d.set_data(self.data_sel[-1],f"set_{key}",symsize=1,quiet=True)
 		else:
 			self.wplot2d.set_data(self.data,"map",symsize=1,replace=True,quiet=True)
 
@@ -1197,11 +1198,15 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		if mmode=="Make Set":
 			# This will produce a list of indices where the distance in latent space is less than the specified rad
-			ptdist=(np.sum((self.midresult.transpose()-latent)**2,1)<(rad**2)).nonzero()[0]
+#			ptdist=(np.sum((self.midresult.transpose()-latent)**2,1)<(rad**2)).nonzero()[0]
+			ptdist=((self.midresult[xcol]-loc[0])**2+(self.midresult[ycol]-loc[1])**2<(rad**2)).nonzero()[0]
 			sz=good_size(self.jsparm["boxsize"]*5//4)
 
+			vec=np.zeros(len(self.midresult))
+			vec[xcol]=loc[0]
+			vec[ycol]=loc[1]
 			nset=good_num(self.curmaps)
-			newmap=[None,local_datetime(),latent,0,0,ptdist]
+			newmap=[None,local_datetime(),list(vec),0,0,ptdist]
 			self.curmaps[str(nset)]=newmap
 			self.sets_changed(nset)
 
@@ -1846,7 +1851,8 @@ class EMGMM(QtWidgets.QMainWindow):
 			# We really do need to rerun this each time in case parameters have changed
 			print("Pregenerating per-particle Gaussian representation")
 			er=run(f"e2gmm_refine_point.py --model {modelout} --ptclsin {self.gmm}/particles.lst --ptclrepout {ptrep} --maxboxsz {maxboxp} --minressz {minboxp}")
-			er=run(f"e2gmm_refine_point.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --ptclrepin {ptrep} --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ptclsclip {self.jsparm['boxsize']} --minressz {minboxp}")
+			print("Training network (single batch)")
+			er=run(f"e2gmm_refine_point.py --model {modelout} --decoderin {decoder} --decoderout {decoder} --encoderout {encoder} --ptclsin {self.gmm}/particles.lst --ptclrepin {ptrep} --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ptclsclip {self.jsparm['boxsize']} --minressz {minboxp}")
 		else:
 			# batched run. Run 10 iterations using each batch of data, and repeat until all requested iterations are complete for all data
 			nb=int(self.currun['batches'])
@@ -1857,6 +1863,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			for b in range(nb):
 				er=run(f"e2gmm_refine_point.py --model {modelout} --ptclsin {self.gmm}/particles.lst --ptclrepout {ptrep} --maxboxsz {maxboxp} --minressz {minboxp} --chunk {b},{nb}")
 
+			print("Training in ",nb," batches")
 			for it in range(0,self.currun['trainiter'],itsize):
 				nit=min(itsize,self.currun['trainiter']-itsize)
 				for b in range(nb):
@@ -1871,6 +1878,7 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		# generate latent representation for all particles using final trained encoder
 		if not er:
+			print("Generating latent vectors with final encoder")
 			run(f"e2gmm_refine_point.py --encoderin {encoder} --ptclrepin {ptrep} --midout {self.gmm}/{self.currunkey}_mid.txt --model {modelout}")
 			self.augment_mid()
 		else:
