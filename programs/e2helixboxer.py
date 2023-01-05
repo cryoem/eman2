@@ -62,6 +62,7 @@ within a helix. Usually, all particles from a micrograph will have the same dime
 
 E2HELIXBOXER_DB = "bdb:" # used to use "bdb:e2helixboxercache#"
 
+
 def main():
 	usage = """e2helixboxer.py --gui <micrograph1> <<micrograph2> <micrograph3> ...
 	e2helixboxer.py --gui --helix-width=<width> <micrograph1> <<micrograph2> <micrograph3> ...
