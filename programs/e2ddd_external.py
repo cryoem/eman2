@@ -98,8 +98,6 @@ def main():
 
 	parser.add_argument("--mc2_kv",  default = 300, type=int, help="Specify electron energy in kV. Only used if DW enabled.",guitype='intbox', row=12, col=1, rowspan=1, colspan=1, mode="spr")
 
-	#parser.add_argument("--mc2_apix",  default = 1, type=float, help="Specify pixel size. Only used if DW enabled.",guitype='floatbox', row=13, col=0, rowspan=1, colspan=1, mode="spr")
-
 	parser.add_argument("--mc2_fmdose",  default = 1, type=float, help="Specify dose per frame in e-/A^2. Only used if DW enabled.",guitype='floatbox', row=13, col=0, rowspan=1, colspan=1, mode="spr")
 
 
