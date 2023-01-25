@@ -121,8 +121,13 @@ class SpaAlignTask(JSTask):
 			else:
 				x=list(x)
 				x.extend(curxf[len(x):])
-				xf=Transform({"type":"xyz", "xtilt":x[0], "ytilt":x[1], "ztilt":x[2],"tx":x[3], "ty":x[4]})
-							
+				xf=Transform({"type":"eman", "az":x[0], "alt":x[1], "phi":x[2],"tx":x[3], "ty":x[4]})
+			
+			v=np.random.randn(3)
+			v/=np.linalg.norm(v)
+			tiny=Transform({"type":"spin","omega":.1,"n1":v[0],"n2":v[1],"n3":v[2]})
+			xf=tiny*xf
+			
 			pj=refsmall.project('gauss_fft',{"transform":xf, "returnfft":1})
 			x0=options.minrespx; x1=int(ss*.4)
 			xf2=Transform(xf)
@@ -188,7 +193,7 @@ class SpaAlignTask(JSTask):
 			
 		if options.extrarot:
 			refsrot=[]
-			r45=Transform({"type":"eman","az":45})
+			r45=Transform({"type":"eman","alt":45,"az":45})
 			for r in refnames:
 				ref=EMData(r)
 				ref.process("xform",{"transform":r45})
@@ -216,7 +221,7 @@ class SpaAlignTask(JSTask):
 		sym=Symmetries.get(options.sym)
 		
 		if options.curve:
-			xfcrs=sym.gen_orientations("eman",{"delta":astep,"phitoo":astep,"inc_mirror":1,"alt_min":80, "alt_max":100})
+			xfcrs=sym.gen_orientations("eman",{"delta":astep,"phitoo":0,"inc_mirror":1,"alt_min":80, "alt_max":100})
 		else:
 			xfcrs=sym.gen_orientations("eman",{"delta":astep,"phitoo":astep,"inc_mirror":1})
 		#print(np.unique([x.get_params("eman")['alt'] for x in xfcrs]))
@@ -250,12 +255,12 @@ class SpaAlignTask(JSTask):
 				npos=max(npos, 1)
 				
 				for ixf in initxfs:
-					ix=ixf.get_params("xyz")
+					ix=ixf.get_params("eman")
 					newxfs.append(Transform(ix))
 
 					for i in range(npos-1):
-						d={"type":"xyz","tx":ix["tx"], "ty":ix["ty"]}
-						for ky in ["xtilt", "ytilt", "ztilt"]:
+						d={"type":"eman","tx":ix["tx"], "ty":ix["ty"]}
+						for ky in ["az", "alt", "phi"]:
 							d[ky]=ix[ky]+np.random.randn()*5./np.pi*2
 						newxfs.append(Transform(d))
 				
@@ -307,8 +312,8 @@ class SpaAlignTask(JSTask):
 					newxfs=[]
 					simplex=np.vstack([[0,0,0], np.eye(3)*astep])
 					for xf0 in xfs:
-						x=xf0.get_params("xyz")
-						curxf=[x["xtilt"], x["ytilt"], x["ztilt"],x["tx"]*ss/ny,x["ty"]*ss/ny]
+						x=xf0.get_params("eman")
+						curxf=[x["az"], x["alt"], x["phi"],x["tx"]*ss/ny,x["ty"]*ss/ny]
 						x0=curxf[:3]
 						res=minimize(test_rot, x0, method='Powell', options={'ftol': 1e-3, 'disp': False, "maxiter":20})
 						scr, x=test_rot(res.x, True)
