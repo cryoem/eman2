@@ -68,6 +68,8 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	parser.add_argument("--mergesort", type=str, default=None, help="Specify the output name here. This will merge all of the input .lst files into a single (resorted) output")
 	parser.add_argument("--mergeinterleave", type=str, default=None, help="Specify the output name here. Interleaves images from input .lst files, eg - A0,B0,C0,A1,B1,C1,... truncates based on size of smallest input, eg- 1000,500,300 -> 900")
 	parser.add_argument("--mergeeo", action="store_true", default=False, help="Merge even odd lst.")
+	parser.add_argument("--mergeeoref", type=str, default=None, help="reference lst file to determine the order for --mergeeo")
+
 	parser.add_argument("--minhisnr", type=float, help="Integrated SNR from 1/10-1/4 1/A must be larger than this",default=-1,guitype='floatbox', row=8, col=1)
 	parser.add_argument("--minlosnr", type=float, help="Integrated SNR from 1/200-1/20 1/A must be larger than this",default=-1,guitype='floatbox', row=8, col=0)
 	parser.add_argument("--mindf", type=float, help="Minimum defocus",default=-1,guitype='floatbox', row=8, col=1)
@@ -81,6 +83,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	parser.add_argument("--retype", type=str, default=None, help="If a lst file is referencing a set of particles from particles/imgname__oldtype.hdf, this will change oldtype to the specified string in-place (modifies input files)")
 	parser.add_argument("--refile", type=str, default=None, help="similar to retype, but replaces the full filename of the source image file with the provided string")
 	parser.add_argument("--shuffle", action="store_true", default=False, help="shuffle list inplace.")
+	parser.add_argument("--flip", action="store_true", default=False, help="flip xform.")
 	parser.add_argument("--sym", type=str, default=None, help="apply symmetry to a list of particles with xform.projection by duplicating each particle N time. only used along with a .lst input")
 	parser.add_argument("--extractattr", type=str, default=None, help="extract an attribute from particle header as an entry in the list")
 	parser.add_argument("--getclass", type=int, help="select a class when --create",default=-1)
@@ -190,32 +193,44 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 			if len(args)!=2:
 				print("Error: Need two inputs...")
 				exit()
-			n0=EMUtil.get_image_count(args[0])
-			n1=EMUtil.get_image_count(args[1])
-			n=max(n0,n1)
-
-			if args[0].endswith(".lst"):
-				lste=LSXFile(args[0],True)
-				lsto=LSXFile(args[1],True)
-				fromlst=True
+			if options.mergeeoref:
+				print("Using the order from {}".format(options.mergeeoref))
+				lst0=load_lst_params(args[0])
+				lst1=load_lst_params(args[1])
+				lstref=load_lst_params(options.mergeeoref)
+				lstout=[None for l in lstref]
+				dic={str((l['src'], l['idx'])):i for i,l in enumerate(lstref)}
+				for l in lst0+lst1:
+					i=dic[str((l['src'], l['idx']))]
+					lstout[i]=l
+				save_lst_params(lstout, options.create)
 			else:
-				fromlst=False
+				n0=EMUtil.get_image_count(args[0])
+				n1=EMUtil.get_image_count(args[1])
+				n=max(n0,n1)
 
-			for i in range(n):
-				if fromlst:
-					if i<n0:
-						ln=lste.read(i)
-						lst.write(-1,ln[0],ln[1],ln[2])
-					if i<n1:
-						ln=lsto.read(i)
-						lst.write(-1,ln[0],ln[1],ln[2])
+				if args[0].endswith(".lst"):
+					lste=LSXFile(args[0],True)
+					lsto=LSXFile(args[1],True)
+					fromlst=True
 				else:
-					if i<n0:
-						lst.write(-1,i,args[0])
-					if i<n1:
-						lst.write(-1,i,args[1])
-			lst=None
-			sys.exit(1)
+					fromlst=False
+
+				for i in range(n):
+					if fromlst:
+						if i<n0:
+							ln=lste.read(i)
+							lst.write(-1,ln[0],ln[1],ln[2])
+						if i<n1:
+							ln=lsto.read(i)
+							lst.write(-1,ln[0],ln[1],ln[2])
+					else:
+						if i<n0:
+							lst.write(-1,i,args[0])
+						if i<n1:
+							lst.write(-1,i,args[1])
+				lst=None
+				sys.exit(1)
 
 		else:
 			for f in args:
@@ -469,7 +484,32 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 					lout.append(q)
 					
 			save_lst_params(lout, f)
+	
+	
+	if options.flip:
+		for f in args:
+			lst=load_lst_params(f)
+			lout=[]
+			x=Transform()
+			for atr in ["xform.align3d","xform.projection"]:
+				if atr in lst[0]:
+					break
+			else:
+				print("No required attribute. Need xform.align3d or xform.projection")
+			
+			print("Using {}".format(atr))
+			for il, l in enumerate(lst):
+				x=l[atr]
+				if atr=="xform.align3d": x=x.inverse()
+				xp=x.get_params("eman")
+				xp["alt"]*=-1
+				x=Transform(xp)
+				if atr=="xform.align3d": x=x.inverse()
+				l[atr]=x
+				lout.append(l)
 					
+			save_lst_params(lout, f)
+	
 	if options.scalexf>0:
 		for f in args:
 			lst=load_lst_params(f)
