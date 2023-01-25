@@ -16,6 +16,7 @@ def main():
 		"tya":"_rlnOriginYAngst",
 		"tx":"_rlnOriginX",
 		"ty":"_rlnOriginY",
+		"class":"_rlnRandomSubset",
 		}
 	
 	usage=" read a relion refinement star file and convert to a EMAN list format. currently only read {}".format(','.join(req.values()))
@@ -26,28 +27,38 @@ def main():
 	parser.add_argument("--amp", type=float,help="amplitude contrast. default 0 (0-100)", default=10)
 	parser.add_argument("--apix", type=float,help="apix", default=1.0)
 	parser.add_argument("--output", type=str,help="output lst file", default="sets/all_relion.lst")
+	parser.add_argument("--shrink", type=str,help="shrink factor", default=None)
 	parser.add_argument("--head", type=int,help="use only first N particles. for testing", default=-1)
+	parser.add_argument("--clip", type=int,help="clip to size after ctf before saving", default=-1)
 	parser.add_argument("--skipwrite", action="store_true", default=False ,help="skip file writing")
+	parser.add_argument("--invert", action="store_true", default=False ,help="invert contrast")
 	parser.add_argument("--onestack", type=str, default=None ,help="save all particles in one stack")
+	parser.add_argument("--lst2star", type=str, default=None ,help="convert the xform from a lst file back to the star file in the same order. ")
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	
-	
+	if options.lst2star:
+		options.skipwrite=True
+		options.output=None
+		
+	if options.shrink:
+		shrink=options.shrink.split(',')
+		
 	f=open(args[0],'r')
-	lines=f.readlines()
+	alllines=f.readlines()
 	f.close()
 	
 	keys=[]
 	starti=options.skipheader
 	for i in range(starti,1000):
-		if lines[i].startswith('_'):
-			keys.append(lines[i][:-1])
+		if alllines[i].startswith('_'):
+			keys.append(alllines[i][:-1])
 		elif i>starti+5:
 			starti=i
 			break
 			
-	lines=lines[starti:]
+	lines=alllines[starti:]
 	l=lines[0].split()
 	print(keys)
 	rid={}
@@ -100,18 +111,25 @@ def main():
 		else:
 			io=ii
 			if '/' in src:
-				fm="particles"+src[src.rfind('/'):src.rfind('.')]+".hdf"
+				fm="particles"+src[src.rfind('/'):src.rfind('.')]+"__flip.hdf"
 			else:
-				fm="particles/"+src[:src.rfind('.')]+".hdf"
+				fm="particles/"+src[:src.rfind('.')]+"__flip.hdf"
 			
 		if not os.path.isfile(src):
 			print("{} does exist".format(src))
 			continue
 
 		if not options.skipwrite:
-			#print(src,ii)
-			try:
-				e=EMData(src, ii)
+			if i==0:
+				e=EMData(src, 0, True)
+				nx=e["nx"]
+				ny=e["ny"]
+			
+			try:	
+				if src.endswith('.mrc'):
+					e=EMData(src, 0, False, Region(0, 0, ii, nx, ny, 1))
+				else:
+					e=EMData(src, ii)
 			except:
 				print("something wrong with {} image {}".format(src, ii))
 				exit()
@@ -130,13 +148,23 @@ def main():
 			e=fft1.do_ift()
 			e["ctf"]=ctf
 			e.process_inplace("normalize.edgemean")
+			if options.invert: e.mult(-1)
 			e.process_inplace("mask.soft",{"outer_radius":-4,"width":4})
 			e["src"]=src
 			e["srci"]=ii
 			e["apix_x"]=options.apix
 			e["apix_y"]=options.apix
 			
+			if options.clip>0:
+				e.clip_inplace(Region((nx-options.clip)//2, (ny-options.clip)//2, options.clip, options.clip))
 			e.write_compressed(fm, io,12,nooutliers=True)
+			if options.shrink:
+				for s in shrink:
+					fms="{}_bin{}.hdf".format(fm[:-4],s.replace('.','_'))
+					ex=e.copy()
+					ex.process_inplace("math.fft.resample",{"n":float(s)})
+					ex.process_inplace("normalize.edgemean")
+					ex.write_compressed(fms, io,12,nooutliers=True)
 			
 		fnames.append([i, fm ,io])
 		if i%100==0 or i==len(lines)-1 : sys.stdout.write("\r{}/{}	  ".format(i, len(lines)))
@@ -166,12 +194,56 @@ def main():
 		
 		#fm=fnames[i]
 		dic={"src":fm[1], "idx":fm[2], "xform.projection":d}
+		if "class" in rid:
+			dic["class"]=int(l[rid["class"]])-1
 		towrite.append(dic)
 		#lst.write(i, fm[2], fm[1], str(d))
 		
-	
-	save_lst_params(towrite, options.output)
-	print("aligned list written to {}".format(options.output))
+	if options.output:
+		save_lst_params(towrite, options.output)
+		
+		if options.shrink:
+			for s in shrink:
+				tg="flip_bin"+s.replace('.','_')
+				ss=float(s)
+				run(f"e2proclst.py {options.output} --create {options.output[:-4]}_{tg}.lst")
+				run(f"e2proclst.py {options.output[:-4]}_{tg}.lst --retype {tg} --scale {1./ss}")
+				
+		print("aligned list written to {}".format(options.output))
+		
+	if options.lst2star:
+		lst=load_lst_params(options.lst2star)
+		oname=args[0][:-5]+"_from_eman.star"
+		f=open(oname,'w')
+		for ln in alllines[:starti]:
+			f.write(ln)
+		for i, ln in enumerate(lines):
+			
+			l=ln.split()
+			
+			#print(l[rid["psi"]], l[rid["tilt"]], l[rid["rot"]],l[rid["txa"]], l[rid["tya"]])
+			d=Transform(lst[i]["xform.projection"])
+			d=d.get_params("spider")
+			
+			#print(ln)
+			c=[f"{x:.6f}" for x in (d["psi"], d["theta"], d["phi"])]
+			l[rid["psi"]], l[rid["tilt"]], l[rid["rot"]]=c[0], c[1], c[2]
+			if txa:
+				c=[f"{x:.6f}" for x in (-d["tx"]*apix, -d["ty"]*apix)]
+				
+			else:
+				c=[f"{x:.6f}" for x in (-d["tx"], -d["ty"])]
+			l[rid["txa"]],l[rid["tya"]]=c[0], c[1]
+			lo=' '.join(l)+'\n'
+			#print(lo)
+									
+			f.write(lo)
+			
+		f.close()
+		print(oname)
+		
+		
+		
 	E2end(logid)
 	
 def run(cmd):

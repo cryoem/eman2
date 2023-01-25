@@ -155,6 +155,36 @@ def mult_gauss_coords(args):
 	return args[0]* args[1]
 
 #@tf.function()
+def pts2img_one_sig(args):
+	pts, ang = args
+	sz, idxft, rrft = params["sz"], params["idxft"], params["rrft"]
+	xfo=params["xforigin"]
+	
+	lp=.1
+	bamp=tf.cast(tf.nn.relu(pts[:,3]), tf.complex64)[:,None]
+	bsigma=tf.cast(tf.nn.relu(pts[:,4]), tf.complex64)*.001
+	#bsigma=tf.cast(tf.nn.relu(pts[:,4]), tf.complex64)
+	#amp=tf.exp(-rrft*lp*tf.nn.relu(bsigma))*tf.nn.relu(bamp)
+	#amp=tf.exp(-rrft*lp)
+	
+	bpos=xf2pts(pts[:,:3],ang)
+	bpos=bpos*sz+sz/2
+	bposft=bpos*np.pi*2
+	
+	cpxang_x=tf.vectorized_map(mult_gauss_coords, (bposft[:,0], idxft[0,[0],:]))
+	cpxang_y=tf.vectorized_map(mult_gauss_coords, (bposft[:,1], idxft[1,:,[0]]))
+
+	sig_x = tf.exp(-rrft[0][None, :]*bsigma[:,None])
+	sig_y = tf.exp(-rrft[1][None, :]*bsigma[:,None])
+    
+	pgauss_x = tf.exp(-1j*tf.cast(cpxang_x, tf.complex64))*bamp*sig_x
+	pgauss_y = tf.exp(-1j*tf.cast(cpxang_y, tf.complex64))*bamp*sig_y
+
+    
+	pgauss = tf.matmul(tf.transpose(pgauss_x), pgauss_y)
+	pgauss = tf.transpose(pgauss)#*tf.cast(amp, tf.complex64)
+	return pgauss*tf.cast(xfo, tf.complex64)
+
 def pts2img_one(args):
 	pts, ang = args
 	sz, idxft, rrft = params["sz"], params["idxft"], params["rrft"]
@@ -162,7 +192,7 @@ def pts2img_one(args):
 	
 	lp=.1
 	bamp=tf.cast(tf.nn.relu(pts[:,3]), tf.complex64)[:,None]
-	#bsigma=pts[:, 4]
+	bsigma=pts[:, 4]
 	#amp=tf.exp(-rrft*lp*tf.nn.relu(bsigma))*tf.nn.relu(bamp)
 	amp=tf.exp(-rrft*lp)
 	
@@ -184,7 +214,7 @@ def pts2img_one(args):
 def pts2img(pts, angs):
 	#pts, angs=args
 	#p=pts2img_one((pts[0], angs[0]))
-	img=tf.vectorized_map(pts2img_one, (pts, angs))
+	img=tf.vectorized_map(pts2img_one_sig, (pts, angs))
 	return tf.math.real(img), tf.math.imag(img)
 
 #### compute particle-projection FRC 
@@ -353,6 +383,10 @@ def set_indices_boxsz(boxsz, apix=0, return_freq=False):
 		sz=boxsz
 		idxft=(idx/sz).astype(floattype)
 		rrft=np.sqrt(np.sum(idx**2, axis=0)).astype(floattype)## batch, npts, x-y
+		rrft_x = idx[0,0,:]**2
+		rrft_y = idx[1,:,0]**2
+		rrft=[rrft_x, rrft_y]
+		
 
 		rr=np.round(np.sqrt(np.sum(idx**2, axis=0))).astype(int)
 		rings=np.zeros((sz,sz//2+1,sz//2), dtype=floattype) #### Fourier rings
@@ -860,7 +894,7 @@ def eval_model(gen_model, options):
 	imgs=[]
 	xfs=[]
 	symmetry=Symmetries.get(options.sym)
-	xfs=symmetry.gen_orientations("eman", {"delta":5})
+	xfs=symmetry.gen_orientations("eman", {"delta":4})
 	xfs=[x.get_params("eman") for x in xfs]
 	nxf=len(xfs)
 	n=7-(nxf-1)%8
@@ -1256,14 +1290,13 @@ def main():
 	parser.add_argument("--ptclsin", type=str,help="particles input for alignment", default="")
 	parser.add_argument("--ptclsout", type=str,help="aligned particle output", default="")
 	parser.add_argument("--learnrate", type=float,help="learning rate for model training only. Default is 1e-5. ", default=1e-5)
-	#parser.add_argument("--sigmareg", type=float,help="regularizer for the sigma of gaussian width. Larger value means all Gaussian functions will have essentially the same width. Smaller value may help compensating local resolution difference.", default=.5)
-	#parser.add_argument("--modelreg", type=float,help="regularizer for for Gaussian positions based on the starting model, ie the result will be biased towards the starting model when training the decoder (0-1 typ). Default 0", default=0)
-	#parser.add_argument("--ampreg", type=float,help="regularizer for the Gaussian amplitudes in the first 1/2 of the iterations. Large values will encourage all Gaussians to have similar amplitudes. default = 0", default=0)
+	
 	parser.add_argument("--niter", type=int,help="number of iterations", default=10)
 	parser.add_argument("--npts", type=int,help="number of points to initialize. ", default=-1)
 	parser.add_argument("--batchsz", type=int,help="batch size", default=32)
 	parser.add_argument("--maxboxsz", type=int,help="maximum fourier box size to use. 2 x target Fourier radius. ", default=64)
 	parser.add_argument("--maxres", type=float,help="maximum resolution. will overwrite maxboxsz. ", default=-1)
+	parser.add_argument("--maxgradres", type=float,help="maximum resolution for gradient. ", default=-1)
 	parser.add_argument("--minres", type=float,help="minimum resolution. ", default=500)
 	parser.add_argument("--trainmodel", action="store_true", default=False ,help="align particles.")
 	parser.add_argument("--align", action="store_true", default=False ,help="align particles.")
@@ -1282,7 +1315,7 @@ def main():
 	#parser.add_argument("--mask", type=str,help="remove points outside mask", default="")
 	parser.add_argument("--anchor", type=str,help="use a smaller model as anchor points for heterogeneity training.", default="")
 	parser.add_argument("--rigidbody", action="store_true", default=False ,help="Consider rigid body movement for heterogeneity analysis. Require --selgauss")
-	parser.add_argument("--selgauss", type=str,help="provide a text file of the indices of gaussian that are allowed to move", default="")
+	parser.add_argument("--selgauss", type=str,help="provide a text file of the indices of gaussian that are allowed to move", default=None)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--bond", type=str,help="provide a text file of the indices of bonds between points", default=None)
 	parser.add_argument("--useangle", action="store_true",help="use angle constraints as well when --bond is provided. ", default=False)
@@ -1474,8 +1507,12 @@ def main():
 		else:
 			
 			agd=[]
-			
-			for mpx in [options.maxpx//2, options.maxpx]:
+			if options.maxgradres>0:
+				mbx=ceil(raw_boxsz*raw_apix*2/options.maxgradres)//2*2
+			else: 
+				mbx=options.maxpx
+				
+			for mpx in [mbx//2, mbx]:
 				options.maxpx=mpx
 				allscr, ag=calc_gradient(trainset, pts, params, options )
 				agd.append(ag)

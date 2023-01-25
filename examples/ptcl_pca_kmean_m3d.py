@@ -29,6 +29,8 @@ def main():
 	parser.add_argument("--selgauss", type=str,help="provide a text file of the indices of gaussian (or volumic mask) that are allowed to move", default=None)
 
 	parser.add_argument("--skip3d", action="store_true", default=False ,help="skip the make3d step.")
+	parser.add_argument("--umap", action="store_true", default=False ,help="use umap instead of pca.")
+	parser.add_argument("--fulldist", action="store_true", default=False ,help="use full distance in reduced space instead of project to one axis.")
 
 	parser.add_argument("--threads", default=12,type=int,help="Number of threads to run in parallel on a single computer. This is the only parallelism supported by e2make3dpar")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -37,8 +39,16 @@ def main():
 	
 	pts=np.loadtxt(options.pts)
 	
-	pca=PCA(options.nbasis)
-	p2=pca.fit_transform(pts[:,1:])
+	if options.umap:
+		
+		import umap
+		pca=umap.UMAP(n_components=options.nbasis)
+		p2=pca.fit_transform(pts[:,1:])
+		p2-=np.mean(p2, axis=0)
+	else:
+		pca=PCA(options.nbasis)
+		p2=pca.fit_transform(pts[:,1:])
+	
 	if options.pcaout:
 		np.savetxt(options.pcaout, p2)
 
@@ -136,7 +146,7 @@ def main():
 			ii=(lbs==l)
 			print(j, np.sum(ii))
 		else:
-			if len(axis)==1:
+			if len(axis)==1 and options.fulldist==False:
 				d=abs(p2[:,axis[0]]-rg[j])
 			else:
 				d=np.linalg.norm(p2[:,axis]-rg[j], axis=1)
