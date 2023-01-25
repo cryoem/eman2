@@ -346,7 +346,7 @@ def E2loadappwin(app,key,win):
 		if geom==None : raise Exception
 		win.resize(geom[2],geom[3])
 		geom[0]=max(32,geom[0])
-		geom[1]=max(32,geom[1])
+		geom[1]=max(60,geom[1])
 		win.move(geom[0],geom[1])
 #		print(app,key,geom)
 	except: return
@@ -1084,7 +1084,7 @@ def parse_infile_arg(arg):
 	fname, _, seq = arg.partition(':')
 
 	if not (fname and os.path.isfile(fname)):
-		raise argparse.ArgumentTypeError(f"{fname} is not an existing regular file!")
+		raise Exception(f"{fname} is not an existing regular file!")
 
 	seq_inc, _, seq_exc = seq.partition('^')
 
@@ -2291,6 +2291,7 @@ def get_3d_font_renderer():
 		pfm = get_platform()
 		if pfm in ["Linux","Darwin"]:
 			font_renderer.set_font_file_name(e2getinstalldir()+"/fonts/DejaVuSerif.ttf")
+			#font_renderer.set_font_file_name(e2getinstalldir()+"/fonts/SourceCodePro-Light.ttf")
 		elif pfm == "Windows":
 			font_renderer.set_font_file_name("C:\\WINDOWS\\Fonts\\arial.ttf")
 		else:
@@ -2951,7 +2952,6 @@ def db_read_image(self, fsp, *parms, **kparms):
 
 	return self.read_image_c(fsp, *parms, **kparms)
 
-EMUtil.get_image_count_c = staticmethod(EMUtil.get_image_count)
 EMData.read_image_c = EMData.read_image
 EMData.read_image = db_read_image
 
@@ -3135,6 +3135,17 @@ and the file size will increase.
 		im.write_image_c(fsp,i+n,EMUtil.ImageType.IMAGE_UNKNOWN,0,None,EMUtil.EMDataType.EM_COMPRESSED)
 	
 EMData.write_compressed=im_write_compressed
+
+
+def db_get_image_count(fsp):
+	if ":" in fsp:
+		fsp, idxs = parse_infile_arg(fsp)
+		return len(idxs)
+	else:
+		return EMUtil.get_image_count_c(fsp)
+
+EMUtil.get_image_count_c = staticmethod(EMUtil.get_image_count)
+EMUtil.get_image_count = db_get_image_count
 
 
 __doc__ = \

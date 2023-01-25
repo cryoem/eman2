@@ -688,7 +688,14 @@ if ENABLE_GUI:
 			(micrograph_dir, micrograph_filename) = os.path.split(micrograph_filepath)
 			self.micrograph_filename = micrograph_filename
 			self.micrograph_name = os.path.splitext(micrograph_filename)[0]
-			self.default_dir = os.getcwd()
+
+			#Check if in project dir. If so, default to particles directory. If not, default to cwd. Make particles directory in project dir if necessary.
+			if os.path.exists(str(os.getcwd()+'/info/project.json')) == True:
+				self.default_dir = str(os.getcwd()+'/particles')
+				if os.path.exists(self.default_dir) == False:
+					os.mkdir(self.default_dir)
+			else:
+				self.default_dir = os.getcwd()
 
 			self.helices_coords_line_edit.setText( os.path.join(self.default_dir, self.micrograph_name + "_boxes.txt") )
 			self.helices_images_line_edit.setText( os.path.join(self.default_dir, self.micrograph_name + "_helix."+saveext) )

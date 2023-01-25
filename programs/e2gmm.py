@@ -386,7 +386,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		#self.wbutneutral=QtWidgets.QPushButton("Train Neutral Model")
 		#self.gblrun.addWidget(self.wbutneutral,4,0)
 
-		self.wbutneutral2=QtWidgets.QPushButton("Train Neutral New")
+		self.wbutneutral2=QtWidgets.QPushButton("Train Neutral")
 		self.gblrun.addWidget(self.wbutneutral2,4,1)
 
 		self.wedngauss = QtWidgets.QLabel(" ")		# originally an editor, now output only
@@ -396,7 +396,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		#self.wbutrerun=QtWidgets.QPushButton("Run Dynamics")
 		#self.gblrun.addWidget(self.wbutrerun,5,0)
 		
-		self.wbutrerun2=QtWidgets.QPushButton("New Dynamics")
+		self.wbutrerun2=QtWidgets.QPushButton("Train GMM")
 		self.gblrun.addWidget(self.wbutrerun2,5,1)
 		
 		#### The form with details about the selected gmm_XX folder
@@ -444,11 +444,11 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wedtrainperturb.setToolTip("Per-iteration model perturbation during training. Larger -> possibly faster training, but more 'churn'")
 		self.gflparm.addRow("Model Perturb:",self.wedtrainperturb)
 
-		self.wbutconv = QtWidgets.QPushButton("Convolutional")
-		self.wbutconv.setCheckable(True)
-		self.wbutconv.setChecked(False)
-		self.wbutconv.setToolTip("Use a convolutional neural network structure instead of a conventional network structure")
-		self.gflparm.addRow(" ",self.wbutconv)
+		# self.wbutconv = QtWidgets.QPushButton("Convolutional")
+		# self.wbutconv.setCheckable(True)
+		# self.wbutconv.setChecked(False)
+		# self.wbutconv.setToolTip("Use a convolutional neural network structure instead of a conventional network structure")
+		# self.gflparm.addRow(" ",self.wbutconv)
 		
 		self.wbutpos = QtWidgets.QPushButton("Position")
 		self.wbutpos.setCheckable(True)
@@ -458,15 +458,15 @@ class EMGMM(QtWidgets.QMainWindow):
 		
 		self.wbutamp = QtWidgets.QPushButton("Amplitude")
 		self.wbutamp.setCheckable(True)
-		self.wbutamp.setChecked(False)
+		self.wbutamp.setChecked(True)
 		self.wbutamp.setToolTip("Include changes of amplitude in the GMM (ligand binding)")
 		self.gflparm.addRow(" ",self.wbutamp)
 		
-		self.wbutsig = QtWidgets.QPushButton("Sigma")
-		self.wbutsig.setCheckable(True)
-		self.wbutsig.setChecked(False)
-		self.wbutsig.setToolTip("Include changes of Gaussian Width in the GMM (rarely useful)")
-		self.gflparm.addRow(" ",self.wbutsig)
+		# self.wbutsig = QtWidgets.QPushButton("Sigma")
+		# self.wbutsig.setCheckable(True)
+		# self.wbutsig.setChecked(False)
+		# self.wbutsig.setToolTip("Include changes of Gaussian Width in the GMM (rarely useful)")
+		# self.gflparm.addRow(" ",self.wbutsig)
 		
 		self.wlabruntime = QtWidgets.QLabel("-")
 		self.gflparm.addRow("Run:",self.wlabruntime)
@@ -487,9 +487,11 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.gblpltctl.addWidget(self.wsbycol,1,1,Qt.AlignLeft)
 		self.wsbycol.setValue(1)
 		
+
+		self.gblpltctl.addWidget(QtWidgets.QLabel("Rad:",self),3,0,Qt.AlignRight)
 		self.wedrad=QtWidgets.QLineEdit("0.2")
 		self.wedrad.setToolTip("Radius for including points adjacent to selected point (sphere/cylinder mode)")
-		self.gblpltctl.addWidget(self.wedrad,1,2,Qt.AlignRight)
+		self.gblpltctl.addWidget(self.wedrad,3,1,Qt.AlignRight)
 		
 		#self.wbutdrgrp=QtWidgets.QButtonGroup()
 		
@@ -555,7 +557,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		#self.wcbpntpln.addItem("Map-HSlab (fast)")
 		#self.wcbpntpln.addItem("Map-Line (fast)")
 		#self.wcbpntpln.addItem("Map-Line-Sph (fast)")
-		self.gblpltctl.addWidget(self.wcbpntpln,1,3)
+		self.gblpltctl.addWidget(self.wcbpntpln,2,0,1,2)
 
 		# These buttons are associated with the map list defined below
 		self.wbutmapnorm=QtWidgets.QPushButton("Build Map")
@@ -893,7 +895,7 @@ class EMGMM(QtWidgets.QMainWindow):
 #		self.wplot2d.set_data(None,replace=True,quiet=True)
 
 		if len(self.maplist.selectedItems())>0:
-			self.wplot2d.set_data(self.data,"map",symsize=10,replace=True,quiet=True)
+			self.wplot2d.set_data(self.data,"map",symsize=1,replace=True,quiet=True)
 			self.curmaps_sel={}
 			self.data_sel=[]
 			ss=10
@@ -906,7 +908,8 @@ class EMGMM(QtWidgets.QMainWindow):
 				if not isinstance(smap[5],np.ndarray) : smap[5]=np.array(smap[5])
 				self.data_sel.append(self.data[:,np.array(smap[5])])	# smap[5] is a list of points in the class
 				#print("S:",self.data.shape,self.data_sel[-1].shape)
-				self.wplot2d.set_data(self.data_sel[-1],f"set_{key}",symsize=ss,quiet=True)
+#				self.wplot2d.set_data(self.data_sel[-1],f"set_{key}",symsize=ss,quiet=True)
+				self.wplot2d.set_data(self.data_sel[-1],f"set_{key}",symsize=1,quiet=True)
 		else:
 			self.wplot2d.set_data(self.data,"map",symsize=1,replace=True,quiet=True)
 
@@ -990,8 +993,8 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.currun["trainiter"]=int(self.wedtrainiter.text())
 		self.currun["modelreg"]=float(self.wedtrainmodelreg.text())
 		self.currun["perturb"]=float(self.wedtrainperturb.text())
-		self.currun["conv"]=butval(self.wbutconv)
-		self.currun["pas"]=butstr(self.wbutpos)+butstr(self.wbutamp)+butstr(self.wbutsig)
+		self.currun["conv"]=0	#butval(self.wbutconv)
+		self.currun["pas"]=butstr(self.wbutpos)+butstr(self.wbutamp)+"0"  # butstr(self.wbutsig)
 		if mode=="neutral": self.currun["time_neutral"]=local_datetime()
 		if mode=="dynamics": self.currun["time_dynamics"]=local_datetime()
 		self.jsparm["run_"+self.currunkey]=self.currun
@@ -1195,11 +1198,15 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		if mmode=="Make Set":
 			# This will produce a list of indices where the distance in latent space is less than the specified rad
-			ptdist=(np.sum((self.midresult.transpose()-latent)**2,1)<(rad**2)).nonzero()[0]
+#			ptdist=(np.sum((self.midresult.transpose()-latent)**2,1)<(rad**2)).nonzero()[0]
+			ptdist=((self.midresult[xcol]-loc[0])**2+(self.midresult[ycol]-loc[1])**2<(rad**2)).nonzero()[0]
 			sz=good_size(self.jsparm["boxsize"]*5//4)
 
+			vec=np.zeros(len(self.midresult))
+			vec[xcol]=loc[0]
+			vec[ycol]=loc[1]
 			nset=good_num(self.curmaps)
-			newmap=[None,local_datetime(),latent,0,0,ptdist]
+			newmap=[None,local_datetime(),list(vec),0,0,ptdist]
 			self.curmaps[str(nset)]=newmap
 			self.sets_changed(nset)
 
@@ -1271,8 +1278,14 @@ class EMGMM(QtWidgets.QMainWindow):
 		try: nset=max([int(k) for k in self.curmaps])+1
 		except: nset=0
 
-		kmseg=KMeans(n_clusters=nseg,init='k-means++')
-		classes=kmseg.fit_predict(self.data[cols].transpose())
+		try:
+			kmseg=KMeans(n_clusters=nseg,init='k-means++')
+			classes=kmseg.fit_predict(self.data[cols].transpose())
+		except:
+			showerror("Problem with K-means parameters")
+			traceback.print_exc()
+			return
+
 		for i in range(nseg):
 			ptdist=np.where(classes==i)[0]
 			newmap=[None,local_datetime(),(cols,kmseg.cluster_centers_[i]),0,0,ptdist]
@@ -1832,18 +1845,25 @@ class EMGMM(QtWidgets.QMainWindow):
 				#return
 		ptrep=f"{self.gmm}/{self.currunkey}_ptrep_{maxboxp}.hdf"
 		#if not os.path.exists(ptrep):
-		# We really do need to rerun this each time in case parameters have changed
-		print("Pregenerating per-particle Gaussian representation")
-		er=run(f"e2gmm_refine_point.py --model {modelout} --ptclsin {self.gmm}/particles.lst --ptclrepout {ptrep} --maxboxsz {maxboxp} --minressz {minboxp}")
 
 		print("Training network")
 		if int(self.currun['batches'])<=1 :
-			er=run(f"e2gmm_refine_point.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --ptclrepin {ptrep} --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ptclsclip {self.jsparm['boxsize']} --minressz {minboxp}")
+			# We really do need to rerun this each time in case parameters have changed
+			print("Pregenerating per-particle Gaussian representation")
+			er=run(f"e2gmm_refine_point.py --model {modelout} --ptclsin {self.gmm}/particles.lst --ptclrepout {ptrep} --maxboxsz {maxboxp} --minressz {minboxp}")
+			print("Training network (single batch)")
+			er=run(f"e2gmm_refine_point.py --model {modelout} --decoderin {decoder} --decoderout {decoder} --encoderout {encoder} --ptclsin {self.gmm}/particles.lst --ptclrepin {ptrep} --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ptclsclip {self.jsparm['boxsize']} --minressz {minboxp}")
 		else:
 			# batched run. Run 10 iterations using each batch of data, and repeat until all requested iterations are complete for all data
 			nb=int(self.currun['batches'])
 			first=True
 			itsize=self.currun['trainiter']//3	# We run 1/3 of the iterations at at a time for all batches
+			# We really do need to rerun this each time in case parameters have changed
+			print("Pregenerating per-particle Gaussian representation")
+			for b in range(nb):
+				er=run(f"e2gmm_refine_point.py --model {modelout} --ptclsin {self.gmm}/particles.lst --ptclrepout {ptrep} --maxboxsz {maxboxp} --minressz {minboxp} --chunk {b},{nb}")
+
+			print("Training in ",nb," batches")
 			for it in range(0,self.currun['trainiter'],itsize):
 				nit=min(itsize,self.currun['trainiter']-itsize)
 				for b in range(nb):
@@ -1858,6 +1878,7 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		# generate latent representation for all particles using final trained encoder
 		if not er:
+			print("Generating latent vectors with final encoder")
 			run(f"e2gmm_refine_point.py --encoderin {encoder} --ptclrepin {ptrep} --midout {self.gmm}/{self.currunkey}_mid.txt --model {modelout}")
 			self.augment_mid()
 		else:
@@ -1949,11 +1970,11 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wedtrainiter.setText(f'{self.currun.get("trainiter",10)}')
 		self.wedtrainperturb.setText(f'{self.currun.get("perturb",0.1)}')
 		self.wedtrainmodelreg.setText(f'{self.currun.get("modelreg",0.5)}')
-		self.wbutconv.setChecked(int(self.currun.get("conv",1)))
+		#self.wbutconv.setChecked(int(self.currun.get("conv",1)))
 		pas=self.currun.get("pas","100")
 		self.wbutpos.setChecked(int(pas[0]))
 		self.wbutamp.setChecked(int(pas[1]))
-		self.wbutsig.setChecked(int(pas[2]))
+		#self.wbutsig.setChecked(int(pas[2]))
 		self.wlabruntime.setText(self.currun.get("time","-"))
 		nx=int(self.jsparm.getdefault("boxsize",128))
 

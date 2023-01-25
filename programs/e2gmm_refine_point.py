@@ -268,7 +268,7 @@ def main():
 
 		save_ptcls_xform(xfsnp, raw_boxsz, options, frcs)
 
-	#### Heterogeneity analysis from particles
+	#### Prepare gaussian representation of individual particles
 	bsz=options.batchsz
 	if options.ptclsin:
 		pts=tf.constant(pts[None,:,:])
@@ -296,11 +296,19 @@ def main():
 			print("Ptcl rep shape: ", allgrds.shape)
 
 		else:
+			nptcl=EMUtil.get_image_count(options.ptclsin)
+			if options.chunk is not None:
+				chunkn=nptcl//options.chunk[1]
+				chunk0=chunkn*options.chunk[0]
+				chunkn=min(nptcl-chunk0,chunkn)
+			else:
+				chunk0=0
+				chunkn=nptcl
+
 			trainset=tf.data.Dataset.from_tensor_slices((dcpx[0], dcpx[1], xfsnp))
 			trainset=trainset.batch(bsz)
 			allscr, allgrds=calc_gradient(trainset, pts, params, options )
 #			allscr, allgrds=calc_gqual(trainset, pts, params, options )
-
 
 			#### For tomographic data we sum the gradients over a 3-D particle, so all 2-D tilts have the same gradient
 			if not grpdct is None:
@@ -316,10 +324,16 @@ def main():
 				#allgrds=allgrds.reshape((len(allgrds),-1))
 				print("Ptcl rep shape: ", allgrds.shape)
 				ag=from_numpy(np.hstack([allscr[:,None], allgrds]))
-				ag.write_image(options.ptclrepout)
+				if chunk0==0 :
+					tmp=EMData(ag["nx"],nptcl,1)
+					tmp.to_zero()
+					tmp.write_image(options.ptclrepout,0)
+					tmp=None
+				ag.write_image(options.ptclrepout,0,IMAGE_HDF,0,Region(0,chunk0,ag["nx"],chunkn))
 				del ag
 				#allgrds=allgrds.reshape((len(allgrds), npt))
 
+	#### Heterogeneity analysis from particles
 	if options.ptclsin and options.heter:
 		#### build deep networks and make sure they work
 		if options.encoderin:

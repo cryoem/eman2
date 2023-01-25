@@ -15,6 +15,7 @@ def main():
 	parser.add_argument("--parallel", type=str,help="Run in parallel, specify type:<option>=<value>:<option>=<value>.", default="thread:1")
 	parser.add_argument("--sym", type=str,help="sym", default="c1")
 	parser.add_argument("--res", type=float,help="The resolution that reference map is lowpass filtered to (with phase randomization) at the begining of the refinement. ", default=10)
+	parser.add_argument("--minrespx", type=int,default=-1, help="skip the first x pixels in fourier space")
 	parser.add_argument("--keep", type=float,help="Fraction of best particles to keep in each iteration.", default=.9)
 	parser.add_argument("--niter", type=int,help="Number of iterations. Default is 10.", default=10)
 	parser.add_argument("--startiter", type=int,help="Start from a specified iteration in an existing refinement ", default=0)
@@ -83,7 +84,10 @@ def main():
 		etc=""
 		if options.curve: etc+=" --curve"
 		
-		run("e2spa_align.py --ptclin {pt}/ptcls_{i0:02d}.lst --ptclout {pt}/ptcls_{i1:02d}.lst --ref {pt}/threed_{i0:02d}.hdf --parallel {par} --sym {s} --maxres {rs:.2f} --goldcontinue --verbose {verbose} --localrefine {lc} {etc}".format(pt=options.path, i0=i, i1=i+1, rs=res, s=sym, par=options.parallel, verbose=options.verbose, lc=options.localrefine, etc=etc))
+		if options.minrespx>0: mrp=f"--minrespx {options.minrespx}"
+		else: mrp=""
+
+		run("e2spa_align.py --ptclin {pt}/ptcls_{i0:02d}.lst --ptclout {pt}/ptcls_{i1:02d}.lst --ref {pt}/threed_{i0:02d}.hdf --parallel {par} --sym {s} --maxres {rs:.2f} --goldcontinue --verbose {verbose} --localrefine {lc} {etc} {mrp}".format(pt=options.path, i0=i, i1=i+1, rs=res, s=sym, par=options.parallel, verbose=options.verbose, lc=options.localrefine, etc=etc,mrp=mrp))
 			
 		for eo in ["even","odd"]:
 			run("e2spa_make3d.py --input {pt}/ptcls_{i1:02d}.lst --output {pt}/threed_{i1:02d}_{eo}.hdf --keep {kp} --sym {s} {par} --clsid {eo}".format(pt=options.path, i1=i+1, eo=eo, s=sym, par=m3dpar, kp=options.keep))

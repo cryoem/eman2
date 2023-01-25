@@ -115,12 +115,19 @@ Manipulations of text files conatining multi-column data (as would be used with 
 --merge  combines several files, all with N rows, into a single file with N rows but additional columns
 
 --dimreduce  a variety of dimensional reduction algorithms are available. This will add additional dimensionally reduced columns to an existing file
-	Note that tsne is the only dimensional reduction algorithm suitable for large numbers (>~50k) of rows.""" 
+	Note that tsne is the only dimensional reduction algorithm suitable for large numbers (>~50k) of rows.
+	
+--hist2d <bins>
+
+--hist3d <bins>
+	""" 
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	####################
 	parser.add_argument("--merge",type=str,help="Merge several files into a single output by appending columns. All inputs must have the same number of rows. Row comments stripped.",default=None)
 	parser.add_argument("--dimreduce",type=str,help="tsne, mds, isomap, lle, spectral. output=input with added columns. Multiple files are independent.",default=None)
+	parser.add_argument("--hist2d",type=int,help="[bins]. Generate a 2d histogram as an image of any 2 specified columns. output=input.hdf",default=0)
+	parser.add_argument("--hist3d",type=int,help="[bins]. Generate a 3d histogram as a 3D volume of any 3 specified columns. output=input.hdf",default=0)
 	parser.add_argument("--dimout",type=int,help="number of output dimensions for dimreduce. default=2",default=2)
 	parser.add_argument("--columns",type=str,help="which columns to use for the analysis (eg, 2-4). First column is 0. End is inclusive. default = all columns",default=None)
 	parser.add_argument("--normalize",action="store_true",default=False,help="Applies normal EMAN normalization to specified columns (mean->0, std->1)")
@@ -211,6 +218,43 @@ Manipulations of text files conatining multi-column data (as would be used with 
 					data2[c]/=np.std(data2[c])
 			data=data2.transpose()
 			writefile(filename,data,lbls,options.precout)
+
+	if options.hist2d>1:
+		for filename in args:
+			data,lbls=readfile(filename,options.verbose)
+
+			data2=data.transpose()
+			cols=parse_range(options.columns,data.shape[1]-1)
+			if options.columns is not None and len(cols)==2 :
+				cols=parse_range(options.columns,data.shape[1]-1)
+				if options.verbose>0: print("using columns: ",cols)
+				ctrmap,xe,ye=np.histogram2d(data2[cols[0]],data2[cols[1]],bins=options.hist2d)
+				outname=f'{filename.rsplit(".",1)[0]}_{cols[0]}_{cols[1]}.hdf'
+				from_numpy(ctrmap).write_image(outname)
+				print("Wrote: ",outname)
+			else:
+				print("Error: please specify 2 columns")
+				sys.exit(1)
+
+	elif options.hist3d>1:
+		for filename in args:
+			data,lbls=readfile(filename,options.verbose)
+
+			data2=data.transpose()
+			cols=parse_range(options.columns,data.shape[1]-1)
+			if options.columns is not None and len(cols)==3:
+				cols=parse_range(options.columns,data.shape[1]-1)
+				if options.verbose>0: print("using columns: ",cols)
+				data2=data2[np.array((cols[0],cols[1],cols[2]))]
+				print(data2.shape)
+				ctrmap,edges=np.histogramdd(data2.transpose(),bins=options.hist3d)
+				outname=f'{filename.rsplit(".",1)[0]}_{cols[0]}_{cols[1]}_{cols[2]}.hdf'
+				from_numpy(ctrmap).write_image(outname)
+				print("Wrote: ",outname)
+			else:
+				print("Error: please specify 3 columns")
+				sys.exit(1)
+
 
 	if options.merge!=None:
 		# read all files. data_sets is a list of files. each file is a list of rows. each row is a list of comma, semicolon or space/tab separated values
