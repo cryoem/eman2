@@ -666,26 +666,44 @@ def checkinput(options):
 	Checks for sanity of input whether directly as an argument or through --input. Both should be functional.
 	Author: Jesus Montoya, jgalaz@gmail.com
 	"""
-	
+
+	extensions = extensions()
+
 	# Programs should really use one or the other, not be flexible in this way. It can lead to a bunch of problems, but as long as you
 	# limit it to your code, I won't complain too much about this one  --steve
+	inputs = []
 	if not options.input:
 		try:
-			options.input = sys.argv[1]
-			print("\ntrying to read input from sys.argv[1]={}".format(options.input))
-			EMData(options.input,0,True)
+			inputs = sys.argv[1:]
+			finalfs=''
+			for i in inputs:
+				finalfs+=i+','
+			finalfs.strip('.')
+			options.input = finalfs
 		except:
-			print("\n(EMAN2_utils)(checkinput) ERROR: input file {} seems to have an invalid format or doesn't exist; verify that the filename is correct.".format( options.input ))
-			#parser.print_help()
-			sys.exit(1)
+			if not options.sys.argv[1]:
+				print("\n(EMAN2_utils)(checkinput) ERROR: input required")
+				sys.exit(1)	
 	else:
-		try:
-			print("\ntrying to read input from --input={}".format(options.input))
-			EMData(options.input,0,True)
-		except:
-			print("\n(EMAN2_utils)(checkinput) ERROR: --input file {} seems to have an invalid format or doesn't exist; verify that the filename is correct.".format( options.input ))
-			sys.exit(1)
-	return options
+		options.input = options.input.split(',')
+		if options.verbose:	
+			print("\n(EMAN2_utils)(checkinput) found these many input files n={}".format(len(options.input)))
+		
+		for i in options.input:
+			ext = os.path.splitext()[-1]
+			if ext in extensions:
+				try:
+					EMData(i,0,True)
+					#finalfs+=i+','
+					print("\ninput file={} scanned for validity".format(i))
+					inputs.append(i)
+				except:
+					print("\n(EMAN2_utils)(checkinput) ERROR: input file {} coudl not be read; verify that the filename is correct and the image is not empty.".format( i ))
+					sys.exit(1)
+			else:
+				print("\n(EMAN2_utils)(checkinput) WARNING: skipping file f={} with invalid extension ext={}".format(i,ext))
+
+	return options,inputs
 	
 
 def runcmd(options,cmd,cmdsfilepath=''):
