@@ -39,13 +39,18 @@ import operator
 import random
 import numpy
 from sys import argv
+import time
+from datetime import timedelta
 
 
 def main():
+	start = time.perf_counter()
 
-	usage = """e2orthoproject.py <options> . 
-			The options should be supplied in "--option=value", replacing "option" for a valid option name, and "value" for an acceptable value for that option. 
+	usage = """
 			This program produces orthogonal projections of an EM volume.
+			
+			e2orthoproject.py <options> . 
+			The options should be supplied in "--option=value", replacing "option" for a valid option name, and "value" for an acceptable value for that option. 
 			"""
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)	
@@ -53,12 +58,6 @@ def main():
 	parser.add_argument("--angles", type=str, default='', help="A single comma or space separated triplet of az,alt,phi values representing the particle rotation to apply before projecting it.")
 	
 	parser.add_argument("--input", type=str, default=None, help="""The name of the input volume from which you want to generate orthogonal projections. You can supply more than one model either by providing an .hdf stack of models, or by providing multiple files separated by commas.""")
-
-	parser.add_argument("--lowpass", type=str, default=None, help="A lowpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.")
-
-	parser.add_argument("--mask", type=str, default=None, help="Mask processor applied to particles before alignment. Default is None")
-
-	parser.add_argument("--normproc", type=str, default=None, help="""Default=None. Normalization processor applied to particles before alignment. Default is to use normalize.mask. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'""")
 
 	parser.add_argument("--path", type=str, default=None, help="""Directory to store results in. The default is a numbered series of directories containing the prefix 'orthoproject'; for example, orthoproject_02 will be the directory by default if 'orthoproject_01' already exists.""")
 	parser.add_argument("--ppid", type=int, default=-1, help="Set the PID of the parent process, used for cross platform PPID")
@@ -77,7 +76,8 @@ def main():
 
 	(options, args) = parser.parse_args()	
 	
-	options = checkinput( options )
+	#c:this checks whether input is supplied directly via sys.argv, or --input, counts valid input files, and puts them in a list for future use.
+	options, inputs = checkinput( options )
 	
 	if options.transformsfile:
 		n=EMUtil.get_image_count(options.input)
@@ -154,36 +154,20 @@ def main():
 
 	logger = E2init(sys.argv, options.ppid)
 
-	if options.mask: 
-		options.mask=parsemodopt(options.mask)
-		
-	if options.lowpass: 
-		options.lowpass=parsemodopt(options.lowpass)
-		
-	if options.normproc: 
-		options.normproc=parsemodopt(options.normproc)
-	
 	'''#
 	#Make a directory where to store the results
 	'''#
 	from EMAN2_utils import makepath
 	options = makepath(options,'orthoprjs')
 	
-
-	'''#
-	#Read input
-	'''#
-	print("options.input",options.input)
-	models=options.input.split(',')
-	
 	rootpath = os.getcwd()
 	path = rootpath + '/' + options.path
 	
-	for model in models:
+	for model in inputs:
 		n = EMUtil.get_image_count(model)	
 		
 		newpath = path
-		if len(models) > 1:
+		if len(inputs) > 1:
 			newpath = path + '/' + model.split('.hdf')[0]
 			os.system('mkdir ' + newpath)
 		
@@ -214,46 +198,7 @@ def main():
 				submodel.transform(t)
 			
 			apix = submodel['apix_x']
-		
-			'''
-			Pre-process/enhance subvolume if specified
-			'''
-			# Make the mask first, use it to normalize (optionally), then apply it 
-			mask=EMData(submodel["nx"],submodel["ny"],submodel["nz"])
-			mask.to_one()
-			
-			if options.mask:
-				#print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options.mask[0],options.mask[1]) 
-				mask.process_inplace(options.mask[0],options.mask[1])
-			
-			# normalize
-			if options.normproc:
-				if options.normproc[0]=="normalize.mask": 
-					options.normproc[1]["mask"]=mask
-				
-				submodel.process_inplace(options.normproc[0],options.normproc[1])
-			
-			'''
-			#Mask after normalizing with the mask you just made, which is just a box full of 1s if no mask is specified
-			'''
-			submodel.mult(mask)
-			
-			'''
-			#If normalizing, it's best to do mask-normalize-mask
-			'''
-			if options.normproc:
-				#if options["normproc"][0]=="normalize.mask": 
-				#	options["normproc"][1]["mask"]=mask
-				print("\n!!!! applying normalization = {}".format(options.normproc))
-				submodel.process_inplace(options.normproc[0],options.normproc[1])
-			
-				submodel.mult(mask)
-			else:
-				print("\nNO normalization = {}".format(options.normproc))
 
-			
-			if options.lowpass:
-				submodel.process_inplace(options.lowpass[0],options.lowpass[1])
 			
 			if options.shrink:
 				submodel.process_inplace('math.meanshrink',{'n':options.shrink})
@@ -305,7 +250,10 @@ def main():
 				kindividual+=1
 				kstack+=1
 			
-	return()	
+	elapsed = time.perf_counter() - start
+	print(str(timedelta(seconds=elapsed)))
+
+	return
 
 if __name__ == '__main__':
 	main()
