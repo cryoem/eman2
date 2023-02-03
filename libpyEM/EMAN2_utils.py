@@ -661,29 +661,47 @@ def makepath(options, stem='e2dir'):
 	
 	return options
 
+
+def extensions():
+	"""
+	Can help to quickly check for/find valid EM image files in a directory based on filename before even attempting to load an file into an EMData object
+	Author: Jesus Montoya, jgalaz@gmail.com
+	"""
+	return ['.dm3','.DM3','.mrc','.MRC','.mrcs','.MRCS','.hdf','.HDF','.tif','.TIF','.st','.ST','.ali','.ALI','.rec','.REC']
+
+
 def checkinput(options):
 	"""
 	Checks for sanity of input whether directly as an argument or through --input. Both should be functional.
 	Author: Jesus Montoya, jgalaz@gmail.com
 	"""
 
-	extensions = extensions()
+	exts = extensions()
 
 	# Programs should really use one or the other, not be flexible in this way. It can lead to a bunch of problems, but as long as you
 	# limit it to your code, I won't complain too much about this one  --steve
 	inputs = []
 	if not options.input:
-		try:
-			inputs = sys.argv[1:]
-			finalfs=''
-			for i in inputs:
-				finalfs+=i+','
-			finalfs.strip('.')
-			options.input = finalfs
-		except:
-			if not options.sys.argv[1]:
-				print("\n(EMAN2_utils)(checkinput) ERROR: input required")
-				sys.exit(1)	
+		potential_inputs = sys.argv[1:]
+		#print("\npotential inputs len={}, which are {}".format(len(potential_inputs),potential_inputs))
+		for f in potential_inputs:
+			ext = os.path.splitext(f)[-1]
+			if ext in exts:
+				try:
+					hdr=EMData(f,0,True)
+					#print("\nfound valid input {}".format(f))
+					inputs.append(f)
+				except:
+					print("\n(EMAN2_utils)(checkinput) WARNING: skipping={} because input could not be read and validated; you may be running the program from the wrong directory".format(f))
+	
+		finalfs=''
+		for i in inputs:
+
+			finalfs+=i+','
+
+		finalfs.strip('.')
+		options.input = finalfs
+
 	else:
 		options.input = options.input.split(',')
 		if options.verbose:	
@@ -859,14 +877,6 @@ def textwriter(data,options,name,invert=0,xvals=None,onlydata=False):
 	#f.close()
 
 	return
-
-
-def extensions():
-	"""
-	Can help to quickly check for/find valid EM image files in a directory based on filename before even attempting to load an file into an EMData object
-	Author: Jesus Montoya, jgalaz@gmail.com
-	"""
-	return ['.dm3','.DM3','.mrc','.MRC','.mrcs','.MRCS','.hdf','.HDF','.tif','.TIF','.st','.ST','.ali','.ALI','.rec','.REC']
 
 
 def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ralign=None, alircmp=("dot",{}),shrink=None,mask=None,subset=None,prefilt=False,verbose=0):
