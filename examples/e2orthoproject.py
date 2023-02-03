@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 '''
 ====================
-Author: Jesus Galaz - whoknows-2012, Last update: 07/Nov/2017
+Author: Jesus Galaz - whoknows-2012, Last update: 01/2023
 ====================
 
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -33,7 +33,6 @@ from builtins import range
 from EMAN2 import *
 from EMAN2_utils import *
 import sys
-import EMAN2
 import heapq
 import operator
 import random
@@ -237,14 +236,11 @@ def main():
 				else:
 					prj.write_image(submodelname,k)
 
-				
-				#print "Options.saverotvol is", options.saverotvol
 				if options.saverotvol:
 					submodel_rot = submodel.copy()
 					submodel_rot.transform(projectiondirections[d])
 					
 					volname = submodelname.replace('_prjs.', '_vol' + d + '.')
-					#print "I will save the rotated volume to this file", volname
 					submodel_rot.write_image( volname , 0)
 					
 				kindividual+=1
