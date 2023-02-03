@@ -708,8 +708,8 @@ def checkinput(options):
 			print("\n(EMAN2_utils)(checkinput) found these many input files n={}".format(len(options.input)))
 		
 		for i in options.input:
-			ext = os.path.splitext()[-1]
-			if ext in extensions:
+			ext = os.path.splitext(i)[-1]
+			if ext in exts:
 				try:
 					EMData(i,0,True)
 					#finalfs+=i+','
