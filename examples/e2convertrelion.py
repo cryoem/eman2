@@ -116,7 +116,7 @@ def main():
 				fm="particles/"+src[:src.rfind('.')]+"__flip.hdf"
 			
 		if not os.path.isfile(src):
-			print("{} does exist".format(src))
+			print("{} does not exist".format(src))
 			continue
 
 		if not options.skipwrite:

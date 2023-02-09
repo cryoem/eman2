@@ -27,7 +27,7 @@ def pdb2numpy(fname, readres=False, readocc=False, readbfac=False, readchain=Fal
 	for l in lines:
 		if l.startswith("ATOM") or l.startswith("HETATM"):
 			if allatom==False and l[13:15]!="CA": continue
-			atom=l.split()[5:8]
+			atom=l[30:].split()[:3]
 			#print(atom)
 			#atom=[l[30:38],l[38:46],l[46:54]]
 			a=[float(a) for a in atom]
