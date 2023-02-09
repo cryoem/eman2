@@ -1393,7 +1393,7 @@ def calc_global_trans(imgs, options, excludes=[], tltax=None,tlts=[]):
 		trans=ts.copy()
 		
 	trans=-ts[:,::-1].copy()*2
-	
+	trans=np.minimum(np.maximum(trans, -sz*1.8), sz*1.8)
 	imgout=[]
 	for i,m in enumerate(imgs):
 		e=m.process("mask.soft",{"outer_radius":-8,"width":8})
