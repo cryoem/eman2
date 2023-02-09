@@ -661,31 +661,67 @@ def makepath(options, stem='e2dir'):
 	
 	return options
 
+
+def extensions():
+	"""
+	Can help to quickly check for/find valid EM image files in a directory based on filename before even attempting to load an file into an EMData object
+	Author: Jesus Montoya, jgalaz@gmail.com
+	"""
+	return ['.dm3','.DM3','.mrc','.MRC','.mrcs','.MRCS','.hdf','.HDF','.tif','.TIF','.st','.ST','.ali','.ALI','.rec','.REC']
+
+
 def checkinput(options):
 	"""
 	Checks for sanity of input whether directly as an argument or through --input. Both should be functional.
 	Author: Jesus Montoya, jgalaz@gmail.com
 	"""
-	
+
+	exts = extensions()
+
 	# Programs should really use one or the other, not be flexible in this way. It can lead to a bunch of problems, but as long as you
 	# limit it to your code, I won't complain too much about this one  --steve
+	inputs = []
 	if not options.input:
-		try:
-			options.input = sys.argv[1]
-			print("\ntrying to read input from sys.argv[1]={}".format(options.input))
-			EMData(options.input,0,True)
-		except:
-			print("\n(EMAN2_utils)(checkinput) ERROR: input file {} seems to have an invalid format or doesn't exist; verify that the filename is correct.".format( options.input ))
-			#parser.print_help()
-			sys.exit(1)
+		potential_inputs = sys.argv[1:]
+		#print("\npotential inputs len={}, which are {}".format(len(potential_inputs),potential_inputs))
+		for f in potential_inputs:
+			ext = os.path.splitext(f)[-1]
+			if ext in exts:
+				try:
+					hdr=EMData(f,0,True)
+					#print("\nfound valid input {}".format(f))
+					inputs.append(f)
+				except:
+					print("\n(EMAN2_utils)(checkinput) WARNING: skipping={} because input could not be read and validated; you may be running the program from the wrong directory".format(f))
+	
+		finalfs=''
+		for i in inputs:
+
+			finalfs+=i+','
+
+		finalfs.strip('.')
+		options.input = finalfs
+
 	else:
-		try:
-			print("\ntrying to read input from --input={}".format(options.input))
-			EMData(options.input,0,True)
-		except:
-			print("\n(EMAN2_utils)(checkinput) ERROR: --input file {} seems to have an invalid format or doesn't exist; verify that the filename is correct.".format( options.input ))
-			sys.exit(1)
-	return options
+		options.input = options.input.split(',')
+		if options.verbose:	
+			print("\n(EMAN2_utils)(checkinput) found these many input files n={}".format(len(options.input)))
+		
+		for i in options.input:
+			ext = os.path.splitext(i)[-1]
+			if ext in exts:
+				try:
+					EMData(i,0,True)
+					#finalfs+=i+','
+					print("\ninput file={} scanned for validity".format(i))
+					inputs.append(i)
+				except:
+					print("\n(EMAN2_utils)(checkinput) ERROR: input file {} coudl not be read; verify that the filename is correct and the image is not empty.".format( i ))
+					sys.exit(1)
+			else:
+				print("\n(EMAN2_utils)(checkinput) WARNING: skipping file f={} with invalid extension ext={}".format(i,ext))
+
+	return options,inputs
 	
 
 def runcmd(options,cmd,cmdsfilepath=''):
@@ -841,14 +877,6 @@ def textwriter(data,options,name,invert=0,xvals=None,onlydata=False):
 	#f.close()
 
 	return
-
-
-def extensions():
-	"""
-	Can help to quickly check for/find valid EM image files in a directory based on filename before even attempting to load an file into an EMData object
-	Author: Jesus Montoya, jgalaz@gmail.com
-	"""
-	return ['.dm3','.DM3','.mrc','.MRC','.mrcs','.MRCS','.hdf','.HDF','.tif','.TIF','.st','.ST','.ali','.ALI','.rec','.REC']
 
 
 def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ralign=None, alircmp=("dot",{}),shrink=None,mask=None,subset=None,prefilt=False,verbose=0):
