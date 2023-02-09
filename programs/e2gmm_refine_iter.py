@@ -81,7 +81,7 @@ def main():
 	js=js_open_dict(fm)
 	js.update(vars(options))
 	js.close()	
-		
+
 	etcpp=""
 	if options.maskpp:
 		etcpp+=" --mask {}".format(options.maskpp)
@@ -90,12 +90,12 @@ def main():
 		it0=itr-1
 		
 		for ieo, eo in enumerate(["even", "odd"]):
-			
+
 			run(f"e2project3d.py {path}/threed_{it0:02d}_{eo}.hdf --outfile {path}/projections_{eo}.hdf --orientgen=eman:delta=4 --parallel=thread:12")
 			
 
 			#else:
-			if itr==1:
+			if itr==options.startiter:
 				
 				if options.initpts:
 					run(f"e2gmm_refine_new.py --ptclsin {path}/projections_{eo}.hdf --model {path}/gmm_init_{eo}.{ext} --maxres {res} --modelout {path}/model_{it0:02d}_{eo}.txt --niter 40 --trainmodel")
@@ -111,8 +111,11 @@ def main():
 			pts=np.loadtxt(f"{path}/model_{it0:02d}_{eo}.txt")
 			if options.mask:
 				msk=EMData(options.mask)
+				
 				## read selected Gaussian from mask file
 				m=msk.numpy().copy()
+				if np.min(m)<1e3 and options.masksigma:
+					m=(m*.75)+.25
 				p=pts[:,:3].copy()
 				p=p[:,::-1]
 				p[:,:2]*=-1
@@ -161,40 +164,3 @@ if __name__ == '__main__':
 	main()
 	
 
-
-	##itr=options.niter+1
-	##for ieo, eo in enumerate(["even", "odd"]):
-		
-		##run(f"e2project3d.py {path}/threed_{it0:02d}_{eo}.hdf --outfile {path}/projections_{eo}.hdf --orientgen=eman:delta=4 --parallel=thread:12")
-		
-		##if options.initpts:
-			##run(f"e2gmm_refine_new.py --ptclsin {path}/projections_{eo}.hdf --model {path}/gmm_init.pdb --maxres {res} --modelout {path}/model_{it0:02d}_{eo}.txt --niter 40 --trainmodel")
-
-		##else:
-			##run(f"e2segment3d.py {path}/threed_{it0:02d}_{eo}.hdf --pdb {path}/model_{it0:02d}_{eo}.pdb --process=segment.kmeans:nseg={options.npt}:thr=4")
-			
-			##run(f"e2gmm_refine_new.py --ptclsin {path}/projections_{eo}.hdf --model {path}/model_{it0:02d}_{eo}.pdb --maxres {res} --modelout {path}/model_{it0:02d}_{eo}.txt --niter 40 --trainmodel")
-		
-		##pts=np.loadtxt(f"{path}/model_{it0:02d}_{eo}.txt")
-		##pn=16
-		##km=KMeans(pn,max_iter=30)
-		##km.fit(pts[:,:3])
-		##pc=km.cluster_centers_
-		##pp=np.hstack([pc, np.zeros((pn,1))+np.mean(pts[:,3]), np.zeros((pn,1))+np.mean(pts[:,4])])
-		##np.savetxt(f"{path}/model_{it0:02d}_{eo}_anchor.txt", pp)
-		##lst=load_lst_params(f"{path}/ptcls_{it0:02d}_{eo}.lst")
-		##np.random.shuffle(lst)
-		##save_lst_params(lst[:50000], f"{path}/ptcls_{it0:02d}_{eo}_sample.lst")
-		
-		##run(f"e2gmm_refine_new.py --model {path}/model_{it0:02d}_{eo}.txt --anchor {path}/model_{it0:02d}_{eo}_anchor.txt --conv --midout {path}/mid_00_{eo}.txt --maxres 5 --minres 25 --learnrate 1e-5 --niter 20 --ptclsin {path}/ptcls_{it0:02d}_{eo}_sample.lst --heter --encoderout {path}/enc_{eo}.h5 --decoderout {path}/dec_{eo}.h5 --pas 110")
-		
-		##run(f'e2gmm_batch.py "e2gmm_refine_new.py --model {path}/model_{it0:02d}_{eo}.txt --conv --midout {path}/midall_00_{eo}.txt --maxres {res} --minres 25 --learnrate 1e-5 --niter 10 --ptclsin {path}/ptcls_{it0:02d}_{eo}.lst --heter --encoderout {path}/enc_{eo}.h5 --decoderout {path}/dec_{eo}.h5 --pas 110" --load --niter 1 --batch 50000')
-		
-		##run(f"e2gmm_refine_new.py --model {path}/model_{it0:02d}_{eo}.txt --ptclsin {path}/ptcls_{it0:02d}_{eo}.lst --ptclsout {path}/ptcls_{itr:02d}_{eo}.lst --align --maxres {res} --minres 25 --decoderin {path}/dec_{eo}.h5 --midin {path}/midall_00_{eo}.txt")
-		
-		##run(f"e2spa_make3d.py --input {path}/ptcls_{itr:02d}_{eo}.lst --output {path}/threed_{itr:02d}_{eo}.hdf --parallel thread:32 --keep .9 --sym {options.sym}")
-	
-		##run(f"e2proc3d.py {path}/threed_{itr:02d}_{eo}.hdf {path}/threed_raw_{eo}.hdf")
-		
-	##run(f"e2refine_postprocess.py --even {path}/threed_{itr:02d}_even.hdf --res {res} --tophat localwiener --sym {options.sym}")
-		

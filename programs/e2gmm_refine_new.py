@@ -21,17 +21,17 @@ if "CUDA_VISIBLE_DEVICES" not in os.environ:
 	
 os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]='true' 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' #### reduce log output
-if ('-h' in sys.argv) or ('--help' in sys.argv):
-	tf=type('empty', (object,), {})()
-	def empty():
-		return lambda f: f
-	tf.function=empty
-	tflayer=int
-	print(tf.function())
-	print("Printing help. Skip tensorflow import")
-else:
-	import tensorflow as tf
-	tflayer=tf.keras.layers.Layer
+#if ('-h' in sys.argv) or ('--help' in sys.argv):
+	#tf=type('empty', (object,), {})()
+	#def empty():
+		#return lambda f: f
+	#tf.function=empty
+	#tflayer=int
+	#print(tf.function())
+	#print("Printing help. Skip tensorflow import")
+#else:
+import tensorflow as tf
+tflayer=tf.keras.layers.Layer
 
 class ResidueConv2D(tflayer):
 	def __init__(self, nk, sz, activation='linear', **args):

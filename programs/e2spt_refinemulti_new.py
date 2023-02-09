@@ -119,8 +119,8 @@ def main():
 	if options.breaksym!=None:
 		opt+=" --breaksym {}".format(options.breaksym)
 		
-	if options.maxang>0: opt+=f" --maxang {options.maxang}"
-	if options.maxshift>0: opt+=f" --maxshift {options.maxshift}"
+	if options.maxang>=0: opt+=f" --maxang {options.maxang}"
+	if options.maxshift>=0: opt+=f" --maxshift {options.maxshift}"
 	if options.minres>0: opt+=f" --minres {options.minres}"
 	if options.maxres>0: opt+=f" --maxres {options.maxres}"
 		
