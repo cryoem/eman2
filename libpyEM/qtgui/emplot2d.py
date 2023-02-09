@@ -2557,9 +2557,9 @@ class EMPlot2DInspector(QtWidgets.QWidget):
 		self.color.addItem("blue")
 		self.color.addItem("red")
 		self.color.addItem("green")
-		self.color.addItem("yellow")
 		self.color.addItem("cyan")
 		self.color.addItem("magenta")
+		self.color.addItem("yellow")
 		self.color.addItem("grey")
 		hbl1.addWidget(self.color)
 

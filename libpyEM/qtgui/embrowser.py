@@ -2833,13 +2833,20 @@ class EMPlotInfoPane(EMInfoPane) :
 		if len(data) == 2500 : self.plotdata.setRowCount(2501)
 		else : self.plotdata.setRowCount(len(data))
 
+		v=np.array(data)
+		mean=np.mean(data, axis=0)
+		std=np.std(data, axis=0)
 		self.plotdata.setColumnCount(numc)
-		self.plotdata.setVerticalHeaderLabels([str(i) for i in range(len(data))])
+		self.plotdata.setVerticalHeaderLabels(["Mean", "Std"]+[str(i) for i in range(len(data))])
 		self.plotdata.setHorizontalHeaderLabels([str(i) for i in range(numc)])
+		for c in range(numc) :
+			self.plotdata.setItem(0, c, QtWidgets.QTableWidgetItem("%1.4g"%mean[c]))
+			self.plotdata.setItem(1, c, QtWidgets.QTableWidgetItem("%1.4g"%std[c]))
+		if len(data)==2500: data=data[:-2]
 
 		for r in range(len(data)) :
 			for c in range(numc) :
-				self.plotdata.setItem(r, c, QtWidgets.QTableWidgetItem("%1.4g"%data[r][c]))
+				self.plotdata.setItem(r+2, c, QtWidgets.QTableWidgetItem("%1.4g"%data[r][c]))
 
 		if len(data) == 2500 :
 			self.plotdata.setVerticalHeaderItem(2500, QtWidgets.QTableWidgetItem("..."))
