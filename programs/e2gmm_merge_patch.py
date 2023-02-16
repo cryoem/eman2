@@ -9,6 +9,8 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--base", type=str, help="path of the global refinement. required for merging multiple folders",default=None)
 	parser.add_argument("--sym", type=str, help="",default="c1")
+	parser.add_argument("--skippp", action="store_true", default=False ,help="skip post process")
+
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	(options, args) = parser.parse_args()
 	
@@ -42,8 +44,10 @@ def main():
 			wt.process_inplace("math.reciprocal", {"zero_to":0})
 			avg.mult(wt)
 			avg.write_image(f"{path}/threed_99_{eo}.hdf")
-			
-		run(f"e2refine_postprocess.py --even {path}/threed_99_even.hdf --res 5 --tophat localwiener --thread 32 --setsf sf.txt --align")
+		
+		
+		if not options.skippp:
+			run(f"e2refine_postprocess.py --even {path}/threed_99_even.hdf --res 5 --tophat localwiener --thread 32 --setsf sf.txt --align")
 		
 	elif len(args)>1:
 		print("Merging refinement results from multiple folders..")
@@ -68,8 +72,11 @@ def main():
 				e=EMData(f"{pt}/threed_raw_{eo}.hdf")
 				e.mult(m)
 				if options.sym!="c1":
+					nsym=Transform.get_nsym(options.sym)
 					e.process_inplace("xform.applysym",{"sym":options.sym})
 					m.process_inplace("xform.applysym",{"sym":options.sym})
+					e.mult(nsym)
+					m.mult(nsym)
 				avg.add(e)
 				wt.add(m)
 				m0.add(m*-1)
@@ -90,7 +97,8 @@ def main():
 			avg.mult(wt)
 			avg.write_image(f"{options.base}/threed_99_{eo}.hdf")
 			
-		run(f"e2refine_postprocess.py --even {options.base}/threed_99_even.hdf --res 5 --tophat localwiener --thread 32 --setsf sf.txt --align")
+		if not options.skippp:
+			run(f"e2refine_postprocess.py --even {options.base}/threed_99_even.hdf --res 5 --tophat localwiener --thread 32 --setsf sf.txt --align")
 	E2end(logid)
 	
 	
