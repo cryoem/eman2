@@ -574,7 +574,7 @@ class EMPlot3DWidget(EMGLWidget):
 						sz=(self.data[i][j[4]]-slimits[0])*30.0/(slimits[1]-slimits[0])
 
 #					ax.scatter(x,y,z,col,mark,linewidths=.5*(self.pparm[i][6]>4))
-					ax.scatter(x,y,z,c=col,marker=mark)
+					ax.scatter(x,y,z,s=sz,c=col,marker=mark)
 
 				# Then we draw the line
 				if self.pparm[i][1]:

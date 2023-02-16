@@ -1494,16 +1494,26 @@ class EMGMM(QtWidgets.QMainWindow):
 			mask=map3d.process("mask.asymunit",{"au":0,"sym":sym})
 			map3d.mult(mask)
 			mask=None
+
+		# Strong positive peaks
 		seg=map3d.process("segment.gauss",opt)
 		print("pos:",len(seg["segment_amps"]))
 		map3d2=map3d.process("normalize.edgemean")
 		map3d2.mult(-1.0)
+
+		# strong negative peaks
 		opt["minratio"]=minneg
 		segneg=map3d2.process("segment.gauss",opt)
 		print("neg:",len(segneg["segment_amps"]))
 #		amps=np.array(seg["segment_amps"]+segneg["segment_amps"])
-		amps=np.append(seg["segment_amps"],np.zeros(len(segneg["segment_amps"]))-0.05)
-		centers=np.array(seg["segment_centers"]+segneg["segment_centers"]).reshape((len(amps),3)).transpose()
+		if self.currun["pas"][1]=="0":
+			print("No amplitude modification, so 'negative' peaks set to small positive value")
+			amps=np.append(seg["segment_amps"],np.zeros(len(segneg["segment_amps"]))+.05)
+			centers=np.array(seg["segment_centers"]+segneg["segment_centers"]).reshape((len(amps),3)).transpose()
+		else:
+			print("negative peaks set to small negative value")
+			amps=np.append(seg["segment_amps"],np.zeros(len(segneg["segment_amps"]))-.05)
+			centers=np.array(seg["segment_centers"]+segneg["segment_centers"]).reshape((len(amps),3)).transpose()
 		try: amps/=max(amps)
 		except:
 			print("ERROR: no gaussians at specified threshold")
@@ -2234,6 +2244,10 @@ class EMGMM(QtWidgets.QMainWindow):
 			# Copy aligned particles (lst file)
 			run(f"cp {rpath}/aliptcls2d_{itr:02d}.lst {self.gmm}/particles.lst; echo ")
 			self.app().setOverrideCursor(Qt.ArrowCursor)
+
+		self.wedsym.setText(f'{self.jsparm.getdefault("sym","c1")}')
+		self.wedapix.setText(f'{self.jsparm.getdefault("apix",0.0):0.5f}')
+		self.wedbox.setText(f'{self.jsparm.getdefault("boxsize",128)}')
 
 		return True
 	
