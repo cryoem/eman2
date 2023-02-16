@@ -45,15 +45,37 @@ def readfile(filename,verbose=0):
 	"""reads a multicolumn numerical file, including optional header comment line
 	returns data[row][col],label[col]"""
 
+	# : specification, n0=first line #, n1=last line #+1, ns=step
+	# :::2 = all even lines
+	# :1::2 = all odd lines
+	# :1000 = first 1000 lines
+	# :0:1000:2 = even lines 0-998
+	if ":" in filename:
+		rng=filename.split(":")
+		filename=rng[0]
+		if len(rng)==2: n0,n1,ns=0,int(rng[1]),1
+		if len(rng)==3: n0,n1,ns=int(rng[1]),int(rng[2]),1
+		if len(rng)==4: 
+			try: n0=int(rng[1])
+			except: n0=0
+			try: n1=int(rng[2])
+			except: n1=-1
+			try: ns=int(rng[3])
+			except: ns=1
+		print(f"Covering range {n0}:{n1} with step {ns}")
+	else: n0,n1,ns=0,-1,1
+			
 	# loadtxt is really slow
 	fin=open(filename,"r")
 	nr=0
+	nt=0
 	lbls=[]
 	for i,lin in enumerate(fin):
 		l=lin.strip()
 		if lin[0]!="#" and len(l)!=0:
 			ll=l
-			nr+=1
+			nt+=1
+			if (n1<0 or nt<n1) and nt>=n0 and (nt-n0)%ns==0: nr+=1
 		else:
 			# look for a comment line with ; separator which may contain column labels
 			if lin[0]=="#":
@@ -71,13 +93,16 @@ def readfile(filename,verbose=0):
 
 	fin.seek(0)
 	# second pass, read the data, seems dumb, but actually faster
-	r=0
+	r=0	# included lines
+	nl=0	# total lines of data
 	for lin in fin:
 		l=lin.strip()
 		if lin[0]!="#" and len(l)!=0:
-			v=[float(x) for x in re.split("[\s,;]+",l)]
-			data[r]=v
-			r+=1
+			if (n1<0 or nl<n1) and nl>=n0 and (nl-n0)%ns==0:
+				v=[float(x) for x in re.split("[\s,;]+",l)]
+				data[r]=v
+				r+=1
+			nl+=1
 
 	if r!=nr : print(f"ERROR: inconsistent read {r} lines read with {nr} rows expected")
 	return data,lbls
@@ -124,6 +149,8 @@ Manipulations of text files conatining multi-column data (as would be used with 
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	####################
+	parser.add_argument("--copy",type=str,help="Copy input file to output specified here. Will follow ':' convention to limit input lines. ",default=None)
+	parser.add_argument("--sortcomment",action="store_true",default=False,help="Sorts rows based on per-row comment (after #) before merging")
 	parser.add_argument("--merge",type=str,help="Merge several files into a single output by appending columns. All inputs must have the same number of rows. Row comments stripped.",default=None)
 	parser.add_argument("--dimreduce",type=str,help="tsne, mds, isomap, lle, spectral. output=input with added columns. Multiple files are independent.",default=None)
 	parser.add_argument("--hist2d",type=int,help="[bins]. Generate a 2d histogram as an image of any 2 specified columns. output=input.hdf",default=0)
@@ -132,7 +159,6 @@ Manipulations of text files conatining multi-column data (as would be used with 
 	parser.add_argument("--columns",type=str,help="which columns to use for the analysis (eg, 2-4). First column is 0. End is inclusive. default = all columns",default=None)
 	parser.add_argument("--normalize",action="store_true",default=False,help="Applies normal EMAN normalization to specified columns (mean->0, std->1)")
 	parser.add_argument("--precout",type=str,help="specify precision and format for writing output, '1.4f' - 4 digits of precision, '1.4g' 4 digits sci notation. default=1.4f",default="1.4f")
-	parser.add_argument("--sortcomment",action="store_true",default=False,help="Sorts rows based on per-row comment (after #) before merging")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higher number means higher level of verboseness",default=1)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
@@ -145,6 +171,12 @@ Manipulations of text files conatining multi-column data (as would be used with 
 
 	logid=E2init(sys.argv,options.ppid)
 
+	if options.copy is not None:
+		if len(args)>1 : print("Copy uses first specified input only!")
+		data,lbls=readfile(args[0],options.verbose)
+		writefile(options.copy,data,lbls,options.precout)
+		print("Copied ",args[0]," to ",options.copy)
+		sys.exit(0)
 
 	if options.dimreduce is not None:
 		for filename in args:
@@ -199,7 +231,8 @@ Manipulations of text files conatining multi-column data (as would be used with 
 				for v in vdc[r]: out.write(f"{v:1.4f}\t")
 				out.write("\n")
 			out.close()
-
+			print("Additional columns added to ",filename)
+			sys.exit(0)
 	if options.normalize :
 
 		for filename in args:
@@ -218,6 +251,8 @@ Manipulations of text files conatining multi-column data (as would be used with 
 					data2[c]/=np.std(data2[c])
 			data=data2.transpose()
 			writefile(filename,data,lbls,options.precout)
+		print("file(s) normalized")
+		sys.exit(0)
 
 	if options.hist2d>1:
 		for filename in args:
@@ -235,6 +270,7 @@ Manipulations of text files conatining multi-column data (as would be used with 
 			else:
 				print("Error: please specify 2 columns")
 				sys.exit(1)
+		sys.exit(0)
 
 	elif options.hist3d>1:
 		for filename in args:
@@ -254,6 +290,7 @@ Manipulations of text files conatining multi-column data (as would be used with 
 			else:
 				print("Error: please specify 3 columns")
 				sys.exit(1)
+		sys.exit(0)
 
 
 	if options.merge!=None:
@@ -292,6 +329,11 @@ Manipulations of text files conatining multi-column data (as would be used with 
 		for row in data_sets[0]:
 			out.write("\t".join(row))
 			out.write("\n")
+
+		print("merged data written to ",options.merge)
+		sys.exit(0)
+
+	
 			
 
 	E2end(logid)
