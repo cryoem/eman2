@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 import argparse
+import os
+
 import requests
 from enum import Enum
 import subprocess as sp
@@ -54,12 +56,15 @@ def main():
 
 	# Run subcommands
 	print("Running subcommands...")
+
+	GIT_BRANCH_SHORT = os.getenv('GIT_BRANCH_SHORT')
+
 	for cmd in (
-			'git branch -D master',
-			'git checkout -b master',
+			f'git branch -D {GIT_BRANCH_SHORT}',
+			f'git checkout -b {GIT_BRANCH_SHORT}',
 			f'python utils/bump_version.py {version_cur} {version}',
 			f'git commit -a -m v{version}',
-			f'git push origin master',
+			f'git push origin {GIT_BRANCH_SHORT}',
 			f'git tag -f v{version}',
 			f'git push origin v{version}',
 			):
