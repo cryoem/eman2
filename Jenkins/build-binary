@@ -18,16 +18,12 @@ def isMasterBranch() {
     return GIT_BRANCH_SHORT == "master"
 }
 
-def isReleaseBranch() {
-    return GIT_BRANCH_SHORT ==~ /release.*/
-}
-
 def isContinuousBuild() {
-    return isMasterBranch() || isReleaseBranch()
+    return isMasterBranch()
 }
 
 def isExperimentalBuild() {
-    return !(isMasterBranch() || isReleaseBranch())
+    return !isMasterBranch()
 }
 
 def isBinaryBuild() {
