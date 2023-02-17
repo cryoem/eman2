@@ -1084,7 +1084,7 @@ def parse_infile_arg(arg):
 	fname, _, seq = arg.partition(':')
 
 	if not (fname and os.path.isfile(fname)):
-		raise Exception(f"{fname} is not an existing regular file!")
+		raise Exception(f"'{fname}' is not an existing regular file!")
 
 	seq_inc, _, seq_exc = seq.partition('^')
 
