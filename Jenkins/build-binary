@@ -160,18 +160,6 @@ pipeline {
       }
     }
     
-    stage('build-local') {
-      when {
-        not { expression { isBinaryBuild() } }
-        expression { isUnix() }
-        not { expression { isSkipStage() } }
-      }
-      
-      steps {
-        sh 'source ci_support/set_env_vars.sh && source $(conda info --root)/bin/activate eman-deps-${EMAN_DEPS_VERSION} && env | sort && bash ci_support/build_no_recipe.sh'
-      }
-    }
-    
     stage('build-recipe') {
       when { not { expression { isSkipStage() } } }
       steps {
