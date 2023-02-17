@@ -15,7 +15,7 @@ keep_pkgs: False
 ignore_duplicate_files: True
 
 specs:
-  - eman2        2.99.42
+  - eman2        2.99.43
   - python       3.9.*
   - conda
   - mamba
