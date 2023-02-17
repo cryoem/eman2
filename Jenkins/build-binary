@@ -14,20 +14,8 @@ def getOSName() {
     return os_map[uname]
 }
 
-def getJobType() {
-    def causes = "${currentBuild.rawBuild.getCauses()}"
-    def job_type = "UNKNOWN"
-    
-    if(causes ==~ /.*TimerTrigger.*/)    { job_type = "cron" }
-    if(causes ==~ /.*GitHubPushCause.*/) { job_type = "push" }
-    if(causes ==~ /.*UserIdCause.*/)     { job_type = "manual" }
-    if(causes ==~ /.*ReplayCause.*/)     { job_type = "manual" }
-    
-    return job_type
-}
-
 def isMasterBranch() {
-    return GIT_BRANCH_SHORT == "master" || GIT_BRANCH_SHORT == "master-dev"
+    return GIT_BRANCH_SHORT == "master"
 }
 
 def isReleaseBranch() {
@@ -36,7 +24,7 @@ def isReleaseBranch() {
 
 // Can't be called to set pipeline envvars, because depends on CI_BUILD
 def isContinuousBuild() {
-    return (CI_BUILD == "1" && isMasterBranch()) || isReleaseBranch() || JOB_TYPE == "cron"
+    return (CI_BUILD == "1" && isMasterBranch()) || isReleaseBranch()
 }
 
 // Can't be called to set pipeline envvars, because depends on CI_BUILD
@@ -159,7 +147,6 @@ pipeline {
   
   environment {
     AGENT_OS_NAME = getOSName()
-    JOB_TYPE = getJobType()
     GIT_BRANCH_SHORT = sh(returnStdout: true, script: 'echo ${GIT_BRANCH##origin/}').trim()
     GIT_COMMIT_SHORT = sh(returnStdout: true, script: 'echo ${GIT_COMMIT:0:7}').trim()
     GIT_AUTHOR_EMAIL = sh(returnStdout: true, script: 'git log -1 --format="%ae"').trim()
