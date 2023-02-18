@@ -317,6 +317,11 @@ class GUIEvalImage(QtWidgets.QWidget):
 		self.brefit=QtWidgets.QPushButton("Refit")
 		self.gbl.addWidget(self.brefit,7,2)
 
+		self.bfilter=QtWidgets.QPushButton("Filt Disp")
+		self.bfilter.setToolTip("Filter micrograph to enchance particles (display only)")
+		self.bfilter.setCheckable(True)
+		self.gbl.addWidget(self.bfilter,7,3)
+
 		self.cbgadj=CheckBox(None,"CTF BG Adj",1)
 		self.gbl.addWidget(self.cbgadj,10,3)
 
@@ -370,6 +375,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 
 		self.bimport.clicked[bool].connect(self.doImport)
 		self.brefit.clicked[bool].connect(self.doRefit)
+		self.bfilter.clicked[bool].connect(self.filterToggle)
 		self.cbgadj.valueChanged.connect(self.bgAdj)
 		self.sdefocus.valueChanged.connect(self.newCTF)
 		self.sbfactor.valueChanged.connect(self.newCTF)
@@ -727,6 +733,25 @@ class GUIEvalImage(QtWidgets.QWidget):
 # 		curtag=item_name(str(self.setlist.item(self.curset).text()))
 # 		db_fparms[curtag]=self.parms[self.curset]
 
+	def filterToggle(self,x=None):
+		if self.bfilter.isChecked() :
+			nx=self.data["nx"]
+			ny=self.data["ny"]
+			apix=self.data["apix_x"]
+			boxsize=good_size(200.0/apix)	# "typical" 200 A particle size
+			gs=good_size(max(nx//2,ny//2))
+			fm=self.data.get_clip(Region(nx/2-gs,ny/2-gs,gs*2,gs*2)).process("math.meanshrink",{"n":2})
+			fm.process_inplace("filter.highpass.gauss",{"cutoff_freq":0.01})
+			fm.process_inplace("mask.decayedge2d",{"width":50})
+			fm.add(-fm["minimum"])
+			fm.process_inplace("filter.lowpass.tophat",{"cutoff_freq":0.05})
+			fm.process_inplace("math.squared")
+			fm.process_inplace("filter.lowpass.gauss",{"cutoff_freq":10.0/(boxsize*apix)})		# 10 oscillations/box
+			fm.process_inplace("xform.scale",{"scale":2.0,"clip":gs*2})
+			fm=fm.get_clip(Region(gs-nx/2,gs-ny/2,nx,ny))	# rembmer the image has been shrunk by 2 here!
+			self.wimage.set_data(fm)
+		else: self.wimage.set_data(self.data)
+
 	def newSet(self,val):
 		"called when a new data set is selected from the list"
 
@@ -773,7 +798,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 
 
 		if self.defaultapix!=None : self.data["apix_x"]=self.defaultapix
-		self.wimage.set_data(self.data)
+		self.filterToggle()		# this displays the actual image
 		self.curfilename = str(self.setlist.item(val).text())
 
 		ctf=self.parms[val][1]
