@@ -23,6 +23,7 @@ pipeline {
     EMAN_BUMP_MINOR  = sh(script: "! git log -1 | grep '.*\\[bump minor\\].*'", returnStatus: true)
     EMAN_BUMP_MAJOR  = sh(script: "! git log -1 | grep '.*\\[bump major\\].*'", returnStatus: true)
     VERSION_COMMIT   = sh(script: "! git log -1 --pretty=%B | grep -x 'v[0-9][0-9]*\\.[0-9][0-9]*\\.[0-9][0-9]*'", returnStatus: true)
+    GIT_BRANCH_SHORT = sh(returnStdout: true, script: 'echo ${GIT_BRANCH##origin/}').trim()
   }
   
   stages {
@@ -34,7 +35,7 @@ pipeline {
       steps {
         sh 'python ./utils/tag_new_version.py --bump ' + versionBumpOption()
         sleep 60
-        build propagate: false, job: 'eman-feedstock-update-version'
+        build job: 'eman-feedstock-update-version'
       }
     }
 
@@ -44,7 +45,7 @@ pipeline {
       }
 
       steps {
-        build propagate: false, job: 'build-binary-trigger'
+        build job: 'build-binary-trigger'
       }
     }
   }
