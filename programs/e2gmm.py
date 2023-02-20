@@ -894,24 +894,26 @@ class EMGMM(QtWidgets.QMainWindow):
 #		self.wplot2d.set_data(self.data,"map")
 #		self.wplot2d.set_data(None,replace=True,quiet=True)
 
+#		print(self.data.shape[1])
+		ss=max(6-int(log10(self.data.shape[1])),1)
 		if len(self.maplist.selectedItems())>0:
-			self.wplot2d.set_data(self.data,"map",symsize=1,replace=True,quiet=True)
+			self.wplot2d.set_data(self.data,"map",symsize=ss,replace=True,quiet=True)
 			self.curmaps_sel={}
 			self.data_sel=[]
-			ss=10
+			# ss=10
 			for i in self.maplist.selectedItems():
 				key=i.text()
-				ss-=2
-				if ss<2 : ss=2
+				# ss-=2
+				# if ss<2 : ss=2
 				smap=self.curmaps[key]
 				self.curmaps_sel[key]=smap
 				if not isinstance(smap[5],np.ndarray) : smap[5]=np.array(smap[5])
 				self.data_sel.append(self.data[:,np.array(smap[5])])	# smap[5] is a list of points in the class
 				#print("S:",self.data.shape,self.data_sel[-1].shape)
 #				self.wplot2d.set_data(self.data_sel[-1],f"set_{key}",symsize=ss,quiet=True)
-				self.wplot2d.set_data(self.data_sel[-1],f"set_{key}",symsize=1,quiet=True)
+				self.wplot2d.set_data(self.data_sel[-1],f"set_{key}",symsize=ss,quiet=True)
 		else:
-			self.wplot2d.set_data(self.data,"map",symsize=1,replace=True,quiet=True)
+			self.wplot2d.set_data(self.data,"map",symsize=ss,replace=True,quiet=True)
 
 		self.wplot2d.setXAxisAll(self.wsbxcol.value(),True)
 		self.wplot2d.setYAxisAll(self.wsbycol.value(),True)
@@ -1267,7 +1269,71 @@ class EMGMM(QtWidgets.QMainWindow):
 		if delerr: QtWidgets.QMessageBox.warning(None, "Warning", "Warning: sets with computed maps not deleted!")
 
 	def set_save(self,ign=None):
-		"""Save a set to a new LST file for further processing"""
+		"""Save one or more sets to a new LST file for further processing"""
+		if len(self.maplist.selectedItems())==0:
+			showerror("One or more sets must be selected. Selected sets will be merged into a single .lst file.")
+			return
+
+		imgns=[]
+		ks=[]
+		for k in self.curmaps_sel:
+			ks.append(k)
+			st=self.curmaps_sel[k]
+			imgns.extend(list(st[5]))
+		imgns.sort()
+
+		lsin=LSXFile(f"{self.gmm}/particles.lst")
+
+		# check if this is subtomogram data, in which case we need to retrieve 3D particles too
+		tmp=lsin[0][2]
+		if "ptcl3d_id" in tmp: ptcl3d=set()	# we use this set to aggregate the 3-D particle ids we need to keep
+		else: ptcl3d=None
+
+		# This is tricky. If we have subtomogram data, in addition to extracting only the 3-D particles referenced
+		# by 2-D particles, we also have to remap the 3-D particle numbers in each 2-D particle!
+		if ptcl3d is not None:
+			# Construct a set containing all 3-D particle numbers we need to keep
+			for n in imgns:
+				ptcl3d.add(lsin[n][2]["ptcl3d_id"])
+
+			ptcl3d=sorted(ptcl3d)	# set -> sorted list
+			map3d2d={j:i for i,j in enumerate(ptcl3d)}		# maps a 3D particle number from the original file to the new file
+
+			outfsp=f"{self.gmm}/{self.currunkey}_set2d_{'-'.join(ks)}.lst"
+			try: os.unlink(outfsp)
+			except: pass
+			lsout=LSXFile(outfsp)
+
+			# first the 2-D particles with corrections
+			for n in imgns:
+				pt=lsin[n]
+				pt[2]["ptcl3d_id"]=map3d2d[pt[2]["ptcl3d_id"]]		# fix the old 3D particle id
+				lsout[-1]=pt		# despite the odd notation, -1 does work this way
+
+			# input and output files for 3D
+			rpath=self.jsparm["refinepath"]
+			ppth=[f for f in os.listdir(rpath) if "aliptcls3d_" in f]	# find all 3D lsts
+			lsin=LSXFile(f"{rpath}/{max(ppth)}")	# find the highest numbered 3D lst
+			outfsp2=f"{self.gmm}/{self.currunkey}_set3d_{'-'.join(ks)}.lst"
+			try: os.unlink(outfsp2)
+			except: pass
+
+			lsout=LSXFile(outfsp2)
+			for i,n in enumerate(ptcl3d):
+				lsout[i]=lsin[n]
+
+			print(f"{len(imgns)} selected particles saved to {outfsp} and {len(ptcl3d)} to {outfsp2}")
+
+		else:	# SPA particles not SPT partcles
+			outfsp=f"{self.gmm}/{self.currunkey}_set_{'-'.join(ks)}.lst"
+			try: os.unlink(outfsp)
+			except: pass
+			lsout=LSXFile(outfsp)
+
+			for n in imgns:
+				lsout[-1]=lsin[n]		# despite the odd notation, -1 does work this way
+
+			print(f"{len(imgns)} selected particles saved to {outfsp}")
 
 	def do_kmeans(self):
 		print("kmeans ...")
@@ -1724,7 +1790,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		nm=QtWidgets.QInputDialog.getText(self,"Run Name","Enter a name for the new run. You will still need to run the subsequent steps.")
 		if not nm[1]: return
 		name=str(nm[0]).replace(" ","_")
-		if not self.jsparm.has_key("run_"+name) : self.wlistrun.addItem(name)
+		if "run_"+name not in self.jsparm : self.wlistrun.addItem(name)
 		self.currunkey=name
 		self.saveparm()		# initialize to avoid messed up defaults later
 		self.wlistrun.setCurrentRow(self.wlistrun.count()-1)
@@ -2116,7 +2182,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.jsparm=js_open_dict(f"{self.gmm}/0_gmm_parms.json")
 		
 		# double check if the user will be destroying results
-		if self.jsparm.has_key("refinepath"):
+		if "refinepath" in self.jsparm:
 			ans=QtWidgets.QMessageBox.question(self,"Are you sure?",f"{self.gmm} has already been configured to work on {self.jsparm['refinepath']}. Continuing may invalidate current results. Proceed?")
 			if ans==QtWidgets.QMessageBox.No:
 				if remove: os.unlink(self.gmm)
