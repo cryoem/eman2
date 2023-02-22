@@ -425,7 +425,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.gflparm.addRow("Symmetry:",self.wedsym)
 		
 		self.wedmask = QtWidgets.QLineEdit("")
-		self.wedmask.setToolTip("3-D volume mask for refining dynamics only. Blank for no mask. Neutral model unmasked.")
+		self.wedmask.setToolTip("<file>[,amp fac]  3-D volume mask for refining dynamics only. Blank for no mask. amp fac can increase Gaussians in mask region.")
 		self.gflparm.addRow("Mask:",self.wedmask)
 		
 		self.weddim = QtWidgets.QLineEdit("4")
@@ -996,6 +996,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		if vol is not None:
 			self.dmapiso.getTransform().set_scale(vol["apix_x"]/self.jsparm["apix"])
 		
+		self.new_3d_opt()
 		self.wview3d.updateGL()
 		self.slice_update()
 
@@ -1567,8 +1568,16 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.lastres=res
 		
 		map3d=EMData(f"{self.gmm}/input_map.hdf")
-#		try: mask=EMData(str(self.wedmask.text()))		# masking of initial segmentation disabled 1/27/22
-#		except: mask=None
+		try:
+			val=float(str(self.wedmask.text()).split(",")[1])
+			mask=EMData(str(self.wedmask.text()).split(",")[0])
+			mask.mult(val)
+			mask.add(1.0)
+			map3d.mult(mask)
+			print(f"masked region enhanced by {val}")
+		except:
+			print("unmasked")
+
 		thrt=self.wedgthr.text()
 		try: minpos,minneg=float(thrt.split(",")[0]),float(thrt.split(",")[1])
 		except:
@@ -1826,96 +1835,6 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.saveparm()		# initialize to avoid messed up defaults later
 		self.wlistrun.setCurrentRow(self.wlistrun.count()-1)
 
-
-	#### NO LONGER USED
-	def do_run(self,clk=False):
-		"""Run the current job with current parameters"""
-		self.saveparm("dynamics")  # updates self.currun with current user input
-
-		prog=QtWidgets.QProgressDialog("Running neutral model network. Progress updates here are limited. See the Console for detailed output.","Abort",0,4)
-		prog.show()
-		
-		maxbox =(int(self.jsparm["boxsize"]*(2*self.jsparm["apix"])/self.currun["targres"])//2)*2
-		maxbox25=(int(self.jsparm["boxsize"]*(2*self.jsparm["apix"])/25.0)//2)*2
-		print(f"Target res {self.currun['targres']} -> max box size {maxbox}")
-		modelout=f"{self.gmm}/{self.currunkey}_model_gmm.txt"		# note that this is from the neutral training above, we do not regenerate modelout at the "run" stage
-		modelseg=f"{self.gmm}/{self.currunkey}_model_seg.txt"
-		
-		sym=self.currun["sym"]
-		prog=QtWidgets.QProgressDialog("Running networks. Progress updates here are limited. See the Console for detailed output.","Abort",0,2)
-		prog.show()
-		self.do_events(1)
-		
-		decoder=f"{self.gmm}/{self.currunkey}_decoder.h5"
-		encoder=f"{self.gmm}/{self.currunkey}_encoder.h5"
-		if (len(self.currun["mask"])>4) : mask=f"--mask {self.currun['mask']}"
-		else: mask=""
-		# heterogeneity analysis
-		if int(self.currun["conv"]): conv="--conv"
-		else: conv=""
-		
-		# We split the data into 10 groups, and if there are enough particles in one set, process the chunks sequentially
-		if not os.path.exists(f"{self.gmm}/particles_1.lst"):
-			run(f"e2proclst.py {self.gmm}/particles.lst --split 10 --create {self.gmm}/sptcl.lst")
-		nchunk=len(LSXFile(f"{self.gmm}/sptcl_0.lst"))
-		
-		# if targeting high resolution, we start with 5 iterations at 25 A first
-		try: os.unlink(encoder)
-		except: pass
-		if maxbox25<maxbox:
-			if nchunk>=4000 : chunk=f"{self.gmm}/sptcl_0.lst"
-			else: chunk=f"{self.gmm}/particles.lst"
-			er=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --decoderout {decoder} --encoderout {encoder} --ptclsin {chunk} --heter {conv} --sym {sym} --maxboxsz {maxbox25} --niter 5 {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")
-			if er :
-				showerror("Error running e2gmm_refine, see console for details. Memory is a common issue. Consider reducing the target resolution.")
-				return
-
-		if os.path.exists(encoder): encin=f"--encoderin {encoder}"
-		else: encin=""
-		if nchunk<4000:
-			er=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --decoderout {decoder} {encin} --encoderout {encoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")
-		else:
-			chit=(self.currun["trainiter"]-1)//10+1
-			er=0
-			for i in range(10):
-				er+=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --decoderout {decoder} {encin} --encoderout {encoder} --ptclsin {self.gmm}/sptcl_{i}.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {chit} {mask} --nmid {self.currun['dim']} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")
-				encin=f"--encoderin {encoder}"
-
-			# we save the middle layer in this final set of 10 runs, which does not update the stored encoder/decoder
-			for i in range(10):
-				er+=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} {encin}  --ptclsin {self.gmm}/sptcl_{i}.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter 1 {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid_{i}.txt --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")
-				encin=f"--encoderin {encoder}"
-			
-			# Remerge the middle layer
-			mids=[open(f"{self.gmm}/{self.currunkey}_mid_{i}.txt","r").readlines() for i in range(10)]
-			out=open(f"{self.gmm}/{self.currunkey}_mid.txt","w")
-			nl=sum([len(i) for i in mids])
-			for i in range(nl):
-				out.write(mids[i%10][i//10])
-			for i in range(10): 
-				try: os.unlink(f"{self.gmm}/{self.currunkey}_mid_{i}.txt")
-				except: pass
-
-		if er :
-			showerror("Error running e2gmm_refine, see console for details. Memory is a common issue. Consider reducing the target resolution.")
-			return
-		else:
-			self.augment_mid()
-
-		self.currun=self.jsparm["run_"+self.currunkey]
-		self.currun["time_dynamics_end"]=local_datetime()
-		self.jsparm["run_"+self.currunkey]=self.currun
-
-		prog.setValue(2)
-		self.do_events()
-		self.currun=self.jsparm["run_"+self.currunkey]
-		self.currun["time_dynamics_end"]=local_datetime()
-		self.jsparm["run_"+self.currunkey]=self.currun
-		
-		self.sel_run(-1)
-
-		self.set3dvis(-1,0,0,0,1,0)
-
 	def do_run_new(self,clk=False):
 		"""Run the current job with current parameters"""
 		self.saveparm("dynamics")  # updates self.currun with current user input
@@ -1938,7 +1857,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		
 		decoder=f"{self.gmm}/{self.currunkey}_decoder.h5"
 		encoder=f"{self.gmm}/{self.currunkey}_encoder.h5"
-		if (len(self.currun["mask"])>4) : mask=f"--mask {self.currun['mask']}"
+		if (len(self.currun["mask"])>4) : mask=f"--mask {self.currun['mask'].split(',')[0]}"
 		else: mask=""
 		# heterogeneity analysis
 		if int(self.currun["conv"]): conv="--conv"
@@ -2158,7 +2077,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.update_maptable()
 
 		try:
-			self.mask=EMData(str(self.wedmask.text()))
+			self.mask=EMData(str(self.wedmask.text()).split(",")[0])
 			self.maskdataitem.setData(self.mask)
 		except: pass
 
