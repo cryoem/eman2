@@ -599,14 +599,23 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wbutvside2=QtWidgets.QPushButton("Side2")
 		self.gbl3dctl.addWidget(self.wbutvside2,0,4)
 
+		self.wbutvoblq=QtWidgets.QPushButton("Oblique")
+		self.gbl3dctl.addWidget(self.wbutvobliq,1,2)
+
+		self.wbutvside3=QtWidgets.QPushButton("Side3")
+		self.gbl3dctl.addWidget(self.wbutvside3,1,3)
+
+		self.wbutvside4=QtWidgets.QPushButton("Side4")
+		self.gbl3dctl.addWidget(self.wbutvside4,1,4)
+
 		# Sphere size
 		self.wvssphsz=ValSlider(self,(1,50),"Sphere Size:",3.0,90)
-		self.gbl3dctl.addWidget(self.wvssphsz,1,1,1,4)
+		self.gbl3dctl.addWidget(self.wvssphsz,2,1,1,4)
 
 		# Thickness
 		self.wlthk = QtWidgets.QLabel("Thk:")
 		self.wlthk.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
-		self.gbl3dctl.addWidget(self.wlthk,2,1)
+		self.gbl3dctl.addWidget(self.wlthk,2,3)
 		self.wsbthk = QtWidgets.QSpinBox()
 		self.wsbthk.setMinimum(-1)
 		self.wsbthk.setMaximum(256)
@@ -616,7 +625,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		# Center with respect to actual center
 		self.wlcen = QtWidgets.QLabel("Cen:")
 		self.wlcen.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
-		self.gbl3dctl.addWidget(self.wlcen,2,3)
+		self.gbl3dctl.addWidget(self.wlcen,2,4)
 		self.wsbcen = QtWidgets.QSpinBox()
 		self.wsbcen.setMinimum(-256)
 		self.wsbcen.setMaximum(256)
@@ -660,8 +669,11 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wbutdmask.clicked[bool].connect(self.new_3d_opt)
 		self.wbutvtop.clicked[bool].connect(self.view_top)
 		self.wbutvbot.clicked[bool].connect(self.view_bot)
+		self.wbutvoblq.clicked[bool].connect(self.view_oblique)
 		self.wbutvside1.clicked[bool].connect(self.view_side1)
 		self.wbutvside2.clicked[bool].connect(self.view_side2)
+		self.wbutvside3.clicked[bool].connect(self.view_side3)
+		self.wbutvside4.clicked[bool].connect(self.view_side4)
 		self.wvssphsz.valueChanged.connect(self.new_sph_size)
 		self.wbutnewgmm.clicked[bool].connect(self.add_gmm)
 #		self.wbutrefine.clicked[bool].connect(self.setgmm_refine)
@@ -765,6 +777,11 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wview3d.updateGL()
 		self.slice_update()
 
+	def view_oblique(self,tmp=None):
+		self.wview3d.getTransform().set_rotation({"type":"eman","az":0.0,"alt":90.0-22.5,"phi":0.0})
+		self.wview3d.updateGL()
+		self.slice_update()
+
 	def view_side1(self,tmp=None):
 		self.wview3d.getTransform().set_rotation({"type":"eman","az":0.0,"alt":90.0,"phi":0.0})
 		self.wview3d.updateGL()
@@ -772,6 +789,16 @@ class EMGMM(QtWidgets.QMainWindow):
 
 	def view_side2(self,tmp=None):
 		self.wview3d.getTransform().set_rotation({"type":"eman","az":90.0,"alt":90.0,"phi":0.0})
+		self.wview3d.updateGL()
+		self.slice_update()
+
+	def view_side3(self,tmp=None):
+		self.wview3d.getTransform().set_rotation({"type":"eman","az":22.5,"alt":90.0,"phi":0.0})
+		self.wview3d.updateGL()
+		self.slice_update()
+
+	def view_side4(self,tmp=None):
+		self.wview3d.getTransform().set_rotation({"type":"eman","az":45.0,"alt":90.0,"phi":0.0})
 		self.wview3d.updateGL()
 		self.slice_update()
 
@@ -791,7 +818,7 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		if self.wview2d is None:
 			self.wview2d = EMImage2DWidget(sizehint=(384,384))
-			self.gbl3dctl.addWidget(self.wview2d,0,5,2,1)
+			self.gbl3dctl.addWidget(self.wview2d,1,5,1,2)
 
 		self.wview2d.set_data(proj)
 
@@ -1554,7 +1581,11 @@ class EMGMM(QtWidgets.QMainWindow):
 		opt={"minratio":minpos,"width":res,"skipseg":2}
 #		if mask!=None: opt["mask"]=mask
 
-		sym=self.currun.setdefault("sym","c1")
+		try: sym=self.currun.setdefault("sym","c1")
+		except:
+			showerror("Unable to get symmetry. Have you created a run yet?")
+			return
+
 		print(f"sym {sym}")
 		if sym.lower()!="c1" :
 			mask=map3d.process("mask.asymunit",{"au":0,"sym":sym})
