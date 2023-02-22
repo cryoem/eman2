@@ -600,7 +600,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.gbl3dctl.addWidget(self.wbutvside2,0,4)
 
 		self.wbutvoblq=QtWidgets.QPushButton("Oblique")
-		self.gbl3dctl.addWidget(self.wbutvobliq,1,2)
+		self.gbl3dctl.addWidget(self.wbutvoblq,1,2)
 
 		self.wbutvside3=QtWidgets.QPushButton("Side3")
 		self.gbl3dctl.addWidget(self.wbutvside3,1,3)
@@ -615,22 +615,22 @@ class EMGMM(QtWidgets.QMainWindow):
 		# Thickness
 		self.wlthk = QtWidgets.QLabel("Thk:")
 		self.wlthk.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
-		self.gbl3dctl.addWidget(self.wlthk,2,3)
+		self.gbl3dctl.addWidget(self.wlthk,3,5)
 		self.wsbthk = QtWidgets.QSpinBox()
 		self.wsbthk.setMinimum(-1)
 		self.wsbthk.setMaximum(256)
 		self.wsbthk.setValue(0)
-		self.gbl3dctl.addWidget(self.wsbthk,2,2)
+		self.gbl3dctl.addWidget(self.wsbthk,3,6)
 
 		# Center with respect to actual center
 		self.wlcen = QtWidgets.QLabel("Cen:")
 		self.wlcen.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
-		self.gbl3dctl.addWidget(self.wlcen,2,4)
+		self.gbl3dctl.addWidget(self.wlcen,3,7)
 		self.wsbcen = QtWidgets.QSpinBox()
 		self.wsbcen.setMinimum(-256)
 		self.wsbcen.setMaximum(256)
 		self.wsbcen.setValue(0)
-		self.gbl3dctl.addWidget(self.wsbcen,2,4)
+		self.gbl3dctl.addWidget(self.wsbcen,3,8)
 
 		self.wbutnmap=QtWidgets.QPushButton("Neutral Map")
 		self.wbutnmap.setCheckable(True)
@@ -769,38 +769,38 @@ class EMGMM(QtWidgets.QMainWindow):
 	def view_top(self,tmp=None):
 		self.wview3d.getTransform().set_rotation({"type":"eman","az":0.0,"alt":0.0,"phi":0.0})
 		self.wview3d.updateGL()
-		self.slice_update()
+		self.slice_update(b=self.wview3d.getTransform())
 
 
 	def view_bot(self,tmp=None):
 		self.wview3d.getTransform().set_rotation({"type":"eman","az":0.0,"alt":180.0,"phi":0.0})
 		self.wview3d.updateGL()
-		self.slice_update()
+		self.slice_update(b=self.wview3d.getTransform())
 
 	def view_oblique(self,tmp=None):
 		self.wview3d.getTransform().set_rotation({"type":"eman","az":0.0,"alt":90.0-22.5,"phi":0.0})
 		self.wview3d.updateGL()
-		self.slice_update()
+		self.slice_update(b=self.wview3d.getTransform())
 
 	def view_side1(self,tmp=None):
 		self.wview3d.getTransform().set_rotation({"type":"eman","az":0.0,"alt":90.0,"phi":0.0})
 		self.wview3d.updateGL()
-		self.slice_update()
+		self.slice_update(b=self.wview3d.getTransform())
 
 	def view_side2(self,tmp=None):
 		self.wview3d.getTransform().set_rotation({"type":"eman","az":90.0,"alt":90.0,"phi":0.0})
 		self.wview3d.updateGL()
-		self.slice_update()
+		self.slice_update(b=self.wview3d.getTransform())
 
 	def view_side3(self,tmp=None):
 		self.wview3d.getTransform().set_rotation({"type":"eman","az":22.5,"alt":90.0,"phi":0.0})
 		self.wview3d.updateGL()
-		self.slice_update()
+		self.slice_update(b=self.wview3d.getTransform())
 
 	def view_side4(self,tmp=None):
 		self.wview3d.getTransform().set_rotation({"type":"eman","az":45.0,"alt":90.0,"phi":0.0})
 		self.wview3d.updateGL()
-		self.slice_update()
+		self.slice_update(b=self.wview3d.getTransform())
 
 	def slice_update(self,a=None,b=None):
 		"""Called when any of the slice parameters change, if b is a transform then we use it"""
@@ -818,7 +818,7 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		if self.wview2d is None:
 			self.wview2d = EMImage2DWidget(sizehint=(384,384))
-			self.gbl3dctl.addWidget(self.wview2d,1,5,1,2)
+			self.gbl3dctl.addWidget(self.wview2d,1,5,2,4)
 
 		self.wview2d.set_data(proj)
 
