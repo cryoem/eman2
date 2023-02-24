@@ -48,12 +48,16 @@ def main():
 	parser.add_argument("--allinfo", action="store_true", default=False, help="Uses all of the .json files in info/ rather than specifying a list on the command line")
 	parser.add_argument("--listkeys",action="store_true", default=False, help="Lists all of the keys in all of the specified info files")
 	parser.add_argument("--remaplstkeys",action="store_true", default=False, help="For JSON files where the keys are image name,# pairs referencing a .lst file, will replace each key with the original image")
+	parser.add_argument("--dump",action="store_true", default=False, help="Nicely print the entire contents of the JSON file to the screen. More readable than simply looking at the file.")
 	parser.add_argument("--retype",type=str, default=None, help="For JSON files where the keys are image name,# pairs, will change the __type value in the image name in all keys")
 	parser.add_argument("--extractkey", type=str, default=None, help="This will extract a single named value from each specified file. Output will be multicolumn if the referenced label is an object, such as CTF.")
 	parser.add_argument("--extractspt", action="store_true", default=False, help="This will extract the parameters from a particle_parms JSON file in SPT projects as a multicolumn text file.")
+	parser.add_argument("--extractboxes", action="store_true", default=False, help="This will save 2-D particle box locations to one or more text files")
+	parser.add_argument("--extractboxes3d", action="store_true", default=False, help="This will save 3-D particle box locations to one or more text files")
+	parser.add_argument("--autoloadboxes", action="store_true", default=False, help="Provide a list of .txt files using the same naming convention produced by extractboxes[3d]. Boxes from files will be added to any existing boxes in corresponding info/*.json files")
 	parser.add_argument("--removekey", type=str, default=None, help="DANGER! This will remove all data associated with the named key from all listed .json files.")
 	parser.add_argument("--addkey", type=str, default=None, help="add a simple key in the format of key:value. Will try to conver value to float if possible.")
-	parser.add_argument("--removeptcl", type=str, default=None, help="remove tomo particles of the given label.")
+	parser.add_argument("--removeptcl", type=str, default=None, help="Remove tomo particle box locations for the specified label.")
 
 	parser.add_argument("--output", type=str, default="jsoninfo.txt", help="Output for text operations (not JSON) filename. default = jsoninfo.txt")
 	parser.add_argument("--setoption",type=str, default=None, help="Set a single option in application preferences, eg - display2d.autocontrast:true")
@@ -154,6 +158,80 @@ def main():
 		
 		for k in sorted(list(allkeys)): print(k)
 		
+	if options.dump:
+		from pprint import pprint
+		allkeys=set()
+		for fsp in args:
+			if len(args)>1: print("\n",fsp,":")
+			js=js_open_dict(fsp)
+			pprint(dict(js.items()))
+			js.close()
+
+	if options.autoloadboxes:
+		for fsp in args:
+			fb=os.path.basename(fsp)
+			if fb.startswith("box_"):
+				try:
+					iname=fb[4:].split("__")[0]				# base name for json file
+					tp=fb.split("__")[1].rsplit(".",1)[0]	# box type
+				except:
+					error_exit("ERROR: --autoloadboxes expects a list of .txt files of the form box[3d]_<micrograph>__<boxtype>.txt, as produced by --extractboxes or --extractboxes3d")
+				js=js_open_dict(info_name(iname))
+				try: bxs=js["boxes"]
+				except: bxs=[]
+				for l in open(fsp,"r"):
+					if l[0]=="#": continue
+					bxs.append([float(l.split()[0]),float(l.split()[1]),tp])
+				js["boxes"]=bxs
+			elif fb.startswith("box3d_"):
+				try:
+					iname=fb[6:].split("__")[0]				# base name for json file
+					tp=fb.split("__")[1].rsplit(".",1)[0]	# box type
+				except:
+					error_exit("ERROR: --autoloadboxes expects a list of .txt files of the form box[3d]_<micrograph>__<boxtype>.txt, as produced by --extractboxes or --extractboxes3d")
+				js=js_open_dict(info_name(iname))
+				try: bxs=js["boxes_3d"]
+				except: bxs=[]
+				for l in open(fsp,"r"):
+					if l[0]=="#": continue
+					ls=l.split()
+					bx=[float(ls[0]),float(ls[1]),float(ls[2]),tp]
+					if len(ls)>3: bx.append(float(ls[3]))
+					if len(ls)>4: bx.append(int(ls[4]))
+					bxs.append(bx)
+				js["boxes_3d"]=bxs
+
+			else:
+				error_exit("ERROR: --autoloadboxes expects a list of .txt files of the form box[3d]_<micrograph>__<boxtype>.txt, as produced by --extractboxes or --extractboxes3d")
+
+	if options.extractboxes:
+		allkeys=set()
+		for fsp in args:
+			js=js_open_dict(fsp)
+			if "boxes" in js:
+				bxs=js["boxes"]			# array of all boxes for this file
+				tps={b[2]:open(f"box_{os.path.basename(fsp)[:-5]}__{b[2].replace('.','-')}.txt","w") for b in bxs}	# dict of open files for each box type
+				for b in bxs:
+					tps[b[2]].write(f"{b[0]:1.1f}\t{b[1]:1.1f}\n")
+			js.close()
+			tps=None		# implicitly close the files
+
+	if options.extractboxes3d:
+		allkeys=set()
+		for fsp in args:
+			js=js_open_dict(fsp)
+			if "boxes_3d" in js:
+				bxs=js["boxes_3d"]			# array of all boxes for this file
+				tps={b[3]:open(f"box3d_{os.path.basename(fsp)[:-5]}__{b[3].replace('.','-')}.txt","w") for b in bxs}	# dict of open files for each box type
+				for b in bxs:
+					tps[b[3]].write(f"{b[0]:1.1f}\t{b[1]:1.1f}\t{b[2]:1.1f}")
+					if len(b)>5 : tps[b[3]].write(f"\t{b[4]:1.1f}\t{b[5]:d}\n")
+					elif len(b)>4 : tps[b[3]].write(f"\t{b[4]:1.1f}\n")
+					else : tps[b[3]].write("\n")
+			js.close()
+			tps=None		# implicitly close the files
+
+
 	if options.extractspt :
 		out=open(options.output,"w")
 		out.write("# file_ptcl,score,trans_x,trans_y,trans_z,az,alt,phi,rel_trans_x,rel_trans_y,rel_trans_z,rel_alt,rel_az,rel_phi\n")

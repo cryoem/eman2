@@ -922,7 +922,7 @@ class EMGMM(QtWidgets.QMainWindow):
 #		self.wplot2d.set_data(None,replace=True,quiet=True)
 
 #		print(self.data.shape[1])
-		ss=max(6-int(log10(self.data.shape[1])),1)
+		ss=max(7-int(log10(self.data.shape[1])),1)
 		if len(self.maplist.selectedItems())>0:
 			self.wplot2d.set_data(self.data,"map",symsize=ss,replace=True,quiet=True)
 			self.curmaps_sel={}
