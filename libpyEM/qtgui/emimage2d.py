@@ -1706,7 +1706,7 @@ class EMImage2DWidget(EMGLWidget):
 		lc=self.scr_to_img(event.x(),event.y())
 		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.show_inspector(1)
-		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
+		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):
 			try:
 				get_application().setOverrideCursor(Qt.ClosedHandCursor)
 			except: # if we're using a version of qt older than 4.2 than we have to use this...
