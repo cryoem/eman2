@@ -15,6 +15,8 @@ def main():
 	
 	If an existing single model refinement exist, provide the aliptcls3d_xx.lst file as particles and use --loadali3d. reference maps are not necessary in this case.
 	e2spt_refinemulti_new.py --ptcls spt_xx/aliptcls3d_yy.lst --niter 5 --maxres 20 --nref 3 --loadali3d
+
+	Strongly suggest running on a single node/computer with --threads and --m3dthreads, as there are sometimes issues with --parallel thread in this program.
 	
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)

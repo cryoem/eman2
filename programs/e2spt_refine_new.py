@@ -15,6 +15,8 @@ def main():
 	
 	One major difference of the new protocol is that the program now can model the localized 2D particle motion by considering the motion trajectory of each particle along with its neighbors. For each particle, --smoothN controls how many of its neighbors are considered to model the local motion, and --smooth controls how much the neighboring particles are weighted during the alignment. The weight of neighboring particles decays in a Gaussian form based on the distance to the center particle of consideration. --smooth=0 means only the center particle is considered, and the program should perform in a similar way as the original subtilt refinement.
 	
+	Strongly suggest running on a single node/computer with --threads and --m3dthreads, as there are sometimes issues with --parallel thread in this program.
+
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--ptcls", type=str,help="3d particle input", default=None,guitype='filebox', browser="EMSetsTable(withmodal=True,multiselect=False)", row=0, col=0,rowspan=1, colspan=2, mode="model")
