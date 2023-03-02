@@ -21,6 +21,8 @@ def main():
 	parser.add_argument("--ptcls", type=str,help="Particle input. required", default=None)
 	parser.add_argument("--path", type=str,help="Path for the refinement", default=None)
 	parser.add_argument("--nref", type=int,help="Number of classes. Without --loadali3d, it duplicate the first ref N times with phase randomization at 2 x maxres. With --loadali3d, the particles are classified to N random classes at the begining.", default=-1)
+	parser.add_argument("--sym", type=str,help="symmetry to apply to the average structure", default="c1")
+	parser.add_argument("--breaksym", type=str,help="Break specified symmetry. Only used when --loadali3d is on.", default=None)
 	parser.add_argument("--maskalign", type=str,default=None,help="Mask file applied to 3D alignment reference in each iteration. Not applied to the average, which will follow normal masking routine.")
 	parser.add_argument("--maskref", type=str,help="Mask applied to the references prior to classification ", default=None)
 	parser.add_argument("--maxres",type=float,help="Maximum resolution (the smaller number) to consider in alignment (in A, not 1/A). Default is 20A",default=20.)
@@ -31,8 +33,8 @@ def main():
 	parser.add_argument("--skipali",action="store_true",help="Skip alignment entirely when --loadali3d is provided. Otherwise a local orientation search will still be performed.",default=False)
 	#parser.add_argument("--threads", type=int,help="", default=12)
 	parser.add_argument("--parallel", type=str,help="parallel options", default="thread:12")
-	parser.add_argument("--sym", type=str,help="symmetry to apply to the average structure", default="c1")
-	parser.add_argument("--breaksym", type=str,help="Break specified symmetry. Only used when --loadali3d is on.", default=None)
+	parser.add_argument("--threads", type=int,help="threads for routines not supporting generic --parallel", default=10, guitype='intbox', row=20, col=1, rowspan=1, colspan=1, mode="model[4]")
+	parser.add_argument("--m3dthread",action="store_true", default=False ,help="do make3d in threading mode with shared memory. safer for large boxes")
 	parser.add_argument("--setsf", type=str,help="set structure factor from text file", default=None)
 	parser.add_argument("--maxshift", type=int, help="maximum shift for local alignment. default box size/6",default=-1)
 	parser.add_argument("--maxang", type=int, help="maximum angle difference for local alignment. ",default=-1)
@@ -76,6 +78,13 @@ def main():
 	else:
 		setsf=""
 	
+	#### always reconstruct 3d maps from 2d particles
+	if options.m3dthread:
+		m3dpar=f" --threads {options.threads}"
+	else:
+		m3dpar=f" --parallel {options.parallel}"
+
+
 	#### generating references...
 	if options.loadali3d and options.nref>0:
 		print("Generating initial references by random classification...")
@@ -85,10 +94,11 @@ def main():
 		save_lst_params(ali2d, f"{path}/aliptcls2d_00.lst")
 		save_lst_params(ali3d, f"{path}/aliptcls3d_00.lst")
 		options.ptcls=f"{path}/aliptcls3d_00.lst"
-		refmask=f"--multfile {options.maskref}" if options.maskref!=None else "" 
+
+		refmask=f"--multfile {options.maskref}" if options.maskref!=None else ""
 		for i in range(options.nref):
 			threed=f"{path}/threed_00_{i:02d}.hdf"
-			run(f"e2spa_make3d.py --input {path}/aliptcls2d_00.lst --output {threed} --keep 1 --parallel {options.parallel} --outsize {boxsize} --pad {padsize} --sym {options.sym} --clsid {i}")
+			run(f"e2spa_make3d.py --input {path}/aliptcls2d_00.lst --output {threed} --keep 1 {m3dpar} --outsize {boxsize} --pad {padsize} --sym {options.sym} --clsid {i}")
 			run(f"e2proc3d.py {threed} {threed} {setsf} --process filter.lowpass.gauss:cutoff_freq={1./options.maxres} --process normalize.edgemean {refmask}")
 	else:
 		print("Loading references...")
@@ -207,7 +217,7 @@ def main():
 		for ir in range(nref):
 			threed=f"{path}/threed_{itr:02d}_{ir:02d}.hdf"
 			a2=ali2d[ir]
-			cmd=f"e2spa_make3d.py --input {a2} --output {threed} --keep 1 --parallel {options.parallel} --outsize {boxsize} --pad {padsize} --sym {options.sym} --clsid {ir}"
+			cmd=f"e2spa_make3d.py --input {a2} --output {threed} --keep 1 {m3dpar} --outsize {boxsize} --pad {padsize} --sym {options.sym} --clsid {ir}"
 			if options.skipali:
 				cmd+=" --no_wt"
 			run(cmd)
