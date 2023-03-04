@@ -301,7 +301,10 @@ def reconstruct(data,recon,pad,ref=None):
 		if wt<=0:
 			continue
 		
-		img=EMData(elem["src"],elem["idx"])
+		try: img=EMData(elem["src"],elem["idx"])
+		except:
+			print(f"Couldn't load {elem['src']} {elem['idx']}. Skipping")
+			continue
 		if img["sigma"]==0 : continue
 	
 		img-=img.get_edge_mean()

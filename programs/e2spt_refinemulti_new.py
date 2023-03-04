@@ -190,6 +190,8 @@ def main():
 					
 		#### save two lists (2d & 3d) for each classi in ieach iteration
 		for i in range(nref):
+			for d in ali2dpms[i]: del d["class"]
+			for d in ali3dpms[i]: del d["class"]
 			save_lst_params(ali2dpms[i], ali2d[i])
 			save_lst_params(ali3dpms[i], ali3d[i])
 			if itr>1:
@@ -217,7 +219,8 @@ def main():
 		for ir in range(nref):
 			threed=f"{path}/threed_{itr:02d}_{ir:02d}.hdf"
 			a2=ali2d[ir]
-			cmd=f"e2spa_make3d.py --input {a2} --output {threed} --keep 1 {m3dpar} --outsize {boxsize} --pad {padsize} --sym {options.sym} --clsid {ir}"
+			cmd=f"e2spa_make3d.py --input {a2} --output {threed} --keep 1 {m3dpar} --outsize {boxsize} --pad {padsize} --sym {options.sym}"  # clsid not needed due to file split
+#			cmd=f"e2spa_make3d.py --input {a2} --output {threed} --keep 1 {m3dpar} --outsize {boxsize} --pad {padsize} --sym {options.sym} --clsid {ir}"
 			if options.skipali:
 				cmd+=" --no_wt"
 			run(cmd)
