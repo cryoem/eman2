@@ -1091,20 +1091,7 @@ EMBytes GLUtil::render_annotated24(EMData *emdata, EMData *intmap, int x0, int y
 	static unsigned char rtable[65536] = {0};
 	static unsigned char gtable[65536] = {0};
 	static unsigned char btable[65536] = {0};
-
-	// if (!tblinit) {
-	// 	tblinit=1;
-	//
-	// 	// Only supporting up to 256 different color "categories"
-	// 	for (int v=0; v<256; v++) {
-	// 		for (int c=0; c<256; c++) {
-	// 			rtable[v*256+c]=(c==0||c==3)?v:0;		//4 colors (0-3) for initial testing
-	// 			gtable[v*256+c]=(c==0||c==1)?v:0;
-	// 			btable[v*256+c]=(c==0||c==2)?v:0;
-	// 		}
-	// 	}
-	// }
-
+	static unsigned char vtable[65536] = {0};
 	static int tblinit=0;
 	if (!tblinit) {
 		tblinit=1;
@@ -1117,12 +1104,12 @@ EMBytes GLUtil::render_annotated24(EMData *emdata, EMData *intmap, int x0, int y
 					H = 0;
 					S = 0;
 				}else{
-					H = abs(fmod(120+139*c, 360));
-					S = abs(fmod((1-4*c/255)*255, 256))/255;
+					H = abs(fmod(120.0+139*c, 360.0));
+					S = abs(fmod((1-4*c/255.0)*255.0, 256.0))/255.0;
 				}
-				float V = (0.4+0.6*(v/255));
+				float V = (0.2+0.8*(v/255.0));
 				float C = S*V;
-				float X = C*(1-abs(fmod(H/60.0, 2)-1));
+				float X = C*(1-abs(fmod(H/60.0, 2.0)-1));
 				float m = V-C;
 				float r;
 				float g;
@@ -1143,13 +1130,19 @@ EMBytes GLUtil::render_annotated24(EMData *emdata, EMData *intmap, int x0, int y
 				int R = (r+m)*255;
 				int G = (g+m)*255;
 				int B = (b+m)*255;
-				rtable[v*256+c] =R;		//4 colors (0-3) for initial testing
+
+				rtable[v*256+c] =R;
 				gtable[v*256+c] =G;
 				btable[v*256+c] =B;
+
+
 			}
 		}
+		rtable[0] =0;
+		gtable[0] =0;
+		btable[0] =0;
+
 	}
-	// Done with old coloring methods
 
 	if (emdata==NULL) return EMBytes();
 	bool invert = (min_gray > max_gray);
@@ -1225,6 +1218,7 @@ EMBytes GLUtil::render_annotated24(EMData *emdata, EMData *intmap, int x0, int y
 	int addi = 0;
 	int addr = 0;
 
+
 	if (inv_scale == floor(inv_scale)) {	// exact integer downscaling
 		dsx = (int) inv_scale;
 		dsy = (int) (inv_scale * nx);
@@ -1232,7 +1226,11 @@ EMBytes GLUtil::render_annotated24(EMData *emdata, EMData *intmap, int x0, int y
 	else {
 		addi = (int) floor(inv_scale);
 		addr = (int) (scale_n * (inv_scale - floor(inv_scale)));
+
 	}
+
+
+
 
 	int xmin = 0;
 
@@ -1265,6 +1263,8 @@ EMBytes GLUtil::render_annotated24(EMData *emdata, EMData *intmap, int x0, int y
 	float * image_data = emdata->get_data();
 	float * class_data = intmap->get_data();
 
+
+
 	if (dsx != -1) {
 		int l = x0 + y0 * nx;
 
@@ -1281,6 +1281,8 @@ EMBytes GLUtil::render_annotated24(EMData *emdata, EMData *intmap, int x0, int y
 				float t;	// holds pixel greyscale
 				unsigned char cls;	// holds class identifier
 
+
+
 				if (dsx == 1) t=image_data[l];
 				else { // This block does local pixel averaging for nicer reduced views
 					t=0;
@@ -1294,6 +1296,7 @@ EMBytes GLUtil::render_annotated24(EMData *emdata, EMData *intmap, int x0, int y
 							t += image_data[l+iii+jjj];
 						}
 					}
+
 
 					t /= dsx*(dsy/nx);
 				}
@@ -1311,6 +1314,7 @@ EMBytes GLUtil::render_annotated24(EMData *emdata, EMData *intmap, int x0, int y
 
 				data[i * 3 + j * bpl] = p;			// greyscale in R channel
 				data[i * 3 + j * bpl +1] = cls;		// color index in G channel
+
 
 				if (hist) histd[p]++;
 
@@ -1345,6 +1349,8 @@ EMBytes GLUtil::render_annotated24(EMData *emdata, EMData *intmap, int x0, int y
 				unsigned char p;
 				float t;
 				unsigned char cls;
+
+
 
 				if (addi <= 1) t = image_data[l];
 				else { // This block does local pixel averaging for nicer reduced views
@@ -1393,18 +1399,31 @@ EMBytes GLUtil::render_annotated24(EMData *emdata, EMData *intmap, int x0, int y
 		}
 	}
 
+
+
 	// Convert grey/class values to RGB
+	int new_xmin=xmin;
+	if (xmin % 3 == 1){
+		new_xmin = xmin-1;
+	} else if (xmin % 3 == 2) {
+		new_xmin = xmin-2;
+	}
+
 	for (int j=ymin*bpl; j <= ymax*bpl; j+=bpl) {
-		for (int i=xmin; i<xsize*3; i+=3) {
-			int grey=(int)data[i+j];
+		for (int i=new_xmin; i<=xsize*3; i+=3) {
+			int gray=(int)data[i+j];
 			int cls=(int)data[i+j+1];
-			//int lup=grey<<8+cls;
-			int lup = grey*256 + cls;
+			int lup = gray*256 + cls;
 			data[i+j]=rtable[lup];
 			data[i+j+1]=gtable[lup];
 			data[i+j+2]=btable[lup];
+
+
+
+
 		}
 	}
+
 
 	EXITFUNC;
 
