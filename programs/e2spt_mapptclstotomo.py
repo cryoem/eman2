@@ -16,6 +16,7 @@ def main():
 	parser.add_argument("--avg", type=str,help="3D volume to insert. spt_xx/threed_xx if unspecified", default="",guitype='filebox', browser="EMBrowserWidget(withmodal=True, startpath='.')", row=3, col=0,rowspan=1, colspan=2)
 	parser.add_argument("--postxf", type=str,help="extra shift after alignment", default="")
 	parser.add_argument("--keep", type=float,help="propotion to keep. will exclude bad particles if this is smaller than 1.0", default=1.0)
+	parser.add_argument("--pixmark",action="store_true",default=False,help="adds a marker to each particle to identify the particle number within the original volume. A set of single voxel high values every other voxel.")
 	parser.add_argument("--gui",action="store_true",help="open the resulting map and tomogram in a GUI display",default=False,guitype="boolbox",row=4, col=0,rowspan=1, colspan=1)
 	parser.add_argument("--new",action="store_true",help="Results from e2spt_refine_new",default=False,guitype="boolbox",row=4, col=1,rowspan=1, colspan=1)
 	parser.add_argument("--ppid", type=int,help="ppid...", default=-1)
@@ -32,9 +33,42 @@ def main():
 		postxf=[0,0,0]
 	
 	
-	
-	
-		
+	ptcl=[]
+	llfile=""
+	bname=base_name(options.tomo)
+	if options.new:
+		alipm=load_lst_params("{}/aliptcls3d_{:02d}.lst".format(path, itr))
+
+		for p in alipm:
+			if base_name(p["src"])==bname:
+				ptcl.append((p["score"], p["src"], p["idx"], p["xform.align3d"]))
+	else:
+		js=js_open_dict("{}/particle_parms_{:02d}.json".format(path, itr))
+		for k in js.keys():
+			fsp,i=eval(k)
+			if fsp[-4:]==".lst" :
+				if llfile!=fsp :
+					llfile=fsp
+					lsx=LSXFile(fsp,True)
+				i,fsp,x=lsx.read(i)
+			if base_name(fsp)==bname:
+				ptcl.append((js[k]["score"],fsp,i,js[k]["xform.align3d"]))
+
+	ptcl.sort()
+	#print(ptcl)
+
+	nptcl=int(len(ptcl)*options.keep)
+	if options.keep<1.0:
+		sthr=ptcl[nptcl][0]
+	else:
+		sthr=100
+
+	pts=[]
+	print("{:d} particles total.".format(int(nptcl)))
+	if nptcl==0:
+		print("No particles. Exiting")
+		sys.exit(0)
+
 	tomo=EMData(options.tomo)
 	if options.gui: tomo_orig=tomo.copy()
 	
@@ -56,42 +90,7 @@ def main():
 	
 	tomo.to_zero()
 	
-	ptcl=[]
-	llfile=""
-	bname=base_name(options.tomo)
-	if options.new:
-		alipm=load_lst_params("{}/aliptcls3d_{:02d}.lst".format(path, itr))
-		
-		for p in alipm:
-			if base_name(p["src"])==bname:
-				ptcl.append((p["score"], p["src"], p["idx"], p["xform.align3d"]))
-	else:
-		js=js_open_dict("{}/particle_parms_{:02d}.json".format(path, itr))
-		for k in js.keys():
-			fsp,i=eval(k)
-			if fsp[-4:]==".lst" :
-				if llfile!=fsp : 
-					llfile=fsp
-					lsx=LSXFile(fsp,True)
-				i,fsp,x=lsx.read(i)
-			if base_name(fsp)==bname:
-				ptcl.append((js[k]["score"],fsp,i,js[k]["xform.align3d"]))
-	
-	ptcl.sort()
-	#print(ptcl)
-			
-	nptcl=int(len(ptcl)*options.keep)
-	if options.keep<1.0:
-		sthr=ptcl[nptcl][0]
-	else:
-		sthr=100
-	
-	pts=[]
-	print("{:d} particles total.".format(int(nptcl)))
-	if nptcl==0:
-		print("No particles. Exiting")
-		sys.exit(0)
-		
+
 	for s,fsp,i,xf in ptcl:
 		if s>sthr:
 			continue
@@ -107,7 +106,19 @@ def main():
 		ts+=postxf
 		xf.set_trans((ts/shrink).tolist())
 		xf=xf.inverse()
-		t=avg.process("xform", {"transform":xf})
+		if options.pixmark:
+			t=avg.copy()
+			for ii in range(i):
+				t[i*4,1,1]=avg["maximum"]
+				t[i*4+1,1,1]=avg["maximum"]
+				t[i*4,2,1]=avg["maximum"]
+				t[i*4+1,2,1]=avg["maximum"]
+				t[i*4,1,2]=avg["maximum"]
+				t[i*4+1,1,2]=avg["maximum"]
+				t[i*4,2,2]=avg["maximum"]
+				t[i*4+1,2,2]=avg["maximum"]
+			t.process_inplace("xform", {"transform":xf})
+		else: t=avg.process("xform", {"transform":xf})
 		pts.append(crd-ts/4)
 		tomo.insert_scaled_sum(t,crd.tolist())
 		print("\t{}/{} finished.".format(len(pts), nptcl), end='\r')
