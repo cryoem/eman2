@@ -626,7 +626,7 @@ bool MarchingCubes::calculate_min_max_vals()
 MarchingCubes::~MarchingCubes() {
 	clear_min_max_vals();
 
-if ((int(glGetString(GL_VERSION)[0])-48)>2){
+//if ((int(glGetString(GL_VERSION)[0])-48)>2){
 // #ifdef _WIN32
 // 	typedef void (APIENTRYP PFNGLDELETEBUFFERSPROC) (GLsizei n, const GLuint *buffers);
 // 	PFNGLDELETEBUFFERSPROC glDeleteBuffers;
@@ -634,7 +634,7 @@ if ((int(glGetString(GL_VERSION)[0])-48)>2){
 // #endif	//_WIN32
 //
 // 	glDeleteBuffers(4, buffer);
-}
+//}
 }
 
 Dict MarchingCubes::get_isosurface()

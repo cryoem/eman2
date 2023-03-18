@@ -1,0 +1,52 @@
+def versionBumpOption() {
+    if (CI_BUILD == "1" || EMAN_BUMP_PATCH == "1") return "patch"
+    else if (EMAN_BUMP_MINOR == "1")               return "minor"
+    else if (EMAN_BUMP_MAJOR == "1")               return "major"
+}
+
+def isVersionBump() {
+  return CI_BUILD == "1" || EMAN_BUMP_PATCH == "1" || EMAN_BUMP_MINOR == "1" || EMAN_BUMP_MAJOR == "1"
+}
+
+def isVersionCommit() {
+  return VERSION_COMMIT == "1"
+}
+
+pipeline {
+  agent {
+    node { label "linux" }
+  }
+  
+  environment {
+    CI_BUILD         = sh(script: "! git log -1 | grep '.*\\[ci build\\].*'",   returnStatus: true)
+    EMAN_BUMP_PATCH  = sh(script: "! git log -1 | grep '.*\\[bump patch\\].*'", returnStatus: true)
+    EMAN_BUMP_MINOR  = sh(script: "! git log -1 | grep '.*\\[bump minor\\].*'", returnStatus: true)
+    EMAN_BUMP_MAJOR  = sh(script: "! git log -1 | grep '.*\\[bump major\\].*'", returnStatus: true)
+    VERSION_COMMIT   = sh(script: "! git log -1 --pretty=%B | grep -x 'v[0-9][0-9]*\\.[0-9][0-9]*\\.[0-9][0-9]*'", returnStatus: true)
+    GIT_BRANCH_SHORT = sh(returnStdout: true, script: 'echo ${GIT_BRANCH##origin/}').trim()
+  }
+  
+  stages {
+    stage('bump version') {
+      when {
+        expression { isVersionBump() }
+      }
+
+      steps {
+        sh 'python ./utils/tag_new_version.py --bump ' + versionBumpOption()
+        sleep 60
+        build job: 'eman-feedstock-update-version'
+      }
+    }
+
+    stage('build tag') {
+      when {
+        expression { isVersionCommit() }
+      }
+
+      steps {
+        build job: 'build-binary-trigger'
+      }
+    }
+  }
+}

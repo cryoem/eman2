@@ -3,7 +3,7 @@ from past.utils import old_div
 from builtins import range
 '''
 ====================
-Author: Jesus Galaz-Montoya - 02/March/2013, Last update: 07/Nov/2017
+Author: Jesus Galaz-Montoya - 02/March/2013, Last update: 01/2023
 ====================
 
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -33,19 +33,25 @@ Author: Jesus Galaz-Montoya - 02/March/2013, Last update: 07/Nov/2017
 '''
 
 from EMAN2 import *
+from EMAN2_utils import *
+
 import sys
 from sys import argv
-import EMAN2
 import operator
 import random
 import numpy
 
 from sys import argv
 
+import time
+from datetime import timedelta
 
 def main():
+	start = time.perf_counter()
 
-	usage = """e2orthoproject.py <input_file1> <input_file2> ... <input_fileN> <options> . 
+	usage = """
+			This program produces orthogonal slices of an EM volume of --nslices thickness.
+			e2slicer.py <input_file1> <input_file2> ... <input_fileN> <options> . 
 			The options should be supplied in "--option=value" format (or --options=value:parameter1=value:parameter2=value... etc, 
 			replacing "option" for a valid option name, and "value", "parameter" for a acceptable entries for that option. 
 			This program extracts slices from a volume or multiple volumes in a stack. By default, the program will extract three orthogonal slices 
@@ -59,19 +65,14 @@ def main():
 	parser.add_argument("--allz",action='store_true',default=False,help="Get ALL the slices in a volume along the z axis.")
 	
 	parser.add_argument("--input", type=str, default='', help="""Default=None. This is redundant with supplying input files directly. The file name containing a volume or stack of volumes from which you want to generate slices. You can supply more than one file either by providing an .hdf stack of volumes, or by providing multiple files separated by commas.""")
-	
-	parser.add_argument("--lowpass",type=str, default='', help="Default=None. A lowpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.")
-
-	parser.add_argument("--mask",type=str,default='',help="Default=None. Mask processor applied to particles before alignment." )
-	
-	parser.add_argument("--normproc",type=str,default='',help="""Default=None (not used). Normalization processor applied to particles before computing slices.""")
-	parser.add_argument("--nslices", type=int, default=None,help="""default=None (not used). Number of slices to average average around the central sections (not compatible with --allx, --ally, or --allz)""")
+		
+	parser.add_argument("--nslices", type=int, default=1,help="""default=1. Number of slices to average around the central sections (not compatible with --allx, --ally, or --allz)""")
 
 	parser.add_argument("--onlymidx",action='store_true',default=False,help="Only extract the middle slice of the volume parallel to the YZ plane.")
 	parser.add_argument("--onlymidy",action='store_true',default=False,help="Only extract the middle slice of the volume parallel to the XZ plane.")
 	parser.add_argument("--onlymidz",action='store_true',default=False,help="Only extract the middle slice of the volume parallel to the XY plane.")
 	
-	parser.add_argument("--path",type=str,default=None,help="""Directory to store results in. The default is a numbered series of directories containing the prefix 'slices'; for example, slices_02 will be the directory by default if 'slices_01' already exists.""")
+	parser.add_argument("--path",type=str,default="slices",help="""Defautl=slices. Directory to store results in. The default is a numbered series of directories containing the prefix 'slices'; for example, slices_02 will be the directory by default if 'slices_01' already exists.""")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	parser.add_argument("--singlestack",action='store_true',default=False,help="""This option will save slices from all particles into a single .hdf stack file if --onlymidz or --onlymidy or --onlymidx are provided, instead of one slice file per volume.""")
@@ -79,45 +80,21 @@ def main():
 	
 	parser.add_argument("--orthogonaloff",action='store_true',default=False,help="""By default, the program will extract three orthogonal slices through the middle of the input volume(s). If this parameter is specified, it will not, and only the other options that are supplied will be valid.""")
 	
-	#parser.add_argument("--saverotvol",action='store_true',default=False,help="Will save the volume in each rotated position used to generate a projection.")
-
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness.")
-
-	#parser.add_argument("--transformsfile",type=str,help="A text files containing lines with one triplet of az,alt,phi values each, representing the transforms to use to project a single volume supplied. ", default='')
-	#parser.add_argument("--angles",type=str,help="A single comma or space separated triplet of az,alt,phi values representing the particle rotation to apply before projecting it.", default='')
-	#parser.add_argument("--tag",type=str,help="When supplying --angles, tag the output projection with a string provided through --tag", default='')
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="default=0. verbose level [0-9], higher number means higher level of verboseness.")
 
 
 	(options, args) = parser.parse_args()	
 	
-	inputs = options.input.split(',')
+	#c:this checks whether input is supplied directly via sys.argv, or --input, counts valid input files, and puts them in a list for future use.
+	options,inputs = checkinput( options )
 
-	if not options.input:
-		inputs = []
-		for f in args:
-			if '.hdf' in f[-4:] or '.HDF' in f[-4:] or '.mrc' in f[-4:] or '.MRC' in f[-4:] or '.mrcs' in f[-5:]:
-				inputs.append(f) 
-		#try:
-		#	print 'argv[1] is', argv[1]
-		#	testimg = EMData(argv[1],0,True)
-		#	options.input = argv[1]
-		#except:		
-		#	#print 'argv[1] is', argv[1]
-		#	print """\nERROR: Supply volume(s) through --input or as the first argument after the program name. For example, program.py volume.hdf --parameter1=value1 --parameter2=value2... etc."""
-		#	sys.exit()
-	
-	print("\ninputs are {}".format(inputs))
+	if not inputs:
+		print("\nERROR: failed to load any valid input files. Make sure you're in the correct directory and filenames are correct. Exiting.")
+		sys.exit(1)
+
+	if options.verbose: print("\ninputs are {}".format(inputs))
 
 	logger = E2init(sys.argv, options.ppid)
-
-	if options.lowpass: 
-		options.lowpass=parsemodopt(options.lowpass)
-
-	if options.mask: 
-		options.mask=parsemodopt(options.mask)
-			
-	if options.normproc: 
-		options.normproc=parsemodopt(options.normproc)
 
 	
 	'''#
@@ -126,41 +103,70 @@ def main():
 	if options.onlymidz:
 		if options.onlymidx or options.onlymidy:
 			print("ERROR: You can only supply one of --onlymidx, --onlymidy or --onlymidz at a time.")
-			sys.exit()
+			sys.exit(1)
 	
 	if options.onlymidx:
 		if options.onlymidy or options.onlymidz:
 			print("ERROR: You can only supply one of --onlymidx, --onlymidy or --onlymidz at a time.")
-			sys.exit()
+			sys.exit(1)
 			
 	if options.onlymidy:
 		if options.onlymidx or options.onlymidz:
 			print("ERROR: You can only supply one of --onlymidx, --onlymidy or --onlymidz at a time.")
-			sys.exit()
+			sys.exit(1)
 
+	if options.allx or options.ally or options.allz:
+		if options.onlymidx or options.onlymidy or options.onlymidz:
+			print("ERROR: Cannot supply --allx, --ally or --allz at the same time than any of --onlymidx={}, --onlymidy={} or --onlymidz={}".format(options.onlymidx,options.onlymidy,otions.onlymidz))
+			sys.exit(1)
 
 	'''#
 	#Make a directory where to store the results
 	'''#
 	from EMAN2_utils import makepath
-	options = makepath(options,'sptslices')
+	options = makepath(options,'slices')
 	
 	
 	'''#
-	#Generate orthogonal slice regions
+	#Generate orthogonal slice regions, using the transforms to get x and y axis perspectives
 	'''#
-	for f in inputs:
 
+	t = Transform()
+	ty = Transform({'type':'eman','az':0,'alt':-90,'phi':0})
+	tx = Transform({'type':'eman','az':-90,'alt':90,'phi':90})
+	
+	axes_dict = {}
+	if options.onlymidx:
+		axes_dict.update({'x':tx})
+	elif options.onlymidy:
+		axes_dict.update({'y':ty})
+	elif options.onlymidz:
+		axes_dict.update({'z':t})													
+
+	elif options.allz or options.allx or options.ally:
+		if options.allx: 
+			axes_dict.update({'x':tx})
+		if options.ally: 
+			axes_dict.update({'y':ty})
+		if options.allz: 
+			axes_dict.update({'z':t})
+
+	if not options.orthogonaloff:
+		axes_dict.update({'x':tx,'y':ty,'z':t})
+
+
+	for f in inputs:
+		print("\nprocessing file {}".format(f))
+		ext = os.path.splitext(f)[-1]
 		try:
-			hdf = EMData( f, 0, True )
+			hdr=EMData(f,0,True)
 		except:
-			print("ERROR: invalid image file {}".format(f))
-			sys.exit(1)
+			print("\ninvalid file f={}".format(f))
 
 		n = EMUtil.get_image_count( f )
 		
 		for i in range(n):
-			print("\nprocessing particle {}".format(i))
+			if options.verbose: print("\nprocessing particle {}".format(i))
 			a = EMData(f,i)
 			
 			ap = a.copy()
@@ -169,11 +175,7 @@ def main():
 				shnyquist = nyquist * options.shrink
 				ap.process_inplace('filter.lowpass.tanh',{'cutoff_freq':old_div(1.0,shnyquist)})
 				ap.process_inplace('math.fft.resample',{'n':options.shrink})
-				
-			nx=ap['nx']
-			ny=ap['ny']
-			nz=ap['nz']
-			
+
 			ptcltag = ''
 			slicestag = ''
 			
@@ -183,151 +185,117 @@ def main():
 				if options.allz or options.ally or options.allx or not options.singlestack:
 					ptcltag = '_ptcl' + str(i).zfill( len( str(n) ))
 			
-			rmid = None
-						
-			if options.onlymidz or options.onlymidy or options.onlymidx:
-				
-				if options.onlymidz:	
-					rmid = Region(0, 0, old_div(nz,2), nx, ny, 1)
-					if options.nslices:
-						rmid = Region(0, 0, old_div(nz,2)-int(ceil(options.nslices/2.0)), nx, ny, options.nslices)
-						
-					print("The region for the orthogonal z slice is", rmid)
-					
-					slicestag += 'z'
-					if n < 2:
-						slicestag = '_SLICEmidz'			
-										
-				elif options.onlymidx:
-					rmid = Region(old_div(nx,2), 0, 0, 1, ny, nz)
-					if options.nslices:
-						rmid = Region(old_div(nx,2)-int(ceil(options.nslices/2.0)), 0, 0, options.nslices, ny, nz)
-						
-					print("The region for the orthogonal x slice is", rmid)
+	
+			for axis in axes_dict:
+				slicef=None
+				if options.nslices > 1 or options.allx or options.ally or options.allz:
+					t=axes_dict[axis]
 
-					#slicemidx=a.get_clip(rmidx)
-					#slicemidx.write_image(options.path + '/' + options.input.replace('.',ptcltag+'_SLICEmidx.'),0)
-					
-					slicestag += 'x'
-					if n < 2:
-						slicestag = '_SLICEmidx'
-					
-					#Tx = Transform({'type':'eman','az':0,'alt':-90,'phi':0})
-					#ap.transform( Tx )
-		
-				elif options.onlymidy:
-					rmid = Region(0, old_div(ny,2), 0, nx, 1, nz)
-					if options.nslices:
-						rmid = Region(0, old_div(ny,2)-int(ceil(options.nslices/2.0)), 0, nx, options.nslices, nz)
-					print("The region for the orthogonal y slice is", rmid)
-		
-					#slicemidy=a.get_clip(rmidy)
-					#slicemidy.write_image(options.path + '/' + options.input.replace('.',ptcltag+'_SLICEmidy.'),0)
-					
-					slicestag += 'y'
-					if n < 2:
-						slicestag = '_SLICEmidy'
-					
-					#Ty = Transform({'type':'eman','az':0,'alt':-90,'phi':-90})
-					#ap.transform( Ty )
-								
-				
-				slicemid = ap.get_clip( rmid )
-				slicemid.set_size( nx, ny, 1)
-				slicemid.write_image(options.path + '/' + os.path.basename( f ).replace('.',ptcltag + slicestag + '.'),i)
-			
-			elif not options.onlymidz and not options.onlymidy and not options.onlymidx:
-				app = a.copy()
-				if options.shrink:
-					nyquist = app['apix_x'] * 2.0
-					shnyquist = nyquist * options.shrink
-					app.process_inplace('filter.lowpass.tanh',{'cutoff_freq':old_div(1.0,shnyquist)})
-					app.process_inplace('math.meanshrink',{'n':options.shrink})
-				
-				#regions={}
-				if not options.orthogonaloff:
-					print("Generating orthogonal slices")
-					rmidz = Region(0, 0, old_div(nz,2), nx, ny, 1)
-					rmidx = Region(old_div(nx,2), 0, 0, 1, ny, nz)
-					rmidy = Region(0, old_div(ny,2), 0, nx, 1, nz)
-					if options.nslices:
-						rmidz = Region(0, 0, old_div(nz,2)-int(ceil(options.nslices/2.0)), nx, ny, options.nslices)
-						rmidx = Region(old_div(nx,2)-int(ceil(options.nslices/2.0)), 0, 0, options.nslices, ny, nz)
-						rmidy = Region(0, old_div(ny,2)-int(ceil(options.nslices/2.0)), 0, nx, options.nslices, nz)
+					aprot = ap.copy()
+					if options.verbose>5: 
+						print("\n(e2slicer)(main) --nslices={} > 1, therefore rotating ptcl with transform={} because axis={}".format(options.nslices,t,axis))
+					aprot.transform(t)
 
-					#tz = Transform({'type':'eman','az':0,'alt':0,'phi':0})
+					if options.nslices >1:
+						slicef=get_slices(options,aprot,axis=axis)
 
-					regions={0:rmidz,1:rmidx,2:rmidy}
-					#k=0
-					for kk in regions:
-						z=1
-						if kk == 0:
-							x=nx
-							y=ny
-					
-						elif kk == 1:
-							x=nz
-							y=ny
-						
-						elif kk == 2:
-							x=nx
-							y=nz
-					
-						#if options.threed2threed or options.threed2twod:
-						#d = EMData()
-						#d.read_image(options.input, 0, False, regions[tag])
-					
-						print("I have extracted this orthogonal region", regions[kk])
-						slice = app.get_clip(regions[kk])
-						slice.set_size(x,y,1)
-						print("ptcl tag is", ptcltag)
-						print("slice is", slice , type(slice))
-						
-						outname = options.path + '/' + os.path.basename( f ).replace('.',ptcltag+'_SLICESortho.')
-						print("outname is", outname)
-						if '.mrc' in outname:
-							outname=outname.replace('.mrc','.hdf')
-							print("new outname is", outname)
-						slice.write_image( outname,kk)
-						
-						
-						print("The mean and index are", slice['mean'],kk)
-						#k+=1
-					
-				if options.allz:
-					print("Generating all z slices")
-					#Tz = Transform({'type':'eman','az':0,'alt':0,'phi':0})
-					
-					outname = options.path + '/' + os.path.basename( f ).replace('.',ptcltag+'_SLICESz.')
-					os.system('e2proc2d.py ' + f + ' ' + outname + ' --threed2twod')
-			
-				if options.allx:
-					print("Generating all x slices")
-					Tx = Transform({'type':'eman','az':0,'alt':-90,'phi':0})
-					volx = app.copy()
-					volx.transform(Tx)
-					rotvolxname = options.path + '/' + os.path.basename( ft ).replace('.', ptcltag+'rotx.')
-					volx.write_image(rotvolxname,0)
-				
-					outname = options.path + '/' + os.path.basename( f ).replace('.',ptcltag+'_SLICESx.')
-				
-					os.system('e2proc2d.py ' + rotvolxname + ' ' + outname + ' --threed2twod')
-			
-				if options.ally:	
-					print("Generating all y slices")
-					Ty = Transform({'type':'eman','az':0,'alt':-90,'phi':-90})
-					voly = app.copy()
-					voly.transform(Ty)
-					rotvolyname = options.path + '/' + os.path.basename( f ).replace('.', ptcltag+'roty.')
-					voly.write_image(rotvolyname,0)
-				
-					outname = options.path + '/' + os.path.basename( f ).replace('.',ptcltag+'_SLICESy.')
-				
-					os.system('e2proc2d.py ' + rotvolyname + ' ' + outname + ' --threed2twod')
+					if options.allx and axis == 'x':
+						if options.verbose > 5: print("Generating all x slices")		
+						rotvolxname = options.path + '/tmp_rotx.hdf'
+						aprot.write_image(rotvolxname,0)
+						outname = options.path + '/' + os.path.basename( f ).replace(ext,ptcltag+'_all_x.hdf')
+						runcmd(options,'e2proc2d.py ' + rotvolxname + ' ' + outname + ' --threed2twod && cd ' + options.path + ' && rm tmp*')
+					if options.ally and axis == 'y':
+						if options.verbose > 5: print("Generating all y slices")
+						rotvolyname = options.path + '/tmp_roty.hdf'
+						aprot.write_image(rotvolyname,0)
+						outname = options.path + '/' + os.path.basename( f ).replace(ext,ptcltag+'_all_y.hdf')
+						runcmd(options,'e2proc2d.py ' + rotvolyname + ' ' + outname + ' --threed2twod && cd ' + options.path + ' && rm tmp*')
+					if options.allz and axis == 'z':
+						if options.verbose > 5: print("Generating all z slices")
+						rotvolzname = options.path + '/tmp_rotz.hdf'
+						aprot.write_image(rotvolzname,0)
+						outname = options.path + '/' + os.path.basename( f ).replace(ext,ptcltag+'_all_z.hdf')
+						runcmd(options,'e2proc2d.py ' + f + ' ' + outname + ' --threed2twod && cd ' + options.path + ' && rm tmp*')
+
+				else:
+					if options.verbose>5: print("\n(e2slicer)(main) getting single slice from axis={}".format(axis))
+					slicef=get_single_slice(options,ap,axis=axis)
+
+				if slicef:
+					if options.onlymidx or options.onlymidy or options.onlymidz:
+						slices_mid_output = options.path + '/' + os.path.basename( f ).replace(ext,ptcltag + '_' + axis + '.hdf')
+						slicef.write_image(slices_mid_output,i)
+
+					elif not options.orthogonaloff:
+						slices_ortho_output = options.path + '/' + os.path.basename( f ).replace(ext,ptcltag + '_ortho.hdf')
+						#print("\noutput name for ortho stack is {}".format(slices_ortho_output))
+						#print("\noptions.nslices={}".format(options.nslices))
+						if options.nslices > 1:
+							slices_ortho_output = slices_ortho_output.replace(".hdf","_nthick" + str(options.nslices) +".hdf" )
+							#print("\nupdated output name for ortho stack is {} becasue --nslices={}".format(slices_ortho_output, options.nslices))
+						slicef.write_image(slices_ortho_output,-1)
 	
 	E2end(logger)
 	
-	return()	
+	elapsed = time.perf_counter() - start
+	print(str(timedelta(seconds=elapsed)))
+
+	return
+
+
+def get_single_slice(options,img,axis=''):
+
+	nx=img['nx']
+	ny=img['ny']
+	nz=img['nz']
+
+	rmid=None
+
+	if axis=='x':
+		rmid = Region(old_div(nx,2), 0, 0, 1, ny, nz)
+		x=nz
+		y=ny
+	elif axis=='y': 
+		rmid = Region(0, old_div(ny,2), 0, nx, 1, nz)
+		x=nx
+		y=nz
+	elif axis=='z': 
+		rmid = Region(0, 0, old_div(nz,2), nx, ny, 1)
+		x=nx
+		y=ny
+
+	if options.verbose > 6: print("The region for the orthogonal z slice is", rmid)
+
+	print("\n(e2slicer)(get_single_slice) getting slice from region rmid={} because axis={}".format(rmid,axis))
+	slicemid = img.get_clip( rmid )
+
+	#c: apparently, setting the size of the output is essential for it to show as a plane in xy as opposed to viewing the slice "from the side"
+	slicemid.set_size(x,y,1)
+
+	return slicemid
+
+
+def get_slices(options,img,axis=''):
+
+	nx=img['nx']
+	ny=img['ny']
+	nz=img['nz']
+	
+	rmid=None
+
+	rmid = Region(0, 0, old_div(nz,2)-int(ceil(options.nslices/2.0)), nx, ny, options.nslices)
+	if options.verbose > 6: print("The region for the orthogonal z nslices is", rmid)
+
+	slicemid = img.get_clip( rmid )
+	slicemid.set_size(nx,ny,options.nslices)
+
+	prj = slicemid.project("standard",Transform())
+	prj.set_attr('xform.projection',Transform())
+	prj.set_size(nx,ny,1)
+
+	return prj
+
 
 if __name__ == '__main__':
 	main()

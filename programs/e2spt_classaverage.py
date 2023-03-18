@@ -1879,7 +1879,7 @@ def sptParseAligner( options ):
 
 	if options.align and 'rotate' in options.align:
 		#print "There's options.align", options.align
-		if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align and 'grid' not in options.align:
+		if options.sym and options.sym != 'c1' and options.sym != 'C1' and 'sym' not in options.align and 'grid' not in options.align:
 			if 'rotate_translate_3d' in options.align or 'rotate_symmetry_3d' in options.align or 'rotate_translate_3d_tree' in options.align:
 				options.align += ':sym=' + str( options.sym )
 			#print "And there's sym", options.sym
@@ -2270,7 +2270,7 @@ def calcAliStep(options):
 		searchF = 0
 	
 	options.align = 'rotate_translate_3d:search=' + str(searchC) +':delta=' + str(CSrounded) + ':dphi=' + str(CSrounded)
-	if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align:
+	if options.sym and options.sym != 'c1' and options.sym != 'C1' and 'sym' not in options.align:
 		options.align += ':sym=' + options.sym
 	
 	

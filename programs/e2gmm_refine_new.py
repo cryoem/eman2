@@ -5,6 +5,7 @@ import numpy as np
 from sklearn.decomposition import PCA
 from EMAN2_utils import pdb2numpy
 import scipy.spatial.distance as scipydist
+from sklearn.cluster import KMeans
 
 #### need to unify the float type across tenforflow and numpy
 ##   in theory float16 also works but it can be unsafe especially when the network is deeper...
@@ -20,17 +21,17 @@ if "CUDA_VISIBLE_DEVICES" not in os.environ:
 	
 os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]='true' 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' #### reduce log output
-if ('-h' in sys.argv) or ('--help' in sys.argv):
-	tf=type('empty', (object,), {})()
-	def empty():
-		return lambda f: f
-	tf.function=empty
-	tflayer=int
-	print(tf.function())
-	print("Printing help. Skip tensorflow import")
-else:
-	import tensorflow as tf
-	tflayer=tf.keras.layers.Layer
+#if ('-h' in sys.argv) or ('--help' in sys.argv):
+	#tf=type('empty', (object,), {})()
+	#def empty():
+		#return lambda f: f
+	#tf.function=empty
+	#tflayer=int
+	#print(tf.function())
+	#print("Printing help. Skip tensorflow import")
+#else:
+import tensorflow as tf
+tflayer=tf.keras.layers.Layer
 
 class ResidueConv2D(tflayer):
 	def __init__(self, nk, sz, activation='linear', **args):
@@ -154,6 +155,36 @@ def mult_gauss_coords(args):
 	return args[0]* args[1]
 
 #@tf.function()
+def pts2img_one_sig(args):
+	pts, ang = args
+	sz, idxft, rrft = params["sz"], params["idxft"], params["rrft"]
+	xfo=params["xforigin"]
+	
+	lp=.1
+	bamp=tf.cast(tf.nn.relu(pts[:,3]), tf.complex64)[:,None]
+	bsigma=tf.cast(tf.nn.relu(pts[:,4]), tf.complex64)*.001
+	#bsigma=tf.cast(tf.nn.relu(pts[:,4]), tf.complex64)
+	#amp=tf.exp(-rrft*lp*tf.nn.relu(bsigma))*tf.nn.relu(bamp)
+	#amp=tf.exp(-rrft*lp)
+	
+	bpos=xf2pts(pts[:,:3],ang)
+	bpos=bpos*sz+sz/2
+	bposft=bpos*np.pi*2
+	
+	cpxang_x=tf.vectorized_map(mult_gauss_coords, (bposft[:,0], idxft[0,[0],:]))
+	cpxang_y=tf.vectorized_map(mult_gauss_coords, (bposft[:,1], idxft[1,:,[0]]))
+
+	sig_x = tf.exp(-rrft[0][None, :]*bsigma[:,None])
+	sig_y = tf.exp(-rrft[1][None, :]*bsigma[:,None])
+    
+	pgauss_x = tf.exp(-1j*tf.cast(cpxang_x, tf.complex64))*bamp*sig_x
+	pgauss_y = tf.exp(-1j*tf.cast(cpxang_y, tf.complex64))*bamp*sig_y
+
+    
+	pgauss = tf.matmul(tf.transpose(pgauss_x), pgauss_y)
+	pgauss = tf.transpose(pgauss)#*tf.cast(amp, tf.complex64)
+	return pgauss*tf.cast(xfo, tf.complex64)
+
 def pts2img_one(args):
 	pts, ang = args
 	sz, idxft, rrft = params["sz"], params["idxft"], params["rrft"]
@@ -161,7 +192,7 @@ def pts2img_one(args):
 	
 	lp=.1
 	bamp=tf.cast(tf.nn.relu(pts[:,3]), tf.complex64)[:,None]
-	#bsigma=pts[:, 4]
+	bsigma=pts[:, 4]
 	#amp=tf.exp(-rrft*lp*tf.nn.relu(bsigma))*tf.nn.relu(bamp)
 	amp=tf.exp(-rrft*lp)
 	
@@ -183,7 +214,7 @@ def pts2img_one(args):
 def pts2img(pts, angs):
 	#pts, angs=args
 	#p=pts2img_one((pts[0], angs[0]))
-	img=tf.vectorized_map(pts2img_one, (pts, angs))
+	img=tf.vectorized_map(pts2img_one_sig, (pts, angs))
 	return tf.math.real(img), tf.math.imag(img)
 
 #### compute particle-projection FRC 
@@ -352,6 +383,10 @@ def set_indices_boxsz(boxsz, apix=0, return_freq=False):
 		sz=boxsz
 		idxft=(idx/sz).astype(floattype)
 		rrft=np.sqrt(np.sum(idx**2, axis=0)).astype(floattype)## batch, npts, x-y
+		rrft_x = idx[0,0,:]**2
+		rrft_y = idx[1,:,0]**2
+		rrft=[rrft_x, rrft_y]
+		
 
 		rr=np.round(np.sqrt(np.sum(idx**2, axis=0))).astype(int)
 		rings=np.zeros((sz,sz//2+1,sz//2), dtype=floattype) #### Fourier rings
@@ -366,7 +401,7 @@ def set_indices_boxsz(boxsz, apix=0, return_freq=False):
 
 def build_encoder(mid=512, nout=4, conv=False, ninp=-1):
 	l2=tf.keras.regularizers.l2(1e-3)
-	kinit=tf.keras.initializers.RandomNormal(0,0.01)	# was 0.01
+	kinit=tf.keras.initializers.RandomNormal(0,1e-3)	# was 0.01
 	
 	if conv:
 		ss=64
@@ -408,29 +443,40 @@ def build_encoder(mid=512, nout=4, conv=False, ninp=-1):
 	encode_model=tf.keras.Sequential(layers)
 	return encode_model
 
-def find_neighbors(pt0, nlayer=5, axis=0):
+def find_neighbors(pt0, nlayer=4, axis=0, existpts=[]):
 	
-	ptpool=[pt0]
-	pns=[64*2**i for i in range(nlayer)][::-1]
-	pns=[p for p in pns if p<len(pt0)]
-	for i,pn in enumerate(pns):
-		pn=pns[i]
+	if len(existpts)>0:
+		ptpool=existpts
+		nlayer=len(ptpool)-2
 		
-		pt1=pt0.copy()
-		np.random.shuffle(pt1)
-		pt1=pt1[:pn,:]
-		pt1+=np.random.randn(len(pt1),3)*1e-3
+	else:
+		ptpool=[pt0]
+		#pns=[64*2**i for i in range(nlayer)][::-1]
+		#pns=[p for p in pns if p<len(pt0)]
+		pns=[1024,512,128,64]
+		for i,pn in enumerate(pns):
+			pn=pns[i]
+			
+			km=KMeans(pn,max_iter=30)
+			km.fit(pt0)
+			pt1=km.cluster_centers_
+			
+			#pt1=pt0.copy()
+			#np.random.shuffle(pt1)
+			#pt1=pt1[:pn,:]
+			#pt1+=np.random.randn(len(pt1),3)*1e-3
 
-		#print(pt1.shape)
-		ptpool.append(pt1.copy())
-		
-	nlayer=len(ptpool)-1
+			#print(pt1.shape)
+			ptpool.append(pt1.copy())
+			
+		nlayer=len(ptpool)-1
+		ptpool.append(pt1.copy()) 
 	
 	#############
 	####
-	nnb=8
+	nnb=16
 	dstid=[]
-	for li in range(nlayer):
+	for li in range(nlayer+1):
 		dst01=scipydist.cdist(ptpool[li], ptpool[li+1])
 		if axis==0:
 			di=np.argsort(dst01, axis=0)[:nnb].T
@@ -440,9 +486,9 @@ def find_neighbors(pt0, nlayer=5, axis=0):
 			dj=np.argsort(dst01, axis=1)[:,:nnb]
 			dstid.append(dj)
 			
-		#print(li, dstid[-1].shape)
+		print(li, dstid[-1].shape)
 		
-	return dstid
+	return dstid, ptpool
 
 def build_encoder_graph(pts, options, nlayer=5):
 	print("#### Building graph encoder...")
@@ -451,7 +497,7 @@ def build_encoder_graph(pts, options, nlayer=5):
 	
 	###########
 	####
-	kinit=tf.keras.initializers.RandomNormal(0,1e-7)
+	kinit=tf.keras.initializers.RandomNormal(0,1e-3)
 	l2=tf.keras.regularizers.l2(1e-3)
 
 	x0=tf.keras.Input(shape=(len(pt0),4))
@@ -485,48 +531,99 @@ def build_encoder_graph(pts, options, nlayer=5):
 	encode_model=tf.keras.Model(x0, y2)
 	return encode_model, midshape
 
-def buid_decoder_graph(pts, midshape, options, nlayer=5):
+def buid_decoder_graph(pts, options, nlayer=4, existlayer=[], kk=1, ptpool=[]):
 	print("#### Building graph decoder...")
 	pt0=pts[0,:,:3].numpy().copy()
-	dstid=find_neighbors(pt0, nlayer=5, axis=1)
+	dstid, ptpool=find_neighbors(pt0, axis=1, existpts=ptpool)
 	
-	kinit=tf.keras.initializers.RandomNormal(0,1e-7)
+	kinit=tf.keras.initializers.RandomNormal(0,1e-3)
 	l2=tf.keras.regularizers.l2(1e-3)
 	
-	x0=tf.keras.Input(shape=(options.nmid))
+	if len(existlayer)==0:
+		declayers=[tf.keras.layers.Dense(256,kernel_regularizer=l2, kernel_initializer=kinit) for i in range(nlayer)]
+		declayers.append(tf.keras.layers.Dense(5,kernel_regularizer=l2))
+	else:
+		declayers=existlayer
+	
+	x0=tf.keras.Input(shape=(4))
 	y1=x0
 	print(y1.shape)
 
-	y1=tf.keras.layers.Dense(np.prod(midshape))(y1)
-	y1=tf.keras.layers.Reshape(midshape)(y1)
+	# y1=tf.keras.layers.Dense(np.prod(midshape))(y1)
+	y1=tf.keras.layers.Dense(32*256)(y1)
+	y1=tf.keras.layers.Reshape((32,256))(y1)
 	print(y1.shape)
-	
-	k1s=[256]*nlayer
-	k1s[-1]=5
-	for li in range(nlayer):
-		k1=k1s[li]
-		if li==nlayer-1:
-			ly=tf.keras.layers.Dense(k1,kernel_regularizer=l2, kernel_initializer=kinit)
-		else:
-			ly=tf.keras.layers.Dense(k1,kernel_regularizer=l2)
-		y0=ly(y1)
-		
-		y1=tf.gather(y0, dstid[nlayer-li-1], axis=1)
+	#kk=1
+	for li in range(kk):
+		y0=declayers[li](y1)
+
+		y1=tf.gather(y0, dstid[-li-1], axis=1)
 		y1=tf.reduce_sum(y1, axis=2)
-		
-		if li==nlayer-1: 
-			y1=tf.math.tanh(y1)
-		else:
-			y1=tf.nn.relu(y1)
-			y1=tf.keras.layers.Dropout(.1)(y1)
-			y1=tf.keras.layers.BatchNormalization()(y1)
-			
-		print(li, y0.shape, y1.shape)
-		
-	# bshift=np.array([-.5,-.5,-.5,0,.5]).astype(floattype)
-	y2=y1+pts  #+tf.constant(bshift)
+
+		y1=tf.nn.relu(y1)
+		y1=tf.keras.layers.Dropout(.1)(y1)
+		y1=tf.keras.layers.BatchNormalization()(y1)
+
+		print(y0.shape, y1.shape)
+
+
+	y1=declayers[-1](y1)
+	# y1=tf.math.tanh(y1)
+	print(y1.shape)
+
+
+	dwt=tf.reduce_sum((ptpool[-kk-1][None,:,:]-ptpool[0][:,None,:])**2, axis=2)
+	dwt=tf.exp(-dwt*50)#*tf.constant(msk, dtype=float)
+	dwt=tf.transpose(dwt)
+	dwt/=np.sum(dwt, axis=0)[None,:]
+	# dwt/=np.sum(dwt, axis=1)[:,None]
+	print(dwt.shape, y1.shape)
+
+	# y2=tf.tensordot(y1, dwt, axes=(1,0))
+	y2=tf.matmul(tf.transpose(y1,(0,2,1)), dwt)
+	y2=tf.transpose(y2, (0,2,1))
+	print(y2.shape)
+
+	y2=y2+pts
+	# y2=y1
 	decode_model=tf.keras.Model(x0, y2)
-	return decode_model
+	
+	return decode_model, declayers, ptpool
+	
+	#x0=tf.keras.Input(shape=(options.nmid))
+	#y1=x0
+	#print(y1.shape)
+
+	#y1=tf.keras.layers.Dense(np.prod(midshape))(y1)
+	#y1=tf.keras.layers.Reshape(midshape)(y1)
+	#print(y1.shape)
+	
+	#k1s=[256]*nlayer
+	#k1s[-1]=5
+	#for li in range(nlayer):
+		#k1=k1s[li]
+		#if li==nlayer-1:
+			#ly=tf.keras.layers.Dense(k1,kernel_regularizer=l2, kernel_initializer=kinit)
+		#else:
+			#ly=tf.keras.layers.Dense(k1,kernel_regularizer=l2)
+		#y0=ly(y1)
+		
+		#y1=tf.gather(y0, dstid[nlayer-li-1], axis=1)
+		#y1=tf.reduce_sum(y1, axis=2)
+		
+		#if li==nlayer-1: 
+			#y1=tf.math.tanh(y1)
+		#else:
+			#y1=tf.nn.relu(y1)
+			#y1=tf.keras.layers.Dropout(.1)(y1)
+			#y1=tf.keras.layers.BatchNormalization()(y1)
+			
+		#print(li, y0.shape, y1.shape)
+		
+	## bshift=np.array([-.5,-.5,-.5,0,.5]).astype(floattype)
+	#y2=y1+pts  #+tf.constant(bshift)
+	#decode_model=tf.keras.Model(x0, y2)
+	#return decode_model
 
 #### build decoder network. 
 ## input integer to initialize as zeros with N points
@@ -552,7 +649,7 @@ def build_decoder(pts, mid=512, ninp=4, conv=False):
 			tf.keras.layers.Reshape((4,4,16)),
 			tf.keras.layers.Conv2DTranspose(16, 3, activation="relu", strides=(2,2), padding="same"),
 			tf.keras.layers.Conv2DTranspose(16, 3, activation="relu", strides=(2,2), padding="same"),
-			tf.keras.layers.Conv2DTranspose(16, 5, activation="relu", strides=(2,2), padding="same"),
+			#tf.keras.layers.Conv2DTranspose(16, 5, activation="relu", strides=(2,2), padding="same"),
 			tf.keras.layers.Dropout(.1),
 			ResidueConv2D(64, 5, activation="relu", padding="same"),
 			tf.keras.layers.Dropout(.1),
@@ -644,32 +741,33 @@ def build_decoder_rigidbody(pts, ninp, foci):
 	print("building decoder with rigid body movement constraints...")
 	
 	x0=tf.keras.Input(shape=(ninp))
-	kinit=tf.keras.initializers.RandomNormal(0,1e-3)
+	kinit=tf.keras.initializers.RandomNormal(0,1e-2)
 	l2=tf.keras.regularizers.l2(1e-3)
-	print("deep resnet")
 	
 	layers=[
 		tf.keras.layers.Dense(256, activation="relu"),
-		tf.keras.layers.Reshape((4,4,16)),
-		tf.keras.layers.Conv2DTranspose(16, 3, activation="relu", strides=(2,2), padding="same"),#8
-		tf.keras.layers.Conv2DTranspose(16, 3, activation="relu", strides=(2,2), padding="same"),#16
-		tf.keras.layers.Dropout(.1),
-		ResidueConv2D(64, 5, activation="relu", padding="same"),
-		tf.keras.layers.Dropout(.1),
-		ResidueConv2D(64, 5, activation="relu", padding="same"),
-		tf.keras.layers.Dropout(.1),
-		ResidueConv2D(64, 5, activation="relu", padding="same"),
-		tf.keras.layers.Dropout(.1),
-		ResidueConv2D(64, 5, activation="relu", padding="same"),
-		tf.keras.layers.Dropout(.1),
-		ResidueConv2D(64, 5, activation="relu", padding="same"),
-		tf.keras.layers.Dropout(.1),
+		tf.keras.layers.Dense(256, activation="relu"),
+		tf.keras.layers.Dense(256, activation="relu"),
+		#tf.keras.layers.Reshape((16,16,1)),
+		#tf.keras.layers.Conv2DTranspose(16, 3, activation="relu", strides=(2,2), padding="same"),#8
+		#tf.keras.layers.Conv2DTranspose(16, 3, activation="relu", strides=(2,2), padding="same"),#16
+		#tf.keras.layers.Dropout(.1),
+		##ResidueConv2D(64, 5, activation="relu", padding="same"),
+		##tf.keras.layers.Dropout(.1),
+		#ResidueConv2D(64, 5, activation="relu", padding="same"),
+		#tf.keras.layers.Dropout(.1),
+		#ResidueConv2D(64, 5, activation="relu", padding="same"),
+		#tf.keras.layers.Dropout(.1),
+		#ResidueConv2D(64, 5, activation="relu", padding="same"),
+		#tf.keras.layers.Dropout(.1),
+		#ResidueConv2D(64, 5, activation="relu", padding="same"),
+		#tf.keras.layers.Dropout(.1),
+		##tf.keras.layers.Conv2DTranspose(16, 5, activation="relu", strides=(1,1), padding="same"),
 		#tf.keras.layers.Conv2DTranspose(16, 5, activation="relu", strides=(1,1), padding="same"),
-		tf.keras.layers.Conv2DTranspose(16, 5, activation="relu", strides=(1,1), padding="same"),
-		tf.keras.layers.Flatten(),
-		tf.keras.layers.Dropout(.3),
+		#tf.keras.layers.Flatten(),
+		#tf.keras.layers.Dropout(.3),
 		tf.keras.layers.BatchNormalization(),    
-		tf.keras.layers.Dense(6, activation="tanh",  kernel_regularizer=l2, kernel_initializer=kinit),
+		tf.keras.layers.Dense(6, activation="linear",  kernel_regularizer=l2, kernel_initializer=kinit),
 	]
 	
 	y0=x0
@@ -796,7 +894,7 @@ def eval_model(gen_model, options):
 	imgs=[]
 	xfs=[]
 	symmetry=Symmetries.get(options.sym)
-	xfs=symmetry.gen_orientations("eman", {"delta":5})
+	xfs=symmetry.gen_orientations("eman", {"delta":4})
 	xfs=[x.get_params("eman") for x in xfs]
 	nxf=len(xfs)
 	n=7-(nxf-1)%8
@@ -1043,6 +1141,9 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, imsk, option
 	wts=encode_model.trainable_variables + decode_model.trainable_variables
 	if options.anchor:
 		wts=wts[:-1]
+		
+	for w in wts:
+		print(w.shape)
 	nbatch=0
 	for t in trainset: nbatch+=1
 	
@@ -1079,11 +1180,13 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, imsk, option
 				if options.rigidbody:
 					pout=rotpts(p0[:,:,:3], pout, imsk) 
 					pout=tf.concat([pout, p0[:,:,3:]], axis=2)
+					
+				else:
+					## mask selected rows
+					pout=pout*imsk[None,:,None]+p0*(1-imsk[None,:,None]) 
+				
 				
 				pout=pout*pas+p0*(1-pas)
-				
-				## mask selected rows
-				pout=pout*imsk[None,:,None]+p0*(1-imsk[None,:,None]) 
 				
 				## finally generate images and calculate frc
 				imgs_cpx=pts2img(pout, xf)
@@ -1126,6 +1229,38 @@ def calc_conf(encode_model, allgrds, bsz=1000):
 	mid=np.concatenate(mid, axis=0)
 	return mid
 	
+def make_mask_gmm(selgauss, pts):
+	if selgauss==None:
+		imsk=tf.zeros(len(pts), dtype=floattype)+1
+		return imsk
+		
+	try: 
+		msk=EMData(selgauss)
+		selmsk=True
+	except:
+		selmsk=False
+		
+	if selmsk:
+		## read selected Gaussian from mask file
+		m=msk.numpy().copy()
+		p=pts[:,:3].copy()
+		p=p[:,::-1]
+		p[:,:2]*=-1
+		p=(p+.5)*msk["nx"]
+
+		o=np.round(p).astype(int)
+		v=m[o[:,0], o[:,1], o[:,2]]
+		imsk=tf.constant(v.astype(floattype))
+	
+	else:
+		## read from a list of points starting from 1
+		i=np.loadtxt(selgauss).astype(int).flatten()-1
+		
+		m=np.zeros(len(pts), dtype=floattype)
+		m[i]=1
+		imsk=tf.constant(m)
+	
+	return imsk
 
 def main():
 	
@@ -1155,14 +1290,13 @@ def main():
 	parser.add_argument("--ptclsin", type=str,help="particles input for alignment", default="")
 	parser.add_argument("--ptclsout", type=str,help="aligned particle output", default="")
 	parser.add_argument("--learnrate", type=float,help="learning rate for model training only. Default is 1e-5. ", default=1e-5)
-	#parser.add_argument("--sigmareg", type=float,help="regularizer for the sigma of gaussian width. Larger value means all Gaussian functions will have essentially the same width. Smaller value may help compensating local resolution difference.", default=.5)
-	#parser.add_argument("--modelreg", type=float,help="regularizer for for Gaussian positions based on the starting model, ie the result will be biased towards the starting model when training the decoder (0-1 typ). Default 0", default=0)
-	#parser.add_argument("--ampreg", type=float,help="regularizer for the Gaussian amplitudes in the first 1/2 of the iterations. Large values will encourage all Gaussians to have similar amplitudes. default = 0", default=0)
+	
 	parser.add_argument("--niter", type=int,help="number of iterations", default=10)
 	parser.add_argument("--npts", type=int,help="number of points to initialize. ", default=-1)
 	parser.add_argument("--batchsz", type=int,help="batch size", default=32)
 	parser.add_argument("--maxboxsz", type=int,help="maximum fourier box size to use. 2 x target Fourier radius. ", default=64)
 	parser.add_argument("--maxres", type=float,help="maximum resolution. will overwrite maxboxsz. ", default=-1)
+	parser.add_argument("--maxgradres", type=float,help="maximum resolution for gradient. ", default=-1)
 	parser.add_argument("--minres", type=float,help="minimum resolution. ", default=500)
 	parser.add_argument("--trainmodel", action="store_true", default=False ,help="align particles.")
 	parser.add_argument("--align", action="store_true", default=False ,help="align particles.")
@@ -1181,7 +1315,7 @@ def main():
 	#parser.add_argument("--mask", type=str,help="remove points outside mask", default="")
 	parser.add_argument("--anchor", type=str,help="use a smaller model as anchor points for heterogeneity training.", default="")
 	parser.add_argument("--rigidbody", action="store_true", default=False ,help="Consider rigid body movement for heterogeneity analysis. Require --selgauss")
-	parser.add_argument("--selgauss", type=str,help="provide a text file of the indices of gaussian that are allowed to move", default="")
+	parser.add_argument("--selgauss", type=str,help="provide a text file of the indices of gaussian that are allowed to move", default=None)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--bond", type=str,help="provide a text file of the indices of bonds between points", default=None)
 	parser.add_argument("--useangle", action="store_true",help="use angle constraints as well when --bond is provided. ", default=False)
@@ -1202,7 +1336,13 @@ def main():
 	if options.model:
 		if options.model.endswith(".pdb"):
 			print("Generating Gaussian model from pdb...")
-			p=pdb2numpy(options.model)
+			p=pdb2numpy(options.model, allatom=True)
+			if options.npts>0:
+				from sklearn.cluster import KMeans
+				km=KMeans(options.npts,max_iter=30)
+				km.fit(p)
+				p=km.cluster_centers_
+			
 			pts=np.zeros((len(p),5))
 			e=EMData(options.ptclsin, 0, True)
 			#sz=e["ny"]
@@ -1315,33 +1455,8 @@ def main():
 	##   used both for align and heterg
 	imsk=tf.zeros(npt, dtype=floattype)+1
 	if options.selgauss:
-		try: 
-			msk=EMData(options.selgauss)
-			selmsk=True
-		except:
-			selmsk=False
-			
-		if selmsk:
-			## read selected Gaussian from mask file
-			m=msk.numpy().copy()
-			p=pts[:,:3].copy()
-			p=p[:,::-1]
-			p[:,:2]*=-1
-			p=(p+.5)*msk["nx"]
-
-			o=np.round(p).astype(int)
-			v=m[o[:,0], o[:,1], o[:,2]]
-			imsk=tf.constant(v.astype(floattype))
+		options.selgauss=imsk=make_mask_gmm(options.selgauss, pts)
 		
-		else:
-			## read from a list of points starting from 1
-			i=np.loadtxt(options.selgauss).astype(int).flatten()-1
-			
-			m=np.zeros(npt, dtype=floattype)
-			m[i]=1
-			imsk=tf.constant(m)
-		
-		options.selgauss=imsk
 		print('selecting {:.0f} out of {} points'.format(np.sum(imsk), npt))
 		
 	#### Align particles using GMM
@@ -1390,7 +1505,22 @@ def main():
 			ppt=tf.constant(ppt[None,:,:].astype(floattype))
 			allscr, allgrds=calc_gradient(trainset, ppt, params, options )
 		else:
-			allscr, allgrds=calc_gradient(trainset, pts, params, options )
+			
+			agd=[]
+			if options.maxgradres>0:
+				mbx=ceil(raw_boxsz*raw_apix*2/options.maxgradres)//2*2
+			else: 
+				mbx=options.maxpx
+				
+			for mpx in [mbx//2, mbx]:
+				options.maxpx=mpx
+				allscr, ag=calc_gradient(trainset, pts, params, options )
+				agd.append(ag)
+				
+			allgrds=np.concatenate(agd, axis=2)
+			print("Gradient shape: ", allgrds.shape) 
+			agd=ag=None
+			#allscr, allgrds=calc_gradient(trainset, pts, params, options )
 		
 		print("Gradient shape: ", allgrds.shape) 
 		
@@ -1399,7 +1529,9 @@ def main():
 			encode_model=tf.keras.models.load_model(f"{options.encoderin}",compile=False,custom_objects={"ResidueConv2D":ResidueConv2D})
 		else:
 			if options.graphnet:
-				encode_model,midshape=build_encoder_graph(pts, options)
+				#encode_model,midshape=build_encoder_graph(pts, options)
+				encode_model=build_encoder(nout=options.nmid, conv=True,ninp=len(pts[0]))
+
 			else:
 				encode_model=build_encoder(nout=options.nmid, conv=options.conv,ninp=len(pts[0]))
 			
@@ -1416,7 +1548,7 @@ def main():
 			elif options.rigidbody:
 				decode_model=build_decoder_rigidbody(pts, ninp=options.nmid, foci=imsk)
 			elif options.graphnet:
-				decode_model=buid_decoder_graph(pts, midshape, options)
+				decode_model, declayers, ptpool=buid_decoder_graph(pts, options)
 			else:
 				decode_model=build_decoder(pts[0].numpy(), ninp=options.nmid, conv=options.conv,mid=options.ndense)
 		
@@ -1435,7 +1567,13 @@ def main():
 			trainset=trainset.batch(bsz)
 			
 			train_heterg(trainset, pts, encode_model, decode_model, params, imsk, options)
-			
+			if options.graphnet:
+				for k in range(2,5):
+					print(f"#####\n graph network include {k} layers")
+					decode_model, l, p=buid_decoder_graph(pts, options, existlayer=declayers, kk=k, ptpool=ptpool)
+					if k==4: options.niter*=2
+					train_heterg(trainset, pts, encode_model, decode_model, params, imsk, options)
+					
 			if options.decoderout!=None: 
 				if os.path.isfile(options.decoderout):
 					os.remove(options.decoderout)

@@ -466,7 +466,7 @@ def main():
 					j=cpl[k][1]
 					ptclxf=Transform({"type":"2d","alpha":cmxalpha[eo][0,j],"mirror":int(cmxmirror[eo][0,j]),"tx":cmxtx[eo][0,j],"ty":cmxty[eo][0,j]}).inverse()
 					clsxf=eulers[c]
-					lsx.write(eo+2*j,j,cptcl[eo],{"xform.projection":(ptclxf*clsxf)})
+					lsx.write(eo+2*j,j,cptcl[eo],{"xform.projection":(ptclxf*clsxf), "class":eo})
 		else: print("ERROR: currently only HDF or LST are supported for output of --extractorientptcl")
 		
 #		print(set(range(max(pts)+1))-pts)
@@ -540,7 +540,7 @@ def main():
 		ptclfsc = "ptclfsc_{}.txt".format(rfnnum)
 		# generate a projection for each particle so we can compare
 
-		pf = "ptclfsc_{}_projections.hdf".format(rfnnum)
+		pf = "ptclfsc_{}_projections.hdf:8".format(rfnnum)
 
 		if options.sym==None or len(options.sym)==0 : options.sym="c1"
 		try:

@@ -69,6 +69,7 @@ def main():
 	parser.add_argument("--automask3d", default=None, type=str,help="Default=auto. Specify as a processor, eg - mask.auto3d:threshold=1.1:radius=30:nshells=5:nshellsgauss=5." )
 	parser.add_argument("--mask", default=None, type=str,help="specify a density map file to use as mask. overwrites automask3d" )
 	#parser.add_argument("--automask3dtight", default=None, type=str,help="replace the mask_tight. only used when automask3d is specified" )
+	parser.add_argument("--masktight", default=None, type=str,help="Mask file for  mask_tight. only used when automask3d is specified" )
 	parser.add_argument("--mergelowres",type=float,default=-1,help="merge low resolution information of the two subset.")
 
 	parser.add_argument("--automask3d2", default=None, type=str,help="Default=None. Specify as a processor. This will be applied to the mask produced by the first automask." )
@@ -115,19 +116,6 @@ def main():
 	hdr=EMData(evenfile,0,1)
 	apix=hdr["apix_x"]
 	
-	if options.mergelowres>0:
-		even=EMData(evenfile,0)
-		odd=EMData(oddfile,0)
-		c=(even+odd)*0.5
-		rs=1./options.mergelowres
-		even.process_inplace("filter.highpass.tophat", {"cutoff_freq":rs})
-		odd.process_inplace("filter.highpass.tophat", {"cutoff_freq":rs})
-		c.process_inplace("filter.lowpass.tophat", {"cutoff_freq":rs})
-		even.add(c)
-		odd.add(c)
-		even.write_image(evenfile)
-		odd.write_image(oddfile)
-
 	# if not specified we use 3/4 Nyquist
 	if options.restarget<=0: 
 		options.restarget=apix*1.5
@@ -179,6 +167,20 @@ def main():
 	unmaskedfsc = "{path}fsc_unmasked_{itr:02d}.txt".format(path=path,itr=options.iter)
 	cmd="e2proc3d.py {evenfile} {unmaskedfsc} --calcfsc={oddfile}".format(unmaskedfsc=unmaskedfsc,evenfile=evenfile,oddfile=oddfile)
 	run(cmd)
+	
+	if options.mergelowres>0:
+		even=EMData(evenfile,0)
+		odd=EMData(oddfile,0)
+		c=(even+odd)*0.5
+		rs=1./options.mergelowres
+		even.process_inplace("filter.highpass.tophat", {"cutoff_freq":rs})
+		odd.process_inplace("filter.highpass.tophat", {"cutoff_freq":rs})
+		c.process_inplace("filter.lowpass.tophat", {"cutoff_freq":rs})
+		even.add(c)
+		odd.add(c)
+		even.write_image(evenfile)
+		odd.write_image(oddfile)
+	
 	
 	if options.sym.startswith("h"):
 		for eo in [evenfile, oddfile]:
@@ -348,9 +350,9 @@ def main():
 			except:pass
 			mask.write_compressed("{path}mask.hdf".format(path=path),0,8,erase=True)
 			
-			#if options.automask3dtight!=None:
+			if options.masktight!=None:
 				#amask3dtight=parsemodopt(options.automask3dtight)
-				#mask.process_inplace(amask3dtight[0],amask3dtight[1])
+				mask=EMData(options.masktight)
 
 #			mask.process_inplace("morph.erode.binary",{"k":2})
 			try: os.unlink(f"{path}mask_tight.hdf")

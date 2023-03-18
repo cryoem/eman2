@@ -393,7 +393,8 @@ class EMTomobox(QtWidgets.QMainWindow):
 		self.gbl.addWidget(self.bt_applyall, 6,0,1,2)
 		
 		self.box_display = QtWidgets.QComboBox()
-		self.box_display.addItem("References")
+		self.box_display.addItem("Good References")
+		self.box_display.addItem("Bad References")
 		self.box_display.addItem("Particles")
 		self.gbl.addWidget(self.box_display, 0,2,1,1)
 		
@@ -478,6 +479,11 @@ class EMTomobox(QtWidgets.QMainWindow):
 		self.boxshapes=BoxShapes(img=self.imgview, points=[] )
 		self.imgview.shapes = {0:self.boxshapes}
 
+		E2loadappwin("e2sptconvnet","main",self)
+		E2loadappwin("e2sptconvnet","positive",self.boxesviewer[1].qt_parent)
+		E2loadappwin("e2sptconvnet","negative",self.boxesviewer[0].qt_parent)
+		E2loadappwin("e2sptconvnet","particles",self.ptclviewer.qt_parent)
+
 		glEnable(GL_POINT_SMOOTH)
 		glEnable(GL_LINE_SMOOTH );
 		glEnable(GL_POLYGON_SMOOTH );
@@ -491,7 +497,20 @@ class EMTomobox(QtWidgets.QMainWindow):
 		self.update_list()
 		self.do_update()
 			
-	
+	def closeEvent(self,event):
+		print("Exiting")
+
+		E2saveappwin("e2sptconvnet","main",self)
+		E2saveappwin("e2sptconvnet","positive",self.boxesviewer[1].qt_parent)
+		E2saveappwin("e2sptconvnet","negative",self.boxesviewer[0].qt_parent)
+		E2saveappwin("e2sptconvnet","particles",self.ptclviewer.qt_parent)
+
+		self.boxesviewer[0].close()
+		self.boxesviewer[1].close()
+		self.ptclviewer.close()
+
+		event.accept()
+
 	def update_list(self):
 		#### update file list
 		files=natural_sort([os.path.join(self.path,f) for f in os.listdir(self.path)])
@@ -847,11 +866,12 @@ class EMTomobox(QtWidgets.QMainWindow):
 		if not event.button()&Qt.LeftButton:
 			return
 		
+		mode=self.box_display.currentText()
 		if  event.modifiers()&Qt.ShiftModifier:
 			### delete point
 			z=self.imgview.list_idx
 			pos=np.array([x,y,z])
-			mode=self.box_display.currentText()
+
 			if mode=="Particles":
 				pts=np.array([b["pos"] for b in self.ptclimages])
 			else:
@@ -874,9 +894,9 @@ class EMTomobox(QtWidgets.QMainWindow):
 			self.do_update()
 			
 		else:
-			#### hold control to add negative references
-			label=int(event.modifiers()&Qt.ControlModifier)
-			label=int(label==0)
+			#### Used to be based on holding control, but that didn't work on all platforms
+			if mode=="Bad References": label=0
+			else : label=1
 			self.add_reference(label, x, y)
 			self.do_update()
 		

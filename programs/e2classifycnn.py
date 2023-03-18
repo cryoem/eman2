@@ -14,6 +14,7 @@ from eman2_gui.emapplication import get_application, EMApp
 from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emimagemx import EMImageMXWidget
 from eman2_gui.emshape import EMShape
+from eman2_gui.embrowser import EMSliceParamDialog,makeOrthoProj
 
 def main():
 
@@ -129,6 +130,8 @@ class NNet:
 				result = self.model.train_on_batch(image, label)
 				cost.append(result)
 			print("iteration {}, cost {:.3f}".format(it, np.mean(cost)))
+		try: os.remove("nnet_classifycnn.h5")
+		except:pass
 		self.model.save("nnet_classifycnn.h5")
 		
 	def apply_network(self, imgs):
@@ -227,8 +230,33 @@ class EMPtclClassify(QtWidgets.QMainWindow):
 		self.nnet=None
 		self.trainset=[]
 		#self.nnetsize=96
+		e=EMData(options.setname, 0, True)
+		is3d=e["nz"]>1
 		
-		self.particles=EMData.read_images(options.setname)
+		if is3d:
+			nimg=EMUtil.get_image_count(options.setname)
+			self.secparm=EMSliceParamDialog(self,nimg)
+			ret=self.secparm.exec_()
+			print(ret)
+			
+			layers=self.secparm.wspinlayers.value()
+			center=self.secparm.wspincenter.value()
+			lowpass=float(self.secparm.wlelp.text())
+			highpass=float(self.secparm.wlehp.text())
+			self.particles=[]
+			for i in range(nimg):
+				first=e["nx"]/2+center-layers
+				ptcl=EMData(options.setname, i,False,Region(0,0,first, e["nx"], e["ny"], layers*2))
+				x=ptcl.process("misc.directional_sum",{"axis":"z"})
+				if lowpass>0 : x.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/lowpass})
+				if highpass>0 : x.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/highpass})
+				x.process_inplace("normalize.edgemean")
+				self.particles.append(x)
+				sys.stdout.write("\r{}/{} finished.".format(i, nimg))
+				sys.stdout.flush()
+			print()
+		else:
+			self.particles=EMData.read_images(options.setname)
 		self.boxsz=self.particles[0]["nx"]
 		
 		self.ptclviewer=EMImageMXWidget()
@@ -318,6 +346,7 @@ class EMPtclClassify(QtWidgets.QMainWindow):
 	def save_set(self):
 		fname=self.options.setname
 		oname=fname[:fname.rfind('.')]+"_good.lst"
+		oname2=fname[:fname.rfind('.')]+"_bad.lst"
 		thr=int(self.val_ptclthr.getval())
 		#print(oname, thr)
 		badi=self.sortidx[:thr]
@@ -326,14 +355,16 @@ class EMPtclClassify(QtWidgets.QMainWindow):
 			os.remove(oname)
 		lst=LSXFile(fname, True)
 		lout=LSXFile(oname, False)
+		lout2=LSXFile(oname2, False)
 		nn=lst.n
 		for i in range(nn):
-			if i in badi:
-				continue
 			l=lst.read(i)
-			lout.write(-1, l[0], l[1], l[2])
+			if i in badi:
+				lout2.write(-1, l[0], l[1], l[2])
+			else:
+				lout.write(-1, l[0], l[1], l[2])
 			
-		lst=lout=None
+		lst=lout=lout2=None
 		print("{} particles written to {}".format(nn-thr, oname))
 		
 	def load_nnet(self):

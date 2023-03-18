@@ -149,6 +149,15 @@ class GUIEvalImage(QtWidgets.QWidget):
 		self.xpos2=(0,10)
 #		self.db = db_open_dict('bdb:mgquality')
 
+		js=js_open_dict("info/project.json")
+
+		if voltage is None: voltage=300.0
+		if cs is None: cs=2.7
+		if ac is None: ac=10.0
+		if apix is None:
+			apix=float(js.getdefault("global.apix",1.0))
+			print("Check A/pix!")
+
 		self.defaultvoltage=voltage
 		self.defaultapix=apix
 		self.defaultcs=cs
@@ -187,7 +196,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 #				if parms==None : raise Exception
 			except:
 				ctf = EMAN2Ctf()
-				ctf.from_dict({'defocus':0.0,'dfdiff':0.0,'dfang':0.0,'bfactor':200.0,'ampcont':self.defaultac,'voltage':0,'cs':4.1,'apix':1.0,'dsbg':-1})	# voltage zero here to trigger initialization
+				ctf.from_dict({'defocus':0.0,'dfdiff':0.0,'dfang':0.0,'bfactor':self.constbfactor,'ampcont':self.defaultac,'voltage':self.defaultvoltage,'cs':self.defaultcs,'apix':self.defaultapix,'dsbg':-1})	# voltage zero here to trigger initialization
 #				if self.defaultvoltage!=None : ctf.voltage=self.defaultvoltage		# default initialization is later! this screws it up
 #				if self.defaultcs!=None : ctf.cs=self.defaultcs
 #				if self.defaultapix!=None : ctf.apix=self.defaultapix
@@ -308,6 +317,11 @@ class GUIEvalImage(QtWidgets.QWidget):
 		self.brefit=QtWidgets.QPushButton("Refit")
 		self.gbl.addWidget(self.brefit,7,2)
 
+		self.bfilter=QtWidgets.QPushButton("Filt Disp")
+		self.bfilter.setToolTip("Filter micrograph to enchance particles (display only)")
+		self.bfilter.setCheckable(True)
+		self.gbl.addWidget(self.bfilter,7,3)
+
 		self.cbgadj=CheckBox(None,"CTF BG Adj",1)
 		self.gbl.addWidget(self.cbgadj,10,3)
 
@@ -361,6 +375,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 
 		self.bimport.clicked[bool].connect(self.doImport)
 		self.brefit.clicked[bool].connect(self.doRefit)
+		self.bfilter.clicked[bool].connect(self.filterToggle)
 		self.cbgadj.valueChanged.connect(self.bgAdj)
 		self.sdefocus.valueChanged.connect(self.newCTF)
 		self.sbfactor.valueChanged.connect(self.newCTF)
@@ -417,9 +432,9 @@ class GUIEvalImage(QtWidgets.QWidget):
 			q=int(event.key())-Qt.Key_0
 			self.squality.setValue(q)
 		elif event.key() == Qt.Key_Left:
-			self.sdefocus.setValue(self.sdefocus.getValue()-0.03)
+			self.sdefocus.setValue(self.sdefocus.getValue()-0.01)
 		elif event.key() == Qt.Key_Right:
-			self.sdefocus.setValue(self.sdefocus.getValue()+0.03)
+			self.sdefocus.setValue(self.sdefocus.getValue()+0.01)
 		elif event.key()==Qt.Key_I :
 			self.doImport()
 		elif event.key()==Qt.Key_U :
@@ -718,6 +733,25 @@ class GUIEvalImage(QtWidgets.QWidget):
 # 		curtag=item_name(str(self.setlist.item(self.curset).text()))
 # 		db_fparms[curtag]=self.parms[self.curset]
 
+	def filterToggle(self,x=None):
+		if self.bfilter.isChecked() :
+			nx=self.data["nx"]
+			ny=self.data["ny"]
+			apix=self.data["apix_x"]
+			boxsize=good_size(200.0/apix)	# "typical" 200 A particle size
+			gs=good_size(max(nx//2,ny//2))
+			fm=self.data.get_clip(Region(nx/2-gs,ny/2-gs,gs*2,gs*2)).process("math.meanshrink",{"n":2})
+			fm.process_inplace("filter.highpass.gauss",{"cutoff_freq":0.01})
+			fm.process_inplace("mask.decayedge2d",{"width":50})
+			fm.add(-fm["minimum"])
+			fm.process_inplace("filter.lowpass.tophat",{"cutoff_freq":0.05})
+			fm.process_inplace("math.squared")
+			fm.process_inplace("filter.lowpass.gauss",{"cutoff_freq":10.0/(boxsize*apix)})		# 10 oscillations/box
+			fm.process_inplace("xform.scale",{"scale":2.0,"clip":gs*2})
+			fm=fm.get_clip(Region(gs-nx/2,gs-ny/2,nx,ny))	# rembmer the image has been shrunk by 2 here!
+			self.wimage.set_data(fm)
+		else: self.wimage.set_data(self.data)
+
 	def newSet(self,val):
 		"called when a new data set is selected from the list"
 
@@ -764,7 +798,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 
 
 		if self.defaultapix!=None : self.data["apix_x"]=self.defaultapix
-		self.wimage.set_data(self.data)
+		self.filterToggle()		# this displays the actual image
 		self.curfilename = str(self.setlist.item(val).text())
 
 		ctf=self.parms[val][1]

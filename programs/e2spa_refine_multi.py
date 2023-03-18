@@ -96,6 +96,19 @@ def main():
 				
 		
 		sfile="{}/score_{:02d}.txt".format(path, itr)
+		
+		### for visual only
+		if options.mask:
+			mask=EMData(options.mask)
+			avgr=Averagers.get("mean")
+			rfs=[EMData(r) for r in refs]
+			for r in rfs:
+				avgr.add_image(r)
+			avg=avgr.finish()		
+			for ic,rf in enumerate(rfs):
+				r=rf*mask + avg*(1-mask)
+				r.write_image(f"{path}/aliref_{ic:02d}.hdf")
+				
 		run("e2spa_classify.py {rf} --ptclin {inp} --output {out} --maxres {rsx:.1f} --minres {rsn:.1f} --parallel {par} {etc}".format(rf=' '.join(refs), inp=pinput, out=sfile, rsx=options.maxres, rsn=options.minres, par=options.parallel, etc=etc))
 				
 		scr=np.loadtxt(sfile)

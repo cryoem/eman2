@@ -2,6 +2,7 @@
 # Muyuan Chen 2021-03
 from EMAN2 import *
 import numpy as np
+import time
 
 def main():
 	
@@ -14,6 +15,8 @@ def main():
 	
 	One major difference of the new protocol is that the program now can model the localized 2D particle motion by considering the motion trajectory of each particle along with its neighbors. For each particle, --smoothN controls how many of its neighbors are considered to model the local motion, and --smooth controls how much the neighboring particles are weighted during the alignment. The weight of neighboring particles decays in a Gaussian form based on the distance to the center particle of consideration. --smooth=0 means only the center particle is considered, and the program should perform in a similar way as the original subtilt refinement.
 	
+	Strongly suggest running on a single node/computer with --threads and --m3dthreads, as there are sometimes issues with --parallel thread in this program.
+
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--ptcls", type=str,help="3d particle input", default=None,guitype='filebox', browser="EMSetsTable(withmodal=True,multiselect=False)", row=0, col=0,rowspan=1, colspan=2, mode="model")
@@ -134,8 +137,9 @@ def main():
 		opt=""
 		if options.goldstandard==True and options.goldcontinue==False:
 			refs={"even":options.ref, "odd":options.ref}
-			opt+="--process filter.lowpass.gauss:cutoff_freq={r:.4f} --process filter.lowpass.randomphase:cutoff_freq={r:.4f}".format(r=1./res)
-			
+#			opt+="--process filter.lowpass.gauss:cutoff_freq={r:.4f} --process filter.lowpass.randomphase:cutoff_freq={r:.4f}".format(r=1./res)
+			opt+="--process filter.lowpass.tophat:cutoff_freq={r:.4f}".format(r=1./res)
+
 		else:	
 			if options.goldcontinue:
 				refs={eo:options.ref[:-4]+f"_{eo}.hdf" for eo in ["even","odd"]}
@@ -193,6 +197,7 @@ def main():
 	#### now start the actual refinement loop
 	#for ii,itype in enumerate(iters):
 	for ii in range(startiter, len(iters)):
+		starttime=time.time()
 		itype=iters[ii]
 		itr=ii+1
 		ref=f"{path}/threed_{ii:02d}.hdf"
@@ -301,7 +306,7 @@ def main():
 			
 		for eo in ["even", "odd"]:
 			run(f"e2spa_make3d.py --input {path}/aliptcls2d_{itr:02d}.lst --output {path}/threed_{itr:02d}_{eo}.hdf --keep {options.keep} --clsid {eo} --outsize {boxsize} --sym {options.sym} {m3dpar}")
-			run(f"e2proc3d.py {path}/threed_{itr:02d}_{eo}.hdf {path}/threed_raw_{eo}.hdf")
+			run(f"e2proc3d.py {path}/threed_{itr:02d}_{eo}.hdf {path}/threed_raw_{eo}.hdf --compressbits 12")
 		
 		#### only do SSNR weighting for the last iteration to avoid potential model bias
 		##   simply run make3d a second time using the previous map as reference.
@@ -323,6 +328,9 @@ def main():
 				refeo=f"{path}/threed_{ii:02d}_{eo}.hdf"
 				os.unlink(refeo)
 				os.rename(tmp,refeo)
+
+		elapsed=int(time.time()-starttime)
+		print(f"Iteration {ii} complete, {elapsed//3600:d}:{(elapsed%3600)//60:02d}:{elapsed%60:02d}")
 	
 	E2end(logid)
 	

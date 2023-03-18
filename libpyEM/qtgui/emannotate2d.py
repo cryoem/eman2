@@ -59,6 +59,7 @@ from eman2_gui.emimageutil import EMMetaDataTable
 from eman2_gui.embrowser import EMBrowserWidget
 from eman2_gui.empmwidgets import *
 from eman2_gui.emanimationutil import SingleValueIncrementAnimation, LineAnimation
+import json
 
 import platform
 
@@ -102,6 +103,9 @@ class EMAnnotate2DWidget(EMGLWidget):
 		self.enable_clip = False
 		EMAnnotate2DWidget.allim[self] = 0
 
+		self.jsonfile=info_name(self.full_data)
+		#info=js_open_dict(self.jsonfile)
+
 		self.init_gl_flag = True
 		self.oldsize=(-1,-1)
 		self.scale=1.0				# Scale factor for display
@@ -118,7 +122,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 		self.rmousedrag=None		# coordinates during a right-drag operation
 		self.mouse_mode_dict = {0:"emit", 1:"emit", 2:"emit", 3:"probe", 4:"measure", 5:"draw", 6:"emit", 7:"emit",8:"seg"}
 		self.mouse_mode = 8         # current mouse mode as selected by the inspector
-		self.mag = 1.0				# magnification factor
+		self.mag = 1.1				# magnification factor
 		self.invmag = 1.0/self.mag	# inverse magnification factor
 
 		self.shapes={}				# dictionary of shapes to draw, see add_shapes
@@ -163,6 +167,8 @@ class EMAnnotate2DWidget(EMGLWidget):
 		self.display_shapes = True # A flag that can be used to turn of the display of shapes - useful to e2boxer
 
 		self.circle_dl = None # used for a circle list, for displaying circled particles, for example
+		#self.xform = Transform({"type":"eman","alt":self.alt,"az":self.az,"tx":self.full_data["nx"]//2,"ty":self.full_data["ny"]//2,"tz":self.full_data["nz"]//2+self.zpos})
+		self.xform = Transform()
 
 		self.setAcceptDrops(True) #TODO: figure out the purpose of this (moved) line of code
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"single_image.png")) #TODO: figure out why this icon doesn't work
@@ -172,13 +178,21 @@ class EMAnnotate2DWidget(EMGLWidget):
 				self.set_data(image, annotation)
 			else:
 				self.set_data(image, None)
+		#print("Full data nz",self.full_data["nz"])
+
 
 			#print("data", (self.data))
 			#print("ann", (self.annotation))
 			#print("full data", (self.full_data))
 			#print("full ann", (self.full_annotation))
 
-	def get_annotation(self) : return self.full_annotation
+	def get_annotation(self) :
+		if self.annotation is None:
+			print("Annotation is", self.annotation)
+		return self.annotation
+		#return self.full_annotation
+	def get_full_annotation(self):
+		return self.full_annotation
 
 	def initializeGL(self):
 		GL.glClearColor(0,0,0,0)
@@ -275,11 +289,22 @@ class EMAnnotate2DWidget(EMGLWidget):
 		print("Mouse mode is: ",mode_num,"which is", self.mouse_mode_dict[self.mouse_mode])
 		self.del_shapes()
 
+	def set_xform(self,tx,ty,tz,alt,az):
+		self.xform = Transform({"type":"eman","alt":alt,"az":az,"tx":tx,"ty":ty,"tz":tz})
+		print("New xform", self.xform)
+		#self.signal_set_scale.emit(1)
+		self.inspector_update()
+		self.force_display_update()
+		self.updateGL()
+
+
+
 	def get_minden(self): return self.minden
 	def get_maxden(self): return self.maxden
 	def get_alt(self): return self.alt
 	def get_az(self): return self.az
 	def get_shapes(self): return self.shapes
+	def get_xform(self): return self.xform
 
 	def coords_within_image_bounds(self,coords):
 		x = coords[0]
@@ -310,18 +335,24 @@ class EMAnnotate2DWidget(EMGLWidget):
 		self.updateGL()
 
 	def set_alt(self,val):
+		#self.set_clip()
 		self.alt=val
-		self.force_display_update()
+		#self.set_xform(self.nx//2,self.ny//2,self.nz//2+self.zpos,self.alt,self.az)
+		self.force_display_update(set_clip=True)
 		self.updateGL()
 
 	def set_az(self,val):
+		#self.set_clip()
 		self.az=val
-		self.force_display_update()
+		#self.set_xform(self.nx//2,self.ny//2,self.nz//2+self.zpos,self.alt,self.az)
+		self.force_display_update(set_clip=True)
 		self.updateGL()
 
 	def set_n(self,val):
-		self.zpos = int(val)
-		self.force_display_update()
+		#self.set_clip()
+		self.zpos = (val)
+		#self.set_xform(self.nx//2,self.ny//2,self.nz//2+self.zpos,self.alt,self.az)
+		self.force_display_update(set_clip=True)
 		self.updateGL()
 
 	def set_file_name(self,file_name):
@@ -355,7 +386,13 @@ class EMAnnotate2DWidget(EMGLWidget):
 
 	def get_data(self):
 
+		#return self.full_data
+		if self.data is None:
+			print("Data is None")
 		return self.data
+
+	def get_full_data(self):
+		return self.full_data
 
 	def set_data(self,data,annotation=None,file_name="",retain_current_settings=True, keepcontrast=False):
 		"""You may pass a single 2D image or a single 3-D volume
@@ -381,10 +418,23 @@ class EMAnnotate2DWidget(EMGLWidget):
 			raise Exception("EMAnnotate2D only supports a single 2-D or 3-D image")
 
 		if data.get_sizes()!=annotation.get_sizes() :
+			print("EMAnnotate2D requires data and annotation to be the same size")
 			raise Exception("EMAnnotate2D requires data and annotation to be the same size")
 
 		self.full_data=data
 		self.full_annotation=annotation
+		self.nx = self.full_annotation["nx"]
+		self.ny = self.full_annotation["ny"]
+		self.nz = self.full_annotation["nz"]
+		#TOREAD
+		#self.xform = Transform({"type":"eman","alt":self.alt,"az":self.az,"tx":self.full_data["nx"]//2,"ty":self.full_data["ny"]//2,"tz":self.full_data["nz"]//2+self.zpos})
+		self.set_xform(self.nx//2,self.ny//2,self.nz//2+self.zpos,self.alt,self.az)
+		#self.data = self.full_data.copy_head()
+		#self.annotation = self.full_annotation.copy_head()
+		#self.data=self.full_data.get_clip(Region(0,0,0,self.full_data["nx"],self.full_data["ny"],1))
+		#self.annotation=self.full_annotation.get_clip(Region(0,0,0,self.full_data["nx"],self.full_data["ny"],1))
+		print("Set initial data")
+
 
 
 		self.image_change_count = 0
@@ -401,6 +451,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 
 				self.resize(min(x,mx),min(y,my))
 		except: pass
+
 
 		self.inspector_update()
 		self.force_display_update()
@@ -529,6 +580,8 @@ class EMAnnotate2DWidget(EMGLWidget):
 			self.origin=(old_div(newscale,self.scale)*(old_div(self.width(),2.0)+self.origin[0])-old_div(self.width(),2.0),old_div(newscale,self.scale)*(old_div(self.height(),2.0)+self.origin[1])-old_div(self.height(),2.0))
 			self.scale=newscale
 			if not quiet : self.signal_set_scale.emit(newscale)
+			self.inspector_update()
+			self.force_display_update()
 			self.updateGL()
 		except: pass
 
@@ -541,20 +594,31 @@ class EMAnnotate2DWidget(EMGLWidget):
 		self.histogram=mode
 		self.updateGL()
 
-	def __set_display_image(self,val,alt,az):
-		if self.full_data["nz"]==1: return False
+	# def __set_display_image(self,val,alt,az):
+	#
+	# 	if self.full_data["nz"]==1:
+	# 		print("Full data nz = 1")
+	#
+	# 		return False
+	#
+	#
+	# 	# faster, so do it this way when not tilted
+	# 	if alt==0 and az==0 :
+	# 		self.set_clip()
+	# 		print("Setting clip in the alt az 0")
+	# 		self.data=self.full_data.get_clip(Region(0,0,val,self.full_data["nx"],self.full_data["ny"],1))
+	# 		#print("Set data from set display")
+	# 		#self.data=self.full_data
+	# 		self.annotation=self.full_annotation.get_clip(Region(0,0,val,self.full_data["nx"],self.full_data["ny"],1))
+	# 		#self.annotation=self.full_annotation
+	# 		return True
+	#
+	# 	return False
 
-		# faster, so do it this way when not tilted
-		if alt==0 and az==0 :
-			self.data=self.full_data.get_clip(Region(0,0,val,self.full_data["nx"],self.full_data["ny"],1))
-			self.annotation=self.full_annotation.get_clip(Region(0,0,val,self.full_data["nx"],self.full_data["ny"],1))
-			return True
-
-
-
-		return False
-
-	def force_display_update(self):
+	def force_display_update(self,set_clip=False):
+		if set_clip:
+			self.set_clip()
+		#self.__set_display_image(zcent+self.zpos,self.az, self.alt)
 		self.display_states = []
 
 	def display_state_changed(self):
@@ -616,9 +680,25 @@ class EMAnnotate2DWidget(EMGLWidget):
 		x0  = 1 + int(old_div(self.origin[0], self.scale))
 		y0  = 1 + int(old_div(self.origin[1], self.scale))
 
-		self.data=self.full_data.get_rotated_clip(Transform({"type":"eman","alt":self.alt,"az":self.az,"tx":self.full_data["nx"]//2,"ty":self.full_data["ny"]//2,"tz":self.full_data["nz"]//2+self.zpos}),(self.full_data["nx"],self.full_data["ny"],1))
-		self.annotation=self.full_annotation.get_rotated_clip(Transform({"type":"eman","alt":self.alt,"az":self.az,"tx":self.full_data["nx"]//2,"ty":self.full_data["ny"]//2,"tz":self.full_data["nz"]//2+self.zpos}),(self.full_data["nx"],self.full_data["ny"],1))
+		#print("Zpos:",self.zpos)
 
+
+		self.xform=Transform({"type":"eman","alt":self.alt,"az":self.az,"tx":self.full_data["nx"]//2,"ty":self.full_data["ny"]//2,"tz":self.full_data["nz"]//2+self.zpos})
+		#print(self.xform)
+
+		#print("Called setting clip")
+		#self.set_xform(self.nx//2,self.ny//2,self.nz//2+self.zpos,self.alt,self.az)
+		#self.xform=Transform({"type":"eman","alt":self.alt,"az":self.az,"tx":self.full_data["nx"]//2,"ty":self.full_data["ny"]//2,"tz":self.full_data["nz"]//2+self.zpos})
+
+		#self.data=self.full_data.get_rotated_clip(Transform({"type":"eman","alt":self.alt,"az":self.az,"tx":self.full_data["nx"]//2,"ty":self.full_data["ny"]//2,"tz":self.full_data["nz"]//2+self.zpos}),(self.full_data["nx"],self.full_data["ny"],1))
+		self.data=self.full_data.get_rotated_clip(self.xform,(self.full_data["nx"],self.full_data["ny"],1))
+
+		#self.xform = Transform({"type":"eman","alt":self.alt,"az":self.az})
+		#self.data=self.full_data.process("xform",{"transform":self.xform}).get_clip(Region(0,0,self.zpos,self.full_data["nx"],self.full_data["ny"],1))
+		#self.annotation=self.full_annotation.get_rotated_clip(Transform({"type":"eman","alt":self.alt,"az":self.az,"tx":self.full_data["nx"]//2,"ty":self.full_data["ny"]//2,"tz":self.full_data["nz"]//2+self.zpos}),(self.full_data["nx"],self.full_data["ny"],1))
+		self.annotation=self.full_annotation.get_rotated_clip(self.xform,(self.full_data["nx"],self.full_data["ny"],1),0)
+		#self.annotation=self.full_annotation.process("xform",{"transform":self.xform}).get_clip(Region(0,0,self.zpos,self.full_data["nx"],self.full_data["ny"],1))
+		#print("Done getting clip")
 		#print(self.full_data,self.full_annotation,self.alt,self.az,self.zpos,x0,y0,wdt,hgt,wid)
 
 		####TOREAD
@@ -630,6 +710,15 @@ class EMAnnotate2DWidget(EMGLWidget):
 							self.scale, pixden[0], pixden[1],
 							min_val, max_val, flags))
 		return return_data
+
+	def set_clip(self):
+		#self.xform=Transform({"type":"eman","alt":self.alt,"az":self.az,"tx":self.full_data["nx"]//2,"ty":self.full_data["ny"]//2,"tz":self.full_data["nz"]//2+self.zpos})
+
+		#print("Setting clip")
+		if self.annotation:
+			self.full_annotation.set_rotated_clip(self.xform,self.annotation)
+		if self.data:
+			self.full_data.set_rotated_clip(self.xform,self.data)
 
 	def render_bitmap_old(self):   # no longer used - use new render_bitmap
 		"""This will render the current bitmap into a string and return a tuple with 1 or 3 (grey vs RGB), width, height, and the raw data string"""
@@ -1283,7 +1372,6 @@ class EMAnnotate2DWidget(EMGLWidget):
 						self.drawr2=int(float(inspector.dtpen2.text()))
 						self.drawv2=float(inspector.dtpenv2.text())
 						self.get_data().process_inplace("mask.paint",{"x":lc[0],"y":lc[1],"z":0,"r1":self.drawr1,"v1":self.drawv1,"r2":self.drawr2,"v2":self.drawv2})
-						#self.get_annotation().process_inplace("mask.paint",{"x":lc[0],"y":lc[1],"z":0,"r1":self.drawr1,"v1":self.drawv1,"r2":self.drawr2,"v2":self.drawv2})
 						self.force_display_update()
 						self.updateGL()
 			elif self.mouse_mode_dict[self.mouse_mode] =="seg":
@@ -1295,18 +1383,23 @@ class EMAnnotate2DWidget(EMGLWidget):
 					if inspector:
 						current_class = inspector.seg_tab.get_current_class()
 						pen_width = inspector.seg_tab.get_pen_width()
-						print("Seg:", lc)
-						#NEED TO DO SOMETHING HERE???
-						#print(self.get_annotation()[int(lc[0]),int(lc[1])])
+						#print("Data xsize:",self.get_data().get_xsize())
+						#print("Seg:", lc)
+						# try:
+						# 	print("D&A", self.data.get_sizes(), self.annotation.get_sizes())
+						# except:
+						# 	print("D&A are None")
+						print(self.get_annotation()[int(lc[0]),int(lc[1])])
 						#print(self.get_annotation())
 						#a = to_numpy(self.get_annotation())
 						#for i in range(int(lc[0])-20,int(lc[0])+20):
 							#for j in range(int(lc[1])-20,int(lc[1])+20):
 
 						#self.get_annotation().process_inplace("mask.sharp",{"dx":lc[0],"dy":lc[1],"dz":0,"inner_radius":0,"outer_radius":10,"value":2})
+						#print("Zpos:", self.zpos)
 						self.get_annotation().process_inplace("mask.paint",{"x":lc[0],"y":lc[1],"z":0,"r1":pen_width,"v1":current_class,"r2":pen_width,"v2":0})
 						#print("Turn point", int(lc[0]),int(lc[1]),"to 2")
-						self.force_display_update()
+						self.force_display_update(set_clip=True)
 						self.updateGL()
 
 
@@ -1382,11 +1475,10 @@ class EMAnnotate2DWidget(EMGLWidget):
 						#a = to_numpy(self.get_annotation())
 						#for i in range(int(lc[0])-20,int(lc[0])+20):
 							#for j in range(int(lc[1])-20,int(lc[1])+20):
-
 						#self.get_annotation().process_inplace("mask.sharp",{"dx":lc[0],"dy":lc[1],"dz":0,"inner_radius":0,"outer_radius":10,"value":2})
 					self.get_annotation().process_inplace("mask.paint",{"x":lc[0],"y":lc[1],"z":0,"r1":pen_width,"v1":current_class,"r2":pen_width,"v2":0})
 						#print("Turn point", int(lc[0]),int(lc[1]),"to 2")
-					self.force_display_update()
+					self.force_display_update(set_clip=1)
 					self.updateGL()
 
 
@@ -1409,7 +1501,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 					self.updateGL()
 			elif self.mouse_mode_dict[self.mouse_mode] == "seg":
 				if event.button()==Qt.LeftButton:
-					self.force_display_update()
+					self.force_display_update(set_clip=1)
 					self.updateGL()
 
 	def wheelEvent(self, event):
@@ -1418,7 +1510,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 			return
 		print(event.angleDelta().y())
 		if event.angleDelta().y() > 0:
-			self.set_scale( self.scale * self.mag )
+			self.set_scale(self.scale * self.mag )
 			print("Scale", self.scale,"Mag", self.mag)
 		elif event.angleDelta().y() < 0:
 			self.set_scale(self.scale * self.invmag )
@@ -1426,6 +1518,8 @@ class EMAnnotate2DWidget(EMGLWidget):
 		if self.inspector: self.inspector.set_scale(self.scale)
 
 
+	def get_z_cent(self):
+		return (self.get_full_data()["nz"])//2
 
 	def mouseDoubleClickEvent(self,event):
 		return
@@ -1449,20 +1543,32 @@ class EMAnnotate2DWidget(EMGLWidget):
 			self.display_web_help("http://blake.bcm.edu/emanwiki/EMAN2/Programs/emimage2d")
 
 		elif event.key() == Qt.Key_Up:
-			if self.list_data != None:
-				self.increment_list_data(1)
+			if self.data != None:
+				if (self.zpos + self.get_z_cent()) < self.get_full_data()["nz"]-1:
+					self.zpos += 1
+					if self.inspector:
+						self.inspector.ns.setValue(self.zpos)
+				self.force_display_update()
 				self.updateGL()
+
 #			else:
 #				self.__key_mvt_animation(0,self.height()*.1)
-			self.signal_increment_list_data.emit(1)
+			#self.signal_increment_list_data.emit(1)
 
 		elif event.key() == Qt.Key_Down:
-			if self.list_data != None:
-				self.increment_list_data(-1)
+			#if self.list_data != None:
+				#self.increment_list_data(-1)
+			if self.data != None:
+				if (self.zpos + self.get_z_cent()) > 0:
+					self.zpos -= 1
+					if self.inspector:
+						self.inspector.ns.setValue(self.zpos)
+				self.force_display_update()
 				self.updateGL()
+
 #			else:
 #				self.__key_mvt_animation(0,-self.height()*.1)
-			self.signal_increment_list_data.emit(-1)
+			#self.signal_increment_list_data.emit(-1)
 
 		elif event.key() == Qt.Key_Right:
 			self.__key_mvt_animation(self.width()*.1,0)
@@ -1539,7 +1645,9 @@ class EMAnnotate2DWidget(EMGLWidget):
 		glNormal(0,0,1)
 		glEnable(GL_TEXTURE_2D)
 		n = self.full_data["nz"]
-		string = f"{self.zpos} ({n})"
+		pos = (n)//2 +self.zpos
+		#string = f"{self.zpos} ({n})"
+		string = f"Z: {round(pos,2)}"
 		bbox = self.font_renderer.bounding_box(string)
 		x_offset = width-(bbox[3]-bbox[0]) - 10
 		y_offset = 10
@@ -1897,23 +2005,30 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 		self.conts.setValue(1.0)
 		self.vbl.addWidget(self.conts)
 
-		self.alts = ValSlider(self,(.1,5.0),"Alt:")
+		self.alts = ValSlider(self,(.1,5.0),"Alt:",rounding=2)
 		self.alts.setObjectName("alt")
 		self.alts.setValue(self.target().get_alt())
 		self.vbl.addWidget(self.alts)
 
-		self.azs = ValSlider(self,(.1,5.0),"Az:")
+		self.azs = ValSlider(self,(.1,5.0),"Az:",rounding=2)
 		self.azs.setObjectName("az")
 		self.azs.setValue(self.target().get_az())
 		self.vbl.addWidget(self.azs)
 
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"eman.png"))
 
-		self.ns = ValSlider(self,label="N#:")
-		self.ns.setIntonly(True)
+		self.ns = ValSlider(self,label="zpos:",rounding=2)
+		zr = self.target().get_full_data()["nz"]*3//4
+		self.ns.setRange(-zr,zr)
+		#self.ns.setIntonly(True)
+		self.ns.setValue(0)
+
+
 		self.vbl.addWidget(self.ns)
 
-		self.ns.setValue(0)
+
+
+
 		self.stmoviebut.setEnabled(True)
 		self.stanimgif.setEnabled(True)
 
@@ -1942,13 +2057,21 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 		self.resize(400,440) # d.woolford thinks this is a good starting size as of Nov 2008 (especially on MAC)
 
 	def update_zrange(self):
-		nz=self.target().get_data()["nz"]
-		zr=nz*3//4		# approximate max z range with high tilt
-		self.ns.setRange(-zr,zr)
-		self.stminsb.setRange(-zr,zr)
-		self.stminsb.setValue(-nz)
-		self.stmaxsb.setRange(-zr,zr)
-		self.stmaxsb.setValue(nz)
+		if self.target().nz > 1:
+			zr=self.target().nz*3//4
+			#print(zr)		# approximate max z range with high tilt
+			self.ns.setRange(-zr,zr)
+			self.ns.setValue(0)
+			#self.ns.setRange(0,nz-1)
+			self.stminsb.setRange(-zr,zr)
+			self.stminsb.setValue(-zr)
+			self.stmaxsb.setRange(-zr,zr)
+			self.stmaxsb.setValue(zr)
+
+		# self.stminsb.setRange(-zr,zr)
+		# self.stminsb.setValue(-nz)
+		# self.stmaxsb.setRange(-zr,zr)
+		# self.stmaxsb.setValue(nz)
 
 	def do_pspec_single(self,ign):
 		"""Compute 1D power spectrum of single image and plot"""
@@ -2160,11 +2283,15 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 
 	def set_minden(self,value,quiet=1):
 		self.mins.setValue(value,quiet)
+
 	##TODO: Update set_scale to actually work
 	def set_scale(self,val):
 		if self.busy : return
+
 		self.busy=1
 		self.scale.setValue(val)
+		#print("Scale in set_scale", self.scale.value)
+
 		self.busy=0
 
 	def new_min(self,val):
@@ -2290,7 +2417,9 @@ class EMSegTab(QtWidgets.QWidget):
 
 		#self.colors = ['#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe', '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080', '#ffffff', '#000000']
 		self.colors = self.create_palette(256)
-		self.read_header(self.target.get_annotation())
+		self.read_header(self.target.get_full_annotation())
+
+
 
 		self.browser_ret = None
 		button_vbl = QtWidgets.QVBoxLayout()
@@ -2335,6 +2464,7 @@ class EMSegTab(QtWidgets.QWidget):
 		self.load_all_button.clicked[bool].connect(self.load_all)
 		self.save_all_button.clicked[bool].connect(self.save_all)
 		self.cb_group.buttonClicked[QtWidgets.QAbstractButton].connect(self.on_check_cb_group)
+		self.table_set.cellClicked[int,int].connect(self.on_table_set)
 
 
 
@@ -2371,14 +2501,27 @@ class EMSegTab(QtWidgets.QWidget):
 		#Return if class or eraser is selected
 		print(cb.text()+" is selected")
 		if cb.text() == "Eraser":
-			self.table_set.setEnabled(False)
+			if self.table_set.rowCount() == 0:
+				print("There are no annotation to erase")
+			else:
+				self.table_set.currentItem().setSelected(False)
 			for button in self.button_list:
 				button.setEnabled(False)
 
 		else:
 			self.table_set.setEnabled(True)
+			try:
+				self.table_set.item(0,1).setSelected(True)
+			except:
+				pass
 			for button in self.button_list:
 				button.setEnabled(True)
+
+	def on_table_set(self,row,col):
+		#print("Row", row, "Col", col)
+		self.classes_cb.setChecked(True)
+
+
 
 
 	def new_class(self):
@@ -2424,8 +2567,8 @@ class EMSegTab(QtWidgets.QWidget):
 			print("Remove class",sel.text(),"at row",row)
 			val = int(self.table_set.item(row,0).text())
 			self.table_set.removeRow(row)
-			self.target.get_annotation().process_inplace("threshold.rangetozero",{"maxval":(val+0.1),"minval":(val-0.1)})
-		self.target.force_display_update()
+			self.target.get_full_annotation().process_inplace("threshold.rangetozero",{"maxval":(val+0.1),"minval":(val-0.1)})
+		self.target.force_display_update(set_clip=False)
 		self.target.updateGL()
 		self.update_sets()
 
@@ -2458,22 +2601,23 @@ class EMSegTab(QtWidgets.QWidget):
 		if not ok : return
 		nums = []
 		names = []
-		annotation_out=self.target.get_annotation().copy_head()
+		annotation_out=self.target.get_full_annotation().copy_head()
 		annotation_out.to_zero()
 		for sel in sels:
 			#print(sel.text())
 			row = self.table_set.row(sel)
 			num = int(self.table_set.item(row,0).text())
 			if multiple_class:
-				annotation_out += num*(self.target.get_annotation().process("threshold.binaryrange",{"high":num+0.1,"low":num-0.1}))
+				annotation_out += num*(self.target.get_full_annotation().process("threshold.binaryrange",{"high":num+0.1,"low":num-0.1}))
 			else:
-				annotation_out += (self.target.get_annotation().process("threshold.binaryrange",{"high":num+0.1,"low":num-0.1}))
+				annotation_out += (self.target.get_full_annotation().process("threshold.binaryrange",{"high":num+0.1,"low":num-0.1}))
 			nums.append(num)
 			names.append(str(self.table_set.item(row,1).text()))
 		name_str=names[0]+""
-		for i in range(1,len(names)):
-			name_str = name_str + "," + names[i]
-		annotation_out["ann_name"] = name_str
+		#for i in range(1,len(names)):
+			#name_str = name_str + "," + names[i]
+		serialize_name = json.dumps(names, default=lambda a: "[%s,%s]" % (str(type(a)), a.pk))
+		annotation_out["ann_name"] = serialize_name
 		annotation_out["ann_num"] = nums
 		annotation_out.write_image(out_name)
 		print("Annotation is saved to", out_name)
@@ -2490,16 +2634,20 @@ class EMSegTab(QtWidgets.QWidget):
 		#Method to actually load an annotation file to append on the current annotation.
 		#Helpful when user want to display multiple annotation on tomograms. May looks weird if the annotations files have overlays.
 		self.browser_ret = (self.openbrowser.getResult())
-		print(self.browser_ret)
+		#print(self.browser_ret)
 		in_f = EMData(self.browser_ret[0])
-		append_dict = self.read_header(in_f,ret=True)
-		for key, value in append_dict.items():
-			self.add_new_row(key,value)
-		self.update_sets()
-		self.target.full_annotation += in_f
-		self.target.force_display_update()
-		self.target.updateGL()
-		return
+		if in_f.get_sizes() != self.target.full_data.get_sizes():
+			print("Annotation file must have the same dimension with the data")
+			return
+		else:
+			append_dict = self.read_header(in_f,ret=True)
+			for key, value in append_dict.items():
+				self.add_new_row(key,value)
+			self.update_sets()
+			self.target.full_annotation += in_f
+			self.target.force_display_update()
+			self.target.updateGL()
+			return
 
 
 
@@ -2514,14 +2662,21 @@ class EMSegTab(QtWidgets.QWidget):
 	def load_all_browser_ok(self):
 		#Method to actually load a new annotation file to display.
 		self.browser_ret = (self.openbrowser.getResult())
-		row_count = self.table_set.rowCount()
-		for i in range(row_count):
-			self.table_set.removeRow(row_count - i - 1)
-		self.target.full_annotation=EMData(self.browser_ret[0])
-		self.read_header(self.target.get_annotation())
-		self.update_sets()
-		self.target.force_display_update()
-		self.target.updateGL()
+		inf = EMData(self.browser_ret[0])
+		if inf.get_sizes() != self.target.full_data.get_sizes():
+			print("Annotation file must have the same dimension with the data")
+			return
+		else:
+			row_count = self.table_set.rowCount()
+			for i in range(row_count):
+				self.table_set.removeRow(row_count - i - 1)
+			self.target.full_annotation=inf
+			self.target.force_display_update(set_clip=0)
+			self.read_header(self.target.get_full_annotation())
+			self.update_sets()
+			self.target.updateGL()
+			return
+
 
 	def save_all(self):
 		#Save the current annotation to disk as a multiclass annotation file.
@@ -2529,12 +2684,20 @@ class EMSegTab(QtWidgets.QWidget):
 		if not ok : return
 		nums = [int(self.table_set.item(row,0).text()) for row in range(self.table_set.rowCount())]
 		names = [str(self.table_set.item(row,1).text()) for row in range(self.table_set.rowCount())]
-		name_str=names[0]+""
-		for i in range(1,len(names)):
-			name_str = name_str + "," + names[i]
-		self.target.get_annotation()["ann_name"] = name_str
-		self.target.get_annotation()["ann_num"] = nums
-		self.target.get_annotation().write_image(out_name)
+		#name_str=names[0]+""
+		#for i in range(1,len(names)):
+			#name_str = name_str + "," + names[i]
+
+		#TOREAD
+		# self.xform = Transform({"type":"eman","tx":self.full_data["nx"]//2,"ty":self.full_data["ny"]//2,"tz":self.full_data["nz"]//2+self.zpos})
+		# self.full_data.set_rotated_clip(self.xform, self.data)
+		# self.full_annotation.set_rotated_clip(self.xform, self.annotation)
+
+		#self.target.get_full_annotation()["ann_name"] = name_str
+		serialize_name = json.dumps(names, default=lambda a: "[%s,%s]" % (str(type(a)), a.pk))
+		self.target.get_full_annotation()["ann_name"] = serialize_name
+		self.target.get_full_annotation()["ann_num"] = nums
+		self.target.get_full_annotation().write_image(out_name)
 		print("Annotation is saved to", out_name)
 		return
 
@@ -2551,7 +2714,9 @@ class EMSegTab(QtWidgets.QWidget):
 		#Read the header information from annotation file
 		try:
 			keys = file_in["ann_num"]
-			values = file_in["ann_name"].split(",")
+			#values = file_in["ann_name"].split(",")
+			values = json.loads(file_in["ann_name"])
+			#print(values)
 			if type(keys) != list: keys = [keys]
 			item_dict=(dict(zip(keys, values)))
 			print(item_dict)
@@ -2562,8 +2727,12 @@ class EMSegTab(QtWidgets.QWidget):
 					self.add_new_row(key,value)
 				self.update_sets()
 		except:
-			print("Trouble headers information. Continue...")
-			pass
+		# 	#print("Trouble reading headers information. Continue...")
+		 	pass
+
+
+
+
 
 	def add_new_row(self,num,name):
 		#Add a new row to the table set

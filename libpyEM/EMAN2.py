@@ -345,8 +345,8 @@ def E2loadappwin(app,key,win):
 		geom=list(E2getappval(app,key))
 		if geom==None : raise Exception
 		win.resize(geom[2],geom[3])
-		geom[0]=max(16,geom[0])
-		geom[1]=max(16,geom[1])
+		geom[0]=max(32,geom[0])
+		geom[1]=max(60,geom[1])
 		win.move(geom[0],geom[1])
 #		print(app,key,geom)
 	except: return
@@ -1084,7 +1084,7 @@ def parse_infile_arg(arg):
 	fname, _, seq = arg.partition(':')
 
 	if not (fname and os.path.isfile(fname)):
-		raise argparse.ArgumentTypeError(f"{fname} is not an existing regular file!")
+		raise Exception(f"'{fname}' is not an existing regular file!")
 
 	seq_inc, _, seq_exc = seq.partition('^')
 
@@ -1113,6 +1113,23 @@ def parse_infile_arg(arg):
 			idxs.pop(i)
 
 	return fname, tuple(idxs.keys())
+
+def parse_range(rangestr,maxval=None):
+	"""parses strings like "1,3,4,6-9,11" and returns (1,3,4,6,7,8,9,11), maxval will support n- without upper values
+	if not provided will still work as long as n- isn't used"""
+
+	ret=[]
+	for s in rangestr.split(","):
+		try: ret.append(int(s))
+		except:
+			try:
+				v1,v2=s.split("-")
+				ret.extend(range(int(v1),int(v2)+1))
+			except:
+				v1=int(s.split("-")[0])
+				ret.extend(range(v1,maxval+1))
+
+	return ret
 
 
 def parse_outfile_arg(arg):
@@ -2274,6 +2291,7 @@ def get_3d_font_renderer():
 		pfm = get_platform()
 		if pfm in ["Linux","Darwin"]:
 			font_renderer.set_font_file_name(e2getinstalldir()+"/fonts/DejaVuSerif.ttf")
+			#font_renderer.set_font_file_name(e2getinstalldir()+"/fonts/SourceCodePro-Light.ttf")
 		elif pfm == "Windows":
 			font_renderer.set_font_file_name("C:\\WINDOWS\\Fonts\\arial.ttf")
 		else:
@@ -2569,7 +2587,7 @@ jsondict : optional string in JSON format or a JSON compatible dictionary. value
 performed with read_image either here or in the EMData class. Returns a tuple (n extfile,extfile,dict). dict
 contains decoded information from the stored JSON dictionary. Will also read certain other legacy comments
 and translate them into a dictionary."""
-		if n>=self.n : raise Exception("Attempt to read record {} from #LSX {} with {} records".format(n,self.path,self.n))
+		if n>=self.n : raise IndexError("Attempt to read record {} from #LSX {} with {} records".format(n,self.path,self.n))
 		self.lock.acquire()
 		n=int(n)
 		self.ptr.seek(self.seekbase+self.linelen*n)
@@ -2857,27 +2875,12 @@ def db_emd_init(self, *parms):
 		C++ signature :
 			void* __init__(_object*,int,int [,int [,bool]])
 """
-	if len(parms) > 0 and len(parms) < 5:
-		if isinstance(parms[0], str) and parms[0].endswith(".lst"):
-			self.__initc()
-			self.read_image(*parms)
-			return
-	#		print "toC:", parms
-	if len(parms) > 2 and isinstance(parms[0], str):
+	if len(parms) > 0 and len(parms) < 5 and isinstance(parms[0], str):
 		self.__initc()
-		self.read_image_c(*parms)
-	# try: self.read_image_c(*parms)			# this handles Region reading, which isn't supported in the C++ constructor
-	# except:
-	# traceback.print_exc()
-	# print "Error reading: ",parms," (if the program does not crash, this may be normal)"
-	# raise Exception
-	else:
-		self.__initc(*parms)
-	# try: self.__initc(*parms)
-	# except:
-	# traceback.print_exc()
-	# print "Error reading: ",parms," (if the program does not crash, this may be normal)"
-	# raise Exception
+		self.read_image(*parms)
+		return
+
+	self.__initc(*parms)
 	return
 
 
@@ -2915,6 +2918,8 @@ def db_read_image(self, fsp, *parms, **kparms):
 	are read, accesses to the image data in the resulting EMData objects will be invalid."""
 	#	print "RI ",fsp,str(parms)
 
+	if fsp is None or fsp=="" : raise Exception("read_image without filename")
+
 	if fsp[:4].lower() == "bdb:":
 		print("ERROR: BDB is not supported in this version of EMAN2. You must use EMAN2.91 or earlier to access legacy data.")
 		return None
@@ -2947,7 +2952,6 @@ def db_read_image(self, fsp, *parms, **kparms):
 
 	return self.read_image_c(fsp, *parms, **kparms)
 
-EMUtil.get_image_count_c = staticmethod(EMUtil.get_image_count)
 EMData.read_image_c = EMData.read_image
 EMData.read_image = db_read_image
 
@@ -3010,8 +3014,7 @@ EMData.write_image_c = EMData.write_image
 EMData.write_image = db_write_image
 
 def im_write_compressed(self,fsp,n,bits=8,minval=0,maxval=0,nooutliers=True,level=1,erase=False):
-	"""write_compressed(self or list,fsp,n,bits=8,minval=0,maxval=0,nooutliers=False,level=1)
-
+	"""
 This flexible image writing routine will write compressed HDF images (or a single image). It may be called
 on an instance:
 
@@ -3132,6 +3135,17 @@ and the file size will increase.
 		im.write_image_c(fsp,i+n,EMUtil.ImageType.IMAGE_UNKNOWN,0,None,EMUtil.EMDataType.EM_COMPRESSED)
 	
 EMData.write_compressed=im_write_compressed
+
+
+def db_get_image_count(fsp):
+	if ":" in fsp:
+		fsp, idxs = parse_infile_arg(fsp)
+		return len(idxs)
+	else:
+		return EMUtil.get_image_count_c(fsp)
+
+EMUtil.get_image_count_c = staticmethod(EMUtil.get_image_count)
+EMUtil.get_image_count = db_get_image_count
 
 
 __doc__ = \
