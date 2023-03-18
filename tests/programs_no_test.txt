@@ -8,3 +8,5 @@
  e2spt_autoboxer.py
  e2reliontoeman.py
  e2gmm_refine_point.py
+ e2gmm_refine_new.py
+ e2gmm_heter_ali.py

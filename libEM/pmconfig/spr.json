@@ -249,16 +249,6 @@
 	"NOTELEVEL": "1",
 	"EXPERT": 1,
 	"CHILDREN": []
-      },
-      {
-	"ICON": "single_image",
-	"PROGRAM":"e2refinetorelion2d.py",
-	"WIZARD":"/lib/pmconfig/relion2d.json",
-	"WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2refinetorelion2d",
-	"NAME": "Export to Relion 2D",
-	"NOTELEVEL": "1",
-	"EXPERT": 1,
-	"CHILDREN": []
       }
     ]
   },
@@ -326,6 +316,15 @@
       },
       {
         "ICON": "refine",
+        "MODE": "refinement",
+        "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2spa_refine",
+        "PROGRAM": "e2spa_refine.py",
+        "NAME": "New single map refinement (e2spa_refine)",
+	"NOTELEVEL": "1",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "refine",
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2refine_split",
         "PROGRAM": "e2refine_split.py",
         "NAME": "Split map into two subgroups (e2refine_split)",
@@ -354,7 +353,7 @@
         "MODE": "refinement",
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2gmm",
         "PROGRAM": "e2gmm.py",
-        "NAME": "GMM Variability (e2gmm - experimental)",
+        "NAME": "GMM Variability (e2gmm)",
         "NOTELEVEL": "1",
         "CHILDREN": []
       },
@@ -366,44 +365,8 @@
 	"NOTELEVEL": "1",
 	"EXPERT": 1,
 	"CHILDREN": []
-      },
-      {
-	"ICON": "refine",
-	"PROGRAM": "e2refinetorelion3d.py",
-        "WIZARD":"/lib/pmconfig/relion3d.json",
-	"WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2refinetorelion3d",
-	"NAME": "Relion Refinement",
-	"EXPERT": 1,
-	"CHILDREN": []
-      },
-      {
-        "ICON": "refine",
-        "NAME": "FreAlign Refinement",
-        "CHILDREN": [
-           {
-            "ICON": "refine",
-            "PROGRAM": "e2refinetofrealign.py",
-            "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2refinetofrealign",
-            "NAME": "Convert To FreAlign",
-            "EXPERT": 1,
-            "CHILDREN": []
-           },
-           {
-            "ICON": "refine",
-            "PROGRAM": "e2runfrealign.py",
-            "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2runfrealign",
-            "NAME": "Run FreAlign 3D Refinement",
-            "CHILDREN": []
-           },
-           {
-            "ICON": "refine",
-            "PROGRAM": "e2refinefromfrealign.py",
-            "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2refinefromfrealign",
-            "NAME": "Convert from FreAlign to EMAN2",
-            "CHILDREN": []
-           }
-        ]
       }
+
     ]
   },
   {

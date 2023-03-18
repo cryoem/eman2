@@ -155,6 +155,8 @@ class SptAlignTask(JSTask):
 				i["score"]=a["score"]
 				if "orig_idx" in a:
 					i["orig_idx"]=a["orig_idx"]
+				if "class" in a:
+					i["orig_class"]=a["class"]
 			
 		if options.aliptcls2d!="":
 			if options.debug:
@@ -263,9 +265,10 @@ class SptAlignTask(JSTask):
 			
 			d3dsel=[d3d[i] for i in srtid]
 			d2dsel=[d2d[i] for i in srtid]
-			if "orig_idx" in d3dsel[0]:
+			if "orig_class" in d3dsel[0]:
+				refid=[d["orig_class"] for d in d3dsel]
+			elif "orig_idx" in d3dsel[0]:
 				refid=[d["orig_idx"]%2 for d in d3dsel]
-				
 			else:
 				refid=[d["idx3d"]%2 for d in d2dsel]
 			
@@ -403,7 +406,9 @@ class SptAlignTask(JSTask):
 			xf=dxf*xf
 			
 			d3=info3d[dc["idx3d"]]
-			if "orig_idx" in d3:
+			if "orig_class" in d3:
+				clsid=d3["orig_class"] 
+			elif "orig_idx" in d3:
 				clsid=d3["orig_idx"]%2
 			else: 
 				clsid=dc["idx3d"]%2

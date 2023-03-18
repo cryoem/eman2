@@ -46,7 +46,7 @@ import sys
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] <input stack> <output basis> [reprojections]
-This too provides a variety of dimensionality reduction methods. This new version
+This tool provides a variety of dimensionality reduction methods on image data. This new version
 uses scikit.learn, which provides a greater variety of algorithms, but must load 
 all data into memory. If working with a large file, you may want to consider using
 --step to operate on a limited subset of the data.

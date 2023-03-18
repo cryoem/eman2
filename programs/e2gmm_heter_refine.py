@@ -1,0 +1,128 @@
+#!/usr/bin/env python
+# Muyuan Chen 2022-12
+from EMAN2 import *
+import numpy as np
+from sklearn.cluster import KMeans
+
+def main():
+	
+	usage="Start from hetergenerity analysis using e2gmm_refine_new, then convert the conformation to orientation within a given mask, and run a few rounds of orientation refinement focusing on the mask."
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
+	parser.add_argument("--path", type=str,help="path", default=None)
+	parser.add_argument("--mask", type=str,help="mask", default=None)
+	parser.add_argument("--expandsym", type=str,help="sym", default=None)
+	parser.add_argument("--maxres", type=float,help="starting resolution", default=7)
+	parser.add_argument("--minres", type=float,help="min resolution", default=20)
+	(options, args) = parser.parse_args()
+	
+	logid=E2init(sys.argv)
+	
+	
+	fname=args[0]
+	er=EMData(fname,0, True)
+	oldpath=os.path.dirname(fname)
+	
+	c=[i for i in fname if i.isdigit()]
+	itr=int(''.join(c[-2:]))
+	print(f"refinement path {oldpath}, iteration {itr}.")
+	
+	if options.path==None: 
+		path=options.path=num_path_new("gmm_")
+		
+		fsc=np.loadtxt(f"{oldpath}/fsc_masked_{itr:02d}.txt")
+		np.savetxt(f"{path}/fsc_masked_00.txt", fsc)
+		fsc=np.loadtxt(f"{oldpath}/fsc_maskedtight_{itr:02d}.txt")
+		np.savetxt(f"{path}/fsc_maskedtight_00.txt", fsc)
+		run(f"e2proc3d.py {oldpath}/threed_{itr:02d}.hdf {path}/threed_00.hdf")
+		
+		for ieo, eo in enumerate(["even", "odd"]):
+			run(f"e2proclst.py {oldpath}/ptcls_{itr:02d}_{eo}.lst --create {path}/ptcls_00_{eo}.lst")
+			if options.expandsym:
+				run(f"e2proclst.py {path}/ptcls_00_{eo}.lst --sym {options.expandsym}")
+				
+			run(f"e2proc3d.py {oldpath}/threed_{itr:02d}_{eo}.hdf {path}/threed_00_{eo}.hdf")
+			
+			pts=np.loadtxt(f"{oldpath}/model_{itr-1:02d}_{eo}.txt")
+			np.savetxt(f"{path}/model_00_{eo}.txt", pts)
+			
+			run(f"e2project3d.py {path}/threed_00_{eo}.hdf --outfile {path}/projections_{eo}.hdf --orientgen=eman:delta=4 --parallel=thread:12")
+				
+	#itr=options.niter+1
+	#itr=20
+	it0=0
+	path=options.path
+	res=options.maxres
+	for ieo, eo in enumerate(["even", "odd"]):
+		
+		pts=np.loadtxt(f"{path}/model_{it0:02d}_{eo}.txt")
+		rawnpt=len(pts)
+		npt=8000
+		np.random.shuffle(pts)
+		pts=pts[:npt]
+		np.savetxt(f"{path}/model_{it0:02d}_{eo}.txt", pts)
+		run(f"e2gmm_refine_new.py --ptclsin {path}/projections_{eo}.hdf --model {path}/model_{it0:02d}_{eo}.txt --maxres {res} --modelout {path}/model_{it0:02d}_{eo}.txt --niter 40 --trainmodel")
+		
+		pn=16
+		km=KMeans(pn,max_iter=30)
+		km.fit(pts[:,:3])
+		pc=km.cluster_centers_
+		
+		msk=EMData(options.mask)
+		## read selected Gaussian from mask file
+		m=msk.numpy().copy()
+		p=pts[:,:3].copy()
+		p=p[:,::-1]
+		p[:,:2]*=-1
+		p=(p+.5)*msk["nx"]
+
+		o=np.round(p).astype(int)
+		v=m[o[:,0], o[:,1], o[:,2]]
+		imsk=v.astype(float)
+		
+		pm=pts[imsk>.1]
+		pn=16
+		km=KMeans(pn,max_iter=30)
+		km.fit(pm[:,:3])
+		pc2=km.cluster_centers_
+		
+		pcx=np.vstack([pc, pc2])
+		pp=np.hstack([pcx, np.zeros((len(pcx),1))+np.mean(pts[:,3]), np.zeros((len(pcx),1))+np.mean(pts[:,4])])
+		np.savetxt(f"{path}/model_{it0:02d}_{eo}_anchor.txt", pp)
+		
+		
+		lst=load_lst_params(f"{path}/ptcls_{it0:02d}_{eo}.lst")
+		np.random.shuffle(lst)
+		save_lst_params(lst[:20000], f"{path}/ptcls_{it0:02d}_{eo}_sample.lst")
+
+		etc=""
+		etc+=f" --selgauss {options.mask}"
+		etc+=" --batchsz 16"
+		etc3=""# --setsf sf_lp.txt"
+		
+		run(f"e2gmm_refine_new.py --model {path}/model_{it0:02d}_{eo}.txt --anchor {path}/model_{it0:02d}_{eo}_anchor.txt --conv --midout {path}/mid_00_{eo}.txt --maxres {res} --minres {options.minres} --learnrate 1e-5 --niter 20 --ptclsin {path}/ptcls_{it0:02d}_{eo}_sample.lst --heter --encoderout {path}/enc_{eo}.h5 --decoderout {path}/dec_{eo}.h5 --pas 100 {etc}")
+		
+		run(f"ptcl_pca_kmean_m3d.py --pts {path}/mid_00_{eo}.txt --pcaout {path}/mid_pca.txt --ptclsin {path}/ptcls_{it0:02d}_{eo}_sample.lst --ptclsout {path}/ptcls_{eo}_cls_00.lst --mode regress --ncls 4 --nptcl 8000 --axis 0")
+		
+		run(f"e2proc3d.py {path}/ptcls_{eo}_cls_00.hdf {path}/ptcls_{eo}_cls_00.hdf --process filter.lowpass.gauss:cutoff_freq={1./res} --process normalize.edgemean")
+		
+		run(f'e2gmm_batch.py "e2gmm_refine_new.py --model {path}/model_{it0:02d}_{eo}.txt --conv --midout {path}/midall_00_{eo}.txt --maxres {res} --minres {options.minres} --learnrate 1e-5 --niter 10 --ptclsin {path}/ptcls_{it0:02d}_{eo}.lst --heter --encoderout {path}/enc_{eo}.h5 --decoderout {path}/dec_{eo}.h5 --pas 100 {etc}" --load --niter 1 --batch 20000')
+		
+		run(f"ptcl_pca_kmean_m3d.py --pts {path}/midall_00_{eo}.txt --pcaout {path}/mid_pca.txt --ptclsin {path}/ptcls_{it0:02d}_{eo}.lst --ptclsout {path}/ptcls_{eo}_cls_00.lst --mode regress --ncls 4 --nptcl 5000 --axis 0")
+		
+		run(f"e2proc3d.py {path}/ptcls_{eo}_cls_00.hdf {path}/ptcls_{eo}_cls_00.hdf --process filter.lowpass.gauss:cutoff_freq={1./res} --process normalize.edgemean")
+		
+	run(f"e2gmm_heter_ali.py --path {path} --mask {options.mask}")
+	run(f"e2refine_postprocess.py --even {path}/threed_01_even.hdf --res {res} --tophat localwiener --thread 32 --setsf sf.txt --align")
+	
+	run(f"e2segment3d.py {path}/threed_01.hdf --pdb {path}/model_01.pdb --process=segment.kmeans:nseg={rawnpt}:thr=3")
+	
+	run(f"e2gmm_refine_iter.py {path}/threed_01.hdf --startres {res} --initpts {path}/model_01.pdb --mask {options.mask} --masksigma --path {path} --startiter 2")
+	
+	E2end(logid)
+	
+	
+if __name__ == '__main__':
+	main()
+	
+
+

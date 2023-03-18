@@ -223,7 +223,7 @@ as well as alignment parameters, so use of tomograms from other software is not 
 	#### scale factor from raw tilt image to tomogram/particle that we get coordinates info from
 	scale=apix_ptcl/apix_tlt
 	options._scale=scale
-	print("### scale by {}".format(options._scale))
+	if options.verbose>0:print("### scale by {:.1f}".format(options._scale))
 	if options.shrink==1.5:
 		shrinklab="_bin1_5"
 	elif options.shrink>=2:
@@ -322,8 +322,10 @@ as well as alignment parameters, so use of tomograms from other software is not 
 						ln=np.sum(np.linalg.norm(np.diff(pt, axis=0), axis=1))*apix_tlt
 						
 						## interpolate to the given spacing
+						if ln<spacing*3:continue
+					
+						pt=np.unique(pt, axis=0) ## duplicated points sometimes happen...
 						ipt=interp_points(pt, npt=int(np.round(ln/spacing)))
-						
 						## again exclude curves that are too short
 						if len(ipt)<4: continue
 						
@@ -627,7 +629,8 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 			drs/=v
 			drs=drs.tolist()
 			tf_dir=Transform()
-			tf_dir.set_rotation(drs)
+			try: tf_dir.set_rotation(drs)
+			except: continue
 			tf_dir.invert()
 
 		else:

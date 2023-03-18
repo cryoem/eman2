@@ -268,7 +268,7 @@ def main():
 
 		save_ptcls_xform(xfsnp, raw_boxsz, options, frcs)
 
-	#### Heterogeneity analysis from particles
+	#### Prepare gaussian representation of individual particles
 	bsz=options.batchsz
 	if options.ptclsin:
 		pts=tf.constant(pts[None,:,:])
@@ -296,11 +296,19 @@ def main():
 			print("Ptcl rep shape: ", allgrds.shape)
 
 		else:
+			nptcl=EMUtil.get_image_count(options.ptclsin)
+			if options.chunk is not None:
+				chunkn=nptcl//options.chunk[1]
+				chunk0=chunkn*options.chunk[0]
+				chunkn=min(nptcl-chunk0,chunkn)
+			else:
+				chunk0=0
+				chunkn=nptcl
+
 			trainset=tf.data.Dataset.from_tensor_slices((dcpx[0], dcpx[1], xfsnp))
 			trainset=trainset.batch(bsz)
 			allscr, allgrds=calc_gradient(trainset, pts, params, options )
 #			allscr, allgrds=calc_gqual(trainset, pts, params, options )
-
 
 			#### For tomographic data we sum the gradients over a 3-D particle, so all 2-D tilts have the same gradient
 			if not grpdct is None:
@@ -316,10 +324,16 @@ def main():
 				#allgrds=allgrds.reshape((len(allgrds),-1))
 				print("Ptcl rep shape: ", allgrds.shape)
 				ag=from_numpy(np.hstack([allscr[:,None], allgrds]))
-				ag.write_image(options.ptclrepout)
+				if chunk0==0 :
+					tmp=EMData(ag["nx"],nptcl,1)
+					tmp.to_zero()
+					tmp.write_image(options.ptclrepout,0)
+					tmp=None
+				ag.write_image(options.ptclrepout,0,IMAGE_HDF,0,Region(0,chunk0,ag["nx"],chunkn))
 				del ag
 				#allgrds=allgrds.reshape((len(allgrds), npt))
 
+	#### Heterogeneity analysis from particles
 	if options.ptclsin and options.heter:
 		#### build deep networks and make sure they work
 		if options.encoderin:
@@ -356,20 +370,7 @@ def main():
 		## conformation output
 		mid=calc_conf(encode_model, allgrds[ptclidx], 1000)
 
-		if options.midout:
-			if options.chunk is not None:
-				if options.chunk[0]==0: out=open(options.midout,"w")	# first batch erases the file
-				else: out=open(options.midout,"a")	# later batches append
-
-				for i in range(mid.shape[0]):
-					out.write(f"{mid[i][0]:1.6f}\t{mid[i][1]:1.6f}\t{mid[i][2]:1.6f}\t{mid[i][3]:1.6f}\n")
-				out.close()
-			#sv=np.hstack([np.where(ptclidx)[0][:,None], mid])
-			#print(mid.shape, sv.shape)
-			#else: np.savetxt(options.midout, sv)
-
-			print("Conformation output saved to {}".format(options.midout))
-
+	# this now normally run as a separate process since the network may be trained in batches
 	if options.ptclrepin and options.encoderin and options.midout:
 		hdr=EMData(options.ptclrepin,0,1)
 		nptcl=hdr["ny"]

@@ -147,8 +147,10 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 
 #New QSplitter code, Erik addition
 		self.setCentralWidget(QtWidgets.QWidget())
-		self.gbl = QtWidgets.QHBoxLayout(self.centralWidget())
-		
+		self.gbl = QtWidgets.QGridLayout(self.centralWidget())
+		self.gblh = QtWidgets.QHBoxLayout()
+		self.gbl.addLayout(self.gblh,0,0,2,2)
+
 		self.splitter_top = QSplitter(Qt.Horizontal) #top panel of images
 		self.splitter_bottom = QSplitter(Qt.Horizontal) #bottom panel of images
 		self.splitter_wrapper = QSplitter(Qt.Vertical) #will stack the top and bottom image panels
@@ -158,23 +160,26 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		self.zyview	= EMImage2DWidget(sizehint=(256,1024))
 		
 		self.wdepth = QtWidgets.QSlider()
-		
+		self.gbl.addWidget(self.wdepth,0,2)
+
 		self.splitter_top.addWidget(self.zyview)
 		self.splitter_top.addWidget(self.xyview)
-		self.splitter_top.addWidget(self.wdepth)
-		self.splitter_bottom.addWidget(self.xzview)
 		
 		self.splitter_wrapper.addWidget(self.splitter_top)
 		self.splitter_wrapper.addWidget(self.splitter_bottom)
 		
-		self.gbl.addWidget(self.splitter_wrapper)
+		self.gblh.addWidget(self.splitter_wrapper)
 		
 		#control panel
 		self.gbl2 = QtWidgets.QGridLayout()
 		self.grid_widget = QtWidgets.QWidget()
 		self.grid_widget.setLayout(self.gbl2)
 		self.splitter_bottom.addWidget(self.grid_widget)
-		
+
+		self.splitter_bottom.addWidget(self.xzview)
+		self.splitter_top.splitterMoved.connect(self.splitter_bottom.moveSplitter)
+
+
 #########################################################################
 		
 		# relative stretch factors
@@ -182,36 +187,6 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		#self.gbl.setRowMinimumHeight(0,200)
 		#self.gbl.setColumnStretch(0,0)
 		
-#old code, Erik commented out
-#		self.gbl.setColumnStretch(1,100)
-#		self.gbl.setColumnStretch(0,1)
-#		self.gbl.setRowStretch(0,100)
-#		self.gbl.setRowStretch(1,1)
-		
-#		# 3 orthogonal restricted projection views
-#		self.xyview = EMImage2DWidget(sizehint=(1024,1024))
-#		self.gbl.addWidget(self.xyview,0,1)
-#
-#		self.xzview = EMImage2DWidget(sizehint=(1024,256))
-#		self.gbl.addWidget(self.xzview,1,1)
-#
-#		self.zyview = EMImage2DWidget(sizehint=(256,1024))
-#		self.gbl.addWidget(self.zyview,0,0)
-#
-#		# Select Z for xy view
-#		self.wdepth = QtWidgets.QSlider()
-#		self.gbl.addWidget(self.wdepth,1,2)
-#
-#		### Control panel area in upper left corner
-#		self.gbl2 = QtWidgets.QGridLayout()
-#		self.gbl.addLayout(self.gbl2,1,0)
-#
-#		#self.wxpos = QtWidgets.QSlider(Qt.Horizontal)
-#		#self.gbl2.addWidget(self.wxpos,0,0)
-#
-#		#self.wypos = QtWidgets.QSlider(Qt.Vertical)
-#		#self.gbl2.addWidget(self.wypos,0,3,6,1)
-#
 		self.wzheight=ValBox(label="Z height:",value=256)
 		self.gbl2.addWidget(self.wzheight,1,0)
 
@@ -432,8 +407,8 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		
 		self.update_all()
 		self.initialized=True
+#		self.splitter_bottom.moveSplitter(self.splitter_top.handle(0).pos(),0)
 		
-
 	def set_data(self,data):
 
 		self.data=data

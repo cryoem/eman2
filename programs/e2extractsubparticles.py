@@ -45,6 +45,99 @@ import traceback
 from EMAN2 import *
 from numpy import arange
 
+def r3dmonoextract(jsd,n0,n1,lsxin,threed,subunitmask,mask,outermask,masked,verbose):
+	# for a single class-average, subtract away a projection of the reference with the exclusion mask in
+	# each symmetry-related orientation, after careful scaling. Note that we don't have a list of which particle is in each class,
+	# but rather a list of which class each particle is in, so we do this a bit inefficiently for now
+	# subunitmask - when applied, includes only the density for the subunit to be extracted
+	# mask - when applied, includes everything inside the normal 3-D whole model mask EXCEPT the subunit to be extracted
+	# ptclmask -
+	if verbose : print("Starting ",n0,n1)
+	global DEBUG
+	ret=[]
+
+	for i in range(n0,n1):
+		p=jsd[i]
+
+		xf=p[3]["xform.projections"]
+#		pnorm=threed.project(
+
+	# We regenerate the masked volumes for each class to avoid using too much RAM
+
+	# Projection of the full, unmasked 3-D reference
+	# followed by projections excluding the subunit to be retained in each symmetry-based orientation
+	projs=[threed.project("standard",{"transform":eulers[cls]})]
+
+	# 2-D masks to be applied to the subparticles after subtraction
+	projmask=[]
+	for xf in symxfs:
+		maskx=mask.process("xform",{"transform":xf})
+		masked=threed.copy()
+		masked.mult(maskx)
+		projs.append(masked.project("standard",{"transform":eulers[cls]}))
+
+		# these are the projection masks. There is one less of these since we don't have one for the unmasked ref volume
+		# These include any region in 2-D which might conceivably contain subunit information
+		if domask:
+			if outermask!=None:
+				omaskx=outermask.process("xform",{"transform":xf})
+	#				projmask.append(omaskx.project("standard",{"transform":eulers[cls]}))
+				projmask.append(omaskx.project("standard",{"transform":eulers[cls]}).process("threshold.binary",{"value":0.01}))
+			else:
+				omaskx=subunitmask.process("xform",{"transform":xf})
+				projmask.append(omaskx.project("standard",{"transform":eulers[cls]}).process("threshold.binary",{"value":0.01}))
+
+	if verbose : print("--- Class %d masks prepared"%cls)
+
+	for eo in range(2):
+		for j in range(nptcl[eo]):
+			if DEBUG and len(ret)>100 : break
+
+			if classmx[eo][0,j]!=cls :
+				#if options.debug: print("XXX {}\t{}\t{}\t{}".format(cls,("even","odd")[eo],j,classmx[eo][0,j]))
+				continue		# only proceed if the particle is in this class
+			if verbose>1: print("{}\t{}\t{}".format(cls,("even","odd")[eo],j))
+
+			ptcl=EMData(cptcl[eo],j)
+#				ptcl.write_image(options.output,-1)
+			#lowth=ptcl["mean"]-ptcl["sigma"]*3.0
+			#highth=ptcl["mean"]+ptcl["sigma"]*3.0
+
+			# Find the transform for this particle (2d) and apply it to the unmasked/masked projections
+			ptclxf=Transform({"type":"2d","alpha":cmxalpha[eo][0,j],"mirror":int(cmxmirror[eo][0,j]),"tx":cmxtx[eo][0,j],"ty":cmxty[eo][0,j]}).inverse()
+			projc=[im.process("xform",{"transform":ptclxf}) for im in projs]		# we transform the projections, not the particle (as in the original classification)
+			if domask: projm=[im.process("xform",{"transform":ptclxf}) for im in projmask]
+#			maskctr=[j.calc_center_of_mass(0.5) for j in projm]
+			if DEBUG :
+				ret.append(projc[0].process("normalize.toimage",{"to":ptcl}))
+				ret.append(ptcl)
+				ret.append(projm[0])
+
+			# now subtract the masked versions processed using the scaling/normalization
+			# we got from the whole/unmasked particle
+			for k,pr in enumerate(projc[1:]):
+				ptcl3=ptcl.process("math.sub.optimal",{"ref":projc[0],"actual":pr})
+
+				# restore any zero values before subtraction
+				zmask=ptcl.process("threshold.notzero")
+				ptcl3.mult(zmask)
+
+				# apply the projection mask if requested
+				if domask :
+					ptcl3.mult(projm[k])
+
+				# The projection mask is often too large to be well centered, so we center based on the squared masked density
+				ptcl3.process_inplace("xform.centerofmass",{"powercenter":1,"int_shift_only":1})
+#				ptcl3.translate(-maskctr[k][0]+ptcl3["nx"]//2,-maskctr[k][1]+ptcl3["ny"]//2,0)
+
+				# If specified we now shrink the box around the (hopefully centered) particle
+				if newbox>3 :
+					ptcl4=ptcl3.get_clip(Region((ptcl3["nx"]-newbox)//2,(ptcl3["ny"]-newbox)//2,newbox,newbox))
+					ret.append(ptcl4)
+				else: ret.append(ptcl3)
+#					print ptcl.cmp("optsub",projc[0])
+	jsd.put((cls,ret))
+
 def monoextract(jsd,cls,threed,nptcl,mask,subunitmask,outermask,symxfs,eulers,cptcl,classmx,cmxtx,cmxty,cmxalpha,cmxmirror,domask,newbox,verbose):
 	# for a single class-average, subtract away a projection of the reference with the exclusion mask in
 	# each symmetry-related orientation, after careful scaling. Note that we don't have a list of which particle is in each class,
@@ -134,7 +227,7 @@ def monoextract(jsd,cls,threed,nptcl,mask,subunitmask,outermask,symxfs,eulers,cp
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """prog [options] <refine_xx folder> <iteration number>
+	usage = """prog [options] <refine_xx or r3d_xx folder> <iteration number>
 
 WARNING - particularly with a lot of threads and larger box-sizes, this program can eat a LOT of RAM. Try running on a small number of threads 
 briefly, and monitor memory usage before ramping up to the full number of available threads.
@@ -210,109 +303,186 @@ is maintained, and a single output stack is generated by this program.
 
 	if options.verbose: print("{} even and {} odd particles in classmx".format(nptcl[0],nptcl[1]))
 
-	# path to the even/odd particles used for the refinement
-	cptcl=js_open_dict("{}/0_refine_parms.json".format(args[0]))["input"]
-	cptcl=[str(i) for i in cptcl]
-
-	# we only permit automatic names now
-	output="sets/subptcl_{}_{}__{}".format(args[0].split("_")[-1],args[1],cptcl[0].split("__")[-1].replace("_even","").replace(".lst",".hdf"))
-	outlst=output.replace(".hdf",".lst")
-	outbispec=output.split("__")[0]+"__ctf_flip_invar.hdf"
-	outbispeclst=outbispec.replace(".hdf",".lst")
-
-	# this reads all of the EMData headers from the projections, should be same for even and odd
-	pathprj="{}/projections_{:02d}_even.hdf".format(args[0],args[1])
-	nref=EMUtil.get_image_count(pathprj)
-	eulers=[EMData(pathprj,i,1)["xform.projection"] for i in range(nref)]
-
-	# The 3D reference volume we are using for subtraction
-	threed=EMData("{}/threed_{:02d}.hdf".format(args[0],args[1]),0)
-
-	# When applied this mask will include only the subunit to be extracted
-	# note that it is not binarized, so "soft" edges are permitted
-	subunitmask=EMData(options.subunitmask)
-	
-	# this is the "inverted" subunit mask, including everything except the subunit, again, "soft" edges are preserved
-	mask=subunitmask.process("math.linear",{"scale":-1.0,"shift":1.0})
-	ptclmask=EMData(args[0]+"/mask.hdf",0) # The full model mask from the reference volume
-	mask.mult(ptclmask)
-	# mask now excludes the subunit and volume outside the masked 3-D particle 
-
-	# Projections of the 3-D outermask will be used in 2-D to eliminate noise
-	# if not specified, the subunitmask will be projected (and thresholded) instead
-	if options.outermask!=None:
-		outermask=EMData(options.outermask)
-	else: outermask=None
-
 	logid=E2init(sys.argv, options.ppid)
+	if args[0].startswith("r3d_"):
+		rparms=js_open_dict(f"{args[0]}/0_spa_params.json")
+		lsxin=LSXFile(f"{args[0]}/ptcls_{args[1]:02d}.lst")
+		hdfout=f"sets/subptclr_{args[0].split('_')[-1]}_{args[1]}_{lsxin[0].split('__')[-1]}"
 
-	# We will need masked versions of our volume for all symmetric orientations
-	# generate the symmetry transforms here for convenience
-	xf = Transform()
-	xf.to_identity()
-	nsym=xf.get_nsym(options.sym)
-	symxfs=[xf.get_sym(options.sym,i) for i in range(nsym)]
+		# The 3D reference volume we are using for subtraction
+		threed=EMData("{}/threed_{:02d}.hdf".format(args[0],args[1]),0)
 
-	# clean up the output file
-	try: os.unlink(output)
-	except: pass
+		# When applied this mask will include only the subunit to be extracted
+		# note that it is not binarized, so "soft" edges are permitted
+		subunitmask=EMData(options.subunitmask)
 
-		
-	NTHREADS=max(options.threads+1,2)		# we only run in threaded mode, and need one for collecting the results
-	jsd=queue.Queue(0)
+		# this is the "inverted" subunit mask, including everything except the subunit, again, "soft" edges are preserved
+		mask=subunitmask.process("math.linear",{"scale":-1.0,"shift":1.0})
+		ptclmask=EMData(args[0]+"/mask.hdf",0) # The full model mask from the reference volume
+		mask.mult(ptclmask)
+		# mask now excludes the subunit and volume outside the masked 3-D particle
 
-	# we start out with just a list of parameters to avoid initializing so many Thread objects at once
-	thrds=[(jsd,cls,threed,nptcl,mask,subunitmask,outermask,symxfs,eulers,cptcl,classmx,cmxtx,cmxty,cmxalpha,cmxmirror,options.masked,options.newbox,options.verbose-1) for cls in range(0,nref,1 if not DEBUG else 16)]
+		# Projections of the 3-D outermask will be used in 2-D to eliminate noise
+		# if not specified, the subunitmask will be projected (and thresholded) instead
+		if options.outermask!=None:
+			outermask=EMData(options.outermask)
+		else: outermask=None
 
-	# here we run the threads and save the results, no actual alignment done here
-	if options.verbose: print(len(thrds)," threads")
-	thrtolaunch=0
-	ncmpl=0
-	starttime=time.time()
-	while thrtolaunch<len(thrds) or threading.active_count()>1 or not jsd.empty():
-		# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
-		# note that it's ok that we wait here forever, since there can't be new results if an existing
-		# thread hasn't finished.
-		if thrtolaunch<len(thrds) :
-			while (threading.active_count()==NTHREADS ) : time.sleep(.1)
-			if options.verbose>1 : print("Starting thread {}/{}".format(thrtolaunch,len(thrds)))
-			thrds[thrtolaunch]=threading.Thread(target=monoextract,args=thrds[thrtolaunch])
-			thrds[thrtolaunch].start()
-			thrtolaunch+=1
-		else: time.sleep(1)		# the final threads are running, we can wait a while
-		
-		# We do a running estimate in min/sec for the job to finish
-		if options.verbose>1 and ncmpl>0: 
-			frac=ncmpl/float(len(thrds))
-			ETR=int(((tlf-starttime)/frac)-(time.time()-starttime))
-			print("{:0.2f}% complete.  ETC- {:d}:{:02d}".format(100.0*frac,ETR//60,ETR%60))
-	
-		while not jsd.empty():
-			ncmpl+=1			# number of completed tasks
-			tlf=time.time()			# used for remaining time estimate
-			cls,ptcls=jsd.get()
-			for p in ptcls: 
-				p.write_image(output,-1)
-				
-			ttj=cls if not DEBUG else cls//16
-			thrds[ttj].join()
-			thrds[ttj]=None
+		# We will need masked versions of our volume for all symmetric orientations
+		# generate the symmetry transforms here for convenience
+		xf = Transform()
+		xf.to_identity()
+		nsym=xf.get_nsym(options.sym)
+		symxfs=[xf.get_sym(options.sym,i) for i in range(nsym)]
 
-	try: os.unlink(outlst)
-	except: pass
-	launch_childprocess("e2proclst.py --create {} {}".format(outlst,output))
-	print("Extraction complete, creating invar")
-	
-	if not DEBUG:
-		if options.invartype=="bispec": prc="math.bispectrum.slice:size={bssz}:fp={bsfp}".format(bssz=bispec_invar_parm[0],bsfp=bispec_invar_parm[1])
-		else: prc="math.harmonic:fp=4"
-		launch_childprocess("e2proc2dpar.py {output} {outbispec} --process filter.highpass.gauss:cutoff_freq=0.01 --process normalize.edgemean --process {prc} --threads {threads}".format(
-			output=output,outbispec=outbispec,prc=prc,threads=options.threads+1))
-		
-		try: os.unlink(outbispeclst)
+		masked=[threed.copy().mult(mask.process("xform",{"transform":x})) for x in symxfs]
+
+
+		NTHREADS=max(options.threads+1,2)		# we only run in threaded mode, and need one for collecting the results
+		jsd=queue.Queue(0)
+
+		# we start out with just a list of parameters to avoid initializing so many Thread objects at once
+		thrds=[(jsd,ptcl,min(ptcl+100,len(lsxin)),lsxin,threed,subunitmask,mask,outermask,masked,options.verbose-1) for ptcl in range(0,len(lsxin),100)]
+
+		# here we run the threads and save the results, no actual alignment done here
+		if options.verbose: print(len(thrds)," threads")
+		thrtolaunch=0
+		ncmpl=0
+		starttime=time.time()
+		while thrtolaunch<len(thrds) or threading.active_count()>1 or not jsd.empty():
+			# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
+			# note that it's ok that we wait here forever, since there can't be new results if an existing
+			# thread hasn't finished.
+			if thrtolaunch<len(thrds) :
+				while (threading.active_count()==NTHREADS ) : time.sleep(.1)
+				if options.verbose>1 : print("Starting thread {}/{}".format(thrtolaunch,len(thrds)))
+				thrds[thrtolaunch]=threading.Thread(target=monoextract,args=thrds[thrtolaunch])
+				thrds[thrtolaunch].start()
+				thrtolaunch+=1
+			else: time.sleep(1)		# the final threads are running, we can wait a while
+
+			# We do a running estimate in min/sec for the job to finish
+			if options.verbose>1 and ncmpl>0:
+				frac=ncmpl/float(len(thrds))
+				ETR=int(((tlf-starttime)/frac)-(time.time()-starttime))
+				print("{:0.2f}% complete.  ETC- {:d}:{:02d}".format(100.0*frac,ETR//60,ETR%60))
+
+			while not jsd.empty():
+				ncmpl+=1			# number of completed tasks
+				tlf=time.time()			# used for remaining time estimate
+				cls,ptcls=jsd.get()
+				for p in ptcls:
+					p.write_image(output,-1)
+
+				ttj=cls if not DEBUG else cls//16
+				thrds[ttj].join()
+				thrds[ttj]=None
+
+
+	elif args[0].startswith("refine_"):
+		# path to the even/odd particles used for the refinement
+		cptcl=js_open_dict("{}/0_refine_parms.json".format(args[0]))["input"]
+		cptcl=[str(i) for i in cptcl]
+
+		# we only permit automatic names now
+		output="sets/subptcl_{}_{}__{}".format(args[0].split("_")[-1],args[1],cptcl[0].split("__")[-1].replace("_even","").replace(".lst",".hdf"))
+		outlst=output.replace(".hdf",".lst")
+		outbispec=output.split("__")[0]+"__ctf_flip_invar.hdf"
+		outbispeclst=outbispec.replace(".hdf",".lst")
+
+		# this reads all of the EMData headers from the projections, should be same for even and odd
+		pathprj="{}/projections_{:02d}_even.hdf".format(args[0],args[1])
+		nref=EMUtil.get_image_count(pathprj)
+		eulers=[EMData(pathprj,i,1)["xform.projection"] for i in range(nref)]
+
+		# The 3D reference volume we are using for subtraction
+		threed=EMData("{}/threed_{:02d}.hdf".format(args[0],args[1]),0)
+
+		# When applied this mask will include only the subunit to be extracted
+		# note that it is not binarized, so "soft" edges are permitted
+		subunitmask=EMData(options.subunitmask)
+
+		# this is the "inverted" subunit mask, including everything except the subunit, again, "soft" edges are preserved
+		mask=subunitmask.process("math.linear",{"scale":-1.0,"shift":1.0})
+		ptclmask=EMData(args[0]+"/mask.hdf",0) # The full model mask from the reference volume
+		mask.mult(ptclmask)
+		# mask now excludes the subunit and volume outside the masked 3-D particle
+
+		# Projections of the 3-D outermask will be used in 2-D to eliminate noise
+		# if not specified, the subunitmask will be projected (and thresholded) instead
+		if options.outermask!=None:
+			outermask=EMData(options.outermask)
+		else: outermask=None
+
+		# We will need masked versions of our volume for all symmetric orientations
+		# generate the symmetry transforms here for convenience
+		xf = Transform()
+		xf.to_identity()
+		nsym=xf.get_nsym(options.sym)
+		symxfs=[xf.get_sym(options.sym,i) for i in range(nsym)]
+
+		# clean up the output file
+		try: os.unlink(output)
 		except: pass
-		launch_childprocess("e2proclst.py --create {} {}".format(outbispeclst,outbispec))
-		print("All done, results in: ",output)
+
+
+		NTHREADS=max(options.threads+1,2)		# we only run in threaded mode, and need one for collecting the results
+		jsd=queue.Queue(0)
+
+		# we start out with just a list of parameters to avoid initializing so many Thread objects at once
+		thrds=[(jsd,cls,threed,nptcl,mask,subunitmask,outermask,symxfs,eulers,cptcl,classmx,cmxtx,cmxty,cmxalpha,cmxmirror,options.masked,options.newbox,options.verbose-1) for cls in range(0,nref,1 if not DEBUG else 16)]
+
+		# here we run the threads and save the results, no actual alignment done here
+		if options.verbose: print(len(thrds)," threads")
+		thrtolaunch=0
+		ncmpl=0
+		starttime=time.time()
+		while thrtolaunch<len(thrds) or threading.active_count()>1 or not jsd.empty():
+			# If we haven't launched all threads yet, then we wait for an empty slot, and launch another
+			# note that it's ok that we wait here forever, since there can't be new results if an existing
+			# thread hasn't finished.
+			if thrtolaunch<len(thrds) :
+				while (threading.active_count()==NTHREADS ) : time.sleep(.1)
+				if options.verbose>1 : print("Starting thread {}/{}".format(thrtolaunch,len(thrds)))
+				thrds[thrtolaunch]=threading.Thread(target=monoextract,args=thrds[thrtolaunch])
+				thrds[thrtolaunch].start()
+				thrtolaunch+=1
+			else: time.sleep(1)		# the final threads are running, we can wait a while
+
+			# We do a running estimate in min/sec for the job to finish
+			if options.verbose>1 and ncmpl>0:
+				frac=ncmpl/float(len(thrds))
+				ETR=int(((tlf-starttime)/frac)-(time.time()-starttime))
+				print("{:0.2f}% complete.  ETC- {:d}:{:02d}".format(100.0*frac,ETR//60,ETR%60))
+
+			while not jsd.empty():
+				ncmpl+=1			# number of completed tasks
+				tlf=time.time()			# used for remaining time estimate
+				cls,ptcls=jsd.get()
+				for p in ptcls:
+					p.write_image(output,-1)
+
+				ttj=cls if not DEBUG else cls//16
+				thrds[ttj].join()
+				thrds[ttj]=None
+
+		try: os.unlink(outlst)
+		except: pass
+		launch_childprocess("e2proclst.py --create {} {}".format(outlst,output))
+		print("Extraction complete, creating invar")
+
+		if not DEBUG:
+			if options.invartype=="bispec": prc="math.bispectrum.slice:size={bssz}:fp={bsfp}".format(bssz=bispec_invar_parm[0],bsfp=bispec_invar_parm[1])
+			else: prc="math.harmonic:fp=4"
+			launch_childprocess("e2proc2dpar.py {output} {outbispec} --process filter.highpass.gauss:cutoff_freq=0.01 --process normalize.edgemean --process {prc} --threads {threads}".format(
+				output=output,outbispec=outbispec,prc=prc,threads=options.threads+1))
+
+			try: os.unlink(outbispeclst)
+			except: pass
+			launch_childprocess("e2proclst.py --create {} {}".format(outbispeclst,outbispec))
+			print("All done, results in: ",output)
+	else:
+		print("ERROR: ",args[0]," must be refine_xx or r3d_xx")
 
 	E2end(logid)
 

@@ -11,13 +11,18 @@ def main():
 	parser.add_argument("--lstin", type=str,help="", default=None)
 	parser.add_argument("--path", type=str,help="", default=None)
 	#parser.add_argument("--sym", type=str,help="", default="c1")
-	
+	parser.add_argument("--make3d", action="store_true", default=False, help="run make3d.")
+
 	(options, args) = parser.parse_args()
 	
 	logid=E2init(sys.argv)
-	lst0=load_lst_params(options.lstin)
-	key0=["{}_{:04d}".format(l["src"], l["idx"]) for l in lst0]
-	dic0={k:i for i,k in enumerate(key0)}
+	
+	if options.path==None: options.path=num_path_new("spt_")
+	
+	if options.lstin:
+		lst0=load_lst_params(options.lstin)
+		key0=["{}_{:04d}".format(l["src"], l["idx"]) for l in lst0]
+		dic0={k:i for i,k in enumerate(key0)}
 	lst1=load_lst_params(options.ptcls)
 	
 	lout3d=[]
@@ -28,12 +33,22 @@ def main():
 	for li,l in enumerate(lst1):
 		e=EMData(l["src"], l["idx"], True)
 		ky="{}_{:04d}".format(e["orig_ptcl"], e["orig_idx"])
-		ii=dic0[ky]
-		l0=lst0[ii]
-		xf3d=e["xform.align3d"]
+		
+		if options.lstin:
+			ii=dic0[ky]
+			l0=lst0[ii]
+			scr=l0["score"]
+		else:
+			scr=1
+			ii=li
+			
+		if "xform.align3d" in l:
+			xf3d=l["xform.align3d"]
+		else:
+			xf3d=e["xform.align3d"]
 
 		dc3={"src":l["src"], "idx":l["idx"], 
-			"score":l0["score"], "xform.align3d":xf3d,
+			"score":scr, "xform.align3d":xf3d,
 			"orig_idx":ii}
 		lout3d.append(dc3)
 
@@ -80,8 +95,9 @@ def main():
 	save_lst_params(info2d, "{}/particle_info_2d.lst".format(options.path))
 	save_lst_params(info3d, "{}/particle_info_3d.lst".format(options.path))
 	
-	#for eo in ["even", "odd"]:
-		#run(f"e2spa_make3d.py --input {options.path}/aliptcls2d_00.lst --output {options.path}/threed_00_{eo}.hdf --clsid {eo} --outsize {boxsz} --sym {options.sym} --parallel thread:32")
+	if options.make3d:
+		for eo in ["even", "odd"]:
+			run(f"e2spa_make3d.py --input {options.path}/aliptcls2d_01.lst --output {options.path}/threed_00_{eo}.hdf --clsid {eo} --parallel thread:32")
 		
 	
 	E2end(logid)

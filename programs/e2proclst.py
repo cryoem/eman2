@@ -81,7 +81,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	parser.add_argument("--retype", type=str, default=None, help="If a lst file is referencing a set of particles from particles/imgname__oldtype.hdf, this will change oldtype to the specified string in-place (modifies input files)")
 	parser.add_argument("--refile", type=str, default=None, help="similar to retype, but replaces the full filename of the source image file with the provided string")
 	parser.add_argument("--shuffle", action="store_true", default=False, help="shuffle list inplace.")
-	parser.add_argument("--sym", type=str, default=None, help="apply symmetry to a list of particles with xform.projection by duplicating each particle N time. only used along with a .lst input")
+	parser.add_argument("--sym", type=str, default=None, help="WARNING: operates in-place, modifying input files!  Apply symmetry to .lst files of particles with xform.projection by duplicating each particle N times.")
 	parser.add_argument("--extractattr", type=str, default=None, help="extract an attribute from particle header as an entry in the list")
 	parser.add_argument("--getclass", type=int, help="select a class when --create",default=-1)
 
@@ -463,7 +463,9 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 					if atr=="xform.align3d": xt=xt.inverse()
 					q[atr]=xt
 					if "raw_id" not in l:
-						q["raw_id"]=il
+						q["sym_raw"]=il
+					if "sym_id" not in l:
+						q["sym_id"]=i
 					lout.append(q)
 					
 			save_lst_params(lout, f)

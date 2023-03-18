@@ -53,6 +53,7 @@ def main():
 			mx=0
 		
 		js["class_list"][str(mx)]={'boxsize': good_size_small(bxsz*scale), 'name': options.label}
+		if "boxes_3d" not in js: js["boxes_3d"]=[]
 		js["boxes_3d"].extend(boxes)
 		print("{} -> {} particles".format(base_name(ky), len(boxes)))
 		f=js_open_dict(ky)

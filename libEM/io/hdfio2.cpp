@@ -1473,11 +1473,15 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 		hid_t plist = H5Pcreate(H5P_DATASET_CREATE);	// we could just use H5P_DEFAULT for non-compressed
 		if (dt==EMUtil::EM_COMPRESSED) {
 			if (nz==1) {
-				hsize_t cdims[2] = { ny>256?256:ny, nx>256?256:nx};		// slice-wise reading common in 3D so 2-D chunks
+				//hsize_t cdims[2] = { ny>256?256:ny, nx>256?256:nx};		// whole image for 2-D
+				//hsize_t cdims[2] = { ny>512?int(2+ny/(ny/512+1)):ny, int(2+nx>512?(nx/512+1)):nx};		// whole image for 2-D < 512
+				hsize_t cdims[2] = { 8, nx};		// match nx, 8 for ny is just to make the chunk a bit larger
 				H5Pset_chunk(plist,2,cdims);	// uses only the first 2 elements
 			}
 			else {
-				hsize_t cdims[3] = { 1, ny>256?256:ny, nx>256?256:nx};		// slice-wise reading common in 3D so 2-D chunks
+				//hsize_t cdims[3] = { 1, ny>256?256:ny, nx>256?256:nx};		// slice-wise reading common in 3D so 2-D chunks
+				//hsize_t cdims[3] = { 1, ny>512?int(2+ny/(ny/512+1)):ny, int(2+nx>512?(nx/512+1)):nx};		// whole image for 2-D < 512
+				hsize_t cdims[3] = { 1, 8, nx};		// nx so that axis is matched, 8 arbitrary to make block size a bit larger
 				H5Pset_chunk(plist,3,cdims);
 			}
 			H5Pset_deflate(plist, renderlevel);		// zlib level default is 1

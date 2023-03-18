@@ -214,7 +214,7 @@ def main():
 	imgs_500mask=[m.process("mask.soft",{"outer_radius":-8,"width":4}) for m in imgs_500]
 
 	num=options.num=len(imgs_500)
-		
+	boxes3d=[]
 	#### create working directory
 	## we do not create the folder until here so we do not end up with empty folders when the input is wrong..
 	if options.writetmp:
@@ -263,6 +263,13 @@ def main():
 		if options.flip:
 			print("Flipping tilt axis...")
 			ttparams[:,2]=(ttparams[:,2]+180)%360
+			
+			if "boxes_3d" in js:
+				boxes3d=js["boxes_3d"]
+				for b in boxes3d:
+					for k in range(3):
+						b[k]*=-1
+
 			
 	else:
 		#### determine alignment parameters from scratch
@@ -609,6 +616,7 @@ def main():
 	js["tlt_file"]=options.inputname
 	js["ali_loss"]=loss0.tolist()
 	js["apix_unbin"]=options.apix_init
+	if len(boxes3d)>0: js["boxes_3d"]=boxes3d
 	js.close()
 	
 	dtime=time.time()-time0
@@ -1385,7 +1393,7 @@ def calc_global_trans(imgs, options, excludes=[], tltax=None,tlts=[]):
 		trans=ts.copy()
 		
 	trans=-ts[:,::-1].copy()*2
-	
+	trans=np.minimum(np.maximum(trans, -sz*1.8), sz*1.8)
 	imgout=[]
 	for i,m in enumerate(imgs):
 		e=m.process("mask.soft",{"outer_radius":-8,"width":8})

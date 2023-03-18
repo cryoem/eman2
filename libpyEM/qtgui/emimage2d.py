@@ -1706,7 +1706,7 @@ class EMImage2DWidget(EMGLWidget):
 		lc=self.scr_to_img(event.x(),event.y())
 		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.show_inspector(1)
-		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
+		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier):
 			try:
 				get_application().setOverrideCursor(Qt.ClosedHandCursor)
 			except: # if we're using a version of qt older than 4.2 than we have to use this...
@@ -1898,13 +1898,13 @@ class EMImage2DWidget(EMGLWidget):
 		elif event.key() == Qt.Key_Left:
 			self.__key_mvt_animation(-self.width()*.1,0)
 		elif event.key()==Qt.Key_W :
-			self.__key_mvt_animation(0,self.height())
+			self.__key_mvt_animation(0,self.height()*.05)
 		elif event.key()==Qt.Key_S :
-			self.__key_mvt_animation(0,-self.height())
+			self.__key_mvt_animation(0,-self.height()*.05)
 		elif event.key()==Qt.Key_D  :
-			self.__key_mvt_animation(self.width(),0)
+			self.__key_mvt_animation(self.width()*.05,0)
 		elif event.key()==Qt.Key_A :
-			self.__key_mvt_animation(-self.width(),0)
+			self.__key_mvt_animation(-self.width()*.05,0)
 		elif event.key()==Qt.Key_Space:
 			self.display_shapes = not self.display_shapes
 			self.updateGL()
