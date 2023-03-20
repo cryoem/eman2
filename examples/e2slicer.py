@@ -265,7 +265,7 @@ def get_single_slice(options,img,axis=''):
 
 	if options.verbose > 6: print("The region for the orthogonal z slice is", rmid)
 
-	print(f"\n(e2slicer)(get_single_slice) getting slice from region rmid={rmid} because axis={xaxis}")
+	print(f"\n(e2slicer)(get_single_slice) getting slice from region rmid={rmid} because axis={axis}")
 	slicemid = img.get_clip( rmid )
 
 	#c: apparently, setting the size of the output is essential for it to show as a plane in xy as opposed to viewing the slice "from the side"
