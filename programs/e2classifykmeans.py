@@ -226,17 +226,28 @@ together."""
 					
 		
 	if (options.clsfiles) :
-		list(map(os.remove, glob.glob('cls????.lst')))
-		stackname=argv[1]
-		if options.original : stackname=options.original
-		for j in range(options.ncls):
-			out=open("cls%04d.lst"%j,"w")
-			out.write("#LST\n")
-			for i in range(len(classes[j])):
-				out.write("%d\t%s\n"%(filen[classes[j][i]],stackname))
-				#im=EMData(stackname,filen[classes[j][i]])
-				#im.write_image("cls%04d.hdf"%j,-1)
-			out.close()
+		# new style lsx files with metadata
+		if (options.original is not None and options.original.endswith(".lst")) or args[0].endswith(".lst") :
+			lin=LSXFile(options.original if options.original is not None else args[0])
+			for j in range(options.ncls):
+				try: os.unlink(f"cls{j:04d}.lst")
+				except: pass
+				lout=LSXFile(f"cls{j:04d}.lst")
+				for i in range(len(classes[j])):
+					lout[-1]=lin[filen[classes[j][i]]]
+		# old style lst files
+		else:
+			list(map(os.remove, glob.glob('cls????.lst')))
+			stackname=argv[1]
+			if options.original : stackname=options.original
+			for j in range(options.ncls):
+				out=open("cls%04d.lst"%j,"w")
+				out.write("#LST\n")
+				for i in range(len(classes[j])):
+					out.write("%d\t%s\n"%(filen[classes[j][i]],stackname))
+					#im=EMData(stackname,filen[classes[j][i]])
+					#im.write_image("cls%04d.hdf"%j,-1)
+				out.close()
 	
 	# Write an EMAN2 standard classification matrix. Particles run along y
 	# each class a particle is in takes a slot in x. There are then a set of

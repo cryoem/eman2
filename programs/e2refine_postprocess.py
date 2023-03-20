@@ -59,7 +59,7 @@ def main():
 	parser.add_argument("--iter", dest = "iter", type = int, default=-1, help = "Iteration number to generate FSC filenames")
 	parser.add_argument("--align",action="store_true",default=False,help="Will do o to e alignment and test for handedness flips. Should not be repeated as it overwrites the odd file with the aligned result.")
 	parser.add_argument("--tomo",action="store_true",default=False,help="Modifies settings to be more appropriate for typical subtomogram averaging")
-	parser.add_argument("--tophat",type=str,default=None,help="'global', 'local' or 'localwiener'. Overall Wiener filter disabled, and replaced by a tophat filter either across the map at 0.143 as Relion appears to do, or locally based on e2fsc_local_real.py results (either local tophat or local wiener)")
+	parser.add_argument("--tophat",type=str,default=None,help="'global', 'local', 'localwiener' or a fixed number representing 1/cutoff freq in A. Overall Wiener filter disabled, and replaced by a tophat filter either across the map at 0.143 as Relion appears to do, or locally based on e2fsc_local_real.py results (either local tophat or local wiener)")
 	parser.add_argument("--ampcorrect",choices=['strucfac', 'flatten','none'],default="strucfac",help="Will perform amplitude correction via the specified method. The default choice is strucfac.")
 	parser.add_argument("--ncmult",type=float,default=1.05,help="Specify how much to multiply noise cutoff during flattening amplitude correction. Default is 1.05.")
 	parser.add_argument("--localsize",type=float,default=-1,help="Override the automatic local region size (in A) used for local resolution calculation and filtration.")
@@ -399,7 +399,8 @@ def main():
 			print("new noise cutoff: {:1.2f}".format(old_div(1.0,noisecutoff)))
 		except: pass
 
-
+	try: options.tophat=float(options.tophat)
+	except: pass
 
 	if options.tophat!=None and options.tophat!="wiener":
 		# _unmasked volumes are NOT tophat filtered
@@ -417,7 +418,19 @@ def main():
 		elif nx>384 : smlthreads=min(options.threads,16)
 		else: smlthreads=options.threads
 		
-		if options.tophat=="global" :
+		if isinstance(options.tophat,float):	# force the filter to a specified resolution
+			cmd=f"e2proc3d.py {path}tmp_even.hdf {evenfile} {ampcorrect} --process filter.lowpass.tophat:cutoff_freq={options.tophat} --multfile {path}mask.hdf {massnorm} {m3dpostproc}"
+			run(cmd)
+
+			cmd=f"e2proc3d.py {path}tmp_odd.hdf {oddfile} {ampcorrect} --process filter.lowpass.tophat:cutoff_freq={options.tophat} --multfile {path}mask.hdf {massnorm} {m3dpostproc}"
+			run(cmd)
+
+			### Refilter/mask
+			combined.write_compressed(combfile,0,options.compressbits,erase=True)	# write the original average back to disk
+
+			run(f"e2proc3d.py {combfile} {combfile}:{options.compressbits} {ampcorrect} --process filter.lowpass.tophat:cutoff_freq={options.tophat} --multfile {path}mask.hdf {massnorm} {symopt} {m3dpostproc}")
+
+		elif options.tophat=="global" :
 			# Technically snrmult should be 1 here, but we use 2 to help speed convergence
 			cmd="e2proc3d.py {path}tmp_even.hdf {evenfile} {ampcorrect} --process filter.lowpass.tophat:cutoff_freq={noisecutoff} --multfile {path}mask.hdf {normproc} {postproc}".format(
 			evenfile=evenfile,path=path,itr=options.iter,normproc=massnorm,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=old_div(1.0,options.restarget),postproc=m3dpostproc,noisecutoff=noisecutoff)
@@ -431,11 +444,11 @@ def main():
 			combined.write_compressed(combfile,0,options.compressbits,erase=True)	# write the original average back to disk
 
 			# Note that the snrmult=4 below should really be 2 (due to the averaging of the 2 maps), the 4 is a somewhat arbitrary compensation for the .143 cutoff being a bit low
-			
+
 			run("e2proc3d.py {combfile} {combfile} {ampcorrect} --process filter.lowpass.tophat:cutoff_freq={noisecutoff} --multfile {path}mask.hdf {normproc} {symopt} {postproc}".format(
 				combfile=combfile,path=path,itr=options.iter,normproc=massnorm,ampcorrect=ampcorrect,postproc=m3dpostproc,symopt=symopt,underfilter=underfilter,maxfreq=old_div(1.0,options.restarget),noisecutoff=noisecutoff))
 			compress_hdf(combfile,options.compressbits)
-			
+
 		elif options.tophat=="local":
 
 			# compute local resolution and locally filter averaged volume, using new local fsc
