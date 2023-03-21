@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+#
 # Author: Lan Dang, 03/17/2022 (dlan@bcm.edu)
 import sys
 from past.utils import old_div
@@ -14,7 +15,9 @@ from EMAN2_utils import interp_points
 from eman2_gui.emapplication import get_application, EMApp
 from eman2_gui.emimage import EMImageWidget
 from eman2_gui.emimage2d import EMImage2DWidget
-from eman2_gui.emannotate2d import EMAnnotate2DWidget
+from annotate_utils import UNet
+#from eman2_gui.emannotate2d import EMAnnotate2DWidget
+from emannotate2d_2 import EMAnnotate2DWidget, EMSegTab
 from eman2_gui.emimagemx import EMImageMXWidget
 from eman2_gui.emscene3d import EMScene3D
 from eman2_gui.emdataitem3d import EMDataItem3D, EMIsosurface
@@ -43,16 +46,18 @@ from matplotlib.patches import Circle
 import matplotlib.pyplot as plt
 
 def main():
-	usage="""annotate tomograms in a folder. annotated images will be saved in ../segs folder.
-	 still developing!!!
+	usage="""annotate tomograms in a folder. annotated images will be saved in ./segs folder.
+	 still developing
 
 	[prog] --folder <path_to_tomogram_folder>
 
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	#parser.add_pos_argument(name="tomogram",help="Specify a tomogram from which you want to extract particles.", default="", guitype='filebox', browser="EMTomoBoxesTable(withmodal=True,multiselect=False)", row=0, col=0,rowspan=1, colspan=2, mode="box3d,box2d")
-	parser.add_argument("--folder",type=str, help="List the folder contain all tomograms to process", default="./tomograms")
-	#parser.add_argument("--annotation",type=str, help="List the tomograms to process", default="")
+	parser.add_argument("--folder",type=str, help="List the folder contain all tomograms to process", default="./tomograms/")
+
+	parser.add_argument("--seg_folder",type=str, help="List the folder contain all annotation file", default="./segs/")
+	parser.add_argument("--region_sz",type=int, help="Region size for Region I/O. -1 reads whole tomogram", default=720)
 	#parser.add_argument("--alltomograms",default=False,help="Process all tomograms from tomograms folder")
 	#parser.add_argument("--boxsize","-b",type=int,help="Box size in pixels",default=-1)
 
@@ -94,16 +99,17 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 	def __init__(self, application,options,data=None,annotate=None):
 		super().__init__()
 		self.app = weakref.ref(application)
-		self.setMinimumSize(1000, 700)
+		self.setMinimumSize(1440, 790)
 		self.options=options
 		self.setWindowTitle("ImageViewer")
 		self.tom_folder = options.folder
+		self.seg_folder = options.seg_folder
 
 		try:
-			os.mkdir("./segs")
-			print("Directory ./segs was created" )
+			os.mkdir(self.seg_folder)
+			print("Directory", self.seg_folder, "is created" )
 		except OSError as error:
-			print("Directory ./segs already existed. Continue")
+			print("Directory",self.seg_folder,"already existed. Continue")
 			pass
 
 		self.tomogram_list = QtWidgets.QListWidget()
@@ -129,7 +135,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		#Need to copy header to annotation file
 		#Need to call garbage collector to remove trash from buffer memory
 
-		self.seg_path = os.path.join("./segs/",self.tomogram_list.item(0).text()[0:-4]+"_seg.hdf")
+		self.seg_path = os.path.join(self.seg_folder,self.tomogram_list.item(0).text()[0:-4]+"_seg.hdf")
 		if not os.path.isfile(self.seg_path):
 			seg_out = EMData(self.nx,self.ny,self.nz)
 			seg_out.write_image(self.seg_path)
@@ -175,16 +181,20 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		# self.gbl.addWidget(QtWidgets.QPushButton("Button3"),0,2)
 		self.gbl.setContentsMargins(8, 8, 8, 8)
 		self.gbl.setSpacing(10)
-
-		self.img_view_fixed_size = 720
+		if options.region_sz == -1:
+			self.img_view_region_size = self.nx
+			print("Reading full images of size", self.nx)
+		elif options.region_sz == 0:
+			print("Region size needs to be greater than 0. Set region size to default value of 720.")
+			self.img_view_region_size = 720
+		else:
+			self.img_view_region_size = options.region_sz
 		self.thumbnail_size=220
 
-		# self.img_view = EMAnnotate2DWidget(self.data,self.annotation,sizehint=(self.img_view_fixed_size,self.img_view_fixed_size))
-		# print("Data",self.img_view.data)
 
-		self.img_view = EMAnnotate2DWidget(sizehint=(self.img_view_fixed_size,self.img_view_fixed_size))
+		self.img_view = EMAnnotate2DWidget(sizehint=(720,720))
 		self.img_view.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
-		self.img_view.setMinimumSize(self.img_view_fixed_size, self.img_view_fixed_size)
+		self.img_view.setMinimumSize(720, 720)
 
 		#self.img_view.show()
 
@@ -203,6 +213,8 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		except:
 			pass
 
+		#self.seg_tab = EMSegTab(target=self.img_view)
+		#self.img_view.external_seg_tab = self.seg_tab
 
 		self.img_view_inspector = self.img_view.get_inspector()
 
@@ -284,7 +296,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 		self.brush_tab = QtWidgets.QWidget()
 		self.btlay = QtWidgets.QVBoxLayout(self.brush_tab)
-		self.btlay.addWidget(QtWidgets.QLabel("Use paint brush to annotate on tomogram. Open control panel"))
+		self.btlay.addWidget(QtWidgets.QLabel("Use paint brush to annotate on tomogram. Use manual annotate tools panel"))
 		self.basic_tab_num = 0
 		self.linear_tab = QtWidgets.QWidget()
 		self.ltlay = QtWidgets.QGridLayout(self.linear_tab)
@@ -505,9 +517,13 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.test_button = QtWidgets.QPushButton("Test Button")
 		self.button_gbl.addWidget(self.test_button,6,1,1,1)
 
+		inspector_vbl = QtWidgets.QVBoxLayout()
+		inspector_vbl.addWidget(QtWidgets.QLabel("Manual Annotate Tools"))
+		inspector_vbl.addWidget(self.img_view_inspector)
+
 		self.gbl.addLayout(tomo_vbl,1,0,1,1)
 		self.gbl.addWidget(self.img_view,1,1,1,1)
-		self.gbl.addWidget(self.img_view_inspector,1,3,1,1)
+		self.gbl.addLayout(inspector_vbl,1,3,1,1)
 		self.centralWidget.setLayout(self.gbl)
 
 		self.control_panel = QtWidgets.QWidget()
@@ -617,7 +633,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.ny=hdr["ny"]
 		self.nz=hdr["nz"]
 
-		seg_path = os.path.join("./segs/",self.tomogram_list.item(int).text()[0:-4]+"_seg.hdf")
+		seg_path = os.path.join(self.seg_folder,self.tomogram_list.item(int).text()[0:-4]+"_seg.hdf")
 		if not os.path.isfile(seg_path):
 			seg_out = EMData(self.nx,self.ny,self.nz)
 			seg_out.write_image(seg_path)
@@ -646,7 +662,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		else:
 			print("Annotation is none.")
 			pass
-		self.set_imgview_data(round(self.data_xy[0]),round(self.data_xy[1]),self.img_view_fixed_size)
+		self.set_imgview_data(round(self.data_xy[0]),round(self.data_xy[1]),self.img_view_region_size)
 		self.seg_path = seg_path
 
 
@@ -678,7 +694,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 				self.cur_region = Region(x-old_div(sz,2),y-old_div(sz,2),iz-self.zthick, sz, sz,self.zthick*2+1)
 				#self.data = EMData(self.data_file, 0, False, Region(x-old_div(sz,2),y-old_div(sz,2),iz-self.zthick, sz, sz,self.zthick*2+1))
 		self.data = EMData(self.data_file, 0, False, self.cur_region)
-		seg_path = os.path.join("./segs/",self.tomogram_list.currentItem().text()[0:-4]+"_seg.hdf")
+		seg_path = os.path.join(self.seg_folder,self.tomogram_list.currentItem().text()[0:-4]+"_seg.hdf")
 		self.annotate = EMData(seg_path, 0, False, self.cur_region)
 		self.img_view.set_data(self.data, self.annotate)
 		self.img_view.set_scale(1)
@@ -709,7 +725,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 	def zt_spinbox_changed(self,event):
 		self.data_xy = self.thumbnail.get_xy()
-		self.set_imgview_data(self.data_xy[0],self.data_xy[1],self.img_view_fixed_size)
+		self.set_imgview_data(self.data_xy[0],self.data_xy[1],self.img_view_region_size)
 
 
 
@@ -1318,11 +1334,11 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		print("Row", row, "Col", col, "Tomogram", self.table_tom.itemAt(row,col))
 		print(self.table_tom.currentItem().text())
 
-	# def table_tom_cell_changed(self):
-	# 	#print("New Cell", self.table_tom.currentItem().text())
-	# 	self.img_view.set_data(EMData(self.table_tom.currentItem().text()),None)
-	# def set_data(self):
-	# 	return
+	def table_tom_cell_changed(self):
+		#print("New Cell", self.table_tom.currentItem().text())
+		self.img_view.set_data(EMData(self.table_tom.currentItem().text()),None)
+	def set_data(self):
+		return
 
 	def update_sets(self):
 		#Set the colors and flags of table set items
@@ -1389,7 +1405,7 @@ class Thumbnail(EMImage2DWidget):
 		self.x = self.box_size[0]/2
 		self.y = self.box_size[1]/2
 		self.set_im()
-		self.app_target.set_imgview_data(self.get_xy()[0],self.get_xy()[1],self.app_target.img_view_fixed_size)
+		self.app_target.set_imgview_data(self.get_xy()[0],self.get_xy()[1],self.app_target.img_view_region_size)
 
 
 		#self.glass_scale
@@ -1424,7 +1440,7 @@ class Thumbnail(EMImage2DWidget):
 		self.im_scalesz = self.im_xsize
 		#print("Hahah",self.im_xsize,self.target.scale)
 		#self.iv_size = [self.target.size().width(), self.target.size().height()]
-		self.iv_size = [self.app_target.img_view_fixed_size, self.app_target.img_view_fixed_size]
+		self.iv_size = [self.app_target.img_view_region_size, self.app_target.img_view_region_size]
 		box_size = [self.size*(self.iv_size[0]/self.im_scalesz),self.size*(self.iv_size[1]/self.im_scalesz)]
 		#print("IV size", self.iv_size, "Box_size", box_size)
 		return box_size
@@ -1434,54 +1450,7 @@ class Thumbnail(EMImage2DWidget):
 		return self.im_xsize*self.target.scale/self.size
 
 	def mousePressEvent(self, event):
-		if event.buttons()&Qt.LeftButton:
-			# lc=self.scr_to_img(event.x(),event.y())
-			# print("Box x,y,bound", lc[0], lc[1], self.box_size[0]/2, self.size-self.box_size[0]/2)
-			# if lc[0] <= self.box_size[0]/2:
-			# 	print("x is out of bound, move position to x =",self.box_size[0]/2)
-			# 	lc=self.scr_to_img(self.box_size[0]/2 ,event.y())
-			# elif lc[0] >= self.size-self.box_size[0]/2:
-			# 	print("x is out of bound, move position to x =",self.size-self.box_size[0]/2)
-			# 	lc=self.scr_to_img(self.box_size[0]/2 ,event.y())
-			# if lc[1] <= self.box_size[1]/2:
-			# 	print("y is out of bound, move position to y =",self.box_size[1]/2)
-			# 	lc=self.scr_to_img(event.x(),self.box_size[1]/2)
-			# elif lc[1] >= (self.size-self.box_size[1]/2):
-			# 	print("y is out of bound, move position to y =",self.size-self.box_size[1]/2)
-			# 	lc=self.scr_to_img(event.x(),self.size-self.box_size[1]/2)
-			# else:
-			# 	pass
-
-			# self.box_size = self.get_box_size()
-			# self.scale_fac = self.get_scale_fac()
-			# lc=self.scr_to_img(event.x(),event.y())
-			# print("lc",lc)
-			# self.app_target.set_imgview_data((lc[0]-self.box_size[0]/2)*self.scale_fac,(lc[1]-self.box_size[0]/2)*self.scale_fac,660)
-			# self.add_box(lc[0],lc[1], self.box_size)
-			return
-
-		# elif event.buttons()&Qt.RightButton:
-		# 	print("Boxsize", self.box_size, "self.iv_fixed_size", self.iv_size)
-		# 	self.box_size = self.get_box_size()
-		# 	self.scale_fac = self.get_scale_fac()
-		# 		#self.target_scale = self.target.scale
-		# 	print(self.target.origin, self.target.rmousedrag)
-		# 	lc=self.scr_to_img(event.x(),event.y())
-		# 	#print(event.x(),event.y())
-		#
-		# 	self.add_box(lc[0],lc[1], self.box_size)
-		# 	#self.target.set_origin(self.target.origin[0]+self.target.rmousedrag[0]-lc[0],self.target.origin[1]-self.target.rmousedrag[1]+lc[1])
-		# 	self.target.set_origin((lc[0]-self.box_size[0]/2)*self.scale_fac,(lc[1]-self.box_size[1]/2)*self.scale_fac)
-		# 	# self.x = event.x()
-		# 	# self.y = event.y()
-		# 	self.target.updateGL()
-		# elif event.buttons()&Qt.RightButton:
-		# 	self.disp_proc = []
-		# 	nm, op =parsemodopt("mask.fromfile:image=self.glass")
-		# 	self.disp_proc.append(Processors.get(nm,op))
-		# 	self.set_disp_proc(self.disp_proc)
-		else:
-			return
+		return
 
 	def mouseMoveEvent(self, event):
 		lc=self.scr_to_img(event.x(),event.y())
@@ -1489,11 +1458,6 @@ class Thumbnail(EMImage2DWidget):
 			self.box_size = self.get_box_size()
 			self.scale_fac = self.get_scale_fac()
 			self.add_box((lc[0]),(lc[1]), (self.box_size))
-			#self.target.set_origin(self.target.origin[0]+self.target.rmousedrag[0]-lc[0],self.target.origin[1]-self.target.rmousedrag[1]+lc[1])
-			#self.target.set_origin((lc[0]-self.box_size[0]/2)*self.scale_fac,(lc[1]-self.box_size[1]/2)*self.scale_fac)
-			# self.x = event.x()
-			# self.y = event.y()
-			#self.target.updateGL()
 		elif event.buttons()&Qt.RightButton:
 			return
 
@@ -1528,7 +1492,6 @@ class Thumbnail(EMImage2DWidget):
 			self.scale_fac = self.get_scale_fac()
 			print("Bzsz", self.box_size, "scale fac", self.scale_fac)
 			self.add_box(xy[0],xy[1], self.box_size)
-
 			if self.app_target.get_annotation():
 				print("Print annotation to file", self.app_target.seg_path)
 				try:
@@ -1540,7 +1503,7 @@ class Thumbnail(EMImage2DWidget):
 			else:
 				print("Annotation is none.")
 				pass
-			self.app_target.set_imgview_data((xy[0])*self.scale_fac,(xy[1])*self.scale_fac,self.app_target.img_view_fixed_size)
+			self.app_target.set_imgview_data((xy[0])*self.scale_fac,(xy[1])*self.scale_fac,self.app_target.img_view_region_size)
 		else:
 			print("or else")
 			return
@@ -1903,269 +1866,6 @@ class Contour(EMShape):
 			glEnableClientState(GL_VERTEX_ARRAY)
 			glVertexPointerf(pts)
 			glDrawArrays(GL_POINTS, 0, len(pts))
-
-class UNet():
-	def __init__(self, infile=None, data=None, label=None, batchsz=50 ):
-
-		#self.model=self.get_tiny_unet(tile_sz,tile_sz)
-		self.model=self.get_unet(64,64)
-		print("Getting a new unet model")
-
-		self.datas=None
-		self.labels=None
-		# self.data_img=data
-		# self.label_img=label
-		#self.data_img.write_image("./neural_nets/test_data.hdf")
-		if infile:
-			self.datas, self.labels = self.load_particles_from_file(ptcls=infile)
-		#self.create_edge_training_set()
-			print("Done creating training set")
-			print("Datas: ",self.datas.shape,"Labels: ",self.labels.shape)
-
-
-	def create_edge_training_set(self,tile_sz=6,disk_sz=5):
-		coor = np.where(self.label_img.numpy()>0)
-		data_l=[]
-		label_l=[]
-		for i in range(15,len(coor[0])-15):
-			x = int(coor[1][i])
-			y = int(coor[0][i])
-			d = self.data_img.get_clip(Region(x,y,tile_sz,tile_sz))
-			l = self.label_img.get_clip(Region(x,y,tile_sz,tile_sz))
-			# d.write_image("./neural_nets/data_stack_train.hdf",-1)
-			# l.write_image("./neural_nets/label_stack_train.hdf",-1)
-			data_l.append(d.numpy())
-			label_l.append(l.numpy())
-		# print(data_l[15])
-		self.datas = np.asarray(data_l,dtype=np.float32)
-		self.datas.reshape(-1,tile_sz,tile_sz,1)
-		self.datas /=3.0
-		self.labels=np.asarray(label_l,dtype=np.float32)
-
-	def get_tiny_unet(self,inp_x=None,inp_y=None):
-		inputs = Input((inp_x, inp_y, 1))
-		conv1 = Conv2D(32, (5, 5), activation='relu', padding='same')(inputs)
-		pool1 = MaxPooling2D(pool_size=(2, 2))(conv1)
-		conv2 = Conv2D(64, (5, 5), activation='relu', padding='same')(pool1)
-		up1 = concatenate([Conv2DTranspose(64, (2, 2), strides=(2, 2), padding='same')(conv2), conv1], axis=3)
-		conv3 = Conv2D(64, (5, 5), activation='relu', padding='same')(up1)
-		conv4 = Conv2D(1, (1, 1), activation='sigmoid')(conv3)
-		model = Model(inputs=[inputs], outputs=[conv4])
-		return model
-
-	def load_particles_from_file(self, ptcls=None, ncopy=1, rng=None):
-		is3d=False
-		e=EMData(ptcls,0, True)
-		tsz=max(e["nx"],e["ny"])
-		nframe=EMUtil.get_image_count(ptcls)
-		if nframe==1:
-			nframe=e["nz"]
-			if nframe>1:
-				is3d=True
-		num = nframe//2
-		data=[]
-		label=[]
-		ntrain=-1
-		for i in range(num):
-			for nc in range(ncopy):
-				if is3d:
-					ptl=EMData(ptcls,0, False,Region(0,0,i*2,tsz,tsz,1))
-				else:
-					ptl=EMData(ptcls,i*2, False, Region(0,0,tsz,tsz))
-
-				if ntrain<0 and ptl.get_attr_default("valid_set", 0)==1:
-					ntrain=len(data)
-				#ptl.process_inplace("threshold.belowtozero")
-
-				ar=ptl.numpy().copy()
-				#shp=np.shape(ar)
-				data.append(ar)
-
-				if is3d:
-					ptl=EMData(ptcls,0, False,Region(0,0,i*2+1,tsz,tsz,1))
-				else:
-					ptl=EMData(ptcls,i*2+1, False, Region(0,0,tsz,tsz))
-					#ptl.process_inplace("threshold.belowtozero")
-
-				ar=ptl.numpy().copy()
-				#shp=np.shape(ar)
-				label.append(ar)
-
-		if ntrain<0: ntrain=len(data)
-		print("{:d} particles loaded, {:d} in training set, {:d} in validation set".format(len(data), ntrain, len(data)-ntrain))
-		data=np.asarray(data,dtype=np.float32)
-
-		print(data.shape)
-		print("Std of particles: ",np.std(data))
-		data/=3.
-
-		label=np.asarray(label,dtype=np.float32)
-		label/=(np.max(np.abs(label)))
-
-		header=EMData(ptcls,0,True)
-		shape=[header["nx"],header["ny"],header["nz"]]
-		return self.normalize(data), label
-
-
-	def get_unet(self,inp_x=None,inp_y=None):
-		inputs = Input((inp_x, inp_y, 1))
-		conv1 = Conv2D(32, (3, 3), activation='relu', padding='same')(inputs)
-		conv1 = Conv2D(32, (3, 3), activation='relu', padding='same')(conv1)
-		pool1 = MaxPooling2D(pool_size=(2, 2))(conv1)
-
-		conv2 = Conv2D(64, (3, 3), activation='relu', padding='same')(pool1)
-		conv2 = Conv2D(64, (3, 3), activation='relu', padding='same')(conv2)
-		pool2 = MaxPooling2D(pool_size=(2, 2))(conv2)
-
-		conv3 = Conv2D(128, (3, 3), activation='relu', padding='same')(pool2)
-		conv3 = Conv2D(128, (3, 3), activation='relu', padding='same')(conv3)
-		pool3 = MaxPooling2D(pool_size=(2, 2))(conv3)
-
-		conv4 = Conv2D(256, (3, 3), activation='relu', padding='same')(pool3)
-		conv4 = Conv2D(256, (3, 3), activation='relu', padding='same')(conv4)
-		#pool4 = MaxPooling2D(pool_size=(2, 2))(conv4)
-
-		#conv5 = Conv2D(512, (3, 3), activation='relu', padding='same')(pool4)
-		#conv5 = Conv2D(512, (3, 3), activation='relu', padding='same')(conv5)
-
-		#up6 = concatenate([Conv2DTranspose(256, (2, 2), strides=(2, 2), padding='same')(conv5), conv4], axis=3)
-		#conv6 = Conv2D(256, (3, 3), activation='relu', padding='same')(up6)
-		#conv6 = Conv2D(256, (3, 3), activation='relu', padding='same')(conv6)
-
-		#up7 = concatenate([Conv2DTranspose(128, (2, 2), strides=(2, 2), padding='same')(conv6), conv3], axis=3)
-		up7 = concatenate([Conv2DTranspose(128, (2, 2), strides=(2, 2), padding='same')(conv4), conv3], axis=3)
-		conv7 = Conv2D(128, (3, 3), activation='relu', padding='same')(up7)
-		conv7 = Conv2D(128, (3, 3), activation='relu', padding='same')(conv7)
-
-		up8 = concatenate([Conv2DTranspose(64, (2, 2), strides=(2, 2), padding='same')(conv7), conv2], axis=3)
-		conv8 = Conv2D(64, (3, 3), activation='relu', padding='same')(up8)
-		conv8 = Conv2D(64, (3, 3), activation='relu', padding='same')(conv8)
-
-		up9 = concatenate([Conv2DTranspose(32, (2, 2), strides=(2, 2), padding='same')(conv8), conv1], axis=3)
-		conv9 = Conv2D(32, (3, 3), activation='relu', padding='same')(up9)
-		conv9 = Conv2D(32, (3, 3), activation='relu', padding='same')(conv9)
-
-		conv10 = Conv2D(1, (1, 1), activation='sigmoid')(conv9)
-
-		model = Model(inputs=[inputs], outputs=[conv10])
-
-		return model
-
-
-	def train_unet(self,weights_out='./neural_nets/weights_temp.h5',no_epoch = 30, batch_sz= 50,val_split=0.2,learnrate=3e-4):
-		def dice_coef(y_true, y_pred):
-			y_true_f = K.flatten(y_true)
-			y_pred_f = K.flatten(y_pred)
-			intersection = K.sum(y_true_f * y_pred_f)
-			return (2. * intersection ) / (K.sum(y_true_f) + K.sum(y_pred_f) )
-
-		def dice_coef_loss(y_true, y_pred):
-			return -dice_coef(y_true, y_pred)
-
-		self.weights_out = weights_out
-		print('-'*30)
-		print('Loading and preprocessing train data...')
-		print('-'*30)
-
-		try:
-			os.remove(self.weights_out)
-			#os.remove('./neural_nets/weights_temp.h5')
-		except:
-			pass
-		self.model.compile(optimizer=Adam(learning_rate=learnrate), loss=dice_coef_loss, metrics=[dice_coef])
-		model_checkpoint = ModelCheckpoint(self.weights_out, monitor='val_loss', save_best_only=True)
-
-		print('-'*30)
-		print('Fitting model...')
-		print('-'*30)
-		self.model.fit(self.datas, self.labels, batch_size=batch_sz, epochs=no_epoch, verbose=1, shuffle=True,validation_split=val_split,callbacks=[model_checkpoint])
-		#return model,history
-		print("Done training model. Network saved to",weights_out)
-
-	def load_model(self,weights_in, tiny=False):
-		if tiny:
-			model = self.get_tiny_unet()
-		else:
-			model = self.get_unet()
-		model.load_weights(weights_in)
-		return model
-
-	# def apply_unet(self,tomogram):
-	# 	m=tomogram.numpy()
-	# 	print(m.shape)
-	# 	model = self.load_model('./neural_nets/weights_temp.h5')
-	# 	p=model.predict(m[None, :, :, None]/3.,verbose=1)
-	# 	cout=from_numpy(p[0,:,:,0])
-	# 	return cout
-
-	def apply_unet(self,weights_in,tomogram=None,outfile=None):
-		if tomogram==None:
-			print("Need to specify tomogram to apply U-net")
-			return
-
-		# if weights_in==None:
-		# 	print("Need to provide weights of U-net")
-		# 	return
-		if not os.path.exists("./neural_nets/weights_temp.h5"):
-			print("There's no neural networks trained for this tomogram. Train a neural net first")
-			return
-		else:
-			pass
-		self.model = self.load_model('./neural_nets/weights_temp.h5')
-		# nframe=EMUtil.get_image_count(tomogram)
-		# is3d=False
-		# ### deal with 3D volume or image stack
-		# e=EMData(tomogram, 0, True)
-		#
-		# apix=e["apix_x"]
-		# if nframe==1:
-		# 	nframe=e["nz"]
-		# 	if nframe>1:
-		# 	#### input data is 3D volume
-		# 		is3d=True
-
-		is3d=True
-		enx,eny=tomogram["nx"], tomogram["ny"]
-		nframe=tomogram["nz"]
-		tsz=max(enx,eny)
-		output=EMData(enx, eny, nframe)
-
-
-		print("Loading tomogram...")
-		tomo_in=[]
-		for nf in range(nframe):
-			e0=tomogram.get_clip(Region((enx-tsz)//2,(eny-tsz)//2,nf,tsz,tsz,1))
-			tomo_in.append(e0)
-		print(len(tomo_in))
-		for idx, img in enumerate(tomo_in):
-			# if idx == 123:
-			# 	plt.imshow(tomo_in[idx].numpy())
-			m=img.numpy()
-			p=self.model.predict(m[None, :, :, None]/3.,verbose=1)
-			#p[p<0]=0
-			cout=from_numpy(p[0,:,:,0])
-			cout=cout.get_clip(Region((cout["nx"]-enx)//2,(cout["ny"]-eny)//2 ,enx, eny))
-			#cout.scale(int(options.labelshrink))
-			output.insert_clip(cout, [0,0,idx])
-
-			sys.stdout.write("\r  {}/{} finished.".format(idx+1, len(tomo_in)))
-			sys.stdout.flush()
-		if outfile:
-			output.write_image(outfile)
-		return output
-
-	def normalize(self,data):
-		mean = np.mean(data)
-		std = np.std(data)
-		data = data - mean
-		data = data/std
-		return data
-	def stack_outfile(self,*dats, outfile):
-		im_x,im_y = dats[0].shape[1:]
-		out_array = np.array([*zip(*dats)]).reshape(-1,im_x,im_y)
-		#print(out_array.shape)
-		out = from_numpy(out_array)
-		out.write_image(outfile)
 
 
 
