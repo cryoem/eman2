@@ -57,7 +57,7 @@ def main():
 	parser.add_argument("--folder",type=str, help="List the folder contain all tomograms to process", default="./tomograms/")
 
 	parser.add_argument("--seg_folder",type=str, help="List the folder contain all annotation file", default="./segs/")
-	parser.add_argument("--region_sz",type=int, help="Region size for Region I/O. -1 reads whole tomogram", default=720)
+	parser.add_argument("--region_sz",type=int, help="Region size for Region I/O. -1 reads whole tomogram", default=680)
 	#parser.add_argument("--alltomograms",default=False,help="Process all tomograms from tomograms folder")
 	#parser.add_argument("--boxsize","-b",type=int,help="Box size in pixels",default=-1)
 
@@ -85,7 +85,7 @@ def main():
 
 
 
-	awin.resize(1440,790)
+	awin.resize(1100,720)
 	awin.show()
 
 
@@ -99,7 +99,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 	def __init__(self, application,options,data=None,annotate=None):
 		super().__init__()
 		self.app = weakref.ref(application)
-		self.setMinimumSize(1440, 790)
+		self.setMinimumSize(1100, 720)
 		self.options=options
 		self.setWindowTitle("ImageViewer")
 		self.tom_folder = options.folder
@@ -185,16 +185,16 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			self.img_view_region_size = self.nx
 			print("Reading full images of size", self.nx)
 		elif options.region_sz == 0:
-			print("Region size needs to be greater than 0. Set region size to default value of 720.")
-			self.img_view_region_size = 720
+			print("Region size needs to be greater than 0. Set region size to default value of 680.")
+			self.img_view_region_size = 680
 		else:
 			self.img_view_region_size = options.region_sz
 		self.thumbnail_size=220
 
 
-		self.img_view = EMAnnotate2DWidget(sizehint=(720,720))
+		self.img_view = EMAnnotate2DWidget(sizehint=(680,680))
 		self.img_view.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
-		self.img_view.setMinimumSize(720, 720)
+		self.img_view.setMinimumSize(680, 680)
 
 		#self.img_view.show()
 
@@ -238,6 +238,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		# self.zt_spinbox.setMinimum(-1)
 		# self.zt_spinbox.setMaximum(self.nz//2)
 
+		self.tomo_list_panel=QtWidgets.QWidget()
 		tomo_vbl = QtWidgets.QGridLayout()
 		tomo_vbl.addWidget(QtWidgets.QLabel("Tomograms"),0,0)
 		tomo_vbl.addWidget(self.tomogram_list,1,0)
@@ -253,6 +254,9 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.zt_spinbox.setMaximum(self.nz//2)
 		zt_hbl.addWidget(self.zt_spinbox)
 		tomo_vbl.addLayout(zt_hbl,3,0)
+		self.tomo_list_panel.setLayout(tomo_vbl)
+		self.tomo_list_panel.setWindowTitle("Tomograms")
+		self.tomo_list_panel.show()
 
 
 		filter_vbl = QtWidgets.QVBoxLayout()
@@ -296,10 +300,11 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 		self.brush_tab = QtWidgets.QWidget()
 		self.btlay = QtWidgets.QVBoxLayout(self.brush_tab)
-		self.btlay.addWidget(QtWidgets.QLabel("Use paint brush to annotate on tomogram. Use manual annotate tools panel"))
+		self.btlay.addWidget(QtWidgets.QLabel("Use paint brush to annotate on tomogram.\nUse manual annotate tools panel"))
 		self.basic_tab_num = 0
 		self.linear_tab = QtWidgets.QWidget()
 		self.ltlay = QtWidgets.QGridLayout(self.linear_tab)
+		self.ltlay.setColumnStretch(70,70)
 
 		self.points_label = QtWidgets.QLabel("Choose anchor points. \nCtrl+Click: start a contour.\nShift+Click: delete a point.")
 		self.clear_button = QtWidgets.QPushButton("Clear points")
@@ -323,6 +328,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 		self.contour_tab = QtWidgets.QWidget()
 		self.ctlay = QtWidgets.QGridLayout(self.contour_tab)
+		self.ctlay.setColumnStretch(70,70)
 		self.clear_contour_button = QtWidgets.QPushButton("Clear points")
 		self.draw_contour_label = QtWidgets.QLabel("Choose anchor points. \nCtrl+Click: start a contour.\nShift+Click: delete a point.")
 		self.fill_contour_checkbox = QtWidgets.QCheckBox("Fill contour")
@@ -344,6 +350,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 		self.boxer_tab = QtWidgets.QWidget()
 		self.bxlay = QtWidgets.QGridLayout(self.boxer_tab)
+		self.bxlay.setColumnStretch(70,70)
 		self.random_bx_bt = QtWidgets.QPushButton("Create Random Boxes")
 		self.clear_bx_bt = QtWidgets.QPushButton("Clear Boxes")
 		self.extract_bt = QtWidgets.QPushButton("Extract Boxes")
@@ -355,11 +362,11 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 
 		self.bxlay.addWidget(QtWidgets.QLabel("Select regions \nfor training nnet"),0,0,1,1)
-		self.bxlay.addWidget(self.bsz_vs,0,1,1,2)
-		self.bxlay.addWidget(self.random_bx_bt,1,1,1,1)
-		self.bxlay.addWidget(self.random_bx_sb,1,2,1,1)
-		self.bxlay.addWidget(self.clear_bx_bt,2,1,1,2)
-		self.bxlay.addWidget(self.extract_bt,3,1,1,2)
+		self.bxlay.addWidget(self.bsz_vs,1,0,1,2)
+		self.bxlay.addWidget(self.random_bx_bt,2,0,1,1)
+		self.bxlay.addWidget(self.random_bx_sb,2,1,1,1)
+		self.bxlay.addWidget(self.clear_bx_bt,3,0,1,1)
+		self.bxlay.addWidget(self.extract_bt,3,1,1,1)
 
 
 		self.basic_tab = QtWidgets.QTabWidget()
@@ -388,14 +395,13 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 		self.assisted_tab = QtWidgets.QTabWidget()
 		self.nn_tab = QtWidgets.QWidget()
-		self.auto_tab = QtWidgets.QWidget()
+		self.morp_tab = QtWidgets.QWidget()
 		self.spec_tab = QtWidgets.QWidget()
 		self.assisted_tab.addTab(self.nn_tab,"NeuralNetwork")
+		self.assisted_tab.addTab(self.morp_tab,"Morphological")
 		self.assisted_tab.addTab(self.spec_tab,"Specific")
-		self.assisted_tab.addTab(self.auto_tab,"Mathematical")
 
-
-
+		#Neural Net tab setup
 		self.bg_button = QtWidgets.QPushButton("Background")
 		self.ann_button = QtWidgets.QPushButton("Classes")
 
@@ -412,46 +418,81 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 
 		self.train_class_button=QtWidgets.QPushButton("Train NNet")
-		self.train_class_button.setFixedWidth(120)
+		#self.train_class_button.setFixedWidth(70)
 		self.train_no_iters_sb = StringBox(label="No iters",value="8",showenable=-1)
-		self.train_no_iters_sb.text.setFixedWidth(60)
+		#self.train_no_iters_sb.text.setFixedWidth(60)
 		self.train_lr_sb = StringBox(label="Learnrate",value="3e-4",showenable=-1)
-		self.train_lr_sb.text.setFixedWidth(60)
-		# self.train_class_sb=QtWidgets.QSpinBox(self)
-		# self.train_class_sb.setMinimum(1)
-		# self.train_class_sb.setValue(1)
+		#self.train_lr_sb.text.setFixedWidth(60)
 		self.build_ts_button = QtWidgets.QPushButton("Build Trainset")
-		self.build_ts_button.setFixedWidth(120)
+		#self.build_ts_button.setFixedWidth(120)
 		self.build_class_sb=StringBox(label="Class ",value="1",showenable=-1)
-		self.build_class_sb.text.setFixedWidth(60)
+		#self.build_class_sb.text.setFixedWidth(60)
 		self.build_norep_sb=StringBox(label="No reps",value="5",showenable=-1)
-		self.build_norep_sb.text.setFixedWidth(60)
+		#self.build_norep_sb.text.setFixedWidth(60)
 		#self.train_all_button=QtWidgets.QPushButton("Train NNet for all ")
 		self.apply_button=QtWidgets.QPushButton("Apply NNet")
 		self.apply_all_button=QtWidgets.QPushButton("Apply All")
 
 
 		#nnet_vbl = QtWidgets.QVBoxLayout(self.nn_tab)
+		# nnet_gbl=QtWidgets.QGridLayout(self.nn_tab)
+		# nnet_gbl.addWidget(QtWidgets.QLabel("Annotate"),0,0,1,1)
+		# nnet_gbl.addWidget(self.bg_button,0,1,1,1)
+		# nnet_gbl.addWidget(self.ann_button,0,2,1,1)
+		# nnet_gbl.addWidget(self.build_ts_button,1,0,1,1)
+		# nnet_gbl.addWidget(self.build_class_sb,1,1,1,1)
+		# nnet_gbl.addWidget(self.build_norep_sb,1,2,1,1)
+		#
+		# nnet_gbl.addWidget(self.train_class_button,2,0,1,1)
+		# nnet_gbl.addWidget(self.train_no_iters_sb,2,1,1,1)
+		# nnet_gbl.addWidget(self.train_lr_sb,2,2,1,1)
+		#
+		# #nnet_gbl.addWidget(self.train_all_button,1,1,1,2)
+		# nnet_gbl.addWidget(QtWidgets.QLabel("Apply to tomogram"),3,0,1,1)
+		# nnet_gbl.addWidget(self.apply_button,3,1,1,1)
+		# nnet_gbl.addWidget(self.apply_all_button,3,2,1,1)
+
+
 		nnet_gbl=QtWidgets.QGridLayout(self.nn_tab)
-		nnet_gbl.addWidget(QtWidgets.QLabel("Annotate"),0,0,1,1)
-		nnet_gbl.addWidget(self.bg_button,0,1,1,1)
-		nnet_gbl.addWidget(self.ann_button,0,2,1,1)
+		nnet_gbl.setColumnStretch(70,70)
+		nnet_gbl.addWidget(self.bg_button,0,0,1,1)
+		nnet_gbl.addWidget(self.ann_button,0,1,1,1)
 		nnet_gbl.addWidget(self.build_ts_button,1,0,1,1)
-		nnet_gbl.addWidget(self.build_class_sb,1,1,1,1)
-		nnet_gbl.addWidget(self.build_norep_sb,1,2,1,1)
+		nnet_gbl.addWidget(self.build_class_sb,2,0,1,1)
+		nnet_gbl.addWidget(self.build_norep_sb,3,0,1,1)
 
-		nnet_gbl.addWidget(self.train_class_button,2,0,1,1)
+		nnet_gbl.addWidget(self.train_class_button,1,1,1,1)
 		nnet_gbl.addWidget(self.train_no_iters_sb,2,1,1,1)
-		nnet_gbl.addWidget(self.train_lr_sb,2,2,1,1)
+		nnet_gbl.addWidget(self.train_lr_sb,3,1,1,1)
 
-		#nnet_gbl.addWidget(self.train_all_button,1,1,1,2)
-		nnet_gbl.addWidget(QtWidgets.QLabel("Apply to tomogram"),3,0,1,1)
-		nnet_gbl.addWidget(self.apply_button,3,1,1,1)
-		nnet_gbl.addWidget(self.apply_all_button,3,2,1,1)
+		#nnet_gbl.addWidget(QtWidgets.QLabel("Apply to tomogram"),3,0,1,1)
+		nnet_gbl.addWidget(self.apply_button,4,0,1,1)
+		nnet_gbl.addWidget(self.apply_all_button,4,1,1,1)
 
-		#nnet_vbl.addWidget(QtWidgets.QLabel("Neural Network"))
-		#nnet_vbl.addLayout(nnet_gbl)
 
+
+
+		#Morp_tab setup
+		self.morp_disk_sz_sp = QtWidgets.QSpinBox()
+		self.morp_disk_sz_sp.setValue(5)
+		self.morp_close_bt = QtWidgets.QPushButton("Closing")
+		self.morp_open_bt = QtWidgets.QPushButton("Opening")
+		self.morp_erode_bt = QtWidgets.QPushButton("Erosion")
+		self.morp_dilate_bt = QtWidgets.QPushButton("Dilation")
+		self.morp_label_bt = QtWidgets.QPushButton("Numbering")
+		morp_gbl=QtWidgets.QGridLayout(self.morp_tab)
+		#morp_gbl.setColumnStretch(70,70)
+		morp_gbl.addWidget(QtWidgets.QLabel("Disk Size"), 0,0,1,1)
+		morp_gbl.addWidget(self.morp_disk_sz_sp, 0,1,1,1)
+		morp_gbl.addWidget(self.morp_close_bt, 1,0,1,1)
+		morp_gbl.addWidget(self.morp_open_bt, 1,1,1,1)
+		morp_gbl.addWidget(self.morp_erode_bt, 2,0,1,1)
+		morp_gbl.addWidget(self.morp_dilate_bt, 2,1,1,1)
+		morp_gbl.addWidget(self.morp_label_bt, 3,0,1,1)
+
+
+
+		#assisted tab setup + function
 		assisted_vbl = QtWidgets.QVBoxLayout()
 		assisted_vbl.addWidget(QtWidgets.QLabel("Automated tools"))
 		assisted_vbl.addWidget(self.assisted_tab)
@@ -462,6 +503,12 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		#self.train_all_button.clicked[bool].connect(self.train_all_bt_clicked)
 		self.apply_button.clicked[bool].connect(self.apply_bt_clicked)
 		self.build_ts_button.clicked[bool].connect(self.build_trainset)
+
+		self.morp_close_bt.clicked[bool].connect(self.do_morp_close)
+		self.morp_open_bt.clicked[bool].connect(self.do_morp_open)
+		self.morp_erode_bt.clicked[bool].connect(self.do_morp_erode)
+		self.morp_dilate_bt.clicked[bool].connect(self.do_morp_dilate)
+		self.morp_label_bt.clicked[bool].connect(self.do_morp_label)
 
 		#Cellular Segmentation
 		#cell_label = QtWidgets.QLabel("Cellular Features")
@@ -504,26 +551,27 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 		#Right Panel
 		self.button_gbl = QtWidgets.QGridLayout()
+		self.button_gbl.setColumnStretch(170,170)
 		# self.button_gbl.addWidget(QtWidgets.QLabel("Tomograms"),0,0,1,1)
 		# self.button_gbl.addWidget(self.tomogram_list,1,0,6,1)
-		self.button_gbl.addLayout(filter_vbl,0,1,2,1)
-		self.button_gbl.addLayout(basic_vbl,2,1,2,1)
+		self.button_gbl.addLayout(filter_vbl,0,0,2,1)
+		self.button_gbl.addLayout(basic_vbl,2,0,2,1)
 		# self.button_gbl.addLayout(nnet_vbl)
 		# self.button_gbl.addLayout(cell_vbl)
-		self.button_gbl.addLayout(assisted_vbl,4,1,2,1)
+		self.button_gbl.addLayout(assisted_vbl,4,0,2,1)
 
 
 
 		self.test_button = QtWidgets.QPushButton("Test Button")
-		self.button_gbl.addWidget(self.test_button,6,1,1,1)
+		self.button_gbl.addWidget(self.test_button,6,0,1,1)
 
 		inspector_vbl = QtWidgets.QVBoxLayout()
 		inspector_vbl.addWidget(QtWidgets.QLabel("Manual Annotate Tools"))
 		inspector_vbl.addWidget(self.img_view_inspector)
 
-		self.gbl.addLayout(tomo_vbl,1,0,1,1)
-		self.gbl.addWidget(self.img_view,1,1,1,1)
-		self.gbl.addLayout(inspector_vbl,1,3,1,1)
+		#self.gbl.addLayout(tomo_vbl,1,0,1,1)
+		self.gbl.addWidget(self.img_view,0,0,1,1)
+		self.gbl.addLayout(inspector_vbl,0,2,1,1)
 		self.centralWidget.setLayout(self.gbl)
 
 		self.control_panel = QtWidgets.QWidget()
@@ -556,6 +604,8 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.zt_spinbox.valueChanged.connect(self.zt_spinbox_changed)
 
 		E2loadappwin("e2annotate","main",self)
+		E2loadappwin("e2annotate","controlpanel",self.control_panel)
+		E2loadappwin("e2annotate","tomograms",self.tomo_list_panel)
 		#self.update_label()
 
 		glEnable(GL_POINT_SMOOTH)
@@ -565,25 +615,13 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	def img_view_wheel_event(self, event):
-		#print(self.img_view.scale, self.img_view.mag)
-		#self.thumbnail.set_im()
-		#self.thumbnail.update_box()
-		#self.thumbnail.force_display_update()
-		#self.thumbnail.updateGL()
-		#print("wheelie wheelie")
 		return
 
 	def img_view_mouse_drag(self, event):
 		if event.buttons()&Qt.RightButton:
-
-			#lc=self.img_view.scr_to_img(event.x(),event.y())
-			#self.thumbnail.target_rmousedrag()
-			#self.thumbnail.update_box()
 			return
 		else:
 			return
-
-
 
 	def get_data(self):
 		return self.img_view.get_full_data()
@@ -619,6 +657,61 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 				print("Error with processor: ",self.procbox3.getValue())
 		#print(ret)
 		self.img_view.set_disp_proc(ret)
+
+	#Do morphological operations
+	def do_morp_close(self):
+		disk_sz = int(self.morp_disk_sz_sp.getValue())
+		if self.zthick == 0:
+			temp = to_numpy(self.get_annotation())
+			self.annotate = from_numpy(morphology.closing(temp,disk(disk_sz)))
+		else:
+			temp = to_numpy(self.get_annotation())
+			for s in range(temp.shape[0]):
+				temp[s] = morphology.closing(temp[s],disk(disk_sz))
+				self.annotate = from_numpy(temp)
+		self.img_view.set_data(self.data, self.annotate)
+
+	def do_morp_open(self):
+		disk_sz = int(self.morp_disk_sz_sp.getValue())
+		if self.zthick == 0:
+			temp = to_numpy(self.get_annotation())
+			self.annotate = from_numpy(morphology.opening(temp,disk(disk_sz)))
+		else:
+			temp = to_numpy(self.get_annotation())
+			for s in range(temp.shape[0]):
+				temp[s] = morphology.opening(temp[s],disk(disk_sz))
+				self.annotate = from_numpy(temp)
+		self.img_view.set_data(self.data, self.annotate)
+
+	def do_morp_dilate(self):
+		disk_sz = int(self.morp_disk_sz_sp.getValue())
+		if self.zthick == 0:
+			temp = to_numpy(self.get_annotation())
+			self.annotate = from_numpy(morphology.dilation(temp,disk(disk_sz)))
+		else:
+			temp = to_numpy(self.get_annotation())
+			for s in range(temp.shape[0]):
+				temp[s] = morphology.dilation(temp[s],disk(disk_sz))
+				self.annotate = from_numpy(temp)
+		self.img_view.set_data(self.data, self.annotate)
+
+	def do_morp_erode(self):
+		disk_sz = int(self.morp_disk_sz_sp.getValue())
+		if self.zthick == 0:
+			temp = to_numpy(self.get_annotation())
+			self.annotate = from_numpy(morphology.erosion(temp,disk(disk_sz)))
+		else:
+			temp = to_numpy(self.get_annotation())
+			for s in range(temp.shape[0]):
+				temp[s] = morphology.erosion(temp[s],disk(disk_sz))
+				self.annotate = from_numpy(temp)
+		self.img_view.set_data(self.data, self.annotate)
+
+	def do_morp_label(self):
+		thres = 0.3
+		temp = to_numpy(self.get_annotation())
+		self.annotate = from_numpy(morphology.label(temp>thres,connectivity=1,return_num=False))
+		self.img_view.set_data(self.data, self.annotate)
 
 	def tomolist_current_change(self, int):
 		# info=js_open_dict("info/annotate_"+self.data_file[:-4]+".json")
@@ -692,6 +785,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 				#self.data = EMData(self.data_file, 0, False, Region(x-old_div(sz,2),y-old_div(sz,2),0, sz, sz, self.nz))
 			else:
 				self.cur_region = Region(x-old_div(sz,2),y-old_div(sz,2),iz-self.zthick, sz, sz,self.zthick*2+1)
+				print(self.cur_region)
 				#self.data = EMData(self.data_file, 0, False, Region(x-old_div(sz,2),y-old_div(sz,2),iz-self.zthick, sz, sz,self.zthick*2+1))
 		self.data = EMData(self.data_file, 0, False, self.cur_region)
 		seg_path = os.path.join(self.seg_folder,self.tomogram_list.currentItem().text()[0:-4]+"_seg.hdf")
@@ -701,43 +795,15 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.img_view.set_origin(0,0)
 
 
-	# def set_thumbnail(self):
-	# 	xsize = self.img_view.get_data().get_xsize()
-	# 	fac=float(self.img_view.get_data().get_xsize())/self.thumbnail.width()
-	# 	self.thumbnail_image=self.img_view.get_data().process('math.fft.resample',{"n":fac})
-	# 	self.thumbnail.set_data(self.thumbnail_image)
-	# 	self.thumbnail.set_scale(1)
-	# 	self.thumbnail.set_mouse_mode(3)
-	# 	self.thumbnail.resize(300,300)
-	# 	self.boxview_size = int(300*(500/xsize))
-	# 	self.thumbnail.inspector.ptareasize.setValue(self.boxview_size)
-	# 	#print(self.thumbnail.scr_to_img(event.x(),event.y()))
-	#
-	#
-	# def mouse_on_thumbnail(self, event):
-	# 	lc=self.scr_to_img(event.x(),event.y())
-	# 	xsize = self.img_view.get_data().get_xsize()
-	# 	box_size = int(300*(500/xsize))
-	# 	color=(0,0,0.7)
-	# 	self.thumbnail.add_shape("box{}".format(i),EMShape(("rect",color[0],color[1],color[2],box[0]-boxsize//2,box[1]-boxsize//2,box[0]+boxsize//2,box[1]+boxsize//2,2.5)))
-	# 	#if not quiet:
-	# 	self.thumbnail.update()
 
 	def zt_spinbox_changed(self,event):
 		self.data_xy = self.thumbnail.get_xy()
+		self.get_annotation().write_image(self.seg_path, 0, IMAGE_HDF, False, self.cur_region)
 		self.set_imgview_data(self.data_xy[0],self.data_xy[1],self.img_view_region_size)
 
 
 
 	def test_drawing_function(self):
-	# 	print("Test Drawing Function")
-	# 	mask = np.zeros((1024,1024))
-	# 	for i,j in self.curve:
-	# 		mask[i,j] = 2
-	# 	ann = self.img_view.get_annotation().numpy()
-	# 	ann += mask
-	# 	self.img_view.force_display_update(set_clip=1)
-	# 	self.img_view.updateGL()
 		self.create_organelles_training_set()
 		return
 
@@ -1374,9 +1440,12 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		print("Exiting")
 		#self.SaveJson()
 		E2saveappwin("e2annotate","main",self)
-		E2saveappwin("e2annotate","controlpanel",self)
+		E2saveappwin("e2annotate","controlpanel",self.control_panel)
+		E2saveappwin("e2annotate","tomograms",self.tomo_list_panel)
+		self.get_annotation().write_image(self.seg_path, 0, IMAGE_HDF, False, self.cur_region)
 		self.close()
 		self.control_panel.close()
+		self.tomo_list_panel.close()
 
 class Thumbnail(EMImage2DWidget):
 	def __init__(self,current_file=None,target=None,app_target = None,tn_size=220):
