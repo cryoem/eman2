@@ -1713,8 +1713,9 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 	def __init__(self,target) :
 		QtWidgets.QWidget.__init__(self,None)
 		self.target=weakref.ref(target)
-
+		self.setFixedWidth(390)
 		self.vbl = QtWidgets.QVBoxLayout(self)
+
 		self.vbl.setContentsMargins(2, 2, 2, 2)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
@@ -1929,7 +1930,7 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 		self.psbstack = QtWidgets.QPushButton("Stack")
 		self.pstlay.addWidget(self.psbstack,0,1)
 
-		self.mmtab.addTab(self.pstab,"PSpec")
+		#self.mmtab.addTab(self.pstab,"PSpec")
 		self.pspecwins=[]
 
 		# Python tab
@@ -1967,22 +1968,25 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 		self.vbl.addWidget(self.mmtab)
 
 		# histogram level horiz layout
-		self.hbl = QtWidgets.QHBoxLayout()
-		self.hbl.setContentsMargins(0, 0, 0, 0)
+		self.hbl = QtWidgets.QGridLayout()
+		self.hbl.setColumnStretch(290,120)
+		self.hbl.setContentsMargins(10, 2, 2, 2)
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")
 		self.vbl.addLayout(self.hbl)
 
 		self.hist = ImgHistogram(self)
+		#self.hist.setFixedWidth(250)
 		self.hist.setObjectName("hist")
-		self.hbl.addWidget(self.hist)
+		self.hbl.addWidget(self.hist,0,0,1,1)
 
 		# Buttons next to the histogram
 		self.vbl2 = QtWidgets.QGridLayout()
-		self.vbl2.setContentsMargins(0, 0, 0, 0)
+		self.vbl2.setColumnStretch(50,50)
+		self.vbl2.setContentsMargins(2, 2, 2, 2)
 		self.vbl2.setSpacing(6)
 		self.vbl2.setObjectName("vbl2")
-		self.hbl.addLayout(self.vbl2)
+		self.hbl.addLayout(self.vbl2,0,1,1,1)
 
 		self.invtog = QtWidgets.QPushButton("Invert")
 		self.invtog.setCheckable(1)
@@ -1993,13 +1997,13 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 		self.histoequal.addItem("Normal")
 		self.histoequal.addItem("Hist Flat")
 		self.histoequal.addItem("Hist Gauss")
-		self.vbl2.addWidget(self.histoequal,0,1,1,1)
+		self.vbl2.addWidget(self.histoequal,1,0,1,1)
 
 		self.auto_contrast_button = QtWidgets.QPushButton("AutoC")
-		self.vbl2.addWidget(self.auto_contrast_button,1,0,1,1)
+		self.vbl2.addWidget(self.auto_contrast_button,2,0,1,1)
 
 		self.full_contrast_button = QtWidgets.QPushButton("FullC")
-		self.vbl2.addWidget(self.full_contrast_button,1,1,1,1)
+		self.vbl2.addWidget(self.full_contrast_button,3,0,1,1)
 
 		## FFT Buttons
 		#self.fftg=QtWidgets.QButtonGroup()
@@ -2100,7 +2104,7 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 		self.azs.valueChanged.connect(self.target().set_az)
 		self.ns.valueChanged.connect(self.target().set_n)
 
-		self.resize(500,500) # d.woolford thinks this is a good starting size as of Nov 2008 (especially on MAC)
+		#self.resize(400,400) # d.woolford thinks this is a good starting size as of Nov 2008 (especially on MAC)
 
 	# def get_seg_tab(self):
 	# 	return self.seg_tab
@@ -2535,7 +2539,7 @@ class EMSegTab(QtWidgets.QWidget):
 		if self.cb_group.checkedId() == 1:
 			sels = self.table_set.selectedItems()
 			if len(sels) == 0:
-				print("No class selected. Open control panel to select class")
+				print("No class selected. Use manual annotate panels to create class")
 				return 0
 			else:
 				row = self.table_set.row(sels[0])
