@@ -15,6 +15,7 @@ def main():
 	parser.add_argument("--tomo", type=str,help="tomogram file name", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True, startpath='tomograms')", row=2, col=0,rowspan=1, colspan=2,)
 	parser.add_argument("--avg", type=str,help="3D volume to insert. spt_xx/threed_xx if unspecified", default="",guitype='filebox', browser="EMBrowserWidget(withmodal=True, startpath='.')", row=3, col=0,rowspan=1, colspan=2)
 	parser.add_argument("--postxf", type=str,help="extra shift after alignment", default="")
+	parser.add_argument("--pdb", type=str,help="pdb input", default=None)
 	parser.add_argument("--keep", type=float,help="propotion to keep. will exclude bad particles if this is smaller than 1.0", default=1.0)
 	parser.add_argument("--gui",action="store_true",help="open the resulting map and tomogram in a GUI display",default=False,guitype="boolbox",row=4, col=0,rowspan=1, colspan=1)
 	parser.add_argument("--new",action="store_true",help="Results from e2spt_refine_new",default=False,guitype="boolbox",row=4, col=1,rowspan=1, colspan=1)
@@ -31,9 +32,6 @@ def main():
 	except:
 		postxf=[0,0,0]
 	
-	
-	
-	
 		
 	tomo=EMData(options.tomo)
 	if options.gui: tomo_orig=tomo.copy()
@@ -42,7 +40,7 @@ def main():
 		options.avg="{}/threed_{:02d}.hdf".format(path, itr)
 	avg=EMData(options.avg, 0)
 	print("Using averaged map {}".format(options.avg))
-		
+	
 	
 	apix_tomo=tomo["apix_x"]
 	apix_ptcl=avg["apix_x"]
@@ -54,6 +52,15 @@ def main():
 	avg.process_inplace("math.fft.resample",{"n":shrink})
 	avg.process_inplace("normalize.edgemean")
 	
+	if options.pdb:
+		pdb=pdb2numpy(options.pdb)
+		print(f"load pdb of {len(pdb)} atoms")
+		pdb/=avg["apix_x"]
+		print(pdb)
+		pdb-=np.mean(pdb, axis=0)
+		
+		#pdb-=avg["nx"]//2
+		
 	tomo.to_zero()
 	
 	ptcl=[]
@@ -92,6 +99,7 @@ def main():
 		print("No particles. Exiting")
 		sys.exit(0)
 		
+	nc=0
 	for s,fsp,i,xf in ptcl:
 		if s>sthr:
 			continue
@@ -108,18 +116,33 @@ def main():
 		xf.set_trans((ts/shrink).tolist())
 		xf=xf.inverse()
 		t=avg.process("xform", {"transform":xf})
-		pts.append(crd-ts/4)
-		tomo.insert_scaled_sum(t,crd.tolist())
-		print("\t{}/{} finished.".format(len(pts), nptcl), end='\r')
+		#if a["ptcl_source_coord"][0]<0 or a["ptcl_source_coord"][1]<0:
+			#continue
+		if options.pdb:
+			p1=np.array([xf.transform(p.tolist()) for p in pdb])
+			pts.extend(p1+crd)
+		else:
+			pts.append(crd-ts/4)
+			tomo.insert_scaled_sum(t,crd.tolist())
+			
+		nc+=1
+		print("\t{}/{} finished.".format(nc, nptcl), end='\r')
 		sys.stdout.flush()
 			
 
 	pts=np.array(pts)
-	pfile="{}/ptcls_pos_{:02d}.pdb".format(path, itr)
+	print(pts.shape)
 	tfile="{}/ptcls_in_tomo_{}_{:02d}.hdf".format(path, bname, itr)
-	tomo.write_compressed(tfile,0,8)
+	if options.pdb:
+		pass
+	else:
+		
+		tomo.write_compressed(tfile,0,8)
+	
+	pfile="{}/ptcls_pos_{:02d}.pdb".format(path, itr)
 	numpy2pdb(fname=pfile, data=pts)
-	print("Map {} particles to the tomogram".format(len(pts)))
+	np.savetxt("{}/ptcls_pos_{:02d}.txt".format(path, itr), pts)
+	print("Map {} particles to the tomogram".format(nc))
 	print("Particle coordinates written to {}".format(pfile))
 	print("Map with particles written to {}".format(tfile))
 	js=None
