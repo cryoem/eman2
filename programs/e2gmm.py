@@ -425,8 +425,8 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.gflparm.addRow("Symmetry:",self.wedsym)
 		
 		self.wedmask = QtWidgets.QLineEdit("")
-		self.wedmask.setToolTip("<file>[,amp fac]  3-D volume mask for refining dynamics only. Blank for no mask. amp fac can increase Gaussians in mask region.")
-		self.gflparm.addRow("Mask:",self.wedmask)
+		self.wedmask.setToolTip("<file>[,<file>...]  3-D volume masks for defining subregions, each with its own latent vector. Latent vec must be divisible by number of masks. Blank for a single region.")
+		self.gflparm.addRow("Masks:",self.wedmask)
 		
 		self.weddim = QtWidgets.QLineEdit("4")
 		self.weddim.setToolTip("Number of dimensions in the latent space (middle network layer)")
@@ -1568,15 +1568,22 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.lastres=res
 		
 		map3d=EMData(f"{self.gmm}/input_map.hdf")
+
+		# we briefly supported "enhancement of densities in the masked region. detect and remove
 		try:
 			val=float(str(self.wedmask.text()).split(",")[1])
-			mask=EMData(str(self.wedmask.text()).split(",")[0])
-			mask.mult(val)
-			mask.add(1.0)
-			map3d.mult(mask)
-			print(f"masked region enhanced by {val}")
+			showerror("old style mask enhancement detected. Ignoring/removing")
+			self.wedmask.setText(self.wedmask.text().split(",")[0])
 		except:
-			print("unmasked")
+			pass
+
+		try:
+			m=str(self.wedmask.text()).split(",")
+			if m[0]!="" : masks=[EMData(f) for f in m]
+			else: masks=None
+		except:
+			showerror("Invalid mask. Comma separated list of filenames or blank!")
+			masks=None
 
 		thrt=self.wedgthr.text()
 		try: minpos,minneg=float(thrt.split(",")[0]),float(thrt.split(",")[1])
@@ -1636,24 +1643,48 @@ class EMGMM(QtWidgets.QMainWindow):
 #		self.wedngauss.setText(str(len(amps)*4//3))
 		self.wedngauss.setText(f"{str(len(amps))} Gau")
 
+		if masks is None: groups=None
+		else:
+			# put each Gaussian in the mask-based group it first matches
+			# results unspecified for overlapping masks
+			# group 0 corresponds to the unmasked region
+			groups=np.zeros(len(amps))	# float type for compatibility later
+			for i in range(len(amps)):
+				for j in range(len(masks)):
+					if masks[j][int(centers[0][i]),int(centers[1][i]),int(centers[2][i])]>0.5:
+						groups[i]=j+1
+						break
+
 		print(f"Resolution={res} -> Ngauss={len(amps)}  ({self.currunkey})")
 		
 		nx=map3d["nx"]
 		centers[0]-=nx/2
 		centers[1]-=nx/2
 		centers[2]-=nx/2
-		self.neutralplot.setData(np.concatenate((centers,[amps])),self.wvssphsz.value)
+		if groups is None: self.neutralplot.setData(np.concatenate((centers,[amps])),self.wvssphsz.value)
+		else: self.neutralplot.setData(np.concatenate((centers,[amps],[np.ones(len(amps))],[groups])),self.wvssphsz.value)
 		self.centers=centers
 		self.amps=amps
+		self.cengroups=groups
 		self.wview3d.update()
 
 		# write the new seg model to disk for use in subsequent runs
 		modelseg=f"{self.gmm}/{self.currunkey}_model_seg.txt"
 		
-		with open(modelseg,"w") as out:
-			for i in range(len(self.amps)):
-				try: out.write(f"{self.centers[0,i]/nx:1.2f}\t{-self.centers[1,i]/nx:1.2f}\t{-self.centers[2,i]/nx:1.2f}\t{self.amps[i]:1.3f}\n")
-				except: print("write error: ",self.centers[:,i],self.amps[i],self.amps.shape,i)
+		if groups is None:
+			with open(modelseg,"w") as out:
+				for i in range(len(self.amps)):
+					try: out.write(f"{self.centers[0,i]/nx:1.2f}\t{-self.centers[1,i]/nx:1.2f}\t{-self.centers[2,i]/nx:1.2f}\t{self.amps[i]:1.3f}\n")
+					except: print("write error: ",self.centers[:,i],self.amps[i],self.amps.shape,i)
+		else:
+			with open(modelseg,"w") as out:
+				for i in range(len(self.amps)):
+					try: out.write(f"{self.centers[0,i]/nx:1.2f}\t{-self.centers[1,i]/nx:1.2f}\t{-self.centers[2,i]/nx:1.2f}\t{self.amps[i]:1.3f}\t1.0\t{self.cengroups[i]:1.0f}\n")
+					except:
+						if i==0:
+							traceback.print_exc()
+							print(len(self.cengroups),self.cengroups)
+						if i<10: print("write error: ",self.centers[:,i],self.amps[i],self.amps.shape,i)
 
 		self.set3dvis(0,0,1,1,0,1)
 
@@ -1722,6 +1753,8 @@ class EMGMM(QtWidgets.QMainWindow):
 		pts[4,:n2c]=1.0
 		self.centers=pts[:3,:]
 		self.amps=pts[3]
+		if len(pts)>5: self.cengroups=pts[5]
+		else: self.cengroups=None
 		
 		self.neutralplot.setData(self.pts,self.wvssphsz.value)
 		self.wview3d.updateGL()
@@ -1805,6 +1838,8 @@ class EMGMM(QtWidgets.QMainWindow):
 		pts[3:4,:n2c]=self.amps[:n2c]
 		self.centers=pts[:3,:]
 		self.amps=pts[3]
+		if len(pts)>5: self.cengroups=pts[5]
+		else: self.cengroups=None
 
 		self.neutralplot.setData(pts,self.wvssphsz.value)
 		self.wview3d.updateGL()
@@ -2025,6 +2060,9 @@ class EMGMM(QtWidgets.QMainWindow):
 			#pts[4,:n2c]=1.0
 			self.centers=pts[:3,:]
 			self.amps=pts[3]
+			if len(pts)>5: self.cengroups=pts[5]
+			else: self.cengroups=None
+
 			
 			self.neutralplot.setData(pts,self.wvssphsz.value)
 			self.wview3d.update()
