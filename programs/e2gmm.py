@@ -425,7 +425,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.gflparm.addRow("Symmetry:",self.wedsym)
 		
 		self.wedmask = QtWidgets.QLineEdit("")
-		self.wedmask.setToolTip("3-D volume mask for refining dynamics only. Blank for no mask. Neutral model unmasked.")
+		self.wedmask.setToolTip("<file>[,amp fac]  3-D volume mask for refining dynamics only. Blank for no mask. amp fac can increase Gaussians in mask region.")
 		self.gflparm.addRow("Mask:",self.wedmask)
 		
 		self.weddim = QtWidgets.QLineEdit("4")
@@ -599,29 +599,38 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wbutvside2=QtWidgets.QPushButton("Side2")
 		self.gbl3dctl.addWidget(self.wbutvside2,0,4)
 
+		self.wbutvoblq=QtWidgets.QPushButton("Oblique")
+		self.gbl3dctl.addWidget(self.wbutvoblq,1,2)
+
+		self.wbutvside3=QtWidgets.QPushButton("Side3")
+		self.gbl3dctl.addWidget(self.wbutvside3,1,3)
+
+		self.wbutvside4=QtWidgets.QPushButton("Side4")
+		self.gbl3dctl.addWidget(self.wbutvside4,1,4)
+
 		# Sphere size
 		self.wvssphsz=ValSlider(self,(1,50),"Sphere Size:",3.0,90)
-		self.gbl3dctl.addWidget(self.wvssphsz,1,1,1,4)
+		self.gbl3dctl.addWidget(self.wvssphsz,2,1,1,4)
 
 		# Thickness
 		self.wlthk = QtWidgets.QLabel("Thk:")
 		self.wlthk.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
-		self.gbl3dctl.addWidget(self.wlthk,2,1)
+		self.gbl3dctl.addWidget(self.wlthk,3,5)
 		self.wsbthk = QtWidgets.QSpinBox()
 		self.wsbthk.setMinimum(-1)
 		self.wsbthk.setMaximum(256)
 		self.wsbthk.setValue(0)
-		self.gbl3dctl.addWidget(self.wsbthk,2,2)
+		self.gbl3dctl.addWidget(self.wsbthk,3,6)
 
 		# Center with respect to actual center
 		self.wlcen = QtWidgets.QLabel("Cen:")
 		self.wlcen.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
-		self.gbl3dctl.addWidget(self.wlcen,2,3)
+		self.gbl3dctl.addWidget(self.wlcen,3,7)
 		self.wsbcen = QtWidgets.QSpinBox()
 		self.wsbcen.setMinimum(-256)
 		self.wsbcen.setMaximum(256)
 		self.wsbcen.setValue(0)
-		self.gbl3dctl.addWidget(self.wsbcen,2,4)
+		self.gbl3dctl.addWidget(self.wsbcen,3,8)
 
 		self.wbutnmap=QtWidgets.QPushButton("Neutral Map")
 		self.wbutnmap.setCheckable(True)
@@ -660,8 +669,11 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wbutdmask.clicked[bool].connect(self.new_3d_opt)
 		self.wbutvtop.clicked[bool].connect(self.view_top)
 		self.wbutvbot.clicked[bool].connect(self.view_bot)
+		self.wbutvoblq.clicked[bool].connect(self.view_oblique)
 		self.wbutvside1.clicked[bool].connect(self.view_side1)
 		self.wbutvside2.clicked[bool].connect(self.view_side2)
+		self.wbutvside3.clicked[bool].connect(self.view_side3)
+		self.wbutvside4.clicked[bool].connect(self.view_side4)
 		self.wvssphsz.valueChanged.connect(self.new_sph_size)
 		self.wbutnewgmm.clicked[bool].connect(self.add_gmm)
 #		self.wbutrefine.clicked[bool].connect(self.setgmm_refine)
@@ -757,23 +769,38 @@ class EMGMM(QtWidgets.QMainWindow):
 	def view_top(self,tmp=None):
 		self.wview3d.getTransform().set_rotation({"type":"eman","az":0.0,"alt":0.0,"phi":0.0})
 		self.wview3d.updateGL()
-		self.slice_update()
+		self.slice_update(b=self.wview3d.getTransform())
 
 
 	def view_bot(self,tmp=None):
 		self.wview3d.getTransform().set_rotation({"type":"eman","az":0.0,"alt":180.0,"phi":0.0})
 		self.wview3d.updateGL()
-		self.slice_update()
+		self.slice_update(b=self.wview3d.getTransform())
+
+	def view_oblique(self,tmp=None):
+		self.wview3d.getTransform().set_rotation({"type":"eman","az":0.0,"alt":90.0-22.5,"phi":0.0})
+		self.wview3d.updateGL()
+		self.slice_update(b=self.wview3d.getTransform())
 
 	def view_side1(self,tmp=None):
 		self.wview3d.getTransform().set_rotation({"type":"eman","az":0.0,"alt":90.0,"phi":0.0})
 		self.wview3d.updateGL()
-		self.slice_update()
+		self.slice_update(b=self.wview3d.getTransform())
 
 	def view_side2(self,tmp=None):
 		self.wview3d.getTransform().set_rotation({"type":"eman","az":90.0,"alt":90.0,"phi":0.0})
 		self.wview3d.updateGL()
-		self.slice_update()
+		self.slice_update(b=self.wview3d.getTransform())
+
+	def view_side3(self,tmp=None):
+		self.wview3d.getTransform().set_rotation({"type":"eman","az":22.5,"alt":90.0,"phi":0.0})
+		self.wview3d.updateGL()
+		self.slice_update(b=self.wview3d.getTransform())
+
+	def view_side4(self,tmp=None):
+		self.wview3d.getTransform().set_rotation({"type":"eman","az":45.0,"alt":90.0,"phi":0.0})
+		self.wview3d.updateGL()
+		self.slice_update(b=self.wview3d.getTransform())
 
 	def slice_update(self,a=None,b=None):
 		"""Called when any of the slice parameters change, if b is a transform then we use it"""
@@ -791,7 +818,7 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		if self.wview2d is None:
 			self.wview2d = EMImage2DWidget(sizehint=(384,384))
-			self.gbl3dctl.addWidget(self.wview2d,0,5,2,1)
+			self.gbl3dctl.addWidget(self.wview2d,1,5,2,4)
 
 		self.wview2d.set_data(proj)
 
@@ -894,24 +921,26 @@ class EMGMM(QtWidgets.QMainWindow):
 #		self.wplot2d.set_data(self.data,"map")
 #		self.wplot2d.set_data(None,replace=True,quiet=True)
 
+#		print(self.data.shape[1])
+		ss=max(7-int(log10(self.data.shape[1])),1)
 		if len(self.maplist.selectedItems())>0:
-			self.wplot2d.set_data(self.data,"map",symsize=1,replace=True,quiet=True)
+			self.wplot2d.set_data(self.data,"map",symsize=ss,replace=True,quiet=True)
 			self.curmaps_sel={}
 			self.data_sel=[]
-			ss=10
+			# ss=10
 			for i in self.maplist.selectedItems():
 				key=i.text()
-				ss-=2
-				if ss<2 : ss=2
+				# ss-=2
+				# if ss<2 : ss=2
 				smap=self.curmaps[key]
 				self.curmaps_sel[key]=smap
 				if not isinstance(smap[5],np.ndarray) : smap[5]=np.array(smap[5])
 				self.data_sel.append(self.data[:,np.array(smap[5])])	# smap[5] is a list of points in the class
 				#print("S:",self.data.shape,self.data_sel[-1].shape)
 #				self.wplot2d.set_data(self.data_sel[-1],f"set_{key}",symsize=ss,quiet=True)
-				self.wplot2d.set_data(self.data_sel[-1],f"set_{key}",symsize=1,quiet=True)
+				self.wplot2d.set_data(self.data_sel[-1],f"set_{key}",symsize=ss,quiet=True)
 		else:
-			self.wplot2d.set_data(self.data,"map",symsize=1,replace=True,quiet=True)
+			self.wplot2d.set_data(self.data,"map",symsize=ss,replace=True,quiet=True)
 
 		self.wplot2d.setXAxisAll(self.wsbxcol.value(),True)
 		self.wplot2d.setYAxisAll(self.wsbycol.value(),True)
@@ -967,6 +996,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		if vol is not None:
 			self.dmapiso.getTransform().set_scale(vol["apix_x"]/self.jsparm["apix"])
 		
+		self.new_3d_opt()
 		self.wview3d.updateGL()
 		self.slice_update()
 
@@ -1267,7 +1297,71 @@ class EMGMM(QtWidgets.QMainWindow):
 		if delerr: QtWidgets.QMessageBox.warning(None, "Warning", "Warning: sets with computed maps not deleted!")
 
 	def set_save(self,ign=None):
-		"""Save a set to a new LST file for further processing"""
+		"""Save one or more sets to a new LST file for further processing"""
+		if len(self.maplist.selectedItems())==0:
+			showerror("One or more sets must be selected. Selected sets will be merged into a single .lst file.")
+			return
+
+		imgns=[]
+		ks=[]
+		for k in self.curmaps_sel:
+			ks.append(k)
+			st=self.curmaps_sel[k]
+			imgns.extend(list(st[5]))
+		imgns.sort()
+
+		lsin=LSXFile(f"{self.gmm}/particles.lst")
+
+		# check if this is subtomogram data, in which case we need to retrieve 3D particles too
+		tmp=lsin[0][2]
+		if "ptcl3d_id" in tmp: ptcl3d=set()	# we use this set to aggregate the 3-D particle ids we need to keep
+		else: ptcl3d=None
+
+		# This is tricky. If we have subtomogram data, in addition to extracting only the 3-D particles referenced
+		# by 2-D particles, we also have to remap the 3-D particle numbers in each 2-D particle!
+		if ptcl3d is not None:
+			# Construct a set containing all 3-D particle numbers we need to keep
+			for n in imgns:
+				ptcl3d.add(lsin[n][2]["ptcl3d_id"])
+
+			ptcl3d=sorted(ptcl3d)	# set -> sorted list
+			map3d2d={j:i for i,j in enumerate(ptcl3d)}		# maps a 3D particle number from the original file to the new file
+
+			outfsp=f"{self.gmm}/{self.currunkey}_set2d_{'-'.join(ks)}.lst"
+			try: os.unlink(outfsp)
+			except: pass
+			lsout=LSXFile(outfsp)
+
+			# first the 2-D particles with corrections
+			for n in imgns:
+				pt=lsin[n]
+				pt[2]["ptcl3d_id"]=map3d2d[pt[2]["ptcl3d_id"]]		# fix the old 3D particle id
+				lsout[-1]=pt		# despite the odd notation, -1 does work this way
+
+			# input and output files for 3D
+			rpath=self.jsparm["refinepath"]
+			ppth=[f for f in os.listdir(rpath) if "aliptcls3d_" in f]	# find all 3D lsts
+			lsin=LSXFile(f"{rpath}/{max(ppth)}")	# find the highest numbered 3D lst
+			outfsp2=f"{self.gmm}/{self.currunkey}_set3d_{'-'.join(ks)}.lst"
+			try: os.unlink(outfsp2)
+			except: pass
+
+			lsout=LSXFile(outfsp2)
+			for i,n in enumerate(ptcl3d):
+				lsout[i]=lsin[n]
+
+			print(f"{len(imgns)} selected particles saved to {outfsp} and {len(ptcl3d)} to {outfsp2}")
+
+		else:	# SPA particles not SPT partcles
+			outfsp=f"{self.gmm}/{self.currunkey}_set_{'-'.join(ks)}.lst"
+			try: os.unlink(outfsp)
+			except: pass
+			lsout=LSXFile(outfsp)
+
+			for n in imgns:
+				lsout[-1]=lsin[n]		# despite the odd notation, -1 does work this way
+
+			print(f"{len(imgns)} selected particles saved to {outfsp}")
 
 	def do_kmeans(self):
 		print("kmeans ...")
@@ -1474,8 +1568,16 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.lastres=res
 		
 		map3d=EMData(f"{self.gmm}/input_map.hdf")
-#		try: mask=EMData(str(self.wedmask.text()))		# masking of initial segmentation disabled 1/27/22
-#		except: mask=None
+		try:
+			val=float(str(self.wedmask.text()).split(",")[1])
+			mask=EMData(str(self.wedmask.text()).split(",")[0])
+			mask.mult(val)
+			mask.add(1.0)
+			map3d.mult(mask)
+			print(f"masked region enhanced by {val}")
+		except:
+			print("unmasked")
+
 		thrt=self.wedgthr.text()
 		try: minpos,minneg=float(thrt.split(",")[0]),float(thrt.split(",")[1])
 		except:
@@ -1488,7 +1590,11 @@ class EMGMM(QtWidgets.QMainWindow):
 		opt={"minratio":minpos,"width":res,"skipseg":2}
 #		if mask!=None: opt["mask"]=mask
 
-		sym=self.currun.setdefault("sym","c1")
+		try: sym=self.currun.setdefault("sym","c1")
+		except:
+			showerror("Unable to get symmetry. Have you created a run yet?")
+			return
+
 		print(f"sym {sym}")
 		if sym.lower()!="c1" :
 			mask=map3d.process("mask.asymunit",{"au":0,"sym":sym})
@@ -1724,100 +1830,10 @@ class EMGMM(QtWidgets.QMainWindow):
 		nm=QtWidgets.QInputDialog.getText(self,"Run Name","Enter a name for the new run. You will still need to run the subsequent steps.")
 		if not nm[1]: return
 		name=str(nm[0]).replace(" ","_")
-		if not self.jsparm.has_key("run_"+name) : self.wlistrun.addItem(name)
+		if "run_"+name not in self.jsparm : self.wlistrun.addItem(name)
 		self.currunkey=name
 		self.saveparm()		# initialize to avoid messed up defaults later
 		self.wlistrun.setCurrentRow(self.wlistrun.count()-1)
-
-
-	#### NO LONGER USED
-	def do_run(self,clk=False):
-		"""Run the current job with current parameters"""
-		self.saveparm("dynamics")  # updates self.currun with current user input
-
-		prog=QtWidgets.QProgressDialog("Running neutral model network. Progress updates here are limited. See the Console for detailed output.","Abort",0,4)
-		prog.show()
-		
-		maxbox =(int(self.jsparm["boxsize"]*(2*self.jsparm["apix"])/self.currun["targres"])//2)*2
-		maxbox25=(int(self.jsparm["boxsize"]*(2*self.jsparm["apix"])/25.0)//2)*2
-		print(f"Target res {self.currun['targres']} -> max box size {maxbox}")
-		modelout=f"{self.gmm}/{self.currunkey}_model_gmm.txt"		# note that this is from the neutral training above, we do not regenerate modelout at the "run" stage
-		modelseg=f"{self.gmm}/{self.currunkey}_model_seg.txt"
-		
-		sym=self.currun["sym"]
-		prog=QtWidgets.QProgressDialog("Running networks. Progress updates here are limited. See the Console for detailed output.","Abort",0,2)
-		prog.show()
-		self.do_events(1)
-		
-		decoder=f"{self.gmm}/{self.currunkey}_decoder.h5"
-		encoder=f"{self.gmm}/{self.currunkey}_encoder.h5"
-		if (len(self.currun["mask"])>4) : mask=f"--mask {self.currun['mask']}"
-		else: mask=""
-		# heterogeneity analysis
-		if int(self.currun["conv"]): conv="--conv"
-		else: conv=""
-		
-		# We split the data into 10 groups, and if there are enough particles in one set, process the chunks sequentially
-		if not os.path.exists(f"{self.gmm}/particles_1.lst"):
-			run(f"e2proclst.py {self.gmm}/particles.lst --split 10 --create {self.gmm}/sptcl.lst")
-		nchunk=len(LSXFile(f"{self.gmm}/sptcl_0.lst"))
-		
-		# if targeting high resolution, we start with 5 iterations at 25 A first
-		try: os.unlink(encoder)
-		except: pass
-		if maxbox25<maxbox:
-			if nchunk>=4000 : chunk=f"{self.gmm}/sptcl_0.lst"
-			else: chunk=f"{self.gmm}/particles.lst"
-			er=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --decoderout {decoder} --encoderout {encoder} --ptclsin {chunk} --heter {conv} --sym {sym} --maxboxsz {maxbox25} --niter 5 {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")
-			if er :
-				showerror("Error running e2gmm_refine, see console for details. Memory is a common issue. Consider reducing the target resolution.")
-				return
-
-		if os.path.exists(encoder): encin=f"--encoderin {encoder}"
-		else: encin=""
-		if nchunk<4000:
-			er=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --decoderout {decoder} {encin} --encoderout {encoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")
-		else:
-			chit=(self.currun["trainiter"]-1)//10+1
-			er=0
-			for i in range(10):
-				er+=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} --decoderout {decoder} {encin} --encoderout {encoder} --ptclsin {self.gmm}/sptcl_{i}.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {chit} {mask} --nmid {self.currun['dim']} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")
-				encin=f"--encoderin {encoder}"
-
-			# we save the middle layer in this final set of 10 runs, which does not update the stored encoder/decoder
-			for i in range(10):
-				er+=run(f"e2gmm_refine.py --model {modelout} --decoderin {decoder} {encin}  --ptclsin {self.gmm}/sptcl_{i}.lst --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter 1 {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid_{i}.txt --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1")
-				encin=f"--encoderin {encoder}"
-			
-			# Remerge the middle layer
-			mids=[open(f"{self.gmm}/{self.currunkey}_mid_{i}.txt","r").readlines() for i in range(10)]
-			out=open(f"{self.gmm}/{self.currunkey}_mid.txt","w")
-			nl=sum([len(i) for i in mids])
-			for i in range(nl):
-				out.write(mids[i%10][i//10])
-			for i in range(10): 
-				try: os.unlink(f"{self.gmm}/{self.currunkey}_mid_{i}.txt")
-				except: pass
-
-		if er :
-			showerror("Error running e2gmm_refine, see console for details. Memory is a common issue. Consider reducing the target resolution.")
-			return
-		else:
-			self.augment_mid()
-
-		self.currun=self.jsparm["run_"+self.currunkey]
-		self.currun["time_dynamics_end"]=local_datetime()
-		self.jsparm["run_"+self.currunkey]=self.currun
-
-		prog.setValue(2)
-		self.do_events()
-		self.currun=self.jsparm["run_"+self.currunkey]
-		self.currun["time_dynamics_end"]=local_datetime()
-		self.jsparm["run_"+self.currunkey]=self.currun
-		
-		self.sel_run(-1)
-
-		self.set3dvis(-1,0,0,0,1,0)
 
 	def do_run_new(self,clk=False):
 		"""Run the current job with current parameters"""
@@ -1841,7 +1857,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		
 		decoder=f"{self.gmm}/{self.currunkey}_decoder.h5"
 		encoder=f"{self.gmm}/{self.currunkey}_encoder.h5"
-		if (len(self.currun["mask"])>4) : mask=f"--mask {self.currun['mask']}"
+		if (len(self.currun["mask"])>4) : mask=f"--mask {self.currun['mask'].split(',')[0]}"
 		else: mask=""
 		# heterogeneity analysis
 		if int(self.currun["conv"]): conv="--conv"
@@ -2061,7 +2077,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.update_maptable()
 
 		try:
-			self.mask=EMData(str(self.wedmask.text()))
+			self.mask=EMData(str(self.wedmask.text()).split(",")[0])
 			self.maskdataitem.setData(self.mask)
 		except: pass
 
@@ -2116,7 +2132,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.jsparm=js_open_dict(f"{self.gmm}/0_gmm_parms.json")
 		
 		# double check if the user will be destroying results
-		if self.jsparm.has_key("refinepath"):
+		if "refinepath" in self.jsparm:
 			ans=QtWidgets.QMessageBox.question(self,"Are you sure?",f"{self.gmm} has already been configured to work on {self.jsparm['refinepath']}. Continuing may invalidate current results. Proceed?")
 			if ans==QtWidgets.QMessageBox.No:
 				if remove: os.unlink(self.gmm)

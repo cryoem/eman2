@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 #
-# Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
+# Author: Lan Dang, 03/17/2022 (dlan@bcm.edu)
+
 # Copyright (c) 2000-2006 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -97,6 +98,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 		self.data = None				# The currently displayed image/volume slice
 		self.annotation = None			# The currently displayed annotation
 		self.list_data = None
+		self.list_idx = 0
 		self.full_data = None 			# The actual image/volume
 		self.full_annotation = None		# This is the actual annotation image/volume
 		self.file_name = ""# stores the filename of the image, if None then member functions should be smart enough to handle it
@@ -120,8 +122,10 @@ class EMAnnotate2DWidget(EMGLWidget):
 		self.curmax=0.0
 		self.disp_proc=[]			# a list/set of Processor objects to apply before rendering
 		self.rmousedrag=None		# coordinates during a right-drag operation
-		self.mouse_mode_dict = {0:"emit", 1:"emit", 2:"emit", 3:"probe", 4:"measure", 5:"draw", 6:"emit", 7:"emit",8:"seg"}
-		self.mouse_mode = 8         # current mouse mode as selected by the inspector
+		#self.mouse_mode_dict = {0:"emit", 1:"emit", 2:"emit", 3:"probe", 4:"measure", 5:"draw", 6:"emit", 7:"emit",8:"seg"}
+		self.mouse_mode_dict = {0:"emit", 1:"emit", 2:"probe", 3:"measure", 4:"emit", 5:"emit",6:"seg"}
+
+		self.mouse_mode = 6         # current mouse mode as selected by the inspector
 		self.mag = 1.1				# magnification factor
 		self.invmag = 1.0/self.mag	# inverse magnification factor
 
@@ -165,10 +169,12 @@ class EMAnnotate2DWidget(EMGLWidget):
 		self.hist = []
 
 		self.display_shapes = True # A flag that can be used to turn of the display of shapes - useful to e2boxer
-
+		self.display_z_label = True
 		self.circle_dl = None # used for a circle list, for displaying circled particles, for example
 		#self.xform = Transform({"type":"eman","alt":self.alt,"az":self.az,"tx":self.full_data["nx"]//2,"ty":self.full_data["ny"]//2,"tz":self.full_data["nz"]//2+self.zpos})
 		self.xform = Transform()
+
+		#self.external_seg_tab = None
 
 		self.setAcceptDrops(True) #TODO: figure out the purpose of this (moved) line of code
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"single_image.png")) #TODO: figure out why this icon doesn't work
@@ -178,6 +184,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 				self.set_data(image, annotation)
 			else:
 				self.set_data(image, None)
+		self.auto_contrast(inspector_update=True,display_update=True)
 		#print("Full data nz",self.full_data["nz"])
 
 
@@ -262,8 +269,9 @@ class EMAnnotate2DWidget(EMGLWidget):
 		return QtCore.QSize(*self.get_parent_suggested_size())
 
 	def set_disp_proc(self,procs):
+		print('set_disp_proc')
 		self.disp_proc=procs
-		self.force_display_update()
+		self.force_display_update(set_clip=True)
 		self.updateGL()
 
 	def set_enable_clip(self,val=True):
@@ -369,9 +377,9 @@ class EMAnnotate2DWidget(EMGLWidget):
 
 		return [data.get_xsize(),data.get_ysize(),data.get_zsize()]
 
-#	def updateGL(self):
-#		if self.gl_widget != None:
-#			self.gl_widget.updateGL()
+	# def updateGL(self):
+	# 	if self.gl_widget != None:
+	# 		self.gl_widget.updateGL()
 
 	def set_frozen(self,frozen):
 		self.frozen = frozen
@@ -388,7 +396,8 @@ class EMAnnotate2DWidget(EMGLWidget):
 
 		#return self.full_data
 		if self.data is None:
-			print("Data is None")
+			self.render_bitmap()
+			print("Data is None. Render")
 		return self.data
 
 	def get_full_data(self):
@@ -495,6 +504,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 			m0=down["minimum"]
 			m1=down["maximum"]
 		else:
+
 			mean=self.data.get_attr("mean")
 			sigma=self.data.get_attr("sigma")
 			m0=self.data.get_attr("minimum")
@@ -511,19 +521,21 @@ class EMAnnotate2DWidget(EMGLWidget):
 	def auto_contrast(self,boolv=False,inspector_update=True,display_update=True):
 		auto_contrast = E2getappval("display2d","autocontrast",True)
 
-		if self.data == None: return
+		if self.full_data == None:
+			#print("data is None")
+			return
 		# histogram is impacted by downsampling, so we need to compensate
 		if self.scale<=0.5 :
-			down=self.data.process("math.meanshrink",{"n":int(floor(1.0/self.scale))})
+			down=self.full_data.process("math.meanshrink",{"n":int(floor(1.0/self.scale))})
 			mean=down["mean"]
 			sigma=down["sigma"]
 			m0=down["minimum"]
 			m1=down["maximum"]
 		else:
-			mean=self.data.get_attr("mean")
-			sigma=self.data.get_attr("sigma")
-			m0=self.data.get_attr("minimum")
-			m1=self.data.get_attr("maximum")
+			mean=self.full_data.get_attr("mean")
+			sigma=self.full_data.get_attr("sigma")
+			m0=self.full_data.get_attr("minimum")
+			m1=self.full_data.get_attr("maximum")
 		self.minden=m0
 		self.maxden=m1
 		if auto_contrast:
@@ -573,6 +585,8 @@ class EMAnnotate2DWidget(EMGLWidget):
 		self.qt_parent.register_animatable(animation)
 		return True
 
+
+	#TODO: Scrolling change scale keep reset to center image.
 	def set_scale(self,newscale,quiet=False):
 		"""Adjusts the scale of the display. Tries to maintain the center of the image at the center"""
 		if self.scale==newscale: return
@@ -581,7 +595,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 			self.scale=newscale
 			if not quiet : self.signal_set_scale.emit(newscale)
 			self.inspector_update()
-			self.force_display_update()
+			self.force_display_update(set_clip=True)
 			self.updateGL()
 		except: pass
 
@@ -659,6 +673,11 @@ class EMAnnotate2DWidget(EMGLWidget):
 		else :
 			pixden = (0, 255)
 
+
+		# min_val = self.curmin
+		# max_val = self.curmax
+		# gam_val = self.gamma
+
 		have_textures = (not self.glflags.npt_textures_unsupported ( ))
 
 		value_size = 1  # 1 8-bit byte
@@ -668,10 +687,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 		min_val = self.curmin
 		max_val = self.curmax
 
-		if len(self.disp_proc)>0 :
-			tmp=values.copy()
-			for p in self.disp_proc: p.process_inplace(tmp)
-			values=tmp
+
 
 		wid =  ((self.width() * value_size - 1) // 4) * 4+ 4
 		wdt =  self.width()
@@ -703,9 +719,20 @@ class EMAnnotate2DWidget(EMGLWidget):
 
 		####TOREAD
 		#print((to_numpy(self.data)[50,50]),(to_numpy(self.annotation)[50,50]))
+		values  = self.data
+		if len(self.disp_proc)>0 :
+			print(self.disp_proc)
+			tmp=values.copy()
+			for p in self.disp_proc: p.process_inplace(tmp)
+			values=tmp
 
+		# return_data = ( wid*3, hgt,
+		# 					GLUtil.render_annotated24 (self.data, self.annotation,
+		# 					x0, y0, wdt, hgt, wid*3,
+		# 					self.scale, pixden[0], pixden[1],
+		# 					min_val, max_val, flags))
 		return_data = ( wid*3, hgt,
-							GLUtil.render_annotated24 (self.data, self.annotation,
+							GLUtil.render_annotated24(values, self.annotation,
 							x0, y0, wdt, hgt, wid*3,
 							self.scale, pixden[0], pixden[1],
 							min_val, max_val, flags))
@@ -719,6 +746,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 			self.full_annotation.set_rotated_clip(self.xform,self.annotation)
 		if self.data:
 			self.full_data.set_rotated_clip(self.xform,self.data)
+
 
 	def render_bitmap_old(self):   # no longer used - use new render_bitmap
 		"""This will render the current bitmap into a string and return a tuple with 1 or 3 (grey vs RGB), width, height, and the raw data string"""
@@ -1123,7 +1151,6 @@ class EMAnnotate2DWidget(EMGLWidget):
 	def inspector_update(self):
 		if not self.inspector is None and not self.data is None:
 			self.inspector.set_limits(self.minden,self.maxden,self.curmin,self.curmax)
-
 			self.inspector.set_scale(self.scale)
 			self.inspector.update_brightness_contrast()
 			self.inspector.mtapix.setValue(self.data["apix_x"])
@@ -1162,6 +1189,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 		y = t1*self.startorigin[1] + t2*self.endorigin[1]
 		self.set_origin(x,y)
 		return True
+
 
 	def animation_done_event(self,animation):
 		if animation == self.key_mvt_animation:
@@ -1345,7 +1373,10 @@ class EMAnnotate2DWidget(EMGLWidget):
 				get_application().setOverrideCursor(Qt.ClosedHandCursor)
 			except: # if we're using a version of qt older than 4.2 than we have to use this...
 				get_application().setOverrideCursor(Qt.SizeAllCursor)
-			self.rmousedrag=(event.x(),event.y() )
+			self.rmousedrag=(event.x(),event.y())
+			if event.buttons()&Qt.RightButton:
+				self.mousedrag.emit(event, lc)
+				#print("Rmousedrag:",self.rmousedrag)
 		else:
 			if self.mouse_mode_dict[self.mouse_mode] == "emit":
 				lc=self.scr_to_img(event.x(),event.y())
@@ -1374,7 +1405,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 						self.get_data().process_inplace("mask.paint",{"x":lc[0],"y":lc[1],"z":0,"r1":self.drawr1,"v1":self.drawv1,"r2":self.drawr2,"v2":self.drawv2})
 						self.force_display_update()
 						self.updateGL()
-			elif self.mouse_mode_dict[self.mouse_mode] =="seg":
+			elif self.mouse_mode_dict[self.mouse_mode]=="seg":
 				if event.buttons()&Qt.LeftButton:
 					inspector = self.get_inspector()
 					#inspector.show()
@@ -1405,12 +1436,16 @@ class EMAnnotate2DWidget(EMGLWidget):
 
 	def mouseMoveEvent(self, event):
 		lc=self.scr_to_img(event.x(),event.y())
+
 		if self.rmousedrag:
 			self.set_origin(self.origin[0]+self.rmousedrag[0]-event.x(),self.origin[1]-self.rmousedrag[1]+event.y())
 			self.rmousedrag=(event.x(),event.y())
-#			self.emit(QtCore.SIGNAL("origin_update"),self.origin)
-			#try: self.updateGL()
-			#except: pass
+			if event.buttons()&Qt.RightButton:
+				self.mousedrag.emit(event, lc)
+				#print("Rmousedrag:",self.rmousedrag)
+			#self.emit(QtCore.SIGNAL("origin_update"),self.origin)
+			try: self.updateGL()
+			except: pass
 		else:
 			if self.mouse_mode_dict[self.mouse_mode] == "emit":
 				lc=self.scr_to_img(event.x(),event.y())
@@ -1512,8 +1547,11 @@ class EMAnnotate2DWidget(EMGLWidget):
 		if event.angleDelta().y() > 0:
 			self.set_scale(self.scale * self.mag )
 			print("Scale", self.scale,"Mag", self.mag)
+			self.mousewheel.emit(event)
 		elif event.angleDelta().y() < 0:
 			self.set_scale(self.scale * self.invmag )
+			print("Scale", self.scale,"Mag", self.mag)
+			self.mousewheel.emit(event)
 		# The self.scale variable is updated now, so just update with that
 		if self.inspector: self.inspector.set_scale(self.scale)
 
@@ -1548,8 +1586,9 @@ class EMAnnotate2DWidget(EMGLWidget):
 					self.zpos += 1
 					if self.inspector:
 						self.inspector.ns.setValue(self.zpos)
-				self.force_display_update()
+				self.force_display_update(set_clip=True)
 				self.updateGL()
+				self.keypress.emit(event)
 
 #			else:
 #				self.__key_mvt_animation(0,self.height()*.1)
@@ -1563,8 +1602,9 @@ class EMAnnotate2DWidget(EMGLWidget):
 					self.zpos -= 1
 					if self.inspector:
 						self.inspector.ns.setValue(self.zpos)
-				self.force_display_update()
+				self.force_display_update(set_clip=True)
 				self.updateGL()
+				self.keypress.emit(event)
 
 #			else:
 #				self.__key_mvt_animation(0,-self.height()*.1)
@@ -1591,7 +1631,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 		elif event.key()==Qt.Key_C:
 			self.auto_contrast()
 		elif event.key()==Qt.Key_I:
-			self.show_inspector(1)
+			self.show_inspector(6)
 		else:
 			self.keypress.emit(event)
 
@@ -1647,10 +1687,12 @@ class EMAnnotate2DWidget(EMGLWidget):
 		n = self.full_data["nz"]
 		pos = (n)//2 +self.zpos
 		#string = f"{self.zpos} ({n})"
+
 		string = f"Z: {round(pos,2)}"
 		bbox = self.font_renderer.bounding_box(string)
 		x_offset = width-(bbox[3]-bbox[0]) - 10
 		y_offset = 10
+
 
 		glPushMatrix()
 		glTranslate(x_offset,y_offset,0)
@@ -1735,32 +1777,33 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 		self.stmoviebut.clicked[bool].connect(self.do_makemovie)
 		self.stanimgif.clicked[bool].connect(self.do_makegifanim)
 
-		# Filter tab
-		self.filttab = QtWidgets.QWidget()
-		self.ftlay=QtWidgets.QGridLayout(self.filttab)
-
-		self.procbox1=StringBox(label="Process1:",value="filter.lowpass.gauss:cutoff_abs=0.125",showenable=0)
-		self.ftlay.addWidget(self.procbox1,2,0)
-
-		self.procbox2=StringBox(label="Process2:",value="filter.highpass.gauss:cutoff_pixels=3",showenable=0)
-		self.ftlay.addWidget(self.procbox2,6,0)
-
-		self.procbox3=StringBox(label="Process3:",value="math.linear:scale=5:shift=0",showenable=0)
-		self.ftlay.addWidget(self.procbox3,10,0)
-
-		self.proclbl1=QtWidgets.QLabel("Image unchanged, display only!")
-		self.ftlay.addWidget(self.proclbl1,12,0)
-
-		self.mmtab.addTab(self.filttab,"Filt")
-
-		self.procbox1.enableChanged.connect(self.do_filters)
-		self.procbox1.textChanged.connect(self.do_filters)
-		self.procbox2.enableChanged.connect(self.do_filters)
-		self.procbox2.textChanged.connect(self.do_filters)
-		self.procbox3.enableChanged.connect(self.do_filters)
-		self.procbox3.textChanged.connect(self.do_filters)
+		# # Filter tab
+		# self.filttab = QtWidgets.QWidget()
+		# self.ftlay=QtWidgets.QGridLayout(self.filttab)
+		#
+		# self.procbox1=StringBox(label="Process1:",value="filter.lowpass.gauss:cutoff_abs=0.125",showenable=0)
+		# self.ftlay.addWidget(self.procbox1,2,0)
+		#
+		# self.procbox2=StringBox(label="Process2:",value="filter.highpass.gauss:cutoff_pixels=3",showenable=0)
+		# self.ftlay.addWidget(self.procbox2,6,0)
+		#
+		# self.procbox3=StringBox(label="Process3:",value="math.linear:scale=5:shift=0",showenable=0)
+		# self.ftlay.addWidget(self.procbox3,10,0)
+		#
+		# self.proclbl1=QtWidgets.QLabel("Image unchanged, display only!")
+		# self.ftlay.addWidget(self.proclbl1,12,0)
+		#
+		# self.mmtab.addTab(self.filttab,"Filt")
+		#
+		# self.procbox1.enableChanged.connect(self.do_filters)
+		# self.procbox1.textChanged.connect(self.do_filters)
+		# self.procbox2.enableChanged.connect(self.do_filters)
+		# self.procbox2.textChanged.connect(self.do_filters)
+		# self.procbox3.enableChanged.connect(self.do_filters)
+		# self.procbox3.textChanged.connect(self.do_filters)
 
 		# Probe tab
+
 		self.probetab = QtWidgets.QWidget()
 		self.ptlay=QtWidgets.QGridLayout(self.probetab)
 
@@ -1840,38 +1883,38 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 		self.mmtab.addTab(self.meastab,"Meas")
 
 		# Draw tab
-		self.drawtab = QtWidgets.QWidget()
-		self.drawlay = QtWidgets.QGridLayout(self.drawtab)
-
-		self.dtl1 = QtWidgets.QLabel("Pen Size:")
-		self.dtl1.setAlignment(Qt.AlignRight)
-		self.drawlay.addWidget(self.dtl1,0,0)
-
-		self.dtpen = QtWidgets.QLineEdit("5")
-		self.drawlay.addWidget(self.dtpen,0,1)
-
-		self.dtl2 = QtWidgets.QLabel("Pen Val:")
-		self.dtl2.setAlignment(Qt.AlignRight)
-		self.drawlay.addWidget(self.dtl2,1,0)
-
-		self.dtpenv = QtWidgets.QLineEdit("1.0")
-		self.drawlay.addWidget(self.dtpenv,1,1)
-
-		self.dtl3 = QtWidgets.QLabel("Pen Size2:")
-		self.dtl3.setAlignment(Qt.AlignRight)
-		self.drawlay.addWidget(self.dtl3,0,2)
-
-		self.dtpen2 = QtWidgets.QLineEdit("5")
-		self.drawlay.addWidget(self.dtpen2,0,3)
-
-		self.dtl4 = QtWidgets.QLabel("Pen Val2:")
-		self.dtl4.setAlignment(Qt.AlignRight)
-		self.drawlay.addWidget(self.dtl4,1,2)
-
-		self.dtpenv2 = QtWidgets.QLineEdit("0")
-		self.drawlay.addWidget(self.dtpenv2,1,3)
-
-		self.mmtab.addTab(self.drawtab,"Draw")
+		# self.drawtab = QtWidgets.QWidget()
+		# self.drawlay = QtWidgets.QGridLayout(self.drawtab)
+		#
+		# self.dtl1 = QtWidgets.QLabel("Pen Size:")
+		# self.dtl1.setAlignment(Qt.AlignRight)
+		# self.drawlay.addWidget(self.dtl1,0,0)
+		#
+		# self.dtpen = QtWidgets.QLineEdit("5")
+		# self.drawlay.addWidget(self.dtpen,0,1)
+		#
+		# self.dtl2 = QtWidgets.QLabel("Pen Val:")
+		# self.dtl2.setAlignment(Qt.AlignRight)
+		# self.drawlay.addWidget(self.dtl2,1,0)
+		#
+		# self.dtpenv = QtWidgets.QLineEdit("1.0")
+		# self.drawlay.addWidget(self.dtpenv,1,1)
+		#
+		# self.dtl3 = QtWidgets.QLabel("Pen Size2:")
+		# self.dtl3.setAlignment(Qt.AlignRight)
+		# self.drawlay.addWidget(self.dtl3,0,2)
+		#
+		# self.dtpen2 = QtWidgets.QLineEdit("5")
+		# self.drawlay.addWidget(self.dtpen2,0,3)
+		#
+		# self.dtl4 = QtWidgets.QLabel("Pen Val2:")
+		# self.dtl4.setAlignment(Qt.AlignRight)
+		# self.drawlay.addWidget(self.dtl4,1,2)
+		#
+		# self.dtpenv2 = QtWidgets.QLineEdit("0")
+		# self.drawlay.addWidget(self.dtpenv2,1,3)
+		#
+		# self.mmtab.addTab(self.drawtab,"Draw")
 
 		# PSpec tab
 		self.pstab = QtWidgets.QWidget()
@@ -1903,6 +1946,9 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 
 		self.mmtab.addTab(self.pytab,"Python")
 
+		# if self.target.external_seg_tab:
+		# 	self.seg_tab = self.target.external_seg_tab
+		# else:
 		self.seg_tab = EMSegTab(target=target)
 		self.mmtab.addTab(self.seg_tab,"Seg" )
 		self.mmtab.setCurrentWidget(self.seg_tab)
@@ -2054,7 +2100,10 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 		self.azs.valueChanged.connect(self.target().set_az)
 		self.ns.valueChanged.connect(self.target().set_n)
 
-		self.resize(400,440) # d.woolford thinks this is a good starting size as of Nov 2008 (especially on MAC)
+		self.resize(500,500) # d.woolford thinks this is a good starting size as of Nov 2008 (especially on MAC)
+
+	# def get_seg_tab(self):
+	# 	return self.seg_tab
 
 	def update_zrange(self):
 		if self.target().nz > 1:
@@ -2284,14 +2333,13 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 	def set_minden(self,value,quiet=1):
 		self.mins.setValue(value,quiet)
 
-	##TODO: Update set_scale to actually work
+
 	def set_scale(self,val):
 		if self.busy : return
 
 		self.busy=1
 		self.scale.setValue(val)
 		#print("Scale in set_scale", self.scale.value)
-
 		self.busy=0
 
 	def new_min(self,val):
@@ -2397,12 +2445,14 @@ class EMSegTab(QtWidgets.QWidget):
 		self.pen_width=ValBox(label="Pen Width",value=15)
 		self.pen_width.setEnabled(1)
 		self.target = target
+		#self.background=False
 
 
-		self.set_list=QtWidgets.QListWidget()
-		self.set_list.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
-		self.set_list.addItem("Void")
-		self.set_list.item(0).setHidden(True)
+
+		# self.set_list=QtWidgets.QListWidget()
+		# self.set_list.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
+		# self.set_list.addItem("Void")
+		# self.set_list.item(0).setHidden(True)
 
 		self.table_set=QtWidgets.QTableWidget(0, 2, self)
 		self.table_set.setColumnWidth(0,70)
@@ -2543,6 +2593,8 @@ class EMSegTab(QtWidgets.QWidget):
 		self.table_set.setCurrentCell(self.table_set.rowCount()-1,1)
 		self.update_sets()
 
+
+
 	def delete_sel(self):
 		#Remove classes to the table set and annotation file. The deleted classes can be saved into separated annotation file.
 		sels = self.table_set.selectedItems()
@@ -2583,7 +2635,7 @@ class EMSegTab(QtWidgets.QWidget):
 		#Method to actual load a binary mask selected from the browser on the current annotation
 		self.browser_ret = (self.openbrowser.getResult())
 		print(self.browser_ret)
-		in_f = EMData(self.browser_ret[0]).process("threshold.binary",{"value":0.5})
+		in_f = EMData(self.browser_ret[0]).process("threshold.binary",{"value":0.3})
 		self.update_sets()
 		self.target.full_annotation *= in_f
 		self.target.force_display_update()
@@ -2640,10 +2692,13 @@ class EMSegTab(QtWidgets.QWidget):
 			print("Annotation file must have the same dimension with the data")
 			return
 		else:
-			append_dict = self.read_header(in_f,ret=True)
-			for key, value in append_dict.items():
-				self.add_new_row(key,value)
-			self.update_sets()
+			try:
+				append_dict = self.read_header(in_f,ret=True)
+				for key, value in append_dict.items():
+					self.add_new_row(key,value)
+				self.update_sets()
+			except:
+				pass
 			self.target.full_annotation += in_f
 			self.target.force_display_update()
 			self.target.updateGL()
@@ -2678,10 +2733,12 @@ class EMSegTab(QtWidgets.QWidget):
 			return
 
 
+
 	def save_all(self):
 		#Save the current annotation to disk as a multiclass annotation file.
 		out_name,ok=QtWidgets.QInputDialog.getText( self, "Save Full Annotation", "Save full annotation to:")
 		if not ok : return
+
 		nums = [int(self.table_set.item(row,0).text()) for row in range(self.table_set.rowCount())]
 		names = [str(self.table_set.item(row,1).text()) for row in range(self.table_set.rowCount())]
 		#name_str=names[0]+""
@@ -2697,6 +2754,8 @@ class EMSegTab(QtWidgets.QWidget):
 		serialize_name = json.dumps(names, default=lambda a: "[%s,%s]" % (str(type(a)), a.pk))
 		self.target.get_full_annotation()["ann_name"] = serialize_name
 		self.target.get_full_annotation()["ann_num"] = nums
+
+
 		self.target.get_full_annotation().write_image(out_name)
 		print("Annotation is saved to", out_name)
 		return

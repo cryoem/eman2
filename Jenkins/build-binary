@@ -14,39 +14,16 @@ def getOSName() {
     return os_map[uname]
 }
 
-def getJobType() {
-    def causes = "${currentBuild.rawBuild.getCauses()}"
-    def job_type = "UNKNOWN"
-    
-    if(causes ==~ /.*TimerTrigger.*/)    { job_type = "cron" }
-    if(causes ==~ /.*GitHubPushCause.*/) { job_type = "push" }
-    if(causes ==~ /.*UserIdCause.*/)     { job_type = "manual" }
-    if(causes ==~ /.*ReplayCause.*/)     { job_type = "manual" }
-    
-    return job_type
-}
-
 def isMasterBranch() {
-    return GIT_BRANCH_SHORT == "master" || GIT_BRANCH_SHORT == "master-dev"
+    return GIT_BRANCH_SHORT == "master"
 }
 
-def isReleaseBranch() {
-    return GIT_BRANCH_SHORT ==~ /release.*/
-}
-
-// Can't be called to set pipeline envvars, because depends on CI_BUILD
 def isContinuousBuild() {
-    return (CI_BUILD == "1" && isMasterBranch()) || isReleaseBranch() || JOB_TYPE == "cron"
+    return isMasterBranch()
 }
 
-// Can't be called to set pipeline envvars, because depends on CI_BUILD
 def isExperimentalBuild() {
-    return CI_BUILD == "1" && !(isMasterBranch() || isReleaseBranch())
-}
-
-// Can't be called to set pipeline envvars, because depends on CI_BUILD indirectly
-def isBinaryBuild() {
-    return isContinuousBuild() || isExperimentalBuild()
+    return !isMasterBranch()
 }
 
 def getBuildStabilityType() {
@@ -159,14 +136,11 @@ pipeline {
   
   environment {
     AGENT_OS_NAME = getOSName()
-    JOB_TYPE = getJobType()
     GIT_BRANCH_SHORT = sh(returnStdout: true, script: 'echo ${GIT_BRANCH##origin/}').trim()
     GIT_COMMIT_SHORT = sh(returnStdout: true, script: 'echo ${GIT_COMMIT:0:7}').trim()
     GIT_AUTHOR_EMAIL = sh(returnStdout: true, script: 'git log -1 --format="%ae"').trim()
     GIT_MESSAGE_SHORT = sprintf("%-30s",sh(returnStdout: true, script: 'git log -1 --format="%s"')).substring(0,30)
     INSTALLERS_DIR = convertToNativePath("${HOME_DIR}/workspace/jenkins-eman-installers")
-
-    CI_BUILD       = sh(script: "! git log -1 | grep '.*\\[ci build\\].*'",       returnStatus: true)
   }
   
   stages {
@@ -182,18 +156,6 @@ pipeline {
       }
     }
     
-    stage('build-local') {
-      when {
-        not { expression { isBinaryBuild() } }
-        expression { isUnix() }
-        not { expression { isSkipStage() } }
-      }
-      
-      steps {
-        sh 'source ci_support/set_env_vars.sh && source $(conda info --root)/bin/activate eman-deps-${EMAN_DEPS_VERSION} && env | sort && bash ci_support/build_no_recipe.sh'
-      }
-    }
-    
     stage('build-recipe') {
       when { not { expression { isSkipStage() } } }
       steps {
@@ -203,7 +165,6 @@ pipeline {
     
     stage('package') {
       when {
-        expression { isBinaryBuild() }
         not { expression { isSkipStage() } }
       }
       environment { PARENT_STAGE_NAME = "${STAGE_NAME}" }
@@ -216,7 +177,6 @@ pipeline {
     
     stage('test-package') {
       when {
-        expression { isBinaryBuild() }
         not { expression { isSkipStage() } }
       }
       environment {
@@ -232,7 +192,6 @@ pipeline {
     
     stage('deploy') {
       when {
-        expression { isBinaryBuild() }
         not { expression { isSkipStage() } }
       }
       environment { PARENT_STAGE_NAME = "${STAGE_NAME}" }
@@ -245,7 +204,6 @@ pipeline {
 
     stage('test-continuous') {
       when {
-        expression { isBinaryBuild() }
         not { expression { isSkipStage() } }
       }
       environment { PARENT_STAGE_NAME = "${STAGE_NAME}" }

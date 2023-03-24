@@ -594,6 +594,7 @@ class EMFileType(object) :
 		layers=self.secparm.wspinlayers.value()
 		center=self.secparm.wspincenter.value()
 		applyxf=self.secparm.wcheckxf.checkState()
+		applysym=str(self.secparm.wlesym.text())
 		stkout=self.secparm.wcheckstk.checkState()
 		oldwin=self.secparm.wcheckoldwin.checkState()
 		highpass=float(self.secparm.wlehp.text())
@@ -645,6 +646,7 @@ class EMFileType(object) :
 			except: xf=Transform()
 			
 			if applyxf: ptcl.process_inplace("xform",{"transform":xf})
+			if applysym is not None and applysym!="" and applysym.lower()!="c1": ptcl.process_inplace("xform.applysym",{"sym":applysym})
 			if mask!=None : ptcl.mult(mask)
 			
 			time.sleep(0.001)
@@ -1420,6 +1422,7 @@ class EMJSONFileType(EMFileType) :
 		lowpass=float(self.secparm.wlelp.text())
 		highpass=float(self.secparm.wlehp.text())
 		applyxf=self.secparm.wcheckxf.checkState()
+		applysym=str(self.secparm.wlesym.text())
 		stkout=self.secparm.wcheckstk.checkState()
 		
 		maskfsp=str(self.secparm.wlemask.text())
@@ -1469,6 +1472,7 @@ class EMJSONFileType(EMFileType) :
 				try: xf=ptcl["xform.align3d"]
 				except: xf=Transform()
 			if applyxf: ptcl.process_inplace("xform",{"transform":xf})
+			if applysym is not None and applysym!="" and applysym.lower()!="c1": ptcl.process_inplace("xform.applysym",{"sym":applysym})
 			if mask!=None : ptcl.mult(mask)
 						
 			time.sleep(0.001)
@@ -3591,6 +3595,7 @@ class EMSliceParamDialog(QtWidgets.QDialog):
 	dlp="-1"
 	dhp="-1"
 	dmask=""
+	sym="c1"
 	oldcheck=0
 	
 	
@@ -3656,6 +3661,10 @@ class EMSliceParamDialog(QtWidgets.QDialog):
 		self.wcheckxf.setToolTip("If set, applies the xform from the JSON/lst file or image header before making projections")
 		self.fol.addRow("Apply xform.align3d from image:",self.wcheckxf)
 
+		self.wlesym=QtWidgets.QLineEdit(self.sym)
+		self.wlesym.setToolTip("Applies the specified symmetry to each particle after xform but before projection")
+		self.fol.addRow("Symmetry after xform:",self.wlesym)
+
 		self.wcheckstk=QtWidgets.QCheckBox("enable")
 		self.wcheckstk.setChecked(0)
 		self.wcheckstk.setToolTip("If set, makes 3 square images instead of a single rectangular image. Good for FFTs.")
@@ -3684,6 +3693,7 @@ class EMSliceParamDialog(QtWidgets.QDialog):
 		EMSliceParamDialog.dlp=self.wlelp.text()
 		EMSliceParamDialog.dhp=self.wlehp.text()
 		EMSliceParamDialog.dmask=self.wlemask.text()
+		EMSliceParamDialog.sym=self.wlesym.text()
 		EMSliceParamDialog.oldcheck=self.wcheckoldwin.checkState()
 		self.accept()
 

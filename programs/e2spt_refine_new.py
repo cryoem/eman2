@@ -179,7 +179,7 @@ def main():
 		run(f"e2proclst.py {options.loadali2d} --create {fout} ")
 		last2d=fout
 		
-	ppmask=setsf=tophat=""
+	ppmask,setsf,tophat="","",""
 	if options.setsf:
 		setsf=f" --setsf {options.setsf}"
 	if options.tophat:

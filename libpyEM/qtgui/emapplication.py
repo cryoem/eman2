@@ -259,7 +259,8 @@ class EMApp(QtWidgets.QApplication):
 					print(s)
 					break
 
-		if style!=None and get_platform()!="Darwin": self.setStyle(style)
+		#if style!=None and get_platform()!="Darwin": self.setStyle(style)
+		if style!=None : self.setStyle(style)
 		
 		if em_app_instance.get_instance() == None:
 			em_app_instance.set_instance(self)

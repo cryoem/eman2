@@ -169,8 +169,9 @@ def main():
 	infile = args[0]
 	outfile = args[1]
 
-	fsp = infile
-	infile, _ = parse_infile_arg(infile)
+	if infile[0] != ":":
+		fsp = infile
+		infile, _ = parse_infile_arg(infile)
 
 	is_new_file = not os.path.isfile(outfile)
 
