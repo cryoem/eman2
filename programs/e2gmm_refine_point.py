@@ -44,7 +44,7 @@ def main():
 	parser.add_argument("--modelout", type=str,help="output trained model file. only used when --projs is provided", default="")
 	parser.add_argument("--decoderin", type=str,help="Rather than initializing the decoder from a model, read an existing trained decoder", default="")
 	parser.add_argument("--decoderout", type=str,help="Save the trained decoder model. Filename should be .h5", default=None)
-	parser.add_argument("--encoderin", type=str,help="Rather than initializing the encoder from scratch, read an existing trained encoder", default="")
+	parser.add_argument("--encoderin", type=str,help="Rather than initializing the encoder from scratch, read an existing trained encoder", default=None)
 	parser.add_argument("--encoderout", type=str,help="Save the trained encoder model. Filename should be .h5", default=None)
 	parser.add_argument("--projs", type=str,help="projections with orientations (in hdf header or comment column of lst file) to train model", default="")
 	parser.add_argument("--evalmodel", type=str,help="generate model projection images to the given file name", default="")
@@ -119,7 +119,7 @@ def main():
 				from collections import Counter
 				pts=np.array(sorted(pts,key=lambda x:x[5]))  # sort points by group so they can be fed into the subencoders
 				grps=Counter(pts[:,5])		# count elements in each group to generate correct encoder
-				if options.nmid%len(grps)!=0 :
+				if options.nmid%len(grps)!=0 and options.encoderin is None  :
 					error_exit(f"ERROR: Size of latent space {options.nmid} must be divisible by the number of groups {len(grps)}")
 				pts=pts[:,:4]
 
@@ -338,7 +338,7 @@ def main():
 	#### Heterogeneity analysis from particles
 	if options.ptclsin and options.heter:
 		#### build deep networks and make sure they work
-		if options.encoderin:
+		if options.encoderin is not None:
 			encode_model=tf.keras.models.load_model(f"{options.encoderin}",compile=False)
 		else:
 			encode_model=build_encoder(len(pts[0]),options.nmid,grps)
@@ -348,6 +348,7 @@ def main():
 		else:
 			decode_model=build_decoder(options.nmid, len(pts[0]))
 
+		print(allgrds[:bsz].shape)
 		mid=encode_model(allgrds[:bsz])
 		print("Latent space shape: ", mid.shape)
 		out=decode_model(mid)
@@ -373,7 +374,7 @@ def main():
 		mid=calc_conf(encode_model, allgrds[ptclidx], 1000)
 
 	# this now normally run as a separate process since the network may be trained in batches
-	if options.ptclrepin and options.encoderin and options.midout:
+	if options.ptclrepin and options.encoderin is not None and options.midout:
 		hdr=EMData(options.ptclrepin,0,1)
 		nptcl=hdr["ny"]
 		nvec=hdr["nx"]
@@ -749,20 +750,22 @@ def build_encoder(ninp,nmid,grps=None):
 		encode_model=tf.keras.Sequential(layers)
 	else:
 		# the goal is to produce something with the same input/output layers as the unsegmented network
+		# but connectivity from specific gaussians limited to specific latent variables
 		ngrp=[grps[i] for i in sorted(grps)]
 		latpergrp=nmid//len(grps)
 		in1=tf.keras.layers.Input(ninp)
 		in2s=[]
 		t=0
 		for i in ngrp:
-			in2s.append(tf.keras.layers.Dense(max(i//2,latpergrp*8))(in1[t:t+i]))
+			in2s.append(tf.keras.layers.Dense(max(i//2,latpergrp*8), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True,bias_initializer=binit)(in1[:,t:t+i]))
 			t+=i
 		# Add Dropout here?
-		mid=[tf.keras.layers.Dense(max(ngrp[i]//8,latpergrp*4))(in2s[i]) for i in range(len(ngrp))]
-		mid2=[tf.keras.layers.Dense(max(ngrp[i]//32,latpergrp*2))(mid[i]) for i in range(len(ngrp))]
-		outs=[tf.keras.layers.dense(latpergrp)(mid2[i]) for i in range(len(ngrp))]
-		out=tf.keras.layers.concatenate(outs)
+		mid=[tf.keras.layers.Dense(max(ngrp[i]//8,latpergrp*4), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True)(in2s[i]) for i in range(len(ngrp))]
+		mid2=[tf.keras.layers.Dense(max(ngrp[i]//32,latpergrp*2), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True)(mid[i]) for i in range(len(ngrp))]
+		outs=[tf.keras.layers.Dense(latpergrp, kernel_regularizer=l2, kernel_initializer=kinit,use_bias=True)(mid2[i]) for i in range(len(ngrp))]
+		out=tf.keras.layers.Concatenate()(outs)
 		encode_model=tf.keras.Model(inputs=in1,outputs=out)
+#		print(in1,in2s,mid,mid2,outs,out)
 	return encode_model
 
 
@@ -1135,6 +1138,7 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, options):
 	
 	## initialize optimizer
 #	opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate)
+#	opt=tf.keras.optimizers.experimental.AdamW(learning_rate=options.learnrate)
 	opt=tf.keras.optimizers.Adamax()
 	wts=encode_model.trainable_variables + decode_model.trainable_variables
 	nbatch=0

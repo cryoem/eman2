@@ -1569,6 +1569,8 @@ class EMGMM(QtWidgets.QMainWindow):
 		
 		map3d=EMData(f"{self.gmm}/input_map.hdf")
 
+		self.saveparm("neutral")  # updates self.currun with current user input
+
 		# we briefly supported "enhancement of densities in the masked region. detect and remove
 		try:
 			val=float(str(self.wedmask.text()).split(",")[1])
@@ -1576,14 +1578,6 @@ class EMGMM(QtWidgets.QMainWindow):
 			self.wedmask.setText(self.wedmask.text().split(",")[0])
 		except:
 			pass
-
-		try:
-			m=str(self.wedmask.text()).split(",")
-			if m[0]!="" : masks=[EMData(f) for f in m]
-			else: masks=None
-		except:
-			showerror("Invalid mask. Comma separated list of filenames or blank!")
-			masks=None
 
 		thrt=self.wedgthr.text()
 		try: minpos,minneg=float(thrt.split(",")[0]),float(thrt.split(",")[1])
@@ -1643,35 +1637,25 @@ class EMGMM(QtWidgets.QMainWindow):
 #		self.wedngauss.setText(str(len(amps)*4//3))
 		self.wedngauss.setText(f"{str(len(amps))} Gau")
 
-		if masks is None: groups=None
-		else:
-			# put each Gaussian in the mask-based group it first matches
-			# results unspecified for overlapping masks
-			# group 0 corresponds to the unmasked region
-			groups=np.zeros(len(amps))	# float type for compatibility later
-			for i in range(len(amps)):
-				for j in range(len(masks)):
-					if masks[j][int(centers[0][i]),int(centers[1][i]),int(centers[2][i])]>0.5:
-						groups[i]=j+1
-						break
-
 		print(f"Resolution={res} -> Ngauss={len(amps)}  ({self.currunkey})")
 		
 		nx=map3d["nx"]
 		centers[0]-=nx/2
 		centers[1]-=nx/2
 		centers[2]-=nx/2
-		if groups is None: self.neutralplot.setData(np.concatenate((centers,[amps])),self.wvssphsz.value)
-		else: self.neutralplot.setData(np.concatenate((centers,[amps],[np.ones(len(amps))],[groups])),self.wvssphsz.value)
 		self.centers=centers
 		self.amps=amps
-		self.cengroups=groups
+
+		self.group_by_mask()
+
+		if self.cengroups is None: self.neutralplot.setData(np.concatenate((centers,[amps])),self.wvssphsz.value)
+		else: self.neutralplot.setData(np.concatenate((centers,[amps],[np.ones(len(amps))],[self.cengroups])),self.wvssphsz.value)
 		self.wview3d.update()
 
 		# write the new seg model to disk for use in subsequent runs
 		modelseg=f"{self.gmm}/{self.currunkey}_model_seg.txt"
 		
-		if groups is None:
+		if self.cengroups is None:
 			with open(modelseg,"w") as out:
 				for i in range(len(self.amps)):
 					try: out.write(f"{self.centers[0,i]/nx:1.2f}\t{-self.centers[1,i]/nx:1.2f}\t{-self.centers[2,i]/nx:1.2f}\t{self.amps[i]:1.3f}\n")
@@ -1695,10 +1679,9 @@ class EMGMM(QtWidgets.QMainWindow):
 		prog.show()
 
 		# Regenerate the initial model by segmentation (writes to modelseg file)
+		# this also updates self.jsparm
 		self.new_res()
-		
-		self.saveparm("neutral")  # updates self.currun with current user input
-		
+
 		sym=self.currun["sym"]
 		maxbox=(int(self.jsparm["boxsize"]*(2*self.jsparm["apix"])/self.currun["targres"])//2)*2
 		minboxp =(int(self.jsparm["boxsize"]*(2*self.jsparm["apix"])/self.currun["ptclminres"]))
@@ -1747,10 +1730,12 @@ class EMGMM(QtWidgets.QMainWindow):
 		pts[1]*=-1.0
 		pts[2]*=-1.0
 		pts[:3,:]*=nx
+
 		n2c=min(ncen,pts.shape[1])
 		pts[:3,:n2c]=self.centers[:,:n2c]
 		pts[3:4,:n2c]=self.amps[:n2c]
 		pts[4,:n2c]=1.0
+
 		self.centers=pts[:3,:]
 		self.amps=pts[3]
 		if len(pts)>5: self.cengroups=pts[5]
@@ -1801,7 +1786,6 @@ class EMGMM(QtWidgets.QMainWindow):
 		else: conv=""
 		decoder=f"{self.gmm}/{self.currunkey}_decoder.h5"
 
-
 		# we extract a subset of the input particles targeting ~10k
 		try: os.unlink(f"{self.gmm}/particles_subset.lst")
 		except: pass
@@ -1833,15 +1817,33 @@ class EMGMM(QtWidgets.QMainWindow):
 		pts[1]*=-1.0
 		pts[2]*=-1.0
 		pts[:3,:]*=nx
-		n2c=min(ncen,pts.shape[1])
-		pts[:3,:n2c]=self.centers[:,:n2c]
-		pts[3:4,:n2c]=self.amps[:n2c]
+
+		# I'm sure there is/was a reason for this, but it isn't obvious to me right now
+		if ncen!=pts.shape[1]:
+			print(f"Note: number of points from training ({pts.shape[1]}) doesn't match segmenation ({ncen})")
+			n2c=min(ncen,pts.shape[1])
+			pts[:3,:n2c]=self.centers[:,:n2c]
+			pts[3:4,:n2c]=self.amps[:n2c]
+
 		self.centers=pts[:3,:]
 		self.amps=pts[3]
-		if len(pts)>5: self.cengroups=pts[5]
-		else: self.cengroups=None
+		self.group_by_mask()
 
-		self.neutralplot.setData(pts,self.wvssphsz.value)
+		# if we did mask based grouping, we need to rewrite the file so the groups are used
+		# by the encoder when computing latent vectors during full network training
+		if self.cengroups is not None:
+			with open(modelout,"w") as out:
+				for i in range(len(self.amps)):
+					try: out.write(f"{self.centers[0,i]/nx:1.2f}\t{-self.centers[1,i]/nx:1.2f}\t{-self.centers[2,i]/nx:1.2f}\t{self.amps[i]:1.3f}\t1.0\t{self.cengroups[i]:1.0f}\n")
+					except:
+						if i==0:
+							traceback.print_exc()
+							print(len(self.cengroups),self.cengroups)
+						if i<10: print("write error: ",self.centers[:,i],self.amps[i],self.amps.shape,i)
+
+
+		if self.cengroups is None: self.neutralplot.setData(pts,self.wvssphsz.value)
+		else: self.neutralplot.setData(np.concatenate((pts,[np.ones(len(self.cengroups))],[self.cengroups])),self.wvssphsz.value)
 		self.wview3d.updateGL()
 		self.do_events()
 		prog.setValue(3)
@@ -1858,6 +1860,32 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.jsparm["run_"+self.currunkey]=self.currun
 
 		self.set3dvis(1,0,0,1,0,1)
+
+	def group_by_mask(self):
+		"""If masks have been specified, use them to group the gaussians as appropriate"""
+
+		nx=int(self.jsparm["boxsize"])
+
+		# load the masks for later
+		try:
+			m=str(self.currun["mask"]).split(",")
+			if m[0]!="" : masks=[EMData(f) for f in m]
+			else: return
+		except:
+			showerror("Invalid mask. Comma separated list of filenames or blank!")
+			return
+
+		# put each Gaussian in the mask-based group it first matches
+		# results unspecified for overlapping masks
+		# group 0 corresponds to the unmasked region
+		groups=np.zeros(len(self.amps))	# float type for compatibility later
+		for i in range(len(self.amps)):
+			for j in range(len(masks)):
+				if masks[j][int(self.centers[0][i])+nx//2,int(self.centers[1][i])+nx//2,int(self.centers[2][i])+nx//2]>0.5:
+					groups[i]=j+1
+					break
+
+		self.cengroups=groups
 
 
 	def new_run(self,clk=False):
@@ -1911,7 +1939,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		if int(self.currun['batches'])<=1 :
 			# We really do need to rerun this each time in case parameters have changed
 			print("Pregenerating per-particle Gaussian representation")
-			er=run(f"e2gmm_refine_point.py --model {modelout} --ptclsin {self.gmm}/particles.lst --ptclrepout {ptrep} --maxboxsz {maxboxp} --minressz {minboxp}")
+			er=run(f"e2gmm_refine_point.py --model {modelout} --ptclsin {self.gmm}/particles.lst --ptclrepout {ptrep} --maxboxsz {maxboxp} --minressz {minboxp} --nmid {self.currun['dim']}")
 			print("Training network (single batch)")
 			er=run(f"e2gmm_refine_point.py --model {modelout} --decoderin {decoder} --decoderout {decoder} --encoderout {encoder} --ptclsin {self.gmm}/particles.lst --ptclrepin {ptrep} --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ptclsclip {self.jsparm['boxsize']} --minressz {minboxp}")
 		else:
@@ -1922,7 +1950,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			# We really do need to rerun this each time in case parameters have changed
 			print("Pregenerating per-particle Gaussian representation")
 			for b in range(nb):
-				er=run(f"e2gmm_refine_point.py --model {modelout} --ptclsin {self.gmm}/particles.lst --ptclrepout {ptrep} --maxboxsz {maxboxp} --minressz {minboxp} --chunk {b},{nb}")
+				er=run(f"e2gmm_refine_point.py --model {modelout} --ptclsin {self.gmm}/particles.lst --ptclrepout {ptrep} --maxboxsz {maxboxp} --minressz {minboxp} --chunk {b},{nb} --nmid {self.currun['dim']}")
 
 			print("Training in ",nb," batches")
 			for it in range(0,self.currun['trainiter'],itsize):
