@@ -15,9 +15,9 @@ from EMAN2_utils import interp_points
 from eman2_gui.emapplication import get_application, EMApp
 from eman2_gui.emimage import EMImageWidget
 from eman2_gui.emimage2d import EMImage2DWidget
-from annotate_utils import UNet
-#from eman2_gui.emannotate2d import EMAnnotate2DWidget
-from emannotate2d_2 import EMAnnotate2DWidget, EMSegTab
+#from annotate_utils import UNet
+from eman2_gui.emannotate2d import EMAnnotate2DWidget
+#from emannotate2d_2 import EMAnnotate2DWidget, EMSegTab
 from eman2_gui.emimagemx import EMImageMXWidget
 from eman2_gui.emscene3d import EMScene3D
 from eman2_gui.emdataitem3d import EMDataItem3D, EMIsosurface
