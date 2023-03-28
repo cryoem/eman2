@@ -27,7 +27,7 @@ def main():
 	c=[i for i in fname if i.isdigit()]
 	olditer=int(''.join(c[-2:]))
 	print(f"refinement path {oldpath}, iteration {olditer}.")
-	p00=np.loadtxt(f"{oldpath}/model_{olditer:02d}_even.txt")
+	p00=np.loadtxt(f"{oldpath}/model_{olditer-1:02d}_even.txt")
 	
 	
 	if options.path==None: 
@@ -77,10 +77,10 @@ def main():
 		for eo in ["even", "odd"]:
 			run(f"e2proc3d.py {oldpath}/threed_{olditer:02d}_{eo}.hdf {path}/threed_{ci*10:02d}_{eo}.hdf")
 			run(f"e2proclst.py {oldpath}/ptcls_{olditer:02d}_{eo}.lst --create {path}/ptcls_{ci*10:02d}_{eo}.lst")
-			p=np.loadtxt(f"{oldpath}/model_{olditer:02d}_{eo}.txt")
+			p=np.loadtxt(f"{oldpath}/model_{olditer-1:02d}_{eo}.txt")
 			np.savetxt(f"{path}/model_{ci*10:02d}_{eo}.txt", p)
 			
-		run(f"e2gmm_refine_iter.py {oldpath}/threed_{olditer:02d}.hdf --startres {options.startres} --initpts {oldpath}/model_{olditer:02d}.txt --mask {path}/mask_patch_{ci:02d}.hdf --masksigma --path {path} --niter {options.niter} --maskpp {path}/mask_00.hdf --startiter {ci*10+1} {etc}")
+		run(f"e2gmm_refine_iter.py {oldpath}/threed_{olditer:02d}.hdf --startres {options.startres} --initpts {oldpath}/model_{olditer-1:02d}.txt --mask {path}/mask_patch_{ci:02d}.hdf --masksigma --path {path} --niter {options.niter} --maskpp {path}/mask_00.hdf --startiter {ci*10+1} {etc}")
 		
 		for eo in ["even", "odd"]:
 			run(f"e2proc3d.py {path}/threed_raw_{eo}.hdf {path}/threed_patch_{ci:02d}_raw_{eo}.hdf")

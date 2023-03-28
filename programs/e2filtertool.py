@@ -274,7 +274,7 @@ class EMProcessorWidget(QtWidgets.QWidget):
 		try: proc_cat,proc_scat=proc.split(".",1)
 		except:
 			proc_cat=proc
-			proc_scat="---"
+			proc_scat=""
 
 		self.wcat.setCurrentIndex(self.wcat.findText(proc_cat))
 #		self.eventCatSel(0)

@@ -108,20 +108,7 @@ def get_sym_pts(sym, pts):
 			
 	return asym
 
-#### Project 3d Gaussian coordinates based on transforms to make projection
-##   input:  pts - ( batch size, number of Gaussian, 3 (x,y,z) )
-##                 ( number of Gaussian, 3) should also work
-##           ang - ( batch size, 5 (az, alt, phi, tx, ty) )
-#@tf.function
-def xf2pts(pts, ang):
-
-	#### input EMAN style euler angle (az, alt, phi) and make projection matrix
-	##   note we need to be able to deal with a batch of particles at once
-	##   so everything is in matrix form
-	
-	azp=-ang[0]
-	altp=ang[1]
-	phip=-ang[2]
+def make_matrix(azp, altp, phip):
 
 	matrix=tf.stack([(tf.cos(phip)*tf.cos(azp) - tf.cos(altp)*tf.sin(azp)*tf.sin(phip)),
 	(tf.cos(phip)*tf.sin(azp) + tf.cos(altp)*tf.cos(azp)*tf.sin(phip)),
@@ -134,19 +121,32 @@ def xf2pts(pts, ang):
 	(tf.sin(altp)*tf.sin(azp)),
 	(-tf.sin(altp)*tf.cos(azp)),
 	tf.cos(altp)], 0)
+	
+	return matrix
 
-	matrix=tf.reshape(matrix, shape=[3,3]) #### Here we get a batch_size x 3 x 3 matrix
-	matrix=tf.transpose(matrix)
+def xf2pts(pts, ang):
+	""" Project 3d Gaussian coordinates based on transforms to make projection
+		input:  pts - ( number of Gaussian, 3 (x,y,z) )
+				ang - ( 5 (az, alt, phi, tx, ty) )
+	"""
+
+	#### input EMAN style euler angle (az, alt, phi) and make projection matrix
+	##   note we need to be able to deal with a batch of particles at once
+	##   so everything is in matrix form	
+	azp=-ang[0]
+	altp=ang[1]
+	phip=-ang[2]
 
 	#### rotate Gaussian positions
+	matrix=make_matrix(azp, altp, phip)
+	matrix=tf.reshape(matrix, shape=[3,3]) 
+	matrix=tf.transpose(matrix)
 
 	pts_rot=tf.matmul(pts, matrix)
 #     pts_rot=tf.transpose(pts_rot)
 
 	#### finally do the translation
-	tx=ang[3]
-	ty=ang[4]
-	pts_rot_trans=tf.stack([(pts_rot[:,0]+tx), (-pts_rot[:,1])+ty], 1)
+	pts_rot_trans=tf.stack([(pts_rot[:,0]+ang[3]), (-pts_rot[:,1])+ang[4]], 1)
 	
 	#pts_rot_trans=pts_rot_trans*sz+sz/2
 	return pts_rot_trans
@@ -254,19 +254,8 @@ def rotpts(pts, ang, msk):
 	phip=-ang[:,2]*np.pi
 	trans=ang[:,3:][:,None,:]*.2
 	m=msk[None,:,None]
-
-	matrix=tf.stack([(tf.cos(phip)*tf.cos(azp) - tf.cos(altp)*tf.sin(azp)*tf.sin(phip)),
-	(tf.cos(phip)*tf.sin(azp) + tf.cos(altp)*tf.cos(azp)*tf.sin(phip)),
-	(tf.sin(altp)*tf.sin(phip)),
-
-	(-tf.sin(phip)*tf.cos(azp) - tf.cos(altp)*tf.sin(azp)*tf.cos(phip)),
-	(-tf.sin(phip)*tf.sin(azp) + tf.cos(altp)*tf.cos(azp)*tf.cos(phip)),
-	(tf.sin(altp)*tf.cos(phip)),
-
-	(tf.sin(altp)*tf.sin(azp)),
-	(-tf.sin(altp)*tf.cos(azp)),
-	tf.cos(altp)], 0)
-
+	
+	matrix=make_matrix(azp, altp, phip)
 	matrix=tf.transpose(matrix)
 	matrix=tf.reshape(matrix, shape=[-1, 3,3]) #### Here we get a batch_size x 3 x 3 matrix
 
@@ -290,7 +279,10 @@ def rotpts(pts, ang, msk):
 #### particles need to have their transform in file header or comment of list file
 ##   will also shrink particles and do FT
 ##   return Fourier images and transform matrix
-def load_particles(fname, boxsz, shuffle=False):
+def load_particles(options):
+	fname=options.ptclsin
+	boxsz=options.maxboxsz
+	shuffle=options.trainmodel
 	
 	nptcl=EMUtil.get_image_count(fname)
 	projs=[]
@@ -307,10 +299,10 @@ def load_particles(fname, boxsz, shuffle=False):
 		for e in el:
 			if rawbox!=boxsz:
 				#### there is some fourier artifact with xform.scale. maybe worth switching to fft.resample?
-				e.process_inplace("math.fft.resample",{"n":rawbox/boxsz})
+				if options.clip>0:
+					e.clip_inplace(Region((rawbox-options.clip)//2,(rawbox-options.clip)//2, options.clip,options.clip))
+				e.process_inplace("math.fft.resample",{"n":e["nx"]/boxsz})
 				#nx=e["nx"]
-				#e.clip_inplace(Region((nx-boxsz)//2,(nx-boxsz)//2, boxsz,boxsz))
-				#e.process_inplace("xform.scale", {"scale":boxsz/rawbox,"clip":boxsz})
 			
 			e.process_inplace("xform.phaseorigin.tocorner")
 			hdrs.append(e.get_attr_dict())
@@ -346,7 +338,10 @@ def load_particles(fname, boxsz, shuffle=False):
 		
 	xfsnp=np.array([[x["az"],x["alt"],x["phi"], x["tx"], x["ty"]] for x in xfs], dtype=floattype)
 	xfsnp[:,:3]=xfsnp[:,:3]*np.pi/180.
-	xfsnp[:,3:]/=float(rawbox)
+	if options.clip>0:
+		xfsnp[:,3:]/=float(options.clip)
+	else:
+		xfsnp[:,3:]/=float(rawbox)
 	
 	print("Data read complete")
 	return data_cpx,xfsnp
@@ -404,7 +399,7 @@ def build_encoder(mid=512, nout=4, conv=False, ninp=-1):
 	kinit=tf.keras.initializers.RandomNormal(0,1e-3)	# was 0.01
 	
 	if conv:
-		ss=64
+		ss=32
 		layers=[
 			tf.keras.layers.Flatten(),
 			tf.keras.layers.Dense(ss*ss, kernel_regularizer=l2),
@@ -648,7 +643,7 @@ def build_decoder(pts, mid=512, ninp=4, conv=False):
 			tf.keras.layers.Dense(256, activation="relu"),
 			tf.keras.layers.Reshape((4,4,16)),
 			tf.keras.layers.Conv2DTranspose(16, 3, activation="relu", strides=(2,2), padding="same"),
-			tf.keras.layers.Conv2DTranspose(16, 3, activation="relu", strides=(2,2), padding="same"),
+			#tf.keras.layers.Conv2DTranspose(16, 3, activation="relu", strides=(2,2), padding="same"),
 			#tf.keras.layers.Conv2DTranspose(16, 5, activation="relu", strides=(2,2), padding="same"),
 			tf.keras.layers.Dropout(.1),
 			ResidueConv2D(64, 5, activation="relu", padding="same"),
@@ -657,7 +652,7 @@ def build_decoder(pts, mid=512, ninp=4, conv=False):
 			tf.keras.layers.Dropout(.1),
 			ResidueConv2D(64, 5, activation="relu", padding="same"),
 			tf.keras.layers.Dropout(.1),
-			ResidueConv2D(64, 5, activation="relu", padding="same"),
+			ResidueConv2D(32, 5, activation="relu", padding="same"),
 			tf.keras.layers.Flatten(),
 			tf.keras.layers.Dropout(.3),
 			tf.keras.layers.BatchNormalization(),
@@ -1034,13 +1029,14 @@ def refine_align(dcpx, xfsnp, pts, options, lr=1e-3):
 	trainset=trainset.batch(options.batchsz)
 	nbatch=nsample//options.batchsz
 	
-	opt=tf.keras.optimizers.Adam(learning_rate=lr) 
+	
 	xfvs=[]
 	frcs=[]
 	niter=options.niter
 	scr=[]
 	
 	for ptr,ptj,xf,conf in trainset:
+		opt=tf.keras.optimizers.Adam(learning_rate=lr) 
 		ptcl_cpx=(ptr, ptj)
 		xfvar=tf.Variable(xf)
 		p0=tf.constant(tf.zeros((xf.shape[0],pts.shape[0], 5))+pts)
@@ -1115,7 +1111,7 @@ def calc_gradient(trainset, pts, params, options):
 			
 			loss=-tf.reduce_mean(fval)
 
-		grad=gt.gradient(loss, pt)
+		grad=tf.convert_to_tensor(gt.gradient(loss, pt))
 		allgrds.append(grad.numpy().copy())
 		allscr.append(fval.numpy().copy())
 		sys.stdout.write("\r {}/{} : {:.4f}        ".format(len(allscr), nbatch, np.mean(fval)))
@@ -1142,8 +1138,8 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, imsk, option
 	if options.anchor:
 		wts=wts[:-1]
 		
-	for w in wts:
-		print(w.shape)
+	#for w in wts:
+		#print(w.shape)
 	nbatch=0
 	for t in trainset: nbatch+=1
 	
@@ -1292,6 +1288,7 @@ def main():
 	parser.add_argument("--learnrate", type=float,help="learning rate for model training only. Default is 1e-5. ", default=1e-5)
 	
 	parser.add_argument("--niter", type=int,help="number of iterations", default=10)
+	parser.add_argument("--clip", type=int,help="clip input images before scaling", default=-1)
 	parser.add_argument("--npts", type=int,help="number of points to initialize. ", default=-1)
 	parser.add_argument("--batchsz", type=int,help="batch size", default=32)
 	parser.add_argument("--maxboxsz", type=int,help="maximum fourier box size to use. 2 x target Fourier radius. ", default=64)
@@ -1301,12 +1298,9 @@ def main():
 	parser.add_argument("--trainmodel", action="store_true", default=False ,help="align particles.")
 	parser.add_argument("--align", action="store_true", default=False ,help="align particles.")
 	parser.add_argument("--heter", action="store_true", default=False ,help="heterogeneity analysis.")
-	#parser.add_argument("--decoderentropy", action="store_true", default=False ,help="This will train some entropy into the decoder using particles to reduce vanishing gradient problems")
 	parser.add_argument("--perturb", type=float, default=0.01 ,help="Relative perturbation level to apply in each iteration during --heter training. Default = 0.01")
 	parser.add_argument("--conv", action="store_true", default=False ,help="Use a convolutional network for heterogeneity analysis.")
 	parser.add_argument("--fromscratch", action="store_true", default=False ,help="start from coarse alignment. otherwise will only do refinement from last round")
-	#parser.add_argument("--gradout", type=str,help="gradient output", default="")
-	#parser.add_argument("--gradin", type=str,help="reading from gradient output instead of recomputing", default="")
 	parser.add_argument("--midout", type=str,help="middle layer output", default="")
 	parser.add_argument("--midin", type=str,help="middle layer input for alignment", default="")
 	parser.add_argument("--pas", type=str,help="choose whether to adjust position, amplitude, sigma. use 3 digit 0/1 input. default is 110, i.e. only adjusting position and amplitude", default="110")
@@ -1400,6 +1394,7 @@ def main():
 	#### load particles
 	e=EMData(options.ptclsin, 0, True)
 	raw_apix, raw_boxsz = e["apix_x"], e["ny"]
+	if options.clip>0: raw_boxsz=options.clip
 	options.raw_apix=raw_apix
 	if options.maxres>0:
 		maxboxsz=options.maxboxsz=ceil(raw_boxsz*raw_apix*2/options.maxres)//2*2
@@ -1410,7 +1405,7 @@ def main():
 	options.minpx=max(1, options.minpx)
 	print("FRC compares from {} to {} Fourier pixels".format(options.minpx, options.maxpx))
 	
-	data_cpx, xfsnp = load_particles(options.ptclsin, maxboxsz, shuffle=options.trainmodel)
+	data_cpx, xfsnp = load_particles(options)
 	options.apix=apix=raw_apix*raw_boxsz/maxboxsz
 	clipid=set_indices_boxsz(data_cpx[0].shape[1], apix, True)		
 	
@@ -1428,8 +1423,9 @@ def main():
 			dcpx=get_clip(data_cpx, params["sz"], clipid)
 			trainset=tf.data.Dataset.from_tensor_slices((dcpx[0], dcpx[1], xfsnp))
 			trainset=trainset.batch(options.batchsz)
-		
+			t0=time.time()
 			train_decoder(gen_model, trainset, params, options, pts)
+			print("##### {:.1f} ######".format(time.time()-t0))
 			pout=gen_model(tf.zeros((1,options.nmid), dtype=floattype)).numpy()[0]
 			
 			pout[:,3]/=np.max(pout[:,3])			

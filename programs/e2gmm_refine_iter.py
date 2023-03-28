@@ -98,15 +98,15 @@ def main():
 			if itr==options.startiter:
 				
 				if options.initpts:
-					run(f"e2gmm_refine_new.py --ptclsin {path}/projections_{eo}.hdf --model {path}/gmm_init_{eo}.{ext} --maxres {res} --modelout {path}/model_{it0:02d}_{eo}.txt --niter 40 --trainmodel")
+					run(f"e2gmm_refine_new.py --ptclsin {path}/projections_{eo}.hdf --model {path}/gmm_init_{eo}.{ext} --maxres {res} --modelout {path}/model_{it0:02d}_{eo}.txt --niter 40 --trainmodel --learnrate 1e-6")
 					
 				else:
 					run(f"e2segment3d.py {path}/threed_{it0:02d}_{eo}.hdf --pdb {path}/model_{it0:02d}_{eo}.pdb --process=segment.kmeans:nseg={options.npt}:thr=4")
 					
-					run(f"e2gmm_refine_new.py --ptclsin {path}/projections_{eo}.hdf --model {path}/model_{it0:02d}_{eo}.pdb --maxres {res} --modelout {path}/model_{it0:02d}_{eo}.txt --niter 40 --trainmodel")
+					run(f"e2gmm_refine_new.py --ptclsin {path}/projections_{eo}.hdf --model {path}/model_{it0:02d}_{eo}.pdb --maxres {res} --modelout {path}/model_{it0:02d}_{eo}.txt --niter 40 --trainmodel --learnrate 1e-6")
 		
 			else:
-				run(f"e2gmm_refine_new.py --ptclsin {path}/projections_{eo}.hdf --model {path}/model_{itr-2:02d}_{eo}.txt --maxres {res} --modelout {path}/model_{it0:02d}_{eo}.txt --niter 40 --trainmodel")
+				run(f"e2gmm_refine_new.py --ptclsin {path}/projections_{eo}.hdf --model {path}/model_{itr-2:02d}_{eo}.txt --maxres {res} --modelout {path}/model_{it0:02d}_{eo}.txt --niter 40 --trainmodel --learnrate 1e-6")
 	
 			pts=np.loadtxt(f"{path}/model_{it0:02d}_{eo}.txt")
 			if options.mask:
@@ -135,9 +135,18 @@ def main():
 					
 				np.savetxt(f"{path}/model_{it0:02d}_{eo}.txt", pts)
 			
-			run(f'e2gmm_batch.py "e2gmm_refine_new.py --model {path}/model_{it0:02d}_{eo}.txt  --ptclsin {path}/ptcls_{it0:02d}_{eo}.lst  --ptclsout {path}/ptcls_{itr:02d}_{eo}.lst --align --maxres {res} --minres {options.minres} --batchsz {options.batchsize}" --niter 0 --batch {options.chunksize}')
+			e=EMData(f"{path}/threed_{it0:02d}_{eo}.hdf",0,True)
+			p=EMData(f"{path}/ptcls_{it0:02d}_{eo}.lst",0,True)
+			etcali="";etcm3d=""
+			if p["nx"]>e["nx"]:
+				clip=e["nx"]
+				etcali+=f" --clip {clip}"
+				etcm3d+=f" --outsize {clip}"
+
 			
-			run(f"e2spa_make3d.py --input {path}/ptcls_{itr:02d}_{eo}.lst --output {path}/threed_{itr:02d}_{eo}.hdf --parallel thread:32 --keep .9 --sym {options.sym}")
+			run(f'e2gmm_batch.py "e2gmm_refine_new.py --model {path}/model_{it0:02d}_{eo}.txt  --ptclsin {path}/ptcls_{it0:02d}_{eo}.lst  --ptclsout {path}/ptcls_{itr:02d}_{eo}.lst --align --maxres {res} --minres {options.minres} --batchsz {options.batchsize} {etcali}" --niter 0 --batch {options.chunksize}')
+			
+			run(f"e2spa_make3d.py --input {path}/ptcls_{itr:02d}_{eo}.lst --output {path}/threed_{itr:02d}_{eo}.hdf --parallel thread:32 --keep .9 --sym {options.sym} {etcm3d}")
 	   
 			run(f"e2proc3d.py {path}/threed_{itr:02d}_{eo}.hdf {path}/threed_raw_{eo}.hdf")
 			

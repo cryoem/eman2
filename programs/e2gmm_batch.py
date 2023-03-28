@@ -10,6 +10,8 @@ def main():
 	parser.add_argument("--batch", type=int, help="batch size", default=50000)
 	parser.add_argument("--niter", type=int, help="number of iterations", default=2)
 	parser.add_argument("--load", action="store_true", default=False ,help="load.")
+	parser.add_argument("--ptcl3d", action="store_true", default=False ,help="separate by 3d particles. batch will correspond to 3d patricles")
+	parser.add_argument("--subtilt", action="store_true", default=False ,help="separate particles for subtilt refinement")
 	parser.add_argument("--ppid", type=int,help="ppid...", default=-1)
 
 	(options, args) = parser.parse_args()
@@ -25,24 +27,62 @@ def main():
 	midout=find_option(cmd, "--midout")
 	citer=find_option(cmd, "--niter")
 	path=pname[:pname.rfind('/')+1]
+	batch=options.batch
 	print("Writing tmp files in ",path)
 	
 	rawcmd=args[0]
 	for rawiter in range(options.niter+1):
-		if rawiter==options.niter:
+		if midout and rawiter==options.niter:
 			rawcmd=rawcmd.replace(f"--niter {citer}", "--niter 0")
 			
 		lst=load_lst_params(pname)
-		n=len(lst)
-		print(f"List input {pname}, with {n} particles")
+		print(f"List input {pname}, with {len(lst)} particles")
 		
-		batch=options.batch
-		niter=ceil(n/batch)
+		if options.ptcl3d and "ptcl3d_id" in lst[0]:
+			pids=np.array([a["ptcl3d_id"] for a in lst])
+			uid=np.unique(pids)
+			print(f"{len(uid)} 3d particles")
+			p3did=[np.where(pids==u)[0] for u in uid]
+			nbatch=ceil(len(uid)/batch)
+		
+		elif options.subtilt:
+			srcs=np.unique([i["src"] for i in lst])
+			p3d=np.unique([i["ptcl3d_id"] for i in lst])
+			print(f"{len(srcs)} tomograms, {len(p3d)} 3d particles, {len(lst)} 2d particles")
+			
+			batches=[]
+			current=[]
+			for src in srcs:
+				l2=[i for i in lst if i['src']==src]
+				tids=np.unique([l["tilt_id"] for l in l2])
+				for t in tids:
+					l3=[l for l in l2 if l["tilt_id"]==t]
+					if len(l3)+len(current)>options.batch:
+						batches.append(current)
+						current=[]
+					current.extend(l3)
+			
+			nbatch=len(batches)
+					
+		else:
+			options.ptcl3d=False		
+			nbatch=ceil(len(lst)/batch)
+			
 		tmpfiles=[]
 		
-		for it in range(niter):
-			ll=lst[it*batch:(it+1)*batch]
-			print(it, len(ll))
+		for it in range(nbatch):
+			print("#######################")
+			print(f"batch {it}/{nbatch}...")
+			if options.ptcl3d:
+				ul=p3did[it*batch:(it+1)*batch]
+				ll=np.concatenate(ul).tolist()
+				ll=[lst[i] for i in ll]
+			elif options.subtilt:
+				ll=batches[it]
+			else:
+				ll=lst[it*batch:(it+1)*batch]
+				
+			print(f"{it}/{nbatch} batches, {len(ll)} particles")
 			tmplst=path+f'tmp_input_{it:03d}.lst'
 			tmpout=path+f'tmp_output_{it:03d}.lst'
 			tmpmid=path+f'tmp_mid_{it:03d}.txt'
@@ -81,6 +121,11 @@ def main():
 				try: os.remove(f)
 				except: pass
 		
+	print("batch processing finished.")
+	if midout:
+		print(f"latent space output saved to {midout}")
+	if oname:
+		print(f"aligned particles saved to {oname}")
 	E2end(logid)
 	
 def find_option(cmd, op):

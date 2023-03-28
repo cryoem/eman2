@@ -41,7 +41,7 @@ def pdb2numpy(fname, readres=False, readocc=False, readbfac=False, readchain=Fal
 			if readbfac:
 				a.append(float(l[60:66].strip()))
 			if readchain:
-				c=l[20:23].strip()
+				c=l[21:22].strip()
 				if not c in cid:
 					cid[c]=len(cid.keys())
 				
@@ -55,7 +55,6 @@ def pdb2numpy(fname, readres=False, readocc=False, readbfac=False, readchain=Fal
 def numpy2pdb(data,fname,occ=[],bfac=[],chainid=[], model=0, residue=[]):
 	if model>0:
 		ww='a'
-		#print "Appending.."
 	else:
 		ww='w'
 

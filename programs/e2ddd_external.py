@@ -65,7 +65,7 @@ def main():
 	parser.add_header(name="orblock1", help='Just a visual separation', title="Options", row=2, col=0, rowspan=1, colspan=2, mode="tomo,spr")
 
 	parser.add_argument("--mdoc", default = None, type=str, help="When an mdoc or idoc is provided, the raw files are automatically found within the input directory",guitype='filebox', browser="EMMovieDataTable(withmodal=True,multiselect=True)",  row=3, col=0,rowspan=1, colspan=2, mode="tomo")
-	parser.add_argument("--apix", default=-1, type=float, help="Specify the Apix of the movies to be processed.",guitype='floatbox', row=2, col=1, rowspan=1, colspan=1, mode="tomo[True]")
+	parser.add_argument("--apix", default=-1, type=float, help="Specify the Apix of the movies to be processed.",guitype='floatbox', row=2, col=1, rowspan=1, colspan=1, mode="tomo[True],spr")
 
 	parser.add_argument("--dark",  default = None, type=str, help="Use this dark reference.",guitype='filebox',  browser="EMMovieDataTable(withmodal=True,multiselect=True)",  row=4, col=0,rowspan=1, colspan=2, mode="tomo,spr")
 	parser.add_argument("--gain",  default = None, type=str, help="Use this gain reference.",guitype='filebox',  browser="EMMovieDataTable(withmodal=True,multiselect=True)",  row=5, col=0,rowspan=1, colspan=2, mode="tomo,spr")
@@ -94,6 +94,13 @@ def main():
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
+	parser.add_argument("--mc2_dw", action="store_true", help="Use MotionCor2 dose-weighting", default=False,guitype='boolbox', row=12, col=0, rowspan=1, colspan=1, mode="spr")
+
+	parser.add_argument("--mc2_kv",  default = 300, type=int, help="Specify electron energy in kV. Only used if DW enabled.",guitype='intbox', row=12, col=1, rowspan=1, colspan=1, mode="spr")
+
+	parser.add_argument("--mc2_fmdose",  default = 1, type=float, help="Specify dose per frame in e-/A^2. Only used if DW enabled.",guitype='floatbox', row=13, col=0, rowspan=1, colspan=1, mode="spr")
+
+
 	(options, args) = parser.parse_args()
 
 	if len(args) == 0:
@@ -321,6 +328,15 @@ def main():
 		elif options.mc2_patchY==None:
 			cmdopts += " -Patch {} 1 ".format(options.mc2_patchX)
 
+		if options.mc2_dw == True:
+			cmdopts += "-Kv {} ".format(options.mc2_kv)
+			cmdopts += "-FmDose {} ".format(options.mc2_fmdose)
+			if options.apix == -1:
+				get_apix = EMData(args[0])
+				cmdopts += "-PixSize {} ".format(get_apix["apix_x"])
+			else:
+				cmdopts += "-PixSize {} ".format(options.apix)
+
 		if options.mdoc != None:
 			if options.tomo:
 				try: os.remove(hdftilt) # get rid of any previous tiltseries with same name
@@ -371,7 +387,6 @@ def main():
 							mrcfile["apix_y"] = options.apix
 						mrcfile.write_image(hdffile)
 						os.remove(outfile)
-
 						
 					else:
 						finalprint+="{}    was not found in the list of images found in {}. It has been skipped.\n".format(bname,os.path.basename(options.mdoc))
@@ -388,13 +403,20 @@ def main():
 					else:
 						cmd = "{} -InMrc {} -OutMrc {} {}".format(program,arg,output,cmdopts)
 					run(cmd,verbose=options.verbose)
-					
-					mrcfile = EMData(output)
+
+					if options.mc2_dw == True:
+						mrcfile = EMData(str(os.path.splitext(output)[0])+"_DW.mrc")
+					else:
+						mrcfile = EMData(output)
+
 					if options.apix != -1:
 						mrcfile["apix_x"] = options.apix
 						mrcfile["apix_y"] = options.apix
 					mrcfile.write_image(hdffile)
 					os.remove(output)
+					if options.mc2_dw == True: #Remove dose-weighted from tmp as well, if necessary
+						os.remove(str(os.path.splitext(output)[0])+"_DW.mrc")
+						os.remove(str(os.path.splitext(output)[0])+"_DWS.mrc")
 
 # def write_apix_into_header(output,apix):
 # 	if output.split(".")[-1] == "mrc":
