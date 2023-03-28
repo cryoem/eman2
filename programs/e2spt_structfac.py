@@ -17,6 +17,7 @@ def main():
 	parser.add_argument("--cutoff", type=float,help="cutoff", default=20)
 	parser.add_argument("--res", type=float,help="lowpass resolution. default 15", default=15)
 	parser.add_argument("--sqrt", action="store_true", default=False ,help="sqrt on structure factor curve. maybe better for high res maps.")
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)

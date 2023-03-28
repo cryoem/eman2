@@ -50,7 +50,7 @@ def main():
 	start = time.perf_counter()
 
 	usage = """
-			This program produces orthogonal slices of an EM volume of --nslices thickness.
+			This program produces orthogonal slices from a 3D EM image/volume of --nslices thickness.
 			e2slicer.py <input_file1> <input_file2> ... <input_fileN> <options> . 
 			The options should be supplied in "--option=value" format (or --options=value:parameter1=value:parameter2=value... etc, 
 			replacing "option" for a valid option name, and "value", "parameter" for a acceptable entries for that option. 
@@ -92,7 +92,7 @@ def main():
 		print("\nERROR: failed to load any valid input files. Make sure you're in the correct directory and filenames are correct. Exiting.")
 		sys.exit(1)
 
-	if options.verbose: print("\ninputs are {}".format(inputs))
+	if options.verbose: print(f"\ninputs are {inputs}")
 
 	logger = E2init(sys.argv, options.ppid)
 
@@ -117,7 +117,7 @@ def main():
 
 	if options.allx or options.ally or options.allz:
 		if options.onlymidx or options.onlymidy or options.onlymidz:
-			print("ERROR: Cannot supply --allx, --ally or --allz at the same time than any of --onlymidx={}, --onlymidy={} or --onlymidz={}".format(options.onlymidx,options.onlymidy,otions.onlymidz))
+			print(f"\nERROR: Cannot supply --allx, --ally or --allz at the same time than any of --onlymidx={options.onlyxmid}, --onlymidy={options.onlyymid} or --onlymidz={options.onlyzmid}")
 			sys.exit(1)
 
 	'''#
@@ -156,17 +156,17 @@ def main():
 
 
 	for f in inputs:
-		print("\nprocessing file {}".format(f))
+		print(f"\nprocessing file {f}")
 		ext = os.path.splitext(f)[-1]
 		try:
 			hdr=EMData(f,0,True)
 		except:
-			print("\ninvalid file f={}".format(f))
+			print(f"\ninvalid file f={f}")
 
 		n = EMUtil.get_image_count( f )
 		
 		for i in range(n):
-			if options.verbose: print("\nprocessing particle {}".format(i))
+			if options.verbose: print("\nprocessing particle {i}")
 			a = EMData(f,i)
 			
 			ap = a.copy()
@@ -193,7 +193,7 @@ def main():
 
 					aprot = ap.copy()
 					if options.verbose>5: 
-						print("\n(e2slicer)(main) --nslices={} > 1, therefore rotating ptcl with transform={} because axis={}".format(options.nslices,t,axis))
+						print("\n(e2slicer)(main) --nslices={options.nslices} > 1, therefore rotating ptcl with transform={t} because axis={axis}")
 					aprot.transform(t)
 
 					if options.nslices >1:
@@ -219,7 +219,7 @@ def main():
 						runcmd(options,'e2proc2d.py ' + f + ' ' + outname + ' --threed2twod && cd ' + options.path + ' && rm tmp*')
 
 				else:
-					if options.verbose>5: print("\n(e2slicer)(main) getting single slice from axis={}".format(axis))
+					if options.verbose>5: print("\n(e2slicer)(main) getting single slice from axis={axis}")
 					slicef=get_single_slice(options,ap,axis=axis)
 
 				if slicef:
@@ -229,11 +229,9 @@ def main():
 
 					elif not options.orthogonaloff:
 						slices_ortho_output = options.path + '/' + os.path.basename( f ).replace(ext,ptcltag + '_ortho.hdf')
-						#print("\noutput name for ortho stack is {}".format(slices_ortho_output))
-						#print("\noptions.nslices={}".format(options.nslices))
+			
 						if options.nslices > 1:
 							slices_ortho_output = slices_ortho_output.replace(".hdf","_nthick" + str(options.nslices) +".hdf" )
-							#print("\nupdated output name for ortho stack is {} becasue --nslices={}".format(slices_ortho_output, options.nslices))
 						slicef.write_image(slices_ortho_output,-1)
 	
 	E2end(logger)
@@ -267,7 +265,7 @@ def get_single_slice(options,img,axis=''):
 
 	if options.verbose > 6: print("The region for the orthogonal z slice is", rmid)
 
-	print("\n(e2slicer)(get_single_slice) getting slice from region rmid={} because axis={}".format(rmid,axis))
+	print(f"\n(e2slicer)(get_single_slice) getting slice from region rmid={rmid} because axis={axis}")
 	slicemid = img.get_clip( rmid )
 
 	#c: apparently, setting the size of the output is essential for it to show as a plane in xy as opposed to viewing the slice "from the side"

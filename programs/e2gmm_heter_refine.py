@@ -12,7 +12,7 @@ def main():
 	parser.add_argument("--mask", type=str,help="mask", default=None)
 	parser.add_argument("--expandsym", type=str,help="sym", default=None)
 	parser.add_argument("--maxres", type=float,help="starting resolution", default=7)
-	parser.add_argument("--minres", type=float,help="min resolution", default=20)
+	parser.add_argument("--minres", type=float,help="min resolution", default=50)
 	(options, args) = parser.parse_args()
 	
 	logid=E2init(sys.argv)
