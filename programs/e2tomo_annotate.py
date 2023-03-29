@@ -15,7 +15,6 @@ from EMAN2_utils import interp_points
 from eman2_gui.emapplication import get_application, EMApp
 from eman2_gui.emimage import EMImageWidget
 from eman2_gui.emimage2d import EMImage2DWidget
-#from annotate_utils import UNet
 from eman2_gui.emannotate2d import EMAnnotate2DWidget
 #from emannotate2d_2 import EMAnnotate2DWidget, EMSegTab
 from eman2_gui.emimagemx import EMImageMXWidget
@@ -215,8 +214,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		except:
 			pass
 
-		#self.seg_tab = EMSegTab(target=self.img_view)
-		#self.img_view.external_seg_tab = self.seg_tab
 
 		#self.seg_tab = EMSegTab(target=self.img_view)
 		#self.img_view.external_seg_tab = self.seg_tab
@@ -407,7 +404,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.assisted_tab.addTab(self.morp_tab,"Morphological")
 		self.assisted_tab.addTab(self.binary_tab,"Binary")
 		self.assisted_tab.addTab(self.spec_tab,"Specific")
-		self.assisted_tab.addTab(self.spec_tab,"Specific")
+
 
 		#Neural Net tab setup
 		self.bg_button = QtWidgets.QPushButton("Background")
@@ -478,23 +475,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		nnet_gbl.addWidget(self.apply_all_button,4,1,1,1)
 
 
-		#Morp_tab setup
-		self.morp_disk_sz_sp = QtWidgets.QSpinBox()
-		self.morp_disk_sz_sp.setValue(5)
-		self.morp_close_bt = QtWidgets.QPushButton("Closing")
-		self.morp_open_bt = QtWidgets.QPushButton("Opening")
-		self.morp_erode_bt = QtWidgets.QPushButton("Erosion")
-		self.morp_dilate_bt = QtWidgets.QPushButton("Dilation")
-		self.morp_label_bt = QtWidgets.QPushButton("Numbering")
-		morp_gbl=QtWidgets.QGridLayout(self.morp_tab)
-		#morp_gbl.setColumnStretch(70,70)
-		morp_gbl.addWidget(QtWidgets.QLabel("Disk Size"), 0,0,1,1)
-		morp_gbl.addWidget(self.morp_disk_sz_sp, 0,1,1,1)
-		morp_gbl.addWidget(self.morp_close_bt, 1,0,1,1)
-		morp_gbl.addWidget(self.morp_open_bt, 1,1,1,1)
-		morp_gbl.addWidget(self.morp_erode_bt, 2,0,1,1)
-		morp_gbl.addWidget(self.morp_dilate_bt, 2,1,1,1)
-		morp_gbl.addWidget(self.morp_label_bt, 3,0,1,1)
+
 
 
 		#assisted tab setup + function
@@ -508,7 +489,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		#self.train_all_button.clicked[bool].connect(self.train_all_bt_clicked)
 		self.apply_button.clicked[bool].connect(self.apply_bt_clicked)
 		self.build_ts_button.clicked[bool].connect(self.build_trainset)
-
 
 		#Morp_tab setup
 		self.morp_disk_sz_sp = QtWidgets.QSpinBox()
@@ -534,7 +514,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.morp_dilate_bt.clicked[bool].connect(self.do_morp_dilate)
 		self.morp_label_bt.clicked[bool].connect(self.do_morp_label)
 
-
 		#Set up Binary Tab and Function
 
 
@@ -552,6 +531,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 		self.bin_low_pass_vs.valueChanged.connect(self.update_mask_from_vs)
 		self.bin_threshold_vs.valueChanged.connect(self.update_mask_from_vs)
+
 
 
 		#Cellular Segmentation
@@ -608,13 +588,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 		self.test_button = QtWidgets.QPushButton("Test Button")
 		self.button_gbl.addWidget(self.test_button,6,0,1,1)
-
-
-		inspector_vbl = QtWidgets.QVBoxLayout()
-		inspector_vbl.addWidget(QtWidgets.QLabel("Manual Annotate Tools"))
-		inspector_vbl.addWidget(self.img_view_inspector)
-
-
 
 		inspector_vbl = QtWidgets.QVBoxLayout()
 		inspector_vbl.addWidget(QtWidgets.QLabel("Manual Annotate Tools"))
@@ -716,10 +689,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			temp = to_numpy(self.get_annotation())
 			#self.annotate = from_numpy(morphology.closing(temp,disk(disk_sz)))
 			self.annotate.process_inplace("morph.close.binary",{"iters":1,"radius":disk_sz,"thresh":0.5})
-		disk_sz = int(self.morp_disk_sz_sp.getValue())
-		if self.zthick == 0:
-			temp = to_numpy(self.get_annotation())
-			self.annotate = from_numpy(morphology.closing(temp,disk(disk_sz)))
 		else:
 			temp = to_numpy(self.get_annotation())
 			for s in range(temp.shape[0]):
@@ -729,7 +698,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 	def do_morp_open(self):
 		disk_sz = int(self.morp_disk_sz_sp.value())
-		disk_sz = int(self.morp_disk_sz_sp.getValue())
 		if self.zthick == 0:
 			temp = to_numpy(self.get_annotation())
 			self.annotate = from_numpy(morphology.opening(temp,disk(disk_sz)))
@@ -742,7 +710,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 	def do_morp_dilate(self):
 		disk_sz = int(self.morp_disk_sz_sp.value())
-		disk_sz = int(self.morp_disk_sz_sp.getValue())
 		if self.zthick == 0:
 			temp = to_numpy(self.get_annotation())
 			self.annotate = from_numpy(morphology.dilation(temp,disk(disk_sz)))
@@ -755,7 +722,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 	def do_morp_erode(self):
 		disk_sz = int(self.morp_disk_sz_sp.value())
-		disk_sz = int(self.morp_disk_sz_sp.getValue())
 		if self.zthick == 0:
 			temp = to_numpy(self.get_annotation())
 			self.annotate = from_numpy(morphology.erosion(temp,disk(disk_sz)))
@@ -877,7 +843,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			self.get_annotation().write_image(self.seg_path, 0, IMAGE_HDF, False, self.cur_region)
 		except:#when annotation files is None
 			pass
-		self.get_annotation().write_image(self.seg_path, 0, IMAGE_HDF, False, self.cur_region)
 		self.set_imgview_data(self.data_xy[0],self.data_xy[1],self.img_view_region_size)
 
 
