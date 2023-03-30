@@ -100,7 +100,7 @@ class SptAlignTask(JSTask):
 	def execute(self, callback):
 		## optimize translation for scipy minimizer
 		def test_trans(tx):
-			sft=np.linalg.norm(tx)
+			sft=np.linalg.norm(np.array(tx)-xout[3:])
 			if sft>options.maxshift: return 1
 			pjsft=[p.process("xform", {"tx":tx[0], "ty":tx[1]}) for p in pjsmall]
 
@@ -114,7 +114,7 @@ class SptAlignTask(JSTask):
 		## consider translation of neighboring particles during rotation of center particle 
 		def test_xform(xx):
 			
-			sft=np.linalg.norm(xx[3:])
+			sft=np.linalg.norm(np.array(xx[3:])-xout[3:])
 			if sft>options.maxshift: return 1
 		
 			dxf=Transform({"type":"xyz","xtilt":xx[0],"ytilt":xx[1],"ztilt":xx[2],
@@ -242,7 +242,7 @@ class SptAlignTask(JSTask):
 			xfpj=[d["xform.projection"] for d in d2d]
 			xfraw=[a*b for a,b in zip(xfpj, txfs)]
 			score=0
-			if options.debug: print(dc, d2d, d3d0, d3d)
+			#if options.debug: print(dc, d2d, d3d0, d3d)
 			## the index of the selected particle from all particles on the same tilt
 			ip=[i for i,d in enumerate(d2d) if d["idx3d"]==dc["idx3d"]][0]
 			
@@ -360,17 +360,17 @@ class SptAlignTask(JSTask):
 			else:
 				xout=[0]*5
 			
+			xout00=np.array(xout).copy()
 			## translational alignment
 			if options.refine_trans:
 				pjsmall=make_projs(refsmall, refid, xfrawsel)
 				res=minimize(test_trans, [xout[3], xout[4]],
 						method='Powell',options={'ftol': 1e-3, 'disp': False, "maxiter":10})
-
-				if options.debug: print("{} - {} : {} -> {}".format(di, np.round(xout[3:],4), test_trans([xout[3], xout[4]]), res.fun))
-#				print(len(pjsmall),len(imgsmall),pjsmall[0]["nx"],imgsmall[0]["nx"],res)
 				
 				xout[3:]=res.x
 				score=res.fun
+				if options.debug: print("{} - {} -> {} : {:.5f} -> {:.5f}".format(di, np.round(xout00[3:],4),np.round(xout[3:],4), test_trans([xout00[3], xout00[4]]), res.fun))
+
 
 			## translational alignment using ccf aligner
 			if options.refine_trans_ccf:
@@ -394,10 +394,11 @@ class SptAlignTask(JSTask):
 				res=minimize(test_xform, xout,
 						method='Powell',options={'ftol': 1e-3, 'disp': False, "maxiter":10})
 						
-				if options.debug: print("{} - {} : {} -> {}".format(di, np.round(xout,4), y0, res.fun))
 				xout=res.x	
 				score=res.fun	
 			
+				if options.debug: print("{} - {} -> {} : {:.5f} -> {:.5f}".format(di, np.round(xout00,4),np.round(xout,4), y0, res.fun))
+				
 			## prepare output
 			xf=Transform(xfraw[ip])
 			dxf=Transform({"type":"xyz","xtilt":xout[0],"ytilt":xout[1],"ztilt":xout[2],

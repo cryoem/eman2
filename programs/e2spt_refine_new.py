@@ -110,11 +110,11 @@ def main():
 		else:
 			iters.append(i)
 			
-	keydic={'p':"Subtomogram alignment", 't': "Subtilt translational refinement", 'T': "Subtilt translational CCF alignment", 'r': "Subtilt rotational refinement", 'd':"Defocus refinement", 'x':"Skipping alignment"}
+	keydic={'p':"Subtomogram alignment", 't': "Subtilt translational refinement", 'T': "Subtilt translational CCF alignment", 'r': "Subtilt rotational refinement", 'd':"Defocus refinement", 'x':"Skipping alignment",'z':"Stop"}
 	
 	if options.continuefrom>0:
 		if options.continuefrom%1>0:
-			iters=['x']+iters
+			iters=['x']*int(1+options.continuefrom)+iters
 			startiter=ceil(options.continuefrom-1)
 			itr=startiter+1
 			
@@ -123,6 +123,7 @@ def main():
 		
 		last2d=f"{path}/aliptcls2d_{itr:02d}.lst"
 		last3d=f"{path}/aliptcls3d_{itr:02d}.lst"
+		print(iters)
 		
 	else:
 		#### There were too many options controlling the resolution previously...
@@ -202,6 +203,7 @@ def main():
 		print(f"######## iter {itr} ##########")
 		print("### {}....".format(keydic[itype]))
 		
+		if itype=='z':break
 		# Ok, this is a hack to avoid adding a new option to each subprogram. May be a little confusing if the program gets interrupted
 		if itype!='x' and options.maskalign!=None:
 			for eo in ("even","odd"):
@@ -277,6 +279,8 @@ def main():
 				cmd+=f" --minres={options.minres}"
 			if options.goldstandard>0 or options.goldcontinue:
 				cmd+=" --goldcontinue"
+			if last2d:
+				cmd+=f" --aliptcls2d {last2d}"
 				
 			run(cmd)
 			last2d=f"{path}/aliptcls2d_{itr:02d}.lst"
