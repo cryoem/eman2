@@ -14,7 +14,10 @@ def main():
 	parser.add_argument("--startres", type=float,help="starting resolution", default=3)
 	parser.add_argument("--npatch", type=int,help="number of patches", default=8)
 	parser.add_argument("--maxres", type=float,help="max resolution", default=-1)
+	parser.add_argument("--expandsym", type=str,help="symmetry expansion", default=None)
 	parser.add_argument("--masktight", action="store_true", default=False ,help="use tight patch mask")
+	parser.add_argument("--batchsize", type=int,help="number of particles in each batch", default=-1)
+	parser.add_argument("--chunksize", type=int,help="number of particles in each gmm_batch process", default=-1)
 
 
 	(options, args) = parser.parse_args()
@@ -48,6 +51,11 @@ def main():
 	etc=""
 	if options.maxres>0:
 		etc+=f" --maxres {options.maxres}"
+	if options.batchsize>0:
+		etc+=f" --batchsize {options.batchsize}"
+	if options.chunksize>0:
+		etc+=f" --chunksize {options.chunksize}"
+		
 		
 	if options.masktight:
 		for ci in range(pn):
@@ -77,6 +85,8 @@ def main():
 		for eo in ["even", "odd"]:
 			run(f"e2proc3d.py {oldpath}/threed_{olditer:02d}_{eo}.hdf {path}/threed_{ci*10:02d}_{eo}.hdf")
 			run(f"e2proclst.py {oldpath}/ptcls_{olditer:02d}_{eo}.lst --create {path}/ptcls_{ci*10:02d}_{eo}.lst")
+			if options.expandsym:
+				run(f"e2proclst.py {path}/ptcls_{ci*10:02d}_{eo}.lst --sym {options.expandsym}")
 			p=np.loadtxt(f"{oldpath}/model_{olditer-1:02d}_{eo}.txt")
 			np.savetxt(f"{path}/model_{ci*10:02d}_{eo}.txt", p)
 			

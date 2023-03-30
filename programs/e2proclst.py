@@ -500,15 +500,18 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 			save_lst_params(lst, f)
 			
 	if options.extractattr:
+		attr=options.extractattr.split(',')
 		for f in args:
 			lst=load_lst_params(f)
 			for l in lst:
 				e=EMData(l["src"], l["idx"], True)
-				if e.has_attr(options.extractattr):
-					l[options.extractattr]=e[options.extractattr]
-				else:
-					print("error: not all particles have the specified attribute")
-					return
+				for at in attr:
+					if e.has_attr(at):
+						l[at]=e[at]
+					else:
+						print("error: not all particles have the specified attribute")
+						print("       {}, {} does not have key {}".format(l["src"],l["idx"],at))
+						exit()
 			save_lst_params(lst, f)
 			
 	E2end(logid)

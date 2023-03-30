@@ -1432,8 +1432,12 @@ class EMIsosurface(EMItem3D):
 		# create the isosurface display list
 		self.isorender.set_surface_value(self.isothr)
 		self.isorender.set_sampling(self.smpval)
-
-		if (float(glGetString(GL_VERSION).decode("utf-8").split(".")[0])>2):
+		glv=glGetString(GL_VERSION)
+		try:
+			a=float(glGetString(GL_VERSION).decode("utf-8").split(".")[0])
+		except:
+			a=100
+		if a>2:
 			GLUtil.contour_isosurface(self.isorender)
 		else:
 			if ( self.texture ):
