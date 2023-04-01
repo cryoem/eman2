@@ -792,7 +792,7 @@ def build_decoder(nmid, pt ):
 #	binit=tf.keras.initializers.RandomNormal(0,1e-2)
 #	kinit=tf.keras.initializers.HeNormal()
 	binit="random_normal"
-	kinit="ke_normal"
+	kinit="he_normal"
 	l2=tf.keras.regularizers.l2(1e-3)
 	l1=tf.keras.regularizers.l1(1e-3)
 #	layer_output=tf.keras.layers.Dense(nout*4, kernel_initializer=kinit, activation="sigmoid",use_bias=True,kernel_constraint=Localize4())
