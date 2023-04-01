@@ -318,7 +318,7 @@ def main():
 			for eo in ["even", "odd"]:
 				run(f"e2spa_make3d.py --input {path}/aliptcls2d_{itr:02d}.lst --output {path}/threed_{itr:02d}_{eo}.hdf --keep {options.keep} --clsid {eo} --outsize {boxsize} --ref {path}/threed_{itr:02d}_{eo}.hdf --maxres {res} --sym {options.sym}  {m3dpar}")
 			
-		run(f"e2refine_postprocess.py --even {path}/threed_{itr:02d}_even.hdf {setsf} {tophat} --threads {options.threads} --restarget {res:.2f} --sym {options.sym} {ppmask}")
+		run(f"e2refine_postprocess.py --even {path}/threed_{itr:02d}_even.hdf {setsf} {tophat} --threads {options.threads} --restarget {res:.2f} --align --sym {options.sym} {ppmask}")
 
 		r=calc_resolution(f"{path}/fsc_masked_{itr:02d}.txt")
 		res=min(r,res*1.1)		# resolution can't take too large a step in the wrong direction

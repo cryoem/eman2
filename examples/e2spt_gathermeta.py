@@ -67,6 +67,7 @@ def main():
 				i["xform.align3d"]=a["xform.align3d"]
 		else:
 			print("error. --ali3d and --ptcls do not match")
+			exit()
 	
 	fali2d=options.ali2d
 	path0=os.path.dirname(fali2d)
@@ -83,6 +84,19 @@ def main():
 	info3d0=load_lst_params(finfo3)
 	ali2d0=load_lst_params(fali2d)
 	ali3d0=load_lst_params(fali3d)
+	missing=False
+	for a in ali2d0:
+		if "dxf" not in a:
+			a["dxf"]=Transform()
+			missing=True
+	if missing: print(f"Some particles from {fali2d} do not contain subtilt alignment info...")
+	
+	options.cmd=' '.join(sys.argv)
+	fm=f"{options.path}/0_spt_gathermeta_params.json"
+	js=js_open_dict(fm)
+	js.update(vars(options))
+	js.close()
+	
 	e0=EMData(info3d0[0]["src"], info3d0[0]["idx"], True)
 	e1=EMData(info3d1[0]["src"], info3d1[0]["idx"], True)
 	scale=e1["apix_x"]/e0["apix_x"]

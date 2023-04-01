@@ -18,6 +18,7 @@ def main():
 	parser.add_argument("--nframe", type=int,help="number of frames in the trajectory", default=5)
 	parser.add_argument("--maxshift", type=float,help="ignore particles with drift/rotation (pixel/degree) larger than this. default 7", default=7)
 	parser.add_argument("--nstd", type=float,help="build trajectories from -n x std to n x std of eigenvalues. default is 2", default=2)
+	parser.add_argument("--nbasis", type=int,help="number of pca basis. default is 2", default=2)
 	parser.add_argument("--nptcl", type=int,help="number of particle per average. default is 500", default=500)
 	parser.add_argument("--threads", type=int,help="threads", default=12)
 
@@ -26,7 +27,11 @@ def main():
 	
 	params0=load_lst_params(options.ali3dold)
 	params1=load_lst_params(options.ali3dnew)
-		
+	e=EMData(options.ali3dnew)
+	outsz=e["nx"]
+	e=EMData(options.ali2d)
+	pad=e["nx"]
+	
 	params=[]
 	pts=[]
 	for i in range(len(params0)):
@@ -39,7 +44,10 @@ def main():
 
 		dt=xf0*xf1.inverse()
 		rot=dt.get_params("spin")["omega"]
-		s=pm0["score"]
+		if "score" in pm0:
+			s=pm0["score"]
+		else:
+			s=-1
 		params.append([dx, rot, s])
 		
 		dt=dt.get_params("xyz")
@@ -65,7 +73,7 @@ def main():
 	std=np.std(pts, 0)
 	p=(pts-mean)/std
 
-	neig=2
+	neig=max(2,options.nbasis)
 	pca=PCA(neig)
 	pca.fit(p[goodi])
 	pfit=pca.transform(p)
@@ -80,7 +88,7 @@ def main():
 	info3d=load_lst_params("{}/particle_info_3d.lst".format(options.path))
 	jstmp="{}/tmp_ptcl_list.txt".format(options.path)
 	threedtmp="{}/threed_tmp.hdf".format(options.path)
-	for ie in range(neig): 
+	for ie in range(options.nbasis): 
 		print("Eigenvector {}".format(ie))
 		tfile=os.path.join(options.path,"threed_eig_{:02d}.hdf".format(ie))
 		if os.path.isfile(tfile): os.remove(tfile)
@@ -98,7 +106,7 @@ def main():
 			idx2d=sum(idx2d,[])
 			np.savetxt(jstmp, idx2d)
 			
-			run(f"e2spa_make3d.py --input {options.ali2d} --output {threedtmp} --keep 1 --parallel thread:{options.threads} --outsize 192 --pad 384 --listsel {jstmp}")
+			run(f"e2spa_make3d.py --input {options.ali2d} --output {threedtmp} --keep 1 --parallel thread:{options.threads} --outsize {outsz} --pad {pad} --listsel {jstmp}")
 			e=EMData(threedtmp)
 			#e.process_inplace("filter.matchto",{"to":ref})
 			#e.mult(msk)
