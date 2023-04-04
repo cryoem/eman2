@@ -47,8 +47,13 @@ def main():
 			
 			run(f"e2project3d.py {path}/threed_00_{eo}.hdf --outfile {path}/projections_{eo}.hdf --orientgen=eman:delta=4 --parallel=thread:12")
 				
-	#itr=options.niter+1
-	#itr=20
+	
+	options.cmd=' '.join(sys.argv)
+	fm=f"{options.path}/0_gmm_heter_params.json"
+	js=js_open_dict(fm)
+	js.update(vars(options))
+	js.close()	
+	
 	it0=0
 	path=options.path
 	res=options.maxres
@@ -99,7 +104,9 @@ def main():
 		etc+=" --batchsz 16"
 		etc3=""# --setsf sf_lp.txt"
 		
-		run(f"e2gmm_refine_new.py --model {path}/model_{it0:02d}_{eo}.txt --anchor {path}/model_{it0:02d}_{eo}_anchor.txt --conv --midout {path}/mid_00_{eo}.txt --maxres {res} --minres {options.minres} --learnrate 1e-5 --niter 20 --ptclsin {path}/ptcls_{it0:02d}_{eo}_sample.lst --heter --encoderout {path}/enc_{eo}.h5 --decoderout {path}/dec_{eo}.h5 --pas 110 {etc}")
+		## pretrain from lower res to ensure convergence
+		res0=max(res,7)
+		run(f"e2gmm_refine_new.py --model {path}/model_{it0:02d}_{eo}.txt --anchor {path}/model_{it0:02d}_{eo}_anchor.txt --conv --midout {path}/mid_00_{eo}.txt --maxres {res0} --minres {options.minres} --learnrate 1e-5 --niter 20 --ptclsin {path}/ptcls_{it0:02d}_{eo}_sample.lst --heter --encoderout {path}/enc_{eo}.h5 --decoderout {path}/dec_{eo}.h5 --pas 110 {etc} --maxgradres {res}")
 		
 		run(f"ptcl_pca_kmean_m3d.py --pts {path}/mid_00_{eo}.txt --pcaout {path}/mid_pca.txt --ptclsin {path}/ptcls_{it0:02d}_{eo}_sample.lst --ptclsout {path}/ptcls_{eo}_cls_00.lst --mode regress --ncls 4 --nptcl 8000 --axis 0")
 		
