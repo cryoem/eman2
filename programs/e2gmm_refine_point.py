@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-# Muyuan Chen 2020-06
+# Steve Ludtke 2022
+# forked from e2gmm_refine Muyuan Chen 2020
 from EMAN2 import *
 import numpy as np
 from sklearn.decomposition import PCA
@@ -733,8 +734,10 @@ def build_encoder(ninp,nmid,grps=None):
 	grps, if provided is a dictionary of group number keys with a count of gaussians as the value. The sum of the values should equal nmid."""
 	l2=tf.keras.regularizers.l2(1e-3)
 	l1=tf.keras.regularizers.l1(1e-3)
-	binit=tf.keras.initializers.RandomNormal(0,1e-2)
-	kinit=tf.keras.initializers.HeNormal()
+#	binit=tf.keras.initializers.RandomNormal(0,1e-2)
+#	kinit=tf.keras.initializers.HeNormal()
+	binit="random_normal"
+	kinit="he_normal"
 
 	if grps is None:
 		print(f"Encoder {max(ninp//2,nmid)} {max(ninp//8,nmid)} {max(ninp//32,nmid)}")
@@ -786,8 +789,10 @@ def build_decoder(nmid, pt ):
 	
 	x0=tf.keras.Input(shape=(nmid))
 	
-	binit=tf.keras.initializers.RandomNormal(0,1e-2)
-	kinit=tf.keras.initializers.HeNormal()
+#	binit=tf.keras.initializers.RandomNormal(0,1e-2)
+#	kinit=tf.keras.initializers.HeNormal()
+	binit="random_normal"
+	kinit="he_normal"
 	l2=tf.keras.regularizers.l2(1e-3)
 	l1=tf.keras.regularizers.l1(1e-3)
 #	layer_output=tf.keras.layers.Dense(nout*4, kernel_initializer=kinit, activation="sigmoid",use_bias=True,kernel_constraint=Localize4())
