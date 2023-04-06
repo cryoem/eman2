@@ -1,22 +1,23 @@
 #!/usr/bin/env python
 # Muyuan Chen 2019-06
-from future import standard_library
-standard_library.install_aliases()
-from builtins import range
 from EMAN2 import *
 import numpy as np
 from scipy.optimize import minimize
 
 def main():
 	
-	usage=" "
+	usage="""
+	Create a structure factor file for map sharpening given unfiltered maps. To run after any spa or spt refinement, use
+	e2spt_structfac.py --even spt_xx/threed_raw_even.hdf --res 5
+	This will create a text file (default sf.txt or specified with --sfout) that can be used by various refinement and post processing programs through the --setsf option.
+	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--even", type=str,help="even threed file", default=None)
-	parser.add_argument("--label", type=str,help="particles label", default=None)
-	parser.add_argument("--sfout", type=str,help="output", default="sf.txt")
+	parser.add_argument("--label", type=str,help="particles label for spt workflow. will correct for low resolution CTF amplitude artifact using the CTF information in particle header. useful for phase plate data.", default=None)
+	parser.add_argument("--sfout", type=str,help="output structure factor text file. default is sf.txt", default="sf.txt")
 	parser.add_argument("--cutoff", type=float,help="cutoff", default=20)
 	parser.add_argument("--res", type=float,help="lowpass resolution. default 15", default=15)
-	parser.add_argument("--sqrt", action="store_true", default=False ,help="sqrt on structure factor curve. maybe better for high res maps.")
+	#parser.add_argument("--sqrt", action="store_true", default=False ,help="sqrt on structure factor curve. maybe better for high res maps.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
@@ -42,7 +43,7 @@ def main():
 	dataf = data.do_fft()
 	curve = dataf.calc_radial_dist((data["ny"]//2), 0, 1.0, False)
 	curve=np.array([i/dataf["nx"]*dataf["ny"]*dataf["nz"] for i in curve])
-	if options.sqrt: curve=np.sqrt(curve)
+	if 1: curve=np.sqrt(curve)
 	
 	if options.label:
 		print("weighting by fsc...")

@@ -7,17 +7,25 @@ from sklearn.cluster import KMeans
 	
 def main():
 	
-	usage=" "
+	usage="""
+	Patch-by-patch refinement using GMM as references. Require GPU and CUDA. For a simple run, use:
+	e2gmm_refine_patch.py gmm_00/threed_05.hdf --startres 3.5 
+	
+	The input needs to be from an existing gmm_xx folder and the program will take information from corresponding files in that folder. The program will segment the GMM from the previous refinement into N patches (default 8), focus refine each one, then combine results together. The first digit in iteration number corresponds to the index of patches. e.g., gmm_xx/threed_23.hdf is the refinement result of the 3rd iteration using the 2nd focus mask. The final result is labeled iteration 99 in the gmm_xx folder.
+	
+	Note the segmentation of GMM does not support symmetry. So for symmetrical structures, always specify the symmetry in --expandsym and the output will be in c1.
+	"""
+	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--path", type=str,help="path", default=None)
-	parser.add_argument("--niter", type=int,help="iteration", default=3)
+	parser.add_argument("--path", type=str,help="path for refinement. default is the next gmm_xx", default=None)
+	parser.add_argument("--niter", type=int,help="number of iteration. default is 3", default=3)
 	parser.add_argument("--startres", type=float,help="starting resolution", default=3)
-	parser.add_argument("--npatch", type=int,help="number of patches", default=8)
-	parser.add_argument("--maxres", type=float,help="max resolution", default=-1)
-	parser.add_argument("--expandsym", type=str,help="symmetry expansion", default=None)
-	parser.add_argument("--masktight", action="store_true", default=False ,help="use tight patch mask")
-	parser.add_argument("--batchsize", type=int,help="number of particles in each batch", default=-1)
-	parser.add_argument("--chunksize", type=int,help="number of particles in each gmm_batch process", default=-1)
+	parser.add_argument("--npatch", type=int,help="number of patches. default is 8", default=8)
+	parser.add_argument("--maxres", type=float,help="max resolution to consider in refinement. i.e. the alignment will not use information beyond this even if FSC goes further.", default=-1)
+	parser.add_argument("--expandsym", type=str,help="symmetry expansion. i.e. start from an input refinement with the given symmetry and perform the new refinement with c1 by making copies of each particle at symmetrical equivalent positions. ", default=None)
+	parser.add_argument("--masktight", action="store_true", default=False ,help="Use tight patch mask instead of spherical ones. seems safe.")
+	parser.add_argument("--batchsize", type=int,help="Number of particles in each batch for alignment. Increase will make the alignment faster, but also increases GPU memory use. ", default=-1)
+	parser.add_argument("--chunksize", type=int,help="Number of particles in each e2gmm_batch process. Increase will make the alignment slightly faster, but also increases CPU memory use. ", default=-1)
 
 
 	(options, args) = parser.parse_args()

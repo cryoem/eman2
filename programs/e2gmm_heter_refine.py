@@ -6,13 +6,17 @@ from sklearn.cluster import KMeans
 
 def main():
 	
-	usage="Start from hetergenerity analysis using e2gmm_refine_new, then convert the conformation to orientation within a given mask, and run a few rounds of orientation refinement focusing on the mask."
+	usage="""Refine heterogeneious domain undergoing large scale continuous motion. Start from hetergenerity analysis using e2gmm_refine_new, then convert the conformation to orientation within a given mask, and run a few rounds of orientation refinement focusing on the mask. 
+	
+	e2gmm_heter_refine.py gmm_00/threed_05.hdf --mask mask.hdf --maxres 3.5
+	
+	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--path", type=str,help="path", default=None)
-	parser.add_argument("--mask", type=str,help="mask", default=None)
-	parser.add_argument("--expandsym", type=str,help="sym", default=None)
-	parser.add_argument("--maxres", type=float,help="starting resolution", default=7)
-	parser.add_argument("--minres", type=float,help="min resolution", default=50)
+	parser.add_argument("--path", type=str,help="path for refinement. default is the next gmm_xx", default=None)
+	parser.add_argument("--mask", type=str,help="mask that defines the region of focusing.", default=None)
+	parser.add_argument("--expandsym", type=str,help="symmetry. the program does not apply symmetry so always specify symmetry here and the final structure will be in c1", default=None)
+	parser.add_argument("--maxres", type=float,help="maximum resolution for the heterogeneity analysis. This will also be the starting resolution for the following focused alignment.", default=7)
+	parser.add_argument("--minres", type=float,help="min resolution for the heterogeneity analysis.", default=50)
 	(options, args) = parser.parse_args()
 	
 	logid=E2init(sys.argv)

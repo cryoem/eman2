@@ -9,12 +9,15 @@ from e2tomogram import *
 
 def main():
 	
-	usage=" "
+	usage="""
+	Polish a tomogram given the subtilt refinement of particles inside. 
+	e2spt_polishtomo.py --fname tomograms/xxxx.hdf --path spt_xx 
+	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--path", type=str,help="path of spt refinement", default=None)
 	parser.add_argument("--fname", type=str,help="name of tomogram", default=None)
 	parser.add_argument("--nneighbor", type=int,help="number of neighbors", default=5)
-	parser.add_argument("--res", type=float,help="resolution of output", default=50)
+	parser.add_argument("--res", type=float,help="lowpass filter the output to the target resolution.", default=50)
 	parser.add_argument("--makeraw", action="store_true", default=False ,help="skip polish for testing")
 
 	(options, args) = parser.parse_args()
@@ -259,6 +262,8 @@ def main():
 	else:
 		outname="tomograms/{}__bin4_polish.hdf".format(base_name(fname))
 	full3d.write_compressed(outname,0,8,nooutliers=True)
+	
+	print(f"Output written to {outname}")
 	E2end(logid)
 
 def reconstruct_tile(job):

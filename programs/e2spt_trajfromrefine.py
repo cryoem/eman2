@@ -1,20 +1,23 @@
 #!/usr/bin/env python
 # Muyuan Chen 2019-05
-from future import standard_library
-standard_library.install_aliases()
-from builtins import range
 from EMAN2 import *
 import numpy as np
 from sklearn.decomposition import PCA,FastICA
+
 def main():
 	
 	usage="""
+	Compile movement trajectories of part of proteins from two alignment parameters of the same set of particles. For example, starting from the global refinement of particles in spt_00, run another iterative local refinement in spt_01 focusing on one part of the structure using e2spt_refine_new.py with --localrefine. Then to compare the difference between angle assignment of the particles in two refinement, run
+	
+	e2spt_trajfromrefine.py --ali3dold spt_00/aliptcls3d_03.lst --ali3dnew spt_01/aliptcls3d_03.lst --ali2d spt_00/aliptcls2d_03.lst --path spt_00
+	
+	This will generate 3D movies showing the movement trajectories between spt_00 and spt_01. --ali2d defines the reference frame of the movement, and --path specifies the directory to write output.	
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--ali3dold", type=str,help="", default=None)
-	parser.add_argument("--ali3dnew", type=str,help="", default=None)
-	parser.add_argument("--path", type=str,help="", default=None)
-	parser.add_argument("--ali2d", type=str,help="", default=None)
+	parser.add_argument("--ali3dold", type=str,help="first particle alignment file", default=None)
+	parser.add_argument("--ali3dnew", type=str,help="second particle alignment file", default=None)
+	parser.add_argument("--path", type=str,help="path to write output", default=None)
+	parser.add_argument("--ali2d", type=str,help="2d particle alignment file for reconstruction.", default=None)
 	parser.add_argument("--nframe", type=int,help="number of frames in the trajectory", default=5)
 	parser.add_argument("--maxshift", type=float,help="ignore particles with drift/rotation (pixel/degree) larger than this. default 7", default=7)
 	parser.add_argument("--nstd", type=float,help="build trajectories from -n x std to n x std of eigenvalues. default is 2", default=2)

@@ -41,7 +41,17 @@ def gather_metadata(ptcls):
 
 def main():
 	
-	usage=" "
+	usage="""
+	Gather metadata for spt refinement. Take into account the pre-determined particle orientation in particle header (generated using e2spt_extract.py with the --jsonali option), and interpolate the 2D subtilt movement from the existing subtilt alignment of any particles from the same tomograms. For example, 
+	
+	e2spt_gathermeta.py --ptcls sets/ptcls.lst --ali2d spt_00/aliptcls2d_07.lst 
+	
+	will compile metadata in a new spt_xx directory. To do spt refinement from it, run
+	
+	e2spt_refine_new.py --path spt_xx --continuefrom 0.5 --localrefine
+	
+	with all other desired options for e2spt_refine_new.py
+	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--ptcls", type=str,help="input 3d particles from sets/", default=None)
 	parser.add_argument("--ali2d", type=str,help="existing aligned 2d particles from spt_xx, used to interpolate local subtilt translation", default=None)

@@ -4,31 +4,40 @@ from EMAN2 import *
 from EMAN2_utils import *
 import numpy as np
 from sklearn.cluster import KMeans
-
-#def run(x):
-	#print(x)
 	
 def main():
 
-	usage=" "
+	usage="""
+	Iterative orientation refinement using GMM as references. Require GPU and CUDA. For a simple run, use:	
+	e2gmm_refine_iter.py r3d_00/threed_00.hdf --startres 4 --npt 10000
+	
+	The input map file need to be from an existing r3d_xx or gmm_xx folder produced by EMAN2. The program will gather particle information from the directory of the map file at the same iteration. i.e. in this example, it will read particles from r3d_00/ptcls_00.lst. It will also inherit the even/odd split from the initial refinement, so the GMMs will be built on r3d_00/threed_00_even.hdf and r3d_00/threed_00_odd.hdf. 
+	
+	To perform a focused refinement, use:
+	
+	e2gmm_refine_iter.py gmm_00/threed_05.hdf --startres 3.5 --initpts gmm_00/model_04.txt --mask mask_foc.hdf --masksigma
+	
+	Here we start from an existing global refinement e2gmm_refine_iter from gmm_00, and use the GMM from the previous refinement folder. Note gmm_00/model_04.txt should not normally exist, but the program should look for gmm_00/model_04_even/odd.txt itself. The mask file will be applied to the sigma of Gaussian functions after each iteration. 
+	
+	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--path", type=str,help="path", default=None)
-	parser.add_argument("--sym", type=str,help="sym", default="c1")
-	parser.add_argument("--initpts", type=str,help="initial points as pdb", default=None)
-	parser.add_argument("--niter", type=int,help="iteration", default=5)
+	parser.add_argument("--path", type=str,help="path for refinement. default is the next gmm_xx", default=None)
+	parser.add_argument("--sym", type=str,help="symmetry to apply to the map", default="c1")
+	parser.add_argument("--initpts", type=str,help="initial Gaussian coordinates to initialize the GMMs. Take pdb or txt files.", default=None)
+	parser.add_argument("--niter", type=int,help="number of iteration. default is 5.", default=5)
 	parser.add_argument("--startres", type=float,help="starting resolution", default=4)
 	parser.add_argument("--minres", type=float,help="min resolution", default=25)
-	parser.add_argument("--maxres", type=float,help="max resolution", default=-1)
-	parser.add_argument("--npt", type=int,help="number of points", default=2000)
-	parser.add_argument("--mask", type=str,help="mask file", default=None)
-	parser.add_argument("--expandsym", type=str,help="symmetry expansion", default=None)
-	parser.add_argument("--masksigma", action="store_true", default=False ,help="mask the sigma of Gaussian")
-	parser.add_argument("--maskamp", action="store_true", default=False ,help="mask the amplitude of Gaussian")
-	parser.add_argument("--maskpp", type=str,help="mask file", default=None)
+	parser.add_argument("--maxres", type=float,help="max resolution to consider in refinement. i.e. the alignment will not use information beyond this even if FSC goes further.", default=-1)
+	parser.add_argument("--npt", type=int,help="number of Gaussian function in the GMM. Ignored when --initpts is provided", default=2000)
+	parser.add_argument("--mask", type=str,help="mask file applied to the GMM after each iteration. The mask can apply to amplitude or sigma depending on the --maskamp or --masksigma options.", default=None)
+	parser.add_argument("--expandsym", type=str,help="symmetry expansion. i.e. start from an input refinement with the given symmetry and perform the new refinement with c1 by making copies of each particle at symmetrical equivalent positions.", default=None)
+	parser.add_argument("--masksigma", action="store_true", default=False ,help="mask the sigma of Gaussian using --mask")
+	parser.add_argument("--maskamp", action="store_true", default=False ,help="mask the amplitude of Gaussian using --mask")
+	parser.add_argument("--maskpp", type=str,help="Mask file for the reconstructed maps post processing. default is auto.", default=None)
 
-	parser.add_argument("--startiter", type=int,help="start iter", default=1)
-	parser.add_argument("--batchsize", type=int,help="number of particles in each batch", default=16)
-	parser.add_argument("--chunksize", type=int,help="number of particles in each gmm_batch process", default=20000)
+	parser.add_argument("--startiter", type=int,help="starting iteration number.", default=1)
+	parser.add_argument("--batchsize", type=int,help="Number of particles in each batch for alignment. Increase will make the alignment faster, but also increases GPU memory use. Default is 16.", default=16)
+	parser.add_argument("--chunksize", type=int,help="Number of particles in each e2gmm_batch process. Increase will make the alignment slightly faster, but also increases CPU memory use. Default is 20000.", default=20000)
 	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
