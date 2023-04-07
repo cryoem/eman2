@@ -221,7 +221,7 @@ def main():
 				run(f"e2proc3d.py {path}/threed_00_{eo}.hdf {path}/threed_raw_{eo}.hdf")
 			
 			if not os.path.isfile("sf.txt"):
-				run(f"e2spt_structfac.py --even {path}/threed_raw_even.hdf --sqrt --res 5")
+				run(f"e2spt_structfac.py --even {path}/threed_raw_even.hdf --res 5")
 			
 			run(f"e2refine_postprocess.py --even {path}/threed_00_even.hdf --res 5 --setsf sf.txt --tophat localwiener --sym {options.sym} --thread 32")
 			

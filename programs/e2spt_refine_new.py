@@ -412,9 +412,6 @@ def calc_resolution(fscfile):
 	
 	return rs*.8
 	
-def run(cmd):
-	print(cmd)
-	launch_childprocess(cmd)
 	
 if __name__ == '__main__':
 	main()
