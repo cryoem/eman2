@@ -317,8 +317,12 @@ class EMPlot2DWidget(EMGLWidget):
 			if contourlevels<=0: contourlevels=pp[9]
 		else:
 			if symtype==-2 and linetype==-2:
-				if len(data)<4 and (diff(self.data[key][0])>=0).all() : doline,linetype=1,0
-				else : dosym,symtype=1,0
+				if len(data)<4 and (diff(self.data[key][0])>=0).all() : doline,linetype,dosym,symtype=1,0,0,0
+				elif len(self.data[key][0])>10000 :
+					doline,linetype,dosym,symtype=0,0,0,0
+					docontour=True
+					contoursteps=max(int(sqrt(len(self.data[key][0])//25)),20)
+				else : doline,linetype,dosym,symtype=0,0,1,0
 			if color<0 : color=len(self.data)%len(colortypes)			# Automatic color setting
 			if color >len(colortypes): color = 0 # there are only a certain number of colors
 			if linetype>=0 : doline=1
@@ -327,9 +331,10 @@ class EMPlot2DWidget(EMGLWidget):
 			else : dosym,symtype=0,0
 			if contoursteps<=5 :
 				docontour=False
-				contoursteps=50
-			else: docontour=True
-			if contourlevels<=0: contourlevels=10
+				contoursteps=max(int(sqrt(len(self.data[key][0])//25)),20)
+			else:
+				docontour=True
+			if contourlevels<=0: contourlevels=25
 		self.pparm[key]=(color,doline,linetype,linewidth,dosym,symtype,symsize,docontour,contoursteps,contourlevels)
 
 		if comments!=None:

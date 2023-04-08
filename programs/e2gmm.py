@@ -521,19 +521,24 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.gblpltctl.addWidget(self.wbutkmeans,0,5)
 		self.wbutkmeans.clicked[bool].connect(self.do_kmeans)
 
+		self.wbutwater=QtWidgets.QPushButton("Wshed")
+		self.wbutwater.setToolTip("Watershed based, number is a maximum, not a target. Requires large N and clear classes.")
+		self.gblpltctl.addWidget(self.wbutwater,1,5)
+		self.wbutwater.clicked[bool].connect(self.do_watershed)
+
 		self.wbutdbscan=QtWidgets.QPushButton("OpticsDB")
 		self.wbutdbscan.setToolTip("Danger! This may exhaust RAM on large data sets")
-		self.gblpltctl.addWidget(self.wbutdbscan,1,5)
+		self.gblpltctl.addWidget(self.wbutdbscan,2,5)
 		self.wbutdbscan.clicked[bool].connect(self.do_dbscan)
 
 		self.wbutoptics=QtWidgets.QPushButton("OpticsXi")
 		self.wbutoptics.setToolTip("This could take many hours to run, and currently has no feedback")
-		self.gblpltctl.addWidget(self.wbutoptics,2,5)
+		self.gblpltctl.addWidget(self.wbutoptics,3,5)
 		self.wbutoptics.clicked[bool].connect(self.do_optics)
 
 		self.wbutspectr=QtWidgets.QPushButton("Spectr")
 		self.wbutspectr.setToolTip("Danger! May fail on large data sets, and possibly exhaust RAM")
-		self.gblpltctl.addWidget(self.wbutspectr,3,5)
+		self.gblpltctl.addWidget(self.wbutspectr,4,5)
 		self.wbutspectr.clicked[bool].connect(self.do_spectral)
 
 		self.wvbnsets=ValBox(label="Sets:",value=2)
@@ -566,11 +571,14 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wbutmapfast=QtWidgets.QPushButton("Quick Map")
 		self.gblpltctl.addWidget(self.wbutmapfast,1,6)
 
+		self.wbutmapgauss=QtWidgets.QPushButton("Gauss Map")
+		self.gblpltctl.addWidget(self.wbutmapfast,2,6)
+
 		self.wbutsetdel=QtWidgets.QPushButton("Delete")
-		self.gblpltctl.addWidget(self.wbutsetdel,2,6)
+		self.gblpltctl.addWidget(self.wbutsetdel,3,6)
 
 		self.wbutsetsave=QtWidgets.QPushButton("Save Set")
-		self.gblpltctl.addWidget(self.wbutsetsave,3,6)
+		self.gblpltctl.addWidget(self.wbutsetsave,4,6)
 
 
 		#### Widgets below 3D
@@ -685,6 +693,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wbutneutral2.clicked[bool].connect(self.new_neutral2)
 		self.wbutmapnorm.clicked[bool].connect(self.new_map)
 		self.wbutmapfast.clicked[bool].connect(self.new_map_fast)
+		self.wbutmapgauss.clicked[bool].connect(self.new_map_gauss)
 		self.wbutsetdel.clicked[bool].connect(self.set_del)
 		self.wbutsetsave.clicked[bool].connect(self.set_save)
 #		self.wedres.editingFinished.connect(self.new_res)
@@ -1285,6 +1294,16 @@ class EMGMM(QtWidgets.QMainWindow):
 			self.threads[-1].start()
 			print(f"Thread {len(self.threads)} started with {len(st[5])} particles")
 
+	def new_map_gauss(self,ign=None):
+		"""generate gaussian maps from set centers"""
+
+		sz=good_size(self.jsparm["boxsize"]*5//4)
+		sym=self.jsparm["sym"]
+		for k in self.curmaps_sel:
+			st=self.curmaps_sel[k]
+
+# TODO: Implement!
+
 	def set_del(self,ign=None):
 		"""Delete an existing set (only if a map hasn't been computed for it)"""
 
@@ -1392,6 +1411,68 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.sets_changed()
 		print("done")
 
+	def do_watershed(self):
+		nseg=int(self.wvbnsets.getValue())		# targeted number of segments
+		npts=len(self.data[0])					# number of particles/points
+		cols=np.array(parse_range(self.wstbaxes.getValue()))
+		if len(cols) not in (2,3) :
+			showerror(f"Watershed only works on 2 or 3 selected dimensions, you selected {cols}")
+			return
+
+		print("watershed ...")
+		print(nseg,npts,cols)
+
+		# 2-D watershed
+		if len(cols)==2:
+			ctrmap,xe,ye=np.histogram2d(self.data[cols[0]],self.data[cols[1]],bins=max(int(sqrt(npts//16)),20))		# make a histogram image
+			dens=from_numpy(ctrmap)
+			dens.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.25})		# smooth the histogram a bit to reduce noise, but keep sampling high enough for watershed to work
+			seg=dens.process("segment.watershed",{"nseg":nseg,"thr":0,"segbymerge":1,"verbose":1})		# apply watershed segmentation to the histogram image
+
+			nseg=int(seg["maximum"]+1)
+			ptdist=[[] for i in range(nseg)]
+
+			# x and y coordinates converted to bin numbers (pixel coordinates)
+			xs=((self.data[cols[0]]-xe[0])*nseg/(xe[-1]-xe[0])).astype("int32")
+			ys=((self.data[cols[1]]-ye[0])*nseg/(ye[-1]-ye[0])).astype("int32")
+			for i in range(npts):
+				try: ptdist[int(seg[xs[i],ys[i]])].append(i)
+				except: print(f"Err: {i}\t{xs[i]}\t{ys[i]}\t{seg[xs[i],ys[i]]}")
+
+			try: nset=max([int(k) for k in self.curmaps])+1
+			except: nset=0
+		# 3-D watershed
+		else:
+			ctrmap,edg=np.histogramdd((self.data[cols[0]],self.data[cols[1]],self.data[cols[2]]),bins=max(int(pow(npts//8,0.333)),12))		# make a histogram image
+			xe,ye,ze=edg
+			dens=from_numpy(ctrmap)
+			dens.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.25})		# smooth the histogram a bit to reduce noise, but keep sampling high enough for watershed to work
+			seg=dens.process("segment.watershed",{"nseg":nseg,"thr":0,"segbymerge":1,"verbose":1})		# apply watershed segmentation to the histogram image
+
+			nseg=int(seg["maximum"]+1)
+			ptdist=[[] for i in range(nseg)]
+
+			# x and y coordinates converted to bin numbers (pixel coordinates)
+			xs=((self.data[cols[0]]-xe[0])*nseg/(xe[-1]-xe[0])).astype("int32")
+			ys=((self.data[cols[1]]-ye[0])*nseg/(ye[-1]-ye[0])).astype("int32")
+			zs=((self.data[cols[2]]-ze[0])*nseg/(ze[-1]-ze[0])).astype("int32")
+			for i in range(npts):
+				try: ptdist[int(seg[xs[i],ys[i],zs[i]])].append(i)
+				except: print(f"Err: {i}\t{xs[i]}\t{ys[i]}\t{seg[xs[i],ys[i]]}")
+
+			try: nset=max([int(k) for k in self.curmaps])+1
+			except: nset=0
+
+		dens.write_image("ws_d.hdf",0)
+		seg.write_image("ws_s.hdf",0)
+
+		# for i in range(nseg):
+		# 	if len(ptdist[i])>0 :
+		# 		self.curmaps[str(nset+i)]=[None,local_datetime(),(cols,None),0,0,np.array(ptdist[i])]
+
+		self.sets_changed()
+		print("done")
+
 	def do_dbscan(self):
 		print("OpticsDB ...")
 		t0=time.time()
@@ -1418,7 +1499,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			except:
 				traceback.print_exc()
 				print(self.data.shape,cols)
-				newmap=[None,local_datetime(),[cols,[0,0,0,0]],0,0,ptdist]
+				newmap=[None,local_datetime(),(cols,None),0,0,ptdist]
 			self.curmaps[str(nset+i)]=newmap
 
 		self.sets_changed()
@@ -1450,7 +1531,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			except:
 				traceback.print_exc()
 				print(self.data.shape,cols)
-				newmap=[None,local_datetime(),[cols,[0,0,0,0]],0,0,ptdist]
+				newmap=[None,local_datetime(),(cols,None),0,0,ptdist]
 			self.curmaps[str(nset+i)]=newmap
 
 		self.sets_changed()
@@ -1477,7 +1558,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			except:
 				traceback.print_exc()
 				print(self.data[cols,ptdist].shape)
-				newmap=[None,local_datetime(),[cols,[0,0,0,0]],0,0,ptdist]
+				newmap=[None,local_datetime(),(cols,None),0,0,ptdist]
 			self.curmaps[str(nset+i)]=newmap
 
 		self.sets_changed()

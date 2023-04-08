@@ -11934,7 +11934,7 @@ struct WSsortlist {
     short x,y,z;
     
     friend bool operator<(const WSsortlist& l, const WSsortlist& r) {
-        return l.pix < r.pix;
+        return l.pix > r.pix;
     }
 };
 
@@ -11963,172 +11963,325 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 	int nx=image->get_xsize();
 	int ny=image->get_ysize();
 	int nz=image->get_zsize();
-	if (nz==1) throw ImageDimensionException("Only 3-D data supported");
-
-	// Count the number of above threshold pixels
-	size_t n2seg = 0;
-	for (int z=1; z<nz-1; z++) {
-		for (int y=1; y<ny-1; y++) {
-			for (int x=1; x<nx-1; x++) {
-				if (image->get_value_at(x,y,z)>=thr) n2seg++;
-			}
-		}
-	}
-	if (verbose) printf("%ld voxels above threshold\n",n2seg);
-
-	// Extract the pixels for sorting
-	vector<WSsortlist> srt(n2seg);
-	size_t i=0;
-	for (int z=1; z<nz-1; z++) {
-		for (int y=1; y<ny-1; y++) {
-			for (int x=1; x<nx-1; x++) {
-				if (image->get_value_at(x,y,z)>=thr) {
-					srt[i].pix=image->get_value_at(x,y,z);
-					srt[i].x=x;
-					srt[i].y=y;
-					srt[i].z=z;
-					i++;
+//	if (nz==1) throw ImageDimensionException("Only 3-D data supported");
+	if (nz>1) {
+		// Count the number of above threshold pixels
+		size_t n2seg = 0;
+		for (int z=1; z<nz-1; z++) {
+			for (int y=1; y<ny-1; y++) {
+				for (int x=1; x<nx-1; x++) {
+					if (image->get_value_at(x,y,z)>=thr) n2seg++;
 				}
 			}
 		}
-	}
-	if (verbose) printf("Voxels extracted, sorting\n");
+		if (verbose) printf("%ld voxels above threshold\n",n2seg);
 
-	// actual sort
-	sort(srt.begin(), srt.end());
-	if (verbose) printf("Voxels sorted (%1.4g max), starting watershed\n",srt[0].pix);
-
-	// now we start with the highest value and fill in the segments
-	float cseg=1.0;
-	int start=n2seg;
-	for (i=0; i<n2seg; i++) {
-		int x=srt[i].x;
-		int y=srt[i].y;
-		int z=srt[i].z;
-		float lvl=0;
-		for (int zz=z-1; zz<=z+1; zz++) {
-			for (int yy=y-1; yy<=y+1; yy++) {
-				for (int xx=x-1; xx<=x+1; xx++) {
-					float v=ret->get_value_at(xx,yy,zz);
-					if (v>lvl) lvl=v;				// use the highest numbered border segment (arbitrary)
+		// Extract the pixels for sorting
+		vector<WSsortlist> srt(n2seg);
+		size_t i=0;
+		for (int z=1; z<nz-1; z++) {
+			for (int y=1; y<ny-1; y++) {
+				for (int x=1; x<nx-1; x++) {
+					if (image->get_value_at(x,y,z)>=thr) {
+						srt[i].pix=image->get_value_at(x,y,z);
+						srt[i].x=x;
+						srt[i].y=y;
+						srt[i].z=z;
+						i++;
+					}
 				}
 			}
 		}
-		if (lvl==0) {
-			if (verbose) printf("%d %d %d\t%1.0f\t%1.3g\n",x,y,z,cseg,srt[i].pix);
-			lvl=cseg;
-			centers.push_back(x);
-			centers.push_back(y);
-			centers.push_back(z);
-			cseg+=1.0;
-		}
-		if (lvl>nseg) {
-			start=i;
-			if (verbose) printf("Requested number of segments achieved at density %1.4g\n",srt[i].pix);
-			break;
-		}		// This means we've made as many segments as we need, so we switch to flood-filling
-		ret->set_value_at_fast(x,y,z,lvl);
-	}
+		if (verbose) printf("Voxels extracted, sorting\n");
 
-	// We have as many segments as we'll get, but not all voxels have been segmented, so we do a progressive flood fill in density order
-	size_t chg=1;
-	while (chg) {
-		chg=0;
-		for (i=start; i<n2seg; i++) {
+		// actual sort
+		sort(srt.begin(), srt.end());
+		if (verbose) printf("Voxels sorted (%1.4g max), starting watershed\n",srt[0].pix);
+
+		// now we start with the highest value and fill in the segments
+		float cseg=1.0;
+		int start=n2seg;
+		for (i=0; i<n2seg; i++) {
 			int x=srt[i].x;
 			int y=srt[i].y;
 			int z=srt[i].z;
-			if (ret->get_value_at(x,y,z)!=0) continue;	// This voxel is already done
-
 			float lvl=0;
 			for (int zz=z-1; zz<=z+1; zz++) {
 				for (int yy=y-1; yy<=y+1; yy++) {
 					for (int xx=x-1; xx<=x+1; xx++) {
-					float v=ret->get_value_at(xx,yy,zz);
-					if (v>lvl) lvl=v;				// use the highest numbered border segment (arbitrary)
+						float v=ret->get_value_at(xx,yy,zz);
+						if (v>lvl) lvl=v;				// use the highest numbered border segment (arbitrary)
 					}
 				}
 			}
-			if (lvl==0) continue;					// we just skip voxels without any segmented neighbors
+			if (lvl==0) {
+				if (verbose) printf("%d %d %d\t%1.0f\t%1.3g\n",x,y,z,cseg,srt[i].pix);
+				lvl=cseg;
+				centers.push_back(x);
+				centers.push_back(y);
+				centers.push_back(z);
+				cseg+=1.0;
+			}
+			if (lvl>nseg) {
+				start=i;
+				if (verbose) printf("Requested number of segments achieved at density %1.4g\n",srt[i].pix);
+				break;
+			}		// This means we've made as many segments as we need, so we switch to flood-filling
 			ret->set_value_at_fast(x,y,z,lvl);
-			chg+=1;
 		}
-		if (verbose) printf("%ld voxels changed\n",chg);
-	}
-	ret->set_attr("segment_centers",centers);
 
-	if (segbymerge) {
-		if (cseg<segbymerge) return ret;
-	}
-	else if (cseg<=nseg) return ret;		// We don't have too many segments, so we just return now
-
-	if (verbose) printf("Merging segments\n");
-	// If requested, we now merge segments with the most surface contact until we have the correct final number
-	if (segbymerge) {
-		int nsegstart=(int)cseg;	// Number of segments we actually generated
-		nseg=(int)cseg;
-		EMData *mx=new EMData(nsegstart,nsegstart,1);		// This will be a "contact matrix" among segments
-		float *mxd=mx->get_data();
-
-		// each cycle of the while loop, we eliminate one segment by merging
-		int sub1=-1,sub2=-1;		// sub2 will be merged into sub1
-		nseg++;						// since we don't actually remove one on the first pass, but decrement the counter
-		while (segbymerge<nseg) {
-			mx->to_zero();
-
-			for (i=0; i<n2seg; i++) {
+		// We have as many segments as we'll get, but not all voxels have been segmented, so we do a progressive flood fill in density order
+		size_t chg=1;
+		while (chg) {
+			chg=0;
+			for (i=start; i<n2seg; i++) {
 				int x=srt[i].x;
 				int y=srt[i].y;
 				int z=srt[i].z;
+				if (ret->get_value_at(x,y,z)!=0) continue;	// This voxel is already done
 
-				int v1=(int)ret->get_value_at(x,y,z);
-				if (v1==sub2) { ret->set_value_at_fast(x,y,z,sub1); v1=sub1; }
-				mxd[v1+v1*nsegstart]++;					// the diagonal is a count of the number of voxels in the segment
+				float lvl=0;
 				for (int zz=z-1; zz<=z+1; zz++) {
 					for (int yy=y-1; yy<=y+1; yy++) {
 						for (int xx=x-1; xx<=x+1; xx++) {
-							int v2=(int)ret->get_value_at(xx,yy,zz);
-							if (v2==sub2) v2=sub1;		// pretend that any sub2 values are actually sub1
-							if (v1==v2) continue;
-							mxd[v1+v2*nsegstart]+=image->get_value_at(xx,yy,zz);		// We weight the connectivity by the image value
+						float v=ret->get_value_at(xx,yy,zz);
+						if (v>lvl) lvl=v;				// use the highest numbered border segment (arbitrary)
 						}
 					}
 				}
+				if (lvl==0) continue;					// we just skip voxels without any segmented neighbors
+				ret->set_value_at_fast(x,y,z,lvl);
+				chg+=1;
 			}
-			mx->update();
-			nseg--;					// number of segments left
-			if (verbose && sub1==-1) { mx->write_image("contactmx.hdf",0); }		// for debugging
+			if (verbose) printf("%ld voxels changed\n",chg);
+		}
+		ret->set_attr("segment_centers",centers);
 
-			sub1=-1;
-			sub2=-1;
-			// contact matrix complete, now figure out which 2 segments to merge
-			// diagonal of matrix is a count of the 'volume' of the segment. off-diagonal elements are surface area of contact region (roughly)
-			// we want to normalize the surface area elements so they are roughly proportional to the size of the segment, so we don't merge
-			// based on total contact area, but contact area as a fraction of the total area.
-			float bestv=-1.0;
-			for (int s1=1; s1<nsegstart; s1++) {
-				for (int s2=1; s2<nsegstart; s2++) {
-					if (s1==s2) continue;				// ignore the diagonal
-					float v=mxd[s1+s2*nsegstart];
-					if (v==0) continue;					// empty segment
-//					v/=(pow(mxd[s1+s1*nsegstart],0.6667f)+pow(mxd[s2+s2*nsegstart],0.6667f));	// normalize by the sum of the estimated surface areas (no shape effects)
-					v/=max(mxd[s1+s1*nsegstart],mxd[s2+s2*nsegstart]);	// normalize by the sum of the estimated surface areas (no shape effects)
-					if (v>bestv) { bestv=v; sub1=s1; sub2=s2; }
+		if (segbymerge) {
+			if (cseg<segbymerge) return ret;
+		}
+		else if (cseg<=nseg) return ret;		// We don't have too many segments, so we just return now
+
+		if (verbose) printf("Merging segments\n");
+		// If requested, we now merge segments with the most surface contact until we have the correct final number
+		if (segbymerge) {
+			int nsegstart=(int)cseg;	// Number of segments we actually generated
+			nseg=(int)cseg;
+			EMData *mx=new EMData(nsegstart,nsegstart,1);		// This will be a "contact matrix" among segments
+			float *mxd=mx->get_data();
+
+			// each cycle of the while loop, we eliminate one segment by merging
+			int sub1=-1,sub2=-1;		// sub2 will be merged into sub1
+			nseg++;						// since we don't actually remove one on the first pass, but decrement the counter
+			while (segbymerge<nseg) {
+				mx->to_zero();
+
+				for (i=0; i<n2seg; i++) {
+					int x=srt[i].x;
+					int y=srt[i].y;
+					int z=srt[i].z;
+
+					int v1=(int)ret->get_value_at(x,y,z);
+					if (v1==sub2) { ret->set_value_at_fast(x,y,z,sub1); v1=sub1; }
+					mxd[v1+v1*nsegstart]++;					// the diagonal is a count of the number of voxels in the segment
+					for (int zz=z-1; zz<=z+1; zz++) {
+						for (int yy=y-1; yy<=y+1; yy++) {
+							for (int xx=x-1; xx<=x+1; xx++) {
+								int v2=(int)ret->get_value_at(xx,yy,zz);
+								if (v2==sub2) v2=sub1;		// pretend that any sub2 values are actually sub1
+								if (v1==v2) continue;
+								mxd[v1+v2*nsegstart]+=image->get_value_at(xx,yy,zz);		// We weight the connectivity by the image value
+							}
+						}
+					}
+				}
+				mx->update();
+				nseg--;					// number of segments left
+				if (verbose && sub1==-1) { mx->write_image("contactmx.hdf",0); }		// for debugging
+
+				sub1=-1;
+				sub2=-1;
+				// contact matrix complete, now figure out which 2 segments to merge
+				// diagonal of matrix is a count of the 'volume' of the segment. off-diagonal elements are surface area of contact region (roughly)
+				// we want to normalize the surface area elements so they are roughly proportional to the size of the segment, so we don't merge
+				// based on total contact area, but contact area as a fraction of the total area.
+				float bestv=-1.0;
+				for (int s1=1; s1<nsegstart; s1++) {
+					for (int s2=1; s2<nsegstart; s2++) {
+						if (s1==s2) continue;				// ignore the diagonal
+						float v=mxd[s1+s2*nsegstart];
+						if (v==0) continue;					// empty segment
+	//					v/=(pow(mxd[s1+s1*nsegstart],0.6667f)+pow(mxd[s2+s2*nsegstart],0.6667f));	// normalize by the sum of the estimated surface areas (no shape effects)
+						v/=max(mxd[s1+s1*nsegstart],mxd[s2+s2*nsegstart]);	// normalize by the sum of the estimated surface areas (no shape effects)
+						if (v>bestv) { bestv=v; sub1=s1; sub2=s2; }
+					}
+				}
+				float mv=0;
+				int mvl=0;
+				for (i=nsegstart+1; i<nsegstart*nsegstart; i+=nsegstart+1)
+					if (mxd[i]>mv) { mv=mxd[i]; mvl=i/nsegstart; }
+				if (verbose) printf("Merging %d to %d (%1.0f, %d)\n",sub2,sub1,mv,mvl);
+				if (sub1==-1) {
+					if (verbose) printf("Unable to find segments to merge, aborting\n");
+					break;
 				}
 			}
-			float mv=0;
-			int mvl=0;
-			for (i=nsegstart+1; i<nsegstart*nsegstart; i+=nsegstart+1)
-				if (mxd[i]>mv) { mv=mxd[i]; mvl=i/nsegstart; }
-			if (verbose) printf("Merging %d to %d (%1.0f, %d)\n",sub2,sub1,mv,mvl);
-			if (sub1==-1) {
-				if (verbose) printf("Unable to find segments to merge, aborting\n");
-				break;
+
+		}
+	}
+	// 2D variant
+	else {
+		// Count the number of above threshold pixels
+		size_t n2seg = 0;
+		for (int y=1; y<ny-1; y++) {
+			for (int x=1; x<nx-1; x++) {
+				if (image->get_value_at(x,y,0)>=thr) n2seg++;
 			}
 		}
+		if (verbose) printf("%ld voxels above threshold\n",n2seg);
 
+		// Extract the pixels for sorting
+		vector<WSsortlist> srt(n2seg);
+		size_t i=0;
+		for (int y=1; y<ny-1; y++) {
+			for (int x=1; x<nx-1; x++) {
+				if (image->get_value_at(x,y,0)>=thr) {
+					srt[i].pix=image->get_value_at(x,y,0);
+					srt[i].x=x;
+					srt[i].y=y;
+					i++;
+				}
+			}
+		}
+		if (verbose) printf("Voxels extracted, sorting\n");
+
+		// actual sort
+		sort(srt.begin(), srt.end());
+		if (verbose) printf("Voxels sorted (%1.4g max), starting watershed\n",srt[0].pix);
+
+		// now we start with the highest value and fill in the segments
+		float cseg=1.0;
+		int start=n2seg;
+		for (i=0; i<n2seg; i++) {
+			int x=srt[i].x;
+			int y=srt[i].y;
+			float lvl=0;
+			for (int yy=y-1; yy<=y+1; yy++) {
+				for (int xx=x-1; xx<=x+1; xx++) {
+					float v=ret->get_value_at(xx,yy,0);
+//					if ((v<lvl && v>0)||lvl==0) lvl=v;				// use the lowest numbered nonzero border segment
+					if (v>lvl) lvl=v;				// use the highest numbered nonzero border segment
+				}
+			}
+			if (lvl==0) {
+				if (verbose) printf("%d %d\t%1.0f\t%1.3g\n",x,y,cseg,srt[i].pix);
+				lvl=cseg;
+				centers.push_back(x);
+				centers.push_back(y);
+				cseg+=1.0;
+			}
+			if (lvl>nseg) {
+				start=i;
+				if (verbose) printf("Requested number of segments achieved at density %1.4g\n",srt[i].pix);
+				break;
+			}		// This means we've made as many segments as we need, so we switch to flood-filling
+			ret->set_value_at_fast(x,y,0,lvl);
+		}
+
+		// We have as many segments as we'll get, but not all voxels have been segmented, so we do a progressive flood fill in density order
+		size_t chg=1;
+		while (chg) {
+			chg=0;
+			for (i=start; i<n2seg; i++) {
+				int x=srt[i].x;
+				int y=srt[i].y;
+				if (ret->get_value_at(x,y,0)!=0) continue;	// This voxel is already done
+
+				float lvl=0;
+				for (int yy=y-1; yy<=y+1; yy++) {
+					for (int xx=x-1; xx<=x+1; xx++) {
+						float v=ret->get_value_at(xx,yy,0);
+						if (v>lvl) lvl=v;				// use the highest numbered border segment (arbitrary)
+					}
+				}
+				if (lvl==0) continue;					// we just skip voxels without any segmented neighbors
+				ret->set_value_at_fast(x,y,0,lvl);
+				chg+=1;
+			}
+			if (verbose) printf("%ld voxels changed\n",chg);
+		}
+		ret->set_attr("segment_centers",centers);
+
+		if (segbymerge) {
+			if (cseg<segbymerge) return ret;
+		}
+		else if (cseg<=nseg) return ret;		// We don't have too many segments, so we just return now
+
+		if (verbose) printf("Merging segments\n");
+		// If requested, we now merge segments with the most surface contact until we have the correct final number
+		if (segbymerge) {
+			int nsegstart=(int)cseg;	// Number of segments we actually generated
+			nseg=(int)cseg;
+			EMData *mx=new EMData(nsegstart,nsegstart,1);		// This will be a "contact matrix" among segments
+			float *mxd=mx->get_data();
+
+			// each cycle of the while loop, we eliminate one segment by merging
+			int sub1=-1,sub2=-1;		// sub2 will be merged into sub1
+			nseg++;						// since we don't actually remove one on the first pass, but decrement the counter
+			while (segbymerge<nseg) {
+				mx->to_zero();
+
+				for (i=0; i<n2seg; i++) {
+					int x=srt[i].x;
+					int y=srt[i].y;
+					int z=0;
+
+					int v1=(int)ret->get_value_at(x,y,z);
+					if (v1==sub2) { ret->set_value_at_fast(x,y,z,sub1); v1=sub1; }
+					mxd[v1+v1*nsegstart]++;					// the diagonal is a count of the number of voxels in the segment
+					for (int yy=y-1; yy<=y+1; yy++) {
+						for (int xx=x-1; xx<=x+1; xx++) {
+							int v2=(int)ret->get_value_at(xx,yy,0);
+							if (v2==sub2) v2=sub1;		// pretend that any sub2 values are actually sub1
+							if (v1==v2) continue;
+							mxd[v1+v2*nsegstart]+=image->get_value_at(xx,yy,0);		// We weight the connectivity by the image value
+						}
+					}
+				}
+				mx->update();
+				nseg--;					// number of segments left
+				if (verbose && sub1==-1) { mx->write_image("contactmx.hdf",0); }		// for debugging
+
+				sub1=-1;
+				sub2=-1;
+				// contact matrix complete, now figure out which 2 segments to merge
+				// diagonal of matrix is a count of the 'volume' of the segment. off-diagonal elements are surface area of contact region (roughly)
+				// we want to normalize the surface area elements so they are roughly proportional to the size of the segment, so we don't merge
+				// based on total contact area, but contact area as a fraction of the total area.
+				float bestv=-1.0;
+				for (int s1=1; s1<nsegstart; s1++) {
+					for (int s2=1; s2<nsegstart; s2++) {
+						if (s1==s2) continue;				// ignore the diagonal
+						float v=mxd[s1+s2*nsegstart];
+						if (v==0) continue;					// empty segment
+						//					v/=(pow(mxd[s1+s1*nsegstart],0.6667f)+pow(mxd[s2+s2*nsegstart],0.6667f));	// normalize by the sum of the estimated surface areas (no shape effects)
+						v/=max(mxd[s1+s1*nsegstart],mxd[s2+s2*nsegstart]);	// normalize by the sum of the estimated surface areas (no shape effects)
+						if (v>bestv) { bestv=v; sub1=s1; sub2=s2; }
+					}
+				}
+				float mv=0;
+				int mvl=0;
+				for (i=nsegstart+1; i<nsegstart*nsegstart; i+=nsegstart+1)
+					if (mxd[i]>mv) { mv=mxd[i]; mvl=i/nsegstart; }
+				if (verbose) printf("Merging %d to %d (%1.0f, %d)\n",sub2,sub1,mv,mvl);
+				if (sub1==-1) {
+					if (verbose) printf("Unable to find segments to merge, aborting\n");
+					break;
+				}
+			}
+
+		}
 	}
-
 	return ret;
 }
 
