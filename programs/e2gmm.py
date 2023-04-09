@@ -572,7 +572,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.gblpltctl.addWidget(self.wbutmapfast,1,6)
 
 		self.wbutmapgauss=QtWidgets.QPushButton("Gauss Map")
-		self.gblpltctl.addWidget(self.wbutmapfast,2,6)
+		self.gblpltctl.addWidget(self.wbutmapgauss,2,6)
 
 		self.wbutsetdel=QtWidgets.QPushButton("Delete")
 		self.gblpltctl.addWidget(self.wbutsetdel,3,6)
@@ -1424,17 +1424,19 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		# 2-D watershed
 		if len(cols)==2:
-			ctrmap,xe,ye=np.histogram2d(self.data[cols[0]],self.data[cols[1]],bins=max(int(sqrt(npts//16)),20))		# make a histogram image
+			nbins=max(int(sqrt(npts//16)),20)
+			ctrmap,xe,ye=np.histogram2d(self.data[cols[0]],self.data[cols[1]],bins=nbins)		# make a histogram image
 			dens=from_numpy(ctrmap)
-			dens.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.25})		# smooth the histogram a bit to reduce noise, but keep sampling high enough for watershed to work
-			seg=dens.process("segment.watershed",{"nseg":nseg,"thr":0,"segbymerge":1,"verbose":1})		# apply watershed segmentation to the histogram image
+			dens.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.2})		# smooth the histogram a bit to reduce noise, but keep sampling high enough for watershed to work
+			seg=dens.process("segment.watershed",{"nseg":nseg,"thr":10.0,"verbose":1})		# apply watershed segmentation to the histogram image
 
 			nseg=int(seg["maximum"]+1)
 			ptdist=[[] for i in range(nseg)]
 
 			# x and y coordinates converted to bin numbers (pixel coordinates)
-			xs=((self.data[cols[0]]-xe[0])*nseg/(xe[-1]-xe[0])).astype("int32")
-			ys=((self.data[cols[1]]-ye[0])*nseg/(ye[-1]-ye[0])).astype("int32")
+			xs=((self.data[cols[0]]-xe[0])*nbins/(xe[-1]-xe[0])).astype("int32")
+			ys=((self.data[cols[1]]-ye[0])*nbins/(ye[-1]-ye[0])).astype("int32")
+			print(xs[:10],ys[:10])
 			for i in range(npts):
 				try: ptdist[int(seg[xs[i],ys[i]])].append(i)
 				except: print(f"Err: {i}\t{xs[i]}\t{ys[i]}\t{seg[xs[i],ys[i]]}")
@@ -1443,19 +1445,20 @@ class EMGMM(QtWidgets.QMainWindow):
 			except: nset=0
 		# 3-D watershed
 		else:
-			ctrmap,edg=np.histogramdd((self.data[cols[0]],self.data[cols[1]],self.data[cols[2]]),bins=max(int(pow(npts//8,0.333)),12))		# make a histogram image
+			nbins=max(int(pow(npts,0.333)),12)
+			ctrmap,edg=np.histogramdd((self.data[cols[0]],self.data[cols[1]],self.data[cols[2]]),bins=nbins)		# make a histogram image
 			xe,ye,ze=edg
 			dens=from_numpy(ctrmap)
-			dens.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.25})		# smooth the histogram a bit to reduce noise, but keep sampling high enough for watershed to work
-			seg=dens.process("segment.watershed",{"nseg":nseg,"thr":0,"segbymerge":1,"verbose":1})		# apply watershed segmentation to the histogram image
+			dens.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.2})		# smooth the histogram a bit to reduce noise, but keep sampling high enough for watershed to work
+			seg=dens.process("segment.watershed",{"nseg":nseg,"thr":5.0,"verbose":1})		# apply watershed segmentation to the histogram image
 
 			nseg=int(seg["maximum"]+1)
 			ptdist=[[] for i in range(nseg)]
 
 			# x and y coordinates converted to bin numbers (pixel coordinates)
-			xs=((self.data[cols[0]]-xe[0])*nseg/(xe[-1]-xe[0])).astype("int32")
-			ys=((self.data[cols[1]]-ye[0])*nseg/(ye[-1]-ye[0])).astype("int32")
-			zs=((self.data[cols[2]]-ze[0])*nseg/(ze[-1]-ze[0])).astype("int32")
+			xs=((self.data[cols[0]]-xe[0])*nbins/(xe[-1]-xe[0])).astype("int32")
+			ys=((self.data[cols[1]]-ye[0])*nbins/(ye[-1]-ye[0])).astype("int32")
+			zs=((self.data[cols[2]]-ze[0])*nbins/(ze[-1]-ze[0])).astype("int32")
 			for i in range(npts):
 				try: ptdist[int(seg[xs[i],ys[i],zs[i]])].append(i)
 				except: print(f"Err: {i}\t{xs[i]}\t{ys[i]}\t{seg[xs[i],ys[i]]}")
@@ -1463,12 +1466,12 @@ class EMGMM(QtWidgets.QMainWindow):
 			try: nset=max([int(k) for k in self.curmaps])+1
 			except: nset=0
 
-		dens.write_image("ws_d.hdf",0)
-		seg.write_image("ws_s.hdf",0)
+		# dens.write_image("ws_d.hdf",0)
+		# seg.write_image("ws_s.hdf",0)
 
-		# for i in range(nseg):
-		# 	if len(ptdist[i])>0 :
-		# 		self.curmaps[str(nset+i)]=[None,local_datetime(),(cols,None),0,0,np.array(ptdist[i])]
+		for i in range(1,nseg):		# we skip class 0, which will generally wrap around the others
+			if len(ptdist[i])>0 :
+				self.curmaps[str(nset+i)]=[None,local_datetime(),(cols,None),0,0,np.array(ptdist[i])]
 
 		self.sets_changed()
 		print("done")

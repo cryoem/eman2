@@ -12269,13 +12269,17 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 						if (v>bestv) { bestv=v; sub1=s1; sub2=s2; }
 					}
 				}
+				if (sub1>sub2) { int tt=sub1; sub1=sub2; sub2=tt; }  // swap so we always merge to the lower numbered segment
 				float mv=0;
 				int mvl=0;
 				for (i=nsegstart+1; i<nsegstart*nsegstart; i+=nsegstart+1)
 					if (mxd[i]>mv) { mv=mxd[i]; mvl=i/nsegstart; }
 				if (verbose) printf("Merging %d to %d (%1.0f, %d)\n",sub2,sub1,mv,mvl);
 				if (sub1==-1) {
-					if (verbose) printf("Unable to find segments to merge, aborting\n");
+					if (verbose) {
+						printf("Unable to find segments to merge, terminating\n");
+						mx->write_image("contactmx_end.hdf",0);
+					}
 					break;
 				}
 			}
