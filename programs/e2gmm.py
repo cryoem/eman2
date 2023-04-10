@@ -490,9 +490,14 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		self.gblpltctl.addWidget(QtWidgets.QLabel("Rad:",self),3,0,Qt.AlignRight)
 		self.wedrad=QtWidgets.QLineEdit("0.2")
-		self.wedrad.setToolTip("Radius for including points adjacent to selected point (sphere/cylinder mode)")
+		self.wedrad.setToolTip("Radius for including points adjacent to selected point or spacing between sets")
 		self.gblpltctl.addWidget(self.wedrad,3,1,Qt.AlignRight)
-		
+
+		self.gblpltctl.addWidget(QtWidgets.QLabel("Ptcl:",self),4,0,Qt.AlignRight)
+		self.wedcnt=QtWidgets.QLineEdit("10000")
+		self.wedcnt.setToolTip("Particles per set in Line of Sets mode")
+		self.gblpltctl.addWidget(self.wedcnt,4,1,Qt.AlignRight)
+
 		#self.wbutdrgrp=QtWidgets.QButtonGroup()
 		
 		#self.wbutdrmid=QtWidgets.QPushButton("Net Mid")
@@ -522,17 +527,17 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wbutkmeans.clicked[bool].connect(self.do_kmeans)
 
 		self.wbutwater=QtWidgets.QPushButton("Wshed")
-		self.wbutwater.setToolTip("Watershed based, number is a maximum, not a target. Requires large N and clear classes.")
+		self.wbutwater.setToolTip("Watershed based, number is a maximum. 2-D and 3-D subspaces only.")
 		self.gblpltctl.addWidget(self.wbutwater,1,5)
 		self.wbutwater.clicked[bool].connect(self.do_watershed)
 
 		self.wbutdbscan=QtWidgets.QPushButton("OpticsDB")
-		self.wbutdbscan.setToolTip("Danger! This may exhaust RAM on large data sets")
+		self.wbutdbscan.setToolTip("Danger! This may exhaust RAM on large data sets, and may take a long time to run")
 		self.gblpltctl.addWidget(self.wbutdbscan,2,5)
 		self.wbutdbscan.clicked[bool].connect(self.do_dbscan)
 
 		self.wbutoptics=QtWidgets.QPushButton("OpticsXi")
-		self.wbutoptics.setToolTip("This could take many hours to run, and currently has no feedback")
+		self.wbutoptics.setToolTip("Danger! This could take many hours to run")
 		self.gblpltctl.addWidget(self.wbutoptics,3,5)
 		self.wbutoptics.clicked[bool].connect(self.do_optics)
 
@@ -551,6 +556,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wcbpntpln=QtWidgets.QComboBox()
 		self.wcbpntpln.addItem("Explore")
 		self.wcbpntpln.addItem("Make Set")
+		self.wcbpntpln.addItem("Line of Sets")
 
 		#self.wcbpntpln.addItem("Plane")
 		#self.wcbpntpln.addItem("HSphere")
@@ -1160,6 +1166,7 @@ class EMGMM(QtWidgets.QMainWindow):
 
 	def plot_mouse(self,event,loc):
 		self.mouseabort=False
+		self.line_origin=None
 		mmode=str(self.wcbpntpln.currentText())
 		dim=self.currun.get("dim",4)
 		augdim=self.midresult.shape[0]
@@ -1205,19 +1212,34 @@ class EMGMM(QtWidgets.QMainWindow):
 			self.wplot2d.add_shape("latent",EMShape(["scrlabel",0.1,0.1,0.1,10.,10.,f"{np.array_str(latent[0], precision=3)} {nptcl} ptcl",120.0,-1]))
 			self.wplot2d.update()
 			return
-		elif mmode==("Make Set"):
+		elif mmode=="Make Set":
 			return
+		elif mmode=="Line of Sets":
+			self.line_origin=loc
+
 		else: print("mode error")
 
 
 	def plot_mouse_drag(self,event,loc):
-		self.plot_mouse(event,loc)
+		mmode=str(self.wcbpntpln.currentText())
+		if self.mouseabort:
+			print("Abort")
+			self.wplot2d.del_shape("genline")
+			self.mouseabort=False
+			self.line_origin=None
+			return
+
+		if mmode=="Line of Sets":
+			self.wplot2d.add_shape("genline",EMShape(["line",0.1,0.8,0.1,self.line_origin[0],self.line_origin[1],loc[0],loc[1],1]))
+			self.wplot2d.update()
+		else:
+			self.plot_mouse(event,loc)
+
+
 		#mmode=str(self.wcbpntpln.currentText())
 		#if mmode != "Line":
 			#return
 		
-		#self.wplot2d.add_shape("genline",EMShape(["line",0.1,0.8,0.1,self.line_origin[0][0],self.line_origin[0][1],loc[0],loc[1],1]))
-		#self.wplot2d.update()
 
 
 	def plot_mouse_up(self,event,loc):
@@ -1228,13 +1250,20 @@ class EMGMM(QtWidgets.QMainWindow):
 		
 		if self.mouseabort:
 			print("Abort")
+			self.wplot2d.del_shape("genline")
 			self.mouseabort=False
+			self.line_origin=None
 			return
 
 		try: rad=float(self.wedrad.text())
 		except: 
 			print("invalid radius, using 0.05")
 			rad=0.05
+		try: ptperset=int(self.wedcnt.text())
+		except:
+			print("invalid particle count, using 4000")
+			ptperset=4000
+
 		xcol=self.wsbxcol.value()
 		ycol=self.wsbycol.value()
 		self.wplot2d.del_shapes(["region","genline"])
@@ -1257,6 +1286,26 @@ class EMGMM(QtWidgets.QMainWindow):
 			#self.threads.append(threading.Thread(target=make3d_thr,args=(self.threadq,len(self.threads),f"{self.gmm}/particles.lst",ptdist,rparms,latent,self.currun,rad,mmode,self.jsparm["boxsize"])))
 			#self.threads[-1].start()
 			#print(f"Thread {len(self.threads)} started with {len(ptdist)} particles")
+			return
+		elif mmode=="Line of Sets":
+
+			dst=hypot((self.line_origin[0]-loc[0]),(self.line_origin[1]-loc[1]))
+			stps=floor(dst/rad)+1		# number of points to generate along the line
+
+			# now we generate a set for each point on the line
+			for i in range(stps+1):
+				cen=((self.line_origin[0]*(stps-i)+loc[0]*i)/stps,(self.line_origin[1]*(stps-i)+loc[1]*i)/stps)
+
+				ptdist=((self.midresult[xcol]-cen[0])**2+(self.midresult[ycol]-cen[1])**2)
+				sel=np.argsort(ptdist)[:ptperset]
+
+				vec=np.zeros(len(self.midresult))
+				vec[xcol]=loc[0]
+				vec[ycol]=loc[1]
+				nset=good_num(self.curmaps)
+				newmap=[None,local_datetime(),list(vec),0,0,sel]
+				self.curmaps[str(nset)]=newmap
+			self.sets_changed(nset)
 			return
 
 	def sets_changed(self,nnew=None):
@@ -1388,6 +1437,7 @@ class EMGMM(QtWidgets.QMainWindow):
 
 	def do_kmeans(self):
 		print("kmeans ...")
+		get_application().setOverrideCursor(Qt.BusyCursor)
 		from sklearn.cluster import KMeans
 		nseg=int(self.wvbnsets.getValue())
 		cols=np.array(parse_range(self.wstbaxes.getValue()))
@@ -1410,6 +1460,7 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		self.sets_changed()
 		print("done")
+		get_application().restoreOverrideCursor()
 
 	def do_watershed(self):
 		nseg=int(self.wvbnsets.getValue())		# targeted number of segments
@@ -1419,6 +1470,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			showerror(f"Watershed only works on 2 or 3 selected dimensions, you selected {cols}")
 			return
 
+		get_application().setOverrideCursor(Qt.BusyCursor)
 		print("watershed ...")
 		print(nseg,npts,cols)
 
@@ -1475,8 +1527,10 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		self.sets_changed()
 		print("done")
+		get_application().restoreOverrideCursor()
 
 	def do_dbscan(self):
+		get_application().setOverrideCursor(Qt.BusyCursor)
 		print("OpticsDB ...")
 		t0=time.time()
 		from sklearn.cluster import OPTICS
@@ -1491,6 +1545,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		nseg=max(classes)+1
 		if (nseg>100):
 			print(f"{nseg} classes found, aborting")
+			get_application().restoreOverrideCursor()
 			return
 
 		for i in range(nseg):
@@ -1507,8 +1562,10 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		self.sets_changed()
 		print(f"done ({time.time()-t0}s)")
+		get_application().restoreOverrideCursor()
 
 	def do_optics(self):
+		get_application().setOverrideCursor(Qt.BusyCursor)
 		print("OpticsXi ...")
 		t0=time.time()
 		from sklearn.cluster import OPTICS
@@ -1523,6 +1580,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		nseg=max(classes)+1
 		if (nseg>100):
 			print(f"{nseg} classes found, aborting")
+			get_application().restoreOverrideCursor()
 			return
 
 		for i in range(nseg):
@@ -1539,8 +1597,10 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		self.sets_changed()
 		print(f"done ({time.time()-t0}s)")
+		get_application().restoreOverrideCursor()
 
 	def do_spectral(self):
+		get_application().setOverrideCursor(Qt.BusyCursor)
 		print("spectral ...")
 		t0=time.time()
 		from sklearn.cluster import SpectralClustering
@@ -1566,6 +1626,7 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		self.sets_changed()
 		print(f"done ({time.time()-t0}s)")
+		get_application().restoreOverrideCursor()
 
 	#def plot_mode_sel(self,but):
 		#"""Plot mode selected"""
@@ -2089,6 +2150,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		"""Called when the user selects a new GMM from the list. Should not be called directly by the user without updating wlistgmm"""
 
 #		print("sel gmm",line)
+		get_application().setOverrideCursor(Qt.BusyCursor)
 		if line<0 : 
 			#self.wedbox.setText("")
 			#self.wedapix.setText("")
@@ -2118,15 +2180,19 @@ class EMGMM(QtWidgets.QMainWindow):
 		except: print("Error: input_map.hdf missing")
 
 		self.set3dvis(1,0,0,0,0,0)
+		get_application().restoreOverrideCursor()
 			
 	def sel_run(self,line):
 		"""Called when the user selects a new run from the list. If called with -1, reloads the current run"""
 		
 #		print("sel_run",line)
+		get_application().setOverrideCursor(Qt.BusyCursor)
 		if line>=0: 
 			self.currunkey=str(self.wlistrun.item(line).text())
 			self.currun=self.jsparm.getdefault("run_"+self.currunkey,{"dim":4,"mask":f"{self.gmm}/mask.hdf","trainiter":10,"pas":"100","modelreg":0.5,"perturb":0.1,"time":"-"})
-		elif self.currunkey is None or len(self.currunkey)==0 or self.currun is None: return
+		elif self.currunkey is None or len(self.currunkey)==0 or self.currun is None:
+			get_application().restoreOverrideCursor()
+			return
 	
 		self.wedres.setText(f'{self.currun.get("targres",20)}')
 		rres=self.currun.get("ptclres",self.currun.get("targres",20))
@@ -2194,6 +2260,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			traceback.print_exc()
 			print(f"Run {self.gmm} -> {self.currunkey} results incomplete. No stored decoder found.",self)
 			self.set3dvis(1,0,0,0,0,1)
+			get_application().restoreOverrideCursor()
 			return
 
 		# list of all data subsets for this run, in the old system these were called "maps" but had incomplete info
@@ -2236,6 +2303,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		except: pass
 
 		self.set3dvis(1,0,0,1,1,0)
+		get_application().restoreOverrideCursor()
 
 	def augment_mid(self):
 		"""This will take the middle layer from the network result and create the "augmented" file with 2-D PCA in the first 2 columns
