@@ -2530,10 +2530,10 @@ class EMSegTab(QtWidgets.QWidget):
 		#Create color palette for table items and indices
 		l = []
 		for i in range(n):
-			h = ((120 + 139*i)%360)
+			h = ((130 + 139*i)%360)
 			#s = (255+(1 - i/(n*4))*256)%256
 			#v = (255+(1-i/(n*8))*256)%256
-			s = ((1-4*i/(n))*255)%256
+			s = ((0.8-3*i/(n))*255)%256
 			v = 255
 			l.append(QtGui.QColor.fromHsv(h,s,v))
 		return l
