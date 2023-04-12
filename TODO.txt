@@ -1,0 +1,12 @@
+- fix hdf cmake
+
+- drop small binaries ?
+
+- binary no compile, get from eman-dev
+
+- replace eman-deps with eman-dev ???
+
+
+
+- Remove individual deps from an eman-deps env
+conda is broken, nothing we can do
