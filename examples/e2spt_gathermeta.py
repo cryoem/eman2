@@ -5,10 +5,47 @@ import numpy as np
 import scipy.spatial.distance as scipydist
 from scipy.optimize import minimize
 
-def gather_metadata(ptcls):
+def gather_metadata(options):
 	info3d=[]
 	info2d=[]
-	data=load_lst_params(ptcls)
+	data=load_lst_params(options.ptcls)
+	
+	if options.exclude:
+		data2=[]
+		print("exclude particles around {}".format(options.exclude))
+		exl=load_lst_params(options.exclude)
+		e1=EMData(options.ptcls,0, True)
+		e2=EMData(options.exclude,0, True)
+		scale2=e2["apix_x"]/e1["apix_x"]
+		print(f"{len(exl)} particles, scale by {scale2:.2f}")
+	
+		fnames=np.unique([i["src"] for i in data])
+		fnames=[base_name(f) for f in fnames]
+		
+		for fname in fnames:
+			i3d1=[i for i in data if base_name(i["src"])==fname]
+			n0=len(i3d1)
+			pos1=[EMData(i["src"], i["idx"], True) for i in i3d1]
+			pos1=np.array([p["ptcl_source_coord"] for p in pos1])
+			
+			i3d2=[i for i in exl if base_name(i["src"])==fname]
+			pos2=[EMData(i["src"], i["idx"], True) for i in i3d2]
+			pos2=np.array([p["ptcl_source_coord"] for p in pos2])*scale2
+			dst=scipydist.cdist(pos1,pos2)
+			torm=np.argmin(dst, axis=0)
+			i3d1=[i3 for i,i3 in enumerate(i3d1) if i not in torm]
+			print("  excluding {} out of {} 3d particles. Average distnace {:.1f} px".format(n0-len(i3d1), n0, np.mean(np.min(dst, axis=0))))
+			data2.extend(i3d1)
+			
+		print("total {} out of {} particles excluded".format(len(data)-len(data2), len(data)))
+		data=data2
+		
+	if "xform.align3d" in data[0]:
+		print("Using 3d alignment from the input lst instead of image header.")
+		xflst=True
+	else:
+		xflst=False
+		
 	for ii,dt in enumerate(data):
 		img=EMData(dt["src"], dt["idx"], True)
 		imgsrc=img["class_ptcl_src"]
@@ -26,10 +63,15 @@ def gather_metadata(ptcls):
 				"idx3d":ii, "xform.projection":e["xform.projection"], "tilt_id":e["tilt_id"]}
 			idx2d.append(len(info2d))
 			info2d.append(dc)
-
+		
+		if xflst:
+			xfali=dt["xform.align3d"]
+		else:
+			xfali=img["xform.align3d"]
+		
 		dc={"src":dt["src"], "idx":dt["idx"],
 			"coord":img["ptcl_source_coord"], "idx2d":idx2d,
-			"class":img["orig_class"], "xform.align3d":img["xform.align3d"]
+			"class":img["orig_class"], "xform.align3d":xfali
 		}
 
 		info3d.append(dc)
@@ -55,7 +97,8 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--ptcls", type=str,help="input 3d particles from sets/", default=None)
 	parser.add_argument("--ali2d", type=str,help="existing aligned 2d particles from spt_xx, used to interpolate local subtilt translation", default=None)
-	parser.add_argument("--ali3d", type=str,help="use align3d from a list in place of the info from --ptcls header. require same particles as --ptcls", default=None)
+	parser.add_argument("--ali3d", action="store_true", default=False, help="use align3d from the list in place of the info from --ptcls header.")
+	parser.add_argument("--exclude", type=str,help="exclude particle around a given set of existing particles", default=None)
 	parser.add_argument("--path", type=str,help="new refinement path", default=None)
 	#parser.add_argument("--sym", type=str,help="", default="c1")
 	parser.add_argument("--userot", action="store_true", default=False, help="use rotational subtilt alignment as well. very slow and may not be as useful..")
@@ -68,16 +111,8 @@ def main():
 	print("Writing in {}".format(options.path))
 	
 	print("Gather metadata from {}".format(options.ptcls))
-	info2d1, info3d1 = gather_metadata(options.ptcls)
+	info2d1, info3d1 = gather_metadata(options)
 	print("Total {} 3d particles and {} 2d particles".format(len(info3d1), len(info2d1)))
-	if options.ali3d:
-		a3=load_lst_params(options.ali3d)
-		if len(a3)==len(info3d1):
-			for i,a in zip(info3d1, a3):
-				i["xform.align3d"]=a["xform.align3d"]
-		else:
-			print("error. --ali3d and --ptcls do not match")
-			exit()
 	
 	fali2d=options.ali2d
 	path0=os.path.dirname(fali2d)
@@ -166,20 +201,22 @@ def main():
 	print("Compute subtilt translation for new refinement")
 	fnames=np.unique([i["src"] for i in info3d1])
 	fnames=[base_name(f) for f in fnames]
+		
 	for fname in fnames:
 		# i2d1=[i for i in info2d1 if base_name(i["src"])==fname]
 		i3d1=[i for i in info3d1 if base_name(i["src"])==fname]
 		i3d0=[i for i in info3d0 if base_name(i["src"])==fname]
+		print(fname, len(i3d0), len(i3d1))
 		
 		a2d0=[[ali2d0[i] for i in i3["idx2d"]] for i3 in i3d0]
 		i2d1=[[info2d1[i] for i in i3["idx2d"]] for i3 in i3d1]
 		a2d1=[[ali2d1[i] for i in i3["idx2d"]] for i3 in i3d1]
-		print(fname, len(i3d0), len(i3d1))
 		
 		txfs=[d["xform.align3d"].inverse() for d in i3d1]
 		
 		pos0=np.array([i["coord"] for i in i3d0])
 		pos1=np.array([i["coord"] for i in i3d1])*scale
+		
 		tids=[a["tilt_id"] for a1 in i2d1 for a in a1]
 		for tid in sorted(np.unique(tids)):
 			ad0=[a for a2 in a2d0 for a in a2 if a["tilt_id"]==tid]

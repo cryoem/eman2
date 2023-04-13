@@ -74,7 +74,7 @@ def main():
 		tree=KDTree(p)
 		d=tree.query(p, k=2)[0][:,1]
 		dm=np.sort(d)[len(d)//3]
-		print(np.sort(d))
+		#print(np.sort(d))
 		print("{:<5} {:.4f}".format(n, dm))
 		numpy2pdb(p, "threed_seg.pdb")
 		if dm<res:
