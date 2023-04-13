@@ -16,7 +16,7 @@ keep_pkgs: False
 ignore_duplicate_files: True
 
 specs:
-  - eman2        2.99.49
+  - eman2        2.99.50
   - eman-deps    33.1
   - conda
   - mamba

@@ -9480,6 +9480,7 @@ def rec3d_make_maps(compute_fsc=True, regularized=True):
                         color=Blockdata["node_volume"][0],
                     )
                 if Blockdata["myid_on_node"] == 0:
+                    final_iter = Tracker["constants"]["best"]
                     if iproc == 0:
                         tvol0.write_image(
                             os.path.join(

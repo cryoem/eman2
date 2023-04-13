@@ -210,7 +210,6 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 		.staticmethod("get")
 		;
 	typedef void (EMAN::Vec4f::*vec4f_set_value_at_float)(int, const float&);
-	typedef void (EMAN::Vec4f::*vec4f_set_value_float)(const float&, const float&, const float&, const float&);
 	typedef float (EMAN::Vec4f::*vec4f_at_float)(int) const;	
 	class_< EMAN::Vec4f >("Vec4f", "typedef Vec4<float> Vec4f;", init<  >())
 		.def(init< float, float, float, float >())
@@ -221,7 +220,7 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 		.def("length", &EMAN::Vec4f::length)
 		.def("set_value", (void (EMAN::Vec4f::*)(const std::vector<float,std::allocator<float> >&) )&EMAN::Vec4f::set_value)
 		.def("set_value_at", vec4f_set_value_at_float(&EMAN::Vec4f::set_value_at))
-		.def("set_value", (void (EMAN::Vec4f::*)(float, float, float, float) )vec4f_set_value_float(&EMAN::Vec4f::set_value))
+		.def("set_value", (void (EMAN::Vec4f::*)(const float&, const float&, const float&, const float&) )&EMAN::Vec4f::set_value)
 	.def("at", vec4f_at_float(&EMAN::Vec4f::at))
 	.def("__getitem__",vec4f_at_float(&EMAN::Vec4f::at))
 		.def("__setitem__",vec4f_set_value_at_float(&EMAN::Vec4f::set_value_at))
@@ -231,7 +230,6 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 	typedef float (EMAN::Vec3f::*dot_float)(const EMAN::Vec3f&) const;
 	typedef EMAN::Vec3f (EMAN::Vec3f::*cross_float)(const EMAN::Vec3f&) const;
 	typedef void (EMAN::Vec3f::*set_value_at_float)(int, const float&);
-	typedef void (EMAN::Vec3f::*set_value_float)(const float&, const float&,const float&);
 	typedef float (EMAN::Vec3f::*at_float)(int) const;
 	
     class_< EMAN::Vec3f >("Vec3f", "typedef Vec3<float> Vec3f;", init<  >())
@@ -247,7 +245,7 @@ BOOST_PYTHON_MODULE(libpyTransform2)
         .def("as_list", &EMAN::Vec3f::as_list)
         .def("set_value", (void (EMAN::Vec3f::*)(const std::vector<float,std::allocator<float> >&) )&EMAN::Vec3f::set_value)
 		.def("set_value_at", set_value_at_float(&EMAN::Vec3f::set_value_at))
-		.def("set_value", (void (EMAN::Vec3f::*)(float, float, float) )set_value_float(&EMAN::Vec3f::set_value))
+		.def("set_value", (void (EMAN::Vec3f::*)(const float&, const float&, const float&) )&EMAN::Vec3f::set_value)
         .def("at", at_float(&EMAN::Vec3f::at))
         .def("__getitem__",at_float(&EMAN::Vec3f::at))
 		.def("__setitem__",set_value_at_float(&EMAN::Vec3f::set_value_at))
@@ -285,7 +283,6 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 	typedef int (EMAN::Vec3i::*dot_int)(const EMAN::Vec3i&) const;
 	typedef EMAN::Vec3i (EMAN::Vec3i::*cross_int)(const EMAN::Vec3i&) const;
 	typedef void (EMAN::Vec3i::*set_value_at_int)(int, const int&);
-	typedef void (EMAN::Vec3i::*set_value_int)(const int&, const int&,const int&);
 	typedef int (EMAN::Vec3i::*at_int)(int) const;
     class_< EMAN::Vec3i >("Vec3i", "typedef Vec3<int> Vec3i;", init<  >())
         .def(init< int, int,  int  >())
@@ -298,7 +295,7 @@ BOOST_PYTHON_MODULE(libpyTransform2)
         .def("as_list", &EMAN::Vec3i::as_list)
         .def("set_value", (void (EMAN::Vec3i::*)(const std::vector<int,std::allocator<int> >&) )&EMAN::Vec3i::set_value)
 		.def("set_value_at",set_value_at_int( &EMAN::Vec3i::set_value_at))
-        .def("set_value", (void (EMAN::Vec3i::*)(int, int, int) ) set_value_int(&EMAN::Vec3i::set_value))
+        .def("set_value", (void (EMAN::Vec3i::*)(const int&, const int&, const int&) ) &EMAN::Vec3i::set_value)
 		.def("at", at_int(&EMAN::Vec3i::at))
 		.def("__getitem__",at_int(&EMAN::Vec3i::at))
 		.def("__setitem__",set_value_at_int(&EMAN::Vec3i::set_value_at))
@@ -332,7 +329,6 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 
 	typedef float (EMAN::Vec2f::*vec2f_dot_float)(const EMAN::Vec2f&) const;
 	typedef void (EMAN::Vec2f::*vec2f_set_value_at_float)(int, const float&);
-	typedef void (EMAN::Vec2f::*vec2f_set_value_float)(const float&, const float&);
 	typedef float (EMAN::Vec2f::*vec2f_at_float)(int) const;
 	class_< EMAN::Vec2f >("Vec2f", "typedef Vec2<float> Vec2f;", init<  >())
 		.def(init< float, float >())
@@ -345,7 +341,7 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 		.def("as_list", &EMAN::Vec2f::as_list)
 		.def("set_value", (void (EMAN::Vec2f::*)(const std::vector<float,std::allocator<float> >&) )&EMAN::Vec2f::set_value)
 		.def("set_value_at", vec2f_set_value_at_float(&EMAN::Vec2f::set_value_at))
-		.def("set_value", (void (EMAN::Vec2f::*)(float, float) )vec2f_set_value_float(&EMAN::Vec2f::set_value))
+		.def("set_value", (void (EMAN::Vec2f::*)(const float&, const float&) )&EMAN::Vec2f::set_value)
 		.def("at", vec2f_at_float(&EMAN::Vec2f::at))
 		.def("__getitem__",vec2f_at_float(&EMAN::Vec2f::at))
 		.def("__setitem__",vec2f_set_value_at_float(&EMAN::Vec2f::set_value_at))

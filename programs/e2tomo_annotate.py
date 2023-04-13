@@ -15,8 +15,7 @@ from EMAN2_utils import interp_points
 from eman2_gui.emapplication import get_application, EMApp
 from eman2_gui.emimage import EMImageWidget
 from eman2_gui.emimage2d import EMImage2DWidget
-from eman2_gui.emannotate2d import EMAnnotate2DWidget
-#from emannotate2d_2 import EMAnnotate2DWidget, EMSegTab
+from eman2_gui.emannotate2d import EMAnnotate2DWidget,EMSegTab
 from eman2_gui.emimagemx import EMImageMXWidget
 from eman2_gui.emscene3d import EMScene3D
 from eman2_gui.emdataitem3d import EMDataItem3D, EMIsosurface
@@ -25,11 +24,7 @@ from eman2_gui.emshape import EMShape
 from eman2_gui.valslider import ValSlider,ValBox,StringBox,EMSpinWidget
 
 import scipy.spatial.distance as scipydist
-from skimage.draw import line, polygon, line_aa
-from skimage import morphology
-from skimage.measure import regionprops
-from skimage.morphology.footprints import disk
-
+import scipy.ndimage as ndi
 import tensorflow as tf
 from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D,Flatten,Dense,Dropout,BatchNormalization, concatenate, Conv2DTranspose
 from tensorflow.keras.models import Model
@@ -41,7 +36,9 @@ from tensorflow.keras.callbacks import History
 import numpy as np
 from eman2_gui.valslider import ValSlider
 import weakref
+
 from matplotlib.patches import Circle
+import matplotlib.path as mplPath
 import matplotlib.pyplot as plt
 
 def main():
@@ -84,7 +81,8 @@ def main():
 
 
 
-	awin.resize(1100,720)
+	awin.resize(1200,720)
+	print("Program saved on Apr 06")
 	awin.show()
 
 
@@ -98,9 +96,9 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 	def __init__(self, application,options,data=None,annotate=None):
 		super().__init__()
 		self.app = weakref.ref(application)
-		self.setMinimumSize(1100, 720)
+		self.setMinimumSize(1200, 720)
 		self.options=options
-		self.setWindowTitle("ImageViewer")
+		self.setWindowTitle("Image Viewer")
 		self.tom_folder = options.folder
 		self.seg_folder = options.seg_folder
 
@@ -137,6 +135,8 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.seg_path = os.path.join(self.seg_folder,self.tomogram_list.item(0).text()[0:-4]+"_seg.hdf")
 		if not os.path.isfile(self.seg_path):
 			seg_out = EMData(self.nx,self.ny,self.nz)
+			#self.write_header(seg_out)
+
 			seg_out.write_image(self.seg_path)
 			del seg_out
 		else:
@@ -192,7 +192,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 
 		self.img_view = EMAnnotate2DWidget(sizehint=(680,680))
-		self.img_view.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
+		#self.img_view.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
 		self.img_view.setMinimumSize(680, 680)
 
 		#self.img_view.show()
@@ -401,10 +401,11 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.spec_tab = QtWidgets.QWidget()
 		self.binary_tab = QtWidgets.QWidget()
 		self.assisted_tab.addTab(self.nn_tab,"NeuralNetwork")
+		self.assisted_tab.addTab(self.binary_tab,"AutoDetect")
 		self.assisted_tab.addTab(self.morp_tab,"Morphological")
-		self.assisted_tab.addTab(self.binary_tab,"Binary")
 		self.assisted_tab.addTab(self.spec_tab,"Specific")
 
+		self.assisted_tab.currentChanged[int].connect(self.assisted_tab_changed)
 
 		#Neural Net tab setup
 		self.bg_button = QtWidgets.QPushButton("Background")
@@ -491,8 +492,8 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.build_ts_button.clicked[bool].connect(self.build_trainset)
 
 		#Morp_tab setup
-		self.morp_disk_sz_sp = QtWidgets.QSpinBox()
-		self.morp_disk_sz_sp.setValue(5)
+		self.morp_n_iters_sp = QtWidgets.QSpinBox()
+		self.morp_n_iters_sp.setValue(3)
 		self.morp_close_bt = QtWidgets.QPushButton("Closing")
 		self.morp_open_bt = QtWidgets.QPushButton("Opening")
 		self.morp_erode_bt = QtWidgets.QPushButton("Erosion")
@@ -500,8 +501,8 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.morp_label_bt = QtWidgets.QPushButton("Numbering")
 		morp_gbl=QtWidgets.QGridLayout(self.morp_tab)
 		#morp_gbl.setColumnStretch(70,70)
-		morp_gbl.addWidget(QtWidgets.QLabel("Disk Size"), 0,0,1,1)
-		morp_gbl.addWidget(self.morp_disk_sz_sp, 0,1,1,1)
+		morp_gbl.addWidget(QtWidgets.QLabel("No iters"), 0,0,1,1)
+		morp_gbl.addWidget(self.morp_n_iters_sp, 0,1,1,1)
 		morp_gbl.addWidget(self.morp_close_bt, 1,0,1,1)
 		morp_gbl.addWidget(self.morp_open_bt, 1,1,1,1)
 		morp_gbl.addWidget(self.morp_erode_bt, 2,0,1,1)
@@ -521,23 +522,36 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.bin_invert_cb = QtWidgets.QCheckBox("Dark Feature")
 		self.bin_invert_cb.setChecked(True)
 		#valslider set to 0 will paint all the annotate file
-		self.bin_low_pass_vs = ValSlider(value=0.2,rng=(0.001,1),rounding=2,label= "Cut-off Abs")
+		self.bin_detect_bt = QtWidgets.QPushButton("Detect Feature")
+		self.bin_fill_bt = QtWidgets.QPushButton("Fill")
+		self.bin_trim_bt = QtWidgets.QPushButton("Trim")
+		self.bin_low_pass_vs = ValSlider(value=1,rng=(0.001,1),rounding=2,label= "Cut-off Abs")
 		self.bin_threshold_vs = ValSlider(value=0.001,rng=(0.001,1),rounding=2,label="Threshold  ")
+		# self.closing_thresh =32
+		# self.opening_thresh =32
+		self.closing_n_iters =1
+		self.opening_n_iters =1
 		bin_gbl.addWidget(self.bin_invert_cb,0,0,1,1)
+		bin_gbl.addWidget(self.bin_detect_bt,0,1,1,1)
 		bin_gbl.addWidget(self.bin_low_pass_vs,1,0,1,2)
 		bin_gbl.addWidget(self.bin_threshold_vs,2,0,1,2)
+		bin_gbl.addWidget(self.bin_fill_bt,3,0,1,1)
+		bin_gbl.addWidget(self.bin_trim_bt,3,1,1,1)
+
 		self.binary_tab.setLayout(bin_gbl)
 
 
+		self.bin_detect_bt.clicked[bool].connect(self.bin_detect_bt_click)
+		self.bin_fill_bt.clicked[bool].connect(self.do_area_closing)
+		self.bin_trim_bt.clicked[bool].connect(self.do_area_opening)
 		self.bin_low_pass_vs.valueChanged.connect(self.update_mask_from_vs)
 		self.bin_threshold_vs.valueChanged.connect(self.update_mask_from_vs)
 
 
 
+
 		#Cellular Segmentation
-		#cell_label = QtWidgets.QLabel("Cellular Features")
 		cell_vbl = QtWidgets.QVBoxLayout(self.spec_tab)
-		#cell_vbl.addWidget(cell_label)
 		cell_button_l = QtWidgets.QVBoxLayout()
 
 
@@ -651,6 +665,8 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		return self.img_view.get_full_data()
 	def get_annotation(self):
 		return self.img_view.get_full_annotation()
+	def get_inspector(self):
+		return self.img_view_inspector
 
 	def zchange(self,value):
 		print(value)
@@ -682,61 +698,136 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		#print(ret)
 		self.img_view.set_disp_proc(ret)
 
+	def assisted_tab_changed(self):
+		self.reset_morp_params()
 	#Do morphological operations
 	def do_morp_close(self):
-		disk_sz = int(self.morp_disk_sz_sp.value())
-		if self.zthick == 0:
-			temp = to_numpy(self.get_annotation())
-			#self.annotate = from_numpy(morphology.closing(temp,disk(disk_sz)))
-			self.annotate.process_inplace("morph.close.binary",{"iters":1,"radius":disk_sz,"thresh":0.5})
-		else:
-			temp = to_numpy(self.get_annotation())
-			for s in range(temp.shape[0]):
-				temp[s] = morphology.closing(temp[s],disk(disk_sz))
-				self.annotate = from_numpy(temp)
+
+		n_iters = int(self.morp_n_iters_sp.value())
+		# if self.zthick == 0:
+		# 	#temp = to_numpy(self.get_annotation())
+		# 	#self.annotate = from_numpy(morphology.closing(temp,disk(disk_sz)))
+		mask = self.get_annotation()
+		# 	#self.annotate = mask.process("morph.close.binary",{"iters":1,"radius":disk_sz,"thresh":0.5})
+		# 	self.annotate = from_numpy(ndi.binary_closing(to_numpy(mask)))
+		# else:
+		# 	temp = to_numpy(self.get_annotation())
+		# 	for s in range(temp.shape[0]):
+		# 		temp[s] = morphology.closing(temp[s],disk(disk_sz))
+		# 	self.annotate = from_numpy(temp)
+		self.annotate = from_numpy(ndi.binary_closing(to_numpy(mask),iterations=n_iters))
 		self.img_view.set_data(self.data, self.annotate)
+		del mask
 
 	def do_morp_open(self):
-		disk_sz = int(self.morp_disk_sz_sp.value())
-		if self.zthick == 0:
-			temp = to_numpy(self.get_annotation())
-			self.annotate = from_numpy(morphology.opening(temp,disk(disk_sz)))
-		else:
-			temp = to_numpy(self.get_annotation())
-			for s in range(temp.shape[0]):
-				temp[s] = morphology.opening(temp[s],disk(disk_sz))
-				self.annotate = from_numpy(temp)
+		n_iters = int(self.morp_n_iters_sp.value())
+		mask = self.get_annotation()
+		# 	#self.annotate = mask.process("morph.close.binary",{"iters":1,"radius":disk_sz,"thresh":0.5})
+		# 	self.annotate = from_numpy(ndi.binary_closing(to_numpy(mask)))
+		# else:
+		# 	temp = to_numpy(self.get_annotation())
+		# 	for s in range(temp.shape[0]):
+		# 		temp[s] = morphology.closing(temp[s],disk(disk_sz))
+		# 	self.annotate = from_numpy(temp)
+		self.annotate = from_numpy(ndi.binary_opening(to_numpy(mask),iterations=n_iters))
 		self.img_view.set_data(self.data, self.annotate)
+		del mask
 
 	def do_morp_dilate(self):
-		disk_sz = int(self.morp_disk_sz_sp.value())
-		if self.zthick == 0:
-			temp = to_numpy(self.get_annotation())
-			self.annotate = from_numpy(morphology.dilation(temp,disk(disk_sz)))
-		else:
-			temp = to_numpy(self.get_annotation())
-			for s in range(temp.shape[0]):
-				temp[s] = morphology.dilation(temp[s],disk(disk_sz))
-				self.annotate = from_numpy(temp)
+		# disk_sz = int(self.morp_n_iters_sp.value())
+		# if self.zthick == 0:
+		# 	temp = to_numpy(self.get_annotation())
+		# 	self.annotate = from_numpy(morphology.dilation(temp,disk(disk_sz)))
+		# else:
+		# 	temp = to_numpy(self.get_annotation())
+		# 	for s in range(temp.shape[0]):
+		# 		temp[s] = morphology.dilation(temp[s],disk(disk_sz))
+		# 	self.annotate = from_numpy(temp)
+		# self.img_view.set_data(self.data, self.annotate)
+
+		n_iters = int(self.morp_n_iters_sp.value())
+		mask = self.get_annotation()
+		self.annotate = from_numpy(ndi.binary_dilation(to_numpy(mask),iterations=n_iters))
 		self.img_view.set_data(self.data, self.annotate)
+		del mask
+
+
 
 	def do_morp_erode(self):
-		disk_sz = int(self.morp_disk_sz_sp.value())
-		if self.zthick == 0:
-			temp = to_numpy(self.get_annotation())
-			self.annotate = from_numpy(morphology.erosion(temp,disk(disk_sz)))
-		else:
-			temp = to_numpy(self.get_annotation())
-			for s in range(temp.shape[0]):
-				temp[s] = morphology.erosion(temp[s],disk(disk_sz))
-				self.annotate = from_numpy(temp)
+		# disk_sz = int(self.morp_n_iters_sp.value())
+		# if self.zthick == 0:
+		# 	temp = to_numpy(self.get_annotation())
+		# 	self.annotate = from_numpy(morphology.erosion(temp,disk(disk_sz)))
+		# else:
+		# 	temp = to_numpy(self.get_annotation())
+		# 	for s in range(temp.shape[0]):
+		# 		temp[s] = morphology.erosion(temp[s],disk(disk_sz))
+		# 	self.annotate = from_numpy(temp)
+		# self.img_view.set_data(self.data, self.annotate)
+		n_iters = int(self.morp_n_iters_sp.value())
+		mask = self.get_annotation()
+		self.annotate = from_numpy(ndi.binary_erosion(to_numpy(mask),iterations=n_iters))
 		self.img_view.set_data(self.data, self.annotate)
+		del mask
 
 	def do_morp_label(self):
-		thres = 0.3
-		temp = to_numpy(self.get_annotation())
-		self.annotate = from_numpy(morphology.label(temp>thres,connectivity=1,return_num=False))
+		# thresh = 0.3
+		# temp = to_numpy(self.get_annotation())
+		# self.annotate = from_numpy(morphology.label(temp>thresh,connectivity=1,return_num=False))
+		# self.img_view.set_data(self.data, self.annotate)
+		n_iters = int(self.morp_n_iters_sp.value())
+
+		mask, num = ndi.label(to_numpy(self.get_annotation()))
+		self.annotate = from_numpy(mask)
+		print("number of object detected:", num)
 		self.img_view.set_data(self.data, self.annotate)
+		del mask
+
+
+	def do_area_opening(self):
+		# self.do_morp_open()
+		# if self.zthick == 0:
+		# 	temp = to_numpy(self.get_annotation())
+		# 	self.annotate = from_numpy(morphology.area_opening(temp, area_threshold=self.opening_thresh, connectivity=1))
+		# else:
+		# 	temp = to_numpy(self.get_annotation())
+		# 	for s in range(temp.shape[0]):
+		# 		temp[s] = morphology.area_opening(temp[s], area_threshold=self.opening_thresh, connectivity=1)
+		# 	self.annotate = from_numpy(temp)
+		# self.img_view.set_data(self.data, self.annotate)
+		# self.opening_thresh = self.opening_thresh*1.5
+		self.morp_n_iters_sp.setValue(self.opening_n_iters)
+		self.do_morp_open()
+
+		self.opening_n_iters +=1
+
+	def do_area_closing(self):
+
+		self.morp_n_iters_sp.setValue(self.closing_n_iters)
+		self.do_morp_close()
+		# if self.zthick == 0:
+		# 	temp = to_numpy(self.get_annotation())
+		# 	self.annotate = from_numpy(morphology.area_closing(temp,area_threshold=self.closing_thresh, connectivity=1))
+		# else:
+		# 	temp = to_numpy(self.get_annotation())
+		# 	for s in range(temp.shape[0]):
+		# 		temp[s] = morphology.area_closing(temp[s],area_threshold=self.closing_thresh, connectivity=1)
+		# 	self.annotate = from_numpy(temp)
+		#self.img_view.set_data(self.data, self.annotate)
+		#self.closing_thresh = self.closing_thresh*1.5
+		self.closing_n_iters +=1
+
+
+	def bin_detect_bt_click(self):
+		if self.bin_low_pass_vs.value == 0.1:
+			self.bin_low_pass_vs.setValue(0.101)
+			self.bin_threshold_vs.setValue(0.601)
+		self.bin_low_pass_vs.setValue(0.1)
+		self.bin_threshold_vs.setValue(0.6)
+		self.reset_morp_params()
+
+
+
 
 	def update_mask_from_vs(self):
 		if self.bin_invert_cb.isChecked():
@@ -749,9 +840,18 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.mask = self.get_annotation()
 		self.lp_masked = mult*self.mask*self.get_data().process("filter.lowpass.gauss",{"cutoff_abs":lp})
 		self.thres_mask = self.lp_masked.process("threshold.binary",{"value":thres})
-		self.img_view.set_data(self.get_data(),self.thres_mask)
+		self.img_view.set_data(self.get_data(),self.thres_mask*self.mask)
 		return
 
+	def reset_morp_params(self,reset_vs=False):
+		# self.closing_thresh =32
+		# self.opening_thresh =32
+		self.closing_n_iters =1
+		self.opening_n_iters =1
+		self.morp_n_iters_sp.setValue(1)
+		if reset_vs:
+			self.bin_low_pass_vs.setValue(1)
+			self.bin_threshold_vs.setValue(0.001)
 
 
 	def tomolist_current_change(self, int):
@@ -767,9 +867,14 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.ny=hdr["ny"]
 		self.nz=hdr["nz"]
 
+		row_count = self.get_inspector().seg_tab.table_set.rowCount()
+		for i in range(row_count):
+			self.get_inspector().seg_tab.table_set.removeRow(row_count - i - 1)
+
 		seg_path = os.path.join(self.seg_folder,self.tomogram_list.item(int).text()[0:-4]+"_seg.hdf")
 		if not os.path.isfile(seg_path):
 			seg_out = EMData(self.nx,self.ny,self.nz)
+			#self.write_header(seg_out)
 			seg_out.write_image(seg_path)
 			del seg_out
 		else:
@@ -790,14 +895,17 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 		if self.get_annotation():
 			print("Print annotation to file", self.seg_path)
+			#self.write_header(self.get_annotation())
+			self.write_out(self.get_annotation(), self.seg_path, self.cur_region)
 
-			self.get_annotation().write_image(self.seg_path, 0, IMAGE_HDF, False, self.cur_region)
+			#self.get_annotation().write_image(self.seg_path, 0, IMAGE_HDF, False, self.cur_region)
 			#self.img_view.inspector.seg_tab.save_all(outfile=self.seg_path, region=self.cur_region)
 		else:
 			print("Annotation is none.")
 			pass
 		self.set_imgview_data(round(self.data_xy[0]),round(self.data_xy[1]),self.img_view_region_size)
 		self.seg_path = seg_path
+		self.reset_morp_params(reset_vs=True)
 
 
 		# info=js_open_dict("info/annotate_"+self.tomogram_list.item(int).text()+".json")
@@ -809,6 +917,22 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		#self.add_boxes()
 
 	#need to write region out before setting new data
+
+	def write_out(self,file_out, out_name, region):
+		row_count = self.get_inspector().seg_tab.table_set.rowCount()
+		print("Row Count",int(row_count))
+		if row_count == 0:
+			print("Table set is empty, no classes was saved in metadata")
+		else:
+			print("Writing classes to metadata")
+			nums = [int(self.get_inspector().seg_tab.table_set.item(row,0).text()) for row in range(row_count)]
+			names = [str(self.get_inspector().seg_tab.table_set.item(row,1).text()) for row in range(row_count)]
+			serialize_name = json.dumps(names, default=lambda a: "[%s,%s]" % (str(type(a)), a.pk))
+			file_out["ann_name"] = serialize_name
+			file_out["ann_num"] = nums
+		file_out.write_image(out_name, 0, IMAGE_HDF, False, region)
+
+
 	def set_imgview_data(self,x,y,sz):
 		iz = self.nz//2
 		print("Nz ,iz",self.nz,iz)
@@ -830,21 +954,28 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 				#self.data = EMData(self.data_file, 0, False, Region(x-old_div(sz,2),y-old_div(sz,2),iz-self.zthick, sz, sz,self.zthick*2+1))
 		self.data = EMData(self.data_file, 0, False, self.cur_region)
 		seg_path = os.path.join(self.seg_folder,self.tomogram_list.currentItem().text()[0:-4]+"_seg.hdf")
+
+
 		self.annotate = EMData(seg_path, 0, False, self.cur_region)
 		self.img_view.set_data(self.data, self.annotate)
 		self.img_view.set_scale(1)
 		self.img_view.set_origin(0,0)
+		#print("Imgview, inspector, segtab",self.img_view,self.img_view.get_inspector(),self.img_view.inspector.seg_tab)
+		self.img_view.get_inspector().seg_tab.read_header(seg_path)
+		self.img_view.get_inspector().seg_tab.update_sets()
+
 
 
 
 	def zt_spinbox_changed(self,event):
 		self.data_xy = self.thumbnail.get_xy()
 		try:
-			self.get_annotation().write_image(self.seg_path, 0, IMAGE_HDF, False, self.cur_region)
+			self.write_out(self.get_annotation(), self.seg_path, self.cur_region)
+			#self.get_annotation().write_image(self.seg_path, 0, IMAGE_HDF, False, self.cur_region)
 		except:#when annotation files is None
 			pass
 		self.set_imgview_data(self.data_xy[0],self.data_xy[1],self.img_view_region_size)
-
+		self.reset_morp_params(reset_vs=True)
 
 
 	def test_drawing_function(self):
@@ -855,6 +986,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.x = self.img_view.get_data().get_xsize()
 		self.y = self.img_view.get_data().get_ysize()
 		mask = np.zeros((self.x,self.y))
+
 		def trapez(y,y0,w):
 			return np.clip(np.minimum(y+1+w/2-y0, -y+1+w/2+y0),0,1)
 		def weighted_line(r0, c0, r1, c1, w, rmin=0, rmax=np.inf):
@@ -889,6 +1021,25 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			# to avoid parts outside of the picture
 			mask = np.logical_and.reduce((yy >= rmin, yy < rmax, vals > 0))
 			return (yy[mask].astype(int), xx[mask].astype(int), vals[mask])
+		def is_point_in_polygon(point,vertices):
+			points = np.array([[x[0],x[1]] for x in vertices])
+			poly_path = mplPath.Path(points)
+			return poly_path.contains_point(point)
+		def polygon(points):
+			min_r = int(min([x[0] for x in points]))
+			max_r = int(max([x[0] for x in points]))
+			min_c = int(min([x[1] for x in points]))
+			max_c = int(max([x[1] for x in points]))
+			rr = []
+			cc = []
+
+			for r in range(min_r,max_r+1):
+				for c in range(min_c,max_c+1):
+					if is_point_in_polygon([r,c],points):
+						rr.append(r)
+						cc.append(c)
+			return np.array(rr, dtype=np.intp), np.array(cc, dtype=np.intp)
+
 		if self.fill_type == "curve":
 			if len(self.curve.points) < 2:
 				print("Need at least 2 points to draw a line")
@@ -906,9 +1057,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			if len(self.contour.points) < 3:
 				print("Need at least 3 points to draw a polygon")
 				return
-			r = np.array([int(item[0]) for item in self.contour.points])
-			c = np.array([int(item[1]) for item in self.contour.points])
-			rr, cc = polygon(r,c)
+			rr, cc = polygon(self.contour.points)
 			mask[rr,cc]=int(self.ct_ann_class.text())
 		elif self.fill_type == "contour_nofill":
 			if len(self.contour.points) < 3:
@@ -1017,6 +1166,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		#self.update_label()
 		self.img_view.force_display_update(set_clip=0)
 		self.img_view.updateGL()
+
 
 	def interp_bt_clicked(self):
 
@@ -1258,23 +1408,40 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 				#r=self.data.get_clip(Region(x-bs//2,y-bs//2,z-bz//2,bs,bs,bz))
 		self.clear_shapes()
 
-	def extract_region(self, thres=0.5):
+	def extract_region(self, iter=3,thresh=0.5):
 		#enumerate label_stack by objects then find bounding box for each object
 		reg_list = []
-		datas = to_numpy(self.get_data())
+		#datas = to_numpy(self.get_data())
 		labels = to_numpy(self.get_annotation())
 
-		for i in range(len(datas)):
-			open_lab = morphology.opening(labels[i],disk(3))
-			labeled= morphology.label(open_lab>thres,connectivity=2,return_num=False)
-			temp_im = datas[i]
-			regions = regionprops(labeled)
-			for region in regions:
-				#minr, minc, maxr, maxc = region.bbox
-				y,x = region.centroid
-				reg_list.append([x,y,i])
+		if len(labels.shape) == 2:#single 2D image
+			#datas = np.expand_dims(datas, axis=0)
+			labels = np.expand_dims(labels, axis=0)
+		#print("Data shape, label shape", datas.shape,labels.shape)
+
+		for i in range(len(labels)):
+			open_lab=ndi.binary_opening(labels[i],iterations=iter)
+			labeled,num = ndi.label(open_lab>thresh)
+			cent_mass = ndi.center_of_mass(open_lab,labeled,[i+1 for i in range(num)])
+			# open_lab = morphology.opening(labels[i],disk(3))
+			# labeled= morphology.label(open_lab>thres,connectivity=2,return_num=False)
+			# temp_im = datas[i]
+			# regions = regionprops(labeled)
+			# for region in regions:
+			# 	#minr, minc, maxr, maxc = region.bbox
+			# 	y,x = region.centroid
+			# reg_list.append([x,y,i for (x,y) in cent_mass])
+			print("mass at slice", i,cent_mass)
+			for pair in cent_mass:
+				reg_list.append([pair[1],pair[0],i])
+
 		print(reg_list)
 		return reg_list
+
+
+
+
+
 
 	def create_organelles_training_set(self):
 		#extract regions of labeled data
@@ -1486,7 +1653,10 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		E2saveappwin("e2annotate","main",self)
 		E2saveappwin("e2annotate","controlpanel",self.control_panel)
 		E2saveappwin("e2annotate","tomograms",self.tomo_list_panel)
-		self.get_annotation().write_image(self.seg_path, 0, IMAGE_HDF, False, self.cur_region)
+		#self.write_header(self.get_annotation())
+		self.write_out(self.get_annotation(), self.seg_path, self.cur_region)
+
+		#self.get_annotation().write_image(self.seg_path, 0, IMAGE_HDF, False, self.cur_region)
 		self.close()
 		self.control_panel.close()
 		self.tomo_list_panel.close()
@@ -1612,7 +1782,10 @@ class Thumbnail(EMImage2DWidget):
 			if self.app_target.get_annotation():
 				print("Print annotation to file", self.app_target.seg_path)
 				try:
-					self.app_target.get_annotation().write_image(self.app_target.seg_path, 0, IMAGE_HDF, False, self.app_target.cur_region)
+					#self.write_header(self.app_target.get_annotation())
+					self.app_target.write_out(self.app_target.get_annotation(), self.app_target.seg_path, self.app_target.cur_region)
+
+					#self.app_target.get_annotation().write_image(self.app_target.seg_path, 0, IMAGE_HDF, False, self.app_target.cur_region)
 				#self.img_view.inspector.seg_tab.save_all(outfile=self.seg_path, region=self.cur_region)
 				except:
 					print("Cannot write to region out of bound. Continue")
@@ -1984,7 +2157,6 @@ class Contour(EMShape):
 			glVertexPointerf(pts)
 			glDrawArrays(GL_POINTS, 0, len(pts))
 
-
 class UNet():
 	def __init__(self, infile=None, data=None, label=None, batchsz=50 ):
 
@@ -2171,17 +2343,40 @@ class UNet():
 		model.load_weights(weights_in)
 		return model
 
+	# def apply_unet(self,tomogram):
+	# 	m=tomogram.numpy()
+	# 	print(m.shape)
+	# 	model = self.load_model('./neural_nets/weights_temp.h5')
+	# 	p=model.predict(m[None, :, :, None]/3.,verbose=1)
+	# 	cout=from_numpy(p[0,:,:,0])
+	# 	return cout
+
 	def apply_unet(self,weights_in,tomogram=None,outfile=None):
 		if tomogram==None:
 			print("Need to specify tomogram to apply U-net")
 			return
 
+		# if weights_in==None:
+		# 	print("Need to provide weights of U-net")
+		# 	return
 		if not os.path.exists("./neural_nets/weights_temp.h5"):
 			print("There's no neural networks trained for this tomogram. Train a neural net first")
 			return
 		else:
 			pass
 		self.model = self.load_model('./neural_nets/weights_temp.h5')
+		# nframe=EMUtil.get_image_count(tomogram)
+		# is3d=False
+		# ### deal with 3D volume or image stack
+		# e=EMData(tomogram, 0, True)
+		#
+		# apix=e["apix_x"]
+		# if nframe==1:
+		# 	nframe=e["nz"]
+		# 	if nframe>1:
+		# 	#### input data is 3D volume
+		# 		is3d=True
+
 		is3d=True
 		enx,eny=tomogram["nx"], tomogram["ny"]
 		nframe=tomogram["nz"]

@@ -243,7 +243,7 @@ class EMPlot2DWidget(EMGLWidget):
 
 		linetype and symtype are integers. -1 will disable either. Default is autoselect."""
 
-		#print "set_data ",key
+#		print("set_data ",key,linetype,symtype,contourlevels)
 		#traceback.print_stack()
 
 		self.del_shapes()
@@ -301,6 +301,7 @@ class EMPlot2DWidget(EMGLWidget):
 
 		if oldkey:
 			pp=self.pparm[key]
+#			print("oldkey ",pp)
 			if color<0 : color=pp[0]
 			if linetype==-2: doline=pp[1]
 			elif linetype==-1: doline=0
@@ -317,20 +318,24 @@ class EMPlot2DWidget(EMGLWidget):
 			if contourlevels<=0: contourlevels=pp[9]
 		else:
 			if symtype==-2 and linetype==-2:
-				if len(data)<4 and (diff(self.data[key][0])>=0).all() : doline,linetype=1,0
-				else : dosym,symtype=1,0
+				if len(data)<4 and (diff(self.data[key][self.axes[key]])>=0).all() : doline,linetype,dosym,symtype,docontour=1,0,0,0,0
+				elif len(self.data[key][0])>10000 :
+					doline,linetype,dosym,symtype,docontour=0,0,0,0,1
+					contoursteps=min(max(int(sqrt(len(self.data[key][0])//100)),15),100)
+				else : doline,linetype,dosym,symtype,docontour=0,0,1,0,0
+			else:
+				if linetype>=0 : doline=1
+				else : doline,linetype=0,0
+				if symtype>=0 : dosym=1
+				else : dosym,symtype=0,0
 			if color<0 : color=len(self.data)%len(colortypes)			# Automatic color setting
 			if color >len(colortypes): color = 0 # there are only a certain number of colors
-			if linetype>=0 : doline=1
-			else : doline,linetype=0,0
-			if symtype>=0 : dosym=1
-			else : dosym,symtype=0,0
 			if contoursteps<=5 :
 				docontour=False
-				contoursteps=50
-			else: docontour=True
-			if contourlevels<=0: contourlevels=10
+				contoursteps=min(max(int(sqrt(len(self.data[key][0])//100)),15),100)
+			if contourlevels<=0: contourlevels=20
 		self.pparm[key]=(color,doline,linetype,linewidth,dosym,symtype,symsize,docontour,contoursteps,contourlevels)
+#		print("set ",self.pparm[key])
 
 		if comments!=None:
 			self.comments[key]=comments

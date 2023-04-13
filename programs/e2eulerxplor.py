@@ -390,7 +390,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 			error("error, no data for %s %s, returning" %(refine_dir,cls))
 #			print "error, no data for",au,cls,"returning"
 			self.events_handlers["inspect"].reset()
-			get_application().setOverrideCursor(Qt.ArrowCursor)
+			get_application().restoreOverrideCursor()
 			return
 		
 		if not self.readfrom:
@@ -399,7 +399,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 			except:
 				error("No data in "+refine_dir )
 				self.events_handlers["inspect"].reset()
-				get_application().setOverrideCursor(Qt.ArrowCursor)
+				get_application().restoreOverrideCursor()
 				return
 
 		self.average_file = cls
@@ -435,7 +435,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 #		else:self.events_handlers["inspect"].reset()
 		self.previous_len = len(eulers)
 		if not self.init_lock:self.updateGL()
-		get_application().setOverrideCursor(Qt.ArrowCursor)
+		get_application().restoreOverrideCursor()
 
 	def __get_file_headers(self,filename):
 		headers = []
@@ -636,7 +636,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 								break
 					if index == -1:
 						print("couldn't find")
-						get_application().setOverrideCursor(Qt.ArrowCursor)
+						get_application().restoreOverrideCursor()
 						return
 
 					x = self.dx.get(index,idx)
@@ -661,7 +661,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 			self.particle_viewer.enable_set("Included",idx_included,False,False)
 			self.particle_viewer.updateGL()
 
-			get_application().setOverrideCursor(Qt.ArrowCursor)
+			get_application().restoreOverrideCursor()
 
 			self.updateGL()
 

@@ -86,7 +86,8 @@ def main():
 	run(f"e2spa_make3d.py --input tmp_model_projections.hdf --output tmp_avg.hdf --thread 32")
 	run(f"e2proc3d.py tmp_avg.hdf model_avg.hdf --process mask.soft:outer_radius=-16 --matchto {fname}")
 	run(f"e2proc3d.py model_avg.hdf model_fsc.txt --calcfsc {fname}")
-    
+	
+	
 	print("final pdb model: threed_seg.pdb")
 	print("final GMM in text file: model_gmm.txt")
 	print("final GMM in density map: model_avg.hdf")
@@ -96,5 +97,3 @@ def main():
 	
 if __name__ == '__main__':
 	main()
-	
-
