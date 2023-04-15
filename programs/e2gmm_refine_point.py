@@ -763,7 +763,8 @@ def build_encoder(ninp,nmid,grps=None):
 			in2s.append(tf.keras.layers.Dense(max(i//2,latpergrp*8), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True,bias_initializer=binit)(in1[:,t:t+i]))
 			t+=i
 		# Add Dropout here?
-		mid=[tf.keras.layers.Dense(max(ngrp[i]//8,latpergrp*4), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True)(in2s[i]) for i in range(len(ngrp))]
+		drop=[tf.keras.layers.Dropout(0.3)(in2s[i]) for i in range(len(ngrp))]
+		mid=[tf.keras.layers.Dense(max(ngrp[i]//8,latpergrp*4), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True)(drop[i]) for i in range(len(ngrp))]
 		mid2=[tf.keras.layers.Dense(max(ngrp[i]//32,latpergrp*2), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True)(mid[i]) for i in range(len(ngrp))]
 		outs=[tf.keras.layers.Dense(latpergrp, kernel_regularizer=l2, kernel_initializer=kinit,use_bias=True)(mid2[i]) for i in range(len(ngrp))]
 		out=tf.keras.layers.Concatenate()(outs)
