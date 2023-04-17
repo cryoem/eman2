@@ -555,7 +555,8 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		self.wcbpntpln=QtWidgets.QComboBox()
 		self.wcbpntpln.addItem("Explore")
-		self.wcbpntpln.addItem("Make Set")
+		self.wcbpntpln.addItem("Make Set R")
+		self.wcbpntpln.addItem("Make Set #")
 		self.wcbpntpln.addItem("Line of Sets")
 
 		#self.wcbpntpln.addItem("Plane")
@@ -1212,7 +1213,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			self.wplot2d.add_shape("latent",EMShape(["scrlabel",0.1,0.1,0.1,10.,10.,f"{np.array_str(latent[0], precision=3)} {nptcl} ptcl",120.0,-1]))
 			self.wplot2d.update()
 			return
-		elif mmode=="Make Set":
+		elif mmode in ("Make Set R","Make Set #"):
 			return
 		elif mmode=="Line of Sets":
 			self.line_origin=loc
@@ -1268,7 +1269,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		ycol=self.wsbycol.value()
 		self.wplot2d.del_shapes(["region","genline"])
 
-		if mmode=="Make Set":
+		if mmode=="Make Set R":
 			# This will produce a list of indices where the distance in latent space is less than the specified rad
 #			ptdist=(np.sum((self.midresult.transpose()-latent)**2,1)<(rad**2)).nonzero()[0]
 			ptdist=((self.midresult[xcol]-loc[0])**2+(self.midresult[ycol]-loc[1])**2<(rad**2)).nonzero()[0]
@@ -1282,10 +1283,21 @@ class EMGMM(QtWidgets.QMainWindow):
 			self.curmaps[str(nset)]=newmap
 			self.sets_changed(nset)
 
-			#rparms={"size":(sz,sz,sz),"sym":self.jsparm["sym"],"mode":"gauss_2","usessnr":0,"verbose":0}
-			#self.threads.append(threading.Thread(target=make3d_thr,args=(self.threadq,len(self.threads),f"{self.gmm}/particles.lst",ptdist,rparms,latent,self.currun,rad,mmode,self.jsparm["boxsize"])))
-			#self.threads[-1].start()
-			#print(f"Thread {len(self.threads)} started with {len(ptdist)} particles")
+			return
+		if mmode=="Make Set #":
+			# This will produce a list of indices where the distance in latent space is less than the specified rad
+#			ptdist=(np.sum((self.midresult.transpose()-latent)**2,1)<(rad**2)).nonzero()[0]
+			ptdist=((self.midresult[xcol]-loc[0])**2+(self.midresult[ycol]-loc[1])**2)
+			sel=np.argsort(ptdist)[:ptperset]
+
+			vec=np.zeros(len(self.midresult))
+			vec[xcol]=loc[0]
+			vec[ycol]=loc[1]
+			nset=good_num(self.curmaps)
+			newmap=[None,local_datetime(),list(vec),0,0,sel]
+			self.curmaps[str(nset)]=newmap
+			self.sets_changed(nset)
+
 			return
 		elif mmode=="Line of Sets":
 
