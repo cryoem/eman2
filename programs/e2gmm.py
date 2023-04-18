@@ -955,7 +955,7 @@ class EMGMM(QtWidgets.QMainWindow):
 					self.data_sel.append(self.data[:,np.array(smap[5])])	# smap[5] is a list of points in the class
 					#print("S:",self.data.shape,self.data_sel[-1].shape)
 	#				self.wplot2d.set_data(self.data_sel[-1],f"set_{key}",symsize=ss,quiet=True)
-					self.wplot2d.set_data(self.data_sel[-1],f"set_{key}",symsize=ss,quiet=True)
+					self.wplot2d.set_data(self.data_sel[-1],f"set_{int(key):02d}",symsize=ss,quiet=True)
 			except:
 				print("Error displaying selected points, e2gmm.py:sel_maptable()")
 				return

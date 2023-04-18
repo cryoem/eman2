@@ -1301,7 +1301,9 @@ class EMIsosurface(EMItem3D):
 		When the EMData changes for EMDataItem3D parent node, this method is called. It is responsible for updating the state of the slice node.
 		"""
 		data = self.getParent().getData()
-		if data==None or data["sigma"]==0 : return
+		if data==None or data["sigma"]==0 :
+			self.isorender=None
+			return
 
 		#This computes initial threshold. Steven Murray does seem to have much success with this though.
 		if self.isothr!=None: #there was data previously
