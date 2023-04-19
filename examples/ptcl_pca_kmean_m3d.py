@@ -110,8 +110,8 @@ def main():
 		
 		print("Making distance matrix of ({},{})".format(len(pdb), len(p00)))
 		dstmat=scipydist.cdist(pdb,p00[:,:3])
-		dstmat=np.exp(-(dstmat**2)*50)
-		dstmat[dstmat<.5]=0
+		dstmat=np.exp(-(dstmat**2)*500)
+		dstmat[dstmat<.1]=0
 		dstmat/=np.sum(dstmat, axis=1)[:,None]
 
 		allpts=[]

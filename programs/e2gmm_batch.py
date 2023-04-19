@@ -62,7 +62,9 @@ def main():
 						current=[]
 					current.extend(l3)
 			
+			batches.append(current)
 			nbatch=len(batches)
+			for i,b in enumerate(batches):print(i,len(b))
 					
 		else:
 			options.ptcl3d=False		
