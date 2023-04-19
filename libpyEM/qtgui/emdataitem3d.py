@@ -1301,7 +1301,9 @@ class EMIsosurface(EMItem3D):
 		When the EMData changes for EMDataItem3D parent node, this method is called. It is responsible for updating the state of the slice node.
 		"""
 		data = self.getParent().getData()
-		if data==None or data["sigma"]==0 : return
+		if data==None or data["sigma"]==0 :
+			self.isorender=None
+			return
 
 		#This computes initial threshold. Steven Murray does seem to have much success with this though.
 		if self.isothr!=None: #there was data previously
@@ -1434,8 +1436,9 @@ class EMIsosurface(EMItem3D):
 		self.isorender.set_sampling(self.smpval)
 		glv=glGetString(GL_VERSION)
 		try:
-			a=float(glGetString(GL_VERSION).decode("utf-8").split(".")[0])
+			a=float(glv.decode("utf-8").split(".")[0])
 		except:
+			print("Isoversion parse: ",glv)
 			a=100
 		if a>2:
 			GLUtil.contour_isosurface(self.isorender)
@@ -1656,7 +1659,8 @@ class EMIsosurface(EMItem3D):
 
 #		print "renderiso"
 #		print(self,self.isorender)
-		GLUtil.render_using_VBOs(self.isorender, 0, 0)
+		try: GLUtil.render_using_VBOs(self.isorender, 0, 0)
+		except: print("No isorenderer")
 
 		glPopMatrix()
 

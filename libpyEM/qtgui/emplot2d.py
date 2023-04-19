@@ -318,7 +318,8 @@ class EMPlot2DWidget(EMGLWidget):
 			if contourlevels<=0: contourlevels=pp[9]
 		else:
 			if symtype==-2 and linetype==-2:
-				if len(data)<4 and (diff(self.data[key][self.axes[key]])>=0).all() : doline,linetype,dosym,symtype,docontour=1,0,0,0,0
+#				print(key,self.data[key],self.axes)
+				if len(data)<4 and (diff(self.data[key][self.axes[key][0]])>=0).all() : doline,linetype,dosym,symtype,docontour=1,0,0,0,0
 				elif len(self.data[key][0])>10000 :
 					doline,linetype,dosym,symtype,docontour=0,0,0,0,1
 					contoursteps=min(max(int(sqrt(len(self.data[key][0])//100)),15),100)
@@ -328,7 +329,7 @@ class EMPlot2DWidget(EMGLWidget):
 				else : doline,linetype=0,0
 				if symtype>=0 : dosym=1
 				else : dosym,symtype=0,0
-			if color<0 : color=len(self.data)%len(colortypes)			# Automatic color setting
+			if color<0 : color=(len(self.data)-1)%len(colortypes)			# Automatic color setting
 			if color >len(colortypes): color = 0 # there are only a certain number of colors
 			if contoursteps<=5 :
 				docontour=False
@@ -3263,7 +3264,7 @@ class EMPlot2DInspector(QtWidgets.QWidget):
 			self.setlist.addItem(a)
 
 		if len(keys) > 0 : self.setlist.setCurrentRow(0)
-		self.showslide.setRange(0,len(keys))
+		self.showslide.setRange(0,len(keys)-1)
 
 	def list_item_changed(self,item):
 		checked = False
