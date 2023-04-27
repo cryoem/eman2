@@ -68,7 +68,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	parser.add_argument("--mergesort", type=str, default=None, help="Specify the output name here. This will merge all of the input .lst files into a single (resorted) output")
 	parser.add_argument("--mergeinterleave", type=str, default=None, help="Specify the output name here. Interleaves images from input .lst files, eg - A0,B0,C0,A1,B1,C1,... truncates based on size of smallest input, eg- 1000,500,300 -> 900")
 	parser.add_argument("--mergeeo", action="store_true", default=False, help="Merge even odd lst.")
-	parser.add_argument("--mergeeoref", type=str, default=None, help="reference lst file to determine the order for --mergeeo")
+	parser.add_argument("--mergeref", type=str, default=None, help="reference lst file to determine the order for --create")
 	parser.add_argument("--minhisnr", type=float, help="Integrated SNR from 1/10-1/4 1/A must be larger than this",default=-1,guitype='floatbox', row=8, col=1)
 	parser.add_argument("--minlosnr", type=float, help="Integrated SNR from 1/200-1/20 1/A must be larger than this",default=-1,guitype='floatbox', row=8, col=0)
 	parser.add_argument("--mindf", type=float, help="Minimum defocus",default=-1,guitype='floatbox', row=8, col=1)
@@ -193,17 +193,6 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 			if len(args)!=2:
 				print("Error: Need two inputs...")
 				exit()
-			if options.mergeeoref:
-				print("Using the order from {}".format(options.mergeeoref))
-				lst0=load_lst_params(args[0])
-				lst1=load_lst_params(args[1])
-				lstref=load_lst_params(options.mergeeoref)
-				lstout=[None for l in lstref]
-				dic={str((l['src'], l['idx'])):i for i,l in enumerate(lstref)}
-				for l in lst0+lst1:
-					i=dic[str((l['src'], l['idx']))]
-					lstout[i]=l
-				save_lst_params(lstout, options.create)
 			else:
 				n0=EMUtil.get_image_count(args[0])
 				n1=EMUtil.get_image_count(args[1])
@@ -231,7 +220,25 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 							lst.write(-1,i,args[1])
 				lst=None
 				sys.exit(1)
-				
+		
+		elif options.mergeref:
+			print("Using the order from {}".format(options.mergeref))
+			lsts=[load_lst_params(a) for a in args]
+			lsts=sum(lsts, [])
+			lstref=load_lst_params(options.mergeref)
+			lstout=[None for l in lstref]
+			dic={str((l['src'], l['idx'])):i for i,l in enumerate(lstref)}
+			print(len(lsts), len(lstref))
+			for l in lsts:
+				i=dic[str((l['src'], l['idx']))]
+				lstout[i]=l
+				print(i,l['src'], l['idx'], len([l for l in lstout if l==None]))
+			for i,l in enumerate(lstout):
+				if l==None:
+					print(i,lstref[i]["src"],lstref[i]["idx"], "missing")
+					exit()
+			save_lst_params(lstout, options.create)
+			
 		else:
 			for f in args:
 				n=EMUtil.get_image_count(f)
