@@ -487,7 +487,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.binary_tab.opening_n_iters =1
 		self.morp_tab.morp_n_iters_sp.setValue(1)
 		if reset_vs:
-			self.binary_tab.in_low_pass_vs.setValue(1)
+			self.binary_tab.bin_low_pass_vs.setValue(1)
 			self.binary_tab.bin_threshold_vs.setValue(0.001)
 
 
