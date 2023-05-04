@@ -112,18 +112,22 @@ def main():
 			
 	keydic={'p':"Subtomogram alignment", 't': "Subtilt translational refinement", 'T': "Subtilt translational CCF alignment", 'r': "Subtilt rotational refinement", 'd':"Defocus refinement", 'x':"Skipping alignment",'z':"Stop"}
 	
+	last2d00=None
 	if options.continuefrom>0:
 		if options.continuefrom%1>0:
 			iters=['x']*int(1+options.continuefrom)+iters
 			startiter=ceil(options.continuefrom-1)
-			itr=startiter+1
-			
+			itr=startiter+1			
 		else:
 			itr=startiter=int(options.continuefrom)
 		
 		last2d=f"{path}/aliptcls2d_{itr:02d}.lst"
 		last3d=f"{path}/aliptcls3d_{itr:02d}.lst"
-		print(iters)
+		
+		if os.path.isfile(f"{path}/0_spt_gathermeta_params.json"):
+			print("Loading from existing metadata..")
+			last2d00=f"{path}/aliptcls2d_01.lst"
+		#print(iters)
 		
 	else:
 		#### There were too many options controlling the resolution previously...
@@ -279,8 +283,8 @@ def main():
 				cmd+=f" --minres={options.minres}"
 			if options.goldstandard>0 or options.goldcontinue:
 				cmd+=" --goldcontinue"
-			if last2d:
-				cmd+=f" --aliptcls2d {last2d}"
+			if last2d00:
+				cmd+=f" --aliptcls2d {last2d00}"
 				
 			run(cmd)
 			last2d=f"{path}/aliptcls2d_{itr:02d}.lst"
