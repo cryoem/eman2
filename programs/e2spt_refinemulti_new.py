@@ -31,6 +31,7 @@ def main():
 	parser.add_argument("--minres",type=float,help="Minimum resolution (the larger number) to consider in alignment (in A, not 1/A)",default=0)
 	parser.add_argument("--niter", type=int,help="number of iterations. default is 5.", default=5)
 	parser.add_argument("--loadali3d",help="load previous 3d alignment from --ptcls input.",action="store_true",default=False)
+	parser.add_argument("--loadali2d",help="load previous 2d alignment ", type=str, default=None)
 	#parser.add_argument("--res", type=float,help="target resolution", default=20.)
 	parser.add_argument("--skipali",action="store_true",help="Skip alignment entirely when --loadali3d is provided. Otherwise a local orientation search will still be performed.",default=False)
 	#parser.add_argument("--threads", type=int,help="", default=12)
@@ -135,6 +136,7 @@ def main():
 	if options.maxshift>=0: opt+=f" --maxshift {options.maxshift}"
 	if options.minres>0: opt+=f" --minres {options.minres}"
 	if options.maxres>0: opt+=f" --maxres {options.maxres}"
+	if options.loadali2d: opt+=f" --plst {options.loadali2d}"
 		
 	#### refinement loop. most of the work is dealt with in e2spt_align_subtlt. here we just parse the input/output
 	for itr in range(1,1+options.niter):
