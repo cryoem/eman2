@@ -147,7 +147,7 @@ class SptAlignTask(JSTask):
 		if options.debug:
 			print("loading metadata from {}, {}...".format(options.info2dname, options.info3dname))
 		info3d=load_lst_params(options.info3dname)
-		info2d=load_lst_params(options.info2dname)
+		#info2d=load_lst_params(options.info2dname)
 		if options.aliptcls3d!="":
 			alipm=load_lst_params(options.aliptcls3d)
 			for i,a in zip(info3d, alipm):
@@ -157,18 +157,20 @@ class SptAlignTask(JSTask):
 					i["orig_idx"]=a["orig_idx"]
 				if "class" in a:
 					i["orig_class"]=a["class"]
-			
-		if options.aliptcls2d!="":
-			if options.debug:
-				print("loading past alignment from {}...".format(options.aliptcls2d))
+		
+		frompast=(options.aliptcls2d!="")
+		#if options.aliptcls2d!="":
+			#if options.debug:
+				#print("loading past alignment from {}...".format(options.aliptcls2d))
 				
-			alipm=load_lst_params(options.aliptcls2d)
-			for i,a in zip(info2d, alipm):
-				i["pastxf"]=a["xform.projection"]
-				i["score"]=a["score"]
-			frompast=True
-		else:
-			frompast=False
+			#alipm=load_lst_params(options.aliptcls2d)
+			#for i,a in zip(info2d, alipm):
+				#i["pastxf"]=a["xform.projection"]
+				#i["score"]=a["score"]
+			#alipm=None
+			#frompast=True
+		#else:
+			#frompast=False
 		
 		### load references
 		if options.goldcontinue:
@@ -216,9 +218,16 @@ class SptAlignTask(JSTask):
 		if options.debug: print("max res: {:.2f}, max box size {}".format(options.maxres, maxy))
 		
 		rets=[]
+		info2dlst=LSXFile(options.info2dname,True)
+		def readi(i):
+			n,p,d=info2dlst.read(i)
+			return {"idx":n,"src":p,"readi":i,**d}
+		
 		for di in self.data:
 			## prepare metadata
-			dc=info2d[di] ## dictionary for the current 2d particle
+			dc=readi(di)
+			#dc=load_lst_params(options.info2dname, [di])[0]
+			#dc=info2d[di] ## dictionary for the current 2d particle
 			fname=dc["src"].replace("particles", "particles3d", 1)
 			#fname=fname.replace("ptcls2d", "ptcls3d", 1)[:-4]+".hdf"
 			tid=dc["tilt_id"]
@@ -228,7 +237,8 @@ class SptAlignTask(JSTask):
 			d2d=[] ## all 2d particles from the selected tilt of that tomogram
 			d3d=[] ## same as d3d0, but excluding the particles that are missing on the selected tilt
 			for d3 in d3d0:
-				d2=[info2d[d] for d in d3["idx2d"]]
+				d2=[readi(i) for i in d3["idx2d"]]
+				#d2=[info2d[d] for d in d3["idx2d"]]
 				d2=[d for d in d2 if d["tilt_id"]==tid]
 				if len(d2)==0:
 					## sometimes a subtilt does not exist
@@ -247,10 +257,16 @@ class SptAlignTask(JSTask):
 			ip=[i for i,d in enumerate(d2d) if d["idx3d"]==dc["idx3d"]][0]
 			
 			if frompast:
-				xfali=[d["pastxf"] for d in d2d]
+				ia=[d["readi"] for d in d2d]
+				apm=load_lst_params(options.aliptcls2d, ia)
+				xfali=[d["xform.projection"] for d in apm]
+				score=apm[ip]["score"]
+				#i["pastxf"]=a["xform.projection"]
+				#i["score"]=a["score"]
+				#xfali=[d["pastxf"] for d in d2d]
 				pastxf=[b*a.inverse()for a,b in zip(xfraw, xfali)]
 				pastxf=[p.get_params("xyz") for p in pastxf]
-				score=d2d[ip]["score"]
+				#score=d2d[ip]["score"]
 			
 			## select neighboring particles (including self)
 			c=coord[ip]
@@ -290,19 +306,16 @@ class SptAlignTask(JSTask):
 					imgsmall.append(a)
 				
 			else:
-				## just read 2d particles. maybe unsafe for thick sample
-				imgs=[EMData(d["src"], d["idx"]) for d in d2dsel]
-				if options.preprocess!=None:
-#					print(f"Applying {options.preprocess} to subtilts")
-					for i in imgs:
-						i.process_inplace(options.preprocess[0],options.preprocess[1])
-						if options.refine_trans_ccf: 
-							i.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/options.minres})
-							i.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.maxres})
-						#i.process_inplace("mask.fft.peak",{"removepeaks":1,"thresh_sigma":1.8}) # STEVE, NPC TESTING
 				imgsmall=[]
+				for d in d2dsel:
+					e=EMData(d["src"], d["idx"])
+					if options.preprocess!=None:
+						e.process_inplace(options.preprocess[0],options.preprocess[1])
+						if options.refine_trans_ccf: 
+							e.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/options.minres})
+							e.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.maxres})
 				
-				for e in imgs:
+					
 					e.clip_inplace(Region((e["nx"]-ny)//2, (e["ny"]-ny)//2, ny, ny))
 					a=e.do_fft()
 					a.process_inplace("xform.phaseorigin.tocenter")
@@ -311,8 +324,28 @@ class SptAlignTask(JSTask):
 					a.process_inplace("xform.fourierorigin.tocenter")
 					imgsmall.append(a)
 					
-			imgs=None
-			
+				### just read 2d particles. maybe unsafe for thick sample
+				#imgs=[EMData(d["src"], d["idx"]) for d in d2dsel]
+				#if options.preprocess!=None:
+##					print(f"Applying {options.preprocess} to subtilts")
+					#for i in imgs:
+						#i.process_inplace(options.preprocess[0],options.preprocess[1])
+						#if options.refine_trans_ccf: 
+							#i.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/options.minres})
+							#i.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.maxres})
+						##i.process_inplace("mask.fft.peak",{"removepeaks":1,"thresh_sigma":1.8}) # STEVE, NPC TESTING
+				#imgsmall=[]
+				
+				#for e in imgs:
+					#e.clip_inplace(Region((e["nx"]-ny)//2, (e["ny"]-ny)//2, ny, ny))
+					#a=e.do_fft()
+					#a.process_inplace("xform.phaseorigin.tocenter")
+					#a.process_inplace("xform.fourierorigin.tocenter")
+					#a=a.get_clip(Region(0,(ny-ss)//2, ss+2, ss))
+					#a.process_inplace("xform.fourierorigin.tocenter")
+					#imgsmall.append(a)
+					
+			#imgs=None
 			## refine defocus value. does not seem to improve result yet
 			if options.refine_defocus:
 				if frompast:
@@ -355,10 +388,10 @@ class SptAlignTask(JSTask):
 				
 			## alignment starting point
 			if frompast:
-				p=pastxf[ip]
-				xout=[p["xtilt"],p["ytilt"],p["ztilt"],p["tx"]*ss/ny,p["ty"]*ss/ny]
+				p=pastxf[ip].copy()
+				xout=[0.,0.,0.,p["tx"]*ss/ny,p["ty"]*ss/ny]
 			else:
-				xout=[0]*5
+				xout=[0.0]*5
 			
 			xout00=np.array(xout).copy()
 			## translational alignment
@@ -405,7 +438,9 @@ class SptAlignTask(JSTask):
 						"tx":xout[3],"ty":xout[4]})
 			dxf.set_trans(dxf.get_trans()*ny/ss)
 			xf=dxf*xf
-			
+			if options.debug: 
+				print(dxf)
+				print(xf)
 			d3=info3d[dc["idx3d"]]
 			if "orig_class" in d3:
 				clsid=d3["orig_class"] 
