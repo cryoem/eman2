@@ -26,6 +26,7 @@ def main():
 	parser.add_argument("--masktight", action="store_true", default=False ,help="Use tight patch mask instead of spherical ones. seems safe.")
 	parser.add_argument("--batchsize", type=int,help="Number of particles in each batch for alignment. Increase will make the alignment faster, but also increases GPU memory use. ", default=-1)
 	parser.add_argument("--chunksize", type=int,help="Number of particles in each e2gmm_batch process. Increase will make the alignment slightly faster, but also increases CPU memory use. ", default=-1)
+	parser.add_argument("--recover",action="store_true", default=False ,help="continue previous crashed refinement")
 
 
 	(options, args) = parser.parse_args()
@@ -42,20 +43,47 @@ def main():
 	
 	
 	if options.path==None: 
-		path=options.path=num_path_new("gmm_")
-	
-	p=p00
-	pn=options.npatch
-	km=KMeans(pn,max_iter=30)
-	km.fit(p[:,:3])
-	pc=km.cluster_centers_
-	lb=km.labels_
+		options.path=num_path_new("gmm_")
 	path=options.path
+	p=p00
 	
-	msk0=EMData(f"{oldpath}/mask.hdf")
-	msk0.write_image(f"{path}/mask_00.hdf")
-	msk=msk0.copy()
+	pn=options.npatch
+	if not options.recover:
+			
+		km=KMeans(pn,max_iter=30)
+		km.fit(p[:,:3])
+		pc=km.cluster_centers_
+		lb=km.labels_
 	
+		msk0=EMData(f"{oldpath}/mask.hdf")
+		msk0.write_image(f"{path}/mask_00.hdf")
+		msk=msk0.copy()
+		
+			
+		if options.masktight:
+			for ci in range(pn):
+				ps=p[lb==ci,:].copy()
+				print(ps.shape)
+				np.savetxt(f"{path}/model_tmp.txt", ps)
+				run(f"e2gmm_refine_new.py --ptclsin {oldpath}/projections_even.hdf  --model {path}/model_tmp.txt --maxres -1 --modelout {path}/model_tmp.txt --niter 0 --trainmodel --evalmodel {path}/model_projs.hdf")
+				run(f"e2spa_make3d.py --input {path}/model_projs.hdf --output {path}/model_avg.hdf --thread 32")
+				e=EMData(f"{path}/model_avg.hdf")
+				e.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.25})
+				e.process_inplace("normalize.edgemean")
+				e.process_inplace("mask.auto3d.thresh",{"nshells":3,"nshellsgauss":5,"threshold1":3,"threshold2":1,"return_mask":True})
+				e.write_image(f"{path}/mask_patch_{ci:02d}.hdf")
+			
+		else:
+			for ci in range(pn):
+				c=pc[ci].copy()
+				r=np.linalg.norm(p[lb==ci,:3]-c, axis=1)
+				r=np.max(r)
+				
+				msk.to_one()
+				c=(c*msk["nx"]).tolist()
+				msk.process_inplace("mask.soft",{"dx":c[0], "dy":-c[1], "dz":-c[2], "outer_radius":r*msk["nx"],"width":5})
+				msk.write_image(f"{path}/mask_patch_{ci:02d}.hdf")
+		
 	etc=""
 	if options.maxres>0:
 		etc+=f" --maxres {options.maxres}"
@@ -64,32 +92,9 @@ def main():
 	if options.chunksize>0:
 		etc+=f" --chunksize {options.chunksize}"
 		
-		
-	if options.masktight:
-		for ci in range(pn):
-			ps=p[lb==ci,:].copy()
-			print(ps.shape)
-			np.savetxt(f"{path}/model_tmp.txt", ps)
-			run(f"e2gmm_refine_new.py --ptclsin {oldpath}/projections_even.hdf  --model {path}/model_tmp.txt --maxres -1 --modelout {path}/model_tmp.txt --niter 0 --trainmodel --evalmodel {path}/model_projs.hdf")
-			run(f"e2spa_make3d.py --input {path}/model_projs.hdf --output {path}/model_avg.hdf --thread 32")
-			e=EMData(f"{path}/model_avg.hdf")
-			e.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.25})
-			e.process_inplace("normalize.edgemean")
-			e.process_inplace("mask.auto3d.thresh",{"nshells":3,"nshellsgauss":5,"threshold1":3,"threshold2":1,"return_mask":True})
-			e.write_image(f"{path}/mask_patch_{ci:02d}.hdf")
-		
-	else:
-		for ci in range(pn):
-			c=pc[ci].copy()
-			r=np.linalg.norm(p[lb==ci,:3]-c, axis=1)
-			r=np.max(r)
-			
-			msk.to_one()
-			c=(c*msk["nx"]).tolist()
-			msk.process_inplace("mask.soft",{"dx":c[0], "dy":-c[1], "dz":-c[2], "outer_radius":r*msk["nx"],"width":5})
-			msk.write_image(f"{path}/mask_patch_{ci:02d}.hdf")
-		
 	for ci in range(pn):
+		if options.recover and os.path.isfile(f"{path}/threed_patch_{ci:02d}_raw_odd.hdf"):
+			continue
 		for eo in ["even", "odd"]:
 			run(f"e2proc3d.py {oldpath}/threed_{olditer:02d}_{eo}.hdf {path}/threed_{ci*10:02d}_{eo}.hdf")
 			run(f"e2proclst.py {oldpath}/ptcls_{olditer:02d}_{eo}.lst --create {path}/ptcls_{ci*10:02d}_{eo}.lst")
