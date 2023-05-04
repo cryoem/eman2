@@ -772,26 +772,26 @@ def build_decoder_rigidbody(pts, ninp, foci):
 	decode_model=tf.keras.Model(x0, y0)
 	return decode_model
 	
-def calc_bond_angle(pout, bond, useangle=False, cn2=[]):
+def calc_bond(pout, bond):
 	
 	px=tf.gather(pout, bond[:,0], axis=1)[:,:,:3]
 	py=tf.gather(pout, bond[:,1], axis=1)[:,:,:3]
 	dst=d=tf.math.sqrt(tf.reduce_sum((px-py)**2, axis=2))
+	return dst
 	
-	if useangle:		
-		## dot product between bonds
-		bd=px-py
-		cx=-tf.gather(bd, cn2[:,0], axis=1)
-		cy=tf.gather(bd, cn2[:,1], axis=1)
-		ang=tf.reduce_sum(cx*cy, axis=2)
+def calc_angle(pout, ang):
+	
+	p0=tf.gather(pout, ang[:,0], axis=1)[:,:,:3]
+	p1=tf.gather(pout, ang[:,1], axis=1)[:,:,:3]
+	p2=tf.gather(pout, ang[:,2], axis=1)[:,:,:3]
+	b0=p0-p1
+	b1=p2-p1
+	ang=tf.reduce_sum(b0*b1, axis=2)
+	ang=ang/tf.linalg.norm(b0, axis=2)/tf.linalg.norm(b1, axis=2)
+	ang=tf.math.acos(ang)*180/np.pi
 
-		ang=ang/tf.linalg.norm(cx, axis=2)/tf.linalg.norm(cy, axis=2)
-		#ang=tf.math.acos(ang)*180/np.pi
+	return ang
 		
-	else:
-		ang=None
-		
-	return dst, ang
 
 #### training decoder on projections
 def train_decoder(gen_model, trainset, params, options, pts=None):
@@ -800,27 +800,28 @@ def train_decoder(gen_model, trainset, params, options, pts=None):
 	wts=gen_model.trainable_variables
 	
 	if options.bond:
-		bond=np.loadtxt(options.bond).astype(int)-1
+		bond=np.loadtxt(options.bond).astype(int)
 		print("Using bond constraints. {} bonds loaded.".format(len(bond)))
 		conf=np.zeros((1,options.nmid), dtype=floattype)
 		pout=gen_model(conf)
-		
-		if options.useangle:
-			#### indices of bonds that form an angle
-			cn2=np.zeros((len(bond)-1, 2), dtype=int)
-			cn2[:,0]=np.arange(len(cn2))
-			cn2[:,1]=cn2[:,0]+1
-			c0=bond[cn2[:,0]]
-			c1=bond[cn2[:,1]]
-			cn2=cn2[c0[:,1]==c1[:,0]]
-		else:
-			cn2=[]
 			
-		dst00, ang00=calc_bond_angle(pout, bond, options.useangle, cn2)
-		print("Average bond distance {:.3f}".format(np.mean(dst00)*options.apix*options.maxboxsz))
-		if options.useangle:
+		dst00=calc_bond(pout, bond)
+		d=dst00*options.apix*options.maxboxsz
+		print("Average bond distance {:.3f}, std {:.3f}".format(np.mean(d), np.std(d)))
+		
+		if options.hbond:
+			hbond=np.loadtxt(options.hbond).astype(int)
+			print("Load {} H-bonds".format(len(hbond)))
+			
+			hdst00=calc_bond(pout, hbond)
+			d=hdst00*options.apix*options.maxboxsz
+			print("Average H-bond distance {:.3f}, std {:.3f}".format(np.mean(d), np.std(d)))
+		
+		if options.angle:
+			angle=np.loadtxt(options.angle).astype(int)
+			ang00=calc_angle(pout, angle)
 			print("Using angle between bonds as constraints")
-			print("  {} angles connect the bonds".format(ang00.shape[1]))
+			print("  {} angles connect the bonds".format(len(angle)))
 			print("  average angle: {:.1f}, std {:.1f}".format(np.mean(ang00), np.std(ang00)))
 		
 	nbatch=0
@@ -828,7 +829,7 @@ def train_decoder(gen_model, trainset, params, options, pts=None):
 	
 	for itr in range(options.niter):
 		cost=[]
-		truecost=[]
+		costetc=[]
 		for pjr,pji,xf in trainset:
 			if xf.shape[0]==1: continue
 			pj_cpx=(pjr,pji)
@@ -844,45 +845,66 @@ def train_decoder(gen_model, trainset, params, options, pts=None):
 				fval=calc_frc(pj_cpx, imgs_cpx, params["rings"], minpx=options.minpx, maxpx=options.maxpx)
 				loss=-tf.reduce_mean(fval)
 				
-				l=loss
-#				l=loss+std[4]*options.sigmareg+std[3]*5*(options.niter-itr)/options.niter
-				#l=loss+std[4]*options.sigmareg
-				
+				lossetc=0
 				if options.bond:
-					dst, ang=calc_bond_angle(pout, bond, options.useangle, cn2)
-					dr=tf.reduce_mean(abs(dst-dst00))
-					l+=dr*options.apix*options.maxboxsz*0.1
-					
-					if options.useangle:
-						da=tf.reduce_mean(abs(ang-ang00))
-						l+=da*.002
-					
-				#if options.modelreg>0: 
-					#print(tf.reduce_sum(pout[0,:,:3]*pts[:,:3]),tf.reduce_sum((pout[0,:,:3]-pts[:,:3])**2),len(pts))
-					#l+=tf.reduce_sum((pout[0,:,:3]-pts[:,:3])**2)/len(pts)*options.modelreg*20.0		# factor of 20 is a rough calibration relative to the dynamic training
-				#if itr<options.niter//2: l+=std[3]*options.ampreg*options.ampreg
-#				print(std)
+					dst=calc_bond(pout, bond)
+					dr=(dst-dst00)*options.apix*options.maxboxsz
+					dr=tf.math.sqrt(tf.reduce_mean(dr**2))
+					lossetc+=dr*1
+					if options.hbond:
+						hdst=calc_bond(pout, hbond)
+						drh=(hdst-hdst00)*options.apix*options.maxboxsz
+						drh=tf.math.sqrt(tf.reduce_mean(drh**2))
+						lossetc+=drh*0.2
+					if options.angle:
+						ang=calc_angle(pout, angle)
+						da=tf.math.sqrt(tf.reduce_mean((ang-ang00)**2))
+						lossetc+=da*0.02
 			
+				l=loss+lossetc*0.2
+				
 			cost.append(loss)  
-			truecost.append(l)
 			grad=gt.gradient(l, wts)
 			opt.apply_gradients(zip(grad, wts))
+			etc=""
+			ce=[]
+			if options.bond:
+				etc+=f", bond {dr:.3f}"
+				ce.append(dr)
+				if options.hbond:
+					etc+=f", H-bond {drh:.4f}"
+					ce.append(drh)
+				if options.angle:
+					etc+=f", angle {da:.3f}"
+					ce.append(da)
+					
 			
-			sys.stdout.write("\r {}/{}\t{:.3f} ({:.3f})         ".format(len(cost), nbatch, loss,l))
+			costetc.append(ce)
+				
+			sys.stdout.write("\r {}/{}\t{:.3f}{}         ".format(len(cost), nbatch, loss, etc))
 			sys.stdout.flush()
 		sys.stdout.write("\r")
 		
-		print("iter {}, loss : {:.4f} ({:.4f})         ".format(itr, np.mean(cost), np.mean(truecost)))
+		etc=""
+		if options.bond:
+			c=np.mean(costetc, axis=0)
+			etc+=f", bond {c[0]:.3f}"
+			if options.hbond:
+				etc+=f", H-bond {c[1]:.4f}"
+			if options.angle:
+				etc+=f", angle {c[2]:.3f}"
+		
+		print("iter {}, loss : {:.4f}{}         ".format(itr, np.mean(cost),etc))
 		
 	if options.bond:
 		conf=np.zeros((1,options.nmid), dtype=floattype)
 		pout=gen_model(conf)
-		dst, ang=calc_bond_angle(pout, bond, options.useangle, cn2)
+		dst=calc_bond(pout, bond)
 		print("Average bond distance after refinement {:.3f}".format(np.mean(dst)*options.apix*options.maxboxsz))
 		
-		if options.useangle:
-			da=tf.reduce_mean(abs(ang-ang00))
-			print("Average angle difference from input model {:.1f}".format(da.numpy()))
+		#if options.useangle:
+			#da=tf.reduce_mean(abs(ang-ang00))
+			#print("Average angle difference from input model {:.1f}".format(da.numpy()))
 
 def eval_model(gen_model, options):
 	
@@ -1137,9 +1159,33 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, imsk, option
 	wts=encode_model.trainable_variables + decode_model.trainable_variables
 	if options.anchor:
 		wts=wts[:-1]
+	
+	
+	if options.bond:
+		bond=np.loadtxt(options.bond).astype(int)
+		print("Using bond constraints. {} bonds loaded.".format(len(bond)))
+		pout=pts.numpy().copy()
+			
+		dst00=calc_bond(pout, bond)
+		d=dst00*options.apix*options.maxboxsz
+		print("Average bond distance {:.3f}, std {:.3f}".format(np.mean(d), np.std(d)))
 		
-	#for w in wts:
-		#print(w.shape)
+		if options.hbond:
+			hbond=np.loadtxt(options.hbond).astype(int)
+			print("Load {} H-bonds".format(len(hbond)))
+			
+			hdst00=calc_bond(pout, hbond)
+			d=hdst00*options.apix*options.maxboxsz
+			print("Average H-bond distance {:.3f}, std {:.3f}".format(np.mean(d), np.std(d)))
+		
+		if options.angle:
+			angle=np.loadtxt(options.angle).astype(int)
+			ang00=calc_angle(pout, angle)
+			print("Using angle between bonds as constraints")
+			print("  {} angles between the bonds".format(len(angle)))
+			print("  average angle: {:.1f}, std {:.1f}".format(np.mean(ang00), np.std(ang00)))
+		
+	
 	nbatch=0
 	for t in trainset: nbatch+=1
 	
@@ -1149,6 +1195,7 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, imsk, option
 		
 		i=0
 		cost=[]
+		costetc=[]
 		testcost=[]
 		for grd,pjr,pji,xf in trainset:
 			pj_cpx=(pjr, pji)
@@ -1167,7 +1214,7 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, imsk, option
 				## similar to the variational autoencoder,
 				## but we do not train the sigma of the random value here
 				## since we control the radius of latent space already, this seems enough
-				conf=options.perturb*tf.random.normal(conf.shape)+conf		# 0.1 is a pretty big perturbation for this range, maybe responsible for the random churn in the models? --steve
+				conf=options.perturb*tf.random.normal(conf.shape)+conf		
 				
 				## mask out the target columns based on --pas
 				pout=decode_model(conf, training=True)
@@ -1189,9 +1236,26 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, imsk, option
 				fval=calc_frc(pj_cpx, imgs_cpx, params["rings"], minpx=options.minpx, maxpx=options.maxpx)
 				loss=-tf.reduce_mean(fval)+cl*10
 				
-				#if options.modelreg>0: 
-					#loss+=tf.reduce_sum((pout[:,:,:3]-pts[:,:,:3])**2)/len(pts)/xf.shape[0]*options.modelreg
+				
+				lossetc=0
+				if options.bond:
+					dst=calc_bond(pout, bond)
+					dr=(dst-dst00)*options.apix*options.maxboxsz
+					dr=tf.math.sqrt(tf.reduce_mean(dr**2))
+					lossetc+=dr*1
+					if options.hbond:
+						hdst=calc_bond(pout, hbond)
+						drh=(hdst-hdst00)*options.apix*options.maxboxsz
+						drh=tf.math.sqrt(tf.reduce_mean(drh**2))
+						lossetc+=drh*0.2
+					if options.angle:
+						ang=calc_angle(pout, angle)
+						da=tf.math.sqrt(tf.reduce_mean((ang-ang00)**2))
+						lossetc+=da*0.02
 			
+				l=loss+lossetc*0.1
+				
+				
 			if options.usetest==False or len(cost)<nbatch*.95:
 				cost.append(loss)
 				grad=gt.gradient(loss, wts)
@@ -1199,16 +1263,43 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, imsk, option
 			else:
 				testcost.append(loss)
 			
+			
+			etc=""
+			ce=[]
+			if options.bond:
+				etc+=f", bond {dr:.3f}"
+				ce.append(dr)
+				if options.hbond:
+					etc+=f", H-bond {drh:.4f}"
+					ce.append(drh)
+				if options.angle:
+					etc+=f", angle {da:.3f}"
+					ce.append(da)
+					
+			
+			costetc.append(ce)
+			
 			i+=1
 			if i%10==0: 
-				sys.stdout.write("\r {}/{}\t{:.3f}         ".format(len(cost), nbatch, loss))
+				sys.stdout.write("\r {}/{}\t{:.3f} {}         ".format(len(cost), nbatch, loss, etc))
 				sys.stdout.flush()
 			
 		sys.stdout.write("\r")
+		
+		
+		etc=""
+		if options.bond:
+			c=np.mean(costetc, axis=0)
+			etc+=f", bond {c[0]:.3f}"
+			if options.hbond:
+				etc+=f", H-bond {c[1]:.4f}"
+			if options.angle:
+				etc+=f", angle {c[2]:.3f}"
+		
 		if options.usetest:
 			print("iter {}, train loss : {:.4f}; test loss {:.4f}".format(itr, np.mean(cost), np.mean(testcost)))
 		else:
-			print("iter {}, loss : {:.4f}".format(itr, np.mean(cost)))
+			print("iter {}, loss : {:.4f} {}".format(itr, np.mean(cost), etc))
 		allcost.append(np.mean(cost))
 		
 	return allcost
@@ -1250,8 +1341,7 @@ def make_mask_gmm(selgauss, pts):
 	
 	else:
 		## read from a list of points starting from 1
-		i=np.loadtxt(selgauss).astype(int).flatten()-1
-		
+		i=np.loadtxt(selgauss).astype(int).flatten()
 		m=np.zeros(len(pts), dtype=floattype)
 		m[i]=1
 		imsk=tf.constant(m)
@@ -1309,10 +1399,11 @@ def main():
 	#parser.add_argument("--mask", type=str,help="remove points outside mask", default="")
 	parser.add_argument("--anchor", type=str,help="use a smaller model as anchor points for heterogeneity training.", default="")
 	parser.add_argument("--rigidbody", action="store_true", default=False ,help="Consider rigid body movement for heterogeneity analysis. Require --selgauss")
-	parser.add_argument("--selgauss", type=str,help="provide a text file of the indices of gaussian that are allowed to move", default=None)
+	parser.add_argument("--selgauss", type=str,help="provide a txet file of the indices of gaussian that are allowed to move", default=None)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--bond", type=str,help="provide a text file of the indices of bonds between points", default=None)
-	parser.add_argument("--useangle", action="store_true",help="use angle constraints as well when --bond is provided. ", default=False)
+	parser.add_argument("--hbond", type=str,help="provide a text file of the indices of H-bonds between points", default=None)
+	parser.add_argument("--angle", type=str,help="provide a text file of the angles to track", default=None)
 	parser.add_argument("--usetest", action="store_true",help="use a separated test set and report loss. ", default=False)
 	parser.add_argument("--pmout", type=str,help="write options to file", default=None)
 	parser.add_argument("--phantompts", type=str,help="load extra phatom points for gradient calculation.", default=None)
@@ -1332,7 +1423,6 @@ def main():
 			print("Generating Gaussian model from pdb...")
 			p=pdb2numpy(options.model, allatom=True)
 			if options.npts>0:
-				from sklearn.cluster import KMeans
 				km=KMeans(options.npts,max_iter=30)
 				km.fit(p)
 				p=km.cluster_centers_

@@ -27,6 +27,7 @@ def main():
 	parser.add_argument("--decoder", type=str,help="decoder input", default=None)
 	parser.add_argument("--pdb", type=str,help="model input in pdb", default=None)
 	parser.add_argument("--selgauss", type=str,help="provide a text file of the indices of gaussian (or volumic mask) that are allowed to move", default=None)
+	parser.add_argument("--model00", type=str,help="neutral state model. require if --decoder and --selgauss are provided", default=None)
 
 	parser.add_argument("--skip3d", action="store_true", default=False ,help="skip the make3d step.")
 	parser.add_argument("--umap", action="store_true", default=False ,help="use umap instead of pca.")
@@ -78,7 +79,7 @@ def main():
 			rg*=mx
 			print(rg)
 			
-	if options.decoder and options.pdb:
+	if options.decoder :
 		px=np.zeros((options.ncls, options.nbasis))
 		for i,a in enumerate(axis): px[:,a]=rg[:,i]
 		py=pca.inverse_transform(px).astype(np.float32)
@@ -92,44 +93,52 @@ def main():
 		from e2gmm_refine_new import ResidueConv2D,make_mask_gmm
 		decode_model=tf.keras.models.load_model(options.decoder,compile=False,custom_objects={"ResidueConv2D":ResidueConv2D})
 		pcnt=decode_model(py).numpy()
-		
-		p00=decode_model(py[:1]*0).numpy()[0]
+		p00=np.loadtxt(options.model00)
 		pcnt=pcnt-p00
 		
-		#print(pcnt.shape)
-		imsk=make_mask_gmm(options.selgauss, p00).numpy()
-		print("Seleting {} out of {} Gaussians".format(np.sum(imsk), len(p00)))
-		pcnt*=imsk[None,:,None]
-		
-		pdb=pdb2numpy(options.pdb, allatom=True)
-		e=EMData(options.ptclsin)
-		apix=e["apix_x"]
-		sz=e["nx"]
-		pdb=pdb/e["ny"]/e["apix_x"]-0.5
-		pdb[:,1:]*=-1
-		
-		print("Making distance matrix of ({},{})".format(len(pdb), len(p00)))
-		dstmat=scipydist.cdist(pdb,p00[:,:3])
-		dstmat=np.exp(-(dstmat**2)*500)
-		dstmat[dstmat<.1]=0
-		dstmat/=np.sum(dstmat, axis=1)[:,None]
+		if options.selgauss:
+			imsk=make_mask_gmm(options.selgauss, p00).numpy()
+			print("Seleting {} out of {} Gaussians".format(np.sum(imsk), len(p00)))
+			pcnt*=imsk[None,:,None]
+			
+		if options.pdb:
+			
+			#print(pcnt.shape)
+			
+			pdb=pdb2numpy(options.pdb, allatom=True)
+			e=EMData(options.ptclsin)
+			apix=e["apix_x"]
+			sz=e["nx"]
+			pdb=pdb/e["ny"]/e["apix_x"]-0.5
+			pdb[:,1:]*=-1
+			
+			print("Making distance matrix of ({},{})".format(len(pdb), len(p00)))
+			dstmat=scipydist.cdist(pdb,p00[:,:3])
+			dstmat=np.exp(-(dstmat**2)*500)
+			dstmat[dstmat<.1]=0
+			dstmat/=np.sum(dstmat, axis=1)[:,None]
 
-		allpts=[]
-		for i,v0 in enumerate(pcnt):
-			v=np.dot(dstmat, v0)    
+			allpts=[]
+			for i,v0 in enumerate(pcnt):
+				v=np.dot(dstmat, v0)    
 
-			pz=pdb+v[:,:3]
-			pz[:,1:]*=-1
-			pz=(pz+.5)*e["ny"]*e["apix_x"]
-			allpts.append(pz.copy())
-			pdbname= f"{options.ptclsout[:-4]}_{i:02d}.pdb"
-			replace_pdb_points(options.pdb, pdbname, pz)
-			print("pdb saved to {}".format(pdbname))
+				pz=pdb+v[:,:3]
+				pz[:,1:]*=-1
+				pz=(pz+.5)*e["ny"]*e["apix_x"]
+				allpts.append(pz.copy())
+				pdbname= f"{options.ptclsout[:-4]}_{i:02d}.pdb"
+				replace_pdb_points(options.pdb, pdbname, pz)
+				print("pdb saved to {}".format(pdbname))
 
-		d=allpts[-1]-allpts[0]
-		d=np.linalg.norm(d, axis=1)
-		print("RMSD {:.2f} from the first to the last frame".format(np.sqrt(np.mean(d**2))))
+			d=allpts[-1]-allpts[0]
+			d=np.linalg.norm(d, axis=1)
+			print("RMSD {:.2f} from the first to the last frame".format(np.sqrt(np.mean(d**2))))
 		
+		else:
+			for i,v0 in enumerate(pcnt):
+				tname=f"{options.ptclsout[:-4]}_{i:02d}.txt"
+				np.savetxt(tname, v0+p00)
+				print("model saved to {}".format(tname))
 		
 	onames=[]
 	fname=options.ptclsin
