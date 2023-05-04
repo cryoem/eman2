@@ -22,6 +22,7 @@ if ('-h' in sys.argv) or ('--help' in sys.argv):
 	print("Printing help. Skip tensorflow import")
 else:
 	import tensorflow as tf
+	import h5py
 
 def main():
 
