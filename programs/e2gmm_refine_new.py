@@ -217,6 +217,67 @@ def pts2img(pts, angs):
 	img=tf.vectorized_map(pts2img_one_sig, (pts, angs))
 	return tf.math.real(img), tf.math.imag(img)
 
+@tf.function()
+def pts2img01(pts, ang):
+	
+	sz, idxft, rrft = params["sz"], params["idxft"], params["rrft"]
+	xfo=params["xforigin"]
+	
+	lp=.1
+	#bamp=tf.cast(tf.nn.relu(pts[:,3]), tf.complex64)[:,None]
+	#bsigma=tf.cast(tf.nn.relu(pts[:,4]), tf.complex64)*.001
+	
+	#print(pts.shape,ang.shape)
+	azp=-ang[:, 0]
+	altp=ang[:, 1]
+	phip=-ang[:, 2]
+
+	matrix = tf.stack([
+	[tf.cos(phip)*tf.cos(azp) - tf.cos(altp)*tf.sin(azp)*tf.sin(phip),
+	tf.cos(phip)*tf.sin(azp) + tf.cos(altp)*tf.cos(azp)*tf.sin(phip),
+	tf.sin(altp)*tf.sin(phip)],
+	[tf.sin(phip)*tf.cos(azp) + tf.cos(altp)*tf.sin(azp)*tf.cos(phip),
+	tf.sin(phip)*tf.sin(azp) - tf.cos(altp)*tf.cos(azp)*tf.cos(phip),
+	-tf.sin(altp)*tf.cos(phip)]]
+	)
+	#print(matrix.shape)
+	#print(matrix)
+	matrix=tf.transpose(matrix, (2, 1, 0))
+
+	pts_rot = pts[:, :, :3] @ matrix
+	pts_rot_trans = pts_rot + ang[:, None, 3:]
+
+	
+	bpos=pts_rot_trans
+	bpos=bpos*sz+sz/2
+	bposft=bpos*np.pi*2
+	
+	cpxang_x=bposft[:, :, 0:1] * idxft[None, 0, [0], :]
+	cpxang_y=bposft[:, :, 1:2] * idxft[None, 1, :, [0]]
+	
+	
+	bamp = tf.cast(tf.nn.relu(pts[:, :, 3:4]), tf.complex64)
+	bsigma=tf.cast(tf.nn.relu(pts[:, :, 4:5]), tf.complex64)*.001
+	
+	#print(rrft[0].shape,rrft[1].shape,bsigma.shape)
+	sig_x = tf.exp(-rrft[0][None, :]*bsigma)
+	sig_y = tf.exp(-rrft[1][None, :]*bsigma)
+	#print(cpxang_x.shape, cpxang_y.shape, bamp.shape)
+	#print(bsigma.shape,sig_x.shape, sig_y.shape)
+    
+	pgauss_x = tf.exp(-1j*tf.cast(cpxang_x, tf.complex64))*bamp*sig_x
+	pgauss_y = tf.exp(-1j*tf.cast(cpxang_y, tf.complex64))*bamp*sig_y
+	#print(pgauss_x.shape,pgauss_y.shape)
+
+    
+	pgauss = tf.transpose(pgauss_y, (0, 2, 1)) @ pgauss_x
+
+	pgauss=pgauss*tf.cast(xfo, tf.complex64)
+	
+	return tf.math.real(pgauss), tf.math.imag(pgauss)
+
+
+
 #### compute particle-projection FRC 
 ##   data_cpx, imgs_cpx - complex images in (real, imag) form
 ##   rings - indices of Fourier rings
@@ -1247,18 +1308,18 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, imsk, option
 						hdst=calc_bond(pout, hbond)
 						drh=(hdst-hdst00)*options.apix*options.maxboxsz
 						drh=tf.math.sqrt(tf.reduce_mean(drh**2))
-						lossetc+=drh*0.2
+						lossetc+=drh*1
 					if options.angle:
 						ang=calc_angle(pout, angle)
 						da=tf.math.sqrt(tf.reduce_mean((ang-ang00)**2))
-						lossetc+=da*0.02
+						lossetc+=da*.1
 			
-				l=loss+lossetc*0.1
+				l=loss+lossetc*.005
 				
 				
 			if options.usetest==False or len(cost)<nbatch*.95:
 				cost.append(loss)
-				grad=gt.gradient(loss, wts)
+				grad=gt.gradient(l, wts)
 				opt.apply_gradients(zip(grad, wts))
 			else:
 				testcost.append(loss)
@@ -1275,6 +1336,7 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, imsk, option
 				if options.angle:
 					etc+=f", angle {da:.3f}"
 					ce.append(da)
+				ce.append(lossetc)
 					
 			
 			costetc.append(ce)
@@ -1295,7 +1357,8 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, imsk, option
 				etc+=f", H-bond {c[1]:.4f}"
 			if options.angle:
 				etc+=f", angle {c[2]:.3f}"
-		
+			etc+=f", geometry  {c[3]:.3f}"
+			
 		if options.usetest:
 			print("iter {}, train loss : {:.4f}; test loss {:.4f}".format(itr, np.mean(cost), np.mean(testcost)))
 		else:
