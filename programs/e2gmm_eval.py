@@ -24,6 +24,7 @@ def main():
 	parser.add_argument("--axis", type=str,help="axis for regress. one number for a line, and two numbers separated by comma to draw circles.", default='0')
 	parser.add_argument("--sym", type=str,help="symmetry", default="c1")
 	parser.add_argument("--nptcl", type=int,help="number of particles per class in regress mode", default=2000)
+	parser.add_argument("--apix", type=float,help="overwrite apix for pdb morphing", default=-1)
 	parser.add_argument("--decoder", type=str,help="decoder input", default=None)
 	parser.add_argument("--pdb", type=str,help="model input in pdb", default=None)
 	parser.add_argument("--selgauss", type=str,help="provide a text file of the indices of gaussian (or volumic mask) that are allowed to move", default=None)
@@ -108,8 +109,10 @@ def main():
 			pdb=pdb2numpy(options.pdb, allatom=True)
 			e=EMData(options.ptclsin)
 			apix=e["apix_x"]
+			if options.apix>0:
+				apix=options.apix
 			sz=e["nx"]
-			pdb=pdb/e["ny"]/e["apix_x"]-0.5
+			pdb=pdb/e["ny"]/apix-0.5
 			pdb[:,1:]*=-1
 			
 			print("Making distance matrix of ({},{})".format(len(pdb), len(p00)))
@@ -124,7 +127,7 @@ def main():
 
 				pz=pdb+v[:,:3]
 				pz[:,1:]*=-1
-				pz=(pz+.5)*e["ny"]*e["apix_x"]
+				pz=(pz+.5)*e["ny"]*apix
 				allpts.append(pz.copy())
 				pdbname= f"{options.ptclsout[:-4]}_{i:02d}.pdb"
 				replace_pdb_points(options.pdb, pdbname, pz)

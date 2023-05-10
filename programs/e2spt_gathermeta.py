@@ -100,7 +100,7 @@ def main():
 	parser.add_argument("--ali3d", action="store_true", default=False, help="use align3d from the list in place of the info from --ptcls header.")
 	parser.add_argument("--exclude", type=str,help="exclude particle around a given set of existing particles", default=None)
 	parser.add_argument("--path", type=str,help="new refinement path", default=None)
-	#parser.add_argument("--sym", type=str,help="", default="c1")
+	parser.add_argument("--smooth", type=float,help="factor to smooth the movement field from the --ali2d refinement. Bigger is smoother, default is 10", default=10)
 	parser.add_argument("--userot", action="store_true", default=False, help="use rotational subtilt alignment as well. very slow and may not be as useful..")
 
 	(options, args) = parser.parse_args()
@@ -161,7 +161,7 @@ def main():
 	dst=scipydist.cdist(pos0,pos1)
 	print(f"{len(pos0)} particles from old refinement, {len(pos1)} particles from new refinement")
 	print("mean neighbor distance between particles from two refinement: {:.4f}".format(np.mean(np.min(dst, axis=0))))
-	dst=np.exp(-dst/10)
+	dst=np.exp(-dst/options.smooth)
 	dst=dst/np.sum(dst,axis=0)
 	v1=np.matmul(v0.T,dst).T
 	print("mean subtilt translation {:.4f} from old refinement".format(np.mean(np.linalg.norm(v0, axis=1))))
@@ -180,7 +180,8 @@ def main():
 		
 		dc2={"src":a["src"],"idx":a["idx"],
 			"ptcl3d_id":a["idx3d"],
-			"tilt_id":a["tilt_id"]}
+			"tilt_id":a["tilt_id"],
+			"score":0}
 		
 		i3=info3d1[a["idx3d"]]
 		if "class" in i3:
@@ -229,7 +230,7 @@ def main():
 			p1=pos1[i1]
 			
 			dst=scipydist.cdist(p0,p1)
-			dst=np.exp(-dst/10)
+			dst=np.exp(-dst/options.smooth)
 			dst=dst/np.sum(dst,axis=0)
 			v1=np.matmul(v0.T,dst).T
 			v1/=scale

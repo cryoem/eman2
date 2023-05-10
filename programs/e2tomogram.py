@@ -88,6 +88,7 @@ def main():
 	parser.add_argument("--reconmode", type=str, help="Intepolation mode for reconstruction. default is trilinear. check e2help.py for details. Not recommended to change.",default="trilinear")
 	parser.add_argument("--maxshift", type=float,help="Maximum shift between tilt(/image size). default is 0.2", default=.2)
 	parser.add_argument("--highpass", type=int,help="initial highpass filter for alignment in pixels. default if 3", default=3)
+	parser.add_argument("--lowpass", type=float,help="initial lowpass filter for alignment in abs. default if 0.5", default=0.5)
 	parser.add_argument("--pathtracktile", type=int,help="number of tile along one axis for patch tracking. default is 5", default=5)
 	parser.add_argument("--badone", action="store_true",help="Remove one bad tilt during coarse alignment. seem to work better with smaller maxshift...", default=False)#, guitype='boolbox',row=9, col=0, rowspan=1, colspan=1,mode="easy")
 	
@@ -202,7 +203,7 @@ def main():
 		m=p.process("math.meanshrink", {"n":2})
 		m.process_inplace("filter.ramp")
 		m.process_inplace("filter.lowpass.gauss",{"cutoff_freq":.025})
-		m.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.5})
+		m.process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.lowpass})
 		m.process_inplace("filter.highpass.gauss",{"cutoff_pixels":options.highpass})
 		m.process_inplace("normalize.edgemean")
 		sz=512
