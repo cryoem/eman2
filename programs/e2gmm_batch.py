@@ -134,7 +134,7 @@ def find_option(cmd, op):
 	
 	ii=[i for i,c in enumerate(cmd) if c==op]
 	if len(ii)!=1:
-		print(f"error: cannot find {op}")
+		print(f"e2gmm_batch: cannot find {op}")
 		return None
 	
 	ii=ii[0]

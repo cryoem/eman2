@@ -232,7 +232,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 			for l in lsts:
 				i=dic[str((l['src'], l['idx']))]
 				lstout[i]=l
-				print(i,l['src'], l['idx'], len([l for l in lstout if l==None]))
+				#print(i,l['src'], l['idx'], len([l for l in lstout if l==None]))
 			for i,l in enumerate(lstout):
 				if l==None:
 					print(i,lstref[i]["src"],lstref[i]["idx"], "missing")
