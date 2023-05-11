@@ -228,15 +228,15 @@ def main():
 			
 	if options.lst2star:
 		lst=load_lst_params(options.lst2star)
+		print("{} particles from star, {} particles from lst".format(len(fnames), len(lst)))
 		oname=args[0][:-5]+"_from_eman.star"
 		f=open(oname,'w')
 		for ln in alllines[:starti]:
 			f.write(ln)
-		for i, ln in enumerate(lines):
-			
+		for fm in fnames:
+			i=fm[0]
+			ln=lines[i]
 			l=ln.split()
-			
-			#print(l[rid["psi"]], l[rid["tilt"]], l[rid["rot"]],l[rid["txa"]], l[rid["tya"]])
 			d=Transform(lst[i]["xform.projection"])
 			d=d.get_params("spider")
 			
