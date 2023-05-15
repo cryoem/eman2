@@ -1,6 +1,8 @@
-- fix hdf cmake
+instructions for conda-install eman
 
-- drop small binaries ?
+e2proc2d:
+ - get_image_count
+ - confirm extensions are handled properly
 
 - binary no compile, get from eman-dev
 
@@ -10,3 +12,5 @@
 
 - Remove individual deps from an eman-deps env
 conda is broken, nothing we can do
+
+ImageDimensionExcept
