@@ -1,17 +1,25 @@
-check eman-dev builds
+- eman2: trigger with [ci build]             (jenkins)
+	update version files                     (python)
+	tag                                      (python)
+	push commit and tag                      (python)
 
-ftgl 2.1.3    not 2.3.1
+	- trigger jenkins job for eman-feedstock (jenkins)
+		update source tag                    (python)
+		push commit to build conda packages  (python)
+	- trigger jenkins job to build binaries  (jenkins)
+		many steps  (python)
 
-build system docs
 
-e2proc2d, e2proc3d:
- - get_image_count
 
-e3proc2d, e3proc3d
 
-- binary no compile, get from eman-dev
+- Fix eman-dev builds, cmake's newly used FindPython3(): need to make conda-build add PYTHON env var, solution: add python to host reqs
+- Fix binary builds to actually build, not test (in renamed jenkins, I think)
+- Documentation
 
-- replace eman-deps with eman-dev ???
+- SegFault
+xubuntu      : src and eman-dev
+build machine: no src, binary
+blake        : no src, eman-dev (illegal instruction)
 
 
 
@@ -19,6 +27,11 @@ e3proc2d, e3proc3d
 conda is broken, nothing we can do
 
 ImageDimensionExcept
+- exceptions do not dislay on Linux
+- pgm, png,
+	- imagic
+- tiff STACKS
+	- big tiff ?
 
 
 LATEST ??

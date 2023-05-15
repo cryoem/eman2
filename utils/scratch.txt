@@ -1,0 +1,15 @@
+eman2
+eman-bump-version: triggered by push to eman2, if bump triggered, runs version update and tagging,
+  config file: Jenkins/bump-version
+
+eman-feedstock-trigger-from-eman-master: triggered by eman2 tags, triggers jenkins job
+* can trigger from Jenkinsfile: 'build job'
+  regex for branches ?
+
+
+eman-feedstock
+
+eman-feedstock-build-tags: triggered by eman-feedstock-trigger-from-eman-master, gets tag from gh or triggering job ?
+  updates version to build, pushes updates to gh
+
+eman-feedstock-build-tags1:
