@@ -443,7 +443,7 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 					#### remove point
 					self.contour.points=[p for i,p in enumerate(self.contour.points) if i!=ii]
 
-			elif event.modifiers()&Qt.ControlModifier and event.modifiers()&Qt.ShiftModifier:
+			elif event.modifiers()&Qt.ControlModifier:
 				if res[ii]<20:
 					#### select contour
 					ci=self.contour.points[ii][3]
