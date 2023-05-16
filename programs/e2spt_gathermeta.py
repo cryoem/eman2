@@ -69,9 +69,13 @@ def gather_metadata(options):
 		else:
 			xfali=img["xform.align3d"]
 		
+		if img.has_attr("orig_class"):
+			cls=img["orig_class"]
+		else:
+			cls=ii
 		dc={"src":dt["src"], "idx":dt["idx"],
 			"coord":img["ptcl_source_coord"], "idx2d":idx2d,
-			"class":img["orig_class"], "xform.align3d":xfali
+			"class":cls, "xform.align3d":xfali
 		}
 
 		info3d.append(dc)

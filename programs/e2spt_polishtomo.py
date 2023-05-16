@@ -293,7 +293,10 @@ def reconstruct_tile(job):
 			fft1.mult(flipim)
 			m=fft1.do_ift()
 			
-		dxy=sel_dxy[tid].copy()[:,:2]
+		try:
+			dxy=sel_dxy[tid].copy()[:,:2]
+		except:
+			continue
 		dx=dxy[di]/options.xfscale
 		dx=np.sum(dx*wt[:,None], axis=0)
 		# print(tid, dx)
