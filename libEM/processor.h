@@ -7525,15 +7525,15 @@ symmetric phase flipping can optionally be performed.";
 
 		virtual string get_desc() const
 		{
-			return "This processor attempts to perform a 'local normalization' so low density and high density features will be on a more even playing field in an isosurface display. threshold is an isosurface threshold at which all desired features are visible, radius is a feature size over which to equalize.";
+			return "This processor attempts to perform a 'local normalization' so low density and high density features will be on a more even playing field in an isosurface display, but without overamplifying background noise. Using this processor can help visualize weaker densities due, for example, to heterogeneity or stronger densities, such as lipid membranes all at the same isosurface threshold. The resulting maps are useful for visualization, but should not be used for quantitative volume measurements. To use: threshold should be set to an isosurface threshold where all desired features are visible, but not so low that noise begins to appear. If this is not possible, you may need to consider low pass filtering the map prior to using this processor. apix should be set to the correct value, even if the correct value is present in the header. radius specifies a feature-size in A over which the normalization will take place, manual adjustment may be necessary. Suggest experimenting with e2filtertool.";
 		}
 
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("threshold", EMObject::FLOAT, "Only values above the threshold will be used to compute the normalization. Generally a good isosurface value.");
-			d.put("radius", EMObject::FLOAT, "Fourier filter radius expressed in pixels in Fourier space. cutoff_pixels in filter.lowpass.gauss");
-			d.put("apix", EMObject::FLOAT, "Angstroms per pixel");
+			d.put("threshold", EMObject::FLOAT, "Only values above the threshold will be used to compute the normalization. Select an isosurface in the original map where all desired densities are visible, but noise is minimal.");
+			d.put("radius", EMObject::FLOAT, "Region size for normalization calculation in A (requires apix to be correct)");
+			d.put("apix", EMObject::FLOAT, "Angstroms per pixel. Specify even if correct in image header.");
 			return d;
 		}
 

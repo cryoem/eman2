@@ -1809,8 +1809,12 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		self.group_by_mask()
 
-		if self.cengroups is None: self.neutralplot.setData(np.concatenate((centers,[amps])),self.wvssphsz.value)
-		else: self.neutralplot.setData(np.concatenate((centers,[amps],[np.ones(len(amps))],[self.cengroups])),self.wvssphsz.value)
+		try:
+			if self.cengroups is None: self.neutralplot.setData(np.concatenate((centers,[amps])),self.wvssphsz.value)
+			else: self.neutralplot.setData(np.concatenate((centers,[amps],[np.ones(len(amps))],[self.cengroups])),self.wvssphsz.value)
+		except:
+			self.cengroups=None
+			self.neutralplot.setData(np.concatenate((centers,[amps])),self.wvssphsz.value)
 		self.wview3d.update()
 
 		# write the new seg model to disk for use in subsequent runs
