@@ -72,7 +72,7 @@ def gather_metadata(options):
 		if img.has_attr("orig_class"):
 			cls=img["orig_class"]
 		else:
-			cls=ii
+			cls=ii%2
 		dc={"src":dt["src"], "idx":dt["idx"],
 			"coord":img["ptcl_source_coord"], "idx2d":idx2d,
 			"class":cls, "xform.align3d":xfali
