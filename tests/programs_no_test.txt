@@ -11,3 +11,5 @@
  e2gmm_refine_new.py
  e2gmm_heter_ali.py
  e2tomo_annotate.py # skimage
+ e2gmm_spt_align.py
+ e2gmm_spt_subtlt.py
