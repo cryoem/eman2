@@ -97,6 +97,7 @@ BOOST_PYTHON_MODULE(libpyTypeConverter2)
 	EMAN::vector_from_python<EMAN::EMAN2Ctf>();
 	EMAN::vector_from_python<std::string>();
 	EMAN::vector_from_python<EMAN::EMData*>();
+	EMAN::vector_from_python< std::shared_ptr<EMAN::EMData> >();
 	EMAN::vector_from_python<EMAN::Pixel>();
 	EMAN::vector_from_python<EMAN::EMObject>();
 	EMAN::vector_from_python<EMAN::Vec3f>();
