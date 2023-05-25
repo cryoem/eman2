@@ -203,6 +203,15 @@ void EMData::_write_image(ImageIO *imageio, int img_index,
 						 EMUtil::EMDataType filestoragetype,
 						 bool use_host_endian)
 {
+	if (is_complex() && is_shuffled())
+		fft_shuffle();
+
+	//set "nx", "ny", "nz" and "changecount" in attr_dict, since they are taken out of attribute dictionary
+	attr_dict["nx"] = nx;
+	attr_dict["ny"] = ny;
+	attr_dict["nz"] = nz;
+	attr_dict["changecount"] = changecount;
+
 	if (!imageio)
 		throw ImageFormatException("cannot create an image io");
 	else {
@@ -316,21 +325,12 @@ void EMData::write_image(const string & filename, int img_index,
 	struct stat fileinfo;
 	if ( region && stat(filename.c_str(),&fileinfo) != 0 ) throw UnexpectedBehaviorException("To write an image using a region the file must already exist and be the correct dimensions");
 
-	if (is_complex() && is_shuffled())
-		fft_shuffle();
-
 	if (imgtype == EMUtil::IMAGE_UNKNOWN) {
 		auto pos = filename.rfind('.');
 		if (pos != string::npos)
 			imgtype = EMUtil::get_image_ext_type(filename.substr(pos+1));
 	}
 	ImageIO::IOMode rwmode = ImageIO::READ_WRITE;
-
-	//set "nx", "ny", "nz" and "changecount" in attr_dict, since they are taken out of attribute dictionary
-	attr_dict["nx"] = nx;
-	attr_dict["ny"] = ny;
-	attr_dict["nz"] = nz;
-	attr_dict["changecount"] = changecount;
 
     // Check if this is a write only format.
     if (Util::is_file_exist(filename) && (!header_only && region == 0)) {
@@ -423,7 +423,27 @@ bool EMData::write_images(const string & filename, vector<std::shared_ptr<EMData
 {
 	ENTERFUNC;
 
-	ImageIO *imageio = EMUtil::get_imageio(filename, ImageIO::WRITE_ONLY);
+	struct stat fileinfo;
+	if ( region && stat(filename.c_str(),&fileinfo) != 0 ) throw UnexpectedBehaviorException("To write an image using a region the file must already exist and be the correct dimensions");
+
+	if (imgtype == EMUtil::IMAGE_UNKNOWN) {
+		auto pos = filename.rfind('.');
+		if (pos != string::npos)
+			imgtype = EMUtil::get_image_ext_type(filename.substr(pos+1));
+	}
+	ImageIO::IOMode rwmode = ImageIO::READ_WRITE;
+
+	// Check if this is a write only format.
+	if (Util::is_file_exist(filename) && (!header_only && region == 0)) {
+		ImageIO * tmp_imageio = EMUtil::get_imageio(filename, ImageIO::READ_ONLY, imgtype);
+		if (tmp_imageio->is_single_image_format())
+			rwmode = ImageIO::WRITE_ONLY;
+		EMUtil::close_imageio(filename, tmp_imageio);
+		tmp_imageio = 0;
+	}
+
+	LOGVAR("getimageio %d",rwmode);
+	ImageIO *imageio = EMUtil::get_imageio(filename, rwmode);
 
 	auto num_imgs = imgs.size();
 	for (size_t i = 0; i < num_imgs; i++) {
