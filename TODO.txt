@@ -19,3 +19,30 @@ e3proc2d, e3proc3d
 conda is broken, nothing we can do
 
 ImageDimensionExcept
+
+
+LATEST ??
+- upload/publish gui/nogui eman-dev
+  - cmake findHDF5 issue
+
+- Currently, nogui ignores tests
+  - have cmake not install gui programs into nogui package ???
+
+- binary builds: do not compile on build machines, package eman-dev.
+Daily cron or trigger packaging after 1 hour of eman-dev update ?
+
+- what to do with eman2/recipe, it's a duplicate,
+but is there any other way to test builds on github/cryoem/eman2 ?
+
+- automatic rerender strategy for pydusa-feedstock, eman-feedstock, ... ?
+
+- update wiki for build system
+
+
+
+- write tiff stacks
+ - careful with image overwriting ???
+ - metadata
+ - ometiff
+
+- ome-zarr
