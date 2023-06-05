@@ -41,6 +41,7 @@ from matplotlib.patches import Circle
 import matplotlib.path as mplPath
 import matplotlib.pyplot as plt
 
+
 def main():
 	usage="""annotate tomograms in a folder. annotated images will be saved in ./segs folder.
 	 still developing
@@ -53,7 +54,7 @@ def main():
 	parser.add_argument("--folder",type=str, help="List the folder contain all tomograms to process", default="./tomograms/")
 
 	parser.add_argument("--seg_folder",type=str, help="List the folder contain all annotation file", default="./segs/")
-	parser.add_argument("--region_sz",type=int, help="Region size for Region I/O. -1 reads whole tomogram", default=680)
+	parser.add_argument("--region_sz",type=int, help="Region size for Region I/O. -1 reads whole tomogram", default=-1)
 	#parser.add_argument("--alltomograms",default=False,help="Process all tomograms from tomograms folder")
 	#parser.add_argument("--boxsize","-b",type=int,help="Box size in pixels",default=-1)
 
@@ -120,6 +121,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.nx = hdr["nx"]
 		self.ny = hdr["ny"]
 		self.nz=hdr["nz"]
+		#self.nz=256
 
 		#TODO
 		#Need to copy header to annotation file
@@ -212,7 +214,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		zt_hbl = QtWidgets.QHBoxLayout()
 		zt_hbl.addWidget(QtWidgets.QLabel("Z-thickness"))
 		self.zt_spinbox = QtWidgets.QSpinBox(self)
-		self.zt_spinbox.setValue(0)
+		self.zt_spinbox.setValue(-1)
 		self.zt_spinbox.setMinimum(-1)
 		self.zt_spinbox.setMaximum(self.nz//2)
 		zt_hbl.addWidget(self.zt_spinbox)
@@ -359,8 +361,13 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.morp_tab = Morp_Tab(target=self)
 		self.binary_tab = Binary_Tab(target=self)
 		self.spec_tab = Specific_Tab(target=self)
-		self.assisted_tab.addTab(self.nn_tab,"NeuralNetwork")
+		self.templ_tab = Templ_Match_Tab(target=self)
+		self.stat_tab = Statistics_Tab(target=self)
+
 		self.assisted_tab.addTab(self.binary_tab,"AutoDetect")
+		self.assisted_tab.addTab(self.nn_tab,"NeuralNetwork")
+		self.assisted_tab.addTab(self.templ_tab,"Template")
+		self.assisted_tab.addTab(self.stat_tab,"Statistics")
 		self.assisted_tab.addTab(self.morp_tab,"Morphological")
 		self.assisted_tab.addTab(self.spec_tab,"Specific")
 		self.assisted_tab.currentChanged[int].connect(self.assisted_tab_changed)
@@ -556,9 +563,14 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 	#need to write region out before setting new data
 
 	def write_out(self,file_out, out_name, region):
-		file_out["ann_name"] = 0.111
-		file_out["ann_num"] = 2
-		file_out.write_image(out_name, 0, IMAGE_HDF, False, region)
+		self.set_scale=1
+		if file_out:
+			# file_out["ann_name"] = 0.111
+			# file_out["ann_num"] = 2
+			file_out.write_image(out_name, 0, IMAGE_HDF, False, region)
+		else:
+			print(file_out)
+			pass
 
 
 	def set_imgview_data(self,x,y,sz):
@@ -570,8 +582,11 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			self.cur_region = Region(x-sz//2,y-sz//2,sz,sz)
 			#self.data = EMData(self.data_file, 0, False, Region(x-old_div(sz,2),y-old_div(sz,2),sz,sz))
 		else:
-			self.zthick = int(self.zt_spinbox.value())
-			print("zthick",self.zthick)
+			try:
+				self.zthick = int(self.zt_spinbox.value())
+				print("zthick",self.zthick)
+			except:
+				self.zthick = 0
 			if self.zthick == -1:
 				print(self.nz)
 				self.cur_region = Region(x-old_div(sz,2),y-old_div(sz,2),0, sz, sz, self.nz)
@@ -1144,6 +1159,8 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		#self.write_header(self.get_annotation())
 
 		self.write_metadata(self.seg_path)
+		print(self.get_annotation(), self.seg_path, self.cur_region)
+
 		self.write_out(self.get_annotation(), self.seg_path, self.cur_region)
 
 		#self.get_annotation().write_image(self.seg_path, 0, IMAGE_HDF, False, self.cur_region)
@@ -1162,7 +1179,13 @@ class Thumbnail(EMImage2DWidget):
 			self.get_im(self.current_file)
 
 		self.scale_fac = round(self.img["nx"]/tn_size)
-		self.thumbnail_image=self.img.process("math.meanshrink",{"n":(self.scale_fac)})
+		print(self.scale_fac)
+		try:
+			self.thumbnail_image=self.img.process("math.meanshrink",{"n":(self.scale_fac)})
+		except:
+			temp=to_numpy(self.img)
+			self.scale_fac = temp.shape[0]
+			self.thumbnail_image=self.img.process("math.meanshrink",{"n":(self.scale_fac)})
 		self.size = self.thumbnail_image.get_sizes()[0]
 
 		if target:
@@ -2237,6 +2260,108 @@ class Binary_Tab(QtWidgets.QWidget):
 		self.target.img_view.set_data(self.target.get_data(),self.thres_mask*self.mask)
 		return
 
+class Templ_Match_Tab(QtWidgets.QWidget):
+	def __init__(self,target) :
+		QtWidgets.QWidget.__init__(self,None)
+		self.target = target
+		self.template_text = QtWidgets.QLineEdit()
+		self.template_browser_bt = QtWidgets.QPushButton("Browse")
+		self.create_template_bt = QtWidgets.QPushButton("Make Template")
+		self.template_match_bt = QtWidgets.QPushButton("Template Match")
+		self.tplt_low_pass_vs = ValSlider(value=1,rng=(0.001,1),rounding=2,label= "Low-pass Filt")
+		self.tplt_threshold_vs = ValSlider(value=0.8,rng=(0.001,6),rounding=2,label="Binary Thresh")
+
+
+		templ_gbl = QtWidgets.QGridLayout()
+		templ_gbl.addWidget(self.template_text,0,0,1,3)
+		templ_gbl.addWidget(self.template_browser_bt,0,3,1,1)
+		templ_gbl.addWidget(self.create_template_bt,1,0,1,2)
+		templ_gbl.addWidget(self.template_match_bt,1,2,1,2)
+		templ_gbl.addWidget(self.tplt_threshold_vs,2,0,1,4)
+		#templ_gbl.addWidget(self.tplt_low_pass_vs,3,0,1,4)
+		self.setLayout(templ_gbl)
+
+		self.tplt_match_launcher = QtWidgets.QWidget()
+		self.tplt_match_launcher.setWindowTitle("Command for template-matching")
+		self.tplt_match_launcher.setMinimumWidth(500)
+		self.tplt_match_cmd = QtWidgets.QTextEdit()
+		self.tplt_lauch_bt = QtWidgets.QPushButton("Launch")
+
+		tml_layout = QtWidgets.QVBoxLayout()
+		tml_layout.addWidget(self.tplt_match_cmd)
+		tml_layout.addWidget(self.tplt_lauch_bt)
+		self.tplt_match_launcher.setLayout(tml_layout)
+
+		self.template_browser_bt.clicked[bool].connect(self.load_template)
+		self.template_match_bt.clicked[bool].connect(self.tplt_match)
+		self.create_template_bt.clicked[bool].connect(self.create_tplt)
+		self.tplt_lauch_bt.clicked[bool].connect(self.tplt_match_launched)
+		self.tplt_threshold_vs.valueChanged.connect(self.binarize_tplt_match)
+
+
+
+
+	def load_template(self):
+		self.tplt_browser = EMBrowserWidget(withmodal=True,multiselect=False)
+		self.tplt_browser.ok.connect(self.tplt_browser_ok)
+		self.tplt_browser.show()
+		return
+
+	def tplt_browser_ok(self):
+		self.tplt_browser_ret = (self.tplt_browser.getResult())
+		self.template_text.setText(self.tplt_browser_ret[0])
+		self.template = EMData(self.tplt_browser_ret[0])
+		#process template
+
+	def tplt_match(self):
+		self.tm_cmd="e2spt_tempmatch.py "+self.target.data_file+" --reference="+self.template_text.text()+" --nptcl=500 --dthr=-1.0 --vthr=0.2 --minvol=-1 --maxvol=-1 --delta=90.0 --sym=c1 --rmedge --rmgold --boxsz=-1 --threads=4 --shrink=1"
+		self.tplt_match_cmd.setText(self.tm_cmd)
+		self.tplt_match_launcher.show()
+		return
+
+	def tplt_match_launched(self):
+		self.tplt_match_launcher.close()
+		try:
+			os.system(self.tplt_match_cmd.toPlainText())
+		except:
+			pass
+		os.system("e2proc3d.py tmp_ccc.hdf tmp_ccc_inv.hdf --mult=-1")
+		#tplt_match_map = EMData("tmp_ccc_inv.hdf")
+		self.tplt_threshold_vs.setValue(0.81)
+		return
+
+	def binarize_tplt_match(self, event):
+		tplt_match_map = EMData("tmp_ccc_inv.hdf")
+		tplt_match_map_bin=tplt_match_map.process("threshold.binary",{"value":self.tplt_threshold_vs.value})
+		self.target.img_view.full_annotation =tplt_match_map_bin
+		self.target.img_view.force_display_update(set_clip=0)
+		self.target.img_view.updateGL()
+
+
+
+
+
+	def create_tplt(self):
+		return
+
+
+
+
+
+class Statistics_Tab(QtWidgets.QWidget):
+	def __init__(self,target) :
+		QtWidgets.QWidget.__init__(self,None)
+		self.target = target
+		
+
+
+
+		stat_gbl = QtWidgets.QGridLayout()
+
+		self.setLayout(stat_gbl)
+
+
+
 
 class Specific_Tab(QtWidgets.QWidget):
 	def __init__(self,target) :
@@ -2278,5 +2403,7 @@ class Specific_Tab(QtWidgets.QWidget):
 		cell_vbl.addLayout(cell_button_l)
 
 
+
 if __name__ == '__main__':
 	main()
+
