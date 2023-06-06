@@ -172,8 +172,7 @@ static vector<std::shared_ptr<EMData>> read_images(const string & filename,
  * @return True if set of images are written successfully to filename.
  */
 static bool write_images(const string & filename,
-									const vector<EMData*> & imgs,
-//									vector<std::shared_ptr<EMData>> imgs,
+									vector<std::shared_ptr<EMData>> imgs,
 									EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN,
 									bool header_only = false,
 									const Region * region = nullptr,
