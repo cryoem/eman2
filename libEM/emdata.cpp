@@ -3489,7 +3489,7 @@ float EMData::calc_dist(EMData * second_img, int y_index) const
 }
 
 
-EMData * EMData::calc_fast_sigma_image( EMData* mask)
+EMData * EMData::calc_fast_sigma_image(EMData* mask)
 {
 	ENTERFUNC;
 
@@ -3602,6 +3602,56 @@ EMData *EMData::calc_flcf(EMData * with)
 
 	EMData* s = calc_fast_sigma_image(ones);// Get the local sigma image
 
+	Region r1;
+	if (ny == 1) r1 = Region((mnx-nxc)/2,nxc);
+	else if (nz == 1) r1 = Region((mnx-nxc)/2, (mny-nyc)/2,nxc,nyc);
+	else r1 = Region((mnx-nxc)/2, (mny-nyc)/2,(mnz-nzc)/2,nxc,nyc,nzc);
+	with_resized->clip_inplace(r1,0.0);
+
+	Region r2;
+	if (ny == 1) r2 = Region((nx-nxc)/2,nxc);
+	else if (nz == 1) r2 = Region((nx-nxc)/2, (ny-nyc)/2,nxc,nyc);
+	else r2 = Region((nx-nxc)/2, (ny-nyc)/2,(nz-nzc)/2,nxc,nyc,nzc);
+	this_copy->clip_inplace(r2,0.0);
+
+	EMData* corr = this_copy->calc_ccf(with_resized); // the ccf results should have same size as sigma
+
+	corr->process_inplace("xform.phaseorigin.tocenter");
+	Region r3;
+	if (ny == 1) r3 = Region((nxc-nx)/2,nx);
+	else if (nz == 1) r3 = Region((nxc-nx)/2, (nyc-ny)/2,nx,ny);
+	else r3 = Region((nxc-nx)/2, (nyc-ny)/2,(nzc-nz)/2,nx,ny,nz);
+	corr->clip_inplace(r3);
+
+	corr->div(*s);
+
+	delete with_resized; delete ones; delete this_copy; delete s;
+	EXITFUNC;
+	return corr;
+}
+
+EMData *EMData::calc_flcf_EDA(EMData * with, EMData * sigma_image)
+{
+	ENTERFUNC;
+	EMData *this_copy=this;
+	this_copy=copy();
+
+	int mnx = with->get_xsize(); int mny = with->get_ysize(); int mnz = with->get_zsize();
+	int nxc = nx+mnx; int nyc = ny+mny; int nzc = nz+mnz;
+
+	// Ones is a circular/spherical mask, consisting of 1s.
+	EMData* ones = new EMData(mnx,mny,mnz);
+	ones->process_inplace("testimage.circlesphere");
+
+	// Get a copy of with, we will eventually resize it
+	EMData* with_resized = with->copy();
+	with_resized->process_inplace("normalize");
+	with_resized->mult(*ones);
+
+	//EMData* s = calc_fast_sigma_image(ones);// Get the local sigma image
+
+	EMData* s = sigma_image->copy();
+	
 	Region r1;
 	if (ny == 1) r1 = Region((mnx-nxc)/2,nxc);
 	else if (nz == 1) r1 = Region((mnx-nxc)/2, (mny-nyc)/2,nxc,nyc);

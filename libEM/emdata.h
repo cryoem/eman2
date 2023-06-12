@@ -678,7 +678,27 @@ namespace EMAN
 		 * @author David Woolford
 		 * @date April 2008
 		*/
-		EMData *calc_fast_sigma_image( EMData* mask);
+		EMData *calc_flcf_EDA(EMData * with, EMData * sigma_image);
+
+		/** Calculates the local standard deviation (sigma) image using the given
+		 * mask image. The mask image is typically much smaller than this image,
+		 * and consists of ones, or is a small circle consisting of ones. The extent
+		 * of the non zero neighborhood explicitly defines the range over which
+		 * the local standard deviation is determined.
+		 * Fourier convolution is used to do the math, ala Roseman (2003, Ultramicroscopy)
+		 * However, Roseman was just working on methods Van Heel had presented earlier.
+		 * The normalize flag causes the mask image to be processed so that it has a
+		 * unit sum.
+		 * Works in 1,2 and 3D
+		 *
+		 * @param mask the image that will be used to define the neighborhood for determine the local standard deviation
+		 * @return the sigma image, the phase origin is at the corner (not the center)
+		 * @exception ImageDimensionException if the dimensions of with do not match those of this
+		 * @exception ImageDimensionException if any of the dimensions sizes of with exceed of this image's.
+		 * @author David Woolford
+		 * @date April 2008
+		*/
+		EMData *calc_fast_sigma_image(EMData * mask);
 
 		/** Convolutes 2 data sets. The 2 images must be of the same size.
 		 * @param with One data set. 'this' image is the other data set.
