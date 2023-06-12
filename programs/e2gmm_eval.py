@@ -34,7 +34,7 @@ def main():
 	parser.add_argument("--umap", action="store_true", default=False ,help="use umap instead of pca.")
 	parser.add_argument("--fulldist", action="store_true", default=False ,help="use full distance in reduced space instead of project to one axis.")
 
-	parser.add_argument("--threads", default=12,type=int,help="Number of threads to run in parallel on a single computer. This is the only parallelism supported by e2make3dpar")
+	parser.add_argument("--threads", default=32,type=int,help="Number of threads to run in parallel on a single computer. This is the only parallelism supported by e2make3dpar")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)

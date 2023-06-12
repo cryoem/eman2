@@ -34,6 +34,7 @@ def main():
 	parser.add_argument("--masksigma", action="store_true", default=False ,help="mask the sigma of Gaussian using --mask")
 	parser.add_argument("--maskamp", action="store_true", default=False ,help="mask the amplitude of Gaussian using --mask")
 	parser.add_argument("--maskpp", type=str,help="Mask file for the reconstructed maps post processing. default is auto.", default=None)
+	parser.add_argument("--masklevel", type=float,help="Mask intensity outside the target region. default is 0.25", default=0.25)
 
 	parser.add_argument("--startiter", type=int,help="starting iteration number.", default=1)
 	parser.add_argument("--batchsize", type=int,help="Number of particles in each batch for alignment. Increase will make the alignment faster, but also increases GPU memory use. Default is 16.", default=16)
@@ -124,7 +125,7 @@ def main():
 				## read selected Gaussian from mask file
 				m=msk.numpy().copy()
 				if np.min(m)<1e3 and options.masksigma:
-					m=(m*.75)+.25
+					m=(m*(1.-options.masklevel))+options.masklevel
 				p=pts[:,:3].copy()
 				p=p[:,::-1]
 				p[:,:2]*=-1
