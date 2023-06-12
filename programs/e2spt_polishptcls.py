@@ -59,6 +59,9 @@ def main():
 		e.mult(-1)
 		e.process_inplace("normalize.edgemean")
 		e["xform.align3d"]=x
+		e["source_ali3d"]=options.ali3d
+		e["source_ali2d"]=options.ali2d
+		e["source_ali3d_idx"]=i
 		e.write_compressed(fname,0, 12, nooutliers=True)
 		os.remove(om)
 

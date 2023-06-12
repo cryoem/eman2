@@ -1281,14 +1281,26 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, imsk, option
 				pout=decode_model(conf, training=True)
 				p0=tf.zeros((xf.shape[0],npt, 5))+pts
 				
+				l3=0
 				if options.rigidbody:
 					pout=rotpts(p0[:,:,:3], pout, imsk) 
 					pout=tf.concat([pout, p0[:,:,3:]], axis=2)
 					
 				else:
+					lmsk=(pout-p0)*(1-imsk[None,:,None]) 
+					# lmsk=tf.math.sqrt(tf.reduce_sum(lmsk**2, axis=2))
+					# lmsk=tf.reduce_sum(lmsk, axis=1)/tf.reduce_sum(1-imsk)
+					# lmsk=tf.reduce_mean(lmsk)
+					lmsk=tf.reduce_sum(lmsk**2)
+					l3+=lmsk
+					
 					## mask selected rows
 					pout=pout*imsk[None,:,None]+p0*(1-imsk[None,:,None]) 
 				
+				
+				lpas=(pout-p0)*(1-pas)
+				lpas=tf.reduce_sum(lpas**2)
+				l3+=lpas*.1
 				
 				pout=pout*pas+p0*(1-pas)
 				
@@ -1314,7 +1326,7 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, imsk, option
 						da=tf.math.sqrt(tf.reduce_mean((ang-ang00)**2))
 						lossetc+=da*.1
 			
-				l=loss+lossetc*.005
+				l=loss+lossetc*.005+l3*l3*options.regmask
 				
 				
 			if options.usetest==False or len(cost)<nbatch*.95:
@@ -1338,7 +1350,7 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, imsk, option
 					ce.append(da)
 				ce.append(lossetc)
 					
-			
+			if options.regmask>0: etc+=f", out of mask {l3:.4f}"
 			costetc.append(ce)
 			
 			i+=1
@@ -1360,9 +1372,9 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, imsk, option
 			etc+=f", geometry  {c[3]:.3f}"
 			
 		if options.usetest:
-			print("iter {}, train loss : {:.4f}; test loss {:.4f}".format(itr, np.mean(cost), np.mean(testcost)))
+			print("iter {}, train loss : {:.6f}; test loss {:.4f}".format(itr, np.mean(cost), np.mean(testcost)))
 		else:
-			print("iter {}, loss : {:.4f} {}".format(itr, np.mean(cost), etc))
+			print("iter {}, loss : {:.6f} {}".format(itr, np.mean(cost), etc))
 		allcost.append(np.mean(cost))
 		
 	return allcost
@@ -1467,6 +1479,7 @@ def main():
 	parser.add_argument("--bond", type=str,help="provide a text file of the indices of bonds between points", default=None)
 	parser.add_argument("--hbond", type=str,help="provide a text file of the indices of H-bonds between points", default=None)
 	parser.add_argument("--angle", type=str,help="provide a text file of the angles to track", default=None)
+	parser.add_argument("--regmask", type=float,help="regularizer to enforce the structure to be unchanged outside the masked region. only useful if the mask need to be released at a later point. still under testing", default=0.0)
 	parser.add_argument("--usetest", action="store_true",help="use a separated test set and report loss. ", default=False)
 	parser.add_argument("--pmout", type=str,help="write options to file", default=None)
 	parser.add_argument("--phantompts", type=str,help="load extra phatom points for gradient calculation.", default=None)
@@ -1657,12 +1670,13 @@ def main():
 			
 			agd=[]
 			if options.maxgradres>0:
-				mbx=ceil(raw_boxsz*raw_apix*2/options.maxgradres)//2*2
+				mbx=ceil(raw_boxsz*raw_apix*2/options.maxgradres)//2
 			else: 
 				mbx=options.maxpx
 				
 			for mpx in [mbx//2, mbx]:
 				options.maxpx=mpx
+				print(f"Fourier radius px {mpx}")
 				allscr, ag=calc_gradient(trainset, pts, params, options )
 				agd.append(ag)
 				
@@ -1670,9 +1684,7 @@ def main():
 			print("Gradient shape: ", allgrds.shape) 
 			agd=ag=None
 			#allscr, allgrds=calc_gradient(trainset, pts, params, options )
-		
-		print("Gradient shape: ", allgrds.shape) 
-		
+				
 		#### build deep networks and make sure they work
 		if options.encoderin:
 			encode_model=tf.keras.models.load_model(f"{options.encoderin}",compile=False,custom_objects={"ResidueConv2D":ResidueConv2D})

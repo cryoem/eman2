@@ -418,6 +418,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.curve_shape_index = 0
 		self.img_view.shapes[0]=self.curve
 
+
 		self.contour=Contour(img=self.img_view, points=pts)
 		self.contour_shape_index = 1
 		self.img_view.shapes[1]=self.contour
@@ -426,6 +427,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		#self.img_view.mousewheel.connect(self.img_view_wheel_event)
 		self.img_view.mousedrag.connect(self.img_view_mouse_drag)
 		self.zt_spinbox.valueChanged.connect(self.zt_spinbox_changed)
+		self.previous_z = self.get_zpos()
 
 		E2loadappwin("e2annotate","main",self)
 		E2loadappwin("e2annotate","controlpanel",self.control_panel)
@@ -627,13 +629,18 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.create_organelles_training_set()
 		return
 
-	def annotate_from_curve(self):
+	def annotate_from_curve(self, insert=None):
+		#TODO: Clear points messing with annotate mechanism
 		self.x = self.img_view.get_data().get_xsize()
 		self.y = self.img_view.get_data().get_ysize()
+
+		tsz=max(self.x,self.y)
 		mask = np.zeros((self.x,self.y))
+		#output=EMData(self.x, self.y, self.z)
 
 		def trapez(y,y0,w):
 			return np.clip(np.minimum(y+1+w/2-y0, -y+1+w/2+y0),0,1)
+
 		def weighted_line(r0, c0, r1, c1, w, rmin=0, rmax=np.inf):
 			# The algorithm below works fine if c1 >= c0 and c1-c0 >= abs(r1-r0).
 			# If either of these cases are violated, do some switches.
@@ -666,6 +673,8 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			# to avoid parts outside of the picture
 			mask = np.logical_and.reduce((yy >= rmin, yy < rmax, vals > 0))
 			return (yy[mask].astype(int), xx[mask].astype(int), vals[mask])
+
+
 		def is_point_in_polygon(point,vertices):
 			points = np.array([[x[0],x[1]] for x in vertices])
 			poly_path = mplPath.Path(points)
@@ -686,25 +695,57 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			return np.array(rr, dtype=np.intp), np.array(cc, dtype=np.intp)
 
 		if self.fill_type == "curve":
+			#mask = np.zeros((self.x,self.y,self.z))
 			if len(self.curve.points) < 2:
 				print("Need at least 2 points to draw a line")
 				return
+			print(self.curve.points)
 			r = np.array([int(item[0]) for item in self.curve.points])
 			c = np.array([int(item[1]) for item in self.curve.points])
-			for i in range(len(r)-1):
+			z = np.array([int(item[2]) for item in self.curve.points])
+
+			pt_dict = {}
+			for i,pt in enumerate(self.curve.points):
+				if pt[2] not in pt_dict.keys():
+					pt_dict[pt[2]] = [i]
+				else:
+					pt_dict[pt[2]].append(i)
+
+			print(pt_dict)
+			if insert is None:
+				ins = self.get_zpos()
+			else:
+				ins = insert
+
+			for i in pt_dict[ins][:-1]:
 				try:
-					rr, cc, val = weighted_line(r[i], c[i], r[i+1],c[i+1], int(self.tx_line_width.text()))
-					mask[rr, cc] = int(self.tx_ann_class.text())
+					if self.curve.points[i][3] != -1:
+						rr, cc, val = weighted_line(r[i], c[i], r[i+1],c[i+1], int(self.tx_line_width.text()))
+						mask[rr, cc] = int(self.tx_ann_class.text())
+						self.curve.points[i][3] = -1
+					else:
+						continue
 				except:
 					continue
+				self.curve.points[pt_dict[ins][-1]][3] = -1
 			mask[r,c]=int(self.tx_ann_class.text())
+			# 	mask[rr, cc] = int(self.tx_ann_class.text())
+			# mask[r,c]=int(self.tx_ann_class.text())
+
+
+
+
+
 		elif self.fill_type == "contour_fill":
+			#mask = np.zeros((self.x,self.y))
 			if len(self.contour.points) < 3:
 				print("Need at least 3 points to draw a polygon")
 				return
 			rr, cc = polygon(self.contour.points)
 			mask[rr,cc]=int(self.ct_ann_class.text())
+
 		elif self.fill_type == "contour_nofill":
+			#mask = np.zeros((self.x,self.y))
 			if len(self.contour.points) < 3:
 				print("Need at least 3 points to draw a polygon")
 				return
@@ -721,11 +762,45 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 				except:
 					continue
 			mask[r,c]=int(self.ct_ann_class.text())
+
 		mask =  np.rot90(np.fliplr(mask))
-		ann = self.img_view.get_annotation().numpy()
-		ann += mask
-		self.img_view.force_display_update(set_clip=1)
-		self.img_view.updateGL()
+
+		if insert is None:
+			print("No insertion")
+			ann = to_numpy(self.img_view.get_annotation())
+			print("Ann shape",mask.shape)
+			ann += mask
+			self.img_view.force_display_update(set_clip=1)
+			self.img_view.updateGL()
+		else:
+			center = self.zt_spinbox.value()
+			if center == -1:
+				center = self.nz//2
+			ann = self.img_view.get_full_annotation().get_clip(Region(0,0,center+int(insert),self.x,self.y,1)).numpy()
+			ann += mask
+			print("Insert clip to",center+insert)
+
+			xform=Transform({"type":"eman","alt":self.img_view.alt,"az":self.img_view.az,"tx":self.img_view.get_full_annotation()["nx"]//2,"ty":self.img_view.get_full_annotation()["ny"]//2,"tz":center+int(insert)})
+			ann_em = from_numpy(ann)
+			self.img_view.get_full_annotation().set_rotated_clip(xform,ann_em)
+			#self.img_view.get_full_annotation().insert_clip(from_numpy(ann),[0,0,center+int(insert)])
+			self.img_view.force_display_update(set_clip=0)
+			self.img_view.updateGL()
+		# if allz:
+		# 	center = self.zt_spinbox.value()
+		# 	if center == -1:
+		# 		center = self.nz//2
+		# 	print(pt_dict)
+		# 	for i in pt_dict.keys():
+		# 		ann = self.img_view.get_full_annotation().get_clip(Region(0,0,center+int(i),self.x,self.y,1)).numpy()
+		# 		ann += mask
+		# 		print("Insert clip to",center+i)
+		# 		self.img_view.get_full_annotation().insert_clip(from_numpy(ann),[0,0,center+int(i)])
+		# 		self.img_view.force_display_update(set_clip=0)
+		# 		self.img_view.updateGL()
+		# else:
+		# 	pass
+
 
 
 	#####ALL BASIC TAB LINEAR AND CONTOUR METHODS
@@ -735,7 +810,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		# print(self.basic_tab_num)
 		if tab_num==3:
 			try:
-				self.annotate_from_curve()
+				self.annotate_from_curve(z_slice=self.get_zpos())
 				self.curve.points = []
 				self.contour.points =[]
 				self.do_update()
@@ -745,8 +820,9 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			return
 
 		elif tab_num==0:
+			print(self.get_zpos())
 			try:
-				self.annotate_from_curve()
+				self.annotate_from_curve(z_slice=self.get_zpos())
 				self.curve.points = []
 				self.contour.points =[]
 				self.do_update()
@@ -836,6 +912,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		pts_intp=[]
 		kk=0
 		for li in np.unique(pts[:,3]):
+			print("Li",li)
 			pt=pts[pts[:,3]==li][:,:3].copy()
 			pt=pt[np.append(True, np.linalg.norm(np.diff(pt, axis=0), axis=1)>0.1)]
 			ln=np.linalg.norm(np.diff(pt, axis=0), axis=1)
@@ -845,13 +922,23 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			if len(pt)<2: continue
 			#print len(pt), ln
 			ipt=interp_points(pt, npt=np.round(ln)//density)
-
-			pts_intp.append(np.hstack([ipt, kk+np.zeros((len(ipt), 1)), self.curve.classid+np.zeros((len(ipt), 1))]))
+			#print("Ipt",ipt)
+			#print("KK",kk,np.zeros((len(ipt), 1)))
+			pts_intp.append(np.hstack([ipt, li+np.zeros((len(ipt), 1)), self.curve.classid+np.zeros((len(ipt), 1))]))
+			#print("Np_hstack",pts_intp)
 			kk+=1
 
+			# else:
+			# 	continue
+
 		pts_intp=np.vstack(pts_intp)
+		#print(pts_intp)
+		#print("self.curve", self.curve.points)
 		self.curve.points=otherpts.tolist()
+		#print("Other pts", otherpts)
 		self.curve.points.extend(pts_intp.tolist())
+		#print("Pts intp", pts_intp)
+
 		#print("Int points:",self.curve.points)
 		self.do_update()
 		#self.save_points()
@@ -864,6 +951,10 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 				self.curve.points=[]
 				self.contour.points=[]
 		else:
+			# try:
+			# 	self.annotate_from_curve()
+			# except:
+			# 	pass
 			self.curve.points=[]
 			self.contour.points=[]
 		self.do_update()
@@ -902,9 +993,26 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 	def key_press(self, event):
 		if event.key() == Qt.Key_Up or event.key() == Qt.Key_Down:
+			if event.key() == Qt.Key_Up:
+				self.previous_z = self.get_zpos()-1
+			if event.key() == Qt.Key_Down:
+				self.previous_z = self.get_zpos()+1
+			print("Previous z", self.previous_z)
+
 			if self.img_view.data:
 				print("Current zpos", self.get_zpos())
-				self.update_img_view_box()
+				if self.basic_tab_num == 3:
+					self.update_img_view_box()
+				elif self.basic_tab_num == 2:
+					self.annotate_from_curve(insert=self.previous_z)
+					self.clear_shapes(reset_boxes_list=False)
+					pass
+				elif self.basic_tab_num == 1:
+					try:
+						self.annotate_from_curve(insert=self.previous_z)
+					except:
+						pass
+
 		else:
 			return
 
@@ -954,8 +1062,8 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 				if len(pts)<1:
 					return
-				ofpln=abs(pts[:,2]-self.img_view.list_idx)>3
 
+				ofpln=abs(pts[:,2]-self.img_view.list_idx)>3
 				res=np.sqrt(np.sum((pts[:,:2]-np.array([x,y]))**2, axis=1))
 				res[ofpln]+=1e5
 				ii=np.argmin(res)
@@ -974,7 +1082,14 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 					else:
 						print('new curve')
-						self.annotate_from_curve()
+						pt_dict = {}
+						for i,pt in enumerate(self.curve.points):
+							if pt[2] not in pt_dict.keys():
+								pt_dict[pt[2]] = [i]
+							else:
+								pt_dict[pt[2]].append(i)
+						for ins in pt_dict.keys():
+							self.annotate_from_curve(insert=ins)
 						self.curve.points = []
 						self.curve.add_point([x, y], True)
 
@@ -1347,15 +1462,15 @@ class Curve(EMShape):
 		self.select=0
 		self.classid=0
 
+
 	def add_point(self, newpt=[], newcontour=False, optimize=True):
 		#zpos=self.image.list_idx
-		zpos = 0
+		czpos = self.image.zpos
 		if len(self.points)==0 and len(newpt)>0:
 			#self.points.append([newpt[0], newpt[1], zpos, self.select, self.classid])
-			self.points.append([newpt[0], newpt[1], zpos, self.select, self.classid])
+			self.points.append([newpt[0], newpt[1], czpos, self.select, self.classid])
 
 		if newcontour==False:
-
 			ci=self.select
 			#### separate the points on the current contour and everything else
 			nppts=np.array(self.points)
@@ -1365,11 +1480,11 @@ class Curve(EMShape):
 
 			if len(pts)<3 or optimize==False:
 				if len(newpt)>0:
-					self.points.append([newpt[0], newpt[1], zpos, ci, self.classid])
+					self.points.append([newpt[0], newpt[1], czpos, ci, self.classid])
 					return
 			else:
 				thr=1000.
-				newpt=np.array([newpt[0], newpt[1], zpos])
+				newpt=np.array([newpt[0], newpt[1], czpos])
 
 
 			if len(newpt)>0:
@@ -1439,16 +1554,19 @@ class Curve(EMShape):
 			pts=np.array(self.points)
 			ci=np.max(pts[:,3])+1
 			self.select=ci
-			self.points.append([newpt[0], newpt[1], zpos, ci, self.classid])
+			#self.current_zpos = self.image.zpos
+			self.points.append([newpt[0], newpt[1], czpos, ci, self.classid])
 
 
 	def draw(self,d2s=None,col=None):
-		zpos=self.image.list_idx
+		#zpos=self.image.list_idx
+		zpos=self.image.zpos
+		# print("self.image", self.image)
+		# print("self.image.zpos", self.image.zpos)
+		# print("zpos",zpos)
 		curpts=[p for p in self.points if p[4]==self.classid]
-
 		#print np.array(self.points)
 		#print "#########"
-
 		cid=np.unique([p[3] for p in curpts])
 		for ci in cid:
 			#### draw lines
@@ -2352,10 +2470,6 @@ class Statistics_Tab(QtWidgets.QWidget):
 	def __init__(self,target) :
 		QtWidgets.QWidget.__init__(self,None)
 		self.target = target
-		
-
-
-
 		stat_gbl = QtWidgets.QGridLayout()
 
 		self.setLayout(stat_gbl)
