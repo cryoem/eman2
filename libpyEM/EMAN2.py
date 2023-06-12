@@ -146,6 +146,20 @@ EMData.numpy=EMNumPy.em2numpy
 from_numpy=EMNumPy.numpy2em
 to_numpy=EMNumPy.em2numpy
 
+def from_tf(tftensor):
+	"""Convert a specified tensor to an EMData object"""
+	return EMNumPy.numpy2em(tftensor.numpy())
+
+def to_tfvar(emdata):
+	"""Convert a specified EMData object into a TensorFlow Variable. WARNING many tensorflow operations are very inefficient with Variable tensors!"""
+	import tensorflow as tf
+	return tf.Variable(EMNumPy.em2numpy(emdata))
+
+def to_tf(emdata):
+	"""Convert a specified EMData object into a Tensorflow constant Tensor. The tensor is immutable, but will have much better performance for most operations."""
+	import tensorflow as tf
+	return tf.constant(EMNumPy.em2numpy(emdata))
+
 def emdata_to_string(self):
 	"""This returns a compressed string representation of the EMData object, suitable for storage
 	or network communication. The EMData object is pickled, then compressed wth zlib. Restore with
