@@ -106,6 +106,7 @@ def main():
 	parser.add_argument("--path", type=str,help="new refinement path", default=None)
 	parser.add_argument("--smooth", type=float,help="factor to smooth the movement field from the --ali2d refinement. Bigger is smoother, default is 10", default=10)
 	parser.add_argument("--userot", action="store_true", default=False, help="use rotational subtilt alignment as well. very slow and may not be as useful..")
+	parser.add_argument("--skipcheck", action="store_true", default=False, help="skip the sanity check...")
 
 	(options, args) = parser.parse_args()
 	
@@ -151,25 +152,26 @@ def main():
 	scale=e1["apix_x"]/e0["apix_x"]
 	print(f"Scale from old to new alignment {scale:.3f}")
 
-	print("Sanity check on one tomogram")
-	fname=base_name(info3d0[0]["src"])
-	i3d0=[i for i in info3d0 if base_name(i["src"])==fname]
-	i3d1=[i for i in info3d1 if base_name(i["src"])==fname]
-	pos0=np.array([i["coord"] for i in i3d0])
-	pos1=np.array([i["coord"] for i in i3d1])
-	pos1*=scale
-	tid=0
-	print(f"tomogram {fname}, tilt id {tid}")
-	a2d0=[i for i in ali2d0 if base_name(i["src"])==fname]
-	v0=np.array([a["dxf"].get_trans() for a in a2d0 if a["tilt_id"]==tid])
-	dst=scipydist.cdist(pos0,pos1)
-	print(f"{len(pos0)} particles from old refinement, {len(pos1)} particles from new refinement")
-	print("mean neighbor distance between particles from two refinement: {:.4f}".format(np.mean(np.min(dst, axis=0))))
-	dst=np.exp(-dst/options.smooth)
-	dst=dst/np.sum(dst,axis=0)
-	v1=np.matmul(v0.T,dst).T
-	print("mean subtilt translation {:.4f} from old refinement".format(np.mean(np.linalg.norm(v0, axis=1))))
-	print("mean subtilt translation {:.4f} from new refinement".format(np.mean(np.linalg.norm(v1, axis=1))))
+	if not options.skipcheck:
+		print("Sanity check on one tomogram")
+		fname=base_name(info3d0[0]["src"])
+		i3d0=[i for i in info3d0 if base_name(i["src"])==fname]
+		i3d1=[i for i in info3d1 if base_name(i["src"])==fname]
+		pos0=np.array([i["coord"] for i in i3d0])
+		pos1=np.array([i["coord"] for i in i3d1])
+		pos1*=scale
+		tid=10
+		print(f"tomogram {fname}, tilt id {tid}")
+		a2d0=[i for i in ali2d0 if base_name(i["src"])==fname]
+		v0=np.array([a["dxf"].get_trans() for a in a2d0 if a["tilt_id"]==tid])
+		dst=scipydist.cdist(pos0,pos1)
+		print(f"{len(pos0)} particles from old refinement, {len(v0)} movement trajectories, {len(pos1)} particles from new refinement")
+		print("mean neighbor distance between particles from two refinement: {:.4f}".format(np.mean(np.min(dst, axis=0))))
+		dst=np.exp(-dst/options.smooth)
+		dst=dst/np.sum(dst,axis=0)
+		v1=np.matmul(v0.T,dst).T
+		print("mean subtilt translation {:.4f} from old refinement".format(np.mean(np.linalg.norm(v0, axis=1))))
+		print("mean subtilt translation {:.4f} from new refinement".format(np.mean(np.linalg.norm(v1, axis=1))))
 	
 	ali3d1=[]
 	for a in info3d1:
@@ -212,6 +214,9 @@ def main():
 		i3d1=[i for i in info3d1 if base_name(i["src"])==fname]
 		i3d0=[i for i in info3d0 if base_name(i["src"])==fname]
 		print(fname, len(i3d0), len(i3d1))
+		if len(i3d0)==0 or len(i3d1)==0:
+			print("no particles in this tomogram. skip...")
+			continue
 		
 		a2d0=[[ali2d0[i] for i in i3["idx2d"]] for i3 in i3d0]
 		i2d1=[[info2d1[i] for i in i3["idx2d"]] for i3 in i3d1]
@@ -232,7 +237,10 @@ def main():
 			p0=pos0[i0]
 			i1=[tid in [a["tilt_id"] for a in a1] for a1 in a2d1 ]
 			p1=pos1[i1]
-			
+			if len(v0)!=len(pos0):
+				print(f"skip tilt {tid} from tomogram {fname}")
+				continue
+				
 			dst=scipydist.cdist(p0,p1)
 			dst=np.exp(-dst/options.smooth)
 			dst=dst/np.sum(dst,axis=0)
