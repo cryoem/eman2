@@ -184,7 +184,48 @@ def pts2img_one_sig(args):
 	pgauss = tf.matmul(tf.transpose(pgauss_x), pgauss_y)
 	pgauss = tf.transpose(pgauss)#*tf.cast(amp, tf.complex64)
 	return pgauss*tf.cast(xfo, tf.complex64)
+	
+#### non-gaussian tests
+def pts2img_one_test(args):
+	pts, ang = args
+	sz, idxft, rrft = params["sz"], params["idxft"], params["rrft"]
+	xfo=params["xforigin"]
+	
+	lp=.1
+	bamp=1e-5*tf.cast(tf.nn.relu(pts[:,3]), tf.complex64)[:,None]
+	bsigma=tf.nn.relu(pts[:,4])*.1
+	#bsigma=tf.cast(tf.nn.relu(pts[:,4]), tf.complex64)
+	#amp=tf.exp(-rrft*lp*tf.nn.relu(bsigma))*tf.nn.relu(bamp)
+	#amp=tf.exp(-rrft*lp)
+	
+	bpos=xf2pts(pts[:,:3],ang)
+	bpos=bpos*sz+sz/2
+	bposft=bpos*np.pi*2
+	
+	cpxang_x=tf.vectorized_map(mult_gauss_coords, (bposft[:,0], idxft[0,[0],:]))
+	cpxang_y=tf.vectorized_map(mult_gauss_coords, (bposft[:,1], idxft[1,:,[0]]))
+	# print(pts)
+	# print(bsigma)
+	sig_x = rrft[0][None, :]*bsigma[:,None]
+	sig_y = rrft[1][None, :]*bsigma[:,None]
+	# print(sig_x)
+	sig_x=tf.nn.relu(1e6-sig_x**2)
+	sig_y=tf.nn.relu(1e6-sig_y**2)
+	sig_x=tf.cast(sig_x, tf.complex64)
+	sig_y=tf.cast(sig_y, tf.complex64)
+	# sig_x = tf.experimental.numpy.sinc(sig_x)**2
+	# sig_y = tf.experimental.numpy.sinc(sig_y)**2
+	# print(sig_x)
+    
+	pgauss_x = tf.exp(-1j*tf.cast(cpxang_x, tf.complex64))*bamp*sig_x
+	pgauss_y = tf.exp(-1j*tf.cast(cpxang_y, tf.complex64))*bamp*sig_y
 
+    
+	pgauss = tf.matmul(tf.transpose(pgauss_x), pgauss_y)
+	pgauss = tf.transpose(pgauss)#*tf.cast(amp, tf.complex64)
+	return pgauss*tf.cast(xfo, tf.complex64)
+
+#### implementation without sigma. deprecated. 
 def pts2img_one(args):
 	pts, ang = args
 	sz, idxft, rrft = params["sz"], params["idxft"], params["rrft"]
@@ -214,9 +255,16 @@ def pts2img_one(args):
 def pts2img(pts, angs):
 	#pts, angs=args
 	#p=pts2img_one((pts[0], angs[0]))
+	# p=pts2img_one_test((pts[0], angs[0]))
+	# print(p)
+	# print(tf.reduce_sum(p))
+	# exit()
+	# img=tf.vectorized_map(pts2img_one_test, (pts, angs))
+	# print(img)
 	img=tf.vectorized_map(pts2img_one_sig, (pts, angs))
 	return tf.math.real(img), tf.math.imag(img)
 
+### implementation without vectorized_map. Not really faster...
 @tf.function()
 def pts2img01(pts, ang):
 	
