@@ -276,7 +276,7 @@ is complete. If the process is killed, 'end' may never be set."""
 		hist=open(".eman3log.txt","r+")
 		hist.seek(0,os.SEEK_END)
 	except:
-		try: hist=open(".eman2log.txt","w")
+		try: hist=open(".eman3log.txt","w")
 		except: return -1
 	n=hist.tell()
 	hist.write(f"{local_datetime()}\t{'0':19s}\t{'-':11s}\t{os.getpid()}/{ppid}\t{socket.gethostname()}\t{' '.join(argv)}\n")
