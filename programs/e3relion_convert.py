@@ -159,13 +159,13 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 	# copy particles by micrograph
 	# doing this one at a time in the first version. May go back and optimize once it's working
 	ugnum=-1
-	try: os.unlink("particles/fromstar.lst")
+	try: os.unlink("sets/fromstar.lst")
 	except: pass
-	lst=LSXFile("particles/fromstar.lst")
+	lst=LSXFile("sets/fromstar.lst")
 	if options.phaseflip: 
-		try: os.unlink("particles/fromstar__ctf_flip.lst")
+		try: os.unlink("sets/fromstar__ctf_flip.lst")
 		except: pass
-		lstf=LSXFile("particles/fromstar__ctf_flip.lst")
+		lstf=LSXFile("sets/fromstar__ctf_flip.lst")
 	lastctf=[]
 	t0=time.time()
 	for i in range(nptcl):
