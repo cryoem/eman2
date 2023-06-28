@@ -28,7 +28,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
-# This is a basic GUI for Muyuan's GMM processing
+# This GUI no longer works with Muyuan's program, preferring the new more memory efficient e2gmm_refine_point
 
 from past.utils import old_div
 from future import standard_library
