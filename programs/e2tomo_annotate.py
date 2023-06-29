@@ -456,6 +456,10 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 	def get_inspector(self):
 		return self.img_view_inspector
 
+	def get_segtab(self):
+		return self.img_view_inspector.seg_tab
+
+
 	def zchange(self,value):
 		print(value)
 
@@ -2584,22 +2588,42 @@ class Statistics_Tab(QtWidgets.QWidget):
 
 	def count_objs(self):
 		thres=self.n_obj_thres_vs.value
-		open_lab=self.target.get_annotation().numpy()
-		#open_lab=ndi.binary_opening(self.target.get_annotation().numpy(),iterations=3)
-		self.labeled_ann,self.num = ndi.label(open_lab>0.5)
-		self.loc=ndi.find_objects(self.labeled_ann,self.num)
-		#print(num)
+		#open_lab=self.target.get_annotation().numpy()
+		sels = self.target.get_segtab().table_set.selectedItems()
+
+		if len(sels) == 0:
+			print("Must select class to quantify")
+			return
+		lab=self.target.get_annotation().copy_head()
+		lab.to_zero()
+
+
 		count = 0
 		self.area_vol = []
 		self.objs = []
-		for i in range(self.num):
-			area_temp=len(np.where(open_lab[self.loc[i]]>0)[0])
-			#print(open_lab[loc[i]].shape[0],open_lab[loc[i]].shape[1])
-			if area_temp >= thres:
-				count = count+1
-				self.area_vol.append(area_temp)
-				self.objs.append(open_lab[self.loc[i]])
-		self.n_objects_text.setText(str(count))
+
+
+		for sel in sels:
+			row = self.target.get_segtab().table_set.row(sel)
+			num = int(self.target.get_segtab().table_set.item(row,0).text())
+			#print(sel.text())
+			# if multiple_class:
+			lab = (self.target.get_annotation().process("threshold.binaryrange",{"high":num+0.1,"low":num-0.1}))
+			open_lab = lab.numpy()
+
+		#open_lab=ndi.binary_opening(self.target.get_annotation().numpy(),iterations=3)
+			self.labeled_ann,self.num = ndi.label(open_lab>0.5)
+			self.loc=ndi.find_objects(self.labeled_ann,self.num)
+			#print(num)
+
+			for i in range(self.num):
+				area_temp=len(np.where(open_lab[self.loc[i]]>0)[0])
+				#print(open_lab[loc[i]].shape[0],open_lab[loc[i]].shape[1])
+				if area_temp >= thres:
+					count = count+1
+					self.area_vol.append(area_temp)
+					self.objs.append(open_lab[self.loc[i]])
+			self.n_objects_text.setText(str(count))
 		return
 
 	def calc_stat(self):
