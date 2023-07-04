@@ -28,7 +28,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
-# This is a basic GUI for Muyuan's GMM processing
+# This GUI no longer works with Muyuan's program, preferring the new more memory efficient e2gmm_refine_point
 
 from past.utils import old_div
 from future import standard_library
@@ -425,8 +425,8 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.gflparm.addRow("Symmetry:",self.wedsym)
 		
 		self.wedmask = QtWidgets.QLineEdit("")
-		self.wedmask.setToolTip("<file>[,amp fac]  3-D volume mask for refining dynamics only. Blank for no mask. amp fac can increase Gaussians in mask region.")
-		self.gflparm.addRow("Mask:",self.wedmask)
+		self.wedmask.setToolTip("<file>[,<file>...]  3-D volume masks for defining subregions, each with its own latent vector. Latent vec must be divisible by number of masks. Blank for a single region.")
+		self.gflparm.addRow("Masks:",self.wedmask)
 		
 		self.weddim = QtWidgets.QLineEdit("4")
 		self.weddim.setToolTip("Number of dimensions in the latent space (middle network layer)")
@@ -490,9 +490,14 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		self.gblpltctl.addWidget(QtWidgets.QLabel("Rad:",self),3,0,Qt.AlignRight)
 		self.wedrad=QtWidgets.QLineEdit("0.2")
-		self.wedrad.setToolTip("Radius for including points adjacent to selected point (sphere/cylinder mode)")
+		self.wedrad.setToolTip("Radius for including points adjacent to selected point or spacing between sets")
 		self.gblpltctl.addWidget(self.wedrad,3,1,Qt.AlignRight)
-		
+
+		self.gblpltctl.addWidget(QtWidgets.QLabel("Ptcl:",self),4,0,Qt.AlignRight)
+		self.wedcnt=QtWidgets.QLineEdit("10000")
+		self.wedcnt.setToolTip("Particles per set in Line of Sets mode")
+		self.gblpltctl.addWidget(self.wedcnt,4,1,Qt.AlignRight)
+
 		#self.wbutdrgrp=QtWidgets.QButtonGroup()
 		
 		#self.wbutdrmid=QtWidgets.QPushButton("Net Mid")
@@ -521,19 +526,24 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.gblpltctl.addWidget(self.wbutkmeans,0,5)
 		self.wbutkmeans.clicked[bool].connect(self.do_kmeans)
 
+		self.wbutwater=QtWidgets.QPushButton("Wshed")
+		self.wbutwater.setToolTip("Watershed based, number is a maximum. 2-D and 3-D subspaces only.")
+		self.gblpltctl.addWidget(self.wbutwater,1,5)
+		self.wbutwater.clicked[bool].connect(self.do_watershed)
+
 		self.wbutdbscan=QtWidgets.QPushButton("OpticsDB")
-		self.wbutdbscan.setToolTip("Danger! This may exhaust RAM on large data sets")
-		self.gblpltctl.addWidget(self.wbutdbscan,1,5)
+		self.wbutdbscan.setToolTip("Danger! This may exhaust RAM on large data sets, and may take a long time to run")
+		self.gblpltctl.addWidget(self.wbutdbscan,2,5)
 		self.wbutdbscan.clicked[bool].connect(self.do_dbscan)
 
 		self.wbutoptics=QtWidgets.QPushButton("OpticsXi")
-		self.wbutoptics.setToolTip("This could take many hours to run, and currently has no feedback")
-		self.gblpltctl.addWidget(self.wbutoptics,2,5)
+		self.wbutoptics.setToolTip("Danger! This could take many hours to run")
+		self.gblpltctl.addWidget(self.wbutoptics,3,5)
 		self.wbutoptics.clicked[bool].connect(self.do_optics)
 
 		self.wbutspectr=QtWidgets.QPushButton("Spectr")
 		self.wbutspectr.setToolTip("Danger! May fail on large data sets, and possibly exhaust RAM")
-		self.gblpltctl.addWidget(self.wbutspectr,3,5)
+		self.gblpltctl.addWidget(self.wbutspectr,4,5)
 		self.wbutspectr.clicked[bool].connect(self.do_spectral)
 
 		self.wvbnsets=ValBox(label="Sets:",value=2)
@@ -545,7 +555,9 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		self.wcbpntpln=QtWidgets.QComboBox()
 		self.wcbpntpln.addItem("Explore")
-		self.wcbpntpln.addItem("Make Set")
+		self.wcbpntpln.addItem("Make Set R")
+		self.wcbpntpln.addItem("Make Set #")
+		self.wcbpntpln.addItem("Line of Sets")
 
 		#self.wcbpntpln.addItem("Plane")
 		#self.wcbpntpln.addItem("HSphere")
@@ -566,11 +578,14 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wbutmapfast=QtWidgets.QPushButton("Quick Map")
 		self.gblpltctl.addWidget(self.wbutmapfast,1,6)
 
+		self.wbutmapgauss=QtWidgets.QPushButton("Gauss Map")
+		self.gblpltctl.addWidget(self.wbutmapgauss,2,6)
+
 		self.wbutsetdel=QtWidgets.QPushButton("Delete")
-		self.gblpltctl.addWidget(self.wbutsetdel,2,6)
+		self.gblpltctl.addWidget(self.wbutsetdel,3,6)
 
 		self.wbutsetsave=QtWidgets.QPushButton("Save Set")
-		self.gblpltctl.addWidget(self.wbutsetsave,3,6)
+		self.gblpltctl.addWidget(self.wbutsetsave,4,6)
 
 
 		#### Widgets below 3D
@@ -685,6 +700,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wbutneutral2.clicked[bool].connect(self.new_neutral2)
 		self.wbutmapnorm.clicked[bool].connect(self.new_map)
 		self.wbutmapfast.clicked[bool].connect(self.new_map_fast)
+		self.wbutmapgauss.clicked[bool].connect(self.new_map_gauss)
 		self.wbutsetdel.clicked[bool].connect(self.set_del)
 		self.wbutsetsave.clicked[bool].connect(self.set_save)
 #		self.wedres.editingFinished.connect(self.new_res)
@@ -924,21 +940,25 @@ class EMGMM(QtWidgets.QMainWindow):
 #		print(self.data.shape[1])
 		ss=max(7-int(log10(self.data.shape[1])),1)
 		if len(self.maplist.selectedItems())>0:
-			self.wplot2d.set_data(self.data,"map",symsize=ss,replace=True,quiet=True)
-			self.curmaps_sel={}
-			self.data_sel=[]
-			# ss=10
-			for i in self.maplist.selectedItems():
-				key=i.text()
-				# ss-=2
-				# if ss<2 : ss=2
-				smap=self.curmaps[key]
-				self.curmaps_sel[key]=smap
-				if not isinstance(smap[5],np.ndarray) : smap[5]=np.array(smap[5])
-				self.data_sel.append(self.data[:,np.array(smap[5])])	# smap[5] is a list of points in the class
-				#print("S:",self.data.shape,self.data_sel[-1].shape)
-#				self.wplot2d.set_data(self.data_sel[-1],f"set_{key}",symsize=ss,quiet=True)
-				self.wplot2d.set_data(self.data_sel[-1],f"set_{key}",symsize=ss,quiet=True)
+			try:
+				self.wplot2d.set_data(self.data,"map",symsize=ss,replace=True,quiet=True)
+				self.curmaps_sel={}
+				self.data_sel=[]
+				# ss=10
+				for i in self.maplist.selectedItems():
+					key=i.text()
+					# ss-=2
+					# if ss<2 : ss=2
+					smap=self.curmaps[key]
+					self.curmaps_sel[key]=smap
+					if not isinstance(smap[5],np.ndarray) : smap[5]=np.array(smap[5])
+					self.data_sel.append(self.data[:,np.array(smap[5])])	# smap[5] is a list of points in the class
+					#print("S:",self.data.shape,self.data_sel[-1].shape)
+	#				self.wplot2d.set_data(self.data_sel[-1],f"set_{key}",symsize=ss,quiet=True)
+					self.wplot2d.set_data(self.data_sel[-1],f"set_{int(key):02d}",symsize=ss,quiet=True)
+			except:
+				print("Error displaying selected points, e2gmm.py:sel_maptable()")
+				return
 		else:
 			self.wplot2d.set_data(self.data,"map",symsize=ss,replace=True,quiet=True)
 
@@ -1147,6 +1167,7 @@ class EMGMM(QtWidgets.QMainWindow):
 
 	def plot_mouse(self,event,loc):
 		self.mouseabort=False
+		self.line_origin=None
 		mmode=str(self.wcbpntpln.currentText())
 		dim=self.currun.get("dim",4)
 		augdim=self.midresult.shape[0]
@@ -1192,19 +1213,34 @@ class EMGMM(QtWidgets.QMainWindow):
 			self.wplot2d.add_shape("latent",EMShape(["scrlabel",0.1,0.1,0.1,10.,10.,f"{np.array_str(latent[0], precision=3)} {nptcl} ptcl",120.0,-1]))
 			self.wplot2d.update()
 			return
-		elif mmode==("Make Set"):
+		elif mmode in ("Make Set R","Make Set #"):
 			return
+		elif mmode=="Line of Sets":
+			self.line_origin=loc
+
 		else: print("mode error")
 
 
 	def plot_mouse_drag(self,event,loc):
-		self.plot_mouse(event,loc)
+		mmode=str(self.wcbpntpln.currentText())
+		if self.mouseabort:
+			print("Abort")
+			self.wplot2d.del_shape("genline")
+			self.mouseabort=False
+			self.line_origin=None
+			return
+
+		if mmode=="Line of Sets":
+			self.wplot2d.add_shape("genline",EMShape(["line",0.1,0.8,0.1,self.line_origin[0],self.line_origin[1],loc[0],loc[1],1]))
+			self.wplot2d.update()
+		else:
+			self.plot_mouse(event,loc)
+
+
 		#mmode=str(self.wcbpntpln.currentText())
 		#if mmode != "Line":
 			#return
 		
-		#self.wplot2d.add_shape("genline",EMShape(["line",0.1,0.8,0.1,self.line_origin[0][0],self.line_origin[0][1],loc[0],loc[1],1]))
-		#self.wplot2d.update()
 
 
 	def plot_mouse_up(self,event,loc):
@@ -1215,18 +1251,25 @@ class EMGMM(QtWidgets.QMainWindow):
 		
 		if self.mouseabort:
 			print("Abort")
+			self.wplot2d.del_shape("genline")
 			self.mouseabort=False
+			self.line_origin=None
 			return
 
 		try: rad=float(self.wedrad.text())
 		except: 
 			print("invalid radius, using 0.05")
 			rad=0.05
+		try: ptperset=int(self.wedcnt.text())
+		except:
+			print("invalid particle count, using 4000")
+			ptperset=4000
+
 		xcol=self.wsbxcol.value()
 		ycol=self.wsbycol.value()
 		self.wplot2d.del_shapes(["region","genline"])
 
-		if mmode=="Make Set":
+		if mmode=="Make Set R":
 			# This will produce a list of indices where the distance in latent space is less than the specified rad
 #			ptdist=(np.sum((self.midresult.transpose()-latent)**2,1)<(rad**2)).nonzero()[0]
 			ptdist=((self.midresult[xcol]-loc[0])**2+(self.midresult[ycol]-loc[1])**2<(rad**2)).nonzero()[0]
@@ -1240,10 +1283,41 @@ class EMGMM(QtWidgets.QMainWindow):
 			self.curmaps[str(nset)]=newmap
 			self.sets_changed(nset)
 
-			#rparms={"size":(sz,sz,sz),"sym":self.jsparm["sym"],"mode":"gauss_2","usessnr":0,"verbose":0}
-			#self.threads.append(threading.Thread(target=make3d_thr,args=(self.threadq,len(self.threads),f"{self.gmm}/particles.lst",ptdist,rparms,latent,self.currun,rad,mmode,self.jsparm["boxsize"])))
-			#self.threads[-1].start()
-			#print(f"Thread {len(self.threads)} started with {len(ptdist)} particles")
+			return
+		if mmode=="Make Set #":
+			# This will produce a list of indices where the distance in latent space is less than the specified rad
+#			ptdist=(np.sum((self.midresult.transpose()-latent)**2,1)<(rad**2)).nonzero()[0]
+			ptdist=((self.midresult[xcol]-loc[0])**2+(self.midresult[ycol]-loc[1])**2)
+			sel=np.argsort(ptdist)[:ptperset]
+
+			vec=np.zeros(len(self.midresult))
+			vec[xcol]=loc[0]
+			vec[ycol]=loc[1]
+			nset=good_num(self.curmaps)
+			newmap=[None,local_datetime(),list(vec),0,0,sel]
+			self.curmaps[str(nset)]=newmap
+			self.sets_changed(nset)
+
+			return
+		elif mmode=="Line of Sets":
+
+			dst=hypot((self.line_origin[0]-loc[0]),(self.line_origin[1]-loc[1]))
+			stps=floor(dst/rad)+1		# number of points to generate along the line
+
+			# now we generate a set for each point on the line
+			for i in range(stps+1):
+				cen=((self.line_origin[0]*(stps-i)+loc[0]*i)/stps,(self.line_origin[1]*(stps-i)+loc[1]*i)/stps)
+
+				ptdist=((self.midresult[xcol]-cen[0])**2+(self.midresult[ycol]-cen[1])**2)
+				sel=np.argsort(ptdist)[:ptperset]
+
+				vec=np.zeros(len(self.midresult))
+				vec[xcol]=loc[0]
+				vec[ycol]=loc[1]
+				nset=good_num(self.curmaps)
+				newmap=[None,local_datetime(),list(vec),0,0,sel]
+				self.curmaps[str(nset)]=newmap
+			self.sets_changed(nset)
 			return
 
 	def sets_changed(self,nnew=None):
@@ -1280,6 +1354,16 @@ class EMGMM(QtWidgets.QMainWindow):
 			self.threads.append(threading.Thread(target=make3d_thr_fast,args=(self.threadq,len(self.threads),f"{self.gmm}/particles.lst",st[5],rparms,st[2],self.currun,0,"Full",k,self.jsparm["boxsize"])))
 			self.threads[-1].start()
 			print(f"Thread {len(self.threads)} started with {len(st[5])} particles")
+
+	def new_map_gauss(self,ign=None):
+		"""generate gaussian maps from set centers"""
+
+		sz=good_size(self.jsparm["boxsize"]*5//4)
+		sym=self.jsparm["sym"]
+		for k in self.curmaps_sel:
+			st=self.curmaps_sel[k]
+
+# TODO: Implement!
 
 	def set_del(self,ign=None):
 		"""Delete an existing set (only if a map hasn't been computed for it)"""
@@ -1365,6 +1449,7 @@ class EMGMM(QtWidgets.QMainWindow):
 
 	def do_kmeans(self):
 		print("kmeans ...")
+		get_application().setOverrideCursor(Qt.BusyCursor)
 		from sklearn.cluster import KMeans
 		nseg=int(self.wvbnsets.getValue())
 		cols=np.array(parse_range(self.wstbaxes.getValue()))
@@ -1387,8 +1472,77 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		self.sets_changed()
 		print("done")
+		get_application().restoreOverrideCursor()
+
+	def do_watershed(self):
+		nseg=int(self.wvbnsets.getValue())		# targeted number of segments
+		npts=len(self.data[0])					# number of particles/points
+		cols=np.array(parse_range(self.wstbaxes.getValue()))
+		if len(cols) not in (2,3) :
+			showerror(f"Watershed only works on 2 or 3 selected dimensions, you selected {cols}")
+			return
+
+		get_application().setOverrideCursor(Qt.BusyCursor)
+		print("watershed ...")
+		print(nseg,npts,cols)
+
+		# 2-D watershed
+		if len(cols)==2:
+			nbins=max(int(sqrt(npts//16)),20)
+			ctrmap,xe,ye=np.histogram2d(self.data[cols[0]],self.data[cols[1]],bins=nbins)		# make a histogram image
+			dens=from_numpy(ctrmap)
+			dens.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.2})		# smooth the histogram a bit to reduce noise, but keep sampling high enough for watershed to work
+			seg=dens.process("segment.watershed",{"nseg":nseg,"thr":10.0,"verbose":1})		# apply watershed segmentation to the histogram image
+
+			nseg=int(seg["maximum"]+1)
+			ptdist=[[] for i in range(nseg)]
+
+			# x and y coordinates converted to bin numbers (pixel coordinates)
+			xs=((self.data[cols[0]]-xe[0])*nbins/(xe[-1]-xe[0])).astype("int32")
+			ys=((self.data[cols[1]]-ye[0])*nbins/(ye[-1]-ye[0])).astype("int32")
+			print(xs[:10],ys[:10])
+			for i in range(npts):
+				try: ptdist[int(seg[xs[i],ys[i]])].append(i)
+				except: print(f"Err: {i}\t{xs[i]}\t{ys[i]}\t{seg[xs[i],ys[i]]}")
+
+			try: nset=max([int(k) for k in self.curmaps])+1
+			except: nset=0
+		# 3-D watershed
+		else:
+			nbins=max(int(pow(npts,0.333)),12)
+			ctrmap,edg=np.histogramdd((self.data[cols[0]],self.data[cols[1]],self.data[cols[2]]),bins=nbins)		# make a histogram image
+			xe,ye,ze=edg
+			dens=from_numpy(ctrmap)
+			dens.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.2})		# smooth the histogram a bit to reduce noise, but keep sampling high enough for watershed to work
+			seg=dens.process("segment.watershed",{"nseg":nseg,"thr":5.0,"verbose":1})		# apply watershed segmentation to the histogram image
+
+			nseg=int(seg["maximum"]+1)
+			ptdist=[[] for i in range(nseg)]
+
+			# x and y coordinates converted to bin numbers (pixel coordinates)
+			xs=((self.data[cols[0]]-xe[0])*nbins/(xe[-1]-xe[0])).astype("int32")
+			ys=((self.data[cols[1]]-ye[0])*nbins/(ye[-1]-ye[0])).astype("int32")
+			zs=((self.data[cols[2]]-ze[0])*nbins/(ze[-1]-ze[0])).astype("int32")
+			for i in range(npts):
+				try: ptdist[int(seg[xs[i],ys[i],zs[i]])].append(i)
+				except: print(f"Err: {i}\t{xs[i]}\t{ys[i]}\t{seg[xs[i],ys[i]]}")
+
+			try: nset=max([int(k) for k in self.curmaps])+1
+			except: nset=0
+
+		# dens.write_image("ws_d.hdf",0)
+		# seg.write_image("ws_s.hdf",0)
+
+		for i in range(1,nseg):		# we skip class 0, which will generally wrap around the others
+			if len(ptdist[i])>0 :
+				self.curmaps[str(nset+i)]=[None,local_datetime(),(cols,None),0,0,np.array(ptdist[i])]
+
+		self.sets_changed()
+		print("done")
+		get_application().restoreOverrideCursor()
 
 	def do_dbscan(self):
+		get_application().setOverrideCursor(Qt.BusyCursor)
 		print("OpticsDB ...")
 		t0=time.time()
 		from sklearn.cluster import OPTICS
@@ -1403,6 +1557,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		nseg=max(classes)+1
 		if (nseg>100):
 			print(f"{nseg} classes found, aborting")
+			get_application().restoreOverrideCursor()
 			return
 
 		for i in range(nseg):
@@ -1414,13 +1569,15 @@ class EMGMM(QtWidgets.QMainWindow):
 			except:
 				traceback.print_exc()
 				print(self.data.shape,cols)
-				newmap=[None,local_datetime(),[cols,[0,0,0,0]],0,0,ptdist]
+				newmap=[None,local_datetime(),(cols,None),0,0,ptdist]
 			self.curmaps[str(nset+i)]=newmap
 
 		self.sets_changed()
 		print(f"done ({time.time()-t0}s)")
+		get_application().restoreOverrideCursor()
 
 	def do_optics(self):
+		get_application().setOverrideCursor(Qt.BusyCursor)
 		print("OpticsXi ...")
 		t0=time.time()
 		from sklearn.cluster import OPTICS
@@ -1435,6 +1592,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		nseg=max(classes)+1
 		if (nseg>100):
 			print(f"{nseg} classes found, aborting")
+			get_application().restoreOverrideCursor()
 			return
 
 		for i in range(nseg):
@@ -1446,13 +1604,15 @@ class EMGMM(QtWidgets.QMainWindow):
 			except:
 				traceback.print_exc()
 				print(self.data.shape,cols)
-				newmap=[None,local_datetime(),[cols,[0,0,0,0]],0,0,ptdist]
+				newmap=[None,local_datetime(),(cols,None),0,0,ptdist]
 			self.curmaps[str(nset+i)]=newmap
 
 		self.sets_changed()
 		print(f"done ({time.time()-t0}s)")
+		get_application().restoreOverrideCursor()
 
 	def do_spectral(self):
+		get_application().setOverrideCursor(Qt.BusyCursor)
 		print("spectral ...")
 		t0=time.time()
 		from sklearn.cluster import SpectralClustering
@@ -1473,11 +1633,12 @@ class EMGMM(QtWidgets.QMainWindow):
 			except:
 				traceback.print_exc()
 				print(self.data[cols,ptdist].shape)
-				newmap=[None,local_datetime(),[cols,[0,0,0,0]],0,0,ptdist]
+				newmap=[None,local_datetime(),(cols,None),0,0,ptdist]
 			self.curmaps[str(nset+i)]=newmap
 
 		self.sets_changed()
 		print(f"done ({time.time()-t0}s)")
+		get_application().restoreOverrideCursor()
 
 	#def plot_mode_sel(self,but):
 		#"""Plot mode selected"""
@@ -1568,15 +1729,16 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.lastres=res
 		
 		map3d=EMData(f"{self.gmm}/input_map.hdf")
+
+		self.saveparm("neutral")  # updates self.currun with current user input
+
+		# we briefly supported "enhancement of densities in the masked region. detect and remove
 		try:
 			val=float(str(self.wedmask.text()).split(",")[1])
-			mask=EMData(str(self.wedmask.text()).split(",")[0])
-			mask.mult(val)
-			mask.add(1.0)
-			map3d.mult(mask)
-			print(f"masked region enhanced by {val}")
+			showerror("old style mask enhancement detected. Ignoring/removing")
+			self.wedmask.setText(self.wedmask.text().split(",")[0])
 		except:
-			print("unmasked")
+			pass
 
 		thrt=self.wedgthr.text()
 		try: minpos,minneg=float(thrt.split(",")[0]),float(thrt.split(",")[1])
@@ -1642,18 +1804,36 @@ class EMGMM(QtWidgets.QMainWindow):
 		centers[0]-=nx/2
 		centers[1]-=nx/2
 		centers[2]-=nx/2
-		self.neutralplot.setData(np.concatenate((centers,[amps])),self.wvssphsz.value)
 		self.centers=centers
 		self.amps=amps
+
+		self.group_by_mask()
+
+		try:
+			if self.cengroups is None: self.neutralplot.setData(np.concatenate((centers,[amps])),self.wvssphsz.value)
+			else: self.neutralplot.setData(np.concatenate((centers,[amps],[np.ones(len(amps))],[self.cengroups])),self.wvssphsz.value)
+		except:
+			self.cengroups=None
+			self.neutralplot.setData(np.concatenate((centers,[amps])),self.wvssphsz.value)
 		self.wview3d.update()
 
 		# write the new seg model to disk for use in subsequent runs
 		modelseg=f"{self.gmm}/{self.currunkey}_model_seg.txt"
 		
-		with open(modelseg,"w") as out:
-			for i in range(len(self.amps)):
-				try: out.write(f"{self.centers[0,i]/nx:1.2f}\t{-self.centers[1,i]/nx:1.2f}\t{-self.centers[2,i]/nx:1.2f}\t{self.amps[i]:1.3f}\n")
-				except: print("write error: ",self.centers[:,i],self.amps[i],self.amps.shape,i)
+		if self.cengroups is None:
+			with open(modelseg,"w") as out:
+				for i in range(len(self.amps)):
+					try: out.write(f"{self.centers[0,i]/nx:1.2f}\t{-self.centers[1,i]/nx:1.2f}\t{-self.centers[2,i]/nx:1.2f}\t{self.amps[i]:1.3f}\n")
+					except: print("write error: ",self.centers[:,i],self.amps[i],self.amps.shape,i)
+		else:
+			with open(modelseg,"w") as out:
+				for i in range(len(self.amps)):
+					try: out.write(f"{self.centers[0,i]/nx:1.2f}\t{-self.centers[1,i]/nx:1.2f}\t{-self.centers[2,i]/nx:1.2f}\t{self.amps[i]:1.3f}\t1.0\t{self.cengroups[i]:1.0f}\n")
+					except:
+						if i==0:
+							traceback.print_exc()
+							print(len(self.cengroups),self.cengroups)
+						if i<10: print("write error: ",self.centers[:,i],self.amps[i],self.amps.shape,i)
 
 		self.set3dvis(0,0,1,1,0,1)
 
@@ -1664,10 +1844,9 @@ class EMGMM(QtWidgets.QMainWindow):
 		prog.show()
 
 		# Regenerate the initial model by segmentation (writes to modelseg file)
+		# this also updates self.jsparm
 		self.new_res()
-		
-		self.saveparm("neutral")  # updates self.currun with current user input
-		
+
 		sym=self.currun["sym"]
 		maxbox=(int(self.jsparm["boxsize"]*(2*self.jsparm["apix"])/self.currun["targres"])//2)*2
 		minboxp =(int(self.jsparm["boxsize"]*(2*self.jsparm["apix"])/self.currun["ptclminres"]))
@@ -1716,12 +1895,16 @@ class EMGMM(QtWidgets.QMainWindow):
 		pts[1]*=-1.0
 		pts[2]*=-1.0
 		pts[:3,:]*=nx
+
 		n2c=min(ncen,pts.shape[1])
 		pts[:3,:n2c]=self.centers[:,:n2c]
 		pts[3:4,:n2c]=self.amps[:n2c]
 		pts[4,:n2c]=1.0
+
 		self.centers=pts[:3,:]
 		self.amps=pts[3]
+		if len(pts)>5: self.cengroups=pts[5]
+		else: self.cengroups=None
 		
 		self.neutralplot.setData(self.pts,self.wvssphsz.value)
 		self.wview3d.updateGL()
@@ -1768,7 +1951,6 @@ class EMGMM(QtWidgets.QMainWindow):
 		else: conv=""
 		decoder=f"{self.gmm}/{self.currunkey}_decoder.h5"
 
-
 		# we extract a subset of the input particles targeting ~10k
 		try: os.unlink(f"{self.gmm}/particles_subset.lst")
 		except: pass
@@ -1800,29 +1982,76 @@ class EMGMM(QtWidgets.QMainWindow):
 		pts[1]*=-1.0
 		pts[2]*=-1.0
 		pts[:3,:]*=nx
-		n2c=min(ncen,pts.shape[1])
-		pts[:3,:n2c]=self.centers[:,:n2c]
-		pts[3:4,:n2c]=self.amps[:n2c]
+
+		# I'm sure there is/was a reason for this, but it isn't obvious to me right now
+		if ncen!=pts.shape[1]:
+			print(f"Note: number of points from training ({pts.shape[1]}) doesn't match segmenation ({ncen})")
+			n2c=min(ncen,pts.shape[1])
+			pts[:3,:n2c]=self.centers[:,:n2c]
+			pts[3:4,:n2c]=self.amps[:n2c]
+
 		self.centers=pts[:3,:]
 		self.amps=pts[3]
+		self.group_by_mask()
 
-		self.neutralplot.setData(pts,self.wvssphsz.value)
+		# if we did mask based grouping, we need to rewrite the file so the groups are used
+		# by the encoder when computing latent vectors during full network training
+		if self.cengroups is not None:
+			with open(modelout,"w") as out:
+				for i in range(len(self.amps)):
+					try: out.write(f"{self.centers[0,i]/nx:1.2f}\t{-self.centers[1,i]/nx:1.2f}\t{-self.centers[2,i]/nx:1.2f}\t{self.amps[i]:1.3f}\t1.0\t{self.cengroups[i]:1.0f}\n")
+					except:
+						if i==0:
+							traceback.print_exc()
+							print(len(self.cengroups),self.cengroups)
+						if i<10: print("write error: ",self.centers[:,i],self.amps[i],self.amps.shape,i)
+
+
+		if self.cengroups is None: self.neutralplot.setData(pts,self.wvssphsz.value)
+		else: self.neutralplot.setData(np.concatenate((pts,[np.ones(len(self.cengroups))],[self.cengroups])),self.wvssphsz.value)
 		self.wview3d.updateGL()
 		self.do_events()
 		prog.setValue(3)
 
-		# make3d on gaussian output for comparison
-		er=run(f"e2make3dpar.py --input {self.gmm}/{self.currunkey}_model_projs.hdf --output {self.gmm}/{self.currunkey}_model_recon.hdf --pad {good_size(self.jsparm['boxsize']*1.25)} --mode trilinear --keep 1 --threads {self.options.threads}")
-
-		# Display the reconstructed Gaussian map
-		seg=EMData(f"{self.gmm}/{self.currunkey}_model_recon.hdf")
-		self.fmapdataitem.setData(seg)
+		# had a segfault on this at one point, then asked why it was really necessary...
+		# # make3d on gaussian output for comparison
+		# er=run(f"e2make3dpar.py --input {self.gmm}/{self.currunkey}_model_projs.hdf --output {self.gmm}/{self.currunkey}_model_recon.hdf --pad {good_size(self.jsparm['boxsize']*1.25)} --mode trilinear --keep 1 --threads {self.options.threads}")
+  #
+		# # Display the reconstructed Gaussian map
+		# seg=EMData(f"{self.gmm}/{self.currunkey}_model_recon.hdf")
+		# self.fmapdataitem.setData(seg)
 		prog.setValue(4)
 		self.currun=self.jsparm["run_"+self.currunkey]
 		self.currun["time_neutral_end"]=local_datetime()
 		self.jsparm["run_"+self.currunkey]=self.currun
 
 		self.set3dvis(1,0,0,1,0,1)
+
+	def group_by_mask(self):
+		"""If masks have been specified, use them to group the gaussians as appropriate"""
+
+		nx=int(self.jsparm["boxsize"])
+
+		# load the masks for later
+		try:
+			m=str(self.currun["mask"]).split(",")
+			if m[0]!="" : masks=[EMData(f) for f in m]
+			else: return
+		except:
+			showerror("Invalid mask. Comma separated list of filenames or blank!")
+			return
+
+		# put each Gaussian in the mask-based group it first matches
+		# results unspecified for overlapping masks
+		# group 0 corresponds to the unmasked region
+		groups=np.zeros(len(self.amps))	# float type for compatibility later
+		for i in range(len(self.amps)):
+			for j in range(len(masks)):
+				if masks[j][int(self.centers[0][i])+nx//2,int(self.centers[1][i])+nx//2,int(self.centers[2][i])+nx//2]>0.5:
+					groups[i]=j+1
+					break
+
+		self.cengroups=groups
 
 
 	def new_run(self,clk=False):
@@ -1876,7 +2105,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		if int(self.currun['batches'])<=1 :
 			# We really do need to rerun this each time in case parameters have changed
 			print("Pregenerating per-particle Gaussian representation")
-			er=run(f"e2gmm_refine_point.py --model {modelout} --ptclsin {self.gmm}/particles.lst --ptclrepout {ptrep} --maxboxsz {maxboxp} --minressz {minboxp}")
+			er=run(f"e2gmm_refine_point.py --model {modelout} --ptclsin {self.gmm}/particles.lst --ptclrepout {ptrep} --maxboxsz {maxboxp} --minressz {minboxp} --nmid {self.currun['dim']}")
 			print("Training network (single batch)")
 			er=run(f"e2gmm_refine_point.py --model {modelout} --decoderin {decoder} --decoderout {decoder} --encoderout {encoder} --ptclsin {self.gmm}/particles.lst --ptclrepin {ptrep} --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ptclsclip {self.jsparm['boxsize']} --minressz {minboxp}")
 		else:
@@ -1887,7 +2116,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			# We really do need to rerun this each time in case parameters have changed
 			print("Pregenerating per-particle Gaussian representation")
 			for b in range(nb):
-				er=run(f"e2gmm_refine_point.py --model {modelout} --ptclsin {self.gmm}/particles.lst --ptclrepout {ptrep} --maxboxsz {maxboxp} --minressz {minboxp} --chunk {b},{nb}")
+				er=run(f"e2gmm_refine_point.py --model {modelout} --ptclsin {self.gmm}/particles.lst --ptclrepout {ptrep} --maxboxsz {maxboxp} --minressz {minboxp} --chunk {b},{nb} --nmid {self.currun['dim']}")
 
 			print("Training in ",nb," batches")
 			for it in range(0,self.currun['trainiter'],itsize):
@@ -1938,6 +2167,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		"""Called when the user selects a new GMM from the list. Should not be called directly by the user without updating wlistgmm"""
 
 #		print("sel gmm",line)
+		get_application().setOverrideCursor(Qt.BusyCursor)
 		if line<0 : 
 			#self.wedbox.setText("")
 			#self.wedapix.setText("")
@@ -1967,15 +2197,19 @@ class EMGMM(QtWidgets.QMainWindow):
 		except: print("Error: input_map.hdf missing")
 
 		self.set3dvis(1,0,0,0,0,0)
+		get_application().restoreOverrideCursor()
 			
 	def sel_run(self,line):
 		"""Called when the user selects a new run from the list. If called with -1, reloads the current run"""
 		
 #		print("sel_run",line)
+		get_application().setOverrideCursor(Qt.BusyCursor)
 		if line>=0: 
 			self.currunkey=str(self.wlistrun.item(line).text())
 			self.currun=self.jsparm.getdefault("run_"+self.currunkey,{"dim":4,"mask":f"{self.gmm}/mask.hdf","trainiter":10,"pas":"100","modelreg":0.5,"perturb":0.1,"time":"-"})
-		elif self.currunkey is None or len(self.currunkey)==0 or self.currun is None: return
+		elif self.currunkey is None or len(self.currunkey)==0 or self.currun is None:
+			get_application().restoreOverrideCursor()
+			return
 	
 		self.wedres.setText(f'{self.currun.get("targres",20)}')
 		rres=self.currun.get("ptclres",self.currun.get("targres",20))
@@ -2025,6 +2259,9 @@ class EMGMM(QtWidgets.QMainWindow):
 			#pts[4,:n2c]=1.0
 			self.centers=pts[:3,:]
 			self.amps=pts[3]
+			if len(pts)>5: self.cengroups=pts[5]
+			else: self.cengroups=None
+
 			
 			self.neutralplot.setData(pts,self.wvssphsz.value)
 			self.wview3d.update()
@@ -2040,6 +2277,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			traceback.print_exc()
 			print(f"Run {self.gmm} -> {self.currunkey} results incomplete. No stored decoder found.",self)
 			self.set3dvis(1,0,0,0,0,1)
+			get_application().restoreOverrideCursor()
 			return
 
 		# list of all data subsets for this run, in the old system these were called "maps" but had incomplete info
@@ -2082,6 +2320,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		except: pass
 
 		self.set3dvis(1,0,0,1,1,0)
+		get_application().restoreOverrideCursor()
 
 	def augment_mid(self):
 		"""This will take the middle layer from the network result and create the "augmented" file with 2-D PCA in the first 2 columns
@@ -2097,14 +2336,20 @@ class EMGMM(QtWidgets.QMainWindow):
 
 			print("Compute PCA")
 			self.pca=skdc.PCA(n_components=2)
-			pcadc=self.pca.fit_transform(midresult.transpose()).transpose()
+			try:
+				pcadc=self.pca.fit_transform(midresult.transpose()).transpose()
+				copycol=False
+			except:
+				print("PCA failed, copying columns")
+				copycol=True
 			print(midresult.shape)
 			out=open(f"{self.gmm}/{self.currunkey}_aug.txt","w")
 			out.write("# PCA0; PCA1; ")
 			out.write("Latent; "*midresult.shape[0])
 			out.write("\n")
 			for i in range(midresult.shape[1]):
-				out.write(f"{pcadc[0][i]:1.4f}\t{pcadc[1][i]:1.4f}\t")
+				if copycol: out.write(f"{midresult[0,i]:1.4f}\t{midresult[0,i]:1.4f}\t")
+				else: out.write(f"{pcadc[0][i]:1.4f}\t{pcadc[1][i]:1.4f}\t")
 				out.write("\t".join([f"{r:1.4f}" for r in midresult[:,i]]))
 				out.write("\n")
 

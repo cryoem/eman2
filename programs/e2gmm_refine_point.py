@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-# Muyuan Chen 2020-06
+# Steve Ludtke 2022
+# forked from e2gmm_refine Muyuan Chen 2020
 from EMAN2 import *
 import numpy as np
 from sklearn.decomposition import PCA
@@ -20,6 +21,7 @@ if ('-h' in sys.argv) or ('--help' in sys.argv):
 	tf.function=lambda f: f
 	print("Printing help. Skip tensorflow import")
 else:
+	import h5py
 	import tensorflow as tf
 
 def main():
@@ -40,11 +42,11 @@ def main():
 	parser.add_argument("--chunk", type=str,help="In case of memory exhaustion, particles can be trained in chunks (similar to a batch). eg - 0,10 will process the first of 10 chunks. Be sure to store and restore the encoder and decoder if using this mode. Must be run sequentially 0-(n-1) without parallelism.", default=None)
 	parser.add_argument("--sym", type=str,help="symmetry. currently only support c and d", default="c1")
 	parser.add_argument("--model", type=str,help="load from an existing model file", default="")
-	parser.add_argument("--segments", type=str,help="Divide the model into sequential domains. Comma separated list of integers. Each integer is the first sequence number of a new region, starting with 0",default=None)
+#	parser.add_argument("--segments", type=str,help="Divide the model into sequential domains. Comma separated list of integers. Each integer is the first sequence number of a new region, starting with 0",default=None)
 	parser.add_argument("--modelout", type=str,help="output trained model file. only used when --projs is provided", default="")
 	parser.add_argument("--decoderin", type=str,help="Rather than initializing the decoder from a model, read an existing trained decoder", default="")
 	parser.add_argument("--decoderout", type=str,help="Save the trained decoder model. Filename should be .h5", default=None)
-	parser.add_argument("--encoderin", type=str,help="Rather than initializing the encoder from scratch, read an existing trained encoder", default="")
+	parser.add_argument("--encoderin", type=str,help="Rather than initializing the encoder from scratch, read an existing trained encoder", default=None)
 	parser.add_argument("--encoderout", type=str,help="Save the trained encoder model. Filename should be .h5", default=None)
 	parser.add_argument("--projs", type=str,help="projections with orientations (in hdf header or comment column of lst file) to train model", default="")
 	parser.add_argument("--evalmodel", type=str,help="generate model projection images to the given file name", default="")
@@ -72,7 +74,7 @@ def main():
 	parser.add_argument("--ptclrepin", type=str,help="Load the per-particle representation from a file rather than recomputing", default="")
 	parser.add_argument("--midout", type=str,help="middle layer output", default="")
 	parser.add_argument("--pas", type=str,help="choose whether to adjust position, amplitude, sigma. sigma is not supported in this version of the program. use 3 digit 0/1 input. default is 110, i.e. only adjusting position and amplitude", default="110")
-	parser.add_argument("--nmid", type=int,help="size of the middle layer", default=4)
+	parser.add_argument("--nmid", type=int,help="size of the middle layer. If model is grouped becomes nmid*ngroup", default=4)
 	parser.add_argument("--mask", type=str,help="remove points outside mask", default="")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
@@ -110,21 +112,23 @@ def main():
 
 			print(pts)
 		else:
-
+			# x,y,z,amp[,sig[,group]]	# sig is ignored, group if present should be integers
 			pts=np.loadtxt(options.model).astype(floattype)
-			if pts.shape[1]==5: pts=pts[:,:4]
-		npt=len(pts)
-		print("{} gaussian in the model".format(len(pts)))
+			grps=None	# if points are grouped, each group is sent to an independent subencoder
+			if pts.shape[1]==5:
+				pts=pts[:,:4]
+			elif pts.shape[1]==6:
+				from collections import Counter
+				pts=np.array(sorted(pts,key=lambda x:x[5]))  # sort points by group so they can be fed into the subencoders
+				grps=Counter(pts[:,5])		# count elements in each group to generate correct encoder
+				if options.nmid%len(grps)!=0 and options.encoderin is None  :
+					error_exit(f"ERROR: Size of latent space {options.nmid} must be divisible by the number of groups {len(grps)}")
+				pts=pts[:,:4]
 
-		if options.segments!=None:
-			segments=[int(s) for s in options.segments.split(",")]
-			if segments[0]!=0 : segments.insert(0,0)
-			for i in range(len(segments-1)):
-				if segments[i-1]>=segments[i] or segments[i]>npt:
-					print("ERROR: segments must be a sequential list of integer model point numbers")
-					sys.exit(1)
-			options.nmid=len(segments)*2	# 2-D space for each feature
-		else: segments=None
+		npt=len(pts)
+		print("{} gaussians in the model".format(len(pts)))
+		if grps is not None: print(f"in {len(grps)} groups")
+
 	else:
 		pts=None
 
@@ -143,7 +147,7 @@ def main():
 
 		## randomize it a bit so we dont have all zero weights
 		rnd=np.random.randn(pts.shape[0], pts.shape[1])*1e-3
-		gen_model=build_decoder(options.nmid,pts+rnd,segments)
+		gen_model=build_decoder(options.nmid,pts+rnd)
 		print("{} gaussian in the model".format(len(pts)))
 
 		## train the model from coordinates first
@@ -214,7 +218,7 @@ def main():
 
 			#### save model to text file
 			np.savetxt(options.modelout, pout)
-			gen_model=build_decoder(options.nmid, pout,segments)
+			gen_model=build_decoder(options.nmid, pout)
 
 
 		#### make projection images from GMM
@@ -336,16 +340,17 @@ def main():
 	#### Heterogeneity analysis from particles
 	if options.ptclsin and options.heter:
 		#### build deep networks and make sure they work
-		if options.encoderin:
+		if options.encoderin is not None:
 			encode_model=tf.keras.models.load_model(f"{options.encoderin}",compile=False)
 		else:
-			encode_model=build_encoder(len(pts[0]),options.nmid)
+			encode_model=build_encoder(len(pts[0]),options.nmid,grps)
 
 		if options.decoderin:
 			decode_model=tf.keras.models.load_model(f"{options.decoderin}",compile=False)
 		else:
-			decode_model=build_decoder(options.nmid, len(pts[0]), segments)
+			decode_model=build_decoder(options.nmid, len(pts[0]))
 
+		print(allgrds[:bsz].shape)
 		mid=encode_model(allgrds[:bsz])
 		print("Latent space shape: ", mid.shape)
 		out=decode_model(mid)
@@ -371,7 +376,7 @@ def main():
 		mid=calc_conf(encode_model, allgrds[ptclidx], 1000)
 
 	# this now normally run as a separate process since the network may be trained in batches
-	if options.ptclrepin and options.encoderin and options.midout:
+	if options.ptclrepin and options.encoderin is not None and options.midout:
 		hdr=EMData(options.ptclrepin,0,1)
 		nptcl=hdr["ny"]
 		nvec=hdr["nx"]
@@ -724,39 +729,50 @@ def set_indices_boxsz(boxsz, apix=0, return_freq=False):
 		params={"sz":sz, "idxft":idxft, "rrft":rrft, "rings":rings, "xforigin":xvec}
 		return params
 
-def build_encoder(ninp,nmid):
+def build_encoder(ninp,nmid,grps=None):
+	"""ninp is the size of the input vector
+	nmid is the size of the latent vector
+	grps, if provided is a dictionary of group number keys with a count of gaussians as the value. The sum of the values should equal nmid."""
 	l2=tf.keras.regularizers.l2(1e-3)
 	l1=tf.keras.regularizers.l1(1e-3)
-	binit=tf.keras.initializers.RandomNormal(0,1e-2)
-	kinit=tf.keras.initializers.HeNormal()
+#	binit=tf.keras.initializers.RandomNormal(0,1e-2)
+#	kinit=tf.keras.initializers.HeNormal()
+	binit="random_normal"
+	kinit="he_normal"
 
-	print(f"Encoder {max(ninp//2,nmid)} {max(ninp//8,nmid)} {max(ninp//32,nmid)}")
-	layers=[
-	tf.keras.layers.Flatten(),
-	tf.keras.layers.Dense(max(ninp//2,nmid*8), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True,bias_initializer=binit),
-	tf.keras.layers.Dropout(.3),
-	tf.keras.layers.Dense(max(ninp//8,nmid*4), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True),
-	tf.keras.layers.Dense(max(ninp//32,nmid*2), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True),
-	#tf.keras.layers.Dense(max(ninp//2,nmid*2), activation="tanh", kernel_regularizer=l1,use_bias=True,bias_initializer=kinit),
-	#tf.keras.layers.Dropout(.3),
-	#tf.keras.layers.Dense(max(ninp//8,nmid*2), activation="tanh", kernel_regularizer=l1,use_bias=True),
-	#tf.keras.layers.Dense(max(ninp//32,nmid*2), activation="tanh", kernel_regularizer=l1,use_bias=True),
-#	tf.keras.layers.BatchNormalization(),
-	tf.keras.layers.Dense(nmid, kernel_regularizer=l2, kernel_initializer=kinit,use_bias=True),
-	]
-		
-	encode_model=tf.keras.Sequential(layers)
+	if grps is None:
+		print(f"Encoder {max(ninp//2,nmid)} {max(ninp//8,nmid)} {max(ninp//32,nmid)}")
+		layers=[
+		tf.keras.layers.Flatten(),
+		tf.keras.layers.Dense(max(ninp//2,nmid*8), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True,bias_initializer=binit),
+		tf.keras.layers.Dropout(.3),
+		tf.keras.layers.Dense(max(ninp//8,nmid*4), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True),
+		tf.keras.layers.Dense(max(ninp//32,nmid*2), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True),
+		tf.keras.layers.Dense(nmid, kernel_regularizer=l2, kernel_initializer=kinit,use_bias=True),
+		]
+
+		encode_model=tf.keras.Sequential(layers)
+	else:
+		# the goal is to produce something with the same input/output layers as the unsegmented network
+		# but connectivity from specific gaussians limited to specific latent variables
+		ngrp=[grps[i] for i in sorted(grps)]
+		latpergrp=nmid//len(grps)
+		in1=tf.keras.layers.Input(ninp)
+		in2s=[]
+		t=0
+		for i in ngrp:
+			in2s.append(tf.keras.layers.Dense(max(i//2,latpergrp*8), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True,bias_initializer=binit)(in1[:,t:t+i]))
+			t+=i
+		# Add Dropout here?
+		drop=[tf.keras.layers.Dropout(0.3)(in2s[i]) for i in range(len(ngrp))]
+		mid=[tf.keras.layers.Dense(max(ngrp[i]//8,latpergrp*4), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True)(drop[i]) for i in range(len(ngrp))]
+		mid2=[tf.keras.layers.Dense(max(ngrp[i]//32,latpergrp*2), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True)(mid[i]) for i in range(len(ngrp))]
+		outs=[tf.keras.layers.Dense(latpergrp, kernel_regularizer=l2, kernel_initializer=kinit,use_bias=True)(mid2[i]) for i in range(len(ngrp))]
+		out=tf.keras.layers.Concatenate()(outs)
+		encode_model=tf.keras.Model(inputs=in1,outputs=out)
+#		print(in1,in2s,mid,mid2,outs,out)
 	return encode_model
 
-def init_segs(segs):
-	nmid=len(segs)
-	m=np.fromfunction(lambda i,j: ((j//4)==(i//2))*0.1+0.9,(nmid,nmid*2),dtype=float32)
-	Localize1
-
-#class Localize1(tf.keras.constraints.Constraint):
-    #def __call__(self, w):
-
-        #return w
 
 
 
@@ -764,7 +780,7 @@ def init_segs(segs):
 # nmid is the number of elements in the middle layer, should match the number of middle layer elements in encoder, must also match number of segments if provided
 # pt is either the integer number of gaussians or a numpy array of gaussian coordinates
 # segs is integer gaussian numbers beginning each defined region or an empty list (or None)
-def build_decoder(nmid, pt,segs ):
+def build_decoder(nmid, pt ):
 	if isinstance(pt, int):
 		nout=pt
 		initpts=False
@@ -773,13 +789,12 @@ def build_decoder(nmid, pt,segs ):
 		nout=len(pt)
 		initpts=True
 	
-	if segs is None or len(segs)<2 : segs=None
-	else: init_segs(segs)
-
 	x0=tf.keras.Input(shape=(nmid))
 	
-	binit=tf.keras.initializers.RandomNormal(0,1e-2)
-	kinit=tf.keras.initializers.HeNormal()
+#	binit=tf.keras.initializers.RandomNormal(0,1e-2)
+#	kinit=tf.keras.initializers.HeNormal()
+	binit="random_normal"
+	kinit="he_normal"
 	l2=tf.keras.regularizers.l2(1e-3)
 	l1=tf.keras.regularizers.l1(1e-3)
 #	layer_output=tf.keras.layers.Dense(nout*4, kernel_initializer=kinit, activation="sigmoid",use_bias=True,kernel_constraint=Localize4())
@@ -1130,6 +1145,7 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, options):
 	
 	## initialize optimizer
 #	opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate)
+#	opt=tf.keras.optimizers.experimental.AdamW(learning_rate=options.learnrate)
 	opt=tf.keras.optimizers.Adamax()
 	wts=encode_model.trainable_variables + decode_model.trainable_variables
 	nbatch=0

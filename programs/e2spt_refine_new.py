@@ -15,8 +15,6 @@ def main():
 	
 	One major difference of the new protocol is that the program now can model the localized 2D particle motion by considering the motion trajectory of each particle along with its neighbors. For each particle, --smoothN controls how many of its neighbors are considered to model the local motion, and --smooth controls how much the neighboring particles are weighted during the alignment. The weight of neighboring particles decays in a Gaussian form based on the distance to the center particle of consideration. --smooth=0 means only the center particle is considered, and the program should perform in a similar way as the original subtilt refinement.
 	
-	Strongly suggest running on a single node/computer with --threads and --m3dthreads, as there are sometimes issues with --parallel thread in this program.
-
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--ptcls", type=str,help="3d particle input", default=None,guitype='filebox', browser="EMSetsTable(withmodal=True,multiselect=False)", row=0, col=0,rowspan=1, colspan=2, mode="model")
@@ -112,19 +110,24 @@ def main():
 		else:
 			iters.append(i)
 			
-	keydic={'p':"Subtomogram alignment", 't': "Subtilt translational refinement", 'T': "Subtilt translational CCF alignment", 'r': "Subtilt rotational refinement", 'd':"Defocus refinement", 'x':"Skipping alignment"}
+	keydic={'p':"Subtomogram alignment", 't': "Subtilt translational refinement", 'T': "Subtilt translational CCF alignment", 'r': "Subtilt rotational refinement", 'd':"Defocus refinement", 'x':"Skipping alignment",'z':"Stop"}
 	
+	last2d00=None
 	if options.continuefrom>0:
 		if options.continuefrom%1>0:
-			iters=['x']+iters
+			iters=['x']*int(1+options.continuefrom)+iters
 			startiter=ceil(options.continuefrom-1)
-			itr=startiter+1
-			
+			itr=startiter+1			
 		else:
 			itr=startiter=int(options.continuefrom)
 		
 		last2d=f"{path}/aliptcls2d_{itr:02d}.lst"
 		last3d=f"{path}/aliptcls3d_{itr:02d}.lst"
+		
+		if os.path.isfile(f"{path}/0_spt_gathermeta_params.json"):
+			print("Loading from existing metadata..")
+			last2d00=f"{path}/aliptcls2d_01.lst"
+		#print(iters)
 		
 	else:
 		#### There were too many options controlling the resolution previously...
@@ -181,7 +184,7 @@ def main():
 		run(f"e2proclst.py {options.loadali2d} --create {fout} ")
 		last2d=fout
 		
-	ppmask=setsf=tophat=""
+	ppmask,setsf,tophat="","",""
 	if options.setsf:
 		setsf=f" --setsf {options.setsf}"
 	if options.tophat:
@@ -204,6 +207,7 @@ def main():
 		print(f"######## iter {itr} ##########")
 		print("### {}....".format(keydic[itype]))
 		
+		if itype=='z':break
 		# Ok, this is a hack to avoid adding a new option to each subprogram. May be a little confusing if the program gets interrupted
 		if itype!='x' and options.maskalign!=None:
 			for eo in ("even","odd"):
@@ -279,6 +283,8 @@ def main():
 				cmd+=f" --minres={options.minres}"
 			if options.goldstandard>0 or options.goldcontinue:
 				cmd+=" --goldcontinue"
+			if last2d00:
+				cmd+=f" --aliptcls2d {last2d00}"
 				
 			run(cmd)
 			last2d=f"{path}/aliptcls2d_{itr:02d}.lst"
@@ -316,7 +322,7 @@ def main():
 			for eo in ["even", "odd"]:
 				run(f"e2spa_make3d.py --input {path}/aliptcls2d_{itr:02d}.lst --output {path}/threed_{itr:02d}_{eo}.hdf --keep {options.keep} --clsid {eo} --outsize {boxsize} --ref {path}/threed_{itr:02d}_{eo}.hdf --maxres {res} --sym {options.sym}  {m3dpar}")
 			
-		run(f"e2refine_postprocess.py --even {path}/threed_{itr:02d}_even.hdf {setsf} {tophat} --threads {options.threads} --restarget {res:.2f} --sym {options.sym} {ppmask}")
+		run(f"e2refine_postprocess.py --even {path}/threed_{itr:02d}_even.hdf {setsf} {tophat} --threads {options.threads} --restarget {res:.2f} --align --sym {options.sym} {ppmask}")
 
 		r=calc_resolution(f"{path}/fsc_masked_{itr:02d}.txt")
 		res=min(r,res*1.1)		# resolution can't take too large a step in the wrong direction
@@ -410,9 +416,6 @@ def calc_resolution(fscfile):
 	
 	return rs*.8
 	
-def run(cmd):
-	print(cmd)
-	launch_childprocess(cmd)
 	
 if __name__ == '__main__':
 	main()

@@ -505,7 +505,8 @@ class SptAlignTask(JSTask):
 				c={	"src":imgsrc, "idx":imgidx[i],
 					"xform.projection": imgxfs[i], "score":score[i],
 					"ptcl3d_id":data["ii"], "class": clsid, "tilt_id":tiltids[i]}
-				
+				if options.plst:
+					c["dxf"]=dxf[i]
 				c2d.append(c)
 				
 			rets.append((data["ii"], c3d, c2d))

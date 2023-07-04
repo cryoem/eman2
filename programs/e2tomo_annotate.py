@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+#
 # Author: Lan Dang, 03/17/2022 (dlan@bcm.edu)
 import sys
 from past.utils import old_div
@@ -14,7 +15,7 @@ from EMAN2_utils import interp_points
 from eman2_gui.emapplication import get_application, EMApp
 from eman2_gui.emimage import EMImageWidget
 from eman2_gui.emimage2d import EMImage2DWidget
-from eman2_gui.emannotate2d import EMAnnotate2DWidget
+from eman2_gui.emannotate2d import EMAnnotate2DWidget,EMSegTab
 from eman2_gui.emimagemx import EMImageMXWidget
 from eman2_gui.emscene3d import EMScene3D
 from eman2_gui.emdataitem3d import EMDataItem3D, EMIsosurface
@@ -23,11 +24,7 @@ from eman2_gui.emshape import EMShape
 from eman2_gui.valslider import ValSlider,ValBox,StringBox,EMSpinWidget
 
 import scipy.spatial.distance as scipydist
-from skimage.draw import line, polygon, line_aa
-from skimage import morphology
-from skimage.measure import regionprops
-from skimage.morphology.footprints import disk
-
+import scipy.ndimage as ndi
 import tensorflow as tf
 from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D,Flatten,Dense,Dropout,BatchNormalization, concatenate, Conv2DTranspose
 from tensorflow.keras.models import Model
@@ -39,20 +36,25 @@ from tensorflow.keras.callbacks import History
 import numpy as np
 from eman2_gui.valslider import ValSlider
 import weakref
+
 from matplotlib.patches import Circle
+import matplotlib.path as mplPath
 import matplotlib.pyplot as plt
 
+
 def main():
-	usage="""annotate tomograms in a folder. annotated images will be saved in ../segs folder.
-	 still developing!!!
+	usage="""annotate tomograms in a folder. annotated images will be saved in ./segs folder.
+	 still developing
 
 	[prog] --folder <path_to_tomogram_folder>
 
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	#parser.add_pos_argument(name="tomogram",help="Specify a tomogram from which you want to extract particles.", default="", guitype='filebox', browser="EMTomoBoxesTable(withmodal=True,multiselect=False)", row=0, col=0,rowspan=1, colspan=2, mode="box3d,box2d")
-	parser.add_argument("--folder",type=str, help="List the folder contain all tomograms to process", default="./tomograms")
-	#parser.add_argument("--annotation",type=str, help="List the tomograms to process", default="")
+	parser.add_argument("--folder",type=str, help="List the folder contain all tomograms to process", default="./tomograms/")
+
+	parser.add_argument("--seg_folder",type=str, help="List the folder contain all annotation file", default="./segs/")
+	parser.add_argument("--region_sz",type=int, help="Region size for Region I/O. -1 reads whole tomogram", default=-1)
 	#parser.add_argument("--alltomograms",default=False,help="Process all tomograms from tomograms folder")
 	#parser.add_argument("--boxsize","-b",type=int,help="Box size in pixels",default=-1)
 
@@ -71,16 +73,10 @@ def main():
 	app = EMApp()
 	awin = EMAnnotateWindow(app,options)
 
-	# screen = app.primaryScreen()
-	# print('Screen: %s' % screen.name())
-	# size = screen.size()
-	# print('Size: %d x %d' % (size.width(), size.height()))
-	# rect = screen.availableGeometry()
-	# print('Available: %d x %d' % (rect.width(), rect.height()))
 
 
 
-	awin.resize(1440,790)
+	awin.resize(1120,720)
 	awin.show()
 
 
@@ -94,16 +90,17 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 	def __init__(self, application,options,data=None,annotate=None):
 		super().__init__()
 		self.app = weakref.ref(application)
-		self.setMinimumSize(1000, 700)
+		self.setMinimumSize(1120, 720)
 		self.options=options
-		self.setWindowTitle("ImageViewer")
+		self.setWindowTitle("Image Viewer")
 		self.tom_folder = options.folder
+		self.seg_folder = options.seg_folder
 
 		try:
-			os.mkdir("./segs")
-			print("Directory ./segs was created" )
+			os.mkdir(self.seg_folder)
+			print("Directory", self.seg_folder, "is created" )
 		except OSError as error:
-			print("Directory ./segs already existed. Continue")
+			print("Directory",self.seg_folder,"already existed. Continue")
 			pass
 
 		self.tomogram_list = QtWidgets.QListWidget()
@@ -124,14 +121,16 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.nx = hdr["nx"]
 		self.ny = hdr["ny"]
 		self.nz=hdr["nz"]
+		#self.nz=256
 
 		#TODO
 		#Need to copy header to annotation file
 		#Need to call garbage collector to remove trash from buffer memory
 
-		self.seg_path = os.path.join("./segs/",self.tomogram_list.item(0).text()[0:-4]+"_seg.hdf")
+		self.seg_path = os.path.join(self.seg_folder,self.tomogram_list.item(0).text()[0:-4]+"_seg.hdf")
 		if not os.path.isfile(self.seg_path):
 			seg_out = EMData(self.nx,self.ny,self.nz)
+			#self.write_header(seg_out)
 			seg_out.write_image(self.seg_path)
 			del seg_out
 		else:
@@ -167,24 +166,22 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 		self.gbl.setColumnStretch(0,1)
 		self.gbl.setColumnStretch(1,3)
-		#self.gbl.setColumnStretch(2,1)
-		#self.gbl.setRowStretch(0,10)
-		#self.gbl.setRowStretch(1,1)
-		# self.gbl.addWidget(QtWidgets.QPushButton("Button1"),0,0)
-		# self.gbl.addWidget(QtWidgets.QPushButton("Button2"),0,1)
-		# self.gbl.addWidget(QtWidgets.QPushButton("Button3"),0,2)
 		self.gbl.setContentsMargins(8, 8, 8, 8)
 		self.gbl.setSpacing(10)
-
-		self.img_view_fixed_size = 720
+		if options.region_sz == -1:
+			self.img_view_region_size = self.nx
+			print("Reading full images of size", self.nx)
+		elif options.region_sz == 0:
+			print("Region size needs to be greater than 0. Set region size to default value of 680.")
+			self.img_view_region_size = 680
+		else:
+			self.img_view_region_size = options.region_sz
 		self.thumbnail_size=220
 
-		# self.img_view = EMAnnotate2DWidget(self.data,self.annotation,sizehint=(self.img_view_fixed_size,self.img_view_fixed_size))
-		# print("Data",self.img_view.data)
 
-		self.img_view = EMAnnotate2DWidget(sizehint=(self.img_view_fixed_size,self.img_view_fixed_size))
-		self.img_view.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
-		self.img_view.setMinimumSize(self.img_view_fixed_size, self.img_view_fixed_size)
+		self.img_view = EMAnnotate2DWidget(sizehint=(680,680))
+		#self.img_view.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
+		self.img_view.setMinimumSize(680, 680)
 
 		#self.img_view.show()
 
@@ -194,6 +191,8 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.unet = None
 
 		#Thumbnail
+		#Attribute error occurs when Thumbnail was initialized before the EMAnnotateWindow
+
 
 		self.thumbnail = Thumbnail(current_file=self.data_file,target=self.img_view,app_target=self,tn_size=self.thumbnail_size)
 		self.thumbnail.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
@@ -203,29 +202,8 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		except:
 			pass
 
-
 		self.img_view_inspector = self.img_view.get_inspector()
-
-
-		# #self.thumbnail.setMinimumSize(300,300)
-		# tomo_vbl = QtWidgets.QGridLayout()
-		# # tomo_vbl.addWidget(QtWidgets.QLabel("Tomograms"),0,0)
-		# # tomo_vbl.addWidget(self.tomogram_list,1,0)
-		# tomo_vbl.addWidget(QtWidgets.QLabel("Annotation Class"),0,0)
-		# tomo_vbl.addWidget(self.seg_tab,1,0)
-		# self.seg_tab.setMinimumSize(self.thumbnail_size, self.thumbnail_size*2)
-		# #self.seg_tab.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
-		# tomo_vbl.setRowStretch(1,2)
-		# tomo_vbl.setRowStretch(2,1)
-		# tomo_vbl.setRowStretch(3,1)
-		# tomo_vbl.addWidget(self.thumbnail,2,0)
-		# zt_hbl = QtWidgets.QHBoxLayout()
-		# zt_hbl.addWidget(QtWidgets.QLabel("Z-thickness"))
-		# self.zt_spinbox = QtWidgets.QSpinBox(self)
-		# self.zt_spinbox.setValue(0)
-		# self.zt_spinbox.setMinimum(-1)
-		# self.zt_spinbox.setMaximum(self.nz//2)
-
+		self.tomo_list_panel=QtWidgets.QWidget()
 		tomo_vbl = QtWidgets.QGridLayout()
 		tomo_vbl.addWidget(QtWidgets.QLabel("Tomograms"),0,0)
 		tomo_vbl.addWidget(self.tomogram_list,1,0)
@@ -236,11 +214,14 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		zt_hbl = QtWidgets.QHBoxLayout()
 		zt_hbl.addWidget(QtWidgets.QLabel("Z-thickness"))
 		self.zt_spinbox = QtWidgets.QSpinBox(self)
-		self.zt_spinbox.setValue(0)
+		self.zt_spinbox.setValue(-1)
 		self.zt_spinbox.setMinimum(-1)
 		self.zt_spinbox.setMaximum(self.nz//2)
 		zt_hbl.addWidget(self.zt_spinbox)
 		tomo_vbl.addLayout(zt_hbl,3,0)
+		self.tomo_list_panel.setLayout(tomo_vbl)
+		self.tomo_list_panel.setWindowTitle("Tomograms")
+		self.tomo_list_panel.show()
 
 
 		filter_vbl = QtWidgets.QVBoxLayout()
@@ -274,8 +255,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		#self.thumbnail.setMinimumSize(300,300)
 
 
-
-
 		#Basic tools
 		basic_label = QtWidgets.QLabel("Basic tools")
 		basic_vbl = QtWidgets.QVBoxLayout()
@@ -284,10 +263,11 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 		self.brush_tab = QtWidgets.QWidget()
 		self.btlay = QtWidgets.QVBoxLayout(self.brush_tab)
-		self.btlay.addWidget(QtWidgets.QLabel("Use paint brush to annotate on tomogram. Open control panel"))
+		self.btlay.addWidget(QtWidgets.QLabel("Use paint brush to annotate on tomogram.\nUse manual annotate tools panel"))
 		self.basic_tab_num = 0
 		self.linear_tab = QtWidgets.QWidget()
 		self.ltlay = QtWidgets.QGridLayout(self.linear_tab)
+		self.ltlay.setColumnStretch(70,70)
 
 		self.points_label = QtWidgets.QLabel("Choose anchor points. \nCtrl+Click: start a contour.\nShift+Click: delete a point.")
 		self.clear_button = QtWidgets.QPushButton("Clear points")
@@ -311,6 +291,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 		self.contour_tab = QtWidgets.QWidget()
 		self.ctlay = QtWidgets.QGridLayout(self.contour_tab)
+		self.ctlay.setColumnStretch(70,70)
 		self.clear_contour_button = QtWidgets.QPushButton("Clear points")
 		self.draw_contour_label = QtWidgets.QLabel("Choose anchor points. \nCtrl+Click: start a contour.\nShift+Click: delete a point.")
 		self.fill_contour_checkbox = QtWidgets.QCheckBox("Fill contour")
@@ -332,6 +313,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 		self.boxer_tab = QtWidgets.QWidget()
 		self.bxlay = QtWidgets.QGridLayout(self.boxer_tab)
+		self.bxlay.setColumnStretch(70,70)
 		self.random_bx_bt = QtWidgets.QPushButton("Create Random Boxes")
 		self.clear_bx_bt = QtWidgets.QPushButton("Clear Boxes")
 		self.extract_bt = QtWidgets.QPushButton("Extract Boxes")
@@ -343,11 +325,11 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 
 		self.bxlay.addWidget(QtWidgets.QLabel("Select regions \nfor training nnet"),0,0,1,1)
-		self.bxlay.addWidget(self.bsz_vs,0,1,1,2)
-		self.bxlay.addWidget(self.random_bx_bt,1,1,1,1)
-		self.bxlay.addWidget(self.random_bx_sb,1,2,1,1)
-		self.bxlay.addWidget(self.clear_bx_bt,2,1,1,2)
-		self.bxlay.addWidget(self.extract_bt,3,1,1,2)
+		self.bxlay.addWidget(self.bsz_vs,1,0,1,2)
+		self.bxlay.addWidget(self.random_bx_bt,2,0,1,1)
+		self.bxlay.addWidget(self.random_bx_sb,2,1,1,1)
+		self.bxlay.addWidget(self.clear_bx_bt,3,0,1,1)
+		self.bxlay.addWidget(self.extract_bt,3,1,1,1)
 
 
 		self.basic_tab = QtWidgets.QTabWidget()
@@ -372,142 +354,48 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.extract_bt.clicked[bool].connect(self.extract_bt_clicked)
 		self.bsz_vs.valueChanged.connect(self.bsz_vs_value_changed)
 
-		#Neural network
+
 
 		self.assisted_tab = QtWidgets.QTabWidget()
-		self.nn_tab = QtWidgets.QWidget()
-		self.auto_tab = QtWidgets.QWidget()
-		self.spec_tab = QtWidgets.QWidget()
+		self.nn_tab = NNet_Tab(target=self)
+		self.morp_tab = Morp_Tab(target=self)
+		self.binary_tab = Binary_Tab(target=self)
+		self.spec_tab = Specific_Tab(target=self)
+		self.templ_tab = Templ_Match_Tab(target=self)
+		self.stat_tab = Statistics_Tab(target=self)
+
+		self.assisted_tab.addTab(self.binary_tab,"AutoDetect")
 		self.assisted_tab.addTab(self.nn_tab,"NeuralNetwork")
+		self.assisted_tab.addTab(self.templ_tab,"Template")
+		self.assisted_tab.addTab(self.stat_tab,"Statistics")
+		self.assisted_tab.addTab(self.morp_tab,"Morphological")
 		self.assisted_tab.addTab(self.spec_tab,"Specific")
-		self.assisted_tab.addTab(self.auto_tab,"Mathematical")
+		self.assisted_tab.currentChanged[int].connect(self.assisted_tab_changed)
 
-
-
-		self.bg_button = QtWidgets.QPushButton("Background")
-		self.ann_button = QtWidgets.QPushButton("Classes")
-
-		self.bg_button.setCheckable(True)
-		#self.bg_button.setFixedWidth(100)
-		self.ann_button.setCheckable(True)
-		#self.bg_button.setFixedWidth(100)
-
-		self.nn_cb_group = QtWidgets.QButtonGroup()
-		self.nn_cb_group.addButton(self.bg_button,0)
-		self.nn_cb_group.addButton(self.ann_button,1)
-
-		self.nn_cb_group.buttonClicked[QtWidgets.QAbstractButton].connect(self.on_check_nn_cb_group)
-
-
-		self.train_class_button=QtWidgets.QPushButton("Train NNet")
-		self.train_class_button.setFixedWidth(120)
-		self.train_no_iters_sb = StringBox(label="No iters",value="8",showenable=-1)
-		self.train_no_iters_sb.text.setFixedWidth(60)
-		self.train_lr_sb = StringBox(label="Learnrate",value="3e-4",showenable=-1)
-		self.train_lr_sb.text.setFixedWidth(60)
-		# self.train_class_sb=QtWidgets.QSpinBox(self)
-		# self.train_class_sb.setMinimum(1)
-		# self.train_class_sb.setValue(1)
-		self.build_ts_button = QtWidgets.QPushButton("Build Trainset")
-		self.build_ts_button.setFixedWidth(120)
-		self.build_class_sb=StringBox(label="Class ",value="1",showenable=-1)
-		self.build_class_sb.text.setFixedWidth(60)
-		self.build_norep_sb=StringBox(label="No reps",value="5",showenable=-1)
-		self.build_norep_sb.text.setFixedWidth(60)
-		#self.train_all_button=QtWidgets.QPushButton("Train NNet for all ")
-		self.apply_button=QtWidgets.QPushButton("Apply NNet")
-		self.apply_all_button=QtWidgets.QPushButton("Apply All")
-
-
-		#nnet_vbl = QtWidgets.QVBoxLayout(self.nn_tab)
-		nnet_gbl=QtWidgets.QGridLayout(self.nn_tab)
-		nnet_gbl.addWidget(QtWidgets.QLabel("Annotate"),0,0,1,1)
-		nnet_gbl.addWidget(self.bg_button,0,1,1,1)
-		nnet_gbl.addWidget(self.ann_button,0,2,1,1)
-		nnet_gbl.addWidget(self.build_ts_button,1,0,1,1)
-		nnet_gbl.addWidget(self.build_class_sb,1,1,1,1)
-		nnet_gbl.addWidget(self.build_norep_sb,1,2,1,1)
-
-		nnet_gbl.addWidget(self.train_class_button,2,0,1,1)
-		nnet_gbl.addWidget(self.train_no_iters_sb,2,1,1,1)
-		nnet_gbl.addWidget(self.train_lr_sb,2,2,1,1)
-
-		#nnet_gbl.addWidget(self.train_all_button,1,1,1,2)
-		nnet_gbl.addWidget(QtWidgets.QLabel("Apply to tomogram"),3,0,1,1)
-		nnet_gbl.addWidget(self.apply_button,3,1,1,1)
-		nnet_gbl.addWidget(self.apply_all_button,3,2,1,1)
-
-		#nnet_vbl.addWidget(QtWidgets.QLabel("Neural Network"))
-		#nnet_vbl.addLayout(nnet_gbl)
-
+		#assisted tab setup + function
 		assisted_vbl = QtWidgets.QVBoxLayout()
 		assisted_vbl.addWidget(QtWidgets.QLabel("Automated tools"))
 		assisted_vbl.addWidget(self.assisted_tab)
 
-		self.bg_button.clicked[bool].connect(self.bg_bt_clicked)
-		self.ann_button.clicked[bool].connect(self.ann_bt_clicked)
-		self.train_class_button.clicked[bool].connect(self.train_class_bt_clicked)
-		#self.train_all_button.clicked[bool].connect(self.train_all_bt_clicked)
-		self.apply_button.clicked[bool].connect(self.apply_bt_clicked)
-		self.build_ts_button.clicked[bool].connect(self.build_trainset)
-
-		#Cellular Segmentation
-		#cell_label = QtWidgets.QLabel("Cellular Features")
-		cell_vbl = QtWidgets.QVBoxLayout(self.spec_tab)
-		#cell_vbl.addWidget(cell_label)
-		cell_button_l = QtWidgets.QVBoxLayout()
-
-
-		self.memb_tab = QtWidgets.QWidget()
-		self.mtlay = QtWidgets.QVBoxLayout(self.memb_tab)
-		self.mem_detect_button = QtWidgets.QPushButton("Auto detect in brushed region")
-		self.bezier_button = QtWidgets.QPushButton("Draw bezier curve")
-		self.double_mem_button = QtWidgets.QPushButton("Double membrane")
-		self.mtlay.addWidget(self.mem_detect_button)
-		self.mtlay.addWidget(self.bezier_button)
-		self.mtlay.addWidget(self.double_mem_button)
-
-		self.actin_tab = QtWidgets.QWidget()
-		self.atlay = QtWidgets.QGridLayout(self.actin_tab)
-		self.actin_button = QtWidgets.QPushButton("Actin")
-		self.atlay.addWidget(self.actin_button)
-
-
-		self.gra_tab = QtWidgets.QWidget()
-		self.gtlay = QtWidgets.QVBoxLayout(self.gra_tab)
-		self.dark_gra_button = QtWidgets.QPushButton("Dark granule")
-		self.alpha_gra_button = QtWidgets.QPushButton("Alpha granule")
-		self.ves_button = QtWidgets.QPushButton("Vesicle")
-		self.gtlay.addWidget(self.dark_gra_button)
-		self.gtlay.addWidget(self.alpha_gra_button)
-		self.gtlay.addWidget(self.ves_button)
-
-		self.cell_tab = QtWidgets.QTabWidget()
-		self.cell_tab.addTab(self.memb_tab,"Membrane")
-		self.cell_tab.addTab(self.actin_tab,"Actin/Microtubules")
-		self.cell_tab.addTab(self.gra_tab,"Granule")
-		cell_button_l.addWidget(self.cell_tab)
-		cell_vbl.addLayout(cell_button_l)
-
-
 		#Right Panel
 		self.button_gbl = QtWidgets.QGridLayout()
-		# self.button_gbl.addWidget(QtWidgets.QLabel("Tomograms"),0,0,1,1)
-		# self.button_gbl.addWidget(self.tomogram_list,1,0,6,1)
-		self.button_gbl.addLayout(filter_vbl,0,1,2,1)
-		self.button_gbl.addLayout(basic_vbl,2,1,2,1)
-		# self.button_gbl.addLayout(nnet_vbl)
-		# self.button_gbl.addLayout(cell_vbl)
-		self.button_gbl.addLayout(assisted_vbl,4,1,2,1)
+		self.button_gbl.setColumnStretch(170,170)
+		self.button_gbl.addLayout(filter_vbl,0,0,2,1)
+		self.button_gbl.addLayout(basic_vbl,2,0,2,1)
+		self.button_gbl.addLayout(assisted_vbl,4,0,2,1)
 
 
 
 		self.test_button = QtWidgets.QPushButton("Test Button")
-		self.button_gbl.addWidget(self.test_button,6,1,1,1)
+		#self.button_gbl.addWidget(self.test_button,6,0,1,1)
 
-		self.gbl.addLayout(tomo_vbl,1,0,1,1)
-		self.gbl.addWidget(self.img_view,1,1,1,1)
-		self.gbl.addWidget(self.img_view_inspector,1,3,1,1)
+		inspector_vbl = QtWidgets.QVBoxLayout()
+		inspector_vbl.addWidget(QtWidgets.QLabel("Manual Annotate Tools"))
+		inspector_vbl.addWidget(self.img_view_inspector)
+
+		#self.gbl.addLayout(tomo_vbl,1,0,1,1)
+		self.gbl.addWidget(self.img_view,0,0,1,1)
+		self.gbl.addLayout(inspector_vbl,0,2,1,1)
 		self.centralWidget.setLayout(self.gbl)
 
 		self.control_panel = QtWidgets.QWidget()
@@ -530,6 +418,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.curve_shape_index = 0
 		self.img_view.shapes[0]=self.curve
 
+
 		self.contour=Contour(img=self.img_view, points=pts)
 		self.contour_shape_index = 1
 		self.img_view.shapes[1]=self.contour
@@ -538,8 +427,11 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		#self.img_view.mousewheel.connect(self.img_view_wheel_event)
 		self.img_view.mousedrag.connect(self.img_view_mouse_drag)
 		self.zt_spinbox.valueChanged.connect(self.zt_spinbox_changed)
+		self.previous_z = self.get_zpos()
 
 		E2loadappwin("e2annotate","main",self)
+		E2loadappwin("e2annotate","controlpanel",self.control_panel)
+		E2loadappwin("e2annotate","tomograms",self.tomo_list_panel)
 		#self.update_label()
 
 		glEnable(GL_POINT_SMOOTH)
@@ -549,30 +441,24 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	def img_view_wheel_event(self, event):
-		#print(self.img_view.scale, self.img_view.mag)
-		#self.thumbnail.set_im()
-		#self.thumbnail.update_box()
-		#self.thumbnail.force_display_update()
-		#self.thumbnail.updateGL()
-		#print("wheelie wheelie")
 		return
 
 	def img_view_mouse_drag(self, event):
 		if event.buttons()&Qt.RightButton:
-
-			#lc=self.img_view.scr_to_img(event.x(),event.y())
-			#self.thumbnail.target_rmousedrag()
-			#self.thumbnail.update_box()
 			return
 		else:
 			return
-
-
 
 	def get_data(self):
 		return self.img_view.get_full_data()
 	def get_annotation(self):
 		return self.img_view.get_full_annotation()
+	def get_inspector(self):
+		return self.img_view_inspector
+
+	def get_segtab(self):
+		return self.img_view_inspector.seg_tab
+
 
 	def zchange(self,value):
 		print(value)
@@ -604,6 +490,20 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		#print(ret)
 		self.img_view.set_disp_proc(ret)
 
+	def assisted_tab_changed(self):
+		self.reset_morp_params()
+
+	def reset_morp_params(self,reset_vs=False):
+		# self.closing_thresh =32
+		# self.opening_thresh =32
+		self.binary_tab.closing_n_iters =1
+		self.binary_tab.opening_n_iters =1
+		self.morp_tab.morp_n_iters_sp.setValue(1)
+		if reset_vs:
+			self.binary_tab.bin_low_pass_vs.setValue(1)
+			self.binary_tab.bin_threshold_vs.setValue(0.001)
+
+
 	def tomolist_current_change(self, int):
 		# info=js_open_dict("info/annotate_"+self.data_file[:-4]+".json")
 		# #info["class"] = self.classes
@@ -617,9 +517,14 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.ny=hdr["ny"]
 		self.nz=hdr["nz"]
 
-		seg_path = os.path.join("./segs/",self.tomogram_list.item(int).text()[0:-4]+"_seg.hdf")
+		row_count = self.get_inspector().seg_tab.table_set.rowCount()
+		for i in range(row_count):
+			self.get_inspector().seg_tab.table_set.removeRow(row_count - i - 1)
+
+		seg_path = os.path.join(self.seg_folder,self.tomogram_list.item(int).text()[0:-4]+"_seg.hdf")
 		if not os.path.isfile(seg_path):
 			seg_out = EMData(self.nx,self.ny,self.nz)
+			#self.write_header(seg_out)
 			seg_out.write_image(seg_path)
 			del seg_out
 		else:
@@ -640,14 +545,17 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 		if self.get_annotation():
 			print("Print annotation to file", self.seg_path)
+			#self.write_header(self.get_annotation())
+			self.write_out(self.get_annotation(), self.seg_path, self.cur_region)
 
-			self.get_annotation().write_image(self.seg_path, 0, IMAGE_HDF, False, self.cur_region)
+			#self.get_annotation().write_image(self.seg_path, 0, IMAGE_HDF, False, self.cur_region)
 			#self.img_view.inspector.seg_tab.save_all(outfile=self.seg_path, region=self.cur_region)
 		else:
 			print("Annotation is none.")
 			pass
-		self.set_imgview_data(round(self.data_xy[0]),round(self.data_xy[1]),self.img_view_fixed_size)
+		self.set_imgview_data(round(self.data_xy[0]),round(self.data_xy[1]),self.img_view_region_size)
 		self.seg_path = seg_path
+		self.reset_morp_params(reset_vs=True)
 
 
 		# info=js_open_dict("info/annotate_"+self.tomogram_list.item(int).text()+".json")
@@ -659,78 +567,84 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		#self.add_boxes()
 
 	#need to write region out before setting new data
+
+	def write_out(self,file_out, out_name, region):
+		self.set_scale=1
+		if file_out:
+			# file_out["ann_name"] = 0.111
+			# file_out["ann_num"] = 2
+			file_out.write_image(out_name, 0, IMAGE_HDF, False, region)
+		else:
+			print(file_out)
+			pass
+
+
 	def set_imgview_data(self,x,y,sz):
 		iz = self.nz//2
 		print("Nz ,iz",self.nz,iz)
 		print("Img x,y,sz",x,y,sz)
 		if self.nz == 1:
 			self.zthick = 0
-			self.cur_region = Region(x-old_div(sz,2),y-old_div(sz,2),sz,sz)
+			self.cur_region = Region(x-sz//2,y-sz//2,sz,sz)
 			#self.data = EMData(self.data_file, 0, False, Region(x-old_div(sz,2),y-old_div(sz,2),sz,sz))
 		else:
-			self.zthick = int(self.zt_spinbox.value())
-			print("zthick",self.zthick)
+			try:
+				self.zthick = int(self.zt_spinbox.value())
+				print("zthick",self.zthick)
+			except:
+				self.zthick = 0
 			if self.zthick == -1:
 				print(self.nz)
 				self.cur_region = Region(x-old_div(sz,2),y-old_div(sz,2),0, sz, sz, self.nz)
 				#self.data = EMData(self.data_file, 0, False, Region(x-old_div(sz,2),y-old_div(sz,2),0, sz, sz, self.nz))
 			else:
 				self.cur_region = Region(x-old_div(sz,2),y-old_div(sz,2),iz-self.zthick, sz, sz,self.zthick*2+1)
+				print(self.cur_region)
 				#self.data = EMData(self.data_file, 0, False, Region(x-old_div(sz,2),y-old_div(sz,2),iz-self.zthick, sz, sz,self.zthick*2+1))
 		self.data = EMData(self.data_file, 0, False, self.cur_region)
-		seg_path = os.path.join("./segs/",self.tomogram_list.currentItem().text()[0:-4]+"_seg.hdf")
+		seg_path = os.path.join(self.seg_folder,self.tomogram_list.currentItem().text()[0:-4]+"_seg.hdf")
+
+
 		self.annotate = EMData(seg_path, 0, False, self.cur_region)
+		#self.read_metadata(seg_path)
+
 		self.img_view.set_data(self.data, self.annotate)
 		self.img_view.set_scale(1)
 		self.img_view.set_origin(0,0)
+		#print("Imgview, inspector, segtab",self.img_view,self.img_view.get_inspector(),self.img_view.inspector.seg_tab)
+		#self.img_view.get_inspector().seg_tab.read_header(seg_path)
+		self.img_view.get_inspector().seg_tab.update_sets()
 
 
-	# def set_thumbnail(self):
-	# 	xsize = self.img_view.get_data().get_xsize()
-	# 	fac=float(self.img_view.get_data().get_xsize())/self.thumbnail.width()
-	# 	self.thumbnail_image=self.img_view.get_data().process('math.fft.resample',{"n":fac})
-	# 	self.thumbnail.set_data(self.thumbnail_image)
-	# 	self.thumbnail.set_scale(1)
-	# 	self.thumbnail.set_mouse_mode(3)
-	# 	self.thumbnail.resize(300,300)
-	# 	self.boxview_size = int(300*(500/xsize))
-	# 	self.thumbnail.inspector.ptareasize.setValue(self.boxview_size)
-	# 	#print(self.thumbnail.scr_to_img(event.x(),event.y()))
-	#
-	#
-	# def mouse_on_thumbnail(self, event):
-	# 	lc=self.scr_to_img(event.x(),event.y())
-	# 	xsize = self.img_view.get_data().get_xsize()
-	# 	box_size = int(300*(500/xsize))
-	# 	color=(0,0,0.7)
-	# 	self.thumbnail.add_shape("box{}".format(i),EMShape(("rect",color[0],color[1],color[2],box[0]-boxsize//2,box[1]-boxsize//2,box[0]+boxsize//2,box[1]+boxsize//2,2.5)))
-	# 	#if not quiet:
-	# 	self.thumbnail.update()
+
 
 	def zt_spinbox_changed(self,event):
 		self.data_xy = self.thumbnail.get_xy()
-		self.set_imgview_data(self.data_xy[0],self.data_xy[1],self.img_view_fixed_size)
-
+		try:
+			self.write_out(self.get_annotation(), self.seg_path, self.cur_region)
+			#self.get_annotation().write_image(self.seg_path, 0, IMAGE_HDF, False, self.cur_region)
+		except:#when annotation files is None
+			pass
+		self.set_imgview_data(self.data_xy[0],self.data_xy[1],self.img_view_region_size)
+		self.reset_morp_params(reset_vs=True)
 
 
 	def test_drawing_function(self):
-	# 	print("Test Drawing Function")
-	# 	mask = np.zeros((1024,1024))
-	# 	for i,j in self.curve:
-	# 		mask[i,j] = 2
-	# 	ann = self.img_view.get_annotation().numpy()
-	# 	ann += mask
-	# 	self.img_view.force_display_update(set_clip=1)
-	# 	self.img_view.updateGL()
 		self.create_organelles_training_set()
 		return
 
-	def annotate_from_curve(self):
+	def annotate_from_curve(self, insert=None):
+		#TODO: Clear points messing with annotate mechanism
 		self.x = self.img_view.get_data().get_xsize()
 		self.y = self.img_view.get_data().get_ysize()
+
+		tsz=max(self.x,self.y)
 		mask = np.zeros((self.x,self.y))
+		#output=EMData(self.x, self.y, self.z)
+
 		def trapez(y,y0,w):
 			return np.clip(np.minimum(y+1+w/2-y0, -y+1+w/2+y0),0,1)
+
 		def weighted_line(r0, c0, r1, c1, w, rmin=0, rmax=np.inf):
 			# The algorithm below works fine if c1 >= c0 and c1-c0 >= abs(r1-r0).
 			# If either of these cases are violated, do some switches.
@@ -763,28 +677,79 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			# to avoid parts outside of the picture
 			mask = np.logical_and.reduce((yy >= rmin, yy < rmax, vals > 0))
 			return (yy[mask].astype(int), xx[mask].astype(int), vals[mask])
+
+
+		def is_point_in_polygon(point,vertices):
+			points = np.array([[x[0],x[1]] for x in vertices])
+			poly_path = mplPath.Path(points)
+			return poly_path.contains_point(point)
+		def polygon(points):
+			min_r = int(min([x[0] for x in points]))
+			max_r = int(max([x[0] for x in points]))
+			min_c = int(min([x[1] for x in points]))
+			max_c = int(max([x[1] for x in points]))
+			rr = []
+			cc = []
+
+			for r in range(min_r,max_r+1):
+				for c in range(min_c,max_c+1):
+					if is_point_in_polygon([r,c],points):
+						rr.append(r)
+						cc.append(c)
+			return np.array(rr, dtype=np.intp), np.array(cc, dtype=np.intp)
+
 		if self.fill_type == "curve":
+			#mask = np.zeros((self.x,self.y,self.z))
 			if len(self.curve.points) < 2:
 				print("Need at least 2 points to draw a line")
 				return
+			print(self.curve.points)
 			r = np.array([int(item[0]) for item in self.curve.points])
 			c = np.array([int(item[1]) for item in self.curve.points])
-			for i in range(len(r)-1):
+			z = np.array([int(item[2]) for item in self.curve.points])
+
+			pt_dict = {}
+			for i,pt in enumerate(self.curve.points):
+				if pt[2] not in pt_dict.keys():
+					pt_dict[pt[2]] = [i]
+				else:
+					pt_dict[pt[2]].append(i)
+
+			print(pt_dict)
+			if insert is None:
+				ins = self.get_zpos()
+			else:
+				ins = insert
+
+			for i in pt_dict[ins][:-1]:
 				try:
-					rr, cc, val = weighted_line(r[i], c[i], r[i+1],c[i+1], int(self.tx_line_width.text()))
-					mask[rr, cc] = int(self.tx_ann_class.text())
+					if self.curve.points[i][3] != -1:
+						rr, cc, val = weighted_line(r[i], c[i], r[i+1],c[i+1], int(self.tx_line_width.text()))
+						mask[rr, cc] = int(self.tx_ann_class.text())
+						self.curve.points[i][3] = -1
+					else:
+						continue
 				except:
 					continue
+				self.curve.points[pt_dict[ins][-1]][3] = -1
 			mask[r,c]=int(self.tx_ann_class.text())
+			# 	mask[rr, cc] = int(self.tx_ann_class.text())
+			# mask[r,c]=int(self.tx_ann_class.text())
+
+
+
+
+
 		elif self.fill_type == "contour_fill":
+			#mask = np.zeros((self.x,self.y))
 			if len(self.contour.points) < 3:
 				print("Need at least 3 points to draw a polygon")
 				return
-			r = np.array([int(item[0]) for item in self.contour.points])
-			c = np.array([int(item[1]) for item in self.contour.points])
-			rr, cc = polygon(r,c)
+			rr, cc = polygon(self.contour.points)
 			mask[rr,cc]=int(self.ct_ann_class.text())
+
 		elif self.fill_type == "contour_nofill":
+			#mask = np.zeros((self.x,self.y))
 			if len(self.contour.points) < 3:
 				print("Need at least 3 points to draw a polygon")
 				return
@@ -801,11 +766,45 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 				except:
 					continue
 			mask[r,c]=int(self.ct_ann_class.text())
+
 		mask =  np.rot90(np.fliplr(mask))
-		ann = self.img_view.get_annotation().numpy()
-		ann += mask
-		self.img_view.force_display_update(set_clip=1)
-		self.img_view.updateGL()
+
+		if insert is None:
+			print("No insertion")
+			ann = to_numpy(self.img_view.get_annotation())
+			print("Ann shape",mask.shape)
+			ann += mask
+			self.img_view.force_display_update(set_clip=1)
+			self.img_view.updateGL()
+		else:
+			center = self.zt_spinbox.value()
+			if center == -1:
+				center = self.nz//2
+			ann = self.img_view.get_full_annotation().get_clip(Region(0,0,center+int(insert),self.x,self.y,1)).numpy()
+			ann += mask
+			print("Insert clip to",center+insert)
+
+			xform=Transform({"type":"eman","alt":self.img_view.alt,"az":self.img_view.az,"tx":self.img_view.get_full_annotation()["nx"]//2,"ty":self.img_view.get_full_annotation()["ny"]//2,"tz":center+int(insert)})
+			ann_em = from_numpy(ann)
+			self.img_view.get_full_annotation().set_rotated_clip(xform,ann_em)
+			#self.img_view.get_full_annotation().insert_clip(from_numpy(ann),[0,0,center+int(insert)])
+			self.img_view.force_display_update(set_clip=0)
+			self.img_view.updateGL()
+		# if allz:
+		# 	center = self.zt_spinbox.value()
+		# 	if center == -1:
+		# 		center = self.nz//2
+		# 	print(pt_dict)
+		# 	for i in pt_dict.keys():
+		# 		ann = self.img_view.get_full_annotation().get_clip(Region(0,0,center+int(i),self.x,self.y,1)).numpy()
+		# 		ann += mask
+		# 		print("Insert clip to",center+i)
+		# 		self.img_view.get_full_annotation().insert_clip(from_numpy(ann),[0,0,center+int(i)])
+		# 		self.img_view.force_display_update(set_clip=0)
+		# 		self.img_view.updateGL()
+		# else:
+		# 	pass
+
 
 
 	#####ALL BASIC TAB LINEAR AND CONTOUR METHODS
@@ -815,7 +814,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		# print(self.basic_tab_num)
 		if tab_num==3:
 			try:
-				self.annotate_from_curve()
+				self.annotate_from_curve(z_slice=self.get_zpos())
 				self.curve.points = []
 				self.contour.points =[]
 				self.do_update()
@@ -825,8 +824,9 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			return
 
 		elif tab_num==0:
+			print(self.get_zpos())
 			try:
-				self.annotate_from_curve()
+				self.annotate_from_curve(z_slice=self.get_zpos())
 				self.curve.points = []
 				self.contour.points =[]
 				self.do_update()
@@ -892,6 +892,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.img_view.force_display_update(set_clip=0)
 		self.img_view.updateGL()
 
+
 	def interp_bt_clicked(self):
 
 		nppts=np.array(self.curve.points)
@@ -915,6 +916,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		pts_intp=[]
 		kk=0
 		for li in np.unique(pts[:,3]):
+			print("Li",li)
 			pt=pts[pts[:,3]==li][:,:3].copy()
 			pt=pt[np.append(True, np.linalg.norm(np.diff(pt, axis=0), axis=1)>0.1)]
 			ln=np.linalg.norm(np.diff(pt, axis=0), axis=1)
@@ -924,13 +926,23 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			if len(pt)<2: continue
 			#print len(pt), ln
 			ipt=interp_points(pt, npt=np.round(ln)//density)
-
-			pts_intp.append(np.hstack([ipt, kk+np.zeros((len(ipt), 1)), self.curve.classid+np.zeros((len(ipt), 1))]))
+			#print("Ipt",ipt)
+			#print("KK",kk,np.zeros((len(ipt), 1)))
+			pts_intp.append(np.hstack([ipt, li+np.zeros((len(ipt), 1)), self.curve.classid+np.zeros((len(ipt), 1))]))
+			#print("Np_hstack",pts_intp)
 			kk+=1
 
+			# else:
+			# 	continue
+
 		pts_intp=np.vstack(pts_intp)
+		#print(pts_intp)
+		#print("self.curve", self.curve.points)
 		self.curve.points=otherpts.tolist()
+		#print("Other pts", otherpts)
 		self.curve.points.extend(pts_intp.tolist())
+		#print("Pts intp", pts_intp)
+
 		#print("Int points:",self.curve.points)
 		self.do_update()
 		#self.save_points()
@@ -943,6 +955,10 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 				self.curve.points=[]
 				self.contour.points=[]
 		else:
+			# try:
+			# 	self.annotate_from_curve()
+			# except:
+			# 	pass
 			self.curve.points=[]
 			self.contour.points=[]
 		self.do_update()
@@ -981,9 +997,26 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 	def key_press(self, event):
 		if event.key() == Qt.Key_Up or event.key() == Qt.Key_Down:
+			if event.key() == Qt.Key_Up:
+				self.previous_z = self.get_zpos()-1
+			if event.key() == Qt.Key_Down:
+				self.previous_z = self.get_zpos()+1
+			print("Previous z", self.previous_z)
+
 			if self.img_view.data:
 				print("Current zpos", self.get_zpos())
-				self.update_img_view_box()
+				if self.basic_tab_num == 3:
+					self.update_img_view_box()
+				elif self.basic_tab_num == 2:
+					self.annotate_from_curve(insert=self.previous_z)
+					self.clear_shapes(reset_boxes_list=False)
+					pass
+				elif self.basic_tab_num == 1:
+					try:
+						self.annotate_from_curve(insert=self.previous_z)
+					except:
+						pass
+
 		else:
 			return
 
@@ -1033,8 +1066,8 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 				if len(pts)<1:
 					return
-				ofpln=abs(pts[:,2]-self.img_view.list_idx)>3
 
+				ofpln=abs(pts[:,2]-self.img_view.list_idx)>3
 				res=np.sqrt(np.sum((pts[:,:2]-np.array([x,y]))**2, axis=1))
 				res[ofpln]+=1e5
 				ii=np.argmin(res)
@@ -1053,7 +1086,14 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 					else:
 						print('new curve')
-						self.annotate_from_curve()
+						pt_dict = {}
+						for i,pt in enumerate(self.curve.points):
+							if pt[2] not in pt_dict.keys():
+								pt_dict[pt[2]] = [i]
+							else:
+								pt_dict[pt[2]].append(i)
+						for ins in pt_dict.keys():
+							self.annotate_from_curve(insert=ins)
 						self.curve.points = []
 						self.curve.add_point([x, y], True)
 
@@ -1095,6 +1135,8 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		#Brush tab
 		else:
 			print("I don't know yet")
+
+
 	#TODO
 	def random_bx_bt_clicked(self):
 		try:
@@ -1108,8 +1150,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			self.boxes.append([xs[i],ys[i],self.get_zpos(),1])
 		self.add_boxes(size=int(self.bsz_vs.value))
 		#self.img_view.updateGL()
-
-
 
 
 	def clear_bx_bt_clicked(self):
@@ -1131,56 +1171,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 				r.write_image(outfile,-1)
 				#r=self.data.get_clip(Region(x-bs//2,y-bs//2,z-bz//2,bs,bs,bz))
 		self.clear_shapes()
-
-	def extract_region(self, thres=0.5):
-		#enumerate label_stack by objects then find bounding box for each object
-		reg_list = []
-		datas = to_numpy(self.get_data())
-		labels = to_numpy(self.get_annotation())
-
-		for i in range(len(datas)):
-			open_lab = morphology.opening(labels[i],disk(3))
-			labeled= morphology.label(open_lab>thres,connectivity=2,return_num=False)
-			temp_im = datas[i]
-			regions = regionprops(labeled)
-			for region in regions:
-				#minr, minc, maxr, maxc = region.bbox
-				y,x = region.centroid
-				reg_list.append([x,y,i])
-		print(reg_list)
-		return reg_list
-
-	def create_organelles_training_set(self):
-		#extract regions of labeled data
-		self.reg_list = self.extract_region()
-		datas = self.get_data()
-		labels = self.get_annotation()
-		# data_l=[]
-		# label_l=[]
-
-		d_outfile = "./particles/org_temp.hdf"
-		l_outfile = "./particles/org_temp_seg.hdf"
-		#print("Create image patches of size",self.bsz_vs.value,"at positions:",self.reg_list)
-		try:
-			os.remove(d_outfile)
-			os.remove(l_outfile)
-		except:
-			pass
-		bs = self.bsz_vs.value
-		for i in range(len(self.reg_list)):
-			x = int(self.reg_list[i][0])
-			y = int(self.reg_list[i][1])
-			z = int(self.reg_list[i][2])
-			d = datas.get_clip(Region(x-bs//2,y-bs//2,z,bs,bs,1))
-			l = labels.get_clip(Region(x-bs//2,y-bs//2,z,bs,bs,1))
-			d.write_image(d_outfile,-1)
-			l.write_image(l_outfile,-1)
-
-	def build_trainset(self):
-		print("Building trainset")
-		self.create_organelles_training_set()
-		os.system("e2tomoseg_buildtrainset.py --buildset --particles_raw=./particles/org_temp.hdf --particles_label=./particles/org_temp_seg.hdf --boxes_negative=./particles/bg_temp.hdf --ncopy={} --trainset_output=./particles/org_temp_trainset.hdf --validset=0.0".format(int(self.build_norep_sb.getValue())))
-
 
 
 
@@ -1204,125 +1194,15 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.do_update()
 		self.img_view.updateGL()
 
-
-	# def ann_button_click(self):
-	# 	self.img_view.show_inspector(6)
-	# def train_button_click(self):
-	# 	if self.import_tf==0:
-	# 		import_tensorflow()
-	# 		self.import_tf = 1
-	# 	annotation_out=self.img_view.get_full_annotation().copy_head()
-	# 	annotation_out.to_zero()
-	# 	# sels = self.img_view.inspector.seg_tab.table_set.selectedItems()
-	# 	# if len(sels) == 0:
-	# 	# 	print("Must select class to save")
-	# 	# 	return
-	# 	# for sel in sels:
-	# 	# 	row = self.img_view.inspector.seg_tab.table_set.row(sel)
-	# 	# 	num = int(self.img_view.inspector.seg_tab.table_set.item(row,0).text())
-	# 	# 	annotation_out += (self.img_view.get_full_annotation().process("threshold.binaryrange",{"high":num+0.1,"low":num-0.1}))
-	# 	trainset_path = './particles/org_temp_trainset.hdf'
-	# 	if !(trainset_path.exists()):
-	# 		print("No trainset file detected in the ./particles folder. Abort")
-	# 	else:
-	# 		pass
-	# 	self.unet = UNet(infile="./particles/org_temp_trainset.hdf")
-	# 	print("Initialize Unet")
-	# 	self.unet.train_unet(batch_sz=50,val_split=0.2,no_epoch = int(self.train_no_iters_sb.getValue()),learnrate=float(self.train_lr_sb.getValue()))
-	# 	print("Done training Unet. Network weights saved to ./neural_nets/weights_temp.h5")
-
-	# def apply_button_click(self):
-	# 	pred_map = self.unet.apply_unet(self.img_view.get_full_data())
-	# 	print("Done applying unet")
-	# 	self.img_view.full_annotation=pred_map
-	# 	self.img_view.force_display_update(set_clip=0)
-	# 	self.img_view.updateGL()
-
-
-
-	def bg_bt_clicked(self):
-		self.basic_tab.setCurrentIndex(3)
-		print("Select background patches for training")
-		return
-
-	def ann_bt_clicked(self):
-		self.basic_tab.setCurrentIndex(0)
-		print("Annotate objects for training")
-		self.img_view.show_inspector(6)
-		return
-
-
-	def train_class_bt_clicked(self):
-		# if self.import_tf==0:
-		# 	import_tensorflow()
-		# 	self.import_tf = 1
-
-		annotation_out=self.img_view.get_full_annotation().copy_head()
-		annotation_out.to_zero()
-		# sels = self.img_view.inspector.seg_tab.table_set.selectedItems()
-		# if len(sels) == 0:
-		# 	print("Must select class to save")
-		# 	return
-		# for sel in sels:
-		# 	row = self.img_view.inspector.seg_tab.table_set.row(sel)
-		# 	num = int(self.img_view.inspector.seg_tab.table_set.item(row,0).text())
-		# 	annotation_out += (self.img_view.get_full_annotation().process("threshold.binaryrange",{"high":num+0.1,"low":num-0.1}))
-		trainset_path = './particles/org_temp_trainset.hdf'
-		if not os.path.exists(trainset_path):
-			print("No trainset file detected in the ./particles folder. Abort")
-		else:
-			pass
-		self.unet = UNet(infile="./particles/org_temp_trainset.hdf")
-		print("Initialize Unet")
-		try:
-			os.listdir('./neural_nets')
-		except:
-			os.mkdir('./neural_nets')
-		unet_wout = os.path.join("./neural_nets",self.tomogram_list.currentItem().text()[:-4]+"_nnet.h5")
-
-		self.unet.train_unet(weights_out=unet_wout,batch_sz=50,val_split=0.2,no_epoch = int(self.train_no_iters_sb.getValue()),learnrate=float(self.train_lr_sb.getValue()))
-		#print("Done training Unet. Network weights saved to", self.unet_wout)
-
-
-	def train_all_bt_clicked(self):
-
-		return
-
-
-	def apply_bt_clicked(self):
-
-		if not self.unet:
-			self.unet = UNet()
-		unet_win = os.path.join("./neural_nets",self.tomogram_list.currentItem().text()[:-4]+"_nnet.h5")
-		if not os.path.exists(unet_win):
-			print("No neural networks saved for this tomogram. Train a Unet first.")
-			return
-		pred_map = self.unet.apply_unet(weights_in=unet_win, tomogram=self.img_view.get_full_data())
-		print("Done applying unet")
-		self.img_view.full_annotation =pred_map
-		self.img_view.force_display_update(set_clip=0)
-		self.img_view.updateGL()
-		return
-
-	def on_check_nn_cb_group(self,cb):
-		print(cb.text()+" is selected")
-		if cb.text() == "Background":
-			self.img_view.mouse_mode=1
-		elif cb.text() =="Classes":
-			self.img_view.mouse_mode=6
-			self.img_view.show_inspector(6)
-		else:
-			return
-
 	def on_table_tom(self,row,col):
 		print("Row", row, "Col", col, "Tomogram", self.table_tom.itemAt(row,col))
 		print(self.table_tom.currentItem().text())
 
-	# def table_tom_cell_changed(self):
-	# 	#print("New Cell", self.table_tom.currentItem().text())
-	# 	self.img_view.set_data(EMData(self.table_tom.currentItem().text()),None)
-	# def set_data(self):
-	# 	return
+	def table_tom_cell_changed(self):
+		#print("New Cell", self.table_tom.currentItem().text())
+		self.img_view.set_data(EMData(self.table_tom.currentItem().text()),None)
+	def set_data(self):
+		return
 
 	def update_sets(self):
 		#Set the colors and flags of table set items
@@ -1352,15 +1232,60 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		info.close()
 
 
+	def write_metadata(self, seg_path):
+		file_out = EMData(seg_path,0,True)
+		row_count = self.get_inspector().seg_tab.table_set.rowCount()
+		print("Row Count",int(row_count))
+		if row_count == 0:
+			print("Table set is empty, no classes was saved in metadata")
+		else:
+			print("Writing classes to metadata")
+			nums = [int(self.get_inspector().seg_tab.table_set.item(row,0).text()) for row in range(row_count)]
+			names = [str(self.get_inspector().seg_tab.table_set.item(row,1).text()) for row in range(row_count)]
+			serialize_name = json.dumps(names, default=lambda a: "[%s,%s]" % (str(type(a)), a.pk))
+			file_out["ann_name"] = serialize_name
+			file_out["ann_num"] = nums
+		return
+
+	def read_metadata(self,seg_path):
+		file_in = EMData(seg_path,0,True)
+		#try:
+		keys = file_in["ann_num"]
+		values = json.loads(file_in["ann_name"])
+		#print(values)
+		if type(keys) != list: keys = [keys]
+		item_dict=(dict(zip(keys, values)))
+		print(item_dict)
+		if ret:
+			return item_dict
+		else:
+			for key, value in item_dict.items():
+				self.get_inspector().seg_tab.add_new_row(key,value)
+			self.get_inspector().seg_tab.update_sets()
+		# except:
+		# 	print("Trouble reading headers information. Continue...")
+		# 	pass
+
+		return
 
 	def closeEvent(self,event):
 		"""Close everything when close the ImageViewer"""
 		print("Exiting")
 		#self.SaveJson()
 		E2saveappwin("e2annotate","main",self)
-		E2saveappwin("e2annotate","controlpanel",self)
+		E2saveappwin("e2annotate","controlpanel",self.control_panel)
+		E2saveappwin("e2annotate","tomograms",self.tomo_list_panel)
+		#self.write_header(self.get_annotation())
+
+		self.write_metadata(self.seg_path)
+		print(self.get_annotation(), self.seg_path, self.cur_region)
+
+		self.write_out(self.get_annotation(), self.seg_path, self.cur_region)
+
+		#self.get_annotation().write_image(self.seg_path, 0, IMAGE_HDF, False, self.cur_region)
 		self.close()
 		self.control_panel.close()
+		self.tomo_list_panel.close()
 
 class Thumbnail(EMImage2DWidget):
 	def __init__(self,current_file=None,target=None,app_target = None,tn_size=220):
@@ -1373,7 +1298,13 @@ class Thumbnail(EMImage2DWidget):
 			self.get_im(self.current_file)
 
 		self.scale_fac = round(self.img["nx"]/tn_size)
-		self.thumbnail_image=self.img.process("math.meanshrink",{"n":(self.scale_fac)})
+		print(self.scale_fac)
+		try:
+			self.thumbnail_image=self.img.process("math.meanshrink",{"n":(self.scale_fac)})
+		except:
+			temp=to_numpy(self.img)
+			self.scale_fac = temp.shape[0]
+			self.thumbnail_image=self.img.process("math.meanshrink",{"n":(self.scale_fac)})
 		self.size = self.thumbnail_image.get_sizes()[0]
 
 		if target:
@@ -1389,7 +1320,7 @@ class Thumbnail(EMImage2DWidget):
 		self.x = self.box_size[0]/2
 		self.y = self.box_size[1]/2
 		self.set_im()
-		self.app_target.set_imgview_data(self.get_xy()[0],self.get_xy()[1],self.app_target.img_view_fixed_size)
+		self.app_target.set_imgview_data(self.get_xy()[0],self.get_xy()[1],self.app_target.img_view_region_size)
 
 
 		#self.glass_scale
@@ -1424,7 +1355,7 @@ class Thumbnail(EMImage2DWidget):
 		self.im_scalesz = self.im_xsize
 		#print("Hahah",self.im_xsize,self.target.scale)
 		#self.iv_size = [self.target.size().width(), self.target.size().height()]
-		self.iv_size = [self.app_target.img_view_fixed_size, self.app_target.img_view_fixed_size]
+		self.iv_size = [self.app_target.img_view_region_size, self.app_target.img_view_region_size]
 		box_size = [self.size*(self.iv_size[0]/self.im_scalesz),self.size*(self.iv_size[1]/self.im_scalesz)]
 		#print("IV size", self.iv_size, "Box_size", box_size)
 		return box_size
@@ -1434,54 +1365,7 @@ class Thumbnail(EMImage2DWidget):
 		return self.im_xsize*self.target.scale/self.size
 
 	def mousePressEvent(self, event):
-		if event.buttons()&Qt.LeftButton:
-			# lc=self.scr_to_img(event.x(),event.y())
-			# print("Box x,y,bound", lc[0], lc[1], self.box_size[0]/2, self.size-self.box_size[0]/2)
-			# if lc[0] <= self.box_size[0]/2:
-			# 	print("x is out of bound, move position to x =",self.box_size[0]/2)
-			# 	lc=self.scr_to_img(self.box_size[0]/2 ,event.y())
-			# elif lc[0] >= self.size-self.box_size[0]/2:
-			# 	print("x is out of bound, move position to x =",self.size-self.box_size[0]/2)
-			# 	lc=self.scr_to_img(self.box_size[0]/2 ,event.y())
-			# if lc[1] <= self.box_size[1]/2:
-			# 	print("y is out of bound, move position to y =",self.box_size[1]/2)
-			# 	lc=self.scr_to_img(event.x(),self.box_size[1]/2)
-			# elif lc[1] >= (self.size-self.box_size[1]/2):
-			# 	print("y is out of bound, move position to y =",self.size-self.box_size[1]/2)
-			# 	lc=self.scr_to_img(event.x(),self.size-self.box_size[1]/2)
-			# else:
-			# 	pass
-
-			# self.box_size = self.get_box_size()
-			# self.scale_fac = self.get_scale_fac()
-			# lc=self.scr_to_img(event.x(),event.y())
-			# print("lc",lc)
-			# self.app_target.set_imgview_data((lc[0]-self.box_size[0]/2)*self.scale_fac,(lc[1]-self.box_size[0]/2)*self.scale_fac,660)
-			# self.add_box(lc[0],lc[1], self.box_size)
-			return
-
-		# elif event.buttons()&Qt.RightButton:
-		# 	print("Boxsize", self.box_size, "self.iv_fixed_size", self.iv_size)
-		# 	self.box_size = self.get_box_size()
-		# 	self.scale_fac = self.get_scale_fac()
-		# 		#self.target_scale = self.target.scale
-		# 	print(self.target.origin, self.target.rmousedrag)
-		# 	lc=self.scr_to_img(event.x(),event.y())
-		# 	#print(event.x(),event.y())
-		#
-		# 	self.add_box(lc[0],lc[1], self.box_size)
-		# 	#self.target.set_origin(self.target.origin[0]+self.target.rmousedrag[0]-lc[0],self.target.origin[1]-self.target.rmousedrag[1]+lc[1])
-		# 	self.target.set_origin((lc[0]-self.box_size[0]/2)*self.scale_fac,(lc[1]-self.box_size[1]/2)*self.scale_fac)
-		# 	# self.x = event.x()
-		# 	# self.y = event.y()
-		# 	self.target.updateGL()
-		# elif event.buttons()&Qt.RightButton:
-		# 	self.disp_proc = []
-		# 	nm, op =parsemodopt("mask.fromfile:image=self.glass")
-		# 	self.disp_proc.append(Processors.get(nm,op))
-		# 	self.set_disp_proc(self.disp_proc)
-		else:
-			return
+		return
 
 	def mouseMoveEvent(self, event):
 		lc=self.scr_to_img(event.x(),event.y())
@@ -1489,11 +1373,6 @@ class Thumbnail(EMImage2DWidget):
 			self.box_size = self.get_box_size()
 			self.scale_fac = self.get_scale_fac()
 			self.add_box((lc[0]),(lc[1]), (self.box_size))
-			#self.target.set_origin(self.target.origin[0]+self.target.rmousedrag[0]-lc[0],self.target.origin[1]-self.target.rmousedrag[1]+lc[1])
-			#self.target.set_origin((lc[0]-self.box_size[0]/2)*self.scale_fac,(lc[1]-self.box_size[1]/2)*self.scale_fac)
-			# self.x = event.x()
-			# self.y = event.y()
-			#self.target.updateGL()
 		elif event.buttons()&Qt.RightButton:
 			return
 
@@ -1528,11 +1407,13 @@ class Thumbnail(EMImage2DWidget):
 			self.scale_fac = self.get_scale_fac()
 			print("Bzsz", self.box_size, "scale fac", self.scale_fac)
 			self.add_box(xy[0],xy[1], self.box_size)
-
 			if self.app_target.get_annotation():
 				print("Print annotation to file", self.app_target.seg_path)
 				try:
-					self.app_target.get_annotation().write_image(self.app_target.seg_path, 0, IMAGE_HDF, False, self.app_target.cur_region)
+					#self.write_header(self.app_target.get_annotation())
+					self.app_target.write_out(self.app_target.get_annotation(), self.app_target.seg_path, self.app_target.cur_region)
+
+					#self.app_target.get_annotation().write_image(self.app_target.seg_path, 0, IMAGE_HDF, False, self.app_target.cur_region)
 				#self.img_view.inspector.seg_tab.save_all(outfile=self.seg_path, region=self.cur_region)
 				except:
 					print("Cannot write to region out of bound. Continue")
@@ -1540,7 +1421,7 @@ class Thumbnail(EMImage2DWidget):
 			else:
 				print("Annotation is none.")
 				pass
-			self.app_target.set_imgview_data((xy[0])*self.scale_fac,(xy[1])*self.scale_fac,self.app_target.img_view_fixed_size)
+			self.app_target.set_imgview_data((xy[0])*self.scale_fac,(xy[1])*self.scale_fac,self.app_target.img_view_region_size)
 		else:
 			print("or else")
 			return
@@ -1585,15 +1466,15 @@ class Curve(EMShape):
 		self.select=0
 		self.classid=0
 
+
 	def add_point(self, newpt=[], newcontour=False, optimize=True):
 		#zpos=self.image.list_idx
-		zpos = 0
+		czpos = self.image.zpos
 		if len(self.points)==0 and len(newpt)>0:
 			#self.points.append([newpt[0], newpt[1], zpos, self.select, self.classid])
-			self.points.append([newpt[0], newpt[1], zpos, self.select, self.classid])
+			self.points.append([newpt[0], newpt[1], czpos, self.select, self.classid])
 
 		if newcontour==False:
-
 			ci=self.select
 			#### separate the points on the current contour and everything else
 			nppts=np.array(self.points)
@@ -1603,11 +1484,11 @@ class Curve(EMShape):
 
 			if len(pts)<3 or optimize==False:
 				if len(newpt)>0:
-					self.points.append([newpt[0], newpt[1], zpos, ci, self.classid])
+					self.points.append([newpt[0], newpt[1], czpos, ci, self.classid])
 					return
 			else:
 				thr=1000.
-				newpt=np.array([newpt[0], newpt[1], zpos])
+				newpt=np.array([newpt[0], newpt[1], czpos])
 
 
 			if len(newpt)>0:
@@ -1677,16 +1558,19 @@ class Curve(EMShape):
 			pts=np.array(self.points)
 			ci=np.max(pts[:,3])+1
 			self.select=ci
-			self.points.append([newpt[0], newpt[1], zpos, ci, self.classid])
+			#self.current_zpos = self.image.zpos
+			self.points.append([newpt[0], newpt[1], czpos, ci, self.classid])
 
 
 	def draw(self,d2s=None,col=None):
-		zpos=self.image.list_idx
+		#zpos=self.image.list_idx
+		zpos=self.image.zpos
+		# print("self.image", self.image)
+		# print("self.image.zpos", self.image.zpos)
+		# print("zpos",zpos)
 		curpts=[p for p in self.points if p[4]==self.classid]
-
 		#print np.array(self.points)
 		#print "#########"
-
 		cid=np.unique([p[3] for p in curpts])
 		for ci in cid:
 			#### draw lines
@@ -2166,6 +2050,687 @@ class UNet():
 		#print(out_array.shape)
 		out = from_numpy(out_array)
 		out.write_image(outfile)
+
+class NNet_Tab(QtWidgets.QWidget):
+	def __init__(self,target):
+		QtWidgets.QWidget.__init__(self,None)
+		#self.target=weakref.ref(target)
+		self.target = target
+
+		self.bg_button = QtWidgets.QPushButton("Background")
+		self.ann_button = QtWidgets.QPushButton("Classes")
+		self.bg_button.setCheckable(True)
+		#self.bg_button.setFixedWidth(100)
+		self.ann_button.setCheckable(True)
+		#self.bg_button.setFixedWidth(100)
+
+		self.nn_cb_group = QtWidgets.QButtonGroup()
+		self.nn_cb_group.addButton(self.bg_button,0)
+		self.nn_cb_group.addButton(self.ann_button,1)
+
+
+
+		self.train_class_button=QtWidgets.QPushButton("Train NNet")
+		#self.train_class_button.setFixedWidth(70)
+		self.train_no_iters_sb = StringBox(label="No iters",value="8",showenable=-1)
+		#self.train_no_iters_sb.text.setFixedWidth(60)
+		self.train_lr_sb = StringBox(label="Learnrate",value="3e-4",showenable=-1)
+		#self.train_lr_sb.text.setFixedWidth(60)
+		self.build_ts_button = QtWidgets.QPushButton("Build Trainset")
+		#self.build_ts_button.setFixedWidth(120)
+		self.build_class_sb=StringBox(label="Class ",value="1",showenable=-1)
+		#self.build_class_sb.text.setFixedWidth(60)
+		self.build_norep_sb=StringBox(label="No reps",value="5",showenable=-1)
+		#self.build_norep_sb.text.setFixedWidth(60)
+		#self.train_all_button=QtWidgets.QPushButton("Train NNet for all ")
+		self.apply_button=QtWidgets.QPushButton("Apply NNet")
+		self.apply_all_button=QtWidgets.QPushButton("Apply All")
+
+
+		nnet_gbl=QtWidgets.QGridLayout(self)
+		nnet_gbl.setColumnStretch(70,70)
+		nnet_gbl.addWidget(self.bg_button,0,0,1,1)
+		nnet_gbl.addWidget(self.ann_button,0,1,1,1)
+		nnet_gbl.addWidget(self.build_ts_button,1,0,1,1)
+		nnet_gbl.addWidget(self.build_class_sb,2,0,1,1)
+		nnet_gbl.addWidget(self.build_norep_sb,3,0,1,1)
+
+		nnet_gbl.addWidget(self.train_class_button,1,1,1,1)
+		nnet_gbl.addWidget(self.train_no_iters_sb,2,1,1,1)
+		nnet_gbl.addWidget(self.train_lr_sb,3,1,1,1)
+
+		#nnet_gbl.addWidget(QtWidgets.QLabel("Apply to tomogram"),3,0,1,1)
+		nnet_gbl.addWidget(self.apply_button,4,0,1,1)
+		nnet_gbl.addWidget(self.apply_all_button,4,1,1,1)
+
+		self.bg_button.clicked[bool].connect(self.bg_bt_clicked)
+		self.ann_button.clicked[bool].connect(self.ann_bt_clicked)
+		self.nn_cb_group.buttonClicked[QtWidgets.QAbstractButton].connect(self.on_check_nn_cb_group)
+		self.train_class_button.clicked[bool].connect(self.train_class_bt_clicked)
+				#self.train_all_button.clicked[bool].connect(self.train_all_bt_clicked)
+		self.apply_button.clicked[bool].connect(self.apply_bt_clicked)
+		self.build_ts_button.clicked[bool].connect(self.build_trainset)
+
+
+	# def extract_bt_clicked(self):
+	# 	print("Extract image patches of size",self.bsz_vs.value,"at positions:",self.boxes)
+	# 	outfile = "./particles/bg_temp.hdf"
+	# 	try:
+	# 		os.remove(outfile)
+	# 	except:
+	# 		pass
+	# 	for i in range(len(self.boxes)):
+	# 		x,y,z = int(self.boxes[i][0]),int(self.boxes[i][1]),int(self.boxes[i][2])
+	# 		bs = self.bsz_vs.value
+	# 		if self.boxes[i][3] == 1:
+	# 			r = self.target.data.get_clip(Region(x-bs//2,y-bs//2,z,bs,bs,1))
+	# 			r.write_image(outfile,-1)
+	# 			#r=self.data.get_clip(Region(x-bs//2,y-bs//2,z-bz//2,bs,bs,bz))
+	# 	self.clear_shapes()
+
+	def extract_region(self, iter=3,thresh=0.5):
+		#enumerate label_stack by objects then find bounding box for each object
+		reg_list = []
+		#datas = to_numpy(self.get_data())
+		labels = to_numpy(self.target.get_annotation())
+
+		if len(labels.shape) == 2:#single 2D image
+			#datas = np.expand_dims(datas, axis=0)
+			labels = np.expand_dims(labels, axis=0)
+		#print("Data shape, label shape", datas.shape,labels.shape)
+
+		for i in range(len(labels)):
+			open_lab=ndi.binary_opening(labels[i],iterations=iter)
+			labeled,num = ndi.label(open_lab>thresh)
+			cent_mass = ndi.center_of_mass(open_lab,labeled,[i+1 for i in range(num)])
+			# open_lab = morphology.opening(labels[i],disk(3))
+			# labeled= morphology.label(open_lab>thres,connectivity=2,return_num=False)
+			# temp_im = datas[i]
+			# regions = regionprops(labeled)
+			# for region in regions:
+			# 	#minr, minc, maxr, maxc = region.bbox
+			# 	y,x = region.centroid
+			# reg_list.append([x,y,i for (x,y) in cent_mass])
+			print("mass at slice", i,cent_mass)
+			for pair in cent_mass:
+				reg_list.append([pair[1],pair[0],i])
+
+		print(reg_list)
+		return reg_list
+
+	def create_organelles_training_set(self):
+		self.reg_list = self.extract_region()
+		datas = self.target.get_data()
+		labels = self.target.get_annotation()
+
+		d_outfile = "./particles/org_temp.hdf"
+		l_outfile = "./particles/org_temp_seg.hdf"
+		#print("Create image patches of size",self.bsz_vs.value,"at positions:",self.reg_list)
+		try:
+			os.remove(d_outfile)
+			os.remove(l_outfile)
+		except:
+			pass
+		bs = self.target.bsz_vs.value
+		for i in range(len(self.reg_list)):
+			x = int(self.reg_list[i][0])
+			y = int(self.reg_list[i][1])
+			z = int(self.reg_list[i][2])
+			d = datas.get_clip(Region(x-bs//2,y-bs//2,z,bs,bs,1))
+			l = labels.get_clip(Region(x-bs//2,y-bs//2,z,bs,bs,1))
+			d.write_image(d_outfile,-1)
+			l.write_image(l_outfile,-1)
+
+	def build_trainset(self):
+		print("Building trainset")
+		self.create_organelles_training_set()
+		os.system("e2tomoseg_buildtrainset.py --buildset --particles_raw=./particles/org_temp.hdf --particles_label=./particles/org_temp_seg.hdf --boxes_negative=./particles/bg_temp.hdf --ncopy={} --trainset_output=./particles/org_temp_trainset.hdf --validset=0.0".format(int(self.build_norep_sb.getValue())))
+
+
+	def bg_bt_clicked(self):
+		self.target.basic_tab.setCurrentIndex(3)
+		print("Select background patches for training")
+		return
+
+	def ann_bt_clicked(self):
+		self.target.basic_tab.setCurrentIndex(0)
+		print("Annotate objects for training")
+		self.target.img_view.show_inspector(6)
+		return
+
+
+	def train_class_bt_clicked(self):
+		annotation_out=self.target.img_view.get_full_annotation().copy_head()
+		annotation_out.to_zero()
+		trainset_path = './particles/org_temp_trainset.hdf'
+		if not os.path.exists(trainset_path):
+			print("No trainset file detected in the ./particles folder. Abort")
+		else:
+			pass
+		self.unet = UNet(infile="./particles/org_temp_trainset.hdf")
+		print("Initialize Unet")
+		try:
+			os.listdir('./neural_nets')
+		except:
+			os.mkdir('./neural_nets')
+		unet_wout = os.path.join("./neural_nets",self.target.tomogram_list.currentItem().text()[:-4]+"_nnet.h5")
+
+		self.unet.train_unet(weights_out=unet_wout,batch_sz=50,val_split=0.2,no_epoch = int(self.train_no_iters_sb.getValue()),learnrate=float(self.train_lr_sb.getValue()))
+		#print("Done training Unet. Network weights saved to", self.unet_wout)
+
+
+	def train_all_bt_clicked(self):
+
+		return
+
+
+	def apply_bt_clicked(self):
+
+		if not self.unet:
+			self.unet = UNet()
+		unet_win = os.path.join("./neural_nets",self.target.tomogram_list.currentItem().text()[:-4]+"_nnet.h5")
+		if not os.path.exists(unet_win):
+			print("No neural networks saved for this tomogram. Train a Unet first.")
+			return
+		pred_map = self.unet.apply_unet(weights_in=unet_win, tomogram=self.target.img_view.get_full_data())
+		print("Done applying unet")
+		self.target.img_view.full_annotation =pred_map
+		self.target.img_view.force_display_update(set_clip=0)
+		self.target.img_view.updateGL()
+		return
+
+	def on_check_nn_cb_group(self,cb):
+		print(cb.text()+" is selected")
+		if cb.text() == "Background":
+			self.target.img_view.mouse_mode=1
+		elif cb.text() =="Classes":
+			self.target.img_view.mouse_mode=6
+			self.target.img_view.show_inspector(6)
+		else:
+			return
+
+class Morp_Tab(QtWidgets.QWidget):
+	def __init__(self,target) :
+		QtWidgets.QWidget.__init__(self,None)
+		self.target = target
+		self.morp_n_iters_sp = QtWidgets.QSpinBox()
+		self.morp_n_iters_sp.setValue(3)
+		self.morp_close_bt = QtWidgets.QPushButton("Closing")
+		self.morp_open_bt = QtWidgets.QPushButton("Opening")
+		self.morp_erode_bt = QtWidgets.QPushButton("Erosion")
+		self.morp_dilate_bt = QtWidgets.QPushButton("Dilation")
+		self.morp_label_bt = QtWidgets.QPushButton("Numbering")
+
+		morp_gbl=QtWidgets.QGridLayout(self)
+		#morp_gbl.setColumnStretch(70,70)
+		morp_gbl.addWidget(QtWidgets.QLabel("No iters"), 0,0,1,1)
+		morp_gbl.addWidget(self.morp_n_iters_sp, 0,1,1,1)
+		morp_gbl.addWidget(self.morp_close_bt, 1,0,1,1)
+		morp_gbl.addWidget(self.morp_open_bt, 1,1,1,1)
+		morp_gbl.addWidget(self.morp_erode_bt, 2,0,1,1)
+		morp_gbl.addWidget(self.morp_dilate_bt, 2,1,1,1)
+		morp_gbl.addWidget(self.morp_label_bt, 3,0,1,1)
+
+		self.morp_close_bt.clicked[bool].connect(self.do_morp_close)
+		self.morp_open_bt.clicked[bool].connect(self.do_morp_open)
+		self.morp_erode_bt.clicked[bool].connect(self.do_morp_erode)
+		self.morp_dilate_bt.clicked[bool].connect(self.do_morp_dilate)
+		self.morp_label_bt.clicked[bool].connect(self.do_morp_label)
+
+	def do_morp_close(self):
+
+		n_iters = int(self.morp_n_iters_sp.value())
+		mask = self.target.get_annotation()
+		self.target.annotate = from_numpy(ndi.binary_closing(to_numpy(mask),iterations=n_iters))
+		self.target.img_view.set_data(self.target.data, self.target.annotate)
+		del mask
+
+	def do_morp_open(self):
+		n_iters = int(self.morp_n_iters_sp.value())
+		mask = self.target.get_annotation()
+		self.target.annotate = from_numpy(ndi.binary_opening(to_numpy(mask),iterations=n_iters))
+		self.target.img_view.set_data(self.target.data, self.target.annotate)
+		del mask
+
+	def do_morp_dilate(self):
+		n_iters = int(self.morp_n_iters_sp.value())
+		mask = self.target.get_annotation()
+		self.target.annotate = from_numpy(ndi.binary_dilation(to_numpy(mask),iterations=n_iters))
+		self.target.img_view.set_data(self.target.data, self.target.annotate)
+		del mask
+
+
+
+	def do_morp_erode(self):
+		n_iters = int(self.morp_n_iters_sp.value())
+		mask = self.target.get_annotation()
+		self.target.annotate = from_numpy(ndi.binary_erosion(to_numpy(mask),iterations=n_iters))
+		self.target.img_view.set_data(self.target.data, self.target.annotate)
+		del mask
+
+	def do_morp_label(self):
+		n_iters = int(self.morp_n_iters_sp.value())
+		mask, num = ndi.label(to_numpy(self.target.get_annotation()))
+		self.target.annotate = from_numpy(mask)
+		print("number of object detected:", num)
+		self.target.img_view.set_data(self.target.data, self.target.annotate)
+		del mask
+
+class Binary_Tab(QtWidgets.QWidget):
+	def __init__(self,target) :
+		QtWidgets.QWidget.__init__(self,None)
+		self.target = target
+
+		#Set up Binary Tab and Function
+		bin_gbl = QtWidgets.QGridLayout(self)
+		self.bin_invert_cb = QtWidgets.QCheckBox("Dark Feature")
+		self.bin_invert_cb.setChecked(True)
+		#valslider set to 0 will paint all the annotate file
+		self.bin_detect_bt = QtWidgets.QPushButton("Detect Feature")
+		self.bin_fill_bt = QtWidgets.QPushButton("Fill")
+		self.bin_trim_bt = QtWidgets.QPushButton("Trim")
+		self.bin_low_pass_vs = ValSlider(value=1,rng=(0.001,1),rounding=2,label= "Cut-off Abs")
+		self.bin_threshold_vs = ValSlider(value=0.001,rng=(0.001,1),rounding=2,label="Threshold  ")
+		self.closing_n_iters =1
+		self.opening_n_iters =1
+
+		bin_gbl.addWidget(self.bin_invert_cb,0,0,1,1)
+		bin_gbl.addWidget(self.bin_detect_bt,0,1,1,1)
+		bin_gbl.addWidget(self.bin_low_pass_vs,1,0,1,2)
+		bin_gbl.addWidget(self.bin_threshold_vs,2,0,1,2)
+		bin_gbl.addWidget(self.bin_fill_bt,3,0,1,1)
+		bin_gbl.addWidget(self.bin_trim_bt,3,1,1,1)
+
+		#self.setLayout(bin_gbl)
+		self.bin_detect_bt.clicked[bool].connect(self.bin_detect_bt_click)
+		self.bin_fill_bt.clicked[bool].connect(self.do_area_closing)
+		self.bin_trim_bt.clicked[bool].connect(self.do_area_opening)
+		self.bin_low_pass_vs.valueChanged.connect(self.update_mask_from_vs)
+		self.bin_threshold_vs.valueChanged.connect(self.update_mask_from_vs)
+
+
+	def do_area_opening(self):
+		self.target.morp_tab.morp_n_iters_sp.setValue(self.opening_n_iters)
+		self.target.morp_tab.do_morp_open()
+		self.opening_n_iters +=1
+
+	def do_area_closing(self):
+		self.target.morp_tab.morp_n_iters_sp.setValue(self.closing_n_iters)
+		self.target.morp_tab.do_morp_close()
+		self.closing_n_iters +=1
+
+
+	def bin_detect_bt_click(self):
+		if self.bin_low_pass_vs.value == 0.1:
+			self.bin_low_pass_vs.setValue(0.101)
+			self.bin_threshold_vs.setValue(0.601)
+		self.bin_low_pass_vs.setValue(0.1)
+		self.bin_threshold_vs.setValue(0.6)
+		self.target.reset_morp_params()
+
+	def update_mask_from_vs(self):
+		if self.bin_invert_cb.isChecked():
+			mult = -1
+		else:
+			mult= 1
+		lp = self.bin_low_pass_vs.value
+		thres = self.bin_threshold_vs.value
+		#self.mask = self.get_annotation().process("threshold.binary",{"value":0.3})
+		self.mask = self.target.get_annotation()
+		self.lp_masked = mult*self.mask*self.target.get_data().process("filter.lowpass.gauss",{"cutoff_abs":lp})
+		self.thres_mask = self.lp_masked.process("threshold.binary",{"value":thres})
+		self.target.img_view.set_data(self.target.get_data(),self.thres_mask*self.mask)
+		return
+
+class Templ_Match_Tab(QtWidgets.QWidget):
+	def __init__(self,target) :
+		QtWidgets.QWidget.__init__(self,None)
+		self.target = target
+		self.template_text = QtWidgets.QLineEdit()
+		self.template_browser_bt = QtWidgets.QPushButton("Browse")
+		self.create_template_bt = QtWidgets.QPushButton("Make Template")
+		self.template_match_bt = QtWidgets.QPushButton("Template Match")
+		self.tplt_low_pass_vs = ValSlider(value=1,rng=(0.001,1),rounding=2,label= "Low-pass Filt")
+		self.tplt_threshold_vs = ValSlider(value=0.8,rng=(0.001,6),rounding=2,label="Binary Thresh")
+
+
+		templ_gbl = QtWidgets.QGridLayout()
+		templ_gbl.addWidget(self.template_text,0,0,1,3)
+		templ_gbl.addWidget(self.template_browser_bt,0,3,1,1)
+		templ_gbl.addWidget(self.create_template_bt,1,0,1,2)
+		templ_gbl.addWidget(self.template_match_bt,1,2,1,2)
+		templ_gbl.addWidget(self.tplt_threshold_vs,2,0,1,4)
+		#templ_gbl.addWidget(self.tplt_low_pass_vs,3,0,1,4)
+		self.setLayout(templ_gbl)
+
+		self.tplt_match_launcher = QtWidgets.QWidget()
+		self.tplt_match_launcher.setWindowTitle("Command for template-matching")
+		self.tplt_match_launcher.setMinimumWidth(500)
+		self.tplt_match_cmd = QtWidgets.QTextEdit()
+		self.tplt_lauch_bt = QtWidgets.QPushButton("Launch")
+
+		tml_layout = QtWidgets.QVBoxLayout()
+		tml_layout.addWidget(self.tplt_match_cmd)
+		tml_layout.addWidget(self.tplt_lauch_bt)
+		self.tplt_match_launcher.setLayout(tml_layout)
+
+		self.template_browser_bt.clicked[bool].connect(self.load_template)
+		self.template_match_bt.clicked[bool].connect(self.tplt_match)
+		self.create_template_bt.clicked[bool].connect(self.create_tplt)
+		self.tplt_lauch_bt.clicked[bool].connect(self.tplt_match_launched)
+		self.tplt_threshold_vs.valueChanged.connect(self.binarize_tplt_match)
+
+
+
+
+	def load_template(self):
+		self.tplt_browser = EMBrowserWidget(withmodal=True,multiselect=False)
+		self.tplt_browser.ok.connect(self.tplt_browser_ok)
+		self.tplt_browser.show()
+		return
+
+	def tplt_browser_ok(self):
+		self.tplt_browser_ret = (self.tplt_browser.getResult())
+		self.template_text.setText(self.tplt_browser_ret[0])
+		self.template = EMData(self.tplt_browser_ret[0])
+		#process template
+
+	def tplt_match(self):
+		self.tm_cmd="e2spt_tempmatch.py "+self.target.data_file+" --reference="+self.template_text.text()+" --nptcl=500 --dthr=-1.0 --vthr=0.2 --minvol=-1 --maxvol=-1 --delta=90.0 --sym=c1 --rmedge --rmgold --boxsz=-1 --threads=4 --shrink=1"
+		self.tplt_match_cmd.setText(self.tm_cmd)
+		self.tplt_match_launcher.show()
+		return
+
+	def tplt_match_launched(self):
+		self.tplt_match_launcher.close()
+		try:
+			os.system(self.tplt_match_cmd.toPlainText())
+		except:
+			pass
+		os.system("e2proc3d.py tmp_ccc.hdf tmp_ccc_inv.hdf --mult=-1")
+		#tplt_match_map = EMData("tmp_ccc_inv.hdf")
+		self.tplt_threshold_vs.setValue(0.81)
+		return
+
+	def binarize_tplt_match(self, event):
+		tplt_match_map = EMData("tmp_ccc_inv.hdf")
+		tplt_match_map_bin=tplt_match_map.process("threshold.binary",{"value":self.tplt_threshold_vs.value})
+		self.target.img_view.full_annotation =tplt_match_map_bin
+		self.target.img_view.force_display_update(set_clip=0)
+		self.target.img_view.updateGL()
+
+
+
+
+
+	def create_tplt(self):
+		return
+
+
+class Fila_Tab(QtWidgets.QWidget):
+	def __init__(self,target) :
+		QtWidgets.QWidget.__init__(self,None)
+		target = target
+		self.tree = QtWidgets.QTreeWidget(self)
+		self.tree.setColumnCount(3)
+		self.tree.setHeaderLabels(["a","b","c"])
+		self.itemflags = Qt.ItemFlags(Qt.ItemIsEditable)|Qt.ItemFlags(Qt.ItemIsSelectable)|Qt.ItemFlags(Qt.ItemIsEnabled)|Qt.ItemFlags(Qt.ItemIsUserCheckable)
+
+
+		data = {"Project A": ["file_a.py", "file_a.txt", "something.xls"],"Project B": ["file_b.csv", "photo.jpg"],"Project C": []}
+		items = []
+		for key, values in data.items():
+			item = QtWidgets.QTreeWidgetItem([key])
+			for value in values:
+				ext = value.split(".")[-1].upper()
+				child = QtWidgets.QTreeWidgetItem([value, ext])
+				item.addChild(child)
+			item.setFlags(self.itemflags)
+			items.append(item)
+
+
+
+
+		self.tree.insertTopLevelItems(0, items)
+		self.tree.itemAt(0,0).setForeground(0,QtGui.QColor.fromRgb(0,120,120))
+
+
+		# for i in range(5):
+		# 	item = QtWidgets.QTreeWidgetItem(self.tree)
+		# 	item.setText(0,str(10+i))
+		# 	item.setFlags(self.itemflags)
+		# 	items.append(item)
+		# 	if i % 2 == 0:
+		# 		item_c = QtWidgets.QTreeWidgetItem(self.tree)
+		# 		item_c.setText(0,str(10*i))
+		# 		item.addChild(item_c)
+		# 		item.setExpanded(False)
+		#
+		#
+		# self.tree.insertTopLevelItems(0,items)
+		self.t_button = QtWidgets.QPushButton('test')
+		self.p_button = QtWidgets.QPushButton('print')
+		self.c_button = QtWidgets.QPushButton('child')
+		self.gbl = QtWidgets.QGridLayout(self)
+		self.gbl.addWidget(QtWidgets.QLabel("This panel is currently for testing only."),0,0,1,3)
+		self.gbl.addWidget(self.tree,1,0,5,3)
+
+		self.gbl.addWidget(self.t_button,0,3,1,1)
+		self.gbl.addWidget(self.p_button,1,3,1,1)
+		self.gbl.addWidget(self.c_button,2,3,1,1)
+
+		self.t_button.clicked[bool].connect(self.t_button_clicked)
+		self.p_button.clicked[bool].connect(self.p_button_clicked)
+		self.c_button.clicked[bool].connect(self.c_button_clicked)
+
+	def t_button_clicked(self):
+		self.tree.insertTopLevelItem(0, QtWidgets.QTreeWidgetItem(['cool name']))
+	def p_button_clicked(self):
+		root = self.tree.invisibleRootItem()
+		#for item in tree.selectedItems():
+		sels = self.tree.selectedItems()
+		for sel in sels:
+			(sel.parent() or root).removeChild(sel)
+		# self.tree.currentItem().takeChildren()
+		# item = self.tree.currentItem()
+
+
+			# self.tree.removeItemWidget(sel,0)
+			# self.tree.removeItemWidget(sel,1)
+			# del sel
+		# self.tree.currentItem().takeChildren()
+		# self.tree.takeTopLevelItem(i)
+	def c_button_clicked(self):
+		child = QtWidgets.QTreeWidgetItem(['cool', 'verycool'])
+		self.tree.currentItem().addChild(child)
+
+
+
+class Statistics_Tab(QtWidgets.QWidget):
+	def __init__(self,target) :
+		QtWidgets.QWidget.__init__(self,None)
+		self.target = target
+		stat_gbl = QtWidgets.QVBoxLayout(self)
+		self.blob_tab = QtWidgets.QWidget()
+		bltlay = QtWidgets.QGridLayout(self.blob_tab)
+
+		self.n_objects_text = QtWidgets.QLineEdit()
+		self.n_obj_thres_vs = ValSlider(value=10,rng=(0.001,5000),rounding=2,label= "Area/Vol Thres")
+		#self.cent_mass_bt = QtWidgets.QPushButton("Center of Mass")
+		self.count_objs_bt = QtWidgets.QPushButton("Count objects")
+		self.stat_bt = QtWidgets.QPushButton("Calc Stat")
+
+		self.stat_combo = QtWidgets.QComboBox()
+		self.stat_combo.addItem('Center of Mass')
+		self.stat_combo.addItem('Volume/Area')
+		self.stat_combo.addItem('Largest Area')
+		self.stat_combo.addItem('Largest Perimeter')
+		self.stat_combo.addItem('Custom')
+
+		bltlay.addWidget(self.count_objs_bt,0,0,1,1)
+		bltlay.addWidget(self.n_objects_text,0,1,1,1)
+		bltlay.addWidget(self.n_obj_thres_vs,1,0,1,3)
+		bltlay.addWidget(self.stat_bt,2,0,1,1)
+		bltlay.addWidget(self.stat_combo,2,1,1,2)
+
+
+		self.fila_tab = Fila_Tab(target=self)
+		fillay = QtWidgets.QGridLayout(self.blob_tab)
+
+		self.stat_tab = QtWidgets.QTabWidget()
+		self.stat_tab.addTab(self.blob_tab,"Blob-like")
+		self.stat_tab.addTab(self.fila_tab,"Filament-like")
+		stat_gbl.addWidget(self.stat_tab)
+
+		self.stat_bt.clicked[bool].connect(self.calc_stat)
+		self.count_objs_bt.clicked[bool].connect(self.count_objs)
+		self.n_obj_thres_vs.valueChanged.connect(self.count_objs)
+
+	def count_objs(self):
+		thres=self.n_obj_thres_vs.value
+		#open_lab=self.target.get_annotation().numpy()
+		sels = self.target.get_segtab().table_set.selectedItems()
+
+		if len(sels) == 0:
+			print("Must select class to quantify")
+			return
+		lab=self.target.get_annotation().copy_head()
+		lab.to_zero()
+
+
+		count = 0
+		self.area_vol = []
+		self.objs = []
+
+
+		for sel in sels:
+			row = self.target.get_segtab().table_set.row(sel)
+			num = int(self.target.get_segtab().table_set.item(row,0).text())
+			#print(sel.text())
+			# if multiple_class:
+			lab = (self.target.get_annotation().process("threshold.binaryrange",{"high":num+0.1,"low":num-0.1}))
+			open_lab = lab.numpy()
+
+		#open_lab=ndi.binary_opening(self.target.get_annotation().numpy(),iterations=3)
+			self.labeled_ann,self.num = ndi.label(open_lab>0.5)
+			self.loc=ndi.find_objects(self.labeled_ann,self.num)
+			#print(num)
+
+			for i in range(self.num):
+				area_temp=len(np.where(open_lab[self.loc[i]]>0)[0])
+				#print(open_lab[loc[i]].shape[0],open_lab[loc[i]].shape[1])
+				if area_temp >= thres:
+					count = count+1
+					self.area_vol.append(area_temp)
+					self.objs.append(open_lab[self.loc[i]])
+			self.n_objects_text.setText(str(count))
+		return
+
+	def calc_stat(self):
+		self.count_objs()
+		if (self.stat_combo.currentText() == "Center of Mass"):
+			self.cent_mass = ndi.center_of_mass(self.target.get_annotation().numpy(),self.labeled_ann,[i+1 for i in range(len(self.objs))])
+			self.cent_mass_em = []
+			for pair in self.cent_mass:
+				if len(pair) == 3:
+					self.cent_mass_em.append([pair[2],pair[1],pair[0]])
+				elif len(pair) == 2:
+					self.cent_mass_em.append([pair[1],pair[0]])
+			for  i in range(1,len(self.cent_mass_em)+1):
+				print("Center of Mass of Obj",i,":", str(self.cent_mass_em[-i]))
+		elif (self.stat_combo.currentText() == "Volume/Area"):
+			for  i in range(1,len(self.area_vol)+1):
+				print("Volume/Area of Obj",i,":", str(self.area_vol[-i]))
+		elif (self.stat_combo.currentText() == "Largest Area"):
+			if  len(self.objs[0].shape)== 2:
+				for  i in range(1,len(self.area_vol)+1):
+					print("Largest Area of Obj",i,":", str(self.area_vol[-i]))
+			else:
+				#self.projs = [from_numpy(obj).process("xform",{"transform":Transform()}).process("misc.directional_sum",{"axis":"z"}) for obj in self.objs]
+				for i in range(1,len(self.objs)+1):
+					obj = self.objs[-i]
+					a = from_numpy(obj)
+					proj = a.process("misc.directional_sum",{"axis":"z"}).numpy()
+					area_temp=len(np.where(proj>0)[0])
+					print("Largest Area of Obj",i,":", area_temp)
+
+		elif self.stat_combo.currentText() == "Largest Perimeter":
+
+			for i in range(1,len(self.objs)+1):
+				obj = self.objs[-i]
+				if len(obj.shape) == 2:
+					im = obj
+				else:
+					a = from_numpy(obj)
+					proj = a.process("misc.directional_sum",{"axis":"z"}).process("threshold.binary",{"value":0.1})
+					im = proj.numpy()
+				# sx = ndi.sobel(im, axis=0, mode='constant')
+				# sy = ndi.sobel(im, axis=1, mode='constant')
+				# sob = np.hypot(sx, sy)
+				# from_numpy(sob).write_image('peri_temp_2.hdf')
+				peri_temp = self.calc_perimeter(im)
+				print("Largest Perimeter of Obj",i,":", peri_temp)
+				#[data.process("xform",{"transform":xform}).process("misc.directional_sum",{"first":nz//2-layers,"last":nz//2+layers,"axis":"z"}) for data in self.datalist]
+			#self.projs = [data.process("xform",{"transform":Transform()}).process("misc.directional_sum",{"first":nz//2-layers,"last":nz//2+layers,"axis":"z"}) for data in self.datalist]
+		else:
+			return
+
+	def calc_perimeter(self,image):
+		(w, h) = image.shape
+		data = np.zeros((w + 2, h + 2), dtype=image.dtype)
+		data[1:-1, 1:-1] = image
+		newdata = np.copy(data)
+		for i in range(1, w + 1):
+			for j in range(1, h + 1):
+				cond = data[i, j] == data[i, j + 1] and \
+						data[i, j] == data[i, j - 1] and \
+						data[i, j] == data[i + 1, j] and \
+						data[i, j] == data[i - 1, j]
+				if cond:
+					newdata[i, j] = 0
+		return np.count_nonzero(newdata)
+
+
+
+
+class Specific_Tab(QtWidgets.QWidget):
+	def __init__(self,target) :
+		QtWidgets.QWidget.__init__(self,None)
+		self.target = target
+
+		cell_vbl = QtWidgets.QVBoxLayout(self)
+		cell_button_l = QtWidgets.QVBoxLayout()
+
+		self.memb_tab = QtWidgets.QWidget()
+		self.mtlay = QtWidgets.QVBoxLayout(self.memb_tab)
+		self.mem_detect_button = QtWidgets.QPushButton("Auto detect in brushed region")
+		self.bezier_button = QtWidgets.QPushButton("Draw bezier curve")
+		self.double_mem_button = QtWidgets.QPushButton("Double membrane")
+		self.mtlay.addWidget(self.mem_detect_button)
+		self.mtlay.addWidget(self.bezier_button)
+		self.mtlay.addWidget(self.double_mem_button)
+
+		self.actin_tab = QtWidgets.QWidget()
+		self.atlay = QtWidgets.QGridLayout(self.actin_tab)
+		self.actin_button = QtWidgets.QPushButton("Actin")
+		self.atlay.addWidget(self.actin_button)
+
+
+		self.gra_tab = QtWidgets.QWidget()
+		self.gtlay = QtWidgets.QVBoxLayout(self.gra_tab)
+		self.dark_gra_button = QtWidgets.QPushButton("Dark granule")
+		self.alpha_gra_button = QtWidgets.QPushButton("Alpha granule")
+		self.ves_button = QtWidgets.QPushButton("Vesicle")
+		self.gtlay.addWidget(self.dark_gra_button)
+		self.gtlay.addWidget(self.alpha_gra_button)
+		self.gtlay.addWidget(self.ves_button)
+
+		self.cell_tab = QtWidgets.QTabWidget()
+		self.cell_tab.addTab(self.memb_tab,"Membrane")
+		self.cell_tab.addTab(self.actin_tab,"Actin/Microtubules")
+		self.cell_tab.addTab(self.gra_tab,"Granule")
+		cell_button_l.addWidget(self.cell_tab)
+		cell_vbl.addLayout(cell_button_l)
 
 
 

@@ -425,7 +425,8 @@ class EMScatterPlot3D(EMShapeBase):
 	surface brightness axis uses a fixed minimum of zero (black) and the actual maximum value as white."""
 	name = "Plot3D"
 	nodetype = "ShapeNode"
-	
+	stdcolors = [(1.0,1.0,1.0),(0,0,1.0),(1.0,0,0),(0,1.0,0),(1.0,1.0,0),(0,1.0,1.0),(1.0,0,1.0),(1.0,0.25,0.75)]
+
 	def __init__(self, transform=None):
 		EMShapeBase.__init__(self, parent=None, children=set(), transform=transform)
 		self.pointthr=0.0
@@ -434,7 +435,11 @@ class EMScatterPlot3D(EMShapeBase):
 		self.setPointSize(1)
 		
 	def setData(self, data, pointsize=1.0):
-		""" Set the dat to plot. Format is a [X, Y, Z] whereX Y and Z are lists of the same length """
+		""" Set the dat to plot. Format is a [X, Y, Z, [bright[,scale[,class]]]]
+		all items must be floating point lists/arrays of the same length
+		XYZ are coordinates
+		per point brightness and scale should be scaled 0-1
+		class should be integers. There are 8 discrete colors which cycle."""
 		if data is None:
 			self.data=[[],[],[]]
 			return
@@ -491,7 +496,16 @@ class EMScatterPlot3D(EMShapeBase):
 #		print(self.pointthr)
 		for i in range(len(self.data[0])):
 			glPushMatrix()
-			if len(self.data)>3:
+			if len(self.data)>5:
+				brtcol=(self.data[3][i]-cmin)/(cmax-cmin)		# color is black for values of 0 ranging to white at max
+				col=EMScatterPlot3D.stdcolors[int(self.data[5][i])%8]
+				if self.data[3][i]<=self.pointthr :
+					glPopMatrix()
+					continue
+				glMaterialfv(GL_FRONT, GL_DIFFUSE, [brtcol*0.75,brtcol*0.75,brtcol*0.75,1.0])
+				glMaterialfv(GL_FRONT, GL_AMBIENT, [col[0]*brtcol,col[1]*brtcol,col[2]*brtcol,1.0])
+
+			elif len(self.data)>3:
 				brtcol=(self.data[3][i]-cmin)/(cmax-cmin)		# color is black for values of 0 ranging to white at max
 				if self.data[3][i]<=self.pointthr :
 					glPopMatrix()

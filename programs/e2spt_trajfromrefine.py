@@ -1,23 +1,27 @@
 #!/usr/bin/env python
 # Muyuan Chen 2019-05
-from future import standard_library
-standard_library.install_aliases()
-from builtins import range
 from EMAN2 import *
 import numpy as np
 from sklearn.decomposition import PCA,FastICA
+
 def main():
 	
 	usage="""
+	Compile movement trajectories of part of proteins from two alignment parameters of the same set of particles. For example, starting from the global refinement of particles in spt_00, run another iterative local refinement in spt_01 focusing on one part of the structure using e2spt_refine_new.py with --localrefine. Then to compare the difference between angle assignment of the particles in two refinement, run
+	
+	e2spt_trajfromrefine.py --ali3dold spt_00/aliptcls3d_03.lst --ali3dnew spt_01/aliptcls3d_03.lst --ali2d spt_00/aliptcls2d_03.lst --path spt_00
+	
+	This will generate 3D movies showing the movement trajectories between spt_00 and spt_01. --ali2d defines the reference frame of the movement, and --path specifies the directory to write output.	
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--ali3dold", type=str,help="", default=None)
-	parser.add_argument("--ali3dnew", type=str,help="", default=None)
-	parser.add_argument("--path", type=str,help="", default=None)
-	parser.add_argument("--ali2d", type=str,help="", default=None)
+	parser.add_argument("--ali3dold", type=str,help="first particle alignment file", default=None)
+	parser.add_argument("--ali3dnew", type=str,help="second particle alignment file", default=None)
+	parser.add_argument("--path", type=str,help="path to write output", default=None)
+	parser.add_argument("--ali2d", type=str,help="2d particle alignment file for reconstruction.", default=None)
 	parser.add_argument("--nframe", type=int,help="number of frames in the trajectory", default=5)
 	parser.add_argument("--maxshift", type=float,help="ignore particles with drift/rotation (pixel/degree) larger than this. default 7", default=7)
 	parser.add_argument("--nstd", type=float,help="build trajectories from -n x std to n x std of eigenvalues. default is 2", default=2)
+	parser.add_argument("--nbasis", type=int,help="number of pca basis. default is 2", default=2)
 	parser.add_argument("--nptcl", type=int,help="number of particle per average. default is 500", default=500)
 	parser.add_argument("--threads", type=int,help="threads", default=12)
 
@@ -26,7 +30,11 @@ def main():
 	
 	params0=load_lst_params(options.ali3dold)
 	params1=load_lst_params(options.ali3dnew)
-		
+	e=EMData(options.ali3dnew)
+	outsz=e["nx"]
+	e=EMData(options.ali2d)
+	pad=e["nx"]
+	
 	params=[]
 	pts=[]
 	for i in range(len(params0)):
@@ -39,7 +47,10 @@ def main():
 
 		dt=xf0*xf1.inverse()
 		rot=dt.get_params("spin")["omega"]
-		s=pm0["score"]
+		if "score" in pm0:
+			s=pm0["score"]
+		else:
+			s=-1
 		params.append([dx, rot, s])
 		
 		dt=dt.get_params("xyz")
@@ -65,7 +76,7 @@ def main():
 	std=np.std(pts, 0)
 	p=(pts-mean)/std
 
-	neig=2
+	neig=max(2,options.nbasis)
 	pca=PCA(neig)
 	pca.fit(p[goodi])
 	pfit=pca.transform(p)
@@ -80,7 +91,7 @@ def main():
 	info3d=load_lst_params("{}/particle_info_3d.lst".format(options.path))
 	jstmp="{}/tmp_ptcl_list.txt".format(options.path)
 	threedtmp="{}/threed_tmp.hdf".format(options.path)
-	for ie in range(neig): 
+	for ie in range(options.nbasis): 
 		print("Eigenvector {}".format(ie))
 		tfile=os.path.join(options.path,"threed_eig_{:02d}.hdf".format(ie))
 		if os.path.isfile(tfile): os.remove(tfile)
@@ -98,7 +109,7 @@ def main():
 			idx2d=sum(idx2d,[])
 			np.savetxt(jstmp, idx2d)
 			
-			run(f"e2spa_make3d.py --input {options.ali2d} --output {threedtmp} --keep 1 --parallel thread:{options.threads} --outsize 192 --pad 384 --listsel {jstmp}")
+			run(f"e2spa_make3d.py --input {options.ali2d} --output {threedtmp} --keep 1 --parallel thread:{options.threads} --outsize {outsz} --pad {pad} --listsel {jstmp}")
 			e=EMData(threedtmp)
 			#e.process_inplace("filter.matchto",{"to":ref})
 			#e.mult(msk)

@@ -1104,8 +1104,8 @@ EMBytes GLUtil::render_annotated24(EMData *emdata, EMData *intmap, int x0, int y
 					H = 0;
 					S = 0;
 				}else{
-					H = abs(fmod(120.0+139*c, 360.0));
-					S = abs(fmod((1-4*c/255.0)*255.0, 256.0))/255.0;
+					H = abs(fmod(130.0+139*c, 360.0));
+					S = abs(fmod((0.8-3*c/255.0)*255.0, 256.0))/255.0;
 				}
 				float V = (0.2+0.8*(v/255.0));
 				float C = S*V;

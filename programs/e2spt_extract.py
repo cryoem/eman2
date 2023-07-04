@@ -804,22 +804,11 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 						
 					threed.mult(mskrot)
 					
-					#mskbig=mskrot.get_clip(Region((bx-p3d)//2,(bx-p3d)//2,(bx-p3d)//2,p3d,p3d,p3d))
-					#threedres=threedraw*mskbig
-					#threedres=threedraw*(1-mskbig)
-					
 					pjnew=[]
 					for pj in projs:
-						#tp=threedraw.project("standard", pj["xform.projection"])
-						#tp.set_attr_dict(pj.get_attr_dict())
-						#pj=pj.get_clip(Region((p3d-bx)//2,(p3d-bx)//2,bx,bx))
-						#pj.process_inplace("filter.matchto",{"to":tp})
-						#pj.process_inplace("normalize.toimage",{"to":tp})
 						
 						tpmsk=threed.project("standard", pj["xform.projection"])
 						tpmsk.set_attr_dict(pj.get_attr_dict())
-						#pj=pj-tpmsk
-						#pjnew.append(pj)
 						pjnew.append(tpmsk)
 					
 					projs=pjnew
@@ -901,20 +890,19 @@ def parse_json(options):
 		for k in keys:
 			src, ii = eval(k)
 			e=EMData(src, ii, True)
+			dt={"k":k,
+				"pos":e["ptcl_source_coord"],
+				"xf":js[k]["xform.align3d"], 
+				"score":js[k]["score"],
+				"class":ii%2,
+				}
 			if src[-4:]==".lst" :
-				data.append({"k":k,
-					"src":e["data_source"],
-					"srci":e["data_n"],
-					"pos":e["ptcl_source_coord"],
-					"xf":js[k]["xform.align3d"], 
-					"score":js[k]["score"]})
+				dt.update({"src":e["data_source"], "srci":e["data_n"]})
+				
 			else:
-				data.append({"k":k,
-					"src":src,
-					"srci":ii,
-					"pos":e["ptcl_source_coord"],
-					"xf":js[k]["xform.align3d"], 
-					"score":js[k]["score"]})
+				dt.update({"src":src,"srci":ii})
+				
+			data.append(dt)
 		js.close()
 	
 	elif options.jsonali.endswith("lst"):
@@ -922,22 +910,25 @@ def parse_json(options):
 		data=[]
 		e=EMData(info[0]["src"], info[0]["idx"], True)
 		for i,nf in enumerate(info):
+			dt={"src":nf["src"],
+				"srci":nf["idx"],
+				"xf":nf["xform.align3d"],
+				"score":-1,
+				"class":i%2}
+			
 			if "coord" in nf:
-				coord=nf["coord"]
+				dt["coord"]=nf["coord"]
 			else:
 				e=EMData(nf["src"], nf["idx"], True)
-				coord=e["ptcl_source_coord"]
+				dt["coord"]=e["ptcl_source_coord"]
 			
 			if "score" in nf:
-				score=nf["score"]
-			else:
-				score=-1
+				dt["score"]=nf["score"]
 				
-			data.append({"src":nf["src"],
-				"srci":nf["idx"],
-				"pos":coord,
-				"xf":nf["xform.align3d"],
-				"score":score})
+			if "class" in nf:
+				dt["class"]=nf["class"]
+				
+			data.append(dt)
 			
 		if options.loadali2d:
 			dr=os.path.dirname(options.loadali2d)
@@ -1003,14 +994,14 @@ def parse_json(options):
 	alld=[]
 	for fi,fname in enumerate(fnames):
 			
-		pos=np.array([d["pos"] for d in data if d["src"]==fname])
-		ids=np.array([d["srci"] for d in data if d["src"]==fname])
-		ptclxfs=[Transform(d["xf"]) for d in data if d["src"]==fname]
-		score=np.array([d["score"] for d in data if d["src"]==fname])
+		dat=[d for d in data if d["src"]==fname]
+		pos=np.array([d["coord"] for d in dat])
+		ptclxfs=[Transform(d["xf"]) for d in dat]
+		score=np.array([d["score"] for d in dat])
 		if options.loadali2d:
-			dxfs=[d["dxfs2d"] for d in data if d["src"]==fname]
+			dxfs=[d["dxfs2d"] for d in dat]
 		else:
-			dxfs=[[] for d in data if d["src"]==fname]
+			dxfs=[[] for d in dat]
 		
 		info=[]
 		newxfs=[]
@@ -1023,7 +1014,7 @@ def parse_json(options):
 				a=ali.inverse()
 				a.translate(c[0], c[1], c[2])
 				newxfs.append(a)
-				info.append({"orig_ptcl":str(fname),"orig_idx":int(ids[i]),"orig_xf":pxf, "dxfs2d":dxfs[i], "postxf":nxf})
+				info.append({"orig_ptcl":str(fname),"orig_idx":int(dat[i]["srci"]),"orig_xf":pxf, "orig_class":dat[i]["class"], "dxfs2d":dxfs[i], "postxf":nxf})
 				#x=np.array([x.get_trans() for x in dxfs[i]])
 				#print(i, np.max(abs(x), axis=0))
 

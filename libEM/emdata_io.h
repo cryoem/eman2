@@ -172,12 +172,12 @@ static vector<std::shared_ptr<EMData>> read_images(const string & filename,
  * @return True if set of images are written successfully to filename.
  */
 static bool write_images(const string & filename,
-									  vector<std::shared_ptr<EMData>> imgs,
-									  EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN,
-									  bool header_only = false,
-									  const Region * region = nullptr,
-									  EMUtil::EMDataType filestoragetype = EMUtil::EM_FLOAT,
-									  bool use_host_endian = true);
+									vector<std::shared_ptr<EMData>> imgs,
+									EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN,
+									bool header_only = false,
+									const Region * region = nullptr,
+									EMUtil::EMDataType filestoragetype = EMUtil::EM_FLOAT,
+									bool use_host_endian = true);
 
 friend ostream& operator<<(ostream& out, const EMData& obj);
 

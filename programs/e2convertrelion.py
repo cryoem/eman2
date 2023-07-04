@@ -34,6 +34,8 @@ def main():
 	parser.add_argument("--invert", action="store_true", default=False ,help="invert contrast")
 	parser.add_argument("--onestack", type=str, default=None ,help="save all particles in one stack")
 	parser.add_argument("--lst2star", type=str, default=None ,help="convert the xform from a lst file back to the star file in the same order. ")
+	parser.add_argument("--make3d", action="store_true", default=False ,help="do 3d reconstruction after import")
+	parser.add_argument("--sym", type=str, default="c1" ,help="symmetry for make3d. ")
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -210,18 +212,31 @@ def main():
 				run(f"e2proclst.py {options.output[:-4]}_{tg}.lst --retype {tg} --scale {1./ss}")
 				
 		print("aligned list written to {}".format(options.output))
-		
+			
+		if options.make3d:
+			path=num_path_new("r3d_")
+			run(f"e2proclst.py {options.output} --create {path}/ptcls_00.lst")
+			for eo in ["even", "odd"]:
+				run(f"e2spa_make3d.py --input {path}/ptcls_00.lst --output {path}/threed_00_{eo}.hdf --keep 1 --parallel thread:32 --clsid {eo} --sym {options.sym}")
+				run(f"e2proc3d.py {path}/threed_00_{eo}.hdf {path}/threed_raw_{eo}.hdf")
+			
+			if not os.path.isfile("sf.txt"):
+				run(f"e2spt_structfac.py --even {path}/threed_raw_even.hdf --res 5")
+			
+			run(f"e2refine_postprocess.py --even {path}/threed_00_even.hdf --res 5 --setsf sf.txt --tophat localwiener --sym {options.sym} --thread 32")
+			
+			
 	if options.lst2star:
 		lst=load_lst_params(options.lst2star)
+		print("{} particles from star, {} particles from lst".format(len(fnames), len(lst)))
 		oname=args[0][:-5]+"_from_eman.star"
 		f=open(oname,'w')
 		for ln in alllines[:starti]:
 			f.write(ln)
-		for i, ln in enumerate(lines):
-			
+		for fm in fnames:
+			i=fm[0]
+			ln=lines[i]
 			l=ln.split()
-			
-			#print(l[rid["psi"]], l[rid["tilt"]], l[rid["rot"]],l[rid["txa"]], l[rid["tya"]])
 			d=Transform(lst[i]["xform.projection"])
 			d=d.get_params("spider")
 			
@@ -241,7 +256,6 @@ def main():
 			
 		f.close()
 		print(oname)
-		
 		
 		
 	E2end(logid)

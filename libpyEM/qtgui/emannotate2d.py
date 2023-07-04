@@ -84,7 +84,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 	def __init__(self, image=None, annotation=None, application=get_application(),winid=None, parent=None,sizehint=(512,512)):
 
 		self.inspector = None # this should be a qt widget, otherwise referred to as an inspector in eman
-
+		print("Using local version pf emannotate widget")
 		EMGLWidget.__init__(self,parent)
 		self.setFocusPolicy(Qt.StrongFocus)
 		self.setMouseTracking(True)
@@ -435,6 +435,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 		self.nx = self.full_annotation["nx"]
 		self.ny = self.full_annotation["ny"]
 		self.nz = self.full_annotation["nz"]
+
 		#TOREAD
 		#self.xform = Transform({"type":"eman","alt":self.alt,"az":self.az,"tx":self.full_data["nx"]//2,"ty":self.full_data["ny"]//2,"tz":self.full_data["nz"]//2+self.zpos})
 		self.set_xform(self.nx//2,self.ny//2,self.nz//2+self.zpos,self.alt,self.az)
@@ -783,8 +784,8 @@ class EMAnnotate2DWidget(EMGLWidget):
 			self.setup_shapes()
 			self.shapechange=0
 
-		width = old_div(self.width(),2.0)
-		height = old_div(self.height(),2.0)
+		width = self.width()/2.0
+		height = self.height()/2.0
 
 		if not self.invert : pixden=(0,255)
 		else: pixden=(255,0)
@@ -1322,6 +1323,11 @@ class EMAnnotate2DWidget(EMGLWidget):
 
 		EMGLWidget.closeEvent(self,event)
 		try:
+			os.remove('./segs/temp_temp.hdf')
+		except:
+			pass
+
+		try:
 			for w in self.inspector.pspecwins: w.close()
 		except: pass
 
@@ -1414,20 +1420,9 @@ class EMAnnotate2DWidget(EMGLWidget):
 					if inspector:
 						current_class = inspector.seg_tab.get_current_class()
 						pen_width = inspector.seg_tab.get_pen_width()
-						#print("Data xsize:",self.get_data().get_xsize())
-						#print("Seg:", lc)
-						# try:
-						# 	print("D&A", self.data.get_sizes(), self.annotation.get_sizes())
-						# except:
-						# 	print("D&A are None")
-						print(self.get_annotation()[int(lc[0]),int(lc[1])])
-						#print(self.get_annotation())
-						#a = to_numpy(self.get_annotation())
-						#for i in range(int(lc[0])-20,int(lc[0])+20):
-							#for j in range(int(lc[1])-20,int(lc[1])+20):
 
-						#self.get_annotation().process_inplace("mask.sharp",{"dx":lc[0],"dy":lc[1],"dz":0,"inner_radius":0,"outer_radius":10,"value":2})
-						#print("Zpos:", self.zpos)
+
+							#self.get_annotation().process_inplace("mask.paint",{"x":lc[0],"y":lc[1],"z":0,"r1":pen_width,"v1":current_class,"r2":pen_width,"v2":0})
 						self.get_annotation().process_inplace("mask.paint",{"x":lc[0],"y":lc[1],"z":0,"r1":pen_width,"v1":current_class,"r2":pen_width,"v2":0})
 						#print("Turn point", int(lc[0]),int(lc[1]),"to 2")
 						self.force_display_update(set_clip=True)
@@ -1676,7 +1671,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 		glEnable(GL_NORMALIZE)
 		glMaterial(GL_FRONT,GL_AMBIENT,(0.2, 1.0, 0.2,1.0))
 		glMaterial(GL_FRONT,GL_DIFFUSE,(0.2, 1.0, 0.9,1.0))
-		glMaterial(GL_FRONT,GL_SPECULAR,(1.0	, 0.5, 0.2,1.0))
+		glMaterial(GL_FRONT,GL_SPECULAR,(1.0, 0.5, 0.2,1.0))
 		glMaterial(GL_FRONT,GL_SHININESS,20.0)
 		enable_depth = glIsEnabled(GL_DEPTH_TEST)
 		glDisable(GL_DEPTH_TEST)
@@ -1713,8 +1708,9 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 	def __init__(self,target) :
 		QtWidgets.QWidget.__init__(self,None)
 		self.target=weakref.ref(target)
-
+		self.setFixedWidth(390)
 		self.vbl = QtWidgets.QVBoxLayout(self)
+
 		self.vbl.setContentsMargins(2, 2, 2, 2)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
@@ -1929,7 +1925,7 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 		self.psbstack = QtWidgets.QPushButton("Stack")
 		self.pstlay.addWidget(self.psbstack,0,1)
 
-		self.mmtab.addTab(self.pstab,"PSpec")
+		#self.mmtab.addTab(self.pstab,"PSpec")
 		self.pspecwins=[]
 
 		# Python tab
@@ -1967,22 +1963,25 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 		self.vbl.addWidget(self.mmtab)
 
 		# histogram level horiz layout
-		self.hbl = QtWidgets.QHBoxLayout()
-		self.hbl.setContentsMargins(0, 0, 0, 0)
+		self.hbl = QtWidgets.QGridLayout()
+		self.hbl.setColumnStretch(290,120)
+		self.hbl.setContentsMargins(10, 2, 2, 2)
 		self.hbl.setSpacing(6)
 		self.hbl.setObjectName("hbl")
 		self.vbl.addLayout(self.hbl)
 
 		self.hist = ImgHistogram(self)
+		#self.hist.setFixedWidth(250)
 		self.hist.setObjectName("hist")
-		self.hbl.addWidget(self.hist)
+		self.hbl.addWidget(self.hist,0,0,1,1)
 
 		# Buttons next to the histogram
 		self.vbl2 = QtWidgets.QGridLayout()
-		self.vbl2.setContentsMargins(0, 0, 0, 0)
+		self.vbl2.setColumnStretch(50,50)
+		self.vbl2.setContentsMargins(2, 2, 2, 2)
 		self.vbl2.setSpacing(6)
 		self.vbl2.setObjectName("vbl2")
-		self.hbl.addLayout(self.vbl2)
+		self.hbl.addLayout(self.vbl2,0,1,1,1)
 
 		self.invtog = QtWidgets.QPushButton("Invert")
 		self.invtog.setCheckable(1)
@@ -1993,13 +1992,13 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 		self.histoequal.addItem("Normal")
 		self.histoequal.addItem("Hist Flat")
 		self.histoequal.addItem("Hist Gauss")
-		self.vbl2.addWidget(self.histoequal,0,1,1,1)
+		self.vbl2.addWidget(self.histoequal,1,0,1,1)
 
 		self.auto_contrast_button = QtWidgets.QPushButton("AutoC")
-		self.vbl2.addWidget(self.auto_contrast_button,1,0,1,1)
+		self.vbl2.addWidget(self.auto_contrast_button,2,0,1,1)
 
 		self.full_contrast_button = QtWidgets.QPushButton("FullC")
-		self.vbl2.addWidget(self.full_contrast_button,1,1,1,1)
+		self.vbl2.addWidget(self.full_contrast_button,3,0,1,1)
 
 		## FFT Buttons
 		#self.fftg=QtWidgets.QButtonGroup()
@@ -2064,7 +2063,10 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"eman.png"))
 
 		self.ns = ValSlider(self,label="zpos:",rounding=2)
-		zr = self.target().get_full_data()["nz"]*3//4
+		nz = self.target().get_full_data()["nz"]
+		zr = nz*3//4
+
+		print("Rotate by", self.alts.getValue(),self.azs.getValue())
 		self.ns.setRange(-zr,zr)
 		#self.ns.setIntonly(True)
 		self.ns.setValue(0)
@@ -2100,7 +2102,9 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 		self.azs.valueChanged.connect(self.target().set_az)
 		self.ns.valueChanged.connect(self.target().set_n)
 
-		self.resize(500,500) # d.woolford thinks this is a good starting size as of Nov 2008 (especially on MAC)
+
+		#self.resize(500,500) # d.woolford thinks this is a good starting size as of Nov 2008 (especially on MAC)
+
 
 	# def get_seg_tab(self):
 	# 	return self.seg_tab
@@ -2442,9 +2446,12 @@ class EMSegTab(QtWidgets.QWidget):
 		self.cb_group = QtWidgets.QButtonGroup()
 		self.cb_group.addButton(self.classes_cb,1)
 		self.cb_group.addButton(self.eraser,2)
-		self.pen_width=ValBox(label="Pen Width",value=15)
+		self.pen_width=ValSlider(label="Pen Sz",labelwidth=30,value=15,rounding=0,rng=(0,60))
+		self.pen_width.setIntonly(1)
 		self.pen_width.setEnabled(1)
 		self.target = target
+		self.og = None #to store annotation image before grouping
+
 		#self.background=False
 
 
@@ -2454,17 +2461,19 @@ class EMSegTab(QtWidgets.QWidget):
 		# self.set_list.addItem("Void")
 		# self.set_list.item(0).setHidden(True)
 
-		self.table_set=QtWidgets.QTableWidget(0, 2, self)
-		self.table_set.setColumnWidth(0,70)
-		self.table_set.setColumnWidth(1,180)
-		self.table_set.setHorizontalHeaderLabels(['Index','Class Name'])
-		for i in range(2):
+		self.table_set=QtWidgets.QTableWidget(0, 3, self)
+		self.table_set.setColumnWidth(0,60)
+		self.table_set.setColumnWidth(1,120)
+		self.table_set.setColumnWidth(2,60)
+		self.table_set.setHorizontalHeaderLabels(['Index','Class Name','Group'])
+		for i in range(3):
 			self.table_set.horizontalHeaderItem(i).setTextAlignment(Qt.AlignLeft)
 
 
 		self.itemflags = Qt.ItemFlags(Qt.ItemIsEditable)|Qt.ItemFlags(Qt.ItemIsSelectable)|Qt.ItemFlags(Qt.ItemIsEnabled)|Qt.ItemFlags(Qt.ItemIsUserCheckable)
 		self.indexflags = Qt.ItemFlags(Qt.ItemIsEnabled)|Qt.ItemFlags(Qt.ItemIsUserCheckable)
-
+		self.used_group_index = [100]
+		self.nodes = {}
 		#self.colors = ['#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe', '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080', '#ffffff', '#000000']
 		self.colors = self.create_palette(256)
 		self.read_header(self.target.get_full_annotation())
@@ -2476,6 +2485,10 @@ class EMSegTab(QtWidgets.QWidget):
 
 		self.new_class_button = QtWidgets.QPushButton("New Class")
 		button_vbl.addWidget(self.new_class_button)
+		self.group_button = QtWidgets.QPushButton("Group")
+		button_vbl.addWidget(self.group_button)
+		self.ungroup_button = QtWidgets.QPushButton("Ungroup")
+		button_vbl.addWidget(self.ungroup_button)
 		self.delete_sel_button = QtWidgets.QPushButton("Delete Selected")
 		button_vbl.addWidget(self.delete_sel_button)
 		self.load_mask_button = QtWidgets.QPushButton("Load Mask")
@@ -2515,6 +2528,8 @@ class EMSegTab(QtWidgets.QWidget):
 		self.save_all_button.clicked[bool].connect(self.save_all)
 		self.cb_group.buttonClicked[QtWidgets.QAbstractButton].connect(self.on_check_cb_group)
 		self.table_set.cellClicked[int,int].connect(self.on_table_set)
+		self.group_button.clicked[bool].connect(self.group_sel)
+		self.ungroup_button.clicked[bool].connect(self.ungroup_sel)
 
 
 
@@ -2522,10 +2537,11 @@ class EMSegTab(QtWidgets.QWidget):
 		#Create color palette for table items and indices
 		l = []
 		for i in range(n):
-			h = ((120 + 139*i)%360)
+			h = ((130 + 139*i)%360)
 			#s = (255+(1 - i/(n*4))*256)%256
 			#v = (255+(1-i/(n*8))*256)%256
-			s = ((1-4*i/(n))*255)%256
+			#s = ((1-4*i/(n))*255)%256
+			s = ((0.8-3*i/(n))*255)%256
 			v = 255
 			l.append(QtGui.QColor.fromHsv(h,s,v))
 		return l
@@ -2535,11 +2551,14 @@ class EMSegTab(QtWidgets.QWidget):
 		if self.cb_group.checkedId() == 1:
 			sels = self.table_set.selectedItems()
 			if len(sels) == 0:
-				print("No class selected. Open control panel to select class")
+				print("No class selected. Use manual annotate panels to create class")
 				return 0
 			else:
 				row = self.table_set.row(sels[0])
-				return int(self.table_set.item(row,0).text())
+				if int(self.table_set.item(row,2).text()) == -1:
+					return int(self.table_set.item(row,0).text())
+				else:
+					return int(self.table_set.item(row,2).text())+100
 		else:
 			return 0
 
@@ -2557,7 +2576,6 @@ class EMSegTab(QtWidgets.QWidget):
 				self.table_set.currentItem().setSelected(False)
 			for button in self.button_list:
 				button.setEnabled(False)
-
 		else:
 			self.table_set.setEnabled(True)
 			try:
@@ -2572,26 +2590,144 @@ class EMSegTab(QtWidgets.QWidget):
 		self.classes_cb.setChecked(True)
 
 
+	def get_unused_index(self,group=False):
+		if not group:
+			n = self.table_set.rowCount()
+			self.used_index = []
+			for i in range(n):
+				self.used_index.append(int(self.table_set.item(i,0).text()))
+			try:
+				self.unused = (set(range(min(self.used_index)+1, max(self.used_index)+2)) - set(self.used_index))
+				new_index = sorted(list(self.unused))[0]
+			except:
+				new_index = 1
+			return new_index
+		else:
+			self.used_group_index.append(self.used_group_index[-1]+1)
+			return self.used_group_index[-1]
 
 
 	def new_class(self):
 		#Add a new class to the table set and annotation file
 		name,ok=QtWidgets.QInputDialog.getText( self, "Class Name", "Enter name for the new class:")
 		if not ok : return
-		n = self.table_set.rowCount()
-		used_index = []
-		for i in range(n):
-			used_index.append(int(self.table_set.item(i,0).text()))
-
-		try:
-			unused = (set(range(min(used_index)+1, max(used_index)+2)) - set(used_index))
-			new_index = sorted(list(unused))[0]
-		except:
-			new_index = 1
-
+		new_index = self.get_unused_index()
 		self.add_new_row(new_index,str(name))
 		self.table_set.setCurrentCell(self.table_set.rowCount()-1,1)
 		self.update_sets()
+
+
+	def group_sel(self):
+		if not os.path.exists('./segs/temp_temp.hdf'):
+			self.target.full_annotation.write_image('./segs/temp_temp.hdf')
+		#self.target.get_full_annotation().write_image('temp_temp.hdf')
+		if len(self.nodes)==0:
+			self.make_nodes()
+
+		group_index=self.get_unused_index(group=True)
+		group_node = Node(group_index,group_index)
+		self.nodes[group_index] = group_node
+
+		temp = self.target.get_full_annotation().copy_head()
+		sels = self.table_set.selectedItems()
+		if len(sels) == 0:
+			print("Must select class to group")
+			return
+		for sel in sels:
+			row = self.table_set.row(sel)
+			val = int(self.table_set.item(row,0).text())
+			group_node.add_child(self.nodes[val])
+			#print("add child at row", row, " to group node")
+			#self.table_set.item(row,2).setText(str(group_index%100))
+
+		# 	temp += (self.target.get_full_annotation().process("threshold.binaryrange",{"high":val+0.1,"low":val-0.1}))
+		# 	self.target.get_full_annotation().process_inplace("threshold.rangetozero",{"maxval":(val+0.1),"minval":(val-0.1)})
+		# self.target.full_annotation += temp*group_index
+		# self.target.force_display_update()
+		self.add_new_row(group_index,str("GROUP ")+str(group_index%100))
+		self.update_group_nums()
+		self.update_sets()
+		self.recolor_by_group()
+		#self.target.force_display_update(set_clip=False)
+		self.target.updateGL()
+
+		return
+
+
+	def ungroup_sel(self):
+		sels = self.table_set.selectedItems()
+		if len(sels) == 0 or len(sels) >1:
+			print("Ungroup once at a time")
+			return
+		sel_row = self.table_set.row(sels[0])
+		if not self.table_set.item(sel_row,1).text().startswith('GROUP'):
+			print("Select a group item to ungroup")
+			return
+		group_index = int(self.table_set.item(sel_row,0).text())
+		self.table_set.removeRow(sel_row)
+		# for row in range(self.table_set.rowCount()):
+		# 	if int(self.table_set.item(row,2).text()) == group_index:
+		# 		self.table_set.item(row,2).setText("-1")
+		for child in self.nodes[group_index].children:
+			child.make_orphan()
+		self.update_group_nums()
+		self.recolor_by_group()
+
+
+
+
+
+
+
+	def recolor_by_group(self):
+		self.target.full_annotation=EMData('./segs/temp_temp.hdf')
+		temp = self.target.get_full_annotation().copy_head()
+		for row in range(self.table_set.rowCount()):
+			index = int(self.table_set.item(row,0).text())
+
+			# group_index = int(self.table_set.item(row,2).text())
+			# if group_index != -1:
+			# 	print("val", val)
+			# 	#self.table_set.item(row,2).setText(str(group_index%100))
+			if index <100:
+				val = self.nodes[index].get_value()
+				temp += self.target.get_full_annotation().process("threshold.binaryrange",{"high":index+0.1,"low":index-0.1})*(val)
+				self.target.get_full_annotation().process_inplace("threshold.rangetozero",{"maxval":(index+0.1),"minval":(index-0.1)})
+				#self.target.get_full_annotation().process("threshold.rangetozero",{"maxval":(val+0.1),"minval":(val-0.1)})
+			# else:
+			# 	continue
+		self.target.full_annotation += temp
+		self.target.force_display_update()
+		#self.target.force_display_update(set_clip=False)
+		self.target.updateGL()
+		self.update_sets()
+		del temp
+
+
+
+	def make_nodes(self):
+		rows = self.table_set.rowCount()
+		self.nodes = {}
+		for row in range(rows):
+			index = int(self.table_set.item(row,0).text())
+			node = Node(index,index)
+			self.nodes[index] = node
+			#node.print_tree()
+
+	def update_group_nums(self):
+		for row in range(self.table_set.rowCount()):
+			index = int(self.table_set.item(row,0).text())
+
+			val  = self.nodes[index].get_value()%100
+			if self.nodes[index].parent:
+				self.table_set.item(row,2).setText(str(val))
+			else:
+				self.table_set.item(row,2).setText("-1")
+
+
+
+
+
 
 
 
@@ -2642,7 +2778,7 @@ class EMSegTab(QtWidgets.QWidget):
 		self.target.updateGL()
 		return
 
-	def save_mask(self, multiple_class = False):
+	def save_mask(self, multiple_class = False, ret = False):
 		#Save the selected annotations as a binary mask (default)
 		#or a multilabel annotation file (to be called when calling delete sel method)
 		sels = self.table_set.selectedItems()
@@ -2663,17 +2799,21 @@ class EMSegTab(QtWidgets.QWidget):
 				annotation_out += num*(self.target.get_full_annotation().process("threshold.binaryrange",{"high":num+0.1,"low":num-0.1}))
 			else:
 				annotation_out += (self.target.get_full_annotation().process("threshold.binaryrange",{"high":num+0.1,"low":num-0.1}))
+
 			nums.append(num)
 			names.append(str(self.table_set.item(row,1).text()))
-		name_str=names[0]+""
-		#for i in range(1,len(names)):
-			#name_str = name_str + "," + names[i]
-		serialize_name = json.dumps(names, default=lambda a: "[%s,%s]" % (str(type(a)), a.pk))
-		annotation_out["ann_name"] = serialize_name
-		annotation_out["ann_num"] = nums
-		annotation_out.write_image(out_name)
-		print("Annotation is saved to", out_name)
-		return
+		if ret:
+			return annotation_out
+		else:
+			name_str=names[0]+""
+			#for i in range(1,len(names)):
+				#name_str = name_str + "," + names[i]
+			serialize_name = json.dumps(names, default=lambda a: "[%s,%s]" % (str(type(a)), a.pk))
+			annotation_out["ann_name"] = serialize_name
+			annotation_out["ann_num"] = nums
+			annotation_out.write_image(out_name)
+			print("Annotation is saved to", out_name)
+			return
 
 	def append_ann(self):
 		#Initiate loading an annotation file to append on the current annotation
@@ -2767,7 +2907,16 @@ class EMSegTab(QtWidgets.QWidget):
 			self.table_set.item(i,0).setFlags(self.indexflags)
 			self.table_set.item(i,1).setFlags(self.itemflags)
 			self.table_set.item(i,0).setForeground(self.colors[key])
-			self.table_set.item(i,1).setForeground(self.colors[key])
+			#self.table_set.item(i,1).setForeground(self.colors[key])
+			group_key = int(self.table_set.item(i,2).text())
+			self.table_set.item(i,2).setFlags(self.indexflags)
+			if group_key != -1:
+				self.table_set.item(i,1).setForeground(self.colors[group_key+100])
+				self.table_set.item(i,2).setForeground(self.colors[group_key+100])
+			else:
+				self.table_set.item(i,1).setForeground(self.colors[key])
+				self.table_set.item(i,2).setForeground(QtGui.QColor.fromRgb(120,120,120))
+
 
 	def read_header(self,file_in,ret = False):
 		#Read the header information from annotation file
@@ -2786,22 +2935,64 @@ class EMSegTab(QtWidgets.QWidget):
 					self.add_new_row(key,value)
 				self.update_sets()
 		except:
-		# 	#print("Trouble reading headers information. Continue...")
-		 	pass
+			#print("Trouble reading headers information. Continue...")
+			pass
 
 
 
 
 
-	def add_new_row(self,num,name):
+	def add_new_row(self,num,name,group_num=-1):
 		#Add a new row to the table set
 		row = self.table_set.rowCount()
 		self.table_set.insertRow(row)
 		self.table_set.setItem(row,0, QtWidgets.QTableWidgetItem(str(num)))
 		self.table_set.setItem(row,1, QtWidgets.QTableWidgetItem(name))
+		self.table_set.setItem(row,2, QtWidgets.QTableWidgetItem(str(group_num)))
+
+
+
+
+
+class Node():
+	def __init__(self, index, value, parent = None ):
+		self.index = index
+		self.og_value = value
+		self.value = value
+		self.parent = parent
+		if self.parent:
+			self.value = self.parent.get_value()
+		self.children = []
+	def get_value(self):
+		return self.value
+	def add_child(self,child):
+		child.adopt_parent(self)
+		self.children.append(child)
+	def adopt_parent(self,parent):
+		self.parent = parent
+		self.value = self.parent.get_value()
+		for child in self.children:
+			child.value = self.parent.get_value()
+	def make_orphan(self):
+		self.parent = None
+		self.value = self.og_value
+		for child in self.children:
+			child.value = self.get_value()
+	def print_tree(self):
+		if self.index == -1:
+			print("Node is marked for deletion")
+			return
+		elif self.parent:
+			print("Parent:", self.parent.index)
+		else:
+			print("Parent:None")
+		print("Self:",self.index)
+		print("Children:",[child.index for child in self.children])
 
 
 # This is just for testing, of course
+
+
 def main():
 	from eman2_gui.emapplication import EMApp
 	em_app = EMApp()
@@ -2809,9 +3000,15 @@ def main():
 
 	if len(sys.argv)==1 :
 		window.set_data(test_image(size=(512,512)))
-	else :
+	elif len(sys.argv)==3:
+		a=EMData(sys.argv[1])
+		b=EMData(sys.argv[2])
+		window.set_data(a,b)
+	else:
 		a=EMData(sys.argv[1])
 		window.set_data(a,None)
+
+
 
 	em_app.show()
 	window.optimally_resize()

@@ -46,7 +46,7 @@ def main():
 	start = time.perf_counter()
 
 	usage = """
-			This program produces orthogonal projections of an EM volume.
+			This program produces orthogonal projections from a 3D EM image/volume.
 			
 			e2orthoproject.py <options> . 
 			The options should be supplied in "--option=value", replacing "option" for a valid option name, and "value" for an acceptable value for that option. 

@@ -5,12 +5,17 @@ import numpy as np
 
 def main():
 	
-	usage=" "
+	usage="""
+	Merge results from multiple focused refinement runs with different masks. For example, when you have a global refinement in gmm_00, and focused refinement in gmm_01 and gmm_02 using differnet masks, run
+	e2gmm_merge_patch.py gmm_01 gmm_02 --base gmm_00
+	
+	The result will be labeled iteraton 99 in the base folder.
+	This is also called automatically by the patch-by-patch refinement.
+	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--base", type=str, help="path of the global refinement. required for merging multiple folders",default=None)
 	parser.add_argument("--sym", type=str, help="",default="c1")
 	parser.add_argument("--skippp", action="store_true", default=False ,help="skip post process")
-
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	(options, args) = parser.parse_args()
 	
