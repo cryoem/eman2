@@ -66,6 +66,7 @@ def main():
 	parser.add_argument("--basisrefs",default=None,type=str,help="Will use a set of existing class-averages/projections to generate the Eigenbasis for classification. This must be an image stack with the same dimensions as the particle data.")
 	parser.add_argument("--normproj", default=False, action="store_true",help="Normalizes each projected vector into the MSA subspace. Note that this is different from normalizing the input images since the subspace is not expected to fully span the image", guitype='boolbox', row=1, col=2, rowspan=1, colspan=1, mode="spr[True]")
 #	parser.add_argument("--fastseed", action="store_true", default=False,help="Will seed the k-means loop quickly, but may produce less consistent results. Always use this when generating >~100 classes.",guitype='boolbox', row=1, col=2, rowspan=1, colspan=1, mode="spr[True]")
+	parser.add_argument("--outlierclass", action="store_true", default=False,help="Will turn the last class into a special class to collect outliers regardless of location",guitype='boolbox', row=1, col=2, rowspan=1, colspan=1, mode="spr[False]")
 	parser.add_argument("--iter", type=int, default=0, help = "The total number of refinement iterations to perform")  #, guitype='intbox', row=2, col=0, rowspan=1, colspan=1, mode="spr")
 	parser.add_argument("--nbasisfp",type=int,default=8,help="Number of MSA basis vectors to use when classifying particles", guitype='intbox', row=2, col=1, rowspan=1, colspan=1, mode="spr")
 #	parser.add_argument("--automask",default=False, action="store_true",help="Automasking during class-averaging to help with centering when particle density is high",guitype="boolbox", row=2,col=2,rowspan=1,colspan=1,mode="spr")
@@ -200,7 +201,7 @@ def main():
 	if logid : E2progress(logid,old_div(proc_tally,total_procs))
 
 	# Classification
-	run("e2classifykmeans.py %s --original %s --mininclass 3 --outlierclass --ncls %d --clsmx %s/classmx_00.hdf --onein --fastseed --axes 0-%d"%(inputproj,options.input,options.ncls,options.path,options.nbasisfp-1))
+	run("e2classifykmeans.py %s --original %s --mininclass 3 %s --ncls %d --clsmx %s/classmx_00.hdf --onein --fastseed --axes 0-%d"%(inputproj,options.input,"--outlierclass" if options.outlierclass else "",options.ncls,options.path,options.nbasisfp-1))
 
 	proc_tally += 1.0
 	if logid : E2progress(logid,old_div(proc_tally,total_procs))
@@ -231,7 +232,7 @@ def main():
 		#if logid : E2progress(logid,proc_tally/total_procs)
 
 		# Classification
-		run("e2classifykmeans.py %s/basis_proj_%02d.hdf --original=%s --mininclass 3 --outlierclass --ncls=%d --clsmx=%s/classmx_%02d.hdf --onein --fastseed"%(options.path,it,options.input,options.ncls,options.path,it))
+		run("e2classifykmeans.py %s/basis_proj_%02d.hdf --original=%s --mininclass 3 %s --ncls=%d --clsmx=%s/classmx_%02d.hdf --onein --fastseed"%(options.path,it,options.input,"--outlierclass" if options.outlierclass else "",options.ncls,options.path,it))
 		proc_tally += 1.0
 		if logid : E2progress(logid,old_div(proc_tally,total_procs))
 

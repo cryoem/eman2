@@ -174,6 +174,7 @@ def main():
 			if options.resample : ptcls=[random.choice(ptcls) for i in ptcls]	# this implements bootstrap resampling of the class-average
 			if options.odd : ptcls=[i for i in ptcls if i%2==1]
 			if options.even: ptcls=[i for i in ptcls if i%2==0]
+#			print(cl,ptcls[:10])
 			tasks.append(ClassAvTask(options.input,ptcls,options.usefilt,options.ref,options.focused,options.iter,options.normproc,options.prefilt,
 			  options.align,options.aligncmp,options.ralign,options.raligncmp,options.averager,options.cmp,options.keep,options.keepsig,
 			  options.automask,options.saveali,options.setsfref,options.verbose,cl,options.center))
