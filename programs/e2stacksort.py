@@ -344,6 +344,7 @@ def sortstack(stack,stack2,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,c
 	rets=[stackshrink[0]]
 	del stack[0]
 	del stackshrink[0]
+	if ret2 is not None: del stack2[0]
 	while (len(stack)>0 and len(ret)<nsort) :
 		best=(1.0e38,-1)
 		for i,ims in enumerate(stackshrink):
@@ -359,7 +360,7 @@ def sortstack(stack,stack2,cmptype,cmpopts,align,alignopts,nsort,shrink,useali,c
 		else :
 			ret.append(stack[best[1]])
 			rets.append(stackshrink[best[1]])
-		if stack2:
+		if ret2 is not None:
 			ret2.append(stack2[best[1]])
 			del stack2[best[1]]
 		del stack[best[1]]
