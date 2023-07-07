@@ -82,7 +82,7 @@ def main():
 			break
 			
 	run(f"e2project3d.py {fname} --outfile {fname[:-4]}_tmp_projection.hdf --orientgen=eman:delta=4 --parallel=thread:16")
-	run(f"e2gmm_refine_new.py --ptclsin {fname[:-4]}_tmp_projection.hdf --model {pdbname} --maxres {options.maxres} --minres {options.minres} --modelout {gmmname} --niter 20 --trainmodel --evalmodel {fname[:-4]}_tmp_model_projections.hdf --learnrate 1e-5")
+	run(f"e2gmm_refine_new.py --ptclsin {fname[:-4]}_tmp_projection.hdf --model {pdbname} --maxres {options.maxres} --minres {options.minres} --modelout {gmmname} --niter 40 --trainmodel --evalmodel {fname[:-4]}_tmp_model_projections.hdf --learnrate 1e-5")
 	run(f"e2spa_make3d.py --input {fname[:-4]}_tmp_model_projections.hdf --output {avgname} --thread 32")
 	run(f"e2proc3d.py {avgname} {avgname} --process mask.soft:outer_radius=-16 --matchto {fname}")
 	run(f"e2proc3d.py {avgname} {fscname} --calcfsc {fname}")

@@ -30,6 +30,7 @@ def main():
 	parser.add_argument("--maxres", type=float,help="max resolution to consider in refinement. i.e. the alignment will not use information beyond this even if FSC goes further.", default=-1)
 	parser.add_argument("--npt", type=int,help="number of Gaussian function in the GMM. Ignored when --initpts is provided", default=2000)
 	parser.add_argument("--mask", type=str,help="mask file applied to the GMM after each iteration. The mask can apply to amplitude or sigma depending on the --maskamp or --masksigma options.", default=None)
+	parser.add_argument("--tophat", type=str,help="tophat filter for post process.", default="localwiener")
 	parser.add_argument("--expandsym", type=str,help="symmetry expansion. i.e. start from an input refinement with the given symmetry and perform the new refinement with c1 by making copies of each particle at symmetrical equivalent positions.", default=None)
 	parser.add_argument("--masksigma", action="store_true", default=False ,help="mask the sigma of Gaussian using --mask")
 	parser.add_argument("--maskamp", action="store_true", default=False ,help="mask the amplitude of Gaussian using --mask")
@@ -162,7 +163,7 @@ def main():
 			
 			#run(f"e2proc3d.py {path}/threed_{itr:02d}_{eo}.hdf {path}/threed_{itr:02d}_{eo}.hdf --multfile mask_foc0_soft.hdf")
 			
-		run(f"e2refine_postprocess.py --even {path}/threed_{itr:02d}_even.hdf --res {res} --tophat localwiener --sym {options.sym} --thread 32 --setsf sf.txt --align  {etcpp}")
+		run(f"e2refine_postprocess.py --even {path}/threed_{itr:02d}_even.hdf --res {res} --tophat {options.tophat} --sym {options.sym} --thread 32 --setsf sf.txt --align  {etcpp}")
 		
 		fsc=np.loadtxt("{}/fsc_maskedtight_{:02d}.txt".format(options.path, itr))
 		fi=fsc[:,1]<0.1
