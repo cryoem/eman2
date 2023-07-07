@@ -26,6 +26,8 @@ def main():
 	enc=find_option(cmd, "--encoderout")
 	midout=find_option(cmd, "--midout")
 	citer=find_option(cmd, "--niter")
+	diter=find_option(cmd, "--retraindec")
+	learnrate=find_option(cmd, "--learnrate")
 	path=pname[:pname.rfind('/')+1]
 	batch=options.batch
 	print("Writing tmp files in ",path)
@@ -34,6 +36,7 @@ def main():
 	for rawiter in range(options.niter+1):
 		if midout and rawiter==options.niter:
 			rawcmd=rawcmd.replace(f"--niter {citer}", "--niter 0")
+			rawcmd=rawcmd.replace(f"--learnrate {learnrate}", "--learnrate 0")
 			
 		lst=load_lst_params(pname)
 		print(f"List input {pname}, with {len(lst)} particles")

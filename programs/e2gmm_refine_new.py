@@ -1258,6 +1258,196 @@ def calc_gradient(trainset, pts, params, options):
 	return allscr, allgrds
 	
 #### train the conformation manifold from particles
+def train_heterg_deconly(dcpx, xfsnp, allconf, pts, decode_model, params, imsk, options):
+	
+	npt=pts.shape[1]
+	pas=[int(i) for i in options.pas]
+	pas=tf.constant(np.array([pas[0],pas[0],pas[0],pas[1],pas[2]], dtype=floattype))
+	
+	wts=decode_model.trainable_variables
+	if options.anchor:
+		wts=wts[:-1]
+	
+	if options.bond:
+		bond=np.loadtxt(options.bond).astype(int)
+		print("Using bond constraints. {} bonds loaded.".format(len(bond)))
+		pout=pts.numpy().copy()
+			
+		dst00=calc_bond(pout, bond)
+		d=dst00*options.apix*options.maxboxsz
+		print("Average bond distance {:.3f}, std {:.3f}".format(np.mean(d), np.std(d)))
+		
+		if options.hbond:
+			hbond=np.loadtxt(options.hbond).astype(int)
+			print("Load {} H-bonds".format(len(hbond)))
+			
+			hdst00=calc_bond(pout, hbond)
+			d=hdst00*options.apix*options.maxboxsz
+			print("Average H-bond distance {:.3f}, std {:.3f}".format(np.mean(d), np.std(d)))
+		
+		if options.angle:
+			angle=np.loadtxt(options.angle).astype(int)
+			ang00=calc_angle(pout, angle)
+			print("Using angle between bonds as constraints")
+			print("  {} angles between the bonds".format(len(angle)))
+			print("  average angle: {:.1f}, std {:.1f}".format(np.mean(ang00), np.std(ang00)))
+		
+		
+	nbatch=len(xfsnp)//options.batchsz
+	opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate)
+	## Training
+	allcost=[]
+	for itr in range(options.retraindec):
+		
+				
+		trainset=tf.data.Dataset.from_tensor_slices((allconf, dcpx[0], dcpx[1], xfsnp))
+		trainset=trainset.batch(options.batchsz)
+		
+		opt1=tf.keras.optimizers.Adam(learning_rate=1e-3)
+		cfstd=np.std(allconf)
+		print(itr, cfstd)
+		i=0
+		cost=[]
+		costetc=[]
+		testcost=[]
+		allconf1=[]
+		for cf,pjr,pji,xf in trainset:
+			pj_cpx=(pjr, pji)
+			conf0=tf.Variable(cf)
+			
+			for it in range(10):
+				with tf.GradientTape() as gt:
+					## from gradient input to the latent space
+					# conf=encode_model(grd, training=True)
+					
+					## perturb the conformation by a random value
+					## similar to the variational autoencoder,
+					## but we do not train the sigma of the random value here
+					## since we control the radius of latent space already, this seems enough
+					# conf=options.perturb*tf.random.normal(conf0.shape)+conf0
+					conf=0.05*cfstd*tf.random.normal(conf0.shape)+conf0
+					
+					## regularization of the latent layer range
+					## ideally the output is within a 1-radius circle
+					## but we want to make the contraint more soft so it won't affect convergence
+					cl=tf.math.sqrt(tf.reduce_sum(conf**2, axis=1))
+					cl=tf.reduce_mean(tf.maximum(cl-2,0))
+					cl+=tf.maximum(0,tf.math.reduce_std(conf)-.15)*.01
+					
+					
+					## mask out the target columns based on --pas
+					pout=decode_model(conf, training=True)
+					p0=tf.zeros((xf.shape[0],npt, 5))+pts
+					
+					l3=0
+					if options.rigidbody:
+						pout=rotpts(p0[:,:,:3], pout, imsk) 
+						pout=tf.concat([pout, p0[:,:,3:]], axis=2)
+						
+					else:
+						lmsk=(pout-p0)*(1-imsk[None,:,None]) 
+						# lmsk=tf.math.sqrt(tf.reduce_sum(lmsk**2, axis=2))
+						# lmsk=tf.reduce_sum(lmsk, axis=1)/tf.reduce_sum(1-imsk)
+						# lmsk=tf.reduce_mean(lmsk)
+						lmsk=tf.reduce_sum(lmsk**2)
+						l3+=lmsk
+						
+						## mask selected rows
+						pout=pout*imsk[None,:,None]+p0*(1-imsk[None,:,None]) 
+					
+					
+					lpas=(pout-p0)*(1-pas)
+					lpas=tf.reduce_sum(lpas**2)
+					l3+=lpas*.1
+					
+					pout=pout*pas+p0*(1-pas)
+					
+					## finally generate images and calculate frc
+					imgs_cpx=pts2img(pout, xf)
+					fval=calc_frc(pj_cpx, imgs_cpx, params["rings"], minpx=options.minpx, maxpx=options.maxpx)
+					loss=-tf.reduce_mean(fval)+cl*10
+					
+					
+					lossetc=0
+					if options.bond:
+						dst=calc_bond(pout, bond)
+						dr=(dst-dst00)*options.apix*options.maxboxsz
+						dr=tf.math.sqrt(tf.reduce_mean(dr**2))
+						lossetc+=dr*1
+						if options.hbond:
+							hdst=calc_bond(pout, hbond)
+							drh=(hdst-hdst00)*options.apix*options.maxboxsz
+							drh=tf.math.sqrt(tf.reduce_mean(drh**2))
+							lossetc+=drh*1
+						if options.angle:
+							ang=calc_angle(pout, angle)
+							da=tf.math.sqrt(tf.reduce_mean((ang-ang00)**2))
+							lossetc+=da*.1
+				
+					l=loss+lossetc*.005+l3*l3*options.regmask
+					
+					
+				if options.usetest==False or len(cost)<nbatch*.95:
+					cost.append(loss)
+					
+					if it%5==0:
+						grad=gt.gradient(l, wts)
+						opt.apply_gradients(zip(grad, wts))
+					else:
+						grad=gt.gradient(l, [conf0])
+						opt1.apply_gradients(zip(grad, [conf0]))
+					
+				else:
+					testcost.append(loss)
+			
+			allconf1.append(conf0.numpy())
+			etc=""
+			ce=[]
+			if options.bond:
+				etc+=f", bond {dr:.3f}"
+				ce.append(dr)
+				if options.hbond:
+					etc+=f", H-bond {drh:.4f}"
+					ce.append(drh)
+				if options.angle:
+					etc+=f", angle {da:.3f}"
+					ce.append(da)
+				ce.append(lossetc)
+					
+			if options.regmask>0: etc+=f", out of mask {l3:.4f}"
+			costetc.append(ce)
+			
+			i+=1
+			if i%10==0: 
+				sys.stdout.write("\r {}/{}\t{:.3f} {}         ".format(len(cost), nbatch*10, loss, etc))
+				sys.stdout.flush()
+			
+		sys.stdout.write("\r")
+		
+		
+		etc=""
+		if options.bond:
+			c=np.mean(costetc, axis=0)
+			etc+=f", bond {c[0]:.3f}"
+			if options.hbond:
+				etc+=f", H-bond {c[1]:.4f}"
+			if options.angle:
+				etc+=f", angle {c[2]:.3f}"
+			etc+=f", geometry  {c[3]:.3f}"
+			
+		if options.usetest:
+			print("iter {}, train loss : {:.6f}; test loss {:.4f}".format(itr, np.mean(cost), np.mean(testcost)))
+		else:
+			print("iter {}, loss : {:.6f} {}".format(itr, np.mean(cost), etc))
+		allcost.append(np.mean(cost))
+		allconf=np.vstack(allconf1)
+		# allconf=allconf/np.std(allconf)*.1
+		sv=np.hstack([np.arange(len(allconf))[:,None], allconf])
+		np.savetxt(options.midout[:-4]+f"_{itr:03d}.txt", sv)
+		
+	return allconf
+	
+#### train the conformation manifold from particles
 def train_heterg(trainset, pts, encode_model, decode_model, params, imsk, options):
 	npt=pts.shape[1]
 	pas=[int(i) for i in options.pas]
@@ -1529,6 +1719,8 @@ def main():
 	parser.add_argument("--angle", type=str,help="provide a text file of the angles to track", default=None)
 	parser.add_argument("--regmask", type=float,help="regularizer to enforce the structure to be unchanged outside the masked region. only useful if the mask need to be released at a later point. still under testing", default=0.0)
 	parser.add_argument("--usetest", action="store_true",help="use a separated test set and report loss. ", default=False)
+	parser.add_argument("--skipenc", action="store_true",help="skip the encoder training. ", default=False)
+	parser.add_argument("--retraindec", type=int,help="retrain decoder after heterogeneity training. ", default=-1)
 	parser.add_argument("--pmout", type=str,help="write options to file", default=None)
 	parser.add_argument("--phantompts", type=str,help="load extra phatom points for gradient calculation.", default=None)
 	parser.add_argument("--normgrad", action="store_true",help="normalize gradient columns also skip sigma column. ", default=False)
@@ -1697,7 +1889,13 @@ def main():
 			xfsnp, frcs=refine_align(dcpx, xfsnp, pts, options, lr=1e-3)
 			
 		save_ptcls_xform(xfsnp, raw_boxsz, options, frcs)
-
+	
+	useencoder=not options.skipenc
+	if not useencoder:
+		retraindec=options.retraindec=10
+	else:
+		retraindec=options.retraindec
+		
 	#### Heterogeneity analysis from particles	
 	if options.heter:
 		pts=tf.constant(pts[None,:,:])
@@ -1705,45 +1903,46 @@ def main():
 		dcpx=get_clip(data_cpx, params["sz"], clipid)
 		bsz=options.batchsz
 		
-		#### calculate d(FRC)/d(GMM) for each particle
-		##   this will be the input for the deep network in place of the particle images
-		trainset=tf.data.Dataset.from_tensor_slices((dcpx[0], dcpx[1], xfsnp))
-		trainset=trainset.batch(bsz)
-		if options.phantompts:
-			ppt=np.loadtxt(options.phantompts)
-			ppt=np.vstack([pts[0].numpy(), ppt])
-			ppt=tf.constant(ppt[None,:,:].astype(floattype))
-			allscr, allgrds=calc_gradient(trainset, ppt, params, options )
-		else:
-			
-			agd=[]
-			if options.maxgradres>0:
-				mbx=ceil(raw_boxsz*raw_apix*2/options.maxgradres)//2
-			else: 
-				mbx=options.maxpx
-				
-			for mpx in [mbx//2, mbx]:
-				options.maxpx=mpx
-				print(f"Fourier radius px {mpx}")
-				allscr, ag=calc_gradient(trainset, pts, params, options )
-				agd.append(ag)
-				
-			allgrds=np.concatenate(agd, axis=2)
-			print("Gradient shape: ", allgrds.shape) 
-			agd=ag=None
-			#allscr, allgrds=calc_gradient(trainset, pts, params, options )
-				
-		#### build deep networks and make sure they work
-		if options.encoderin:
-			encode_model=tf.keras.models.load_model(f"{options.encoderin}",compile=False,custom_objects={"ResidueConv2D":ResidueConv2D})
-		else:
-			if options.graphnet:
-				#encode_model,midshape=build_encoder_graph(pts, options)
-				encode_model=build_encoder(nout=options.nmid, conv=True,ninp=len(pts[0]))
-
+		if useencoder:
+			#### calculate d(FRC)/d(GMM) for each particle
+			##   this will be the input for the deep network in place of the particle images
+			trainset=tf.data.Dataset.from_tensor_slices((dcpx[0], dcpx[1], xfsnp))
+			trainset=trainset.batch(bsz)
+			if options.phantompts:
+				ppt=np.loadtxt(options.phantompts)
+				ppt=np.vstack([pts[0].numpy(), ppt])
+				ppt=tf.constant(ppt[None,:,:].astype(floattype))
+				allscr, allgrds=calc_gradient(trainset, ppt, params, options )
 			else:
-				encode_model=build_encoder(nout=options.nmid, conv=options.conv,ninp=len(pts[0]))
-			
+				maxpx0=options.maxpx
+				agd=[]
+				if options.maxgradres>0:
+					mbx=ceil(raw_boxsz*raw_apix*2/options.maxgradres)//2
+				else: 
+					mbx=options.maxpx
+					
+				for mpx in [mbx//2, mbx]:
+					options.maxpx=mpx
+					print(f"Fourier radius px {mpx}")
+					allscr, ag=calc_gradient(trainset, pts, params, options )
+					agd.append(ag)
+					
+				allgrds=np.concatenate(agd, axis=2)
+				print("Gradient shape: ", allgrds.shape) 
+				agd=ag=None
+				options.maxpx=maxpx0
+					
+			#### build deep networks and make sure they work
+			if options.encoderin:
+				encode_model=tf.keras.models.load_model(f"{options.encoderin}",compile=False,custom_objects={"ResidueConv2D":ResidueConv2D})
+			else:
+				if options.graphnet:
+					#encode_model,midshape=build_encoder_graph(pts, options)
+					encode_model=build_encoder(nout=options.nmid, conv=True,ninp=len(pts[0]))
+
+				else:
+					encode_model=build_encoder(nout=options.nmid, conv=options.conv,ninp=len(pts[0]))
+				
 		if options.anchor:
 			anchor=np.loadtxt(options.anchor)[:,:3]
 			anchor=tf.constant(anchor,dtype=floattype)
@@ -1760,43 +1959,64 @@ def main():
 				decode_model, declayers, ptpool=buid_decoder_graph(pts, options)
 			else:
 				decode_model=build_decoder(pts[0].numpy(), ninp=options.nmid, conv=options.conv,mid=options.ndense)
-		
-		print("Input shape: ",allgrds[:bsz].shape)
-		mid=encode_model(allgrds[:bsz])
-		print("Gaussian model shape: ",pts.shape)
+# 		
+		if useencoder:
+			print("Input shape: ",allgrds[:bsz].shape)
+			mid=encode_model(allgrds[:bsz])
+			print("Gaussian model shape: ",pts.shape)
+		else:
+			mid=np.zeros((bsz, options.nmid), dtype=floattype)
+			
 		print("Latent space shape: ", mid.shape)
 		out=decode_model(mid)
 		print("Output shape: ",out.shape)
 		#print("Deviation from neutral model: ", np.mean(abs(out-pts)))
 		
-		if options.niter>0:
+		if options.niter>0 or options.retraindec>0:
 			#### actual training
-			#ptclidx=allscr>-1
-			trainset=tf.data.Dataset.from_tensor_slices((allgrds, dcpx[0], dcpx[1], xfsnp))
-			trainset=trainset.batch(bsz)
 			
-			train_heterg(trainset, pts, encode_model, decode_model, params, imsk, options)
-			if options.graphnet:
-				for k in range(2,5):
-					print(f"#####\n graph network include {k} layers")
-					decode_model, l, p=buid_decoder_graph(pts, options, existlayer=declayers, kk=k, ptpool=ptpool)
-					if k==4: options.niter*=2
-					train_heterg(trainset, pts, encode_model, decode_model, params, imsk, options)
+			if useencoder:
+				trainset=tf.data.Dataset.from_tensor_slices((allgrds, dcpx[0], dcpx[1], xfsnp))
+				trainset=trainset.batch(bsz)
+				
+				train_heterg(trainset, pts, encode_model, decode_model, params, imsk, options)
+				if options.graphnet:
+					for k in range(2,5):
+						print(f"#####\n graph network include {k} layers")
+						decode_model, l, p=buid_decoder_graph(pts, options, existlayer=declayers, kk=k, ptpool=ptpool)
+						if k==4: options.niter*=2
+						train_heterg(trainset, pts, encode_model, decode_model, params, imsk, options)
+						
+				if options.encoderout!=None: 
+					if os.path.isfile(options.encoderout):
+						os.remove(options.encoderout)
+					encode_model.save(options.encoderout)
+					print("encoder saved as ",options.encoderout)
 					
+				
+				allconf=calc_conf(encode_model, allgrds, 1000)
+				
+			else:
+				allconf=np.zeros((len(xfsnp), options.nmid), dtype=floattype)
+				allconf+=tf.random.normal(allconf.shape)*0.01
+				
+			if retraindec:
+				allconf=train_heterg_deconly(dcpx, xfsnp, allconf, pts, decode_model, params, imsk, options)
+			
+				
 			if options.decoderout!=None: 
 				if os.path.isfile(options.decoderout):
 					os.remove(options.decoderout)
 				decode_model.save(options.decoderout)
 				print("Decoder saved as ",options.decoderout)
-			if options.encoderout!=None: 
-				if os.path.isfile(options.encoderout):
-					os.remove(options.encoderout)
-				encode_model.save(options.encoderout)
-				print("encoder saved as ",options.encoderout)
 			
 		## conformation output
 		if options.midout:
-			mid=calc_conf(encode_model, allgrds, 1000)
+			# if useencoder:
+			# 	mid=calc_conf(encode_model, allgrds, 1000)
+			# else:
+			mid=allconf.copy()
+			
 			sv=np.hstack([np.arange(len(mid))[:,None], mid])
 			print(mid.shape, sv.shape)
 			np.savetxt(options.midout, sv)
