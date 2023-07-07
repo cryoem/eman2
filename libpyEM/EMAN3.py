@@ -29,14 +29,8 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 #
-import traceback
-#traceback.print_stack()
 
-from past.utils import old_div
-from future import standard_library
-standard_library.install_aliases()
-from builtins import range
-from builtins import object
+#standard_library.install_aliases()  #not sure where this came from?
 import sys
 from math import *
 from sys import exit
@@ -50,8 +44,7 @@ import socket
 import subprocess
 from EMAN2_cppwrap import *
 from EMAN2_meta import *
-#import EMAN2db
-import EMAN2jsondb
+import EMAN3jsondb
 import argparse, copy
 import glob
 import random
@@ -62,7 +55,6 @@ import traceback
 from pathlib import Path
 
 import threading
-#from Sparx import *
 
 ### If we ever need to add 'cleanup' exit code, this is how to do it. Drawn from the old BDB code.
 ## if the program exits nicely, close all of the databases
@@ -121,7 +113,7 @@ except: pass
 #try:
 #import EMAN2db
 #from EMAN2db import EMAN2DB,db_open_dict,db_close_dict,db_remove_dict,db_list_dicts,db_check_dict,db_parse_path,db_convert_path,db_get_image_info,e2gethome, e2getcwd
-from EMAN2jsondb import JSDict,js_open_dict,js_close_dict,js_remove_dict,js_list_dicts,js_check_dict,js_one_key
+from EMAN3jsondb import JSDict,js_open_dict,js_close_dict,js_remove_dict,js_list_dicts,js_check_dict,js_one_key
 #except:
 #	HOMEDB=None
 
@@ -273,58 +265,54 @@ file_mode_range={
 class NotImplementedException(Exception):
 	def __init__(self,val=None): pass
 
-def E2init(argv, ppid=-1) :
-	"""E2init(argv)
+def E3init(argv, ppid=-1) :
+	"""E3init(argv)
 This function is called to log information about the current job to the local logfile. The flags stored for each process
 are pid, start, args, progress and end. progress is from 0.0-1.0 and may or may not be updated. end is not set until the process
 is complete. If the process is killed, 'end' may never be set."""
 
 	# We go to the end of the file. Record the location, then write a fixed length string
 	try:
-		hist=open(".eman2log.txt","r+")
+		hist=open(".eman3log.txt","r+")
 		hist.seek(0,os.SEEK_END)
 	except:
-		try: hist=open(".eman2log.txt","w")
+		try: hist=open(".eman3log.txt","w")
 		except: return -1
 	n=hist.tell()
-	hist.write("%s\tincomplete         \t%6d/%6d\t%s\t%s\n"%(local_datetime(),os.getpid(),ppid,socket.gethostname()," ".join(argv)))
+	hist.write(f"{local_datetime()}\t{'0':19s}\t{'-':11s}\t{os.getpid()}/{ppid}\t{socket.gethostname()}\t{' '.join(argv)}\n")
 
-#	hist.flush()
 	hist.close()
-
-	#if EMAN2db.BDB_CACHE_DISABLE :
-		#print "Note: Cache disabled"
 
 	return n
 
-def E2progress(n,progress):
+def E3progress(n,progress):
 	"""Updates the progress fraction (0.0-1.0) for a running job. Negative values may optionally be
 set to indicate an error exit."""
 #	if EMAN2db.BDB_CACHE_DISABLE : return		# THIS MUST REMAIN DISABLED NOW THAT THE CACHE IS DISABLED PERMANENTLY !!!
 
 	try:
-		hist=open(".eman2log.txt","r+")
+		hist=open(".eman3log.txt","r+")
 		hist.seek(n+20)
 	except:
 		return -1
-	hist.write("%3d%%         "%(int(progress*100.0)))
+	hist.write(f"{int(progress*100.0):19.0f}")
 #	hist.flush()
 	hist.close()
 
 	return n
 
-def E2end(n):
-	"""E2end(n)
-This function is called to log the end of the current job. n is returned by E2init"""
-#	if EMAN2db.BDB_CACHE_DISABLE : return		# THIS MUST REMAIN DISABLED NOW THAT THE CACHE IS DISABLED PERMANENTLY !!!
-
+def E3end(n):
+	"""E3end(n)
+This function is called to log the end of the current job. n is returned by E3init"""
 	try:
-		hist=open(".eman2log.txt","r+")
-		hist.seek(n+20)
+		hist=open(".eman3log.txt","r+")
+		hist.seek(n)
+		start=hist.read(19)
+		hist.read(1)
+		end=local_datetime()
 	except:
 		return -1
-	hist.write("%s"%(local_datetime()))
-#	hist.flush()
+	hist.write(f"{end:19s}\t{timestamp_diff(start,end):11d}")
 	hist.close()
 
 	return n
@@ -1742,7 +1730,6 @@ def local_datetime(secs=-1):
 	if secs<0 : secs=time.time()
 	t=localtime(secs)
 	return strftime("%Y/%m/%d %H:%M:%S",t)
-#	return "%04d/%02d/%02d %02d:%02d:%02d"%t[:6]
 
 def timestamp_diff(t1,t2):
 	"""Takes two timestamps in local_datetime() format and subtracts them, result in seconds.
@@ -2566,7 +2553,7 @@ jsondict : optional string in JSON format or a JSON compatible dictionary. value
 			if not isinstance(jsondict,dict) and jsondict!=None: 
 				jsondict={"__default__":jsondict}
 			if jsondict!=None:
-				jss=json.dumps(jsondict,indent=None,sort_keys=True,separators=(',',':'),default=EMAN2jsondb.obj_to_json)			
+				jss=json.dumps(jsondict,indent=None,sort_keys=True,separators=(',',':'),default=EMAN3jsondb.obj_to_json)
 				outln="{}\t{}\t{}".format(nextfile,extfile,jss)
 			else: outln="{}\t{}".format(nextfile,extfile)
 			
@@ -2603,7 +2590,7 @@ and translate them into a dictionary."""
 			raise(Exception)
 		if len(ln[2])<2: ln[2]={}
 		else:
-			try: ln[2]=json.loads(ln[2],object_hook=EMAN2jsondb.json_to_obj)
+			try: ln[2]=json.loads(ln[2],object_hook=EMAN3jsondb.json_to_obj)
 			except:
 				if self.filekeys!=None:
 					vals=ln[2].split(";")

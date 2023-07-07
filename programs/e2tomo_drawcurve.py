@@ -27,7 +27,7 @@ def main():
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
-	
+
 
 	app = EMApp()
 
@@ -51,10 +51,10 @@ class Contour(EMShape):
 		self.triangles=[]
 		self.select=0
 		self.classid=0
-		
-		
-	
-		
+
+
+
+
 
 	def add_point(self, newpt=[], newcontour=False, optimize=True):
 
@@ -80,7 +80,7 @@ class Contour(EMShape):
 			else:
 				thr=1000.
 				newpt=np.array([newpt[0], newpt[1], zpos])
-			
+
 
 			if len(newpt)>0:
 				#### add a point
@@ -109,7 +109,7 @@ class Contour(EMShape):
 			#idx=np.where(pts[:,3]==ci)[0]
 			pp=pts.copy()
 			path=np.arange(len(pp), dtype=int)
-		
+
 			dmat=scipydist.squareform(scipydist.pdist(pp))
 			dmat+=np.eye(len(dmat))*thr
 			if len(pp)>=3:
@@ -157,7 +157,7 @@ class Contour(EMShape):
 	def draw(self,d2s=None,col=None):
 		zpos=self.image.list_idx
 		curpts=[p for p in self.points if p[4]==self.classid]
-		
+
 		#print np.array(self.points)
 		#print "#########"
 
@@ -227,7 +227,7 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 		self.imgview = EMImage2DWidget()
 		self.setCentralWidget(QtWidgets.QWidget())
 		self.gbl = QtWidgets.QGridLayout(self.centralWidget())
-		
+
 		self.lb_txt0=QtWidgets.QLabel("ClassID")
 		self.gbl.addWidget(self.lb_txt0, 0,0,1,1)
 		self.classidbox=QtWidgets.QSpinBox()
@@ -235,32 +235,32 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 		self.classidbox.setMaximum(5)
 		self.classidbox.setValue(0)
 		self.gbl.addWidget(self.classidbox, 0,1,1,1)
-		
+
 		self.lb_lines=QtWidgets.QLabel("")
 		self.lb_lines.setWordWrap(True)
 		self.gbl.addWidget(self.lb_lines, 1,0,1,2)
-		
-		
+
+
 		self.bt_showimg=QtWidgets.QPushButton("Show tomogram")
 		self.bt_showimg.setToolTip("Show tomogram window")
 		self.gbl.addWidget(self.bt_showimg, 2,0,1,2)
-		
+
 		self.bt_savepdb=QtWidgets.QPushButton("Save PDB")
 		self.bt_savepdb.setToolTip("Save curves as PDB")
 		self.gbl.addWidget(self.bt_savepdb, 3,0,1,2)
-		
+
 		self.bt_clear=QtWidgets.QPushButton("Clear")
 		self.bt_clear.setToolTip("Clear all points")
 		self.gbl.addWidget(self.bt_clear, 4,0,1,2)
-		
+
 		self.bt_interp=QtWidgets.QPushButton("Interpolate")
 		self.bt_interp.setToolTip("Interpolate points")
 		self.gbl.addWidget(self.bt_interp, 5,0,1,1)
-		
+
 		self.tx_interp=QtWidgets.QLineEdit(self)
 		self.tx_interp.setText("20")
 		self.gbl.addWidget(self.tx_interp, 5,1,1,1)
-		
+
 		self.classidbox.valueChanged[int].connect(self.classid_change)
 		self.bt_showimg.clicked[bool].connect(self.show_tomo)
 		self.bt_savepdb.clicked[bool].connect(self.save_pdb)
@@ -271,8 +271,8 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 		self.options=options
 		self.app=weakref.ref(application)
 		self.do_optimize=not options.nooptimize
-		
-		
+
+
 		self.datafile=datafile
 		self.data=EMData(datafile)
 		self.imgview.setWindowTitle(base_name(datafile))
@@ -282,7 +282,7 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 		self.infofile=info_name(datafile)
 
 
-		
+
 		pts=[]
 		self.apix_scale=1
 		self.tomocenter=np.zeros(3)
@@ -293,19 +293,19 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 			apix_unbin=js["apix_unbin"]
 			self.apix_scale=apix_cur/apix_unbin
 			self.tomocenter= np.array([self.data["nx"],self.data["ny"],self.data["nz"]])/2
-		
-			
+
+
 		if js.has_key("curves") and len(js["curves"])>0:
 			pts=np.array(js["curves"]).copy()
 			if len(pts[0])<5:
 				pts=np.hstack([pts, np.zeros((len(pts),1))])
 			pts[:,:3]=pts[:,:3]/self.apix_scale + self.tomocenter
 			pts=pts.tolist()
-				
+
 		else:
 			pts=[]
 		js.close()
-		
+
 		self.contour=Contour(img=self.imgview, points=pts )
 		self.shape_index = 0
 		self.imgview.shapes = {0:self.contour}
@@ -323,7 +323,7 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 
 	def update_label(self):
 		pts=np.array([p for p in self.contour.points if p[4]==self.contour.classid])
-		
+
 		if len(pts)==0:
 			return
 		lb=np.unique(pts[:,3])
@@ -336,34 +336,34 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 		idx=int(self.classidbox.value())
 		self.contour.classid=idx
 		self.do_update()
-		
-		
+
+
 	def show_tomo(self):
 		self.imgview.show()
-		
+
 	def save_pdb(self):
 		pts=np.array([p for p in self.contour.points if p[4]==self.contour.classid])
 		if len(pts)==0:
 			return
-		
+
 		filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Save PDB', os.getcwd(), "(*.pdb)")[0]
 		numpy2pdb(data=pts[:,:3], fname=filename, chainid=pts[:,3])
-	
+
 	def interp_points(self):
 		nppts=np.array(self.contour.points)
 		sel=nppts[:,4]==self.contour.classid
 		pts=nppts[sel].copy()
 		otherpts=nppts[sel==False].copy()
-		
+
 		if len(pts)==0:
 			return
-		
+
 		try:
 			density=float(self.tx_interp.text())
-			print("Interpolate to one points per {:.1f} pixel...".format(density))
+			print("Interpolate Hahahaha to one points per {:.1f} pixel...".format(density))
 		except:
 			return
-			
+
 		pts_intp=[]
 		kk=0
 		for li in np.unique(pts[:,3]):
@@ -376,16 +376,16 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 			if len(pt)<2: continue
 			#print len(pt), ln
 			ipt=interp_points(pt, npt=np.round(ln)//density)
-			
+
 			pts_intp.append(np.hstack([ipt, kk+np.zeros((len(ipt), 1)), self.contour.classid+np.zeros((len(ipt), 1))]))
 			kk+=1
-		
+
 		pts_intp=np.vstack(pts_intp)
 		self.contour.points=otherpts.tolist()
 		self.contour.points.extend(pts_intp.tolist())
 		self.do_update()
 		self.save_points()
-		
+
 	def save_points(self):
 		js=js_open_dict(self.infofile)
 		if self.apix_scale==0:
@@ -395,29 +395,29 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 			if len(pts)>0:
 				pts[:,:3]=(pts[:,:3]- self.tomocenter) * self.apix_scale
 			js["curves"]=pts.tolist()
-			
+
 		js.close()
-		
-		
+
+
 	def key_press(self, event):
 		#print(event.key())
 		if event.key()==96:
 			self.imgview.increment_list_data(1)
 			self.do_update()
-		elif event.key()==49:	
+		elif event.key()==49:
 			self.imgview.increment_list_data(-1)
 			self.do_update()
 		return
 
 	def clear_points(self):
-		choice = QtWidgets.QMessageBox.question(self, 'Clear points', 
+		choice = QtWidgets.QMessageBox.question(self, 'Clear points',
 			'Clear all points in the tomogram?', QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
 		if choice == QtWidgets.QMessageBox.Yes:
 			self.contour.points=[]
-		
+
 		self.do_update()
 		self.save_points()
-		
+
 		return
 
 	def on_mouseup(self, event):
@@ -457,15 +457,15 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 		else:
 			#### add point
 			self.contour.add_point([x, y], optimize=self.do_optimize) #, self.imgview.list_idx
-		
+
 		self.do_update()
 		self.save_points()
-	
+
 	def do_update(self):
 		self.imgview.shapechange=1
 		self.update_label()
 		self.imgview.updateGL()
-		
+
 	def closeEvent(self, event):
 		self.imgview.close()
 

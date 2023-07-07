@@ -21,8 +21,8 @@ if ('-h' in sys.argv) or ('--help' in sys.argv):
 	tf.function=lambda f: f
 	print("Printing help. Skip tensorflow import")
 else:
-	import tensorflow as tf
 	import h5py
+	import tensorflow as tf
 
 def main():
 

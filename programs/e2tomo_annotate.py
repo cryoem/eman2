@@ -102,6 +102,13 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		except OSError as error:
 			print("Directory",self.seg_folder,"already existed. Continue")
 			pass
+		try:
+			os.mkdir(os.path.join(self.seg_folder,'info'))
+			print("Info folder is created" )
+		except OSError as error:
+			print("Info folder already existed. Continue")
+			pass
+
 
 		self.tomogram_list = QtWidgets.QListWidget()
 		self.tom_file_list = []
@@ -121,6 +128,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.nx = hdr["nx"]
 		self.ny = hdr["ny"]
 		self.nz=hdr["nz"]
+		#print('Nz',self.nz)
 		#self.nz=256
 
 		#TODO
@@ -136,6 +144,17 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		else:
 			print("Seg file for the first one already exists. Continue ")
 			pass
+
+		self.seg_info_path = os.path.join(self.seg_folder,'info',self.tomogram_list.item(0).text()[0:-4]+"_seg_info.json")
+		try:
+			f = open(self.seg_info_path, 'x')
+		except:
+			print("Info file for the first one already exists. Continue ")
+
+
+		# 	pass
+
+
 
 		#print("Nz ,iz",hdr["nz"],iz)
 		# info=js_open_dict("info/annotate_"+self.tomogram_list.item(0).text()+".json")
@@ -195,7 +214,9 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 
 		self.thumbnail = Thumbnail(current_file=self.data_file,target=self.img_view,app_target=self,tn_size=self.thumbnail_size)
-		self.thumbnail.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
+		#self.thumbnail.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
+		self.thumbnail.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
+
 		self.thumbnail.setMinimumSize(self.thumbnail_size, self.thumbnail_size)
 		try:
 			self.thumbnail.set_im()
@@ -203,6 +224,8 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			pass
 
 		self.img_view_inspector = self.img_view.get_inspector()
+		self.update_tree_set()
+
 		self.tomo_list_panel=QtWidgets.QWidget()
 		tomo_vbl = QtWidgets.QGridLayout()
 		tomo_vbl.addWidget(QtWidgets.QLabel("Tomograms"),0,0)
@@ -212,12 +235,24 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		tomo_vbl.setRowStretch(3,1)
 		tomo_vbl.addWidget(self.thumbnail,2,0)
 		zt_hbl = QtWidgets.QHBoxLayout()
-		zt_hbl.addWidget(QtWidgets.QLabel("Z-thickness"))
-		self.zt_spinbox = QtWidgets.QSpinBox(self)
+
+		self.zt_spinbox = QtWidgets.QSpinBox()
 		self.zt_spinbox.setValue(-1)
 		self.zt_spinbox.setMinimum(-1)
-		self.zt_spinbox.setMaximum(self.nz//2)
+		#self.zt_spinbox.setMaximum(self.get_nz()//2)
+		self.zc_spinbox = QtWidgets.QSpinBox()
+
+		self.zc_spinbox.setValue(self.get_nz()//2)
+		self.zc_spinbox.setMinimum(0)
+		#self.zc_spinbox.setMaximum(self.get_nz())
+		zt_hbl.addWidget(QtWidgets.QLabel("cen:"))
+		zt_hbl.addWidget(self.zc_spinbox)
+		zt_hbl.addWidget(QtWidgets.QLabel("thk:"))
 		zt_hbl.addWidget(self.zt_spinbox)
+
+
+
+
 		tomo_vbl.addLayout(zt_hbl,3,0)
 		self.tomo_list_panel.setLayout(tomo_vbl)
 		self.tomo_list_panel.setWindowTitle("Tomograms")
@@ -387,7 +422,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 
 		self.test_button = QtWidgets.QPushButton("Test Button")
-		self.button_gbl.addWidget(self.test_button,6,0,1,1)
+		#self.button_gbl.addWidget(self.test_button,6,0,1,1)
 
 		inspector_vbl = QtWidgets.QVBoxLayout()
 		inspector_vbl.addWidget(QtWidgets.QLabel("Manual Annotate Tools"))
@@ -426,7 +461,8 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.img_view.keypress.connect(self.key_press)
 		#self.img_view.mousewheel.connect(self.img_view_wheel_event)
 		self.img_view.mousedrag.connect(self.img_view_mouse_drag)
-		self.zt_spinbox.valueChanged.connect(self.zt_spinbox_changed)
+		self.zt_spinbox.valueChanged.connect(self.z_spinbox_changed)
+		self.zc_spinbox.valueChanged.connect(self.z_spinbox_changed)
 		self.previous_z = self.get_zpos()
 
 		E2loadappwin("e2annotate","main",self)
@@ -455,6 +491,14 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		return self.img_view.get_full_annotation()
 	def get_inspector(self):
 		return self.img_view_inspector
+
+	def get_segtab(self):
+		return self.img_view_inspector.seg_tab
+
+	def get_treeset(self):
+		return self.get_segtab().tree_set
+
+
 
 	def zchange(self,value):
 		print(value)
@@ -512,10 +556,14 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.nx=hdr["nx"]
 		self.ny=hdr["ny"]
 		self.nz=hdr["nz"]
+		print('Nz',self.nz)
 
-		row_count = self.get_inspector().seg_tab.table_set.rowCount()
-		for i in range(row_count):
-			self.get_inspector().seg_tab.table_set.removeRow(row_count - i - 1)
+		# row_count = self.get_inspector().seg_tab.table_set.rowCount()
+		# for i in range(row_count):
+		# 	self.get_inspector().seg_tab.table_set.removeRow(row_count - i - 1)
+		self.get_inspector().seg_tab.write_treeset_json(self.seg_info_path)
+		self.get_treeset().clear()
+
 
 		seg_path = os.path.join(self.seg_folder,self.tomogram_list.item(int).text()[0:-4]+"_seg.hdf")
 		if not os.path.isfile(seg_path):
@@ -526,10 +574,23 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		else:
 			print("Seg file for tomogram {} already exists. Continue ".format(self.tomogram_list.item(int).text()))
 			pass
+
+		seg_info_path = os.path.join(self.seg_folder,'info',self.tomogram_list.item(int).text()[0:-4]+"_seg_info.json")
+		# if not os.path.isfile(seg_info_path):
+		# 	with open(seg_info_path, 'w') as fp:
+		# 		pass
+		# else:
+		# 	print("Info file for the current one already exists. Continue ")
+		# 	pass
+		try:
+			fp = open(seg_info_path, 'x')
+		except:
+			print("Info file for the current one already exists. Continue ")
+			# 	pass
+
+
 		self.zt_spinbox.setMaximum(self.nz//2)
 		#self.data = EMData(self.data_file)
-
-
 		self.thumbnail.get_im(self.data_file)
 		self.thumbnail.set_im()
 		self.clear_shapes()
@@ -544,13 +605,23 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			#self.write_header(self.get_annotation())
 			self.write_out(self.get_annotation(), self.seg_path, self.cur_region)
 
+
+
+
 			#self.get_annotation().write_image(self.seg_path, 0, IMAGE_HDF, False, self.cur_region)
 			#self.img_view.inspector.seg_tab.save_all(outfile=self.seg_path, region=self.cur_region)
 		else:
 			print("Annotation is none.")
 			pass
+
+		self.zc_spinbox.setValue(self.nz//2)
+		self.zc_spinbox.setMaximum(self.nz)
 		self.set_imgview_data(round(self.data_xy[0]),round(self.data_xy[1]),self.img_view_region_size)
+
+		self.update_tree_set()
+
 		self.seg_path = seg_path
+		self.seg_info_path = seg_info_path
 		self.reset_morp_params(reset_vs=True)
 
 
@@ -576,8 +647,12 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 
 	def set_imgview_data(self,x,y,sz):
-		iz = self.nz//2
-		print("Nz ,iz",self.nz,iz)
+		try:
+			cen = int(self.zc_spinbox.value())
+		except:
+			cen = self.nz//2
+
+		print("Nz ,iz",self.nz,cen)
 		print("Img x,y,sz",x,y,sz)
 		if self.nz == 1:
 			self.zthick = 0
@@ -590,11 +665,14 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			except:
 				self.zthick = 0
 			if self.zthick == -1:
-				print(self.nz)
-				self.cur_region = Region(x-old_div(sz,2),y-old_div(sz,2),0, sz, sz, self.nz)
+				#print(self.nz)
+				self.zc_spinbox.setValue(self.nz//2)
+				self.zc_spinbox.setMaximum(self.nz)
+				self.cur_region = Region(x-sz//2,y-sz//2,0, sz, sz, self.nz)
 				#self.data = EMData(self.data_file, 0, False, Region(x-old_div(sz,2),y-old_div(sz,2),0, sz, sz, self.nz))
 			else:
-				self.cur_region = Region(x-old_div(sz,2),y-old_div(sz,2),iz-self.zthick, sz, sz,self.zthick*2+1)
+
+				self.cur_region = Region(x-sz//2,y-sz//2,cen-self.zthick, sz, sz,self.zthick*2+1)
 				print(self.cur_region)
 				#self.data = EMData(self.data_file, 0, False, Region(x-old_div(sz,2),y-old_div(sz,2),iz-self.zthick, sz, sz,self.zthick*2+1))
 		self.data = EMData(self.data_file, 0, False, self.cur_region)
@@ -609,12 +687,29 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.img_view.set_origin(0,0)
 		#print("Imgview, inspector, segtab",self.img_view,self.img_view.get_inspector(),self.img_view.inspector.seg_tab)
 		#self.img_view.get_inspector().seg_tab.read_header(seg_path)
-		self.img_view.get_inspector().seg_tab.update_sets()
+
+	def update_tree_set(self):
+		#self.get_inspector().seg_tab.tree_set.clear()
+		seg_info_path = os.path.join(self.seg_folder,'info',self.tomogram_list.currentItem().text()[0:-4]+"_seg_info.json")
+		print(seg_info_path)
+		try:
+			self.get_segtab().read_json_treeset(seg_info_path)
+		except:
+			print("No info file available")
+			return
+		self.get_segtab().update_sets()
+		# try:
+		tree_topit = self.get_segtab().tree_set.topLevelItem(0)
+		self.get_segtab().tree_set.setCurrentItem(tree_topit,1)
+		# except:
+		# 	print("Except")
+		# 	pass
 
 
 
 
-	def zt_spinbox_changed(self,event):
+
+	def z_spinbox_changed(self,event):
 		self.data_xy = self.thumbnail.get_xy()
 		try:
 			self.write_out(self.get_annotation(), self.seg_path, self.cur_region)
@@ -974,6 +1069,11 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			print("Except in get zpos")
 			return 0
 
+	def get_nz(self):
+		hdr=EMData(self.data_file, 0,True)
+		self.nz=hdr["nz"]
+		return self.nz
+
 	def get_boxsize(self):
 		return int(self.bsz_vs.value)
 	def inside_box(self,i,x=-1,y=-1,z=0):
@@ -1273,15 +1373,28 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		E2saveappwin("e2annotate","tomograms",self.tomo_list_panel)
 		#self.write_header(self.get_annotation())
 
-		self.write_metadata(self.seg_path)
+		#self.write_metadata(self.seg_path)
 		print(self.get_annotation(), self.seg_path, self.cur_region)
+		try:
+			self.get_inspector().seg_tab.write_treeset_json(self.seg_info_path)
+		except:
+			print("Cannot print class metadata to info file.")
+			pass
+		#self.get_treeset().clear()
 
-		self.write_out(self.get_annotation(), self.seg_path, self.cur_region)
+		try:
+			self.write_out(self.get_annotation(), self.seg_path, self.cur_region)
+		except:
+			print("Cannot write annotation to segs file.")
+			pass
 
 		#self.get_annotation().write_image(self.seg_path, 0, IMAGE_HDF, False, self.cur_region)
 		self.close()
 		self.control_panel.close()
 		self.tomo_list_panel.close()
+
+
+
 
 class Thumbnail(EMImage2DWidget):
 	def __init__(self,current_file=None,target=None,app_target = None,tn_size=220):
@@ -2463,6 +2576,140 @@ class Templ_Match_Tab(QtWidgets.QWidget):
 		return
 
 
+class Fila_Tab(QtWidgets.QWidget):
+	def __init__(self,target) :
+		QtWidgets.QWidget.__init__(self,None)
+		target = target
+		self.tree = QtWidgets.QTreeWidget(self)
+		self.tree.setColumnCount(3)
+		self.tree.setHeaderLabels(["a","b","c"])
+		self.itemflags = Qt.ItemFlags(Qt.ItemIsEditable)|Qt.ItemFlags(Qt.ItemIsSelectable)|Qt.ItemFlags(Qt.ItemIsEnabled)|Qt.ItemFlags(Qt.ItemIsUserCheckable)
+		self.tree_root = self.tree.invisibleRootItem()
+
+
+		data = {'Project A': {'file_a.py': {'cool': {'cool': None}}, 'file_a.txt': None, 'something.xls': None}, 'Project B': {'file_b.csv': None, 'photo.jpg': None}, 'Project C': None}
+		#data = {"Project A": ["file_a.py", "file_a.txt", "something.xls"],"Project B": ["file_b.csv", "photo.jpg"],"Project C": []}
+		# items = []
+		# for key, values in data.items():
+		# 	item = QtWidgets.QTreeWidgetItem([key])
+		# 	for value in values:
+		# 		ext = value.split(".")[-1].upper()
+		#
+		# 		child = QtWidgets.QTreeWidgetItem([value, ext])
+		# 		item.addChild(child)
+		# 	item.setFlags(self.itemflags)
+		# 	items.append(item)
+
+		# self.tree.insertTopLevelItems(0, items)
+		# for i in range(self.tree.topLevelItemCount()):
+		# 	self.tree_root.addChild(self.tree.topLevelItem(i))
+		#self.tree.itemAt(0,0).setForeground(0,QtGui.QColor.fromRgb(0,120,120))
+
+		def fill_item(item, value):
+			def new_item(parent, text, val=None):
+				child = QtWidgets.QTreeWidgetItem([text])
+				fill_item(child, val)
+				parent.addChild(child)
+				#child.setExpanded(True)
+			if value is None: return
+			elif isinstance(value, dict):
+				for key, val in sorted(value.items()):
+					new_item(item, str(key), val)
+			elif isinstance(value, (list, tuple)):
+				for val in value:
+					text = (str(val) if not isinstance(val, (dict, list, tuple))
+							else '[%s]' % type(val).__name__)
+					new_item(item, text, val)
+			else:
+				new_item(item, str(value))
+		fill_item(self.tree.invisibleRootItem(),data)
+		# for i in range(5):
+		# 	item = QtWidgets.QTreeWidgetItem(self.tree)
+		# 	item.setText(0,str(10+i))
+		# 	item.setFlags(self.itemflags)
+		# 	items.append(item)
+		# 	if i % 2 == 0:
+		# 		item_c = QtWidgets.QTreeWidgetItem(self.tree)
+		# 		item_c.setText(0,str(10*i))
+		# 		item.addChild(item_c)
+		# 		item.setExpanded(False)
+		#
+		#
+		# self.tree.insertTopLevelItems(0,items)
+		self.t_button = QtWidgets.QPushButton('test')
+		self.p_button = QtWidgets.QPushButton('print')
+		self.c_button = QtWidgets.QPushButton('child')
+		self.gbl = QtWidgets.QGridLayout(self)
+		self.gbl.addWidget(QtWidgets.QLabel("This panel is currently for testing only."),0,0,1,3)
+		self.gbl.addWidget(self.tree,1,0,5,3)
+
+		self.gbl.addWidget(self.t_button,0,3,1,1)
+		self.gbl.addWidget(self.p_button,1,3,1,1)
+		self.gbl.addWidget(self.c_button,2,3,1,1)
+
+		self.t_button.clicked[bool].connect(self.t_button_clicked)
+		self.p_button.clicked[bool].connect(self.p_button_clicked)
+		self.c_button.clicked[bool].connect(self.c_button_clicked)
+
+
+
+
+	def tree_to_dict(self,parent):
+		childCount = parent.childCount()
+		if not childCount:
+			return
+		content = {}
+		for row in range(childCount):
+			child = parent.child(row)
+			content[child.text(0)] = self.tree_to_dict(child)
+
+
+			values = json.loads(file_in["ann_name"])
+			serialize_name = json.dumps(names, default=lambda a: "[%s,%s]" % (str(type(a)), a.pk))
+
+		return content
+
+	def t_button_clicked(self):
+		self.tree.insertTopLevelItem(0, QtWidgets.QTreeWidgetItem(['cool name']))
+	def p_button_clicked(self):
+		json_str = self.tree_to_dict(self.tree.invisibleRootItem())
+		print(json_str)
+		# print(self.tree.invisibleRootItem())
+		# # root = self.tree.invisibleRootItem()
+		# #for item in tree.selectedItems():
+		# sels = self.tree.selectedItems()
+		# for sel in sels:
+		# 	#(sel.parent() or self.tree_root).removeChild(sel)
+		# 	#try:
+		# 	self.change_parent(sel,self.tree.topLevelItem(2))
+			# except:
+			# 	print("index",self.tree_root.indexOfChild(sel))
+			# 	twin = QtWidgets.QTreeWidgetItem([sel.text(0),sel.text(1)])
+			# 	self.tree.topLevelItem(2).addChild(twin)
+			# 	self.tree_root.removeChild(sel)
+			# 	print("Top level item")
+		# self.tree.currentItem().takeChildren()
+		# item = self.tree.currentItem()
+
+	def change_parent(self,item, new_parent):
+		old_parent = item.parent()
+		print("Old parent",old_parent)
+		try:
+			ix = old_parent.indexOfChild(item)
+			item_without_parent = old_parent.takeChild(ix)
+		except:
+			self.tree_root.addChild(item)
+			ix = self.tree_root.indexOfChild(item)
+			item_without_parent = self.tree_root.takeChild(ix)
+		new_parent.addChild(item_without_parent)
+			# self.tree.removeItemWidget(sel,0)
+			# self.tree.removeItemWidget(sel,1)
+			# del sel
+		# self.tree.currentItem().takeChildren()
+		# self.tree.takeTopLevelItem(i)
+	def c_button_clicked(self):
+		child = QtWidgets.QTreeWidgetItem(['cool', 'verycool'])
+		self.tree.currentItem().addChild(child)
 
 
 
@@ -2470,9 +2717,146 @@ class Statistics_Tab(QtWidgets.QWidget):
 	def __init__(self,target) :
 		QtWidgets.QWidget.__init__(self,None)
 		self.target = target
-		stat_gbl = QtWidgets.QGridLayout()
+		stat_gbl = QtWidgets.QVBoxLayout(self)
+		self.blob_tab = QtWidgets.QWidget()
+		bltlay = QtWidgets.QGridLayout(self.blob_tab)
 
-		self.setLayout(stat_gbl)
+		self.n_objects_text = QtWidgets.QLineEdit()
+		self.n_obj_thres_vs = ValSlider(value=10,rng=(0.001,5000),rounding=2,label= "Area/Vol Thres")
+		#self.cent_mass_bt = QtWidgets.QPushButton("Center of Mass")
+		self.count_objs_bt = QtWidgets.QPushButton("Count objects")
+		self.stat_bt = QtWidgets.QPushButton("Calc Stat")
+
+		self.stat_combo = QtWidgets.QComboBox()
+		self.stat_combo.addItem('Center of Mass')
+		self.stat_combo.addItem('Volume/Area')
+		self.stat_combo.addItem('Largest Area')
+		self.stat_combo.addItem('Largest Perimeter')
+		self.stat_combo.addItem('Custom')
+
+		bltlay.addWidget(self.count_objs_bt,0,0,1,1)
+		bltlay.addWidget(self.n_objects_text,0,1,1,1)
+		bltlay.addWidget(self.n_obj_thres_vs,1,0,1,3)
+		bltlay.addWidget(self.stat_bt,2,0,1,1)
+		bltlay.addWidget(self.stat_combo,2,1,1,2)
+
+
+		self.fila_tab = Fila_Tab(target=self)
+		fillay = QtWidgets.QGridLayout(self.blob_tab)
+
+		self.stat_tab = QtWidgets.QTabWidget()
+		self.stat_tab.addTab(self.blob_tab,"Blob-like")
+		self.stat_tab.addTab(self.fila_tab,"Filament-like")
+		stat_gbl.addWidget(self.stat_tab)
+
+		self.stat_bt.clicked[bool].connect(self.calc_stat)
+		self.count_objs_bt.clicked[bool].connect(self.count_objs)
+		self.n_obj_thres_vs.valueChanged.connect(self.count_objs)
+
+	def count_objs(self):
+		thres=self.n_obj_thres_vs.value
+		#open_lab=self.target.get_annotation().numpy()
+		#sels = self.target.get_segtab().table_set.selectedItems()
+		sels = self.target.get_segtab().tree_set.selectedItems()
+
+		if len(sels) == 0:
+			print("Must select class to quantify")
+			return
+		lab=self.target.get_annotation().copy_head()
+		lab.to_zero()
+
+
+		count = 0
+		self.area_vol = []
+		self.objs = []
+
+
+		for sel in sels:
+			#row = self.target.get_segtab().table_set.row(sel)
+			num = int(sel.text(0))
+			#print(sel.text())
+			# if multiple_class:
+			lab = (self.target.get_annotation().process("threshold.binaryrange",{"high":num+0.1,"low":num-0.1}))
+			open_lab = lab.numpy()
+
+		#open_lab=ndi.binary_opening(self.target.get_annotation().numpy(),iterations=3)
+			self.labeled_ann,self.num = ndi.label(open_lab>0.5)
+			self.loc=ndi.find_objects(self.labeled_ann,self.num)
+			#print(num)
+
+			for i in range(self.num):
+				area_temp=len(np.where(open_lab[self.loc[i]]>0)[0])
+				#print(open_lab[loc[i]].shape[0],open_lab[loc[i]].shape[1])
+				if area_temp >= thres:
+					count = count+1
+					self.area_vol.append(area_temp)
+					self.objs.append(open_lab[self.loc[i]])
+			self.n_objects_text.setText(str(count))
+		return
+
+	def calc_stat(self):
+		self.count_objs()
+		if (self.stat_combo.currentText() == "Center of Mass"):
+			self.cent_mass = ndi.center_of_mass(self.target.get_annotation().numpy(),self.labeled_ann,[i+1 for i in range(len(self.objs))])
+			self.cent_mass_em = []
+			for pair in self.cent_mass:
+				if len(pair) == 3:
+					self.cent_mass_em.append([pair[2],pair[1],pair[0]])
+				elif len(pair) == 2:
+					self.cent_mass_em.append([pair[1],pair[0]])
+			for  i in range(1,len(self.cent_mass_em)+1):
+				print("Center of Mass of Obj",i,":", str(self.cent_mass_em[-i]))
+		elif (self.stat_combo.currentText() == "Volume/Area"):
+			for  i in range(1,len(self.area_vol)+1):
+				print("Volume/Area of Obj",i,":", str(self.area_vol[-i]))
+		elif (self.stat_combo.currentText() == "Largest Area"):
+			if  len(self.objs[0].shape)== 2:
+				for  i in range(1,len(self.area_vol)+1):
+					print("Largest Area of Obj",i,":", str(self.area_vol[-i]))
+			else:
+				#self.projs = [from_numpy(obj).process("xform",{"transform":Transform()}).process("misc.directional_sum",{"axis":"z"}) for obj in self.objs]
+				for i in range(1,len(self.objs)+1):
+					obj = self.objs[-i]
+					a = from_numpy(obj)
+					proj = a.process("misc.directional_sum",{"axis":"z"}).numpy()
+					area_temp=len(np.where(proj>0)[0])
+					print("Largest Area of Obj",i,":", area_temp)
+
+		elif self.stat_combo.currentText() == "Largest Perimeter":
+
+			for i in range(1,len(self.objs)+1):
+				obj = self.objs[-i]
+				if len(obj.shape) == 2:
+					im = obj
+				else:
+					a = from_numpy(obj)
+					proj = a.process("misc.directional_sum",{"axis":"z"}).process("threshold.binary",{"value":0.1})
+					im = proj.numpy()
+				# sx = ndi.sobel(im, axis=0, mode='constant')
+				# sy = ndi.sobel(im, axis=1, mode='constant')
+				# sob = np.hypot(sx, sy)
+				# from_numpy(sob).write_image('peri_temp_2.hdf')
+				peri_temp = self.calc_perimeter(im)
+				print("Largest Perimeter of Obj",i,":", peri_temp)
+				#[data.process("xform",{"transform":xform}).process("misc.directional_sum",{"first":nz//2-layers,"last":nz//2+layers,"axis":"z"}) for data in self.datalist]
+			#self.projs = [data.process("xform",{"transform":Transform()}).process("misc.directional_sum",{"first":nz//2-layers,"last":nz//2+layers,"axis":"z"}) for data in self.datalist]
+		else:
+			return
+
+	def calc_perimeter(self,image):
+		(w, h) = image.shape
+		data = np.zeros((w + 2, h + 2), dtype=image.dtype)
+		data[1:-1, 1:-1] = image
+		newdata = np.copy(data)
+		for i in range(1, w + 1):
+			for j in range(1, h + 1):
+				cond = data[i, j] == data[i, j + 1] and \
+						data[i, j] == data[i, j - 1] and \
+						data[i, j] == data[i + 1, j] and \
+						data[i, j] == data[i - 1, j]
+				if cond:
+					newdata[i, j] = 0
+		return np.count_nonzero(newdata)
 
 
 
@@ -2520,4 +2904,3 @@ class Specific_Tab(QtWidgets.QWidget):
 
 if __name__ == '__main__':
 	main()
-

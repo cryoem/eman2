@@ -34,8 +34,6 @@
 
 from EMAN2 import *
 import numpy as np
-from sklearn.decomposition import PCA
-from EMAN2_utils import pdb2numpy
 import tensorflow as tf
 import h5py
 
@@ -92,3 +90,4 @@ def main():
 
 
 	logid=E2init(sys.argv,options.ppid)
+

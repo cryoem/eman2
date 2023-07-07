@@ -28,7 +28,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
-# This is a basic GUI for Muyuan's GMM processing
+# This GUI no longer works with Muyuan's program, preferring the new more memory efficient e2gmm_refine_point
 
 from past.utils import old_div
 from future import standard_library
@@ -2013,12 +2013,13 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.do_events()
 		prog.setValue(3)
 
-		# make3d on gaussian output for comparison
-		er=run(f"e2make3dpar.py --input {self.gmm}/{self.currunkey}_model_projs.hdf --output {self.gmm}/{self.currunkey}_model_recon.hdf --pad {good_size(self.jsparm['boxsize']*1.25)} --mode trilinear --keep 1 --threads {self.options.threads}")
-
-		# Display the reconstructed Gaussian map
-		seg=EMData(f"{self.gmm}/{self.currunkey}_model_recon.hdf")
-		self.fmapdataitem.setData(seg)
+		# had a segfault on this at one point, then asked why it was really necessary...
+		# # make3d on gaussian output for comparison
+		# er=run(f"e2make3dpar.py --input {self.gmm}/{self.currunkey}_model_projs.hdf --output {self.gmm}/{self.currunkey}_model_recon.hdf --pad {good_size(self.jsparm['boxsize']*1.25)} --mode trilinear --keep 1 --threads {self.options.threads}")
+  #
+		# # Display the reconstructed Gaussian map
+		# seg=EMData(f"{self.gmm}/{self.currunkey}_model_recon.hdf")
+		# self.fmapdataitem.setData(seg)
 		prog.setValue(4)
 		self.currun=self.jsparm["run_"+self.currunkey]
 		self.currun["time_neutral_end"]=local_datetime()
@@ -2335,14 +2336,20 @@ class EMGMM(QtWidgets.QMainWindow):
 
 			print("Compute PCA")
 			self.pca=skdc.PCA(n_components=2)
-			pcadc=self.pca.fit_transform(midresult.transpose()).transpose()
+			try:
+				pcadc=self.pca.fit_transform(midresult.transpose()).transpose()
+				copycol=False
+			except:
+				print("PCA failed, copying columns")
+				copycol=True
 			print(midresult.shape)
 			out=open(f"{self.gmm}/{self.currunkey}_aug.txt","w")
 			out.write("# PCA0; PCA1; ")
 			out.write("Latent; "*midresult.shape[0])
 			out.write("\n")
 			for i in range(midresult.shape[1]):
-				out.write(f"{pcadc[0][i]:1.4f}\t{pcadc[1][i]:1.4f}\t")
+				if copycol: out.write(f"{midresult[0,i]:1.4f}\t{midresult[0,i]:1.4f}\t")
+				else: out.write(f"{pcadc[0][i]:1.4f}\t{pcadc[1][i]:1.4f}\t")
 				out.write("\t".join([f"{r:1.4f}" for r in midresult[:,i]]))
 				out.write("\n")
 

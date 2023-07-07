@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
-# Author: Steven Ludtke, 04/17/14 (sludtke@bcm.edu)
-# Copyright (c) 2014- Baylor College of Medicine
+# Author: Steven Ludtke, 06/25/2023 (sludtke@bcm.edu)
+# Copyright (c) 2023- Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
@@ -72,13 +72,12 @@ def goodval(vals):
 		except: pass
 	return val
 
-class StarFile3(dict):
-	"""This is a more complete Star file implementation (than StarFile) which also supports formats like mmCIF without breaking
-	the original simplistic class.
+class StarFile(dict):
+	"""This is a more complete Star file implementation (than EMAN2 StarFile) which also supports formats like mmCIF.
+
 	This will appear as a dictionary of dictionaries. The outermost level of the dictionary will be the "data_" elements.
 	if no "data_" element is present, the file will be keyed as "data_default". Within the "data_" element, all keys
-	are at the same level. loop_ blocks will get aggregated into a single dictionary, with each key referencing an
-	appropriate length list. """
+	are at the same level. loop_ block columns are aggregated as lists/nparrays at the top level """
 
 	def __init__(self,filename):
 		self.readfile(filename)
@@ -178,133 +177,4 @@ class StarFile3(dict):
 		raise Exception("StarFile: Key-value pair error. Matching value not found. ",key)
 
 
-class StarFile(dict):
-	
-	def __init__(self,filename,dataname=None):
-		"""dataname can be used to specify a specific data block to read from the file.
-If not set, it will read the first block encountered. Value should be of the form "data_general"."""
-		dict.__init__(self)
-		self.filename=filename
-		self.dataname=dataname
-		self.loops=[]
-		
-		if os.path.isfile(filename) :
-			self.readfile()
-		else :
-			raise Exception(f"Cannot open STAR file: {filename}")
-			
-	def _nextline(self):
-		"""Used internally when parsing a star file to emulate readline"""
-		self.lineptr+=1
-		return self.lines[self.lineptr-1]
-	
-	def readfile(self):
-		"""This parses the STAR file, replacing any previous contents in the dictionary"""
-		
-		self.loops=[]
-		self.clear()
-		
-		matcher=re.compile("""("[^"]+")|('[^']+')|([^\s]+)""")
-		
-		# read the entire file into a buffer, this dramatically simplifies the logic, even if it eats a chunk of RAM
-		self.lines=[i for i in open(self.filename,"r") if len(i.strip())!=0 and i[0]!="#"]
-		self.lineptr=0
 
-		# seek to the correct block of data
-		if self.dataname!=None:
-			lt=len(self.dataname)
-			for i,l in enumerate(self.lines):
-				if l[:lt]==self.dataname : break
-			else:
-				raise Exception("Dataname '{}' not found".format(self.dataname))
-			self.lineptr=i+1
-		
-		while 1:
-			try: line=self._nextline().strip()
-			except: break
-		
-			if line[0]=="_" :				# A single key/value pair
-				spl=line.split(None,1)		# split on whitespace
-				key=spl[0][1:]
-				
-				if len(spl)==2:				# value on the same line
-					if spl[1][0] in ("'",'"') : self[key]=spl[1:-1]		# we assume the last non-whitespace character is the ending delimiter
-					else:
-						try: val=int(spl[1])
-						except: 
-							try: val=float(spl[1])
-							except: val=spl[1]			# if not an int or a float, must be a simple value string
-					
-						self[key]=val
-				else:						# value starts on next line
-					line2=self._nextline()
-					if line2[0] in ("'",'"') :
-						self[key]=line2.strip()[1:-1]
-					elif line2[0]==";" :
-						val=[line2[1:]]
-						while 1:
-							try: line2=self._nextline()
-							except: raise Exception("StarFile: Error found parsing multi-line string value for %s"%key)
-							if line2[0]==';' : break
-							val.append(line2)
-						val[-1]=val[-1].rstrip()		# remove trailing whitespace on the last line
-						val="".join(val)
-						self[key]=val
-					else: raise Exception("StarFile: Key-value pair error. Matching value for %s not found."%key)
-			elif line[:5].lower()=="data_":
-				if len(self)>0 :
-#					print("WARNING: second data_ block encountered in ",self.filename,". Cannot deal with this at present. Second block ignored")
-					return
-				self.dataname=line[5:]
-			elif line[:5].lower()=="loop_":
-				loop=[]
-				self.loops.append(loop)				# add it to the list of loops immediately then update it as we go
-				# First we read the parameter names for the loop
-				while 1:
-					line2=self._nextline().strip()
-					if line2[0]=="_":
-						loop.append(line2.split()[0][1:])
-						self[loop[-1]]=[]			# this will hold the data values when we read them
-					else: break
-				self.lineptr-=1
-				
-				# Now we read the actual loop data elements
-				vals=[]
-				while 1:
-					try: line2=self._nextline().strip()
-					except: break
-				
-					if line2[0]=="_" or line2.lower()[:5]=="loop_" : break
-					elif line2[0]==";" :
-						val=line2[0][1:]
-						while 1:
-							line2=self._nextline()
-							if line2[0]==";":
-								break
-							val+=line2
-						vals.append(val)
-					else:
-						vals.extend([goodval(i) for i in matcher.findall(line2)])
-						if len(vals)<len(loop) :			# we may need to read multiple lines to get enough values
-							continue
-						if len(vals)>len(loop) : 
-							print("mismatch")
-							print(line2)
-							print(len(loop),loop)
-							print(len(vals),vals)
-							break
-						for i in range(len(vals)): self[loop[i]].append(vals[i])
-						vals=[]
-				self.lineptr-=1
-			else:
-				print("StarFile: Unknown content on line :",line)
-				break
-
-				
-	def writefile(self,filename=None):
-		"""Writes the contents of the current dictionary back to disk using either the existing filename, or an alternative name passed in"""
-		
-		print("Sorry, writing not implemented yet")
-					
-			
-			
