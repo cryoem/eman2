@@ -187,7 +187,8 @@ def main():
 		dc2={"src":a["src"],"idx":a["idx"],
 			"ptcl3d_id":a["idx3d"],
 			"tilt_id":a["tilt_id"],
-			"score":0}
+			"score":0,
+			"dxf":Transform()}
 		
 		i3=info3d1[a["idx3d"]]
 		if "class" in i3:
@@ -237,7 +238,7 @@ def main():
 			p0=pos0[i0]
 			i1=[tid in [a["tilt_id"] for a in a1] for a1 in a2d1 ]
 			p1=pos1[i1]
-			if len(v0)!=len(pos0):
+			if len(v0)!=len(p0):
 				print(f"skip tilt {tid} from tomogram {fname}")
 				continue
 				
