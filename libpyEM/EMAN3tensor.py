@@ -65,7 +65,7 @@ def to_tfvar(emdata):
 		return tf.Variable(EMNumPy.em2numpy(emdata))
 
 	if isinstance(emdata,list) or isinstance(emdata,tuple):
-		npstack=np.stack([to_numpy(im) for im in emdata]],axis=0)
+		npstack=np.stack([to_numpy(im) for im in emdata],axis=0)
 		return tf.Variable(npstack)
 
 def to_tf(emdata):
@@ -75,10 +75,17 @@ def to_tf(emdata):
 		return tf.constant(EMNumPy.em2numpy(emdata))
 
 	if isinstance(emdata,list) or isinstance(emdata,tuple):
-		npstack=np.stack([to_numpy(im) for im in emdata]],axis=0)
+		npstack=np.stack([to_numpy(im) for im in emdata],axis=0)
 		return tf.constant(npstack)
 
-def tf_downsample_2d(imgs,newsize=newx,stack=False):
+def tf_fft2d(imgs):
+	if isinstance(imgs,EMData) or ((isinstance(imgs,list) or isinstance(imgs,tuple)) and isinstance(imgs[0],EMData)): imgs=to_tf(imgs)
+
+	if imgs.dtype==tf.complex64: raise Exception("Data type must be real")
+
+	return tf.signal.rfft2d(imgs)
+
+def tf_downsample_2d(imgs,newsize,stack=False):
 	"""Fourier downsamples a tensorflow 2D image or stack of 2D images (similar to math.fft.resample processor conceptually)
 	return will always be a stack (3d tensor) even if the first dimension is 1
 	passed image/stack may be real or complex (FFT), return is always complex!
@@ -95,10 +102,10 @@ def tf_downsample_2d(imgs,newsize=newx,stack=False):
 
 	if imgs.ndim==2: imgs=tf.expand_dims(imgs,0)	# we need a 3 rank tensor
 
-	cropy=tf.gather(imgs,np.concatenate(np.arange(newx//2),np.arange(imgs.shape[1]-newx//2,imgs.shape[1])),axis=1))
+	cropy=tf.gather(imgs,np.concatenate(np.arange(newx//2),np.arange(imgs.shape[1]-newx//2,imgs.shape[1])),axis=1)
 	return cropy[:,:,:newx//2+1]
 
-def tf_downsample_3d(imgs,newsize=newx,stack=False):
+def tf_downsample_3d(imgs,newsize,stack=False):
 	"""Fourier downsamples a tensorflow 3D image or stack of 3D images (similar to math.fft.resample processor conceptually)
 	return will always be a stack (3d tensor) even if the first dimension is 1
 	passed image/stack may be real or complex (FFT), return is always complex!
@@ -115,8 +122,8 @@ def tf_downsample_3d(imgs,newsize=newx,stack=False):
 
 	if imgs.ndim==3: imgs=tf.expand_dims(imgs,0)	# we need a 3 rank tensor
 
-	cropz=tf.gather(imgs,np.concatenate(np.arange(newx//2),np.arange(imgs.shape[1]-newx//2,imgs.shape[1])),axis=1))
-	cropy=tf.gather(cropz,np.concatenate(np.arange(newx//2),np.arange(imgs.shape[2]-newx//2,imgs.shape[1])),axis=2))
+	cropz=tf.gather(imgs,np.concatenate(np.arange(newx//2),np.arange(imgs.shape[1]-newx//2,imgs.shape[1])),axis=1)
+	cropy=tf.gather(cropz,np.concatenate(np.arange(newx//2),np.arange(imgs.shape[2]-newx//2,imgs.shape[1])),axis=2)
 	return cropy[:,:,:,:newx//2+1]
 
 FRC_REFS={}
