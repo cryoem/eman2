@@ -47,7 +47,7 @@ np.fromfunction(lambda x,y: np.hypot(x,y),(nx,ny)) - for example
 
 """
 
-
+from EMAN3 import *
 import tensorflow as tf
 import numpy as np
 
@@ -85,7 +85,7 @@ def tf_fft2d(imgs):
 
 	return tf.signal.rfft2d(imgs)
 
-def tf_downsample_2d(imgs,newsize,stack=False):
+def tf_downsample_2d(imgs,newx,stack=False):
 	"""Fourier downsamples a tensorflow 2D image or stack of 2D images (similar to math.fft.resample processor conceptually)
 	return will always be a stack (3d tensor) even if the first dimension is 1
 	passed image/stack may be real or complex (FFT), return is always complex!
@@ -102,7 +102,7 @@ def tf_downsample_2d(imgs,newsize,stack=False):
 
 	if imgs.ndim==2: imgs=tf.expand_dims(imgs,0)	# we need a 3 rank tensor
 
-	cropy=tf.gather(imgs,np.concatenate(np.arange(newx//2),np.arange(imgs.shape[1]-newx//2,imgs.shape[1])),axis=1)
+	cropy=tf.gather(imgs,np.concatenate((np.arange(newx//2),np.arange(imgs.shape[1]-newx//2,imgs.shape[1]))),axis=1)
 	return cropy[:,:,:newx//2+1]
 
 def tf_downsample_3d(imgs,newsize,stack=False):
@@ -122,8 +122,8 @@ def tf_downsample_3d(imgs,newsize,stack=False):
 
 	if imgs.ndim==3: imgs=tf.expand_dims(imgs,0)	# we need a 3 rank tensor
 
-	cropz=tf.gather(imgs,np.concatenate(np.arange(newx//2),np.arange(imgs.shape[1]-newx//2,imgs.shape[1])),axis=1)
-	cropy=tf.gather(cropz,np.concatenate(np.arange(newx//2),np.arange(imgs.shape[2]-newx//2,imgs.shape[1])),axis=2)
+	cropz=tf.gather(imgs,np.concatenate((np.arange(newx//2),np.arange(imgs.shape[1]-newx//2,imgs.shape[1]))),axis=1)
+	cropy=tf.gather(cropz,np.concatenate((np.arange(newx//2),np.arange(imgs.shape[2]-newx//2,imgs.shape[1]))),axis=2)
 	return cropy[:,:,:,:newx//2+1]
 
 FRC_REFS={}
