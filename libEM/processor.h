@@ -4717,6 +4717,8 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 			if (npeaks == 0) {
 				npeaks = 1;
 			}
+
+			usemean=params.set_default("usemean",0);
 		}
 
 		TypeDict get_param_types() const
@@ -4724,6 +4726,13 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 			TypeDict d;
 			d.put("npeaks", EMObject::INT, "The number of pixels adjacent to the pixel under consideration which may be higher and still be a valid peak. If 0, finds pure peaks");
 			d.put("usemean", EMObject::BOOL, "Count all pixels with value higher than the mean of adjacent pixels as peaks. Overwrite npeaks.");
+
+			// these come from the parent
+			d.put("radius", EMObject::INT, "The 'radius' of the (square/cube) search box, eg - 1 -> 3x3 box");
+			d.put("xsize", EMObject::INT, "+- range on X axis, 0 uses the value only, 1 -> -1,0,+1, ...");
+			d.put("ysize", EMObject::INT, "+- range on Y axis");
+			d.put("zsize", EMObject::INT, "+- range on Z axis)");
+
 			return d;
 		}
 
@@ -4737,7 +4746,7 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 	  protected:
 		void process_pixel(float *pixel, const float *data, int n) const
 		{
-			if (params["usemean"]){
+			if (usemean){
 				float mean=0;
 				for (int i = 0; i < n; i++)
 				{
@@ -4767,6 +4776,7 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 		}
 	  private:
 		int npeaks;
+		int usemean;
 	};
 
 	/**averages over cal_half_width, then sets the value in a local block
