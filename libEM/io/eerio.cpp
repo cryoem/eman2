@@ -205,6 +205,22 @@ int EerIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 	for(auto &d : acquisition_data_dict)
 		dict[d.first] = d.second;
 
+	if(auto it = dict.find("EER.sensor_pixel_size.width"); it != dict.end()) {
+		if ((float)it->second == 0.0)
+			dict["apix_x"] = 1.0f;
+		else
+			dict["apix_x"] = (float)it->second * (float)1.0e10;
+	}
+
+	if(auto it = dict.find("EER.sensor_pixel_size.height"); it != dict.end()) {
+		if ((float)it->second == 0.0)
+			dict["apix_y"] = 1.0f;
+		else
+			dict["apix_y"] = (float)it->second * (float)1.0e10;
+	}
+
+	dict["apix_z"] = dict["apix_x"];
+
 	return 0;
 }
 
