@@ -30,25 +30,11 @@
  * */
 #ifndef glutil_h__
 #define glutil_h__
-
 #include <vector>
-
-
-//#include "vec3.h"
+#include "vec3.h"
 #include "transform.h"
 #include "emdata.h"
-
-#include "exception.h"
-
-
-
-
-
-
-
-
-
-
+//#include "exception.h"
 #ifdef __APPLE__
 	#include "OpenGL/gl.h"
 #else // WIN32, LINUX
