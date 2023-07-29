@@ -56,7 +56,7 @@ def from_tf(tftensor,stack=False):
 	If stack is set, then the first axis of the tensor will be unpacked to form a list. ie a 3D tensor would become a list of 2D EMData objects"""
 
 	if stack:
-		return [EMNumPy.numpy2em(tftensor[i]) for i in range(tftensor.shape[0])]
+		return [EMNumPy.numpy2em(tftensor[i].numpy()) for i in range(tftensor.shape[0])]
 	return EMNumPy.numpy2em(tftensor.numpy())
 
 def to_tfvar(emdata):
@@ -84,6 +84,27 @@ def tf_fft2d(imgs):
 	if imgs.dtype==tf.complex64: raise Exception("Data type must be real")
 
 	return tf.signal.rfft2d(imgs)
+
+def tf_fft3d(imgs):
+	if isinstance(imgs,EMData) or ((isinstance(imgs,list) or isinstance(imgs,tuple)) and isinstance(imgs[0],EMData)): imgs=to_tf(imgs)
+
+	if imgs.dtype==tf.complex64: raise Exception("Data type must be real")
+
+	return tf.signal.rfft3d(imgs)
+
+def tf_ift2d(imgs):
+	if isinstance(imgs,EMData) or ((isinstance(imgs,list) or isinstance(imgs,tuple)) and isinstance(imgs[0],EMData)): imgs=to_tf(imgs)
+
+	if imgs.dtype!=tf.complex64: raise Exception("Data type must be complex")
+
+	return tf.signal.irfft2d(imgs)
+
+def tf_ift3d(imgs):
+	if isinstance(imgs,EMData) or ((isinstance(imgs,list) or isinstance(imgs,tuple)) and isinstance(imgs[0],EMData)): imgs=to_tf(imgs)
+
+	if imgs.dtype!=tf.complex64: raise Exception("Data type must be complex")
+
+	return tf.signal.irfft3d(imgs)
 
 def tf_downsample_2d(imgs,newx,stack=False):
 	"""Fourier downsamples a tensorflow 2D image or stack of 2D images (similar to math.fft.resample processor conceptually)
@@ -126,16 +147,59 @@ def tf_downsample_3d(imgs,newsize,stack=False):
 	cropy=tf.gather(cropz,np.concatenate((np.arange(newx//2),np.arange(imgs.shape[2]-newx//2,imgs.shape[1]))),axis=2)
 	return cropy[:,:,:,:newx//2+1]
 
-FRC_REFS={}
+FRC_RADS={}		# dictionary (cache) of constant tensors of size ny/2+1,ny containing the Fourier radius to each point in the image
+#FRC_NORM={}		# dictionary (cache) of constant tensors of size ny/2*1.414
 def tf_frc(ima,imb):
-	"""Computes the FRC between two stacks of complex images. Returns a stack of 1D FSC curves."""
+	"""Computes the pairwise FRCs between two stacks of complex images. Returns a stack of 1D FSC curves."""
 	if ima.dtype!=tf.complex64 or imb.dtype!=tf.complex64 : raise Exception("tf_fsc requires FFTs")
 
-	global FRC_REFS
+	global FRC_RADS
+#	global FRC_NORM		# we don't actually need this unless we want to compute uncertainties (number of points at each radius)
 	ny=ima.shape[1]
-	try: rad_img=FRC_REFS[ny]
+	nimg=ima.shape[0]
+	nr=int(ny*0.70711)+1	# max radius we consider
+	try:
+		rad_img=FRC_RADS[ny]
+#		norm=FRC_NORM[ny]
 	except:
-		rad_img=np.vstack((np.fromfunction(lambda y,x: np.int32(np.hypot(x,y)),(ny//2,ny//2+1)),np.fromfunction(lambda y,x: np.int32(np.hypot(x,ny//2-y)),(ny//2,ny//2+1))))
+#		rad_img=tf.expand_dims(tf.constant(np.vstack((np.fromfunction(lambda y,x: np.int32(np.hypot(x,y)),(ny//2,ny//2+1)),np.fromfunction(lambda y,x: np.int32(np.hypot(x,ny//2-y)),(ny//2,ny//2+1))))),0)
+		rad_img=tf.constant(np.vstack((np.fromfunction(lambda y,x: np.int32(np.hypot(x,y)),(ny//2,ny//2+1)),np.fromfunction(lambda y,x: np.int32(np.hypot(x,ny//2-y)),(ny//2,ny//2+1)))))
+		ones=tf.ones(ima.shape)
+#		zero=tf.zeros((int(ny*0.70711)+1))
+#		norm=tf.tensor_scatter_nd_add(zero, rad_img, ones)  # computes the number of values at each Fourier radius
+		FRC_RADS[ny]=rad_img
+#		FRC_NORM[ny]=norm
+
+	imar=tf.math.real(ima) # if you do the dot product with complex math the processor computes the cancelling cross-terms. Want to avoid the waste
+	imai=tf.math.imag(ima)
+	imbr=tf.math.real(imb)
+	imbi=tf.math.imag(imb)
+
+	imabr=imar*imbr		# compute these before squaring for normalization
+	imabi=imai*imbi
+
+	imar=imar*imar		# just need the squared versions, not the originals now
+	imai=imai*imai
+	imbr=imbr*imbr
+	imbi=imbi*imbi
+
+	zero=tf.zeros((nimg,nr))
+	cross=tf.tensor_scatter_nd_add(zero,rad_img,imabr)	#start with zero when we add the real component
+	cross=tf.tensor_scatter_nd_add(cross,rad_img,imabi)	#add the imaginary component to the real
+
+	aprd=tf.tensor_scatter_nd_add(zero,rad_img,imar)
+	aprd=tf.tensor_scatter_nd_add(aprd,rad_img,imai)
+
+	bprd=tf.tensor_scatter_nd_add(zero,rad_img,imbr)
+	bprd=tf.tensor_scatter_nd_add(bprd,rad_img,imbi)
+
+	return cross/tf.sqrt(aprd*bprd)
+
+FSC_REFS={}
+def tf_fsc(ima,imb):
+	"""Computes the FSC between a stack of complex volumes and a single reference volume. Returns a stack of 1D FSC curves."""
+	if ima.dtype!=tf.complex64 or imb.dtype!=tf.complex64 : raise Exception("tf_fsc requires FFTs")
+
 
 #### Project 3d Gaussian coordinates based on transforms to make projection
 ##   input:  pts - ( batch size, number of Gaussian, 3 (x,y,z) )
