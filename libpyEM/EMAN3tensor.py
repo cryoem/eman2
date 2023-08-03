@@ -148,9 +148,12 @@ def tf_downsample_3d(imgs,newsize,stack=False):
 	return cropy[:,:,:,:newx//2+1]
 
 FRC_RADS={}		# dictionary (cache) of constant tensors of size ny/2+1,ny containing the Fourier radius to each point in the image
-#FRC_NORM={}		# dictionary (cache) of constant tensors of size ny/2*1.414
+#FRC_NORM={}		# dictionary (cache) of constant tensors of size ny/2*1.414 (we don't actually need this for anything)
+#TODO iterating over the images is handled with a python for loop. This may not be taking great advantage of the GPU (just don't know)
+# two possible approaches would be to add an extra dimension to rad_img to cover image number, and handle the scatter_nd as a single operation
+# or to try making use of DataSet. I started a DataSet implementation, but decided it added too much design complexity
 def tf_frc(ima,imb):
-	"""Computes the pairwise FRCs between two stacks of complex images. Returns a stack of 1D FSC curves."""
+	"""Computes the pairwise FRCs between two stacks of complex images. Returns a list of 1D FSC tensors."""
 	if ima.dtype!=tf.complex64 or imb.dtype!=tf.complex64 : raise Exception("tf_fsc requires FFTs")
 
 	global FRC_RADS
@@ -162,12 +165,12 @@ def tf_frc(ima,imb):
 		rad_img=FRC_RADS[ny]
 #		norm=FRC_NORM[ny]
 	except:
-#		rad_img=tf.expand_dims(tf.constant(np.vstack((np.fromfunction(lambda y,x: np.int32(np.hypot(x,y)),(ny//2,ny//2+1)),np.fromfunction(lambda y,x: np.int32(np.hypot(x,ny//2-y)),(ny//2,ny//2+1))))),0)
-		rad_img=tf.constant(np.vstack((np.fromfunction(lambda y,x: np.int32(np.hypot(x,y)),(ny//2,ny//2+1)),np.fromfunction(lambda y,x: np.int32(np.hypot(x,ny//2-y)),(ny//2,ny//2+1)))))
-		ones=tf.ones(ima.shape)
+		rad_img=tf.expand_dims(tf.constant(np.vstack((np.fromfunction(lambda y,x: np.int32(np.hypot(x,y)),(ny//2,ny//2+1)),np.fromfunction(lambda y,x: np.int32(np.hypot(x,ny//2-y)),(ny//2,ny//2+1))))),2)
+#		rad_img=tf.constant(np.vstack((np.fromfunction(lambda y,x: np.int32(np.hypot(x,y)),(ny//2,ny//2+1)),np.fromfunction(lambda y,x: np.int32(np.hypot(x,ny//2-y)),(ny//2,ny//2+1)))))
+		FRC_RADS[ny]=rad_img
+#		ones=tf.ones(ima.shape)
 #		zero=tf.zeros((int(ny*0.70711)+1))
 #		norm=tf.tensor_scatter_nd_add(zero, rad_img, ones)  # computes the number of values at each Fourier radius
-		FRC_RADS[ny]=rad_img
 #		FRC_NORM[ny]=norm
 
 	imar=tf.math.real(ima) # if you do the dot product with complex math the processor computes the cancelling cross-terms. Want to avoid the waste
@@ -183,17 +186,22 @@ def tf_frc(ima,imb):
 	imbr=imbr*imbr
 	imbi=imbi*imbi
 
-	zero=tf.zeros((nimg,nr))
-	cross=tf.tensor_scatter_nd_add(zero,rad_img,imabr)	#start with zero when we add the real component
-	cross=tf.tensor_scatter_nd_add(cross,rad_img,imabi)	#add the imaginary component to the real
+	frc=[]
+	for i in range(nimg):
+		zero=tf.zeros([nr])
+#		print(zero.shape,rad_img.shape,imabr[i].shape)
+		cross=tf.tensor_scatter_nd_add(zero,rad_img,imabr[i])	#start with zero when we add the real component
+		cross=tf.tensor_scatter_nd_add(cross,rad_img,imabi[i])	#add the imaginary component to the real
 
-	aprd=tf.tensor_scatter_nd_add(zero,rad_img,imar)
-	aprd=tf.tensor_scatter_nd_add(aprd,rad_img,imai)
+		aprd=tf.tensor_scatter_nd_add(zero,rad_img,imar[i])
+		aprd=tf.tensor_scatter_nd_add(aprd,rad_img,imai[i])
 
-	bprd=tf.tensor_scatter_nd_add(zero,rad_img,imbr)
-	bprd=tf.tensor_scatter_nd_add(bprd,rad_img,imbi)
+		bprd=tf.tensor_scatter_nd_add(zero,rad_img,imbr[i])
+		bprd=tf.tensor_scatter_nd_add(bprd,rad_img,imbi[i])
 
-	return cross/tf.sqrt(aprd*bprd)
+		frc.append(cross/tf.sqrt(aprd*bprd))
+
+	return frc
 
 FSC_REFS={}
 def tf_fsc(ima,imb):
