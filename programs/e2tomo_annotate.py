@@ -41,7 +41,6 @@ from matplotlib.patches import Circle
 import matplotlib.path as mplPath
 import matplotlib.pyplot as plt
 
-
 def main():
 	usage="""annotate tomograms in a folder. annotated images will be saved in ./segs folder.
 	 still developing
@@ -199,6 +198,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 
 		self.img_view = EMAnnotate2DWidget(sizehint=(680,680))
+		self.img_view.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
 		#self.img_view.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
 		self.img_view.setMinimumSize(680, 680)
 
@@ -239,15 +239,15 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.zt_spinbox = QtWidgets.QSpinBox()
 		self.zt_spinbox.setValue(-1)
 		self.zt_spinbox.setMinimum(-1)
-		#self.zt_spinbox.setMaximum(self.get_nz()//2)
+		self.zt_spinbox.setMaximum(self.get_nz()//2)
 		self.zc_spinbox = QtWidgets.QSpinBox()
 
 		self.zc_spinbox.setValue(self.get_nz()//2)
 		self.zc_spinbox.setMinimum(0)
-		#self.zc_spinbox.setMaximum(self.get_nz())
-		zt_hbl.addWidget(QtWidgets.QLabel("cen:"))
+		self.zc_spinbox.setMaximum(self.get_nz())
+		zt_hbl.addWidget(QtWidgets.QLabel("cen"))
 		zt_hbl.addWidget(self.zc_spinbox)
-		zt_hbl.addWidget(QtWidgets.QLabel("thk:"))
+		zt_hbl.addWidget(QtWidgets.QLabel("thk"))
 		zt_hbl.addWidget(self.zt_spinbox)
 
 
@@ -429,7 +429,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		inspector_vbl.addWidget(self.img_view_inspector)
 
 		#self.gbl.addLayout(tomo_vbl,1,0,1,1)
-		self.gbl.addWidget(self.img_view,0,0,1,1)
+		self.gbl.addWidget(self.img_view,0,0,1,2)
 		self.gbl.addLayout(inspector_vbl,0,2,1,1)
 		self.centralWidget.setLayout(self.gbl)
 

@@ -173,6 +173,7 @@ static vector<std::shared_ptr<EMData>> read_images(const string & filename,
  */
 static bool write_images(const string & filename,
 									vector<std::shared_ptr<EMData>> imgs,
+									int idxs=0,
 									EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN,
 									bool header_only = false,
 									const Region * region = nullptr,

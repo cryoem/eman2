@@ -298,3 +298,5 @@ IF(ENABLE_RT)
 	include(cmake/testing.cmake)
 	ADD_SUBDIRECTORY(rt)
 ENDIF()
+
+install(CODE "MESSAGE(\"\nTo install SPHIRE, run 'make install-sphire'.\n\")")

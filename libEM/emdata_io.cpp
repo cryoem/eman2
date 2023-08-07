@@ -415,6 +415,7 @@ vector<shared_ptr<EMData>> EMData::read_images(const string & filename, vector<i
 }
 
 bool EMData::write_images(const string & filename, vector<std::shared_ptr<EMData>> imgs,
+						  int idxs,
 						  EMUtil::ImageType imgtype,
 						  bool header_only,
 						  const Region * region,
@@ -449,7 +450,7 @@ bool EMData::write_images(const string & filename, vector<std::shared_ptr<EMData
 	for (size_t i = 0; i < num_imgs; i++) {
 		auto d = imgs[i].get();
 		try {
-			d->_write_image(imageio, (int)i, imgtype, header_only, region, filestoragetype, use_host_endian);
+			d->_write_image(imageio, (int)(i + idxs), imgtype, header_only, region, filestoragetype, use_host_endian);
 		}
 		catch(E2Exception &e) {
 			throw(e);

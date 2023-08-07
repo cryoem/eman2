@@ -47,7 +47,7 @@ np.fromfunction(lambda x,y: np.hypot(x,y),(nx,ny)) - for example
 
 """
 
-
+from EMAN3 import *
 import tensorflow as tf
 import numpy as np
 
@@ -56,7 +56,7 @@ def from_tf(tftensor,stack=False):
 	If stack is set, then the first axis of the tensor will be unpacked to form a list. ie a 3D tensor would become a list of 2D EMData objects"""
 
 	if stack:
-		return [EMNumPy.numpy2em(tftensor[i]) for i in range(tftensor.shape[0])]
+		return [EMNumPy.numpy2em(tftensor[i].numpy()) for i in range(tftensor.shape[0])]
 	return EMNumPy.numpy2em(tftensor.numpy())
 
 def to_tfvar(emdata):
@@ -65,7 +65,7 @@ def to_tfvar(emdata):
 		return tf.Variable(EMNumPy.em2numpy(emdata))
 
 	if isinstance(emdata,list) or isinstance(emdata,tuple):
-		npstack=np.stack([to_numpy(im) for im in emdata]],axis=0)
+		npstack=np.stack([to_numpy(im) for im in emdata],axis=0)
 		return tf.Variable(npstack)
 
 def to_tf(emdata):
@@ -75,10 +75,38 @@ def to_tf(emdata):
 		return tf.constant(EMNumPy.em2numpy(emdata))
 
 	if isinstance(emdata,list) or isinstance(emdata,tuple):
-		npstack=np.stack([to_numpy(im) for im in emdata]],axis=0)
+		npstack=np.stack([to_numpy(im) for im in emdata],axis=0)
 		return tf.constant(npstack)
 
-def tf_downsample_2d(imgs,newsize=newx,stack=False):
+def tf_fft2d(imgs):
+	if isinstance(imgs,EMData) or ((isinstance(imgs,list) or isinstance(imgs,tuple)) and isinstance(imgs[0],EMData)): imgs=to_tf(imgs)
+
+	if imgs.dtype==tf.complex64: raise Exception("Data type must be real")
+
+	return tf.signal.rfft2d(imgs)
+
+def tf_fft3d(imgs):
+	if isinstance(imgs,EMData) or ((isinstance(imgs,list) or isinstance(imgs,tuple)) and isinstance(imgs[0],EMData)): imgs=to_tf(imgs)
+
+	if imgs.dtype==tf.complex64: raise Exception("Data type must be real")
+
+	return tf.signal.rfft3d(imgs)
+
+def tf_ift2d(imgs):
+	if isinstance(imgs,EMData) or ((isinstance(imgs,list) or isinstance(imgs,tuple)) and isinstance(imgs[0],EMData)): imgs=to_tf(imgs)
+
+	if imgs.dtype!=tf.complex64: raise Exception("Data type must be complex")
+
+	return tf.signal.irfft2d(imgs)
+
+def tf_ift3d(imgs):
+	if isinstance(imgs,EMData) or ((isinstance(imgs,list) or isinstance(imgs,tuple)) and isinstance(imgs[0],EMData)): imgs=to_tf(imgs)
+
+	if imgs.dtype!=tf.complex64: raise Exception("Data type must be complex")
+
+	return tf.signal.irfft3d(imgs)
+
+def tf_downsample_2d(imgs,newx,stack=False):
 	"""Fourier downsamples a tensorflow 2D image or stack of 2D images (similar to math.fft.resample processor conceptually)
 	return will always be a stack (3d tensor) even if the first dimension is 1
 	passed image/stack may be real or complex (FFT), return is always complex!
@@ -95,10 +123,10 @@ def tf_downsample_2d(imgs,newsize=newx,stack=False):
 
 	if imgs.ndim==2: imgs=tf.expand_dims(imgs,0)	# we need a 3 rank tensor
 
-	cropy=tf.gather(imgs,np.concatenate(np.arange(newx//2),np.arange(imgs.shape[1]-newx//2,imgs.shape[1])),axis=1))
+	cropy=tf.gather(imgs,np.concatenate((np.arange(newx//2),np.arange(imgs.shape[1]-newx//2,imgs.shape[1]))),axis=1)
 	return cropy[:,:,:newx//2+1]
 
-def tf_downsample_3d(imgs,newsize=newx,stack=False):
+def tf_downsample_3d(imgs,newsize,stack=False):
 	"""Fourier downsamples a tensorflow 3D image or stack of 3D images (similar to math.fft.resample processor conceptually)
 	return will always be a stack (3d tensor) even if the first dimension is 1
 	passed image/stack may be real or complex (FFT), return is always complex!
@@ -115,20 +143,71 @@ def tf_downsample_3d(imgs,newsize=newx,stack=False):
 
 	if imgs.ndim==3: imgs=tf.expand_dims(imgs,0)	# we need a 3 rank tensor
 
-	cropz=tf.gather(imgs,np.concatenate(np.arange(newx//2),np.arange(imgs.shape[1]-newx//2,imgs.shape[1])),axis=1))
-	cropy=tf.gather(cropz,np.concatenate(np.arange(newx//2),np.arange(imgs.shape[2]-newx//2,imgs.shape[1])),axis=2))
+	cropz=tf.gather(imgs,np.concatenate((np.arange(newx//2),np.arange(imgs.shape[1]-newx//2,imgs.shape[1]))),axis=1)
+	cropy=tf.gather(cropz,np.concatenate((np.arange(newx//2),np.arange(imgs.shape[2]-newx//2,imgs.shape[1]))),axis=2)
 	return cropy[:,:,:,:newx//2+1]
 
-FRC_REFS={}
+FRC_RADS={}		# dictionary (cache) of constant tensors of size ny/2+1,ny containing the Fourier radius to each point in the image
+#FRC_NORM={}		# dictionary (cache) of constant tensors of size ny/2*1.414 (we don't actually need this for anything)
+#TODO iterating over the images is handled with a python for loop. This may not be taking great advantage of the GPU (just don't know)
+# two possible approaches would be to add an extra dimension to rad_img to cover image number, and handle the scatter_nd as a single operation
+# or to try making use of DataSet. I started a DataSet implementation, but decided it added too much design complexity
 def tf_frc(ima,imb):
-	"""Computes the FRC between two stacks of complex images. Returns a stack of 1D FSC curves."""
+	"""Computes the pairwise FRCs between two stacks of complex images. Returns a list of 1D FSC tensors."""
 	if ima.dtype!=tf.complex64 or imb.dtype!=tf.complex64 : raise Exception("tf_fsc requires FFTs")
 
-	global FRC_REFS
+	global FRC_RADS
+#	global FRC_NORM		# we don't actually need this unless we want to compute uncertainties (number of points at each radius)
 	ny=ima.shape[1]
-	try: rad_img=FRC_REFS[ny]
+	nimg=ima.shape[0]
+	nr=int(ny*0.70711)+1	# max radius we consider
+	try:
+		rad_img=FRC_RADS[ny]
+#		norm=FRC_NORM[ny]
 	except:
-		rad_img=np.vstack((np.fromfunction(lambda y,x: np.int32(np.hypot(x,y)),(ny//2,ny//2+1)),np.fromfunction(lambda y,x: np.int32(np.hypot(x,ny//2-y)),(ny//2,ny//2+1))))
+		rad_img=tf.expand_dims(tf.constant(np.vstack((np.fromfunction(lambda y,x: np.int32(np.hypot(x,y)),(ny//2,ny//2+1)),np.fromfunction(lambda y,x: np.int32(np.hypot(x,ny//2-y)),(ny//2,ny//2+1))))),2)
+#		rad_img=tf.constant(np.vstack((np.fromfunction(lambda y,x: np.int32(np.hypot(x,y)),(ny//2,ny//2+1)),np.fromfunction(lambda y,x: np.int32(np.hypot(x,ny//2-y)),(ny//2,ny//2+1)))))
+		FRC_RADS[ny]=rad_img
+#		ones=tf.ones(ima.shape)
+#		zero=tf.zeros((int(ny*0.70711)+1))
+#		norm=tf.tensor_scatter_nd_add(zero, rad_img, ones)  # computes the number of values at each Fourier radius
+#		FRC_NORM[ny]=norm
+
+	imar=tf.math.real(ima) # if you do the dot product with complex math the processor computes the cancelling cross-terms. Want to avoid the waste
+	imai=tf.math.imag(ima)
+	imbr=tf.math.real(imb)
+	imbi=tf.math.imag(imb)
+
+	imabr=imar*imbr		# compute these before squaring for normalization
+	imabi=imai*imbi
+
+	imar=imar*imar		# just need the squared versions, not the originals now
+	imai=imai*imai
+	imbr=imbr*imbr
+	imbi=imbi*imbi
+
+	frc=[]
+	for i in range(nimg):
+		zero=tf.zeros([nr])
+#		print(zero.shape,rad_img.shape,imabr[i].shape)
+		cross=tf.tensor_scatter_nd_add(zero,rad_img,imabr[i])	#start with zero when we add the real component
+		cross=tf.tensor_scatter_nd_add(cross,rad_img,imabi[i])	#add the imaginary component to the real
+
+		aprd=tf.tensor_scatter_nd_add(zero,rad_img,imar[i])
+		aprd=tf.tensor_scatter_nd_add(aprd,rad_img,imai[i])
+
+		bprd=tf.tensor_scatter_nd_add(zero,rad_img,imbr[i])
+		bprd=tf.tensor_scatter_nd_add(bprd,rad_img,imbi[i])
+
+		frc.append(cross/tf.sqrt(aprd*bprd))
+
+	return frc
+
+FSC_REFS={}
+def tf_fsc(ima,imb):
+	"""Computes the FSC between a stack of complex volumes and a single reference volume. Returns a stack of 1D FSC curves."""
+	if ima.dtype!=tf.complex64 or imb.dtype!=tf.complex64 : raise Exception("tf_fsc requires FFTs")
+
 
 #### Project 3d Gaussian coordinates based on transforms to make projection
 ##   input:  pts - ( batch size, number of Gaussian, 3 (x,y,z) )

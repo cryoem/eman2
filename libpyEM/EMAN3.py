@@ -53,7 +53,7 @@ import json
 from collections import OrderedDict
 import traceback
 from pathlib import Path
-
+import numpy as np
 import threading
 
 ### If we ever need to add 'cleanup' exit code, this is how to do it. Drawn from the old BDB code.
@@ -123,12 +123,17 @@ XYData.__len__=XYData.get_size
 #Transform3D.__str__=lambda x:"Transform3D(\t%7.4g\t%7.4g\t%7.4g\n\t\t%7.4g\t%7.4g\t%7.4g\n\t\t%7.4g\t%7.4g\t%7.4g)\nPretrans:%s\nPosttrans:%s"%(x.at(0,0),x.at(0,1),x.at(0,2),x.at(1,0),x.at(1,1),x.at(1,2),x.at(2,0),x.at(2,1),x.at(2,2),str(x.get_pretrans()),str(x.get_posttrans()))
 
 try:
-	if __IPYTHON__ : GUIMode=True
-	from PyQt5 import QtGui, QtWidgets
-	app=QtWidgets.qApp
+	if __session__ is not None :
+		GUIMode="jupyter"
+		import ipykernel
 except:
-	GUIMode=False
-	app = 0
+	try:
+		if __IPYTHON__ : GUIMode="ipython"
+		from PyQt5 import QtGui, QtWidgets
+		app=QtWidgets.qApp
+	except:
+		GUIMode=None
+		app = 0
 
 GUIbeingdragged=None
 originalstdout = sys.stdout
@@ -1296,7 +1301,7 @@ def e3display(data,vtype="auto",vname=None,dname="Unknown",settings={},port=3198
 def display(img,force_2d=False,force_plot=False):
 	"""Generic display function for images or sets of images. You can force images to be displayed in 2-D or as a plot with
 	the optional flags"""
-	if GUIMode:
+	if GUIMode=="ipython":
 		from eman2_gui import emimage
 		if isinstance(img,tuple) : img=list(img)
 		image = emimage.EMImageWidget(img,None,app,force_2d,force_plot)
@@ -1342,7 +1347,7 @@ def euler_display(emdata_list):
 		print("gui mode is disabled")
 
 def browse():
-	if GUIMode:
+	if GUIMode=="ipython":
 		from eman2_gui.emselector import EMBrowser
 		browser = EMBrowser()
 		browser.show()
@@ -1384,20 +1389,55 @@ def plot_image_similarity(im1,im2,skipzero=True,skipnearzero=False):
 	plot((x,y))
 	return (x,y)
 
-def plot(data,data2=None,data3=None,show=1,size=(800,600),path="plot.png"):
-	"""plots an image or an array using the matplotlib library"""
-	if GUIMode:
-		from eman2_gui.emplot2d import EMPlot2DWidget
-		plotw=EMPlot2DWidget(application=app)
-		plotw.set_data(data,"interactive")
-		if data2!=None : plotw.set_data(data2,"interactive2")
-		if data3!=None : plotw.set_data(data3,"interactive3")
-		plotw.setWindowTitle("2D Plot")
-		plotw.show()
-		try: plotw.raise_()
-		except: pass
-#		app.show_specific(plotw)
-		return plotw
+def plot(data,datax=None,flags="line",color="auto"):
+	"""This will try and make a 2-D plot whatever is provided in a sensible way. The interface has changed since EMAN2.
+	data - one or more arrays of Y values
+	datax - one or more arrays of X values. Number of values must match data. If data is multiple arrays, and datax is a single array, it will be used for all y values
+	flags - comma separated list of line, scatter
+	color - name or "auto"
+	"""
+
+	if GUIMode=="jupyter":
+		from bokeh.plotting import figure, output_notebook, show
+
+		output_notebook()      # output to Jupiter
+
+		# create a new plot
+		p = figure(tools="pan,box_zoom,reset,save")
+
+		if isinstance(data,XYData):
+			data=[np.array(data.get_xlist())]
+			datax=[np.array(data.get_ylist())]
+
+		if isinstance(data,EMData):
+			if data["nz"]!=1: raise Exception("Only 1 or 2D EMData objects may be used with plot()")
+			if data["ny"]==1: data=[data.numpy()]
+			else: data=data.numpy()
+
+		try:
+			data=np.array(data)
+			if data.ndim==1 : data=np.expand_dims(data,0)
+		except:
+			try:
+				if len(data)>1 and isinstance(data[0],EMData):
+					data=np.array([d.numpy() for d in data])
+				else: raise Exception("plot() doesn't have a handler for data of this type")
+			except: raise Exception("plot() doesn't have a handler for this type of data")
+
+		if datax is None:
+			datax=np.arange(len(data[0]))
+
+		if datax.ndim==2:
+			for i in range(len(data)):
+				p.line(datax[i], data[i], line_width=1)
+		else:
+			for d in data:
+				p.line(datax,d,line_width=1)
+
+		show(p)
+
+	elif GUIMode=="ipython":
+		raise Exception("EMAN3 Plot() is currently Jupyter-only")
 	else :
 		import matplotlib
 		matplotlib.use('Agg')

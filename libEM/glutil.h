@@ -30,12 +30,11 @@
  * */
 #ifndef glutil_h__
 #define glutil_h__
-
 #include <vector>
 #include "vec3.h"
 #include "transform.h"
 #include "emdata.h"
-
+//#include "exception.h"
 #ifdef __APPLE__
 	#include "OpenGL/gl.h"
 #else // WIN32, LINUX
@@ -118,9 +117,14 @@ namespace EMAN
 		 * @param flags	2-add a 256 int greyscale histogram to the end of the image array,4-invert y axis, 1/8/16 ignored
 		 * @exception ImageDimensionException If the image is not 2D.
 		 */
-		static EMBytes render_annotated24(EMData * emdata, EMData *intmap, int x, int y, int xsize, int ysize,
-								   int bpl, float scale, int min_gray, int max_gray,
-							 float min_render, float max_render,int flags);
+
+
+		static EMBytes render_annotated24(EMData * emdata, EMData *intmap , int x, int y, int xsize, int ysize,
+ 								   int bpl, float scale, int min_gray, int max_gray,
+ 							 float min_render, float max_render,int flags, const vector<float> & rgblist);
+		// static EMBytes render_annotated24(EMData * emdata, EMData *intmap, int x, int y, int xsize, int ysize,
+		// 						   int bpl, float scale, int min_gray, int max_gray,
+		// 					 float min_render, float max_render,int flags);
 
 		/** Get an isosurface display list
 		* Traverses the tree, marches the cubes, and renders a display list using the associated vertices and normals
@@ -129,34 +133,34 @@ namespace EMAN
 		* @return an OpenGL display list number
 		*/
 		static unsigned long get_isosurface_dl(MarchingCubes* mc, unsigned int tex_id = 0, bool surface_face_z = false, bool recontour = true);
-		
+
 		/** Render a isosurface using buffer objects, this uses non-deprecated methods and improves performance */
 		static void render_using_VBOs(MarchingCubes* mc, unsigned int tex_id = 0, bool surface_face_z = false);
-		
+
 		/** Recountour isosurface, for use with VBOs */
 		static void contour_isosurface(MarchingCubes* mc);
-		
+
 		/** Load a EMAN style transform to open GL w/o having to go through python
 		* Calls glLoadTransposeMatrix rather than glLoadMatrix to convert between C/C++/Python row-major format and openGL's Column major format
 		* @param xform The Transform to apply
 		**/
 		static void glLoadMatrix(const Transform& xform);
-		
+
 		/** Mult a EMAN style transform to open GL w/o having to go through python
 		* Calls glMultTransposeMatrix rather than glMultMatrix to convert between C/C++/Python row-major format and openGL's Column major format
 		* @param xform The Transform to apply
 		**/
 		static void glMultMatrix(const Transform& xform);
-		
+
 		/** Draw a bounding box. This is done on the C side to simplify vertex arrays */
 		static void glDrawBoundingBox(float width, float height, float depth);
-		
+
 		static void glDrawDisk(float radius, int spokes);
-		
+
 	private:
 		//This is a buffer for the bounding box
 		static GLuint buffer[2];
-		
+
 	};
 
 }

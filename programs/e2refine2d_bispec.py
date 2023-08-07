@@ -179,9 +179,9 @@ def main():
 	# we are using a subspace defined by some class-averages or projections instead of the particles
 	if options.basisrefs!=None:
 		if invmode=="bispec":
-			run("e2proc2dpar.py {} {}/bref_invar.hdf --process math.bispectrum.slice:fp={}:size={} --threads {}".format(options.basisrefs,options.path,bispec_invar_parm[1],bispec_invar_parm[0],options.threads))
+			run("e2proc2d.py {} {}/bref_invar.hdf --process math.bispectrum.slice:fp={}:size={} ".format(options.basisrefs,options.path,bispec_invar_parm[1],bispec_invar_parm[0]))
 		else:
-			run("e2proc2dpar.py {} {}/bref_invar.hdf --process math.harmonic:fp=4 --threads {}".format(options.basisrefs,options.path,bispec_invar_parm[1],bispec_invar_parm[0],options.threads))
+			run("e2proc2d.py {} {}/bref_invar.hdf --process math.harmonic:fp=4 ".format(options.basisrefs,options.path,bispec_invar_parm[1],bispec_invar_parm[0]))
 		
 		run("e2msa.py %s/bref_invar.hdf %s %s --projin %s --nbasis %0d --mode %s --nomeansub %s"%(options.path,fpbasis,inputproj,fpfile,options.nbasisfp,msamode,normproj))
 
@@ -256,9 +256,9 @@ def class_postproc(options,it,invmode):
 	run("e2proc2d.py %s/classes_%02d.hdf %s/classes_%02d.hdf --inplace --calccont --process=filter.highpass.gauss:cutoff_pixels=2 --process=normalize.circlemean:radius=-5"%(options.path,it,options.path,it))
 
 	if invmode=="bispec" :
-		run("e2proc2dpar.py {}/classes_{:02d}.hdf {}/classes_fp_{:02d}.hdf --process math.bispectrum.slice:fp={}:size={} --threads {}".format(options.path,it,options.path,it,bispec_invar_parm[1],bispec_invar_parm[0],options.threads))
+		run("e2proc2d.py {}/classes_{:02d}.hdf {}/classes_fp_{:02d}.hdf --process math.bispectrum.slice:fp={}:size={}".format(options.path,it,options.path,it,bispec_invar_parm[1],bispec_invar_parm[0]))
 	else:
-		run("e2proc2dpar.py {}/classes_{:02d}.hdf {}/classes_fp_{:02d}.hdf --process math.harmonic:fp=4 --threads {}".format(options.path,it,options.path,it,options.threads))
+		run("e2proc2dpar.py {}/classes_{:02d}.hdf {}/classes_fp_{:02d}.hdf --process math.harmonic:fp=4 ".format(options.path,it,options.path,it))
 		
 	run("e2stacksort.py %s/classes_fp_%02d.hdf %s/classes_fp_%02d.hdf %s/classes_%02d.hdf %s/classes_%02d.hdf --simcmp=ccc --seqalicen"%(options.path,it,options.path,it,options.path,it,options.path,it))
 	
