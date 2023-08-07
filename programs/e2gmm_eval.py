@@ -85,8 +85,8 @@ def main():
 		for i,a in enumerate(axis): px[:,a]=rg[:,i]
 		py=pca.inverse_transform(px).astype(np.float32)
 		#print(py)
-		
-		os.environ["CUDA_VISIBLE_DEVICES"]='0' 
+		if "CUDA_VISIBLE_DEVICES" not in os.environ:
+			os.environ["CUDA_VISIBLE_DEVICES"]='0' 
 		import tensorflow as tf
 		
 		emdir=e2getinstalldir()
@@ -95,7 +95,7 @@ def main():
 		decode_model=tf.keras.models.load_model(options.decoder,compile=False,custom_objects={"ResidueConv2D":ResidueConv2D})
 		pcnt=decode_model(py).numpy()
 		p00=np.loadtxt(options.model00)
-		pcnt=pcnt-p00
+		# pcnt=pcnt-p00
 		
 		if options.selgauss:
 			imsk=make_mask_gmm(options.selgauss, p00).numpy()

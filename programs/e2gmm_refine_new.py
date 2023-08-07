@@ -253,14 +253,6 @@ def pts2img_one(args):
 
 @tf.function()
 def pts2img(pts, angs):
-	#pts, angs=args
-	#p=pts2img_one((pts[0], angs[0]))
-	# p=pts2img_one_test((pts[0], angs[0]))
-	# print(p)
-	# print(tf.reduce_sum(p))
-	# exit()
-	# img=tf.vectorized_map(pts2img_one_test, (pts, angs))
-	# print(img)
 	img=tf.vectorized_map(pts2img_one_sig, (pts, angs))
 	return tf.math.real(img), tf.math.imag(img)
 
@@ -693,46 +685,11 @@ def buid_decoder_graph(pts, options, nlayer=4, existlayer=[], kk=1, ptpool=[]):
 	decode_model=tf.keras.Model(x0, y2)
 	
 	return decode_model, declayers, ptpool
-	
-	#x0=tf.keras.Input(shape=(options.nmid))
-	#y1=x0
-	#print(y1.shape)
-
-	#y1=tf.keras.layers.Dense(np.prod(midshape))(y1)
-	#y1=tf.keras.layers.Reshape(midshape)(y1)
-	#print(y1.shape)
-	
-	#k1s=[256]*nlayer
-	#k1s[-1]=5
-	#for li in range(nlayer):
-		#k1=k1s[li]
-		#if li==nlayer-1:
-			#ly=tf.keras.layers.Dense(k1,kernel_regularizer=l2, kernel_initializer=kinit)
-		#else:
-			#ly=tf.keras.layers.Dense(k1,kernel_regularizer=l2)
-		#y0=ly(y1)
-		
-		#y1=tf.gather(y0, dstid[nlayer-li-1], axis=1)
-		#y1=tf.reduce_sum(y1, axis=2)
-		
-		#if li==nlayer-1: 
-			#y1=tf.math.tanh(y1)
-		#else:
-			#y1=tf.nn.relu(y1)
-			#y1=tf.keras.layers.Dropout(.1)(y1)
-			#y1=tf.keras.layers.BatchNormalization()(y1)
-			
-		#print(li, y0.shape, y1.shape)
-		
-	## bshift=np.array([-.5,-.5,-.5,0,.5]).astype(floattype)
-	#y2=y1+pts  #+tf.constant(bshift)
-	#decode_model=tf.keras.Model(x0, y2)
-	#return decode_model
 
 #### build decoder network. 
 ## input integer to initialize as zeros with N points
 ## input point list to initialize to match input
-def build_decoder(pts, mid=512, ninp=4, conv=False):
+def build_decoder(pts, mid=512, ninp=4, conv=False, heterg=False):
 	if isinstance(pts, int):
 		npt=pts
 		initpts=False
@@ -745,7 +702,7 @@ def build_decoder(pts, mid=512, ninp=4, conv=False):
 	
 	kinit=tf.keras.initializers.RandomNormal(0,1e-2)
 	l2=tf.keras.regularizers.l2(1e-3)
-	layer_output=tf.keras.layers.Dense(npt*5, kernel_initializer=kinit, activation="sigmoid",use_bias=True)
+	layer_output=tf.keras.layers.Dense(npt*5, kernel_initializer=kinit, activation="tanh",use_bias=True)
 	if conv:
 			
 		layers=[
@@ -783,22 +740,22 @@ def build_decoder(pts, mid=512, ninp=4, conv=False):
 	## the five columns are for x,y,z,amp,sigma
 	## the range for x,y,z is [-.5, .5]
 	## range for amp is [0,1], sigma is [.5, 1.5]
-	bshift=np.array([-.5,-.5,-.5,0,.5]).astype(floattype)
+	# bshift=np.array([-.5,-.5,-.5,0,.5]).astype(floattype)
 	
 	y0=x0
 	for l in layers:
 		y0=l(y0)
 		
-	y0=y0+tf.constant(bshift)
-	gen_model=tf.keras.Model(x0, y0)
+	y0=y0*.5
 	
-	## match the bias of the final layer to input
-	## need to undo the sigmoid activation
-	if initpts:
-		bs=pts.copy()-bshift
-		bs=np.clip(bs, 1e-6, 1-1e-6)
-		bs=-np.log(1./bs-1)
-		layer_output.bias.assign(bs.flatten())
+	if heterg:
+		pass
+	elif initpts:
+		y0=y0+pts.copy().astype(floattype)
+	else:
+		y0=y0+np.array([0,0,0,.5,1]).astype(floattype)		
+		
+	gen_model=tf.keras.Model(x0, y0)
 	
 	return gen_model
 
@@ -835,7 +792,7 @@ def build_decoder_anchor(pts, cnt, ninp ):
 	for l in layers:
 		y0=l(y0)
 
-	y0=y0+pts
+	# y0=y0
 	layer_output.weights[0].assign(tf.transpose(dwt))
 	decode_model=tf.keras.Model(x0, y0)
 	return decode_model
@@ -852,24 +809,6 @@ def build_decoder_rigidbody(pts, ninp, foci):
 		tf.keras.layers.Dense(256, activation="relu"),
 		tf.keras.layers.Dense(256, activation="relu"),
 		tf.keras.layers.Dense(256, activation="relu"),
-		#tf.keras.layers.Reshape((16,16,1)),
-		#tf.keras.layers.Conv2DTranspose(16, 3, activation="relu", strides=(2,2), padding="same"),#8
-		#tf.keras.layers.Conv2DTranspose(16, 3, activation="relu", strides=(2,2), padding="same"),#16
-		#tf.keras.layers.Dropout(.1),
-		##ResidueConv2D(64, 5, activation="relu", padding="same"),
-		##tf.keras.layers.Dropout(.1),
-		#ResidueConv2D(64, 5, activation="relu", padding="same"),
-		#tf.keras.layers.Dropout(.1),
-		#ResidueConv2D(64, 5, activation="relu", padding="same"),
-		#tf.keras.layers.Dropout(.1),
-		#ResidueConv2D(64, 5, activation="relu", padding="same"),
-		#tf.keras.layers.Dropout(.1),
-		#ResidueConv2D(64, 5, activation="relu", padding="same"),
-		#tf.keras.layers.Dropout(.1),
-		##tf.keras.layers.Conv2DTranspose(16, 5, activation="relu", strides=(1,1), padding="same"),
-		#tf.keras.layers.Conv2DTranspose(16, 5, activation="relu", strides=(1,1), padding="same"),
-		#tf.keras.layers.Flatten(),
-		#tf.keras.layers.Dropout(.3),
 		tf.keras.layers.BatchNormalization(),    
 		tf.keras.layers.Dense(6, activation="linear",  kernel_regularizer=l2, kernel_initializer=kinit),
 	]
@@ -885,7 +824,7 @@ def calc_bond(pout, bond):
 	
 	px=tf.gather(pout, bond[:,0], axis=1)[:,:,:3]
 	py=tf.gather(pout, bond[:,1], axis=1)[:,:,:3]
-	dst=d=tf.math.sqrt(tf.reduce_sum((px-py)**2, axis=2))
+	dst=tf.math.sqrt(tf.nn.relu(tf.reduce_sum((px-py)**2, axis=2)))
 	return dst
 	
 def calc_angle(pout, ang):
@@ -896,7 +835,9 @@ def calc_angle(pout, ang):
 	b0=p0-p1
 	b1=p2-p1
 	ang=tf.reduce_sum(b0*b1, axis=2)
-	ang=ang/tf.linalg.norm(b0, axis=2)/tf.linalg.norm(b1, axis=2)
+	n0=tf.linalg.norm(b0, axis=2)*tf.linalg.norm(b1, axis=2)
+	ang=tf.math.divide_no_nan(ang, n0)
+	ang=tf.minimum(tf.maximum(ang, -1),1)
 	ang=tf.math.acos(ang)*180/np.pi
 
 	return ang
@@ -907,6 +848,9 @@ def train_decoder(gen_model, trainset, params, options, pts=None):
 	"""pts input can optionally be used as a regularizer if they are known to be good"""
 	opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate) 
 	wts=gen_model.trainable_variables
+	
+	pas=[int(i) for i in options.pas]
+	pas=tf.constant(np.array([pas[0],pas[0],pas[0],pas[1],pas[2]], dtype=floattype))
 	
 	if options.bond:
 		bond=np.loadtxt(options.bond).astype(int)
@@ -949,6 +893,7 @@ def train_decoder(gen_model, trainset, params, options, pts=None):
 				#else: 
 				conf=tf.zeros((xf.shape[0],options.nmid), dtype=floattype)
 				pout=gen_model(conf)
+				pout*=pas
 				std=tf.reduce_mean(tf.math.reduce_std(pout, axis=1), axis=0)
 				imgs_cpx=pts2img(pout, xf)
 				fval=calc_frc(pj_cpx, imgs_cpx, params["rings"], minpx=options.minpx, maxpx=options.maxpx)
@@ -968,7 +913,7 @@ def train_decoder(gen_model, trainset, params, options, pts=None):
 					if options.angle:
 						ang=calc_angle(pout, angle)
 						da=tf.math.sqrt(tf.reduce_mean((ang-ang00)**2))
-						lossetc+=da*0.02
+						lossetc+=da*0.05
 			
 				l=loss+lossetc*0.2
 				
@@ -1268,6 +1213,13 @@ def train_heterg_deconly(dcpx, xfsnp, allconf, pts, decode_model, params, imsk, 
 	if options.anchor:
 		wts=wts[:-1]
 	
+	if options.decoderext:
+		decoder00=tf.keras.models.load_model(f"{options.decoderext}",compile=False)
+		dc=decoder00(allconf[:1])
+		print(dc.shape)
+		if options.decoderext_mask:
+			imsk00=make_mask_gmm(options.decoderext_mask, pts[0].numpy())
+	
 	if options.bond:
 		bond=np.loadtxt(options.bond).astype(int)
 		print("Using bond constraints. {} bonds loaded.".format(len(bond)))
@@ -1305,7 +1257,7 @@ def train_heterg_deconly(dcpx, xfsnp, allconf, pts, decode_model, params, imsk, 
 		
 		opt1=tf.keras.optimizers.Adam(learning_rate=1e-3)
 		cfstd=np.std(allconf)
-		print(itr, cfstd)
+		# print(itr, cfstd)
 		i=0
 		cost=[]
 		costetc=[]
@@ -1334,33 +1286,24 @@ def train_heterg_deconly(dcpx, xfsnp, allconf, pts, decode_model, params, imsk, 
 					cl=tf.reduce_mean(tf.maximum(cl-2,0))
 					cl+=tf.maximum(0,tf.math.reduce_std(conf)-.15)*.01
 					
-					
 					## mask out the target columns based on --pas
 					pout=decode_model(conf, training=True)
 					p0=tf.zeros((xf.shape[0],npt, 5))+pts
 					
-					l3=0
-					if options.rigidbody:
-						pout=rotpts(p0[:,:,:3], pout, imsk) 
-						pout=tf.concat([pout, p0[:,:,3:]], axis=2)
+					## mask selected rows
+					pout=pout*imsk[None,:,None]
+					
+					if options.decoderext:
+						pout00=decoder00(conf, training=False)
 						
-					else:
-						lmsk=(pout-p0)*(1-imsk[None,:,None]) 
-						# lmsk=tf.math.sqrt(tf.reduce_sum(lmsk**2, axis=2))
-						# lmsk=tf.reduce_sum(lmsk, axis=1)/tf.reduce_sum(1-imsk)
-						# lmsk=tf.reduce_mean(lmsk)
-						lmsk=tf.reduce_sum(lmsk**2)
-						l3+=lmsk
+						if options.decoderext_mask:
+							pout00=pout00*imsk00[None,:,None]
+							
+						pout+=pout00
+					
 						
-						## mask selected rows
-						pout=pout*imsk[None,:,None]+p0*(1-imsk[None,:,None]) 
-					
-					
-					lpas=(pout-p0)*(1-pas)
-					lpas=tf.reduce_sum(lpas**2)
-					l3+=lpas*.1
-					
-					pout=pout*pas+p0*(1-pas)
+					pout=pout*pas
+					pout+=p0
 					
 					## finally generate images and calculate frc
 					imgs_cpx=pts2img(pout, xf)
@@ -1384,7 +1327,7 @@ def train_heterg_deconly(dcpx, xfsnp, allconf, pts, decode_model, params, imsk, 
 							da=tf.math.sqrt(tf.reduce_mean((ang-ang00)**2))
 							lossetc+=da*.1
 				
-					l=loss+lossetc*.005+l3*l3*options.regmask
+					l=loss+lossetc*.005
 					
 					
 				if options.usetest==False or len(cost)<nbatch*.95:
@@ -1488,10 +1431,12 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, imsk, option
 	nbatch=0
 	for t in trainset: nbatch+=1
 	
+	
+	etcwt=0
 	## Training
 	allcost=[]
 	for itr in range(options.niter):
-		
+		lossratio=[]
 		i=0
 		cost=[]
 		costetc=[]
@@ -1505,7 +1450,7 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, imsk, option
 				## regularization of the latent layer range
 				## ideally the output is within a 1-radius circle
 				## but we want to make the contraint more soft so it won't affect convergence
-				cl=tf.math.sqrt(tf.reduce_sum(conf**2, axis=1))
+				cl=tf.math.sqrt(tf.nn.relu(tf.reduce_sum(conf**2, axis=1)))
 				cl=tf.reduce_mean(tf.maximum(cl-1,0))
 				
 				
@@ -1519,28 +1464,18 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, imsk, option
 				pout=decode_model(conf, training=True)
 				p0=tf.zeros((xf.shape[0],npt, 5))+pts
 				
-				l3=0
 				if options.rigidbody:
 					pout=rotpts(p0[:,:,:3], pout, imsk) 
 					pout=tf.concat([pout, p0[:,:,3:]], axis=2)
 					
-				else:
-					lmsk=(pout-p0)*(1-imsk[None,:,None]) 
-					# lmsk=tf.math.sqrt(tf.reduce_sum(lmsk**2, axis=2))
-					# lmsk=tf.reduce_sum(lmsk, axis=1)/tf.reduce_sum(1-imsk)
-					# lmsk=tf.reduce_mean(lmsk)
-					lmsk=tf.reduce_sum(lmsk**2)
-					l3+=lmsk
 					
-					## mask selected rows
-					pout=pout*imsk[None,:,None]+p0*(1-imsk[None,:,None]) 
+				## mask selected rows
+				pout=pout*imsk[None,:,None]
+			
 				
+				pout=pout*pas
 				
-				lpas=(pout-p0)*(1-pas)
-				lpas=tf.reduce_sum(lpas**2)
-				l3+=lpas*.1
-				
-				pout=pout*pas+p0*(1-pas)
+				pout+=p0
 				
 				## finally generate images and calculate frc
 				imgs_cpx=pts2img(pout, xf)
@@ -1552,25 +1487,27 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, imsk, option
 				if options.bond:
 					dst=calc_bond(pout, bond)
 					dr=(dst-dst00)*options.apix*options.maxboxsz
-					dr=tf.math.sqrt(tf.reduce_mean(dr**2))
+					dr=tf.math.sqrt(tf.nn.relu(tf.reduce_mean(dr**2)))
 					lossetc+=dr*1
 					if options.hbond:
 						hdst=calc_bond(pout, hbond)
 						drh=(hdst-hdst00)*options.apix*options.maxboxsz
-						drh=tf.math.sqrt(tf.reduce_mean(drh**2))
+						drh=tf.math.sqrt(tf.nn.relu(tf.reduce_mean(drh**2)))
 						lossetc+=drh*1
 					if options.angle:
 						ang=calc_angle(pout, angle)
-						da=tf.math.sqrt(tf.reduce_mean((ang-ang00)**2))
-						lossetc+=da*.1
+						da=tf.math.sqrt(tf.nn.relu(tf.reduce_mean((ang-ang00)**2)))
+						# lossetc+=da*.1
+						
+					lossratio.append([loss, lossetc])
 			
-				l=loss+lossetc*.005+l3*l3*options.regmask
-				
+				l=loss+lossetc*etcwt
 				
 			if options.usetest==False or len(cost)<nbatch*.95:
 				cost.append(loss)
-				grad=gt.gradient(l, wts)
-				opt.apply_gradients(zip(grad, wts))
+				if options.bond and itr>0:
+					grad=gt.gradient(l, wts)
+					opt.apply_gradients(zip(grad, wts))
 			else:
 				testcost.append(loss)
 			
@@ -1590,7 +1527,17 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, imsk, option
 					
 			if options.regmask>0: etc+=f", out of mask {l3:.4f}"
 			costetc.append(ce)
-			
+			for a in [dr, drh, da, loss]:
+				if np.isnan(a):
+					
+					print()
+					print(dr, drh, da, loss)
+					print(grd)
+					print("####################")
+					print(conf)
+					print("####################")
+					print(pout)
+					aaaaaaaaaaaa
 			i+=1
 			if i%10==0: 
 				sys.stdout.write("\r {}/{}\t{:.3f} {}         ".format(len(cost), nbatch, loss, etc))
@@ -1608,6 +1555,13 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, imsk, option
 			if options.angle:
 				etc+=f", angle {c[2]:.3f}"
 			etc+=f", geometry  {c[3]:.3f}"
+			
+			lossratio=np.array(lossratio)
+			lsr=np.mean(lossratio, axis=0)
+			if itr==0:
+				etcwt=abs(lsr[0])/abs(lsr[1])*.001
+			print()
+			print(f"FRC: {lsr[0]:.6f}, bonds: {lsr[1]:.6f}, bond weitght {etcwt:.4f}, lossetc: {lsr[1]*etcwt:.6f}")
 			
 		if options.usetest:
 			print("iter {}, train loss : {:.6f}; test loss {:.4f}".format(itr, np.mean(cost), np.mean(testcost)))
@@ -1654,9 +1608,9 @@ def make_mask_gmm(selgauss, pts):
 	
 	else:
 		## read from a list of points starting from 1
-		i=np.loadtxt(selgauss).astype(int).flatten()
-		m=np.zeros(len(pts), dtype=floattype)
-		m[i]=1
+		m=np.loadtxt(selgauss).astype(floattype).flatten()
+		# m=np.zeros(len(pts), dtype=floattype)
+		# m[i]=1
 		imsk=tf.constant(m)
 	
 	return imsk
@@ -1683,9 +1637,7 @@ def main():
 	parser.add_argument("--decoderout", type=str,help="Save the trained decoder model. Filename should be .h5", default=None)
 	parser.add_argument("--encoderin", type=str,help="Rather than initializing the decoder from a model, read an existing trained encoder", default="")
 	parser.add_argument("--encoderout", type=str,help="Save the trained encoder model. Filename should be .h5", default=None)
-	#parser.add_argument("--projs", type=str,help="projections with orientations (in hdf header or comment column of lst file) to train model", default="")
 	parser.add_argument("--evalmodel", type=str,help="generate model projection images to the given file name", default="")
-	#parser.add_argument("--evalsize", type=int,help="Box size for the projections for evaluation.", default=-1)
 	parser.add_argument("--ptclsin", type=str,help="particles input for alignment", default="")
 	parser.add_argument("--ptclsout", type=str,help="aligned particle output", default="")
 	parser.add_argument("--learnrate", type=float,help="learning rate for model training only. Default is 1e-5. ", default=1e-5)
@@ -1706,7 +1658,7 @@ def main():
 	parser.add_argument("--fromscratch", action="store_true", default=False ,help="start from coarse alignment. otherwise will only do refinement from last round")
 	parser.add_argument("--midout", type=str,help="middle layer output", default="")
 	parser.add_argument("--midin", type=str,help="middle layer input for alignment", default="")
-	parser.add_argument("--pas", type=str,help="choose whether to adjust position, amplitude, sigma. use 3 digit 0/1 input. default is 110, i.e. only adjusting position and amplitude", default="110")
+	parser.add_argument("--pas", type=str,help="choose whether to adjust position, amplitude, sigma. use 3 digit 0/1 input. default is 111", default="111")
 	parser.add_argument("--nmid", type=int,help="size of the middle layer", default=4)
 	parser.add_argument("--ndense", type=int,help="size of the layers between the middle and in/out, variable if -1. Default 512", default=512)
 	#parser.add_argument("--mask", type=str,help="remove points outside mask", default="")
@@ -1725,7 +1677,8 @@ def main():
 	parser.add_argument("--phantompts", type=str,help="load extra phatom points for gradient calculation.", default=None)
 	parser.add_argument("--normgrad", action="store_true",help="normalize gradient columns also skip sigma column. ", default=False)
 	parser.add_argument("--graphnet", action="store_true",help="use graph network. ", default=False)
-
+	parser.add_argument("--decoderext", type=str,help="load existing decoder. it will not be trained, but the output will be added to the output of the decoder to be trained.", default=None)
+	parser.add_argument("--decoderext_mask", type=str,help="mask for the loaded existing decoder. different from the current training mask.", default=None)
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv,options.ppid)
@@ -1958,7 +1911,7 @@ def main():
 			elif options.graphnet:
 				decode_model, declayers, ptpool=buid_decoder_graph(pts, options)
 			else:
-				decode_model=build_decoder(pts[0].numpy(), ninp=options.nmid, conv=options.conv,mid=options.ndense)
+				decode_model=build_decoder(pts[0].numpy(), ninp=options.nmid, conv=options.conv,mid=options.ndense, heterg=True)
 # 		
 		if useencoder:
 			print("Input shape: ",allgrds[:bsz].shape)
@@ -1971,7 +1924,7 @@ def main():
 		out=decode_model(mid)
 		print("Output shape: ",out.shape)
 		#print("Deviation from neutral model: ", np.mean(abs(out-pts)))
-		
+		allconf=np.zeros(())
 		if options.niter>0 or options.retraindec>0:
 			#### actual training
 			
@@ -1997,8 +1950,11 @@ def main():
 				allconf=calc_conf(encode_model, allgrds, 1000)
 				
 			else:
-				allconf=np.zeros((len(xfsnp), options.nmid), dtype=floattype)
-				allconf+=tf.random.normal(allconf.shape)*0.01
+				if options.midin:
+					allconf=np.loadtxt(options.midin)[:,1:].astype(floattype)
+				else:
+					allconf=np.zeros((len(xfsnp), options.nmid), dtype=floattype)
+					allconf+=tf.random.normal(allconf.shape)*0.01
 				
 			if retraindec:
 				allconf=train_heterg_deconly(dcpx, xfsnp, allconf, pts, decode_model, params, imsk, options)
@@ -2012,10 +1968,10 @@ def main():
 			
 		## conformation output
 		if options.midout:
-			# if useencoder:
-			# 	mid=calc_conf(encode_model, allgrds, 1000)
-			# else:
-			mid=allconf.copy()
+			if len(allconf.shape)==0:
+				mid=calc_conf(encode_model, allgrds, 1000)
+			else:
+				mid=allconf.copy()
 			
 			sv=np.hstack([np.arange(len(mid))[:,None], mid])
 			print(mid.shape, sv.shape)
