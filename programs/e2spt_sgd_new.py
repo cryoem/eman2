@@ -25,6 +25,9 @@ def main():
 	parser.add_argument("--classify",action="store_true",help="classify particles to the best class. there is the risk that some classes may end up with no particle. by default each class will include the best batch particles, and different classes can overlap.",default=False)
 	parser.add_argument("--curve",action="store_true",help="Mode for filament structure refinement.",default=False)
 	parser.add_argument("--vector",action="store_true",help="similar to --curve but keep vector direction as well.",default=False)
+	parser.add_argument("--refine",action="store_true",help="only refine from existing orientations.",default=False)
+	parser.add_argument("--breaksym", type=str,help="require --refine", default=None)
+	parser.add_argument("--skipali",action="store_true",help="require --breaksym.",default=False)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int,help="ppid", default=-2)
 	parser.add_argument("--threads", type=int,help="threads", default=24)
@@ -86,17 +89,16 @@ def main():
 			idx=np.arange(npt)
 			np.random.shuffle(idx)
 			idx=np.sort(idx[:batch])
-			if options.curve:
+			if options.curve or options.vector or options.refine:
 				xfs=[]
 				for ii in idx:
 					s=info3d[ii]
-					#e=EMData(s["src"], s["idx"], True)
-					#print(ptcls, ii)
 					e=EMData(ptcls, int(ii), True)
-					#print(s)
 					xf=Transform(e["xform.align3d"])
-					r=Transform({"type":"eman", "phi":np.random.rand()*360})
-					xfs.append((r*xf).inverse())
+					if options.curve or options.vector:
+						r=Transform({"type":"eman", "phi":np.random.rand()*360})
+						xf=r*xf
+					xfs.append(xf.inverse())
 				
 			else:
 				tt=parsesym("c1")
@@ -150,6 +152,12 @@ def main():
 				cmd+=" --curve"
 			elif options.vector:
 				cmd+=" --vector"
+			elif options.refine:
+				if options.breaksym:
+					cmd+=f" --breaksym {options.breaksym}"
+					if options.skipali:
+						cmd+=" --skipali"
+
 			else:
 				cmd+=" --fromscratch"
 				
