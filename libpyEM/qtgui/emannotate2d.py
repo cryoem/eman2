@@ -127,9 +127,9 @@ class EMAnnotate2DWidget(EMGLWidget):
 		#self.tree_sels = []			# a list/item objects selected in the treeset to display with original color in rendering
 		self.rmousedrag=None		# coordinates during a right-drag operation
 		#self.mouse_mode_dict = {0:"emit", 1:"emit", 2:"emit", 3:"probe", 4:"measure", 5:"draw", 6:"emit", 7:"emit",8:"seg"}
-		self.mouse_mode_dict = {0:"emit", 1:"emit", 2:"probe", 3:"measure", 4:"emit", 5:"emit",6:"seg"}
+		self.mouse_mode_dict = {0:"emit", 1:"emit", 2:"probe", 3:"measure", 4:"emit",5:"seg"}
 
-		self.mouse_mode = 6         # current mouse mode as selected by the inspector
+		self.mouse_mode = 5         # current mouse mode as selected by the inspector
 		self.mag = 1.1				# magnification factor
 		self.invmag = 1.0/self.mag	# inverse magnification factor
 
@@ -180,14 +180,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 		#self.xform = Transform({"type":"eman","alt":self.alt,"az":self.az,"tx":self.full_data["nx"]//2,"ty":self.full_data["ny"]//2,"tz":self.full_data["nz"]//2+self.zpos})
 		self.xform = Transform()
 		self.display_group = False
-
-		s=np.arange(0, 15, 0.5)
-		#print(s.type)
-		sf=XYData()
-		sf.set_xy_list(s.tolist(),s.tolist())
-
-		#self.ctable = s.tolist()
-		self.need_new_RGB = 1
+		#self.need_new_RGB = 1
 		self.colors = self.create_palette(256)
 		self.ctable = self.create_RGB_list()
 
@@ -316,7 +309,9 @@ class EMAnnotate2DWidget(EMGLWidget):
 			return
 		self.mouse_mode = mode_num
 		print("Mouse mode is: ",mode_num,"which is", self.mouse_mode_dict[self.mouse_mode])
-		self.del_shapes()
+		#self.del_shapes()
+		self.del_shape("PROBE")
+		self.del_shape("MEAS")
 
 	def set_xform(self,tx,ty,tz,alt,az):
 		self.xform = Transform({"type":"eman","alt":alt,"az":az,"tx":tx,"ty":ty,"tz":tz})
@@ -451,6 +446,9 @@ class EMAnnotate2DWidget(EMGLWidget):
 			print("EMAnnotate2D requires data and annotation to be the same size")
 			raise Exception("EMAnnotate2D requires data and annotation to be the same size")
 
+		# if np.max(data) > 1:
+		# 	self.full_data=data/np.max(data)
+		# else:
 		self.full_data=data
 		self.full_annotation=annotation
 		self.nx = self.full_annotation["nx"]
@@ -696,59 +694,61 @@ class EMAnnotate2DWidget(EMGLWidget):
 			#s = (255+(1 - i/(n*4))*256)%256
 			#v = (255+(1-i/(n*8))*256)%256
 			#s = ((1-4*i/(n))*255)%256
-			s = ((0.8-3*i/(n))*255)%256
+			s = ((0.7-3*i/(n))*255)%256
 			v = 255
-			l.append(QtGui.QColor.fromHsv(h,s,v))
+			l.append(QtGui.QColor.fromHsv(h,s,min(v+30,255)))
 		return l
 
 	def get_color_palette(self):
 		return self.colors
 
 
-	# def create_palette(self,n=256):
-	# 	#Create color palette for table items and indices
-	# 	l = []
-	# 	#ctable = list(to_numpy(self.target.ctable))
-	# 	ctable = self.target.ctable
-	# 	print("Len ctable", len(ctable))
-	# 	for i in range(0,256*3,3):
-	# 		r=ctable[255*256*3+i]
-	# 		g=ctable[255*256*3+i+1]
-	# 		b=ctable[255*256*3+i+2]
-	# 		l.append(QtGui.QColor.fromRgb(r,g,b))
-	# 		# if i < 10:
-	# 		# 	print("rgb2",r,g,b)
-	# 	return l
+	def create_palette_from_RGB(self):
+		#Create color palette for table items and indices
+		l = [QtGui.QColor.fromHsv(0,0,255)]
+		#ctable = list(to_numpy(self.target.ctable))
+		ctable = self.target.ctable
+		#print("Len ctable", len(ctable))
+		n_col = len(self.target.ctable)
+		for i in range(3,n_col*3,3):
+			r=ctable[255*n_col*3+i]
+			g=ctable[255*n_col*3+i+1]
+			b=ctable[255*n_col*3+i+2]
+			l.append(QtGui.QColor.fromRgb(r,g,b))
+			# if i < 10:
+			# 	print("rgb2",r,g,b)
+		return l
 
 	def create_RGB_list(self):
-		if self.need_new_RGB == 0:
-			return self.ctable
+		# if self.need_new_RGB == 0:
+		# 	return self.ctable
+		#
+		# else:
+		print("Repopulate RGBlist")
+		ctable = []
+		for v in range(256):
+			# for i in (range(n)):
+			# 	if i == 0:
+			# 		h = 0
+			# 		s = 0
+			# 	else:
+			#
+			# 		h = ((130 + 139*i)%360)
+			# 		#s = (255+(1 - i/(n*4))*256)%256
+			# 		#v = (255+(1-i/(n*8))*256)%256
+			# 		#s = ((1-4*i/(n))*255)%256
+			# 		s = ((0.8-3*i/(n))*255)%256
+			# 		#s = 255
+			for fullv_color in self.colors:
+				color = QtGui.QColor.fromHsv(fullv_color.hue(),fullv_color.saturation(),v)
+				#color = QtGui.QColor.fromHsv(h,s,v)
+				ctable.append(color.red())
+				ctable.append(color.green())
+				ctable.append(color.blue())
+				# if i == 0 and v >=250:
+				# 	print("I=0",color.red(),color.green(),color.blue())
 
-		else:
-			ctable = []
-			for v in range(256):
-				# for i in (range(n)):
-				# 	if i == 0:
-				# 		h = 0
-				# 		s = 0
-				# 	else:
-				#
-				# 		h = ((130 + 139*i)%360)
-				# 		#s = (255+(1 - i/(n*4))*256)%256
-				# 		#v = (255+(1-i/(n*8))*256)%256
-				# 		#s = ((1-4*i/(n))*255)%256
-				# 		s = ((0.8-3*i/(n))*255)%256
-				# 		#s = 255
-				for fullv_color in self.colors:
-					color = QtGui.QColor.fromHsv(fullv_color.hue(),fullv_color.saturation(),v)
-					#color = QtGui.QColor.fromHsv(h,s,v)
-					ctable.append(color.red())
-					ctable.append(color.green())
-					ctable.append(color.blue())
-					# if i == 0 and v >=250:
-					# 	print("I=0",color.red(),color.green(),color.blue())
-
-			return (np.array(ctable)).tolist()
+		return (np.array(ctable)).tolist()
 
 
 
@@ -905,7 +905,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 		# 					x0, y0, wdt, hgt, wid*3,
 		# 					self.scale, pixden[0], pixden[1],
 		# 					min_val, max_val, flags))
-		self.ctable = self.create_RGB_list()
+		#self.ctable = self.create_RGB_list()
 		return_data = ( wid*3, hgt,
 							GLUtil.render_annotated24(values, annotation,
 							x0, y0, wdt, hgt, wid*3,
@@ -1487,6 +1487,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 		except:pass
 
 	def del_shapes(self,k=None):
+		print(self.shapes)
 		if k:
 			try:
 				for i in k:
@@ -1827,7 +1828,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 		elif event.key()==Qt.Key_C:
 			self.auto_contrast()
 		elif event.key()==Qt.Key_I:
-			self.show_inspector(6)
+			self.show_inspector(5)
 		else:
 			self.keypress.emit(event)
 
@@ -2647,11 +2648,22 @@ class CustomTreeSet(QtWidgets.QTreeWidget):
 		self.target.target.force_display_update(set_clip=False)
 		self.target.target.updateGL()
 
-class CustomTreeWidgetItem(QtWidgets.QTreeWidgetItem):
-	def __init__(self, color = None):
-		super().__init__()
-		if color:
-			self.color = color
+class GroupTreeWidgetItem(QtWidgets.QTreeWidgetItem):
+	def __init__(self, str_l=[],color = None):
+		super().__init__(str_l)
+		self.g_color = color
+
+	def get_children(self):
+		for i in range(tree_widget_item.childCount()):
+			nodes.append(self.child(i))
+		return
+
+	def get_whole_branch(self):
+		nodes = []
+		nodes.append(self)
+		for i in range(tree_widget_item.childCount()):
+			nodes.extend(self.get_whole_branch(self.child(i)))
+		return nodes
 
 
 
@@ -2807,7 +2819,7 @@ class EMSegTab(QtWidgets.QWidget):
 			#sels = self.table_set.selectedItems()
 			sels = self.tree_set.selectedItems()
 			if len(sels) == 0:
-				print("No class selected. Use manual annotate panels to create class")
+				#print("No class selected. Use manual annotate panels to create class")
 				return 0
 			else:
 				# row = self.table_set.row(sels[0])
@@ -2944,9 +2956,11 @@ class EMSegTab(QtWidgets.QWidget):
 			#print(color.hue())
 
 			self.target.colors[index] = QtGui.QColor.fromHsv(color.hue(),color.saturation(),255)
+			#self.target.need_new_RGB = 1
+			#self.colors = self.target.get_color_palette()
 
 			self.update_sets()
-			self.target.need_new_RGB = 1
+			self.target.ctable = self.target.create_RGB_list()
 			self.target.force_display_update()
 			self.target.updateGL()
 
@@ -3153,14 +3167,14 @@ class EMSegTab(QtWidgets.QWidget):
 			if not ok : return
 
 
-		if not os.path.exists('./segs/temp') :
-			os.mkdir('./segs/temp')
+		# if not os.path.exists('./segs/temp') :
+		# 	os.mkdir('./segs/temp')
+		#
+		# #self.target.get_full_annotation().write_image('./segs/temp/temp_'+str(group_index)+'.hdf')
+		# if not os.path.isfile('./segs/temp/single_temp.hdf'):
+		# 	self.target.get_full_annotation().write_image('./segs/temp/single_temp.hdf')
 
-		#self.target.get_full_annotation().write_image('./segs/temp/temp_'+str(group_index)+'.hdf')
-		if not os.path.isfile('./segs/temp/single_temp.hdf'):
-			self.target.get_full_annotation().write_image('./segs/temp/single_temp.hdf')
-
-		self.add_new_row(group_index,name)
+		self.add_new_row(group_index,name,-1,group_node=True)
 		group_item = self.tree_set.topLevelItem(self.tree_set.topLevelItemCount()-1)
 		for sel in sels:
 			sel.setText(2,str(group_index))
@@ -3369,6 +3383,7 @@ class EMSegTab(QtWidgets.QWidget):
 		self.target.full_annotation *= in_f
 		self.target.force_display_update()
 		self.target.updateGL()
+		del in_f
 		return
 
 	def load_class(self):
@@ -3390,14 +3405,21 @@ class EMSegTab(QtWidgets.QWidget):
 
 		self.browser_ret = (self.openbrowser.getResult())
 		print(self.browser_ret)
+
+
 		in_f = EMData(self.browser_ret[0]).process("threshold.binary",{"value":0.3})
+		bg_in_f = 1-in_f
+
+
+
 		if in_f.get_sizes() != self.target.full_data.get_sizes():
 			print("Annotation file must have the same dimension with the data")
 			return
 		else:
-			self.target.full_annotation += in_f*val
+			self.target.full_annotation = self.target.full_annotation*bg_in_f + in_f*val
 			self.target.force_display_update()
 			self.target.updateGL()
+			del in_f, bg_in_f
 		return
 
 
@@ -3413,18 +3435,26 @@ class EMSegTab(QtWidgets.QWidget):
 			annotation_out += (self.target.get_full_annotation().process("threshold.binaryrange",{"high":num+0.1,"low":num-0.1}))
 		return annotation_out
 
-	def get_group_annotate(self):
-		sels = self.tree_set.selectedItems()
-		if len(sels) == 0 or len(sels) > 1:
-			print("Must select single group")
-			return
-		if sels[0].childCount() == 0:
-			print("Not a group node")
-			return self.get_selected_annotate()
+	# def get_group_annotate(self):
+	# 	sels = self.tree_set.selectedItems()
+	# 	if len(sels) == 0 or len(sels) > 1:
+	# 		print("Must select single group")
+	# 		return
+	# 	if sels[0].childCount() == 0:
+	# 		print("Not a group node")
+	# 		return self.get_selected_annotate()
+	#
+	# 	annotation_out=self.target.get_full_annotation().copy_head()
+	# 	annotation_out.to_zero()
+	# 	for sel in self.get_whole_branch(sels[0]):
+	# 		num = int(sel.text(0))
+	# 		annotation_out += (self.target.get_full_annotation().process("threshold.binaryrange",{"high":num+0.1,"low":num-0.1}))
+	# 	return annotation_out
 
+	def get_whole_annotate(self, item):
 		annotation_out=self.target.get_full_annotation().copy_head()
 		annotation_out.to_zero()
-		for sel in self.get_whole_branch(sels[0]):
+		for sel in self.get_whole_branch(item):
 			num = int(sel.text(0))
 			annotation_out += (self.target.get_full_annotation().process("threshold.binaryrange",{"high":num+0.1,"low":num-0.1}))
 		return annotation_out
@@ -3503,6 +3533,7 @@ class EMSegTab(QtWidgets.QWidget):
 			self.target.full_annotation += in_f
 			self.target.force_display_update()
 			self.target.updateGL()
+			del in_f
 			return
 
 
@@ -3518,8 +3549,8 @@ class EMSegTab(QtWidgets.QWidget):
 	def load_all_browser_ok(self):
 		#Method to actually load a new annotation file to display.
 		self.browser_ret = (self.openbrowser.getResult())
-		inf = EMData(self.browser_ret[0])
-		if inf.get_sizes() != self.target.full_data.get_sizes():
+		in_f = EMData(self.browser_ret[0])
+		if in_f.get_sizes() != self.target.full_data.get_sizes():
 			print("Annotation file must have the same dimension with the data")
 			return
 		else:
@@ -3527,11 +3558,13 @@ class EMSegTab(QtWidgets.QWidget):
 			# for i in range(row_count):
 			# 	self.table_set.removeRow(row_count - i - 1)
 			self.tree_set.clear()
-			self.target.full_annotation=inf
+			self.target.full_annotation=in_f
 			self.target.force_display_update(set_clip=0)
 			#self.read_header(self.target.get_full_annotation())
-			self.update_sets()
+			#self.update_sets()
 			self.target.updateGL()
+			del in_f
+
 			return
 
 
@@ -3563,13 +3596,19 @@ class EMSegTab(QtWidgets.QWidget):
 		return
 
 	def update_sets(self):
-		self.target.need_new_RGB = 0
+
+
+		#self.target.need_new_RGB = 0
+
 		#print("NEED NEW RGB", self.target.need_new_RGB)
 		it = QtWidgets.QTreeWidgetItemIterator(self.tree_set)
 		self.used_index = [0]
 		while it.value():
 			item = it.value()
-			self.used_index.append(int(item.text(0)))
+			try:
+				self.used_index.append(int(item.text(0)))
+			except:
+				pass
 			if item.text(2) != "-1":
 				self.target.display_group = True
 			if item.parent():
@@ -3579,6 +3618,7 @@ class EMSegTab(QtWidgets.QWidget):
 					item.setText(2,item.parent().text(0))
 			else:
 				item.setText(2,"-1")
+
 			self.color_tree_item(item)
 			it += 1
 			# key = int(self.tree_set.topLevelItem(i).text(0))
@@ -3616,9 +3656,18 @@ class EMSegTab(QtWidgets.QWidget):
 				# self.tree_set.itemAt(i,1).setForeground(self.colors[key])
 				# self.tree_set.itemAt(i,2).setForeground(QtGui.QColor.fromRgb(120,120,120))
 	def color_tree_item(self,item):
+
 		#item.setFlags(self.itemflags)
-		key = int(item.text(0))
-		item.setForeground(0,self.colors[key])
+		# key = int(item.text(0))
+		# item.setForeground(0,self.colors[key])
+
+		try:
+			key = int(item.text(0))
+			item.setForeground(0,self.colors[key])
+		except:
+			return
+
+
 		if int(item.text(2)) == -1:
 			key = int(item.text(0))
 				# print(key)
@@ -3692,10 +3741,14 @@ class EMSegTab(QtWidgets.QWidget):
 
 
 
-	def add_new_row(self,num,name,group_num=-1):
+	def add_new_row(self,num,name,group_num=-1,group_node=False):
+
 		next = self.tree_set.topLevelItemCount()
 		#print("Next", next)
-		item = QtWidgets.QTreeWidgetItem([str(num),name,str(group_num)])
+		if not group_node:
+			item = QtWidgets.QTreeWidgetItem([str(num),name,str(group_num)])
+		else:
+			item = GroupTreeWidgetItem(["123",name,str(group_num)],color=QtGui.QColor(0, 0, 255, 127))
 		self.tree_set.insertTopLevelItem(next, item)
 
 
@@ -3724,6 +3777,7 @@ class EMSegTab(QtWidgets.QWidget):
 		json_str = tree_to_dict(self.tree_set.invisibleRootItem())
 		js=js_open_dict(json_file)
 		js['tree_dict'] = json_str
+		js['ctable'] = self.target.ctable
 
 	def read_json_treeset(self, json_file=""):
 		if json_file == "" or not (json_file.endswith(".json")):
@@ -3733,7 +3787,6 @@ class EMSegTab(QtWidgets.QWidget):
 			pass
 		def fill_item(item, value):
 			def new_item(parent, text, val=None):
-
 				ser_text = list(json.loads(text))
 				child = QtWidgets.QTreeWidgetItem(ser_text)
 				fill_item(child, val)
@@ -3753,8 +3806,19 @@ class EMSegTab(QtWidgets.QWidget):
 		#js=js_open_dict("./test_json.json")
 		js=js_open_dict(json_file)
 		json_str = js['tree_dict']
+		self.tree_set.clear()
 		fill_item(self.tree_set.invisibleRootItem(),json_str)
-
+		# try:
+		# 	self.target.ctable = js['ctable']
+		# 	self.target.colors = self.target.create_palette_from_RGB()
+		# 	self.need_new_RGB = 1
+		# 	self.colors = self.target.get_color_palette()
+		# 	self.update_sets()
+		# 	self.target.force_display_update()
+		# 	self.target.updateGL()
+		# except:
+		# 	print("No color info detected")
+		# 	pass
 
 def main():
 	from eman2_gui.emapplication import EMApp
@@ -3770,16 +3834,8 @@ def main():
 	else:
 		a=EMData(sys.argv[1])
 		window.set_data(a,None)
-
-
-
 	em_app.show()
 	window.optimally_resize()
 	sys.exit(em_app.exec_())
-
-
-
-
-
 if __name__ == '__main__':
 	main()
