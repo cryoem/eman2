@@ -51,6 +51,25 @@ from EMAN3 import *
 import tensorflow as tf
 import numpy as np
 
+
+def tf_set_device(dev=0,maxmem=4096):
+	"""Sets maximum memory for a specific Tensorflow device and returns a device to use with "with:"
+	dev - GPU number or -1 for CPU (CPU doesn't actually permit memory size allocation)
+	maxmem - maximum memory to allocate in megabytes
+
+	dev=tf_set_device(gpuid,6144)
+	with dev:
+		# tensorflow operations
+	"""
+	if dev<0 :
+		device=tf.config.list_physical_devices('CPU')[0]
+		tf.config.set_logical_device_configuration(device,[tf.config.LogicalDeviceConfiguration()])
+		return tf.device('/CPU:0')
+	else:
+		device=tf.config.list_physical_devices('GPU')[dev]
+		tf.config.set_logical_device_configuration(device,[tf.config.LogicalDeviceConfiguration(memory_limit=maxmem)])
+		return tf.device(f'/GPU:{dev}')
+
 def from_tf(tftensor,stack=False):
 	"""Convert a specified tensor to an EMData object
 	If stack is set, then the first axis of the tensor will be unpacked to form a list. ie a 3D tensor would become a list of 2D EMData objects"""
