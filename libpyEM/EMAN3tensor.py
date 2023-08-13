@@ -129,12 +129,12 @@ def tf_downsample_2d(imgs,newx,stack=False):
 	"""Fourier downsamples a tensorflow 2D image or stack of 2D images (similar to math.fft.resample processor conceptually)
 	return will always be a stack (3d tensor) even if the first dimension is 1
 	passed image/stack may be real or complex (FFT), return is always complex!
-	final image will be a square/cube with the size nx on all axes. Should not be used to downsample rectangular images.
-	newx MUST be even, and the input image must have even dimensions in real space
-	note that complex conjugate relationships aren't enforced in the cropped Fourier volume
+	final image will be a square/cube with the (real space) size nx on all axes. Should not be used to downsample rectangular images.
+	newx specifies the real-space image size after downsampling, MUST be even, and the input image must have even dimensions in real space
+	note that complex conjugate relationships aren't enforced in the cropped Fourier volume in redundant locations
 	"""
 
-	if newx%2!=0 : raise Exception("newsize must be an even number")
+	if newx%2!=0 : raise Exception("newx must be an even number")
 
 	if isinstance(imgs,EMData) or ((isinstance(imgs,list) or isinstance(imgs,tuple)) and isinstance(imgs[0],EMData)): imgs=to_tf(imgs)
 
@@ -145,16 +145,16 @@ def tf_downsample_2d(imgs,newx,stack=False):
 	cropy=tf.gather(imgs,np.concatenate((np.arange(newx//2),np.arange(imgs.shape[1]-newx//2,imgs.shape[1]))),axis=1)
 	return cropy[:,:,:newx//2+1]
 
-def tf_downsample_3d(imgs,newsize,stack=False):
+def tf_downsample_3d(imgs,newx,stack=False):
 	"""Fourier downsamples a tensorflow 3D image or stack of 3D images (similar to math.fft.resample processor conceptually)
 	return will always be a stack (3d tensor) even if the first dimension is 1
 	passed image/stack may be real or complex (FFT), return is always complex!
 	final image will be a square/cube with the size nx on all axes. Should not be used to downsample rectangular images.
-	newx MUST be even, and the input image must have even dimensions in real space
+	newx specifies the real-space image size after downsampling,MUST be even, and the input image must have even dimensions in real space
 	note that complex conjugate relationships aren't enforced in the cropped Fourier volume
 	"""
 
-	if newx%2!=0 : raise Exception("newsize must be an even number")
+	if newx%2!=0 : raise Exception("newx must be an even number")
 
 	if isinstance(imgs,EMData) or ((isinstance(imgs,list) or isinstance(imgs,tuple)) and isinstance(imgs[0],EMData)): imgs=to_tf(imgs)
 

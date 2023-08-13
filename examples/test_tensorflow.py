@@ -16,7 +16,7 @@ def main():
 	(options, args) = parser.parse_args()
 #	logid=E2init(sys.argv)
 	
-	dev=tf_set_device(options.gpuid,6144)
+	dev=tf_set_device(options.gpuid,8192)
 
 	with dev:
 		print("Testing basic operations...")
@@ -87,9 +87,9 @@ def main():
 		print("Truth: {}\tEstimate:{}\nTime:{:0.2f} s\n".format(b[:,:,0,0],tbp[:,:,0,0],time()-start))
 
 		print("Testing FFTs")
-		imgs=[test_image(size=(256,256)) for i in range(2048)]
+		imgs=[test_image(size=(1024,1024)) for i in range(256)]
 		imgstf=to_tf(imgs)
-		print("Allocated")
+		print(f"{imgstf.shape} Allocated")
 		start=time()
 		if options.gpuid==-1:
 			ffts=tf_fft2d(imgstf)
@@ -97,6 +97,40 @@ def main():
 		else:
 			for i in range(1000): ffts=tf_fft2d(imgstf)
 			print(f"Done: {(time()-start)/2.048:0.3f} us/fft")
+
+		imgs=[test_image(size=(256,256)) for i in range(4096)]
+		imgstf=to_tf(imgs)
+		print(f"{imgstf.shape} Allocated")
+		start=time()
+		if options.gpuid==-1:
+			ffts=tf_fft2d(imgstf)
+			print(f"Done: {(time()-start)/.004096:0.3f} us/fft (one core)")
+		else:
+			for i in range(1000): ffts=tf_fft2d(imgstf)
+			print(f"Done: {(time()-start)/4.096:0.3f} us/fft")
+
+		imgs=[test_image(size=(256,256)) for i in range(1024)]
+		imgstf=to_tf(imgs)
+		print(f"{imgstf.shape} Allocated")
+		start=time()
+		if options.gpuid==-1:
+			ffts=tf_fft2d(imgstf)
+			print(f"Done: {(time()-start)/.001024:0.3f} us/fft (one core)")
+		else:
+			for i in range(1000): ffts=tf_fft2d(imgstf)
+			print(f"Done: {(time()-start)/1.024:0.3f} us/fft")
+
+		imgs=[test_image(size=(256,256)) for i in range(512)]
+		imgstf=to_tf(imgs)
+		print(f"{imgstf.shape} Allocated")
+		start=time()
+		if options.gpuid==-1:
+			ffts=tf_fft2d(imgstf)
+			print(f"Done: {(time()-start)/.000512:0.3f} us/fft (one core)")
+		else:
+			for i in range(1000): ffts=tf_fft2d(imgstf)
+			print(f"Done: {(time()-start)/0.512:0.3f} us/fft")
+
 
 #	E2end(logid)
 	
