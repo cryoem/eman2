@@ -554,5 +554,9 @@ bool TiffIO::is_image_big_endian()
 	return is_big_endian;
 }
 
+bool TiffIO::is_single_image_format() const
+{
+	return false;
+}
 
 #endif	//USE_TIFF
