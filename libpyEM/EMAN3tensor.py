@@ -146,8 +146,19 @@ but tensorflow can be used for some operations"""
 		if isinstance(self._data,tf.Tensor): self._data=self._data.numpy()
 		self._data[key]=value
 
-#	def to_tfimage
+	def spinvec_to_mx(self,xforms)
+		"""This will convert an Nx3 array of "spin vectors" into an Nx4x2 tensor, which may be re-used
+		to rotate a set of Gaussian points into many different 2-D projection orienations for use with
+		to_tfimages(). The spin vector is an x/y/z vector where the vector direction denotes the spin
+		axis and the length of the vector denotes the amount of rotation. A length of 1 will correspond
+		to a 2*pi rotation to make it more compatible with deep learning. This is very similar to a
+		quaternion, and can be easily converted into one by converting the X/Y/Z vector length:
+		len'=sin(2*pi*len/2) and computing a w such that the quaternion has unit length"""
+		pass
 
+
+	def to_tfimages(self,mx):
+		pass
 
 
 def tf_set_device(dev=0,maxmem=4096):
