@@ -1527,17 +1527,6 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, imsk, option
 					
 			if options.regmask>0: etc+=f", out of mask {l3:.4f}"
 			costetc.append(ce)
-			for a in [dr, drh, da, loss]:
-				if np.isnan(a):
-					
-					print()
-					print(dr, drh, da, loss)
-					print(grd)
-					print("####################")
-					print(conf)
-					print("####################")
-					print(pout)
-					aaaaaaaaaaaa
 			i+=1
 			if i%10==0: 
 				sys.stdout.write("\r {}/{}\t{:.3f} {}         ".format(len(cost), nbatch, loss, etc))
