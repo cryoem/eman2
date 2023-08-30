@@ -155,8 +155,8 @@ def main():
 			elif options.refine:
 				if options.breaksym:
 					cmd+=f" --breaksym {options.breaksym}"
-					if options.skipali:
-						cmd+=" --skipali"
+				if options.skipali:
+					cmd+=" --skipali"
 
 			else:
 				cmd+=" --fromscratch"

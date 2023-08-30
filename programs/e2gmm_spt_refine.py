@@ -20,7 +20,8 @@ def main():
 	parser.add_argument("--startiter", type=int, help="",default=0)
 	parser.add_argument("--sym", type=str,help="sym", default="c1")
 
-	parser.add_argument("--mask", type=str,help="mask file applied to the GMM after each iteration. The mask can apply to amplitude or sigma depending on the --maskamp or --masksigma options.", default=None)
+	# parser.add_argument("--mask", type=str,help="mask file applied to the GMM after each iteration. The mask can apply to amplitude or sigma depending on the --maskamp or --masksigma options.", default=None)
+	parser.add_argument("--maskpp", type=str,help="mask for post process", default=None)
 	parser.add_argument("--parallel", type=str,help="parallel", default="thread:32")
 
 	parser.add_argument("--threads", type=int, help="",default=32)
@@ -116,6 +117,8 @@ def main():
 	ppmask,setsf,tophat="","",""
 	if options.setsf:
 		setsf=f" --setsf {options.setsf}"
+	if options.maskpp:
+		ppmask=f" --mask {options.maskpp}"
 	tophat=" --tophat localwiener"
 	
 	#startiter=0
