@@ -125,13 +125,13 @@ def main():
 		px = Transform({'type':'eman','az':90,'alt':90,'phi':0})
 		projectiondirections={'px':px}
 	elif options.onlyy:
-		py = Transform({'type':'eman','az':0,'alt':90,'phi':0})
+		py = Transform({'type':'eman','az':180,'alt':90,'phi':0})
 
 		projectiondirections={'py':py}
 	else:	
 		pz = Transform({'type':'eman','az':0,'alt':0,'phi':0})
 		px = Transform({'type':'eman','az':90,'alt':90,'phi':0})
-		py = Transform({'type':'eman','az':0,'alt':90,'phi':0})
+		py = Transform({'type':'eman','az':180,'alt':90,'phi':0})
 		projectiondirections = {'pz':pz,'px':px,'py':py}
 
 	if options.transformsfile:

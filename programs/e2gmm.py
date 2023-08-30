@@ -408,7 +408,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.gflparm.addRow("# Ptcl Batches:",self.wedbatch)
 
 		self.wedrres = QtWidgets.QLineEdit("25")
-		self.wedrres.setToolTip("Resolution for individual particle input representation (often lower)")
+		self.wedrres.setToolTip("Resolution for individual particle input representation (often lower),opt low res limit after comma eg: 25,250")
 		self.gflparm.addRow("Input Res (A):",self.wedrres)
 
 		self.wedbox = QtWidgets.QLineEdit("256")
@@ -1035,7 +1035,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			self.currun["ptclminres"]=float(rres.split(",")[1])
 		else:
 			self.currun["ptclres"]=float(rres)
-			self.currun["ptclminres"]=1000.0
+			self.currun["ptclminres"]=250.0
 		self.currun["batches"]=str(self.wedbatch.text())
 		self.currun["sym"]=str(self.wedsym.text())
 		self.currun["mask"]=str(self.wedmask.text())
@@ -1937,6 +1937,7 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		sym=self.currun["sym"]
 		maxbox=(int(self.jsparm["boxsize"]*(2*self.jsparm["apix"])/self.currun["targres"])//2)*2
+		minboxp =(int(self.jsparm["boxsize"]*(2*self.jsparm["apix"])/self.currun["ptclminres"]))
 		modelout=f"{self.gmm}/{self.currunkey}_model_gmm.txt"
 		modelseg=f"{self.gmm}/{self.currunkey}_model_seg.txt"
 		prog.setValue(1)
@@ -1965,13 +1966,13 @@ class EMGMM(QtWidgets.QMainWindow):
 		lsxs=None
 
 		# refine the neutral model against some real data in entropy training mode
-		er=run(f"e2gmm_refine_point.py --projs {self.gmm}/particles_subset.lst --decoderentropy --npt {self.currun['ngauss']} --sym {sym} --maxboxsz {maxbox} --model {modelseg} --modelout {modelout} --niter 10  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --ampreg 0.1  --ptclsclip {self.jsparm['boxsize']}")
+		er=run(f"e2gmm_refine_point.py --projs {self.gmm}/particles_subset.lst --decoderentropy --npt {self.currun['ngauss']} --sym {sym} --maxboxsz {maxbox} --minressz {minboxp} --model {modelseg} --modelout {modelout} --niter 10  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --ampreg 0.1  --ptclsclip {self.jsparm['boxsize']}")
 		if er :
 			showerror("Error running e2gmm_refine, see console for details. GPU memory exhaustion is a common issue. Consider reducing the target resolution.")
 			return
 
 		# Now we train latent zero to the neutral conformation
-		er=run(f"e2gmm_refine_point.py --projs {self.gmm}/proj_in.hdf --decoderin {decoder} --sym {sym} --maxboxsz {maxbox} --model {modelseg} --modelout {modelout} --niter 20  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --modelreg {self.currun['modelreg']} --ampreg 1.0  --ptclsclip {self.jsparm['boxsize']}")
+		er=run(f"e2gmm_refine_point.py --projs {self.gmm}/proj_in.hdf --decoderin {decoder} --sym {sym} --maxboxsz {maxbox} --minressz {minboxp} --model {modelseg} --modelout {modelout} --niter 20  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --modelreg {self.currun['modelreg']} --ampreg 1.0  --ptclsclip {self.jsparm['boxsize']}")
 		#er=run(f"e2gmm_refine_point.py --projs {self.gmm}/proj_in.hdf  --sym {sym} --maxboxsz {maxbox} --model {modelseg} --modelout {modelout} --niter 20  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --modelreg {self.currun['modelreg']} --ampreg 1.0 --ndense -1 --ptclsclip {self.jsparm['boxsize']}")
 		if er :
 			showerror("Error running e2gmm_refine, see console for details. GPU memory exhaustion is a common issue. Consider reducing the target resolution.")
@@ -2213,7 +2214,7 @@ class EMGMM(QtWidgets.QMainWindow):
 	
 		self.wedres.setText(f'{self.currun.get("targres",20)}')
 		rres=self.currun.get("ptclres",self.currun.get("targres",20))
-		rminres=self.currun.get("ptclminres",1000.0)
+		rminres=self.currun.get("ptclminres",250.0)
 		if rminres<1000.0 : self.wedrres.setText(f'{rres:1.1f},{rminres:1.0f}')
 		else : self.wedrres.setText(f'{rres:1.1f}')
 		try:

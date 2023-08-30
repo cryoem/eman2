@@ -51,6 +51,134 @@ from EMAN3 import *
 import tensorflow as tf
 import numpy as np
 
+
+class EMDataStack():
+	"""This class represents a stack of EMData images with an (optional) tensorflow/numpy representation.
+	- All images in the stack must have the same dimensions.
+	- Adding new EMData objects or setting an existing object to a different object will force the tensorflow and numpy representations to be regenerated
+	- WARNING: the Tensorflow representation will be generated the first time it is accessed. Image changes to any contained EMData objects after this point will
+	not be reflected in the tensor unless the update() method is called.
+
+	EMData elements may be accessed as stack[n], and elements may similarly be altered
+	"""
+
+	def __init__(self,imgs=None):
+		"""	imgs - one of:
+		None
+		filename, with optional ":" range specifier (see https://eman2.org/ImageFormats)
+		single EMData object
+		list or tuple of EMData objects
+		"""
+		self.set_data(imgs)
+
+	def set_data(self,imgs):
+		""" """
+		if imgs is None: self._stack=[]
+		elif isinstance(imgs,EMData): self._stack=[imgs]
+		elif isinstance(imgs,str): self._stack=EMData.read_images(imgs)
+		else:
+			try: self._stack=list(imgs)		# copy the list, not the elements of the list
+			except: raise Exception("EMDataStack may only be initialized with None, a filename, an EMData object or a list/tuple of EMData objects")
+
+		self._tensor=None
+		self._numpy=None
+
+	def __len__(self): return len(self._stack)
+
+	def __getitem__(self,key): return self._stack[key]
+
+	def __setitem__(self,key,value):
+		self._stack[key]=value
+		self._tensor=None
+		self._numpy=None
+
+	def update(self):
+		"""Call this if any of the contained EMData objects are altered (image values) to trigger regeneration of the tensor upon next use. Not necessary
+	to call this if you alter which image objects are contained in the stack."""
+		self._tensor=None
+
+	@property
+	def tensor(self):
+		"""Returns the current tuple of EMData objects as a single constant tensor such that tensor[i] will produce the tensor form of self.stack[i]"""
+		if self._tensor is None:
+			if len(self._stack)==0: raise Exception("EMDataStack cannot provide numpy representation until it has been initialized with data")
+			self._tensor=tf.constant(np.stack(self.numpy,axis=0))
+		return self._tensor
+
+	@tensor.setter
+	def tensor(self,value):
+		if value is not None: raise Exception("EMDataStack.tensor may not be set to any value other than None. It is generated automatically on demand.")
+		self._tensor=None
+
+	@property
+	def numpy(self):
+		"""Returns a list of numpy objects created from the EMData objects (thus they share memory). Due to memory sharing, the stack is not automatically
+		merged into a single numpy array. This could be done with, for example np.stack(stk.numpy,axis=0), but the shared memory aspect would be lost.
+		"""
+		if self._numpy==None:
+			if len(self._stack)==0: raise Exception("EMDataStack cannot provide numpy representation until it has been initialized with data")
+			self._numpy=[to_numpy(im) for im in self._stack]
+		return self._numpy
+
+	@numpy.setter
+	def numpy(self,value):
+		if value is not None: raise Exception("EMDataStack.numpy may not be set to any value other than None. It is generated automatically on demand.")
+		self._numpy=None
+
+def Gaussians():
+	"""This represents a set of Gaussians with x,y,z,amp parameters (but no width). Main representation is a N x 4 numpy array (x,y,z,amp) ],
+but tensorflow can be used for some operations"""
+
+	def __init__(self,gaus=0):
+		if isinstance(gaus,int):
+			if ngaus<=0: self._data=None
+			else: self._data=np.zeros((ngaus,4))
+		else:
+			try: self._data=np.array(gaus)
+			except: raise Exception("Gaussians must be initialized with an integer (number of Gaussians) or N x 4 matrix")
+
+	def __getitem__(self,key):
+		"""Return the keyed Gaussian parameter, may return a tensor or numpy array. G[i] returns the 4-vector for the i'th Gaussian"""
+		return self._data[key]
+
+	def __setitem__(self,key,value):
+		# if the Gaussians are a tensor, we turn it back into numpy for modification
+		if isinstance(self._data,tf.Tensor): self._data=self._data.numpy()
+		self._data[key]=value
+
+	def spinvec_to_mx(self,xforms)
+		"""This will convert an Nx3 array of "spin vectors" into an Nx4x2 tensor, which may be re-used
+		to rotate a set of Gaussian points into many different 2-D projection orienations for use with
+		to_tfimages(). The spin vector is an x/y/z vector where the vector direction denotes the spin
+		axis and the length of the vector denotes the amount of rotation. A length of 1 will correspond
+		to a 2*pi rotation to make it more compatible with deep learning. This is very similar to a
+		quaternion, and can be easily converted into one by converting the X/Y/Z vector length:
+		len'=sin(2*pi*len/2) and computing a w such that the quaternion has unit length"""
+		pass
+
+
+	def to_tfimages(self,mx):
+		pass
+
+
+def tf_set_device(dev=0,maxmem=4096):
+	"""Sets maximum memory for a specific Tensorflow device and returns a device to use with "with:"
+	dev - GPU number or -1 for CPU (CPU doesn't actually permit memory size allocation)
+	maxmem - maximum memory to allocate in megabytes
+
+	dev=tf_set_device(gpuid,6144)
+	with dev:
+		# tensorflow operations, "with" block optional
+	"""
+	if dev<0 :
+		pdevice=tf.config.list_physical_devices('CPU')[0]
+		tf.config.set_logical_device_configuration(pdevice,[tf.config.LogicalDeviceConfiguration()])
+		return tf.device('/CPU:0')
+	else:
+		pdevice=tf.config.list_physical_devices('GPU')[dev]
+		tf.config.set_logical_device_configuration(pdevice,[tf.config.LogicalDeviceConfiguration(memory_limit=maxmem)])
+		return tf.device(f'/GPU:{dev}')
+
 def from_tf(tftensor,stack=False):
 	"""Convert a specified tensor to an EMData object
 	If stack is set, then the first axis of the tensor will be unpacked to form a list. ie a 3D tensor would become a list of 2D EMData objects"""
@@ -110,12 +238,12 @@ def tf_downsample_2d(imgs,newx,stack=False):
 	"""Fourier downsamples a tensorflow 2D image or stack of 2D images (similar to math.fft.resample processor conceptually)
 	return will always be a stack (3d tensor) even if the first dimension is 1
 	passed image/stack may be real or complex (FFT), return is always complex!
-	final image will be a square/cube with the size nx on all axes. Should not be used to downsample rectangular images.
-	newx MUST be even, and the input image must have even dimensions in real space
-	note that complex conjugate relationships aren't enforced in the cropped Fourier volume
+	final image will be a square/cube with the (real space) size nx on all axes. Should not be used to downsample rectangular images.
+	newx specifies the real-space image size after downsampling, MUST be even, and the input image must have even dimensions in real space
+	note that complex conjugate relationships aren't enforced in the cropped Fourier volume in redundant locations
 	"""
 
-	if newx%2!=0 : raise Exception("newsize must be an even number")
+	if newx%2!=0 : raise Exception("newx must be an even number")
 
 	if isinstance(imgs,EMData) or ((isinstance(imgs,list) or isinstance(imgs,tuple)) and isinstance(imgs[0],EMData)): imgs=to_tf(imgs)
 
@@ -126,16 +254,16 @@ def tf_downsample_2d(imgs,newx,stack=False):
 	cropy=tf.gather(imgs,np.concatenate((np.arange(newx//2),np.arange(imgs.shape[1]-newx//2,imgs.shape[1]))),axis=1)
 	return cropy[:,:,:newx//2+1]
 
-def tf_downsample_3d(imgs,newsize,stack=False):
+def tf_downsample_3d(imgs,newx,stack=False):
 	"""Fourier downsamples a tensorflow 3D image or stack of 3D images (similar to math.fft.resample processor conceptually)
 	return will always be a stack (3d tensor) even if the first dimension is 1
 	passed image/stack may be real or complex (FFT), return is always complex!
 	final image will be a square/cube with the size nx on all axes. Should not be used to downsample rectangular images.
-	newx MUST be even, and the input image must have even dimensions in real space
+	newx specifies the real-space image size after downsampling,MUST be even, and the input image must have even dimensions in real space
 	note that complex conjugate relationships aren't enforced in the cropped Fourier volume
 	"""
 
-	if newx%2!=0 : raise Exception("newsize must be an even number")
+	if newx%2!=0 : raise Exception("newx must be an even number")
 
 	if isinstance(imgs,EMData) or ((isinstance(imgs,list) or isinstance(imgs,tuple)) and isinstance(imgs[0],EMData)): imgs=to_tf(imgs)
 
