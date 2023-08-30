@@ -418,6 +418,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 		self.assisted_tab = QtWidgets.QTabWidget()
 		self.nn_tab = NNet_Tab(target=self)
+		self.snn_tab = Simple_NNet_Tab(target=self)
 		self.morp_tab = Morp_Tab(target=self)
 		self.binary_tab = Binary_Tab(target=self)
 		self.spec_tab = Specific_Tab(target=self)
@@ -426,7 +427,8 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.subtom_tab = Subtom_Tab(target=self)
 
 		self.assisted_tab.addTab(self.binary_tab,"AutoDetect")
-		self.assisted_tab.addTab(self.nn_tab,"NeuralNetwork")
+		self.assisted_tab.addTab(self.nn_tab,"UNet")
+		self.assisted_tab.addTab(self.snn_tab,"SimpleNNet")
 		self.assisted_tab.addTab(self.templ_tab,"Template")
 		self.assisted_tab.addTab(self.stat_tab,"Statistics")
 		self.assisted_tab.addTab(self.morp_tab,"Morphological")
@@ -648,9 +650,10 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 		self.update_tree_set()
 
+
 		self.seg_path = seg_path
 		self.seg_info_path = seg_info_path
-		self.reset_morp_params(reset_vs=True)
+		self.reset_morp_params(reset_vs=False)
 
 
 		# info=js_open_dict("info/annotate_"+self.tomogram_list.item(int).text()+".json")
@@ -2307,6 +2310,173 @@ class UNet():
 		out = from_numpy(out_array)
 		out.write_image(outfile)
 
+class Simple_NNet_Tab(QtWidgets.QWidget):
+	def __init__(self,target):
+		QtWidgets.QWidget.__init__(self,None)
+		#self.target=weakref.ref(target)
+		self.target = target
+		self.map_file_lst = []
+		self.no_maps = 5
+		self.prob_maps_sb = StringBox(label="Prob Maps")
+		self.prob_maps_browser_bt = QtWidgets.QPushButton("Browse")
+		self.merger_tool_bt = QtWidgets.QPushButton("Merger Tool")
+		self.prob_maps_browser_bt.clicked[bool].connect(self.load_masks)
+		self.merger_tool_bt.clicked[bool].connect(self.merger_tool_bt_clicked)
+
+		gbl = QtWidgets.QGridLayout(self)
+
+		gbl.addWidget(self.prob_maps_sb,0,0,1,3)
+		gbl.addWidget(self.prob_maps_browser_bt,0,3,1,1)
+		gbl.addWidget(self.merger_tool_bt,1,0,1,4)
+
+	def load_masks(self):
+		#Load probability maps to merge in EMAnnotateWidget
+		self.openbrowser = EMBrowserWidget(withmodal=True,multiselect=True)
+		self.openbrowser.ok.connect(self.load_masks_browser_ok)
+		self.openbrowser.show()
+		return
+
+	def load_masks_browser_ok(self):
+		self.browser_ret = (self.openbrowser.getResult())
+		self.prob_maps_sb.setValue(",".join(self.browser_ret))
+
+	def merger_tool_bt_clicked(self):
+		map_file_lst = self.prob_maps_sb.getValue().split(",")
+		print(map_file_lst)
+		if len(map_file_lst) == 0:
+			print("Specify probability maps for merging")
+			return
+		else:
+			self.merger_tool = Merger_Tool(target=self.target, maps_lst=map_file_lst)
+			return
+
+
+class Merger_Tool(QtWidgets.QWidget):
+	def __init__(self,target,maps_lst):
+		QtWidgets.QWidget.__init__(self,None)
+		#self.target=weakref.ref(target)
+		self.target = target
+		self.maps_lst = maps_lst
+		self.maps = []
+		for map_file in self.maps_lst:
+			if len(map_file) == 0:
+				print("Please specify probability map for merging. Abort")
+				return
+			hdr = EMData(map_file, 0,True)
+			if [hdr["nx"],hdr["ny"],hdr["nz"]]!= [self.target.nx,self.target.ny,self.target.nz]:
+				print("Mismatch dimension between full data and probablity map ",map_file,". Abort")
+				return
+			else:
+				try:
+					self.maps.append(EMData(map_file,0, False, self.target.cur_region))
+				except Exception as e:
+					print(e)
+		self.vss = []
+		self.bts = []
+		self.wss = []
+		self.bts_group = QtWidgets.QButtonGroup()
+		self.merger_bt = QtWidgets.QPushButton("Merge Annotation")
+		self.class_root_le = QtWidgets.QLineEdit("Class")
+		self.merger_full_bt = QtWidgets.QPushButton("Merge Full Annotation")
+		self.merger_full_le = QtWidgets.QLineEdit()
+		self.merger_full_le.setText(self.target.seg_path)
+		mt_gbl=QtWidgets.QGridLayout(self)
+		for i in range(len(self.maps)):
+			self.bts.append(QtWidgets.QPushButton("Show Map "+str(i+1)))
+			self.vss.append(ValSlider(value=0.5,rng=(0.001,1.2),rounding=2,label= "Thres "+str(i+1)))
+			self.wss.append(ValSlider(value=1,rng=(0.000,1),rounding=2,label= "Weight "+str(i+1)))
+			self.bts_group.addButton(self.bts[i],i)
+			mt_gbl.addWidget(self.bts[i],i,0,1,1)
+			mt_gbl.addWidget(self.vss[i],i,1,1,1)
+			mt_gbl.addWidget(self.wss[i],i,2,1,1)
+			self.vss[i].valueChanged.connect(self.update_from_slider)
+			self.wss[i].valueChanged.connect(self.update_from_slider)
+		mt_gbl.addWidget(self.merger_bt,len(self.maps),0,1,1)
+		mt_gbl.addWidget(self.class_root_le,len(self.maps),1,1,1)
+		mt_gbl.addWidget(self.merger_full_bt,len(self.maps)+1,0,1,1)
+		mt_gbl.addWidget(self.merger_full_le,len(self.maps)+1,1,1,1)
+		self.bts_group.buttonClicked[QtWidgets.QAbstractButton].connect(self.on_check_bts_group)
+		self.merger_bt.clicked[bool].connect(self.merge_annotation)
+		self.merger_full_bt.clicked[bool].connect(self.merge_full)
+		self.show()
+		#self.setCentralWidget(QtWidgets.QWidget)
+
+
+	def update_from_slider(self):
+		# max_map = np.maximum(to_numpy(self.vss[1].value * self.maps[1]),to_numpy(self.vss[0].value * self.maps[0]))
+		# if len(self.vss) >2:
+		#print(self.target.data.get_sizes())
+		#self.norm_maps = [np.zeros(self.target.annotate.get_sizes())]
+		zero_map = self.target.get_annotation().copy_head()
+		zero_map.to_zero()
+		self.norm_maps = [to_numpy(zero_map)]
+		for i in range(len(self.vss)):
+			map = self.maps[i].process("threshold.binary",{"value":self.vss[i].value})
+			self.norm_maps.append(self.wss[i].value * to_numpy(map))
+		stack_map = np.stack(self.norm_maps)
+		self.target.annotate= from_numpy(np.argmax(stack_map,axis=0))
+		# 	for i in range(2,len(self.vss)):
+		# 		#print("Value",self.vss[i].value)
+		# 		max_map = np.maximum(to_numpy(self.vss[i].value * self.maps[i]),max_map)
+		# self.target.annotate = from_numpy(max_map)
+		# self.target.annotate.process_inplace("threshold.binary",{"value":0.5})
+		self.target.img_view.set_data(self.target.data, self.target.annotate)
+
+
+
+
+	def on_check_bts_group(self,bt):
+		id = self.bts_group.id(bt)
+		map = self.maps[id].process("threshold.binary",{"value":self.vss[id].value})
+		self.target.img_view.set_data(self.target.data, (id+1)*map)
+
+	def merge_annotation(self):
+		name = self.class_root_le.text()
+		self.target.get_segtab().tree_set.clear()
+		for i in range(len(self.maps)):
+			self.target.get_segtab().add_child(parent_item="root",child_l=[str(i+1),name+"_"+str(i+1),"-1"])
+			self.target.get_segtab().update_sets()
+		#self.close()
+
+	def merge_full(self):
+		print ("Start thresholding probability maps.")
+		try:
+			maps = [EMData(file_name) for file_name in self.maps_lst]
+		except Exception as e:
+			print(e)
+			return
+		zero_map = maps[0].copy_head()
+		zero_map.to_zero()
+		norm_maps = [to_numpy(zero_map)]
+		for i in range(len(maps)):
+			print ("***")
+			map = maps[i].process("threshold.binary",{"value":self.vss[i].value})
+			norm_maps.append(self.wss[i].value * to_numpy(map))
+
+		print("Done processing probablity map. Calculating final map.")
+		merge_out = from_numpy(np.argmax(np.stack(norm_maps),axis=0))
+		try:
+			merge_out.write_image(self.merger_full_le.text())
+			print("Final map written to ",self.merger_full_le.text(),". Close Merger Tool.")
+			del maps, norm_maps, merge_out
+		except Exception as e:
+			print(e)
+		self.close()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 class NNet_Tab(QtWidgets.QWidget):
 	def __init__(self,target):
 		QtWidgets.QWidget.__init__(self,None)
@@ -2590,9 +2760,18 @@ class Morp_Tab(QtWidgets.QWidget):
 		# labeled,num = ndi.label(open_lab>0.5)
 
 		sels = self.get_target_selected()
-		for sel in sels:
-			val=int(sel.text(0))
+		#print(len(sels))
+		# if len(sels) > 0:
+		# 	sels = sels.reverse()
+		#
+		# else:
+		# 	print("Must select labeled class to calculate convex hull")
+		# 	return
 
+		for i in range(len(sels)):
+			sel = sels[-i]
+
+			val=int(sel.text(0))
 		# for i in range(1,num+1):
 			ann=self.target.get_annotation().process("threshold.binaryrange",{"high":val+0.1,"low":val-0.1})
 
@@ -2606,7 +2785,9 @@ class Morp_Tab(QtWidgets.QWidget):
 				points = np.stack((p1[0], p1[1]), axis=-1)
 				try:
 					hull = ConvexHull(points=points,qhull_options='QG4')
-				except:
+				except Exception as e:
+					print(val)
+					print("Cannot calc convex hull due to exception", e)
 					continue
 				pts = []
 				for simplex in hull.vertices:
@@ -2633,15 +2814,19 @@ class Morp_Tab(QtWidgets.QWidget):
 		# val = int(sel.text(0))
 		# mask = self.target.get_segtab().get_whole_annotate(sel)
 		#val,mask = self.get_target_selected()
-		for sel in sels:
-			val=int(sel.text(0))
-			mask=self.target.get_annotation().process("threshold.binaryrange",{"high":val+0.1,"low":val-0.1})
-			if mask:
-				self.target.get_annotation().process_inplace("threshold.rangetozero",{"maxval":(val+0.1),"minval":(val-0.1)})
-				self.target.annotate += val*from_numpy(ndi.binary_closing(to_numpy(mask),iterations=n_iters))
+		try:
+			for sel in sels:
+				val=int(sel.text(0))
+				mask=self.target.get_annotation().process("threshold.binaryrange",{"high":val+0.1,"low":val-0.1})
+				if mask:
+					self.target.get_annotation().process_inplace("threshold.rangetozero",{"maxval":(val+0.1),"minval":(val-0.1)})
+					self.target.annotate += val*from_numpy(ndi.binary_closing(to_numpy(mask),iterations=n_iters))
 
-				del mask
-		self.target.img_view.set_data(self.target.data, self.target.annotate)
+					del mask
+			self.target.img_view.set_data(self.target.data, self.target.annotate)
+		except Exception as e:
+			print(e)
+
 
 	def do_morp_open(self):
 		# n_iters = int(self.morp_n_iters_sp.value())
@@ -2657,15 +2842,18 @@ class Morp_Tab(QtWidgets.QWidget):
 
 		n_iters = int(self.morp_n_iters_sp.value())
 		sels = self.get_target_selected()
-		for sel in sels:
-			val=int(sel.text(0))
-			mask=self.target.get_annotation().process("threshold.binaryrange",{"high":val+0.1,"low":val-0.1})
-			if mask:
-				self.target.get_annotation().process_inplace("threshold.rangetozero",{"maxval":(val+0.1),"minval":(val-0.1)})
-				self.target.annotate += val*from_numpy(ndi.binary_opening(to_numpy(mask),iterations=n_iters))
+		try:
+			for sel in sels:
+				val=int(sel.text(0))
+				mask=self.target.get_annotation().process("threshold.binaryrange",{"high":val+0.1,"low":val-0.1})
+				if mask:
+					self.target.get_annotation().process_inplace("threshold.rangetozero",{"maxval":(val+0.1),"minval":(val-0.1)})
+					self.target.annotate += val*from_numpy(ndi.binary_opening(to_numpy(mask),iterations=n_iters))
 
-				del mask
-		self.target.img_view.set_data(self.target.data, self.target.annotate)
+					del mask
+			self.target.img_view.set_data(self.target.data, self.target.annotate)
+		except Exception as e:
+			print(e)
 
 	def do_morp_dilate(self):
 		# n_iters = int(self.morp_n_iters_sp.value())
@@ -2680,15 +2868,18 @@ class Morp_Tab(QtWidgets.QWidget):
 		# 	del mask
 		n_iters = int(self.morp_n_iters_sp.value())
 		sels = self.get_target_selected()
-		for sel in sels:
-			val=int(sel.text(0))
-			mask=self.target.get_annotation().process("threshold.binaryrange",{"high":val+0.1,"low":val-0.1})
-			if mask:
-				self.target.get_annotation().process_inplace("threshold.rangetozero",{"maxval":(val+0.1),"minval":(val-0.1)})
-				self.target.annotate += val*from_numpy(ndi.binary_dilation(to_numpy(mask),iterations=n_iters))
+		try:
+			for sel in sels:
+				val=int(sel.text(0))
+				mask=self.target.get_annotation().process("threshold.binaryrange",{"high":val+0.1,"low":val-0.1})
+				if mask:
+					self.target.get_annotation().process_inplace("threshold.rangetozero",{"maxval":(val+0.1),"minval":(val-0.1)})
+					self.target.annotate += val*from_numpy(ndi.binary_dilation(to_numpy(mask),iterations=n_iters))
 
-				del mask
-		self.target.img_view.set_data(self.target.data, self.target.annotate)
+					del mask
+			self.target.img_view.set_data(self.target.data, self.target.annotate)
+		except Exception as e:
+			print(e)
 
 
 
@@ -2703,17 +2894,21 @@ class Morp_Tab(QtWidgets.QWidget):
 		# 	self.target.annotate += val*from_numpy(ndi.binary_erosion(to_numpy(mask),iterations=n_iters))
 		# 	self.target.img_view.set_data(self.target.data, self.target.annotate)
 		# 	del mask
-		n_iters = int(self.morp_n_iters_sp.value())
-		sels = self.get_target_selected()
-		for sel in sels:
-			val=int(sel.text(0))
-			mask=self.target.get_annotation().process("threshold.binaryrange",{"high":val+0.1,"low":val-0.1})
 
-			if mask:
-				self.target.get_annotation().process_inplace("threshold.rangetozero",{"maxval":(val+0.1),"minval":(val-0.1)})
-				self.target.annotate += val*from_numpy(ndi.binary_erosion(to_numpy(mask),iterations=n_iters))
-				del mask
-		self.target.img_view.set_data(self.target.data, self.target.annotate)
+		n_iters = int(self.morp_n_iters_sp.value())
+		try:
+			sels = self.get_target_selected()
+			for sel in sels:
+				val=int(sel.text(0))
+				mask=self.target.get_annotation().process("threshold.binaryrange",{"high":val+0.1,"low":val-0.1})
+
+				if mask:
+					self.target.get_annotation().process_inplace("threshold.rangetozero",{"maxval":(val+0.1),"minval":(val-0.1)})
+					self.target.annotate += val*from_numpy(ndi.binary_erosion(to_numpy(mask),iterations=n_iters))
+					del mask
+			self.target.img_view.set_data(self.target.data, self.target.annotate)
+		except Exception as e:
+			print(e)
 
 	def do_morp_label(self):
 		#n_iters = int(self.morp_n_iters_sp.value())
@@ -2760,6 +2955,7 @@ class Binary_Tab(QtWidgets.QWidget):
 		self.bin_threshold_vs = ValSlider(value=0.001,rng=(0.001,5),rounding=2,label="Threshold  ")
 		self.closing_n_iters =1
 		self.opening_n_iters =1
+
 		#self.bin_tab_quiet = False
 
 		bin_gbl.addWidget(self.bin_invert_cb,0,0,1,1)
@@ -2842,6 +3038,8 @@ class Binary_Tab(QtWidgets.QWidget):
 		self.update_mask_from_vs()
 
 	def update_mask_from_vs(self):
+
+
 		self.closing_n_iters =1
 		self.opening_n_iters =1
 		sel = self.get_selected_item()
@@ -3266,6 +3464,7 @@ class Statistics_Tab(QtWidgets.QWidget):
 		self.stat_combo.addItem('Largest Perimeter')
 		self.stat_combo.addItem('Custom')
 
+
 		#bltlay.addWidget(self.count_objs_bt,0,0,1,1)
 		bltlay.addWidget(self.n_obj_thres_vs,0,0,1,3)
 		bltlay.addWidget(QtWidgets.QLabel("Num objects larger than thresh:"),1,0,1,3)
@@ -3329,11 +3528,12 @@ class Statistics_Tab(QtWidgets.QWidget):
 	#WORK BUT NEED TO BE CONDENSED
 	def thres_vs_changed(self):
 		thres=self.n_obj_thres_vs.value
-		sels = self.target.get_segtab().get_whole_branch(self.get_selected_item())
-		if sels is None:
-			print ("Select a class to count objects")
+		try:
+			sels = self.target.get_segtab().get_whole_branch(self.get_selected_item())
+		except:
+			print ("Must select a class to count objects.")
 			return
-		elif len(sels) == 1:
+		if len(sels) == 1:
 			sel = sels[0]
 			val=int(sel.text(0))
 			raw_mask=to_numpy(self.target.get_annotation().process("threshold.binaryrange",{"high":val+0.1,"low":val-0.1}))
@@ -3394,10 +3594,15 @@ class Statistics_Tab(QtWidgets.QWidget):
 
 	def label_objs(self,ask_user=True):
 		sel = self.get_selected_item()
-		val = int(sel.text(0))
+		try:
+			val = int(sel.text(0))
+			sels = self.target.get_segtab().get_whole_branch(sel)
+		except:
+			print ("Must select a class to count objects.")
+			return
 		raw_mask = self.target.get_segtab().get_whole_annotate(sel)
 		relabel = False
-		if len(self.target.get_segtab().get_whole_branch(sel))>1:
+		if len(sels)>1:
 			if not ask_user:
 				relabel = True
 			else:
