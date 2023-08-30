@@ -72,13 +72,14 @@ def main():
 		bsz=128
 		trainset=tf.data.Dataset.from_tensor_slices((midraw, xfsnp))
 		trainset=trainset.batch(bsz)
-		opt=tf.keras.optimizers.Adam(learning_rate=1e-3) 
+		
 		nbatch=len(xfsnp)//bsz
 		niter=30
 		xfvs=[]
 		scores=[]
 		for conf,xf in trainset:
 			xfvar=tf.Variable(xf)
+			opt=tf.keras.optimizers.Adam(learning_rate=1e-3) 
 			p0=tf.constant(tf.zeros((xf.shape[0],pts.shape[0], 3))+pts[:,:3])
 
 			pout=decode_model(conf)[:,:,:3]
