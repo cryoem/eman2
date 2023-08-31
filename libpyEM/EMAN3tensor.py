@@ -186,7 +186,7 @@ but tensorflow can be used for some operations"""
 		if isinstance(self._data,tf.Tensor): self._data=self._data.numpy()
 		self._data[key]=value
 
-	def spinvec_to_mx(self,xforms)
+	def spinvec_to_mx(self,xforms):
 		"""This will convert an Nx3 array of "spin vectors" into an Nx4x2 tensor, which may be re-used
 		to rotate a set of Gaussian points into many different 2-D projection orienations for use with
 		to_tfimages(). The spin vector is an x/y/z vector where the vector direction denotes the spin
