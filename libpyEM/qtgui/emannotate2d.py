@@ -2658,12 +2658,16 @@ class GroupTreeWidgetItem(QtWidgets.QTreeWidgetItem):
 			nodes.append(self.child(i))
 		return
 
-	def get_whole_branch(self):
+	def get_whole_branch(self,reversed=False):
 		nodes = []
 		nodes.append(self)
 		for i in range(tree_widget_item.childCount()):
 			nodes.extend(self.get_whole_branch(self.child(i)))
-		return nodes
+		if reversed:
+			return nodes.reverse()
+		else:
+			return nodes
+
 
 
 
@@ -2925,7 +2929,7 @@ class EMSegTab(QtWidgets.QWidget):
 	# 				continue
 	# 		return item_l
 
-	def get_whole_branch(self,tree_widget_item, index_only = False):
+	def get_whole_branch(self,tree_widget_item, index_only = False, reversed = False):
 		"""Returns all QTreeWidgetItems in the subtree rooted at the given node."""
 		nodes = []
 		nodes.append(tree_widget_item)
@@ -2936,6 +2940,8 @@ class EMSegTab(QtWidgets.QWidget):
 			for node in nodes:
 				indices.append(int(node.text(0)))
 			return indices
+		elif reversed:
+			return nodes.reverse()
 		else:
 			return nodes
 
@@ -3001,12 +3007,30 @@ class EMSegTab(QtWidgets.QWidget):
 
 
 	def get_unused_index(self):
+		# if not group:
+			# n = self.table_set.rowCount()
+			# self.used_index = []
+			# for i in range(n):
+			# 	self.used_index.append(int(self.table_set.item(i,0).text()))
+			# try:
+			# 	self.unused = (set(range(min(self.used_index)+1, max(self.used_index)+2)) - set(self.used_index))
+			# 	new_index = sorted(list(self.unused))[0]
+			# except:
+			# 	new_index = 1
+			# return new_index
+			# n = self.tree_set.topLevelItemCount()
+			# self.used_index = []
+			# for i in range(n):
+			# 	self.used_index.append(int(self.tree_set.topLevelItem(i).text(0)))
 		try:
 			self.unused = (set(range(min(self.used_index)+1, max(self.used_index)+2)) - set(self.used_index))
 			new_index = sorted(list(self.unused))[0]
 		except:
 			new_index = 1
 		return new_index
+		# else:
+		# 	self.used_group_index.append(self.used_group_index[-1]+1)
+		# 	return self.used_group_index[-1]
 
 
 	def new_class(self):
@@ -3025,6 +3049,8 @@ class EMSegTab(QtWidgets.QWidget):
 
 	def test_widget_button_clicked(self):
 
+		#self.tree_set.currentItem().addChild(QtWidgets.QTreeWidgetItem(["17","b","-1"]))
+		#self.add_child(child_l=["17","b","-1"])
 		self.color_label = QtWidgets.QLabel()
 		self.color_label.setGeometry(100, 100, 200, 60)
 		#self.color_label.setAutoFillBackground(True)
@@ -3033,7 +3059,9 @@ class EMSegTab(QtWidgets.QWidget):
 		color_dialog.setOption(QtWidgets.QColorDialog.NoButtons)
 		color = color_dialog.getColor()
 
-
+		# setting graphic effect to the label
+		# graphic = QtWidgets.QGraphicsColorizeEffect(self)
+		# graphic.setColor(self.color)
 		alpha  = 140
 		values = "{r}, {g}, {b}".format(r = color.hue(),
 												g = color.saturation(), b = 120
@@ -3048,12 +3076,21 @@ class EMSegTab(QtWidgets.QWidget):
 
 
 
-	def add_child(self,child_item=None,child_l=[]):
+	def add_child(self,parent_item="current",child_item=None,child_l=[]):
+		if parent_item=="current":
+			parent_item = self.tree_set.currentItem()
+		elif parent_item=="root":
+			parent_item = self.tree_set.invisibleRootItem()
+		else:
+			print("Specify parent item to add child")
+			return
+
+
 		if child_item:
-			self.tree_set.currentItem().addChild(child_item)
+			parent_item.addChild(child_item)
 		elif len(child_l) > 0:
 			child_item = QtWidgets.QTreeWidgetItem(child_l)
-			self.tree_set.currentItem().addChild(child_item)
+			parent_item.addChild(child_item)
 		else:
 			return
 
@@ -3072,6 +3109,21 @@ class EMSegTab(QtWidgets.QWidget):
 			ix = self.tree_root.indexOfChild(item)
 			item_without_parent = self.tree_root.takeChild(ix)
 		new_parent.addChild(item_without_parent)
+		# if item_without_parent.childCount() > 0:
+		# it = QtWidgets.QTreeWidgetItemIterator(item_without_parent)
+		#
+		# #it +=1
+		# while it.value():
+		# 	#print(item.text(0))
+		# 	item = it.value()
+		# 	#print("CP",item.text(0))
+		# 	if new_parent.text(0) == "":
+		# 		print("EMPTY")
+		# 		item.setText(2,"-1")
+		# 	else:
+		# 		print("NOT EMPTY")
+		# 		item.setText(2,new_parent.text(0))
+		# 	it += 1
 
 
 
@@ -3104,8 +3156,29 @@ class EMSegTab(QtWidgets.QWidget):
 		self.target.updateGL()
 
 	def group_sel(self):
+
+		#self.target.get_full_annotation().write_image('temp_temp.hdf')
+		# if len(self.nodes)==0:
+		# 	self.make_nodes()
+
+
+		#group_index=self.get_unused_index(group=True)
 		group_index=self.get_unused_index()
+		#group_node = Node(group_index,group_index)
+		#self.nodes[group_index] = group_node
+
 		temp = self.target.get_full_annotation().copy_head()
+		# sels = self.table_set.selectedItems()
+		# if len(sels) == 0:
+		# 	print("Must select class to group")
+		# 	return
+		# for sel in sels:
+		# 	row = self.table_set.row(sel)
+		# 	val = int(self.table_set.item(row,0).text())
+		# 	group_node.add_child(self.nodes[val])
+			#print("add child at row", row, " to group node")
+			#self.table_set.item(row,2).setText(str(group_index%100))
+
 		sels = self.tree_set.selectedItems()
 		if len(sels) == 0:
 			print("Must select class to group")
@@ -3114,12 +3187,51 @@ class EMSegTab(QtWidgets.QWidget):
 			name,ok=QtWidgets.QInputDialog.getText( self, "Group Name", "Enter name for group:")
 			if not ok : return
 
+
+		# if not os.path.exists('./segs/temp') :
+		# 	os.mkdir('./segs/temp')
+		#
+		# #self.target.get_full_annotation().write_image('./segs/temp/temp_'+str(group_index)+'.hdf')
+		# if not os.path.isfile('./segs/temp/single_temp.hdf'):
+		# 	self.target.get_full_annotation().write_image('./segs/temp/single_temp.hdf')
+
 		self.add_new_row(group_index,name,-1,group_node=True)
 		group_item = self.tree_set.topLevelItem(self.tree_set.topLevelItemCount()-1)
 		for sel in sels:
 			sel.setText(2,str(group_index))
 			self.change_parent(sel,group_item)
+
+			# group_item.addChild(sel)
+			# print("parent",sel.parent())
+			# row = self.table_set.row(sel)
+			# val = int(self.table_set.item(row,0).text())
+			# group_node.add_child(self.nodes[val])
+		# it = QtWidgets.QTreeWidgetItemIterator(self.tree_set)
+		# while it.value():
+		# 	item = it.value()
+		# 	if int(item.text(2)) == -1:
+		# 		print("No parent")
+		# 		print(item.text(1))
+		# 		it += 1
+		# 	else:
+		# 		self.color_tree_item(item)
+		# 		val = int(item.text(0))
+		# 		group_val = int(item.text(2))
+		# 		temp += (self.target.get_full_annotation().process("threshold.binaryrange",{"high":val+0.1,"low":val-0.1}))
+		# 		self.target.get_full_annotation().process_inplace("threshold.rangetozero",{"maxval":(val+0.1),"minval":(val-0.1)})
+		# 		it += 1
+		#
+		# self.target.full_annotation += temp*group_index
+		#self.color_by_group()
+		#self.target.force_display_update()
+		#self.add_new_row(group_index,str("GROUP ")+str(group_index%100))
+		#self.update_group_nums()
 		self.update_sets()
+
+
+		#self.target.display_group.append(group_index)
+		#self.recolor_by_group()
+		#self.target.tree_sels = []
 		self.target.force_display_update(set_clip=False)
 		self.target.updateGL()
 
@@ -3127,6 +3239,16 @@ class EMSegTab(QtWidgets.QWidget):
 
 
 	def ungroup_sel(self):
+
+
+		# sels = self.table_set.selectedItems()
+		# if len(sels) == 0 or len(sels) >1:
+		# 	print("Ungroup once at a time")
+		# 	return
+		# sel_row = self.table_set.row(sels[0])
+		# if not self.table_set.item(sel_row,1).text().startswith('GROUP'):
+		# 	print("Select a group item to ungroup")
+		# 	return
 		sels = self.tree_set.selectedItems()
 		if len(sels) == 0 or len(sels) >1:
 			print("Ungroup once at a time")
@@ -3136,12 +3258,94 @@ class EMSegTab(QtWidgets.QWidget):
 			print("Not a group node")
 			return
 		else:
+			#group_val = int(sel.text(0))
+			# ori = EMData('./segs/temp/temp_'+str(group_val)+'.hdf')
+			# temp = self.target.get_full_annotation().copy_head()
 			for orphan in sel.takeChildren():
+
+
+				#self.change_parent(orphan,self.tree_root)
+
 				self.change_parent(orphan,sel.parent() or self.tree_root)
+					#orphan.setText(2,(orphan.parent().text(0)))
+
+					#orphan.setText(2, "-1")
+				#self.color_by_group()
+
+			# 	val = int(orphan.text(0))
+			# 	temp += (val-group_val)*(ori.process("threshold.binaryrange",{"high":val+0.1,"low":val-0.1}))
+			#
+			# #temp  += self.target.get_full_annotation().process("threshold.rangetozero",{"maxval":(group_val+0.1),"minval":(group_val-0.1)})
+			# temp  += self.target.get_full_annotation()
+			#
+			# self.target.full_annotation = temp
+			#
+			# #self.tree_root.removeChild(sel)
+			# del temp,ori
+			# 	return
+
+
+		#group_index = int(self.table_set.item(sel_row,0).text())
+		#group_index = int(sel.text(0))
+
+
+
+
+		#self.table_set.removeRow(sel_row)
+
+		# for child in self.nodes[group_index].children:
+		# 	child.make_orphan()
+		# self.update_group_nums()
+		# try:
+		# 	self.used_group_index.remove(group_index)
+		# 	self.target.display_group.remove(group_index)
+		# except:
+		# 	pass
 		self.update_sets()
 		#self.recolor_by_group()
 		self.target.force_display_update()
 		self.target.updateGL()
+
+
+
+	# def recolor_by_group(self):
+	# 	self.target.full_annotation=EMData('./segs/temp_temp.hdf')
+	# 	temp = self.target.get_full_annotation().copy_head()
+	# 	for row in range(self.table_set.rowCount()):
+	# 		index = int(self.table_set.item(row,0).text())
+	# 		if index <100:
+	# 			val = self.nodes[index].get_value()
+	# 			temp += self.target.get_full_annotation().process("threshold.binaryrange",{"high":index+0.1,"low":index-0.1})*(val)
+	# 			self.target.get_full_annotation().process_inplace("threshold.rangetozero",{"maxval":(index+0.1),"minval":(index-0.1)})
+	#
+	# 	self.target.full_annotation += temp
+	# 	self.target.force_display_update()
+	# 	#self.target.force_display_update(set_clip=False)
+	# 	self.target.updateGL()
+	# 	self.update_sets()
+	# 	del temp
+
+
+
+	# def make_nodes(self):
+	# 	rows = self.table_set.rowCount()
+	# 	self.nodes = {}
+	# 	for row in range(rows):
+	# 		index = int(self.table_set.item(row,0).text())
+	# 		node = Node(index,index)
+	# 		self.nodes[index] = node
+	# 		#node.print_tree()
+
+	# def update_group_nums(self):
+	# 	for row in range(self.table_set.rowCount()):
+	# 		index = int(self.table_set.item(row,0).text())
+	# 		val  = self.nodes[index].get_value()%100
+	# 		if self.nodes[index].parent:
+	# 			self.table_set.item(row,2).setText(str(val))
+	# 		else:
+	# 			self.table_set.item(row,2).setText("-1")
+
+
 
 	def delete_sel(self):
 
@@ -3255,6 +3459,21 @@ class EMSegTab(QtWidgets.QWidget):
 			annotation_out += (self.target.get_full_annotation().process("threshold.binaryrange",{"high":num+0.1,"low":num-0.1}))
 		return annotation_out
 
+	# def get_group_annotate(self):
+	# 	sels = self.tree_set.selectedItems()
+	# 	if len(sels) == 0 or len(sels) > 1:
+	# 		print("Must select single group")
+	# 		return
+	# 	if sels[0].childCount() == 0:
+	# 		print("Not a group node")
+	# 		return self.get_selected_annotate()
+	#
+	# 	annotation_out=self.target.get_full_annotation().copy_head()
+	# 	annotation_out.to_zero()
+	# 	for sel in self.get_whole_branch(sels[0]):
+	# 		num = int(sel.text(0))
+	# 		annotation_out += (self.target.get_full_annotation().process("threshold.binaryrange",{"high":num+0.1,"low":num-0.1}))
+	# 	return annotation_out
 
 	def get_whole_annotate(self, item):
 		annotation_out=self.target.get_full_annotation().copy_head()
@@ -3265,6 +3484,10 @@ class EMSegTab(QtWidgets.QWidget):
 		return annotation_out
 
 	def save_mask(self, multiple_class = False, ret = False):
+		#Save the selected annotations as a binary mask (default)
+		#or a multilabel annotation file (to be called when calling delete sel method)
+		#sels = self.table_set.selectedItems()
+		#sels = self.tree_set.selectedItems()
 		sels = []
 		for sel in self.tree_set.selectedItems():
 
@@ -3355,9 +3578,14 @@ class EMSegTab(QtWidgets.QWidget):
 			print("Annotation file must have the same dimension with the data")
 			return
 		else:
+			# row_count = self.table_set.rowCount()
+			# for i in range(row_count):
+			# 	self.table_set.removeRow(row_count - i - 1)
 			self.tree_set.clear()
 			self.target.full_annotation=in_f
 			self.target.force_display_update(set_clip=0)
+			#self.read_header(self.target.get_full_annotation())
+			#self.update_sets()
 			self.target.updateGL()
 			del in_f
 
@@ -3369,6 +3597,24 @@ class EMSegTab(QtWidgets.QWidget):
 		#Save the current annotation to disk as a multiclass annotation file.
 		out_name,ok=QtWidgets.QInputDialog.getText( self, "Save Full Annotation", "Save full annotation to:")
 		if not ok : return
+
+		# nums = [int(self.table_set.item(row,0).text()) for row in range(self.table_set.rowCount())]
+		# names = [str(self.table_set.item(row,1).text()) for row in range(self.table_set.rowCount())]
+		# group_id = [int(self.table_set.item(row,2).text()) for row in range(self.table_set.rowCount())]
+		# #name_str=names[0]+""
+		# #for i in range(1,len(names)):
+		# 	#name_str = name_str + "," + names[i]
+		#
+		# #TOREAD
+		# # self.xform = Transform({"type":"eman","tx":self.full_data["nx"]//2,"ty":self.full_data["ny"]//2,"tz":self.full_data["nz"]//2+self.zpos})
+		# # self.full_data.set_rotated_clip(self.xform, self.data)
+		# # self.full_annotation.set_rotated_clip(self.xform, self.annotation)
+		#
+		# #self.target.get_full_annotation()["ann_name"] = name_str
+		# serialize_name = json.dumps(names, default=lambda a: "[%s,%s]" % (str(type(a)), a.pk))
+		# self.target.get_full_annotation()["ann_name"] = serialize_name
+		# self.target.get_full_annotation()["ann_num"] = nums
+		# self.target.get_full_annotation()["ann_group"] = group_id
 		self.target.get_full_annotation().write_image(out_name)
 		print("Annotation is really saved to", out_name)
 		return
@@ -3399,8 +3645,46 @@ class EMSegTab(QtWidgets.QWidget):
 
 			self.color_tree_item(item)
 			it += 1
+			# key = int(self.tree_set.topLevelItem(i).text(0))
+			# self.tree_set.topLevelItem(i).setFlags(self.itemflags)
+			# self.tree_set.topLevelItem(i).setForeground(0,self.colors[key])
+			# self.tree_set.topLevelItem(i).setForeground(1,self.colors[key])
 
+
+
+			#group_key = int(self.tree_set.item(i,2).text())
+			#if group_key != -1:
+			# 		self.table_set.item(i,1).setForeground(self.colors[group_key+100])
+			# 		self.table_set.item(i,2).setForeground(self.colors[group_key+100])
+			# 	else:
+			# 		self.table_set.item(i,1).setForeground(self.colors[key])
+			# 		self.table_set.item(i,2).setForeground(QtGui.QColor.fromRgb(120,120,120))
+
+		#Set the colors and flags of table set items
+		# for i in range(self.table_set.rowCount()):
+		# 	key = int(self.table_set.item(i,0).text())
+		#
+		# 	self.table_set.item(i,0).setFlags(self.indexflags)
+		# 	self.table_set.item(i,1).setFlags(self.itemflags)
+		# 	self.table_set.item(i,0).setForeground(self.colors[key])
+		# 	#self.table_set.item(i,1).setForeground(self.colors[key])
+		# 	group_key = int(self.table_set.item(i,2).text())
+		# 	self.table_set.item(i,2).setFlags(self.indexflags)
+		# 	if group_key != -1:
+		# 		self.table_set.item(i,1).setForeground(self.colors[group_key+100])
+		# 		self.table_set.item(i,2).setForeground(self.colors[group_key+100])
+		# 	else:
+		# 		self.table_set.item(i,1).setForeground(self.colors[key])
+		# 		self.table_set.item(i,2).setForeground(QtGui.QColor.fromRgb(120,120,120))
+
+				# self.tree_set.itemAt(i,1).setForeground(self.colors[key])
+				# self.tree_set.itemAt(i,2).setForeground(QtGui.QColor.fromRgb(120,120,120))
 	def color_tree_item(self,item):
+
+		#item.setFlags(self.itemflags)
+		# key = int(item.text(0))
+		# item.setForeground(0,self.colors[key])
+
 		try:
 			key = int(item.text(0))
 			item.setForeground(0,self.colors[key])
@@ -3442,15 +3726,9 @@ class EMSegTab(QtWidgets.QWidget):
 			if ret:
 				return item_dict
 			else:
-				# for key, value in item_dict.items():
-				# 	self.add_new_row(key,value)
 				if len(group_ids)>0:
 					for i in range(len(keys)):
 						self.add_new_row(keys[i],values[i],group_ids[i])
-					# if len(self.nodes)==0:
-					# 	self.make_nodes()
-					# print("nodes",[node.get_value() for node in (self.nodes.values())])
-					# print("rowCount",self.table_set.rowCount())
 					for row in range(self.table_set.rowCount()):
 						print(int(self.table_set.item(row,0).text()))
 						if int(self.table_set.item(row,2).text()) != -1:
@@ -3474,6 +3752,9 @@ class EMSegTab(QtWidgets.QWidget):
 			pass
 
 
+	def reset(self):
+		#reset seg tab when set new data
+		return
 
 
 
@@ -3504,7 +3785,10 @@ class EMSegTab(QtWidgets.QWidget):
 				child = parent.child(row)
 
 				text = [child.text(0),child.text(1),child.text(2)]
+
 				ser_text =  json.dumps(text, default=lambda a: "[%s,%s]" % (str(type(a)), a.pk))
+
+				#content[child.text(0)] = tree_to_dict(child)
 				content[ser_text] = tree_to_dict(child)
 			return content
 
@@ -3542,6 +3826,7 @@ class EMSegTab(QtWidgets.QWidget):
 		json_str = js['tree_dict']
 		self.tree_set.clear()
 		fill_item(self.tree_set.invisibleRootItem(),json_str)
+
 def main():
 	from eman2_gui.emapplication import EMApp
 	em_app = EMApp()
@@ -3559,5 +3844,6 @@ def main():
 	em_app.show()
 	window.optimally_resize()
 	sys.exit(em_app.exec_())
+
 if __name__ == '__main__':
 	main()

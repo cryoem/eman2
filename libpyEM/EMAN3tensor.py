@@ -125,14 +125,54 @@ class EMDataStack():
 		if value is not None: raise Exception("EMDataStack.numpy may not be set to any value other than None. It is generated automatically on demand.")
 		self._numpy=None
 
+def Orientations():
+	"""This represents a set of orientations, with a standard representation of an XYZ vector where the vector length indicates the amount
+		of rotation with a length of 0.5 corresponding to 180 degrees. This form is a good representation for deep learning minimization strategies
+		which conventionally span a range of ~1.0. This form can be readily interconverted to EMAN2 Transform objects or transformation matrices
+		for use with Gaussians.
+	"""
+
+	def __init__(self,xyzs=0):
+		"""Initialize with either the number of orientations or a N x 3 matrix"""
+		if isinstance(xyzs,int):
+			if xyzs<=0: self._data=None
+			else: self._data=np.zeros((xyzs,3))
+		else:
+			try: self._data=np.array(xyzs)
+			except: raise Exception("Orientations must be initialized with an integer (number of orientations) or a N x 3 numpy array")
+
+	def __getitem__(self,key):
+		"""Return the keyed Gaussian parameter, may return a tensor or numpy array. G[i] returns the 4-vector for the i'th Gaussian"""
+		return self._data[key]
+
+	def __setitem__(self,key,value):
+		# if the Gaussians are a tensor, we turn it back into numpy for modification
+		if isinstance(self._data,tf.Tensor): self._data=self._data.numpy()
+		self._data[key]=value
+
+	def to_mx(self):
+		"""Returns the current set of orientations as a N x 2 x 3 matrix which will transform a set of 3-vectors to a set of
+		2-vectors, ignoring the resulting Z component. Typically used with Gaussians to generate projections."""
+		if not isinstance(self._data,tf.Tensor): self._data=tf.constant(self._data)
+
+		l=tf.norm(xyz)
+		w=cos(pi*l)  # cos "real" component of quaternion
+		if l>0:
+			s=sin(pi*l)/l  # multiply xyz component of quaternion by this
+			q=xyz*s        # the x/y/z components of q
+		else: q=xyz
+
+		mx=np.array(((1-2*(q[1]*q[1]+q[2]*q[2]),2*q[0]*q[1]-2*q[2]*w,2*q[0]*q[2]+2*q[1]*w),
+			(2*q[0]*q[1]+2*q[2]*w,1-(2*q[0]*q[0]+2*q[2]*q[2]),2*q[1]*q[2]-2*q[0]*w)))
+
 def Gaussians():
 	"""This represents a set of Gaussians with x,y,z,amp parameters (but no width). Main representation is a N x 4 numpy array (x,y,z,amp) ],
 but tensorflow can be used for some operations"""
 
 	def __init__(self,gaus=0):
 		if isinstance(gaus,int):
-			if ngaus<=0: self._data=None
-			else: self._data=np.zeros((ngaus,4))
+			if gaus<=0: self._data=None
+			else: self._data=np.zeros((gaus,4))
 		else:
 			try: self._data=np.array(gaus)
 			except: raise Exception("Gaussians must be initialized with an integer (number of Gaussians) or N x 4 matrix")
@@ -146,7 +186,7 @@ but tensorflow can be used for some operations"""
 		if isinstance(self._data,tf.Tensor): self._data=self._data.numpy()
 		self._data[key]=value
 
-	def spinvec_to_mx(self,xforms)
+	def spinvec_to_mx(self,xforms):
 		"""This will convert an Nx3 array of "spin vectors" into an Nx4x2 tensor, which may be re-used
 		to rotate a set of Gaussian points into many different 2-D projection orienations for use with
 		to_tfimages(). The spin vector is an x/y/z vector where the vector direction denotes the spin
