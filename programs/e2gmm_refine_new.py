@@ -1505,9 +1505,14 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, imsk, option
 				
 			if options.usetest==False or len(cost)<nbatch*.95:
 				cost.append(loss)
-				if options.bond and itr>0:
+				if options.bond and itr==0:
+					pass
+				else:
 					grad=gt.gradient(l, wts)
 					opt.apply_gradients(zip(grad, wts))
+				# print(np.std(grad[0]))
+				
+				
 			else:
 				testcost.append(loss)
 			

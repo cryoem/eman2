@@ -69,7 +69,7 @@ def main():
 		np.random.shuffle(pts)
 		pts=pts[:npt]
 		np.savetxt(f"{path}/model_{it0:02d}_{eo}.txt", pts)
-		run(f"e2gmm_refine_new.py --ptclsin {path}/projections_{eo}.hdf --model {path}/model_{it0:02d}_{eo}.txt --maxres {res} --modelout {path}/model_{it0:02d}_{eo}.txt --niter 40 --trainmodel")
+		run(f"e2gmm_refine_new.py --ptclsin {path}/projections_{eo}.hdf --model {path}/model_{it0:02d}_{eo}.txt --maxres {res} --modelout {path}/model_{it0:02d}_{eo}.txt --niter 40 --trainmodel --learnrate 1e-6")
 		
 		pn=16
 		km=KMeans(pn,max_iter=30)
