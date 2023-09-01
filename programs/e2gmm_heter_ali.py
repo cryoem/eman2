@@ -25,6 +25,34 @@ sys.path.insert(0,os.path.join(emdir,'bin'))
 floattype=np.float32
 from e2gmm_refine_new import *
 
+def xf2pts(pts, ang):
+	""" Project 3d Gaussian coordinates based on transforms to make projection
+		input:  pts - ( number of Gaussian, 3 (x,y,z) )
+				ang - ( 5 (az, alt, phi, tx, ty) )
+	"""
+
+	#### input EMAN style euler angle (az, alt, phi) and make projection matrix
+	##   note we need to be able to deal with a batch of particles at once
+	##   so everything is in matrix form	
+	azp=-ang[0]
+	altp=ang[1]
+	phip=-ang[2]
+
+	#### rotate Gaussian positions
+	matrix=make_matrix(azp, altp, phip)
+	matrix=tf.reshape(matrix, shape=[3,3]) 
+	matrix=tf.transpose(matrix)
+
+	pts_rot=tf.matmul(pts, matrix)
+#     pts_rot=tf.transpose(pts_rot)
+
+	#### finally do the translation
+	pts_rot_trans=tf.stack([(pts_rot[:,0]+ang[3]), (-pts_rot[:,1])+ang[4]], 1)
+	
+	#pts_rot_trans=pts_rot_trans*sz+sz/2
+	return pts_rot_trans
+
+
 def xf2pts_one(args):
 	return xf2pts(args[0], args[1])
 
@@ -38,6 +66,8 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--path", type=str,help="path", default=None)
 	parser.add_argument("--mask", type=str,help="mask", default=None)
+	parser.add_argument("--niter", type=int, help="number of iteration",default=30)
+	parser.add_argument("--learnrate", type=float, help="learning rate",default=1e-3)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
@@ -74,15 +104,15 @@ def main():
 		trainset=trainset.batch(bsz)
 		
 		nbatch=len(xfsnp)//bsz
-		niter=30
+		niter=options.niter
 		xfvs=[]
 		scores=[]
 		for conf,xf in trainset:
 			xfvar=tf.Variable(xf)
-			opt=tf.keras.optimizers.Adam(learning_rate=1e-3) 
+			opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate) 
 			p0=tf.constant(tf.zeros((xf.shape[0],pts.shape[0], 3))+pts[:,:3])
 
-			pout=decode_model(conf)[:,:,:3]
+			pout=decode_model(conf)[:,:,:3]+p0
 			pj0=xf2pts_mult(pout, xf)
 
 
