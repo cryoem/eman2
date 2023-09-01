@@ -7,12 +7,16 @@ def main():
 	
 	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--path", type=str,help="path", default="sgd_00")
+	parser.add_argument("--path", type=str,help="path", default=None)
+	parser.add_argument("--breaksym", type=str,help="symmetry breaking", default="c1")
 	parser.add_argument("--res", type=int,help="res", default=30)
-	parser.add_argument("--batch", type=int,help="batch", default=32)
+	parser.add_argument("--learnrate", type=float,help="learning rate", default=0.1)
+	parser.add_argument("--batch", type=int,help="batch", default=128)
 	parser.add_argument("--niter", type=int,help="number of iterations", default=100)
+	parser.add_argument("--ncls", type=int,help="number of classes", default=1)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--curve", action="store_true", default=False ,help="curve mode")
+	parser.add_argument("--skipali", action="store_true", default=False ,help="load transform from image header and skip alignment here")
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -21,7 +25,7 @@ def main():
 	ptcls=load_lst_params(fname)
 	npt=len(ptcls)
 	batch=options.batch
-	
+	if options.path==None: options.path=num_path_new("sgd_")
 	
 	e=EMData(fname,0, True)
 	options.hdr=hdr=e.get_attr_dict()
@@ -31,6 +35,8 @@ def main():
 	options.shrink=1
 	path=options.path
 	options.parallel="thread:32"
+	if options.breaksym!="c1":
+		options.skipali=True
 	
 	save_lst_params(ptcls, f"{path}/ptcls_input.lst")
 	
@@ -44,6 +50,8 @@ def main():
 		xfcrs=[x for x in xfcrs if abs(x.get_params("eman")['alt']-90)<10]
 	#xfs=tt.gen_orientations("rand",{"n":batch,"phitoo":True})
 	xfs=np.random.choice(xfcrs, batch)
+	cls=np.arange(npt)%options.ncls
+	np.random.shuffle(cls)
 		
 	ali2d=[]
 	for ii,xf in zip(idx,xfs):
@@ -53,14 +61,22 @@ def main():
 			d["xform.projection"]=i2d["xform.projection"]
 		else:
 			d["xform.projection"]=xf
+		
+		d["class"]=cls[ii]
 		ali2d.append(d)
 		
 	save_lst_params(ali2d, f"{path}/ptcls.lst")
-	thrd0=make_3d(ali2d, options)
-	avg0=post_process(thrd0, options)
-	avg0.write_image(f"{path}/output.hdf")
-	avg0.write_compressed(f"{path}/output_all.hdf", -1, 12, nooutliers=True)
-	lr=.1
+		
+	threeds=[]
+	for ic in range(options.ncls):
+		al=[a for a in ali2d if a["class"]==ic]
+		thrd0=make_3d(al, options)
+		threeds.append(thrd0)
+		avg0=post_process(thrd0, options)
+		avg0.write_image(f"{path}/output_cls{ic}.hdf")
+		avg0.write_compressed(f"{path}/output_all_cls{ic}.hdf", -1, 8, nooutliers=True)
+		
+	lr=options.learnrate
 	
 	for itr in range(options.niter):
 		print(itr)
@@ -74,17 +90,42 @@ def main():
 		etc=""
 		if options.curve:
 			etc+=" --curve"
-		launch_childprocess(f"e2spa_align.py --ptclin {path}/ptcls.lst --ptclout {path}/ptcls_ali.lst --ref {path}/output.hdf --maxres {options.res} --parallel {options.parallel} {etc}")
+		if options.skipali:
+			etc+=" --skipali"
+		if options.breaksym!="c1":
+			etc+=f" --breaksym {options.breaksym}"
+			
+		alis=[]
+		score=[]
+		for ic in range(options.ncls):
+			launch_childprocess(f"e2spa_align.py --ptclin {path}/ptcls.lst --ptclout {path}/ptcls_ali_cls{ic}.lst --ref {path}/output_cls{ic}.hdf --maxres {options.res} --parallel {options.parallel} {etc}")
 	
-		ali2d=load_lst_params(f"{path}/ptcls_ali.lst")
+			ali2d=load_lst_params(f"{path}/ptcls_ali_cls{ic}.lst")
+			scr=[a["score"] for a in ali2d]
+			alis.append(ali2d)
+			score.append(scr)
+			
+		score=np.array(score)
+		cls=np.argmin(score, axis=0)
+		print([np.sum(cls==i) for i in range(options.ncls)])
 		
-		thrd1=make_3d(ali2d, options)
+		thdnew=[]
+		for ic in range(options.ncls):
+			ali2d=[a for a,c in zip(alis[ic], cls) if c==ic]
+			print(len(ali2d))
+			
 		
-		out=thrd0*(1-lr)+thrd1*lr
-		avg=post_process(out, options)
-		avg.write_image(f"{path}/output.hdf")
-		avg.write_compressed(f"{path}/output_all.hdf", -1, 12, nooutliers=True)
-		thrd0=out.copy()
+			thrd1=make_3d(ali2d, options)
+			thrd0=threeds[ic]
+		
+			out=thrd0*(1-lr)+thrd1*lr
+			avg=post_process(out, options)
+			avg.write_image(f"{path}/output_cls{ic}.hdf")
+			avg.write_compressed(f"{path}/output_all_cls{ic}.hdf", -1, 8, nooutliers=True)
+			thrd0=out.copy()
+			thdnew.append(thrd0)
+			
+		threeds=thdnew
 	
 	E2end(logid)
 	

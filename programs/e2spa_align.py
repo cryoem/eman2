@@ -24,12 +24,15 @@ def main():
 	parser.add_argument("--localrefine", type=int, default=-1 ,help="local refinement. larger value correspond to smaller local region")
 	parser.add_argument("--goldcontinue", action="store_true", default=False ,help="split even/odd subset and references.")
 	parser.add_argument("--extrarot", action="store_true", default=False ,help="do an extra rotation to combat the interpolation issues.")
+	parser.add_argument("--skipali",action="store_true",help="Skip alignment and only calculate the score. Incompatible with --fromscratch, but --breaksym will still be considered.",default=False)
 	#parser.add_argument("--skiprefine", action="store_true", default=False ,help="coarse search only.")
 	#parser.add_argument("--ctfweight", action="store_true", default=False ,help="weight by ctf. not used yet...")
 	#parser.add_argument("--slow", action="store_true", default=False ,help="slow but finer search")
 	parser.add_argument("--maxres", type=float,default=-1, help="max resolution for cmp")
 	parser.add_argument("--minrespx", type=int,default=4, help="skip the first x pixel in fourier space")
 	parser.add_argument("--sym", type=str,help="symmetry. ", default="c1")
+	parser.add_argument("--breaksym", type=str,help="breaking symmetry. only works for --localrefine or --skipali", default="c1")
+
 	parser.add_argument("--ppid", type=int,help="ppid...", default=-1)
 	parser.add_argument("--verbose","-v", type=int,help="Verbose", default=0)
 
@@ -57,7 +60,7 @@ def main():
 		print("Debugging mode. running on one thread with 8 particles")
 		
 	
-	nbatch=min(nptcl//4, num_cpus)
+	nbatch=min(nptcl, num_cpus)
 	
 	infos=[[] for i in range(nbatch)]
 	for i,info in enumerate(pinfo):
@@ -264,6 +267,21 @@ class SpaAlignTask(JSTask):
 							d[ky]=ix[ky]+np.random.randn()*5./np.pi*2
 						newxfs.append(Transform(d))
 				
+			if options.skipali:
+				### skip alignment alltogether
+				newxfs=initxfs
+				istart=len(ssrg)-1
+				npos=1
+				
+			if options.breaksym!="c1":
+				xf2=[]
+				for xf in newxfs:
+					for i in range(Transform.get_nsym(options.breaksym)):
+						x2=xf.get_sym(options.breaksym, i)
+						xf2.append(x2)
+				newxfs=xf2
+				npos=len(newxfs)
+				
 			if img.has_attr("ctf"):
 				ctf=img["ctf"]
 				ds=1./(ny*ref["apix_x"])
@@ -307,16 +325,18 @@ class SpaAlignTask(JSTask):
 				
 				else:
 					xfs=newxfs
-					if len(initxfs)>0:	
+					if len(initxfs)>0 and options.skipali==False:
 						xfs.append(initxfs[0])
 					newxfs=[]
-					simplex=np.vstack([[0,0,0], np.eye(3)*astep])
 					for xf0 in xfs:
 						x=xf0.get_params("eman")
 						curxf=[x["az"], x["alt"], x["phi"],x["tx"]*ss/ny,x["ty"]*ss/ny]
 						x0=curxf[:3]
-						res=minimize(test_rot, x0, method='Powell', options={'ftol': 1e-3, 'disp': False, "maxiter":20})
-						scr, x=test_rot(res.x, True)
+						if options.skipali:
+							scr, x=test_rot(curxf, True)
+						else:
+							res=minimize(test_rot, x0, method='Powell', options={'ftol': 1e-3, 'disp': False, "maxiter":20})
+							scr, x=test_rot(res.x, True)
 						score.append(scr)
 						newxfs.append(x)
 						
