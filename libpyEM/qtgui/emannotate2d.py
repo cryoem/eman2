@@ -67,6 +67,7 @@ import platform
 
 from eman2_gui.emglobjects import EMOpenGLFlagsAndTools
 
+
 class EMAnnotate2DWidget(EMGLWidget):
 	"""
 	"""
@@ -1487,7 +1488,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 		except:pass
 
 	def del_shapes(self,k=None):
-		print(self.shapes)
+		#print(self.shapes)
 		if k:
 			try:
 				for i in k:
@@ -3726,9 +3727,15 @@ class EMSegTab(QtWidgets.QWidget):
 			if ret:
 				return item_dict
 			else:
+				# for key, value in item_dict.items():
+				# 	self.add_new_row(key,value)
 				if len(group_ids)>0:
 					for i in range(len(keys)):
 						self.add_new_row(keys[i],values[i],group_ids[i])
+					# if len(self.nodes)==0:
+					# 	self.make_nodes()
+					# print("nodes",[node.get_value() for node in (self.nodes.values())])
+					# print("rowCount",self.table_set.rowCount())
 					for row in range(self.table_set.rowCount()):
 						print(int(self.table_set.item(row,0).text()))
 						if int(self.table_set.item(row,2).text()) != -1:
@@ -3827,6 +3834,9 @@ class EMSegTab(QtWidgets.QWidget):
 		self.tree_set.clear()
 		fill_item(self.tree_set.invisibleRootItem(),json_str)
 
+
+
+
 def main():
 	from eman2_gui.emapplication import EMApp
 	em_app = EMApp()
@@ -3844,6 +3854,5 @@ def main():
 	em_app.show()
 	window.optimally_resize()
 	sys.exit(em_app.exec_())
-
 if __name__ == '__main__':
 	main()

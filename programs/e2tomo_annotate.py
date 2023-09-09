@@ -151,6 +151,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.nz=hdr["nz"]
 		#print('Nz',self.nz)
 		#self.nz=256
+		self.popwidgets = []
 
 		#TODO
 		#Need to copy header to annotation file
@@ -230,6 +231,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 
 		self.boxes = []
+		self.fill_type = None
 		self.unet = None
 
 		#Thumbnail
@@ -403,7 +405,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		basic_button_l.addWidget(self.basic_tab)
 		basic_vbl.addLayout(basic_button_l)
 
-		self.basic_tab.tabBarClicked[int].connect(self.basic_tab_change)
+		#self.basic_tab.tabBarClicked[int].connect(self.basic_tab_change)
 		self.basic_tab.currentChanged[int].connect(self.basic_tab_change)
 		self.interp_button.clicked[bool].connect(self.interp_bt_clicked)
 		self.clear_button.clicked[bool].connect(self.clear_points)
@@ -519,6 +521,11 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		return self.img_view.get_full_data()
 	def get_annotation(self):
 		return self.img_view.get_full_annotation()
+
+	def get_full_data_from_file(self):
+		return EMData(self.data_file)
+	def get_full_annotation_from_file(self):
+		return EMData(self.seg_path)
 	def get_inspector(self):
 		return self.img_view_inspector
 
@@ -754,7 +761,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			print("image cannot be write to disk")#when annotation files is None
 			pass
 		self.set_imgview_data(self.data_xy[0],self.data_xy[1],self.img_view_region_size)
-		self.reset_morp_params(reset_vs=True)
+		self.reset_morp_params(reset_vs=False)
 
 
 	def test_drawing_function(self):
@@ -778,6 +785,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			bs = self.bsz_vs.value
 			#if self.boxes[i][3] == 1:
 			if self.boxes[i][3] != -1:
+				print(self.boxes[i])
 				r = self.data.get_clip(Region(x-bs//2,y-bs//2,z,bs,bs,1))
 				l = self.get_annotation().get_clip(Region(x-bs//2,y-bs//2,z,bs,bs,1))
 				r.write_image(outfile,-1)
@@ -963,6 +971,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.basic_tab_num = tab_num
 		# print(self.basic_tab_num)
 		if tab_num==3:
+
 			try:
 				self.annotate_from_curve(insert=self.get_zpos())
 				self.curve.points = []
@@ -970,21 +979,23 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 				self.do_update()
 			except:
 				pass
+			self.fill_type = None
 			self.img_view.mouse_mode = 1
 			return
 
 		elif tab_num==0:
-			print("Zpos:",self.get_zpos())
+			#print("Zpos:",self.get_zpos())
 			try:
 				self.annotate_from_curve(insert=self.get_zpos())
 				self.curve.points = []
 				self.contour.points =[]
 				self.do_update()
-			except:
-				print("Can't paint")
+			except Exception as e:
+				print("Can't paint due to", e)
 
 				pass
-			self.extract_bt_clicked()
+			# if self.extract_bt:
+			# self.extract_bt_clicked()
 			self.img_view.mouse_mode = 5
 			#print("Mouse mode is:",self.img_view.mouse_mode_dict[self.img_view.mouse_mode])
 			#self.img_view.show_inspector(6)
@@ -1020,6 +1031,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			print("Mouse mode is:",self.img_view.mouse_mode_dict[self.img_view.mouse_mode])
 			#Setting EMAnnotate2DWidget mouse mode to emit mode
 			return
+
 
 	def fill_contour_checkbox_changed(self,int):
 
@@ -1181,6 +1193,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 	def update_img_view_box(self):
 		current_z = self.get_zpos()
+		print("Current z", current_z)
 		self.clear_shapes(reset_boxes_list=False)
 		for box in self.boxes:
 			if box[3] != -1:
@@ -1477,6 +1490,9 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			print("Cannot write annotation to segs file.")
 
 			pass
+
+		for widget in self.popwidgets:
+			widget.close()
 
 		#self.get_annotation().write_image(self.seg_path, 0, IMAGE_HDF, False, self.cur_region)
 		self.close()
@@ -2317,17 +2333,24 @@ class Simple_NNet_Tab(QtWidgets.QWidget):
 		self.target = target
 		self.map_file_lst = []
 		self.no_maps = 5
+		self.segment_box_bt = QtWidgets.QPushButton("Segment Training Reference")
 		self.prob_maps_sb = StringBox(label="Prob Maps")
 		self.prob_maps_browser_bt = QtWidgets.QPushButton("Browse")
 		self.merger_tool_bt = QtWidgets.QPushButton("Merger Tool")
-		self.prob_maps_browser_bt.clicked[bool].connect(self.load_masks)
-		self.merger_tool_bt.clicked[bool].connect(self.merger_tool_bt_clicked)
+
 
 		gbl = QtWidgets.QGridLayout(self)
 
-		gbl.addWidget(self.prob_maps_sb,0,0,1,3)
-		gbl.addWidget(self.prob_maps_browser_bt,0,3,1,1)
-		gbl.addWidget(self.merger_tool_bt,1,0,1,4)
+
+		gbl.addWidget(self.segment_box_bt,0,0,1,4)
+		gbl.addWidget(self.prob_maps_sb,1,0,1,3)
+		gbl.addWidget(self.prob_maps_browser_bt,1,3,1,1)
+		gbl.addWidget(self.merger_tool_bt,2,0,1,4)
+
+		self.segment_box_bt.clicked[bool].connect(self.segment_box_bt_clicked)
+		self.prob_maps_browser_bt.clicked[bool].connect(self.load_masks)
+		self.merger_tool_bt.clicked[bool].connect(self.merger_tool_bt_clicked)
+
 
 	def load_masks(self):
 		#Load probability maps to merge in EMAnnotateWidget
@@ -2348,8 +2371,195 @@ class Simple_NNet_Tab(QtWidgets.QWidget):
 			return
 		else:
 			self.merger_tool = Merger_Tool(target=self.target, maps_lst=map_file_lst)
+			self.target.popwidgets.append(self.merger_tool)
 			return
 
+	def segment_box_bt_clicked(self):
+		#self.target.zt_spinbox.setValue(-1)
+		self.boxer_widget = Boxer_Widget(target=self.target)
+		self.target.popwidgets.append(self.boxer_widget)
+		# self.jsonfile = info_name(self.target.data_file)
+		# print(self.jsonfile)
+		# if os.path.isfile(self.jsonfile):
+		# 	info = js_open_dict(self.jsonfile)
+		# else:
+		# 	print("No info file was detected for the current datafile. Please provide the correct info name in the box below")
+		# 	return
+		#
+		# self.sets={}
+		# self.boxsize={}
+		# if "class_list" in info:
+		# 	clslst=info["class_list"]
+		# 	for k in sorted(clslst.keys()):
+		# 		if type(clslst[k])==dict:
+		# 			self.sets[int(k)]=str(clslst[k]["name"])
+		# 			self.boxsize[int(k)]=int(clslst[k]["boxsize"])
+		# 		else:
+		# 			self.sets[int(k)]=str(clslst[k])
+		# 			self.boxsize[int(k)]=64
+		# print(self.sets)
+		# clr=QtGui.QColor
+		# self.setcolors=[QtGui.QBrush(clr("blue")),QtGui.QBrush(clr("green")),QtGui.QBrush(clr("red")),QtGui.QBrush(clr("cyan")),QtGui.QBrush(clr("purple")),QtGui.QBrush(clr("orange")), QtGui.QBrush(clr("yellow")),QtGui.QBrush(clr("hotpink")),QtGui.QBrush(clr("gold"))]
+		# self.sets_visible={}
+
+class Boxer_Widget(QtWidgets.QWidget):
+	def __init__(self,target):
+		QtWidgets.QWidget.__init__(self,None)
+		self.target = target
+		self.jsonfile = info_name(self.target.data_file)
+		print(self.jsonfile)
+		if os.path.isfile(self.jsonfile):
+			info = js_open_dict(self.jsonfile)
+		else:
+			print("No info file was detected for the current datafile. Please provide the correct info name in the box below")
+			return
+		self.sets={}
+		self.boxsize={}
+		self.all_boxes=[]
+		if "class_list" in info:
+			clslst=info["class_list"]
+			for k in sorted(clslst.keys()):
+				if type(clslst[k])==dict:
+					self.sets[int(k)]=str(clslst[k]["name"])
+					self.boxsize[int(k)]=int(clslst[k]["boxsize"])
+				else:
+					self.sets[int(k)]=str(clslst[k])
+					self.boxsize[int(k)]=64
+		#print(self.sets)
+		self.set_table = QtWidgets.QTableWidget(len(self.sets),4)
+		self.set_table.setHorizontalHeaderLabels(["Index","Class Name","Box Size","Stored Boxes"])
+		for i in range(len(self.sets)):
+			key = list(self.sets.keys())[i]
+			self.set_table.setItem(i,0,QtWidgets.QTableWidgetItem(str(key)))
+			self.set_table.setItem(i,1,QtWidgets.QTableWidgetItem(str(self.sets[key])))
+			self.set_table.setItem(i,2,QtWidgets.QTableWidgetItem(str(self.boxsize[key])))
+			self.set_table.setItem(i,3,QtWidgets.QTableWidgetItem(str(999)))
+
+		self.extract_train_bt = QtWidgets.QPushButton("Extract Train Data")
+		self.extract_train_le = QtWidgets.QLineEdit()
+		self.extract_train_le.setText(os.path.join('./trainset/',base_name(self.target.data_file)[0:-4]+"_trainset.hdf"))
+
+		if "boxes_3d" in info:
+			box=info["boxes_3d"]
+			for i,b in enumerate(box):
+				#### X-center,Y-center,Z-center,method,[score,[class #]]
+				bdf=[0,0,0,"manual",0.0, 0, 0]
+				for j,bi in enumerate(b):  bdf[j]=bi
+				if bdf[5] not in list(self.sets.keys()):
+					clsi=int(bdf[5])
+					self.sets[clsi]="particles_{:02d}".format(clsi)
+					self.boxsize[clsi]=64
+
+				self.all_boxes.append(bdf)
+
+
+
+
+
+
+
+
+		bw_gbl=QtWidgets.QGridLayout(self)
+		bw_gbl.addWidget(self.set_table,0,0,2,2)
+		bw_gbl.addWidget(self.extract_train_bt,2,0,1,1)
+		bw_gbl.addWidget(self.extract_train_le,2,1,1,1)
+
+
+
+
+		self.set_table.currentItemChanged[QtWidgets.QTableWidgetItem,QtWidgets.QTableWidgetItem].connect(self.set_table_item_changed)
+		self.set_table.itemClicked[QtWidgets.QTableWidgetItem].connect(self.on_item_clicked)
+		self.extract_train_bt.clicked[bool].connect(self.extract_boxes)
+
+
+
+
+
+
+		self.show()
+
+
+	def on_item_clicked(self, item):
+		set_index = int(self.set_table.item(self.set_table.row(item),0).text())
+		sz = 64
+		self.target.img_view.del_shapes()
+		nz = self.target.get_nz()//2
+		for box in self.all_boxes:
+			if box[5] == set_index:
+				if box[2]-nz == 0:
+
+					self.target.boxes.append([box[0],box[1],box[2]-nz,1])
+				else:
+					self.target.boxes.append([box[0],box[1],box[2]-nz,0])
+		zs = [abs(box[2]) for box in self.target.boxes]
+		print("Change z-thickness to", max(zs),"to visualize all boxes from file")
+		self.target.zt_spinbox.setValue(max(zs))
+		self.target.add_boxes(sz)
+		self.target.basic_tab.setCurrentIndex(3)
+		return
+
+	def extract_boxes(self):
+		try:
+			print("Saving annotation at", self.target.seg_path)
+			self.target.write_out(self.target.get_annotation(), self.target.seg_path, self.target.cur_region)
+		except Exception as e:
+			print("Cannot extract box due to error", e, "while writing annotation to segs file. Abort")
+			return
+
+		if not os.path.exists("./trainset"):
+			os.mkdir("./trainset")
+
+		print("Extract image and label patches of size",self.target.bsz_vs.value,"at positions:",self.target.boxes)
+		outfile = self.extract_train_le.text()
+		try:
+			os.remove(outfile)
+		except:
+			pass
+
+		for i in range(len(self.target.boxes)):
+			nz = self.target.get_nz()//2
+			x,y,z = int(self.target.boxes[i][0]),int(self.target.boxes[i][1]),int(self.target.boxes[i][2]+nz)
+
+			bs = self.target.bsz_vs.value
+			target_data =  self.target.get_full_data_from_file()
+			target_annotation = self.target.get_full_annotation_from_file()
+			#if self.boxes[i][3] == 1:
+			if self.target.boxes[i][3] != -1:
+				box_region = Region(x-bs//2,y-bs//2,z,bs,bs,1)
+				# r= EMData(self.target.data_file,0, False, box_region)
+				# l= EMData(self.target.seg_path,0, False, box_region)
+				#l = self.target.get_annotation().get_clip(Region(x-bs//2,y-bs//2,z,bs,bs,1))
+				r = target_data.get_clip(Region(x-bs//2,y-bs//2,z,bs,bs,1))
+				l = target_annotation.get_clip(Region(x-bs//2,y-bs//2,z,bs,bs,1))
+				try:
+					r.write_image(outfile,-1)
+					l.write_image(outfile,-1)
+				except Exception as e:
+					print("Trainset file is not correctly formatted. Abort")
+					print(e)
+					return
+
+				#r=self.data.get_clip(Region(x-bs//2,y-bs//2,z-bz//2,bs,bs,bz))
+		self.target.clear_shapes()
+		del target_data, target_annotation
+		return
+
+
+	def set_table_item_changed(self, current, previous):
+		return
+	def show_boxes(self, set_index):
+		return
+
+	def add_boxes(self, size = 64):
+		sz = size
+		color = [0.1,0.1,0.3]
+		for i in range(len(self.boxes)):
+
+			x,y = int(self.boxes[i][0]),int(self.boxes[i][1])
+
+			if self.boxes[i][3] == 1:
+				self.img_view.add_shape("box{}".format(i),EMShape(("rect",color[0],color[1],color[2],x-old_div(sz,2),y-old_div(sz,2),x+old_div((sz+1),2),y+old_div((sz+1),2),2)))
+		self.img_view.updateGL()
 
 class Merger_Tool(QtWidgets.QWidget):
 	def __init__(self,target,maps_lst):
@@ -2407,6 +2617,7 @@ class Merger_Tool(QtWidgets.QWidget):
 		# if len(self.vss) >2:
 		#print(self.target.data.get_sizes())
 		#self.norm_maps = [np.zeros(self.target.annotate.get_sizes())]
+
 		zero_map = self.target.get_annotation().copy_head()
 		zero_map.to_zero()
 		self.norm_maps = [to_numpy(zero_map)]
@@ -2956,7 +3167,7 @@ class Binary_Tab(QtWidgets.QWidget):
 		self.closing_n_iters =1
 		self.opening_n_iters =1
 
-		#self.bin_tab_quiet = False
+		self.quiet = False
 
 		bin_gbl.addWidget(self.bin_invert_cb,0,0,1,1)
 		bin_gbl.addWidget(self.bin_detect_bt,0,1,1,1)
@@ -3035,11 +3246,12 @@ class Binary_Tab(QtWidgets.QWidget):
 
 		self.target.reset_morp_params()
 		#self.bin_tab_quiet = False
+		self.quiet = False
 		self.update_mask_from_vs()
 
 	def update_mask_from_vs(self):
-
-
+		# if self.quiet == True:
+		# 	return
 		self.closing_n_iters =1
 		self.opening_n_iters =1
 		sel = self.get_selected_item()
@@ -3066,7 +3278,6 @@ class Binary_Tab(QtWidgets.QWidget):
 		# self.target.img_view.updateGL()
 		self.target.img_view.set_data(self.target.data, self.target.annotate)
 		#self.target.img_view.set_data(self.target.get_data(),self.thres_mask*self.mask)
-
 		return
 
 
