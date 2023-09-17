@@ -55,6 +55,7 @@ namespace EMAN
 		DEFINE_IMAGEIO_FUNC;
 		static bool is_valid(const void *first_block);
 		int get_nimg();
+		bool is_single_image_format() const override;
 
 		template<class T>
 		int write_compressed(float *data);
