@@ -147,12 +147,28 @@ def Orientations():
 
 	def __setitem__(self,key,value):
 		# if the Gaussians are a tensor, we turn it back into numpy for modification
-		if isinstance(self._data,tf.Tensor): self._data=self._data.numpy()
+#		if isinstance(self._data,tf.Tensor): self._data=self._data.numpy()
 		self._data[key]=value
 
-	def to_mx(self):
+	def to_mx2d(self):
 		"""Returns the current set of orientations as a N x 2 x 3 matrix which will transform a set of 3-vectors to a set of
 		2-vectors, ignoring the resulting Z component. Typically used with Gaussians to generate projections."""
+
+#		if not isinstance(self._data,tf.Tensor): self._data=tf.constant(self._data)
+
+		l=np.linalg.norm(xyz,axis=1)
+		w=np.cos(pi*l)  # cos "real" component of quaternion
+		if l>0:
+			s=sin(pi*l)/l  # multiply xyz component of quaternion by this
+			q=xyz*s        # the x/y/z components of q
+		else: q=xyz
+
+		mx=np.array(((1-2*(q[1]*q[1]+q[2]*q[2]),2*q[0]*q[1]-2*q[2]*w,2*q[0]*q[2]+2*q[1]*w),
+			(2*q[0]*q[1]+2*q[2]*w,1-(2*q[0]*q[0]+2*q[2]*q[2]),2*q[1]*q[2]-2*q[0]*w)))
+
+	def to_mx3d(self):
+		"""Returns the current set of orientations as a N x 3 x 3 matrix which will transform a set of 3-vectors to a set of
+		rotated 3-vectors, ignoring the resulting Z component. Typically used with Gaussians to generate projections."""
 		if not isinstance(self._data,tf.Tensor): self._data=tf.constant(self._data)
 
 		l=tf.norm(xyz)
