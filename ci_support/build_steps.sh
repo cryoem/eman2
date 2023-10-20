@@ -17,9 +17,9 @@ CONDARC
 
 
 mamba install --update-specs --yes --quiet --channel conda-forge \
-    conda-build pip boa conda-forge-ci-setup=3
+    conda-build pip boa conda-forge-ci-setup=3 constructor
 mamba update --update-specs --yes --quiet --channel conda-forge \
-    conda-build pip boa conda-forge-ci-setup=3
+    conda-build pip boa conda-forge-ci-setup=3 constructor
 
 /usr/bin/sudo -n yum install -y mesa-libGL
 
@@ -27,3 +27,4 @@ mamba update --update-specs --yes --quiet --channel conda-forge \
 set +e
 source ${REPO_ROOT}/ci_support/set_env_vars.sh
 conda mambabuild "${REPO_ROOT}/recipe" -c cryoem -c conda-forge
+constructor "${REPO_ROOT}"/ci_support/ -v --debug

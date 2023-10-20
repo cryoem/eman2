@@ -16,9 +16,9 @@ source ${MINIFORGE_HOME}/etc/profile.d/conda.sh
 conda activate base
 
 mamba install --update-specs --quiet --yes --channel conda-forge \
-    conda-build pip boa conda-forge-ci-setup=3
+    conda-build pip boa conda-forge-ci-setup=3 constructor
 mamba update --update-specs --yes --quiet --channel conda-forge \
-    conda-build pip boa conda-forge-ci-setup=3
+    conda-build pip boa conda-forge-ci-setup=3 constructor
 
 
 /usr/bin/sudo mangle_homebrew
@@ -26,3 +26,4 @@ mamba update --update-specs --yes --quiet --channel conda-forge \
 
 source ./ci_support/set_env_vars.sh
 conda mambabuild ./recipe -c cryoem -c conda-forge
+constructor ./ci_support/ -v --debug
