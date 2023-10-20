@@ -11,34 +11,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - CONFIG: linux
-            DOCKER_IMAGE: quay.io/condaforge/linux-anvil-cos7-x86_64
-            os: ubuntu
-          - CONFIG: osx
-            os: macos
           - CONFIG: win
             os: windows
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
-
-    - name: Build on Linux
-      if: matrix.os == 'ubuntu'
-      env:
-        CONFIG: ${{ matrix.CONFIG }}
-        DOCKER_IMAGE: ${{ matrix.DOCKER_IMAGE }}
-      shell: bash
-      run: |
-        docker run --rm --privileged multiarch/qemu-user-static:register --reset --credential yes
-        ./ci_support/run_docker_build.sh
-
-    - name: Build on macOS
-      if: matrix.os == 'macos'
-      env:
-        CONFIG: ${{ matrix.CONFIG }}
-      shell: bash
-      run: |
-        ./ci_support/run_osx_build.sh
 
     - name: Install Miniconda for windows
       uses: conda-incubator/setup-miniconda@v2
