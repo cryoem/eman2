@@ -6,7 +6,7 @@ installer_filename: eman2_huge.linux.sh  # [linux]
 installer_filename: eman2_huge.win.exe   # [win]
 
 channels:
-    - file:///place_holder_conda_prefix/conda-bld
+    - file:///C:\Miniconda3\conda-bld\
     - https://conda.anaconda.org/cryoem
     - https://conda.anaconda.org/conda-forge
     - https://repo.anaconda.com/pkgs/main           # [win]

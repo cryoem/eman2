@@ -27,14 +27,23 @@ jobs:
       shell: cmd
       run: |
         call activate base
-        mamba.exe install -c conda-forge 'python=3.9' conda-build conda pip boa conda-forge-ci-setup=3
+        mamba.exe install -c conda-forge 'python=3.10' conda-build conda pip boa conda-forge-ci-setup=3 constructor
         if errorlevel 1 exit 1
         
-        set EMAN_VERSION=2.99
+        set EMAN_VERSION=2.99.47
         set EMAN_DEPS_VERSION=31.1
         conda.exe mambabuild ./recipe -c cryoem -c conda-forge -c defaults
         if errorlevel 1 exit 1
+
+        constructor ci_support/constructor-mini/ -v --debug
+        if errorlevel 1 exit
+        
       env:
         PYTHONUNBUFFERED: 1
         CONFIG: ${{ matrix.CONFIG }}
       if: matrix.os == 'windows'
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: eman2.win.exe
+        path: eman2.win.exe
