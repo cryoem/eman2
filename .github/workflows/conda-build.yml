@@ -29,6 +29,7 @@ jobs:
         call activate base
         mamba.exe install -c conda-forge 'python=3.10' conda-build conda pip boa conda-forge-ci-setup=3 constructor
         if errorlevel 1 exit 1
+        conda.exe config --set channel_priority flexible
         
         set EMAN_VERSION=2.99.47
         set EMAN_DEPS_VERSION=31.1
