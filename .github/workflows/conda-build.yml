@@ -36,7 +36,7 @@ jobs:
         conda.exe mambabuild ./recipe -c cryoem -c conda-forge -c defaults
         if errorlevel 1 exit 1
 
-        constructor ci_support/constructor-mini/ -v --debug
+        constructor ci_support/ -v --debug
         if errorlevel 1 exit
         
       env:
