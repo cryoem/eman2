@@ -25,5 +25,3 @@ specs:
 
 welcome_image: ../images/EMAN2Icon.png      # [win]
 icon_image:    ../images/eman.ico           # [win]
-post_install:  ../post-install-actions.sh      # [unix]
-post_install:  ../post-install-actions.bat     # [win]
