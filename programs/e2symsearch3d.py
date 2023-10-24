@@ -116,11 +116,11 @@ def main():
 	
 	(options, args) = parser.parse_args()
 	
-	options = checkinput( options )
+	options = checkinput( options )[0]
 	
-	if options.parallel in (None,"","none","None") :
-		print("WARNING: no --parallel specified. Please see http://eman2.org/Parallel")
-		options.parallel="thread:2"
+	#if options.parallel in (None,"","none","None") :
+	#	print("WARNING: no --parallel specified. Please see http://eman2.org/Parallel")
+	#	options.parallel="thread:2"
 	
 	#If no failures up until now, initialize logger
 	log = 0
@@ -137,8 +137,11 @@ def main():
 	
 	if rootpath not in options.path:
 		options.path = rootpath + '/' + options.path
-		
+	
+	print("\n(e2symsearch3d)(main) BEFORE spt_options_parser --input is={}".format(input))
 	options = sptOptionsParser( options )
+	print("\n(e2symsearch3d)(main) AFTER spt_options_parser --input is={}".format(input))
+
 	
 	avgr = Averagers.get( options.averager[0], options.averager[1 ])
 	resultsdict = {}
