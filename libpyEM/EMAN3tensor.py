@@ -147,43 +147,75 @@ def Orientations():
 
 	def __setitem__(self,key,value):
 		# if the Gaussians are a tensor, we turn it back into numpy for modification
-#		if isinstance(self._data,tf.Tensor): self._data=self._data.numpy()
+		self._coerce_numpy()
 		self._data[key]=value
 
-	def to_mx2d(self):
-		"""Returns the current set of orientations as a N x 2 x 3 matrix which will transform a set of 3-vectors to a set of
-		2-vectors, ignoring the resulting Z component. Typically used with Gaussians to generate projections."""
+	def __len__(self): return self._data.shape[0]
 
-#		if not isinstance(self._data,tf.Tensor): self._data=tf.constant(self._data)
-
-		l=np.linalg.norm(xyz,axis=1)
-		w=np.cos(pi*l)  # cos "real" component of quaternion
-		if l>0:
-			s=sin(pi*l)/l  # multiply xyz component of quaternion by this
-			q=xyz*s        # the x/y/z components of q
-		else: q=xyz
-
-		mx=np.array(((1-2*(q[1]*q[1]+q[2]*q[2]),2*q[0]*q[1]-2*q[2]*w,2*q[0]*q[2]+2*q[1]*w),
-			(2*q[0]*q[1]+2*q[2]*w,1-(2*q[0]*q[0]+2*q[2]*q[2]),2*q[1]*q[2]-2*q[0]*w)))
-
-	def to_mx3d(self):
-		"""Returns the current set of orientations as a N x 3 x 3 matrix which will transform a set of 3-vectors to a set of
-		rotated 3-vectors, ignoring the resulting Z component. Typically used with Gaussians to generate projections."""
+	def _coerce_tensor(self):
 		if not isinstance(self._data,tf.Tensor): self._data=tf.constant(self._data)
 
-		l=tf.norm(xyz)
-		w=cos(pi*l)  # cos "real" component of quaternion
-		if l>0:
-			s=sin(pi*l)/l  # multiply xyz component of quaternion by this
-			q=xyz*s        # the x/y/z components of q
-		else: q=xyz
+	def _coerce_numpy(self):
+		if isinstance(self._data,tf.Tensor): self._data=self._data.numpy()
 
-		mx=np.array(((1-2*(q[1]*q[1]+q[2]*q[2]),2*q[0]*q[1]-2*q[2]*w,2*q[0]*q[2]+2*q[1]*w),
-			(2*q[0]*q[1]+2*q[2]*w,1-(2*q[0]*q[0]+2*q[2]*q[2]),2*q[1]*q[2]-2*q[0]*w)))
+	def to_mx2d(self):
+		"""Returns the current set of orientations as a 2 x 3 x N matrix which will transform a set of 3-vectors to a set of
+		2-vectors, ignoring the resulting Z component. Typically used with Gaussians to generate projections.
+
+		To apply to a set of vectors:
+		mx=self.to_mx2d()
+		vecs=tf.constant(((1,0,0),(0,1,0),(0,0,1),(2,2,2),(1,1,0),(0,1,1)),dtype=tf.float32)
+
+		tf.transpose(tf.matmul(mx[:,:,0],tf.transpose(vecs)))
+		or
+		tf.einsum("ij,kj->ki",mx[:,:,0],vecs)
+		"""
+
+		self._coerce_tensor()
+
+		# Adding a tiny value avoids the issue with zero rotations. While it would be more correct to use a conditional
+		# it is much slower, and the tiny pertutbation should not significantly impact the math.
+		l=tf.norm(self._data,axis=1)+1.0e-37
+
+		w=tf.cos(pi*l)  # cos "real" component of quaternion
+		s=tf.sin(pi*l)/l
+		q=tf.transpose(self._data)*s		# transpose makes the vectorized math below work properly
+
+		mx=tf.stack(((1-2*(q[1]*q[1]+q[2]*q[2]),2*q[0]*q[1]-2*q[2]*w,2*q[0]*q[2]+2*q[1]*w),
+		(2*q[0]*q[1]+2*q[2]*w,1-(2*q[0]*q[0]+2*q[2]*q[2]),2*q[1]*q[2]-2*q[0]*w)))
+		return mx
+
+	def to_mx3d(self):
+		"""Returns the current set of orientations as a 3 x 3 x N matrix which will transform a set of 3-vectors to a set of
+		rotated 3-vectors, ignoring the resulting Z component. Typically used with Gaussians to generate projections.
+
+		To apply to a set of vectors:
+		mx=self.to_mx2d()
+		vecs=tf.constant(((1,0,0),(0,1,0),(0,0,1),(2,2,2),(1,1,0),(0,1,1)),dtype=tf.float32)
+
+		tf.transpose(tf.matmul(mx[:,:,0],tf.transpose(vecs)))
+		or
+		tf.einsum("ij,kj->ki",mx[:,:,0],vecs)"""
+
+		self._coerce_tensor()
+
+		# Adding a tiny value avoids the issue with zero rotations. While it would be more correct to use a conditional
+		# it is much slower, and the tiny pertutbation should not significantly impact the math.
+		l=tf.norm(self._data,axis=1)+1.0e-37
+
+		w=tf.cos(pi*l)  # cos "real" component of quaternion
+		s=tf.sin(pi*l)/l
+		q=tf.transpose(self._data)*s		# transpose makes the vectorized math below work properly
+
+		mx=tf.stack(((1-2*(q[1]*q[1]+q[2]*q[2]),2*q[0]*q[1]-2*q[2]*w,2*q[0]*q[2]+2*q[1]*w),
+		(2*q[0]*q[1]+2*q[2]*w,1-(2*q[0]*q[0]+2*q[2]*q[2]),2*q[1]*q[2]-2*q[0]*w),
+		(2*q[0]*q[2]+2*q[1]*w,2*q[1]*q[2]+2*q[0]*w,1-(2*q[0]*q[0]+2*q[1]*q[1]))))
+		return mx
+
 
 def Gaussians():
-	"""This represents a set of Gaussians with x,y,z,amp parameters (but no width). Main representation is a N x 4 numpy array (x,y,z,amp) ],
-but tensorflow can be used for some operations"""
+	"""This represents a set of Gaussians with x,y,z,amp parameters (but no width). Representation is a N x 4 numpy array or tensor (x,y,z,amp) ],
+x,y,z are ~-0.5 to ~0.5 (typ) and amp is 0 to ~1. A scaling factor (value -> pixels) is applied when generating projections. """
 
 	def __init__(self,gaus=0):
 		if isinstance(gaus,int):
@@ -199,8 +231,38 @@ but tensorflow can be used for some operations"""
 
 	def __setitem__(self,key,value):
 		# if the Gaussians are a tensor, we turn it back into numpy for modification
-		if isinstance(self._data,tf.Tensor): self._data=self._data.numpy()
+		self._coerce_numpy()
 		self._data[key]=value
+
+	def _coerce_tensor(self):
+		if not isinstance(self._data,tf.Tensor): self._data=tf.constant(self._data)
+
+	def _coerce_numpy(self):
+		if isinstance(self._data,tf.Tensor): self._data=self._data.numpy()
+
+	def project_simple(self,orts,boxsize,txty=None):
+		"""Generates a tensor containing a simple 2-D projection (interpolated delta functions) of the set of Gaussians for each of N Orientations in orts.
+		orts - must be an Orientations object
+		txty =  is an (optional) N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Gaussians for each Orientation.
+		boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
+
+		With these definitions, Gaussian coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
+		used for comparisons should be resampled without any "clip" operations.
+		"""
+		self._coerce_tensor()
+
+		proj=tf.zeros((len(orts),boxsize,boxsize))		# projections
+		mx=orts.to_mx2d()
+
+		# iterate over projections
+		for j in range(len(orts)):
+			xfgauss=tf.einsum("ij,kj->ki",mx[:,:,j],self._data[:,:3])	# rotated Gaussian coordinates for projection j
+			if txty is not None: xfgauss+=txty[:,:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
+			xfgauss=(xfgauss+0.5)*boxsize)		# shift and scale both x and y the same
+
+
+
+
 
 	def spinvec_to_mx(self,xforms):
 		"""This will convert an Nx3 array of "spin vectors" into an Nx4x2 tensor, which may be re-used
