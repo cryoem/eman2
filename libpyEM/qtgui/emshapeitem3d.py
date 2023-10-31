@@ -1013,9 +1013,9 @@ class EMInspectorControlShape(EMItem3DInspector):
 	def updateItemControls(self):
 		""" Updates this item inspector. Function is called by the item it observes"""
 		super(EMInspectorControlShape, self).updateItemControls()
-		self.ambcolorbox.setColor(QtGui.QColor(255*self.item3d().ambient[0],255*self.item3d().ambient[1],255*self.item3d().ambient[2]))
-		self.diffusecolorbox.setColor(QtGui.QColor(255*self.item3d().diffuse[0],255*self.item3d().diffuse[1],255*self.item3d().diffuse[2]))
-		self.specularcolorbox.setColor(QtGui.QColor(255*self.item3d().specular[0],255*self.item3d().specular[1],255*self.item3d().specular[2]))
+		self.ambcolorbox.setColor(QtGui.QColor(int(255*self.item3d().ambient[0]),int(255*self.item3d().ambient[1]),int(255*self.item3d().ambient[2])))
+		self.diffusecolorbox.setColor(QtGui.QColor(int(255*self.item3d().diffuse[0]),int(255*self.item3d().diffuse[1]),int(255*self.item3d().diffuse[2])))
+		self.specularcolorbox.setColor(QtGui.QColor(int(255*self.item3d().specular[0]),int(255*self.item3d().specular[1]),int(255*self.item3d().specular[2])))
 	
 	def addTabs(self):
 		""" Add a tab for each 'column' """
