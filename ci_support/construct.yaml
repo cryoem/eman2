@@ -23,5 +23,5 @@ specs:
   - console_shortcut  # [win]
   - menuinst          # [win]
 
-post_install:  ../post-install-actions.sh      # [unix]
-post_install:  ../post-install-actions.bat     # [win]
+post_install:  post-install-actions.sh      # [unix]
+post_install:  post-install-actions.bat     # [win]
