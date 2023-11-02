@@ -48,3 +48,8 @@ jobs:
       with:
         name: eman2.win.exe
         path: eman2.win.exe
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: conda-bld
+        path: C:\Miniconda3\conda-bld\win-64\*
