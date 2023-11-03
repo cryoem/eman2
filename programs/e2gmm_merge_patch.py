@@ -46,6 +46,14 @@ def main():
 				avg.add(e)
 				wt.add(m)
 				
+			#### copy background noise from the first map
+			wt0=1-wt
+			wt0.process_inplace("threshold.belowtozero")
+			e=EMData(f"{path}/threed_patch_00_raw_{eo}.hdf")
+			e.mult(wt0)
+			avg.add(e)
+			wt.add(wt0)
+			
 			wt.process_inplace("math.reciprocal", {"zero_to":0})
 			avg.mult(wt)
 			avg.write_image(f"{path}/threed_99_{eo}.hdf")
@@ -66,6 +74,7 @@ def main():
 			wt=avg.copy()
 			
 			m0=EMData(f"{options.base}/mask.hdf")
+			m0.to_one()
 			for pt in args:
 				if pt==options.base: continue
 				js=js_open_dict(f"{pt}/0_gmm_params.json")
@@ -86,8 +95,8 @@ def main():
 				wt.add(m)
 				m0.add(m*-1)
 
+			
 			e=EMData(f"{options.base}/threed_raw_{eo}.hdf")
-			# m=EMData(f"mask_zone0.hdf")
 			m=m0.copy()
 			m.process_inplace("threshold.binary",{"value":.2})
 			m.process_inplace("mask.addshells.gauss",{"val1":5,"val2":10})
@@ -101,6 +110,7 @@ def main():
 			wt.process_inplace("math.reciprocal", {"zero_to":0})
 			avg.mult(wt)
 			avg.write_image(f"{options.base}/threed_99_{eo}.hdf")
+			avg.write_image(f"{options.base}/threed_99_raw_{eo}.hdf")
 			
 		if not options.skippp:
 			run(f"e2refine_postprocess.py --even {options.base}/threed_99_even.hdf --res 5 --tophat localwiener --thread 32 --setsf sf.txt --align")
