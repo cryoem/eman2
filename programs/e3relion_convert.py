@@ -61,6 +61,7 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 	parser.add_argument("--cs", default=0, type=float,help="Spherical aberration in mm, if not found in STAR file", guitype='floatbox', row=8, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--ac", default=0, type=float,help="Amplitude contrast as a percentage, eg - 10, not 0.1, if not found in STAR file", guitype='floatbox', row=8, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--particlebits", default=6, type=float,help="Significant bits to retain in HDF files for raw particles, 6 is usually more than sufficient (default 6)", guitype='intbox', row=9, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--dftolerance",default=0.001, type=float,help="If defocus has to be used to group the particles by micrograph, and the defocus varies per particle, this is the amount of variation in microns to permit within a single file")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
@@ -143,17 +144,18 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 			if options.verbose>0: print("Unable to group particles using rlnImageName")
 		except:
 			# final try. If the same defocus was assigned to all images in a micrograph, we can use that
-			dfs=set(star[rkey]["rlnDefocusU"])
+			dfrng=[int(.002*df/options.dftolerance) for df in star[rkey]["rlnDefocusU"]]  # defocus converted to integers covering the acceptable range of values, .002 microns&range
+			dfs=set(dfrng)
 			if len(dfs)<nptcl/5:
-				if options.verbose>0: print("Using rlnDefocusU to group particles")
+				if options.verbose>0: print(f"Using rlnDefocusU to group particles into {len(dfs)} groups")
 				n=0
 				ugnums=[0]
-				df=star[rkey]["rlnDefocusU"]
+				df=dfrng
 				for i in range(1,nptcl):
 					if df[i]!=df[i-1]: n+=1
 					ugnums.append(n)
-			else:
-				if options.verbose>0: print("Unable to group particles by micrograph, collapsing to a single file")
+			if len(dfs)>=nptcl/5 or len(ugnums)>nptcl/5:
+				print("WARNING: Unable to group particles usefully by micrograph, collapsing to a single file. Consider rerunning with sufficiently large --dftolerance")
 				ugnums=np.zeros(nptcl,"int32")
 
 	# copy particles by micrograph
@@ -191,6 +193,10 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 				if i==0: print("No usable particle orientations found in STAR file!")
 				xform=Transform()
 
+		# expensive to compute, but since so many relion files have per-particle CTF, we preserve this even when "grouping by micrograph"
+		ctf=EMAN2Ctf()
+		ctf.from_dict({"defocus":defocus,"dfang":dfang,"dfdiff":dfdiff,"voltage":voltage,"cs":cs,"ampcont":ac,"apix":apix,"bfactor":bfactor})
+
 		# begin a new micrograph file
 		if ugnums[i]!=ugnum:
 			ugnum=ugnums[i]
@@ -199,19 +205,11 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 			ptclno=0
 			jdb=js_open_dict(info_name(ptclname))
 
-
 			# Make a "micrograph" CTF entry for each set of different defocuses to use when fitting
-			ctf=EMAN2Ctf()
-			ctf.from_dict({"defocus":defocus,"dfang":dfang,"dfdiff":dfdiff,"voltage":voltage,"cs":cs,"ampcont":ac,"apix":apix,"bfactor":bfactor})
 			jdb["ctf_frame"]=[1024,ctf,(256,256),tuple(),5,1]
 
 		imn,imfsp=star[rkey]["rlnImageName"][i].split("@")
 		imn=int(imn)
-		# update existing CTF object, which we store in the actual image header
-		ctf.defocus=defocus
-		ctf.dfdiff=dfdiff
-		ctf.dfang=dfang
-		ctf.bfactor=bfactor
 
 		img=EMData("../"+imfsp,imn-1)		# relion starts with #1, EMAN #0
 		img["apix_x"]=apix

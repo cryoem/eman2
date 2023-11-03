@@ -189,7 +189,7 @@ def main():
 			
 	else:
 		#### even larger images.. hopefully 8k at most
-		bf=imgsz//4096+1
+		bf=imgsz//4096
 		imgs_4k=[img.process("math.meanshrink", {"n":bf}).process("normalize.edgemean") for img in imgs]
 		imgs_2k=[img.process("math.meanshrink", {"n":2}).process("normalize.edgemean") for img in imgs_4k]
 		imgs=imgs_4k

@@ -34,6 +34,7 @@ from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
+import h5py
 import sys
 import os
 import weakref
@@ -541,10 +542,15 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.gblpltctl.addWidget(self.wbutoptics,3,5)
 		self.wbutoptics.clicked[bool].connect(self.do_optics)
 
-		self.wbutspectr=QtWidgets.QPushButton("Spectr")
-		self.wbutspectr.setToolTip("Danger! May fail on large data sets, and possibly exhaust RAM")
-		self.gblpltctl.addWidget(self.wbutspectr,4,5)
-		self.wbutspectr.clicked[bool].connect(self.do_spectral)
+		# self.wbutspectr=QtWidgets.QPushButton("Spectr")
+		# self.wbutspectr.setToolTip("Danger! May fail on large data sets, and possibly exhaust RAM")
+		# self.gblpltctl.addWidget(self.wbutspectr,4,5)
+		# self.wbutspectr.clicked[bool].connect(self.do_spectral)
+
+		self.wbutlin=QtWidgets.QPushButton("Line")
+		self.wbutlin.setToolTip("Sequential split along a single axis")
+		self.gblpltctl.addWidget(self.wbutlin,4,5)
+		self.wbutlin.clicked[bool].connect(self.do_linesplit)
 
 		self.wvbnsets=ValBox(label="Sets:",value=2)
 		self.wvbnsets.setIntonly(True)
@@ -1616,6 +1622,34 @@ class EMGMM(QtWidgets.QMainWindow):
 		print("spectral ...")
 		t0=time.time()
 		from sklearn.cluster import SpectralClustering
+		nseg=int(self.wvbnsets.getValue())
+		cols=np.array(parse_range(self.wstbaxes.getValue()))
+
+		try: nset=max([int(k) for k in self.curmaps])+1
+		except: nset=0
+
+		spseg=SpectralClustering(n_jobs=-1)
+		classes=spseg.fit_predict(self.data[cols].transpose())
+		nseg=max(classes)+1
+		for i in range(nseg):
+			ptdist=np.where(classes==i)[0]
+			try:
+				cen=np.mean(self.data[cols,ptdist],1)
+				newmap=[None,local_datetime(),[cols,cen],0,0,ptdist]
+			except:
+				traceback.print_exc()
+				print(self.data[cols,ptdist].shape)
+				newmap=[None,local_datetime(),(cols,None),0,0,ptdist]
+			self.curmaps[str(nset+i)]=newmap
+
+		self.sets_changed()
+		print(f"done ({time.time()-t0}s)")
+		get_application().restoreOverrideCursor()
+
+	def do_linesplit(self):
+		get_application().setOverrideCursor(Qt.BusyCursor)
+		print("Split along a single axis ...")
+		t0=time.time()
 		nseg=int(self.wvbnsets.getValue())
 		cols=np.array(parse_range(self.wstbaxes.getValue()))
 

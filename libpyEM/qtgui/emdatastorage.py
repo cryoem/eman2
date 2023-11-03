@@ -31,10 +31,7 @@
 #
 
 from past.utils import old_div
-try:
-	from UserDict import DictMixin
-except ImportError:
-	from collections import MutableMapping as DictMixin
+from collections.abc import MutableMapping as DictMixin
 
 from math import *
 import time

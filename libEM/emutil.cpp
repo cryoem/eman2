@@ -413,6 +413,9 @@ EMUtil::ImageType EMUtil::get_image_type(const string & in_filename)
 	else if (old_ext == "hdf") {
 		return IMAGE_HDF;
 	}
+	else if (old_ext == "tiff" || old_ext == "tif") {
+		return IMAGE_TIFF;
+	}
 
 	FILE *in = fopen(filename.c_str(), "rb");
 

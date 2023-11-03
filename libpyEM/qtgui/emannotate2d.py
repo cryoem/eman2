@@ -62,10 +62,10 @@ from eman2_gui.embrowser import EMBrowserWidget
 from eman2_gui.empmwidgets import *
 from eman2_gui.emanimationutil import SingleValueIncrementAnimation, LineAnimation
 import json
-
 import platform
 
 from eman2_gui.emglobjects import EMOpenGLFlagsAndTools
+
 
 class EMAnnotate2DWidget(EMGLWidget):
 	"""
@@ -1487,7 +1487,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 		except:pass
 
 	def del_shapes(self,k=None):
-		print(self.shapes)
+		#print(self.shapes)
 		if k:
 			try:
 				for i in k:
@@ -1620,6 +1620,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 					lc=self.scr_to_img(event.x(),event.y())
 					#current_class = self.current_class
 					if inspector:
+						self.mousedown.emit(event, lc)
 						current_class = inspector.seg_tab.get_current_class()
 						pen_width = inspector.seg_tab.get_pen_width()
 
@@ -1629,6 +1630,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 						#print("Turn point", int(lc[0]),int(lc[1]),"to 2")
 						self.force_display_update(set_clip=True)
 						self.updateGL()
+						# self.mousedown.emit(event, lc)
 
 
 	def mouseMoveEvent(self, event):
@@ -1735,6 +1737,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 				if event.button()==Qt.LeftButton:
 					self.force_display_update(set_clip=1)
 					self.updateGL()
+					self.mouseup.emit(event, lc)
 
 	def wheelEvent(self, event):
 		if self.mouse_mode==0 and event.modifiers()&Qt.ShiftModifier:
@@ -3726,9 +3729,15 @@ class EMSegTab(QtWidgets.QWidget):
 			if ret:
 				return item_dict
 			else:
+				# for key, value in item_dict.items():
+				# 	self.add_new_row(key,value)
 				if len(group_ids)>0:
 					for i in range(len(keys)):
 						self.add_new_row(keys[i],values[i],group_ids[i])
+					# if len(self.nodes)==0:
+					# 	self.make_nodes()
+					# print("nodes",[node.get_value() for node in (self.nodes.values())])
+					# print("rowCount",self.table_set.rowCount())
 					for row in range(self.table_set.rowCount()):
 						print(int(self.table_set.item(row,0).text()))
 						if int(self.table_set.item(row,2).text()) != -1:
@@ -3826,6 +3835,19 @@ class EMSegTab(QtWidgets.QWidget):
 		json_str = js['tree_dict']
 		self.tree_set.clear()
 		fill_item(self.tree_set.invisibleRootItem(),json_str)
+		# try:
+		# 	self.target.ctable = js['ctable']
+		# 	self.target.colors = self.target.create_palette_from_RGB()
+		# 	self.need_new_RGB = 1
+		# 	self.colors = self.target.get_color_palette()
+		# 	self.update_sets()
+		# 	self.target.force_display_update()
+		# 	self.target.updateGL()
+		# except:
+		# 	print("No color info detected")
+		# 	pass
+
+
 
 def main():
 	from eman2_gui.emapplication import EMApp
@@ -3844,6 +3866,5 @@ def main():
 	em_app.show()
 	window.optimally_resize()
 	sys.exit(em_app.exec_())
-
 if __name__ == '__main__':
 	main()

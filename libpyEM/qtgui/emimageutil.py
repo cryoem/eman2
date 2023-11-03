@@ -436,7 +436,7 @@ class ImgHistogram(QtWidgets.QWidget):
 		p.eraseRect(0,0,self.width(),self.height())
 		p.setPen(Qt.darkGray)
 		for i,j in enumerate(self.histdata):
-			p.drawLine(i,127,i,127-old_div(j*126,self.norm))
+			p.drawLine(i,127,i,127-int(j*126/self.norm))
 		
 		if self.histdata is None: return
 		p=QtGui.QPainter()
@@ -445,15 +445,15 @@ class ImgHistogram(QtWidgets.QWidget):
 		p.eraseRect(0,0,self.width(),self.height())
 		p.setPen(Qt.darkGray)
 		for i,j in enumerate(self.histdata):
-			p.drawLine(i,127,i,127-old_div(j*126,self.norm))
+			p.drawLine(i,127,i,127-int(j*126/self.norm))
 
 		# If the user has dragged, we need to show a value
 
 		if (self.probe) and (self.volume == False):
 			p.setPen(Qt.blue)
-			p.drawLine(self.probe[0]+1,0,self.probe[0]+1,127-old_div(self.probe[1]*126,self.norm))
+			p.drawLine(self.probe[0]+1,0,self.probe[0]+1,127-int(self.probe[1]*126/self.norm))
 			p.setPen(Qt.red)
-			p.drawLine(self.probe[0]+1,127,self.probe[0]+1,127-old_div(self.probe[1]*126,self.norm))
+			p.drawLine(self.probe[0]+1,127,self.probe[0]+1,127-int(self.probe[1]*126/self.norm))
 			p.setFont(self.font)
 			#p.drawText(200,20,"x=%d"%(self.probe[0]))
 			#p.drawText(200,36,"%1.2f"%self.threshold)
