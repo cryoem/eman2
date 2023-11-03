@@ -342,9 +342,7 @@ def main():
 		trainset1=trainset1.batch(32)
 	else:
 		chinid=[]
-		
-	save_model_pdb(gen_model, gen_model_ca, options, f"{path}/fit_01tmp",theta_all_out)
-	
+			
 	##########################################
 	print("Re-building rotamers...")
 	for chin in chinid:
@@ -509,7 +507,7 @@ def main():
 		d=cost[:,0]-cost[:,1]
 		print(" loss from {:.3f} to {:.3f}".format(np.mean(cost[:,0]), np.mean(cost[:,1])))
 	
-		save_model_pdb(gen_model, gen_model_ca, options, f"{path}/fit_02", theta_all_out)
+	save_model_pdb(gen_model, gen_model_ca, options, f"{path}/fit_02", theta_all_out)
 		
 		
 	##########################################
