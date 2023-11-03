@@ -13,3 +13,6 @@
  e2tomo_annotate.py # skimage
  e2gmm_spt_align.py
  e2gmm_spt_subtlt.py
+ e2gmm_model_refine.py
+ e2gmm_model_compile.py
+ e2gmm_model_fit.py

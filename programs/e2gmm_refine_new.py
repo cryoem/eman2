@@ -943,10 +943,12 @@ def train_decoder(gen_model, trainset, params, options, pts=None):
 		if options.bond:
 			c=np.mean(costetc, axis=0)
 			etc+=f", bond {c[0]:.3f}"
+			ci=1
 			if options.hbond:
-				etc+=f", H-bond {c[1]:.4f}"
+				etc+=f", H-bond {c[ci]:.4f}"
+				ci+=1
 			if options.angle:
-				etc+=f", angle {c[2]:.3f}"
+				etc+=f", angle {c[ci]:.3f}"
 		
 		print("iter {}, loss : {:.4f}{}         ".format(itr, np.mean(cost),etc))
 		
