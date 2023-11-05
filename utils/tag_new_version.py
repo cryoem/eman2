@@ -83,6 +83,9 @@ def main():
 	version_new = bump_version_tuple(bump_bit, version_cur)
 	push_tag(version_cur, version_new)
 
+	with open(os.getenv('GITHUB_ENV'), "a") as fout:
+		fout.write(f"new_version={'.'.join([str(i) for i in version_new])}")
+
 
 if __name__ == "__main__":
 	main()
