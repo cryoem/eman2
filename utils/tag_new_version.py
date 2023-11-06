@@ -4,43 +4,43 @@ import argparse
 import os
 
 import requests
-from enum import Enum
 import subprocess as sp
 
-class Version(Enum):
-	MAJOR = 0
-	MINOR = 1
-	PATCH = 2
 
+bump_choices = ('major', 'minor', 'patch')
+bump_choices_idx = {v:i for i,v in enumerate(bump_choices)}
 
-def main():
-	parser = argparse.ArgumentParser()
-	parser.add_argument('--bump', choices=['major', 'minor', 'patch'], default='patch')
-
-	options = parser.parse_args()
-	bump_bit = options.bump.upper()
-	print(f"Bumping '{bump_bit}' version...")
-
+def get_latest_version_from_gh():
 	tags = [t['name'] for t in requests.get('https://api.github.com/repos/cryoem/eman2/tags').json()]
 	print(f"Received GitHub tags:\n{tags}")
 
-	tags = sorted([t for t in tags if t.startswith('v')], reverse=True)
+	# tags = ['v2.99', 'v2.99.33', 'release', 'v2.44a-windoiws'] ->
+	# tags = [['2', '99'], ['2', '99', '33'], ['2', '44a-windoiws']]
+	tags = [t[1:].split('.') for t in tags if t.startswith('v')]
+
+	# tags = [['2', '99'], ['2', '99', '33'], ['2', '44a-windoiws']] ->
+	# tags = [[2, 99], [2, 99, 33]]
+	tags = [[int(word) for word in t] for t in tags if all([word.isnumeric() for word in t])]
+
+	# tags = [[2, 99], [2, 99, 33]] ->
+	# tags = [[2, 99, 0], [2, 99, 33]]
+	for t in tags:
+		t.extend((len(bump_choices)-len(t))*[0])  # pad with 0s
+
+	# tags = [[2, 99, 0], [2, 99, 33]] ->
+	# tags = [[2, 99, 33]], [2, 99, 0]
+	tags = sorted(tags, reverse=True)
 	print(f"Version tags (sorted: latest to oldest):\n{tags}")
 
-	tag = tags[0]
-	version_cur = tag[1:]
+	version = tags[0]
 
-	print(f"Latest tag:\n{tag}")
-	print(f"Current version:\n{version_cur}")
+	print(f"Current version:  {version}")
 
-	version = [int(v) for v in version_cur.split('.')]
+	return version
 
-	while len(version) < 3:
-		version.append(0)
-
-	print(f"Version bits:\n{version}")
-
-	i_bump = Version[bump_bit].value
+def bump_version_tuple(bump_bit, version):
+	version = version.copy()
+	i_bump = bump_choices_idx[bump_bit]
 
 	# Bump requested version bit
 	version[i_bump] += 1
@@ -49,28 +49,39 @@ def main():
 	for i in range(i_bump + 1, len(version)):
 		version[i] = 0
 
-	print(f"Bumped version bits:\n{version}")
+	print(f"Bumped version bits: {version}")
 
-	version = '.'.join([str(i) for i in version])
-	print(f"Bumped version:\n{version}")
+	return version
 
-	# Run subcommands
-	print("Running subcommands...")
+def push_tag(version_cur, version_new):
+	branch = os.getenv('GITHUB_REF_NAME')
 
-	GIT_BRANCH_SHORT = os.getenv('GIT_BRANCH_SHORT')
+	version_cur = '.'.join([str(i) for i in version_cur])
+	version_new = '.'.join([str(i) for i in version_new])
 
 	for cmd in (
-			f'git branch -D {GIT_BRANCH_SHORT}',
-			f'git checkout -b {GIT_BRANCH_SHORT}',
-			f'python utils/bump_version.py {version_cur} {version}',
-			f'git commit -a -m v{version}',
-			f'git push origin {GIT_BRANCH_SHORT}',
-			f'git tag -f v{version}',
-			f'git push origin v{version}',
+			f'python utils/bump_version.py {version_cur} {version_new}',
+			f'git commit -a -m v{version_new}',
+			f'git tag -f v{version_new}',
+			f'git push origin {branch} v{version_new}',
 			):
 		print(f"> {cmd}")
-		cmd = cmd.split()
-		sp.run(cmd)
+		output = sp.run(cmd.split(), capture_output=True, text=True).stdout
+		print(output)
+
+def main():
+	parser = argparse.ArgumentParser()
+	parser.add_argument('--bump', choices=bump_choices, default='patch')
+
+	options = parser.parse_args()
+
+	bump_bit = options.bump.lower()
+
+	print(f"Bumping '{bump_bit}' version...")
+
+	version_cur = get_latest_version_from_gh()
+	version_new = bump_version_tuple(bump_bit, version_cur)
+	push_tag(version_cur, version_new)
 
 
 if __name__ == "__main__":
