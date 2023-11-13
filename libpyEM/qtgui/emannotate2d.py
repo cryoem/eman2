@@ -63,10 +63,7 @@ from eman2_gui.empmwidgets import *
 from eman2_gui.emanimationutil import SingleValueIncrementAnimation, LineAnimation
 import json
 import platform
-
 from eman2_gui.emglobjects import EMOpenGLFlagsAndTools
-
-
 class EMAnnotate2DWidget(EMGLWidget):
 	"""
 	"""
@@ -280,7 +277,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 		return QtCore.QSize(*self.get_parent_suggested_size())
 
 	def set_disp_proc(self,procs):
-		print('set_disp_proc')
+		#print('set_disp_proc')
 		self.disp_proc=procs
 		self.force_display_update(set_clip=True)
 		self.updateGL()
@@ -3600,24 +3597,6 @@ class EMSegTab(QtWidgets.QWidget):
 		#Save the current annotation to disk as a multiclass annotation file.
 		out_name,ok=QtWidgets.QInputDialog.getText( self, "Save Full Annotation", "Save full annotation to:")
 		if not ok : return
-
-		# nums = [int(self.table_set.item(row,0).text()) for row in range(self.table_set.rowCount())]
-		# names = [str(self.table_set.item(row,1).text()) for row in range(self.table_set.rowCount())]
-		# group_id = [int(self.table_set.item(row,2).text()) for row in range(self.table_set.rowCount())]
-		# #name_str=names[0]+""
-		# #for i in range(1,len(names)):
-		# 	#name_str = name_str + "," + names[i]
-		#
-		# #TOREAD
-		# # self.xform = Transform({"type":"eman","tx":self.full_data["nx"]//2,"ty":self.full_data["ny"]//2,"tz":self.full_data["nz"]//2+self.zpos})
-		# # self.full_data.set_rotated_clip(self.xform, self.data)
-		# # self.full_annotation.set_rotated_clip(self.xform, self.annotation)
-		#
-		# #self.target.get_full_annotation()["ann_name"] = name_str
-		# serialize_name = json.dumps(names, default=lambda a: "[%s,%s]" % (str(type(a)), a.pk))
-		# self.target.get_full_annotation()["ann_name"] = serialize_name
-		# self.target.get_full_annotation()["ann_num"] = nums
-		# self.target.get_full_annotation()["ann_group"] = group_id
 		self.target.get_full_annotation().write_image(out_name)
 		print("Annotation is really saved to", out_name)
 		return
@@ -3683,11 +3662,6 @@ class EMSegTab(QtWidgets.QWidget):
 				# self.tree_set.itemAt(i,1).setForeground(self.colors[key])
 				# self.tree_set.itemAt(i,2).setForeground(QtGui.QColor.fromRgb(120,120,120))
 	def color_tree_item(self,item):
-
-		#item.setFlags(self.itemflags)
-		# key = int(item.text(0))
-		# item.setForeground(0,self.colors[key])
-
 		try:
 			key = int(item.text(0))
 			item.setForeground(0,self.colors[key])
@@ -3759,14 +3733,6 @@ class EMSegTab(QtWidgets.QWidget):
 		except:
 			#print("Trouble reading headers information. Continue...")
 			pass
-
-
-	def reset(self):
-		#reset seg tab when set new data
-		return
-
-
-
 
 	def add_new_row(self,num,name,group_num=-1,group_node=False):
 
@@ -3846,8 +3812,6 @@ class EMSegTab(QtWidgets.QWidget):
 		# except:
 		# 	print("No color info detected")
 		# 	pass
-
-
 
 def main():
 	from eman2_gui.emapplication import EMApp
