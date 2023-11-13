@@ -76,17 +76,27 @@ def main():
 		km.fit(pts[:,:3])
 		pc=km.cluster_centers_
 		
-		msk=EMData(options.mask)
-		## read selected Gaussian from mask file
-		m=msk.numpy().copy()
-		p=pts[:,:3].copy()
-		p=p[:,::-1]
-		p[:,:2]*=-1
-		p=(p+.5)*msk["nx"]
+		emmask=True
+		try:
+			msk=EMData(options.mask)
+		except:
+			emmask=False
+			
+		if emmask:
+			## read selected Gaussian from mask file
+			m=msk.numpy().copy()
+			p=pts[:,:3].copy()
+			p=p[:,::-1]
+			p[:,:2]*=-1
+			p=(p+.5)*msk["nx"]
 
-		o=np.round(p).astype(int)
-		v=m[o[:,0], o[:,1], o[:,2]]
-		imsk=v.astype(float)
+			o=np.round(p).astype(int)
+			v=m[o[:,0], o[:,1], o[:,2]]
+			imsk=v.astype(float)
+		else:
+			i=np.loadtxt(options.mask).astype(int).flatten()
+			imsk=np.zeros(len(pts), dtype=float)
+			imsk[i]=1
 		
 		pm=pts[imsk>.1]
 		pn=16

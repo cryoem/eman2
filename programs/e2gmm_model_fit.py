@@ -157,12 +157,20 @@ def main():
 	
 	resid=[get_info(a, True) for a in atoms]
 	resid, caidx=np.unique(resid, return_inverse=True)
-	capos=np.array([np.mean(pts[caidx==i], axis=0) for i in range(np.max(caidx)-1)])
+	capos=np.array([np.mean(pts[caidx==i], axis=0) for i in range(np.max(caidx)+1)])
 	res_atom_dict={r:np.where(caidx==i)[0] for i,r in enumerate(resid)}
 	print("Shape of CA model: ",capos.shape)
-
+	
+	reschain=[r.split('_')[0] for r in resid]
+	reschain, reschainid=np.unique(reschain, return_inverse=True)
+	ri=np.array([int(r.split('_')[1]) for r in resid])
+	ri=ri+reschainid*np.max(ri)
+	ri=ri-np.min(ri)
+	ri=ri/np.max(ri)
+	cp=np.hstack([capos, 10*reschainid[:,None], 10*ri[:,None]])
+	
 	km=KMeans(options.npatch,max_iter=30)
-	km.fit(capos[:,:3])
+	km.fit(cp)
 	pcnt=km.cluster_centers_
 	icls=np.zeros(len(pts), dtype=int)
 	for i in range(options.npatch):
@@ -192,7 +200,7 @@ def main():
 	etc=""
 	print("Large scale model morphing...")
 	wts=gen_model.trainable_variables
-	for itr in range(10):
+	for itr in range(20):
 		cost=[]
 		costetc=[]
 		for pjr,pji,xf in trainset:
@@ -255,7 +263,7 @@ def main():
 	opt=tf.keras.optimizers.Adam(learning_rate=1e-5) 
 	wts=gen_model.trainable_variables
 	wts+=gen_model_ca.trainable_variables
-	weight_model=1e-3
+	weight_model=1e-4
 	
 	for itr in range(20):
 		cost=[]

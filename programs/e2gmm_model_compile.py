@@ -60,7 +60,7 @@ def main():
 	##########################
 	print("Calculating van der Waals radius...")
 	atomtype=['_'.join([a.parent.resname, a.id]) for a in atoms]
-	vdw=np.array([e2pc.vdw_radius[a] for a in atomtype])
+	vdw=np.array([e2pc.get_vdw_radius(a) for a in atomtype])
 	np.savetxt(f"{path}/model_vdwr.txt", vdw)
 	
 	
@@ -104,16 +104,16 @@ def main():
 			if dp<.1 and i2>ai:
 				bonds2.append([ai, i2, ssbond[0], ssbond[1]])
 			
-	bonds0=np.array(bonds0)
-	bonds1=np.array(bonds1)
-	bonds2=np.array(bonds2)
+	bonds0=np.array(bonds0).reshape(-1,4)
+	bonds1=np.array(bonds1).reshape(-1,4)
+	bonds2=np.array(bonds2).reshape(-1,4)
 	print("  {} intra-residue bonds, {} peptide bonds, and {} S-S bonds.".format(len(bonds0), len(bonds1), len(bonds2)))
 
 	bonds=np.concatenate([bonds0, bonds1, bonds2], axis=0)
 	print("  {} bonds total.".format(len(bonds)))
 	
 	bond_len=calc_bond(atom_pos[None,:,:], bonds[:,:2].astype(int))
-	ii=np.where(abs(bond_len[0])>5)[0]
+	ii=np.where(abs(bond_len[0])>15)[0]
 	if len(ii)>0:
 		print("  ignore bad bonds:")
 	bd=bonds[ii][:,:2].astype(int)
@@ -182,7 +182,7 @@ def main():
 			pa_n=pr[atomtype[i0]=='N']
 			pa_c=pr[atomtype[i0]=='C']
 			pa_ca=pr[atomtype[i0]=='CA']
-			if min(len(pa_n), len(pa_c), len(pa_ca))==0: continue
+			if len(pa_n)!=1 or len(pa_c)!=1 or len(pa_ca)!=1: continue
 			
 			dst_n=np.linalg.norm((pr1-pa_n)[:,:3], axis=1)
 			dst_c=np.linalg.norm((pr1-pa_c)[:,:3], axis=1)

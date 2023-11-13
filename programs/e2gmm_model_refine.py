@@ -267,6 +267,8 @@ def get_rotamer_angle(atoms, nchi=0):
 	nci=0
 	for ii in np.unique(resid):
 		res=ca_res[ii]
+		if res not in e2pc.chi_angles_atoms:
+			continue
 		chi=e2pc.chi_angles_atoms[res]
 		if len(chi)>nchi:
 			chi=chi[nchi]
@@ -342,6 +344,8 @@ def compile_hydrogen(pdb):
 	for i,r in enumerate(residue):
 		adict=r.child_dict
 		res=r.resname
+		if res not in e2pc.hydrogen_position:
+			continue
 		hp=e2pc.hydrogen_position[res]
 		for h in hp:
 			if h[0]=='H':
@@ -494,7 +498,7 @@ def eval_chem(model, theta_all, theta_h, options):
 	clashid=calc_clashid(arot[0].numpy(), options, pad=60)
 	vdw_radius=tf.gather(options.vdwr_h, clashid)+options.vdwr_h[:,None]
 	
-	atomdic={'H':0,'C':1,'N':2,'O':3,'S':4}
+	atomdic={'H':0,'C':1,'N':2,'O':3,'S':4,'M':9,'P':9}
 	atype=np.array([atomdic[a.id[0]] for a in options.atoms])
 	atype=np.append(atype, np.zeros(len(options.h_info[0]), dtype=int))
 	ii=np.arange(len(clashid))
@@ -909,7 +913,7 @@ def main():
 	
 	#### vdw radius of H
 	lbs=["{}_{}".format(h[1].resname,h[0]) for h in h_label]
-	vdwh=np.array([e2pc.vdw_radius[i] for i in lbs])
+	vdwh=np.array([e2pc.get_vdw_radius(i) for i in lbs])
 	options.vdwr_h=np.append(vdwr, vdwh).astype(floattype)
 		
 	#### dihedral rotationfor H

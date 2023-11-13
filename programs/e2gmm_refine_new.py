@@ -1604,9 +1604,9 @@ def make_mask_gmm(selgauss, pts):
 	
 	else:
 		## read from a list of points starting from 1
-		m=np.loadtxt(selgauss).astype(floattype).flatten()
-		# m=np.zeros(len(pts), dtype=floattype)
-		# m[i]=1
+		i=np.loadtxt(selgauss).astype(int).flatten()
+		m=np.zeros(len(pts), dtype=floattype)
+		m[i]=1
 		imsk=tf.constant(m)
 	
 	return imsk
