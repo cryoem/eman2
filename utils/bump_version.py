@@ -36,8 +36,7 @@ def main():
 	eman_versions = (
 		FileKeyVerPair('CMakeLists.txt',                             'VERSION',      versions_pair),
 		FileKeyVerPair('ci_support/set_env_vars.sh',                 'EMAN_VERSION', versions_pair),
-		FileKeyVerPair('ci_support/constructor-mini/construct.yaml', 'eman2',        versions_pair),
-		FileKeyVerPair('ci_support/constructor-huge/construct.yaml', 'eman2',        versions_pair),
+		FileKeyVerPair('ci_support/construct.yaml', 'eman2',        versions_pair),
 	)
 
 	for f in eman_versions:

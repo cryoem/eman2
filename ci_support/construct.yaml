@@ -1,9 +1,9 @@
 name: EMAN2-SPHIRE-SPARX
 version: combined
 
-installer_filename: eman2_huge.mac.sh    # [osx]
-installer_filename: eman2_huge.linux.sh  # [linux]
-installer_filename: eman2_huge.win.exe   # [win]
+installer_filename: eman2.mac.sh    # [osx]
+installer_filename: eman2.linux.sh  # [linux]
+installer_filename: eman2.win.exe   # [win]
 
 channels:
     - file:///place_holder_conda_prefix/conda-bld
@@ -17,13 +17,11 @@ ignore_duplicate_files: True
 
 specs:
   - eman2        2.99.54
-  - eman-deps    33.1
   - conda
   - mamba
   - pip
   - console_shortcut  # [win]
   - menuinst          # [win]
-
 
 welcome_image: ../../images/EMAN2Icon.png      # [win]
 icon_image:    ../../images/eman.ico           # [win]
