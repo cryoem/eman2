@@ -258,7 +258,7 @@ x,y,z are ~-0.5 to ~0.5 (typ) and amp is 0 to ~1. A scaling factor (value -> pix
 		for j in range(len(orts)):
 			xfgauss=tf.einsum("ij,kj->ki",mx[:,:,j],self._data[:,:3])	# rotated Gaussian coordinates for projection j
 			if txty is not None: xfgauss+=txty[:,:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
-			xfgauss=(xfgauss+0.5)*boxsize)		# shift and scale both x and y the same
+			xfgauss=(xfgauss+0.5)*boxsize		# shift and scale both x and y the same
 
 
 
