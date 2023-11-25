@@ -1425,12 +1425,10 @@ class EMGMM(QtWidgets.QMainWindow):
 			# store metadata to identify maps in dynamic_maps.hdf
 			# note that 2
 			# set # (key), 0) map #, 1) timestamp, 2) (cols,coordinates of center), 3) map size, 4) est resolution, 5) list of points
-			newmap=[nmaps,local_datetime(),latent,box,-1,0]
+			newmap=[nmaps,local_datetime(),latent,box,-1,ptdist]
 			self.curmaps[str(k)]=newmap
 			self.sets_changed()
 			nmaps+=1
-
-
 
 	def set_del(self,ign=None):
 		"""Delete an existing set (only if a map hasn't been computed for it)"""
