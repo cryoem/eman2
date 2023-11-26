@@ -6,7 +6,7 @@ installer_filename: eman2.linux.sh  # [linux]
 installer_filename: eman2.win.exe   # [win]
 
 channels:
-    - file:///home/conda/build_artifacts/conda-bld  # [linux]
+    - file:///home/conda/build_artifacts            # [linux]
     - file:///Users/runner/miniforge3/conda-bld     # [osx]
     - file:///C:\Miniconda3\conda-bld\              # [win]
     - https://conda.anaconda.org/cryoem
