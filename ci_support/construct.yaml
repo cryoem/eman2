@@ -6,7 +6,6 @@ installer_filename: eman2_huge.linux.sh  # [linux]
 installer_filename: eman2_huge.win.exe   # [win]
 
 channels:
-    - file:///C:\Miniconda3\conda-bld\
     - https://conda.anaconda.org/cryoem
     - https://conda.anaconda.org/conda-forge
     - https://repo.anaconda.com/pkgs/main           # [win]
@@ -16,12 +15,9 @@ keep_pkgs: False
 ignore_duplicate_files: True
 
 specs:
-  - eman2        2.99.54
-  - eman-deps    33.1
+  - eman-dev     2.99.54
   - conda
   - mamba
   - pip
   - console_shortcut  # [win]
   - menuinst          # [win]
-
-
