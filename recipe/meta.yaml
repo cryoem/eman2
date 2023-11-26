@@ -1,34 +1,96 @@
 package:
-    name: eman2
-    version: {{ environ.get('EMAN_VERSION', '') }}
+  name: eman2
+  version: {{ environ.get('EMAN_VERSION', '') }}
 
 source:
-    - path: {{ RECIPE_DIR }}/..
-    - url: https://www.khronos.org/registry/OpenGL/api/GL/glext.h             # [win]
-      folder: GL                                                              # [win]
-    - url: https://www.khronos.org/registry/EGL/api/KHR/khrplatform.h         # [win]
-      folder: KHR                                                             # [win]
+  - path: {{ RECIPE_DIR }}/..
+  - url: https://www.khronos.org/registry/OpenGL/api/GL/glext.h             # [win]
+    folder: GL                                                              # [win]
+  - url: https://www.khronos.org/registry/EGL/api/KHR/khrplatform.h         # [win]
+    folder: KHR                                                             # [win]
 
 requirements:
-    build:
-        - {{ compiler('cxx') }}
-        - {{ cdt('mesa-libgl-devel') }}   # [linux]
-        - make                            # [unix]
-        - libcxx<16
+  build:
+    - {{ compiler('cxx') }}
+    - {{ cdt('mesa-libgl-devel') }}      # [linux]
+    - {{ compiler('c') }}
+    - sysroot_linux-64 2.17              # [linux64]
+    - make                               # [unix]
+    - python                             # [build_platform != target_platform]
+    - cmake                              # [build_platform != target_platform]
+    - numpy                              # [build_platform != target_platform]
+    - cross-python_{{ target_platform }} # [build_platform != target_platform]
 
-    host:
-        - eman-deps         {{ environ.get('EMAN_DEPS_VERSION', '') }}
-        - libglu                          # [linux]
-        - python            3.9
-        - libcxx<16
+  host:
+    - python
+    - pyqt
+    - pyopengl
+    - cmake        >=3.14
 
-    run_constrained:
-      - libcxx<16
+    - ipywidgets
+    - matplotlib
+    - scipy
+    - ipython
+    - scikit-learn
+    - pandas
+    - tensorflow
+    - pydusa                             # [not win]
+    - nose
+    - future
+    - configparser
+    - tqdm
+    - jupyterlab
+    - nodejs
+    - biopython
+
+    - boost
+    - fftw
+    - numpy
+    - ftgl
+    - freetype
+    - gsl
+    - hdf5         >=1.12                # [not win]
+    - hdf5         <1.14                 # [win]
+    - libtiff
+    - libpng
+    - zlib
+
+  run:
+    - python
+    - pyqt
+    - pyopengl
+    - cmake        >=3.14
+
+    - ipywidgets
+    - matplotlib
+    - scipy
+    - ipython
+    - scikit-learn
+    - pandas
+    - tensorflow
+    - pydusa                             # [not win]
+    - nose
+    - future
+    - configparser
+    - tqdm
+    - jupyterlab
+    - nodejs
+    - biopython
+
+    - boost
+    - fftw
+    - {{ pin_compatible('numpy', min_pin='x.x', max_pin='x.x') }}
+    - ftgl
+    - freetype
+    - gsl
+    - hdf5         >=1.12                # [not win]
+    - hdf5         <1.14                 # [win]
+    - libtiff
+    - libpng
+    - zlib
 
 test:
   requires:
-    - eman-deps     {{ environ.get('EMAN_DEPS_VERSION', '') }}
-    - libglu                             # [linux]
     - openssh                            # [not win]
 
   source_files:

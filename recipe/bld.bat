@@ -9,11 +9,10 @@ if errorlevel 1 exit 1
 set CL=/MP
 
 cmake --version
-cmake "%SRC_DIR%" -G "NMake Makefiles" ^
+cmake "%SRC_DIR%" -G "%CMAKE_GENERATOR%"       ^
                     -DPython3_EXECUTABLE="%PYTHON%" ^
-                    -DCMAKE_BUILD_TYPE=Release    ^
-                    -DENABLE_WARNINGS=OFF ^
-                    -DENABLE_OPTIMIZE_WINDOWS_VC=ON
+                    -DCMAKE_BUILD_TYPE=Release ^
+                    -DENABLE_WARNINGS=OFF
 if errorlevel 1 exit 1
 
 cmake --build "%builddir%" --config Release --target install
