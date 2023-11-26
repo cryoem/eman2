@@ -73,12 +73,12 @@ jobs:
 
     - uses: actions/upload-artifact@v3
       with:
-        name: /home/conda/eman2.linux.sh
-        path: eman2.linux.sh
+        name: eman2.linux.sh
+        path: /home/conda/eman2.linux.sh
       if: matrix.os == 'ubuntu'
 
     - uses: actions/upload-artifact@v3
       with:
-        name: /Users/runner/work/eman2/eman2/eman2.mac.sh
-        path: eman2.mac.sh
+        name: eman2.mac.sh
+        path: /Users/runner/work/eman2/eman2/eman2.mac.sh
       if: matrix.os == 'macos'
