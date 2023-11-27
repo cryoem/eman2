@@ -278,7 +278,7 @@ def main():
 	
 	(options, args) = parser.parse_args()
 	
-	options = checkinput( options )
+	options = checkinput( options )[0]
 	
 	if options.parallel in (None,"","none","None") :
 		print("WARNING: no --parallel specified. Please see http://eman2.org/Parallel")
@@ -1611,7 +1611,11 @@ Function to check whether images are cubed and even, and to check whether input 
 '''
 def checksaneimagesize( options, stack1, stack2=''):
 	
-	stacks = [stack1]
+	stacks = []
+	if type(stack1) == 'str':
+		stacks.append(stack1)
+	elif type(stack1) == 'list':
+		stacks+= stack1
 	if stack2:
 		stacks.append( stack2 )
 		
@@ -1623,29 +1627,26 @@ def checksaneimagesize( options, stack1, stack2=''):
 			nx = stackhdr["nx"]
 			ny = stackhdr["ny"]
 			nz = stackhdr["nz"]
+			print("\nThe size of the images in stack %s is nx=%d, ny=%d, nz=%d" %(stack,nx,ny,nz))
 		
-			if nx!=ny or ny!=nz or nx!=nz:
-				print(("\n(e2spt_classaverage)(checksaneimagesize) ERROR: stack %s must contain volumes that are cubes (nx=ny=nz). The size of the images in stack %s is nx=%d, ny=%d, nz=%d" %(stack,nx,ny,nz)))
+			if int(nx) != int(ny) or int(ny)!=int(nz) or nx!=nz:
+				print("\n(e2spt_classaverage)(checksaneimagesize) ERROR: stack %s must contain volumes that are cubes (nx=ny=nz). The size of the images in stack %s is nx=%d, ny=%d, nz=%d" %(stack,nx,ny,nz))
 				sys.exit(1)
+			else:
+				print("nx=%d, ny=%d, nz=%d are all the same"%(nx,ny,nz))
 			
-			if nx % 2 or ny % 2 or nz %2:
-				print(("\n(e2spt_classaverage)(checksaneimagesize) ERROR: volumes in stack %s must be even sized. The size of the images provided is nx=%d, ny=%d, nz=%d" %(nx,ny,nz)))
-				print ("while I could resize the images for you on the fly, results will be less murky if you're explicitly aware that the particles need resizing. Please run 'e2proc3d.py input.hdf output_resized.hdf --clip newsize' at the commandline, choosing 'newsize' to be an even number (e.g., 1 pixel smaller than the current boxsize). Then rerun e2spt_classaverage with the resized stack as --input.") 
-				print(sys.exit())
-			elif options.shrink:
-				if  old_div(nx, options.shrink) %2or  old_div(ny, options.shrink) %2or nz/options.shrink %2:
-					print(("\n(e2spt_classaverage)(checksaneimagesize) --shrink is %d; therefore the size of the images in stack %s after shrinking would be x=%d, y=%d, z=%d, which is not even. Please run 'e2proc3d.py input.hdf output_resized.hdf --clip newsize' at the commandline, choosing a box size such that when shrunk by the shrink factor specified it still yields an even box size. " %(options.shrink,  old_div(nx, options.shrink) %2, old_div(ny, options.shrink) %2, old_div(nz, options.shrink) %2)))
-					sys.exit(1)
-			
-			elif options.shrinkfine:
-				if  old_div(nx, options.shrinkfine) %2or  old_div(ny, options.shrinkfine) %2or nz/options.shrinkfine %2:
-					print(("\n(e2spt_classaverage)(checksaneimagesize) --shrinkfine is %d; therefore the size of the images in stack %s after shrinking would be x=%d, y=%d, z=%d, which is not even. Please run 'e2proc3d.py input.hdf output_resized.hdf --clip newsize' at the commandline, choosing a box size such that when shrunk by the shrink factor specified it still yields an even box size. " %(options.shrinkfine,  old_div(nx, options.shrinkfine) %2, old_div(ny, options.shrinkfine) %2, old_div(nz, options.shrinkfine) %2)))
-					sys.exit(1)
+			print(f"\nnx%2={nx%2}")
+			print(f"\nny%2={ny%2}")
+			print(f"\nm nz%2={nz%2}")
+			if nx%2 or ny%2 or nz%2:
+				print("\n(e2spt_classaverage)(checksaneimagesize) ERROR: volumes in stack %s must be even sized. The size of the images provided is nx=%d, ny=%d, nz=%d" %(stack,nx,ny,nz))
+				print(sys.exit(1))
+
 		except:
 			print("(except) stack is", stack)
 			stackhdr = EMData( stack, 0, True )
-			print("header stack1hdr is", stack1hdr)
-			print(("\n(e2spt_classaverage)(checksaneimagesize) ERROR reading stack %s. Check that the file name is correct and the file is sane" %(stack) ))
+			print("header stackhdr is", stackhdr)
+			print(("\n(e2spt_classaverage)(checksaneimagesize) ERROR reading stack=%s. Check that the file name is correct and the file is sane. nx=%d ny=%d nz=%d" %(stack,nx,ny,nz) ))
 			sys.exit(1)
 	
 	
