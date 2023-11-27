@@ -32,7 +32,7 @@ Author: Jesus Galaz-Montoya - 2017, Last update: 12/Sep/2017
 from past.utils import old_div
 from builtins import range
 import matplotlib
-matplotlib.use('Agg',warn=False)
+matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
 import pylab
@@ -101,6 +101,7 @@ def main():
 
 	parser.add_argument("--nbins", type=int,default=0,help="""Default=0 (not used). Requires --histogram. Number of bins for histogram. If not provided, the optimal bin number will be automatically calculated based on bin-width, computed using Scott's normal reference rule, width = (3.5*std)/cuberoot(n), where 'std' is the standard deviation of the mean intensity distribution of population and n is the number of mean intensity values considered (this is affected by --removesigma). Then, bins will be nbins = (max(intensities) - min(intensities)) / width.""")	
 	parser.add_argument("--nocolor", action='store_true', default=False, help="""Default=False. Plots are colored, by default; don't be cheap; clear communication and representation pays off; or consider publishing in online open source journals that don't charge extra for color figures.""")
+	parser.add_argument("--nolabels", action='store_true', default=False, help="""Default=False. No labels for line data (when there's too many, this distorts the plots).""")
 	parser.add_argument("--normalize", action='store_true', default=False, help="""Default=False. This option will normalize all plots to be scaled between 0 and 1.""") 
 	
 	parser.add_argument("--outputtag",type=str,default='plotfig',help="""Default=plotfig. String common to all automatically generated output files. For example, --outputtag=myplot will generate myplot1.png, myplot2.png, ..., myplotN.png""")
@@ -434,7 +435,7 @@ def plotfig( options, fig, ax, datax, datay, count, colorthis='k', markerthis=''
 	#colorthis = 'k'
 	#if colorstart and colorstep:
 	#	colorthis = cpick.to_rgba( colorstart + kplot*colorstep)
-	label=str(count)
+	
 
 	if options.individualplots:
 		if options.marker:
@@ -453,8 +454,14 @@ def plotfig( options, fig, ax, datax, datay, count, colorthis='k', markerthis=''
 		linestyle=''
 		linewidth=0
 	
+	label=str(count)
 	if not options.histogram:
-		ax.plot( datax, datay, linestyle=linestyle, linewidth=linewidth, marker=markerthis, markersize=10, markeredgewidth=5, color=colorthis, label=label, alpha=alphaval)
+		if not options.nolabels:
+			ax.plot( datax, datay, linestyle=linestyle, linewidth=linewidth, marker=markerthis, markersize=10, markeredgewidth=5, color=colorthis, label=label, alpha=alphaval)
+		else:
+			ax.plot( datax, datay, linestyle=linestyle, linewidth=linewidth, marker=markerthis, markersize=10, markeredgewidth=5, color=colorthis, alpha=alphaval)
+
+
 	elif options.histogram:
 		nbins = calcbins(options,datay)
 		print("\ndatay is",datay)
