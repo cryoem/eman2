@@ -138,6 +138,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		self.mfile_save_boxloc=self.mfile.addAction("Save Box Coord")
 		self.mfile_save_boxpdb=self.mfile.addAction("Save Coord as PDB")
 		self.mfile_save_boxes_stack=self.mfile.addAction("Save Boxes as Stack")
+		self.mfile_save_gif=self.mfile.addAction("Save GIF movie")
 		#self.mfile_quit=self.mfile.addAction("Quit")
 
 
@@ -247,6 +248,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		self.mfile_save_boxpdb.triggered[bool].connect(self.menu_file_save_boxpdb)
 		
 		self.mfile_save_boxes_stack.triggered[bool].connect(self.save_boxes)
+		self.mfile_save_gif.triggered[bool].connect(self.save_gif)
 		#self.mfile_quit.triggered[bool].connect(self.menu_file_quit)
 
 		# all other widgets
@@ -480,8 +482,58 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 #		self.gbl.setColumnMinimumWidth(0,z)
 #		#print(data["nx"],data["ny"],data["nz"])
 #		return
+	def save_gif(self):
 		
+
+		cmd, ok = QtWidgets.QInputDialog.getText(self, 'Command', 'xy:100-200')
+		if not ok:
+			return
 		
+		try:
+			from PIL import ImageGrab
+		except:
+			print("require PIL")
+			return
+		
+			
+		cmd=str(cmd)
+		print(cmd)
+		cmd=cmd.split(':')
+		win=cmd[0]
+		if win=="xy":
+			view=self.xyview
+		elif win=="xz":
+			view=self.xzview
+		elif win=="zy":
+			view=self.zyview
+		else:
+			print("choose from xy, xz, zy.")
+			return
+		
+		z=[int(i) for i in cmd[1].split('-')]
+		fnames=[]
+		for i in range(z[0], z[1]):
+			if win=="xy":
+				self.wdepth.setValue(i)
+			elif win=="xz":
+				self.y_loc=i
+				self.update_sliceview(['y'])
+			else:
+				self.x_loc=i
+				self.update_sliceview(['x'])
+				
+			p= view.mapToGlobal(QtCore.QPoint(0, 0))
+			ss_region=(p.x(), p.y(), p.x()+view.width(), p.y()+view.height())
+			# print(ss_region)
+			ss_img = ImageGrab.grab(ss_region)
+			fnames.append(f"snapshot_{i:03d}.png")
+			ss_img.save(fnames[-1])
+# 		
+		c="convert {} snapshot.gif".format(' '.join(fnames+fnames[::-1]))
+		print(c)
+		os.system(c)
+
+	
 	def event_boxsize(self):
 		if self.get_boxsize()==int(self.wboxsize.getValue()):
 			return

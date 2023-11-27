@@ -794,7 +794,8 @@ def do_patch_tracking(imgs, ttparams, options, niter=4):
 					lasti=i
 					continue
 					
-				tilex[i]=tilex[lasti]+px[i]
+				try: tilex[i]=tilex[lasti]+px[i]
+				except: continue
 				lasti=i
 				
 			tx=tilex[:,::-1]

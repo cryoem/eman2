@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # Steve Ludtke 2022
 # forked from e2gmm_refine Muyuan Chen 2020
+import h5py
 from EMAN2 import *
 import numpy as np
 from sklearn.decomposition import PCA
@@ -21,7 +22,6 @@ if ('-h' in sys.argv) or ('--help' in sys.argv):
 	tf.function=lambda f: f
 	print("Printing help. Skip tensorflow import")
 else:
-	import h5py
 	import tensorflow as tf
 
 def main():
