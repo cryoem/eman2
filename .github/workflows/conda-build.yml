@@ -74,7 +74,7 @@ jobs:
     - uses: actions/upload-artifact@v3
       with:
         name: eman2.linux.sh
-        path: /home/conda/eman2.linux.sh
+        path: eman2.linux.sh
       if: matrix.os == 'ubuntu'
 
     - uses: actions/upload-artifact@v3
