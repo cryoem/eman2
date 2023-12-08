@@ -93,6 +93,7 @@ def main():
 	parser.add_argument("--badone", action="store_true",help="Remove one bad tilt during coarse alignment. seem to work better with smaller maxshift...", default=False)#, guitype='boolbox',row=9, col=0, rowspan=1, colspan=1,mode="easy")
 	
 	parser.add_argument("--flip", action="store_true",help="Flip the tomogram by rotating the tilt axis. need --load existing alignment", default=False)
+	parser.add_argument("--skipexist", action="store_true",help="Skip existing tomograms when --alltiltseries is specified.", default=False)
 	parser.add_argument("--autoclipxy", action="store_true",help="Optimize the x-y shape of the tomogram to fit in the tilt images. only works in bytile reconstruction. useful for non square cameras.", default=False,guitype='boolbox',row=16, col=0, rowspan=1, colspan=1,mode="easy")
 
 
@@ -106,6 +107,22 @@ def main():
 		fld="tiltseries/"
 		args=[fld+f for f in sorted(os.listdir(fld)) if (
 			f.endswith(".hdf") or f.endswith(".mrc") or f.endswith(".mrcs") or f.endswith(".st") or f.endswith(".lst"))]
+		if options.skipexist:
+			
+			fld="tomograms/"
+			tomos=[fld+f for f in os.listdir(fld)]
+			tomos=[base_name(t) for t in tomos]
+			
+			a1=[]
+			for a in args:
+				bname=base_name(a)
+				if bname in tomos:
+					print(f"Skipping {a}: tomogram exist")
+				else:
+					a1.append(a)
+					
+			args=a1
+				
 	
 	if len(args)==1:
 		inputname=args[0]

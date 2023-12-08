@@ -230,7 +230,7 @@ def main():
 			run(cmd)
 			
 			refmask=f"--multfile {options.maskref}" if options.maskref!=None and itr<options.niter else "" 
-			run(f"e2proc3d.py {threed} {threed} {setsf} --process filter.lowpass.gauss:cutoff_freq={1./options.maxres} --process normalize.edgemean {refmask}")
+			run(f"e2proc3d.py {threed} {threed} {setsf} --sym {options.sym} --process filter.lowpass.gauss:cutoff_freq={1./options.maxres} --process normalize.edgemean {refmask}")
 		
 
 	E2end(logid)

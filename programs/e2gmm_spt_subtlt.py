@@ -7,7 +7,7 @@ from EMAN2 import *
 
 if "CUDA_VISIBLE_DEVICES" not in os.environ:
 	# so we can decide which gpu to use with environmental variable
-	os.environ["CUDA_VISIBLE_DEVICES"]='1' 
+	os.environ["CUDA_VISIBLE_DEVICES"]='0' 
 
 #### do not occupy the entire GPU memory at once
 ##   seems necessary to avoid some errors...

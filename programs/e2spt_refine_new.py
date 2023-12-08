@@ -231,11 +231,11 @@ def main():
 			if options.localrefine and last3d:
 				ptcls=last3d
 				opt+=f" --maxshift {options.maxshift} --maxang {options.maxang}"
-			if options.curve:
+			elif options.curve:
 				opt+=" --curve"
 			elif options.vector:
 				opt+=" --vector"
-			if options.localrefine==False and options.curve==False:
+			else:
 				opt+=" --fromscratch"
 			
 			#### if there is a subtilt alignment run before this, also use the 2d alignment info
