@@ -499,6 +499,11 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wedcnt.setToolTip("Particles per set in Line of Sets mode")
 		self.gblpltctl.addWidget(self.wedcnt,4,1,Qt.AlignRight)
 
+		self.gblpltctl.addWidget(QtWidgets.QLabel("Ptcl:",self),4,0,Qt.AlignRight)
+		self.wedcnt=QtWidgets.QLineEdit("10000")
+		self.wedcnt.setToolTip("Particles per set in Line of Sets mode")
+		self.gblpltctl.addWidget(self.wedcnt,4,1,Qt.AlignRight)
+
 		#self.wbutdrgrp=QtWidgets.QButtonGroup()
 		
 		#self.wbutdrmid=QtWidgets.QPushButton("Net Mid")
@@ -537,18 +542,23 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.gblpltctl.addWidget(self.wbutdbscan,2,5)
 		self.wbutdbscan.clicked[bool].connect(self.do_dbscan)
 
-		self.wbutoptics=QtWidgets.QPushButton("OpticsXi")
-		self.wbutoptics.setToolTip("Danger! This could take many hours to run")
-		self.gblpltctl.addWidget(self.wbutoptics,3,5)
-		self.wbutoptics.clicked[bool].connect(self.do_optics)
+		# self.wbutoptics=QtWidgets.QPushButton("OpticsXi")
+		# self.wbutoptics.setToolTip("Danger! This could take many hours to run")
+		# self.gblpltctl.addWidget(self.wbutoptics,3,5)
+		# self.wbutoptics.clicked[bool].connect(self.do_optics)
 
 		# self.wbutspectr=QtWidgets.QPushButton("Spectr")
 		# self.wbutspectr.setToolTip("Danger! May fail on large data sets, and possibly exhaust RAM")
 		# self.gblpltctl.addWidget(self.wbutspectr,4,5)
 		# self.wbutspectr.clicked[bool].connect(self.do_spectral)
 
+		self.wbutcir=QtWidgets.QPushButton("Circle")
+		self.wbutcir.setToolTip("Circular shells. 2 values for Axes. Sets should be comma separated list of integers starting with 1 or 0 for the center.")
+		self.gblpltctl.addWidget(self.wbutcir,3,5)
+		self.wbutcir.clicked[bool].connect(self.do_cirsplit)
+
 		self.wbutlin=QtWidgets.QPushButton("Line")
-		self.wbutlin.setToolTip("Sequential split along a single axis")
+		self.wbutlin.setToolTip("Sequential split along a single axis. Single value for Axes.")
 		self.gblpltctl.addWidget(self.wbutlin,4,5)
 		self.wbutlin.clicked[bool].connect(self.do_linesplit)
 
@@ -1364,12 +1374,63 @@ class EMGMM(QtWidgets.QMainWindow):
 	def new_map_gauss(self,ign=None):
 		"""generate gaussian maps from set centers"""
 
-		sz=good_size(self.jsparm["boxsize"]*5//4)
-		sym=self.jsparm["sym"]
-		for k in self.curmaps_sel:
-			st=self.curmaps_sel[k]
+		# this bit drawn from old pdb2mrc because I'm in a hurry
+		gaus=EMData(10,10,10)
+		gaus.to_one()
+		gaus.process_inplace("mask.gaussian",{"outer_radius":3.0}) # making a narrow Gaussian for now
 
-# TODO: Implement!
+		box=int(self.wedbox.text())
+		sym=self.jsparm["sym"]
+		dim=self.currun.get("dim",4)
+		apix=self.jsparm["apix"]
+
+		# compute a radial structure factor from the neutral map we can use to filter the gaussian maps
+		neuf=self.map3d.do_fft()
+		rint=np.array(neuf.calc_radial_dist(box//2,0,1.0,True))
+		rint/=(box*box*box)
+		sf=XYData()
+		sf.set_xy_list([i/(apix*box) for i in range(len(rint))],list(rint))
+
+		try: nmaps=EMUtil.get_image_count(f"{self.gmm}/set_maps.hdf")
+		except: nmaps=0
+
+		for k in self.curmaps_sel:
+			smap=self.curmaps_sel[k]
+
+			ptdist=smap[5]
+			if len(ptdist)>1000: ptdist=ptdist[::len(ptdist)//1000]		# We don't really need every point to get a pretty good average position for the set
+			latent=np.mean(self.midresult.transpose()[ptdist,2:2+dim],0,keepdims=True)		# the mean latent vector over selected points
+			gauss=self.decoder(latent,0).numpy()[0].transpose()
+
+			gauss[:3]*=box
+			gauss[2]*=-1.0
+			gauss[1]*=-1.0
+			if not butval(self.wbutpos): gauss[:3]=self.model[:3]
+			if not butval(self.wbutamp): gauss[3]=self.model[3]
+
+			gmap=EMData(box,box,box)
+			gmap["apix_x"]=apix
+			gmap["apix_y"]=apix
+			gmap["apix_z"]=apix
+			for i in range(gauss.shape[1]):
+				gmap.insert_scaled_sum(gaus,(gauss[0][i]+box//2-1,gauss[1][i]+box//2-1,gauss[2][i]+box//2-1),1.0,gauss[3][i])  # FIXME: The -1's here shouldn't be necessary if things work as documented I think...
+
+
+			gmap.process_inplace("filter.setstrucfac",{"apix":apix,"strucfac":sf})
+#			self.display_dynamic(gmap)
+			gmap.write_compressed(f"{self.gmm}/set_maps.hdf",nmaps,8)
+			gmap.write_compressed(f"{self.gmm}/set_even.hdf",nmaps,8)
+			gmap.write_compressed(f"{self.gmm}/set_odd.hdf",nmaps,8)
+
+			# store metadata to identify maps in dynamic_maps.hdf
+			# note that 2
+			# set # (key), 0) map #, 1) timestamp, 2) (cols,coordinates of center), 3) map size, 4) est resolution, 5) list of points
+			newmap=[nmaps,local_datetime(),latent,box,-1,0]
+			self.curmaps[str(k)]=newmap
+			self.sets_changed()
+			nmaps+=1
+
+
 
 	def set_del(self,ign=None):
 		"""Delete an existing set (only if a map hasn't been computed for it)"""
@@ -1649,17 +1710,70 @@ class EMGMM(QtWidgets.QMainWindow):
 	def do_linesplit(self):
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		print("Split along a single axis ...")
-		t0=time.time()
-		nseg=int(self.wvbnsets.getValue())
+		try: nseg=int(self.wvbnsets.getValue())
+		except:
+			showerror("For Line mode please specify a single number for Sets (number of sets)")
+			return
+		try: col=int(self.wstbaxes.getValue())
+		except:
+			showerror("For Line mode please specify a single value for Axes")
+			return
+
+		try: nset=max([int(k) for k in self.curmaps])+1		# starting set number
+		except: nset=0
+
+		cen=np.mean(self.data[col])
+		minv=max(cen-np.std(self.data[col])*2.5,np.min(self.data[col]))	# mean-standard deviation*2.5 or actual minimum value
+		maxv=min(cen+np.std(self.data[col])*2.5,np.max(self.data[col])) # mean+standard deviation*2.5 or actual maximum value
+
+		classes=np.floor(nseg*(self.data[col]-minv)/(maxv-minv)).astype("int32") # particles outside the minv->maxv range will be excluded from the sets
+
+		for i in range(nseg):
+			ptdist=np.where(classes==i)[0]
+			try:
+				cen=np.mean(self.data[col,ptdist])
+				newmap=[None,local_datetime(),[col,cen],0,0,ptdist]
+			except:
+				traceback.print_exc()
+				print(self.data[col,ptdist].shape)
+				newmap=[None,local_datetime(),(col,None),0,0,ptdist]
+			self.curmaps[str(nset+i)]=newmap
+
+		self.sets_changed()
+		get_application().restoreOverrideCursor()
+
+	def do_cirsplit(self):
+		get_application().setOverrideCursor(Qt.BusyCursor)
+		print("Split in rings on 2 axes")
+		nseg=np.array(parse_range(self.wvbnsets.getValue()))
+		if len(nseg<2) :
+			showerror("Please specify a comma separated list for Sets, starting with 0 or 1 for the center")
+			return
+		if nseg[0]!=0 and nseg[0]!=1:
+			showerror("The first value in Sets must be 0 or 1 for the center of the distribution")
+			return
 		cols=np.array(parse_range(self.wstbaxes.getValue()))
+		if len(cols)!=2:
+			showerror("Axes must specify exactly 2 axes")
+			return
 
 		try: nset=max([int(k) for k in self.curmaps])+1
 		except: nset=0
 
-		spseg=SpectralClustering(n_jobs=-1)
-		classes=spseg.fit_predict(self.data[cols].transpose())
-		nseg=max(classes)+1
-		for i in range(nseg):
+		xy=self.data[cols]
+		xy[0]-=np.mean(xy[0])	# center of the distribution -> 0,0
+		xy[1]-=np.mean(xy[1])
+		r=np.hypot(xy[0],xy[1])		# polar coordinates radius
+		ang=np.atan2(xy[1],xy[0])	# polar coordinates angle
+		maxr=min(np.std(r)*2.5,np.max(r))
+
+		if nseg[0]==0: r=np.floor((len(nseg)-1)*r/maxr).astype("int32")+1	# no "center" region
+		else: r=np.floor(len(nseg)*r/maxr+0.5).astype("int32")				# "center" region has 1/2 radius
+
+		cirstart=[sum(nseg[:i]) for i in range(len(nseg))]
+
+		tnseg=sum(nseg)
+		for i in range(tnseg):
 			ptdist=np.where(classes==i)[0]
 			try:
 				cen=np.mean(self.data[cols,ptdist],1)
@@ -1671,8 +1785,8 @@ class EMGMM(QtWidgets.QMainWindow):
 			self.curmaps[str(nset+i)]=newmap
 
 		self.sets_changed()
-		print(f"done ({time.time()-t0}s)")
 		get_application().restoreOverrideCursor()
+
 
 	#def plot_mode_sel(self,but):
 		#"""Plot mode selected"""
