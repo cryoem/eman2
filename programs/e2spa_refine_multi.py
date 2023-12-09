@@ -17,6 +17,7 @@ def main():
 	parser.add_argument("--maxres", type=float,help="max resolution", default=10)
 	parser.add_argument("--minres", type=float,help="min resolution", default=100)
 	parser.add_argument("--niter", type=int,help="iter", default=10)
+	parser.add_argument("--outsize", type=int,help="size of reconstruction output", default=-1)
 	parser.add_argument("--setsf", type=str,help="setsf", default=None)
 
 	(options, args) = parser.parse_args()
@@ -74,6 +75,8 @@ def main():
 			refs.append(r)
 			
 	#par0="thread:24"
+	m3detc=""
+	if options.outsize>0: m3detc=f" --outsize {options.outsize}"
 	for itr in range(options.niter+1):
 		
 		c0=cls.copy()
@@ -90,7 +93,7 @@ def main():
 				threed=lname.replace("ptcls_", "threed_")[:-3]+"hdf"
 				refs.append(threed)
 				
-				run("e2spa_make3d.py --input {inp} --output {out} --keep 1 --sym {sm} --parallel {par}".format(inp=lname, out=threed, sm=sym, par=options.parallel))
+				run("e2spa_make3d.py --input {inp} --output {out} --keep 1 --sym {sm} --parallel {par} {etc}".format(inp=lname, out=threed, sm=sym, par=options.parallel, etc=m3detc))
 				
 				run("e2proc3d.py {} {} {} --process filter.lowpass.gauss:cutoff_freq={:.4f} --process normalize.edgemean".format(threed, threed, setsf, 1./options.maxres))
 				
@@ -126,7 +129,8 @@ def main():
 	ps=classify_list(f"{path}/ptcls_input.lst", cls, f"{path}/ptcls_final", options.breaksym)
 	thd=[p.replace("ptcls_final","threed_final")[:-3]+"hdf" for p in ps]
 	for pt,td, in zip(ps, thd):
-		run("e2spa_make3d.py --input {inp} --output {out} --keep 1 --sym {sm} --parallel {par}".format(inp=pt, out=td, sm=sym, par=options.parallel))
+		
+		run("e2spa_make3d.py --input {inp} --output {out} --keep 1 --sym {sm} --parallel {par} {etc}".format(inp=pt, out=td, sm=sym, par=options.parallel, etc=m3detc))
 		
 		run("e2proc3d.py {} {} {} --process filter.lowpass.gauss:cutoff_freq={:.4f} --process normalize.edgemean".format(td, td, setsf, 1./options.maxres))
 		

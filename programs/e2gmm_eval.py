@@ -29,6 +29,7 @@ def main():
 	parser.add_argument("--pdb", type=str,help="model input in pdb", default=None)
 	parser.add_argument("--selgauss", type=str,help="provide a text file of the indices of gaussian (or volumic mask) that are allowed to move", default=None)
 	parser.add_argument("--model00", type=str,help="neutral state model. require if --decoder and --selgauss are provided", default=None)
+	parser.add_argument("--outsize", type=int,help="box size of 3d volume output", default=-1)
 
 	parser.add_argument("--skip3d", action="store_true", default=False ,help="skip the make3d step.")
 	parser.add_argument("--umap", action="store_true", default=False ,help="use umap instead of pca.")
@@ -178,6 +179,8 @@ def main():
 	
 	if options.skip3d==False:
 		e=EMData(fname, 0, True)
+		if options.outsize<0:
+			options.outsize=e["nx"]
 		if options.pad<1: options.pad=good_size(e["nx"]*1.25)
 		if options.setsf:
 			options.setsf=" --setsf "+options.setsf
@@ -188,7 +191,7 @@ def main():
 			
 		for j in range(options.ncls):
 			t="tmp_classify_{:04d}.hdf".format(np.random.randint(10000))
-			cmd="e2spa_make3d.py --input {} --output {} --pad {} --keep 1 --parallel thread:{} {} --sym {} --clsid {}".format(options.ptclsout, t, options.pad, options.threads, options.setsf, options.sym, j)
+			cmd="e2spa_make3d.py --input {} --output {} --pad {} --outsize {} --keep 1 --parallel thread:{} {} --sym {} --clsid {}".format(options.ptclsout, t, options.pad, options.outsize, options.threads, options.setsf, options.sym, j)
 			launch_childprocess(cmd)
 			e=EMData(t)
 			e.write_compressed(name3d,-1,12)

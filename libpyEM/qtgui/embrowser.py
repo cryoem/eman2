@@ -1835,10 +1835,11 @@ class EMStackFileType(EMFileType) :
 		data=[[x[k] for k in xfkeys] for x in xfs]
 		data=np.array(data)
 		
-		if "score" in keys:
-			xfkeys+=["score"]
-			scr=np.array([p["score"] for p in params])
-			data=np.hstack([data, scr[:,None]])
+		for etc in ["score", "class"]:
+			if etc in keys:
+				xfkeys+=[etc]
+				scr=np.array([p[etc] for p in params])
+				data=np.hstack([data, scr[:,None]])
 		
 		data=data.T.tolist()
 		print("The {} columns are {}".format(len(xfkeys), xfkeys))

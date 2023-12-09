@@ -109,15 +109,15 @@ def main():
 			if itr==options.startiter:
 				
 				if options.initpts:
-					run(f"e2gmm_refine_new.py --ptclsin {path}/projections_{eo}.hdf --model {path}/gmm_init_{eo}.{ext} --maxres {res} --modelout {path}/model_{it0:02d}_{eo}.txt --niter 40 --trainmodel --learnrate 1e-6")
+					run(f"e2gmm_refine_new.py --ptclsin {path}/projections_{eo}.hdf --model {path}/gmm_init_{eo}.{ext} --maxres {res} --modelout {path}/model_{it0:02d}_{eo}.txt --niter 40 --trainmodel --learnrate 1e-6 --batchsz {options.batchsize}")
 					
 				else:
 					run(f"e2segment3d.py {path}/threed_{it0:02d}_{eo}.hdf --pdb {path}/model_{it0:02d}_{eo}.pdb --process=segment.kmeans:nseg={options.npt}:thr=4")
 					
-					run(f"e2gmm_refine_new.py --ptclsin {path}/projections_{eo}.hdf --model {path}/model_{it0:02d}_{eo}.pdb --maxres {res} --modelout {path}/model_{it0:02d}_{eo}.txt --niter 40 --trainmodel --learnrate 1e-6")
+					run(f"e2gmm_refine_new.py --ptclsin {path}/projections_{eo}.hdf --model {path}/model_{it0:02d}_{eo}.pdb --maxres {res} --modelout {path}/model_{it0:02d}_{eo}.txt --niter 40 --trainmodel --learnrate 1e-6 --batchsz {options.batchsize}")
 		
 			else:
-				run(f"e2gmm_refine_new.py --ptclsin {path}/projections_{eo}.hdf --model {path}/model_{itr-2:02d}_{eo}.txt --maxres {res} --modelout {path}/model_{it0:02d}_{eo}.txt --niter 40 --trainmodel --learnrate 1e-6")
+				run(f"e2gmm_refine_new.py --ptclsin {path}/projections_{eo}.hdf --model {path}/model_{itr-2:02d}_{eo}.txt --maxres {res} --modelout {path}/model_{it0:02d}_{eo}.txt --niter 40 --trainmodel --learnrate 1e-6 --batchsz {options.batchsize}")
 	
 			pts=np.loadtxt(f"{path}/model_{it0:02d}_{eo}.txt")
 			if options.mask:
@@ -133,6 +133,7 @@ def main():
 				p=(p+.5)*msk["nx"]
 
 				o=np.round(p).astype(int)
+				o=np.clip(o, 0, len(m)-1)
 				v=m[o[:,0], o[:,1], o[:,2]]
 				imsk=v.astype(float)
 				if options.masksigma:

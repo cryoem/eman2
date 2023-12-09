@@ -17,6 +17,7 @@ def main():
 	parser.add_argument("--path", type=str,help="path of spt refinement", default=None)
 	parser.add_argument("--fname", type=str,help="name of tomogram", default=None)
 	parser.add_argument("--nneighbor", type=int,help="number of neighbors", default=5)
+	parser.add_argument("--clipz", type=int,help="thickness in z. default is 256", default=256)
 	parser.add_argument("--res", type=float,help="lowpass filter the output to the target resolution.", default=50)
 	parser.add_argument("--makeraw", action="store_true", default=False ,help="skip polish for testing")
 
@@ -179,8 +180,8 @@ def main():
 		outy=good_size(bds[1])
 		print("tomogram shape: {} x {}".format(outx, outy))
 
-		clipz=256
-		sz=256 #### this is the output 3D size 
+		clipz=options.clipz
+		sz=max(clipz, 256) #### this is the output 3D size 
 		pad=good_size(sz*1.4) #### this is the padded size in fourier space
 		options.outz=outz=clipz
 		options.step=step=sz//2

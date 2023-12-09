@@ -206,10 +206,16 @@ def main():
 		
 		if options.shrink:
 			for s in shrink:
-				tg="flip_bin"+s.replace('.','_')
 				ss=float(s)
-				run(f"e2proclst.py {options.output} --create {options.output[:-4]}_{tg}.lst")
-				run(f"e2proclst.py {options.output[:-4]}_{tg}.lst --retype {tg} --scale {1./ss}")
+				if options.onestack:
+					tg="bin"+s.replace('.','_')
+					run(f"e2proclst.py {options.output} --create {options.output[:-4]}_{tg}.lst")
+					run(f"e2proclst.py {options.output[:-4]}_{tg}.lst --refile {options.onestack[:-4]}_{tg}.hdf --scale {1./ss}")
+					
+				else:
+					tg="flip_bin"+s.replace('.','_')
+					run(f"e2proclst.py {options.output} --create {options.output[:-4]}_{tg}.lst")
+					run(f"e2proclst.py {options.output[:-4]}_{tg}.lst --retype {tg} --scale {1./ss}")
 				
 		print("aligned list written to {}".format(options.output))
 			
