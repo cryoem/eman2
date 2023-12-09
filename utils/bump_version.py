@@ -41,11 +41,7 @@ def main():
 	)
 
 	for f in eman_versions:
-		fname = f.fname
-		keyword = f.keyword
-		version_pair = f.version_pair
-
-		update_versions_in_files(fname, keyword, version_pair)
+		update_versions_in_files(f.fname, f.keyword, f.version_pair)
 
 
 if __name__ == "__main__":
