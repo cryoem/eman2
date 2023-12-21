@@ -71,9 +71,8 @@ def main():
 	for tname in tomonames:
 		fname=[f for f in filenames if base_name(f)==base_name(tname)]
 		if len(fname)==0:
-			print("cannot find file")
-			print(options.fname)
-			print(filenames)
+			print(f"No particles in {tname}. Skipping")
+			continue
 			
 		fname=fname[0]	
 		print(f"Polishing tomogram {fname}")
