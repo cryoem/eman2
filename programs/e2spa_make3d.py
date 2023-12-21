@@ -122,29 +122,33 @@ def main():
 				
 		
 		wts=np.array(wts)
-		wts[wts<0]=0
+		# np.savetxt(options.output[:-4]+".txt", wts)
+# 		
+# 		wts[wts<0]=0
+		r0=0; r1=-1
 		if options.minres>0:
 			r0=int(apix*ny/options.minres)
-			wts[:,:r0]=np.mean(wts[:,:r0], axis=0)
-		
+# 			wts[:,:r0]=np.mean(wts[:,:r0], axis=0)
+# 		
 		if options.maxres>0:
 			r1=int(apix*ny/options.maxres)
-			wts[:,r1:]=np.mean(wts[:,r1:], axis=0)
-			
+# 			wts[:,r1:]=np.mean(wts[:,r1:], axis=0)
+
+		scr=np.mean(wts[:,r0:r1], axis=1)
 		
-		
-		print(wts.shape)
+		print(wts.shape, scr.shape)
+		print(np.min(scr), np.mean(scr), np.max(scr))
 		del etc
 		
 		#print(r0,r1)
-		#scrs=np.mean(wts[:,r0:r1], axis=1)
-		#if options.keep<1:
-			#thr=np.sort(scrs)[int(len(scrs)*(1-options.keep))-1]
-			#scrs[scrs<thr]=-1
+		scrs=np.mean(wts[:,r0:r1], axis=1)
+		if options.keep[1]<1:
+			thr=np.sort(scrs)[int(len(scrs)*(1-options.keep[1]))-1]
+			scrs[scrs<thr]=-1
 		
 		for i,d in enumerate(data):
-			d["curve"]=wts[i]
-			#d["weight"]=float(scrs[i])
+			# d["curve"]=wts[i]
+			d["weight"]=float(scrs[i])
 			
 			
 	etc=EMTaskCustomer(options.parallel, module="e2spa_make3d.Make3dTask")
