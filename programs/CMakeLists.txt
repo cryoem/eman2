@@ -46,7 +46,7 @@ if(GIT_EXECUTABLE)
 							)
 		endif()
 		# git-describe output: <tag>-<num-of-commits-since-tag>-g<hash>
-		# We are insterested in extracting the hash part of the git-describe output
+		# We are interested in extracting the hash part of the git-describe output
 		string(REGEX REPLACE
 			   "^.*-.*-g" ""
 			   EMAN_GITHASH "${EMAN_GITHASH}"

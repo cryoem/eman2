@@ -1,6 +1,6 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.14)
 PROJECT(EMAN
-		VERSION 2.99.54
+		VERSION 2.99.55
 		LANGUAGES CXX
 		)
 
@@ -286,9 +286,9 @@ add_custom_target(PythonFiles
 
 if(NOT WIN32)
 	install(CODE "execute_process(
-					COMMAND ${CMAKE_COMMAND} -E create_symlink ${EMAN_PREFIX}/bin/sp_gui.py ${EMAN_PREFIX}/bin/sphire
-					COMMAND ${CMAKE_COMMAND} -E create_symlink ${EMAN_PREFIX}/bin/sp_sx.py ${EMAN_PREFIX}/bin/sp_sparx
-					COMMAND ${CMAKE_COMMAND} -E create_symlink ${EMAN_PREFIX}/bin/sx.py    ${EMAN_PREFIX}/bin/sparx
+					COMMAND ${CMAKE_COMMAND} -E create_symlink ./sp_gui.py ${EMAN_PREFIX}/bin/sphire
+					COMMAND ${CMAKE_COMMAND} -E create_symlink ./sp_sx.py ${EMAN_PREFIX}/bin/sp_sparx
+					COMMAND ${CMAKE_COMMAND} -E create_symlink ./sx.py    ${EMAN_PREFIX}/bin/sparx
 				 )"
 			)
 endif()
