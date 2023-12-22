@@ -251,8 +251,8 @@ def main():
 					l1=l.replace('.', '_')
 					l2=l[:l.rfind('_')]
 					match=[a for a in args if l in a]
-					match+=[a for a in args if l1 in a]
-					match+=[a for a in args if l2 in a]
+					if len(match)==0:match+=[a for a in args if l1 in a]
+					if len(match)==0:match+=[a for a in args if l2 in a]
 					if len(match)==0:
 						print("error: image file for {} does not exist".format(l))
 						break
