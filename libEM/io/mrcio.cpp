@@ -64,6 +64,8 @@ string convert_microseconds_to_local_time(long us) {
 const char *MrcIO::CTF_MAGIC = "!-";
 const char *MrcIO::SHORT_CTF_MAGIC = "!$";
 
+static int vertical_flip_messsage_counter = 0;
+
 MrcIO::MrcIO(const string & fname, IOMode rw)
 :	ImageIO(fname, rw), mode_size(0),
 		isFEI(false), is_ri(0), is_new_file(false),
@@ -600,6 +602,11 @@ int MrcIO::read_mrc_header(Dict & dict, int image_index, const Region * area, bo
 int MrcIO::read_fei_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
+
+ 	if ((vertical_flip_messsage_counter++) == 0 \
+		 && (dict["MRC.exttyp"] == string("FEI1") || dict["MRC.exttyp"] == string("FEI2")) \
+		 && dict["MRC.imodStamp"] != string("IMOD"))
+		cout << "File: " << filename << " is flipped vertically!" << endl;
 
 	/* Read extended image header by specified image index */
 	FeiMrcExtHeader feiexth;
