@@ -82,6 +82,7 @@ namespace EMAN
 		};
 
 		/* updated to MRC Image2000 format which is compatible with CCP4 format */
+		/* https://www.ccpem.ac.uk/mrc_format/mrc2014.php */
 		struct MrcHeader
 		{
 			int nx;				/* 0 - number of columns */
@@ -118,13 +119,18 @@ namespace EMAN
 
 			int ispg;			/* 22 - Space group number (0 for images). */
 
-			int nsymbt;			/* 23 - Number of chars used for storing symmetry operators. */
+			int nsymbt;			/* 23 - Number of bytes in extended header. */
 
+			/* https://bio3d.colorado.edu/imod/doc/libhelp/mrcfiles.html */
 			short dvid;
 			char blank[6];
+
+			/* https://www.ccpem.ac.uk/mrc_format/mrc2014.php */
 			char exttyp[4];
 			int nversion;
 			char blank2[16];
+
+			/* https://bio3d.colorado.edu/imod/doc/libhelp/mrcfiles.html */
 			short numintegers;
 			short numfloats;
 
@@ -136,7 +142,7 @@ namespace EMAN
 			float max3;
 			char imod_stamp[4]; // 1146047817 if int or 'IMOD' if char[4] indicates that file was created by IMOD or
 			                    // other software that uses bit flags in the following field
-			int imod_flags;			/* 39 - bit flags used by IMOD - >= 16 for 8 bit packed */
+			int imod_flags;			/* bit flags used by IMOD - >= 16 for 8 bit packed */
 			short idtype;
 			short lens;
 			short nd1;
@@ -145,7 +151,7 @@ namespace EMAN
 			short vd2;
 			float tiltangles[6];
 
-			float xorigin;		/* 40 - X origin. */
+			float xorigin;		/* X origin. */
 			float yorigin;		/* Y origin. */
 			float zorigin;		/* Z origin. */
 
@@ -249,6 +255,7 @@ namespace EMAN
 		 * Each section is 128 bytes long. The extended header is thus 1024*128 bytes (always the same length,
 		 * reagrdless of how many images are present.)
 		 * Not always 1024*128 bytes, but at least 128*nz. the length of extended header is defined in the regular header field "next" */
+		/* https://www.ccpem.ac.uk/downloads/EPU_MRC2014_File_Image_Format_Specification_-_306687.pdf */
 		struct FeiMrcExtHeader
 		{
 			float a_tilt;		/* Alpha tilt, in degrees */
