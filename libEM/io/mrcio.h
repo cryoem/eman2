@@ -120,9 +120,30 @@ namespace EMAN
 
 			int nsymbt;			/* 23 - Number of chars used for storing symmetry operators. */
 
-			int user1[15];			// 24 - 38
+			short dvid;
+			char blank[6];
+			char exttyp[4];
+			int nversion;
+			char blank2[16];
+			short numintegers;
+			short numfloats;
+
+			short sub;
+			short zfac;
+			float min2;
+			float max2;
+			float min3;
+			float max3;
+			char imod_stamp[4]; // 1146047817 if int or 'IMOD' if char[4] indicates that file was created by IMOD or
+			                    // other software that uses bit flags in the following field
 			int imod_flags;			/* 39 - bit flags used by IMOD - >= 16 for 8 bit packed */
-			int user2[9];
+			short idtype;
+			short lens;
+			short nd1;
+			short nd2;
+			short vd1;
+			short vd2;
+			float tiltangles[6];
 
 			float xorigin;		/* 40 - X origin. */
 			float yorigin;		/* Y origin. */
