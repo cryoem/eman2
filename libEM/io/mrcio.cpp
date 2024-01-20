@@ -447,6 +447,8 @@ int MrcIO::read_mrc_header(Dict & dict, int image_index, const Region * area, bo
 	dict["MRC.my"] = mrch.my;
 	dict["MRC.mz"] = mrch.mz;
 
+	dict["MRC.mode"] = mrch.mode;
+
 	dict["MRC.xlen"] = mrch.xlen;
 	dict["MRC.ylen"] = mrch.ylen;
 	dict["MRC.zlen"] = mrch.zlen;
@@ -468,6 +470,13 @@ int MrcIO::read_mrc_header(Dict & dict, int image_index, const Region * area, bo
 
 	dict["MRC.ispg"] = mrch.ispg;
 	dict["MRC.nsymbt"] = mrch.nsymbt;
+
+	dict["MRC.exttyp"] = string(mrch.exttyp, 4);
+	dict["MRC.nversion"] = mrch.nversion;
+
+	dict["MRC.imod_stamp"] = string(mrch.imod_stamp, 4);
+	dict["MRC.imod_flags"] = mrch.imod_flags;
+	dict["MRC.map"] = string(mrch.map, 4);		/* constant string "MAP "  */
 
 	float apx = mrch.xlen / mrch.mx;
 	float apy = mrch.ylen / mrch.my;
