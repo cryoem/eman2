@@ -562,8 +562,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.gblpltctl.addWidget(self.wbutlin,4,5)
 		self.wbutlin.clicked[bool].connect(self.do_linesplit)
 
-		self.wvbnsets=ValBox(label="Sets:",value=2)
-		self.wvbnsets.setIntonly(True)
+		self.wvbnsets=StringBox(label="Sets:",value=2)
 		self.gblpltctl.addWidget(self.wvbnsets,0,4)
 
 		self.wstbaxes=StringBox(label="Axes:",value="2-5")
@@ -1516,7 +1515,10 @@ class EMGMM(QtWidgets.QMainWindow):
 		print("kmeans ...")
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		from sklearn.cluster import KMeans
-		nseg=int(self.wvbnsets.getValue())
+		try: nseg=int(self.wvbnsets.getValue())
+		except:
+			showerror("N Sets must be an integer for this operation")
+			return
 		cols=np.array(parse_range(self.wstbaxes.getValue()))
 
 		try: nset=max([int(k) for k in self.curmaps])+1
@@ -1611,7 +1613,10 @@ class EMGMM(QtWidgets.QMainWindow):
 		print("OpticsDB ...")
 		t0=time.time()
 		from sklearn.cluster import OPTICS
-		nseg=int(self.wvbnsets.getValue())
+		try: nseg=int(self.wvbnsets.getValue())
+		except:
+			showerror("N Sets must be an integer for this operation")
+			return
 		cols=np.array(parse_range(self.wstbaxes.getValue()))
 
 		try: nset=max([int(k) for k in self.curmaps])+1
@@ -1646,7 +1651,10 @@ class EMGMM(QtWidgets.QMainWindow):
 		print("OpticsXi ...")
 		t0=time.time()
 		from sklearn.cluster import OPTICS
-		nseg=int(self.wvbnsets.getValue())
+		try: nseg=int(self.wvbnsets.getValue())
+		except:
+			showerror("N Sets must be an integer for this operation")
+			return
 		cols=np.array(parse_range(self.wstbaxes.getValue()))
 
 		try: nset=max([int(k) for k in self.curmaps])+1
