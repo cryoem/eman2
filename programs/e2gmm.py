@@ -562,7 +562,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.gblpltctl.addWidget(self.wbutlin,4,5)
 		self.wbutlin.clicked[bool].connect(self.do_linesplit)
 
-		self.wvbnsets=StringBox(label="Sets:",value=2)
+		self.wvbnsets=StringBox(label="Sets:",value="2")
 		self.gblpltctl.addWidget(self.wvbnsets,0,4)
 
 		self.wstbaxes=StringBox(label="Axes:",value="2-5")
