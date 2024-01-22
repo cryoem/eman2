@@ -562,8 +562,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.gblpltctl.addWidget(self.wbutlin,4,5)
 		self.wbutlin.clicked[bool].connect(self.do_linesplit)
 
-		self.wvbnsets=ValBox(label="Sets:",value=2)
-		self.wvbnsets.setIntonly(True)
+		self.wvbnsets=StringBox(label="Sets:",value="2")
 		self.gblpltctl.addWidget(self.wvbnsets,0,4)
 
 		self.wstbaxes=StringBox(label="Axes:",value="2-5")
@@ -1425,12 +1424,10 @@ class EMGMM(QtWidgets.QMainWindow):
 			# store metadata to identify maps in dynamic_maps.hdf
 			# note that 2
 			# set # (key), 0) map #, 1) timestamp, 2) (cols,coordinates of center), 3) map size, 4) est resolution, 5) list of points
-			newmap=[nmaps,local_datetime(),latent,box,-1,0]
+			newmap=[nmaps,local_datetime(),latent,box,-1,ptdist]
 			self.curmaps[str(k)]=newmap
 			self.sets_changed()
 			nmaps+=1
-
-
 
 	def set_del(self,ign=None):
 		"""Delete an existing set (only if a map hasn't been computed for it)"""
@@ -1518,7 +1515,10 @@ class EMGMM(QtWidgets.QMainWindow):
 		print("kmeans ...")
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		from sklearn.cluster import KMeans
-		nseg=int(self.wvbnsets.getValue())
+		try: nseg=int(self.wvbnsets.getValue())
+		except:
+			showerror("N Sets must be an integer for this operation")
+			return
 		cols=np.array(parse_range(self.wstbaxes.getValue()))
 
 		try: nset=max([int(k) for k in self.curmaps])+1
@@ -1613,7 +1613,10 @@ class EMGMM(QtWidgets.QMainWindow):
 		print("OpticsDB ...")
 		t0=time.time()
 		from sklearn.cluster import OPTICS
-		nseg=int(self.wvbnsets.getValue())
+		try: nseg=int(self.wvbnsets.getValue())
+		except:
+			showerror("N Sets must be an integer for this operation")
+			return
 		cols=np.array(parse_range(self.wstbaxes.getValue()))
 
 		try: nset=max([int(k) for k in self.curmaps])+1
@@ -1648,7 +1651,10 @@ class EMGMM(QtWidgets.QMainWindow):
 		print("OpticsXi ...")
 		t0=time.time()
 		from sklearn.cluster import OPTICS
-		nseg=int(self.wvbnsets.getValue())
+		try: nseg=int(self.wvbnsets.getValue())
+		except:
+			showerror("N Sets must be an integer for this operation")
+			return
 		cols=np.array(parse_range(self.wstbaxes.getValue()))
 
 		try: nset=max([int(k) for k in self.curmaps])+1
