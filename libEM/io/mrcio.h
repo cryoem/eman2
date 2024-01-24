@@ -258,33 +258,153 @@ namespace EMAN
 		/* https://www.ccpem.ac.uk/downloads/EPU_MRC2014_File_Image_Format_Specification_-_306687.pdf */
 		struct FeiMrcExtHeader
 		{
-			float a_tilt;		/* Alpha tilt, in degrees */
-			float b_tilt;		/* beta tilt, in degrees */
+//			Image, System and Application
+			int metadata_size;
+			int metadata_version;
+			unsigned int bitmask_1;
+			double timestamp;
+			char microscope_type[16];
+			char d_number[16];
+			char application[16];
+			char application_version[16];
 
-			float x_stage;		/* Stage x position. Normally in SI units (meters), but some older files may be
-			 	 	 	 	 	 in micrometers. Check by looking at values for x,y,z. If one of these exceeds 1,
-			 	 	 	 	 	 it will be micrometers. */
-			float y_stage;		/* Stage y position. For testing of units see x_stage */
-			float z_stage;		/* Stage z position. For testing of units see x_stage */
+//			Gun
+			double ht;
+			double dose;
 
-			float x_shift;		/* Image shift x. For testing of units see x_stage */
-			float y_shift;		/* Image shift y. For testing of units see x_stage */
+//			Stage
+			double alpha_tilt;
+			double beta_tilt;
 
-			float defocus;		/* Defocus as read from microscope. For testing of units see x_stage */
-			float exp_time;		/* Exposure time in seconds */
-			float mean_int;		/* Mean value of image */
+			double x_stage;
+			double y_stage;
+			double z_stage;
 
-			float tilt_axis;	/* The orientation of the tilt axis in the image in degrees.
-			 	 	 	 	 	 Vertical to the top is 0=B0, the direction of positive rotation is anti-clockwise */
-			float pixel_size;	/* The pixel size of the images in SI units (meters) */
-			float magnification;	/*The magnification used in SI units (volts) */
-			float ht;			/* Value of the high tension in SI units (volts) */
-			float binning;		/* The binning of the CCD or STEM acquisition */
-			float appliedDefocus;	/* The intended application defocus in SI units (meters),
-			 	 	 	 	 	 as defined for example in the tomography parameters view. */
+			double tilt_axis_angle;
 
-			float remainder[16];	/* not used */
-		};
+			double dual_axis_rotation;
+
+//			Pixel Size
+			double pixel_size_x;
+			double pixel_size_y;
+
+			char unused[48];
+
+//			Optics
+			double defocus;
+			double stem_defocus;
+			double applied_defocus;
+			int instrument_mode;
+			int projection_mode;
+			char objective_lens_mode[16];
+			char high_magnification_mode[16];
+			int probe_mode;
+			bool eftem_on;
+			double magnification;	/*The magnification used in SI units (volts) */
+			unsigned int bitmask_2;
+			double camera_length;
+			int spot_index;
+			double illuminated_area;
+			double intensity;
+			double convergence_angle;
+			char illumination_mode[16];
+			bool wide_convergence_angle_range;
+
+//			EFTEM Imaging
+			bool slit_inserted;
+			double slit_width;
+			double acceleration_voltage_offset;
+			double drift_tube_voltage;
+			double energy_shift;
+
+//			Image Shifts
+			double shift_offset_x;
+			double shift_offset_y;
+			double shift_x;
+			double shift_y;
+
+//			Camera
+			double integration_time;
+			int binning_width;
+			int binning_height;
+			char camera_name[16];
+			int readout_area_left;
+			int readout_area_top;
+			int readout_area_right;
+			int readout_area_bottom;
+			bool ceta_noise_reduction;
+			int ceta_frames_summed;
+			bool direct_detector_electron_counting;
+			bool direct_detector_align_frames;
+			int camera_param_reserved_0;
+			int camera_param_reserved_1;
+			int camera_param_reserved_2;
+			int camera_param_reserved_3;
+			unsigned int bitmask_3;
+			int camera_param_reserved_4;
+			int camera_param_reserved_5;
+			int camera_param_reserved_6;
+			int camera_param_reserved_7;
+			int camera_param_reserved_8;
+			int camera_param_reserved_9;
+			bool phase_plate;
+
+//			STEM
+			char stem_detector_name[16];
+			double gain;
+			double offset;
+			int stem_param_reserved_0;
+			int stem_param_reserved_1;
+			int stem_param_reserved_2;
+			int stem_param_reserved_3;
+			int stem_param_reserved_4;
+
+//			Scan settings
+			double dwell_time;
+			double frame_time;
+			int scan_size_left;
+			int scan_size_top;
+			int scan_size_right;
+			int scan_size_bottom;
+			double full_scan_fov_x;
+			double full_scan_fov_y;
+
+//			EDX Elemental maps
+			char element[16];
+			double energy_interval_lower;
+			double energy_interval_higher;
+			int method;
+
+//			Dose fractions
+			bool is_dose_fraction;
+			int fraction_number;
+			int start_frame;
+			int end_frame;
+
+//			Reconstruction
+			char input_stack_filename[80];
+			unsigned int bitmask_4;
+			double alpha_tilt_min;
+			double alpha_tilt_max;
+
+//			FEI2 Version 2 Extension to the Extended Header Specification
+			double scan_rotation;
+			double diffraction_pattern_rotation;
+			double image_rotation;
+			int scan_mode_enumeration;
+			long acquisition_time_stamp;
+			char detector_commercial_name[16];
+			double start_tilt_angle;
+			double end_tilt_angle;
+			double tilt_per_image;
+			double tilt_speed;
+			int beam_center_x_pixel;
+			int beam_center_y_pixel;
+			long cfeg_flash_timestamp;
+			int phase_plate_position_index;
+			char objective_aperture_name[16];
+
+		} __attribute__((packed));
 
 		static const char *CTF_MAGIC;
 		static const char *SHORT_CTF_MAGIC;
