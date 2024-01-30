@@ -1429,7 +1429,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		except: nmaps=0
 
 		for k in self.curmaps_sel:
-			smap=self.curmaps_sel[k]
+			smap=self.curmaps[str(k)]
 
 			ptdist=smap[5]
 			if len(ptdist)>1000: ptdist=ptdist[::len(ptdist)//1000]		# We don't really need every point to get a pretty good average position for the set
@@ -1451,6 +1451,7 @@ class EMGMM(QtWidgets.QMainWindow):
 
 
 			gmap.process_inplace("filter.setstrucfac",{"apix":apix,"strucfac":sf})
+			gmap.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/self.currun.get("ptclres",self.currun.get("targres",20))})
 #			self.display_dynamic(gmap)
 			gmap.write_compressed(f"{self.gmm}/set_maps.hdf",nmaps,8)
 			gmap.write_compressed(f"{self.gmm}/set_even.hdf",nmaps,8)
@@ -1459,7 +1460,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			# store metadata to identify maps in dynamic_maps.hdf
 			# note that 2
 			# set # (key), 0) map #, 1) timestamp, 2) (cols,coordinates of center), 3) map size, 4) est resolution, 5) list of points
-			newmap=[nmaps,local_datetime(),latent,box,-1,ptdist]
+			newmap=[nmaps,local_datetime(),latent,box,-1,smap[5]]
 			self.curmaps[str(k)]=newmap
 			self.sets_changed()
 			nmaps+=1
@@ -1787,8 +1788,8 @@ class EMGMM(QtWidgets.QMainWindow):
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		print("Split in rings on 2 axes")
 		nseg=np.array(parse_range(self.wvbnsets.getValue()))
-		if len(nseg<2) :
-			showerror("Please specify a comma separated list for Sets, starting with 0 or 1 for the center")
+		if len(nseg)<2 :
+			showerror(f"Please specify a comma separated list for Sets, starting with 0 or 1 for the center. I got: {nseg}")
 			return
 		if nseg[0]!=0 and nseg[0]!=1:
 			showerror("The first value in Sets must be 0 or 1 for the center of the distribution")
@@ -1805,13 +1806,21 @@ class EMGMM(QtWidgets.QMainWindow):
 		xy[0]-=np.mean(xy[0])	# center of the distribution -> 0,0
 		xy[1]-=np.mean(xy[1])
 		r=np.hypot(xy[0],xy[1])		# polar coordinates radius
-		ang=np.atan2(xy[1],xy[0])	# polar coordinates angle
+		ang=np.arctan2(xy[1],xy[0])	# polar coordinates angle
 		maxr=min(np.std(r)*2.5,np.max(r))
 
 		if nseg[0]==0: r=np.floor((len(nseg)-1)*r/maxr).astype("int32")+1	# no "center" region
 		else: r=np.floor(len(nseg)*r/maxr+0.5).astype("int32")				# "center" region has 1/2 radius
 
 		cirstart=[sum(nseg[:i]) for i in range(len(nseg))]
+
+		print(nseg)
+		print(f"r: {r[:25]}")
+		print(f"ang: {ang[:25]}")
+		print(cirstart)
+
+		showerror("This mode isn't done yet")
+		return
 
 		tnseg=sum(nseg)
 		for i in range(tnseg):

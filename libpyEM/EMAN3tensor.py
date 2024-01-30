@@ -125,14 +125,14 @@ class EMDataStack():
 		if value is not None: raise Exception("EMDataStack.numpy may not be set to any value other than None. It is generated automatically on demand.")
 		self._numpy=None
 
-def Orientations():
+class Orientations():
 	"""This represents a set of orientations, with a standard representation of an XYZ vector where the vector length indicates the amount
 		of rotation with a length of 0.5 corresponding to 180 degrees. This form is a good representation for deep learning minimization strategies
 		which conventionally span a range of ~1.0. This form can be readily interconverted to EMAN2 Transform objects or transformation matrices
 		for use with Gaussians.
 	"""
 
-	def __init__(self,xyzs=0):
+	def __init__(self,xyzs):
 		"""Initialize with either the number of orientations or a N x 3 matrix"""
 		if isinstance(xyzs,int):
 			if xyzs<=0: self._data=None
@@ -213,7 +213,7 @@ def Orientations():
 		return mx
 
 
-def Gaussians():
+class Gaussians():
 	"""This represents a set of Gaussians with x,y,z,amp parameters (but no width). Representation is a N x 4 numpy array or tensor (x,y,z,amp) ],
 x,y,z are ~-0.5 to ~0.5 (typ) and amp is 0 to ~1. A scaling factor (value -> pixels) is applied when generating projections. """
 
@@ -260,8 +260,20 @@ x,y,z are ~-0.5 to ~0.5 (typ) and amp is 0 to ~1. A scaling factor (value -> pix
 			if txty is not None: xfgauss+=txty[:,:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
 			xfgauss=(xfgauss+0.5)*boxsize		# shift and scale both x and y the same
 
+			xfgaussf=tf.floor(xfgauss)
+			xfgaussi=tf.cast(xfgaussf,tf.int32)	# integer index
+			xfgaussf=xfgauss-xfgaussf				# remainder used for bilinear interpolation
 
+			# messy tensor math here to implement bilinear interpolation
+			bamp0=self._data[:,4]*(1.0-xfgaussf[:,:,0])*(1.0-xfgaussf[:,:,1])	#0,0
+			bamp1=self._data[:,4]*(xfgaussf[:,:,0])*(1.0-xfgaussf[:,:,1])		#1,0
+			bamp2=self._data[:,4]*(xfgaussf[:,:,0])*(xfgaussf[:,:,1])			#1,1
+			bamp3=self._data[:,4]*(1.0-xfgaussf[:,:,0])*(xfgaussf[:,:,1])		#0,1
+			bampall=tf.concat([bamp0,bamp1,bamp2,bamp3],1)
+			bposall=tf.concat([xfgaussi,xfgaussi+(1,0),xfgaussi+(1,1),xfgaussi+(0,1)],1)
+			proj=tf.stack([tf.tensor_scatter_nd_add(proj[i],bposall[i],bampall[i]) for i in range(proj.shape[0])])
 
+		return proj
 
 
 	def spinvec_to_mx(self,xforms):
