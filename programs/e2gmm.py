@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Author: Steven Ludtke  9/28/2020 
+# Author: Steven Ludtke  9/28/2020
 # Copyright (c) 2020- Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -59,8 +59,8 @@ import sklearn.manifold as skmf
 from queue import Queue
 from matplotlib.patches import Circle
 
-os.environ["CUDA_VISIBLE_DEVICES"]='0' 
-os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]='true' 
+os.environ["CUDA_VISIBLE_DEVICES"]='0'
+os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]='true'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' #### reduce log output
 
 import traceback
@@ -106,15 +106,15 @@ def make3d_thr(que,tskn,fsp,imgns,rparms,latent,currun,rad,mmode,nset,ptclsclip=
 
 	returns in que (tskn,% complete, volume (when 100%)
 	"""
-	
+
 #	print(rparms)
 	recone=Reconstructors.get("fourier",rparms)
 	recone.setup()
 	recono=Reconstructors.get("fourier",rparms)
 	recono.setup()
-	
+
 	pad=rparms["size"][0]
-	
+
 	# read images in chunks of 100 for (maybe) increased efficiency
 	for i in range(len(imgns)//100+1):
 		que.put((tskn,9500*i//len(imgns),None,None))  # don't want to accidentally return 100, this is for progress display
@@ -133,7 +133,7 @@ def make3d_thr(que,tskn,fsp,imgns,rparms,latent,currun,rad,mmode,nset,ptclsclip=
 			else:
 				imf=recono.preprocess_slice(im2,xf)
 				recono.insert_slice(imf,xf,1.0)
-	
+
 	que.put((tskn,96,None,None))  # don't want to accidentally return 100, this is for progress display
 	rete=recone.finish(True)
 	reto=recono.finish(True)
@@ -147,7 +147,7 @@ def make3d_thr(que,tskn,fsp,imgns,rparms,latent,currun,rad,mmode,nset,ptclsclip=
 	fscf=rete.calc_fourier_shell_correlation(reto)
 	fsc=fscf[len(fscf)//3:len(fscf)*2//3]
 #	print(fsc)
-	for r,v in enumerate(fsc[5:]): 
+	for r,v in enumerate(fsc[5:]):
 		if v<0.143: break
 	r+=5
 	que.put((tskn,98,None,None))  # don't want to accidentally return 100, this is for progress display
@@ -166,7 +166,7 @@ def make3d_thr(que,tskn,fsp,imgns,rparms,latent,currun,rad,mmode,nset,ptclsclip=
 	ret["apix_y"]=im["apix_x"]
 	ret["apix_z"]=im["apix_x"]
 	print(f"Resolution {r} {1.0/fscf[r]}")
-			
+
 	que.put((tskn,100,ret,latent,imgns,currun,rad,rete,reto,mmode,nset))
 
 def make3d_thr_fast(que,tskn,fsp,imgns,rparms,latent,currun,rad,mmode,nset,ptclsclip=-1):
@@ -178,10 +178,10 @@ def make3d_thr_fast(que,tskn,fsp,imgns,rparms,latent,currun,rad,mmode,nset,ptcls
 	imgns - list of image numbers from fsp to include
 	rparms - recosntructor parameters, include size,sym,mode,usessnr,verbose
 	currun - the current run parameters. pass them in case the user selects a different run during reconstruction
-	
+
 	returns in que (tskn,% complete, volume (when 100%)
 	"""
-	
+
 #	print(rparms)
 	rparms["mode"]="nearest_neighbor"
 	pad=good_size(rparms["size"][0]//2)
@@ -190,8 +190,8 @@ def make3d_thr_fast(que,tskn,fsp,imgns,rparms,latent,currun,rad,mmode,nset,ptcls
 	recone.setup()
 	recono=Reconstructors.get("fourier",rparms)
 	recono.setup()
-	
-	
+
+
 	# read images in chunks of 100 for (maybe) increased efficiency
 	for i in range(len(imgns)//100+1):
 		que.put((tskn,9900*i//len(imgns),None,None))  # don't want to accidentally return 100, this is for progress display
@@ -210,7 +210,7 @@ def make3d_thr_fast(que,tskn,fsp,imgns,rparms,latent,currun,rad,mmode,nset,ptcls
 			else:
 				imf=recono.preprocess_slice(im2,xf)
 				recono.insert_slice(imf,xf,1.0)
-	
+
 	rete=recone.finish(True)
 	reto=recono.finish(True)
 	rete["apix_x"]=im["apix_x"]
@@ -222,7 +222,7 @@ def make3d_thr_fast(que,tskn,fsp,imgns,rparms,latent,currun,rad,mmode,nset,ptcls
 	fscf=rete.calc_fourier_shell_correlation(reto)
 	fsc=fscf[len(fscf)//3:len(fscf)*2//3]
 #	print(fsc)
-	for r,v in enumerate(fsc[5:]): 
+	for r,v in enumerate(fsc[5:]):
 		if v<0.143: break
 	r+=5
 	ret=rete.copy()
@@ -237,7 +237,7 @@ def make3d_thr_fast(que,tskn,fsp,imgns,rparms,latent,currun,rad,mmode,nset,ptcls
 	ret["ptcl_repr"]=len(imgns)
 	ret["resolution"]=1.0/fscf[r]
 	print(f"Resolution {r} {1.0/fscf[r]}")
-			
+
 	que.put((tskn,100,ret,latent,imgns,currun,rad,rete,reto,mmode,nset))
 
 def numrng(f):
@@ -251,9 +251,9 @@ def main():
 	usage = """prog [options]
 
 	WARNING: This program still under development.
-	
-	This program is designed to work interactively with Gaussian mixture models, automating as much 
-	as possible of the tasks associated with studying dynamics using GMMs. It requires either a 
+
+	This program is designed to work interactively with Gaussian mixture models, automating as much
+	as possible of the tasks associated with studying dynamics using GMMs. It requires either a
 	refine_XX folder or a set of particles with known orientations as a starting point."""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
@@ -264,21 +264,21 @@ def main():
 
 	global options
 	(options, args) = parser.parse_args()
-	
+
 	#if options.path==None:
 		#options.path=numbered_path("gmm",True)
 #		os.makedirs(options.path)
 
 	if options.threads<1 : options.threads=num_cpus()
-		
+
 	#if not os.path.exists(options.path) :
 		#os.mkdir(options.path)
-		
+
 #	parms=js_open_dict("{}/0_a2d_parms.json".format(options.path))
-	
+
 
 	pid=E2init(argv)
-	
+
 	app = EMApp()
 	emgmm=EMGMM(app,options)
 	emgmm.show()
@@ -289,15 +289,15 @@ are not yet available through this interface. Matching number
 of gaussians to resolution/volume is key in obtaining good
 distributions.""")
 	app.execute()
-	
+
 	E2end(pid)
 
 class EMGMM(QtWidgets.QMainWindow):
 	"""This is the main window for the e2gmm application"""
-	
+
 	def __init__(self,application,opt):
 		self.options=opt
-		"""application is an QApplication instance. path is the path for ouput files""" 
+		"""application is an QApplication instance. path is the path for ouput files"""
 		QtWidgets.QWidget.__init__(self)
 
 		self.particles=None
@@ -321,61 +321,61 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.setCentralWidget(QtWidgets.QWidget())
 		self.gbl = QtWidgets.QGridLayout(self.centralWidget())
 		cen=self.centralWidget()
-		
+
 		self.gbl.setColumnStretch(0,0)
 		self.gbl.setColumnStretch(2,4)
 		self.gbl.setColumnStretch(4,5)
-		
+
 		# Plot
 		self.wplot2d = EMPlot2DWidget()
 		self.gbl.addWidget(self.wplot2d,0,2,3,1)
 		self.wplot2d.set_mouse_emit(True)
 		self.wplot2d.set_annotate(self.plot_annotate)
 		self.wplot2d.set_selectpoints(False)
-		
+
 		# 3-D View
 		self.wview3d = EMScene3D()
 		self.gbl.addWidget(self.wview3d,0,4,2,1)
-		
+
 		# Left pane for GMM folder and parameters
 		self.gbll = QtWidgets.QGridLayout()
 		self.gbl.addLayout(self.gbll,0,0,4,1)		# 4 rows tall, 1 column wide
-		
+
 		# gmm_XX folder selection
 		self.gblfld = QtWidgets.QGridLayout()
 		self.gbll.addLayout(self.gblfld,0,0)
-		
+
 		self.wlistgmm = QtWidgets.QListWidget()
 		self.wlistgmm.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
 		self.update_gmms()
 		self.gblfld.addWidget(self.wlistgmm,0,0,1,2)
-		
+
 		self.wbutnewgmm=QtWidgets.QPushButton("New GMM")
 		self.gblfld.addWidget(self.wbutnewgmm,1,0)
 
 		self.wlpath = QtWidgets.QLabel("-")
 		self.wlpath.setToolTip("Path this GMM is based on")
 		self.gblfld.addWidget(self.wlpath,1,1)
-		
+
 		#self.wbutrefine = QtWidgets.QPushButton("refine_XX")
 		#self.gblfld.addWidget(self.wbutrefine,1,1)
-		
+
 		# run selection
 		self.gblrun = QtWidgets.QGridLayout()
 		self.gbll.addLayout(self.gblrun,1,0)
-		
+
 		self.wlistrun = QtWidgets.QListWidget()
 		self.wlistrun.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
 #		self.update_runs()
 		self.gblrun.addWidget(self.wlistrun,0,0,1,2)
-		
+
 		self.wbutnewrun=QtWidgets.QPushButton("Create Run")
 		self.gblrun.addWidget(self.wbutnewrun,1,0)
 
 		self.wbutres = QtWidgets.QPushButton("Resolution (A)")
 		self.wbutres.setToolTip("Generate new Gaussian neutral model")
 		self.gblrun.addWidget(self.wbutres,2,0)
-		
+
 		self.wedres = QtWidgets.QLineEdit("25")
 		self.wedres.setToolTip("Resolution for Gaussian generation and refinement FSC")
 		self.gblrun.addWidget(self.wedres,2,1)
@@ -396,14 +396,14 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		#self.wbutrerun=QtWidgets.QPushButton("Run Dynamics")
 		#self.gblrun.addWidget(self.wbutrerun,5,0)
-		
+
 		self.wbutrerun2=QtWidgets.QPushButton("Train GMM")
 		self.gblrun.addWidget(self.wbutrerun2,5,1)
-		
+
 		#### The form with details about the selected gmm_XX folder
 		self.gflparm = QtWidgets.QFormLayout()
 		self.gbll.addLayout(self.gflparm,2,0)
-		
+
 		self.wedbatch = QtWidgets.QLineEdit("1")
 		self.wedbatch.setToolTip("Number of batches for network training (reduces memory requirements)")
 		self.gflparm.addRow("# Ptcl Batches:",self.wedbatch)
@@ -424,15 +424,15 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wedsym = QtWidgets.QLineEdit("c1")
 		self.wedsym.setToolTip("Symmetry used during refinement. Cannot reduce here without rerunning refinement!")
 		self.gflparm.addRow("Symmetry:",self.wedsym)
-		
+
 		self.wedmask = QtWidgets.QLineEdit("")
 		self.wedmask.setToolTip("<file>[,<file>...]  3-D volume masks for defining subregions, each with its own latent vector. Latent vec must be divisible by number of masks. Blank for a single region.")
 		self.gflparm.addRow("Masks:",self.wedmask)
-		
+
 		self.weddim = QtWidgets.QLineEdit("4")
 		self.weddim.setToolTip("Number of dimensions in the latent space (middle network layer)")
 		self.gflparm.addRow("Latent Dim:",self.weddim)
-		
+
 		self.wedtrainiter = QtWidgets.QLineEdit("10")
 		self.wedtrainiter.setToolTip("Training iterations (10-20 typical)")
 		self.gflparm.addRow("Train iter:",self.wedtrainiter)
@@ -450,32 +450,32 @@ class EMGMM(QtWidgets.QMainWindow):
 		# self.wbutconv.setChecked(False)
 		# self.wbutconv.setToolTip("Use a convolutional neural network structure instead of a conventional network structure")
 		# self.gflparm.addRow(" ",self.wbutconv)
-		
+
 		self.wbutpos = QtWidgets.QPushButton("Position")
 		self.wbutpos.setCheckable(True)
 		self.wbutpos.setChecked(True)
 		self.wbutpos.setToolTip("Include changes of position in the GMM (motion)")
 		self.gflparm.addRow("Parameters",self.wbutpos)
-		
+
 		self.wbutamp = QtWidgets.QPushButton("Amplitude")
 		self.wbutamp.setCheckable(True)
 		self.wbutamp.setChecked(True)
 		self.wbutamp.setToolTip("Include changes of amplitude in the GMM (ligand binding)")
 		self.gflparm.addRow(" ",self.wbutamp)
-		
+
 		# self.wbutsig = QtWidgets.QPushButton("Sigma")
 		# self.wbutsig.setCheckable(True)
 		# self.wbutsig.setChecked(False)
 		# self.wbutsig.setToolTip("Include changes of Gaussian Width in the GMM (rarely useful)")
 		# self.gflparm.addRow(" ",self.wbutsig)
-		
+
 		self.wlabruntime = QtWidgets.QLabel("-")
 		self.gflparm.addRow("Run:",self.wlabruntime)
-		
+
 		#### Widgets below plot
 		self.gblpltctl = QtWidgets.QGridLayout()
 		self.gbl.addLayout(self.gblpltctl,3,2)
-		
+
 		self.gblpltctl.addWidget(QtWidgets.QLabel("X Col:",self),0,0,Qt.AlignRight)
 		self.wsbxcol=QtWidgets.QSpinBox(self)
 		self.wsbxcol.setRange(0,10)
@@ -487,7 +487,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wsbycol.setRange(0,10)
 		self.gblpltctl.addWidget(self.wsbycol,1,1,Qt.AlignLeft)
 		self.wsbycol.setValue(1)
-		
+
 
 		self.gblpltctl.addWidget(QtWidgets.QLabel("Rad:",self),3,0,Qt.AlignRight)
 		self.wedrad=QtWidgets.QLineEdit("0.2")
@@ -505,28 +505,28 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.gblpltctl.addWidget(self.wedcnt,4,1,Qt.AlignRight)
 
 		#self.wbutdrgrp=QtWidgets.QButtonGroup()
-		
+
 		#self.wbutdrmid=QtWidgets.QPushButton("Net Mid")
 		#self.wbutdrmid.setCheckable(True)
 		#self.wbutdrmid.setChecked(True)
 		#self.gblpltctl.addWidget(self.wbutdrmid,0,3)
 		#self.wbutdrgrp.addButton(self.wbutdrmid,0)
-		
+
 		#self.wbutdrpca=QtWidgets.QPushButton("PCA")
 		#self.wbutdrpca.setCheckable(True)
 		#self.gblpltctl.addWidget(self.wbutdrpca,0,4)
 		#self.wbutdrgrp.addButton(self.wbutdrpca,1)
-		
+
 		#self.wbutdrpca=QtWidgets.QPushButton("ICA")
 		#self.wbutdrpca.setCheckable(True)
 		#self.gblpltctl.addWidget(self.wbutdrpca,0,5)
 		#self.wbutdrgrp.addButton(self.wbutdrpca,2)
-		
+
 		#self.gblpltctl.addWidget(QtWidgets.QLabel("New Dim:",self),1,4,Qt.AlignRight)
 		#self.wsbnewdim=QtWidgets.QSpinBox(self)
 		#self.wsbnewdim.setRange(2,10)
 		#self.gblpltctl.addWidget(self.wsbnewdim,1,5,Qt.AlignLeft)
-		
+
 		self.wbutkmeans=QtWidgets.QPushButton("Kmeans")
 		self.wbutkmeans.setToolTip("Fast and functional, but produces linear boundaries not clusters")
 		self.gblpltctl.addWidget(self.wbutkmeans,0,5)
@@ -562,8 +562,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.gblpltctl.addWidget(self.wbutlin,4,5)
 		self.wbutlin.clicked[bool].connect(self.do_linesplit)
 
-		self.wvbnsets=ValBox(label="Sets:",value=2)
-		self.wvbnsets.setIntonly(True)
+		self.wvbnsets=StringBox(label="Sets:",value="2")
 		self.gblpltctl.addWidget(self.wvbnsets,0,4)
 
 		self.wstbaxes=StringBox(label="Axes:",value="2-5")
@@ -603,6 +602,13 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wbutsetsave=QtWidgets.QPushButton("Save Set")
 		self.gblpltctl.addWidget(self.wbutsetsave,4,6)
 
+		self.wbutsetintsec=QtWidgets.QPushButton("Intersect")
+		self.gblpltctl.addWidget(self.wbutsetintsec,0,7)
+
+		self.wbutsetunion=QtWidgets.QPushButton("Union")
+		self.gblpltctl.addWidget(self.wbutsetunion,1,7)
+
+
 
 		#### Widgets below 3D
 		self.gbl3dctl = QtWidgets.QGridLayout()
@@ -617,7 +623,7 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		# 2-D slice view
 		self.wview2d = None
-		
+
 		self.wbutvtop=QtWidgets.QPushButton("Top")
 		self.gbl3dctl.addWidget(self.wbutvtop,0,1)
 
@@ -719,12 +725,15 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wbutmapgauss.clicked[bool].connect(self.new_map_gauss)
 		self.wbutsetdel.clicked[bool].connect(self.set_del)
 		self.wbutsetsave.clicked[bool].connect(self.set_save)
+
+		self.wbutsetintsec.clicked[bool].connect(self.intsec_sets)
+		self.wbutsetunion.clicked[bool].connect(self.union_sets)
 #		self.wedres.editingFinished.connect(self.new_res)
 		self.wbutres.clicked[bool].connect(self.new_res)
 		#self.wbutdrgrp.idClicked[int].connect(self.plot_mode_sel)		# requires pyqt 5.15
 		#self.wbutdrgrp.buttonClicked[QtWidgets.QAbstractButton].connect(self.plot_mode_sel)
-		self.wsbxcol.valueChanged[int].connect(self.update_axes_x)		
-		self.wsbycol.valueChanged[int].connect(self.update_axes_y)		
+		self.wsbxcol.valueChanged[int].connect(self.update_axes_x)
+		self.wsbycol.valueChanged[int].connect(self.update_axes_y)
 		#self.wsbxcol.valueChanged[int].connect(self.wplot2d.setXAxisAll) #sequencing issue with this approach
 		#self.wsbycol.valueChanged[int].connect(self.wplot2d.setYAxisAll)
 		#self.wsbxcol.valueChanged[int].connect(self.update_maps_plot)		# also connect to update map locations when axes change
@@ -753,22 +762,22 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		# shows the filtered map when appropriate
 		self.fmapdataitem=None
-		
+
 		# Gaussian dynamic coordinates as spheres
 		self.gaussplot=EMScatterPlot3D()
 		self.wview3d.insertNewNode("Dynamic Model",self.gaussplot)
-		
+
 		# Gaussian neutral model (for comparison with the map and with the dynamic model
 		self.neutralplot=EMScatterPlot3D()
 		self.wview3d.insertNewNode("Neutral Model",self.neutralplot)
 
 		self.currunkey=None
 		self.lastres=0
-		
+
 		# Active threads used for 3-D reconstructions, once joined they are removed from the list
 		self.threads=[]
 		self.threadq=Queue()
-		
+
 		# This is used to update reconstruction thread results
 		self.timer=QTimer()
 		self.timer.timeout.connect(self.timeout)
@@ -795,7 +804,7 @@ class EMGMM(QtWidgets.QMainWindow):
 	def do_events(self,delay=0.1):
 		"""process the event loop with a small delay to allow user abort, etc."""
 		t=time.time()
-		while (time.time()-t<delay): 
+		while (time.time()-t<delay):
 			self.app().processEvents()
 
 	def view_top(self,tmp=None):
@@ -838,7 +847,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		"""Called when any of the slice parameters change, if b is a transform then we use it"""
 		if b is not None: self.ort_slice=b
 		if self.cur_dyn_vol is None :
-			if self.wview2d is not None: 
+			if self.wview2d is not None:
 				self.wview2d.set_data(EMData(256,256,1))
 			return
 		thk=self.wsbthk.value()		# thickness of layer
@@ -856,7 +865,7 @@ class EMGMM(QtWidgets.QMainWindow):
 
 	def timeout(self):
 		"""Handles the results of completed threads"""
-		
+
 		while not self.threadq.empty():
 			ret=self.threadq.get()
 			if ret[1]==100:
@@ -878,14 +887,14 @@ class EMGMM(QtWidgets.QMainWindow):
 				#vol.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/currun["targres"]})	# e/o fsc filter now handled in reconstructor
 				vol.process_inplace("normalize")
 				vol["latent"]=f"{tuple(latent)} {rad} '{mmode}'"
-				
+
 				# store the reconstructed map
 				try: nmaps=EMUtil.get_image_count(f"{self.gmm}/set_maps.hdf")
 				except: nmaps=0
 				vol.write_compressed(f"{self.gmm}/set_maps.hdf",nmaps,8)
 				vole.write_compressed(f"{self.gmm}/set_even.hdf",nmaps,8)
 				volo.write_compressed(f"{self.gmm}/set_odd.hdf",nmaps,8)
-				
+
 				# store metadata to identify maps in dynamic_maps.hdf
 				# note that 2
 				# set # (key), 0) map #, 1) timestamp, 2) (cols,coordinates of center), 3) map size, 4) est resolution, 5) list of points
@@ -1012,7 +1021,7 @@ class EMGMM(QtWidgets.QMainWindow):
 				except:
 					print("Error: map missing for ",smap)
 			else:
-				self.display_dynamic(None) 
+				self.display_dynamic(None)
 #				self.wview3d.updateGL()
 		else:
 			self.display_dynamic(None)
@@ -1028,10 +1037,10 @@ class EMGMM(QtWidgets.QMainWindow):
 			self.wview3d.insertNewNode("Isosurface",self.dmapiso,parentnode=self.dmapdataitem)
 		else:
 			self.dmapdataitem.setData(vol)
-		
+
 		if vol is not None:
 			self.dmapiso.getTransform().set_scale(vol["apix_x"]/self.jsparm["apix"])
-		
+
 		self.new_3d_opt()
 		self.wview3d.updateGL()
 		self.slice_update()
@@ -1064,17 +1073,17 @@ class EMGMM(QtWidgets.QMainWindow):
 		if mode=="neutral": self.currun["time_neutral"]=local_datetime()
 		if mode=="dynamics": self.currun["time_dynamics"]=local_datetime()
 		self.jsparm["run_"+self.currunkey]=self.currun
-	
+
 	def new_sph_size(self,newval=10):
 		self.gaussplot.setPointSize(self.wvssphsz.value)
 		self.neutralplot.setPointSize(self.wvssphsz.value)
 		self.wview3d.update()
-	
+
 	def plot_keyboard(self,event):
 		"""keyboard events from the 2-D plot"""
-		
+
 		if event.key()==Qt.Key_Escape: self.mouseabort=True
-	
+
 	#def plot_mouse(self,event,loc):
 		#self.mouseabort=False
 		#mmode=str(self.wcbpntpln.currentText())
@@ -1256,7 +1265,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		#mmode=str(self.wcbpntpln.currentText())
 		#if mmode != "Line":
 			#return
-		
+
 
 
 	def plot_mouse_up(self,event,loc):
@@ -1264,7 +1273,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		dim=self.currun.get("dim",4)
 		xcol=self.wsbxcol.value()
 		ycol=self.wsbycol.value()
-		
+
 		if self.mouseabort:
 			print("Abort")
 			self.wplot2d.del_shape("genline")
@@ -1273,7 +1282,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			return
 
 		try: rad=float(self.wedrad.text())
-		except: 
+		except:
 			print("invalid radius, using 0.05")
 			rad=0.05
 		try: ptperset=int(self.wedcnt.text())
@@ -1348,6 +1357,31 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.jsparm["sets"]=allmaps
 		self.update_maptable(nnew)
 
+	def intsec_sets(self):
+		sets = []
+		for key in self.curmaps_sel:
+			sets.append(self.curmaps_sel[key][5])
+
+		vec=np.zeros(len(self.midresult))
+		nset = good_num(self.curmaps)
+		sel = np.array(list(set.intersection(*map(set,sets))))
+		newmap = [None,local_datetime(),list(vec),0,0,sel]
+		self.curmaps[str(nset)]=newmap
+		self.sets_changed(nset)
+		return
+
+	def union_sets(self):
+		sets = []
+		for key in self.curmaps_sel:
+			sets.append(self.curmaps_sel[key][5])
+		vec=np.zeros(len(self.midresult))
+		nset = good_num(self.curmaps)
+		sel = np.array(list(set.union(*map(set,sets))))
+		newmap = [None,local_datetime(),list(vec),0,0,sel]
+		self.curmaps[str(nset)]=newmap
+		self.sets_changed(nset)
+		return
+
 	def new_map(self,ign=None):
 		"""Start threads to generate a new full scale map for all selected sets"""
 
@@ -1395,7 +1429,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		except: nmaps=0
 
 		for k in self.curmaps_sel:
-			smap=self.curmaps_sel[k]
+			smap=self.curmaps[str(k)]
 
 			ptdist=smap[5]
 			if len(ptdist)>1000: ptdist=ptdist[::len(ptdist)//1000]		# We don't really need every point to get a pretty good average position for the set
@@ -1417,6 +1451,7 @@ class EMGMM(QtWidgets.QMainWindow):
 
 
 			gmap.process_inplace("filter.setstrucfac",{"apix":apix,"strucfac":sf})
+			gmap.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/self.currun.get("ptclres",self.currun.get("targres",20))})
 #			self.display_dynamic(gmap)
 			gmap.write_compressed(f"{self.gmm}/set_maps.hdf",nmaps,8)
 			gmap.write_compressed(f"{self.gmm}/set_even.hdf",nmaps,8)
@@ -1425,12 +1460,10 @@ class EMGMM(QtWidgets.QMainWindow):
 			# store metadata to identify maps in dynamic_maps.hdf
 			# note that 2
 			# set # (key), 0) map #, 1) timestamp, 2) (cols,coordinates of center), 3) map size, 4) est resolution, 5) list of points
-			newmap=[nmaps,local_datetime(),latent,box,-1,0]
+			newmap=[nmaps,local_datetime(),latent,box,-1,smap[5]]
 			self.curmaps[str(k)]=newmap
 			self.sets_changed()
 			nmaps+=1
-
-
 
 	def set_del(self,ign=None):
 		"""Delete an existing set (only if a map hasn't been computed for it)"""
@@ -1518,7 +1551,10 @@ class EMGMM(QtWidgets.QMainWindow):
 		print("kmeans ...")
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		from sklearn.cluster import KMeans
-		nseg=int(self.wvbnsets.getValue())
+		try: nseg=int(self.wvbnsets.getValue())
+		except:
+			showerror("N Sets must be an integer for this operation")
+			return
 		cols=np.array(parse_range(self.wstbaxes.getValue()))
 
 		try: nset=max([int(k) for k in self.curmaps])+1
@@ -1613,7 +1649,10 @@ class EMGMM(QtWidgets.QMainWindow):
 		print("OpticsDB ...")
 		t0=time.time()
 		from sklearn.cluster import OPTICS
-		nseg=int(self.wvbnsets.getValue())
+		try: nseg=int(self.wvbnsets.getValue())
+		except:
+			showerror("N Sets must be an integer for this operation")
+			return
 		cols=np.array(parse_range(self.wstbaxes.getValue()))
 
 		try: nset=max([int(k) for k in self.curmaps])+1
@@ -1648,7 +1687,10 @@ class EMGMM(QtWidgets.QMainWindow):
 		print("OpticsXi ...")
 		t0=time.time()
 		from sklearn.cluster import OPTICS
-		nseg=int(self.wvbnsets.getValue())
+		try: nseg=int(self.wvbnsets.getValue())
+		except:
+			showerror("N Sets must be an integer for this operation")
+			return
 		cols=np.array(parse_range(self.wstbaxes.getValue()))
 
 		try: nset=max([int(k) for k in self.curmaps])+1
@@ -1746,8 +1788,8 @@ class EMGMM(QtWidgets.QMainWindow):
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		print("Split in rings on 2 axes")
 		nseg=np.array(parse_range(self.wvbnsets.getValue()))
-		if len(nseg<2) :
-			showerror("Please specify a comma separated list for Sets, starting with 0 or 1 for the center")
+		if len(nseg)<2 :
+			showerror(f"Please specify a comma separated list for Sets, starting with 0 or 1 for the center. I got: {nseg}")
 			return
 		if nseg[0]!=0 and nseg[0]!=1:
 			showerror("The first value in Sets must be 0 or 1 for the center of the distribution")
@@ -1764,13 +1806,21 @@ class EMGMM(QtWidgets.QMainWindow):
 		xy[0]-=np.mean(xy[0])	# center of the distribution -> 0,0
 		xy[1]-=np.mean(xy[1])
 		r=np.hypot(xy[0],xy[1])		# polar coordinates radius
-		ang=np.atan2(xy[1],xy[0])	# polar coordinates angle
+		ang=np.arctan2(xy[1],xy[0])	# polar coordinates angle
 		maxr=min(np.std(r)*2.5,np.max(r))
 
 		if nseg[0]==0: r=np.floor((len(nseg)-1)*r/maxr).astype("int32")+1	# no "center" region
 		else: r=np.floor(len(nseg)*r/maxr+0.5).astype("int32")				# "center" region has 1/2 radius
 
 		cirstart=[sum(nseg[:i]) for i in range(len(nseg))]
+
+		print(nseg)
+		print(f"r: {r[:25]}")
+		print(f"ang: {ang[:25]}")
+		print(cirstart)
+
+		showerror("This mode isn't done yet")
+		return
 
 		tnseg=sum(nseg)
 		for i in range(tnseg):
@@ -1790,10 +1840,10 @@ class EMGMM(QtWidgets.QMainWindow):
 
 	#def plot_mode_sel(self,but):
 		#"""Plot mode selected"""
-		
+
 		#self.plotmode=self.wbutdrgrp.id(but)
 		#newdim=self.wsbnewdim.value()
-		
+
 		#if self.plotmode==0:
 ##			print("norm")
 			#self.data=self.midresult
@@ -1803,12 +1853,12 @@ class EMGMM(QtWidgets.QMainWindow):
 			#self.data=self.decomp.fit_transform(self.midresult.transpose()).transpose()
 		#elif self.plotmode==2:
 			#pass
-			
+
 		#self.wsbxcol.setRange(0,len(self.data)-1)
 		#self.wsbxcol.setValue(0)
 		#self.wsbycol.setRange(0,len(self.data)-1)
 		#self.wsbycol.setValue(1)
-		
+
 ##		print(self.data.shape)
 		#self.wplot2d.set_data(self.data,"map",symsize=1)
 
@@ -1816,12 +1866,12 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wplot2d.setXAxisAll(x,True)
 #		self.wplot2d.autoscale()
 		self.wplot2d.updateGL()
-		
+
 	def update_axes_y(self,y):
 		self.wplot2d.setYAxisAll(y,True)
 #		self.wplot2d.autoscale()
 		self.wplot2d.updateGL()
-	
+
 	def plot_annotate(self,fig,ax):
 		"""This is called as a callback during rendering of the 2-D plot"""
 		#xa=self.wsbxcol.value()
@@ -1859,15 +1909,15 @@ class EMGMM(QtWidgets.QMainWindow):
 	def set3dvis(self,neumap=1,dynmap=1,filtmap=1,neumdl=1,dynmdl=1,blankplot=0):
 		"""sets the visibility of various 3-D display components. 1 enables, 0 disables, -1 leaves unchanged"""
 		if neumap>=0 : self.wbutnmap.setChecked(True)
-		try: 
+		try:
 			if dynmap>=0: self.wbutdmap.setChecked(True)
 		except: pass
-		try: 
+		try:
 			if filtmap>=0: self.fmapdataitem.setVisibleItem(filtmap)
 		except: pass
 		if dynmdl>=0: self.wbutdmdl.setChecked(True)
 		if neumdl>=0: self.wbutnmdl.setChecked(True)
-		if blankplot: 
+		if blankplot:
 			self.wplot2d.set_data(None,replace=True,symsize=1)
 
 	def new_res(self):
@@ -1875,7 +1925,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		try: res=float(self.wedres.text())
 		except: return
 		self.lastres=res
-		
+
 		map3d=EMData(f"{self.gmm}/input_map.hdf")
 
 		self.saveparm("neutral")  # updates self.currun with current user input
@@ -1942,12 +1992,12 @@ class EMGMM(QtWidgets.QMainWindow):
 			self.wview3d.insertNewNode("Isosurface",self.fmapiso,parentnode=self.fmapdataitem)
 		else:
 			self.fmapdataitem.setData(seg)
-			
+
 #		self.wedngauss.setText(str(len(amps)*4//3))
 		self.wedngauss.setText(f"{str(len(amps))} Gau")
 
 		print(f"Resolution={res} -> Ngauss={len(amps)}  ({self.currunkey})")
-		
+
 		nx=map3d["nx"]
 		centers[0]-=nx/2
 		centers[1]-=nx/2
@@ -1967,7 +2017,7 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		# write the new seg model to disk for use in subsequent runs
 		modelseg=f"{self.gmm}/{self.currunkey}_model_seg.txt"
-		
+
 		if self.cengroups is None:
 			with open(modelseg,"w") as out:
 				for i in range(len(self.amps)):
@@ -2007,12 +2057,12 @@ class EMGMM(QtWidgets.QMainWindow):
 		if (ncen==0) :
 			showerror("No centers determined at current resolution!")
 			return
-			
+
 		if int(self.currun["conv"]): conv="--conv"
 		else: conv=""
 		decoder=f"{self.gmm}/{self.currunkey}_decoder.h5"
 
-		
+
 		# we extract a subset of the input particles targeting ~10k
 		try: os.unlink(f"{self.gmm}/particles_subset.lst")
 		except: pass
@@ -2038,7 +2088,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			showerror("Error running e2gmm_refine, see console for details. GPU memory exhaustion is a common issue. Consider reducing the target resolution.")
 			return
 		prog.setValue(2)
-		
+
 		pts=np.loadtxt(modelout).transpose()
 		pts[1]*=-1.0
 		pts[2]*=-1.0
@@ -2053,7 +2103,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.amps=pts[3]
 		if len(pts)>5: self.cengroups=pts[5]
 		else: self.cengroups=None
-		
+
 		self.neutralplot.setData(self.pts,self.wvssphsz.value)
 		self.wview3d.updateGL()
 		self.do_events()
@@ -2069,7 +2119,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.currun=self.jsparm["run_"+self.currunkey]
 		self.currun["time_neutral_end"]=local_datetime()
 		self.jsparm["run_"+self.currunkey]=self.currun
-		
+
 		self.set3dvis(1,0,0,1,0,1)
 
 	def new_neutral2(self):
@@ -2219,7 +2269,7 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		prog=QtWidgets.QProgressDialog("Running neutral model network. Progress updates here are limited. See the Console for detailed output.","Abort",0,4)
 		prog.show()
-		
+
 		maxbox =(int(self.jsparm["boxsize"]*(2*self.jsparm["apix"])/self.currun["targres"])//2)*2
 		maxbox25=(int(self.jsparm["boxsize"]*(2*self.jsparm["apix"])/25.0)//2)*2
 		maxboxp =(int(self.jsparm["boxsize"]*(2*self.jsparm["apix"])/self.currun["ptclres"])//2)*2
@@ -2227,12 +2277,12 @@ class EMGMM(QtWidgets.QMainWindow):
 		print(f"Target res {self.currun['targres']} -> max box size {maxbox}")
 		modelout=f"{self.gmm}/{self.currunkey}_model_gmm.txt"		# note that this is from the neutral training above, we do not regenerate modelout at the "run" stage
 		modelseg=f"{self.gmm}/{self.currunkey}_model_seg.txt"
-		
+
 		sym=self.currun["sym"]
 		prog=QtWidgets.QProgressDialog("Running networks. Progress updates here are limited. See the Console for detailed output.","Abort",0,2)
 		prog.show()
 		self.do_events(1)
-		
+
 		decoder=f"{self.gmm}/{self.currunkey}_decoder.h5"
 		encoder=f"{self.gmm}/{self.currunkey}_encoder.h5"
 		if (len(self.currun["mask"])>4) : mask=f"--mask {self.currun['mask'].split(',')[0]}"
@@ -2240,7 +2290,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		# heterogeneity analysis
 		if int(self.currun["conv"]): conv="--conv"
 		else: conv=""
-		
+
 		# if targeting high resolution, we start with 10 iterations at 25 A first  # note 10/22, disabled, may do more harm than good?
 		#if maxbox25<maxbox:
 			#er=run(f"e2gmm_refine_point.py --model {modelout} --decoderin {decoder} --ptclsin {self.gmm}/particles.lst --heter {conv} --sym {sym} --maxboxsz {maxbox25} --niter 10 {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --decoderout {decoder} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ndense -1 --ptclsclip {self.jsparm['boxsize']}")
@@ -2298,7 +2348,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.currun=self.jsparm["run_"+self.currunkey]
 		self.currun["time_dynamics_end"]=local_datetime()
 		self.jsparm["run_"+self.currunkey]=self.currun
-		
+
 		self.sel_run(-1)
 
 		self.set3dvis(-1,0,0,0,1,0)
@@ -2311,13 +2361,13 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wlistgmm.clear()
 		for i in self.gmms:
 			self.wlistgmm.addItem(i)
-	
+
 	def sel_gmm(self,line):
 		"""Called when the user selects a new GMM from the list. Should not be called directly by the user without updating wlistgmm"""
 
 #		print("sel gmm",line)
 		get_application().setOverrideCursor(Qt.BusyCursor)
-		if line<0 : 
+		if line<0 :
 			#self.wedbox.setText("")
 			#self.wedapix.setText("")
 			#self.wedsym.setText("c1")
@@ -2331,7 +2381,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wedapix.setText(f'{self.jsparm.getdefault("apix",0.0):0.5f}')
 		self.wedsym.setText(f'{self.jsparm.getdefault("sym","c1")}')
 		self.wedmask.setText(f'{self.jsparm.getdefault("mask",f"{self.gmm}/mask.hdf")}')
-		
+
 		# these may vary from run to run
 		self.wlistrun.clear()
 		for k in self.jsparm.keys():
@@ -2340,26 +2390,26 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.currunkey=None
 
 		self.sel_run(self.wlistrun.count()-1)
-		try: 
+		try:
 			self.map3d=EMData(f'{self.gmm}/input_map.hdf')
 			self.mapdataitem.setData(self.map3d)
 		except: print("Error: input_map.hdf missing")
 
 		self.set3dvis(1,0,0,0,0,0)
 		get_application().restoreOverrideCursor()
-			
+
 	def sel_run(self,line):
 		"""Called when the user selects a new run from the list. If called with -1, reloads the current run"""
-		
+
 #		print("sel_run",line)
 		get_application().setOverrideCursor(Qt.BusyCursor)
-		if line>=0: 
+		if line>=0:
 			self.currunkey=str(self.wlistrun.item(line).text())
 			self.currun=self.jsparm.getdefault("run_"+self.currunkey,{"dim":4,"mask":f"{self.gmm}/mask.hdf","trainiter":10,"pas":"100","modelreg":0.5,"perturb":0.1,"time":"-"})
 		elif self.currunkey is None or len(self.currunkey)==0 or self.currun is None:
 			get_application().restoreOverrideCursor()
 			return
-	
+
 		self.wedres.setText(f'{self.currun.get("targres",20)}')
 		rres=self.currun.get("ptclres",self.currun.get("targres",20))
 		rminres=self.currun.get("ptclminres",250.0)
@@ -2396,7 +2446,7 @@ class EMGMM(QtWidgets.QMainWindow):
 				self.fmapdataitem.setData(None)
 
 		# Neutral Gaussian model (needed when PAS != 111)
-		try: 
+		try:
 			self.model=np.loadtxt(f"{self.gmm}/{self.currunkey}_model_gmm.txt").transpose()
 			pts=self.model
 			pts[1]*=-1.0
@@ -2411,18 +2461,18 @@ class EMGMM(QtWidgets.QMainWindow):
 			if len(pts)>5: self.cengroups=pts[5]
 			else: self.cengroups=None
 
-			
+
 			self.neutralplot.setData(pts,self.wvssphsz.value)
 			self.wview3d.update()
 
 		except:
 			self.neutralplot.setData(None)
 			print(f"Neutral gaussian model missing ({self.gmm}/{self.currunkey}_model_gmm.txt)")
-			
+
 		# Decoder model for generating Gaussians
-		try: 
+		try:
 			self.decoder = tf.keras.models.load_model(f"{self.gmm}/{self.currunkey}_decoder.h5",compile=False)
-		except: 
+		except:
 			traceback.print_exc()
 			print(f"Run {self.gmm} -> {self.currunkey} results incomplete. No stored decoder found.",self)
 			self.set3dvis(1,0,0,0,0,1)
@@ -2440,12 +2490,12 @@ class EMGMM(QtWidgets.QMainWindow):
 			# m[2] is now (cols,center), normally a list, doesn't really need to be forced to numpy
 			#m[2]=np.array(m[2])		# latent space center
 			m[5]=np.array(m[5])		# list of point numbers in set
-		
+
 		if not os.path.exists(f"{self.gmm}/{self.currunkey}_aug.txt"): self.augment_mid()
 
 		# Augmented middle layer for every particle, this is 2 columns of PCA, N columns of latent vector, arbitrary columns with dim-reduced representations
 		self.wplot2d.del_shapes()
-		try: 
+		try:
 			self.midresult=np.loadtxt(f"{self.gmm}/{self.currunkey}_aug.txt").transpose()
 			self.data=self.midresult
 			self.wplot2d.set_data(self.data,"map",symsize=1,replace=True,quiet=True)
@@ -2458,7 +2508,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			traceback.print_exc()
 			print(f"Augmented middle layer missing ({self.gmm}/{self.currunkey}_aug.txt)")
 			self.set3dvis(1,0,0,0,0,1)
-		
+
 #		self.plot_mouse(None,(0,0))
 		self.wplot2d.updateGL()
 		self.update_maptable()
@@ -2513,35 +2563,35 @@ class EMGMM(QtWidgets.QMainWindow):
 	def add_gmm(self,clk=False):
 		"""Creates a new numbered gmm_XX folder"""
 		try: newgmm=num_path_new("gmm")
-		except: 
+		except:
 			showerror(f"Cannot create {newgmm}",self)
 			return
 		self.gmm=newgmm
 		ok=self.setgmm_refine(remove=True)
 		if ok: self.wlistgmm.addItem(newgmm)
-		
+
 	def setgmm_refine(self,clk=False,remove=False):
 		"""Allows the user to select the source data for a new gmm_XX folder.
-		if remove is set and the user hits cancel, the folder will be removed.""" 
+		if remove is set and the user hits cancel, the folder will be removed."""
 		self.jsparm=js_open_dict(f"{self.gmm}/0_gmm_parms.json")
-		
+
 		# double check if the user will be destroying results
 		if "refinepath" in self.jsparm:
 			ans=QtWidgets.QMessageBox.question(self,"Are you sure?",f"{self.gmm} has already been configured to work on {self.jsparm['refinepath']}. Continuing may invalidate current results. Proceed?")
 			if ans==QtWidgets.QMessageBox.No:
 				if remove: os.unlink(self.gmm)
 				return False
-			
+
 		# Get the name of an existing refinement
 		try:
 			rpath=os.path.relpath(str(QtWidgets.QFileDialog.getExistingDirectory(self,"Please select an existing refine_xx or r3d_xx folder to base the analysis on")))
 		except: return
-		if not os.path.isdir(rpath) : 
+		if not os.path.isdir(rpath) :
 			showerror("Invalid path")
 			if remove: os.unlink(self.gmm)
 			return False
 		self.jsparm["refinepath"]=rpath
-		
+
 		if rpath.startswith("refine_"):
 			### setup the folder
 			try:
@@ -2554,7 +2604,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			rparm=js_open_dict(f"{rpath}/0_refine_parms.json")
 			if rparm["breaksym"] : self.jsparm["sym"]="c1"
 			else: self.jsparm["sym"]=rparm["sym"]
-			
+
 			# Copy projections from refine folder
 			eprj=f"{rpath}/projections_{itr:02d}_even.hdf"
 			oprj=f"{rpath}/projections_{itr:02d}_odd.hdf"
@@ -2573,7 +2623,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			a=EMData(f"{rpath}/threed_{itr:02d}.hdf")
 			a.write_compressed(f"{self.gmm}/input_map.hdf",0,12)
 			self.jsparm["source_map"]=f"{rpath}/threed_{itr:02d}.hdf"
-			
+
 			# Copy mask from refine folder
 			a=EMData(f"{rpath}/mask_tight.hdf")
 			a.write_compressed(f"{self.gmm}/mask.hdf",0,8)
@@ -2594,7 +2644,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			rparm=js_open_dict(f"{rpath}/0_spa_params.json")
 			#if rparm["breaksym"] : self.jsparm["sym"]="c1"
 			#else: self.jsparm["sym"]=rparm["sym"]
-			
+
 			# Copy map from refine folder
 			a=EMData(f"{rpath}/threed_{itr:02d}.hdf")
 			a.write_compressed(f"{self.gmm}/input_map.hdf",0,12)
@@ -2605,10 +2655,10 @@ class EMGMM(QtWidgets.QMainWindow):
 			except:
 				self.jsparm["sym"]="c1"
 				print("symmetry missing, assuming C1")
-				
+
 			# make projection from threed
 			run(f"e2project3d.py {rpath}/threed_{itr:02d}.hdf --outfile {self.gmm}/proj_in.hdf --orientgen rand:n=500:phitoo=1 --sym c1 --parallel thread:5")
-			
+
 			# Copy mask from refine folder
 			a=EMData(f"{rpath}/mask_tight.hdf")
 			a.write_compressed(f"{self.gmm}/mask.hdf",0,8)
@@ -2660,7 +2710,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wedbox.setText(f'{self.jsparm.getdefault("boxsize",128)}')
 
 		return True
-	
+
 	def closeEvent(self,event):
 		E2saveappwin("e2gmm","main",self)
 
