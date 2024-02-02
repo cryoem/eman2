@@ -359,7 +359,7 @@ def rotpts(pts, ang, msk):
 	matrix=make_matrix(azp, altp, phip)
 	matrix=tf.transpose(matrix)
 	matrix=tf.reshape(matrix, shape=[-1, 3,3]) #### Here we get a batch_size x 3 x 3 matrix
-
+	
 	cnt=tf.reduce_sum(pts*m, axis=1)[:,None, :]
 	cnt=cnt/tf.reduce_sum(m)
 	pts_cnt=pts-cnt
@@ -1289,11 +1289,25 @@ def train_heterg_deconly(dcpx, xfsnp, allconf, pts, decode_model, params, imsk, 
 					cl+=tf.maximum(0,tf.math.reduce_std(conf)-.15)*.01
 					
 					## mask out the target columns based on --pas
+					
 					pout=decode_model(conf, training=True)
 					p0=tf.zeros((xf.shape[0],npt, 5))+pts
 					
-					## mask selected rows
-					pout=pout*imsk[None,:,None]
+					if options.rigidbody:
+						pout=rotpts(p0[:,:,:3], pout, imsk) 
+						pout=tf.concat([pout, p0[:,:,3:]], axis=2)
+						
+					else:
+						## mask selected rows
+						pout=pout*imsk[None,:,None]
+						pout=pout*pas
+						pout+=p0
+# 					
+# 					pout=decode_model(conf, training=True)
+# 					p0=tf.zeros((xf.shape[0],npt, 5))+pts
+# 					
+# 					## mask selected rows
+# 					pout=pout*imsk[None,:,None]
 					
 					if options.decoderext:
 						pout00=decoder00(conf, training=False)
@@ -1303,9 +1317,9 @@ def train_heterg_deconly(dcpx, xfsnp, allconf, pts, decode_model, params, imsk, 
 							
 						pout+=pout00
 					
-						
-					pout=pout*pas
-					pout+=p0
+# 						
+# 					pout=pout*pas
+# 					pout+=p0
 					
 					## finally generate images and calculate frc
 					imgs_cpx=pts2img(pout, xf)
@@ -1335,7 +1349,7 @@ def train_heterg_deconly(dcpx, xfsnp, allconf, pts, decode_model, params, imsk, 
 				if options.usetest==False or len(cost)<nbatch*.95:
 					cost.append(loss)
 					
-					if it%5==0:
+					if options.skipdec==False and it%2==0:
 						grad=gt.gradient(l, wts)
 						opt.apply_gradients(zip(grad, wts))
 					else:
@@ -1387,8 +1401,8 @@ def train_heterg_deconly(dcpx, xfsnp, allconf, pts, decode_model, params, imsk, 
 		allcost.append(np.mean(cost))
 		allconf=np.vstack(allconf1)
 		# allconf=allconf/np.std(allconf)*.1
-		sv=np.hstack([np.arange(len(allconf))[:,None], allconf])
-		np.savetxt(options.midout[:-4]+f"_{itr:03d}.txt", sv)
+		# sv=np.hstack([np.arange(len(allconf))[:,None], allconf])
+		# np.savetxt(options.midout[:-4]+f"_{itr:03d}.txt", sv)
 		
 	return allconf
 	
@@ -1470,14 +1484,11 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, imsk, option
 					pout=rotpts(p0[:,:,:3], pout, imsk) 
 					pout=tf.concat([pout, p0[:,:,3:]], axis=2)
 					
-					
-				## mask selected rows
-				pout=pout*imsk[None,:,None]
-			
-				
-				pout=pout*pas
-				
-				pout+=p0
+				else:
+					## mask selected rows
+					pout=pout*imsk[None,:,None]
+					pout=pout*pas
+					pout+=p0
 				
 				## finally generate images and calculate frc
 				imgs_cpx=pts2img(pout, xf)
@@ -1668,6 +1679,7 @@ def main():
 	parser.add_argument("--regmask", type=float,help="regularizer to enforce the structure to be unchanged outside the masked region. only useful if the mask need to be released at a later point. still under testing", default=0.0)
 	parser.add_argument("--usetest", action="store_true",help="use a separated test set and report loss. ", default=False)
 	parser.add_argument("--skipenc", action="store_true",help="skip the encoder training. ", default=False)
+	parser.add_argument("--skipdec", action="store_true",help="skip the decoder training. ", default=False)
 	parser.add_argument("--retraindec", type=int,help="retrain decoder after heterogeneity training. ", default=-1)
 	parser.add_argument("--pmout", type=str,help="write options to file", default=None)
 	parser.add_argument("--phantompts", type=str,help="load extra phatom points for gradient calculation.", default=None)
@@ -1839,11 +1851,12 @@ def main():
 			
 		save_ptcls_xform(xfsnp, raw_boxsz, options, frcs)
 	
-	useencoder=not options.skipenc
-	if not useencoder:
-		retraindec=options.retraindec=10
+	if options.skipenc or options.midin:
+		print("Skipping encoder")
+		useencoder=False
 	else:
-		retraindec=options.retraindec
+		useencoder=True
+	retraindec=options.retraindec
 		
 	#### Heterogeneity analysis from particles	
 	if options.heter:
@@ -1948,6 +1961,7 @@ def main():
 			else:
 				if options.midin:
 					allconf=np.loadtxt(options.midin)[:,1:].astype(floattype)
+					print(f"latent space coordinates loaded from {options.midin}. Shape {allconf.shape}")
 				else:
 					allconf=np.zeros((len(xfsnp), options.nmid), dtype=floattype)
 					allconf+=tf.random.normal(allconf.shape)*0.01
@@ -1956,7 +1970,7 @@ def main():
 				allconf=train_heterg_deconly(dcpx, xfsnp, allconf, pts, decode_model, params, imsk, options)
 			
 				
-			if options.decoderout!=None: 
+			if options.decoderout!=None and options.skipdec==False: 
 				if os.path.isfile(options.decoderout):
 					os.remove(options.decoderout)
 				decode_model.save(options.decoderout)

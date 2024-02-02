@@ -21,7 +21,7 @@ def main():
 	
 	logid=E2init(sys.argv)
 	
-	if len(args)==1:
+	if len(args)==1 and options.base==None:
 		## read from gmm_refine_patch in a single folder
 		path=args[0]
 		print("Reading from patch-wise refinement in",path)
@@ -57,12 +57,13 @@ def main():
 			wt.process_inplace("math.reciprocal", {"zero_to":0})
 			avg.mult(wt)
 			avg.write_image(f"{path}/threed_99_{eo}.hdf")
+			avg.write_image(f"{path}/threed_99_raw_{eo}.hdf")
 		
 		
 		if not options.skippp:
 			run(f"e2refine_postprocess.py --even {path}/threed_99_even.hdf --res 5 --tophat localwiener --thread 32 --setsf sf.txt --align")
 		
-	elif len(args)>1:
+	else:
 		print("Merging refinement results from multiple folders..")
 		if not options.base:
 			print("A global refinement folder (--base) required")
@@ -80,7 +81,7 @@ def main():
 				js=js_open_dict(f"{pt}/0_gmm_params.json")
 				mfile=js["mask"]
 				m=EMData(mfile)
-				print(f"Reading from {pt}, using mask file {mfile}")
+				print(f"Reading from {pt} {eo}, using mask file {mfile}")
 				m.process_inplace("threshold.binary",{"value":.5})
 				m.process_inplace("mask.addshells.gauss",{"val1":2,"val2":4})
 				e=EMData(f"{pt}/threed_raw_{eo}.hdf")

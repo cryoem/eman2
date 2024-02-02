@@ -24,6 +24,7 @@ def main():
 	oname=find_option(cmd, "--ptclsout")
 	dec=find_option(cmd, "--decoderout")
 	enc=find_option(cmd, "--encoderout")
+	midin=find_option(cmd, "--midin")
 	midout=find_option(cmd, "--midout")
 	citer=find_option(cmd, "--niter")
 	diter=find_option(cmd, "--retraindec")
@@ -31,12 +32,15 @@ def main():
 	path=pname[:pname.rfind('/')+1]
 	batch=options.batch
 	print("Writing tmp files in ",path)
+	# print(int(diter))
 	
 	rawcmd=args[0]
 	for rawiter in range(options.niter+1):
 		if midout and rawiter==options.niter:
 			rawcmd=rawcmd.replace(f"--niter {citer}", "--niter 0")
 			rawcmd=rawcmd.replace(f"--learnrate {learnrate}", "--learnrate 0")
+			if diter!=None and int(diter)>0:
+				rawcmd+=" --skipdec"
 			
 		lst=load_lst_params(pname)
 		print(f"List input {pname}, with {len(lst)} particles")
@@ -74,6 +78,9 @@ def main():
 			nbatch=ceil(len(lst)/batch)
 			
 		tmpfiles=[]
+		if midin!=None:
+			mid=np.loadtxt(midin)
+			print(f"load --midin from {midin}, shape {mid.shape}")
 		
 		for it in range(nbatch):
 			print("#######################")
@@ -85,20 +92,32 @@ def main():
 			elif options.subtilt:
 				ll=batches[it]
 			else:
-				ll=lst[it*batch:(it+1)*batch]
+				ll=lst[it*batch:(it+1)*batch]				
 				
 			print(f"{it}/{nbatch} batches, {len(ll)} particles")
 			tmplst=path+f'tmp_input_{it:03d}.lst'
 			tmpout=path+f'tmp_output_{it:03d}.lst'
 			tmpmid=path+f'tmp_mid_{it:03d}.txt'
 			save_lst_params(ll, tmplst)
-			tmpfiles.append([tmplst,tmpout, tmpmid])
-			
+			tmps=[tmplst,tmpout, tmpmid]
 			cc=rawcmd.replace(pname, tmplst)
 			if oname: cc=cc.replace(oname, tmpout)
 			if midout: cc=cc.replace(midout, tmpmid)
+			
+			if midin!=None:
+				tmpmidin=path+f'tmp_midin_{it:03d}.txt'
+				mm=mid[it*batch:(it+1)*batch,:]
+				np.savetxt(tmpmidin, mm)
+				tmps.append(tmpmidin)
+				cc=cc.replace(midin, tmpmidin)
+
+			tmpfiles.append(tmps)
+			
 			if options.load or rawiter>0: 
-				cc=cc+f" --encoderin {enc} --decoderin {dec}"
+				if enc!=None:
+					cc=cc+f" --encoderin {enc}"
+				if dec!=None:
+					cc=cc+f" --decoderin {dec}"
 					
 			run(cc)
 			
@@ -109,7 +128,7 @@ def main():
 			
 			midall=np.concatenate(midall)
 			midall[:,0]=np.arange(len(midall))
-			print(midall.shape)
+			print(f"final latent space saved to {midout}, shape {midall.shape}")
 			np.savetxt(midout, midall)
 				
 		if oname:

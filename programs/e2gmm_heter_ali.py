@@ -66,28 +66,32 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--path", type=str,help="path", default=None)
 	parser.add_argument("--mask", type=str,help="mask", default=None)
+	parser.add_argument("--iterid", type=int, help="iteration id for midall_xx.txt",default=0)
 	parser.add_argument("--niter", type=int, help="number of iteration",default=30)
 	parser.add_argument("--learnrate", type=float, help="learning rate",default=1e-3)
+	parser.add_argument("--rigidbody", action="store_true", default=False ,help="for rigid body motion decoder")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
 	
 	logid=E2init(sys.argv)
 	path=options.path
-	itr=0
-	itnew=1
+	itr=options.iterid
+	itnew=itr+1
 	
 	for eo in ["even", "odd"]:
 		print(f"Realigning {eo}...")
 		pts=np.loadtxt(f"{path}/model_{itr:02d}_{eo}.txt")
 
 		imsk=make_mask_gmm(options.mask, pts).numpy()
-		#plt.scatter(p[:,1], p[:,2], c=imsk,  alpha=.2, cmap="RdBu_r")
 		
-		decode_model=tf.keras.models.load_model(f"{path}/dec_{eo}.h5",compile=False,custom_objects={"ResidueConv2D":ResidueConv2D})
+		if itr==0:
+			decname=f"{path}/dec_{eo}.h5"
+		else:
+			decname=f"{path}/dec_{itr:02d}_{eo}.h5"
+			
+		decode_model=tf.keras.models.load_model(decname,compile=False,custom_objects={"ResidueConv2D":ResidueConv2D})
 		midraw=np.loadtxt(f"{path}/midall_{itr:02d}_{eo}.txt")[:,1:]
-
-		pts=np.loadtxt(f"{path}/model_{itr:02d}_{eo}.txt")
 		
 		pfile=f"{path}/ptcls_{itr:02d}_{eo}.lst"
 		lst=load_lst_params(pfile)
@@ -111,10 +115,15 @@ def main():
 			xfvar=tf.Variable(xf)
 			opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate) 
 			p0=tf.constant(tf.zeros((xf.shape[0],pts.shape[0], 3))+pts[:,:3])
-
-			pout=decode_model(conf)[:,:,:3]+p0
+			
+			if options.rigidbody:
+				pout=decode_model(conf)
+				pout=rotpts(p0[:,:,:3], pout, imsk) 
+				
+			else:
+				pout=decode_model(conf)[:,:,:3]+p0
+				
 			pj0=xf2pts_mult(pout, xf)
-
 
 			cost=[]
 			for it in range(niter):
@@ -123,8 +132,11 @@ def main():
 					dpj=pj1-pj0
 					dpj=tf.reduce_sum(dpj**2, axis=2)*imsk
 					# print(dpj.shape)
-					loss1=tf.reduce_sum(dpj, axis=1)
-					loss=tf.reduce_mean(loss1)*100
+					# loss1=tf.reduce_sum(dpj, axis=1)
+					# loss=tf.reduce_mean(loss1)
+					loss1=tf.reduce_mean(dpj, axis=1)
+					loss=tf.reduce_mean(tf.math.sqrt(loss1))
+					loss*=rawbox*e["apix_x"]
 					if it==0: loss0=loss
 
 
@@ -132,7 +144,7 @@ def main():
 				opt.apply_gradients([(grad, xfvar)])
 				cost.append(loss)
 
-			sys.stdout.write("\r batch {}/{}, loss {:.3f} -> {:.3f}   ".format(len(xfvs), nbatch, loss0, loss))
+			sys.stdout.write("\r batch {}/{}, RMSD loss {:.3f} -> {:.3f} A  ".format(len(xfvs), nbatch, loss0, loss))
 			sys.stdout.flush()
 
 			xfvs.append(xfvar.numpy())
