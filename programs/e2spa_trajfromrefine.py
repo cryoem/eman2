@@ -45,7 +45,7 @@ def main():
 	
 	pmfile=os.path.join(options.path,"refinestats.txt")
 	np.savetxt(pmfile, params)
-	print("Refine stats saved to {}")
+	print("Refine stats saved to {}".format(pmfile))
 
 	print("Generating eigen-trajectory...")
 	

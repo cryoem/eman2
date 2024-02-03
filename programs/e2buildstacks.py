@@ -70,7 +70,8 @@ def main():
 	parser.add_argument("--tltang",type=str,help="a text file for tilt angle. will sort the images in each stack accrodingly", default=None)
 
 	(options, args) = parser.parse_args()
-
+	logid=E2init(sys.argv,options.ppid)
+	
 	if options.output==None:
 		if options.guess or options.mdoc:
 			pass
@@ -385,7 +386,7 @@ def main():
 				n+=1
 
 		if options.verbose : print(n," total images written to ",options.output)
-
+		E2end(logid)
 
 if __name__ == "__main__":
 	main()

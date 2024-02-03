@@ -135,14 +135,16 @@ def main():
 				o=np.round(p).astype(int)
 				o=np.clip(o, 0, len(m)-1)
 				v=m[o[:,0], o[:,1], o[:,2]]
-				imsk=v.astype(float)
+				
 				if options.masksigma:
+					imsk=v.astype(float).copy()
 					iz=imsk==0
 					imsk[iz]=1
 					imsk=1./imsk
 					imsk[iz]=0
 					pts[:,4]=pts[:,4]*imsk
-				elif options.maskamp:
+				if options.maskamp:
+					imsk=v.astype(float).copy()
 					pts[:,3]=pts[:,3]*imsk
 					
 				np.savetxt(f"{path}/model_{it0:02d}_{eo}.txt", pts)
