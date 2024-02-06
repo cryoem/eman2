@@ -103,13 +103,14 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.mfile=self.menuBar().addMenu("File")
 #		self.mfile_save_processor=self.mfile.addAction("Save Processor Param")
 		self.mfile_save_full=self.mfile.addAction("Save Full Annotation")
-		self.mfile_quit=self.mfile.addAction("Quit")
+		self.mfile_del_all=self.mfile.addAction("Delete Full Annotation")
+		self.mfile_quit=self.mfile.addAction("Close All Windows")
 
 		self.medit=self.menuBar().addMenu("Edit")
 		self.medit_undo=self.medit.addAction("Undo")
 		self.medit_undo.setEnabled(False)
 
-
+		self.mfile_del_all.triggered[bool].connect(self.menu_file_del_all)
 		self.mfile_quit.triggered[bool].connect(self.menu_file_quit)
 		self.medit_undo.triggered[bool].connect(self.menu_edit_undo)
 
@@ -1034,10 +1035,17 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 				l.write_image(outfile,-1)
 				#r=self.data.get_clip(Region(x-bs//2,y-bs//2,z-bz//2,bs,bs,bz))
 		self.clear_shapes()
-
 		return
 
-	def annotate_from_curve(self, insert=None):
+	def annotate_from_curve(self,insert=None):
+
+		if self.img_view.brush_mode == 0:
+			self.annotate_from_curve_2D(insert)
+		else:
+			self.annotate_from_curve_3D()
+		self.clear_shapes(reset_boxes_list=False)
+
+	def annotate_from_curve_2D(self, insert=None):
 		self.save_current_state()
 		#TODO: Clear points messing with annotate mechanism
 		self.x = self.img_view.get_data().get_xsize()
@@ -1046,7 +1054,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		tsz=max(self.x,self.y)
 		mask = np.zeros((self.x,self.y))
 		#output=EMData(self.x, self.y, self.z)
-
 		def trapez(y,y0,w):
 			return np.clip(np.minimum(y+1+w/2-y0, -y+1+w/2+y0),0,1)
 
@@ -1082,8 +1089,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			# to avoid parts outside of the picture
 			mask = np.logical_and.reduce((yy >= rmin, yy < rmax, vals > 0))
 			return (yy[mask].astype(int), xx[mask].astype(int), vals[mask])
-
-
 		def is_point_in_polygon(point,vertices):
 			points = np.array([[x[0],x[1]] for x in vertices])
 			poly_path = mplPath.Path(points)
@@ -1150,7 +1155,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 				return
 			rr, cc = polygon(self.contour.points)
 			print(self.contour.points)
-			#mask[rr,cc]=int(self.ct_ann_class.text())
 			mask[rr,cc] = int(self.get_current_class())
 
 		elif self.fill_type == "contour_nofill":
@@ -1172,32 +1176,193 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 				except:
 					continue
-			#mask[r,c]=int(self.ct_ann_class.text())
 			mask[r,c] = int(self.get_current_class())
 
 		mask =  np.rot90(np.fliplr(mask))
 
 		if insert is None:
 			print("No insertion")
-			ann = to_numpy(self.img_view.get_annotation())
-			print("Ann shape",mask.shape)
-			ann += mask
+			ins_img = to_numpy(self.img_view.get_annotation())
+			self.img_view.annotation = from_numpy(np.where(mask>0,mask,ins_img))
 			self.img_view.force_display_update(set_clip=1)
 			self.img_view.updateGL()
 		else:
 			center = self.zt_spinbox.value()
 			if center == -1:
 				center = self.nz//2
-			ann = self.img_view.get_full_annotation().get_clip(Region(0,0,center+int(insert),self.x,self.y,1)).numpy()
-			ann += mask
-			#print("Insert clip to",center+insert)
-
-			xform=Transform({"type":"eman","alt":self.img_view.alt,"az":self.img_view.az,"tx":self.img_view.get_full_annotation()["nx"]//2,"ty":self.img_view.get_full_annotation()["ny"]//2,"tz":center+int(insert)})
-			ann_em = from_numpy(ann)
-			self.img_view.get_full_annotation().set_rotated_clip(xform,ann_em)
-			#self.img_view.get_full_annotation().insert_clip(from_numpy(ann),[0,0,center+int(insert)])
-			self.img_view.force_display_update(set_clip=0)
+			ins_img = to_numpy(self.img_view.get_full_annotation().get_clip(Region(0,0,center+int(insert),self.x,self.y,1)))
+			ann = from_numpy(np.where(mask>0,mask,ins_img))
+			xform=Transform({"type":"eman","alt":self.img_view.alt,"az":self.img_view.az,"tx":self.img_view.nx//2,"ty":self.img_view.ny//2,"tz":self.img_view.nz//2+int(insert)})
+			ins_img=to_numpy(self.img_view.get_full_annotation().get_rotated_clip(xform,(self.img_view.nx,self.img_view.ny,1),0))
+			ann = from_numpy(np.where(mask>0,mask,ins_img))
+			self.img_view.get_full_annotation().set_rotated_clip(xform,ann)
+			self.img_view.force_display_update()
 			self.img_view.updateGL()
+
+
+
+	def annotate_from_curve_3D(self):
+		self.save_current_state()
+		def calc_middle_pts(start,end,interval):
+			dist = np.linalg.norm(np.array(end)-np.array(start))
+			if interval <1:
+				interval=1
+			no_pts = floor(dist//interval)
+			if no_pts == 0:
+				return []
+			n_vec = (np.array(end)-np.array(start))/no_pts
+			pts_l = []
+			for i in range(no_pts):
+				pts_l.append(start+n_vec*i)
+			pts_l.append(end)
+			return pts_l
+		def is_point_in_polygon(point,vertices):
+			points = np.array([[x[0],x[1]] for x in vertices])
+			poly_path = mplPath.Path(points)
+			return poly_path.contains_point(point)
+
+
+		def find_bounding_square_box(vertices):
+		# Initialize min and max coordinates for x and y
+			min_x, min_y = float('inf'), float('inf')
+			max_x, max_y = float('-inf'), float('-inf')
+
+			# Iterate through each vertex to find min and max coordinates for x and y
+			for x, y,_,_ in vertices:
+				min_x, max_x = min(min_x, x), max(max_x, x)
+				min_y, max_y = min(min_y, y), max(max_y, y)
+
+			# Determine the length of the side of the square
+			side_length = max(max_x - min_x, max_y - min_y) + 2
+			if side_length % 2 == 1:
+				side_length = side_length+1
+
+			# Define the bottom-left and top-right corners of the square
+			bottom_left = (min_x, min_y)
+			top_right = (min_x + side_length, min_y + side_length)
+			mid = (int(min_x) + side_length//2, int(min_y) + side_length//2)
+			return mid,int(side_length)
+		#
+		# def find_bounding_box(vertices):
+		# # Initialize min and max coordinates for x and y
+		# 	min_x, min_y = float('inf'), float('inf')
+		# 	max_x, max_y = float('-inf'), float('-inf')
+		#
+		# 	# Iterate through each vertex to find min and max coordinates for x and y
+		# 	for x, y,_,_ in vertices:
+		# 		min_x, max_x = min(min_x, x), max(max_x, x)
+		# 		min_y, max_y = min(min_y, y), max(max_y, y)
+		#
+		# 	# Determine the length of the side of the square
+		# 	side_length = max(max_x - min_x, max_y - min_y)
+		# 	if side_length % 2 == 1:
+		# 		side_length = side_length+1
+		#
+		# 	# Define the bottom-left and top-right corners of the square
+		# 	bottom_left = (min_x, min_y)
+		# 	top_right = (max_x, max_y)
+		# 	mid = ((max_x+min_x)//2, (max_y+min_y)//2)
+		# 	return mid, max_x-min_x,max_y-min_y
+
+		def polygon(points):
+			center, side_length = find_bounding_square_box(points)
+			min_r = int(min([x[0] for x in points]))
+			max_r = int(max([x[0] for x in points]))
+			min_c = int(min([x[1] for x in points]))
+			max_c = int(max([x[1] for x in points]))
+			rr = []
+			cc = []
+
+			for r in range(min_r,max_r+1):
+				for c in range(min_c,max_c+1):
+					if is_point_in_polygon([r,c],points):
+						rr.append(r-min_r)
+						cc.append(c-min_c)
+						# rr.append(r)
+						# cc.append(c)
+			return np.array(rr, dtype=np.intp), np.array(cc, dtype=np.intp)
+			#mask =  np.rot90(np.fliplr(mask))
+
+		def define_eroded_volume(middle_image, z = None):
+
+			x, y = middle_image.shape[0],middle_image.shape[0]
+			if z is None:
+				z=middle_image.shape[0]
+			vol = np.zeros((z,x,y))
+			center_slice = z // 2
+			for i in range(z):
+				vol[i,:, :] = ndi.binary_erosion(middle_image,iterations=abs(z//2-i))
+			vol[z//2,:, :] = middle_image
+			return vol
+
+
+		value = int(self.get_current_class())
+		self.w_line=15
+		if self.fill_type == "curve":
+			if len(self.curve.points) < 2:
+				print("Need at least 2 points to draw a line")
+				return
+			self.w_line = int(self.tx_line_width.text())//2
+
+			pts_l = []
+
+			for i in range(len(self.curve.points)-1):
+				for p in calc_middle_pts(self.curve.points[i][0:3],self.curve.points[i+1][0:3],self.w_line/10):
+					pts_l.append(p)
+
+		elif self.fill_type == "contour_fill":
+			if len(self.contour.points) < 3:
+				print("Need at least 3 points for a contour")
+				return
+
+			center, side_length = find_bounding_square_box(self.contour.points)
+			print("Center,side_length", center, side_length)
+
+			a = np.zeros((side_length,side_length))
+			rr,cc = polygon(self.contour.points)
+			a[rr,cc] = 1
+			a = np.rot90(np.fliplr(a))
+			fill_vol = define_eroded_volume(a,self.img_view.nz)
+
+			xrot, yrot, zrot = self.img_view.reverse_transform_point([center[0],center[1],self.img_view.nz//2+self.img_view.zpos], self.img_view.get_xform())
+			xform=Transform({"type":"eman","alt":self.img_view.alt,"az":self.img_view.az,"tx":self.img_view.nx//2+xrot,"ty":self.img_view.ny//2+yrot,"tz":self.img_view.nz//2+zrot})
+			subvol=self.img_view.get_full_annotation().get_rotated_clip(xform,(side_length,side_length,self.img_view.nz),0)
+			self.img_view.full_annotation.set_rotated_clip(xform,from_numpy(np.where(fill_vol>0,value,to_numpy(subvol))))
+			self.img_view.force_display_update()
+			self.img_view.updateGL()
+			return
+
+
+
+		else:
+			anchor_l = self.contour.points
+			anchor_l.append(self.contour.points[0])
+			self.w_line = int(self.ct_line_width.text())//2
+			if self.w_line <5:
+				interval = self.w_line
+			elif self.w_line <20:
+				interval = self.w_line/2
+			else:
+				interval = self.w_line/4
+			pts_l = []
+
+			for i in range(len(anchor_l)-1):
+
+				for p in calc_middle_pts(anchor_l[i][0:3],anchor_l[i+1][0:3],interval):
+					pts_l.append(p)
+
+
+		for pts in pts_l:
+			xrot, yrot, zrot = self.img_view.reverse_transform_point([pts[0],pts[1],self.img_view.nz//2+pts[2]], self.img_view.get_xform())
+			xform=Transform({"type":"eman","alt":self.img_view.alt,"az":self.img_view.az,"tx":self.img_view.nx//2+xrot,"ty":self.img_view.ny//2+yrot,"tz":self.img_view.nz//2+zrot})
+			subvol=self.img_view.get_full_annotation().get_rotated_clip(xform,(2*self.w_line,2*self.w_line,2*self.w_line),0)
+			#subvol = from_numpy(np.ones((2*self.w_line,2*self.w_line,2*self.w_line)))
+			fill_vol = subvol.process("mask.paint",{"x":self.w_line,"y":self.w_line,"z":self.w_line,"r1":self.w_line,"v1":value,"r2":self.w_line,"v2":0})
+			#self.img_view.full_annotation.set_rotated_clip(xform,value*subvol.process("threshold.binaryrange",{"high":value+0.1,"low":value-0.1}))
+			self.img_view.full_annotation.set_rotated_clip(xform,fill_vol)
+		self.img_view.force_display_update()
+		self.img_view.updateGL()
+
 
 
 
@@ -1388,12 +1553,17 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 				if self.basic_tab_num == 3:
 					self.update_img_view_box()
 				elif self.basic_tab_num == 2:
-					self.annotate_from_curve(insert=self.previous_z)
-					self.clear_shapes(reset_boxes_list=False)
-					pass
+					if self.img_view.brush_mode == 0:
+						self.annotate_from_curve(insert=self.previous_z)
+						self.clear_shapes(reset_boxes_list=False)
+					else:
+						pass
 				elif self.basic_tab_num == 1:
 					try:
-						self.annotate_from_curve(insert=self.previous_z)
+						if self.img_view.brush_mode == 0:
+							self.annotate_from_curve(insert=self.previous_z)
+						else:
+							pass
 					except:
 						pass
 		else:
@@ -1713,6 +1883,10 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		info.close()
 
 	#Function from system menu
+	def menu_file_del_all(self):
+		self.img_view.full_annotation = EMData(self.nx,self.ny,self.nz)
+		self.img_view.force_display_update()
+		self.img_view.updateGL()
 	def menu_file_quit(self):
 		self.close()
 	def menu_edit_undo(self):
@@ -4408,6 +4582,10 @@ class Statistics_Tab(QtWidgets.QWidget):
 					a = from_numpy(obj)
 					proj = a.process("misc.directional_sum",{"axis":"z"}).process("threshold.binary",{"value":0.1})
 					im = proj.numpy()
+				# sx = ndi.sobel(im, axis=0, mode='constant')
+				# sy = ndi.sobel(im, axis=1, mode='constant')
+				# sob = np.hypot(sx, sy)
+				# from_numpy(sob).write_image('peri_temp_2.hdf')
 				peri_temp = self.calc_perimeter(im)
 				print("Largest Perimeter of Obj",i,":", peri_temp, "pixel")
 				print("Largest Perimeter of Obj",i,":", peri_temp*apix,"A")
@@ -4430,6 +4608,9 @@ class Statistics_Tab(QtWidgets.QWidget):
 				if cond:
 					newdata[i, j] = 0
 		return np.count_nonzero(newdata)
+
+
+
 
 class Specific_Tab(QtWidgets.QWidget):
 	def __init__(self,target) :
