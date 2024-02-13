@@ -188,6 +188,8 @@ class GUIFourierSynth(QtWidgets.QWidget):
 		self.cbtargfn.addItem("sin bad f2")
 		self.cbtargfn.addItem("0 phase")	#15
 		self.cbtargfn.addItem("rand phase")
+		self.cbtargfn.addItem("Gauss LP 1")
+		self.cbtargfn.addItem("Gauss LP 2")
 		self.hbl1.addWidget(self.cbtargfn)
 
 		self.bsound=QtWidgets.QPushButton("Play")
@@ -388,6 +390,14 @@ class GUIFourierSynth(QtWidgets.QWidget):
 			nsin=int(self.vnsin.getValue())
 			for i in range(nsin+1):
 				self.wpha[i].setValue(random.uniform(-180.,180.),1)
+		elif index==17:		# Gauss LP1
+			nsin=int(self.vnsin.getValue())
+			for i in range(nsin+1):
+				self.wamp[i].setValue(self.wamp[i].getValue()*exp(-(i*2/nsin)**2),1)
+		elif index==18:		# Gauss LP2
+			nsin=int(self.vnsin.getValue())
+			for i in range(nsin+1):
+				self.wamp[i].setValue(self.wamp[i].getValue()*exp(-(i*8/nsin)**2),1)
 		else :
 			nx=int(self.vcell.getValue())
 			x=np.arange(0,1.0,1.0/nx)
