@@ -153,7 +153,7 @@ class Orientations():
 	def __len__(self): return self._data.shape[0]
 
 	def _coerce_tensor(self):
-		if not isinstance(self._data,tf.Tensor): self._data=tf.constant(self._data)
+		if not isinstance(self._data,tf.Tensor): self._data=tf.constant(self._data,tf.float32)
 
 	def _coerce_numpy(self):
 		if isinstance(self._data,tf.Tensor): self._data=self._data.numpy()
@@ -235,7 +235,7 @@ x,y,z are ~-0.5 to ~0.5 (typ) and amp is 0 to ~1. A scaling factor (value -> pix
 		self._data[key]=value
 
 	def _coerce_tensor(self):
-		if not isinstance(self._data,tf.Tensor): self._data=tf.constant(self._data)
+		if not isinstance(self._data,tf.Tensor): self._data=tf.constant(self._data,tf.float32)
 
 	def _coerce_numpy(self):
 		if isinstance(self._data,tf.Tensor): self._data=self._data.numpy()
@@ -251,10 +251,13 @@ x,y,z are ~-0.5 to ~0.5 (typ) and amp is 0 to ~1. A scaling factor (value -> pix
 		"""
 		self._coerce_tensor()
 
-		proj=tf.zeros((len(orts),boxsize,boxsize))		# projections
+#		proj=tf.zeros((len(orts),boxsize,boxsize))		# projections
+		proj=tf.zeros((boxsize,boxsize))		# projections
+		proj2=[]
 		mx=orts.to_mx2d()
 
 		# iterate over projections
+		# TODO - at some point this outer loop should be converted to a tensor axis for better performance
 		for j in range(len(orts)):
 			xfgauss=tf.einsum("ij,kj->ki",mx[:,:,j],self._data[:,:3])	# rotated Gaussian coordinates for projection j
 			if txty is not None: xfgauss+=txty[:,:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
@@ -264,31 +267,21 @@ x,y,z are ~-0.5 to ~0.5 (typ) and amp is 0 to ~1. A scaling factor (value -> pix
 			xfgaussi=tf.cast(xfgaussf,tf.int32)	# integer index
 			xfgaussf=xfgauss-xfgaussf				# remainder used for bilinear interpolation
 
+			# print(xfgaussf,xfgaussi)
+			# print(xfgaussf.shape,xfgaussi.shape,self._data.shape,self._data[:,3].shape)
 			# messy tensor math here to implement bilinear interpolation
-			bamp0=self._data[:,4]*(1.0-xfgaussf[:,:,0])*(1.0-xfgaussf[:,:,1])	#0,0
-			bamp1=self._data[:,4]*(xfgaussf[:,:,0])*(1.0-xfgaussf[:,:,1])		#1,0
-			bamp2=self._data[:,4]*(xfgaussf[:,:,0])*(xfgaussf[:,:,1])			#1,1
-			bamp3=self._data[:,4]*(1.0-xfgaussf[:,:,0])*(xfgaussf[:,:,1])		#0,1
-			bampall=tf.concat([bamp0,bamp1,bamp2,bamp3],1)
-			bposall=tf.concat([xfgaussi,xfgaussi+(1,0),xfgaussi+(1,1),xfgaussi+(0,1)],1)
-			proj=tf.stack([tf.tensor_scatter_nd_add(proj[i],bposall[i],bampall[i]) for i in range(proj.shape[0])])
+			bamp0=self._data[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])	#0,0
+			bamp1=self._data[:,3]*(xfgaussf[:,0])*(1.0-xfgaussf[:,1])		#1,0
+			bamp2=self._data[:,3]*(xfgaussf[:,0])*(xfgaussf[:,1])			#1,1
+			bamp3=self._data[:,3]*(1.0-xfgaussf[:,0])*(xfgaussf[:,1])		#0,1
+			bampall=tf.concat([bamp0,bamp1,bamp2,bamp3],0)  # TODO: this would be ,1 with the loop subsumed
+			bposall=tf.concat([xfgaussi,xfgaussi+(1,0),xfgaussi+(1,1),xfgaussi+(0,1)],0) # TODO: this too
+			proj2.append(tf.tensor_scatter_nd_add(proj,bposall,bampall))
 
-		return proj
-
-
-	def spinvec_to_mx(self,xforms):
-		"""This will convert an Nx3 array of "spin vectors" into an Nx4x2 tensor, which may be re-used
-		to rotate a set of Gaussian points into many different 2-D projection orienations for use with
-		to_tfimages(). The spin vector is an x/y/z vector where the vector direction denotes the spin
-		axis and the length of the vector denotes the amount of rotation. A length of 1 will correspond
-		to a 2*pi rotation to make it more compatible with deep learning. This is very similar to a
-		quaternion, and can be easily converted into one by converting the X/Y/Z vector length:
-		len'=sin(2*pi*len/2) and computing a w such that the quaternion has unit length"""
-		pass
+		return tf.stack(proj2)
+		#proj=tf.stack([tf.tensor_scatter_nd_add(proj[i],bposall[i],bampall[i]) for i in range(proj.shape[0])])
 
 
-	def to_tfimages(self,mx):
-		pass
 
 
 def tf_set_device(dev=0,maxmem=4096):
@@ -410,9 +403,10 @@ FRC_RADS={}		# dictionary (cache) of constant tensors of size ny/2+1,ny containi
 #TODO iterating over the images is handled with a python for loop. This may not be taking great advantage of the GPU (just don't know)
 # two possible approaches would be to add an extra dimension to rad_img to cover image number, and handle the scatter_nd as a single operation
 # or to try making use of DataSet. I started a DataSet implementation, but decided it added too much design complexity
-def tf_frc(ima,imb):
-	"""Computes the pairwise FRCs between two stacks of complex images. Returns a list of 1D FSC tensors."""
+def tf_frc(ima,imb,avg=False):
+	"""Computes the pairwise FRCs between two stacks of complex images. Returns a list of 1D FSC tensors or if sum is set, the average"""
 	if ima.dtype!=tf.complex64 or imb.dtype!=tf.complex64 : raise Exception("tf_fsc requires FFTs")
+	if tf.rank(ima)<3 or tf.rank(imb)<3 or ima.shape != imb.shape: raise Exception("tf_fsc works on stacks of FFTs not individual images, and the shape of both inputs must match")
 
 	global FRC_RADS
 #	global FRC_NORM		# we don't actually need this unless we want to compute uncertainties (number of points at each radius)
@@ -447,7 +441,7 @@ def tf_frc(ima,imb):
 	frc=[]
 	for i in range(nimg):
 		zero=tf.zeros([nr])
-#		print(zero.shape,rad_img.shape,imabr[i].shape)
+#		print(zero.shape,rad_img.shape,imabr.shape)
 		cross=tf.tensor_scatter_nd_add(zero,rad_img,imabr[i])	#start with zero when we add the real component
 		cross=tf.tensor_scatter_nd_add(cross,rad_img,imabi[i])	#add the imaginary component to the real
 
@@ -459,7 +453,8 @@ def tf_frc(ima,imb):
 
 		frc.append(cross/tf.sqrt(aprd*bprd))
 
-	return frc
+	if avg: return tf.math.reduce_mean(frc,1)
+	else: return frc
 
 FSC_REFS={}
 def tf_fsc(ima,imb):
