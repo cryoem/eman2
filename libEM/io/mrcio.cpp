@@ -169,11 +169,7 @@ void MrcIO::init()
 			mrch.zlen = 1.0;
 		}
 
-		if (mrch.nlabels > 0) {
-			if (string(mrch.labels[0],3) == "Fei") {
-				isFEI = true;
-			}
-		}
+		isFEI = (string(mrch.exttyp,3) == "FEI");
 
 		is_transpose = (mrch.mapc == 2 && mrch.mapr == 1);
 
