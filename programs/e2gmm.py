@@ -1023,6 +1023,45 @@ class EMGMM(QtWidgets.QMainWindow):
 			else:
 				self.display_dynamic(None)
 #				self.wview3d.updateGL()
+		elif len(self.maplist.selectedItems())==2:
+			dim=self.currun.get("dim",4)
+			key1=self.maplist.selectedItems()[0].text()
+			smap1=self.curmaps[key1]
+			ptdist1=smap1[5]
+			if len(ptdist1)>1000: ptdist1=ptdist1[::len(ptdist1)//1000]		# We don't really need every point to get a pretty good average position for the set
+			latent1=np.mean(self.midresult.transpose()[ptdist1,2:2+dim],0,keepdims=True)# the mean latent vector over selected points
+			gauss1=self.decoder(latent1,0).numpy()[0].transpose()
+
+			key2=self.maplist.selectedItems()[1].text()
+			smap2=self.curmaps[key2]
+			ptdist2=smap2[5]
+			if len(ptdist2)>1000: ptdist2=ptdist2[::len(ptdist2)//1000]		# We don't really need every point to get a pretty good average position for the set
+			latent2=np.mean(self.midresult.transpose()[ptdist2,2:2+dim],0,keepdims=True)		# the mean latent vector over selected points
+			gauss2=self.decoder(latent2,0).numpy()[0].transpose()
+			if latent1 is not None and latent2 is not None:
+				gauss = np.zeros_like(gauss1)
+				gauss[:3] = gauss1[:3] + (gauss2[:3] - gauss1[:3])/2 #Location of the comparison model is the mid point of two models.
+				box=int(self.wedbox.text())
+				gauss[:3]*=box
+				gauss[2]*=-1.0
+				gauss[1]*=-1.0
+				if not butval(self.wbutpos):
+					gauss[:3]=self.model[:3]
+
+				distances = []
+				for point1, point2 in zip(gauss1.transpose(), gauss2.transpose()):
+					x1, y1, z1, a1 = point1
+					x2, y2, z2, a2 = point2
+					distance = sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2 + (a2 - a1) ** 2) #Amplitude of gaussians are the difference between the two comparing models.
+					distances.append(distance)
+				gauss[3] = np.array(distances)/max(distances) #distance between points normalize to range[0,1]
+				if not butval(self.wbutamp):
+					pass
+				self.gaussplot.setData(gauss,self.wvssphsz.value)
+				self.display_dynamic(None)
+				self.wview3d.updateGL()
+
+
 		else:
 			self.display_dynamic(None)
 

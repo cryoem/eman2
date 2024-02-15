@@ -41,8 +41,6 @@ from matplotlib.patches import Circle
 import matplotlib.path as mplPath
 import matplotlib.pyplot as plt
 
-
-
 def main():
 	usage="""annotate tomograms in a folder. annotated images will be saved in ./segs folder.
 	 still developing
@@ -59,9 +57,6 @@ def main():
 	parser.add_argument("--zthick",type=int, help="Zthickness for Region I/O. -1 reads full z. Default=0 reading a single central slice.", default=0)
 	parser.add_argument("--no_tmp",action="store_true", help="DO NOT saving temporary file for undo function. Make the program faster when handle big volume. Default=False.", default=False)
 
-	#parser.add_argument("--alltomograms",default=False,help="Process all tomograms from tomograms folder")
-	#parser.add_argument("--boxsize","-b",type=int,help="Box size in pixels",default=-1)
-
 	(options, args) = parser.parse_args()
 
 	#
@@ -69,17 +64,8 @@ def main():
 	# 	print("INPUT ERROR: You must specify an image to display.")
 	# 	sys.exit(1)
 
-
-	#img = args[0]
-
-	#imghdr = EMData(img,0,True)
-	#options.apix = imghdr['apix_x']
 	app = EMApp()
 	awin = EMAnnotateWindow(app,options)
-
-
-
-
 	awin.resize(1120,720)
 	awin.show()
 
@@ -101,20 +87,17 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 		#System Menu
 		self.mfile=self.menuBar().addMenu("File")
-#		self.mfile_save_processor=self.mfile.addAction("Save Processor Param")
 		self.mfile_save_full=self.mfile.addAction("Save Full Annotation")
-		self.mfile_quit=self.mfile.addAction("Quit")
+		self.mfile_del_all=self.mfile.addAction("Delete Full Annotation")
+		self.mfile_quit=self.mfile.addAction("Close All Windows")
 
 		self.medit=self.menuBar().addMenu("Edit")
 		self.medit_undo=self.medit.addAction("Undo")
 		self.medit_undo.setEnabled(False)
 
-
+		self.mfile_del_all.triggered[bool].connect(self.menu_file_del_all)
 		self.mfile_quit.triggered[bool].connect(self.menu_file_quit)
 		self.medit_undo.triggered[bool].connect(self.menu_edit_undo)
-
-
-
 
 		self.tom_folder = options.folder
 		self.seg_folder = options.seg_folder
@@ -127,18 +110,11 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			print("Directory",self.seg_folder,"already existed. Continue")
 			pass
 
-
-
-
-
 		self.tomogram_list = QtWidgets.QListWidget()
 		self.tom_file_list = []
 		self.seg_grps = []
 
 		self.tomo_tree = QtWidgets.QTreeWidget()
-
-
-
 
 		if len(self.tom_folder)>0:
 			tom_ls = sorted(os.listdir(self.tom_folder))
@@ -158,19 +134,13 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 					self.tom_file_list.append(file_name)
 				else:
 					print(file_name,"is not a valid file_name. Pass")
-			#print(os.path.basename(options.tomos))
-			# self.tomogram_list.addItem(os.path.basename(file_name))
+
 
 		print("Self.tom_file_list",self.tom_file_list)
-
-
-
-
 		for t in range(len(self.tom_file_list)):
 			file_name = self.tom_file_list[t]
 			if t == 0: #FIRST ITEM OF THE TREE
 				self.data_file = str(os.path.join(self.tom_folder,file_name))
-				# self.data_file = str(os.path.join(self.tom_folder,self.tomogram_list.item(0).text()))
 				hdr=EMData(self.data_file, 0,True)
 
 				self.nx = hdr["nx"]
@@ -195,9 +165,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 					f = open(self.seg_info_path, 'x')
 				except:
 					print("Info file for the first one already exists. Continue ")
-			# self.tomogram_list.addItem(file_name)
-
-
 
 			tomo_tree_item = QtWidgets.QTreeWidgetItem([file_name])
 			self.tomo_tree.addTopLevelItem(tomo_tree_item)
@@ -235,23 +202,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		#Need to copy header to annotation file
 		#Need to call garbage collector to remove trash from buffer memory
 
-
-
-		# self.seg_path = os.path.join(self.seg_folder,self.seg_grps[0].checkedButton().text())
-		# print("Self.seg_path",self.seg_path)
-
-		#self.seg_info_path = os.path.join(self.seg_folder,'info',self.tomogram_list.item(0).text()[0:-4]+"_seg_info.json")
-		# self.seg_info_path = os.path.join(self.seg_folder,self.tomogram_list.item(0).text()[0:-4]+"_seg.json")
-
-		# 	pass
-		#print("Nz ,iz",hdr["nz"],iz)
-		# info=js_open_dict("info/annotate_"+self.tomogram_list.item(0).text()+".json")
-		# try:
-		# 	self.boxes=info["boxes"]
-		# except:
-		# 	self.boxes = []
-		# info.close()
-		#self.ann_file = "./segs/"+self.data_file[0:-4]+"_seg.hdf"
 		print("File_name", self.data_file)
 		self.data = EMData(self.data_file)/3.0
 		self.apix=self.data['apix_x']
@@ -262,9 +212,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			self.annotation = None
 			pass
 
-		#self.tomogram_list.currentRowChanged[int].connect(self.tomolist_current_change)
 		self.tomo_tree.currentItemChanged[QtWidgets.QTreeWidgetItem,QtWidgets.QTreeWidgetItem].connect(self.tomotree_current_item_change)
-		#self.tomo_tree.itemChanged[QtWidgets.QTreeWidgetItem,int].connect(self.tomotree_item_change)
 		for seg_grp in self.seg_grps:
 			seg_grp.buttonClicked[QtWidgets.QAbstractButton].connect(self.seg_path_change)
 
@@ -292,7 +240,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 		self.img_view = EMAnnotate2DWidget(sizehint=(680,680))
 		self.img_view.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
-		#self.img_view.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
 		self.img_view.setMinimumSize(680, 680)
 
 		#self.img_view.show()
@@ -305,11 +252,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.fill_type = None
 		self.unet = None
 		self.setcolors = ['blue','green','red','cyan','purple','orange','yellow','hotpink','gold']
-
-
-		#Thumbnail
-		#Attribute error occurs when Thumbnail was initialized before the EMAnnotateWindow
-
 
 		self.zt_spinbox = QtWidgets.QSpinBox()
 
@@ -325,7 +267,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 
 		self.thumbnail = Thumbnail(current_file=self.data_file,target=self.img_view,app_target=self,tn_size=self.thumbnail_size)
-		#self.thumbnail.setSizePolicy(QtWidgets.QSizePolicy.Fixed,QtWidgets.QSizePolicy.Fixed)
 		self.thumbnail.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
 
 		self.thumbnail.setMinimumSize(self.thumbnail_size, self.thumbnail_size)
@@ -394,9 +335,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.procbox3.textChanged.connect(self.do_filters)
 
 
-		#self.thumbnail.setMinimumSize(300,300)
-
-
 		#Basic tools
 		basic_label = QtWidgets.QLabel("Basic tools")
 		basic_vbl = QtWidgets.QVBoxLayout()
@@ -416,8 +354,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.interp_button = QtWidgets.QPushButton("Interpolate")
 		self.tx_line_width=QtWidgets.QSpinBox(self)
 		self.tx_line_width.setValue(5)
-		# self.tx_ann_class=QtWidgets.QSpinBox(self)
-		# self.tx_ann_class.setValue(1)
 
 		self.ltlay.addWidget(self.points_label,0,0,2,2)
 		self.ltlay.addWidget(QtWidgets.QLabel("Line Width"),2,2,1,2)
@@ -440,9 +376,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.fill_contour_checkbox.setChecked(True)
 		self.ct_line_width=QtWidgets.QSpinBox(self)
 		self.ct_line_width.setValue(5)
-		# self.ct_ann_class=QtWidgets.QSpinBox(self)
-		# self.ct_ann_class.setValue(1)
-
 
 		self.ctlay.addWidget(self.draw_contour_label,0,0,2,2)
 		self.ctlay.addWidget(QtWidgets.QLabel("Draw line to annotate file"),2,0,1,2)
@@ -547,12 +480,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.button_gbl.addLayout(filter_vbl,0,0,2,1)
 		self.button_gbl.addLayout(basic_vbl,2,0,2,1)
 		self.button_gbl.addLayout(assisted_vbl,4,0,2,1)
-
-		# self.undo_button = QtWidgets.QPushButton("Undo")
-		# self.undo_button.setEnabled(False)
-		#
-		# #self.test_button.setCheckable(True)
-		# self.button_gbl.addWidget(self.undo_button,6,0,1,1)
 
 		self.test_button = QtWidgets.QPushButton("Test Button")
 		#self.test_button.setCheckable(True)
@@ -732,12 +659,9 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			seg_path = os.path.join(self.seg_folder,self.seg_grps[self.tomo_tree.indexOfTopLevelItem(self.tomo_tree.currentItem())].checkedButton().text())
 			print("Seg file for current tomogram already exists at",seg_path)
 		else:
-		# if not os.path.isfile(seg_path):
-			#seg_path = os.path.join(self.seg_folder,base_name(self.tomo_tree.currentItem().text(0))+"_seg.hdf")
 			seg_path = os.path.join(self.seg_folder,base_name(self.data_file)+"_seg.hdf")
 			print("Create seg_file",seg_path)
 			seg_out = EMData(self.nx,self.ny,self.nz)
-			#self.write_header(seg_out)
 			seg_out.write_image(seg_path)
 			del seg_out
 			seg_item = QtWidgets.QTreeWidgetItem()
@@ -789,70 +713,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.reset_morp_params(reset_vs=False)
 		self.set_imgview_data(round(self.data_xy[0]),round(self.data_xy[1]),self.img_view_region_size)
 		self.update_tree_set()
-		# seg_info_path = os.path.join(self.seg_folder,self.tomogram_list.item(int).text()[0:-4]+"_seg.json")
 
-
-
-	#TO OMIT LATER
-	# def tomolist_current_change(self, int):
-	# 	print("Current item", self.tomogram_list.item(int).text())
-	# 	print(str(self.tomogram_list.item(int).text()))
-	# 	self.data_file = str(os.path.join(self.tom_folder,self.tomogram_list.item(int).text()))
-	# 	hdr=EMData(self.data_file, 0,True)
-	# 	self.nx=hdr["nx"]
-	# 	self.ny=hdr["ny"]
-	# 	self.nz=hdr["nz"]
-	# 	print('Nz',self.nz)
-	# 	self.get_inspector().seg_tab.write_treeset_json(self.seg_info_path)
-	#
-	#
-	# 	seg_path = os.path.join(self.seg_folder,self.tomogram_list.item(int).text()[0:-4]+"_seg.hdf")
-	# 	if not os.path.isfile(seg_path):
-	# 		seg_out = EMData(self.nx,self.ny,self.nz)
-	# 		#self.write_header(seg_out)
-	# 		seg_out.write_image(seg_path)
-	# 		del seg_out
-	# 	else:
-	# 		print("Seg file for tomogram {} already exists. Continue ".format(self.tomogram_list.item(int).text()))
-	# 		pass
-	#
-	# 	#seg_info_path = os.path.join(self.seg_folder,'info',self.tomogram_list.item(int).text()[0:-4]+"_seg_info.json")
-	# 	seg_info_path = os.path.join(self.seg_folder,self.tomogram_list.item(int).text()[0:-4]+"_seg.json")
-	#
-	# 	try:
-	# 		fp = open(seg_info_path, 'x')
-	# 	except:
-	# 		print("Info file for the current one already exists. Continue ")
-	# 		# 	pass
-	#
-	#
-	# 	self.zt_spinbox.setMaximum(self.nz//2)
-	# 	#self.data = EMData(self.data_file)
-	# 	self.thumbnail.get_im(self.data_file)
-	# 	self.thumbnail.set_im()
-	# 	self.clear_shapes()
-	#
-	# 	#TODO - Fix zthick and hard code part
-	#
-	# 	self.data_xy = self.thumbnail.get_xy()
-	# 	print("data xy", self.data_xy)
-	#
-	# 	if self.get_annotation():
-	# 		print("Print annotation to file", self.seg_path)
-	# 		#self.write_header(self.get_annotation())
-	# 		self.write_out(self.get_annotation(), self.seg_path, self.cur_region)
-	#
-	# 	else:
-	# 		print("Annotation is none.")
-	# 		pass
-	#
-	# 	self.zc_spinbox.setValue(self.nz//2)
-	# 	self.zc_spinbox.setMaximum(self.nz)
-	# 	self.set_imgview_data(round(self.data_xy[0]),round(self.data_xy[1]),self.img_view_region_size)
-	# 	self.update_tree_set()
-	# 	self.seg_path = seg_path
-	# 	self.seg_info_path = seg_info_path
-	# 	self.reset_morp_params(reset_vs=False)
 
 
 	#need to write region out before setting new data
@@ -1034,10 +895,17 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 				l.write_image(outfile,-1)
 				#r=self.data.get_clip(Region(x-bs//2,y-bs//2,z-bz//2,bs,bs,bz))
 		self.clear_shapes()
-
 		return
 
-	def annotate_from_curve(self, insert=None):
+	def annotate_from_curve(self,insert=None):
+
+		if self.img_view.brush_mode == 0:
+			self.annotate_from_curve_2D(insert)
+		else:
+			self.annotate_from_curve_3D()
+		self.clear_shapes(reset_boxes_list=False)
+
+	def annotate_from_curve_2D(self, insert=None):
 		self.save_current_state()
 		#TODO: Clear points messing with annotate mechanism
 		self.x = self.img_view.get_data().get_xsize()
@@ -1046,7 +914,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		tsz=max(self.x,self.y)
 		mask = np.zeros((self.x,self.y))
 		#output=EMData(self.x, self.y, self.z)
-
 		def trapez(y,y0,w):
 			return np.clip(np.minimum(y+1+w/2-y0, -y+1+w/2+y0),0,1)
 
@@ -1082,8 +949,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			# to avoid parts outside of the picture
 			mask = np.logical_and.reduce((yy >= rmin, yy < rmax, vals > 0))
 			return (yy[mask].astype(int), xx[mask].astype(int), vals[mask])
-
-
 		def is_point_in_polygon(point,vertices):
 			points = np.array([[x[0],x[1]] for x in vertices])
 			poly_path = mplPath.Path(points)
@@ -1131,7 +996,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 					if self.curve.points[i][3] != -1:
 						rr, cc, val = weighted_line(r[i], c[i], r[i+1],c[i+1], int(self.tx_line_width.text()))
 						#mask[rr, cc] = int(self.tx_ann_class.text())
-						print("Len RR",len(rr))
+						#print("Len RR",len(rr))
 						mask[rr, cc] = int(self.get_current_class())
 						self.curve.points[i][3] = -1
 					else:
@@ -1150,7 +1015,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 				return
 			rr, cc = polygon(self.contour.points)
 			print(self.contour.points)
-			#mask[rr,cc]=int(self.ct_ann_class.text())
 			mask[rr,cc] = int(self.get_current_class())
 
 		elif self.fill_type == "contour_nofill":
@@ -1172,32 +1036,211 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 				except:
 					continue
-			#mask[r,c]=int(self.ct_ann_class.text())
 			mask[r,c] = int(self.get_current_class())
 
 		mask =  np.rot90(np.fliplr(mask))
 
 		if insert is None:
 			print("No insertion")
-			ann = to_numpy(self.img_view.get_annotation())
-			print("Ann shape",mask.shape)
-			ann += mask
+			ins_img = to_numpy(self.img_view.get_annotation())
+			self.img_view.annotation = from_numpy(np.where(mask>0,mask,ins_img))
 			self.img_view.force_display_update(set_clip=1)
 			self.img_view.updateGL()
 		else:
 			center = self.zt_spinbox.value()
 			if center == -1:
 				center = self.nz//2
-			ann = self.img_view.get_full_annotation().get_clip(Region(0,0,center+int(insert),self.x,self.y,1)).numpy()
-			ann += mask
-			#print("Insert clip to",center+insert)
-
-			xform=Transform({"type":"eman","alt":self.img_view.alt,"az":self.img_view.az,"tx":self.img_view.get_full_annotation()["nx"]//2,"ty":self.img_view.get_full_annotation()["ny"]//2,"tz":center+int(insert)})
-			ann_em = from_numpy(ann)
-			self.img_view.get_full_annotation().set_rotated_clip(xform,ann_em)
-			#self.img_view.get_full_annotation().insert_clip(from_numpy(ann),[0,0,center+int(insert)])
-			self.img_view.force_display_update(set_clip=0)
+			ins_img = to_numpy(self.img_view.get_full_annotation().get_clip(Region(0,0,center+int(insert),self.x,self.y,1)))
+			ann = from_numpy(np.where(mask>0,mask,ins_img))
+			xform=Transform({"type":"eman","alt":self.img_view.alt,"az":self.img_view.az,"tx":self.img_view.nx//2,"ty":self.img_view.ny//2,"tz":self.img_view.nz//2+int(insert)})
+			ins_img=to_numpy(self.img_view.get_full_annotation().get_rotated_clip(xform,(self.img_view.nx,self.img_view.ny,1),0))
+			ann = from_numpy(np.where(mask>0,mask,ins_img))
+			self.img_view.get_full_annotation().set_rotated_clip(xform,ann)
+			self.img_view.force_display_update()
 			self.img_view.updateGL()
+
+
+
+	def annotate_from_curve_3D(self):
+		self.save_current_state()
+		def calc_middle_pts(start,end,interval):
+			dist = np.linalg.norm(np.array(end)-np.array(start))
+			if interval <1:
+				interval=1
+			no_pts = floor(dist//interval)
+			if no_pts == 0:
+				return []
+			n_vec = (np.array(end)-np.array(start))/no_pts
+			pts_l = []
+			for i in range(no_pts):
+				pts_l.append(start+n_vec*i)
+			pts_l.append(end)
+			return pts_l
+		def is_point_in_polygon(point,vertices):
+			points = np.array([[x[0],x[1]] for x in vertices])
+			poly_path = mplPath.Path(points)
+			return poly_path.contains_point(point)
+
+
+		def find_bounding_square_box(vertices):
+		# Initialize min and max coordinates for x and y
+			min_x, min_y = float('inf'), float('inf')
+			max_x, max_y = float('-inf'), float('-inf')
+
+			# Iterate through each vertex to find min and max coordinates for x and y
+			for x, y,_,_ in vertices:
+				min_x, max_x = min(min_x, x), max(max_x, x)
+				min_y, max_y = min(min_y, y), max(max_y, y)
+
+			# Determine the length of the side of the square
+			side_length = max(max_x - min_x, max_y - min_y) + 2
+			if side_length % 2 == 1:
+				side_length = side_length+1
+
+			# Define the bottom-left and top-right corners of the square
+			bottom_left = (min_x, min_y)
+			top_right = (min_x + side_length, min_y + side_length)
+			mid = (int(min_x) + side_length//2, int(min_y) + side_length//2)
+			return mid,int(side_length)
+		#
+		# def find_bounding_box(vertices):
+		# # Initialize min and max coordinates for x and y
+		# 	min_x, min_y = float('inf'), float('inf')
+		# 	max_x, max_y = float('-inf'), float('-inf')
+		#
+		# 	# Iterate through each vertex to find min and max coordinates for x and y
+		# 	for x, y,_,_ in vertices:
+		# 		min_x, max_x = min(min_x, x), max(max_x, x)
+		# 		min_y, max_y = min(min_y, y), max(max_y, y)
+		#
+		# 	# Determine the length of the side of the square
+		# 	side_length = max(max_x - min_x, max_y - min_y)
+		# 	if side_length % 2 == 1:
+		# 		side_length = side_length+1
+		#
+		# 	# Define the bottom-left and top-right corners of the square
+		# 	bottom_left = (min_x, min_y)
+		# 	top_right = (max_x, max_y)
+		# 	mid = ((max_x+min_x)//2, (max_y+min_y)//2)
+		# 	return mid, max_x-min_x,max_y-min_y
+
+		def polygon(points):
+			center, side_length = find_bounding_square_box(points)
+			min_r = int(min([x[0] for x in points]))
+			max_r = int(max([x[0] for x in points]))
+			min_c = int(min([x[1] for x in points]))
+			max_c = int(max([x[1] for x in points]))
+			rr = []
+			cc = []
+
+			for r in range(min_r,max_r+1):
+				for c in range(min_c,max_c+1):
+					if is_point_in_polygon([r,c],points):
+						rr.append(r-min_r)
+						cc.append(c-min_c)
+						# rr.append(r)
+						# cc.append(c)
+			return np.array(rr, dtype=np.intp), np.array(cc, dtype=np.intp)
+			#mask =  np.rot90(np.fliplr(mask))
+
+		def define_eroded_volume(middle_image, z = None):
+
+			x, y = middle_image.shape[0],middle_image.shape[0]
+			if z is None:
+				z=middle_image.shape[0]
+			vol = np.zeros((z,x,y))
+			center_slice = z // 2
+			for i in range(z):
+				vol[i,:, :] = ndi.binary_erosion(middle_image,iterations=abs(z//2-i))
+			vol[z//2,:, :] = middle_image
+			return vol
+
+
+		value = int(self.get_current_class())
+		self.w_line=15
+		if self.fill_type == "curve":
+			if len(self.curve.points) < 2:
+				print("Need at least 2 points to draw a line")
+				return
+			self.w_line = int(self.tx_line_width.text())//2
+
+			pts_l = []
+
+			for i in range(len(self.curve.points)-1):
+				for p in calc_middle_pts(self.curve.points[i][0:3],self.curve.points[i+1][0:3],self.w_line/10):
+					pts_l.append(p)
+
+		elif self.fill_type == "contour_fill":
+			if len(self.contour.points) < 3:
+				print("Need at least 3 points for a contour")
+				return
+
+			#w_line = int(self.tx_line_width.text())
+			# pts_l = sparse_polygon(self.contour.points)
+			center, side_length = find_bounding_square_box(self.contour.points)
+			print("Center,side_length", center, side_length)
+
+			a = np.zeros((side_length,side_length))
+			rr,cc = polygon(self.contour.points)
+			a[rr,cc] = 1
+			a = np.rot90(np.fliplr(a))
+			fill_vol = define_eroded_volume(a,self.img_view.nz)
+			# mask = np.zeros((self.img_view.nx,self.img_view.ny))
+			# mask[rr,cc] = 1
+			# fill_vol = define_eroded_volume(mask,self.img_view.nz)
+
+		# 	mask[rr,cc] = int(self.get_current_class())
+			#from_numpy(fill_vol).write_image("fillvol.hdf")
+
+			#print("Fillvol shape",fill_vol.shape)
+
+
+			xrot, yrot, zrot = self.img_view.reverse_transform_point([center[0],center[1],self.img_view.nz//2+self.img_view.zpos], self.img_view.get_xform())
+			xform=Transform({"type":"eman","alt":self.img_view.alt,"az":self.img_view.az,"tx":self.img_view.nx//2+xrot,"ty":self.img_view.ny//2+yrot,"tz":self.img_view.nz//2+zrot})
+			subvol=self.img_view.get_full_annotation().get_rotated_clip(xform,(side_length,side_length,self.img_view.nz),0)
+
+
+			#subvol = from_numpy(np.ones((2*self.w_line,2*self.w_line,2*self.w_line)))
+			#subvol.process_inplace("mask.paint",{"x":self.w_line,"y":self.w_line,"z":self.w_line,"r1":self.w_line,"v1":value,"r2":self.w_line,"v2":0})
+			self.img_view.full_annotation.set_rotated_clip(xform,from_numpy(np.where(fill_vol>0,value,to_numpy(subvol))))
+			#self.img_view.full_annotation.set_rotated_clip(xform,subvol*2)
+			# full_vol=from_numpy(np.where(fill_vol>0,value,to_numpy(self.img_view.full_annotation)))
+			# self.img_view.full_annotation = full_vol.process("xform",{"transform":self.img_view.xform})
+			self.img_view.force_display_update()
+			self.img_view.updateGL()
+			return
+
+
+
+		else:
+			anchor_l = self.contour.points
+			anchor_l.append(self.contour.points[0])
+			self.w_line = int(self.ct_line_width.text())//2
+			if self.w_line <5:
+				interval = self.w_line
+			elif self.w_line <20:
+				interval = self.w_line/2
+			else:
+				interval = self.w_line/4
+			pts_l = []
+
+			for i in range(len(anchor_l)-1):
+
+				for p in calc_middle_pts(anchor_l[i][0:3],anchor_l[i+1][0:3],interval):
+					pts_l.append(p)
+
+
+		for pts in pts_l:
+			xrot, yrot, zrot = self.img_view.reverse_transform_point([pts[0],pts[1],self.img_view.nz//2+pts[2]], self.img_view.get_xform())
+			xform=Transform({"type":"eman","alt":self.img_view.alt,"az":self.img_view.az,"tx":self.img_view.nx//2+xrot,"ty":self.img_view.ny//2+yrot,"tz":self.img_view.nz//2+zrot})
+			subvol=self.img_view.get_full_annotation().get_rotated_clip(xform,(2*self.w_line,2*self.w_line,2*self.w_line),0)
+			#subvol = from_numpy(np.ones((2*self.w_line,2*self.w_line,2*self.w_line)))
+			fill_vol = subvol.process("mask.paint",{"x":self.w_line,"y":self.w_line,"z":self.w_line,"r1":self.w_line,"v1":value,"r2":self.w_line,"v2":0})
+			#self.img_view.full_annotation.set_rotated_clip(xform,value*subvol.process("threshold.binaryrange",{"high":value+0.1,"low":value-0.1}))
+			self.img_view.full_annotation.set_rotated_clip(xform,fill_vol)
+		self.img_view.force_display_update()
+		self.img_view.updateGL()
+
 
 
 
@@ -1388,12 +1431,17 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 				if self.basic_tab_num == 3:
 					self.update_img_view_box()
 				elif self.basic_tab_num == 2:
-					self.annotate_from_curve(insert=self.previous_z)
-					self.clear_shapes(reset_boxes_list=False)
-					pass
+					if self.img_view.brush_mode == 0:
+						self.annotate_from_curve(insert=self.previous_z)
+						self.clear_shapes(reset_boxes_list=False)
+					else:
+						pass
 				elif self.basic_tab_num == 1:
 					try:
-						self.annotate_from_curve(insert=self.previous_z)
+						if self.img_view.brush_mode == 0:
+							self.annotate_from_curve(insert=self.previous_z)
+						else:
+							pass
 					except:
 						pass
 		else:
@@ -1713,6 +1761,10 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		info.close()
 
 	#Function from system menu
+	def menu_file_del_all(self):
+		self.img_view.full_annotation = EMData(self.nx,self.ny,self.nz)
+		self.img_view.force_display_update()
+		self.img_view.updateGL()
 	def menu_file_quit(self):
 		self.close()
 	def menu_edit_undo(self):
@@ -2865,7 +2917,7 @@ class Boxer_Widget(QtWidgets.QWidget):
 		if "boxes_3d" in info:
 			box=info["boxes_3d"]
 
-			stored_l = [i[-2] for i in box]
+			stored_l = [i[5] for i in box]
 			for i in range(len(self.sets)):
 				key = list(self.sets.keys())[i]
 				self.set_table.setItem(i,3,QtWidgets.QTableWidgetItem(str(stored_l.count(key))))
@@ -2929,9 +2981,9 @@ class Boxer_Widget(QtWidgets.QWidget):
 		print("Change z-thickness to", max(zs),"to visualize all boxes from file")
 		self.target.zt_spinbox.setValue(max(zs))
 		self.target.current_box_index_sp.setValue(set_index[0])
-		self.target.add_boxes(sz)
 		self.target.basic_tab.setCurrentIndex(3)
 		bs = self.target.bsz_vs.setValue(sz)
+		self.target.add_boxes(sz)
 
 		tentative_seg = self.get_seg_file_name()
 		self.extract_train_le.setText(tentative_seg[0:-7]+"_trainset.hdf")
@@ -2975,7 +3027,7 @@ class Boxer_Widget(QtWidgets.QWidget):
 		# if not os.path.exists("./trainset"):
 		# 	os.mkdir("./trainset")
 
-		print("Extract image and label patches of size",self.target.bsz_vs.value,"at positions:",self.target.boxes)
+		print("Extract image and label patches of size",self.target.bsz_vs.value) #"at positions:",self.target.boxes)
 		outfile_trainset = self.extract_train_le.text()
 		tentative_seg = self.get_seg_file_name()
 		outfile_raw = tentative_seg[0:-7]+"_raw.hdf"
@@ -2987,6 +3039,7 @@ class Boxer_Widget(QtWidgets.QWidget):
 		except:
 			pass
 
+		print("Extract Boxes")
 		for i in range(len(self.target.boxes)):
 			nz = self.target.get_nz()//2
 			x,y,z = int(self.target.boxes[i][0]),int(self.target.boxes[i][1]),int(self.target.boxes[i][2]+nz)
@@ -2994,29 +3047,31 @@ class Boxer_Widget(QtWidgets.QWidget):
 			target_data =  self.target.get_full_data_from_file()
 			target_annotation = self.target.get_full_annotation_from_file()
 			#if self.boxes[i][3] == 1:
-			if self.target.boxes[i][3] != 1:
-				pass
-			else:
-				box_region = Region(x-bs//2,y-bs//2,z,bs,bs,1)
-				r = target_data.get_clip(Region(x-bs//2,y-bs//2,z,bs,bs,1))
-				l = target_annotation.get_clip(Region(x-bs//2,y-bs//2,z,bs,bs,1))
-				try:
-					r.write_image(outfile_raw,-1)
-					l.write_image(outfile_seg,-1)
+			# if self.target.boxes[i][3] != 1:
+			# 	pass
+			# else:
+			box_region = Region(x-bs//2,y-bs//2,z,bs,bs,1)
+			r = target_data.get_clip(Region(x-bs//2,y-bs//2,z,bs,bs,1))
+			l = target_annotation.get_clip(Region(x-bs//2,y-bs//2,z,bs,bs,1))
 
-				except Exception as e:
-					print("Trainset file is not correctly formatted. Abort")
-					print(e)
-					return
+			try:
+				r.write_image(outfile_raw,-1)
+				l.write_image(outfile_seg,-1)
 
-		print("Building trainset")
+			except Exception as e:
+				print("Trainset file is not correctly formatted. Abort")
+				print(e)
+				return
+			sys.stdout.write("\r{}/{} boxes written".format(i+1,len(self.target.boxes)))
+			sys.stdout.flush()
+
+		print("\nBuilding trainset")
 		os.system("e2tomoseg_buildtrainset.py --buildset --particles_raw={} --particles_label={} --ncopy={} --trainset_output={} --validset=0.0".format(outfile_raw,outfile_seg,str(self.extract_train_ncopy_sb.value()),outfile_trainset))
 		try:
 			del target_data, target_annotation
 		except:
 			pass
 		self.target.clear_shapes()
-
 		return
 
 	def show_train_data(self):
@@ -4263,103 +4318,6 @@ class Statistics_Tab(QtWidgets.QWidget):
 		del t_mask
 		self.n_objects_text.setText(str(count))
 
-
-	# def count_objs(self):
-	# 	thres=self.n_obj_thres_vs.value
-	# 	#n_iters = int(self.morp_n_iters_sp.value())
-	# 	sel = self.get_selected_item()
-	# 	#self.counted_item.append(sel)
-	# 	#val,raw_mask = self.get_target_selected()
-	# 	if sel:
-	# 		val = int(sel.text(0))
-	# 		raw_mask = self.target.get_segtab().get_whole_annotate(sel)
-	# 	else:
-	# 		print("Select a class to count")
-	# 		return
-	#
-	# 	# if raw_mask:
-	# 	self.target.get_annotation().process_inplace("threshold.rangetozero",{"maxval":(val+0.1),"minval":(val-0.1)})
-	# 	# 	self.target.annotate += val*from_numpy(ndi.binary_opening(to_numpy(mask),iterations=n_iters))
-	# 	# mask, num = ndi.label(to_numpy(self.target.get_annotation()))
-	# 	self.labeled_ann,self.num = ndi.label(to_numpy(raw_mask))
-	# 	self.loc=ndi.find_objects(self.labeled_ann,self.num)
-	# 	t_mask = np.zeros(self.labeled_ann.shape)
-	# 	count = 0
-	# 	self.area_vol = []
-	# 	self.objs = []
-	# 	open_lab=to_numpy(raw_mask)
-	# 	# current_item = self.target.get_segtab().tree_set.currentItem()
-	# 	# current_item.takeChildren()
-	#
-	# 	for i in range(1,self.num+1):
-	# 		#area_temp=len(np.where(open_lab[self.loc[i-1]]>0)[0])
-	# 		area_temp=len(np.where(open_lab[self.loc[i-1]]>0)[0])
-	# 		#print(open_lab[loc[i]].shape[0],open_lab[loc[i]].shape[1])
-	# 		if area_temp >= thres:
-	# 			count = count+1
-	# 			self.area_vol.append(area_temp)
-	# 			self.objs.append(open_lab[self.loc[i-1]])
-	# 			ind = self.target.get_segtab().get_unused_index()
-	# 			name = current_item.text(1)
-	# 			self.target.get_segtab().add_child(child_l=[str(ind),name+"_"+str(i),"-1"])
-	# 			self.target.get_segtab().update_sets()
-	# 	#self.target.annotate += *(raw_mask)
-	# 			t_mask += np.where(self.labeled_ann==i,ind,0)
-	#
-	# 	self.target.annotate += from_numpy(t_mask)
-	# 	print("number of object detected:", self.num)
-	# 	self.target.img_view.set_data(self.target.data, self.target.annotate)
-	# 	del t_mask
-	# 	self.n_objects_text.setText(str(count))
-
-
-
-	# def calc_convex_hull(self):
-	# 	def is_point_in_polygon(point,vertices):
-	# 		points = np.array([[x[0],x[1]] for x in vertices])
-	# 		poly_path = mplPath.Path(points)
-	# 		return poly_path.contains_point(point)
-	# 	def polygon(points):
-	# 		min_r = int(min([x[0] for x in points]))
-	# 		max_r = int(max([x[0] for x in points]))
-	# 		min_c = int(min([x[1] for x in points]))
-	# 		max_c = int(max([x[1] for x in points]))
-	# 		rr = []
-	# 		cc = []
-	# 		for r in range(min_r,max_r+1):
-	# 			for c in range(min_c,max_c+1):
-	# 				if is_point_in_polygon([r,c],points):
-	# 					rr.append(r)
-	# 					cc.append(c)
-	# 		return np.array(rr), np.array(cc)
-	#
-	#
-	#
-	# 	open_lab=ndi.binary_opening(to_numpy(img),iterations=1)
-	# 	labeled,num = ndi.label(open_lab>0.5)
-	#
-	# 	for i in range(1,num+1):
-	# 		o1 = np.ma.masked_where(labeled!=i,labeled)
-	# 		p1 = np.nonzero(o1)
-	# 		points = np.stack((p1[0], p1[1]), axis=-1)
-	# 		hull = ConvexHull(points=points,qhull_options='QG4')
-	# 		pts = []
-	# 		for simplex in hull.vertices:
-	# 			pts.append([points[simplex,0],points[simplex,1]])
-	# 		rr,cc = polygon(pts)
-	# 		labeled[rr,cc]=i
-	# 	return labeled
-	#
-	# def show_convex_hull(self):
-	# 	sel = self.get_selected_item()
-	# 	if sel not in self.counted_item:
-	# 		self.count_objs()
-	# 	convex = self.calc_convex_hull(img=self.target.annotate)
-	# 	self.target.img_view.set_data(self.target.data, from_numpy(convex))
-	# 	del convex
-
-
-
 	def calc_stat(self):
 		apix = self.apix_vs.value
 		sel = self.get_selected_item()
@@ -4408,6 +4366,10 @@ class Statistics_Tab(QtWidgets.QWidget):
 					a = from_numpy(obj)
 					proj = a.process("misc.directional_sum",{"axis":"z"}).process("threshold.binary",{"value":0.1})
 					im = proj.numpy()
+				# sx = ndi.sobel(im, axis=0, mode='constant')
+				# sy = ndi.sobel(im, axis=1, mode='constant')
+				# sob = np.hypot(sx, sy)
+				# from_numpy(sob).write_image('peri_temp_2.hdf')
 				peri_temp = self.calc_perimeter(im)
 				print("Largest Perimeter of Obj",i,":", peri_temp, "pixel")
 				print("Largest Perimeter of Obj",i,":", peri_temp*apix,"A")
@@ -4430,6 +4392,9 @@ class Statistics_Tab(QtWidgets.QWidget):
 				if cond:
 					newdata[i, j] = 0
 		return np.count_nonzero(newdata)
+
+
+
 
 class Specific_Tab(QtWidgets.QWidget):
 	def __init__(self,target) :
@@ -4494,7 +4459,7 @@ class Specific_Tab(QtWidgets.QWidget):
 			print(a/np.pi*180)
 
 		alt = angles[1]/np.pi*180
-		print("ALT", alt)
+		#print("ALT", alt)
 		self.target.get_inspector().alts.setValue(alt)
 		self.target.get_inspector().ns.setValue(0)
 		self.target.img_view.del_shape("p1")
