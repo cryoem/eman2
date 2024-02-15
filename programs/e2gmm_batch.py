@@ -84,7 +84,7 @@ def main():
 		
 		for it in range(nbatch):
 			print("#######################")
-			print(f"batch {it}/{nbatch}...")
+			print(f"batch {it+1}/{nbatch}...")
 			if options.ptcl3d:
 				ul=p3did[it*batch:(it+1)*batch]
 				ll=np.concatenate(ul).tolist()
@@ -132,11 +132,31 @@ def main():
 			np.savetxt(midout, midall)
 				
 		if oname:
-			ptclsall=[]
-			for tmp in tmpfiles:
-				ptclsall.extend(load_lst_params(tmp[1]))
+			if "e2gmm_rigidbody.py" in rawcmd:
+				#### the output lst will be broken into multiple patches
+				for ip in range(100):
+					om=f'{path}/tmp_output_p{ip:02d}_000.lst'
+					if not os.path.isfile(om): break
+				npatch=ip
 				
-			save_lst_params(ptclsall, oname)
+				for ip in range(npatch):
+					ptclsall=[]
+					tmps=[f'{path}/tmp_output_p{ip:02d}_{it:03d}.lst' for it in range(nbatch)]
+					for tmp in tmps:
+						ptclsall.extend(load_lst_params(tmp))
+						os.remove(tmp)
+					
+					o=oname.split('_')
+					o.insert(-1,f'p{ip:02d}')
+					om='_'.join(o)
+					save_lst_params(ptclsall, om)
+				
+			else:
+				ptclsall=[]
+				for tmp in tmpfiles:
+					ptclsall.extend(load_lst_params(tmp[1]))
+					
+				save_lst_params(ptclsall, oname)
 			
 		options.load=True
 		
