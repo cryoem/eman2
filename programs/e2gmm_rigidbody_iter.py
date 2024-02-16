@@ -122,6 +122,13 @@ def main():
 	js.update(vars(options))
 	js.close()	
 
+	if options.storexf:
+		for eo in ["even", "odd"]:
+			nptcl=EMUtil.get_image_count(f"{path}/ptcls_00_{eo}.lst")
+			last_xf=np.zeros((nptcl, options.npatch*6))
+			last_xf=from_numpy(last_xf)
+			last_xf.write_image(f"{path}/xf_{eo}.hdf")
+
 	#### starting refinement
 	maskfile=[f"{path}/mask_patch_{ci:02d}.hdf" for ci in range(options.npatch)]
 	masks=','.join(maskfile)

@@ -135,13 +135,12 @@ def main():
 	
 	last_xf=np.zeros((len(xfsnp), npatch, 6), dtype=floattype)
 	if options.xf_file!=None:
-		if os.path.isfile(options.xf_file):
-			print(f"Loading previous transform from {options.xf_file}...")
-			last_xf_raw=EMData(options.xf_file)
-			last_xf_raw=last_xf_raw.numpy().copy()
-			print("  reading lines from {} to {}".format(options.xf_starti, options.xf_starti+len(xfsnp)))
-			last_xf=last_xf_raw[options.xf_starti:options.xf_starti+len(xfsnp)]
-			last_xf=last_xf.reshape((len(xfsnp), npatch, 6)).astype(floattype)
+		print(f"Loading previous transform from {options.xf_file}...")
+		last_xf_raw=EMData(options.xf_file)
+		last_xf_raw=last_xf_raw.numpy().copy()
+		print("  reading lines from {} to {}".format(options.xf_starti, options.xf_starti+len(xfsnp)))
+		last_xf=last_xf_raw[options.xf_starti:options.xf_starti+len(xfsnp)]
+		last_xf=last_xf.reshape((len(xfsnp), npatch, 6)).astype(floattype)
 		
 	trainset=tf.data.Dataset.from_tensor_slices((data_cpx[0], data_cpx[1], xfsnp, last_xf))
 	nsample=data_cpx[0].shape[0]
