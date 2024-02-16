@@ -29,6 +29,7 @@ def main():
 	citer=find_option(cmd, "--niter")
 	diter=find_option(cmd, "--retraindec")
 	learnrate=find_option(cmd, "--learnrate")
+	xf_file=find_option(cmd, "--xf_file")
 	path=pname[:pname.rfind('/')+1]
 	batch=options.batch
 	print("Writing tmp files in ",path)
@@ -94,7 +95,7 @@ def main():
 			else:
 				ll=lst[it*batch:(it+1)*batch]				
 				
-			print(f"{it}/{nbatch} batches, {len(ll)} particles")
+			print(f"{it+1}/{nbatch} batches, {len(ll)} particles")
 			tmplst=path+f'tmp_input_{it:03d}.lst'
 			tmpout=path+f'tmp_output_{it:03d}.lst'
 			tmpmid=path+f'tmp_mid_{it:03d}.txt'
@@ -118,7 +119,9 @@ def main():
 					cc=cc+f" --encoderin {enc}"
 				if dec!=None:
 					cc=cc+f" --decoderin {dec}"
-					
+			
+			if "e2gmm_rigidbody.py" in rawcmd and xf_file!=None:
+				cc+=f" --xf_starti {it*batch}"
 			run(cc)
 			
 		if midout:

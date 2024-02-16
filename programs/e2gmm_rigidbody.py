@@ -10,7 +10,7 @@ if "CUDA_VISIBLE_DEVICES" not in os.environ:
 	
 #### do not occupy the entire GPU memory at once
 ##   seems necessary to avoid some errors...
-# os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]='true' 
+os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]='true' 
 
 #### finally initialize tensorflow
 import tensorflow as tf
@@ -73,6 +73,9 @@ def main():
 	parser.add_argument("--niter", type=int, help="number of iteration",default=20)
 	parser.add_argument("--maxres", type=float, help="resolution",default=5.)
 	parser.add_argument("--learnrate", type=float, help="learning rate",default=2e-3)
+	parser.add_argument("--l2_weight", type=float, help="weighting factor for L2. default is 1",default=1.)
+	parser.add_argument("--xf_file", type=str,help="file for the transform input/output. hdf format. will overwrite.", default=None)
+	parser.add_argument("--xf_starti", type=int,help="first line ID for the xf_file. ", default=0)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
@@ -129,24 +132,35 @@ def main():
 	options.minpx=2
 	options.maxpx=ceil(raw_apix/maxres*raw_boxsz)
 	options.batchsz=32
-
-	trainset=tf.data.Dataset.from_tensor_slices((data_cpx[0], data_cpx[1], xfsnp))
+	
+	last_xf=np.zeros((len(xfsnp), npatch, 6), dtype=floattype)
+	if options.xf_file!=None:
+		if os.path.isfile(options.xf_file):
+			print(f"Loading previous transform from {options.xf_file}...")
+			last_xf_raw=EMData(options.xf_file)
+			last_xf_raw=last_xf_raw.numpy().copy()
+			print("  reading lines from {} to {}".format(options.xf_starti, options.xf_starti+len(xfsnp)))
+			last_xf=last_xf_raw[options.xf_starti:options.xf_starti+len(xfsnp)]
+			last_xf=last_xf.reshape((len(xfsnp), npatch, 6)).astype(floattype)
+		
+	trainset=tf.data.Dataset.from_tensor_slices((data_cpx[0], data_cpx[1], xfsnp, last_xf))
 	nsample=data_cpx[0].shape[0]
 	trainset=trainset.batch(options.batchsz)
 	nbatch=nsample//options.batchsz
 
 	
 	#### do one batch first to determine l2
-	for ptr,ptj,xf in trainset:
+	for ptr,ptj,xf,lx in trainset:
 		opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate) 
 		ptcl_cpx=(ptr, ptj)
+		
 		xfvar=tf.Variable(np.zeros((xf.shape[0],npatch, 6), dtype=floattype))
 		p0=tf.constant(tf.zeros((xf.shape[0],pts.shape[0], 5))+pts)
 		
 		cost=[]
 		for itr in range(options.niter):
 			with tf.GradientTape() as gt:
-				p1=rotpts_mult(p0[:,:,:3], xfvar, imsk)
+				p1=rotpts_mult(p0[:,:,:3], xfvar+lx, imsk)
 				p2=tf.concat([p1, p0[:,:,3:]], axis=2)
 				proj_cpx=pts2img(p2, xf)
 				#print(proj_cpx[0].shape, ptcl_cpx[0].shape, params["rings"].shape)
@@ -162,7 +176,7 @@ def main():
 		
 		break
 	
-	l2wd=float((cost[0]-cost[-1])/l2)
+	l2wd=float((cost[0]-cost[-1])/l2)*options.l2_weight
 	print("Refine without L2:")
 	print("  loss change {:.3f}, L2 change {:.3f}, use weight decay factor {:.3f}".format(float((cost[0]-cost[-1])), float(l2), l2wd))
 		
@@ -171,7 +185,7 @@ def main():
 	print("Full refinement......")
 	xfvs=[]
 
-	for ptr,ptj,xf in trainset:
+	for ptr,ptj,xf,lx in trainset:
 		opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate) 
 		ptcl_cpx=(ptr, ptj)
 		xfvar=tf.Variable(np.zeros((xf.shape[0],npatch, 6), dtype=floattype))
@@ -180,7 +194,7 @@ def main():
 		cost=[]
 		for itr in range(options.niter):
 			with tf.GradientTape() as gt:
-				p1=rotpts_mult(p0[:,:,:3], xfvar, imsk)
+				p1=rotpts_mult(p0[:,:,:3], xfvar+lx, imsk)
 				p2=tf.concat([p1, p0[:,:,3:]], axis=2)
 				proj_cpx=pts2img(p2, xf)
 				#print(proj_cpx[0].shape, ptcl_cpx[0].shape, params["rings"].shape)
@@ -200,8 +214,17 @@ def main():
 		xfvs.append(xfvar.numpy())
 
 	xfrot=np.vstack(xfvs).copy()
-	angles=tf.data.Dataset.from_tensor_slices((xfrot, xfsnp)).batch(128)
+	xfrot+=last_xf
 	print()
+	
+	if options.xf_file!=None:
+		print(f"Writing transform to {options.xf_file}...")
+		lx=xfrot.reshape((len(xfsnp), -1)).copy()
+		last_xf_raw[options.xf_starti:options.xf_starti+len(xfsnp)]=lx
+		lx=from_numpy(last_xf_raw)
+		lx.write_image(options.xf_file)
+	
+	angles=tf.data.Dataset.from_tensor_slices((xfrot, xfsnp)).batch(128)
 	
 	#### now convert rigid body movement to orientation change
 	print("Converting back to orientation......")
