@@ -20,8 +20,10 @@ def main():
 	parser.add_argument("--masks", type=str,help="masks for refinement. multiple files separated by ','. Replace npatch if specified.", default=None)
 	parser.add_argument("--applysym", type=str,help="apply symmetry to reconstruction.", default="c1")
 	parser.add_argument("--startiter", type=int,help="starting iteration. default is 1", default=1)
-	# parser.add_argument("--batchsize", type=int,help="Number of particles in each batch for alignment. Increase will make the alignment faster, but also increases GPU memory use. ", default=-1)
-	# parser.add_argument("--chunksize", type=int,help="Number of particles in each e2gmm_batch process. Increase will make the alignment slightly faster, but also increases CPU memory use. ", default=-1)
+	parser.add_argument("--l2_weight", type=float, help="weighting factor for L2. default is 1",default=1.)
+	parser.add_argument("--chunksize", type=int,help="Number of particles in each e2gmm_batch process. Increase will make the alignment slightly faster, but also increases CPU memory use. ", default=25000)
+	parser.add_argument("--storexf", action="store_true", default=False ,help="store the transform after refinement and start from the transform in the last iteration each time.")
+
 	# parser.add_argument("--recover",action="store_true", default=False ,help="continue previous crashed refinement")
 
 
@@ -36,6 +38,10 @@ def main():
 	olditer=int(''.join(c[-2:]))
 	print(f"refinement path {oldpath}, iteration {olditer}.")
 	
+	if options.masks!=None:
+		maskfile=options.masks.split(',')
+		pn=options.npatch=len(maskfile)
+		
 	#### prepare iteration 00
 	if options.path==None: 
 		path=options.path=num_path_new("gmm_")
@@ -99,10 +105,9 @@ def main():
 					c=(c*msk["nx"]).tolist()
 					msk.process_inplace("mask.soft",{"dx":c[0], "dy":-c[1], "dz":-c[2], "outer_radius":r*msk["nx"],"width":5})
 					msk.write_image(f"{path}/mask_patch_{ci:02d}.hdf")
+					
 		else:
 			
-			maskfile=options.masks.split(',')
-			pn=options.npatch=len(maskfile)
 			for ci,m in enumerate(maskfile):
 				e=EMData(m)
 				e.write_image(f"{path}/mask_patch_{ci:02d}.hdf")
@@ -117,6 +122,13 @@ def main():
 	js.update(vars(options))
 	js.close()	
 
+	if options.storexf:
+		for eo in ["even", "odd"]:
+			nptcl=EMUtil.get_image_count(f"{path}/ptcls_00_{eo}.lst")
+			last_xf=np.zeros((nptcl, options.npatch*6))
+			last_xf=from_numpy(last_xf)
+			last_xf.write_image(f"{path}/xf_{eo}.hdf")
+
 	#### starting refinement
 	maskfile=[f"{path}/mask_patch_{ci:02d}.hdf" for ci in range(options.npatch)]
 	masks=','.join(maskfile)
@@ -127,7 +139,10 @@ def main():
 		
 		for eo in ["even", "odd"]:
 			
-			run(f"e2gmm_batch.py 'e2gmm_rigidbody.py --ptclsin {path}/ptcls_00_{eo}.lst --ptclsout {path}/ptcls_{iiter:02d}_{eo}.lst --model {path}/model_{iiter-1:02d}_{eo}.txt --mask {masks} --maxres {res}' --batch 25000 --niter 0")
+			etc=""
+			if options.storexf: etc+=f" --xf_file {path}/xf_{eo}.hdf"
+			
+			run(f"e2gmm_batch.py 'e2gmm_rigidbody.py --ptclsin {path}/ptcls_00_{eo}.lst --ptclsout {path}/ptcls_{iiter:02d}_{eo}.lst --model {path}/model_{iiter-1:02d}_{eo}.txt --mask {masks} --maxres {res} --l2_weight {options.l2_weight} {etc}' --batch {options.chunksize} --niter 0")
 		
 			
 			for pid in range(options.npatch):
@@ -163,9 +178,6 @@ def main():
 			
 			
 		run(f"e2refine_postprocess.py --even {path}/threed_{iiter:02d}_even.hdf --res 5 --tophat localwiener --sym c1 --thread 32 --setsf sf.txt --align --mask {path}/mask_00.hdf")
-		
-		if iiter==options.niter:
-			break
 			
 		rr=options.maxres*resmult[iiter+1]
 		for eo in ["even","odd"]:
