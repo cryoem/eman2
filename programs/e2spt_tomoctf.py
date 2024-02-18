@@ -40,7 +40,7 @@ def get_xf_pos(tpm, pk):
 #### Calculate matching score of a set of power spectrum curves (curve) and a set of 1D CTF curves (allctf)
 #### and return the a matrix in which each row corresponds to a ctf curve and each column represent a poser spectrum
 #### It does the background subtraction in the same way as e2ctf
-def calc_all_scr(curve, allctf, zlist, bxsz, exclude=[]):
+def calc_all_scr(curve, allctf, zlist, bxsz,  mres, exclude=[]):
 	#print curve
 	allscr=np.zeros((len(allctf), len(curve)))+np.inf
 
@@ -51,7 +51,10 @@ def calc_all_scr(curve, allctf, zlist, bxsz, exclude=[]):
 			allscr[i]=1
 			continue
 
-		z0=zz[0]
+		if mres == -1:
+			z0=zz[0]
+		else:
+			z0=mres
 		z1=np.minimum(zz[-1], int(bxsz/2*.5))
 
 		if z1-z0<10: continue
@@ -183,9 +186,11 @@ def main():
 
 	parser.add_argument("--bgcurve", type=str, help="load a curve of background power spectrum to substract for ctf estimation.",default=None)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
-	
+	parser.add_argument("--minres", type=int, help="Set what CTF zero to start the algo from, default is 1st zero",default=-1)
+
 	(options, args) = parser.parse_args()
 	
+	mres=options.minres
 	#### deal with multiple inputs
 	if options.alltiltseries:
 		fld="tiltseries/"
@@ -357,7 +362,7 @@ def main():
 			for si in [0,1]:
 				allscr=[]
 				for ic, ctf in enumerate(allctf):
-					scr=calc_all_scr(allrd, ctf, zlist[ic], box, exclude)
+					scr=calc_all_scr(allrd, ctf, zlist[ic], box, mres, exclude)
 					idxsft=np.round(signs[si]*np.array(pzus)/defstep).astype(int)
 					stilt=np.zeros(len(defrg))+np.inf
 					for i,df in enumerate(defrg):
@@ -433,7 +438,7 @@ def main():
 		
 		allscr=[]
 		for ic, ctf in enumerate(allctf):
-			scr=calc_all_scr(allrd, ctf, zlist[ic], box, exclude)
+			scr=calc_all_scr(allrd, ctf, zlist[ic], box, mres, exclude)
 			idxsft=np.round(-np.array(pzus)/defstep).astype(int)
 			stilt=np.zeros(len(defrg))+np.inf
 			for i,df in enumerate(defrg):
