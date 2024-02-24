@@ -130,13 +130,12 @@ class CZIDataLoader(QtWidgets.QWidget):
 
 	def download_dataset(self):
 		self.inquire_dataset()
-		self.create_data_folder(self.dataset_id)
-		if not self.set_indices:
-			try:
-				self.set_indices = int(self.download_tomo_num.text())
-			except:
-				print("No set indices provide. Download all tomogram in the dataset")
-				return
+		self.create_data_folder(self.get_dataset_id())
+		try:
+			self.set_indices = self.download_tomo_num.text()
+		except:
+			print("No set indices provide. Download all tomogram in the dataset")
+			return
 		indices = []
 		tomo_num= self.set_indices
 		if tomo_num =="all":
@@ -176,6 +175,7 @@ class CZIDataLoader(QtWidgets.QWidget):
 				os.mkdir(seg_dest)
 				print("Downloading Annotation(s) for tomogram",tomo.name)
 				tomo.download_all_annotations(dest_path=seg_dest,shape="SegmentationMask",format="mrc")
+		print("Finish downloading data")
 
 
 	def inquire_dataset(self):
@@ -197,10 +197,14 @@ class CZIDataLoader(QtWidgets.QWidget):
 		print("Dataset ID {} includes {} tomograms".format(str(self.dataset_id),str(len(self.tomos))))
 
 	def get_dataset_id(self):
-		return self.dataset_id_le.text()
+		try:
+			return self.dataset_id_le.text()
+		except:
+			return self.dataset_id
+
 	def import_data_to_eman(self):
-		#self.create_data_folder(self.dataset_id)
-		eman2_tomo_fname ="./{}_eman".format(self.dataset_id)
+		self.create_data_folder(self.get_dataset_id())
+		eman2_tomo_fname ="./{}_eman".format(self.get_dataset_id())
 		if not os.path.exists(eman2_tomo_fname):
 			os.mkdir(eman2_tomo_fname)
 		else:
@@ -221,7 +225,7 @@ class CZIDataLoader(QtWidgets.QWidget):
 				os.system("e2proc3d.py {} {}{} --process=normalize.maxmin".format(ori_f,eman2_f,imod_import))
 
 				ori_seg_fold = os.path.join("./CZI_data/{}/segs".format(self.dataset_id),tomo_f[0:-4])
-				if os.path.exists(ori_seg_fold):
+				if os.path.exists(ori_seg_fold) and len(os.listdir(ori_seg_fold)) != 0:
 					try:
 						iter = 1
 						for seg_f in os.listdir(ori_seg_fold):
