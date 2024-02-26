@@ -1038,9 +1038,22 @@ class EMGMM(QtWidgets.QMainWindow):
 			if len(ptdist2)>1000: ptdist2=ptdist2[::len(ptdist2)//1000]		# We don't really need every point to get a pretty good average position for the set
 			latent2=np.mean(self.midresult.transpose()[ptdist2,2:2+dim],0,keepdims=True)		# the mean latent vector over selected points
 			gauss2=self.decoder(latent2,0).numpy()[0].transpose()
+
 			if latent1 is not None and latent2 is not None:
-				gauss = np.zeros_like(gauss1)
-				gauss[:3] = gauss1[:3] + (gauss2[:3] - gauss1[:3])/2 #Location of the comparison model is the mid point of two models.
+				#gauss = np.zeros_like(gauss1)
+				# print(gauss.shape)
+				# gauss[:3] = gauss1[:3] + (gauss2[:3] - gauss1[:3])/2 #Location of the comparison model is the mid point of two models.
+				# box=int(self.wedbox.text())
+				# gauss[:3]*=box
+				# gauss[2]*=-1.0
+				# gauss[1]*=-1.0
+				# if not butval(self.wbutpos):
+				# 	gauss[:3]=self.model[:3]
+				gauss = np.zeros_like(np.concatenate((gauss1,gauss2),axis=1))
+				print("Shape",gauss.shape,gauss1.shape)
+
+				gauss[:3,:gauss1.shape[1]] = gauss1[:3]
+				gauss[:3,gauss1.shape[1]:] = gauss2[:3]
 				box=int(self.wedbox.text())
 				gauss[:3]*=box
 				gauss[2]*=-1.0
@@ -1048,16 +1061,28 @@ class EMGMM(QtWidgets.QMainWindow):
 				if not butval(self.wbutpos):
 					gauss[:3]=self.model[:3]
 
+
 				distances = []
 				for point1, point2 in zip(gauss1.transpose(), gauss2.transpose()):
 					x1, y1, z1, a1 = point1
 					x2, y2, z2, a2 = point2
 					distance = sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2 + (a2 - a1) ** 2) #Amplitude of gaussians are the difference between the two comparing models.
 					distances.append(distance)
-				gauss[3] = np.array(distances)/max(distances) #distance between points normalize to range[0,1]
+
+				#gauss[3] = np.array(distances)/max(distances) #distance between points normalize to range[0,1]
+				d_array = np.array(distances)/max(distances)
+
+				gauss[3] = np.concatenate((d_array,d_array))
 				if not butval(self.wbutamp):
 					pass
-				self.gaussplot.setData(gauss,self.wvssphsz.value)
+				#print("Shape",gauss.shape,gauss1.shape)
+
+				groups = np.ones_like(gauss[3])
+				groups[len(gauss[3])//2:] = 2
+				g = groups.reshape(1,-1)
+
+				#print(np.concatenate((gauss,groups.reshape(1,-1))).shape)
+				self.gaussplot.setData(np.concatenate((gauss,np.ones_like(g),g)),self.wvssphsz.value)
 				self.display_dynamic(None)
 				self.wview3d.updateGL()
 
@@ -2267,7 +2292,6 @@ class EMGMM(QtWidgets.QMainWindow):
 
 	def group_by_mask(self):
 		"""If masks have been specified, use them to group the gaussians as appropriate"""
-
 		nx=int(self.jsparm["boxsize"])
 
 		# load the masks for later
