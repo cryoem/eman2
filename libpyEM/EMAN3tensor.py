@@ -30,13 +30,22 @@
 #
 
 """
+This module contains EMAN3-specific operations. We don't generate EMAN-like aliases for monolithic tensorflow operations.
+
 ONLY import this file if you will be working with tensorflow in your program, otherwise the tensorflow initialization may add unreasonable startup delays
 
-This module contains EMAN3-specific operations. We don't generate EMAN-like aliases for monolithic tensorflow operations. With that in mind:
-Some useful TensorFlow/NumPy operations/comments in an EMAN3 context which are not part of the module:
+There are several key classes for data representation in this module:
+EMStack3D, 2D, 1D - A set of 3 classes to represent stacks of images of different dimensionality with seamless interconversion among EMData, NumPy and Tensorflow.
+	Implemented as 3 separate classes to avoid validation overhead and provide dimensionality-specific routines. All share a common generic interface.
+
+Orientations - an array {N,X,Y,Z} of orientations, interconvertable to EMAN Transform objects. The main representation is an XYZ vector where the length of the vector represents
+	the amount of rotation, and the direction is the plane of rotation. This representation is particularly conventient for work with deep learning.
+
+Gaussians - an array of Gaussian objects {N,X,Y,Z,A} with amplitude, but no width
 
 VERY important to note that when indexing EMData objects it is emd[x,y,z], whereas indexing numpy/tensorflow objects, the last index is the fastest varying ary[z,y,x] !
 
+====
 tf.signal.rfft2d    - returns a new constant tensor which is the FFT of the last 2 indices of the tensor.
                        ie - if used on a 3-D tensor (N,X,Y) will return (N,FX,FY)
                        FFT tensors are complex, and padded in X, ie (NX,NY) -> (NX/2+1,NY)
@@ -52,14 +61,16 @@ import tensorflow as tf
 import numpy as np
 
 
-class EMDataStack():
-	"""This class represents a stack of EMData images with an (optional) tensorflow/numpy representation.
+class EMStack3D():
+	"""This class represents a stack of 3-D Volumes in either an EMData, NumPy or Tensorflow representation, with easy interconversion
+	- Shape of the array is {N,Z,Y,X}, as EMData, it is a list of N x EMData(X,Y,Z)
 	- All images in the stack must have the same dimensions.
-	- Adding new EMData objects or setting an existing object to a different object will force the tensorflow and numpy representations to be regenerated
-	- WARNING: the Tensorflow representation will be generated the first time it is accessed. Image changes to any contained EMData objects after this point will
-	not be reflected in the tensor unless the update() method is called.
+	- Only one representation exists at a time. Coercing to a new type is relatively expensive in terms of time.
+	- Coerce routines will insure that the required representation exists, but others will be lost to insure self-consistency.
+	- The convenience method numpy_list() will return a python list of N {Z,X,Y} NumPy arrays sharing memory with the EMData objects in the EMDataStack,
+	  but beware, as coercing the EMDataStack to a differnt type will invalidate these NumPy arrays, and could create a crash!
 
-	EMData elements may be accessed as stack[n], and elements may similarly be altered
+	Individual images in the stack may be accessed using [n]
 	"""
 
 	def __init__(self,imgs=None):
@@ -68,29 +79,49 @@ class EMDataStack():
 		filename, with optional ":" range specifier (see https://eman2.org/ImageFormats)
 		single EMData object
 		list or tuple of EMData objects
+		numpy array, with first axis being image number {N,Z,Y,X} | {N,Y,X} | {N,X}
+		Tensor, with first axis being image number {N,Z,Y,X} ...
 		"""
+		self._data=None	# representation in whatever the current format is
+		self._npy_list=None # list of NumPy arrays sharing memory with EMData objects. RISKY - never copy this list, only use in place!
 		self.set_data(imgs)
 
 	def set_data(self,imgs):
 		""" """
-		if imgs is None: self._stack=[]
-		elif isinstance(imgs,EMData): self._stack=[imgs]
-		elif isinstance(imgs,str): self._stack=EMData.read_images(imgs)
+		if imgs is None:
+			self._data=None
+			self._npy_list=None
+		elif isinstance(imgs,EMData):
+			if imgs.get_ndim()!=3: raise Exception("EMStack3D only supports 3-D data")
+			self._data=[imgs]
+			self._npy_list=None
+		elif isinstance(imgs,tf.Tensor) or isinstance(imgs,numpy.ndarray):
+			if len(imgs.shape)!=4: raise Exception(f"EMStack3D only supports stacks of 3-D data, the provided images were {len(imgs.shape)}-D")
+			self._data=imgs
+			self._npy_list=None
+		elif isinstance(imgs,str):
+			self._data=EMData.read_images(imgs)
+			if imgs[0].get_ndim()!=3: raise Exception(f"EMStack3D only supports stacks of 3-D data. {imgs} is {imgs[0].get_ndim()}-D")
+			self._npy_list=None
 		else:
-			try: self._stack=list(imgs)		# copy the list, not the elements of the list
-			except: raise Exception("EMDataStack may only be initialized with None, a filename, an EMData object or a list/tuple of EMData objects")
+			try:
+				if not isinstance(imgs[0],EMData): raise Exception(f"EMDataStack cannot be initialized with a list of {type(imgs[0])}")
+				self._data=list(imgs)		# copy the list, not the elements of the list
+				self._npy_list=None
+			except: raise Exception("EMDataStack may be initialized with None, a filename, an EMData object, a list/tuple of EMData objects, a NumPy array or a Tensor {N,Z,Y,X}")
 
-		self._tensor=None
-		self._numpy=None
+	def __len__(self): return len(self._data)
 
-	def __len__(self): return len(self._stack)
+	@property
+	def shape(self):
+		# note that the returned shape is N,Z,Y,X regardless of representation
+		if isinstance(self._data,list): return((len(self._data),self._data[0]["nz"],self._data[0]["ny"],self._data[0]["nx"]))
+		return(self._data.shape)
 
-	def __getitem__(self,key): return self._stack[key]
+	def __getitem__(self,key): return self._data[key]
 
 	def __setitem__(self,key,value):
-		self._stack[key]=value
-		self._tensor=None
-		self._numpy=None
+		raise Exception("Cannot set individual elements")
 
 	def update(self):
 		"""Call this if any of the contained EMData objects are altered (image values) to trigger regeneration of the tensor upon next use. Not necessary
@@ -99,31 +130,59 @@ class EMDataStack():
 
 	@property
 	def tensor(self):
-		"""Returns the current tuple of EMData objects as a single constant tensor such that tensor[i] will produce the tensor form of self.stack[i]"""
-		if self._tensor is None:
-			if len(self._stack)==0: raise Exception("EMDataStack cannot provide numpy representation until it has been initialized with data")
-			self._tensor=tf.constant(np.stack(self.numpy,axis=0))
-		return self._tensor
+		self.coerce_tensor()
+		return self._data
 
 	@tensor.setter
 	def tensor(self,value):
-		if value is not None: raise Exception("EMDataStack.tensor may not be set to any value other than None. It is generated automatically on demand.")
-		self._tensor=None
+		self.set_data(value)
 
 	@property
 	def numpy(self):
-		"""Returns a list of numpy objects created from the EMData objects (thus they share memory). Due to memory sharing, the stack is not automatically
-		merged into a single numpy array. This could be done with, for example np.stack(stk.numpy,axis=0), but the shared memory aspect would be lost.
-		"""
-		if self._numpy==None:
-			if len(self._stack)==0: raise Exception("EMDataStack cannot provide numpy representation until it has been initialized with data")
-			self._numpy=[to_numpy(im) for im in self._stack]
-		return self._numpy
+		self.coerce_numpy()
+		return self._data
 
 	@numpy.setter
 	def numpy(self,value):
-		if value is not None: raise Exception("EMDataStack.numpy may not be set to any value other than None. It is generated automatically on demand.")
-		self._numpy=None
+		self.set_data(value)
+
+	@property
+	def emdata(self):
+		self.coerce_emdata()
+		return self._data
+
+	@emdata.setter
+	def emdata(self,value):
+		self.set_data(value)
+
+	@property
+	def numpy_list(self):
+		self.coerce_emdata()
+		if self._npy_list is not None: return
+		self._npy_list=[i.numpy() for i in self._data]
+
+	def coerce_emdata():
+		"""Forces the current representation to EMData/NumPy"""
+		if isinstance(self._data,list): return
+		elif isinstance(self._data,np.ndarray): self._data=[from_numpy(i) for i in self._data]
+		elif isinstance(self._data,tf.Tensor): self._data=from_tf(self._data,True)
+		else: raise Exception(f"Invalid data in EMStack3D: {type(self._data)}")
+		self._npy_list=None		# not necessary if already EMData list
+
+	def coerce_numpy():
+		if isinstance(self._data,np.ndarray): return
+		elif self._npy_list is not None: self._data=np.stack(self._npy_list)
+		elif isinstance(self._data,list): self._data=np.stack([i.numpy() for i in self._data])
+		elif isinstance(self._data,tf.Tensor): self._data=self._data.numpy()
+		else: raise Exception(f"Invalid data in EMStack3D: {type(self._data)}")
+		self._npy_list=None		# not necessary if already EMData list
+
+	def coerce_tensor():
+		if isinstance(self._data,tf.Tensor): return
+		elif isinstance(self._data,list): self._data=to_tf(self._data)
+		elif isinstance(self._data,np.ndarray): self._data=self._data.numpy()
+		else: raise Exception(f"Invalid data in EMStack3D: {type(self._data)}")
+
 
 class Orientations():
 	"""This represents a set of orientations, with a standard representation of an XYZ vector where the vector length indicates the amount
