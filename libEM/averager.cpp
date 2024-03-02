@@ -247,6 +247,7 @@ void ImageAverager::add_image(EMData * image)
 		result = image->copy_head();
 		result->set_size(nx, ny, nz);
 		sigma_image = params.set_default("sigma", (EMData*)0);
+		if (sigma_image) sigma_image->set_size(nx, ny, nz);
 		ignore0 = params["ignore0"];
 
 		normimage = params.set_default("normimage", (EMData*)0);
@@ -256,10 +257,7 @@ void ImageAverager::add_image(EMData * image)
 
 	float *result_data = result->get_data();
 	float *sigma_image_data = 0;
-	if (sigma_image) {
-		sigma_image->set_size(nx, ny, nz);
-		sigma_image_data = sigma_image->get_data();
-	}
+	if (sigma_image) sigma_image_data = sigma_image->get_data();
 
 	float * image_data = image->get_data();
 

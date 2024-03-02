@@ -514,14 +514,10 @@ class GUIFourierSynth(QtWidgets.QWidget):
 		if not self.targfn is None:
 			self.synthplot.set_data((np.arange(len(self.targfn)),self.targfn),"Target",quiet=True,linewidth=1,linetype=2,symtype=0)
 
-#		if self.cbshowall.isChecked() :
-#			csum=self.total["minimum"]*1.1
-#			for i in range(nsin):
-#				if self.wamps[i]==0: continue
-#				csum-=self.wamps[i]*1.1
-#				if self.cbshifted.isChecked() : self.curves[i].add(csum)
-#				self.synthplot.set_data((self.xvals,self.curves[i].get_data_as_vector()),"%d"%i,quiet=True,linewidth=1,color=2)
-#				csum-=self.wamps[i]*1.1
+		if self.cbshowall.isChecked() :
+			for i in range(nsin):
+				#if self.cbshifted.isChecked() : self.curves[i].add(csum)
+				self.synthplot.set_data((self.xvals,self.wamp[i].getValue()*np.cos(self.xvals/samples*i*2*pi+self.wpha[i].getValue()*pi/180.0)),"%d"%i,quiet=True,linewidth=1,color=2)
 
 		self.synthplot.updateGL()
 
