@@ -61,7 +61,7 @@ import tensorflow as tf
 import numpy as np
 
 
-class EMStack3D():
+class EMStack():
 	"""This class represents a stack of 3-D Volumes in either an EMData, NumPy or Tensorflow representation, with easy interconversion
 	- Shape of the array is {N,Z,Y,X}, as EMData, it is a list of N x EMData(X,Y,Z)
 	- All images in the stack must have the same dimensions.
@@ -87,36 +87,13 @@ class EMStack3D():
 		self.set_data(imgs)
 
 	def set_data(self,imgs):
-		""" """
-		if imgs is None:
-			self._data=None
-			self._npy_list=None
-		elif isinstance(imgs,EMData):
-			if imgs.get_ndim()!=3: raise Exception("EMStack3D only supports 3-D data")
-			self._data=[imgs]
-			self._npy_list=None
-		elif isinstance(imgs,tf.Tensor) or isinstance(imgs,numpy.ndarray):
-			if len(imgs.shape)!=4: raise Exception(f"EMStack3D only supports stacks of 3-D data, the provided images were {len(imgs.shape)}-D")
-			self._data=imgs
-			self._npy_list=None
-		elif isinstance(imgs,str):
-			self._data=EMData.read_images(imgs)
-			if imgs[0].get_ndim()!=3: raise Exception(f"EMStack3D only supports stacks of 3-D data. {imgs} is {imgs[0].get_ndim()}-D")
-			self._npy_list=None
-		else:
-			try:
-				if not isinstance(imgs[0],EMData): raise Exception(f"EMDataStack cannot be initialized with a list of {type(imgs[0])}")
-				self._data=list(imgs)		# copy the list, not the elements of the list
-				self._npy_list=None
-			except: raise Exception("EMDataStack may be initialized with None, a filename, an EMData object, a list/tuple of EMData objects, a NumPy array or a Tensor {N,Z,Y,X}")
+		raise Exception("EMStack should not be used directly, please use EMStack3D, EMStack2D or EMStack1d")
 
 	def __len__(self): return len(self._data)
 
 	@property
 	def shape(self):
-		# note that the returned shape is N,Z,Y,X regardless of representation
-		if isinstance(self._data,list): return((len(self._data),self._data[0]["nz"],self._data[0]["ny"],self._data[0]["nx"]))
-		return(self._data.shape)
+		raise Exception("EMStack should not be used directly, please use EMStack3D, EMStack2D or EMStack1d")
 
 	def __getitem__(self,key): return self._data[key]
 
@@ -161,7 +138,7 @@ class EMStack3D():
 		if self._npy_list is not None: return
 		self._npy_list=[i.numpy() for i in self._data]
 
-	def coerce_emdata():
+	def coerce_emdata(self):
 		"""Forces the current representation to EMData/NumPy"""
 		if isinstance(self._data,list): return
 		elif isinstance(self._data,np.ndarray): self._data=[from_numpy(i) for i in self._data]
@@ -169,7 +146,7 @@ class EMStack3D():
 		else: raise Exception(f"Invalid data in EMStack3D: {type(self._data)}")
 		self._npy_list=None		# not necessary if already EMData list
 
-	def coerce_numpy():
+	def coerce_numpy(self):
 		if isinstance(self._data,np.ndarray): return
 		elif self._npy_list is not None: self._data=np.stack(self._npy_list)
 		elif isinstance(self._data,list): self._data=np.stack([i.numpy() for i in self._data])
@@ -177,11 +154,168 @@ class EMStack3D():
 		else: raise Exception(f"Invalid data in EMStack3D: {type(self._data)}")
 		self._npy_list=None		# not necessary if already EMData list
 
-	def coerce_tensor():
+	def coerce_tensor(self):
 		if isinstance(self._data,tf.Tensor): return
 		elif isinstance(self._data,list): self._data=to_tf(self._data)
 		elif isinstance(self._data,np.ndarray): self._data=self._data.numpy()
 		else: raise Exception(f"Invalid data in EMStack3D: {type(self._data)}")
+
+	# TODO - implement keep_type
+	def do_fft(self,keep_type=False):
+		raise Exception("EMStack should not be used directly, please use EMStack3D, EMStack2D or EMStack1d")
+
+	def do_ift(self,keep_type=False):
+		raise Exception("EMStack should not be used directly, please use EMStack3D, EMStack2D or EMStack1d")
+
+	def calc_ccf(self,target):
+		"""Compute the cross correlation between each image in the stack and target, which may be a single image or another EMStack of the same size"""
+
+		if isinstance(target,EMStack3D):
+			return self.tensor*tf.math.conj(target)
+
+class EMStack3D(EMStack):
+	"""This class represents a stack of 3-D Volumes in either an EMData, NumPy or Tensorflow representation, with easy interconversion
+	- Shape of the array is {N,Z,Y,X}, as EMData, it is a list of N x EMData(X,Y,Z)
+	- All images in the stack must have the same dimensions.
+	- Only one representation exists at a time. Coercing to a new type is relatively expensive in terms of time.
+	- Coerce routines will insure that the required representation exists, but others will be lost to insure self-consistency.
+	- The convenience method numpy_list() will return a python list of N {Z,X,Y} NumPy arrays sharing memory with the EMData objects in the EMDataStack,
+	  but beware, as coercing the EMDataStack to a differnt type will invalidate these NumPy arrays, and could create a crash!
+
+	Individual images in the stack may be accessed using emdata[n], tensor[n], numpy[n]
+	"""
+
+	def set_data(self,imgs):
+		""" """
+		if imgs is None:
+			self._data=None
+			self._npy_list=None
+		elif isinstance(imgs,EMData):
+			if imgs.get_ndim()!=3: raise Exception("EMStack3D only supports 3-D data")
+			self._data=[imgs]
+			self._npy_list=None
+		elif isinstance(imgs,tf.Tensor) or isinstance(imgs,np.ndarray):
+			if len(imgs.shape)!=4: raise Exception(f"EMStack3D only supports stacks of 3-D data, the provided images were {len(imgs.shape)}-D")
+			self._data=imgs
+			self._npy_list=None
+		elif isinstance(imgs,str):
+			self._data=EMData.read_images(imgs)
+			if imgs[0].get_ndim()!=3: raise Exception(f"EMStack3D only supports stacks of 3-D data. {imgs} is {imgs[0].get_ndim()}-D")
+			self._npy_list=None
+		else:
+			try:
+				if not isinstance(imgs[0],EMData): raise Exception(f"EMDataStack cannot be initialized with a list of {type(imgs[0])}")
+				self._data=list(imgs)		# copy the list, not the elements of the list
+				self._npy_list=None
+			except: raise Exception("EMDataStack may be initialized with None, a filename, an EMData object, a list/tuple of EMData objects, a NumPy array or a Tensor {N,Z,Y,X}")
+
+	def __len__(self): return len(self._data)
+
+	@property
+	def shape(self):
+		# note that the returned shape is N,Z,Y,X regardless of representation
+		if isinstance(self._data,list): return((len(self._data),self._data[0]["nz"],self._data[0]["ny"],self._data[0]["nx"]))
+		return(self._data.shape)
+
+	# TODO - implement keep_type
+	def do_fft(self,keep_type=False):
+		"""Computes the FFT of each image and returns a new EMStack3D. If keep_type is not set, will convert to Tensor before computing FFT."""
+		if keep_type: raise Exception("do_fft: keep_type not functional yet")
+		self.coerce_tensor()
+
+		return tf_fft3d(self._data)
+
+	def do_ift(self,keep_type=False):
+		"""Computes the IFT of each image and returns a new EMStack3D. If keep_type is not set, will convert to Tensor before computing."""
+		if keep_type: raise Exception("do_ift: keep_type not functional yet")
+		self.coerce_tensor()
+
+		return tf_ift3d(self._data)
+
+	def calc_ccf(self,target):
+		"""Compute the cross correlation between each image in the stack and target, which may be a single image or another EMStack of the same size"""
+
+		if isinstance(target,EMStack3D):
+			return EMStack3D(self.tensor*tf.math.conj(target.tensor))
+		elif isinstance(target,tf.Tensor):
+			return EMStack3D(self.tensor*tf.math.conj(target))
+		else: raise Exception("calc_ccf: target must be either EMStack2D or single Tensor")
+
+class EMStack2D(EMStack):
+	"""This class represents a stack of 2-D Images in either an EMData, NumPy or Tensorflow representation, with easy interconversion
+	- Shape of the array is {N,Y,X}, as EMData, it is a list of N x EMData(X,Y)
+	- All images in the stack must have the same dimensions.
+	- Only one representation exists at a time. Coercing to a new type is relatively expensive in terms of time.
+	- Coerce routines will insure that the required representation exists, but others will be lost to insure self-consistency.
+	- The convenience method numpy_list() will return a python list of N {Z,X,Y} NumPy arrays sharing memory with the EMData objects in the EMDataStack,
+	  but beware, as coercing the EMDataStack to a differnt type will invalidate these NumPy arrays, and could create a crash!
+
+	Individual images in the stack may be accessed using emdata[n], tensor[n], numpy[n]
+	"""
+
+	def set_data(self,imgs):
+		""" """
+		if imgs is None:
+			self._data=None
+			self._npy_list=None
+		elif isinstance(imgs,EMData):
+			if imgs.get_ndim()!=2: raise Exception("EMStack2D only supports 2-D data")
+			self._data=[imgs]
+			self._npy_list=None
+		elif isinstance(imgs,tf.Tensor) or isinstance(imgs,np.ndarray):
+			if len(imgs.shape)!=3: raise Exception(f"EMStack2D only supports stacks of 2-D data, the provided images were {len(imgs.shape)}-D")
+			self._data=imgs
+			self._npy_list=None
+		elif isinstance(imgs,str):
+			self._data=EMData.read_images(imgs)
+			if imgs[0].get_ndim()!=3: raise Exception(f"EMStack2D only supports stacks of 2-D data. {imgs} is {imgs[0].get_ndim()}-D")
+			self._npy_list=None
+		else:
+			try:
+				if not isinstance(imgs[0],EMData): raise Exception(f"EMDataStack cannot be initialized with a list of {type(imgs[0])}")
+				self._data=list(imgs)		# copy the list, not the elements of the list
+				self._npy_list=None
+			except: raise Exception("EMDataStack may be initialized with None, a filename, an EMData object, a list/tuple of EMData objects, a NumPy array or a Tensor {N,Z,Y,X}")
+
+	def __len__(self): return len(self._data)
+
+	@property
+	def shape(self):
+		# note that the returned shape is N,Z,Y,X regardless of representation
+		if isinstance(self._data,list): return((len(self._data),self._data[0]["ny"],self._data[0]["nx"]))
+		return(self._data.shape)
+
+	# TODO - implement keep_type
+	def do_fft(self,keep_type=False):
+		"""Computes the FFT of each image and returns a new EMStack3D. If keep_type is not set, will convert to Tensor before computing FFT."""
+		if keep_type: raise Exception("do_fft: keep_type not functional yet")
+		self.coerce_tensor()
+
+		return EMStack2D(tf_fft2d(self._data))
+
+	def do_ift(self,keep_type=False):
+		"""Computes the IFT of each image and returns a new EMStack3D. If keep_type is not set, will convert to Tensor before computing."""
+		if keep_type: raise Exception("do_ift: keep_type not functional yet")
+		self.coerce_tensor()
+
+		return EMStack2D(tf_ift2d(self._data))
+
+	def calc_ccf(self,target,center=True):
+		"""Compute the cross correlation between each image in the stack and target, which may be a single image or another EMStack of the same size.
+	If center is True, will shift the phase origin so zero shift corresponds to the middle of the image"""
+
+		if center:
+			if isinstance(target,EMStack2D):
+				return EMStack2D(tf_phaseorigin2d(self.tensor*tf.math.conj(target.tensor)))
+			elif isinstance(target,tf.Tensor):
+				return EMStack2D(tf_phaseorigin2d(self.tensor*tf.math.conj(target)))
+			else: raise Exception("calc_ccf: target must be either EMStack2D or single Tensor")
+		else:
+			if isinstance(target,EMStack2D):
+				return EMStack2D(self.tensor*tf.math.conj(target.tensor))
+			elif isinstance(target,tf.Tensor):
+				return EMStack2D(self.tensor*tf.math.conj(target))
+			else: raise Exception("calc_ccf: target must be either EMStack2D or single Tensor")
 
 
 class Orientations():
@@ -340,9 +474,6 @@ x,y,z are ~-0.5 to ~0.5 (typ) and amp is 0 to ~1. A scaling factor (value -> pix
 		return tf.stack(proj2)
 		#proj=tf.stack([tf.tensor_scatter_nd_add(proj[i],bposall[i],bampall[i]) for i in range(proj.shape[0])])
 
-
-
-
 def tf_set_device(dev=0,maxmem=4096):
 	"""Sets maximum memory for a specific Tensorflow device and returns a device to use with "with:"
 	dev - GPU number or -1 for CPU (CPU doesn't actually permit memory size allocation)
@@ -415,6 +546,28 @@ def tf_ift3d(imgs):
 	if imgs.dtype!=tf.complex64: raise Exception("Data type must be complex")
 
 	return tf.signal.irfft3d(imgs)
+
+POF2D=None
+def tf_phaseorigin2d(imgs):
+	global POF2D
+	if len(imgs.shape)==3: shp=imgs.shape[1:]
+	else: shp=imgs.shape
+
+	if POF2D is None or shp!=POF2D.shape:
+		POF2D=tf.constant(np.fromfunction(lambda y,x: ((x+y)%2)*-2+1,shp),dtype=tf.complex64)
+
+	return imgs*POF2D
+
+POF3D=None
+def tf_phaseorigin3d(imgs):
+	global POF3D
+	if len(imgs.shape)==3: shp=imgs.shape[1:]
+	else: shp=imgs.shape
+
+	if POF3D is None or shp!=POF3D.shape:
+		POF3D=tf.constant(np.fromfunction(lambda z,y,x: ((z+x+y)%2)*-2+1,shp),dtype=tf.complex64)
+
+	return imgs*POF3D
 
 def tf_downsample_2d(imgs,newx,stack=False):
 	"""Fourier downsamples a tensorflow 2D image or stack of 2D images (similar to math.fft.resample processor conceptually)
@@ -607,7 +760,7 @@ def pts2img(pts, ang, params, lp=.1, sym="c1"):
 		multmodel=False
 
 	### when a non c1 symmetry is provided, this will return a list of points
-	##  one for each asymmetrical unit so we loop through them and sum the images
+	##  one for each asymmetrical unit so we loop thro`ugh them and sum the images
 	p0=get_sym_pts(sym, pts)
 	for p in p0:
 		p=tf.transpose(p)
