@@ -30,6 +30,7 @@
 #
 
 from EMAN3 import *
+from EMAN3tensor import *
 import random
 
 def main():
@@ -40,6 +41,7 @@ At the moment this program provides only an option for estimating the gain image
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--est_gain", type=str,help="specify output file for gain image. Estimates a gain image when given a set of many movies via hierarchical median estimation", default=None)
+	parser.add_argument("--ccftest", type=str,help="specify output file for gain image. Estimates a gain image when given a set of many movies via hierarchical median estimation", default=None)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
@@ -63,8 +65,18 @@ At the moment this program provides only an option for estimating the gain image
 		avg=avgr.finish()
 		avg.write_image("average.hdf",0)
 		sig.write_image("average.hdf",1)
-		avg.mult(sig.process("math.reciprocal"))
-		avg.write_image("average.hdf",2)
+		avg2=avg.copy()
+		avg2.mult(sig.process("math.reciprocal"))
+		avg2.write_image("average.hdf",2)
+
+	if options.ccftest is not None:
+		avg.add(-avg["mean"])
+		nimg=EMUtil.get_image_count(args[i])
+		imgs=EMData.read_images(f"{args[i]}:0:{min(50,nimg)}")
+		for i in imgs:
+			i.
+		emds=EMDataStack(imgs)
+
 
 	E3end(argv)
 
