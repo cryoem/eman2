@@ -569,59 +569,6 @@ int MrcIO::read_fei_header(Dict & dict, int image_index, const Region * area, bo
 {
 	ENTERFUNC;
 
-	if(image_index < 0) {
-		image_index = 0;
-	}
-
-	init();
-
-	check_region(area, FloatSize(feimrch.nx, feimrch.ny, feimrch.nz), is_new_file, false);
-
-	int xlen = 0, ylen = 0, zlen = 0;
-
-	EMUtil::get_region_dims(area, feimrch.nx, & xlen, feimrch.ny, & ylen, feimrch.nz, & zlen);
-
-	dict["nx"] = xlen;
-	dict["ny"] = ylen;
-	dict["nz"] = zlen;
-	dict["FEIMRC.nx"] = feimrch.nx;
-	dict["FEIMRC.ny"] = feimrch.ny;
-	dict["FEIMRC.nz"] = feimrch.nz;
-
-	dict["datatype"] = to_em_datatype(feimrch.mode);	//=1, FEI-MRC file always use short for data type
-
-	dict["FEIMRC.nxstart"] = feimrch.nxstart;
-	dict["FEIMRC.nystart"] = feimrch.nystart;
-	dict["FEIMRC.nzstart"] = feimrch.nzstart;
-
-	dict["FEIMRC.mx"] = feimrch.mx;
-	dict["FEIMRC.my"] = feimrch.my;
-	dict["FEIMRC.mz"] = feimrch.mz;
-
-	dict["FEIMRC.xlen"] = feimrch.xlen;
-	dict["FEIMRC.ylen"] = feimrch.ylen;
-	dict["FEIMRC.zlen"] = feimrch.zlen;
-
-	dict["FEIMRC.alpha"] = feimrch.alpha;
-	dict["FEIMRC.beta"] = feimrch.beta;
-	dict["FEIMRC.gamma"] = feimrch.gamma;
-
-	dict["FEIMRC.mapc"] = feimrch.mapc;
-	dict["FEIMRC.mapr"] = feimrch.mapr;
-	dict["FEIMRC.maps"] = feimrch.maps;
-
-	dict["FEIMRC.minimum"] = feimrch.amin;
-	dict["FEIMRC.maximum"] = feimrch.amax;
-	dict["FEIMRC.mean"] = feimrch.amean;
-//	dict["mean"] = feimrch.amean;
-
-	dict["FEIMRC.ispg"] = feimrch.ispg;
-	dict["FEIMRC.nsymbt"] = feimrch.nsymbt;
-
-	dict["apix_x"] = feimrch.xlen / feimrch.mx;
-	dict["apix_y"] = feimrch.ylen / feimrch.my;
-	dict["apix_z"] = feimrch.zlen / feimrch.mz;
-
 	dict["FEIMRC.next"] = feimrch.next;	//offset from end of header to the first dataset
 	dict["FEIMRC.dvid"] = feimrch.dvid;
 	dict["FEIMRC.numintegers"] = feimrch.numintegers;
@@ -643,28 +590,10 @@ int MrcIO::read_fei_header(Dict & dict, int image_index, const Region * area, bo
 	dict["FEIMRC.vd1"] = feimrch.vd1;
 	dict["FEIMRC.vd2"] = feimrch.vd2;
 
-	char label[32];
-
-	for(int i=0; i<9; i++) {	// 9 tilt angles
-		sprintf(label, "MRC.tiltangles%d", i);
-		dict[string(label)] = feimrch.tiltangles[i];
-	}
-
-	dict["FEIMRC.zorg"] = feimrch.zorg;
-	dict["FEIMRC.xorg"] = feimrch.xorg;
-	dict["FEIMRC.yorg"] = feimrch.yorg;
-
-	dict["FEIMRC.nlabl"] = feimrch.nlabl;
-
-	for (int i = 0; i < feimrch.nlabl; i++) {
-		sprintf(label, "MRC.label%d", i);
-		dict[string(label)] = string(feimrch.labl[i], MRC_LABEL_SIZE);
-	}
-
 	/* Read extended image header by specified image index */
 	FeiMrcExtHeader feiexth;
 
-	portable_fseek(file, sizeof(FeiMrcHeader)+sizeof(FeiMrcExtHeader)*image_index, SEEK_SET);
+	portable_fseek(file, sizeof(MrcHeader)+sizeof(FeiMrcExtHeader)*image_index, SEEK_SET);
 
 	if (fread(&feiexth, sizeof(FeiMrcExtHeader), 1, file) != 1) {
 		throw ImageReadException(filename, "FEI MRC extended header");
@@ -686,9 +615,6 @@ int MrcIO::read_fei_header(Dict & dict, int image_index, const Region * area, bo
 	dict["FEIMRC.tilt_axis"] = feiexth.tilt_axis;
 
 	dict["FEIMRC.pixel_size"] = feiexth.pixel_size;
-	dict["apix_x"] = feiexth.pixel_size *1.0e10;
-	dict["apix_y"] = feiexth.pixel_size *1.0e10;
-	dict["apix_z"] = feiexth.pixel_size *1.0e10;
 	dict["FEIMRC.magnification"] = feiexth.magnification;
 	dict["FEIMRC.ht"] = feiexth.ht;
 	dict["FEIMRC.binning"] = feiexth.binning;

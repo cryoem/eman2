@@ -166,91 +166,6 @@ namespace EMAN
 			char labels[MRC_NUM_LABELS][MRC_LABEL_SIZE];
 		};
 
-		/** Extended MRC format for tomography
-		 * As used by Fei; original definition of extended header by Dave Agard and Bram Koster
-		 * Contact Dustin Morado <Dustin.Morado@uth.tmc.edu> for details.
-		 *
-		 * The extended MRC format consists of three parts:
-		 * 1. the header (same as in the original MRC format definition)
-		 * 2. the extended header
-		 * 3. the data
-		 * The MRC file is in little-endian (PC) format (IMOD can handle this). If you need to swap
-		 * to big-endian (UNIX or Mac), all data must be swapped according to their data format.
-		 *
-		 * All image data will be 2-byte integer. */
-		struct FeiMrcHeader
-		{
-			int nx;				/* The number of pixels in the x direction of the image */
-			int ny;				/* The number of pixels in the y direction of the image */
-			int nz;				/* The number of pixels in the z direction of the image
-			 	 	 	 	 	 Effectively in the tomography tilt series this means the
-			 	 	 	 	 	 number of images in the tilt series. */
-
-			int mode;			/* Defines the data type. Should always be 1 (2-byte integer)
-			 	 	 	 	 	 in the case of tomography*/
-
-			int nxstart;		/* set to 0: not used; lower bound of columns */
-			int nystart;		/* set to 0: not used; lower bound of rows */
-			int nzstart;		/* set to 0: not used; lower bound of sections */
-
-			int mx;				/* set to nx: not used; grid size x */
-			int my;				/* set to ny: not used; grid size y */
-			int mz;				/* set to nz: not used; grid size z */
-
-			float xlen;			/* set to mx: not used; cell size in x Angstroms (pixel spacing=3Dxlen/mx) */
-			float ylen;			/* set to mx: not used; cell size in y Angstroms (pixel spacing=3Dxlen/my) */
-			float zlen;			/* set to mx: not used; cell size in z Angstroms (pixel spacing=3Dxlen/mz) */
-
-			float alpha;		/* set to 90: not used; cell angles in degrees */
-			float beta;			/* set to 90: not used; cell angles in degrees */
-			float gamma;		/* set to 90: not used; cell angles in degrees */
-
-			/* axis X => 1, Y => 2, Z => 3 */
-			int mapc;			/* set to 1: not used; mapping columns, rows, sections on axis (x=3D1, y=3D2, z=3D3) */
-			int mapr;			/* set to 2: not used; mapping columns, rows, sections on axis (x=3D1, y=3D2, z=3D3)     */
-			int maps;			/* set to 3: not used; mapping columns, rows, sections on axis (x=3D1, y=3D2, z=3D3) */
-
-			float amin;			/* minimum pixel value of all images in file */
-			float amax;			/* maximum pixel value of all images in file */
-			float amean;		/* mean pixel value of all images in file */
-
-			short ispg;			/* set to 0: not used; space group number (0 for images) */
-
-			short nsymbt;			/* set to 0: not used; number of bytes used for storing symmetry operators */
-
-			int	next;			/* This value gives the offset (in bytes) from the end
-								of the file header to the first dataset (image).
-								Thus you will find the first image at 1024 + next bytes. */
-			short dvid;			/* set to 0: not used; creator id */
-			char extra[30];		/* set to 0: not used, extra 30 bytes data */
-			short numintegers;	/* set to 0: not used */
-			short numfloats;	/* set to 32; we always expect a extended header of 32 floats */
-
-			short sub;
-			short zfac;
-			float min2;
-			float max2;
-			float min3;
-			float max3;
-			float min4;
-			float max4;
-			short idtype;
-			short lens;
-			short nd1;
-			short nd2;
-			short vd1;
-			short vd2;
-			float tiltangles[9];	/* set to 0; not used; used to rotate model to match rotated image */
-
-			float zorg;			/* set to 0: not used; origin of image */
-			float xorg;
-			float yorg;
-
-			int nlabl;			/* number of labels */
-			char labl[MRC_NUM_LABELS][MRC_LABEL_SIZE]; 	/* Arrays of characters that can be used for description.
-			 	 	 	 	 	 	 	 	 	 	 	 	 Label0 is used for copyright information, always start with "Fei"*/
-		};
-
 		/** The extended header used by Fei MRC image. It contains the information about a maximum of 1024 images.
 		 * Each section is 128 bytes long. The extended header is thus 1024*128 bytes (always the same length,
 		 * reagrdless of how many images are present.)
@@ -412,10 +327,7 @@ namespace EMAN
 	private:
 		int mode_size;
 
-		union {
-			MrcHeader mrch;
-			FeiMrcHeader feimrch;
-		};
+		MrcHeader mrch;
 
 		/* the extended MRC format for tomography, used by FEI */
 		bool isFEI;
